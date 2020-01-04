@@ -871,8 +871,8 @@ Object.assign(jb, {
             }
             if (frame[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$dummyComp$/))
                 jb.logError(macroId + ' is defined more than once, using last definition ' + id)
-            if (frame[macroId] !== undefined && !isNS && jb.macroNs[macroId])
-                jb.logError(macroId + ' is already defined as ns, using last definition ' + id)
+            // if (frame[macroId] !== undefined && !isNS && jb.macroNs[macroId])
+            //     jb.logError(macroId + ' is already defined as ns, using last definition ' + id)
             return true;
         }
 
@@ -6017,6 +6017,9 @@ ui.toVdomOrStr = val => {
 	return res
 }
 
+ui.hasClassInVdom = (vdom,clz) => (jb.path(vdom,'attributes.class') || '').split(' ').indexOf(clz) != -1
+ui.findInVdom = (vdom,clz) => ui.hasClassInVdom(vdom,clz) ? vdom : (vdom.children||[]).find(vd=>ui.findInVdom(vd,clz))
+
 // ****************** components ****************
 
 jb.component('custom-style', { /* customStyle */
@@ -6240,22 +6243,29 @@ jb.component('label.span', { /* label.span */
   })
 }))
 
-jb.component('header.card-title', { /* label.cardTitle */
+;[1,2,3,4,5,6].map(level=>jb.component(`header.mdc-headline${level}`, {
   type: 'label.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class: 'mdl-card__title' },
-    				h('h2',{ class: 'mdl-card__title-text' },	state.text)),
+    template: (cmp,state,h) => h('h2',{class: `mdc-typography mdc-typography--headline${level}`},state.text),
     features: label.bindText()
   })
-})
+}))
 
-jb.component('label.card-supporting-text', { /* label.cardSupportingText */
+;[1,2].map(level=>jb.component(`header.mdc-subtitle${level}`, {
   type: 'label.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class: 'mdl-card__supporting-text' },	state.text),
+    template: (cmp,state,h) => h('h2',{class: `mdc-typography mdc-typography--subtitle${level}`},state.text),
     features: label.bindText()
   })
-})
+}))
+
+;[1,2].map(level=>jb.component(`text.mdc-body${level}`, {
+  type: 'label.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('h2',{class: `mdc-typography mdc-typography--body${level}`},state.text),
+    features: label.bindText()
+  })
+}))
 
 jb.component('label.highlight', { /* label.highlight */
   type: 'data',
@@ -6395,7 +6405,7 @@ jb.component('button', { /* button */
     {
       id: 'style',
       type: 'button.style',
-      defaultValue: button.mdlRaised(),
+      defaultValue: button.mdcRaised(),
       dynamic: true
     },
     {id: 'features', type: 'feature[]', dynamic: true}
@@ -6495,7 +6505,6 @@ function databindField(cmp,ctx,debounceTime,oneWay) {
     if (jb.val(newRef) != jb.val(cmp.state.databindRef))
       cmp.databindRefChanged.next(newRef)
     cmp.setState({model: cmp.jbModel()});
-    cmp.refreshMdl && cmp.refreshMdl();
     cmp.extendRefresh && cmp.extendRefresh();
   }
 
@@ -6742,7 +6751,7 @@ jb.component('editable-text', { /* editableText */
     {
       id: 'style',
       type: 'editable-text.style',
-      defaultValue: editableText.mdlInput(),
+      defaultValue: editableText.mdcInput(),
       dynamic: true
     },
     {id: 'features', type: 'feature[]', dynamic: true}
@@ -6883,8 +6892,7 @@ jb.component('editable-boolean', { /* editableBoolean */
 				if (!cmp.jbModel) return '';
 				return cmp.jbModel() ? ctx.params.textForTrue(cmp.ctx) : ctx.params.textForFalse(cmp.ctx);
 			}
-			cmp.extendRefresh = _ =>
-				cmp.setState({text: cmp.text()})
+			cmp.extendRefresh = () => cmp.strongRefresh()
 			cmp.state.text = cmp.text()
 		},
 	})
@@ -6894,14 +6902,8 @@ jb.component('editable-boolean.keyboard-support', { /* editableBoolean.keyboardS
   type: 'feature',
   impl: ctx => ({
 		onkeydown: true,
-		afterViewInit: cmp => {
-			cmp.onkeydown.filter(e=> 
-					e.keyCode == 37 || e.keyCode == 39)
-				.subscribe(e=> {
-					cmp.toggle();
-					cmp.refreshMdl && cmp.refreshMdl();
-				})
-		},
+		afterViewInit: cmp => cmp.onkeydown.filter(e=> e.keyCode == 37 || e.keyCode == 39)
+			.subscribe(e=> cmp.toggle())
 	})
 })
 ;
@@ -7489,6 +7491,10 @@ jb.component('feature.editable-content', {
       if (vdom.tag && vdom.tag.toLowerCase() == 'button' && vdom.children.length == 1 && typeof vdom.children[0] == 'string') {
         vdom.children[0] = jb.ui.h('span',attsToInject,vdom.children[0])
         return vdom
+      } else if (vdom.tag && vdom.tag.toLowerCase() == 'button' && jb.ui.findInVdom(vdom,'mdc-button__label')) {
+        const atts = jb.ui.findInVdom(vdom,'mdc-button__label').attributes
+        Object.assign(atts,attsToInject,{style: [(atts.style || ''),'z-index: 100'].filter(x=>x).join(';') })
+        return vdom
       }
       vdom.attributes = vdom.attributes || {};
       Object.assign(vdom.attributes,attsToInject)
@@ -8007,8 +8013,8 @@ jb.component('dialog.dialog-ok-cancel', { /* dialog.dialogOkCancel */
 			h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
 			h(state.contentComp),
 			h('div',{class: 'dialog-buttons'},[
-				h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: 'dialogClose' },cmp.cancelLabel),
-				h('button',{class: 'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: 'dialogCloseOK' },cmp.okLabel),
+				h('button',{class: 'mdc-button', onclick: 'dialogClose' },cmp.cancelLabel),
+				h('button',{class: 'mdc-button', onclick: 'dialogCloseOK' },cmp.okLabel),
 			]),
 		]),
     css: '>.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }'
@@ -8636,7 +8642,7 @@ jb.component('itemlist-container.search', { /* itemlistContainer.search */
     {
       id: 'style',
       type: 'editable-text.style',
-      defaultValue: editableText.mdlSearch(),
+      defaultValue: editableText.mdcSearch(),
       dynamic: true
     },
     {id: 'features', type: 'feature[]', dynamic: true}
@@ -8794,7 +8800,7 @@ jb.component('itemlist-container.search-in-all-properties', { /* itemlistContain
 
 jb.ns('menuStyle')
 jb.ns('menuSeparator')
-jb.ns('mdl')
+jb.ns('mdc')
 
 jb.component('menu.menu', { /* menu.menu */
   type: 'menu.option',
@@ -9206,6 +9212,7 @@ jb.component('menu-style.option-line', { /* menuStyle.optionLine */
 				h('i',{class:'material-icons'},state.icon),
 				h('span',{class:'title'},state.title),
 				h('span',{class:'shortcut'},state.shortcut),
+        h('div',{class: 'mdc-line-ripple' }),
 		]),
     css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
 				.selected { background: #d8d8d8 }
@@ -9213,7 +9220,7 @@ jb.component('menu-style.option-line', { /* menuStyle.optionLine */
 				>span { padding-top: 3px }
 						>.title { display: block; text-align: left; white-space: nowrap; }
 				>.shortcut { margin-left: auto; text-align: right; padding-right: 15px }`,
-    features: [mdl.rippleEffect(), menu.initMenuOption()]
+    features: [menu.initMenuOption(),mdc.rippleEffect()]
   })
 })
 
@@ -9256,7 +9263,7 @@ jb.component('menu-style.popup-thumb', { /* menuStyle.popupThumb */
 				onmouseenter: 'mouseEnter',
 				onclick: 'openPopup'
 		},state.title),
-    features: [menu.initPopupMenu(), mdl.rippleEffect()]
+    features: [menu.initPopupMenu(), mdc.rippleEffect()]
   })
 })
 
@@ -9480,7 +9487,7 @@ jb.component('group.theme', { /* group.theme */
 jb.component('theme.material-design', { /* theme.materialDesign */
   type: 'theme',
   impl: () => ({
-  	'$theme.editable-text': 'editable-text.mdl-input'
+  	'$theme.editable-text': 'editable-text.mdc-input'
   })
 })
 ;
@@ -9496,16 +9503,7 @@ jb.component('material-icon', { /* materialIcon */
     {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx =>
-		jb.ui.ctrl(ctx,{init: cmp=> cmp.state.icon = ctx.params.icon})
-})
-
-jb.component('icon.icon-in-button', { /* icon.iconInButton */
-  type: 'icon-with-action.style',
-  impl: customStyle(
-    (cmp,state,h) => h('button',{ class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect', onclick: 'clicked' },
-		      h('i',{ class: 'material-icons' }, state.icon))
-  )
+  impl: ctx => jb.ui.ctrl(ctx,{init: cmp=> cmp.state.icon = ctx.params.icon})
 })
 
 jb.component('icon.material', { /* icon.material */
@@ -9517,7 +9515,6 @@ jb.component('icon.material', { /* icon.material */
 ;
 
 jb.ns('slider')
-jb.ns('mdlStyle')
 
 jb.component('editable-number.slider-no-text', { /* editableNumber.sliderNoText */
   type: 'editable-number.style',
@@ -9539,7 +9536,7 @@ jb.component('editable-number.slider', { /* editableNumber.slider */
         controls: [
           editableText({
             databind: '%$editableNumberModel/databind%',
-            style: editableText.mdlInputNoFloatingLabel(36),
+            style: editableText.mdcNoLabel(36),
             features: [slider.handleArrowKeys(), css.margin(-3)]
           }),
           editableNumber({
@@ -9633,7 +9630,7 @@ jb.component('slider.edit-as-text-popup', { /* slider.editAsTextPopup */
         editableText({
           title: '%title%',
           databind: '%databind%',
-          style: editableText.mdlInput('270'),
+          style: editableText.mdcInput('270'),
           features: feature.onEnter(dialog.closeContainingPopup())
         })
       ],
@@ -9650,16 +9647,6 @@ jb.component('slider.edit-as-text-popup', { /* slider.editAsTextPopup */
   })
 })
 
-
-jb.component('editable-number.mdl-slider', { /* editableNumber.mdlSlider */
-  type: 'editable-number.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('input',{class:'mdl-slider mdl-js-slider', type: 'range',
-        min: state.min, max: state.max, step: state.step,
-        value: state.model, mouseup: e => cmp.jbModel(e.target.value), tabindex: 0}),
-    features: [field.databind(), slider.init(), mdlStyle.initDynamic()]
-  })
-})
 ;
 
 jb.ns('table')
@@ -9872,84 +9859,54 @@ jb.component('goto-url', { /* gotoUrl */
 
 ;
 
-jb.component('mdl-style.init-dynamic', { /* mdlStyle.initDynamic */
+jb.ns('mdc,mdc-style')
+
+jb.component('mdc-style.init-dynamic', { /* mdcStyle.initDynamic */
   type: 'feature',
   params: [
     {id: 'query', as: 'string'}
   ],
-  impl: (ctx,query) =>
-    ({
-      afterViewInit: cmp => {
-        if (typeof componentHandler === 'undefined') return
-        var elems = query ? cmp.base.querySelectorAll(query) : [cmp.base];
-        cmp.refreshMdl = _ => jb.delay(1).then(_ => elems.forEach(el=> {
-            if (!jb.ui.inDocument(el))
-              return;
-            componentHandler.downgradeElements(el);
-            componentHandler.upgradeElement(el);
-          })).catch(e=>jb.logException(e,'mdlStyle.initDynamic',ctx))
+  impl: ctx => ({
+    afterViewInit: cmp => {
+      cmp.mdc_comps = cmp.mdc_comps || []
+      if (cmp.base.classList.contains('mdc-text-field'))
+        cmp.mdc_comps.push(new jb.ui.material.MDCTextField(cmp.base))
+      else if (cmp.base.classList.contains('mdc-button'))
+        cmp.mdc_comps.push(new jb.ui.material.MDCRipple(cmp.base))
+      else if (cmp.base.classList.contains('mdc-switch'))
+        cmp.mdc_comps.push(new jb.ui.material.MDCSwitch(cmp.base))
 
-        jb.delay(1).then(_ =>
-      	 elems.forEach(el=>
-           jb.ui.inDocument(el) && componentHandler.upgradeElement(el)))
-            .catch(e=>jb.logException(e,'mdlStyle.initDynamic',ctx))
-      },
-      componentDidUpdate: cmp => {
-       var input = cmp.base.querySelector('input');
-       input && input.setCustomValidity && input.setCustomValidity(cmp.state.error||'');
-       input && input.dispatchEvent(new Event('input'));
-      },
-      destroy: cmp => {
-        if (typeof componentHandler === 'undefined') return
-        try {
-          typeof $ !== 'undefined' && $.contains(document.documentElement, cmp.base) &&
-          (query ? cmp.base.querySelectorAll(query) : [cmp.base]).forEach(el=>
-      	 	   jb.ui.inDocument(el) && componentHandler.downgradeElements(el))
-        } catch(e) { jb.logException(e,'mdlStyle.initDynamic',ctx) }
-       }
-    })
+    },
+    destroy: cmp => (cmp.mdc_comps || []).forEach(mdc_cmp=>mdc_cmp.destroy())
+  })
 })
 
-jb.component('mdl.ripple-effect', { /* mdl.rippleEffect */
+jb.component('mdc.ripple-effect', {
   type: 'feature',
-  description: 'add ripple effect to buttons',
+  description: 'add ripple effect',
   impl: ctx => ({
-      templateModifier1: (vdom,cmp,state) => {
-        vdom.children = jb.asArray(vdom.children)
-        vdom.children.push(jb.ui.h('span',{class:'mdl-ripple'}));
+      templateModifier: vdom => {
+        'mdc-ripple-surface mdc-ripple-radius-bounded mdc-states mdc-states-base-color(red)'.split(' ')
+          .forEach(cl=>jb.ui.addClassToVdom(vdom,cl))
         return vdom;
-      },
-      css: '{ position: relative; overflow:hidden }',
-      afterViewInit: cmp => {
-          cmp.base.classList.add('mdl-js-ripple-effect');
-          (typeof componentHandler !== 'undefined') && jb.ui.inDocument(cmp.base) && componentHandler.upgradeElement(cmp.base);
-      },
-      destroy: cmp => (typeof componentHandler !== 'undefined') && 
-        jb.ui.inDocument(cmp.base) && componentHandler.downgradeElements(cmp.base)
+      }
    })
 })
 
-// ****** label styles
-
-jb.component('label.mdl-ripple-effect', { /* label.mdlRippleEffect */
+jb.component('label.mdc-ripple-effect', { /* label.mdcRippleEffect */
   type: 'label.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{class:'mdl-button mdl-js-button mdl-js-ripple-effect'},state.text),
-    features: [label.bindText(), mdlStyle.initDynamic()]
+    template: (cmp,state,h) => h('button',{class: 'mdc-button'},[
+      h('div',{class:'mdc-button__ripple'}),
+      h('span',{class:'mdc-button__label'},state.text),
+    ]),
+    css: `>span { text-transform: none; }`,
+    features: [label.bindText(), mdcStyle.initDynamic()]
   })
 })
 
-jb.component('label.mdl-button', { /* label.mdlButton */
-  type: 'label.style',
-  params: [
-    {id: 'width', as: 'number'}
-  ],
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{class:'mdl-button mdl-js-button'},state.text),
-    css: '{? {width:%$width%px} ?}',
-    features: [label.bindText(), mdlStyle.initDynamic()]
-  })
-})
+
+
 ;
 
 jb.component('button.href', { /* button.href */
@@ -9988,24 +9945,31 @@ jb.component('button.native', {
   })
 })
 
-jb.component('button.mdl-raised', { /* button.mdlRaised */
+jb.component('button.mdc', {
   type: 'button.style',
+  params: [
+    {id: 'raised', as: 'boolean' }
+  ],
   impl: customStyle({
-    template: (cmp,state,h) => h('button',{class: 'mdl-button mdl-button--raised mdl-js-button mdl-js-ripple-effect', onclick: true},state.title),
-    features: mdlStyle.initDynamic()
+    template: (cmp,{title},h) => h('button',{class: 'mdc-button' + (cmp.raised ? ' mdc-button--raised': ''), onclick: true},[
+      h('div',{class:'mdc-button__ripple'}),
+      h('span',{class:'mdc-button__label'},title),
+    ]),
+    features: mdcStyle.initDynamic()
   })
 })
 
-jb.component('button.mdl-flat-ripple', { /* button.mdlFlatRipple */
+jb.component('button.mdc-raised', {
   type: 'button.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('button',{class:'mdl-button mdl-js-button mdl-js-ripple-effect', onclick: true},state.title),
-    css: '{ text-transform: none }',
-    features: mdlStyle.initDynamic()
-  })
+  impl: button.mdc(true)
 })
 
-jb.component('button.mdl-icon', { /* button.mdlIcon */
+jb.component('button.mdc-flat', {
+  type: 'button.style',
+  impl: button.mdc(false) 
+})
+
+jb.component('button.mdc-icon', { /* button.mdcIcon */
   type: 'button.style,icon-with-action.style',
   params: [
     {id: 'icon', as: 'string', default: 'code'}
@@ -10015,42 +9979,11 @@ jb.component('button.mdl-icon', { /* button.mdlIcon */
           class: 'mdc-icon-button material-icons mdc-ripple-surface',
           title: state.title, tabIndex: -1, onclick:  true},cmp.icon),
     css: `{ border-radius: 2px; padding: 0; width: 24px; height: 24px;}`,
-    features: mdlStyle.initDynamic()
+    features: mdcStyle.initDynamic()
   })
 })
 
-jb.component('button.mdl-round-icon', { /* button.mdlRoundIcon */
-  type: 'button.style,icon-with-action.style',
-  params: [
-    {id: 'icon', as: 'string', default: 'code'}
-  ],
-  impl: customStyle({
-    template: (cmp,state,h) => h('button',{
-          class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect',
-          title: state.title, tabIndex: -1, onclick: true},
-        h('i',{class: 'material-icons'},cmp.icon)
-      ),
-    features: mdlStyle.initDynamic()
-  })
-})
-
-jb.component('button.mdl-icon12-with-ripple', { /* button.mdlIcon12WithRipple */
-  type: 'button.style,icon-with-action.style',
-  params: [
-    {id: 'icon', as: 'string', default: 'code'}
-  ],
-  impl: customStyle({
-    template: (cmp,state,h) => h('button',{
-          class: 'mdl-button mdl-button--icon mdl-js-button mdl-js-ripple-effect',
-          title: state.title, tabIndex: -1, onclick: true },
-        h('i',{class: 'material-icons'},cmp.icon)
-      ),
-    css: '>.material-icons { font-size:12px;  }',
-    features: mdlStyle.initDynamic()
-  })
-})
-
-jb.component('button.mdl-icon12', { /* button.mdlIcon12 */
+jb.component('button.mdc-icon12', { /* button.mdcIcon12 */
   type: 'button.style,icon-with-action.style',
   params: [
     {id: 'icon', as: 'string', default: 'code'}
@@ -10061,20 +9994,14 @@ jb.component('button.mdl-icon12', { /* button.mdlIcon12 */
   })
 })
 
-jb.component('button.mdl-card-flat', { /* button.mdlCardFlat */
-  type: 'button.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('a',{class:'mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect', onclick: true},state.title),
-    features: mdlStyle.initDynamic()
-  })
-})
 ;
+
+jb.ns('mdc,mdc-style')
 
 jb.component('editable-text.input', { /* editableText.input */
   type: 'editable-text.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('input', {
-        value: state.model, onchange: true, onkeyup: true, onblur: true }),
+    template: (cmp,state,h) => h('input', {value: state.model, onchange: true, onkeyup: true, onblur: true }),
     features: field.databindText()
   })
 })
@@ -10088,58 +10015,56 @@ jb.component('editable-text.textarea', { /* editableText.textarea */
   ],
   impl: customStyle({
     template: (cmp,state,h) => h('textarea', {
-        rows: cmp.rows, cols: cmp.cols,
-        value: state.model, onchange: true, onkeyup: true, onblur: true  }),
+        rows: cmp.rows, cols: cmp.cols, value: state.model, onchange: true, onkeyup: true, onblur: true  }),
     features: field.databindText(0, '%$oneWay%')
   })
 })
 
-jb.component('editable-text.mdl-input', { /* editableText.mdlInput */
+jb.component('editable-text.mdc-input', { /* editableText.mdcInput */
   type: 'editable-text.style,editable-number.style',
   params: [
     {id: 'width', as: 'number'}
   ],
   impl: customStyle({
     template: (cmp,state,h) => h('div',{class: ['mdc-text-field',state.error ? 'is-invalid' : ''].join(' ') },[
-        h('input', { class: 'mdc-text-field__input', id: 'input_' + state.fieldId, type: 'text',
+        h('input', { type: 'text', class: 'mdc-text-field__input', id: 'input_' + state.fieldId,
             value: state.model, onchange: true, onkeyup: true, onblur: true,
         }),
-        h('label',{class: 'mdc-label', for: 'input_' + state.fieldId},state.title),
-        //h('div',{class: 'mdc-line-ripple' }),
+        h('label',{class: 'mdc-floating-label', for: 'input_' + state.fieldId},state.title),
+        h('div',{class: 'mdc-line-ripple' }),
         h('span',{class: 'mdc-text-field-helper-text' }, state.error || '')
       ]),
     css: '{ {?width: %$width%px?} }',
-    features: [
-      field.databindText(),
-      //mdlStyle.initDynamic(),
-    ]
+    features: [field.databindText(), mdcStyle.initDynamic()]
   })
 })
 
-jb.component('editable-text.mdl-input-no-floating-label', { /* editableText.mdlInputNoFloatingLabel */
+jb.component('editable-text.mdc-no-label', { /* editableText.mdcNoLabel */
   type: 'editable-text.style',
   params: [
     {id: 'width', as: 'number'}
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('input', { class: 'mdl-textfield__input', type: 'text',
-            value: state.model, onchange: true, onkeyup: true, onblur: true }),
-    css: '{ {?width: %$width%px?} } :focus { border-color: #3F51B5; border-width: 2px}',
-    features: [field.databindText()]
+    template: (cmp,state,h) => h('div',{class: 'mdc-text-field mdc-text-field--no-label'},
+        h('input', { class: 'mdc-text-field__input', type: 'text', value: state.model, onchange: true, onkeyup: true, onblur: true }),
+        h('div',{class: 'mdc-line-ripple' }),
+        ),
+    css: '{ padding: 0 !important; {?width: %$width%px?} } :focus { border-color: #3F51B5; border-width: 2px}',
+    features: [field.databindText(), mdcStyle.initDynamic()]
   })
 })
 
-jb.component('editable-text.mdl-search', { /* editableText.mdlSearch */
+jb.component('editable-text.mdc-search', { /* editableText.mdcSearch */
   description: 'debounced and one way binding',
   type: 'editable-text.style',
   impl: customStyle({
-    template: (cmp,{model, fieldId, title},h) => h('div',{class:'mdl-textfield mdl-js-textfield'},[
-        h('input', { class: 'mdl-textfield__input', id: 'search_' + fieldId, type: 'text',
+    template: (cmp,{model, fieldId, title},h) => h('div',{class:'mdc-text-field'},[
+        h('input', { class: 'mdc-text-field__input', id: 'search_' + fieldId, type: 'text',
             value: model, onchange: true, onkeyup: true, onblur: true,
         }),
-        h('label',{class: 'mdl-textfield__label', for: 'search_' + fieldId}, model ? '' : title)
+        h('label',{class: 'mdc-floating-label mdc-floating-label--float-above', for: 'search_' + fieldId}, model ? '' : title)
       ]),
-    features: [field.databindText(), mdlStyle.initDynamic()]
+    features: [field.databindText(), mdcStyle.initDynamic()]
   })
 })
 
@@ -10401,38 +10326,6 @@ jb.component('group.ul-li', { /* group.ulLi */
   })
 })
 
-jb.component('group.expandable', { /* group.expandable */
-  type: 'group.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('section',{ class: 'jb-group'},[
-        h('div',{ class: 'header'},[
-          h('div',{ class: 'title'}, state.title),
-          h('button',{ class: 'mdl-button mdl-button--icon', onclick: 'toggle', title: cmp.expand_title() },
-            h('i',{ class: 'material-icons'}, state.show ? 'keyboard_arrow_down' : 'keyboard_arrow_right')
-          )
-        ])
-      ].concat(state.show ? state.ctrls.map(ctrl=> h('div',{ },h(ctrl))): [])
-    ),
-    css: `>.header { display: flex; flex-direction: row; }
-        >.header>button:hover { background: none }
-        >.header>button { margin-left: auto }
-        >.header.title { margin: 5px }`,
-    features: [group.initGroup(), group.initExpandable()]
-  })
-})
-
-jb.component('group.init-expandable', { /* group.initExpandable */
-  type: 'feature',
-  category: 'group:0',
-  impl: ctx => ({
-        init: cmp => {
-            cmp.state.show = true;
-            cmp.expand_title = () => cmp.show ? 'collapse' : 'expand';
-            cmp.toggle = function () { cmp.show = !cmp.show; };
-        },
-  })
-})
-
 jb.component('group.tabs', { /* group.tabs */
   type: 'group.style',
   params: [
@@ -10452,7 +10345,7 @@ jb.component('group.tabs', { /* group.tabs */
                 writeValue('%$selectedTab/ctrl%', '%$tab%'),
                 refreshControlById(ctx=> 'tab_' + ctx.componentContext.id)
               ),
-              style: button.mdlFlatRipple(),
+              style: button.mdcFlat(),
               features: [css.width('%$width%'), css('{text-align: left}')]
             }),
             itemVariable: 'tab'
@@ -10477,7 +10370,7 @@ jb.component('group.tabs', { /* group.tabs */
 jb.component('group.accordion', {
   type: 'group.style',
   params: [
-    {id: 'titleStyle', type: 'button.style', dynamic: true, defaultValue: button.mdlFlatRipple() },
+    {id: 'titleStyle', type: 'button.style', dynamic: true, defaultValue: button.mdcFlat() },
     {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: group.section()},
     {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
   ],
@@ -10545,6 +10438,7 @@ jb.component('group.sections', {
 })
 ;
 
+jb.ns('mdc.style')
 jb.component('table.with-headers', { /* table.withHeaders */
   params: [ 
     { id: 'hideHeaders',  as: 'boolean' },
@@ -10555,7 +10449,8 @@ jb.component('table.with-headers', { /* table.withHeaders */
         ...(cmp.hideHeaders ? [] : [h('thead',{},h('tr',{},
           cmp.fields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} }, jb.ui.fieldTitle(cmp,f,h))) ))]),
         h('tbody',{class: 'jb-drag-parent'},
-            state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
+            state.items.map((item,index)=> jb.ui.item(cmp,h('tr',
+                { class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
               h('td', jb.filterEmpty({ 'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), class: f.class, title: f.hoverTitle &&  f.hoverTitle(item) }), 
                 f.control ? h(f.control(item,index),{index, row: item}) : f.fieldData(item,index))))
               ,item))
@@ -10570,47 +10465,43 @@ jb.component('table.with-headers', { /* table.withHeaders */
 })
 
 
-jb.component('table.mdl', { /* table.mdl */
+jb.component('table.mdc', { /* table.mdc */
   type: 'table.style,itemlist.style',
   params: [
     {
       id: 'classForTable',
       as: 'string',
-      defaultValue: 'mdl-data-table mdl-js-data-table mdl-data-table--selectable mdl-shadow--2dp'
-    },
-    {
-      id: 'classForTd',
-      as: 'string',
-      defaultValue: 'mdl-data-table__cell--non-numeric'
+      defaultValue: 'mdc-data-table__table mdc-data-table--selectable'
     }
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('table',{ class: cmp.classForTable },[
-        h('thead',{},h('tr',{},cmp.fields.map((f,i) =>h('th',{
+    template: (cmp,state,h) => h('div',{class: 'mdc-data-table'}, h('table',{ class: cmp.classForTable },[
+        h('thead',{},h('tr',{class:'mdc-data-table__header-row'},cmp.fields.map((f,i) =>h('th',{
           'jb-ctx': f.ctxId, 
-          class: [cmp.classForTd]
+          class: ['mdc-data-table__header-cell']
             .concat([ 
-              (state.sortOptions && state.sortOptions.filter(o=>o.field == f)[0] || {}).dir == 'asc' ? 'mdl-data-table__header--sorted-ascending': '',
-              (state.sortOptions && state.sortOptions.filter(o=>o.field == f)[0] || {}).dir == 'des' ? 'mdl-data-table__header--sorted-descending': '',
+              (state.sortOptions && state.sortOptions.filter(o=>o.field == f)[0] || {}).dir == 'asc' ? 'mdc-data-table__header--sorted-ascending': '',
+              (state.sortOptions && state.sortOptions.filter(o=>o.field == f)[0] || {}).dir == 'des' ? 'mdc-data-table__header--sorted-descending': '',
             ]).filter(x=>x).join(' '), 
           style: { width: f.width ? f.width + 'px' : ''},
           onclick: 'toggleSort',
           fieldIndex: i
           }
           ,jb.ui.fieldTitle(cmp,f,h))) )),
-        h('tbody',{class: 'jb-drag-parent'},
-            state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
+        h('tbody',{class: 'jb-drag-parent mdc-data-table__content'},
+            state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item mdc-data-table__row', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},cmp.fields.map(f=>
               h('td', jb.filterEmpty({ 
                 'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), 
-                class: (f.class + ' ' + cmp.classForTd).trim(), 
+                class: (f.class + ' ' + cmp.classForTd + ' mdc-data-table__cell').trim(), 
                 title: f.hoverTitle &&  f.hoverTitle(item) 
               }) , f.control ? h(f.control(item,index)) : f.fieldData(item,index))))
               ,item))
         ),
         state.items.length == 0 ? 'no items' : ''
-        ]),
-    css: '{width: 100%}',
-    features: [table.initTableOrItemlist(), table.initSort()]
+        ])),
+    css: `{width: 100%} 
+    ~ .mdc-data-table__header-cell {font-weight: 700}`,
+    features: [table.initTableOrItemlist(), table.initSort(), mdcStyle.initDynamic() ]
   })
 })
 ;
@@ -10757,7 +10648,7 @@ jb.component('picklist.label-list', { /* picklist.labelList */
 jb.component('picklist.button-list', { /* picklist.buttonList */
   type: 'picklist.style',
   params: [
-    {id: 'buttonStyle', type: 'button.style', dynamic: true, defaultValue: button.mdlFlatRipple()},
+    {id: 'buttonStyle', type: 'button.style', dynamic: true, defaultValue: button.mdc()},
     {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.horizontal() },
     {id: 'cssForSelected', as: 'string', description: 'e.g. background: red;color: blue;font-weight: bold;', defaultValue: 'background: #bbb; color: #fff' },
   ],
@@ -10850,10 +10741,7 @@ jb.component('property-sheet.titles-above', { /* propertySheet.titlesAbove */
 jb.component('editable-boolean.checkbox', { /* editableBoolean.checkbox */
   type: 'editable-boolean.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('input', { type: 'checkbox',
-        checked: state.model,
-        onchange: 'setChecked',
-        onkeyup: 'setChecked'  }),
+    template: (cmp,state,h) => h('input', { type: 'checkbox', checked: state.model, onchange: 'setChecked', onkeyup: 'setChecked'  }),
     features: field.databind()
   })
 })
@@ -10862,13 +10750,10 @@ jb.component('editable-boolean.checkbox-with-title', { /* editableBoolean.checkb
   type: 'editable-boolean.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{}, [h('input', { type: 'checkbox',
-        checked: state.model,
-        onchange: 'setChecked',
-        onkeyup: 'setChecked'  }), state.text]),
+        checked: state.model, onchange: 'setChecked', onkeyup: 'setChecked'  }), state.text]),
     features: field.databind()
   })
 })
-
 
 jb.component('editable-boolean.expand-collapse', { /* editableBoolean.expandCollapse */
   type: 'editable-boolean.style',
@@ -10880,18 +10765,23 @@ jb.component('editable-boolean.expand-collapse', { /* editableBoolean.expandColl
   })
 })
 
-jb.component('editable-boolean.mdl-slide-toggle', { /* editableBoolean.mdlSlideToggle */
+jb.component('editable-boolean.mdc-slide-toggle', { /* editableBoolean.mdcSlideToggle */
   type: 'editable-boolean.style',
   params: [
-    { id: 'width', as: 'number', defaultValue: 80 }
+    { id: 'width', as: 'string', defaultValue: 80 }
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('label',{style: { width: cmp.width+'px'}, class:'mdl-switch mdl-js-switch mdl-js-ripple-effect', for: 'switch_' + state.fieldId },[
-        h('input', { type: 'checkbox', class: 'mdl-switch__input', id: 'switch_' + state.fieldId,
-          checked: state.model, onchange: 'setChecked' }),
-        h('span',{class:'mdl-switch__label' },state.text)
+    template: (cmp,state,h) => h('div',{class: 'mdc-switch'},[
+      h('div',{class: 'mdc-switch__track'}),
+      h('div',{class: 'mdc-switch__thumb-underlay'},[
+        h('div',{class: 'mdc-switch__thumb'},
+          h('input', { type: 'checkbox', role: 'switch', class: 'mdc-switch__native-control', id: 'switch_' + state.fieldId,
+            checked: state.model, onchange: 'setChecked' })),
       ]),
-    features: [field.databind(), editableBoolean.keyboardSupport(), mdlStyle.initDynamic()]
+      h('label',{for: 'switch_' + state.fieldId},state.text)
+    ]),
+    css: ctx => `{ width: ${jb.ui.withUnits(ctx.params.width)}}`,
+    features: [field.databind(), editableBoolean.keyboardSupport(), mdcStyle.initDynamic()]
   })
 })
 
@@ -10909,42 +10799,6 @@ jb.component('editable-boolean.checkbox-with-label', {
   })
 })
 
-;
-
-jb.component('card.card', { /* card.card */
-  type: 'group.style',
-  params: [
-    {id: 'width', as: 'number', defaultValue: 320},
-    {id: 'shadow', as: 'string', options: '2,3,4,6,8,16', defaultValue: '2'}
-  ],
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class: `mdl-card mdl-shadow--${cmp.shadow}dp` },
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl,{class: cmp.itemClass}),ctrl.ctx.data))),
-    css: '{ width: %$width%px }',
-    features: group.initGroup()
-  })
-})
-
-jb.component('card.media-group', { /* card.mediaGroup */
-  type: 'group.style',
-  impl: group.div(
-
-  )
-})
-
-jb.component('card.actions-group', { /* card.actionsGroup */
-  type: 'group.style',
-  impl: group.div(
-
-  )
-})
-
-jb.component('card.menu', { /* card.menu */
-  type: 'group.style',
-  impl: group.div(
-    
-  )
-})
 ;
 
 jb.component('pretty-print', { /* prettyPrint */

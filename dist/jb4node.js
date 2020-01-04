@@ -871,8 +871,8 @@ Object.assign(jb, {
             }
             if (frame[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$dummyComp$/))
                 jb.logError(macroId + ' is defined more than once, using last definition ' + id)
-            if (frame[macroId] !== undefined && !isNS && jb.macroNs[macroId])
-                jb.logError(macroId + ' is already defined as ns, using last definition ' + id)
+            // if (frame[macroId] !== undefined && !isNS && jb.macroNs[macroId])
+            //     jb.logError(macroId + ' is already defined as ns, using last definition ' + id)
             return true;
         }
 

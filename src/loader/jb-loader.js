@@ -10,18 +10,18 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       ],
       'material-css': [
         'dist/material.css',
-//        'dist/material.indigo-pink.min.css',
       ],
       'ui-common': [
         'css/font.css',
         'css/styles.css',
 
-        'dist/preact.dev.js',
         'dist/jb-immutable.js', // the immutable-helper lib
         'dist/jb-rx.js',
 
         'src/ui/watchable/watchable-ref.js',
-        'src/ui/jb-comp.js',
+        'src/ui/core/react.js',
+        'src/ui/core/ui-comp.js',
+        'src/ui/core/ui-utils.js',
 
         'src/ui/group.js',
         'src/ui/label.js',
@@ -54,7 +54,6 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/styles/picklist-styles.js',
         'src/ui/styles/property-sheet-styles.js',
         'src/ui/styles/editable-boolean-styles.js',
-				'src/ui/styles/card-styles.js',
       ],
       'ui-tree':[
         'src/ui/tree/tree.js',

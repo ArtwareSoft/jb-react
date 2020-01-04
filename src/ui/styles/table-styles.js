@@ -59,7 +59,8 @@ jb.component('table.mdc', { /* table.mdc */
         ),
         state.items.length == 0 ? 'no items' : ''
         ])),
-    css: '{width: 100%}',
+    css: `{width: 100%} 
+    ~ .mdc-data-table__header-cell {font-weight: 700}`,
     features: [table.initTableOrItemlist(), table.initSort(), mdcStyle.initDynamic() ]
   })
 })

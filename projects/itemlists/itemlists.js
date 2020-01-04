@@ -29,7 +29,8 @@ jb.component('itemlists.table', { /* itemlists.table */
     fields: [
       field({title: 'name', data: '%name%', width: '200'}),
       field({title: 'age', data: '%age%'})
-    ]
+    ],
+    style: table.mdc()
   })
 })
 
@@ -127,7 +128,7 @@ jb.component('itemlists.editable-table', { /* itemlists.editableTable */
         ]
       }),
       button({
-        title: 'add',
+        title: 'ADD',
         action: addToArray('%$people%', obj()),
         style: button.mdcRaised()
       })
@@ -335,16 +336,16 @@ jb.component('data-resource.people', { /* dataResource.people */
   watchableData: [
     {
       name: 'Homer Simpson',
-      age: 42,
+      age: '42',
       male: true,
       children: [{name: 'Bart'}, {name: 'Lisa'}, {name: 'Maggie'}]
     },
     {
       name: 'Marge Simpson',
-      age: 38,
+      age: '38',
       male: false,
       children: [{name: 'Bart'}, {name: 'Lisa'}, {name: 'Maggie'}]
     },
-    {name: 'Bart Simpson', age: 12, male: true, children: []}
+    {name: 'erter'}
   ]
 })
