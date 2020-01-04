@@ -15,12 +15,13 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'css/font.css',
         'css/styles.css',
 
-        'dist/preact.dev.js',
         'dist/jb-immutable.js', // the immutable-helper lib
         'dist/jb-rx.js',
 
         'src/ui/watchable/watchable-ref.js',
-        'src/ui/jb-comp.js',
+        'src/ui/core/react.js',
+        'src/ui/core/ui-comp.js',
+        'src/ui/core/ui-utils.js',
 
         'src/ui/group.js',
         'src/ui/label.js',

@@ -71,7 +71,7 @@ jb.component('ui-test', { /* uiTest */
 					}
 					const elem = document.createElement('div');
 					const ctxForTst = ctx.setVars({elemToTest : elem })
-					const vdom = jb.ui.h(jb.ui.renderable(control(ctxForTst)));
+					const vdom = jb.ui.h(control(ctxForTst));
 					const cmp = jb.ui.render(vdom, elem)._component;
 					return Promise.resolve(cmp && cmp.delayed)
 						.then(_ => jb.delay(1))

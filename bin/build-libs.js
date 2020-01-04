@@ -30,7 +30,6 @@ concatFiles(filesOfModules('codemirror-js-files'),'codemirror.js')
 concatFiles(filesOfModules('animate'),'animate.js')
 removeExports('animate.js')
 concatFiles(filesOfModules('d3'),'d3.js');
-concatFiles(['node_modules/material-design-lite/material.js'],'material.js')
 concatFiles(['node_modules/dragula/dist/dragula.js'],'dragula.js')
 concatFiles(['node_modules/history/umd/history.js'],'history.js')
 
@@ -47,6 +46,4 @@ concatFiles(['/src/loader/jb-loader.js'],'jb-loader.js');
 concatFiles(['/src/testing/testers.js'],'testers.js');
 
 concatFiles(filesOfModules('codemirror-css-files'),'codemirror.css')
-//concatFiles(['node_modules/material-design-lite/material.css'],'material.css')
-concatFiles(['node_modules/material-design-lite/dist/material.indigo-pink.min.css'],'material.indigo-pink.min.css')
 concatFiles(['node_modules/dragula/dist/dragula.css'],'dragula.css')
