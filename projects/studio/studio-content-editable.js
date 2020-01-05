@@ -79,11 +79,22 @@ jb.component('content-editable.toolbar', { /* contentEditable.toolbar */
         style: button.mdcIcon('add')
       }),
       button({
+        title: 'Duplicate data item',
+        action: ctx => jb.ui.contentEditable.duplicateDataItem(ctx),
+        style: button.mdcIcon('control_point'),
+        features: feature.if('%$sourceItem%')
+      }),
+      button({
         vars: Var('parentLayout', ctx =>
           jb.studio.parents(ctx.run(studio.currentProfilePath())).find(path=> jb.studio.compNameOfPath(path) == 'group') + '~layout'),
         title: 'Layout',
         action: studio.openPickProfile('%$parentLayout%'),
         style: button.mdcIcon('view_quilt')
+      }),
+      button({
+        title: 'Properties',
+        action: studio.openProperties(true),
+        style: button.mdcIcon('storage')
       }),
       button({
         title: 'Delete',
@@ -105,9 +116,9 @@ jb.ui.contentEditable = {
         else if (scriptRef)
             jb.writeValue(scriptRef,val,cmp.ctx)
     },
-    openToolbar(ev,path) { 
-        new jb.jbCtx().setVar('$launchingElement',{ el : ev.target})
-            .run({$: 'content-editable.open-toolbar', path })
+    openToolbar(ev,path,item) { 
+        new jb.jbCtx().setVar('$launchingElement',{ el : ev.target}).setVar('sourceItem',item)
+            .run({$: 'content-editable.open-toolbar',path})
     },
     handleKeyEvent(ev,cmp,prop) {
         if (ev.keyCode == 13) {
@@ -124,5 +135,20 @@ jb.ui.contentEditable = {
     },
     refOfProp(cmp,prop) {
         return cmp.toObserve.filter(e=>e.id == prop).map(e=>e.ref)[0] || this.scriptRef(cmp,prop)
-    }
+    },
+    duplicateDataItem(ctx) {
+      const st = jb.studio
+      const item = ctx.vars.sourceItem
+      const _jb = st.previewjb
+      const ref = _jb.asRef(item)
+      const handler = _jb.refHandler(ref)
+      const path = handler.pathOfRef(ref)
+      const parent_ref = handler.refOfPath(path.slice(0,-1))
+      if (parent_ref && Array.isArray(_jb.val(parent_ref))) {
+        const clone = st.previewWindow.JSON.parse(JSON.stringify(item));
+        const index = Number(path.slice(-1));
+        _jb.splice(parent_ref,[[index, 0,clone]],ctx);
+        ctx.run(runActions(dialog.closeAll(), studio.refreshPreview()))
+      }
+    },    
 }

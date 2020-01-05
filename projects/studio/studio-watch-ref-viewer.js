@@ -219,8 +219,8 @@ jb.studio.activateWatchRefViewer = () => {
     })
     delayedSpy.filter(e=>e.logName === 'notifyCmpObservable')
         .subscribe(e=> {
-            const ref = e.record[4].ref
-            const ctx = e.record[4].srcCtx
+            const ref = e.record[3].ref
+            const ctx = e.record[3].srcCtx
             const path = ref && jb.refHandler(ref).pathOfRef(ref).join('~')
             if (!editorOfPath(path)) return
             jb.studio.highlightCtx(ctx)

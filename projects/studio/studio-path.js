@@ -60,7 +60,7 @@ Object.assign(st,{
 		const _path = path.split('~');
 		st.compsRefHandler.resourceReferred && st.compsRefHandler.resourceReferred(_path[0]);
 		const ref = st.compsRefHandler.refOfPath(_path,silent)
-		if (!ref) debugger
+		if (!ref) return
 		ref.jbToUse = st.previewjb
 		return ref
   },
@@ -122,7 +122,6 @@ Object.assign(st, {
 			result = [];
 		st.writeValueOfPath(path,result,srcCtx);
 	},
-
 	duplicateControl: (path,srcCtx) => {
 		const prop = path.split('~').pop();
 		const val = st.valOfPath(path);

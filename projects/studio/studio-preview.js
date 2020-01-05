@@ -55,6 +55,7 @@ st.initPreview = function(preview_window,allowedTypes) {
         st.writeValue(st.compsRefHandler.refOfPath([e[0]]), eval(`(${jb.prettyPrint(e[1])})`)) // update the history for future save
         jb.val(st.compsRefHandler.refOfPath([e[0]]))[jb.location] = e[1][jb.location]
       })
+      jb.entries(st.previewWindow.JSON.parse(st.resourcesFromPrevRun || '{}')).forEach(e=>st.previewjb.resource(e[0],e[1]))
 
       st.previewjb.http_get_cache = {}
       st.previewjb.ctxByPath = {}
@@ -83,6 +84,7 @@ jb.component('studio.refresh-preview', { /* studio.refreshPreview */
   impl: ctx => {
     jb.ui.garbageCollectCtxDictionary(true);
     jb.studio.previewjb.ui.garbageCollectCtxDictionary(true);
+    jb.studio.resourcesFromPrevRun = st.previewWindow.JSON.stringify(jb.studio.previewjb.resources)
     //jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
     jb.ui.dialogs.reRenderAll()
     ctx.run(refreshControlById('preview-parent'))

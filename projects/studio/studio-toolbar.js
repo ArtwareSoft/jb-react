@@ -46,7 +46,7 @@ jb.component('studio.toolbar', { /* studio.toolbar */
         style: button.mdcIcon('format_align_left')
       }),
       button({
-        title: 'storage',
+        title: 'Properties',
         action: studio.openProperties(true),
         style: button.mdcIcon('storage')
       }),

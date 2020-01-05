@@ -488,7 +488,7 @@ jb.component('feature.editable-content', {
         cmp.onblurHandler = ev => contentEditable.setScriptData(ev,cmp,editableContentParam,isHtml)
         if (!isHtml)
           cmp.onkeydownHandler = cmp.onkeypressHandler = ev => contentEditable.handleKeyEvent(ev,cmp,editableContentParam)
-        cmp.onmousedownHandler = ev => contentEditable.openToolbar(ev,cmp.ctx.path)
+        cmp.onmousedownHandler = ev => contentEditable.openToolbar(ev,cmp.ctx.path,cmp.ctx.vars.item)
       }
     },
     templateModifier: (vdom,cmp) => {
