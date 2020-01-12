@@ -40,7 +40,7 @@ jb.component('group.itemlist-container', { /* group.itemlistContainer */
     {id: 'maxItems', as: 'number', defaultValue: 100},
     {id: 'initialSelection', as: 'single'}
   ],
-  impl: list(
+  impl: features(
     variable({
         name: 'itemlistCntrData',
         value: {
@@ -54,15 +54,12 @@ jb.component('group.itemlist-container', { /* group.itemlistContainer */
     variable({
         name: 'itemlistCntr',
         value: ctx => createItemlistCntr(ctx,ctx.componentContext.params)
-      }),
-    ctx => ({
-			init: cmp => {
-				const maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');
+    }),
+	feature.init( (ctx,{cmp}) => {
+		const maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');
 //        jb.writeValue(maxItemsRef,ctx.componentContext.params.maxItems);
-				cmp.ctx.vars.itemlistCntr.maxItemsFilter = items =>
-					items.slice(0,jb.tonumber(maxItemsRef));
-			},
-		})
+		cmp.ctx.vars.itemlistCntr.maxItemsFilter = items =>	items.slice(0,jb.tonumber(maxItemsRef));
+	})
   )
 })
 
@@ -175,27 +172,21 @@ jb.component('itemlist-container.more-items-button', { /* itemlistContainer.more
     },
     {id: 'delta', as: 'number', defaultValue: 200},
     {id: 'style', type: 'button.style', defaultValue: button.href(), dynamic: true},
-    {id: 'features', type: 'feature[]', dynamic: true}
+	{id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: (ctx,title,delta) => jb.ui.ctrl(ctx,{
-			watchRef: { refF: () => cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref')},
-			beforeInit: cmp => {
-				if (!ctx.vars.itemlistCntr) return;
-				const maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');
-				cmp.clicked = _ =>
-					jb.writeValue(maxItemsRef,jb.tonumber(maxItemsRef) + delta, ctx);
-				cmp.refresh = _ =>
-					cmp.setState({title: jb.val(ctx.params.title(cmp.ctx.setVars({delta: delta})))});
-			},
-			init: cmp =>
-				cmp.state.title = jb.val(ctx.params.title(cmp.ctx.setVars({delta: delta}))),
-
-			templateModifier: (vdom,cmp,state) => { // hide the button when not needed
-				if (cmp.ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','number') == cmp.ctx.exp('%$itemlistCntrData/countAfterFilter%','number'))
-					return jb.ui.h('span');
-				return vdom;
-			}
-	})
+  impl: controlWithFeatures(ctx=>jb.ui.ctrl(ctx),[
+	  watchRef('%$itemlistCntrData/maxItems%'),
+	  defHandler('clicked', writeValue('%$itemlistCntrData/maxItems%', 
+			  (ctx,{itemlistCntrData},{delta}) => delta + itemlistCntrData.maxItems)),
+	  calcProp('title', (ctx,{},{title,delta}) => title(ctx.setVar('delta',delta))),
+	  ctx => ({
+		templateModifier: (vdom,cmp,state) => { // hide the button when not needed
+			if (cmp.ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','number') == cmp.ctx.exp('%$itemlistCntrData/countAfterFilter%','number'))
+				return '';
+			return vdom;
+		}
+	  })
+  ])  
 })
 
 jb.ui.extractPropFromExpression = exp => { // performance for simple cases such as %prop1%

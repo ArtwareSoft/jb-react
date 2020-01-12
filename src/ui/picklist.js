@@ -23,9 +23,8 @@ jb.component('picklist', { /* picklist */
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx =>
-    jb.ui.ctrl(ctx,{
-      beforeInit: cmp => {
-        cmp.recalcOptions = function(init) {
+    jb.ui.ctrl(ctx,features(
+      setProps( () => {
           var options = ctx.params.options(ctx);
           var groupsHash = {};
           var promotedGroups = (ctx.params.promote() || {}).groups || [];
@@ -45,16 +44,14 @@ jb.component('picklist', { /* picklist */
             options: options,
             hasEmptyOption: options.filter(x=>!x.text)[0]
           }
-        }
-        cmp.state = cmp.recalcOptions();
-      },
-      afterViewInit: cmp => {
+      }),
+      interactive((_ctx,{cmp}) => {
         if (cmp.databindRefChanged) jb.ui.databindObservable(cmp,{srcCtx: ctx})
-          .subscribe(e=>cmp.onChange && cmp.onChange(jb.val(e.ref)))
+          .subscribe(e=>cmp.onChange && cmp.onChange(_ctx.setData(jb.val(e.ref))))
         else jb.ui.refObservable(ctx.params.databind(),cmp,{srcCtx: ctx}).subscribe(e=>
-          cmp.onChange && cmp.onChange(jb.val(e.ref)))
-      },
-    })
+          cmp.onChange && cmp.onChange(_ctx.setData(jb.val(e.ref))))
+      })
+    ))
 })
 
 function groupOfOpt(opt) {
@@ -68,12 +65,8 @@ jb.component('picklist.dynamic-options', { /* picklist.dynamicOptions */
   params: [
     {id: 'recalcEm', as: 'single'}
   ],
-  impl: (ctx,recalcEm) => ({
-    init: cmp =>
-      recalcEm && recalcEm.subscribe &&
-        recalcEm.takeUntil( cmp.destroyed )
-        .subscribe(e=> cmp.setState(cmp.recalcOptions()))
-  })
+  impl: interactive((ctx,{cmp},{recalcEm}) => 
+      recalcEm && recalcEm.subscribe && recalcEm.takeUntil( cmp.destroyed ).subscribe(() => cmp.refresh()) )
 })
 
 jb.component('picklist.onChange', { /* picklist.onChange */
@@ -82,10 +75,7 @@ jb.component('picklist.onChange', { /* picklist.onChange */
   params: [
     {id: 'action', type: 'action', dynamic: true}
   ],
-  impl: (ctx,action) => ({
-    init: cmp =>
-      cmp.onChange = val => action(ctx.setData(val))
-  })
+  impl: interactive((ctx,{cmp},{action}) => cmp.onChange = action)
 })
 
 // ********* options
@@ -96,8 +86,8 @@ jb.component('picklist.optionsByComma', { /* picklist.optionsByComma */
     {id: 'options', as: 'string', mandatory: true},
     {id: 'allowEmptyValue', type: 'boolean'}
   ],
-  impl: function(context,options,allowEmptyValue) {
-    var emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
+  impl: function(ctx,options,allowEmptyValue) {
+    const emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
     return emptyValue.concat((options||'').split(',').map(code=> ({ code: code, text: code })));
   }
 })
@@ -109,7 +99,7 @@ jb.component('picklist.options', { /* picklist.options */
     {id: 'allowEmptyValue', type: 'boolean'}
   ],
   impl: function(context,options,allowEmptyValue) {
-    var emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
+    const emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
     return emptyValue.concat(options.map(code=> ({ code: code, text: code })));
   }
 })
@@ -122,13 +112,9 @@ jb.component('picklist.coded-options', { /* picklist.codedOptions */
     {id: 'text', as: 'string', dynamic: true, mandatory: true},
     {id: 'allowEmptyValue', type: 'boolean'}
   ],
-  impl: function(context,options,code,text,allowEmptyValue) {
-    var emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
-    return emptyValue.concat(options.map(function(option) {
-      return {
-        code: code(null,option), text: text(null,option)
-      }
-    }))
+  impl: function(ctx,options,code,text,allowEmptyValue) {
+    const emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
+    return emptyValue.concat(options.map(option => ({ code: code(null,option), text: text(null,option) })))
   }
 })
 
@@ -149,9 +135,9 @@ jb.component('picklist.sorted-options', { /* picklist.sortedOptions */
     }
   ],
   impl: (ctx,optionsFunc,marks) => {
-    var options = optionsFunc() || [];
+    let options = optionsFunc() || [];
     marks.forEach(mark=> {
-        var option = options.filter(opt=>opt.code == mark.code)[0];
+        const option = options.filter(opt=>opt.code == mark.code)[0];
         if (option)
           option.mark = Number(mark.mark || 50);
     });
@@ -167,6 +153,5 @@ jb.component('picklist.promote', { /* picklist.promote */
     {id: 'groups', as: 'array'},
     {id: 'options', as: 'array'}
   ],
-  impl: (context,groups,options) =>
-    ({ groups: groups, options: options})
+  impl: ctx => ctx.params
 })

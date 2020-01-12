@@ -1,76 +1,82 @@
 (function() {
 jb.ui.field_id_counter = jb.ui.field_id_counter || 0;
 
-function databindField(cmp,ctx,debounceTime,oneWay) {
-  if (debounceTime) {
-    cmp.debouncer = new jb.rx.Subject();
-    cmp.debouncer.takeUntil( cmp.destroyed )
-      .distinctUntilChanged()
-      .buffer(cmp.debouncer.debounceTime(debounceTime))
-      .filter(buf=>buf.length)
-      .map(buf=>buf.pop())
-      .subscribe(val=>cmp.jbModel(val))
-  }
+jb.component('field.databind', { /* field.databind */
+  type: 'feature',
+  category: 'field:0',
+  params: [
+    {id: 'debounceTime', as: 'number', defaultValue: 0},
+    {id: 'oneWay', type: 'boolean', as: 'boolean' },
+  ],
+  impl: features(
+    calcProp('model', '%$$model/databind%'),
+    calcProp('title', '%$$model/title%'),
+    calcProp('fieldId',() => jb.ui.field_id_counter++ ),
 
-  if (!ctx.vars.$model || !ctx.vars.$model.databind)
-    return jb.logError('bind-field: No databind in model', ctx, ctx.vars.$model);
+    interactive((ctx,{cmp},{debounceTime,oneWay}) => {
+        if (debounceTime) {
+          cmp.debouncer = new jb.rx.Subject();
+          cmp.debouncer.takeUntil( cmp.destroyed )
+            .distinctUntilChanged()
+            .buffer(cmp.debouncer.debounceTime(debounceTime))
+            .filter(buf=>buf.length)
+            .map(buf=>buf.pop())
+            .subscribe(val=>cmp.jbModel(val))
+        }
 
-  cmp.jbModel = (val,source) => {
-    if (source == 'keyup') {
-      if (cmp.debouncer)
-        return cmp.debouncer.next(val);
-      return jb.delay(1).then(_=>cmp.jbModel(val)); // make sure the input is inside the value
-    }
+        if (!ctx.vars.$model || !ctx.vars.$model.databind)
+          return jb.logError('bind-field: No databind in model', ctx, ctx.vars.$model);
 
-    if (val === undefined)
-      return jb.val(cmp.state.databindRef);
-    else { // write
-        cmp.state.model = val;
-        if (!oneWay)
-          cmp.setState();
-        jb.ui.checkValidationError(cmp);
-        jb.writeValue(cmp.state.databindRef,val,ctx);
-    }
-  }
+        cmp.jbModel = val => {
+          if (event && event.type == 'keyup') {
+            if (cmp.debouncer)
+              return cmp.debouncer.next(val);
+            return jb.delay(1).then(_=>cmp.jbModel(val)); // make sure the input is inside the value
+          }
+          if (val === undefined)
+            return jb.val(ctx.vars.$model.databind(cmp.ctx));
+          else { // write
+              cmp.state.model = val;
+              jb.ui.checkValidationError(cmp,val);
+              jb.writeValue(ctx.vars.$model.databind(cmp.ctx),val,ctx);
+              if (!oneWay)
+                cmp.refresh();
+          }
+        }
+        cmp.onblurHandler = () => cmp.jbModel(event.target.value)
+        if (!ctx.vars.$model.updateOnBlur)
+          cmp.onchangeHandler = cmp.onkeyupHandler = cmp.onkeydownHandler = cmp.onblurHandler
 
-  cmp.refresh = _ => {
-    const newRef = ctx.vars.$model.databind(cmp.ctx);
-    if (jb.val(newRef) != jb.val(cmp.state.databindRef))
-      cmp.databindRefChanged.next(newRef)
-    cmp.setState({model: cmp.jbModel()});
-    cmp.extendRefresh && cmp.extendRefresh();
-  }
+        //databindRefChanged
+        cmp.databindRefChangedSub = new jb.rx.Subject();
+        cmp.databindRefChanged = cmp.databindRefChangedSub.do(ref=> {
+          cmp.state.databindRef = ref
+          cmp.state.model = cmp.jbModel()
+        })
+        cmp.databindRefChanged.subscribe(()=>{}) // first activation
 
-  cmp.state.title = ctx.vars.$model.title();
-  cmp.state.fieldId = jb.ui.field_id_counter++;
-  cmp.databindRefChangedSub = new jb.rx.Subject();
-  cmp.databindRefChanged = cmp.databindRefChangedSub.do(ref=> {
-    cmp.state.databindRef = ref
-    cmp.state.model = cmp.jbModel()
-  })
-  cmp.databindRefChanged.subscribe(()=>{}) // first activation
+        //const srcCtx = ctx.componentContext;
+        // if (!oneWay)
+        //     jb.ui.databindObservable(cmp, {srcCtx, onError: _ => cmp.refresh({model: null},{srcCtx}) })
+        //     .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
+        //     .subscribe(e=> !cmp.watchRefOn && cmp.refresh(null,{srcCtx}))
+
+        cmp.databindRefChangedSub.next(ctx.vars.$model.databind(ctx));
+      }
+    ))
+})
 
 
-  const srcCtx = cmp.ctxForPick || cmp.ctx;
-  if (!oneWay)
-      jb.ui.databindObservable(cmp, {
-            srcCtx: ctx, onError: _ => cmp.setState({model: null}) })
-      .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
-      .subscribe(e=> !cmp.watchRefOn && jb.ui.setState(cmp,null,e,ctx))
-
-   cmp.databindRefChangedSub.next(ctx.vars.$model.databind(cmp.ctx));
-}
-
-jb.ui.checkValidationError = cmp => {
-  const err = validationError(cmp);
+jb.ui.checkValidationError = (cmp,val) => {
+  const err = validationError();
   if (cmp.state.error != err) {
     jb.log('field',['setErrState',cmp,err])
-    cmp.setState({valid: !err, error:err});
+    cmp.refresh({valid: !err, error:err});
   }
 
   function validationError() {
     if (!cmp.validations) return;
-    const ctx = cmp.ctx.setData(cmp.state.model);
+    const ctx = cmp.ctx.setData(val);
     const err = (cmp.validations || [])
       .filter(validator=>!validator.validCondition(ctx))
       .map(validator=>validator.errorMessage(ctx))[0];
@@ -96,62 +102,20 @@ jb.ui.preserveFieldCtxWithItem = (field,item) => {
 	return ctx && jb.ui.preserveCtx(ctx.setData(item))
 }
   
-jb.component('field.databind', { /* field.databind */
-  type: 'feature',
-  impl: ctx => ({
-      beforeInit: cmp => { 
-        databindField(cmp,ctx),
-        cmp.onblurHandler = (e,src) => cmp.jbModel(e.target.value,src)
-        if (!ctx.vars.$model.updateOnBlur)
-          cmp.onchangeHandler = cmp.onkeyupHandler = onkeydownHandler = cmp.onblurHandler
-      },
-      init: cmp => cmp.fieldInitialValue && (cmp.state.model = cmp.fieldInitialValue(cmp.ctx))
-  })
-})
-
 jb.component('field.databind-text', { /* field.databindText */
   type: 'feature',
+  category: 'field:0',
   params: [
     {id: 'debounceTime', as: 'number', defaultValue: 0},
-    {id: 'oneWay', type: 'boolean', as: 'boolean', defaultValue: true}
+    {id: 'oneWay', type: 'boolean', as: 'boolean', defaultValue: true},
   ],
-  impl: (ctx,debounceTime,oneWay) => ({
-      beforeInit: cmp => {
-        databindField(cmp,ctx,debounceTime,oneWay)
-        cmp.onblurHandler = (e,src) => cmp.jbModel(e.target.value,src)
-        if (!ctx.vars.$model.updateOnBlur)
-          cmp.onchangeHandler = cmp.onkeyupHandler = onkeydownHandler = cmp.onblurHandler
-      },
-      init: cmp => cmp.fieldInitialValue && (cmp.state.model = cmp.fieldInitialValue(cmp.ctx))
-  })
+  impl: field.databind('%$debounceTime%', '%$oneWay%')
 })
 
-jb.component('field.data', { /* field.data */
-  type: 'data',
-  impl: ctx => ctx.vars.$model.databind()
-})
-
-jb.component('field.default', { /* field.default */
-  type: 'feature',
-  params: [
-    {id: 'value', type: 'data'}
-  ],
-  impl: (ctx,defaultValue) => {
-    var data_ref = ctx.vars.$model.databind();
-    if (data_ref && jb.val(data_ref) == null)
-      jb.writeValue(data_ref, jb.val(defaultValue), ctx)
-  }
-})
-
-jb.component('field.init-value', { /* field.initValue */
-  type: 'feature',
-  params: [
-    {id: 'value', type: 'data' , dynamic: true}
-  ],
-  impl: (ctx,valueF) => ({
-    beforeInit: cmp => cmp.fieldInitialValue = ctx2 => jb.val(valueF(ctx2 || ctx))
-  })
-})
+// jb.component('field.data', { /* field.data */
+//   type: 'data',
+//   impl: ctx => ctx.vars.$model.databind()
+// })
 
 jb.component('field.keyboard-shortcut', { /* field.keyboardShortcut */
   type: 'feature',
@@ -161,47 +125,41 @@ jb.component('field.keyboard-shortcut', { /* field.keyboardShortcut */
     {id: 'key', as: 'string', description: 'e.g. Alt+C'},
     {id: 'action', type: 'action', dynamic: true}
   ],
-  impl: (context,key,action) => ({
-      afterViewInit: cmp => {
+  impl: interactive( (ctx,{cmp},{key,action}) => {
         const elem = cmp.base.querySelector('input') || cmp.base
         if (elem.tabIndex === undefined) elem.tabIndex = -1
         jb.rx.Observable.fromEvent(elem, 'keydown')
             .takeUntil( cmp.destroyed )
             .subscribe(event=>{
-              var keyStr = key.split('+').slice(1).join('+');
-              var keyCode = keyStr.charCodeAt(0);
+              const keyStr = key.split('+').slice(1).join('+');
+              const keyCode = keyStr.charCodeAt(0);
               if (key == 'Delete') keyCode = 46;
 
-              var helper = (key.match('([A-Za-z]*)+') || ['',''])[1];
+              const helper = (key.match('([A-Za-z]*)+') || ['',''])[1];
               if (helper == 'Ctrl' && !event.ctrlKey) return
               if (helper == 'Alt' && !event.altKey) return
               if (event.keyCode == keyCode || (event.key && event.key == keyStr))
                 action();
-            })
-      }
-  })
+        })
+    })
 })
 
-jb.component('field.subscribe', { /* field.subscribe */
+jb.component('field.on-data-change', { /* field.onDataChange */
   type: 'feature',
   params: [
     {id: 'action', type: 'action', mandatory: true, dynamic: true},
     {id: 'includeFirst', type: 'boolean', as: 'boolean'}
   ],
-  impl: (context,action,includeFirst) => ({
-    init: cmp => {
+  impl: interactive( (ctx,{cmp},{action,includeFirst}) => {
       const includeFirstEm = includeFirst ? jb.rx.Observable.of({ref: cmp.state.databindRef}) : jb.rx.Observable.of();
-      jb.ui.databindObservable(cmp,{srcCtx: context})
+      jb.ui.databindObservable(cmp,{srcCtx: ctx})
             .merge(includeFirstEm)
             .map(e=>jb.val(e.ref))
             .filter(x=>x)
             .subscribe(x=>
-              action(context.setData(x)));
-    }
-  })
+              action(ctx.setData(x)));
+    })
 })
-
-jb.component('field.on-change', jb.comps['field.subscribe'])
 
 jb.component('field.toolbar', { /* field.toolbar */
   type: 'feature',
@@ -220,14 +178,14 @@ jb.component('validation', { /* validation */
     {id: 'validCondition', mandatory: true, as: 'boolean', dynamic: true},
     {id: 'errorMessage', mandatory: true, as: 'string', dynamic: true}
   ],
-  impl: (ctx,validCondition,errorMessage) => ({
-      init: cmp =>
-        cmp.validations = (cmp.validations || []).concat([ctx.params]),
-      afterViewInit: cmp =>  { // for preview
-          var _ctx = ctx.setData(cmp.state.model);
-          validCondition(_ctx); errorMessage(_ctx);
-      }
-  })
+  impl: interactive((ctx,{cmp},{validCondition,errorMessage}) => {
+          cmp.validations = (cmp.validations || []).concat([{validCondition,errorMessage}]);
+          if (jb.ui.inPreview()) {
+            const _ctx = ctx.setData(cmp.state.model);
+            validCondition(_ctx)
+            errorMessage(_ctx)
+          }
+      })
 })
 
 jb.component('field.title', {

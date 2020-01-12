@@ -11,8 +11,8 @@ jb.component('group.htmlTag', { /* group.htmlTag */
     {id: 'itemClass', as: 'string'}
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h(cmp.htmlTag,{ class: cmp.groupClass },
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h(ctrl,{class: cmp.itemClass}),ctrl.ctx.data))),
+    template: (cmp,{htmlTag,groupClass,itemClass,ctrls},h) => h(htmlTag,{ class: groupClass },
+        ctrls.map(ctrl=> h(ctrl,{class: itemClass}))),
     features: group.initGroup()
   })
 })
@@ -31,7 +31,7 @@ jb.component('group.ul-li', { /* group.ulLi */
   type: 'group.style',
   impl: customStyle({
     template: (cmp,state,h) => h('ul',{ class: 'jb-itemlist'},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h('li', {class: 'jb-item'} ,h(ctrl)),ctrl.ctx.data))),
+        state.ctrls.map(ctrl=> h('li', {class: 'jb-item'} ,h(ctrl)))),
     css: `{ list-style: none; padding: 0; margin: 0;}
     >li { list-style: none; padding: 0; margin: 0;}`,
     features: group.initGroup()

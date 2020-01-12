@@ -40,7 +40,7 @@ jb.component('button.mdc', {
     {id: 'raised', as: 'boolean' }
   ],
   impl: customStyle({
-    template: (cmp,{title},h) => h('button',{class: 'mdc-button' + (cmp.raised ? ' mdc-button--raised': ''), onclick: true},[
+    template: (cmp,{title,raised},h) => h('button',{class: 'mdc-button' + (raised ? ' mdc-button--raised': ''), onclick: true},[
       h('div',{class:'mdc-button__ripple'}),
       h('span',{class:'mdc-button__label'},title),
     ]),
@@ -64,9 +64,9 @@ jb.component('button.mdc-icon', { /* button.mdcIcon */
     {id: 'icon', as: 'string', default: 'code'}
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('button',{
+    template: (cmp,{title,icon},h) => h('button',{
           class: 'mdc-icon-button material-icons mdc-ripple-surface',
-          title: state.title, tabIndex: -1, onclick:  true},cmp.icon),
+          title, tabIndex: -1, onclick:  true},icon),
     css: `{ border-radius: 2px; padding: 0; width: 24px; height: 24px;}`,
     features: mdcStyle.initDynamic()
   })
@@ -78,7 +78,7 @@ jb.component('button.mdc-icon12', { /* button.mdcIcon12 */
     {id: 'icon', as: 'string', default: 'code'}
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('i',{class: 'material-icons', onclick: true},cmp.icon),
+    template: (cmp,{icon},h) => h('i',{class: 'material-icons', onclick: true},icon),
     css: '{ font-size:12px; cursor: pointer }'
   })
 })

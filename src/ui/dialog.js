@@ -29,30 +29,26 @@ jb.component('open-dialog', { /* openDialog */
 			dialogData: {},
 			formContainer: { err: ''}
 		})
-		dialog.comp = jb.ui.ctrl(ctx,{
-			beforeInit: cmp => {
-				cmp.dialog = dialog;
+		dialog.buildComp = innerCtx => jb.ui.ctrl(innerCtx, features(
+			calcProp('title', _ctx=> _ctx.vars.$model.title(_ctx)),
+			calcProp('contentComp', '%$$model.content%'),
+			calcProp('hasMenu', '%$$model/menu/profile%'),
+			calcProp('menuComp', '%$$model/menu%'),
+			() => ({
+				afterViewInit: cmp => {
+					cmp.dialog = dialog
+					dialog.interactiveCmp = cmp
+					dialog.onOK = ctx2 => context.params.onOK(cmp.ctx.extendVars(ctx2));
+					cmp.dialogCloseOK = () => dialog.close({OK: true});
+					cmp.dialogClose = args => dialog.close(args);
+					//cmp.recalcTitle = (e,srcCtx) =>	jb.ui.setState(cmp,{title: ctx.params.title(ctx)},e,srcCtx)
 
-				cmp.state.title = ctx.params.title(ctx);
-				try {
-					cmp.state.contentComp = ctx.params.content(cmp.ctx);
-					cmp.hasMenu = !!ctx.params.menu.profile;
-					if (cmp.hasMenu)
-						cmp.menuComp = ctx.params.menu(cmp.ctx);
-				} catch (e) {
-					jb.logException(e,'dialog',ctx);
+					cmp.dialog.el = cmp.base;
+					if (!cmp.dialog.el.style.zIndex)
+						cmp.dialog.el.style.zIndex = 100;
 				}
-				dialog.onOK = ctx2 => context.params.onOK(cmp.ctx.extendVars(ctx2));
-				cmp.dialogCloseOK = () => dialog.close({OK: true});
-				cmp.dialogClose = args => dialog.close(args);
-				cmp.recalcTitle = (e,srcCtx) =>	jb.ui.setState(cmp,{title: ctx.params.title(ctx)},e,srcCtx)
-			},
-			afterViewInit: cmp => {
-				cmp.dialog.el = cmp.base;
-				if (!cmp.dialog.el.style.zIndex)
-					cmp.dialog.el.style.zIndex = 100;
-			},
-		});
+		})));
+		dialog.comp = dialog.buildComp(ctx)
 
 		if (!context.probe)
 			jb.ui.dialogs.addDialog(dialog,ctx);
@@ -149,10 +145,10 @@ jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
   jb.component('dialog.default', { /* dialog.default */
 	type: 'dialog.style',
 	impl: customStyle({
-	  template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
-			  h('div',{class: 'dialog-title'},state.title),
+	  template: (cmp,{title,contentComp},h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
+			  h('div',{class: 'dialog-title'},title),
 			  h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
-			  h(state.contentComp),
+			  h(contentComp),
 		  ]),
 	  features: dialogFeature.dragTitle()
 	})
@@ -405,13 +401,15 @@ jb.ui.dialogs = {
 	addDialog(dialog,ctx) {
 		const self = this;
 		dialog.context = ctx;
-		this.dialogs.forEach(d=>
-			d.em.next({ type: 'new-dialog', dialog: dialog }));
+		this.dialogs.forEach(d=> d.em.next({ type: 'new-dialog', dialog: dialog }));
+		jb.log('addDialog',[dialog])
 		this.dialogs.push(dialog);
 		if (dialog.modal && !document.querySelector('.modal-overlay'))
 			jb.ui.addHTML(document.body,'<div class="modal-overlay"></div>');
+		jb.ui.render(jb.ui.h(dialog.comp), this.dialogsTopElem(ctx))
 
 		dialog.close = function(args) {
+			jb.log('closeDialog',[dialog])
 			if (dialog.context.vars.formContainer.err && args && args.OK) // not closing dialog with errors
 				return;
 			return Promise.resolve().then(_=>{
@@ -428,12 +426,12 @@ jb.ui.dialogs = {
 					self.dialogs.splice(index, 1);
 				if (dialog.modal && document.querySelector('.modal-overlay'))
 					document.body.removeChild(document.querySelector('.modal-overlay'));
-				return self.refresh(ctx);
+				jb.ui.unmount(dialog.el)
+				if (dialog.el.parentElement === self.dialogsTopElem(ctx))
+					self.dialogsTopElem(ctx).removeChild(dialog.el)
 			})
 		},
 		dialog.closed = () => self.dialogs.indexOf(dialog) == -1;
-
-		this.refresh(ctx);
 	},
 	closeDialogs(dialogs) {
 		return dialogs.slice(0).reduce((pr,dialog) => pr.then(()=>dialog.close()), Promise.resolve())
@@ -444,16 +442,13 @@ jb.ui.dialogs = {
 	closePopups() {
 		return jb.ui.dialogs.closeDialogs(jb.ui.dialogs.dialogs.filter(d=>d.isPopup))
 	},
-	dialogsCmp(_ctx) {
-		if (!this._dialogsCmp) {
-			const ctx = _ctx || new jb.jbCtx()
-			this._dialogsCmp = ctx.run(dialog.jbDialogs())
-			jb.ui.render(jb.ui.h(this._dialogsCmp),ctx.vars.elemToTest || document.body,this._dialogsCmp)
+	dialogsTopElem(ctx) {
+		if (!this._dialogsTopElem) {
+			this._dialogsTopElem = (ctx.vars.elemToTest || document.body).ownerDocument.createElement('div')
+			this._dialogsTopElem.className = 'jb-dialogs'
+			;(ctx.vars.elemToTest || document.body).appendChild(this._dialogsTopElem)
 		}
-		return this._dialogsCmp
-	},
-    refresh(ctx) {
-		this.dialogsCmp(ctx).setState()
+		return this._dialogsTopElem
 	},
 	reRenderAll() {
 		return this.dialogs.reduce((p,dialog) => p.then(()=>
@@ -463,14 +458,3 @@ jb.ui.dialogs = {
 			})), Promise.resolve())
 	}
 }
-
-jb.component('dialog.jb-dialogs', { 
-	type: 'control',
-	params: [
-	  {id: 'style', dynamic: true },
-	],
-	impl: ctx => jb.ui.ctrl(ctx,{
-		afterViewInit: () => {},
-		template: (cmp,state,h) => h('div', { class:'jb-dialogs' }, jb.ui.dialogs.dialogs.map(d=>h(d.comp))  )
-	})
-})

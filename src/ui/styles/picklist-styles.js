@@ -19,10 +19,10 @@ jb.component('picklist.radio', {
     { id: 'text', defaultValue: '%text%', dynamic: true },
   ],
   impl: customStyle({
-    template: (cmp,{options, fieldId},h) => h('div', {},
+    template: (cmp,{options, fieldId, text},h) => h('div', {},
           options.flatMap(option=> [h('input', {
               type: 'radio', name: fieldId, id: '' + cmp.ctx.id + option.code, value: option.text, onchange: true
-            }), h('label',{for: '' + cmp.ctx.id + option.code}, cmp.text(cmp.ctx.setData(option))) ] )),
+            }), h('label',{for: '' + cmp.ctx.id + option.code}, text(cmp.ctx.setData(option))) ] )),
     css: `>input { %$radioCss% }`,
     features: field.databind()
   })

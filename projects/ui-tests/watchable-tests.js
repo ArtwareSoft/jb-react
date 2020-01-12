@@ -1,42 +1,37 @@
 jb.component('ui-test.check-box-with-calculated-and-watch-ref',  /* uiTest_checkBoxWithCalculatedAndWatchRef */ {
     impl: uiTest({
         control: editableBoolean({
-        databind: '%$person/name% == \"Homer Simpson\"',
-        style: editableBoolean_checkboxWithTitle(),
-        textForTrue: 'yes',
-        textForFalse: 'nonono',
-        features: watchRef('%$person/name%')
+          databind: '%$person/name% == \"Homer Simpson\"',
+          style: editableBoolean_checkboxWithTitle(),
+          textForTrue: 'yes',
+          textForFalse: 'nonono',
+          features: watchRef('%$person/name%')
         }),
-        action: runActions(writeValue('%$person/name%', 'Mukki'), delay(200)),
+        action: writeValue('%$person/name%', 'Mukki'),
         expectedResult: contains('nonono'),
-        expectedCounters: {setState: 1}
+        expectedCounters: {refreshElem: 1}
     })
 })
 
 jb.component('ui-test.boolean-watchable-var-as-boolean-true-to-false', {
     impl: uiTest({
       control: label({
-        text: pipeline(test_getAsBool('%$var1%'),({data}) => data === false ? 'OK' : 'Error'),
-        features: [
-          variable({name: 'var1', value: true, watchable: true}),
-          watchRef('%$var1%'),
-          feature_afterLoad(writeValue('%$var1%', false))
-        ]
+        text: data.if('%$person/male%','Error','OK'),
+        features: watchRef('%$person/male%'),
       }),
+      action: writeValue('%$person/male%', false),
       expectedResult: contains('OK')
     })
 })
 
 jb.component('ui-test.boolean-watchable-var-as-boolean-false-to-true', {
     impl: uiTest({
+      runBefore: writeValue('%$person/male%', false),
       control: label({
-        text: pipeline(test_getAsBool('%$var1%'),({data}) => data === true ? 'OK' : 'Error'),
-        features: [
-          variable({name: 'var1', value: false, watchable: true}),
-          watchRef('%$var1%'),
-          feature_afterLoad(writeValue('%$var1%', true))
-        ]
+        text: data.if('%$person/male%','OK','Error'),
+        features: watchRef('%$person/male%'),
       }),
+      action: writeValue('%$person/male%', true),
       expectedResult: contains('OK')
     })
 })
@@ -60,7 +55,7 @@ jb.component('ui-test.watchable-var-with-global-id',  /* uiTest_mutableVarWithGl
         controls: label('%$var1%'),
         features: [
           variable({name: 'var1', value: 'hello', watchable: true, globalId: 'globalVar1'}),
-          feature_afterLoad(writeValue('%$var1%', 'foo'))
+          feature.afterLoad(writeValue('%$var1%', 'foo'))
         ]
       }),
       expectedResult: contains('foo')
@@ -133,7 +128,7 @@ jb.component('ui-test.calculated-var',  /* uiTest_calculatedVar */ {
           calculatedVar({name: 'var3', value: '%$var1% %$var2%', watchRefs: list('%$var1%', '%$var2%')})
         ]
       }),
-      action: uiAction_setText('hi', '#var1'),
+      action: uiAction.setText('hi', '#var1'),
       expectedResult: contains('hi world')
     })
 })
@@ -179,7 +174,7 @@ jb.component('ui-test.label-with-watch-ref-in-spliced-array', {
       }),
       action: splice({array: '%$personWithChildren/children%', fromIndex: 0, noOfItemsToRemove: 1}),
       expectedResult: contains('Maggie'),
-      expectedCounters: {setState: 1}
+      expectedCounters: {refreshElem: 1}
     })
 })
 
@@ -194,7 +189,7 @@ jb.component('ui-test.splice-and-set', {
       writeValue('%$personWithChildren/children[1]/name%','hello')
     ],
     expectedResult: contains('hello'),
-    //expectedCounters: {setState: 2}
+    //expectedCounters: {refreshElem: 2}
   })
 })
 
@@ -207,7 +202,7 @@ jb.component('ui-test.label-not-watching-ui-var', {
         feature_afterLoad(writeValue('%$text1/text%', 'not good'))
       ]
     }),
-    expectedCounters: {setState: 0},
+    expectedCounters: {refreshElem: 0},
     expectedResult: contains('OK')
   })
 })
@@ -221,7 +216,7 @@ jb.component('ui-test.label-not-watching-basic-var', {
         feature_afterLoad(writeValue('%$text1/text%', 'not good'))
       ]
     }),
-    expectedCounters: {setState: 0},
+    expectedCounters: {refreshElem: 0},
     expectedResult: contains('OK')
   })
 })
@@ -236,7 +231,7 @@ jb.component('ui-test.group-watching-without-includeChildren', {
       feature_afterLoad(writeValue('%$text1/text%', 'not good'))
     ]
   }),
-    expectedCounters: {setState: 0},
+    expectedCounters: {refreshElem: 0},
     expectedResult: contains('OK')
   })
 })
@@ -251,7 +246,7 @@ jb.component('ui-test.group-watching-with-includeChildren', {
         feature_afterLoad(writeValue('%$text1/text%', 'changed'))
       ]
     }),
-    expectedCounters: {setState: 1}, // a kind of bug fixed with includeChildren: 'structure'
+    expectedCounters: {refreshElem: 1}, // a kind of bug fixed with includeChildren: 'structure'
     expectedResult: contains('changed')
   })
 })
@@ -266,7 +261,7 @@ jb.component('ui-test.group-watching-structure', {
         feature.afterLoad(writeValue('%$text1/text%', 'changed'))
       ]
     }),
-    expectedCounters: {setState: 1},
+    expectedCounters: {refreshElem: 1},
     expectedResult: contains('changed')
   })
 })
@@ -289,7 +284,7 @@ jb.component('ui-test.watch-ref-array-delete-with-run-action-on-items',  {
             })))
       ]
     }),
-    expectedCounters: { setState: 3},
+    expectedCounters: { refreshElem: 3},
     expectedResult: contains('[]')
   })
 })
@@ -304,7 +299,7 @@ jb.component('ui-test.watchable-as-text', {
             id('editor'),
             feature.onKey('Alt-P', textEditor.withCursorPath(writeValue('%$path%','%$cursorPath%'))),
             textarea.initTextareaEditor(),
-            textEditor.init()
+            //textEditor.init()
           ],
           style1: editableText.codemirror(),
           style: editableText.textarea({rows: 30,cols: 80})
@@ -388,7 +383,7 @@ jb.component('ui-test.splice-should-not-fire-full-container-change',  {
       controls: label('%name%')
     }),
     action: addToArray('%$watchable-people%', obj(prop('name','mukki'))),
-    expectedCounters: {setState: 0 },
+    expectedCounters: {refreshElem: 0 },
     expectedResult: not(contains('mukki'))
   })
 })
@@ -401,7 +396,7 @@ jb.component('ui-test.splice-and-watch-ref-strcture',  {
       features: watchRef({ref: '%$watchable-people%', includeChildren: 'structure'})
     }),
     action: addToArray('%$watchable-people%', obj(prop('name','mukki'))),
-    expectedCounters: {setState: 1 },
+    expectedCounters: {refreshElem: 1 },
     expectedResult: contains('mukki')
   })
 })
@@ -413,9 +408,9 @@ jb.component('ui-test.splice-and-watch-ref-without-include-children',  {
       controls: label('%name%'),
       features: watchRef({ref: '%$watchable-people%', includeChildren: 'no'})
     }),
-    action: addToArray('%$watchable-people%', obj(prop('name','mukki'))),
-    expectedCounters: {setState: 0 },
-    expectedResult: not(contains('mukki'))
+    action: writeValue('%$watchable-people[0]/name%', 'mukki'),
+    expectedCounters: {refreshElem: 1 },
+    expectedResult: contains('mukki')
   })
 })
 
@@ -428,9 +423,9 @@ jb.component('ui-test.splice-and-watch-ref-add-twice',  {
     }),
     action: runActions(
       addToArray('%$watchable-people%', obj(prop('name','mukki'))),
-      addToArray('%$watchable-people%', obj(prop('name','kukki')))
+      ctx => ctx.run(addToArray('%$watchable-people%', obj(prop('name','kukki'))))
     ),
-    expectedCounters: {setState: 2 },
+    expectedCounters: {refreshElem: 2 },
     expectedResult: contains('kukki')
   })
 })

@@ -7,6 +7,7 @@ function compsRef(val,opEvent) {
     jb.comps = val;
   }
 }
+compsRef.id = 'comps-test'
 
 st.initTests = function() {
   st.compsRefHandler = st.compsRefHandler || jb.ui.extraWatchableHandler(compsRef);

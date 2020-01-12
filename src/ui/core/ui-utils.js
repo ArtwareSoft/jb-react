@@ -23,11 +23,17 @@ Object.assign(jb.ui,{
     withUnits: v => (v === '' || v === undefined) ? '' : (''+v||'').match(/[^0-9]$/) ? v : `${v}px`,
     fixCssLine: css => css.indexOf('/n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css,
     ctxOfElem: elem => elem && elem.getAttribute && elem.getAttribute('jb-ctx') && jb.ctxDictionary[elem.getAttribute('jb-ctx')],
+    resultCtxOfElem: elem => elem && elem.getAttribute && elem.getAttribute('outCtx') && jb.ctxDictionary[elem.getAttribute('jb-ctx')],
     preserveCtx(ctx) {
         jb.ctxDictionary[ctx.id] = ctx
         return ctx.id
     },
     inStudio() { return jb.studio && jb.studio.studioWindow },
+    inPreview() { 
+        try {   
+            return !ui.inStudio() && jb.frame.parent.jb.studio.initPreview
+        } catch(e) {}
+    },
 })
 
 // ****************** html utils ***************
@@ -195,7 +201,7 @@ jb.component('style-by-control', { /* styleByControl */
     impl: (ctx,control,modelVar) => control(ctx.setVar(modelVar,ctx.vars.$model))
 })
   
-jb.component('style-with-features', { 
+jb.component('style-with-features', { /* styleWithFeatures */
       typePattern: /\.style$/,
       description: 'customize, add more features to style',
       category: 'advanced:10,all:20',
@@ -206,7 +212,7 @@ jb.component('style-with-features', {
       impl: (ctx,style,features) => style && {...style,featuresOptions: (style.featuresOptions || []).concat(features())}
 })  
 
-jb.component('control-with-features', {
+jb.component('control-with-features', { /* controlWithFeatures */
     type: 'control',
     description: 'customize, add more features to control',
     category: 'advanced:10,all:20',

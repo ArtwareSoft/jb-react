@@ -110,7 +110,7 @@ function extendWithVars(ctx,vars) {
   if (!vars) return ctx;
   let res = ctx;
   for(let varname in vars || {})
-    res = new jbCtx(res,{ vars: {[varname]: res.runInner(vars[varname], null,'$vars~'+varname)} });
+    res = new jbCtx(res,{ vars: {[varname]: res.runInner(vars[varname] || '%%', null,'$vars~'+varname)} });
   return res;
 }
 
@@ -321,7 +321,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
 
       if (input != null && typeof input == 'object') {
         if (obj === null || obj === undefined) return;
-        if (typeof obj[subExp] === 'function' && (parentParam.dynamic || obj[subExp].profile))
+        if (typeof obj[subExp] === 'function' && (parentParam && parentParam.dynamic || obj[subExp].profile))
             return obj[subExp](ctx);
         if (isRefType(jstype)) {
           if (last)
@@ -577,12 +577,12 @@ function pathSummary(path) {
 }
 
 function logError() {
-  frame.console && frame.console.log(...arguments)
+  frame.console && frame.console.log('%c Error: ','color: red', ...arguments)
   log('error',[...arguments])
 }
 
 function logException(e,errorStr,ctx, ...rest) {
-  frame.console && frame.console.log(...arguments)
+  frame.console && frame.console.log('%c Exception: ','color: red', ...arguments)
   log('exception',[e.stack||'',ctx,errorStr && pathSummary(ctx && ctx.path),e, ...rest])
 }
 
@@ -793,12 +793,14 @@ Object.assign(jb,{
     return f(handler)
   },
  
+  // handler for ref
   refHandler: ref => {
     if (ref && ref.handler) return ref.handler
     if (jb.simpleValueByRefHandler.isRef(ref)) 
       return jb.simpleValueByRefHandler
     return jb.watchableHandlers.find(handler => handler.isRef(ref))
   },
+  // handler for object (including the case of ref)
   objHandler: obj => obj && jb.refHandler(obj) || jb.watchableHandlers.find(handler=> handler.watchable(obj)) || jb.simpleValueByRefHandler,
   asRef: obj => {
     const watchableHanlder = jb.watchableHandlers.find(handler => handler.watchable(obj) || handler.isRef(obj))

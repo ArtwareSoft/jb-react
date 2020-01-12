@@ -16,6 +16,7 @@ function compsRefOfPreviewJb(previewjb) {
 		}
 	}
 	compsRef.frame = previewjb.frame
+	compsRef.id = 'comps'
 	return compsRef
 }
 st.scriptChange = new jb.rx.Subject()
@@ -351,17 +352,16 @@ jb.component('studio.watch-path', { /* studio.watchPath */
 jb.component('studio.watch-script-changes', { /* studio.watchScriptChanges */
   type: 'feature',
   impl: ctx => ({
-      init: cmp => st.scriptChange.takeUntil( cmp.destroyed )
-		//.debounceTime(200)
-		.subscribe(e=> jb.ui.setState(cmp,null,e,ctx))
+      afterViewInit: cmp => st.scriptChange.takeUntil( cmp.destroyed )
+		.subscribe(e=> cmp.refresh({srcCtx: ctx}))
    })
 })
 
 jb.component('studio.watch-components', { /* studio.watchComponents */
   type: 'feature',
   impl: ctx => ({
-      init: cmp => st.scriptChange.takeUntil( cmp.destroyed ).filter(e=>e.path.length == 1)
-        	.subscribe(e=> jb.ui.setState(cmp,null,e,ctx))
+      afterViewInit: cmp => st.scriptChange.takeUntil( cmp.destroyed ).filter(e=>e.path.length == 1)
+        	.subscribe(e=> cmp.refresh({srcCtx: ctx}))
    })
 })
 

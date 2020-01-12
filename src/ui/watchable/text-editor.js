@@ -109,12 +109,10 @@ jb.component('text-editor.with-cursor-path', { /* textEditor.withCursorPath */
     {id: 'selector', as: 'string', defaultValue: '#editor'}
   ],
   impl: (ctx,action,selector) => {
-        let editor = ctx.vars.editor && ctx.vars.editor()
+        let editor = ctx.vars.editor
         if (!editor) {
-            try {
-                const elem = selector ? ctx.vars.elemToTest.querySelector(selector) : ctx.vars.elemToTest;
-                editor = elem._component.ctx.vars.editor()
-            } catch(e) {}
+            const elem = selector ? ctx.vars.elemToTest.querySelector(selector) : ctx.vars.elemToTest;
+            editor = jb.path(elem,'_component.editor')
         }
         if (editor && editor.getCursorPos)
             action(editor.ctx().setVars({
@@ -158,43 +156,29 @@ jb.component('text-editor.is-dirty', { /* textEditor.isDirty */
 //     }})
 // })
 
-jb.component('text-editor.init', { /* textEditor.init */
-  type: 'feature',
-  params: [
-
-  ],
-  impl: ctx => ({
-    extendCtx: (ctx,cmp) => ctx.setVars({
-        editor: () => cmp.editor,
-        refreshEditor: path => refreshEditor(cmp,path)
-      })
-  })
-})
-
 jb.component('textarea.init-textarea-editor', { /* textarea.initTextareaEditor */
   type: 'feature',
-  impl: ctx => ({
-        beforeInit: cmp => {
-          cmp.editor = {
+  impl: interactive( (ctx,{cmp}) => {
+        jb.val(cmp.state.databindRef)
+        cmp.editor = {
             ctx: () => cmp.ctx,
             data_ref: cmp.state.databindRef,
             getCursorPos: () => offsetToLineCol(cmp.base.value,cmp.base.selectionStart),
             cursorCoords: () => {},
             markText: () => {},
             replaceRange: (text, from, to) => {
-              const _from = lineColToOffset(cmp.base.value,from)
-              const _to = lineColToOffset(cmp.base.value,to)
-              cmp.base.value = cmp.base.value.slice(0,_from) + text + cmp.base.value.slice(_to)
+                const _from = lineColToOffset(cmp.base.value,from)
+                const _to = lineColToOffset(cmp.base.value,to)
+                cmp.base.value = cmp.base.value.slice(0,_from) + text + cmp.base.value.slice(_to)
             },
             setSelectionRange: (from, to) => {
-              const _from = lineColToOffset(cmp.base.value,from)
-              const _to = to && lineColToOffset(cmp.base.value,to) || _from
-              cmp.base.setSelectionRange(_from,_to)
+                const _from = lineColToOffset(cmp.base.value,from)
+                const _to = to && lineColToOffset(cmp.base.value,to) || _from
+                cmp.base.setSelectionRange(_from,_to)
             },
-          }
-          if (cmp.ctx.vars.editorContainer)
-            cmp.ctx.vars.editorContainer.editorCmp = cmp
         }
+        if (cmp.ctx.vars.editorContainer)
+            cmp.ctx.vars.editorContainer.editorCmp = cmp
     })
 })
 

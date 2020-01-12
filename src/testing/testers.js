@@ -141,10 +141,12 @@ jb.component('ui-action.click', { /* uiAction.click */
     {id: 'methodToActivate', as: 'string', defaultValue: 'onclickHandler'}
   ],
   impl: (ctx,selector,methodToActivate) => {
-		var elems = selector ? Array.from(ctx.vars.elemToTest.querySelectorAll(selector)) : [ctx.vars.elemToTest];
-		elems.forEach(e=>
-			e._component && e._component[methodToActivate] && e._component[methodToActivate]())
-		return jb.delay(1);
+		const elems = selector ? Array.from(ctx.vars.elemToTest.querySelectorAll(selector)) : [ctx.vars.elemToTest];
+		elems.forEach(e=> {
+//			jb.ui.runActionOfElem(e,methodToActivate)
+			e._component && e._component[methodToActivate] && e._component[methodToActivate]()
+		})
+		//return jb.delay(1);
 	}
 })
 
@@ -189,7 +191,7 @@ jb.component('test.dialog-content', { /* test.dialogContent */
     {id: 'id', as: 'string'}
   ],
   impl: (ctx,id) =>
-		jb.ui.dialogs.dialogs.filter(d=>d.id == id).map(d=>d.el)[0].outerHTML || ''
+		jb.ui.dialogs.dialogs.filter(d=>d.id == id).map(d=>d.el).filter(x=>x).slice(0,1).map(x=>x.outerHTML).join('') || ''
 })
 
 var jb_success_counter = 0;

@@ -3,15 +3,7 @@ jb.component('hello-world.main', { /* helloWorld.main */
   type: 'control',
   impl: group({
     layout: layout.grid({columnSizes: list('200', '100', 'auto')}),
-    controls: [
-      itemlist({
-        title: '',
-        items: '%$people%',
-        controls: [
-          text({text: '%name%', title: 'my title'})
-        ]
-      })
-    ]
+    controls: text('hello world')
   })
 })
 
@@ -33,3 +25,7 @@ jb.component('data-resource.people', { /* dataResource.people */
   ]
 })
 
+
+jb.component('data-resource.room', { /* dataResource.room */
+  passiveData: ''
+})

@@ -21,7 +21,6 @@ jb.component('content-editable.open-layout', {
   impl: runActions(
       writeValue('%$studio/profile_path%','%$path%'),
       openDialog({
-//          style: contentEditable.popupStyle(),
           content: contentEditable.toolbar()
   }))
 })

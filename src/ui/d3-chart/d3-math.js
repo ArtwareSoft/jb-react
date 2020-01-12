@@ -11,19 +11,19 @@ jb.component('d3g.pivot', { /* d3g.pivot */
     {id: 'axisControl', type: 'control', dynamic: true, defaultValue: button('%title%')},
   ],
   impl: (ctx,title,value,scaleFunc,range,domain,axisControl) => ({
-			init: function(ctx2) {
+    title,
+    init: function(ctx2) {
 				var scale = scaleFunc(ctx2);
 				this.range = range(ctx2);
 				this.domain = domain(ctx2.setVars({valFunc: this.valFunc}));
         this.scale = scale.range(this.range).domain(this.domain);
         this.axisControl = axisControl;
 				return this;
-			},
-			title: title,
-			valFunc: x => {
-				var out = value(ctx.setData(x));
-				return +out || out;
-			}
+    },
+    valFunc: x => {
+      var out = value(ctx.setData(x));
+      return +out || out;
+    }
 	})
 })
 

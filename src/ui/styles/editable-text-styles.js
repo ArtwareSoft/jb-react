@@ -3,7 +3,7 @@ jb.ns('mdc,mdc-style')
 jb.component('editable-text.input', { /* editableText.input */
   type: 'editable-text.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('input', {value: state.model, onchange: true, onkeyup: true, onblur: true }),
+    template: (cmp,{model},h) => h('input', {value: model, onchange: true, onkeyup: true, onblur: true }),
     features: field.databindText()
   })
 })
@@ -16,8 +16,8 @@ jb.component('editable-text.textarea', { /* editableText.textarea */
     {id: 'oneWay', type: 'boolean', as: 'boolean', defaultValue: true}
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('textarea', {
-        rows: cmp.rows, cols: cmp.cols, value: state.model, onchange: true, onkeyup: true, onblur: true  }),
+    template: (cmp,{model,rows,cols},h) => h('textarea', {
+        rows: rows, cols: cols, value: model, onchange: true, onkeyup: true, onblur: true  }),
     features: field.databindText(0, '%$oneWay%')
   })
 })
@@ -124,8 +124,7 @@ jb.component('editable-text.expandable', {
       variable({name: 'editable', watchable: true}),
       variable({name: 'expandableContext', value: obj() }),
     ]
-  })
-  ,
+  }),
     'editableTextModel'
   )
 })

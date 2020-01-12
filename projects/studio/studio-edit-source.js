@@ -66,11 +66,9 @@ jb.component('studio.editable-source', { /* studio.editableSource */
       }
     }),
     features: [
-      ctx => ({
-        init: cmp => ctx.vars.$dialog.refresh = () => cmp.refresh && cmp.refresh()
-      }),
+      interactive((ctx,{cmp}) => ctx.vars.$dialog.refresh = () => cmp.refresh && cmp.refresh()),
       feature.onKey('Ctrl-I', studio.openJbEditor('%$path%')),
-      textEditor.init()
+      //textEditor.init()
     ]
   })
 })

@@ -6,8 +6,8 @@ jb.component('property-sheet.titles-left', { /* propertySheet.titlesLeft */
     {id: 'spacing', as: 'string', description: 'grid-column-gap', defaultValue: '10px' },
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{}, state.ctrls.flatMap(ctrl=>[
-        h(cmp.ctx.run(label({text: ctx => cmp.titleText(ctx.setData(ctrl.field().title())), style: ctx => cmp.titleStyle(ctx)}))),
+    template: (cmp,{ctrls,titleStyle,titleText},h) => h('div',{}, ctrls.flatMap(ctrl=>[
+        h(cmp.ctx.run(label({text: ctx => titleText(ctx.setData(ctrl.field().title())), style: ctx => titleStyle(ctx)}))),
         h(ctrl)
       ])
     ),
@@ -24,12 +24,12 @@ jb.component('property-sheet.titles-above', { /* propertySheet.titlesAbove */
     {id: 'spacing', as: 'string', description: 'grid-column-gap', defaultValue: '10px' },
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{ style: {'grid-template-columns': state.ctrls.map(()=>'auto').join(' ')}}, [
-        ...state.ctrls.map(ctrl=>
+    template: (cmp,{ctrls,titleStyle,titleText},h) => h('div',{ style: {'grid-template-columns': ctrls.map(()=>'auto').join(' ')}}, [
+        ...ctrls.map(ctrl=>
           h(cmp.ctx.run(label({
-            text: ctx => cmp.titleText(ctx.setData(ctrl.field().title())), 
-            style: ctx => cmp.titleStyle(ctx)})))), 
-        ...state.ctrls.map(ctrl=>h(ctrl))
+            text: ctx => titleText(ctx.setData(ctrl.field().title())), 
+            style: ctx => titleStyle(ctx)})))), 
+        ...ctrls.map(ctrl=>h(ctrl))
       ]
     ),
     css: `{ display: grid; grid-column-gap:%$spacing% }`,

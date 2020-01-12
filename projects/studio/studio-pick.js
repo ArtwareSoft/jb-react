@@ -7,7 +7,7 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
     {id: 'from', as: 'string'}
   ],
   impl: ctx => ({
-      init: cmp=> {
+    afterViewInit: cmp=> {
           const _window = ctx.params.from == 'preview' ? st.previewWindow : window;
           const previewOffset = ctx.params.from == 'preview' ? document.querySelector('#jb-preview').getBoundingClientRect().top : 0;
           cmp.titleBelow = false;
@@ -118,7 +118,7 @@ function showBox(cmp,profElem,_window,previewOffset) {
   if (profElem_offset == null || jb.ui.offset(document.querySelector('#jb-preview')) == null)
     return;
 
-    cmp.setState({
+    cmp.refresh({
         top: previewOffset + profElem_offset.top,
         left: profElem_offset.left,
         width: jb.ui.outerWidth(profElem) == jb.ui.outerWidth(_window.document.body) ? jb.ui.outerWidth(profElem) -10 : cmp.width = jb.ui.outerWidth(profElem),
@@ -126,7 +126,7 @@ function showBox(cmp,profElem,_window,previewOffset) {
         title: st.shortTitle(pathFromElem(_window,profElem)),
         titleTop: previewOffset + profElem_offset.top - 20,
         titleLeft: profElem_offset.left
-    });
+    })
 }
 
 jb.studio.getOrCreateHighlightBox = function(sampleElem) {

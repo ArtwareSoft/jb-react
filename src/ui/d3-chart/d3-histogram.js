@@ -43,8 +43,7 @@ jb.component('d3-histogram.plain', { /* d3Histogram.plain */
 
 jb.component('d3-histogram.init', { /* d3Histogram.init */
   type: 'd3-feature',
-  impl: ctx => ({
-      beforeInit: cmp => {
+  impl: feature.init( (ctx,{cmp}) => {
         cmp.pivot = ctx.vars.$model.pivot();
         if (!cmp.pivot) return;
         cmp.items = calcItems().filter(cmp.pivot.valFunc);
@@ -68,8 +67,6 @@ jb.component('d3-histogram.init', { /* d3Histogram.init */
           cmp.sortItems && cmp.sortItems();
           return cmp.items;
         }
-
-      },
   })
 })
 

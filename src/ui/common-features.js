@@ -1,30 +1,101 @@
+jb.component('def-handler', { 
+  type: 'feature',
+  description: 'define custom event handler',
+  params: [
+    {id: 'id', as: 'string', mandatory: true, description: 'to be used in html, e.g. onclick="clicked" '},
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
+  ],
+  impl: (ctx,id) => ({defHandler: {id, ctx}})
+})
+
+jb.component('calc-prop', { 
+  type: 'feature',
+  description: 'define a variable to be used in the rendering calculation process',
+  params: [
+    {id: 'id', as: 'string', mandatory: true },
+    {id: 'value', mandatory: true, dynamic: true},
+    {id: 'priority', as: 'number', defaultValue: 1, description: 'if same prop was defined elsewhere who will win. range 1-1000'},
+    {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'},
+  ],
+  impl: ctx => ({calcProp: {... ctx.params, index: jb.ui.propCounter++}})
+})
+
+jb.component('interactive-prop', { 
+  type: 'feature',
+  description: 'define a variable for the interactive comp',
+  params: [
+    {id: 'id', as: 'string', mandatory: true },
+    {id: 'value', mandatory: true, dynamic: true},
+  ],
+  impl: (ctx,id) => ({interactiveProp: {id, ctx }})
+})
+
+jb.component('set-props', {
+  type: 'feature',
+  description: 'define variables to be used in the rendering calculation process',
+  params: [
+    {id: 'props', as: 'object', mandatory: true, description: 'props as object' },
+    {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'},
+  ],
+  impl: (ctx,props,phase) => Object.keys(props).map(id =>
+    ({calcProp: {id, value: () => props[id], phase, index: jb.ui.propCounter++}}))
+})
+
+jb.component('feature.init', { /* feature.init */
+  type: 'feature',
+  category: 'lifecycle',
+  params: [
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
+  ],
+  impl: (ctx,action) => ({ init: action })
+})
+
+jb.component('feature.after-load', { /* feature.afterLoad */
+  type: 'feature',
+  description: 'init, onload, defines the interactive part of the component',
+  category: 'lifecycle',
+  params: [
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
+  ],
+  impl: ctx => ({ afterViewInit: cmp => ctx.params.action(cmp.ctx) })
+})
+jb.component('interactive', jb.comps['feature.after-load'])
+
+jb.component('features', {
+  type: 'feature',
+  description: 'list of features, auto flattens',
+  params: [
+    {id: 'features', type: 'feature[]', as: 'array', composite: true}
+  ],
+  impl: (ctx,features) => features.flatMap(x=>Array.isArray(x) ? x: [x])
+})
+
 jb.component('group.wait', { /* group.wait */
   type: 'feature',
   category: 'group:70',
   description: 'wait for asynch data before showing the control',
   params: [
     {id: 'for', mandatory: true, dynamic: true},
-    {id: 'loadingControl', type: 'control', defaultValue: label('loading ...'), dynamic: true},
-    {id: 'error', type: 'control', defaultValue: label('error: %$error%'), dynamic: true },
+    {id: 'loadingControl', type: 'control', defaultValue: {$: 'text', text:'loading ...'}, dynamic: true},
+    {id: 'error', type: 'control', defaultValue: {$: 'text', text:'error: %$error%' }, dynamic: true },
     {id: 'varName', as: 'string'}
   ],
-  impl: (ctx,waitFor,loading,error,varName) => ({
-      beforeInit: cmp => {
-        cmp.originalCalcState = cmp.calcState
-        cmp.calcState = cmp => ({ ctrls: [loading(cmp.ctx)].map(x=>cmp.ctx.profile.$ == 'itemlist' ? [x] : x) })
-        Promise.resolve(waitFor()).then(data => {
-              cmp.ctx = varName ? cmp.ctx.setData(data).setVar(varName,data) : cmp.ctx.setData(data);
-              cmp.calcState = cmp.originalCalcState
-              cmp.refresh()
-          }).catch(e=> {
-            cmp.calcState = cmp => ({ ctrls: [error(ctx.setVars({error:e}))], text: JSON.stringify(e) })
-            cmp.refresh()
-          })
-      },
-      init: cmp => {
-        cmp.refresh = cmp.refresh || (() => cmp.setState({ctrls: cmp.calcCtrls()}))
+  impl: features(
+    calcProp({id: 'ctrls', 
+      priority: ctx => jb.path(ctx.vars.$state,'dataArrived') ? 0: 10, // hijack the ctrls calculation
+      value: (ctx,{cmp},{loadingControl,error}) => {
+        const ctrl = cmp.state.error ? error() : loadingControl(ctx)
+        return cmp.ctx.profile.$ == 'itemlist' ? [[ctrl]] : [ctrl]
       }
-  })
+    }),
+    interactive( (ctx,{cmp},{varName}) => !cmp.state.dataArrived && !cmp.state.error &&
+      Promise.resolve(ctx.componentContext.params.for()).then(data =>
+          cmp.refresh({ dataArrived: true }, {
+            srcCtx: ctx.componentContext, 
+            extendCtx: ctx => ctx.setVar(varName,data).setData(data) 
+          }))
+          .catch(e=> cmp.refresh({error: JSON.stringify(e)}))
+    ))
 })
 
 jb.component('watch-ref', { /* watchRef */
@@ -35,8 +106,8 @@ jb.component('watch-ref', { /* watchRef */
     { id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data' },
     { id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well' },
     { id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean' },
-    { id: 'strongRefresh', as: 'boolean', description: 'rebuild the component, including all features and variables', type: 'boolean' },
-    { id: 'recalcVars', as: 'boolean', description: 'recalculate feature variables', type: 'boolean' },
+//    { id: 'strongRefresh', as: 'boolean', description: 'rebuild the component, including all features and variables', type: 'boolean' },
+//    { id: 'recalcVars', as: 'boolean', description: 'recalculate feature variables', type: 'boolean' },
     { id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority' },
    ],
   impl: ctx => ({ watchRef: {refF: ctx.params.ref, ...ctx.params}})
@@ -50,8 +121,7 @@ jb.component('watch-observable', { /* watchObservable */
     {id: 'toWatch', mandatory: true},
   ],
   impl: (ctx,toWatch) => ({
-      init: cmp => toWatch.takeUntil(cmp.destroyed).subscribe(()=>jb.ui.setState(cmp,null,null,ctx)),
-      afterViewInit: () => {} // to keep the comp
+      afterViewInit: cmp => toWatch.takeUntil(cmp.destroyed).subscribe(()=>cmp.refresh(null,{srcCtx:ctx})),
   })
 })
 
@@ -77,11 +147,8 @@ jb.component('group.data', { /* group.data */
   impl: (ctx, refF, itemVariable,watch,includeChildren) => ({
       ...(watch ? {watchRef: { refF, includeChildren }} : {}),
       extendCtx: ctx => {
-          const ref = refF();
-          const res = ctx.setData(ref);
-          if (itemVariable)
-            res = res.setVar(itemVariable,ref);
-          return res;
+          const ref = refF()
+          return ctx.setData(ref).setVar(itemVariable,ref)
       },
   })
 })
@@ -115,15 +182,9 @@ jb.component('feature.hover-title', { /* feature.hoverTitle */
   type: 'feature',
   description: 'set element title, usually shown by browser on hover',
   params: [
-    {id: 'title', as: 'string', dynamic: true}
+    {id: 'title', as: 'string', mandatory: true}
   ],
-  impl: (ctx, title) => ({
-    templateModifier: (vdom,cmp,state) => {
-      vdom.attributes = vdom.attributes || {};
-      vdom.attributes.title = title(cmp.ctx.setData(state.title))
-      return vdom;
-    }
-  })
+  impl: htmlAttribute('title','%$title%')
 })
 
 jb.component('variable', { /* variable */
@@ -150,7 +211,7 @@ jb.component('variable', { /* variable */
         if (!watchable)
           return ctx.setVar(name,jb.val(value(ctx)))
 
-        cmp.resourceId = cmp.resourceId || cmp.ctx.id; // use the first ctx id
+        cmp.resourceId = cmp.resourceId || cmp.originatingCtx.id;
         const fullName = globalId || (name + ':' + cmp.resourceId);
         jb.log('var',['new-watchable',ctx,fullName])
         jb.resource(fullName, value(ctx));
@@ -181,42 +242,27 @@ jb.component('calculated-var', { /* calculatedVar */
       description: 'variable to watch. needs to be in array'
     }
   ],
-  impl: (context, name, value,globalId, watchRefs) => ({
+  impl: (ctx, name, value,globalId, watchRefs) => ({
       destroy: cmp => {
-        jb.writeValue(jb.mainWatchableHandler.refOfPath([name + ':' + cmp.resourceId]),null,context)
+        const fullName = globalId || (name + ':' + cmp.cmpId);
+        cmp.ctx.run(writeValue(`%$${fullName}%`,null))
       },
-      extendCtx: (ctx,cmp) => {
-        cmp.resourceId = cmp.resourceId || cmp.ctx.id; // use the first ctx id
-        const fullName = globalId || (name + ':' + cmp.resourceId);
+      extendCtx: (_ctx,cmp) => {
+        const fullName = globalId || (name + ':' + cmp.cmpId);
         jb.log('calculated var',['new-resource',ctx,fullName])
-        jb.resource(fullName, jb.val(value(ctx)));
-        const refToResource = jb.mainWatchableHandler.refOfPath([fullName]);
+        jb.resource(fullName, jb.val(value(_ctx)));
+        const ref = _ctx.exp(`%$${fullName}%`,'ref')
+        return _ctx.setVar(name, ref);
+      },
+      afterViewInit: cmp => {
+        const fullName = globalId || (name + ':' + cmp.cmpId);
+        const refToResource = cmp.ctx.exp(`%$${fullName}%`,'ref');
         (watchRefs(cmp.ctx)||[]).map(x=>jb.asRef(x)).filter(x=>x).forEach(ref=>
-            jb.ui.refObservable(ref,cmp,{includeChildren: 'yes', srcCtx: context}).subscribe(e=>
-              jb.writeValue(refToResource,value(cmp.ctx),context))
-          )
-        return ctx.setVar(name, refToResource);
+          jb.ui.refObservable(ref,cmp,{srcCtx: ctx}).subscribe(e=>
+            jb.writeValue(refToResource,value(cmp.ctx),ctx))
+        )
       }
   })
-})
-
-jb.component('feature.init', { /* feature.init */
-  type: 'feature',
-  category: 'lifecycle',
-  params: [
-    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
-  ],
-  impl: (ctx,action) => ({ init: cmp => action(cmp.ctx) })
-})
-
-jb.component('feature.after-load', { /* feature.afterLoad */
-  type: 'feature',
-  description: 'init, onload',
-  category: 'lifecycle',
-  params: [
-    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
-  ],
-  impl: ctx => ({ afterViewInit: cmp => jb.delay(1).then(_ => ctx.params.action(cmp.ctx)) })
 })
 
 jb.component('feature.if', { /* feature.if */
@@ -226,9 +272,9 @@ jb.component('feature.if', { /* feature.if */
   params: [
     {id: 'showCondition', mandatory: true, dynamic: true}
   ],
-  impl: (ctx, condition,watch) => ({
-    templateModifier: (vdom,cmp,state) =>
-    jb.toboolean(condition(cmp.ctx)) ? vdom : jb.ui.h('span',{style: {display: 'none'}})
+  impl: (ctx, condition) => ({
+    templateModifier: (vdom,cmp) =>
+      jb.toboolean(condition(cmp.ctx)) ? vdom : jb.ui.h('span',{style: {display: 'none'}})
   })
 })
 
@@ -243,7 +289,7 @@ jb.component('hidden', { /* hidden */
     templateModifier: (vdom,cmp,state) => {
       if (!jb.toboolean(showCondition(cmp.ctx)))
         jb.path(vdom,['attributes','style','display'],'none')
-      return vdom;
+      return vdom
     }
   })
 })
@@ -256,9 +302,10 @@ jb.component('conditional-class', { /* conditionalClass */
     {id: 'condition', type: 'boolean', mandatory: true, dynamic: true}
   ],
   impl: (ctx,cssClass,cond) => ({
-    templateModifier: (vdom,cmp,state) => {
-      if (cond())
+    templateModifier: (vdom,cmp) => {
+      if (jb.toboolean(cond(cmp.ctx)))
         jb.ui.addClassToVdom(vdom,cssClass())
+      return vdom
     }
   })
 })
@@ -276,11 +323,11 @@ jb.component('feature.keyboard-shortcut', { /* feature.keyboardShortcut */
         jb.rx.Observable.fromEvent(cmp.base.ownerDocument, 'keydown')
             .takeUntil( cmp.destroyed )
             .subscribe(event=>{
-              var keyStr = key.split('+').slice(1).join('+');
-              var keyCode = keyStr.charCodeAt(0);
+              const keyStr = key.split('+').slice(1).join('+');
+              const keyCode = keyStr.charCodeAt(0);
               if (key == 'Delete') keyCode = 46;
 
-              var helper = (key.match('([A-Za-z]*)+') || ['',''])[1];
+              const helper = (key.match('([A-Za-z]*)+') || ['',''])[1];
               if (helper == 'Ctrl' && !event.ctrlKey) return
               if (helper == 'Alt' && !event.altKey) return
               if (event.keyCode == keyCode || (event.key && event.key == keyStr))
@@ -422,24 +469,13 @@ jb.component('refresh-control-by-id', { /* refreshControlById */
     const elem = base && base.querySelector('#'+id)
     if (!elem)
       return jb.logError('refresh-control-by-id can not find elem for #'+id, ctx)
-    jb.ui.refreshElem(elem,ctx.params,ctx)
+    jb.ui.refreshElem(elem,null,{srcCtx: ctx})
   }
-})
-
-jb.component('feature.define-handler', { 
-  type: 'feature',
-  params: [
-    {id: 'id', as: 'string', mandatory: true, description: 'to be used in html, e.g. onclick="clicked" '},
-    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
-  ],
-  impl: (ctx,id,action) => ({
-      init: cmp => cmp[id] = ev => jb.ui.wrapWithLauchingElement(action, cmp.ctx, ev.currentTarget)()
-  })
 })
 
 jb.component('group.auto-focus-on-first-input', { /* group.autoFocusOnFirstInput */
   type: 'feature',
-  impl: (ctx,condition) => ({
+  impl: ctx => ({
       afterViewInit: cmp => {
           const elem = Array.from(cmp.base.querySelectorAll('input,textarea,select'))
             .filter(e => e.getAttribute('type') != 'checkbox')[0];
@@ -469,8 +505,7 @@ jb.component('feature.byCondition', { /* feature.byCondition */
     {id: 'then', type: 'feature', mandatory: true, dynamic: true, composite: true},
     {id: 'else', type: 'feature', dynamic: true}
   ],
-  impl: (ctx,cond,_then,_else) =>
- 		cond ? _then() : _else()
+  impl: (ctx,cond,_then,_else) =>	cond ? _then() : _else()
 })
 
 jb.component('feature.editable-content', {
@@ -481,8 +516,7 @@ jb.component('feature.editable-content', {
     {id: 'isHtml', as: 'boolean', description: 'allow rich text editing' },
   ],
   impl: (ctx,editableContentParam,isHtml) => ({
-    afterViewInit: () => {}, // keep the component
-    init: cmp => {
+    afterViewInit: cmp => {
       const contentEditable = jb.studio.studioWindow.jb.ui.contentEditable
       if (contentEditable) {
         cmp.onblurHandler = ev => contentEditable.setScriptData(ev,cmp,editableContentParam,isHtml)

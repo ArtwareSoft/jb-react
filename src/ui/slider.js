@@ -44,21 +44,8 @@ jb.component('slider.init', { /* slider.init */
       onmouseup: true,
       onmousedown: true,
       onmousemove: true,
-      init: cmp =>
-        cmp.refresh =  _=> {
-          var val = cmp.jbModel() !=null && Number(cmp.jbModel());
-          cmp.max = Math.max.apply(0,[ctx.vars.$model.max,val,cmp.max].filter(x=>x!=null));
-          cmp.min = Math.min.apply(0,[ctx.vars.$model.min,val,cmp.min].filter(x=>x!=null));
-          if (val == cmp.max && ctx.vars.$model.autoScale)
-            cmp.max += cmp.max - cmp.min;
-          if (val == cmp.min && ctx.vars.$model.autoScale)
-            cmp.min -= cmp.max - cmp.min;
-
-          jb.ui.setState(cmp,{ min: cmp.min, max: cmp.max, step: ctx.vars.$model.step, val: cmp.jbModel() },null,ctx);
-        },
-
       afterViewInit: cmp => {
-          cmp.refresh();
+          //cmp.refresh();
 
           cmp.handleArrowKey = e => {
               var val = Number(cmp.jbModel()) || 0;
@@ -73,8 +60,19 @@ jb.component('slider.init', { /* slider.init */
               }
           }
 
-          cmp.onkeydown.subscribe(e=>
-              cmp.handleArrowKey(e));
+          cmp.__refresh =  _=> {
+            var val = cmp.jbModel() !=null && Number(cmp.jbModel());
+            cmp.max = Math.max.apply(0,[ctx.vars.$model.max,val,cmp.max].filter(x=>x!=null));
+            cmp.min = Math.min.apply(0,[ctx.vars.$model.min,val,cmp.min].filter(x=>x!=null));
+            if (val == cmp.max && ctx.vars.$model.autoScale)
+              cmp.max += cmp.max - cmp.min;
+            if (val == cmp.min && ctx.vars.$model.autoScale)
+              cmp.min -= cmp.max - cmp.min;
+  
+            jb.ui.setState(cmp,{ min: cmp.min, max: cmp.max, step: ctx.vars.$model.step, val: cmp.jbModel() },null,ctx);
+          },
+  
+          cmp.onkeydown.subscribe(e=> cmp.handleArrowKey(e));
 
           // drag
           cmp.onmousedown.flatMap(e=>
@@ -96,8 +94,7 @@ jb.component('slider.handle-arrow-keys', { /* sliderText.handleArrowKeys */
           jb.delay(1).then(_=>{
             var sliderCtx = ctx.vars.sliderCtx;
             if (sliderCtx)
-              cmp.onkeydown.subscribe(e=>
-                  sliderCtx.handleArrowKey(e));
+              cmp.onkeydown.subscribe(e=>sliderCtx.handleArrowKey(e));
           })
       }
     })

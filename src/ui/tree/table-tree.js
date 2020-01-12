@@ -28,21 +28,46 @@ jb.component('tree.model-filter', {
   
 jb.component('table-tree.init', {
     type: 'feature',
-    impl: ctx => ({
-        beforeInit: cmp => {
-            const treeModel = cmp.treeModel = cmp.ctx.vars.$model.treeModel()
-            treeModel.maxDepth = treeModel.maxDepth || 5
-            cmp.expanded = {[treeModel.rootPath]: true}
-            treeModel.children(treeModel.rootPath).forEach(path=>cmp.expanded[path] = true)
+    impl: features(
+        calcProp('maxDepth','%$cmp/treeModel/maxDepth%'),
+        calcProp('items',(ctx,{cmp}) => {
+            const treeModel = cmp.treeModel
+            if (ctx.vars.$model.includeRoot)
+                return calcItems(treeModel.rootPath, 0)
+            else
+                return calcItems(treeModel.rootPath, -1).filter(x=>x.depth > -1)
 
-            cmp.refresh = () => cmp.setState({items:cmp.calcItems()})
-            cmp.itemsCache = {}
-            cmp.headLineCache = {}
-            cmp.calcItems = () => calcItems(treeModel.rootPath,0)
+            function calcItems(top, depth) {
+                const item = [{path: top, depth, val: treeModel.val(top), expanded: cmp.state.expanded[top]}]
+                if (cmp.state.expanded[top])
+                    return treeModel.children(top).reduce((acc,child) => 
+                        depth >= treeModel.maxDepth ? acc : acc = acc.concat(calcItems(child, depth+1)),item)
+                return item
+            }
+        }),
+        interactive( (ctx,{cmp}) => {
+            cmp.flip = () => {
+                const path = elemToPath(event.target)
+                if (!path) debugger
+                cmp.state.expanded[path] = !(cmp.state.expanded[path]);
+                cmp.refresh({expanded: cmp.state.expanded});
+            }
+            function elemToPath(el) { return el && (el.getAttribute('path') || jb.ui.closest(el,'.jb-item') && jb.ui.closest(el,'.jb-item').getAttribute('path')) }
+        }),
+        feature.init( (ctx,{cmp}) => {
+            const treeModel = cmp.treeModel = ctx.vars.$model.treeModel()
+            treeModel.maxDepth = treeModel.maxDepth || 5
+            const firstTime = !cmp.state.expanded
+            cmp.state.expanded = cmp.state.expanded || {[treeModel.rootPath]: true}
+            firstTime && treeModel.children(treeModel.rootPath).forEach(path=>cmp.state.expanded[path] = true)
+
+            //cmp.itemsCache = {}
+            //cmp.headLineCache = {}
+            //cmp.calcItems = () => calcItems(treeModel.rootPath,0)
             cmp.leafFields = calcFields('leafFields')
             cmp.commonFields = calcFields('commonFields')
             cmp.fieldsForPath = path => treeModel.isArray(path) ? cmp.commonFields : cmp.leafFields.concat(cmp.commonFields)
-            cmp.headline = item => getOrCreateHeadlineCmp(item)
+            cmp.headline = item => headlineCmp(item)
 
             cmp.expandingFieldsOfItem = item => {
                 const maxDepthAr = Array.from(new Array(treeModel.maxDepth))
@@ -53,7 +78,7 @@ jb.component('table-tree.init', {
                         if (i < depthOfItem || i == depthOfItem && !treeModel.isArray(item.path)) 
                             return { empty: true }
                         if (i == depthOfItem) return {
-                            expanded: cmp.expanded[item.path],
+                            expanded: cmp.state.expanded[item.path],
                             toggle: true
                         }
                         if (i == depthOfItem+1) return {
@@ -65,62 +90,33 @@ jb.component('table-tree.init', {
                 )
             }
 
-            cmp.flipExpandCollapse = e => {
-                const path = cmp.elemToPath(e.target)
-                if (!path) debugger
-                cmp.expanded[path] = !(cmp.expanded[path]);
-                cmp.refresh();
-            }
-            cmp.elemToPath = el => el && (el.getAttribute('path') || jb.ui.closest(el,'.jb-item') && jb.ui.closest(el,'.jb-item').getAttribute('path'))
-
-
-            function calcItems(top) {
-                if (cmp.ctx.vars.$model.includeRoot)
-                    return refreshItemsFromCache(doCalcItems(top, 0))
-                return refreshItemsFromCache(doCalcItems(top, -1).filter(x=>x.depth > -1))
-            }
-            function refreshItemsFromCache(items) {
-                return items.map(item=>{
-                    if (!cmp.itemsCache[item.path])
-                        cmp.itemsCache[item.path] = item
-                    return Object.assign(cmp.itemsCache[item.path],item)
-                })
-            }
-            function doCalcItems(top, depth) {
-                const item = [{path: top, depth, val: treeModel.val(top), expanded: cmp.expanded[top]}]
-                if (cmp.expanded[top])
-                    return treeModel.children(top).reduce((acc,child) => 
-                        depth >= treeModel.maxDepth ? acc : acc = acc.concat(doCalcItems(child, depth+1)),item)
-                return item
-            }
-            function getOrCreateControl(field,item,index) {
-                if (!treeModel.FieldCache)
-                    return field.control(item,index,true)
-                cmp.ctrlCache = cmp.ctrlCache || {}
-                const key = item.path+'~!'+item.expanded + '~' +field.ctxId
-                cmp.ctrlCache[key] = cmp.ctrlCache[key] || field.control(item,index)
-                return cmp.ctrlCache[key]
-            }
+        //    function getOrCreateControl(field,item,index) {
+        //         if (!treeModel.FieldCache)
+        //             return field.control(item,index,true)
+        //         cmp.ctrlCache = cmp.ctrlCache || {}
+        //         const key = item.path+'~!'+item.expanded + '~' +field.ctxId
+        //         cmp.ctrlCache[key] = cmp.ctrlCache[key] || field.control(item,index)
+        //         return cmp.ctrlCache[key]
+        //     }
             function calcFields(fieldsProp) {
-                const fields = ctx.vars.$model[fieldsProp]().map(x=>x.field())
-                fields.forEach(f=>f.cachedControl = (item,index) => getOrCreateControl(f,item,index))
-                return fields
+                return ctx.vars.$model[fieldsProp]().map(x=>x.field())
+                //fields.forEach(f=>f.cachedControl = (item,index) => getOrCreateControl(f,item,index))
+                //return fields
             }
             function headlineCmp(item) {
                 return ctx.vars.$model.chapterHeadline(
-                        cmp.ctx.setData({path: item.path, val: treeModel.val(item.path)})
-                            .setVars({item,collapsed: ctx2 => !cmp.expanded[item.path]}))
+                        ctx.setData({path: item.path, val: treeModel.val(item.path)})
+                            .setVars({item,collapsed: ctx2 => !cmp.state.expanded[item.path]}))
             }
-            function getOrCreateHeadlineCmp(item) {
-                if (!treeModel.HeadLineCache)
-                    return headlineCmp(item)
-                if (!cmp.headLineCache[item.path])
-                    cmp.headLineCache[item.path] = headlineCmp(item)
-                return cmp.headLineCache[item.path]
-            }
-        },
-        init: cmp => cmp.state.items = cmp.calcItems(),
-    })
+            // function getOrCreateHeadlineCmp(item) {
+            //     if (!treeModel.HeadLineCache)
+            //         return headlineCmp(item)
+            //     if (!cmp.headLineCache[item.path])
+            //         cmp.headLineCache[item.path] = headlineCmp(item)
+            //     return cmp.headLineCache[item.path]
+            // }
+        })
+    )
 })
   
 jb.component('table-tree.plain', {
@@ -132,26 +128,27 @@ jb.component('table-tree.plain', {
       { id: 'noItemsCtrl', type: 'control', dynamic: true, defaultValue: text('no items') },
     ],
     impl: customStyle({
-      template: (cmp,state,h) => h('table',{},[
-          ...Array.from(new Array(cmp.treeModel.maxDepth)).map(f=>h('col',{width: cmp.expColWidth + 'px'})),
-          h('col',{width: cmp.gapWidth + 'px'}),
-          ...cmp.leafFields.concat(cmp.commonFields).map(f=>h('col',{width: f.width || '200px'})),
-          ...(cmp.hideHeaders ? [] : [h('thead',{},h('tr',{},
-          Array.from(new Array(cmp.treeModel.maxDepth+1)).map(f=>h('th',{class: 'th-expand-collapse'})).concat(
-                [...cmp.leafFields, ...cmp.commonFields].map(f=>h('th',{'jb-ctx': f.ctxId},jb.ui.fieldTitle(cmp,f,h))) )))]),
-          h('tbody',{class: 'jb-drag-parent'},
-              state.items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item', path: item.path }, 
-                [...cmp.expandingFieldsOfItem(item).map(f=>h('td',
-                            f.empty ? { class: 'empty-expand-collapse'} : f.toggle ? {class: 'expandbox' } : {class: 'headline', colSpan: f.colSpan, onclick: 'flipExpandCollapse' },
-                            f.empty ? '' : f.toggle ? h('span',{}, h('i',{class:'material-icons noselect', onclick: 'flipExpandCollapse'  },
-                                            f.expanded ? 'keyboard_arrow_down' : 'keyboard_arrow_right')) : h(cmp.headline(item))
-                )), 
-                    ...cmp.fieldsForPath(item.path).map(f=>h('td', {'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), class: 'tree-field'}, 
-                        h(f.cachedControl(item,index),{index: index}))) ]
-              ), item ))
-          ),
-          state.items.length == 0 ? h(cmp.noItemsCtrl()) : ''
-          ]),
+      template: (cmp,{ items, maxDepth, hideHeaders, gapWidth, expColWidth, noItemsCtrl},h) => h('table',{},[
+        ...Array.from(new Array(maxDepth)).map(f=>h('col',{width: expColWidth + 'px'})),
+        h('col',{width: gapWidth + 'px'}),
+        ...cmp.leafFields.concat(cmp.commonFields).map(f=>h('col',{width: f.width || '200px'})),
+        ...(hideHeaders ? [] : [h('thead',{},h('tr',{},
+        Array.from(new Array(maxDepth+1)).map(f=>h('th',{class: 'th-expand-collapse'})).concat(
+            [...cmp.leafFields, ...cmp.commonFields].map(f=>h('th',{'jb-ctx': f.ctxId},jb.ui.fieldTitle(cmp,f,h))) )))]),
+        h('tbody',{class: 'jb-drag-parent'},
+          items.map((item,index)=> h('tr',{ class: 'jb-item', path: item.path }, 
+            [...cmp.expandingFieldsOfItem(item).map(f=>h('td',
+              f.empty ? { class: 'empty-expand-collapse'} : 
+                f.toggle ? {class: 'expandbox' } : {class: 'headline', colSpan: f.colSpan, onclick: 'flip' },
+              f.empty ? '' : f.toggle ? h('span',{}, h('i',{class:'material-icons noselect', onclick: 'flip'  },
+                f.expanded ? 'keyboard_arrow_down' : 'keyboard_arrow_right')) : h(cmp.headline(item))
+              )), 
+              ...cmp.fieldsForPath(item.path).map(f=>h('td', {'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), class: 'tree-field'}, 
+              h(f.control(item,index),{index: index}))) 
+            ]
+        ))),
+        items.length == 0 ? h(noItemsCtrl()) : ''
+      ]),
       css: `{border-spacing: 0; text-align: left;width: 100%; table-layout:fixed;}
       >tbody>tr>td>span { font-size:16px; cursor: pointer; display: flex; border: 1px solid transparent }
       >tbody>tr>td>span>i { font-size: 16px; }

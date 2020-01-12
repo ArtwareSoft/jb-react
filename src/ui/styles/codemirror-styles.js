@@ -30,7 +30,7 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 				cmp.textAreaAlternative ? h('textarea', {class: 'jb-textarea-alternative-for-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind(cmp.ctx)) })
 					: h('div',{},h('textarea', {class: 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind(cmp.ctx)) })),
 			css: '{width: 100%}',
-			beforeInit: cmp => {
+			init: (ctx,{cmp}) => {
 				cmp.state.databindRef = cmp.ctx.vars.$model.databind(cmp.ctx)
 				if (jb.tostring(cmp.state.databindRef).length > ctx.params.maxLength)
 					cmp.textAreaAlternative = true

@@ -19,60 +19,43 @@ jb.component('itemlist', { /* itemlist */
 jb.component('itemlist.no-container', { /* itemlist.noContainer */
   type: 'feature',
   category: 'group:20',
-  impl: ctx => ({
-    extendCtx: (ctx,cmp) => ctx.setVars({itemlistCntr: null})
-    })
+  impl: ctx => ({ extendCtx: (ctx,cmp) => ctx.setVars({itemlistCntr: null}) })
 })
 
 jb.component('itemlist.init', { /* itemlist.init */
   type: 'feature',
-  impl: ctx => ({
-    calcState: cmp => ({ctrls: cmp.calcCtrls() }),
-    init: cmp => cmp.calcCtrls = () => {
-      const controlsOfItem = item => ctx.vars.$model.controls(
-          new jb.jbCtx(cmp.ctx,{data: item, vars: {[ctx.vars.$model.itemVariable]: item}})).filter(x=>x)
+  impl: features(
+    calcProp('items', '%$$model.items%'),
+    interactiveProp('items', '%$$model.items%'),
+    calcProp('ctrls', ctx => {
+      const controlsOfItem = item => 
+        ctx.vars.$model.controls(ctx.setVar(ctx.vars.$model.itemVariable,item).setData(item)).filter(x=>x)
 
-      cmp.items = ctx.vars.$model.items ? jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx))) : [];
-      if (cmp.ctx.vars.itemlistCntr)
-        cmp.ctx.vars.itemlistCntr.items = cmp.items;
-      return cmp.items.slice(0,ctx.vars.$model.visualSizeLimit || 100).map(item=>
+      // if (ctx.vars.itemlistCntr)
+      //   ctx.vars.itemlistCntr.items = ctx.vars.props.items;
+      return ctx.vars.props.items.slice(0,ctx.vars.$model.visualSizeLimit || 100).map(item=>
         Object.assign(controlsOfItem(item),{item})).filter(x=>x.length > 0);
-
-    },
-
-    beforeInit1: cmp => {
-        cmp.refresh = _ => cmp.setState({ctrls: cmp.calcCtrls()})
-
-        cmp.calcCtrls = _ => {
-            cmp.items = ctx.vars.$model.items ? jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx))) : [];
-            if (cmp.ctx.vars.itemlistCntr)
-              cmp.ctx.vars.itemlistCntr.items = cmp.items;
-            return cmp.items.slice(0,ctx.vars.$model.visualSizeLimit || 100).map(item=>
-              Object.assign(controlsOfItem(item),{item})).filter(x=>x.length > 0);
-        }
-
-      },
-  })
+    }),
+    calcProp({id: 'updateItemlistCntr', value: action.if('%$itemlistCntr%',writeValue('%$itemlistCntr.items%', '%$props.items%')), phase: 100}),
+  )
 })
 
 jb.component('itemlist.init-table', { /* itemlist.initTable */
   type: 'feature',
-  impl: ctx => ({
-      beforeInit: cmp => {
-        cmp.refresh = _ =>
-            cmp.setState({items: cmp.calcItems()})
-
-        cmp.calcItems = _ => {
-            cmp.items = (ctx.vars.$model.items ? jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx))) : [])
-              .slice(0,ctx.vars.$model.visualSizeLimit || 100);
-            if (cmp.ctx.vars.itemlistCntr)
-              cmp.ctx.vars.itemlistCntr.items = cmp.items;
-            return cmp.items;
-        }
-        cmp.fields = ctx.vars.$model.controls().map(inner=>inner.field())
-      },
-      init: cmp => cmp.state.items = cmp.calcItems(),
-  })
+  impl: features(
+      // calcProp('items', (ctx,{cmp}) => {
+      //     const res = (ctx.vars.$model.items ? jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx))) : [])
+      //         .slice(0,ctx.vars.$model.visualSizeLimit || 100);
+      //     if (cmp.ctx.vars.itemlistCntr)
+      //       cmp.ctx.vars.itemlistCntr.items = res;
+      //     return res;
+      // }),
+      calcProp('items', pipeline('%$$model.items%', slice(0,firstSucceeding('%$$model.visualSizeLimit%',100)))),
+      interactiveProp('items', pipeline('%$$model.items%', slice(0,firstSucceeding('%$$model.visualSizeLimit%',100)))),
+      calcProp('fields', '%$$model/controls/field%'),
+      calcProp({id: 'updateItemlistCntr', value: action.if('%$itemlistCntr%',writeValue('%$itemlistCntr.items%', '%$props.items%')), phase: 100}),
+      //      calcProp('fields', ctx => ctx.vars.$model.controls().map(inner=>inner.field()))
+  )
 })
 
 jb.component('itemlist.fast-filter', {
@@ -81,34 +64,21 @@ jb.component('itemlist.fast-filter', {
   params: [
     {id: 'showCondition', mandatory: true, dynamic: true, defaultValue: itemlistContainer.conditionFilter() },
     {id: 'filtersRef', mandatory: true, as: 'ref', dynamic: true, defaultValue: '%$itemlistCntrData/search_pattern%'},
-    {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
   ],
-  impl: (ctx,showCondition,filtersRef,includeChildren) => ({
-      init: cmp => {
-        jb.ui.refObservable(filtersRef(cmp.ctx),cmp,{includeChildren, srcCtx: ctx})
-          .subscribe(e=> cmp.fastFilter())
-
-        cmp.fastFilter = _ => {
-          if (!cmp.base) return
-          Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
-            .forEach(elem=> {
-              if (showCondition(jb.ctxDictionary[elem.getAttribute('jb-ctx')]))
-                elem.style.display = 'block'
-              else
-                elem.style.display = 'none'
-            })
-        }
-      },
-  })
+  impl: interactive( (ctx,{cmp},{showCondition,filtersRef}) => 
+        jb.ui.refObservable(filtersRef(cmp.ctx),cmp,{srcCtx: ctx})
+          .subscribe(() => Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).forEach(elem=> 
+                elem.style.display = showCondition(jb.ctxDictionary[elem.getAttribute('jb-ctx')]) ? 'block' : 'none'))
+   )
 })
 
 jb.component('itemlist.ul-li', { /* itemlist.ulLi */
   type: 'itemlist.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('ul',{ class: 'jb-itemlist'},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h('li',
+    template: (cmp,{ctrls},h) => h('ul',{ class: 'jb-itemlist'},
+        ctrls.map(ctrl=> h('li',
           {class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
-          ctrl.map(singleCtrl=>h(singleCtrl))),ctrl.item))),
+          ctrl.map(singleCtrl=>h(singleCtrl))))),
     css: `{ list-style: none; padding: 0; margin: 0;}
     >li { list-style: none; padding: 0; margin: 0;}`,
     features: itemlist.init()
@@ -121,9 +91,9 @@ jb.component('itemlist.horizontal', { /* itemlist.horizontal */
     {id: 'spacing', as: 'number', defaultValue: 0}
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class: 'jb-drag-parent'},
-        state.ctrls.map(ctrl=> jb.ui.item(cmp,h('div', {class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
-          ctrl.map(singleCtrl=>h(singleCtrl))),ctrl.item))),
+    template: (cmp,{ctrls},h) => h('div',{ class: 'jb-drag-parent'},
+        ctrls.map(ctrl=> h('div', {class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
+          ctrl.map(singleCtrl=>h(singleCtrl))))),
     css: `{display: flex}
         >* { margin-right: %$spacing%px }
         >*:last-child { margin-right:0 }`,
@@ -164,7 +134,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
           .subscribe(data => ctx.params.onDoubleClick(cmp.ctx.setData(data)))
 
         cmp.setSelected = selected => {
-          cmp.selected = selected
+          cmp.state.selected = selected
           if (!cmp.base) return
           Array.from(cmp.base.querySelectorAll('.jb-item.selected,*>.jb-item.selected,*>*>.jb-item.selected'))
             .forEach(elem=>elem.classList.remove('selected'))
@@ -173,23 +143,27 @@ jb.component('itemlist.selection', { /* itemlist.selection */
             .forEach(elem=> {elem.classList.add('selected'); elem.scrollIntoViewIfNeeded()})
         }
 
-        cmp.selectionEmitter
-          .merge(cmp.clickEmitter)
-          .distinctUntilChanged()
-          .filter(x=>x)
+        cmp.selectionEmitter.merge(cmp.clickEmitter).distinctUntilChanged().filter(x=>x)
           .subscribe( selected => {
               writeSelectedToDatabind(selected);
               cmp.setSelected(selected)
               ctx.params.onSelection(cmp.ctx.setData(selected));
-          });
+        })
 
         const selectedRef = databind()
+        
         jb.isWatchable(selectedRef) && jb.ui.refObservable(selectedRef,cmp,{throw: true, srcCtx: ctx})
           .catch(e=>cmp.setSelected(null) || [])
-          .subscribe(e=>
-            cmp.setSelected(selectedOfDatabind()))
+          .subscribe(() => cmp.setSelected(selectedOfDatabind()))
 
-        function autoSelectFirst() {
+        if (cmp.state.selected && cmp.items.indexOf(cmp.state.selected) == -1) // clean irrelevant selection
+          cmp.state.selected = null;
+        if (selectedOfDatabind()) //selectedRef && jb.val(selectedRef))
+          cmp.setSelected(selectedOfDatabind())
+        if (!cmp.state.selected)
+          autoSelectFirstWhenEnabled()
+
+        function autoSelectFirstWhenEnabled() {
           if (ctx.params.autoSelectFirst && cmp.items[0] && !jb.val(selectedRef))
               return cmp.selectionEmitter.next(cmp.items[0])
         }
@@ -204,15 +178,6 @@ jb.component('itemlist.selection', { /* itemlist.selection */
           const ctxId = itemElem && itemElem.getAttribute('jb-ctx')
           return ((ctxId && jb.ctxDictionary[ctxId]) || {}).data
         }
-
-        jb.delay(1).then(_=>{
-           if (cmp.selected && cmp.items.indexOf(cmp.selected) == -1)
-              cmp.selected = null;
-           if (selectedRef && jb.val(selectedRef))
-             cmp.setSelected(selectedOfDatabind())
-           if (!cmp.selected)
-              autoSelectFirst()
-        })
     },
     css: ['>.selected','>*>.selected','>*>*>.selected'].map(sel=>sel+ ' ' + jb.ui.fixCssLine(ctx.params.cssForSelected)).join('\n')
   })
@@ -238,20 +203,16 @@ jb.component('itemlist.keyboard-selection', { /* itemlist.keyboardSelection */
         }
         cmp.onkeydown = onkeydown.takeUntil( cmp.destroyed );
 
-        cmp.onkeydown.filter(e=> e.keyCode == 13 && cmp.selected)
-          .subscribe(x=>
-            ctx.params.onEnter(cmp.ctx.setData(cmp.selected)));
+        cmp.onkeydown.filter(e=> e.keyCode == 13 && cmp.state.selected)
+          .subscribe(() => ctx.params.onEnter(cmp.ctx.setData(cmp.state.selected)));
 
-        cmp.onkeydown.filter(e=> !e.ctrlKey &&
-              (e.keyCode == 38 || e.keyCode == 40))
-            .map(event => {
-              event.stopPropagation();
-              var diff = event.keyCode == 40 ? 1 : -1;
-              var items = cmp.items;
-              return items[(items.indexOf(cmp.selected) + diff + items.length) % items.length] || cmp.selected;
-        }).subscribe(x=>
-          cmp.selectionEmitter && cmp.selectionEmitter.next(x)
-        )
+        cmp.onkeydown.filter(ev => !ev.ctrlKey && (ev.keyCode == 38 || ev.keyCode == 40))
+            .map(ev => {
+              ev.stopPropagation();
+              const diff = ev.keyCode == 40 ? 1 : -1;
+              const items = cmp.items;
+              return items[(items.indexOf(cmp.state.selected) + diff + items.length) % items.length] || cmp.state.selected;
+        }).subscribe(selected => cmp.selectionEmitter && cmp.selectionEmitter.next(selected) )
       },
     })
 })
@@ -293,10 +254,10 @@ jb.component('itemlist.drag-and-drop', { /* itemlist.dragAndDrop */
             e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
             .subscribe(e=> {
               const diff = e.keyCode == 40 ? 1 : -1;
-              const selectedIndex = cmp.items.indexOf(cmp.selected);
+              const selectedIndex = cmp.items.indexOf(cmp.state.selected);
               if (selectedIndex == -1) return;
               const index = (selectedIndex + diff+ cmp.items.length) % cmp.items.length;
-              jb.splice(jb.asRef(cmp.items),[[selectedIndex,1],[index,0,cmp.selected]],ctx);
+              jb.splice(jb.asRef(cmp.items),[[selectedIndex,1],[index,0,cmp.state.selected]],ctx);
           })
 //        })
       }

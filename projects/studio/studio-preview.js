@@ -61,9 +61,9 @@ st.initPreview = function(preview_window,allowedTypes) {
       st.previewjb.ctxByPath = {}
       //jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
 
-      st.initEventTracker();
-      if (preview_window.location.href.match(/\/studio-helper/))
-        st.previewjb.studio.initEventTracker();
+      // st.initEventTracker();
+      // if (preview_window.location.href.match(/\/studio-helper/))
+      //   st.previewjb.studio.initEventTracker();
 
       jb.exp('%$studio/settings/activateWatchRefViewer%','boolean') && st.activateWatchRefViewer();
 
@@ -112,8 +112,7 @@ jb.component('studio.set-preview-size', { /* studio.setPreviewSize */
 
 jb.component('studio.wait-for-preview-iframe', { /* studio.waitForPreviewIframe */
   impl: _ =>
-    jb.ui.waitFor(()=>
-      jb.studio.previewWindow)
+    jb.ui.waitFor(()=> jb.studio.previewWindow)
 })
 
 jb.studio.pageChange = jb.ui.resourceChange().filter(e=>e.path.join('/') == 'studio/page')
@@ -130,45 +129,70 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
     {id: 'width', as: 'number'},
     {id: 'height', as: 'number'}
   ],
-  impl: ctx =>
-    jb.ui.ctrl(ctx,{
-      init: cmp => {
-        const host = ctx.exp('%$queryParams/host%')
-        if (host && st.projectHosts[host]) {
-          const project = ctx.exp('%$studio/project%')
-          document.title = `${project} with jBart`;
-          cmp.state.loadingMessage = 'loading project from ' + host + '::' + ctx.exp('%$queryParams/hostProjectId%')
-          return st.projectHosts[host].fetchProject(ctx.exp('%$queryParams/hostProjectId%'),project)
-            .then(inMemoryProject => {
-              st.inMemoryProject = inMemoryProject
-              cmp.setState({loadingMessage: '', inMemoryProject}) 
-            })
-        }
-        let project = ctx.exp('%$studio/project%')
-        const rootName = ctx.exp('%$studio/settings/rootName%')
-        if (!project) {
-          project = rootName
-          cmp.ctx.run(writeValue('%$studio/project%',project))
-          return st.host.rootExists().then(exists=> {
-              if (exists)
-                location.reload()
-              cmp.state.inMemoryProject = st.inMemoryProject = ctx.run(studio.newInMemoryProject(project,'./'))
-              if (st.host.canNotSave) 
-                return cmp.setState({})
-              return jb.delay(100).then(()=>ctx.run(studio.saveComponents()))
-          })
-        }
-        if (st.inMemoryProject) {
-          cmp.state.inMemoryProject = st.inMemoryProject
-          document.title = project + ' with jBart';
-          return
-        }
-        const cacheKiller =  'cacheKiller='+(''+Math.random()).slice(10)
-        const src = `/project/${project}?${cacheKiller}&spy=preview`
-        cmp.state.src = src
-        document.title = project + ' with jBart';
-      },
-    })
+  impl: ctx => jb.ui.ctrl(ctx, features(
+        calcProp('cacheKiller', () => 'cacheKiller='+(''+Math.random()).slice(10)),
+        calcProp('rootName','%$studio/settings/rootName%'),
+        calcProp('project','%$studio/project%'),
+        calcProp('src', '/project/%$props/project%?%$props/cacheKiller%&spy=preview'),
+        calcProp('inMemoryProject', st.inMemoryProject),
+        calcProp('host', '%$queryParams/host%'),
+        calcProp('hasHost', ctx => ctx.vars.host && st.projectHosts[ctx.vars.host]),
+        calcProp('loadingMessage', data.if('%$inMemoryProject%', '',
+          '{? loading project from %$props/host%::%$queryParams/hostProjectId% ?}')),
+        interactive( (ctx,{cmp}) => {
+          if (!st.inMemoryProject && cmp.ctx.vars.props.host && st.projectHosts[host]) {
+            const project = ctx.exp('%$studio/project%')
+            document.title = `${project} with jBart`;
+            return st.projectHosts[host].fetchProject(ctx.exp('%$queryParams/hostProjectId%'),project)
+              .then(inMemoryProject => {
+                st.inMemoryProject = inMemoryProject
+                cmp.refresh() 
+              })
+          }
+        })
+  ))
+})
+
+        
+        // let project = ctx.exp('%$studio/project%')
+        // const rootName = ctx.exp('%$studio/settings/rootName%')
+        // if (!project) {
+        //   project = rootName
+        //   cmp.ctx.run(writeValue('%$studio/project%',project))
+        //   return st.host.rootExists().then(exists=> {
+        //       if (exists)
+        //         location.reload()
+        //       cmp.state.inMemoryProject = st.inMemoryProject = ctx.run(studio.newInMemoryProject(project,'./'))
+        //       if (st.host.canNotSave) 
+        //         return cmp.refresh()
+        //       return jb.delay(100).then(()=>ctx.run(studio.saveComponents()))
+        //   })
+        // }
+        // if (st.inMemoryProject) {
+        //   cmp.state.inMemoryProject = st.inMemoryProject
+        //   document.title = project + ' with jBart';
+        //   return
+        // }
+        // document.title = project + ' with jBart';
+
+jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
+  type: 'preview-style',
+  impl: customStyle({
+    template: (cmp,{loadingMessage, src, inMemoryProject},h) => {
+      if (loadingMessage)
+        return h('p',{class: 'loading-message'}, loadingMessage)
+      return h('iframe', {
+          id:'jb-preview',
+          sandbox: 'allow-same-origin allow-forms allow-scripts',
+          frameborder: 0,
+          class: 'preview-iframe',
+          width: cmp.ctx.vars.$model.width,
+          height: cmp.ctx.vars.$model.height,
+          src: inMemoryProject ? "javascript: parent.jb.studio.injectImMemoryProjectToPreview(this)" : src
+        })
+    },
+    css: '{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; }'
+  })
 })
 
 st.injectImMemoryProjectToPreview = function(previewWin) {
@@ -192,25 +216,5 @@ st.injectImMemoryProjectToPreview = function(previewWin) {
   
   previewWin.document.write(html)
 }
-
-jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
-  type: 'preview-style',
-  impl: customStyle({
-    template: (cmp,{loadingMessage, src, inMemoryProject},h) => {
-      if (loadingMessage)
-        return h('p',{class: 'loading-message'}, loadingMessage)
-      return h('iframe', {
-          id:'jb-preview',
-          sandbox: 'allow-same-origin allow-forms allow-scripts',
-          frameborder: 0,
-          class: 'preview-iframe',
-          width: cmp.ctx.vars.$model.width,
-          height: cmp.ctx.vars.$model.height,
-          src: inMemoryProject ? "javascript: parent.jb.studio.injectImMemoryProjectToPreview(this)" : src
-        })
-    },
-    css: '{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; }'
-  })
-})
 
 })()

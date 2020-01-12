@@ -16,29 +16,24 @@ jb.component('label', {...jb.comps.text,type: 'depricated-control'} )
 
 jb.component('label.bind-text', { /* label.bindText */
   type: 'feature',
+  category: 'label:0',
   impl: ctx => ({
-    watchAndCalcRefProp: { prop: 'text', toState: jb.ui.toVdomOrStr, strongRefresh: true },
+    watchAndCalcRefProp: { prop: 'text', transformValue: jb.ui.toVdomOrStr, strongRefresh: true },
     studioFeatures: feature.editableContent('text')
   })
 })
 
 jb.component('label.allow-asynch-value', {
   type: 'feature',
-  impl: ctx => ({
-    init: cmp => {
-      const textF = ctx.vars.$model.text 
-      const textRef = textF(cmp.ctx);
-      const val = jb.ui.toVdomOrStr(textRef)
+  impl: features(
+    calcProp('text', (ctx,{cmp}) => cmp.text || ctx.vars.props.text),
+    interactive((ctx,{cmp}) => {
+      if (cmp.text) return
+      const val = jb.ui.toVdomOrStr(ctx.vars.$model.text(cmp.ctx))
       if (val && typeof val.then == 'function')
-        refreshAsynchText(val)
-
-      cmp.refresh = _ => refreshAsynchText(jb.ui.toVdomOrStr(textF(cmp.ctx)))
-
-      function refreshAsynchText(textPromise) {
-        Promise.resolve(textPromise).then(text => cmp.setState({text}))
-      }
+        val.then(res=>cmp.refresh({text: jb.ui.toVdomOrStr(res)},{srcCtx: ctx.componentContext}))
     }
-  })
+  ))
 })
 
 jb.component('label.htmlTag', { /* label.htmlTag */
@@ -53,7 +48,7 @@ jb.component('label.htmlTag', { /* label.htmlTag */
     {id: 'cssClass', as: 'string'}
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h(cmp.htmlTag,{class: cmp.cssClass},state.text),
+    template: (cmp,{text,htmlTag,cssClass},h) => h(htmlTag,{class: cssClass},text),
     features: label.bindText(),
   })
 })
@@ -61,7 +56,7 @@ jb.component('label.htmlTag', { /* label.htmlTag */
 jb.component('label.no-wrapping-tag', { /* label.noWrappingTag() */
   type: 'label.style',
   impl: customStyle({
-    template: (cmp,state,h) => state.text,
+    template: (cmp,{text},h) => text,
     features: label.bindText()
   })
 })
@@ -69,7 +64,7 @@ jb.component('label.no-wrapping-tag', { /* label.noWrappingTag() */
 jb.component('label.span', { /* label.span */
   type: 'label.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('span',{},state.text),
+    template: (cmp,{text},h) => h('span',{},text),
     features: label.bindText()
   })
 })
@@ -77,7 +72,7 @@ jb.component('label.span', { /* label.span */
 ;[1,2,3,4,5,6].map(level=>jb.component(`header.h${level}`, {
   type: 'label.style',
   impl: customStyle({
-    template: (cmp,state,h) => h(`h${level}`,{},state.text),
+    template: (cmp,{text},h) => h(`h${level}`,{},text),
     features: label.bindText()
   })
 }))
@@ -85,7 +80,7 @@ jb.component('label.span', { /* label.span */
 ;[1,2,3,4,5,6].map(level=>jb.component(`header.mdc-headline${level}`, {
   type: 'label.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('h2',{class: `mdc-typography mdc-typography--headline${level}`},state.text),
+    template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--headline${level}`},text),
     features: label.bindText()
   })
 }))
@@ -93,7 +88,7 @@ jb.component('label.span', { /* label.span */
 ;[1,2].map(level=>jb.component(`header.mdc-subtitle${level}`, {
   type: 'label.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('h2',{class: `mdc-typography mdc-typography--subtitle${level}`},state.text),
+    template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--subtitle${level}`},text),
     features: label.bindText()
   })
 }))
@@ -101,7 +96,7 @@ jb.component('label.span', { /* label.span */
 ;[1,2].map(level=>jb.component(`text.mdc-body${level}`, {
   type: 'label.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('h2',{class: `mdc-typography mdc-typography--body${level}`},state.text),
+    template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--body${level}`},text),
     features: label.bindText()
   })
 }))

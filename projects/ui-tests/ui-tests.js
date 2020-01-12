@@ -90,7 +90,7 @@ jb.component('ui-test.wait-for-with-pipe', {
     }),
     action: delay(40),
     expectedResult: and(contains('hello'),not(contains('loading'))),
-    expectedCounters: {initCmp: 3}
+    expectedCounters: {initCmp: 4}
   })
 })
 
@@ -116,16 +116,17 @@ jb.component('ui-test.wait-for-with-var', { /* uiTest.waitForWithVar */
   })
 })
 
-jb.component('ui-test.watchObservable', {
-  impl: uiTest({
-    control: label({
-      text: '%$person/name%',
-      features: watchObservable({ toWatch: jb.rx.Observable.fromPromise(jb.delay(1)) })
-    }),
-    expectedCounters: {setState: 1},
-    expectedResult: true
-  })
-})
+// jb.component('ui-test.watchObservable', {
+//   impl: uiTest({
+//     vars: Var('promise', ctx => jb.delay(1)),
+//     control: label({
+//       text: '%$person/name%',
+//       features: watchObservable({ toWatch: (ctx,{promise}) => jb.rx.Observable.fromPromise(promise) })
+//     }),
+//     expectedCounters: {setState: 1},
+//     expectedResult: true
+//   })
+// })
 
 jb.component('ui-test.button', { /* uiTest.button */
   impl: uiTest({
@@ -198,6 +199,23 @@ jb.component('ui-test.editable-text-expandable', {
   })
 })
 
+jb.component('ui-test.editable-text-by-control', {
+  impl: uiTest({
+    control: editableText({
+      title: 'name',
+      databind: '%$person/name%',
+      style: styleByControl(group({
+        controls: [],
+        features: [
+          variable({name: 'expandableContext', value: obj() }),
+        ]
+      }),'editableTextModel' ),
+    }),
+    expectedResult: true
+  })
+})
+
+
 jb.component('ui-test.two-way-binding', { /* uiTest.twoWayBinding */
   impl: uiTest({
     control: group({
@@ -236,7 +254,6 @@ jb.component('ui-test.layout-vertical', {
     expectedResult: contains(['button1', 'label1'])
   })
 })
-
 
 jb.component('ui-test.open-dialog', { /* uiTest.openDialog */
   impl: uiTest({
@@ -306,6 +323,24 @@ jb.component('ui-test.renderable', { /* uiTest.renderable */
     }),
     action: uiAction.click('button'),
     expectedResult: contains({text: 'hello as label', allText: test.dialogContent('hello')})
+  })
+})
+
+jb.component('ui-test.refresh-dialog', { 
+  impl: uiTest({
+    control: button({
+      title: 'click me',
+      action: openDialog({
+        id: 'hello', 
+        content: label('%$person/name%'), 
+        features: interactive(action.if('%$person/name% == "mukki"','', runActions(
+          writeValue('%$person/name%','mukki'),
+          (ctx,{cmp}) => cmp.refresh()
+        )))
+      })
+    }),
+    action: uiAction.click('button'),
+    expectedResult: contains({text: 'mukki', allText: test.dialogContent('hello')})
   })
 })
 
@@ -1287,7 +1322,7 @@ jb.component('ui-test.control.first-succeeding', { /* uiTest.group.firstSucceedi
   })
 })
 
-jb.component('ui-test.first-succeeding-watchable-sample', {
+jb.component('ui-test.first-succeeding-watchable-sample', { // firstSucceedingWatchableSample
   type: 'control',
   impl: group({
     controls: [
@@ -1312,7 +1347,7 @@ jb.component('ui-test.first-succeeding.watch-refresh-on-ctrl-change', { /* uiTes
     control: uiTest.firstSucceedingWatchableSample(),
     action: uiAction.click('#female'),
     expectedResult: contains('not male'),
-    expectedCounters: {initCmp: 8}
+    expectedCounters: {renderVdom: 9}
   })
 })
 
@@ -1321,7 +1356,7 @@ jb.component('ui-test.first-succeeding.same-does-not-recreate', {
     control: uiTest.firstSucceedingWatchableSample(),
     action: [uiAction.click('#female'),uiAction.click('#zee')],
     expectedResult: contains('not male'),
-    expectedCounters: {initCmp: 8}
+    expectedCounters: {renderVdom: 9}
   })
 })
 
@@ -1330,7 +1365,7 @@ jb.component('ui-test.first-succeeding.watch-refresh-on-ctrl-change-and-back', {
     control: uiTest.firstSucceedingWatchableSample(),
     action: runActions(uiAction.click('#female'), uiAction.click('#male')),
     expectedResult: contains('a male'),
-    expectedCounters: {initCmp: 9}
+    expectedCounters: {renderVdom: 11}
   })
 })
 
@@ -1493,7 +1528,14 @@ jb.component('ui-test.watchable-parent-refresh-mask-children', {
     }),
     action: writeValue('%$person/name%','hello'),
     expectedResult: contains('hello'),
-    expectedCounters: { notifyCmpObservable: 1 }
+    expectedCounters: { notifyObservableElem: 1 }
+  })
+})
+
+jb.component('ui-test.watchable-url', { 
+  impl: uiTest({
+    control: text('%$person/name%'),
+    expectedResult: contains('toobserve="resources://2~name;person~name'),
   })
 })
 

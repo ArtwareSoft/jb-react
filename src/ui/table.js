@@ -83,7 +83,7 @@ jb.component('field.control', { /* field.control */
   ],
   impl: (ctx,title,control,width,dataForSort,numeric) => ({
     title: () => title,
-    control: row => control(ctx.setData(row)).reactComp(),
+    control: row => control(ctx.setData(row)),
     width: width,
     fieldData: row => dataForSort(ctx.setData(row)),
     numeric: numeric,
@@ -109,40 +109,33 @@ jb.component('table.init-table-or-itemlist', {
 jb.component('table.init', { /* table.init */
   type: 'feature',
   category: 'table:10',
-  impl: ctx => ({
-      beforeInit: cmp => {
+  impl: features(
+    calcProp('fields', '%$$model.fields%'),
+    calcProp({id: 'updateItemlistCntr', value: writeValue('%$itemlistCntr.items%', '%$props.items%'), phase: 100}),
+    calcProp('items', pipeline('%$$model.items%', slice(0,firstSucceeding('%$$model.visualSizeLimit%',100)))),
+    interactiveProp('items', pipeline('%$$model.items%', slice(0,firstSucceeding('%$$model.visualSizeLimit%',100)))),
+    // calcProp('items', (ctx,{cmp}) => {
+    //   const items = jb.toarray(ctx.vars.$model.items(ctx));
+    //   extendItemsWithCalculatedFields();
+    //   //cmp.sortItems && cmp.sortItems();
+    //   return items.slice(0,ctx.vars.$model.visualSizeLimit || 100);
 
-        cmp.fields = ctx.vars.$model.fields();
-        cmp.state.items = calcItems();
-
-        cmp.refresh = _ =>
-            cmp.setState({items: calcItems()})
-
-        function calcItems() {
-          cmp.items = jb.toarray(ctx.vars.$model.items(cmp.ctx));
-          if (cmp.ctx.vars.itemlistCntr)
-              cmp.ctx.vars.itemlistCntr.items = cmp.items;
-          extendItemsWithCalculatedFields();
-          cmp.sortItems && cmp.sortItems();
-          return cmp.items.slice(0,ctx.vars.$model.visualSizeLimit || 100);
-        }
-
-        function extendItemsWithCalculatedFields() {
-          if (!cmp.fields || !cmp.items) return;
-          cmp.fields.filter(f=>f.extendItems).forEach(f=>
-            cmp.items.forEach(item=>item[f.title()] = f.calcFieldData(item)))
-        }
-      },
-  })
+    //   function extendItemsWithCalculatedFields() {
+    //     if (!ctx.data.fields || !cmp.items) return;
+    //     ctx.data.fields.filter(f=>f.extendItems).forEach(f=>
+    //       cmp.items.forEach(item=>item[f.title()] = f.calcFieldData(item)))
+    //   }
+    // }),
+  )
 })
 
 jb.component('table.init-sort', { /* table.initSort */
   type: 'feature',
   impl: ctx => ({
-      beforeInit: cmp => {
+      afterViewInit: cmp => {
         cmp.toggleSort = ev => {
-          const field = cmp.fields[ev.currentTarget.getAttribute('fieldIndex')]
-          const sortOptions = cmp.state.sortOptions || [];
+          const field = cmp.renderProps.fields[ev.currentTarget.getAttribute('fieldIndex')]
+          const sortOptions = cmp.renderProps.sortOptions || [];
           var option = sortOptions.filter(o=>o.field == field)[0];
           if (!option)
             sortOptions = [{field: field,dir: 'none'}].concat(sortOptions).slice(0,2);
@@ -152,14 +145,13 @@ jb.component('table.init-sort', { /* table.initSort */
           option.dir = directions[(directions.indexOf(option.dir)+1)%directions.length];
           if (option.dir == 'none')
             sortOptions.splice(sortOptions.indexOf(option),1);
-          cmp.setState({sortOptions: sortOptions});
-          cmp.refresh();
+          cmp.refresh({sortOptions: sortOptions});
         }
         cmp.sortItems = () => {
-          if (!cmp.items || !cmp.state.sortOptions || cmp.state.sortOptions.length == 0) return;
-          cmp.items.forEach((item,index)=>cmp.state.sortOptions.forEach(o=> 
+          if (!cmp.items || !cmp.renderProps.sortOptions || cmp.renderProps.sortOptions.length == 0) return;
+          cmp.items.forEach((item,index)=>cmp.renderProps.sortOptions.forEach(o=> 
               item['$jb_$sort_'+o.field.title] = o.field.fieldData(item,index)));
-          var major = cmp.state.sortOptions[0], minor = cmp.state.sortOptions[1];
+          var major = cmp.renderProps.sortOptions[0], minor = cmp.renderProps.sortOptions[1];
           if (!minor)
             cmp.items.sort(sortFunc(major))
           else {

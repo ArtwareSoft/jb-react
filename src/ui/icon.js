@@ -9,12 +9,12 @@ jb.component('material-icon', { /* materialIcon */
     {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx => jb.ui.ctrl(ctx,{init: cmp=> cmp.state.icon = ctx.params.icon})
+  impl: ctx => jb.ui.ctrl(ctx, calcProp('icon','%$$model/icon%'))
 })
 
 jb.component('icon.material', { /* icon.material */
   type: 'icon-with-action.style',
   impl: customStyle(
-    (cmp,state,h) => h('i',{ class: 'material-icons' }, state.icon)
+    (cmp,{icon},h) => h('i',{ class: 'material-icons' }, icon)
   )
 })

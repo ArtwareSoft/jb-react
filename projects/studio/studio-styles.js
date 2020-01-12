@@ -67,12 +67,10 @@ jb.component('editable-text.studio-codemirror-tgp', { /* editableText.studioCode
 jb.component('button.select-profile-style', { /* button.selectProfileStyle */
   type: 'button.style',
   impl: customStyle({
-    init: cmp => cmp.clickedEnter = ev => ev.keyCode == 13 && cmp.onclickHandler(ev),
-    template: (cmp,state,h) =>
-        h('input', { class: 'mdc-text-field__input', type: 'text', readonly: true, title: state.title,
-            value: state.title,
-            onmouseup: 'onclickHandler',
-            onkeydown: 'clickedEnter',
+    features: interactive( (ctx,{cmp}) => cmp.clickedEnter = () => event.keyCode == 13 && cmp.onclickHandler()),
+    template: (cmp,{title},h) =>
+        h('input', { class: 'mdc-text-field__input', type: 'text', readonly: true, title,
+            value: title, onmouseup: 'onclickHandler', onkeydown: 'clickedEnter',
         }),
     css: '{ cursor: pointer; padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom: 7px; } :focus { border-color: #3F51B5; border-width: 2px}'
   })
@@ -89,7 +87,7 @@ jb.component('studio.property-toolbar-style', { /* studio.propertyToolbarStyle *
 jb.component('button.studio-script', { /* button.studioScript */
   type: 'button.style',
   impl: customStyle({
-    init: cmp => cmp.clickedEnter = ev => ev.keyCode == 13 && cmp.onclickHandler(ev),
+    features: interactive( (ctx,{cmp}) => cmp.clickedEnter = ev => event.keyCode == 13 && cmp.onclickHandler()),
     template: (cmp,state,h) =>
         h('input', { class: 'mdc-text-field__input', type: 'text', readonly: true, title: state.title,
             value: state.title,

@@ -19,9 +19,10 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'dist/jb-rx.js',
 
         'src/ui/watchable/watchable-ref.js',
-        'src/ui/core/react.js',
+        'src/ui/core/jb-react.js',
         'src/ui/core/ui-comp.js',
         'src/ui/core/ui-utils.js',
+        'src/ui/common-features.js',
 
         'src/ui/group.js',
         'src/ui/label.js',
@@ -32,7 +33,6 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/editable-text.js',
         'src/ui/editable-boolean.js',
         'src/ui/editable-number.js',
-        'src/ui/common-features.js',
         'src/ui/css-features.js',
         'src/ui/dialog.js',
         'src/ui/itemlist.js',

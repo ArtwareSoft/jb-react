@@ -4,14 +4,13 @@ jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
     {id: 'id', as: 'string'},
     {id: 'width', as: 'number', defaultValue: 300},
     {id: 'height', as: 'number', defaultValue: 100},
-    {id: 'onUpdate', type: 'action', dynamic: true},
   ],
   impl: customStyle({
-			template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: cmp.id},[
-				h('div',{class: 'dialog-title noselect'},state.title),
+			template: (cmp,{title,contentComp,id},h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: id},[
+				h('div',{class: 'dialog-title noselect'},title),
 				cmp.hasMenu ? h('div',{class: 'dialog-menu'},h(cmp.menuComp)): '',
 				h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
-				h('div',{class: 'jb-dialog-content-parent'},h(state.contentComp)),
+				h('div',{class: 'jb-dialog-content-parent'},h(contentComp)),
 				h('div',{class: 'dialog-buttons'},[
 					...(cmp.dialog.gotoEditor ? [h('button',{class: 'mdc-button', onclick: 'dialog.gotoEditor' },'goto editor')] : []),
 					h('button',{class: 'mdc-button', onclick: 'dialog.refresh' },'refresh'),
@@ -84,10 +83,10 @@ jb.component('dialog.show-source-style', {
 	  {id: 'height', as: 'number', defaultValue: 600},
 	],
 	impl: customStyle({
-			  template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: cmp.id},[
-				  h('div',{class: 'dialog-title noselect'},state.title),
+			  template: (cmp,{title,contentComp,id},h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: id},[
+				  h('div',{class: 'dialog-title noselect'},title),
 				  h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
-				  h('div',{class: 'jb-dialog-content-parent stretchedToMargin'},h(state.contentComp)),
+				  h('div',{class: 'jb-dialog-content-parent stretchedToMargin'},h(contentComp)),
 			  ]),
 			  features: [
 					  {$: 'dialog-feature.drag-title', id: '%$id%'},
@@ -125,25 +124,21 @@ jb.component('dialog.show-source-style', {
 
 jb.component('studio-dialog-feature.studio-popup-location', { /* studioDialogFeature.studioPopupLocation */
   type: 'dialog-feature',
-  impl: ctx => ({
-		afterViewInit: cmp => {
-			var dialog = cmp.dialog;
-			var id = (dialog.id||'').replace(/\s/g,'_');
+  impl: interactive( (ctx,{cmp}) => {
+			const dialog = cmp.dialog;
+			const id = (dialog.id||'').replace(/\s/g,'_');
 			if (id && !sessionStorage[id]) {
 				dialog.el.classList.add(id);
 				dialog.el.classList.add('default-location')
 			}
 		}
-	})
+	)
 })
 
 jb.component('studio-dialog-feature.refresh-title', { /* studioDialogFeature.refreshTitle */
   type: 'dialog-feature',
-  impl: ctx => ({
-		afterViewInit: cmp =>
-			jb.studio.scriptChange.takeUntil( cmp.destroyed ).subscribe(e=>
-				cmp.recalcTitle && cmp.recalcTitle(e,ctx))
-	})
+  impl: interactive( (ctx,{cmp}) => jb.studio.scriptChange.takeUntil( cmp.destroyed )
+  		.subscribe(e=> cmp.recalcTitle && cmp.recalcTitle(e,ctx)))
 })
 
 jb.component('studio.code-mirror-mode', { /* studio.codeMirrorMode */
@@ -181,11 +176,11 @@ jb.component('dialog.studio-floating', { /* dialog.studioFloating */
     {id: 'height', as: 'number', defaultValue: 100}
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: cmp.id},[
-				h('div',{class: 'dialog-title noselect'},state.title),
+    template: (cmp,{title,contentComp,id},h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: id},[
+				h('div',{class: 'dialog-title noselect'},title),
 				cmp.hasMenu ? h('div',{class: 'dialog-menu'},h(cmp.menuComp)): '',
 				h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
-				h('div',{class: 'jb-dialog-content-parent'},h(state.contentComp)),
+				h('div',{class: 'jb-dialog-content-parent'},h(contentComp)),
 			]),
     css: `{ position: fixed;
 						background: #F9F9F9;
@@ -274,7 +269,7 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
               max: '%$controlItem/width/max%',
               features: [
                 field.default('%$controlItem/width/default%'),
-                field.subscribe(studio.setPreviewSize('%%'), true)
+                field.onDataChange(studio.setPreviewSize('%%'), true)
               ]
             }),
             editableNumber({
@@ -285,7 +280,7 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
               max: '%$controlItem/height/max%',
               features: [
                 field.default('%$controlItem/height/default%'),
-                field.subscribe(studio.setPreviewSize(undefined, '%%'), true)
+                field.onDataChange(studio.setPreviewSize(undefined, '%%'), true)
               ]
             })
           ],

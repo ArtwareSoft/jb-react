@@ -9,7 +9,7 @@ jb.component('editable-number', { /* editableNumber */
     {
       id: 'style',
       type: 'editable-number.style',
-      defaultValue: editableNumber.input(),
+      defaultValue: editableText.mdcInput(),
       dynamic: true
     },
     {
@@ -64,17 +64,6 @@ jb.component('editable-number', { /* editableNumber */
       }
       return jb.ui.ctrl(ctx.setVars({ editableNumber: new editableNumber(ctx.params) }))
   }
-})
-
-jb.component('editable-number.input', { /* editableNumber.input */
-  type: 'editable-number.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('input', { 
-        value: state.model, 
-        onchange: e => cmp.jbModel(e.target.value), 
-        onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
-    features: field.databindText()
-  })
 })
 
 

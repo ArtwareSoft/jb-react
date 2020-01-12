@@ -19,6 +19,18 @@ jb.component('personWithChildren', { watchableData: {
   friends: [{ name: 'Barnie' } ],
 }})
 
+jb.component('peopleWithChildren', { watchableData: [
+  {
+    name: 'Homer',
+    children: [{name: 'Bart'}, {name: 'Lisa'}],
+  },
+  {
+    name: 'Marge',
+    children: [{name: 'Bart'}, {name: 'Lisa'}],
+  }
+]
+})
+
 jb.component('stringArray', { watchableData: ['a','b','c']})
 jb.component('stringTree', { watchableData: { node1: ['a','b','c'], node2: ['1','2','3']}})
 
@@ -41,6 +53,13 @@ jb.component('data-test.property-watchable', {
   impl: dataTest({
     calculate: property('name','%$person%'),
     expectedResult: equals('Homer Simpson')
+  })
+})
+
+jb.component('data-test.pipeline-var', {
+  impl: dataTest({
+    calculate: pipeline('%$peopleWithChildren%',pipeline(Var('parent'),'%children%','%name% is child of %$parent/name%'),join()),
+    expectedResult: equals('Bart is child of Homer,Lisa is child of Homer,Bart is child of Marge,Lisa is child of Marge')
   })
 })
 

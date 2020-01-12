@@ -16,16 +16,15 @@ jb.component('editable-text', { /* editableText */
     },
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx =>
-    jb.ui.ctrl(ctx)
+  impl: ctx => jb.ui.ctrl(ctx)
 })
 
 jb.component('editable-text.x-button', { /* editableText.xButton */
   type: 'feature',
   impl: ctx =>({
-    init: cmp => cmp.cleanValue = () => cmp.jbModel(null),
-    templateModifier: (vdom,cmp,state) => 
-      jb.ui.h('div', {},[vdom].concat(cmp.jbModel() ? [jb.ui.h('button', { class: 'delete', onclick: 'cleanValue' } ,'×')]  : []) ),
+    afterViewInit: cmp => cmp.cleanValue = () => { cmp.jbModel(''); cmp.refresh() },
+    templateModifier: (vdom,cmp,{model}) => 
+      jb.ui.h('div', {},[vdom].concat(model ? [jb.ui.h('button', { class: 'delete', onclick: 'cleanValue' } ,'×')]  : []) ),
     css: `>.delete {
           margin-left: -16px;
           float: right;

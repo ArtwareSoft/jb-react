@@ -39,7 +39,7 @@ jb.component('d3-scatter.plain', { /* d3Scatter.plain */
     			h('g',{ axisIndex: 1, class: 'y axis', transform: 'translate(0,0)'}),
     			h('text', { class: 'label', x: 10, y: 10}, cmp.yPivot.title),
     			h('text', { class: 'label', x: cmp.innerWidth, y: cmp.innerHeight - 10, 'text-anchor': 'end'}, cmp.xPivot.title),
-    			h('text', { class: 'note', x: cmp.innerWidth, y: cmp.height - cmp.top, 'text-anchor': 'end' }, '' + cmp.state.items.length + ' items'),
+    			h('text', { class: 'note', x: cmp.innerWidth, y: cmp.height - cmp.top, 'text-anchor': 'end' }, '' + state.items.length + ' items'),
     		].concat(
     		state.items.map((item,index)=> h('circle',{
     			class: 'bubble', index,
@@ -68,57 +68,55 @@ jb.component('d3-scatter.plain', { /* d3Scatter.plain */
 
 jb.component('d3-scatter.init', { /* d3Scatter.init */
   type: 'feature',
-  impl: ctx => ({
-      beforeInit: cmp => {
-        cmp.state.items = calcItems();
-        cmp.pivots = ctx.vars.$model.pivots();
-        const x = cmp.pivots[0] || emptyPivot(),
-              y = cmp.pivots[1] || emptyPivot(),
-              radius = cmp.pivots[2] || emptyPivot(),
-              color = cmp.pivots[3] || emptyPivot();
-
-        const ctx2 = ctx.setVars({items: cmp.state.items, frame: ctx.vars.$model.frame});
-        Object.assign(cmp, {
+  impl: features(
+      calcProp('items',(ctx,{cmp}) => {
+        cmp.items = jb.toarray(jb.val(ctx.vars.$model.items(ctx)));
+        if (ctx.vars.itemlistCntr)
+            ctx.vars.itemlistCntr.items = cmp.items;
+        cmp.sortItems && cmp.sortItems();
+        return cmp.items.slice(0,ctx.vars.$model.visualSizeLimit);
+      }),
+      calcProp('pivots','%$$mode/pivots%'),
+      calcProp('emptyPivot', d3g.pivot({title: 'empty', value: list('0', '1') })),
+      calcProp('x',firstSucceeding('%pivots[0]%','%$emptyPivot%')),
+      calcProp('y',firstSucceeding('%pivots[1]%','%$emptyPivot%')),
+      calcProp('radius',firstSucceeding('%pivots[2]%','%$emptyPivot%')),
+      calcProp('color',firstSucceeding('%pivots[3]%','%$emptyPivot%')),
+      setProps(ctx=> {
+        const ctx2 = ctx.setVars({items: ctx.data.items, frame: ctx.vars.$model.frame});
+        const res = {
           xPivot: x.init(ctx2.setVars({xAxis: true})),
           yPivot: y.init(ctx2.setVars({yAxis: true})),
           rPivot: radius.init(ctx2.setVars({rAxis: true})),
           colorPivot: color.init(ctx2.setVars({colorAxis: true})),
           itemTitle: ctx.vars.$model.itemTitle
-        }, ctx.vars.$model.frame );
-        cmp.colorPivot.scale = d3.scaleOrdinal(d3.schemeAccent); //.domain(cmp.colorPivot.domain);
-
-        cmp.refresh = _ =>
-            cmp.setState({items: calcItems()})
-
-        cmp.clicked = ev => {
-          const elem = ev.target
-          const index = elem.getAttribute('index')
-          const parent = jb.path(elem, 'parentElement.parentElement')
-          const axisIndex = parent && parent.getAttribute('axisIndex')
-          if (axisIndex !== null) {
-            const action = jb.ui.wrapWithLauchingElement(ctx.vars.$model.onSelectAxisValue, cmp.ctx, elem)
-            action(ctx.setData({ pivot: cmp.pivots[axisIndex], value: elem.innerHTML}).setVars({event:ev}))
-          }
-          else if (index !== null) {
-            const action = jb.ui.wrapWithLauchingElement(ctx.vars.$model.onSelectItem, cmp.ctx, elem)
-            action(ctx.setData(cmp.items[index]).setVars({event:ev}))
-          }
         }
-	  
-        function calcItems() {
-          cmp.items = jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx)));
-          if (cmp.ctx.vars.itemlistCntr)
-              cmp.ctx.vars.itemlistCntr.items = cmp.items;
-          cmp.sortItems && cmp.sortItems();
-          return cmp.items.slice(0,ctx.vars.$model.visualSizeLimit);
-        }
-        function emptyPivot() { return cmp.ctx.run(d3g.pivot({title: 'empty', value: list('0', '1')})) }
-    },
-    afterViewInit: cmp => {
+        res.colorPivot.scale = d3.scaleOrdinal(d3.schemeAccent); //.domain(cmp.colorPivot.domain);
+        return res
+    }),
+    interactive( (ctx,{cmp}) => {
       d3.select(cmp.base.querySelector('.x.axis')).call(d3.axisBottom().scale(cmp.xPivot.scale));
       d3.select(cmp.base.querySelector('.y.axis')).call(d3.axisLeft().scale(cmp.yPivot.scale));
-    }
-  })
+
+      cmp.clicked = ({event,ctx}) => {
+        const pivots = ctx.vars.$model.pivots();
+        const items = jb.toarray(jb.val(ctx.vars.$model.items(ctx)))
+
+        const elem = event.target
+        const index = elem.getAttribute('index')
+        const parent = jb.path(elem, 'parentElement.parentElement')
+        const axisIndex = parent && parent.getAttribute('axisIndex')
+        if (axisIndex !== null) {
+          const action = jb.ui.wrapWithLauchingElement(ctx.vars.$model.onSelectAxisValue, ctx, elem)
+          action(ctx.setData({ pivot: pivots[axisIndex], value: elem.innerHTML}).setVars({event:ev}))
+        }
+        else if (index !== null) {
+          const action = jb.ui.wrapWithLauchingElement(ctx.vars.$model.onSelectItem, ctx, elem)
+          action(ctx.setData(items[index]).setVars({event}))
+        }
+      }
+    })
+  )
 })
 
 jb.component('d3g.frame', { /* d3g.frame */

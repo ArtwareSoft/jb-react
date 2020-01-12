@@ -22,7 +22,7 @@ jb.component('menu.menu', { /* menu.menu */
 		applyShortcut: function(e) {
 			return this.options().reduce((res,o)=> res || (o.applyShortcut && o.applyShortcut(e)),false)
 		},
-		ctx: ctx
+		ctx
 	})
 })
 
@@ -37,8 +37,7 @@ jb.component('menu.options-group', { /* menu.optionsGroup */
       mandatory: true
     }
   ],
-  impl: (ctx,options) =>
-			options()
+  impl: (ctx,options) => options()
 })
 
 jb.component('menu.dynamic-options', { /* menu.dynamicOptions */
@@ -47,9 +46,7 @@ jb.component('menu.dynamic-options', { /* menu.dynamicOptions */
     {id: 'items', type: 'data', as: 'array', mandatory: true, dynamic: true},
     {id: 'genericOption', type: 'menu.option', mandatory: true, dynamic: true}
   ],
-  impl: (ctx,items,generic) =>
-		items().map(item =>
-				generic(ctx.setVars({menuData: item}).setData(item)))
+  impl: (ctx,items,generic) => items().map(item => generic(ctx.setData(item))) // .setVar('menuData',item)
 })
 
 jb.component('menu.end-with-separator', { /* menu.endWithSeparator */
@@ -88,8 +85,7 @@ jb.component('menu.action', { /* menu.action */
     {id: 'shortcut', as: 'string'},
     {id: 'showCondition', type: 'boolean', as: 'boolean', defaultValue: true}
   ],
-  impl: ctx =>
-		ctx.params.showCondition ? ({
+  impl: ctx => ctx.params.showCondition && ({
 			leaf : ctx.params,
 			action: _ => ctx.params.action(ctx.setVars({topMenu:null})), // clean topMenu from context after the action
 			title: ctx.params.title(ctx),
@@ -101,7 +97,7 @@ jb.component('menu.action', { /* menu.action */
 				}
 			},
 			ctx: ctx
-		}) : null
+		})
 })
 
 // ********* actions / controls ************
@@ -123,7 +119,10 @@ jb.component('menu.control', { /* menu.control */
 		return jb.ui.ctrl(ctx.setVars({
 			topMenu: ctx.vars.topMenu || { popups: []},
 			menuModel: menuModel,
-		}),{ctxForPick: menuModel.ctx })
+		}),features(
+      () => {ctxForPick: menuModel.ctx },
+      calcProp('title','%$menuModel.title%'),
+    ))
 	}
 })
 
@@ -219,25 +218,21 @@ jb.component('menu.init-popup-menu', { /* menu.initPopupMenu */
       defaultValue: dialog.contextMenuPopup()
     }
   ],
-  impl: ctx =>
-		({
-			destroy: cmp =>
-				cmp.closePopup(),
-			afterViewInit: cmp => {
-				cmp.setState({title: ctx.vars.menuModel.title});
-
+  impl: features(
+      () => ({destroy: cmp => cmp.closePopup()}),
+      calcProp('title','%$menuModel.title%'),
+			interactive((ctx,{cmp}) => {
 				cmp.mouseEnter = _ => {
 					if (jb.ui.find('.context-menu-popup')[0]) // first open with click...
   					cmp.openPopup()
 				};
 				cmp.openPopup = jb.ui.wrapWithLauchingElement( ctx2 => {
 					cmp.ctx.vars.topMenu.popups.push(ctx.vars.menuModel);
-							ctx2.run( {$: 'menu.open-context-menu',
-								popupStyle: _ctx => ctx.params.popupStyle(_ctx),
-								menu: _ctx =>
-									ctx.vars.$model.menu()
-							})
-						} , cmp.ctx, cmp.base );
+					ctx2.run( {$: 'menu.open-context-menu',
+							popupStyle: _ctx => ctx.componentContext.params.popupStyle(_ctx),
+							menu: _ctx =>	ctx.vars.$model.menu()
+						})
+					}, cmp.ctx, cmp.base );
 
 				cmp.closePopup = () => jb.ui.dialogs.closeDialogs(jb.ui.dialogs.dialogs
               .filter(d=>d.id == ctx.vars.optionsParentId))
@@ -261,18 +256,21 @@ jb.component('menu.init-popup-menu', { /* menu.initPopupMenu */
 									})
 						}
 				})
-			}
-		})
+			})
+		)
 })
 
 jb.component('menu.init-menu-option', { /* menu.initMenuOption */
   type: 'feature',
-  impl: ctx =>
-		({
-		afterViewInit: cmp => {
-			const leafParams = ctx.vars.menuModel.leaf;
-					cmp.setState({title:  leafParams.title() ,icon : leafParams.icon ,shortcut: leafParams.shortcut});
-					cmp.action = jb.ui.wrapWithLauchingElement( () =>
+  impl: features(
+    calcProp('title','%$menuModel.leaf.title%'),
+    calcProp('icon','%$menuModel.leaf.icon%'),
+    calcProp('shortcut','%$menuModel.leaf.shortcut%'),
+
+		interactive( (ctx,{cmp}) => {
+			// const leafParams = ctx.vars.menuModel.leaf;
+			// 		cmp.setState({title:  leafParams.title() ,icon : leafParams.icon ,shortcut: leafParams.shortcut});
+			cmp.action = jb.ui.wrapWithLauchingElement( () =>
             jb.ui.dialogs.closePopups()
 //              .then(()=>jb.delay(50))
               .then(() =>	ctx.vars.menuModel.action())
@@ -282,12 +280,11 @@ jb.component('menu.init-menu-option', { /* menu.initMenuOption */
 				if (ctx.vars.topMenu && ctx.vars.topMenu.keydown) {
 					const keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
 						keydown.filter(e=>e.keyCode == 13 && ctx.vars.topMenu.selected == ctx.vars.menuModel) // Enter
-								.subscribe(_=>
-									cmp.action())
-					}
+								.subscribe(_=> cmp.action())
+				}
 			})
-		}
 		})
+	)
 })
 
 jb.component('menu-style.apply-multi-level', { /* menuStyle.applyMultiLevel */
@@ -396,9 +393,9 @@ jb.component('menu.selection', { /* menu.selection */
         return ((ctxId && jb.ctxDictionary[ctxId]) || {}).data
       }
 		},
-		extendItem: (cmp,vdom,data) => {
-				jb.ui.toggleClassInVdom(vdom,'selected', ctx.vars.topMenu.selected == data);
-		},
+		// extendItem: (cmp,vdom,data) => {
+		// 		jb.ui.toggleClassInVdom(vdom,'selected', ctx.vars.topMenu.selected == data);
+		// },
 		css: '>.selected { background: #bbb !important; color: #fff !important }',
 		})
 })

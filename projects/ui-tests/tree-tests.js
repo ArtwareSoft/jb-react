@@ -125,7 +125,7 @@ jb.component('ui-test.table-tree-refresh1', {
     }),
     action: ctx => {
       const cmp = jb.ui.cmpOfSelector('#tableTree',ctx)
-      Object.assign(cmp.expanded,{'~friends':true, '~friends~0': true })
+      Object.assign(cmp.state.expanded,{'~friends':true, '~friends~0': true })
       cmp.refresh()
     },
     expectedResult: contains(['name','path','Homer','friends','Barnie','~friends~0~name'])
@@ -147,7 +147,7 @@ jb.component('ui-test.table-tree-refresh2', {
     }),
     action: ctx => {
       const cmp = jb.ui.cmpOfSelector('#tableTree',ctx)
-      Object.assign(cmp.expanded,{'~a':false })
+      Object.assign(cmp.state.expanded,{'~a':false })
       cmp.refresh()
     },
     expectedResult: not(contains(['undefined']))
