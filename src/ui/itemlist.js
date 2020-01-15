@@ -186,10 +186,13 @@ jb.component('itemlist.keyboard-selection', { /* itemlist.keyboardSelection */
     {id: 'onEnter', type: 'action', dynamic: true}
   ],
   impl: ctx => ({
-      afterViewInit: cmp => {
-        const selectionKeySourceCmp = jb.ui.parentCmps(cmp).find(_cmp=>_cmp.selectionKeySource)
+    templateModifier: vdom => {
+      vdom.attributes = vdom.attributes || {};
+      vdom.attributes.tabIndex = 0
+    },
+    afterViewInit: cmp => {
+        const selectionKeySourceCmp = jb.ui.parentCmps(cmp.base).find(_cmp=>_cmp.selectionKeySource)
         let onkeydown = jb.path(cmp.ctx.vars,'itemlistCntr.keydown') || jb.path(selectionKeySourceCmp,'onkeydown');
-        cmp.base.setAttribute('tabIndex','0');
         if (!onkeydown) {
           onkeydown = jb.rx.Observable.fromEvent(cmp.base, 'keydown')
           if (ctx.params.autoFocus)

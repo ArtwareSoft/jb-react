@@ -35,9 +35,9 @@ Object.assign(jb.ui,{
             return !ui.inStudio() && jb.frame.parent.jb.studio.initPreview
         } catch(e) {}
     },
-    parentCmps(cmp) {
-        if (!cmp) return []
-        const parents = jb.ui.parents(cmp.base)
+    parentCmps(elem) {
+        if (!elem) return []
+        const parents = jb.ui.parents(elem)
         const dialogElem = parents[parents.length-5]
         return (jb.ui.hasClass(dialogElem,'jb-dialog') 
                 ? parents.slice(0,-4).concat(jb.ui.ctxOfElem(dialogElem).exp('%$$launchingElement.el._component.base%') || []) 

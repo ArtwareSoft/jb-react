@@ -21,9 +21,9 @@ jb.component('tree', { /* tree */
 				cmp.state.expanded[path] = !(cmp.state.expanded[path]);
 				cmp.refresh();
 			}),
-			interactiveProp('nodeModel', '%$$model.nodeModel%'),
+			interactiveProp('model', '%$$model.nodeModel%'),
 			interactive( (ctx,{cmp}) => {
-				cmp.state.expanded =  { [cmp.nodeModel.rootPath] : true }
+				cmp.state.expanded =  { [cmp.model.rootPath] : true }
 				tree.cmp = cmp
 				cmp.selectionEmitter = new jb.rx.Subject()
 				tree.redraw = cmp.redraw = () => cmp.refresh()
@@ -169,7 +169,7 @@ jb.component('tree.selection', { /* tree.selection */
   ],
   impl: (ctx,databind) => ({
 		onclick: true,
-		//componentDidUpdate : cmp => cmp.setSelected(cmp.state.selected),
+		componentDidUpdate : cmp => cmp.setSelected(cmp.state.selected),
 
   		afterViewInit: cmp => {
 			const selectedRef = databind()
@@ -226,9 +226,11 @@ jb.component('tree.keyboard-selection', { /* tree.keyboardSelection */
   ],
   impl: context => ({
 			onkeydown: true,
+			templateModifier: vdom => {
+				vdom.attributes = vdom.attributes || {};
+				vdom.attributes.tabIndex = 0
+			},
 			afterViewInit: cmp=> {
-				cmp.base.setAttribute('tabIndex','0');
-
 				const keyDownNoAlts = cmp.onkeydown.filter(e=> !e.ctrlKey && !e.altKey)
 
 				context.vars.$tree.regainFocus = cmp.regainFocus = cmp.getKeyboardFocus = cmp.getKeyboardFocus || (_ => {

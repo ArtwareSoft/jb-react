@@ -31,7 +31,7 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
               .last() // esc or user pick
               .subscribe(profElem=> {
                   const pickSelection = ctx.exp('%$pickSelection%')
-                  pickSelection.ctx = _window.jb.ctxDictionary[profElem.getAttribute('jb-ctx')];
+                  pickSelection.ctx = _window.jb.ctxDictionary[profElem.getAttribute('pick-ctx') || profElem.getAttribute('jb-ctx')];
                   pickSelection.elem = profElem;
                   // inform watchers
                   ctx.run(writeValue('%$studio/pickSelectionCtxId%',(pickSelection.ctx || {}).id))
@@ -56,7 +56,7 @@ h('div',{ class: 'edge left', style: { height: state.height +'px', top: state.to
 h('div',{ class: 'edge right', style: { height: state.height +'px', top: state.top + 'px', left: (state.left + state.width) + 'px' }}) ,
 h('div',{ class: 'edge bottom', style: { width: state.width + 'px', top: (state.top + state.height) +'px', left: state.left + 'px' }}) ,
 h('div',{ class: 'title' + (state.titleBelow ? ' bottom' : ''), style: { top: state.titleTop + 'px', left: state.titleLeft + 'px'} },[
-            h('div',{ class: 'text'},state.title),
+            h('div',{ class: 'text'},state.pickTitle),
             h('div',{ class: 'triangle'}),
     ])]),
     css: `
@@ -123,7 +123,7 @@ function showBox(cmp,profElem,_window,previewOffset) {
         left: profElem_offset.left,
         width: jb.ui.outerWidth(profElem) == jb.ui.outerWidth(_window.document.body) ? jb.ui.outerWidth(profElem) -10 : cmp.width = jb.ui.outerWidth(profElem),
         height: jb.ui.outerHeight(profElem),
-        title: st.shortTitle(pathFromElem(_window,profElem)),
+        pickTitle: st.shortTitle(pathFromElem(_window,profElem)),
         titleTop: previewOffset + profElem_offset.top - 20,
         titleLeft: profElem_offset.left
     })
@@ -143,7 +143,6 @@ st.highlightCtx = function(ctx) {
     if (!ctx) return
     const _window = st.previewWindow || window;
     st.highlightElems(Array.from(_window.document.querySelectorAll(`[jb-ctx="${ctx.id}"]`)))
-//		.filter(e=>e.getAttribute('jb-ctx') == ctx.id))
 }
 
 st.highlightByScriptPath = function(path) {

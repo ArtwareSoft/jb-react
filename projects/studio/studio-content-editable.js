@@ -29,7 +29,13 @@ jb.component('content-editable.popup-style', {
     type: 'dialog.style',
     impl: customStyle({
       template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
-      css: '{ position: absolute; background: white; box-shadow: 2px 2px 3px #d5d5d5; opacity: 0.7; border-radius: 8px; padding: 6px;border: 1px solid rgb(213, 213, 213) }',
+      css: `{ position: absolute; background: white; padding: 6px; opacity: 0.7;
+              box-shadow: 2px 2px 3px #d5d5d5; border: 1px solid rgb(213, 213, 213); }
+          ~:hover { opacity: 1}
+          >*>* { width: 0 }
+          ~:hover >*>* { width: 24px }
+          >*>*:first-child { width: 24px;}
+      `,
       features: [
         css(''),
         dialogFeature.uniqueDialog('content-editable-toolbar'),
@@ -125,9 +131,8 @@ jb.ui.contentEditable = {
     handleKeyEvent(ev,cmp,prop) {
         if (ev.keyCode == 13) {
             this.setScriptData(ev,cmp,prop)
-            if (!cmp._destroyed)
-                cmp.refresh()
-            return false
+            jb.delay(1).then(() => cmp.refresh()) // can not wait for script change delay
+            return false // does not work..
         }
     },
     scriptRef(cmp,prop) {

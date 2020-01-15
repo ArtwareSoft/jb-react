@@ -115,12 +115,9 @@ jb.component('menu.control', { /* menu.control */
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => {
-		const menuModel = ctx.params.menu() || { options: [], ctx: ctx, title: ''};
-		return jb.ui.ctrl(ctx.setVars({
-			topMenu: ctx.vars.topMenu || { popups: []},
-			menuModel: menuModel,
-		}),features(
-      () => {ctxForPick: menuModel.ctx },
+		const menuModel = ctx.params.menu() || { options: [], ctx, title: ''};
+		return jb.ui.ctrl(ctx.setVars({	topMenu: ctx.vars.topMenu || { popups: []},	menuModel	}), features(
+      () => ({ctxForPick: menuModel.ctx }),
       calcProp('title','%$menuModel.title%'),
     ))
 	}
@@ -176,7 +173,7 @@ jb.component('menu-style.pulldown', { /* menuStyle.pulldown */
         Var('innerMenuStyle', ctx => ctx.componentContext.params.innerMenuStyle),
         Var('leafOptionStyle', ctx => ctx.componentContext.params.leafOptionStyle)
       ],
-      items: '%$menuModel/options%',
+      items: ctx => ctx.vars.menuModel.options().filter(x=>x),
       controls: menu.control({menu: '%$item%', style: menuStyle.popupThumb()}),
       style: call('layout'),
       features: menu.selection()
@@ -200,7 +197,7 @@ jb.component('menu-style.context-menu', { /* menuStyle.contextMenu */
         Var('optionsParentId', ctx => ctx.id),
         Var('leafOptionStyle', ctx => ctx.componentContext.params.leafOptionStyle)
       ],
-      items: '%$menuModel/options%',
+      items: ctx => ctx.vars.menuModel.options().filter(x=>x),
       controls: menu.control({menu: '%$item%', style: menuStyle.applyMultiLevel({})}),
       features: menu.selection(true)
     })
@@ -345,8 +342,11 @@ jb.component('menu.selection', { /* menu.selection */
   impl: ctx => ({
       onkeydown: true,
       onmousemove: true,
+			templateModifier: vdom => {
+				vdom.attributes = vdom.attributes || {};
+				vdom.attributes.tabIndex = 0
+			},
 			afterViewInit: cmp => {
-				cmp.base.setAttribute('tabIndex','0');
 				// putting the emitter at the top-menu only and listen at all sub menus
 				if (!ctx.vars.topMenu.keydown) {
 					ctx.vars.topMenu.keydown = cmp.onkeydown;

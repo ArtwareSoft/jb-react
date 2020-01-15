@@ -12,7 +12,7 @@ function compareVdom(b,a) {
     }
 
     function childDiff(b,a) {
-        if (a.length == 1 && b.length == 1) 
+        if (a.length == 1 && b.length == 1 && a[0].tag == b[0].tag)
             return [{...compareVdom(b[0],a[0]),afterIndex: 0}]
         jb.log('childDiff',[...arguments])
         const beforeWithIndex = b.map((e,i)=> ({i, ...e}))
@@ -73,48 +73,66 @@ function printDelta(delta) {
 
 function applyVdomDiff(elem,vdomAfter) {
     const delta = compareVdom(elemToVdom(elem),vdomAfter)
-    applyDeltaToDom(elem,delta)
+    const active = document.activeElement === elem
+    jb.log('applyDeltaTop',[...arguments,active,delta],{modifier: record => record.push(printDelta(delta)) })
+    if (delta.tag) {
+        unmount(elem)
+        const newElem = render(vdomAfter,elem.parentElement)
+        elem.parentElement.replaceChild(newElem,elem)
+        jb.log('replaceTop',[newElem,elem,delta])
+        elem = newElem
+    } else {
+        applyDeltaToDom(elem,delta)
+    }
     ui.findIncludeSelf(elem,'[interactive]').forEach(el=> 
         el._component ? el._component.recalcPropsFromElem() : mountInteractive(el))
-
-    jb.log('applyDelta',[...arguments],{modifier: record => record.push(printDelta(delta)) })
+    if (active) elem.focus()
+    ui.garbageCollectCtxDictionary()
 }
 
 function applyDeltaToDom(elem,delta) {
+    jb.log('applyDelta',[...arguments])
+    if (delta.children) {
+        const childElems = Array.from(elem.children), updates = delta.children, toAppend = delta.children.toAppend || []
+        const sameOrder = updates.reduce((acc,e,i) => acc && e.afterIndex ==i, true) && !toAppend.length
+            || !updates.length && toAppend.reduce((acc,e,i) => acc && e.afterIndex ==i, true)
+        updates.forEach((e,i)=>{
+            if (e.$ == 'delete') {
+                unmount(childElems[i])
+                elem.removeChild(childElems[i])
+                jb.log('removeChild',[childElems[i],e,elem,delta])
+            } else {
+                applyDeltaToDom(childElems[i],e)
+                !sameOrder && (childElems[i].setAttribute('afterIndex',e.afterIndex))
+            }
+        })
+        toAppend.forEach(e=>{
+            const newChild = elem.ownerDocument.createElement(e.tag)
+            elem.appendChild(newChild)
+            applyDeltaToDom(newChild,e)
+            jb.log('appendChild',[newChild,e,elem,delta])
+            !sameOrder && (newChild.setAttribute('afterIndex',e.afterIndex))
+        })
+        if (!sameOrder) {
+            const originalOrder = Array.from(elem.children)
+            Array.from(elem.children)
+                .sort((x,y) => Number(x.getAttribute('afterIndex')) - Number(y.getAttribute('afterIndex')))
+                .forEach(el=> {
+                    const index = Number(el.getAttribute('afterIndex'))
+                    if (originalOrder[index] != el)
+                        elem.insertBefore(el, originalOrder[index])
+                    el.removeAttribute('afterIndex')
+                })
+            }
+        // remove leftover text nodes in mixed
+        if (elem.childElementCount)
+            Array.from(elem.childNodes).filter(ch=>ch.nodeName == '#text')
+                .forEach(ch=>{
+                    elem.removeChild(ch)
+                    jb.log('removeChild',['remove leftover',ch,elem,delta])
+                })
+    }
     jb.entries(delta.attributes).forEach(e=> setAtt(elem,e[0],e[1]))
-    if (!delta.children) return
-    const childElems = Array.from(elem.children), updates = delta.children, toAppend = delta.children.toAppend || []
-    const sameOrder = updates.reduce((acc,e,i) => acc && e.afterIndex ==i, true) && !toAppend.length
-        || !updates.length && toAppend.reduce((acc,e,i) => acc && e.afterIndex ==i, true)
-    updates.forEach((e,i)=>{
-        if (e.$ == 'delete') {
-            unmount(childElems[i])
-            elem.removeChild(childElems[i])
-        } else {
-            applyDeltaToDom(childElems[i],e)
-            !sameOrder && (childElems[i].setAttribute('afterIndex',e.afterIndex))
-        }
-    })
-    toAppend.forEach(e=>{
-        const newChild = elem.ownerDocument.createElement(e.tag)
-        elem.appendChild(newChild)
-        applyDeltaToDom(newChild,e)
-        !sameOrder && (newChild.setAttribute('afterIndex',e.afterIndex))
-    })
-    if (!sameOrder) {
-        const originalOrder = Array.from(elem.children)
-        Array.from(elem.children)
-            .sort((x,y) => Number(x.getAttribute('afterIndex')) - Number(y.getAttribute('afterIndex')))
-            .forEach(el=> {
-                const index = Number(el.getAttribute('afterIndex'))
-                if (originalOrder[index] != el)
-                    elem.insertBefore(el, originalOrder[index])
-                el.removeAttribute('afterIndex')
-            })
-        }
-    // remove leftover text nodes in mixed
-    if (elem.childElementCount)
-        Array.from(elem.childNodes).filter(ch=>ch.nodeName == '#text').forEach(ch=>elem.removeChild(ch))
 }
 
 function h(cmpOrTag,attributes,children) {
@@ -194,7 +212,6 @@ function unmount(elem) {
     jb.log('unmount',[...arguments]);
     if (!elem || !elem.setAttribute) return
     jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> el._component && el._component.destroy())
-    ui.garbageCollectCtxDictionary()
 }
 
 function render(vdom,parentElem) {
@@ -209,12 +226,13 @@ function render(vdom,parentElem) {
     }
     const res = doRender(vdom,parentElem)
     ui.findIncludeSelf(res,'[interactive]').forEach(el=> mountInteractive(el))
+    ui.garbageCollectCtxDictionary()
     return res
 }
 
 Object.assign(jb.ui, {
     VNode: Symbol.for("VNode"),
-    h, render, unmount, applyVdomDiff,
+    h, render, unmount, applyVdomDiff, elemToVdom, printDelta,
     handleCmpEvent(specificHandler) {
         const el = [event.currentTarget, ...jb.ui.parents(event.currentTarget)].find(el=> el.getAttribute && el.getAttribute('jb-ctx') != null)
         if (!el) return
@@ -257,7 +275,7 @@ Object.assign(jb.ui, {
         jb.resourcesToDelete.forEach(id => delete jb.resources[id])
         jb.resourcesToDelete = []
     
-        const used = 'jb-ctx,mount-ctx,handlers,interactive'.split(',')
+        const used = 'jb-ctx,mount-ctx,pick-ctx,handlers,interactive'.split(',')
             .flatMap(att=>Array.from(document.querySelectorAll(`[${att}]`))
                 .flatMap(el => el.getAttribute(att).split(',').map(x=>Number(x.split('-').pop()))))
                     .sort((x,y)=>x-y);
@@ -377,11 +395,13 @@ function mountInteractive(elem) {
         base: elem,
         refresh(state, options) {
             jb.log('refreshReq',[...arguments])
-            !this._deleted && ui.refreshElem(elem,{...this.state, ...state},options) 
+            if (this._deleted) return
+            ui.refreshElem(elem,{...this.state, ...state},options)
+            ;(this.componentDidUpdateFuncs||[]).forEach(f=> tryWrapper(() => f(this), 'componentDidUpdate'))
         },
         destroy() {
             this._deleted = true
-            this.resolveDestroyed() // notifications to takeUntil(cmp.destroyed) observers
+            this.resolveDestroyed() // notifications to takeUntil(this.destroyed) observers
             ;(cmp.destroyFuncs||[]).forEach(f=> tryWrapper(() => f(this), 'destroy'));
         },
         status: 'initializing',
@@ -394,7 +414,8 @@ function mountInteractive(elem) {
                 this[id] = jb.val(ctx.setVar('state',this.state).runInner(ctx.profile.value,'value','value'))
             })
             this.doRefresh && this.doRefresh()
-        }
+        },
+        componentDidUpdateFuncs: cmp.componentDidUpdateFuncs
     }
     mountedCmp.destroyed = new Promise(resolve=>mountedCmp.resolveDestroyed = resolve)
     elem._component = mountedCmp

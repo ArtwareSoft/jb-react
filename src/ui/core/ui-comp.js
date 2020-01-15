@@ -5,8 +5,8 @@ ui.propCounter = 0
 const cssSelectors_hash = ui.cssSelectors_hash = {};
 const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,this.ctx) }}
 const lifeCycle = new Set('init,componentDidMount,componentWillUpdate,componentDidUpdate,destroy,extendCtx,templateModifier,extendItem'.split(','))
-const arrayProps = new Set('enrichField,dynamicCss,watchAndCalcRefProp,staticCssLines,ctxForPick,defHandler,interactiveProp,calcProp'.split(','))
-const singular = new Set('template,calcRenderProps,toolbar,styleCtx,calcHash'.split(','))
+const arrayProps = new Set('enrichField,dynamicCss,watchAndCalcRefProp,staticCssLines,defHandler,interactiveProp,calcProp'.split(','))
+const singular = new Set('template,calcRenderProps,toolbar,styleCtx,calcHash,ctxForPick'.split(','))
 
 class JbComponent {
     constructor(ctx) {
@@ -18,7 +18,6 @@ class JbComponent {
     }
     init() {
         jb.log('initCmp',[this]);
-        this.originatingCtx = this.ctxForPick && this.ctxForPick[0] || this.originatingCtx;
         this.ctx = (this.extendCtxFuncs||[])
             .reduce((acc,extendCtx) => tryWrapper(() => extendCtx(acc,this),'extendCtx'), this.originatingCtx)
         this.renderProps = {}
@@ -51,6 +50,7 @@ class JbComponent {
         filteredPropsByPriority.sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
             .forEach(prop=> Object.assign(this.renderProps, { [prop.id]: jb.val(prop.value(this.calcCtx))}))
         jb.log('renderProps',[this.renderProps, this])
+        this.template = this.template || (() => '')
         const initialVdom = tryWrapper(() => this.template(this,this.renderProps,ui.h), 'template')
         const vdom = (this.templateModifierFuncs||[]).reduce((vdom,modifier) =>
                 (vdom && typeof vdom === 'object')
@@ -69,11 +69,13 @@ class JbComponent {
             vdom.attributes = Object.assign(vdom.attributes || {}, {
                     'jb-ctx': ui.preserveCtx(this.originatingCtx),
                     'cmp-id': this.cmpId, 
-                    'mount-ctx': ui.preserveCtx(this.ctx)},
-                    observe ? {observe} : {}, 
-                    handlers ? {handlers} : {}, 
-                    (this.componentDidMountFuncs || interactive) ? {interactive} : {}, 
-                    this.renderProps.cmpHash != null ? {cmpHash: this.renderProps.cmpHash} : {}
+                    'mount-ctx': ui.preserveCtx(this.ctx)
+                },
+                observe && {observe}, 
+                handlers && {handlers}, 
+                this.ctxForPick && { 'pick-ctx': ui.preserveCtx(this.ctxForPick) },
+                (this.componentDidMountFuncs || interactive) && {interactive}, 
+                this.renderProps.cmpHash != null && {cmpHash: this.renderProps.cmpHash}
             )
         }
         fixHandlers(vdom)

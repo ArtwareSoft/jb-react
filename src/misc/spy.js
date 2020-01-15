@@ -3,7 +3,8 @@ const spySettings = {
 	moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable,scriptChange,resLog', 
 	groups: {
 		watchable: 'doOp,writeValue,removeCmpObservable,registerCmpObservable,notifyCmpObservable,notifyObservableElems,notifyObservableElem,scriptChange',
-		react: 'applyVdomDiff,htmlChange,applyChildrenDiff,unmount,render,initCmp,refreshReq,refreshElem,addDialog,closeDialog,refreshDialogs',
+		react: 'applyDeltaTop,applyDelta,unmount,render,initCmp,refreshReq,refreshElem,childDiffRes,htmlChange,appendChild,removeChild,replaceTop',
+		dialog: 'addDialog,closeDialog,refreshDialogs'
 	},
 	includeLogs: 'exception,error',
 	stackFilter: /spy|jb_spy|Object.log|node_modules/i,

@@ -530,7 +530,7 @@ jb.component('feature.editable-content', {
       if (!contentEditable || editableContentParam && !contentEditable.refOfProp(cmp,editableContentParam)) return vdom
       const attsToInject = {contenteditable: 'true', onblur: true, onmousedown: true, onkeypress: true, onkeydown: true}
       // fix spacebar bug in button
-      if (vdom.tag && vdom.tag.toLowerCase() == 'button' && vdom.children.length == 1 && typeof vdom.children[0] == 'string') {
+      if (vdom.tag && vdom.tag.toLowerCase() == 'button' && vdom.children && vdom.children.length == 1 && typeof vdom.children[0] == 'string') {
         vdom.children[0] = jb.ui.h('span',attsToInject,vdom.children[0])
         return vdom
       } else if (vdom.tag && vdom.tag.toLowerCase() == 'button' && jb.ui.findInVdom(vdom,'mdc-button__label')) {

@@ -9,7 +9,7 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
   ],
   impl: ctx => ({
       afterViewInit: cmp => {
-        const selectionKeySourceCmp = jb.ui.parentCmps(cmp).find(_cmp=>_cmp.selectionKeySource)
+        const selectionKeySourceCmp = jb.ui.parentCmps(cmp.base).find(_cmp=>_cmp.selectionKeySource)
         const pathToTrace = ctx.params.path
         const keyup = selectionKeySourceCmp.keyup.takeUntil( cmp.destroyed )
         const input = selectionKeySourceCmp.input

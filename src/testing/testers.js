@@ -109,7 +109,7 @@ jb.component('ui-test', { /* uiTest */
 	}
 })
 
-jb.component('ui-test.refresh-control', { // refreshControl
+jb.component('ui-test.apply-vdom-diff', { // applyVdomDiff
 	type: 'test',
 	params: [
 	 {id: 'controlBefore', type: 'control', dynamic: true},
@@ -119,17 +119,20 @@ jb.component('ui-test.refresh-control', { // refreshControl
 		console.log('starting ' + ctx.path)
 		const initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
 
+		const elem1 = document.createElement('div');
+		jb.ui.render(jb.ui.h(control(ctx.setVars({elemToTest : elem1 }))),elem1)
+		const expectedHtml = elem1.innerHTML
+		const expectedVdom = jb.ui.elemToVdom(elem1)
+
 		const elem = document.createElement('div');
 		const ctxForTst = ctx.setVars({elemToTest : elem })
-		jb.ui.render(vdom,jb.ui.h(control(ctxForTst)))
-		const expectedHtml = elem.innerHTML
-		const expectedVdom = jb.ui.elemToVdom(elem)
-		jb.ui.render(vdom,jb.ui.h(controlBefore(ctxForTst)))
-		jb.ui.render(vdom,jb.ui.h(control(ctxForTst)))
+		jb.ui.render(jb.ui.h(controlBefore(ctxForTst)),elem)
+		jb.ui.applyVdomDiff(elem.firstElementChild,jb.ui.h(control(ctxForTst)))
 		const actualHtml = elem.innerHTML
 		const actualVdom = jb.ui.elemToVdom(elem)
 		const success = !!(expectedHtml.replace(/[0-9]/g,'') == actualHtml.replace(/[0-9]/g,''));
-		const result = { id: ctx.vars.testID, success, elem, reason: 'html is different ' + jb.ui.printDelta(jb.objectDiff(expectedVdom,actualVdom)) }
+		const reason = !success ? ('html is different ' + jb.prettyPrint(jb.objectDiff(expectedVdom,actualVdom))) : ''
+		const result = { id: ctx.vars.testID, success, elem, reason }
 		if (new URL(location.href).searchParams.get('show') === null) {
 			jb.ui.dialogs.dialogs.forEach(d=>d.close())
 			jb.ui.unmount(elem)

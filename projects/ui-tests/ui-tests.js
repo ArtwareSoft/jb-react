@@ -1570,3 +1570,47 @@ jb.component('ui-test.watchable-ref-to-inner-elements-when-value-is-empty', {
     expectedResult: true //contains('hello'),
   })
 })
+
+const h = jb.ui.h
+
+jb.component('ui-test.apply-vdom-diff-text', { 
+  impl: uiTest.applyVdomDiff({
+    controlBefore: ctx => h('div',{},'aa'),
+    control: ctx => h('div',{},'bb'),
+  })
+})
+
+jb.component('ui-test.apply-vdom-diff-tag', { 
+  impl: uiTest.applyVdomDiff({
+    controlBefore: ctx => h('span',{},'aa'),
+    control: ctx => h('div',{},'bb'),
+  })
+})
+
+jb.component('ui-test.apply-vdom-child-tag', { 
+  impl: uiTest.applyVdomDiff({
+    controlBefore: group({controls: text('aa')}),
+    control: group({controls: text({ text: 'aa', style: header.h1() }) }),
+  })
+})
+
+jb.component('ui-test.apply-vdom-diff-mixed', { 
+  impl: uiTest.applyVdomDiff({
+    controlBefore: ctx => h('div',{},'aa'),
+    control: ctx => h('div',{},h('div',{},'bb')),
+  })
+})
+
+jb.component('ui-test.apply-vdom-diff-mixed2', { 
+  impl: uiTest.applyVdomDiff({
+    controlBefore: ctx => h('div',{},h('div',{},'bb')),
+    control: ctx => h('div',{},'aa'),
+  })
+})
+
+jb.component('ui-test.apply-vdom-diff-to-text', { 
+  impl: uiTest.applyVdomDiff({
+    controlBefore: ctx => h('div',{},'aa'),
+    control: ctx => 'aa',
+  })
+})
