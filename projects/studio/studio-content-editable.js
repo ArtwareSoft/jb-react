@@ -29,8 +29,9 @@ jb.component('content-editable.popup-style', {
     type: 'dialog.style',
     impl: customStyle({
       template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
-      css: '{ position: absolute; background: white; box-shadow: 2px 2px 3px #d5d5d5; padding: 3px 0; border: 1px solid rgb(213, 213, 213) }',
+      css: '{ position: absolute; background: white; box-shadow: 2px 2px 3px #d5d5d5; opacity: 0.7; border-radius: 8px; padding: 6px;border: 1px solid rgb(213, 213, 213) }',
       features: [
+        css(''),
         dialogFeature.uniqueDialog('content-editable-toolbar'),
         dialogFeature.maxZIndexOnClick(),
         dialogFeature.closeWhenClickingOutside(),
@@ -107,13 +108,15 @@ jb.component('content-editable.toolbar', { /* contentEditable.toolbar */
 
 jb.ui.contentEditable = {
     setScriptData(ev,cmp,prop,isHtml) {
-        const resourceRef = cmp.toObserve.filter(e=>e.id == prop).map(e=>e.ref)[0]
-        const scriptRef = this.scriptRef(cmp,prop)
+        const vdomCmp = jb.studio.previewjb.ctxDictionary[cmp.base.getAttribute('jb-ctx')].runItself()
+        vdomCmp.renderVdom()
+        const resourceRef = vdomCmp.toObserve.filter(e=>e.id == prop).map(e=>e.ref)[0]
+        const scriptRef = this.scriptRef(vdomCmp,prop)
         const val = isHtml ? ev.target.innerHTML : ev.target.innerText
         if (resourceRef)
-            jb.studio.previewjb.writeValue(resourceRef,val,cmp.ctx)
+            jb.studio.previewjb.writeValue(resourceRef,val,vdomCmp.ctx)
         else if (scriptRef)
-            jb.writeValue(scriptRef,val,cmp.ctx)
+            jb.writeValue(scriptRef,val,vdomCmp.ctx)
     },
     openToolbar(ev,path,item) { 
         new jb.jbCtx().setVar('$launchingElement',{ el : ev.target}).setVar('sourceItem',item)
@@ -123,7 +126,7 @@ jb.ui.contentEditable = {
         if (ev.keyCode == 13) {
             this.setScriptData(ev,cmp,prop)
             if (!cmp._destroyed)
-                cmp.strongRefresh()
+                cmp.refresh()
             return false
         }
     },

@@ -40,7 +40,7 @@ jb.component('editable-boolean.mdc-slide-toggle', { /* editableBoolean.mdcSlideT
       ]),
       h('label',{for: 'switch_' + state.fieldId},state.text)
     ]),
-    css: ctx => `{ width: ${jb.ui.withUnits(ctx.params.width)}}`,
+    css: ctx => jb.ui.propWithUnits('width',ctx.params.width),
     features: [field.databind(), editableBoolean.keyboardSupport(), mdcStyle.initDynamic()]
   })
 })

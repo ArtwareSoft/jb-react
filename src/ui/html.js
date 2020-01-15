@@ -17,7 +17,7 @@ jb.component('html.plain', {
     type: 'html.style',
     impl: ctx => ({
         watchAndCalcRefProp: { prop: 'html', strongRefresh: true },
-        template: (cmp,state,h) => h('html',{},state.html),
+        template: (cmp,{html},h) => h('html',{$html: html, jb_external: true } ) ,
         studioFeatures: feature.editableContent('html',true),
     })
 })

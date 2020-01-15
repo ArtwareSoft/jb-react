@@ -64,7 +64,7 @@ jb.component('group.first-succeeding', { /* group.firstSucceeding */
       }, null),
     }),
     calcProp({id: 'ctrls', priority: 5, value: ctx => [
-      ctx.vars.$model.ctx.run(jb.asArray(ctx.vars.$model.controls.profile)[ctx.vars.props.cmpHash-1])] }),
+      ctx.vars.$model.ctx.run(jb.asArray(ctx.vars.$model.controls.profile)[ctx.vars.$props.cmpHash-1])] }),
   )
 })
 

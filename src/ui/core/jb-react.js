@@ -1,17 +1,19 @@
 (function(){
 const ui = jb.ui;
+const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,this.ctx) }}
 
 function compareVdom(b,a) {
-    if (a.tag && a.tag != b.tag) {
-        return { $: 'replace', ...a }
-    }
-    const attributes = calcRemount(b.attributes||{}, jb.objectDiff(b.attributes || {},a.attributes || {}))
+    const attributes = calcRemount(b.attributes||{}, jb.objectDiff(a.attributes || {}, b.attributes || {}))
     const children = childDiff(b.children || [],a.children || [])
-    return { ...(Object.keys(attributes).length ? {attributes} : {}),  ...(Object.keys(children).length ? {children} : {}) }
+    return { 
+        ...(Object.keys(attributes).length ? {attributes} : {}), 
+        ...(children ? {children} : {}),
+        ...(a.tag != b.tag ? { tag: a.tag} : {})
+    }
 
     function childDiff(b,a) {
         if (a.length == 1 && b.length == 1) 
-            return compareVdom(b[0],a[0])
+            return [{...compareVdom(b[0],a[0]),afterIndex: 0}]
         jb.log('childDiff',[...arguments])
         const beforeWithIndex = b.map((e,i)=> ({i, ...e}))
         let remainingBefore = beforeWithIndex.slice(0)
@@ -20,17 +22,16 @@ function compareVdom(b,a) {
         a.forEach((toLocate,i) => afterToBeforeMap[i] = afterToBeforeMap[i] || sameIndexSameTag(toLocate,i,remainingBefore))
 
         const reused = []
-        const res = { 
-            updates: beforeWithIndex.map((e,i)=> {
+        const res = beforeWithIndex.map((e,i)=> {
                 const afterIndex = afterToBeforeMap.indexOf(e)
                 if (afterIndex == -1)
                     return {$: 'delete', afterIndex }
                 reused[afterIndex] = true
                 return { afterIndex, ...compareVdom(e, a[afterIndex]), ...(e.$remount ? {remount: true}: {}) }
-            }),
-            toAppend: a.flatMap((e,i) => reused[i] ? [] : ({...e, afterIndex: i}))
-        }
+            })
+        res.toAppend = a.flatMap((e,i) => reused[i] ? [] : [{...compareVdom({},e), afterIndex: i}])
         jb.log('childDiffRes',[res,...arguments])
+        if (!res.length && !res.toAppend.length) return null
         return res
 
         function locateVdom(toLocate,remainingBefore) {
@@ -52,142 +53,91 @@ function compareVdom(b,a) {
 
 function elemToVdom(elem) {
     return {
-        attributes: jb.objFromEntries(Array.from(elem.attributes).map(e=>[e.id,e.value])),
-        children: Array.from(elem.children).map(el= elemToVdom(el))
+        tag: elem.tagName.toLowerCase(),
+        attributes: jb.objFromEntries([
+            ...Array.from(elem.attributes).map(e=>[e.name,e.value]), 
+            ...(jb.path(elem,'firstChild.nodeName') == '#text' ? [['$text',elem.firstChild.nodeValue]] : [])
+        ]),
+        ...( elem.childElementCount && !elem.getAttribute('jb_external') 
+            ? { children: Array.from(elem.children).map(el=> elemToVdom(el)) } : {})
     }
+}
+
+function printDelta(delta) {
+    const filterDelta = dlt => ({
+        attributes: jb.objFromEntries(jb.entries(dlt.attributes).filter(e=>e[0] =='jb-ctx')),
+        children: (dlt.children || []).map(c=>filterDelta(c)).filter(x=>(x.children ||[]).length || x.attributes)
+    })
+    return jb.prettyPrint(filterDelta(delta))
+}
+
+function applyVdomDiff(elem,vdomAfter) {
+    const delta = compareVdom(elemToVdom(elem),vdomAfter)
+    applyDeltaToDom(elem,delta)
+    ui.findIncludeSelf(elem,'[interactive]').forEach(el=> 
+        el._component ? el._component.recalcPropsFromElem() : mountInteractive(el))
+
+    jb.log('applyDelta',[...arguments],{modifier: record => record.push(printDelta(delta)) })
 }
 
 function applyDeltaToDom(elem,delta) {
-    jb.log('applyDelta',[...arguments])
-    jb.entries(delta.attributes).forEach(e=> (e[1] != null) ? setAtt(elem,e[0],e[1]) : elem.removeAttribute(e[0]))
-    const childElems = Array.from(elem.children)
-    const sameOrder = delta.updates.reduce((acc,e,i) => acc && e.afterIndex ==i, true) && !delta.toAppend.length
-        || !delta.updates.length && delta.toAppend.reduce((acc,e,i) => acc && e.afterIndex ==i, true)
-    delta.children.updates.forEach(e=>{
-        if (e.$delete) {
-            unbound(childElems[i])
+    jb.entries(delta.attributes).forEach(e=> setAtt(elem,e[0],e[1]))
+    if (!delta.children) return
+    const childElems = Array.from(elem.children), updates = delta.children, toAppend = delta.children.toAppend || []
+    const sameOrder = updates.reduce((acc,e,i) => acc && e.afterIndex ==i, true) && !toAppend.length
+        || !updates.length && toAppend.reduce((acc,e,i) => acc && e.afterIndex ==i, true)
+    updates.forEach((e,i)=>{
+        if (e.$ == 'delete') {
+            unmount(childElems[i])
             elem.removeChild(childElems[i])
         } else {
             applyDeltaToDom(childElems[i],e)
-            !sameOrder && (childElems[i].afterIndex = e.afterIndex)
+            !sameOrder && (childElems[i].setAttribute('afterIndex',e.afterIndex))
         }
     })
-    delta.children.toAppend.forEach(e=>{
+    toAppend.forEach(e=>{
         const newChild = elem.ownerDocument.createElement(e.tag)
         elem.appendChild(newChild)
         applyDeltaToDom(newChild,e)
-        !sameOrder && (newChild.afterIndex = e.afterIndex)
+        !sameOrder && (newChild.setAttribute('afterIndex',e.afterIndex))
     })
-    if (!sameOrder) Array.from(elem.children)
+    if (!sameOrder) {
+        const originalOrder = Array.from(elem.children)
+        Array.from(elem.children)
             .sort((x,y) => Number(x.getAttribute('afterIndex')) - Number(y.getAttribute('afterIndex')))
             .forEach(el=> {
-                elem.insertBefore(el, elem.children[Number(x.getAttribute('afterIndex'))])
+                const index = Number(el.getAttribute('afterIndex'))
+                if (originalOrder[index] != el)
+                    elem.insertBefore(el, originalOrder[index])
                 el.removeAttribute('afterIndex')
             })
+        }
+    // remove leftover text nodes in mixed
+    if (elem.childElementCount)
+        Array.from(elem.childNodes).filter(ch=>ch.nodeName == '#text').forEach(ch=>elem.removeChild(ch))
 }
-
 
 function h(cmpOrTag,attributes,children) {
     if (cmpOrTag && cmpOrTag[ui.VNode]) return cmpOrTag // Vdom
-    if (cmpOrTag && cmpOrTag.noNeedForCmpObject && cmpOrTag.noNeedForCmpObject())
-        return cmpOrTag.renderVdom()
-    // if (cmpOrTag && renderVdom())
+    // if (cmpOrTag && cmpOrTag.noNeedForCmpObject && cmpOrTag.noNeedForCmpObject())
     //     return cmpOrTag.renderVdom()
-    if (Array.isArray(children) && children.length > 1)
-        children = children.filter(x=>x).map(item=> typeof item == 'string' ? h('span',{},item) : item)
-    if (children === "") children = null
-    if (typeof children === 'string') children = [children]
+    if (cmpOrTag && cmpOrTag.renderVdom)
+        return cmpOrTag.renderVdom()
+    attributes = jb.objFromEntries(jb.entries(attributes).map(e=>[e[0].toLowerCase(),e[1]]))
+    if (children === '') children = null
+    if (['string','boolean','number'].indexOf(typeof children) !== -1) {
+        attributes.$text = children
+        children = null
+    }
+    if (children && typeof children.then == 'function') {
+        attributes.$text = '...'
+        children = null
+    }
+    if (children != null && !Array.isArray(children)) children = [children]
+    if (children != null)
+        children = children.filter(x=>x).map(item=> typeof item == 'string' ? h('span',{$text: item}) : item)
     
     return {...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,attributes,children,[ui.VNode]: true}
-}
-
-function applyVdomDiff(elem,vdomBefore,vdomAfter,cmp) {
-    if (!elem && !vdomBefore && !vdomAfter) return
-    if (elem.getAttribute && elem.getAttribute('cmpHash') &&
-        elem.getAttribute('cmpHash') == (jb.path(vdomAfter,'attributes.cmpHash') || jb.path(vdomAfter,'cmp.cmpHash')))
-            return
-    jb.log('applyVdomDiff',[...arguments]);
-    if (vdomBefore == null || elem == null) debugger
-    if (typeof vdomAfter !== 'object') {
-        if (vdomAfter === vdomBefore) return
-        elem.nodeType == 3 ? elem.nodeValue = vdomAfter : elem.innerText = vdomAfter
-        jb.log('htmlChange',['change text',elem,vdomBefore,vdomAfter,cmp]);
-        elem.children && Array.from(elem.children).forEach(ch=>unmount(ch))
-        return elem
-    }
-    if ((vdomBefore.tag || vdomBefore.cmp) != (vdomAfter.tag || vdomAfter.cmp)) {
-        unmountNotification(elem)
-        const replaceWith = render(vdomAfter,elem.parentElement,cmp)
-        jb.log('htmlChange',['replaceChild',replaceWith,elem]);
-        const res = elem.parentElement.replaceChild(replaceWith,elem)
-        return res
-    }
-    if (vdomBefore.cmp) // same cmp
-        return
-    
-    if (vdomBefore.attributes || vdomAfter.attributes)
-        applyAttsDiff(elem, vdomBefore.attributes || {}, vdomAfter.attributes || {})
-    if (vdomBefore.children || vdomAfter.children)
-        applyChildrenDiff(elem, jb.asArray(vdomBefore.children), jb.asArray(vdomAfter.children),cmp)
-    return elem
-}
-
-function applyAttsDiff(elem, vdomBefore, vdomAfter) {
-    const keys = Object.keys(vdomBefore).filter(k=>k.indexOf('on') != 0)
-    keys.forEach(key => isAttUndefined(key,vdomAfter) && elem.removeAttribute(key))
-    keys.forEach(key => (vdomAfter[key] != vdomBefore[key]) && setAtt(elem,key,vdomAfter[key]))
-}
-
-function applyChildrenDiff(parentElem, vdomBefore, vdomAfter, cmp) {
-    if (vdomBefore.length ==1 && vdomAfter.length == 1 && parentElem.childElementCount === 0 && parentElem.firstChild) 
-        return applyVdomDiff(parentElem.firstChild, vdomBefore[0], vdomAfter[0], cmp)
-    jb.log('applyChildrenDiff',[...arguments])
-    if (vdomBefore.length != parentElem.childElementCount) {
-        jb.log('applyChildrenDiff',['unexpected dom',...arguments])
-        while(parentElem.firstChild) {
-            unmount(parentElem.firstChild)
-            parentElem.removeChild(parentElem.firstChild)
-        }
-    }
-    let remainingBefore = vdomBefore.filter((e,i)=>parentElem.childNodes[i])
-        .map((e,i)=> Object.assign({},e,{i, base: parentElem.childNodes[i]}))
-    const unmountCandidates = remainingBefore.slice(0)
-    const childrenMap = vdomAfter.map((toLocate,i)=> locateCurrentVdom1(toLocate,i,remainingBefore))
-    vdomAfter.forEach((toLocate,i)=> childrenMap[i] = childrenMap[i] || locateCurrentVdom2(toLocate,i,remainingBefore))
-    unmountCandidates.filter(toLocate => childrenMap.indexOf(toLocate) == -1 && toLocate.base).forEach(elem =>{
-        unmountNotification(elem.base)
-        parentElem.removeChild(elem.base)
-        jb.log('htmlChange',['removeChild',elem.base]);
-    })
-    let lastElem = vdomAfter.reduce((prevElem,after,index) => {
-        const current = childrenMap[index]
-        const childElem = current ? applyVdomDiff(current.base,current,after,cmp) : render(after,parentElem,cmp)
-        return putInPlace(childElem,prevElem)
-    },null)
-    lastElem = lastElem && lastElem.nextSibling
-    while(lastElem) {
-        parentElem.removeChild(lastElem)
-        jb.log('htmlChange',['removeChild',lastElem]);
-        lastElem = lastElem.nextSibling
-    }
-
-    function putInPlace(childElem,prevElem) {
-        if (prevElem && prevElem.nextSibling != childElem) {
-            parentElem.insertBefore(childElem, prevElem.nextSibling)
-            jb.log('htmlChange',['insertBefore',childElem,prevElem && prevElem.nextSibling]);
-        }
-        return childElem
-    }
-    function locateCurrentVdom1(toLocate,index,remainingBefore) {
-        const found = remainingBefore.findIndex(before=>sameSource(before,toLocate))
-        if (found != -1)                
-            return remainingBefore.splice(found,1)[0]
-    }
-    function locateCurrentVdom2(toLocate,index,remainingBefore) {
-        const found = remainingBefore.findIndex(before=>before.tag && before.i == index && before.tag === toLocate.tag)
-        if (found != -1)                
-            return remainingBefore.splice(found,1)[0]
-    }
 }
 
 function sameSource(vdomBefore,vdomAfter) {
@@ -196,6 +146,10 @@ function sameSource(vdomBefore,vdomAfter) {
     if (atts1.cmpId && atts1.cmpId === atts2.cmpId || atts1.ctxId && atts1.ctxId === atts2.ctxId) return true
     if (compareCtxAtt('path',atts1,atts2) && compareCtxAtt('data',atts1,atts2)) return true
     if (compareAtts(['id','path','name'],atts1,atts2)) return true
+}
+
+function calcRemount(atts,diff) {
+    return diff
 }
 
 function compareAtts(attsToCompare,atts1,atts2) {
@@ -211,8 +165,16 @@ function compareCtxAtt(att,atts1,atts2) {
 }
 
 function setAtt(elem,att,val) {
-    if (val == null) return
-    if (att == 'style' && typeof val === 'object') {
+    if (val == null) {
+        elem.removeAttribute(att)
+        jb.log('htmlChange',['remove',...arguments])
+    } else if (att === '$text') {
+        elem.innerText = val
+        jb.log('htmlChange',['text',...arguments]);
+    } else if (att === '$html') {
+        elem.innerHTML = val
+        jb.log('htmlChange',['html',...arguments]);
+    } else if (att === 'style' && typeof val === 'object') {
         elem.setAttribute(att,jb.entries(val).map(e=>`${e[0]}:${e[1]}`).join(';'))
         jb.log('htmlChange',['setAtt',...arguments]);
     } else if (att == 'value' && elem.tagName.match(/input|textarea/i) ) {
@@ -222,54 +184,32 @@ function setAtt(elem,att,val) {
         if (active)
             elem.focus()
         jb.log('htmlChange',['setAtt',...arguments]);
-    }
-    else {
+    } else {
         elem.setAttribute(att,val)
         jb.log('htmlChange',['setAtt',...arguments]);
     }
 }
-function isAttUndefined(key,vdom) {
-    return !vdom.hasOwnProperty(key) || (key == 'checked' && vdom[key] === false)
-}
 
 function unmount(elem) {
-    unmountNotification(elem)
-}
-function unmountNotification(elem) {
     jb.log('unmount',[...arguments]);
     if (!elem || !elem.setAttribute) return
-    elem.setAttribute('recycleCounter',(+(elem.getAttribute('recycleCounter') || '0')) + 1)
-    jb.ui.findIncludeSelf(elem,'[cmpId]').forEach(el=> el._component.destroy())
+    jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> el._component && el._component.destroy())
     ui.garbageCollectCtxDictionary()
 }
 
-function render(vdom,parentElem,cmp) {
-    jb.log('render',[...arguments]);
-    let elem = null
-    if (typeof vdom !== 'object') {
-        jb.log('htmlChange',['innerText',...arguments])
-        parentElem.nodeType == 3 ? parentElem.nodeValue = vdom : parentElem.innerText = vdom
-    } else if (vdom.tag) {
+function render(vdom,parentElem) {
+    jb.log('render',[...arguments])
+    function doRender(vdom,parentElem) {
         jb.log('htmlChange',['createElement',...arguments])
-        elem = parentElem.ownerDocument.createElement(vdom.tag == 'html' ? 'div' : vdom.tag)
-        jb.entries(vdom.attributes).filter(e=>e[0].indexOf('on') != 0 && !isAttUndefined(e[0],vdom.attributes)).forEach(e=>setAtt(elem,e[0],e[1]))
-        jb.entries(vdom.attributes).filter(e=>e[0].indexOf('on') == 0).forEach(
-                e=>elem.setAttribute(e[0],`jb.ui.handleCmpEvent(${typeof e[1] == 'string' && e[1] ? "'" + e[1] + "'" : '' })`))
-        if (vdom.tag == 'html')
-            elem.innerHTML = vdom.children && vdom.children[0] || ''
-        else 
-            jb.asArray(vdom.children).map(child=> render(child,elem,cmp)).filter(x=>x)
-                .forEach(chElem=>elem.appendChild(chElem))
+        const elem = parentElem.ownerDocument.createElement(vdom.tag)
+        jb.entries(vdom.attributes).forEach(e=>setAtt(elem,e[0],e[1])) // filter(e=>e[0].indexOf('on') != 0 && !isAttUndefined(e[0],vdom.attributes)).
+        jb.asArray(vdom.children).map(child=> doRender(child,elem)).forEach(el=>elem.appendChild(el))
         parentElem.appendChild(elem)
-        jb.log('htmlChange',['appendChild',parentElem,elem])
-    } else if (vdom.cmp) {
-        elem = render(vdom.cmp.renderVdom(),parentElem, vdom.cmp)
-        if (!elem) return // string
-        parentElem.appendChild(elem)
-        jb.log('htmlChange',['appendChild',parentElem,elem])
-        vdom.cmp.componentDidMount(elem)
-    } 
-    return elem
+        return elem
+    }
+    const res = doRender(vdom,parentElem)
+    ui.findIncludeSelf(res,'[interactive]').forEach(el=> mountInteractive(el))
+    return res
 }
 
 Object.assign(jb.ui, {
@@ -280,10 +220,7 @@ Object.assign(jb.ui, {
         if (!el) return
         const cmp = el._component
         const action = specificHandler ? specificHandler : `on${event.type}Handler`
-        if (cmp[action])
-            cmp[action]()
-        else
-            ui.runActionOfElem(el,action)
+        return (cmp && cmp[action]) ? cmp[action](event) : ui.runActionOfElem(el,action)
     },
     runActionOfElem(elem,action) {
         (elem.getAttribute('handlers') || '').split(',').filter(x=>x.indexOf(action+'-') == 0)
@@ -293,38 +230,39 @@ Object.assign(jb.ui, {
             })
     },
     ctrl(context,options) {
-        const $state = context.vars.__refreshElemCall ? context.vars.$state : {}
-        const ctx = context.setVars({ $model: { ctx: context, ...context.params} , $state, __refreshElemCall : undefined });
-        const styleOptions = defaultStyle(ctx) || {};
+        const $state = context.vars.$refreshElemCall ? context.vars.$state : {}
+        const ctx = context.setVars({ $model: { ctx: context, ...context.params} , $state, $refreshElemCall : undefined })
+        const styleOptions = defaultStyle(ctx) || {}
         if (styleOptions.jbExtend)  {// style by control
-            return styleOptions.jbExtend(options).applyFeatures(ctx);
+            return styleOptions.jbExtend(options).applyFeatures(ctx)
         }
-        return new ui.JbComponent(ctx).jbExtend(options).jbExtend(styleOptions).applyFeatures(ctx);
+        return new ui.JbComponent(ctx).jbExtend(options).jbExtend(styleOptions).applyFeatures(ctx)
     
         function defaultStyle(ctx) {
-            const profile = context.profile;
-            const defaultVar = '$theme.' + (profile.$ || '');
+            const profile = context.profile
+            const defaultVar = '$theme.' + (profile.$ || '')
             if (!profile.style && context.vars[defaultVar])
                 return ctx.run({$:context.vars[defaultVar]})
-            return context.params.style ? context.params.style(ctx) : {};
+            return context.params.style ? context.params.style(ctx) : {}
         }
     },
     garbageCollectCtxDictionary(force) {
-        const now = new Date().getTime();
-        ui.ctxDictionaryLastCleanUp = ui.ctxDictionaryLastCleanUp || now;
-        const timeSinceLastCleanUp = now - ui.ctxDictionaryLastCleanUp;
-        if (!force && timeSinceLastCleanUp < 10000)
-            return;
-        ui.ctxDictionaryLastCleanUp = now;
+        const now = new Date().getTime()
+        ui.ctxDictionaryLastCleanUp = ui.ctxDictionaryLastCleanUp || now
+        const timeSinceLastCleanUp = now - ui.ctxDictionaryLastCleanUp
+        if (!force && timeSinceLastCleanUp < 10000) return
+        ui.ctxDictionaryLastCleanUp = now
         jb.resourcesToDelete = jb.resourcesToDelete || []
         jb.log('garbageCollect',jb.resourcesToDelete)
         jb.resourcesToDelete.forEach(id => delete jb.resources[id])
         jb.resourcesToDelete = []
     
-        const used = Array.from(document.querySelectorAll('[jb-ctx]')).map(e=>Number(e.getAttribute('jb-ctx')))
-            .concat(Array.from(document.querySelectorAll('[handlers]')).flatMap(e=>e.getAttribute('handlers').split(','))
-            .map(x=>Number(x.split('-')[1]))).sort((x,y)=>x-y);
+        const used = 'jb-ctx,mount-ctx,handlers,interactive'.split(',')
+            .flatMap(att=>Array.from(document.querySelectorAll(`[${att}]`))
+                .flatMap(el => el.getAttribute(att).split(',').map(x=>Number(x.split('-').pop()))))
+                    .sort((x,y)=>x-y);
 
+        // remove unused ctx from dictionary
         const dict = Object.getOwnPropertyNames(jb.ctxDictionary).map(x=>Number(x)).sort((x,y)=>x-y);
         let lastUsedIndex = 0;
         for(let i=0;i<dict.length;i++) {
@@ -333,6 +271,7 @@ Object.assign(jb.ui, {
             if (used[lastUsedIndex] != dict[i])
                 delete jb.ctxDictionary[''+dict[i]];
         }
+        // remove unused vars from resources
         const ctxToPath = ctx => jb.entries(ctx.vars).map(e=>e[1]).filter(v=>jb.isWatchable(v)).map(v => jb.asRef(v)).map(ref=>jb.refHandler(ref).pathOfRef(ref)).flat()
         const globalVarsUsed = jb.unique(used.map(x=>jb.ctxDictionary[''+x]).filter(x=>x).map(ctx=>ctxToPath(ctx)).flat())
         let iteratingOnVar = ''
@@ -349,7 +288,7 @@ Object.assign(jb.ui, {
     },
 
     refreshElem(elem, state, options) {
-        if (jb.path(elem,'_component.status') != 'ready') 
+        if (jb.path(elem,'_component.status') == 'initializing') 
             return jb.logError('circular refresh',[...arguments]);
         jb.log('refreshElem',[...arguments]);
         const _ctx = ui.ctxOfElem(elem)
@@ -358,27 +297,26 @@ Object.assign(jb.ui, {
         let ctx = state ? _ctx.setVar('$state',state) : _ctx
         if (options && options.extendCtx)
             ctx = options.extendCtx(ctx)
-        ctx = ctx.setVar('__refreshElemCall',true)
-        const cmp = ctx.profile.$ == 'open-dialog' ? ctx.vars.$dialog.buildComp(ctx) : ctx.runItself()
+        ctx = ctx.setVar('$refreshElemCall',true)
+        const cmp = ctx.profile.$ == 'open-dialog' ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself()
         const hash = cmp.init()
         if (hash != null && hash == elem.getAttribute('cmpHash'))
             return jb.log('refreshElem',['stopped by hash', hash, ...arguments]);
-        cmp && applyVdomDiff(elem, jb.path(elem,'_component.vdom') || h(''),h(cmp),cmp)
+        cmp && applyVdomDiff(elem, h(cmp))
     },
 
     subscribeToRefChange: watchHandler => watchHandler.resourceChange.subscribe(e=> {
         const changed_path = watchHandler.removeLinksFromPath(watchHandler.pathOfRef(e.ref))
         if (!changed_path) debugger
-        //toobserve="resources://2~name;person~name
+        //observe="resources://2~name;person~name
         const parentNode = e.srcCtx && e.srcCtx.vars.elemToTest || document
-        const elemsToCheck = Array.from(parentNode.querySelectorAll('[toobserve]'))
-        const recycleCounters = elemsToCheck.map(el=>el.getAttribute('recycleCounter') || '0')
+        const elemsToCheck = Array.from(parentNode.querySelectorAll('[observe]'))
+        const elemsToCheckCtx = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
         jb.log('notifyObservableElems',['elemsToCheck',elemsToCheck,e])
         elemsToCheck.forEach((elem,i) => {
-            const isOld = jb.path(elem,'_component._deleted') || (+elem.getAttribute('recycleCounter') > +recycleCounters[i]) 
-            if (isOld) return // can not use filter as cmp may be destroyed during the process
+            if (elemsToCheckCtx[i] != elem.getAttribute('jb-ctx')) return // the elem was changed by it parent 
             let refresh = false
-            elem.getAttribute('toobserve').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{
+            elem.getAttribute('observe').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{
                 //if (checkCircularity(obs)) return
                 const obsPath = watchHandler.removeLinksFromPath(watchHandler.pathOfRef(obs.ref))
                 if (!obsPath)
@@ -429,6 +367,44 @@ function checkCircularity(obs) {
         const ctxStylePath = obs.callerPath.replace(/~features~?[0-9]*$/,'')
         return callerPathsToCompare.reduce((res,path) => res || path.indexOf(ctxStylePath) == 0, false)
     }
+}
+
+function mountInteractive(elem) {
+    const ctx = jb.ctxDictionary[elem.getAttribute('mount-ctx')]
+    const cmp = (ctx.profile.$ == 'open-dialog') ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself();
+    const mountedCmp = {
+        state: {},
+        base: elem,
+        refresh(state, options) {
+            jb.log('refreshReq',[...arguments])
+            !this._deleted && ui.refreshElem(elem,{...this.state, ...state},options) 
+        },
+        destroy() {
+            this._deleted = true
+            this.resolveDestroyed() // notifications to takeUntil(cmp.destroyed) observers
+            ;(cmp.destroyFuncs||[]).forEach(f=> tryWrapper(() => f(this), 'destroy'));
+        },
+        status: 'initializing',
+        recalcPropsFromElem() {
+            this.ctx = jb.ctxDictionary[elem.getAttribute('mount-ctx')].setVar('cmp',this)
+            this.cmpId = elem.getAttribute('cmp-id')
+            ;(elem.getAttribute('interactive') || '').split(',').filter(x=>x).forEach(op => {
+                [id, ctxId] = op.split('-')
+                const ctx = jb.ctxDictionary[ctxId]
+                this[id] = jb.val(ctx.setVar('state',this.state).runInner(ctx.profile.value,'value','value'))
+            })
+            this.doRefresh && this.doRefresh()
+        }
+    }
+    mountedCmp.destroyed = new Promise(resolve=>mountedCmp.resolveDestroyed = resolve)
+    elem._component = mountedCmp
+    mountedCmp.recalcPropsFromElem()
+
+    jb.unique(cmp.eventObservables)
+        .forEach(op => mountedCmp[op] = jb.rx.Observable.fromEvent(elem, op.slice(2)).takeUntil( mountedCmp.destroyed ))
+
+    ;(cmp.componentDidMountFuncs||[]).forEach(f=> tryWrapper(() => f(mountedCmp), 'componentDidMount'))
+    mountedCmp.status = 'ready'
 }
 
 })()

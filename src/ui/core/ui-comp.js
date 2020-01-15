@@ -23,7 +23,7 @@ class JbComponent {
             .reduce((acc,extendCtx) => tryWrapper(() => extendCtx(acc,this),'extendCtx'), this.originatingCtx)
         this.renderProps = {}
         this.state = this.ctx.vars.$state
-        this.calcCtx = this.ctx.setVar('props',this.renderProps).setVar('cmp',this)
+        this.calcCtx = this.ctx.setVar('$props',this.renderProps).setVar('cmp',this)
 
         this.renderProps.cmpHash = this.calcHash && tryWrapper(() => this.calcHash(this.calcCtx))
         this.initialized = true
@@ -44,7 +44,6 @@ class JbComponent {
             this.renderProps[e.prop] = (e.transformValue || (x=>x))(jb.val(ref))
         })
 
-        //Object.assign(this,(this.styleCtx || {}).params); // temporary for compatability
         Object.assign(this.renderProps,(this.styleCtx || {}).params, this.state);
         
         const filteredPropsByPriority = (this.calcProp || []).filter(toFilter=> 
@@ -59,65 +58,33 @@ class JbComponent {
                     : vdom     
         ,initialVdom)
 
-        if (typeof vdom === 'object') ui.addClassToVdom(vdom, this.jbCssClass())
-        // vdom = vdom || ui.h('span',{display: 'none'})
-        const toObserve = this.toObserve.map(x=>[x.ref.handler.urlOfRef(x.ref),
+        const observe = this.toObserve.map(x=>[x.ref.handler.urlOfRef(x.ref),
             x.includeChildren ? `includeChildren=${x.includeChildren}` : ''
         ].join(';')).join(',')
         const handlers = (this.defHandler||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx)}`).join(',')
-        const interactiveProps = (this.interactiveProp||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx)}`).join(',')
+        const interactive = (this.interactiveProp||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx)}`).join(',')
+
         if (typeof vdom == 'object') {
             ui.addClassToVdom(vdom, this.jbCssClass())
             vdom.attributes = Object.assign(vdom.attributes || {}, {
-                    cmpId: this.cmpId,
-                    'jb-ctx': ui.preserveCtx(this.originatingCtx)}, 
-                    toObserve ? {toObserve} : {}, 
+                    'jb-ctx': ui.preserveCtx(this.originatingCtx),
+                    'cmp-id': this.cmpId, 
+                    'mount-ctx': ui.preserveCtx(this.ctx)},
+                    observe ? {observe} : {}, 
                     handlers ? {handlers} : {}, 
-                    interactiveProps ? {interactiveProps} : {}, 
+                    (this.componentDidMountFuncs || interactive) ? {interactive} : {}, 
                     this.renderProps.cmpHash != null ? {cmpHash: this.renderProps.cmpHash} : {}
             )
         }
-        this.vdom = vdom
+        fixHandlers(vdom)
         jb.log('renRes',[this.ctx, vdom, this]);
         return vdom
-    }
 
-    componentDidMount(elem) {
-        const mountedCmp = {
-            cmpId: this.cmpId,
-            state: this.state,
-            base: elem,
-            refresh(state, options) {
-                jb.log('refreshReq',[...arguments])
-                !this._deleted && ui.refreshElem(elem,{...this.state, ...state},options) 
-            },
-            destroy() {
-                mountedCmp._deleted = true
-                mountedCmp.resolveDestroyed() // notifications to takeUntil(cmp.destroyed) observers
-                ;(this.destroyFuncs||[]).forEach(f=> tryWrapper(() => f(this), 'destroy'));
-            },
-            vdom: this.vdom,
-            status: 'init',
-            destroyFuncs: this.destroyFuncs
+        function fixHandlers(vdom) {
+            jb.entries(vdom.attributes).forEach(([att,val]) => att.indexOf('on') == 0 && (''+val).indexOf('jb.ui') != 0 &&
+                (vdom.attributes[att] = `jb.ui.handleCmpEvent(${typeof val == 'string' && val ? "'" + val + "'" : '' })`))
+            ;(vdom.children || []).forEach(vd => fixHandlers(vd))
         }
-        mountedCmp.ctx = this.ctx.setVar('cmp',mountedCmp)
-        mountedCmp.destroyed = new Promise(resolve=>mountedCmp.resolveDestroyed = resolve)
-        elem._component = mountedCmp
-
-        ;(this.defHandler||[]).forEach(h=>mountedCmp[h.id] = () => { // not essential, used for cmp debug
-            const ctx = jb.ctxDictionary[h.ctx.id]
-            ctx.setVar('cmp',mountedCmp).runInner(ctx.profile.action,'action','action')
-        })
-        ;(this.interactiveProp||[]).forEach(h=> {
-            const ctx = jb.ctxDictionary[h.ctx.id]
-            mountedCmp[h.id] = jb.val(ctx.setVar('state',mountedCmp.state).runInner(ctx.profile.value,'value','value'))
-        })
-        
-
-        jb.unique(this.eventObservables)
-            .forEach(op => mountedCmp[op] = jb.rx.Observable.fromEvent(elem, op.slice(2)).takeUntil( mountedCmp.destroyed ))
-        ;(this.componentDidMountFuncs||[]).forEach(f=> tryWrapper(() => f(mountedCmp), 'componentDidMount'))
-        mountedCmp.status = 'ready'
     }
 
     jbCssClass() {

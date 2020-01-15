@@ -16,46 +16,15 @@ jb.component('open-dialog', { /* openDialog */
     {id: 'features', type: 'dialog-feature[]', dynamic: true}
   ],
   impl: function(context,id) {
-		const modal = context.params.modal;
-		const dialog = {
-			id: id,
-      		instanceId: context.id,
-			modal: modal,
-			em: new jb.rx.Subject(),
-		};
-
+		const dialog = { id, modal: context.params.modal, em: new jb.rx.Subject() }
 		const ctx = context.setVars({
 			$dialog: dialog,
 			dialogData: {},
 			formContainer: { err: ''}
 		})
-		dialog.buildComp = innerCtx => jb.ui.ctrl(innerCtx, features(
-			calcProp('title', _ctx=> _ctx.vars.$model.title(_ctx)),
-			calcProp('contentComp', '%$$model.content%'),
-			calcProp('hasMenu', '%$$model/menu/profile%'),
-			calcProp('menuComp', '%$$model/menu%'),
-			() => ({
-				afterViewInit: cmp => {
-					cmp.dialog = dialog
-					dialog.interactiveCmp = cmp
-					dialog.onOK = ctx2 => context.params.onOK(cmp.ctx.extendVars(ctx2));
-					cmp.dialogCloseOK = () => dialog.close({OK: true});
-					cmp.dialogClose = args => dialog.close(args);
-					//cmp.recalcTitle = (e,srcCtx) =>	jb.ui.setState(cmp,{title: ctx.params.title(ctx)},e,srcCtx)
-
-					cmp.dialog.el = cmp.base;
-					if (!cmp.dialog.el.style.zIndex)
-						cmp.dialog.el.style.zIndex = 100;
-				}
-		})));
-		dialog.comp = dialog.buildComp(ctx)
-
-		if (!context.probe)
-			jb.ui.dialogs.addDialog(dialog,ctx);
-		else
-			jb.studio.probeResEl = jb.ui.render(jb.ui.h(dialog.comp), jb.studio.probeEl || document.createElement('div'), jb.studio.probeResEl);
-
-		return dialog;
+		dialog.content = () => jb.ui.dialogs.buildComp(ctx).renderVdom() // used by probe as breaking prop
+		if (!context.probe)	jb.ui.dialogs.addDialog(dialog,ctx);
+		return dialog
 	}
 })
 
@@ -263,11 +232,7 @@ jb.component('dialog-feature.css-class-on-launching-element', { /* dialogFeature
 			const dialog = context.vars.$dialog;
 			const control = context.vars.$launchingElement.el;
 			jb.ui.addClass(control,'dialog-open');
-			dialog.em.filter(e=>
-				e.type == 'close')
-				.take(1)
-				.subscribe(()=>
-          jb.ui.removeClass(control,'dialog-open'))
+			dialog.em.filter(e=> e.type == 'close').take(1).subscribe(()=> jb.ui.removeClass(control,'dialog-open'))
 		}
 	})
 })
@@ -397,20 +362,40 @@ jb.component('dialog.div', { /* dialog.div */
 })
   
 jb.ui.dialogs = {
- 	dialogs: [],
+	 dialogs: [],
+	 buildComp(ctx) { // used with addDialog profile
+		const dialog = ctx.vars.$dialog
+		return jb.ui.ctrl(ctx, features(
+			calcProp('title', _ctx=> _ctx.vars.$model.title(_ctx)),
+			calcProp('contentComp', '%$$model.content%'),
+			calcProp('hasMenu', '%$$model/menu/profile%'),
+			calcProp('menuComp', '%$$model/menu%'),
+			feature.init( ({},{cmp}) => cmp.dialog = dialog),
+			interactive( ({},{cmp}) => {
+				dialog.cmp = cmp
+				cmp.dialog = dialog
+				dialog.onOK = ctx2 => ctx.params.onOK(cmp.ctx.extendVars(ctx2));
+				cmp.dialogCloseOK = () => dialog.close({OK: true});
+				cmp.dialogClose = args => dialog.close(args);
+				//cmp.recalcTitle = (e,srcCtx) =>	jb.ui.setState(cmp,{title: ctx.params.title(ctx)},e,srcCtx)
+
+				dialog.el = cmp.base;
+				if (!cmp.base.style.zIndex) cmp.base.style.zIndex = 100;
+			})
+	))},
+
 	addDialog(dialog,ctx) {
 		const self = this;
-		dialog.context = ctx;
-		this.dialogs.forEach(d=> d.em.next({ type: 'new-dialog', dialog: dialog }));
 		jb.log('addDialog',[dialog])
 		this.dialogs.push(dialog);
 		if (dialog.modal && !document.querySelector('.modal-overlay'))
 			jb.ui.addHTML(document.body,'<div class="modal-overlay"></div>');
-		jb.ui.render(jb.ui.h(dialog.comp), this.dialogsTopElem(ctx))
+		jb.ui.render(jb.ui.h(this.buildComp(ctx)), this.dialogsTopElem(ctx))
+		this.dialogs.forEach(d=> d.em.next({ type: 'new-dialog', dialog }));
 
 		dialog.close = function(args) {
 			jb.log('closeDialog',[dialog])
-			if (dialog.context.vars.formContainer.err && args && args.OK) // not closing dialog with errors
+			if (ctx.vars.formContainer.err && args && args.OK) // not closing dialog with errors
 				return;
 			return Promise.resolve().then(_=>{
 				if (dialog.closing) return;

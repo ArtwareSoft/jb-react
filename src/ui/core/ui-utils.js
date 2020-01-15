@@ -21,6 +21,7 @@ Object.assign(jb.ui,{
         return f(ctx.extendVars(ctx2).setVars({ $launchingElement: { el : elem, ...options }}));
     },
     withUnits: v => (v === '' || v === undefined) ? '' : (''+v||'').match(/[^0-9]$/) ? v : `${v}px`,
+    propWithUnits: (prop,v) => (v === '' || v === undefined) ? '' : `${prop}: ` + ((''+v||'').match(/[^0-9]$/) ? v : `${v}px`) + ';',
     fixCssLine: css => css.indexOf('/n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css,
     ctxOfElem: elem => elem && elem.getAttribute && elem.getAttribute('jb-ctx') && jb.ctxDictionary[elem.getAttribute('jb-ctx')],
     resultCtxOfElem: elem => elem && elem.getAttribute && elem.getAttribute('outCtx') && jb.ctxDictionary[elem.getAttribute('jb-ctx')],
@@ -34,6 +35,15 @@ Object.assign(jb.ui,{
             return !ui.inStudio() && jb.frame.parent.jb.studio.initPreview
         } catch(e) {}
     },
+    parentCmps(cmp) {
+        if (!cmp) return []
+        const parents = jb.ui.parents(cmp.base)
+        const dialogElem = parents[parents.length-5]
+        return (jb.ui.hasClass(dialogElem,'jb-dialog') 
+                ? parents.slice(0,-4).concat(jb.ui.ctxOfElem(dialogElem).exp('%$$launchingElement.el._component.base%') || []) 
+                : parents)
+            .map(el=>el._component).filter(x=>x)
+    }
 })
 
 // ****************** html utils ***************
@@ -66,7 +76,7 @@ Object.assign(jb.ui, {
     findIncludeSelf: (el,query) => (ui.matches(el,query) ? [el] : []).concat(Array.from(el.querySelectorAll(query))),
     addClass: (el,clz) => el.classList.add(clz),
     removeClass: (el,clz) => el.classList.remove(clz),
-    hasClass: (el,clz) => el.classList.contains(clz),
+    hasClass: (el,clz) => el && el.classList.contains(clz),
     matches: (el,query) => el && el.matches && el.matches(query),
     index: el => Array.from(el.parentNode.children).indexOf(el),
     inDocument: el => el && (ui.parents(el).slice(-1)[0]||{}).nodeType == 9,
@@ -168,9 +178,24 @@ ui.renderWidget = function(profile,top) {
         if (page) currentProfile = {$: page}
         const cmp = new jb.jbCtx().run(currentProfile)
         const start = new Date().getTime()
-        ui.applyVdomDiff(top.firstChild, {},ui.h(cmp),cmp)
+        ui.applyVdomDiff(top.firstElementChild ,ui.h(cmp))
         lastRenderTime = new Date().getTime() - start
     }
+}
+
+jb.objectDiff = function(newObj, orig) {
+    if (orig === newObj) return {}
+    if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
+    const deletedValues = Object.keys(orig).reduce((acc, key) =>
+        newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: undefined }
+    , {})
+
+    return Object.keys(newObj).reduce((acc, key) => {
+      if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key
+      const difference = jb.objectDiff(newObj[key], orig[key])
+      if (jb.isObject(difference) && jb.isEmpty(difference)) return acc // return no diff
+      return { ...acc, [key]: difference } // return updated key
+    }, deletedValues)
 }
 
 // ****************** components ****************

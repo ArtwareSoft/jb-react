@@ -63,10 +63,10 @@ jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
   impl: ctx =>({
     onkeyup: true,
     onkeydown: true, // used for arrows
-    extendCtx: (ctx,cmp) => ctx.setVars({selectionKeySource: {}}),
+//    extendCtx: (ctx,cmp) => ctx.setVar('selectionKeySource', {}),
 
     afterViewInit: cmp => {
-      var input = jb.ui.findIncludeSelf(cmp.base,'input')[0];
+      const input = jb.ui.findIncludeSelf(cmp.base,'input')[0];
       if (!input) return;
 
       cmp.openPopup = jb.ui.wrapWithLauchingElement( ctx2 =>
@@ -95,10 +95,9 @@ jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
           }
       }
 
-      cmp.ctx.vars.selectionKeySource.input = input;
-      const keyup = cmp.ctx.vars.selectionKeySource.keyup = cmp.onkeyup.delay(1); // delay to have input updated
-      cmp.ctx.vars.selectionKeySource.keydown = cmp.onkeydown;
-      cmp.ctx.vars.selectionKeySource.cmp = cmp;
+      cmp.selectionKeySource = true
+      cmp.input = input;
+      const keyup = cmp.keyup = cmp.onkeyup.delay(1); // delay to have input updated
 
       jb.delay(500).then(_=>{
         cmp.onkeydown.filter(e=> e.keyCode == 13).subscribe(_=>{
@@ -118,7 +117,6 @@ jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
       if (ctx.params.autoOpen)
         cmp.refreshSuggestionPopupOpenClose()
     },
-    destroy: cmp =>
-        cmp.closePopup(),
+    destroy: cmp => cmp.closePopup(),
   })
 })

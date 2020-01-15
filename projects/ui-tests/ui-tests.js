@@ -259,13 +259,9 @@ jb.component('ui-test.open-dialog', { /* uiTest.openDialog */
   impl: uiTest({
     control: button({
       title: 'click me',
-      action: openDialog({
-        id: 'hello',
-        content: group({
-          controls: [
-            label('jbart')
-          ]
-        }),
+      action: openDialog({ 
+        id: 'hello', 
+        content: text('jbart'),
         title: 'hello',
         features: [
           dialogFeature.nearLauncherPosition({
@@ -421,29 +417,36 @@ jb.component('ui-test.group-flex', { /* uiTest.groupFlex */
 
 jb.component('ui-test.button-click', { /* uiTest.buttonClick */
   impl: uiTest({
-    control: button({title: 'Click Me', action: () => alert(1)}),
-    expectedResult: true
+    control: button({title: 'Click Me', action: writeValue('%$person/name%','mukki')}),
+    action: uiAction.click('button'),
+    expectedResult: equals('%$person/name%','mukki')
   })
 })
 
 jb.component('ui-test.button-x', { /* uiTest.buttonX */
   impl: uiTest({
     control: button({title: 'Click Me', action: () => alert(1), style: button.x()}),
-    expectedResult: true
+    expectedResult: contains('×')
   })
 })
 
 jb.component('ui-test.resource', { /* uiTest.resource */
   impl: uiTest({
     control: button('%$person.name%'),
-    expectedResult: contains(['Homer'])
+    expectedResult: contains('Homer')
   })
 })
 
 jb.component('ui-test.features-css', { /* uiTest.featuresCss */
   impl: uiTest({
-    control: label({text: 'Hello World2', features: css('{color: cyan; font-weight: bold}')}),
-    expectedResult: contains(['Hello'])
+    control: label({text: 'Hello World', features: css('color: red')}),
+    expectedResult: ctx => {
+      const elem = ctx.vars.elemToTest
+      document.body.appendChild(elem)
+      const ret = getComputedStyle(elem.firstElementChild).color == 'rgb(255, 0, 0)'
+      document.body.removeChild(elem)
+      return ret
+    }
   })
 })
 
@@ -559,7 +562,7 @@ jb.component('ui-test.itemlist-selection', { /* uiTest.itemlistSelection */
   })
 })
 
-jb.component('ui-test.itemlist-MD', { /* uiTest.itemlistMD */
+jb.component('ui-test.itemlist-MD-auto-select-first', { /* uiTest.itemlistMD */
   impl: uiTest({
     control: group({
       controls: [
@@ -1403,12 +1406,12 @@ jb.component('ui-test.check-box-with-text', { /* uiTest.checkBoxWithText */
           databind: '%$person/male%',
           style: editableBoolean.checkboxWithTitle(),
           textForTrue: 'male',
-          textForFalse: 'female',
+          textForFalse: 'girl',
           features: id('male')
         })
       ]
     }),
-    expectedResult: true
+    expectedResult: contains('male')
   })
 })
 
@@ -1535,7 +1538,7 @@ jb.component('ui-test.watchable-parent-refresh-mask-children', {
 jb.component('ui-test.watchable-url', { 
   impl: uiTest({
     control: text('%$person/name%'),
-    expectedResult: contains('toobserve="resources://2~name;person~name'),
+    expectedResult: contains('observe="resources://2~name;person~name'),
   })
 })
 

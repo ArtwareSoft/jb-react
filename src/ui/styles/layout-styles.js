@@ -3,11 +3,9 @@ jb.component('layout.vertical', { /* layout.vertical */
   params: [
     {id: 'spacing', as: 'string', defaultValue: 3}
   ],
-  impl: ctx => ({
-    css: `{display: flex; flex-direction: column}
-          >* { margin-bottom: ${jb.ui.withUnits(ctx.params.spacing)} }
-          >*:last-child { margin-bottom:0 }`,
-  })
+  impl: css( ({},{},{spacing}) =>  `{display: flex; flex-direction: column}
+          >* { ${jb.ui.propWithUnits('margin-bottom',spacing)} }
+          >*:last-child { margin-bottom:0 }`)
 })
 
 jb.component('layout.horizontal', { /* layout.horizontal */
@@ -15,11 +13,9 @@ jb.component('layout.horizontal', { /* layout.horizontal */
   params: [
     {id: 'spacing', as: 'string', defaultValue: 3}
   ],
-  impl: ctx => ({
-    css: `{display: flex}
-        >* { margin-right: ${jb.ui.withUnits(ctx.params.spacing)} }
-        >*:last-child { margin-right:0 }`,
-  })
+  impl: css( ({},{},{spacing}) =>  `{display: flex}
+        >* { ${jb.ui.propWithUnits('margin-right', spacing)} }
+        >*:last-child { margin-right:0 }`)
 })
 
 jb.component('layout.horizontal-fixed-split', { /* layout.horizontalFixedSplit */
@@ -31,9 +27,9 @@ jb.component('layout.horizontal-fixed-split', { /* layout.horizontalFixedSplit *
   ],
   impl: ctx => ({
     css: `{display: flex}
-        >*:first-child { margin-right: ${jb.ui.withUnits(ctx.params.spacing)}; 
-          width: ${jb.ui.withUnits(ctx.params.leftWidth)}; }
-        >*:last-child { margin-right:0; width: ${jb.ui.withUnits(ctx.params.rightWidth)}; }`,
+        >*:first-child { ${jb.ui.propWithUnits('margin-right',ctx.params.spacing)}
+        ${jb.ui.propWithUnits('width',ctx.params.leftWidth)} }
+        >*:last-child { margin-right:0; ${jb.ui.propWithUnits('width',ctx.params.rightWidth)} }`,
   })
 })
 
@@ -44,7 +40,7 @@ jb.component('layout.horizontal-wrapped', { /* layout.horizontalWrapped */
   ],
   impl: ctx => ({
     css: `{display: flex}
-        >* { margin-right: ${jb.ui.withUnits(ctx.params.spacing)} }
+        >* {${jb.ui.propWithUnits('margin-right',ctx.params.spacing)} }
         >*:last-child { margin-right:0 }`,
   })
 })

@@ -24,122 +24,104 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
     {id: 'hint', as: 'boolean', type: 'boolean'},
     {id: 'maxLength', as: 'number', defaultValue: 5000},
   ],
-  impl: function(ctx, cm_settings, _enableFullScreen, resizer, height, mode, debounceTime, lineWrapping) {
-		return {
-			template: (cmp,state,h) => 
-				cmp.textAreaAlternative ? h('textarea', {class: 'jb-textarea-alternative-for-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind(cmp.ctx)) })
-					: h('div',{},h('textarea', {class: 'jb-codemirror', value: jb.tostring(cmp.ctx.vars.$model.databind(cmp.ctx)) })),
-			css: '{width: 100%}',
-			init: (ctx,{cmp}) => {
-				cmp.state.databindRef = cmp.ctx.vars.$model.databind(cmp.ctx)
-				if (jb.tostring(cmp.state.databindRef).length > ctx.params.maxLength)
-					cmp.textAreaAlternative = true
-			},
-			afterViewInit: cmp => {
-				if (cmp.textAreaAlternative) return
-				try {
-					let data_ref = cmp.state.databindRef;
-					if (data_ref instanceof Promise)
-						jb.delay(1).then(() => cmp.refresh())
-					cm_settings = cm_settings||{};
-					const adjustedExtraKeys = jb.objFromEntries(jb.entries(cm_settings.extraKeys).map(e=>[
-						e[0], _ => jb.ui.wrapWithLauchingElement(ctx2 => ctx2.run(e[1]), cmp.ctx, cmp.base,
-						{launcherHeightFix: 1})(cmp.ctx)
-					]))
-					const effective_settings = Object.assign({},cm_settings, {
-						mode: mode || 'javascript',
-						lineWrapping: lineWrapping,
-						lineNumbers: ctx.params.lineNumbers,
-						theme: 'solarized light',
-						autofocus: false,
-						extraKeys: Object.assign({
-							'Ctrl-Space': 'autocomplete',
-							'Ctrl-Enter': editor => ctx.params.onCtrlEnter(ctx.setVars({editor}))
-						}, adjustedExtraKeys),
-						readOnly: ctx.params.readOnly,
-					});
-					const editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
-					cmp.editor = {
-						data_ref,
-						cmp,
-						ctx: () => cmp.ctx.setVars({$launchingElement: { el : cmp.base, launcherHeightFix: 1 }}),
-						getCursorPos: () => posFromCM(editor.getCursor()),
-						charCoords(pos) {
-							return editor.charCoords(posToCM(pos),'window')
-						},
-						cursorCoords() {
-							return editor.cursorCoords('window')
-						},
-						normalizePreviewCoords(coords) {
-							const previewIframe = document.querySelector('.preview-iframe')
-							if (!previewIframe) return coords
+  impl: features(
+	  calcProp('text','%$$model/databind%'),
+	  calcProp('textAreaAlternative', ({},{$props},{maxLength}) => $props.text.length > maxLength),
+	  ctx => ({ template: (cmp,{text,textAreaAlternative},h) => 
+		textAreaAlternative ? h('textarea', {class: 'jb-textarea-alternative-for-codemirror', value: text })
+			: h('div',{},h('textarea', {class: 'jb-codemirror', value: text })),
+	  }),
+	  interactiveProp('data_ref', ctx => ctx.vars.$model.databind()),
+	  interactive( (ctx,{cmp},{cm_settings, _enableFullScreen, readOnly, onCtrlEnter, mode, debounceTime, lineWrapping, lineNumbers}) =>{
+		if (jb.ui.hasClass(cmp.base, 'jb-textarea-alternative-for-codemirror')) return
+		try {
+			if (cmp.data_ref instanceof Promise)
+				jb.delay(1).then(() => cmp.refresh())
+			cm_settings = cm_settings||{};
+			const adjustedExtraKeys = jb.objFromEntries(jb.entries(cm_settings.extraKeys).map(e=>[
+				e[0], _ => jb.ui.wrapWithLauchingElement(ctx2 => ctx2.run(e[1]), cmp.ctx, cmp.base,
+				{launcherHeightFix: 1})(cmp.ctx)
+			]))
+			const effective_settings = Object.assign({},cm_settings, {
+				mode: mode || 'javascript',
+				lineWrapping, lineNumbers, readOnly,
+				theme: 'solarized light',
+				autofocus: false,
+				extraKeys: Object.assign({
+					'Ctrl-Space': 'autocomplete',
+					'Ctrl-Enter': editor => onCtrlEnter(ctx.setVars({editor}))
+				}, adjustedExtraKeys),
+			});
+			const editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
+			cmp.editor = {
+				data_ref: cmp.data_ref,
+				cmp,
+				ctx: () => cmp.ctx.setVars({$launchingElement: { el : cmp.base, launcherHeightFix: 1 }}),
+				getCursorPos: () => posFromCM(editor.getCursor()),
+				charCoords(pos) {
+					return editor.charCoords(posToCM(pos),'window')
+				},
+				cursorCoords() {
+					return editor.cursorCoords('window')
+				},
+				normalizePreviewCoords(coords) {
+					const previewIframe = document.querySelector('.preview-iframe')
+					if (!previewIframe) return coords
 
-							const offset = jb.ui.offset(previewIframe)
-							return coords && Object.assign(coords,{
-								top: coords.top - offset.top,
-								left: coords.left - offset.left
-							})
-						},
-						refreshFromDataRef: () => editor.setValue(jb.tostring(jb.val(data_ref))),
-						setValue: text => editor.setValue(text),
-						storeToRef: () => jb.writeValue(data_ref,editor.getValue(), ctx),
-						isDirty: () => editor.getValue() !== jb.tostring(jb.val(data_ref)),
-						markText: (from,to) => editor.markText(posToCM(from),posToCM(to), {className: 'jb-highlight-comp-changed'}),
-						replaceRange: (text, from, to) => editor.replaceRange(text, posToCM(from),posToCM(to)),
-						setSelectionRange: (from, to) => editor.setSelection(posToCM(from),posToCM(to)),
-						focus: () => editor.focus(),
-						formatComponent() { 
-							const {text, from, to} = jb.textEditor.formatComponent(editor.getValue(),this.getCursorPos(),data_ref.jbToUse)
-							this.replaceRange(text, from, to)
-						},
-						cmEditor: editor
-					}
-					cmp.refresh = () => Promise.resolve(cmp.ctx.vars.$model.databind(cmp.ctx)).then(ref=>{
-						cmp.state.databindRef = cmp.editor.data_ref = data_ref = ref;
-						editor.setValue(jb.tostring(jb.val(data_ref)))
+					const offset = jb.ui.offset(previewIframe)
+					return coords && Object.assign(coords,{
+						top: coords.top - offset.top,
+						left: coords.left - offset.left
 					})
-					const wrapper = editor.getWrapperElement();
-					if (height)
-						wrapper.style.height = jb.ui.withUnits(height);
-					jb.delay(1).then(() => {
-						if (_enableFullScreen)
-							enableFullScreen(editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper))
-						editor.refresh(); // ????
-					});
-					editor.setValue(jb.tostring(jb.val(data_ref)));
-				//cmp.lastEdit = new Date().getTime();
-					editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
-					!data_ref.oneWay && jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,cmp,{srcCtx: ctx})
-						.map(e=>jb.tostring(jb.val(data_ref)))
-						.filter(x => x != editor.getValue())
-						.subscribe(x=>{
-							const cur = editor.getCursor()
-							editor.setValue(x)
-							editor.setSelection(cur)
-							cmp.editor.markText({line: 0, col:0}, {line: editor.laseLine(), col: 0})
-						});
+				},
+				refreshFromDataRef: () => editor.setValue(jb.tostring(jb.val(cmp.data_ref))),
+				setValue: text => editor.setValue(text),
+				storeToRef: () => jb.writeValue(cmp.data_ref,editor.getValue(), ctx),
+				isDirty: () => editor.getValue() !== jb.tostring(jb.val(cmp.data_ref)),
+				markText: (from,to) => editor.markText(posToCM(from),posToCM(to), {className: 'jb-highlight-comp-changed'}),
+				replaceRange: (text, from, to) => editor.replaceRange(text, posToCM(from),posToCM(to)),
+				setSelectionRange: (from, to) => editor.setSelection(posToCM(from),posToCM(to)),
+				focus: () => editor.focus(),
+				formatComponent() { 
+					const {text, from, to} = jb.textEditor.formatComponent(editor.getValue(),this.getCursorPos(),cmp.data_ref.jbToUse)
+					this.replaceRange(text, from, to)
+				},
+				cmEditor: editor
+			}
+			cmp.doRefresh = () => editor.setValue(jb.tostring(jb.val(cmp.data_ref)))
+			const wrapper = editor.getWrapperElement();
+			jb.delay(1).then(() => _enableFullScreen && enableFullScreen(editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper)))
 
-					const editorTextChange = jb.rx.Observable.create(obs=>
-						editor.on('change', () => {
-							//cmp.lastEdit = new Date().getTime();
-							obs.next(editor.getValue())
-						})
-					);
-					editorTextChange.takeUntil( cmp.destroyed )
-						.debounceTime(debounceTime)
-						.filter(x =>
-							x != jb.tostring(jb.val(data_ref)))
-						.distinctUntilChanged()
-						.subscribe(x=>
-							jb.writeValue(data_ref,x, ctx));
+			editor.setValue(jb.tostring(jb.val(cmp.data_ref)));
+			//cmp.lastEdit = new Date().getTime();
+			//editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
+			!cmp.data_ref.oneWay && jb.isWatchable(cmp.data_ref) && jb.ui.refObservable(cmp.data_ref,cmp,{srcCtx: ctx})
+				.map(e=>jb.tostring(jb.val(cmp.data_ref)))
+				.filter(x => x != editor.getValue())
+				.subscribe(x=>{
+					const cur = editor.getCursor()
+					editor.setValue(x)
+					editor.setSelection(cur)
+					cmp.editor.markText({line: 0, col:0}, {line: editor.laseLine(), col: 0})
+				});
 
-				} catch(e) {
-					jb.logException(e,'editable-text.codemirror',ctx);
-					return;
-				}
-			 }
+			jb.rx.Observable.create(obs=>
+				editor.on('change', () => obs.next(editor.getValue())))
+				.takeUntil( cmp.destroyed )
+				.debounceTime(debounceTime)
+				.filter(x => x != jb.tostring(jb.val(cmp.data_ref)))
+				.distinctUntilChanged()
+				.subscribe(x=>	jb.writeValue(cmp.data_ref,x, ctx));
+
+		} catch(e) {
+			jb.logException(e,'editable-text.codemirror',ctx);
+			return;
 		}
-	}
+	}),
+	css( ({},{},{height}) => `{width: 100%; ${jb.ui.propWithUnits('height',height)}}
+		>div { box-shadow: none !important}
+	`),
+  )
 })
 
 function enableFullScreen(editor,width,height) {

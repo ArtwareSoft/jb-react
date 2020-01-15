@@ -560,13 +560,13 @@ const logs = {};
 
 const profileOfPath = path => path.reduce((o,p)=>o && o[p], jb.comps) || {}
 
-const log = (logName, record) => jb.spy && jb.spy.log(logName, record, {
+const log = (logName, record, options) => jb.spy && jb.spy.log(logName, record, { 
   modifier: record => {
     if (record[1] instanceof jbCtx)
       record.splice(1,0,pathSummary(record[1].path))
     if (record[0] instanceof jbCtx)
       record.splice(0,0,pathSummary(record[0].path))
-}});
+} , ...options });
 
 function pathSummary(path) {
   if (!path) return ''

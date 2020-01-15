@@ -22,6 +22,12 @@ jb.component('itemlist.no-container', { /* itemlist.noContainer */
   impl: ctx => ({ extendCtx: (ctx,cmp) => ctx.setVars({itemlistCntr: null}) })
 })
 
+jb.component('itemlist.init-container-with-items', { 
+  type: 'feature',
+  category: 'itemlist:20',
+  impl: calcProp({id: 'updateItemlistCntr', value: action.if('%$itemlistCntr%',writeValue('%$itemlistCntr.items%', '%$$props.items%')), phase: 100}),
+})
+
 jb.component('itemlist.init', { /* itemlist.init */
   type: 'feature',
   impl: features(
@@ -30,32 +36,21 @@ jb.component('itemlist.init', { /* itemlist.init */
     calcProp('ctrls', ctx => {
       const controlsOfItem = item => 
         ctx.vars.$model.controls(ctx.setVar(ctx.vars.$model.itemVariable,item).setData(item)).filter(x=>x)
-
-      // if (ctx.vars.itemlistCntr)
-      //   ctx.vars.itemlistCntr.items = ctx.vars.props.items;
-      return ctx.vars.props.items.slice(0,ctx.vars.$model.visualSizeLimit || 100).map(item=>
+      return ctx.vars.$props.items.slice(0,ctx.vars.$model.visualSizeLimit || 100).map(item=>
         Object.assign(controlsOfItem(item),{item})).filter(x=>x.length > 0);
     }),
-    calcProp({id: 'updateItemlistCntr', value: action.if('%$itemlistCntr%',writeValue('%$itemlistCntr.items%', '%$props.items%')), phase: 100}),
+    itemlist.initContainerWithItems()
   )
 })
 
 jb.component('itemlist.init-table', { /* itemlist.initTable */
   type: 'feature',
   impl: features(
-      // calcProp('items', (ctx,{cmp}) => {
-      //     const res = (ctx.vars.$model.items ? jb.toarray(jb.val(ctx.vars.$model.items(cmp.ctx))) : [])
-      //         .slice(0,ctx.vars.$model.visualSizeLimit || 100);
-      //     if (cmp.ctx.vars.itemlistCntr)
-      //       cmp.ctx.vars.itemlistCntr.items = res;
-      //     return res;
-      // }),
       calcProp('items', pipeline('%$$model.items%', slice(0,firstSucceeding('%$$model.visualSizeLimit%',100)))),
       interactiveProp('items', pipeline('%$$model.items%', slice(0,firstSucceeding('%$$model.visualSizeLimit%',100)))),
       calcProp('fields', '%$$model/controls/field%'),
-      calcProp({id: 'updateItemlistCntr', value: action.if('%$itemlistCntr%',writeValue('%$itemlistCntr.items%', '%$props.items%')), phase: 100}),
-      //      calcProp('fields', ctx => ctx.vars.$model.controls().map(inner=>inner.field()))
-  )
+      itemlist.initContainerWithItems()
+    )
 })
 
 jb.component('itemlist.fast-filter', {
@@ -165,7 +160,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
 
         function autoSelectFirstWhenEnabled() {
           if (ctx.params.autoSelectFirst && cmp.items[0] && !jb.val(selectedRef))
-              return cmp.selectionEmitter.next(cmp.items[0])
+              jb.delay(1).then(()=> cmp.selectionEmitter.next(cmp.items[0]))
         }
         function writeSelectedToDatabind(selected) {
           return selectedRef && jb.writeValue(selectedRef,ctx.params.selectedToDatabind(ctx.setData(selected)), ctx)
@@ -192,7 +187,8 @@ jb.component('itemlist.keyboard-selection', { /* itemlist.keyboardSelection */
   ],
   impl: ctx => ({
       afterViewInit: cmp => {
-        let onkeydown = (cmp.ctx.vars.itemlistCntr && cmp.ctx.vars.itemlistCntr.keydown) || (cmp.ctx.vars.selectionKeySource && cmp.ctx.vars.selectionKeySource.keydown);
+        const selectionKeySourceCmp = jb.ui.parentCmps(cmp).find(_cmp=>_cmp.selectionKeySource)
+        let onkeydown = jb.path(cmp.ctx.vars,'itemlistCntr.keydown') || jb.path(selectionKeySourceCmp,'onkeydown');
         cmp.base.setAttribute('tabIndex','0');
         if (!onkeydown) {
           onkeydown = jb.rx.Observable.fromEvent(cmp.base, 'keydown')

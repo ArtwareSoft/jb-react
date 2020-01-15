@@ -29,7 +29,6 @@ jb.component('tree.model-filter', {
 jb.component('table-tree.init', {
     type: 'feature',
     impl: features(
-        calcProp('maxDepth','%$cmp/treeModel/maxDepth%'),
         calcProp('items',(ctx,{cmp}) => {
             const treeModel = cmp.treeModel
             if (ctx.vars.$model.includeRoot)
@@ -45,18 +44,20 @@ jb.component('table-tree.init', {
                 return item
             }
         }),
+        interactiveProp('treeModel', '%$$model.treeModel%'),
         interactive( (ctx,{cmp}) => {
+            cmp.state.expanded = {[cmp.treeModel.rootPath]: true}
             cmp.flip = () => {
                 const path = elemToPath(event.target)
                 if (!path) debugger
                 cmp.state.expanded[path] = !(cmp.state.expanded[path]);
-                cmp.refresh({expanded: cmp.state.expanded});
+                cmp.refresh();
             }
             function elemToPath(el) { return el && (el.getAttribute('path') || jb.ui.closest(el,'.jb-item') && jb.ui.closest(el,'.jb-item').getAttribute('path')) }
         }),
         feature.init( (ctx,{cmp}) => {
             const treeModel = cmp.treeModel = ctx.vars.$model.treeModel()
-            treeModel.maxDepth = treeModel.maxDepth || 5
+            cmp.renderProps.maxDepth = treeModel.maxDepth = (treeModel.maxDepth || 5)
             const firstTime = !cmp.state.expanded
             cmp.state.expanded = cmp.state.expanded || {[treeModel.rootPath]: true}
             firstTime && treeModel.children(treeModel.rootPath).forEach(path=>cmp.state.expanded[path] = true)

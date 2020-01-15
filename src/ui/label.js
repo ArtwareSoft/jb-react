@@ -23,10 +23,10 @@ jb.component('label.bind-text', { /* label.bindText */
   })
 })
 
-jb.component('label.allow-asynch-value', {
+jb.component('label.allow-asynch-value', { // allowAsynchValue
   type: 'feature',
   impl: features(
-    calcProp('text', (ctx,{cmp}) => cmp.text || ctx.vars.props.text),
+    calcProp('text', (ctx,{cmp}) => cmp.text || ctx.vars.$props.text),
     interactive((ctx,{cmp}) => {
       if (cmp.text) return
       const val = jb.ui.toVdomOrStr(ctx.vars.$model.text(cmp.ctx))

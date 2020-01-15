@@ -9,10 +9,10 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
   ],
   impl: ctx => ({
       afterViewInit: cmp => {
-        const selectionKeySource = cmp.ctx.vars.selectionKeySource
+        const selectionKeySourceCmp = jb.ui.parentCmps(cmp).find(_cmp=>_cmp.selectionKeySource)
         const pathToTrace = ctx.params.path
-        const keyup = selectionKeySource.keyup.takeUntil( cmp.destroyed )
-        const input = selectionKeySource.input
+        const keyup = selectionKeySourceCmp.keyup.takeUntil( cmp.destroyed )
+        const input = selectionKeySourceCmp.input
 
         keyup.debounceTime(20) // solves timing of closing the floating input
           .startWith(1) // compensation for loosing the first event from selectionKeySource
@@ -50,7 +50,7 @@ jb.component('studio.paste-suggestion', { /* studio.pasteSuggestion */
   impl: (ctx,option,toAdd) => {
     if (option && ctx.exp('%$suggestionData/options%','array').length)
     Promise.resolve(option.paste(ctx,toAdd)).then(_=> {
-      var cmp = ctx.vars.selectionKeySource.cmp;
+      const cmp = ctx.vars.suggestionData.inputCmp;
       cmp.closePopup();
     })
   }
@@ -103,6 +103,7 @@ jb.component('studio.property-primitive', { /* studio.propertyPrimitive */
         features: [
           feature.onKey('Right', studio.pasteSuggestion('%$suggestionData/selected%', '/')),
           feature.onKey('Enter', studio.pasteSuggestion('%$suggestionData/selected%')),
+          interactive(writeValue('%$suggestionData/inputCmp%', '%$cmp%')),
           editableText.helperPopup({
             control: studio.suggestionsItemlist('%$path%'),
             popupId: 'suggestions',
@@ -223,6 +224,7 @@ st.suggestions = class {
           .map(e=>[jb.removeDataResourcePrefix(e[0]),e[1]])
     const vars = jb.entries(Object.assign({},(probeCtx.componentContext||{}).params,probeCtx.vars))
         .concat(resources)
+        .filter(x=>['cmp'].indexOf(x[0]) == -1)
         .map(x=>new ValueOption('$'+x[0],jb.studio.previewjb.val(x[1]),this.pos,this.tail))
         .filter(x=> x.toPaste.indexOf('$$') != 0)
         // .filter(x=> x.toPaste.indexOf(':') == -1)
@@ -279,7 +281,7 @@ class ValueOption {
       return ``;
     }
     paste(ctx,_toAdd) {
-      const input = ctx.vars.selectionKeySource.input;
+      const input = ctx.vars.suggestionData.inputCmp.input;
       const primiteVal = typeof this.value != 'object'
       const toPaste = this.toPaste + (primiteVal ? '%' : _toAdd);
       const pos = this.pos + 1;
@@ -304,7 +306,7 @@ class CompOption {
        this.description = description;
     }
     paste(ctx) {
-      var input = ctx.vars.selectionKeySource.input;
+      const input = ctx.vars.suggestionData.inputCmp.input;
       input.value = '=' + this.toPaste;
       this.writeValue(ctx);
     }

@@ -111,21 +111,9 @@ jb.component('table.init', { /* table.init */
   category: 'table:10',
   impl: features(
     calcProp('fields', '%$$model.fields%'),
-    calcProp({id: 'updateItemlistCntr', value: writeValue('%$itemlistCntr.items%', '%$props.items%'), phase: 100}),
+    calcProp({id: 'updateItemlistCntr', value: writeValue('%$itemlistCntr.items%', '%$$props.items%'), phase: 100}),
     calcProp('items', pipeline('%$$model.items%', slice(0,firstSucceeding('%$$model.visualSizeLimit%',100)))),
     interactiveProp('items', pipeline('%$$model.items%', slice(0,firstSucceeding('%$$model.visualSizeLimit%',100)))),
-    // calcProp('items', (ctx,{cmp}) => {
-    //   const items = jb.toarray(ctx.vars.$model.items(ctx));
-    //   extendItemsWithCalculatedFields();
-    //   //cmp.sortItems && cmp.sortItems();
-    //   return items.slice(0,ctx.vars.$model.visualSizeLimit || 100);
-
-    //   function extendItemsWithCalculatedFields() {
-    //     if (!ctx.data.fields || !cmp.items) return;
-    //     ctx.data.fields.filter(f=>f.extendItems).forEach(f=>
-    //       cmp.items.forEach(item=>item[f.title()] = f.calcFieldData(item)))
-    //   }
-    // }),
   )
 })
 

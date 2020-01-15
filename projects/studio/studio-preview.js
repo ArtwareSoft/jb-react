@@ -133,14 +133,14 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
         calcProp('cacheKiller', () => 'cacheKiller='+(''+Math.random()).slice(10)),
         calcProp('rootName','%$studio/settings/rootName%'),
         calcProp('project','%$studio/project%'),
-        calcProp('src', '/project/%$props/project%?%$props/cacheKiller%&spy=preview'),
+        calcProp('src', '/project/%$$props/project%?%$$props/cacheKiller%&spy=preview'),
         calcProp('inMemoryProject', st.inMemoryProject),
         calcProp('host', '%$queryParams/host%'),
         calcProp('hasHost', ctx => ctx.vars.host && st.projectHosts[ctx.vars.host]),
         calcProp('loadingMessage', data.if('%$inMemoryProject%', '',
-          '{? loading project from %$props/host%::%$queryParams/hostProjectId% ?}')),
+          '{? loading project from %$$props/host%::%$queryParams/hostProjectId% ?}')),
         interactive( (ctx,{cmp}) => {
-          if (!st.inMemoryProject && cmp.ctx.vars.props.host && st.projectHosts[host]) {
+          if (!st.inMemoryProject && cmp.ctx.vars.$props.host && st.projectHosts[host]) {
             const project = ctx.exp('%$studio/project%')
             document.title = `${project} with jBart`;
             return st.projectHosts[host].fetchProject(ctx.exp('%$queryParams/hostProjectId%'),project)

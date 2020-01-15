@@ -87,21 +87,6 @@ jb.evalStr = function(str,frame) {
     }
 }
 
-jb.objectDiff = function(newObj, orig) {
-    if (orig === newObj) return {}
-    if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
-    const deletedValues = Object.keys(orig).reduce((acc, key) =>
-        newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: undefined }
-    , {})
-
-    return Object.keys(newObj).reduce((acc, key) => {
-      if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key
-      const difference = jb.objectDiff(newObj[key], orig[key])
-      if (jb.isObject(difference) && jb.isEmpty(difference)) return acc // return no diff
-      return { ...acc, [key]: difference } // return updated key
-    }, deletedValues)
-}
-
 jb.component('text-editor.with-cursor-path', { /* textEditor.withCursorPath */
   type: 'action',
   params: [

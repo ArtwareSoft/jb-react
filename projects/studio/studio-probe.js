@@ -57,10 +57,8 @@ st.Probe = class {
         const st = jb.studio
         return Promise.resolve(this.context.runItself()).then(res=>{
             if (st.isCompNameOfType(jb.compName(this.circuit),'control')) {
-                const ctrl = jb.ui.h(res)
-                st.probeEl = st.probeEl || document.createElement('div')
-                st.probeResEl = jb.ui.render(ctrl, st.probeEl, st.probeResEl)
-                return ({element: st.probeResEl})
+                const vdom = res.renderVdom()
+                return ({props: res.renderProps, vdom , cmp: res})
             }
             else if (st.isCompNameOfType(jb.compName(this.circuit),'table-field')) {
                 const item = this.context.vars.$probe_item

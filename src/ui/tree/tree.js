@@ -21,10 +21,12 @@ jb.component('tree', { /* tree */
 				cmp.state.expanded[path] = !(cmp.state.expanded[path]);
 				cmp.refresh();
 			}),
+			interactiveProp('nodeModel', '%$$model.nodeModel%'),
 			interactive( (ctx,{cmp}) => {
+				cmp.state.expanded =  { [cmp.nodeModel.rootPath] : true }
+				tree.cmp = cmp
 				cmp.selectionEmitter = new jb.rx.Subject()
 				tree.redraw = cmp.redraw = () => cmp.refresh()
-				tree.cmp = cmp
 
 				cmp.expandPath = path => {
 					let changed = false
@@ -37,7 +39,6 @@ jb.component('tree', { /* tree */
 					if (changed) cmp.redraw()
 					return changed
 				}
-	
 				cmp.elemToPath = el => el && (el.getAttribute('path') || jb.ui.closest(el,'.treenode') && jb.ui.closest(el,'.treenode').getAttribute('path'))
 			}),
 			feature.init( (ctx,{cmp}) => {
