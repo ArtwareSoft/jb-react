@@ -173,7 +173,7 @@ jb.component('menu-style.pulldown', { /* menuStyle.pulldown */
         Var('innerMenuStyle', ctx => ctx.componentContext.params.innerMenuStyle),
         Var('leafOptionStyle', ctx => ctx.componentContext.params.leafOptionStyle)
       ],
-      items: ctx => ctx.vars.menuModel.options().filter(x=>x),
+      items: ctx => ctx.vars.menuModel.options && ctx.vars.menuModel.options().filter(x=>x) || [],
       controls: menu.control({menu: '%$item%', style: menuStyle.popupThumb()}),
       style: call('layout'),
       features: menu.selection()
@@ -197,7 +197,7 @@ jb.component('menu-style.context-menu', { /* menuStyle.contextMenu */
         Var('optionsParentId', ctx => ctx.id),
         Var('leafOptionStyle', ctx => ctx.componentContext.params.leafOptionStyle)
       ],
-      items: ctx => ctx.vars.menuModel.options().filter(x=>x),
+      items: ctx => ctx.vars.menuModel.options && ctx.vars.menuModel.options().filter(x=>x) || [],
       controls: menu.control({menu: '%$item%', style: menuStyle.applyMultiLevel({})}),
       features: menu.selection(true)
     })
@@ -340,25 +340,26 @@ jb.component('menu.selection', { /* menu.selection */
     {id: 'autoSelectFirst', type: 'boolean'}
   ],
   impl: ctx => ({
-      onkeydown: true,
-      onmousemove: true,
-			templateModifier: vdom => {
+    onkeydown: true,
+    onmousemove: true,
+		templateModifier: vdom => {
 				vdom.attributes = vdom.attributes || {};
 				vdom.attributes.tabIndex = 0
-			},
-			afterViewInit: cmp => {
+    },
+		afterViewInit: cmp => {
 				// putting the emitter at the top-menu only and listen at all sub menus
 				if (!ctx.vars.topMenu.keydown) {
 					ctx.vars.topMenu.keydown = cmp.onkeydown;
 						jb.ui.focus(cmp.base,'menu.keyboard init autoFocus',ctx);
-			}
+			  }
+      cmp.items = Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
+        .map(el=>(jb.ctxDictionary[el.getAttribute('jb-ctx')] || {}).data)
 
 			const keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
       cmp.onmousemove.map(e=> dataOfElems(e.target.ownerDocument.elementsFromPoint(e.pageX, e.pageY)))
         .filter(x=>x).filter(data => data != ctx.vars.topMenu.selected)
         .subscribe(data => cmp.select(data))
-			keydown.filter(e=>
-						e.keyCode == 38 || e.keyCode == 40 )
+			keydown.filter(e=> e.keyCode == 38 || e.keyCode == 40 )
 					.map(event => {
 						event.stopPropagation();
 						const diff = event.keyCode == 40 ? 1 : -1;
@@ -383,7 +384,7 @@ jb.component('menu.selection', { /* menu.selection */
           .filter(elem=> (jb.ctxDictionary[elem.getAttribute('jb-ctx')] || {}).data === selected)
           .forEach(elem=> elem.classList.add('selected'))
       }
-			cmp.selected = _ =>	ctx.vars.topMenu.selected;
+			cmp.state.selected = ctx.vars.topMenu.selected;
 			if (ctx.params.autoSelectFirst && cmp.items[0])
             cmp.select(cmp.items[0])
 

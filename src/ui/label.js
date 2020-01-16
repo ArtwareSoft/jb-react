@@ -53,13 +53,14 @@ jb.component('label.htmlTag', { /* label.htmlTag */
   })
 })
 
-// jb.component('label.no-wrapping-tag', { /* label.noWrappingTag() */
-//   type: 'label.style',
-//   impl: customStyle({
-//     template: (cmp,{text},h) => text,
-//     features: label.bindText()
-//   })
-// })
+jb.component('label.no-wrapping-tag', { /* label.noWrappingTag() */
+  type: 'label.style',
+  category: 'label:0',
+  impl: customStyle({
+    template: (cmp,{text},h) => text,
+    features: label.bindText()
+  })
+})
 
 jb.component('label.span', { /* label.span */
   type: 'label.style',

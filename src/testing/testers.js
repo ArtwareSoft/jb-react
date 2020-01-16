@@ -308,6 +308,6 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,rerun}) {
 				jb.ui.addHTML(document.body,elem);
 				if (show && res.elem)
 					document.body.appendChild(res.elem);
-				jb.ui && jb.ui.garbageCollectCtxDictionary && jb.ui.garbageCollectCtxDictionary(true)
+				jb.ui && jb.ui.garbageCollectCtxDictionary && jb.ui.garbageCollectCtxDictionary(document.body,true)
 			})
 }

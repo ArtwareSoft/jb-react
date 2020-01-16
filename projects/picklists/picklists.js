@@ -17,7 +17,6 @@ jb.component('picklists.main', { /* picklists.main */
     layout: layout.flex({wrap: 'wrap'}),
     style: group.sections({
       sectionStyle: styleWithFeatures(
-        card.card(),
         [css.margin({left: '30', bottom: '40'}), css.padding({left: '20'})]
       ),
       innerGroupStyle: styleWithFeatures(group.div(), [css.padding({right: '50'})])

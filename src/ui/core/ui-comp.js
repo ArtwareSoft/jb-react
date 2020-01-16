@@ -59,10 +59,12 @@ class JbComponent {
         ,initialVdom)
 
         const observe = this.toObserve.map(x=>[x.ref.handler.urlOfRef(x.ref),
-            x.includeChildren ? `includeChildren=${x.includeChildren}` : ''
+            x.includeChildren ? `includeChildren=${x.includeChildren}` : '',
+            x.strongRefresh ? `strongRefresh` : ''
         ].join(';')).join(',')
         const handlers = (this.defHandler||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx)}`).join(',')
         const interactive = (this.interactiveProp||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx)}`).join(',')
+        const morecontexts = this.contexts.slice(1).map(x=>x.id).join(',')
 
         if (typeof vdom == 'object') {
             ui.addClassToVdom(vdom, this.jbCssClass())
@@ -73,6 +75,7 @@ class JbComponent {
                 },
                 observe && {observe}, 
                 handlers && {handlers}, 
+                morecontexts && {morecontexts},
                 this.ctxForPick && { 'pick-ctx': ui.preserveCtx(this.ctxForPick) },
                 (this.componentDidMountFuncs || interactive) && {interactive}, 
                 this.renderProps.cmpHash != null && {cmpHash: this.renderProps.cmpHash}

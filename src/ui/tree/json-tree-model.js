@@ -101,11 +101,18 @@ class Json {
 	modify(op,path,args,ctx) {
 		op.call(this,path,args);
 	}
-	move(dragged,target,ctx) { // drag & drop
+	move(dragged,_target,ctx) { // drag & drop
 		const draggedArr = this.val(dragged.split('~').slice(0,-1).join('~'));
+		const target = isNaN(Number(_target.split('~').slice(-1))) ? _target + '~0' : _target
 		const targetArr = this.val(target.split('~').slice(0,-1).join('~'));
 		if (Array.isArray(draggedArr) && Array.isArray(targetArr))
-			jb.move(jb.asRef(this.val(dragged)), jb.asRef(this.val(target)),ctx)
+			jb.move(jb.asRef(this.val(dragged)), this.val(target) ? jb.asRef(this.val(target)) : this.extraArrayRef(target) ,ctx)
+	}
+	extraArrayRef(target) {
+		const targetArr = this.val(target.split('~').slice(0,-1).join('~'));
+		const targetArrayRef = jb.asRef(targetArr)
+		const handler = targetArrayRef.handler
+		return handler && handler.refOfPath(handler.pathOfRef(targetArrayRef).concat(target.split('~').slice(-1)))
 	}
 }
 

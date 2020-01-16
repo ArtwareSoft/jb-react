@@ -5,8 +5,8 @@ jb.component('group', { /* group */
   category: 'group:100,common:90',
   params: [
     {id: 'title', as: 'string', dynamic: true},
-    {id: 'layout', type: 'layout' },
-    {id: 'style',type: 'group.style',defaultValue: group.div(),mandatory: true,dynamic: true},
+    {id: 'layout', type: 'layout', defaultValue: layout.vertical() },
+    {id: 'style',type: 'group.style', defaultValue: group.div(), mandatory: true, dynamic: true},
     {id: 'controls',type: 'control[]',mandatory: true,flattenArray: true,dynamic: true,composite: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],

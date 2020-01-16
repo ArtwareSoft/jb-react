@@ -71,11 +71,11 @@ function printDelta(delta) {
     return jb.prettyPrint(filterDelta(delta))
 }
 
-function applyVdomDiff(elem,vdomAfter) {
+function applyVdomDiff(elem,vdomAfter,strongRefresh) {
     const delta = compareVdom(elemToVdom(elem),vdomAfter)
     const active = document.activeElement === elem
     jb.log('applyDeltaTop',[...arguments,active,delta],{modifier: record => record.push(printDelta(delta)) })
-    if (delta.tag) {
+    if (delta.tag || strongRefresh) {
         unmount(elem)
         const newElem = render(vdomAfter,elem.parentElement)
         elem.parentElement.replaceChild(newElem,elem)
@@ -87,7 +87,7 @@ function applyVdomDiff(elem,vdomAfter) {
     ui.findIncludeSelf(elem,'[interactive]').forEach(el=> 
         el._component ? el._component.recalcPropsFromElem() : mountInteractive(el))
     if (active) elem.focus()
-    ui.garbageCollectCtxDictionary()
+    ui.garbageCollectCtxDictionary(elem)
 }
 
 function applyDeltaToDom(elem,delta) {
@@ -226,7 +226,7 @@ function render(vdom,parentElem) {
     }
     const res = doRender(vdom,parentElem)
     ui.findIncludeSelf(res,'[interactive]').forEach(el=> mountInteractive(el))
-    ui.garbageCollectCtxDictionary()
+    ui.garbageCollectCtxDictionary(parentElem)
     return res
 }
 
@@ -264,7 +264,9 @@ Object.assign(jb.ui, {
             return context.params.style ? context.params.style(ctx) : {}
         }
     },
-    garbageCollectCtxDictionary(force) {
+    garbageCollectCtxDictionary(elem,force) {
+        if (!elem.ownerDocument.contains(elem)) return // tests
+
         const now = new Date().getTime()
         ui.ctxDictionaryLastCleanUp = ui.ctxDictionaryLastCleanUp || now
         const timeSinceLastCleanUp = now - ui.ctxDictionaryLastCleanUp
@@ -320,7 +322,7 @@ Object.assign(jb.ui, {
         const hash = cmp.init()
         if (hash != null && hash == elem.getAttribute('cmpHash'))
             return jb.log('refreshElem',['stopped by hash', hash, ...arguments]);
-        cmp && applyVdomDiff(elem, h(cmp))
+        cmp && applyVdomDiff(elem, h(cmp), jb.path(options,'strongRefresh'))
     },
 
     subscribeToRefChange: watchHandler => watchHandler.resourceChange.subscribe(e=> {
@@ -333,12 +335,13 @@ Object.assign(jb.ui, {
         jb.log('notifyObservableElems',['elemsToCheck',elemsToCheck,e])
         elemsToCheck.forEach((elem,i) => {
             if (elemsToCheckCtx[i] != elem.getAttribute('jb-ctx')) return // the elem was changed by it parent 
-            let refresh = false
+            let refresh = false, strongRefresh = false
             elem.getAttribute('observe').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{
                 //if (checkCircularity(obs)) return
                 const obsPath = watchHandler.removeLinksFromPath(watchHandler.pathOfRef(obs.ref))
                 if (!obsPath)
                     return jb.logError('observer ref path is empty',obs,e)
+                strongRefresh = strongRefresh || obs.strongRefresh
                 const diff = ui.comparePaths(changed_path, obsPath)
                 const isChildOfChange = diff == 1
                 const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
@@ -349,15 +352,16 @@ Object.assign(jb.ui, {
                     refresh = true
                 }
             })
-            refresh && ui.refreshElem(elem,null,{srcCtx: e.srcCtx})
+            refresh && ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh})
         })
 
         function observerFromStr(obsStr) {
             const parts = obsStr.split('://')
             const innerParts = parts[1].split(';')
             const includeChildren = (innerParts[2].match(/includeChildren=([a-z]+)/) || ['',''])[1]
+            const strongRefresh = innerParts[3] === 'strongRefresh'
             return parts[0] == watchHandler.resources.id && 
-                { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren }
+                { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh }
         }
     }),
     databindObservable(cmp,settings) {
@@ -387,15 +391,16 @@ function checkCircularity(obs) {
     }
 }
 
-function mountInteractive(elem) {
+function mountInteractive(elem, keepState) {
     const ctx = jb.ctxDictionary[elem.getAttribute('mount-ctx')]
     const cmp = (ctx.profile.$ == 'open-dialog') ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself();
     const mountedCmp = {
-        state: {},
+        state: { ...(keepState && jb.path(elem._component,'state')) },
         base: elem,
         refresh(state, options) {
             jb.log('refreshReq',[...arguments])
             if (this._deleted) return
+            Object.assign(this.state, state)
             ui.refreshElem(elem,{...this.state, ...state},options)
             ;(this.componentDidUpdateFuncs||[]).forEach(f=> tryWrapper(() => f(this), 'componentDidUpdate'))
         },

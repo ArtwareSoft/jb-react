@@ -26,7 +26,7 @@ jb.component('ui-test.tree-rightClick', { /* uiTest.treeRightClick */
 jb.component('ui-test.tree-DD', { /* uiTest.treeDD */
     impl: uiTest({
       control: tree({
-        nodeModel: tree.json('%$personWithChildren%', 'Homer'),
+        nodeModel: tree.json('%$personWithChildren%','personWithChildren'),
         features: [tree.selection(), tree.dragAndDrop(), tree.keyboardSelection()]
       }),
       action: ctx => jb.move(ctx.exp('%$personWithChildren/children[1]%', 'ref'),
@@ -40,6 +40,54 @@ jb.component('ui-test.tree-DD', { /* uiTest.treeDD */
         'Bart,Maggie,Lisa,Barnie'
       )
     })
+})
+
+jb.component('ui-test.tree-DD-and-back', {
+  impl: uiTest({
+    control: tree({
+      nodeModel: tree.json('%$personWithChildren%','personWithChildren'),
+      features: [tree.selection(), tree.dragAndDrop(), tree.keyboardSelection()]
+    }),
+    action: runActions(
+      ctx => jb.move(ctx.exp('%$personWithChildren/children[1]%', 'ref'),
+          ctx.exp('%$personWithChildren/friends[1]%', 'ref'),ctx),
+      delay(1),
+      ctx => jb.move(ctx.exp('%$personWithChildren/friends[1]%', 'ref'),
+          ctx.exp('%$personWithChildren/children[1]%', 'ref'),ctx)
+    ),
+    expectedResult: equals(
+      pipeline(
+        list('%$personWithChildren/children%', '%$personWithChildren/friends%'),
+        '%name%',
+        join()
+      ),
+      'Bart,Lisa,Maggie,Barnie'
+    )
+  })
+})
+
+jb.component('ui-test.tree-DD-twice', {
+  impl: uiTest({
+    control: tree({
+      nodeModel: tree.json('%$personWithChildren%','personWithChildren'),
+      features: [tree.selection(), tree.dragAndDrop(), tree.keyboardSelection()]
+    }),
+    action: runActions(
+      ctx => jb.move(ctx.exp('%$personWithChildren/children[1]%', 'ref'),
+          ctx.exp('%$personWithChildren/friends[1]%', 'ref'),ctx) ,
+      delay(1),
+      ctx => jb.move(ctx.exp('%$personWithChildren/children[1]%', 'ref'),
+          ctx.exp('%$personWithChildren/friends[1]%', 'ref'),ctx)
+    ),
+    expectedResult: equals(
+      pipeline(
+        list('%$personWithChildren/children%', '%$personWithChildren/friends%'),
+        '%name%',
+        join()
+      ),
+      'Bart,Barnie,Maggie,Lisa'
+    )
+  })
 })
 
 jb.component('ui-test.tree-visual-DD', {

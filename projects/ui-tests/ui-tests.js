@@ -94,6 +94,39 @@ jb.component('ui-test.wait-for-with-pipe', {
   })
 })
 
+// jb.component('ui-test.wait-for-with-MD', {
+//   impl: uiTest({
+//     control: group({
+//       controls: [
+//         itemlist({
+//           items: '%$people%',
+//           controls: label('%$item.name%'),
+//           features: [
+//             itemlist.selection({
+//               databind: '%$globals/selectedPerson%',
+//               autoSelectFirst: true
+//             }),
+//           ]
+//         }),
+//         group({ 
+//           controls: label('%%'),
+//           features: [
+//             watchRef({ ref: '%$globals/selectedPerson%', strongRefresh: true }),
+//             group.wait({for: pipe(delay(10), '%$globals/selectedPerson/name% -- delayed')})
+//           ]
+//         })
+//       ]
+//     }),
+//     action: [
+//       delay(10),
+//       writeValue('%$globals/selectedPerson%','%$people[1]%'),
+//       delay(40)
+//     ],
+//     expectedResult: and(contains('Marge Simpson -- delayed'),not(contains('loading'))),
+//     expectedCounters: {replaceTop: 2, applyDeltaTop: 4}
+//   })
+// })
+
 jb.component('ui-test.asynch-label', {
   impl: uiTest({
     control: label({ 
@@ -473,7 +506,6 @@ jb.component('ui-test.itemlist.shown-only-on-item-hover', {
     expectedResult: contains(['Homer Simpson'])
   })
 })
-
 
 jb.component('ui-test.itemlist-with-select', { /* uiTest.itemlistWithSelect */
   impl: uiTest({
@@ -934,7 +966,7 @@ jb.component('ui-test.expand-collapse-with-default-collapse', { /* uiTest.expand
           })
         ],
         features: [
-          watchRef({ref: '%$default%', strongRefresh: true}),
+          watchRef({ref: '%$default%' }),
           feature.init(writeValue('%$expanded%','%$default%'))
         ]
       })
@@ -1587,10 +1619,10 @@ jb.component('ui-test.apply-vdom-diff-tag', {
   })
 })
 
-jb.component('ui-test.apply-vdom-child-tag', { 
+jb.component('ui-test.apply-vdom-diff-to-text', { 
   impl: uiTest.applyVdomDiff({
-    controlBefore: group({controls: text('aa')}),
-    control: group({controls: text({ text: 'aa', style: header.h1() }) }),
+    controlBefore: ctx => h('div',{},'aa'),
+    control: ctx => 'aa',
   })
 })
 
@@ -1612,5 +1644,52 @@ jb.component('ui-test.apply-vdom-diff-to-text', {
   impl: uiTest.applyVdomDiff({
     controlBefore: ctx => h('div',{},'aa'),
     control: ctx => 'aa',
+  })
+})
+
+jb.component('ui-test.apply-vdom-diff-DD-tree1', { 
+  impl: uiTest.applyVdomDiff({
+    controlBefore: group({controls: [ 
+      text('0'), 
+      text('1'), 
+        group({controls: [ text('1.1'), text('1.2')] }), 
+        text('2')] 
+    }),
+    control: group({controls: [ 
+      text('1'), 
+      group({controls: [ text('0'), text('1.1'), text('1.2')] }), 
+      text('2')] 
+    }),
+  })
+})
+
+jb.component('ui-test.apply-vdom-diff-DD-tree1', { 
+  impl: uiTest.applyVdomDiff({
+    controlBefore: group({controls: [ 
+      text('0'), 
+      text('1'), 
+        group({controls: [ text('1.1'), text('1.2')] }), 
+        text('2')] 
+    }),
+    control: group({controls: [ 
+      text('1'), 
+      group({controls: [ text('0'), text('1.1'), text('1.2')] }), 
+      text('2')] 
+    }),
+  })
+})
+
+jb.component('ui-test.apply-vdom-diff-DD-tree2', { 
+  impl: uiTest.applyVdomDiff({
+    controlBefore: h('div',{},[
+      '0','1',
+      h('div',{},[ '1.1','1.2' ]),
+      '2'
+    ]),
+    control: h('div',{},[
+      '1',
+      h('div',{},[ '0','1.1','1.2' ]),
+      '2'
+    ])
   })
 })

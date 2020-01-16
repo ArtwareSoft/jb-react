@@ -106,9 +106,7 @@ jb.component('watch-ref', { /* watchRef */
     { id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data' },
     { id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well' },
     { id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean' },
-//    { id: 'strongRefresh', as: 'boolean', description: 'rebuild the component, including all features and variables', type: 'boolean' },
-//    { id: 'recalcVars', as: 'boolean', description: 'recalculate feature variables', type: 'boolean' },
-    { id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority' },
+    { id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and reinit wait for data', type: 'boolean' },
    ],
   impl: ctx => ({ watchRef: {refF: ctx.params.ref, ...ctx.params}})
 })
@@ -120,9 +118,8 @@ jb.component('watch-observable', { /* watchObservable */
   params: [
     {id: 'toWatch', mandatory: true},
   ],
-  impl: (ctx,toWatch) => ({
-      afterViewInit: cmp => toWatch.takeUntil(cmp.destroyed).subscribe(()=>cmp.refresh(null,{srcCtx:ctx})),
-  })
+  impl: interactive((ctx,{cmp}) => 
+    toWatch.takeUntil(cmp.destroyed).subscribe(()=>cmp.refresh(null,{srcCtx:ctx.componentContext})))
 })
 
 jb.component('group.data', { /* group.data */
@@ -461,8 +458,8 @@ jb.component('refresh-control-by-id', { /* refreshControlById */
   type: 'action',
   params: [
     {id: 'id', as: 'string', mandatory: true},
-    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component, including all features and variables', type: 'boolean' },
-    {id: 'recalcVars', as: 'boolean', description: 'recalculate feature variables', type: 'boolean' },
+    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and promises', type: 'boolean' },
+//    {id: 'recalcVars', as: 'boolean', description: 'recalculate feature variables', type: 'boolean' },
   ],
   impl: (ctx,id) => {
     const base = ctx.vars.elemToTest || typeof document !== 'undefined' && document

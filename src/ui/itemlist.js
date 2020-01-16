@@ -32,7 +32,6 @@ jb.component('itemlist.init', { /* itemlist.init */
   type: 'feature',
   impl: features(
     calcProp('items', '%$$model.items%'),
-    interactiveProp('items', '%$$model.items%'),
     calcProp('ctrls', ctx => {
       const controlsOfItem = item => 
         ctx.vars.$model.controls(ctx.setVar(ctx.vars.$model.itemVariable,item).setData(item)).filter(x=>x)
@@ -47,7 +46,6 @@ jb.component('itemlist.init-table', { /* itemlist.initTable */
   type: 'feature',
   impl: features(
       calcProp('items', pipeline('%$$model.items%', slice(0,firstSucceeding('%$$model.visualSizeLimit%',100)))),
-      interactiveProp('items', pipeline('%$$model.items%', slice(0,firstSucceeding('%$$model.visualSizeLimit%',100)))),
       calcProp('fields', '%$$model/controls/field%'),
       itemlist.initContainerWithItems()
     )
@@ -127,6 +125,9 @@ jb.component('itemlist.selection', { /* itemlist.selection */
         cmp.clickEmitter = cmp.onclick.merge(cmp.ondblclick).map(e=>dataOfElem(e.target)).filter(x=>x)
         cmp.ondblclick.map(e=> dataOfElem(e.target)).filter(x=>x)
           .subscribe(data => ctx.params.onDoubleClick(cmp.ctx.setData(data)))
+
+        cmp.items = Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
+          .map(el=>(jb.ctxDictionary[el.getAttribute('jb-ctx')] || {}).data)
 
         cmp.setSelected = selected => {
           cmp.state.selected = selected
@@ -256,7 +257,8 @@ jb.component('itemlist.drag-and-drop', { /* itemlist.dragAndDrop */
               const selectedIndex = cmp.items.indexOf(cmp.state.selected);
               if (selectedIndex == -1) return;
               const index = (selectedIndex + diff+ cmp.items.length) % cmp.items.length;
-              jb.splice(jb.asRef(cmp.items),[[selectedIndex,1],[index,0,cmp.state.selected]],ctx);
+              const itemsF = jb.path(jb.ctxDictionary,`${cmp.base.getAttribute('jb-ctx')}.params.items`)
+              itemsF && jb.splice(jb.asRef(itemsF()),[[selectedIndex,1],[index,0,cmp.state.selected]],ctx);
           })
 //        })
       }

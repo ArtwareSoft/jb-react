@@ -335,10 +335,11 @@ jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
 				cmp.state.expanded[dropElm.dragged.path] = dropElm.dragged.expanded; // restore expanded state
 				const state = treeStateAsRefs(cmp);
 				const targetSibling = _targetSibling; // || target.lastElementChild == dropElm && target.previousElementSibling
-				let targetPath = targetSibling ? cmp.elemToPath(targetSibling) : addToIndex(cmp.elemToPath(target.lastElementChild),1);
+				let targetPath = targetSibling ? cmp.elemToPath(targetSibling) : 
+					target.lastElementChild ? addToIndex(cmp.elemToPath(target.lastElementChild),1) : cmp.elemToPath(target);
 				// strange dragule behavior fix
 				const draggedIndex = Number(dropElm.dragged.path.split('~').pop());
-				const targetIndex = Number(targetPath.split('~').pop());
+				const targetIndex = Number(targetPath.split('~').pop()) || 0;
 				if (target === source && targetIndex > draggedIndex)
 					targetPath = addToIndex(targetPath,-1)
 				cmp.model.move(dropElm.dragged.path,targetPath,ctx);
@@ -349,19 +350,18 @@ jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
 		    })
 
 	        // ctrl up and down
-    		cmp.onkeydown.filter(e=>
-    				e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
-    				.subscribe(e=> {
-      					const selectedIndex = Number(cmp.state.selected.split('~').pop());
-      					if (isNaN(selectedIndex)) return;
-      					const no_of_siblings = Array.from(cmp.base.querySelector('.treenode.selected').parentNode.children).length;
-						const diff = e.keyCode == 40 ? 1 : -1;
-      					let target = (selectedIndex + diff+ no_of_siblings) % no_of_siblings;
-						const state = treeStateAsRefs(tree);
-      					cmp.model.move(cmp.state.selected, cmp.state.selected.split('~').slice(0,-1).concat([target]).join('~'),ctx)
-						  
-						restoreTreeStateFromRefs(cmp,state);
-      			})
+    		cmp.onkeydown.filter(e=>e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
+				.subscribe(e=> {
+					const selectedIndex = Number(cmp.state.selected.split('~').pop());
+					if (isNaN(selectedIndex)) return;
+					const no_of_siblings = Array.from(cmp.base.querySelector('.treenode.selected').parentNode.children).length;
+					const diff = e.keyCode == 40 ? 1 : -1;
+					let target = (selectedIndex + diff+ no_of_siblings) % no_of_siblings;
+					const state = treeStateAsRefs(tree);
+					cmp.model.move(cmp.state.selected, cmp.state.selected.split('~').slice(0,-1).concat([target]).join('~'),ctx)
+						
+					restoreTreeStateFromRefs(cmp,state);
+				})
       		},
   	})
 })
@@ -384,6 +384,7 @@ refToPath = ref => ref && ref.path ? ref.path().join('~') : ''
 
 addToIndex = (path,toAdd) => {
 	if (!path) debugger;
+	if (isNaN(Number(path.slice(-1)))) return path
 	const index = Number(path.slice(-1)) + toAdd;
 	return path.split('~').slice(0,-1).concat([index]).join('~')
 }

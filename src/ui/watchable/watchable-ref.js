@@ -116,11 +116,14 @@ class WatchableValueByRef {
   }
   fixSplicedPaths(path,spliceOp) {
     const propDepth = path.length
-    Array.from(this.objToPath.keys()).filter(k=>startsWithPath(this.objToPath.get(k)))
+    Array.from(this.objToPath.keys())
+      .filter(k=>startsWithPath(this.objToPath.get(k)))
+//      .filter(k=>! spliceOp.reduce((res,ar) => res || jb.asArray(ar[2]).indexOf(k) != -1, false)) // do not touch the moved elem itslef
       .forEach(k=>{
         const newPath = this.objToPath.get(k)
         newPath[propDepth] = fixIndexProp(+newPath[propDepth])
-        this.objToPath.set(k,newPath)
+        if (newPath[propDepth] >= 0)
+          this.objToPath.set(k,newPath)
       })
 
     function startsWithPath(toCompare) {
@@ -130,7 +133,7 @@ class WatchableValueByRef {
       return true
     }
     function fixIndexProp(oldIndex) {
-      return oldIndex + spliceOp.reduce((delta,ar) => (oldIndex < ar[0]) ? 0 : (ar[2] || []).length - ar[1],0)
+      return oldIndex + spliceOp.reduce((delta,ar) => (oldIndex < ar[0]) ? 0 : jb.asArray(ar[2]).length - ar[1],0)
     }
   }
   pathOfRef(ref) {
