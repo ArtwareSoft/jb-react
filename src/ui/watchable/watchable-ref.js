@@ -150,7 +150,7 @@ class WatchableValueByRef {
     const path = this.pathOfRef(ref)
     this.addJbId(path)
     const byId = [ref.$jb_obj[jbId],ref.$jb_childProp].filter(x=>x != null).map(x=>(''+x).replace(/~|;|,/g,'')).join('~')
-    const byPath = path.map(x=>x.replace(/~|;|,/g,'')).join('~')
+    const byPath = path.map(x=>(''+x).replace(/~|;|,/g,'')).join('~')
     return `${this.resources.id}://${byId};${byPath}`
   }
   refOfUrl(url) {

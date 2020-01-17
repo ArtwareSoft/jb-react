@@ -7,6 +7,7 @@ jb.component('mdc-style.init-dynamic', { /* mdcStyle.initDynamic */
   ],
   impl: ctx => ({
     afterViewInit: cmp => {
+      if (!jb.ui.material) return jb.logError('please load mdc library')      
       cmp.mdc_comps = cmp.mdc_comps || []
       if (cmp.base.classList.contains('mdc-text-field'))
         cmp.mdc_comps.push(new jb.ui.material.MDCTextField(cmp.base))

@@ -1341,19 +1341,50 @@ jb.component('ui-test.control.first-succeeding', { /* uiTest.group.firstSucceedi
             controlWithCondition('%$gender% != \"female\"', label('male2')),
             controlWithCondition(true, label('second-succeeding'))
           ]
-        }),
-        group({
-          features: group.firstSucceeding(),
-          controls: [
-            controlWithCondition('%$gender% == \"female\"', label('female')),
-            controlWithCondition('%$gender% == \"lale\"', label('male2')),
-            label('default')
-          ]
         })
       ],
       features: [variable({name: 'gender', value: 'male'})]
     }),
-    expectedResult: and(contains(['male', 'male2', 'default']), not(contains('second-succeeding')))
+    expectedResult: and(contains(['male', 'male2']), not(contains('second-succeeding')))
+  })
+})
+
+jb.component('ui-test.control.first-succeeding-inner-var', {
+  impl: uiTest({
+    control: group({
+        features: [
+          group.firstSucceeding(),
+          variable('innerVar', '5')
+        ],
+        controls: controlWithCondition('%$innerVar% == \"5\"', label('innerVar'))
+    }),
+    expectedResult: contains('innerVar')
+  })
+})
+
+jb.component('ui-test.control.first-succeeding-default', {
+  impl: uiTest({
+    control: group({
+      features: group.firstSucceeding(),
+      controls: [
+        controlWithCondition(false, label('female')),
+        label('defaultCtrl')
+      ]
+    }),
+    expectedResult: contains('defaultCtrl')
+  })
+})
+
+jb.component('ui-test.control.first-succeeding-without-condition', {
+  impl: uiTest({
+    control: group({
+      features: group.firstSucceeding(),
+      controls: [
+        label('withoutCondition'),
+        controlWithCondition(true, label('female')),
+      ]
+    }),
+    expectedResult: contains('withoutCondition')
   })
 })
 
@@ -1637,29 +1668,6 @@ jb.component('ui-test.apply-vdom-diff-mixed2', {
   impl: uiTest.applyVdomDiff({
     controlBefore: ctx => h('div',{},h('div',{},'bb')),
     control: ctx => h('div',{},'aa'),
-  })
-})
-
-jb.component('ui-test.apply-vdom-diff-to-text', { 
-  impl: uiTest.applyVdomDiff({
-    controlBefore: ctx => h('div',{},'aa'),
-    control: ctx => 'aa',
-  })
-})
-
-jb.component('ui-test.apply-vdom-diff-DD-tree1', { 
-  impl: uiTest.applyVdomDiff({
-    controlBefore: group({controls: [ 
-      text('0'), 
-      text('1'), 
-        group({controls: [ text('1.1'), text('1.2')] }), 
-        text('2')] 
-    }),
-    control: group({controls: [ 
-      text('1'), 
-      group({controls: [ text('0'), text('1.1'), text('1.2')] }), 
-      text('2')] 
-    }),
   })
 })
 

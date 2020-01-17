@@ -364,7 +364,7 @@ jb.component('menu.selection', { /* menu.selection */
 						event.stopPropagation();
 						const diff = event.keyCode == 40 ? 1 : -1;
 						const items = cmp.items.filter(item=>!item.separator);
-						const selectedIndex = items.indexOf(ctx.vars.topMenu.selected);
+						const selectedIndex = ctx.vars.topMenu.selected.separator ? 0 : items.indexOf(ctx.vars.topMenu.selected);
 						if (selectedIndex != -1)
 							return items[(selectedIndex + diff + items.length) % items.length];
 				}).filter(x=>x).subscribe(data => cmp.select(data))

@@ -82,11 +82,11 @@ st.initPreview = function(preview_window,allowedTypes) {
 jb.component('studio.refresh-preview', { /* studio.refreshPreview */
   type: 'action',
   impl: ctx => {
-    jb.ui.garbageCollectCtxDictionary(true);
-    jb.studio.previewjb.ui.garbageCollectCtxDictionary(true);
+    jb.ui.garbageCollectCtxDictionary(jb.frame.document.body,true);
+    jb.studio.previewjb.ui.garbageCollectCtxDictionary(jb.studio.previewjb.frame.document.body, true);
     jb.studio.resourcesFromPrevRun = st.previewWindow.JSON.stringify(jb.studio.previewjb.resources)
     //jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
-    jb.ui.dialogs.reRenderAll()
+    jb.ui.dialogs.reRenderAll(ctx)
     ctx.run(refreshControlById('preview-parent'))
   }
 })

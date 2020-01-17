@@ -118,7 +118,7 @@ jb.component('watch-observable', { /* watchObservable */
   params: [
     {id: 'toWatch', mandatory: true},
   ],
-  impl: interactive((ctx,{cmp}) => 
+  impl: interactive((ctx,{cmp},{toWatch}) => 
     toWatch.takeUntil(cmp.destroyed).subscribe(()=>cmp.refresh(null,{srcCtx:ctx.componentContext})))
 })
 

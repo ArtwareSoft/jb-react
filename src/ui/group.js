@@ -58,13 +58,18 @@ jb.component('group.first-succeeding', { /* group.firstSucceeding */
   impl: features(
     () => ({calcHash: ctx => jb.asArray(ctx.vars.$model.controls.profile).reduce((res,prof,i) => {
         if (res) return res
-        const found = ctx.vars.$model.ctx.bool(prof.$ == 'control-with-condition' ? prof.condition : prof)
+        const found = prof.condition == undefined || ctx.vars.$model.ctx.setVars(ctx.vars).runInner(prof.condition,{ as: 'boolean'},`controls.${i}.condition`)
         if (found) 
           return i + 1 // avoid index 0
       }, null),
     }),
-    calcProp({id: 'ctrls', priority: 5, value: ctx => [
-      ctx.vars.$model.ctx.run(jb.asArray(ctx.vars.$model.controls.profile)[ctx.vars.$props.cmpHash-1])] }),
+    calcProp({id: 'ctrls', priority: 5, value: ctx => {
+      const index = ctx.vars.$props.cmpHash-1
+      if (isNaN(index)) return []
+      const prof = jb.asArray(ctx.vars.$model.controls.profile)[index]
+      return [ctx.vars.$model.ctx.setVars(ctx.vars).runInner(prof,{type: 'control'},`controls.${index}`)]
+     } 
+    }),
   )
 })
 

@@ -126,8 +126,9 @@ jb.component('itemlist.selection', { /* itemlist.selection */
         cmp.ondblclick.map(e=> dataOfElem(e.target)).filter(x=>x)
           .subscribe(data => ctx.params.onDoubleClick(cmp.ctx.setData(data)))
 
-        cmp.items = Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
+        cmp.calcItems = () => Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
           .map(el=>(jb.ctxDictionary[el.getAttribute('jb-ctx')] || {}).data)
+        cmp.items = cmp.calcItems()
 
         cmp.setSelected = selected => {
           cmp.state.selected = selected
@@ -167,7 +168,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
           return selectedRef && jb.writeValue(selectedRef,ctx.params.selectedToDatabind(ctx.setData(selected)), ctx)
         }
         function selectedOfDatabind() {
-          return selectedRef && jb.val(ctx.params.databindToSelected(ctx.setVars({items: cmp.items}).setData(jb.val(selectedRef))))
+          return selectedRef && jb.val(ctx.params.databindToSelected(ctx.setVars({items: cmp.calcItems()}).setData(jb.val(selectedRef))))
         }
         function dataOfElem(el) {
           const itemElem = jb.ui.closest(el,'.jb-item')
@@ -210,8 +211,9 @@ jb.component('itemlist.keyboard-selection', { /* itemlist.keyboardSelection */
             .map(ev => {
               ev.stopPropagation();
               const diff = ev.keyCode == 40 ? 1 : -1;
-              const items = cmp.items;
-              return items[(items.indexOf(cmp.state.selected) + diff + items.length) % items.length] || cmp.state.selected;
+              cmp.items = cmp.calcItems()
+              const selectedIndex = cmp.items.indexOf(cmp.state.selected) + diff
+              return cmp.items[Math.min(cmp.items.length-1,Math.max(0,selectedIndex))];
         }).subscribe(selected => cmp.selectionEmitter && cmp.selectionEmitter.next(selected) )
       },
     })
@@ -227,6 +229,7 @@ jb.component('itemlist.drag-and-drop', { /* itemlist.dragAndDrop */
         });
 
         drake.on('drag', function(el, source) {
+          cmp.items = cmp.calcItems()
           let item = el.getAttribute('jb-ctx') && jb.ctxDictionary[el.getAttribute('jb-ctx')].data;
           if (!item) {
             const item_comp = el._component || (el.firstElementChild && el.firstElementChild._component);
@@ -253,6 +256,7 @@ jb.component('itemlist.drag-and-drop', { /* itemlist.dragAndDrop */
           cmp.onkeydown.filter(e=>
             e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
             .subscribe(e=> {
+              cmp.items = cmp.calcItems()
               const diff = e.keyCode == 40 ? 1 : -1;
               const selectedIndex = cmp.items.indexOf(cmp.state.selected);
               if (selectedIndex == -1) return;

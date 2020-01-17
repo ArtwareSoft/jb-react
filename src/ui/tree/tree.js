@@ -182,35 +182,36 @@ jb.component('tree.selection', { /* tree.selection */
 				jb.ui.findIncludeSelf(cmp.base,'.treenode').filter(elem=> elem.getAttribute('path') === selected)
 					.forEach(elem=> {elem.classList.add('selected'); elem.scrollIntoViewIfNeeded()})
 			}
-	  
-		  cmp.selectionEmitter
-		  	.merge(databindObs || [])
-		  	.merge(cmp.onclick.map(event => cmp.elemToPath(event.target)))
-			.distinctUntilChanged()
-		  	.filter(x=>x)
-		  	.map(x=> jb.val(x))
-		  	.subscribe(selected=> {
-				cmp.setSelected(selected);
-				selectedRef && jb.writeValue(selectedRef, selected, ctx);
-				ctx.params.onSelection(cmp.ctx.setData(selected));
-		  })
-		  cmp.onclick.subscribe(_=>	cmp.regainFocus && cmp.regainFocus())
+			cmp.getSelected = () => cmp.state.selected = cmp.elemToPath(jb.ui.findIncludeSelf(cmp.base,'.treenode.selected')[0])
+			
+			cmp.selectionEmitter.merge(databindObs || [])
+				.merge(cmp.onclick.map(event => cmp.elemToPath(event.target)))
+				.distinctUntilChanged()
+				.filter(x=>x)
+				.map(x=> jb.val(x))
+				.subscribe(selected=> {
+					cmp.setSelected(selected);
+					selectedRef && jb.writeValue(selectedRef, selected, ctx);
+					ctx.params.onSelection(cmp.ctx.setData(selected));
+				})
 
-		if (ctx.params.onRightClick.profile)
-			cmp.base.oncontextmenu = (e=> {
-				jb.ui.wrapWithLauchingElement(ctx.params.onRightClick,
-					ctx.setData(cmp.elemToPath(e.target)), e.target)();
-				return false;
-			});
+			cmp.onclick.subscribe(_=>	cmp.regainFocus && cmp.regainFocus())
 
-		  // first auto selection selection
-		  var first_selected = jb.val(selectedRef);
-		  if (!first_selected && ctx.params.autoSelectFirst) {
-			  var first = jb.ui.find(cmp.base.parentNode,'.treenode')[0];
-			  first_selected = cmp.elemToPath(first);
-		  }
-		  if (first_selected)
-  			jb.delay(1).then(() => cmp.selectionEmitter.next(first_selected))
+			if (ctx.params.onRightClick.profile)
+				cmp.base.oncontextmenu = (e=> {
+					jb.ui.wrapWithLauchingElement(ctx.params.onRightClick,
+						ctx.setData(cmp.elemToPath(e.target)), e.target)();
+					return false;
+				});
+
+			// first auto selection selection
+			var first_selected = jb.val(selectedRef);
+			if (!first_selected && ctx.params.autoSelectFirst) {
+				var first = jb.ui.find(cmp.base.parentNode,'.treenode')[0];
+				first_selected = cmp.elemToPath(first);
+			}
+			if (first_selected)
+				jb.delay(1).then(() => cmp.selectionEmitter.next(first_selected))
   		},
   	})
 })
@@ -248,31 +249,33 @@ jb.component('tree.keyboard-selection', { /* tree.keyboardSelection */
 					.map(event => {
 						const diff = event.keyCode == 40 ? 1 : -1;
 						const nodes = jb.ui.findIncludeSelf(cmp.base,'.treenode');
-						const selected = jb.ui.findIncludeSelf(cmp.base,'.treenode.selected')[0];
-						return cmp.elemToPath(nodes[nodes.indexOf(selected) + diff]) || cmp.state.selected;
+						const selectedEl = jb.ui.findIncludeSelf(cmp.base,'.treenode.selected')[0];
+						return cmp.elemToPath(nodes[nodes.indexOf(selectedEl) + diff]) || cmp.getSelected();
 					}).subscribe(x=> cmp.selectionEmitter.next(x))
 				// expand collapse
 				keyDownNoAlts
 					.filter(e=> e.keyCode == 37 || e.keyCode == 39)
 					.subscribe(event => {
-						const isArray = cmp.model.isArray(cmp.state.selected);
-						if (!isArray || (cmp.state.expanded[cmp.state.selected] && event.keyCode == 39))
+						const selected = cmp.getSelected()
+						const isArray = cmp.model.isArray(selected);
+						if (!isArray || (cmp.state.expanded[selected] && event.keyCode == 39))
 							runActionInTreeContext(context.params.onRightClickOfExpanded);
-						if (isArray && cmp.state.selected) {
-							cmp.state.expanded[cmp.state.selected] = (event.keyCode == 39);
+						if (isArray && selected) {
+							cmp.state.expanded[selected] = (event.keyCode == 39);
 							cmp.redraw()
 						}
 					});
 
 				function runActionInTreeContext(action) {
+					console.log(cmp.getSelected())
 					jb.ui.wrapWithLauchingElement(action,
-						context.setData(cmp.state.selected), jb.ui.findIncludeSelf(cmp.base,'.treenode.selected>.treenode-line')[0])()
+						context.setData(cmp.getSelected()), jb.ui.findIncludeSelf(cmp.base,'.treenode.selected>.treenode-line')[0])()
 				}
 				// menu shortcuts - delay in order not to block registration of other features
 		    jb.delay(1).then(_=> cmp.base && (cmp.base.onkeydown = e => {
 					if ((e.ctrlKey || e.altKey || e.keyCode == 46) // also Delete
 					 && (e.keyCode != 17 && e.keyCode != 18)) { // ctrl or alt alone
-						var menu = context.params.applyMenuShortcuts(context.setData(cmp.state.selected));
+						var menu = context.params.applyMenuShortcuts(context.setData(cmp.getSelected()));
 						if (menu && menu.applyShortcut && menu.applyShortcut(e))
 							return false;  // stop propagation
 					}
@@ -352,13 +355,14 @@ jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
 	        // ctrl up and down
     		cmp.onkeydown.filter(e=>e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
 				.subscribe(e=> {
-					const selectedIndex = Number(cmp.state.selected.split('~').pop());
+					const selected = cmp.getSelected()
+					const selectedIndex = Number(selected.split('~').pop());
 					if (isNaN(selectedIndex)) return;
 					const no_of_siblings = Array.from(cmp.base.querySelector('.treenode.selected').parentNode.children).length;
 					const diff = e.keyCode == 40 ? 1 : -1;
 					let target = (selectedIndex + diff+ no_of_siblings) % no_of_siblings;
 					const state = treeStateAsRefs(tree);
-					cmp.model.move(cmp.state.selected, cmp.state.selected.split('~').slice(0,-1).concat([target]).join('~'),ctx)
+					cmp.model.move(selected, selected.split('~').slice(0,-1).concat([target]).join('~'),ctx)
 						
 					restoreTreeStateFromRefs(cmp,state);
 				})
@@ -368,13 +372,13 @@ jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
 
 
 treeStateAsRefs = cmp => ({
-	selected: pathToRef(cmp.model,cmp.state.selected),
+	selected: pathToRef(cmp.model,cmp.getSelected()),
 	expanded: jb.entries(cmp.state.expanded).filter(e=>e[1]).map(e=>pathToRef(cmp.model,e[0]))
 })
 
 restoreTreeStateFromRefs = (cmp,state) => {
 	if (!cmp.model.refHandler) return
-	cmp.state.selected = refToPath(state.selected);
+	refToPath(state.selected) && cmp.setSelected(refToPath(state.selected));
 	cmp.state.expanded = {};
 	state.expanded.forEach(ref=>cmp.state.expanded[refToPath(ref)] = true)
 }

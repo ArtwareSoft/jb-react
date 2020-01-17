@@ -3,7 +3,8 @@ const ui = jb.ui;
 const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,this.ctx) }}
 
 function compareVdom(b,a) {
-    const attributes = calcRemount(b.attributes||{}, jb.objectDiff(a.attributes || {}, b.attributes || {}))
+    const attributes = jb.objectDiff(a.attributes || {}, b.attributes || {})
+    if (attributes.style == undefined) delete attributes.style // do not delete style attributes defined by interactive
     const children = childDiff(b.children || [],a.children || [])
     return { 
         ...(Object.keys(attributes).length ? {attributes} : {}), 
@@ -164,10 +165,6 @@ function sameSource(vdomBefore,vdomAfter) {
     if (atts1.cmpId && atts1.cmpId === atts2.cmpId || atts1.ctxId && atts1.ctxId === atts2.ctxId) return true
     if (compareCtxAtt('path',atts1,atts2) && compareCtxAtt('data',atts1,atts2)) return true
     if (compareAtts(['id','path','name'],atts1,atts2)) return true
-}
-
-function calcRemount(atts,diff) {
-    return diff
 }
 
 function compareAtts(attsToCompare,atts1,atts2) {

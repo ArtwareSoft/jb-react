@@ -435,11 +435,7 @@ jb.ui.dialogs = {
 		}
 		return this._dialogsTopElem
 	},
-	reRenderAll() {
-		return this.dialogs.reduce((p,dialog) => p.then(()=>
-			Promise.resolve(dialog.close()).then(()=> {
-				const openDialogAction = dialog.comp.ctx.path.split('~').reduce((obj,p)=>obj[p],jb.comps)
-				dialog.comp.ctx.ctx({profile: openDialogAction, path: ''}).runItself()
-			})), Promise.resolve())
+	reRenderAll(ctx) {
+		this._dialogsTopElem && Array.from(this._dialogsTopElem.children).filter(x=>x).forEach(el=> jb.ui.refreshElem(el,null,{srcCtx: ctx}))
 	}
 }

@@ -50,8 +50,7 @@ jb.component('studio.paste-suggestion', { /* studio.pasteSuggestion */
   impl: (ctx,option,toAdd) => {
     if (option && ctx.exp('%$suggestionData/options%','array').length)
     Promise.resolve(option.paste(ctx,toAdd)).then(_=> {
-      const cmp = ctx.vars.suggestionData.inputCmp;
-      cmp.closePopup();
+      jb.ui.closestCmp(ctx.vars.suggestionData.input).closePopup()
     })
   }
 })
@@ -306,8 +305,8 @@ class CompOption {
        this.description = description;
     }
     paste(ctx) {
-      const input = ctx.vars.suggestionData.inputCmp.input;
-      input.value = '=' + this.toPaste;
+      // const input = ctx.vars.suggestionData.inputCmp.input;
+      // input.value = '=' + this.toPaste;
       this.writeValue(ctx);
     }
     writeValue(ctx) {

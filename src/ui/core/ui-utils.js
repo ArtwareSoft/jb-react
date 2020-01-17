@@ -35,14 +35,17 @@ Object.assign(jb.ui,{
             return !ui.inStudio() && jb.frame.parent.jb.studio.initPreview
         } catch(e) {}
     },
-    parentCmps(elem) {
-        if (!elem) return []
-        const parents = jb.ui.parents(elem)
+    parentCmps(el) {
+        if (!el) return []
+        const parents = jb.ui.parents(el)
         const dialogElem = parents[parents.length-5]
         return (jb.ui.hasClass(dialogElem,'jb-dialog') 
                 ? parents.slice(0,-4).concat(jb.ui.ctxOfElem(dialogElem).exp('%$$launchingElement.el._component.base%') || []) 
                 : parents)
             .map(el=>el._component).filter(x=>x)
+    },
+    closestCmp(el) {
+        return el._component || this.parentCmps(el)[0]
     }
 })
 

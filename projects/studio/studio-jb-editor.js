@@ -88,10 +88,10 @@ jb.component('studio.data-browse', { /* studio.dataBrowse */
         group({
           features: group.firstSucceeding(),
           controls: [ 
-            controlWithCondition(
-              inGroup(list('JbComponent', 'jbCtx'), className('%$obj%')),
-              label({text: className('%$obj%')})
-            ),
+            // controlWithCondition(
+            //   inGroup(list('JbComponent', 'jbCtx'), className('%$obj%')),
+            //   label({text: className('%$obj%')})
+            // ),
             controlWithCondition(
               isOfType('string,boolean,number', '%$obj%'),
               label('%$obj%')
@@ -200,9 +200,9 @@ jb.component('studio.probe-data-view', { /* studio.probeDataView */
      ],
     features: [
       css.height({height: '600', overflow: 'auto', minMax: 'max'}),
-      watchRef('%$jbEditorCntrData/selected%'),
-      watchRef('%$studio/pickSelectionCtxId%'),
-      watchRef('%$studio/refreshProbe%'),
+      watchRef({ ref: '%$jbEditorCntrData/selected%', strongRefresh: true}),
+      watchRef({ ref: '%$studio/pickSelectionCtxId%', strongRefresh: true}),
+      watchRef({ ref: '%$studio/refreshProbe%', strongRefresh: true}),
       variable({name: 'maxItems', value: '5', watchable: true })
     ]
   })
@@ -367,9 +367,13 @@ jb.component('studio.expand-and-select-first-child-in-jb-editor', { /* studio.ex
     const ctxOfTree = ctx.vars.$tree ? ctx : jb.ctxDictionary[jbEditorElem.getAttribute('jb-ctx')];
     const cmp = ctxOfTree.vars.$tree && ctxOfTree.vars.$tree.cmp;
     if (!cmp) return;
-    const firstChild = cmp.model.children(cmp.state.selected)[0];
-    if (firstChild)
-      cmp.selectionEmitter.next(firstChild)
+    const path = cmp.getSelected() || ctx.componentContext.params.path
+    if (!path) return
+    const firstChildPath = cmp.model.children(path)[0];
+    if (firstChildPath) {
+      cmp.selectionEmitter.next(firstChildPath)
+      cmp.expandPath(firstChildPath)
+    }
     cmp.regainFocus && cmp.regainFocus()
   }
 })
