@@ -37,7 +37,8 @@ jb.component('tree', { /* tree */
 			}),
 			feature.init( (ctx,{cmp}) => {
 				cmp.model = nodeModel
-				cmp.state.expanded =  cmp.state.expanded || { [nodeModel.rootPath] : true }
+				cmp.state.expanded =  cmp.state.expanded || {}
+				expandPath(cmp.state.expanded, nodeModel.rootPath)
 			}),
 			css('{user-select: none}')
 		))
@@ -375,7 +376,6 @@ jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
       		},
   	})
 })
-
 
 treeStateAsRefs = cmp => ({
 	selected: pathToRef(cmp.model,cmp.getSelected()),
