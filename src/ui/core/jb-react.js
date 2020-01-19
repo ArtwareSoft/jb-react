@@ -13,6 +13,7 @@ function compareVdom(b,a) {
     }
 
     function childDiff(b,a) {
+        if (b.length == 0 && a.length ==0) return
         if (a.length == 1 && b.length == 1 && a[0].tag == b[0].tag)
             return [{...compareVdom(b[0],a[0]),__afterIndex: 0}]
         jb.log('childDiff',[...arguments])
@@ -66,16 +67,19 @@ function elemToVdom(elem) {
 
 function printDelta(delta) {
     const filterDelta = dlt => ({
-        attributes: jb.objFromEntries(jb.entries(dlt.attributes).filter(e=>e[0] =='jb-ctx')),
+        attributes: jb.objFromEntries(jb.entries(dlt.attributes)
+            .filter(e=> ['jb-ctx','cmp-id','originators','__afterIndex','mount-ctx','interactive'].indexOf(e[0]) == -1)),
         children: (dlt.children || []).map(c=>filterDelta(c)).filter(x=>(x.children ||[]).length || x.attributes)
     })
     return filterDelta(delta)
 }
 
 function applyVdomDiff(elem,vdomAfter,strongRefresh) {
-    const delta = compareVdom(elemToVdom(elem),vdomAfter)
+    jb.log('applyDeltaTop',['start',...arguments])
+    const vdomBefore = elemToVdom(elem)
+    const delta = compareVdom(vdomBefore,vdomAfter)
     const active = document.activeElement === elem
-    jb.log('applyDeltaTop',[...arguments,active,delta],{modifier: record => record.push(printDelta(delta)) })
+    jb.log('applyDeltaTop',['apply',vdomBefore,vdomAfter,delta,active,...arguments],{modifier: record => record.push(printDelta(delta)) })
     if (delta.tag || strongRefresh) {
         unmount(elem)
         const newElem = render(vdomAfter,elem.parentElement)
@@ -115,13 +119,12 @@ function applyDeltaToDom(elem,delta) {
             !sameOrder && (newChild.setAttribute('__afterIndex',e.__afterIndex))
         })
         if (!sameOrder) {
-            const originalOrder = Array.from(elem.children)
             Array.from(elem.children)
                 .sort((x,y) => Number(x.getAttribute('__afterIndex')) - Number(y.getAttribute('__afterIndex')))
                 .forEach(el=> {
                     const index = Number(el.getAttribute('__afterIndex'))
-                    if (originalOrder[index] != el)
-                        elem.insertBefore(el, originalOrder[index])
+                    if (elem.children[index] != el)
+                        elem.insertBefore(el, elem.children[index])
                     el.removeAttribute('__afterIndex')
                 })
             }
@@ -138,8 +141,6 @@ function applyDeltaToDom(elem,delta) {
 
 function h(cmpOrTag,attributes,children) {
     if (cmpOrTag && cmpOrTag[ui.VNode]) return cmpOrTag // Vdom
-    // if (cmpOrTag && cmpOrTag.noNeedForCmpObject && cmpOrTag.noNeedForCmpObject())
-    //     return cmpOrTag.renderVdom()
     if (cmpOrTag && cmpOrTag.renderVdom)
         return cmpOrTag.renderVdom()
     attributes = jb.objFromEntries(jb.entries(attributes).map(e=>[e[0].toLowerCase(),e[1]]))

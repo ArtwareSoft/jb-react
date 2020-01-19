@@ -220,6 +220,20 @@ jb.component('ui-test.table-tree-with-title-ctrl', {
   })
 })
 
+jb.component('ui-test.table-tree-refresh-bug', {
+  impl: uiTest({
+      control: tableTree({
+        treeModel: tree.jsonReadOnly('%$personWithChildren%', ''),
+        chapterHeadline: label({text: suffix('~', '%path%')}),
+    }),
+    action: ctx => {
+      const el = ctx.vars.elemToTest.querySelector('[path="~children"]')
+      jb.ui.closestCmp(el).flip({target: el})
+    },
+    expectedResult: contains(['children','>2<','friends'])
+  })
+})
+
 jb.component('ui-test.table-tree-with-filter', {
   impl: uiTest({
       control: tableTree({

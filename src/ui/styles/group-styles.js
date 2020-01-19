@@ -109,7 +109,7 @@ jb.component('group.accordion', {
             style: call('sectionStyle'),
             controls: [
               button({
-                title: ({},{section}) => section.field().title(),
+                title: ({},{section}) => section && section.field().title(),
                 style: call('titleStyle'),
                 action: runActions(
                   writeValue('%$selectedTab/path%', '%$section/ctx/path%'),
@@ -165,7 +165,7 @@ jb.component('group.sections', { /* group.sections */
             style: call('sectionStyle'),
             controls: [
               label({
-                text: ({},{section}) => section.field().title(),
+                text: ({},{section}) => section && section.field().title(),
                 style: call('titleStyle')
               }),
               group({style: call('innerGroupStyle'), controls: ({},{section}) => section})

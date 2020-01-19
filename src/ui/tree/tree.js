@@ -29,7 +29,7 @@ jb.component('tree', { /* tree */
 				tree.redraw = cmp.redraw = () => cmp.refresh()
 
 				cmp.expandPath = path => {
-					const changed = expandPath(cmp.state.expanded,path)
+					const changed = jb.ui.treeExpandPath(cmp.state.expanded,path)
 					if (changed) cmp.redraw()
 					return changed
 				}
@@ -38,14 +38,14 @@ jb.component('tree', { /* tree */
 			feature.init( (ctx,{cmp}) => {
 				cmp.model = nodeModel
 				cmp.state.expanded =  cmp.state.expanded || {}
-				expandPath(cmp.state.expanded, nodeModel.rootPath)
+				jb.ui.treeExpandPath(cmp.state.expanded, nodeModel.rootPath)
 			}),
 			css('{user-select: none}')
 		))
 	}
 })
 
-function expandPath(expanded, path) {
+jb.ui.treeExpandPath = jb.ui.treeExpandPath || ((expanded, path) => {
 	let changed = false
 	path.split('~').reduce((base, x) => {
 			const inner = base ? (base + '~' + x) : x;
@@ -54,7 +54,7 @@ function expandPath(expanded, path) {
 			return inner;
 		},'')
 	return changed
-}
+})
 
 class TreeRenderer {
 	constructor(args) {
@@ -181,7 +181,7 @@ jb.component('tree.selection', { /* tree.selection */
 	  feature.init( (ctx,{cmp},{databind}) => {
 		cmp.state.expanded = cmp.state.expanded||{}
 		const selectedPath = jb.val(databind())
-		selectedPath && expandPath(cmp.state.expanded, selectedPath)
+		selectedPath && jb.ui.treeExpandPath(cmp.state.expanded, selectedPath)
 	  },5),
 	  interactive( (ctx,{cmp},{databind,autoSelectFirst,onSelection,onRightClick}) => {
 			const selectedRef = databind()
@@ -318,7 +318,7 @@ jb.component('tree.expand-path', {
 	params: [
 	  {id: 'paths', as: 'array', descrition: 'array of paths to be expanded'}
 	],
-	impl: (ctx,paths) => ctx.vars.cmp && paths.forEach(path => expandPath(ctx.vars.cmp.state.expanded, path))
+	impl: (ctx,paths) => ctx.vars.cmp && paths.forEach(path => jb.ui.treeExpandPath(ctx.vars.cmp.state.expanded, path))
 })
   
 jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */

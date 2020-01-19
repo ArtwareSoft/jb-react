@@ -47,7 +47,7 @@ jb.component('table-tree.init', {
         interactiveProp('treeModel', '%$$model.treeModel%'),
         interactive( (ctx,{cmp}) => {
             cmp.state.expanded = {[cmp.treeModel.rootPath]: true}
-            cmp.flip = () => {
+            cmp.flip = (event) => {
                 const path = elemToPath(event.target)
                 if (!path) debugger
                 cmp.state.expanded[path] = !(cmp.state.expanded[path]);
@@ -59,8 +59,9 @@ jb.component('table-tree.init', {
             const treeModel = cmp.treeModel = ctx.vars.$model.treeModel()
             cmp.renderProps.maxDepth = treeModel.maxDepth = (treeModel.maxDepth || 5)
             const firstTime = !cmp.state.expanded
-            cmp.state.expanded = cmp.state.expanded || {[treeModel.rootPath]: true}
-            firstTime && treeModel.children(treeModel.rootPath).forEach(path=>cmp.state.expanded[path] = true)
+            cmp.state.expanded = cmp.state.expanded || {}
+            jb.ui.treeExpandPath(cmp.state.expanded,treeModel.rootPath)
+            firstTime && treeModel.children(treeModel.rootPath).forEach(path=>jb.ui.treeExpandPath(cmp.state.expanded,path))
 
             //cmp.itemsCache = {}
             //cmp.headLineCache = {}
@@ -169,4 +170,15 @@ jb.component('json.path-selector', {
         const path_array = typeof path == 'string' ? path.split('~').filter(x=>x) : jb.asArray(path)
         return path_array.reduce((o,p) => o && o[p], base)
     }
+})
+
+jb.ui.treeExpandPath = jb.ui.treeExpandPath || ((expanded, path) => {
+	let changed = false
+	path.split('~').reduce((base, x) => {
+			const inner = base ? (base + '~' + x) : x;
+			changed = changed || (!expanded[inner])
+			expanded[inner] = true;
+			return inner;
+		},'')
+	return changed
 })

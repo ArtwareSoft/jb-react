@@ -36,7 +36,7 @@ jb.component('dynamic-controls', { /* dynamicControls */
     {id: 'genericControl', type: 'control', mandatory: true, dynamic: true},
     {id: 'itemVariable', as: 'string', defaultValue: 'controlItem'},
   ],
-  impl: (ctx,controlItems,genericControl,itemVariable) => controlItems()
+  impl: (ctx,controlItems,genericControl,itemVariable) => (controlItems() || [])
       .map(controlItem => jb.tosingle(genericControl(ctx.setVar(itemVariable,controlItem).setData(controlItem))))
 })
 

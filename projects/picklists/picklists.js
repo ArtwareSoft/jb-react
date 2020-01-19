@@ -63,11 +63,15 @@ jb.component('picklists.custom', { /* picklists.custom */
         options: picklist.options('%$people/name%'),
         features: watchRef('%$person/name%')
       }),
-      picklist({
-        title: '',
-        databind: '%$person/name%',
-        options: picklist.options('%$people/name%'),
-        style: picklist.nativeMdLook()
+      group({
+        style: group.sections({}),
+        controls: [
+          text({text: 'text1', title: 'title1'}),
+          dynamicControls({
+            controlItems: list('1'),
+            genericControl: text({text: 'my text', title: '%%'})
+          })
+        ]
       })
     ]
   })

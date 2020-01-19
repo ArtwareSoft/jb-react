@@ -156,13 +156,7 @@ class JbComponent {
         return this
     }
     applyParamFeatures(ctx) {
-//        this.contexts.push(ctx)
         (ctx.params.features && ctx.params.features(ctx) || []).forEach(f => this.jbExtend(f,ctx))
-
-        // if (ctx.params.style && ctx.params.style.profile && ctx.params.style.profile.features) {
-        //     jb.asArray(ctx.params.style.profile.features).forEach((f,i)=>
-        //             this.jbExtend(ctx.runInner(f,{type:'feature'},ctx.path+'~features~'+i),ctx))
-        // }
         return this;
     }
 
