@@ -14,7 +14,7 @@ function compareVdom(b,a) {
 
     function childDiff(b,a) {
         if (a.length == 1 && b.length == 1 && a[0].tag == b[0].tag)
-            return [{...compareVdom(b[0],a[0]),afterIndex: 0}]
+            return [{...compareVdom(b[0],a[0]),__afterIndex: 0}]
         jb.log('childDiff',[...arguments])
         const beforeWithIndex = b.map((e,i)=> ({i, ...e}))
         let remainingBefore = beforeWithIndex.slice(0)
@@ -24,13 +24,13 @@ function compareVdom(b,a) {
 
         const reused = []
         const res = beforeWithIndex.map((e,i)=> {
-                const afterIndex = afterToBeforeMap.indexOf(e)
-                if (afterIndex == -1)
-                    return {$: 'delete', afterIndex }
-                reused[afterIndex] = true
-                return { afterIndex, ...compareVdom(e, a[afterIndex]), ...(e.$remount ? {remount: true}: {}) }
-            })
-        res.toAppend = a.flatMap((e,i) => reused[i] ? [] : [{...compareVdom({},e), afterIndex: i}])
+            const __afterIndex = afterToBeforeMap.indexOf(e)
+            if (__afterIndex == -1)
+                return {$: 'delete', __afterIndex }
+            reused[__afterIndex] = true
+            return { __afterIndex, ...compareVdom(e, a[__afterIndex]), ...(e.$remount ? {remount: true}: {}) }
+        })
+        res.toAppend = a.flatMap((e,i) => reused[i] ? [] : [{...compareVdom({},e), __afterIndex: i}])
         jb.log('childDiffRes',[res,...arguments])
         if (!res.length && !res.toAppend.length) return null
         return res
@@ -69,7 +69,7 @@ function printDelta(delta) {
         attributes: jb.objFromEntries(jb.entries(dlt.attributes).filter(e=>e[0] =='jb-ctx')),
         children: (dlt.children || []).map(c=>filterDelta(c)).filter(x=>(x.children ||[]).length || x.attributes)
     })
-    return jb.prettyPrint(filterDelta(delta))
+    return filterDelta(delta)
 }
 
 function applyVdomDiff(elem,vdomAfter,strongRefresh) {
@@ -95,8 +95,8 @@ function applyDeltaToDom(elem,delta) {
     jb.log('applyDelta',[...arguments])
     if (delta.children) {
         const childElems = Array.from(elem.children), updates = delta.children, toAppend = delta.children.toAppend || []
-        const sameOrder = updates.reduce((acc,e,i) => acc && e.afterIndex ==i, true) && !toAppend.length
-            || !updates.length && toAppend.reduce((acc,e,i) => acc && e.afterIndex ==i, true)
+        const sameOrder = updates.reduce((acc,e,i) => acc && e.__afterIndex ==i, true) && !toAppend.length
+            || !updates.length && toAppend.reduce((acc,e,i) => acc && e.__afterIndex ==i, true)
         updates.forEach((e,i)=>{
             if (e.$ == 'delete') {
                 unmount(childElems[i])
@@ -104,7 +104,7 @@ function applyDeltaToDom(elem,delta) {
                 jb.log('removeChild',[childElems[i],e,elem,delta])
             } else {
                 applyDeltaToDom(childElems[i],e)
-                !sameOrder && (childElems[i].setAttribute('afterIndex',e.afterIndex))
+                !sameOrder && (childElems[i].setAttribute('__afterIndex',e.__afterIndex))
             }
         })
         toAppend.forEach(e=>{
@@ -112,17 +112,17 @@ function applyDeltaToDom(elem,delta) {
             elem.appendChild(newChild)
             applyDeltaToDom(newChild,e)
             jb.log('appendChild',[newChild,e,elem,delta])
-            !sameOrder && (newChild.setAttribute('afterIndex',e.afterIndex))
+            !sameOrder && (newChild.setAttribute('__afterIndex',e.__afterIndex))
         })
         if (!sameOrder) {
             const originalOrder = Array.from(elem.children)
             Array.from(elem.children)
-                .sort((x,y) => Number(x.getAttribute('afterIndex')) - Number(y.getAttribute('afterIndex')))
+                .sort((x,y) => Number(x.getAttribute('__afterIndex')) - Number(y.getAttribute('__afterIndex')))
                 .forEach(el=> {
-                    const index = Number(el.getAttribute('afterIndex'))
+                    const index = Number(el.getAttribute('__afterIndex'))
                     if (originalOrder[index] != el)
                         elem.insertBefore(el, originalOrder[index])
-                    el.removeAttribute('afterIndex')
+                    el.removeAttribute('__afterIndex')
                 })
             }
         // remove leftover text nodes in mixed
@@ -183,6 +183,10 @@ function setAtt(elem,att,val) {
     if (val == null) {
         elem.removeAttribute(att)
         jb.log('htmlChange',['remove',...arguments])
+    } else if (att === 'checked' && elem.tagName.toLowerCase() === 'input') {
+        if (val === true)
+            elem.checked = true
+        jb.log('htmlChange',['checked',...arguments]);
     } else if (att === '$text') {
         elem.innerText = val
         jb.log('htmlChange',['text',...arguments]);
@@ -192,7 +196,7 @@ function setAtt(elem,att,val) {
     } else if (att === 'style' && typeof val === 'object') {
         elem.setAttribute(att,jb.entries(val).map(e=>`${e[0]}:${e[1]}`).join(';'))
         jb.log('htmlChange',['setAtt',...arguments]);
-    } else if (att == 'value' && elem.tagName.match(/input|textarea/i) ) {
+    } else if (att == 'value' && elem.tagName.match(/select|input|textarea/i) ) {
         const active = document.activeElement === elem
         if (elem.value == val) return
         elem.value = val
@@ -248,10 +252,10 @@ Object.assign(jb.ui, {
         const $state = context.vars.$refreshElemCall ? context.vars.$state : {}
         const ctx = context.setVars({ $model: { ctx: context, ...context.params} , $state, $refreshElemCall : undefined })
         const styleOptions = defaultStyle(ctx) || {}
-        if (styleOptions.jbExtend)  {// style by control
-            return styleOptions.jbExtend(options).applyFeatures(ctx)
+        if (styleOptions instanceof ui.JbComponent)  {// style by control
+            return styleOptions.orig(ctx).jbExtend(options,ctx).applyParamFeatures(ctx)
         }
-        return new ui.JbComponent(ctx).jbExtend(options).jbExtend(styleOptions).applyFeatures(ctx)
+        return new ui.JbComponent(ctx).jbExtend(options,ctx).jbExtend(styleOptions,ctx).applyParamFeatures(ctx)
     
         function defaultStyle(ctx) {
             const profile = context.profile
@@ -274,7 +278,7 @@ Object.assign(jb.ui, {
         jb.resourcesToDelete.forEach(id => delete jb.resources[id])
         jb.resourcesToDelete = []
     
-        const used = 'jb-ctx,mount-ctx,pick-ctx,handlers,interactive'.split(',')
+        const used = 'jb-ctx,mount-ctx,pick-ctx,handlers,interactive,originators'.split(',')
             .flatMap(att=>Array.from(document.querySelectorAll(`[${att}]`))
                 .flatMap(el => el.getAttribute(att).split(',').map(x=>Number(x.split('-').pop()))))
                     .sort((x,y)=>x-y);

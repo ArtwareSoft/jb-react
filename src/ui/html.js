@@ -28,14 +28,15 @@ jb.component('html.in-iframe', {
         {id: 'width', as: 'string', defaultValue: '100%'},
         {id: 'height', as: 'string', defaultValue: '100%'}
     ],
-    impl: customStyle({
-        template: (cmp,state,h) => h('iframe', {
-            sandbox: 'allow-same-origin allow-forms allow-scripts',
-            frameborder: 0, width: cmp.width, height: cmp.height,
-            src: 'javascript: document.write(parent.contentForIframe)'
-          }),
-          features: ctx => ({
-            afterViewInit: cmp => window.contentForIframe = cmp.ctx.vars.$model.html()
-        })
-    })
+    impl: features(
+        ctx => ({
+            template: (cmp,{width,height},h) => h('iframe', {
+                sandbox: 'allow-same-origin allow-forms allow-scripts',
+                frameborder: 0, width, height,
+                src: 'javascript: document.write(parent.contentForIframe)'
+            })
+        }),
+        interactiveProp('html', '%$$model/html%'),
+        interactive( ({},{cmp}) => window.contentForIframe = cmp.html)
+    )
 })

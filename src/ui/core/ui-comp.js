@@ -10,16 +10,17 @@ const singular = new Set('template,calcRenderProps,toolbar,styleCtx,calcHash,ctx
 
 class JbComponent {
     constructor(ctx) {
-        this.ctx = this.originatingCtx = ctx // used to calc features
+        this.ctx = ctx // used to calc features
         this.cmpId = cmpId++
         this.eventObservables = []
         this.staticCssLines = []
         this.contexts = []
+        this.originators = [ctx]
     }
     init() {
         jb.log('initCmp',[this]);
         this.ctx = (this.extendCtxFuncs||[])
-            .reduce((acc,extendCtx) => tryWrapper(() => extendCtx(acc,this),'extendCtx'), this.originatingCtx)
+            .reduce((acc,extendCtx) => tryWrapper(() => extendCtx(acc,this),'extendCtx'), this.ctx)
         this.renderProps = {}
         this.state = this.ctx.vars.$state
         this.calcCtx = this.ctx.setVar('$props',this.renderProps).setVar('cmp',this)
@@ -33,7 +34,8 @@ class JbComponent {
         jb.log('renderVdom',[this]);
         if (!this.initialized)
             this.init();
-        (this.initFuncs||[]).forEach(f=> tryWrapper(() => this.calcCtx.run(f), 'init'));
+        (this.initFuncs||[]).sort((p1,p2) => p1.phase - p2.phase)
+            .forEach(f =>  tryWrapper(() => f.action(this.calcCtx), 'init'));
    
         this.toObserve = this.watchRef ? this.watchRef.map(obs=>({...obs,ref: obs.refF(this.ctx)})).filter(obs=>jb.isWatchable(obs.ref)) : []
         this.watchAndCalcRefProp && this.watchAndCalcRefProp.forEach(e=>{
@@ -48,7 +50,8 @@ class JbComponent {
         const filteredPropsByPriority = (this.calcProp || []).filter(toFilter=> 
                 this.calcProp.filter(p=>p.id == toFilter.id && p.priority > toFilter.priority).length == 0)
         filteredPropsByPriority.sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
-            .forEach(prop=> Object.assign(this.renderProps, { [prop.id]: jb.val(prop.value(this.calcCtx))}))
+            .forEach(prop=> Object.assign(this.renderProps, { 
+                [prop.id]:  jb.val( tryWrapper(() => prop.value(this.calcCtx),`renderProp:${prop.id}`) )}))
         jb.log('renderProps',[this.renderProps, this])
         this.template = this.template || (() => '')
         const initialVdom = tryWrapper(() => this.template(this,this.renderProps,ui.h), 'template')
@@ -64,18 +67,18 @@ class JbComponent {
         ].join(';')).join(',')
         const handlers = (this.defHandler||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx)}`).join(',')
         const interactive = (this.interactiveProp||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx)}`).join(',')
-        const morecontexts = this.contexts.slice(1).map(x=>x.id).join(',')
+        const originators = this.originators.map(ctx=>ui.preserveCtx(ctx)).join(',')
 
         if (typeof vdom == 'object') {
             ui.addClassToVdom(vdom, this.jbCssClass())
             vdom.attributes = Object.assign(vdom.attributes || {}, {
-                    'jb-ctx': ui.preserveCtx(this.originatingCtx),
+                    'jb-ctx': ui.preserveCtx(this.originatingCtx()),
                     'cmp-id': this.cmpId, 
                     'mount-ctx': ui.preserveCtx(this.ctx)
                 },
                 observe && {observe}, 
                 handlers && {handlers}, 
-                morecontexts && {morecontexts},
+                originators && {originators},
                 this.ctxForPick && { 'pick-ctx': ui.preserveCtx(this.ctxForPick) },
                 (this.componentDidMountFuncs || interactive) && {interactive}, 
                 this.renderProps.cmpHash != null && {cmpHash: this.renderProps.cmpHash}
@@ -118,10 +121,13 @@ class JbComponent {
             this.cachedClass = jbClass
         return jbClass
     }
+    originatingCtx() {
+        return this.originators[this.originators.length-1]
+    }
 
     field() {
         if (this._field) return this._field
-        const ctx = this.originatingCtx
+        const ctx = this.originatingCtx()
         this._field = {
             class: '',
             ctxId: ui.preserveCtx(ctx),
@@ -143,22 +149,27 @@ class JbComponent {
             this.itemfieldCache.set(item,factory())
         return this.itemfieldCache.get(item)
     }
+    orig(ctx) {
+        if (jb.comps[ctx.profile && ctx.profile.$].type.split(',').indexOf('control') == -1)
+            debugger
+        this.originators.push(ctx)
+        return this
+    }
+    applyParamFeatures(ctx) {
+//        this.contexts.push(ctx)
+        (ctx.params.features && ctx.params.features(ctx) || []).forEach(f => this.jbExtend(f,ctx))
 
-    applyFeatures(ctx) {
-        this.contexts.push(ctx)
-        const features = (ctx.params.features && ctx.params.features(ctx) || []);
-        features.forEach(f => this.jbExtend(f,ctx));
-        if (ctx.params.style && ctx.params.style.profile && ctx.params.style.profile.features) {
-            jb.asArray(ctx.params.style.profile.features)
-                .forEach((f,i)=>
-                    this.jbExtend(ctx.runInner(f,{type:'feature'},ctx.path+'~features~'+i),ctx))
-        }
+        // if (ctx.params.style && ctx.params.style.profile && ctx.params.style.profile.features) {
+        //     jb.asArray(ctx.params.style.profile.features).forEach((f,i)=>
+        //             this.jbExtend(ctx.runInner(f,{type:'feature'},ctx.path+'~features~'+i),ctx))
+        // }
         return this;
     }
 
     jbExtend(_options,ctx) {
         if (!_options) return this;
-        ctx = ctx || this.originatingCtx;
+        if (!ctx) debugger
+        ctx = ctx || this.ctx;
         if (!ctx)
             console.log('no ctx provided for jbExtend');
         if (typeof _options != 'object')
@@ -169,8 +180,10 @@ class JbComponent {
             return this
         }
 
-        if (options.afterViewInit) options.componentDidMount = options.afterViewInit
-        if (typeof options.class == 'string') options.templateModifier = vdom => ui.addClassToVdom(vdom,options.class)
+        if (options.afterViewInit) 
+            options.componentDidMount = options.afterViewInit
+        if (typeof options.class == 'string') 
+            options.templateModifier = vdom => ui.addClassToVdom(vdom,options.class)
 
         Object.keys(options).forEach(key=>{
             if (lifeCycle.has(key)) {

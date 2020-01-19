@@ -55,11 +55,11 @@ jb.component('field.databind', { /* field.databind */
         })
         cmp.databindRefChanged.subscribe(()=>{}) // first activation
 
-        //const srcCtx = ctx.componentContext;
-        // if (!oneWay)
-        //     jb.ui.databindObservable(cmp, {srcCtx, onError: _ => cmp.refresh({model: null},{srcCtx}) })
-        //     .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
-        //     .subscribe(e=> !cmp.watchRefOn && cmp.refresh(null,{srcCtx}))
+        const srcCtx = ctx.componentContext;
+        if (!oneWay)
+            jb.ui.databindObservable(cmp, {srcCtx, onError: _ => cmp.refresh({model: null},{srcCtx}) })
+            .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
+            .subscribe(e=> !cmp.watchRefOn && cmp.refresh(null,{srcCtx}))
 
         cmp.databindRefChangedSub.next(ctx.vars.$model.databind(ctx));
       }

@@ -127,7 +127,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
           .subscribe(data => ctx.params.onDoubleClick(cmp.ctx.setData(data)))
 
         cmp.calcItems = () => Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
-          .map(el=>(jb.ctxDictionary[el.getAttribute('jb-ctx')] || {}).data)
+          .map(el=>(jb.ctxDictionary[el.getAttribute('jb-ctx')] || {}).data).filter(x=>x)
         cmp.items = cmp.calcItems()
 
         cmp.setSelected = selected => {

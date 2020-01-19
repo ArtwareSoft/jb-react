@@ -15,11 +15,11 @@ jb.component('button', { /* button */
       featuresOptions: defHandler('onclickHandler', (ctx,{cmp}) => {
         const ev = event
         if (ev && ev.ctrlKey && cmp.ctrlAction)
-          cmp.ctrlAction(cmp.ctx.setVars({event:ev}))
+          cmp.ctrlAction(cmp.ctx.setVar('event',ev))
         else if (ev && ev.altKey && cmp.altAction)
-          cmp.altAction(cmp.ctx.setVars({event:ev}))
+          cmp.altAction(cmp.ctx.setVar('event',ev))
         else
-          cmp.action && cmp.action(cmp.ctx.setVars({event:ev}))
+          cmp.action && cmp.action(cmp.ctx.setVar('event',ev))
         }),
       afterViewInit: cmp => cmp.action = jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)
     })

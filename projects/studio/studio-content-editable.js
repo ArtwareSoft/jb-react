@@ -136,9 +136,9 @@ jb.ui.contentEditable = {
         }
     },
     scriptRef(cmp,prop) {
-        const ref = jb.studio.refOfPath(cmp.ctx.path + '~' + prop)
+        const ref = jb.studio.refOfPath(cmp.originatingCtx().path + '~' + prop)
         const val = jb.val(ref)
-        return typeof val === 'string' && ref
+        return typeof val === 'string' && cmp.ctx.exp(val) === val && ref
     },
     refOfProp(cmp,prop) {
         return cmp.toObserve.filter(e=>e.id == prop).map(e=>e.ref)[0] || this.scriptRef(cmp,prop)

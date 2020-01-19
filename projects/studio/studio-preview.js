@@ -130,17 +130,20 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
     {id: 'height', as: 'number'}
   ],
   impl: ctx => jb.ui.ctrl(ctx, features(
-        calcProp('cacheKiller', () => 'cacheKiller='+(''+Math.random()).slice(10)),
-        calcProp('rootName','%$studio/settings/rootName%'),
-        calcProp('project','%$studio/project%'),
-        calcProp('src', '/project/%$$props/project%?%$$props/cacheKiller%&spy=preview'),
-        calcProp('inMemoryProject', st.inMemoryProject),
-        calcProp('host', '%$queryParams/host%'),
-        calcProp('hasHost', ctx => ctx.vars.host && st.projectHosts[ctx.vars.host]),
-        calcProp('loadingMessage', data.if('%$inMemoryProject%', '',
-          '{? loading project from %$$props/host%::%$queryParams/hostProjectId% ?}')),
-        interactive( (ctx,{cmp}) => {
-          if (!st.inMemoryProject && cmp.ctx.vars.$props.host && st.projectHosts[host]) {
+      calcProp('width','%$$model/width%'),
+      calcProp('height','%$$model/height%'),
+      calcProp('cacheKiller', () => 'cacheKiller='+(''+Math.random()).slice(10)),
+      calcProp('rootName','%$studio/settings/rootName%'),
+      calcProp('project','%$studio/project%'),
+      calcProp('src', '/project/%$$props/project%?%$$props/cacheKiller%&spy=preview'),
+      calcProp('inMemoryProject', st.inMemoryProject),
+      calcProp('host', '%$queryParams/host%'),
+      calcProp('hasHost', ctx => ctx.vars.host && st.projectHosts[ctx.vars.host]),
+      calcProp('loadingMessage', data.if('%$inMemoryProject%', '',
+        '{? loading project from %$$props/host%::%$queryParams/hostProjectId% ?}')),
+      interactive( (ctx,{cmp}) => {
+          const host = ctx.exp('%$queryParams/host')
+          if (!st.inMemoryProject && host && st.projectHosts[host]) {
             const project = ctx.exp('%$studio/project%')
             document.title = `${project} with jBart`;
             return st.projectHosts[host].fetchProject(ctx.exp('%$queryParams/hostProjectId%'),project)
@@ -178,7 +181,7 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
 jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
   type: 'preview-style',
   impl: customStyle({
-    template: (cmp,{loadingMessage, src, inMemoryProject},h) => {
+    template: (cmp,{width,height, loadingMessage, src, inMemoryProject},h) => {
       if (loadingMessage)
         return h('p',{class: 'loading-message'}, loadingMessage)
       return h('iframe', {
@@ -186,8 +189,7 @@ jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
           sandbox: 'allow-same-origin allow-forms allow-scripts',
           frameborder: 0,
           class: 'preview-iframe',
-          width: cmp.ctx.vars.$model.width,
-          height: cmp.ctx.vars.$model.height,
+          width, height,
           src: inMemoryProject ? "javascript: parent.jb.studio.injectImMemoryProjectToPreview(this)" : src
         })
     },

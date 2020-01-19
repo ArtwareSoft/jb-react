@@ -1,3 +1,5 @@
+jb.ns('css')
+
 jb.component('group.htmlTag', { /* group.htmlTag */
   type: 'group.style',
   params: [
@@ -30,12 +32,25 @@ jb.component('group.section', { /* group.section */
 jb.component('group.ul-li', { /* group.ulLi */
   type: 'group.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('ul',{ class: 'jb-itemlist'},
-        state.ctrls.map(ctrl=> h('li', {class: 'jb-item'} ,h(ctrl)))),
+    template: (cmp,{ctrls},h) => h('ul',{ class: 'jb-itemlist'},
+        ctrls.map(ctrl=> h('li', {class: 'jb-item'} ,h(ctrl)))),
     css: `{ list-style: none; padding: 0; margin: 0;}
     >li { list-style: none; padding: 0; margin: 0;}`,
     features: group.initGroup()
   })
+})
+
+jb.component('group.card', {
+  type: 'feature',
+  category: 'card:100',
+  params: [
+    {id: 'width', as: 'string', defaultValue: 320},
+    {id: 'outlined', as: 'boolean' },
+  ],
+  impl: features(
+    css.class(({},{},{outlined}) => ['mdc-card', ...(outlined ? ['mdc-card--outlined']: [])].join(' ') ),
+    css( ({},{},{width}) => jb.ui.propWithUnits('width',width)),
+  )
 })
 
 jb.component('group.tabs', { /* group.tabs */
@@ -119,12 +134,27 @@ jb.component('group.accordion', {
   )
 })
 
-jb.component('group.sections', {
+jb.component('group.sections', { /* group.sections */
   type: 'group.style',
   params: [
-    {id: 'titleStyle', type: 'label.style', dynamic: true, defaultValue: label.htmlTag('h3')},
-    {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: group.section()},
-    {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
+    {
+      id: 'titleStyle',
+      type: 'label.style',
+      dynamic: true,
+      defaultValue: header.mdcHeadline5()
+    },
+    {
+      id: 'sectionStyle',
+      type: 'group.style',
+      dynamic: true,
+      defaultValue: styleWithFeatures(group.div(), [group.card(), css.padding({})])
+    },
+    {
+      id: 'innerGroupStyle',
+      type: 'group.style',
+      dynamic: true,
+      defaultValue: group.div()
+    }
   ],
   impl: styleByControl(
     group({

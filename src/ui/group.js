@@ -37,18 +37,7 @@ jb.component('dynamic-controls', { /* dynamicControls */
     {id: 'itemVariable', as: 'string', defaultValue: 'controlItem'},
   ],
   impl: (ctx,controlItems,genericControl,itemVariable) => controlItems()
-      .map(controlItem => jb.tosingle(genericControl(
-        new jb.jbCtx(ctx,{data: controlItem, vars: {[itemVariable]: controlItem}}))))
-})
-
-jb.component('group.dynamic-titles', { /* group.dynamicTitles */
-  type: 'feature',
-  category: 'group:30',
-  description: 'dynamic titles for sub controls',
-  impl: ctx => ({
-    // componentWillUpdate: cmp =>
-    //   (cmp.state.ctrls || []).forEach(ctrl=> ctrl.title = ctrl.field().title ? ctrl.field().title() : '')
-  })
+      .map(controlItem => jb.tosingle(genericControl(ctx.setVar(itemVariable,controlItem).setData(controlItem))))
 })
 
 jb.component('group.first-succeeding', { /* group.firstSucceeding */

@@ -29,13 +29,7 @@ jb.component('tree', { /* tree */
 				tree.redraw = cmp.redraw = () => cmp.refresh()
 
 				cmp.expandPath = path => {
-					let changed = false
-					path.split('~').reduce((base, x) => {
-							const inner = base ? (base + '~' + x) : x;
-							changed = changed || (!cmp.state.expanded[inner])
-							cmp.state.expanded[inner] = true;
-							return inner;
-						},'')
+					const changed = expandPath(cmp.state.expanded,path)
 					if (changed) cmp.redraw()
 					return changed
 				}
@@ -49,6 +43,17 @@ jb.component('tree', { /* tree */
 		))
 	}
 })
+
+function expandPath(expanded, path) {
+	let changed = false
+	path.split('~').reduce((base, x) => {
+			const inner = base ? (base + '~' + x) : x;
+			changed = changed || (!expanded[inner])
+			expanded[inner] = true;
+			return inner;
+		},'')
+	return changed
+}
 
 class TreeRenderer {
 	constructor(args) {
@@ -167,11 +172,17 @@ jb.component('tree.selection', { /* tree.selection */
     {id: 'onSelection', type: 'action', dynamic: true},
     {id: 'onRightClick', type: 'action', dynamic: true}
   ],
-  impl: (ctx,databind) => ({
-		onclick: true,
-		componentDidUpdate : cmp => cmp.setSelected(cmp.state.selected),
-
-  		afterViewInit: cmp => {
+  impl: features(
+	  ctx => ({
+		  onclick: true,
+		  componentDidUpdate : cmp => cmp.setSelected(cmp.state.selected),
+	  }),
+	  feature.init( (ctx,{cmp},{databind}) => {
+		cmp.state.expanded = cmp.state.expanded||{}
+		const selectedPath = jb.val(databind())
+		selectedPath && expandPath(cmp.state.expanded, selectedPath)
+	  },5),
+	  interactive( (ctx,{cmp},{databind,autoSelectFirst,onSelection,onRightClick}) => {
 			const selectedRef = databind()
   			const databindObs = jb.isWatchable(selectedRef) && jb.ui.refObservable(selectedRef,cmp,{srcCtx: ctx}).map(e=>jb.val(e.ref))
 
@@ -192,28 +203,28 @@ jb.component('tree.selection', { /* tree.selection */
 				.subscribe(selected=> {
 					cmp.setSelected(selected);
 					selectedRef && jb.writeValue(selectedRef, selected, ctx);
-					ctx.params.onSelection(cmp.ctx.setData(selected));
+					onSelection(cmp.ctx.setData(selected));
 				})
 
 			cmp.onclick.subscribe(_=>	cmp.regainFocus && cmp.regainFocus())
 
-			if (ctx.params.onRightClick.profile)
+			if (onRightClick.profile)
 				cmp.base.oncontextmenu = (e=> {
-					jb.ui.wrapWithLauchingElement(ctx.params.onRightClick,
+					jb.ui.wrapWithLauchingElement(onRightClick,
 						ctx.setData(cmp.elemToPath(e.target)), e.target)();
 					return false;
 				});
 
 			// first auto selection selection
 			var first_selected = jb.val(selectedRef);
-			if (!first_selected && ctx.params.autoSelectFirst) {
+			if (!first_selected && autoSelectFirst) {
 				var first = jb.ui.find(cmp.base.parentNode,'.treenode')[0];
 				first_selected = cmp.elemToPath(first);
 			}
 			if (first_selected)
 				jb.delay(1).then(() => cmp.selectionEmitter.next(first_selected))
-  		},
-  	})
+  	   }),
+  	)
 })
 
 jb.component('tree.keyboard-selection', { /* tree.keyboardSelection */
@@ -306,12 +317,7 @@ jb.component('tree.expand-path', {
 	params: [
 	  {id: 'paths', as: 'array', descrition: 'array of paths to be expanded'}
 	],
-	impl: (ctx,paths) => ctx.vars.cmp && paths.forEach(path => path.split('~').reduce((base, x) => {
-		const inner = base ? (base + '~' + x) : x;
-		ctx.vars.cmp.state.expanded[inner] = true;
-		return inner;
-	  },'')
-	)
+	impl: (ctx,paths) => ctx.vars.cmp && paths.forEach(path => expandPath(ctx.vars.cmp.state.expanded, path))
 })
   
 jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
@@ -383,7 +389,7 @@ restoreTreeStateFromRefs = (cmp,state) => {
 	state.expanded.forEach(ref=>cmp.state.expanded[refToPath(ref)] = true)
 }
 
-pathToRef = (model,path) => model.refHandler && model.refHandler.refOfPath(path.split('~'))
+pathToRef = (model,path) => path && model.refHandler && model.refHandler.refOfPath(path.split('~'))
 refToPath = ref => ref && ref.path ? ref.path().join('~') : ''
 
 addToIndex = (path,toAdd) => {

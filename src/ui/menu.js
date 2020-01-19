@@ -96,7 +96,7 @@ jb.component('menu.action', { /* menu.action */
 					return true;
 				}
 			},
-			ctx: ctx
+			ctx
 		})
 })
 
@@ -116,7 +116,7 @@ jb.component('menu.control', { /* menu.control */
   ],
   impl: ctx => {
 		const menuModel = ctx.params.menu() || { options: [], ctx, title: ''};
-		return jb.ui.ctrl(ctx.setVars({	topMenu: ctx.vars.topMenu || { popups: []},	menuModel	}), features(
+    return jb.ui.ctrl(ctx.setVars({	topMenu: ctx.vars.topMenu || { popups: []},	menuModel	}), features(
       () => ({ctxForPick: menuModel.ctx }),
       calcProp('title','%$menuModel.title%'),
     ))

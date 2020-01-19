@@ -36,7 +36,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 		enabled: () => true,
 		log(logName, record, {takeFrom, funcTitle, modifier} = {}) {
 			const init = () => {
-				if (!this.includeLogs) {
+				if (!this.initialized) {
 					const includeLogsFromParam = (this.spyParam || '').split(',').filter(x => x[0] !== '-').filter(x => x)
 						.flatMap(x=>Object.keys(settings.groups).indexOf(x) == -1 ? [x] : settings.groups[x].split(','))
 					const excludeLogsFromParam = (this.spyParam || '').split(',').filter(x => x[0] === '-').map(x => x.slice(1))
@@ -45,6 +45,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 						return acc
 					}, {})
 				}
+				this.initialized = true
 			}
 			const shouldLog = (logName, record) =>
 				this.spyParam === 'all' || Array.isArray(record) && this.includeLogs[logName] && !settings.extraIgnoredEvents.includes(record[0])

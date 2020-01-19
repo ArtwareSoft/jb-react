@@ -45,9 +45,10 @@ jb.component('feature.init', { /* feature.init */
   type: 'feature',
   category: 'lifecycle',
   params: [
-    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true},
+    {id: 'phase', as: 'number', defaultValue: 10, description: 'init funcs from different features can use each other, phase defines the calculation order'},
   ],
-  impl: (ctx,action) => ({ init: action })
+  impl: (ctx,action,phase) => ({ init: { action, phase }})
 })
 
 jb.component('feature.after-load', { /* feature.afterLoad */
@@ -203,13 +204,12 @@ jb.component('variable', { /* variable */
       description: 'If specified, the var will be defined as global with this id'
     }
   ],
-  impl: (context, name, value, watchable, globalId,type) => ({
+  impl: ({}, name, value, watchable, globalId) => ({
       extendCtx: (ctx,cmp) => {
         if (!watchable)
           return ctx.setVar(name,jb.val(value(ctx)))
 
-        cmp.resourceId = cmp.resourceId || cmp.originatingCtx.id;
-        const fullName = globalId || (name + ':' + cmp.resourceId);
+        const fullName = globalId || (name + ':' + cmp.cmpId);
         jb.log('var',['new-watchable',ctx,fullName])
         jb.resource(fullName, value(ctx));
         const refToResource = jb.mainWatchableHandler.refOfPath([fullName]);

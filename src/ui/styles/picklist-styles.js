@@ -19,10 +19,10 @@ jb.component('picklist.radio', {
     { id: 'text', defaultValue: '%text%', dynamic: true },
   ],
   impl: customStyle({
-    template: (cmp,{options, fieldId, text},h) => h('div', {},
-          options.flatMap(option=> [h('input', {
-              type: 'radio', name: fieldId, id: '' + cmp.ctx.id + option.code, value: option.text, onchange: true
-            }), h('label',{for: '' + cmp.ctx.id + option.code}, text(cmp.ctx.setData(option))) ] )),
+    template: (cmp,{model, options, fieldId, text},h) => h('div', {},
+          options.flatMap((option,i)=> [h('input', {
+              type: 'radio', name: fieldId, id: i, checked: model === option.code, onchange: true
+            }), h('label',{for: i}, text(cmp.ctx.setData(option))) ] )),
     css: `>input { %$radioCss% }`,
     features: field.databind()
   })
@@ -39,7 +39,7 @@ jb.component('picklist.radio-vertical', {
 jb.component('picklist.native-md-look-open', { /* picklist.nativeMdLookOpen */
   type: 'picklist.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{}, [ 
+    template: (cmp,state,h) => h('div',{}, [
         h('input', { type: 'text', value: state.model, list: 'list_' + cmp.ctx.id, onchange: true }),
         h('datalist', {id: 'list_' + cmp.ctx.id}, state.options.map(option=>h('option',{},option.text)))
     ]),
@@ -115,16 +115,23 @@ jb.component('picklist.label-list', { /* picklist.labelList */
   type: 'picklist.style',
   params: [
     {id: 'labelStyle', type: 'label.style', dynamic: true, defaultValue: label.span()},
-    {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.ulLi()},
-    {id: 'cssForSelected', as: 'string', description: 'e.g. background: red OR >a { color: red }', defaultValue: 'background: #bbb; color: #fff' },
+    {
+      id: 'itemlistStyle',
+      type: 'itemlist.style',
+      dynamic: true,
+      defaultValue: itemlist.ulLi()
+    },
+    {
+      id: 'cssForSelected',
+      as: 'string',
+      description: 'e.g. background: red OR >a { color: red }',
+      defaultValue: 'background: #bbb; color: #fff'
+    }
   ],
   impl: styleByControl(
     itemlist({
       items: '%$picklistModel/options%',
-      controls: label({
-        text: '%text%',
-        style: call('labelStyle')
-      }),
+      controls: label({text: '%text%', style: call('labelStyle')}),
       style: call('itemlistStyle'),
       features: itemlist.selection({
         databind: '%$picklistModel/databind%',
@@ -140,17 +147,29 @@ jb.component('picklist.label-list', { /* picklist.labelList */
 jb.component('picklist.button-list', { /* picklist.buttonList */
   type: 'picklist.style',
   params: [
-    {id: 'buttonStyle', type: 'button.style', dynamic: true, defaultValue: button.mdc()},
-    {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.horizontal() },
-    {id: 'cssForSelected', as: 'string', description: 'e.g. background: red;color: blue;font-weight: bold;', defaultValue: 'background: #bbb; color: #fff' },
+    {
+      id: 'buttonStyle',
+      type: 'button.style',
+      dynamic: true,
+      defaultValue: button.mdc()
+    },
+    {
+      id: 'itemlistStyle',
+      type: 'itemlist.style',
+      dynamic: true,
+      defaultValue: itemlist.horizontal()
+    },
+    {
+      id: 'cssForSelected',
+      as: 'string',
+      description: 'e.g. background: red;color: blue;font-weight: bold;',
+      defaultValue: 'background: #bbb; color: #fff'
+    }
   ],
   impl: styleByControl(
     itemlist({
       items: '%$picklistModel/options%',
-      controls: button({
-        title: '%text%',
-        style: call('buttonStyle')
-      }),
+      controls: button({title: '%text%', style: call('buttonStyle')}),
       style: call('itemlistStyle'),
       features: itemlist.selection({
         databind: '%$picklistModel/databind%',

@@ -200,10 +200,11 @@ jb.studio.activateWatchRefViewer = () => {
         st.previewjb.initSpy({})
     st.previewjb.spy.setLogs('registerCmpObservable,notifyCmpObservable,destroyCmp,setState')
 
-    const delayedSpy = jb.rx.Observable.zip(
-            jb.rx.Observable.interval(100),
-            st.previewjb.spy.observable()
-    ).map(z=>z[1])
+    // const delayedSpy = jb.rx.Observable.zip(
+    //         jb.rx.Observable.interval(100),
+    //         st.previewjb.spy.observable()
+    // ).map(z=>z[1])
+    const delayedSpy = st.previewjb.spy.observable()
     
     delayedSpy.filter(e=>e.logName === 'registerCmpObservable').subscribe(e=> {
             const ref = e.record[0].ref

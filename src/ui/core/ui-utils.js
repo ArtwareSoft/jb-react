@@ -248,7 +248,7 @@ jb.component('control-with-features', { /* controlWithFeatures */
         {id: 'control', type: 'control', mandatory: true},
         {id: 'features', type: 'feature[]', templateValue: [], mandatory: true}
     ],
-    impl: (ctx,control,features) => control.jbExtend(features,ctx)
+    impl: (ctx,control,features) => control.jbExtend(features,ctx).orig(ctx)
 })  
 
 })()
