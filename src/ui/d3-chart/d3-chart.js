@@ -78,7 +78,7 @@ jb.component('d3-scatter.init', { /* d3Scatter.init */
       return items.slice(0,$model.visualSizeLimit);
     }),
     calcProp('frame','%$$model/frame%'),
-    calcProp('pivots','%$$model/pivots%'),
+    calcProp('pivots', ctx => ctx.exp('%$$model/pivots%')),
     calcProp('emptyPivot', d3g.pivot({title: 'empty', value: list('0', '1') })),
     calcProp('x',firstSucceeding('%$$props/pivots[0]%','%$$props/emptyPivot%')),
     calcProp('y',firstSucceeding('%$$props/pivots[1]%','%$$props/emptyPivot%')),

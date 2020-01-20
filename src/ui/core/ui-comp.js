@@ -55,6 +55,7 @@ class JbComponent {
                 Object.assign(this.renderProps, { ...(prop.id == '$props' ? value : { [prop.id]: value })})
             })
         jb.log('renderProps',[this.renderProps, this])
+        if (this.ctx.probe && this.ctx.probe.outOfTime) return
         this.template = this.template || (() => '')
         const initialVdom = tryWrapper(() => this.template(this,this.renderProps,ui.h), 'template')
         const vdom = (this.templateModifierFuncs||[]).reduce((vdom,modifier) =>

@@ -181,7 +181,7 @@ jb.component('tree.selection', { /* tree.selection */
 	  feature.init( (ctx,{cmp},{databind}) => {
 		cmp.state.expanded = cmp.state.expanded||{}
 		const selectedPath = jb.val(databind())
-		selectedPath && jb.ui.treeExpandPath(cmp.state.expanded, selectedPath)
+		selectedPath && jb.ui.treeExpandPath(cmp.state.expanded, selectedPath.split('~').slice(0,-1).join('~'))
 	  },5),
 	  interactive( (ctx,{cmp},{databind,autoSelectFirst,onSelection,onRightClick}) => {
 			const selectedRef = databind()
