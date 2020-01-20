@@ -46,7 +46,8 @@ jb.component('table-tree.init', {
         }),
         interactiveProp('treeModel', '%$$model.treeModel%'),
         interactive( (ctx,{cmp}) => {
-            cmp.state.expanded = {[cmp.treeModel.rootPath]: true}
+            cmp.state.expanded = jb.objFromEntries(Array.from(cmp.base.querySelectorAll('[expanded=true]'))
+                    .map(x=>x.getAttribute('path')).concat([cmp.treeModel.rootPath]).map(x=>[x,true]))
             cmp.flip = (event) => {
                 const path = elemToPath(event.target)
                 if (!path) debugger
@@ -60,8 +61,10 @@ jb.component('table-tree.init', {
             cmp.renderProps.maxDepth = treeModel.maxDepth = (treeModel.maxDepth || 5)
             const firstTime = !cmp.state.expanded
             cmp.state.expanded = cmp.state.expanded || {}
-            jb.ui.treeExpandPath(cmp.state.expanded,treeModel.rootPath)
-            firstTime && treeModel.children(treeModel.rootPath).forEach(path=>jb.ui.treeExpandPath(cmp.state.expanded,path))
+            if (firstTime) {
+                jb.ui.treeExpandPath(cmp.state.expanded,treeModel.rootPath)
+                treeModel.children(treeModel.rootPath).forEach(path=>jb.ui.treeExpandPath(cmp.state.expanded,path))
+            }
 
             //cmp.itemsCache = {}
             //cmp.headLineCache = {}
@@ -130,7 +133,7 @@ jb.component('table-tree.plain', {
       { id: 'noItemsCtrl', type: 'control', dynamic: true, defaultValue: text('no items') },
     ],
     impl: customStyle({
-      template: (cmp,{ items, maxDepth, hideHeaders, gapWidth, expColWidth, noItemsCtrl},h) => h('table',{},[
+      template: (cmp,{ expanded, items, maxDepth, hideHeaders, gapWidth, expColWidth, noItemsCtrl},h) => h('table',{},[
         ...Array.from(new Array(maxDepth)).map(f=>h('col',{width: expColWidth + 'px'})),
         h('col',{width: gapWidth + 'px'}),
         ...cmp.leafFields.concat(cmp.commonFields).map(f=>h('col',{width: f.width || '200px'})),
@@ -138,7 +141,7 @@ jb.component('table-tree.plain', {
         Array.from(new Array(maxDepth+1)).map(f=>h('th',{class: 'th-expand-collapse'})).concat(
             [...cmp.leafFields, ...cmp.commonFields].map(f=>h('th',{'jb-ctx': f.ctxId},jb.ui.fieldTitle(cmp,f,h))) )))]),
         h('tbody',{class: 'jb-drag-parent'},
-          items.map((item,index)=> h('tr',{ class: 'jb-item', path: item.path }, 
+          items.map((item,index)=> h('tr',{ class: 'jb-item', path: item.path, expanded: expanded[item.path] }, 
             [...cmp.expandingFieldsOfItem(item).map(f=>h('td',
               f.empty ? { class: 'empty-expand-collapse'} : 
                 f.toggle ? {class: 'expandbox' } : {class: 'headline', colSpan: f.colSpan, onclick: 'flip' },

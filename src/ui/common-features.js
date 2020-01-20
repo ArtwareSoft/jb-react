@@ -197,24 +197,24 @@ jb.component('variable', { /* variable */
       as: 'boolean',
       type: 'boolean',
       description: 'E.g., selected item variable'
-    },
-    {
-      id: 'globalId',
-      as: 'string',
-      description: 'If specified, the var will be defined as global with this id'
     }
   ],
-  impl: ({}, name, value, watchable, globalId) => ({
-      extendCtx: (ctx,cmp) => {
-        if (!watchable)
-          return ctx.setVar(name,jb.val(value(ctx)))
+  impl: ({}, name, value, watchable) => ({
+    destroy: cmp => {
+      const fullName = name + ':' + cmp.cmpId;
+      cmp.ctx.run(writeValue(`%$${fullName}%`,null))
+    },
+    extendCtx: (ctx,cmp) => {
+      if (!watchable)
+        return ctx.setVar(name,jb.val(value(ctx)))
 
-        const fullName = globalId || (name + ':' + cmp.cmpId);
-        jb.log('var',['new-watchable',ctx,fullName])
-        jb.resource(fullName, value(ctx));
-        const refToResource = jb.mainWatchableHandler.refOfPath([fullName]);
-        return ctx.setVar(name, refToResource);
-      }
+      const fullName = name + ':' + cmp.cmpId;
+      if (fullName == 'items') debugger
+      jb.log('var',['new-watchable',ctx,fullName])
+      const refToResource = jb.mainWatchableHandler.refOfPath([fullName]);
+      jb.writeValue(refToResource,value(ctx),ctx)
+      return ctx.setVar(name, refToResource);
+    }
   })
 })
 
@@ -226,11 +226,6 @@ jb.component('calculated-var', { /* calculatedVar */
     {id: 'name', as: 'string', mandatory: true},
     {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
     {
-      id: 'globalId',
-      as: 'string',
-      description: 'If specified, the var will be defined as global with this id'
-    },
-    {
       id: 'watchRefs',
       as: 'array',
       dynamic: true,
@@ -239,20 +234,20 @@ jb.component('calculated-var', { /* calculatedVar */
       description: 'variable to watch. needs to be in array'
     }
   ],
-  impl: (ctx, name, value,globalId, watchRefs) => ({
+  impl: (ctx, name, value, watchRefs) => ({
       destroy: cmp => {
-        const fullName = globalId || (name + ':' + cmp.cmpId);
+        const fullName = name + ':' + cmp.cmpId;
         cmp.ctx.run(writeValue(`%$${fullName}%`,null))
       },
       extendCtx: (_ctx,cmp) => {
-        const fullName = globalId || (name + ':' + cmp.cmpId);
+        const fullName = name + ':' + cmp.cmpId;
         jb.log('calculated var',['new-resource',ctx,fullName])
         jb.resource(fullName, jb.val(value(_ctx)));
         const ref = _ctx.exp(`%$${fullName}%`,'ref')
         return _ctx.setVar(name, ref);
       },
       afterViewInit: cmp => {
-        const fullName = globalId || (name + ':' + cmp.cmpId);
+        const fullName = name + ':' + cmp.cmpId;
         const refToResource = cmp.ctx.exp(`%$${fullName}%`,'ref');
         (watchRefs(cmp.ctx)||[]).map(x=>jb.asRef(x)).filter(x=>x).forEach(ref=>
           jb.ui.refObservable(ref,cmp,{srcCtx: ctx}).subscribe(e=>

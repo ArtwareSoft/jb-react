@@ -15,7 +15,7 @@ jb.component('ui-test.check-box-with-calculated-and-watch-ref',  /* uiTest_check
 
 jb.component('ui-test.boolean-watchable-var-as-boolean-true-to-false', {
     impl: uiTest({
-      control: label({
+      control: text({
         text: data.if('%$person/male%','Error','OK'),
         features: watchRef('%$person/male%'),
       }),
@@ -27,7 +27,7 @@ jb.component('ui-test.boolean-watchable-var-as-boolean-true-to-false', {
 jb.component('ui-test.boolean-watchable-var-as-boolean-false-to-true', {
     impl: uiTest({
       runBefore: writeValue('%$person/male%', false),
-      control: label({
+      control: text({
         text: data.if('%$person/male%','OK','Error'),
         features: watchRef('%$person/male%'),
       }),
@@ -39,22 +39,9 @@ jb.component('ui-test.boolean-watchable-var-as-boolean-false-to-true', {
 jb.component('ui-test.watchable-var',  /* uiTest_mutableVar */ {
     impl: uiTest({
       control: group({
-        controls: label('%$var1%'),
+        controls: text('%$var1%'),
         features: [
           variable({name: 'var1', value: 'hello', watchable: true}),
-          feature.afterLoad(writeValue('%$var1%', 'foo'))
-        ]
-      }),
-      expectedResult: contains('foo')
-    })
-})
-
-jb.component('ui-test.watchable-var-with-global-id',  /* uiTest_mutableVarWithGlobalId */ {
-    impl: uiTest({
-      control: group({
-        controls: label('%$var1%'),
-        features: [
-          variable({name: 'var1', value: 'hello', watchable: true, globalId: 'globalVar1'}),
           feature.afterLoad(writeValue('%$var1%', 'foo'))
         ]
       }),
@@ -65,7 +52,7 @@ jb.component('ui-test.watchable-var-with-global-id',  /* uiTest_mutableVarWithGl
 jb.component('ui-test.watchable-var-as-object',  /* uiTest_mutableVarAsObject */ {
     impl: uiTest({
       control: group({
-        controls: label('%$obj1/txt%'),
+        controls: text('%$obj1/txt%'),
         features: [
           variable({name: 'obj1', value: {$: 'object', txt: 'hello'}, watchable: true}),
           feature.afterLoad(writeValue('%$obj1/txt%', 'foo'))
@@ -78,12 +65,11 @@ jb.component('ui-test.watchable-var-as-object',  /* uiTest_mutableVarAsObject */
 jb.component('ui-test.watchable-var-as-array',  /* uiTest_mutableVarAsArray */ {
     impl: uiTest({
       control: group({
-        controls: label('%$items[1]/title%'),
+        controls: text('%$items[1]/title%'),
         features: variable({
           name: 'items',
           value: asIs([{title: 'koo'}, {title: 'foo'}]),
-          watchable: true,
-          globalId: 'items'
+          watchable: true        
         })
       }),
       expectedResult: contains('foo')
@@ -93,8 +79,8 @@ jb.component('ui-test.watchable-var-as-array',  /* uiTest_mutableVarAsArray */ {
 jb.component('ui-test.watchable-var-as-array-one-item',  /* uiTest_mutableVarAsArrayOneItem */ {
     impl: uiTest({
       control: group({
-        controls: label('%$items[0]/title%'),
-        features: variable({name: 'items', value: asIs([{title: 'foo'}]), watchable: true, globalId: 'items'})
+        controls: text('%$items[0]/title%'),
+        features: variable({name: 'items', value: asIs([{title: 'foo'}]), watchable: true })
       }),
       expectedResult: contains('foo')
     })
@@ -104,7 +90,7 @@ jb.component('ui-test.watchable-var-as-array-one-item',  /* uiTest_mutableVarAsA
 jb.component('ui-test.watchable-var-as-object-not-initialized',  /* uiTest_mutableVarAsObjectNotInitialized */ {
     impl: uiTest({
       control: group({
-        controls: label('%$obj1/txt%'),
+        controls: text('%$obj1/txt%'),
         features: [
           variable({name: 'obj1', value: {$: 'object'}, watchable: true}),
           feature.afterLoad(writeValue('%$obj1/txt%', 'foo'))
@@ -120,7 +106,7 @@ jb.component('ui-test.calculated-var',  /* uiTest_calculatedVar */ {
         controls: [
           editableText({databind: '%$var1%', features: id('var1')}),
           editableText({databind: '%$var2%'}),
-          label('%$var3%')
+          text('%$var3%')
         ],
         features: [
           variable({name: 'var1', value: 'hello', watchable: true}),
@@ -139,7 +125,7 @@ jb.component('ui-test.calculated-var-cyclic',  /* uiTest_calculatedVarCyclic */ 
         controls: [
           editableText({databind: '%$var1%', features: id('var1')}),
           editableText({databind: '%$var2%'}),
-          label('%$var3%')
+          text('%$var3%')
         ],
         features: [
           calculatedVar({name: 'var1', value: 'xx%$var3%', watchRefs: '%$var3%'}),
@@ -154,21 +140,21 @@ jb.component('ui-test.calculated-var-cyclic',  /* uiTest_calculatedVarCyclic */ 
 
 jb.component('ui-test.boolean-not-reffable-true',  /* uiTest_booleanNotReffableTrue */ {
     impl: uiTest({
-      control: label({text: isOfType('string', '123')}),
+      control: text({text: isOfType('string', '123')}),
       expectedResult: contains('true')
     })
 })
 
 jb.component('ui-test.boolean-not-reffable-false',  /* uiTest_booleanNotReffableFalse */ {
     impl: uiTest({
-      control: label({text: isOfType('string2', '123')}),
+      control: text({text: isOfType('string2', '123')}),
       expectedResult: contains('false')
     })
 })
 
 jb.component('ui-test.label-with-watch-ref-in-spliced-array', {
     impl: uiTest({
-      control: label({
+      control: text({
         text: '%$personWithChildren/children[1]/name%',
         //features: watchRef('%$personWithChildren/children%')
       }),
@@ -180,7 +166,7 @@ jb.component('ui-test.label-with-watch-ref-in-spliced-array', {
 
 jb.component('ui-test.splice-and-set', {
   impl: uiTest({
-    control: label({
+    control: text({
       text: '%$personWithChildren/children[1]/name%',
       features: watchRef('%$personWithChildren/children%')
     }),
@@ -195,7 +181,7 @@ jb.component('ui-test.splice-and-set', {
 
 jb.component('ui-test.label-not-watching-ui-var', {
   impl: uiTest({
-    control: label({
+    control: text({
       text: '%$text1/text%',
       features: [
         variable({name: 'text1', value: obj(prop('text','OK'))}),
@@ -209,7 +195,7 @@ jb.component('ui-test.label-not-watching-ui-var', {
 
 jb.component('ui-test.label-not-watching-basic-var', {
   impl: uiTest({
-    control: label({
+    control: text({
       vars: Var('text1', obj(prop('text','OK'))),
       text: '%$text1/text%',
       features: [
@@ -224,7 +210,7 @@ jb.component('ui-test.label-not-watching-basic-var', {
 jb.component('ui-test.group-watching-without-includeChildren', {
   impl: uiTest({
     control: group({
-      controls: label('%$text1/text%'),
+      controls: text('%$text1/text%'),
     features: [
       variable({name: 'text1', value: obj(prop('text','OK'))}),
       watchRef({ref: '%$text1%'}),
@@ -239,7 +225,7 @@ jb.component('ui-test.group-watching-without-includeChildren', {
 jb.component('ui-test.group-watching-with-includeChildren', {
   impl: uiTest({
     control: group({
-      controls: label('%$text1/text%'),
+      controls: text('%$text1/text%'),
       features: [
         variable({name: 'text1', watchable: true, value: obj(prop('text','OK'))}),
         watchRef({ref: '%$text1%', includeChildren: 'yes'}),
@@ -254,7 +240,7 @@ jb.component('ui-test.group-watching-with-includeChildren', {
 jb.component('ui-test.group-watching-structure', {
   impl: uiTest({
     control: group({
-      controls: label('%$text1/text%'),
+      controls: text('%$text1/text%'),
       features: [
         variable({name: 'text1', watchable: true, value: obj(prop('text','OK'))}),
         watchRef({ref: '%$text1%', includeChildren: 'structure'}),
@@ -269,7 +255,7 @@ jb.component('ui-test.group-watching-structure', {
 jb.component('ui-test.watch-ref-array-delete-with-run-action-on-items',  {
   impl: uiTest({
     control: group({
-      controls: label({
+      controls: text({
           text: json.stringify("%$watchable-people%"),
           features: watchRef({ref: '%$watchable-people%', includeChildren: 'yes'}) 
       }),
@@ -314,7 +300,7 @@ jb.component('ui-test.watchable-as-text', {
           title: 'change name',
           action: writeValue('%$watchable-people[1]/name%','mukki')
         }),
-        label('%$path%'),
+        text('%$path%'),
       ],
       features: [
         id('group'),
@@ -368,7 +354,7 @@ jb.component('ui-test.watchable-as-text-write-set-object-to-array', {
 
 jb.component('data-test.watchable-object-to-primitive-bug', {
   impl: uiTest({
-    control: label('%$person%'),
+    control: text('%$person%'),
     action: runActions(
       writeValue('%$person%', 'world'), 
       writeValue('%$person%', 'hello') ),
@@ -380,7 +366,7 @@ jb.component('ui-test.splice-should-not-fire-full-container-change',  {
   impl: uiTest({
     control: itemlist({
       items: '%$watchable-people%',
-      controls: label('%name%')
+      controls: text('%name%')
     }),
     action: addToArray('%$watchable-people%', obj(prop('name','mukki'))),
     expectedCounters: {refreshElem: 0 },
@@ -392,7 +378,7 @@ jb.component('ui-test.splice-and-watch-ref-strcture',  {
   impl: uiTest({
     control: itemlist({
       items: '%$watchable-people%',
-      controls: label('%name%'),
+      controls: text('%name%'),
       features: watchRef({ref: '%$watchable-people%', includeChildren: 'structure'})
     }),
     action: addToArray('%$watchable-people%', obj(prop('name','mukki'))),
@@ -405,7 +391,7 @@ jb.component('ui-test.splice-and-watch-ref-without-include-children',  {
   impl: uiTest({
     control: itemlist({
       items: '%$watchable-people%',
-      controls: label('%name%'),
+      controls: text('%name%'),
       features: watchRef({ref: '%$watchable-people%', includeChildren: 'no'})
     }),
     action: writeValue('%$watchable-people[0]/name%', 'mukki'),
@@ -418,7 +404,7 @@ jb.component('ui-test.splice-and-watch-ref-add-twice',  {
   impl: uiTest({
     control: itemlist({
       items: '%$watchable-people%',
-      controls: label('%name%'),
+      controls: text('%name%'),
       features: watchRef({ref: '%$watchable-people%', includeChildren: 'structure'})
     }),
     action: runActions(

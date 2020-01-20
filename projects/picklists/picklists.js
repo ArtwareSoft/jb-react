@@ -14,14 +14,18 @@ jb.component('people',{ watchableData : [
 jb.component('picklists.main', { /* picklists.main */
   type: 'control',
   impl: group({
-    layout: layout.flex({alignItems: '', justifyContent: '', direction: 'row', wrap: 'wrap'}),
+    layout: layout.grid({
+      columnSizes: list('320', '320', '320'),
+      columnGap: '10px',
+      rowGap: '10px'
+    }),
     style: group.sections({
-      titleStyle: header.mdcHeadline5(),
+      titleStyle: header.mdcHeadline6(),
       sectionStyle: styleWithFeatures(
         group.div(),
         [group.card(), css.padding({left: '10', bottom: '20'})]
       ),
-      innerGroupStyle: styleWithFeatures(group.div(), [css.padding({right: '50'})])
+      innerGroupStyle: styleWithFeatures(group.div(), [css.padding({top: '20', right: '20'})])
     }),
     controls: [
       dynamicControls({

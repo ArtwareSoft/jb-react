@@ -1,7 +1,7 @@
 (function(){
 
-function getSinglePathChange(newVal, currentVal) {
-    return pathAndValueOfSingleChange(jb.objectDiff(newVal,currentVal),'',currentVal)
+function getSinglePathChange(diff, currentVal) {
+    return pathAndValueOfSingleChange(diff,'',currentVal)
 
     function pathAndValueOfSingleChange(obj, pathSoFar, currentVal) {
         if (currentVal === undefined || (typeof obj !== 'object' && obj !== undefined))
@@ -23,13 +23,15 @@ function setStrValue(value, ref, ctx) {
         return
     const currentVal = jb.val(ref)
     if (newVal && typeof newVal === 'object' && typeof currentVal === 'object') {
-        const {innerPath, innerValue} = getSinglePathChange(newVal,currentVal)
+        const diff = jb.objectDiff(newVal,currentVal)
+        if (Object.keys(diff).length == 0) return // no diffs
+        const {innerPath, innerValue} = getSinglePathChange(diff,currentVal) // one diff
         if (innerPath) {
             const fullInnerPath = ref.handler.pathOfRef(ref).concat(innerPath.slice(1).split('~'))
             return jb.writeValue(ref.handler.refOfPath(fullInnerPath),innerValue,ctx)
         }
     }
-    if (newVal !== undefined)
+    if (newVal !== undefined) // many diffs
        jb.writeValue(ref,newVal,ctx)
 }
 

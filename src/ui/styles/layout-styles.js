@@ -74,7 +74,7 @@ jb.component('layout.grid', { /* layout.grid */
     css: ctx.setVars({...ctx.params,
           colSizes: ctx.params.columnSizes.map(x=>jb.ui.withUnits(x)).join(' ') , rowSizes: ctx.params.rowSizes.map(x=>jb.ui.withUnits(x)).join(' ')
          }).exp(`{ display: grid; {?grid-template-columns:%$colSizes%;?} {?grid-template-rows:%$rowSizes%;?} 
-            {?grid-column-gap:%$columnGap%;?} {?grid-column-gap:%$rowGap%;?} }`)
+            {?grid-column-gap:%$columnGap%;?} {?grid-row-gap:%$rowGap%;?} }`)
   })
 })
 

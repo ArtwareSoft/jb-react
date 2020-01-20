@@ -31,10 +31,12 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 		textAreaAlternative ? h('textarea', {class: 'jb-textarea-alternative-for-codemirror', value: text })
 			: h('div',{},h('textarea', {class: 'jb-codemirror', value: text })),
 	  }),
-	  interactiveProp('data_ref', ctx => ctx.vars.$model.databind()),
+
 	  interactive( (ctx,{cmp},{cm_settings, _enableFullScreen, readOnly, onCtrlEnter, mode, debounceTime, lineWrapping, lineNumbers}) =>{
 		if (jb.ui.hasClass(cmp.base, 'jb-textarea-alternative-for-codemirror')) return
 		try {
+			cmp.doRefresh = () => cmp.data_ref = cmp.ctx.vars.$model.databind()
+			cmp.doRefresh()
 			if (cmp.data_ref instanceof Promise)
 				jb.delay(1).then(() => cmp.refresh())
 			cm_settings = cm_settings||{};

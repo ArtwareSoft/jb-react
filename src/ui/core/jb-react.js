@@ -274,10 +274,7 @@ Object.assign(jb.ui, {
         const timeSinceLastCleanUp = now - ui.ctxDictionaryLastCleanUp
         if (!force && timeSinceLastCleanUp < 10000) return
         ui.ctxDictionaryLastCleanUp = now
-        jb.resourcesToDelete = jb.resourcesToDelete || []
         jb.log('garbageCollect',jb.resourcesToDelete)
-        jb.resourcesToDelete.forEach(id => delete jb.resources[id])
-        jb.resourcesToDelete = []
     
         const used = 'jb-ctx,mount-ctx,pick-ctx,handlers,interactive,originators'.split(',')
             .flatMap(att=>Array.from(document.querySelectorAll(`[${att}]`))
@@ -285,7 +282,7 @@ Object.assign(jb.ui, {
                     .sort((x,y)=>x-y);
 
         // remove unused ctx from dictionary
-        const dict = Object.getOwnPropertyNames(jb.ctxDictionary).map(x=>Number(x)).sort((x,y)=>x-y);
+        const dict = Object.keys(jb.ctxDictionary).map(x=>Number(x)).sort((x,y)=>x-y);
         let lastUsedIndex = 0;
         for(let i=0;i<dict.length;i++) {
             while (used[lastUsedIndex] < dict[i])
@@ -294,19 +291,12 @@ Object.assign(jb.ui, {
                 delete jb.ctxDictionary[''+dict[i]];
         }
         // remove unused vars from resources
-        const ctxToPath = ctx => jb.entries(ctx.vars).map(e=>e[1]).filter(v=>jb.isWatchable(v)).map(v => jb.asRef(v)).map(ref=>jb.refHandler(ref).pathOfRef(ref)).flat()
+        const ctxToPath = ctx => Object.values(ctx.vars).filter(v=>jb.isWatchable(v)).map(v => jb.asRef(v))
+            .map(ref=>jb.refHandler(ref).pathOfRef(ref)).flat()
         const globalVarsUsed = jb.unique(used.map(x=>jb.ctxDictionary[''+x]).filter(x=>x).map(ctx=>ctxToPath(ctx)).flat())
-        let iteratingOnVar = ''
         Object.keys(jb.resources).filter(id=>id.indexOf(':') != -1)
-            .sort().reverse() // get the latest usages (largest ctxId) as first item in each group
-            .forEach(id=>{
-                if (iteratingOnVar != id.split(':')[0]) {
-                    iteratingOnVar = id.split(':')[0]
-                    return // do not delete the latest usage of a variable. It may not be bound yet
-                }
-                if (globalVarsUsed.indexOf(id) == -1)
-                    jb.resourcesToDelete.push(id)
-        })
+            .filter(id=>globalVarsUsed.indexOf(id) == -1)
+            .forEach(id => delete jb.resources[id])
     },
 
     refreshElem(elem, state, options) {

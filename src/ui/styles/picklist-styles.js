@@ -21,7 +21,7 @@ jb.component('picklist.radio', {
   impl: customStyle({
     template: (cmp,{model, options, fieldId, text},h) => h('div', {},
           options.flatMap((option,i)=> [h('input', {
-              type: 'radio', name: fieldId, id: i, checked: model === option.code, onchange: true
+              type: 'radio', name: fieldId, id: i, checked: model === option.code, value: option.code, onchange: true
             }), h('label',{for: i}, text(cmp.ctx.setData(option))) ] )),
     css: `>input { %$radioCss% }`,
     features: field.databind()

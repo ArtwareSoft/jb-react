@@ -1542,6 +1542,16 @@ jb.component('ui-test.validator', {
   })
 })
 
+jb.component('ui-test.watchable-variable-as-proxy', { 
+  impl: uiTest({
+    control: group({
+      features: variable({name: 'link', value: '%$person%', watchable: true})
+    }),
+    expectedResult: ctx => jb.resources[Object.keys(jb.resources).filter(x=>x.match(/link:[0-9]*/))[0]][Symbol.for("isProxy")]
+  })
+})
+
+
 jb.component('ui-test.watchable-link-write-original-watch-link', { 
   impl: uiTest({
     control: group({
@@ -1571,20 +1581,20 @@ jb.component('ui-test.watchable-write-via-link', {
   })
 })
 
-jb.component('ui-test.watchable-override-link-val', { 
-  impl: uiTest({
-    control: group({
-      controls: [
-        text({text: '%$person/name%' }),
-        text({text: '%$link/name%' }),
-        button({title: 'set', action: writeValue('%$link%',obj(prop('name','hello'))), features: id('set')})
-      ],
-      features: variable({name: 'link', value: '%$person%', watchable: true})
-    }),
-    action: uiAction.click('#set'),
-    expectedResult: contains(['hello','hello'])
-  })
-})
+// jb.component('ui-test.watchable-override-link-val', { 
+//   impl: uiTest({
+//     control: group({
+//       controls: [
+//         text({text: '%$person/name%' }),
+//         text({text: '%$link/name%' }),
+//         button({title: 'set', action: writeValue('%$link%',obj(prop('name','hello'))), features: id('set')})
+//       ],
+//       features: variable({name: 'link', value: '%$person%', watchable: true})
+//     }),
+//     action: uiAction.click('#set'),
+//     expectedResult: contains(['Homer','hello'])
+//   })
+// })
 
 jb.component('ui-test.watchable-parent-refresh-mask-children', { 
   impl: uiTest({

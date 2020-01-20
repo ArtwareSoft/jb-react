@@ -29,11 +29,11 @@ jb.component('content-editable.popup-style', {
     type: 'dialog.style',
     impl: customStyle({
       template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
-      css: `{ position: absolute; background: white; padding: 6px; opacity: 0.7;
+      css: `{ position: absolute; background: white; padding: 6px; opacity: 0.5;
               box-shadow: 2px 2px 3px #d5d5d5; border: 1px solid rgb(213, 213, 213); }
           ~:hover { opacity: 1}
-          >*>* { width: 0 }
-          ~:hover >*>* { width: 24px }
+          >*>* { width: 0; margin-right: 0; }
+          ~:hover >*>* { width: 24px; margin-right: 3px; }
           >*>*:first-child { width: 24px;}
       `,
       features: [
