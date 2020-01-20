@@ -50,8 +50,10 @@ class JbComponent {
         const filteredPropsByPriority = (this.calcProp || []).filter(toFilter=> 
                 this.calcProp.filter(p=>p.id == toFilter.id && p.priority > toFilter.priority).length == 0)
         filteredPropsByPriority.sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
-            .forEach(prop=> Object.assign(this.renderProps, { 
-                [prop.id]:  jb.val( tryWrapper(() => prop.value(this.calcCtx),`renderProp:${prop.id}`) )}))
+            .forEach(prop=> { 
+                const value = jb.val( tryWrapper(() => prop.value(this.calcCtx),`renderProp:${prop.id}`))
+                Object.assign(this.renderProps, { ...(prop.id == '$props' ? value : { [prop.id]: value })})
+            })
         jb.log('renderProps',[this.renderProps, this])
         this.template = this.template || (() => '')
         const initialVdom = tryWrapper(() => this.template(this,this.renderProps,ui.h), 'template')
@@ -74,7 +76,8 @@ class JbComponent {
             vdom.attributes = Object.assign(vdom.attributes || {}, {
                     'jb-ctx': ui.preserveCtx(this.originatingCtx()),
                     'cmp-id': this.cmpId, 
-                    'mount-ctx': ui.preserveCtx(this.ctx)
+                    'mount-ctx': ui.preserveCtx(this.ctx),
+                    'props-ctx': ui.preserveCtx(this.calcCtx),
                 },
                 observe && {observe}, 
                 handlers && {handlers}, 

@@ -32,22 +32,23 @@ jb.component('d3g.chart-scatter', { /* d3g.chartScatter */
 jb.component('d3-scatter.plain', { /* d3Scatter.plain */
   type: 'd3g.scatter-style',
   impl: customStyle({
-    template: (cmp,state,h) => h('svg',{width: cmp.width, height: cmp.height, onclick: 'clicked'},
-    	  h('g', { transform: 'translate(' + cmp.left + ',' + cmp.top + ')' },
+    template: (cmp,{items, frame,xPivot,yPivot,rPivot,colorPivot,itemTitle},h) => 
+      h('svg',{width: frame.width, height: frame.height, onclick: 'clicked'},
+    	  h('g', { transform: `translate(${frame.left},${frame.top})` },
     		[
-    			h('g',{ axisIndex: 0, class: 'x axis', transform: 'translate(0,' + cmp.innerHeight + ')'}),
+    			h('g',{ axisIndex: 0, class: 'x axis', transform: 'translate(0,' + frame.innerHeight + ')'}),
     			h('g',{ axisIndex: 1, class: 'y axis', transform: 'translate(0,0)'}),
-    			h('text', { class: 'label', x: 10, y: 10}, cmp.yPivot.title),
-    			h('text', { class: 'label', x: cmp.innerWidth, y: cmp.innerHeight - 10, 'text-anchor': 'end'}, cmp.xPivot.title),
-    			h('text', { class: 'note', x: cmp.innerWidth, y: cmp.height - cmp.top, 'text-anchor': 'end' }, '' + state.items.length + ' items'),
+    			h('text', { class: 'label', x: 10, y: 10}, yPivot.title),
+    			h('text', { class: 'label', x: frame.innerWidth, y: frame.innerHeight - 10, 'text-anchor': 'end'}, xPivot.title),
+    			h('text', { class: 'note', x: frame.innerWidth, y: frame.height - frame.top, 'text-anchor': 'end' }, '' + items.length + ' items'),
     		].concat(
-    		state.items.map((item,index)=> h('circle',{
+    		items.map((item,index)=> h('circle',{
     			class: 'bubble', index,
-    			cx: cmp.xPivot.scale(cmp.xPivot.valFunc(item)),
-    			cy: cmp.yPivot.scale(cmp.yPivot.valFunc(item)),
-    			r: cmp.rPivot.scale(cmp.rPivot.valFunc(item)),
-    			fill: cmp.colorPivot.scale(cmp.colorPivot.valFunc(item)),
-    		},h('title',{x: cmp.rPivot.scale(cmp.xPivot.valFunc(item))}, cmp.itemTitle(cmp.ctx.setData(item)) )
+    			cx: xPivot.scale(xPivot.valFunc(item)),
+    			cy: yPivot.scale(yPivot.valFunc(item)),
+    			r: rPivot.scale(rPivot.valFunc(item)),
+    			fill: colorPivot.scale(colorPivot.valFunc(item)),
+    		},h('title',{x: rPivot.scale(xPivot.valFunc(item))}, itemTitle(cmp.ctx.setData(item)) )
     	))))),
     css: `>g>.label { font-size: 15px; text-transform: capitalize }
 >g>.note { font-size: 10px; }
@@ -69,39 +70,39 @@ jb.component('d3-scatter.plain', { /* d3Scatter.plain */
 jb.component('d3-scatter.init', { /* d3Scatter.init */
   type: 'feature',
   impl: features(
-      calcProp('items',(ctx,{cmp}) => {
-        cmp.items = jb.toarray(jb.val(ctx.vars.$model.items(ctx)));
-        if (ctx.vars.itemlistCntr)
-            ctx.vars.itemlistCntr.items = cmp.items;
-        cmp.sortItems && cmp.sortItems();
-        return cmp.items.slice(0,ctx.vars.$model.visualSizeLimit);
-      }),
-      calcProp('pivots','%$$mode/pivots%'),
-      calcProp('emptyPivot', d3g.pivot({title: 'empty', value: list('0', '1') })),
-      calcProp('x',firstSucceeding('%pivots[0]%','%$emptyPivot%')),
-      calcProp('y',firstSucceeding('%pivots[1]%','%$emptyPivot%')),
-      calcProp('radius',firstSucceeding('%pivots[2]%','%$emptyPivot%')),
-      calcProp('color',firstSucceeding('%pivots[3]%','%$emptyPivot%')),
-      setProps(ctx=> {
-        const ctx2 = ctx.setVars({items: ctx.data.items, frame: ctx.vars.$model.frame});
-        const res = {
-          xPivot: x.init(ctx2.setVars({xAxis: true})),
-          yPivot: y.init(ctx2.setVars({yAxis: true})),
-          rPivot: radius.init(ctx2.setVars({rAxis: true})),
-          colorPivot: color.init(ctx2.setVars({colorAxis: true})),
-          itemTitle: ctx.vars.$model.itemTitle
-        }
-        res.colorPivot.scale = d3.scaleOrdinal(d3.schemeAccent); //.domain(cmp.colorPivot.domain);
-        return res
+    calcProp('items',(ctx,{cmp,$model,itemlistCntr}) => {
+      const items = jb.toarray(jb.val($model.items(ctx)));
+      if (itemlistCntr)
+          itemlistCntr.items = items;
+      cmp.sortItems && cmp.sortItems();
+      return items.slice(0,$model.visualSizeLimit);
+    }),
+    calcProp('frame','%$$model/frame%'),
+    calcProp('pivots','%$$model/pivots%'),
+    calcProp('emptyPivot', d3g.pivot({title: 'empty', value: list('0', '1') })),
+    calcProp('x',firstSucceeding('%$$props/pivots[0]%','%$$props/emptyPivot%')),
+    calcProp('y',firstSucceeding('%$$props/pivots[1]%','%$$props/emptyPivot%')),
+    calcProp('radius',firstSucceeding('%$$props/pivots[2]%','%$$props/emptyPivot%')),
+    calcProp('color',firstSucceeding('%$$props/pivots[3]%','%$$props/emptyPivot%')),
+    calcProps((ctx,{cmp,$model})=> {
+      const ctx2 = ctx.setVars({frame: ctx.vars.$props.frame, items: ctx.vars.$props.items})
+      const res = {
+        xPivot: cmp.renderProps.x.init(ctx2.setVar('xAxis',true)),
+        yPivot: cmp.renderProps.y.init(ctx2.setVar('yAxis',true)),
+        rPivot: cmp.renderProps.radius.init(ctx2.setVars({rAxis: true})),
+        colorPivot: cmp.renderProps.color.init(ctx2.setVars({colorAxis: true})),
+        itemTitle: $model.itemTitle
+      }
+      res.colorPivot.scale = d3.scaleOrdinal(d3.schemeAccent); //.domain(cmp.colorPivot.domain);
+      return res
     }),
     interactive( (ctx,{cmp}) => {
-      d3.select(cmp.base.querySelector('.x.axis')).call(d3.axisBottom().scale(cmp.xPivot.scale));
-      d3.select(cmp.base.querySelector('.y.axis')).call(d3.axisLeft().scale(cmp.yPivot.scale));
+      cmp.base.outerHTML = cmp.base.outerHTML +'' // ???
+      d3.select(cmp.base.querySelector('.x.axis')).call(d3.axisBottom().scale(cmp.ctx.vars.$props.xPivot.scale));
+      d3.select(cmp.base.querySelector('.y.axis')).call(d3.axisLeft().scale(cmp.ctx.vars.$props.yPivot.scale));
 
-      cmp.clicked = ({event,ctx}) => {
-        const pivots = ctx.vars.$model.pivots();
-        const items = jb.toarray(jb.val(ctx.vars.$model.items(ctx)))
-
+      cmp.clicked = ({event,ctx,cmp}) => {
+        const {pivots,items} = cmp.ctx.vars.$props
         const elem = event.target
         const index = elem.getAttribute('index')
         const parent = jb.path(elem, 'parentElement.parentElement')

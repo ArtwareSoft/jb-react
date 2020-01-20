@@ -24,7 +24,7 @@ jb.component('picklist', { /* picklist */
   ],
   impl: ctx =>
     jb.ui.ctrl(ctx,features(
-      setProps( () => {
+      calcProps( () => {
           var options = ctx.params.options(ctx);
           var groupsHash = {};
           var promotedGroups = (ctx.params.promote() || {}).groups || [];

@@ -276,7 +276,7 @@ Object.assign(jb.ui, {
         ui.ctxDictionaryLastCleanUp = now
         jb.log('garbageCollect',jb.resourcesToDelete)
     
-        const used = 'jb-ctx,mount-ctx,pick-ctx,handlers,interactive,originators'.split(',')
+        const used = 'jb-ctx,mount-ctx,pick-ctx,props-ctx,handlers,interactive,originators'.split(',')
             .flatMap(att=>Array.from(document.querySelectorAll(`[${att}]`))
                 .flatMap(el => el.getAttribute(att).split(',').map(x=>Number(x.split('-').pop()))))
                     .sort((x,y)=>x-y);
@@ -384,7 +384,7 @@ function checkCircularity(obs) {
 }
 
 function mountInteractive(elem, keepState) {
-    const ctx = jb.ctxDictionary[elem.getAttribute('mount-ctx')]
+    const ctx = jb.ctxDictionary[elem.getAttribute('props-ctx')]
     const cmp = (ctx.profile.$ == 'open-dialog') ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself();
     const mountedCmp = {
         state: { ...(keepState && jb.path(elem._component,'state')) },
@@ -403,7 +403,7 @@ function mountInteractive(elem, keepState) {
         },
         status: 'initializing',
         recalcPropsFromElem() {
-            this.ctx = jb.ctxDictionary[elem.getAttribute('mount-ctx')].setVar('cmp',this)
+            this.ctx = jb.ctxDictionary[elem.getAttribute('props-ctx')].setVar('cmp',this)
             this.cmpId = elem.getAttribute('cmp-id')
             ;(elem.getAttribute('interactive') || '').split(',').filter(x=>x).forEach(op => {
                 [id, ctxId] = op.split('-')

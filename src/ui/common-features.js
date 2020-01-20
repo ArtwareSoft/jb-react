@@ -30,15 +30,16 @@ jb.component('interactive-prop', {
   impl: (ctx,id) => ({interactiveProp: {id, ctx }})
 })
 
-jb.component('set-props', {
+jb.component('calc-props', {
   type: 'feature',
   description: 'define variables to be used in the rendering calculation process',
   params: [
-    {id: 'props', as: 'object', mandatory: true, description: 'props as object' },
+    {id: 'props', as: 'object', mandatory: true, description: 'props as object', dynamic: true },
     {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'},
   ],
-  impl: (ctx,props,phase) => Object.keys(props).map(id =>
-    ({calcProp: {id, value: () => props[id], phase, index: jb.ui.propCounter++}}))
+  impl: (ctx,propsF,phase) => ({
+      calcProp: {id: '$props', value: ctx => propsF(ctx), phase, index: jb.ui.propCounter++ }
+    })
 })
 
 jb.component('feature.init', { /* feature.init */
