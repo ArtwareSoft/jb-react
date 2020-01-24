@@ -61,7 +61,7 @@ jb.component('studio.search-list', { /* studio.searchList */
             data: pipeline('%implType%', data.if('%% = \"function\"', 'javascript', ''))
           })
         ],
-        style: table.withHeaders(),
+        style: table.plain(),
         features: [
           watchRef('%$itemlistCntrData/search_pattern%'),
           itemlist.selection({

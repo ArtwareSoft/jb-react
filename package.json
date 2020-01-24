@@ -42,7 +42,9 @@
     "node-fetch": "^2.6.0"
   },
   "devDependencies": {
+    "@material/chips": "^4.0.0",
     "@material/data-table": "^4.0.0",
+    "@material/fab": "^4.0.0",
     "@material/floating-label": "^4.0.0",
     "@material/ripple": "^4.0.0",
     "@material/switch": "^4.0.0",

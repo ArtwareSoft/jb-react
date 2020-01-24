@@ -35,8 +35,7 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 	  interactive( (ctx,{cmp},{cm_settings, _enableFullScreen, readOnly, onCtrlEnter, mode, debounceTime, lineWrapping, lineNumbers}) =>{
 		if (jb.ui.hasClass(cmp.base, 'jb-textarea-alternative-for-codemirror')) return
 		try {
-			cmp.doRefresh = () => cmp.data_ref = cmp.ctx.vars.$model.databind()
-			cmp.doRefresh()
+			cmp.data_ref = cmp.ctx.vars.$model.databind()
 			if (cmp.data_ref instanceof Promise)
 				jb.delay(1).then(() => cmp.refresh())
 			cm_settings = cm_settings||{};
@@ -90,7 +89,10 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 				},
 				cmEditor: editor
 			}
-			cmp.doRefresh = () => editor.setValue(jb.tostring(jb.val(cmp.data_ref)))
+			cmp.doRefresh = () => {
+				cmp.data_ref = cmp.ctx.vars.$model.databind()
+				editor.setValue(jb.tostring(jb.val(cmp.data_ref)))
+			}
 			const wrapper = editor.getWrapperElement();
 			jb.delay(1).then(() => _enableFullScreen && enableFullScreen(editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper)))
 

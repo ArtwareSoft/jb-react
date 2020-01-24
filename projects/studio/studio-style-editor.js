@@ -117,7 +117,7 @@ jb.component('studio.style-editor', { /* studio.styleEditor */
                   onOK: writeValue(studio.ref('%$path%~template'), studio.jsxToH('%$jsx%')),
                   features: [variable({name: 'jsx', value: 'paste your jsx here', watchable: 'true'})]
                 }),
-                style: button.mdcRaised()
+                style: button.mdc()
               })
             ]
           }),

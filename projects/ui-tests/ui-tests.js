@@ -493,7 +493,7 @@ jb.component('ui-test.itemlist', { /* uiTest.itemlist */
 jb.component('ui-test.itemlist.shown-only-on-item-hover', {
   impl: uiTest({
     control: itemlist({items: '%$people%',
-      style: table.withHeaders(),
+      style: table.plain(),
       controls: [
         label('%name%'),
         button({
@@ -704,7 +704,7 @@ jb.component('ui-test.itemlist-with-table-style', {
   impl: uiTest({
     control: itemlist({
       items: '%$watchable-people%',
-      style: table.withHeaders(),
+      style: table.plain(),
       controls: [
         text({title: 'index', text: '%$index%', features: field.columnWidth(40) }), 
         text({title: 'name', text: '%name%', features: field.columnWidth(300) }), 

@@ -11,10 +11,13 @@ jb.component('mdc-style.init-dynamic', { /* mdcStyle.initDynamic */
       cmp.mdc_comps = cmp.mdc_comps || []
       if (cmp.base.classList.contains('mdc-text-field'))
         cmp.mdc_comps.push(new jb.ui.material.MDCTextField(cmp.base))
-      else if (cmp.base.classList.contains('mdc-button'))
+      else if (cmp.base.classList.contains('mdc-button') || cmp.base.classList.contains('mdc-fab'))
         cmp.mdc_comps.push(new jb.ui.material.MDCRipple(cmp.base))
       else if (cmp.base.classList.contains('mdc-switch'))
         cmp.mdc_comps.push(new jb.ui.material.MDCSwitch(cmp.base))
+      else if (cmp.base.classList.contains('mdc-chip-set'))
+        cmp.mdc_comps.push(new jb.ui.material.MDCChipSet(cmp.base))
+        
     },
     destroy: cmp => (cmp.mdc_comps || []).forEach(mdc_cmp=>mdc_cmp.destroy())
   })

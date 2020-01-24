@@ -15,11 +15,13 @@ jb.component('html', {
 
 jb.component('html.plain', {
     type: 'html.style',
-    impl: ctx => ({
-        watchAndCalcRefProp: { prop: 'html', strongRefresh: true },
-        template: (cmp,{html},h) => h('html',{$html: html, jb_external: true } ) ,
-        studioFeatures: feature.editableContent('html',true),
-    })
+    impl: ctx => features(
+        watchAndCalcModelProp('html'),
+        () => ({
+            template: (cmp,{html},h) => h('html',{$html: html, jb_external: true } ) ,
+            studioFeatures :{$: 'feature.content-editable', param: 'html' },
+        })
+    )
 })
 
 jb.component('html.in-iframe', {

@@ -44,22 +44,35 @@ jb.component('group.card', {
   type: 'feature',
   category: 'card:100',
   params: [
+    {id: 'padding', as: 'string', defaultValue: 10},
     {id: 'width', as: 'string', defaultValue: 320},
     {id: 'outlined', as: 'boolean' },
   ],
   impl: features(
     css.class(({},{},{outlined}) => ['mdc-card', ...(outlined ? ['mdc-card--outlined']: [])].join(' ') ),
-    css( ({},{},{width}) => jb.ui.propWithUnits('width',width)),
+    css( ({},{},{padding,width}) => [jb.ui.propWithUnits('padding',padding), jb.ui.propWithUnits('width',width)].filter(x=>x).join(';')),
+  )
+})
+
+jb.component('group.chip-set', {
+  type: 'feature',
+  category: 'chip:100',
+  params: [
+    {id: 'spacing', as: 'string', defaultValue: 3}
+  ],
+  impl: features(
+    css.class('mdc-chip-set'),
+    mdcStyle.initDynamic()
   )
 })
 
 jb.component('group.tabs', { /* group.tabs */
   type: 'group.style',
   params: [
-    {id: 'width', as: 'number'}
+    {id: 'width', as: 'number'},
+    {id: 'tabStyle', type: 'button.style', dynamic: true, defaultValue: button.mdc() },
   ],
-  impl: styleByControl(
-    group({
+  impl: styleByControl( group({
       controls: [
         group({
           title: 'thumbs',
@@ -68,27 +81,18 @@ jb.component('group.tabs', { /* group.tabs */
             controlItems: '%$tabsModel/controls%',
             genericControl: button({
               title: '%$tab/field/title%',
-              action: runActions(
-                writeValue('%$selectedTab/ctrl%', '%$tab%'),
-                refreshControlById(ctx=> 'tab_' + ctx.componentContext.id)
-              ),
-              style: button.mdcFlat(),
-              features: [css.width('%$width%'), css('{text-align: left}')]
+              action: writeValue('%$selectedTab%', '%$tabIndex%'),
+              raised: '%$tabIndex% == %$selectedTab%',
+              style: call('tabStyle'),
+              features: [css.width('%$width%'), css('{text-align: left}'), watchRef('%$selectedTab%')]
             }),
-            itemVariable: 'tab'
+            itemVariable: 'tab',
+            indexVariable: 'tabIndex'
           }),
-          features: group.initGroup()
         }),
-        '%$selectedTab/ctrl%'
+        controlWithFeatures('%$tabsModel/controls[{%$selectedTab%}]%', watchRef('%$selectedTab%'))
       ],
-      features: [
-        id(ctx=> 'tab_' + ctx.componentContext.id),
-        variable({
-          name: 'selectedTab',
-          value: obj(prop('ctrl', '%$tabsModel/controls[0]%', 'single'))
-        }),
-        group.initGroup()
-      ]
+      features: variable({ name: 'selectedTab', value: 0, watchable: true} ),
     }),
     'tabsModel'
   )
@@ -97,38 +101,34 @@ jb.component('group.tabs', { /* group.tabs */
 jb.component('group.accordion', {
   type: 'group.style',
   params: [
-    {id: 'titleStyle', type: 'button.style', dynamic: true, defaultValue: button.mdcFlat() },
+    {id: 'titleStyle', type: 'button.style', dynamic: true, defaultValue: button.mdc() },
     {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: group.section()},
     {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
   ],
-  impl: styleByControl(
-    group({
+  impl: styleByControl( group({
       controls: dynamicControls({
           controlItems: '%$sectionsModel/controls%',
           genericControl: group({
             style: call('sectionStyle'),
             controls: [
               button({
-                title: ({},{section}) => section && section.field().title(),
+                title: '%$section/field/title%',
                 style: call('titleStyle'),
-                action: runActions(
-                  writeValue('%$selectedTab/path%', '%$section/ctx/path%'),
-                  refreshControlById(ctx=> 'accoridon_' + ctx.componentContext.id)
-                )
+                raised: '%$sectionIndex% == %$selectedTab%',
+                action: writeValue('%$selectedTab%', '%$sectionIndex%'),
+                features: [css.width('%$width%'), css('{justify-content: left}'), watchRef('%$selectedTab%')]
               }),
-              group({style: call('innerGroupStyle'), controls: ({},{section,selectedTab}) => section.ctx.path == selectedTab.path && section})
+              group({
+                features: [feature.if('%$sectionIndex% == %$selectedTab%'),watchRef('%$selectedTab%')],
+                style: call('innerGroupStyle'), 
+                controls: '%$sectionsModel/controls[{%$sectionIndex%}]%'
+              })
             ]
           }),
-          itemVariable: 'section'
+          itemVariable: 'section',
+          indexVariable: 'sectionIndex'
       }),
-      features: [
-        id(ctx=> 'accoridon_' + ctx.componentContext.id),
-        variable({
-          name: 'selectedTab',
-          value: obj(prop('path','%$sectionsModel/controls[0]/ctx/path%'))
-        }),
-        group.initGroup()
-      ]
+      features: variable({ name: 'selectedTab', value: 0, watchable: true} ),
     }),
     'sectionsModel'
   )
@@ -156,25 +156,18 @@ jb.component('group.sections', { /* group.sections */
       defaultValue: group.div()
     }
   ],
-  impl: styleByControl(
-    group({
-      controls: [
-        dynamicControls({
+  impl: styleByControl( group({
+      controls: dynamicControls({
           controlItems: '%$sectionsModel/controls%',
           genericControl: group({
             style: call('sectionStyle'),
             controls: [
-              label({
-                text: ({},{section}) => section && section.field().title(),
-                style: call('titleStyle')
-              }),
-              group({style: call('innerGroupStyle'), controls: ({},{section}) => section})
+              text({ text: '%$section/field/title%', style: call('titleStyle') }),
+              group({style: call('innerGroupStyle'), controls: '%$section%'})
             ]
           }),
           itemVariable: 'section'
-        })
-      ]
-    }),
+    })}),
     'sectionsModel'
   )
 })

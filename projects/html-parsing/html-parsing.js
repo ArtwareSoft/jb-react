@@ -11,7 +11,7 @@ jb.component('html-parsing.main', { /* htmlParsing.main */
           text({title: 'property', text: '%%', features: field.columnWidth('200')}),
           text({title: 'value', text: pipeline('%$phone/{%%}%')})
         ],
-        style: table.withHeaders(),
+        style: table.plain(),
         features: [css.width('446')]
       }),
       itemlist({
@@ -20,7 +20,7 @@ jb.component('html-parsing.main', { /* htmlParsing.main */
           text({title: 'feature', text: '%feature%'}),
           text({title: 'value', text: '%val%'})
         ],
-        style: table.withHeaders(),
+        style: table.plain(),
         features: [css.width('400')]
       })
     ],
@@ -153,7 +153,7 @@ jb.component('html-parsing.parseDevice', { /* htmlParsing.parseDevice */
               text({title: 'name', text: '%name%', features: field.columnWidth('300')}),
               text({title: 'price', text: pipeline('%Price%', matchRegex('[0-9]+'))})
             ],
-            style: table.withHeaders(),
+            style: table.plain(),
             visualSizeLimit: '12',
             features: [
               itemlist.selection('%$sel%', undefined),

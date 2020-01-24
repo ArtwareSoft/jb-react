@@ -47,7 +47,7 @@ jb.component('animation-demo.itemlist', { /* animationDemo.itemlist */
               loop: false,
               duration: '2000'
             }),
-            style: button.mdcRaised()
+            style: button.mdc()
           }),
           button({
             title: 'stagger',

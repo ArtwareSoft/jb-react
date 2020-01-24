@@ -6,13 +6,14 @@ jb.component('button', { /* button */
   params: [
     {id: 'title', as: 'ref', mandatory: true, templateValue: 'click me', dynamic: true},
     {id: 'action', type: 'action', mandatory: true, dynamic: true},
-    {id: 'style', type: 'button.style', defaultValue: button.mdcRaised(), dynamic: true },
+    {id: 'style', type: 'button.style', defaultValue: button.mdc(), dynamic: true },
+    {id: 'raised', as: 'boolean', dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx => jb.ui.ctrl(ctx, {
-      watchAndCalcRefProp: { prop: 'title', strongRefresh: true },
-      studioFeatures: feature.editableContent('title'),
-      featuresOptions: defHandler('onclickHandler', (ctx,{cmp}) => {
+  impl: ctx => jb.ui.ctrl(ctx, ctx.run(features(
+      watchAndCalcModelProp('title'),
+      watchAndCalcModelProp('raised'),
+      defHandler('onclickHandler', (ctx,{cmp}) => {
         const ev = event
         if (ev && ev.ctrlKey && cmp.ctrlAction)
           cmp.ctrlAction(cmp.ctx.setVar('event',ev))
@@ -20,9 +21,10 @@ jb.component('button', { /* button */
           cmp.altAction(cmp.ctx.setVar('event',ev))
         else
           cmp.action && cmp.action(cmp.ctx.setVar('event',ev))
-        }),
-      afterViewInit: cmp => cmp.action = jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)
-    })
+      }),
+      interactive( ({},{cmp}) => cmp.action = jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)),
+      ctx => ({studioFeatures :{$: 'feature.content-editable', param: 'title' }}),
+    )))
 })
 
 jb.component('ctrl-action', { /* ctrlAction */

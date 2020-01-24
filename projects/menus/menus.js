@@ -81,14 +81,14 @@ jb.component('menus.popup', {
             ]
           }
         }, 
-        style: button.mdcRaised()
+        style: button.mdc()
       }
     ]
   }, 
   controls: [
     {$: 'button', 
       title: 'click me', 
-      style: button.mdcRaised()
+      style: button.mdc()
     }
   ], 
   title: ''

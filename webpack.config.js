@@ -73,4 +73,4 @@ const jbJison = {
   resolve: { modules: [ 'node_modules'] },
 };
 
-module.exports = [jbImmutable,jbRx,babel_ext,jbJison,material];
+module.exports = [jbImmutable,jbRx,babel_ext,material];

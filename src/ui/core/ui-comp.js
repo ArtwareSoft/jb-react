@@ -5,7 +5,7 @@ ui.propCounter = 0
 const cssSelectors_hash = ui.cssSelectors_hash = {};
 const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,this.ctx) }}
 const lifeCycle = new Set('init,componentDidMount,componentWillUpdate,componentDidUpdate,destroy,extendCtx,templateModifier,extendItem'.split(','))
-const arrayProps = new Set('enrichField,dynamicCss,watchAndCalcRefProp,staticCssLines,defHandler,interactiveProp,calcProp'.split(','))
+const arrayProps = new Set('enrichField,dynamicCss,watchAndCalcModelProp,staticCssLines,defHandler,interactiveProp,calcProp'.split(','))
 const singular = new Set('template,calcRenderProps,toolbar,styleCtx,calcHash,ctxForPick'.split(','))
 
 class JbComponent {
@@ -20,7 +20,7 @@ class JbComponent {
     init() {
         jb.log('initCmp',[this]);
         this.ctx = (this.extendCtxFuncs||[])
-            .reduce((acc,extendCtx) => tryWrapper(() => extendCtx(acc,this),'extendCtx'), this.ctx)
+            .reduce((acc,extendCtx) => tryWrapper(() => extendCtx(acc,this),'extendCtx'), this.ctx.setVar('cmpId',this.cmpId))
         this.renderProps = {}
         this.state = this.ctx.vars.$state
         this.calcCtx = this.ctx.setVar('$props',this.renderProps).setVar('cmp',this)
@@ -38,11 +38,11 @@ class JbComponent {
             .forEach(f =>  tryWrapper(() => f.action(this.calcCtx), 'init'));
    
         this.toObserve = this.watchRef ? this.watchRef.map(obs=>({...obs,ref: obs.refF(this.ctx)})).filter(obs=>jb.isWatchable(obs.ref)) : []
-        this.watchAndCalcRefProp && this.watchAndCalcRefProp.forEach(e=>{
+        this.watchAndCalcModelProp && this.watchAndCalcModelProp.forEach(e=>{
             const ref = this.ctx.vars.$model[e.prop](this.ctx)
             if (jb.isWatchable(ref))
                 this.toObserve.push({id: e.prop, cmp: this, ref,...e})
-            this.renderProps[e.prop] = (e.transformValue || (x=>x))(jb.val(ref))
+            this.renderProps[e.prop] = e.transformValue(this.ctx.setData(jb.val(ref)))
         })
 
         Object.assign(this.renderProps,(this.styleCtx || {}).params, this.state);
@@ -103,7 +103,7 @@ class JbComponent {
         if (this.cachedClass)
             return this.cachedClass
         const ctx = this.ctx
-        const cssLines = (this.staticCssLines || []).concat((this.dynamicCss || []).map(dynCss=>dynCss(ctx))).filter(x=>x)
+        const cssLines = (this.staticCssLines || []).concat((this.dynamicCss || []).map(dynCss=>dynCss(this.calcCtx))).filter(x=>x)
         const cssKey = cssLines.join('\n')
         if (!cssKey) return ''
         if (!cssSelectors_hash[cssKey]) {

@@ -122,7 +122,7 @@ jb.component('studio.script-history', { /* studio.scriptHistory */
             width: '100'
           })
         ],
-        style: table.withHeaders()
+        style: table.plain()
       })
     ],
     features: [

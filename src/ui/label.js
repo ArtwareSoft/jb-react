@@ -17,10 +17,10 @@ jb.component('label', {...jb.comps.text,type: 'depricated-control'} )
 jb.component('label.bind-text', { /* label.bindText */
   type: 'feature',
   category: 'label:0',
-  impl: ctx => ({
-    watchAndCalcRefProp: { prop: 'text', transformValue: jb.ui.toVdomOrStr, strongRefresh: true },
-    studioFeatures: feature.editableContent('text')
-  })
+  impl: features(
+    watchAndCalcModelProp('text', ({data}) => jb.ui.toVdomOrStr(data)),
+    () => ({studioFeatures :{$: 'feature.content-editable', param: 'text' }})
+  )
 })
 
 jb.component('label.allow-asynch-value', { // allowAsynchValue

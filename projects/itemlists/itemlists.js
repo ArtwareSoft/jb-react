@@ -14,7 +14,7 @@ jb.component('itemlists.main', { /* itemlists.main */
       text({title: 'name', text: '%name%', features: field.columnWidth('250')}),
       text({title: 'age', text: '%age%'})
     ],
-    style: table.withHeaders(),
+    style: table.plain(),
     features: [
       itemlist.selection({databind: '%$selectedItem%', autoSelectFirst: 'true'}),
       itemlist.keyboardSelection({})
@@ -130,7 +130,7 @@ jb.component('itemlists.editable-table', { /* itemlists.editableTable */
       button({
         title: 'ADD',
         action: addToArray('%$people%', obj()),
-        style: button.mdcRaised()
+        style: button.mdc()
       })
     ]
   })
@@ -219,9 +219,14 @@ jb.component('itemlists.master-details-with-container', { /* itemlists.masterDet
       itemlist({
         items: '%$people%',
         controls: [
-          text({title: 'name', text: '%name%'})
+          text({text: '%name%', title: 'name'})
         ],
-        features: [itemlist.selection({autoSelectFirst: 'true'}), itemlist.keyboardSelection({})]
+        style: table.mdc(true),
+        features: [
+          itemlist.selection({autoSelectFirst: 'true'}),
+          itemlist.keyboardSelection({}),
+          css.width('200px')
+        ]
       }),
       html({
         title: 'separator',
@@ -233,17 +238,12 @@ jb.component('itemlists.master-details-with-container', { /* itemlists.masterDet
       }),
       group({
         title: 'person',
-        style: propertySheet.titlesAbove({
-          titleStyle: styleWithFeatures(
-            label.mdcRippleEffect(),
-            css('text-align: left; padding-left: 0;')
-          )
-        }),
+        style: propertySheet.titlesAbove({titleStyle: header.mdcHeadline6()}),
         controls: [
-          text({title: 'name', text: '%name%'}),
-          text({title: 'age', text: '%age%'})
+          text({text: '%name%', title: 'name'}),
+          text({text: '%age%', title: 'age'})
         ],
-        features: group.data({data: '%$itemlistCntrData/selected%', watch: true})
+        features: [group.data({data: '%$itemlistCntrData/selected%', watch: true}), group.card({})]
       })
     ],
     features: group.itemlistContainer({})
@@ -258,8 +258,9 @@ jb.component('itemlists.master-details', { /* itemlists.masterDetails */
       itemlist({
         items: '%$people%',
         controls: [
-          text({title: 'name', text: '%name%'})
+          text({text: '%name%', title: 'name'})
         ],
+        style: table.mdc(true),
         features: [
           itemlist.selection({databind: '%$selected%', autoSelectFirst: 'true'}),
           itemlist.keyboardSelection({})
@@ -280,10 +281,10 @@ jb.component('itemlists.master-details', { /* itemlists.masterDetails */
           titleText: '%%:'
         }),
         controls: [
-          text({title: 'name', text: '%name%'}),
-          text({title: 'age', text: '%age%'})
+          text({text: '%name%', title: 'name'}),
+          text({text: '%age%', title: 'age'})
         ],
-        features: group.data({data: '%$selected%', watch: true})
+        features: [group.data({data: '%$selected%', watch: true}), group.card({width: '500'})]
       })
     ],
     features: [
@@ -315,7 +316,7 @@ jb.component('itemlists.with-sort', { /* itemlists.withSort */
           text({title: 'name', text: '%name%', features: field.columnWidth('250')}),
           text({title: 'age', text: '%age%'})
         ],
-        style: table.withHeaders(),
+        style: table.plain(),
         features: watchRef('%$sortBy%')
       })
     ]
@@ -346,6 +347,6 @@ jb.component('data-resource.people', { /* dataResource.people */
       male: false,
       children: [{name: 'Bart'}, {name: 'Lisa'}, {name: 'Maggie'}]
     },
-    {name: 'erter'}
+    {name: 'Bart Simpson', age: '12'}
   ]
 })

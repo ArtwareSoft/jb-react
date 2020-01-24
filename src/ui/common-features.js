@@ -8,6 +8,16 @@ jb.component('def-handler', {
   impl: (ctx,id) => ({defHandler: {id, ctx}})
 })
 
+jb.component('watch-and-calc-model-prop', { // watchAndCalcModelProp
+  type: 'feature',
+  description: 'Use a model property in the rendering and watch its changes (refresh on change)',
+  params: [
+    {id: 'prop', as: 'string', mandatory: true },
+    {id: 'transformValue', dynamic: true, defaultValue: '%%'}
+  ],
+  impl: (ctx,prop,transformValue) => ({watchAndCalcModelProp: { prop, transformValue }})
+})
+
 jb.component('calc-prop', { 
   type: 'feature',
   description: 'define a variable to be used in the rendering calculation process',
@@ -157,12 +167,12 @@ jb.component('html-attribute', { /* htmlAttribute */
   description: 'set attribute to html element and give it value',
   params: [
     {id: 'attribute', mandatory: true, as: 'string'},
-    {id: 'value', mandatory: true, as: 'string'}
+    {id: 'value', mandatory: true, as: 'string', dynamic: true}
   ],
   impl: (ctx,attribute,value) => ({
-    templateModifier: vdom => {
+    templateModifier: (vdom,cmp) => {
         vdom.attributes = vdom.attributes || {};
-        vdom.attributes[attribute] = value
+        vdom.attributes[attribute] = value(cmp.ctx)
         return vdom;
       }
   })
@@ -172,9 +182,9 @@ jb.component('id', { /* id */
   type: 'feature',
   description: 'adds id to html element',
   params: [
-    {id: 'id', mandatory: true, as: 'string'}
+    {id: 'id', mandatory: true, as: 'string', dynamic: true}
   ],
-  impl: htmlAttribute('id','%$id%')
+  impl: htmlAttribute('id', (ctx,{},{id}) => id(ctx))
 })
 
 jb.component('feature.hover-title', { /* feature.hoverTitle */
@@ -263,7 +273,7 @@ jb.component('feature.if', { /* feature.if */
   category: 'feature:85',
   description: 'adds/remove element to dom by condition. keywords: hidden/show',
   params: [
-    {id: 'showCondition', mandatory: true, dynamic: true}
+    {id: 'showCondition', as: 'boolean', mandatory: true, dynamic: true}
   ],
   impl: (ctx, condition) => ({
     templateModifier: (vdom,cmp) =>
@@ -499,41 +509,4 @@ jb.component('feature.byCondition', { /* feature.byCondition */
     {id: 'else', type: 'feature', dynamic: true}
   ],
   impl: (ctx,cond,_then,_else) =>	cond ? _then() : _else()
-})
-
-jb.component('feature.editable-content', {
-  type: 'feature',
-  description: 'studio editing behavior',
-  params: [
-    {id: 'editableContentParam', as: 'string', description: 'name of param mapped to the content editable element' },
-    {id: 'isHtml', as: 'boolean', description: 'allow rich text editing' },
-  ],
-  impl: (ctx,editableContentParam,isHtml) => ({
-    afterViewInit: cmp => {
-      const contentEditable = jb.studio.studioWindow.jb.ui.contentEditable
-      if (contentEditable) {
-        cmp.onblurHandler = ev => contentEditable.setScriptData(ev,cmp,editableContentParam,isHtml)
-        if (!isHtml)
-          cmp.onkeydownHandler = cmp.onkeypressHandler = ev => contentEditable.handleKeyEvent(ev,cmp,editableContentParam)
-        cmp.onmousedownHandler = ev => contentEditable.openToolbar(ev,cmp.ctx.path,cmp.ctx.vars.item)
-      }
-    },
-    templateModifier: (vdom,cmp) => {
-      const contentEditable = jb.studio.studioWindow.jb.ui.contentEditable
-      if (!contentEditable || editableContentParam && !contentEditable.refOfProp(cmp,editableContentParam)) return vdom
-      const attsToInject = {contenteditable: 'true', onblur: true, onmousedown: true, onkeypress: true, onkeydown: true}
-      // fix spacebar bug in button
-      if (vdom.tag && vdom.tag.toLowerCase() == 'button' && vdom.children && vdom.children.length == 1 && typeof vdom.children[0] == 'string') {
-        vdom.children[0] = jb.ui.h('span',attsToInject,vdom.children[0])
-        return vdom
-      } else if (vdom.tag && vdom.tag.toLowerCase() == 'button' && jb.ui.findInVdom(vdom,'mdc-button__label')) {
-        const atts = jb.ui.findInVdom(vdom,'mdc-button__label').attributes
-        Object.assign(atts,attsToInject,{style: [(atts.style || ''),'z-index: 100'].filter(x=>x).join(';') })
-        return vdom
-      }
-      vdom.attributes = vdom.attributes || {};
-      Object.assign(vdom.attributes,attsToInject)
-      return vdom;
-    }
-  })
 })

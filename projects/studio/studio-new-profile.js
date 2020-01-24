@@ -109,7 +109,7 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
               data: '%%',
               hoverTitle: ({data}) => (jb.studio.previewjb.comps[data]||{}).description || ''
             }),
-            style: table.withHeaders(true),
+            style: table.plain(true),
             features: [
               itemlist.selection({
                 databind: '%$itemlistCntrData/selected%',

@@ -1,6 +1,7 @@
 var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : {}), {
       'core': [
-        'src/core/jb-core.js'
+        'src/core/jb-core.js',
+        'src/core/jb-macro.js',
       ],
       'common': [
         'src/core/jb-core.js',
@@ -19,9 +20,10 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'dist/jb-rx.js',
 
         'src/ui/watchable/watchable-ref.js',
-        'src/ui/core/react.js',
+        'src/ui/core/jb-react.js',
         'src/ui/core/ui-comp.js',
         'src/ui/core/ui-utils.js',
+        'src/ui/common-features.js',
 
         'src/ui/group.js',
         'src/ui/label.js',
@@ -32,7 +34,6 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/editable-text.js',
         'src/ui/editable-boolean.js',
         'src/ui/editable-number.js',
-        'src/ui/common-features.js',
         'src/ui/css-features.js',
         'src/ui/dialog.js',
         'src/ui/itemlist.js',
@@ -137,7 +138,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'suggestions', 'properties','jb-editor-styles','edit-source','jb-editor','pick','h-to-jsx','style-editor',
         'references','properties-menu','save','open-project','tree',
         'data-browse', 'new-project','event-tracker', 'toolbar','search', 'main', 'component-header', 'hosts', 'probe',
-        'watch-ref-viewer', 'content-editable'
+        'watch-ref-viewer', 'content-editable', 'position-thumbs'
       ],
       'studio-tests': [
         'projects/studio/studio-testers.js',

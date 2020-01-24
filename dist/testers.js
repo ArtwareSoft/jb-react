@@ -64,11 +64,9 @@ jb.component('ui-test', { /* uiTest */
 		return Promise.resolve(runBefore())
 			.then(_ => {
 				try {
-					if (expectedCounters) {
-						if (!jb.spy)
-							jb.initSpy({spyParam: 'ui-test'})
-						jb.spy.clear()
-					}
+					if (!jb.spy)
+						jb.initSpy({spyParam: 'ui-test'})
+					jb.spy.clear()
 					const elem = document.createElement('div');
 					const ctxForTst = ctx.setVars({elemToTest : elem })
 					const vdom = jb.ui.h(control(ctxForTst));
@@ -100,8 +98,8 @@ jb.component('ui-test', { /* uiTest */
 					jb.entries(JSON.parse(ctx.vars.initial_resources)).forEach(e=>jb.resource(e[0],e[1]))
 					jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
 					jb.ui.subscribeToRefChange(jb.mainWatchableHandler)
-					if (expectedCounters)
-						jb.initSpy({resetSpyToNull: true})
+					//if (expectedCounters)
+					jb.initSpy({resetSpyToNull: true})
 				}
 				return result;
 			}).then(result =>
@@ -111,6 +109,44 @@ jb.component('ui-test', { /* uiTest */
 	}
 })
 
+jb.component('ui-test.apply-vdom-diff', { // applyVdomDiff
+	type: 'test',
+	params: [
+	 {id: 'controlBefore', type: 'control', dynamic: true},
+	 {id: 'control', type: 'control', dynamic: true},
+	],
+	impl: function(ctx,controlBefore,control,expectedCounters) {
+		console.log('starting ' + ctx.path)
+		const initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
+
+		const elem1 = document.createElement('div');
+		jb.ui.render(jb.ui.h(control(ctx.setVars({elemToTest : elem1 }))),elem1)
+		const expectedHtml = elem1.innerHTML
+		const expectedVdom = jb.ui.elemToVdom(elem1)
+
+		const elem = document.createElement('div');
+		const ctxForTst = ctx.setVars({elemToTest : elem })
+		jb.ui.render(jb.ui.h(controlBefore(ctxForTst)),elem)
+		jb.ui.applyVdomDiff(elem.firstElementChild,jb.ui.h(control(ctxForTst)))
+		const actualHtml = elem.innerHTML
+		const actualVdom = jb.ui.elemToVdom(elem)
+		const success = !!(expectedHtml.replace(/[0-9]/g,'') == actualHtml.replace(/[0-9]/g,''));
+		const reason = !success ? ('html is different ' + jb.prettyPrint(jb.objectDiff(expectedVdom,actualVdom))) : ''
+		const result = { id: ctx.vars.testID, success, elem, reason }
+		if (new URL(location.href).searchParams.get('show') === null) {
+			jb.ui.dialogs.dialogs.forEach(d=>d.close())
+			jb.ui.unmount(elem)
+			jb.rebuildRefHandler && jb.rebuildRefHandler();
+			jb.entries(JSON.parse(ctx.vars.initial_resources)).forEach(e=>jb.resource(e[0],e[1]))
+			jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
+			jb.ui.subscribeToRefChange(jb.mainWatchableHandler)
+			if (expectedCounters)
+				jb.initSpy({resetSpyToNull: true})
+		}
+		return result
+	  }
+})
+  
 function countersErrors(expectedCounters) {
 	if (!jb.spy) return ''
 	if ((jb.spy.logs.exception || [])[0])
@@ -141,10 +177,12 @@ jb.component('ui-action.click', { /* uiAction.click */
     {id: 'methodToActivate', as: 'string', defaultValue: 'onclickHandler'}
   ],
   impl: (ctx,selector,methodToActivate) => {
-		var elems = selector ? Array.from(ctx.vars.elemToTest.querySelectorAll(selector)) : [ctx.vars.elemToTest];
-		elems.forEach(e=>
-			e._component && e._component[methodToActivate] && e._component[methodToActivate]())
-		return jb.delay(1);
+		const elems = selector ? Array.from(ctx.vars.elemToTest.querySelectorAll(selector)) : [ctx.vars.elemToTest];
+		elems.forEach(e=> {
+			jb.ui.runActionOfElem(e,methodToActivate)
+//			e._component && e._component[methodToActivate] && e._component[methodToActivate]()
+		})
+		//return jb.delay(1);
 	}
 })
 
@@ -189,7 +227,7 @@ jb.component('test.dialog-content', { /* test.dialogContent */
     {id: 'id', as: 'string'}
   ],
   impl: (ctx,id) =>
-		jb.ui.dialogs.dialogs.filter(d=>d.id == id).map(d=>d.el)[0].outerHTML || ''
+		jb.ui.dialogs.dialogs.filter(d=>d.id == id).map(d=>d.el).filter(x=>x).slice(0,1).map(x=>x.outerHTML).join('') || ''
 })
 
 var jb_success_counter = 0;
@@ -270,7 +308,7 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,rerun}) {
 				jb.ui.addHTML(document.body,elem);
 				if (show && res.elem)
 					document.body.appendChild(res.elem);
-				jb.ui && jb.ui.garbageCollectCtxDictionary && jb.ui.garbageCollectCtxDictionary(true)
+				jb.ui && jb.ui.garbageCollectCtxDictionary && jb.ui.garbageCollectCtxDictionary(document.body,true)
 			})
 }
 ;

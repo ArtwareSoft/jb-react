@@ -118,7 +118,7 @@ jb.component('studio.event-tracker', { /* studio.eventTracker */
             width: '100'
           })
         ],
-        style: table.withHeaders()
+        style: table.plain()
       })
     ],
     features: [

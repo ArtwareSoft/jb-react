@@ -110,7 +110,7 @@ function extendWithVars(ctx,vars) {
   if (!vars) return ctx;
   let res = ctx;
   for(let varname in vars || {})
-    res = new jbCtx(res,{ vars: {[varname]: res.runInner(vars[varname], null,'$vars~'+varname)} });
+    res = new jbCtx(res,{ vars: {[varname]: res.runInner(vars[varname] || '%%', null,'$vars~'+varname)} });
   return res;
 }
 
@@ -321,7 +321,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
 
       if (input != null && typeof input == 'object') {
         if (obj === null || obj === undefined) return;
-        if (typeof obj[subExp] === 'function' && (parentParam.dynamic || obj[subExp].profile))
+        if (typeof obj[subExp] === 'function' && (parentParam && parentParam.dynamic || obj[subExp].profile))
             return obj[subExp](ctx);
         if (isRefType(jstype)) {
           if (last)
@@ -560,13 +560,13 @@ const logs = {};
 
 const profileOfPath = path => path.reduce((o,p)=>o && o[p], jb.comps) || {}
 
-const log = (logName, record) => jb.spy && jb.spy.log(logName, record, {
+const log = (logName, record, options) => jb.spy && jb.spy.log(logName, record, { 
   modifier: record => {
     if (record[1] instanceof jbCtx)
       record.splice(1,0,pathSummary(record[1].path))
     if (record[0] instanceof jbCtx)
       record.splice(0,0,pathSummary(record[0].path))
-}});
+} , ...options });
 
 function pathSummary(path) {
   if (!path) return ''
@@ -577,12 +577,12 @@ function pathSummary(path) {
 }
 
 function logError() {
-  frame.console && frame.console.log(...arguments)
+  frame.console && frame.console.log('%c Error: ','color: red', ...arguments)
   log('error',[...arguments])
 }
 
 function logException(e,errorStr,ctx, ...rest) {
-  frame.console && frame.console.log(...arguments)
+  frame.console && frame.console.log('%c Exception: ','color: red', ...arguments)
   log('exception',[e.stack||'',ctx,errorStr && pathSummary(ctx && ctx.path),e, ...rest])
 }
 
@@ -793,12 +793,14 @@ Object.assign(jb,{
     return f(handler)
   },
  
+  // handler for ref
   refHandler: ref => {
     if (ref && ref.handler) return ref.handler
     if (jb.simpleValueByRefHandler.isRef(ref)) 
       return jb.simpleValueByRefHandler
     return jb.watchableHandlers.find(handler => handler.isRef(ref))
   },
+  // handler for object (including the case of ref)
   objHandler: obj => obj && jb.refHandler(obj) || jb.watchableHandlers.find(handler=> handler.watchable(obj)) || jb.simpleValueByRefHandler,
   asRef: obj => {
     const watchableHanlder = jb.watchableHandlers.find(handler => handler.watchable(obj) || handler.isRef(obj))
@@ -998,8 +1000,7 @@ jb.component('data.if', { /* data.if */
     {id: 'then', mandatory: true, dynamic: true},
     {id: 'else', dynamic: true, defaultValue: '%%'}
   ],
-  impl: (ctx,cond,_then,_else) =>
- 		cond ? _then() : _else()
+  impl: (ctx,cond,_then,_else) =>	cond ? _then() : _else()
 })
 
 jb.component('action.if', { /* action.if */
@@ -1011,8 +1012,7 @@ jb.component('action.if', { /* action.if */
     {id: 'then', type: 'action', mandatory: true, dynamic: true},
     {id: 'else', type: 'action', dynamic: true}
   ],
-  impl: (ctx,cond,_then,_else) =>
- 		cond ? _then() : _else()
+  impl: (ctx,cond,_then,_else) =>	cond ? _then() : _else()
 })
 
 jb.component('jb-run', { /* jbRun */
@@ -1021,10 +1021,8 @@ jb.component('jb-run', { /* jbRun */
     {id: 'profile', as: 'string', mandatory: true, description: 'profile name'},
     {id: 'params', as: 'single'}
   ],
-  impl: (ctx,profile,params) =>
- 		ctx.run(Object.assign({$:profile},params || {}))
+  impl: (ctx,profile,params) =>	ctx.run(Object.assign({$:profile},params || {}))
 })
-
 
 jb.component('list', { /* list */
   type: 'data',
@@ -1210,8 +1208,13 @@ jb.component('write-value', { /* writeValue */
     {id: 'to', as: 'ref', mandatory: true},
     {id: 'value', mandatory: true}
   ],
-  impl: (ctx,to,value) =>
-    Promise.resolve(jb.val(value)).then(val=>jb.writeValue(to,val,ctx))
+  impl: (ctx,to,value) => {
+    const val = jb.val(value)
+    if (val && typeof val.then == 'function')
+      return Promise.resolve().then(val=>jb.writeValue(to,val,ctx))
+    else
+      jb.writeValue(to,val,ctx)
+  }
 })
 
 jb.component('property', {
@@ -1220,8 +1223,7 @@ jb.component('property', {
     {id: 'prop', as: 'string', mandatory: true},
     {id: 'obj', defaultValue: '%%' },
   ],
-  impl: (ctx,prop,obj) =>
-		jb.objectProperty(obj,prop,ctx)
+  impl: (ctx,prop,obj) =>	jb.objectProperty(obj,prop,ctx)
 })
 
 jb.component('index-of', { /* indexOf */
@@ -1249,10 +1251,8 @@ jb.component('splice', { /* splice */
     {id: 'noOfItemsToRemove', as: 'number', defaultValue: 0},
     {id: 'itemsToAdd', as: 'array', defaultValue: []}
   ],
-  impl: (ctx,array,fromIndex,noOfItemsToRemove,itemsToAdd) => {
-		const ar = jb.toarray(array);
+  impl: (ctx,array,fromIndex,noOfItemsToRemove,itemsToAdd) =>
 		jb.splice(array,[[fromIndex,noOfItemsToRemove,...itemsToAdd]],ctx)
-	}
 })
 
 jb.component('remove-from-array', { /* removeFromArray */
@@ -1263,8 +1263,7 @@ jb.component('remove-from-array', { /* removeFromArray */
     {id: 'index', as: 'number', description: 'choose item or index'}
   ],
   impl: (ctx,array,itemToRemove,_index) => {
-		const ar = jb.toarray(array);
-		const index = itemToRemove ? ar.indexOf(itemToRemove) : _index;
+		const index = itemToRemove ? jb.toarray(array).indexOf(itemToRemove) : _index;
 		if (index != -1)
 			jb.splice(array,[[index,1]],ctx)
 	}
@@ -1275,8 +1274,7 @@ jb.component('toggle-boolean-value', { /* toggleBooleanValue */
   params: [
     {id: 'of', as: 'ref'}
   ],
-  impl: (ctx,_of) =>
-		jb.writeValue(_of,jb.val(_of) ? false : true,ctx)
+  impl: (ctx,_of) => jb.writeValue(_of,jb.val(_of) ? false : true,ctx)
 })
 
 jb.component('slice', { /* slice */
@@ -1330,7 +1328,7 @@ jb.component('first', { /* first */
 
 jb.component('last', { /* last */
   type: 'aggregator',
-  impl: ctx => ctx.data.slice(-1)[0]
+  impl: ({data}) => data.slice(-1)[0]
 })
 
 jb.component('count', { /* count */
@@ -1356,8 +1354,7 @@ jb.component('sample', { /* sample */
     {id: 'size', as: 'number', defaultValue: 300},
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
-  impl: (ctx,size,items) =>
-		items.filter((x,i)=>i % (Math.floor(items.length/size) ||1) == 0)
+  impl: (ctx,size,items) =>	items.filter((x,i)=>i % (Math.floor(items.length/size) ||1) == 0)
 })
 
 jb.component('obj', { /* obj */
@@ -1395,18 +1392,28 @@ jb.component('prop', { /* prop */
   macroByValue: true,
   params: [
     {id: 'title', as: 'string', mandatory: true},
-    {id: 'val', dynamic: 'true', type: 'data', mandatory: true, defaultValue: ''},
+    {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: ''},
     {id: 'type', as: 'string', options: 'string,number,boolean,object,array', defaultValue: 'string' }
   ],
   impl: ctx => ctx.params
 })
+
+jb.component('pipeline.var', {
+  type: 'aggregator',
+  params: [
+    {id: 'name', as: 'string', mandatory: true},
+    {id: 'val', mandatory: true, dynamic: true, defaultValue: '%%'}
+  ],
+  impl: ctx => ({ [Symbol.for('Var')]: true, ...ctx.params })
+})
+
 
 jb.component('Var', { /* Var */
   type: 'var,system',
   isSystem: true,
   params: [
     {id: 'name', as: 'string', mandatory: true},
-    {id: 'val', dynamic: 'true', type: 'data', mandatory: true, defaultValue: ''}
+    {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: '%%'}
   ],
   macro: (result, self) =>
 		Object.assign(result,{ $vars: Object.assign(result.$vars || {}, { [self.name]: self.val }) })
@@ -1429,8 +1436,7 @@ jb.component('If', { /* If */
     {id: 'then'},
     {id: 'Else'}
   ],
-  impl: (ctx,cond,_then,_else) =>
-		cond ? _then : _else
+  impl: (ctx,cond,_then,_else) =>	cond ? _then : _else
 })
 
 jb.component('not', { /* not */
@@ -1483,8 +1489,7 @@ jb.component('between', { /* between */
     {id: 'to', as: 'number', mandatory: true},
     {id: 'val', as: 'number', defaultValue: '%%'}
   ],
-  impl: (ctx,from,to,val) =>
-		val >= from && val <= to
+  impl: (ctx,from,to,val) => val >= from && val <= to
 })
 
 jb.component('contains', { /* contains */
@@ -1523,8 +1528,7 @@ jb.component('starts-with', { /* startsWith */
     {id: 'startsWith', as: 'string', mandatory: true},
     {id: 'text', defaultValue: '%%', as: 'string'}
   ],
-  impl: (context,startsWith,text) =>
-		text.indexOf(startsWith) == 0
+  impl: (context,startsWith,text) => text.indexOf(startsWith) == 0
 })
 
 jb.component('ends-with', { /* endsWith */
@@ -1534,8 +1538,7 @@ jb.component('ends-with', { /* endsWith */
     {id: 'endsWith', as: 'string', mandatory: true},
     {id: 'text', defaultValue: '%%', as: 'string'}
   ],
-  impl: (context,endsWith,text) =>
-		text.indexOf(endsWith,text.length-endsWith.length) !== -1
+  impl: (context,endsWith,text) => text.indexOf(endsWith,text.length-endsWith.length) !== -1
 })
 
 
@@ -1544,9 +1547,7 @@ jb.component('filter', { /* filter */
   params: [
     {id: 'filter', type: 'boolean', as: 'boolean', dynamic: true, mandatory: true}
   ],
-  impl: (context,filter) =>
-		jb.toarray(context.data).filter(item =>
-			filter(context,item))
+  impl: (context,filter) =>	jb.toarray(context.data).filter(item =>	filter(context,item))
 })
 
 jb.component('match-regex', { /* matchRegex */
@@ -1653,8 +1654,7 @@ jb.component('json.stringify', { /* json.stringify */
     {id: 'value', defaultValue: '%%'},
     {id: 'space', as: 'string', description: 'use space or tab to make pretty output'}
   ],
-  impl: (context,value,space) =>
-			JSON.stringify(jb.val(value),null,space)
+  impl: (context,value,space) => JSON.stringify(jb.val(value),null,space)
 })
 
 jb.component('json.parse', { /* json.parse */
@@ -1734,8 +1734,7 @@ jb.component('isEmpty', { /* isEmpty */
   params: [
     {id: 'item', as: 'single', defaultValue: '%%'}
   ],
-  impl: (ctx, item) =>
-		!item || (Array.isArray(item) && item.length == 0)
+  impl: (ctx, item) => !item || (Array.isArray(item) && item.length == 0)
 })
 
 jb.component('notEmpty', { /* notEmpty */
@@ -1743,8 +1742,7 @@ jb.component('notEmpty', { /* notEmpty */
   params: [
     {id: 'item', as: 'single', defaultValue: '%%'}
   ],
-  impl: (ctx, item) =>
-		item && !(Array.isArray(item) && item.length == 0)
+  impl: (ctx, item) => item && !(Array.isArray(item) && item.length == 0)
 })
 
 jb.component('equals', { /* equals */
@@ -1875,8 +1873,7 @@ jb.component('range', { /* range */
     {id: 'from', as: 'number', defaultValue: 1},
     {id: 'to', as: 'number', defaultValue: 10}
   ],
-  impl: (ctx,from,to) =>
-    Array.from(Array(to-from+1).keys()).map(x=>x+from)
+  impl: (ctx,from,to) => Array.from(Array(to-from+1).keys()).map(x=>x+from)
 })
 
 jb.component('type-of', { /* typeOf */
@@ -1885,7 +1882,7 @@ jb.component('type-of', { /* typeOf */
     {id: 'obj', defaultValue: '%%'}
   ],
   impl: (ctx,_obj) => {
-	  	const obj = jb.val(_obj);
+	  const obj = jb.val(_obj)
 		return Array.isArray(obj) ? 'array' : typeof obj
 	}
 })
@@ -1896,7 +1893,7 @@ jb.component('class-name', { /* className */
     {id: 'obj', defaultValue: '%%'}
   ],
   impl: (ctx,_obj) => {
-	  	const obj = jb.val(_obj);
+	  const obj = jb.val(_obj);
 		return obj && obj.constructor && obj.constructor.name
 	}
 })
@@ -1920,8 +1917,7 @@ jb.component('in-group', { /* inGroup */
     {id: 'group', as: 'array', mandatory: true},
     {id: 'item', as: 'single', defaultValue: '%%'}
   ],
-  impl: (ctx,group,item) =>
-  	group.indexOf(item) != -1
+  impl: (ctx,group,item) =>	group.indexOf(item) != -1
 })
 
 jb.urlProxy = (typeof window !== 'undefined' && location.href.match(/^[^:]*/)[0] || 'http') + '://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
@@ -2088,8 +2084,9 @@ jb.exp = (...args) => new jb.jbCtx().exp(...args);
 const spySettings = { 
 	moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable,scriptChange,resLog', 
 	groups: {
-		watchable: 'doOp,writeValue,removeCmpObservable,registerCmpObservable,notifyCmpObservable,scriptChange',
-		react: 'applyVdomDiff,htmlChange,applyChildrenDiff,unmount,render,initCmp,setState',
+		watchable: 'doOp,writeValue,removeCmpObservable,registerCmpObservable,notifyCmpObservable,notifyObservableElems,notifyObservableElem,scriptChange',
+		react: 'applyDeltaTop,applyDelta,unmount,render,initCmp,refreshReq,refreshElem,childDiffRes,htmlChange,appendChild,removeChild,replaceTop',
+		dialog: 'addDialog,closeDialog,refreshDialogs'
 	},
 	includeLogs: 'exception,error',
 	stackFilter: /spy|jb_spy|Object.log|node_modules/i,
@@ -2121,7 +2118,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 		enabled: () => true,
 		log(logName, record, {takeFrom, funcTitle, modifier} = {}) {
 			const init = () => {
-				if (!this.includeLogs) {
+				if (!this.initialized) {
 					const includeLogsFromParam = (this.spyParam || '').split(',').filter(x => x[0] !== '-').filter(x => x)
 						.flatMap(x=>Object.keys(settings.groups).indexOf(x) == -1 ? [x] : settings.groups[x].split(','))
 					const excludeLogsFromParam = (this.spyParam || '').split(',').filter(x => x[0] === '-').map(x => x.slice(1))
@@ -2130,6 +2127,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 						return acc
 					}, {})
 				}
+				this.initialized = true
 			}
 			const shouldLog = (logName, record) =>
 				this.spyParam === 'all' || Array.isArray(record) && this.includeLogs[logName] && !settings.extraIgnoredEvents.includes(record[0])

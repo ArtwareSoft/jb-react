@@ -1,5 +1,5 @@
 jb.ns('mdc.style')
-jb.component('table.with-headers', { /* table.withHeaders */
+jb.component('table.plain', { /* table.plain */
   params: [ 
     { id: 'hideHeaders',  as: 'boolean' },
   ],
@@ -24,19 +24,15 @@ jb.component('table.with-headers', { /* table.withHeaders */
   })
 })
 
-
 jb.component('table.mdc', { /* table.mdc */
   type: 'table.style,itemlist.style',
   params: [
-    {
-      id: 'classForTable',
-      as: 'string',
-      defaultValue: 'mdc-data-table__table mdc-data-table--selectable'
-    }
+    { id: 'hideHeaders',  as: 'boolean' },
+    { id: 'classForTable', as: 'string', defaultValue: 'mdc-data-table__table mdc-data-table--selectable' },
   ],
   impl: customStyle({
-    template: (cmp,{items,fields,classForTable,classForTd,sortOptions},h) => h('div',{class: 'mdc-data-table'}, h('table',{ class: classForTable },[
-        h('thead',{},h('tr',{class:'mdc-data-table__header-row'},fields.map((f,i) =>h('th',{
+    template: (cmp,{items,fields,classForTable,classForTd,sortOptions,hideHeaders},h) => h('div',{class: 'mdc-data-table'}, h('table',{ class: classForTable },[
+      ...(hideHeaders ? [] : [h('thead',{},h('tr',{class:'mdc-data-table__header-row'},fields.map((f,i) =>h('th',{
           'jb-ctx': f.ctxId, 
           class: ['mdc-data-table__header-cell']
             .concat([ 
@@ -47,7 +43,7 @@ jb.component('table.mdc', { /* table.mdc */
           onclick: 'toggleSort',
           fieldIndex: i
           }
-          ,jb.ui.fieldTitle(cmp,f,h))) )),
+          ,jb.ui.fieldTitle(cmp,f,h))) ))]),
         h('tbody',{class: 'jb-drag-parent mdc-data-table__content'},
             items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item mdc-data-table__row', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},fields.map(f=>
               h('td', jb.filterEmpty({ 

@@ -7,11 +7,10 @@ jb.component('table', { /* table */
     {id: 'title', as: 'string'},
     {id: 'items', as: 'array', dynamic: true, mandatory: true},
     {id: 'fields', type: 'table-field[]', mandatory: true, dynamic: true},
-    {
-      id: 'style',
+    { id: 'style',
       type: 'table.style',
       dynamic: true,
-      defaultValue: table.withHeaders()
+      defaultValue: table.plain()
     },
     {
       id: 'visualSizeLimit',

@@ -35,9 +35,11 @@ jb.component('dynamic-controls', { /* dynamicControls */
     {id: 'controlItems', type: 'data', as: 'array', mandatory: true, dynamic: true},
     {id: 'genericControl', type: 'control', mandatory: true, dynamic: true},
     {id: 'itemVariable', as: 'string', defaultValue: 'controlItem'},
+    {id: 'indexVariable', as: 'string' },
   ],
-  impl: (ctx,controlItems,genericControl,itemVariable) => (controlItems() || [])
-      .map(controlItem => jb.tosingle(genericControl(ctx.setVar(itemVariable,controlItem).setData(controlItem))))
+  impl: (ctx,controlItems,genericControl,itemVariable,indexVariable) => (controlItems() || [])
+      .map((controlItem,i) => jb.tosingle(genericControl(
+        ctx.setVar(itemVariable,controlItem).setVar(indexVariable,i).setData(controlItem))))
 })
 
 jb.component('group.first-succeeding', { /* group.firstSucceeding */

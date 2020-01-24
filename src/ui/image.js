@@ -11,7 +11,7 @@ jb.component('image', { /* image */
     {id: 'features', type: 'feature[]', dynamic: true, templateValue: css.height('100')}
   ],
   impl: ctx => jb.ui.ctrl(ctx, {
-    studioFeatures: feature.editableContent(),
+    studioFeatures :{$: 'feature.content-editable' },
   })
 })
 

@@ -41,7 +41,7 @@ st.initPreview = function(preview_window,allowedTypes) {
 
       st.previewWindow = preview_window;
       st.previewjb = preview_window.jb;
-      ['jb-component','jb-param'].forEach(comp=>st.previewjb.component(comp,jb.comps[comp]));
+      ['jb-component','jb-param','feature.content-editable'].forEach(comp=>st.previewjb.component(comp,jb.comps[comp]));
       st.serverComps = st.previewjb.comps;
       st.previewjb.studio.studioWindow = window;
       st.previewjb.studio.previewjb = st.previewjb;

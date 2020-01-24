@@ -107,6 +107,22 @@ jb.component('studio-helper.inteli-tree', { /* studioHelper.inteliTree */
   })
 })
 
+jb.component('studio-helper.content-editable-position', { /* studioHelper.contentEditablePosition */
+  type: 'control',
+  impl: text({
+    text: 'hello',
+    style: header.mdcHeadline2(),
+    features: [
+      interactive(
+        (ctx,{cmp}) => ctx.setVar('inspectedElem', cmp.base).run(contentEditable.openPositionThumbs())
+      ),
+      css.height('100'),
+      css.padding({top: '', bottom: '40'}),
+      css('background: grey')
+    ]
+  })
+})
+
 jb.component('studio-helper-dummy.simple-label', { /* studioHelperDummy.simpleLabel */
   type: 'control',
   impl: label({
@@ -182,8 +198,8 @@ jb.component('studio-helper.data-resources', { /* studioHelper.dataResources */
   impl: group({
     controls: [
       {'$': 'studio.data-resources'},
-      button({style: button.mdcFlat()}),
-      button({style: button.mdcFlat()})
+      button({style: button.mdc()}),
+      button({style: button.mdc()})
     ]
   })
 })

@@ -155,7 +155,8 @@ jb.component('table-tree.plain', {
         items.length == 0 ? h(noItemsCtrl()) : ''
       ]),
       css: `{border-spacing: 0; text-align: left;width: 100%; table-layout:fixed;}
-      >tbody>tr>td>span { font-size:16px; cursor: pointer; display: flex; border: 1px solid transparent }
+      >tbody>tr>td { vertical-align: bottom; height: 30px; }
+      >tbody>tr>td>span { font-size:16px; cursor: pointer; border: 1px solid transparent }
       >tbody>tr>td>span>i { font-size: 16px; }
       `,
       features: tableTree.init()
