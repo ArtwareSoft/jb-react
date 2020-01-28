@@ -56,7 +56,7 @@ jb.component('data-test.property-watchable', {
   })
 })
 
-jb.component('data-test.pipeline-var', {
+jb.component('data-test.pipeline-var', { // var in pipeline. var-in-pipeline
   impl: dataTest({
     calculate: pipeline('%$peopleWithChildren%',pipeline(Var('parent'),'%children%','%name% is child of %$parent/name%'),join()),
     expectedResult: equals('Bart is child of Homer,Lisa is child of Homer,Bart is child of Marge,Lisa is child of Marge')
@@ -513,6 +513,14 @@ jb.component('data-test.pretty-print-macro', { /* dataTest.prettyPrintMacro */
   impl: dataTest({
     calculate: prettyPrint(ctx => jb.comps['data-test.obj'].impl),
     expectedResult: contains(["prop('a', 1)", ctx => "res: '%%'"])
+  })
+})
+
+jb.component('data-test.activateFunction', { 
+  impl: dataTest({
+    vars: Var('f1', ctx => (() => ({ a: 5 }))),
+    calculate: '%$f1()/a%',
+    expectedResult: equals(5)
   })
 })
 

@@ -13,7 +13,7 @@ jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
 				h('div',{class: 'jb-dialog-content-parent'},h(contentComp)),
 				h('div',{class: 'dialog-buttons'},[
 					...(cmp.dialog.gotoEditor ? [h('button',{class: 'mdc-button', onclick: 'dialog.gotoEditor' },'goto editor')] : []),
-					h('button',{class: 'mdc-button', onclick: 'dialog.refresh' },'refresh'),
+					h('button',{class: 'mdc-button', onclick: 'refresh' },'refresh'),
 					h('button',{class: 'mdc-button', onclick: 'dialogCloseOK' },'ok'),
 				].filter(x=>x) ),
 			]),

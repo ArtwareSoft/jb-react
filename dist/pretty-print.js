@@ -3,7 +3,7 @@ jb.component('pretty-print', { /* prettyPrint */
     {id: 'profile', defaultValue: '%%'},
     {id: 'colWidth', as: 'number', defaultValue: 140}
   ],
-  impl: (ctx,profile) => jb.prettyPrint(profile,ctx.params)
+  impl: (ctx,profile) => jb.prettyPrint(jb.val(profile),ctx.params)
 })
 
 jb.prettyPrintComp = function(compId,comp,settings={}) {

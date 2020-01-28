@@ -308,31 +308,36 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
 
     const refHandler = jb.objHandler(input)
     const functionCallMatch = subExp.match(/=([a-zA-Z]*)\(?([^)]*)\)?/);
-      if (functionCallMatch && jb.functions[functionCallMatch[1]])
+    if (functionCallMatch && jb.functions[functionCallMatch[1]])
         return tojstype(jb.functions[functionCallMatch[1]](ctx,functionCallMatch[2]),jstype,ctx);
 
-      if (first && subExp.charAt(0) == '$' && subExp.length > 1)
-        return calcVar(ctx,subExp.substr(1),last ? jstype : null)
-      const obj = val(input);
-      if (subExp == 'length' && obj && typeof obj.length != 'undefined')
-        return obj.length;
-      if (Array.isArray(obj) && isNaN(Number(subExp)))
-        return [].concat.apply([],obj.map(item=>pipe(item,subExp,last,false,refHandler)).filter(x=>x!=null));
+    if (subExp.match(/\(\)$/)) {
+      const func = pipe(input,subExp.slice(0,-2),last,first)
+      return typeof func == 'function' ? func(ctx) : func
+    }
 
-      if (input != null && typeof input == 'object') {
-        if (obj === null || obj === undefined) return;
-        if (typeof obj[subExp] === 'function' && (parentParam && parentParam.dynamic || obj[subExp].profile))
-            return obj[subExp](ctx);
-        if (isRefType(jstype)) {
-          if (last)
-            return refHandler.objectProperty(obj,subExp,ctx);
-          if (obj[subExp] === undefined)
-            obj[subExp] = implicitlyCreateInnerObject(obj,subExp,refHandler);
-        }
-        if (last && jstype)
-            return jstypes[jstype](obj[subExp]);
-        return obj[subExp];
+    if (first && subExp.charAt(0) == '$' && subExp.length > 1)
+      return calcVar(ctx,subExp.substr(1),last ? jstype : null)
+    const obj = val(input);
+    if (subExp == 'length' && obj && typeof obj.length != 'undefined')
+      return obj.length;
+    if (Array.isArray(obj) && isNaN(Number(subExp)))
+      return [].concat.apply([],obj.map(item=>pipe(item,subExp,last,false,refHandler)).filter(x=>x!=null));
+
+    if (input != null && typeof input == 'object') {
+      if (obj === null || obj === undefined) return;
+      if (typeof obj[subExp] === 'function' && (parentParam && parentParam.dynamic || obj[subExp].profile))
+          return obj[subExp](ctx);
+      if (isRefType(jstype)) {
+        if (last)
+          return refHandler.objectProperty(obj,subExp,ctx);
+        if (obj[subExp] === undefined)
+          obj[subExp] = implicitlyCreateInnerObject(obj,subExp,refHandler);
       }
+      if (last && jstype)
+          return jstypes[jstype](obj[subExp]);
+      return obj[subExp];
+    }
   }
   function implicitlyCreateInnerObject(parent,prop,refHandler) {
     jb.log('implicitlyCreateInnerObject',[...arguments]);
@@ -996,11 +1001,11 @@ jb.component('data.if', { /* data.if */
   type: 'data',
   macroByValue: true,
   params: [
-    {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
+    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true},
     {id: 'then', mandatory: true, dynamic: true},
     {id: 'else', dynamic: true, defaultValue: '%%'}
   ],
-  impl: (ctx,cond,_then,_else) =>	cond ? _then() : _else()
+  impl: (ctx,cond,_then,_else) =>	cond() ? _then() : _else()
 })
 
 jb.component('action.if', { /* action.if */
@@ -1432,11 +1437,11 @@ jb.component('remark', { /* remark */
 jb.component('If', { /* If */
   macroByValue: true,
   params: [
-    {id: 'condition', as: 'boolean', type: 'boolean', mandatory: true},
-    {id: 'then'},
-    {id: 'Else'}
+    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true},
+    {id: 'then', dynamic: true},
+    {id: 'Else', dynamic: true}
   ],
-  impl: (ctx,cond,_then,_else) =>	cond ? _then : _else
+  impl: (ctx,cond,_then,_else) =>	cond() ? _then() : _else()
 })
 
 jb.component('not', { /* not */
@@ -2239,7 +2244,7 @@ jb.component('pretty-print', { /* prettyPrint */
     {id: 'profile', defaultValue: '%%'},
     {id: 'colWidth', as: 'number', defaultValue: 140}
   ],
-  impl: (ctx,profile) => jb.prettyPrint(profile,ctx.params)
+  impl: (ctx,profile) => jb.prettyPrint(jb.val(profile),ctx.params)
 })
 
 jb.prettyPrintComp = function(compId,comp,settings={}) {

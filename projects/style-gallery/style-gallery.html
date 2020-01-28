@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<head>
+  <script type="text/javascript">
+    startTime = new Date().getTime();
+  </script>
+  <script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,material"></script>
+  <script type="text/javascript" src="/projects/style-gallery/style-gallery.js"></script>
+  <script type="text/javascript" src="https://unpkg.com/material-components-web@0.8.0/dist/material-components-web.min.js"></script>
+</head>
+<body>
+<div id="main"> </div>
+<script>
+  jb.ui.renderWidget({$:'style-gallery.picklist'},document.getElementById('main'))
+</script>
+</body>
+</html>
+

@@ -90,9 +90,7 @@ jb.component('dialog.studio-pick-dialog', { /* dialog.studioPickDialog */
 function eventToElem(e,_window, pathPrefix) {
   if (pathPrefix.indexOf('studio-helper.') == 0)
     pathPrefix = ''
-  const mousePos = {
-      x: e.pageX - _window.pageXOffset, y: e.pageY  - _window.pageYOffset
-  };
+  const mousePos = { x: e.pageX - _window.pageXOffset, y: e.pageY  - _window.pageYOffset }
   const elems = _window.document.elementsFromPoint(mousePos.x, mousePos.y);
   const results = elems.flatMap(el=>[el,...jb.ui.parents(el)])
       .filter(e => e && e.getAttribute)

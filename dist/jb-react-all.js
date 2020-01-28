@@ -308,31 +308,36 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
 
     const refHandler = jb.objHandler(input)
     const functionCallMatch = subExp.match(/=([a-zA-Z]*)\(?([^)]*)\)?/);
-      if (functionCallMatch && jb.functions[functionCallMatch[1]])
+    if (functionCallMatch && jb.functions[functionCallMatch[1]])
         return tojstype(jb.functions[functionCallMatch[1]](ctx,functionCallMatch[2]),jstype,ctx);
 
-      if (first && subExp.charAt(0) == '$' && subExp.length > 1)
-        return calcVar(ctx,subExp.substr(1),last ? jstype : null)
-      const obj = val(input);
-      if (subExp == 'length' && obj && typeof obj.length != 'undefined')
-        return obj.length;
-      if (Array.isArray(obj) && isNaN(Number(subExp)))
-        return [].concat.apply([],obj.map(item=>pipe(item,subExp,last,false,refHandler)).filter(x=>x!=null));
+    if (subExp.match(/\(\)$/)) {
+      const func = pipe(input,subExp.slice(0,-2),last,first)
+      return typeof func == 'function' ? func(ctx) : func
+    }
 
-      if (input != null && typeof input == 'object') {
-        if (obj === null || obj === undefined) return;
-        if (typeof obj[subExp] === 'function' && (parentParam && parentParam.dynamic || obj[subExp].profile))
-            return obj[subExp](ctx);
-        if (isRefType(jstype)) {
-          if (last)
-            return refHandler.objectProperty(obj,subExp,ctx);
-          if (obj[subExp] === undefined)
-            obj[subExp] = implicitlyCreateInnerObject(obj,subExp,refHandler);
-        }
-        if (last && jstype)
-            return jstypes[jstype](obj[subExp]);
-        return obj[subExp];
+    if (first && subExp.charAt(0) == '$' && subExp.length > 1)
+      return calcVar(ctx,subExp.substr(1),last ? jstype : null)
+    const obj = val(input);
+    if (subExp == 'length' && obj && typeof obj.length != 'undefined')
+      return obj.length;
+    if (Array.isArray(obj) && isNaN(Number(subExp)))
+      return [].concat.apply([],obj.map(item=>pipe(item,subExp,last,false,refHandler)).filter(x=>x!=null));
+
+    if (input != null && typeof input == 'object') {
+      if (obj === null || obj === undefined) return;
+      if (typeof obj[subExp] === 'function' && (parentParam && parentParam.dynamic || obj[subExp].profile))
+          return obj[subExp](ctx);
+      if (isRefType(jstype)) {
+        if (last)
+          return refHandler.objectProperty(obj,subExp,ctx);
+        if (obj[subExp] === undefined)
+          obj[subExp] = implicitlyCreateInnerObject(obj,subExp,refHandler);
       }
+      if (last && jstype)
+          return jstypes[jstype](obj[subExp]);
+      return obj[subExp];
+    }
   }
   function implicitlyCreateInnerObject(parent,prop,refHandler) {
     jb.log('implicitlyCreateInnerObject',[...arguments]);
@@ -996,11 +1001,11 @@ jb.component('data.if', { /* data.if */
   type: 'data',
   macroByValue: true,
   params: [
-    {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
+    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true},
     {id: 'then', mandatory: true, dynamic: true},
     {id: 'else', dynamic: true, defaultValue: '%%'}
   ],
-  impl: (ctx,cond,_then,_else) =>	cond ? _then() : _else()
+  impl: (ctx,cond,_then,_else) =>	cond() ? _then() : _else()
 })
 
 jb.component('action.if', { /* action.if */
@@ -1432,11 +1437,11 @@ jb.component('remark', { /* remark */
 jb.component('If', { /* If */
   macroByValue: true,
   params: [
-    {id: 'condition', as: 'boolean', type: 'boolean', mandatory: true},
-    {id: 'then'},
-    {id: 'Else'}
+    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true},
+    {id: 'then', dynamic: true},
+    {id: 'Else', dynamic: true}
   ],
-  impl: (ctx,cond,_then,_else) =>	cond ? _then : _else
+  impl: (ctx,cond,_then,_else) =>	cond() ? _then() : _else()
 })
 
 jb.component('not', { /* not */
@@ -5821,15 +5826,16 @@ jb.component('feature.onHover', { /* feature.onHover */
   category: 'events',
   params: [
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true, mandatory: true},
-    {id: 'onLeave', type: 'action[]', mandatory: true, dynamic: true}
+    {id: 'onLeave', type: 'action[]', mandatory: true, dynamic: true},
+    {id: 'debounceTime', as: 'number', defaultValue: 0 }
   ],
-  impl: (ctx,action) => ({
+  impl: (ctx,action,onLeave,debounceTime) => ({
       onmouseenter: true, onmouseleave: true,
       afterViewInit: cmp => {
-        cmp.onmouseenter.debounceTime(500).subscribe(()=>
+        cmp.onmouseenter.debounceTime(debounceTime).subscribe(()=>
               jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)())
-        cmp.onmouseleave.debounceTime(500).subscribe(()=>
-              jb.ui.wrapWithLauchingElement(ctx.params.onLeave, cmp.ctx, cmp.base)())
+        cmp.onmouseleave.debounceTime(debounceTime).subscribe(()=>
+              jb.ui.wrapWithLauchingElement(onLeave, cmp.ctx, cmp.base)())
       }
   })
 })
@@ -6397,7 +6403,6 @@ jb.component('field.databind', { /* field.databind */
       }
     ))
 })
-
 
 jb.ui.checkValidationError = (cmp,val) => {
   const err = validationError();
@@ -9045,7 +9050,6 @@ jb.component('mdc-style.init-dynamic', { /* mdcStyle.initDynamic */
         cmp.mdc_comps.push(new jb.ui.material.MDCSwitch(cmp.base))
       else if (cmp.base.classList.contains('mdc-chip-set'))
         cmp.mdc_comps.push(new jb.ui.material.MDCChipSet(cmp.base))
-        
     },
     destroy: cmp => (cmp.mdc_comps || []).forEach(mdc_cmp=>mdc_cmp.destroy())
   })
@@ -9082,8 +9086,8 @@ jb.component('label.mdc-ripple-effect', { /* label.mdcRippleEffect */
 jb.component('button.href', { /* button.href */
   type: 'button.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: true }, state.title),
-    css: '{color: grey}'
+    template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
+    css: '{color: grey} .raised { font-weight: bold }'
   })
 })
 
@@ -9111,7 +9115,8 @@ jb.component('button.x', { /* button.x */
 jb.component('button.native', {
   type: 'button.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('button',{title: state.title, onclick: true },state.title),
+    template: (cmp,{title,raised},h) => h('button',{class: raised ? 'raised' : '', title, onclick: true },title),
+    css: '.raised {font-weight: bold}'
   })
 })
 
@@ -9121,7 +9126,8 @@ jb.component('button.mdc', {
     {id: 'ripple', as: 'boolean', defaultValue: true }
   ],
   impl: customStyle({
-    template: (cmp,{title,raised},h) => h('button',{class: 'mdc-button' + (raised ? ' mdc-button--raised': ''), onclick: true},[
+    template: (cmp,{title,raised},h) => h('button',{
+      class: ['mdc-button',raised && 'raised mdc-button--raised'].filter(x=>x).join(' '), onclick: true},[
       h('div',{class:'mdc-button__ripple'}),
       h('span',{class:'mdc-button__label'},title),
     ]),
@@ -9132,12 +9138,16 @@ jb.component('button.mdc', {
 jb.component('button.mdc-icon', { /* button.mdcIcon */
   type: 'button.style,icon-with-action.style',
   params: [
-    {id: 'icon', as: 'string', defaultValue: 'code'}
+    {id: 'icon', as: 'string', defaultValue: 'bookmark_border'},
+    {id: 'raisedIcon', as: 'string'}
   ],
   impl: customStyle({
-    template: (cmp,{title,icon},h) => h('button',{
-          class: 'mdc-icon-button material-icons',
-          title, tabIndex: -1, onclick:  true},icon),
+    template: (cmp,{title,icon,raised,raisedIcon},h) => h('button',{
+          class: ['mdc-icon-button material-icons',raised && 'raised mdc-icon-button--on'].filter(x=>x).join(' '),
+          title, tabIndex: -1, onclick:  true},[
+            h('i',{class:'material-icons mdc-icon-button__icon mdc-icon-button__icon--on'}, raisedIcon || icon),
+            h('i',{class:'material-icons mdc-icon-button__icon '}, icon),
+        ]),
     css: `{ border-radius: 2px; padding: 0; width: 24px; height: 24px;}`,
     features: mdcStyle.initDynamic()
   })
@@ -9148,31 +9158,36 @@ jb.component('button.mdc-chip-action', {
   params: [
   ],
   impl: customStyle({
-    template: (cmp,{title},h) => 
-      h('div',{ class: 'mdc-chip', role: 'row' }, [
+    template: (cmp,{title,raised},h) => 
+    h('div',{class: 'mdc-chip-set mdc-chip-set--choice'}, 
+      h('div',{ class: ['mdc-chip',raised && 'mdc-chip--selected raised'].filter(x=>x).join(' ') }, [
         h('div',{ class: 'mdc-chip__ripple'}),
         h('span',{ role: 'gridcell'}, h('span', {role: 'button', tabindex: -1, class: 'mdc-chip__text'}, title )),
-      ]),
+    ])),
+    features: mdcStyle.initDynamic()
   })
 })
 
-jb.component('button.mdc-chip-with-icon', { 
+jb.component('button.mdc-chip-with-icons', { // mdcChipWithIcons
   type: 'button.style,icon-with-action.style',
   params: [
-    {id: 'icon', as: 'string', defaultValue: 'code'},
+    {id: 'leadingIcon', as: 'string', defaultValue: 'code'},
+    {id: 'trailingIcon', as: 'string', defaultValue: 'code'},
   ],
   impl: customStyle({
-    template: (cmp,{title,icon,mini},h) => 
-      h('button',{ class: ['mdc-fab mdc-fab--extended'].filter(x=>x).join(' ') , 
-          title, tabIndex: -1, onclick:  true}, [
-        h('div',{ class: 'mdc-button__ripple'}),
-        ...(icon ? [h('span',{ class: 'mdc-fab__icon material-icons'},icon)]: []),
-        h('span',{ class: 'mdc-fab__label'},title),
-      ]),
+    template: (cmp,{title,raised,leadingIcon,trailingIcon},h) => 
+    h('div',{class: 'mdc-chip-set mdc-chip-set--choice'}, 
+      h('div',{ class: ['mdc-chip',raised && 'mdc-chip--selected raised'].filter(x=>x).join(' ') }, [
+        h('div',{ class: 'mdc-chip__ripple'}),
+        ...(leadingIcon ? [h('i',{class:'material-icons mdc-chip__icon mdc-chip__icon--leading'},leadingIcon)] : []),
+        h('span',{ role: 'gridcell'}, h('span', {role: 'button', tabindex: -1, class: 'mdc-chip__text'}, title )),
+        ...(trailingIcon ? [h('i',{class:'material-icons mdc-chip__icon mdc-chip__icon--trailing'},trailingIcon)] : []),
+    ])),
+    features: mdcStyle.initDynamic()
   })
 })
 
-jb.component('button.mdc-floating-action', { 
+jb.component('button.mdc-floating-action', { // button.mdcFloatingAction
   type: 'button.style,icon-with-action.style',
   description: 'fab icon',
   params: [
@@ -9180,8 +9195,8 @@ jb.component('button.mdc-floating-action', {
     {id: 'mini', as: 'boolean'},
   ],
   impl: customStyle({
-    template: (cmp,{title,icon,mini,plain},h) => 
-      h('button',{ class: ['mdc-fab',mini && 'mdc-fab--mini'].filter(x=>x).join(' ') , 
+    template: (cmp,{title,icon,mini,raised},h) => 
+      h('button',{ class: ['mdc-fab',raised && 'raised mdc-icon-button--on',mini && 'mdc-fab--mini'].filter(x=>x).join(' ') , 
           title, tabIndex: -1, onclick:  true}, [
             h('div',{ class: 'mdc-fab__ripple'}),
             h('span',{ class: 'mdc-fab__icon material-icons'},icon),
@@ -9197,8 +9212,8 @@ jb.component('button.mdc-floating-with-title', {
     {id: 'mini', as: 'boolean' },
   ],
   impl: customStyle({
-    template: (cmp,{title,icon,mini},h) => 
-      h('button',{ class: ['mdc-fab mdc-fab--extended',mini && 'mdc-fab--mini'].filter(x=>x).join(' ') , 
+    template: (cmp,{title,icon,mini,raised},h) => 
+      h('button',{ class: ['mdc-fab mdc-fab--extended',raised && 'mdc-icon-button--on',mini && 'mdc-fab--mini'].filter(x=>x).join(' ') , 
           title, tabIndex: -1, onclick:  true}, [
         h('div',{ class: 'mdc-fab__ripple'}),
         ...(icon ? [h('span',{ class: 'mdc-fab__icon material-icons'},icon)]: []),
@@ -9214,7 +9229,8 @@ jb.component('button.mdc-icon12', { /* button.mdcIcon12 */
     {id: 'icon', as: 'string', defaultValue: 'code'}
   ],
   impl: customStyle({
-    template: (cmp,{icon},h) => h('i',{class: 'material-icons', onclick: true},icon),
+    template: (cmp,{icon,raised},h) => h('i',{class: ['material-icons',raised && 'raised mdc-icon-button--on'].filter(x=>x).join(' ') 
+      , onclick: true},icon),
     css: '{ font-size:12px; cursor: pointer }'
   })
 })
@@ -9431,18 +9447,6 @@ jb.component('layout.grid', { /* layout.grid */
          }).exp(`{ display: grid; {?grid-template-columns:%$colSizes%;?} {?grid-template-rows:%$rowSizes%;?} 
             {?grid-column-gap:%$columnGap%;?} {?grid-row-gap:%$rowGap%;?} }`)
   })
-})
-
-jb.component('layout.chip-set', {
-  type: 'feature',
-  category: 'group:30',
-  params: [
-    {id: 'spacing', as: 'string', defaultValue: 3}
-  ],
-  impl: features(
-    css.class('mdc-chip-set'),
-    mdcStyle.initDynamic()
-  )
 })
 
 jb.component('flex-item.grow', { /* flexItem.grow */
@@ -9996,6 +10000,24 @@ jb.component('editable-boolean.expand-collapse', { /* editableBoolean.expandColl
   })
 })
 
+jb.component('editable-boolean.mdc-x-v', {
+  type: 'editable-boolean.style',
+  params: [
+    {id: 'yesIcon', as: 'string', defaultValue: 'check'},
+    {id: 'noIcon', as: 'string', defaultValue: 'close'}
+  ],
+  impl: customStyle({
+    template: (cmp,{title,model,yesIcon,noIcon},h) => h('button',{
+          class: ['mdc-icon-button material-icons',model && 'raised mdc-icon-button--on'].filter(x=>x).join(' '),
+          title, tabIndex: -1, onclick: 'toggle'},[
+            h('i',{class:'material-icons mdc-icon-button__icon mdc-icon-button__icon--on'}, yesIcon),
+            h('i',{class:'material-icons mdc-icon-button__icon '}, noIcon),
+        ]),
+    features: [field.databind(), mdcStyle.initDynamic()]
+  })
+})
+
+
 jb.component('editable-boolean.mdc-slide-toggle', { /* editableBoolean.mdcSlideToggle */
   type: 'editable-boolean.style',
   params: [
@@ -10037,7 +10059,7 @@ jb.component('pretty-print', { /* prettyPrint */
     {id: 'profile', defaultValue: '%%'},
     {id: 'colWidth', as: 'number', defaultValue: 140}
   ],
-  impl: (ctx,profile) => jb.prettyPrint(profile,ctx.params)
+  impl: (ctx,profile) => jb.prettyPrint(jb.val(profile),ctx.params)
 })
 
 jb.prettyPrintComp = function(compId,comp,settings={}) {

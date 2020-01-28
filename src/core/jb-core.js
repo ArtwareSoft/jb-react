@@ -308,31 +308,36 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
 
     const refHandler = jb.objHandler(input)
     const functionCallMatch = subExp.match(/=([a-zA-Z]*)\(?([^)]*)\)?/);
-      if (functionCallMatch && jb.functions[functionCallMatch[1]])
+    if (functionCallMatch && jb.functions[functionCallMatch[1]])
         return tojstype(jb.functions[functionCallMatch[1]](ctx,functionCallMatch[2]),jstype,ctx);
 
-      if (first && subExp.charAt(0) == '$' && subExp.length > 1)
-        return calcVar(ctx,subExp.substr(1),last ? jstype : null)
-      const obj = val(input);
-      if (subExp == 'length' && obj && typeof obj.length != 'undefined')
-        return obj.length;
-      if (Array.isArray(obj) && isNaN(Number(subExp)))
-        return [].concat.apply([],obj.map(item=>pipe(item,subExp,last,false,refHandler)).filter(x=>x!=null));
+    if (subExp.match(/\(\)$/)) {
+      const func = pipe(input,subExp.slice(0,-2),last,first)
+      return typeof func == 'function' ? func(ctx) : func
+    }
 
-      if (input != null && typeof input == 'object') {
-        if (obj === null || obj === undefined) return;
-        if (typeof obj[subExp] === 'function' && (parentParam && parentParam.dynamic || obj[subExp].profile))
-            return obj[subExp](ctx);
-        if (isRefType(jstype)) {
-          if (last)
-            return refHandler.objectProperty(obj,subExp,ctx);
-          if (obj[subExp] === undefined)
-            obj[subExp] = implicitlyCreateInnerObject(obj,subExp,refHandler);
-        }
-        if (last && jstype)
-            return jstypes[jstype](obj[subExp]);
-        return obj[subExp];
+    if (first && subExp.charAt(0) == '$' && subExp.length > 1)
+      return calcVar(ctx,subExp.substr(1),last ? jstype : null)
+    const obj = val(input);
+    if (subExp == 'length' && obj && typeof obj.length != 'undefined')
+      return obj.length;
+    if (Array.isArray(obj) && isNaN(Number(subExp)))
+      return [].concat.apply([],obj.map(item=>pipe(item,subExp,last,false,refHandler)).filter(x=>x!=null));
+
+    if (input != null && typeof input == 'object') {
+      if (obj === null || obj === undefined) return;
+      if (typeof obj[subExp] === 'function' && (parentParam && parentParam.dynamic || obj[subExp].profile))
+          return obj[subExp](ctx);
+      if (isRefType(jstype)) {
+        if (last)
+          return refHandler.objectProperty(obj,subExp,ctx);
+        if (obj[subExp] === undefined)
+          obj[subExp] = implicitlyCreateInnerObject(obj,subExp,refHandler);
       }
+      if (last && jstype)
+          return jstypes[jstype](obj[subExp]);
+      return obj[subExp];
+    }
   }
   function implicitlyCreateInnerObject(parent,prop,refHandler) {
     jb.log('implicitlyCreateInnerObject',[...arguments]);

@@ -78,18 +78,6 @@ jb.component('layout.grid', { /* layout.grid */
   })
 })
 
-jb.component('layout.chip-set', {
-  type: 'feature',
-  category: 'group:30',
-  params: [
-    {id: 'spacing', as: 'string', defaultValue: 3}
-  ],
-  impl: features(
-    css.class('mdc-chip-set'),
-    mdcStyle.initDynamic()
-  )
-})
-
 jb.component('flex-item.grow', { /* flexItem.grow */
   type: 'feature',
   category: 'flex-item',

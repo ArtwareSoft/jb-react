@@ -27,11 +27,11 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
   impl: features(
 	  calcProp('text','%$$model/databind%'),
 	  calcProp('textAreaAlternative', ({},{$props},{maxLength}) => $props.text.length > maxLength),
-	  ctx => ({ template: (cmp,{text,textAreaAlternative},h) => 
-		textAreaAlternative ? h('textarea', {class: 'jb-textarea-alternative-for-codemirror', value: text })
-			: h('div',{},h('textarea', {class: 'jb-codemirror', value: text })),
+	  ctx => ({ 
+		  template: (cmp,{text,textAreaAlternative},h) => 
+			textAreaAlternative ? h('textarea', {class: 'jb-textarea-alternative-for-codemirror', value: text })
+				: h('div',{},h('textarea', {class: 'jb-codemirror', value: text })),
 	  }),
-
 	  interactive( (ctx,{cmp},{cm_settings, _enableFullScreen, readOnly, onCtrlEnter, mode, debounceTime, lineWrapping, lineNumbers}) =>{
 		if (jb.ui.hasClass(cmp.base, 'jb-textarea-alternative-for-codemirror')) return
 		try {
@@ -53,7 +53,7 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 					'Ctrl-Enter': editor => onCtrlEnter(ctx.setVars({editor}))
 				}, adjustedExtraKeys),
 			});
-			const editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
+			let editor = null
 			cmp.editor = {
 				data_ref: cmp.data_ref,
 				cmp,
@@ -90,32 +90,30 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 				cmEditor: editor
 			}
 			cmp.doRefresh = () => {
+				cmp.editor.cmEditor = editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
 				cmp.data_ref = cmp.ctx.vars.$model.databind()
 				editor.setValue(jb.tostring(jb.val(cmp.data_ref)))
+
+				jb.rx.Observable.create(obs=> editor.on('change', () => obs.next(editor.getValue())))
+					.takeUntil( cmp.destroyed )
+					.debounceTime(debounceTime)
+					.filter(x => x != jb.tostring(jb.val(cmp.data_ref)))
+					.distinctUntilChanged()
+					.subscribe(x=>	jb.writeValue(cmp.data_ref,x, ctx));
+	
+				!cmp.data_ref.oneWay && jb.isWatchable(cmp.data_ref) && jb.ui.refObservable(cmp.data_ref,cmp,{srcCtx: ctx})
+					.map(e=>jb.tostring(jb.val(cmp.data_ref)))
+					.filter(x => x != editor.getValue())
+					.subscribe(x=>{
+						const cur = editor.getCursor()
+						editor.setValue(x)
+						editor.setSelection(cur)
+						cmp.editor.markText({line: 0, col:0}, {line: editor.lastLine(), col: 0})
+					});
 			}
+			cmp.doRefresh()
 			const wrapper = editor.getWrapperElement();
 			jb.delay(1).then(() => _enableFullScreen && enableFullScreen(editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper)))
-
-			editor.setValue(jb.tostring(jb.val(cmp.data_ref)));
-			//cmp.lastEdit = new Date().getTime();
-			//editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
-			!cmp.data_ref.oneWay && jb.isWatchable(cmp.data_ref) && jb.ui.refObservable(cmp.data_ref,cmp,{srcCtx: ctx})
-				.map(e=>jb.tostring(jb.val(cmp.data_ref)))
-				.filter(x => x != editor.getValue())
-				.subscribe(x=>{
-					const cur = editor.getCursor()
-					editor.setValue(x)
-					editor.setSelection(cur)
-					cmp.editor.markText({line: 0, col:0}, {line: editor.laseLine(), col: 0})
-				});
-
-			jb.rx.Observable.create(obs=>
-				editor.on('change', () => obs.next(editor.getValue())))
-				.takeUntil( cmp.destroyed )
-				.debounceTime(debounceTime)
-				.filter(x => x != jb.tostring(jb.val(cmp.data_ref)))
-				.distinctUntilChanged()
-				.subscribe(x=>	jb.writeValue(cmp.data_ref,x, ctx));
 
 		} catch(e) {
 			jb.logException(e,'editable-text.codemirror',ctx);

@@ -200,10 +200,11 @@ jb.component('studio.comp-name-ref', { /* studio.compNameRef */
 jb.component('studio.profile-as-text', { /* studio.profileAsText */
   type: 'data',
   params: [
-    {id: 'path', as: 'string'}
+    {id: 'path', as: 'string'},
+    {id: 'oneWay', as: 'boolean', defaultValue: true}    
   ],
   impl: watchableAsText(
-    studio.ref('%$path%')
+    studio.ref('%$path%'), '%$oneWay%'
   )
 })
 

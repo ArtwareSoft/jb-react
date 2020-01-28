@@ -308,31 +308,36 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
 
     const refHandler = jb.objHandler(input)
     const functionCallMatch = subExp.match(/=([a-zA-Z]*)\(?([^)]*)\)?/);
-      if (functionCallMatch && jb.functions[functionCallMatch[1]])
+    if (functionCallMatch && jb.functions[functionCallMatch[1]])
         return tojstype(jb.functions[functionCallMatch[1]](ctx,functionCallMatch[2]),jstype,ctx);
 
-      if (first && subExp.charAt(0) == '$' && subExp.length > 1)
-        return calcVar(ctx,subExp.substr(1),last ? jstype : null)
-      const obj = val(input);
-      if (subExp == 'length' && obj && typeof obj.length != 'undefined')
-        return obj.length;
-      if (Array.isArray(obj) && isNaN(Number(subExp)))
-        return [].concat.apply([],obj.map(item=>pipe(item,subExp,last,false,refHandler)).filter(x=>x!=null));
+    if (subExp.match(/\(\)$/)) {
+      const func = pipe(input,subExp.slice(0,-2),last,first)
+      return typeof func == 'function' ? func(ctx) : func
+    }
 
-      if (input != null && typeof input == 'object') {
-        if (obj === null || obj === undefined) return;
-        if (typeof obj[subExp] === 'function' && (parentParam && parentParam.dynamic || obj[subExp].profile))
-            return obj[subExp](ctx);
-        if (isRefType(jstype)) {
-          if (last)
-            return refHandler.objectProperty(obj,subExp,ctx);
-          if (obj[subExp] === undefined)
-            obj[subExp] = implicitlyCreateInnerObject(obj,subExp,refHandler);
-        }
-        if (last && jstype)
-            return jstypes[jstype](obj[subExp]);
-        return obj[subExp];
+    if (first && subExp.charAt(0) == '$' && subExp.length > 1)
+      return calcVar(ctx,subExp.substr(1),last ? jstype : null)
+    const obj = val(input);
+    if (subExp == 'length' && obj && typeof obj.length != 'undefined')
+      return obj.length;
+    if (Array.isArray(obj) && isNaN(Number(subExp)))
+      return [].concat.apply([],obj.map(item=>pipe(item,subExp,last,false,refHandler)).filter(x=>x!=null));
+
+    if (input != null && typeof input == 'object') {
+      if (obj === null || obj === undefined) return;
+      if (typeof obj[subExp] === 'function' && (parentParam && parentParam.dynamic || obj[subExp].profile))
+          return obj[subExp](ctx);
+      if (isRefType(jstype)) {
+        if (last)
+          return refHandler.objectProperty(obj,subExp,ctx);
+        if (obj[subExp] === undefined)
+          obj[subExp] = implicitlyCreateInnerObject(obj,subExp,refHandler);
       }
+      if (last && jstype)
+          return jstypes[jstype](obj[subExp]);
+      return obj[subExp];
+    }
   }
   function implicitlyCreateInnerObject(parent,prop,refHandler) {
     jb.log('implicitlyCreateInnerObject',[...arguments]);
@@ -996,11 +1001,11 @@ jb.component('data.if', { /* data.if */
   type: 'data',
   macroByValue: true,
   params: [
-    {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
+    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true},
     {id: 'then', mandatory: true, dynamic: true},
     {id: 'else', dynamic: true, defaultValue: '%%'}
   ],
-  impl: (ctx,cond,_then,_else) =>	cond ? _then() : _else()
+  impl: (ctx,cond,_then,_else) =>	cond() ? _then() : _else()
 })
 
 jb.component('action.if', { /* action.if */
@@ -1432,11 +1437,11 @@ jb.component('remark', { /* remark */
 jb.component('If', { /* If */
   macroByValue: true,
   params: [
-    {id: 'condition', as: 'boolean', type: 'boolean', mandatory: true},
-    {id: 'then'},
-    {id: 'Else'}
+    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true},
+    {id: 'then', dynamic: true},
+    {id: 'Else', dynamic: true}
   ],
-  impl: (ctx,cond,_then,_else) =>	cond ? _then : _else
+  impl: (ctx,cond,_then,_else) =>	cond() ? _then() : _else()
 })
 
 jb.component('not', { /* not */
@@ -5821,15 +5826,16 @@ jb.component('feature.onHover', { /* feature.onHover */
   category: 'events',
   params: [
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true, mandatory: true},
-    {id: 'onLeave', type: 'action[]', mandatory: true, dynamic: true}
+    {id: 'onLeave', type: 'action[]', mandatory: true, dynamic: true},
+    {id: 'debounceTime', as: 'number', defaultValue: 0 }
   ],
-  impl: (ctx,action) => ({
+  impl: (ctx,action,onLeave,debounceTime) => ({
       onmouseenter: true, onmouseleave: true,
       afterViewInit: cmp => {
-        cmp.onmouseenter.debounceTime(500).subscribe(()=>
+        cmp.onmouseenter.debounceTime(debounceTime).subscribe(()=>
               jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)())
-        cmp.onmouseleave.debounceTime(500).subscribe(()=>
-              jb.ui.wrapWithLauchingElement(ctx.params.onLeave, cmp.ctx, cmp.base)())
+        cmp.onmouseleave.debounceTime(debounceTime).subscribe(()=>
+              jb.ui.wrapWithLauchingElement(onLeave, cmp.ctx, cmp.base)())
       }
   })
 })
@@ -6397,7 +6403,6 @@ jb.component('field.databind', { /* field.databind */
       }
     ))
 })
-
 
 jb.ui.checkValidationError = (cmp,val) => {
   const err = validationError();
@@ -9045,7 +9050,6 @@ jb.component('mdc-style.init-dynamic', { /* mdcStyle.initDynamic */
         cmp.mdc_comps.push(new jb.ui.material.MDCSwitch(cmp.base))
       else if (cmp.base.classList.contains('mdc-chip-set'))
         cmp.mdc_comps.push(new jb.ui.material.MDCChipSet(cmp.base))
-        
     },
     destroy: cmp => (cmp.mdc_comps || []).forEach(mdc_cmp=>mdc_cmp.destroy())
   })
@@ -9082,8 +9086,8 @@ jb.component('label.mdc-ripple-effect', { /* label.mdcRippleEffect */
 jb.component('button.href', { /* button.href */
   type: 'button.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: true }, state.title),
-    css: '{color: grey}'
+    template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
+    css: '{color: grey} .raised { font-weight: bold }'
   })
 })
 
@@ -9111,7 +9115,8 @@ jb.component('button.x', { /* button.x */
 jb.component('button.native', {
   type: 'button.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('button',{title: state.title, onclick: true },state.title),
+    template: (cmp,{title,raised},h) => h('button',{class: raised ? 'raised' : '', title, onclick: true },title),
+    css: '.raised {font-weight: bold}'
   })
 })
 
@@ -9121,7 +9126,8 @@ jb.component('button.mdc', {
     {id: 'ripple', as: 'boolean', defaultValue: true }
   ],
   impl: customStyle({
-    template: (cmp,{title,raised},h) => h('button',{class: 'mdc-button' + (raised ? ' mdc-button--raised': ''), onclick: true},[
+    template: (cmp,{title,raised},h) => h('button',{
+      class: ['mdc-button',raised && 'raised mdc-button--raised'].filter(x=>x).join(' '), onclick: true},[
       h('div',{class:'mdc-button__ripple'}),
       h('span',{class:'mdc-button__label'},title),
     ]),
@@ -9132,12 +9138,16 @@ jb.component('button.mdc', {
 jb.component('button.mdc-icon', { /* button.mdcIcon */
   type: 'button.style,icon-with-action.style',
   params: [
-    {id: 'icon', as: 'string', defaultValue: 'code'}
+    {id: 'icon', as: 'string', defaultValue: 'bookmark_border'},
+    {id: 'raisedIcon', as: 'string'}
   ],
   impl: customStyle({
-    template: (cmp,{title,icon},h) => h('button',{
-          class: 'mdc-icon-button material-icons',
-          title, tabIndex: -1, onclick:  true},icon),
+    template: (cmp,{title,icon,raised,raisedIcon},h) => h('button',{
+          class: ['mdc-icon-button material-icons',raised && 'raised mdc-icon-button--on'].filter(x=>x).join(' '),
+          title, tabIndex: -1, onclick:  true},[
+            h('i',{class:'material-icons mdc-icon-button__icon mdc-icon-button__icon--on'}, raisedIcon || icon),
+            h('i',{class:'material-icons mdc-icon-button__icon '}, icon),
+        ]),
     css: `{ border-radius: 2px; padding: 0; width: 24px; height: 24px;}`,
     features: mdcStyle.initDynamic()
   })
@@ -9148,31 +9158,36 @@ jb.component('button.mdc-chip-action', {
   params: [
   ],
   impl: customStyle({
-    template: (cmp,{title},h) => 
-      h('div',{ class: 'mdc-chip', role: 'row' }, [
+    template: (cmp,{title,raised},h) => 
+    h('div',{class: 'mdc-chip-set mdc-chip-set--choice'}, 
+      h('div',{ class: ['mdc-chip',raised && 'mdc-chip--selected raised'].filter(x=>x).join(' ') }, [
         h('div',{ class: 'mdc-chip__ripple'}),
         h('span',{ role: 'gridcell'}, h('span', {role: 'button', tabindex: -1, class: 'mdc-chip__text'}, title )),
-      ]),
+    ])),
+    features: mdcStyle.initDynamic()
   })
 })
 
-jb.component('button.mdc-chip-with-icon', { 
+jb.component('button.mdc-chip-with-icons', { // mdcChipWithIcons
   type: 'button.style,icon-with-action.style',
   params: [
-    {id: 'icon', as: 'string', defaultValue: 'code'},
+    {id: 'leadingIcon', as: 'string', defaultValue: 'code'},
+    {id: 'trailingIcon', as: 'string', defaultValue: 'code'},
   ],
   impl: customStyle({
-    template: (cmp,{title,icon,mini},h) => 
-      h('button',{ class: ['mdc-fab mdc-fab--extended'].filter(x=>x).join(' ') , 
-          title, tabIndex: -1, onclick:  true}, [
-        h('div',{ class: 'mdc-button__ripple'}),
-        ...(icon ? [h('span',{ class: 'mdc-fab__icon material-icons'},icon)]: []),
-        h('span',{ class: 'mdc-fab__label'},title),
-      ]),
+    template: (cmp,{title,raised,leadingIcon,trailingIcon},h) => 
+    h('div',{class: 'mdc-chip-set mdc-chip-set--choice'}, 
+      h('div',{ class: ['mdc-chip',raised && 'mdc-chip--selected raised'].filter(x=>x).join(' ') }, [
+        h('div',{ class: 'mdc-chip__ripple'}),
+        ...(leadingIcon ? [h('i',{class:'material-icons mdc-chip__icon mdc-chip__icon--leading'},leadingIcon)] : []),
+        h('span',{ role: 'gridcell'}, h('span', {role: 'button', tabindex: -1, class: 'mdc-chip__text'}, title )),
+        ...(trailingIcon ? [h('i',{class:'material-icons mdc-chip__icon mdc-chip__icon--trailing'},trailingIcon)] : []),
+    ])),
+    features: mdcStyle.initDynamic()
   })
 })
 
-jb.component('button.mdc-floating-action', { 
+jb.component('button.mdc-floating-action', { // button.mdcFloatingAction
   type: 'button.style,icon-with-action.style',
   description: 'fab icon',
   params: [
@@ -9180,8 +9195,8 @@ jb.component('button.mdc-floating-action', {
     {id: 'mini', as: 'boolean'},
   ],
   impl: customStyle({
-    template: (cmp,{title,icon,mini,plain},h) => 
-      h('button',{ class: ['mdc-fab',mini && 'mdc-fab--mini'].filter(x=>x).join(' ') , 
+    template: (cmp,{title,icon,mini,raised},h) => 
+      h('button',{ class: ['mdc-fab',raised && 'raised mdc-icon-button--on',mini && 'mdc-fab--mini'].filter(x=>x).join(' ') , 
           title, tabIndex: -1, onclick:  true}, [
             h('div',{ class: 'mdc-fab__ripple'}),
             h('span',{ class: 'mdc-fab__icon material-icons'},icon),
@@ -9197,8 +9212,8 @@ jb.component('button.mdc-floating-with-title', {
     {id: 'mini', as: 'boolean' },
   ],
   impl: customStyle({
-    template: (cmp,{title,icon,mini},h) => 
-      h('button',{ class: ['mdc-fab mdc-fab--extended',mini && 'mdc-fab--mini'].filter(x=>x).join(' ') , 
+    template: (cmp,{title,icon,mini,raised},h) => 
+      h('button',{ class: ['mdc-fab mdc-fab--extended',raised && 'mdc-icon-button--on',mini && 'mdc-fab--mini'].filter(x=>x).join(' ') , 
           title, tabIndex: -1, onclick:  true}, [
         h('div',{ class: 'mdc-fab__ripple'}),
         ...(icon ? [h('span',{ class: 'mdc-fab__icon material-icons'},icon)]: []),
@@ -9214,7 +9229,8 @@ jb.component('button.mdc-icon12', { /* button.mdcIcon12 */
     {id: 'icon', as: 'string', defaultValue: 'code'}
   ],
   impl: customStyle({
-    template: (cmp,{icon},h) => h('i',{class: 'material-icons', onclick: true},icon),
+    template: (cmp,{icon,raised},h) => h('i',{class: ['material-icons',raised && 'raised mdc-icon-button--on'].filter(x=>x).join(' ') 
+      , onclick: true},icon),
     css: '{ font-size:12px; cursor: pointer }'
   })
 })
@@ -9431,18 +9447,6 @@ jb.component('layout.grid', { /* layout.grid */
          }).exp(`{ display: grid; {?grid-template-columns:%$colSizes%;?} {?grid-template-rows:%$rowSizes%;?} 
             {?grid-column-gap:%$columnGap%;?} {?grid-row-gap:%$rowGap%;?} }`)
   })
-})
-
-jb.component('layout.chip-set', {
-  type: 'feature',
-  category: 'group:30',
-  params: [
-    {id: 'spacing', as: 'string', defaultValue: 3}
-  ],
-  impl: features(
-    css.class('mdc-chip-set'),
-    mdcStyle.initDynamic()
-  )
 })
 
 jb.component('flex-item.grow', { /* flexItem.grow */
@@ -9995,6 +9999,24 @@ jb.component('editable-boolean.expand-collapse', { /* editableBoolean.expandColl
     features: field.databind()
   })
 })
+
+jb.component('editable-boolean.mdc-x-v', {
+  type: 'editable-boolean.style',
+  params: [
+    {id: 'yesIcon', as: 'string', defaultValue: 'check'},
+    {id: 'noIcon', as: 'string', defaultValue: 'close'}
+  ],
+  impl: customStyle({
+    template: (cmp,{title,model,yesIcon,noIcon},h) => h('button',{
+          class: ['mdc-icon-button material-icons',model && 'raised mdc-icon-button--on'].filter(x=>x).join(' '),
+          title, tabIndex: -1, onclick: 'toggle'},[
+            h('i',{class:'material-icons mdc-icon-button__icon mdc-icon-button__icon--on'}, yesIcon),
+            h('i',{class:'material-icons mdc-icon-button__icon '}, noIcon),
+        ]),
+    features: [field.databind(), mdcStyle.initDynamic()]
+  })
+})
+
 
 jb.component('editable-boolean.mdc-slide-toggle', { /* editableBoolean.mdcSlideToggle */
   type: 'editable-boolean.style',
@@ -25549,7 +25571,7 @@ jb.component('pretty-print', { /* prettyPrint */
     {id: 'profile', defaultValue: '%%'},
     {id: 'colWidth', as: 'number', defaultValue: 140}
   ],
-  impl: (ctx,profile) => jb.prettyPrint(profile,ctx.params)
+  impl: (ctx,profile) => jb.prettyPrint(jb.val(profile),ctx.params)
 })
 
 jb.prettyPrintComp = function(compId,comp,settings={}) {
@@ -27733,10 +27755,11 @@ function setStrValue(value, ref, ctx) {
 jb.component('watchable-as-text', { /* watchableAsText */
   type: 'data',
   params: [
-    {id: 'ref', as: 'ref', dynamic: true}
+    {id: 'ref', as: 'ref', dynamic: true},
+    {id: 'oneWay', as: 'boolean', defaultValue: true}
   ],
-  impl: (ctx,refF) => ({
-        oneWay: true,
+  impl: (ctx,refF,oneWay) => ({
+        oneWay,
         getRef() {
             return this.ref || (this.ref = refF())
         },
@@ -28309,11 +28332,11 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
   impl: features(
 	  calcProp('text','%$$model/databind%'),
 	  calcProp('textAreaAlternative', ({},{$props},{maxLength}) => $props.text.length > maxLength),
-	  ctx => ({ template: (cmp,{text,textAreaAlternative},h) => 
-		textAreaAlternative ? h('textarea', {class: 'jb-textarea-alternative-for-codemirror', value: text })
-			: h('div',{},h('textarea', {class: 'jb-codemirror', value: text })),
+	  ctx => ({ 
+		  template: (cmp,{text,textAreaAlternative},h) => 
+			textAreaAlternative ? h('textarea', {class: 'jb-textarea-alternative-for-codemirror', value: text })
+				: h('div',{},h('textarea', {class: 'jb-codemirror', value: text })),
 	  }),
-
 	  interactive( (ctx,{cmp},{cm_settings, _enableFullScreen, readOnly, onCtrlEnter, mode, debounceTime, lineWrapping, lineNumbers}) =>{
 		if (jb.ui.hasClass(cmp.base, 'jb-textarea-alternative-for-codemirror')) return
 		try {
@@ -28335,7 +28358,7 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 					'Ctrl-Enter': editor => onCtrlEnter(ctx.setVars({editor}))
 				}, adjustedExtraKeys),
 			});
-			const editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
+			let editor = null
 			cmp.editor = {
 				data_ref: cmp.data_ref,
 				cmp,
@@ -28372,32 +28395,30 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 				cmEditor: editor
 			}
 			cmp.doRefresh = () => {
+				cmp.editor.cmEditor = editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
 				cmp.data_ref = cmp.ctx.vars.$model.databind()
 				editor.setValue(jb.tostring(jb.val(cmp.data_ref)))
+
+				jb.rx.Observable.create(obs=> editor.on('change', () => obs.next(editor.getValue())))
+					.takeUntil( cmp.destroyed )
+					.debounceTime(debounceTime)
+					.filter(x => x != jb.tostring(jb.val(cmp.data_ref)))
+					.distinctUntilChanged()
+					.subscribe(x=>	jb.writeValue(cmp.data_ref,x, ctx));
+	
+				!cmp.data_ref.oneWay && jb.isWatchable(cmp.data_ref) && jb.ui.refObservable(cmp.data_ref,cmp,{srcCtx: ctx})
+					.map(e=>jb.tostring(jb.val(cmp.data_ref)))
+					.filter(x => x != editor.getValue())
+					.subscribe(x=>{
+						const cur = editor.getCursor()
+						editor.setValue(x)
+						editor.setSelection(cur)
+						cmp.editor.markText({line: 0, col:0}, {line: editor.lastLine(), col: 0})
+					});
 			}
+			cmp.doRefresh()
 			const wrapper = editor.getWrapperElement();
 			jb.delay(1).then(() => _enableFullScreen && enableFullScreen(editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper)))
-
-			editor.setValue(jb.tostring(jb.val(cmp.data_ref)));
-			//cmp.lastEdit = new Date().getTime();
-			//editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
-			!cmp.data_ref.oneWay && jb.isWatchable(cmp.data_ref) && jb.ui.refObservable(cmp.data_ref,cmp,{srcCtx: ctx})
-				.map(e=>jb.tostring(jb.val(cmp.data_ref)))
-				.filter(x => x != editor.getValue())
-				.subscribe(x=>{
-					const cur = editor.getCursor()
-					editor.setValue(x)
-					editor.setSelection(cur)
-					cmp.editor.markText({line: 0, col:0}, {line: editor.laseLine(), col: 0})
-				});
-
-			jb.rx.Observable.create(obs=>
-				editor.on('change', () => obs.next(editor.getValue())))
-				.takeUntil( cmp.destroyed )
-				.debounceTime(debounceTime)
-				.filter(x => x != jb.tostring(jb.val(cmp.data_ref)))
-				.distinctUntilChanged()
-				.subscribe(x=>	jb.writeValue(cmp.data_ref,x, ctx));
 
 		} catch(e) {
 			jb.logException(e,'editable-text.codemirror',ctx);
@@ -29391,7 +29412,7 @@ jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
 				h('div',{class: 'jb-dialog-content-parent'},h(contentComp)),
 				h('div',{class: 'dialog-buttons'},[
 					...(cmp.dialog.gotoEditor ? [h('button',{class: 'mdc-button', onclick: 'dialog.gotoEditor' },'goto editor')] : []),
-					h('button',{class: 'mdc-button', onclick: 'dialog.refresh' },'refresh'),
+					h('button',{class: 'mdc-button', onclick: 'refresh' },'refresh'),
 					h('button',{class: 'mdc-button', onclick: 'dialogCloseOK' },'ok'),
 				].filter(x=>x) ),
 			]),
@@ -29953,10 +29974,11 @@ jb.component('studio.comp-name-ref', { /* studio.compNameRef */
 jb.component('studio.profile-as-text', { /* studio.profileAsText */
   type: 'data',
   params: [
-    {id: 'path', as: 'string'}
+    {id: 'path', as: 'string'},
+    {id: 'oneWay', as: 'boolean', defaultValue: true}    
   ],
   impl: watchableAsText(
-    studio.ref('%$path%')
+    studio.ref('%$path%'), '%$oneWay%'
   )
 })
 
@@ -33047,9 +33069,7 @@ jb.component('dialog.studio-pick-dialog', { /* dialog.studioPickDialog */
 function eventToElem(e,_window, pathPrefix) {
   if (pathPrefix.indexOf('studio-helper.') == 0)
     pathPrefix = ''
-  const mousePos = {
-      x: e.pageX - _window.pageXOffset, y: e.pageY  - _window.pageYOffset
-  };
+  const mousePos = { x: e.pageX - _window.pageXOffset, y: e.pageY  - _window.pageYOffset }
   const elems = _window.document.elementsFromPoint(mousePos.x, mousePos.y);
   const results = elems.flatMap(el=>[el,...jb.ui.parents(el)])
       .filter(e => e && e.getAttribute)
@@ -34395,11 +34415,13 @@ jb.component('studio.open-resource', { /* studio.openResource */
         content: editableText({
           databind: studio.profileAsText('%$path%'),
           style: editableText.studioCodemirrorTgp(),
-          features: interactive((ctx,{cmp}) => 
-            ctx.vars.$dialog.refresh = () => {
+          features: [
+            interactive(
+              (ctx,{cmp}) => ctx.vars.$dialog.cmp.refresh = () => {
               ctx.run(studio.copyDataResourceToComp('%$path%','%$name%'))
-              cmp.refresh && cmp.refresh()
-          })
+              cmp.refresh && cmp.refresh()}
+            )
+          ]
         }),
         title: pipeline(studio.watchableOrPassive('%$path%'), 'Edit %$name% (%%)'),
         features: [
@@ -35872,7 +35894,7 @@ jb.studio.activateWatchRefViewer = () => {
 
 jb.ns('content-editable')
 
-jb.component('content-editable.open-toolbar', {
+jb.component('content-editable.open-toolbar', { // openToolbar
     type: 'action',
     params: [
         {id: 'path', as: 'string'},
@@ -35882,7 +35904,7 @@ jb.component('content-editable.open-toolbar', {
         openDialog({
             style: contentEditable.popupStyle(),
             content: contentEditable.toolbar(),
-            features: dialogFeature.onClose(ctx=>ctx.vars.deactivateContentEditable(ctx))
+            //features: dialogFeature.onClose(contentEditable.deactivate())
     }))
 })
 
@@ -35894,7 +35916,7 @@ jb.component('content-editable.activation-icon', {
             title: 'Edit',
             action: ctx => ctx.vars.activateContentEditable(ctx),
             style: button.mdcIcon('edit'),
-            features: dialogFeature.onClose(ctx=>ctx.vars.cleanActivationIcon(ctx))
+//            features: dialogFeature.onClose(contentEditable.deactivate())
           })
   })
 })
@@ -35911,8 +35933,7 @@ jb.component('content-editable.popup-style', {
         dialogFeature.maxZIndexOnClick(),
         dialogFeature.closeWhenClickingOutside(),
         dialogFeature.nearLauncherPosition({offsetLeft: 100, offsetTop: ctx => 
-          document.querySelector('#jb-preview').getBoundingClientRect().top
-          - jb.ui.computeStyle(ctx.vars.inspectedElem,'marginBottom')
+          jb.ui.studioFixYPos - jb.ui.computeStyle(jb.ui.contentEditable.current.base,'marginBottom')
         })
       ]
    })
@@ -35930,6 +35951,15 @@ jb.component('studio.open-toolbar-of-last-edit', { /* studio.openToolbarOfLastEd
           new jb.jbCtx().setVar('$launchingElement',{ el }).run({$: 'content-editable.open-toolbar', path })
       })
     }
+})
+
+jb.component('content-editable.deactivate', { /* contentEditable.deactivate */
+  type: 'action',
+  impl: ctx => {
+    jb.ui.contentEditable.current && jb.ui.contentEditable.current.refresh({contentEditableActive: false})
+    jb.ui.dialogs.closePopups()
+    jb.ui.contentEditable.current = null
+  }
 })
 
 jb.component('content-editable.toolbar', { /* contentEditable.toolbar */
@@ -35950,7 +35980,8 @@ jb.component('content-editable.toolbar', { /* contentEditable.toolbar */
       button({
         title: 'positions',
         action: [
-          contentEditable.openPositionThumbs(),
+          contentEditable.openPositionThumbs('y'),
+          contentEditable.openPositionThumbs('x'),
         ],
         style: button.mdcIcon('vertical_align_center')
       }),
@@ -35992,26 +36023,29 @@ jb.component('content-editable.toolbar', { /* contentEditable.toolbar */
 })
 
 jb.ui.contentEditable = {
-  setPositionScript(el,cssProp,side,value,ctx) {
-      const prop = cssProp == 'height' ? cssProp : side 
-      const featureComp = {$: `css.${cssProp}`, [prop] : value }
+  setPositionScript(el,fullProp,value,ctx) {
+      let {side,prop} = jb.ui.splitCssProp(fullProp)
+      if (fullProp == 'height' || fullProp == 'width')
+        side = prop = fullProp
+      const featureComp = {$: `css.${prop}`, [side] : value }
       const originatingCtx = jb.studio.previewjb.ctxDictionary[el.getAttribute('jb-ctx')]
       let featuresRef = jb.studio.refOfPath(originatingCtx.path + '~features')
       let featuresVal = jb.val(featuresRef)
       if (!featuresVal) {
-        jb.writeValue(scriptRef,featureComp,ctx)
-      } else if (!Array.isArray(featuresVal) && featuresVal[0].$ == featureComp.$) {
-        jb.writeValue(jb.studio.refOfPath(originatingCtx.path + `~features~${prop}`),value,ctx)
+        jb.writeValue(featuresRef,featureComp,ctx)
+      } else if (!Array.isArray(featuresVal) && featuresVal.$ == featureComp.$) {
+        jb.writeValue(jb.studio.refOfPath(originatingCtx.path + `~features~${side}`),value,ctx)
       } else {
         if (!Array.isArray(featuresVal)) { // wrap with array
-          jb.writeValue(featuresVal,[featuresVal],ctx)
+          jb.writeValue(featuresRef,[featuresVal],ctx)
+          featuresRef = jb.studio.refOfPath(originatingCtx.path + '~features')
           featuresVal = jb.val(featuresRef)
         }
         const existingFeature = featuresVal.findIndex(f=>f.$ == featureComp.$)
         if (existingFeature != -1)
-          jb.writeValue(jb.studio.refOfPath(originatingCtx.path + `~features~${existingFeature}~${prop}`),value,ctx)
+          jb.writeValue(jb.studio.refOfPath(originatingCtx.path + `~features~${existingFeature}~${side}`),value,ctx)
         else
-          jb.push(featuresVal,featureComp)
+          jb.push(featuresRef,featureComp,ctx)
       }
   },
   setScriptData(ev,cmp,prop,isHtml) {
@@ -36024,59 +36058,51 @@ jb.ui.contentEditable = {
           jb.studio.previewjb.writeValue(resourceRef,val,vdomCmp.ctx)
       else if (scriptRef)
           jb.writeValue(scriptRef,val,vdomCmp.ctx)
-    },
-  showActivationIcon(ev,cmp) {
-      cmp.base.style.background = 'linear-gradient(90deg, rgba(2,0,36,0.4598214285714286) 0%, rgba(255,255,255,1) 100%)'
-      cmp.base.style.borderRadius = '3px'
-      const ctx = new jb.jbCtx()
-        .setVar('inspectedElem', cmp.base)
-        .setVar('activateContentEditable', () => {
-            cmp.refresh({contentEditableActive: true})
-            jb.delay(100).then(() => { // wait for new position because of zoom
-              ctx.setVar('sourceItem',cmp.ctx.vars.item)
-                .setVar('$launchingElement',{ el : cmp.base})
-                .run({$: 'content-editable.open-toolbar', path: cmp.ctx.path})
-              cmp.base.focus()
-            })
-          }).setVar('deactivateContentEditable', () => {
-            cmp.refresh({contentEditableActive: false})
-          })
-          .setVar('cleanActivationIcon', () => {
-            cmp.base.style = ''
-          })
-      ctx.setVar('$launchingElement',{ el : ev.target}).run({$: 'content-editable.activation-icon'})
-    },
-    handleKeyEvent(ev,cmp,prop) {
-        if (ev.keyCode == 13) {
-            this.setScriptData(ev,cmp,prop)
-            jb.delay(1).then(() => cmp.refresh({contentEditableActive: false})) // can not wait for script change delay
-            jb.ui.dialogs.closePopups()
-            return false // does not work..
-        }
-    },
-    scriptRef(cmp,prop) {
+  },
+  activate(cmp) {
+    this.current && this.current.refresh({contentEditableActive: false})
+    this.current = cmp
+    new jb.jbCtx().setVar('$launchingElement',{ el : cmp.base}).run(runActions(
+      delay(10),
+      () => cmp.refresh({contentEditableActive: true}),
+      contentEditable.openToolbar(cmp.ctx.path),
+      contentEditable.openPositionThumbs('x'),
+      contentEditable.openPositionThumbs('y')
+    ))
+  },
+  handleKeyEvent(ev,cmp,prop) {
+      if (ev.keyCode == 13) {
+          this.setScriptData(ev,cmp,prop)
+          new jb.jbCtx().run(runActions(
+            delay(1), // can not wait for script change delay
+            contentEditable.deactivate()
+          ))
+          return false // does not work..
+      }
+  },
+  scriptRef(cmp,prop) {
         const ref = jb.studio.refOfPath(cmp.originatingCtx().path + '~' + prop)
         const val = jb.val(ref)
         return typeof val === 'string' && cmp.ctx.exp(val) === val && ref
-    },
-    refOfProp(cmp,prop) {
-        return cmp.toObserve.filter(e=>e.id == prop).map(e=>e.ref)[0] || this.scriptRef(cmp,prop)
-    },
-    duplicateDataItem(ctx) {
-      const st = jb.studio
-      const item = ctx.vars.sourceItem
-      const _jb = st.previewjb
-      const ref = _jb.asRef(item)
-      const handler = _jb.refHandler(ref)
-      const path = handler.pathOfRef(ref)
-      const parent_ref = handler.refOfPath(path.slice(0,-1))
-      if (parent_ref && Array.isArray(_jb.val(parent_ref))) {
-        const clone = st.previewWindow.JSON.parse(JSON.stringify(item));
-        const index = Number(path.slice(-1));
-        _jb.splice(parent_ref,[[index, 0,clone]],ctx);
-        ctx.run(runActions(dialog.closeAll(), studio.refreshPreview()))
-      }
-    },
+  },
+  refOfProp(cmp,prop) {
+      return cmp.toObserve.filter(e=>e.id == prop).map(e=>e.ref)[0] || this.scriptRef(cmp,prop)
+  },
+  duplicateDataItem(ctx) {
+    const st = jb.studio
+    const item = ctx.vars.sourceItem
+    const _jb = st.previewjb
+    const ref = _jb.asRef(item)
+    const handler = _jb.refHandler(ref)
+    const path = handler.pathOfRef(ref)
+    const parent_ref = handler.refOfPath(path.slice(0,-1))
+    if (parent_ref && Array.isArray(_jb.val(parent_ref))) {
+      const clone = st.previewWindow.JSON.parse(JSON.stringify(item));
+      const index = Number(path.slice(-1));
+      _jb.splice(parent_ref,[[index, 0,clone]],ctx);
+      ctx.run(runActions(dialog.closeAll(), studio.refreshPreview()))
+    }
+  },
 }
 
 jb.component('feature.content-editable', {
@@ -36086,14 +36112,14 @@ jb.component('feature.content-editable', {
     {id: 'param', as: 'string', description: 'name of param mapped to the content editable element' },
   ],
   impl: (ctx,param) => ({
-    afterViewInit1: cmp => {
+    afterViewInit: cmp => {
       const isHtml = param == 'html'
       const contentEditable = jb.ui.contentEditable
       if (contentEditable) {
         cmp.onblurHandler = ev => contentEditable.setScriptData(ev,cmp,param,isHtml)
         if (!isHtml)
           cmp.onkeydownHandler = cmp.onkeypressHandler = ev => contentEditable.handleKeyEvent(ev,cmp,param)
-        cmp.onmousedownHandler = ev => contentEditable.showActivationIcon(ev,cmp)
+        cmp.onmousedownHandler = ev => jb.ui.contentEditable.activate(cmp,ev)
       }
     },
     templateModifier: (vdom,cmp) => {
@@ -36114,198 +36140,243 @@ jb.component('feature.content-editable', {
       return vdom;
     },
     dynamicCss: ctx => ctx.vars.cmp.state.contentEditableActive &&
-      `{background-image: linear-gradient(17deg,rgba(243,248,255,.03) 63.45%,rgba(207,214,229,.27) 98%); border-radius: 3px;}`
+      `{ border: 1px dashed grey; background-image: linear-gradient(90deg,rgba(243,248,255,.03) 63.45%,rgba(207,214,229,.27) 98%); border-radius: 3px;}`
   })
 })
 ;
 
-jb.ui.computeStyle = (el,prop) => +(getComputedStyle(el)[prop].split('px')[0] || 0)
-jb.ui.computePos = (el,prop,side) => {
-  const sideUpper = side.charAt(0).toUpperCase() + side.slice(1)
-  if (side == 'bottom') {
-    return prop == el.getBoundingClientRect().bottom + 'margin' ? jb.ui.computeStyle(el,'margin'+sideUpper)
-      : prop == 'padding' ? 0 : 0-jb.ui.computeStyle(el,'padding'+sideUpper)
+Object.assign(jb.ui,{
+  computeStyle(el,prop) { return +(getComputedStyle(el)[prop].split('px')[0] || 0)},
+  splitCssProp(cssProp) {
+    const sideIndex = Array.from(cssProp).findIndex(x=>x.toUpperCase() == x)
+    return { prop: cssProp.slice(0,sideIndex), sideUpper: cssProp.slice(sideIndex), 
+      side: cssProp.slice(sideIndex)[0].toLowerCase() + cssProp.slice(sideIndex+1) }
+  },
+  computeBasePos(el, cssProp, axis) {
+    const elemRect = el.getBoundingClientRect()
+    const endPos = elemRect[axis == 'x' ? 'right' : 'bottom']
+    const otherSidePos = elemRect[axis == 'x' ? 'left' : 'top']
+    if (cssProp == 'height' || cssProp == 'width') 
+      return otherSidePos
+    const {prop,sideUpper,side} = jb.ui.splitCssProp(cssProp)
+    const otherSideUpper = side == 'bottom' ? 'Top': 'Bottom'
+    const basePos = prop == 'margin' ? endPos
+        : prop == 'padding' ?  endPos - jb.ui.computeStyle(el,'padding'+sideUpper)
+        : otherSidePos + jb.ui.computeStyle(el,'padding'+otherSideUpper)
+    return basePos
+  },
+  studioFixYPos() { 
+    return (document.querySelector('#jb-preview') && document.querySelector('#jb-preview').getBoundingClientRect().top) || 0
   }
-}
+})
 
-jb.ui.computeBasePos = (el,prop,side) => {
-  const sideUpper = side.charAt(0).toUpperCase() + side.slice(1)
-  const otherSide = side == 'bottom' ? 'Top': 'Bottom'
-  if (side == 'bottom') {
-    return prop == 'margin' ? el.getBoundingClientRect().bottom
-      : prop == 'padding' ?  el.getBoundingClientRect().bottom - jb.ui.computeStyle(el,'padding'+sideUpper)
-      : el.getBoundingClientRect().top + jb.ui.computeStyle(el,'padding'+otherSide)
-  }
-} 
+jb.component('content-editable.effective-prop', { /* contentEditable.effectiveProp */
+  type: 'control',
+  params: [
+    { id: 'axis', as: 'string', options: 'x,y'},
+  ],
+  impl: firstSucceeding('%$studio/dragPos/prop%', If('axis=="x"','paddingRight','paddingBottom'))
+})
 
+jb.component('content-editable.action-icon', {
+  type: 'control',
+  params: [
+    { id: 'cssProp', as: 'string'},
+  ],
+  impl: (ctx,cssProp) => cssProp == 'marginBottom' ? 'border_bottom' 
+    : cssProp == 'paddingBottom' || cssProp == 'paddingTop' ? 'border_horizontal'
+    : cssProp == 'marginTop' ? 'border_top' 
+    : cssProp == 'marginRight' ? 'border_right' 
+    : cssProp == 'paddingRight' || cssProp == 'paddingLeft' ? 'border_vertical'
+    : cssProp == 'marginLeft' ? 'border_left'
+    : cssProp == 'width' || cssProp == 'height' ? 'border_clear'
+    : ''
+})
+
+jb.component('content-editable.position-button', { /* contentEditable.positionButton */
+  type: 'control',
+  params: [
+    { id: 'cssProp', as: 'string' },
+    { id: 'axis', as: 'string', options: 'x,y'},
+  ],
+  impl: group({
+    controls: [ 
+      button({title: '', //'%$prop% %$side%', 
+       raised: equals(contentEditable.effectiveProp(),'%$cssProp%'),
+       style: button.mdcIcon(contentEditable.actionIcon('%$cssProp%')),
+       features: css(If('%$axis%==y','padding-top: 20px; padding-bottom: 20px; margin-top: -20px'
+       ,'padding-left: 20px; padding-right: 20px; margin-left: -20px'))
+      }),
+    ],
+    features: feature.onHover(runActions(contentEditable.writePosToScript(), writeValue('%$studio/dragPos/prop%', '%$cssProp%') )),
+  }),
+})
 
 jb.component('content-editable.position-thumbs', { /* contentEditable.positionThumbs */
   type: 'control',
   params: [
-    { id: 'side', as: 'string', options: 'top,left,right,bottom'},
+    { id: 'axis', as: 'string', options: 'x,y'},
   ],
   impl: group({
-    layout: layout.horizontal(),
-    controls: [
-      group({
-        layout: layout.vertical(0),
-        controls: [
-          materialIcon({ 
-            icon: 'drag_handle',
-            features: contentEditable.dragableThumb('margin','bottom')
-          }),
-          text({text: 'Mrgn', features: css.margin({left: '5'})})
-        ],
-        features: [
-          feature.hoverTitle(
-            ctx => `margin bottom (${getComputedStyle(ctx.vars.inspectedElem).marginBottom})`
-          )
-        ]
-      }),
-      group({
-        layout: layout.vertical(0),
-        controls: [
-          materialIcon({ 
-            icon: 'drag_handle',
-            features: contentEditable.dragableThumb('padding','bottom')
-          }),
-          text({text: 'Pad', features: css.margin({left: '5'})})
-        ],
-        features: [
-          css.margin(
-            ctx=> -1 * (jb.ui.computeStyle(ctx.vars.inspectedElem,'marginBottom') || 0)
-          ),
-          feature.hoverTitle(
-            ctx => `padding bottom (${getComputedStyle(ctx.vars.inspectedElem).paddingBottom})`
-          )
-        ]
-      }),      
-      group({
-        layout: layout.vertical(0),
-        controls: [
-          materialIcon({ 
-            icon: 'drag_handle',
-            features: contentEditable.dragableThumb('height','bottom')
-          }),
-          text({text: 'Hght', features: css.margin({left: '5'})})
-        ],
-        features: [
-          css.margin(
-            ctx => -1 * ((jb.ui.computeStyle(ctx.vars.inspectedElem,'marginBottom') || 0) 
-            + (jb.ui.computeStyle(ctx.vars.inspectedElem,'paddingBottom') || 0))
-          ),
-          feature.hoverTitle('height (%$inspectedElem/offsetHeight%)')
-        ]
-      }),
-    ]
-  })
+      layout: layout.flex({ direction: If('%$axis%==y','column','row'), alignItems: 'center' }),
+      controls: [
+          group({
+            layout: layout.flex({ direction: If('%$axis%==y','column','row'), alignItems: 'center' }),
+            controls: materialIcon({ 
+            icon: 'radio_button_unchecked',
+            features: [
+              contentEditable.dragableThumb('%$axis%'),
+              css('font-size: 14px')
+            ]
+          })
+        }),
+        group({
+          layout: layout.grid({columnSizes: If('%$axis%==x',list('30', '40','100'),list('168'))}),
+          controls: [
+            group({
+              layout: layout.grid({rowGap: '10px', columnSizes: If('%$axis%==y',list('24', '24','24', '24','24', '24','24'),list('24'))}),
+              controls: [
+              contentEditable.positionButton('margin%$sideEnd%','%$axis%'),
+              contentEditable.positionButton('padding%$sideEnd%','%$axis%'),
+              text(''),
+              contentEditable.positionButton('%$sizer%','%$axis%'),
+              text(''),
+              contentEditable.positionButton('padding%$sideStart%','%$axis%'),
+              contentEditable.positionButton('margin%$sideStart%','%$axis%'),
+            ]}),
+            text({ 
+              text: pipeline(
+                Var('inspectElemStyle', ctx => getComputedStyle(jb.ui.contentEditable.current.base)),
+                Var('prop', contentEditable.effectiveProp('%$axis%')),
+                  '%$inspectElemStyle/{%$prop%}%',
+                  removeSuffix('px')
+              ),
+              features: css(If('%$axis%==x','align-self: center','padding-top: 5px'))
+            }),
+            text({ text: contentEditable.effectiveProp('%$axis%'), features: css(If('%$axis%==x','align-self: center;','')) } ),
+          ],
+          features: [
+            css(If('%$axis%==y','margin-top: -10px; width: 168px;text-align: center', 'height: 182px' )), 
+            feature.if('%$studio/dragPos/{%$axis%}-active%'),
+            watchRef({ ref: '%$studio/dragPos%', includeChildren: 'yes' }),
+            variable('sizer',If('%$axis%==x','width','height')),
+            variable('sideStart',If('%$axis%==x','Left','Top')),
+            variable('sideEnd',If('%$axis%==x','Right','Bottom'))
+          ]
+        })
+      ]  
+    }),
 })
 
 jb.component('content-editable.open-position-thumbs', { /* contentEditable.openPositionThumbs */
   type: 'action',
+  params: [
+    { id: 'axis', as: 'string', options: 'x,y'},
+  ],
   impl: runActions(
-    ctx => ctx.vars.inspectedElem.style.border = '1px dashed grey',
-    ctx => jb.ui.dialogs.closePopups(),
+    //ctx => jb.ui.dialogs.closePopups(),
     delay(100),
     openDialog({
         style: contentEditable.positionThumbsStyle(),
-        content: contentEditable.positionThumbs('bottom')
+        content: contentEditable.positionThumbs('%$axis%'),
+        features: [ 
+          watchRef('%$studio/dragPos/prop%'),
+//          dialogFeature.onClose(contentEditable.deactivate()),
+          css(`~ button>i {font-size: 24px }
+            ~ button.raised>i { border-bottom: 2px solid #6200ee; }
+            {display: flex; align-items: center;}
+          `),
+          css.dynamic(If('%$axis%==y','{flex-direction: column}')),
+          css.dynamic(If('%$axis%==y',`~ i {cursor: row-resize}`,'~ i {cursor: col-resize}')),
+          css((ctx,{},{axis}) => {
+            const el = jb.ui.contentEditable.current.base
+            const elemRect = el.getBoundingClientRect()
+            const iconOffset = [-3, -8]
+            const left = (axis == 'x' ? elemRect.right + iconOffset[0] : elemRect.left) + 'px'
+            const top = jb.ui.studioFixYPos() + (axis == 'y' ? elemRect.bottom + iconOffset[1] : elemRect.top) + 'px'
+            const width = axis == 'y' ? `width: ${elemRect.width}px;` : ''
+            const height = axis == 'x' ? `height: ${elemRect.height}px;` : ''
+            return `left: ${left}; top: ${top}; ${width}${height}`
+          })
+        ]
     })
   )
 })
 
-jb.component('content-editable.dragable-thumb', {
+jb.component('content-editable.write-pos-to-script', { 
+  type: 'action',
+  impl: ctx => {
+    const el = jb.ui.contentEditable.current.base
+    const prop = ctx.exp('%$studio/dragPos/prop%')
+    if (!prop) return
+    const val = jb.ui.computeStyle(el,prop)
+    jb.ui.contentEditable.setPositionScript(el, prop , val, ctx)
+  }
+})
+
+jb.component('content-editable.dragable-thumb', { // dragableThumb
   type: 'feature',
   params: [
-    { id: 'prop', as: 'string', options: 'height,margin,padding'},
-    { id: 'side', as: 'string', options: 'top,left,right,bottom'},
+    { id: 'axis', as: 'string', options: 'x,y'},
   ],
-  impl: interactive((ctx,{cmp},{prop,side})=> {
-    const el = ctx.vars.inspectedElem
-    const cssProp  = prop == 'height' ? prop : prop + side.charAt(0).toUpperCase() + side.slice(1)
+  impl: interactive((ctx,{cmp},{axis})=> {
+    const el = jb.ui.contentEditable.current.base
+    const prop = () => ctx.run(contentEditable.effectiveProp(axis))
     cmp.mousedownEm = jb.rx.Observable.fromEvent(cmp.base, 'mousedown').takeUntil( cmp.destroyed );
     let mouseUpEm = jb.rx.Observable.fromEvent(document, 'mouseup').takeUntil( cmp.destroyed );
     let mouseMoveEm = jb.rx.Observable.fromEvent(document, 'mousemove').takeUntil( cmp.destroyed );
     if (jb.studio.previewWindow) {
-      mouseUpEm = mouseUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mouseup'))
-        .takeUntil( cmp.destroyed );
-      mouseMoveEm = mouseMoveEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mousemove'))
-        .takeUntil( cmp.destroyed );
+      mouseUpEm = mouseUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mouseup')).takeUntil( cmp.destroyed )
+      mouseMoveEm = mouseMoveEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mousemove')).takeUntil( cmp.destroyed )
     }
-    const dialogEm = jb.ui.parentCmps(cmp.base)[0].base
-    cmp.mousedownEm.do(e => e.preventDefault()).flatMap(() => mouseMoveEm.takeUntil(mouseUpEm)
-        .do(e => dialogEm.style.top = e.clientY + 'px')
-        .do(e => console.log(e.clientY, jb.ui.computeBasePos(el,prop,side)))
-        .map(e => Math.max(0,e.clientY - jb.ui.computeBasePos(el,prop,side)))
-        .do(v => console.log(v, dialogEm.style.top))
-//        .debounceTime(100)  
-//        .map(desired => requestedVal(desired) )
-        .map(requested => moveTo(requested))
-        .filter(wasEffective => wasEffective )
-    ).subscribe(val => {
-      jb.ui.parentCmps(cmp.base).forEach(cmp=>cmp.doRefresh && cmp.doRefresh()) // refresh also the parent with all other thumbs
-//      setScriptVal(val)
-    })
+    const dialog = ctx.vars.$dialog;
+    const dialogStyle = dialog.cmp.base.style
+    cmp.mousedownEm.do(e => e.preventDefault())
+      .do(() => ctx.run(writeValue('%$studio/dragPos/{%$axis%}-active%', true)))
+      .flatMap(() => mouseMoveEm.takeUntil(mouseUpEm)
+        .map(e => moveHandlerAndCalcNewPos(e))
+        .do(requested => moveElem(requested))
+     .finally(() => { 
+       ctx.run(runActions(
+          writeValue('%$studio/dragPos/{%$axis%}-active%', false),
+          contentEditable.writePosToScript(),
+          jb.ui.dialogs.closePopups())
+        )
+     }))
+     .subscribe(val => ctx.run(writeValue('%$studio/dragPos/pos%', val))
+    )
 
-    function getVal() { return jb.ui.computeStyle(el,cssProp) }
-    function setVal(val) { el.style[cssProp] = val + 'px' }
-    function setScriptVal(value) { jb.ui.contentEditable.setPositionScript(el, prop, side, value, ctx) }
+    function getVal() { return jb.ui.computeStyle(el,prop()) }
+    function setVal(val) { el.style[prop()] = val + 'px'; }
+    function moveHandlerAndCalcNewPos(e) { 
+      if (axis == 'y') {
+        dialogStyle.top = (e.clientY - 12) + 'px'
+        return Math.max(0,e.clientY - jb.ui.studioFixYPos() - jb.ui.computeBasePos(el,prop(),axis) )
+      } else {
+        dialogStyle.left = (e.clientX - 12) + 'px'
+        return Math.max(0,e.clientX - jb.ui.computeBasePos(el,prop(),axis) )
+      }
+    }
 
-    function moveTo(requested) { // returns it is was effective
+    function moveElem(requested) {
       const current = getVal()
       setVal(requested)
-      if (getVal() == requested) {
-        cmp.base.title = `${prop} ${side}: ${getComputedStyle(el)[cssProp]}`
-        console.log('change',current,requested,el, el.style[cssProp], cmp.base.title)
-        return true
-      }
-      console.log('rollback',current,requested)
-      setVal(current) // was not effective roll back
+      if (getVal() != requested)
+        setVal(current) // was not effective, so rollback
     }
-
-    function requestedVal(desired) { return getVal() + (Math.floor(Math.log((desired - getVal() ))) || 0) }
   })
-})
-
-jb.component('content-editable.thumbs-offset', {
-  type: 'feature',
-  params: [
-    {id: 'offsetLeft', as: 'number', dynamic: true, defaultValue: 0},
-    {id: 'offsetTop', as: 'number', dynamic: true, defaultValue: 0},
-    {id: 'rightSide', as: 'boolean', type: 'boolean'}
-  ],
-  impl: interactive((ctx,{cmp},{offsetLeft,offsetTop,rightSide}) => {
-    cmp.doRefresh = () => {
-      const el = ctx.vars.inspectedElem
-      const pos = el.getBoundingClientRect()
-      const marginBottom = +(getComputedStyle(el).marginBottom.split('px')[0]||0)
-      const jbDialog = jb.ui.findIncludeSelf(cmp.base,'.jb-dialog')[0]
-      const left = rightSide ? jb.ui.outerWidth(el) : 0
-      const top = document.querySelector('#jb-preview') ? document.querySelector('#jb-preview').getBoundingClientRect().top : 0
-      const iconOffset = [8, 8]
-      jbDialog.style.display = 'block'
-      jbDialog.style.left = pos.left + left - iconOffset[0] + offsetLeft() + 'px'
-      jbDialog.style.top = pos.bottom + marginBottom -iconOffset[1] + top + offsetTop() + 'px'
-    }
-    cmp.doRefresh()
-  })
-
 })
 
 jb.component('content-editable.position-thumbs-style', {
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
-    css: `{ position: absolute; background: white; mix-blend-mode: multiply;  }
-    ~ i {cursor: ns-resize}
-    ~ span { font-size: 8px}`,
+    css: `{ display: block; position: absolute; background: white; mix-blend-mode: multiply;  }`,
     features: [
       dialogFeature.maxZIndexOnClick(),
       dialogFeature.closeWhenClickingOutside(),
-      contentEditable.thumbsOffset()
     ]
  })
 })
-
 ;
 

@@ -2,8 +2,14 @@ jb.ns('helloWorld')
 jb.component('hello-world.main', { /* helloWorld.main */
   type: 'control',
   impl: group({
-    layout: layout.grid({columnSizes: list('200', '100', 'auto')}),
-    controls: text('hello world')
+    layout: layout.vertical(),
+    controls: [
+      text({
+        text: '%$people/name%',
+        features: [css.height(309), css.padding({top: 0, left: 25}), css.width(663)]
+      }),
+      text({text: 'my text', title: 'my title'})
+    ]
   })
 })
 

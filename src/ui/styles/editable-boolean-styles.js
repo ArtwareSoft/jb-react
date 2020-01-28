@@ -25,6 +25,24 @@ jb.component('editable-boolean.expand-collapse', { /* editableBoolean.expandColl
   })
 })
 
+jb.component('editable-boolean.mdc-x-v', {
+  type: 'editable-boolean.style',
+  params: [
+    {id: 'yesIcon', as: 'string', defaultValue: 'check'},
+    {id: 'noIcon', as: 'string', defaultValue: 'close'}
+  ],
+  impl: customStyle({
+    template: (cmp,{title,model,yesIcon,noIcon},h) => h('button',{
+          class: ['mdc-icon-button material-icons',model && 'raised mdc-icon-button--on'].filter(x=>x).join(' '),
+          title, tabIndex: -1, onclick: 'toggle'},[
+            h('i',{class:'material-icons mdc-icon-button__icon mdc-icon-button__icon--on'}, yesIcon),
+            h('i',{class:'material-icons mdc-icon-button__icon '}, noIcon),
+        ]),
+    features: [field.databind(), mdcStyle.initDynamic()]
+  })
+})
+
+
 jb.component('editable-boolean.mdc-slide-toggle', { /* editableBoolean.mdcSlideToggle */
   type: 'editable-boolean.style',
   params: [

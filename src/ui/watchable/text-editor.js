@@ -38,10 +38,11 @@ function setStrValue(value, ref, ctx) {
 jb.component('watchable-as-text', { /* watchableAsText */
   type: 'data',
   params: [
-    {id: 'ref', as: 'ref', dynamic: true}
+    {id: 'ref', as: 'ref', dynamic: true},
+    {id: 'oneWay', as: 'boolean', defaultValue: true}
   ],
-  impl: (ctx,refF) => ({
-        oneWay: true,
+  impl: (ctx,refF,oneWay) => ({
+        oneWay,
         getRef() {
             return this.ref || (this.ref = refF())
         },

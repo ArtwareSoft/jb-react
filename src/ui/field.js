@@ -66,7 +66,6 @@ jb.component('field.databind', { /* field.databind */
     ))
 })
 
-
 jb.ui.checkValidationError = (cmp,val) => {
   const err = validationError();
   if (cmp.state.error != err) {

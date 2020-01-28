@@ -1,6 +1,6 @@
 jb.ns('content-editable')
 
-jb.component('content-editable.open-toolbar', {
+jb.component('content-editable.open-toolbar', { // openToolbar
     type: 'action',
     params: [
         {id: 'path', as: 'string'},
@@ -10,7 +10,7 @@ jb.component('content-editable.open-toolbar', {
         openDialog({
             style: contentEditable.popupStyle(),
             content: contentEditable.toolbar(),
-            features: dialogFeature.onClose(ctx=>ctx.vars.deactivateContentEditable(ctx))
+            //features: dialogFeature.onClose(contentEditable.deactivate())
     }))
 })
 
@@ -22,7 +22,7 @@ jb.component('content-editable.activation-icon', {
             title: 'Edit',
             action: ctx => ctx.vars.activateContentEditable(ctx),
             style: button.mdcIcon('edit'),
-            features: dialogFeature.onClose(ctx=>ctx.vars.cleanActivationIcon(ctx))
+//            features: dialogFeature.onClose(contentEditable.deactivate())
           })
   })
 })
@@ -39,8 +39,7 @@ jb.component('content-editable.popup-style', {
         dialogFeature.maxZIndexOnClick(),
         dialogFeature.closeWhenClickingOutside(),
         dialogFeature.nearLauncherPosition({offsetLeft: 100, offsetTop: ctx => 
-          document.querySelector('#jb-preview').getBoundingClientRect().top
-          - jb.ui.computeStyle(ctx.vars.inspectedElem,'marginBottom')
+          jb.ui.studioFixYPos - jb.ui.computeStyle(jb.ui.contentEditable.current.base,'marginBottom')
         })
       ]
    })
@@ -58,6 +57,15 @@ jb.component('studio.open-toolbar-of-last-edit', { /* studio.openToolbarOfLastEd
           new jb.jbCtx().setVar('$launchingElement',{ el }).run({$: 'content-editable.open-toolbar', path })
       })
     }
+})
+
+jb.component('content-editable.deactivate', { /* contentEditable.deactivate */
+  type: 'action',
+  impl: ctx => {
+    jb.ui.contentEditable.current && jb.ui.contentEditable.current.refresh({contentEditableActive: false})
+    jb.ui.dialogs.closePopups()
+    jb.ui.contentEditable.current = null
+  }
 })
 
 jb.component('content-editable.toolbar', { /* contentEditable.toolbar */
@@ -78,7 +86,8 @@ jb.component('content-editable.toolbar', { /* contentEditable.toolbar */
       button({
         title: 'positions',
         action: [
-          contentEditable.openPositionThumbs(),
+          contentEditable.openPositionThumbs('y'),
+          contentEditable.openPositionThumbs('x'),
         ],
         style: button.mdcIcon('vertical_align_center')
       }),
@@ -120,26 +129,29 @@ jb.component('content-editable.toolbar', { /* contentEditable.toolbar */
 })
 
 jb.ui.contentEditable = {
-  setPositionScript(el,cssProp,side,value,ctx) {
-      const prop = cssProp == 'height' ? cssProp : side 
-      const featureComp = {$: `css.${cssProp}`, [prop] : value }
+  setPositionScript(el,fullProp,value,ctx) {
+      let {side,prop} = jb.ui.splitCssProp(fullProp)
+      if (fullProp == 'height' || fullProp == 'width')
+        side = prop = fullProp
+      const featureComp = {$: `css.${prop}`, [side] : value }
       const originatingCtx = jb.studio.previewjb.ctxDictionary[el.getAttribute('jb-ctx')]
       let featuresRef = jb.studio.refOfPath(originatingCtx.path + '~features')
       let featuresVal = jb.val(featuresRef)
       if (!featuresVal) {
-        jb.writeValue(scriptRef,featureComp,ctx)
-      } else if (!Array.isArray(featuresVal) && featuresVal[0].$ == featureComp.$) {
-        jb.writeValue(jb.studio.refOfPath(originatingCtx.path + `~features~${prop}`),value,ctx)
+        jb.writeValue(featuresRef,featureComp,ctx)
+      } else if (!Array.isArray(featuresVal) && featuresVal.$ == featureComp.$) {
+        jb.writeValue(jb.studio.refOfPath(originatingCtx.path + `~features~${side}`),value,ctx)
       } else {
         if (!Array.isArray(featuresVal)) { // wrap with array
-          jb.writeValue(featuresVal,[featuresVal],ctx)
+          jb.writeValue(featuresRef,[featuresVal],ctx)
+          featuresRef = jb.studio.refOfPath(originatingCtx.path + '~features')
           featuresVal = jb.val(featuresRef)
         }
         const existingFeature = featuresVal.findIndex(f=>f.$ == featureComp.$)
         if (existingFeature != -1)
-          jb.writeValue(jb.studio.refOfPath(originatingCtx.path + `~features~${existingFeature}~${prop}`),value,ctx)
+          jb.writeValue(jb.studio.refOfPath(originatingCtx.path + `~features~${existingFeature}~${side}`),value,ctx)
         else
-          jb.push(featuresVal,featureComp)
+          jb.push(featuresRef,featureComp,ctx)
       }
   },
   setScriptData(ev,cmp,prop,isHtml) {
@@ -152,59 +164,51 @@ jb.ui.contentEditable = {
           jb.studio.previewjb.writeValue(resourceRef,val,vdomCmp.ctx)
       else if (scriptRef)
           jb.writeValue(scriptRef,val,vdomCmp.ctx)
-    },
-  showActivationIcon(ev,cmp) {
-      cmp.base.style.background = 'linear-gradient(90deg, rgba(2,0,36,0.4598214285714286) 0%, rgba(255,255,255,1) 100%)'
-      cmp.base.style.borderRadius = '3px'
-      const ctx = new jb.jbCtx()
-        .setVar('inspectedElem', cmp.base)
-        .setVar('activateContentEditable', () => {
-            cmp.refresh({contentEditableActive: true})
-            jb.delay(100).then(() => { // wait for new position because of zoom
-              ctx.setVar('sourceItem',cmp.ctx.vars.item)
-                .setVar('$launchingElement',{ el : cmp.base})
-                .run({$: 'content-editable.open-toolbar', path: cmp.ctx.path})
-              cmp.base.focus()
-            })
-          }).setVar('deactivateContentEditable', () => {
-            cmp.refresh({contentEditableActive: false})
-          })
-          .setVar('cleanActivationIcon', () => {
-            cmp.base.style = ''
-          })
-      ctx.setVar('$launchingElement',{ el : ev.target}).run({$: 'content-editable.activation-icon'})
-    },
-    handleKeyEvent(ev,cmp,prop) {
-        if (ev.keyCode == 13) {
-            this.setScriptData(ev,cmp,prop)
-            jb.delay(1).then(() => cmp.refresh({contentEditableActive: false})) // can not wait for script change delay
-            jb.ui.dialogs.closePopups()
-            return false // does not work..
-        }
-    },
-    scriptRef(cmp,prop) {
+  },
+  activate(cmp) {
+    this.current && this.current.refresh({contentEditableActive: false})
+    this.current = cmp
+    new jb.jbCtx().setVar('$launchingElement',{ el : cmp.base}).run(runActions(
+      delay(10),
+      () => cmp.refresh({contentEditableActive: true}),
+      contentEditable.openToolbar(cmp.ctx.path),
+      contentEditable.openPositionThumbs('x'),
+      contentEditable.openPositionThumbs('y')
+    ))
+  },
+  handleKeyEvent(ev,cmp,prop) {
+      if (ev.keyCode == 13) {
+          this.setScriptData(ev,cmp,prop)
+          new jb.jbCtx().run(runActions(
+            delay(1), // can not wait for script change delay
+            contentEditable.deactivate()
+          ))
+          return false // does not work..
+      }
+  },
+  scriptRef(cmp,prop) {
         const ref = jb.studio.refOfPath(cmp.originatingCtx().path + '~' + prop)
         const val = jb.val(ref)
         return typeof val === 'string' && cmp.ctx.exp(val) === val && ref
-    },
-    refOfProp(cmp,prop) {
-        return cmp.toObserve.filter(e=>e.id == prop).map(e=>e.ref)[0] || this.scriptRef(cmp,prop)
-    },
-    duplicateDataItem(ctx) {
-      const st = jb.studio
-      const item = ctx.vars.sourceItem
-      const _jb = st.previewjb
-      const ref = _jb.asRef(item)
-      const handler = _jb.refHandler(ref)
-      const path = handler.pathOfRef(ref)
-      const parent_ref = handler.refOfPath(path.slice(0,-1))
-      if (parent_ref && Array.isArray(_jb.val(parent_ref))) {
-        const clone = st.previewWindow.JSON.parse(JSON.stringify(item));
-        const index = Number(path.slice(-1));
-        _jb.splice(parent_ref,[[index, 0,clone]],ctx);
-        ctx.run(runActions(dialog.closeAll(), studio.refreshPreview()))
-      }
-    },
+  },
+  refOfProp(cmp,prop) {
+      return cmp.toObserve.filter(e=>e.id == prop).map(e=>e.ref)[0] || this.scriptRef(cmp,prop)
+  },
+  duplicateDataItem(ctx) {
+    const st = jb.studio
+    const item = ctx.vars.sourceItem
+    const _jb = st.previewjb
+    const ref = _jb.asRef(item)
+    const handler = _jb.refHandler(ref)
+    const path = handler.pathOfRef(ref)
+    const parent_ref = handler.refOfPath(path.slice(0,-1))
+    if (parent_ref && Array.isArray(_jb.val(parent_ref))) {
+      const clone = st.previewWindow.JSON.parse(JSON.stringify(item));
+      const index = Number(path.slice(-1));
+      _jb.splice(parent_ref,[[index, 0,clone]],ctx);
+      ctx.run(runActions(dialog.closeAll(), studio.refreshPreview()))
+    }
+  },
 }
 
 jb.component('feature.content-editable', {
@@ -214,14 +218,14 @@ jb.component('feature.content-editable', {
     {id: 'param', as: 'string', description: 'name of param mapped to the content editable element' },
   ],
   impl: (ctx,param) => ({
-    afterViewInit1: cmp => {
+    afterViewInit: cmp => {
       const isHtml = param == 'html'
       const contentEditable = jb.ui.contentEditable
       if (contentEditable) {
         cmp.onblurHandler = ev => contentEditable.setScriptData(ev,cmp,param,isHtml)
         if (!isHtml)
           cmp.onkeydownHandler = cmp.onkeypressHandler = ev => contentEditable.handleKeyEvent(ev,cmp,param)
-        cmp.onmousedownHandler = ev => contentEditable.showActivationIcon(ev,cmp)
+        cmp.onmousedownHandler = ev => jb.ui.contentEditable.activate(cmp,ev)
       }
     },
     templateModifier: (vdom,cmp) => {
@@ -242,6 +246,6 @@ jb.component('feature.content-editable', {
       return vdom;
     },
     dynamicCss: ctx => ctx.vars.cmp.state.contentEditableActive &&
-      `{background-image: linear-gradient(17deg,rgba(243,248,255,.03) 63.45%,rgba(207,214,229,.27) 98%); border-radius: 3px;}`
+      `{ border: 1px dashed grey; background-image: linear-gradient(90deg,rgba(243,248,255,.03) 63.45%,rgba(207,214,229,.27) 98%); border-radius: 3px;}`
   })
 })

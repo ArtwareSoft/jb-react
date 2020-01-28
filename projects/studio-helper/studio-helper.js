@@ -114,7 +114,7 @@ jb.component('studio-helper.content-editable-position', { /* studioHelper.conten
     style: header.mdcHeadline2(),
     features: [
       interactive(
-        (ctx,{cmp}) => ctx.setVar('inspectedElem', cmp.base).run(contentEditable.openPositionThumbs())
+        (ctx,{cmp}) => jb.ui.contentEditable.activate(cmp)
       ),
       css.height('100'),
       css.padding({top: '', bottom: '40'}),

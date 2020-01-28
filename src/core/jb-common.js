@@ -81,11 +81,11 @@ jb.component('data.if', { /* data.if */
   type: 'data',
   macroByValue: true,
   params: [
-    {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
+    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true},
     {id: 'then', mandatory: true, dynamic: true},
     {id: 'else', dynamic: true, defaultValue: '%%'}
   ],
-  impl: (ctx,cond,_then,_else) =>	cond ? _then() : _else()
+  impl: (ctx,cond,_then,_else) =>	cond() ? _then() : _else()
 })
 
 jb.component('action.if', { /* action.if */
@@ -517,11 +517,11 @@ jb.component('remark', { /* remark */
 jb.component('If', { /* If */
   macroByValue: true,
   params: [
-    {id: 'condition', as: 'boolean', type: 'boolean', mandatory: true},
-    {id: 'then'},
-    {id: 'Else'}
+    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true},
+    {id: 'then', dynamic: true},
+    {id: 'Else', dynamic: true}
   ],
-  impl: (ctx,cond,_then,_else) =>	cond ? _then : _else
+  impl: (ctx,cond,_then,_else) =>	cond() ? _then() : _else()
 })
 
 jb.component('not', { /* not */

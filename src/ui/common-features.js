@@ -377,15 +377,16 @@ jb.component('feature.onHover', { /* feature.onHover */
   category: 'events',
   params: [
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true, mandatory: true},
-    {id: 'onLeave', type: 'action[]', mandatory: true, dynamic: true}
+    {id: 'onLeave', type: 'action[]', mandatory: true, dynamic: true},
+    {id: 'debounceTime', as: 'number', defaultValue: 0 }
   ],
-  impl: (ctx,action) => ({
+  impl: (ctx,action,onLeave,debounceTime) => ({
       onmouseenter: true, onmouseleave: true,
       afterViewInit: cmp => {
-        cmp.onmouseenter.debounceTime(500).subscribe(()=>
+        cmp.onmouseenter.debounceTime(debounceTime).subscribe(()=>
               jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)())
-        cmp.onmouseleave.debounceTime(500).subscribe(()=>
-              jb.ui.wrapWithLauchingElement(ctx.params.onLeave, cmp.ctx, cmp.base)())
+        cmp.onmouseleave.debounceTime(debounceTime).subscribe(()=>
+              jb.ui.wrapWithLauchingElement(onLeave, cmp.ctx, cmp.base)())
       }
   })
 })
