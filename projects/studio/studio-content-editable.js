@@ -83,14 +83,11 @@ jb.component('content-editable.toolbar', { /* contentEditable.toolbar */
         ),
         style: button.mdcIcon('style')
       }),
-      button({
-        title: 'positions',
-        action: [
-          contentEditable.openPositionThumbs('y'),
-          contentEditable.openPositionThumbs('x'),
-        ],
-        style: button.mdcIcon('vertical_align_center')
-      }),
+      // button({
+      //   title: 'Edit Text',
+      //   action: () => jb.ui.contentEditable.current && jb.ui.contentEditable.current.refresh({contentEditableActive: true}),
+      //   style: button.mdcIcon('title')
+      // }),
       button({
         title: 'Insert Control',
         action: studio.openNewProfileDialog({
@@ -166,15 +163,18 @@ jb.ui.contentEditable = {
           jb.writeValue(scriptRef,val,vdomCmp.ctx)
   },
   activate(cmp) {
+    if (!new jb.jbCtx().exp('%$studio/settings/contentEditable%')) return
     this.current && this.current.refresh({contentEditableActive: false})
     this.current = cmp
     new jb.jbCtx().setVar('$launchingElement',{ el : cmp.base}).run(runActions(
-      delay(10),
+//      delay(10),
       () => cmp.refresh({contentEditableActive: true}),
+//      delay(10),
       contentEditable.openToolbar(cmp.ctx.path),
       contentEditable.openPositionThumbs('x'),
-      contentEditable.openPositionThumbs('y')
+      contentEditable.openPositionThumbs('y'),
     ))
+    cmp.base.focus()
   },
   handleKeyEvent(ev,cmp,prop) {
       if (ev.keyCode == 13) {
@@ -183,7 +183,7 @@ jb.ui.contentEditable = {
             delay(1), // can not wait for script change delay
             contentEditable.deactivate()
           ))
-          return false // does not work..
+          return false // stop propagation. sometimes does not work..
       }
   },
   scriptRef(cmp,prop) {

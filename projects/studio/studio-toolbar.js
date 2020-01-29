@@ -1,3 +1,5 @@
+jb.ns('contentEditable')
+
 jb.component('studio.pickAndOpen', { /* studio.pickAndOpen */
   type: 'action',
   params: [
@@ -19,6 +21,24 @@ jb.component('studio.toolbar', { /* studio.toolbar */
   impl: group({
     layout: layout.horizontal('5'),
     controls: [
+      editableBoolean({
+        databind: '%$studio/settings/contentEditable%',
+        style: editableBoolean.mdcXV('location_searching', 'location_disabled'),
+        title: 'Content Editable',
+        features: [
+          css.margin({top: '-10', left: ''}),
+          feature.onEvent({event: 'click', action: contentEditable.deactivate()})
+        ]
+      }),
+      editableBoolean({
+        databind: '%$studio/settings/activateWatchRefViewer%',
+        style: editableBoolean.mdcXV('blur_on', 'blur_off'),
+        title: 'Watch Reference Viewer',
+        features: [
+          css.margin({top: '-10', left: ''}),
+          feature.onEvent({event: 'click', action: studio.refreshPreview()})
+        ]
+      }),
       button({
         title: 'Select',
         action: studio.pickAndOpen(),

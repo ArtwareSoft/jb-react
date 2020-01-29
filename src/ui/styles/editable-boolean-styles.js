@@ -27,9 +27,10 @@ jb.component('editable-boolean.expand-collapse', { /* editableBoolean.expandColl
 
 jb.component('editable-boolean.mdc-x-v', {
   type: 'editable-boolean.style',
+  description: 'two icons',
   params: [
-    {id: 'yesIcon', as: 'string', defaultValue: 'check'},
-    {id: 'noIcon', as: 'string', defaultValue: 'close'}
+    {id: 'yesIcon', as: 'string', mandatory: true, defaultValue: 'check'},
+    {id: 'noIcon', as: 'string', mandatory: true, defaultValue: 'close'}
   ],
   impl: customStyle({
     template: (cmp,{title,model,yesIcon,noIcon},h) => h('button',{
