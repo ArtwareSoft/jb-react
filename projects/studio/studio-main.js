@@ -4,6 +4,7 @@ jb.component('data-resource.studio', { /* dataResource.studio */
     page: '',
     profile_path: '',
     pickSelectionCtxId: '',
+    settings: { contentEditable : true, activateWatchRefViewer: true },
     baseStudioUrl: '//unpkg.com/jb-react/bin/studio/'
   }
 })
@@ -268,7 +269,8 @@ jb.component('studio.all', { /* studio.all */
     ],
     features: [
       group.wait({
-        for: ctx => jb.studio.host.settings().then(settings => ctx.run(writeValue('%$studio/settings%',JSON.parse(settings)))),
+        for: ctx => jb.studio.host.settings().then(settings => ctx.run(writeValue('%$studio/settings%',
+          Object.assign(ctx.exp('%$studio/settings%'),JSON.parse(settings))))),
         loadingControl: label('')}),
       group.data({data: '%$studio/project%', watch: true}),
       feature.init(urlHistory.mapStudioUrlToResource('studio'))

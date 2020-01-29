@@ -167,19 +167,22 @@ jb.component('studio.animate-cmp-refresh', {
     })
 })
 
-function animateCtxRefresh(ctx) {
-    jb.exec(
-        animation.start({
-            animation: [
-                animation.rotate({rotateY: () => [0,25]}),
-                animation.easing(animation.inOutEasing('Quad', 'InOut'))
-            ],
-            duration: '600',
-            direction: 'alternate',
-            target: () => elemsOfCtx(ctx)
-        })
-    )
-}
+jb.component('animate.refresh-elem', {
+    type: 'action',
+    params: [
+        {id: 'elem'}
+    ],
+    impl: action.if('%$studio/settings/activateWatchRefViewer%',animation.start({
+        animation: [
+            animation.rotate({rotateY: () => [0,25]}),
+            animation.easing(animation.inOutEasing('Quad', 'InOut'))
+        ],
+        duration: '600',
+        direction: 'alternate',
+        target: '%$elem%'
+    }))
+})
+
 
 function animateCtxDestroy(ctx) {    
     jb.exec(
@@ -237,7 +240,7 @@ jb.studio.activateWatchRefViewer = () => {
             jb.exec(studio.animateCmpDestroy({pos}))))
 
     delayedSpy.filter(e=>e.logName === 'setState').subscribe(e => 
-        animateCtxRefresh(e.record[0].ctx))
+        jb.exec(animate.refreshElem(elemsOfCtx(e.record[0].ctx))))
 }
 
 })()

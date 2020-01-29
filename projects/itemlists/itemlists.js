@@ -128,9 +128,11 @@ jb.component('itemlists.editable-table', { /* itemlists.editableTable */
         ]
       }),
       button({
-        title: 'ADD',
+        title: 'add',
         action: addToArray('%$people%', obj()),
-        style: button.mdc()
+        style: button.mdcFloatingWithTitle('add'),
+        raised: 'true',
+        features: css.width('150')
       })
     ]
   })
@@ -228,14 +230,6 @@ jb.component('itemlists.master-details-with-container', { /* itemlists.masterDet
           css.width('200px')
         ]
       }),
-      html({
-        title: 'separator',
-        html: '<div></div>',
-        features: [
-          css.border({width: '1', side: 'right', color: 'grey'}),
-          css.margin({left: '10', right: '10'})
-        ]
-      }),
       group({
         title: 'person',
         style: propertySheet.titlesAbove({titleStyle: header.mdcHeadline6()}),
@@ -264,14 +258,6 @@ jb.component('itemlists.master-details', { /* itemlists.masterDetails */
         features: [
           itemlist.selection({databind: '%$selected%', autoSelectFirst: 'true'}),
           itemlist.keyboardSelection({})
-        ]
-      }),
-      html({
-        title: 'separator',
-        html: '<div></div>',
-        features: [
-          css.border({width: '1', side: 'right', color: 'grey'}),
-          css.margin({left: '10', right: '10'})
         ]
       }),
       group({

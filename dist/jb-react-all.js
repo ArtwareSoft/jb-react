@@ -2083,6 +2083,7 @@ jb.component('format-date', {
 })
 
 jb.exec = (...args) => new jb.jbCtx().run(...args)
+jb.execInStudio = (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.jbCtx().run(...args)
 jb.exp = (...args) => new jb.jbCtx().exp(...args);
 
 (function() {
@@ -4777,7 +4778,8 @@ Object.assign(jb.ui, {
         return (cmp && cmp[action]) ? cmp[action](event) : ui.runActionOfElem(el,action)
     },
     runActionOfElem(elem,action) {
-        (elem.getAttribute('handlers') || '').split(',').filter(x=>x.indexOf(action+'-') == 0)
+        if (elem.getAttribute('contenteditable')) return
+        ;(elem.getAttribute('handlers') || '').split(',').filter(x=>x.indexOf(action+'-') == 0)
             .forEach(str=> {
                 const ctx = jb.ctxDictionary[str.split('-')[1]]
                 ctx && ctx.setVar('cmp',elem._component).runInner(ctx.profile.action,'action','action')
@@ -4849,6 +4851,7 @@ Object.assign(jb.ui, {
         if (hash != null && hash == elem.getAttribute('cmpHash'))
             return jb.log('refreshElem',['stopped by hash', hash, ...arguments]);
         cmp && applyVdomDiff(elem, h(cmp), jb.path(options,'strongRefresh'))
+        jb.execInStudio({ $: 'animate.refresh-elem', elem: () => elem })
     },
 
     subscribeToRefChange: watchHandler => watchHandler.resourceChange.subscribe(e=> {
@@ -5374,7 +5377,7 @@ ui.renderWidget = function(profile,top) {
         if (page) currentProfile = {$: page}
         const cmp = new jb.jbCtx().run(currentProfile)
         const start = new Date().getTime()
-        ui.applyVdomDiff(top.firstElementChild ,ui.h(cmp))
+        ui.applyVdomDiff(top.firstElementChild ,ui.h(cmp), !!page)
         lastRenderTime = new Date().getTime() - start
     }
 }
@@ -10002,9 +10005,10 @@ jb.component('editable-boolean.expand-collapse', { /* editableBoolean.expandColl
 
 jb.component('editable-boolean.mdc-x-v', {
   type: 'editable-boolean.style',
+  description: 'two icons',
   params: [
-    {id: 'yesIcon', as: 'string', defaultValue: 'check'},
-    {id: 'noIcon', as: 'string', defaultValue: 'close'}
+    {id: 'yesIcon', as: 'string', mandatory: true, defaultValue: 'check'},
+    {id: 'noIcon', as: 'string', mandatory: true, defaultValue: 'close'}
   ],
   impl: customStyle({
     template: (cmp,{title,model,yesIcon,noIcon},h) => h('button',{

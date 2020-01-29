@@ -243,7 +243,8 @@ Object.assign(jb.ui, {
         return (cmp && cmp[action]) ? cmp[action](event) : ui.runActionOfElem(el,action)
     },
     runActionOfElem(elem,action) {
-        (elem.getAttribute('handlers') || '').split(',').filter(x=>x.indexOf(action+'-') == 0)
+        if (elem.getAttribute('contenteditable')) return
+        ;(elem.getAttribute('handlers') || '').split(',').filter(x=>x.indexOf(action+'-') == 0)
             .forEach(str=> {
                 const ctx = jb.ctxDictionary[str.split('-')[1]]
                 ctx && ctx.setVar('cmp',elem._component).runInner(ctx.profile.action,'action','action')
@@ -315,6 +316,7 @@ Object.assign(jb.ui, {
         if (hash != null && hash == elem.getAttribute('cmpHash'))
             return jb.log('refreshElem',['stopped by hash', hash, ...arguments]);
         cmp && applyVdomDiff(elem, h(cmp), jb.path(options,'strongRefresh'))
+        jb.execInStudio({ $: 'animate.refresh-elem', elem: () => elem })
     },
 
     subscribeToRefChange: watchHandler => watchHandler.resourceChange.subscribe(e=> {

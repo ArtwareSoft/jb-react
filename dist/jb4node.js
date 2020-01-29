@@ -2083,6 +2083,7 @@ jb.component('format-date', {
 })
 
 jb.exec = (...args) => new jb.jbCtx().run(...args)
+jb.execInStudio = (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.jbCtx().run(...args)
 jb.exp = (...args) => new jb.jbCtx().exp(...args);
 
 (function() {

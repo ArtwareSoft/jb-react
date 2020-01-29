@@ -14,18 +14,18 @@ jb.component('content-editable.open-toolbar', { // openToolbar
     }))
 })
 
-jb.component('content-editable.activation-icon', {
-  type: 'action',
-  impl: openDialog({
-          style: contentEditable.popupStyle(),
-          content: button({
-            title: 'Edit',
-            action: ctx => ctx.vars.activateContentEditable(ctx),
-            style: button.mdcIcon('edit'),
-//            features: dialogFeature.onClose(contentEditable.deactivate())
-          })
-  })
-})
+// jb.component('content-editable.activation-icon', {
+//   type: 'action',
+//   impl: openDialog({
+//           style: contentEditable.popupStyle(),
+//           content: button({
+//             title: 'Edit',
+//             action: ctx => ctx.vars.activateContentEditable(ctx),
+//             style: button.mdcIcon('edit'),
+// //            features: dialogFeature.onClose(contentEditable.deactivate())
+//           })
+//   })
+// })
 
 jb.component('content-editable.popup-style', {
     type: 'dialog.style',
@@ -246,6 +246,6 @@ jb.component('feature.content-editable', {
       return vdom;
     },
     dynamicCss: ctx => ctx.vars.cmp.state.contentEditableActive &&
-      `{ border: 1px dashed grey; background-image: linear-gradient(90deg,rgba(243,248,255,.03) 63.45%,rgba(207,214,229,.27) 98%); border-radius: 3px;}`
+      `{ pointer-events: all; border: 1px dashed grey; background-image: linear-gradient(90deg,rgba(243,248,255,.03) 63.45%,rgba(207,214,229,.27) 98%); border-radius: 3px;}`
   })
 })

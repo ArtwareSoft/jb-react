@@ -4,11 +4,12 @@ jb.component('hello-world.main', { /* helloWorld.main */
   impl: group({
     layout: layout.vertical(),
     controls: [
-      text({
-        text: '%$people/name%',
-        features: [css.height(309), css.padding({top: 0, left: 25}), css.width(663)]
-      }),
-      text({text: 'my text', title: 'my title'})
+      text({text: 'my tetyurytyuty', title: 'my title'}),
+      button({
+        title: 'CLICK ME',
+        action: openDialog({style: dialog.dialogOkCancel(), content: group({}), title: 'hello'}),
+        style: button.tableCellHref()
+      })
     ]
   })
 })

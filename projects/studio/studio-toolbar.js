@@ -24,7 +24,7 @@ jb.component('studio.toolbar', { /* studio.toolbar */
       editableBoolean({
         databind: '%$studio/settings/contentEditable%',
         style: editableBoolean.mdcXV('location_searching', 'location_disabled'),
-        title: 'Content Editable',
+        title: 'Inline content editing',
         features: [
           css.margin({top: '-10', left: ''}),
           feature.onEvent({event: 'click', action: contentEditable.deactivate()})
@@ -33,10 +33,10 @@ jb.component('studio.toolbar', { /* studio.toolbar */
       editableBoolean({
         databind: '%$studio/settings/activateWatchRefViewer%',
         style: editableBoolean.mdcXV('blur_on', 'blur_off'),
-        title: 'Watch Reference Viewer',
+        title: 'Watch Data Connections',
         features: [
           css.margin({top: '-10', left: ''}),
-          feature.onEvent({event: 'click', action: studio.refreshPreview()})
+          //feature.onEvent({event: 'click', action: studio.refreshPreview()})
         ]
       }),
       button({

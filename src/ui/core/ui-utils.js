@@ -181,7 +181,7 @@ ui.renderWidget = function(profile,top) {
         if (page) currentProfile = {$: page}
         const cmp = new jb.jbCtx().run(currentProfile)
         const start = new Date().getTime()
-        ui.applyVdomDiff(top.firstElementChild ,ui.h(cmp))
+        ui.applyVdomDiff(top.firstElementChild ,ui.h(cmp), !!page)
         lastRenderTime = new Date().getTime() - start
     }
 }

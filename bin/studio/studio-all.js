@@ -2083,6 +2083,7 @@ jb.component('format-date', {
 })
 
 jb.exec = (...args) => new jb.jbCtx().run(...args)
+jb.execInStudio = (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.jbCtx().run(...args)
 jb.exp = (...args) => new jb.jbCtx().exp(...args);
 
 (function() {
@@ -4777,7 +4778,8 @@ Object.assign(jb.ui, {
         return (cmp && cmp[action]) ? cmp[action](event) : ui.runActionOfElem(el,action)
     },
     runActionOfElem(elem,action) {
-        (elem.getAttribute('handlers') || '').split(',').filter(x=>x.indexOf(action+'-') == 0)
+        if (elem.getAttribute('contenteditable')) return
+        ;(elem.getAttribute('handlers') || '').split(',').filter(x=>x.indexOf(action+'-') == 0)
             .forEach(str=> {
                 const ctx = jb.ctxDictionary[str.split('-')[1]]
                 ctx && ctx.setVar('cmp',elem._component).runInner(ctx.profile.action,'action','action')
@@ -4849,6 +4851,7 @@ Object.assign(jb.ui, {
         if (hash != null && hash == elem.getAttribute('cmpHash'))
             return jb.log('refreshElem',['stopped by hash', hash, ...arguments]);
         cmp && applyVdomDiff(elem, h(cmp), jb.path(options,'strongRefresh'))
+        jb.execInStudio({ $: 'animate.refresh-elem', elem: () => elem })
     },
 
     subscribeToRefChange: watchHandler => watchHandler.resourceChange.subscribe(e=> {
@@ -5374,7 +5377,7 @@ ui.renderWidget = function(profile,top) {
         if (page) currentProfile = {$: page}
         const cmp = new jb.jbCtx().run(currentProfile)
         const start = new Date().getTime()
-        ui.applyVdomDiff(top.firstElementChild ,ui.h(cmp))
+        ui.applyVdomDiff(top.firstElementChild ,ui.h(cmp), !!page)
         lastRenderTime = new Date().getTime() - start
     }
 }
@@ -10002,9 +10005,10 @@ jb.component('editable-boolean.expand-collapse', { /* editableBoolean.expandColl
 
 jb.component('editable-boolean.mdc-x-v', {
   type: 'editable-boolean.style',
+  description: 'two icons',
   params: [
-    {id: 'yesIcon', as: 'string', defaultValue: 'check'},
-    {id: 'noIcon', as: 'string', defaultValue: 'close'}
+    {id: 'yesIcon', as: 'string', mandatory: true, defaultValue: 'check'},
+    {id: 'noIcon', as: 'string', mandatory: true, defaultValue: 'close'}
   ],
   impl: customStyle({
     template: (cmp,{title,model,yesIcon,noIcon},h) => h('button',{
@@ -34736,6 +34740,8 @@ jb.component('studio.open-event-tracker', { /* studio.openEventTracker */
 
 })();
 
+jb.ns('contentEditable')
+
 jb.component('studio.pickAndOpen', { /* studio.pickAndOpen */
   type: 'action',
   params: [
@@ -34757,6 +34763,24 @@ jb.component('studio.toolbar', { /* studio.toolbar */
   impl: group({
     layout: layout.horizontal('5'),
     controls: [
+      editableBoolean({
+        databind: '%$studio/settings/contentEditable%',
+        style: editableBoolean.mdcXV('location_searching', 'location_disabled'),
+        title: 'Inline content editing',
+        features: [
+          css.margin({top: '-10', left: ''}),
+          feature.onEvent({event: 'click', action: contentEditable.deactivate()})
+        ]
+      }),
+      editableBoolean({
+        databind: '%$studio/settings/activateWatchRefViewer%',
+        style: editableBoolean.mdcXV('blur_on', 'blur_off'),
+        title: 'Watch Data Connections',
+        features: [
+          css.margin({top: '-10', left: ''}),
+          //feature.onEvent({event: 'click', action: studio.refreshPreview()})
+        ]
+      }),
       button({
         title: 'Select',
         action: studio.pickAndOpen(),
@@ -34970,6 +34994,7 @@ jb.component('data-resource.studio', { /* dataResource.studio */
     page: '',
     profile_path: '',
     pickSelectionCtxId: '',
+    settings: { contentEditable : true, activateWatchRefViewer: true },
     baseStudioUrl: '//unpkg.com/jb-react/bin/studio/'
   }
 })
@@ -35234,7 +35259,8 @@ jb.component('studio.all', { /* studio.all */
     ],
     features: [
       group.wait({
-        for: ctx => jb.studio.host.settings().then(settings => ctx.run(writeValue('%$studio/settings%',JSON.parse(settings)))),
+        for: ctx => jb.studio.host.settings().then(settings => ctx.run(writeValue('%$studio/settings%',
+          Object.assign(ctx.exp('%$studio/settings%'),JSON.parse(settings))))),
         loadingControl: label('')}),
       group.data({data: '%$studio/project%', watch: true}),
       feature.init(urlHistory.mapStudioUrlToResource('studio'))
@@ -35817,19 +35843,22 @@ jb.component('studio.animate-cmp-refresh', {
     })
 })
 
-function animateCtxRefresh(ctx) {
-    jb.exec(
-        animation.start({
-            animation: [
-                animation.rotate({rotateY: () => [0,25]}),
-                animation.easing(animation.inOutEasing('Quad', 'InOut'))
-            ],
-            duration: '600',
-            direction: 'alternate',
-            target: () => elemsOfCtx(ctx)
-        })
-    )
-}
+jb.component('animate.refresh-elem', {
+    type: 'action',
+    params: [
+        {id: 'elem'}
+    ],
+    impl: action.if('%$studio/settings/activateWatchRefViewer%',animation.start({
+        animation: [
+            animation.rotate({rotateY: () => [0,25]}),
+            animation.easing(animation.inOutEasing('Quad', 'InOut'))
+        ],
+        duration: '600',
+        direction: 'alternate',
+        target: '%$elem%'
+    }))
+})
+
 
 function animateCtxDestroy(ctx) {    
     jb.exec(
@@ -35887,7 +35916,7 @@ jb.studio.activateWatchRefViewer = () => {
             jb.exec(studio.animateCmpDestroy({pos}))))
 
     delayedSpy.filter(e=>e.logName === 'setState').subscribe(e => 
-        animateCtxRefresh(e.record[0].ctx))
+        jb.exec(animate.refreshElem(elemsOfCtx(e.record[0].ctx))))
 }
 
 })();
@@ -35908,18 +35937,18 @@ jb.component('content-editable.open-toolbar', { // openToolbar
     }))
 })
 
-jb.component('content-editable.activation-icon', {
-  type: 'action',
-  impl: openDialog({
-          style: contentEditable.popupStyle(),
-          content: button({
-            title: 'Edit',
-            action: ctx => ctx.vars.activateContentEditable(ctx),
-            style: button.mdcIcon('edit'),
-//            features: dialogFeature.onClose(contentEditable.deactivate())
-          })
-  })
-})
+// jb.component('content-editable.activation-icon', {
+//   type: 'action',
+//   impl: openDialog({
+//           style: contentEditable.popupStyle(),
+//           content: button({
+//             title: 'Edit',
+//             action: ctx => ctx.vars.activateContentEditable(ctx),
+//             style: button.mdcIcon('edit'),
+// //            features: dialogFeature.onClose(contentEditable.deactivate())
+//           })
+//   })
+// })
 
 jb.component('content-editable.popup-style', {
     type: 'dialog.style',
@@ -35977,14 +36006,11 @@ jb.component('content-editable.toolbar', { /* contentEditable.toolbar */
         ),
         style: button.mdcIcon('style')
       }),
-      button({
-        title: 'positions',
-        action: [
-          contentEditable.openPositionThumbs('y'),
-          contentEditable.openPositionThumbs('x'),
-        ],
-        style: button.mdcIcon('vertical_align_center')
-      }),
+      // button({
+      //   title: 'Edit Text',
+      //   action: () => jb.ui.contentEditable.current && jb.ui.contentEditable.current.refresh({contentEditableActive: true}),
+      //   style: button.mdcIcon('title')
+      // }),
       button({
         title: 'Insert Control',
         action: studio.openNewProfileDialog({
@@ -36060,15 +36086,18 @@ jb.ui.contentEditable = {
           jb.writeValue(scriptRef,val,vdomCmp.ctx)
   },
   activate(cmp) {
+    if (!new jb.jbCtx().exp('%$studio/settings/contentEditable%')) return
     this.current && this.current.refresh({contentEditableActive: false})
     this.current = cmp
     new jb.jbCtx().setVar('$launchingElement',{ el : cmp.base}).run(runActions(
-      delay(10),
+//      delay(10),
       () => cmp.refresh({contentEditableActive: true}),
+//      delay(10),
       contentEditable.openToolbar(cmp.ctx.path),
       contentEditable.openPositionThumbs('x'),
-      contentEditable.openPositionThumbs('y')
+      contentEditable.openPositionThumbs('y'),
     ))
+    cmp.base.focus()
   },
   handleKeyEvent(ev,cmp,prop) {
       if (ev.keyCode == 13) {
@@ -36077,7 +36106,7 @@ jb.ui.contentEditable = {
             delay(1), // can not wait for script change delay
             contentEditable.deactivate()
           ))
-          return false // does not work..
+          return false // stop propagation. sometimes does not work..
       }
   },
   scriptRef(cmp,prop) {
@@ -36140,7 +36169,7 @@ jb.component('feature.content-editable', {
       return vdom;
     },
     dynamicCss: ctx => ctx.vars.cmp.state.contentEditableActive &&
-      `{ border: 1px dashed grey; background-image: linear-gradient(90deg,rgba(243,248,255,.03) 63.45%,rgba(207,214,229,.27) 98%); border-radius: 3px;}`
+      `{ pointer-events: all; border: 1px dashed grey; background-image: linear-gradient(90deg,rgba(243,248,255,.03) 63.45%,rgba(207,214,229,.27) 98%); border-radius: 3px;}`
   })
 })
 ;
