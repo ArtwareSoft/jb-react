@@ -248,7 +248,6 @@ jb.component('ui-test.editable-text-by-control', {
   })
 })
 
-
 jb.component('ui-test.two-way-binding', { /* uiTest.twoWayBinding */
   impl: uiTest({
     control: group({

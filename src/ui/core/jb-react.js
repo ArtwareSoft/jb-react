@@ -331,7 +331,8 @@ Object.assign(jb.ui, {
             if (elemsToCheckCtx[i] != elem.getAttribute('jb-ctx')) return // the elem was changed by it parent 
             let refresh = false, strongRefresh = false
             elem.getAttribute('observe').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{
-                //if (checkCircularity(obs)) return
+                const path = jb.path(elem,'_component.ctx.componentContext.callerPath')
+                //if (!obs.allowSelfRefresh && path && e.srcCtx && e.srcCtx.callStack().indexOf(path) != -1)  return
                 const obsPath = watchHandler.removeLinksFromPath(watchHandler.pathOfRef(obs.ref))
                 if (!obsPath)
                     return jb.logError('observer ref path is empty',obs,e)
@@ -378,7 +379,7 @@ function checkCircularity(obs) {
         return true
     }
 
-    if (!obs.allowSelfRefresh && obs.srcCtx) {
+    if (!obs.allowSelfRefresh && obs.srcCtx && obs.callerPath) {
         const callerPathsToCompare = callerPaths.map(x=> x.replace(/~features~?[0-9]*$/,'').replace(/~style$/,''))
         const ctxStylePath = obs.callerPath.replace(/~features~?[0-9]*$/,'')
         return callerPathsToCompare.reduce((res,path) => res || path.indexOf(ctxStylePath) == 0, false)

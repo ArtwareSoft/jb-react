@@ -246,6 +246,6 @@ jb.component('feature.content-editable', {
       return vdom;
     },
     dynamicCss: ctx => ctx.vars.cmp.state.contentEditableActive &&
-      `{ pointer-events: all; border: 1px dashed grey; background-image: linear-gradient(90deg,rgba(243,248,255,.03) 63.45%,rgba(207,214,229,.27) 98%); border-radius: 3px;}`
+      `{ border: 1px dashed grey; background-image: linear-gradient(90deg,rgba(243,248,255,.03) 63.45%,rgba(207,214,229,.27) 98%); border-radius: 3px;}`
   })
 })
