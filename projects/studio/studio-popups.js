@@ -269,7 +269,6 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
               max: '%$controlItem/width/max%',
               features: [
                 field.default('%$controlItem/width/default%'),
-                field.onDataChange(studio.setPreviewSize('%%'), true)
               ]
             }),
             editableNumber({
@@ -280,7 +279,6 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
               max: '%$controlItem/height/max%',
               features: [
                 field.default('%$controlItem/height/default%'),
-                field.onDataChange(studio.setPreviewSize(undefined, '%%'), true)
               ]
             })
           ],

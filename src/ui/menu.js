@@ -220,7 +220,7 @@ jb.component('menu.init-popup-menu', { /* menu.initPopupMenu */
       calcProp('title','%$menuModel.title%'),
 			interactive((ctx,{cmp}) => {
 				cmp.mouseEnter = _ => {
-					if (jb.ui.find('.context-menu-popup')[0]) // first open with click...
+					if (jb.ui.find(ctx,'.context-menu-popup')[0]) // first open with click...
   					cmp.openPopup()
 				};
 				cmp.openPopup = jb.ui.wrapWithLauchingElement( ctx2 => {

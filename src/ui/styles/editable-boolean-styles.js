@@ -1,7 +1,7 @@
 jb.component('editable-boolean.checkbox', { /* editableBoolean.checkbox */
   type: 'editable-boolean.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('input', { type: 'checkbox', checked: state.model, onchange: 'setChecked', onkeyup: 'setChecked'  }),
+    template: (cmp,state,h) => h('input', { type: 'checkbox', checked: state.databind, onchange: 'setChecked', onkeyup: 'setChecked'  }),
     features: field.databind()
   })
 })
@@ -10,7 +10,7 @@ jb.component('editable-boolean.checkbox-with-title', { /* editableBoolean.checkb
   type: 'editable-boolean.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{}, [h('input', { type: 'checkbox',
-        checked: state.model, onchange: 'setChecked', onkeyup: 'setChecked'  }), state.text]),
+        checked: state.databind, onchange: 'setChecked', onkeyup: 'setChecked'  }), state.text]),
     features: field.databind()
   })
 })
@@ -19,7 +19,7 @@ jb.component('editable-boolean.expand-collapse', { /* editableBoolean.expandColl
   type: 'editable-boolean.style',
   impl: customStyle({
     template: (cmp,state,h) => h('i',{class:'material-icons noselect', onclick: 'toggle' }, 
-      state.model ? 'keyboard_arrow_down' : 'keyboard_arrow_right'),
+      state.databind ? 'keyboard_arrow_down' : 'keyboard_arrow_right'),
     css: `{ font-size:16px; cursor: pointer; }`,
     features: field.databind()
   })
@@ -55,7 +55,7 @@ jb.component('editable-boolean.mdc-slide-toggle', { /* editableBoolean.mdcSlideT
       h('div',{class: 'mdc-switch__thumb-underlay'},[
         h('div',{class: 'mdc-switch__thumb'},
           h('input', { type: 'checkbox', role: 'switch', class: 'mdc-switch__native-control', id: 'switch_' + state.fieldId,
-            checked: state.model, onchange: 'setChecked' })),
+            checked: state.databind, onchange: 'setChecked' })),
       ]),
       h('label',{for: 'switch_' + state.fieldId},state.text)
     ]),
@@ -69,7 +69,7 @@ jb.component('editable-boolean.checkbox-with-label', {
   impl: customStyle({
     template: (cmp,state,h) => h('div',{},[
         h('input', { type: 'checkbox', id: "switch_"+state.fieldId,
-          checked: state.model,
+          checked: state.databind,
           onchange: 'setChecked',
           onkeyup: 'setChecked'  },),
         h('label',{for: "switch_"+state.fieldId },state.text)

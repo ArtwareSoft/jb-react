@@ -28,7 +28,7 @@ jb.component('mdc.ripple-effect', {
   impl: ctx => ({
       templateModifier: vdom => {
         'mdc-ripple-surface mdc-ripple-radius-bounded mdc-states mdc-states-base-color(red)'.split(' ')
-          .forEach(cl=>jb.ui.addClassToVdom(vdom,cl))
+          .forEach(cl=>vdom.addClass(cl))
         return vdom;
       }
    })

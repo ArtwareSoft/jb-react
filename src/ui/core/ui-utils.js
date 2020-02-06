@@ -23,8 +23,8 @@ Object.assign(jb.ui,{
     withUnits: v => (v === '' || v === undefined) ? '' : (''+v||'').match(/[^0-9]$/) ? v : `${v}px`,
     propWithUnits: (prop,v) => (v === '' || v === undefined) ? '' : `${prop}: ` + ((''+v||'').match(/[^0-9]$/) ? v : `${v}px`) + ';',
     fixCssLine: css => css.indexOf('/n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css,
-    ctxOfElem: elem => elem && elem.getAttribute && elem.getAttribute('jb-ctx') && jb.ctxDictionary[elem.getAttribute('jb-ctx')],
-    resultCtxOfElem: elem => elem && elem.getAttribute && elem.getAttribute('outCtx') && jb.ctxDictionary[elem.getAttribute('jb-ctx')],
+    ctxDictOfElem: elem => (!jb.frame.isWorker && elem.getAttribute('worker') ? jb.ui.workers[elem.getAttribute('worker')] : jb).ctxDictionary,
+    ctxOfElem: (elem,att) => elem && elem.getAttribute && jb.ui.ctxDictOfElem(elem)[elem.getAttribute(att || 'jb-ctx')],
     preserveCtx(ctx) {
         jb.ctxDictionary[ctx.id] = ctx
         return ctx.id
@@ -46,7 +46,16 @@ Object.assign(jb.ui,{
     },
     closestCmp(el) {
         return el._component || this.parentCmps(el)[0]
-    }
+    },
+    document(ctx) {
+        if (jb.frame.isWorker)
+            return jb.ui.widgets[ctx.vars.widgetId].top
+        return ctx.vars.elemToTest || typeof document !== 'undefined' && document
+    },
+    item(cmp,vdom,data) {
+        cmp.extendItemFuncs && cmp.extendItemFuncs.forEach(f=>f(cmp,vdom,data));
+        return vdom;
+    },
 })
 
 // ****************** html utils ***************
@@ -75,67 +84,35 @@ Object.assign(jb.ui, {
           el = el.parentNode;
         }
     },
-    find(el,query) { return typeof el == 'string' ? Array.from(document.querySelectorAll(el)) : Array.from(el.querySelectorAll(query)) },
-    findIncludeSelf: (el,query) => (ui.matches(el,query) ? [el] : []).concat(Array.from(el.querySelectorAll(query))),
+    activeElement() { return document.activeElement },
+    find(el,selector,options) { 
+        if (el instanceof jb.jbCtx)
+            el = this.document(el) // el is ctx
+        return el instanceof jb.ui.VNode ? el.querySelectorAll(selector,options) : 
+            [... (options && options.includeSelf && ui.matches(el,selector) ? [el] : []),
+             ...Array.from(el.querySelectorAll(selector))]
+    },
+    findIncludeSelf: (el,selector) => jb.ui.find(el,selector,{includeSelf: true}),
     addClass: (el,clz) => el.classList.add(clz),
     removeClass: (el,clz) => el.classList.remove(clz),
     hasClass: (el,clz) => el && el.classList.contains(clz),
     matches: (el,query) => el && el.matches && el.matches(query),
     index: el => Array.from(el.parentNode.children).indexOf(el),
-    inDocument: el => el && (ui.parents(el).slice(-1)[0]||{}).nodeType == 9,
-    addHTML: (el,html) => {
-        const elem = document.createElement('div');
-        elem.innerHTML = html;
-        el.appendChild(elem.firstChild)
-    },
     limitStringLength(str,maxLength) {
         if (typeof str == 'string' && str.length > maxLength-3)
           return str.substring(0,maxLength) + '...';
         return str;
+    },
+    addHTML(el,html) {
+        const elem = document.createElement('div');
+        elem.innerHTML = html;
+        el.appendChild(elem.firstChild)
+    },
+    addStyleElem(innerHtml) {
+        const style_elem = document.createElement('style');
+        style_elem.innerHTML = innerHtml;
+        document.head.appendChild(style_elem);
     }
-})
-
-// ****************** vdom utils ***************
-Object.assign(jb.ui, {
-    addClassToVdom(vdom,clz) {
-        vdom.attributes = vdom.attributes || {};
-        if (vdom.attributes.class === undefined) vdom.attributes.class = ''
-        if (clz && vdom.attributes.class.split(' ').indexOf(clz) == -1)
-            vdom.attributes.class = [vdom.attributes.class,clz].filter(x=>x).join(' ');
-        return vdom;
-    },
-    
-    toggleClassInVdom(vdom,clz,add) {
-      vdom.attributes = vdom.attributes || {};
-      const classes = (vdom.attributes.class || '').split(' ').map(x=>x.trim()).filter(x=>x);
-      if (add && classes.indexOf(clz) == -1)
-        vdom.attributes.class = [...classes,clz].join(' ');
-      if (!add)
-        vdom.attributes.class = classes.filter(x=>x != clz).join(' ');
-      return vdom;
-    },
-    
-    item(cmp,vdom,data) {
-        cmp.extendItemFuncs && cmp.extendItemFuncs.forEach(f=>f(cmp,vdom,data));
-        return vdom;
-    },
-    
-    toVdomOrStr(val) {
-        if (val &&  (typeof val.then == 'function' || typeof val.subscribe == 'function'))
-            return jb.synchArray(val).then(v => ui.toVdomOrStr(v[0]))
-    
-        const res1 = Array.isArray(val) ? val.map(v=>jb.val(v)): val
-        let res = jb.val((Array.isArray(res1) && res1.length == 1) ? res1[0] : res1)
-        if (res && res[ui.VNode] || Array.isArray(res)) return res
-        if (typeof res === 'boolean' || typeof res === 'object')
-            res = '' + res
-        else if (typeof res === 'string')
-            res = res.slice(0,1000)
-        return res
-    },
-    
-    hasClassInVdom: (vdom,clz) => (jb.path(vdom,'attributes.class') || '').split(' ').indexOf(clz) != -1,
-    findInVdom: (vdom,clz) => ui.hasClassInVdom(vdom,clz) ? vdom : (vdom.children||[]).find(vd=>ui.findInVdom(vd,clz)),
 })
 
 ui.renderWidget = function(profile,top) {
@@ -181,7 +158,7 @@ ui.renderWidget = function(profile,top) {
         if (page) currentProfile = {$: page}
         const cmp = new jb.jbCtx().run(currentProfile)
         const start = new Date().getTime()
-        ui.applyVdomDiff(top.firstElementChild ,ui.h(cmp), !!page)
+        ui.applyVdomDiff(top.firstElementChild ,ui.h(cmp), { strongRefresh: !!page })
         lastRenderTime = new Date().getTime() - start
     }
 }
@@ -190,7 +167,7 @@ jb.objectDiff = function(newObj, orig) {
     if (orig === newObj) return {}
     if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
     const deletedValues = Object.keys(orig).reduce((acc, key) =>
-        newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: undefined }
+        newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: '__undefined' }
     , {})
 
     return Object.keys(newObj).reduce((acc, key) => {

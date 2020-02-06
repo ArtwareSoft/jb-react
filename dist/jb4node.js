@@ -2228,7 +2228,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 
 function initSpyByUrl() {
 	const getUrl = () => { try { return frame.location.href } catch(e) {} }
-	const getParentUrl = () => { try { return frame.parent.location.href } catch(e) {} }
+	const getParentUrl = () => { try { return frame.parent && frame.parent.location.href } catch(e) {} }
 	const getSpyParam = url => (url.match('[?&]spy=([^&]+)') || ['', ''])[1]
 	const spyParam = getSpyParam(getParentUrl() || '') || getSpyParam(getUrl() || '')
 	if (spyParam)
@@ -2318,7 +2318,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
 
     function shouldNotFlat(result) {
       const ctrls = path.match(/~controls$/) && Array.isArray(jb.studio.valOfPath(path)) // && innerVals.length > 1// jb.studio.isOfType(path,'control') && !arrayElem
-      const customStyle = jb.studio.compNameOfPath(path) === 'customStyle'
+      const customStyle = jb.studio.compNameOfPath && jb.studio.compNameOfPath(path) === 'customStyle'
       const top = (path.match(/~/g)||'').length < 2
       const long = result.text.replace(/\n\s*/g,'').length > colWidth
       return result.unflat || customStyle || top || ctrls || long

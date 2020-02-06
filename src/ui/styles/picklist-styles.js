@@ -1,7 +1,7 @@
 jb.component('picklist.native', { /* picklist.native */
   type: 'picklist.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('select', { value: state.model, onchange: true },
+    template: (cmp,state,h) => h('select', { value: state.databind, onchange: true },
           state.options.map(option=>h('option',{value: option.code},option.text))
         ),
     css: `
@@ -19,9 +19,9 @@ jb.component('picklist.radio', {
     { id: 'text', defaultValue: '%text%', dynamic: true },
   ],
   impl: customStyle({
-    template: (cmp,{model, options, fieldId, text},h) => h('div', {},
+    template: (cmp,{databind, options, fieldId, text},h) => h('div', {},
           options.flatMap((option,i)=> [h('input', {
-              type: 'radio', name: fieldId, id: i, checked: model === option.code, value: option.code, onchange: true
+              type: 'radio', name: fieldId, id: i, checked: databind === option.code, value: option.code, onchange: true
             }), h('label',{for: i}, text(cmp.ctx.setData(option))) ] )),
     css: `>input { %$radioCss% }`,
     features: field.databind()
@@ -40,7 +40,7 @@ jb.component('picklist.native-md-look-open', { /* picklist.nativeMdLookOpen */
   type: 'picklist.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{}, [
-        h('input', { type: 'text', value: state.model, list: 'list_' + cmp.ctx.id, onchange: true }),
+        h('input', { type: 'text', value: state.databind, list: 'list_' + cmp.ctx.id, onchange: true }),
         h('datalist', {id: 'list_' + cmp.ctx.id}, state.options.map(option=>h('option',{},option.text)))
     ]),
     css: `>input {  appearance: none; -webkit-appearance: none; font-family: inherit;
@@ -78,7 +78,7 @@ jb.component('picklist.native-md-look', { /* picklist.nativeMdLook */
   type: 'picklist.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{},h('select',
-      { value: state.model, onchange: true },
+      { value: state.databind, onchange: true },
           state.options.map(option=>h('option',{value: option.code},option.text)))),
     css: `>select {  appearance: none; -webkit-appearance: none; font-family: inherit;
   background-color: transparent;
@@ -194,7 +194,7 @@ jb.component('picklist.hyperlinks', { /* hyperlinks */
 jb.component('picklist.groups', { /* picklist.groups */
   type: 'picklist.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('select', { value: state.model, onchange: true },
+    template: (cmp,state,h) => h('select', { value: state.databind, onchange: true },
           (state.hasEmptyOption ? [h('option',{value:''},'')] : []).concat(
             state.groups.map(group=>h('optgroup',{label: group.text},
               group.options.map(option=>h('option',{value: option.code},option.text))

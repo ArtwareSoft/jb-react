@@ -45,12 +45,12 @@ jb.component('picklist', { /* picklist */
             hasEmptyOption: options.filter(x=>!x.text)[0]
           }
       }),
-      interactive((_ctx,{cmp}) => {
-        if (cmp.databindRefChanged) jb.ui.databindObservable(cmp,{srcCtx: ctx})
-          .subscribe(e=>cmp.onChange && cmp.onChange(_ctx.setData(jb.val(e.ref))))
-        else jb.ui.refObservable(ctx.params.databind(),cmp,{srcCtx: ctx}).subscribe(e=>
-          cmp.onChange && cmp.onChange(_ctx.setData(jb.val(e.ref))))
-      })
+      // interactive((_ctx,{cmp}) => {
+      //   if (cmp.databindRefChanged) jb.ui.databindObservable(cmp,{srcCtx: ctx})
+      //     .subscribe(e=>cmp.onChange && cmp.onChange(_ctx.setData(jb.val(e.ref))))
+      //   else jb.ui.refObservable(ctx.params.databind(),cmp,{srcCtx: ctx}).subscribe(e=>
+      //     cmp.onChange && cmp.onChange(_ctx.setData(jb.val(e.ref))))
+      // })
     ))
 })
 

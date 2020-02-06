@@ -2228,7 +2228,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 
 function initSpyByUrl() {
 	const getUrl = () => { try { return frame.location.href } catch(e) {} }
-	const getParentUrl = () => { try { return frame.parent.location.href } catch(e) {} }
+	const getParentUrl = () => { try { return frame.parent && frame.parent.location.href } catch(e) {} }
 	const getSpyParam = url => (url.match('[?&]spy=([^&]+)') || ['', ''])[1]
 	const spyParam = getSpyParam(getParentUrl() || '') || getSpyParam(getUrl() || '')
 	if (spyParam)
@@ -4533,9 +4533,88 @@ jb.component('run-transaction', { /* runTransaction */
 })()
 ;
 
+class VNode {
+    constructor(cmpOrTag, _attributes, _children) {
+        const attributes = jb.objFromEntries(jb.entries(_attributes).map(e=>[e[0].toLowerCase(),e[1]]))
+        let children = (_children === '') ? null : _children
+        if (['string','boolean','number'].indexOf(typeof children) !== -1) {
+            attributes.$text = children
+            children = null
+        }
+        if (children && typeof children.then == 'function') {
+            attributes.$text = '...'
+            children = null
+        }
+        if (children != null && !Array.isArray(children)) children = [children]
+        if (children != null)
+            children = children.filter(x=>x).map(item=> typeof item == 'string' ? h('span',{$text: item}) : item)
+        Object.assign(this,{...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,attributes,children})
+    }
+    getAttribute(att) {
+        return (this.attributes || {})[att]
+    }
+    setAttribute(att,val) {
+        this.attributes = this.attributes || {}
+        this.attributes[att] = val
+    }
+    addClass(clz) {
+        this.attributes = this.attributes || {};
+        if (this.attributes.class === undefined) this.attributes.class = ''
+        if (clz && this.attributes.class.split(' ').indexOf(clz) == -1)
+            this.attributes.class = [this.attributes.class,clz].filter(x=>x).join(' ');
+        return this;
+    }
+    hasClass(clz) {
+        return (jb.path(this,'attributes.class') || '').split(' ').indexOf(clz) != -1
+    }
+    querySelectorAll(selector,{includeSelf}={}) {
+        const hasAtt = selector.match(/^\[([a-zA-Z0-9_\-]+)\]$/)
+        const attEquals = selector.match(/^\[([a-zA-Z0-9_\-]+)="([a-zA-Z0-9_\-]+)"\]$/)
+        const hasClass = selector.match(/^\.([a-zA-Z0-9_\-]+)$/)
+        const hasTag = selector.match(/^[a-zA-Z0-9_\-]+$/)
+        const selectorMatcher = hasAtt ? el => el.attributes && el.attributes[hasAtt[1]]
+            : hasClass ? el => el.hasClass(hasClass[1])
+            : hasTag ? el => el.tag === hasTag[0]
+            : attEquals ? el => el.attributes && el.attributes[attEquals[1]] == attEquals[2]
+            : null
+
+        return selectorMatcher && doFind(this,selectorMatcher,!includeSelf)
+
+        function doFind(vdom,selectorMatcher,excludeSelf) {
+            return [ ...(!excludeSelf && selectorMatcher(vdom) ? [vdom] : []), 
+                ...(vdom.children||[]).flatMap(ch=> doFind(ch,selectorMatcher))
+            ]
+        }
+    }
+}
+
+function toVdomOrStr(val) {
+    if (val &&  (typeof val.then == 'function' || typeof val.subscribe == 'function'))
+        return jb.synchArray(val).then(v => jb.ui.toVdomOrStr(v[0]))
+
+    const res1 = Array.isArray(val) ? val.map(v=>jb.val(v)): val
+    let res = jb.val((Array.isArray(res1) && res1.length == 1) ? res1[0] : res1)
+    if (res && res instanceof VNode || Array.isArray(res)) return res
+    if (typeof res === 'boolean' || typeof res === 'object')
+        res = '' + res
+    else if (typeof res === 'string')
+        res = res.slice(0,1000)
+    return res
+}
+
+Object.assign(jb.ui, {VNode, toVdomOrStr});
+
 (function(){
 const ui = jb.ui;
 const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,this.ctx) }}
+
+function h(cmpOrTag,attributes,children) {
+    if (cmpOrTag instanceof ui.VNode) return cmpOrTag // Vdom
+    if (cmpOrTag && cmpOrTag.renderVdom)
+        return cmpOrTag.renderVdom()
+   
+    return new VNode(cmpOrTag,attributes,children)
+}
 
 function compareVdom(b,a) {
     const attributes = jb.objectDiff(a.attributes || {}, b.attributes || {})
@@ -4550,7 +4629,7 @@ function compareVdom(b,a) {
     function childDiff(b,a) {
         if (b.length == 0 && a.length ==0) return
         if (a.length == 1 && b.length == 1 && a[0].tag == b[0].tag)
-            return [{...compareVdom(b[0],a[0]),__afterIndex: 0}]
+            return { 0: {...compareVdom(b[0],a[0]),__afterIndex: 0}, length: 1 }
         jb.log('childDiff',[...arguments])
         const beforeWithIndex = b.map((e,i)=> ({i, ...e}))
         let remainingBefore = beforeWithIndex.slice(0)
@@ -4559,12 +4638,15 @@ function compareVdom(b,a) {
         a.forEach((toLocate,i) => afterToBeforeMap[i] = afterToBeforeMap[i] || sameIndexSameTag(toLocate,i,remainingBefore))
 
         const reused = []
-        const res = beforeWithIndex.map((e,i)=> {
-            const __afterIndex = afterToBeforeMap.indexOf(e)
-            if (__afterIndex == -1)
-                return {$: 'delete', __afterIndex }
-            reused[__afterIndex] = true
-            return { __afterIndex, ...compareVdom(e, a[__afterIndex]), ...(e.$remount ? {remount: true}: {}) }
+        const res = { length: beforeWithIndex.length }
+        beforeWithIndex.forEach( (e,i) => {
+            const __afterIndex = afterToBeforeMap.indexOf(e);
+            if (__afterIndex == -1) {
+                res [i] =  {$: 'delete', __afterIndex }
+            } else {
+                reused[__afterIndex] = true
+                res [i] = { __afterIndex, ...compareVdom(e, a[__afterIndex]), ...(e.$remount ? {remount: true}: {}) }
+            }
         })
         res.toAppend = a.flatMap((e,i) => reused[i] ? [] : [{...compareVdom({},e), __afterIndex: i}])
         jb.log('childDiffRes',[res,...arguments])
@@ -4588,6 +4670,67 @@ function compareVdom(b,a) {
     }
 }
 
+function filterDelta(delta) {
+    const doFilter = dlt => ({
+        attributes: jb.objFromEntries(jb.entries(dlt.attributes)
+            .filter(e=> ['jb-ctx','cmp-id','originators','__afterIndex','mount-ctx','interactive'].indexOf(e[0]) == -1)),
+        children: dlt.children
+    })
+    return doFilter(delta)
+}
+
+function sameSource(vdomBefore,vdomAfter) {
+    if (vdomBefore.cmp && vdomBefore.cmp === vdomAfter.cmp) return true
+    const atts1 = vdomBefore.attributes || {}, atts2 = vdomAfter.attributes || {}
+    if (atts1.cmpId && atts1.cmpId === atts2.cmpId || atts1.ctxId && atts1.ctxId === atts2.ctxId) return true
+    if (compareCtxAtt('path',atts1,atts2) && compareCtxAtt('data',atts1,atts2)) return true
+    if (compareAtts(['id','path','name'],atts1,atts2)) return true
+}
+
+function compareAtts(attsToCompare,atts1,atts2) {
+    for(let i=0;i<attsToCompare.length;i++)
+        if (atts1[attsToCompare[i]] && atts1[attsToCompare[i]] == atts2[attsToCompare[i]])
+            return true
+}
+
+function compareCtxAtt(att,atts1,atts2) {
+    const val1 = atts1.ctxId && jb.path(jb.ui.ctxDictionary[atts1.ctxId],att)
+    const val2 = atts2.ctxId && jb.path(jb.ui.ctxDictionary[atts2.ctxId],att)
+    return val1 && val2 && val1 == val2
+}
+
+// dom related functions
+
+function applyVdomDiff(elem,vdomAfter,{strongRefresh} = {}) {
+    jb.log('applyDeltaTop',['start',...arguments])
+    const vdomBefore = elem instanceof ui.VNode ? elem : elemToVdom(elem)
+    const delta = compareVdom(vdomBefore,vdomAfter)
+    if (elem instanceof ui.VNode) { // runs on worker
+        const cmpId = elem.getAttribute('cmp-id')
+        if (elem != vdomAfter) { // update the elem
+            Object.keys(elem).forEach(k=>delete elem[k])
+            Object.assign(elem,vdomAfter)
+        }
+        return jb.ui.updateRenderer(delta,elem.attributes.id,cmpId) // deligate to the main thread 
+    }
+    const active = jb.ui.activeElement() === elem
+    jb.log('applyDeltaTop',['apply',vdomBefore,vdomAfter,delta,active,...arguments],
+        {modifier: record => record.push(filterDelta(delta)) })
+    if (delta.tag || strongRefresh) {
+        unmount(elem)
+        const newElem = render(vdomAfter,elem.parentElement)
+        elem.parentElement.replaceChild(newElem,elem)
+        jb.log('replaceTop',[newElem,elem,delta])
+        elem = newElem
+    } else {
+        applyDeltaToDom(elem,delta)
+    }
+    ui.findIncludeSelf(elem,'[interactive]').forEach(el=> 
+        el._component ? el._component.recalcPropsFromElem() : mountInteractive(el))
+    if (active) jb.ui.focus(elem)
+    ui.garbageCollectCtxDictionary(elem)
+}
+
 function elemToVdom(elem) {
     return {
         tag: elem.tagName.toLowerCase(),
@@ -4600,43 +4743,15 @@ function elemToVdom(elem) {
     }
 }
 
-function printDelta(delta) {
-    const filterDelta = dlt => ({
-        attributes: jb.objFromEntries(jb.entries(dlt.attributes)
-            .filter(e=> ['jb-ctx','cmp-id','originators','__afterIndex','mount-ctx','interactive'].indexOf(e[0]) == -1)),
-        children: (dlt.children || []).map(c=>filterDelta(c)).filter(x=>(x.children ||[]).length || x.attributes)
-    })
-    return filterDelta(delta)
-}
-
-function applyVdomDiff(elem,vdomAfter,strongRefresh) {
-    jb.log('applyDeltaTop',['start',...arguments])
-    const vdomBefore = elemToVdom(elem)
-    const delta = compareVdom(vdomBefore,vdomAfter)
-    const active = document.activeElement === elem
-    jb.log('applyDeltaTop',['apply',vdomBefore,vdomAfter,delta,active,...arguments],{modifier: record => record.push(printDelta(delta)) })
-    if (delta.tag || strongRefresh) {
-        unmount(elem)
-        const newElem = render(vdomAfter,elem.parentElement)
-        elem.parentElement.replaceChild(newElem,elem)
-        jb.log('replaceTop',[newElem,elem,delta])
-        elem = newElem
-    } else {
-        applyDeltaToDom(elem,delta)
-    }
-    ui.findIncludeSelf(elem,'[interactive]').forEach(el=> 
-        el._component ? el._component.recalcPropsFromElem() : mountInteractive(el))
-    if (active) elem.focus()
-    ui.garbageCollectCtxDictionary(elem)
-}
-
 function applyDeltaToDom(elem,delta) {
     jb.log('applyDelta',[...arguments])
+    const children = delta.children
     if (delta.children) {
-        const childElems = Array.from(elem.children), updates = delta.children, toAppend = delta.children.toAppend || []
-        const sameOrder = updates.reduce((acc,e,i) => acc && e.__afterIndex ==i, true) && !toAppend.length
-            || !updates.length && toAppend.reduce((acc,e,i) => acc && e.__afterIndex ==i, true)
-        updates.forEach((e,i)=>{
+        const childrenArr = delta.children.length ? Array.from(Array(delta.children.length).keys()).map(i=>children[i]) : []
+        const childElems = Array.from(elem.children), toAppend = delta.children.toAppend || []
+        const sameOrder = childrenArr.reduce((acc,e,i) => acc && e.__afterIndex ==i, true) && !toAppend.length
+            || !childrenArr.length && toAppend.reduce((acc,e,i) => acc && e.__afterIndex ==i, true)
+        childrenArr.forEach((e,i) => {
             if (e.$ == 'delete') {
                 unmount(childElems[i])
                 elem.removeChild(childElems[i])
@@ -4674,49 +4789,8 @@ function applyDeltaToDom(elem,delta) {
     jb.entries(delta.attributes).forEach(e=> setAtt(elem,e[0],e[1]))
 }
 
-function h(cmpOrTag,attributes,children) {
-    if (cmpOrTag && cmpOrTag[ui.VNode]) return cmpOrTag // Vdom
-    if (cmpOrTag && cmpOrTag.renderVdom)
-        return cmpOrTag.renderVdom()
-    attributes = jb.objFromEntries(jb.entries(attributes).map(e=>[e[0].toLowerCase(),e[1]]))
-    if (children === '') children = null
-    if (['string','boolean','number'].indexOf(typeof children) !== -1) {
-        attributes.$text = children
-        children = null
-    }
-    if (children && typeof children.then == 'function') {
-        attributes.$text = '...'
-        children = null
-    }
-    if (children != null && !Array.isArray(children)) children = [children]
-    if (children != null)
-        children = children.filter(x=>x).map(item=> typeof item == 'string' ? h('span',{$text: item}) : item)
-    
-    return {...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,attributes,children,[ui.VNode]: true}
-}
-
-function sameSource(vdomBefore,vdomAfter) {
-    if (vdomBefore.cmp && vdomBefore.cmp === vdomAfter.cmp) return true
-    const atts1 = vdomBefore.attributes || {}, atts2 = vdomAfter.attributes || {}
-    if (atts1.cmpId && atts1.cmpId === atts2.cmpId || atts1.ctxId && atts1.ctxId === atts2.ctxId) return true
-    if (compareCtxAtt('path',atts1,atts2) && compareCtxAtt('data',atts1,atts2)) return true
-    if (compareAtts(['id','path','name'],atts1,atts2)) return true
-}
-
-function compareAtts(attsToCompare,atts1,atts2) {
-    for(let i=0;i<attsToCompare.length;i++)
-        if (atts1[attsToCompare[i]] && atts1[attsToCompare[i]] == atts2[attsToCompare[i]])
-            return true
-}
-
-function compareCtxAtt(att,atts1,atts2) {
-    const val1 = atts1.ctxId && jb.path(jb.ui.ctxDictionary[atts1.ctxId],att)
-    const val2 = atts2.ctxId && jb.path(jb.ui.ctxDictionary[atts2.ctxId],att)
-    return val1 && val2 && val1 == val2
-}
-
 function setAtt(elem,att,val) {
-    if (val == null) {
+    if (att[0] != '$' && (val == null || val == '__undefined')) {
         elem.removeAttribute(att)
         jb.log('htmlChange',['remove',...arguments])
     } else if (att === 'checked' && elem.tagName.toLowerCase() === 'input') {
@@ -4724,10 +4798,10 @@ function setAtt(elem,att,val) {
             elem.checked = true
         jb.log('htmlChange',['checked',...arguments]);
     } else if (att === '$text') {
-        elem.innerText = val
+        elem.innerText =  val == '__undefined' ? '' : val
         jb.log('htmlChange',['text',...arguments]);
     } else if (att === '$html') {
-        elem.innerHTML = val
+        elem.innerHTML = val == '__undefined' ? '' : val
         jb.log('htmlChange',['html',...arguments]);
     } else if (att === 'style' && typeof val === 'object') {
         elem.setAttribute(att,jb.entries(val).map(e=>`${e[0]}:${e[1]}`).join(';'))
@@ -4768,21 +4842,24 @@ function render(vdom,parentElem) {
 }
 
 Object.assign(jb.ui, {
-    VNode: Symbol.for("VNode"),
-    h, render, unmount, applyVdomDiff, elemToVdom, printDelta,
+    VNode, h, render, unmount, applyVdomDiff, applyDeltaToDom, elemToVdom, mountInteractive, compareVdom,
     handleCmpEvent(specificHandler) {
         const el = [event.currentTarget, ...jb.ui.parents(event.currentTarget)].find(el=> el.getAttribute && el.getAttribute('jb-ctx') != null)
         if (!el) return
+        if (el.getAttribute('worker')) { // forward the event to the worker
+            return jb.ui.workers[el.getAttribute('worker')].handleBrowserEvent(el,event,specificHandler)
+        }
         const cmp = el._component
         const action = specificHandler ? specificHandler : `on${event.type}Handler`
         return (cmp && cmp[action]) ? cmp[action](event) : ui.runActionOfElem(el,action)
     },
-    runActionOfElem(elem,action) {
+    runActionOfElem(elem,action,ev) {
         if (elem.getAttribute('contenteditable')) return
+        ev = typeof event != 'undefined' ? event : ev
         ;(elem.getAttribute('handlers') || '').split(',').filter(x=>x.indexOf(action+'-') == 0)
             .forEach(str=> {
-                const ctx = jb.ctxDictionary[str.split('-')[1]]
-                ctx && ctx.setVar('cmp',elem._component).runInner(ctx.profile.action,'action','action')
+                const ctx = jb.ui.ctxDictOfElem(elem)[str.split('-')[1]]
+                ctx && ctx.setVar('cmp',elem._component).setVars({ev}).runInner(ctx.profile.action,'action','action')
             })
     },
     ctrl(context,options) {
@@ -4810,7 +4887,6 @@ Object.assign(jb.ui, {
         const timeSinceLastCleanUp = now - ui.ctxDictionaryLastCleanUp
         if (!force && timeSinceLastCleanUp < 10000) return
         ui.ctxDictionaryLastCleanUp = now
-        jb.log('garbageCollect',jb.resourcesToDelete)
     
         const used = 'jb-ctx,mount-ctx,pick-ctx,props-ctx,handlers,interactive,originators'.split(',')
             .flatMap(att=>Array.from(document.querySelectorAll(`[${att}]`))
@@ -4820,11 +4896,14 @@ Object.assign(jb.ui, {
         // remove unused ctx from dictionary
         const dict = Object.keys(jb.ctxDictionary).map(x=>Number(x)).sort((x,y)=>x-y);
         let lastUsedIndex = 0;
+        const removedCtxs = [], removedResources = []
         for(let i=0;i<dict.length;i++) {
             while (used[lastUsedIndex] < dict[i])
                 lastUsedIndex++;
-            if (used[lastUsedIndex] != dict[i])
-                delete jb.ctxDictionary[''+dict[i]];
+            if (used[lastUsedIndex] != dict[i]) {
+                removedCtxs.push(i)
+                delete jb.ctxDictionary[''+dict[i]]
+            }
         }
         // remove unused vars from resources
         const ctxToPath = ctx => Object.values(ctx.vars).filter(v=>jb.isWatchable(v)).map(v => jb.asRef(v))
@@ -4832,7 +4911,9 @@ Object.assign(jb.ui, {
         const globalVarsUsed = jb.unique(used.map(x=>jb.ctxDictionary[''+x]).filter(x=>x).map(ctx=>ctxToPath(ctx)).flat())
         Object.keys(jb.resources).filter(id=>id.indexOf(':') != -1)
             .filter(id=>globalVarsUsed.indexOf(id) == -1)
-            .forEach(id => delete jb.resources[id])
+            .forEach(id => { removedResources.push(id); delete jb.resources[id]})
+
+        jb.log('garbageCollect',[removedCtxs,removedResources])
     },
 
     refreshElem(elem, state, options) {
@@ -4850,7 +4931,7 @@ Object.assign(jb.ui, {
         const hash = cmp.init()
         if (hash != null && hash == elem.getAttribute('cmpHash'))
             return jb.log('refreshElem',['stopped by hash', hash, ...arguments]);
-        cmp && applyVdomDiff(elem, h(cmp), jb.path(options,'strongRefresh'))
+        cmp && applyVdomDiff(elem, h(cmp), {strongRefresh: jb.path(options,'strongRefresh')})
         jb.execInStudio({ $: 'animate.refresh-elem', elem: () => elem })
     },
 
@@ -4858,15 +4939,15 @@ Object.assign(jb.ui, {
         const changed_path = watchHandler.removeLinksFromPath(watchHandler.pathOfRef(e.ref))
         if (!changed_path) debugger
         //observe="resources://2~name;person~name
-        const parentNode = e.srcCtx && e.srcCtx.vars.elemToTest || document
-        const elemsToCheck = Array.from(parentNode.querySelectorAll('[observe]'))
+        const elemsToCheck = jb.ui.find(e.srcCtx,'[observe]')
         const elemsToCheckCtx = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
         jb.log('notifyObservableElems',['elemsToCheck',elemsToCheck,e])
         elemsToCheck.forEach((elem,i) => {
             if (elemsToCheckCtx[i] != elem.getAttribute('jb-ctx')) return // the elem was changed by it parent 
             let refresh = false, strongRefresh = false
             elem.getAttribute('observe').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{
-                //if (checkCircularity(obs)) return
+                const path = jb.path(elem,'_component.ctx.componentContext.callerPath')
+                //if (!obs.allowSelfRefresh && path && e.srcCtx && e.srcCtx.callStack().indexOf(path) != -1)  return
                 const obsPath = watchHandler.removeLinksFromPath(watchHandler.pathOfRef(obs.ref))
                 if (!obsPath)
                     return jb.logError('observer ref path is empty',obs,e)
@@ -4893,11 +4974,11 @@ Object.assign(jb.ui, {
                 { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh }
         }
     }),
-    databindObservable(cmp,settings) {
-	    return cmp.databindRefChanged.merge(jb.rx.Observable.of(cmp.state.databindRef)).flatMap(ref =>
-			(!cmp.watchRefOn && jb.isWatchable(ref) && ui.refObservable(ref,cmp,settings)
-                .map(e=>Object.assign({ref},e)) ) || [])
-    },
+    // databindObservable(cmp,settings) {
+	//     return cmp.databindRefChanged.merge(jb.rx.Observable.of(cmp.state.databindRef)).flatMap(ref =>
+	// 		(!cmp.watchRefOn && jb.isWatchable(ref) && ui.refObservable(ref,cmp,settings)
+    //             .map(e=>Object.assign({ref},e)) ) || [])
+    // },
 })
 
 ui.subscribeToRefChange(jb.mainWatchableHandler)
@@ -4913,7 +4994,7 @@ function checkCircularity(obs) {
         return true
     }
 
-    if (!obs.allowSelfRefresh && obs.srcCtx) {
+    if (!obs.allowSelfRefresh && obs.srcCtx && obs.callerPath) {
         const callerPathsToCompare = callerPaths.map(x=> x.replace(/~features~?[0-9]*$/,'').replace(/~style$/,''))
         const ctxStylePath = obs.callerPath.replace(/~features~?[0-9]*$/,'')
         return callerPathsToCompare.reduce((res,path) => res || path.indexOf(ctxStylePath) == 0, false)
@@ -4921,7 +5002,7 @@ function checkCircularity(obs) {
 }
 
 function mountInteractive(elem, keepState) {
-    const ctx = jb.ctxDictionary[elem.getAttribute('props-ctx')]
+    const ctx = jb.ui.ctxOfElem(elem,'mount-ctx')
     const cmp = (ctx.profile.$ == 'open-dialog') ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself();
     const mountedCmp = {
         state: { ...(keepState && jb.path(elem._component,'state')) },
@@ -4940,11 +5021,12 @@ function mountInteractive(elem, keepState) {
         },
         status: 'initializing',
         recalcPropsFromElem() {
-            this.ctx = jb.ctxDictionary[elem.getAttribute('props-ctx')].setVar('cmp',this)
+            if (elem.getAttribute('worker')) return
+            this.ctx = jb.ui.ctxOfElem(elem,'mount-ctx').setVar('cmp',this)
             this.cmpId = elem.getAttribute('cmp-id')
             ;(elem.getAttribute('interactive') || '').split(',').filter(x=>x).forEach(op => {
                 [id, ctxId] = op.split('-')
-                const ctx = jb.ctxDictionary[ctxId]
+                const ctx = jb.ui.ctxDictOfElem(elem)[ctxId]
                 this[id] = jb.val(ctx.setVar('state',this.state).runInner(ctx.profile.value,'value','value'))
             })
             this.doRefresh && this.doRefresh()
@@ -5038,18 +5120,34 @@ class JbComponent {
         const interactive = (this.interactiveProp||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx)}`).join(',')
         const originators = this.originators.map(ctx=>ui.preserveCtx(ctx)).join(',')
 
+        const atts = jb.frame.workerId ? 
+            { worker: jb.frame.workerId, 'cmp-id': this.cmpId, ...(handlers && {handlers}) } : 
+            Object.assign(vdom.attributes || {}, {
+                'jb-ctx': ui.preserveCtx(this.originatingCtx()),
+                'cmp-id': this.cmpId, 
+                'mount-ctx': ui.preserveCtx(this.ctx),
+                // 'props-ctx': ui.preserveCtx(this.calcCtx),
+            },
+            observe && {observe}, 
+            handlers && {handlers}, 
+            originators && {originators},
+            this.ctxForPick && { 'pick-ctx': ui.preserveCtx(this.ctxForPick) },
+            (this.componentDidMountFuncs || interactive) && {interactive}, 
+            this.renderProps.cmpHash != null && {cmpHash: this.renderProps.cmpHash}
+        )        
         if (typeof vdom == 'object') {
-            ui.addClassToVdom(vdom, this.jbCssClass())
+            vdom.addClass(this.jbCssClass())
             vdom.attributes = Object.assign(vdom.attributes || {}, {
                     'jb-ctx': ui.preserveCtx(this.originatingCtx()),
                     'cmp-id': this.cmpId, 
                     'mount-ctx': ui.preserveCtx(this.ctx),
-                    'props-ctx': ui.preserveCtx(this.calcCtx),
+                    // 'props-ctx': ui.preserveCtx(this.calcCtx),
                 },
                 observe && {observe}, 
                 handlers && {handlers}, 
                 originators && {originators},
                 this.ctxForPick && { 'pick-ctx': ui.preserveCtx(this.ctxForPick) },
+                jb.frame.workerId && { 'worker': jb.frame.workerId },
                 (this.componentDidMountFuncs || interactive) && {interactive}, 
                 this.renderProps.cmpHash != null && {cmpHash: this.renderProps.cmpHash}
             )
@@ -5069,8 +5167,10 @@ class JbComponent {
         if (this.cachedClass)
             return this.cachedClass
         const ctx = this.ctx
-        const cssLines = (this.staticCssLines || []).concat((this.dynamicCss || []).map(dynCss=>dynCss(this.calcCtx))).filter(x=>x)
+        const cssLines = (this.staticCssLines || []).concat((this.dynamicCss || [])
+            .map(dynCss=>dynCss(this.calcCtx))).filter(x=>x)
         const cssKey = cssLines.join('\n')
+        const classPrefix = jb.frame.isWorker ? 'w'+frame.workerId : 'jb-'
         if (!cssKey) return ''
         if (!cssSelectors_hash[cssKey]) {
             cssId++;
@@ -5078,15 +5178,13 @@ class JbComponent {
             const cssStyle = cssLines.map(selectorPlusExp=>{
                 const selector = selectorPlusExp.split('{')[0];
                 const fixed_selector = selector.split(',').map(x=>x.trim().replace('|>',' '))
-                    .map(x=>x.indexOf('~') == -1 ? `.jb-${cssId}${x}` : x.replace('~',`.jb-${cssId}`));
+                    .map(x=>x.indexOf('~') == -1 ? `.${classPrefix}${cssId}${x}` : x.replace('~',`.${classPrefix}${cssId}`));
                 return fixed_selector + ' { ' + selectorPlusExp.split('{')[1];
             }).join('\n');
             const remark = `/*style: ${ctx.profile.style && ctx.profile.style.$}, path: ${ctx.path}*/\n`;
-            const style_elem = document.createElement('style');
-            style_elem.innerHTML = remark + cssStyle;
-            document.head.appendChild(style_elem);
+            ui.addStyleElem(remark + cssStyle)
         }
-        const jbClass = `jb-${cssSelectors_hash[cssKey]}`
+        const jbClass = `${classPrefix}${cssSelectors_hash[cssKey]}`
         if (!this.dynamicCss)
             this.cachedClass = jbClass
         return jbClass
@@ -5120,7 +5218,7 @@ class JbComponent {
         return this.itemfieldCache.get(item)
     }
     orig(ctx) {
-        if (jb.comps[ctx.profile && ctx.profile.$].type.split(',').indexOf('control') == -1)
+        if (jb.comps[ctx.profile && ctx.profile.$].type.split(/,|-/).indexOf('control') == -1)
             debugger
         this.originators.push(ctx)
         return this
@@ -5147,7 +5245,7 @@ class JbComponent {
         if (options.afterViewInit) 
             options.componentDidMount = options.afterViewInit
         if (typeof options.class == 'string') 
-            options.templateModifier = vdom => ui.addClassToVdom(vdom,options.class)
+            options.templateModifier = vdom => vdom.addClass(options.class)
 
         Object.keys(options).forEach(key=>{
             if (lifeCycle.has(key)) {
@@ -5185,7 +5283,7 @@ ui.JbComponent = JbComponent
 
 jb.jstypes.renderable = value => {
     if (value == null) return '';
-    if (value[ui.VNode]) return value;
+    if (value instanceof ui.VNode) return value;
     if (value instanceof JbComponent) return ui.h(value)
     if (Array.isArray(value))
         return ui.h('div',{},value.map(item=>jb.jstypes.renderable(item)));
@@ -5219,8 +5317,8 @@ Object.assign(jb.ui,{
     withUnits: v => (v === '' || v === undefined) ? '' : (''+v||'').match(/[^0-9]$/) ? v : `${v}px`,
     propWithUnits: (prop,v) => (v === '' || v === undefined) ? '' : `${prop}: ` + ((''+v||'').match(/[^0-9]$/) ? v : `${v}px`) + ';',
     fixCssLine: css => css.indexOf('/n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css,
-    ctxOfElem: elem => elem && elem.getAttribute && elem.getAttribute('jb-ctx') && jb.ctxDictionary[elem.getAttribute('jb-ctx')],
-    resultCtxOfElem: elem => elem && elem.getAttribute && elem.getAttribute('outCtx') && jb.ctxDictionary[elem.getAttribute('jb-ctx')],
+    ctxDictOfElem: elem => (!jb.frame.isWorker && elem.getAttribute('worker') ? jb.ui.workers[elem.getAttribute('worker')] : jb).ctxDictionary,
+    ctxOfElem: (elem,att) => elem && elem.getAttribute && jb.ui.ctxDictOfElem(elem)[elem.getAttribute(att || 'jb-ctx')],
     preserveCtx(ctx) {
         jb.ctxDictionary[ctx.id] = ctx
         return ctx.id
@@ -5242,7 +5340,16 @@ Object.assign(jb.ui,{
     },
     closestCmp(el) {
         return el._component || this.parentCmps(el)[0]
-    }
+    },
+    document(ctx) {
+        if (jb.frame.isWorker)
+            return jb.ui.widgets[ctx.vars.widgetId].top
+        return ctx.vars.elemToTest || typeof document !== 'undefined' && document
+    },
+    item(cmp,vdom,data) {
+        cmp.extendItemFuncs && cmp.extendItemFuncs.forEach(f=>f(cmp,vdom,data));
+        return vdom;
+    },
 })
 
 // ****************** html utils ***************
@@ -5271,67 +5378,35 @@ Object.assign(jb.ui, {
           el = el.parentNode;
         }
     },
-    find(el,query) { return typeof el == 'string' ? Array.from(document.querySelectorAll(el)) : Array.from(el.querySelectorAll(query)) },
-    findIncludeSelf: (el,query) => (ui.matches(el,query) ? [el] : []).concat(Array.from(el.querySelectorAll(query))),
+    activeElement() { return document.activeElement },
+    find(el,selector,options) { 
+        if (el instanceof jb.jbCtx)
+            el = this.document(el) // el is ctx
+        return el instanceof jb.ui.VNode ? el.querySelectorAll(selector,options) : 
+            [... (options && options.includeSelf && ui.matches(el,selector) ? [el] : []),
+             ...Array.from(el.querySelectorAll(selector))]
+    },
+    findIncludeSelf: (el,selector) => jb.ui.find(el,selector,{includeSelf: true}),
     addClass: (el,clz) => el.classList.add(clz),
     removeClass: (el,clz) => el.classList.remove(clz),
     hasClass: (el,clz) => el && el.classList.contains(clz),
     matches: (el,query) => el && el.matches && el.matches(query),
     index: el => Array.from(el.parentNode.children).indexOf(el),
-    inDocument: el => el && (ui.parents(el).slice(-1)[0]||{}).nodeType == 9,
-    addHTML: (el,html) => {
-        const elem = document.createElement('div');
-        elem.innerHTML = html;
-        el.appendChild(elem.firstChild)
-    },
     limitStringLength(str,maxLength) {
         if (typeof str == 'string' && str.length > maxLength-3)
           return str.substring(0,maxLength) + '...';
         return str;
+    },
+    addHTML(el,html) {
+        const elem = document.createElement('div');
+        elem.innerHTML = html;
+        el.appendChild(elem.firstChild)
+    },
+    addStyleElem(innerHtml) {
+        const style_elem = document.createElement('style');
+        style_elem.innerHTML = innerHtml;
+        document.head.appendChild(style_elem);
     }
-})
-
-// ****************** vdom utils ***************
-Object.assign(jb.ui, {
-    addClassToVdom(vdom,clz) {
-        vdom.attributes = vdom.attributes || {};
-        if (vdom.attributes.class === undefined) vdom.attributes.class = ''
-        if (clz && vdom.attributes.class.split(' ').indexOf(clz) == -1)
-            vdom.attributes.class = [vdom.attributes.class,clz].filter(x=>x).join(' ');
-        return vdom;
-    },
-    
-    toggleClassInVdom(vdom,clz,add) {
-      vdom.attributes = vdom.attributes || {};
-      const classes = (vdom.attributes.class || '').split(' ').map(x=>x.trim()).filter(x=>x);
-      if (add && classes.indexOf(clz) == -1)
-        vdom.attributes.class = [...classes,clz].join(' ');
-      if (!add)
-        vdom.attributes.class = classes.filter(x=>x != clz).join(' ');
-      return vdom;
-    },
-    
-    item(cmp,vdom,data) {
-        cmp.extendItemFuncs && cmp.extendItemFuncs.forEach(f=>f(cmp,vdom,data));
-        return vdom;
-    },
-    
-    toVdomOrStr(val) {
-        if (val &&  (typeof val.then == 'function' || typeof val.subscribe == 'function'))
-            return jb.synchArray(val).then(v => ui.toVdomOrStr(v[0]))
-    
-        const res1 = Array.isArray(val) ? val.map(v=>jb.val(v)): val
-        let res = jb.val((Array.isArray(res1) && res1.length == 1) ? res1[0] : res1)
-        if (res && res[ui.VNode] || Array.isArray(res)) return res
-        if (typeof res === 'boolean' || typeof res === 'object')
-            res = '' + res
-        else if (typeof res === 'string')
-            res = res.slice(0,1000)
-        return res
-    },
-    
-    hasClassInVdom: (vdom,clz) => (jb.path(vdom,'attributes.class') || '').split(' ').indexOf(clz) != -1,
-    findInVdom: (vdom,clz) => ui.hasClassInVdom(vdom,clz) ? vdom : (vdom.children||[]).find(vd=>ui.findInVdom(vd,clz)),
 })
 
 ui.renderWidget = function(profile,top) {
@@ -5377,7 +5452,7 @@ ui.renderWidget = function(profile,top) {
         if (page) currentProfile = {$: page}
         const cmp = new jb.jbCtx().run(currentProfile)
         const start = new Date().getTime()
-        ui.applyVdomDiff(top.firstElementChild ,ui.h(cmp), !!page)
+        ui.applyVdomDiff(top.firstElementChild ,ui.h(cmp), { strongRefresh: !!page })
         lastRenderTime = new Date().getTime() - start
     }
 }
@@ -5386,7 +5461,7 @@ jb.objectDiff = function(newObj, orig) {
     if (orig === newObj) return {}
     if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
     const deletedValues = Object.keys(orig).reduce((acc, key) =>
-        newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: undefined }
+        newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: '__undefined' }
     , {})
 
     return Object.keys(newObj).reduce((acc, key) => {
@@ -5524,6 +5599,15 @@ jb.component('feature.after-load', { /* feature.afterLoad */
   impl: ctx => ({ afterViewInit: cmp => ctx.params.action(cmp.ctx) })
 })
 jb.component('interactive', jb.comps['feature.after-load'])
+
+jb.component('template-modifier', { /* templateModifier */
+  type: 'feature',
+  description: 'change the html template',
+  params: [
+    {id: 'value', mandatory: true, dynamic: true}
+  ],
+  impl: (ctx,value) => ({ templateModifier: (vdom,cmp) => value(ctx.setVars({cmp,vdom, ...cmp.renderProps})) })
+})
 
 jb.component('features', {
   type: 'feature',
@@ -5759,7 +5843,7 @@ jb.component('conditional-class', { /* conditionalClass */
   impl: (ctx,cssClass,cond) => ({
     templateModifier: (vdom,cmp) => {
       if (jb.toboolean(cond(cmp.ctx)))
-        jb.ui.addClassToVdom(vdom,cssClass())
+        vdom.addClass(cssClass())
       return vdom
     }
   })
@@ -5921,8 +6005,7 @@ jb.component('refresh-control-by-id', { /* refreshControlById */
 //    {id: 'recalcVars', as: 'boolean', description: 'recalculate feature variables', type: 'boolean' },
   ],
   impl: (ctx,id) => {
-    const base = ctx.vars.elemToTest || typeof document !== 'undefined' && document
-    const elem = base && base.querySelector('#'+id)
+    const elem = jb.ui.document(ctx).querySelector('#'+id)
     if (!elem)
       return jb.logError('refresh-control-by-id can not find elem for #'+id, ctx)
     jb.ui.refreshElem(elem,null,{srcCtx: ctx})
@@ -5964,6 +6047,201 @@ jb.component('feature.byCondition', { /* feature.byCondition */
   impl: (ctx,cond,_then,_else) =>	cond ? _then() : _else()
 })
 ;
+
+(function() {
+const withUnits = jb.ui.withUnits
+const fixCssLine = jb.ui.fixCssLine
+
+jb.component('css', { /* css */
+  description: 'e.g. {color: red; width: 20px} or div>.myClas {color: red} ',
+  type: 'feature,dialog-feature',
+  params: [
+    {id: 'css', mandatory: true, as: 'string'}
+  ],
+  impl: (ctx,css) => ({css: fixCssLine(css)})
+})
+
+jb.component('css.dynamic', {
+  description: 'recalc the css on refresh/watchRef. e.g. {color: %$color%}',
+  type: 'feature,dialog-feature',
+  params: [
+    {id: 'css', mandatory: true, as: 'string', dynamic: true}
+  ],
+  impl: (ctx,css) => ({dynamicCss: ctx2 => css(ctx2)})
+})
+
+jb.component('css.with-condition', {
+  description: 'css with dynamic condition. e.g. .myclz {color: red}',
+  type: 'feature,dialog-feature',
+  params: [
+    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true},
+    {id: 'css', mandatory: true, as: 'string', dynamic: true}
+  ],
+  impl: (ctx,cond,css) => ({dynamicCss: ctx2 => cond(ctx2) ? fixCssLine(css(ctx2)) : ''})
+})
+
+jb.component('css.class', { /* css.class */
+  type: 'feature,dialog-feature',
+  params: [
+    {id: 'class', mandatory: true, as: 'string'}
+  ],
+  impl: (ctx,clz) => ({class: clz})
+})
+
+jb.component('css.width', { /* css.width */
+  type: 'feature,dialog-feature',
+  params: [
+    {id: 'width', mandatory: true, as: 'string'},
+    {id: 'overflow', as: 'string', options: ',auto,hidden,scroll'},
+    {id: 'minMax', as: 'string', options: ',min,max'},
+    {id: 'selector', as: 'string'}
+  ],
+  impl: (ctx,width,overflow,minMax) =>
+    ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}width: ${withUnits(width)} ${overflow ? '; overflow-x:' + overflow + ';' : ''} }`})
+})
+
+jb.component('css.height', { /* css.height */
+  type: 'feature,dialog-feature',
+  params: [
+    {id: 'height', mandatory: true, as: 'string'},
+    {id: 'overflow', as: 'string', options: ',auto,hidden,scroll'},
+    {id: 'minMax', as: 'string', options: ',min,max'},
+    {id: 'selector', as: 'string'}
+  ],
+  impl: (ctx,height,overflow,minMax) =>
+    ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}height: ${withUnits(height)} ${overflow ? '; overflow-y:' + overflow : ''} }`})
+})
+
+jb.component('css.opacity', { /* css.opacity */
+  type: 'feature',
+  params: [
+    {id: 'opacity', mandatory: true, as: 'string' , description: '0-1'},
+    {id: 'selector', as: 'string'}
+  ],
+  impl: (ctx,opacity) =>
+    ({css: `${ctx.params.selector} { opacity: ${opacity} }`})
+})
+
+jb.component('css.padding', { /* css.padding */
+  type: 'feature,dialog-feature',
+  params: [
+    {id: 'top', as: 'string'},
+    {id: 'left', as: 'string'},
+    {id: 'right', as: 'string'},
+    {id: 'bottom', as: 'string'},
+    {id: 'selector', as: 'string'}
+  ],
+  impl: ctx => {
+    var css = ['top','left','right','bottom']
+      .filter(x=>ctx.params[x] != null)
+      .map(x=> `padding-${x}: ${withUnits(ctx.params[x])}`)
+      .join('; ');
+    return {css: `${ctx.params.selector} {${css}}`};
+  }
+})
+
+jb.component('css.margin', { /* css.margin */
+  type: 'feature,dialog-feature',
+  params: [
+    {id: 'top', as: 'string'},
+    {id: 'left', as: 'string'},
+    {id: 'right', as: 'string'},
+    {id: 'bottom', as: 'string'},
+    {id: 'selector', as: 'string'}
+  ],
+  impl: ctx => {
+    var css = ['top','left','right','bottom']
+      .filter(x=>ctx.params[x] != null)
+      .map(x=> `margin-${x}: ${withUnits(ctx.params[x])}`)
+      .join('; ');
+    return {css: `${ctx.params.selector} {${css}}`};
+  }
+})
+
+jb.component('css.transform-rotate', { /* css.transformRotate */
+  type: 'feature',
+  params: [
+    {id: 'angle', as: 'string', description: '0-360'},
+    {id: 'selector', as: 'string'}
+  ],
+  impl: ctx => {
+    return {css: `${ctx.params.selector} {transform:rotate(${ctx.params.angle}deg)}`};
+  }
+})
+
+jb.component('css.color', { /* css.color */
+  type: 'feature',
+  params: [
+    {id: 'color', as: 'string'},
+    {id: 'background', as: 'string'},
+    {id: 'selector', as: 'string'}
+  ],
+  impl: (ctx,color) => {
+		var css = ['color','background']
+      .filter(x=>ctx.params[x])
+      .map(x=> `${x}: ${ctx.params[x]}`)
+      .join('; ');
+    return css && ({css: `${ctx.params.selector} {${css}}`});
+  }
+})
+
+jb.component('css.transform-scale', { /* css.transformScale */
+  type: 'feature',
+  params: [
+    {id: 'x', as: 'string', description: '0-1'},
+    {id: 'y', as: 'string', description: '0-1'},
+    {id: 'selector', as: 'string'}
+  ],
+  impl: ctx => ({css: `${ctx.params.selector} {transform:scale(${ctx.params.x},${ctx.params.y})}`})
+})
+
+jb.component('css.bold', { 
+  type: 'feature',
+  impl: ctx => ({css: `{font-weight: bold}`})
+})
+
+jb.component('css.underline', { 
+  type: 'feature',
+  impl: ctx => ({css: `{text-decoration: underline}`})
+})
+
+jb.component('css.box-shadow', { /* css.boxShadow */
+  type: 'feature,dialog-feature',
+  params: [
+    {id: 'blurRadius', as: 'string', templateValue: '5'},
+    {id: 'spreadRadius', as: 'string', templateValue: '0'},
+    {id: 'shadowColor', as: 'string', templateValue: '#000000'},
+    {id: 'opacity', as: 'string', templateValue: 0.5, description: '0-1'},
+    {id: 'horizontal', as: 'string', templateValue: '10'},
+    {id: 'vertical', as: 'string', templateValue: '10'},
+    {id: 'selector', as: 'string'}
+  ],
+  impl: (context,blurRadius,spreadRadius,shadowColor,opacity,horizontal,vertical,selector) => {
+    var color = [parseInt(shadowColor.slice(1,3),16) || 0, parseInt(shadowColor.slice(3,5),16) || 0, parseInt(shadowColor.slice(5,7),16) || 0]
+      .join(',');
+    return ({css: `${selector} { box-shadow: ${withUnits(horizontal)} ${withUnits(vertical)} ${withUnits(blurRadius)} ${withUnits(spreadRadius)} rgba(${color},${opacity}) }`})
+  }
+})
+
+jb.component('css.border', { /* css.border */
+  type: 'feature,dialog-feature',
+  params: [
+    {id: 'width', as: 'string', defaultValue: '1'},
+    {id: 'side', as: 'string', options: 'top,left,bottom,right'},
+    {
+      id: 'style',
+      as: 'string',
+      options: 'solid,dotted,dashed,double,groove,ridge,inset,outset',
+      defaultValue: 'solid'
+    },
+    {id: 'color', as: 'string', defaultValue: 'black'},
+    {id: 'selector', as: 'string'}
+  ],
+  impl: (context,width,side,style,color,selector) =>
+    ({css: `${selector} { border${side?'-'+side:''}: ${withUnits(width)} ${style} ${color} }`})
+})
+
+})();
 
 jb.ns('group,layout,tabs')
 
@@ -6350,62 +6628,81 @@ jb.component('field.databind', { /* field.databind */
     {id: 'oneWay', type: 'boolean', as: 'boolean' },
   ],
   impl: features(
-    calcProp('model', '%$$model/databind%'),
+    If('%$oneWay%', calcProp('databind', '%$$model/databind%'), watchAndCalcModelProp('databind')),
     calcProp('title', '%$$model/title%'),
     calcProp('fieldId',() => jb.ui.field_id_counter++ ),
-
-    interactive((ctx,{cmp},{debounceTime,oneWay}) => {
-        if (debounceTime) {
-          cmp.debouncer = new jb.rx.Subject();
-          cmp.debouncer.takeUntil( cmp.destroyed )
-            .distinctUntilChanged()
-            .buffer(cmp.debouncer.debounceTime(debounceTime))
-            .filter(buf=>buf.length)
-            .map(buf=>buf.pop())
-            .subscribe(val=>cmp.jbModel(val))
-        }
-
-        if (!ctx.vars.$model || !ctx.vars.$model.databind)
-          return jb.logError('bind-field: No databind in model', ctx, ctx.vars.$model);
-
-        cmp.jbModel = val => {
-          if (event && event.type == 'keyup') {
-            if (cmp.debouncer)
-              return cmp.debouncer.next(val);
-            return jb.delay(1).then(_=>cmp.jbModel(val)); // make sure the input is inside the value
-          }
-          if (val === undefined)
-            return jb.val(ctx.vars.$model.databind(cmp.ctx));
-          else { // write
-              cmp.state.model = val;
-              jb.ui.checkValidationError(cmp,val);
-              jb.writeValue(ctx.vars.$model.databind(cmp.ctx),val,ctx);
-              if (!oneWay)
-                cmp.refresh();
-          }
-        }
-        cmp.onblurHandler = () => cmp.jbModel(event.target.value)
-        if (!ctx.vars.$model.updateOnBlur)
-          cmp.onchangeHandler = cmp.onkeyupHandler = cmp.onkeydownHandler = cmp.onblurHandler
-
-        //databindRefChanged
-        cmp.databindRefChangedSub = new jb.rx.Subject();
-        cmp.databindRefChanged = cmp.databindRefChangedSub.do(ref=> {
-          cmp.state.databindRef = ref
-          cmp.state.model = cmp.jbModel()
-        })
-        cmp.databindRefChanged.subscribe(()=>{}) // first activation
-
-        const srcCtx = ctx.componentContext;
-        if (!oneWay)
-            jb.ui.databindObservable(cmp, {srcCtx, onError: _ => cmp.refresh({model: null},{srcCtx}) })
-            .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
-            .subscribe(e=> !cmp.watchRefOn && cmp.refresh(null,{srcCtx}))
-
-        cmp.databindRefChangedSub.next(ctx.vars.$model.databind(ctx));
-      }
-    ))
+    defHandler('onblurHandler', (ctx,{cmp, ev},{oneWay}) => writeFieldData(ctx,cmp,ev.target.value,oneWay)),
+    defHandler('onchangeHandler', (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && writeFieldData(ctx,cmp,ev.target.value,oneWay)),
+    defHandler('onkeyupHandler', (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && writeFieldData(ctx,cmp,ev.target.value,oneWay)),
+    defHandler('onkeydownHandler', (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && writeFieldData(ctx,cmp,ev.target.value,oneWay)),
+    interactiveProp('jbModel',(ctx,{cmp}) => value => {
+      if (value == null)
+        return ctx.exp('%$$mode/databind','number')
+      else
+        writeFieldData(ctx,cmp,{target:{value}},true)
+    }),
+  )
 })
+
+function writeFieldData(ctx,cmp,value,oneWay) {
+//  const val = (typeof event != 'undefined' ? event : ev).target.value
+  jb.ui.checkValidationError(cmp,value);
+  jb.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx);
+  !oneWay && jb.ui.refreshElem(ev.target,null,{srcCtx: ctx.componentContext});
+}
+
+//     interactive((ctx,{cmp},{debounceTime,oneWay}) => {
+//         if (debounceTime) {
+//           cmp.debouncer = new jb.rx.Subject();
+//           cmp.debouncer.takeUntil( cmp.destroyed )
+//             .distinctUntilChanged()
+//             .buffer(cmp.debouncer.debounceTime(debounceTime))
+//             .filter(buf=>buf.length)
+//             .map(buf=>buf.pop())
+//             .subscribe(val=>cmp.jbModel(val))
+//         }
+
+//         if (!ctx.vars.$model || !ctx.vars.$model.databind)
+//           return jb.logError('bind-field: No databind in model', ctx, ctx.vars.$model);
+
+//         cmp.jbModel = val => {
+//           if (event && event.type == 'keyup') {
+//             if (cmp.debouncer)
+//               return cmp.debouncer.next(val);
+//             return jb.delay(1).then(_=>cmp.jbModel(val)); // make sure the input is inside the value
+//           }
+//           if (val === undefined)
+//             return jb.val(ctx.vars.$model.databind(cmp.ctx));
+//           else { // write
+//               cmp.state.model = val;
+//               jb.ui.checkValidationError(cmp,val);
+//               jb.writeValue(ctx.vars.$model.databind(cmp.ctx),val,ctx);
+//               if (!oneWay)
+//                 cmp.refresh();
+//           }
+//         }
+//         cmp.onblurHandler = () => cmp.jbModel(event.target.value)
+//         if (!ctx.vars.$model.updateOnBlur)
+//           cmp.onchangeHandler = cmp.onkeyupHandler = cmp.onkeydownHandler = cmp.onblurHandler
+
+//         //databindRefChanged
+//         cmp.databindRefChangedSub = new jb.rx.Subject();
+//         cmp.databindRefChanged = cmp.databindRefChangedSub.do(ref=> {
+//           cmp.state.databindRef = ref
+//           cmp.state.model = cmp.jbModel()
+//         })
+//         cmp.databindRefChanged.subscribe(()=>{}) // first activation
+
+//         const srcCtx = ctx.componentContext;
+//         if (!oneWay)
+//             jb.ui.databindObservable(cmp, {srcCtx, onError: _ => cmp.refresh({model: null},{srcCtx}) })
+//             .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
+//             .subscribe(e=> !cmp.watchRefOn && cmp.refresh(null,{srcCtx}))
+
+//         cmp.databindRefChangedSub.next(ctx.vars.$model.databind(ctx));
+//       }
+//     ))
+// })
 
 jb.ui.checkValidationError = (cmp,val) => {
   const err = validationError();
@@ -6481,23 +6778,6 @@ jb.component('field.keyboard-shortcut', { /* field.keyboardShortcut */
               if (event.keyCode == keyCode || (event.key && event.key == keyStr))
                 action();
         })
-    })
-})
-
-jb.component('field.on-data-change', { /* field.onDataChange */
-  type: 'feature',
-  params: [
-    {id: 'action', type: 'action', mandatory: true, dynamic: true},
-    {id: 'includeFirst', type: 'boolean', as: 'boolean'}
-  ],
-  impl: interactive( (ctx,{cmp},{action,includeFirst}) => {
-      const includeFirstEm = includeFirst ? jb.rx.Observable.of({ref: cmp.state.databindRef}) : jb.rx.Observable.of();
-      jb.ui.databindObservable(cmp,{srcCtx: ctx})
-            .merge(includeFirstEm)
-            .map(e=>jb.val(e.ref))
-            .filter(x=>x)
-            .subscribe(x=>
-              action(ctx.setData(x)));
     })
 })
 
@@ -6592,11 +6872,13 @@ jb.component('editable-text', { /* editableText */
 
 jb.component('editable-text.x-button', { /* editableText.xButton */
   type: 'feature',
-  impl: ctx =>({
-    afterViewInit: cmp => cmp.cleanValue = () => { cmp.jbModel(''); cmp.refresh() },
-    templateModifier: (vdom,cmp,{model}) => 
-      jb.ui.h('div', {},[vdom].concat(model ? [jb.ui.h('button', { class: 'delete', onclick: 'cleanValue' } ,'×')]  : []) ),
-    css: `>.delete {
+  impl: features(
+    defHandler('cleanValue',writeValue('%$$model/databind%','')),
+    templateModifier(({},{vdom,databind}) => 
+      jb.ui.h('div', {},[vdom, 
+          ...(databind ? [jb.ui.h('button', { class: 'delete', onclick: 'cleanValue' } ,'×')]  : [])] 
+    )),
+    css(`>.delete {
           margin-left: -16px;
           float: right;
           cursor: pointer; font: 20px sans-serif;
@@ -6605,7 +6887,7 @@ jb.component('editable-text.x-button', { /* editableText.xButton */
       }
       { display : flex }
       >.delete:hover { opacity: .5 }`
-  })
+  ))
 })
 
 jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
@@ -6713,8 +6995,8 @@ jb.component('editable-boolean', { /* editableBoolean */
   ],
   impl: ctx => jb.ui.ctrl(ctx, features(
     calcProp('text',data.if('%$$model/databind%','%$$model/textForTrue%','%$$model/textForFalse%' )),
-    defHandler('toggle', (ctx,{cmp}) => cmp.jbModel(!cmp.jbModel()) ),
-    defHandler('setChecked', (ctx,{cmp}) => cmp.jbModel(event.target.checked) ),
+    defHandler('toggle', writeValue('%$$model/databind%',not('%$$model/databind%'))),
+    defHandler('setChecked', writeValue('%$$model/databind%','true')),
 		))
 })
 
@@ -6722,7 +7004,8 @@ jb.component('editable-boolean.keyboard-support', { /* editableBoolean.keyboardS
   type: 'feature',
   impl: feature.onEvent({
     event: 'click',
-    action: (ctx,{cmp}) => (event.keyCode == 37 || event.keyCode == 39) && cmp.toggle()
+    action: action.if(() => event.keyCode == 37 || event.keyCode == 39,
+      writeValue('%$$model/databind%',not('%$$model/databind%')))
   })
 })
 ;
@@ -6798,201 +7081,6 @@ jb.component('editable-number', { /* editableNumber */
 
 ;
 
-(function() {
-const withUnits = jb.ui.withUnits
-const fixCssLine = jb.ui.fixCssLine
-
-jb.component('css', { /* css */
-  description: 'e.g. {color: red; width: 20px} or div>.myClas {color: red} ',
-  type: 'feature,dialog-feature',
-  params: [
-    {id: 'css', mandatory: true, as: 'string'}
-  ],
-  impl: (ctx,css) => ({css: fixCssLine(css)})
-})
-
-jb.component('css.dynamic', {
-  description: 'recalc the css on refresh/watchRef. e.g. {color: %$color%}',
-  type: 'feature,dialog-feature',
-  params: [
-    {id: 'css', mandatory: true, as: 'string', dynamic: true}
-  ],
-  impl: (ctx,css) => ({dynamicCss: ctx2 => css(ctx2)})
-})
-
-jb.component('css.with-condition', {
-  description: 'css with dynamic condition. e.g. .myclz {color: red}',
-  type: 'feature,dialog-feature',
-  params: [
-    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true},
-    {id: 'css', mandatory: true, as: 'string', dynamic: true}
-  ],
-  impl: (ctx,cond,css) => ({dynamicCss: ctx2 => cond(ctx2) ? fixCssLine(css(ctx2)) : ''})
-})
-
-jb.component('css.class', { /* css.class */
-  type: 'feature,dialog-feature',
-  params: [
-    {id: 'class', mandatory: true, as: 'string'}
-  ],
-  impl: (ctx,clz) => ({class: clz})
-})
-
-jb.component('css.width', { /* css.width */
-  type: 'feature,dialog-feature',
-  params: [
-    {id: 'width', mandatory: true, as: 'string'},
-    {id: 'overflow', as: 'string', options: ',auto,hidden,scroll'},
-    {id: 'minMax', as: 'string', options: ',min,max'},
-    {id: 'selector', as: 'string'}
-  ],
-  impl: (ctx,width,overflow,minMax) =>
-    ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}width: ${withUnits(width)} ${overflow ? '; overflow-x:' + overflow + ';' : ''} }`})
-})
-
-jb.component('css.height', { /* css.height */
-  type: 'feature,dialog-feature',
-  params: [
-    {id: 'height', mandatory: true, as: 'string'},
-    {id: 'overflow', as: 'string', options: ',auto,hidden,scroll'},
-    {id: 'minMax', as: 'string', options: ',min,max'},
-    {id: 'selector', as: 'string'}
-  ],
-  impl: (ctx,height,overflow,minMax) =>
-    ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}height: ${withUnits(height)} ${overflow ? '; overflow-y:' + overflow : ''} }`})
-})
-
-jb.component('css.opacity', { /* css.opacity */
-  type: 'feature',
-  params: [
-    {id: 'opacity', mandatory: true, as: 'string' , description: '0-1'},
-    {id: 'selector', as: 'string'}
-  ],
-  impl: (ctx,opacity) =>
-    ({css: `${ctx.params.selector} { opacity: ${opacity} }`})
-})
-
-jb.component('css.padding', { /* css.padding */
-  type: 'feature,dialog-feature',
-  params: [
-    {id: 'top', as: 'string'},
-    {id: 'left', as: 'string'},
-    {id: 'right', as: 'string'},
-    {id: 'bottom', as: 'string'},
-    {id: 'selector', as: 'string'}
-  ],
-  impl: ctx => {
-    var css = ['top','left','right','bottom']
-      .filter(x=>ctx.params[x] != null)
-      .map(x=> `padding-${x}: ${withUnits(ctx.params[x])}`)
-      .join('; ');
-    return {css: `${ctx.params.selector} {${css}}`};
-  }
-})
-
-jb.component('css.margin', { /* css.margin */
-  type: 'feature,dialog-feature',
-  params: [
-    {id: 'top', as: 'string'},
-    {id: 'left', as: 'string'},
-    {id: 'right', as: 'string'},
-    {id: 'bottom', as: 'string'},
-    {id: 'selector', as: 'string'}
-  ],
-  impl: ctx => {
-    var css = ['top','left','right','bottom']
-      .filter(x=>ctx.params[x] != null)
-      .map(x=> `margin-${x}: ${withUnits(ctx.params[x])}`)
-      .join('; ');
-    return {css: `${ctx.params.selector} {${css}}`};
-  }
-})
-
-jb.component('css.transform-rotate', { /* css.transformRotate */
-  type: 'feature',
-  params: [
-    {id: 'angle', as: 'string', description: '0-360'},
-    {id: 'selector', as: 'string'}
-  ],
-  impl: ctx => {
-    return {css: `${ctx.params.selector} {transform:rotate(${ctx.params.angle}deg)}`};
-  }
-})
-
-jb.component('css.color', { /* css.color */
-  type: 'feature',
-  params: [
-    {id: 'color', as: 'string'},
-    {id: 'background', as: 'string'},
-    {id: 'selector', as: 'string'}
-  ],
-  impl: (ctx,color) => {
-		var css = ['color','background']
-      .filter(x=>ctx.params[x])
-      .map(x=> `${x}: ${ctx.params[x]}`)
-      .join('; ');
-    return css && ({css: `${ctx.params.selector} {${css}}`});
-  }
-})
-
-jb.component('css.transform-scale', { /* css.transformScale */
-  type: 'feature',
-  params: [
-    {id: 'x', as: 'string', description: '0-1'},
-    {id: 'y', as: 'string', description: '0-1'},
-    {id: 'selector', as: 'string'}
-  ],
-  impl: ctx => ({css: `${ctx.params.selector} {transform:scale(${ctx.params.x},${ctx.params.y})}`})
-})
-
-jb.component('css.bold', { 
-  type: 'feature',
-  impl: ctx => ({css: `{font-weight: bold}`})
-})
-
-jb.component('css.underline', { 
-  type: 'feature',
-  impl: ctx => ({css: `{text-decoration: underline}`})
-})
-
-jb.component('css.box-shadow', { /* css.boxShadow */
-  type: 'feature,dialog-feature',
-  params: [
-    {id: 'blurRadius', as: 'string', templateValue: '5'},
-    {id: 'spreadRadius', as: 'string', templateValue: '0'},
-    {id: 'shadowColor', as: 'string', templateValue: '#000000'},
-    {id: 'opacity', as: 'string', templateValue: 0.5, description: '0-1'},
-    {id: 'horizontal', as: 'string', templateValue: '10'},
-    {id: 'vertical', as: 'string', templateValue: '10'},
-    {id: 'selector', as: 'string'}
-  ],
-  impl: (context,blurRadius,spreadRadius,shadowColor,opacity,horizontal,vertical,selector) => {
-    var color = [parseInt(shadowColor.slice(1,3),16) || 0, parseInt(shadowColor.slice(3,5),16) || 0, parseInt(shadowColor.slice(5,7),16) || 0]
-      .join(',');
-    return ({css: `${selector} { box-shadow: ${withUnits(horizontal)} ${withUnits(vertical)} ${withUnits(blurRadius)} ${withUnits(spreadRadius)} rgba(${color},${opacity}) }`})
-  }
-})
-
-jb.component('css.border', { /* css.border */
-  type: 'feature,dialog-feature',
-  params: [
-    {id: 'width', as: 'string', defaultValue: '1'},
-    {id: 'side', as: 'string', options: 'top,left,bottom,right'},
-    {
-      id: 'style',
-      as: 'string',
-      options: 'solid,dotted,dashed,double,groove,ridge,inset,outset',
-      defaultValue: 'solid'
-    },
-    {id: 'color', as: 'string', defaultValue: 'black'},
-    {id: 'selector', as: 'string'}
-  ],
-  impl: (context,width,side,style,color,selector) =>
-    ({css: `${selector} { border${side?'-'+side:''}: ${withUnits(width)} ${style} ${color} }`})
-})
-
-})();
-
 jb.component('open-dialog', { /* openDialog */
   type: 'action',
   params: [
@@ -7061,9 +7149,9 @@ jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
 		  return {
 				 css: '>.dialog-title { cursor: pointer }',
 				 afterViewInit: function(cmp) {
-					   const titleElem = cmp.base.querySelector('.dialog-title');
-					   cmp.mousedownEm = jb.rx.Observable.fromEvent(titleElem, 'mousedown')
-						   .takeUntil( cmp.destroyed );
+					const titleElem = cmp.base.querySelector('.dialog-title');
+					cmp.mousedownEm = jb.rx.Observable.fromEvent(titleElem, 'mousedown')
+						.takeUntil( cmp.destroyed );
   
 					if (id && sessionStorage.getItem(id)) {
 						  const pos = JSON.parse(sessionStorage.getItem(id));
@@ -7357,8 +7445,8 @@ jb.component('dialog.div', { /* dialog.div */
 })
   
 jb.ui.dialogs = {
-	 dialogs: [],
-	 buildComp(ctx) { // used with addDialog profile
+	dialogs: [],
+	buildComp(ctx) { // used with addDialog profile
 		const dialog = ctx.vars.$dialog
 		return jb.ui.ctrl(ctx, features(
 			calcProp('title', _ctx=> _ctx.vars.$model.title(_ctx)),
@@ -7372,12 +7460,10 @@ jb.ui.dialogs = {
 				dialog.onOK = ctx2 => ctx.params.onOK(cmp.ctx.extendVars(ctx2));
 				cmp.dialogCloseOK = () => dialog.close({OK: true});
 				cmp.dialogClose = args => dialog.close(args);
-				//cmp.recalcTitle = (e,srcCtx) =>	jb.ui.setState(cmp,{title: ctx.params.title(ctx)},e,srcCtx)
-
 				dialog.el = cmp.base;
 				if (!cmp.base.style.zIndex) cmp.base.style.zIndex = 100;
-			})
-	))},
+		})))
+	},
 
 	addDialog(dialog,ctx) {
 		const self = this;
@@ -7949,7 +8035,7 @@ jb.component('itemlist-container.filter-field', { /* itemlistContainer.filterFie
 					cmp.itemToFilterData = item => fieldData(ctx.setData(item));
 
 				ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.filters.push(items=>{
-						const filterValue = cmp.jbModel();
+						const filterValue = jb.val(ctx.vars.$model.databind());
 						if (!filterValue) return items;
 						const res = items.filter(item=>filterType.filter(filterValue,cmp.itemToFilterData(item)) );
 						if (filterType.sort && (!cmp.state.sortOptions || cmp.state.sortOptions.length == 0) )
@@ -8236,7 +8322,7 @@ jb.component('menu.init-popup-menu', { /* menu.initPopupMenu */
       calcProp('title','%$menuModel.title%'),
 			interactive((ctx,{cmp}) => {
 				cmp.mouseEnter = _ => {
-					if (jb.ui.find('.context-menu-popup')[0]) // first open with click...
+					if (jb.ui.find(ctx,'.context-menu-popup')[0]) // first open with click...
   					cmp.openPopup()
 				};
 				cmp.openPopup = jb.ui.wrapWithLauchingElement( ctx2 => {
@@ -8559,12 +8645,12 @@ jb.component('picklist', { /* picklist */
             hasEmptyOption: options.filter(x=>!x.text)[0]
           }
       }),
-      interactive((_ctx,{cmp}) => {
-        if (cmp.databindRefChanged) jb.ui.databindObservable(cmp,{srcCtx: ctx})
-          .subscribe(e=>cmp.onChange && cmp.onChange(_ctx.setData(jb.val(e.ref))))
-        else jb.ui.refObservable(ctx.params.databind(),cmp,{srcCtx: ctx}).subscribe(e=>
-          cmp.onChange && cmp.onChange(_ctx.setData(jb.val(e.ref))))
-      })
+      // interactive((_ctx,{cmp}) => {
+      //   if (cmp.databindRefChanged) jb.ui.databindObservable(cmp,{srcCtx: ctx})
+      //     .subscribe(e=>cmp.onChange && cmp.onChange(_ctx.setData(jb.val(e.ref))))
+      //   else jb.ui.refObservable(ctx.params.databind(),cmp,{srcCtx: ctx}).subscribe(e=>
+      //     cmp.onChange && cmp.onChange(_ctx.setData(jb.val(e.ref))))
+      // })
     ))
 })
 
@@ -8720,8 +8806,11 @@ jb.component('editable-number.slider-no-text', { /* editableNumber.sliderNoText 
   impl: customStyle({
     template: (cmp,state,h) => h('input',{ type: 'range',
         min: state.min, max: state.max, step: state.step,
-        value: state.model, mouseup: e => cmp.jbModel(e.target.value), tabindex: -1}),
-    features: [field.databind(), slider.init()]
+        value: state.databind, mouseup: 'onblurHandler', tabindex: -1}),
+    features: [
+      field.databind(), 
+      slider.init()
+    ]
   })
 })
 
@@ -8760,7 +8849,6 @@ jb.component('slider.init', { /* slider.init */
       onmousedown: true,
       onmousemove: true,
       afterViewInit: cmp => {
-          //cmp.refresh();
 
           cmp.handleArrowKey = e => {
               var val = Number(cmp.jbModel()) || 0;
@@ -9064,7 +9152,7 @@ jb.component('mdc.ripple-effect', {
   impl: ctx => ({
       templateModifier: vdom => {
         'mdc-ripple-surface mdc-ripple-radius-bounded mdc-states mdc-states-base-color(red)'.split(' ')
-          .forEach(cl=>jb.ui.addClassToVdom(vdom,cl))
+          .forEach(cl=>vdom.addClass(cl))
         return vdom;
       }
    })
@@ -9245,7 +9333,7 @@ jb.ns('mdc,mdc-style')
 jb.component('editable-text.input', { /* editableText.input */
   type: 'editable-text.style',
   impl: customStyle({
-    template: (cmp,{model},h) => h('input', {value: model, onchange: true, onkeyup: true, onblur: true }),
+    template: (cmp,{databind},h) => h('input', {value: databind, onchange: true, onkeyup: true, onblur: true }),
     features: field.databindText()
   })
 })
@@ -9258,8 +9346,8 @@ jb.component('editable-text.textarea', { /* editableText.textarea */
     {id: 'oneWay', type: 'boolean', as: 'boolean', defaultValue: true}
   ],
   impl: customStyle({
-    template: (cmp,{model,rows,cols},h) => h('textarea', {
-        rows: rows, cols: cols, value: model, onchange: true, onkeyup: true, onblur: true  }),
+    template: (cmp,{databind,rows,cols},h) => h('textarea', {
+        rows: rows, cols: cols, value: databind, onchange: true, onkeyup: true, onblur: true  }),
     features: field.databindText(0, '%$oneWay%')
   })
 })
@@ -9272,7 +9360,7 @@ jb.component('editable-text.mdc-input', { /* editableText.mdcInput */
   impl: customStyle({
     template: (cmp,state,h) => h('div',{class: ['mdc-text-field',state.error ? 'is-invalid' : ''].join(' ') },[
         h('input', { type: 'text', class: 'mdc-text-field__input', id: 'input_' + state.fieldId,
-            value: state.model, onchange: true, onkeyup: true, onblur: true,
+            value: state.databind, onchange: true, onkeyup: true, onblur: true,
         }),
         h('label',{class: 'mdc-floating-label', for: 'input_' + state.fieldId},state.title),
         h('div',{class: 'mdc-line-ripple' }),
@@ -9290,7 +9378,7 @@ jb.component('editable-text.mdc-no-label', { /* editableText.mdcNoLabel */
   ],
   impl: customStyle({
     template: (cmp,state,h) => h('div',{class: 'mdc-text-field mdc-text-field--no-label'},
-        h('input', { class: 'mdc-text-field__input', type: 'text', value: state.model, onchange: true, onkeyup: true, onblur: true }),
+        h('input', { class: 'mdc-text-field__input', type: 'text', value: state.databind, onchange: true, onkeyup: true, onblur: true }),
         h('div',{class: 'mdc-line-ripple' }),
         ),
     css: '{ padding: 0 !important; {?width: %$width%px?} } :focus { border-color: #3F51B5; border-width: 2px}',
@@ -9302,11 +9390,11 @@ jb.component('editable-text.mdc-search', { /* editableText.mdcSearch */
   description: 'debounced and one way binding',
   type: 'editable-text.style',
   impl: customStyle({
-    template: (cmp,{model, fieldId, title},h) => h('div',{class:'mdc-text-field'},[
+    template: (cmp,{databind, fieldId, title},h) => h('div',{class:'mdc-text-field'},[
         h('input', { class: 'mdc-text-field__input', id: 'search_' + fieldId, type: 'text',
-            value: model, onchange: true, onkeyup: true, onblur: true,
+            value: databind, onchange: true, onkeyup: true, onblur: true,
         }),
-        h('label',{class: 'mdc-floating-label mdc-floating-label--float-above', for: 'search_' + fieldId}, model ? '' : title)
+        h('label',{class: 'mdc-floating-label mdc-floating-label--float-above', for: 'search_' + fieldId}, databind ? '' : title)
       ]),
     features: [field.databindText(), mdcStyle.initDynamic()]
   })
@@ -9728,7 +9816,7 @@ jb.component('table.mdc', { /* table.mdc */
 jb.component('picklist.native', { /* picklist.native */
   type: 'picklist.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('select', { value: state.model, onchange: true },
+    template: (cmp,state,h) => h('select', { value: state.databind, onchange: true },
           state.options.map(option=>h('option',{value: option.code},option.text))
         ),
     css: `
@@ -9746,9 +9834,9 @@ jb.component('picklist.radio', {
     { id: 'text', defaultValue: '%text%', dynamic: true },
   ],
   impl: customStyle({
-    template: (cmp,{model, options, fieldId, text},h) => h('div', {},
+    template: (cmp,{databind, options, fieldId, text},h) => h('div', {},
           options.flatMap((option,i)=> [h('input', {
-              type: 'radio', name: fieldId, id: i, checked: model === option.code, value: option.code, onchange: true
+              type: 'radio', name: fieldId, id: i, checked: databind === option.code, value: option.code, onchange: true
             }), h('label',{for: i}, text(cmp.ctx.setData(option))) ] )),
     css: `>input { %$radioCss% }`,
     features: field.databind()
@@ -9767,7 +9855,7 @@ jb.component('picklist.native-md-look-open', { /* picklist.nativeMdLookOpen */
   type: 'picklist.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{}, [
-        h('input', { type: 'text', value: state.model, list: 'list_' + cmp.ctx.id, onchange: true }),
+        h('input', { type: 'text', value: state.databind, list: 'list_' + cmp.ctx.id, onchange: true }),
         h('datalist', {id: 'list_' + cmp.ctx.id}, state.options.map(option=>h('option',{},option.text)))
     ]),
     css: `>input {  appearance: none; -webkit-appearance: none; font-family: inherit;
@@ -9805,7 +9893,7 @@ jb.component('picklist.native-md-look', { /* picklist.nativeMdLook */
   type: 'picklist.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{},h('select',
-      { value: state.model, onchange: true },
+      { value: state.databind, onchange: true },
           state.options.map(option=>h('option',{value: option.code},option.text)))),
     css: `>select {  appearance: none; -webkit-appearance: none; font-family: inherit;
   background-color: transparent;
@@ -9921,7 +10009,7 @@ jb.component('picklist.hyperlinks', { /* hyperlinks */
 jb.component('picklist.groups', { /* picklist.groups */
   type: 'picklist.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('select', { value: state.model, onchange: true },
+    template: (cmp,state,h) => h('select', { value: state.databind, onchange: true },
           (state.hasEmptyOption ? [h('option',{value:''},'')] : []).concat(
             state.groups.map(group=>h('optgroup',{label: group.text},
               group.options.map(option=>h('option',{value: option.code},option.text))
@@ -9979,7 +10067,7 @@ jb.component('property-sheet.titles-above', { /* propertySheet.titlesAbove */
 jb.component('editable-boolean.checkbox', { /* editableBoolean.checkbox */
   type: 'editable-boolean.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('input', { type: 'checkbox', checked: state.model, onchange: 'setChecked', onkeyup: 'setChecked'  }),
+    template: (cmp,state,h) => h('input', { type: 'checkbox', checked: state.databind, onchange: 'setChecked', onkeyup: 'setChecked'  }),
     features: field.databind()
   })
 })
@@ -9988,7 +10076,7 @@ jb.component('editable-boolean.checkbox-with-title', { /* editableBoolean.checkb
   type: 'editable-boolean.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{}, [h('input', { type: 'checkbox',
-        checked: state.model, onchange: 'setChecked', onkeyup: 'setChecked'  }), state.text]),
+        checked: state.databind, onchange: 'setChecked', onkeyup: 'setChecked'  }), state.text]),
     features: field.databind()
   })
 })
@@ -9997,7 +10085,7 @@ jb.component('editable-boolean.expand-collapse', { /* editableBoolean.expandColl
   type: 'editable-boolean.style',
   impl: customStyle({
     template: (cmp,state,h) => h('i',{class:'material-icons noselect', onclick: 'toggle' }, 
-      state.model ? 'keyboard_arrow_down' : 'keyboard_arrow_right'),
+      state.databind ? 'keyboard_arrow_down' : 'keyboard_arrow_right'),
     css: `{ font-size:16px; cursor: pointer; }`,
     features: field.databind()
   })
@@ -10033,7 +10121,7 @@ jb.component('editable-boolean.mdc-slide-toggle', { /* editableBoolean.mdcSlideT
       h('div',{class: 'mdc-switch__thumb-underlay'},[
         h('div',{class: 'mdc-switch__thumb'},
           h('input', { type: 'checkbox', role: 'switch', class: 'mdc-switch__native-control', id: 'switch_' + state.fieldId,
-            checked: state.model, onchange: 'setChecked' })),
+            checked: state.databind, onchange: 'setChecked' })),
       ]),
       h('label',{for: 'switch_' + state.fieldId},state.text)
     ]),
@@ -10047,7 +10135,7 @@ jb.component('editable-boolean.checkbox-with-label', {
   impl: customStyle({
     template: (cmp,state,h) => h('div',{},[
         h('input', { type: 'checkbox', id: "switch_"+state.fieldId,
-          checked: state.model,
+          checked: state.databind,
           onchange: 'setChecked',
           onkeyup: 'setChecked'  },),
         h('label',{for: "switch_"+state.fieldId },state.text)
@@ -25648,7 +25736,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
 
     function shouldNotFlat(result) {
       const ctrls = path.match(/~controls$/) && Array.isArray(jb.studio.valOfPath(path)) // && innerVals.length > 1// jb.studio.isOfType(path,'control') && !arrayElem
-      const customStyle = jb.studio.compNameOfPath(path) === 'customStyle'
+      const customStyle = jb.studio.compNameOfPath && jb.studio.compNameOfPath(path) === 'customStyle'
       const top = (path.match(/~/g)||'').length < 2
       const long = result.text.replace(/\n\s*/g,'').length > colWidth
       return result.unflat || customStyle || top || ctrls || long
@@ -27556,10 +27644,12 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'dist/jb-rx.js',
 
         'src/ui/watchable/watchable-ref.js',
+        'src/ui/core/vdom.js',
         'src/ui/core/jb-react.js',
         'src/ui/core/ui-comp.js',
         'src/ui/core/ui-utils.js',
         'src/ui/common-features.js',
+        'src/ui/css-features.js',
 
         'src/ui/group.js',
         'src/ui/label.js',
@@ -27570,7 +27660,6 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/editable-text.js',
         'src/ui/editable-boolean.js',
         'src/ui/editable-number.js',
-        'src/ui/css-features.js',
         'src/ui/dialog.js',
         'src/ui/itemlist.js',
         'src/ui/itemlist-container.js',
@@ -27596,6 +27685,9 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/tree/tree.js',
         'src/ui/tree/table-tree.js',
         'src/ui/tree/json-tree-model.js',
+      ],
+      remote : [
+        'src/ui/watchable/remote.js',
       ],
       'inner-html': [ // unsafe
         'src/ui/inner-html.js',
@@ -27868,10 +27960,11 @@ jb.component('text-editor.is-dirty', { /* textEditor.isDirty */
 jb.component('textarea.init-textarea-editor', { /* textarea.initTextareaEditor */
   type: 'feature',
   impl: interactive( (ctx,{cmp}) => {
-        jb.val(cmp.state.databindRef)
+        const data_ref = ctx.vars.$model.databind()
+        jb.val(data_ref) // calc text
         cmp.editor = {
             ctx: () => cmp.ctx,
-            data_ref: cmp.state.databindRef,
+            data_ref,
             getCursorPos: () => offsetToLineCol(cmp.base.value,cmp.base.selectionStart),
             cursorCoords: () => {},
             markText: () => {},
@@ -27935,11 +28028,12 @@ function offsetToLineCol(text,offset) {
 
 function refreshEditor(cmp,_path) {
     const editor = cmp.editor
-    const text = jb.tostring(cmp.state.databindRef)
-    const pathWithOffset = _path ? {path: _path+'~!value',offset:1} : this.pathOfPosition(cmp.state.databindRef, editor.getCursorPos())
+    const data_ref = cmp.ctx.vars.$model.databind()
+    const text = jb.tostring(data_ref)
+    const pathWithOffset = _path ? {path: _path+'~!value',offset:1} : this.pathOfPosition(data_ref, editor.getCursorPos())
     editor.setValue(text)
     if (pathWithOffset) {
-        const _pos = cmp.state.databindRef.locationMap[pathWithOffset.path]
+        const _pos = data_ref.locationMap[pathWithOffset.path]
         const pos = _pos && _pos.positions
         if (pos)
             editor.setSelectionRange({line: pos[0], col: pos[1] + (pathWithOffset.offset || 0)})
@@ -28447,8 +28541,8 @@ function enableFullScreen(editor,width,height) {
 		.jb-codemirror-editorCss { position:relative; }
 		.jb-codemirror-fullScreenEditorCss { padding-top: 20px, display: block; position: fixed !important; top: 0; left: 0; z-index: 99999999; }
 	`;
-	if (!jb.ui.find('#jb_codemirror_fullscreen')[0])
-    jb.ui.addHTML(document.head,`<style id="jb_codemirror_fullscreen" type="text/css">${css}</style>`);
+	if (!jb.ui.find(document,'#jb_codemirror_fullscreen')[0])
+    	jb.ui.addHTML(document.head,`<style id="jb_codemirror_fullscreen" type="text/css">${css}</style>`);
 
 	const jEditorElem = editor.getWrapperElement();
   	jb.ui.addClass(jEditorElem,'jb-codemirror-editorCss');
@@ -28561,7 +28655,7 @@ jb.component('editable-text.studio-primitive-text', { /* editableText.studioPrim
   impl: customStyle({
     template: (cmp,state,h) => h('input', {
           class: 'mdc-text-field__input',
-          value: state.model, onchange: true, onkeyup: true, onblur: true
+          value: state.databind, onchange: true, onkeyup: true, onblur: true
       }),
     css: '{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom: 7px;} :focus { border-color: #3F51B5; border-width: 2px}',
     features: field.databindText(500,false)
@@ -28573,7 +28667,7 @@ jb.component('editable-text.floating-input', { /* editableText.floatingInput */
   impl: customStyle({
     template: (cmp,state,h) => h('div',{class:'mdc-text-field'},[
       h('input', { class: 'mdc-text-field__input', type: 'text', autocomplete: 'nop',
-          value: state.model, onchange: true, onkeyup: true, onblur: true,
+          value: state.databind, onchange: true, onkeyup: true, onblur: true,
       }),
       h('label',{class: 'mdc-floating-label', for: 'jb_input_' + state.fieldId},state.title)
     ]),
@@ -28661,7 +28755,7 @@ jb.component('button.studio-script', { /* button.studioScript */
 jb.component('picklist.studio-enum', { /* picklist.studioEnum */
   type: 'picklist.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('select', { value: state.model, onchange: true },
+    template: (cmp,state,h) => h('select', { value: state.databind, onchange: true },
           state.options.map(option=>h('option',{value: option.code},option.text))
         ),
     css: `
@@ -29672,7 +29766,6 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
               max: '%$controlItem/width/max%',
               features: [
                 field.default('%$controlItem/width/default%'),
-                field.onDataChange(studio.setPreviewSize('%%'), true)
               ]
             }),
             editableNumber({
@@ -29683,7 +29776,6 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
               max: '%$controlItem/height/max%',
               features: [
                 field.default('%$controlItem/height/default%'),
-                field.onDataChange(studio.setPreviewSize(undefined, '%%'), true)
               ]
             })
           ],
@@ -31648,7 +31740,7 @@ class ValueOption {
       const pos = this.pos + 1;
       input.value = input.value.substr(0,this.pos-this.tail.length) + toPaste + input.value.substr(pos);
       try {
-        input._component && input._component.jbModel(input.value,'keyup') // sometimes the onupdate event is not activated...
+//        input._component && input._component.jbModel(input.value,'keyup') // sometimes the onupdate event is not activated...
       } catch (e) {}
       ctx.exp('%$suggestionData%').options = [] // disable more pastes...
 
@@ -36159,8 +36251,8 @@ jb.component('feature.content-editable', {
       if (vdom.tag && vdom.tag.toLowerCase() == 'button' && vdom.children && vdom.children.length == 1 && typeof vdom.children[0] == 'string') {
         vdom.children[0] = jb.ui.h('span',attsToInject,vdom.children[0])
         return vdom
-      } else if (vdom.tag && vdom.tag.toLowerCase() == 'button' && jb.ui.findInVdom(vdom,'mdc-button__label')) {
-        const atts = jb.ui.findInVdom(vdom,'mdc-button__label').attributes
+      } else if (vdom.tag && vdom.tag.toLowerCase() == 'button' && jb.ui.find(vdom,'.mdc-button__label')) {
+        const atts = jb.ui.find(vdom,'.mdc-button__label').attributes
         Object.assign(atts,attsToInject,{style: [(atts.style || ''),'z-index: 100'].filter(x=>x).join(';') })
         return vdom
       }
@@ -36169,7 +36261,7 @@ jb.component('feature.content-editable', {
       return vdom;
     },
     dynamicCss: ctx => ctx.vars.cmp.state.contentEditableActive &&
-      `{ pointer-events: all; border: 1px dashed grey; background-image: linear-gradient(90deg,rgba(243,248,255,.03) 63.45%,rgba(207,214,229,.27) 98%); border-radius: 3px;}`
+      `{ border: 1px dashed grey; background-image: linear-gradient(90deg,rgba(243,248,255,.03) 63.45%,rgba(207,214,229,.27) 98%); border-radius: 3px;}`
   })
 })
 ;

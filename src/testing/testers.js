@@ -215,8 +215,11 @@ jb.component('ui-action.set-text', { /* uiAction.setText */
   ],
   impl: (ctx,value,selector,delay) => {
 		const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : ctx.vars.elemToTest;
-		elem && elem._component && elem._component.jbModel(value) 
-//			&& jb.ui.findIncludeSelf(elem,`${selector},${selector} input,${selector} textarea`).forEach(el=>el.value = value);
+		if (elem.getAttribute('worker')) 
+			return jb.ui.workers[elem.getAttribute('worker')].handleBrowserEvent(elem, {type: 'blur', target: {value}})
+		else
+			jb.ui.runActionOfElem(elem,'onblurHandler',{target:{value}})
+		//elem && elem._component && elem._component.jbModel(value) 
 		return jb.delay(delay);
 	}
 })

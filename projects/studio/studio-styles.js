@@ -3,7 +3,7 @@ jb.component('editable-text.studio-primitive-text', { /* editableText.studioPrim
   impl: customStyle({
     template: (cmp,state,h) => h('input', {
           class: 'mdc-text-field__input',
-          value: state.model, onchange: true, onkeyup: true, onblur: true
+          value: state.databind, onchange: true, onkeyup: true, onblur: true
       }),
     css: '{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom: 7px;} :focus { border-color: #3F51B5; border-width: 2px}',
     features: field.databindText(500,false)
@@ -15,7 +15,7 @@ jb.component('editable-text.floating-input', { /* editableText.floatingInput */
   impl: customStyle({
     template: (cmp,state,h) => h('div',{class:'mdc-text-field'},[
       h('input', { class: 'mdc-text-field__input', type: 'text', autocomplete: 'nop',
-          value: state.model, onchange: true, onkeyup: true, onblur: true,
+          value: state.databind, onchange: true, onkeyup: true, onblur: true,
       }),
       h('label',{class: 'mdc-floating-label', for: 'jb_input_' + state.fieldId},state.title)
     ]),
@@ -103,7 +103,7 @@ jb.component('button.studio-script', { /* button.studioScript */
 jb.component('picklist.studio-enum', { /* picklist.studioEnum */
   type: 'picklist.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('select', { value: state.model, onchange: true },
+    template: (cmp,state,h) => h('select', { value: state.databind, onchange: true },
           state.options.map(option=>h('option',{value: option.code},option.text))
         ),
     css: `

@@ -1391,14 +1391,14 @@ jb.component('ui-test.first-succeeding-watchable-sample', { // firstSucceedingWa
   type: 'control',
   impl: group({
     controls: [
-      editableText({databind: '%$gender%'}),
+      editableText({databind: '%$gender%', oneWay: true}),
       button({ title: 'female', action: writeValue('%$gender%', 'female'), features: id('female') }),
       button({ title: 'zee', action: writeValue('%$gender%', 'zee'), features: id('zee') }),
       button({ title: 'male', action: writeValue('%$gender%', 'male'), features: id('male') }),
       group({
         controls: [
-          controlWithCondition('%$gender% == \"male\"', label('a male')),
-          label('not male')
+          controlWithCondition('%$gender% == \"male\"', text('a male')),
+          text('not male')
         ],
         features: [ group.firstSucceeding(), watchRef('%$gender%') ]
       })

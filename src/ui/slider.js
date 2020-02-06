@@ -5,8 +5,11 @@ jb.component('editable-number.slider-no-text', { /* editableNumber.sliderNoText 
   impl: customStyle({
     template: (cmp,state,h) => h('input',{ type: 'range',
         min: state.min, max: state.max, step: state.step,
-        value: state.model, mouseup: e => cmp.jbModel(e.target.value), tabindex: -1}),
-    features: [field.databind(), slider.init()]
+        value: state.databind, mouseup: 'onblurHandler', tabindex: -1}),
+    features: [
+      field.databind(), 
+      slider.init()
+    ]
   })
 })
 
@@ -45,7 +48,6 @@ jb.component('slider.init', { /* slider.init */
       onmousedown: true,
       onmousemove: true,
       afterViewInit: cmp => {
-          //cmp.refresh();
 
           cmp.handleArrowKey = e => {
               var val = Number(cmp.jbModel()) || 0;

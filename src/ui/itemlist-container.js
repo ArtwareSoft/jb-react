@@ -212,7 +212,7 @@ jb.component('itemlist-container.filter-field', { /* itemlistContainer.filterFie
 					cmp.itemToFilterData = item => fieldData(ctx.setData(item));
 
 				ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.filters.push(items=>{
-						const filterValue = cmp.jbModel();
+						const filterValue = jb.val(ctx.vars.$model.databind());
 						if (!filterValue) return items;
 						const res = items.filter(item=>filterType.filter(filterValue,cmp.itemToFilterData(item)) );
 						if (filterType.sort && (!cmp.state.sortOptions || cmp.state.sortOptions.length == 0) )

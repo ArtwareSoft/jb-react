@@ -72,18 +72,34 @@ class JbComponent {
         const interactive = (this.interactiveProp||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx)}`).join(',')
         const originators = this.originators.map(ctx=>ui.preserveCtx(ctx)).join(',')
 
+        const atts = jb.frame.workerId ? 
+            { worker: jb.frame.workerId, 'cmp-id': this.cmpId, ...(handlers && {handlers}) } : 
+            Object.assign(vdom.attributes || {}, {
+                'jb-ctx': ui.preserveCtx(this.originatingCtx()),
+                'cmp-id': this.cmpId, 
+                'mount-ctx': ui.preserveCtx(this.ctx),
+                // 'props-ctx': ui.preserveCtx(this.calcCtx),
+            },
+            observe && {observe}, 
+            handlers && {handlers}, 
+            originators && {originators},
+            this.ctxForPick && { 'pick-ctx': ui.preserveCtx(this.ctxForPick) },
+            (this.componentDidMountFuncs || interactive) && {interactive}, 
+            this.renderProps.cmpHash != null && {cmpHash: this.renderProps.cmpHash}
+        )        
         if (typeof vdom == 'object') {
-            ui.addClassToVdom(vdom, this.jbCssClass())
+            vdom.addClass(this.jbCssClass())
             vdom.attributes = Object.assign(vdom.attributes || {}, {
                     'jb-ctx': ui.preserveCtx(this.originatingCtx()),
                     'cmp-id': this.cmpId, 
                     'mount-ctx': ui.preserveCtx(this.ctx),
-                    'props-ctx': ui.preserveCtx(this.calcCtx),
+                    // 'props-ctx': ui.preserveCtx(this.calcCtx),
                 },
                 observe && {observe}, 
                 handlers && {handlers}, 
                 originators && {originators},
                 this.ctxForPick && { 'pick-ctx': ui.preserveCtx(this.ctxForPick) },
+                jb.frame.workerId && { 'worker': jb.frame.workerId },
                 (this.componentDidMountFuncs || interactive) && {interactive}, 
                 this.renderProps.cmpHash != null && {cmpHash: this.renderProps.cmpHash}
             )
@@ -103,8 +119,10 @@ class JbComponent {
         if (this.cachedClass)
             return this.cachedClass
         const ctx = this.ctx
-        const cssLines = (this.staticCssLines || []).concat((this.dynamicCss || []).map(dynCss=>dynCss(this.calcCtx))).filter(x=>x)
+        const cssLines = (this.staticCssLines || []).concat((this.dynamicCss || [])
+            .map(dynCss=>dynCss(this.calcCtx))).filter(x=>x)
         const cssKey = cssLines.join('\n')
+        const classPrefix = jb.frame.isWorker ? 'w'+frame.workerId : 'jb-'
         if (!cssKey) return ''
         if (!cssSelectors_hash[cssKey]) {
             cssId++;
@@ -112,15 +130,13 @@ class JbComponent {
             const cssStyle = cssLines.map(selectorPlusExp=>{
                 const selector = selectorPlusExp.split('{')[0];
                 const fixed_selector = selector.split(',').map(x=>x.trim().replace('|>',' '))
-                    .map(x=>x.indexOf('~') == -1 ? `.jb-${cssId}${x}` : x.replace('~',`.jb-${cssId}`));
+                    .map(x=>x.indexOf('~') == -1 ? `.${classPrefix}${cssId}${x}` : x.replace('~',`.${classPrefix}${cssId}`));
                 return fixed_selector + ' { ' + selectorPlusExp.split('{')[1];
             }).join('\n');
             const remark = `/*style: ${ctx.profile.style && ctx.profile.style.$}, path: ${ctx.path}*/\n`;
-            const style_elem = document.createElement('style');
-            style_elem.innerHTML = remark + cssStyle;
-            document.head.appendChild(style_elem);
+            ui.addStyleElem(remark + cssStyle)
         }
-        const jbClass = `jb-${cssSelectors_hash[cssKey]}`
+        const jbClass = `${classPrefix}${cssSelectors_hash[cssKey]}`
         if (!this.dynamicCss)
             this.cachedClass = jbClass
         return jbClass
@@ -154,7 +170,7 @@ class JbComponent {
         return this.itemfieldCache.get(item)
     }
     orig(ctx) {
-        if (jb.comps[ctx.profile && ctx.profile.$].type.split(',').indexOf('control') == -1)
+        if (jb.comps[ctx.profile && ctx.profile.$].type.split(/,|-/).indexOf('control') == -1)
             debugger
         this.originators.push(ctx)
         return this
@@ -181,7 +197,7 @@ class JbComponent {
         if (options.afterViewInit) 
             options.componentDidMount = options.afterViewInit
         if (typeof options.class == 'string') 
-            options.templateModifier = vdom => ui.addClassToVdom(vdom,options.class)
+            options.templateModifier = vdom => vdom.addClass(options.class)
 
         Object.keys(options).forEach(key=>{
             if (lifeCycle.has(key)) {
@@ -219,7 +235,7 @@ ui.JbComponent = JbComponent
 
 jb.jstypes.renderable = value => {
     if (value == null) return '';
-    if (value[ui.VNode]) return value;
+    if (value instanceof ui.VNode) return value;
     if (value instanceof JbComponent) return ui.h(value)
     if (Array.isArray(value))
         return ui.h('div',{},value.map(item=>jb.jstypes.renderable(item)));

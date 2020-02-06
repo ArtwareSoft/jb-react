@@ -138,8 +138,8 @@ function enableFullScreen(editor,width,height) {
 		.jb-codemirror-editorCss { position:relative; }
 		.jb-codemirror-fullScreenEditorCss { padding-top: 20px, display: block; position: fixed !important; top: 0; left: 0; z-index: 99999999; }
 	`;
-	if (!jb.ui.find('#jb_codemirror_fullscreen')[0])
-    jb.ui.addHTML(document.head,`<style id="jb_codemirror_fullscreen" type="text/css">${css}</style>`);
+	if (!jb.ui.find(document,'#jb_codemirror_fullscreen')[0])
+    	jb.ui.addHTML(document.head,`<style id="jb_codemirror_fullscreen" type="text/css">${css}</style>`);
 
 	const jEditorElem = editor.getWrapperElement();
   	jb.ui.addClass(jEditorElem,'jb-codemirror-editorCss');

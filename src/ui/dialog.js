@@ -66,9 +66,9 @@ jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
 		  return {
 				 css: '>.dialog-title { cursor: pointer }',
 				 afterViewInit: function(cmp) {
-					   const titleElem = cmp.base.querySelector('.dialog-title');
-					   cmp.mousedownEm = jb.rx.Observable.fromEvent(titleElem, 'mousedown')
-						   .takeUntil( cmp.destroyed );
+					const titleElem = cmp.base.querySelector('.dialog-title');
+					cmp.mousedownEm = jb.rx.Observable.fromEvent(titleElem, 'mousedown')
+						.takeUntil( cmp.destroyed );
   
 					if (id && sessionStorage.getItem(id)) {
 						  const pos = JSON.parse(sessionStorage.getItem(id));
@@ -362,8 +362,8 @@ jb.component('dialog.div', { /* dialog.div */
 })
   
 jb.ui.dialogs = {
-	 dialogs: [],
-	 buildComp(ctx) { // used with addDialog profile
+	dialogs: [],
+	buildComp(ctx) { // used with addDialog profile
 		const dialog = ctx.vars.$dialog
 		return jb.ui.ctrl(ctx, features(
 			calcProp('title', _ctx=> _ctx.vars.$model.title(_ctx)),
@@ -377,12 +377,10 @@ jb.ui.dialogs = {
 				dialog.onOK = ctx2 => ctx.params.onOK(cmp.ctx.extendVars(ctx2));
 				cmp.dialogCloseOK = () => dialog.close({OK: true});
 				cmp.dialogClose = args => dialog.close(args);
-				//cmp.recalcTitle = (e,srcCtx) =>	jb.ui.setState(cmp,{title: ctx.params.title(ctx)},e,srcCtx)
-
 				dialog.el = cmp.base;
 				if (!cmp.base.style.zIndex) cmp.base.style.zIndex = 100;
-			})
-	))},
+		})))
+	},
 
 	addDialog(dialog,ctx) {
 		const self = this;

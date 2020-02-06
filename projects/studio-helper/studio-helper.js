@@ -292,19 +292,6 @@ jb.component('studio-helper.script-history', { /* studioHelper.scriptHistory */
   })
 })
 
-jb.component('studio-helper.editable-text-input', { /* studioHelper.editableTextInput */
-  type: 'editable-text.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('input', {
-        value: state.model,
-        onchange: e => cmp.jbModel(e.target.value),
-        onkeyup: e => cmp.jbModel(e.target.value,'keyup')  }),
-    css: '{height: 16px}',
-    features: field.databindText()
-  })
-})
-
-
 jb.component('studio-helper.edit-file', { /* studioHelper.editFile */
   type: 'control',
   impl: editableText({

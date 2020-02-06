@@ -147,10 +147,11 @@ jb.component('text-editor.is-dirty', { /* textEditor.isDirty */
 jb.component('textarea.init-textarea-editor', { /* textarea.initTextareaEditor */
   type: 'feature',
   impl: interactive( (ctx,{cmp}) => {
-        jb.val(cmp.state.databindRef)
+        const data_ref = ctx.vars.$model.databind()
+        jb.val(data_ref) // calc text
         cmp.editor = {
             ctx: () => cmp.ctx,
-            data_ref: cmp.state.databindRef,
+            data_ref,
             getCursorPos: () => offsetToLineCol(cmp.base.value,cmp.base.selectionStart),
             cursorCoords: () => {},
             markText: () => {},
@@ -214,11 +215,12 @@ function offsetToLineCol(text,offset) {
 
 function refreshEditor(cmp,_path) {
     const editor = cmp.editor
-    const text = jb.tostring(cmp.state.databindRef)
-    const pathWithOffset = _path ? {path: _path+'~!value',offset:1} : this.pathOfPosition(cmp.state.databindRef, editor.getCursorPos())
+    const data_ref = cmp.ctx.vars.$model.databind()
+    const text = jb.tostring(data_ref)
+    const pathWithOffset = _path ? {path: _path+'~!value',offset:1} : this.pathOfPosition(data_ref, editor.getCursorPos())
     editor.setValue(text)
     if (pathWithOffset) {
-        const _pos = cmp.state.databindRef.locationMap[pathWithOffset.path]
+        const _pos = data_ref.locationMap[pathWithOffset.path]
         const pos = _pos && _pos.positions
         if (pos)
             editor.setSelectionRange({line: pos[0], col: pos[1] + (pathWithOffset.offset || 0)})

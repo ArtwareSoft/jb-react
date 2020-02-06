@@ -73,6 +73,15 @@ jb.component('feature.after-load', { /* feature.afterLoad */
 })
 jb.component('interactive', jb.comps['feature.after-load'])
 
+jb.component('template-modifier', { /* templateModifier */
+  type: 'feature',
+  description: 'change the html template',
+  params: [
+    {id: 'value', mandatory: true, dynamic: true}
+  ],
+  impl: (ctx,value) => ({ templateModifier: (vdom,cmp) => value(ctx.setVars({cmp,vdom, ...cmp.renderProps})) })
+})
+
 jb.component('features', {
   type: 'feature',
   description: 'list of features, auto flattens',
@@ -307,7 +316,7 @@ jb.component('conditional-class', { /* conditionalClass */
   impl: (ctx,cssClass,cond) => ({
     templateModifier: (vdom,cmp) => {
       if (jb.toboolean(cond(cmp.ctx)))
-        jb.ui.addClassToVdom(vdom,cssClass())
+        vdom.addClass(cssClass())
       return vdom
     }
   })
@@ -469,8 +478,7 @@ jb.component('refresh-control-by-id', { /* refreshControlById */
 //    {id: 'recalcVars', as: 'boolean', description: 'recalculate feature variables', type: 'boolean' },
   ],
   impl: (ctx,id) => {
-    const base = ctx.vars.elemToTest || typeof document !== 'undefined' && document
-    const elem = base && base.querySelector('#'+id)
+    const elem = jb.ui.document(ctx).querySelector('#'+id)
     if (!elem)
       return jb.logError('refresh-control-by-id can not find elem for #'+id, ctx)
     jb.ui.refreshElem(elem,null,{srcCtx: ctx})

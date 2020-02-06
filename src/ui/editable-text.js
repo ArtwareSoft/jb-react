@@ -21,11 +21,13 @@ jb.component('editable-text', { /* editableText */
 
 jb.component('editable-text.x-button', { /* editableText.xButton */
   type: 'feature',
-  impl: ctx =>({
-    afterViewInit: cmp => cmp.cleanValue = () => { cmp.jbModel(''); cmp.refresh() },
-    templateModifier: (vdom,cmp,{model}) => 
-      jb.ui.h('div', {},[vdom].concat(model ? [jb.ui.h('button', { class: 'delete', onclick: 'cleanValue' } ,'×')]  : []) ),
-    css: `>.delete {
+  impl: features(
+    defHandler('cleanValue',writeValue('%$$model/databind%','')),
+    templateModifier(({},{vdom,databind}) => 
+      jb.ui.h('div', {},[vdom, 
+          ...(databind ? [jb.ui.h('button', { class: 'delete', onclick: 'cleanValue' } ,'×')]  : [])] 
+    )),
+    css(`>.delete {
           margin-left: -16px;
           float: right;
           cursor: pointer; font: 20px sans-serif;
@@ -34,7 +36,7 @@ jb.component('editable-text.x-button', { /* editableText.xButton */
       }
       { display : flex }
       >.delete:hover { opacity: .5 }`
-  })
+  ))
 })
 
 jb.component('editable-text.helper-popup', { /* editableText.helperPopup */

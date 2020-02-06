@@ -9,62 +9,81 @@ jb.component('field.databind', { /* field.databind */
     {id: 'oneWay', type: 'boolean', as: 'boolean' },
   ],
   impl: features(
-    calcProp('model', '%$$model/databind%'),
+    If('%$oneWay%', calcProp('databind', '%$$model/databind%'), watchAndCalcModelProp('databind')),
     calcProp('title', '%$$model/title%'),
     calcProp('fieldId',() => jb.ui.field_id_counter++ ),
-
-    interactive((ctx,{cmp},{debounceTime,oneWay}) => {
-        if (debounceTime) {
-          cmp.debouncer = new jb.rx.Subject();
-          cmp.debouncer.takeUntil( cmp.destroyed )
-            .distinctUntilChanged()
-            .buffer(cmp.debouncer.debounceTime(debounceTime))
-            .filter(buf=>buf.length)
-            .map(buf=>buf.pop())
-            .subscribe(val=>cmp.jbModel(val))
-        }
-
-        if (!ctx.vars.$model || !ctx.vars.$model.databind)
-          return jb.logError('bind-field: No databind in model', ctx, ctx.vars.$model);
-
-        cmp.jbModel = val => {
-          if (event && event.type == 'keyup') {
-            if (cmp.debouncer)
-              return cmp.debouncer.next(val);
-            return jb.delay(1).then(_=>cmp.jbModel(val)); // make sure the input is inside the value
-          }
-          if (val === undefined)
-            return jb.val(ctx.vars.$model.databind(cmp.ctx));
-          else { // write
-              cmp.state.model = val;
-              jb.ui.checkValidationError(cmp,val);
-              jb.writeValue(ctx.vars.$model.databind(cmp.ctx),val,ctx);
-              if (!oneWay)
-                cmp.refresh();
-          }
-        }
-        cmp.onblurHandler = () => cmp.jbModel(event.target.value)
-        if (!ctx.vars.$model.updateOnBlur)
-          cmp.onchangeHandler = cmp.onkeyupHandler = cmp.onkeydownHandler = cmp.onblurHandler
-
-        //databindRefChanged
-        cmp.databindRefChangedSub = new jb.rx.Subject();
-        cmp.databindRefChanged = cmp.databindRefChangedSub.do(ref=> {
-          cmp.state.databindRef = ref
-          cmp.state.model = cmp.jbModel()
-        })
-        cmp.databindRefChanged.subscribe(()=>{}) // first activation
-
-        const srcCtx = ctx.componentContext;
-        if (!oneWay)
-            jb.ui.databindObservable(cmp, {srcCtx, onError: _ => cmp.refresh({model: null},{srcCtx}) })
-            .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
-            .subscribe(e=> !cmp.watchRefOn && cmp.refresh(null,{srcCtx}))
-
-        cmp.databindRefChangedSub.next(ctx.vars.$model.databind(ctx));
-      }
-    ))
+    defHandler('onblurHandler', (ctx,{cmp, ev},{oneWay}) => writeFieldData(ctx,cmp,ev.target.value,oneWay)),
+    defHandler('onchangeHandler', (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && writeFieldData(ctx,cmp,ev.target.value,oneWay)),
+    defHandler('onkeyupHandler', (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && writeFieldData(ctx,cmp,ev.target.value,oneWay)),
+    defHandler('onkeydownHandler', (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && writeFieldData(ctx,cmp,ev.target.value,oneWay)),
+    interactiveProp('jbModel',(ctx,{cmp}) => value => {
+      if (value == null)
+        return ctx.exp('%$$mode/databind','number')
+      else
+        writeFieldData(ctx,cmp,{target:{value}},true)
+    }),
+  )
 })
+
+function writeFieldData(ctx,cmp,value,oneWay) {
+//  const val = (typeof event != 'undefined' ? event : ev).target.value
+  jb.ui.checkValidationError(cmp,value);
+  jb.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx);
+  !oneWay && jb.ui.refreshElem(ev.target,null,{srcCtx: ctx.componentContext});
+}
+
+//     interactive((ctx,{cmp},{debounceTime,oneWay}) => {
+//         if (debounceTime) {
+//           cmp.debouncer = new jb.rx.Subject();
+//           cmp.debouncer.takeUntil( cmp.destroyed )
+//             .distinctUntilChanged()
+//             .buffer(cmp.debouncer.debounceTime(debounceTime))
+//             .filter(buf=>buf.length)
+//             .map(buf=>buf.pop())
+//             .subscribe(val=>cmp.jbModel(val))
+//         }
+
+//         if (!ctx.vars.$model || !ctx.vars.$model.databind)
+//           return jb.logError('bind-field: No databind in model', ctx, ctx.vars.$model);
+
+//         cmp.jbModel = val => {
+//           if (event && event.type == 'keyup') {
+//             if (cmp.debouncer)
+//               return cmp.debouncer.next(val);
+//             return jb.delay(1).then(_=>cmp.jbModel(val)); // make sure the input is inside the value
+//           }
+//           if (val === undefined)
+//             return jb.val(ctx.vars.$model.databind(cmp.ctx));
+//           else { // write
+//               cmp.state.model = val;
+//               jb.ui.checkValidationError(cmp,val);
+//               jb.writeValue(ctx.vars.$model.databind(cmp.ctx),val,ctx);
+//               if (!oneWay)
+//                 cmp.refresh();
+//           }
+//         }
+//         cmp.onblurHandler = () => cmp.jbModel(event.target.value)
+//         if (!ctx.vars.$model.updateOnBlur)
+//           cmp.onchangeHandler = cmp.onkeyupHandler = cmp.onkeydownHandler = cmp.onblurHandler
+
+//         //databindRefChanged
+//         cmp.databindRefChangedSub = new jb.rx.Subject();
+//         cmp.databindRefChanged = cmp.databindRefChangedSub.do(ref=> {
+//           cmp.state.databindRef = ref
+//           cmp.state.model = cmp.jbModel()
+//         })
+//         cmp.databindRefChanged.subscribe(()=>{}) // first activation
+
+//         const srcCtx = ctx.componentContext;
+//         if (!oneWay)
+//             jb.ui.databindObservable(cmp, {srcCtx, onError: _ => cmp.refresh({model: null},{srcCtx}) })
+//             .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
+//             .subscribe(e=> !cmp.watchRefOn && cmp.refresh(null,{srcCtx}))
+
+//         cmp.databindRefChangedSub.next(ctx.vars.$model.databind(ctx));
+//       }
+//     ))
+// })
 
 jb.ui.checkValidationError = (cmp,val) => {
   const err = validationError();
@@ -140,23 +159,6 @@ jb.component('field.keyboard-shortcut', { /* field.keyboardShortcut */
               if (event.keyCode == keyCode || (event.key && event.key == keyStr))
                 action();
         })
-    })
-})
-
-jb.component('field.on-data-change', { /* field.onDataChange */
-  type: 'feature',
-  params: [
-    {id: 'action', type: 'action', mandatory: true, dynamic: true},
-    {id: 'includeFirst', type: 'boolean', as: 'boolean'}
-  ],
-  impl: interactive( (ctx,{cmp},{action,includeFirst}) => {
-      const includeFirstEm = includeFirst ? jb.rx.Observable.of({ref: cmp.state.databindRef}) : jb.rx.Observable.of();
-      jb.ui.databindObservable(cmp,{srcCtx: ctx})
-            .merge(includeFirstEm)
-            .map(e=>jb.val(e.ref))
-            .filter(x=>x)
-            .subscribe(x=>
-              action(ctx.setData(x)));
     })
 })
 
