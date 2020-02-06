@@ -4701,17 +4701,17 @@ function compareCtxAtt(att,atts1,atts2) {
 
 // dom related functions
 
-function applyVdomDiff(elem,vdomAfter,{strongRefresh} = {}) {
+function applyVdomDiff(elem,vdomAfter,{strongRefresh, ctx} = {}) {
     jb.log('applyDeltaTop',['start',...arguments])
     const vdomBefore = elem instanceof ui.VNode ? elem : elemToVdom(elem)
     const delta = compareVdom(vdomBefore,vdomAfter)
     if (elem instanceof ui.VNode) { // runs on worker
-        const cmpId = elem.getAttribute('cmp-id')
+        const cmpId = elem.getAttribute('cmp-id'), elemId = elem.getAttribute('id')
         if (elem != vdomAfter) { // update the elem
             Object.keys(elem).forEach(k=>delete elem[k])
             Object.assign(elem,vdomAfter)
         }
-        return jb.ui.updateRenderer(delta,elem.attributes.id,cmpId) // deligate to the main thread 
+        return jb.ui.updateRenderer(delta,elemId,cmpId,ctx && ctx.vars.widgetId) // deligate to the main thread 
     }
     const active = jb.ui.activeElement() === elem
     jb.log('applyDeltaTop',['apply',vdomBefore,vdomAfter,delta,active,...arguments],
@@ -4786,36 +4786,38 @@ function applyDeltaToDom(elem,delta) {
                     jb.log('removeChild',['remove leftover',ch,elem,delta])
                 })
     }
-    jb.entries(delta.attributes).forEach(e=> setAtt(elem,e[0],e[1]))
+    jb.entries(delta.attributes)
+        .filter(e=> !(e[0] === '$text' && elem.firstElementChild) )
+        .forEach(e=> setAtt(elem,e[0],e[1]))
 }
 
 function setAtt(elem,att,val) {
-    if (att[0] != '$' && (val == null || val == '__undefined')) {
+    if (att[0] !== '$' && val == null) {
         elem.removeAttribute(att)
         jb.log('htmlChange',['remove',...arguments])
     } else if (att === 'checked' && elem.tagName.toLowerCase() === 'input') {
         if (val === true)
             elem.checked = true
-        jb.log('htmlChange',['checked',...arguments]);
+        jb.log('htmlChange',['checked',...arguments])
     } else if (att === '$text') {
-        elem.innerText =  val == '__undefined' ? '' : val
-        jb.log('htmlChange',['text',...arguments]);
+        elem.innerText = val || ''
+        jb.log('htmlChange',['text',...arguments])
     } else if (att === '$html') {
-        elem.innerHTML = val == '__undefined' ? '' : val
-        jb.log('htmlChange',['html',...arguments]);
+        elem.innerHTML = val || ''
+        jb.log('htmlChange',['html',...arguments])
     } else if (att === 'style' && typeof val === 'object') {
         elem.setAttribute(att,jb.entries(val).map(e=>`${e[0]}:${e[1]}`).join(';'))
-        jb.log('htmlChange',['setAtt',...arguments]);
+        jb.log('htmlChange',['setAtt',...arguments])
     } else if (att == 'value' && elem.tagName.match(/select|input|textarea/i) ) {
         const active = document.activeElement === elem
         if (elem.value == val) return
         elem.value = val
         if (active)
             elem.focus()
-        jb.log('htmlChange',['setAtt',...arguments]);
+        jb.log('htmlChange',['setAtt',...arguments])
     } else {
         elem.setAttribute(att,val)
-        jb.log('htmlChange',['setAtt',...arguments]);
+        jb.log('htmlChange',['setAtt',...arguments])
     }
 }
 
@@ -4931,7 +4933,7 @@ Object.assign(jb.ui, {
         const hash = cmp.init()
         if (hash != null && hash == elem.getAttribute('cmpHash'))
             return jb.log('refreshElem',['stopped by hash', hash, ...arguments]);
-        cmp && applyVdomDiff(elem, h(cmp), {strongRefresh: jb.path(options,'strongRefresh')})
+        cmp && applyVdomDiff(elem, h(cmp), {strongRefresh: jb.path(options,'strongRefresh'), ctx})
         jb.execInStudio({ $: 'animate.refresh-elem', elem: () => elem })
     },
 
@@ -5461,7 +5463,7 @@ jb.objectDiff = function(newObj, orig) {
     if (orig === newObj) return {}
     if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
     const deletedValues = Object.keys(orig).reduce((acc, key) =>
-        newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: '__undefined' }
+        newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: jb.frame.isWorker ? '__undefined' : undefined}
     , {})
 
     return Object.keys(newObj).reduce((acc, key) => {
@@ -6427,13 +6429,13 @@ jb.component('label.span', { /* label.span */
   })
 }))
 
-jb.component('label.highlight', { /* label.highlight */
+jb.component('text.highlight', { /* text.highlight */
   type: 'data',
   macroByValue: true,
   params: [
     {id: 'base', as: 'string', dynamic: true},
     {id: 'highlight', as: 'string', dynamic: true},
-    {id: 'cssClass', as: 'string', defaultValue: 'mdl-color-text--indigo-A700'}
+    {id: 'cssClass', as: 'string', defaultValue: 'mdl-color-text--deep-purple-A700'}
   ],
   impl: (ctx,base,highlightF,cssClass) => {
     const h = highlightF(), b = base();
@@ -27652,7 +27654,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/css-features.js',
 
         'src/ui/group.js',
-        'src/ui/label.js',
+        'src/ui/text.js',
         'src/ui/html.js',
         'src/ui/image.js',
         'src/ui/button.js',
@@ -34275,7 +34277,7 @@ jb.component('studio.choose-project', { /* studio.chooseProject */
       itemlist({
         items: pipeline('%projects%', itemlistContainer.filter()),
         controls: button({
-          title: label.highlight('%%', '%$itemlistCntrData/search_pattern%'),
+          title: text.highlight('%%', '%$itemlistCntrData/search_pattern%'),
           action: studio.gotoProject('%%'),
           style: button.mdc(),
           features: css('{ text-align: left; width: 250px }')
@@ -34991,10 +34993,10 @@ jb.component('studio.search-list', { /* studio.searchList */
             title: 'id',
             control: button({
               title: pipeline(
-                label.highlight(
+                text.highlight(
                     '%id%',
                     '%$itemlistCntrData/search_pattern%',
-                    'mdl-color-text--indigo-A700'
+                    'mdl-color-text--deep-purple-A700'
                   )
               ),
               action: studio.openJbEditor('%id%'),

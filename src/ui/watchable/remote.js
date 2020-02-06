@@ -116,11 +116,11 @@ if (jb.frame.isWorker)
         widgets: {},
         activeElement() {},
         focus() {},
-        updateRenderer(delta,elemId,cmpId) {
+        updateRenderer(delta,elemId,cmpId,widgetId) {
             const css = this._stylesToAdd.join('\n')
             this._stylesToAdd = []
             const store = jb.ui.serializeCtxOfVdom(delta)
-            postMessage('updateDelta>'+JSON.stringify({delta,elemId, cmpId, css, store}))
+            postMessage(`delta-${widgetId}>`+JSON.stringify({delta,elemId, cmpId, css, store}))
         },
         addStyleElem(innerHtml) {
             this._stylesToAdd.push(innerHtml)
@@ -205,16 +205,16 @@ jb.component('worker.main',{
             const widgetProf = pipeline({$asIs: {widgetId,main}}, // runs on worker
                 ctx => {
                     const {main, widgetId} = ctx.data
-                    const cmp = ctx.setData(null).run({$: main})
+                    const cmp = ctx.setData(null).setVar('widgetId',widgetId).run({$: main})
                     const top = jb.ui.h(cmp)
                     top.attributes = Object.assign(top.attributes || {},{ worker: 1, id: widgetId })
                     jb.ui.widgets[widgetId] = { top }
-                    jb.ui.updateRenderer(jb.ui.compareVdom({},top),widgetId)
+                    jb.ui.updateRenderer(jb.ui.compareVdom({},top),widgetId,null,widgetId)
             })
 
             return this.getWorker().then( worker => {
-                worker.response.filter(({id}) => id == 'updateDelta').subscribe(({data}) => {
-                    const _data = JSON.parse(data)
+                worker.response.filter(({id}) => id == `delta-${widgetId}`).subscribe(({data}) => {
+                    const _data = JSON.parse(data.replace(/"__undefined"/g,'null'))
                     console.log('delta-from-remote',_data)
                     const {delta,elemId,cmpId,css,store} = _data
                     jb.ui.mainWorker.ctxDictionary = jb.ui.mainWorker.ctxDictionary || {}

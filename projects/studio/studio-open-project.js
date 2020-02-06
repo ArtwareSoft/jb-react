@@ -23,7 +23,7 @@ jb.component('studio.choose-project', { /* studio.chooseProject */
       itemlist({
         items: pipeline('%projects%', itemlistContainer.filter()),
         controls: button({
-          title: label.highlight('%%', '%$itemlistCntrData/search_pattern%'),
+          title: text.highlight('%%', '%$itemlistCntrData/search_pattern%'),
           action: studio.gotoProject('%%'),
           style: button.mdc(),
           features: css('{ text-align: left; width: 250px }')

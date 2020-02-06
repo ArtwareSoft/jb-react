@@ -625,8 +625,8 @@ jb.component('ui-test.itemlist-container-search-ctrl', { /* uiTest.itemlistConta
       itemlistContainer.search(),
       itemlist({
         items: '%$people%',
-        controls: label({
-          text: label.highlight('%name%', '%$itemlistCntrData/search_pattern%'),
+        controls: text({
+          text: text.highlight('%name%', '%$itemlistCntrData/search_pattern%'),
           features: [css.class('label1'), watchRef('%$itemlistCntrData/search_pattern%')]
         }),
         features: [
@@ -683,7 +683,7 @@ jb.component('ui-test.search-doesnot-create-ReactClass', { /* uiTest.searchDoesn
         itemlistContainer.search({}),
         itemlist({
           items: pipeline('%$people%', itemlistContainer.filter()),
-          controls: label({text: label.highlight('%name%', '%$itemlistCntrData/search_pattern%')}),
+          controls: label({text: text.highlight('%name%', '%$itemlistCntrData/search_pattern%')}),
           features: [
             itemlist.selection({autoSelectFirst: true}),
             itemlist.keyboardSelection(true),

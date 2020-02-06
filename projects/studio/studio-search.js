@@ -28,10 +28,10 @@ jb.component('studio.search-list', { /* studio.searchList */
             title: 'id',
             control: button({
               title: pipeline(
-                label.highlight(
+                text.highlight(
                     '%id%',
                     '%$itemlistCntrData/search_pattern%',
-                    'mdl-color-text--indigo-A700'
+                    'mdl-color-text--deep-purple-A700'
                   )
               ),
               action: studio.openJbEditor('%id%'),

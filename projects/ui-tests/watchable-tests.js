@@ -436,14 +436,23 @@ jb.component('ui-test.remote-widget-editable-text',  {
   })
 })
 
-jb.component('ui-test.serialize-ctx-of-vdom', {
-  impl: dataTest({
-    calculate: ctx => {
-      const vdom = ctx.setVar('a',{x: 10}).run(text('hello from worker')).renderVdom()
-      const store = jb.ui.serializeCtxOfVdom(vdom)
-      const restored = jb.ui.deserializeCtxStore(store)
-      return restored.ctx[29].vars.a.x
-    },
-    expectedResult: 10
+jb.component('ui-test.remote-widget-empty-editable-text',  {
+  impl: uiTest({
+    runBefore: remote.initMainWorker({ sourceUrl: ctx => `http://${location.host}/projects/ui-tests/remote-widgets.js` }),
+    control: remote.widget({main: 'ui-test.remote-editable-ctrl' }),
+    action: [ delay(40), ctx => ctx.run(uiAction.setText('', '#inp')), delay(20)],
+    expectedResult: and(not(contains('undefined')),not(contains('Homer')))
   })
 })
+
+// jb.component('ui-test.serialize-ctx-of-vdom', {
+//   impl: dataTest({
+//     calculate: ctx => {
+//       const vdom = ctx.setVar('a',{x: 10}).run(text('hello from worker')).renderVdom()
+//       const store = jb.ui.serializeCtxOfVdom(vdom)
+//       const restored = jb.ui.deserializeCtxStore(store)
+//       return restored.ctx[29].vars.a.x
+//     },
+//     expectedResult: 10
+//   })
+// })
