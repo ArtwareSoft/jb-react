@@ -12,7 +12,7 @@ class VNode {
         }
         if (children != null && !Array.isArray(children)) children = [children]
         if (children != null)
-            children = children.filter(x=>x).map(item=> typeof item == 'string' ? h('span',{$text: item}) : item)
+            children = children.filter(x=>x).map(item=> typeof item == 'string' ? jb.ui.h('span',{$text: item}) : item)
         Object.assign(this,{...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,attributes,children})
     }
     getAttribute(att) {

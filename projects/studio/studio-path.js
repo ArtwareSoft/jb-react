@@ -290,8 +290,7 @@ jb.component('studio.ref', { /* studio.ref */
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
-  impl: (ctx,path) =>
-		st.refOfPath(path)
+  impl: (ctx,path) => st.refOfPath(path)
 })
 
 jb.component('studio.path-of-ref', { /* studio.pathOfRef */

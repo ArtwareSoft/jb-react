@@ -199,6 +199,17 @@ jb.component('ui-test.editable-text', { /* uiTest.editableText */
   })
 })
 
+jb.component('ui-test.editable-text-empty', { /* uiTest.editableText */
+  impl: uiTest({
+    control: editableText({
+      title: 'name',
+      databind: '%$person/name1%',
+      style: editableText.input()
+    }),
+    expectedResult: not(contains('object'))
+  })
+})
+
 jb.component('ui-test.editable-text-mdc', {
   impl: uiTest({
     control: editableText({

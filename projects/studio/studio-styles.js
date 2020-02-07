@@ -1,10 +1,12 @@
 jb.component('editable-text.studio-primitive-text', { /* editableText.studioPrimitiveText */
   type: 'editable-text.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('input', {
+    template: (cmp,{databind},h) => {
+      if (typeof databind != 'string') debugger
+      return h('input', {
           class: 'mdc-text-field__input',
-          value: state.databind, onchange: true, onkeyup: true, onblur: true
-      }),
+          value: databind, onchange: true, onkeyup: true, onblur: true
+      })},
     css: '{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom: 7px;} :focus { border-color: #3F51B5; border-width: 2px}',
     features: field.databindText(500,false)
   })
