@@ -4547,7 +4547,7 @@ class VNode {
         }
         if (children != null && !Array.isArray(children)) children = [children]
         if (children != null)
-            children = children.filter(x=>x).map(item=> typeof item == 'string' ? h('span',{$text: item}) : item)
+            children = children.filter(x=>x).map(item=> typeof item == 'string' ? jb.ui.h('span',{$text: item}) : item)
         Object.assign(this,{...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,attributes,children})
     }
     getAttribute(att) {
@@ -5092,7 +5092,7 @@ class JbComponent {
             const ref = this.ctx.vars.$model[e.prop](this.ctx)
             if (jb.isWatchable(ref))
                 this.toObserve.push({id: e.prop, cmp: this, ref,...e})
-            this.renderProps[e.prop] = e.transformValue(this.ctx.setData(jb.val(ref)))
+            this.renderProps[e.prop] = e.transformValue(this.ctx.setData(jb.val(ref) || ''))
         })
 
         Object.assign(this.renderProps,(this.styleCtx || {}).params, this.state);

@@ -4547,7 +4547,7 @@ class VNode {
         }
         if (children != null && !Array.isArray(children)) children = [children]
         if (children != null)
-            children = children.filter(x=>x).map(item=> typeof item == 'string' ? h('span',{$text: item}) : item)
+            children = children.filter(x=>x).map(item=> typeof item == 'string' ? jb.ui.h('span',{$text: item}) : item)
         Object.assign(this,{...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,attributes,children})
     }
     getAttribute(att) {
@@ -5092,7 +5092,7 @@ class JbComponent {
             const ref = this.ctx.vars.$model[e.prop](this.ctx)
             if (jb.isWatchable(ref))
                 this.toObserve.push({id: e.prop, cmp: this, ref,...e})
-            this.renderProps[e.prop] = e.transformValue(this.ctx.setData(jb.val(ref)))
+            this.renderProps[e.prop] = e.transformValue(this.ctx.setData(jb.val(ref) || ''))
         })
 
         Object.assign(this.renderProps,(this.styleCtx || {}).params, this.state);
@@ -28655,10 +28655,12 @@ function tgpHint(CodeMirror) {}
 jb.component('editable-text.studio-primitive-text', { /* editableText.studioPrimitiveText */
   type: 'editable-text.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('input', {
+    template: (cmp,{databind},h) => {
+      if (typeof databind != 'string') debugger
+      return h('input', {
           class: 'mdc-text-field__input',
-          value: state.databind, onchange: true, onkeyup: true, onblur: true
-      }),
+          value: databind, onchange: true, onkeyup: true, onblur: true
+      })},
     css: '{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom: 7px;} :focus { border-color: #3F51B5; border-width: 2px}',
     features: field.databindText(500,false)
   })
@@ -29114,8 +29116,7 @@ jb.component('studio.ref', { /* studio.ref */
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
-  impl: (ctx,path) =>
-		st.refOfPath(path)
+  impl: (ctx,path) => st.refOfPath(path)
 })
 
 jb.component('studio.path-of-ref', { /* studio.pathOfRef */
