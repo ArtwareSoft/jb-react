@@ -1,7 +1,7 @@
 {
   "name": "jb-react",
-  "version": "0.6.2",
-  "description": "jBart - Visual Development with react",
+  "version": "0.6.3",
+  "description": "jBart - Visual Development with react like engine",
   "homepage": "https://github.com/artwaresoft/jb-react",
   "bugs": {
     "url": "https://github.com/artwaresoft/jb-react/issues"

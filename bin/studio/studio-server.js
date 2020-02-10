@@ -7,9 +7,10 @@ file_type_handlers = {};
 
 _iswin = /^win/.test(process.platform);
 
-let settings = { port: 8083, open_source_cmd_vsCode: 'code -r -g', http_dir: './', exclude: 'node_modules|\.git' }
+let settings = { port: 8083, open_source_cmd_vsCode: 'code -r -g', http_dir: './', exclude: 'node_modules|\.git', verbose: getProcessArgument('verbose') }
 try {
   Object.assign(settings,JSON.parse(fs.readFileSync('./jbart.json')))
+  if (settings.verbose) console.log('settings',settings)
 } catch(e) {}
 
 // define projects not under /jbart/projects directory
@@ -89,6 +90,8 @@ function serveFile(req,res,path) {
 //  console.log(path,full_path);
   const full_path = calcFullPath(path).replace(/!st!/,'')
   const extension = path.split('.').pop();
+  if (settings.verbose) console.log('reading file ',full_path)
+
 
   fs.readFile(_path(full_path), function (err, content) {
     if (err) {
@@ -470,6 +473,16 @@ function saveComp(toSave,original,comp,project,force,projectDir,destFileName) {
     function compareArrays(arr1,arr2) {
       return arr1.join('\n') == arr2.join('\n')
     }
+}
+
+function getProcessArgument(argName) {
+  for (let i = 0; i < process.argv.length; i++) {
+    const arg = process.argv[i];
+    if (arg.indexOf('-' + argName + ':') == 0) 
+      return arg.substring(arg.indexOf(':') + 1).replace(/'/g,'');
+    if (arg == '-' + argName) return true;
+  }
+  return '';
 }
 
 http.createServer(serve).listen(settings.port);
