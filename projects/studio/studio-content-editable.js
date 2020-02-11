@@ -237,7 +237,7 @@ jb.component('feature.content-editable', {
         vdom.children[0] = jb.ui.h('span',attsToInject,vdom.children[0])
         return vdom
       } else if (vdom.tag && vdom.tag.toLowerCase() == 'button' && jb.ui.find(vdom,'.mdc-button__label')) {
-        const atts = jb.ui.find(vdom,'.mdc-button__label').attributes
+        const atts = jb.ui.find(vdom,'.mdc-button__label').attributes || {}
         Object.assign(atts,attsToInject,{style: [(atts.style || ''),'z-index: 100'].filter(x=>x).join(';') })
         return vdom
       }

@@ -908,7 +908,12 @@ jb.component('ui-test.editable-boolean.all-styles', { /* uiTest.editableBoolean.
           style: editableBoolean.expandCollapse(),
           title: 'male'
         }),
-        label('%$person/male%')
+        editableBoolean({
+          databind: '%$person/male%',
+          style: editableBoolean.mdcXV(),
+          title: 'male'
+        }),
+        text('%$person/male%')
       ]
     }),
     expectedResult: contains(['male'])

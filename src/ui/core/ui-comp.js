@@ -57,12 +57,10 @@ class JbComponent {
         jb.log('renderProps',[this.renderProps, this])
         if (this.ctx.probe && this.ctx.probe.outOfTime) return
         this.template = this.template || (() => '')
-        const initialVdom = tryWrapper(() => this.template(this,this.renderProps,ui.h), 'template')
-        const vdom = (this.templateModifierFuncs||[]).reduce((vdom,modifier) =>
-                (vdom && typeof vdom === 'object')
-                    ? tryWrapper(() => modifier(vdom,this,this.renderProps,ui.h) || vdom, 'templateModifier') 
-                    : vdom     
-        ,initialVdom)
+        const initialVdom = tryWrapper(() => this.template(this,this.renderProps,ui.h), 'template') || {}
+        const vdom = (this.templateModifierFuncs||[]).reduce((vd,modifier) =>
+                (vd && typeof vd === 'object') ? tryWrapper(() => modifier(vd,this,this.renderProps,ui.h) || vd, 'templateModifier') 
+                    : vd ,initialVdom)
 
         const observe = this.toObserve.map(x=>[x.ref.handler.urlOfRef(x.ref),
             x.includeChildren ? `includeChildren=${x.includeChildren}` : '',

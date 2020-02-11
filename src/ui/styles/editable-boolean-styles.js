@@ -18,14 +18,14 @@ jb.component('editable-boolean.checkbox-with-title', { /* editableBoolean.checkb
 jb.component('editable-boolean.expand-collapse', { /* editableBoolean.expandCollapse */
   type: 'editable-boolean.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('i',{class:'material-icons noselect', onclick: 'toggle' }, 
-      state.databind ? 'keyboard_arrow_down' : 'keyboard_arrow_right'),
+    template: (cmp,{databind},h) => h('i',{class:'material-icons noselect', onclick: 'toggle' }, 
+      databind ? 'keyboard_arrow_down' : 'keyboard_arrow_right'),
     css: `{ font-size:16px; cursor: pointer; }`,
     features: field.databind()
   })
 })
 
-jb.component('editable-boolean.mdc-x-v', {
+jb.component('editable-boolean.mdc-x-v', { // editableBoolean.mdcXV
   type: 'editable-boolean.style',
   description: 'two icons',
   params: [
@@ -33,8 +33,8 @@ jb.component('editable-boolean.mdc-x-v', {
     {id: 'noIcon', as: 'string', mandatory: true, defaultValue: 'close'}
   ],
   impl: customStyle({
-    template: (cmp,{title,model,yesIcon,noIcon},h) => h('button',{
-          class: ['mdc-icon-button material-icons',model && 'raised mdc-icon-button--on'].filter(x=>x).join(' '),
+    template: (cmp,{title,databind,yesIcon,noIcon},h) => h('button',{
+          class: ['mdc-icon-button material-icons',databind && 'raised mdc-icon-button--on'].filter(x=>x).join(' '),
           title, tabIndex: -1, onclick: 'toggle'},[
             h('i',{class:'material-icons mdc-icon-button__icon mdc-icon-button__icon--on'}, yesIcon),
             h('i',{class:'material-icons mdc-icon-button__icon '}, noIcon),
@@ -42,7 +42,6 @@ jb.component('editable-boolean.mdc-x-v', {
     features: [field.databind(), mdcStyle.initDynamic()]
   })
 })
-
 
 jb.component('editable-boolean.mdc-slide-toggle', { /* editableBoolean.mdcSlideToggle */
   type: 'editable-boolean.style',
