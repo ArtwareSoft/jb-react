@@ -1,18 +1,20 @@
 <!DOCTYPE html>
-<html title="hello world">
+<html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script type="text/javascript">
-    startTime = new Date().getTime();
+    jbProjectSettings = {
+      project: 'hello-world',
+      libs: 'common,ui-common,material',
+      jsFiles: ['hello-world.js'],
+    }
   </script>
-  <script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,material"></script>
-  <script type="text/javascript" src="/projects/hello-world/hello-world.js"></script>
+  <script type="text/javascript" src="/src/loader/jb-loader.js"></script>
 </head>
 <body>
-<div id="main"> </div>
-<script>
-  jb.ui.renderWidget({$:'hello-world.main'},document.getElementById('main'))
-</script>
+  <script>
+    window.jb_initWidget && jb_initWidget()
+  </script>
 </body>
-</html>
+</html
 

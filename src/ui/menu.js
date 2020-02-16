@@ -426,7 +426,7 @@ jb.component('menu.option-as-icon24', { /* menu.optionAsIcon24 */
   type: 'menu-option.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{
-				class: 'line noselect', onclick: 'clicked', title: state.title
+				class: 'line noselect', onclick: true, title: state.title
 			},[
 				h('i',{class:'material-icons'},state.icon),
 		]),

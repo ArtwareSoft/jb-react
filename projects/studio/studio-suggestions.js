@@ -102,7 +102,7 @@ jb.component('studio.property-primitive', { /* studio.propertyPrimitive */
         features: [
           feature.onKey('Right', studio.pasteSuggestion('%$suggestionData/selected%', '/')),
           feature.onKey('Enter', studio.pasteSuggestion('%$suggestionData/selected%')),
-          interactive(writeValue('%$suggestionData/inputCmp%', '%$cmp%')),
+          //interactive(writeValue('%$suggestionData/inputCmp%', '%$cmp%')),
           editableText.helperPopup({
             control: studio.suggestionsItemlist('%$path%'),
             popupId: 'suggestions',
@@ -280,7 +280,7 @@ class ValueOption {
       return ``;
     }
     paste(ctx,_toAdd) {
-      const input = ctx.vars.suggestionData.inputCmp.input;
+      const input = ctx.vars.suggestionData.input;
       const primiteVal = typeof this.value != 'object'
       const toPaste = this.toPaste + (primiteVal ? '%' : _toAdd);
       const pos = this.pos + 1;

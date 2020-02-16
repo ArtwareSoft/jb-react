@@ -33,7 +33,7 @@ jb.component('d3-scatter.plain', { /* d3Scatter.plain */
   type: 'd3g.scatter-style',
   impl: customStyle({
     template: (cmp,{items, frame,xPivot,yPivot,rPivot,colorPivot,itemTitle},h) => 
-      h('svg',{width: frame.width, height: frame.height, onclick: 'clicked'},
+      h('svg',{width: frame.width, height: frame.height, onclick: true},
     	  h('g', { transform: `translate(${frame.left},${frame.top})` },
     		[
     			h('g',{ axisIndex: 0, class: 'x axis', transform: 'translate(0,' + frame.innerHeight + ')'}),

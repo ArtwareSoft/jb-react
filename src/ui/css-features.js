@@ -191,4 +191,14 @@ jb.component('css.border', { /* css.border */
     ({css: `${selector} { border${side?'-'+side:''}: ${withUnits(width)} ${style} ${color} }`})
 })
 
+jb.component('css.line-clamp', {
+  type: 'feature',
+  description: 'ellipsis after X lines',
+  params: [
+    {id: 'lines', mandatory: true, as: 'string' , templateValue: 3, description: 'no of lines to clump'},
+    {id: 'selector', as: 'string'}
+  ],
+  impl: css('%$selector% { overflow: hidden; text-overflow: ellipsis; -webkit-box-orient: vertical; display: -webkit-box; -webkit-line-clamp: %$lines% }')
+})
+
 })()

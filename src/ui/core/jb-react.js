@@ -121,7 +121,7 @@ function applyVdomDiff(elem,vdomAfter,{strongRefresh, ctx} = {}) {
     }
     ui.findIncludeSelf(elem,'[interactive]').forEach(el=> 
         el._component ? el._component.recalcPropsFromElem() : mountInteractive(el))
-    if (active) jb.ui.focus(elem)
+    if (active) jb.ui.focus(elem,'apply Vdom diff',ctx)
     ui.garbageCollectCtxDictionary(elem)
 }
 

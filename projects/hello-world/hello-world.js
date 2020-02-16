@@ -4,7 +4,6 @@ jb.component('hello-world.main', { /* helloWorld.main */
   impl: group({
     layout: layout.vertical(),
     controls: [
-      text({text: 'my tetyurytyuty', title: 'my title'}),
       button({
         title: 'CLICK ME',
         action: openDialog({style: dialog.dialogOkCancel(), content: group({}), title: 'hello'}),

@@ -42,7 +42,8 @@ class JbComponent {
             const ref = this.ctx.vars.$model[e.prop](this.ctx)
             if (jb.isWatchable(ref))
                 this.toObserve.push({id: e.prop, cmp: this, ref,...e})
-            this.renderProps[e.prop] = e.transformValue(this.ctx.setData(jb.val(ref) || ''))
+            const val = jb.val(ref)
+            this.renderProps[e.prop] = e.transformValue(this.ctx.setData(val == null ? '' : val))
         })
 
         Object.assign(this.renderProps,(this.styleCtx || {}).params, this.state);

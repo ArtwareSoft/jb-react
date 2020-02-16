@@ -162,8 +162,11 @@ jb.ui.contentEditable = {
       else if (scriptRef)
           jb.writeValue(scriptRef,val,vdomCmp.ctx)
   },
+  isEnabled() {
+    return new jb.jbCtx().exp('%$studio/settings/contentEditable%')
+  },
   activate(cmp) {
-    if (!new jb.jbCtx().exp('%$studio/settings/contentEditable%')) return
+    if (!this.isEnabled()) return
     this.current && this.current.refresh({contentEditableActive: false})
     this.current = cmp
     new jb.jbCtx().setVar('$launchingElement',{ el : cmp.base}).run(runActions(
@@ -221,7 +224,7 @@ jb.component('feature.content-editable', {
     afterViewInit: cmp => {
       const isHtml = param == 'html'
       const contentEditable = jb.ui.contentEditable
-      if (contentEditable) {
+      if (contentEditable && contentEditable.isEnabled()) {
         cmp.onblurHandler = ev => contentEditable.setScriptData(ev,cmp,param,isHtml)
         if (!isHtml)
           cmp.onkeydownHandler = cmp.onkeypressHandler = ev => contentEditable.handleKeyEvent(ev,cmp,param)
@@ -230,7 +233,7 @@ jb.component('feature.content-editable', {
     },
     templateModifier: (vdom,cmp) => {
       const contentEditable = jb.ui.contentEditable
-      if (!contentEditable || param && !contentEditable.refOfProp(cmp,param)) return vdom
+      if (!contentEditable || !contentEditable.isEnabled() || param && !contentEditable.refOfProp(cmp,param)) return vdom
       const attsToInject = cmp.state.contentEditableActive ? {contenteditable: 'true', onblur: true, onmousedown: true, onkeypress: true, onkeydown: true} : {onmousedown: true};
       // fix spacebar bug in button
       if (vdom.tag && vdom.tag.toLowerCase() == 'button' && vdom.children && vdom.children.length == 1 && typeof vdom.children[0] == 'string') {

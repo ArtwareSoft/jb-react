@@ -271,7 +271,7 @@ jb.component('tree.keyboard-selection', { /* tree.keyboardSelection */
 						const selected = cmp.getSelected()
 						const isArray = cmp.model.isArray(selected);
 						if (!isArray || (cmp.state.expanded[selected] && event.keyCode == 39))
-							runActionInTreeContext(context.params.onRightClickOfExpanded);
+							return runActionInTreeContext(context.params.onRightClickOfExpanded);
 						if (isArray && selected) {
 							cmp.state.expanded[selected] = (event.keyCode == 39);
 							cmp.redraw()

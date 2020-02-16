@@ -95,7 +95,7 @@ jb.component('field.control', { /* field.control */
 jb.component('button.table-cell-href', { /* tableButton.href */
   type: 'button.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: 'clicked'}, state.title),
+    template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: true}, state.title),
     css: '{color: grey}'
   })
 })

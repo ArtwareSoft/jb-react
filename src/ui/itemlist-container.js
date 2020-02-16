@@ -176,7 +176,7 @@ jb.component('itemlist-container.more-items-button', { /* itemlistContainer.more
   ],
   impl: controlWithFeatures(ctx=>jb.ui.ctrl(ctx),[
 	  watchRef('%$itemlistCntrData/maxItems%'),
-	  defHandler('clicked', writeValue('%$itemlistCntrData/maxItems%', 
+	  defHandler('onclickHandler', writeValue('%$itemlistCntrData/maxItems%', 
 			  (ctx,{itemlistCntrData},{delta}) => delta + itemlistCntrData.maxItems)),
 	  calcProp('title', (ctx,{},{title,delta}) => title(ctx.setVar('delta',delta))),
 	  ctx => ({
