@@ -633,12 +633,9 @@ const simpleValueByRefHandler = {
   },
   asRef(value) {
     return value
-    // if (value && (value.$jb_parent || value.$jb_val))
-    //     return value;
-    // return { $jb_val: () => value, $jb_path: () => [] }
   },
   isRef(value) {
-    return value && (value.$jb_parent || value.$jb_val);
+    return value && (value.$jb_parent || value.$jb_val || value.$jb_obj)
   },
   objectProperty(obj,prop) {
       if (this.isRef(obj[prop]))

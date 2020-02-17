@@ -445,6 +445,17 @@ jb.component('ui-test.remote-widget-empty-editable-text',  {
   })
 })
 
+jb.component('ui-test.refProp', {
+  impl: dataTest({
+    runBefore: writeValue(pipeline(
+      obj(refProp('personName','%$person/name%')),
+      '%personName%'
+      ),'Dan'),
+    calculate: '%$person/name%',
+    expectedResult: equals('Dan')
+  })
+})
+
 // jb.component('ui-test.serialize-ctx-of-vdom', {
 //   impl: dataTest({
 //     calculate: ctx => {
@@ -453,6 +464,6 @@ jb.component('ui-test.remote-widget-empty-editable-text',  {
 //       const restored = jb.ui.deserializeCtxStore(store)
 //       return restored.ctx[29].vars.a.x
 //     },
-//     expectedResult: 10
+//     expectedResult: equals(10)
 //   })
 // })

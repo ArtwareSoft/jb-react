@@ -448,7 +448,7 @@ jb.component('obj', { /* obj */
     {id: 'props', type: 'prop[]', mandatory: true, sugar: true}
   ],
   impl: (ctx,properties) =>
-		Object.assign({}, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)])))
+		jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)]))
 })
 
 jb.component('extend', { /* extend */
@@ -482,6 +482,17 @@ jb.component('prop', { /* prop */
   ],
   impl: ctx => ctx.params
 })
+
+jb.component('ref-prop', { /* refProp */
+  type: 'prop',
+  description: 'value by reference allows to change or watch the value',
+  params: [
+    {id: 'title', as: 'string', mandatory: true},
+    {id: 'val', dynamic: true, as: 'ref', mandatory: true },
+  ],
+  impl: ctx => ({ ...ctx.params, type: 'ref' })
+})
+
 
 jb.component('pipeline.var', {
   type: 'aggregator',
