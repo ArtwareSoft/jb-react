@@ -28,6 +28,9 @@ jb.component('tree.model-filter', { /* tree.modelFilter */
 
 jb.component('table-tree.init', { /* tableTree.init */
   type: 'feature',
+  params:[
+    {id: 'autoOpenFirstLevel', as: 'boolean' },
+  ],
   impl: features(
     calcProp({
         id: 'items',
@@ -62,19 +65,17 @@ jb.component('table-tree.init', { /* tableTree.init */
         }
       ),
     feature.init(
-        (ctx,{cmp}) => {
+        (ctx,{cmp},{autoOpenFirstLevel}) => {
             const treeModel = cmp.treeModel = ctx.vars.$model.treeModel()
             cmp.renderProps.maxDepth = treeModel.maxDepth = (treeModel.maxDepth || 5)
             const firstTime = !cmp.state.expanded
             cmp.state.expanded = cmp.state.expanded || {}
             if (firstTime) {
                 jb.ui.treeExpandPath(cmp.state.expanded,treeModel.rootPath)
-                treeModel.children(treeModel.rootPath).forEach(path=>jb.ui.treeExpandPath(cmp.state.expanded,path))
+                if (autoOpenFirstLevel)
+                    treeModel.children(treeModel.rootPath).forEach(path=>jb.ui.treeExpandPath(cmp.state.expanded,path))
             }
 
-            //cmp.itemsCache = {}
-            //cmp.headLineCache = {}
-            //cmp.calcItems = () => calcItems(treeModel.rootPath,0)
             cmp.leafFields = calcFields('leafFields')
             cmp.commonFields = calcFields('commonFields')
             cmp.fieldsForPath = path => treeModel.isArray(path) ? cmp.commonFields : cmp.leafFields.concat(cmp.commonFields)
@@ -100,32 +101,14 @@ jb.component('table-tree.init', { /* tableTree.init */
                     }
                 )
             }
-
-        //    function getOrCreateControl(field,item,index) {
-        //         if (!treeModel.FieldCache)
-        //             return field.control(item,index,true)
-        //         cmp.ctrlCache = cmp.ctrlCache || {}
-        //         const key = item.path+'~!'+item.expanded + '~' +field.ctxId
-        //         cmp.ctrlCache[key] = cmp.ctrlCache[key] || field.control(item,index)
-        //         return cmp.ctrlCache[key]
-        //     }
             function calcFields(fieldsProp) {
                 return ctx.vars.$model[fieldsProp]().map(x=>x.field())
-                //fields.forEach(f=>f.cachedControl = (item,index) => getOrCreateControl(f,item,index))
-                //return fields
             }
             function headlineCmp(item) {
                 return ctx.vars.$model.chapterHeadline(
                         ctx.setData({path: item.path, val: treeModel.val(item.path)})
                             .setVars({item,collapsed: ctx2 => !cmp.state.expanded[item.path]}))
             }
-            // function getOrCreateHeadlineCmp(item) {
-            //     if (!treeModel.HeadLineCache)
-            //         return headlineCmp(item)
-            //     if (!cmp.headLineCache[item.path])
-            //         cmp.headLineCache[item.path] = headlineCmp(item)
-            //     return cmp.headLineCache[item.path]
-            // }
         }
       )
   )
@@ -134,7 +117,8 @@ jb.component('table-tree.init', { /* tableTree.init */
 jb.component('table-tree.plain', { /* tableTree.plain */
   type: 'table-tree.style',
   params: [
-    {id: 'hideHeaders', as: 'boolean', type: 'boolean'},
+    {id: 'hideHeaders', as: 'boolean' },
+    {id: 'autoOpenFirstLevel', as: 'boolean' },
     {id: 'gapWidth', as: 'number', defaultValue: 30},
     {id: 'expColWidth', as: 'number', defaultValue: 16},
     {id: 'noItemsCtrl', type: 'control', dynamic: true, defaultValue: text('no items')}
@@ -166,7 +150,7 @@ jb.component('table-tree.plain', { /* tableTree.plain */
       >tbody>tr>td>span { font-size:16px; cursor: pointer; border: 1px solid transparent }
       >tbody>tr>td>span>i { font-size: 16px; vertical-align: middle;}
       `,
-    features: tableTree.init()
+    features: tableTree.init('%$autoOpenFirstLevel%')
   })
 })
 
@@ -186,10 +170,10 @@ jb.component('json.path-selector', { /* json.pathSelector */
 jb.ui.treeExpandPath = jb.ui.treeExpandPath || ((expanded, path) => {
 	let changed = false
 	path.split('~').reduce((base, x) => {
-			const inner = base ? (base + '~' + x) : x;
-			changed = changed || (!expanded[inner])
-			expanded[inner] = true;
-			return inner;
-		},'')
+        const inner = base ? (base + '~' + x) : x;
+        changed = changed || (!expanded[inner])
+        expanded[inner] = true;
+        return inner;
+    },'')
 	return changed
 })

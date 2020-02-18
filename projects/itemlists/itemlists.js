@@ -128,11 +128,11 @@ jb.component('itemlists.editable-table', { /* itemlists.editableTable */
         ]
       }),
       button({
-        title: 'add',
+        title: 'add person',
         action: addToArray('%$people%', obj()),
         style: button.mdcFloatingWithTitle('add'),
         raised: 'true',
-        features: css.width('150')
+        features: [css.width('200'), css.margin('10')]
       })
     ]
   })
