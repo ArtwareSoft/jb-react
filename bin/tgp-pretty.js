@@ -1,5 +1,5 @@
-require('../src/misc/wSpy.js')
 jb = require('../src/core/jb-core.js')
+//require('../src/misc/spy.js')
 const {getProcessArgument} = require('./utils.js')
 const fs = require('fs');
 require('../src/loader/jb-loader.js');
@@ -30,7 +30,8 @@ function run() {
     const entries = jb.entries(jb.comps) 
         .map(e=>({id:e[0], comp:e[1], file:e[1][jb.location][0]}))
         .filter(({id}) => !id.match(/-json-format$/) && !id.match(/forward-ns-declaration$/))
-        entries.filter(({file}) => 
+    
+    entries.filter(({file}) => 
             filePattern.test(file) )
         .forEach( args => swapComp(args))
 }

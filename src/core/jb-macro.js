@@ -8,16 +8,16 @@ Object.assign(jb, {
 
         if (checkId(macroId))
             registerProxy(macroId)
-        if (nameSpace && checkId(nameSpace, true) && !frame[nameSpace]) {
+        if (nameSpace && checkId(nameSpace, true) && !jb.frame[nameSpace]) {
             registerProxy(nameSpace, true)
             jb.macroNs[nameSpace] = true
         }
 
         function registerProxy(proxyId) {
-            frame[proxyId] = new Proxy(() => 0, {
+            jb.frame[proxyId] = new Proxy(() => 0, {
                 get: (o, p) => {
                     if (typeof p === 'symbol') return true
-                    return frame[proxyId + '_' + p] || genericMacroProcessor(proxyId, p)
+                    return jb.frame[proxyId + '_' + p] || genericMacroProcessor(proxyId, p)
                 },
                 apply: function (target, thisArg, allArgs) {
                     const { args, system } = splitSystemArgs(allArgs)
@@ -42,13 +42,13 @@ Object.assign(jb, {
         }
 
         function checkId(macroId, isNS) {
-            if (frame[macroId] && !frame[macroId][jb.macroDef]) {
+            if (jb.frame[macroId] && !jb.frame[macroId][jb.macroDef]) {
                 jb.logError(macroId + ' is reserved by system or libs. please use a different name')
                 return false
             }
-            if (frame[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$dummyComp$/))
+            if (jb.frame[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$dummyComp$/))
                 jb.logError(macroId + ' is defined more than once, using last definition ' + id)
-            // if (frame[macroId] !== undefined && !isNS && jb.macroNs[macroId])
+            // if (jb.frame[macroId] !== undefined && !isNS && jb.macroNs[macroId])
             //     jb.logError(macroId + ' is already defined as ns, using last definition ' + id)
             return true;
         }

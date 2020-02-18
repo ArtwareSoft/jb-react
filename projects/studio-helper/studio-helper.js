@@ -1,6 +1,6 @@
-jb.ns('studio-helper')
+jb.ns('studio-helper,d3g')
 jb.studio.initCompsRefHandler(jb)
-jb.studio.previewWindow = window
+jb.studio.previewWindow = jb.frame
 // fake current path
 jb.delay(100).then(()=>new jb.jbCtx().run(runActions(writeValue('%$studio/project%','studio-helper')),writeValue('%$studio/page%','topBar') ))
 
@@ -429,7 +429,6 @@ jb.component('studio-helper-sample.control', { /* studioHelperSample.control */
     ]
   })
 })
-
 
 jb.component('studio-helper.comps-chart', { /* studioHelper.compsChart */
   type: 'control',

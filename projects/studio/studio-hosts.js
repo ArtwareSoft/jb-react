@@ -65,7 +65,7 @@ st.chooseHostByUrl = entryUrl => {
 
 function getEntryUrl() {
     const location = jb.frame.location
-    return location && new URLSearchParams(location.search).entryUrl || location.href
+    return location && (new URLSearchParams(location.search).entryUrl || location.href)
 }
 st.chooseHostByUrl(getEntryUrl())
 
@@ -77,8 +77,8 @@ function _extractText(str,startMarker,endMarker,replaceWith) {
     return str.slice(pos1 + startMarker.length ,pos2)
 }
 
-window.aa_jsonp_callback = x => x
-const jbProxy = location.href.match(/^[^:]*/)[0] + '://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
+jb.frame.aa_jsonp_callback = x => x
+const jbProxy = jb.frame.location && (location.href.match(/^[^:]*/)[0] + '://jbartdb.appspot.com/jbart_db.js?op=proxy&url=')
 
 function getUrlContent(url) {
     const proxy = jbProxy

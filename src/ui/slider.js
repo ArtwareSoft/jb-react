@@ -52,7 +52,7 @@ jb.component('slider.init', { /* slider.init */
           cmp.handleArrowKey = e => {
               var val = Number(cmp.jbModel()) || 0;
               if (e.keyCode == 46) // delete
-                jb.writeValue(cmp.state.databindRef || ctx.vars.$model.databind(),null, ctx);
+                jb.writeValue(ctx.vars.$model.databind(),null, ctx);
               if ([37,39].indexOf(e.keyCode) != -1) {
                 var inc = e.shiftKey ? 9 : 1;
                 if (val !=null && e.keyCode == 39)

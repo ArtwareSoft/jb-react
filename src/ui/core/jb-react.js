@@ -7,7 +7,7 @@ function h(cmpOrTag,attributes,children) {
     if (cmpOrTag && cmpOrTag.renderVdom)
         return cmpOrTag.renderVdom()
    
-    return new VNode(cmpOrTag,attributes,children)
+    return new jb.ui.VNode(cmpOrTag,attributes,children)
 }
 
 function compareVdom(b,a) {
@@ -238,7 +238,7 @@ function render(vdom,parentElem) {
 }
 
 Object.assign(jb.ui, {
-    VNode, h, render, unmount, applyVdomDiff, applyDeltaToDom, elemToVdom, mountInteractive, compareVdom,
+    h, render, unmount, applyVdomDiff, applyDeltaToDom, elemToVdom, mountInteractive, compareVdom,
     handleCmpEvent(specificHandler) {
         const el = [event.currentTarget, ...jb.ui.parents(event.currentTarget)].find(el=> el.getAttribute && el.getAttribute('jb-ctx') != null)
         if (!el) return
