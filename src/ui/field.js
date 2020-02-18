@@ -29,7 +29,7 @@ function writeFieldData(ctx,cmp,value,oneWay) {
 //  const val = (typeof event != 'undefined' ? event : ev).target.value
   jb.ui.checkValidationError(cmp,value);
   jb.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx);
-  !oneWay && jb.ui.refreshElem(ev.target,null,{srcCtx: ctx.componentContext});
+  !oneWay && jb.ui.refreshElem(cmp.base,null,{srcCtx: ctx.componentContext});
 }
 
 //     interactive((ctx,{cmp},{debounceTime,oneWay}) => {

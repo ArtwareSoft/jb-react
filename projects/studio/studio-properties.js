@@ -31,11 +31,15 @@ jb.component('studio.properties', { /* studio.properties */
           features: [feature.hoverTitle(pipeline(studio.paramDef('%path%'), '%description%'))]
         }),
         style: tableTree.plain({hideHeaders: true, gapWidth: 100, noItemsCtrl: text('')}),
-        features: studio.watchPath({
+        features: [
+          css(`>tbody>tr>td.headline { vertical-align: inherit; margin-bottom: 7px; }
+            >tbody>tr>td>span>i { margin-bottom: 8px }`),
+          studio.watchPath({
           path: '%$path%',
           includeChildren: 'structure',
           allowSelfRefresh: true
         })
+      ]
       }),
       button({
         title: 'new feature',
@@ -116,7 +120,6 @@ jb.component('studio.prop-field', { /* studio.propField */
   })
 })
 
-
 jb.component('studio.property-toolbar', { /* studio.propertyToolbar */
   type: 'control',
   params: [
@@ -134,7 +137,7 @@ jb.component('studio.property-toolbar-feature', { /* studio.propertyToolbarFeatu
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: list(
+  impl: features(
     field.toolbar(studio.propertyToolbar('%$path%')),
     studio.disabledSupport('%$path%')
   )
@@ -147,7 +150,7 @@ jb.component('studio.property-script', { /* studio.propertyScript */
   ],
   impl: group({
     controls: button({
-      title: (ctx,vars,{path}) => jb.prettyPrint(jb.studio.valOfPath(path)),
+      title: prettyPrint(studio.val('%$path%'), true),
       action: studio.openJbEditor('%$path%'),
       style: button.studioScript()
     }),

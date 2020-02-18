@@ -1,12 +1,10 @@
 jb.component('editable-text.studio-primitive-text', { /* editableText.studioPrimitiveText */
   type: 'editable-text.style',
   impl: customStyle({
-    template: (cmp,{databind},h) => {
-      if (typeof databind != 'string') debugger
-      return h('input', {
+    template: (cmp,{databind},h) => h('input', {
           class: 'mdc-text-field__input',
           value: databind, onchange: true, onkeyup: true, onblur: true
-      })},
+    }),
     css: '{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom: 7px;} :focus { border-color: #3F51B5; border-width: 2px}',
     features: field.databindText(500,false)
   })
@@ -81,8 +79,10 @@ jb.component('button.select-profile-style', { /* button.selectProfileStyle */
 jb.component('studio.property-toolbar-style', { /* studio.propertyToolbarStyle */
   type: 'button.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('i',{class: 'material-icons', onclick: true },'more_vert'),
-    css: '{ cursor: pointer;width: 16px; font-size: 16px; padding-top: 3px }'
+    template: (cmp,state,h) => h('i',{class: 'material-icons', onclick: true, title: 'more...' },'more_vert'),
+    css: `{ cursor: pointer;width: 16px; font-size: 16px; vertical-align: super; opacity: 0.5}
+      ~:hover { opacity: 1}
+    `
   })
 })
 
@@ -99,8 +99,6 @@ jb.component('button.studio-script', { /* button.studioScript */
     css: '{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom: 7px;; cursor: pointer; opacity: 0.8; font-style: italic; }'
   })
 })
-
-
 
 jb.component('picklist.studio-enum', { /* picklist.studioEnum */
   type: 'picklist.style',

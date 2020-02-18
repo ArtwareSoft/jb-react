@@ -5,17 +5,19 @@ jb.component('image', { /* image */
   category: 'control:50,common:70',
   params: [
     {id: 'url', as: 'string', mandatory: true, templateValue: 'https://freesvg.org/img/UN-CONSTRUCTION-2.png'},
-    {id: 'resize', type: 'image.resize', defaultValue: image.fullyVisible()},
+    {id: 'width', as: 'string', mandatory: true, templateValue: '100', description: 'e.g: 100, 20%'},
+    {id: 'height', as: 'string', mandatory: true, description: 'e.g: 100, 20%'},
+    {id: 'resize', type: 'image.resize', description: 'background-size, resize the image', defaultValue: image.fullyVisible()},
     {id: 'position', type: 'image.position', description: 'move/shift image' },
     {id: 'style', type: 'image.style', dynamic: true, defaultValue: image.defaultStyle()},
-    {id: 'features', type: 'feature[]', dynamic: true, templateValue: css.height('100')}
+    {id: 'features', type: 'feature[]', dynamic: true }
   ],
   impl: ctx => jb.ui.ctrl(ctx, {
     studioFeatures :{$: 'feature.content-editable' },
   })
 })
 
-jb.component('image.width-height', {
+jb.component('image.width-height', { // image.widthHeight
   type: 'image.resize',
   description: 'fixed size or precentage of the original',
   params: [
@@ -52,12 +54,19 @@ jb.component('image.default-style', {
   type: 'image.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div'),
-    css: (ctx,{$model}) => `
+    css: pipeline(
+      Var('url', (ctx,{$model}) => $model.url.replace(/__WIDTH__/,$model.width).replace(/__HEIGHT__/,$model.height)),
+      Var('width', (ctx,{$model}) => jb.ui.withUnits($model.width)),
+      Var('height', (ctx,{$model}) => jb.ui.withUnits($model.height)),
+    `
       { 
-          background-image: url('${$model.url}');
-          background-size: ${$model.resize};
-          ${$model.position};
-          background-repeat: no-repeat
+          background-image: url('%$url%');
+          {? background-size: %$$model/resize%; ?}
+          {? %$$model/position%; ?}
+          background-repeat: no-repeat;
+          {?width: %$width%; ?}
+          {?height: %$height%; ?}
       }`
+    )
   })
 })

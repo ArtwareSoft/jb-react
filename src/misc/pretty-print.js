@@ -1,7 +1,7 @@
 jb.component('pretty-print', { /* prettyPrint */
   params: [
     {id: 'profile', defaultValue: '%%'},
-    {id: 'colWidth', as: 'number', defaultValue: 140}
+    {id: 'forceFlat', as: 'boolean'}
   ],
   impl: (ctx,profile) => jb.prettyPrint(jb.val(profile),ctx.params)
 })
@@ -26,7 +26,7 @@ jb.prettyPrint.advanceLineCol = function({line,col},text) {
 }
 jb.prettyPrint.spaces = Array.from(new Array(200)).map(_=>' ').join('');
 
-jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath='',showNulls,comps} = {}) {
+jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath='',showNulls,comps,forceFlat} = {}) {
   comps = comps || jb.comps
   if (!val || typeof val !== 'object')
     return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
@@ -66,7 +66,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
     const result = processList(beforeClose, [{prop: '!close-newline', item: () => newLine(-1)}, ..._close])
 
     const unflat = shouldNotFlat(result)
-    if (!unflat && !flat)
+    if ((forceFlat || !unflat) && !flat)
       return joinVals(ctx, innerVals, open, close, true, isArray)
     return Object.assign(result,{unflat})
 

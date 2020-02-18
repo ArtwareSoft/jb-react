@@ -107,6 +107,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       cards: [
         'src/ui/cards/cards.js',
         'src/ui/cards/cards-styles.js',
+        'src/ui/cards/cards-adapters.js',
       ],
       'cards-sample-data': [
         'src/ui/cards/sample-data/wix-blog.js',

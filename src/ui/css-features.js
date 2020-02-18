@@ -167,7 +167,7 @@ jb.component('css.box-shadow', { /* css.boxShadow */
     {id: 'selector', as: 'string'}
   ],
   impl: (context,blurRadius,spreadRadius,shadowColor,opacity,horizontal,vertical,selector) => {
-    var color = [parseInt(shadowColor.slice(1,3),16) || 0, parseInt(shadowColor.slice(3,5),16) || 0, parseInt(shadowColor.slice(5,7),16) || 0]
+    const color = [parseInt(shadowColor.slice(1,3),16) || 0, parseInt(shadowColor.slice(3,5),16) || 0, parseInt(shadowColor.slice(5,7),16) || 0]
       .join(',');
     return ({css: `${selector} { box-shadow: ${withUnits(horizontal)} ${withUnits(vertical)} ${withUnits(blurRadius)} ${withUnits(spreadRadius)} rgba(${color},${opacity}) }`})
   }

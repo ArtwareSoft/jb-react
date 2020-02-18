@@ -352,7 +352,7 @@ jb.component('dialog.popup', { /* dialog.popup */
     ]
   })
 })
-
+  
 jb.component('dialog.div', { /* dialog.div */
 	type: 'dialog.style',
 	impl: customStyle({

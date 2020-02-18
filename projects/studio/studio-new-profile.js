@@ -229,8 +229,9 @@ jb.component('studio.open-new-profile-dialog', { /* studio.openNewProfileDialog 
     }),
     title: 'new %$type%',
     features: [
-      css.height({height: '520', overflow: 'hidden'}),
+      css.height({height: '520', overflow: 'hidden', minMax: 'min'}),
       css.width({width: '450', overflow: 'hidden'}),
+      css(`~ .mdc-text-field { background-color: inherit }`),
       dialogFeature.dragTitle('new %$type%'),
       studio.nearLauncherPosition(),
       dialogFeature.autoFocusOnFirstInput(),
@@ -246,10 +247,13 @@ jb.component('studio.pick-profile', { /* studio.pickProfile */
     {id: 'path', as: 'string'}
   ],
   impl: button({
-    title: firstSucceeding(studio.compName('%$path%'), ''),
+    title: prettyPrint(studio.val('%$path%'),true),
     action: studio.openPickProfile('%$path%'),
     style: button.selectProfileStyle(),
-    features: studio.watchPath('%$path%')
+    features: [
+      studio.watchPath('%$path%'),
+      css.opacity(0.7)
+    ]
   })
 })
 
@@ -259,7 +263,8 @@ jb.component('studio.open-pick-profile', {
     {id: 'path', as: 'string'}
   ],
   impl: openDialog({
-    style: dialog.popup(),
+    style: dialog.studioFloating(),
+    title: pipeline(studio.paramType('%$path%'),'select %%'),
     content: group({ controls: [
       studio.selectProfile({
         onSelect: studio.setComp('%$path%', '%%'),
@@ -272,6 +277,9 @@ jb.component('studio.open-pick-profile', {
       studio.properties('%$path%')
     ]}),
     features: [
+      css.height({height: '520', overflow: 'hidden', minMax: 'min'}),
+      css.width({width: '450', overflow: 'hidden'}),
+      css(`~ .mdc-text-field { background-color: inherit }`),
       dialogFeature.autoFocusOnFirstInput(),
       css.padding({right: '20'}),
       feature.init(writeValue('%$dialogData/originalVal%', studio.val('%$path%'))),

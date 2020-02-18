@@ -450,6 +450,7 @@ jb.component('studio.add-variable', { /* studio.addVariable */
       title: 'New variable',
       modal: 'true',
       features: [
+        css.width('300'),
         dialogFeature.nearLauncherPosition({}),
         dialogFeature.autoFocusOnFirstInput()
       ]
