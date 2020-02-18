@@ -84,106 +84,110 @@ jb.component('studio.data-browse', { /* studio.dataBrowse */
     {id: 'width', as: 'number', defaultValue: 200}
   ],
   impl: group({
-      controls: [
-        group({
-          features: group.firstSucceeding(),
-          controls: [ 
-            // controlWithCondition(
-            //   inGroup(list('JbComponent', 'jbCtx'), className('%$obj%')),
-            //   label({text: className('%$obj%')})
-            // ),
-            controlWithCondition(
-              isOfType('string,boolean,number', '%$obj%'),
-              label('%$obj%')
-            ),
-            controlWithCondition(
-              isOfType('array', '%$obj%'),
-              table({
-                items: pipeline('%$obj%', slice(0, '%$maxItems%')),
-                fields: field.control({
-                  title: pipeline(count('%$obj%'), '%% items'),
-                  control: studio.dataBrowse({obj: '%%', width: 200})
-                }),
-                style: table.mdc(),
-                features: [watchRef('%$maxItems%')]
-              })
-            ),
-            controlWithCondition(isNull('%$obj%'), label('null')),
-            tree({
-              nodeModel: tree.jsonReadOnly('%$obj%', '%$title%'),
-              style: tree.expandBox(),
-              features: [
-                tree.selection({}),
-                tree.keyboardSelection({}),
-                css.width({width: '%$width%', minMax: 'max'})
-              ]
+    controls: [
+      group({
+        controls: [
+          controlWithCondition(
+            isOfType('string,boolean,number', '%$obj%'),
+            label('%$obj%')
+          ),
+          controlWithCondition(
+            isOfType('array', '%$obj%'),
+            table({
+              items: pipeline('%$obj%', slice(0, '%$maxItems%')),
+              fields: field.control({
+                title: pipeline(count('%$obj%'), '%% items'),
+                control: studio.dataBrowse('%%', 200)
+              }),
+              style: table.mdc(),
+              features: [watchRef('%$maxItems%')]
             })
-          ]
+          ),
+          controlWithCondition(isNull('%$obj%'), label('null')),
+          tree({
+            nodeModel: tree.jsonReadOnly('%$obj%', '%$title%'),
+            style: tree.expandBox({}),
+            features: [
+              tree.selection({}),
+              tree.keyboardSelection({}),
+              css.width({width: '%$width%', minMax: 'max'})
+            ]
+          })
+        ],
+        features: group.firstSucceeding()
+      }),
+      controlWithCondition(
+        and('%$obj/length% > 100', isOfType('string', '%$obj%')),
+        button({
+          title: 'open (%$obj/length%)',
+          action: openDialog({
+            style: dialog.showSourceStyle('show-data'),
+            content: group({
+              style: group.tabs(),
+              controls: [
+                editableText({
+                  title: 'text',
+                  databind: '%$obj%',
+                  style: editableText.codemirror({
+                    enableFullScreen: true,
+                    height: '200',
+                    mode: 'text',
+                    debounceTime: 300,
+                    lineNumbers: true,
+                    readOnly: true
+                  })
+                }),
+                html({title: 'html', html: '%$obj%', style: html.inIframe()})
+              ],
+              features: css('{height: 100%} >div:last-child {height: 100%}')
+            })
+          }),
+          style: button.href()
         }),
-        controlWithCondition(
-          and('%$obj/length% > 100', isOfType('string', '%$obj%')),
-          button({
-            title: 'open (%$obj/length%)',
-            action: openDialog({
-              style: dialog.showSourceStyle({id:'show-data'}),
-              content:  group({
-                features: css('{height: 100%} >div:last-child {height: 100%}'),
-                style: group.tabs(),
-                controls: [
-                  editableText({
-                    title: 'text',
-                    databind: '%$obj%',
-                    style: editableText.codemirror({
-                      enableFullScreen: true,
-                      height: '200',
-                      mode: 'text',
-                      debounceTime: 300,
-                      lineNumbers: true,
-                      readOnly: true
-                    })
-                  }),
-                  html({title: 'html', html: '%$obj%', style: html.inIframe()})
-                ]})
-            }),
-            style: button.href()
-          }),
-          'long text'
-        ),
-        controlWithCondition(
-          and('%$obj/length% > 5', isOfType('array', '%$obj%'), '%$maxItems% == 5'),
-          button({
-            title: 'show (%$obj/length%)',
-            action: writeValue('%$maxItems%', '100'),
-            style: button.href(),
-            features: [watchRef('%$maxItems%'), hidden('%$maxItems% == 5')]
-          }),
-          'large array'
-        )
-      ],
-      features: [variable({name: 'maxItems', value: '5', watchable: 'true'})]
-    })
+        'long text'
+      ),
+      controlWithCondition(
+        and('%$obj/length% > 5', isOfType('array', '%$obj%'), '%$maxItems% == 5'),
+        button({
+          title: 'show (%$obj/length%)',
+          action: writeValue('%$maxItems%', '100'),
+          style: button.href(),
+          features: [watchRef('%$maxItems%'), hidden('%$maxItems% == 5')]
+        }),
+        'large array'
+      )
+    ],
+    features: [variable({name: 'maxItems', value: '5', watchable: 'true'})]
+  })
 })
 
 jb.component('studio.probe-data-view', { /* studio.probeDataView */
   type: 'control',
   impl: group({
-    controls: [itemlist({
-        items: pipeline('%$probeResult%',slice(0,'%$maxItems%')),
+    controls: [
+      itemlist({
+        items: pipeline('%$probeResult%', slice(0, '%$maxItems%')),
         controls: [
           group({
             title: 'in (%$probeResult/length%)',
             controls: studio.dataBrowse(({data}) => st.previewjb.val(data.in.data)),
-            features:[
+            features: [
               field.columnWidth(100),
-              field.titleCtrl(button({
-                    title: 'in (%$probeResult/length%)',
-                    action: writeValue('%$maxItems%', '100'),
-                    style: button.href(),
-                    features: [watchRef('%$maxItems%'), ] // hidden('%$probeResult/length% > %$maxItems%')
-              }))
+              field.titleCtrl(
+                button({
+                  title: 'in (%$probeResult/length%)',
+                  action: writeValue('%$maxItems%', '100'),
+                  style: button.href(),
+                  features: [watchRef('%$maxItems%')]
+                })
+              )
             ]
           }),
-          group({title: 'out', controls: studio.dataBrowse('%out%'), features: field.columnWidth(100)})
+          group({
+            title: 'out',
+            controls: studio.dataBrowse('%out%'),
+            features: field.columnWidth(100)
+          })
         ],
         style: table.mdc(),
         features: [
@@ -194,16 +198,16 @@ jb.component('studio.probe-data-view', { /* studio.probeDataView */
             loadingControl: label('...'),
             varName: 'probeResult'
           }),
-          css('{white-space: normal}'),
+          css('{white-space: normal}')
         ]
-      }),
-     ],
+      })
+    ],
     features: [
       css.height({height: '600', overflow: 'auto', minMax: 'max'}),
-      watchRef({ ref: '%$jbEditorCntrData/selected%', strongRefresh: true}),
-      watchRef({ ref: '%$studio/pickSelectionCtxId%', strongRefresh: true}),
-      watchRef({ ref: '%$studio/refreshProbe%', strongRefresh: true}),
-      variable({name: 'maxItems', value: '5', watchable: true })
+      watchRef({ref: '%$jbEditorCntrData/selected%', strongRefresh: true}),
+      watchRef({ref: '%$studio/pickSelectionCtxId%', strongRefresh: true}),
+      watchRef({ref: '%$studio/refreshProbe%', strongRefresh: true}),
+      variable({name: 'maxItems', value: '5', watchable: true})
     ]
   })
 })
@@ -228,7 +232,11 @@ jb.component('studio.open-jb-edit-property', { /* studio.openJbEditProperty */
             ],
             features: [
               feature.onEsc(dialog.closeContainingPopup(true)),
-              feature.onEnter(dialog.closeContainingPopup(true), tree.regainFocus(), toggleBooleanValue('%$studio/refreshProbe%'))
+              feature.onEnter(
+                dialog.closeContainingPopup(true),
+                tree.regainFocus(),
+                toggleBooleanValue('%$studio/refreshProbe%')
+              )
             ]
           }),
           features: [
@@ -248,10 +256,7 @@ jb.component('studio.open-jb-edit-property', { /* studio.openJbEditProperty */
           content: studio.jbFloatingInput('%$actualPath%'),
           features: [
             dialogFeature.autoFocusOnFirstInput(),
-            dialogFeature.onClose(
-                toggleBooleanValue('%$studio/refreshProbe%'),
-                tree.regainFocus()
-            )
+            dialogFeature.onClose(toggleBooleanValue('%$studio/refreshProbe%'))
           ]
         })
       ),
@@ -276,26 +281,26 @@ jb.component('studio.jb-editor-inteli-tree', { /* studio.jbEditorInteliTree */
     {id: 'path', as: 'string'}
   ],
   impl: tree({
-        nodeModel: studio.jbEditorNodes('%$path%'),
-        style: tree.expandBox({showIcon: true}),
-        features: [
-          css.class('jb-editor'),
-          tree.selection({
-            databind: '%$jbEditorCntrData/selected%',
-            autoSelectFirst: true,
-            onRightClick: studio.openJbEditorMenu('%%', '%$path%')
-          }),
-          tree.keyboardSelection({
-            onEnter: studio.openJbEditProperty('%$jbEditorCntrData/selected%'),
-            onRightClickOfExpanded: studio.openJbEditorMenu('%%', '%$path%'),
-            autoFocus: true,
-            applyMenuShortcuts: studio.jbEditorMenu('%%', '%$path%')
-          }),
-          tree.dragAndDrop(),
-          css.width({width: '500', selector: 'jb-editor'}),
-          studio.watchScriptChanges()
-        ]
-   })
+    nodeModel: studio.jbEditorNodes('%$path%'),
+    style: tree.expandBox(true),
+    features: [
+      css.class('jb-editor'),
+      tree.selection({
+        databind: '%$jbEditorCntrData/selected%',
+        autoSelectFirst: true,
+        onRightClick: studio.openJbEditorMenu('%%', '%$path%')
+      }),
+      tree.keyboardSelection({
+        onEnter: studio.openJbEditProperty('%$jbEditorCntrData/selected%'),
+        onRightClickOfExpanded: studio.openJbEditorMenu('%%', '%$path%'),
+        autoFocus: true,
+        applyMenuShortcuts: studio.jbEditorMenu('%%', '%$path%')
+      }),
+      tree.dragAndDrop(),
+      css.width({width: '500', selector: 'jb-editor'}),
+      studio.watchScriptChanges()
+    ]
+  })
 })
 
 jb.component('studio.jb-editor', { /* studio.jbEditor */
@@ -324,7 +329,7 @@ jb.component('studio.open-jb-editor', { /* studio.openJbEditor */
   impl: openDialog({
     vars: [
       Var('dialogId', {'$if': '%$newWindow%', then: '', else: 'jb-editor'}),
-      Var('fromPath', '%$fromPath%'),
+      Var('fromPath', '%$fromPath%')
     ],
     style: dialog.studioFloating({id: '%$dialogId%', width: '860', height: '400'}),
     content: studio.jbEditor('%$path%'),

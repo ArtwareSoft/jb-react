@@ -5,7 +5,7 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
   type: 'feature',
   params: [
     {id: 'path', as: 'string'},
-    {id: 'source', as: 'string'},
+    {id: 'source', as: 'string'}
   ],
   impl: ctx => ({
       afterViewInit: cmp => {
@@ -102,7 +102,6 @@ jb.component('studio.property-primitive', { /* studio.propertyPrimitive */
         features: [
           feature.onKey('Right', studio.pasteSuggestion('%$suggestionData/selected%', '/')),
           feature.onKey('Enter', studio.pasteSuggestion('%$suggestionData/selected%')),
-          //interactive(writeValue('%$suggestionData/inputCmp%', '%$cmp%')),
           editableText.helperPopup({
             control: studio.suggestionsItemlist('%$path%'),
             popupId: 'suggestions',

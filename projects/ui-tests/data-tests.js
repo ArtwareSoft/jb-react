@@ -49,24 +49,30 @@ jb.component('data-test.get-ref-value-as-boolean', { /* dataTest.getRefValueAsBo
   })
 })
 
-jb.component('data-test.property-watchable', {
+jb.component('data-test.property-watchable', { /* dataTest.propertyWatchable */
   impl: dataTest({
-    calculate: property('name','%$person%'),
+    calculate: property('name', '%$person%'),
     expectedResult: equals('Homer Simpson')
   })
 })
 
-jb.component('data-test.pipeline-var', { // var in pipeline. var-in-pipeline
+jb.component('data-test.pipeline-var', { /* dataTest.pipelineVar */
   impl: dataTest({
-    calculate: pipeline('%$peopleWithChildren%',pipeline(Var('parent'),'%children%','%name% is child of %$parent/name%'),join()),
-    expectedResult: equals('Bart is child of Homer,Lisa is child of Homer,Bart is child of Marge,Lisa is child of Marge')
+    calculate: pipeline(
+      '%$peopleWithChildren%',
+      pipeline(Var('parent'), '%children%', '%name% is child of %$parent/name%'),
+      join({})
+    ),
+    expectedResult: equals(
+      'Bart is child of Homer,Lisa is child of Homer,Bart is child of Marge,Lisa is child of Marge'
+    )
   })
 })
 
-jb.component('data-test.property-passive', {
+jb.component('data-test.property-passive', { /* dataTest.propertyPassive */
   impl: dataTest({
-    vars: Var('person',obj(prop('name','homer'))),
-    calculate: property('name','%$person%'),
+    vars: [Var('person', obj(prop('name', 'homer')))],
+    calculate: property('name', '%$person%'),
     expectedResult: equals('homer')
   })
 })
@@ -208,13 +214,10 @@ jb.component('data-test.runActionOnItems', { /* dataTest.runActionOnItems */
   })
 })
 
-jb.component('data-test.runActionOnItems-array-ref', {
+jb.component('data-test.runActionOnItems-array-ref', { /* dataTest.runActionOnItemsArrayRef */
   impl: dataTest({
     calculate: pipeline('%$personWithChildren/children/name%', join({})),
-    runBefore: runActionOnItems(
-      '%$personWithChildren/children/name%',
-      writeValue('%%', 'a%%')
-    ),
+    runBefore: runActionOnItems('%$personWithChildren/children/name%', writeValue('%%', 'a%%')),
     expectedResult: equals('aBart,aLisa,aMaggie')
   })
 })
@@ -238,9 +241,10 @@ jb.component('data-test.ref-of-array-item', { /* dataTest.refOfArrayItem */
   })
 })
 
-jb.component('data-test.ref-of-string-array-item-splice', {
+jb.component('data-test.ref-of-string-array-item-splice', { /* dataTest.refOfStringArrayItemSplice */
   impl: dataTest({
-    vars: Var('refs',obj()),
+    vars: [Var('refs', obj())],
+    calculate: '',
     runBefore: ctx => {
       const refs = ctx.vars.refs
       refs.refOfc = ctx.exp('%$stringArray[2]%','ref')
@@ -248,40 +252,39 @@ jb.component('data-test.ref-of-string-array-item-splice', {
       ctx.run(splice({array: '%$stringArray%', fromIndex: 0, noOfItemsToRemove: 1}))
       refs.valAfter = jb.val(refs.refOfc)
     },
-    calculate: '',
-    expectedResult: equals('%$refs/valBefore%','%$refs/valAfter%')
+    expectedResult: equals('%$refs/valBefore%', '%$refs/valAfter%')
   })
 })
 
-jb.component('data-test.ref-of-string-array-item-move', {
+jb.component('data-test.ref-of-string-array-item-move', { /* dataTest.refOfStringArrayItemMove */
   impl: dataTest({
-    vars: Var('refs',obj()),
+    vars: [Var('refs', obj())],
+    calculate: '',
     runBefore: ctx => {
       const refs = ctx.vars.refs
       refs.refOfb = ctx.exp('%$stringArray[1]%','ref')
       refs.refOfc = ctx.exp('%$stringArray[2]%','ref')
       refs.valBefore = jb.val(refs.refOfc)
-      jb.move(refs.refOfc, refs.refOfb, ctx)      
+      jb.move(refs.refOfc, refs.refOfb, ctx)
       refs.valAfter = jb.val(refs.refOfc)
     },
-    calculate: '',
-    expectedResult: equals('%$refs/valBefore%','%$refs/valAfter%')
+    expectedResult: equals('%$refs/valBefore%', '%$refs/valAfter%')
   })
 })
 
-jb.component('data-test.ref-of-string-tree-move', {
+jb.component('data-test.ref-of-string-tree-move', { /* dataTest.refOfStringTreeMove */
   impl: dataTest({
-    vars: Var('refs',obj()),
+    vars: [Var('refs', obj())],
+    calculate: '',
     runBefore: ctx => {
       const refs = ctx.vars.refs
       refs.refOfb = ctx.exp('%$stringTree/node1[1]%','ref')
       refs.refOf2 = ctx.exp('%$stringTree/node2[2]%','ref')
       refs.valBefore = jb.val(refs.refOfb)
-      jb.move(refs.refOfb, refs.refOf2, ctx)      
+      jb.move(refs.refOfb, refs.refOf2, ctx)
       refs.valAfter = jb.val(refs.refOfb)
     },
-    calculate: '',
-    expectedResult: equals('%$refs/valBefore%','%$refs/valAfter%')
+    expectedResult: equals('%$refs/valBefore%', '%$refs/valAfter%')
   })
 })
 
@@ -372,19 +375,19 @@ jb.component('data-test.pipe-with-promise', { /* dataTest.pipeWithPromise */
   })
 })
 
-jb.component('data-test.pipe-in-pipe', { 
+jb.component('data-test.pipe-in-pipe', { /* dataTest.pipeInPipe */
   impl: dataTest({
-    calculate: pipe(Var('a',3),
-        pipe(delay(1), list([1,2,'%$a%']), join())
-    ),
+    calculate: pipe(Var('a', 3), pipe(delay(1), list([1, 2, '%$a%']), join({}))),
     expectedResult: equals('1,2,3')
   })
 })
 
-jb.component('data-test.pipe-in-pipe-with-delayed-var', { 
+jb.component('data-test.pipe-in-pipe-with-delayed-var', { /* dataTest.pipeInPipeWithDelayedVar */
   impl: dataTest({
-    calculate: pipe(Var('a',ctx => Promise.resolve(3)),
-      pipe(delay(1), list([1,2,'%$a%']), join())),
+    calculate: pipe(
+      Var('a', ctx => Promise.resolve(3)),
+      pipe(delay(1), list([1, 2, '%$a%']), join({}))
+    ),
     expectedResult: equals('1,2,3')
   })
 })
@@ -516,9 +519,9 @@ jb.component('data-test.pretty-print-macro', { /* dataTest.prettyPrintMacro */
   })
 })
 
-jb.component('data-test.activateFunction', { 
+jb.component('data-test.activateFunction', { /* dataTest.activateFunction */
   impl: dataTest({
-    vars: Var('f1', ctx => (() => ({ a: 5 }))),
+    vars: [Var('f1', ctx => (() => ({ a: 5 })))],
     calculate: '%$f1()/a%',
     expectedResult: equals(5)
   })
@@ -699,23 +702,23 @@ jb.component('data-test.pretty-print-$contains', { /* dataTest.prettyPrint-$cont
   })
 })
 
-jb.component('data-test.eval-expression', {
+jb.component('data-test.eval-expression', { /* dataTest.evalExpression */
   impl: dataTest({
     calculate: evalExpression('1+1'),
     expectedResult: equals(2)
   })
 })
 
-jb.component('data-test.first-succeeding', {
+jb.component('data-test.first-succeeding', { /* dataTest.firstSucceeding */
   impl: dataTest({
-    calculate: firstSucceeding(evalExpression('1/0'),2,1),
+    calculate: firstSucceeding(evalExpression('1/0'), 2, 1),
     expectedResult: equals(2)
   })
 })
 
-jb.component('data-test.first-succeeding.with-empty-string', {
+jb.component('data-test.first-succeeding.with-empty-string', { /* dataTest.firstSucceeding.withEmptyString */
   impl: dataTest({
-    calculate: firstSucceeding('','a','b'),
+    calculate: firstSucceeding('', 'a', 'b'),
     expectedResult: equals('a')
   })
 })

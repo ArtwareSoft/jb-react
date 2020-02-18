@@ -22,22 +22,32 @@ jb.component('itemlist.no-container', { /* itemlist.noContainer */
   impl: ctx => ({ extendCtx: (ctx,cmp) => ctx.setVars({itemlistCntr: null}) })
 })
 
-jb.component('itemlist.init-container-with-items', { 
+jb.component('itemlist.init-container-with-items', { /* itemlist.initContainerWithItems */
   type: 'feature',
   category: 'itemlist:20',
-  impl: calcProp({id: 'updateItemlistCntr', value: action.if('%$itemlistCntr%',writeValue('%$itemlistCntr.items%', '%$$props.items%')), phase: 100}),
+  impl: calcProp({
+    id: 'updateItemlistCntr',
+    value: action.if(
+      '%$itemlistCntr%',
+      writeValue('%$itemlistCntr.items%', '%$$props.items%')
+    ),
+    phase: 100
+  })
 })
 
 jb.component('itemlist.init', { /* itemlist.init */
   type: 'feature',
   impl: features(
-    calcProp('items', '%$$model.items%'),
-    calcProp('ctrls', ctx => {
-      const controlsOfItem = item => 
+    calcProp({id: 'items', value: '%$$model.items%'}),
+    calcProp({
+        id: 'ctrls',
+        value: ctx => {
+      const controlsOfItem = item =>
         ctx.vars.$model.controls(ctx.setVar(ctx.vars.$model.itemVariable,item).setData(item)).filter(x=>x)
       return ctx.vars.$props.items.slice(0,ctx.vars.$model.visualSizeLimit || 100).map(item=>
         Object.assign(controlsOfItem(item),{item})).filter(x=>x.length > 0);
-    }),
+    }
+      }),
     itemlist.initContainerWithItems()
   )
 })
@@ -45,24 +55,31 @@ jb.component('itemlist.init', { /* itemlist.init */
 jb.component('itemlist.init-table', { /* itemlist.initTable */
   type: 'feature',
   impl: features(
-      calcProp('items', pipeline('%$$model.items%', slice(0,firstSucceeding('%$$model.visualSizeLimit%',100)))),
-      calcProp('fields', '%$$model/controls/field%'),
-      itemlist.initContainerWithItems()
-    )
+    calcProp({
+        id: 'items',
+        value: pipeline(
+          '%$$model.items%',
+          slice(0, firstSucceeding('%$$model.visualSizeLimit%', 100))
+        )
+      }),
+    calcProp({id: 'fields', value: '%$$model/controls/field%'}),
+    itemlist.initContainerWithItems()
+  )
 })
 
-jb.component('itemlist.fast-filter', {
+jb.component('itemlist.fast-filter', { /* itemlist.fastFilter */
   type: 'feature',
   description: 'use display:hide to filter itemlist elements',
   params: [
-    {id: 'showCondition', mandatory: true, dynamic: true, defaultValue: itemlistContainer.conditionFilter() },
-    {id: 'filtersRef', mandatory: true, as: 'ref', dynamic: true, defaultValue: '%$itemlistCntrData/search_pattern%'},
+    {id: 'showCondition', mandatory: true, dynamic: true, defaultValue: itemlistContainer.conditionFilter()},
+    {id: 'filtersRef', mandatory: true, as: 'ref', dynamic: true, defaultValue: '%$itemlistCntrData/search_pattern%'}
   ],
-  impl: interactive( (ctx,{cmp},{showCondition,filtersRef}) => 
+  impl: interactive(
+    (ctx,{cmp},{showCondition,filtersRef}) =>
         jb.ui.refObservable(filtersRef(cmp.ctx),cmp,{srcCtx: ctx})
-          .subscribe(() => Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).forEach(elem=> 
+          .subscribe(() => Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).forEach(elem=>
                 elem.style.display = showCondition(jb.ctxDictionary[elem.getAttribute('jb-ctx')]) ? 'block' : 'none'))
-   )
+  )
 })
 
 jb.component('itemlist.ul-li', { /* itemlist.ulLi */
@@ -99,23 +116,13 @@ jb.component('itemlist.horizontal', { /* itemlist.horizontal */
 jb.component('itemlist.selection', { /* itemlist.selection */
   type: 'feature',
   params: [
-    {
-      id: 'databind',
-      as: 'ref',
-      defaultValue: '%$itemlistCntrData/selected%',
-      dynamic: true
-    },
+    {id: 'databind', as: 'ref', defaultValue: '%$itemlistCntrData/selected%', dynamic: true},
     {id: 'selectedToDatabind', dynamic: true, defaultValue: '%%'},
     {id: 'databindToSelected', dynamic: true, defaultValue: '%%'},
     {id: 'onSelection', type: 'action', dynamic: true},
     {id: 'onDoubleClick', type: 'action', dynamic: true},
     {id: 'autoSelectFirst', type: 'boolean'},
-    {
-      id: 'cssForSelected',
-      as: 'string',
-      description: 'e.g. background: red;color: blue',
-      defaultValue: 'background: #bbb !important; color: #fff !important'
-    }
+    {id: 'cssForSelected', as: 'string', description: 'e.g. background: red;color: blue', defaultValue: 'background: #bbb !important; color: #fff !important'}
   ],
   impl: (ctx,databind) => ({
     onclick: true,
@@ -148,7 +155,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
         })
 
         const selectedRef = databind()
-        
+
         jb.isWatchable(selectedRef) && jb.ui.refObservable(selectedRef,cmp,{throw: true, srcCtx: ctx})
           .catch(e=>cmp.setSelected(null) || [])
           .subscribe(() => cmp.setSelected(selectedOfDatabind()))

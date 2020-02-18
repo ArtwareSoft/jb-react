@@ -12,23 +12,23 @@ jb.component('picklist.native', { /* picklist.native */
   })
 })
 
-jb.component('picklist.radio', {
+jb.component('picklist.radio', { /* picklist.radio */
   type: 'picklist.style',
-  params:[
-    { id: 'radioCss', as: 'string', defaultValue: '', description: 'e.g. display: none' },
-    { id: 'text', defaultValue: '%text%', dynamic: true },
+  params: [
+    {id: 'radioCss', as: 'string', defaultValue: '', description: 'e.g. display: none'},
+    {id: 'text', defaultValue: '%text%', dynamic: true}
   ],
   impl: customStyle({
     template: (cmp,{databind, options, fieldId, text},h) => h('div', {},
           options.flatMap((option,i)=> [h('input', {
               type: 'radio', name: fieldId, id: i, checked: databind === option.code, value: option.code, onchange: true
             }), h('label',{for: i}, text(cmp.ctx.setData(option))) ] )),
-    css: `>input { %$radioCss% }`,
+    css: '>input { %$radioCss% }',
     features: field.databind()
   })
 })
 
-jb.component('picklist.radio-vertical', {
+jb.component('picklist.radio-vertical', { /* picklist.radioVertical */
   type: 'picklist.style',
   impl: styleWithFeatures(
     picklist.radio(),
@@ -115,18 +115,8 @@ jb.component('picklist.label-list', { /* picklist.labelList */
   type: 'picklist.style',
   params: [
     {id: 'labelStyle', type: 'label.style', dynamic: true, defaultValue: label.span()},
-    {
-      id: 'itemlistStyle',
-      type: 'itemlist.style',
-      dynamic: true,
-      defaultValue: itemlist.ulLi()
-    },
-    {
-      id: 'cssForSelected',
-      as: 'string',
-      description: 'e.g. background: red OR >a { color: red }',
-      defaultValue: 'background: #bbb; color: #fff'
-    }
+    {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.ulLi()},
+    {id: 'cssForSelected', as: 'string', description: 'e.g. background: red OR >a { color: red }', defaultValue: 'background: #bbb; color: #fff'}
   ],
   impl: styleByControl(
     itemlist({
@@ -147,24 +137,9 @@ jb.component('picklist.label-list', { /* picklist.labelList */
 jb.component('picklist.button-list', { /* picklist.buttonList */
   type: 'picklist.style',
   params: [
-    {
-      id: 'buttonStyle',
-      type: 'button.style',
-      dynamic: true,
-      defaultValue: button.mdc()
-    },
-    {
-      id: 'itemlistStyle',
-      type: 'itemlist.style',
-      dynamic: true,
-      defaultValue: itemlist.horizontal()
-    },
-    {
-      id: 'cssForSelected',
-      as: 'string',
-      description: 'e.g. background: red;color: blue;font-weight: bold;',
-      defaultValue: 'background: #bbb; color: #fff'
-    }
+    {id: 'buttonStyle', type: 'button.style', dynamic: true, defaultValue: button.mdc()},
+    {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.horizontal()},
+    {id: 'cssForSelected', as: 'string', description: 'e.g. background: red;color: blue;font-weight: bold;', defaultValue: 'background: #bbb; color: #fff'}
   ],
   impl: styleByControl(
     itemlist({
@@ -182,7 +157,7 @@ jb.component('picklist.button-list', { /* picklist.buttonList */
   )
 })
 
-jb.component('picklist.hyperlinks', { /* hyperlinks */
+jb.component('picklist.hyperlinks', { /* picklist.hyperlinks */
   type: 'picklist.style',
   impl: picklist.buttonList({
     buttonStyle: button.href(),

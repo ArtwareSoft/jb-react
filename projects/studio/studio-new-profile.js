@@ -91,7 +91,6 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
         layout: layout.horizontal('33'),
         controls: [
           table({
-            visualSizeLimit: 500,
             items: pipeline(
               '%$Categories%',
               filter(
@@ -110,6 +109,7 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
               hoverTitle: ({data}) => (jb.studio.previewjb.comps[data]||{}).description || ''
             }),
             style: table.plain(true),
+            visualSizeLimit: 500,
             features: [
               itemlist.selection({
                 databind: '%$itemlistCntrData/selected%',
@@ -187,9 +187,7 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
         value: {'$if': studio.val('%$path%'), then: 'all', else: '%$Categories[0]/code%'},
         watchable: true
       }),
-      group.itemlistContainer({
-        initialSelection: studio.compName('%$path%')
-      }),
+      group.itemlistContainer({initialSelection: studio.compName('%$path%')}),
       css.width('400')
     ]
   })
@@ -231,7 +229,8 @@ jb.component('studio.open-new-profile-dialog', { /* studio.openNewProfileDialog 
     features: [
       css.height({height: '520', overflow: 'hidden', minMax: 'min'}),
       css.width({width: '450', overflow: 'hidden'}),
-      css(`~ .mdc-text-field { background-color: inherit }`),
+      dialogFeature.closeWhenClickingOutside(),
+      css('~ .mdc-text-field { background-color: inherit }'),
       dialogFeature.dragTitle('new %$type%'),
       studio.nearLauncherPosition(),
       dialogFeature.autoFocusOnFirstInput(),
@@ -247,43 +246,52 @@ jb.component('studio.pick-profile', { /* studio.pickProfile */
     {id: 'path', as: 'string'}
   ],
   impl: button({
-    title: prettyPrint(studio.val('%$path%'),true),
+    title: prettyPrint(studio.val('%$path%'), true),
     action: studio.openPickProfile('%$path%'),
     style: button.selectProfileStyle(),
     features: [
-      studio.watchPath('%$path%'),
+      studio.watchPath({path: '%$path%', includeChildren: 'yes'}),
       css.opacity(0.7)
     ]
   })
 })
 
-jb.component('studio.open-pick-profile', { 
+jb.component('studio.open-pick-profile', { /* studio.openPickProfile */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: openDialog({
-    style: dialog.studioFloating(),
-    title: pipeline(studio.paramType('%$path%'),'select %%'),
-    content: group({ controls: [
-      studio.selectProfile({
-        onSelect: studio.setComp('%$path%', '%%'),
-        onBrowse: action.if(or(
-          equals('layout',studio.paramType('%$path%')),
-          endsWith('.style',studio.paramType('%$path%'))), studio.setComp('%$path%', '%%')),
-        type: studio.paramType('%$path%'),
-        path: '%$path%'
-      }),
-      studio.properties('%$path%')
-    ]}),
+    style: dialog.studioFloating({}),
+    content: group({
+      controls: [
+        studio.selectProfile({
+          onSelect: studio.setComp('%$path%', '%%'),
+          onBrowse: action.if(
+            or(
+              equals('layout', studio.paramType('%$path%')),
+              endsWith('.style', studio.paramType('%$path%'))
+            ),
+            studio.setComp('%$path%', '%%')
+          ),
+          type: studio.paramType('%$path%'),
+          path: '%$path%'
+        }),
+        studio.properties('%$path%')
+      ]
+    }),
+    title: pipeline(studio.paramType('%$path%'), 'select %%'),
     features: [
       css.height({height: '520', overflow: 'hidden', minMax: 'min'}),
       css.width({width: '450', overflow: 'hidden'}),
-      css(`~ .mdc-text-field { background-color: inherit }`),
+      css('~ .mdc-text-field { background-color: inherit }'),
+      dialogFeature.closeWhenClickingOutside(),
       dialogFeature.autoFocusOnFirstInput(),
       css.padding({right: '20'}),
       feature.init(writeValue('%$dialogData/originalVal%', studio.val('%$path%'))),
-      dialogFeature.onClose(action.if(not('%%'),studio.setComp('%$path%', '%$dialogData/originalVal%')))
+      dialogFeature.onClose(
+        action.if(not('%%'), studio.setComp('%$path%', '%$dialogData/originalVal%'))
+      )
     ]
   })
 })
@@ -306,10 +314,10 @@ jb.component('studio.open-new-page', { /* studio.openNewPage */
     }),
     title: 'New Page',
     onOK: [
-      studio.newComp('%$studio/project%.%$dialogData/name%', {$asIs: {
-          type: 'control',
-          impl :{$: 'group', contorls: []}
-      }}),
+      studio.newComp(
+        '%$studio/project%.%$dialogData/name%',
+        asIs({type: 'control', impl: group({})})
+      ),
       writeValue('%$studio/profile_path%', '%$studio/project%.%$dialogData/name%~impl'),
       writeValue('%$studio/page%', '%$dialogData/name%'),
       studio.openControlTree(),
@@ -317,13 +325,11 @@ jb.component('studio.open-new-page', { /* studio.openNewPage */
       refreshControlById('pages')
     ],
     modal: true,
-    features: [
-      dialogFeature.autoFocusOnFirstInput()
-    ]
+    features: [dialogFeature.autoFocusOnFirstInput()]
   })
 })
 
-jb.component('studio.open-new-function', {
+jb.component('studio.open-new-function', { /* studio.openNewFunction */
   type: 'action',
   impl: openDialog({
     style: dialog.dialogOkCancel(),
@@ -341,19 +347,16 @@ jb.component('studio.open-new-function', {
     }),
     title: 'New Function',
     onOK: [
-      studio.newComp('%$studio/project%.%$dialogData/name%', {$asIs: {
-          type: 'data',
-          impl: {$: 'pipeline', items: []},
-          testData: 'sampleData'
-      }}),
+      studio.newComp(
+        '%$studio/project%.%$dialogData/name%',
+        asIs({type: 'data', impl: pipeline(), testData: 'sampleData'})
+      ),
       writeValue('%$studio/profile_path%', '%$studio/project%.%$dialogData/name%'),
       studio.openJbEditor('%$studio/project%.%$dialogData/name%'),
       refreshControlById('functions')
     ],
     modal: true,
-    features: [
-      dialogFeature.autoFocusOnFirstInput()
-    ]
+    features: [dialogFeature.autoFocusOnFirstInput()]
   })
 })
 
@@ -395,14 +398,14 @@ jb.component('studio.insert-control-menu', { /* studio.insertControlMenu */
   })
 })
 
-jb.component('studio.new-profile', {
+jb.component('studio.new-profile', { /* studio.newProfile */
   params: [
     {id: 'compName', as: 'string'}
   ],
   impl: (ctx,compName) => jb.studio.newProfile(jb.studio.getComp(compName), compName)
 })
 
-jb.component('studio.new-comp', {
+jb.component('studio.new-comp', { /* studio.newComp */
   params: [
     {id: 'compName', as: 'string'},
     {id: 'compContent'}

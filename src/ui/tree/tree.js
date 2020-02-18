@@ -5,7 +5,7 @@ jb.component('tree', { /* tree */
   type: 'control',
   params: [
     {id: 'nodeModel', type: 'tree.node-model', dynamic: true, mandatory: true},
-    {id: 'style', type: 'tree.style', defaultValue: tree.expandBox(), dynamic: true},
+    {id: 'style', type: 'tree.style', defaultValue: tree.expandBox({}), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: context => {
@@ -63,7 +63,7 @@ class TreeRenderer {
 	}
 	renderTree() {
 		const {model,h} = this
-		if (this.noHead) 
+		if (this.noHead)
 			return h('div',{}, model.children(model.rootPath).map(childPath=> this.renderNode(childPath)))
 		return this.renderNode(model.rootPath)
 	}
@@ -81,8 +81,8 @@ class TreeRenderer {
 jb.component('tree.plain', { /* tree.plain */
   type: 'tree.style',
   params: [
-	{id: 'showIcon', as: 'boolean'},
-	{id: 'noHead', as: 'boolean'},
+    {id: 'showIcon', as: 'boolean', type: 'boolean'},
+    {id: 'noHead', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,showIcon,noHead) => ctx.run(customStyle({
 	template: (cmp,state,h) => {
@@ -113,14 +113,14 @@ jb.component('tree.plain', { /* tree.plain */
   }))
 })
 
-jb.component('tree.expand-box', {
-	type: 'tree.style',
-	params: [
-	  {id: 'showIcon', as: 'boolean'},
-	  {id: 'noHead', as: 'boolean'},
-	  {id: 'lineWidth', as: 'string', defaultValue: '300px'},
-	],
-	impl: (ctx,showIcon,noHead,lineWidth) => ctx.run(customStyle({
+jb.component('tree.expand-box', { /* tree.expandBox */
+  type: 'tree.style',
+  params: [
+    {id: 'showIcon', as: 'boolean', type: 'boolean'},
+    {id: 'noHead', as: 'boolean', type: 'boolean'},
+    {id: 'lineWidth', as: 'string', defaultValue: '300px'}
+  ],
+  impl: (ctx,showIcon,noHead,lineWidth) => ctx.run(customStyle({
 	  template: (cmp,state,h) => {
 		function renderLine(path) {
 			const model = cmp.model
@@ -145,10 +145,10 @@ jb.component('tree.expand-box', {
 	|>.treenode-label { margin-top: -2px }
 	|>.treenode-label .treenode-val { color: red; padding-left: 4px; }
 	|>.treenode-line { display: flex; box-orient: horizontal; width: ${lineWidth}; padding-bottom: 3px;}
-	  
+
 	|>.treenode { display: block }
 	|>.treenode.selected>*>.treenode-label,.treenode.selected>*>.treenode-label  { background: #D9E8FB;}
-  
+
 	|>.treenode-icon { font-size: 16px; margin-right: 2px; }
 	|>.treenode-expandbox { border: none; background: none; position: relative; width:9px; height:9px; padding: 0; vertical-align: top;
 		margin-top: 5px;  margin-right: 5px;  cursor: pointer;}
@@ -164,26 +164,30 @@ jb.component('tree.expand-box', {
 	|>.treenode-expandbox.nochildren .line-tb { display: none;}`
 	}))
 })
-  
+
 jb.component('tree.selection', { /* tree.selection */
   type: 'feature',
   params: [
     {id: 'databind', as: 'ref', dynamic: true},
-    {id: 'autoSelectFirst', as: 'boolean'},
+    {id: 'autoSelectFirst', as: 'boolean', type: 'boolean'},
     {id: 'onSelection', type: 'action', dynamic: true},
     {id: 'onRightClick', type: 'action', dynamic: true}
   ],
   impl: features(
-	  ctx => ({
+    ctx => ({
 		  onclick: true,
 		  componentDidUpdate : cmp => cmp.setSelected(cmp.state.selected),
 	  }),
-	  feature.init( (ctx,{cmp},{databind}) => {
+    feature.init(
+        (ctx,{cmp},{databind}) => {
 		cmp.state.expanded = cmp.state.expanded||{}
 		const selectedPath = jb.val(databind())
 		selectedPath && jb.ui.treeExpandPath(cmp.state.expanded, selectedPath.split('~').slice(0,-1).join('~'))
-	  },5),
-	  interactive( (ctx,{cmp},{databind,autoSelectFirst,onSelection,onRightClick}) => {
+	  },
+        5
+      ),
+    interactive(
+        (ctx,{cmp},{databind,autoSelectFirst,onSelection,onRightClick}) => {
 			const selectedRef = databind()
   			const databindObs = jb.isWatchable(selectedRef) && jb.ui.refObservable(selectedRef,cmp,{srcCtx: ctx}).map(e=>jb.val(e.ref))
 
@@ -195,7 +199,7 @@ jb.component('tree.selection', { /* tree.selection */
 					.forEach(elem=> {elem.classList.add('selected'); elem.scrollIntoViewIfNeeded()})
 			}
 			cmp.getSelected = () => cmp.state.selected = cmp.elemToPath(jb.ui.findIncludeSelf(cmp.base,'.treenode.selected')[0])
-			
+
 			cmp.selectionEmitter.merge(databindObs || [])
 				.merge(cmp.onclick.map(event => cmp.elemToPath(event.target)))
 				.distinctUntilChanged()
@@ -224,8 +228,9 @@ jb.component('tree.selection', { /* tree.selection */
 			}
 			if (first_selected)
 				jb.delay(1).then(() => cmp.selectionEmitter.next(first_selected))
-  	   }),
-  	)
+  	   }
+      )
+  )
 })
 
 jb.component('tree.keyboard-selection', { /* tree.keyboardSelection */
@@ -313,14 +318,14 @@ jb.component('tree.redraw', { /* tree.redraw */
 	}
 })
 
-jb.component('tree.expand-path', { 
-	type: 'action',
-	params: [
-	  {id: 'paths', as: 'array', descrition: 'array of paths to be expanded'}
-	],
-	impl: (ctx,paths) => ctx.vars.cmp && paths.forEach(path => jb.ui.treeExpandPath(ctx.vars.cmp.state.expanded, path))
+jb.component('tree.expand-path', { /* tree.expandPath */
+  type: 'action',
+  params: [
+    {id: 'paths', as: 'array', descrition: 'array of paths to be expanded'}
+  ],
+  impl: (ctx,paths) => ctx.vars.cmp && paths.forEach(path => jb.ui.treeExpandPath(ctx.vars.cmp.state.expanded, path))
 })
-  
+
 jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
   type: 'feature',
   impl: ctx => ({

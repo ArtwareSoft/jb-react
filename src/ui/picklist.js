@@ -6,20 +6,9 @@ jb.component('picklist', { /* picklist */
   params: [
     {id: 'title', as: 'string', dynamic: true},
     {id: 'databind', as: 'ref', mandaroy: true, dynamic: true},
-    {
-      id: 'options',
-      type: 'picklist.options',
-      dynamic: true,
-      mandatory: true,
-      defaultValue: picklist.optionsByComma()
-    },
+    {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true, defaultValue: {'$': 'picklist.options-by-comma', '$byValue': []}},
     {id: 'promote', type: 'picklist.promote', dynamic: true},
-    {
-      id: 'style',
-      type: 'picklist.style',
-      defaultValue: picklist.native(),
-      dynamic: true
-    },
+    {id: 'style', type: 'picklist.style', defaultValue: picklist.native(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx =>
@@ -65,8 +54,10 @@ jb.component('picklist.dynamic-options', { /* picklist.dynamicOptions */
   params: [
     {id: 'recalcEm', as: 'single'}
   ],
-  impl: interactive((ctx,{cmp},{recalcEm}) => 
-      recalcEm && recalcEm.subscribe && recalcEm.takeUntil( cmp.destroyed ).subscribe(() => cmp.refresh()) )
+  impl: interactive(
+    (ctx,{cmp},{recalcEm}) =>
+      recalcEm && recalcEm.subscribe && recalcEm.takeUntil( cmp.destroyed ).subscribe(() => cmp.refresh())
+  )
 })
 
 jb.component('picklist.onChange', { /* picklist.onChange */
@@ -75,7 +66,9 @@ jb.component('picklist.onChange', { /* picklist.onChange */
   params: [
     {id: 'action', type: 'action', dynamic: true}
   ],
-  impl: interactive((ctx,{cmp},{action}) => cmp.onChange = action)
+  impl: interactive(
+    (ctx,{cmp},{action}) => cmp.onChange = action
+  )
 })
 
 // ********* options
@@ -121,18 +114,8 @@ jb.component('picklist.coded-options', { /* picklist.codedOptions */
 jb.component('picklist.sorted-options', { /* picklist.sortedOptions */
   type: 'picklist.options',
   params: [
-    {
-      id: 'options',
-      type: 'picklist.options',
-      dynamic: true,
-      mandatory: true,
-      composite: true
-    },
-    {
-      id: 'marks',
-      as: 'array',
-      description: 'e.g input:80,group:90. 0 mark means hidden. no mark means 50'
-    }
+    {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true, composite: true},
+    {id: 'marks', as: 'array', description: 'e.g input:80,group:90. 0 mark means hidden. no mark means 50'}
   ],
   impl: (ctx,optionsFunc,marks) => {
     let options = optionsFunc() || [];

@@ -30,8 +30,8 @@ Object.assign(jb.ui,{
         return ctx.id
     },
     inStudio() { return jb.studio && jb.studio.studioWindow },
-    inPreview() { 
-        try {   
+    inPreview() {
+        try {
             return !ui.inStudio() && jb.frame.parent.jb.studio.initPreview
         } catch(e) {}
     },
@@ -39,8 +39,8 @@ Object.assign(jb.ui,{
         if (!el) return []
         const parents = jb.ui.parents(el)
         const dialogElem = parents[parents.length-5]
-        return (jb.ui.hasClass(dialogElem,'jb-dialog') 
-                ? parents.slice(0,-4).concat(jb.ui.ctxOfElem(dialogElem).exp('%$$launchingElement.el._component.base%') || []) 
+        return (jb.ui.hasClass(dialogElem,'jb-dialog')
+                ? parents.slice(0,-4).concat(jb.ui.ctxOfElem(dialogElem).exp('%$$launchingElement.el._component.base%') || [])
                 : parents)
             .map(el=>el._component).filter(x=>x)
     },
@@ -85,10 +85,10 @@ Object.assign(jb.ui, {
         }
     },
     activeElement() { return document.activeElement },
-    find(el,selector,options) { 
+    find(el,selector,options) {
         if (el instanceof jb.jbCtx)
             el = this.document(el) // el is ctx
-        return el instanceof jb.ui.VNode ? el.querySelectorAll(selector,options) : 
+        return el instanceof jb.ui.VNode ? el.querySelectorAll(selector,options) :
             [... (options && options.includeSelf && ui.matches(el,selector) ? [el] : []),
              ...Array.from(el.querySelectorAll(selector))]
     },
@@ -128,7 +128,7 @@ ui.renderWidget = function(profile,top) {
 	} catch(e) {
 		return jb.logException(e)
     }
-    
+
     let currentProfile = profile
     let lastRenderTime = 0, fixedDebounce = 500
     const debounceTime = () => Math.min(2000,lastRenderTime*3 + fixedDebounce)
@@ -181,51 +181,51 @@ jb.objectDiff = function(newObj, orig) {
 // ****************** components ****************
 
 jb.component('custom-style', { /* customStyle */
-    typePattern: /\.style$/,
-    category: 'advanced:10,all:10',
-    params: [
-      {id: 'template', as: 'single', mandatory: true, dynamic: true, ignore: true},
-      {id: 'css', as: 'string'},
-      {id: 'features', type: 'feature[]', dynamic: true}
-    ],
-    impl: (context,css,features) => ({
+  typePattern: t => /\.style$/.test(t),
+  category: 'advanced:10,all:10',
+  params: [
+    {id: 'template', as: 'single', mandatory: true, dynamic: true, ignore: true},
+    {id: 'css', as: 'string'},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: (context,css,features) => ({
           template: context.profile.template,
           css: css,
           featuresOptions: features(),
           styleCtx: context._parent
     })
 })
-  
+
 jb.component('style-by-control', { /* styleByControl */
-    typePattern: /\.style$/,
-    category: 'advanced:10,all:20',
-    params: [
-      {id: 'control', type: 'control', mandatory: true, dynamic: true},
-      {id: 'modelVar', as: 'string', mandatory: true}
-    ],
-    impl: (ctx,control,modelVar) => control(ctx.setVar(modelVar,ctx.vars.$model))
+  typePattern: t => /\.style$/.test(t),
+  category: 'advanced:10,all:20',
+  params: [
+    {id: 'control', type: 'control', mandatory: true, dynamic: true},
+    {id: 'modelVar', as: 'string', mandatory: true}
+  ],
+  impl: (ctx,control,modelVar) => control(ctx.setVar(modelVar,ctx.vars.$model))
 })
-  
+
 jb.component('style-with-features', { /* styleWithFeatures */
-      typePattern: /\.style$/,
-      description: 'customize, add more features to style',
-      category: 'advanced:10,all:20',
-      params: [
-        {id: 'style', type: '$asParent', mandatory: true, composite: true },
-        {id: 'features', type: 'feature[]', templateValue: [], dynamic: true, mandatory: true}
-      ],
-      impl: (ctx,style,features) => style && {...style,featuresOptions: (style.featuresOptions || []).concat(features())}
-})  
+  typePattern: t => /\.style$/.test(t),
+  description: 'customize, add more features to style',
+  category: 'advanced:10,all:20',
+  params: [
+    {id: 'style', type: '$asParent', mandatory: true, composite: true},
+    {id: 'features', type: 'feature[]', templateValue: [], dynamic: true, mandatory: true}
+  ],
+  impl: (ctx,style,features) => style && {...style,featuresOptions: (style.featuresOptions || []).concat(features())}
+})
 
 jb.component('control-with-features', { /* controlWithFeatures */
-    type: 'control',
-    description: 'customize, add more features to control',
-    category: 'advanced:10,all:20',
-    params: [
-        {id: 'control', type: 'control', mandatory: true},
-        {id: 'features', type: 'feature[]', templateValue: [], mandatory: true}
-    ],
-    impl: (ctx,control,features) => control.jbExtend(features,ctx).orig(ctx)
-})  
+  type: 'control',
+  description: 'customize, add more features to control',
+  category: 'advanced:10,all:20',
+  params: [
+    {id: 'control', type: 'control', mandatory: true},
+    {id: 'features', type: 'feature[]', templateValue: [], mandatory: true}
+  ],
+  impl: (ctx,control,features) => control.jbExtend(features,ctx).orig(ctx)
+})
 
 })()

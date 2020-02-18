@@ -70,18 +70,19 @@ jb.component('editable-text.mdc-search', { /* editableText.mdcSearch */
   })
 })
 
-jb.component('editable-text.expandable', {
+jb.component('editable-text.expandable', { /* editableText.expandable */
   description: 'label that changes to editable class on double click',
   type: 'editable-text.style',
   params: [
-    { id: 'buttonFeatures', type: 'feature[]', flattenArray: true, dynamic: true},
-    { id: 'editableFeatures', type: 'feature[]', flattenArray: true, dynamic: true},
-    { id: 'buttonStyle', type: 'button.style' , dynamic: true, defaultValue: button.href() },
-    { id: 'editableStyle', type: 'editable-text.style', dynamic: true , defaultValue: editableText.input() },
-    { id: 'onToggle', type: 'action' , dynamic: true  }
-  ], 
-  impl: styleByControl(group({
-    controls: [
+    {id: 'buttonFeatures', type: 'feature[]', flattenArray: true, dynamic: true},
+    {id: 'editableFeatures', type: 'feature[]', flattenArray: true, dynamic: true},
+    {id: 'buttonStyle', type: 'button.style', dynamic: true, defaultValue: button.href()},
+    {id: 'editableStyle', type: 'editable-text.style', dynamic: true, defaultValue: editableText.input()},
+    {id: 'onToggle', type: 'action', dynamic: true}
+  ],
+  impl: styleByControl(
+    group({
+      controls: [
         editableText({
           databind: '%$editableTextModel/databind%',
           updateOnBlur: true,
@@ -102,29 +103,29 @@ jb.component('editable-text.expandable', {
                   jb.delay(1).then(() => jb.ui.focus(elem, 'editable-text.expandable', ctx))
               }
             }),
-            (ctx,vars,{editableFeatures}) => editableFeatures(ctx),
+            (ctx,vars,{editableFeatures}) => editableFeatures(ctx)
           ]
-      }),
-      button({
-        title: '%$editableTextModel/databind%',
-        style: call('buttonStyle'),
-        action: runActions(
-          toggleBooleanValue('%$editable%'),
-          (ctx,{expandableContext}) => expandableContext.regainFocus(),
-          (ctx,vars,{onToggle}) => onToggle(ctx)
-        ),
-        features: [
-          watchRef('%$editable%'),
-          hidden(not('%$editable%')),
-          (ctx,vars,{buttonFeatures}) => buttonFeatures(ctx)
-        ],
-      })
-    ],
-    features: [
-      variable({name: 'editable', watchable: true}),
-      variable({name: 'expandableContext', value: obj() }),
-    ]
-  }),
+        }),
+        button({
+          title: '%$editableTextModel/databind%',
+          action: runActions(
+            toggleBooleanValue('%$editable%'),
+            (ctx,{expandableContext}) => expandableContext.regainFocus(),
+            (ctx,vars,{onToggle}) => onToggle(ctx)
+          ),
+          style: call('buttonStyle'),
+          features: [
+            watchRef('%$editable%'),
+            hidden(not('%$editable%')),
+            (ctx,vars,{buttonFeatures}) => buttonFeatures(ctx)
+          ]
+        })
+      ],
+      features: [
+        variable({name: 'editable', watchable: true}),
+        variable({name: 'expandableContext', value: obj()})
+      ]
+    }),
     'editableTextModel'
   )
 })

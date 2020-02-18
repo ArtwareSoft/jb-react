@@ -52,7 +52,11 @@ jb.component('test.inner-label-template-static-param', { /* test.innerLabelTempl
   params: [
     {id: 'param1', type: 'string'}
   ],
-  impl: group({ controls: []})
+  impl: group({
+    controls: [
+
+    ]
+  })
 })
 
 jb.component('probe-test.static-inner-in-template', { /* probeTest.staticInnerInTemplate */
@@ -63,9 +67,9 @@ jb.component('probe-test.static-inner-in-template', { /* probeTest.staticInnerIn
   })
 })
 
-jb.component('probe-test.label-text', {
+jb.component('probe-test.label-text', { /* probeTest.labelText */
   impl: studioProbeTest({
-    circuit: text({text: ctx => 'hello' }),
+    circuit: text(ctx => 'hello'),
     probePath: 'text',
     expectedVisits: 1
   })

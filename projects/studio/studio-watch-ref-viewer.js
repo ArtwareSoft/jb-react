@@ -2,12 +2,12 @@
 const st = jb.studio
 jb.ns('animation')
 
-jb.component('studio.position-of-data', {
-    type: 'position',
-    params: [
-        {id: 'path', as: 'string'},
-    ],
-    impl: (ctx,path) => {
+jb.component('studio.position-of-data', { /* studio.positionOfData */
+  type: 'position',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx,path) => {
         const editor = editorOfPath(path)
         if (!editor) return []
         const positions = posOfData(path)
@@ -68,123 +68,140 @@ function positionsOfCtx(ctx)  {
     return elemsOfCtx(ctx).map(el => fixPreviewOffset(enrichWithCenter(jb.ui.offset(el))))
 }
 
-jb.component('studio.animate-watch-ref-particle', {
-    type: 'action',
-    params: [
-        {id: 'from'},
-        {id: 'to'},
-    ],
-    impl: openDialog({
-        style: studio.dialogParticleStyle(),
-        content: label({
-          text: '➤',
-          features: [
-            css((ctx,{},{from,to}) => {
+jb.component('studio.animate-watch-ref-particle', { /* studio.animateWatchRefParticle */
+  type: 'action',
+  params: [
+    {id: 'from'},
+    {id: 'to'}
+  ],
+  impl: openDialog({
+    style: studio.dialogParticleStyle(),
+    content: label({
+      text: '➤',
+      features: [
+        css(
+          (ctx,{},{from,to}) => {
                 const dx = (to.centerX - from.centerX) || 1, dy = (to.centerY - from.centerY) || 1
                 const addPI = dx < 0 ? 3.14 : 0
                 return `transform: rotate(${addPI+Math.atan(dx/dy)}rad)`
-            }),
-            feature.onEvent({
-            event: 'load',
-            action: runActions(
-              animation.start({
-                  animation: animation.moveTo({
-                        X: animation.range('%$from/centerX%', '%$to/centerX%'),
-                        Y: animation.range('%$from/centerY%', '%$to/centerY%')
-                     }),
-                  duration: '1000'
-                }),
-              dialog.closeContainingPopup()
-            )
-          })]
-        }),
+            }
+        ),
+        feature.onEvent({
+          event: 'load',
+          action: runActions(
+            {
+                '$': 'animation.start',
+                animation: {
+                  '$': 'animation.move-to',
+                  X: {'$': 'animation.range', '$byValue': ['%$from/centerX%', '%$to/centerX%']},
+                  Y: {'$': 'animation.range', '$byValue': ['%$from/centerY%', '%$to/centerY%']}
+                },
+                duration: '1000'
+              },
+            dialog.closeContainingPopup()
+          )
+        })
+      ]
     })
+  })
 })
 
-jb.component('studio.animate-cmp-destroy', {
-    type: 'action',
-    params: [
-        {id: 'pos'},
-    ],
-    impl: openDialog({
-        style: studio.dialogParticleStyle(),
-        content: label({
-          text: '◯',
-          features: [ 
-            css('color: grey'),
-            feature.onEvent({
-                event: 'load',
-                action: runActions(
-                    animation.start({
-                        animation: animation.moveTo({
-                            X: '%$pos/centerX%',
-                            Y: '%$pos/centerY%'
-                        }),
-                        duration: '1'
-                    }),
-                    animation.start({
-                        animation: [
-                        animation.scale({scale: animation.range('0.1', '3')}),
-                        animation.easing(animation.inOutEasing('Cubic', 'Out'))
-                        ],
-                        direction: 'reverse',
-                        duration: '1000'
-                    }),
-                dialog.closeContainingPopup()
-                )
-          })]
-        }),
+jb.component('studio.animate-cmp-destroy', { /* studio.animateCmpDestroy */
+  type: 'action',
+  params: [
+    {id: 'pos'}
+  ],
+  impl: openDialog({
+    style: studio.dialogParticleStyle(),
+    content: label({
+      text: '◯',
+      features: [
+        css('color: grey'),
+        feature.onEvent({
+          event: 'load',
+          action: runActions(
+            {
+                '$': 'animation.start',
+                animation: {'$': 'animation.move-to', X: '%$pos/centerX%', Y: '%$pos/centerY%'},
+                duration: '1'
+              },
+            {
+                '$': 'animation.start',
+                animation: [
+                  {
+                    '$': 'animation.scale',
+                    scale: {'$': 'animation.range', '$byValue': ['0.1', '3']}
+                  },
+                  {
+                    '$': 'animation.easing',
+                    '$byValue': [{'$': 'animation.in-out-easing', '$byValue': ['Cubic', 'Out']}]
+                  }
+                ],
+                direction: 'reverse',
+                duration: '1000'
+              },
+            dialog.closeContainingPopup()
+          )
+        })
+      ]
     })
+  })
 })
 
-jb.component('studio.animate-cmp-refresh', {
-    type: 'action',
-    params: [
-        {id: 'pos'},
-    ],
-    impl: openDialog({
-        style: studio.dialogParticleStyle(),
-        content: label({
-          text: '▯',
-          features: feature.onEvent({
-            event: 'load',
-            action: runActions(
-                animation.start({
-                    animation: animation.moveTo({
-                        X: '%$pos/centerX%',
-                        Y: '%$pos/centerY%'
-                    }),
-                    duration: '1'
-                }),
-                animation.start({
-                    animation: animation.rotate('5turn'),
-                    duration: '1000'
-                }),
-              dialog.closeContainingPopup()
-            )
-          })
-        }),
+jb.component('studio.animate-cmp-refresh', { /* studio.animateCmpRefresh */
+  type: 'action',
+  params: [
+    {id: 'pos'}
+  ],
+  impl: openDialog({
+    style: studio.dialogParticleStyle(),
+    content: label({
+      text: '▯',
+      features: feature.onEvent({
+        event: 'load',
+        action: runActions(
+          {
+              '$': 'animation.start',
+              animation: {'$': 'animation.move-to', X: '%$pos/centerX%', Y: '%$pos/centerY%'},
+              duration: '1'
+            },
+          {
+              '$': 'animation.start',
+              animation: {'$': 'animation.rotate', '$byValue': ['5turn']},
+              duration: '1000'
+            },
+          dialog.closeContainingPopup()
+        )
+      })
     })
+  })
 })
 
-jb.component('animate.refresh-elem', {
-    type: 'action',
-    params: [
-        {id: 'elem'}
-    ],
-    impl: action.if('%$studio/settings/activateWatchRefViewer%',animation.start({
-        animation: [
-            animation.rotate({rotateY: () => [0,25]}),
-            animation.easing(animation.inOutEasing('Quad', 'InOut'))
-        ],
-        duration: '600',
-        direction: 'alternate',
-        target: '%$elem%'
-    }))
+jb.component('animate.refresh-elem', { /* animate.refreshElem */
+  type: 'action',
+  params: [
+    {id: 'elem'}
+  ],
+  impl: action.if(
+    '%$studio/settings/activateWatchRefViewer%',
+    {
+      '$': 'animation.start',
+      animation: [
+        {'$': 'animation.rotate', rotateY: () => [0,25]},
+        {
+          '$': 'animation.easing',
+          '$byValue': [{'$': 'animation.in-out-easing', '$byValue': ['Quad', 'InOut']}]
+        }
+      ],
+      duration: '600',
+      direction: 'alternate',
+      target: '%$elem%'
+    }
+  )
 })
 
 
-function animateCtxDestroy(ctx) {    
+function animateCtxDestroy(ctx) {
     jb.exec(
         animation.start({
             animation: [
@@ -208,7 +225,7 @@ jb.studio.activateWatchRefViewer = () => {
     //         st.previewjb.spy.observable()
     // ).map(z=>z[1])
     const delayedSpy = st.previewjb.spy.observable()
-    
+
     delayedSpy.filter(e=>e.logName === 'registerCmpObservable').subscribe(e=> {
             const ref = e.record[0].ref
             const ctx = e.record[0].ctx
@@ -239,7 +256,7 @@ jb.studio.activateWatchRefViewer = () => {
         positionsOfCtx(e.record[0].ctx).forEach(pos=>
             jb.exec(studio.animateCmpDestroy({pos}))))
 
-    delayedSpy.filter(e=>e.logName === 'setState').subscribe(e => 
+    delayedSpy.filter(e=>e.logName === 'setState').subscribe(e =>
         jb.exec(animate.refreshElem(elemsOfCtx(e.record[0].ctx))))
 }
 

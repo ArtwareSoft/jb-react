@@ -47,7 +47,7 @@ st.initPreview = function(preview_window,allowedTypes) {
       st.previewjb.studio.previewjb = st.previewjb;
       st.previewjb.studio.studiojb = jb;
       st.previewjb.lastRun = {}
-    
+
       // reload the changed components and rebuild the history
       st.initCompsRefHandler(st.previewjb, allowedTypes)
       changedComps.forEach(e=>{
@@ -125,7 +125,12 @@ jb.studio.pageChange = jb.ui.resourceChange().filter(e=>e.path.join('/') == 'stu
 jb.component('studio.preview-widget', { /* studio.previewWidget */
   type: 'control',
   params: [
-    {id: 'style', type: 'preview-style', dynamic: true, defaultValue: studio.previewWidgetImpl()},
+    {
+      id: 'style',
+      type: 'preview-style',
+      dynamic: true,
+      defaultValue: studio.previewWidgetImpl()
+    },
     {id: 'width', as: 'number'},
     {id: 'height', as: 'number'}
   ],
@@ -156,7 +161,7 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
   ))
 })
 
-        
+
         // let project = ctx.exp('%$studio/project%')
         // const rootName = ctx.exp('%$studio/settings/rootName%')
         // if (!project) {
@@ -166,7 +171,7 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
         //       if (exists)
         //         location.reload()
         //       cmp.state.inMemoryProject = st.inMemoryProject = ctx.run(studio.newInMemoryProject(project,'./'))
-        //       if (st.host.canNotSave) 
+        //       if (st.host.canNotSave)
         //         return cmp.refresh()
         //       return jb.delay(100).then(()=>ctx.run(studio.saveComponents()))
         //   })
@@ -215,7 +220,7 @@ st.injectImMemoryProjectToPreview = function(previewWin) {
         cssToInject].join('\n')
      + html.slice(pos+len)
   }
-  
+
   previewWin.document.write(html)
 }
 

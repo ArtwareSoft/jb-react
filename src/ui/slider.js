@@ -6,10 +6,7 @@ jb.component('editable-number.slider-no-text', { /* editableNumber.sliderNoText 
     template: (cmp,state,h) => h('input',{ type: 'range',
         min: state.min, max: state.max, step: state.step,
         value: state.databind, mouseup: 'onblurHandler', tabindex: -1}),
-    features: [
-      field.databind(), 
-      slider.init()
-    ]
+    features: [field.databind(), slider.init()]
   })
 })
 
@@ -70,10 +67,10 @@ jb.component('slider.init', { /* slider.init */
               cmp.max += cmp.max - cmp.min;
             if (val == cmp.min && ctx.vars.$model.autoScale)
               cmp.min -= cmp.max - cmp.min;
-  
+
             jb.ui.setState(cmp,{ min: cmp.min, max: cmp.max, step: ctx.vars.$model.step, val: cmp.jbModel() },null,ctx);
           },
-  
+
           cmp.onkeydown.subscribe(e=> cmp.handleArrowKey(e));
 
           // drag
@@ -87,7 +84,7 @@ jb.component('slider.init', { /* slider.init */
     })
 })
 
-jb.component('slider.handle-arrow-keys', { /* sliderText.handleArrowKeys */
+jb.component('slider.handle-arrow-keys', { /* slider.handleArrowKeys */
   type: 'feature',
   impl: ctx => ({
       onkeyup: true,

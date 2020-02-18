@@ -39,7 +39,7 @@ jb.component('watchable-as-text', { /* watchableAsText */
   type: 'data',
   params: [
     {id: 'ref', as: 'ref', dynamic: true},
-    {id: 'oneWay', as: 'boolean', defaultValue: true}
+    {id: 'oneWay', as: 'boolean', defaultValue: true, type: 'boolean'}
   ],
   impl: (ctx,refF,oneWay) => ({
         oneWay,
@@ -146,7 +146,8 @@ jb.component('text-editor.is-dirty', { /* textEditor.isDirty */
 
 jb.component('textarea.init-textarea-editor', { /* textarea.initTextareaEditor */
   type: 'feature',
-  impl: interactive( (ctx,{cmp}) => {
+  impl: interactive(
+    (ctx,{cmp}) => {
         const data_ref = ctx.vars.$model.databind()
         jb.val(data_ref) // calc text
         cmp.editor = {
@@ -168,7 +169,8 @@ jb.component('textarea.init-textarea-editor', { /* textarea.initTextareaEditor *
         }
         if (cmp.ctx.vars.editorContainer)
             cmp.ctx.vars.editorContainer.editorCmp = cmp
-    })
+    }
+  )
 })
 
 
@@ -268,7 +270,7 @@ function formatComponent(fileContent, pos, jbToUse = jb) {
     const compSrc = linesOfComp.join('\n')
     if (jb.evalStr(compSrc,jbToUse.frame) === Symbol.for('parseError'))
         return []
-    return {text: jb.prettyPrintComp(compId,jbToUse.comps[compId],{comps: jbToUse.comps}) + '\n', 
+    return {text: jb.prettyPrintComp(compId,jbToUse.comps[compId],{comps: jbToUse.comps}) + '\n',
         from: {line: componentHeaderIndex, col: 0}, to: {line: componentHeaderIndex+compLastLine+1, col: 0} }
 }
 

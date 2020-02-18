@@ -1,9 +1,9 @@
-jb.component('studio.all-comps', {
+jb.component('studio.all-comps', { /* studio.allComps */
   type: 'data',
   impl: (ctx,cmpId) => Object.keys(jb.studio.previewjb.comps)
 })
 
-jb.component('studio.component-statistics', {
+jb.component('studio.component-statistics', { /* studio.componentStatistics */
   type: 'data',
   params: [
     {id: 'cmpId', as: 'string', defaultValue: '%%'}
@@ -153,8 +153,8 @@ jb.component('studio.components-list', { /* studio.componentsList */
         treeModel: tree.jsonReadOnly(studio.cmpsOfProjectByFiles(), ''),
         leafFields: [
           text({
-            title: 'size',
             text: pipeline(studio.componentStatistics('%val%'), '%size%'),
+            title: 'size',
             features: [field.columnWidth('80')]
           }),
           button({
@@ -190,10 +190,10 @@ jb.component('studio.components-list', { /* studio.componentsList */
           })
         ],
         chapterHeadline: text({
-          title: '',
-          text: pipeline('%path%', split({separator: '~', part: 'last'}))
+          text: pipeline('%path%', split({separator: '~', part: 'last'})),
+          title: ''
         }),
-        style: tableTree.plain({hideHeaders: false, gapWidth: '130', expColWidth: '10'}),
+        style: tableTree.plain({hideHeaders: false, gapWidth: '130', expColWidth: '10'})
       })
     ],
     features: [

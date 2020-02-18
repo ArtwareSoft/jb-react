@@ -104,7 +104,7 @@ jb.component('studio.event-tracker', { /* studio.eventTracker */
               title: studio.eventCmp(),
               action: studio.gotoPath('%cmp/ctxForPick/path%'),
               style: button.href(),
-              features: [feature.onHover(studio.highlightEvent())]
+              features: [feature.onHover({action: studio.highlightEvent()})]
             }),
             width: '200'
           }),
@@ -132,7 +132,7 @@ jb.component('studio.event-tracker', { /* studio.eventTracker */
 })
 
 
-jb.component('studio.open-event-tracker', { /* studio.openEventTracker */ 
+jb.component('studio.open-event-tracker', { /* studio.openEventTracker */
   type: 'action',
   params: [
     {id: 'studio', as: 'boolean', type: 'boolean'}

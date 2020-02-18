@@ -1,9 +1,9 @@
 jb.component('property-sheet.titles-left', { /* propertySheet.titlesLeft */
   type: 'group.style',
   params: [
-    {id: 'titleStyle', type: 'label.style', defaultValue: styleWithFeatures(label.span(), css.bold()), dynamic: true },
-    {id: 'titleText', defaultValue: '%%:', dynamic: true },
-    {id: 'spacing', as: 'string', description: 'grid-column-gap', defaultValue: '10px' },
+    {id: 'titleStyle', type: 'label.style', defaultValue: styleWithFeatures(label.span(), css.bold()), dynamic: true},
+    {id: 'titleText', defaultValue: '%%:', dynamic: true},
+    {id: 'spacing', as: 'string', description: 'grid-column-gap', defaultValue: '10px'}
   ],
   impl: customStyle({
     template: (cmp,{ctrls,titleStyle,titleText},h) => h('div',{}, ctrls.flatMap(ctrl=>[
@@ -11,7 +11,7 @@ jb.component('property-sheet.titles-left', { /* propertySheet.titlesLeft */
         h(ctrl)
       ])
     ),
-    css: `{ display: grid; grid-template-columns: auto auto; grid-column-gap:%$spacing%}`,
+    css: '{ display: grid; grid-template-columns: auto auto; grid-column-gap:%$spacing%}',
     features: group.initGroup()
   })
 })
@@ -19,9 +19,9 @@ jb.component('property-sheet.titles-left', { /* propertySheet.titlesLeft */
 jb.component('property-sheet.titles-above', { /* propertySheet.titlesAbove */
   type: 'group.style',
   params: [
-    {id: 'titleStyle', type: 'label.style', defaultValue: styleWithFeatures(label.span(), css.bold()), dynamic: true },
-    {id: 'titleText', defaultValue: '%%', dynamic: true },
-    {id: 'spacing', as: 'string', description: 'grid-column-gap', defaultValue: '10px' },
+    {id: 'titleStyle', type: 'label.style', defaultValue: styleWithFeatures(label.span(), css.bold()), dynamic: true},
+    {id: 'titleText', defaultValue: '%%', dynamic: true},
+    {id: 'spacing', as: 'string', description: 'grid-column-gap', defaultValue: '10px'}
   ],
   impl: customStyle({
     template: (cmp,{ctrls,titleStyle,titleText},h) => h('div',{ style: {'grid-template-columns': ctrls.map(()=>'auto').join(' ')}}, [
@@ -32,7 +32,7 @@ jb.component('property-sheet.titles-above', { /* propertySheet.titlesAbove */
         ...ctrls.map(ctrl=>h(ctrl))
       ]
     ),
-    css: `{ display: grid; grid-column-gap:%$spacing% }`,
+    css: '{ display: grid; grid-column-gap:%$spacing% }',
     features: group.initGroup()
   })
 })

@@ -1,4 +1,4 @@
-jb.component('studio.new-in-memory-project', { 
+jb.component('studio.new-in-memory-project', {
   params: [
     {id: 'project', as: 'string'},
     {id: 'baseDir', as: 'string'}
@@ -28,7 +28,7 @@ jb.component('studio.new-in-memory-project', {
 </html>`),
   prop('%$project%.js',`jb.ns('%$project%')
 
-jb.component('%$project%.main', { 
+jb.component('%$project%.main', {
   type: 'control',
   impl: group({
     controls: [button('my button')]
@@ -39,7 +39,7 @@ jb.component('%$project%.main', {
 )
 })
 
-jb.component('studio.open-new-project', { /* studio.openNewProject */ 
+jb.component('studio.open-new-project', { /* studio.openNewProject */
   type: 'action',
   impl: openDialog({
     style: dialog.dialogOkCancel(),
@@ -51,8 +51,8 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
           databind: '%$dialogData/name%',
           style: editableText.mdcInput(),
           features: [
-              feature.onEnter(dialog.closeContainingPopup()),
-              validation(matchRegex('^[\-a-zA-Z_0-9]+$'),'invalid project name')
+            feature.onEnter(dialog.closeContainingPopup()),
+            validation(matchRegex('^[-a-zA-Z_0-9]+$'), 'invalid project name')
           ]
         })
       ],
@@ -61,9 +61,9 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
     title: 'New Project',
     onOK: runActions(
       ctx => jb.studio.inMemoryProject = ctx.run(studio.newInMemoryProject('%$dialogData/name%')),
-      writeValue('%$studio/project%','%$dialogData/name%'),
-      writeValue('%$studio/page%','main'),
-      writeValue('%$studio/profile_path%','%$dialogData/name%.main'),
+      writeValue('%$studio/project%', '%$dialogData/name%'),
+      writeValue('%$studio/page%', 'main'),
+      writeValue('%$studio/profile_path%', '%$dialogData/name%.main'),
       delay(100),
       ctx => jb.studio.host.canNotSave || ctx.run(studio.saveComponents())
     ),

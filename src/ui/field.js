@@ -6,22 +6,41 @@ jb.component('field.databind', { /* field.databind */
   category: 'field:0',
   params: [
     {id: 'debounceTime', as: 'number', defaultValue: 0},
-    {id: 'oneWay', type: 'boolean', as: 'boolean' },
+    {id: 'oneWay', type: 'boolean', as: 'boolean'}
   ],
   impl: features(
-    If('%$oneWay%', calcProp('databind', '%$$model/databind%'), watchAndCalcModelProp('databind')),
-    calcProp('title', '%$$model/title%'),
-    calcProp('fieldId',() => jb.ui.field_id_counter++ ),
-    defHandler('onblurHandler', (ctx,{cmp, ev},{oneWay}) => writeFieldData(ctx,cmp,ev.target.value,oneWay)),
-    defHandler('onchangeHandler', (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && writeFieldData(ctx,cmp,ev.target.value,oneWay)),
-    defHandler('onkeyupHandler', (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && writeFieldData(ctx,cmp,ev.target.value,oneWay)),
-    defHandler('onkeydownHandler', (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && writeFieldData(ctx,cmp,ev.target.value,oneWay)),
-    interactiveProp('jbModel',(ctx,{cmp}) => value => {
+    If(
+        '%$oneWay%',
+        calcProp({id: 'databind', value: '%$$model/databind%'}),
+        watchAndCalcModelProp('databind')
+      ),
+    calcProp({id: 'title', value: '%$$model/title%'}),
+    calcProp({id: 'fieldId', value: () => jb.ui.field_id_counter++}),
+    defHandler(
+        'onblurHandler',
+        (ctx,{cmp, ev},{oneWay}) => writeFieldData(ctx,cmp,ev.target.value,oneWay)
+      ),
+    defHandler(
+        'onchangeHandler',
+        (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && writeFieldData(ctx,cmp,ev.target.value,oneWay)
+      ),
+    defHandler(
+        'onkeyupHandler',
+        (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && writeFieldData(ctx,cmp,ev.target.value,oneWay)
+      ),
+    defHandler(
+        'onkeydownHandler',
+        (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && writeFieldData(ctx,cmp,ev.target.value,oneWay)
+      ),
+    interactiveProp(
+        'jbModel',
+        (ctx,{cmp}) => value => {
       if (value == null)
         return ctx.exp('%$$mode/databind','number')
       else
         writeFieldData(ctx,cmp,{target:{value}},true)
-    }),
+    }
+      )
   )
 })
 
@@ -106,7 +125,7 @@ jb.ui.checkValidationError = (cmp,val) => {
 
 jb.ui.fieldTitle = function(cmp,fieldOrCtrl,h) {
   let field = fieldOrCtrl.field && fieldOrCtrl.field() || fieldOrCtrl
-  field = typeof field === 'function' ? field() : field  
+  field = typeof field === 'function' ? field() : field
 	if (field.titleCtrl) {
 		const ctx = cmp.ctx.setData(field).setVars({input: cmp.ctx.data})
 		const jbComp = field.titleCtrl(ctx);
@@ -119,15 +138,18 @@ jb.ui.preserveFieldCtxWithItem = (field,item) => {
 	const ctx = jb.ctxDictionary[field.ctxId]
 	return ctx && jb.ui.preserveCtx(ctx.setData(item))
 }
-  
+
 jb.component('field.databind-text', { /* field.databindText */
   type: 'feature',
   category: 'field:0',
   params: [
     {id: 'debounceTime', as: 'number', defaultValue: 0},
-    {id: 'oneWay', type: 'boolean', as: 'boolean', defaultValue: true},
+    {id: 'oneWay', type: 'boolean', as: 'boolean', defaultValue: true}
   ],
-  impl: field.databind('%$debounceTime%', '%$oneWay%')
+  impl: field.databind(
+    '%$debounceTime%',
+    '%$oneWay%'
+  )
 })
 
 // jb.component('field.data', { /* field.data */
@@ -143,7 +165,8 @@ jb.component('field.keyboard-shortcut', { /* field.keyboardShortcut */
     {id: 'key', as: 'string', description: 'e.g. Alt+C'},
     {id: 'action', type: 'action', dynamic: true}
   ],
-  impl: interactive( (ctx,{cmp},{key,action}) => {
+  impl: interactive(
+    (ctx,{cmp},{key,action}) => {
         const elem = cmp.base.querySelector('input') || cmp.base
         if (elem.tabIndex === undefined) elem.tabIndex = -1
         jb.rx.Observable.fromEvent(elem, 'keydown')
@@ -159,7 +182,8 @@ jb.component('field.keyboard-shortcut', { /* field.keyboardShortcut */
               if (event.keyCode == keyCode || (event.key && event.key == keyStr))
                 action();
         })
-    })
+    }
+  )
 })
 
 jb.component('field.toolbar', { /* field.toolbar */
@@ -176,51 +200,51 @@ jb.component('validation', { /* validation */
   type: 'feature',
   category: 'validation:100',
   params: [
-    {id: 'validCondition', mandatory: true, as: 'boolean', dynamic: true},
+    {id: 'validCondition', mandatory: true, as: 'boolean', dynamic: true, type: 'boolean'},
     {id: 'errorMessage', mandatory: true, as: 'string', dynamic: true}
   ],
-  impl: interactive((ctx,{cmp},{validCondition,errorMessage}) => {
+  impl: interactive(
+    (ctx,{cmp},{validCondition,errorMessage}) => {
           cmp.validations = (cmp.validations || []).concat([{validCondition,errorMessage}]);
           if (jb.ui.inPreview()) {
             const _ctx = ctx.setData(cmp.state.model);
             validCondition(_ctx)
             errorMessage(_ctx)
           }
-      })
+      }
+  )
 })
 
-jb.component('field.title', {
+jb.component('field.title', { /* field.title */
   description: 'used to set table title in button and label',
   type: 'feature',
   category: 'table:80',
   params: [
-    {id: 'title', as: 'string', dynamic: true, mandatory: true },
+    {id: 'title', as: 'string', dynamic: true, mandatory: true}
   ],
   impl: (ctx,title) => ({
       enrichField: field => field.title = ctx => title(ctx)
   })
 })
 
-jb.component('field.title-ctrl', {
+jb.component('field.title-ctrl', { /* field.titleCtrl */
   description: 'title as control, buttons are usefull',
   type: 'feature',
   category: 'table:80',
   params: [
-    {id: 'titleCtrl', type: 'control', mandatory: true, dynamic: true, 
-      templateValue: button({title: '%title%', style: button.href()}) 
-    },
+    {id: 'titleCtrl', type: 'control', mandatory: true, dynamic: true, templateValue: button({title: '%title%', style: button.href()})}
   ],
   impl: (ctx,titleCtrl) => ({
       enrichField: field => field.titleCtrl = ctx => titleCtrl(ctx)
   })
 })
 
-jb.component('field.column-width', {
+jb.component('field.column-width', { /* field.columnWidth */
   description: 'used in itemlist fields',
   type: 'feature',
   category: 'table:80',
   params: [
-    {id: 'width', as: 'number', mandatory: true },
+    {id: 'width', as: 'number', mandatory: true}
   ],
   impl: (ctx,width) => ({
       enrichField: field => field.width = width

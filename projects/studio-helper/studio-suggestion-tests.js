@@ -10,7 +10,9 @@ jb.component('people-array', { /* peopleArray */
 
 jb.component('suggestions-test.default-probe', { /* suggestionsTest.defaultProbe */
   type: 'control',
-  impl: text('')
+  impl: text(
+    ''
+  )
 })
 
 jb.component('suggestions-test.simple-vars', { /* suggestionsTest.simpleVars */
@@ -41,7 +43,7 @@ jb.component('suggestions-test.inside-array', { /* suggestionsTest.insideArray *
   })
 })
 
-jb.component('suggestions-test.1', { /* suggestionsTest.1 */ 
+jb.component('suggestions-test.1', { /* suggestionsTest.1 */
   impl: suggestionsTest({
     expression: '%',
     expectedResult: contains('people')

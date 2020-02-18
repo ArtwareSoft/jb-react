@@ -56,16 +56,16 @@ jb.component('ui-test.label', { /* uiTest.label */
   })
 })
 
-jb.component('ui-test.html', { 
+jb.component('ui-test.html', { /* uiTest.html */
   impl: uiTest({
-    control: html({ html: '<p>hello world</p>'}),
+    control: html({html: '<p>hello world</p>'}),
     expectedResult: contains('<p>hello world</p>')
   })
 })
 
-jb.component('ui-test.html.in-iframe', { 
+jb.component('ui-test.html.in-iframe', { /* uiTest.html.inIframe */
   impl: uiTest({
-    control: html({ html: '<p>hello world</p>', style: html.inIframe()}),
+    control: html({html: '<p>hello world</p>', style: html.inIframe()}),
     expectedResult: contains('iframe')
   })
 })
@@ -82,14 +82,14 @@ jb.component('ui-test.group', { /* uiTest.group */
   })
 })
 
-jb.component('ui-test.wait-for-with-pipe', {
+jb.component('ui-test.wait-for-with-pipe', { /* uiTest.waitForWithPipe */
   impl: uiTest({
     control: group({
       controls: label('%%'),
       features: group.wait({for: pipe(delay(10), 'hello')})
     }),
     action: delay(40),
-    expectedResult: and(contains('hello'),not(contains('loading'))),
+    expectedResult: and(contains('hello'), not(contains('loading'))),
     expectedCounters: {initCmp: 4}
   })
 })
@@ -108,7 +108,7 @@ jb.component('ui-test.wait-for-with-pipe', {
 //             }),
 //           ]
 //         }),
-//         group({ 
+//         group({
 //           controls: label('%%'),
 //           features: [
 //             watchRef({ ref: '%$globals/selectedPerson%', strongRefresh: true }),
@@ -127,12 +127,9 @@ jb.component('ui-test.wait-for-with-pipe', {
 //   })
 // })
 
-jb.component('ui-test.asynch-label', {
+jb.component('ui-test.asynch-label', { /* uiTest.asynchLabel */
   impl: uiTest({
-    control: label({ 
-      text: pipe(delay(10), 'hello'),
-      features: label.allowAsynchValue()
-    }),
+    control: label({text: pipe(delay(10), 'hello'), features: label.allowAsynchValue()}),
     action: delay(40),
     expectedResult: contains('hello')
   })
@@ -199,7 +196,7 @@ jb.component('ui-test.editable-text', { /* uiTest.editableText */
   })
 })
 
-jb.component('ui-test.editable-text-empty', { /* uiTest.editableText */
+jb.component('ui-test.editable-text-empty', { /* uiTest.editableTextEmpty */
   impl: uiTest({
     control: editableText({
       title: 'name',
@@ -210,7 +207,7 @@ jb.component('ui-test.editable-text-empty', { /* uiTest.editableText */
   })
 })
 
-jb.component('ui-test.editable-text-mdc', {
+jb.component('ui-test.editable-text-mdc', { /* uiTest.editableTextMdc */
   impl: uiTest({
     control: editableText({
       title: 'name',
@@ -232,28 +229,31 @@ jb.component('ui-test.editable-text.x-button', { /* uiTest.editableText.xButton 
   })
 })
 
-jb.component('ui-test.editable-text-expandable', {
+jb.component('ui-test.editable-text-expandable', { /* uiTest.editableTextExpandable */
   impl: uiTest({
     control: editableText({
       title: 'name',
       databind: '%$person/name%',
-      style: editableText.expandable(),
+      style: editableText.expandable({})
     }),
     expectedResult: true
   })
 })
 
-jb.component('ui-test.editable-text-by-control', {
+jb.component('ui-test.editable-text-by-control', { /* uiTest.editableTextByControl */
   impl: uiTest({
     control: editableText({
       title: 'name',
       databind: '%$person/name%',
-      style: styleByControl(group({
-        controls: [],
-        features: [
-          variable({name: 'expandableContext', value: obj() }),
-        ]
-      }),'editableTextModel' ),
+      style: styleByControl(
+        group({
+          controls: [
+            
+          ],
+          features: [variable({name: 'expandableContext', value: obj()})]
+        }),
+        'editableTextModel'
+      )
     }),
     expectedResult: true
   })
@@ -263,12 +263,12 @@ jb.component('ui-test.two-way-binding', { /* uiTest.twoWayBinding */
   impl: uiTest({
     control: group({
       controls: [
-        editableText({title: 'name', databind: '%$person/name%', features: id('inp') }),
+        editableText({title: 'name', databind: '%$person/name%', features: id('inp')}),
         label('%$person/name%')
       ]
     }),
     action: ctx => ctx.run(uiAction.setText('hello', '#inp')),
-    expectedResult: contains(['<span', 'hello','</span'])
+    expectedResult: contains(['<span', 'hello', '</span'])
   })
 })
 
@@ -285,7 +285,7 @@ jb.component('ui-test.group-horizontal', { /* uiTest.groupHorizontal */
   })
 })
 
-jb.component('ui-test.layout-vertical', {
+jb.component('ui-test.layout-vertical', { /* uiTest.layoutVertical */
   impl: uiTest({
     control: group({
       layout: layout.vertical(30),
@@ -302,8 +302,8 @@ jb.component('ui-test.open-dialog', { /* uiTest.openDialog */
   impl: uiTest({
     control: button({
       title: 'click me',
-      action: openDialog({ 
-        id: 'hello', 
+      action: openDialog({
+        id: 'hello',
         content: text('jbart'),
         title: 'hello',
         features: [
@@ -365,17 +365,20 @@ jb.component('ui-test.renderable', { /* uiTest.renderable */
   })
 })
 
-jb.component('ui-test.refresh-dialog', { 
+jb.component('ui-test.refresh-dialog', { /* uiTest.refreshDialog */
   impl: uiTest({
     control: button({
       title: 'click me',
       action: openDialog({
-        id: 'hello', 
-        content: label('%$person/name%'), 
-        features: interactive(action.if('%$person/name% == "mukki"','', runActions(
-          writeValue('%$person/name%','mukki'),
-          (ctx,{cmp}) => cmp.refresh()
-        )))
+        id: 'hello',
+        content: label('%$person/name%'),
+        features: interactive(
+          action.if(
+              '%$person/name% == \"mukki\"',
+              '',
+              runActions(writeValue('%$person/name%', 'mukki'), (ctx,{cmp}) => cmp.refresh())
+            )
+        )
       })
     }),
     action: uiAction.click('button'),
@@ -385,7 +388,7 @@ jb.component('ui-test.refresh-dialog', {
 
 jb.component('ui-test.dialog-cleanup', { /* uiTest.dialogCleanup */
   impl: uiTest({
-    vars: Var('cleanup',obj(prop('destroy'),prop('tickAfterDestroy'))),
+    vars: [Var('cleanup', obj(prop('destroy'), prop('tickAfterDestroy')))],
     control: button({
       title: 'click me',
       action: openDialog({
@@ -403,7 +406,10 @@ jb.component('ui-test.dialog-cleanup', { /* uiTest.dialogCleanup */
       })
     }),
     action: [uiAction.click('button'), dialog.closeAll(), delay(20)],
-    expectedResult: and(equals('%$cleanup/destroy%','attached'),equals('%$cleanup/tickAfterDestroy%','detached'))
+    expectedResult: and(
+      equals('%$cleanup/destroy%', 'attached'),
+      equals('%$cleanup/tickAfterDestroy%', 'detached')
+    )
   })
 })
 
@@ -420,35 +426,35 @@ jb.component('ui-test.dialog-cleanup-bug', { /* uiTest.dialogCleanupBug */
 })
 
 // ensure the right order between the unmount that causes elem._component = null and the blur event which is automatically generated when detaching the dialog
-jb.component('ui-test.updateOnBlur-when-dialog-closed', { 
+jb.component('ui-test.updateOnBlur-when-dialog-closed', { /* uiTest.updateOnBlurWhenDialogClosed */
   impl: uiTest({
-    control: group({ controls: [
+    control: group({
+      controls: [
         button({
           title: 'click me',
           action: ctx => ctx.setVars({elemToTest:null}).run(openDialog({content:
             editableText({title: 'name', updateOnBlur: true, databind: '%$person/name%' })
-          })),
+          }))
         }),
         label('%$person/name%')
       ]
     }),
     action: runActions(
-      uiAction.click('button'), 
+      uiAction.click('button'),
       ctx => {
         // document.querySelector('input').value = 'hello'
         // document.querySelector('input').focus()
         // document.querySelector('.dialog-close').click()
-      }, 
-      //dialog.closeAll(),
-      ),
-    expectedResult: true //contains('hello')
+      }
+    ),
+    expectedResult: true
   })
 })
 
 jb.component('ui-test.group-flex', { /* uiTest.groupFlex */
   impl: uiTest({
     control: group({
-      layout: layout.flex({direction: 'row'}),
+      layout: layout.flex('row'),
       controls: [
         button('button1'),
         label('label1')
@@ -460,9 +466,9 @@ jb.component('ui-test.group-flex', { /* uiTest.groupFlex */
 
 jb.component('ui-test.button-click', { /* uiTest.buttonClick */
   impl: uiTest({
-    control: button({title: 'Click Me', action: writeValue('%$person/name%','mukki')}),
+    control: button({title: 'Click Me', action: writeValue('%$person/name%', 'mukki')}),
     action: uiAction.click('button'),
-    expectedResult: equals('%$person/name%','mukki')
+    expectedResult: equals('%$person/name%', 'mukki')
   })
 })
 
@@ -500,18 +506,19 @@ jb.component('ui-test.itemlist', { /* uiTest.itemlist */
   })
 })
 
-jb.component('ui-test.itemlist.shown-only-on-item-hover', {
+jb.component('ui-test.itemlist.shown-only-on-item-hover', { /* uiTest.itemlist.shownOnlyOnItemHover */
   impl: uiTest({
-    control: itemlist({items: '%$people%',
-      style: table.plain(),
+    control: itemlist({
+      items: '%$people%',
       controls: [
         label('%name%'),
         button({
           title: 'delete',
           style: button.x(),
           features: [itemlist.shownOnlyOnItemHover(), field.columnWidth('50px')]
-        })        
-      ]
+        })
+      ],
+      style: table.plain()
     }),
     expectedResult: contains(['Homer Simpson'])
   })
@@ -520,7 +527,7 @@ jb.component('ui-test.itemlist.shown-only-on-item-hover', {
 jb.component('ui-test.itemlist-with-select', { /* uiTest.itemlistWithSelect */
   impl: uiTest({
     control: itemlist({
-      items: list('%$people%','%$people%','%$people%'),
+      items: list('%$people%', '%$people%', '%$people%'),
       controls: label('%$item.name% - %name%'),
       features: itemlist.selection({})
     }),
@@ -604,7 +611,7 @@ jb.component('ui-test.itemlist-selection', { /* uiTest.itemlistSelection */
   })
 })
 
-jb.component('ui-test.itemlist-MD-auto-select-first', { /* uiTest.itemlistMD */
+jb.component('ui-test.itemlist-MD-auto-select-first', { /* uiTest.itemlistMDAutoSelectFirst */
   impl: uiTest({
     control: group({
       controls: [
@@ -633,7 +640,7 @@ jb.component('ui-test.itemlist-container-search-ctrl', { /* uiTest.itemlistConta
   type: 'control',
   impl: group({
     controls: [
-      itemlistContainer.search(),
+      itemlistContainer.search({}),
       itemlist({
         items: '%$people%',
         controls: text({
@@ -646,11 +653,11 @@ jb.component('ui-test.itemlist-container-search-ctrl', { /* uiTest.itemlistConta
           itemlist.keyboardSelection({
             autoFocus: true,
             onEnter: writeValue('%$person/selected%', '%name%')
-          }),
+          })
         ]
       })
     ],
-    features: group.itemlistContainer()
+    features: group.itemlistContainer({})
   })
 })
 
@@ -658,7 +665,7 @@ jb.component('ui-test.itemlist-container-search', { /* uiTest.itemlistContainerS
   impl: uiTest({
     control: uiTest.itemlistContainerSearchCtrl(),
     action: uiAction.setText('ho', '.mdc-text-field'),
-    expectedResult: contains(['Ho', 'mer','display: none;','display: none;'])
+    expectedResult: contains(['Ho', 'mer', 'display: none;', 'display: none;'])
   })
 })
 
@@ -705,21 +712,20 @@ jb.component('ui-test.search-doesnot-create-ReactClass', { /* uiTest.searchDoesn
       features: [group.itemlistContainer({})]
     }),
     action: uiAction.setText('ho', '.mdc-text-field'),
-    expectedResult: ctx => true,
-//    expectedCounters: ctx => ({ createReactClass: 6 })
+    expectedResult: ctx => true
   })
 })
 
-jb.component('ui-test.itemlist-with-table-style', {
+jb.component('ui-test.itemlist-with-table-style', { /* uiTest.itemlistWithTableStyle */
   impl: uiTest({
     control: itemlist({
       items: '%$watchable-people%',
-      style: table.plain(),
       controls: [
-        text({title: 'index', text: '%$index%', features: field.columnWidth(40) }), 
-        text({title: 'name', text: '%name%', features: field.columnWidth(300) }), 
-        text({title: 'age', text: '%age%'})
+        text({text: '%$index%', title: 'index', features: field.columnWidth(40)}),
+        text({text: '%name%', title: 'name', features: field.columnWidth(300)}),
+        text({text: '%age%', title: 'age'})
       ],
+      style: table.plain(),
       features: [
         itemlist.selection({
           databind: '%$globals/selectedPerson%',
@@ -727,7 +733,7 @@ jb.component('ui-test.itemlist-with-table-style', {
         })
       ]
     }),
-    expectedResult: contains(['300','age', 'Homer Simpson', '38', '>3<', 'Bart'])
+    expectedResult: contains(['300', 'age', 'Homer Simpson', '38', '>3<', 'Bart'])
   })
 })
 
@@ -799,7 +805,7 @@ jb.component('ui-test.property-sheet.titles-above', { /* uiTest.propertySheet.ti
     control: group({
       controls: [
         group({
-          style: propertySheet.titlesAbove(),
+          style: propertySheet.titlesAbove({}),
           controls: [
             editableText({title: 'name', databind: '%$person/name%'}),
             editableText({title: 'address', databind: '%$person/address%'})
@@ -980,10 +986,7 @@ jb.component('ui-test.expand-collapse-with-default-collapse', { /* uiTest.expand
             features: [feature.if('%$expanded%'), watchRef('%$expanded%')]
           })
         ],
-        features: [
-          watchRef({ref: '%$default%' }),
-          feature.init(writeValue('%$expanded%','%$default%'))
-        ]
+        features: [watchRef('%$default%'), feature.init(writeValue('%$expanded%', '%$default%'))]
       })
     ],
     features: [
@@ -1004,10 +1007,7 @@ jb.component('ui-test.editable-boolean.expand-collapse-with-default-val', { /* u
 jb.component('ui-test.editable-boolean.expand-collapse-with-default-collapse', { /* uiTest.editableBoolean.expandCollapseWithDefaultCollapse */
   impl: uiTest({
     control: uiTest.expandCollapseWithDefaultCollapse(),
-    action: runActions(
-      // uiAction.click('#default', 'toggle'),
-      // uiAction.click('#expCollapse', 'toggle')
-    ),
+    action: runActions(),
     expectedResult: not(contains('inner text'))
   })
 })
@@ -1072,16 +1072,14 @@ jb.component('ui-test.prettyPrintComp', { /* uiTest.prettyPrintComp */
     waitForPromise: delay(50),
     control: group({
       controls: [
-        {
-          '$': 'text',
+        text({
           text: ctx => jb_prettyPrintComp('ui-test.inner-label1-tst', jb.comps['ui-test.inner-label1-tst']),
           style: {'$': 'text.multi-line'}
-        },
-        {
-          '$': 'text',
+        }),
+        text({
           text: ctx => jb_prettyPrintComp('editable-text.codemirror', jb.comps['editable-text.codemirror']),
           style: text.codemirror({})
-        }
+        })
       ]
     }),
     expectedResult: contains(['dynamic: true'])
@@ -1107,19 +1105,19 @@ jb.component('ui-test.picklist', { /* uiTest.picklist */
   })
 })
 
-jb.component('ui-test.picklist-radio', {
+jb.component('ui-test.picklist-radio', { /* uiTest.picklistRadio */
   impl: uiTest({
     control: picklist({
-            title: 'city',
-            databind: '%$personWithAddress/address/city%',
-            options: picklist.optionsByComma('Springfield,New York,Tel Aviv,London'),
-            style: picklist.radio(),
+      title: 'city',
+      databind: '%$personWithAddress/address/city%',
+      options: picklist.optionsByComma('Springfield,New York,Tel Aviv,London'),
+      style: picklist.radio()
     }),
     expectedResult: contains(['Springfield', 'New York'])
   })
 })
 
-jb.component('ui-test.field-title-of-label', { 
+jb.component('ui-test.field-title-of-label', { /* uiTest.fieldTitleOfLabel */
   impl: uiTest({
     control: group({
       style: propertySheet.titlesLeft({}),
@@ -1214,7 +1212,7 @@ jb.component('ui-test.tabs', { /* uiTest.tabs */
 jb.component('ui-test.group.accordion', { /* uiTest.group.accordion */
   impl: uiTest({
     control: group({
-      style: group.accordion(),
+      style: group.accordion({}),
       controls: [
         group({title: 'tab1', controls: label('in tab1')}),
         group({title: 'tab2', controls: label('in tab2')})
@@ -1263,7 +1261,7 @@ jb.component('ui-test.picklist-as-itemlist', { /* uiTest.picklistAsItemlist */
         picklist({
           databind: '%$personWithAddress/address/city%',
           options: picklist.optionsByComma('Springfield,New York,Tel Aviv,London'),
-          style: picklist.labelList()
+          style: picklist.labelList({})
         }),
         label('%$personWithAddress/address/city%')
       ]
@@ -1334,28 +1332,28 @@ jb.component('ui-test.refresh-control-by-id', { /* uiTest.refreshControlById */
   })
 })
 
-jb.component('ui-test.raw-vdom', {
-  impl :{$: 'ui-test',
+jb.component('ui-test.raw-vdom', { /* uiTest.rawVdom */
+  impl: uiTest({
     control: ctx => jb.ui.h('div',{},'hello world'),
     expectedResult: contains('hello world')
-  },
+  })
 })
 
-jb.component('ui-test.control.first-succeeding', { /* uiTest.group.firstSucceeding */
+jb.component('ui-test.control.first-succeeding', { /* uiTest.control.firstSucceeding */
   impl: uiTest({
     control: group({
       controls: [
         group({
-          features: group.firstSucceeding(),
-          controls: controlWithCondition('%$gender% == \"male\"', label('male'))
+          controls: controlWithCondition('%$gender% == \"male\"', label('male')),
+          features: group.firstSucceeding()
         }),
         group({
-          features: group.firstSucceeding(),
           controls: [
             controlWithCondition('%$gender% == \"female\"', label('female')),
             controlWithCondition('%$gender% != \"female\"', label('male2')),
             controlWithCondition(true, label('second-succeeding'))
-          ]
+          ],
+          features: group.firstSucceeding()
         })
       ],
       features: [variable({name: 'gender', value: 'male'})]
@@ -1364,59 +1362,68 @@ jb.component('ui-test.control.first-succeeding', { /* uiTest.group.firstSucceedi
   })
 })
 
-jb.component('ui-test.control.first-succeeding-inner-var', {
+jb.component('ui-test.control.first-succeeding-inner-var', { /* uiTest.control.firstSucceedingInnerVar */
   impl: uiTest({
     control: group({
-        features: [
-          group.firstSucceeding(),
-          variable('innerVar', '5')
-        ],
-        controls: controlWithCondition('%$innerVar% == \"5\"', label('innerVar'))
+      controls: controlWithCondition('%$innerVar% == \"5\"', label('innerVar')),
+      features: [group.firstSucceeding(), variable({name: 'innerVar', value: '5'})]
     }),
     expectedResult: contains('innerVar')
   })
 })
 
-jb.component('ui-test.control.first-succeeding-default', {
+jb.component('ui-test.control.first-succeeding-default', { /* uiTest.control.firstSucceedingDefault */
   impl: uiTest({
     control: group({
-      features: group.firstSucceeding(),
       controls: [
         controlWithCondition(false, label('female')),
         label('defaultCtrl')
-      ]
+      ],
+      features: group.firstSucceeding()
     }),
     expectedResult: contains('defaultCtrl')
   })
 })
 
-jb.component('ui-test.control.first-succeeding-without-condition', {
+jb.component('ui-test.control.first-succeeding-without-condition', { /* uiTest.control.firstSucceedingWithoutCondition */
   impl: uiTest({
     control: group({
-      features: group.firstSucceeding(),
       controls: [
         label('withoutCondition'),
-        controlWithCondition(true, label('female')),
-      ]
+        controlWithCondition(true, label('female'))
+      ],
+      features: group.firstSucceeding()
     }),
     expectedResult: contains('withoutCondition')
   })
 })
 
-jb.component('ui-test.first-succeeding-watchable-sample', { // firstSucceedingWatchableSample
+jb.component('ui-test.first-succeeding-watchable-sample', { /* uiTest.firstSucceedingWatchableSample */
   type: 'control',
   impl: group({
     controls: [
-      editableText({databind: '%$gender%', oneWay: true}),
-      button({ title: 'female', action: writeValue('%$gender%', 'female'), features: id('female') }),
-      button({ title: 'zee', action: writeValue('%$gender%', 'zee'), features: id('zee') }),
-      button({ title: 'male', action: writeValue('%$gender%', 'male'), features: id('male') }),
+      editableText({databind: '%$gender%'}),
+      button({
+        title: 'female',
+        action: writeValue('%$gender%', 'female'),
+        features: id('female')
+      }),
+      button({
+        title: 'zee',
+        action: writeValue('%$gender%', 'zee'),
+        features: id('zee')
+      }),
+      button({
+        title: 'male',
+        action: writeValue('%$gender%', 'male'),
+        features: id('male')
+      }),
       group({
         controls: [
           controlWithCondition('%$gender% == \"male\"', text('a male')),
           text('not male')
         ],
-        features: [ group.firstSucceeding(), watchRef('%$gender%') ]
+        features: [group.firstSucceeding(), watchRef('%$gender%')]
       })
     ],
     features: variable({name: 'gender', value: 'male', watchable: true})
@@ -1432,16 +1439,16 @@ jb.component('ui-test.first-succeeding.watch-refresh-on-ctrl-change', { /* uiTes
   })
 })
 
-jb.component('ui-test.first-succeeding.same-does-not-recreate', { 
+jb.component('ui-test.first-succeeding.same-does-not-recreate', { /* uiTest.firstSucceeding.sameDoesNotRecreate */
   impl: uiTest({
     control: uiTest.firstSucceedingWatchableSample(),
-    action: [uiAction.click('#female'),uiAction.click('#zee')],
+    action: [uiAction.click('#female'), uiAction.click('#zee')],
     expectedResult: contains('not male'),
     expectedCounters: {renderVdom: 9}
   })
 })
 
-jb.component('ui-test.first-succeeding.watch-refresh-on-ctrl-change-and-back', { 
+jb.component('ui-test.first-succeeding.watch-refresh-on-ctrl-change-and-back', { /* uiTest.firstSucceeding.watchRefreshOnCtrlChangeAndBack */
   impl: uiTest({
     control: uiTest.firstSucceedingWatchableSample(),
     action: runActions(uiAction.click('#female'), uiAction.click('#male')),
@@ -1450,15 +1457,16 @@ jb.component('ui-test.first-succeeding.watch-refresh-on-ctrl-change-and-back', {
   })
 })
 
-jb.component('ui-test.watchRef.recalcVars', { 
+jb.component('ui-test.watchRef.recalcVars', { /* uiTest.watchRef.recalcVars */
   impl: uiTest({
-    control: label({text: '%$changed%',
-          features: [
-            variable({name: 'changed', value: '--%$person/name%--'}),
-            watchRef({ ref: '%$person/name%', recalcVars: true})
-          ]
+    control: label({
+      text: '%$changed%',
+      features: [
+        variable({name: 'changed', value: '--%$person/name%--'}),
+        watchRef('%$person/name%')
+      ]
     }),
-    action: writeValue('%$person/name%','hello'),
+    action: writeValue('%$person/name%', 'hello'),
     expectedResult: contains('--hello--')
   })
 })
@@ -1493,22 +1501,29 @@ jb.component('ui-test.check-box-with-text', { /* uiTest.checkBoxWithText */
   })
 })
 
-jb.component('ui-test.hidden-ref-bug', { 
+jb.component('ui-test.hidden-ref-bug', { /* uiTest.hiddenRefBug */
   impl: uiTest({
     control: group({
-    controls: label({text: 'hey', features: hidden('%$hidden%')}),
-    features: variable({name: 'hidden', watchable: true})
+      controls: label({text: 'hey', features: hidden('%$hidden%')}),
+      features: variable({name: 'hidden', watchable: true})
     }),
-    expectedResult: contains('display:none'),
+    expectedResult: contains('display:none')
   })
 })
 
-jb.component('ui-test.css-dynamic', { 
+jb.component('ui-test.css-dynamic', { /* uiTest.cssDynamic */
   impl: uiTest({
     control: group({
       controls: [
-        label({text: '%$color%', features: [css.dynamic('{ color: %$color% }'), id('label')] }),
-        button({title: 'green', action: writeValue('%$color%', 'green'), features: id('green')}),
+        label({
+          text: '%$color%',
+          features: [css.dynamic('{ color: %$color% }'), id('label')]
+        }),
+        button({
+          title: 'green',
+          action: writeValue('%$color%', 'green'),
+          features: id('green')
+        }),
         button({title: 'blue', action: writeValue('%$color%', 'blue')})
       ],
       features: variable({name: 'color', value: 'blue', watchable: true})
@@ -1518,85 +1533,94 @@ jb.component('ui-test.css-dynamic', {
   })
 })
 
-jb.component('ui-test.css-with-condition', { 
+jb.component('ui-test.css-with-condition', { /* uiTest.cssWithCondition */
   impl: uiTest({
     control: group({
       controls: [
-        label({text: '%$color%', features: [
-          css.dynamic('{ color: %$color% }'),
-          css.withCondition('%$color%==blue', '{background: white}'), 
-          css.withCondition('%$color%==green', '{background: grey}'), 
-          id('label')
-        ]}),
-        button({title: 'green', action: writeValue('%$color%', 'green'), features: id('green')}),
+        label({
+          text: '%$color%',
+          features: [
+            css.dynamic('{ color: %$color% }'),
+            css.withCondition('%$color%==blue', '{background: white}'),
+            css.withCondition('%$color%==green', '{background: grey}'),
+            id('label')
+          ]
+        }),
+        button({
+          title: 'green',
+          action: writeValue('%$color%', 'green'),
+          features: id('green')
+        }),
         button({title: 'blue', action: writeValue('%$color%', 'blue')})
       ],
       features: variable({name: 'color', value: 'blue', watchable: true})
     }),
     action: uiAction.click('#green'),
-    expectedResult: pipeline(ctx => jb.ui.cssOfSelector('#label',ctx), contains(['color: green','grey']))
+    expectedResult: pipeline(
+      ctx => jb.ui.cssOfSelector('#label',ctx),
+      contains(['color: green', 'grey'])
+    )
   })
 })
 
-jb.component('ui-test.validator', { 
+jb.component('ui-test.validator', { /* uiTest.validator */
   impl: uiTest({
     control: group({
       controls: [
         editableText({
           databind: '%$person/name%',
-          features: [
-            id('fld'),
-            validation(matchRegex('^[a-zA-Z_0-9]+$'),'invalid project name')
-          ]
-        }),
+          features: [id('fld'), validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid project name')]
+        })
       ],
-      features: variable({name: 'formContainer', value: obj(prop('err',''))})
+      features: variable({name: 'formContainer', value: obj(prop('err', ''))})
     }),
-    action: uiAction.setText('a b','#fld'),
+    action: uiAction.setText('a b', '#fld'),
     expectedResult: contains('invalid project name')
   })
 })
 
-jb.component('ui-test.watchable-variable-as-proxy', { 
+jb.component('ui-test.watchable-variable-as-proxy', { /* uiTest.watchableVariableAsProxy */
   impl: uiTest({
-    control: group({
-      features: variable({name: 'link', value: '%$person%', watchable: true})
-    }),
+    control: group({features: variable({name: 'link', value: '%$person%', watchable: true})}),
     expectedResult: ctx => jb.resources[Object.keys(jb.resources).filter(x=>x.match(/link:[0-9]*/))[0]][Symbol.for("isProxy")]
   })
 })
 
 
-jb.component('ui-test.watchable-link-write-original-watch-link', { 
+jb.component('ui-test.watchable-link-write-original-watch-link', { /* uiTest.watchableLinkWriteOriginalWatchLink */
   impl: uiTest({
     control: group({
       controls: [
-        text({text: '%$person/name%' }),
-        text({text: '%$link/name%' }),
+        text('%$person/name%'),
+        text('%$link/name%')
       ],
       features: variable({name: 'link', value: '%$person%', watchable: true})
     }),
-    action: writeValue('%$person/name%','hello'),
-    expectedResult: contains(['hello','hello'])
+    action: writeValue('%$person/name%', 'hello'),
+    expectedResult: contains(['hello', 'hello'])
   })
 })
 
-jb.component('ui-test.watchable-write-via-link', { 
+jb.component('ui-test.watchable-write-via-link', { /* uiTest.watchableWriteViaLink */
   impl: uiTest({
     control: group({
       controls: [
-        text({text: '%$person/name%' }),
-        text({text: '%$link/name%' }),
-        button({title: 'set', action: writeValue('%$link/name%','hello'), features: id('set')})
+        text('%$person/name%'),
+        text('%$link/name%'),
+        button({
+          title: 'set',
+          action: writeValue('%$link/name%', 'hello'),
+          features: id('set')
+        })
       ],
       features: variable({name: 'link', value: '%$person%', watchable: true})
     }),
     action: uiAction.click('#set'),
-    expectedResult: contains(['hello','hello'])
+    expectedResult: contains(['hello', 'hello'])
   })
 })
 
-// jb.component('ui-test.watchable-override-link-val', { 
+// jb.component('ui-test.watchable-override-link-val', {
 //   impl: uiTest({
 //     control: group({
 //       controls: [
@@ -1611,118 +1635,155 @@ jb.component('ui-test.watchable-write-via-link', {
 //   })
 // })
 
-jb.component('ui-test.watchable-parent-refresh-mask-children', { 
+jb.component('ui-test.watchable-parent-refresh-mask-children', { /* uiTest.watchableParentRefreshMaskChildren */
   impl: uiTest({
-    control: group({
-      controls: text({text: '%$person/name%' }),
-      features: watchRef('%$person/name%')
-    }),
-    action: writeValue('%$person/name%','hello'),
+    control: group({controls: text('%$person/name%'), features: watchRef('%$person/name%')}),
+    action: writeValue('%$person/name%', 'hello'),
     expectedResult: contains('hello'),
-    expectedCounters: { notifyObservableElem: 1 }
+    expectedCounters: {notifyObservableElem: 1}
   })
 })
 
-jb.component('ui-test.watchable-url', { 
+jb.component('ui-test.watchable-url', { /* uiTest.watchableUrl */
   impl: uiTest({
     control: text('%$person/name%'),
-    expectedResult: contains('observe="resources://2~name;person~name'),
+    expectedResult: contains('observe=\"resources://2~name;person~name')
   })
 })
 
-jb.component('ui-test.itemlist-with-group-wait', { 
+jb.component('ui-test.itemlist-with-group-wait', { /* uiTest.itemlistWithGroupWait */
   impl: uiTest({
     control: itemlist({
-      items: '%$items%', 
+      items: '%$items%',
       controls: label('%name%'),
-      features: group.wait({
-        for: pipe(delay(1),()=>[{name: 'homer'}]),
-        varName: 'items'
-      }),
+      features: group.wait({for: pipe(delay(1), ()=>[{name: 'homer'}]), varName: 'items'})
     }),
     action: delay(20),
-    expectedResult: contains('homer'),
+    expectedResult: contains('homer')
   })
 })
 
-jb.component('ui-test.watchable-ref-to-inner-elements-when-value-is-empty', { 
+jb.component('ui-test.watchable-ref-to-inner-elements-when-value-is-empty', { /* uiTest.watchableRefToInnerElementsWhenValueIsEmpty */
   impl: uiTest({
     control: group({
       controls: [
-        text({text: '%$selected/name%' }), // initialized when selected is empty
-        button({title: 'set', action: writeValue('%$selected%',obj(prop('name','hello'))), features: id('set')})
+        text('%$selected/name%'),
+        button({
+          title: 'set',
+          action: writeValue('%$selected%', obj(prop('name', 'hello'))),
+          features: id('set')
+        })
       ],
       features: variable({name: 'selected', watchable: true})
     }),
     action: uiAction.click('#set'),
-    expectedResult: true //contains('hello'),
+    expectedResult: true
   })
 })
 
 const h = jb.ui.h
 
-jb.component('ui-test.apply-vdom-diff-text', { 
-  impl: uiTest.applyVdomDiff({
-    controlBefore: ctx => h('div',{},'aa'),
-    control: ctx => h('div',{},'bb'),
-  })
+jb.component('ui-test.apply-vdom-diff-text', { /* uiTest.applyVdomDiffText */
+  impl: uiTest.applyVdomDiff(
+    ctx => h('div',{},'aa'),
+    ctx => h('div',{},'bb')
+  )
 })
 
-jb.component('ui-test.apply-vdom-diff-tag', { 
-  impl: uiTest.applyVdomDiff({
-    controlBefore: ctx => h('span',{},'aa'),
-    control: ctx => h('div',{},'bb'),
-  })
+jb.component('ui-test.apply-vdom-diff-tag', { /* uiTest.applyVdomDiffTag */
+  impl: uiTest.applyVdomDiff(
+    ctx => h('span',{},'aa'),
+    ctx => h('div',{},'bb')
+  )
 })
 
-jb.component('ui-test.apply-vdom-diff-to-text', { 
-  impl: uiTest.applyVdomDiff({
-    controlBefore: ctx => h('div',{},'aa'),
-    control: ctx => 'aa',
-  })
+jb.component('ui-test.apply-vdom-diff-to-text', { /* uiTest.applyVdomDiffToText */
+  impl: uiTest.applyVdomDiff(
+    ctx => h('div',{},'aa'),
+    ctx => 'aa'
+  )
 })
 
-jb.component('ui-test.apply-vdom-diff-mixed', { 
-  impl: uiTest.applyVdomDiff({
-    controlBefore: ctx => h('div',{},'aa'),
-    control: ctx => h('div',{},h('div',{},'bb')),
-  })
+jb.component('ui-test.apply-vdom-diff-mixed', { /* uiTest.applyVdomDiffMixed */
+  impl: uiTest.applyVdomDiff(
+    ctx => h('div',{},'aa'),
+    ctx => h('div',{},h('div',{},'bb'))
+  )
 })
 
-jb.component('ui-test.apply-vdom-diff-mixed2', { 
-  impl: uiTest.applyVdomDiff({
-    controlBefore: ctx => h('div',{},h('div',{},'bb')),
-    control: ctx => h('div',{},'aa'),
-  })
+jb.component('ui-test.apply-vdom-diff-mixed2', { /* uiTest.applyVdomDiffMixed2 */
+  impl: uiTest.applyVdomDiff(
+    ctx => h('div',{},h('div',{},'bb')),
+    ctx => h('div',{},'aa')
+  )
 })
 
-jb.component('ui-test.apply-vdom-diff-DD-tree1', { 
-  impl: uiTest.applyVdomDiff({
-    controlBefore: group({controls: [ 
-      text('0'), 
-      text('1'), 
-        group({controls: [ text('1.1'), text('1.2')] }), 
-        text('2')] 
+jb.component('ui-test.apply-vdom-diff-DD-tree1', { /* uiTest.applyVdomDiffDDTree1 */
+  impl: uiTest.applyVdomDiff(
+    group({
+      controls: [
+        text('0'),
+        text('1'),
+        group({
+          controls: [
+            text('1.1'),
+            text('1.2')
+          ]
+        }),
+        text('2')
+      ]
     }),
-    control: group({controls: [ 
-      text('1'), 
-      group({controls: [ text('0'), text('1.1'), text('1.2')] }), 
-      text('2')] 
-    }),
-  })
+    group({
+      controls: [
+        text('1'),
+        group({
+          controls: [
+            text('0'),
+            text('1.1'),
+            text('1.2')
+          ]
+        }),
+        text('2')
+      ]
+    })
+  )
 })
 
-jb.component('ui-test.apply-vdom-diff-DD-tree2', { 
-  impl: uiTest.applyVdomDiff({
-    controlBefore: h('div',{},[
-      '0','1',
-      h('div',{},[ '1.1','1.2' ]),
-      '2'
-    ]),
-    control: h('div',{},[
-      '1',
-      h('div',{},[ '0','1.1','1.2' ]),
-      '2'
-    ])
-  })
+jb.component('ui-test.apply-vdom-diff-DD-tree2', { /* uiTest.applyVdomDiffDDTree2 */
+  impl: uiTest.applyVdomDiff(
+    {
+      tag: 'div',
+      attributes: {},
+      children: [
+        {tag: 'span', attributes: text('0'), children: undefined},
+        {tag: 'span', attributes: text('1'), children: undefined},
+        {
+          tag: 'div',
+          attributes: {},
+          children: [
+            {tag: 'span', attributes: text('1.1'), children: undefined},
+            {tag: 'span', attributes: text('1.2'), children: undefined}
+          ]
+        },
+        {tag: 'span', attributes: text('2'), children: undefined}
+      ]
+    },
+    {
+      tag: 'div',
+      attributes: {},
+      children: [
+        {tag: 'span', attributes: text('1'), children: undefined},
+        {
+          tag: 'div',
+          attributes: {},
+          children: [
+            {tag: 'span', attributes: text('0'), children: undefined},
+            {tag: 'span', attributes: text('1.1'), children: undefined},
+            {tag: 'span', attributes: text('1.2'), children: undefined}
+          ]
+        },
+        {tag: 'span', attributes: text('2'), children: undefined}
+      ]
+    }
+  )
 })

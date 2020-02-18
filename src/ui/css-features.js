@@ -11,7 +11,7 @@ jb.component('css', { /* css */
   impl: (ctx,css) => ({css: fixCssLine(css)})
 })
 
-jb.component('css.dynamic', {
+jb.component('css.dynamic', { /* css.dynamic */
   description: 'recalc the css on refresh/watchRef. e.g. {color: %$color%}',
   type: 'feature,dialog-feature',
   params: [
@@ -20,11 +20,11 @@ jb.component('css.dynamic', {
   impl: (ctx,css) => ({dynamicCss: ctx2 => css(ctx2)})
 })
 
-jb.component('css.with-condition', {
+jb.component('css.with-condition', { /* css.withCondition */
   description: 'css with dynamic condition. e.g. .myclz {color: red}',
   type: 'feature,dialog-feature',
   params: [
-    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true},
+    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true, type: 'boolean'},
     {id: 'css', mandatory: true, as: 'string', dynamic: true}
   ],
   impl: (ctx,cond,css) => ({dynamicCss: ctx2 => cond(ctx2) ? fixCssLine(css(ctx2)) : ''})
@@ -65,7 +65,7 @@ jb.component('css.height', { /* css.height */
 jb.component('css.opacity', { /* css.opacity */
   type: 'feature',
   params: [
-    {id: 'opacity', mandatory: true, as: 'string' , description: '0-1'},
+    {id: 'opacity', mandatory: true, as: 'string', description: '0-1'},
     {id: 'selector', as: 'string'}
   ],
   impl: (ctx,opacity) =>
@@ -145,12 +145,12 @@ jb.component('css.transform-scale', { /* css.transformScale */
   impl: ctx => ({css: `${ctx.params.selector} {transform:scale(${ctx.params.x},${ctx.params.y})}`})
 })
 
-jb.component('css.bold', { 
+jb.component('css.bold', { /* css.bold */
   type: 'feature',
   impl: ctx => ({css: `{font-weight: bold}`})
 })
 
-jb.component('css.underline', { 
+jb.component('css.underline', { /* css.underline */
   type: 'feature',
   impl: ctx => ({css: `{text-decoration: underline}`})
 })
@@ -178,12 +178,7 @@ jb.component('css.border', { /* css.border */
   params: [
     {id: 'width', as: 'string', defaultValue: '1'},
     {id: 'side', as: 'string', options: 'top,left,bottom,right'},
-    {
-      id: 'style',
-      as: 'string',
-      options: 'solid,dotted,dashed,double,groove,ridge,inset,outset',
-      defaultValue: 'solid'
-    },
+    {id: 'style', as: 'string', options: 'solid,dotted,dashed,double,groove,ridge,inset,outset', defaultValue: 'solid'},
     {id: 'color', as: 'string', defaultValue: 'black'},
     {id: 'selector', as: 'string'}
   ],
@@ -191,14 +186,16 @@ jb.component('css.border', { /* css.border */
     ({css: `${selector} { border${side?'-'+side:''}: ${withUnits(width)} ${style} ${color} }`})
 })
 
-jb.component('css.line-clamp', {
+jb.component('css.line-clamp', { /* css.lineClamp */
   type: 'feature',
   description: 'ellipsis after X lines',
   params: [
-    {id: 'lines', mandatory: true, as: 'string' , templateValue: 3, description: 'no of lines to clump'},
+    {id: 'lines', mandatory: true, as: 'string', templateValue: 3, description: 'no of lines to clump'},
     {id: 'selector', as: 'string'}
   ],
-  impl: css('%$selector% { overflow: hidden; text-overflow: ellipsis; -webkit-box-orient: vertical; display: -webkit-box; -webkit-line-clamp: %$lines% }')
+  impl: css(
+    '%$selector% { overflow: hidden; text-overflow: ellipsis; -webkit-box-orient: vertical; display: -webkit-box; -webkit-line-clamp: %$lines% }'
+  )
 })
 
 })()

@@ -5,13 +5,14 @@ jb.component('studio.watchable-or-passive', { /* studio.watchableOrPassive */
   impl: (ctx,path) => path.match(/~watchable/) ? 'Watchable' : 'Passive'
 })
 
-jb.component('studio.copy-data-resource-to-comp', {
+jb.component('studio.copy-data-resource-to-comp', { /* studio.copyDataResourceToComp */
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
     {id: 'name', as: 'string'}
   ],
-  impl: writeValue(studio.profileAsText('%$path%'),
+  impl: writeValue(
+    studio.profileAsText('%$path%'),
     (ctx,vars,{name}) => jb.prettyPrint(new jb.studio.previewjb.jbCtx().exp('%$'+name+'%'))
   )
 })
@@ -67,12 +68,18 @@ jb.component('studio.open-new-resource', { /* studio.openNewResource */
     }),
     title: 'New %$watchableOrPassive% Data Source',
     onOK: [
-      studio.newComp('data-resource.%$name%',
-        obj(prop('%$watchableOrPassive%Data', `put your data here.
+      studio.newComp(
+        'data-resource.%$name%',
+        obj(
+          prop(
+              '%$watchableOrPassive%Data',
+              `put your data here.
 E.g.
 hello world
 [1,2,3]
-{ x: 7, y: 3}`))
+{ x: 7, y: 3}`
+            )
+        )
       ),
       studio.openResource('data-resource.%$name%~%$watchableOrPassive%Data', '%$name%')
     ],

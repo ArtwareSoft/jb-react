@@ -6,8 +6,8 @@ jb.component('button', { /* button */
   params: [
     {id: 'title', as: 'ref', mandatory: true, templateValue: 'click me', dynamic: true},
     {id: 'action', type: 'action', mandatory: true, dynamic: true},
-    {id: 'style', type: 'button.style', defaultValue: button.mdc(), dynamic: true },
-    {id: 'raised', as: 'boolean', dynamic: true},
+    {id: 'style', type: 'button.style', defaultValue: button.mdc(), dynamic: true},
+    {id: 'raised', as: 'boolean', dynamic: true, type: 'boolean'},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx, ctx.run(features(
@@ -34,7 +34,9 @@ jb.component('ctrl-action', { /* ctrlAction */
   params: [
     {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
-  impl: interactive( (ctx,{cmp},{action}) => cmp.ctrlAction = jb.ui.wrapWithLauchingElement(action, ctx, cmp.base))
+  impl: interactive(
+    (ctx,{cmp},{action}) => cmp.ctrlAction = jb.ui.wrapWithLauchingElement(action, ctx, cmp.base)
+  )
 })
 
 jb.component('alt-action', { /* altAction */
@@ -44,7 +46,9 @@ jb.component('alt-action', { /* altAction */
   params: [
     {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
-  impl: interactive( (ctx,{cmp},{action}) => cmp.altAction = jb.ui.wrapWithLauchingElement(action, ctx, cmp.base))
+  impl: interactive(
+    (ctx,{cmp},{action}) => cmp.altAction = jb.ui.wrapWithLauchingElement(action, ctx, cmp.base)
+  )
 })
 
 jb.component('button-disabled', { /* buttonDisabled */
@@ -54,5 +58,7 @@ jb.component('button-disabled', { /* buttonDisabled */
   params: [
     {id: 'enabledCondition', type: 'boolean', mandatory: true, dynamic: true}
   ],
-  impl: interactive( (ctx,{cmp},{enabledCondition}) => cmp.isEnabled = ctx2 => enabledCondition(ctx.extendVars(ctx2)))
+  impl: interactive(
+    (ctx,{cmp},{enabledCondition}) => cmp.isEnabled = ctx2 => enabledCondition(ctx.extendVars(ctx2))
+  )
 })

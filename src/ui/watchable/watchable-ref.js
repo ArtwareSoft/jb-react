@@ -306,7 +306,7 @@ class WatchableValueByRef {
     if (!this.isPrimitiveArray(ref.$jb_obj)) return
     const arrayId = ref.$jb_obj[jbId]
     const deltas = this.primitiveArraysDeltas[arrayId] || []
-    deltas.slice(ref.$jb_delta_version).forEach(group => { 
+    deltas.slice(ref.$jb_delta_version).forEach(group => {
         if (group.fromIndex != undefined && group.fromIndex === ref.$jb_childProp) { // move
           ref.$jb_childProp = group.toIndex
           if (group.toArray)
@@ -320,7 +320,7 @@ class WatchableValueByRef {
           } else if (ref.$jb_childProp >= from) {
             ref.$jb_childProp = ref.$jb_childProp - toDelete + (toAdd != null) ? 1 : 0
           }
-        }) 
+        })
     })
     ref.$jb_delta_version = deltas.length
   }
@@ -346,7 +346,7 @@ class WatchableValueByRef {
       const key = this.pathOfRef(req.ref).join('~') + ' : ' + ctx.path
       const recycleCounter = req.cmpOrElem.getAttribute && +(req.cmpOrElem.getAttribute('recycleCounter') || 0)
       const obs = { ...req, subject, key, recycleCounter, ctx }
-      
+
       this.observables.push(obs);
       this.observables.sort((e1,e2) => jb.ui.comparePaths(e1.ctx.path, e2.ctx.path))
       jb.log('registerCmpObservable',[obs])
@@ -360,7 +360,7 @@ class WatchableValueByRef {
       const observablesToUpdate = this.observables.slice(0) // this.observables array may change in the notification process !!
       const changed_path = this.removeLinksFromPath(this.pathOfRef(e.ref))
       if (changed_path) observablesToUpdate.forEach(obs=> {
-        const isOld = obs.cmpOrElem.NodeType && (+obs.cmpOrElem.getAttribute('recycleCounter')) > obs.recycleCounter 
+        const isOld = obs.cmpOrElem.NodeType && (+obs.cmpOrElem.getAttribute('recycleCounter')) > obs.recycleCounter
         if (obs.cmpOrElem._destroyed || isOld) {
           if (this.observables.indexOf(obs) != -1) {
             jb.log('removeCmpObservable',[obs])
@@ -442,7 +442,7 @@ jb.ui.resourceChange = () => jb.mainWatchableHandler.resourceChange;
 jb.component('run-transaction', { /* runTransaction */
   type: 'action',
   params: [
-    {id: 'actions', type: 'action[]', dynamic: true, composite: true, mandatory: true, defaultValue: [] },
+    {id: 'actions', type: 'action[]', dynamic: true, composite: true, mandatory: true, defaultValue: []},
     {id: 'disableNotifications', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,actions,disableNotifications) => {

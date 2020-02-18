@@ -128,7 +128,7 @@ jb.component('studio.style-editor', { /* studio.styleEditor */
               studio.jbEditor('%$path%')
             ]
           })
-        ],
+        ]
       })
     ]
   })
@@ -170,7 +170,7 @@ jb.component('studio.open-style-editor', { /* studio.openStyleEditor */
   })
 })
 
-jb.component('studio.style-editor-options', { /* studio.styleEditorOptions */ 
+jb.component('studio.style-editor-options', { /* studio.styleEditorOptions */
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}

@@ -66,9 +66,10 @@ jb.component('studio.editable-source', { /* studio.editableSource */
       }
     }),
     features: [
-      interactive((ctx,{cmp}) => ctx.vars.$dialog.refresh = () => cmp.refresh && cmp.refresh()),
-      feature.onKey('Ctrl-I', studio.openJbEditor('%$path%')),
-      //textEditor.init()
+      interactive(
+        (ctx,{cmp}) => ctx.vars.$dialog.refresh = () => cmp.refresh && cmp.refresh()
+      ),
+      feature.onKey('Ctrl-I', studio.openJbEditor('%$path%'))
     ]
   })
 })
@@ -103,7 +104,7 @@ jb.component('studio.view-all-files', { /* studio.viewAllFiles */
         picklist({
           databind: '%$file%',
           options: picklist.options(keys('%$content/files%')),
-          style: picklist.horizontalButtons()
+          style: {'$': 'picklist.horizontal-buttons', '$byValue': []}
         }),
         editableText({
           title: '',
@@ -405,7 +406,7 @@ jb.component('source-editor.suggestions-itemlist', { /* sourceEditor.suggestions
   })
 })
 
-jb.component('source-editor.files-of-project', {
+jb.component('source-editor.files-of-project', { /* sourceEditor.filesOfProject */
   impl: ctx => {
     if (jb.studio.inMemoryProject)
       return Object.keys(jb.studio.inMemoryProject.files)
@@ -423,21 +424,15 @@ jb.component('studio.github-helper', { /* studio.githubHelper */
           title: 'properties',
           layout: layout.flex({spacing: '100'}),
           controls: [
-            editableText({
-              title: 'github username',
-              databind: '%$properties/username%',
-            }),
-            editableText({
-              title: 'github repository',
-              databind: '%$properties/repository%',
-            })
+            editableText({title: 'github username', databind: '%$properties/username%'}),
+            editableText({title: 'github repository', databind: '%$properties/repository%'})
           ]
         }),
         group({
           controls: [
             group({
               title: 'share urls',
-              layout: layout.flex({spacing: '', justifyContent: 'flex-start'}),
+              layout: layout.flex({justifyContent: 'flex-start', spacing: ''}),
               controls: [
                 html({
                   title: 'share link',
@@ -472,7 +467,7 @@ jb.component('studio.github-helper', { /* studio.githubHelper */
                 picklist({
                   databind: '%$item%',
                   options: picklist.options(keys('%$content%')),
-                  style: picklist.horizontalButtons()
+                  style: {'$': 'picklist.horizontal-buttons', '$byValue': []}
                 }),
                 editableText({
                   databind: pipeline(

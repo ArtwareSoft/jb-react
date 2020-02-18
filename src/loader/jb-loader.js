@@ -27,8 +27,8 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/common-features.js',
         'src/ui/css-features.js',
 
-        'src/ui/group.js',
         'src/ui/text.js',
+        'src/ui/group.js',
         'src/ui/html.js',
         'src/ui/image.js',
         'src/ui/button.js',

@@ -1,17 +1,17 @@
 jb.ns('content-editable')
 
-jb.component('content-editable.open-toolbar', { // openToolbar
-    type: 'action',
-    params: [
-        {id: 'path', as: 'string'},
-    ],
-    impl: runActions(
-        writeValue('%$studio/profile_path%','%$path%'),
-        openDialog({
-            style: contentEditable.popupStyle(),
-            content: contentEditable.toolbar(),
-            //features: dialogFeature.onClose(contentEditable.deactivate())
-    }))
+jb.component('content-editable.open-toolbar', { /* contentEditable.openToolbar */
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: runActions(
+    writeValue('%$studio/profile_path%', '%$path%'),
+    openDialog({
+        style: contentEditable.popupStyle(),
+        content: contentEditable.toolbar()
+      })
+  )
 })
 
 // jb.component('content-editable.activation-icon', {
@@ -27,22 +27,24 @@ jb.component('content-editable.open-toolbar', { // openToolbar
 //   })
 // })
 
-jb.component('content-editable.popup-style', {
-    type: 'dialog.style',
-    impl: customStyle({
-      template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
-      css: `{ position: absolute; background: white; padding: 6px;
+jb.component('content-editable.popup-style', { /* contentEditable.popupStyle */
+  type: 'dialog.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
+    css: `{ position: absolute; background: white; padding: 6px;
               box-shadow: 2px 2px 3px #d5d5d5; border: 1px solid rgb(213, 213, 213); }
       `,
-      features: [
-        dialogFeature.uniqueDialog('content-editable-toolbar'),
-        dialogFeature.maxZIndexOnClick(),
-        dialogFeature.closeWhenClickingOutside(),
-        dialogFeature.nearLauncherPosition({offsetLeft: 100, offsetTop: ctx => 
+    features: [
+      dialogFeature.uniqueDialog('content-editable-toolbar'),
+      dialogFeature.maxZIndexOnClick(),
+      dialogFeature.closeWhenClickingOutside(),
+      dialogFeature.nearLauncherPosition({
+        offsetLeft: 100,
+        offsetTop: ctx =>
           jb.ui.studioFixYPos - jb.ui.computeStyle(jb.ui.contentEditable.current.base,'marginBottom')
-        })
-      ]
-   })
+      })
+    ]
+  })
 })
 
 jb.component('studio.open-toolbar-of-last-edit', { /* studio.openToolbarOfLastEdit */
@@ -75,7 +77,8 @@ jb.component('content-editable.toolbar', { /* contentEditable.toolbar */
     controls: [
       button({
         title: 'Change Style',
-        action: action.if(equals(studio.compName(studio.currentProfilePath()), 'image'),
+        action: action.if(
+          equals(studio.compName(studio.currentProfilePath()), 'image'),
           studio.openProperties(),
           studio.openPickProfile(
             join({separator: '~', items: list(studio.currentProfilePath(), 'style')})
@@ -83,11 +86,6 @@ jb.component('content-editable.toolbar', { /* contentEditable.toolbar */
         ),
         style: button.mdcIcon('style')
       }),
-      // button({
-      //   title: 'Edit Text',
-      //   action: () => jb.ui.contentEditable.current && jb.ui.contentEditable.current.refresh({contentEditableActive: true}),
-      //   style: button.mdcIcon('title')
-      // }),
       button({
         title: 'Insert Control',
         action: studio.openNewProfileDialog({
@@ -104,8 +102,13 @@ jb.component('content-editable.toolbar', { /* contentEditable.toolbar */
         features: feature.if('%$sourceItem%')
       }),
       button({
-        vars: Var('parentLayout', ctx =>
-          jb.studio.parents(ctx.run(studio.currentProfilePath())).find(path=> jb.studio.compNameOfPath(path) == 'group') + '~layout'),
+        vars: [
+          Var(
+            'parentLayout',
+            ctx =>
+          jb.studio.parents(ctx.run(studio.currentProfilePath())).find(path=> jb.studio.compNameOfPath(path) == 'group') + '~layout'
+          )
+        ],
         title: 'Layout',
         action: studio.openPickProfile('%$parentLayout%'),
         style: button.mdcIcon('view_quilt')
@@ -120,8 +123,8 @@ jb.component('content-editable.toolbar', { /* contentEditable.toolbar */
         action: studio.delete(studio.currentProfilePath()),
         style: button.mdcIcon('delete')
       })
-     ],
-    features: variable({name:'showTree', value: false, watchable: true})
+    ],
+    features: variable({name: 'showTree', value: false, watchable: true})
   })
 })
 
@@ -214,11 +217,11 @@ jb.ui.contentEditable = {
   },
 }
 
-jb.component('feature.content-editable', {
+jb.component('feature.content-editable', { /* feature.contentEditable */
   type: 'feature',
   description: 'studio editing behavior',
   params: [
-    {id: 'param', as: 'string', description: 'name of param mapped to the content editable element' },
+    {id: 'param', as: 'string', description: 'name of param mapped to the content editable element'}
   ],
   impl: (ctx,param) => ({
     afterViewInit: cmp => {

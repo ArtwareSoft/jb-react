@@ -1,7 +1,7 @@
 jb.component('studio.goto-project', { /* studio.gotoProject */
   type: 'action',
   params: [
-    {id: 'name', as: 'string'},
+    {id: 'name', as: 'string'}
   ],
   impl: runActions(
     gotoUrl(ctx => jb.studio.host.projectUrlInStudio(ctx.exp('%$name%')), 'new tab'),
@@ -37,7 +37,7 @@ jb.component('studio.choose-project', { /* studio.chooseProject */
       })
     ],
     features: [
-      group.wait({for: http.get('/?op=projects', 'true')}),
+      group.wait({for: http.get({url: '/?op=projects', json: 'true'})}),
       css.padding({top: '15', left: '15'}),
       group.itemlistContainer({})
     ]

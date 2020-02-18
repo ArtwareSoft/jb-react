@@ -32,14 +32,16 @@ jb.component('studio.properties', { /* studio.properties */
         }),
         style: tableTree.plain({hideHeaders: true, gapWidth: 100, noItemsCtrl: text('')}),
         features: [
-          css(`>tbody>tr>td.headline { vertical-align: inherit; margin-bottom: 7px; }
-            >tbody>tr>td>span>i { margin-bottom: 8px }`),
+          css(
+            `>tbody>tr>td.headline { vertical-align: inherit; margin-bottom: 7px; }
+            >tbody>tr>td>span>i { margin-bottom: 8px }`
+          ),
           studio.watchPath({
-          path: '%$path%',
-          includeChildren: 'structure',
-          allowSelfRefresh: true
-        })
-      ]
+            path: '%$path%',
+            includeChildren: 'structure',
+            allowSelfRefresh: true
+          })
+        ]
       }),
       button({
         title: 'new feature',
@@ -93,16 +95,20 @@ jb.component('studio.prop-field', { /* studio.propField */
           studio.propertyPrimitive('%$path%')
         ),
         controlWithCondition(
-          or('%$expanded%', isEmpty('%$val%'), not(studio.isOfType('%$path%', 'data,boolean'))),
+          or(
+            '%$expanded%',
+            isEmpty('%$val%'),
+            not(studio.isOfType('%$path%', 'data,boolean'))
+          ),
           studio.pickProfile('%$path%')
         ),
         studio.propertyScript('%$path%')
       ],
       features: [
         group.firstSucceeding(),
-        studio.watchPath({ path: '%$path%', includeChildren: 'yes', recalcVars: true }),
-        variable('paramDef', studio.paramDef('%$path%')),
-        variable('val', studio.val('%$path%'))
+        studio.watchPath({path: '%$path%', includeChildren: 'yes', recalcVars: true}),
+        variable({name: 'paramDef', value: studio.paramDef('%$path%')}),
+        variable({name: 'val', value: studio.val('%$path%')})
       ]
     }),
     features: [
@@ -165,7 +171,7 @@ jb.component('studio.property-boolean', { /* studio.propertyBoolean */
   ],
   impl: editableBoolean({
     databind: studio.ref('%$path%'),
-    style: editableBoolean.mdcSlideToggle(),
+    style: editableBoolean.mdcSlideToggle()
   })
 })
 
@@ -200,7 +206,7 @@ jb.component('studio.open-properties', { /* studio.openProperties */
   ],
   impl: openDialog({
     style: dialog.studioFloating({id: 'studio-properties', width: '500'}),
-    content: studio.properties(studio.currentProfilePath(),'%$focus%'),
+    content: studio.properties(studio.currentProfilePath(), '%$focus%'),
     title: pipeline(
       {
           '$': 'object',

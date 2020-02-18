@@ -633,12 +633,9 @@ const simpleValueByRefHandler = {
   },
   asRef(value) {
     return value
-    // if (value && (value.$jb_parent || value.$jb_val))
-    //     return value;
-    // return { $jb_val: () => value, $jb_path: () => [] }
   },
   isRef(value) {
-    return value && (value.$jb_parent || value.$jb_val);
+    return value && (value.$jb_parent || value.$jb_val || value.$jb_obj)
   },
   objectProperty(obj,prop) {
       if (this.isRef(obj[prop]))
@@ -666,7 +663,8 @@ Object.assign(jb,{
 
   component: (id,comp) => {
     try {
-      const line = new Error().stack.split(/\r|\n/).filter(x=>x && !x.match(/<anonymous>|about:blank/)).pop()
+      const errStack = new Error().stack.split(/\r|\n/)
+      const line = errStack.filter(x=>x && !x.match(/\)<anonymous>|about:blank|tgp-pretty.js|internal\/modules\/cjs/)).pop()
       comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3)
     
       if (comp.watchableData !== undefined) {
@@ -838,16 +836,16 @@ Object.assign(jb, {
 
         if (checkId(macroId))
             registerProxy(macroId)
-        if (nameSpace && checkId(nameSpace, true) && !frame[nameSpace]) {
+        if (nameSpace && checkId(nameSpace, true) && !jb.frame[nameSpace]) {
             registerProxy(nameSpace, true)
             jb.macroNs[nameSpace] = true
         }
 
         function registerProxy(proxyId) {
-            frame[proxyId] = new Proxy(() => 0, {
+            jb.frame[proxyId] = new Proxy(() => 0, {
                 get: (o, p) => {
                     if (typeof p === 'symbol') return true
-                    return frame[proxyId + '_' + p] || genericMacroProcessor(proxyId, p)
+                    return jb.frame[proxyId + '_' + p] || genericMacroProcessor(proxyId, p)
                 },
                 apply: function (target, thisArg, allArgs) {
                     const { args, system } = splitSystemArgs(allArgs)
@@ -872,13 +870,13 @@ Object.assign(jb, {
         }
 
         function checkId(macroId, isNS) {
-            if (frame[macroId] && !frame[macroId][jb.macroDef]) {
+            if (jb.frame[macroId] && !jb.frame[macroId][jb.macroDef]) {
                 jb.logError(macroId + ' is reserved by system or libs. please use a different name')
                 return false
             }
-            if (frame[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$dummyComp$/))
+            if (jb.frame[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$dummyComp$/))
                 jb.logError(macroId + ' is defined more than once, using last definition ' + id)
-            // if (frame[macroId] !== undefined && !isNS && jb.macroNs[macroId])
+            // if (jb.frame[macroId] !== undefined && !isNS && jb.macroNs[macroId])
             //     jb.logError(macroId + ' is already defined as ns, using last definition ' + id)
             return true;
         }
@@ -1368,7 +1366,7 @@ jb.component('obj', { /* obj */
     {id: 'props', type: 'prop[]', mandatory: true, sugar: true}
   ],
   impl: (ctx,properties) =>
-		Object.assign({}, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)])))
+		jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)]))
 })
 
 jb.component('extend', { /* extend */
@@ -1402,6 +1400,17 @@ jb.component('prop', { /* prop */
   ],
   impl: ctx => ctx.params
 })
+
+jb.component('ref-prop', { /* refProp */
+  type: 'prop',
+  description: 'value by reference allows to change or watch the value',
+  params: [
+    {id: 'title', as: 'string', mandatory: true},
+    {id: 'val', dynamic: true, as: 'ref', mandatory: true },
+  ],
+  impl: ctx => ({ ...ctx.params, type: 'ref' })
+})
+
 
 jb.component('pipeline.var', {
   type: 'aggregator',
@@ -2243,7 +2252,7 @@ initSpyByUrl()
 jb.component('pretty-print', { /* prettyPrint */
   params: [
     {id: 'profile', defaultValue: '%%'},
-    {id: 'colWidth', as: 'number', defaultValue: 140}
+    {id: 'forceFlat', as: 'boolean'}
   ],
   impl: (ctx,profile) => jb.prettyPrint(jb.val(profile),ctx.params)
 })
@@ -2268,7 +2277,7 @@ jb.prettyPrint.advanceLineCol = function({line,col},text) {
 }
 jb.prettyPrint.spaces = Array.from(new Array(200)).map(_=>' ').join('');
 
-jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath='',showNulls,comps} = {}) {
+jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath='',showNulls,comps,forceFlat} = {}) {
   comps = comps || jb.comps
   if (!val || typeof val !== 'object')
     return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
@@ -2308,7 +2317,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
     const result = processList(beforeClose, [{prop: '!close-newline', item: () => newLine(-1)}, ..._close])
 
     const unflat = shouldNotFlat(result)
-    if (!unflat && !flat)
+    if ((forceFlat || !unflat) && !flat)
       return joinVals(ctx, innerVals, open, close, true, isArray)
     return Object.assign(result,{unflat})
 
@@ -2317,7 +2326,9 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
     }
 
     function shouldNotFlat(result) {
-      const ctrls = path.match(/~controls$/) && Array.isArray(jb.studio.valOfPath(path)) // && innerVals.length > 1// jb.studio.isOfType(path,'control') && !arrayElem
+      const val = jb.studio.valOfPath(path)
+      if (path.match(/~params~[0-9]+$/)) return false
+      const ctrls = path.match(/~controls$/) && Array.isArray(val) // && innerVals.length > 1// jb.studio.isOfType(path,'control') && !arrayElem
       const customStyle = jb.studio.compNameOfPath && jb.studio.compNameOfPath(path) === 'customStyle'
       const top = (path.match(/~/g)||'').length < 2
       const long = result.text.replace(/\n\s*/g,'').length > colWidth

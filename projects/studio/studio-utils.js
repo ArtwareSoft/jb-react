@@ -67,7 +67,9 @@ jb.component('studio.last-edit', { /* studio.lastEdit */
 
 jb.component('studio.goto-last-edit', { /* studio.gotoLastEdit */
   type: 'action',
-  impl: studio.gotoPath(studio.lastEdit())
+  impl: studio.gotoPath(
+    studio.lastEdit()
+  )
 })
 
 jb.component('studio.comp-source', { /* studio.compSource */

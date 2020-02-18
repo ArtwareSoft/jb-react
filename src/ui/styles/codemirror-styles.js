@@ -8,12 +8,7 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
   params: [
     {id: 'cm_settings', as: 'single'},
     {id: 'enableFullScreen', type: 'boolean', as: 'boolean', defaultValue: true},
-    {
-      id: 'resizer',
-      type: 'boolean',
-      as: 'boolean',
-      description: 'resizer id or true (id is used to keep size in session storage)'
-    },
+    {id: 'resizer', type: 'boolean', as: 'boolean', description: 'resizer id or true (id is used to keep size in session storage)'},
     {id: 'height', as: 'string'},
     {id: 'mode', as: 'string'},
     {id: 'debounceTime', as: 'number', defaultValue: 300},
@@ -22,17 +17,21 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
     {id: 'readOnly', options: ',true,nocursor'},
     {id: 'onCtrlEnter', type: 'action', dynamic: true},
     {id: 'hint', as: 'boolean', type: 'boolean'},
-    {id: 'maxLength', as: 'number', defaultValue: 5000},
+    {id: 'maxLength', as: 'number', defaultValue: 5000}
   ],
   impl: features(
-	  calcProp('text','%$$model/databind%'),
-	  calcProp('textAreaAlternative', ({},{$props},{maxLength}) => $props.text.length > maxLength),
-	  ctx => ({ 
-		  template: (cmp,{text,textAreaAlternative},h) => 
+    calcProp({id: 'text', value: '%$$model/databind%'}),
+    calcProp({
+        id: 'textAreaAlternative',
+        value: ({},{$props},{maxLength}) => $props.text.length > maxLength
+      }),
+    ctx => ({
+		  template: (cmp,{text,textAreaAlternative},h) =>
 			textAreaAlternative ? h('textarea', {class: 'jb-textarea-alternative-for-codemirror', value: text })
 				: h('div',{},h('textarea', {class: 'jb-codemirror', value: text })),
 	  }),
-	  interactive( (ctx,{cmp},{cm_settings, _enableFullScreen, readOnly, onCtrlEnter, mode, debounceTime, lineWrapping, lineNumbers}) =>{
+    interactive(
+        (ctx,{cmp},{cm_settings, _enableFullScreen, readOnly, onCtrlEnter, mode, debounceTime, lineWrapping, lineNumbers}) =>{
 		if (jb.ui.hasClass(cmp.base, 'jb-textarea-alternative-for-codemirror')) return
 		try {
 			cmp.data_ref = cmp.ctx.vars.$model.databind()
@@ -83,7 +82,7 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 				replaceRange: (text, from, to) => editor.replaceRange(text, posToCM(from),posToCM(to)),
 				setSelectionRange: (from, to) => editor.setSelection(posToCM(from),posToCM(to)),
 				focus: () => editor.focus(),
-				formatComponent() { 
+				formatComponent() {
 					const {text, from, to} = jb.textEditor.formatComponent(editor.getValue(),this.getCursorPos(),cmp.data_ref.jbToUse)
 					this.replaceRange(text, from, to)
 				},
@@ -100,7 +99,7 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 					.filter(x => x != jb.tostring(jb.val(cmp.data_ref)))
 					.distinctUntilChanged()
 					.subscribe(x=>	jb.writeValue(cmp.data_ref,x, ctx));
-	
+
 				!cmp.data_ref.oneWay && jb.isWatchable(cmp.data_ref) && jb.ui.refObservable(cmp.data_ref,cmp,{srcCtx: ctx})
 					.map(e=>jb.tostring(jb.val(cmp.data_ref)))
 					.filter(x => x != editor.getValue())
@@ -119,10 +118,13 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 			jb.logException(e,'editable-text.codemirror',ctx);
 			return;
 		}
-	}),
-	css( ({},{},{height}) => `{width: 100%; ${jb.ui.propWithUnits('height',height)}}
+	}
+      ),
+    css(
+        ({},{},{height}) => `{width: 100%; ${jb.ui.propWithUnits('height',height)}}
 		>div { box-shadow: none !important}
-	`),
+	`
+      )
   )
 })
 
@@ -196,12 +198,7 @@ jb.component('text.codemirror', { /* text.codemirror */
   params: [
     {id: 'cm_settings', as: 'single'},
     {id: 'enableFullScreen', type: 'boolean', as: 'boolean', defaultValue: true},
-    {
-      id: 'resizer',
-      type: 'boolean',
-      as: 'boolean',
-      description: 'resizer id or true (id is used to keep size in session storage)'
-    },
+    {id: 'resizer', type: 'boolean', as: 'boolean', description: 'resizer id or true (id is used to keep size in session storage)'},
     {id: 'height', as: 'number'},
     {id: 'mode', as: 'string', options: 'htmlmixed,javascript,css'},
     {id: 'lineWrapping', as: 'boolean', type: 'boolean'}

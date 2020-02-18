@@ -5,12 +5,7 @@ jb.component('editable-boolean', { /* editableBoolean */
   category: 'input:20',
   params: [
     {id: 'databind', as: 'ref', type: 'boolean', mandaroy: true, dynamic: true, aa: 5},
-    {
-      id: 'style',
-      type: 'editable-boolean.style',
-      defaultValue: editableBoolean.checkbox(),
-      dynamic: true
-    },
+    {id: 'style', type: 'editable-boolean.style', defaultValue: editableBoolean.checkbox(), dynamic: true},
     {id: 'title', as: 'string', dynamic: true},
     {id: 'textForTrue', as: 'string', defaultValue: 'yes', dynamic: true},
     {id: 'textForFalse', as: 'string', defaultValue: 'no', dynamic: true},
@@ -27,7 +22,9 @@ jb.component('editable-boolean.keyboard-support', { /* editableBoolean.keyboardS
   type: 'feature',
   impl: feature.onEvent({
     event: 'click',
-    action: action.if(() => event.keyCode == 37 || event.keyCode == 39,
-      writeValue('%$$model/databind%',not('%$$model/databind%')))
+    action: action.if(
+      () => event.keyCode == 37 || event.keyCode == 39,
+      writeValue('%$$model/databind%', not('%$$model/databind%'))
+    )
   })
 })

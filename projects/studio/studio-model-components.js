@@ -201,10 +201,11 @@ jb.component('studio.profile-as-text', { /* studio.profileAsText */
   type: 'data',
   params: [
     {id: 'path', as: 'string'},
-    {id: 'oneWay', as: 'boolean', defaultValue: true}    
+    {id: 'oneWay', as: 'boolean', defaultValue: true, type: 'boolean'}
   ],
   impl: watchableAsText(
-    studio.ref('%$path%'), '%$oneWay%'
+    studio.ref('%$path%'),
+    '%$oneWay%'
   )
 })
 
@@ -446,7 +447,7 @@ jb.component('studio.disabled-support', { /* studio.disabledSupport */
   )
 })
 
-jb.component('studio.params-of-path', {
+jb.component('studio.params-of-path', { /* studio.paramsOfPath */
   type: 'tree.node-model',
   params: [
     {id: 'path', as: 'string'}

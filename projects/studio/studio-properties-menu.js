@@ -3,14 +3,13 @@ jb.component('studio.goto-path', { /* studio.gotoPath */
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: action.if('%$path%', runActions(
-    dialog.closeContainingPopup(),
-    writeValue('%$studio/profile_path%', '%$path%'),
-    // action.if(
-    //     studio.isOfType('%$path%', 'control,table-field'),
-    //     studio.openControlTree(true)
-    //   )
-  ))
+  impl: action.if(
+    '%$path%',
+    runActions(
+      dialog.closeContainingPopup(),
+      writeValue('%$studio/profile_path%', '%$path%')
+    )
+  )
 })
 
 jb.component('studio.open-property-menu', { /* studio.openPropertyMenu */
@@ -63,7 +62,7 @@ jb.component('studio.open-property-menu', { /* studio.openPropertyMenu */
   })
 })
 
-jb.component('studio.jb-editor-menu', { /* studio.jbEditorMenu */ 
+jb.component('studio.jb-editor-menu', { /* studio.jbEditorMenu */
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'},
@@ -162,7 +161,11 @@ jb.component('studio.jb-editor-menu', { /* studio.jbEditorMenu */
       ),
       studio.gotoEditorOptions('%$path%'),
       menu.studioWrapWith({path: '%$path%', type: 'control', components: list('group')}),
-      menu.studioWrapWith({path: '%$path%', type: 'style', components: list('style-with-features')}),
+      menu.studioWrapWith({
+        path: '%$path%',
+        type: 'style',
+        components: list('style-with-features')
+      }),
       menu.studioWrapWith({
         path: '%$path%',
         type: 'data',

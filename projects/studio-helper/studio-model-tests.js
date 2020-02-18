@@ -1,5 +1,7 @@
 jb.component('studio-data-test.list-for-tests', { /* studioDataTest.listForTests */
-  impl: list()
+  impl: list(
+
+  )
 })
 
 jb.component('studio-data-test.categories-of-type', { /* studioDataTest.categoriesOfType */
@@ -91,19 +93,27 @@ jb.component('studio-data-test.jb-editor-move', { /* studioDataTest.jbEditorMove
 })
 
 jb.component('test.set-sugar-comp-simple', { /* test.setSugarCompSimple */
-  impl: label({})
+  impl: label({
+    
+  })
 })
 
 jb.component('test.set-sugar-comp-wrap', { /* test.setSugarCompWrap */
-  impl: label('a')
+  impl: label(
+    'a'
+  )
 })
 
 jb.component('test.set-sugar-comp-override1', { /* test.setSugarCompOverride1 */
-  impl: label(pipeline('a', 'b'))
+  impl: label({
+    text: pipeline('a', 'b')
+  })
 })
 
 jb.component('test.set-sugar-comp-override2', { /* test.setSugarCompOverride2 */
-  impl: label(list('a', 'b'))
+  impl: label({
+    text: list('a', 'b')
+  })
 })
 
 jb.component('studio-data-test.set-sugar-comp-simple', { /* studioDataTest.setSugarCompSimple */

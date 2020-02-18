@@ -10,21 +10,21 @@ jb.component('studio.save-components', { /* studio.saveComponents */
     if (st.inMemoryProject) {
       const project = st.inMemoryProject.project, baseDir = st.inMemoryProject.baseDir
       const files = jb.objFromEntries(jb.entries(st.inMemoryProject.files)
-        .map(file=>[file[0],newFileContent(file[1], 
+        .map(file=>[file[0],newFileContent(file[1],
             st.changedComps().filter(comp=>locationOfComp(comp).indexOf(file[0]) != -1))
         ]))
-      
+
       const jsToInject = jb.entries(files).filter(e=>e[0].match(/js$/))
         .map(e => `<script type="text/javascript" src="${st.host.srcOfJsFile(project,e[0],baseDir)}"></script>`).join('\n')
       const cssToInject = jb.entries(files).filter(e=>e[0].match(/css$/))
         .map(e => `<link rel="stylesheet" href="${st.host.srcOfJsFile(project,e[0],baseDir)}" charset="utf-8">`).join('\n')
-    
+
       jb.entries(files).forEach(e=>
         files[e[0]] = e[1].replace(/<!-- load-jb-scripts-here -->/, [st.host.scriptForLoadLibraries(st.inMemoryProject.libs),jsToInject,cssToInject].join('\n'))
           .replace(/\/\/# sourceURL=.*/g,''))
       if (!files['index.html'])
         files['index.html'] = st.host.htmlAsCloud(jb.entries(files).filter(e=>e[0].match(/html$/))[0][1],project)
-    
+
       return jb.studio.host.createProject({project, files, baseDir})
         .then(r => r.json())
         .catch(e => {
@@ -60,7 +60,7 @@ jb.component('studio.save-components', { /* studio.saveComponents */
 				st.showMultiMessages(messages)
         e.comps.forEach(([id]) => st.serverComps[id] = st.previewjb.comps[id])
       })
-      
+
     }
 })
 
@@ -95,10 +95,10 @@ function newFileContent(fileContent, comps) {
   return lines.join('\n')
 }
 
-jb.component('studio.file-after-changes', {
+jb.component('studio.file-after-changes', { /* studio.fileAfterChanges */
   params: [
     {id: 'fileName', as: 'string'},
-    {id: 'fileContent', as: 'string'},
+    {id: 'fileContent', as: 'string'}
   ],
   impl: (ctx, fileName, fileContent) => {
     const location = jb.location

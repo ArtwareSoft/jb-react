@@ -54,12 +54,14 @@ jb.component('group.itemlist-container', { /* group.itemlistContainer */
     variable({
         name: 'itemlistCntr',
         value: ctx => createItemlistCntr(ctx,ctx.componentContext.params)
-    }),
-	feature.init( (ctx,{cmp}) => {
+      }),
+    feature.init(
+        (ctx,{cmp}) => {
 		const maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');
 //        jb.writeValue(maxItemsRef,ctx.componentContext.params.maxItems);
 		cmp.ctx.vars.itemlistCntr.maxItemsFilter = items =>	items.slice(0,jb.tonumber(maxItemsRef));
-	})
+	}
+      )
   )
 })
 
@@ -99,37 +101,22 @@ jb.component('itemlist-container.filter', { /* itemlistContainer.filter */
 })
 
 jb.component('itemlist-container.condition-filter', { /* itemlistContainer.conditionFilter */
-	type: 'boolean',
-	category: 'itemlist-filter:100',
-	requires: ctx => ctx.vars.itemlistCntr,
-	impl: ctx => ctx.vars.itemlistCntr && 
+  type: 'boolean',
+  category: 'itemlist-filter:100',
+  requires: ctx => ctx.vars.itemlistCntr,
+  impl: ctx => ctx.vars.itemlistCntr &&
 		ctx.vars.itemlistCntr.filters.reduce((res,filter) => res && filter([ctx.data]).length, true)
 })
-  
+
 jb.component('itemlist-container.search', { /* itemlistContainer.search */
   type: 'control',
   category: 'itemlist-filter:100',
   requires: ctx => ctx.vars.itemlistCntr,
   params: [
     {id: 'title', as: 'string', dynamic: true, defaultValue: 'Search'},
-    {
-      id: 'searchIn',
-      as: 'string',
-      dynamic: true,
-      defaultValue: itemlistContainer.searchInAllProperties()
-    },
-    {
-      id: 'databind',
-      as: 'ref',
-      dynamic: true,
-      defaultValue: '%$itemlistCntrData/search_pattern%'
-    },
-    {
-      id: 'style',
-      type: 'editable-text.style',
-      defaultValue: editableText.mdcSearch(),
-      dynamic: true
-    },
+    {id: 'searchIn', as: 'string', dynamic: true, defaultValue: itemlistContainer.searchInAllProperties()},
+    {id: 'databind', as: 'ref', dynamic: true, defaultValue: '%$itemlistCntrData/search_pattern%'},
+    {id: 'style', type: 'editable-text.style', defaultValue: editableText.mdcSearch(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: (ctx,title,searchIn,databind) =>
@@ -164,29 +151,35 @@ jb.component('itemlist-container.more-items-button', { /* itemlistContainer.more
   category: 'itemlist-filter:100',
   requires: ctx => ctx.vars.itemlistCntr,
   params: [
-    {
-      id: 'title',
-      as: 'string',
-      dynamic: true,
-      defaultValue: 'show %$delta% more ... (%$itemlistCntrData/countAfterFilter%/%$itemlistCntrData/countBeforeMaxFilter%)'
-    },
+    {id: 'title', as: 'string', dynamic: true, defaultValue: 'show %$delta% more ... (%$itemlistCntrData/countAfterFilter%/%$itemlistCntrData/countBeforeMaxFilter%)'},
     {id: 'delta', as: 'number', defaultValue: 200},
     {id: 'style', type: 'button.style', defaultValue: button.href(), dynamic: true},
-	{id: 'features', type: 'feature[]', dynamic: true}
+    {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: controlWithFeatures(ctx=>jb.ui.ctrl(ctx),[
-	  watchRef('%$itemlistCntrData/maxItems%'),
-	  defHandler('onclickHandler', writeValue('%$itemlistCntrData/maxItems%', 
-			  (ctx,{itemlistCntrData},{delta}) => delta + itemlistCntrData.maxItems)),
-	  calcProp('title', (ctx,{},{title,delta}) => title(ctx.setVar('delta',delta))),
-	  ctx => ({
+  impl: controlWithFeatures(
+    ctx=>jb.ui.ctrl(ctx),
+    [
+      watchRef('%$itemlistCntrData/maxItems%'),
+      defHandler(
+        'onclickHandler',
+        writeValue(
+          '%$itemlistCntrData/maxItems%',
+          (ctx,{itemlistCntrData},{delta}) => delta + itemlistCntrData.maxItems
+        )
+      ),
+      calcProp({
+        id: 'title',
+        value: (ctx,{},{title,delta}) => title(ctx.setVar('delta',delta))
+      }),
+      ctx => ({
 		templateModifier: (vdom,cmp,state) => { // hide the button when not needed
 			if (cmp.ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','number') == cmp.ctx.exp('%$itemlistCntrData/countAfterFilter%','number'))
 				return '';
 			return vdom;
 		}
 	  })
-  ])  
+    ]
+  )
 })
 
 jb.ui.extractPropFromExpression = exp => { // performance for simple cases such as %prop1%

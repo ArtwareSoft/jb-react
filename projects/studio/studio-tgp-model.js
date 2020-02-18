@@ -339,7 +339,7 @@ Object.assign(st,{
 		}
 	},
 	isCompObjOfType: (compObj,type) => (compObj.type||'data').split(',').indexOf(type) != -1
-		|| (compObj.typePattern && compObj.typePattern.test(type)),
+		|| (compObj.typePattern && compObj.typePattern(type)),
 
 	// single first param type
 	paramTypeOfPath: path => {

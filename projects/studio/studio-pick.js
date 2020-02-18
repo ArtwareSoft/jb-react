@@ -220,22 +220,30 @@ st.closestCtxInPreview = _path => {
 jb.component('studio.pick-toolbar', { /* studio.pickToolbar */
   type: 'control',
   impl: button({
-      title: join({
-        separator: '',
-        items: list(studio.shortTitle('%$path%'), '(', split({separator: '~', part: 'first'}), ')')
-      }),
-      action: studio.gotoPath('%$path%'),
-      style: button.href(),
-      features: [
-        css('{background: white} :hover {color: black}'),
-        variable('path', ctx =>{
+    title: join({
+      separator: '',
+      items: list(
+        studio.shortTitle('%$path%'),
+        '(',
+        split({separator: '~', part: 'first'}),
+        ')'
+      )
+    }),
+    action: studio.gotoPath('%$path%'),
+    style: button.href(),
+    features: [
+      css('{background: white} :hover {color: black}'),
+      variable({
+        name: 'path',
+        value: ctx =>{
           const elem = ctx.exp('%$pickSelection/elem%')
           const res = elem ? [elem.getAttribute('pick-ctx'), elem.getAttribute('jb-ctx'),
                // ...(elem.getAttribute('originators')||'').split(',').filter(x=>x)
             ].filter(x=>x).slice(0,1).map(id=>st.previewjb.ctxDictionary[id].path) : []
           return res
-        })
-      ]
+        }
+      })
+    ]
   })
 })
 

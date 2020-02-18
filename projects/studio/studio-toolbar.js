@@ -34,10 +34,7 @@ jb.component('studio.toolbar', { /* studio.toolbar */
         databind: '%$studio/settings/activateWatchRefViewer%',
         style: editableBoolean.mdcXV('blur_on', 'blur_off'),
         title: 'Watch Data Connections',
-        features: [
-          css.margin({top: '-10', left: ''}),
-          //feature.onEvent({event: 'click', action: studio.refreshPreview()})
-        ]
+        features: [css.margin({top: '-10', left: ''})]
       }),
       button({
         title: 'Select',

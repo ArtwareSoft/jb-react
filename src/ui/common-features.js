@@ -1,51 +1,51 @@
-jb.component('def-handler', { 
+jb.component('def-handler', { /* defHandler */
   type: 'feature',
   description: 'define custom event handler',
   params: [
-    {id: 'id', as: 'string', mandatory: true, description: 'to be used in html, e.g. onclick="clicked" '},
+    {id: 'id', as: 'string', mandatory: true, description: 'to be used in html, e.g. onclick=\"clicked\" '},
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
   impl: (ctx,id) => ({defHandler: {id, ctx}})
 })
 
-jb.component('watch-and-calc-model-prop', { // watchAndCalcModelProp
+jb.component('watch-and-calc-model-prop', { /* watchAndCalcModelProp */
   type: 'feature',
   description: 'Use a model property in the rendering and watch its changes (refresh on change)',
   params: [
-    {id: 'prop', as: 'string', mandatory: true },
+    {id: 'prop', as: 'string', mandatory: true},
     {id: 'transformValue', dynamic: true, defaultValue: '%%'}
   ],
   impl: (ctx,prop,transformValue) => ({watchAndCalcModelProp: { prop, transformValue }})
 })
 
-jb.component('calc-prop', { 
+jb.component('calc-prop', { /* calcProp */
   type: 'feature',
   description: 'define a variable to be used in the rendering calculation process',
   params: [
-    {id: 'id', as: 'string', mandatory: true },
+    {id: 'id', as: 'string', mandatory: true},
     {id: 'value', mandatory: true, dynamic: true},
     {id: 'priority', as: 'number', defaultValue: 1, description: 'if same prop was defined elsewhere who will win. range 1-1000'},
-    {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'},
+    {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'}
   ],
   impl: ctx => ({calcProp: {... ctx.params, index: jb.ui.propCounter++}})
 })
 
-jb.component('interactive-prop', { 
+jb.component('interactive-prop', { /* interactiveProp */
   type: 'feature',
   description: 'define a variable for the interactive comp',
   params: [
-    {id: 'id', as: 'string', mandatory: true },
-    {id: 'value', mandatory: true, dynamic: true},
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'value', mandatory: true, dynamic: true}
   ],
   impl: (ctx,id) => ({interactiveProp: {id, ctx }})
 })
 
-jb.component('calc-props', {
+jb.component('calc-props', { /* calcProps */
   type: 'feature',
   description: 'define variables to be used in the rendering calculation process',
   params: [
-    {id: 'props', as: 'object', mandatory: true, description: 'props as object', dynamic: true },
-    {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'},
+    {id: 'props', as: 'object', mandatory: true, description: 'props as object', dynamic: true},
+    {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'}
   ],
   impl: (ctx,propsF,phase) => ({
       calcProp: {id: '$props', value: ctx => propsF(ctx), phase, index: jb.ui.propCounter++ }
@@ -57,7 +57,7 @@ jb.component('feature.init', { /* feature.init */
   category: 'lifecycle',
   params: [
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true},
-    {id: 'phase', as: 'number', defaultValue: 10, description: 'init funcs from different features can use each other, phase defines the calculation order'},
+    {id: 'phase', as: 'number', defaultValue: 10, description: 'init funcs from different features can use each other, phase defines the calculation order'}
   ],
   impl: (ctx,action,phase) => ({ init: { action, phase }})
 })
@@ -82,7 +82,7 @@ jb.component('template-modifier', { /* templateModifier */
   impl: (ctx,value) => ({ templateModifier: (vdom,cmp) => value(ctx.setVars({cmp,vdom, ...cmp.renderProps})) })
 })
 
-jb.component('features', {
+jb.component('features', { /* features */
   type: 'feature',
   description: 'list of features, auto flattens',
   params: [
@@ -91,44 +91,16 @@ jb.component('features', {
   impl: (ctx,features) => features.flatMap(x=>Array.isArray(x) ? x: [x])
 })
 
-jb.component('group.wait', { /* group.wait */
-  type: 'feature',
-  category: 'group:70',
-  description: 'wait for asynch data before showing the control',
-  params: [
-    {id: 'for', mandatory: true, dynamic: true},
-    {id: 'loadingControl', type: 'control', defaultValue: {$: 'text', text:'loading ...'}, dynamic: true},
-    {id: 'error', type: 'control', defaultValue: {$: 'text', text:'error: %$error%' }, dynamic: true },
-    {id: 'varName', as: 'string'}
-  ],
-  impl: features(
-    calcProp({id: 'ctrls', 
-      priority: ctx => jb.path(ctx.vars.$state,'dataArrived') ? 0: 10, // hijack the ctrls calculation
-      value: (ctx,{cmp},{loadingControl,error}) => {
-        const ctrl = cmp.state.error ? error() : loadingControl(ctx)
-        return cmp.ctx.profile.$ == 'itemlist' ? [[ctrl]] : [ctrl]
-      }
-    }),
-    interactive( (ctx,{cmp},{varName}) => !cmp.state.dataArrived && !cmp.state.error &&
-      Promise.resolve(ctx.componentContext.params.for()).then(data =>
-          cmp.refresh({ dataArrived: true }, {
-            srcCtx: ctx.componentContext, 
-            extendCtx: ctx => ctx.setVar(varName,data).setData(data) 
-          }))
-          .catch(e=> cmp.refresh({error: JSON.stringify(e)}))
-    ))
-})
-
 jb.component('watch-ref', { /* watchRef */
   type: 'feature',
   category: 'watch:100',
   description: 'subscribes to data changes to refresh component',
   params: [
-    { id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data' },
-    { id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well' },
-    { id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean' },
-    { id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and reinit wait for data', type: 'boolean' },
-   ],
+    {id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data'},
+    {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
+    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
+    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and reinit wait for data', type: 'boolean'}
+  ],
   impl: ctx => ({ watchRef: {refF: ctx.params.ref, ...ctx.params}})
 })
 
@@ -137,10 +109,12 @@ jb.component('watch-observable', { /* watchObservable */
   category: 'watch',
   description: 'subscribes to a custom rx.observable to refresh component',
   params: [
-    {id: 'toWatch', mandatory: true},
+    {id: 'toWatch', mandatory: true}
   ],
-  impl: interactive((ctx,{cmp},{toWatch}) => 
-    toWatch.takeUntil(cmp.destroyed).subscribe(()=>cmp.refresh(null,{srcCtx:ctx.componentContext})))
+  impl: interactive(
+    (ctx,{cmp},{toWatch}) =>
+    toWatch.takeUntil(cmp.destroyed).subscribe(()=>cmp.refresh(null,{srcCtx:ctx.componentContext}))
+  )
 })
 
 jb.component('group.data', { /* group.data */
@@ -148,19 +122,9 @@ jb.component('group.data', { /* group.data */
   category: 'general:100,watch:80',
   params: [
     {id: 'data', mandatory: true, dynamic: true, as: 'ref'},
-    {
-      id: 'itemVariable',
-      as: 'string',
-      description: 'optional. define data as a local variable'
-    },
+    {id: 'itemVariable', as: 'string', description: 'optional. define data as a local variable'},
     {id: 'watch', as: 'boolean', type: 'boolean'},
-    {
-      id: 'includeChildren',
-      as: 'string',
-      options: 'yes,no,structure',
-      defaultValue: 'no',
-      description: 'watch childern change as well'
-    }
+    {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'}
   ],
   impl: (ctx, refF, itemVariable,watch,includeChildren) => ({
       ...(watch ? {watchRef: { refF, includeChildren }} : {}),
@@ -193,7 +157,10 @@ jb.component('id', { /* id */
   params: [
     {id: 'id', mandatory: true, as: 'string', dynamic: true}
   ],
-  impl: htmlAttribute('id', (ctx,{},{id}) => id(ctx))
+  impl: htmlAttribute(
+    'id',
+    (ctx,{},{id}) => id(ctx)
+  )
 })
 
 jb.component('feature.hover-title', { /* feature.hoverTitle */
@@ -202,7 +169,10 @@ jb.component('feature.hover-title', { /* feature.hoverTitle */
   params: [
     {id: 'title', as: 'string', mandatory: true}
   ],
-  impl: htmlAttribute('title','%$title%')
+  impl: htmlAttribute(
+    'title',
+    '%$title%'
+  )
 })
 
 jb.component('variable', { /* variable */
@@ -212,12 +182,7 @@ jb.component('variable', { /* variable */
   params: [
     {id: 'name', as: 'string', mandatory: true},
     {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
-    {
-      id: 'watchable',
-      as: 'boolean',
-      type: 'boolean',
-      description: 'E.g., selected item variable'
-    }
+    {id: 'watchable', as: 'boolean', type: 'boolean', description: 'E.g., selected item variable'}
   ],
   impl: ({}, name, value, watchable) => ({
     destroy: cmp => {
@@ -245,14 +210,7 @@ jb.component('calculated-var', { /* calculatedVar */
   params: [
     {id: 'name', as: 'string', mandatory: true},
     {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
-    {
-      id: 'watchRefs',
-      as: 'array',
-      dynamic: true,
-      mandatory: true,
-      defaultValue: [],
-      description: 'variable to watch. needs to be in array'
-    }
+    {id: 'watchRefs', as: 'array', dynamic: true, mandatory: true, defaultValue: [], description: 'variable to watch. needs to be in array'}
   ],
   impl: (ctx, name, value, watchRefs) => ({
       destroy: cmp => {
@@ -282,7 +240,7 @@ jb.component('feature.if', { /* feature.if */
   category: 'feature:85',
   description: 'adds/remove element to dom by condition. keywords: hidden/show',
   params: [
-    {id: 'showCondition', as: 'boolean', mandatory: true, dynamic: true}
+    {id: 'showCondition', as: 'boolean', mandatory: true, dynamic: true, type: 'boolean'}
   ],
   impl: (ctx, condition) => ({
     templateModifier: (vdom,cmp) =>
@@ -352,19 +310,9 @@ jb.component('feature.onEvent', { /* feature.onEvent */
   type: 'feature',
   category: 'events',
   params: [
-    {
-      id: 'event',
-      as: 'string',
-      mandatory: true,
-      options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover'
-    },
+    {id: 'event', as: 'string', mandatory: true, options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover'},
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true},
-    {
-      id: 'debounceTime',
-      as: 'number',
-      defaultValue: 0,
-      description: 'used for mouse events such as mousemove'
-    }
+    {id: 'debounceTime', as: 'number', defaultValue: 0, description: 'used for mouse events such as mousemove'}
   ],
   impl: (ctx,event,action,debounceTime) => ({
       [`on${event}`]: true,
@@ -385,9 +333,9 @@ jb.component('feature.onHover', { /* feature.onHover */
   description: 'on mouse enter',
   category: 'events',
   params: [
-    {id: 'action', type: 'action[]', mandatory: true, dynamic: true, mandatory: true},
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true},
     {id: 'onLeave', type: 'action[]', mandatory: true, dynamic: true},
-    {id: 'debounceTime', as: 'number', defaultValue: 0 }
+    {id: 'debounceTime', as: 'number', defaultValue: 0}
   ],
   impl: (ctx,action,onLeave,debounceTime) => ({
       onmouseenter: true, onmouseleave: true,
@@ -400,7 +348,7 @@ jb.component('feature.onHover', { /* feature.onHover */
   })
 })
 
-jb.component('feature.class-on-hover', {
+jb.component('feature.class-on-hover', { /* feature.classOnHover */
   type: 'feature',
   description: 'set css class on mouse enter',
   category: 'events',
@@ -458,7 +406,10 @@ jb.component('feature.onEnter', { /* feature.onEnter */
   params: [
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
-  impl: feature.onKey('Enter', call('action') )
+  impl: feature.onKey(
+    'Enter',
+    call('action')
+  )
 })
 
 jb.component('feature.onEsc', { /* feature.onEsc */
@@ -467,15 +418,17 @@ jb.component('feature.onEsc', { /* feature.onEsc */
   params: [
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
-  impl: feature.onKey('Esc', call('action'))
+  impl: feature.onKey(
+    'Esc',
+    call('action')
+  )
 })
 
 jb.component('refresh-control-by-id', { /* refreshControlById */
   type: 'action',
   params: [
     {id: 'id', as: 'string', mandatory: true},
-    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and promises', type: 'boolean' },
-//    {id: 'recalcVars', as: 'boolean', description: 'recalculate feature variables', type: 'boolean' },
+    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and promises', type: 'boolean'}
   ],
   impl: (ctx,id) => {
     const elem = jb.ui.document(ctx).querySelector('#'+id)

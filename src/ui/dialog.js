@@ -3,12 +3,7 @@ jb.component('open-dialog', { /* openDialog */
   params: [
     {id: 'id', as: 'string'},
     {id: 'style', type: 'dialog.style', dynamic: true, defaultValue: dialog.default()},
-    {
-      id: 'content',
-      type: 'control',
-      dynamic: true,
-      templateValue: group({}),
-    },
+    {id: 'content', type: 'control', dynamic: true, templateValue: group({})},
     {id: 'menu', type: 'control', dynamic: true},
     {id: 'title', as: 'renderable', dynamic: true},
     {id: 'onOK', type: 'action', dynamic: true},
@@ -29,12 +24,12 @@ jb.component('open-dialog', { /* openDialog */
 })
 
 jb.component('dialog.close-containing-popup', { /* dialog.closeContainingPopup */
-	description: 'close parent dialog',
-	type: 'action',
-	params: [
-		{id: 'OK', type: 'boolean', as: 'boolean', defaultValue: true}
-	],
-	impl: (context,OK) => context.vars.$dialog && context.vars.$dialog.close({OK:OK})
+  description: 'close parent dialog',
+  type: 'action',
+  params: [
+    {id: 'OK', type: 'boolean', as: 'boolean', defaultValue: true}
+  ],
+  impl: (context,OK) => context.vars.$dialog && context.vars.$dialog.close({OK:OK})
 })
 
 jb.component('dialog-feature.unique-dialog', { /* dialogFeature.uniqueDialog */
@@ -69,23 +64,23 @@ jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
 					const titleElem = cmp.base.querySelector('.dialog-title');
 					cmp.mousedownEm = jb.rx.Observable.fromEvent(titleElem, 'mousedown')
 						.takeUntil( cmp.destroyed );
-  
+
 					if (id && sessionStorage.getItem(id)) {
 						  const pos = JSON.parse(sessionStorage.getItem(id));
 						  dialog.el.style.top  = pos.top  + 'px';
 						  dialog.el.style.left = pos.left + 'px';
 					}
-  
+
 					let mouseUpEm = jb.rx.Observable.fromEvent(document, 'mouseup').takeUntil( cmp.destroyed );
 					let mouseMoveEm = jb.rx.Observable.fromEvent(document, 'mousemove').takeUntil( cmp.destroyed );
-  
+
 					if (jb.studio.previewWindow) {
 						mouseUpEm = mouseUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mouseup'))
 							.takeUntil( cmp.destroyed );
 						mouseMoveEm = mouseMoveEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mousemove'))
 							.takeUntil( cmp.destroyed );
 					}
-  
+
 					const mousedrag = cmp.mousedownEm
 							.do(e =>
 								e.preventDefault())
@@ -100,7 +95,7 @@ jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
 								  left: Math.max(0,pos.clientX - imageOffset.left)
 							   }))
 							);
-  
+
 					mousedrag.distinctUntilChanged().subscribe(pos => {
 					  dialog.el.style.top  = pos.top  + 'px';
 					  dialog.el.style.left = pos.left + 'px';
@@ -110,7 +105,7 @@ jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
 			 }
 	  }
   })
-  
+
   jb.component('dialog.default', { /* dialog.default */
 	type: 'dialog.style',
 	impl: customStyle({
@@ -199,7 +194,6 @@ jb.component('dialog.close-dialog', { /* dialog.closeDialog */
     {id: 'delay', as: 'number', defaultValue: 200}
   ],
   impl: (ctx,id,delay) => jb.ui.dialogs.closeDialogs(jb.ui.dialogs.dialogs.filter(d=>d.id == id))
-  
 })
 
 jb.component('dialog.close-all', { /* dialog.closeAll */
@@ -284,12 +278,7 @@ jb.component('dialog.dialog-ok-cancel', { /* dialog.dialogOkCancel */
 jb.component('dialog-feature.resizer', { /* dialogFeature.resizer */
   type: 'dialog-feature',
   params: [
-    {
-      id: 'resizeInnerCodemirror',
-      as: 'boolean',
-      description: 'effective only for dialog with a single codemirror element',
-      type: 'boolean'
-    }
+    {id: 'resizeInnerCodemirror', as: 'boolean', description: 'effective only for dialog with a single codemirror element', type: 'boolean'}
   ],
   impl: (ctx,codeMirror) => ({
 	templateModifier: (vdom,cmp,state) => {
@@ -352,15 +341,15 @@ jb.component('dialog.popup', { /* dialog.popup */
     ]
   })
 })
-  
+
 jb.component('dialog.div', { /* dialog.div */
-	type: 'dialog.style',
-	impl: customStyle({
-	  template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
-	  css: '{ position: absolute }'
-	})
+  type: 'dialog.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
+    css: '{ position: absolute }'
+  })
 })
-  
+
 jb.ui.dialogs = {
 	dialogs: [],
 	buildComp(ctx) { // used with addDialog profile
@@ -405,7 +394,7 @@ jb.ui.dialogs = {
 				dialog.em.complete();
 
 				const index = self.dialogs.indexOf(dialog);
-				if (index != -1) 
+				if (index != -1)
 					self.dialogs.splice(index, 1);
 				if (dialog.modal && document.querySelector('.modal-overlay'))
 					document.body.removeChild(document.querySelector('.modal-overlay'));

@@ -216,7 +216,7 @@ Object.assign(st, {
 				jb.writeValue(st.refOfPath(to),[],srcCtx);
 			if (!Array.isArray(st.valOfPath(to)))
 				jb.writeValue(st.refOfPath(to),[st.valOfPath(to)],srcCtx);
-				
+
             to += '~' + st.valOfPath(to).length;
 		}
 		return jb.move(st.refOfPath(from),st.refOfPath(to),srcCtx)
@@ -313,35 +313,35 @@ jb.component('studio.watch-path', { /* studio.watchPath */
   params: [
     {id: 'path', as: 'string', mandatory: true},
     {
-		id: 'includeChildren',
-		as: 'string',
-		options: 'yes,no,structure',
-		defaultValue: 'no',
-		description: 'watch childern change as well'
-	  },
-	 {
-		id: 'allowSelfRefresh',
-		as: 'boolean',
-		description: 'allow refresh originated from the components or its children',
-		type: 'boolean'
-	  },
-	  {
-		id: 'strongRefresh',
-		as: 'boolean',
-		description: 'rebuild the component, including all features and variables',
-		type: 'boolean'
-	  },
-	  {
-		id: 'recalcVars',
-		as: 'boolean',
-		description: 'recalculate feature variables',
-		type: 'boolean'
-	  },
-	  {
-		id: 'delay',
-		as: 'number',
-		description: 'delay in activation, can be used to set priority'
-	  },
+      id: 'includeChildren',
+      as: 'string',
+      options: 'yes,no,structure',
+      defaultValue: 'no',
+      description: 'watch childern change as well'
+    },
+    {
+      id: 'allowSelfRefresh',
+      as: 'boolean',
+      description: 'allow refresh originated from the components or its children',
+      type: 'boolean'
+    },
+    {
+      id: 'strongRefresh',
+      as: 'boolean',
+      description: 'rebuild the component, including all features and variables',
+      type: 'boolean'
+    },
+    {
+      id: 'recalcVars',
+      as: 'boolean',
+      description: 'recalculate feature variables',
+      type: 'boolean'
+    },
+    {
+      id: 'delay',
+      as: 'number',
+      description: 'delay in activation, can be used to set priority'
+    }
   ],
   impl: (ctx,path) => ({
 	  watchRef: {refF: () => st.refOfPath(path), ...ctx.params},

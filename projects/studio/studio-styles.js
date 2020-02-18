@@ -6,7 +6,7 @@ jb.component('editable-text.studio-primitive-text', { /* editableText.studioPrim
           value: databind, onchange: true, onkeyup: true, onblur: true
     }),
     css: '{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom: 7px;} :focus { border-color: #3F51B5; border-width: 2px}',
-    features: field.databindText(500,false)
+    features: field.databindText(500, false)
   })
 })
 
@@ -67,12 +67,14 @@ jb.component('editable-text.studio-codemirror-tgp', { /* editableText.studioCode
 jb.component('button.select-profile-style', { /* button.selectProfileStyle */
   type: 'button.style',
   impl: customStyle({
-    features: interactive( (ctx,{cmp}) => cmp.clickedEnter = () => event.keyCode == 13 && cmp.onclickHandler()),
     template: (cmp,{title},h) =>
         h('input', { class: 'mdc-text-field__input', type: 'text', readonly: true, title,
             value: title, onmouseup: 'onclickHandler', onkeydown: 'clickedEnter',
         }),
-    css: '{ cursor: pointer; padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom: 7px; } :focus { border-color: #3F51B5; border-width: 2px}'
+    css: '{ cursor: pointer; padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom: 7px; } :focus { border-color: #3F51B5; border-width: 2px}',
+    features: interactive(
+      (ctx,{cmp}) => cmp.clickedEnter = () => event.keyCode == 13 && cmp.onclickHandler()
+    )
   })
 })
 
@@ -89,14 +91,16 @@ jb.component('studio.property-toolbar-style', { /* studio.propertyToolbarStyle *
 jb.component('button.studio-script', { /* button.studioScript */
   type: 'button.style',
   impl: customStyle({
-    features: interactive( (ctx,{cmp}) => cmp.clickedEnter = ev => event.keyCode == 13 && cmp.onclickHandler()),
     template: (cmp,state,h) =>
         h('input', { class: 'mdc-text-field__input', type: 'text', readonly: true, title: state.title,
             value: state.title,
             onmouseup: 'onclickHandler',
             onkeydown: 'clickedEnter',
         }),
-    css: '{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom: 7px;; cursor: pointer; opacity: 0.8; font-style: italic; }'
+    css: '{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom: 7px;; cursor: pointer; opacity: 0.8; font-style: italic; }',
+    features: interactive(
+      (ctx,{cmp}) => cmp.clickedEnter = ev => event.keyCode == 13 && cmp.onclickHandler()
+    )
   })
 })
 
@@ -162,7 +166,7 @@ jb.component('dialog.studio-multiline-edit', { /* dialog.studioMultilineEdit */
     features: [
       dialogFeature.maxZIndexOnClick(),
       dialogFeature.closeWhenClickingOutside(),
-      dialogFeature.cssClassOnLaunchingElement(),
+      dialogFeature.cssClassOnLaunchingElement()
     ]
   })
 })

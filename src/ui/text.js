@@ -1,6 +1,6 @@
 jb.ns('label')
 
-jb.component('text', { /* label */
+jb.component('text', { /* text */
   type: 'control',
   category: 'control:100,common:100',
   params: [
@@ -23,37 +23,34 @@ jb.component('label.bind-text', { /* label.bindText */
   )
 })
 
-jb.component('label.allow-asynch-value', { // allowAsynchValue
+jb.component('label.allow-asynch-value', { /* label.allowAsynchValue */
   type: 'feature',
   impl: features(
-    calcProp('text', (ctx,{cmp}) => cmp.text || ctx.vars.$props.text),
-    interactive((ctx,{cmp}) => {
+    calcProp({id: 'text', value: (ctx,{cmp}) => cmp.text || ctx.vars.$props.text}),
+    interactive(
+        (ctx,{cmp}) => {
       if (cmp.text) return
       const val = jb.ui.toVdomOrStr(ctx.vars.$model.text(cmp.ctx))
       if (val && typeof val.then == 'function')
         val.then(res=>cmp.refresh({text: jb.ui.toVdomOrStr(res)},{srcCtx: ctx.componentContext}))
     }
-  ))
+      )
+  )
 })
 
 jb.component('label.htmlTag', { /* label.htmlTag */
   type: 'label.style',
   params: [
-    {
-      id: 'htmlTag',
-      as: 'string',
-      defaultValue: 'p',
-      options: 'span,p,h1,h2,h3,h4,h5,div,li,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label'
-    },
+    {id: 'htmlTag', as: 'string', defaultValue: 'p', options: 'span,p,h1,h2,h3,h4,h5,div,li,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label'},
     {id: 'cssClass', as: 'string'}
   ],
   impl: customStyle({
     template: (cmp,{text,htmlTag,cssClass},h) => h(htmlTag,{class: cssClass},text),
-    features: label.bindText(),
+    features: label.bindText()
   })
 })
 
-jb.component('label.no-wrapping-tag', { /* label.noWrappingTag() */
+jb.component('label.no-wrapping-tag', { /* label.noWrappingTag */
   type: 'label.style',
   category: 'label:0',
   impl: customStyle({

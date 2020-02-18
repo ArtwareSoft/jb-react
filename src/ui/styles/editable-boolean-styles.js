@@ -18,14 +18,14 @@ jb.component('editable-boolean.checkbox-with-title', { /* editableBoolean.checkb
 jb.component('editable-boolean.expand-collapse', { /* editableBoolean.expandCollapse */
   type: 'editable-boolean.style',
   impl: customStyle({
-    template: (cmp,{databind},h) => h('i',{class:'material-icons noselect', onclick: 'toggle' }, 
+    template: (cmp,{databind},h) => h('i',{class:'material-icons noselect', onclick: 'toggle' },
       databind ? 'keyboard_arrow_down' : 'keyboard_arrow_right'),
-    css: `{ font-size:16px; cursor: pointer; }`,
+    css: '{ font-size:16px; cursor: pointer; }',
     features: field.databind()
   })
 })
 
-jb.component('editable-boolean.mdc-x-v', { // editableBoolean.mdcXV
+jb.component('editable-boolean.mdc-x-v', { /* editableBoolean.mdcXV */
   type: 'editable-boolean.style',
   description: 'two icons',
   params: [
@@ -46,7 +46,7 @@ jb.component('editable-boolean.mdc-x-v', { // editableBoolean.mdcXV
 jb.component('editable-boolean.mdc-slide-toggle', { /* editableBoolean.mdcSlideToggle */
   type: 'editable-boolean.style',
   params: [
-    { id: 'width', as: 'string', defaultValue: 80 }
+    {id: 'width', as: 'string', defaultValue: 80}
   ],
   impl: customStyle({
     template: (cmp,state,h) => h('div',{class: 'mdc-switch'},[
@@ -63,7 +63,7 @@ jb.component('editable-boolean.mdc-slide-toggle', { /* editableBoolean.mdcSlideT
   })
 })
 
-jb.component('editable-boolean.checkbox-with-label', {
+jb.component('editable-boolean.checkbox-with-label', { /* editableBoolean.checkboxWithLabel */
   type: 'editable-boolean.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{},[

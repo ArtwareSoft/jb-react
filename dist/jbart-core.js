@@ -633,12 +633,9 @@ const simpleValueByRefHandler = {
   },
   asRef(value) {
     return value
-    // if (value && (value.$jb_parent || value.$jb_val))
-    //     return value;
-    // return { $jb_val: () => value, $jb_path: () => [] }
   },
   isRef(value) {
-    return value && (value.$jb_parent || value.$jb_val);
+    return value && (value.$jb_parent || value.$jb_val || value.$jb_obj)
   },
   objectProperty(obj,prop) {
       if (this.isRef(obj[prop]))
@@ -666,7 +663,8 @@ Object.assign(jb,{
 
   component: (id,comp) => {
     try {
-      const line = new Error().stack.split(/\r|\n/).filter(x=>x && !x.match(/<anonymous>|about:blank/)).pop()
+      const errStack = new Error().stack.split(/\r|\n/)
+      const line = errStack.filter(x=>x && !x.match(/\)<anonymous>|about:blank|tgp-pretty.js|internal\/modules\/cjs/)).pop()
       comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3)
     
       if (comp.watchableData !== undefined) {
@@ -838,16 +836,16 @@ Object.assign(jb, {
 
         if (checkId(macroId))
             registerProxy(macroId)
-        if (nameSpace && checkId(nameSpace, true) && !frame[nameSpace]) {
+        if (nameSpace && checkId(nameSpace, true) && !jb.frame[nameSpace]) {
             registerProxy(nameSpace, true)
             jb.macroNs[nameSpace] = true
         }
 
         function registerProxy(proxyId) {
-            frame[proxyId] = new Proxy(() => 0, {
+            jb.frame[proxyId] = new Proxy(() => 0, {
                 get: (o, p) => {
                     if (typeof p === 'symbol') return true
-                    return frame[proxyId + '_' + p] || genericMacroProcessor(proxyId, p)
+                    return jb.frame[proxyId + '_' + p] || genericMacroProcessor(proxyId, p)
                 },
                 apply: function (target, thisArg, allArgs) {
                     const { args, system } = splitSystemArgs(allArgs)
@@ -872,13 +870,13 @@ Object.assign(jb, {
         }
 
         function checkId(macroId, isNS) {
-            if (frame[macroId] && !frame[macroId][jb.macroDef]) {
+            if (jb.frame[macroId] && !jb.frame[macroId][jb.macroDef]) {
                 jb.logError(macroId + ' is reserved by system or libs. please use a different name')
                 return false
             }
-            if (frame[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$dummyComp$/))
+            if (jb.frame[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$dummyComp$/))
                 jb.logError(macroId + ' is defined more than once, using last definition ' + id)
-            // if (frame[macroId] !== undefined && !isNS && jb.macroNs[macroId])
+            // if (jb.frame[macroId] !== undefined && !isNS && jb.macroNs[macroId])
             //     jb.logError(macroId + ' is already defined as ns, using last definition ' + id)
             return true;
         }

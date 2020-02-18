@@ -8,12 +8,7 @@ jb.component('editable-text', { /* editableText */
     {id: 'title', as: 'string', dynamic: true},
     {id: 'databind', as: 'ref', mandaroy: true, dynamic: true},
     {id: 'updateOnBlur', as: 'boolean', type: 'boolean'},
-    {
-      id: 'style',
-      type: 'editable-text.style',
-      defaultValue: editableText.mdcInput(),
-      dynamic: true
-    },
+    {id: 'style', type: 'editable-text.style', defaultValue: editableText.mdcInput(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
@@ -22,12 +17,15 @@ jb.component('editable-text', { /* editableText */
 jb.component('editable-text.x-button', { /* editableText.xButton */
   type: 'feature',
   impl: features(
-    defHandler('cleanValue',writeValue('%$$model/databind%','')),
-    templateModifier(({},{vdom,databind}) => 
-      jb.ui.h('div', {},[vdom, 
-          ...(databind ? [jb.ui.h('button', { class: 'delete', onclick: 'cleanValue' } ,'×')]  : [])] 
-    )),
-    css(`>.delete {
+    defHandler('cleanValue', writeValue('%$$model/databind%', '')),
+    templateModifier(
+        ({},{vdom,databind}) =>
+      jb.ui.h('div', {},[vdom,
+          ...(databind ? [jb.ui.h('button', { class: 'delete', onclick: 'cleanValue' } ,'×')]  : [])]
+    )
+      ),
+    css(
+        `>.delete {
           margin-left: -16px;
           float: right;
           cursor: pointer; font: 20px sans-serif;
@@ -36,7 +34,8 @@ jb.component('editable-text.x-button', { /* editableText.xButton */
       }
       { display : flex }
       >.delete:hover { opacity: .5 }`
-  ))
+      )
+  )
 })
 
 jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
@@ -44,20 +43,8 @@ jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
   params: [
     {id: 'control', type: 'control', dynamic: true, mandatory: true},
     {id: 'popupId', as: 'string', mandatory: true},
-    {
-      id: 'popupStyle',
-      type: 'dialog.style',
-      dynamic: true,
-      defaultValue: dialog.popup()
-    },
-    {
-      id: 'showHelper',
-      as: 'boolean',
-      dynamic: true,
-      defaultValue: notEmpty('%value%'),
-      description: 'show/hide helper according to input content',
-      type: 'boolean'
-    },
+    {id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue: dialog.popup()},
+    {id: 'showHelper', as: 'boolean', dynamic: true, defaultValue: notEmpty('%value%'), description: 'show/hide helper according to input content', type: 'boolean'},
     {id: 'autoOpen', as: 'boolean', type: 'boolean'},
     {id: 'onEnter', type: 'action', dynamic: true},
     {id: 'onEsc', type: 'action', dynamic: true}

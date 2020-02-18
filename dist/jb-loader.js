@@ -27,8 +27,8 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/common-features.js',
         'src/ui/css-features.js',
 
-        'src/ui/group.js',
         'src/ui/text.js',
+        'src/ui/group.js',
         'src/ui/html.js',
         'src/ui/image.js',
         'src/ui/button.js',
@@ -62,7 +62,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/tree/table-tree.js',
         'src/ui/tree/json-tree-model.js',
       ],
-      remote : [
+      remote: [
         'src/ui/watchable/remote.js',
       ],
       'inner-html': [ // unsafe
@@ -103,6 +103,15 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       animate: [
         'node_modules/animejs/lib/anime.js',
         'src/ui/animation/animation.js'
+      ],
+      cards: [
+        'src/ui/cards/cards.js',
+        'src/ui/cards/cards-styles.js',
+        'src/ui/cards/cards-adapters.js',
+      ],
+      'cards-sample-data': [
+        'src/ui/cards/sample-data/wix-blog.js',
+        'src/ui/cards/sample-data/wordpress-angrybirds.js',
       ],
       'd3': [
         'node_modules/d3/dist/d3.js',
@@ -159,22 +168,15 @@ function jb_dynamicLoad(modules,prefix) {
         file = 'projects/studio/studio-' + file + '.js';
       if (m == 'studio-tests' && !file.match(/\//))
         file = 'projects/studio-helper/studio-' + file + '-tests.js';
-      // if (m=='node_modules/jquery/dist/jquery.min.js' && electron)
-      //   return document.write('<script src="../node_modules/jquery/dist/jquery.min.js" onload="global.$ = window.$ = window.jQuery = module.exports;"></script>');
 
       if (prefix) { // avoid muliple source files with the same name in the debugger
         const file_path = file.split('/');
         file_path.push(prefix+file_path.pop());
         file = file_path.join('/');
       }
-      // if (win.electron)
-      //   return win.loadURL(`file://${win.jbartBase}/../${file}`)
 
       const url = (window.jbLoaderRelativePath ? '' : '/') + file;
-      if (file.match(/\.js$/))
-        document.write('<script src="' + url + '" charset="UTF-8"></script>')
-      else
-        document.write('<link rel="stylesheet" type="text/css" href="' + url + '" />');
+      loadFile(url)
     })
   })
 }
@@ -183,7 +185,39 @@ if (typeof window != 'undefined')
   if (document.currentScript && document.currentScript.getAttribute('modules'))
     jb_dynamicLoad(document.currentScript.getAttribute('modules'),document.currentScript.getAttribute('prefix'));
 
-if (typeof global != 'undefined')
- global.jb_modules = jb_modules;
-;
+if (typeof global != 'undefined') global.jb_modules = jb_modules;
+
+loadProject()
+
+function loadProject() {
+  if (typeof jbProjectSettings == 'undefined') return
+
+  jb_dynamicLoad(jbProjectSettings.libs); // may load packaged libs from dist
+
+  [...(jbProjectSettings.jsFiles || []), ...(jbProjectSettings.cssFiles || [])]
+    .forEach(fn=> loadFile(pathOfProjectFile(jbProjectSettings.project,fn,'')) )
+}
+
+function jb_initWidget() {
+  if (!document.getElementById('main')) {
+    const mainElem = document.createElement('div')
+    mainElem.setAttribute('id','main')
+    document.body.appendChild(mainElem)
+  }
+  jb.ui.renderWidget({$: jbProjectSettings.entry || `${jbProjectSettings.project}.main` }, document.getElementById('main'))
+}
+
+function pathOfProjectFile(project,fn,baseDir) {
+  if (baseDir)
+   return baseDir == './' ? fn : `/${project}/${fn}`
+  return `/projects/${project}/${fn}`
+ }
+ 
+ function loadFile(url) {
+   if (url.match(/\.js$/))
+     document.write('<script src="' + url + '" charset="UTF-8"></script>')
+   else
+     document.write('<link rel="stylesheet" type="text/css" href="' + url + '" />');
+ }
+ ;
 

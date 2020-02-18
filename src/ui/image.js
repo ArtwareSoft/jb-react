@@ -8,57 +8,60 @@ jb.component('image', { /* image */
     {id: 'width', as: 'string', mandatory: true, templateValue: '100', description: 'e.g: 100, 20%'},
     {id: 'height', as: 'string', mandatory: true, description: 'e.g: 100, 20%'},
     {id: 'resize', type: 'image.resize', description: 'background-size, resize the image', defaultValue: image.fullyVisible()},
-    {id: 'position', type: 'image.position', description: 'move/shift image' },
+    {id: 'position', type: 'image.position', description: 'move/shift image'},
     {id: 'style', type: 'image.style', dynamic: true, defaultValue: image.defaultStyle()},
-    {id: 'features', type: 'feature[]', dynamic: true }
+    {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx, {
     studioFeatures :{$: 'feature.content-editable' },
   })
 })
 
-jb.component('image.width-height', { // image.widthHeight
+jb.component('image.width-height', { /* image.widthHeight */
   type: 'image.resize',
   description: 'fixed size or precentage of the original',
   params: [
     {id: 'width', as: 'string', description: 'e.g: 100, 20%'},
-    {id: 'height', as: 'string', description: 'e.g: 100, 20%'},
+    {id: 'height', as: 'string', description: 'e.g: 100, 20%'}
   ],
   impl: (ctx,width,height) => [ jb.ui.withUnits(width) ||'auto',jb.ui.withUnits(height)||'auto'].join(' ')
 })
 
-jb.component('image.cover', {
+jb.component('image.cover', { /* image.cover */
   description: 'auto resize or crop to cover all area',
   type: 'image.resize',
   impl: 'cover'
 })
 
-jb.component('image.fully-visible', {
+jb.component('image.fully-visible', { /* image.fullyVisible */
   description: 'contain, auto resize to ensure the image is fully visible',
   type: 'image.resize',
   impl: 'contain'
 })
 
-jb.component('image.position', {
+jb.component('image.position', { /* image.position */
   description: 'offset move shift original image',
   type: 'image.position',
   params: [
     {id: 'x', as: 'string', description: 'e.g. 7, 50%, right'},
-    {id: 'y', as: 'string', description: 'e.g. 10, 50%, bottom'},
+    {id: 'y', as: 'string', description: 'e.g. 10, 50%, bottom'}
   ],
   impl: (ctx,x,y) => [x && `x: ${jb.ui.withUnits(x)}`,y && `y: ${jb.ui.withUnits(y)}`]
     .filter(x=>x).map(x=>`background-position-${x}`).join(';')
 })
 
-jb.component('image.default-style', { 
+jb.component('image.default-style', { /* image.defaultStyle */
   type: 'image.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div'),
     css: pipeline(
-      Var('url', (ctx,{$model}) => $model.url.replace(/__WIDTH__/,$model.width).replace(/__HEIGHT__/,$model.height)),
+      Var(
+          'url',
+          (ctx,{$model}) => $model.url.replace(/__WIDTH__/,$model.width).replace(/__HEIGHT__/,$model.height)
+        ),
       Var('width', (ctx,{$model}) => jb.ui.withUnits($model.width)),
       Var('height', (ctx,{$model}) => jb.ui.withUnits($model.height)),
-    `
+      `
       { 
           background-image: url('%$url%');
           {? background-size: %$$model/resize%; ?}

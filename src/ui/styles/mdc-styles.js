@@ -7,7 +7,7 @@ jb.component('mdc-style.init-dynamic', { /* mdcStyle.initDynamic */
   ],
   impl: ctx => ({
     afterViewInit: cmp => {
-      if (!jb.ui.material) return jb.logError('please load mdc library')      
+      if (!jb.ui.material) return jb.logError('please load mdc library')
       cmp.mdc_comps = cmp.mdc_comps || []
       if (cmp.base.classList.contains('mdc-text-field'))
         cmp.mdc_comps.push(new jb.ui.material.MDCTextField(cmp.base))
@@ -22,7 +22,7 @@ jb.component('mdc-style.init-dynamic', { /* mdcStyle.initDynamic */
   })
 })
 
-jb.component('mdc.ripple-effect', {
+jb.component('mdc.ripple-effect', { /* mdc.rippleEffect */
   type: 'feature',
   description: 'add ripple effect',
   impl: ctx => ({
@@ -41,7 +41,7 @@ jb.component('label.mdc-ripple-effect', { /* label.mdcRippleEffect */
       h('div',{class:'mdc-button__ripple'}),
       h('span',{class:'mdc-button__label'},state.text),
     ]),
-    css: `>span { text-transform: none; }`,
+    css: '>span { text-transform: none; }',
     features: [label.bindText(), mdcStyle.initDynamic()]
   })
 })

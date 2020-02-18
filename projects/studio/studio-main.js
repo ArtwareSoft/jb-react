@@ -4,7 +4,7 @@ jb.component('data-resource.studio', { /* dataResource.studio */
     page: '',
     profile_path: '',
     pickSelectionCtxId: '',
-    settings: { contentEditable : true, activateWatchRefViewer: true },
+    settings: {contentEditable: true, activateWatchRefViewer: true},
     baseStudioUrl: '//unpkg.com/jb-react/bin/studio/'
   }
 })
@@ -29,7 +29,7 @@ jb.component('studio.pages', { /* studio.pages */
       }),
       itemlist({
         items: pipeline(
-          studio.cmpsOfProject('%$studio/project%'),
+          studio.cmpsOfProject(),
           filter(studio.isOfType('%%', 'control')),
           suffix('.')
         ),
@@ -54,7 +54,7 @@ jb.component('studio.pages', { /* studio.pages */
       }),
       itemlist({
         items: pipeline(
-          studio.cmpsOfProject('%$studio/project%'),
+          studio.cmpsOfProject(),
           filter(studio.isOfType('%%', 'data')),
           suffix('.')
         ),
@@ -68,7 +68,7 @@ jb.component('studio.pages', { /* studio.pages */
           ]
         }),
         style: itemlist.horizontal(),
-        features: [ id('functions'), css.class('studio-pages-items')]
+        features: [id('functions'), css.class('studio-pages-items')]
       })
     ],
     features: [
@@ -271,7 +271,8 @@ jb.component('studio.all', { /* studio.all */
       group.wait({
         for: ctx => jb.studio.host.settings().then(settings => ctx.run(writeValue('%$studio/settings%',
           Object.assign(ctx.exp('%$studio/settings%'),JSON.parse(settings))))),
-        loadingControl: label('')}),
+        loadingControl: label('')
+      }),
       group.data({data: '%$studio/project%', watch: true}),
       feature.init(urlHistory.mapStudioUrlToResource('studio'))
     ]

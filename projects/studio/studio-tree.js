@@ -127,8 +127,8 @@ jb.component('studio.control-tree', { /* studio.controlTree */
   impl: group({
     controls: [
       tree({
-        style: tree.expandBox({showIcon: true}),
         nodeModel: studio.controlTreeNodes(),
+        style: tree.expandBox(true),
         features: [
           tree.selection({
             databind: '%$studio/profile_path%',
@@ -143,12 +143,15 @@ jb.component('studio.control-tree', { /* studio.controlTree */
           }),
           tree.dragAndDrop(),
           studio.watchScriptChanges(),
-          defHandler('newControl', studio.openNewProfileDialog({
-            path: (ctx,{$tree,$launchingElement}) => $tree.cmp.elemToPath($launchingElement.el),
-            type: 'control',
-            mode: 'insert-control',
-            onClose: studio.gotoLastEdit()
-          }))
+          defHandler(
+            'newControl',
+            studio.openNewProfileDialog({
+              path: (ctx,{$tree,$launchingElement}) => $tree.cmp.elemToPath($launchingElement.el),
+              type: 'control',
+              mode: 'insert-control',
+              onClose: studio.gotoLastEdit()
+            })
+          )
         ]
       })
     ],
@@ -156,7 +159,7 @@ jb.component('studio.control-tree', { /* studio.controlTree */
   })
 })
 
-jb.component('studio.open-control-tree', { /* studio.openControlTree */ 
+jb.component('studio.open-control-tree', { /* studio.openControlTree */
   type: 'action',
   impl: openDialog({
     style: dialog.studioFloating({id: 'studio-outline', width: '350'}),

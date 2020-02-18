@@ -1,12 +1,14 @@
+jb.ns('studioDialogFeature')
+
 jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
   type: 'dialog.style',
   params: [
     {id: 'id', as: 'string'},
     {id: 'width', as: 'number', defaultValue: 300},
-    {id: 'height', as: 'number', defaultValue: 100},
+    {id: 'height', as: 'number', defaultValue: 100}
   ],
   impl: customStyle({
-			template: (cmp,{title,contentComp,id},h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: id},[
+    template: (cmp,{title,contentComp,id},h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: id},[
 				h('div',{class: 'dialog-title noselect'},title),
 				cmp.hasMenu ? h('div',{class: 'dialog-menu'},h(cmp.menuComp)): '',
 				h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
@@ -17,14 +19,7 @@ jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
 					h('button',{class: 'mdc-button', onclick: 'dialogCloseOK' },'ok'),
 				].filter(x=>x) ),
 			]),
-			features: [
-					{$: 'dialog-feature.drag-title', id: '%$id%'},
-					{$: 'dialog-feature.unique-dialog', id: '%$id%', remeberLastLocation: true },
-					{$: 'dialog-feature.max-zIndex-on-click', minZIndex: 5000 },
-					{$: 'studio-dialog-feature.refresh-title' },
-					{$: 'studio-dialog-feature.studio-popup-location' },
-			],
-			css: `{ position: fixed;
+    css: `{ position: fixed;
 						background: #F9F9F9;
 						width: %$width%px;
 						min-height: %$height%px;
@@ -60,42 +55,41 @@ jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
 						opacity: .2;
 				}
 				>.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }
-				>.dialog-close:hover { opacity: .5 }`
-
-	})
+				>.dialog-close:hover { opacity: .5 }`,
+    features: [
+      dialogFeature.dragTitle('%$id%'),
+      dialogFeature.uniqueDialog('%$id%', true),
+      dialogFeature.maxZIndexOnClick(5000),
+      studioDialogFeature.refreshTitle(),
+      studioDialogFeature.studioPopupLocation()
+    ]
+  })
 })
 
-jb.component('studio.dialog-particle-style', { 
-	type: 'dialog.style',
-	impl: customStyle({
-	  template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
-	  css: `{ position: fixed; z-index: 6000 !important; width: 20px; height: 20px;}
+jb.component('studio.dialog-particle-style', { /* studio.dialogParticleStyle */
+  type: 'dialog.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
+    css: `{ position: fixed; z-index: 6000 !important; width: 20px; height: 20px;}
 	  >* { display: inline-block; }`
-	})
+  })
 })
 
 
-jb.component('dialog.show-source-style', {
-	type: 'dialog.style',
-	params: [
-	  {id: 'id', as: 'string'},
-	  {id: 'width', as: 'number', defaultValue: 600},
-	  {id: 'height', as: 'number', defaultValue: 600},
-	],
-	impl: customStyle({
-			  template: (cmp,{title,contentComp,id},h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: id},[
+jb.component('dialog.show-source-style', { /* dialog.showSourceStyle */
+  type: 'dialog.style',
+  params: [
+    {id: 'id', as: 'string'},
+    {id: 'width', as: 'number', defaultValue: 600},
+    {id: 'height', as: 'number', defaultValue: 600}
+  ],
+  impl: customStyle({
+    template: (cmp,{title,contentComp,id},h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: id},[
 				  h('div',{class: 'dialog-title noselect'},title),
 				  h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
 				  h('div',{class: 'jb-dialog-content-parent stretchedToMargin'},h(contentComp)),
 			  ]),
-			  features: [
-					  {$: 'dialog-feature.drag-title', id: '%$id%'},
-					  {$: 'dialog-feature.unique-dialog', id: '%$id%', remeberLastLocation: true },
-					  {$: 'dialog-feature.max-zIndex-on-click', minZIndex: 5000 },
-					  {$: 'studio-dialog-feature.studio-popup-location' },
-					  dialogFeature.resizer(true)
-			 ],
-			  css: `{ position: fixed;
+    css: `{ position: fixed;
 						  background: #F9F9F9;
 						  width: %$width%px;
 						  height: %$height%px;
@@ -118,13 +112,21 @@ jb.component('dialog.show-source-style', {
 						  font-weight: 700;
 						  opacity: .2;
 				  }
-				  >.dialog-close:hover { opacity: .5 }`
-	  })
+				  >.dialog-close:hover { opacity: .5 }`,
+    features: [
+      dialogFeature.dragTitle('%$id%'),
+      dialogFeature.uniqueDialog('%$id%', true),
+      dialogFeature.maxZIndexOnClick(5000),
+      studioDialogFeature.studioPopupLocation(),
+      dialogFeature.resizer(true)
+    ]
+  })
 })
 
 jb.component('studio-dialog-feature.studio-popup-location', { /* studioDialogFeature.studioPopupLocation */
   type: 'dialog-feature',
-  impl: interactive( (ctx,{cmp}) => {
+  impl: interactive(
+    (ctx,{cmp}) => {
 			const dialog = cmp.dialog;
 			const id = (dialog.id||'').replace(/\s/g,'_');
 			if (id && !sessionStorage[id]) {
@@ -132,13 +134,15 @@ jb.component('studio-dialog-feature.studio-popup-location', { /* studioDialogFea
 				dialog.el.classList.add('default-location')
 			}
 		}
-	)
+  )
 })
 
 jb.component('studio-dialog-feature.refresh-title', { /* studioDialogFeature.refreshTitle */
   type: 'dialog-feature',
-  impl: interactive( (ctx,{cmp}) => jb.studio.scriptChange.takeUntil( cmp.destroyed )
-  		.subscribe(e=> cmp.recalcTitle && cmp.recalcTitle(e,ctx)))
+  impl: interactive(
+    (ctx,{cmp}) => jb.studio.scriptChange.takeUntil( cmp.destroyed )
+  		.subscribe(e=> cmp.recalcTitle && cmp.recalcTitle(e,ctx))
+  )
 })
 
 jb.component('studio.code-mirror-mode', { /* studio.codeMirrorMode */
@@ -236,8 +240,8 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
   impl: openDialog({
     style: dialog.studioFloating('responsive'),
     content: group({
-		style: group.tabs(),
-		controls : dynamicControls({
+      style: group.tabs(),
+      controls: dynamicControls({
         controlItems: asIs(
           [
             {
@@ -267,9 +271,7 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
               style: editableText.mdcInput(),
               min: '%$controlItem/width/min%',
               max: '%$controlItem/width/max%',
-              features: [
-                field.default('%$controlItem/width/default%'),
-              ]
+              features: [{'$': 'field.default', '$byValue': ['%$controlItem/width/default%']}]
             }),
             editableNumber({
               databind: '%$studio/responsive/{%$controlItem/id%}/height%',
@@ -277,14 +279,12 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
               style: editableText.mdcInput(),
               min: '%$controlItem/height/min%',
               max: '%$controlItem/height/max%',
-              features: [
-                field.default('%$controlItem/height/default%'),
-              ]
+              features: [{'$': 'field.default', '$byValue': ['%$controlItem/height/default%']}]
             })
           ],
           features: [css('{ padding-left: 12px; padding-top: 7px }')]
         })
-      }),
+      })
     }),
     title: 'responsive'
   })

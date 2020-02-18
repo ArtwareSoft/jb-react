@@ -7,17 +7,8 @@ jb.component('table', { /* table */
     {id: 'title', as: 'string'},
     {id: 'items', as: 'array', dynamic: true, mandatory: true},
     {id: 'fields', type: 'table-field[]', mandatory: true, dynamic: true},
-    { id: 'style',
-      type: 'table.style',
-      dynamic: true,
-      defaultValue: table.plain()
-    },
-    {
-      id: 'visualSizeLimit',
-      as: 'number',
-      defaultValue: 100,
-      description: 'by default table is limmited to 100 shown items'
-    },
+    {id: 'style', type: 'table.style', dynamic: true, defaultValue: table.plain()},
+    {id: 'visualSizeLimit', as: 'number', defaultValue: 100, description: 'by default table is limmited to 100 shown items'},
     {id: 'features', type: 'feature[]', dynamic: true, flattenArray: true}
   ],
   impl: ctx =>
@@ -32,7 +23,7 @@ jb.component('field', { /* field */
     {id: 'hoverTitle', as: 'string', dynamic: true},
     {id: 'width', as: 'number'},
     {id: 'numeric', as: 'boolean', type: 'boolean'},
-    {id: 'extendItems', as: 'boolean', type: 'boolean', description: 'extend the items with the calculated field using the title as field name' },
+    {id: 'extendItems', as: 'boolean', type: 'boolean', description: 'extend the items with the calculated field using the title as field name'},
     {id: 'class', as: 'string'}
   ],
   impl: (ctx,title,data,hoverTitle,width,numeric,extendItems,_class) => ({
@@ -69,13 +60,7 @@ jb.component('field.control', { /* field.control */
   type: 'table-field',
   params: [
     {id: 'title', as: 'string', mandatory: true},
-    {
-      id: 'control',
-      type: 'control',
-      dynamic: true,
-      mandatory: true,
-      defaultValue: label('')
-    },
+    {id: 'control', type: 'control', dynamic: true, mandatory: true, defaultValue: label('')},
     {id: 'width', as: 'number'},
     {id: 'dataForSort', dynamic: true},
     {id: 'numeric', as: 'boolean', type: 'boolean'}
@@ -92,7 +77,7 @@ jb.component('field.control', { /* field.control */
 
 // todo - move to styles
 
-jb.component('button.table-cell-href', { /* tableButton.href */
+jb.component('button.table-cell-href', { /* button.tableCellHref */
   type: 'button.style',
   impl: customStyle({
     template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: true}, state.title),
@@ -100,7 +85,7 @@ jb.component('button.table-cell-href', { /* tableButton.href */
   })
 })
 
-jb.component('table.init-table-or-itemlist', {
+jb.component('table.init-table-or-itemlist', { /* table.initTableOrItemlist */
   type: 'feature',
   impl: ctx => ctx.run(ctx.vars.$model.fields ? table.init() : itemlist.initTable())
 })
@@ -109,10 +94,26 @@ jb.component('table.init', { /* table.init */
   type: 'feature',
   category: 'table:10',
   impl: features(
-    calcProp('fields', '%$$model.fields%'),
-    calcProp({id: 'updateItemlistCntr', value: writeValue('%$itemlistCntr.items%', '%$$props.items%'), phase: 100}),
-    calcProp('items', pipeline('%$$model.items%', slice(0,firstSucceeding('%$$model.visualSizeLimit%',100)))),
-    interactiveProp('items', pipeline('%$$model.items%', slice(0,firstSucceeding('%$$model.visualSizeLimit%',100)))),
+    calcProp({id: 'fields', value: '%$$model.fields%'}),
+    calcProp({
+        id: 'updateItemlistCntr',
+        value: writeValue('%$itemlistCntr.items%', '%$$props.items%'),
+        phase: 100
+      }),
+    calcProp({
+        id: 'items',
+        value: pipeline(
+          '%$$model.items%',
+          slice(0, firstSucceeding('%$$model.visualSizeLimit%', 100))
+        )
+      }),
+    interactiveProp(
+        'items',
+        pipeline(
+          '%$$model.items%',
+          slice(0, firstSucceeding('%$$model.visualSizeLimit%', 100))
+        )
+      )
   )
 })
 

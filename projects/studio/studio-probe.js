@@ -133,7 +133,7 @@ st.Probe = class {
 
 const probeEmitter = new jb.rx.Subject()
 
-jb.component('studio.probe', { /* studio.probe */ 
+jb.component('studio.probe', { /* studio.probe */
   type: 'data',
   params: [
     {id: 'path', as: 'string', dynamic: true}
