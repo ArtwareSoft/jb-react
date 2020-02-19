@@ -60,7 +60,7 @@ jb.component('card.image454', { /* singlecard.image454 */
             group({
               title: 'text overlay',
               controls: [
-                card.Properties()
+                card.properties()
               ],
               features: [
                 css('height: 100%; width: 100%; position: absolute; top: 0; left: 0; display: inline-block;'),
@@ -71,7 +71,7 @@ jb.component('card.image454', { /* singlecard.image454 */
           features: css('position: relative')
         })
       ],
-      //features: [css.width('454'), css.height('454')]
+      features: [css.width('454'), css.height('454')]
     })
 })
 
@@ -90,7 +90,7 @@ jb.component('card.flat940', { /* singlecard.flat940 */
       group({
         layout: layout.vertical('18'),
         controls: [
-          card.Properties(),
+          card.properties(),
           label({
             text: '%title%',
             title: 'title',
@@ -127,7 +127,7 @@ jb.component('card.full940', { /* singlecard.full940 */
     layout: layout.vertical('30'),
     style: group.htmlTag('article'),
     controls: [
-      card.Properties(),
+      card.properties(),
       label({
         text: '%title%',
         title: 'title',

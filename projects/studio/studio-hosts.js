@@ -18,6 +18,7 @@ const devHost = {
     srcOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
     pathOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
     projectUrlInStudio: project => `/project/studio/${project}`,
+    isDevHost: true
 }
 
 const userLocalHost = Object.assign({},devHost,{
@@ -177,38 +178,5 @@ jb.component('studio.parse-project-html', { /* studio.parseProjectHtml */
       )
   )
 })
-jb.component('studio.parse-project-html', { /* studio.parseProjectHtml */
-    type: 'data',
-    impl: obj(
-          prop(
-              'fileNames',
-              pipeline(
-                extractText({
-                    startMarkers: ['<script', 'src=\"'],
-                    endMarker: '\"',
-                    repeating: 'true'
-                  }),
-                filter(and(notContains(['/loader/']), notContains(['/dist/']))),
-                extractSuffix('/')
-              ), 'array'
-            ),
-          prop(
-              'libs',
-              list(
-                pipeline(
-                    extractText({startMarkers: ['modules=\"'], endMarker: '\"', repeating: 'true'}),
-                    split(','),
-                    filter(and(notEquals('common'), notEquals('ui-common'))),
-                    '%%.js'
-                  ),
-                pipeline(
-                    extractText({startMarkers: ['/dist/'], endMarker: '\"', repeating: 'true'}),
-                    filter(notEquals('jb-react-all.js')),
-                    filter(notEquals('material.css'))
-                  )
-              ), 'array'
-            )
-        )
-  })
 
 })()

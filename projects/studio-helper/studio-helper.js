@@ -138,9 +138,7 @@ jb.component('studio-helper-sample.button', { /* studioHelperSample.button */
   impl: button(
     'btn1'
   ),
-  action: dialog.closeAll(
-
-  )
+  action: dialog.closeAll()
 })
 
 jb.component('studio-helper-sample.control', { /* studioHelperSample.control */
@@ -160,46 +158,11 @@ jb.component('studio-helper-sample.control', { /* studioHelperSample.control */
   })
 })
 
-jb.component('studio-helper-dummy.label', { /* studioHelperDummy.label */
-  type: 'control',
-  impl: label({
-    title: pipeline(
-      '%%',
-      '%$people-array/people%',
-      '%name% aa aa a a a a a sa fds ds f sd fsd fsd fsd fs sdf faaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-      {'$': 'object', dd: '%%', mkmk: ''}
-    ),
-    features: [
-      css('{ position: absolute; margin-left: -20px; margin-top: 2px }'),
-      hidden(true)
-    ]
-  })
-})
-
-jb.component('studio-helper.group-with-label', { /* studioHelper.groupWithLabel */
-  type: 'control',
-  impl: group({
-    title: '',
-    controls: label('hello')
-  })
-})
-
 jb.component('studio-helper.empty-group', { /* studioHelper.emptyGroup */
   type: 'control',
   impl: group({
     controls: [
       text({text: pipeline(''), title: 'my title'})
-    ]
-  })
-})
-
-jb.component('studio-helper.data-resources', { /* studioHelper.dataResources */
-  type: 'control',
-  impl: group({
-    controls: [
-      {'$': 'studio.data-resources'},
-      button({style: button.mdc()}),
-      button({style: button.mdc()})
     ]
   })
 })
@@ -210,7 +173,6 @@ jb.component('studio-helper.select-control', { /* studioHelper.selectControl */
     type: 'control'
   })
 })
-
 
 jb.component('studio-helper.select-feature', { /* studioHelper.selectFeature */
   type: 'control',
@@ -271,14 +233,6 @@ jb.component('studio-helper.studio-properties', { /* studioHelper.studioProperti
   impl: group({
     vars: [Var('circuit', 'studio-helper-sample.properties-tgp')],
     controls: studio.properties('studio-helper-sample.properties-tgp~impl')
-  })
-})
-
-jb.component('studio-helper1.studio-properties', { /* studioHelper1.studioProperties */
-  type: 'control',
-  impl: group({
-    vars: [Var('circuit', 'studio-helper-sample.picklist')],
-    controls: studio.properties('studio-helper-sample.picklist~impl')
   })
 })
 
@@ -430,71 +384,3 @@ jb.component('studio-helper-sample.control', { /* studioHelperSample.control */
   })
 })
 
-jb.component('studio-helper.comps-chart', { /* studioHelper.compsChart */
-  type: 'control',
-  impl: group({
-    controls: [
-      d3g.chartScatter({
-        title: 'comps chart',
-        items: pipeline(
-          studio.allComps(),
-          studio.componentStatistics('%%'),
-          filter(contains({text: 'projects/studio', allText: '%file%'}))
-        ),
-        frame: d3g.frame({width: '2400', height: 500, top: 30, right: 50, bottom: 40, left: 60}),
-        pivots: [
-          d3g.pivot({
-            title: 'file',
-            value: pipeline(
-              '%file%',
-              pipeline(split({separator: '-', part: 'but first'}), join('-')),
-              split({separator: '.js', part: 'first'})
-            ),
-            scale: d3g.bandScale({paddingInner: '1', align: '0.5'})
-          }),
-          d3g.pivot({title: 'line', value: '%lineInFile%', scale: d3g.linearScale()}),
-          d3g.pivot({title: 'size', value: '%linesOfCode%', scale: d3g.linearScale()}),
-          d3g.pivot({title: 'refs', value: '%refs%'})
-        ],
-        itemTitle: '%id%',
-        onSelectItem: openDialog({content: editableText({databind: prettyPrint('%%')})}),
-        onSelectAxisValue: openDialog({content: editableText({databind: prettyPrint('%%')})}),
-        visualSizeLimit: '10000'
-      })
-    ]
-  })
-})
-
-jb.component('studio-helper.parse-project-html', { /* studioHelper.parseProjectHtml */
-  type: 'data',
-  impl: obj(
-    prop(
-        'files',
-        pipeline(
-          extractText({
-              startMarkers: ['<script', 'src=\"'],
-              endMarker: '\"',
-              repeating: 'true'
-            }),
-          filter(and(notContains(['/loader/']), notContains(['/dist/']))),
-          extractSuffix('/')
-        )
-      ),
-    prop(
-        'libs',
-        list(
-          pipeline(
-              extractText({startMarkers: ['modules=\"'], endMarker: '\"', repeating: 'true'}),
-              split(','),
-              filter(and(notEquals('common'), notEquals('ui-common'))),
-              '%%.js'
-            ),
-          pipeline(
-              extractText({startMarkers: ['/dist/'], endMarker: '\"', repeating: 'true'}),
-              filter(notEquals('jb-react-all.js')),
-              filter(notEquals('material.css'))
-            )
-        )
-      )
-  )
-})

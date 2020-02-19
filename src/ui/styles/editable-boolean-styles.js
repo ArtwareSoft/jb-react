@@ -39,6 +39,7 @@ jb.component('editable-boolean.mdc-x-v', { /* editableBoolean.mdcXV */
             h('i',{class:'material-icons mdc-icon-button__icon mdc-icon-button__icon--on'}, yesIcon),
             h('i',{class:'material-icons mdc-icon-button__icon '}, noIcon),
         ]),
+    css: '{ border-radius: 2px; padding: 0; width: 24px; height: 24px;}',
     features: [field.databind(), mdcStyle.initDynamic()]
   })
 })

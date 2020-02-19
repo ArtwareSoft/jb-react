@@ -1,49 +1,57 @@
 (function() {
 const st = jb.studio;
 
+function initStudioEditing() {
+  if (st.previewjb.comps['dialog.studio-pick-dialog']) return
+  jb.entries(jb.comps).filter(e=>e[1][jb.location][0].indexOf('projects/studio') != -1).forEach(e=> 
+    st.previewjb.comps[e[0]] = { ...e[1], [jb.location] : [e[1][jb.location][0].replace(/!st!/,''), e[1][jb.location][1]]})
+}
+
 jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
   type: 'dialog-feature',
   params: [
     {id: 'from', as: 'string'}
   ],
-  impl: ctx => ({
+  impl: (ctx,from) => ({
     afterViewInit: cmp=> {
-          const _window = ctx.params.from == 'preview' ? st.previewWindow : window;
-          const previewOffset = ctx.params.from == 'preview' ? document.querySelector('#jb-preview').getBoundingClientRect().top : 0;
-          cmp.titleBelow = false;
+      if (from === 'studio')
+        initStudioEditing()
+      const _window = from == 'preview' ? st.previewWindow : window;
+      const previewOffset = from == 'preview' ? document.querySelector('#jb-preview').getBoundingClientRect().top : 0;
+      cmp.titleBelow = false;
 
-          const cover = _window.document.createElement('div')
-          cover.className = 'jb-cover'
-          cover.style.position= 'absolute'; cover.style.width= '100%'; cover.style.height= '100%'; cover.style.background= 'white'; cover.style.opacity= '0'; cover.style.top= 0; cover.style.left= 0;
-          _window.document.body.appendChild(cover);
-          const mouseMoveEm = jb.rx.Observable.fromEvent(_window.document, 'mousemove');
-          let userPick = jb.rx.Observable.fromEvent(document, 'mousedown');
-          let keyUpEm = jb.rx.Observable.fromEvent(document, 'keyup');
-          if (st.previewWindow) {
-              userPick = userPick.merge(jb.rx.Observable.fromEvent(st.previewWindow.document, 'mousedown'));
-              keyUpEm = keyUpEm.merge(jb.rx.Observable.fromEvent(st.previewWindow.document, 'keyup'));
-          }
-          mouseMoveEm.debounceTime(50)
-              .takeUntil(keyUpEm.filter(e=>e.keyCode == 27).merge(userPick))
-              .map(e=> eventToElem(e,_window,ctx.exp('%$studio/project%.%$studio/page%')))
-              .filter(x=>x && x.getAttribute)
-              .do(profElem=> {
-                ctx.exp('%$pickSelection%').elem = profElem
-                showBox(cmp,profElem,_window,previewOffset)
-              })
-              .last() // esc or user pick
-              .subscribe(profElem=> {
-                  const pickSelection = ctx.exp('%$pickSelection%')
-                  pickSelection.ctx = _window.jb.ctxDictionary[profElem.getAttribute('pick-ctx') || profElem.getAttribute('jb-ctx')];
-                  pickSelection.elem = profElem;
-                  // inform watchers
-                  ctx.run(writeValue('%$studio/pickSelectionCtxId%',(pickSelection.ctx || {}).id))
+      const cover = _window.document.createElement('div')
+      cover.className = 'jb-cover'
+      cover.style.position= 'absolute'; cover.style.width= '100%'; cover.style.height= '100%'; cover.style.background= 'white'; cover.style.opacity= '0'; cover.style.top= 0; cover.style.left= 0;
+      _window.document.body.appendChild(cover);
+      const mouseMoveEm = jb.rx.Observable.fromEvent(_window.document, 'mousemove');
+      let userPick = jb.rx.Observable.fromEvent(document, 'mousedown');
+      let keyUpEm = jb.rx.Observable.fromEvent(document, 'keyup');
+      if (st.previewWindow) {
+          userPick = userPick.merge(jb.rx.Observable.fromEvent(st.previewWindow.document, 'mousedown'));
+          keyUpEm = keyUpEm.merge(jb.rx.Observable.fromEvent(st.previewWindow.document, 'keyup'));
+      }
+      mouseMoveEm.debounceTime(50)
+          .takeUntil(keyUpEm.filter(e=>e.keyCode == 27).merge(userPick))
+          .map(e=> eventToElem(e,_window,from == 'preview' ? ctx.exp('%$studio/project%.%$studio/page%') : 'studio'))
+          .filter(x=>x && x.getAttribute)
+          .do(profElem=> {
+            ctx.exp('%$pickSelection%').elem = profElem
+            showBox(cmp,profElem,_window,previewOffset)
+          })
+          .last() // esc or user pick
+          .subscribe(profElem=> {
+              const pickSelection = ctx.exp('%$pickSelection%')
+              pickSelection.ctx = _window.jb.ctxDictionary[profElem.getAttribute('pick-ctx') || profElem.getAttribute('jb-ctx')];
+              pickSelection.elem = profElem;
+              // inform watchers
+              ctx.run(writeValue('%$studio/pickSelectionCtxId%',(pickSelection.ctx || {}).id))
 
-                  ctx.vars.$dialog.close({OK: true});
-                  _window.document.body.removeChild(cover);
-              })
-        }
-    })
+              ctx.vars.$dialog.close({OK: true});
+              _window.document.body.removeChild(cover);
+          })
+    }
+  })
 })
 
 jb.component('dialog.studio-pick-dialog', { /* dialog.studioPickDialog */
@@ -128,69 +136,77 @@ function showBox(cmp,profElem,_window,previewOffset) {
     })
 }
 
-jb.studio.getOrCreateHighlightBox = function(sampleElem) {
-  const doc = sampleElem.ownerDocument
-  if (!doc.querySelector('#preview-box')) {
-    const elem = doc.createElement('div');
-    elem.setAttribute('id','preview-box');
-    !doc.body.appendChild(elem);
-  }
-  return doc.querySelector('#preview-box');
-}
-
-st.highlightCtx = function(ctx) {
-    if (!ctx) return
-    const _window = st.previewWindow || window;
-    st.highlightElems(Array.from(_window.document.querySelectorAll(`[jb-ctx="${ctx.id}"]`)))
-}
-
-st.highlightByScriptPath = function(path) {
-    const pathStr = Array.isArray(path) ? path.join('~') : path;
-    const result = st.closestCtxInPreview(pathStr)
-    st.highlightCtx(result.ctx)
-}
-
-st.highlightElems = function(elems) {
-  if (!elems || !elems.length) return
-  const html = elems.map(el => {
-      const offset = jb.ui.offset(el);
-      let width = jb.ui.outerWidth(el);
+Object.assign(st, {
+  getOrCreateHighlightBox(sampleElem) {
+    const doc = sampleElem.ownerDocument
+    if (!doc.querySelector('#preview-box')) {
+      const elem = doc.createElement('div');
+      elem.setAttribute('id','preview-box');
+      !doc.body.appendChild(elem);
+    }
+    return doc.querySelector('#preview-box');
+  }, 
+  highlightCtx(ctx) {
+      [st.previewWindow,window].forEach(win=>
+        st.highlightElems(Array.from(win.document.querySelectorAll(`[jb-ctx="${ctx.id}"]`))))
+  },
+  highlightByScriptPath(path) {
+      const pathStr = Array.isArray(path) ? path.join('~') : path;
+      const result = st.closestCtxInPreview(pathStr)
+      st.highlightCtx(result.ctx)
+  },
+  highlightElems(elems) {
+    if (!elems || !elems.length) return
+    const html = elems.map(el => {
+      const offset = jb.ui.offset(el)
+      let width = jb.ui.outerWidth(el)
       if (width == jb.ui.outerWidth(document.body))
           width -= 10;
       return `<div style="opacity: 0.5; position: absolute; background: rgb(193, 224, 228); border: 1px solid blue; z-index: 10000;
           width: ${width}px; left: ${offset.left}px;top: ${offset.top}px; height: ${jb.ui.outerHeight(el)}px"></div>`
-  }).join('');
+    }).join('');
+  
+    const box = st.getOrCreateHighlightBox(elems[0]);
+    jb.ui.removeClass(box,'jb-fade-3s-transition');
+    box.innerHTML = html;
+    jb.delay(1).then(()=> jb.ui.addClass(box,'jb-fade-3s-transition'));
+    jb.delay(1000).then(()=>st.getOrCreateHighlightBox(elems[0]).innerHTML = ''); // clean after the fade animation
+  },
+  refreshStudioComponent(path) {
+    jb.comps[path[0]] = st.previewjb.comps[path[0]]
+    const pathStr = Array.isArray(path) ? path.join('~') : path;
+    const {elem, ctx} = st.findElemsByCtxCondition(ctx => pathStr.indexOf(ctx.path) == 0)[0] || {}
+    ctx.profile = jb.path(jb.comps,ctx.path.split('~'))
+    const cmp = ctx.profile.$ == 'open-dialog' ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself()
+    cmp && jb.ui.applyVdomDiff(elem, jb.ui.h(cmp), {strongRefresh: true, ctx})
+    jb.exec({ $: 'animate.refresh-elem', elem: () => elem })
+  },
+  findElemsByCtxCondition(condition) {
+    return [st.previewWindow,window].flatMap(win => 
+      Array.from(win.document.querySelectorAll('[jb-ctx]'))
+        .map(elem=>({elem, ctx: win.jb.ctxDictionary[elem.getAttribute('jb-ctx')]}))
+        .filter(e => e.ctx && condition(e.ctx))
+    )
+  },
+  closestCtxInPreview(_path) {
+      const path = _path.split('~fields~')[0]; // field is passive..
+      const candidates = st.findElemsByCtxCondition(ctx => path.indexOf(ctx.path) == 0)
+      return candidates.sort((e2,e1) => 1000* (e1.ctx.path.length - e2.ctx.path.length) + (e1.ctx.id - e2.ctx.id) )[0] || {ctx: null, elem: null}
+  }
+})
 
-  const box = jb.studio.getOrCreateHighlightBox(elems[0]);
-  jb.ui.removeClass(box,'jb-fade-3s-transition');
-  box.innerHTML = html;
-  jb.delay(1).then(()=> jb.ui.addClass(box,'jb-fade-3s-transition'));
-  jb.delay(1000).then(()=>jb.studio.getOrCreateHighlightBox(elems[0]).innerHTML = ''); // clean after the fade animation
-}
-
-jb.component('studio.highlight-in-preview', { /* studio.highlightInPreview */
+jb.component('studio.highlight-by-path', { /* studio.highlightByPath */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => {
-        const _window = st.previewWindow || window;
-        if (!_window) return;
-        let elems = Array.from(_window.document.querySelectorAll('[jb-ctx]'))
-            .filter(e=>{
-                const _ctx = _window.jb.ctxDictionary[e.getAttribute('jb-ctx')];
-                const callerPath = _ctx && _ctx.componentContext && _ctx.componentContext.callerPath;
-                return callerPath == path || (_ctx && _ctx.path == path);
-            })
+    const elems = st.findElemsByCtxCondition(_ctx => {
+      const callerPath = _ctx && _ctx.componentContext && _ctx.componentContext.callerPath;
+      return callerPath == path || (_ctx && _ctx.path == path);
+    }).map(e=>e.elem)
 
-        if (elems.length == 0) // try to look in studio
-            elems = Array.from(document.querySelectorAll('[jb-ctx]'))
-            .filter(e=> {
-                const _ctx = jb.ctxDictionary[e.getAttribute('jb-ctx')];
-                return _ctx && _ctx.path == path
-            })
-
-        jb.studio.highlightElems(elems);
+    st.highlightElems(elems);
   }
 })
 
@@ -206,16 +222,6 @@ jb.component('studio.pick', { /* studio.pick */
     onOK: ctx => ctx.componentContext.params.onSelect(ctx.setData(ctx.exp('%$pickSelection/ctx%')))
   })
 })
-
-st.closestCtxInPreview = _path => {
-    const path = _path.split('~fields~')[0]; // field is passive..
-    const _window = st.previewWindow || window;
-    if (!_window) return;
-    const elems = Array.from(_window.document.querySelectorAll('[jb-ctx]'));
-    const candidates = elems.map(elem=>({ ctx: _window.jb.ctxDictionary[elem.getAttribute('jb-ctx')], elem }))
-        .filter(e=>e.ctx && path.indexOf(e.ctx.path) == 0)
-    return candidates.sort((e2,e1) => 1000* (e1.ctx.path.length - e2.ctx.path.length) + (e1.ctx.id - e2.ctx.id) )[0] || {ctx: null, elem: null}
-}
 
 jb.component('studio.pick-toolbar', { /* studio.pickToolbar */
   type: 'control',
@@ -237,9 +243,10 @@ jb.component('studio.pick-toolbar', { /* studio.pickToolbar */
         name: 'path',
         value: ctx =>{
           const elem = ctx.exp('%$pickSelection/elem%')
+          if (!elem) return ''
+          const _jb = elem.ownerDocument === jb.frame.document ? jb : st.previewjb
           const res = elem ? [elem.getAttribute('pick-ctx'), elem.getAttribute('jb-ctx'),
-               // ...(elem.getAttribute('originators')||'').split(',').filter(x=>x)
-            ].filter(x=>x).slice(0,1).map(id=>st.previewjb.ctxDictionary[id].path) : []
+            ].filter(x=>x).slice(0,1).map(id=>_jb.ctxDictionary[id].path) : []
           return res
         }
       })

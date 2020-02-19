@@ -33,6 +33,8 @@ st.initCompsRefHandler = function(previewjb,allowedTypes) {
 		st.scriptChange.next(e)
 		st.highlightByScriptPath(e.path)
 		writeValueToDataResource(e.path,e.newVal)
+		if ((jb.path(jb.comps,[e.path[0],jb.location,0]) || '').indexOf('projects/studio') != -1)
+			st.refreshStudioComponent(e.path)
 		st.lastStudioActivity= new Date().getTime()
 	})
 }

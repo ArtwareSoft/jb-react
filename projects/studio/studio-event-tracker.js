@@ -62,7 +62,7 @@ jb.component('studio.highlight-event', { /* studio.highlightEvent */
   params: [
     {id: 'event', as: 'single', defaultValue: '%%'}
   ],
-  impl: studio.highlightInPreview(
+  impl: studio.highlightByPath(
     '%$event/cmp/ctx/path%'
   )
 })

@@ -133,7 +133,7 @@ jb.component('studio.control-tree', { /* studio.controlTree */
           tree.selection({
             databind: '%$studio/profile_path%',
             autoSelectFirst: true,
-            onSelection: [studio.openProperties(), studio.highlightInPreview(studio.currentProfilePath())],
+            onSelection: [studio.openProperties(), studio.highlightByPath(studio.currentProfilePath())],
             onRightClick: studio.openTreeMenu('%%')
           }),
           tree.keyboardSelection({
