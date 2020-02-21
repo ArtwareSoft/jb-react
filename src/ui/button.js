@@ -13,8 +13,8 @@ jb.component('button', { /* button */
   impl: ctx => jb.ui.ctrl(ctx, ctx.run(features(
       watchAndCalcModelProp('title'),
       watchAndCalcModelProp('raised'),
-      defHandler('onclickHandler', (ctx,{cmp}) => {
-        const ev = event
+      defHandler('onclickHandler', (ctx,{cmp, ev}) => {
+        //const ev = event
         if (ev && ev.ctrlKey && cmp.ctrlAction)
           cmp.ctrlAction(cmp.ctx.setVar('event',ev))
         else if (ev && ev.altKey && cmp.altAction)

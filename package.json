@@ -49,6 +49,7 @@
     "@material/ripple": "^4.0.0",
     "@material/switch": "^4.0.0",
     "@material/textfield": "^4.0.0",
+    "@mdi/js": "^4.9.95",
     "animejs": "^3.1.0",
     "babel-core": "^6.24.1",
     "babel-loader": "^6.4.1",

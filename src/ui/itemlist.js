@@ -41,14 +41,43 @@ jb.component('itemlist.init', { /* itemlist.init */
     calcProp({id: 'items', value: '%$$model.items%'}),
     calcProp({
         id: 'ctrls',
-        value: ctx => {
-      const controlsOfItem = item =>
-        ctx.vars.$model.controls(ctx.setVar(ctx.vars.$model.itemVariable,item).setData(item)).filter(x=>x)
-      return ctx.vars.$props.items.slice(0,ctx.vars.$model.visualSizeLimit || 100).map(item=>
-        Object.assign(controlsOfItem(item),{item})).filter(x=>x.length > 0);
-    }
+        value: (ctx,{cmp}) => {
+          const controlsOfItem = item =>
+            ctx.vars.$model.controls(ctx.setVar(ctx.vars.$model.itemVariable,item).setData(item)).filter(x=>x)
+          return jb.ui.addSlicedState(cmp, ctx.vars.$props.items, ctx.vars.$model.visualSizeLimit).map(item=>
+            Object.assign(controlsOfItem(item),{item})).filter(x=>x.length > 0);
+        }
       }),
     itemlist.initContainerWithItems()
+  )
+})
+
+jb.component('itemlist.infinite-scroll', { 
+  type: 'feature',
+  params: [
+    { id: 'pageSize', as: 'number', defaultValue: 2 }
+  ],
+  impl: features(
+    defHandler('onscrollHandler', (ctx,{ev, $state},{pageSize}) => {
+      const elem = ev.target
+      const scrollPercentFromTop =  (elem.scrollTop + jb.ui.offset(elem).height)/ elem.scrollHeight
+      if (scrollPercentFromTop < 0.9) return
+      const allItems = ctx.vars.$model.items()
+      const needsToLoadMoreItems = $state.visualLimit.shownItems && $state.visualLimit.shownItems < allItems.length
+      if (!needsToLoadMoreItems) return
+      const cmpCtx = jb.ui.ctxOfElem(elem)
+      if (!cmpCtx) return
+      const itemsToAppend = allItems.slice($state.visualLimit.shownItems, $state.visualLimit.shownItems + pageSize)
+      const ctxToRun = cmpCtx.ctx({profile: Object.assign({},cmpCtx.profile,{ items: () => itemsToAppend}), path: ''}) // change the profile to return itemsToAppend
+      const vdom = ctxToRun.runItself().renderVdom()
+      const itemlistVdom = jb.ui.findIncludeSelf(vdom,'.jb-itemlist')[0]
+      if (itemlistVdom) {
+        console.log(itemsToAppend,ev)
+        jb.ui.appendItems(elem,itemlistVdom)
+        $state.visualLimit.shownItems += itemsToAppend.length
+      }
+    }),
+    templateModifier(({},{vdom}) => vdom.setAttribute('onscroll',true))
   )
 })
 
@@ -111,6 +140,15 @@ jb.component('itemlist.horizontal', { /* itemlist.horizontal */
   })
 })
 
+jb.ui.itemlistInitCalcItems = cmp => cmp.calcItems = cmp.calcItems || (() => Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
+    .map(el=>(jb.ctxDictionary[el.getAttribute('jb-ctx')] || {}).data).filter(x=>x))
+
+jb.ui.addSlicedState = (cmp,items,visualLimit) => {
+  if (items.length > visualLimit)
+    cmp.state.visualLimit = { totalItems: items.length, shownItems: visualLimit }
+    return items.slice(0,visualLimit)
+}
+
 // ****************** Selection ******************
 
 jb.component('itemlist.selection', { /* itemlist.selection */
@@ -133,8 +171,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
         cmp.ondblclick.map(e=> dataOfElem(e.target)).filter(x=>x)
           .subscribe(data => ctx.params.onDoubleClick(cmp.ctx.setData(data)))
 
-        cmp.calcItems = () => Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
-          .map(el=>(jb.ctxDictionary[el.getAttribute('jb-ctx')] || {}).data).filter(x=>x)
+        jb.ui.itemlistInitCalcItems(cmp)
         cmp.items = cmp.calcItems()
 
         cmp.setSelected = selected => {
@@ -209,7 +246,8 @@ jb.component('itemlist.keyboard-selection', { /* itemlist.keyboardSelection */
         } else {
           onkeydown = onkeydown.merge(jb.rx.Observable.fromEvent(cmp.base, 'keydown'))
         }
-        cmp.onkeydown = onkeydown.takeUntil( cmp.destroyed );
+        cmp.onkeydown = onkeydown.takeUntil( cmp.destroyed )
+        jb.ui.itemlistInitCalcItems(cmp)
 
         cmp.onkeydown.filter(e=> e.keyCode == 13 && cmp.state.selected)
           .subscribe(() => ctx.params.onEnter(cmp.ctx.setData(cmp.state.selected)));
@@ -230,6 +268,8 @@ jb.component('itemlist.drag-and-drop', { /* itemlist.dragAndDrop */
   type: 'feature',
   impl: ctx => ({
       afterViewInit: function(cmp) {
+        jb.ui.itemlistInitCalcItems(cmp)
+
         const drake = dragula([cmp.base.querySelector('.jb-drag-parent') || cmp.base] , {
           moves: (el,source,handle) =>
             jb.ui.hasClass(handle,'drag-handle')

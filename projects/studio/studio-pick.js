@@ -3,7 +3,7 @@ const st = jb.studio;
 
 function initStudioEditing() {
   if (st.previewjb.comps['dialog.studio-pick-dialog']) return
-  jb.entries(jb.comps).filter(e=>e[1][jb.location][0].indexOf('projects/studio') != -1).forEach(e=> 
+  jb.entries(jb.comps).filter(e=>st.isStudioCmp(e[0])).forEach(e=> 
     st.previewjb.comps[e[0]] = { ...e[1], [jb.location] : [e[1][jb.location][0].replace(/!st!/,''), e[1][jb.location][1]]})
 }
 
@@ -20,6 +20,9 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
       const previewOffset = from == 'preview' ? document.querySelector('#jb-preview').getBoundingClientRect().top : 0;
       cmp.titleBelow = false;
 
+      const projectPrefix = ctx.exp('%$studio/project%.%$studio/page%')
+      const eventToElemPredicate = from == 'preview' ? 
+        (path => path.indexOf(projectPrefix) == 0) : (path => st.isStudioCmp(path.split('~')[0]))
       const cover = _window.document.createElement('div')
       cover.className = 'jb-cover'
       cover.style.position= 'absolute'; cover.style.width= '100%'; cover.style.height= '100%'; cover.style.background= 'white'; cover.style.opacity= '0'; cover.style.top= 0; cover.style.left= 0;
@@ -33,7 +36,7 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
       }
       mouseMoveEm.debounceTime(50)
           .takeUntil(keyUpEm.filter(e=>e.keyCode == 27).merge(userPick))
-          .map(e=> eventToElem(e,_window,from == 'preview' ? ctx.exp('%$studio/project%.%$studio/page%') : 'studio'))
+          .map(e=> eventToElem(e,_window,eventToElemPredicate))
           .filter(x=>x && x.getAttribute)
           .do(profElem=> {
             ctx.exp('%$pickSelection%').elem = profElem
@@ -95,9 +98,7 @@ jb.component('dialog.studio-pick-dialog', { /* dialog.studioPickDialog */
   })
 })
 
-function eventToElem(e,_window, pathPrefix) {
-  if (pathPrefix.indexOf('studio-helper.') == 0)
-    pathPrefix = ''
+function eventToElem(e,_window, predicate) {
   const mousePos = { x: e.pageX - _window.pageXOffset, y: e.pageY  - _window.pageYOffset }
   const elems = _window.document.elementsFromPoint(mousePos.x, mousePos.y);
   const results = elems.flatMap(el=>[el,...jb.ui.parents(el)])
@@ -116,7 +117,7 @@ function eventToElem(e,_window, pathPrefix) {
   return orderedResults[0];
 
   function checkCtxId(ctxId) {
-    return ctxId && _window.jb.ctxDictionary[ctxId].path.indexOf(pathPrefix) == 0
+    return ctxId && predicate(_window.jb.ctxDictionary[ctxId].path)
   }
 }
 
@@ -147,7 +148,7 @@ Object.assign(st, {
     return doc.querySelector('#preview-box');
   }, 
   highlightCtx(ctx) {
-      [st.previewWindow,window].forEach(win=>
+      ctx && [st.previewWindow,window].forEach(win=>
         st.highlightElems(Array.from(win.document.querySelectorAll(`[jb-ctx="${ctx.id}"]`))))
   },
   highlightByScriptPath(path) {

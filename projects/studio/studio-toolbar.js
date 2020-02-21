@@ -75,17 +75,19 @@ jb.component('studio.toolbar', { /* studio.toolbar */
         title: 'Event Tracker',
         action: studio.openEventTracker(),
         style: button.mdcIcon('hearing'),
-        features: ctrlAction(studio.openEventTracker('true'))
+        features: [ctrlAction(studio.openEventTracker('true')), hidden()]
       }),
       button({
         title: 'History',
         action: studio.openScriptHistory(),
-        style: button.mdcIcon('pets')
+        style: button.mdcIcon('pets'),
+        features: hidden()
       }),
       button({
         title: 'Show Data',
         action: {'$': 'studio.showProbeData'},
-        style: button.mdcIcon('input')
+        style: button.mdcIcon('input'),
+        features: hidden()
       }),
       button({
         title: 'add',
@@ -99,7 +101,8 @@ jb.component('studio.toolbar', { /* studio.toolbar */
       button({
         title: 'Responsive',
         action: studio.openResponsivePhonePopup(),
-        style: button.mdcIcon('tablet_android')
+        style: button.mdcIcon('tablet_android'),
+        features: hidden()
       })
     ],
     features: [

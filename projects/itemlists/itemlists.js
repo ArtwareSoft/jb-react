@@ -7,17 +7,23 @@ jb.component('people', { watchableData: [
 
 jb.component('itemlists.main', { /* itemlists.main */
   type: 'control',
-  impl: itemlist({
-    title: '',
-    items: '%$people%',
+  impl: group({
+    layout: layout.vertical(),
     controls: [
-      text({title: 'name', text: '%name%', features: field.columnWidth('250')}),
-      text({title: 'age', text: '%age%'})
-    ],
-    style: table.plain(),
-    features: [
-      itemlist.selection({databind: '%$selectedItem%', autoSelectFirst: 'true'}),
-      itemlist.keyboardSelection({})
+      button({title: 'click me', style: button.mdIcon('Yoga')}),
+      itemlist({
+        title: '',
+        items: '%$people%',
+        controls: [
+          text({text: '%name%', title: 'name', features: field.columnWidth('250')}),
+          text({text: '%age%', title: 'age'})
+        ],
+        style: table.plain(),
+        features: [
+          itemlist.selection({databind: '%$selectedItem%', autoSelectFirst: 'true'}),
+          itemlist.keyboardSelection({})
+        ]
+      })
     ]
   })
 })
@@ -335,4 +341,41 @@ jb.component('data-resource.people', { /* dataResource.people */
     },
     {name: 'Bart Simpson', age: '12'}
   ]
+})
+
+jb.component('itemlists.search-icon', { /* itemlists.searchIcon */
+  type: 'control',
+  impl: group({
+    controls: [
+      itemlistContainer.search({
+        title: '',
+        searchIn: '%%',
+        databind: '%$itemlistCntrData/search_pattern%'
+      }),
+      itemlist({
+        title: '',
+        items: pipeline(ctx => jb.frame.MDIcons, keys(), itemlistContainer.filter()),
+        controls: [
+          group({
+            layout: layout.horizontal(),
+            controls: [
+              button({title: 'icon', style: button.mdIcon('%%')}),
+              text({
+                text: pipeline('%%', text.highlight('%%', '%$itemlistCntrData.search_pattern%')),
+                title: 'icon name'
+              })
+            ]
+          })
+        ],
+        visualSizeLimit: '50',
+        features: [
+          watchRef({ref: '%$itemlistCntrData/search_pattern%', strongRefresh: 'true'}),
+          css.height({height: '300', overflow: 'scroll'}),
+          css.width('600'),
+          itemlist.infiniteScroll()
+        ]
+      })
+    ],
+    features: group.itemlistContainer({})
+  })
 })

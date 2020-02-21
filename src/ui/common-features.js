@@ -310,7 +310,7 @@ jb.component('feature.onEvent', { /* feature.onEvent */
   type: 'feature',
   category: 'events',
   params: [
-    {id: 'event', as: 'string', mandatory: true, options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover'},
+    {id: 'event', as: 'string', mandatory: true, options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll'},
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true},
     {id: 'debounceTime', as: 'number', defaultValue: 0, description: 'used for mouse events such as mousemove'}
   ],

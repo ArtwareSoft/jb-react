@@ -129,6 +129,10 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'css/font.css',
         'css/styles.css',
       ],
+      'md-icons': [
+        'dist/mdi.js',
+        'src/ui/md-icons.js'
+      ],
       babel: [
         'node_modules/babel-standalone/babel.js',
         'dist/babel-ext.js'

@@ -309,7 +309,7 @@ class CompOption {
       this.writeValue(ctx);
     }
     writeValue(ctx) {
-      st.setComp(ctx.exp('%$suggestionData/path%','string'),this.toPaste);
+      st.setComp(ctx.exp('%$suggestionData/path%','string'),this.toPaste,ctx);
       return ctx.run(runActions(dialog.closeDialog('studio-jb-editor-popup'),
         studio.expandAndSelectFirstChildInJbEditor()))
     }

@@ -37,7 +37,6 @@ jb.component('group.itemlist-container', { /* group.itemlistContainer */
   params: [
     {id: 'id', as: 'string', mandatory: true},
     {id: 'defaultItem', as: 'single'},
-    {id: 'maxItems', as: 'number', defaultValue: 100},
     {id: 'initialSelection', as: 'single'}
   ],
   impl: features(
@@ -47,7 +46,6 @@ jb.component('group.itemlist-container', { /* group.itemlistContainer */
           '$': 'object',
           search_pattern: '',
           selected: '%$initialSelection%',
-          maxItems: '%$maxItems%'
         },
         watchable: true
       }),
@@ -55,13 +53,6 @@ jb.component('group.itemlist-container', { /* group.itemlistContainer */
         name: 'itemlistCntr',
         value: ctx => createItemlistCntr(ctx,ctx.componentContext.params)
       }),
-    feature.init(
-        (ctx,{cmp}) => {
-		const maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');
-//        jb.writeValue(maxItemsRef,ctx.componentContext.params.maxItems);
-		cmp.ctx.vars.itemlistCntr.maxItemsFilter = items =>	items.slice(0,jb.tonumber(maxItemsRef));
-	}
-      )
   )
 })
 
@@ -83,12 +74,11 @@ jb.component('itemlist-container.filter', { /* itemlistContainer.filter */
   ],
   impl: (ctx,updateCounters) => {
 			if (!ctx.vars.itemlistCntr) return;
-			const resBeforeMaxFilter = ctx.vars.itemlistCntr.filters.reduce((items,filter) =>
+			const res = ctx.vars.itemlistCntr.filters.reduce((items,filter) =>
 									filter(items), ctx.data || []);
-			const res = ctx.vars.itemlistCntr.maxItemsFilter(resBeforeMaxFilter);
 			if (ctx.vars.itemlistCntrData.countAfterFilter != res.length)
 				jb.delay(1).then(_=>ctx.vars.itemlistCntr.reSelectAfterFilter(res));
-			if (updateCounters) {
+			if (updateCounters) { // use merge
 					jb.delay(1).then(_=>{
 					jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeFilter%','ref'),(ctx.data || []).length, ctx);
 					jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','ref'),resBeforeMaxFilter.length, ctx);

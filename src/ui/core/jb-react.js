@@ -137,6 +137,15 @@ function elemToVdom(elem) {
     }
 }
 
+function appendItems(elem, vdomToAppend,ctx) { // used in infinite scroll
+    if (elem instanceof ui.VNode) { // runs on worker
+        const cmpId = elem.getAttribute('cmp-id'), elemId = elem.getAttribute('id')
+        // TODO: update the elem
+        return jb.ui.updateRenderer(vdomToAppend,elemId,cmpId,ctx && ctx.vars.widgetId) // deligate to the main thread 
+    }
+    (vdomToAppend.children ||[]).forEach(vdom => render(vdom,elem))
+}
+
 function applyDeltaToDom(elem,delta) {
     jb.log('applyDelta',[...arguments])
     const children = delta.children
@@ -181,7 +190,7 @@ function applyDeltaToDom(elem,delta) {
                 })
     }
     jb.entries(delta.attributes)
-        .filter(e=> !(e[0] === '$text' && elem.firstElementChild) )
+        .filter(e=> !(e[0] === '$text' && elem.firstElementChild) ) // elem with $text should not have children
         .forEach(e=> setAtt(elem,e[0],e[1]))
 }
 
@@ -238,7 +247,7 @@ function render(vdom,parentElem) {
 }
 
 Object.assign(jb.ui, {
-    h, render, unmount, applyVdomDiff, applyDeltaToDom, elemToVdom, mountInteractive, compareVdom,
+    h, render, unmount, applyVdomDiff, applyDeltaToDom, elemToVdom, mountInteractive, compareVdom, appendItems,
     handleCmpEvent(specificHandler) {
         const el = [event.currentTarget, ...jb.ui.parents(event.currentTarget)].find(el=> el.getAttribute && el.getAttribute('jb-ctx') != null)
         if (!el) return
@@ -399,6 +408,8 @@ function checkCircularity(obs) {
 
 function mountInteractive(elem, keepState) {
     const ctx = jb.ui.ctxOfElem(elem,'mount-ctx')
+    if (!ctx)
+        return jb.logError('no ctx for elem',[elem])
     const cmp = (ctx.profile.$ == 'open-dialog') ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself();
     const mountedCmp = {
         state: { ...(keepState && jb.path(elem._component,'state')) },

@@ -146,7 +146,7 @@ jb.component('studio.control-tree', { /* studio.controlTree */
           defHandler(
             'newControl',
             studio.openNewProfileDialog({
-              path: (ctx,{$tree,$launchingElement}) => $tree.cmp.elemToPath($launchingElement.el),
+              path: (ctx,{cmp,$launchingElement}) => cmp.elemToPath($launchingElement.el),
               type: 'control',
               mode: 'insert-control',
               onClose: studio.gotoLastEdit()
