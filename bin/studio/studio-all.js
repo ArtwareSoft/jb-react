@@ -4752,6 +4752,15 @@ function elemToVdom(elem) {
     }
 }
 
+function appendItems(elem, vdomToAppend,ctx) { // used in infinite scroll
+    if (elem instanceof ui.VNode) { // runs on worker
+        const cmpId = elem.getAttribute('cmp-id'), elemId = elem.getAttribute('id')
+        // TODO: update the elem
+        return jb.ui.updateRenderer(vdomToAppend,elemId,cmpId,ctx && ctx.vars.widgetId) // deligate to the main thread 
+    }
+    (vdomToAppend.children ||[]).forEach(vdom => render(vdom,elem))
+}
+
 function applyDeltaToDom(elem,delta) {
     jb.log('applyDelta',[...arguments])
     const children = delta.children
@@ -4796,7 +4805,7 @@ function applyDeltaToDom(elem,delta) {
                 })
     }
     jb.entries(delta.attributes)
-        .filter(e=> !(e[0] === '$text' && elem.firstElementChild) )
+        .filter(e=> !(e[0] === '$text' && elem.firstElementChild) ) // elem with $text should not have children
         .forEach(e=> setAtt(elem,e[0],e[1]))
 }
 
@@ -4853,7 +4862,7 @@ function render(vdom,parentElem) {
 }
 
 Object.assign(jb.ui, {
-    h, render, unmount, applyVdomDiff, applyDeltaToDom, elemToVdom, mountInteractive, compareVdom,
+    h, render, unmount, applyVdomDiff, applyDeltaToDom, elemToVdom, mountInteractive, compareVdom, appendItems,
     handleCmpEvent(specificHandler) {
         const el = [event.currentTarget, ...jb.ui.parents(event.currentTarget)].find(el=> el.getAttribute && el.getAttribute('jb-ctx') != null)
         if (!el) return
@@ -5014,6 +5023,8 @@ function checkCircularity(obs) {
 
 function mountInteractive(elem, keepState) {
     const ctx = jb.ui.ctxOfElem(elem,'mount-ctx')
+    if (!ctx)
+        return jb.logError('no ctx for elem',[elem])
     const cmp = (ctx.profile.$ == 'open-dialog') ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself();
     const mountedCmp = {
         state: { ...(keepState && jb.path(elem._component,'state')) },
@@ -5847,7 +5858,7 @@ jb.component('feature.onEvent', { /* feature.onEvent */
   type: 'feature',
   category: 'events',
   params: [
-    {id: 'event', as: 'string', mandatory: true, options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover'},
+    {id: 'event', as: 'string', mandatory: true, options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll'},
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true},
     {id: 'debounceTime', as: 'number', defaultValue: 0, description: 'used for mouse events such as mousemove'}
   ],
@@ -6588,8 +6599,8 @@ jb.component('button', { /* button */
   impl: ctx => jb.ui.ctrl(ctx, ctx.run(features(
       watchAndCalcModelProp('title'),
       watchAndCalcModelProp('raised'),
-      defHandler('onclickHandler', (ctx,{cmp}) => {
-        const ev = event
+      defHandler('onclickHandler', (ctx,{cmp, ev}) => {
+        //const ev = event
         if (ev && ev.ctrlKey && cmp.ctrlAction)
           cmp.ctrlAction(cmp.ctx.setVar('event',ev))
         else if (ev && ev.altKey && cmp.altAction)
@@ -6675,75 +6686,17 @@ jb.component('field.databind', { /* field.databind */
       ),
     interactiveProp(
         'jbModel',
-        (ctx,{cmp}) => value => {
-      if (value == null)
-        return ctx.exp('%$$mode/databind','number')
-      else
-        writeFieldData(ctx,cmp,{target:{value}},true)
-    }
+        (ctx,{cmp}) => value => 
+          value == null ? ctx.exp('%$$mode/databind','number') : writeFieldData(ctx,cmp,{target:{value}},true)
       )
   )
 })
 
 function writeFieldData(ctx,cmp,value,oneWay) {
-//  const val = (typeof event != 'undefined' ? event : ev).target.value
   jb.ui.checkValidationError(cmp,value);
   jb.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx);
   !oneWay && jb.ui.refreshElem(cmp.base,null,{srcCtx: ctx.componentContext});
 }
-
-//     interactive((ctx,{cmp},{debounceTime,oneWay}) => {
-//         if (debounceTime) {
-//           cmp.debouncer = new jb.rx.Subject();
-//           cmp.debouncer.takeUntil( cmp.destroyed )
-//             .distinctUntilChanged()
-//             .buffer(cmp.debouncer.debounceTime(debounceTime))
-//             .filter(buf=>buf.length)
-//             .map(buf=>buf.pop())
-//             .subscribe(val=>cmp.jbModel(val))
-//         }
-
-//         if (!ctx.vars.$model || !ctx.vars.$model.databind)
-//           return jb.logError('bind-field: No databind in model', ctx, ctx.vars.$model);
-
-//         cmp.jbModel = val => {
-//           if (event && event.type == 'keyup') {
-//             if (cmp.debouncer)
-//               return cmp.debouncer.next(val);
-//             return jb.delay(1).then(_=>cmp.jbModel(val)); // make sure the input is inside the value
-//           }
-//           if (val === undefined)
-//             return jb.val(ctx.vars.$model.databind(cmp.ctx));
-//           else { // write
-//               cmp.state.model = val;
-//               jb.ui.checkValidationError(cmp,val);
-//               jb.writeValue(ctx.vars.$model.databind(cmp.ctx),val,ctx);
-//               if (!oneWay)
-//                 cmp.refresh();
-//           }
-//         }
-//         cmp.onblurHandler = () => cmp.jbModel(event.target.value)
-//         if (!ctx.vars.$model.updateOnBlur)
-//           cmp.onchangeHandler = cmp.onkeyupHandler = cmp.onkeydownHandler = cmp.onblurHandler
-
-//         //databindRefChanged
-//         cmp.databindRefChangedSub = new jb.rx.Subject();
-//         cmp.databindRefChanged = cmp.databindRefChangedSub.do(ref=> {
-//           cmp.state.databindRef = ref
-//           cmp.state.model = cmp.jbModel()
-//         })
-//         cmp.databindRefChanged.subscribe(()=>{}) // first activation
-
-//         const srcCtx = ctx.componentContext;
-//         if (!oneWay)
-//             jb.ui.databindObservable(cmp, {srcCtx, onError: _ => cmp.refresh({model: null},{srcCtx}) })
-//             .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
-//             .subscribe(e=> !cmp.watchRefOn && cmp.refresh(null,{srcCtx}))
-
-//         cmp.databindRefChangedSub.next(ctx.vars.$model.databind(ctx));
-//       }
-//     ))
-// })
 
 jb.ui.checkValidationError = (cmp,val) => {
   const err = validationError();
@@ -6792,11 +6745,6 @@ jb.component('field.databind-text', { /* field.databindText */
     '%$oneWay%'
   )
 })
-
-// jb.component('field.data', { /* field.data */
-//   type: 'data',
-//   impl: ctx => ctx.vars.$model.databind()
-// })
 
 jb.component('field.keyboard-shortcut', { /* field.keyboardShortcut */
   type: 'feature',
@@ -7564,14 +7512,43 @@ jb.component('itemlist.init', { /* itemlist.init */
     calcProp({id: 'items', value: '%$$model.items%'}),
     calcProp({
         id: 'ctrls',
-        value: ctx => {
-      const controlsOfItem = item =>
-        ctx.vars.$model.controls(ctx.setVar(ctx.vars.$model.itemVariable,item).setData(item)).filter(x=>x)
-      return ctx.vars.$props.items.slice(0,ctx.vars.$model.visualSizeLimit || 100).map(item=>
-        Object.assign(controlsOfItem(item),{item})).filter(x=>x.length > 0);
-    }
+        value: (ctx,{cmp}) => {
+          const controlsOfItem = item =>
+            ctx.vars.$model.controls(ctx.setVar(ctx.vars.$model.itemVariable,item).setData(item)).filter(x=>x)
+          return jb.ui.addSlicedState(cmp, ctx.vars.$props.items, ctx.vars.$model.visualSizeLimit).map(item=>
+            Object.assign(controlsOfItem(item),{item})).filter(x=>x.length > 0);
+        }
       }),
     itemlist.initContainerWithItems()
+  )
+})
+
+jb.component('itemlist.infinite-scroll', { 
+  type: 'feature',
+  params: [
+    { id: 'pageSize', as: 'number', defaultValue: 2 }
+  ],
+  impl: features(
+    defHandler('onscrollHandler', (ctx,{ev, $state},{pageSize}) => {
+      const elem = ev.target
+      const scrollPercentFromTop =  (elem.scrollTop + jb.ui.offset(elem).height)/ elem.scrollHeight
+      if (scrollPercentFromTop < 0.9) return
+      const allItems = ctx.vars.$model.items()
+      const needsToLoadMoreItems = $state.visualLimit.shownItems && $state.visualLimit.shownItems < allItems.length
+      if (!needsToLoadMoreItems) return
+      const cmpCtx = jb.ui.ctxOfElem(elem)
+      if (!cmpCtx) return
+      const itemsToAppend = allItems.slice($state.visualLimit.shownItems, $state.visualLimit.shownItems + pageSize)
+      const ctxToRun = cmpCtx.ctx({profile: Object.assign({},cmpCtx.profile,{ items: () => itemsToAppend}), path: ''}) // change the profile to return itemsToAppend
+      const vdom = ctxToRun.runItself().renderVdom()
+      const itemlistVdom = jb.ui.findIncludeSelf(vdom,'.jb-itemlist')[0]
+      if (itemlistVdom) {
+        console.log(itemsToAppend,ev)
+        jb.ui.appendItems(elem,itemlistVdom)
+        $state.visualLimit.shownItems += itemsToAppend.length
+      }
+    }),
+    templateModifier(({},{vdom}) => vdom.setAttribute('onscroll',true))
   )
 })
 
@@ -7634,6 +7611,15 @@ jb.component('itemlist.horizontal', { /* itemlist.horizontal */
   })
 })
 
+jb.ui.itemlistInitCalcItems = cmp => cmp.calcItems = cmp.calcItems || (() => Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
+    .map(el=>(jb.ctxDictionary[el.getAttribute('jb-ctx')] || {}).data).filter(x=>x))
+
+jb.ui.addSlicedState = (cmp,items,visualLimit) => {
+  if (items.length > visualLimit)
+    cmp.state.visualLimit = { totalItems: items.length, shownItems: visualLimit }
+    return items.slice(0,visualLimit)
+}
+
 // ****************** Selection ******************
 
 jb.component('itemlist.selection', { /* itemlist.selection */
@@ -7656,8 +7642,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
         cmp.ondblclick.map(e=> dataOfElem(e.target)).filter(x=>x)
           .subscribe(data => ctx.params.onDoubleClick(cmp.ctx.setData(data)))
 
-        cmp.calcItems = () => Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
-          .map(el=>(jb.ctxDictionary[el.getAttribute('jb-ctx')] || {}).data).filter(x=>x)
+        jb.ui.itemlistInitCalcItems(cmp)
         cmp.items = cmp.calcItems()
 
         cmp.setSelected = selected => {
@@ -7732,7 +7717,8 @@ jb.component('itemlist.keyboard-selection', { /* itemlist.keyboardSelection */
         } else {
           onkeydown = onkeydown.merge(jb.rx.Observable.fromEvent(cmp.base, 'keydown'))
         }
-        cmp.onkeydown = onkeydown.takeUntil( cmp.destroyed );
+        cmp.onkeydown = onkeydown.takeUntil( cmp.destroyed )
+        jb.ui.itemlistInitCalcItems(cmp)
 
         cmp.onkeydown.filter(e=> e.keyCode == 13 && cmp.state.selected)
           .subscribe(() => ctx.params.onEnter(cmp.ctx.setData(cmp.state.selected)));
@@ -7753,6 +7739,8 @@ jb.component('itemlist.drag-and-drop', { /* itemlist.dragAndDrop */
   type: 'feature',
   impl: ctx => ({
       afterViewInit: function(cmp) {
+        jb.ui.itemlistInitCalcItems(cmp)
+
         const drake = dragula([cmp.base.querySelector('.jb-drag-parent') || cmp.base] , {
           moves: (el,source,handle) =>
             jb.ui.hasClass(handle,'drag-handle')
@@ -7866,7 +7854,6 @@ jb.component('group.itemlist-container', { /* group.itemlistContainer */
   params: [
     {id: 'id', as: 'string', mandatory: true},
     {id: 'defaultItem', as: 'single'},
-    {id: 'maxItems', as: 'number', defaultValue: 100},
     {id: 'initialSelection', as: 'single'}
   ],
   impl: features(
@@ -7876,7 +7863,6 @@ jb.component('group.itemlist-container', { /* group.itemlistContainer */
           '$': 'object',
           search_pattern: '',
           selected: '%$initialSelection%',
-          maxItems: '%$maxItems%'
         },
         watchable: true
       }),
@@ -7884,13 +7870,6 @@ jb.component('group.itemlist-container', { /* group.itemlistContainer */
         name: 'itemlistCntr',
         value: ctx => createItemlistCntr(ctx,ctx.componentContext.params)
       }),
-    feature.init(
-        (ctx,{cmp}) => {
-		const maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');
-//        jb.writeValue(maxItemsRef,ctx.componentContext.params.maxItems);
-		cmp.ctx.vars.itemlistCntr.maxItemsFilter = items =>	items.slice(0,jb.tonumber(maxItemsRef));
-	}
-      )
   )
 })
 
@@ -7912,12 +7891,11 @@ jb.component('itemlist-container.filter', { /* itemlistContainer.filter */
   ],
   impl: (ctx,updateCounters) => {
 			if (!ctx.vars.itemlistCntr) return;
-			const resBeforeMaxFilter = ctx.vars.itemlistCntr.filters.reduce((items,filter) =>
+			const res = ctx.vars.itemlistCntr.filters.reduce((items,filter) =>
 									filter(items), ctx.data || []);
-			const res = ctx.vars.itemlistCntr.maxItemsFilter(resBeforeMaxFilter);
 			if (ctx.vars.itemlistCntrData.countAfterFilter != res.length)
 				jb.delay(1).then(_=>ctx.vars.itemlistCntr.reSelectAfterFilter(res));
-			if (updateCounters) {
+			if (updateCounters) { // use merge
 					jb.delay(1).then(_=>{
 					jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeFilter%','ref'),(ctx.data || []).length, ctx);
 					jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','ref'),resBeforeMaxFilter.length, ctx);
@@ -10002,6 +9980,7 @@ jb.component('editable-boolean.mdc-x-v', { /* editableBoolean.mdcXV */
             h('i',{class:'material-icons mdc-icon-button__icon mdc-icon-button__icon--on'}, yesIcon),
             h('i',{class:'material-icons mdc-icon-button__icon '}, noIcon),
         ]),
+    css: '{ border-radius: 2px; padding: 0; width: 24px; height: 24px;}',
     features: [field.databind(), mdcStyle.initDynamic()]
   })
 })
@@ -27647,6 +27626,10 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'css/font.css',
         'css/styles.css',
       ],
+      'md-icons': [
+        'dist/mdi.js',
+        'src/ui/md-icons.js'
+      ],
       babel: [
         'node_modules/babel-standalone/babel.js',
         'dist/babel-ext.js'
@@ -28751,7 +28734,8 @@ jb.component('dialog.studio-multiline-edit', { /* dialog.studioMultilineEdit */
 })
 ;
 
-(function() { var st = jb.studio;
+(function() { 
+const st = jb.studio;
 
 function compsRefOfPreviewJb(previewjb) {
 	st.compsHistory = [];
@@ -28773,6 +28757,7 @@ function compsRefOfPreviewJb(previewjb) {
 	return compsRef
 }
 st.scriptChange = new jb.rx.Subject()
+
 st.initCompsRefHandler = function(previewjb,allowedTypes) {
 	const oldCompsRefHandler = st.compsRefHandler
 	oldCompsRefHandler && oldCompsRefHandler.stopListening.next(1)
@@ -28786,6 +28771,8 @@ st.initCompsRefHandler = function(previewjb,allowedTypes) {
 		st.scriptChange.next(e)
 		st.highlightByScriptPath(e.path)
 		writeValueToDataResource(e.path,e.newVal)
+		if (st.isStudioCmp(e.path[0]))
+			st.refreshStudioComponent(e.path)
 		st.lastStudioActivity= new Date().getTime()
 	})
 }
@@ -28833,6 +28820,7 @@ Object.assign(st,{
   writeValueOfPath: (path,value,srcCtx) => st.writeValue(st.refOfPath(path),value,srcCtx),
   getComp: id => st.previewjb.comps[id],
   compAsStr: id => jb.prettyPrintComp(id,st.getComp(id)),
+  isStudioCmp: id => (jb.path(jb.comps,[id,jb.location,0]) || '').indexOf('projects/studio') != -1
 })
 
 
@@ -31712,7 +31700,7 @@ class CompOption {
       this.writeValue(ctx);
     }
     writeValue(ctx) {
-      st.setComp(ctx.exp('%$suggestionData/path%','string'),this.toPaste);
+      st.setComp(ctx.exp('%$suggestionData/path%','string'),this.toPaste,ctx);
       return ctx.run(runActions(dialog.closeDialog('studio-jb-editor-popup'),
         studio.expandAndSelectFirstChildInJbEditor()))
     }
@@ -33034,49 +33022,60 @@ jb.component('studio.add-variable', { /* studio.addVariable */
 (function() {
 const st = jb.studio;
 
+function initStudioEditing() {
+  if (st.previewjb.comps['dialog.studio-pick-dialog']) return
+  jb.entries(jb.comps).filter(e=>st.isStudioCmp(e[0])).forEach(e=> 
+    st.previewjb.comps[e[0]] = { ...e[1], [jb.location] : [e[1][jb.location][0].replace(/!st!/,''), e[1][jb.location][1]]})
+}
+
 jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
   type: 'dialog-feature',
   params: [
     {id: 'from', as: 'string'}
   ],
-  impl: ctx => ({
+  impl: (ctx,from) => ({
     afterViewInit: cmp=> {
-          const _window = ctx.params.from == 'preview' ? st.previewWindow : window;
-          const previewOffset = ctx.params.from == 'preview' ? document.querySelector('#jb-preview').getBoundingClientRect().top : 0;
-          cmp.titleBelow = false;
+      if (from === 'studio')
+        initStudioEditing()
+      const _window = from == 'preview' ? st.previewWindow : window;
+      const previewOffset = from == 'preview' ? document.querySelector('#jb-preview').getBoundingClientRect().top : 0;
+      cmp.titleBelow = false;
 
-          const cover = _window.document.createElement('div')
-          cover.className = 'jb-cover'
-          cover.style.position= 'absolute'; cover.style.width= '100%'; cover.style.height= '100%'; cover.style.background= 'white'; cover.style.opacity= '0'; cover.style.top= 0; cover.style.left= 0;
-          _window.document.body.appendChild(cover);
-          const mouseMoveEm = jb.rx.Observable.fromEvent(_window.document, 'mousemove');
-          let userPick = jb.rx.Observable.fromEvent(document, 'mousedown');
-          let keyUpEm = jb.rx.Observable.fromEvent(document, 'keyup');
-          if (st.previewWindow) {
-              userPick = userPick.merge(jb.rx.Observable.fromEvent(st.previewWindow.document, 'mousedown'));
-              keyUpEm = keyUpEm.merge(jb.rx.Observable.fromEvent(st.previewWindow.document, 'keyup'));
-          }
-          mouseMoveEm.debounceTime(50)
-              .takeUntil(keyUpEm.filter(e=>e.keyCode == 27).merge(userPick))
-              .map(e=> eventToElem(e,_window,ctx.exp('%$studio/project%.%$studio/page%')))
-              .filter(x=>x && x.getAttribute)
-              .do(profElem=> {
-                ctx.exp('%$pickSelection%').elem = profElem
-                showBox(cmp,profElem,_window,previewOffset)
-              })
-              .last() // esc or user pick
-              .subscribe(profElem=> {
-                  const pickSelection = ctx.exp('%$pickSelection%')
-                  pickSelection.ctx = _window.jb.ctxDictionary[profElem.getAttribute('pick-ctx') || profElem.getAttribute('jb-ctx')];
-                  pickSelection.elem = profElem;
-                  // inform watchers
-                  ctx.run(writeValue('%$studio/pickSelectionCtxId%',(pickSelection.ctx || {}).id))
+      const projectPrefix = ctx.exp('%$studio/project%.%$studio/page%')
+      const eventToElemPredicate = from == 'preview' ? 
+        (path => path.indexOf(projectPrefix) == 0) : (path => st.isStudioCmp(path.split('~')[0]))
+      const cover = _window.document.createElement('div')
+      cover.className = 'jb-cover'
+      cover.style.position= 'absolute'; cover.style.width= '100%'; cover.style.height= '100%'; cover.style.background= 'white'; cover.style.opacity= '0'; cover.style.top= 0; cover.style.left= 0;
+      _window.document.body.appendChild(cover);
+      const mouseMoveEm = jb.rx.Observable.fromEvent(_window.document, 'mousemove');
+      let userPick = jb.rx.Observable.fromEvent(document, 'mousedown');
+      let keyUpEm = jb.rx.Observable.fromEvent(document, 'keyup');
+      if (st.previewWindow) {
+          userPick = userPick.merge(jb.rx.Observable.fromEvent(st.previewWindow.document, 'mousedown'));
+          keyUpEm = keyUpEm.merge(jb.rx.Observable.fromEvent(st.previewWindow.document, 'keyup'));
+      }
+      mouseMoveEm.debounceTime(50)
+          .takeUntil(keyUpEm.filter(e=>e.keyCode == 27).merge(userPick))
+          .map(e=> eventToElem(e,_window,eventToElemPredicate))
+          .filter(x=>x && x.getAttribute)
+          .do(profElem=> {
+            ctx.exp('%$pickSelection%').elem = profElem
+            showBox(cmp,profElem,_window,previewOffset)
+          })
+          .last() // esc or user pick
+          .subscribe(profElem=> {
+              const pickSelection = ctx.exp('%$pickSelection%')
+              pickSelection.ctx = _window.jb.ctxDictionary[profElem.getAttribute('pick-ctx') || profElem.getAttribute('jb-ctx')];
+              pickSelection.elem = profElem;
+              // inform watchers
+              ctx.run(writeValue('%$studio/pickSelectionCtxId%',(pickSelection.ctx || {}).id))
 
-                  ctx.vars.$dialog.close({OK: true});
-                  _window.document.body.removeChild(cover);
-              })
-        }
-    })
+              ctx.vars.$dialog.close({OK: true});
+              _window.document.body.removeChild(cover);
+          })
+    }
+  })
 })
 
 jb.component('dialog.studio-pick-dialog', { /* dialog.studioPickDialog */
@@ -33120,9 +33119,7 @@ jb.component('dialog.studio-pick-dialog', { /* dialog.studioPickDialog */
   })
 })
 
-function eventToElem(e,_window, pathPrefix) {
-  if (pathPrefix.indexOf('studio-helper.') == 0)
-    pathPrefix = ''
+function eventToElem(e,_window, predicate) {
   const mousePos = { x: e.pageX - _window.pageXOffset, y: e.pageY  - _window.pageYOffset }
   const elems = _window.document.elementsFromPoint(mousePos.x, mousePos.y);
   const results = elems.flatMap(el=>[el,...jb.ui.parents(el)])
@@ -33141,7 +33138,7 @@ function eventToElem(e,_window, pathPrefix) {
   return orderedResults[0];
 
   function checkCtxId(ctxId) {
-    return ctxId && _window.jb.ctxDictionary[ctxId].path.indexOf(pathPrefix) == 0
+    return ctxId && predicate(_window.jb.ctxDictionary[ctxId].path)
   }
 }
 
@@ -33161,69 +33158,77 @@ function showBox(cmp,profElem,_window,previewOffset) {
     })
 }
 
-jb.studio.getOrCreateHighlightBox = function(sampleElem) {
-  const doc = sampleElem.ownerDocument
-  if (!doc.querySelector('#preview-box')) {
-    const elem = doc.createElement('div');
-    elem.setAttribute('id','preview-box');
-    !doc.body.appendChild(elem);
-  }
-  return doc.querySelector('#preview-box');
-}
-
-st.highlightCtx = function(ctx) {
-    if (!ctx) return
-    const _window = st.previewWindow || window;
-    st.highlightElems(Array.from(_window.document.querySelectorAll(`[jb-ctx="${ctx.id}"]`)))
-}
-
-st.highlightByScriptPath = function(path) {
-    const pathStr = Array.isArray(path) ? path.join('~') : path;
-    const result = st.closestCtxInPreview(pathStr)
-    st.highlightCtx(result.ctx)
-}
-
-st.highlightElems = function(elems) {
-  if (!elems || !elems.length) return
-  const html = elems.map(el => {
-      const offset = jb.ui.offset(el);
-      let width = jb.ui.outerWidth(el);
+Object.assign(st, {
+  getOrCreateHighlightBox(sampleElem) {
+    const doc = sampleElem.ownerDocument
+    if (!doc.querySelector('#preview-box')) {
+      const elem = doc.createElement('div');
+      elem.setAttribute('id','preview-box');
+      !doc.body.appendChild(elem);
+    }
+    return doc.querySelector('#preview-box');
+  }, 
+  highlightCtx(ctx) {
+      ctx && [st.previewWindow,window].forEach(win=>
+        st.highlightElems(Array.from(win.document.querySelectorAll(`[jb-ctx="${ctx.id}"]`))))
+  },
+  highlightByScriptPath(path) {
+      const pathStr = Array.isArray(path) ? path.join('~') : path;
+      const result = st.closestCtxInPreview(pathStr)
+      st.highlightCtx(result.ctx)
+  },
+  highlightElems(elems) {
+    if (!elems || !elems.length) return
+    const html = elems.map(el => {
+      const offset = jb.ui.offset(el)
+      let width = jb.ui.outerWidth(el)
       if (width == jb.ui.outerWidth(document.body))
           width -= 10;
       return `<div style="opacity: 0.5; position: absolute; background: rgb(193, 224, 228); border: 1px solid blue; z-index: 10000;
           width: ${width}px; left: ${offset.left}px;top: ${offset.top}px; height: ${jb.ui.outerHeight(el)}px"></div>`
-  }).join('');
+    }).join('');
+  
+    const box = st.getOrCreateHighlightBox(elems[0]);
+    jb.ui.removeClass(box,'jb-fade-3s-transition');
+    box.innerHTML = html;
+    jb.delay(1).then(()=> jb.ui.addClass(box,'jb-fade-3s-transition'));
+    jb.delay(1000).then(()=>st.getOrCreateHighlightBox(elems[0]).innerHTML = ''); // clean after the fade animation
+  },
+  refreshStudioComponent(path) {
+    jb.comps[path[0]] = st.previewjb.comps[path[0]]
+    const pathStr = Array.isArray(path) ? path.join('~') : path;
+    const {elem, ctx} = st.findElemsByCtxCondition(ctx => pathStr.indexOf(ctx.path) == 0)[0] || {}
+    ctx.profile = jb.path(jb.comps,ctx.path.split('~'))
+    const cmp = ctx.profile.$ == 'open-dialog' ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself()
+    cmp && jb.ui.applyVdomDiff(elem, jb.ui.h(cmp), {strongRefresh: true, ctx})
+    jb.exec({ $: 'animate.refresh-elem', elem: () => elem })
+  },
+  findElemsByCtxCondition(condition) {
+    return [st.previewWindow,window].flatMap(win => 
+      Array.from(win.document.querySelectorAll('[jb-ctx]'))
+        .map(elem=>({elem, ctx: win.jb.ctxDictionary[elem.getAttribute('jb-ctx')]}))
+        .filter(e => e.ctx && condition(e.ctx))
+    )
+  },
+  closestCtxInPreview(_path) {
+      const path = _path.split('~fields~')[0]; // field is passive..
+      const candidates = st.findElemsByCtxCondition(ctx => path.indexOf(ctx.path) == 0)
+      return candidates.sort((e2,e1) => 1000* (e1.ctx.path.length - e2.ctx.path.length) + (e1.ctx.id - e2.ctx.id) )[0] || {ctx: null, elem: null}
+  }
+})
 
-  const box = jb.studio.getOrCreateHighlightBox(elems[0]);
-  jb.ui.removeClass(box,'jb-fade-3s-transition');
-  box.innerHTML = html;
-  jb.delay(1).then(()=> jb.ui.addClass(box,'jb-fade-3s-transition'));
-  jb.delay(1000).then(()=>jb.studio.getOrCreateHighlightBox(elems[0]).innerHTML = ''); // clean after the fade animation
-}
-
-jb.component('studio.highlight-in-preview', { /* studio.highlightInPreview */
+jb.component('studio.highlight-by-path', { /* studio.highlightByPath */
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => {
-        const _window = st.previewWindow || window;
-        if (!_window) return;
-        let elems = Array.from(_window.document.querySelectorAll('[jb-ctx]'))
-            .filter(e=>{
-                const _ctx = _window.jb.ctxDictionary[e.getAttribute('jb-ctx')];
-                const callerPath = _ctx && _ctx.componentContext && _ctx.componentContext.callerPath;
-                return callerPath == path || (_ctx && _ctx.path == path);
-            })
+    const elems = st.findElemsByCtxCondition(_ctx => {
+      const callerPath = _ctx && _ctx.componentContext && _ctx.componentContext.callerPath;
+      return callerPath == path || (_ctx && _ctx.path == path);
+    }).map(e=>e.elem)
 
-        if (elems.length == 0) // try to look in studio
-            elems = Array.from(document.querySelectorAll('[jb-ctx]'))
-            .filter(e=> {
-                const _ctx = jb.ctxDictionary[e.getAttribute('jb-ctx')];
-                return _ctx && _ctx.path == path
-            })
-
-        jb.studio.highlightElems(elems);
+    st.highlightElems(elems);
   }
 })
 
@@ -33239,16 +33244,6 @@ jb.component('studio.pick', { /* studio.pick */
     onOK: ctx => ctx.componentContext.params.onSelect(ctx.setData(ctx.exp('%$pickSelection/ctx%')))
   })
 })
-
-st.closestCtxInPreview = _path => {
-    const path = _path.split('~fields~')[0]; // field is passive..
-    const _window = st.previewWindow || window;
-    if (!_window) return;
-    const elems = Array.from(_window.document.querySelectorAll('[jb-ctx]'));
-    const candidates = elems.map(elem=>({ ctx: _window.jb.ctxDictionary[elem.getAttribute('jb-ctx')], elem }))
-        .filter(e=>e.ctx && path.indexOf(e.ctx.path) == 0)
-    return candidates.sort((e2,e1) => 1000* (e1.ctx.path.length - e2.ctx.path.length) + (e1.ctx.id - e2.ctx.id) )[0] || {ctx: null, elem: null}
-}
 
 jb.component('studio.pick-toolbar', { /* studio.pickToolbar */
   type: 'control',
@@ -33270,9 +33265,10 @@ jb.component('studio.pick-toolbar', { /* studio.pickToolbar */
         name: 'path',
         value: ctx =>{
           const elem = ctx.exp('%$pickSelection/elem%')
+          if (!elem) return ''
+          const _jb = elem.ownerDocument === jb.frame.document ? jb : st.previewjb
           const res = elem ? [elem.getAttribute('pick-ctx'), elem.getAttribute('jb-ctx'),
-               // ...(elem.getAttribute('originators')||'').split(',').filter(x=>x)
-            ].filter(x=>x).slice(0,1).map(id=>st.previewjb.ctxDictionary[id].path) : []
+            ].filter(x=>x).slice(0,1).map(id=>_jb.ctxDictionary[id].path) : []
           return res
         }
       })
@@ -34409,7 +34405,7 @@ jb.component('studio.control-tree', { /* studio.controlTree */
           tree.selection({
             databind: '%$studio/profile_path%',
             autoSelectFirst: true,
-            onSelection: [studio.openProperties(), studio.highlightInPreview(studio.currentProfilePath())],
+            onSelection: [studio.openProperties(), studio.highlightByPath(studio.currentProfilePath())],
             onRightClick: studio.openTreeMenu('%%')
           }),
           tree.keyboardSelection({
@@ -34422,7 +34418,7 @@ jb.component('studio.control-tree', { /* studio.controlTree */
           defHandler(
             'newControl',
             studio.openNewProfileDialog({
-              path: (ctx,{$tree,$launchingElement}) => $tree.cmp.elemToPath($launchingElement.el),
+              path: (ctx,{cmp,$launchingElement}) => cmp.elemToPath($launchingElement.el),
               type: 'control',
               mode: 'insert-control',
               onClose: studio.gotoLastEdit()
@@ -34726,7 +34722,7 @@ jb.component('studio.highlight-event', { /* studio.highlightEvent */
   params: [
     {id: 'event', as: 'single', defaultValue: '%%'}
   ],
-  impl: studio.highlightInPreview(
+  impl: studio.highlightByPath(
     '%$event/cmp/ctx/path%'
   )
 })
@@ -34838,16 +34834,12 @@ jb.component('studio.toolbar', { /* studio.toolbar */
         databind: '%$studio/settings/contentEditable%',
         style: editableBoolean.mdcXV('location_searching', 'location_disabled'),
         title: 'Inline content editing',
-        features: [
-          css.margin({top: '-10', left: ''}),
-          feature.onEvent({event: 'click', action: contentEditable.deactivate()})
-        ]
+        features: [feature.onEvent({event: 'click', action: contentEditable.deactivate()})]
       }),
       editableBoolean({
         databind: '%$studio/settings/activateWatchRefViewer%',
         style: editableBoolean.mdcXV('blur_on', 'blur_off'),
-        title: 'Watch Data Connections',
-        features: [css.margin({top: '-10', left: ''})]
+        title: 'Watch Data Connections'
       }),
       button({
         title: 'Select',
@@ -34892,17 +34884,19 @@ jb.component('studio.toolbar', { /* studio.toolbar */
         title: 'Event Tracker',
         action: studio.openEventTracker(),
         style: button.mdcIcon('hearing'),
-        features: ctrlAction(studio.openEventTracker('true'))
+        features: [ctrlAction(studio.openEventTracker('true')), hidden()]
       }),
       button({
         title: 'History',
         action: studio.openScriptHistory(),
-        style: button.mdcIcon('pets')
+        style: button.mdcIcon('pets'),
+        features: hidden()
       }),
       button({
         title: 'Show Data',
         action: {'$': 'studio.showProbeData'},
-        style: button.mdcIcon('input')
+        style: button.mdcIcon('input'),
+        features: hidden()
       }),
       button({
         title: 'add',
@@ -34916,7 +34910,8 @@ jb.component('studio.toolbar', { /* studio.toolbar */
       button({
         title: 'Responsive',
         action: studio.openResponsivePhonePopup(),
-        style: button.mdcIcon('tablet_android')
+        style: button.mdcIcon('tablet_android'),
+        features: hidden()
       })
     ],
     features: [
@@ -35414,6 +35409,7 @@ const devHost = {
     srcOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
     pathOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
     projectUrlInStudio: project => `/project/studio/${project}`,
+    isDevHost: true
 }
 
 const userLocalHost = Object.assign({},devHost,{
@@ -35573,39 +35569,6 @@ jb.component('studio.parse-project-html', { /* studio.parseProjectHtml */
       )
   )
 })
-jb.component('studio.parse-project-html', { /* studio.parseProjectHtml */
-    type: 'data',
-    impl: obj(
-          prop(
-              'fileNames',
-              pipeline(
-                extractText({
-                    startMarkers: ['<script', 'src=\"'],
-                    endMarker: '\"',
-                    repeating: 'true'
-                  }),
-                filter(and(notContains(['/loader/']), notContains(['/dist/']))),
-                extractSuffix('/')
-              ), 'array'
-            ),
-          prop(
-              'libs',
-              list(
-                pipeline(
-                    extractText({startMarkers: ['modules=\"'], endMarker: '\"', repeating: 'true'}),
-                    split(','),
-                    filter(and(notEquals('common'), notEquals('ui-common'))),
-                    '%%.js'
-                  ),
-                pipeline(
-                    extractText({startMarkers: ['/dist/'], endMarker: '\"', repeating: 'true'}),
-                    filter(notEquals('jb-react-all.js')),
-                    filter(notEquals('material.css'))
-                  )
-              ), 'array'
-            )
-        )
-  })
 
 })();
 
@@ -36058,19 +36021,6 @@ jb.component('content-editable.open-toolbar', { /* contentEditable.openToolbar *
   )
 })
 
-// jb.component('content-editable.activation-icon', {
-//   type: 'action',
-//   impl: openDialog({
-//           style: contentEditable.popupStyle(),
-//           content: button({
-//             title: 'Edit',
-//             action: ctx => ctx.vars.activateContentEditable(ctx),
-//             style: button.mdcIcon('edit'),
-// //            features: dialogFeature.onClose(contentEditable.deactivate())
-//           })
-//   })
-// })
-
 jb.component('content-editable.popup-style', { /* contentEditable.popupStyle */
   type: 'dialog.style',
   impl: customStyle({
@@ -36267,8 +36217,9 @@ jb.component('feature.content-editable', { /* feature.contentEditable */
   params: [
     {id: 'param', as: 'string', description: 'name of param mapped to the content editable element'}
   ],
-  impl: (ctx,param) => ({
-    afterViewInit: cmp => {
+  impl: features(
+    feature.keyboardShortcut('Alt+N', () => jb.frame.parent.jb.exec({$:'studio.pickAndOpen', from: 'studio'})),
+    interactive( ({},{cmp},{param}) => {
       const isHtml = param == 'html'
       const contentEditable = jb.ui.contentEditable
       if (contentEditable && contentEditable.isEnabled()) {
@@ -36277,8 +36228,8 @@ jb.component('feature.content-editable', { /* feature.contentEditable */
           cmp.onkeydownHandler = cmp.onkeypressHandler = ev => contentEditable.handleKeyEvent(ev,cmp,param)
         cmp.onmousedownHandler = ev => jb.ui.contentEditable.activate(cmp,ev)
       }
-    },
-    templateModifier: (vdom,cmp) => {
+    }),
+    templateModifier(({},{cmp,vdom},{param}) => {
       const contentEditable = jb.ui.contentEditable
       if (!contentEditable || !contentEditable.isEnabled() || param && !contentEditable.refOfProp(cmp,param)) return vdom
       const attsToInject = cmp.state.contentEditableActive ? {contenteditable: 'true', onblur: true, onmousedown: true, onkeypress: true, onkeydown: true} : {onmousedown: true};
@@ -36294,10 +36245,9 @@ jb.component('feature.content-editable', { /* feature.contentEditable */
       vdom.attributes = vdom.attributes || {};
       Object.assign(vdom.attributes,attsToInject)
       return vdom;
-    },
-    dynamicCss: ctx => ctx.vars.cmp.state.contentEditableActive &&
-      `{ border: 1px dashed grey; background-image: linear-gradient(90deg,rgba(243,248,255,.03) 63.45%,rgba(207,214,229,.27) 98%); border-radius: 3px;}`
-  })
+    }),
+    css.dynamic(If('%$cmp.state.contentEditableActive%',`{ border: 1px dashed grey; background-image: linear-gradient(90deg,rgba(243,248,255,.03) 63.45%,rgba(207,214,229,.27) 98%); border-radius: 3px;}`))
+  )
 })
 ;
 

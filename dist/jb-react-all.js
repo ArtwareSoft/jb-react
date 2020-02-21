@@ -4752,6 +4752,15 @@ function elemToVdom(elem) {
     }
 }
 
+function appendItems(elem, vdomToAppend,ctx) { // used in infinite scroll
+    if (elem instanceof ui.VNode) { // runs on worker
+        const cmpId = elem.getAttribute('cmp-id'), elemId = elem.getAttribute('id')
+        // TODO: update the elem
+        return jb.ui.updateRenderer(vdomToAppend,elemId,cmpId,ctx && ctx.vars.widgetId) // deligate to the main thread 
+    }
+    (vdomToAppend.children ||[]).forEach(vdom => render(vdom,elem))
+}
+
 function applyDeltaToDom(elem,delta) {
     jb.log('applyDelta',[...arguments])
     const children = delta.children
@@ -4796,7 +4805,7 @@ function applyDeltaToDom(elem,delta) {
                 })
     }
     jb.entries(delta.attributes)
-        .filter(e=> !(e[0] === '$text' && elem.firstElementChild) )
+        .filter(e=> !(e[0] === '$text' && elem.firstElementChild) ) // elem with $text should not have children
         .forEach(e=> setAtt(elem,e[0],e[1]))
 }
 
@@ -4853,7 +4862,7 @@ function render(vdom,parentElem) {
 }
 
 Object.assign(jb.ui, {
-    h, render, unmount, applyVdomDiff, applyDeltaToDom, elemToVdom, mountInteractive, compareVdom,
+    h, render, unmount, applyVdomDiff, applyDeltaToDom, elemToVdom, mountInteractive, compareVdom, appendItems,
     handleCmpEvent(specificHandler) {
         const el = [event.currentTarget, ...jb.ui.parents(event.currentTarget)].find(el=> el.getAttribute && el.getAttribute('jb-ctx') != null)
         if (!el) return
@@ -5014,6 +5023,8 @@ function checkCircularity(obs) {
 
 function mountInteractive(elem, keepState) {
     const ctx = jb.ui.ctxOfElem(elem,'mount-ctx')
+    if (!ctx)
+        return jb.logError('no ctx for elem',[elem])
     const cmp = (ctx.profile.$ == 'open-dialog') ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself();
     const mountedCmp = {
         state: { ...(keepState && jb.path(elem._component,'state')) },
@@ -5847,7 +5858,7 @@ jb.component('feature.onEvent', { /* feature.onEvent */
   type: 'feature',
   category: 'events',
   params: [
-    {id: 'event', as: 'string', mandatory: true, options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover'},
+    {id: 'event', as: 'string', mandatory: true, options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll'},
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true},
     {id: 'debounceTime', as: 'number', defaultValue: 0, description: 'used for mouse events such as mousemove'}
   ],
@@ -6588,8 +6599,8 @@ jb.component('button', { /* button */
   impl: ctx => jb.ui.ctrl(ctx, ctx.run(features(
       watchAndCalcModelProp('title'),
       watchAndCalcModelProp('raised'),
-      defHandler('onclickHandler', (ctx,{cmp}) => {
-        const ev = event
+      defHandler('onclickHandler', (ctx,{cmp, ev}) => {
+        //const ev = event
         if (ev && ev.ctrlKey && cmp.ctrlAction)
           cmp.ctrlAction(cmp.ctx.setVar('event',ev))
         else if (ev && ev.altKey && cmp.altAction)
@@ -6675,75 +6686,17 @@ jb.component('field.databind', { /* field.databind */
       ),
     interactiveProp(
         'jbModel',
-        (ctx,{cmp}) => value => {
-      if (value == null)
-        return ctx.exp('%$$mode/databind','number')
-      else
-        writeFieldData(ctx,cmp,{target:{value}},true)
-    }
+        (ctx,{cmp}) => value => 
+          value == null ? ctx.exp('%$$mode/databind','number') : writeFieldData(ctx,cmp,{target:{value}},true)
       )
   )
 })
 
 function writeFieldData(ctx,cmp,value,oneWay) {
-//  const val = (typeof event != 'undefined' ? event : ev).target.value
   jb.ui.checkValidationError(cmp,value);
   jb.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx);
   !oneWay && jb.ui.refreshElem(cmp.base,null,{srcCtx: ctx.componentContext});
 }
-
-//     interactive((ctx,{cmp},{debounceTime,oneWay}) => {
-//         if (debounceTime) {
-//           cmp.debouncer = new jb.rx.Subject();
-//           cmp.debouncer.takeUntil( cmp.destroyed )
-//             .distinctUntilChanged()
-//             .buffer(cmp.debouncer.debounceTime(debounceTime))
-//             .filter(buf=>buf.length)
-//             .map(buf=>buf.pop())
-//             .subscribe(val=>cmp.jbModel(val))
-//         }
-
-//         if (!ctx.vars.$model || !ctx.vars.$model.databind)
-//           return jb.logError('bind-field: No databind in model', ctx, ctx.vars.$model);
-
-//         cmp.jbModel = val => {
-//           if (event && event.type == 'keyup') {
-//             if (cmp.debouncer)
-//               return cmp.debouncer.next(val);
-//             return jb.delay(1).then(_=>cmp.jbModel(val)); // make sure the input is inside the value
-//           }
-//           if (val === undefined)
-//             return jb.val(ctx.vars.$model.databind(cmp.ctx));
-//           else { // write
-//               cmp.state.model = val;
-//               jb.ui.checkValidationError(cmp,val);
-//               jb.writeValue(ctx.vars.$model.databind(cmp.ctx),val,ctx);
-//               if (!oneWay)
-//                 cmp.refresh();
-//           }
-//         }
-//         cmp.onblurHandler = () => cmp.jbModel(event.target.value)
-//         if (!ctx.vars.$model.updateOnBlur)
-//           cmp.onchangeHandler = cmp.onkeyupHandler = cmp.onkeydownHandler = cmp.onblurHandler
-
-//         //databindRefChanged
-//         cmp.databindRefChangedSub = new jb.rx.Subject();
-//         cmp.databindRefChanged = cmp.databindRefChangedSub.do(ref=> {
-//           cmp.state.databindRef = ref
-//           cmp.state.model = cmp.jbModel()
-//         })
-//         cmp.databindRefChanged.subscribe(()=>{}) // first activation
-
-//         const srcCtx = ctx.componentContext;
-//         if (!oneWay)
-//             jb.ui.databindObservable(cmp, {srcCtx, onError: _ => cmp.refresh({model: null},{srcCtx}) })
-//             .filter(e=>!e || !e.srcCtx || e.srcCtx.path != srcCtx.path) // block self refresh
-//             .subscribe(e=> !cmp.watchRefOn && cmp.refresh(null,{srcCtx}))
-
-//         cmp.databindRefChangedSub.next(ctx.vars.$model.databind(ctx));
-//       }
-//     ))
-// })
 
 jb.ui.checkValidationError = (cmp,val) => {
   const err = validationError();
@@ -6792,11 +6745,6 @@ jb.component('field.databind-text', { /* field.databindText */
     '%$oneWay%'
   )
 })
-
-// jb.component('field.data', { /* field.data */
-//   type: 'data',
-//   impl: ctx => ctx.vars.$model.databind()
-// })
 
 jb.component('field.keyboard-shortcut', { /* field.keyboardShortcut */
   type: 'feature',
@@ -7564,14 +7512,43 @@ jb.component('itemlist.init', { /* itemlist.init */
     calcProp({id: 'items', value: '%$$model.items%'}),
     calcProp({
         id: 'ctrls',
-        value: ctx => {
-      const controlsOfItem = item =>
-        ctx.vars.$model.controls(ctx.setVar(ctx.vars.$model.itemVariable,item).setData(item)).filter(x=>x)
-      return ctx.vars.$props.items.slice(0,ctx.vars.$model.visualSizeLimit || 100).map(item=>
-        Object.assign(controlsOfItem(item),{item})).filter(x=>x.length > 0);
-    }
+        value: (ctx,{cmp}) => {
+          const controlsOfItem = item =>
+            ctx.vars.$model.controls(ctx.setVar(ctx.vars.$model.itemVariable,item).setData(item)).filter(x=>x)
+          return jb.ui.addSlicedState(cmp, ctx.vars.$props.items, ctx.vars.$model.visualSizeLimit).map(item=>
+            Object.assign(controlsOfItem(item),{item})).filter(x=>x.length > 0);
+        }
       }),
     itemlist.initContainerWithItems()
+  )
+})
+
+jb.component('itemlist.infinite-scroll', { 
+  type: 'feature',
+  params: [
+    { id: 'pageSize', as: 'number', defaultValue: 2 }
+  ],
+  impl: features(
+    defHandler('onscrollHandler', (ctx,{ev, $state},{pageSize}) => {
+      const elem = ev.target
+      const scrollPercentFromTop =  (elem.scrollTop + jb.ui.offset(elem).height)/ elem.scrollHeight
+      if (scrollPercentFromTop < 0.9) return
+      const allItems = ctx.vars.$model.items()
+      const needsToLoadMoreItems = $state.visualLimit.shownItems && $state.visualLimit.shownItems < allItems.length
+      if (!needsToLoadMoreItems) return
+      const cmpCtx = jb.ui.ctxOfElem(elem)
+      if (!cmpCtx) return
+      const itemsToAppend = allItems.slice($state.visualLimit.shownItems, $state.visualLimit.shownItems + pageSize)
+      const ctxToRun = cmpCtx.ctx({profile: Object.assign({},cmpCtx.profile,{ items: () => itemsToAppend}), path: ''}) // change the profile to return itemsToAppend
+      const vdom = ctxToRun.runItself().renderVdom()
+      const itemlistVdom = jb.ui.findIncludeSelf(vdom,'.jb-itemlist')[0]
+      if (itemlistVdom) {
+        console.log(itemsToAppend,ev)
+        jb.ui.appendItems(elem,itemlistVdom)
+        $state.visualLimit.shownItems += itemsToAppend.length
+      }
+    }),
+    templateModifier(({},{vdom}) => vdom.setAttribute('onscroll',true))
   )
 })
 
@@ -7634,6 +7611,15 @@ jb.component('itemlist.horizontal', { /* itemlist.horizontal */
   })
 })
 
+jb.ui.itemlistInitCalcItems = cmp => cmp.calcItems = cmp.calcItems || (() => Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
+    .map(el=>(jb.ctxDictionary[el.getAttribute('jb-ctx')] || {}).data).filter(x=>x))
+
+jb.ui.addSlicedState = (cmp,items,visualLimit) => {
+  if (items.length > visualLimit)
+    cmp.state.visualLimit = { totalItems: items.length, shownItems: visualLimit }
+    return items.slice(0,visualLimit)
+}
+
 // ****************** Selection ******************
 
 jb.component('itemlist.selection', { /* itemlist.selection */
@@ -7656,8 +7642,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
         cmp.ondblclick.map(e=> dataOfElem(e.target)).filter(x=>x)
           .subscribe(data => ctx.params.onDoubleClick(cmp.ctx.setData(data)))
 
-        cmp.calcItems = () => Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
-          .map(el=>(jb.ctxDictionary[el.getAttribute('jb-ctx')] || {}).data).filter(x=>x)
+        jb.ui.itemlistInitCalcItems(cmp)
         cmp.items = cmp.calcItems()
 
         cmp.setSelected = selected => {
@@ -7732,7 +7717,8 @@ jb.component('itemlist.keyboard-selection', { /* itemlist.keyboardSelection */
         } else {
           onkeydown = onkeydown.merge(jb.rx.Observable.fromEvent(cmp.base, 'keydown'))
         }
-        cmp.onkeydown = onkeydown.takeUntil( cmp.destroyed );
+        cmp.onkeydown = onkeydown.takeUntil( cmp.destroyed )
+        jb.ui.itemlistInitCalcItems(cmp)
 
         cmp.onkeydown.filter(e=> e.keyCode == 13 && cmp.state.selected)
           .subscribe(() => ctx.params.onEnter(cmp.ctx.setData(cmp.state.selected)));
@@ -7753,6 +7739,8 @@ jb.component('itemlist.drag-and-drop', { /* itemlist.dragAndDrop */
   type: 'feature',
   impl: ctx => ({
       afterViewInit: function(cmp) {
+        jb.ui.itemlistInitCalcItems(cmp)
+
         const drake = dragula([cmp.base.querySelector('.jb-drag-parent') || cmp.base] , {
           moves: (el,source,handle) =>
             jb.ui.hasClass(handle,'drag-handle')
@@ -7866,7 +7854,6 @@ jb.component('group.itemlist-container', { /* group.itemlistContainer */
   params: [
     {id: 'id', as: 'string', mandatory: true},
     {id: 'defaultItem', as: 'single'},
-    {id: 'maxItems', as: 'number', defaultValue: 100},
     {id: 'initialSelection', as: 'single'}
   ],
   impl: features(
@@ -7876,7 +7863,6 @@ jb.component('group.itemlist-container', { /* group.itemlistContainer */
           '$': 'object',
           search_pattern: '',
           selected: '%$initialSelection%',
-          maxItems: '%$maxItems%'
         },
         watchable: true
       }),
@@ -7884,13 +7870,6 @@ jb.component('group.itemlist-container', { /* group.itemlistContainer */
         name: 'itemlistCntr',
         value: ctx => createItemlistCntr(ctx,ctx.componentContext.params)
       }),
-    feature.init(
-        (ctx,{cmp}) => {
-		const maxItemsRef = cmp.ctx.exp('%$itemlistCntrData/maxItems%','ref');
-//        jb.writeValue(maxItemsRef,ctx.componentContext.params.maxItems);
-		cmp.ctx.vars.itemlistCntr.maxItemsFilter = items =>	items.slice(0,jb.tonumber(maxItemsRef));
-	}
-      )
   )
 })
 
@@ -7912,12 +7891,11 @@ jb.component('itemlist-container.filter', { /* itemlistContainer.filter */
   ],
   impl: (ctx,updateCounters) => {
 			if (!ctx.vars.itemlistCntr) return;
-			const resBeforeMaxFilter = ctx.vars.itemlistCntr.filters.reduce((items,filter) =>
+			const res = ctx.vars.itemlistCntr.filters.reduce((items,filter) =>
 									filter(items), ctx.data || []);
-			const res = ctx.vars.itemlistCntr.maxItemsFilter(resBeforeMaxFilter);
 			if (ctx.vars.itemlistCntrData.countAfterFilter != res.length)
 				jb.delay(1).then(_=>ctx.vars.itemlistCntr.reSelectAfterFilter(res));
-			if (updateCounters) {
+			if (updateCounters) { // use merge
 					jb.delay(1).then(_=>{
 					jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeFilter%','ref'),(ctx.data || []).length, ctx);
 					jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','ref'),resBeforeMaxFilter.length, ctx);
@@ -10002,6 +9980,7 @@ jb.component('editable-boolean.mdc-x-v', { /* editableBoolean.mdcXV */
             h('i',{class:'material-icons mdc-icon-button__icon mdc-icon-button__icon--on'}, yesIcon),
             h('i',{class:'material-icons mdc-icon-button__icon '}, noIcon),
         ]),
+    css: '{ border-radius: 2px; padding: 0; width: 24px; height: 24px;}',
     features: [field.databind(), mdcStyle.initDynamic()]
   })
 })
