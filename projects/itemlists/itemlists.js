@@ -343,7 +343,7 @@ jb.component('data-resource.people', { /* dataResource.people */
   ]
 })
 
-jb.component('itemlists.search-icon', { /* itemlists.searchIcon */
+jb.component('itemlists.infinite-scroll', {
   type: 'control',
   impl: group({
     controls: [
