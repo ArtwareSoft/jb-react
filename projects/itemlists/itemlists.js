@@ -343,10 +343,23 @@ jb.component('data-resource.people', { /* dataResource.people */
   ]
 })
 
-jb.component('itemlists.infinite-scroll', {
+jb.component('itemlists.infinite-scroll', { /* itemlists.infiniteScroll */
   type: 'control',
   impl: group({
     controls: [
+      itemlist({
+        title: '',
+        items: range(),
+        controls: [
+          text({text: '%%', title: 'my title'})
+        ],
+        visualSizeLimit: '7',
+        features: [
+          css.height({height: '100', overflow: 'scroll'}),
+          itemlist.infiniteScroll(),
+          css.width('600')
+        ]
+      }),
       itemlistContainer.search({
         title: '',
         searchIn: '%%',

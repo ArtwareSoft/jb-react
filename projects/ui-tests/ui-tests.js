@@ -733,6 +733,7 @@ jb.component('ui-test.itemlist-with-table-style', { /* uiTest.itemlistWithTableS
         })
       ]
     }),
+    action: delay(20),
     expectedResult: contains(['300', 'age', 'Homer Simpson', '38', '>3<', 'Bart'])
   })
 })
@@ -1681,109 +1682,21 @@ jb.component('ui-test.watchable-ref-to-inner-elements-when-value-is-empty', { /*
   })
 })
 
-const h = jb.ui.h
-
-jb.component('ui-test.apply-vdom-diff-text', { /* uiTest.applyVdomDiffText */
-  impl: uiTest.applyVdomDiff(
-    ctx => h('div',{},'aa'),
-    ctx => h('div',{},'bb')
-  )
-})
-
-jb.component('ui-test.apply-vdom-diff-tag', { /* uiTest.applyVdomDiffTag */
-  impl: uiTest.applyVdomDiff(
-    ctx => h('span',{},'aa'),
-    ctx => h('div',{},'bb')
-  )
-})
-
-jb.component('ui-test.apply-vdom-diff-to-text', { /* uiTest.applyVdomDiffToText */
-  impl: uiTest.applyVdomDiff(
-    ctx => h('div',{},'aa'),
-    ctx => 'aa'
-  )
-})
-
-jb.component('ui-test.apply-vdom-diff-mixed', { /* uiTest.applyVdomDiffMixed */
-  impl: uiTest.applyVdomDiff(
-    ctx => h('div',{},'aa'),
-    ctx => h('div',{},h('div',{},'bb'))
-  )
-})
-
-jb.component('ui-test.apply-vdom-diff-mixed2', { /* uiTest.applyVdomDiffMixed2 */
-  impl: uiTest.applyVdomDiff(
-    ctx => h('div',{},h('div',{},'bb')),
-    ctx => h('div',{},'aa')
-  )
-})
-
-jb.component('ui-test.apply-vdom-diff-DD-tree1', { /* uiTest.applyVdomDiffDDTree1 */
-  impl: uiTest.applyVdomDiff(
-    group({
-      controls: [
-        text('0'),
-        text('1'),
-        group({
-          controls: [
-            text('1.1'),
-            text('1.2')
-          ]
-        }),
-        text('2')
+jb.component('ui-test.infinite-scroll', { 
+  impl: uiTest({
+    control: itemlist({
+      items: range(0,10),
+      controls: text('%%'),
+      visualSizeLimit: '7',
+      features: [
+        css.height({height: '100', overflow: 'scroll'}),
+        itemlist.infiniteScroll(),
+        css.width('600')
       ]
     }),
-    group({
-      controls: [
-        text('1'),
-        group({
-          controls: [
-            text('0'),
-            text('1.1'),
-            text('1.2')
-          ]
-        }),
-        text('2')
-      ]
-    })
-  )
+    action: uiAction.scrollDown('.jb-itemlist'),
+    expectedResult: contains('>8<')
+  })
 })
 
-jb.component('ui-test.apply-vdom-diff-DD-tree2', { /* uiTest.applyVdomDiffDDTree2 */
-  impl: uiTest.applyVdomDiff(
-    {
-      tag: 'div',
-      attributes: {},
-      children: [
-        {tag: 'span', attributes: text('0'), children: undefined},
-        {tag: 'span', attributes: text('1'), children: undefined},
-        {
-          tag: 'div',
-          attributes: {},
-          children: [
-            {tag: 'span', attributes: text('1.1'), children: undefined},
-            {tag: 'span', attributes: text('1.2'), children: undefined}
-          ]
-        },
-        {tag: 'span', attributes: text('2'), children: undefined}
-      ]
-    },
-    {
-      tag: 'div',
-      attributes: {},
-      children: [
-        {tag: 'span', attributes: text('1'), children: undefined},
-        {
-          tag: 'div',
-          attributes: {},
-          children: [
-            {tag: 'span', attributes: text('0'), children: undefined},
-            {tag: 'span', attributes: text('1.1'), children: undefined},
-            {tag: 'span', attributes: text('1.2'), children: undefined}
-          ]
-        },
-        {tag: 'span', attributes: text('2'), children: undefined}
-      ]
-    }
-  )
-})
+

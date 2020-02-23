@@ -60,8 +60,7 @@ jb.component('itemlist.infinite-scroll', {
   impl: features(
     defHandler('onscrollHandler', (ctx,{ev, $state},{pageSize}) => {
       const elem = ev.target
-      const scrollPercentFromTop =  (elem.scrollTop + jb.ui.offset(elem).height)/ elem.scrollHeight
-      if (scrollPercentFromTop < 0.9) return
+      if (!ev.scrollPercentFromTop || ev.scrollPercentFromTop < 0.9) return
       const allItems = ctx.vars.$model.items()
       const needsToLoadMoreItems = $state.visualLimit.shownItems && $state.visualLimit.shownItems < allItems.length
       if (!needsToLoadMoreItems) return

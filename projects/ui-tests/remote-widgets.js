@@ -52,3 +52,18 @@ jb.component('ui-test.hello-from-worker', {
     type: 'control',
     impl: text('hello from worker')
 })
+
+jb.component('ui-test.remote-infinite-scroll', {
+    type: 'control',
+    impl: itemlist({
+        items: range(),
+        controls: text('%%'),
+        visualSizeLimit: '7',
+        features: [
+          css.height({height: '100', overflow: 'scroll'}),
+          itemlist.infiniteScroll(),
+          css.width('600')
+        ]
+      })
+})
+

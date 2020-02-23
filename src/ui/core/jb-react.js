@@ -248,24 +248,29 @@ function render(vdom,parentElem) {
 
 Object.assign(jb.ui, {
     h, render, unmount, applyVdomDiff, applyDeltaToDom, elemToVdom, mountInteractive, compareVdom, appendItems,
-    handleCmpEvent(specificHandler) {
-        const el = [event.currentTarget, ...jb.ui.parents(event.currentTarget)].find(el=> el.getAttribute && el.getAttribute('jb-ctx') != null)
+    handleCmpEvent(specificHandler, ev) {
+        ev = typeof event != 'undefined' ? event : ev
+        const el = [ev.currentTarget, ...jb.ui.parents(ev.currentTarget)].find(el=> el.getAttribute && el.getAttribute('jb-ctx') != null)
         if (!el) return
+        if (ev.type == 'scroll') // needs to be here to support the worker scenario
+            ev.scrollPercentFromTop = ev.scrollPercentFromTop || (el.scrollTop + jb.ui.offset(el).height)/ el.scrollHeight;
+
         if (el.getAttribute('worker')) { // forward the event to the worker
-            return jb.ui.workers[el.getAttribute('worker')].handleBrowserEvent(el,event,specificHandler)
+            return jb.ui.workers[el.getAttribute('worker')].handleBrowserEvent(el,ev,specificHandler)
         }
         const cmp = el._component
-        const action = specificHandler ? specificHandler : `on${event.type}Handler`
-        return (cmp && cmp[action]) ? cmp[action](event) : ui.runActionOfElem(el,action)
+        const action = specificHandler ? specificHandler : `on${ev.type}Handler`
+        return (cmp && cmp[action]) ? cmp[action](ev) : ui.runActionOfElem(el,action,ev)
     },
     runActionOfElem(elem,action,ev) {
         if (elem.getAttribute('contenteditable')) return
         ev = typeof event != 'undefined' ? event : ev
-        ;(elem.getAttribute('handlers') || '').split(',').filter(x=>x.indexOf(action+'-') == 0)
-            .forEach(str=> {
-                const ctx = jb.ui.ctxDictOfElem(elem)[str.split('-')[1]]
-                ctx && ctx.setVar('cmp',elem._component).setVars({ev}).runInner(ctx.profile.action,'action','action')
-            })
+        const ctxToRun = (elem.getAttribute('handlers') || '').split(',').filter(x=>x.indexOf(action+'-') == 0)
+            .map(str=>jb.ui.ctxDictOfElem(elem)[str.split('-')[1]])
+            .filter(x=>x)
+            .map(ctx=> ctx.setVar('cmp',elem._component).setVars({ev}))[0]
+
+        return ctxToRun && ctxToRun.runInner(ctxToRun.profile.action,'action','action')
     },
     ctrl(context,options) {
         const $state = context.vars.$refreshElemCall ? context.vars.$state : {}

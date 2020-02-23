@@ -445,6 +445,18 @@ jb.component('ui-test.remote-widget-empty-editable-text',  {
   })
 })
 
+// jb.component('ui-test.remote-widget-infinite-scroll',  {
+//   impl: uiTest({
+//     runBefore: remote.initMainWorker({ sourceUrl: ctx => `http://${location.host}/projects/ui-tests/remote-widgets.js` }),
+//     control: remote.widget({main: 'ui-test.remote-infinite-scroll' }),
+//     action: [ delay(40), 
+//         uiAction.scrollDown('.jb-itemlist'), 
+//         delay(20)
+//     ],
+//     expectedResult: and(not(contains('undefined')),not(contains('Homer')))
+//   })
+// })
+
 jb.component('ui-test.refProp', {
   impl: dataTest({
     runBefore: writeValue(pipeline(

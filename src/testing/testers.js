@@ -179,10 +179,9 @@ jb.component('ui-action.click', { /* uiAction.click */
   impl: (ctx,selector,methodToActivate) => {
 		const elems = selector ? Array.from(ctx.vars.elemToTest.querySelectorAll(selector)) : [ctx.vars.elemToTest];
 		elems.forEach(e=> {
-			jb.ui.runActionOfElem(e,methodToActivate)
-//			e._component && e._component[methodToActivate] && e._component[methodToActivate]()
+			const ev = { type: 'click', currentTarget: e, target: e}
+			jb.ui.handleCmpEvent(methodToActivate,ev)
 		})
-		//return jb.delay(1);
 	}
 })
 
@@ -211,20 +210,29 @@ jb.component('ui-action.set-text', { /* uiAction.setText */
   params: [
     {id: 'value', as: 'string', mandatory: true},
     {id: 'selector', as: 'string', defaultValue: 'input,textarea'},
-    {id: 'delay', as: 'number', defaultValue: 1}
   ],
   impl: (ctx,value,selector,delay) => {
 		const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : ctx.vars.elemToTest;
 		jb.ui.findIncludeSelf(elem,'input,textarea').forEach(e=>e.value= value)
-		if (elem.getAttribute('worker')) 
-			jb.ui.workers[elem.getAttribute('worker')].handleBrowserEvent(elem, {type: 'blur', target: {value}})
-		else
-			jb.ui.runActionOfElem(elem,'onblurHandler',{target:{value}})
-		//elem && elem._component && elem._component.jbModel(value) 
-		return jb.delay(delay);
+		const ev = { type: 'blur', currentTarget: elem, target: {value}}
+		jb.ui.handleCmpEvent('',ev)
+		return jb.delay(1);
 	}
 })
 
+jb.component('ui-action.scroll-down', {
+	type: 'ui-action',
+	macroByValue: true,
+	params: [
+	  {id: 'selector', as: 'string' },
+	],
+	impl: (ctx,selector,delay) => {
+		  const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : ctx.vars.elemToTest;
+		  const ev = { type: 'scroll', currentTarget: elem, target: elem, scrollPercentFromTop : 0.9}
+		  jb.ui.handleCmpEvent('',ev)
+	  }
+  })
+  
 jb.component('test.dialog-content', { /* test.dialogContent */
   type: 'data',
   params: [
