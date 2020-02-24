@@ -29401,7 +29401,7 @@ jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
           frameborder: 0,
           class: 'preview-iframe',
           width, height,
-          src: cmp.state.inMemoryProject ? `javascript: parent.jb.studio.injectInMemoryProjectToPreview(this,${JSON.stringify(st.inMemoryProject)})` : src
+          src: cmp.state.inMemoryProject ? `javascript: parent.jb.studio.injectInMemoryProjectToPreview(this,${JSON.stringify(cmp.state.inMemoryProject)})` : src
         })
     },
     css: '{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; }'
