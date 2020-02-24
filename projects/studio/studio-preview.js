@@ -184,7 +184,7 @@ const html = `<!DOCTYPE html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script type="text/javascript">
-    jbProjectSettings = ${projectSettings}
+    jbProjectSettings = ${JSON.stringify(projectSettings)}
   </script>
   <script type="text/javascript" src="/src/loader/jb-loader.js"></script>
 </head>
