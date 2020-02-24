@@ -161,28 +161,34 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'projects/studio/studio-testers.js',
         'probe','model','tree','suggestion'
       ],
-
-    })
+})
 
 function jb_dynamicLoad(modules,prefix) {
   prefix = prefix || '';
-  modules.split(',').forEach(m=>{
-    (jb_modules[m] || []).forEach(file=>{
-      if (m == 'studio' && !file.match(/\//))
-        file = 'projects/studio/studio-' + file + '.js';
-      if (m == 'studio-tests' && !file.match(/\//))
-        file = 'projects/studio-helper/studio-' + file + '-tests.js';
+  const isDist = document.currentScript.getAttribute('src').indexOf('/dist/') != -1
+  if (isDist) {
+    const scriptSrc = document.currentScript.getAttribute('src')
+    const base = scriptSrc.slice(0,scriptSrc.lastIndexOf('/')+1)
+    modules.split(',').forEach(m=>loadFile(base+m+'.js'))
+  } else {
+    modules.split(',').forEach(m=>{
+      (jb_modules[m] || []).forEach(file=>{
+        if (m == 'studio' && !file.match(/\//))
+          file = 'projects/studio/studio-' + file + '.js';
+        if (m == 'studio-tests' && !file.match(/\//))
+          file = 'projects/studio-helper/studio-' + file + '-tests.js';
 
-      if (prefix) { // avoid muliple source files with the same name in the debugger
-        const file_path = file.split('/');
-        file_path.push(prefix+file_path.pop());
-        file = file_path.join('/');
-      }
+        if (prefix) { // avoid muliple source files with the same name in the debugger
+          const file_path = file.split('/');
+          file_path.push(prefix+file_path.pop());
+          file = file_path.join('/');
+        }
 
-      const url = (window.jbLoaderRelativePath ? '' : '/') + file;
-      loadFile(url)
+        const url = (window.jbLoaderRelativePath ? '' : '/') + file;
+        loadFile(url)
+      })
     })
-  })
+  }
 }
 
 if (typeof window != 'undefined')
