@@ -27746,7 +27746,7 @@ function jb_initWidget() {
 
 function pathOfProjectFile(project,fn,baseDir) {
   if (baseDir.indexOf('//') != -1) // external
-    return baseUrl + fn
+    return baseDir + fn
   else if (baseDir)
    return baseDir == './' ? fn : `/${project}/${fn}`
   return `/projects/${project}/${fn}`
