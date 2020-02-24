@@ -1,22 +1,20 @@
-
 <!DOCTYPE html>
+<html>
 <head>
-  <meta charset="utf-8">
-  
-
-  <link rel="stylesheet" href="/projects/todomvc/todomvc.css" charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script type="text/javascript">
-    startTime = new Date().getTime();
+    jbProjectSettings = {
+      project: 'todomvc',
+      libs: 'common,ui-common',
+      jsFiles: ['todomvc.js'],
+      cssFiles: ['todomvc.css'],
+    }
   </script>
-  <script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common"></script>
-  <script type="text/javascript" src="/projects/todomvc/todomvc.js"></script>
-  <script1 type="text/javascript" src="/projects/todomvc/samples.js"></script1>
+  <script type="text/javascript" src="/src/loader/jb-loader.js"></script>
 </head>
 <body>
-<div id="main"> </div>
-<script>
-  jb.ui.renderWidget({$:'todomvc.main'},document.getElementById('main'))
-</script>
+  <script>
+    window.jb_initWidget && jb_initWidget()
+  </script>
 </body>
 </html>
-
