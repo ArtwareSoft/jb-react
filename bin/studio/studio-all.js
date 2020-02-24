@@ -29377,7 +29377,7 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
       calcProp('loadingMessage', data.if('%$inMemoryProject%', '',
         '{? loading project from %$$props/host%::%$queryParams/hostProjectId% ?}')),
       interactive( (ctx,{cmp}) => {
-          const host = ctx.exp('%$queryParams/host')
+          const host = ctx.exp('%$queryParams/host%')
           if (!st.inMemoryProject && host && st.projectHosts[host]) {
             const project = ctx.exp('%$studio/project%')
             document.title = `${project} with jBart`;
