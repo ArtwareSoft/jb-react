@@ -270,7 +270,7 @@ jb.component('studio.all', { /* studio.all */
     features: [
       group.wait({
         for: ctx => jb.studio.host.settings().then(settings => ctx.run(writeValue('%$studio/settings%',
-          Object.assign(ctx.exp('%$studio/settings%'),JSON.parse(settings))))),
+          Object.assign(ctx.exp('%$studio/settings%'), typeof settings == 'string' ? JSON.parse(settings) : {})))),
         loadingControl: label('')
       }),
       group.data({data: '%$studio/project%', watch: true}),
