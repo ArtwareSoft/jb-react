@@ -220,12 +220,14 @@ const base_get_handlers = {
     file_type_handlers.html(req,res,`${jbReactDir}bin/studio/studio-bin.html`),
   studio: (req,res) => 
     file_type_handlers.html(req,res,`projects/studio/studio.html`),
-  project(req,res,path) {
+  project(req,res) {
     const project_with_params = req.url.split('/')[2];
     const project = project_with_params.split('?')[0];
     // if (external_projects[project])
     //   return file_type_handlers.html(req,res, external_projects[project] + `/${project}/${project}.html`);
-    return file_type_handlers.html(req,res,`${projectDirectory(project)}/${project}.html`);
+    const path = `${projectDirectory(project)}/${project}.html`
+    const htmlFileName = fs.existsSync(path) ? path : `${projectDirectory(project)}/index.html`
+    return file_type_handlers.html(req,res,htmlFileName);
   }
 };
 
