@@ -29382,7 +29382,7 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
             const project = ctx.exp('%$studio/project%')
             document.title = `${project} with jBart`;
             return st.projectHosts[host].fetchProject(ctx.exp('%$queryParams/hostProjectId%'),project)
-              .then(inMemoryProject => cmp.refresh({ inMemoryProject }) 
+              .then(inMemoryProject => cmp.refresh({ inMemoryProject })) 
           }
         })
   ))
