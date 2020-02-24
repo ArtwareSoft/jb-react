@@ -108,22 +108,23 @@ st.projectHosts = {
             const baseUrl = decodeURIComponent(gitHubUrl).replace(/^https?:/,'')
             const project = baseUrl.split('/').filter(x=>x).pop()
             return getUrlContent(gitHubUrl).then(html =>{
-                const srcUrls = html.split('<script type="text/javascript" src="').slice(1)
-                    .map(x=>x.match(/^[^"]*/)[0])
-                const css = html.split('<link rel="stylesheet" href="').slice(1)
-                    .map(x=>x.match(/^[^"]*/)[0])
-                const fileNames = srcUrls.filter(x=>x.indexOf('/dist/') == -1)
-                const libs = srcUrls.filter(x=>x.indexOf('/dist/') != -1).map(x=>x.match(/dist\/(.*)\.js$/)[1]).filter(x=>x!='jb-react-all')
-                return css.reduce((acc,file)=>
-                    acc.then(files => getUrlContent(gitHubUrl + file).then(content => Object.assign(files, {[file]: content}))), Promise.resolve({
-                        [`${project}.html`]: fixHtml(html)
-                    }) )
-                        .then(files => ({project, files, fileNames, libs, baseUrl }))
+                const settings = eval('({' + _extractText(html,'jbProjectSettings = {','}') + '})')
+                return {...settings,baseUrl,project}
+                // const srcUrls = html.split('<script type="text/javascript" src="').slice(1)
+                //     .map(x=>x.match(/^[^"]*/)[0])
+                // const css = html.split('<link rel="stylesheet" href="').slice(1)
+                //     .map(x=>x.match(/^[^"]*/)[0])
+                // const fileNames = srcUrls.filter(x=>x.indexOf('/dist/') == -1)
+                // const libs = srcUrls.filter(x=>x.indexOf('/dist/') != -1).map(x=>x.match(/dist\/(.*)\.js$/)[1]).filter(x=>x!='jb-react-all')
+                // return css.reduce((acc,file)=>
+                //     acc.then(files => getUrlContent(gitHubUrl + file).then(content => Object.assign(files, {[file]: content}))), Promise.resolve({
+                //         [`${project}.html`]: fixHtml(html)
+                //     }) )
+                //         .then(files => ({project, files, fileNames, libs, baseUrl }))
             })
-
-            function fixHtml(html) {
-                return _extractText(html,'<!-- start-jb-scripts -->\n','<!-- end-jb-scripts -->','<!-- load-jb-scripts-here -->\n')
-            }
+            // function fixHtml(html) {
+            //     return _extractText(html,'<!-- start-jb-scripts -->\n','<!-- end-jb-scripts -->','<!-- load-jb-scripts-here -->\n')
+            // }
         }
     }
 }

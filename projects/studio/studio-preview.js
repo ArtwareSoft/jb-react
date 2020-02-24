@@ -203,6 +203,8 @@ jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
 })
 
 st.injectImMemoryProjectToPreview = function(previewWin) {
+  st.inMemoryProject
+  debugger
   const jsToInject = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/js$/))
     .map(e => 'eval(' + '`'+ e[1].replace(/`/g,'\\`').replace(/<\/script>/gi,'`+`</`+`script>`+`')  + '`)'
      ).join('\n')
