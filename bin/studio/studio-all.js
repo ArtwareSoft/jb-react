@@ -35463,7 +35463,7 @@ const userLocalHost = Object.assign({},devHost,{
 })
 
 const cloudHost = {
-    settings: () => Promise.resolve(''),
+    settings: () => Promise.resolve(({})),
     rootExists: () => Promise.resolve(false),
     getFile: path => st.inMemoryProject ? st.inMemoryProject.files[path] : jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files' }}),
     htmlAsCloud: (html,project) => html.replace(/\/dist\//g,'//unpkg.com/jb-react/dist/').replace(/src="\.\.\//g,'src="').replace(`/${project}/`,''),
