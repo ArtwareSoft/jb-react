@@ -111,7 +111,7 @@ jb.component('studio.main-menu', { /* studio.mainMenu */
               menu.action({
                 title: 'todos',
                 action: gotoUrl(
-                  'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/todomvc',
+                  'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/todomvc&project=todomvc',
                   'new tab'
                 )
               }),
