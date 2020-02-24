@@ -199,7 +199,7 @@ function loadProject() {
   jb_dynamicLoad(jbProjectSettings.libs); // may load packaged libs from dist
 
   [...(jbProjectSettings.jsFiles || []), ...(jbProjectSettings.cssFiles || [])]
-    .forEach(fn=> loadFile(pathOfProjectFile(jbProjectSettings.project,fn,'')) )
+    .forEach(fn=> loadFile(pathOfProjectFile(jbProjectSettings.project,fn,jbProjectSettings.baseUrl || '')) )
 }
 
 function jb_initWidget() {
@@ -212,7 +212,9 @@ function jb_initWidget() {
 }
 
 function pathOfProjectFile(project,fn,baseDir) {
-  if (baseDir)
+  if (baseDir.indexOf('//') != -1) // external
+    return baseUrl + fn
+  else if (baseDir)
    return baseDir == './' ? fn : `/${project}/${fn}`
   return `/projects/${project}/${fn}`
  }
