@@ -161,13 +161,13 @@ function createWorker(workerId) {
             worker.response.next(({id, data: data.slice(id.length+1) }))
         },
         handleBrowserEvent(el,event,specificHandler) {
-            const widgetId = jb.ui.parents(el).filter(el=>el.getAttribute && el.getAttribute('widgetTop'))
+            const widgetId = jb.ui.parents(el,{includeSelf: true}).filter(el=>el.getAttribute && el.getAttribute('widgetTop'))
                 .map(el=>el.getAttribute('id'))[0]
             return this.exec(pipeline(
                         {$asIs: {
                             specificHandler, 
                             cmpId: el.getAttribute('cmp-id'), 
-                            event: {type: event.type, target: { value: event.target.value} },
+                            event: {type: event.type, target: { value: event.target.value}, scrollPercentFromTop: event.scrollPercentFromTop },
                             widgetId
                         }},
                         ctx => jb.ui.handleBrowserEvent(ctx.data)))
@@ -254,39 +254,5 @@ jb.component('remote.widget', {
         return jb.ui.h('div',{id: widgetId, widgetTop: 'true'})
     }
 })
-
-// jb.component('remote.control', {
-//     type: 'control',
-//     params: [
-//         {id: 'control', type: 'control', mandatory: true, dynamic: true},
-//         {id: 'remote', type: 'remote', mandatory: true, defaultValue: worker.main() },
-//     ],
-//     impl: group({
-//         controls: '%$remoteCtrl%',
-//         features: group.wait({
-//             for: (ctx,{},{remote,control}) => remote.createCtrl(control.profile,ctx.componentContext.callerPath + '~control'),
-//             loadingControl: label('...'),
-//             varName: 'remoteCtrl'
-//         }),
-//     })
-// })
-
-// createCtrl(ctrlProf,path) { // return promise with {vdom,store}
-//     const vdomProf = pipeline({$asIs: {ctrlProf,path}},
-//         ctx => {
-//         const cmp = new jb.jbCtx(ctx,{ data: null, profile: ctx.data.ctrlProf, forcePath: ctx.data.path, path: '' } ).runItself()
-//         const vdom = cmp.renderVdom()
-//         return { vdom, store: jb.ui.serializeCtxOfVdom(vdom) }
-//     })
-//     return this.getWorker()
-//         .then(worker => worker.exec(vdomProf))
-//         .then(x=> {
-//             const res = JSON.parse(x)[0]
-//             jb.ui.mainWorker.ctxDictionary = jb.ui.mainWorker.ctxDictionary || {}
-//             Object.assign(jb.ui.mainWorker.ctxDictionary,jb.ui.deserializeCtxStore(res.store).ctx)
-//             const {cmpOrTag,attributes,children} = res.vdom
-//             return new jb.ui.VNode(cmpOrTag,attributes,children)
-//         })
-// },
 
 })()

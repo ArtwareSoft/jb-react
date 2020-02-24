@@ -4863,24 +4863,29 @@ function render(vdom,parentElem) {
 
 Object.assign(jb.ui, {
     h, render, unmount, applyVdomDiff, applyDeltaToDom, elemToVdom, mountInteractive, compareVdom, appendItems,
-    handleCmpEvent(specificHandler) {
-        const el = [event.currentTarget, ...jb.ui.parents(event.currentTarget)].find(el=> el.getAttribute && el.getAttribute('jb-ctx') != null)
+    handleCmpEvent(specificHandler, ev) {
+        ev = typeof event != 'undefined' ? event : ev
+        const el = jb.ui.parents(ev.currentTarget,{includeSelf: true}).find(el=> el.getAttribute && el.getAttribute('jb-ctx') != null)
         if (!el) return
+        if (ev.type == 'scroll') // needs to be here to support the worker scenario
+            ev.scrollPercentFromTop = ev.scrollPercentFromTop || (el.scrollTop + jb.ui.offset(el).height)/ el.scrollHeight;
+
         if (el.getAttribute('worker')) { // forward the event to the worker
-            return jb.ui.workers[el.getAttribute('worker')].handleBrowserEvent(el,event,specificHandler)
+            return jb.ui.workers[el.getAttribute('worker')].handleBrowserEvent(el,ev,specificHandler)
         }
         const cmp = el._component
-        const action = specificHandler ? specificHandler : `on${event.type}Handler`
-        return (cmp && cmp[action]) ? cmp[action](event) : ui.runActionOfElem(el,action)
+        const action = specificHandler ? specificHandler : `on${ev.type}Handler`
+        return (cmp && cmp[action]) ? cmp[action](ev) : ui.runActionOfElem(el,action,ev)
     },
     runActionOfElem(elem,action,ev) {
         if (elem.getAttribute('contenteditable')) return
         ev = typeof event != 'undefined' ? event : ev
-        ;(elem.getAttribute('handlers') || '').split(',').filter(x=>x.indexOf(action+'-') == 0)
-            .forEach(str=> {
-                const ctx = jb.ui.ctxDictOfElem(elem)[str.split('-')[1]]
-                ctx && ctx.setVar('cmp',elem._component).setVars({ev}).runInner(ctx.profile.action,'action','action')
-            })
+        const ctxToRun = (elem.getAttribute('handlers') || '').split(',').filter(x=>x.indexOf(action+'-') == 0)
+            .map(str=>jb.ui.ctxDictOfElem(elem)[str.split('-')[1]])
+            .filter(x=>x)
+            .map(ctx=> ctx.setVar('cmp',elem._component).setVars({ev}))[0]
+
+        return ctxToRun && ctxToRun.runInner(ctxToRun.profile.action,'action','action')
     },
     ctrl(context,options) {
         const $state = context.vars.$refreshElemCall ? context.vars.$state : {}
@@ -5384,14 +5389,14 @@ Object.assign(jb.ui, {
         return el.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom);
     },
     offset(el) { return el.getBoundingClientRect() },
-    parents(el) {
-        const res = [];
-        el = el.parentNode;
+    parents(el,{includeSelf} = {}) {
+        const res = [] 
+        el = includeSelf ? el : el && el.parentNode;
         while(el) {
           res.push(el);
           el = el.parentNode;
         }
-        return res;
+        return res
     },
     closest(el,query) {
         while(el) {
@@ -7531,8 +7536,7 @@ jb.component('itemlist.infinite-scroll', {
   impl: features(
     defHandler('onscrollHandler', (ctx,{ev, $state},{pageSize}) => {
       const elem = ev.target
-      const scrollPercentFromTop =  (elem.scrollTop + jb.ui.offset(elem).height)/ elem.scrollHeight
-      if (scrollPercentFromTop < 0.9) return
+      if (!ev.scrollPercentFromTop || ev.scrollPercentFromTop < 0.9) return
       const allItems = ctx.vars.$model.items()
       const needsToLoadMoreItems = $state.visualLimit.shownItems && $state.visualLimit.shownItems < allItems.length
       if (!needsToLoadMoreItems) return
@@ -7544,7 +7548,7 @@ jb.component('itemlist.infinite-scroll', {
       const itemlistVdom = jb.ui.findIncludeSelf(vdom,'.jb-itemlist')[0]
       if (itemlistVdom) {
         console.log(itemsToAppend,ev)
-        jb.ui.appendItems(elem,itemlistVdom)
+        jb.ui.appendItems(elem,itemlistVdom,ctx)
         $state.visualLimit.shownItems += itemsToAppend.length
       }
     }),
@@ -33122,7 +33126,7 @@ jb.component('dialog.studio-pick-dialog', { /* dialog.studioPickDialog */
 function eventToElem(e,_window, predicate) {
   const mousePos = { x: e.pageX - _window.pageXOffset, y: e.pageY  - _window.pageYOffset }
   const elems = _window.document.elementsFromPoint(mousePos.x, mousePos.y);
-  const results = elems.flatMap(el=>[el,...jb.ui.parents(el)])
+  const results = elems.flatMap(el=>jb.ui.parents(el,{includeSelf: true}))
       .filter(e => e && e.getAttribute)
       .filter(e => checkCtxId(e.getAttribute('pick-ctx')) || checkCtxId(e.getAttribute('jb-ctx')) )
   if (results.length == 0) return [];

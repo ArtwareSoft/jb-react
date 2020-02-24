@@ -4863,24 +4863,29 @@ function render(vdom,parentElem) {
 
 Object.assign(jb.ui, {
     h, render, unmount, applyVdomDiff, applyDeltaToDom, elemToVdom, mountInteractive, compareVdom, appendItems,
-    handleCmpEvent(specificHandler) {
-        const el = [event.currentTarget, ...jb.ui.parents(event.currentTarget)].find(el=> el.getAttribute && el.getAttribute('jb-ctx') != null)
+    handleCmpEvent(specificHandler, ev) {
+        ev = typeof event != 'undefined' ? event : ev
+        const el = jb.ui.parents(ev.currentTarget,{includeSelf: true}).find(el=> el.getAttribute && el.getAttribute('jb-ctx') != null)
         if (!el) return
+        if (ev.type == 'scroll') // needs to be here to support the worker scenario
+            ev.scrollPercentFromTop = ev.scrollPercentFromTop || (el.scrollTop + jb.ui.offset(el).height)/ el.scrollHeight;
+
         if (el.getAttribute('worker')) { // forward the event to the worker
-            return jb.ui.workers[el.getAttribute('worker')].handleBrowserEvent(el,event,specificHandler)
+            return jb.ui.workers[el.getAttribute('worker')].handleBrowserEvent(el,ev,specificHandler)
         }
         const cmp = el._component
-        const action = specificHandler ? specificHandler : `on${event.type}Handler`
-        return (cmp && cmp[action]) ? cmp[action](event) : ui.runActionOfElem(el,action)
+        const action = specificHandler ? specificHandler : `on${ev.type}Handler`
+        return (cmp && cmp[action]) ? cmp[action](ev) : ui.runActionOfElem(el,action,ev)
     },
     runActionOfElem(elem,action,ev) {
         if (elem.getAttribute('contenteditable')) return
         ev = typeof event != 'undefined' ? event : ev
-        ;(elem.getAttribute('handlers') || '').split(',').filter(x=>x.indexOf(action+'-') == 0)
-            .forEach(str=> {
-                const ctx = jb.ui.ctxDictOfElem(elem)[str.split('-')[1]]
-                ctx && ctx.setVar('cmp',elem._component).setVars({ev}).runInner(ctx.profile.action,'action','action')
-            })
+        const ctxToRun = (elem.getAttribute('handlers') || '').split(',').filter(x=>x.indexOf(action+'-') == 0)
+            .map(str=>jb.ui.ctxDictOfElem(elem)[str.split('-')[1]])
+            .filter(x=>x)
+            .map(ctx=> ctx.setVar('cmp',elem._component).setVars({ev}))[0]
+
+        return ctxToRun && ctxToRun.runInner(ctxToRun.profile.action,'action','action')
     },
     ctrl(context,options) {
         const $state = context.vars.$refreshElemCall ? context.vars.$state : {}
@@ -5384,14 +5389,14 @@ Object.assign(jb.ui, {
         return el.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom);
     },
     offset(el) { return el.getBoundingClientRect() },
-    parents(el) {
-        const res = [];
-        el = el.parentNode;
+    parents(el,{includeSelf} = {}) {
+        const res = [] 
+        el = includeSelf ? el : el && el.parentNode;
         while(el) {
           res.push(el);
           el = el.parentNode;
         }
-        return res;
+        return res
     },
     closest(el,query) {
         while(el) {
@@ -7531,8 +7536,7 @@ jb.component('itemlist.infinite-scroll', {
   impl: features(
     defHandler('onscrollHandler', (ctx,{ev, $state},{pageSize}) => {
       const elem = ev.target
-      const scrollPercentFromTop =  (elem.scrollTop + jb.ui.offset(elem).height)/ elem.scrollHeight
-      if (scrollPercentFromTop < 0.9) return
+      if (!ev.scrollPercentFromTop || ev.scrollPercentFromTop < 0.9) return
       const allItems = ctx.vars.$model.items()
       const needsToLoadMoreItems = $state.visualLimit.shownItems && $state.visualLimit.shownItems < allItems.length
       if (!needsToLoadMoreItems) return
@@ -7544,7 +7548,7 @@ jb.component('itemlist.infinite-scroll', {
       const itemlistVdom = jb.ui.findIncludeSelf(vdom,'.jb-itemlist')[0]
       if (itemlistVdom) {
         console.log(itemsToAppend,ev)
-        jb.ui.appendItems(elem,itemlistVdom)
+        jb.ui.appendItems(elem,itemlistVdom,ctx)
         $state.visualLimit.shownItems += itemsToAppend.length
       }
     }),
@@ -11082,13 +11086,13 @@ function createWorker(workerId) {
             worker.response.next(({id, data: data.slice(id.length+1) }))
         },
         handleBrowserEvent(el,event,specificHandler) {
-            const widgetId = jb.ui.parents(el).filter(el=>el.getAttribute && el.getAttribute('widgetTop'))
+            const widgetId = jb.ui.parents(el,{includeSelf: true}).filter(el=>el.getAttribute && el.getAttribute('widgetTop'))
                 .map(el=>el.getAttribute('id'))[0]
             return this.exec(pipeline(
                         {$asIs: {
                             specificHandler, 
                             cmpId: el.getAttribute('cmp-id'), 
-                            event: {type: event.type, target: { value: event.target.value} },
+                            event: {type: event.type, target: { value: event.target.value}, scrollPercentFromTop: event.scrollPercentFromTop },
                             widgetId
                         }},
                         ctx => jb.ui.handleBrowserEvent(ctx.data)))
@@ -11175,40 +11179,6 @@ jb.component('remote.widget', {
         return jb.ui.h('div',{id: widgetId, widgetTop: 'true'})
     }
 })
-
-// jb.component('remote.control', {
-//     type: 'control',
-//     params: [
-//         {id: 'control', type: 'control', mandatory: true, dynamic: true},
-//         {id: 'remote', type: 'remote', mandatory: true, defaultValue: worker.main() },
-//     ],
-//     impl: group({
-//         controls: '%$remoteCtrl%',
-//         features: group.wait({
-//             for: (ctx,{},{remote,control}) => remote.createCtrl(control.profile,ctx.componentContext.callerPath + '~control'),
-//             loadingControl: label('...'),
-//             varName: 'remoteCtrl'
-//         }),
-//     })
-// })
-
-// createCtrl(ctrlProf,path) { // return promise with {vdom,store}
-//     const vdomProf = pipeline({$asIs: {ctrlProf,path}},
-//         ctx => {
-//         const cmp = new jb.jbCtx(ctx,{ data: null, profile: ctx.data.ctrlProf, forcePath: ctx.data.path, path: '' } ).runItself()
-//         const vdom = cmp.renderVdom()
-//         return { vdom, store: jb.ui.serializeCtxOfVdom(vdom) }
-//     })
-//     return this.getWorker()
-//         .then(worker => worker.exec(vdomProf))
-//         .then(x=> {
-//             const res = JSON.parse(x)[0]
-//             jb.ui.mainWorker.ctxDictionary = jb.ui.mainWorker.ctxDictionary || {}
-//             Object.assign(jb.ui.mainWorker.ctxDictionary,jb.ui.deserializeCtxStore(res.store).ctx)
-//             const {cmpOrTag,attributes,children} = res.vdom
-//             return new jb.ui.VNode(cmpOrTag,attributes,children)
-//         })
-// },
 
 })();
 

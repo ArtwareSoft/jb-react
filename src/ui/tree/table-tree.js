@@ -32,6 +32,29 @@ jb.component('table-tree.init', { /* tableTree.init */
     {id: 'autoOpenFirstLevel', as: 'boolean' },
   ],
   impl: features(
+    calcProp('expanded',(ctx,{cmp,$props},{autoOpenFirstLevel}) => {
+        const treeModel = cmp.treeModel
+        cmp.state = cmp.state || {}
+        const firstTime = !cmp.state.expanded
+        cmp.state.expanded = cmp.state.expanded || {}
+        if (firstTime) {
+            const allPathsToExtend = [
+                treeModel.rootPath,
+                ...(autoOpenFirstLevel && treeModel.children(treeModel.rootPath) || []),
+                ...($props.pathsToExtend || []),
+            ]
+            allPathsToExtend.forEach(path=>expandPathWithChildren(path))
+        }
+        return cmp.state.expanded
+
+        function expandPathWithChildren(path) {
+            path.split('~').reduce((base, x) => {
+                const inner = base != null ? (base + '~' + x) : x;
+                cmp.state.expanded[inner] = true
+                return inner
+            },null)
+        }
+    }),
     calcProp({
         id: 'items',
         value: (ctx,{cmp}) => {
@@ -58,6 +81,11 @@ jb.component('table-tree.init', { /* tableTree.init */
             cmp.flip = (event) => {
                 const path = elemToPath(event.target)
                 if (!path) debugger
+                path.split('~').slice(0,-1).reduce((base, x) => {
+                    const inner = base != null ? (base + '~' + x) : x;
+                    cmp.state.expanded[inner] = true
+                    return inner
+                },null)
                 cmp.state.expanded[path] = !(cmp.state.expanded[path]);
                 cmp.refresh();
             }
@@ -68,13 +96,6 @@ jb.component('table-tree.init', { /* tableTree.init */
         (ctx,{cmp},{autoOpenFirstLevel}) => {
             const treeModel = cmp.treeModel = ctx.vars.$model.treeModel()
             cmp.renderProps.maxDepth = treeModel.maxDepth = (treeModel.maxDepth || 5)
-            const firstTime = !cmp.state.expanded
-            cmp.state.expanded = cmp.state.expanded || {}
-            if (firstTime) {
-                jb.ui.treeExpandPath(cmp.state.expanded,treeModel.rootPath)
-                if (autoOpenFirstLevel)
-                    treeModel.children(treeModel.rootPath).forEach(path=>jb.ui.treeExpandPath(cmp.state.expanded,path))
-            }
 
             cmp.leafFields = calcFields('leafFields')
             cmp.commonFields = calcFields('commonFields')
@@ -167,13 +188,14 @@ jb.component('json.path-selector', { /* json.pathSelector */
     }
 })
 
-jb.ui.treeExpandPath = jb.ui.treeExpandPath || ((expanded, path) => {
-	let changed = false
-	path.split('~').reduce((base, x) => {
-        const inner = base ? (base + '~' + x) : x;
-        changed = changed || (!expanded[inner])
-        expanded[inner] = true;
-        return inner;
-    },'')
-	return changed
+jb.component('table-tree.expand-path', {
+    type: 'table-tree.style',
+    params: [
+      {id: 'path', as: 'string' },
+    ],
+    impl: calcProp({ id: 'pathsToExtend', 
+        value: ({},{pathsToExtend},{path}) => [...path.split(','), ...(pathsToExtend || [])],
+        phase: 5 // before
+    })
 })
+

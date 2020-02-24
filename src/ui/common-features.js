@@ -62,6 +62,15 @@ jb.component('feature.init', { /* feature.init */
   impl: (ctx,action,phase) => ({ init: { action, phase }})
 })
 
+jb.component('feature.beforeInit', { 
+  type: 'feature',
+  category: 'lifecycle',
+  params: [
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true},
+  ],
+  impl: feature.init('%$action%',5)
+})
+
 jb.component('feature.after-load', { /* feature.afterLoad */
   type: 'feature',
   description: 'init, onload, defines the interactive part of the component',
@@ -256,7 +265,7 @@ jb.component('hidden', { /* hidden */
     {id: 'showCondition', type: 'boolean', mandatory: true, dynamic: true}
   ],
   impl: (ctx,showCondition) => ({
-    templateModifier: (vdom,cmp,state) => {
+    templateModifier: (vdom,cmp) => {
       if (!jb.toboolean(showCondition(cmp.ctx)))
         jb.path(vdom,['attributes','style','display'],'none')
       return vdom

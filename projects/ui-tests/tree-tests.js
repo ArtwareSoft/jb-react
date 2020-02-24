@@ -160,7 +160,24 @@ jb.component('ui-test.tree-DD-after-last', { /* uiTest.treeDDAfterLast */
         )
     })
 })
-  
+
+jb.component('ui-test.table-tree.expand-path', {
+  impl: uiTest({
+      control: tableTree({
+        treeModel: tree.jsonReadOnly('%$personWithChildren%', ''),
+        leafFields: text({title: 'name', text: '%val%'}),
+        commonFields: text({title: 'path', text: '%path%'}),
+        chapterHeadline: label({text: suffix('~', '%path%')}),
+        style: tableTree.plain(),
+        features: [
+          id('tableTree'),
+          tableTree.expandPath('~friends~0')
+        ]
+    }),
+    expectedResult: contains(['name','path','Homer','friends','Barnie','~friends~0~name'])
+  })
+})
+
 jb.component('ui-test.table-tree-refresh1', {
   impl: uiTest({
       control: tableTree({
@@ -169,20 +186,20 @@ jb.component('ui-test.table-tree-refresh1', {
         commonFields: text({title: 'path', text: '%path%'}),
         chapterHeadline: label({text: suffix('~', '%path%')}),
         style: tableTree.plain(),
-        features: id('tableTree')
+        features: [
+          tableTree.expandPath('%$globals/expanded%'),
+          watchRef({ref: '%$globals/expanded%', strongRefresh: true})
+        ]
     }),
-    action: ctx => {
-      const cmp = jb.ui.cmpOfSelector('#tableTree',ctx)
-      Object.assign(cmp.state.expanded,{'~friends':true, '~friends~0': true })
-      cmp.refresh()
-    },
+    action: writeValue('%$globals/expanded%', '~friends~0'),
     expectedResult: contains(['name','path','Homer','friends','Barnie','~friends~0~name'])
   })
 })
 
-jb.component('ui-test.table-tree-refresh2', {
+jb.component('ui-test.table-tree-unexpand-refresh', {
   impl: uiTest({
-      control: tableTree({
+    runBefore: writeValue('%$globals/expanded%', '~a'),
+    control: tableTree({
         treeModel: tree.jsonReadOnly(()=>({
           a: { a1: 'val' },
           b: { b1: 'val' },
@@ -191,16 +208,31 @@ jb.component('ui-test.table-tree-refresh2', {
         commonFields: text({title: 'path', text: '%path%'}),
         chapterHeadline: label({text: suffix('~', '%path%')}),
         style: tableTree.plain(),
-        features: id('tableTree')
+        features: [
+          tableTree.expandPath('%$globals/expanded%'),
+          watchRef({ref: '%$globals/expanded%', strongRefresh: true})
+        ]
     }),
-    action: ctx => {
-      const cmp = jb.ui.cmpOfSelector('#tableTree',ctx)
-      Object.assign(cmp.state.expanded,{'~a':false })
-      cmp.refresh()
-    },
-    expectedResult: not(contains(['undefined']))
+    action: writeValue('%$globals/expanded%', ''),
+    expectedResult: and(not(contains('undefined')), not(contains('~a~a1')))
   })
 })
+
+jb.component('ui-test.table-tree-expand-mulitple-paths', {
+  impl: uiTest({
+    control: tableTree({
+        treeModel: tree.jsonReadOnly(()=>({
+          a: { a1: 'val' },
+          b: { b1: 'val' },
+        }) , ''),
+        commonFields: text({title: 'path', text: '%path%'}),
+        chapterHeadline: label({text: suffix('~', '%path%')}),
+        features: tableTree.expandPath('~a,~b'),
+    }),
+    expectedResult: contains(['~a~a1','~b~b1'])
+  })
+})
+
 
 jb.component('ui-test.table-tree-with-title-ctrl', {
   impl: uiTest({

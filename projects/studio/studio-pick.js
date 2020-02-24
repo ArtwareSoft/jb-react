@@ -101,7 +101,7 @@ jb.component('dialog.studio-pick-dialog', { /* dialog.studioPickDialog */
 function eventToElem(e,_window, predicate) {
   const mousePos = { x: e.pageX - _window.pageXOffset, y: e.pageY  - _window.pageYOffset }
   const elems = _window.document.elementsFromPoint(mousePos.x, mousePos.y);
-  const results = elems.flatMap(el=>[el,...jb.ui.parents(el)])
+  const results = elems.flatMap(el=>jb.ui.parents(el,{includeSelf: true}))
       .filter(e => e && e.getAttribute)
       .filter(e => checkCtxId(e.getAttribute('pick-ctx')) || checkCtxId(e.getAttribute('jb-ctx')) )
   if (results.length == 0) return [];

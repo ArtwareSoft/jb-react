@@ -40,7 +40,8 @@ jb.component('studio.properties', { /* studio.properties */
             path: '%$path%',
             includeChildren: 'structure',
             allowSelfRefresh: true
-          })
+          }),
+          tableTree.expandPath(studio.lastEdit())
         ]
       }),
       button({

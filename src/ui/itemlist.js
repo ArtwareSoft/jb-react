@@ -72,7 +72,7 @@ jb.component('itemlist.infinite-scroll', {
       const itemlistVdom = jb.ui.findIncludeSelf(vdom,'.jb-itemlist')[0]
       if (itemlistVdom) {
         console.log(itemsToAppend,ev)
-        jb.ui.appendItems(elem,itemlistVdom)
+        jb.ui.appendItems(elem,itemlistVdom,ctx)
         $state.visualLimit.shownItems += itemsToAppend.length
       }
     }),

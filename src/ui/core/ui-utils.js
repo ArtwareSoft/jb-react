@@ -69,14 +69,14 @@ Object.assign(jb.ui, {
         return el.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom);
     },
     offset(el) { return el.getBoundingClientRect() },
-    parents(el) {
-        const res = [];
-        el = el.parentNode;
+    parents(el,{includeSelf} = {}) {
+        const res = [] 
+        el = includeSelf ? el : el && el.parentNode;
         while(el) {
           res.push(el);
           el = el.parentNode;
         }
-        return res;
+        return res
     },
     closest(el,query) {
         while(el) {

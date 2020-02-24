@@ -250,7 +250,7 @@ Object.assign(jb.ui, {
     h, render, unmount, applyVdomDiff, applyDeltaToDom, elemToVdom, mountInteractive, compareVdom, appendItems,
     handleCmpEvent(specificHandler, ev) {
         ev = typeof event != 'undefined' ? event : ev
-        const el = [ev.currentTarget, ...jb.ui.parents(ev.currentTarget)].find(el=> el.getAttribute && el.getAttribute('jb-ctx') != null)
+        const el = jb.ui.parents(ev.currentTarget,{includeSelf: true}).find(el=> el.getAttribute && el.getAttribute('jb-ctx') != null)
         if (!el) return
         if (ev.type == 'scroll') // needs to be here to support the worker scenario
             ev.scrollPercentFromTop = ev.scrollPercentFromTop || (el.scrollTop + jb.ui.offset(el).height)/ el.scrollHeight;
@@ -333,7 +333,8 @@ Object.assign(jb.ui, {
         const _ctx = ui.ctxOfElem(elem)
         if (!_ctx) 
             return jb.logError('refreshElem - no ctx for elem',elem)
-        let ctx = state ? _ctx.setVar('$state',state) : _ctx
+        const strongRefresh = jb.path(options,'strongRefresh')
+        let ctx = _ctx.setVar('$state', strongRefresh ? {} : state) // strongRefresh kills state
         if (options && options.extendCtx)
             ctx = options.extendCtx(ctx)
         ctx = ctx.setVar('$refreshElemCall',true)
@@ -341,7 +342,7 @@ Object.assign(jb.ui, {
         const hash = cmp.init()
         if (hash != null && hash == elem.getAttribute('cmpHash'))
             return jb.log('refreshElem',['stopped by hash', hash, ...arguments]);
-        cmp && applyVdomDiff(elem, h(cmp), {strongRefresh: jb.path(options,'strongRefresh'), ctx})
+        cmp && applyVdomDiff(elem, h(cmp), {strongRefresh, ctx})
         jb.execInStudio({ $: 'animate.refresh-elem', elem: () => elem })
     },
 
