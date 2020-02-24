@@ -29298,6 +29298,7 @@ st.initPreview = function(preview_window,allowedTypes) {
       //   st.previewjb.studio.initEventTracker();
 
       jb.exp('%$studio/settings/activateWatchRefViewer%','boolean') && st.activateWatchRefViewer();
+      jb.exec(writeValue('%$studio/projectSettings%',() => preview_window.jbProjectSettings))
 
 			fixInvalidUrl()
 
@@ -29373,29 +29374,25 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
       calcProp('rootName','%$studio/settings/rootName%'),
       calcProp('project','%$studio/project%'),
       calcProp('src', '/project/%$$props/project%?%$$props/cacheKiller%&spy=preview'),
-      calcProp('inMemoryProject', () => st.inMemoryProject),
       calcProp('host', '%$queryParams/host%'),
-      calcProp('hasHost', ctx => ctx.vars.host && st.projectHosts[ctx.vars.host]),
-      calcProp('loadingMessage', data.if('%$$props/inMemoryProject%', '',
-        '{? loading project from %$$props/host%::%$queryParams/hostProjectId% ?}')),
+      calcProp('loadingMessage', '{? loading project from %$$props/host%::%$queryParams/hostProjectId% ?}'),
       interactive( (ctx,{cmp}) => {
           const host = ctx.exp('%$queryParams/host%')
-          if (!st.inMemoryProject && host && st.projectHosts[host]) {
+          if (!cmp.state.projectLoaded && host && st.projectHosts[host]) {
             const project = ctx.exp('%$studio/project%')
             document.title = `${project} with jBart`;
             return st.projectHosts[host].fetchProject(ctx.exp('%$queryParams/hostProjectId%'),project)
-              .then(inMemoryProject => cmp.refresh({ inMemoryProject })) 
+              .then(projectSettings => cmp.refresh({ projectLoaded: true, projectSettings })) 
           }
         })
   ))
 })
 
-
 jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
   type: 'preview-style',
   impl: customStyle({
-    template: (cmp,{width,height, loadingMessage, src },h) => {
-      if (!cmp.state.inMemoryProject)
+    template: (cmp,{width,height, loadingMessage, src, host },h) => {
+      if (host && !cmp.state.projectLoaded)
         return h('p',{class: 'loading-message'}, loadingMessage)
       return h('iframe', {
           id:'jb-preview',
@@ -29403,14 +29400,15 @@ jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
           frameborder: 0,
           class: 'preview-iframe',
           width, height,
-          src: cmp.state.inMemoryProject ? `javascript: parent.jb.studio.injectInMemoryProjectToPreview(this,${JSON.stringify(cmp.state.inMemoryProject)})` : src
+          src: cmp.state.projectLoaded ? 
+          `javascript: parent.jb.studio.injectProjectToPreview(this,${JSON.stringify(cmp.state.projectSettings)})` : src
         })
     },
     css: '{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; }'
   })
 })
 
-st.injectInMemoryProjectToPreview = function(previewWin,projectSettings) {
+st.injectProjectToPreview = function(previewWin,projectSettings) {
 const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -30845,15 +30843,7 @@ Object.assign(st,{
 		return '';
 	},
 	previewCompsAsEntries: () => jb.entries(st.previewjb.comps).filter(e=>e[1]),
-	projectFiles: () => {
-		if (st.inMemoryProject && st.inMemoryProject.fileNames)
-			return st.inMemoryProject.fileNames
-		const ctx = new jb.jbCtx()
-		const project = ctx.exp('%$studio/project%') // || 'studio-helper'
-		return ctx.setData(jb.studio.previewWindow.document.head.outerHTML).run(studio.parseProjectHtml())
-			.fileNames.filter(x=>x.indexOf(project) != -1 || x.indexOf('..') != -1)
-			.map(x=>x.split('/').pop())
-	},
+	projectFiles: () => jb.exec('%$studio/projectSettings/jsFiles%'),
 	projectCompsAsEntries: () => {
 		const files = st.projectFiles()
 		return st.previewCompsAsEntries().filter(e=> {
@@ -30861,7 +30851,6 @@ Object.assign(st,{
 			return files.indexOf(fn) != -1
 		})
 	},
-
 	// queries
 	paramDef: path => {
 		if (!st.parentPath(path)) // no param def for root
@@ -32430,11 +32419,7 @@ jb.component('source-editor.suggestions-itemlist', { /* sourceEditor.suggestions
 })
 
 jb.component('source-editor.files-of-project', { /* sourceEditor.filesOfProject */
-  impl: ctx => {
-    if (jb.studio.inMemoryProject)
-      return Object.keys(jb.studio.inMemoryProject.files)
-    return st.projectUtils.projectContent(ctx)
-  }
+  impl: '%$studio/projectSettings/jsFiles%'
 })
 
 jb.component('studio.github-helper', { /* studio.githubHelper */
@@ -34124,36 +34109,36 @@ jb.component('studio.save-components', { /* studio.saveComponents */
     const messages = []
     const filesToUpdate = jb.unique(st.changedComps().map(e=>locationOfComp(e)).filter(x=>x))
       .map(fn=>({fn, path: st.host.locationToPath(fn), comps: st.changedComps().filter(e=>locationOfComp(e) == fn)}))
-    if (st.inMemoryProject) {
-      const project = st.inMemoryProject.project, baseDir = st.inMemoryProject.baseDir
-      const files = jb.objFromEntries(jb.entries(st.inMemoryProject.files)
-        .map(file=>[file[0],newFileContent(file[1],
-            st.changedComps().filter(comp=>locationOfComp(comp).indexOf(file[0]) != -1))
-        ]))
+    // if (st.inMemoryProject) {
+    //   const project = st.inMemoryProject.project, baseDir = st.inMemoryProject.baseDir
+    //   const files = jb.objFromEntries(jb.entries(st.inMemoryProject.files)
+    //     .map(file=>[file[0],newFileContent(file[1],
+    //         st.changedComps().filter(comp=>locationOfComp(comp).indexOf(file[0]) != -1))
+    //     ]))
 
-      const jsToInject = jb.entries(files).filter(e=>e[0].match(/js$/))
-        .map(e => `<script type="text/javascript" src="${st.host.srcOfJsFile(project,e[0],baseDir)}"></script>`).join('\n')
-      const cssToInject = jb.entries(files).filter(e=>e[0].match(/css$/))
-        .map(e => `<link rel="stylesheet" href="${st.host.srcOfJsFile(project,e[0],baseDir)}" charset="utf-8">`).join('\n')
+    //   const jsToInject = jb.entries(files).filter(e=>e[0].match(/js$/))
+    //     .map(e => `<script type="text/javascript" src="${st.host.srcOfJsFile(project,e[0],baseDir)}"></script>`).join('\n')
+    //   const cssToInject = jb.entries(files).filter(e=>e[0].match(/css$/))
+    //     .map(e => `<link rel="stylesheet" href="${st.host.srcOfJsFile(project,e[0],baseDir)}" charset="utf-8">`).join('\n')
 
-      jb.entries(files).forEach(e=>
-        files[e[0]] = e[1].replace(/<!-- load-jb-scripts-here -->/, [st.host.scriptForLoadLibraries(st.inMemoryProject.libs),jsToInject,cssToInject].join('\n'))
-          .replace(/\/\/# sourceURL=.*/g,''))
-      if (!files['index.html'])
-        files['index.html'] = st.host.htmlAsCloud(jb.entries(files).filter(e=>e[0].match(/html$/))[0][1],project)
+    //   jb.entries(files).forEach(e=>
+    //     files[e[0]] = e[1].replace(/<!-- load-jb-scripts-here -->/, [st.host.scriptForLoadLibraries(st.inMemoryProject.libs),jsToInject,cssToInject].join('\n'))
+    //       .replace(/\/\/# sourceURL=.*/g,''))
+    //   if (!files['index.html'])
+    //     files['index.html'] = st.host.htmlAsCloud(jb.entries(files).filter(e=>e[0].match(/html$/))[0][1],project)
 
-      return jb.studio.host.createProject({project, files, baseDir})
-        .then(r => r.json())
-        .catch(e => {
-          jb.studio.message(`error saving project ${project}: ` + (e && e.desc));
-          jb.logException(e,'',ctx)
-        })
-        .then(res=>{
-          if (res.type == 'error')
-              return jb.studio.message(`error saving project ${project}: ` + (res && jb.prettyPrint(res.desc)));
-          location.reload()
-        })
-    }
+    //   return jb.studio.host.createProject({project, files, baseDir})
+    //     .then(r => r.json())
+    //     .catch(e => {
+    //       jb.studio.message(`error saving project ${project}: ` + (e && e.desc));
+    //       jb.logException(e,'',ctx)
+    //     })
+    //     .then(res=>{
+    //       if (res.type == 'error')
+    //           return jb.studio.message(`error saving project ${project}: ` + (res && jb.prettyPrint(res.desc)));
+    //       location.reload()
+    //     })
+    // }
 
     return jb.rx.Observable.from(filesToUpdate)
       .concatMap(e =>
@@ -34177,7 +34162,6 @@ jb.component('studio.save-components', { /* studio.saveComponents */
 				st.showMultiMessages(messages)
         e.comps.forEach(([id]) => st.serverComps[id] = st.previewjb.comps[id])
       })
-
     }
 })
 
@@ -34592,7 +34576,7 @@ jb.component('studio.data-resource-menu', { /* studio.dataResourceMenu */
 
 ;
 
-jb.component('studio.new-in-memory-project', {
+jb.component('studio.new-project', {
   params: [
     {id: 'project', as: 'string'},
     {id: 'baseDir', as: 'string'}
@@ -34603,20 +34587,19 @@ jb.component('studio.new-in-memory-project', {
     prop('files', obj(prop('%$project%.html', `<!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <link rel="icon" type="image/png" href="//unpkg.com/jb-react@0.5.4/bin/studio/css/favicon.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script type="text/javascript">
-    startTime = new Date().getTime();
+  jbProjectSettings = {
+    project: '%$project%',
+    libs: 'common,ui-common,material',
+    jsFiles: ['%$project%.js'],
+  }
   </script>
-<!-- start-jb-scripts -->
-<!-- load-jb-scripts-here -->
-<!-- end-jb-scripts -->
+  <script type="text/javascript" src="/src/loader/jb-loader.js"></script>
 </head>
 <body>
-  <div id="main"> </div>
   <script>
-    jb.ui.renderWidget({$:'%$project%.main'},document.getElementById('main'))
+    window.jb_initWidget && jb_initWidget()
   </script>
 </body>
 </html>`),
@@ -34629,7 +34612,6 @@ jb.component('%$project%.main', {
   })
 })
 //# sourceURL=%$project%.js}`)), 'object'),
-  prop('libs',list('material'),'array')
 )
 })
 
@@ -34654,7 +34636,12 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
     }),
     title: 'New Project',
     onOK: runActions(
-      ctx => jb.studio.inMemoryProject = ctx.run(studio.newInMemoryProject('%$dialogData/name%')),
+      writeValue('%$studio/projectSettings%', {$: 'object',
+          project: '%$dialogData/name%',
+          libs: 'common,ui-common,material',
+          jsFiles: ['%$dialogData/name%.js']
+      }),
+      studio.newProject('%$dialogData/name%'),
       writeValue('%$studio/project%', '%$dialogData/name%'),
       writeValue('%$studio/page%', 'main'),
       writeValue('%$studio/profile_path%', '%$dialogData/name%.main'),
@@ -35407,7 +35394,7 @@ const st = jb.studio;
 const devHost = {
     settings: () => fetch(`/?op=settings`).then(res=>res.text()),
     rootExists: () => fetch(`/?op=rootExists`).then(res=>res.text()).then(res=>res==='true'),
-    getFile: path => st.inMemoryProject ? st.inMemoryProject.files[path] : fetch(`/?op=getFile&path=${path}`).then(res=>res.text()),
+    getFile: path => fetch(`/?op=getFile&path=${path}`).then(res=>res.text()),
     locationToPath: path => path.replace(/^[0-9]*\//,''),
     saveFile: (path, contents) => {
         return fetch(`/?op=saveFile`,
@@ -35440,7 +35427,7 @@ const userLocalHost = Object.assign({},devHost,{
 const cloudHost = {
     settings: () => Promise.resolve(({})),
     rootExists: () => Promise.resolve(false),
-    getFile: path => st.inMemoryProject ? st.inMemoryProject.files[path] : jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files' }}),
+    getFile: path => jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files' }}),
     htmlAsCloud: (html,project) => html.replace(/\/dist\//g,'//unpkg.com/jb-react/dist/').replace(/src="\.\.\//g,'src="').replace(`/${project}/`,''),
     locationToPath: path => path.replace(/^[0-9]*\//,''),
     createProject: request => jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files'}}),
@@ -35532,20 +35519,20 @@ st.projectHosts = {
     }
 }
 
-st.projectUtils = {
-    projectContent: ctx => {
-        const project = ctx.exp('%$studio/project%') || 'hello-world', rootName = ctx.exp('%$studio/settings/rootName%')
-        const baseDir = rootName == project ? './' : ''
-        const htmlPath = st.host.pathOfJsFile(project,project+'.html',baseDir)
-        return st.host.getFile(htmlPath).then(html=> {
-            const {fileNames,libs} = ctx.setData(html).run(studio.parseProjectHtml())
-            return fileNames.reduce((acc,file)=>
-                acc.then(res => st.host.getFile(st.host.pathOfJsFile(project,file,baseDir)).then(content => Object.assign(res, {[file]: content}))), Promise.resolve({
-                    [`${project}.html`]: html
-            }) ).then(files => ({project, files, fileNames, libs}))
-        })
-    }
-}
+// st.projectUtils = {
+//     projectContent: ctx => {
+//         const project = ctx.exp('%$studio/project%') || 'hello-world', rootName = ctx.exp('%$studio/settings/rootName%')
+//         const baseDir = rootName == project ? './' : ''
+//         const htmlPath = st.host.pathOfJsFile(project,project+'.html',baseDir)
+//         return st.host.getFile(htmlPath).then(html=> {
+//             const {fileNames,libs} = ctx.setData(html).run(studio.parseProjectHtml())
+//             return fileNames.reduce((acc,file)=>
+//                 acc.then(res => st.host.getFile(st.host.pathOfJsFile(project,file,baseDir)).then(content => Object.assign(res, {[file]: content}))), Promise.resolve({
+//                     [`${project}.html`]: html
+//             }) ).then(files => ({project, files, fileNames, libs}))
+//         })
+//     }
+// }
 
 jb.component('studio.parse-project-html', { /* studio.parseProjectHtml */
   type: 'data',

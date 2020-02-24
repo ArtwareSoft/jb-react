@@ -4,7 +4,7 @@ const st = jb.studio;
 const devHost = {
     settings: () => fetch(`/?op=settings`).then(res=>res.text()),
     rootExists: () => fetch(`/?op=rootExists`).then(res=>res.text()).then(res=>res==='true'),
-    getFile: path => st.inMemoryProject ? st.inMemoryProject.files[path] : fetch(`/?op=getFile&path=${path}`).then(res=>res.text()),
+    getFile: path => fetch(`/?op=getFile&path=${path}`).then(res=>res.text()),
     locationToPath: path => path.replace(/^[0-9]*\//,''),
     saveFile: (path, contents) => {
         return fetch(`/?op=saveFile`,
@@ -37,7 +37,7 @@ const userLocalHost = Object.assign({},devHost,{
 const cloudHost = {
     settings: () => Promise.resolve(({})),
     rootExists: () => Promise.resolve(false),
-    getFile: path => st.inMemoryProject ? st.inMemoryProject.files[path] : jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files' }}),
+    getFile: path => jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files' }}),
     htmlAsCloud: (html,project) => html.replace(/\/dist\//g,'//unpkg.com/jb-react/dist/').replace(/src="\.\.\//g,'src="').replace(`/${project}/`,''),
     locationToPath: path => path.replace(/^[0-9]*\//,''),
     createProject: request => jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files'}}),
@@ -129,20 +129,20 @@ st.projectHosts = {
     }
 }
 
-st.projectUtils = {
-    projectContent: ctx => {
-        const project = ctx.exp('%$studio/project%') || 'hello-world', rootName = ctx.exp('%$studio/settings/rootName%')
-        const baseDir = rootName == project ? './' : ''
-        const htmlPath = st.host.pathOfJsFile(project,project+'.html',baseDir)
-        return st.host.getFile(htmlPath).then(html=> {
-            const {fileNames,libs} = ctx.setData(html).run(studio.parseProjectHtml())
-            return fileNames.reduce((acc,file)=>
-                acc.then(res => st.host.getFile(st.host.pathOfJsFile(project,file,baseDir)).then(content => Object.assign(res, {[file]: content}))), Promise.resolve({
-                    [`${project}.html`]: html
-            }) ).then(files => ({project, files, fileNames, libs}))
-        })
-    }
-}
+// st.projectUtils = {
+//     projectContent: ctx => {
+//         const project = ctx.exp('%$studio/project%') || 'hello-world', rootName = ctx.exp('%$studio/settings/rootName%')
+//         const baseDir = rootName == project ? './' : ''
+//         const htmlPath = st.host.pathOfJsFile(project,project+'.html',baseDir)
+//         return st.host.getFile(htmlPath).then(html=> {
+//             const {fileNames,libs} = ctx.setData(html).run(studio.parseProjectHtml())
+//             return fileNames.reduce((acc,file)=>
+//                 acc.then(res => st.host.getFile(st.host.pathOfJsFile(project,file,baseDir)).then(content => Object.assign(res, {[file]: content}))), Promise.resolve({
+//                     [`${project}.html`]: html
+//             }) ).then(files => ({project, files, fileNames, libs}))
+//         })
+//     }
+// }
 
 jb.component('studio.parse-project-html', { /* studio.parseProjectHtml */
   type: 'data',

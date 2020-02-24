@@ -407,11 +407,7 @@ jb.component('source-editor.suggestions-itemlist', { /* sourceEditor.suggestions
 })
 
 jb.component('source-editor.files-of-project', { /* sourceEditor.filesOfProject */
-  impl: ctx => {
-    if (jb.studio.inMemoryProject)
-      return Object.keys(jb.studio.inMemoryProject.files)
-    return st.projectUtils.projectContent(ctx)
-  }
+  impl: '%$studio/projectSettings/jsFiles%'
 })
 
 jb.component('studio.github-helper', { /* studio.githubHelper */

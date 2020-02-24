@@ -1,4 +1,4 @@
-jb.component('studio.new-in-memory-project', {
+jb.component('studio.new-project', {
   params: [
     {id: 'project', as: 'string'},
     {id: 'baseDir', as: 'string'}
@@ -9,20 +9,19 @@ jb.component('studio.new-in-memory-project', {
     prop('files', obj(prop('%$project%.html', `<!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <link rel="icon" type="image/png" href="//unpkg.com/jb-react@0.5.4/bin/studio/css/favicon.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script type="text/javascript">
-    startTime = new Date().getTime();
+  jbProjectSettings = {
+    project: '%$project%',
+    libs: 'common,ui-common,material',
+    jsFiles: ['%$project%.js'],
+  }
   </script>
-<!-- start-jb-scripts -->
-<!-- load-jb-scripts-here -->
-<!-- end-jb-scripts -->
+  <script type="text/javascript" src="/src/loader/jb-loader.js"></script>
 </head>
 <body>
-  <div id="main"> </div>
   <script>
-    jb.ui.renderWidget({$:'%$project%.main'},document.getElementById('main'))
+    window.jb_initWidget && jb_initWidget()
   </script>
 </body>
 </html>`),
@@ -35,7 +34,6 @@ jb.component('%$project%.main', {
   })
 })
 //# sourceURL=%$project%.js}`)), 'object'),
-  prop('libs',list('material'),'array')
 )
 })
 
@@ -60,7 +58,12 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
     }),
     title: 'New Project',
     onOK: runActions(
-      ctx => jb.studio.inMemoryProject = ctx.run(studio.newInMemoryProject('%$dialogData/name%')),
+      writeValue('%$studio/projectSettings%', {$: 'object',
+          project: '%$dialogData/name%',
+          libs: 'common,ui-common,material',
+          jsFiles: ['%$dialogData/name%.js']
+      }),
+      studio.newProject('%$dialogData/name%'),
       writeValue('%$studio/project%', '%$dialogData/name%'),
       writeValue('%$studio/page%', 'main'),
       writeValue('%$studio/profile_path%', '%$dialogData/name%.main'),

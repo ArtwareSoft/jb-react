@@ -7,36 +7,36 @@ jb.component('studio.save-components', { /* studio.saveComponents */
     const messages = []
     const filesToUpdate = jb.unique(st.changedComps().map(e=>locationOfComp(e)).filter(x=>x))
       .map(fn=>({fn, path: st.host.locationToPath(fn), comps: st.changedComps().filter(e=>locationOfComp(e) == fn)}))
-    if (st.inMemoryProject) {
-      const project = st.inMemoryProject.project, baseDir = st.inMemoryProject.baseDir
-      const files = jb.objFromEntries(jb.entries(st.inMemoryProject.files)
-        .map(file=>[file[0],newFileContent(file[1],
-            st.changedComps().filter(comp=>locationOfComp(comp).indexOf(file[0]) != -1))
-        ]))
+    // if (st.inMemoryProject) {
+    //   const project = st.inMemoryProject.project, baseDir = st.inMemoryProject.baseDir
+    //   const files = jb.objFromEntries(jb.entries(st.inMemoryProject.files)
+    //     .map(file=>[file[0],newFileContent(file[1],
+    //         st.changedComps().filter(comp=>locationOfComp(comp).indexOf(file[0]) != -1))
+    //     ]))
 
-      const jsToInject = jb.entries(files).filter(e=>e[0].match(/js$/))
-        .map(e => `<script type="text/javascript" src="${st.host.srcOfJsFile(project,e[0],baseDir)}"></script>`).join('\n')
-      const cssToInject = jb.entries(files).filter(e=>e[0].match(/css$/))
-        .map(e => `<link rel="stylesheet" href="${st.host.srcOfJsFile(project,e[0],baseDir)}" charset="utf-8">`).join('\n')
+    //   const jsToInject = jb.entries(files).filter(e=>e[0].match(/js$/))
+    //     .map(e => `<script type="text/javascript" src="${st.host.srcOfJsFile(project,e[0],baseDir)}"></script>`).join('\n')
+    //   const cssToInject = jb.entries(files).filter(e=>e[0].match(/css$/))
+    //     .map(e => `<link rel="stylesheet" href="${st.host.srcOfJsFile(project,e[0],baseDir)}" charset="utf-8">`).join('\n')
 
-      jb.entries(files).forEach(e=>
-        files[e[0]] = e[1].replace(/<!-- load-jb-scripts-here -->/, [st.host.scriptForLoadLibraries(st.inMemoryProject.libs),jsToInject,cssToInject].join('\n'))
-          .replace(/\/\/# sourceURL=.*/g,''))
-      if (!files['index.html'])
-        files['index.html'] = st.host.htmlAsCloud(jb.entries(files).filter(e=>e[0].match(/html$/))[0][1],project)
+    //   jb.entries(files).forEach(e=>
+    //     files[e[0]] = e[1].replace(/<!-- load-jb-scripts-here -->/, [st.host.scriptForLoadLibraries(st.inMemoryProject.libs),jsToInject,cssToInject].join('\n'))
+    //       .replace(/\/\/# sourceURL=.*/g,''))
+    //   if (!files['index.html'])
+    //     files['index.html'] = st.host.htmlAsCloud(jb.entries(files).filter(e=>e[0].match(/html$/))[0][1],project)
 
-      return jb.studio.host.createProject({project, files, baseDir})
-        .then(r => r.json())
-        .catch(e => {
-          jb.studio.message(`error saving project ${project}: ` + (e && e.desc));
-          jb.logException(e,'',ctx)
-        })
-        .then(res=>{
-          if (res.type == 'error')
-              return jb.studio.message(`error saving project ${project}: ` + (res && jb.prettyPrint(res.desc)));
-          location.reload()
-        })
-    }
+    //   return jb.studio.host.createProject({project, files, baseDir})
+    //     .then(r => r.json())
+    //     .catch(e => {
+    //       jb.studio.message(`error saving project ${project}: ` + (e && e.desc));
+    //       jb.logException(e,'',ctx)
+    //     })
+    //     .then(res=>{
+    //       if (res.type == 'error')
+    //           return jb.studio.message(`error saving project ${project}: ` + (res && jb.prettyPrint(res.desc)));
+    //       location.reload()
+    //     })
+    // }
 
     return jb.rx.Observable.from(filesToUpdate)
       .concatMap(e =>
@@ -60,7 +60,6 @@ jb.component('studio.save-components', { /* studio.saveComponents */
 				st.showMultiMessages(messages)
         e.comps.forEach(([id]) => st.serverComps[id] = st.previewjb.comps[id])
       })
-
     }
 })
 

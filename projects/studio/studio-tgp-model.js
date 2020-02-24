@@ -270,15 +270,7 @@ Object.assign(st,{
 		return '';
 	},
 	previewCompsAsEntries: () => jb.entries(st.previewjb.comps).filter(e=>e[1]),
-	projectFiles: () => {
-		if (st.inMemoryProject && st.inMemoryProject.fileNames)
-			return st.inMemoryProject.fileNames
-		const ctx = new jb.jbCtx()
-		const project = ctx.exp('%$studio/project%') // || 'studio-helper'
-		return ctx.setData(jb.studio.previewWindow.document.head.outerHTML).run(studio.parseProjectHtml())
-			.fileNames.filter(x=>x.indexOf(project) != -1 || x.indexOf('..') != -1)
-			.map(x=>x.split('/').pop())
-	},
+	projectFiles: () => jb.exec('%$studio/projectSettings/jsFiles%'),
 	projectCompsAsEntries: () => {
 		const files = st.projectFiles()
 		return st.previewCompsAsEntries().filter(e=> {
@@ -286,7 +278,6 @@ Object.assign(st,{
 			return files.indexOf(fn) != -1
 		})
 	},
-
 	// queries
 	paramDef: path => {
 		if (!st.parentPath(path)) // no param def for root

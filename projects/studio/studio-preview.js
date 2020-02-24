@@ -66,6 +66,7 @@ st.initPreview = function(preview_window,allowedTypes) {
       //   st.previewjb.studio.initEventTracker();
 
       jb.exp('%$studio/settings/activateWatchRefViewer%','boolean') && st.activateWatchRefViewer();
+      jb.exec(writeValue('%$studio/projectSettings%',() => preview_window.jbProjectSettings))
 
 			fixInvalidUrl()
 
@@ -141,29 +142,25 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
       calcProp('rootName','%$studio/settings/rootName%'),
       calcProp('project','%$studio/project%'),
       calcProp('src', '/project/%$$props/project%?%$$props/cacheKiller%&spy=preview'),
-      calcProp('inMemoryProject', () => st.inMemoryProject),
       calcProp('host', '%$queryParams/host%'),
-      calcProp('hasHost', ctx => ctx.vars.host && st.projectHosts[ctx.vars.host]),
-      calcProp('loadingMessage', data.if('%$$props/inMemoryProject%', '',
-        '{? loading project from %$$props/host%::%$queryParams/hostProjectId% ?}')),
+      calcProp('loadingMessage', '{? loading project from %$$props/host%::%$queryParams/hostProjectId% ?}'),
       interactive( (ctx,{cmp}) => {
           const host = ctx.exp('%$queryParams/host%')
-          if (!st.inMemoryProject && host && st.projectHosts[host]) {
+          if (!cmp.state.projectLoaded && host && st.projectHosts[host]) {
             const project = ctx.exp('%$studio/project%')
             document.title = `${project} with jBart`;
             return st.projectHosts[host].fetchProject(ctx.exp('%$queryParams/hostProjectId%'),project)
-              .then(inMemoryProject => cmp.refresh({ inMemoryProject })) 
+              .then(projectSettings => cmp.refresh({ projectLoaded: true, projectSettings })) 
           }
         })
   ))
 })
 
-
 jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
   type: 'preview-style',
   impl: customStyle({
-    template: (cmp,{width,height, loadingMessage, src },h) => {
-      if (!cmp.state.inMemoryProject)
+    template: (cmp,{width,height, loadingMessage, src, host },h) => {
+      if (host && !cmp.state.projectLoaded)
         return h('p',{class: 'loading-message'}, loadingMessage)
       return h('iframe', {
           id:'jb-preview',
@@ -171,14 +168,15 @@ jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
           frameborder: 0,
           class: 'preview-iframe',
           width, height,
-          src: cmp.state.inMemoryProject ? `javascript: parent.jb.studio.injectInMemoryProjectToPreview(this,${JSON.stringify(cmp.state.inMemoryProject)})` : src
+          src: cmp.state.projectLoaded ? 
+          `javascript: parent.jb.studio.injectProjectToPreview(this,${JSON.stringify(cmp.state.projectSettings)})` : src
         })
     },
     css: '{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; }'
   })
 })
 
-st.injectInMemoryProjectToPreview = function(previewWin,projectSettings) {
+st.injectProjectToPreview = function(previewWin,projectSettings) {
 const html = `<!DOCTYPE html>
 <html>
 <head>
