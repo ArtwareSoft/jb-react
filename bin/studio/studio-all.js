@@ -29409,26 +29409,21 @@ jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
 })
 
 st.injectImMemoryProjectToPreview = function(previewWin) {
-  st.inMemoryProject
-  debugger
-  const jsToInject = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/js$/))
-    .map(e => 'eval(' + '`'+ e[1].replace(/`/g,'\\`').replace(/<\/script>/gi,'`+`</`+`script>`+`')  + '`)'
-     ).join('\n')
-  const injectWithSrc = (st.inMemoryProject.fileNames ||[]).map(jsFile => `<script type="text/javascript" src="${st.inMemoryProject.baseUrl}/${jsFile}"></script>`)
-  const cssToInject = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/css$/))
-    .map(e => `<style>${e[1]}</style>` ).join('\n')
-  let html = jb.entries(st.inMemoryProject.files).filter(e=>e[0].match(/html$/))[0][1]
-  if (html.match(/<!-- load-jb-scripts-here -->/)) {
-    // replace did not work here beacuse of '$'
-    const pos = html.indexOf('<!-- load-jb-scripts-here -->'), len = '<!-- load-jb-scripts-here -->'.length
-    html = html.slice(0,pos) + [
-        st.host.scriptForLoadLibraries(st.inMemoryProject.libs),
-        ...injectWithSrc,
-        `<script>${jsToInject}</script>`,
-        cssToInject].join('\n')
-     + html.slice(pos+len)
-  }
-
+const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script type="text/javascript">
+    jbProjectSettings = ${JSON.stringify(st.inMemoryProject)}
+  </script>
+  <script type="text/javascript" src="/src/loader/jb-loader.js"></script>
+</head>
+<body>
+  <script>
+    window.jb_initWidget && jb_initWidget()
+  </script>
+</body>
+</html>`
   previewWin.document.write(html)
 }
 
