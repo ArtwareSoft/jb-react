@@ -171,20 +171,20 @@ jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
           frameborder: 0,
           class: 'preview-iframe',
           width, height,
-          src: cmp.state.inMemoryProject ? "javascript: parent.jb.studio.injectImMemoryProjectToPreview(this)" : src
+          src: cmp.state.inMemoryProject ? `javascript: parent.jb.studio.injectInMemoryProjectToPreview(this,${JSON.stringify(st.inMemoryProject)})` : src
         })
     },
     css: '{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; }'
   })
 })
 
-st.injectImMemoryProjectToPreview = function(previewWin) {
+st.injectInMemoryProjectToPreview = function(previewWin,projectSettings) {
 const html = `<!DOCTYPE html>
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script type="text/javascript">
-    jbProjectSettings = ${JSON.stringify(st.inMemoryProject)}
+    jbProjectSettings = ${projectSettings}
   </script>
   <script type="text/javascript" src="/src/loader/jb-loader.js"></script>
 </head>
