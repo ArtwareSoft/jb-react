@@ -180,6 +180,8 @@ jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
 })
 
 st.injectProjectToPreview = function(previewWin,projectSettings) {
+const jb_loader = location.href.indexOf('https://artwaresoft.github.io/') == 0 
+  ? 'https://artwaresoft.github.io/jb-react/dist/jb-loader.js' : '/src/loader/jb-loader.js'
 const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -187,7 +189,7 @@ const html = `<!DOCTYPE html>
   <script type="text/javascript">
     jbProjectSettings = ${JSON.stringify(projectSettings)}
   </script>
-  <script type="text/javascript" src="/src/loader/jb-loader.js"></script>
+  <script type="text/javascript" src="${jb_loader}"></script>
 </head>
 <body>
   <script>
