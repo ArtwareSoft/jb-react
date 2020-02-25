@@ -1,25 +1,20 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script type="text/javascript">
-    startTime = new Date().getTime();
+    jbProjectSettings = {
+      project: 'hello-world',
+      libs: 'common,ui-common,material,parsing',
+      jsFiles: ['html-parsing.js','sample-pages.js','html-parsing-results.js'],
+    }
   </script>
-<!-- start-jb-scripts -->
-<script type="text/javascript" src="//unpkg.com/jb-react/dist/jb-react-all.js"></script>
-<script type="text/javascript" src="//unpkg.com/jb-react/dist/parsing.js"></script>
-<script type="text/javascript" src="//unpkg.com/jb-react/dist/material.js"></script><link rel="stylesheet" type="text/css" href="//unpkg.com/jb-react/dist/material.css"/>
-<script type="text/javascript" src="html-parsing.js"></script>
-<script type="text/javascript" src="sample-pages.js"></script>
-<script type="text/javascript" src="html-parsing-results.js"></script>
-
-<!-- end-jb-scripts -->
+  <script type="text/javascript" src="/src/loader/jb-loader.js"></script>
 </head>
 <body>
-  <div id="main"> </div>
   <script>
-    jb.ui.renderWidget({$:'d3-demo.main'},document.getElementById('main'))
+    window.jb_initWidget && jb_initWidget()
   </script>
 </body>
 </html>
+
