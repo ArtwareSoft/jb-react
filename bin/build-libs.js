@@ -51,3 +51,5 @@ concatFiles(['/src/testing/testers.js'],'testers.js');
 
 concatFiles(filesOfModules('codemirror-css'),'codemirror.css')
 concatFiles(['node_modules/dragula/dist/dragula.css'],'dragula.css')
+
+concatFiles(filesOfModules('md-icons'),'md-icons.js')

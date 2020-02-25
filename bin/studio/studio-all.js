@@ -5162,7 +5162,7 @@ class JbComponent {
             (this.componentDidMountFuncs || interactive) && {interactive}, 
             this.renderProps.cmpHash != null && {cmpHash: this.renderProps.cmpHash}
         )        
-        if (typeof vdom == 'object') {
+        if (vdom instanceof jb.ui.VNode) {
             vdom.addClass(this.jbCssClass())
             vdom.attributes = Object.assign(vdom.attributes || {}, {
                     'jb-ctx': ui.preserveCtx(this.originatingCtx()),
@@ -27660,7 +27660,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'css/styles.css',
       ],
       'md-icons': [
-        'dist/mdi.js',
+        'dist/mdi-lib.js',
         'src/ui/md-icons.js'
       ],
       babel: [

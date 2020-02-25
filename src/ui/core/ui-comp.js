@@ -86,7 +86,7 @@ class JbComponent {
             (this.componentDidMountFuncs || interactive) && {interactive}, 
             this.renderProps.cmpHash != null && {cmpHash: this.renderProps.cmpHash}
         )        
-        if (typeof vdom == 'object') {
+        if (vdom instanceof jb.ui.VNode) {
             vdom.addClass(this.jbCssClass())
             vdom.attributes = Object.assign(vdom.attributes || {}, {
                     'jb-ctx': ui.preserveCtx(this.originatingCtx()),

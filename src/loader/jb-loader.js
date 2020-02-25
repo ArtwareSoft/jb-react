@@ -127,7 +127,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'css/styles.css',
       ],
       'md-icons': [
-        'dist/mdi.js',
+        'dist/mdi-lib.js',
         'src/ui/md-icons.js'
       ],
       babel: [
