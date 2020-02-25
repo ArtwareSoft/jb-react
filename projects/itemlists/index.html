@@ -2,15 +2,15 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script type="text/javascript">
+<script>
 jbProjectSettings = {
   project: 'itemlists',
   libs: 'common,ui-common,material,dragula,md-icons',
   jsFiles: ['itemlists.js'],
 }
+const loaderBase = location.href.indexOf('localhost:8082') == -1 ? '//artwaresoft.github.io/jb-react/dist' : '/src/loader';
+document.write('<script src="' + loaderBase + '/jb-loader.js" charset="UTF-8"></' + 'script>')
 </script>
-<script type="text/javascript" src="/src/loader/jb-loader.js"></script>
-<script type="text/javascript" src="//artwaresoft.github.io/jb-react/dist/jb-loader.js"></script>
 </head>
 <body>
   <script>

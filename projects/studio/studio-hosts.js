@@ -110,74 +110,20 @@ st.projectHosts = {
             return getUrlContent(gitHubUrl).then(html =>{
                 const settings = eval('({' + _extractText(html,'jbProjectSettings = {','}') + '})')
                 return {...settings,baseUrl,project}
-                // const srcUrls = html.split('<script type="text/javascript" src="').slice(1)
-                //     .map(x=>x.match(/^[^"]*/)[0])
-                // const css = html.split('<link rel="stylesheet" href="').slice(1)
-                //     .map(x=>x.match(/^[^"]*/)[0])
-                // const fileNames = srcUrls.filter(x=>x.indexOf('/dist/') == -1)
-                // const libs = srcUrls.filter(x=>x.indexOf('/dist/') != -1).map(x=>x.match(/dist\/(.*)\.js$/)[1]).filter(x=>x!='jb-react-all')
-                // return css.reduce((acc,file)=>
-                //     acc.then(files => getUrlContent(gitHubUrl + file).then(content => Object.assign(files, {[file]: content}))), Promise.resolve({
-                //         [`${project}.html`]: fixHtml(html)
-                //     }) )
-                //         .then(files => ({project, files, fileNames, libs, baseUrl }))
+
             })
-            // function fixHtml(html) {
-            //     return _extractText(html,'<!-- start-jb-scripts -->\n','<!-- end-jb-scripts -->','<!-- load-jb-scripts-here -->\n')
-            // }
+        }
+    },
+    studio: {
+        fetchProject(id,project) {
+            const baseUrl = `/project/${project}?cacheKiller=${Math.floor(Math.random()*100000)}`
+            return fetch(baseUrl).then(r=>r.text()).then(html =>{
+                const settings = eval('({' + _extractText(html,'jbProjectSettings = {','}') + '})')
+                return {...settings, project}
+            })
         }
     }
 }
 
-// st.projectUtils = {
-//     projectContent: ctx => {
-//         const project = ctx.exp('%$studio/project%') || 'hello-world', rootName = ctx.exp('%$studio/settings/rootName%')
-//         const baseDir = rootName == project ? './' : ''
-//         const htmlPath = st.host.pathOfJsFile(project,project+'.html',baseDir)
-//         return st.host.getFile(htmlPath).then(html=> {
-//             const {fileNames,libs} = ctx.setData(html).run(studio.parseProjectHtml())
-//             return fileNames.reduce((acc,file)=>
-//                 acc.then(res => st.host.getFile(st.host.pathOfJsFile(project,file,baseDir)).then(content => Object.assign(res, {[file]: content}))), Promise.resolve({
-//                     [`${project}.html`]: html
-//             }) ).then(files => ({project, files, fileNames, libs}))
-//         })
-//     }
-// }
-
-jb.component('studio.parse-project-html', { /* studio.parseProjectHtml */
-  type: 'data',
-  impl: obj(
-    prop(
-        'fileNames',
-        pipeline(
-          extractText({
-              startMarkers: ['<script', 'src=\"'],
-              endMarker: '\"',
-              repeating: 'true'
-            }),
-          filter(and(notContains(['/loader/']), notContains(['/dist/']))),
-          extractSuffix('/')
-        ),
-        'array'
-      ),
-    prop(
-        'libs',
-        list(
-          pipeline(
-              extractText({startMarkers: ['modules=\"'], endMarker: '\"', repeating: 'true'}),
-              split(','),
-              filter(and(notEquals('common'), notEquals('ui-common'))),
-              '%%.js'
-            ),
-          pipeline(
-              extractText({startMarkers: ['/dist/'], endMarker: '\"', repeating: 'true'}),
-              filter(notEquals('jb-react-all.js')),
-              filter(notEquals('material.css'))
-            )
-        ),
-        'array'
-      )
-  )
-})
 
 })()

@@ -138,15 +138,15 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
   impl: ctx => jb.ui.ctrl(ctx, features(
       calcProp('width','%$$model/width%'),
       calcProp('height','%$$model/height%'),
-      calcProp('cacheKiller', () => 'cacheKiller='+(''+Math.random()).slice(10)),
-      calcProp('rootName','%$studio/settings/rootName%'),
-      calcProp('project','%$studio/project%'),
-      calcProp('src', '/project/%$$props/project%?%$$props/cacheKiller%&spy=preview'),
-      calcProp('host', '%$queryParams/host%'),
+//      calcProp('cacheKiller', () => 'cacheKiller='+(''+Math.random()).slice(10)),
+//      calcProp('rootName','%$studio/settings/rootName%'),
+//      calcProp('project','%$studio/project%'),
+//      calcProp('src', '/project/%$$props/project%?%$$props/cacheKiller%'),
+      calcProp('host', firstSucceeding('%$queryParams/host%','studio')),
       calcProp('loadingMessage', '{? loading project from %$$props/host%::%$queryParams/hostProjectId% ?}'),
       interactive( (ctx,{cmp}) => {
-          const host = ctx.exp('%$queryParams/host%')
-          if (!cmp.state.projectLoaded && host && st.projectHosts[host]) {
+          const host = ctx.run(firstSucceeding('%$queryParams/host%','studio'))
+          if (!ctx.vars.$state.projectLoaded && host && st.projectHosts[host]) {
             const project = ctx.exp('%$studio/project%')
             document.title = `${project} with jBart`;
             return st.projectHosts[host].fetchProject(ctx.exp('%$queryParams/hostProjectId%'),project)
@@ -172,7 +172,7 @@ jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
           class: 'preview-iframe',
           width, height,
           src: cmp.state.projectLoaded ? 
-          `javascript: parent.jb.studio.injectProjectToPreview(this,${JSON.stringify(cmp.state.projectSettings)})` : src
+            `javascript: parent.jb.studio.injectProjectToPreview(this,${JSON.stringify(cmp.state.projectSettings)})` : 'javascript: '
         })
     },
     css: '{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; }'

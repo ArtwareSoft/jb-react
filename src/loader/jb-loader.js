@@ -168,8 +168,8 @@ function jb_dynamicLoad(modules,prefix) {
   if (isDist) {
     const scriptSrc = document.currentScript.getAttribute('src')
     const base = scriptSrc.slice(0,scriptSrc.lastIndexOf('/')+1)
-    modules.split(',').flatMap(m=>[m,...(jb_modules[`${m}-css`] ? [`${m}-css`]: [])])
-      .forEach(m=>loadFile(base+m+'.js'))
+    modules.split(',').flatMap(m=>[m+'.js',...(jb_modules[`${m}-css`] ? [`${m}.css`]: [])])
+      .forEach(m=>loadFile(base+m))
   } else {
     modules.split(',').flatMap(m=>[m,...(jb_modules[`${m}-css`] ? [`${m}-css`]: [])]).forEach(m=>{
       (jb_modules[m] || []).forEach(file=>{

@@ -27701,8 +27701,8 @@ function jb_dynamicLoad(modules,prefix) {
   if (isDist) {
     const scriptSrc = document.currentScript.getAttribute('src')
     const base = scriptSrc.slice(0,scriptSrc.lastIndexOf('/')+1)
-    modules.split(',').flatMap(m=>[m,...(jb_modules[`${m}-css`] ? [`${m}-css`]: [])])
-      .forEach(m=>loadFile(base+m+'.js'))
+    modules.split(',').flatMap(m=>[m+'.js',...(jb_modules[`${m}-css`] ? [`${m}.css`]: [])])
+      .forEach(m=>loadFile(base+m))
   } else {
     modules.split(',').flatMap(m=>[m,...(jb_modules[`${m}-css`] ? [`${m}-css`]: [])]).forEach(m=>{
       (jb_modules[m] || []).forEach(file=>{
@@ -29376,15 +29376,15 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
   impl: ctx => jb.ui.ctrl(ctx, features(
       calcProp('width','%$$model/width%'),
       calcProp('height','%$$model/height%'),
-      calcProp('cacheKiller', () => 'cacheKiller='+(''+Math.random()).slice(10)),
-      calcProp('rootName','%$studio/settings/rootName%'),
-      calcProp('project','%$studio/project%'),
-      calcProp('src', '/project/%$$props/project%?%$$props/cacheKiller%&spy=preview'),
-      calcProp('host', '%$queryParams/host%'),
+//      calcProp('cacheKiller', () => 'cacheKiller='+(''+Math.random()).slice(10)),
+//      calcProp('rootName','%$studio/settings/rootName%'),
+//      calcProp('project','%$studio/project%'),
+//      calcProp('src', '/project/%$$props/project%?%$$props/cacheKiller%'),
+      calcProp('host', firstSucceeding('%$queryParams/host%','studio')),
       calcProp('loadingMessage', '{? loading project from %$$props/host%::%$queryParams/hostProjectId% ?}'),
       interactive( (ctx,{cmp}) => {
-          const host = ctx.exp('%$queryParams/host%')
-          if (!cmp.state.projectLoaded && host && st.projectHosts[host]) {
+          const host = ctx.run(firstSucceeding('%$queryParams/host%','studio'))
+          if (!ctx.vars.$state.projectLoaded && host && st.projectHosts[host]) {
             const project = ctx.exp('%$studio/project%')
             document.title = `${project} with jBart`;
             return st.projectHosts[host].fetchProject(ctx.exp('%$queryParams/hostProjectId%'),project)
@@ -29410,7 +29410,7 @@ jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
           class: 'preview-iframe',
           width, height,
           src: cmp.state.projectLoaded ? 
-          `javascript: parent.jb.studio.injectProjectToPreview(this,${JSON.stringify(cmp.state.projectSettings)})` : src
+            `javascript: parent.jb.studio.injectProjectToPreview(this,${JSON.stringify(cmp.state.projectSettings)})` : 'javascript: '
         })
     },
     css: '{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; }'
@@ -35509,75 +35509,21 @@ st.projectHosts = {
             return getUrlContent(gitHubUrl).then(html =>{
                 const settings = eval('({' + _extractText(html,'jbProjectSettings = {','}') + '})')
                 return {...settings,baseUrl,project}
-                // const srcUrls = html.split('<script type="text/javascript" src="').slice(1)
-                //     .map(x=>x.match(/^[^"]*/)[0])
-                // const css = html.split('<link rel="stylesheet" href="').slice(1)
-                //     .map(x=>x.match(/^[^"]*/)[0])
-                // const fileNames = srcUrls.filter(x=>x.indexOf('/dist/') == -1)
-                // const libs = srcUrls.filter(x=>x.indexOf('/dist/') != -1).map(x=>x.match(/dist\/(.*)\.js$/)[1]).filter(x=>x!='jb-react-all')
-                // return css.reduce((acc,file)=>
-                //     acc.then(files => getUrlContent(gitHubUrl + file).then(content => Object.assign(files, {[file]: content}))), Promise.resolve({
-                //         [`${project}.html`]: fixHtml(html)
-                //     }) )
-                //         .then(files => ({project, files, fileNames, libs, baseUrl }))
+
             })
-            // function fixHtml(html) {
-            //     return _extractText(html,'<!-- start-jb-scripts -->\n','<!-- end-jb-scripts -->','<!-- load-jb-scripts-here -->\n')
-            // }
+        }
+    },
+    studio: {
+        fetchProject(id,project) {
+            const baseUrl = `/project/${project}?cacheKiller=${Math.floor(Math.random()*100000)}`
+            return fetch(baseUrl).then(r=>r.text()).then(html =>{
+                const settings = eval('({' + _extractText(html,'jbProjectSettings = {','}') + '})')
+                return {...settings, project}
+            })
         }
     }
 }
 
-// st.projectUtils = {
-//     projectContent: ctx => {
-//         const project = ctx.exp('%$studio/project%') || 'hello-world', rootName = ctx.exp('%$studio/settings/rootName%')
-//         const baseDir = rootName == project ? './' : ''
-//         const htmlPath = st.host.pathOfJsFile(project,project+'.html',baseDir)
-//         return st.host.getFile(htmlPath).then(html=> {
-//             const {fileNames,libs} = ctx.setData(html).run(studio.parseProjectHtml())
-//             return fileNames.reduce((acc,file)=>
-//                 acc.then(res => st.host.getFile(st.host.pathOfJsFile(project,file,baseDir)).then(content => Object.assign(res, {[file]: content}))), Promise.resolve({
-//                     [`${project}.html`]: html
-//             }) ).then(files => ({project, files, fileNames, libs}))
-//         })
-//     }
-// }
-
-jb.component('studio.parse-project-html', { /* studio.parseProjectHtml */
-  type: 'data',
-  impl: obj(
-    prop(
-        'fileNames',
-        pipeline(
-          extractText({
-              startMarkers: ['<script', 'src=\"'],
-              endMarker: '\"',
-              repeating: 'true'
-            }),
-          filter(and(notContains(['/loader/']), notContains(['/dist/']))),
-          extractSuffix('/')
-        ),
-        'array'
-      ),
-    prop(
-        'libs',
-        list(
-          pipeline(
-              extractText({startMarkers: ['modules=\"'], endMarker: '\"', repeating: 'true'}),
-              split(','),
-              filter(and(notEquals('common'), notEquals('ui-common'))),
-              '%%.js'
-            ),
-          pipeline(
-              extractText({startMarkers: ['/dist/'], endMarker: '\"', repeating: 'true'}),
-              filter(notEquals('jb-react-all.js')),
-              filter(notEquals('material.css'))
-            )
-        ),
-        'array'
-      )
-  )
-})
 
 })();
 
