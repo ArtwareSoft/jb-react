@@ -27542,13 +27542,11 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/core/jb-common.js',
         'src/misc/spy.js',
       ],
-      'material-css': [
-        'dist/material.css',
-      ],
-      'ui-common': [
+      'ui-common-css': [
         'css/font.css',
         'css/styles.css',
-
+      ],      
+      'ui-common': [
         'dist/jb-immutable.js', // the immutable-helper lib
         'dist/jb-rx.js',
 
@@ -27626,7 +27624,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'node_modules/codemirror/addon/fold/foldgutter.js',
         'node_modules/codemirror/addon/selection/active-line.js',
       ],
-      'codemirror-css-files': [
+      'codemirror-css': [
         'node_modules/codemirror/addon/dialog/dialog.css',
         'node_modules/codemirror/addon/search/matchesonscrollbar.css',
         'node_modules/codemirror/lib/codemirror.css',
@@ -27672,6 +27670,8 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       ],
       'material': [
         'dist/material.js',
+      ],
+      'material-css': [
         'dist/material.css',
       ],
       'history': [ 'dist/history.js' ],
@@ -27702,9 +27702,10 @@ function jb_dynamicLoad(modules,prefix) {
   if (isDist) {
     const scriptSrc = document.currentScript.getAttribute('src')
     const base = scriptSrc.slice(0,scriptSrc.lastIndexOf('/')+1)
-    modules.split(',').forEach(m=>loadFile(base+m+'.js'))
+    modules.split(',').flatMap(m=>[m,...(jb_modules[`${m}-css`] ? [`${m}-css`]: [])])
+      .forEach(m=>loadFile(base+m+'.js'))
   } else {
-    modules.split(',').forEach(m=>{
+    modules.split(',').flatMap(m=>[m,...(jb_modules[`${m}-css`] ? [`${m}-css`]: [])]).forEach(m=>{
       (jb_modules[m] || []).forEach(file=>{
         if (m == 'studio' && !file.match(/\//))
           file = 'projects/studio/studio-' + file + '.js';
