@@ -26,6 +26,9 @@ const studioCssFiles = ['/css/styles.css', '/projects/studio/css/studio.css'].co
 const nodeFiles = filesOfModules('common,node,pretty-print,xml,jison,parsing').filter(x=>!x.match(/.css$/));
 const coreFiles = jb_modules['core'];
 
+concatFiles(filesOfModules('common'),'common.js')
+concatFiles(filesOfModules('ui-common'),'ui-common.js')
+
 concatFiles(filesOfModules('codemirror-js-files'),'codemirror.js')
 concatFiles(filesOfModules('animate'),'animate.js')
 removeExports('animate.js')
