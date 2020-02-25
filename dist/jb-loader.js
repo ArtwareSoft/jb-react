@@ -71,7 +71,6 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       ],
       'codemirror': [
           'dist/codemirror.js',
-          'dist/codemirror.css',
       ],
       'codemirror-js-files': [
         'node_modules/codemirror/lib/codemirror.js',

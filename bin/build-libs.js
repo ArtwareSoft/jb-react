@@ -28,6 +28,7 @@ const coreFiles = jb_modules['core'];
 
 concatFiles(filesOfModules('common'),'common.js')
 concatFiles(filesOfModules('ui-common'),'ui-common.js')
+concatFiles(filesOfModules('ui-common-css'),'ui-common.css')
 
 concatFiles(filesOfModules('codemirror-js-files'),'codemirror.js')
 concatFiles(filesOfModules('animate'),'animate.js')
@@ -48,5 +49,5 @@ concatFiles(studioFiles,'../bin/studio/studio-all.js');
 concatFiles(['/src/loader/jb-loader.js'],'jb-loader.js');
 concatFiles(['/src/testing/testers.js'],'testers.js');
 
-concatFiles(filesOfModules('codemirror-css-files'),'codemirror.css')
+concatFiles(filesOfModules('codemirror-css'),'codemirror.css')
 concatFiles(['node_modules/dragula/dist/dragula.css'],'dragula.css')
