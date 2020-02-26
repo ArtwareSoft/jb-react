@@ -35153,6 +35153,20 @@ jb.component('studio.ctx-counters', { /* studio.ctxCounters */
   })
 })
 
+jb.component('studio.sample-project',{
+  type: 'menu.option',
+  params:[
+    {id: 'project', as: 'string'}
+  ],
+  impl: menu.action({
+    title: '%$project%',
+    action: gotoUrl(
+      'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/%$project%&project=%$project%',
+      'new tab'
+    )
+  })
+})
+
 jb.component('studio.main-menu', { /* studio.mainMenu */
   type: 'menu.option',
   impl: menu.menu({
@@ -35164,41 +35178,9 @@ jb.component('studio.main-menu', { /* studio.mainMenu */
           menu.menu({
             title: 'Sample Projects',
             options: [
-              menu.action({
-                title: 'itemlists',
-                action: gotoUrl(
-                  'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/itemlists&project=itemlists',
-                  'new tab'
-                )
-              }),
-              menu.action({
-                title: 'todos',
-                action: gotoUrl(
-                  'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/todomvc&project=todomvc',
-                  'new tab'
-                )
-              }),
-              menu.action({
-                title: 'html parsing',
-                action: gotoUrl(
-                  'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/html-parsing&project=html-parsing',
-                  'new tab'
-                )
-              }),
-              menu.action({
-                title: 'd3 chart',
-                action: gotoUrl(
-                  'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/d3-demo&project=d3-demo',
-                  'new tab'
-                )
-              }),
-              menu.action({
-                title: 'animation',
-                action: gotoUrl(
-                  'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/animation-demo&project=animation-demo',
-                  'new tab'
-                )
-              })
+              studio.sampleProject('itemlists'),
+              studio.sampleProject('todos'),
+              studio.sampleProject('html-parsing'),
             ]
           }),
           menu.action({title: 'New Project', action: studio.openNewProject(), icon: 'new'}),
