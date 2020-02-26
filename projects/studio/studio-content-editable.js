@@ -211,8 +211,12 @@ jb.component('feature.content-editable', { /* feature.contentEditable */
     {id: 'param', as: 'string', description: 'name of param mapped to the content editable element'}
   ],
   impl: features(
-    feature.keyboardShortcut('Alt+N', () => jb.frame.parent.jb.exec({$:'studio.pickAndOpen', from: 'studio'})),
-    interactive( ({},{cmp},{param}) => {
+    feature.keyboardShortcut(
+        'Alt+N',
+        () => jb.frame.parent.jb.exec({$:'studio.pickAndOpen', from: 'studio'})
+      ),
+    interactive(
+        ({},{cmp},{param}) => {
       const isHtml = param == 'html'
       const contentEditable = jb.ui.contentEditable
       if (contentEditable && contentEditable.isEnabled()) {
@@ -221,8 +225,10 @@ jb.component('feature.content-editable', { /* feature.contentEditable */
           cmp.onkeydownHandler = cmp.onkeypressHandler = ev => contentEditable.handleKeyEvent(ev,cmp,param)
         cmp.onmousedownHandler = ev => jb.ui.contentEditable.activate(cmp,ev)
       }
-    }),
-    templateModifier(({},{cmp,vdom},{param}) => {
+    }
+      ),
+    templateModifier(
+        ({},{cmp,vdom},{param}) => {
       const contentEditable = jb.ui.contentEditable
       if (!contentEditable || !contentEditable.isEnabled() || param && !contentEditable.refOfProp(cmp,param)) return vdom
       const attsToInject = cmp.state.contentEditableActive ? {contenteditable: 'true', onblur: true, onmousedown: true, onkeypress: true, onkeydown: true} : {onmousedown: true};
@@ -238,7 +244,13 @@ jb.component('feature.content-editable', { /* feature.contentEditable */
       vdom.attributes = vdom.attributes || {};
       Object.assign(vdom.attributes,attsToInject)
       return vdom;
-    }),
-    css.dynamic(If('%$cmp.state.contentEditableActive%',`{ border: 1px dashed grey; background-image: linear-gradient(90deg,rgba(243,248,255,.03) 63.45%,rgba(207,214,229,.27) 98%); border-radius: 3px;}`))
+    }
+      ),
+    css.dynamic(
+        If(
+          '%$cmp.state.contentEditableActive%',
+          '{ border: 1px dashed grey; background-image: linear-gradient(90deg,rgba(243,248,255,.03) 63.45%,rgba(207,214,229,.27) 98%); border-radius: 3px;}'
+        )
+      )
   )
 })

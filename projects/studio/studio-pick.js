@@ -3,7 +3,7 @@ const st = jb.studio;
 
 function initStudioEditing() {
   if (st.previewjb.comps['dialog.studio-pick-dialog']) return
-  jb.entries(jb.comps).filter(e=>st.isStudioCmp(e[0])).forEach(e=> 
+  jb.entries(jb.comps).filter(e=>st.isStudioCmp(e[0])).forEach(e=>
     st.previewjb.comps[e[0]] = { ...e[1], [jb.location] : [e[1][jb.location][0].replace(/!st!/,''), e[1][jb.location][1]]})
 }
 
@@ -146,7 +146,7 @@ Object.assign(st, {
       !doc.body.appendChild(elem);
     }
     return doc.querySelector('#preview-box');
-  }, 
+  },
   highlightCtx(ctx) {
       ctx && [st.previewWindow,window].forEach(win=>
         st.highlightElems(Array.from(win.document.querySelectorAll(`[jb-ctx="${ctx.id}"]`))))
@@ -166,7 +166,7 @@ Object.assign(st, {
       return `<div style="opacity: 0.5; position: absolute; background: rgb(193, 224, 228); border: 1px solid blue; z-index: 10000;
           width: ${width}px; left: ${offset.left}px;top: ${offset.top}px; height: ${jb.ui.outerHeight(el)}px"></div>`
     }).join('');
-  
+
     const box = st.getOrCreateHighlightBox(elems[0]);
     jb.ui.removeClass(box,'jb-fade-3s-transition');
     box.innerHTML = html;
@@ -183,7 +183,7 @@ Object.assign(st, {
     jb.exec({ $: 'animate.refresh-elem', elem: () => elem })
   },
   findElemsByCtxCondition(condition) {
-    return [st.previewWindow,window].flatMap(win => 
+    return [st.previewWindow,window].flatMap(win =>
       Array.from(win.document.querySelectorAll('[jb-ctx]'))
         .map(elem=>({elem, ctx: win.jb.ctxDictionary[elem.getAttribute('jb-ctx')]}))
         .filter(e => e.ctx && condition(e.ctx))

@@ -58,11 +58,15 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
     }),
     title: 'New Project',
     onOK: runActions(
-      writeValue('%$studio/projectSettings%', {$: 'object',
-          project: '%$dialogData/name%',
-          libs: 'common,ui-common,material',
-          jsFiles: ['%$dialogData/name%.js']
-      }),
+      writeValue(
+          '%$studio/projectSettings%',
+          {
+            '$': 'object',
+            project: '%$dialogData/name%',
+            libs: 'common,ui-common,material',
+            jsFiles: ['%$dialogData/name%.js']
+          }
+        ),
       studio.newProject('%$dialogData/name%'),
       writeValue('%$studio/project%', '%$dialogData/name%'),
       writeValue('%$studio/page%', 'main'),

@@ -47,11 +47,7 @@ jb.component('studio.jb-editor-container', { /* studio.jbEditorContainer */
   params: [
     {id: 'id', as: 'string', mandatory: true},
     {id: 'initialSelection', as: 'string', defaultValue: '%$path%'},
-    {
-      id: 'circuit',
-      as: 'single',
-      description: 'path or ctx of circuit to run the probe'
-    }
+    {id: 'circuit', as: 'single', description: 'path or ctx of circuit to run the probe'}
   ],
   impl: list(
     variable({

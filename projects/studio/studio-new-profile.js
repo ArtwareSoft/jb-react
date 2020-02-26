@@ -249,10 +249,7 @@ jb.component('studio.pick-profile', { /* studio.pickProfile */
     title: prettyPrint(studio.val('%$path%'), true),
     action: studio.openPickProfile('%$path%'),
     style: button.selectProfileStyle(),
-    features: [
-      studio.watchPath({path: '%$path%', includeChildren: 'yes'}),
-      css.opacity(0.7)
-    ]
+    features: [studio.watchPath({path: '%$path%', includeChildren: 'yes'}), css.opacity(0.7)]
   })
 })
 

@@ -1,4 +1,4 @@
-(function() { 
+(function() {
 const st = jb.studio;
 
 function compsRefOfPreviewJb(previewjb) {
@@ -317,36 +317,11 @@ jb.component('studio.watch-path', { /* studio.watchPath */
   category: 'group:0',
   params: [
     {id: 'path', as: 'string', mandatory: true},
-    {
-      id: 'includeChildren',
-      as: 'string',
-      options: 'yes,no,structure',
-      defaultValue: 'no',
-      description: 'watch childern change as well'
-    },
-    {
-      id: 'allowSelfRefresh',
-      as: 'boolean',
-      description: 'allow refresh originated from the components or its children',
-      type: 'boolean'
-    },
-    {
-      id: 'strongRefresh',
-      as: 'boolean',
-      description: 'rebuild the component, including all features and variables',
-      type: 'boolean'
-    },
-    {
-      id: 'recalcVars',
-      as: 'boolean',
-      description: 'recalculate feature variables',
-      type: 'boolean'
-    },
-    {
-      id: 'delay',
-      as: 'number',
-      description: 'delay in activation, can be used to set priority'
-    }
+    {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
+    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
+    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component, including all features and variables', type: 'boolean'},
+    {id: 'recalcVars', as: 'boolean', description: 'recalculate feature variables', type: 'boolean'},
+    {id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority'}
   ],
   impl: (ctx,path) => ({
 	  watchRef: {refF: () => st.refOfPath(path), ...ctx.params},

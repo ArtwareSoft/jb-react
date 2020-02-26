@@ -28778,7 +28778,7 @@ jb.component('dialog.studio-multiline-edit', { /* dialog.studioMultilineEdit */
 })
 ;
 
-(function() { 
+(function() {
 const st = jb.studio;
 
 function compsRefOfPreviewJb(previewjb) {
@@ -29097,36 +29097,11 @@ jb.component('studio.watch-path', { /* studio.watchPath */
   category: 'group:0',
   params: [
     {id: 'path', as: 'string', mandatory: true},
-    {
-      id: 'includeChildren',
-      as: 'string',
-      options: 'yes,no,structure',
-      defaultValue: 'no',
-      description: 'watch childern change as well'
-    },
-    {
-      id: 'allowSelfRefresh',
-      as: 'boolean',
-      description: 'allow refresh originated from the components or its children',
-      type: 'boolean'
-    },
-    {
-      id: 'strongRefresh',
-      as: 'boolean',
-      description: 'rebuild the component, including all features and variables',
-      type: 'boolean'
-    },
-    {
-      id: 'recalcVars',
-      as: 'boolean',
-      description: 'recalculate feature variables',
-      type: 'boolean'
-    },
-    {
-      id: 'delay',
-      as: 'number',
-      description: 'delay in activation, can be used to set priority'
-    }
+    {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
+    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
+    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component, including all features and variables', type: 'boolean'},
+    {id: 'recalcVars', as: 'boolean', description: 'recalculate feature variables', type: 'boolean'},
+    {id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority'}
   ],
   impl: (ctx,path) => ({
 	  watchRef: {refF: () => st.refOfPath(path), ...ctx.params},
@@ -29364,12 +29339,7 @@ jb.studio.pageChange = jb.ui.resourceChange().filter(e=>e.path.join('/') == 'stu
 jb.component('studio.preview-widget', { /* studio.previewWidget */
   type: 'control',
   params: [
-    {
-      id: 'style',
-      type: 'preview-style',
-      dynamic: true,
-      defaultValue: studio.previewWidgetImpl()
-    },
+    {id: 'style', type: 'preview-style', dynamic: true, defaultValue: studio.previewWidgetImpl()},
     {id: 'width', as: 'number'},
     {id: 'height', as: 'number'}
   ],
@@ -29388,7 +29358,7 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
             const project = ctx.exp('%$studio/project%')
             document.title = `${project} with jBart`;
             return st.projectHosts[host].fetchProject(ctx.exp('%$queryParams/hostProjectId%'),project)
-              .then(projectSettings => { 
+              .then(projectSettings => {
                 jb.exec(writeValue('%$studio/project%', projectSettings.project))
                 cmp.refresh({ projectLoaded: true, projectSettings })
             })
@@ -29418,7 +29388,7 @@ jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
 })
 
 st.injectProjectToPreview = function(previewWin,projectSettings) {
-const jb_loader = location.href.indexOf('https://artwaresoft.github.io/') == 0 
+const jb_loader = location.href.indexOf('https://artwaresoft.github.io/') == 0
   ? 'https://artwaresoft.github.io/jb-react/dist/jb-loader.js' : '/src/loader/jb-loader.js'
 const html = `<!DOCTYPE html>
 <html>
@@ -31228,10 +31198,7 @@ jb.component('studio.pick-profile', { /* studio.pickProfile */
     title: prettyPrint(studio.val('%$path%'), true),
     action: studio.openPickProfile('%$path%'),
     style: button.selectProfileStyle(),
-    features: [
-      studio.watchPath({path: '%$path%', includeChildren: 'yes'}),
-      css.opacity(0.7)
-    ]
+    features: [studio.watchPath({path: '%$path%', includeChildren: 'yes'}), css.opacity(0.7)]
   })
 })
 
@@ -32609,11 +32576,7 @@ jb.component('studio.jb-editor-container', { /* studio.jbEditorContainer */
   params: [
     {id: 'id', as: 'string', mandatory: true},
     {id: 'initialSelection', as: 'string', defaultValue: '%$path%'},
-    {
-      id: 'circuit',
-      as: 'single',
-      description: 'path or ctx of circuit to run the probe'
-    }
+    {id: 'circuit', as: 'single', description: 'path or ctx of circuit to run the probe'}
   ],
   impl: list(
     variable({
@@ -33032,7 +32995,7 @@ const st = jb.studio;
 
 function initStudioEditing() {
   if (st.previewjb.comps['dialog.studio-pick-dialog']) return
-  jb.entries(jb.comps).filter(e=>st.isStudioCmp(e[0])).forEach(e=> 
+  jb.entries(jb.comps).filter(e=>st.isStudioCmp(e[0])).forEach(e=>
     st.previewjb.comps[e[0]] = { ...e[1], [jb.location] : [e[1][jb.location][0].replace(/!st!/,''), e[1][jb.location][1]]})
 }
 
@@ -33175,7 +33138,7 @@ Object.assign(st, {
       !doc.body.appendChild(elem);
     }
     return doc.querySelector('#preview-box');
-  }, 
+  },
   highlightCtx(ctx) {
       ctx && [st.previewWindow,window].forEach(win=>
         st.highlightElems(Array.from(win.document.querySelectorAll(`[jb-ctx="${ctx.id}"]`))))
@@ -33195,7 +33158,7 @@ Object.assign(st, {
       return `<div style="opacity: 0.5; position: absolute; background: rgb(193, 224, 228); border: 1px solid blue; z-index: 10000;
           width: ${width}px; left: ${offset.left}px;top: ${offset.top}px; height: ${jb.ui.outerHeight(el)}px"></div>`
     }).join('');
-  
+
     const box = st.getOrCreateHighlightBox(elems[0]);
     jb.ui.removeClass(box,'jb-fade-3s-transition');
     box.innerHTML = html;
@@ -33212,7 +33175,7 @@ Object.assign(st, {
     jb.exec({ $: 'animate.refresh-elem', elem: () => elem })
   },
   findElemsByCtxCondition(condition) {
-    return [st.previewWindow,window].flatMap(win => 
+    return [st.previewWindow,window].flatMap(win =>
       Array.from(win.document.querySelectorAll('[jb-ctx]'))
         .map(elem=>({elem, ctx: win.jb.ctxDictionary[elem.getAttribute('jb-ctx')]}))
         .filter(e => e.ctx && condition(e.ctx))
@@ -34647,11 +34610,15 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
     }),
     title: 'New Project',
     onOK: runActions(
-      writeValue('%$studio/projectSettings%', {$: 'object',
-          project: '%$dialogData/name%',
-          libs: 'common,ui-common,material',
-          jsFiles: ['%$dialogData/name%.js']
-      }),
+      writeValue(
+          '%$studio/projectSettings%',
+          {
+            '$': 'object',
+            project: '%$dialogData/name%',
+            libs: 'common,ui-common,material',
+            jsFiles: ['%$dialogData/name%.js']
+          }
+        ),
       studio.newProject('%$dialogData/name%'),
       writeValue('%$studio/project%', '%$dialogData/name%'),
       writeValue('%$studio/page%', 'main'),
@@ -35153,9 +35120,9 @@ jb.component('studio.ctx-counters', { /* studio.ctxCounters */
   })
 })
 
-jb.component('studio.sample-project',{
+jb.component('studio.sample-project', { /* studio.sampleProject */
   type: 'menu.option',
-  params:[
+  params: [
     {id: 'project', as: 'string'}
   ],
   impl: menu.action({
@@ -35180,7 +35147,7 @@ jb.component('studio.main-menu', { /* studio.mainMenu */
             options: [
               studio.sampleProject('itemlists'),
               studio.sampleProject('todos'),
-              studio.sampleProject('html-parsing'),
+              studio.sampleProject('html-parsing')
             ]
           }),
           menu.action({title: 'New Project', action: studio.openNewProject(), icon: 'new'}),
@@ -36157,8 +36124,12 @@ jb.component('feature.content-editable', { /* feature.contentEditable */
     {id: 'param', as: 'string', description: 'name of param mapped to the content editable element'}
   ],
   impl: features(
-    feature.keyboardShortcut('Alt+N', () => jb.frame.parent.jb.exec({$:'studio.pickAndOpen', from: 'studio'})),
-    interactive( ({},{cmp},{param}) => {
+    feature.keyboardShortcut(
+        'Alt+N',
+        () => jb.frame.parent.jb.exec({$:'studio.pickAndOpen', from: 'studio'})
+      ),
+    interactive(
+        ({},{cmp},{param}) => {
       const isHtml = param == 'html'
       const contentEditable = jb.ui.contentEditable
       if (contentEditable && contentEditable.isEnabled()) {
@@ -36167,8 +36138,10 @@ jb.component('feature.content-editable', { /* feature.contentEditable */
           cmp.onkeydownHandler = cmp.onkeypressHandler = ev => contentEditable.handleKeyEvent(ev,cmp,param)
         cmp.onmousedownHandler = ev => jb.ui.contentEditable.activate(cmp,ev)
       }
-    }),
-    templateModifier(({},{cmp,vdom},{param}) => {
+    }
+      ),
+    templateModifier(
+        ({},{cmp,vdom},{param}) => {
       const contentEditable = jb.ui.contentEditable
       if (!contentEditable || !contentEditable.isEnabled() || param && !contentEditable.refOfProp(cmp,param)) return vdom
       const attsToInject = cmp.state.contentEditableActive ? {contenteditable: 'true', onblur: true, onmousedown: true, onkeypress: true, onkeydown: true} : {onmousedown: true};
@@ -36184,8 +36157,14 @@ jb.component('feature.content-editable', { /* feature.contentEditable */
       vdom.attributes = vdom.attributes || {};
       Object.assign(vdom.attributes,attsToInject)
       return vdom;
-    }),
-    css.dynamic(If('%$cmp.state.contentEditableActive%',`{ border: 1px dashed grey; background-image: linear-gradient(90deg,rgba(243,248,255,.03) 63.45%,rgba(207,214,229,.27) 98%); border-radius: 3px;}`))
+    }
+      ),
+    css.dynamic(
+        If(
+          '%$cmp.state.contentEditableActive%',
+          '{ border: 1px dashed grey; background-image: linear-gradient(90deg,rgba(243,248,255,.03) 63.45%,rgba(207,214,229,.27) 98%); border-radius: 3px;}'
+        )
+      )
   )
 })
 ;

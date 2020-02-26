@@ -90,9 +90,9 @@ jb.component('studio.ctx-counters', { /* studio.ctxCounters */
   })
 })
 
-jb.component('studio.sample-project',{
+jb.component('studio.sample-project', { /* studio.sampleProject */
   type: 'menu.option',
-  params:[
+  params: [
     {id: 'project', as: 'string'}
   ],
   impl: menu.action({
@@ -117,7 +117,7 @@ jb.component('studio.main-menu', { /* studio.mainMenu */
             options: [
               studio.sampleProject('itemlists'),
               studio.sampleProject('todos'),
-              studio.sampleProject('html-parsing'),
+              studio.sampleProject('html-parsing')
             ]
           }),
           menu.action({title: 'New Project', action: studio.openNewProject(), icon: 'new'}),

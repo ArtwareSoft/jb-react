@@ -126,12 +126,7 @@ jb.studio.pageChange = jb.ui.resourceChange().filter(e=>e.path.join('/') == 'stu
 jb.component('studio.preview-widget', { /* studio.previewWidget */
   type: 'control',
   params: [
-    {
-      id: 'style',
-      type: 'preview-style',
-      dynamic: true,
-      defaultValue: studio.previewWidgetImpl()
-    },
+    {id: 'style', type: 'preview-style', dynamic: true, defaultValue: studio.previewWidgetImpl()},
     {id: 'width', as: 'number'},
     {id: 'height', as: 'number'}
   ],
@@ -150,7 +145,7 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
             const project = ctx.exp('%$studio/project%')
             document.title = `${project} with jBart`;
             return st.projectHosts[host].fetchProject(ctx.exp('%$queryParams/hostProjectId%'),project)
-              .then(projectSettings => { 
+              .then(projectSettings => {
                 jb.exec(writeValue('%$studio/project%', projectSettings.project))
                 cmp.refresh({ projectLoaded: true, projectSettings })
             })
@@ -180,7 +175,7 @@ jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
 })
 
 st.injectProjectToPreview = function(previewWin,projectSettings) {
-const jb_loader = location.href.indexOf('https://artwaresoft.github.io/') == 0 
+const jb_loader = location.href.indexOf('https://artwaresoft.github.io/') == 0
   ? 'https://artwaresoft.github.io/jb-react/dist/jb-loader.js' : '/src/loader/jb-loader.js'
 const html = `<!DOCTYPE html>
 <html>
