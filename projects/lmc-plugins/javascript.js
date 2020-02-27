@@ -3,7 +3,7 @@ aa_lmcApi_registerPlugin({
   title: 'javascript',
   editor: {
     js(object,settingsRef) {
-      var editor_elem = object.el.querySelector('#scriptEditor')
+      var editor_elem = object.el
       if (!editor_elem) return
       editor_elem.value = settingsRef()
       editor_elem.addEventListener("blur", () => settingsRef(editor_elem.value))
