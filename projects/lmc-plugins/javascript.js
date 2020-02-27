@@ -15,7 +15,10 @@ aa_lmcApi_registerPlugin({
 },
   runtime: {
     js(object,data) {
-      eval(data)
+      if (!data || typeof data != 'string') return
+      try {
+        eval(data)
+      } catch(e) {}
     },
     html: '',
     css: '',
