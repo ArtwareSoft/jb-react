@@ -12,7 +12,7 @@ aa_lmcApi_registerPlugin({
       ['textToSearch','selector'].forEach(id=>{
         var elem = object.el.querySelector('#'+id)
         if (!elem) return
-        elem.value = settingsRef()[id] || ''
+        elem.value = widgetData[id] || ''
         elem.addEventListener("blur", () => {
           widgetData[id] = elem.value
           settingsRef(JSON.stringify(widgetData))
