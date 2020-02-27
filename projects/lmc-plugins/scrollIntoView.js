@@ -34,8 +34,9 @@ aa_lmcApi_registerPlugin({
   runtime: {
     js(object,data) {
       var widgetData = JSON.parse(data)
-        var selector = widgetData.selector || 'div'
-        setTimeout(() => 
+      if (!widgetData) return
+      var selector = widgetData.selector || 'div'
+      setTimeout(() => 
             Array.from(document.querySelectorAll(selector))
                 .filter(p=>p.innerHTML.indexOf(widgetData.textToSearch) != -1).slice(0,1)
                 .forEach(p=>p.scrollIntoView())
