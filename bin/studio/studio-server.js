@@ -15,14 +15,14 @@ try {
 
 // define projects not under /jbart/projects directory
 let sites = null;
-const projecstDir = settings.devHost ? 'projects' : './'
+const projectstDir = settings.devHost ? 'projects' : './'
 const rootName = process.cwd().split('/').pop().split('\\').pop()
 const jbReactDir = fs.existsSync('node_modules/jb-react/') ? 'node_modules/jb-react/' : './'
 
 function projectDirectory(project) {
     sites = sites || externalSites() || {};
     const site = Object.keys(sites).filter(site=>project.indexOf(site+'-') != -1)[0];
-    const res = site ? `${sites[site]}/${project.substring(site.length+1)}` : `${settings.http_dir}${projecstDir}/${rootName == project ? '' : project}`;
+    const res = site ? `${sites[site]}/${project.substring(site.length+1)}` : `${settings.http_dir}${projectstDir}/${rootName == project ? '' : project}`;
     return res;
 
     function externalSites() {
@@ -302,8 +302,8 @@ const op_get_handlers = {
       res.end(getURLParam(req,'data'));
     },
     projects: function(req,res,path) {
-      const projects = fs.readdirSync(projecstDir)
-        .filter(dir=>fs.statSync(projecstDir + '/' + dir).isDirectory())
+      const projects = fs.readdirSync(projectstDir)
+        .filter(dir=>fs.statSync(projectstDir + '/' + dir).isDirectory())
         .filter(dir=>!dir.match(new RegExp(settings.exclude)))
         .concat(fs.existsSync(`./${rootName}.html`) ? [rootName] : [])
       res.end(JSON.stringify({projects}));

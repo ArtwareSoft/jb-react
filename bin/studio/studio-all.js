@@ -35390,6 +35390,7 @@ const userLocalHost = Object.assign({},devHost,{
             + libs.filter(lib=>jb_modules[lib+'-css']).map(lib=>`<link rel="stylesheet" type="text/css" href="/dist/${lib}.css"/>`)
         return '<link rel="stylesheet" type="text/css" href="/dist/css/styles.css"/>\n<script type="text/javascript" src="/dist/jb-react-all.js"></script>\n' + libScripts
     },
+    locationToPath: path => path.replace(/^[0-9]*\//,'').replace(/^projects\//,''),
     srcOfJsFile: (project,fn,baseDir) => baseDir == './' ? `../${fn}` : `/${project}/${fn}`,
     pathOfJsFile: (project,fn,baseDir) => baseDir == './' ? fn : `/${project}/${fn}`,
     projectUrlInStudio: project => `/studio-bin/${project}`,
