@@ -1,17 +1,19 @@
-
 <!DOCTYPE html>
+<html>
 <head>
-  <script type="text/javascript">
-    startTime = new Date().getTime();
-  </script>
-  <script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,material-css,codemirror,parsing,pretty-print,d3"></script>
-  <script type="text/javascript" src="/projects/cCommerce/cCommerce.js"></script>
-  <script type="text/javascript" src="/projects/cCommerce/phones.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+jbProjectSettings = {
+  project: 'cCommerce',
+  libs: 'common,ui-common,material,codemirror,codemirror,parsing,pretty-print,d3',
+  jsFiles: ['cCommerce.js','phones.js'],
+}
+</script>
 </head>
 <body>
-<div id="main"> </div>
-<script>
-  jb.ui.renderWidget({$:'cCommerce.main'},document.getElementById('main'))
-</script>
+  <script>
+    window.jb_initWidget && jb_initWidget()
+  </script>
 </body>
 </html>
+

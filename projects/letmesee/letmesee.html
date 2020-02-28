@@ -1,16 +1,19 @@
 <!DOCTYPE html>
+<html>
 <head>
-  <script type="text/javascript">
-    startTime = new Date().getTime();
-  </script>
-  <script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,xml,ui-common,material-css,inner-html"></script>
-  <script type="text/javascript" src="/projects/letmesee/letmesee.js"></script>
-  <script type="text/javascript" src="/projects/letmesee/samples.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+jbProjectSettings = {
+  project: 'letmesee',
+  libs: 'common,ui-common,material,xml,inner-html',
+  jsFiles: ['letmesee.js','samples.js'],
+}
+</script>
 </head>
 <body>
-<div id="main"> </div>
-<script>
-  jb.ui.renderWidget({$:'letmesee.main'},document.getElementById('main'))
-</script>
+  <script>
+    window.jb_initWidget && jb_initWidget()
+  </script>
 </body>
 </html>
+
