@@ -7318,13 +7318,13 @@ jb.component('dialog.dialog-ok-cancel', { /* dialog.dialogOkCancel */
     {id: 'cancelLabel', as: 'string', defaultValue: 'Cancel'}
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
-			h('div',{class: 'dialog-title'},state.title),
+    template: (cmp,{title,contentComp,cancelLabel,okLabel},h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
+			h('div',{class: 'dialog-title'},title),
 			h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
-			h(state.contentComp),
+			h(contentComp),
 			h('div',{class: 'dialog-buttons'},[
-				h('button',{class: 'mdc-button', onclick: 'dialogClose' },cmp.cancelLabel),
-				h('button',{class: 'mdc-button', onclick: 'dialogCloseOK' },cmp.okLabel),
+				h('button',{class: 'mdc-button', onclick: 'dialogClose' },cancelLabel),
+				h('button',{class: 'mdc-button', onclick: 'dialogCloseOK' },okLabel),
 			]),
 		]),
     css: '>.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }'
@@ -34139,6 +34139,21 @@ jb.component('studio.save-components', { /* studio.saveComponents */
     }
 })
 
+jb.component('studio.save-new-project', { /* studio.saveNewProject */
+  type: 'action,has-side-effects',
+  params: [
+    { id: 'filesToSave', as: 'array' }
+  ],
+  impl: (ctx,filesToSave) => {
+    const messages = [],
+    return filesToSave.reduce((pr,{path,contents}) => pr.then(()=> st.host.saveFile(path,contents)), Promise.resolve() ).catch(e=> {
+      messages.push({ text: 'error saving: ' + (typeof e == 'string' ? e : e.message || e.e), error: true })
+      st.showMultiMessages(messages)
+      return jb.logException(e,'error while saving ' + e.id,ctx) || []
+    })
+  }
+})
+
 function locationOfComp(compE) {
   try {
     return (compE[1] || st.compsHistory[0].before[compE[0]])[jb.location][0]
@@ -34610,21 +34625,22 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
     }),
     title: 'New Project',
     onOK: runActions(
-      writeValue(
-          '%$studio/projectSettings%',
-          {
-            '$': 'object',
-            project: '%$dialogData/name%',
-            libs: 'common,ui-common,material',
-            jsFiles: ['%$dialogData/name%.js']
-          }
-        ),
-      studio.newProject('%$dialogData/name%'),
-      writeValue('%$studio/project%', '%$dialogData/name%'),
+      Var('project','%$dialogData/name%'),
+      // writeValue(
+      //     '%$studio/projectSettings%',
+      //     {
+      //       '$': 'object',
+      //       project: '%$project%',
+      //       libs: 'common,ui-common,material',
+      //       jsFiles: ['%$project%.js']
+      //     }
+      //   ),
+      studio.saveNewProject(studio.newProject('%$project%')),
+      writeValue('%$studio/project%', '%$project%'),
       writeValue('%$studio/page%', 'main'),
-      writeValue('%$studio/profile_path%', '%$dialogData/name%.main'),
+      writeValue('%$studio/profile_path%', '%$project%.main'),
       delay(100),
-      ctx => jb.studio.host.canNotSave || ctx.run(studio.saveComponents())
+//      () => location.reload()
     ),
     modal: true,
     features: [
@@ -34633,7 +34649,33 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
     ]
   })
 })
-;
+
+jb.component('studio.save-new-project', { /* studio.saveNewProject */
+  type: 'action,has-side-effects',
+  params: [
+    { id: 'projectObj', as: 'object' }
+  ],
+  impl: (ctx,{project, files, baseDir}) => {
+    return jb.studio.host.createProject({project, files, baseDir})
+        .then(r => r.json())
+        .catch(e => {
+          jb.studio.message(`error saving project ${project}: ` + (e && e.desc));
+          jb.logException(e,'',ctx)
+        })
+        .then(res=>{
+          if (res.type == 'error')
+              return jb.studio.message(`error saving project ${project}: ` + (res && jb.prettyPrint(res.desc)));
+          location.reload()
+        })
+
+    // const messages = [],
+    // return filesToSave.reduce((pr,{path,contents}) => pr.then(()=> st.host.saveFile(path,contents)), Promise.resolve() ).catch(e=> {
+    //   messages.push({ text: 'error saving: ' + (typeof e == 'string' ? e : e.message || e.e), error: true })
+    //   st.showMultiMessages(messages)
+    //   return jb.logException(e,'error while saving ' + e.id,ctx) || []
+    // })
+  }
+});
 
 (function() {
 const st = jb.studio;

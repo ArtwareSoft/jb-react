@@ -58,21 +58,22 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
     }),
     title: 'New Project',
     onOK: runActions(
-      writeValue(
-          '%$studio/projectSettings%',
-          {
-            '$': 'object',
-            project: '%$dialogData/name%',
-            libs: 'common,ui-common,material',
-            jsFiles: ['%$dialogData/name%.js']
-          }
-        ),
-      studio.newProject('%$dialogData/name%'),
-      writeValue('%$studio/project%', '%$dialogData/name%'),
+      Var('project','%$dialogData/name%'),
+      // writeValue(
+      //     '%$studio/projectSettings%',
+      //     {
+      //       '$': 'object',
+      //       project: '%$project%',
+      //       libs: 'common,ui-common,material',
+      //       jsFiles: ['%$project%.js']
+      //     }
+      //   ),
+      studio.saveNewProject(studio.newProject('%$project%')),
+      writeValue('%$studio/project%', '%$project%'),
       writeValue('%$studio/page%', 'main'),
-      writeValue('%$studio/profile_path%', '%$dialogData/name%.main'),
+      writeValue('%$studio/profile_path%', '%$project%.main'),
       delay(100),
-      ctx => jb.studio.host.canNotSave || ctx.run(studio.saveComponents())
+//      () => location.reload()
     ),
     modal: true,
     features: [
@@ -80,4 +81,31 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
       dialogFeature.nearLauncherPosition({offsetLeft: '300', offsetTop: '100'})
     ]
   })
+})
+
+jb.component('studio.save-new-project', { /* studio.saveNewProject */
+  type: 'action,has-side-effects',
+  params: [
+    { id: 'projectObj', as: 'object' }
+  ],
+  impl: (ctx,{project, files, baseDir}) => {
+    return jb.studio.host.createProject({project, files, baseDir})
+        .then(r => r.json())
+        .catch(e => {
+          jb.studio.message(`error saving project ${project}: ` + (e && e.desc));
+          jb.logException(e,'',ctx)
+        })
+        .then(res=>{
+          if (res.type == 'error')
+              return jb.studio.message(`error saving project ${project}: ` + (res && jb.prettyPrint(res.desc)));
+          location.reload()
+        })
+
+    // const messages = [],
+    // return filesToSave.reduce((pr,{path,contents}) => pr.then(()=> st.host.saveFile(path,contents)), Promise.resolve() ).catch(e=> {
+    //   messages.push({ text: 'error saving: ' + (typeof e == 'string' ? e : e.message || e.e), error: true })
+    //   st.showMultiMessages(messages)
+    //   return jb.logException(e,'error while saving ' + e.id,ctx) || []
+    // })
+  }
 })

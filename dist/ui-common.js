@@ -5067,13 +5067,13 @@ jb.component('dialog.dialog-ok-cancel', { /* dialog.dialogOkCancel */
     {id: 'cancelLabel', as: 'string', defaultValue: 'Cancel'}
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
-			h('div',{class: 'dialog-title'},state.title),
+    template: (cmp,{title,contentComp,cancelLabel,okLabel},h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
+			h('div',{class: 'dialog-title'},title),
 			h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
-			h(state.contentComp),
+			h(contentComp),
 			h('div',{class: 'dialog-buttons'},[
-				h('button',{class: 'mdc-button', onclick: 'dialogClose' },cmp.cancelLabel),
-				h('button',{class: 'mdc-button', onclick: 'dialogCloseOK' },cmp.okLabel),
+				h('button',{class: 'mdc-button', onclick: 'dialogClose' },cancelLabel),
+				h('button',{class: 'mdc-button', onclick: 'dialogCloseOK' },okLabel),
 			]),
 		]),
     css: '>.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }'
