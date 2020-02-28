@@ -35157,7 +35157,8 @@ jb.component('studio.main-menu', { /* studio.mainMenu */
             options: [
               studio.sampleProject('itemlists'),
               studio.sampleProject('todos'),
-              studio.sampleProject('html-parsing')
+              studio.sampleProject('html-parsing'),
+              studio.sampleProject('cards-demo')
             ]
           }),
           menu.action({title: 'New Project', action: studio.openNewProject(), icon: 'new'}),

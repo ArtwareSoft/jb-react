@@ -35,6 +35,9 @@ concatFiles(filesOfModules('codemirror-js-files'),'codemirror.js')
 concatFiles(filesOfModules('animate'),'animate.js')
 removeExports('animate.js')
 concatFiles(filesOfModules('d3'),'d3.js');
+concatFiles(filesOfModules('cards'),'cards.js');
+concatFiles(filesOfModules('cards-sample-data'),'cards-sample-data.js');
+
 concatFiles(['node_modules/dragula/dist/dragula.js'],'dragula.js')
 concatFiles(['node_modules/history/umd/history.js'],'history.js')
 
