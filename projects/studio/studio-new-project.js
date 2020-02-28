@@ -6,7 +6,7 @@ jb.component('studio.new-project', {
   impl: obj(
     prop('project','%$project%'),
     prop('baseDir','%$baseDir%'),
-    prop('files', obj(prop('%$project%.html', `<!DOCTYPE html>
+    prop('files', obj(prop('index.html', `<!DOCTYPE html>
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -33,9 +33,11 @@ jb.component('%$project%.main', {
     controls: [button('my button')]
   })
 })
-//# sourceURL=%$project%.js}`)), 'object'),
+`)), 'object'),
 )
 })
+
+//# sourceURL=%$project%.js
 
 jb.component('studio.open-new-project', { /* studio.openNewProject */
   type: 'action',
@@ -59,21 +61,11 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
     title: 'New Project',
     onOK: runActions(
       Var('project','%$dialogData/name%'),
-      // writeValue(
-      //     '%$studio/projectSettings%',
-      //     {
-      //       '$': 'object',
-      //       project: '%$project%',
-      //       libs: 'common,ui-common,material',
-      //       jsFiles: ['%$project%.js']
-      //     }
-      //   ),
-      studio.saveNewProject(studio.newProject('%$project%')),
+      studio.saveNewProject('%$project%'),
       writeValue('%$studio/project%', '%$project%'),
       writeValue('%$studio/page%', 'main'),
       writeValue('%$studio/profile_path%', '%$project%.main'),
-      delay(100),
-//      () => location.reload()
+      () => location.reload()
     ),
     modal: true,
     features: [
@@ -86,9 +78,10 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
 jb.component('studio.save-new-project', { /* studio.saveNewProject */
   type: 'action,has-side-effects',
   params: [
-    { id: 'projectObj', as: 'object' }
+    { id: 'project', as: 'string' }
   ],
-  impl: (ctx,{project, files, baseDir}) => {
+  impl: (ctx,project) => {
+    const {files, baseDir} = ctx.run(studio.newProject(()=> project))
     return jb.studio.host.createProject({project, files, baseDir})
         .then(r => r.json())
         .catch(e => {
@@ -98,14 +91,6 @@ jb.component('studio.save-new-project', { /* studio.saveNewProject */
         .then(res=>{
           if (res.type == 'error')
               return jb.studio.message(`error saving project ${project}: ` + (res && jb.prettyPrint(res.desc)));
-          location.reload()
         })
-
-    // const messages = [],
-    // return filesToSave.reduce((pr,{path,contents}) => pr.then(()=> st.host.saveFile(path,contents)), Promise.resolve() ).catch(e=> {
-    //   messages.push({ text: 'error saving: ' + (typeof e == 'string' ? e : e.message || e.e), error: true })
-    //   st.showMultiMessages(messages)
-    //   return jb.logException(e,'error while saving ' + e.id,ctx) || []
-    // })
   }
 })
