@@ -18,6 +18,7 @@ const devHost = {
     srcOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
     pathOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
     projectUrlInStudio: project => `/project/studio/${project}`,
+    jbLoader: '/src/loader/jb-loader.js',
     isDevHost: true
 }
 
@@ -32,6 +33,8 @@ const userLocalHost = Object.assign({},devHost,{
     srcOfJsFile: (project,fn,baseDir) => baseDir == './' ? `../${fn}` : `/${project}/${fn}`,
     pathOfJsFile: (project,fn,baseDir) => baseDir == './' ? fn : `/${project}/${fn}`,
     projectUrlInStudio: project => `/studio-bin/${project}`,
+    jbLoader: '/dist/jb-loader.js',
+    isDevHost: false
 })
 
 const cloudHost = {
@@ -48,7 +51,8 @@ const cloudHost = {
     },
     pathOfJsFile: (project,fn) => fn,
     projectUrlInStudio: project => ``,
-    canNotSave: true
+    canNotSave: true,
+    jbLoader: 'https://artwaresoft.github.io/jb-react/dist/jb-loader.js',
 }
 
 //     fiddle.jshell.net/davidbyd/47m1e2tk/show/?studio =>  //unpkg.com/jb-react/bin/studio/studio-cloud.html?entry=//fiddle.jshell.net/davidbyd/47m1e2tk/show/

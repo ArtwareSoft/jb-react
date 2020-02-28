@@ -29388,8 +29388,6 @@ jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
 })
 
 st.injectProjectToPreview = function(previewWin,projectSettings) {
-const jb_loader = location.href.indexOf('https://artwaresoft.github.io/') == 0
-  ? 'https://artwaresoft.github.io/jb-react/dist/jb-loader.js' : '/src/loader/jb-loader.js'
 const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -29397,7 +29395,7 @@ const html = `<!DOCTYPE html>
   <script type="text/javascript">
     jbProjectSettings = ${JSON.stringify(projectSettings)}
   </script>
-  <script type="text/javascript" src="${jb_loader}"></script>
+  <script type="text/javascript" src="${st.host.jbLoader}"></script>
 </head>
 <body>
   <script>
@@ -35380,6 +35378,7 @@ const devHost = {
     srcOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
     pathOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
     projectUrlInStudio: project => `/project/studio/${project}`,
+    jbLoader: '/src/loader/jb-loader.js',
     isDevHost: true
 }
 
@@ -35394,6 +35393,8 @@ const userLocalHost = Object.assign({},devHost,{
     srcOfJsFile: (project,fn,baseDir) => baseDir == './' ? `../${fn}` : `/${project}/${fn}`,
     pathOfJsFile: (project,fn,baseDir) => baseDir == './' ? fn : `/${project}/${fn}`,
     projectUrlInStudio: project => `/studio-bin/${project}`,
+    jbLoader: '/dist/jb-loader.js',
+    isDevHost: false
 })
 
 const cloudHost = {
@@ -35410,7 +35411,8 @@ const cloudHost = {
     },
     pathOfJsFile: (project,fn) => fn,
     projectUrlInStudio: project => ``,
-    canNotSave: true
+    canNotSave: true,
+    jbLoader: 'https://artwaresoft.github.io/jb-react/dist/jb-loader.js',
 }
 
 //     fiddle.jshell.net/davidbyd/47m1e2tk/show/?studio =>  //unpkg.com/jb-react/bin/studio/studio-cloud.html?entry=//fiddle.jshell.net/davidbyd/47m1e2tk/show/
