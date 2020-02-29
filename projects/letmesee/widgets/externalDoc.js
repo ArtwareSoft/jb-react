@@ -63,7 +63,6 @@ aa_lmcApi_registerPlugin({
       },
       html: '',
       css: `#this .aa_property_title { color: #666 !important; }`,
-//      #this  .fld__externalRawHtml   { height: 40px;  width: 595px;}`,
       defaultWidgetData: '',
       files: []
   },
@@ -102,11 +101,11 @@ aa_lmcApi_registerPlugin({
       </FieldType>
       <FieldAspect t="field_aspect.DefaultValue" Value="1"/>
     </Field>
-    <Field t="fld.Field" FieldData="%!@height%" ID="LinkToDocheight" Title="Height">
+    <Field t="fld.Field" FieldData="%!@css%" ID="LinkToDocheight" Title="Css">
       <FieldType t="fld_type.EditableText">
         <Style t="editable_text.LMCTextbox" Width="354px"/>
       </FieldType>
-      <FieldAspect t="field_aspect.DefaultValue" Value="400"/>
+      <FieldAspect t="field_aspect.DefaultValue" Value="height: 400px;"/>
     </Field>
   </Field>`,
       js(object,settingsRef) {
@@ -150,8 +149,8 @@ aa_lmcApi_registerPlugin({
           function jumpToText(html,el) {
           }
       },
-      html: '<div></div>',
-      css: '#this {overflow-y: scroll; height: %@height%px }'
+      html: '<div class="frame-link-to-doc"></div>',
+      css: '#this {overflow-y: scroll; %@css% }'
   },   
   })
   
