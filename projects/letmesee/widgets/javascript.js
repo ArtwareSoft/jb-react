@@ -1,7 +1,7 @@
 aa_lmcApi_registerPlugin({
   id: 'javascript',
   title: 'javascript',
-  editor: {
+  agent: {
     js(object,settingsRef) {
       var editor_elem = object.el
       if (!editor_elem) return
@@ -13,7 +13,7 @@ aa_lmcApi_registerPlugin({
     defaultWidgetData: 'enter your script here',
     files: []
 },
-  runtime: {
+  visitor: {
     js(object,data) {
       if (!data || typeof data != 'string') return
       try {
