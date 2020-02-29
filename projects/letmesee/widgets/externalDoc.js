@@ -15,10 +15,11 @@ aa_lmcApi_registerPlugin({
         <Style t="editable_text.NicEdit" Buttons="save,bold,italic,underline,left,center,right,justify,ol,ul,fontSize,fontFamily,fontFormat,indent,outdent,image,upload,link,unlink,forecolor,bgcolor" Height="150" Width="600">&#xa;                          </Style>
       </FieldType>
     </Field>
-    <Field t="field.Field" ID="_externalRawHtml" Title="Paste raw Html here">
-      <Type t="field_aspect.MultiLineText" Rows="20" Cols="120">
-        <Style t="textarea.Default" />
-      </Type>
+    <Field t="control.CustomControl" ID="_externalRawHtml" Title="Paste raw Html here">
+      <Control t="ui.CustomStyle">
+        <Html><![CDATA[<textarea/>]]></Html>
+        <Css><![CDATA[#this { height: 40px;  width: 595px;}]]></Css>
+      </Control>
     </Field>
   </Field>`,
       js(object,settingsRef) {
@@ -61,8 +62,8 @@ aa_lmcApi_registerPlugin({
           });
       },
       html: '',
-      css: `#this .aa_property_title { color: #666 !important; }
-      #this  .fld__externalRawHtml   { height: 40px;  width: 595px;}`,
+      css: `#this .aa_property_title { color: #666 !important; }`,
+//      #this  .fld__externalRawHtml   { height: 40px;  width: 595px;}`,
       defaultWidgetData: '',
       files: []
   },
