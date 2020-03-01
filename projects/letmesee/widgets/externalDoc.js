@@ -46,13 +46,13 @@ aa_lmcApi_registerPlugin({
             || document.querySelector('.fld__externalRawHtml').value
           const docId = ajaxart.totext(ajaxart.dynamicText(data,"%@docId%",context))
           if (!docId) {
-          	alert('please enter docId');
+          	alert('please enter Document Id');
           	return
           }
           const otherDocIds = ajaxart.dynamicText(data,"%$Room/items/paragraph[@docId='{@docId}']%",context)
           if (otherDocIds.length > 1) {
           	ajaxart.run(data,aa_parsexml('<action t="action.WriteValue" To="%!@docId%" Value=""/>'),'',context);
-          	alert('docId ' + docId + ' already exists, please choose a different one');
+          	alert('Document ' + docId + ' already exists, please choose a different one');
           	return
           }
   
