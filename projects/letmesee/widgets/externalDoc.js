@@ -88,7 +88,7 @@ aa_lmcApi_registerPlugin({
     agent: {
         xtml: `<Field t="control.PropertySheet" ID="_ps1" Title="Property Sheet">
     <Style t="properties.LMCDialogPropertySheet"/>
-    <Field t="fld.Field" FieldData="%!@docId%" ID="docId" Title="Document Id">
+    <Field t="fld.Field" FieldData="%!@externalDocId%" ID="docId" Title="Document Id">
         <FieldType t="fld_type.Picklist" AllowEmptyValue="" AllowValueNotInOptions="">
             <Options t="editable_picklist.DynamicOptions" OptionCode="%%" OptionDisplayName="%%"  Options="%$Room/items/paragraph/@docId%"/>
             <Style t="editable_picklist.LMCPicklist" Width="354px"/>
@@ -122,14 +122,14 @@ aa_lmcApi_registerPlugin({
       files: []
   },
   summaryLabel: {
-      html: '<div>%@docId% : %@textToJumpTo%</div>',
+      html: '<div>%@externalDocId% : %@textToJumpTo%</div>',
       css: '#this {overflow:hidden; font:12px Arial Black, Gadget, sans-serif; margin-left: -24px;}', 
   },
   visitor: {
       js(object,_data) {
           const data = [object.Data[0].parentElement];
           const context = object.Context;
-          const url = ajaxart.dynamicText(data,"%$Room/items/paragraph[@docId='{@docId}']/@publicUrl%",context);
+          const url = ajaxart.dynamicText(data,"%$Room/items/paragraph[@docId='{@externalDocId}']/@publicUrl%",context);
           const textToJumpTo = ajaxart.totext(ajaxart.dynamicText(data,"%@textToJumpTo%",context))
           const occ = +ajaxart.totext(ajaxart.dynamicText(data,"%@occurance%",context))
           const publicUrl = ajaxart.totext(url) + '?cachekill=' + Math.floor(Math.random() *10000);
