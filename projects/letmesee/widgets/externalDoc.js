@@ -44,19 +44,19 @@ aa_lmcApi_registerPlugin({
             document.querySelector('.fld__externalDocFld').jbNicEditorInstance.setContent('')
           const content = document.querySelector('.fld__externalDocFld').jbNicEditorInstance.getContent() 
             || document.querySelector('.fld__externalRawHtml').value
-          const docId = ajaxart.dynamicText(data,"%@docId%",context)
+          const docId = ajaxart.totext(ajaxart.dynamicText(data,"%@docId%",context))
           if (!docId) {
           	alert('please enter docId');
           	return
           }
-          const otherDocIds = ajaxart.dynamicText(data,"%$Room/items/paragraph[@docId='{@docId}']%",context)
+          const otherDocIds = ajaxart.totext(ajaxart.dynamicText(data,"%$Room/items/paragraph[@docId='{@docId}']%",context))
           if (otherDocIds.length > 1) {
           	ajaxart.run(data,aa_parsexml('<action t="action.WriteValue" To="%!@docId%" Value=""/>'),'',context);
           	alert('docId ' + docId + ' already exists, please choose a different one');
           	return
           }
   
-          const fileName = ajaxart.dynamicText(data,'%$Room/@id%-%@docId%.html',context)[0];
+          const fileName = ajaxart.totext(ajaxart.dynamicText(data,'%$Room/@id%-%@docId%.html',context));
           var waitCursorCss = aa_attach_global_css("#this { cursor:wait !important; }");
           $('body').addClass(waitCursorCss);
           aa_lmcApi_saveFileWithPost({
