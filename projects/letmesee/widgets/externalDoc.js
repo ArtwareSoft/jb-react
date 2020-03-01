@@ -9,10 +9,6 @@ aa_lmcApi_registerPlugin({
         <Style t="editable_text.LMCTextbox" Width="354px"/>
       </FieldType>
       <FieldAspect t="field_aspect.DefaultValue" Value="doc1"/>
-      <FieldAspect t="field_aspect.Mandatory"/>
-      <FieldAspect t="field_aspect.Validation" AddTitleToErrorMessage="true" ShowErrorMessageNextToField="true" ErrorMessage="Document id already exists">
-          <ValidationLogic t="validation.Unique" OtherValues="%$Room/items/paragraph/@docId%"/>
-      </FieldAspect>
     </Field>
     <Field t="fld.Field" ID="_externalDocFld" Title="Paste document here">
       <FieldType t="fld_type.EditableText">
