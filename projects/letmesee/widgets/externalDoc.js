@@ -49,7 +49,7 @@ aa_lmcApi_registerPlugin({
           	alert('please enter docId');
           	return
           }
-          const otherDocIds = ajaxart.totext(ajaxart.dynamicText(data,"%$Room/items/paragraph[@docId='{@docId}']%",context))
+          const otherDocIds = ajaxart.dynamicText(data,"%$Room/items/paragraph[@docId='{@docId}']%",context)
           if (otherDocIds.length > 1) {
           	ajaxart.run(data,aa_parsexml('<action t="action.WriteValue" To="%!@docId%" Value=""/>'),'',context);
           	alert('docId ' + docId + ' already exists, please choose a different one');
