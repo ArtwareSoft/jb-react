@@ -41,7 +41,7 @@ aa_lmcApi_registerPlugin({
       onClose(object) {
           const data = [object.Data], context = object.Context
           if (document.querySelector('.fld__externalDocFld').jbNicEditorInstance.getContent() == '<br>')
-            document.querySelector('.fld__externalDocFld').jbNicEditorInstance.setContent() == ''
+            document.querySelector('.fld__externalDocFld').jbNicEditorInstance.setContent('')
           const content = document.querySelector('.fld__externalDocFld').jbNicEditorInstance.getContent() 
             || document.querySelector('.fld__externalRawHtml').value
           const docId = ajaxart.dynamicText(data,"%@docId%",context)
