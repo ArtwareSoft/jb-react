@@ -9,6 +9,10 @@ aa_lmcApi_registerPlugin({
         <Style t="editable_text.LMCTextbox" Width="354px"/>
       </FieldType>
       <FieldAspect t="field_aspect.DefaultValue" Value="doc1"/>
+      <FieldAspect t="field_aspect.Mandatory"/>
+      <FieldAspect t="field_aspect.Validation" AddTitleToErrorMessage="true" ShowErrorMessageNextToField="true" ErrorMessage="Document id already exists">
+        <ValidationLogic t="validation.Unique" OtherValues="%$Room/items/paragraph/@docId%"/>
+      </FieldAspect>
     </Field>
     <Field t="fld.Field" ID="_externalDocFld" Title="Paste document here">
       <FieldType t="fld_type.EditableText">
@@ -85,10 +89,10 @@ aa_lmcApi_registerPlugin({
         xtml: `<Field t="control.PropertySheet" ID="_ps1" Title="Property Sheet">
     <Style t="properties.LMCDialogPropertySheet"/>
     <Field t="fld.Field" FieldData="%!@docId%" ID="docId" Title="Document Id">
-      <FieldType t="fld_type.EditableText">
-        <Style t="editable_text.LMCTextbox" Width="354px"/>
-      </FieldType>
-      <FieldAspect t="field_aspect.DefaultValue" Value="doc1"/>
+        <FieldType t="fld_type.Picklist" AllowEmptyValue="" AllowValueNotInOptions="">
+            <Options t="editable_picklist.DynamicOptions" OptionCode="%%" OptionDisplayName="%%"  Options="%$Room/items/paragraph/@docId%"/>
+            <Style t="editable_picklist.LMCPicklist" Width="354px"/>
+        </FieldType>
     </Field>
     <Field t="fld.Field" FieldData="%!@textToJumpTo%" ID="TxtToJump" Title="Jump to text">
       <FieldType t="fld_type.EditableText">
