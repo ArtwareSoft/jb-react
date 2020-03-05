@@ -3228,7 +3228,9 @@ ui.renderWidget = function(profile,top) {
         if (page) currentProfile = {$: page}
         const cmp = new jb.jbCtx().run(currentProfile)
         const start = new Date().getTime()
-        ui.applyVdomDiff(top.firstElementChild ,ui.h(cmp), { strongRefresh: !!page })
+        jb.ui.unmount(top)
+        top.innerHTML = ''
+        jb.ui.render(ui.h(cmp),top)
         lastRenderTime = new Date().getTime() - start
     }
 }
@@ -3988,7 +3990,7 @@ jb.component('css.line-clamp', { /* css.lineClamp */
 
 })();
 
-jb.ns('label')
+jb.ns('text')
 
 jb.component('text', { /* text */
   type: 'control',
@@ -3996,7 +3998,7 @@ jb.component('text', { /* text */
   params: [
     {id: 'text', as: 'ref', mandatory: true, templateValue: 'my text', dynamic: true},
     {id: 'title', as: 'ref', mandatory: true, templateValue: 'my title', dynamic: true},
-    {id: 'style', type: 'label.style', defaultValue: label.span(), dynamic: true},
+    {id: 'style', type: 'text.style', defaultValue: text.span(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
@@ -4004,16 +4006,16 @@ jb.component('text', { /* text */
 
 jb.component('label', {...jb.comps.text,type: 'depricated-control'} )
 
-jb.component('label.bind-text', { /* label.bindText */
+jb.component('text.bind-text', { /* text.bindText */
   type: 'feature',
-  category: 'label:0',
+  category: 'text:0',
   impl: features(
     watchAndCalcModelProp('text', ({data}) => jb.ui.toVdomOrStr(data)),
     () => ({studioFeatures :{$: 'feature.content-editable', param: 'text' }})
   )
 })
 
-jb.component('label.allow-asynch-value', { /* label.allowAsynchValue */
+jb.component('text.allow-asynch-value', { /* text.allowAsynchValue */
   type: 'feature',
   impl: features(
     calcProp({id: 'text', value: (ctx,{cmp}) => cmp.text || ctx.vars.$props.text}),
@@ -4028,64 +4030,64 @@ jb.component('label.allow-asynch-value', { /* label.allowAsynchValue */
   )
 })
 
-jb.component('label.htmlTag', { /* label.htmlTag */
-  type: 'label.style',
+jb.component('text.htmlTag', { /* text.htmlTag */
+  type: 'text.style',
   params: [
     {id: 'htmlTag', as: 'string', defaultValue: 'p', options: 'span,p,h1,h2,h3,h4,h5,div,li,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label'},
     {id: 'cssClass', as: 'string'}
   ],
   impl: customStyle({
     template: (cmp,{text,htmlTag,cssClass},h) => h(htmlTag,{class: cssClass},text),
-    features: label.bindText()
+    features: text.bindText()
   })
 })
 
-jb.component('label.no-wrapping-tag', { /* label.noWrappingTag */
-  type: 'label.style',
-  category: 'label:0',
+jb.component('text.no-wrapping-tag', { /* text.noWrappingTag */
+  type: 'text.style',
+  category: 'text:0',
   impl: customStyle({
     template: (cmp,{text},h) => text,
-    features: label.bindText()
+    features: text.bindText()
   })
 })
 
-jb.component('label.span', { /* label.span */
-  type: 'label.style',
+jb.component('text.span', { /* text.span */
+  type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('span',{},text),
-    features: label.bindText()
+    features: text.bindText()
   })
 })
 
 ;[1,2,3,4,5,6].map(level=>jb.component(`header.h${level}`, {
-  type: 'label.style',
+  type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h(`h${level}`,{},text),
-    features: label.bindText()
+    features: text.bindText()
   })
 }))
 
 ;[1,2,3,4,5,6].map(level=>jb.component(`header.mdc-headline${level}`, {
-  type: 'label.style',
+  type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--headline${level}`},text),
-    features: label.bindText()
+    features: text.bindText()
   })
 }))
 
 ;[1,2].map(level=>jb.component(`header.mdc-subtitle${level}`, {
-  type: 'label.style',
+  type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--subtitle${level}`},text),
-    features: label.bindText()
+    features: text.bindText()
   })
 }))
 
 ;[1,2].map(level=>jb.component(`text.mdc-body${level}`, {
-  type: 'label.style',
+  type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--body${level}`},text),
-    features: label.bindText()
+    features: text.bindText()
   })
 }))
 
@@ -4243,13 +4245,13 @@ jb.component('html', { /* html */
 
 jb.component('html.plain', { /* html.plain */
   type: 'html.style',
-  impl: ctx => features(
+  impl: customStyle({
+    template: (cmp,{html},h) => h('html',{$html: html, jb_external: true } ) ,
+    features: [
         watchAndCalcModelProp('html'),
-        () => ({
-            template: (cmp,{html},h) => h('html',{$html: html, jb_external: true } ) ,
-            studioFeatures :{$: 'feature.content-editable', param: 'html' },
-        })
-    )
+        () => ({ studioFeatures :{$: 'feature.content-editable', param: 'html' } })
+    ]
+  })
 })
 
 jb.component('html.in-iframe', { /* html.inIframe */
@@ -4258,17 +4260,17 @@ jb.component('html.in-iframe', { /* html.inIframe */
     {id: 'width', as: 'string', defaultValue: '100%'},
     {id: 'height', as: 'string', defaultValue: '100%'}
   ],
-  impl: features(
-    ctx => ({
-            template: (cmp,{width,height},h) => h('iframe', {
-                sandbox: 'allow-same-origin allow-forms allow-scripts',
-                frameborder: 0, width, height,
-                src: 'javascript: document.write(parent.contentForIframe)'
-            })
-        }),
-    interactiveProp('html', '%$$model/html%'),
-    interactive(({},{cmp}) => window.contentForIframe = cmp.html)
-  )
+  impl: customStyle({
+    template: (cmp,{width,height},h) => h('iframe', {
+        sandbox: 'allow-same-origin allow-forms allow-scripts',
+        frameborder: 0, width, height,
+        src: 'javascript: document.write(parent.contentForIframe)'
+    }),
+    features: [
+      interactiveProp('html', '%$$model/html%'),
+      interactive(({},{cmp}) => window.contentForIframe = cmp.html)
+    ]
+  })
 })
 ;
 
@@ -6654,7 +6656,7 @@ jb.component('field.control', { /* field.control */
   type: 'table-field',
   params: [
     {id: 'title', as: 'string', mandatory: true},
-    {id: 'control', type: 'control', dynamic: true, mandatory: true, defaultValue: label('')},
+    {id: 'control', type: 'control', dynamic: true, mandatory: true, defaultValue: text('')},
     {id: 'width', as: 'number'},
     {id: 'dataForSort', dynamic: true},
     {id: 'numeric', as: 'boolean', type: 'boolean'}
@@ -6813,14 +6815,14 @@ jb.component('mdc.ripple-effect', { /* mdc.rippleEffect */
 })
 
 jb.component('label.mdc-ripple-effect', { /* label.mdcRippleEffect */
-  type: 'label.style',
+  type: 'text.style',
   impl: customStyle({
     template: (cmp,state,h) => h('button',{class: 'mdc-button'},[
       h('div',{class:'mdc-button__ripple'}),
       h('span',{class:'mdc-button__label'},state.text),
     ]),
     css: '>span { text-transform: none; }',
-    features: [label.bindText(), mdcStyle.initDynamic()]
+    features: [text.bindText(), mdcStyle.initDynamic()]
   })
 })
 
@@ -7389,7 +7391,7 @@ jb.component('group.accordion', { /* group.accordion */
 jb.component('group.sections', { /* group.sections */
   type: 'group.style',
   params: [
-    {id: 'titleStyle', type: 'label.style', dynamic: true, defaultValue: header.mdcHeadline5()},
+    {id: 'titleStyle', type: 'text.style', dynamic: true, defaultValue: header.mdcHeadline5()},
     {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: styleWithFeatures(group.div(), [group.card({}), css.padding({})])},
     {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
   ],
@@ -7592,14 +7594,14 @@ jb.component('picklist.native-md-look', { /* picklist.nativeMdLook */
 jb.component('picklist.label-list', { /* picklist.labelList */
   type: 'picklist.style',
   params: [
-    {id: 'labelStyle', type: 'label.style', dynamic: true, defaultValue: label.span()},
+    {id: 'labelStyle', type: 'text.style', dynamic: true, defaultValue: text.span()},
     {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.ulLi()},
     {id: 'cssForSelected', as: 'string', description: 'e.g. background: red OR >a { color: red }', defaultValue: 'background: #bbb; color: #fff'}
   ],
   impl: styleByControl(
     itemlist({
       items: '%$picklistModel/options%',
-      controls: label({text: '%text%', style: call('labelStyle')}),
+      controls: text({text: '%text%', style: call('labelStyle')}),
       style: call('itemlistStyle'),
       features: itemlist.selection({
         databind: '%$picklistModel/databind%',
@@ -7665,13 +7667,13 @@ select::-webkit-input-placeholder { color: #999; }`,
 jb.component('property-sheet.titles-left', { /* propertySheet.titlesLeft */
   type: 'group.style',
   params: [
-    {id: 'titleStyle', type: 'label.style', defaultValue: styleWithFeatures(label.span(), css.bold()), dynamic: true},
+    {id: 'titleStyle', type: 'text.style', defaultValue: styleWithFeatures(text.span(), css.bold()), dynamic: true},
     {id: 'titleText', defaultValue: '%%:', dynamic: true},
     {id: 'spacing', as: 'string', description: 'grid-column-gap', defaultValue: '10px'}
   ],
   impl: customStyle({
     template: (cmp,{ctrls,titleStyle,titleText},h) => h('div',{}, ctrls.flatMap(ctrl=>[
-        h(cmp.ctx.run(label({text: ctx => titleText(ctx.setData(ctrl.field().title())), style: ctx => titleStyle(ctx)}))),
+        h(cmp.ctx.run(text({text: ctx => titleText(ctx.setData(ctrl.field().title())), style: ctx => titleStyle(ctx)}))),
         h(ctrl)
       ])
     ),
@@ -7683,14 +7685,14 @@ jb.component('property-sheet.titles-left', { /* propertySheet.titlesLeft */
 jb.component('property-sheet.titles-above', { /* propertySheet.titlesAbove */
   type: 'group.style',
   params: [
-    {id: 'titleStyle', type: 'label.style', defaultValue: styleWithFeatures(label.span(), css.bold()), dynamic: true},
+    {id: 'titleStyle', type: 'text.style', defaultValue: styleWithFeatures(text.span(), css.bold()), dynamic: true},
     {id: 'titleText', defaultValue: '%%', dynamic: true},
     {id: 'spacing', as: 'string', description: 'grid-column-gap', defaultValue: '10px'}
   ],
   impl: customStyle({
     template: (cmp,{ctrls,titleStyle,titleText},h) => h('div',{ style: {'grid-template-columns': ctrls.map(()=>'auto').join(' ')}}, [
         ...ctrls.map(ctrl=>
-          h(cmp.ctx.run(label({
+          h(cmp.ctx.run(text({
             text: ctx => titleText(ctx.setData(ctrl.field().title())), 
             style: ctx => titleStyle(ctx)})))), 
         ...ctrls.map(ctrl=>h(ctrl))

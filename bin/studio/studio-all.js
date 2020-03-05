@@ -54,11 +54,11 @@ function do_jb_run(ctx,parentParam,settings) {
             case 'function': run.ctx.params[paramObj.name] = paramObj.outerFunc(run.ctx) ;  break;
             case 'array': run.ctx.params[paramObj.name] =
                 paramObj.array.map((prof,i) =>
-                  jb_run(new jbCtx(run.ctx,{profile: prof, forcePath: ctx.path + '~' + paramObj.path+ '~' + i, path: ''}), paramObj.param))
+                  jb_run(new jbCtx(run.ctx,{profile: prof, forcePath: paramObj.forcePath || ctx.path + '~' + paramObj.path+ '~' + i, path: ''}), paramObj.param))
                   //run.ctx.runInner(prof, paramObj.param, paramObj.path+'~'+i) )
               ; break;  // maybe we should [].concat and handle nulls
             default: run.ctx.params[paramObj.name] =
-              jb_run(new jbCtx(run.ctx,{profile: paramObj.prof, forcePath: ctx.path + '~' + paramObj.path, path: ''}), paramObj.param);
+              jb_run(new jbCtx(run.ctx,{profile: paramObj.prof, forcePath: paramObj.forcePath || ctx.path + '~' + paramObj.path, path: ''}), paramObj.param);
             //run.ctx.runInner(paramObj.prof, paramObj.param, paramObj.path)
             //jb_run(paramObj.ctx, paramObj.param);
           }
@@ -120,10 +120,9 @@ function compParams(comp) {
   return Array.isArray(comp.params) ? comp.params : entries(comp.params).map(x=>Object.assign(x[1],{id: x[0]}));
 }
 
-function prepareParams(comp,profile,ctx) {
+function prepareParams(comp_name,comp,profile,ctx) {
   return compParams(comp)
-    .filter(comp=>
-      !comp.ignore)
+    .filter(param=> !param.ignore)
     .map((param,index) => {
       const p = param.id, sugar = sugarProp(profile);
       let val = profile[p], path =p;
@@ -131,7 +130,11 @@ function prepareParams(comp,profile,ctx) {
         path = sugar[0];
         val = sugar[1];
       }
-      const valOrDefault = (val !== undefined) ? val : (param.defaultValue !== undefined ? param.defaultValue : null);
+      const valOrDefault = val !== undefined ? val : (param.defaultValue !== undefined ? param.defaultValue : null)
+      const usingDefault = val === undefined && param.defaultValue !== undefined
+      const forcePath = usingDefault && [comp_name, 'params', compParams(comp).indexOf(param), 'defaultValue'].join('~')
+      if (forcePath) path = ''
+
       const valOrDefaultArray = valOrDefault ? valOrDefault : []; // can remain single, if null treated as empty array
       const arrayParam = param.type && param.type.indexOf('[]') > -1 && Array.isArray(valOrDefaultArray);
 
@@ -142,21 +145,20 @@ function prepareParams(comp,profile,ctx) {
             func = (ctx2,data2) =>
               jb.flattenArray(valOrDefaultArray.map((prof,i)=> runCtx.extendVars(ctx2,data2).runInner(prof,param,path+'~'+i)))
           else
-            func = (ctx2,data2) =>
-                  valOrDefault != null ? runCtx.extendVars(ctx2,data2).runInner(valOrDefault,param,path) : valOrDefault;
+            func = (ctx2,data2) => jb_run(new jb.jbCtx(runCtx.extendVars(ctx2,data2),{ profile: valOrDefault, forcePath, path } ),param)
 
           Object.defineProperty(func, "name", { value: p }); // for debug
-          func.profile = (typeof(val) != "undefined") ? val : (typeof(param.defaultValue) != 'undefined') ? param.defaultValue : null;
+          func.profile = val !== undefined ? val : (param.defaultValue !== undefined ? param.defaultValue : null)
           func.srcPath = ctx.path;
           return func;
         }
-        return { name: p, type: 'function', outerFunc: outerFunc, path: path, param: param };
+        return { name: p, type: 'function', outerFunc, path, param, forcePath };
       }
 
       if (arrayParam) // array of profiles
-        return { name: p, type: 'array', array: valOrDefaultArray, param: Object.assign({},param,{type:param.type.split('[')[0],as:null}), path: path };
+        return { name: p, type: 'array', array: valOrDefaultArray, param: Object.assign({},param,{type:param.type.split('[')[0],as:null}), forcePath, path };
       else
-        return { name: p, type: 'run', prof: valOrDefault, param: param, path: path }; // ctx: new jbCtx(ctx,{profile: valOrDefault, path: p}),
+        return { name: p, type: 'run', prof: valOrDefault, param, forcePath, path };
   })
 }
 
@@ -213,7 +215,7 @@ function prepare(ctx,parentParam) {
 
   fixByValue(profile,comp)
   const resCtx = Object.assign(new jbCtx(ctx,{}), {parentParam, params: {}})
-  const preparedParams = prepareParams(comp,profile,resCtx);
+  const preparedParams = prepareParams(comp_name,comp,profile,resCtx);
   if (typeof comp.impl === 'function') {
     Object.defineProperty(comp.impl, 'name', { value: comp_name }); // comp_name.replace(/[^a-zA-Z0-9]/g,'_')
     return { type: 'profile', impl: comp.impl, ctx: resCtx, preparedParams: preparedParams }
@@ -378,8 +380,6 @@ function bool_expression(exp, ctx, parentParam) {
   if (op == '==' || op == '!=' || op == '$=' || op == '^=') {
     const p1 = tostring(expression(trim(parts[1]), ctx, {as: 'string'}))
     let p2 = tostring(expression(trim(parts[3]), ctx, {as: 'string'}))
-    // const p1 = expression(trim(parts[1]), ctx, {as: 'string'});
-    // const p2 = expression(trim(parts[3]), ctx, {as: 'string'});
     p2 = (p2.match(/^["'](.*)["']/) || ['',p2])[1]; // remove quotes
     if (op == '==') return p1 == p2;
     if (op == '!=') return p1 != p2;
@@ -536,7 +536,7 @@ class jbCtx {
   setVars(vars) { return new jbCtx(this,{vars: vars}) }
   setVar(name,val) { return name ? new jbCtx(this,{vars: {[name]: val}}) : this }
   setData(data) { return new jbCtx(this,{data: data}) }
-  runInner(profile,parentParam, path) { return jb_run(new jbCtx(this,{profile: profile,path: path}), parentParam) }
+  runInner(profile,parentParam, path) { return jb_run(new jbCtx(this,{profile: profile,path}), parentParam) }
   bool(profile) { return this.run(profile, { as: 'boolean'}) }
   // keeps the ctx vm and not the caller vm - needed in studio probe
   ctx(ctx2) { return new jbCtx(this,ctx2) }
@@ -1815,7 +1815,7 @@ jb.component('run-action-on-items', { /* runActionOnItems */
 })
 
 jb.component('delay', { /* delay */
-  type: 'action',
+  type: 'action,data',
   params: [
     {id: 'mSec', as: 'number', defaultValue: 1}
   ],
@@ -1965,7 +1965,7 @@ jb.component('http.fetch', { /* http.fetch */
   type: 'data,action',
   description: 'fetch, get or post data from external url',
   params: [
-    {id: 'url', as: 'string'},
+    {id: 'url', as: 'string', mandatory: true},
     {id: 'method', as: 'string', options: 'GET,POST', defaultValue: 'GET'},
     {id: 'headers', as: 'single', templateValue: obj(prop('Content-Type','application/json; charset=UTF-8'))},
     {id: 'body', as: 'single'},
@@ -1978,7 +1978,7 @@ jb.component('http.fetch', { /* http.fetch */
       method,
       headers: headers || {}, 
       mode: 'cors',
-      body: typeof body == 'string' ? body : JSON.stringify(body) 
+      body: (typeof body == 'string' || body == null) ? body : JSON.stringify(body) 
     }
 
     const reqStr = encodeURIComponent(JSON.stringify(reqObj))
@@ -5479,7 +5479,9 @@ ui.renderWidget = function(profile,top) {
         if (page) currentProfile = {$: page}
         const cmp = new jb.jbCtx().run(currentProfile)
         const start = new Date().getTime()
-        ui.applyVdomDiff(top.firstElementChild ,ui.h(cmp), { strongRefresh: !!page })
+        jb.ui.unmount(top)
+        top.innerHTML = ''
+        jb.ui.render(ui.h(cmp),top)
         lastRenderTime = new Date().getTime() - start
     }
 }
@@ -6239,7 +6241,7 @@ jb.component('css.line-clamp', { /* css.lineClamp */
 
 })();
 
-jb.ns('label')
+jb.ns('text')
 
 jb.component('text', { /* text */
   type: 'control',
@@ -6247,7 +6249,7 @@ jb.component('text', { /* text */
   params: [
     {id: 'text', as: 'ref', mandatory: true, templateValue: 'my text', dynamic: true},
     {id: 'title', as: 'ref', mandatory: true, templateValue: 'my title', dynamic: true},
-    {id: 'style', type: 'label.style', defaultValue: label.span(), dynamic: true},
+    {id: 'style', type: 'text.style', defaultValue: text.span(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
@@ -6255,16 +6257,16 @@ jb.component('text', { /* text */
 
 jb.component('label', {...jb.comps.text,type: 'depricated-control'} )
 
-jb.component('label.bind-text', { /* label.bindText */
+jb.component('text.bind-text', { /* text.bindText */
   type: 'feature',
-  category: 'label:0',
+  category: 'text:0',
   impl: features(
     watchAndCalcModelProp('text', ({data}) => jb.ui.toVdomOrStr(data)),
     () => ({studioFeatures :{$: 'feature.content-editable', param: 'text' }})
   )
 })
 
-jb.component('label.allow-asynch-value', { /* label.allowAsynchValue */
+jb.component('text.allow-asynch-value', { /* text.allowAsynchValue */
   type: 'feature',
   impl: features(
     calcProp({id: 'text', value: (ctx,{cmp}) => cmp.text || ctx.vars.$props.text}),
@@ -6279,64 +6281,64 @@ jb.component('label.allow-asynch-value', { /* label.allowAsynchValue */
   )
 })
 
-jb.component('label.htmlTag', { /* label.htmlTag */
-  type: 'label.style',
+jb.component('text.htmlTag', { /* text.htmlTag */
+  type: 'text.style',
   params: [
     {id: 'htmlTag', as: 'string', defaultValue: 'p', options: 'span,p,h1,h2,h3,h4,h5,div,li,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label'},
     {id: 'cssClass', as: 'string'}
   ],
   impl: customStyle({
     template: (cmp,{text,htmlTag,cssClass},h) => h(htmlTag,{class: cssClass},text),
-    features: label.bindText()
+    features: text.bindText()
   })
 })
 
-jb.component('label.no-wrapping-tag', { /* label.noWrappingTag */
-  type: 'label.style',
-  category: 'label:0',
+jb.component('text.no-wrapping-tag', { /* text.noWrappingTag */
+  type: 'text.style',
+  category: 'text:0',
   impl: customStyle({
     template: (cmp,{text},h) => text,
-    features: label.bindText()
+    features: text.bindText()
   })
 })
 
-jb.component('label.span', { /* label.span */
-  type: 'label.style',
+jb.component('text.span', { /* text.span */
+  type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('span',{},text),
-    features: label.bindText()
+    features: text.bindText()
   })
 })
 
 ;[1,2,3,4,5,6].map(level=>jb.component(`header.h${level}`, {
-  type: 'label.style',
+  type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h(`h${level}`,{},text),
-    features: label.bindText()
+    features: text.bindText()
   })
 }))
 
 ;[1,2,3,4,5,6].map(level=>jb.component(`header.mdc-headline${level}`, {
-  type: 'label.style',
+  type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--headline${level}`},text),
-    features: label.bindText()
+    features: text.bindText()
   })
 }))
 
 ;[1,2].map(level=>jb.component(`header.mdc-subtitle${level}`, {
-  type: 'label.style',
+  type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--subtitle${level}`},text),
-    features: label.bindText()
+    features: text.bindText()
   })
 }))
 
 ;[1,2].map(level=>jb.component(`text.mdc-body${level}`, {
-  type: 'label.style',
+  type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--body${level}`},text),
-    features: label.bindText()
+    features: text.bindText()
   })
 }))
 
@@ -6494,13 +6496,13 @@ jb.component('html', { /* html */
 
 jb.component('html.plain', { /* html.plain */
   type: 'html.style',
-  impl: ctx => features(
+  impl: customStyle({
+    template: (cmp,{html},h) => h('html',{$html: html, jb_external: true } ) ,
+    features: [
         watchAndCalcModelProp('html'),
-        () => ({
-            template: (cmp,{html},h) => h('html',{$html: html, jb_external: true } ) ,
-            studioFeatures :{$: 'feature.content-editable', param: 'html' },
-        })
-    )
+        () => ({ studioFeatures :{$: 'feature.content-editable', param: 'html' } })
+    ]
+  })
 })
 
 jb.component('html.in-iframe', { /* html.inIframe */
@@ -6509,17 +6511,17 @@ jb.component('html.in-iframe', { /* html.inIframe */
     {id: 'width', as: 'string', defaultValue: '100%'},
     {id: 'height', as: 'string', defaultValue: '100%'}
   ],
-  impl: features(
-    ctx => ({
-            template: (cmp,{width,height},h) => h('iframe', {
-                sandbox: 'allow-same-origin allow-forms allow-scripts',
-                frameborder: 0, width, height,
-                src: 'javascript: document.write(parent.contentForIframe)'
-            })
-        }),
-    interactiveProp('html', '%$$model/html%'),
-    interactive(({},{cmp}) => window.contentForIframe = cmp.html)
-  )
+  impl: customStyle({
+    template: (cmp,{width,height},h) => h('iframe', {
+        sandbox: 'allow-same-origin allow-forms allow-scripts',
+        frameborder: 0, width, height,
+        src: 'javascript: document.write(parent.contentForIframe)'
+    }),
+    features: [
+      interactiveProp('html', '%$$model/html%'),
+      interactive(({},{cmp}) => window.contentForIframe = cmp.html)
+    ]
+  })
 })
 ;
 
@@ -8905,7 +8907,7 @@ jb.component('field.control', { /* field.control */
   type: 'table-field',
   params: [
     {id: 'title', as: 'string', mandatory: true},
-    {id: 'control', type: 'control', dynamic: true, mandatory: true, defaultValue: label('')},
+    {id: 'control', type: 'control', dynamic: true, mandatory: true, defaultValue: text('')},
     {id: 'width', as: 'number'},
     {id: 'dataForSort', dynamic: true},
     {id: 'numeric', as: 'boolean', type: 'boolean'}
@@ -9064,14 +9066,14 @@ jb.component('mdc.ripple-effect', { /* mdc.rippleEffect */
 })
 
 jb.component('label.mdc-ripple-effect', { /* label.mdcRippleEffect */
-  type: 'label.style',
+  type: 'text.style',
   impl: customStyle({
     template: (cmp,state,h) => h('button',{class: 'mdc-button'},[
       h('div',{class:'mdc-button__ripple'}),
       h('span',{class:'mdc-button__label'},state.text),
     ]),
     css: '>span { text-transform: none; }',
-    features: [label.bindText(), mdcStyle.initDynamic()]
+    features: [text.bindText(), mdcStyle.initDynamic()]
   })
 })
 
@@ -9640,7 +9642,7 @@ jb.component('group.accordion', { /* group.accordion */
 jb.component('group.sections', { /* group.sections */
   type: 'group.style',
   params: [
-    {id: 'titleStyle', type: 'label.style', dynamic: true, defaultValue: header.mdcHeadline5()},
+    {id: 'titleStyle', type: 'text.style', dynamic: true, defaultValue: header.mdcHeadline5()},
     {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: styleWithFeatures(group.div(), [group.card({}), css.padding({})])},
     {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
   ],
@@ -9843,14 +9845,14 @@ jb.component('picklist.native-md-look', { /* picklist.nativeMdLook */
 jb.component('picklist.label-list', { /* picklist.labelList */
   type: 'picklist.style',
   params: [
-    {id: 'labelStyle', type: 'label.style', dynamic: true, defaultValue: label.span()},
+    {id: 'labelStyle', type: 'text.style', dynamic: true, defaultValue: text.span()},
     {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.ulLi()},
     {id: 'cssForSelected', as: 'string', description: 'e.g. background: red OR >a { color: red }', defaultValue: 'background: #bbb; color: #fff'}
   ],
   impl: styleByControl(
     itemlist({
       items: '%$picklistModel/options%',
-      controls: label({text: '%text%', style: call('labelStyle')}),
+      controls: text({text: '%text%', style: call('labelStyle')}),
       style: call('itemlistStyle'),
       features: itemlist.selection({
         databind: '%$picklistModel/databind%',
@@ -9916,13 +9918,13 @@ select::-webkit-input-placeholder { color: #999; }`,
 jb.component('property-sheet.titles-left', { /* propertySheet.titlesLeft */
   type: 'group.style',
   params: [
-    {id: 'titleStyle', type: 'label.style', defaultValue: styleWithFeatures(label.span(), css.bold()), dynamic: true},
+    {id: 'titleStyle', type: 'text.style', defaultValue: styleWithFeatures(text.span(), css.bold()), dynamic: true},
     {id: 'titleText', defaultValue: '%%:', dynamic: true},
     {id: 'spacing', as: 'string', description: 'grid-column-gap', defaultValue: '10px'}
   ],
   impl: customStyle({
     template: (cmp,{ctrls,titleStyle,titleText},h) => h('div',{}, ctrls.flatMap(ctrl=>[
-        h(cmp.ctx.run(label({text: ctx => titleText(ctx.setData(ctrl.field().title())), style: ctx => titleStyle(ctx)}))),
+        h(cmp.ctx.run(text({text: ctx => titleText(ctx.setData(ctrl.field().title())), style: ctx => titleStyle(ctx)}))),
         h(ctrl)
       ])
     ),
@@ -9934,14 +9936,14 @@ jb.component('property-sheet.titles-left', { /* propertySheet.titlesLeft */
 jb.component('property-sheet.titles-above', { /* propertySheet.titlesAbove */
   type: 'group.style',
   params: [
-    {id: 'titleStyle', type: 'label.style', defaultValue: styleWithFeatures(label.span(), css.bold()), dynamic: true},
+    {id: 'titleStyle', type: 'text.style', defaultValue: styleWithFeatures(text.span(), css.bold()), dynamic: true},
     {id: 'titleText', defaultValue: '%%', dynamic: true},
     {id: 'spacing', as: 'string', description: 'grid-column-gap', defaultValue: '10px'}
   ],
   impl: customStyle({
     template: (cmp,{ctrls,titleStyle,titleText},h) => h('div',{ style: {'grid-template-columns': ctrls.map(()=>'auto').join(' ')}}, [
         ...ctrls.map(ctrl=>
-          h(cmp.ctx.run(label({
+          h(cmp.ctx.run(text({
             text: ctx => titleText(ctx.setData(ctrl.field().title())), 
             style: ctx => titleStyle(ctx)})))), 
         ...ctrls.map(ctrl=>h(ctrl))
@@ -10454,7 +10456,7 @@ jb.component('table-tree', { /* tableTree */
     {id: 'treeModel', type: 'tree.node-model', dynamic: true, mandatory: true},
     {id: 'leafFields', type: 'control[]', dynamic: true},
     {id: 'commonFields', type: 'control[]', dynamic: true},
-    {id: 'chapterHeadline', type: 'control', dynamic: true, defaultValue: label(''), description: '$collapsed as parameter'},
+    {id: 'chapterHeadline', type: 'control', dynamic: true, defaultValue: text(''), description: '$collapsed as parameter'},
     {id: 'style', type: 'table-tree.style', defaultValue: tableTree.plain({}), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
@@ -28731,8 +28733,8 @@ jb.component('picklist.studio-enum', { /* picklist.studioEnum */
   })
 })
 
-jb.component('label.studio-message', { /* label.studioMessage */
-  type: 'label.style',
+jb.component('text.studio-message', { /* label.studioMessage */
+  type: 'text.style',
   impl: customStyle({
     template: (cmp,state,h) => h('span',{class: 'studio-message'}, state.text),
     css: `{ position: absolute;
@@ -28741,7 +28743,7 @@ jb.component('label.studio-message', { /* label.studioMessage */
       width: 1000px;
       margin-top: -100px;
       }`,
-    features: label.bindText()
+    features: text.bindText()
   })
 })
 
@@ -30976,7 +30978,7 @@ jb.component('studio.categories-marks', { /* studio.categoriesMarks */
               'events:85',
               'group:80',
               'all:20',
-              'feature:0,tabs:0,label:0,picklist:0,studio:0,text:0,menu:0,flex-layout-container:0,md-style:0,itemlist-container:0,editable-text:0,editable-boolean:0,first-succeeding:0,itemlist-filter:0',
+              'feature:0,tabs:0,text:0,picklist:0,studio:0,text:0,menu:0,flex-layout-container:0,md-style:0,itemlist-container:0,editable-text:0,editable-boolean:0,first-succeeding:0,itemlist-filter:0',
               'md-style:0'
             ),
           split(','),
@@ -31090,9 +31092,9 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
               group({
                 controls: itemlist({
                   items: '%$picklistModel/options/code%',
-                  controls: label({
+                  controls: text({
                     text: pipeline('%$Categories%', filter('%code% == %$item%'), '%code% (%pts/length%)'),
-                    style: label.span(),
+                    style: text.span(),
                     features: [css.width('120'), css('{text-align: left}'), css.padding({left: '10'})]
                   }),
                   style: itemlist.ulLi(),
@@ -31111,9 +31113,9 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
           })
         ]
       }),
-      label({
+      text({
         text: pipeline('%$itemlistCntrData/selected%', studio.val('%%'), '%description%'),
-        style: label.span()
+        style: text.span()
       })
     ],
     features: [
@@ -31429,7 +31431,7 @@ jb.component('studio.suggestions-itemlist', { /* studio.suggestionsItemlist */
   ],
   impl: itemlist({
     items: '%$suggestionData/options%',
-    controls: label({
+    controls: text({
       text: '%text%',
       features: [
         css.padding({left: '3', right: '2'}),
@@ -31516,7 +31518,7 @@ jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */
               css.width('100%')
             ]
           }),
-          label({
+          text({
             text: pipeline(studio.paramDef('%$path%'), '%description%'),
             features: css('{    bottom: 0;     left: 4px;     position: absolute; }}')
           })
@@ -31706,7 +31708,7 @@ jb.component('studio.properties', { /* studio.properties */
             features: [field.columnWidth('20'), css('{ text-align: right }')]
           })
         ],
-        chapterHeadline: label({
+        chapterHeadline: text({
           text: ({data}) => {
             const path = data.path
             const prop = path.split('~').pop()
@@ -32357,7 +32359,7 @@ jb.component('source-editor.add-prop', { /* sourceEditor.addProp */
           })
         ]
       }),
-      label({text: '', features: css('{border: 1px solid white;}')})
+      text({text: '', features: css('{border: 1px solid white;}')})
     ],
     features: [
       variable({
@@ -32376,7 +32378,7 @@ jb.component('source-editor.suggestions-itemlist', { /* sourceEditor.suggestions
   ],
   impl: itemlist({
     items: sourceEditor.propOptions('%$path%'),
-    controls: label({text: '%text%', features: [css.padding({left: '3', right: '2'})]}),
+    controls: text({text: '%text%', features: [css.padding({left: '3', right: '2'})]}),
     features: [
       id('suggestions-itemlist'),
       itemlist.noContainer(),
@@ -32612,7 +32614,7 @@ jb.component('studio.data-browse', { /* studio.dataBrowse */
         controls: [
           controlWithCondition(
             isOfType('string,boolean,number', '%$obj%'),
-            label('%$obj%')
+            text('%$obj%')
           ),
           controlWithCondition(
             isOfType('array', '%$obj%'),
@@ -32626,7 +32628,7 @@ jb.component('studio.data-browse', { /* studio.dataBrowse */
               features: [watchRef('%$maxItems%')]
             })
           ),
-          controlWithCondition(isNull('%$obj%'), label('null')),
+          controlWithCondition(isNull('%$obj%'), text('null')),
           tree({
             nodeModel: tree.jsonReadOnly('%$obj%', '%$title%'),
             style: tree.expandBox({}),
@@ -32718,7 +32720,7 @@ jb.component('studio.probe-data-view', { /* studio.probeDataView */
           feature.if('%$jbEditorCntrData/selected%'),
           group.wait({
             for: studio.probeResults('%$jbEditorCntrData/selected%'),
-            loadingControl: label('...'),
+            loadingControl: text('...'),
             varName: 'probeResult'
           }),
           css('{white-space: normal}')
@@ -33209,7 +33211,7 @@ jb.component('studio.pick', { /* studio.pick */
   ],
   impl: openDialog({
     style: dialog.studioPickDialog('%$from%'),
-    content: label(''),
+    content: text(''),
     onOK: ctx => ctx.componentContext.params.onSelect(ctx.setData(ctx.exp('%$pickSelection/ctx%')))
   })
 })
@@ -33460,7 +33462,7 @@ jb.component('studio.style-editor', { /* studio.styleEditor */
                   onCtrlEnter: studio.refreshPreview()
                 })
               }),
-              label({text: 'jsx', style: label.htmlTag('h5')}),
+              text({text: 'jsx', style: text.htmlTag('h5')}),
               editableText({
                 title: 'template',
                 databind: pipeline(studio.templateAsJsx('%$path%~template'), studio.pretty('%%')),
@@ -35073,7 +35075,7 @@ jb.component('studio.pages', { /* studio.pages */
           filter(studio.isOfType('%%', 'control')),
           suffix('.')
         ),
-        controls: label({text: extractSuffix('.'), features: css.class('studio-page')}),
+        controls: text({text: extractSuffix('.'), features: css.class('studio-page')}),
         style: itemlist.horizontal(),
         features: [
           id('pages'),
@@ -35085,7 +35087,7 @@ jb.component('studio.pages', { /* studio.pages */
           css.class('studio-pages-items')
         ]
       }),
-      label('|'),
+      text('|'),
       button({
         title: 'new function',
         action: studio.openNewFunction(),
@@ -35098,7 +35100,7 @@ jb.component('studio.pages', { /* studio.pages */
           filter(studio.isOfType('%%', 'data')),
           suffix('.')
         ),
-        controls: label({
+        controls: text({
           text: extractSuffix('.'),
           features: [
             feature.onEvent({
@@ -35113,7 +35115,7 @@ jb.component('studio.pages', { /* studio.pages */
     ],
     features: [
       css.class('studio-pages'),
-      group.wait({for: studio.waitForPreviewIframe(), loadingControl: label({})}),
+      group.wait({for: studio.waitForPreviewIframe(), loadingControl: text({})}),
       studio.watchComponents()
     ]
   })
@@ -35121,7 +35123,7 @@ jb.component('studio.pages', { /* studio.pages */
 
 jb.component('studio.ctx-counters', { /* studio.ctxCounters */
   type: 'control',
-  impl: label({
+  impl: text({
     text: ctx => (jb.frame.performance && performance.memory && performance.memory.usedJSHeapSize / 1000000)  + 'M',
     features: [
       css('{ background: #F5F5F5; position: absolute; bottom: 0; right: 0; }'),
@@ -35247,10 +35249,10 @@ jb.component('studio.top-bar', { /* studio.topBar */
         title: 'title and menu',
         layout: layout.vertical('11'),
         controls: [
-          label({text: 'message', style: label.studioMessage()}),
-          label({
+          text({text: 'message', style: text.studioMessage()}),
+          text({
             text: replace({find: '_', replace: ' ', text: '%$studio/project%'}),
-            style: label.htmlTag('div'),
+            style: text.htmlTag('div'),
             features: [
               css('{ font: 20px Arial; margin-left: 6px; margin-top: 6px}'),
               watchRef('%$studio/project%')
@@ -35294,7 +35296,7 @@ jb.component('studio.all', { /* studio.all */
       group.wait({
         for: ctx => jb.studio.host.settings().then(settings => ctx.run(writeValue('%$studio/settings%',
           Object.assign(ctx.exp('%$studio/settings%'), typeof settings == 'string' ? JSON.parse(settings) : {})))),
-        loadingControl: label('')
+        loadingControl: text('')
       }),
       group.data({data: '%$studio/project%', watch: true}),
       feature.init(urlHistory.mapStudioUrlToResource('studio'))
@@ -35311,7 +35313,7 @@ jb.component('studio.path-hyperlink', { /* studio.pathHyperlink */
   impl: group({
     layout: layout.horizontal('9'),
     controls: [
-      label('%$prefix%'),
+      text('%$prefix%'),
       button({
         title: ctx => {
 	  		const path = ctx.componentContext.params.path;
@@ -35741,7 +35743,7 @@ jb.component('studio.animate-watch-ref-particle', { /* studio.animateWatchRefPar
   ],
   impl: openDialog({
     style: studio.dialogParticleStyle(),
-    content: label({
+    content: text({
       text: '➤',
       features: [
         css(
@@ -35778,7 +35780,7 @@ jb.component('studio.animate-cmp-destroy', { /* studio.animateCmpDestroy */
   ],
   impl: openDialog({
     style: studio.dialogParticleStyle(),
-    content: label({
+    content: text({
       text: '◯',
       features: [
         css('color: grey'),
@@ -35820,7 +35822,7 @@ jb.component('studio.animate-cmp-refresh', { /* studio.animateCmpRefresh */
   ],
   impl: openDialog({
     style: studio.dialogParticleStyle(),
-    content: label({
+    content: text({
       text: '▯',
       features: feature.onEvent({
         event: 'load',

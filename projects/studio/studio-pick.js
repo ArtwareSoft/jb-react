@@ -219,7 +219,7 @@ jb.component('studio.pick', { /* studio.pick */
   ],
   impl: openDialog({
     style: dialog.studioPickDialog('%$from%'),
-    content: label(''),
+    content: text(''),
     onOK: ctx => ctx.componentContext.params.onSelect(ctx.setData(ctx.exp('%$pickSelection/ctx%')))
   })
 })

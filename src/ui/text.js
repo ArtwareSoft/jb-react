@@ -1,4 +1,4 @@
-jb.ns('label')
+jb.ns('text')
 
 jb.component('text', { /* text */
   type: 'control',
@@ -6,7 +6,7 @@ jb.component('text', { /* text */
   params: [
     {id: 'text', as: 'ref', mandatory: true, templateValue: 'my text', dynamic: true},
     {id: 'title', as: 'ref', mandatory: true, templateValue: 'my title', dynamic: true},
-    {id: 'style', type: 'label.style', defaultValue: label.span(), dynamic: true},
+    {id: 'style', type: 'text.style', defaultValue: text.span(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
@@ -14,16 +14,16 @@ jb.component('text', { /* text */
 
 jb.component('label', {...jb.comps.text,type: 'depricated-control'} )
 
-jb.component('label.bind-text', { /* label.bindText */
+jb.component('text.bind-text', { /* text.bindText */
   type: 'feature',
-  category: 'label:0',
+  category: 'text:0',
   impl: features(
     watchAndCalcModelProp('text', ({data}) => jb.ui.toVdomOrStr(data)),
     () => ({studioFeatures :{$: 'feature.content-editable', param: 'text' }})
   )
 })
 
-jb.component('label.allow-asynch-value', { /* label.allowAsynchValue */
+jb.component('text.allow-asynch-value', { /* text.allowAsynchValue */
   type: 'feature',
   impl: features(
     calcProp({id: 'text', value: (ctx,{cmp}) => cmp.text || ctx.vars.$props.text}),
@@ -38,64 +38,64 @@ jb.component('label.allow-asynch-value', { /* label.allowAsynchValue */
   )
 })
 
-jb.component('label.htmlTag', { /* label.htmlTag */
-  type: 'label.style',
+jb.component('text.htmlTag', { /* text.htmlTag */
+  type: 'text.style',
   params: [
     {id: 'htmlTag', as: 'string', defaultValue: 'p', options: 'span,p,h1,h2,h3,h4,h5,div,li,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label'},
     {id: 'cssClass', as: 'string'}
   ],
   impl: customStyle({
     template: (cmp,{text,htmlTag,cssClass},h) => h(htmlTag,{class: cssClass},text),
-    features: label.bindText()
+    features: text.bindText()
   })
 })
 
-jb.component('label.no-wrapping-tag', { /* label.noWrappingTag */
-  type: 'label.style',
-  category: 'label:0',
+jb.component('text.no-wrapping-tag', { /* text.noWrappingTag */
+  type: 'text.style',
+  category: 'text:0',
   impl: customStyle({
     template: (cmp,{text},h) => text,
-    features: label.bindText()
+    features: text.bindText()
   })
 })
 
-jb.component('label.span', { /* label.span */
-  type: 'label.style',
+jb.component('text.span', { /* text.span */
+  type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('span',{},text),
-    features: label.bindText()
+    features: text.bindText()
   })
 })
 
 ;[1,2,3,4,5,6].map(level=>jb.component(`header.h${level}`, {
-  type: 'label.style',
+  type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h(`h${level}`,{},text),
-    features: label.bindText()
+    features: text.bindText()
   })
 }))
 
 ;[1,2,3,4,5,6].map(level=>jb.component(`header.mdc-headline${level}`, {
-  type: 'label.style',
+  type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--headline${level}`},text),
-    features: label.bindText()
+    features: text.bindText()
   })
 }))
 
 ;[1,2].map(level=>jb.component(`header.mdc-subtitle${level}`, {
-  type: 'label.style',
+  type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--subtitle${level}`},text),
-    features: label.bindText()
+    features: text.bindText()
   })
 }))
 
 ;[1,2].map(level=>jb.component(`text.mdc-body${level}`, {
-  type: 'label.style',
+  type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--body${level}`},text),
-    features: label.bindText()
+    features: text.bindText()
   })
 }))
 

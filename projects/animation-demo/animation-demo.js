@@ -90,7 +90,7 @@ jb.component('animation-demo.itemlist', { /* animationDemo.itemlist */
       itemlist({
         items: range(),
         controls: [
-          label({text: '%%', features: []})
+          text({text: '%%', features: []})
         ],
         features: [css.margin({left: '200'}), css.height('200'), css.width('50'), id('numbers')]
       })
@@ -108,7 +108,7 @@ jb.component('animation-demo.particle', { /* animationDemo.particle */
         title: 'move',
         action: openDialog({
           style: dialog.div(),
-          content: label({
+          content: text({
             title: '◯',
             features: feature.onEvent({
               event: 'load',
@@ -137,9 +137,9 @@ jb.component('animation-demo.watch-ref', { /* animationDemo.watchRef */
   impl: group({
     layout: layout.vertical('30'),
     controls: [
-      label('%$person/name%'),
+      text('%$person/name%'),
       editableText({databind: '%$person/name%'}),
-      label('%$person/name%')
+      text('%$person/name%')
     ],
     features: css.width('200')
   })

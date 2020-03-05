@@ -18,7 +18,7 @@ jb.component('studio.properties', { /* studio.properties */
             features: [field.columnWidth('20'), css('{ text-align: right }')]
           })
         ],
-        chapterHeadline: label({
+        chapterHeadline: text({
           text: ({data}) => {
             const path = data.path
             const prop = path.split('~').pop()

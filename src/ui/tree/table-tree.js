@@ -7,7 +7,7 @@ jb.component('table-tree', { /* tableTree */
     {id: 'treeModel', type: 'tree.node-model', dynamic: true, mandatory: true},
     {id: 'leafFields', type: 'control[]', dynamic: true},
     {id: 'commonFields', type: 'control[]', dynamic: true},
-    {id: 'chapterHeadline', type: 'control', dynamic: true, defaultValue: label(''), description: '$collapsed as parameter'},
+    {id: 'chapterHeadline', type: 'control', dynamic: true, defaultValue: text(''), description: '$collapsed as parameter'},
     {id: 'style', type: 'table-tree.style', defaultValue: tableTree.plain({}), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],

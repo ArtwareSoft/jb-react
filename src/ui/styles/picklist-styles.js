@@ -114,14 +114,14 @@ jb.component('picklist.native-md-look', { /* picklist.nativeMdLook */
 jb.component('picklist.label-list', { /* picklist.labelList */
   type: 'picklist.style',
   params: [
-    {id: 'labelStyle', type: 'label.style', dynamic: true, defaultValue: label.span()},
+    {id: 'labelStyle', type: 'text.style', dynamic: true, defaultValue: text.span()},
     {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.ulLi()},
     {id: 'cssForSelected', as: 'string', description: 'e.g. background: red OR >a { color: red }', defaultValue: 'background: #bbb; color: #fff'}
   ],
   impl: styleByControl(
     itemlist({
       items: '%$picklistModel/options%',
-      controls: label({text: '%text%', style: call('labelStyle')}),
+      controls: text({text: '%text%', style: call('labelStyle')}),
       style: call('itemlistStyle'),
       features: itemlist.selection({
         databind: '%$picklistModel/databind%',

@@ -62,7 +62,7 @@ jb.component('studio.suggestions-itemlist', { /* studio.suggestionsItemlist */
   ],
   impl: itemlist({
     items: '%$suggestionData/options%',
-    controls: label({
+    controls: text({
       text: '%text%',
       features: [
         css.padding({left: '3', right: '2'}),
@@ -149,7 +149,7 @@ jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */
               css.width('100%')
             ]
           }),
-          label({
+          text({
             text: pipeline(studio.paramDef('%$path%'), '%description%'),
             features: css('{    bottom: 0;     left: 4px;     position: absolute; }}')
           })

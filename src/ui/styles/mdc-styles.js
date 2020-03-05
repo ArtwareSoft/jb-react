@@ -35,14 +35,14 @@ jb.component('mdc.ripple-effect', { /* mdc.rippleEffect */
 })
 
 jb.component('label.mdc-ripple-effect', { /* label.mdcRippleEffect */
-  type: 'label.style',
+  type: 'text.style',
   impl: customStyle({
     template: (cmp,state,h) => h('button',{class: 'mdc-button'},[
       h('div',{class:'mdc-button__ripple'}),
       h('span',{class:'mdc-button__label'},state.text),
     ]),
     css: '>span { text-transform: none; }',
-    features: [label.bindText(), mdcStyle.initDynamic()]
+    features: [text.bindText(), mdcStyle.initDynamic()]
   })
 })
 

@@ -15,13 +15,13 @@ jb.component('html', { /* html */
 
 jb.component('html.plain', { /* html.plain */
   type: 'html.style',
-  impl: ctx => features(
+  impl: customStyle({
+    template: (cmp,{html},h) => h('html',{$html: html, jb_external: true } ) ,
+    features: [
         watchAndCalcModelProp('html'),
-        () => ({
-            template: (cmp,{html},h) => h('html',{$html: html, jb_external: true } ) ,
-            studioFeatures :{$: 'feature.content-editable', param: 'html' },
-        })
-    )
+        () => ({ studioFeatures :{$: 'feature.content-editable', param: 'html' } })
+    ]
+  })
 })
 
 jb.component('html.in-iframe', { /* html.inIframe */
@@ -30,15 +30,15 @@ jb.component('html.in-iframe', { /* html.inIframe */
     {id: 'width', as: 'string', defaultValue: '100%'},
     {id: 'height', as: 'string', defaultValue: '100%'}
   ],
-  impl: features(
-    ctx => ({
-            template: (cmp,{width,height},h) => h('iframe', {
-                sandbox: 'allow-same-origin allow-forms allow-scripts',
-                frameborder: 0, width, height,
-                src: 'javascript: document.write(parent.contentForIframe)'
-            })
-        }),
-    interactiveProp('html', '%$$model/html%'),
-    interactive(({},{cmp}) => window.contentForIframe = cmp.html)
-  )
+  impl: customStyle({
+    template: (cmp,{width,height},h) => h('iframe', {
+        sandbox: 'allow-same-origin allow-forms allow-scripts',
+        frameborder: 0, width, height,
+        src: 'javascript: document.write(parent.contentForIframe)'
+    }),
+    features: [
+      interactiveProp('html', '%$$model/html%'),
+      interactive(({},{cmp}) => window.contentForIframe = cmp.html)
+    ]
+  })
 })

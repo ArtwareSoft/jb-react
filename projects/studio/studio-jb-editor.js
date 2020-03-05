@@ -85,7 +85,7 @@ jb.component('studio.data-browse', { /* studio.dataBrowse */
         controls: [
           controlWithCondition(
             isOfType('string,boolean,number', '%$obj%'),
-            label('%$obj%')
+            text('%$obj%')
           ),
           controlWithCondition(
             isOfType('array', '%$obj%'),
@@ -99,7 +99,7 @@ jb.component('studio.data-browse', { /* studio.dataBrowse */
               features: [watchRef('%$maxItems%')]
             })
           ),
-          controlWithCondition(isNull('%$obj%'), label('null')),
+          controlWithCondition(isNull('%$obj%'), text('null')),
           tree({
             nodeModel: tree.jsonReadOnly('%$obj%', '%$title%'),
             style: tree.expandBox({}),
@@ -191,7 +191,7 @@ jb.component('studio.probe-data-view', { /* studio.probeDataView */
           feature.if('%$jbEditorCntrData/selected%'),
           group.wait({
             for: studio.probeResults('%$jbEditorCntrData/selected%'),
-            loadingControl: label('...'),
+            loadingControl: text('...'),
             varName: 'probeResult'
           }),
           css('{white-space: normal}')

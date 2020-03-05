@@ -897,7 +897,7 @@ jb.component('run-action-on-items', { /* runActionOnItems */
 })
 
 jb.component('delay', { /* delay */
-  type: 'action',
+  type: 'action,data',
   params: [
     {id: 'mSec', as: 'number', defaultValue: 1}
   ],
@@ -1047,7 +1047,7 @@ jb.component('http.fetch', { /* http.fetch */
   type: 'data,action',
   description: 'fetch, get or post data from external url',
   params: [
-    {id: 'url', as: 'string'},
+    {id: 'url', as: 'string', mandatory: true},
     {id: 'method', as: 'string', options: 'GET,POST', defaultValue: 'GET'},
     {id: 'headers', as: 'single', templateValue: obj(prop('Content-Type','application/json; charset=UTF-8'))},
     {id: 'body', as: 'single'},
@@ -1060,7 +1060,7 @@ jb.component('http.fetch', { /* http.fetch */
       method,
       headers: headers || {}, 
       mode: 'cors',
-      body: typeof body == 'string' ? body : JSON.stringify(body) 
+      body: (typeof body == 'string' || body == null) ? body : JSON.stringify(body) 
     }
 
     const reqStr = encodeURIComponent(JSON.stringify(reqObj))

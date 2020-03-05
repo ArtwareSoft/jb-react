@@ -29,7 +29,7 @@ jb.component('studio-helper.event-tracker', { /* studioHelper.eventTracker */
     layout: layout.vertical(3),
     controls: [
       editableText({databind: '%$globals/test1%', style: editableText.mdcInput()}),
-      label({text: '%$globals/test1%', style: label.span()}),
+      text({text: '%$globals/test1%', style: text.span()}),
       studio.eventTracker()
     ]
   })
@@ -125,10 +125,10 @@ jb.component('studio-helper.content-editable-position', { /* studioHelper.conten
 
 jb.component('studio-helper-dummy.simple-label', { /* studioHelperDummy.simpleLabel */
   type: 'control',
-  impl: label({
+  impl: text({
     vars: [Var('check', 2)],
     title: 'hello',
-    style: label.span(),
+    style: text.span(),
     features: [css('{ color: red }'), css.padding({top: '20', left: '160'})]
   })
 })
@@ -149,11 +149,11 @@ jb.component('studio-helper-sample.control', { /* studioHelperSample.control */
       group({
         title: '2.0',
         controls: [
-          label('my label'),
-          label('fdsfsdfd')
+          text('my label'),
+          text('fdsfsdfd')
         ]
       }),
-      label('1.00')
+      text('1.00')
     ]
   })
 })
@@ -203,8 +203,8 @@ jb.component('studio-helper-sample.control', {
   impl: group({
     title: 'main',
     controls: [
-      group({title: '2.0', controls: label('my label')}),
-      label('1.00')
+      group({title: '2.0', controls: text('my label')}),
+      text('1.00')
     ]
   })
 })
@@ -312,7 +312,7 @@ jb.component('studio-helper-sample.properties-params-prof', { /* studioHelperSam
     boolAsJs: ctx => ctx.vars.aa,
     boolAsExp: '%$person/male%',
     style: button.href(),
-    features: [label.bindText(), mdcStyle.initDynamic()]
+    features: [text.bindText(), mdcStyle.initDynamic()]
   }),
   '$vars': {
 
@@ -378,8 +378,8 @@ jb.component('studio-helper-sample.control', { /* studioHelperSample.control */
   impl: group({
     title: pipeline('main'),
     controls: [
-      group({title: '2.0', controls: [label('my label'), label('fdsfsdfd')]}),
-      label('1.00')
+      group({title: '2.0', controls: [text('my label'), text('fdsfsdfd')]}),
+      text('1.00')
     ]
   })
 })

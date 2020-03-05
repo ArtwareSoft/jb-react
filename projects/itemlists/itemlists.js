@@ -269,7 +269,7 @@ jb.component('itemlists.master-details', { /* itemlists.masterDetails */
       group({
         title: 'person',
         style: propertySheet.titlesLeft({
-          titleStyle: styleWithFeatures(label.span(), css.bold()),
+          titleStyle: styleWithFeatures(text.span(), css.bold()),
           titleText: '%%:'
         }),
         controls: [

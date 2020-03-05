@@ -369,7 +369,7 @@ jb.component('source-editor.add-prop', { /* sourceEditor.addProp */
           })
         ]
       }),
-      label({text: '', features: css('{border: 1px solid white;}')})
+      text({text: '', features: css('{border: 1px solid white;}')})
     ],
     features: [
       variable({
@@ -388,7 +388,7 @@ jb.component('source-editor.suggestions-itemlist', { /* sourceEditor.suggestions
   ],
   impl: itemlist({
     items: sourceEditor.propOptions('%$path%'),
-    controls: label({text: '%text%', features: [css.padding({left: '3', right: '2'})]}),
+    controls: text({text: '%text%', features: [css.padding({left: '3', right: '2'})]}),
     features: [
       id('suggestions-itemlist'),
       itemlist.noContainer(),

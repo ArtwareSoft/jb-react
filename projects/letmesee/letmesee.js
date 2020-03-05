@@ -39,7 +39,7 @@ jb.component('letmesee.main', {
   controls: [
     {$: 'label', 
       title: 'my label', 
-      style :{$: 'label.span' }
+      style :{$: 'text.span' }
     }
   ]
 })

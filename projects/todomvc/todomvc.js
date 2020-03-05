@@ -12,7 +12,7 @@ jb.component('todomvc.main', { /* todomvc.main */
   type: 'control',
   impl: group({
     controls: [
-      label({text: 'todos', style: label.htmlTag('h1')}),
+      text({text: 'todos', style: text.htmlTag('h1')}),
       editableText({
         title: 'input',
         databind: '%$new-task/task%',
@@ -95,7 +95,7 @@ jb.component('todomvc.main', { /* todomvc.main */
               If('%% > 1', '%% items', '%% item'),
               '%% left'
             ),
-            style: label.span(),
+            style: text.span(),
             features: watchRef({ref: '%$todo%', includeChildren: 'yes', delay: ''})
           }),
           picklist({

@@ -42,6 +42,13 @@ jb.component('test.getAsBool', { /* test.getAsBool */
   impl: (ctx,val) => val
 })
 
+jb.component('test.withDefaultValueComp', { 
+  params: [
+    {id: 'val', defaultValue: pipeline('5') }
+  ],
+  impl: '%$val%'
+})
+
 jb.component('data-test.get-ref-value-as-boolean', { /* dataTest.getRefValueAsBoolean */
   impl: dataTest({
     calculate: test.getAsBool('%$person/male%'),
@@ -642,7 +649,7 @@ jb.component('data.test1', { /* data.test1 */
 jb.component('data-test.pretty-print-positions', { /* dataTest.prettyPrintPositions */
   impl: dataTest({
     calculate: pipeline(
-      () => jb.prettyPrintWithPositions(group({title: '2.0', controls: label('my label')})),
+      () => jb.prettyPrintWithPositions(group({title: '2.0', controls: text('my label')})),
       '%map/~controls~text~!value%',
       join({})
     ),
@@ -657,15 +664,15 @@ jb.component('data-test.pretty-print-positions-inner-flat', { /* dataTest.pretty
       group({
         title: 'main',
         controls: [
-          group({title: '2.0', controls: label('my label')}),
-          label('1.00')
+          group({title: '2.0', controls: text('my label')}),
+          text('1.00')
         ]
       })
       ),
       '%map/~controls~0~controls~text~!value%',
       join({})
     ),
-    expectedResult: equals('3,41,3,51')
+    expectedResult: equals('3,40,3,50')
   })
 })
 
@@ -720,5 +727,12 @@ jb.component('data-test.first-succeeding.with-empty-string', { /* dataTest.first
   impl: dataTest({
     calculate: firstSucceeding('', 'a', 'b'),
     expectedResult: equals('a')
+  })
+})
+
+jb.component('data-test.DefaultValueComp', { 
+  impl: dataTest({
+    calculate: test.withDefaultValueComp(),
+    expectedResult: equals(5)
   })
 })

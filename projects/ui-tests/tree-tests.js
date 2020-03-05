@@ -167,7 +167,7 @@ jb.component('ui-test.table-tree.expand-path', {
         treeModel: tree.jsonReadOnly('%$personWithChildren%', ''),
         leafFields: text({title: 'name', text: '%val%'}),
         commonFields: text({title: 'path', text: '%path%'}),
-        chapterHeadline: label({text: suffix('~', '%path%')}),
+        chapterHeadline: text({text: suffix('~', '%path%')}),
         style: tableTree.plain(),
         features: [
           id('tableTree'),
@@ -184,7 +184,7 @@ jb.component('ui-test.table-tree-refresh1', {
         treeModel: tree.jsonReadOnly('%$personWithChildren%', ''),
         leafFields: text({title: 'name', text: '%val%'}),
         commonFields: text({title: 'path', text: '%path%'}),
-        chapterHeadline: label({text: suffix('~', '%path%')}),
+        chapterHeadline: text({text: suffix('~', '%path%')}),
         style: tableTree.plain(),
         features: [
           tableTree.expandPath('%$globals/expanded%'),
@@ -206,7 +206,7 @@ jb.component('ui-test.table-tree-unexpand-refresh', {
         }) , ''),
         leafFields: text({title: 'name', text: '%val%'}),
         commonFields: text({title: 'path', text: '%path%'}),
-        chapterHeadline: label({text: suffix('~', '%path%')}),
+        chapterHeadline: text({text: suffix('~', '%path%')}),
         style: tableTree.plain(),
         features: [
           tableTree.expandPath('%$globals/expanded%'),
@@ -226,7 +226,7 @@ jb.component('ui-test.table-tree-expand-mulitple-paths', {
           b: { b1: 'val' },
         }) , ''),
         commonFields: text({title: 'path', text: '%path%'}),
-        chapterHeadline: label({text: suffix('~', '%path%')}),
+        chapterHeadline: text({text: suffix('~', '%path%')}),
         features: tableTree.expandPath('~a,~b'),
     }),
     expectedResult: contains(['~a~a1','~b~b1'])
@@ -246,7 +246,7 @@ jb.component('ui-test.table-tree-with-title-ctrl', {
               style: button.href()
           }))        
         }),
-        chapterHeadline: label({text: suffix('~', '%path%')}),
+        chapterHeadline: text({text: suffix('~', '%path%')}),
     }),
     expectedResult: contains(['my name','path','Homer'])
   })
@@ -256,7 +256,7 @@ jb.component('ui-test.table-tree-refresh-bug', {
   impl: uiTest({
       control: tableTree({
         treeModel: tree.jsonReadOnly('%$personWithChildren%', ''),
-        chapterHeadline: label({text: suffix('~', '%path%')}),
+        chapterHeadline: text({text: suffix('~', '%path%')}),
     }),
     action: ctx => {
       const el = ctx.vars.elemToTest.querySelector('[path="~children"]')
@@ -271,7 +271,7 @@ jb.component('ui-test.table-tree-with-filter', {
       control: tableTree({
         treeModel: tree.modelFilter(tree.jsonReadOnly('%$personWithChildren%', ''), endsWith('~name')),
         leafFields: text({title: 'name', text: '%val%' }),
-        chapterHeadline: label({text: suffix('~', '%path%')}),
+        chapterHeadline: text({text: suffix('~', '%path%')}),
     }),
     expectedResult: and(contains(['name','Homer']),not(contains('friends')))
   })

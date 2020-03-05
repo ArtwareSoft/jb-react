@@ -8,7 +8,7 @@ jb.component('person', { watchableData: {
 
 jb.component('probe-test.single-control', { /* probeTest.singleControl */
   impl: studioProbeTest({
-    circuit: group({controls: label('hello')}),
+    circuit: group({controls: text('hello')}),
     probePath: 'controls',
     expectedVisits: 1
   })
@@ -16,7 +16,7 @@ jb.component('probe-test.single-control', { /* probeTest.singleControl */
 
 jb.component('probe-test.pt-by-example', { /* probeTest.ptByExample */
   impl: studioProbeTest({
-    circuit: group({controls: itemlist({items: list(1, 2), controls: label('hello')})}),
+    circuit: group({controls: itemlist({items: list(1, 2), controls: text('hello')})}),
     probePath: 'controls~controls',
     expectedVisits: 2
   })
@@ -32,7 +32,7 @@ jb.component('probe-test.using-global', { /* probeTest.usingGlobal */
 
 jb.component('test.inner-label', { /* test.innerLabel */
   type: 'control',
-  impl: label(
+  impl: text(
     'hello'
   )
 })
@@ -77,7 +77,7 @@ jb.component('probe-test.label-text', { /* probeTest.labelText */
 
 jb.component('probe-test.inner-in-template', { /* probeTest.innerInTemplate */
   impl: studioProbeTest({
-    circuit: group({controls: test.innerLabelTemplate(label('hello'))}),
+    circuit: group({controls: test.innerLabelTemplate(text('hello'))}),
     probePath: 'controls~ctrl~text',
     expectedVisits: 1
   })
@@ -85,21 +85,21 @@ jb.component('probe-test.inner-in-template', { /* probeTest.innerInTemplate */
 
 jb.component('probe-test.pipeline-sugar-json-format', { /* probeTest.pipelineSugar */
   impl: studioProbeTest({
-    circuit: group({controls: label({text: {$pipeline: ['hello'] } })}) ,
+    circuit: group({controls: text({text: {$pipeline: ['hello'] } })}) ,
     probePath: 'controls~text~$pipeline~0'
   })
 })
 
 jb.component('probe-test.pipeline-no-sugar', { /* probeTest.pipelineNoSugar */
   impl: studioProbeTest({
-    circuit: group({controls: label({text: pipeline('hello')})}),
+    circuit: group({controls: text({text: pipeline('hello')})}),
     probePath: 'controls~text~items~0'
   })
 })
 
 jb.component('probe-test.pipeline-one-elem-json-format', { /* probeTest.pipelineOneElem */
   impl: studioProbeTest({
-    circuit: group({controls: label({text: {$: 'pipeline', items: 'hello' }})}),
+    circuit: group({controls: text({text: {$: 'pipeline', items: 'hello' }})}),
     probePath: 'controls~text~items'
   })
 })
@@ -122,7 +122,7 @@ jb.component('probe-test.inside-write-value', { /* probeTest.insideWriteValue */
 
 jb.component('probe-test.inside-open-dialog', { /* probeTest.insideOpenDialog */
   impl: studioProbeTest({
-    circuit: button({action: openDialog({content: label('hello')})}),
+    circuit: button({action: openDialog({content: text('hello')})}),
     probePath: 'action~content~text',
     expectedVisits: 1
   })
@@ -132,7 +132,7 @@ jb.component('probe-test.inside-open-dialog-onOk', { /* probeTest.insideOpenDial
   impl: studioProbeTest({
     circuit: button({
       action: openDialog({
-        content: label('hello'),
+        content: text('hello'),
         onOK: writeValue('%$person/name%', 'homer')
       })
     }),
@@ -168,14 +168,14 @@ jb.component('probe-test.inside-action-with-side-effects', { /* probeTest.inside
 
 jb.component('probe-test.filter-no-sugar', { /* probeTest.filterNoSugar */
   impl: studioProbeTest({
-    circuit: group({controls: label({text: pipeline('hello', filter('%% == \"hello\"'))})}),
+    circuit: group({controls: text({text: pipeline('hello', filter('%% == \"hello\"'))})}),
     probePath: 'controls~text~items~1~filter'
   })
 })
 
 jb.component('test.label1', { /* test.label1 */
   type: 'control',
-  impl: label({
+  impl: text({
     
   })
 })

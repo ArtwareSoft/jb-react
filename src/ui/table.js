@@ -60,7 +60,7 @@ jb.component('field.control', { /* field.control */
   type: 'table-field',
   params: [
     {id: 'title', as: 'string', mandatory: true},
-    {id: 'control', type: 'control', dynamic: true, mandatory: true, defaultValue: label('')},
+    {id: 'control', type: 'control', dynamic: true, mandatory: true, defaultValue: text('')},
     {id: 'width', as: 'number'},
     {id: 'dataForSort', dynamic: true},
     {id: 'numeric', as: 'boolean', type: 'boolean'}

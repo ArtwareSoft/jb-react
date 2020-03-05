@@ -149,7 +149,7 @@ jb.component('group.accordion', { /* group.accordion */
 jb.component('group.sections', { /* group.sections */
   type: 'group.style',
   params: [
-    {id: 'titleStyle', type: 'label.style', dynamic: true, defaultValue: header.mdcHeadline5()},
+    {id: 'titleStyle', type: 'text.style', dynamic: true, defaultValue: header.mdcHeadline5()},
     {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: styleWithFeatures(group.div(), [group.card({}), css.padding({})])},
     {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
   ],

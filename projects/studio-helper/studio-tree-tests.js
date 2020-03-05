@@ -18,7 +18,7 @@ jb.component('jb-editor-test.cmp4', { /* jbEditorTest.cmp4 */
 })
 
 jb.component('jb-editor-test.cmp5-json-format', { /* jbEditorTest.cmp5 */
-  impl: label({
+  impl: text({
     text: {$pipeline: ['a','b'] }
   })
 })

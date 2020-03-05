@@ -33,7 +33,7 @@ jb.component('studio.pages', { /* studio.pages */
           filter(studio.isOfType('%%', 'control')),
           suffix('.')
         ),
-        controls: label({text: extractSuffix('.'), features: css.class('studio-page')}),
+        controls: text({text: extractSuffix('.'), features: css.class('studio-page')}),
         style: itemlist.horizontal(),
         features: [
           id('pages'),
@@ -45,7 +45,7 @@ jb.component('studio.pages', { /* studio.pages */
           css.class('studio-pages-items')
         ]
       }),
-      label('|'),
+      text('|'),
       button({
         title: 'new function',
         action: studio.openNewFunction(),
@@ -58,7 +58,7 @@ jb.component('studio.pages', { /* studio.pages */
           filter(studio.isOfType('%%', 'data')),
           suffix('.')
         ),
-        controls: label({
+        controls: text({
           text: extractSuffix('.'),
           features: [
             feature.onEvent({
@@ -73,7 +73,7 @@ jb.component('studio.pages', { /* studio.pages */
     ],
     features: [
       css.class('studio-pages'),
-      group.wait({for: studio.waitForPreviewIframe(), loadingControl: label({})}),
+      group.wait({for: studio.waitForPreviewIframe(), loadingControl: text({})}),
       studio.watchComponents()
     ]
   })
@@ -81,7 +81,7 @@ jb.component('studio.pages', { /* studio.pages */
 
 jb.component('studio.ctx-counters', { /* studio.ctxCounters */
   type: 'control',
-  impl: label({
+  impl: text({
     text: ctx => (jb.frame.performance && performance.memory && performance.memory.usedJSHeapSize / 1000000)  + 'M',
     features: [
       css('{ background: #F5F5F5; position: absolute; bottom: 0; right: 0; }'),
@@ -207,10 +207,10 @@ jb.component('studio.top-bar', { /* studio.topBar */
         title: 'title and menu',
         layout: layout.vertical('11'),
         controls: [
-          label({text: 'message', style: label.studioMessage()}),
-          label({
+          text({text: 'message', style: text.studioMessage()}),
+          text({
             text: replace({find: '_', replace: ' ', text: '%$studio/project%'}),
-            style: label.htmlTag('div'),
+            style: text.htmlTag('div'),
             features: [
               css('{ font: 20px Arial; margin-left: 6px; margin-top: 6px}'),
               watchRef('%$studio/project%')
@@ -254,7 +254,7 @@ jb.component('studio.all', { /* studio.all */
       group.wait({
         for: ctx => jb.studio.host.settings().then(settings => ctx.run(writeValue('%$studio/settings%',
           Object.assign(ctx.exp('%$studio/settings%'), typeof settings == 'string' ? JSON.parse(settings) : {})))),
-        loadingControl: label('')
+        loadingControl: text('')
       }),
       group.data({data: '%$studio/project%', watch: true}),
       feature.init(urlHistory.mapStudioUrlToResource('studio'))
@@ -271,7 +271,7 @@ jb.component('studio.path-hyperlink', { /* studio.pathHyperlink */
   impl: group({
     layout: layout.horizontal('9'),
     controls: [
-      label('%$prefix%'),
+      text('%$prefix%'),
       button({
         title: ctx => {
 	  		const path = ctx.componentContext.params.path;

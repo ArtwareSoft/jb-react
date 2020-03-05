@@ -76,7 +76,7 @@ jb.component('studio.animate-watch-ref-particle', { /* studio.animateWatchRefPar
   ],
   impl: openDialog({
     style: studio.dialogParticleStyle(),
-    content: label({
+    content: text({
       text: '➤',
       features: [
         css(
@@ -113,7 +113,7 @@ jb.component('studio.animate-cmp-destroy', { /* studio.animateCmpDestroy */
   ],
   impl: openDialog({
     style: studio.dialogParticleStyle(),
-    content: label({
+    content: text({
       text: '◯',
       features: [
         css('color: grey'),
@@ -155,7 +155,7 @@ jb.component('studio.animate-cmp-refresh', { /* studio.animateCmpRefresh */
   ],
   impl: openDialog({
     style: studio.dialogParticleStyle(),
-    content: label({
+    content: text({
       text: '▯',
       features: feature.onEvent({
         event: 'load',

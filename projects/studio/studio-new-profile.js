@@ -29,7 +29,7 @@ jb.component('studio.categories-marks', { /* studio.categoriesMarks */
               'events:85',
               'group:80',
               'all:20',
-              'feature:0,tabs:0,label:0,picklist:0,studio:0,text:0,menu:0,flex-layout-container:0,md-style:0,itemlist-container:0,editable-text:0,editable-boolean:0,first-succeeding:0,itemlist-filter:0',
+              'feature:0,tabs:0,text:0,picklist:0,studio:0,text:0,menu:0,flex-layout-container:0,md-style:0,itemlist-container:0,editable-text:0,editable-boolean:0,first-succeeding:0,itemlist-filter:0',
               'md-style:0'
             ),
           split(','),
@@ -143,9 +143,9 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
               group({
                 controls: itemlist({
                   items: '%$picklistModel/options/code%',
-                  controls: label({
+                  controls: text({
                     text: pipeline('%$Categories%', filter('%code% == %$item%'), '%code% (%pts/length%)'),
-                    style: label.span(),
+                    style: text.span(),
                     features: [css.width('120'), css('{text-align: left}'), css.padding({left: '10'})]
                   }),
                   style: itemlist.ulLi(),
@@ -164,9 +164,9 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
           })
         ]
       }),
-      label({
+      text({
         text: pipeline('%$itemlistCntrData/selected%', studio.val('%%'), '%description%'),
-        style: label.span()
+        style: text.span()
       })
     ],
     features: [

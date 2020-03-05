@@ -54,11 +54,11 @@ function do_jb_run(ctx,parentParam,settings) {
             case 'function': run.ctx.params[paramObj.name] = paramObj.outerFunc(run.ctx) ;  break;
             case 'array': run.ctx.params[paramObj.name] =
                 paramObj.array.map((prof,i) =>
-                  jb_run(new jbCtx(run.ctx,{profile: prof, forcePath: ctx.path + '~' + paramObj.path+ '~' + i, path: ''}), paramObj.param))
+                  jb_run(new jbCtx(run.ctx,{profile: prof, forcePath: paramObj.forcePath || ctx.path + '~' + paramObj.path+ '~' + i, path: ''}), paramObj.param))
                   //run.ctx.runInner(prof, paramObj.param, paramObj.path+'~'+i) )
               ; break;  // maybe we should [].concat and handle nulls
             default: run.ctx.params[paramObj.name] =
-              jb_run(new jbCtx(run.ctx,{profile: paramObj.prof, forcePath: ctx.path + '~' + paramObj.path, path: ''}), paramObj.param);
+              jb_run(new jbCtx(run.ctx,{profile: paramObj.prof, forcePath: paramObj.forcePath || ctx.path + '~' + paramObj.path, path: ''}), paramObj.param);
             //run.ctx.runInner(paramObj.prof, paramObj.param, paramObj.path)
             //jb_run(paramObj.ctx, paramObj.param);
           }
@@ -120,10 +120,9 @@ function compParams(comp) {
   return Array.isArray(comp.params) ? comp.params : entries(comp.params).map(x=>Object.assign(x[1],{id: x[0]}));
 }
 
-function prepareParams(comp,profile,ctx) {
+function prepareParams(comp_name,comp,profile,ctx) {
   return compParams(comp)
-    .filter(comp=>
-      !comp.ignore)
+    .filter(param=> !param.ignore)
     .map((param,index) => {
       const p = param.id, sugar = sugarProp(profile);
       let val = profile[p], path =p;
@@ -131,7 +130,11 @@ function prepareParams(comp,profile,ctx) {
         path = sugar[0];
         val = sugar[1];
       }
-      const valOrDefault = (val !== undefined) ? val : (param.defaultValue !== undefined ? param.defaultValue : null);
+      const valOrDefault = val !== undefined ? val : (param.defaultValue !== undefined ? param.defaultValue : null)
+      const usingDefault = val === undefined && param.defaultValue !== undefined
+      const forcePath = usingDefault && [comp_name, 'params', compParams(comp).indexOf(param), 'defaultValue'].join('~')
+      if (forcePath) path = ''
+
       const valOrDefaultArray = valOrDefault ? valOrDefault : []; // can remain single, if null treated as empty array
       const arrayParam = param.type && param.type.indexOf('[]') > -1 && Array.isArray(valOrDefaultArray);
 
@@ -142,21 +145,20 @@ function prepareParams(comp,profile,ctx) {
             func = (ctx2,data2) =>
               jb.flattenArray(valOrDefaultArray.map((prof,i)=> runCtx.extendVars(ctx2,data2).runInner(prof,param,path+'~'+i)))
           else
-            func = (ctx2,data2) =>
-                  valOrDefault != null ? runCtx.extendVars(ctx2,data2).runInner(valOrDefault,param,path) : valOrDefault;
+            func = (ctx2,data2) => jb_run(new jb.jbCtx(runCtx.extendVars(ctx2,data2),{ profile: valOrDefault, forcePath, path } ),param)
 
           Object.defineProperty(func, "name", { value: p }); // for debug
-          func.profile = (typeof(val) != "undefined") ? val : (typeof(param.defaultValue) != 'undefined') ? param.defaultValue : null;
+          func.profile = val !== undefined ? val : (param.defaultValue !== undefined ? param.defaultValue : null)
           func.srcPath = ctx.path;
           return func;
         }
-        return { name: p, type: 'function', outerFunc: outerFunc, path: path, param: param };
+        return { name: p, type: 'function', outerFunc, path, param, forcePath };
       }
 
       if (arrayParam) // array of profiles
-        return { name: p, type: 'array', array: valOrDefaultArray, param: Object.assign({},param,{type:param.type.split('[')[0],as:null}), path: path };
+        return { name: p, type: 'array', array: valOrDefaultArray, param: Object.assign({},param,{type:param.type.split('[')[0],as:null}), forcePath, path };
       else
-        return { name: p, type: 'run', prof: valOrDefault, param: param, path: path }; // ctx: new jbCtx(ctx,{profile: valOrDefault, path: p}),
+        return { name: p, type: 'run', prof: valOrDefault, param, forcePath, path };
   })
 }
 
@@ -213,7 +215,7 @@ function prepare(ctx,parentParam) {
 
   fixByValue(profile,comp)
   const resCtx = Object.assign(new jbCtx(ctx,{}), {parentParam, params: {}})
-  const preparedParams = prepareParams(comp,profile,resCtx);
+  const preparedParams = prepareParams(comp_name,comp,profile,resCtx);
   if (typeof comp.impl === 'function') {
     Object.defineProperty(comp.impl, 'name', { value: comp_name }); // comp_name.replace(/[^a-zA-Z0-9]/g,'_')
     return { type: 'profile', impl: comp.impl, ctx: resCtx, preparedParams: preparedParams }
@@ -378,8 +380,6 @@ function bool_expression(exp, ctx, parentParam) {
   if (op == '==' || op == '!=' || op == '$=' || op == '^=') {
     const p1 = tostring(expression(trim(parts[1]), ctx, {as: 'string'}))
     let p2 = tostring(expression(trim(parts[3]), ctx, {as: 'string'}))
-    // const p1 = expression(trim(parts[1]), ctx, {as: 'string'});
-    // const p2 = expression(trim(parts[3]), ctx, {as: 'string'});
     p2 = (p2.match(/^["'](.*)["']/) || ['',p2])[1]; // remove quotes
     if (op == '==') return p1 == p2;
     if (op == '!=') return p1 != p2;
@@ -536,7 +536,7 @@ class jbCtx {
   setVars(vars) { return new jbCtx(this,{vars: vars}) }
   setVar(name,val) { return name ? new jbCtx(this,{vars: {[name]: val}}) : this }
   setData(data) { return new jbCtx(this,{data: data}) }
-  runInner(profile,parentParam, path) { return jb_run(new jbCtx(this,{profile: profile,path: path}), parentParam) }
+  runInner(profile,parentParam, path) { return jb_run(new jbCtx(this,{profile: profile,path}), parentParam) }
   bool(profile) { return this.run(profile, { as: 'boolean'}) }
   // keeps the ctx vm and not the caller vm - needed in studio probe
   ctx(ctx2) { return new jbCtx(this,ctx2) }
@@ -1815,7 +1815,7 @@ jb.component('run-action-on-items', { /* runActionOnItems */
 })
 
 jb.component('delay', { /* delay */
-  type: 'action',
+  type: 'action,data',
   params: [
     {id: 'mSec', as: 'number', defaultValue: 1}
   ],
@@ -1965,7 +1965,7 @@ jb.component('http.fetch', { /* http.fetch */
   type: 'data,action',
   description: 'fetch, get or post data from external url',
   params: [
-    {id: 'url', as: 'string'},
+    {id: 'url', as: 'string', mandatory: true},
     {id: 'method', as: 'string', options: 'GET,POST', defaultValue: 'GET'},
     {id: 'headers', as: 'single', templateValue: obj(prop('Content-Type','application/json; charset=UTF-8'))},
     {id: 'body', as: 'single'},
@@ -1978,7 +1978,7 @@ jb.component('http.fetch', { /* http.fetch */
       method,
       headers: headers || {}, 
       mode: 'cors',
-      body: typeof body == 'string' ? body : JSON.stringify(body) 
+      body: (typeof body == 'string' || body == null) ? body : JSON.stringify(body) 
     }
 
     const reqStr = encodeURIComponent(JSON.stringify(reqObj))

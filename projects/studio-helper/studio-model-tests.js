@@ -38,9 +38,9 @@ jb.component('test.move-in-tree', { /* test.moveInTree */
   type: 'control',
   impl: group({
     controls: [
-      label('a'),
-      label('b'),
-      label('c'),
+      text('a'),
+      text('b'),
+      text('c'),
       group({}),
       group({
         controls: [
@@ -93,25 +93,25 @@ jb.component('studio-data-test.jb-editor-move', { /* studioDataTest.jbEditorMove
 })
 
 jb.component('test.set-sugar-comp-simple', { /* test.setSugarCompSimple */
-  impl: label({
+  impl: text({
     
   })
 })
 
 jb.component('test.set-sugar-comp-wrap', { /* test.setSugarCompWrap */
-  impl: label(
+  impl: text(
     'a'
   )
 })
 
 jb.component('test.set-sugar-comp-override1', { /* test.setSugarCompOverride1 */
-  impl: label({
+  impl: text({
     text: pipeline('a', 'b')
   })
 })
 
 jb.component('test.set-sugar-comp-override2', { /* test.setSugarCompOverride2 */
-  impl: label({
+  impl: text({
     text: list('a', 'b')
   })
 })
@@ -152,7 +152,7 @@ jb.component('studio-data-test.set-sugar-comp-override2', { /* studioDataTest.se
 })
 
 jb.component('test.profile-as-text-example', { /* test.profileAsTextExample */
-  impl: label(
+  impl: text(
     'a'
   )
 })

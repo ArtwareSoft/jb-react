@@ -149,10 +149,10 @@ jb.component('card.flat940', { /* singlecard.flat940 */
         layout: layout.vertical('18'),
         controls: [
           card.properties(),
-          label({
+          text({
             text: '%title%',
             title: 'title',
-            style: label.htmlTag('div'),
+            style: text.htmlTag('div'),
             features: [
               css('font: 28px questrial,sans-serif;overflow-wrap: break-word;'),
               css('.item-hover ~ { color: rgb(95, 138, 22) }'),
@@ -186,10 +186,10 @@ jb.component('card.full940', { /* singlecard.full940 */
     style: group.htmlTag('article'),
     controls: [
       card.properties(),
-      label({
+      text({
         text: '%title%',
         title: 'title',
-        style: label.htmlTag('div'),
+        style: text.htmlTag('div'),
         features: [
           css('font: 40px worksans-semibold, \"work sans\", sans-serif;'),
           css('.item-hover ~ { color: rgb(95, 138, 22) }'),
