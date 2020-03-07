@@ -17,7 +17,7 @@ jb.component('style-gallery.styles-of-ui-component', {
 
 const variations = { button: { prop: 'raised', values: [true,false] }}
 
-'button,text,editable-text,editable-number,editable-boolean,group,itemlist,picklist'.split(',')
+'button,text,editable-text,editable-number,editable-boolean,group,itemlist,picklist,image'.split(',')
 .forEach(ctrl=>
   jb.component(`style-gallery.${ctrl}`,  { type: 'control',
   impl: group({
@@ -47,6 +47,9 @@ const variations = { button: { prop: 'raised', values: [true,false] }}
           controls: [text({ title: 'title1', text: 'text1'} ),text({ title: 'title2', text: 'text2'}) ],
           options: picklist.options('%$people/name%'),
           style: ctx => ctx.run({$: ctx.data}),
+          url: 'https://freesvg.org/img/UN-CONSTRUCTION-2.png',
+          width: 100,
+          height: 100,
         }].flatMap(prof=>[(variations[ctrl]|| {prop: 'x', values:[1]})].flatMap(e=> e.values.map(val => ({...prof, [e.prop] : val }))))
       }),
       itemVariable: '__style'

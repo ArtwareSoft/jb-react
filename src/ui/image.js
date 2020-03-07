@@ -9,7 +9,7 @@ jb.component('image', { /* image */
     {id: 'height', as: 'string', mandatory: true, description: 'e.g: 100, 20%'},
     {id: 'resize', type: 'image.resize', description: 'background-size, resize the image', defaultValue: image.fullyVisible()},
     {id: 'position', type: 'image.position', description: 'move/shift image'},
-    {id: 'style', type: 'image.style', dynamic: true, defaultValue: image.defaultStyle()},
+    {id: 'style', type: 'image.style', dynamic: true, defaultValue: image.background()},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx, {
@@ -50,7 +50,7 @@ jb.component('image.position', { /* image.position */
     .filter(x=>x).map(x=>`background-position-${x}`).join(';')
 })
 
-jb.component('image.default-style', { /* image.defaultStyle */
+jb.component('image.background', { /* image.background */
   type: 'image.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div'),
@@ -67,6 +67,23 @@ jb.component('image.default-style', { /* image.defaultStyle */
           {? background-size: %$$model/resize%; ?}
           {? %$$model/position%; ?}
           background-repeat: no-repeat;
+          {?width: %$width%; ?}
+          {?height: %$height%; ?}
+      }`
+    )
+  })
+})
+
+jb.component('image.img', { 
+  type: 'image.style',
+  impl: customStyle({
+    features: calcProp('url', '%$$model/url%'),
+    template: ({},{url},h) => h('img', { src: url}),
+    css: pipeline(
+      Var('width', (ctx,{$model}) => jb.ui.withUnits($model.width)),
+      Var('height', (ctx,{$model}) => jb.ui.withUnits($model.height)),
+      `
+      { 
           {?width: %$width%; ?}
           {?height: %$height%; ?}
       }`

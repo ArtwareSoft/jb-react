@@ -41,7 +41,7 @@ jb.component('css.class', { /* css.class */
 jb.component('css.width', { /* css.width */
   type: 'feature,dialog-feature',
   params: [
-    {id: 'width', mandatory: true, as: 'string'},
+    {id: 'width', mandatory: true, as: 'string', description: 'e.g. 200, 100%, calc(100% - 100px)'},
     {id: 'overflow', as: 'string', options: ',auto,hidden,scroll'},
     {id: 'minMax', as: 'string', options: ',min,max'},
     {id: 'selector', as: 'string'}
@@ -53,7 +53,7 @@ jb.component('css.width', { /* css.width */
 jb.component('css.height', { /* css.height */
   type: 'feature,dialog-feature',
   params: [
-    {id: 'height', mandatory: true, as: 'string'},
+    {id: 'height', mandatory: true, as: 'string', description: 'e.g. 200, 100%, calc(100% - 100px)'},
     {id: 'overflow', as: 'string', options: ',auto,hidden,scroll'},
     {id: 'minMax', as: 'string', options: ',min,max'},
     {id: 'selector', as: 'string'}
@@ -75,14 +75,14 @@ jb.component('css.opacity', { /* css.opacity */
 jb.component('css.padding', { /* css.padding */
   type: 'feature,dialog-feature',
   params: [
-    {id: 'top', as: 'string'},
+    {id: 'top', as: 'string', description: 'e.g. 20, 20%, 0.4em'},
     {id: 'left', as: 'string'},
     {id: 'right', as: 'string'},
     {id: 'bottom', as: 'string'},
     {id: 'selector', as: 'string'}
   ],
   impl: ctx => {
-    var css = ['top','left','right','bottom']
+    const css = ['top','left','right','bottom']
       .filter(x=>ctx.params[x] != null)
       .map(x=> `padding-${x}: ${withUnits(ctx.params[x])}`)
       .join('; ');
@@ -93,19 +93,39 @@ jb.component('css.padding', { /* css.padding */
 jb.component('css.margin', { /* css.margin */
   type: 'feature,dialog-feature',
   params: [
-    {id: 'top', as: 'string'},
-    {id: 'left', as: 'string'},
+    {id: 'top', as: 'string', description: 'e.g. 20, 20%, 0.4em, -20'},
     {id: 'right', as: 'string'},
     {id: 'bottom', as: 'string'},
+    {id: 'left', as: 'string'},
     {id: 'selector', as: 'string'}
   ],
   impl: ctx => {
-    var css = ['top','left','right','bottom']
+    const css = ['top','left','right','bottom']
       .filter(x=>ctx.params[x] != null)
       .map(x=> `margin-${x}: ${withUnits(ctx.params[x])}`)
       .join('; ');
     return {css: `${ctx.params.selector} {${css}}`};
   }
+})
+
+jb.component('css.margin-all-sides', {
+  type: 'feature,dialog-feature',
+  params: [
+    {id: 'value', as: 'string', mandatory: true, description: 'e.g. 20, 20%, 0.4em'},
+    {id: 'selector', as: 'string'}
+  ],
+  impl: (ctx,value,selector) => ({css: `${selector} margin: ${withUnits(value)}`})
+})
+
+jb.component('css.margin-vertical-horizontal', {
+  type: 'feature,dialog-feature',
+  params: [
+    {id: 'vertical', as: 'string', mandatory: true},
+    {id: 'horizontal', as: 'string', mandatory: true},
+    {id: 'selector', as: 'string'}
+  ],
+  impl: (ctx,vertical,horizontal,selector) => 
+    ({css: `${selector} margin: ${withUnits(vertical)+ ' ' +withUnits(horizontal)}`})
 })
 
 jb.component('css.transform-rotate', { /* css.transformRotate */
@@ -114,9 +134,7 @@ jb.component('css.transform-rotate', { /* css.transformRotate */
     {id: 'angle', as: 'string', description: '0-360'},
     {id: 'selector', as: 'string'}
   ],
-  impl: ctx => {
-    return {css: `${ctx.params.selector} {transform:rotate(${ctx.params.angle}deg)}`};
-  }
+  impl: (ctx,angle,selector) => ({css: `${selector} {transform:rotate(${angle}deg)}`})
 })
 
 jb.component('css.color', { /* css.color */
@@ -127,7 +145,7 @@ jb.component('css.color', { /* css.color */
     {id: 'selector', as: 'string'}
   ],
   impl: (ctx,color) => {
-		var css = ['color','background']
+		const css = ['color','background']
       .filter(x=>ctx.params[x])
       .map(x=> `${x}: ${ctx.params[x]}`)
       .join('; ');
@@ -197,5 +215,22 @@ jb.component('css.line-clamp', { /* css.lineClamp */
     '%$selector% { overflow: hidden; text-overflow: ellipsis; -webkit-box-orient: vertical; display: -webkit-box; -webkit-line-clamp: %$lines% }'
   )
 })
+
+jb.component('css.layout', {
+  type: 'feature:0',
+  params: [
+    {id: 'css', mandatory: true, as: 'string'}
+  ],
+  impl: (ctx,css) => ({css: fixCssLine(css)})
+})
+
+jb.component('css.typography', {
+  type: 'feature:0',
+  params: [
+    {id: 'css', mandatory: true, as: 'string'}
+  ],
+  impl: (ctx,css) => ({css: fixCssLine(css)})
+})
+
 
 })()

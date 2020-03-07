@@ -1,0 +1,32 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<style>
+#div1 {
+  width: 350px;
+  height: 70px;
+  padding: 10px;
+  border: 1px solid #aaaaaa;
+}
+</style>
+<script>
+function allowDrop(ev) {
+  ev.preventDefault();
+}
+
+function drop(ev) {
+  ev.preventDefault();
+  var data = ev.dataTransfer.getData("text");
+  ev.dataTransfer.items[1].getAsString(x=>
+  	document.getElementById('target').innerHTML = x)
+}
+</script>
+</head>
+<body>
+
+<p>Drop Html Here:</p>
+<div id="target"></div>
+<div id="div1" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+
+</body>
+</html>
