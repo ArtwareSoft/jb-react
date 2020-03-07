@@ -3,7 +3,7 @@ const st = jb.studio;
 
 function initStudioEditing() {
   if (st.previewjb.comps['dialog.studio-pick-dialog']) return
-  jb.entries(jb.comps).filter(e=>st.isStudioCmp(e[0])).forEach(e=>
+  jb.entries(jb.comps).filter(e=>st.isStudioCmp(e[0]) || !st.previewjb.comps[e[0]]).forEach(e=>
     st.previewjb.comps[e[0]] = { ...e[1], [jb.location] : [e[1][jb.location][0].replace(/!st!/,''), e[1][jb.location][1]]})
 }
 

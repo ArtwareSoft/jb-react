@@ -151,11 +151,12 @@ jb.component('studio.control-tree', { /* studio.controlTree */
               mode: 'insert-control',
               onClose: studio.gotoLastEdit()
             })
-          )
+          ),
+          studio.dropHtml()
         ]
       })
     ],
-    features: [css.padding('10')]
+    features: css.padding('10')
   })
 })
 

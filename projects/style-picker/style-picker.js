@@ -260,9 +260,6 @@ function hasTexts(base,texts,contentObj) {
     return texts.reduce((acc,txt) => acc && contentObj[base + '/' +txt], true)
 }
 
-function extractStyle(instance,pattern) {
-
-}
 function targetElem() {
     const target_el = document.querySelector('#target')
     return (target_el && target_el.contentDocument) ?

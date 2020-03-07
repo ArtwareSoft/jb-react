@@ -112,8 +112,7 @@ jb.component('studio.set-preview-size', { /* studio.setPreviewSize */
 })
 
 jb.component('studio.wait-for-preview-iframe', { /* studio.waitForPreviewIframe */
-  impl: _ =>
-    jb.ui.waitFor(()=> jb.studio.previewWindow)
+  impl: () => jb.ui.waitFor(()=> jb.studio.previewWindow)
 })
 
 jb.studio.pageChange = jb.ui.resourceChange().filter(e=>e.path.join('/') == 'studio/page')
@@ -133,10 +132,6 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
   impl: ctx => jb.ui.ctrl(ctx, features(
       calcProp('width','%$$model/width%'),
       calcProp('height','%$$model/height%'),
-//      calcProp('cacheKiller', () => 'cacheKiller='+(''+Math.random()).slice(10)),
-//      calcProp('rootName','%$studio/settings/rootName%'),
-//      calcProp('project','%$studio/project%'),
-//      calcProp('src', '/project/%$$props/project%?%$$props/cacheKiller%'),
       calcProp('host', firstSucceeding('%$queryParams/host%','studio')),
       calcProp('loadingMessage', '{? loading project from %$$props/host%::%$queryParams/hostProjectId% ?}'),
       interactive( (ctx,{cmp}) => {
