@@ -90,7 +90,7 @@ st.Probe = class {
         const parentCtx = this.probe[_path][0].in, breakingPath = _path+'~'+breakingProp
         const obj = this.probe[_path][0].out
         const hasSideEffect = st.previewjb.comps[st.compNameOfPath(breakingPath)] && (st.previewjb.comps[st.compNameOfPath(breakingPath)].type ||'').indexOf('has-side-effects') != -1
-        if (!hasSideEffect && obj[breakingProp] && typeof obj[breakingProp] == 'function')
+        if (obj && !hasSideEffect && obj[breakingProp] && typeof obj[breakingProp] == 'function')
             return Promise.resolve(obj[breakingProp]())
                 .then(_=>this.handleGaps(_path))
 

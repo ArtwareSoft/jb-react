@@ -132,7 +132,7 @@ jb.component('studio.script-history', { /* studio.scriptHistory */
   })
 })
 
-jb.component('studio.open-script-history', { /* studio.openScriptHistory */ 
+jb.component('studio.open-script-history', { /* studio.openScriptHistory */
   type: 'action',
   impl: openDialog({
     style: dialog.studioFloating({id: 'script-history', width: '700', height: '400'}),

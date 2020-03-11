@@ -96,7 +96,8 @@ jb.component('studio.toolbar', { /* studio.toolbar */
           mode: 'insert-control',
           onClose: studio.gotoLastEdit()
         }),
-        style: button.mdcIcon('add')
+        style: button.mdcIcon('add'),
+        features: studio.dropHtml(studio.insertControl('%$newCtrl%'))
       }),
       button({
         title: 'Responsive',

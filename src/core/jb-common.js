@@ -866,7 +866,7 @@ jb.component('runActions', { /* runActions */
   ],
   impl: ctx => {
 		if (!ctx.profile) debugger;
-		const actions = jb.asArray(ctx.profile.actions || ctx.profile['$runActions']);
+		const actions = jb.asArray(ctx.profile.actions || ctx.profile['$runActions']).filter(x=>x);
 		const innerPath =  (ctx.profile.actions && ctx.profile.actions.sugar) ? ''
 			: (ctx.profile['$runActions'] ? '$runActions~' : 'items~');
 		return actions.reduce((def,action,index) =>

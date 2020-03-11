@@ -125,7 +125,7 @@ jb.component('picklist.studio-enum', { /* picklist.studioEnum */
   })
 })
 
-jb.component('text.studio-message', { /* label.studioMessage */
+jb.component('text.studio-message', { /* text.studioMessage */
   type: 'text.style',
   impl: customStyle({
     template: (cmp,state,h) => h('span',{class: 'studio-message'}, state.text),

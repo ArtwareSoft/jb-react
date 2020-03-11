@@ -48,6 +48,21 @@ jb.component('data-test', { /* dataTest */
 	}
 })
 
+jb.component('ui-test-runner', {
+	type: 'control',
+	params: [
+	  {id: 'test', as: 'string', defaultValue: 'ui-test.label'},
+	],
+	impl: group({
+		controls: (ctx,{},{test}) => new jb.jbCtx(ctx,{ profile: jb.path(jb.comps[test],'impl.control') || {$: 'text'}, 
+			forcePath: test+ '~impl~control', path: '' } ).runItself(),
+		features: group.wait({
+			for: (ctx,{},{test}) => new jb.jbCtx(ctx,{ profile: jb.path(jb.comps[test],'impl.runBefore') || '', 
+				forcePath: test+ '~impl~runBefore', path: '' } ).runItself()
+		})
+	})
+})
+
 jb.component('ui-test', { /* uiTest */
   type: 'test',
   params: [

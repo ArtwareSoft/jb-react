@@ -28,39 +28,14 @@ jb.component('extract-text', { /* extractText */
   description: 'text breaking according to begin/end markers',
   params: [
     {id: 'text', as: 'string-with-source-ref', defaultValue: '%%'},
-    {id: 'startMarkers', type: 'data[]' ,as: 'array', mandatory: true},
+    {id: 'startMarkers', type: 'data[]', as: 'array', mandatory: true},
     {id: 'endMarker', as: 'string'},
-    {
-      id: 'includingStartMarker',
-      as: 'boolean',
-      type: 'boolean',
-      description: 'include the marker at part of the result'
-    },
-    {
-      id: 'includingEndMarker',
-      as: 'boolean',
-      type: 'boolean',
-      description: 'include the marker at part of the result'
-    },
-    {
-      id: 'repeating',
-      as: 'boolean',
-      type: 'boolean',
-      description: 'apply the markers repeatingly'
-    },
+    {id: 'includingStartMarker', as: 'boolean', type: 'boolean', description: 'include the marker at part of the result'},
+    {id: 'includingEndMarker', as: 'boolean', type: 'boolean', description: 'include the marker at part of the result'},
+    {id: 'repeating', as: 'boolean', type: 'boolean', description: 'apply the markers repeatingly'},
     {id: 'noTrim', as: 'boolean', type: 'boolean'},
-    {
-      id: 'useRegex',
-      as: 'boolean',
-      type: 'boolean',
-      description: 'use regular expression in markers'
-    },
-    {
-      id: 'exclude',
-      as: 'boolean',
-      type: 'boolean',
-      description: 'return the inverse result. E.g. exclude remarks'
-    }
+    {id: 'useRegex', as: 'boolean', type: 'boolean', description: 'use regular expression in markers'},
+    {id: 'exclude', as: 'boolean', type: 'boolean', description: 'return the inverse result. E.g. exclude remarks'}
   ],
   impl: (ctx,textRef,startMarkers,endMarker,includingStartMarker,includingEndMarker,repeating,noTrim,regex,exclude) => {
     const text = jb.tostring(textRef);
@@ -124,19 +99,8 @@ jb.component('break-text', { /* breakText */
   description: 'recursive text breaking according to multi level separators',
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'},
-    {
-      id: 'separators',
-      as: 'array',
-      mandatory: true,
-      defaultValue: [],
-      description: 'multi level separators'
-    },
-    {
-      id: 'useRegex',
-      as: 'boolean',
-      type: 'boolean',
-      description: 'use regular expression in separators'
-    }
+    {id: 'separators', as: 'array', mandatory: true, defaultValue: [], description: 'multi level separators'},
+    {id: 'useRegex', as: 'boolean', type: 'boolean', description: 'use regular expression in separators'}
   ],
   impl: (ctx,text,separators,regex) => {
 	  let findMarker = (text,marker, startpos) => {
@@ -283,7 +247,7 @@ jb.component('wrap-as-object', { /* wrapAsObject */
   type: 'aggregator',
   params: [
     {id: 'propertyName', as: 'string', dynamic: true, mandatory: true},
-    {id: 'value', as: 'string', dynamic: true, defaultValue: '%%' },
+    {id: 'value', as: 'string', dynamic: true, defaultValue: '%%'},
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
   impl: (ctx,key,value,items) => {
@@ -293,7 +257,7 @@ jb.component('wrap-as-object', { /* wrapAsObject */
   }
 })
 
-jb.component('write-value-asynch', {
+jb.component('write-value-asynch', { /* writeValueAsynch */
   type: 'action',
   params: [
     {id: 'to', as: 'ref', mandatory: true},

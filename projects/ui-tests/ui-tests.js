@@ -248,7 +248,7 @@ jb.component('ui-test.editable-text-by-control', { /* uiTest.editableTextByContr
       style: styleByControl(
         group({
           controls: [
-            
+
           ],
           features: [variable({name: 'expandableContext', value: obj()})]
         }),
@@ -1682,7 +1682,7 @@ jb.component('ui-test.watchable-ref-to-inner-elements-when-value-is-empty', { /*
   })
 })
 
-jb.component('ui-test.infinite-scroll', { 
+jb.component('ui-test.infinite-scroll', {
   impl: uiTest({
     control: itemlist({
       items: range(0,10),

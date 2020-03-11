@@ -148,17 +148,17 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       'jison': [ 'dist/jb-jison.js', 'src/misc/jison.js' ],
       'parsing': [ 'src/misc/parsing.js' ],
       studio: [
-        'dist/material.js','src/loader/jb-loader.js', 'src/ui/watchable/text-editor.js', 
+        'dist/material.js', 'src/ui/watchable/text-editor.js', 
         'src/misc/parsing.js', 'src/ui/styles/codemirror-styles.js',
         'styles', 'path','utils', 'preview','popups','url','model-components', 'completion', 'undo','tgp-model', 'new-profile',
         'suggestions', 'properties','jb-editor-styles','edit-source','jb-editor','pick','h-to-jsx','style-editor',
         'references','properties-menu','save','open-project','tree',
         'data-browse', 'new-project','event-tracker', 'toolbar','search', 'main', 'component-header', 'hosts', 'probe',
-        'watch-ref-viewer', 'content-editable', 'position-thumbs', 'drop-html'
+        'watch-ref-viewer', 'content-editable', 'position-thumbs', 'html-to-ctrl', 'patterns'
       ],
       'studio-tests': [
         'projects/studio/studio-testers.js',
-        'probe','model','tree','suggestion'
+        'probe','model','tree','suggestion','patterns'
       ],
 })
 
@@ -214,7 +214,8 @@ function jb_initWidget() {
     mainElem.setAttribute('id','main')
     document.body.appendChild(mainElem)
   }
-  jb.ui.renderWidget({$: jbProjectSettings.entry || `${jbProjectSettings.project}.main` }, document.getElementById('main'))
+  const prof = jbProjectSettings.entry && jbProjectSettings.entry.$ && jbProjectSettings.entry
+  jb.ui.renderWidget(prof || {$: jbProjectSettings.entry || `${jbProjectSettings.project}.main` }, document.getElementById('main'))
 }
 
 function pathOfProjectFile(project,fn,baseDir) {
@@ -222,7 +223,10 @@ function pathOfProjectFile(project,fn,baseDir) {
     return baseDir + fn
   else if (baseDir)
    return baseDir == './' ? fn : `/${project}/${fn}`
-  return `/projects/${project}/${fn}`
+  else if (fn[0] == '/')
+    return fn
+  else
+    return `/projects/${project}/${fn}`
  }
  
  function loadFile(url) {

@@ -256,10 +256,10 @@ jb.component('studio.profile-value-as-text', { /* studio.profileValueAsText */
 jb.component('studio.insert-control', { /* studio.insertControl */
   type: 'action',
   params: [
-    {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()},
-    {id: 'comp', as: 'string'}
+    {id: 'comp', mandatory: true, description: 'comp name or comp json'},
+    {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
-  impl: (ctx,path,comp,type) =>	st.insertControl(path, comp,ctx)
+  impl: (ctx,comp,path) =>	st.insertControl(path, comp,ctx)
 })
 
 jb.component('studio.wrap', { /* studio.wrap */

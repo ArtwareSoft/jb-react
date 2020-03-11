@@ -146,13 +146,15 @@ jb.component('studio.control-tree', { /* studio.controlTree */
           defHandler(
             'newControl',
             studio.openNewProfileDialog({
-              path: '%$$state.selected%',
+              path: tree.pathOfInteractiveItem(),
               type: 'control',
               mode: 'insert-control',
               onClose: studio.gotoLastEdit()
             })
           ),
-          studio.dropHtml()
+          studio.dropHtml(
+            studio.extractStyle('%$newCtrl%', tree.pathOfInteractiveItem())
+          )
         ]
       })
     ],

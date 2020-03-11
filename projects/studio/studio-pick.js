@@ -21,8 +21,9 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
       cmp.titleBelow = false;
 
       const projectPrefix = ctx.exp('%$studio/project%.%$studio/page%')
+      const testHost = ctx.exp('%$queryParams/host%') == 'test'
       const eventToElemPredicate = from == 'preview' ? 
-        (path => path.indexOf(projectPrefix) == 0) : (path => st.isStudioCmp(path.split('~')[0]))
+        (path => testHost || path.indexOf(projectPrefix) == 0) : (path => st.isStudioCmp(path.split('~')[0]))
       const cover = _window.document.createElement('div')
       cover.className = 'jb-cover'
       cover.style.position= 'absolute'; cover.style.width= '100%'; cover.style.height= '100%'; cover.style.background= 'white'; cover.style.opacity= '0'; cover.style.top= 0; cover.style.left= 0;
@@ -246,8 +247,10 @@ jb.component('studio.pick-toolbar', { /* studio.pickToolbar */
           const elem = ctx.exp('%$pickSelection/elem%')
           if (!elem) return ''
           const _jb = elem.ownerDocument === jb.frame.document ? jb : st.previewjb
-          const res = elem ? [elem.getAttribute('pick-ctx'), elem.getAttribute('jb-ctx'),
-            ].filter(x=>x).slice(0,1).map(id=>_jb.ctxDictionary[id].path) : []
+          const res = elem ? [elem.getAttribute('pick-ctx'), elem.getAttribute('jb-ctx')]
+              .map(id=>_jb.ctxDictionary[id])
+              .filter(x=>x)
+              .map(ctx=>ctx.path).slice(0,1) : []
           return res
         }
       })

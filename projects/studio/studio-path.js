@@ -196,12 +196,16 @@ Object.assign(st, {
 		st.writeValue(st.refOfPath(path),{['$'+compName]: currentVal || emptyVal} ,srcCtx)
 	},
 
-	insertControl: (path,compName,srcCtx) => {
-		const comp = compName && st.getComp(compName);
-		if (!compName || !comp) return;
-		let newCtrl = st.newProfile(comp,compName)
-		if (st.controlParams(path)[0] == 'fields' && newCtrl.$ != 'field')
-			newCtrl = { $: 'field.control', control : newCtrl};
+	insertControl: (path,compToInsert,srcCtx) => {
+		let newCtrl = compToInsert
+		if (typeof compToInsert == 'string') {
+			const comp = compToInsert && st.getComp(compToInsert);
+			if (!compToInsert || !comp) return;
+			newCtrl = st.newProfile(comp,compToInsert)
+			if (st.controlParams(path)[0] == 'fields' && newCtrl.$ != 'field')
+				newCtrl = { $: 'field.control', control : newCtrl};
+		}
+
 		// find group parent that can insert the control
 		if (path.indexOf('~') == -1)
 			path = path + '~impl';

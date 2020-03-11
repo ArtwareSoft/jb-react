@@ -209,7 +209,7 @@ jb.component('studio.open-new-profile-dialog', { /* studio.openNewProfileDialog 
         [
           action.switchCase(
             '%$mode% == \"insert-control\"',
-            studio.insertControl('%$path%', '%%')
+            studio.insertControl('%%', '%$path%')
           ),
           action.switchCase(
             '%$mode% == \"insert\"',
@@ -364,7 +364,7 @@ jb.component('studio.insert-comp-option', { /* studio.insertCompOption */
   ],
   impl: menu.action({
     title: '%$title%',
-    action: studio.insertControl(studio.currentProfilePath(), '%$comp%')
+    action: studio.insertControl('%$comp%')
   })
 })
 
@@ -372,6 +372,42 @@ jb.component('studio.insert-control-menu', { /* studio.insertControlMenu */
   impl: menu.menu({
     title: 'Insert',
     options: [
+      menu.action({
+        title: 'Drop html from any web site',
+        action: openDialog({
+          style: dialog.dialogOkCancel(),
+          content: group({
+            layout: layout.vertical(),
+            controls: [
+              button({
+                title: 'drop here',
+                style: button.mdc(),
+                raised: '',
+                features: [
+                  css.height('80'),
+                  studio.dropHtml(
+                    runActions(studio.insertControl('%$newCtrl%'), dialog.closeContainingPopup())
+                  )
+                ]
+              }),
+              editableText({
+                title: 'paste html here',
+                databind: '%$studio/htmlToPaste%',
+                style: editableText.textarea({rows: '3', cols: '80'}),
+                features: htmlAttribute('placeholder', 'or paste html here')
+              })
+            ],
+            features: [css.width('400'), css.padding({left: '4', right: '4'})]
+          }),
+          title: 'Drop html from any web site',
+          onOK: action.if(
+            '%$studio/htmlToPaste%',
+            studio.insertControl(studio.htmlToControl('%$studio/htmlToPaste%'))
+          ),
+          features: dialogFeature.dragTitle()
+        }),
+        shortcut: ''
+      }),
       menu.menu({
         title: 'Control',
         options: [

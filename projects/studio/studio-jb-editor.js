@@ -83,10 +83,7 @@ jb.component('studio.data-browse', { /* studio.dataBrowse */
     controls: [
       group({
         controls: [
-          controlWithCondition(
-            isOfType('string,boolean,number', '%$obj%'),
-            text('%$obj%')
-          ),
+          controlWithCondition(isOfType('string,boolean,number', '%$obj%'), text('%$obj%')),
           controlWithCondition(
             isOfType('array', '%$obj%'),
             table({

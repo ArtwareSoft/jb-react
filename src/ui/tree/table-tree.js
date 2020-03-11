@@ -6,10 +6,10 @@ jb.component('table-tree', { /* tableTree */
   params: [
     {id: 'treeModel', type: 'tree.node-model', dynamic: true, mandatory: true},
     {id: 'leafFields', type: 'control[]', dynamic: true},
-    {id: 'commonFields', type: 'control[]', dynamic: true},
+    {id: 'commonFields', type: 'control[]', dynamic: true, as: 'array'},
     {id: 'chapterHeadline', type: 'control', dynamic: true, defaultValue: text(''), description: '$collapsed as parameter'},
     {id: 'style', type: 'table-tree.style', defaultValue: tableTree.plain({}), dynamic: true},
-    {id: 'features', type: 'feature[]', dynamic: true}
+    {id: 'features', type: 'feature[]', dynamic: true, as: 'array'}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
 })
@@ -28,11 +28,13 @@ jb.component('tree.model-filter', { /* tree.modelFilter */
 
 jb.component('table-tree.init', { /* tableTree.init */
   type: 'feature',
-  params:[
-    {id: 'autoOpenFirstLevel', as: 'boolean' },
+  params: [
+    {id: 'autoOpenFirstLevel', as: 'boolean', type: 'boolean'}
   ],
   impl: features(
-    calcProp('expanded',(ctx,{cmp,$props},{autoOpenFirstLevel}) => {
+    calcProp({
+        id: 'expanded',
+        value: (ctx,{cmp,$props},{autoOpenFirstLevel}) => {
         const treeModel = cmp.treeModel
         cmp.state = cmp.state || {}
         const firstTime = !cmp.state.expanded
@@ -54,7 +56,8 @@ jb.component('table-tree.init', { /* tableTree.init */
                 return inner
             },null)
         }
-    }),
+    }
+      }),
     calcProp({
         id: 'items',
         value: (ctx,{cmp}) => {
@@ -138,8 +141,8 @@ jb.component('table-tree.init', { /* tableTree.init */
 jb.component('table-tree.plain', { /* tableTree.plain */
   type: 'table-tree.style',
   params: [
-    {id: 'hideHeaders', as: 'boolean' },
-    {id: 'autoOpenFirstLevel', as: 'boolean' },
+    {id: 'hideHeaders', as: 'boolean', type: 'boolean'},
+    {id: 'autoOpenFirstLevel', as: 'boolean', type: 'boolean'},
     {id: 'gapWidth', as: 'number', defaultValue: 30},
     {id: 'expColWidth', as: 'number', defaultValue: 16},
     {id: 'noItemsCtrl', type: 'control', dynamic: true, defaultValue: text('no items')}
@@ -188,14 +191,15 @@ jb.component('json.path-selector', { /* json.pathSelector */
     }
 })
 
-jb.component('table-tree.expand-path', {
-    type: 'table-tree.style',
-    params: [
-      {id: 'path', as: 'string' },
-    ],
-    impl: calcProp({ id: 'pathsToExtend', 
-        value: ({},{pathsToExtend},{path}) => [...path.split(','), ...(pathsToExtend || [])],
-        phase: 5 // before
-    })
+jb.component('table-tree.expand-path', { /* tableTree.expandPath */
+  type: 'table-tree.style',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: calcProp({
+    id: 'pathsToExtend',
+    value: ({},{pathsToExtend},{path}) => [...path.split(','), ...(pathsToExtend || [])],
+    phase: 5
+  })
 })
 

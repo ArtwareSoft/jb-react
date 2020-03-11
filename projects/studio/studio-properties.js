@@ -205,21 +205,23 @@ jb.component('studio.open-properties', { /* studio.openProperties */
   params: [
     {id: 'focus', type: 'boolean', as: 'boolean'}
   ],
-  impl: openDialog({
-    style: dialog.studioFloating({id: 'studio-properties', width: '500'}),
-    content: studio.properties(studio.currentProfilePath(), '%$focus%'),
-    title: pipeline(
-      {
-          '$': 'object',
-          title: studio.shortTitle(studio.currentProfilePath()),
-          comp: studio.compName(studio.currentProfilePath())
-        },
-      'Properties of %comp% %title%'
-    ),
-    features: [
-      feature.keyboardShortcut('Ctrl+Left', studio.openControlTree()),
-      dialogFeature.resizer()
-    ]
-  })
+  impl: runActions(
+    Var('path',studio.currentProfilePath()),
+    action.if(studio.compName('%$path%'),openDialog({
+      style: dialog.studioFloating({id: 'studio-properties', width: '500'}),
+      content: studio.properties('%$path%', '%$focus%'),
+      title: pipeline(
+        {
+            '$': 'object',
+            title: studio.shortTitle('%$path%'),
+            comp: studio.compName('%$path%')
+          },
+        'Properties of %comp% %title%'
+      ),
+      features: [
+        feature.keyboardShortcut('Ctrl+Left', studio.openControlTree()),
+        dialogFeature.resizer()
+      ]
+    })))
 })
 

@@ -169,7 +169,7 @@ jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */
             action: writeValue(studio.ref('%$path%'), '%$val%')
           }),
           feature.if(studio.isOfType('%$path%', 'boolean')),
-          css.margin({top: '35', left: '', right: '20'})
+          css.margin({top: '35', right: '20', left: ''})
         ]
       })
     ],
