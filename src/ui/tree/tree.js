@@ -326,10 +326,10 @@ jb.component('tree.expand-path', { /* tree.expandPath */
   impl: (ctx,paths) => ctx.vars.cmp && paths.forEach(path => jb.ui.treeExpandPath(ctx.vars.cmp.state.expanded, path))
 })
 
-jb.component('tree.path-of-interactive-item', { 
-	descrition: 'path of the clicked/dragged item using event.target',
-	type: 'data',
-	impl: ctx => {
+jb.component('tree.path-of-interactive-item', { /* tree.pathOfInteractiveItem */
+  descrition: 'path of the clicked/dragged item using event.target',
+  type: 'data',
+  impl: ctx => {
 		const {cmp,ev} = ctx.vars
 		return cmp && cmp.elemToPath && ev && ev.target && cmp.elemToPath(ev.target)
 	}

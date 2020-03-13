@@ -24,7 +24,7 @@ st.Probe = class {
         this.probe[pathToTrace] = this.result
         this.pathToTrace = pathToTrace
         const initial_resources = st.previewjb.resources
-        const initial_comps = st.compsRefHandler.resources()
+        const initial_comps = st.compsRefHandler && st.compsRefHandler.resources()
         if (st.probeDisabled) {
             this.completed = false
             this.remark = 'probe disabled'
@@ -48,7 +48,7 @@ st.Probe = class {
                 // make values out of ref
                 this.result.forEach(obj=> { obj.out = jb.val(obj.out) ; obj.in.data = jb.val(obj.in.data)})
                 st.previewjb.watchableValueByRef && st.previewjb.watchableValueByRef.resources(initial_resources)
-                st.compsRefHandler.resources(initial_comps)
+                initial_comps && st.compsRefHandler.resources(initial_comps)
                 return this
             })
     }

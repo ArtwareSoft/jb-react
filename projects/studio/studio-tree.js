@@ -152,9 +152,7 @@ jb.component('studio.control-tree', { /* studio.controlTree */
               onClose: studio.gotoLastEdit()
             })
           ),
-          studio.dropHtml(
-            studio.extractStyle('%$newCtrl%', tree.pathOfInteractiveItem())
-          )
+          studio.dropHtml(studio.extractStyle('%$newCtrl%', tree.pathOfInteractiveItem()))
         ]
       })
     ],
