@@ -214,7 +214,18 @@ jb.component('feature.content-editable', { /* feature.contentEditable */
     feature.keyboardShortcut(
         'Alt+N',
         () => jb.frame.parent.jb.exec({$:'studio.pickAndOpen', from: 'studio'})
-      ),
+    ),
+    htmlAttribute('ondragover','over'),
+    htmlAttribute('ondrop','dropHtml'),
+    defHandler('over', (ctx,{ev}) => ev.preventDefault() ),
+    defHandler('dropHtml', (ctx,{cmp, ev},{onDrop}) => {
+      ev.preventDefault();
+      return ev.dataTransfer.items[1].getAsString(html => {
+          const targetCtx = jb.studio.previewjb.ctxDictionary[ev.target.getAttribute('jb-ctx')]
+          new jb.jbCtx().setVar('newCtrl',jb.ui.htmlToControl(html)).run(
+                studio.extractStyle('%$newCtrl%', () => targetCtx && targetCtx.path ))
+          })
+    }),
     interactive(
         ({},{cmp},{param}) => {
       const isHtml = param == 'html'
