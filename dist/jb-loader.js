@@ -164,6 +164,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
 
 function jb_dynamicLoad(modules,prefix) {
   prefix = prefix || '';
+  modules = modules || '';
   const isDist = document.currentScript.getAttribute('src').indexOf('/dist/') != -1
   if (isDist) {
     const scriptSrc = document.currentScript.getAttribute('src')
