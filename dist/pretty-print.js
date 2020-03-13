@@ -1,7 +1,7 @@
 jb.component('pretty-print', { /* prettyPrint */
   params: [
     {id: 'profile', defaultValue: '%%'},
-    {id: 'forceFlat', as: 'boolean'}
+    {id: 'forceFlat', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,profile) => jb.prettyPrint(jb.val(profile),ctx.params)
 })

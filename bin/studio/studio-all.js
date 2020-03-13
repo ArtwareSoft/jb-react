@@ -1784,7 +1784,7 @@ jb.component('runActions', { /* runActions */
   ],
   impl: ctx => {
 		if (!ctx.profile) debugger;
-		const actions = jb.asArray(ctx.profile.actions || ctx.profile['$runActions']);
+		const actions = jb.asArray(ctx.profile.actions || ctx.profile['$runActions']).filter(x=>x);
 		const innerPath =  (ctx.profile.actions && ctx.profile.actions.sugar) ? ''
 			: (ctx.profile['$runActions'] ? '$runActions~' : 'items~');
 		return actions.reduce((def,action,index) =>
@@ -6082,7 +6082,7 @@ jb.component('css.class', { /* css.class */
 jb.component('css.width', { /* css.width */
   type: 'feature,dialog-feature',
   params: [
-    {id: 'width', mandatory: true, as: 'string'},
+    {id: 'width', mandatory: true, as: 'string', description: 'e.g. 200, 100%, calc(100% - 100px)'},
     {id: 'overflow', as: 'string', options: ',auto,hidden,scroll'},
     {id: 'minMax', as: 'string', options: ',min,max'},
     {id: 'selector', as: 'string'}
@@ -6094,7 +6094,7 @@ jb.component('css.width', { /* css.width */
 jb.component('css.height', { /* css.height */
   type: 'feature,dialog-feature',
   params: [
-    {id: 'height', mandatory: true, as: 'string'},
+    {id: 'height', mandatory: true, as: 'string', description: 'e.g. 200, 100%, calc(100% - 100px)'},
     {id: 'overflow', as: 'string', options: ',auto,hidden,scroll'},
     {id: 'minMax', as: 'string', options: ',min,max'},
     {id: 'selector', as: 'string'}
@@ -6116,14 +6116,14 @@ jb.component('css.opacity', { /* css.opacity */
 jb.component('css.padding', { /* css.padding */
   type: 'feature,dialog-feature',
   params: [
-    {id: 'top', as: 'string'},
+    {id: 'top', as: 'string', description: 'e.g. 20, 20%, 0.4em'},
     {id: 'left', as: 'string'},
     {id: 'right', as: 'string'},
     {id: 'bottom', as: 'string'},
     {id: 'selector', as: 'string'}
   ],
   impl: ctx => {
-    var css = ['top','left','right','bottom']
+    const css = ['top','left','right','bottom']
       .filter(x=>ctx.params[x] != null)
       .map(x=> `padding-${x}: ${withUnits(ctx.params[x])}`)
       .join('; ');
@@ -6134,19 +6134,39 @@ jb.component('css.padding', { /* css.padding */
 jb.component('css.margin', { /* css.margin */
   type: 'feature,dialog-feature',
   params: [
-    {id: 'top', as: 'string'},
-    {id: 'left', as: 'string'},
+    {id: 'top', as: 'string', description: 'e.g. 20, 20%, 0.4em, -20'},
     {id: 'right', as: 'string'},
     {id: 'bottom', as: 'string'},
+    {id: 'left', as: 'string'},
     {id: 'selector', as: 'string'}
   ],
   impl: ctx => {
-    var css = ['top','left','right','bottom']
+    const css = ['top','left','right','bottom']
       .filter(x=>ctx.params[x] != null)
       .map(x=> `margin-${x}: ${withUnits(ctx.params[x])}`)
       .join('; ');
     return {css: `${ctx.params.selector} {${css}}`};
   }
+})
+
+jb.component('css.margin-all-sides', {
+  type: 'feature,dialog-feature',
+  params: [
+    {id: 'value', as: 'string', mandatory: true, description: 'e.g. 20, 20%, 0.4em'},
+    {id: 'selector', as: 'string'}
+  ],
+  impl: (ctx,value,selector) => ({css: `${selector} margin: ${withUnits(value)}`})
+})
+
+jb.component('css.margin-vertical-horizontal', {
+  type: 'feature,dialog-feature',
+  params: [
+    {id: 'vertical', as: 'string', mandatory: true},
+    {id: 'horizontal', as: 'string', mandatory: true},
+    {id: 'selector', as: 'string'}
+  ],
+  impl: (ctx,vertical,horizontal,selector) => 
+    ({css: `${selector} margin: ${withUnits(vertical)+ ' ' +withUnits(horizontal)}`})
 })
 
 jb.component('css.transform-rotate', { /* css.transformRotate */
@@ -6155,9 +6175,7 @@ jb.component('css.transform-rotate', { /* css.transformRotate */
     {id: 'angle', as: 'string', description: '0-360'},
     {id: 'selector', as: 'string'}
   ],
-  impl: ctx => {
-    return {css: `${ctx.params.selector} {transform:rotate(${ctx.params.angle}deg)}`};
-  }
+  impl: (ctx,angle,selector) => ({css: `${selector} {transform:rotate(${angle}deg)}`})
 })
 
 jb.component('css.color', { /* css.color */
@@ -6168,7 +6186,7 @@ jb.component('css.color', { /* css.color */
     {id: 'selector', as: 'string'}
   ],
   impl: (ctx,color) => {
-		var css = ['color','background']
+		const css = ['color','background']
       .filter(x=>ctx.params[x])
       .map(x=> `${x}: ${ctx.params[x]}`)
       .join('; ');
@@ -6238,6 +6256,23 @@ jb.component('css.line-clamp', { /* css.lineClamp */
     '%$selector% { overflow: hidden; text-overflow: ellipsis; -webkit-box-orient: vertical; display: -webkit-box; -webkit-line-clamp: %$lines% }'
   )
 })
+
+jb.component('css.layout', {
+  type: 'feature:0',
+  params: [
+    {id: 'css', mandatory: true, as: 'string'}
+  ],
+  impl: (ctx,css) => ({css: fixCssLine(css)})
+})
+
+jb.component('css.typography', {
+  type: 'feature:0',
+  params: [
+    {id: 'css', mandatory: true, as: 'string'}
+  ],
+  impl: (ctx,css) => ({css: fixCssLine(css)})
+})
+
 
 })();
 
@@ -6536,7 +6571,7 @@ jb.component('image', { /* image */
     {id: 'height', as: 'string', mandatory: true, description: 'e.g: 100, 20%'},
     {id: 'resize', type: 'image.resize', description: 'background-size, resize the image', defaultValue: image.fullyVisible()},
     {id: 'position', type: 'image.position', description: 'move/shift image'},
-    {id: 'style', type: 'image.style', dynamic: true, defaultValue: image.defaultStyle()},
+    {id: 'style', type: 'image.style', dynamic: true, defaultValue: image.background()},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx, {
@@ -6577,7 +6612,7 @@ jb.component('image.position', { /* image.position */
     .filter(x=>x).map(x=>`background-position-${x}`).join(';')
 })
 
-jb.component('image.default-style', { /* image.defaultStyle */
+jb.component('image.background', { /* image.background */
   type: 'image.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div'),
@@ -6594,6 +6629,23 @@ jb.component('image.default-style', { /* image.defaultStyle */
           {? background-size: %$$model/resize%; ?}
           {? %$$model/position%; ?}
           background-repeat: no-repeat;
+          {?width: %$width%; ?}
+          {?height: %$height%; ?}
+      }`
+    )
+  })
+})
+
+jb.component('image.img', { 
+  type: 'image.style',
+  impl: customStyle({
+    features: calcProp('url', '%$$model/url%'),
+    template: ({},{url},h) => h('img', { src: url}),
+    css: pipeline(
+      Var('width', (ctx,{$model}) => jb.ui.withUnits($model.width)),
+      Var('height', (ctx,{$model}) => jb.ui.withUnits($model.height)),
+      `
+      { 
           {?width: %$width%; ?}
           {?height: %$height%; ?}
       }`
@@ -10045,7 +10097,7 @@ jb.component('tree', { /* tree */
   params: [
     {id: 'nodeModel', type: 'tree.node-model', dynamic: true, mandatory: true},
     {id: 'style', type: 'tree.style', defaultValue: tree.expandBox({}), dynamic: true},
-    {id: 'features', type: 'feature[]', dynamic: true}
+    {id: 'features', type: 'feature[]', dynamic: true, as: 'array'}
   ],
   impl: context => {
 	  const tree = {}
@@ -10365,6 +10417,15 @@ jb.component('tree.expand-path', { /* tree.expandPath */
   impl: (ctx,paths) => ctx.vars.cmp && paths.forEach(path => jb.ui.treeExpandPath(ctx.vars.cmp.state.expanded, path))
 })
 
+jb.component('tree.path-of-interactive-item', { /* tree.pathOfInteractiveItem */
+  descrition: 'path of the clicked/dragged item using event.target',
+  type: 'data',
+  impl: ctx => {
+		const {cmp,ev} = ctx.vars
+		return cmp && cmp.elemToPath && ev && ev.target && cmp.elemToPath(ev.target)
+	}
+})
+
 jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
   type: 'feature',
   impl: ctx => ({
@@ -10455,10 +10516,10 @@ jb.component('table-tree', { /* tableTree */
   params: [
     {id: 'treeModel', type: 'tree.node-model', dynamic: true, mandatory: true},
     {id: 'leafFields', type: 'control[]', dynamic: true},
-    {id: 'commonFields', type: 'control[]', dynamic: true},
+    {id: 'commonFields', type: 'control[]', dynamic: true, as: 'array'},
     {id: 'chapterHeadline', type: 'control', dynamic: true, defaultValue: text(''), description: '$collapsed as parameter'},
     {id: 'style', type: 'table-tree.style', defaultValue: tableTree.plain({}), dynamic: true},
-    {id: 'features', type: 'feature[]', dynamic: true}
+    {id: 'features', type: 'feature[]', dynamic: true, as: 'array'}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
 })
@@ -10477,11 +10538,13 @@ jb.component('tree.model-filter', { /* tree.modelFilter */
 
 jb.component('table-tree.init', { /* tableTree.init */
   type: 'feature',
-  params:[
-    {id: 'autoOpenFirstLevel', as: 'boolean' },
+  params: [
+    {id: 'autoOpenFirstLevel', as: 'boolean', type: 'boolean'}
   ],
   impl: features(
-    calcProp('expanded',(ctx,{cmp,$props},{autoOpenFirstLevel}) => {
+    calcProp({
+        id: 'expanded',
+        value: (ctx,{cmp,$props},{autoOpenFirstLevel}) => {
         const treeModel = cmp.treeModel
         cmp.state = cmp.state || {}
         const firstTime = !cmp.state.expanded
@@ -10503,7 +10566,8 @@ jb.component('table-tree.init', { /* tableTree.init */
                 return inner
             },null)
         }
-    }),
+    }
+      }),
     calcProp({
         id: 'items',
         value: (ctx,{cmp}) => {
@@ -10587,8 +10651,8 @@ jb.component('table-tree.init', { /* tableTree.init */
 jb.component('table-tree.plain', { /* tableTree.plain */
   type: 'table-tree.style',
   params: [
-    {id: 'hideHeaders', as: 'boolean' },
-    {id: 'autoOpenFirstLevel', as: 'boolean' },
+    {id: 'hideHeaders', as: 'boolean', type: 'boolean'},
+    {id: 'autoOpenFirstLevel', as: 'boolean', type: 'boolean'},
     {id: 'gapWidth', as: 'number', defaultValue: 30},
     {id: 'expColWidth', as: 'number', defaultValue: 16},
     {id: 'noItemsCtrl', type: 'control', dynamic: true, defaultValue: text('no items')}
@@ -10637,15 +10701,16 @@ jb.component('json.path-selector', { /* json.pathSelector */
     }
 })
 
-jb.component('table-tree.expand-path', {
-    type: 'table-tree.style',
-    params: [
-      {id: 'path', as: 'string' },
-    ],
-    impl: calcProp({ id: 'pathsToExtend', 
-        value: ({},{pathsToExtend},{path}) => [...path.split(','), ...(pathsToExtend || [])],
-        phase: 5 // before
-    })
+jb.component('table-tree.expand-path', { /* tableTree.expandPath */
+  type: 'table-tree.style',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: calcProp({
+    id: 'pathsToExtend',
+    value: ({},{pathsToExtend},{path}) => [...path.split(','), ...(pathsToExtend || [])],
+    phase: 5
+  })
 })
 
 ;
@@ -25570,7 +25635,7 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
 jb.component('pretty-print', { /* prettyPrint */
   params: [
     {id: 'profile', defaultValue: '%%'},
-    {id: 'forceFlat', as: 'boolean'}
+    {id: 'forceFlat', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,profile) => jb.prettyPrint(jb.val(profile),ctx.params)
 })
@@ -27533,241 +27598,6 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _mat
 
 /******/ });;
 
-var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : {}), {
-      'core': [
-        'src/core/jb-core.js',
-        'src/core/jb-macro.js',
-      ],
-      'common': [
-        'src/core/jb-core.js',
-        'src/core/jb-macro.js',
-        'src/core/jb-common.js',
-        'src/misc/spy.js',
-      ],
-      'ui-common-css': [
-        'css/font.css',
-        'css/styles.css',
-      ],      
-      'ui-common': [
-        'dist/jb-immutable.js', // the immutable-helper lib
-        'dist/jb-rx.js',
-
-        'src/ui/watchable/watchable-ref.js',
-        'src/ui/core/vdom.js',
-        'src/ui/core/jb-react.js',
-        'src/ui/core/ui-comp.js',
-        'src/ui/core/ui-utils.js',
-        'src/ui/common-features.js',
-        'src/ui/css-features.js',
-
-        'src/ui/text.js',
-        'src/ui/group.js',
-        'src/ui/html.js',
-        'src/ui/image.js',
-        'src/ui/button.js',
-        'src/ui/field.js',
-        'src/ui/editable-text.js',
-        'src/ui/editable-boolean.js',
-        'src/ui/editable-number.js',
-        'src/ui/dialog.js',
-        'src/ui/itemlist.js',
-        'src/ui/itemlist-container.js',
-        'src/ui/menu.js',
-        'src/ui/picklist.js',
-        'src/ui/theme.js',
-        'src/ui/icon.js',
-        'src/ui/slider.js',
-        'src/ui/table.js',
-        'src/ui/window.js',
-
-        'src/ui/styles/mdc-styles.js',
-        'src/ui/styles/button-styles.js',
-        'src/ui/styles/editable-text-styles.js',
-        'src/ui/styles/layout-styles.js',
-        'src/ui/styles/group-styles.js',
-        'src/ui/styles/table-styles.js',
-        'src/ui/styles/picklist-styles.js',
-        'src/ui/styles/property-sheet-styles.js',
-        'src/ui/styles/editable-boolean-styles.js',
-      ],
-      'ui-tree':[
-        'src/ui/tree/tree.js',
-        'src/ui/tree/table-tree.js',
-        'src/ui/tree/json-tree-model.js',
-      ],
-      remote: [
-        'src/ui/watchable/remote.js',
-      ],
-      'inner-html': [ // unsafe
-        'src/ui/inner-html.js',
-      ],
-      'testers': [
-        'src/testing/testers.js',
-      ],
-      'codemirror': [
-          'dist/codemirror.js',
-      ],
-      'codemirror-js-files': [
-        'node_modules/codemirror/lib/codemirror.js',
-        'node_modules/codemirror/mode/xml/xml.js',
-        'node_modules/codemirror/mode/javascript/javascript.js',
-        'node_modules/codemirror/mode/css/css.js',
-        'node_modules/codemirror/mode/jsx/jsx.js',
-        'node_modules/codemirror/mode/htmlmixed/htmlmixed.js',
-        'node_modules/codemirror/addon/hint/show-hint.js',
-
-        'node_modules/codemirror/addon/dialog/dialog.js',
-        'node_modules/codemirror/addon/search/searchcursor.js',
-        'node_modules/codemirror/addon/search/search.js',
-        'node_modules/codemirror/addon/scroll/annotatescrollbar.js',
-        'node_modules/codemirror/addon/search/matchesonscrollbar.js',
-
-        'node_modules/codemirror/addon/fold/foldgutter.js',
-        'node_modules/codemirror/addon/selection/active-line.js',
-      ],
-      'codemirror-css': [
-        'node_modules/codemirror/addon/dialog/dialog.css',
-        'node_modules/codemirror/addon/search/matchesonscrollbar.css',
-        'node_modules/codemirror/lib/codemirror.css',
-        'node_modules/codemirror/theme/solarized.css',
-        'node_modules/codemirror/addon/hint/show-hint.css',
-      ],
-      animate: [
-        'node_modules/animejs/lib/anime.js',
-        'src/ui/animation/animation.js'
-      ],
-      cards: [
-        'src/ui/cards/cards.js',
-        'src/ui/cards/cards-styles.js',
-        'src/ui/cards/cards-adapters.js',
-      ],
-      'cards-sample-data': [
-        'src/ui/cards/sample-data/wix-blog.js',
-        'src/ui/cards/sample-data/wordpress-angrybirds.js',
-      ],
-      'd3': [
-        'node_modules/d3/dist/d3.js',
-        'src/ui/d3-chart/d3-math.js',
-        'src/ui/d3-chart/d3-chart.js',
-        'src/ui/d3-chart/d3-histogram.js',
-      ],
-      'dragula': [
-          'dist/dragula.js',
-          'dist/dragula.css',
-      ],
-      'jb-d3': ['dist/jb-d3.js'],
-      'css-files': [
-        'dist/material.css',
-        'css/font.css',
-        'css/styles.css',
-      ],
-      'md-icons': [
-        'dist/mdi-lib.js',
-        'src/ui/md-icons.js'
-      ],
-      babel: [
-        'node_modules/babel-standalone/babel.js',
-        'dist/babel-ext.js'
-      ],
-      'material': [
-        'dist/material.js',
-      ],
-      'material-css': [
-        'dist/material.css',
-      ],
-      'history': [ 'dist/history.js' ],
-      'node-adapter': [ 'src/node-adapter/node-adapter.js' ],
-      'pretty-print': [ 'src/misc/pretty-print.js' ],
-      'object-encoder': [ 'src/misc/object-encoder.js' ],
-      'xml': [ 'src/misc/xml.js' ],
-      'jison': [ 'dist/jb-jison.js', 'src/misc/jison.js' ],
-      'parsing': [ 'src/misc/parsing.js' ],
-      studio: [
-        'dist/material.js','src/loader/jb-loader.js', 'src/ui/watchable/text-editor.js', 
-        'src/misc/parsing.js', 'src/ui/styles/codemirror-styles.js',
-        'styles', 'path','utils', 'preview','popups','url','model-components', 'completion', 'undo','tgp-model', 'new-profile',
-        'suggestions', 'properties','jb-editor-styles','edit-source','jb-editor','pick','h-to-jsx','style-editor',
-        'references','properties-menu','save','open-project','tree',
-        'data-browse', 'new-project','event-tracker', 'toolbar','search', 'main', 'component-header', 'hosts', 'probe',
-        'watch-ref-viewer', 'content-editable', 'position-thumbs'
-      ],
-      'studio-tests': [
-        'projects/studio/studio-testers.js',
-        'probe','model','tree','suggestion'
-      ],
-})
-
-function jb_dynamicLoad(modules,prefix) {
-  prefix = prefix || '';
-  const isDist = document.currentScript.getAttribute('src').indexOf('/dist/') != -1
-  if (isDist) {
-    const scriptSrc = document.currentScript.getAttribute('src')
-    const base = scriptSrc.slice(0,scriptSrc.lastIndexOf('/')+1)
-    modules.split(',').flatMap(m=>[m+'.js',...(jb_modules[`${m}-css`] ? [`${m}.css`]: [])])
-      .forEach(m=>loadFile(base+m))
-  } else {
-    modules.split(',').flatMap(m=>[m,...(jb_modules[`${m}-css`] ? [`${m}-css`]: [])]).forEach(m=>{
-      (jb_modules[m] || []).forEach(file=>{
-        if (m == 'studio' && !file.match(/\//))
-          file = 'projects/studio/studio-' + file + '.js';
-        if (m == 'studio-tests' && !file.match(/\//))
-          file = 'projects/studio-helper/studio-' + file + '-tests.js';
-
-        if (prefix) { // avoid muliple source files with the same name in the debugger
-          const file_path = file.split('/');
-          file_path.push(prefix+file_path.pop());
-          file = file_path.join('/');
-        }
-
-        const url = (window.jbLoaderRelativePath ? '' : '/') + file;
-        loadFile(url)
-      })
-    })
-  }
-}
-
-if (typeof window != 'undefined')
-  if (document.currentScript && document.currentScript.getAttribute('modules'))
-    jb_dynamicLoad(document.currentScript.getAttribute('modules'),document.currentScript.getAttribute('prefix'));
-
-if (typeof global != 'undefined') global.jb_modules = jb_modules;
-
-loadProject()
-
-function loadProject() {
-  if (typeof jbProjectSettings == 'undefined') return
-
-  jb_dynamicLoad(jbProjectSettings.libs); // may load packaged libs from dist
-
-  [...(jbProjectSettings.jsFiles || []), ...(jbProjectSettings.cssFiles || [])]
-    .forEach(fn=> loadFile(pathOfProjectFile(jbProjectSettings.project,fn,jbProjectSettings.baseUrl || '')) )
-}
-
-function jb_initWidget() {
-  if (!document.getElementById('main')) {
-    const mainElem = document.createElement('div')
-    mainElem.setAttribute('id','main')
-    document.body.appendChild(mainElem)
-  }
-  jb.ui.renderWidget({$: jbProjectSettings.entry || `${jbProjectSettings.project}.main` }, document.getElementById('main'))
-}
-
-function pathOfProjectFile(project,fn,baseDir) {
-  if (baseDir.indexOf('//') != -1) // external
-    return baseDir + fn
-  else if (baseDir)
-   return baseDir == './' ? fn : `/${project}/${fn}`
-  return `/projects/${project}/${fn}`
- }
- 
- function loadFile(url) {
-   if (url.match(/\.js$/))
-     document.write('<script src="' + url + '" charset="UTF-8"></script>')
-   else
-     document.write('<link rel="stylesheet" type="text/css" href="' + url + '" />');
- }
- ;
-
 (function(){
 
 function getSinglePathChange(diff, currentVal) {
@@ -28085,39 +27915,14 @@ jb.component('extract-text', { /* extractText */
   description: 'text breaking according to begin/end markers',
   params: [
     {id: 'text', as: 'string-with-source-ref', defaultValue: '%%'},
-    {id: 'startMarkers', type: 'data[]' ,as: 'array', mandatory: true},
+    {id: 'startMarkers', type: 'data[]', as: 'array', mandatory: true},
     {id: 'endMarker', as: 'string'},
-    {
-      id: 'includingStartMarker',
-      as: 'boolean',
-      type: 'boolean',
-      description: 'include the marker at part of the result'
-    },
-    {
-      id: 'includingEndMarker',
-      as: 'boolean',
-      type: 'boolean',
-      description: 'include the marker at part of the result'
-    },
-    {
-      id: 'repeating',
-      as: 'boolean',
-      type: 'boolean',
-      description: 'apply the markers repeatingly'
-    },
+    {id: 'includingStartMarker', as: 'boolean', type: 'boolean', description: 'include the marker at part of the result'},
+    {id: 'includingEndMarker', as: 'boolean', type: 'boolean', description: 'include the marker at part of the result'},
+    {id: 'repeating', as: 'boolean', type: 'boolean', description: 'apply the markers repeatingly'},
     {id: 'noTrim', as: 'boolean', type: 'boolean'},
-    {
-      id: 'useRegex',
-      as: 'boolean',
-      type: 'boolean',
-      description: 'use regular expression in markers'
-    },
-    {
-      id: 'exclude',
-      as: 'boolean',
-      type: 'boolean',
-      description: 'return the inverse result. E.g. exclude remarks'
-    }
+    {id: 'useRegex', as: 'boolean', type: 'boolean', description: 'use regular expression in markers'},
+    {id: 'exclude', as: 'boolean', type: 'boolean', description: 'return the inverse result. E.g. exclude remarks'}
   ],
   impl: (ctx,textRef,startMarkers,endMarker,includingStartMarker,includingEndMarker,repeating,noTrim,regex,exclude) => {
     const text = jb.tostring(textRef);
@@ -28181,19 +27986,8 @@ jb.component('break-text', { /* breakText */
   description: 'recursive text breaking according to multi level separators',
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'},
-    {
-      id: 'separators',
-      as: 'array',
-      mandatory: true,
-      defaultValue: [],
-      description: 'multi level separators'
-    },
-    {
-      id: 'useRegex',
-      as: 'boolean',
-      type: 'boolean',
-      description: 'use regular expression in separators'
-    }
+    {id: 'separators', as: 'array', mandatory: true, defaultValue: [], description: 'multi level separators'},
+    {id: 'useRegex', as: 'boolean', type: 'boolean', description: 'use regular expression in separators'}
   ],
   impl: (ctx,text,separators,regex) => {
 	  let findMarker = (text,marker, startpos) => {
@@ -28340,7 +28134,7 @@ jb.component('wrap-as-object', { /* wrapAsObject */
   type: 'aggregator',
   params: [
     {id: 'propertyName', as: 'string', dynamic: true, mandatory: true},
-    {id: 'value', as: 'string', dynamic: true, defaultValue: '%%' },
+    {id: 'value', as: 'string', dynamic: true, defaultValue: '%%'},
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
   impl: (ctx,key,value,items) => {
@@ -28350,7 +28144,7 @@ jb.component('wrap-as-object', { /* wrapAsObject */
   }
 })
 
-jb.component('write-value-asynch', {
+jb.component('write-value-asynch', { /* writeValueAsynch */
   type: 'action',
   params: [
     {id: 'to', as: 'ref', mandatory: true},
@@ -28733,7 +28527,7 @@ jb.component('picklist.studio-enum', { /* picklist.studioEnum */
   })
 })
 
-jb.component('text.studio-message', { /* label.studioMessage */
+jb.component('text.studio-message', { /* text.studioMessage */
   type: 'text.style',
   impl: customStyle({
     template: (cmp,state,h) => h('span',{class: 'studio-message'}, state.text),
@@ -28978,12 +28772,16 @@ Object.assign(st, {
 		st.writeValue(st.refOfPath(path),{['$'+compName]: currentVal || emptyVal} ,srcCtx)
 	},
 
-	insertControl: (path,compName,srcCtx) => {
-		const comp = compName && st.getComp(compName);
-		if (!compName || !comp) return;
-		let newCtrl = st.newProfile(comp,compName)
-		if (st.controlParams(path)[0] == 'fields' && newCtrl.$ != 'field')
-			newCtrl = { $: 'field.control', control : newCtrl};
+	insertControl: (path,compToInsert,srcCtx) => {
+		let newCtrl = compToInsert
+		if (typeof compToInsert == 'string') {
+			const comp = compToInsert && st.getComp(compToInsert);
+			if (!compToInsert || !comp) return;
+			newCtrl = st.newProfile(comp,compToInsert)
+			if (st.controlParams(path)[0] == 'fields' && newCtrl.$ != 'field')
+				newCtrl = { $: 'field.control', control : newCtrl};
+		}
+
 		// find group parent that can insert the control
 		if (path.indexOf('~') == -1)
 			path = path + '~impl';
@@ -29327,8 +29125,7 @@ jb.component('studio.set-preview-size', { /* studio.setPreviewSize */
 })
 
 jb.component('studio.wait-for-preview-iframe', { /* studio.waitForPreviewIframe */
-  impl: _ =>
-    jb.ui.waitFor(()=> jb.studio.previewWindow)
+  impl: () => jb.ui.waitFor(()=> jb.studio.previewWindow)
 })
 
 jb.studio.pageChange = jb.ui.resourceChange().filter(e=>e.path.join('/') == 'studio/page')
@@ -29348,10 +29145,6 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
   impl: ctx => jb.ui.ctrl(ctx, features(
       calcProp('width','%$$model/width%'),
       calcProp('height','%$$model/height%'),
-//      calcProp('cacheKiller', () => 'cacheKiller='+(''+Math.random()).slice(10)),
-//      calcProp('rootName','%$studio/settings/rootName%'),
-//      calcProp('project','%$studio/project%'),
-//      calcProp('src', '/project/%$$props/project%?%$$props/cacheKiller%'),
       calcProp('host', firstSucceeding('%$queryParams/host%','studio')),
       calcProp('loadingMessage', '{? loading project from %$$props/host%::%$queryParams/hostProjectId% ?}'),
       interactive( (ctx,{cmp}) => {
@@ -30041,10 +29834,10 @@ jb.component('studio.profile-value-as-text', { /* studio.profileValueAsText */
 jb.component('studio.insert-control', { /* studio.insertControl */
   type: 'action',
   params: [
-    {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()},
-    {id: 'comp', as: 'string'}
+    {id: 'comp', mandatory: true, description: 'comp name or comp json'},
+    {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
-  impl: (ctx,path,comp,type) =>	st.insertControl(path, comp,ctx)
+  impl: (ctx,comp,path) =>	st.insertControl(path, comp,ctx)
 })
 
 jb.component('studio.wrap', { /* studio.wrap */
@@ -30540,7 +30333,7 @@ jb.component('studio.script-history', { /* studio.scriptHistory */
   })
 })
 
-jb.component('studio.open-script-history', { /* studio.openScriptHistory */ 
+jb.component('studio.open-script-history', { /* studio.openScriptHistory */
   type: 'action',
   impl: openDialog({
     style: dialog.studioFloating({id: 'script-history', width: '700', height: '400'}),
@@ -31158,7 +30951,7 @@ jb.component('studio.open-new-profile-dialog', { /* studio.openNewProfileDialog 
         [
           action.switchCase(
             '%$mode% == \"insert-control\"',
-            studio.insertControl('%$path%', '%%')
+            studio.insertControl('%%', '%$path%')
           ),
           action.switchCase(
             '%$mode% == \"insert\"',
@@ -31313,7 +31106,7 @@ jb.component('studio.insert-comp-option', { /* studio.insertCompOption */
   ],
   impl: menu.action({
     title: '%$title%',
-    action: studio.insertControl(studio.currentProfilePath(), '%$comp%')
+    action: studio.insertControl('%$comp%')
   })
 })
 
@@ -31321,6 +31114,42 @@ jb.component('studio.insert-control-menu', { /* studio.insertControlMenu */
   impl: menu.menu({
     title: 'Insert',
     options: [
+      menu.action({
+        title: 'Drop html from any web site',
+        action: openDialog({
+          style: dialog.dialogOkCancel(),
+          content: group({
+            layout: layout.vertical(),
+            controls: [
+              button({
+                title: 'drop here',
+                style: button.mdc(),
+                raised: '',
+                features: [
+                  css.height('80'),
+                  studio.dropHtml(
+                    runActions(studio.insertControl('%$newCtrl%'), dialog.closeContainingPopup())
+                  )
+                ]
+              }),
+              editableText({
+                title: 'paste html here',
+                databind: '%$studio/htmlToPaste%',
+                style: editableText.textarea({rows: '3', cols: '80'}),
+                features: htmlAttribute('placeholder', 'or paste html here')
+              })
+            ],
+            features: [css.width('400'), css.padding({left: '4', right: '4'})]
+          }),
+          title: 'Drop html from any web site',
+          onOK: action.if(
+            '%$studio/htmlToPaste%',
+            studio.insertControl(studio.htmlToControl('%$studio/htmlToPaste%'))
+          ),
+          features: dialogFeature.dragTitle()
+        }),
+        shortcut: ''
+      }),
       menu.menu({
         title: 'Control',
         options: [
@@ -31538,7 +31367,7 @@ jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */
             action: writeValue(studio.ref('%$path%'), '%$val%')
           }),
           feature.if(studio.isOfType('%$path%', 'boolean')),
-          css.margin({top: '35', left: '', right: '20'})
+          css.margin({top: '35', right: '20', left: ''})
         ]
       })
     ],
@@ -31895,22 +31724,28 @@ jb.component('studio.open-properties', { /* studio.openProperties */
   params: [
     {id: 'focus', type: 'boolean', as: 'boolean'}
   ],
-  impl: openDialog({
-    style: dialog.studioFloating({id: 'studio-properties', width: '500'}),
-    content: studio.properties(studio.currentProfilePath(), '%$focus%'),
-    title: pipeline(
-      {
-          '$': 'object',
-          title: studio.shortTitle(studio.currentProfilePath()),
-          comp: studio.compName(studio.currentProfilePath())
-        },
-      'Properties of %comp% %title%'
-    ),
-    features: [
-      feature.keyboardShortcut('Ctrl+Left', studio.openControlTree()),
-      dialogFeature.resizer()
-    ]
-  })
+  impl: runActions(
+    Var('path', studio.currentProfilePath()),
+    action.if(
+        studio.compName('%$path%'),
+        openDialog({
+          style: dialog.studioFloating({id: 'studio-properties', width: '500'}),
+          content: studio.properties('%$path%', '%$focus%'),
+          title: pipeline(
+            {
+                '$': 'object',
+                title: studio.shortTitle('%$path%'),
+                comp: studio.compName('%$path%')
+              },
+            'Properties of %comp% %title%'
+          ),
+          features: [
+            feature.keyboardShortcut('Ctrl+Left', studio.openControlTree()),
+            dialogFeature.resizer()
+          ]
+        })
+      )
+  )
 })
 
 ;
@@ -32612,10 +32447,7 @@ jb.component('studio.data-browse', { /* studio.dataBrowse */
     controls: [
       group({
         controls: [
-          controlWithCondition(
-            isOfType('string,boolean,number', '%$obj%'),
-            text('%$obj%')
-          ),
+          controlWithCondition(isOfType('string,boolean,number', '%$obj%'), text('%$obj%')),
           controlWithCondition(
             isOfType('array', '%$obj%'),
             table({
@@ -32995,7 +32827,7 @@ const st = jb.studio;
 
 function initStudioEditing() {
   if (st.previewjb.comps['dialog.studio-pick-dialog']) return
-  jb.entries(jb.comps).filter(e=>st.isStudioCmp(e[0])).forEach(e=>
+  jb.entries(jb.comps).filter(e=>st.isStudioCmp(e[0]) || !st.previewjb.comps[e[0]]).forEach(e=>
     st.previewjb.comps[e[0]] = { ...e[1], [jb.location] : [e[1][jb.location][0].replace(/!st!/,''), e[1][jb.location][1]]})
 }
 
@@ -33013,8 +32845,9 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
       cmp.titleBelow = false;
 
       const projectPrefix = ctx.exp('%$studio/project%.%$studio/page%')
+      const testHost = ctx.exp('%$queryParams/host%') == 'test'
       const eventToElemPredicate = from == 'preview' ? 
-        (path => path.indexOf(projectPrefix) == 0) : (path => st.isStudioCmp(path.split('~')[0]))
+        (path => testHost || path.indexOf(projectPrefix) == 0) : (path => st.isStudioCmp(path.split('~')[0]))
       const cover = _window.document.createElement('div')
       cover.className = 'jb-cover'
       cover.style.position= 'absolute'; cover.style.width= '100%'; cover.style.height= '100%'; cover.style.background= 'white'; cover.style.opacity= '0'; cover.style.top= 0; cover.style.left= 0;
@@ -33169,13 +33002,14 @@ Object.assign(st, {
     jb.comps[path[0]] = st.previewjb.comps[path[0]]
     const pathStr = Array.isArray(path) ? path.join('~') : path;
     const {elem, ctx} = st.findElemsByCtxCondition(ctx => pathStr.indexOf(ctx.path) == 0)[0] || {}
+    if (!ctx) return
     ctx.profile = jb.path(jb.comps,ctx.path.split('~'))
     const cmp = ctx.profile.$ == 'open-dialog' ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself()
     cmp && jb.ui.applyVdomDiff(elem, jb.ui.h(cmp), {strongRefresh: true, ctx})
     jb.exec({ $: 'animate.refresh-elem', elem: () => elem })
   },
   findElemsByCtxCondition(condition) {
-    return [st.previewWindow,window].flatMap(win =>
+    return [st.previewWindow,window].filter(x=>x).flatMap(win =>
       Array.from(win.document.querySelectorAll('[jb-ctx]'))
         .map(elem=>({elem, ctx: win.jb.ctxDictionary[elem.getAttribute('jb-ctx')]}))
         .filter(e => e.ctx && condition(e.ctx))
@@ -33238,8 +33072,10 @@ jb.component('studio.pick-toolbar', { /* studio.pickToolbar */
           const elem = ctx.exp('%$pickSelection/elem%')
           if (!elem) return ''
           const _jb = elem.ownerDocument === jb.frame.document ? jb : st.previewjb
-          const res = elem ? [elem.getAttribute('pick-ctx'), elem.getAttribute('jb-ctx'),
-            ].filter(x=>x).slice(0,1).map(id=>_jb.ctxDictionary[id].path) : []
+          const res = elem ? [elem.getAttribute('pick-ctx'), elem.getAttribute('jb-ctx')]
+              .map(id=>_jb.ctxDictionary[id])
+              .filter(x=>x)
+              .map(ctx=>ctx.path).slice(0,1) : []
           return res
         }
       })
@@ -34388,16 +34224,17 @@ jb.component('studio.control-tree', { /* studio.controlTree */
           defHandler(
             'newControl',
             studio.openNewProfileDialog({
-              path: '%$$state.selected%',
+              path: tree.pathOfInteractiveItem(),
               type: 'control',
               mode: 'insert-control',
               onClose: studio.gotoLastEdit()
             })
-          )
+          ),
+          studio.dropHtml(studio.extractStyle('%$newCtrl%', tree.pathOfInteractiveItem()))
         ]
       })
     ],
-    features: [css.padding('10')]
+    features: css.padding('10')
   })
 })
 
@@ -34894,7 +34731,8 @@ jb.component('studio.toolbar', { /* studio.toolbar */
           mode: 'insert-control',
           onClose: studio.gotoLastEdit()
         }),
-        style: button.mdcIcon('add')
+        style: button.mdcIcon('add'),
+        features: studio.dropHtml(studio.insertControl('%$newCtrl%'))
       }),
       button({
         title: 'Responsive',
@@ -35490,6 +35328,17 @@ st.projectHosts = {
                 return {...settings, project}
             })
         }
+    },
+    test: {
+        fetchProject(id,project) {
+            return Promise.resolve({
+                libs: 'common,ui-common,material,ui-tree,dragula,codemirror,testers,pretty-print,studio,studio-tests,object-encoder,remote',
+                jsFiles: ['remote-widgets.js',...['data','ui','vdom','tree','watchable','parsing','object-encoder'].map(x=>x+'-tests.js')]
+                    .map(x=>`/projects/ui-tests/${x}`),
+                project, 
+                entry: { $: 'ui-test-runner', test: project }
+            })
+        }
     }
 }
 
@@ -35522,7 +35371,7 @@ st.Probe = class {
         this.probe[pathToTrace] = this.result
         this.pathToTrace = pathToTrace
         const initial_resources = st.previewjb.resources
-        const initial_comps = st.compsRefHandler.resources()
+        const initial_comps = st.compsRefHandler && st.compsRefHandler.resources()
         if (st.probeDisabled) {
             this.completed = false
             this.remark = 'probe disabled'
@@ -35546,7 +35395,7 @@ st.Probe = class {
                 // make values out of ref
                 this.result.forEach(obj=> { obj.out = jb.val(obj.out) ; obj.in.data = jb.val(obj.in.data)})
                 st.previewjb.watchableValueByRef && st.previewjb.watchableValueByRef.resources(initial_resources)
-                st.compsRefHandler.resources(initial_comps)
+                initial_comps && st.compsRefHandler.resources(initial_comps)
                 return this
             })
     }
@@ -35588,7 +35437,7 @@ st.Probe = class {
         const parentCtx = this.probe[_path][0].in, breakingPath = _path+'~'+breakingProp
         const obj = this.probe[_path][0].out
         const hasSideEffect = st.previewjb.comps[st.compNameOfPath(breakingPath)] && (st.previewjb.comps[st.compNameOfPath(breakingPath)].type ||'').indexOf('has-side-effects') != -1
-        if (!hasSideEffect && obj[breakingProp] && typeof obj[breakingProp] == 'function')
+        if (obj && !hasSideEffect && obj[breakingProp] && typeof obj[breakingProp] == 'function')
             return Promise.resolve(obj[breakingProp]())
                 .then(_=>this.handleGaps(_path))
 
@@ -36453,4 +36302,406 @@ jb.component('content-editable.position-thumbs-style', { /* contentEditable.posi
   })
 })
 ;
+
+jb.component('studio.drop-html', { 
+    params: [
+        { id: 'onDrop', type: 'action', dynamic: true, description: 'use %$newCtrl%' }
+    ],
+    type: 'feature',
+    impl: features(
+      htmlAttribute('ondragover','over'),
+      htmlAttribute('ondrop','dropHtml'),
+      defHandler('over', (ctx,{ev}) => ev.preventDefault() ),
+      defHandler('dropHtml', (ctx,{cmp, ev},{onDrop}) => {
+        ev.preventDefault();
+        return ev.dataTransfer.items[1].getAsString(html =>
+                onDrop(ctx.setVar('newCtrl',jb.ui.htmlToControl(html))))
+      })
+    )
+})
+
+jb.component('studio.html-to-control', { 
+    params: [
+        {id: 'html', as: 'string'}
+    ],
+    impl: (ctx,html) => jb.ui.htmlToControl(html)
+})
+
+jb.ui.cssProcessors = {
+    layout: {
+        filter: prop => prop.match(/flex|grid|align/) || 
+            ['display','order','top','left','right','bottom','box-sizing'].find(x=>prop.indexOf(x+':') == 0),
+        features: props => css.layout(props.join(';'))
+    },
+    width: {
+        filter: (prop,props) => 
+            prop.match(/^(min-|max-)?width/) || prop.match(/overflow-x/) && props.find(x=>x.match(/^(min-|max-)?width/)),
+        features: props => {
+            const widthProp = props.filter(x=>x.match(/^(min-|max-)?width/))[0]
+            const minMax = widthProp.match(/min/) ? 'min' : widthProp.match(/max/) ? 'max' : null
+            const overflow = props.filter(x=>x.match(/overflow/)).map(x=>x.split(':').pop().trim())[0]
+            return css.width({
+                    width: widthProp.split(':').pop().replace(/px/,'').trim(),
+                    ...(minMax && {minMax}),
+                    ...(overflow && {overflow}),
+                })
+        }
+    },
+    height: {
+        filter: (prop,props) => 
+            prop.match(/^(min-|max-)?height/) || prop.match(/overflow-y/) && props.find(x=>x.match(/^(min-|max-)?height/)),
+        features: props => {
+            const heightProp = props.filter(x=>x.match(/^(min-|max-)?height/))[0]
+            const minMax = heightProp.match(/min/) ? 'min' : heightProp.match(/max/) ? 'max' : null
+            const overflow = props.filter(x=>x.match(/overflow/)).map(x=>x.split(':').pop().trim())[0]
+            return css.height({
+                    height: heightProp.split(':').pop().replace(/px/,'').trim(),
+                    ...(minMax && {minMax}),
+                    ...(overflow && {overflow}),
+                })
+        }
+    },
+    margin: {
+        filter: x=>x.match(/margin:/),
+        features: props => {
+            if (props.length > 1)
+                return [css.layout(props.join(';'))]
+            const vals = props[0].split(':').pop().split(' ').filter(x=>x).map(x=>x.split('px')[0])
+            const allZero = vals.reduce((agg,val) => agg && val == '0', true)
+            if (allZero) return
+            return vals.length == 1 ? css.marginAllSides(vals[0])
+                : vals.length == 2 ? css.marginVerticalHorizontal(vals[0],vals[1])
+                : vals.length == 3 ? css.margin({top: vals[0], right: vals[1], bottom: vals[2], left: vals[1] })
+                : css.margin({top: vals[0], right: vals[1], bottom: vals[2], left: vals[3] })
+        }
+    },
+    padding: {
+        filter: x=>x.match(/padding:/),
+        features: props => {
+            if (props.length > 1)
+                return [css(props.join(';'))]
+            const vals = props[0].split(':').pop().split(' ').filter(x=>x).map(x=>x.split('px')[0])
+            const allZero = vals.reduce((agg,val) => agg && val == '0', true)
+            if (allZero) return
+            return vals.length == 1 ? css.padding({top: vals[0], right: vals[0], bottom: vals[0], left: vals[0] })
+                : vals.length == 2 ? css.padding({top: vals[0], right: vals[1], bottom: vals[0], left: vals[1] })
+                : vals.length == 3 ? css.padding({top: vals[0], right: vals[1], bottom: vals[2], left: vals[1] })
+                : css.padding({top: vals[0], right: vals[1], bottom: vals[2], left: vals[3] })
+        }
+    },
+    typography: {
+        filter: x => x.match(/font|text-/),
+        features: props => css.typography(props.join(';'))
+    },
+}
+
+jb.ui.htmlToControl = function(html) {
+    const elem = document.createElement('div')
+    elem.innerHTML = html
+    clean(elem)
+    return vdomToControl(elemToVdom(elem))    
+
+    function elemToVdom(elem) {
+        if (elem.nodeType == Node.TEXT_NODE && elem.nodeValue.match(/^\s*$/)) return
+        if (elem.nodeType == Node.TEXT_NODE) { // for mixed {
+            return { elem, tag: 'span', attributes: { $text: elem.nodeValue.trim() } }
+        }
+        const singleTextChild = elem.childNodes.length == 1 && jb.path(elem,'firstChild.nodeName') == '#text' && elem.firstChild.nodeValue
+        return {
+            elem,
+            tag: elem.tagName.toLowerCase(),
+            attributes: jb.objFromEntries([
+                ...Array.from(elem.attributes).map(e=>[e.name,e.value]),
+                ...( singleTextChild ? [['$text',singleTextChild]] : [])
+            ]),
+            ...( (elem.childNodes[0] && !singleTextChild) && { children: 
+                Array.from(elem.childNodes).map(el=> elemToVdom(el)).filter(x=>x) })
+        }
+    }
+
+    function clean(elem) {
+        elem.setAttribute('class','')
+        elem.setAttribute('style',(elem.getAttribute('style') ||'').split(';')
+            .filter(x=>!x.match('inherit'))
+            .filter(x=>!x.match(/^\s*border: 0px$/))
+            .join(';'))
+        Array.from(elem.children).forEach(e => clean(e))
+    }
+
+    function vdomToControl(vdom) {
+        const atts = vdom.attributes || {}
+        const tag = vdom.tag
+        const styleCss = atts.style||''
+        const props = styleCss.trim().split(';').map(x=>x.trim()).map(x=>x,replace(/\s*:\s*/g,':')).filter(x=>x)
+        const featureProps = props.filter(x=> !x.match(/background-image|background-size/))
+
+        const pt = vdom.children ? 'group'
+            : (tag == 'button' || tag == 'a') ? 'button'
+            : atts.$text ? 'text'
+            : tag == 'img' ? 'image'
+            : styleCss.indexOf('background-image') != -1 ? 'image' 
+            : 'group'
+        const features = extractFeatures(), controls = extractControls(), style = extractStyle()
+        return {$: pt, 
+            ...(style && {style}) , 
+            ...(features && features.length && {features}),
+            ...(controls && controls.length && {controls}),
+            ...extractPTProps()
+        }
+    
+        function extractFeatures() {
+            const attfeatures = ['width','height','tabindex'].filter(att => atts[att])
+                .map(att=> htmlAttribute(att,atts[att]))
+            return [atts.class && css.class(atts.class), ...cssToFeatures(), ...attfeatures].filter(x=>x)
+        }
+    
+        function cssToFeatures() {
+            if (!styleCss) return []
+            const res = Object.values(jb.ui.cssProcessors).reduce((agg,proc) => {
+                const props4Features = agg.props.filter(p=>proc.filter(p,featureProps))
+                const features = props4Features.length ? jb.asArray(proc.features(props4Features)).filter(x=>x) : []
+                return {
+                    props: agg.props.filter(p=>! proc.filter(p,featureProps)),
+                    features: [...agg.features, ...features]
+            }}, {props: featureProps, features: []})
+            return res.features.concat([css(res.props.join(';'))])
+        }
+    
+        function extractStyle() {
+            if (jb.comps[pt+'.htmlTag']) // group & text
+                return jb.frame[pt].htmlTag(tag)
+            else if (tag == 'button')
+                return button.native()
+            else if (tag == 'a')
+                return button.href()
+            else if (tag == 'img')
+                return image.img()
+        }
+        function extractControls() {
+            return vdom.children && vdom.children.map(ch=>vdomToControl(ch))
+        }
+        function extractPTProps() {
+            return { 
+                text: pt == 'text' && atts.$text, 
+                url: pt == 'image' && atts.src || bgImage(),
+                resize: bgSize(),
+                title: pt == 'button' && tag == 'a' && atts.$text ||
+                       pt == 'group' && tag 
+            }
+        }
+        function bgImage() {
+            return props.filter(x=> x.indexOf('background-image') != -1)
+                .map(x=>x.replace(/^background-image\s*:\s*/,''))
+                .map(x=>x.replace(/^url\(/,'')
+                .replace(/^("|')/,'').replace(/("|')$/,''))[0]
+        }
+        function bgSize() {
+            return props.filter(x=> x.indexOf('background-size') != -1)
+                .map(x=>x.replace(/^background-size\s*:\s*/,''))
+                .map(val => val == 'cover' ? image.cover()
+                    : val == 'contain' ? image.fullyVisible()
+                    : image.widthHeight(... val.split(' ').map(x=>x.trim().replace(/px/,'')))
+                )[0]
+        }
+    }   
+}
+;
+
+(function(){
+
+jb.ns('patterns')
+
+jb.component('studio.select-style', { /* studio.selectStyle */
+  type: 'control',
+  params: [
+    {id: 'extractedCtrl'},
+    {id: 'targetPath', as: 'string'}
+  ],
+  impl: group({
+    layout: layout.grid({columnSizes: list('600'), columnGap: '10px', rowGap: '10px'}),
+    style: group.sections({
+      titleStyle: header.mdcHeadline6(),
+      sectionStyle: styleWithFeatures(
+        group.div(),
+        [
+          css.padding({left: '10', bottom: '20'}),
+          css.boxShadow({
+            blurRadius: '2',
+            spreadRadius: '0',
+            shadowColor: '#000000',
+            opacity: 0.5,
+            horizontal: '2',
+            vertical: '2'
+          }),
+          css('position: relative')
+        ]
+      ),
+      innerGroupStyle: styleWithFeatures(group.div(), [css.padding({top: '20', right: '20'})])
+    }),
+    controls: dynamicControls({
+      controlItems: pipeline(
+        studio.suggestedStyles('%$extractedCtrl%','%$targetPath%'),
+        ctx => {
+            const clone = JSON.parse(JSON.stringify(ctx.run(studio.val('%$targetPath%'))))
+            const length = JSON.stringify(ctx.exp('%%')).length
+            return { ...clone, style: ctx.exp('%%'), length }
+        }
+      ),
+      genericControl: group({
+        controls: [
+          ctx => ctx.run(ctx.exp('%$__option%')),
+          button({
+            title: 'select (%$__option/length%)',
+            action: runActions(
+              writeValue(studio.ref('%$targetPath%~style'), '%$__option/style%'),
+              dialog.closeContainingPopup()
+            ),
+            features: css('position: absolute; top: 0; left: 30px;')
+          })
+        ]
+      }),
+      itemVariable: '__option'
+    }),
+    features: css.height('600')
+    })
+})
+
+jb.component('studio.extract-style', {
+    type: 'action',
+    params: [
+        {id: 'extractedCtrl'},
+        {id: 'targetPath', as: 'string'},
+    ],
+    impl: openDialog({
+        content: studio.selectStyle('%$extractedCtrl%','%$targetPath%'),
+        title: 'select style',
+        features: dialogFeature.uniqueDialog('unique')
+    })
+})
+
+jb.component('studio.suggested-styles', {
+    params: [
+        {id: 'extractedCtrl'},
+        {id: 'targetPath', as: 'string'},
+    ],
+    impl: (ctx,extractedCtrl,targetPath) => {
+        const constraints = ctx.exp('%$studio/pattern/constraints%') || []
+        const target = jb.studio.compNameOfPath(targetPath)
+        const {params, suggestions} = jb.ui.stylePatterns[target] && jb.ui.stylePatterns[target](extractedCtrl) || {}
+        if (!params) return []
+        const previewCtx = jb.studio.closestCtxInPreview(ctx.exp('%$targetPath%')).ctx
+        return suggestions.filter(x => checkConstraints(x)).map(x=>mark(x)).sort((x,y) => y.mark - x.mark)
+
+        function checkConstraints(sugg) {
+            return constraints.reduce((res,cons) => res && cons.match(sugg),true)
+        }
+
+        function mark(sugg) {
+            const mark = Object.keys(params).reduce((res,p) => res + paramDiff(p),0)
+            return {...sugg, mark}
+
+            function paramDiff(p) {
+                if (params[p].type == 'text') {
+                    const dropValue = previewCtx && previewCtx.run(params[p].dropValue) || ''
+                    const draggedValue = sugg._patternInfo.paramValues[p].draggedValue || ''
+                    return Math.abs(dropValue.length - draggedValue.length)
+                }
+                if (params[p].type == 'image') {
+                    // todo image size
+                }
+                return 0
+            }
+        }
+    }        
+})
+
+jb.component('pattern.path-value-constraint',{
+    params: [
+        {id: 'path', as: 'string'},
+        {id: 'value'},
+    ],
+    impl: (ctx,path,value) => ({
+        match: sugg => sugg._patternInfo.mapping[path] == value
+    })
+})
+
+function pathToObj(base, path) {
+    return path.split('/').filter(x=>x).reduce((o,p) => o[p],base)
+}
+
+function parents(path,includeThis) {
+    const result = ['']
+    path.split('/').reduce((acc,p) => {
+        const path = [acc,p].filter(x=>x).join('/')
+        result.push(path)
+        return path
+    } ,'')
+    return result.reverse().slice(includeThis ? 0 : 1)
+}
+
+function flatContent(ctrl ,path) {
+    const children = jb.asArray(ctrl.controls||[])
+        .flatMap((ch,i) => flatContent(ch,
+            [path,'controls',Array.isArray(ctrl.controls) ? i : ''].filter(x=>x!=='').join('/')))
+    return [{ctrl,path}, ...children]
+}
+
+function calcContentMap(ctrl) {
+    const ar = flatContent(ctrl,'')
+    return { ar, ...jb.objFromEntries(ar.map(x=>([x.path,x])))}
+}
+
+jb.ui.stylePatterns = {
+    text(extractedCtrl) {
+        const content = flatContent(extractedCtrl,'')
+        const texts = content.filter(x=>x.ctrl.$ == 'text')
+        const value = '%$textModel/text%'
+        const params = {text: { dropValue: value, type: 'text'}}
+        const suggestions = texts.flatMap(text=> {
+            const boundedCtrl = JSON.parse(JSON.stringify(extractedCtrl))
+            const overridePath = [...text.path.split('/'),'text'] 
+            const draggedValue = jb.path(boundedCtrl,overridePath)
+            jb.path(boundedCtrl,overridePath,value) // set value
+            return parents(text.path,true).map(path => {
+                const ctrl = pathToObj(boundedCtrl, path)
+                return {...styleByControl(ctrl,'textModel'), 
+                    _patternInfo: {
+                        top: path,
+                        paramValues: { text : {overridePath, draggedValue} }
+                    }
+                }
+            })
+        })
+        return {params, suggestions}
+    },
+    card(extractedCtrl) {
+        const content = flatContent(extractedCtrl,'')
+        const contentMap = jb.objFromEntries(content.map(x=>([x.path,x])))
+        const images = content.filter(x=>x.ctrl.$ == 'image')
+
+        return jb.unique(images.flatMap(x=>[imageToCardPattern(x.path)]), x=>JSON.stringify(x))
+            .map(pattern => ({pattern, instances: findPatternInstances(pattern)}))
+
+        function imageToCardPattern(imgPath) {
+            return parents(imgPath).reduce((acc,x) => acc || (acc = cardPattern(x)), null)
+        }
+
+        function cardPattern(path) {
+            const subPaths = content.filter(x=>x.path.indexOf(path) == 0)
+            const image = subPaths.filter(x=>x.ctrl.$ == 'image').map(x=>x.path.slice(path.length+1))
+            const text = subPaths.filter(x=>x.ctrl.$ == 'text').map(x=>x.path.slice(path.length+1))
+            if (image && text)
+                return {image,text}
+        }
+        function findPatternInstances(pattern) {
+            const imageDepth = pattern.image[0].split('/').length
+            return content.filter(x=>x.image).map(x=>parents(x.path)[imageDepth])
+                .filter(base=> hasTexts(base, pattern.text,content))
+                .map(path=>({path,
+                    elem: pathToObj(target_el,path) }))
+        }
+    }
+}
+
+})();
 

@@ -1784,7 +1784,7 @@ jb.component('runActions', { /* runActions */
   ],
   impl: ctx => {
 		if (!ctx.profile) debugger;
-		const actions = jb.asArray(ctx.profile.actions || ctx.profile['$runActions']);
+		const actions = jb.asArray(ctx.profile.actions || ctx.profile['$runActions']).filter(x=>x);
 		const innerPath =  (ctx.profile.actions && ctx.profile.actions.sugar) ? ''
 			: (ctx.profile['$runActions'] ? '$runActions~' : 'items~');
 		return actions.reduce((def,action,index) =>
@@ -6082,7 +6082,7 @@ jb.component('css.class', { /* css.class */
 jb.component('css.width', { /* css.width */
   type: 'feature,dialog-feature',
   params: [
-    {id: 'width', mandatory: true, as: 'string'},
+    {id: 'width', mandatory: true, as: 'string', description: 'e.g. 200, 100%, calc(100% - 100px)'},
     {id: 'overflow', as: 'string', options: ',auto,hidden,scroll'},
     {id: 'minMax', as: 'string', options: ',min,max'},
     {id: 'selector', as: 'string'}
@@ -6094,7 +6094,7 @@ jb.component('css.width', { /* css.width */
 jb.component('css.height', { /* css.height */
   type: 'feature,dialog-feature',
   params: [
-    {id: 'height', mandatory: true, as: 'string'},
+    {id: 'height', mandatory: true, as: 'string', description: 'e.g. 200, 100%, calc(100% - 100px)'},
     {id: 'overflow', as: 'string', options: ',auto,hidden,scroll'},
     {id: 'minMax', as: 'string', options: ',min,max'},
     {id: 'selector', as: 'string'}
@@ -6116,14 +6116,14 @@ jb.component('css.opacity', { /* css.opacity */
 jb.component('css.padding', { /* css.padding */
   type: 'feature,dialog-feature',
   params: [
-    {id: 'top', as: 'string'},
+    {id: 'top', as: 'string', description: 'e.g. 20, 20%, 0.4em'},
     {id: 'left', as: 'string'},
     {id: 'right', as: 'string'},
     {id: 'bottom', as: 'string'},
     {id: 'selector', as: 'string'}
   ],
   impl: ctx => {
-    var css = ['top','left','right','bottom']
+    const css = ['top','left','right','bottom']
       .filter(x=>ctx.params[x] != null)
       .map(x=> `padding-${x}: ${withUnits(ctx.params[x])}`)
       .join('; ');
@@ -6134,19 +6134,39 @@ jb.component('css.padding', { /* css.padding */
 jb.component('css.margin', { /* css.margin */
   type: 'feature,dialog-feature',
   params: [
-    {id: 'top', as: 'string'},
-    {id: 'left', as: 'string'},
+    {id: 'top', as: 'string', description: 'e.g. 20, 20%, 0.4em, -20'},
     {id: 'right', as: 'string'},
     {id: 'bottom', as: 'string'},
+    {id: 'left', as: 'string'},
     {id: 'selector', as: 'string'}
   ],
   impl: ctx => {
-    var css = ['top','left','right','bottom']
+    const css = ['top','left','right','bottom']
       .filter(x=>ctx.params[x] != null)
       .map(x=> `margin-${x}: ${withUnits(ctx.params[x])}`)
       .join('; ');
     return {css: `${ctx.params.selector} {${css}}`};
   }
+})
+
+jb.component('css.margin-all-sides', {
+  type: 'feature,dialog-feature',
+  params: [
+    {id: 'value', as: 'string', mandatory: true, description: 'e.g. 20, 20%, 0.4em'},
+    {id: 'selector', as: 'string'}
+  ],
+  impl: (ctx,value,selector) => ({css: `${selector} margin: ${withUnits(value)}`})
+})
+
+jb.component('css.margin-vertical-horizontal', {
+  type: 'feature,dialog-feature',
+  params: [
+    {id: 'vertical', as: 'string', mandatory: true},
+    {id: 'horizontal', as: 'string', mandatory: true},
+    {id: 'selector', as: 'string'}
+  ],
+  impl: (ctx,vertical,horizontal,selector) => 
+    ({css: `${selector} margin: ${withUnits(vertical)+ ' ' +withUnits(horizontal)}`})
 })
 
 jb.component('css.transform-rotate', { /* css.transformRotate */
@@ -6155,9 +6175,7 @@ jb.component('css.transform-rotate', { /* css.transformRotate */
     {id: 'angle', as: 'string', description: '0-360'},
     {id: 'selector', as: 'string'}
   ],
-  impl: ctx => {
-    return {css: `${ctx.params.selector} {transform:rotate(${ctx.params.angle}deg)}`};
-  }
+  impl: (ctx,angle,selector) => ({css: `${selector} {transform:rotate(${angle}deg)}`})
 })
 
 jb.component('css.color', { /* css.color */
@@ -6168,7 +6186,7 @@ jb.component('css.color', { /* css.color */
     {id: 'selector', as: 'string'}
   ],
   impl: (ctx,color) => {
-		var css = ['color','background']
+		const css = ['color','background']
       .filter(x=>ctx.params[x])
       .map(x=> `${x}: ${ctx.params[x]}`)
       .join('; ');
@@ -6238,6 +6256,23 @@ jb.component('css.line-clamp', { /* css.lineClamp */
     '%$selector% { overflow: hidden; text-overflow: ellipsis; -webkit-box-orient: vertical; display: -webkit-box; -webkit-line-clamp: %$lines% }'
   )
 })
+
+jb.component('css.layout', {
+  type: 'feature:0',
+  params: [
+    {id: 'css', mandatory: true, as: 'string'}
+  ],
+  impl: (ctx,css) => ({css: fixCssLine(css)})
+})
+
+jb.component('css.typography', {
+  type: 'feature:0',
+  params: [
+    {id: 'css', mandatory: true, as: 'string'}
+  ],
+  impl: (ctx,css) => ({css: fixCssLine(css)})
+})
+
 
 })();
 
@@ -6536,7 +6571,7 @@ jb.component('image', { /* image */
     {id: 'height', as: 'string', mandatory: true, description: 'e.g: 100, 20%'},
     {id: 'resize', type: 'image.resize', description: 'background-size, resize the image', defaultValue: image.fullyVisible()},
     {id: 'position', type: 'image.position', description: 'move/shift image'},
-    {id: 'style', type: 'image.style', dynamic: true, defaultValue: image.defaultStyle()},
+    {id: 'style', type: 'image.style', dynamic: true, defaultValue: image.background()},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx, {
@@ -6577,7 +6612,7 @@ jb.component('image.position', { /* image.position */
     .filter(x=>x).map(x=>`background-position-${x}`).join(';')
 })
 
-jb.component('image.default-style', { /* image.defaultStyle */
+jb.component('image.background', { /* image.background */
   type: 'image.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div'),
@@ -6594,6 +6629,23 @@ jb.component('image.default-style', { /* image.defaultStyle */
           {? background-size: %$$model/resize%; ?}
           {? %$$model/position%; ?}
           background-repeat: no-repeat;
+          {?width: %$width%; ?}
+          {?height: %$height%; ?}
+      }`
+    )
+  })
+})
+
+jb.component('image.img', { 
+  type: 'image.style',
+  impl: customStyle({
+    features: calcProp('url', '%$$model/url%'),
+    template: ({},{url},h) => h('img', { src: url}),
+    css: pipeline(
+      Var('width', (ctx,{$model}) => jb.ui.withUnits($model.width)),
+      Var('height', (ctx,{$model}) => jb.ui.withUnits($model.height)),
+      `
+      { 
           {?width: %$width%; ?}
           {?height: %$height%; ?}
       }`
@@ -10040,7 +10092,7 @@ jb.component('editable-boolean.checkbox-with-label', { /* editableBoolean.checkb
 jb.component('pretty-print', { /* prettyPrint */
   params: [
     {id: 'profile', defaultValue: '%%'},
-    {id: 'forceFlat', as: 'boolean'}
+    {id: 'forceFlat', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,profile) => jb.prettyPrint(jb.val(profile),ctx.params)
 })
@@ -10232,7 +10284,7 @@ jb.component('tree', { /* tree */
   params: [
     {id: 'nodeModel', type: 'tree.node-model', dynamic: true, mandatory: true},
     {id: 'style', type: 'tree.style', defaultValue: tree.expandBox({}), dynamic: true},
-    {id: 'features', type: 'feature[]', dynamic: true}
+    {id: 'features', type: 'feature[]', dynamic: true, as: 'array'}
   ],
   impl: context => {
 	  const tree = {}
@@ -10552,6 +10604,15 @@ jb.component('tree.expand-path', { /* tree.expandPath */
   impl: (ctx,paths) => ctx.vars.cmp && paths.forEach(path => jb.ui.treeExpandPath(ctx.vars.cmp.state.expanded, path))
 })
 
+jb.component('tree.path-of-interactive-item', { /* tree.pathOfInteractiveItem */
+  descrition: 'path of the clicked/dragged item using event.target',
+  type: 'data',
+  impl: ctx => {
+		const {cmp,ev} = ctx.vars
+		return cmp && cmp.elemToPath && ev && ev.target && cmp.elemToPath(ev.target)
+	}
+})
+
 jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
   type: 'feature',
   impl: ctx => ({
@@ -10642,10 +10703,10 @@ jb.component('table-tree', { /* tableTree */
   params: [
     {id: 'treeModel', type: 'tree.node-model', dynamic: true, mandatory: true},
     {id: 'leafFields', type: 'control[]', dynamic: true},
-    {id: 'commonFields', type: 'control[]', dynamic: true},
+    {id: 'commonFields', type: 'control[]', dynamic: true, as: 'array'},
     {id: 'chapterHeadline', type: 'control', dynamic: true, defaultValue: text(''), description: '$collapsed as parameter'},
     {id: 'style', type: 'table-tree.style', defaultValue: tableTree.plain({}), dynamic: true},
-    {id: 'features', type: 'feature[]', dynamic: true}
+    {id: 'features', type: 'feature[]', dynamic: true, as: 'array'}
   ],
   impl: ctx => jb.ui.ctrl(ctx)
 })
@@ -10664,11 +10725,13 @@ jb.component('tree.model-filter', { /* tree.modelFilter */
 
 jb.component('table-tree.init', { /* tableTree.init */
   type: 'feature',
-  params:[
-    {id: 'autoOpenFirstLevel', as: 'boolean' },
+  params: [
+    {id: 'autoOpenFirstLevel', as: 'boolean', type: 'boolean'}
   ],
   impl: features(
-    calcProp('expanded',(ctx,{cmp,$props},{autoOpenFirstLevel}) => {
+    calcProp({
+        id: 'expanded',
+        value: (ctx,{cmp,$props},{autoOpenFirstLevel}) => {
         const treeModel = cmp.treeModel
         cmp.state = cmp.state || {}
         const firstTime = !cmp.state.expanded
@@ -10690,7 +10753,8 @@ jb.component('table-tree.init', { /* tableTree.init */
                 return inner
             },null)
         }
-    }),
+    }
+      }),
     calcProp({
         id: 'items',
         value: (ctx,{cmp}) => {
@@ -10774,8 +10838,8 @@ jb.component('table-tree.init', { /* tableTree.init */
 jb.component('table-tree.plain', { /* tableTree.plain */
   type: 'table-tree.style',
   params: [
-    {id: 'hideHeaders', as: 'boolean' },
-    {id: 'autoOpenFirstLevel', as: 'boolean' },
+    {id: 'hideHeaders', as: 'boolean', type: 'boolean'},
+    {id: 'autoOpenFirstLevel', as: 'boolean', type: 'boolean'},
     {id: 'gapWidth', as: 'number', defaultValue: 30},
     {id: 'expColWidth', as: 'number', defaultValue: 16},
     {id: 'noItemsCtrl', type: 'control', dynamic: true, defaultValue: text('no items')}
@@ -10824,15 +10888,16 @@ jb.component('json.path-selector', { /* json.pathSelector */
     }
 })
 
-jb.component('table-tree.expand-path', {
-    type: 'table-tree.style',
-    params: [
-      {id: 'path', as: 'string' },
-    ],
-    impl: calcProp({ id: 'pathsToExtend', 
-        value: ({},{pathsToExtend},{path}) => [...path.split(','), ...(pathsToExtend || [])],
-        phase: 5 // before
-    })
+jb.component('table-tree.expand-path', { /* tableTree.expandPath */
+  type: 'table-tree.style',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: calcProp({
+    id: 'pathsToExtend',
+    value: ({},{pathsToExtend},{path}) => [...path.split(','), ...(pathsToExtend || [])],
+    phase: 5
+  })
 })
 
 ;

@@ -48,6 +48,24 @@ jb.component('data-test', { /* dataTest */
 	}
 })
 
+jb.component('ui-test-runner', {
+	type: 'control',
+	params: [
+	  {id: 'test', as: 'string', defaultValue: 'ui-test.label'},
+	],
+	impl: (ctx,test) => {
+		const profile = jb.path(jb.comps[test],'impl')
+		const ctxWithVars = ctx.setVars(jb.objFromEntries((profile.vars||[]).map(v=>[v.name,ctx.run(v.val)])))
+		const ctxToRun = new jb.jbCtx(ctxWithVars,{ profile, forcePath: test+ '~impl', path: '' } )
+		return ctxToRun.run(group({
+			controls: () => ctxToRun.runInner(profile.control,{type: 'control'}, 'control'),
+			features: group.wait({
+				for: () => profile.runBefore && ctxToRun.runInner(profile.runBefore,{type: 'runBefore'}, 'runBefore')
+			})
+		}))
+	}
+})
+
 jb.component('ui-test', { /* uiTest */
   type: 'test',
   params: [
@@ -248,6 +266,9 @@ var jb_fail_counter = 0;
 function goto_editor(id) {
 	fetch(`/?op=gotoSource&comp=${id}`)
 }
+function goto_studio(id) {
+	location.href = `/project/studio/${id}?host=test`
+}
 function hide_success_lines() {
 	document.querySelectorAll('.success').forEach(e=>e.style.display = 'none')
 }
@@ -306,8 +327,10 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,rerun}) {
 				else
 					jb_fail_counter++;
 				const baseUrl = window.location.href.split('/tests.html')[0]
+				const studioUrl = `http://localhost:8082/project/studio/${res.id}?host=test`
 				var elem = `<div class="${res.success ? 'success' : 'failure'}""><a href="${baseUrl}/tests.html?test=${res.id}&show&spy=res" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
-				<button class="editor" onclick="goto_editor('${res.id}')">src</button><span>${res.reason||''}</span>
+				<button class="editor" onclick="goto_editor('${res.id}')">src</button><button class="editor" onclick="goto_studio('${res.id}')">studio</button>
+				<span>${res.reason||''}</span>
 				</div>`;
 
 				document.getElementById('success-counter').innerHTML = ', success ' + jb_success_counter;
