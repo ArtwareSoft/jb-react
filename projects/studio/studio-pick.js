@@ -14,6 +14,7 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
   ],
   impl: (ctx,from) => ({
     afterViewInit: cmp=> {
+      const {pipe,fromEvent,takeUntil,merge,Do, map,debounceTime, last, forEach} = jb.callbag
       if (from === 'studio')
         initStudioEditing()
       const _window = from == 'preview' ? st.previewWindow : window;
@@ -28,23 +29,24 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
       cover.className = 'jb-cover'
       cover.style.position= 'absolute'; cover.style.width= '100%'; cover.style.height= '100%'; cover.style.background= 'white'; cover.style.opacity= '0'; cover.style.top= 0; cover.style.left= 0;
       _window.document.body.appendChild(cover);
-      const mouseMoveEm = jb.rx.Observable.fromEvent(_window.document, 'mousemove');
-      let userPick = jb.rx.Observable.fromEvent(document, 'mousedown');
-      let keyUpEm = jb.rx.Observable.fromEvent(document, 'keyup');
+      const mouseMoveEm = fromEvent(_window.document, 'mousemove');
+      let userPick = fromEvent(document, 'mousedown');
+      let keyUpEm = fromEvent(document, 'keyup');
       if (st.previewWindow) {
-          userPick = userPick.merge(jb.rx.Observable.fromEvent(st.previewWindow.document, 'mousedown'));
-          keyUpEm = keyUpEm.merge(jb.rx.Observable.fromEvent(st.previewWindow.document, 'keyup'));
+          userPick =  merge(userPick,fromEvent(st.previewWindow.document, 'mousedown'))
+          keyUpEm = merge(keyUpEm,fromEvent(st.previewWindow.document, 'keyup'))
       }
-      mouseMoveEm.debounceTime(50)
-          .takeUntil(keyUpEm.filter(e=>e.keyCode == 27).merge(userPick))
-          .map(e=> eventToElem(e,_window,eventToElemPredicate))
-          .filter(x=>x && x.getAttribute)
-          .do(profElem=> {
+      pipe(mouseMoveEm,
+          debounceTime(50),
+          takeUntil(merge(pipe(keyUpEm,filter(e=>e.keyCode == 27)), userPick)),
+          map(e=> eventToElem(e,_window,eventToElemPredicate)),
+          filter(x=>x && x.getAttribute),
+          Do(profElem=> {
             ctx.exp('%$pickSelection%').elem = profElem
             showBox(cmp,profElem,_window,previewOffset)
-          })
-          .last() // esc or user pick
-          .subscribe(profElem=> {
+          }),
+          last(), // esc or user pick
+          forEach(profElem=> {
               const pickSelection = ctx.exp('%$pickSelection%')
               pickSelection.ctx = _window.jb.ctxDictionary[profElem.getAttribute('pick-ctx') || profElem.getAttribute('jb-ctx')];
               pickSelection.elem = profElem;
@@ -53,7 +55,7 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
 
               ctx.vars.$dialog.close({OK: true});
               _window.document.body.removeChild(cover);
-          })
+          }))
     }
   })
 })

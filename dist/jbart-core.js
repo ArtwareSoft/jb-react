@@ -749,12 +749,12 @@ Object.assign(jb,{
     const _ar = ar.filter(x=>x).map(v=>
       (typeof v.then == 'function' || typeof v.subscribe == 'function') ? v : [v]);
 
-    return jb.rx.Observable.from(_ar)
-          .concatMap(x=>x)
-          .flatMap(v =>
-            Array.isArray(v) ? v : [v])
-          .toArray()
-          .toPromise()
+    const {pipe, fromIter, concatMap,flatMap,toPromiseArray} = jb.callbag
+    return pipe(
+          fromIter(_ar),
+          concatMap(x=>x),
+          flatMap(v => Array.isArray(v) ? v : [v]),
+          toPromiseArray)
   },
   unique: (ar,f) => {
     f = f || (x=>x);

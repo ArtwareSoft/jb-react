@@ -106,9 +106,7 @@ jb.component('field.keyboard-shortcut', { /* field.keyboardShortcut */
     (ctx,{cmp},{key,action}) => {
         const elem = cmp.base.querySelector('input') || cmp.base
         if (elem.tabIndex === undefined) elem.tabIndex = -1
-        jb.rx.Observable.fromEvent(elem, 'keydown')
-            .takeUntil( cmp.destroyed )
-            .subscribe(event=>{
+        jb.callbag.forEach(jb.ui.fromEvent(cmp,'keydown',elem))(event=>{
               const keyStr = key.split('+').slice(1).join('+');
               const keyCode = keyStr.charCodeAt(0);
               if (key == 'Delete') keyCode = 46;

@@ -237,7 +237,7 @@ jb.component('calculated-var', { /* calculatedVar */
         const fullName = name + ':' + cmp.cmpId;
         const refToResource = cmp.ctx.exp(`%$${fullName}%`,'ref');
         (watchRefs(cmp.ctx)||[]).map(x=>jb.asRef(x)).filter(x=>x).forEach(ref=>
-          jb.ui.refObservable(ref,cmp,{srcCtx: ctx}).subscribe(e=>
+          jb.callbag.subscribe(jb.ui.refObservable(ref,cmp,{srcCtx: ctx}))(e=>
             jb.writeValue(refToResource,value(cmp.ctx),ctx))
         )
       }
@@ -298,10 +298,8 @@ jb.component('feature.keyboard-shortcut', { /* feature.keyboardShortcut */
     {id: 'action', type: 'action', dynamic: true}
   ],
   impl: (ctx,key,action) => ({
-      afterViewInit: cmp =>
-        jb.rx.Observable.fromEvent(cmp.base.ownerDocument, 'keydown')
-            .takeUntil( cmp.destroyed )
-            .subscribe(event=>{
+      afterViewInit: cmp => {
+        jb.callbag.forEach(jb.ui.fromEvent(cmp,'keydown',cmp.base.ownerDocument))(event=>{
               const keyStr = key.split('+').slice(1).join('+');
               const keyCode = keyStr.charCodeAt(0);
               if (key == 'Delete') keyCode = 46;
@@ -311,8 +309,8 @@ jb.component('feature.keyboard-shortcut', { /* feature.keyboardShortcut */
               if (helper == 'Alt' && !event.altKey) return
               if (event.keyCode == keyCode || (event.key && event.key == keyStr))
                 action();
-            })
-      })
+        })
+    }})
 })
 
 jb.component('feature.onEvent', { /* feature.onEvent */

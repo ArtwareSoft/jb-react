@@ -15,7 +15,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       ],      
       'ui-common': [
         'dist/jb-immutable.js', // the immutable-helper lib
-        'dist/jb-rx.js', // todo: remove
+//        'dist/jb-rx.js', // todo: remove
         'src/misc/jb-callbag.js',
 
         'src/ui/watchable/watchable-ref.js',

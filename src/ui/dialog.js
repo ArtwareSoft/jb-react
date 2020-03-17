@@ -11,7 +11,7 @@ jb.component('open-dialog', { /* openDialog */
     {id: 'features', type: 'dialog-feature[]', dynamic: true}
   ],
   impl: function(context,id) {
-		const dialog = { id, modal: context.params.modal, em: new jb.rx.Subject() }
+		const dialog = { id, modal: context.params.modal, em: jb.callbag.subject() }
 		const ctx = context.setVars({
 			$dialog: dialog,
 			dialogData: {},
@@ -171,19 +171,22 @@ jb.component('dialog-feature.close-when-clicking-outside', { /* dialogFeature.cl
   params: [
     {id: 'delay', as: 'number', defaultValue: 100}
   ],
-  impl: function(context,delay) {
+  impl: function(context,_delay) {
 		const dialog = context.vars.$dialog;
 		dialog.isPopup = true;
 		jb.delay(10).then(() =>  { // delay - close older before
-			let clickoutEm = jb.rx.Observable.fromEvent(document, 'mousedown');
+			const {pipe, fromEvent, takeUntil,subscribe, merge,filter,take,delay} = jb.callbag
+			let clickoutEm = fromEvent(document, 'mousedown');
 			if (jb.studio.previewWindow)
-				clickoutEm = clickoutEm.merge(jb.rx.Observable.fromEvent(
-			      				(jb.studio.previewWindow || {}).document, 'mousedown'));
+				clickoutEm = merge(clickoutEm, fromEvent((jb.studio.previewWindow || {}).document, 'mousedown'))
 
-		 	clickoutEm.filter(e => jb.ui.closest(e.target,'.jb-dialog') == null)
-   				.takeUntil(dialog.em.filter(e => e.type == 'close'))
-   				.take(1).delay(delay).subscribe(()=>
-		  			dialog.close())
+			pipe(clickoutEm,
+				filter(e => jb.ui.closest(e.target,'.jb-dialog') == null),
+   				takeUntil( filter(dialog.em)(e => e.type == 'close')),
+				take(1),
+				delay(_delay),
+				subscribe(()=> dialog.close())
+			)
   		})
 	}
 })
@@ -291,42 +294,45 @@ jb.component('dialog-feature.resizer', { /* dialogFeature.resizer */
 
 	afterViewInit: function(cmp) {
 		const resizerElem = cmp.base.querySelector('.jb-resizer');
-		cmp.mousedownEm = jb.rx.Observable.fromEvent(resizerElem, 'mousedown').takeUntil( cmp.destroyed );
+		const {pipe, map, flatMap,takeUntil, merge,subscribe} = jb.callbag
 
-		let mouseUpEm = jb.rx.Observable.fromEvent(document, 'mouseup').takeUntil( cmp.destroyed );
-		let mouseMoveEm = jb.rx.Observable.fromEvent(document, 'mousemove').takeUntil( cmp.destroyed );
+		cmp.mousedownEm = jb.ui.fromEvent(cmp,'mousedown',resizerElem)
+		let mouseUpEm = jb.ui.fromEvent(cmp,'mouseup',document)
+		let mouseMoveEm = jb.ui.fromEvent(cmp,'mousemove',document)
 
 		if (jb.studio.previewWindow) {
-			mouseUpEm = mouseUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mouseup'))
-				.takeUntil( cmp.destroyed );
-			mouseMoveEm = mouseMoveEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mousemove'))
-				.takeUntil( cmp.destroyed );
+			mouseUpEm = merge(mouseUpEm,jb.ui.fromEvent(cmp,'mouseup',jb.studio.previewWindow.document))
+			mouseMoveEm = merge(mouseMoveEm,jb.ui.fromEvent(cmp,'mousemove',jb.studio.previewWindow.document))
 		}
 
 		let codeMirrorElem,codeMirrorSizeDiff;
-		const mousedrag = cmp.mousedownEm.do(e=>{
-			if (codeMirror) {
+		pipe(cmp.mousedownEm,
+			Do(e=>{
+				if (codeMirror) {
 					codeMirrorElem = cmp.base.querySelector('.CodeMirror,.jb-textarea-alternative-for-codemirror');
 					if (codeMirrorElem)
 					codeMirrorSizeDiff = codeMirrorElem.getBoundingClientRect().top - cmp.base.getBoundingClientRect().top
 						+ (cmp.base.getBoundingClientRect().bottom - codeMirrorElem.getBoundingClientRect().bottom);
-			}
-			}).map(e =>  ({
+				}
+			}),
+			map(e =>  ({
 				left: cmp.base.getBoundingClientRect().left,
 				top:  cmp.base.getBoundingClientRect().top
-			})).flatMap(imageOffset =>
-					mouseMoveEm.takeUntil(mouseUpEm)
-					.map(pos => ({ top:  pos.clientY - imageOffset.top, left: pos.clientX - imageOffset.left }))
-			)
-
-		mousedrag.distinctUntilChanged().subscribe(pos => {
-			cmp.base.style.height  = pos.top  + 'px';
-			cmp.base.style.width = pos.left + 'px';
-			if (codeMirrorElem)
-				codeMirrorElem.style.height  = (pos.top - codeMirrorSizeDiff) + 'px';
+			})),
+			flatMap(imageOffset =>
+				pipe(mouseMoveEm,
+					takeUntil(mouseUpEm),
+					map(pos => ({ top:  pos.clientY - imageOffset.top, left: pos.clientX - imageOffset.left }))
+				)
+			),
+			subscribe(pos => {
+				cmp.base.style.height  = pos.top  + 'px';
+				cmp.base.style.width = pos.left + 'px';
+				if (codeMirrorElem)
+					codeMirrorElem.style.height  = (pos.top - codeMirrorSizeDiff) + 'px';
 			})
-		}
-	})
+		  )
+	}})
 })
 
 jb.component('dialog.popup', { /* dialog.popup */

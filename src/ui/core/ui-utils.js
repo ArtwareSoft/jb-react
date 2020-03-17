@@ -56,6 +56,9 @@ Object.assign(jb.ui,{
         cmp.extendItemFuncs && cmp.extendItemFuncs.forEach(f=>f(cmp,vdom,data));
         return vdom;
     },
+    fromEvent: (cmp,event,elem) => jb.callbag.pipe(
+          jb.callbag.fromEvent(elem || cmp.base, event),
+          jb.callbag.takeUntil( jb.callbag.fromPromise(cmp.destroyed) ))
 })
 
 // ****************** html utils ***************

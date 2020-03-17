@@ -16,7 +16,7 @@ class WatchableValueByRef {
     this.objToPath = new Map()
     this.idCounter = 1
     this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])]
-    this.resourceChange = new jb.rx.Subject()
+    this.resourceChange = jb.callbag.subject()
     this.observables = []
     this.primitiveArraysDeltas = {}
 
@@ -340,7 +340,7 @@ class WatchableValueByRef {
     return this.doOp(ref,{$merge: this.createSecondaryLink(value)},srcCtx)
   }
   getOrCreateObservable(req) {
-      const subject = new jb.rx.Subject()
+      const subject = jb.callbag.subject()
       req.srcCtx = req.srcCtx || { path: ''}
       const ctx = req.cmpOrElem.ctx || jb.ui.ctxOfElem(req.cmpOrElem)
       const key = this.pathOfRef(req.ref).join('~') + ' : ' + ctx.path
@@ -356,7 +356,7 @@ class WatchableValueByRef {
     return this.resources.frame || jb.frame
   }
   propagateResourceChangeToObservables() {
-    this.resourceChange.subscribe(e=>{
+    jb.callbag.subscribe(this.resourceChange)(e=>{
       const observablesToUpdate = this.observables.slice(0) // this.observables array may change in the notification process !!
       const changed_path = this.removeLinksFromPath(this.pathOfRef(e.ref))
       if (changed_path) observablesToUpdate.forEach(obs=> {
@@ -425,7 +425,7 @@ jb.ui.refObservable = (ref,cmpOrElem,settings={}) => {
     return ref.$jb_observable(cmpOrElem);
   if (!jb.isWatchable(ref)) {
     jb.logError('ref is not watchable', ref)
-    return jb.rx.Observable.from([])
+    return jb.callbag.fromIter([])
   }
   return jb.refHandler(ref).getOrCreateObservable({ref,cmpOrElem,...settings})
   //jb.refHandler(ref).refObservable(ref,cmpOrElem,settings);

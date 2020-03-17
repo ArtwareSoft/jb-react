@@ -104,8 +104,8 @@ jb.component('itemlist.fast-filter', { /* itemlist.fastFilter */
   ],
   impl: interactive(
     (ctx,{cmp},{showCondition,filtersRef}) =>
-        jb.ui.refObservable(filtersRef(cmp.ctx),cmp,{srcCtx: ctx})
-          .subscribe(() => Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).forEach(elem=>
+      jb.callbag.subscribe(jb.ui.refObservable(filtersRef(cmp.ctx),cmp,{srcCtx: ctx}))
+          (() => Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).forEach(elem=>
                 elem.style.display = showCondition(jb.ctxDictionary[elem.getAttribute('jb-ctx')]) ? 'block' : 'none'))
   )
 })
@@ -165,10 +165,18 @@ jb.component('itemlist.selection', { /* itemlist.selection */
     onclick: true,
     ondblclick: true,
     afterViewInit: cmp => {
-        cmp.selectionEmitter = new jb.rx.Subject();
-        cmp.clickEmitter = cmp.onclick.merge(cmp.ondblclick).map(e=>dataOfElem(e.target)).filter(x=>x)
-        cmp.ondblclick.map(e=> dataOfElem(e.target)).filter(x=>x)
-          .subscribe(data => ctx.params.onDoubleClick(cmp.ctx.setData(data)))
+        const {pipe,map,filter,subscribe,merge,subject,distinctUntilChanged,catchError} = jb.callbag
+        cmp.selectionEmitter = subject();
+        cmp.clickEmitter = pipe(
+          merge(cmp.onclick,cmp.ondblclick),
+          map(e=>dataOfElem(e.target)),
+          filter(x=>x)
+        )
+        pipe(cmp.ondblclick,
+          map(e=> dataOfElem(e.target)),
+          filter(x=>x),
+          subscribe(data => ctx.params.onDoubleClick(cmp.ctx.setData(data)))
+        )
 
         jb.ui.itemlistInitCalcItems(cmp)
         cmp.items = cmp.calcItems()
@@ -183,18 +191,22 @@ jb.component('itemlist.selection', { /* itemlist.selection */
             .forEach(elem=> {elem.classList.add('selected'); elem.scrollIntoViewIfNeeded()})
         }
 
-        cmp.selectionEmitter.merge(cmp.clickEmitter).distinctUntilChanged().filter(x=>x)
-          .subscribe( selected => {
+        pipe(merge(cmp.selectionEmitter,cmp.clickEmitter),
+          distinctUntilChanged(),
+          filter(x=>x),
+          subscribe( selected => {
               writeSelectedToDatabind(selected);
               cmp.setSelected(selected)
               ctx.params.onSelection(cmp.ctx.setData(selected));
-        })
+        }))
 
         const selectedRef = databind()
 
-        jb.isWatchable(selectedRef) && jb.ui.refObservable(selectedRef,cmp,{throw: true, srcCtx: ctx})
-          .catch(e=>cmp.setSelected(null) || [])
-          .subscribe(() => cmp.setSelected(selectedOfDatabind()))
+        jb.isWatchable(selectedRef) && pipe(
+          jb.ui.refObservable(selectedRef,cmp,{throw: true, srcCtx: ctx}),
+          catchError(() => cmp.setSelected(null) || []),
+          subscribe(() => cmp.setSelected(selectedOfDatabind()))
+        )
 
         if (cmp.state.selected && cmp.items.indexOf(cmp.state.selected) == -1) // clean irrelevant selection
           cmp.state.selected = null;
@@ -236,29 +248,33 @@ jb.component('itemlist.keyboard-selection', { /* itemlist.keyboardSelection */
       vdom.attributes.tabIndex = 0
     },
     afterViewInit: cmp => {
+        const {pipe,map,filter,subscribe,merge} = jb.callbag
         const selectionKeySourceCmp = jb.ui.parentCmps(cmp.base).find(_cmp=>_cmp.selectionKeySource)
         let onkeydown = jb.path(cmp.ctx.vars,'itemlistCntr.keydown') || jb.path(selectionKeySourceCmp,'onkeydown');
         if (!onkeydown) {
-          onkeydown = jb.rx.Observable.fromEvent(cmp.base, 'keydown')
+          onkeydown = jb.ui.fromEvent(cmp, 'keydown')
           if (ctx.params.autoFocus)
             jb.ui.focus(cmp.base,'itemlist.keyboard-selection init autoFocus',ctx)
         } else {
-          onkeydown = onkeydown.merge(jb.rx.Observable.fromEvent(cmp.base, 'keydown'))
+          onkeydown = merge(onkeydown,jb.ui.fromEvent(cmp, 'keydown'))
         }
-        cmp.onkeydown = onkeydown.takeUntil( cmp.destroyed )
+        cmp.onkeydown = onkeydown
         jb.ui.itemlistInitCalcItems(cmp)
 
-        cmp.onkeydown.filter(e=> e.keyCode == 13 && cmp.state.selected)
-          .subscribe(() => ctx.params.onEnter(cmp.ctx.setData(cmp.state.selected)));
+        pipe(cmp.onkeydown,
+          filter(e=> e.keyCode == 13 && cmp.state.selected),
+          subscribe(() => ctx.params.onEnter(cmp.ctx.setData(cmp.state.selected))))
 
-        cmp.onkeydown.filter(ev => !ev.ctrlKey && (ev.keyCode == 38 || ev.keyCode == 40))
-            .map(ev => {
+        pipe(cmp.onkeydown,
+          filter(ev => !ev.ctrlKey && (ev.keyCode == 38 || ev.keyCode == 40)),
+          map(ev => {
               ev.stopPropagation();
               const diff = ev.keyCode == 40 ? 1 : -1;
               cmp.items = cmp.calcItems()
               const selectedIndex = cmp.items.indexOf(cmp.state.selected) + diff
               return cmp.items[Math.min(cmp.items.length-1,Math.max(0,selectedIndex))];
-        }).subscribe(selected => cmp.selectionEmitter && cmp.selectionEmitter.next(selected) )
+          }),
+          subscribe(selected => cmp.selectionEmitter && cmp.selectionEmitter.next(selected) ))
       },
     })
 })

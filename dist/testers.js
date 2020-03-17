@@ -306,12 +306,15 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,rerun}) {
 
 	document.write(`<div style="font-size: 20px"><span id="fail-counter" onclick="hide_success_lines()"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span><span id="memory-usage"></span></div>`);
 
-	return jb.rx.Observable.from(Array.from(Array(rerun ? Number(rerun) : 1).keys()))
-		.concatMap(i=> (i % 20 == 0) ? jb.delay(300): [1])
-		.concatMap(_=>
-		jb.rx.Observable.from(tests).concatMap(e=>{
-			jb.logs.error = [];
-			return Promise.resolve(new jb.jbCtx().setVars({testID: e[0], initial_resources }).run({$:e[0]}))
+	const {pipe, fromIter, subscribe,concatMap} = jb.callbag
+	return pipe(
+		fromIter(Array.from(Array(rerun ? Number(rerun) : 1).keys())),
+		//concatMap(i=> (i % 20 == 0) ? jb.delay(300): [1]),
+		concatMap(_=> pipe(
+			fromIter(tests),
+			concatMap(e=> {
+			  jb.logs.error = [];
+			  return Promise.resolve(new jb.jbCtx().setVars({testID: e[0], initial_resources }).run({$:e[0]}))
 				.then(res => {
 					if (!res)
 						return { id: e[0], success: false, reason: 'empty result'}
@@ -321,30 +324,31 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,rerun}) {
 					}
 					return res
 				})
-			})).subscribe(res=> {
-				if (res.success)
-					jb_success_counter++;
-				else
-					jb_fail_counter++;
-				const baseUrl = window.location.href.split('/tests.html')[0]
-				const studioUrl = `http://localhost:8082/project/studio/${res.id}?host=test`
-				var elem = `<div class="${res.success ? 'success' : 'failure'}""><a href="${baseUrl}/tests.html?test=${res.id}&show&spy=res" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
+		}))),
+		subscribe(res=> {
+			if (res.success)
+				jb_success_counter++;
+			else
+				jb_fail_counter++;
+			const baseUrl = window.location.href.split('/tests.html')[0]
+			const studioUrl = `http://localhost:8082/project/studio/${res.id}?host=test`
+			var elem = `<div class="${res.success ? 'success' : 'failure'}""><a href="${baseUrl}/tests.html?test=${res.id}&show&spy=res" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
 				<button class="editor" onclick="goto_editor('${res.id}')">src</button><button class="editor" onclick="goto_studio('${res.id}')">studio</button>
 				<span>${res.reason||''}</span>
 				</div>`;
 
-				document.getElementById('success-counter').innerHTML = ', success ' + jb_success_counter;
-				document.getElementById('fail-counter').innerHTML = 'failures ' + jb_fail_counter;
-				document.getElementById('fail-counter').style.color = jb_fail_counter ? 'red' : 'green';
-				document.getElementById('fail-counter').style.cursor = 'pointer';
-				document.getElementById('memory-usage').innerHTML = ', ' + (performance.memory.usedJSHeapSize / 1000000)  + 'M memory used';
+			document.getElementById('success-counter').innerHTML = ', success ' + jb_success_counter;
+			document.getElementById('fail-counter').innerHTML = 'failures ' + jb_fail_counter;
+			document.getElementById('fail-counter').style.color = jb_fail_counter ? 'red' : 'green';
+			document.getElementById('fail-counter').style.cursor = 'pointer';
+			document.getElementById('memory-usage').innerHTML = ', ' + (performance.memory.usedJSHeapSize / 1000000)  + 'M memory used';
 
-				document.getElementById('time').innerHTML = ', ' + (new Date().getTime() - startTime) +' mSec';
-				jb.ui.addHTML(document.body,elem);
-				if (show && res.elem)
-					document.body.appendChild(res.elem);
-				jb.ui && jb.ui.garbageCollectCtxDictionary && jb.ui.garbageCollectCtxDictionary(document.body,true)
-			})
+			document.getElementById('time').innerHTML = ', ' + (new Date().getTime() - startTime) +' mSec';
+			jb.ui.addHTML(document.body,elem);
+			if (show && res.elem)
+				document.body.appendChild(res.elem);
+			jb.ui && jb.ui.garbageCollectCtxDictionary && jb.ui.garbageCollectCtxDictionary(document.body,true)
+	}))
 }
 ;
 

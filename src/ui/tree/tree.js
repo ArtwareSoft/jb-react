@@ -25,7 +25,7 @@ jb.component('tree', { /* tree */
 			interactive( (ctx,{cmp}) => {
 				cmp.state.expanded =  { [cmp.model.rootPath] : true }
 				tree.cmp = cmp
-				cmp.selectionEmitter = new jb.rx.Subject()
+				cmp.selectionEmitter = jb.callbag.subject()
 				tree.redraw = cmp.redraw = () => cmp.refresh()
 
 				cmp.expandPath = path => {
@@ -189,7 +189,8 @@ jb.component('tree.selection', { /* tree.selection */
     interactive(
         (ctx,{cmp},{databind,autoSelectFirst,onSelection,onRightClick}) => {
 			const selectedRef = databind()
-  			const databindObs = jb.isWatchable(selectedRef) && jb.ui.refObservable(selectedRef,cmp,{srcCtx: ctx}).map(e=>jb.val(e.ref))
+			const {pipe,map,filter,subscribe,merge,distinctUntilChanged} = jb.callbag
+			  const databindObs = jb.isWatchable(selectedRef) && map(jb.ui.refObservable(selectedRef,cmp,{srcCtx: ctx}))(e=>jb.val(e.ref))
 
 			cmp.setSelected = selected => {
 				cmp.state.selected = selected
@@ -200,18 +201,19 @@ jb.component('tree.selection', { /* tree.selection */
 			}
 			cmp.getSelected = () => cmp.state.selected = cmp.elemToPath(jb.ui.findIncludeSelf(cmp.base,'.treenode.selected')[0])
 
-			cmp.selectionEmitter.merge(databindObs || [])
-				.merge(cmp.onclick.map(event => cmp.elemToPath(event.target)))
-				.distinctUntilChanged()
-				.filter(x=>x)
-				.map(x=> jb.val(x))
-				.subscribe(selected=> {
+
+			pipe(
+				merge(cmp.selectionEmitter(databindObs, map(cmp.onclick)(event => cmp.elemToPath(event.target)))),
+				distinctUntilChanged(),
+				filter(x=>x),
+				map(x=> jb.val(x)),
+				subscribe(selected=> {
 					cmp.setSelected(selected);
 					selectedRef && jb.writeValue(selectedRef, selected, ctx);
 					onSelection(cmp.ctx.setData(selected));
-				})
+			}))
 
-			cmp.onclick.subscribe(_=>	cmp.regainFocus && cmp.regainFocus())
+			subscribe(cmp.onclick, () =>	cmp.regainFocus && cmp.regainFocus())
 
 			if (onRightClick.profile)
 				cmp.base.oncontextmenu = (e=> {

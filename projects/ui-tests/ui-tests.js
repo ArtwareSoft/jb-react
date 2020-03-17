@@ -151,7 +151,7 @@ jb.component('ui-test.wait-for-with-var', { /* uiTest.waitForWithVar */
 //     vars: Var('promise', ctx => jb.delay(1)),
 //     control: text({
 //       text: '%$person/name%',
-//       features: watchObservable({ toWatch: (ctx,{promise}) => jb.rx.Observable.fromPromise(promise) })
+//       features: watchObservable({ toWatch: (ctx,{promise}) => jb.callbag.fromPromise(promise) })
 //     }),
 //     expectedCounters: {setState: 1},
 //     expectedResult: true

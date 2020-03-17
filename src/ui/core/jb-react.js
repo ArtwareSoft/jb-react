@@ -385,11 +385,6 @@ Object.assign(jb.ui, {
                 { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh }
         }
     }),
-    // databindObservable(cmp,settings) {
-	//     return cmp.databindRefChanged.merge(jb.rx.Observable.of(cmp.state.databindRef)).flatMap(ref =>
-	// 		(!cmp.watchRefOn && jb.isWatchable(ref) && ui.refObservable(ref,cmp,settings)
-    //             .map(e=>Object.assign({ref},e)) ) || [])
-    // },
 })
 
 ui.subscribeToRefChange(jb.mainWatchableHandler)
@@ -451,7 +446,7 @@ function mountInteractive(elem, keepState) {
     mountedCmp.recalcPropsFromElem()
 
     jb.unique(cmp.eventObservables)
-        .forEach(op => mountedCmp[op] = jb.rx.Observable.fromEvent(elem, op.slice(2)).takeUntil( mountedCmp.destroyed ))
+        .forEach(op => mountedCmp[op] = jb.ui.fromEvent(mountedCmp,op.slice(2),elem))
 
     ;(cmp.componentDidMountFuncs||[]).forEach(f=> tryWrapper(() => f(mountedCmp), 'componentDidMount'))
     mountedCmp.status = 'ready'

@@ -30,7 +30,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 		otherSpies: [],
 		observable() { 
 			const _jb = jb.path(jb,'studio.studiojb') || jb
-			this._obs = this._obs || new _jb.rx.Subject()
+			this._obs = this._obs || _jb.callbag.subject()
 			return this._obs
 		},
 		enabled: () => true,

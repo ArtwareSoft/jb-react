@@ -415,7 +415,7 @@ jb.component('data-test.pipe-with-promise3', { /* dataTest.pipeWithPromise3 */
 
 jb.component('data-test.pipe-with-observable', { /* dataTest.pipeWithObservable */
   impl: dataTest({
-    calculate: pipe(ctx => jb.rx.Observable.of([1,2]), '%%a', join({})),
+    calculate: pipe(ctx => jb.callbag.fromIter([1,2]), '%%a', join({})),
     expectedResult: equals('1a,2a')
   })
 })

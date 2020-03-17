@@ -1,3 +1,5 @@
+import { last } from "rxjs/operator/last"
+
 Object.assign(jb.ui,{
   computeStyle(el,prop) { return +(getComputedStyle(el)[prop].split('px')[0] || 0)},
   splitCssProp(cssProp) {
@@ -209,28 +211,34 @@ jb.component('content-editable.dragable-thumb', { /* contentEditable.dragableThu
     (ctx,{cmp},{axis})=> {
     const el = jb.ui.contentEditable.current.base
     const prop = () => ctx.run(contentEditable.effectiveProp(axis))
-    cmp.mousedownEm = jb.rx.Observable.fromEvent(cmp.base, 'mousedown').takeUntil( cmp.destroyed );
-    let mouseUpEm = jb.rx.Observable.fromEvent(document, 'mouseup').takeUntil( cmp.destroyed );
-    let mouseMoveEm = jb.rx.Observable.fromEvent(document, 'mousemove').takeUntil( cmp.destroyed );
+    const {pipe,fromEvent,takeUntil,merge,Do, flatMap, map, last, forEach,fromPromise} = jb.callbag
+    const destroyed = fromPromise(cmp.destroyed)
+    cmp.mousedownEm = fromEvent(cmp.base, 'mousedown').takeUntil( destroyed );
+    let mouseUpEm = fromEvent(document, 'mouseup').takeUntil( destroyed );
+    let mouseMoveEm = fromEvent(document, 'mousemove').takeUntil( destroyed );
     if (jb.studio.previewWindow) {
-      mouseUpEm = mouseUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mouseup')).takeUntil( cmp.destroyed )
-      mouseMoveEm = mouseMoveEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mousemove')).takeUntil( cmp.destroyed )
+      mouseUpEm = merge(mouseUpEm,fromEvent(jb.studio.previewWindow.document, 'mouseup')).takeUntil( destroyed )
+      mouseMoveEm = merge(mouseMoveEm,fromEvent(jb.studio.previewWindow.document, 'mousemove')).takeUntil( destroyed )
     }
     const dialog = ctx.vars.$dialog;
     const dialogStyle = dialog.cmp.base.style
-    cmp.mousedownEm.do(e => e.preventDefault())
-      .do(() => ctx.run(writeValue('%$studio/dragPos/{%$axis%}-active%', true)))
-      .flatMap(() => mouseMoveEm.takeUntil(mouseUpEm)
-        .map(e => moveHandlerAndCalcNewPos(e))
-        .do(requested => moveElem(requested))
-     .finally(() => {
-       ctx.run(runActions(
-          writeValue('%$studio/dragPos/{%$axis%}-active%', false),
-          contentEditable.writePosToScript(),
-          jb.ui.dialogs.closePopups())
-        )
-     }))
-     .subscribe(val => ctx.run(writeValue('%$studio/dragPos/pos%', val))
+    pipe(cmp.mousedownEm,
+      Do(e => e.preventDefault()),
+      Do(() => ctx.run(writeValue('%$studio/dragPos/{%$axis%}-active%', true))),
+      flatMap(() => pipe(
+        mouseMoveEm,
+        takeUntil(mouseUpEm),
+        map(e => moveHandlerAndCalcNewPos(e)),
+        Do(requested => moveElem(requested)),
+        Do(val => ctx.run(writeValue('%$studio/dragPos/pos%', val))),
+        last(),
+        Do(() => ctx.run(runActions(
+            writeValue('%$studio/dragPos/{%$axis%}-active%', false),
+            contentEditable.writePosToScript(),
+            jb.ui.dialogs.closePopups())
+        ))
+      )),
+     forEach(() => {}) // TODO: try to take it out
     )
 
     function getVal() { return jb.ui.computeStyle(el,prop()) }

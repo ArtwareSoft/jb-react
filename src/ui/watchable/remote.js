@@ -1,6 +1,7 @@
 (function(){
 
 const storeId = Symbol.for("storeId")
+const {pipe,map,filter,subscribe} = jb.callbag
 
 jb.ui.serializeCtxOfVdom = function(vdom) {
     const store = {idCounter: 1, ctx: {}, data: {}, strs: []}
@@ -153,7 +154,7 @@ function createWorker(workerId) {
     const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: 'application/javascript'})));
     
     Object.assign(worker,{
-        response: new jb.rx.Subject(),
+        response: jb.callbag.subject(),
         onmessage(e) {
             const data = e.data
             const id = (data.match(/^([^>]+)>/) || ['',''])[1]
@@ -184,7 +185,11 @@ function createWorker(workerId) {
             jb.log('to-remote',message)
             console.log('to-remote: ' + message)
             worker.postMessage(message)
-            return worker.response.filter(({id}) => id == messageId).take(1).map(({data}) => data).toPromise()
+            return pipe(worker.response,
+                    filter(({id}) => id == messageId),
+                    take(1), 
+                    map(({data}) => data),
+                    toPromise)
         }
     })
     return worker
@@ -213,19 +218,22 @@ jb.component('worker.main',{
             })
 
             return this.getWorker().then( worker => {
-                worker.response.filter(({id}) => id == `delta-${widgetId}`).subscribe(({data}) => {
-                    const _data = JSON.parse(data.replace(/"__undefined"/g,'null'))
-                    console.log('delta-from-remote',_data)
-                    const {delta,elemId,cmpId,css,store} = _data
-                    jb.ui.mainWorker.ctxDictionary = jb.ui.mainWorker.ctxDictionary || {}
-                    Object.assign(jb.ui.mainWorker.ctxDictionary,jb.ui.deserializeCtxStore(store).ctx)
-                    const elem = jb.ui.document(ctx).querySelector('#'+elemId) 
-                        || jb.ui.document(ctx).querySelector(`[cmp-id="${cmpId}"]`)
-                    elem && jb.ui.applyDeltaToDom(elem, delta)
-                    css && jb.ui.addStyleElem(css)
-                    jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> 
-                        el._component ? el._component.recalcPropsFromElem() : jb.ui.mountInteractive(el))
-                })            
+                pipe(
+                    worker.response,
+                    filter(({id}) => id == `delta-${widgetId}`),
+                    subscribe(({data}) => {
+                        const _data = JSON.parse(data.replace(/"__undefined"/g,'null'))
+                        console.log('delta-from-remote',_data)
+                        const {delta,elemId,cmpId,css,store} = _data
+                        jb.ui.mainWorker.ctxDictionary = jb.ui.mainWorker.ctxDictionary || {}
+                        Object.assign(jb.ui.mainWorker.ctxDictionary,jb.ui.deserializeCtxStore(store).ctx)
+                        const elem = jb.ui.document(ctx).querySelector('#'+elemId) 
+                            || jb.ui.document(ctx).querySelector(`[cmp-id="${cmpId}"]`)
+                        elem && jb.ui.applyDeltaToDom(elem, delta)
+                        css && jb.ui.addStyleElem(css)
+                        jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> 
+                            el._component ? el._component.recalcPropsFromElem() : jb.ui.mountInteractive(el))
+                }))
                 return worker.exec(widgetProf)
             })
         },

@@ -93,22 +93,26 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 				cmp.data_ref = cmp.ctx.vars.$model.databind()
 				editor.setValue(jb.tostring(jb.val(cmp.data_ref)))
 
-				jb.rx.Observable.create(obs=> editor.on('change', () => obs.next(editor.getValue())))
-					.takeUntil( cmp.destroyed )
-					.debounceTime(debounceTime)
-					.filter(x => x != jb.tostring(jb.val(cmp.data_ref)))
-					.distinctUntilChanged()
-					.subscribe(x=>	jb.writeValue(cmp.data_ref,x, ctx));
+				const {pipe,map,filter,subscribe,distinctUntilChanged,create,debounceTime} = jb.callbag
 
-				!cmp.data_ref.oneWay && jb.isWatchable(cmp.data_ref) && jb.ui.refObservable(cmp.data_ref,cmp,{srcCtx: ctx})
-					.map(e=>jb.tostring(jb.val(cmp.data_ref)))
-					.filter(x => x != editor.getValue())
-					.subscribe(x=>{
-						const cur = editor.getCursor()
-						editor.setValue(x)
-						editor.setSelection(cur)
-						cmp.editor.markText({line: 0, col:0}, {line: editor.lastLine(), col: 0})
-					});
+				pipe(
+					create(obs=> editor.on('change', () => obs.next(editor.getValue()))),
+					takeUntil( cmp.destroyed ),
+					debounceTime(debounceTime),
+					filter(x => x != jb.tostring(jb.val(cmp.data_ref))),
+					distinctUntilChanged(),
+					subscribe(x=> jb.writeValue(cmp.data_ref,x, ctx)))
+
+				!cmp.data_ref.oneWay && jb.isWatchable(cmp.data_ref) && pipe(
+						jb.ui.refObservable(cmp.data_ref,cmp,{srcCtx: ctx}),
+						map(e=>jb.tostring(jb.val(cmp.data_ref))),
+						filter(x => x != editor.getValue()),
+						subscribe(x=>{
+							const cur = editor.getCursor()
+							editor.setValue(x)
+							editor.setSelection(cur)
+							cmp.editor.markText({line: 0, col:0}, {line: editor.lastLine(), col: 0})
+						}))
 			}
 			cmp.doRefresh()
 			const wrapper = editor.getWrapperElement();

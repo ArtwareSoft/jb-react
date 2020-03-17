@@ -33,5 +33,5 @@ import 'rxjs/add/operator/toPromise';
 import 'rxjs/add/operator/race';
 import 'rxjs/add/operator/finally';
 
-jb.rx.Observable = Observable;
+jb.callbag = Observable;
 jb.rx.Subject = Subject;

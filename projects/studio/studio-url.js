@@ -46,19 +46,19 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
         if (_search)
             Object.assign(ctx.exp('%$queryParams%'),JSON.parse('{"' + decodeURI(_search).replace(/"/g, '\\"').replace(/&/g, '","').replace(/=/g,'":"') + '"}'))
 
-        const browserUrlEm = jb.rx.Observable.create(obs=>
-            jb.ui.location.listen(x=> obs.next(x)));
+        const {pipe, fromIter, subscribe,merge,create,map,filter} = jb.callbag
+        const browserUrlEm = create(obs=> jb.ui.location.listen(x=> obs.next(x)))
 
-        const databindEm = jb.ui.resourceChange().filter(e=> e.path[0] == resource)
-              .map(_=> jb.resource(resource))
-            .filter(obj=>
-                obj[params[0]])
-            .map(obj=>
-                urlFormat.objToUrl(obj));
+        const databindEm = pipe(jb.ui.resourceChange(),
+            filter(e=> e.path[0] == resource),
+            map(_=> jb.resource(resource)),
+            filter(obj=> obj[params[0]]),
+            map(obj=> urlFormat.objToUrl(obj)))
 
-        browserUrlEm.merge(databindEm)
-            .startWith(location)
-            .subscribe(loc => {
+        pipe(
+            merge(browserUrlEm,databindEm,fromIter([location])),
+//            startWith(location),
+            subscribe(loc => {
                 const obj = urlFormat.urlToObj(loc);
                 params.forEach(p=>
                     jb.writeValue(ctx.exp(`%$${resource}/${p}%`,'ref'), jb.tostring(obj[p]) ,ctx) );
@@ -67,7 +67,7 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
                 if (loc.search && loc.search === location.search) return
                 jb.ui.location.push(Object.assign({},jb.ui.location.location, loc));
                 ctx.params.onUrlChange(ctx.setData(loc));
-            })
+        }))
     }
 })
 

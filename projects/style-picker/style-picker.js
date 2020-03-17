@@ -28,7 +28,7 @@ jb.component('style-picker.main', { /* stylePicker.main */
   })
 })
 
-jb.component('style-picker.show-patterns',{
+jb.component('style-picker.show-patterns', {
     type: 'control',
     impl: itemlist({
         title: '',

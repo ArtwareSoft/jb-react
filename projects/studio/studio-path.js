@@ -20,7 +20,7 @@ function compsRefOfPreviewJb(previewjb) {
 	compsRef.id = 'comps'
 	return compsRef
 }
-st.scriptChange = new jb.rx.Subject()
+st.scriptChange = jb.callbag.subject()
 
 st.initCompsRefHandler = function(previewjb,allowedTypes) {
 	const oldCompsRefHandler = st.compsRefHandler
@@ -28,7 +28,7 @@ st.initCompsRefHandler = function(previewjb,allowedTypes) {
 	const compsRef = compsRefOfPreviewJb(previewjb);
 	st.compsRefHandler = jb.ui.extraWatchableHandler(compsRef, oldCompsRefHandler)
 	st.compsRefHandler.allowedTypes = st.compsRefHandler.allowedTypes.concat(allowedTypes);
-	st.compsRefHandler.stopListening = new jb.rx.Subject()
+	st.compsRefHandler.stopListening = jb.callbag.subject()
 
 	st.compsRefHandler.resourceChange.takeUntil(st.compsRefHandler.stopListening).subscribe(e=>{
 		jb.log('scriptChange',[e.srcCtx,e]);
