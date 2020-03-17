@@ -4083,6 +4083,394 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var rxjs
 /******/ });;
 
 (function() {
+const is = (previous, current) => previous === current
+const UNIQUE = {}
+
+jb.callbag = {
+    range: function* (from, to) {
+        let i = from
+        while (i <= to) {
+            yield i
+            i++
+        }
+    },
+    forEach: operation => source => {
+        let talkback
+        source(0, (t, d) => {
+            if (t === 0) talkback = d
+            if (t === 1) operation(d)
+            if (t === 1 || t === 0) talkback(1)
+        })
+    },
+    fromIter: iter => (start, sink) => {
+        if (start !== 0) return
+        const iterator =
+            typeof Symbol !== 'undefined' && iter[Symbol.iterator]
+            ? iter[Symbol.iterator]()
+            : iter
+        let inloop = false
+        let got1 = false
+        let res
+        function loop() {
+            inloop = true
+            while (got1) {
+                got1 = false
+                res = iterator.next()
+                if (res.done) sink(2)
+                else sink(1, res.value)
+            }
+            inloop = false
+        }
+        sink(0, t => {
+            if (t === 1) {
+                got1 = true
+                if (!inloop && !(res && res.done)) loop()
+            }
+        })
+    },
+    Do: f => source => (start, sink) => {
+        if (start !== 0) return
+        source(0, (t, d) => {
+            if (t == 1) f(d)
+            sink(t, d)
+        })
+    },
+    filter: condition => source => (start, sink) => {
+        if (start !== 0) return
+        let talkback
+        source(0, (t, d) => {
+          if (t === 0) {
+            talkback = d
+            sink(t, d)
+          } else if (t === 1) {
+            if (condition(d)) sink(t, d)
+            else talkback(1)
+          }
+          else sink(t, d)
+        })
+    },
+    map: f => source => (start, sink) => {
+        if (start !== 0) return
+        source(0, (t, d) => {
+            sink(t, t === 1 ? f(d) : d)
+        })
+    },
+    pipe(...cbs) {
+        let res = cbs[0]
+        for (let i = 1, n = cbs.length; i < n; i++) res = cbs[i](res)
+        return res
+    },
+    distinctUntilChanged(compare = is) {
+        return source => (start, sink) => {
+            if (start !== 0) return
+            let inited = false
+            let prev
+            let talkback
+            source(0, (type, data) => {
+                if (type === 0) {
+                    talkback = data
+                }
+
+                if (type !== 1) {
+                    sink(type, data)
+                    return
+                }
+
+                if (inited && compare(prev, data)) {
+                    talkback(1)
+                    return
+                }
+
+                inited = true
+                prev = data
+                sink(1, data)
+            })
+        }
+    },
+    takeUntil: notifier => source => (start, sink) => {
+        if (start !== 0) return
+        let sourceTalkback
+        let notifierTalkback
+        let inited = false
+        let done = UNIQUE
+
+        source(0, (type, data) => {
+            if (type === 0) {
+                sourceTalkback = data
+
+                notifier(0, (t, d) => {
+                    if (t === 0) {
+                        notifierTalkback = d
+                        notifierTalkback(1)
+                        return
+                    }
+                    if (t === 1) {
+                        done = void 0
+                        notifierTalkback(2)
+                        sourceTalkback(2)
+                        if (inited) sink(2)
+                        return
+                    }
+                    if (t === 2) {
+                        notifierTalkback = null
+                        done = d
+                        if (d != null) {
+                            sourceTalkback(2)
+                            if (inited) sink(t, d)
+                        }
+                    }
+                })
+                inited = true
+
+                sink(0, (t, d) => {
+                    if (done !== UNIQUE) return
+                    if (t === 2 && notifierTalkback) notifierTalkback(2)
+                    sourceTalkback(t, d)
+                })
+
+                if (done !== UNIQUE) sink(2, done)
+                return
+            }
+            if (type === 2) notifierTalkback(2)
+            if (done === UNIQUE) sink(type, data)
+        })
+    },
+    flatMap: (makeSource, combineResults) => inputSource => (start, sink) => {
+        if (start !== 0) return
+
+        if (!combineResults) combineResults = (x, y) => y
+
+        let index = 0
+        let talkbacks = {}
+        let sourceEnded = false
+        let inputSourceTalkback = null
+
+        let pullHandle = (t, d) => {
+            var currTalkback = Object.values(talkbacks).pop()
+            if (t === 1) {
+                if (currTalkback) currTalkback(1)
+                else if (!sourceEnded) inputSourceTalkback(1)
+                else sink(2)
+            }
+            if (t === 2) {
+                if (currTalkback) currTalkback(2)
+                inputSourceTalkback(2)
+            }
+        }
+
+        let stopOrContinue = d => {
+            if (sourceEnded && Object.keys(talkbacks).length === 0) sink(2, d)
+            else inputSourceTalkback(1)
+        }
+
+        let makeSink = (i, d, talkbacks) =>
+            (currT, currD) => {
+                if (currT === 0) {talkbacks[i] = currD; talkbacks[i](1)}
+                if (currT === 1) sink(1, combineResults(d, currD))
+                if (currT === 2) {
+                    delete talkbacks[i]
+                    stopOrContinue(currD)
+                }
+            }
+
+        inputSource(0, (t, d) => {
+            if (t === 0) {
+                inputSourceTalkback = d
+                sink(0, pullHandle)
+            }
+            if (t === 1) {
+                makeSource(d)(0, makeSink(index++, d, talkbacks))
+            }
+            if (t === 2) {
+                sourceEnded = true
+                stopOrContinue(d)
+            }
+    })
+    },
+    merge(...sources) {
+        return (start, sink) => {
+          if (start !== 0) return
+          const n = sources.length
+          const sourceTalkbacks = new Array(n)
+          let startCount = 0
+          let endCount = 0
+          let ended = false
+          const talkback = (t, d) => {
+            if (t === 2) ended = true
+            for (let i = 0; i < n; i++) sourceTalkbacks[i] && sourceTalkbacks[i](t, d)
+          }
+          for (let i = 0; i < n; i++) {
+            if (ended) return
+            sources[i](0, (t, d) => {
+              if (t === 0) {
+                sourceTalkbacks[i] = d
+                if (++startCount === 1) sink(0, talkback)
+              } else if (t === 2 && d) {
+                ended = true
+                for (let j = 0; j < n; j++) {
+                  if (j !== i) sourceTalkbacks[j] && sourceTalkbacks[j](2)
+                }
+                sink(2, d)
+              } else if (t === 2) {
+                sourceTalkbacks[i] = void 0
+                if (++endCount === n) sink(2)
+              } else sink(t, d)
+            })
+          }
+        }
+    },
+    fromEvent: (node, name, options) => (start, sink) => {
+        if (start !== 0) return
+        let disposed = false
+        const handler = ev => {
+          sink(1, ev)
+        }
+      
+        sink(0, t => {
+          if (t !== 2) {
+            return
+          }
+          disposed = true
+          if (node.removeEventListener) node.removeEventListener(name, handler, options)
+          else if (node.removeListener) node.removeListener(name, handler)
+          else throw new Error('cannot remove listener from node. No method found.')
+        })
+      
+        if (disposed) {
+          return
+        }
+      
+        if (node.addEventListener) node.addEventListener(name, handler, options)
+        else if (node.addListener) node.addListener(name, handler)
+        else throw new Error('cannot add listener to node. No method found.')
+    },
+    fromPromise: promise => (start, sink) => {
+        if (start !== 0) return
+        let ended = false
+        const onfulfilled = val => {
+          if (ended) return
+          sink(1, val)
+          if (ended) return
+          sink(2)
+        }
+        const onrejected = (err = new Error()) => {
+          if (ended) return
+          sink(2, err)
+        }
+        promise.then(onfulfilled, onrejected)
+        sink(0, t => {
+          if (t === 2) ended = true
+        })
+    },
+    subject() {
+        let sinks = []
+        return (type, data) => {
+          if (type === 0) {
+            const sink = data
+            sinks.push(sink)
+            sink(0, t => {
+              if (t === 2) {
+                const i = sinks.indexOf(sink)
+                if (i > -1) sinks.splice(i, 1)
+              }
+            })
+          } else {
+            const zinkz = sinks.slice(0)
+            for (let i = 0, n = zinkz.length, sink; i < n; i++) {
+              sink = zinkz[i]
+              if (sinks.indexOf(sink) > -1) sink(type, data)
+            }
+          }
+        }
+    },
+    catchError: fn => source => (start, sink) => {
+        if (start !== 0) return
+      
+        source(0, (type, data) => {
+          type === 2 && typeof data !== 'undefined' ? fn(data) : sink(type, data);
+        })
+    },
+    concat: (...sources) => (start, sink) => {
+        if (start !== 0) return
+        const n = sources.length
+        if (n === 0) {
+          sink(0, () => {})
+          sink(2)
+          return
+        }
+        let i = 0
+        let sourceTalkback
+        let lastPull = UNIQUE
+        const talkback = (t, d) => {
+          if (t === 1) lastPull = d
+          sourceTalkback(t, d)
+        }
+        (function next() {
+          if (i === n) {
+            sink(2)
+            return
+          }
+          sources[i](0, (t, d) => {
+            if (t === 0) {
+              sourceTalkback = d
+              if (i === 0) sink(0, talkback)
+              else if (lastPull !== UNIQUE) sourceTalkback(1, lastPull)
+            } else if (t === 2 && d) {
+              sink(2, d)
+            } else if (t === 2) {
+              i++
+              next()
+            } else {
+              sink(t, d)
+            }
+          })
+        })()
+    },
+    create: prod => (start, sink) => {
+        if (start !== 0) return
+        if (typeof prod !== 'function') {
+          sink(0, () => {})
+          sink(2)
+          return
+        }
+        let end = false
+        let clean
+        sink(0, (t) => {
+          if (!end) {
+            end = t === 2
+            if (end && typeof clean === 'function') clean()
+          }
+        })
+        if (end) return
+        clean = prod((v) => {
+          if (!end) sink(1, v)
+        }, (e) => {
+          if (!end && e !== undefined) {
+            end = true
+            sink(2, e)
+          }
+        }, () => {
+          if (!end) {
+            end = true
+            sink(2)
+          }
+        })
+    },
+    debounceTime: duration => source => (start, sink) => {
+        if (start !== 0) return
+        let timeout
+        source(0, (t, d) => {
+          // every event clears the existing timeout, if any
+          if (timeout) clearTimeout(timeout)
+          if (t === 1) timeout = setTimeout(() => sink(1, d), duration)
+          else sink(t, d)
+        })
+    } 
+}   
+
+})();
+
+(function() {
 
 // const sampleRef = {
 //     $jb_obj: {}, // real object (or parent) val - may exist only in older version of the resource. may contain $jb_id for tracking
@@ -7168,12 +7556,13 @@ jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
 	],
 	impl: function(context, id) {
 		  const dialog = context.vars.$dialog;
+		  const {pipe,fromEvent,takeUntil,merge,Do, map,flatMap,distinctUntilChanged,fromPromise, forEach} = jb.callbag
 		  return {
 				 css: '>.dialog-title { cursor: pointer }',
 				 afterViewInit: function(cmp) {
 					const titleElem = cmp.base.querySelector('.dialog-title');
-					cmp.mousedownEm = jb.rx.Observable.fromEvent(titleElem, 'mousedown')
-						.takeUntil( cmp.destroyed );
+					const destroyed = fromPromise(cmp.destroyed)
+					cmp.mousedownEm = pipe(fromEvent(titleElem, 'mousedown'),takeUntil(destroyed));
 
 					if (id && sessionStorage.getItem(id)) {
 						  const pos = JSON.parse(sessionStorage.getItem(id));
@@ -7181,36 +7570,36 @@ jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
 						  dialog.el.style.left = pos.left + 'px';
 					}
 
-					let mouseUpEm = jb.rx.Observable.fromEvent(document, 'mouseup').takeUntil( cmp.destroyed );
-					let mouseMoveEm = jb.rx.Observable.fromEvent(document, 'mousemove').takeUntil( cmp.destroyed );
+					let mouseUpEm = pipe(fromEvent(document, 'mouseup'), takeUntil(destroyed))
+					let mouseMoveEm = pipe(fromEvent(document, 'mousemove'), takeUntil(destroyed))
 
 					if (jb.studio.previewWindow) {
-						mouseUpEm = mouseUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mouseup'))
-							.takeUntil( cmp.destroyed );
-						mouseMoveEm = mouseMoveEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mousemove'))
-							.takeUntil( cmp.destroyed );
+						mouseUpEm = merge(mouseUpEm, pipe(fromEvent(jb.studio.previewWindow.document, 'mouseup')), takeUntil(destroyed))
+						mouseMoveEm = merge(mouseMoveEm, pipe(fromEvent(jb.studio.previewWindow.document, 'mousemove')), takeUntil(destroyed))
 					}
 
-					const mousedrag = cmp.mousedownEm
-							.do(e =>
-								e.preventDefault())
-							.map(e =>  ({
-							left: e.clientX - dialog.el.getBoundingClientRect().left,
-							top:  e.clientY - dialog.el.getBoundingClientRect().top
-						  }))
-							.flatMap(imageOffset =>
-								 mouseMoveEm.takeUntil(mouseUpEm)
-								 .map(pos => ({
-								  top:  Math.max(0,pos.clientY - imageOffset.top),
-								  left: Math.max(0,pos.clientX - imageOffset.left)
-							   }))
-							);
-
-					mousedrag.distinctUntilChanged().subscribe(pos => {
-					  dialog.el.style.top  = pos.top  + 'px';
-					  dialog.el.style.left = pos.left + 'px';
-					  if (id) sessionStorage.setItem(id, JSON.stringify(pos))
-					})
+					pipe(
+							cmp.mousedownEm,
+							Do(e => e.preventDefault()),
+							map(e =>  ({
+								left: e.clientX - dialog.el.getBoundingClientRect().left,
+								top:  e.clientY - dialog.el.getBoundingClientRect().top
+						  	})),
+							flatMap(imageOffset =>
+								 pipe(mouseMoveEm, takeUntil(mouseUpEm),
+									map(pos => ({
+									top:  Math.max(0,pos.clientY - imageOffset.top),
+									left: Math.max(0,pos.clientX - imageOffset.left)
+									}))
+								 )
+							),
+							//distinctUntilChanged(),
+							forEach(pos => {
+								dialog.el.style.top  = pos.top  + 'px';
+								dialog.el.style.left = pos.left + 'px';
+								if (id) sessionStorage.setItem(id, JSON.stringify(pos))
+							})
+					)
 				}
 			 }
 	  }
@@ -7699,7 +8088,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
     {id: 'onSelection', type: 'action', dynamic: true},
     {id: 'onDoubleClick', type: 'action', dynamic: true},
     {id: 'autoSelectFirst', type: 'boolean'},
-    {id: 'cssForSelected', as: 'string', description: 'e.g. background: red;color: blue', defaultValue: 'background: #bbb !important; color: #fff !important'}
+    {id: 'cssForSelected', as: 'string', description: 'e.g. background: #bbb', defaultValue: 'background: #bbb !important; color: #fff !important'}
   ],
   impl: (ctx,databind) => ({
     onclick: true,
@@ -35333,8 +35722,8 @@ st.projectHosts = {
         fetchProject(id,project) {
             return Promise.resolve({
                 libs: 'common,ui-common,material,ui-tree,dragula,codemirror,testers,pretty-print,studio,studio-tests,object-encoder,remote',
-                jsFiles: ['remote-widgets.js',...['data','ui','vdom','tree','watchable','parsing','object-encoder'].map(x=>x+'-tests.js')]
-                    .map(x=>`/projects/ui-tests/${x}`),
+                jsFiles: ['remote-widgets','phones-3',...['data','ui','vdom','tree','watchable','parsing','object-encoder'].map(x=>x+'-tests')]
+                    .map(x=>`/projects/ui-tests/${x}.js`),
                 project, 
                 entry: { $: 'ui-test-runner', test: project }
             })
@@ -35477,8 +35866,6 @@ st.Probe = class {
         return out
     }
 }
-
-const probeEmitter = new jb.rx.Subject()
 
 jb.component('studio.probe', { /* studio.probe */
   type: 'data',
@@ -36597,27 +36984,27 @@ jb.component('studio.suggested-styles', {
     ],
     impl: (ctx,extractedCtrl,targetPath) => {
         const constraints = ctx.exp('%$studio/pattern/constraints%') || []
-        const target = jb.studio.compNameOfPath(targetPath)
-        const {params, suggestions} = jb.ui.stylePatterns[target] && jb.ui.stylePatterns[target](extractedCtrl) || {}
+        const target = jb.studio.valOfPath(targetPath)
+        const {params, options} = jb.ui.stylePatterns[target.$] && jb.ui.stylePatterns[target.$](extractedCtrl,target) || {}
         if (!params) return []
         const previewCtx = jb.studio.closestCtxInPreview(ctx.exp('%$targetPath%')).ctx
-        return suggestions.filter(x => checkConstraints(x)).map(x=>mark(x)).sort((x,y) => y.mark - x.mark)
+        return options.filter(x => checkConstraints(x)).map(x=>mark(x)).sort((x,y) => y.mark - x.mark)
 
-        function checkConstraints(sugg) {
-            return constraints.reduce((res,cons) => res && cons.match(sugg),true)
+        function checkConstraints(option) {
+            return constraints.reduce((res,cons) => res && cons.match(option),true)
         }
 
-        function mark(sugg) {
-            const mark = Object.keys(params).reduce((res,p) => res + paramDiff(p),0)
-            return {...sugg, mark}
+        function mark(option) {
+            const mark = params.reduce((res,p) => res + paramDiff(p),0)
+            return {...option, mark}
 
-            function paramDiff(p) {
-                if (params[p].type == 'text') {
-                    const dropValue = previewCtx && previewCtx.run(params[p].dropValue) || ''
-                    const draggedValue = sugg._patternInfo.paramValues[p].draggedValue || ''
-                    return Math.abs(dropValue.length - draggedValue.length)
+            function paramDiff(param) {
+                if (param.type == 'text') {
+                    const origValue = previewCtx && previewCtx.run(param.origValue) || ''
+                    const draggedValue = option._patternInfo.paramValues[param.id].draggedValue || ''
+                    return Math.abs(origValue.length - draggedValue.length)
                 }
-                if (params[p].type == 'image') {
+                if (param.type == 'image') {
                     // todo image size
                 }
                 return 0
@@ -36632,7 +37019,7 @@ jb.component('pattern.path-value-constraint',{
         {id: 'value'},
     ],
     impl: (ctx,path,value) => ({
-        match: sugg => sugg._patternInfo.mapping[path] == value
+        match: option => option._patternInfo.mapping[path] == value
     })
 })
 
@@ -36657,18 +37044,15 @@ function flatContent(ctrl ,path) {
     return [{ctrl,path}, ...children]
 }
 
-function calcContentMap(ctrl) {
-    const ar = flatContent(ctrl,'')
-    return { ar, ...jb.objFromEntries(ar.map(x=>([x.path,x])))}
-}
+const paramProps = { text: 'text', button: 'title', image: 'url' }
 
 jb.ui.stylePatterns = {
     text(extractedCtrl) {
         const content = flatContent(extractedCtrl,'')
         const texts = content.filter(x=>x.ctrl.$ == 'text')
         const value = '%$textModel/text%'
-        const params = {text: { dropValue: value, type: 'text'}}
-        const suggestions = texts.flatMap(text=> {
+        const params = [{id: 'text', origValue: value, type: 'text'}]
+        const options = texts.flatMap(text=> {
             const boundedCtrl = JSON.parse(JSON.stringify(extractedCtrl))
             const overridePath = [...text.path.split('/'),'text'] 
             const draggedValue = jb.path(boundedCtrl,overridePath)
@@ -36683,33 +37067,75 @@ jb.ui.stylePatterns = {
                 }
             })
         })
-        return {params, suggestions}
+        return {params, options}
     },
-    card(extractedCtrl) {
+    group(extractedCtrl, target) {
+        const targetContent = flatContent(target,'')
         const content = flatContent(extractedCtrl,'')
-        const contentMap = jb.objFromEntries(content.map(x=>([x.path,x])))
-        const images = content.filter(x=>x.ctrl.$ == 'image')
+        const params = ['button','image','text'].flatMap(type=> content.filter(x=>x.ctrl.$ == type).map((elem,i)=>(
+            { id: idOfCtrl(elem.ctrl) || `${type}${i}`, origValue: elem.ctrl, type} )))
+    },
+    group(extractedCtrl, target) {
+        const targetContent = flatContent(target,'')
+        const params = ['button','image','text'].flatMap(type=> targetContent.filter(x=>x.ctrl.$ == type).map((elem,i)=>(
+            { id: idOfCtrl(elem.ctrl) || `${type}${i}`, origValue: elem.ctrl, type} )))
 
-        return jb.unique(images.flatMap(x=>[imageToCardPattern(x.path)]), x=>JSON.stringify(x))
-            .map(pattern => ({pattern, instances: findPatternInstances(pattern)}))
+        const content = flatContent(extractedCtrl,'')
+        // parents of images that have also text
+        const parentGroups = jb.unique(content.filter(x=>x.ctrl.$ == 'image').flatMap(x=>parents(x.path)))
+            .filter(path=>hasText(path))
+            .slice(-1) // TODO: remove
+        const options = parentGroups.flatMap(top => {
+            const matches = ['button','image','text'].map(type=>{
+                const draggedElemsOfType = content.filter(x=> x.ctrl.$ == type && x.path.indexOf(top) == 0)
+                return permutations(params.filter(p=> p.type == type),draggedElemsOfType).filter(x => x.length)
+            })
+            return combinations(matches.filter(x => x.length))
+                .filter(x => x.length).map(matches=>matchesToOption(matches,top))
+        })
+        return {params, options}
 
-        function imageToCardPattern(imgPath) {
-            return parents(imgPath).reduce((acc,x) => acc || (acc = cardPattern(x)), null)
+        // returns all matches between the params and the dragElems
+        // E.g. [ [ {param1, draggedElem1 }, {param2, draggedElem2 }], [{param1, draggedElem2 }, {param2, draggedElem1 }] ] ]
+        // result type [matches] when matches = [match], match: { param, draggedElem }
+        function permutations(params,draggedElems) {
+            if (params.length == 0 || draggedElems.length == 0) return [[]]
+            if (params.length == 1)
+                return [draggedElems.map(draggedElem=>({draggedElem, param: params[0]}))]
+            // match first param with all dragged Elems and combine with the other params/elems recursevely
+            return draggedElems.flatMap( (draggedElem,i)=> {
+                    const resultWithoutFirstParam = permutations(params.slice(1),[...draggedElems.slice(0,i),...draggedElems.slice(i+1) ] )
+                    return resultWithoutFirstParam.map(matches => matches.map(match=> [...match, {draggedElem, param: params[0]}]))
+                }
+            ).filter(x => x.length)
+        }
+        // returns all combinations of the matches
+        // input [[matchText1, matchText2],[matchImage1, matchImage2],[matchBtn1, matchBtn2] ] 
+        //   => [[...matchText1,...matchImage1,...matchBtn1], [...matchText2,...matchImage1, ...matchBtn1], .. 2*2*2
+        // result is [matches] when matches = [match], match: { param, draggedElem }
+        function combinations(arrOfMatches) {
+            if (arrOfMatches.length == 1) return arrOfMatches[0].map(match=>[match])
+            const innerCombinations = combinations(arrOfMatches.slice(1))
+            return arrOfMatches[0].flatMap(match=> innerCombinations.map(matches=>[match,...matches]))
         }
 
-        function cardPattern(path) {
-            const subPaths = content.filter(x=>x.path.indexOf(path) == 0)
-            const image = subPaths.filter(x=>x.ctrl.$ == 'image').map(x=>x.path.slice(path.length+1))
-            const text = subPaths.filter(x=>x.ctrl.$ == 'text').map(x=>x.path.slice(path.length+1))
-            if (image && text)
-                return {image,text}
+        function matchesToOption(matches,top) {
+            const boundedCtrl = JSON.parse(JSON.stringify(extractedCtrl))
+            const paramValues = {}
+            matches.forEach(match => {
+                const overridePath = [...match.option.path.split('/'), paramProps[match.param.type]] 
+                const draggedValue = jb.path(boundedCtrl,overridePath)
+                paramValues[match.param.id] = {overridePath, draggedValue}
+                jb.path(boundedCtrl,overridePath,match.param.origValue) // set value
+            })
+            const ctrl = pathToObj(boundedCtrl, top)
+            return {...styleByControl(ctrl,''), _patternInfo: { top, paramValues } }
         }
-        function findPatternInstances(pattern) {
-            const imageDepth = pattern.image[0].split('/').length
-            return content.filter(x=>x.image).map(x=>parents(x.path)[imageDepth])
-                .filter(base=> hasTexts(base, pattern.text,content))
-                .map(path=>({path,
-                    elem: pathToObj(target_el,path) }))
+        function hasText(path) {
+            return content.filter(x=>x.path.indexOf(path) == 0 && x.ctrl.$ == 'text')[0]
+        }
+        function idOfCtrl(ctrl) {
+            return ctrl && (ctrl.features||[]).filter(f=>f.$ == 'id').map(f=>f.id)[0]
         }
     }
 }

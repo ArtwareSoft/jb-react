@@ -159,7 +159,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
     {id: 'onSelection', type: 'action', dynamic: true},
     {id: 'onDoubleClick', type: 'action', dynamic: true},
     {id: 'autoSelectFirst', type: 'boolean'},
-    {id: 'cssForSelected', as: 'string', description: 'e.g. background: red;color: blue', defaultValue: 'background: #bbb !important; color: #fff !important'}
+    {id: 'cssForSelected', as: 'string', description: 'e.g. background: #bbb', defaultValue: 'background: #bbb !important; color: #fff !important'}
   ],
   impl: (ctx,databind) => ({
     onclick: true,

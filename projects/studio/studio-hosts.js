@@ -132,8 +132,8 @@ st.projectHosts = {
         fetchProject(id,project) {
             return Promise.resolve({
                 libs: 'common,ui-common,material,ui-tree,dragula,codemirror,testers,pretty-print,studio,studio-tests,object-encoder,remote',
-                jsFiles: ['remote-widgets.js',...['data','ui','vdom','tree','watchable','parsing','object-encoder'].map(x=>x+'-tests.js')]
-                    .map(x=>`/projects/ui-tests/${x}`),
+                jsFiles: ['remote-widgets','phones-3',...['data','ui','vdom','tree','watchable','parsing','object-encoder'].map(x=>x+'-tests')]
+                    .map(x=>`/projects/ui-tests/${x}.js`),
                 project, 
                 entry: { $: 'ui-test-runner', test: project }
             })

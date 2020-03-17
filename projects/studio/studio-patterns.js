@@ -77,27 +77,27 @@ jb.component('studio.suggested-styles', {
     ],
     impl: (ctx,extractedCtrl,targetPath) => {
         const constraints = ctx.exp('%$studio/pattern/constraints%') || []
-        const target = jb.studio.compNameOfPath(targetPath)
-        const {params, suggestions} = jb.ui.stylePatterns[target] && jb.ui.stylePatterns[target](extractedCtrl) || {}
+        const target = jb.studio.valOfPath(targetPath)
+        const {params, options} = jb.ui.stylePatterns[target.$] && jb.ui.stylePatterns[target.$](extractedCtrl,target) || {}
         if (!params) return []
         const previewCtx = jb.studio.closestCtxInPreview(ctx.exp('%$targetPath%')).ctx
-        return suggestions.filter(x => checkConstraints(x)).map(x=>mark(x)).sort((x,y) => y.mark - x.mark)
+        return options.filter(x => checkConstraints(x)).map(x=>mark(x)).sort((x,y) => y.mark - x.mark)
 
-        function checkConstraints(sugg) {
-            return constraints.reduce((res,cons) => res && cons.match(sugg),true)
+        function checkConstraints(option) {
+            return constraints.reduce((res,cons) => res && cons.match(option),true)
         }
 
-        function mark(sugg) {
-            const mark = Object.keys(params).reduce((res,p) => res + paramDiff(p),0)
-            return {...sugg, mark}
+        function mark(option) {
+            const mark = params.reduce((res,p) => res + paramDiff(p),0)
+            return {...option, mark}
 
-            function paramDiff(p) {
-                if (params[p].type == 'text') {
-                    const dropValue = previewCtx && previewCtx.run(params[p].dropValue) || ''
-                    const draggedValue = sugg._patternInfo.paramValues[p].draggedValue || ''
-                    return Math.abs(dropValue.length - draggedValue.length)
+            function paramDiff(param) {
+                if (param.type == 'text') {
+                    const origValue = previewCtx && previewCtx.run(param.origValue) || ''
+                    const draggedValue = option._patternInfo.paramValues[param.id].draggedValue || ''
+                    return Math.abs(origValue.length - draggedValue.length)
                 }
-                if (params[p].type == 'image') {
+                if (param.type == 'image') {
                     // todo image size
                 }
                 return 0
@@ -112,7 +112,7 @@ jb.component('pattern.path-value-constraint',{
         {id: 'value'},
     ],
     impl: (ctx,path,value) => ({
-        match: sugg => sugg._patternInfo.mapping[path] == value
+        match: option => option._patternInfo.mapping[path] == value
     })
 })
 
@@ -137,18 +137,15 @@ function flatContent(ctrl ,path) {
     return [{ctrl,path}, ...children]
 }
 
-function calcContentMap(ctrl) {
-    const ar = flatContent(ctrl,'')
-    return { ar, ...jb.objFromEntries(ar.map(x=>([x.path,x])))}
-}
+const paramProps = { text: 'text', button: 'title', image: 'url' }
 
 jb.ui.stylePatterns = {
     text(extractedCtrl) {
         const content = flatContent(extractedCtrl,'')
         const texts = content.filter(x=>x.ctrl.$ == 'text')
         const value = '%$textModel/text%'
-        const params = {text: { dropValue: value, type: 'text'}}
-        const suggestions = texts.flatMap(text=> {
+        const params = [{id: 'text', origValue: value, type: 'text'}]
+        const options = texts.flatMap(text=> {
             const boundedCtrl = JSON.parse(JSON.stringify(extractedCtrl))
             const overridePath = [...text.path.split('/'),'text'] 
             const draggedValue = jb.path(boundedCtrl,overridePath)
@@ -163,33 +160,75 @@ jb.ui.stylePatterns = {
                 }
             })
         })
-        return {params, suggestions}
+        return {params, options}
     },
-    card(extractedCtrl) {
+    group(extractedCtrl, target) {
+        const targetContent = flatContent(target,'')
         const content = flatContent(extractedCtrl,'')
-        const contentMap = jb.objFromEntries(content.map(x=>([x.path,x])))
-        const images = content.filter(x=>x.ctrl.$ == 'image')
+        const params = ['button','image','text'].flatMap(type=> content.filter(x=>x.ctrl.$ == type).map((elem,i)=>(
+            { id: idOfCtrl(elem.ctrl) || `${type}${i}`, origValue: elem.ctrl, type} )))
+    },
+    group(extractedCtrl, target) {
+        const targetContent = flatContent(target,'')
+        const params = ['button','image','text'].flatMap(type=> targetContent.filter(x=>x.ctrl.$ == type).map((elem,i)=>(
+            { id: idOfCtrl(elem.ctrl) || `${type}${i}`, origValue: elem.ctrl, type} )))
 
-        return jb.unique(images.flatMap(x=>[imageToCardPattern(x.path)]), x=>JSON.stringify(x))
-            .map(pattern => ({pattern, instances: findPatternInstances(pattern)}))
+        const content = flatContent(extractedCtrl,'')
+        // parents of images that have also text
+        const parentGroups = jb.unique(content.filter(x=>x.ctrl.$ == 'image').flatMap(x=>parents(x.path)))
+            .filter(path=>hasText(path))
+            .slice(-1) // TODO: remove
+        const options = parentGroups.flatMap(top => {
+            const matches = ['button','image','text'].map(type=>{
+                const draggedElemsOfType = content.filter(x=> x.ctrl.$ == type && x.path.indexOf(top) == 0)
+                return permutations(params.filter(p=> p.type == type),draggedElemsOfType).filter(x => x.length)
+            })
+            return combinations(matches.filter(x => x.length))
+                .filter(x => x.length).map(matches=>matchesToOption(matches,top))
+        })
+        return {params, options}
 
-        function imageToCardPattern(imgPath) {
-            return parents(imgPath).reduce((acc,x) => acc || (acc = cardPattern(x)), null)
+        // returns all matches between the params and the dragElems
+        // E.g. [ [ {param1, draggedElem1 }, {param2, draggedElem2 }], [{param1, draggedElem2 }, {param2, draggedElem1 }] ] ]
+        // result type [matches] when matches = [match], match: { param, draggedElem }
+        function permutations(params,draggedElems) {
+            if (params.length == 0 || draggedElems.length == 0) return [[]]
+            if (params.length == 1)
+                return [draggedElems.map(draggedElem=>({draggedElem, param: params[0]}))]
+            // match first param with all dragged Elems and combine with the other params/elems recursevely
+            return draggedElems.flatMap( (draggedElem,i)=> {
+                    const resultWithoutFirstParam = permutations(params.slice(1),[...draggedElems.slice(0,i),...draggedElems.slice(i+1) ] )
+                    return resultWithoutFirstParam.map(matches => matches.map(match=> [...match, {draggedElem, param: params[0]}]))
+                }
+            ).filter(x => x.length)
+        }
+        // returns all combinations of the matches
+        // input [[matchText1, matchText2],[matchImage1, matchImage2],[matchBtn1, matchBtn2] ] 
+        //   => [[...matchText1,...matchImage1,...matchBtn1], [...matchText2,...matchImage1, ...matchBtn1], .. 2*2*2
+        // result is [matches] when matches = [match], match: { param, draggedElem }
+        function combinations(arrOfMatches) {
+            if (arrOfMatches.length == 1) return arrOfMatches[0].map(match=>[match])
+            const innerCombinations = combinations(arrOfMatches.slice(1))
+            return arrOfMatches[0].flatMap(match=> innerCombinations.map(matches=>[match,...matches]))
         }
 
-        function cardPattern(path) {
-            const subPaths = content.filter(x=>x.path.indexOf(path) == 0)
-            const image = subPaths.filter(x=>x.ctrl.$ == 'image').map(x=>x.path.slice(path.length+1))
-            const text = subPaths.filter(x=>x.ctrl.$ == 'text').map(x=>x.path.slice(path.length+1))
-            if (image && text)
-                return {image,text}
+        function matchesToOption(matches,top) {
+            const boundedCtrl = JSON.parse(JSON.stringify(extractedCtrl))
+            const paramValues = {}
+            matches.forEach(match => {
+                const overridePath = [...match.option.path.split('/'), paramProps[match.param.type]] 
+                const draggedValue = jb.path(boundedCtrl,overridePath)
+                paramValues[match.param.id] = {overridePath, draggedValue}
+                jb.path(boundedCtrl,overridePath,match.param.origValue) // set value
+            })
+            const ctrl = pathToObj(boundedCtrl, top)
+            return {...styleByControl(ctrl,''), _patternInfo: { top, paramValues } }
         }
-        function findPatternInstances(pattern) {
-            const imageDepth = pattern.image[0].split('/').length
-            return content.filter(x=>x.image).map(x=>parents(x.path)[imageDepth])
-                .filter(base=> hasTexts(base, pattern.text,content))
-                .map(path=>({path,
-                    elem: pathToObj(target_el,path) }))
+        function hasText(path) {
+            return content.filter(x=>x.path.indexOf(path) == 0 && x.ctrl.$ == 'text')[0]
+        }
+        function idOfCtrl(ctrl) {
+            return ctrl && (ctrl.features||[]).filter(f=>f.$ == 'id').map(f=>f.id)[0]
         }
     }
 }

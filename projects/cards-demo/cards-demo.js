@@ -2,11 +2,14 @@ jb.ns('cards,cards-demo,style-gallery')
 
 jb.component('cards-demo.main', { /* cardsDemo.main */
   impl: group({
-    controls: card({
-      data: '%$wix-blog/items/0%',
-      adapter: cards.wixPostAdapter(),
-      style: card.box290()
-    })
+    layout: layout.horizontal('20'),
+    controls: [
+      card({
+        data: '%$wix-blog/items/0%',
+        style: card.box290(),
+        adapter: cards.wixPostAdapter()
+      })
+    ]
   })
 })
 
@@ -50,3 +53,18 @@ jb.component('style-gallery.styles-of-ui-component', {
     })
   }),
 }))
+
+jb.component('cards-demo.phone', { /* cardsDemo.phone */
+  type: 'control',
+  impl: group({
+    controls: [
+      group({
+        controls: [
+          text({text: '%title%', title: 'my title'}),
+          image({url: '%image%', width: '200', height: '200'})
+        ],
+        features: group.data({data: '%$phones[0]%', itemVariable: ''})
+      })
+    ]
+  })
+})

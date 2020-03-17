@@ -58,12 +58,13 @@ jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
 	],
 	impl: function(context, id) {
 		  const dialog = context.vars.$dialog;
+		  const {pipe,fromEvent,takeUntil,merge,Do, map,flatMap,distinctUntilChanged,fromPromise, forEach} = jb.callbag
 		  return {
 				 css: '>.dialog-title { cursor: pointer }',
 				 afterViewInit: function(cmp) {
 					const titleElem = cmp.base.querySelector('.dialog-title');
-					cmp.mousedownEm = jb.rx.Observable.fromEvent(titleElem, 'mousedown')
-						.takeUntil( cmp.destroyed );
+					const destroyed = fromPromise(cmp.destroyed)
+					cmp.mousedownEm = pipe(fromEvent(titleElem, 'mousedown'),takeUntil(destroyed));
 
 					if (id && sessionStorage.getItem(id)) {
 						  const pos = JSON.parse(sessionStorage.getItem(id));
@@ -71,36 +72,36 @@ jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
 						  dialog.el.style.left = pos.left + 'px';
 					}
 
-					let mouseUpEm = jb.rx.Observable.fromEvent(document, 'mouseup').takeUntil( cmp.destroyed );
-					let mouseMoveEm = jb.rx.Observable.fromEvent(document, 'mousemove').takeUntil( cmp.destroyed );
+					let mouseUpEm = pipe(fromEvent(document, 'mouseup'), takeUntil(destroyed))
+					let mouseMoveEm = pipe(fromEvent(document, 'mousemove'), takeUntil(destroyed))
 
 					if (jb.studio.previewWindow) {
-						mouseUpEm = mouseUpEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mouseup'))
-							.takeUntil( cmp.destroyed );
-						mouseMoveEm = mouseMoveEm.merge(jb.rx.Observable.fromEvent(jb.studio.previewWindow.document, 'mousemove'))
-							.takeUntil( cmp.destroyed );
+						mouseUpEm = merge(mouseUpEm, pipe(fromEvent(jb.studio.previewWindow.document, 'mouseup')), takeUntil(destroyed))
+						mouseMoveEm = merge(mouseMoveEm, pipe(fromEvent(jb.studio.previewWindow.document, 'mousemove')), takeUntil(destroyed))
 					}
 
-					const mousedrag = cmp.mousedownEm
-							.do(e =>
-								e.preventDefault())
-							.map(e =>  ({
-							left: e.clientX - dialog.el.getBoundingClientRect().left,
-							top:  e.clientY - dialog.el.getBoundingClientRect().top
-						  }))
-							.flatMap(imageOffset =>
-								 mouseMoveEm.takeUntil(mouseUpEm)
-								 .map(pos => ({
-								  top:  Math.max(0,pos.clientY - imageOffset.top),
-								  left: Math.max(0,pos.clientX - imageOffset.left)
-							   }))
-							);
-
-					mousedrag.distinctUntilChanged().subscribe(pos => {
-					  dialog.el.style.top  = pos.top  + 'px';
-					  dialog.el.style.left = pos.left + 'px';
-					  if (id) sessionStorage.setItem(id, JSON.stringify(pos))
-					})
+					pipe(
+							cmp.mousedownEm,
+							Do(e => e.preventDefault()),
+							map(e =>  ({
+								left: e.clientX - dialog.el.getBoundingClientRect().left,
+								top:  e.clientY - dialog.el.getBoundingClientRect().top
+						  	})),
+							flatMap(imageOffset =>
+								 pipe(mouseMoveEm, takeUntil(mouseUpEm),
+									map(pos => ({
+									top:  Math.max(0,pos.clientY - imageOffset.top),
+									left: Math.max(0,pos.clientX - imageOffset.left)
+									}))
+								 )
+							),
+							//distinctUntilChanged(),
+							forEach(pos => {
+								dialog.el.style.top  = pos.top  + 'px';
+								dialog.el.style.left = pos.left + 'px';
+								if (id) sessionStorage.setItem(id, JSON.stringify(pos))
+							})
+					)
 				}
 			 }
 	  }
