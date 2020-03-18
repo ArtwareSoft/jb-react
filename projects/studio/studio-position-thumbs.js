@@ -1,5 +1,3 @@
-import { last } from "rxjs/operator/last"
-
 Object.assign(jb.ui,{
   computeStyle(el,prop) { return +(getComputedStyle(el)[prop].split('px')[0] || 0)},
   splitCssProp(cssProp) {

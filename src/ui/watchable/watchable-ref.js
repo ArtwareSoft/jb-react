@@ -356,7 +356,7 @@ class WatchableValueByRef {
     return this.resources.frame || jb.frame
   }
   propagateResourceChangeToObservables() {
-    jb.callbag.subscribe(this.resourceChange)(e=>{
+    jb.subscribe(this.resourceChange, e=>{
       const observablesToUpdate = this.observables.slice(0) // this.observables array may change in the notification process !!
       const changed_path = this.removeLinksFromPath(this.pathOfRef(e.ref))
       if (changed_path) observablesToUpdate.forEach(obs=> {
@@ -448,9 +448,8 @@ jb.component('run-transaction', { /* runTransaction */
   impl: (ctx,actions,disableNotifications) => {
 		jb.mainWatchableHandler.startTransaction()
 		return actions.reduce((def,action,index) =>
-				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index ))
-			,Promise.resolve())
-			.catch((e) => jb.logException(e,ctx))
+				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index )) ,Promise.resolve())
+			.catch(e => jb.logException(e,ctx))
 			.then(() => jb.mainWatchableHandler.endTransaction(disableNotifications))
 	}
 })

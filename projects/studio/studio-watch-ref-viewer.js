@@ -216,6 +216,8 @@ function animateCtxDestroy(ctx) {
 }
 
 jb.studio.activateWatchRefViewer = () => {
+  const {pipe,map,filter,subscribe,merge,subject,distinctUntilChanged,catchError} = jb.callbag
+
     if (!st.previewjb.spy)
         st.previewjb.initSpy({})
     st.previewjb.spy.setLogs('registerCmpObservable,notifyCmpObservable,destroyCmp,setState')
@@ -226,7 +228,7 @@ jb.studio.activateWatchRefViewer = () => {
     // ).map(z=>z[1])
     const delayedSpy = st.previewjb.spy.observable()
 
-    delayedSpy.filter(e=>e.logName === 'registerCmpObservable').subscribe(e=> {
+    pipe(delayedSpy, filter(e=>e.logName === 'registerCmpObservable'), subscribe(e=> {
             const ref = e.record[0].ref
             const ctx = e.record[0].ctx
             const path = ref && jb.refHandler(ref).pathOfRef(ref).join('~')
@@ -237,9 +239,9 @@ jb.studio.activateWatchRefViewer = () => {
                 () => pos,
                 studio.positionOfData(path)
             )))
-    })
-    delayedSpy.filter(e=>e.logName === 'notifyCmpObservable')
-        .subscribe(e=> {
+    }))
+    pipe(delayedSpy, filter(e=>e.logName === 'notifyCmpObservable'),
+        subscribe(e=> {
             const ref = e.record[3].ref
             const ctx = e.record[3].srcCtx
             const path = ref && jb.refHandler(ref).pathOfRef(ref).join('~')
@@ -250,14 +252,14 @@ jb.studio.activateWatchRefViewer = () => {
                 studio.positionOfData(path),
                 () => pos,
             )))
-    })
+    }))
 
-    delayedSpy.filter(e=>e.logName === 'destroyCmp').subscribe(e =>
+    pipe(delayedSpy,filter(e=>e.logName === 'destroyCmp'), subscribe(e =>
         positionsOfCtx(e.record[0].ctx).forEach(pos=>
-            jb.exec(studio.animateCmpDestroy({pos}))))
+            jb.exec(studio.animateCmpDestroy({pos})))))
 
-    delayedSpy.filter(e=>e.logName === 'setState').subscribe(e =>
-        jb.exec(animate.refreshElem(elemsOfCtx(e.record[0].ctx))))
+    pipe(delayedSpy,filter(e=>e.logName === 'setState'), subscribe(e =>
+        jb.exec(animate.refreshElem(elemsOfCtx(e.record[0].ctx)))))
 }
 
 })()

@@ -1,5 +1,7 @@
 (function() {
 const st = jb.studio;
+const {pipe,filter,subscribe,takeUntil} = jb.callbag
+
 
 function compsRefOfPreviewJb(previewjb) {
 	st.compsHistory = [];
@@ -30,15 +32,17 @@ st.initCompsRefHandler = function(previewjb,allowedTypes) {
 	st.compsRefHandler.allowedTypes = st.compsRefHandler.allowedTypes.concat(allowedTypes);
 	st.compsRefHandler.stopListening = jb.callbag.subject()
 
-	st.compsRefHandler.resourceChange.takeUntil(st.compsRefHandler.stopListening).subscribe(e=>{
-		jb.log('scriptChange',[e.srcCtx,e]);
-		st.scriptChange.next(e)
-		st.highlightByScriptPath(e.path)
-		writeValueToDataResource(e.path,e.newVal)
-		if (st.isStudioCmp(e.path[0]))
-			st.refreshStudioComponent(e.path)
-		st.lastStudioActivity= new Date().getTime()
-	})
+	pipe(st.compsRefHandler.resourceChange,
+		takeUntil(st.compsRefHandler.stopListening),
+		subscribe(e=>{
+			jb.log('scriptChange',[e.srcCtx,e]);
+			st.scriptChange.next(e)
+			st.highlightByScriptPath(e.path)
+			writeValueToDataResource(e.path,e.newVal)
+			if (st.isStudioCmp(e.path[0]))
+				st.refreshStudioComponent(e.path)
+			st.lastStudioActivity= new Date().getTime()
+		}))
 }
 
 function writeValueToDataResource(path,value) {
@@ -335,16 +339,20 @@ jb.component('studio.watch-path', { /* studio.watchPath */
 jb.component('studio.watch-script-changes', { /* studio.watchScriptChanges */
   type: 'feature',
   impl: ctx => ({
-      afterViewInit: cmp => st.scriptChange.takeUntil( cmp.destroyed )
-		.subscribe(e=> cmp.refresh({srcCtx: ctx}))
+	  afterViewInit: cmp => pipe(st.scriptChange,
+		takeUntil( cmp.destroyed ),
+		subscribe(() => cmp.refresh({srcCtx: ctx}))
+	  )
    })
 })
 
 jb.component('studio.watch-components', { /* studio.watchComponents */
   type: 'feature',
   impl: ctx => ({
-      afterViewInit: cmp => st.scriptChange.takeUntil( cmp.destroyed ).filter(e=>e.path.length == 1)
-        	.subscribe(e=> cmp.refresh({srcCtx: ctx}))
+	  afterViewInit: cmp => pipe(st.scriptChange,
+			takeUntil( cmp.destroyed ),
+			filter(e=>e.path.length == 1),
+        	subscribe(() => cmp.refresh({srcCtx: ctx})))
    })
 })
 

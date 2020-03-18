@@ -9,8 +9,8 @@ jb.component('studio.component-statistics', { /* studio.componentStatistics */
     {id: 'cmpId', as: 'string', defaultValue: '%%'}
   ],
   impl: (ctx,cmpId) => {
-	  var _jb = jb.studio.previewjb;
-	  jb.studio.scriptChange.subscribe(_=>_jb.statistics = null);
+	  const _jb = jb.studio.previewjb;
+	  jb.subscribe(jb.studio.scriptChange, _=>_jb.statistics = null);
 	  if (!_jb.statistics) {
       const refs = {}, comps = _jb.comps;
 

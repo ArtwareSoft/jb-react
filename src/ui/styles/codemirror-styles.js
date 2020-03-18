@@ -232,13 +232,14 @@ jb.component('text.codemirror', { /* text.codemirror */
                     jb.logException(e,'editable-text.codemirror',ctx);
                     return;
                 }
-                editor.getWrapperElement().style.boxShadow = 'none'; //.css('box-shadow', 'none');
-                jb.ui.resourceChange().takeUntil(cmp.destroyed)
-                    .map(()=> ctx.vars.$model.text())
-                    .filter(x=>x)
-                    .distinctUntilChanged()
-                    .subscribe(x=>
-                        editor.setValue(x));
+				editor.getWrapperElement().style.boxShadow = 'none';
+				const {pipe,map,filter,subscribe,distinctUntilChanged,takeUntil} = jb.callbag
+				pipe(jb.ui.resourceChange(),
+					takeUntil(cmp.destroyed),
+                    map(()=> ctx.vars.$model.text()),
+                    filter(x=>x),
+                    distinctUntilChanged(),
+                    subscribe(x=> editor.setValue(x)))
             }
         }
     }

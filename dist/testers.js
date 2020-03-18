@@ -19,7 +19,7 @@ jb.component('data-test', { /* dataTest */
 			.then(_ =>
 				calculate())
 			.then(v=>
-				Array.isArray(v) ? jb.synchArray(v) : v)
+				Array.isArray(v) ? jb.toSynchArray(v) : v)
 			.then(value=> {
 				const countersErr = countersErrors(expectedCounters);
 				const success = !! (expectedResult(new jb.jbCtx(ctx,{ data: value })) && !countersErr);
@@ -293,6 +293,12 @@ if (typeof startTime === 'undefined')
 startTime = startTime || new Date().getTime();
 
 jb.testers.runTests = function({testType,specificTest,show,pattern,rerun}) {
+	const {pipe, fromIter, subscribe,concatMap, flatMap, fromPromise, merge} = jb.callbag
+	// pipe(fromIter([1,2,3]),concatMap(x=> Promise.resolve(x))
+	// 	,subscribe(x=>console.log(x)))
+	// return
+
+
 	jb.studio.initTests() && jb.studio.initTests()
 	const initial_resources = JSON.stringify(jb.resources).replace(/\"\$jb_id":[0-9]*,/g,'')
 	const tests = jb.entries(jb.comps)
@@ -306,15 +312,15 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,rerun}) {
 
 	document.write(`<div style="font-size: 20px"><span id="fail-counter" onclick="hide_success_lines()"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span><span id="memory-usage"></span></div>`);
 
-	const {pipe, fromIter, subscribe,concatMap} = jb.callbag
 	return pipe(
-		fromIter(Array.from(Array(rerun ? Number(rerun) : 1).keys())),
-		//concatMap(i=> (i % 20 == 0) ? jb.delay(300): [1]),
-		concatMap(_=> pipe(
+		// fromIter(Array.from(Array(rerun ? Number(rerun) : 1).keys())),
+		// //concatMap(i=> (i % 20 == 0) ? jb.delay(300): [1]),
+		// concatMap(pipe(
 			fromIter(tests),
 			concatMap(e=> {
+			//	return Promise.resolve({ id: e[0], success: false, reason: 'empty result'})
 			  jb.logs.error = [];
-			  return Promise.resolve(new jb.jbCtx().setVars({testID: e[0], initial_resources }).run({$:e[0]}))
+			  return fromPromise(Promise.resolve(new jb.jbCtx().setVars({testID: e[0], initial_resources }).run({$:e[0]}))
 				.then(res => {
 					if (!res)
 						return { id: e[0], success: false, reason: 'empty result'}
@@ -323,8 +329,8 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,rerun}) {
 						res.reason = 'log errors: ' + JSON.stringify(jb.logs.error)
 					}
 					return res
-				})
-		}))),
+			 }))
+		}),
 		subscribe(res=> {
 			if (res.success)
 				jb_success_counter++;

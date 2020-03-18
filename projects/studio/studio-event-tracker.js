@@ -1,23 +1,6 @@
 (function() {
 const st = jb.studio;
 
-// st.initEventTracker = _ => {
-// 	// debug the preview
-// 	st.stateChangeEvents = [];
-// 	st.previewjb.ui.stateChangeEm.subscribe(e=>{
-// 		var curTime = e.timeStamp = new Date().getTime();
-// 		st.stateChangeEvents.unshift(e);
-// 		st.stateChangeEvents = st.stateChangeEvents.filter(ev=>ev.timeStamp > curTime - 2000)
-// 	})
-// 	// debug the studio
-// 	st.studioStateChangeEvents = [];
-// 	jb.ui.stateChangeEm.subscribe(e=>{
-// 		var curTime = e.timeStamp = new Date().getTime();
-// 		st.studioStateChangeEvents.unshift(e);
-// 		st.studioStateChangeEvents = st.studioStateChangeEvents.filter(ev=>ev.timeStamp > curTime - 2000)
-// 	})
-// }
-
 //ui.stateChangeEm.next({cmp: cmp, opEvent: opEvent})
 //({op: op, ref: ref, srcCtx: srcCtx, oldRef: oldRef, oldResources: oldResources})
 

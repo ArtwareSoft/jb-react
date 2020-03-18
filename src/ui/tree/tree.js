@@ -260,21 +260,20 @@ jb.component('tree.keyboard-selection', { /* tree.keyboardSelection */
 
 				if (context.params.autoFocus)
 					jb.ui.focus(cmp.base,'tree.keyboard-selection init autofocus',context);
+				
+				const {pipe,map,filter,subscribe} = jb.callbag
+				pipe(keyDownNoAlts, filter(e=> e.keyCode == 13), subscribe(e =>
+					runActionInTreeContext(context.params.onEnter)))
 
-				keyDownNoAlts.filter(e=> e.keyCode == 13).subscribe(e =>
-							runActionInTreeContext(context.params.onEnter))
-
-				keyDownNoAlts.filter(e=> e.keyCode == 38 || e.keyCode == 40)
-					.map(event => {
+				pipe(keyDownNoAlts, filter(e=> e.keyCode == 38 || e.keyCode == 40),
+					map(event => {
 						const diff = event.keyCode == 40 ? 1 : -1;
 						const nodes = jb.ui.findIncludeSelf(cmp.base,'.treenode');
 						const selectedEl = jb.ui.findIncludeSelf(cmp.base,'.treenode.selected')[0];
 						return cmp.elemToPath(nodes[nodes.indexOf(selectedEl) + diff]) || cmp.getSelected();
-					}).subscribe(x=> cmp.selectionEmitter.next(x))
+					}), subscribe(x=> cmp.selectionEmitter.next(x)))
 				// expand collapse
-				keyDownNoAlts
-					.filter(e=> e.keyCode == 37 || e.keyCode == 39)
-					.subscribe(event => {
+				pipe(keyDownNoAlts, filter(e=> e.keyCode == 37 || e.keyCode == 39), subscribe(event => {
 						const selected = cmp.getSelected()
 						const isArray = cmp.model.isArray(selected);
 						if (!isArray || (cmp.state.expanded[selected] && event.keyCode == 39))
@@ -283,7 +282,7 @@ jb.component('tree.keyboard-selection', { /* tree.keyboardSelection */
 							cmp.state.expanded[selected] = (event.keyCode == 39);
 							cmp.redraw()
 						}
-					});
+				}))
 
 				function runActionInTreeContext(action) {
 					console.log(cmp.getSelected())
@@ -375,21 +374,21 @@ jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
 				cmp.redraw(true);
 		    })
 
-	        // ctrl up and down
-    		cmp.onkeydown.filter(e=>e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
-				.subscribe(e=> {
-					const selected = cmp.getSelected()
-					const selectedIndex = Number(selected.split('~').pop());
-					if (isNaN(selectedIndex)) return;
-					const no_of_siblings = Array.from(cmp.base.querySelector('.treenode.selected').parentNode.children).length;
-					const diff = e.keyCode == 40 ? 1 : -1;
-					let target = (selectedIndex + diff+ no_of_siblings) % no_of_siblings;
-					const state = treeStateAsRefs(tree);
-					cmp.model.move(selected, selected.split('~').slice(0,-1).concat([target]).join('~'),ctx)
-						
-					restoreTreeStateFromRefs(cmp,state);
-				})
-      		},
+			// ctrl up and down
+			const {pipe,filter,subscribe} = jb.callbag
+    		pipe(cmp.onkeydown, filter(e=>e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40)), subscribe(e=> {
+				const selected = cmp.getSelected()
+				const selectedIndex = Number(selected.split('~').pop());
+				if (isNaN(selectedIndex)) return;
+				const no_of_siblings = Array.from(cmp.base.querySelector('.treenode.selected').parentNode.children).length;
+				const diff = e.keyCode == 40 ? 1 : -1;
+				let target = (selectedIndex + diff+ no_of_siblings) % no_of_siblings;
+				const state = treeStateAsRefs(tree);
+				cmp.model.move(selected, selected.split('~').slice(0,-1).concat([target]).join('~'),ctx)
+					
+				restoreTreeStateFromRefs(cmp,state);
+			}))
+      	},
   	})
 })
 

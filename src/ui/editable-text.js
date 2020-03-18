@@ -57,6 +57,7 @@ jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
     afterViewInit: cmp => {
       const input = jb.ui.findIncludeSelf(cmp.base,'input')[0];
       if (!input) return;
+      const {pipe,filter,subscribe} = jb.callbag
 
       cmp.openPopup = jb.ui.wrapWithLauchingElement( ctx2 =>
             ctx2.run( openDialog({
@@ -89,20 +90,19 @@ jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
       const keyup = cmp.keyup = cmp.onkeyup.delay(1); // delay to have input updated
 
       jb.delay(500).then(_=>{
-        cmp.onkeydown.filter(e=> e.keyCode == 13).subscribe(_=>{
+
+        pipe(cmp.onkeydown,filter(e=> e.keyCode == 13),subscribe(_=>{
           const showHelper = ctx.params.showHelper(cmp.ctx.setData(input))
           jb.log('helper-popup', ['onEnter', showHelper, input.value,cmp.ctx,cmp,ctx])
           if (!showHelper)
             ctx.params.onEnter(cmp.ctx)
-        });
-        cmp.onkeydown.filter(e=> e.keyCode == 27 ).subscribe(_=> ctx.params.onEsc(cmp.ctx));
+        }))
+        subscribe(keyup)(e=>e.keyCode == 27 && ctx.params.onEsc(cmp.ctx))
       })
 
-      keyup.filter(e=> [13,27,37,38,40].indexOf(e.keyCode) == -1)
-        .subscribe(_=>cmp.refreshSuggestionPopupOpenClose())
+      subscribe(keyup)(e=> [13,27,37,38,40].indexOf(e.keyCode) == -1 && cmp.refreshSuggestionPopupOpenClose())
+      subscribe(keyup)(e=>e.keyCode == 27 && cmp.closePopup())
 
-      keyup.filter(e=>e.keyCode == 27) // ESC
-          .subscribe(_=>cmp.closePopup())
       if (ctx.params.autoOpen)
         cmp.refreshSuggestionPopupOpenClose()
     },

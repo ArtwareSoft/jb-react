@@ -121,9 +121,10 @@ jb.component('watch-observable', { /* watchObservable */
     {id: 'toWatch', mandatory: true}
   ],
   impl: interactive(
-    (ctx,{cmp},{toWatch}) =>
-    toWatch.takeUntil(cmp.destroyed).subscribe(()=>cmp.refresh(null,{srcCtx:ctx.componentContext}))
-  )
+    (ctx,{cmp},{toWatch}) => jb.callbag.pipe(toWatch,
+      jb.callbag.takeUntil(cmp.destroyed),
+      jb.callbag.subscribe(()=>cmp.refresh(null,{srcCtx:ctx.componentContext}))
+    ))
 })
 
 jb.component('group.data', { /* group.data */
@@ -237,8 +238,8 @@ jb.component('calculated-var', { /* calculatedVar */
         const fullName = name + ':' + cmp.cmpId;
         const refToResource = cmp.ctx.exp(`%$${fullName}%`,'ref');
         (watchRefs(cmp.ctx)||[]).map(x=>jb.asRef(x)).filter(x=>x).forEach(ref=>
-          jb.callbag.subscribe(jb.ui.refObservable(ref,cmp,{srcCtx: ctx}))(e=>
-            jb.writeValue(refToResource,value(cmp.ctx),ctx))
+          jb.subscribe(jb.ui.refObservable(ref,cmp,{srcCtx: ctx}), 
+            e=> jb.writeValue(refToResource,value(cmp.ctx),ctx))
         )
       }
   })
@@ -327,9 +328,8 @@ jb.component('feature.onEvent', { /* feature.onEvent */
         if (event == 'load') {
           jb.delay(1).then(() => jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)())
         } else {
-          (debounceTime ? cmp[`on${event}`].debounceTime(debounceTime) : cmp[`on${event}`])
-            .subscribe(event=>
-                  jb.ui.wrapWithLauchingElement(action, cmp.ctx.setVars({event}), cmp.base)())
+          jb.subscribe(debounceTime ? cmp[`on${event}`].debounceTime(debounceTime) : cmp[`on${event}`], 
+            event=> jb.ui.wrapWithLauchingElement(action, cmp.ctx.setVars({event}), cmp.base)())
         }
       }
   })
@@ -344,13 +344,15 @@ jb.component('feature.onHover', { /* feature.onHover */
     {id: 'onLeave', type: 'action[]', mandatory: true, dynamic: true},
     {id: 'debounceTime', as: 'number', defaultValue: 0}
   ],
-  impl: (ctx,action,onLeave,debounceTime) => ({
+  impl: (ctx,action,onLeave,_debounceTime) => ({
       onmouseenter: true, onmouseleave: true,
       afterViewInit: cmp => {
-        cmp.onmouseenter.debounceTime(debounceTime).subscribe(()=>
-              jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)())
-        cmp.onmouseleave.debounceTime(debounceTime).subscribe(()=>
-              jb.ui.wrapWithLauchingElement(onLeave, cmp.ctx, cmp.base)())
+        const {pipe,debounceTime,subscribe} = jb.callbag
+
+        pipe(cmp.onmouseenter, debounceTime(_debounceTime), subscribe(()=>
+              jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)()))
+        pipe(cmp.onmouseleave,debounceTime(_debounceTime),subscribe(()=>
+              jb.ui.wrapWithLauchingElement(onLeave, cmp.ctx, cmp.base)()))
       }
   })
 })
@@ -365,8 +367,8 @@ jb.component('feature.class-on-hover', { /* feature.classOnHover */
   impl: (ctx,clz) => ({
     onmouseenter: true, onmouseleave: true,
     afterViewInit: cmp => {
-      cmp.onmouseenter.subscribe(()=> jb.ui.addClass(cmp.base,clz))
-      cmp.onmouseleave.subscribe(()=> jb.ui.removeClass(cmp.base,clz))
+      jb.subscribe(cmp.onmouseenter, ()=> jb.ui.addClass(cmp.base,clz))
+      jb.subscribe(cmp.onmouseleave, ()=> jb.ui.removeClass(cmp.base,clz))
     }
   })
 })
@@ -399,7 +401,7 @@ jb.component('feature.onKey', { /* feature.onKey */
   ],
   impl: (ctx,key,action) => ({
       onkeydown: true,
-      afterViewInit: cmp => cmp.onkeydown.subscribe(e=> {
+      afterViewInit: cmp => jb.subscribe(cmp.onkeydown, e=> {
           if (!jb.ui.checkKey(e,key)) return
           ctx.params.doNotWrapWithLauchingElement ? action(cmp.ctx) :
             jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)()
@@ -413,10 +415,7 @@ jb.component('feature.onEnter', { /* feature.onEnter */
   params: [
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
-  impl: feature.onKey(
-    'Enter',
-    call('action')
-  )
+  impl: feature.onKey('Enter', call('action'))
 })
 
 jb.component('feature.onEsc', { /* feature.onEsc */
@@ -425,10 +424,7 @@ jb.component('feature.onEsc', { /* feature.onEsc */
   params: [
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
-  impl: feature.onKey(
-    'Esc',
-    call('action')
-  )
+  impl: feature.onKey('Esc', call('action'))
 })
 
 jb.component('refresh-control-by-id', { /* refreshControlById */

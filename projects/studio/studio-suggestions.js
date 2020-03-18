@@ -9,29 +9,33 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
   ],
   impl: ctx => ({
       afterViewInit: cmp => {
+        const {pipe,map,subscribe,distinctUntilChanged,catchError,startWith,debounceTime} = jb.callbag
+
         const selectionKeySourceCmp = jb.ui.parentCmps(cmp.base).find(_cmp=>_cmp.selectionKeySource)
         const pathToTrace = ctx.params.path
         const keyup = selectionKeySourceCmp.keyup.takeUntil( cmp.destroyed )
         const input = selectionKeySourceCmp.input
 
-        keyup.debounceTime(20) // solves timing of closing the floating input
-          .startWith(1) // compensation for loosing the first event from selectionKeySource
-          .map(e=> input.value).distinctUntilChanged() // compare input value - if input was not changed - leave it. Alt-Space can be used here
-          .map(e => st.closestCtxOfLastRun(pathToTrace))
-          .map(probeCtx=>
-            new st.suggestions(input, ctx.exp('%$suggestionData/expressionOnly%')).extendWithOptions(probeCtx,pathToTrace))
-          .catch(e=> jb.logException(e,'suggestions',cmp.ctx) || [])
-          .distinctUntilChanged((e1,e2)=> e1.key == e2.key) // compare options - if options are the same - leave it.
-          .takeUntil( cmp.destroyed )
-          .delay(1) // let the itemlist to be built at the first time
-          .subscribe(e=> {
+        pipe(keyup,
+          debounceTime(20), // solves timing of closing the floating input
+          startWith(1), // compensation for loosing the first event from selectionKeySource
+          map(e=> input.value),
+          distinctUntilChanged(), // compare input value - if input was not changed - leave it. Alt-Space can be used here
+          map(e => st.closestCtxOfLastRun(pathToTrace)),
+          map(probeCtx=>
+            new st.suggestions(input, ctx.exp('%$suggestionData/expressionOnly%')).extendWithOptions(probeCtx,pathToTrace)),
+          catchError(e=> jb.logException(e,'suggestions',cmp.ctx) || []),
+          distinctUntilChanged((e1,e2)=> e1.key == e2.key), // compare options - if options are the same - leave it.
+          takeUntil( cmp.destroyed ),
+          delay(1), // let the itemlist to be built at the first time
+          subscribe(e=> {
               cmp.ctx.run((ctx,{suggestionData}) => {
                 suggestionData && Object.assign(suggestionData,e)
                 if (suggestionData.options.indexOf(suggestionData.selected) == -1)
                   suggestionData.selected = null
               })
               cmp.ctx.run(refreshControlById('suggestions-itemlist'))
-          });
+          }))
       }
   })
 })

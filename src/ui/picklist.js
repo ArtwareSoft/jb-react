@@ -33,13 +33,7 @@ jb.component('picklist', { /* picklist */
             options: options,
             hasEmptyOption: options.filter(x=>!x.text)[0]
           }
-      }),
-      // interactive((_ctx,{cmp}) => {
-      //   if (cmp.databindRefChanged) jb.ui.databindObservable(cmp,{srcCtx: ctx})
-      //     .subscribe(e=>cmp.onChange && cmp.onChange(_ctx.setData(jb.val(e.ref))))
-      //   else jb.ui.refObservable(ctx.params.databind(),cmp,{srcCtx: ctx}).subscribe(e=>
-      //     cmp.onChange && cmp.onChange(_ctx.setData(jb.val(e.ref))))
-      // })
+      })
     ))
 })
 
@@ -55,8 +49,10 @@ jb.component('picklist.dynamic-options', { /* picklist.dynamicOptions */
     {id: 'recalcEm', as: 'single'}
   ],
   impl: interactive(
-    (ctx,{cmp},{recalcEm}) =>
-      recalcEm && recalcEm.subscribe && recalcEm.takeUntil( cmp.destroyed ).subscribe(() => cmp.refresh())
+    (ctx,{cmp},{recalcEm}) => {
+      const {pipe,takeUntil,subscribe} = jb.callbag
+      recalcEm && pipe(recalcEm, takeUntil( cmp.destroyed ), subscribe(() => cmp.refresh()))
+    }
   )
 })
 

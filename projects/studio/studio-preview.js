@@ -115,12 +115,13 @@ jb.component('studio.wait-for-preview-iframe', { /* studio.waitForPreviewIframe 
   impl: () => jb.ui.waitFor(()=> jb.studio.previewWindow)
 })
 
-jb.studio.pageChange = jb.ui.resourceChange().filter(e=>e.path.join('/') == 'studio/page')
-      .startWith(1)
-      .flatMap(e=> {
+const {pipe,startWith,filter,flatMap} = jb.callbag
+jb.studio.pageChange = pipe(jb.ui.resourceChange(), filter(e=>e.path.join('/') == 'studio/page'),
+      startWith(1),
+      flatMap(e=> {
         const page = jb.resources.studio.project + '.' + jb.resources.studio.page;
         return jb.resources.studio.page ? [{page}] : []
-      });
+}))
 
 jb.component('studio.preview-widget', { /* studio.previewWidget */
   type: 'control',

@@ -93,16 +93,16 @@ function do_jb_run(ctx,parentParam,settings) {
   function prepareGCArgs(ctx,preparedParams) {
     const delayed = preparedParams.filter(param => {
       const v = ctx.params[param.name] || {};
-      return (v.then || v.subscribe ) && param.param.as != 'observable'
+      return jb.isDelayed(v) && param.param.as != 'observable'
     });
-    if (delayed.length == 0 || typeof Observable == 'undefined')
-      return [ctx].concat(preparedParams.map(param=>ctx.params[param.name]))
+    if (delayed.length == 0)
+      return [ctx, ...preparedParams.map(param=>ctx.params[param.name])]
 
-    return Observable.from(preparedParams)
-        .concatMap(param=> ctx.params[param.name])
-        .toArray()
-        .map(x=> [ctx].concat(x))
-        .toPromise()
+    const {pipe,concatMap,fromIter} = jb.callbag
+    return pipe(fromIter(preparedParams),
+        concatMap(param=> ctx.params[param.name]),
+        toPromiseArray())
+          .then(ar => [ctx, ...ar])
   }
 }
 
@@ -741,21 +741,20 @@ Object.assign(jb,{
     })
     return out;
   },
-  synchArray: __ar => {
+  isDelayed: v => v && (Object.prototype.toString.call(v) === "[object Promise]" || jb.callbag.isCallbag(v)),
+  toSynchArray: __ar => {
     const ar = jb.asArray(__ar)
-    const isSynch = ar.filter(v=> v &&  (typeof v.then == 'function' || typeof v.subscribe == 'function')).length == 0;
+    const isSynch = ar.filter(v=> jb.isDelayed(v)).length == 0;
     if (isSynch) return ar;
 
-    const _ar = ar.filter(x=>x).map(v=>
-      (typeof v.then == 'function' || typeof v.subscribe == 'function') ? v : [v]);
-
-    const {pipe, fromIter, concatMap,flatMap,toPromiseArray} = jb.callbag
+    const {pipe, fromIter, fromAny, concatMap,flatMap,toPromiseArray} = jb.callbag
     return pipe(
-          fromIter(_ar),
-          concatMap(x=>x),
-          flatMap(v => Array.isArray(v) ? v : [v]),
+          fromIter(ar),
+          concatMap(x=> fromAny(x)),
+//          flatMap(v => Array.isArray(v) ? v : [v]),
           toPromiseArray)
   },
+  subscribe: (source,listener) => jb.callbag.subscribe(listener)(source),
   unique: (ar,f) => {
     f = f || (x=>x);
     let keys = {}, res = [];
@@ -945,9 +944,9 @@ jb.pipe = function(context,ptName) {
 
 	if (ptName == '$pipe') // promise pipe
 		return profiles.reduce((deferred,prof,index) =>
-			deferred.then(data=>jb.synchArray(data)).then(data=>step(prof,index,data))
+			deferred.then(data=>jb.toSynchArray(data)).then(data=>step(prof,index,data))
     , Promise.resolve(start))
-      .then(data=>jb.synchArray(data))
+      .then(data=>jb.toSynchArray(data))
 
 	return profiles.reduce((data,prof,index) =>
 		step(prof,index,data), start)
@@ -1213,7 +1212,7 @@ jb.component('write-value', { /* writeValue */
   ],
   impl: (ctx,to,value) => {
     const val = jb.val(value)
-    if (val && typeof val.then == 'function')
+    if (jb.isDelayed(val))
       return Promise.resolve().then(val=>jb.writeValue(to,val,ctx))
     else
       jb.writeValue(to,val,ctx)

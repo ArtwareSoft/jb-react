@@ -346,7 +346,7 @@ Object.assign(jb.ui, {
         jb.execInStudio({ $: 'animate.refresh-elem', elem: () => elem })
     },
 
-    subscribeToRefChange: watchHandler => watchHandler.resourceChange.subscribe(e=> {
+    subscribeToRefChange: watchHandler => jb.subscribe(watchHandler.resourceChange, e=> {
         const changed_path = watchHandler.removeLinksFromPath(watchHandler.pathOfRef(e.ref))
         if (!changed_path) debugger
         //observe="resources://2~name;person~name

@@ -54,8 +54,8 @@ class VNode {
 }
 
 function toVdomOrStr(val) {
-    if (val &&  (typeof val.then == 'function' || typeof val.subscribe == 'function'))
-        return jb.synchArray(val).then(v => jb.ui.toVdomOrStr(v[0]))
+    if (jb.isDelayed(val))
+        return jb.toSynchArray(val).then(v => jb.ui.toVdomOrStr(v[0]))
 
     const res1 = Array.isArray(val) ? val.map(v=>jb.val(v)): val
     let res = jb.val((Array.isArray(res1) && res1.length == 1) ? res1[0] : res1)

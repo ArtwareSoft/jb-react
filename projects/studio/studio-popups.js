@@ -140,8 +140,10 @@ jb.component('studio-dialog-feature.studio-popup-location', { /* studioDialogFea
 jb.component('studio-dialog-feature.refresh-title', { /* studioDialogFeature.refreshTitle */
   type: 'dialog-feature',
   impl: interactive(
-    (ctx,{cmp}) => jb.studio.scriptChange.takeUntil( cmp.destroyed )
-  		.subscribe(e=> cmp.recalcTitle && cmp.recalcTitle(e,ctx))
+    (ctx,{cmp}) => jb.callbag.pipe(
+        jb.studio.scriptChange,
+        jb.callbag.takeUntil( cmp.destroyed ),
+  		  jb.callbag.subscribe(e=> cmp.recalcTitle && cmp.recalcTitle(e,ctx)))
   )
 })
 

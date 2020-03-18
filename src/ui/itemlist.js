@@ -104,8 +104,8 @@ jb.component('itemlist.fast-filter', { /* itemlist.fastFilter */
   ],
   impl: interactive(
     (ctx,{cmp},{showCondition,filtersRef}) =>
-      jb.callbag.subscribe(jb.ui.refObservable(filtersRef(cmp.ctx),cmp,{srcCtx: ctx}))
-          (() => Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).forEach(elem=>
+      jb.subscribe(jb.ui.refObservable(filtersRef(cmp.ctx),cmp,{srcCtx: ctx}),
+          () => Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).forEach(elem=>
                 elem.style.display = showCondition(jb.ctxDictionary[elem.getAttribute('jb-ctx')]) ? 'block' : 'none'))
   )
 })

@@ -157,7 +157,7 @@ jb.callbag = {
             }
             inloop = false
         }
-        sink(0, t => {
+        sink(0, (t, d) => {
             if (t === 1) {
                 got1 = true
                 if (!inloop && !(res && res.done)) loop()
@@ -192,6 +192,7 @@ jb.callbag = {
         })
     },
     pipe(...cbs) {
+        if (!cbs[0]) return
         let res = cbs[0]
         for (let i = 1, n = cbs.length; i < n; i++) res = cbs[i](res)
         return res
@@ -223,56 +224,62 @@ jb.callbag = {
             })
         }
     },
-    takeUntil: notifier => source => (start, sink) => {
-        if (start !== 0) return
-        let sourceTalkback
-        let notifierTalkback
-        let inited = false
-        let done = UNIQUE
+    takeUntil(notifier) {
+        if (Object.prototype.toString.call(notifier) === "[object Promise]")
+            notifier = jb.callbag.fromPromise(notifier)
+        return source => (start, sink) => {
+            if (start !== 0) return
+            let sourceTalkback
+            let notifierTalkback
+            let inited = false
+            let done = UNIQUE
 
-        source(0, (type, data) => {
-            if (type === 0) {
-                sourceTalkback = data
+            source(0, (t, d) => {
+                if (t === 0) {
+                    sourceTalkback = d
 
-                notifier(0, (t, d) => {
-                    if (t === 0) {
-                        notifierTalkback = d
-                        notifierTalkback(1)
-                        return
-                    }
-                    if (t === 1) {
-                        done = void 0
-                        notifierTalkback(2)
-                        sourceTalkback(2)
-                        if (inited) sink(2)
-                        return
-                    }
-                    if (t === 2) {
-                        notifierTalkback = null
-                        done = d
-                        if (d != null) {
-                            sourceTalkback(2)
-                            if (inited) sink(t, d)
+                    notifier(0, (t, d) => {
+                        if (t === 0) {
+                            notifierTalkback = d
+                            notifierTalkback(1)
+                            return
                         }
-                    }
-                })
-                inited = true
+                        if (t === 1) {
+                            done = void 0
+                            notifierTalkback(2)
+                            sourceTalkback(2)
+                            if (inited) sink(2)
+                            return
+                        }
+                        if (t === 2) {
+                            notifierTalkback = null
+                            done = d
+                            if (d != null) {
+                                sourceTalkback(2)
+                                if (inited) sink(t, d)
+                            }
+                        }
+                    })
+                    inited = true
 
-                sink(0, (t, d) => {
-                    if (done !== UNIQUE) return
-                    if (t === 2 && notifierTalkback) notifierTalkback(2)
-                    sourceTalkback(t, d)
-                })
+                    sink(0, (t, d) => {
+                        if (done !== UNIQUE) return
+                        if (t === 2 && notifierTalkback) notifierTalkback(2)
+                        sourceTalkback(t, d)
+                    })
 
-                if (done !== UNIQUE) sink(2, done)
-                return
-            }
-            if (type === 2) notifierTalkback(2)
-            if (done === UNIQUE) sink(type, data)
-        })
+                    if (done !== UNIQUE) sink(2, done)
+                    return
+                }
+                if (t === 2) notifierTalkback(2)
+                if (done === UNIQUE) sink(t, d)
+            })
+        }
     },
-    flatMap: (makeSource, combineResults) => inputSource => (start, sink) => {
+    flatMap: (_makeSource, combineResults) => inputSource => (start, sink) => {
         if (start !== 0) return
+        const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
+
 
         if (!combineResults) combineResults = (x, y) => y
 
@@ -358,11 +365,9 @@ jb.callbag = {
     fromEvent: (node, name, options) => (start, sink) => {
         if (start !== 0) return
         let disposed = false
-        const handler = ev => {
-          sink(1, ev)
-        }
+        const handler = ev => sink(1, ev)
       
-        sink(0, t => {
+        sink(0, (t, d) => {
           if (t !== 2) {
             return
           }
@@ -394,15 +399,15 @@ jb.callbag = {
           sink(2, err)
         }
         promise.then(onfulfilled, onrejected)
-        sink(0, t => {
+        sink(0, (t, d) => {
           if (t === 2) ended = true
         })
     },
     subject() {
         let sinks = []
-        function subj(type, data)  {
-            if (type === 0) {
-                const sink = data
+        const subj = (t, d) => {
+            if (t === 0) {
+                const sink = d
                 sinks.push(sink)
                 sink(0, t => {
                     if (t === 2) {
@@ -414,7 +419,7 @@ jb.callbag = {
                     const zinkz = sinks.slice(0)
                     for (let i = 0, n = zinkz.length, sink; i < n; i++) {
                         sink = zinkz[i]
-                        if (sinks.indexOf(sink) > -1) sink(type, data)
+                        if (sinks.indexOf(sink) > -1) sink(t, d)
                 }
             }
         }
@@ -425,73 +430,48 @@ jb.callbag = {
     },
     catchError: fn => source => (start, sink) => {
         if (start !== 0) return
-      
-        source(0, (type, data) => {
-          type === 2 && typeof data !== 'undefined' ? fn(data) : sink(type, data);
-        })
+        source(0, (t, d) => t === 2 && typeof d !== 'undefined' ? fn(d) : sink(t, d))
     },
-    concatMap(project) {
+    concatMap(_project) {
+        const project = (...args) => jb.callbag.fromAny(_project(...args))
         return source => (start, sink) => {
           if (start !== 0) return
-      
           const queue = []
           let innerTalkback = null
           let sourceTalkback
       
-          const innerSink = (type, data) => {
-            if (type === 0) {
-              innerTalkback = data
+          const innerSink = (t, d) => {
+            if (t === 0) {
+              innerTalkback = d
               innerTalkback(1)
-              return
-            }
-      
-            if (type === 1) {
-              sink(1, data)
+            } else if (t === 1) {
+              sink(1, d)
               innerTalkback(1)
-              return
-            }
-      
-            if (type === 2) {
+            } else if (t === 2) {
               innerTalkback = null
-      
-              if (queue.length === 0) {
-                return
-              }
-      
+              if (queue.length === 0) return
               project(queue.shift())(0, innerSink)
             }
           }
       
-          const wrappedSink = (type, data) => {
-            if (type === 2 && innerTalkback !== null) {
-              innerTalkback(2, data)
-            }
-            sourceTalkback(type, data)
+          const wrappedSink = (t, d) => {
+            if (t === 2 && innerTalkback !== null) innerTalkback(2, d)
+            sourceTalkback(t, d)
           }
       
-          source(0, (type, data) => {
-            if (type === 0) {
-              sourceTalkback = data
+          source(0, (t, d) => {
+            if (t === 0) {
+              sourceTalkback = d
               sink(0, wrappedSink)
               return
-            }
-      
-            if (type === 1) {
-              if (innerTalkback !== null) {
-                queue.push(data)
-                return
-              }
-      
-              project(data)(0, innerSink)
-              return
-            }
-      
-            if (type === 2) {
-              sink(2, data)
-      
-              if (innerTalkback !== null) {
-                innerTalkback(2, data)
-              }
+            } else if (t === 1) {
+              if (innerTalkback !== null) 
+                queue.push(d) 
+              else 
+                project(d)(0, innerSink)
+            } else if (t === 2) {
+              sink(2, d)
+              if (innerTalkback !== null) innerTalkback(2, d)
             }
           })
         }
@@ -532,7 +512,7 @@ jb.callbag = {
         source(0, (t, d) => {
           // every event clears the existing timeout, if any
           if (timeout) clearTimeout(timeout)
-          if (t === 1) timeout = setTimeout(() => sink(1, d), duration)
+          if (t === 1) timeout = setTimeout(() => sink(1, d), typeof duration == 'function' ? duration() : duration)
           else sink(t, d)
         })
     },
@@ -566,7 +546,7 @@ jb.callbag = {
           }
         })
     },
-    last: (predicate = kTrue, resultSelector = identity) => source => (start, slink) => {
+    last: (predicate = kTrue, resultSelector = identity) => source => (start, sink) => {
         if (start !== 0) return
         let talkback
         let lastVal
@@ -574,7 +554,7 @@ jb.callbag = {
         source(0, (t, d) => {
           if (t === 0) {
             talkback = d
-            slink(t, d)
+            sink(t, d)
           } else if (t === 1) {
             if (predicate(d)) {
               lastVal = d
@@ -582,28 +562,17 @@ jb.callbag = {
             }
             talkback(1)
           } else if (t === 2) {
-            if (matched) slink(1, resultSelector(lastVal))
-            slink(2)
+            if (matched) sink(1, resultSelector(lastVal))
+            sink(2)
           } else {
-            slink(t, d)
+            sink(t, d)
           }
         })
     },
-    catchError: fn => source => (start, sink) => {
-        if (start !== 0) return;
-      
-        source(0, (type, data) => {
-          type === 2 && typeof data !== 'undefined' ? fn(data) : sink(type, data)
-        })
-    },
     subscribe: (listener = {}) => source => {
-        if (typeof listener === "function") {
-          listener = { next: listener }
-        }
-      
+        if (typeof listener === "function") listener = { next: listener }
         let { next, error, complete } = listener
         let talkback
-      
         source(0, (t, d) => {
           if (t === 0) talkback = d
           if (t === 1 && next) next(d)
@@ -611,12 +580,7 @@ jb.callbag = {
           if (t === 2 && !d && complete) complete()
           if (t === 2 && !!d && error) error( d )
         })
-      
-        const dispose = () => {
-          if (talkback) talkback(2)
-        }
-      
-        return dispose
+        return () => talkback && talkback(2) // dispose
     },
     toPromise(source) {
         return new Promise((resolve, reject) => {
@@ -644,39 +608,39 @@ jb.callbag = {
             })
         })
     },
-    startWith: (...xs) => inputSource => (start, outputSink) => {
+    startWith: (...xs) => inputSource => (start, sink) => {
         if (start !== 0) return
         let disposed = false
         let inputTalkback
         let trackPull = false
         let lastPull
       
-        outputSink(0, (ot, od) => {
-          if (trackPull && ot === 1) {
-            lastPull = [1, od]
+        sink(0, (t, d) => {
+          if (trackPull && t === 1) {
+            lastPull = [1, d]
           }
       
-          if (ot === 2) {
+          if (t === 2) {
             disposed = true
             xs.length = 0
           }
       
           if (!inputTalkback) return
-          inputTalkback(ot, od)
+          inputTalkback(t, d)
         })
       
         while (xs.length !== 0) {
           if (xs.length === 1) {
             trackPull = true
           }
-          outputSink(1, xs.shift())
+          sink(1, xs.shift())
         }
       
         if (disposed) return
       
-        inputSource(0, (it, id) => {
-          if (it === 0) {
-            inputTalkback = id
+        inputSource(0, (t, d) => {
+          if (t === 0) {
+            inputTalkback = d
             trackPull = false
       
             if (lastPull) {
@@ -685,11 +649,11 @@ jb.callbag = {
             }
             return
           }
-          outputSink(it, id)
+          sink(t, d)
         })
     },
-    delay: duration => source => (type,sink) => {
-        if (type !== 0) return
+    delay: duration => source => (start, sink) => {
+        if (start !== 0) return
         source(0,(t,d)=>{
             if (t !== 1) return sink(t,d)
             let id = setTimeout(()=> {
@@ -697,8 +661,23 @@ jb.callbag = {
                 sink(1,d)
             },duration)
         })
-    }
+    },
+    fromCallBag: source => source,
+    fromAny: (source, name, options) => {
+        const f = source && 'from' + (Object.prototype.toString.call(source) === "[object Promise]" ? 'Promise'
+            : source.addEventListener ? 'Event'
+            : typeof source[Symbol.iterator] === 'function' ? 'Iter'
+            : '')
+        if (jb.callbag[f]) 
+            return jb.callbag[f](source, name, options)
+        else if (jb.callbag.isCallbag(source))
+            return source
+        else
+            return jb.callbag.fromIter([source])
+    },
+    isCallbag: source => source.toString().split('=>')[0].replace(/\s/g,'').match(/start,sink|t,d/)
 }
+
 
 })();
 
@@ -1060,7 +1039,7 @@ class WatchableValueByRef {
     return this.resources.frame || jb.frame
   }
   propagateResourceChangeToObservables() {
-    jb.callbag.subscribe(this.resourceChange)(e=>{
+    jb.subscribe(this.resourceChange, e=>{
       const observablesToUpdate = this.observables.slice(0) // this.observables array may change in the notification process !!
       const changed_path = this.removeLinksFromPath(this.pathOfRef(e.ref))
       if (changed_path) observablesToUpdate.forEach(obs=> {
@@ -1152,9 +1131,8 @@ jb.component('run-transaction', { /* runTransaction */
   impl: (ctx,actions,disableNotifications) => {
 		jb.mainWatchableHandler.startTransaction()
 		return actions.reduce((def,action,index) =>
-				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index ))
-			,Promise.resolve())
-			.catch((e) => jb.logException(e,ctx))
+				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index )) ,Promise.resolve())
+			.catch(e => jb.logException(e,ctx))
 			.then(() => jb.mainWatchableHandler.endTransaction(disableNotifications))
 	}
 })
@@ -1218,8 +1196,8 @@ class VNode {
 }
 
 function toVdomOrStr(val) {
-    if (val &&  (typeof val.then == 'function' || typeof val.subscribe == 'function'))
-        return jb.synchArray(val).then(v => jb.ui.toVdomOrStr(v[0]))
+    if (jb.isDelayed(val))
+        return jb.toSynchArray(val).then(v => jb.ui.toVdomOrStr(v[0]))
 
     const res1 = Array.isArray(val) ? val.map(v=>jb.val(v)): val
     let res = jb.val((Array.isArray(res1) && res1.length == 1) ? res1[0] : res1)
@@ -1581,7 +1559,7 @@ Object.assign(jb.ui, {
         jb.execInStudio({ $: 'animate.refresh-elem', elem: () => elem })
     },
 
-    subscribeToRefChange: watchHandler => watchHandler.resourceChange.subscribe(e=> {
+    subscribeToRefChange: watchHandler => jb.subscribe(watchHandler.resourceChange, e=> {
         const changed_path = watchHandler.removeLinksFromPath(watchHandler.pathOfRef(e.ref))
         if (!changed_path) debugger
         //observe="resources://2~name;person~name
@@ -2070,7 +2048,6 @@ ui.renderWidget = function(profile,top) {
 
     let currentProfile = profile
     let lastRenderTime = 0, fixedDebounce = 500
-    const debounceTime = () => Math.min(2000,lastRenderTime*3 + fixedDebounce)
 
     if (jb.studio.studioWindow) {
         const studioWin = jb.studio.studioWindow
@@ -2080,13 +2057,14 @@ ui.renderWidget = function(profile,top) {
         if (project && page)
             currentProfile = {$: `${project}.${page}`}
 
-        st.pageChange.filter(({page})=>page != currentProfile.$).subscribe(({page})=> doRender(page))
-        st.scriptChange.filter(e=>(jb.path(e,'path.0') || '').indexOf('data-resource.') != 0) // do not update on data change
-            .debounce(() => jb.delay(debounceTime()))
-            .subscribe(() =>{
+        const {pipe,debounceTime,filter,subscribe} = jb.callbag
+        pipe(st.pageChange, filter(({page})=>page != currentProfile.$), subscribe(({page})=> doRender(page)))
+        pipe(st.scriptChange, filter(e=>(jb.path(e,'path.0') || '').indexOf('data-resource.') != 0), // do not update on data change
+            debounceTime(() => Math.min(2000,lastRenderTime*3 + fixedDebounce)),
+            subscribe(() =>{
                 doRender()
                 jb.ui.dialogs.reRenderAll()
-            });
+            }))
     }
     const elem = top.ownerDocument.createElement('div')
     top.appendChild(elem)
@@ -2295,9 +2273,10 @@ jb.component('watch-observable', { /* watchObservable */
     {id: 'toWatch', mandatory: true}
   ],
   impl: interactive(
-    (ctx,{cmp},{toWatch}) =>
-    toWatch.takeUntil(cmp.destroyed).subscribe(()=>cmp.refresh(null,{srcCtx:ctx.componentContext}))
-  )
+    (ctx,{cmp},{toWatch}) => jb.callbag.pipe(toWatch,
+      jb.callbag.takeUntil(cmp.destroyed),
+      jb.callbag.subscribe(()=>cmp.refresh(null,{srcCtx:ctx.componentContext}))
+    ))
 })
 
 jb.component('group.data', { /* group.data */
@@ -2411,8 +2390,8 @@ jb.component('calculated-var', { /* calculatedVar */
         const fullName = name + ':' + cmp.cmpId;
         const refToResource = cmp.ctx.exp(`%$${fullName}%`,'ref');
         (watchRefs(cmp.ctx)||[]).map(x=>jb.asRef(x)).filter(x=>x).forEach(ref=>
-          jb.callbag.subscribe(jb.ui.refObservable(ref,cmp,{srcCtx: ctx}))(e=>
-            jb.writeValue(refToResource,value(cmp.ctx),ctx))
+          jb.subscribe(jb.ui.refObservable(ref,cmp,{srcCtx: ctx}), 
+            e=> jb.writeValue(refToResource,value(cmp.ctx),ctx))
         )
       }
   })
@@ -2501,9 +2480,8 @@ jb.component('feature.onEvent', { /* feature.onEvent */
         if (event == 'load') {
           jb.delay(1).then(() => jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)())
         } else {
-          (debounceTime ? cmp[`on${event}`].debounceTime(debounceTime) : cmp[`on${event}`])
-            .subscribe(event=>
-                  jb.ui.wrapWithLauchingElement(action, cmp.ctx.setVars({event}), cmp.base)())
+          jb.subscribe(debounceTime ? cmp[`on${event}`].debounceTime(debounceTime) : cmp[`on${event}`], 
+            event=> jb.ui.wrapWithLauchingElement(action, cmp.ctx.setVars({event}), cmp.base)())
         }
       }
   })
@@ -2518,13 +2496,15 @@ jb.component('feature.onHover', { /* feature.onHover */
     {id: 'onLeave', type: 'action[]', mandatory: true, dynamic: true},
     {id: 'debounceTime', as: 'number', defaultValue: 0}
   ],
-  impl: (ctx,action,onLeave,debounceTime) => ({
+  impl: (ctx,action,onLeave,_debounceTime) => ({
       onmouseenter: true, onmouseleave: true,
       afterViewInit: cmp => {
-        cmp.onmouseenter.debounceTime(debounceTime).subscribe(()=>
-              jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)())
-        cmp.onmouseleave.debounceTime(debounceTime).subscribe(()=>
-              jb.ui.wrapWithLauchingElement(onLeave, cmp.ctx, cmp.base)())
+        const {pipe,debounceTime,subscribe} = jb.callbag
+
+        pipe(cmp.onmouseenter, debounceTime(_debounceTime), subscribe(()=>
+              jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)()))
+        pipe(cmp.onmouseleave,debounceTime(_debounceTime),subscribe(()=>
+              jb.ui.wrapWithLauchingElement(onLeave, cmp.ctx, cmp.base)()))
       }
   })
 })
@@ -2539,8 +2519,8 @@ jb.component('feature.class-on-hover', { /* feature.classOnHover */
   impl: (ctx,clz) => ({
     onmouseenter: true, onmouseleave: true,
     afterViewInit: cmp => {
-      cmp.onmouseenter.subscribe(()=> jb.ui.addClass(cmp.base,clz))
-      cmp.onmouseleave.subscribe(()=> jb.ui.removeClass(cmp.base,clz))
+      jb.subscribe(cmp.onmouseenter, ()=> jb.ui.addClass(cmp.base,clz))
+      jb.subscribe(cmp.onmouseleave, ()=> jb.ui.removeClass(cmp.base,clz))
     }
   })
 })
@@ -2573,7 +2553,7 @@ jb.component('feature.onKey', { /* feature.onKey */
   ],
   impl: (ctx,key,action) => ({
       onkeydown: true,
-      afterViewInit: cmp => cmp.onkeydown.subscribe(e=> {
+      afterViewInit: cmp => jb.subscribe(cmp.onkeydown, e=> {
           if (!jb.ui.checkKey(e,key)) return
           ctx.params.doNotWrapWithLauchingElement ? action(cmp.ctx) :
             jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)()
@@ -2587,10 +2567,7 @@ jb.component('feature.onEnter', { /* feature.onEnter */
   params: [
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
-  impl: feature.onKey(
-    'Enter',
-    call('action')
-  )
+  impl: feature.onKey('Enter', call('action'))
 })
 
 jb.component('feature.onEsc', { /* feature.onEsc */
@@ -2599,10 +2576,7 @@ jb.component('feature.onEsc', { /* feature.onEsc */
   params: [
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
-  impl: feature.onKey(
-    'Esc',
-    call('action')
-  )
+  impl: feature.onKey('Esc', call('action'))
 })
 
 jb.component('refresh-control-by-id', { /* refreshControlById */
@@ -3585,6 +3559,7 @@ jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
     afterViewInit: cmp => {
       const input = jb.ui.findIncludeSelf(cmp.base,'input')[0];
       if (!input) return;
+      const {pipe,filter,subscribe} = jb.callbag
 
       cmp.openPopup = jb.ui.wrapWithLauchingElement( ctx2 =>
             ctx2.run( openDialog({
@@ -3617,20 +3592,19 @@ jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
       const keyup = cmp.keyup = cmp.onkeyup.delay(1); // delay to have input updated
 
       jb.delay(500).then(_=>{
-        cmp.onkeydown.filter(e=> e.keyCode == 13).subscribe(_=>{
+
+        pipe(cmp.onkeydown,filter(e=> e.keyCode == 13),subscribe(_=>{
           const showHelper = ctx.params.showHelper(cmp.ctx.setData(input))
           jb.log('helper-popup', ['onEnter', showHelper, input.value,cmp.ctx,cmp,ctx])
           if (!showHelper)
             ctx.params.onEnter(cmp.ctx)
-        });
-        cmp.onkeydown.filter(e=> e.keyCode == 27 ).subscribe(_=> ctx.params.onEsc(cmp.ctx));
+        }))
+        subscribe(keyup)(e=>e.keyCode == 27 && ctx.params.onEsc(cmp.ctx))
       })
 
-      keyup.filter(e=> [13,27,37,38,40].indexOf(e.keyCode) == -1)
-        .subscribe(_=>cmp.refreshSuggestionPopupOpenClose())
+      subscribe(keyup)(e=> [13,27,37,38,40].indexOf(e.keyCode) == -1 && cmp.refreshSuggestionPopupOpenClose())
+      subscribe(keyup)(e=>e.keyCode == 27 && cmp.closePopup())
 
-      keyup.filter(e=>e.keyCode == 27) // ESC
-          .subscribe(_=>cmp.closePopup())
       if (ctx.params.autoOpen)
         cmp.refreshSuggestionPopupOpenClose()
     },
@@ -3767,11 +3741,8 @@ jb.component('dialog-feature.unique-dialog', { /* dialogFeature.uniqueDialog */
 		if (!id) return;
 		const dialog = context.vars.$dialog;
 		dialog.id = id;
-		dialog.em.filter(e=> e.type == 'new-dialog')
-			.subscribe(e=> {
-				if (e.dialog != dialog && e.dialog.id == id )
-					dialog.close();
-		})
+		jb.subscribe(dialog.em, e =>
+			e.type == 'new-dialog' && e.dialog != dialog && e.dialog.id == id && dialog.close())
 	}
 })
 
@@ -3886,8 +3857,11 @@ jb.component('dialog-feature.onClose', { /* dialogFeature.onClose */
   params: [
     {id: 'action', type: 'action', dynamic: true}
   ],
-  impl: (ctx,action) => ctx.vars.$dialog.em.filter(e => e.type == 'close').take(1)
-			.subscribe(e=> action(ctx.setData(e.OK)))
+  impl: (ctx,action) => {
+	const {pipe,filter,subscribe} = jb.callbag
+	return pipe(ctx.vars.$dialog.em,
+		filter(e => e.type == 'close'), take(1), subscribe(e=> action(ctx.setData(e.OK)))
+	)}
 })
 
 jb.component('dialog-feature.close-when-clicking-outside', { /* dialogFeature.closeWhenClickingOutside */
@@ -3951,10 +3925,11 @@ jb.component('dialog-feature.css-class-on-launching-element', { /* dialogFeature
   type: 'dialog-feature',
   impl: context => ({
 		afterViewInit: cmp => {
+			const {pipe,filter,subscribe} = jb.callbag
 			const dialog = context.vars.$dialog;
 			const control = context.vars.$launchingElement.el;
 			jb.ui.addClass(control,'dialog-open');
-			dialog.em.filter(e=> e.type == 'close').take(1).subscribe(()=> jb.ui.removeClass(control,'dialog-open'))
+			pipe(dialog.em, filter(e=> e.type == 'close'), take(1), subscribe(()=> jb.ui.removeClass(control,'dialog-open')))
 		}
 	})
 })
@@ -4265,8 +4240,8 @@ jb.component('itemlist.fast-filter', { /* itemlist.fastFilter */
   ],
   impl: interactive(
     (ctx,{cmp},{showCondition,filtersRef}) =>
-      jb.callbag.subscribe(jb.ui.refObservable(filtersRef(cmp.ctx),cmp,{srcCtx: ctx}))
-          (() => Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).forEach(elem=>
+      jb.subscribe(jb.ui.refObservable(filtersRef(cmp.ctx),cmp,{srcCtx: ctx}),
+          () => Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).forEach(elem=>
                 elem.style.display = showCondition(jb.ctxDictionary[elem.getAttribute('jb-ctx')]) ? 'block' : 'none'))
   )
 })
@@ -4519,8 +4494,6 @@ jb.component('itemlist.divider', { /* itemlist.divider */
     ({css: `>.jb-item:not(:first-of-type) { border-top: 1px solid rgba(0,0,0,0.12); padding-top: ${space}px }`})
 })
 ;
-
-import { takeUntil } from "rxjs/operator/takeUntil";
 
 (function() {
 
@@ -4978,22 +4951,17 @@ jb.component('menu.init-popup-menu', { /* menu.initPopupMenu */
 					if (ctx.vars.topMenu && ctx.vars.topMenu.keydown) {
 						const keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
 
-							keydown.filter(e=>e.keyCode == 39) // right arrow
-									.subscribe(_=>{
-										if (ctx.vars.topMenu.selected == ctx.vars.menuModel && cmp.openPopup)
-											cmp.openPopup();
-									})
-							keydown.filter(e=>e.keyCode == 37) // left arrow
-									.subscribe(_=>{
-										if (cmp.ctx.vars.topMenu.popups.slice(-1)[0] == ctx.vars.menuModel) {
-											ctx.vars.topMenu.selected = ctx.vars.menuModel;
-											cmp.closePopup();
-										}
-									})
-						}
-				})
-			}
-      )
+					jb.subscribe(keydown, e=> e.keyCode == 39 && // right arrow
+						ctx.vars.topMenu.selected == ctx.vars.menuModel && cmp.openPopup && cmp.openPopup())
+          jb.subscribe(keydown, e=> { // left arrow
+              if (e.keyCode == 37 && cmp.ctx.vars.topMenu.popups.slice(-1)[0] == ctx.vars.menuModel) {
+                ctx.vars.topMenu.selected = ctx.vars.menuModel;
+                cmp.closePopup();
+              }
+          })
+				}
+			})
+		})
   )
 })
 
@@ -5005,24 +4973,21 @@ jb.component('menu.init-menu-option', { /* menu.initMenuOption */
     calcProp({id: 'shortcut', value: '%$menuModel.leaf.shortcut%'}),
     interactive(
         (ctx,{cmp}) => {
-			// const leafParams = ctx.vars.menuModel.leaf;
-			// 		cmp.setState({title:  leafParams.title() ,icon : leafParams.icon ,shortcut: leafParams.shortcut});
-			cmp.action = jb.ui.wrapWithLauchingElement( () =>
-            jb.ui.dialogs.closePopups()
-//              .then(()=>jb.delay(50))
-              .then(() =>	ctx.vars.menuModel.action())
-					, ctx, cmp.base);
+          const {pipe,filter,subscribe} = jb.callbag
 
-				jb.delay(1).then(_=>{ // wait for topMenu keydown initalization
-				if (ctx.vars.topMenu && ctx.vars.topMenu.keydown) {
-					const keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
-						keydown.filter(e=>e.keyCode == 13 && ctx.vars.topMenu.selected == ctx.vars.menuModel) // Enter
-								.subscribe(_=> cmp.action())
-				}
+          cmp.action = jb.ui.wrapWithLauchingElement( () =>
+                jb.ui.dialogs.closePopups().then(() =>	ctx.vars.menuModel.action())
+              , ctx, cmp.base);
+
+          jb.delay(1).then(_=>{ // wait for topMenu keydown initalization
+          if (ctx.vars.topMenu && ctx.vars.topMenu.keydown) {
+            pipe(ctx.vars.topMenu.keydown,
+              takeUntil( cmp.destroyed ),
+              filter(e=>e.keyCode == 13 && ctx.vars.topMenu.selected == ctx.vars.menuModel), // Enter
+              subscribe(_=> cmp.action()))
+          }
 			})
-		}
-      )
-  )
+	}))
 })
 
 jb.component('menu-style.apply-multi-level', { /* menuStyle.applyMultiLevel */
@@ -5081,25 +5046,27 @@ jb.component('menu.selection', { /* menu.selection */
       cmp.items = Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
         .map(el=>(jb.ctxDictionary[el.getAttribute('jb-ctx')] || {}).data)
 
-			const keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
-      cmp.onmousemove.map(e=> dataOfElems(e.target.ownerDocument.elementsFromPoint(e.pageX, e.pageY)))
-        .filter(x=>x).filter(data => data != ctx.vars.topMenu.selected)
-        .subscribe(data => cmp.select(data))
-			keydown.filter(e=> e.keyCode == 38 || e.keyCode == 40 )
-					.map(event => {
+      const {pipe,map,filter,subscribe,merge,subject,distinctUntilChanged,catchError} = jb.callbag
+
+			const keydown = pipe(ctx.vars.topMenu.keydown, takeUntil( cmp.destroyed ))
+      pipe(cmp.onmousemove, map(e=> dataOfElems(e.target.ownerDocument.elementsFromPoint(e.pageX, e.pageY))),
+        filter(x=>x).filter(data => data != ctx.vars.topMenu.selected),
+        subscribe(data => cmp.select(data)))
+			map(keydown, filter(e=> e.keyCode == 38 || e.keyCode == 40 ),
+					map(event => {
 						event.stopPropagation();
 						const diff = event.keyCode == 40 ? 1 : -1;
 						const items = cmp.items.filter(item=>!item.separator);
 						const selectedIndex = ctx.vars.topMenu.selected.separator ? 0 : items.indexOf(ctx.vars.topMenu.selected);
 						if (selectedIndex != -1)
 							return items[(selectedIndex + diff + items.length) % items.length];
-				}).filter(x=>x).subscribe(data => cmp.select(data))
+				}),filter(x=>x),subscribe(data => cmp.select(data)))
 
-			keydown.filter(e=>e.keyCode == 27) // close all popups
-					.subscribe(_=> jb.ui.dialogs.closePopups().then(()=> {
+			pipe(keydown,filter(e=>e.keyCode == 27), // close all popups
+					subscribe(_=> jb.ui.dialogs.closePopups().then(()=> {
               cmp.ctx.vars.topMenu.popups = [];
               cmp.ctx.run({$:'tree.regain-focus'}) // very ugly
-          }))
+      })))
 
       cmp.select = selected => {
 				ctx.vars.topMenu.selected = selected
@@ -5120,9 +5087,6 @@ jb.component('menu.selection', { /* menu.selection */
         return ((ctxId && jb.ctxDictionary[ctxId]) || {}).data
       }
 		},
-		// extendItem: (cmp,vdom,data) => {
-		// 		jb.ui.toggleClassInVdom(vdom,'selected', ctx.vars.topMenu.selected == data);
-		// },
 		css: '>.selected { background: #bbb !important; color: #fff !important }',
 		})
 })
@@ -5257,13 +5221,7 @@ jb.component('picklist', { /* picklist */
             options: options,
             hasEmptyOption: options.filter(x=>!x.text)[0]
           }
-      }),
-      // interactive((_ctx,{cmp}) => {
-      //   if (cmp.databindRefChanged) jb.ui.databindObservable(cmp,{srcCtx: ctx})
-      //     .subscribe(e=>cmp.onChange && cmp.onChange(_ctx.setData(jb.val(e.ref))))
-      //   else jb.ui.refObservable(ctx.params.databind(),cmp,{srcCtx: ctx}).subscribe(e=>
-      //     cmp.onChange && cmp.onChange(_ctx.setData(jb.val(e.ref))))
-      // })
+      })
     ))
 })
 
@@ -5279,8 +5237,10 @@ jb.component('picklist.dynamic-options', { /* picklist.dynamicOptions */
     {id: 'recalcEm', as: 'single'}
   ],
   impl: interactive(
-    (ctx,{cmp},{recalcEm}) =>
-      recalcEm && recalcEm.subscribe && recalcEm.takeUntil( cmp.destroyed ).subscribe(() => cmp.refresh())
+    (ctx,{cmp},{recalcEm}) => {
+      const {pipe,takeUntil,subscribe} = jb.callbag
+      recalcEm && pipe(recalcEm, takeUntil( cmp.destroyed ), subscribe(() => cmp.refresh()))
+    }
   )
 })
 
@@ -5477,14 +5437,15 @@ jb.component('slider.init', { /* slider.init */
               cmp.min -= cmp.max - cmp.min;
 
             jb.ui.setState(cmp,{ min: cmp.min, max: cmp.max, step: ctx.vars.$model.step, val: cmp.jbModel() },null,ctx);
-          },
+          }
 
-          cmp.onkeydown.subscribe(e=> cmp.handleArrowKey(e));
+          const {pipe,subscribe,flatMap,takeUntil} = jb.callbag
+          pipe(cmp.onkeydown,subscribe(e=> cmp.handleArrowKey(e)))
 
           // drag
-          cmp.onmousedown.flatMap(e=>
-            cmp.onmousemove.takeUntil(cmp.onmouseup)
-            ).subscribe(e=>cmp.jbModel(cmp.base.value))
+          pipe(cmp.onmousedown, 
+            flatMap(e=> pipe(cmp.onmousemove, takeUntil(cmp.onmouseup))), 
+            subscribe(e=>cmp.jbModel(cmp.base.value)))
 
           if (ctx.vars.sliderCtx) // supporting left/right arrow keys in the text field as well
             ctx.vars.sliderCtx.handleArrowKey = e => cmp.handleArrowKey(e);
@@ -5494,17 +5455,11 @@ jb.component('slider.init', { /* slider.init */
 
 jb.component('slider.handle-arrow-keys', { /* slider.handleArrowKeys */
   type: 'feature',
-  impl: ctx => ({
-      onkeyup: true,
-      onkeydown: true,
-      afterViewInit: cmp => {
-          jb.delay(1).then(_=>{
-            var sliderCtx = ctx.vars.sliderCtx;
-            if (sliderCtx)
-              cmp.onkeydown.subscribe(e=>sliderCtx.handleArrowKey(e));
-          })
-      }
-    })
+  impl: features(
+    htmlAttribute('onkeydown',true),
+    defHandler('onkeydownHandler', (ctx,{ev}) =>
+        ctx.vars.sliderCtx && sliderCtx.handleArrowKey(ev))
+  )
 })
 
 jb.component('slider.edit-as-text-popup', { /* slider.editAsTextPopup */

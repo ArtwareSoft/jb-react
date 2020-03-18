@@ -134,7 +134,6 @@ ui.renderWidget = function(profile,top) {
 
     let currentProfile = profile
     let lastRenderTime = 0, fixedDebounce = 500
-    const debounceTime = () => Math.min(2000,lastRenderTime*3 + fixedDebounce)
 
     if (jb.studio.studioWindow) {
         const studioWin = jb.studio.studioWindow
@@ -144,13 +143,14 @@ ui.renderWidget = function(profile,top) {
         if (project && page)
             currentProfile = {$: `${project}.${page}`}
 
-        st.pageChange.filter(({page})=>page != currentProfile.$).subscribe(({page})=> doRender(page))
-        st.scriptChange.filter(e=>(jb.path(e,'path.0') || '').indexOf('data-resource.') != 0) // do not update on data change
-            .debounce(() => jb.delay(debounceTime()))
-            .subscribe(() =>{
+        const {pipe,debounceTime,filter,subscribe} = jb.callbag
+        pipe(st.pageChange, filter(({page})=>page != currentProfile.$), subscribe(({page})=> doRender(page)))
+        pipe(st.scriptChange, filter(e=>(jb.path(e,'path.0') || '').indexOf('data-resource.') != 0), // do not update on data change
+            debounceTime(() => Math.min(2000,lastRenderTime*3 + fixedDebounce)),
+            subscribe(() =>{
                 doRender()
                 jb.ui.dialogs.reRenderAll()
-            });
+            }))
     }
     const elem = top.ownerDocument.createElement('div')
     top.appendChild(elem)

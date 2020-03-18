@@ -43,11 +43,8 @@ jb.component('dialog-feature.unique-dialog', { /* dialogFeature.uniqueDialog */
 		if (!id) return;
 		const dialog = context.vars.$dialog;
 		dialog.id = id;
-		dialog.em.filter(e=> e.type == 'new-dialog')
-			.subscribe(e=> {
-				if (e.dialog != dialog && e.dialog.id == id )
-					dialog.close();
-		})
+		jb.subscribe(dialog.em, e =>
+			e.type == 'new-dialog' && e.dialog != dialog && e.dialog.id == id && dialog.close())
 	}
 })
 
@@ -162,8 +159,11 @@ jb.component('dialog-feature.onClose', { /* dialogFeature.onClose */
   params: [
     {id: 'action', type: 'action', dynamic: true}
   ],
-  impl: (ctx,action) => ctx.vars.$dialog.em.filter(e => e.type == 'close').take(1)
-			.subscribe(e=> action(ctx.setData(e.OK)))
+  impl: (ctx,action) => {
+	const {pipe,filter,subscribe} = jb.callbag
+	return pipe(ctx.vars.$dialog.em,
+		filter(e => e.type == 'close'), take(1), subscribe(e=> action(ctx.setData(e.OK)))
+	)}
 })
 
 jb.component('dialog-feature.close-when-clicking-outside', { /* dialogFeature.closeWhenClickingOutside */
@@ -227,10 +227,11 @@ jb.component('dialog-feature.css-class-on-launching-element', { /* dialogFeature
   type: 'dialog-feature',
   impl: context => ({
 		afterViewInit: cmp => {
+			const {pipe,filter,subscribe} = jb.callbag
 			const dialog = context.vars.$dialog;
 			const control = context.vars.$launchingElement.el;
 			jb.ui.addClass(control,'dialog-open');
-			dialog.em.filter(e=> e.type == 'close').take(1).subscribe(()=> jb.ui.removeClass(control,'dialog-open'))
+			pipe(dialog.em, filter(e=> e.type == 'close'), take(1), subscribe(()=> jb.ui.removeClass(control,'dialog-open')))
 		}
 	})
 })

@@ -27,9 +27,9 @@ jb.pipe = function(context,ptName) {
 
 	if (ptName == '$pipe') // promise pipe
 		return profiles.reduce((deferred,prof,index) =>
-			deferred.then(data=>jb.synchArray(data)).then(data=>step(prof,index,data))
+			deferred.then(data=>jb.toSynchArray(data)).then(data=>step(prof,index,data))
     , Promise.resolve(start))
-      .then(data=>jb.synchArray(data))
+      .then(data=>jb.toSynchArray(data))
 
 	return profiles.reduce((data,prof,index) =>
 		step(prof,index,data), start)
@@ -295,7 +295,7 @@ jb.component('write-value', { /* writeValue */
   ],
   impl: (ctx,to,value) => {
     const val = jb.val(value)
-    if (val && typeof val.then == 'function')
+    if (jb.isDelayed(val))
       return Promise.resolve().then(val=>jb.writeValue(to,val,ctx))
     else
       jb.writeValue(to,val,ctx)

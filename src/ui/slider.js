@@ -69,14 +69,15 @@ jb.component('slider.init', { /* slider.init */
               cmp.min -= cmp.max - cmp.min;
 
             jb.ui.setState(cmp,{ min: cmp.min, max: cmp.max, step: ctx.vars.$model.step, val: cmp.jbModel() },null,ctx);
-          },
+          }
 
-          cmp.onkeydown.subscribe(e=> cmp.handleArrowKey(e));
+          const {pipe,subscribe,flatMap,takeUntil} = jb.callbag
+          pipe(cmp.onkeydown,subscribe(e=> cmp.handleArrowKey(e)))
 
           // drag
-          cmp.onmousedown.flatMap(e=>
-            cmp.onmousemove.takeUntil(cmp.onmouseup)
-            ).subscribe(e=>cmp.jbModel(cmp.base.value))
+          pipe(cmp.onmousedown, 
+            flatMap(e=> pipe(cmp.onmousemove, takeUntil(cmp.onmouseup))), 
+            subscribe(e=>cmp.jbModel(cmp.base.value)))
 
           if (ctx.vars.sliderCtx) // supporting left/right arrow keys in the text field as well
             ctx.vars.sliderCtx.handleArrowKey = e => cmp.handleArrowKey(e);
@@ -86,17 +87,11 @@ jb.component('slider.init', { /* slider.init */
 
 jb.component('slider.handle-arrow-keys', { /* slider.handleArrowKeys */
   type: 'feature',
-  impl: ctx => ({
-      onkeyup: true,
-      onkeydown: true,
-      afterViewInit: cmp => {
-          jb.delay(1).then(_=>{
-            var sliderCtx = ctx.vars.sliderCtx;
-            if (sliderCtx)
-              cmp.onkeydown.subscribe(e=>sliderCtx.handleArrowKey(e));
-          })
-      }
-    })
+  impl: features(
+    htmlAttribute('onkeydown',true),
+    defHandler('onkeydownHandler', (ctx,{ev}) =>
+        ctx.vars.sliderCtx && sliderCtx.handleArrowKey(ev))
+  )
 })
 
 jb.component('slider.edit-as-text-popup', { /* slider.editAsTextPopup */
