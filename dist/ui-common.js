@@ -1977,11 +1977,11 @@ Object.assign(jb.ui,{
           jb.callbag.fromEvent(elem || cmp.base, event),
           jb.callbag.takeUntil( jb.callbag.fromPromise(cmp.destroyed) )
     ),
-    upDownEnterEscObs(cmp) {
+    upDownEnterEscObs(cmp) { // and stop propagation !!!
       const {pipe, takeUntil,fromPromise,subject} = jb.callbag
       const keydown_src = subject();
       cmp.base.onkeydown = e => {
-        if ([38,40,13,27].indexOf(e.keyCode) != -1) { // stop propagation for up down arrows
+        if ([38,40,13,27].indexOf(e.keyCode) != -1) { 
           keydown_src.next(e);
           return false;
         }

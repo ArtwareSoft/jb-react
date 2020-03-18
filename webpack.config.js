@@ -4,16 +4,6 @@ const path = require('path');
 const JBART_DIR = __dirname + '/';
 const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
 
-const jbRx = {
-  mode: 'development',
-  entry: JBART_DIR + 'src/ui/jb-rx.js',
-  output: {
-    path: JBART_DIR + 'dist',
-    filename: 'jb-rx.js',
-  },
-  resolve: { modules: [path.resolve(JBART_DIR, "src"), path.resolve(JBART_DIR, "node_modules")] },
-};
-
 const jbImmutable = {
   mode: 'development',
   entry: JBART_DIR + 'src/ui/pack-immutable.js',
@@ -48,17 +38,6 @@ const babel_ext = {
   resolve: { modules: [ 'node_modules' ] },
 };
 
-const jbRxMin = {
-  mode: 'production',
-  entry: JBART_DIR + 'src/ui/jb-rx.js',
-  output: {
-    path: JBART_DIR + 'dist',
-    filename: 'jb-rx.min.js',
-  },
-  resolve: { modules: [path.resolve(JBART_DIR, "src"), path.resolve(JBART_DIR, "node_modules")] },
-  plugins: [ new UglifyJSPlugin() ],
-};
-
 const jbJison = {
   mode: 'development',
   entry: JBART_DIR + 'src/misc/pack-jison.js',
@@ -73,4 +52,15 @@ const jbJison = {
   resolve: { modules: [ 'node_modules'] },
 };
 
-module.exports = [jbImmutable,jbRx,babel_ext,material];
+const jbReactAllMin = {
+  optimization: {
+    minimizer: [new UglifyJsPlugin()],
+  },
+  entry: JBART_DIR + 'src/dist/jb-react-all.js',
+  output: {
+    path: JBART_DIR + 'dist',
+    filename: 'jb-react-all-min.js',
+  },
+}
+
+module.exports = [jbImmutable,material,jbReactAllMin];
