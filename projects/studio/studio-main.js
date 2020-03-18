@@ -85,7 +85,7 @@ jb.component('studio.ctx-counters', { /* studio.ctxCounters */
     text: ctx => (jb.frame.performance && performance.memory && performance.memory.usedJSHeapSize / 1000000)  + 'M',
     features: [
       css('{ background: #F5F5F5; position: absolute; bottom: 0; right: 0; }'),
-      watchObservable(ctx => jb.studio.scriptChange.debounceTime(500))
+      watchObservable(ctx => jb.studio.scriptChange,500)
     ]
   })
 })

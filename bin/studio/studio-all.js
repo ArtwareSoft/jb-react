@@ -98,11 +98,9 @@ function do_jb_run(ctx,parentParam,settings) {
     if (delayed.length == 0)
       return [ctx, ...preparedParams.map(param=>ctx.params[param.name])]
 
-    const {pipe,concatMap,fromIter} = jb.callbag
-    return pipe(fromIter(preparedParams),
-        concatMap(param=> ctx.params[param.name]),
-        toPromiseArray())
-          .then(ar => [ctx, ...ar])
+    const {pipe,concatMap,fromIter,toPromiseArray} = jb.callbag
+    return pipe(fromIter(preparedParams), concatMap(param=> ctx.params[param.name]), toPromiseArray)
+            .then(ar => [ctx, ...ar])
   }
 }
 
@@ -747,11 +745,11 @@ Object.assign(jb,{
     const isSynch = ar.filter(v=> jb.isDelayed(v)).length == 0;
     if (isSynch) return ar;
 
-    const {pipe, fromIter, fromAny, concatMap,flatMap,toPromiseArray} = jb.callbag
+    const {pipe, fromIter, toPromiseArray, concatMap,flatMap} = jb.callbag
     return pipe(
           fromIter(ar),
-          concatMap(x=> fromAny(x)),
-//          flatMap(v => Array.isArray(v) ? v : [v]),
+          concatMap(x=>x),
+          flatMap(v => Array.isArray(v) ? v : [v]),
           toPromiseArray)
   },
   subscribe: (source,listener) => jb.callbag.subscribe(listener)(source),
@@ -2441,7 +2439,9 @@ jb.callbag = {
             sink(t, t === 1 ? f(d) : d)
         })
     },
-    pipe(...cbs) {
+    pipe(..._cbs) {
+        const cbs = _cbs.filter(x=>x).filter(x=>jb.callbag.fromAny(x))
+
         if (!cbs[0]) return
         let res = cbs[0]
         for (let i = 1, n = cbs.length; i < n; i++) res = cbs[i](res)
@@ -2580,7 +2580,8 @@ jb.callbag = {
             }
     })
     },
-    merge(...sources) {
+    merge(..._sources) {
+        const sources = _sources.filter(x=>x).filter(x=>jb.callbag.fromAny(x))
         return (start, sink) => {
           if (start !== 0) return
           const n = sources.length
@@ -4520,11 +4521,13 @@ jb.component('watch-observable', { /* watchObservable */
   category: 'watch',
   description: 'subscribes to a custom rx.observable to refresh component',
   params: [
-    {id: 'toWatch', mandatory: true}
+    {id: 'toWatch', mandatory: true},
+    {id: 'debounceTime', as: 'number', description: 'in mSec'}
   ],
   impl: interactive(
-    (ctx,{cmp},{toWatch}) => jb.callbag.pipe(toWatch,
+    (ctx,{cmp},{toWatch, debounceTime}) => jb.callbag.pipe(toWatch,
       jb.callbag.takeUntil(cmp.destroyed),
+      debounceTime && jb.callbag.debounceTime(debounceTime),
       jb.callbag.subscribe(()=>cmp.refresh(null,{srcCtx:ctx.componentContext}))
     ))
 })
@@ -5809,7 +5812,7 @@ jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
     afterViewInit: cmp => {
       const input = jb.ui.findIncludeSelf(cmp.base,'input')[0];
       if (!input) return;
-      const {pipe,filter,subscribe} = jb.callbag
+      const {pipe,filter,subscribe,delay} = jb.callbag
 
       cmp.openPopup = jb.ui.wrapWithLauchingElement( ctx2 =>
             ctx2.run( openDialog({
@@ -5839,7 +5842,7 @@ jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
 
       cmp.selectionKeySource = true
       cmp.input = input;
-      const keyup = cmp.keyup = cmp.onkeyup.delay(1); // delay to have input updated
+      const keyup = cmp.keyup = pipe(cmp.onkeyup,delay(1)) // delay to have input updated
 
       jb.delay(500).then(_=>{
 
@@ -6108,7 +6111,7 @@ jb.component('dialog-feature.onClose', { /* dialogFeature.onClose */
     {id: 'action', type: 'action', dynamic: true}
   ],
   impl: (ctx,action) => {
-	const {pipe,filter,subscribe} = jb.callbag
+	const {pipe,filter,subscribe,take} = jb.callbag
 	return pipe(ctx.vars.$dialog.em,
 		filter(e => e.type == 'close'), take(1), subscribe(e=> action(ctx.setData(e.OK)))
 	)}
@@ -6175,7 +6178,7 @@ jb.component('dialog-feature.css-class-on-launching-element', { /* dialogFeature
   type: 'dialog-feature',
   impl: context => ({
 		afterViewInit: cmp => {
-			const {pipe,filter,subscribe} = jb.callbag
+			const {pipe,filter,subscribe,take} = jb.callbag
 			const dialog = context.vars.$dialog;
 			const control = context.vars.$launchingElement.el;
 			jb.ui.addClass(control,'dialog-open');
@@ -6243,7 +6246,7 @@ jb.component('dialog-feature.resizer', { /* dialogFeature.resizer */
 
 	afterViewInit: function(cmp) {
 		const resizerElem = cmp.base.querySelector('.jb-resizer');
-		const {pipe, map, flatMap,takeUntil, merge,subscribe} = jb.callbag
+		const {pipe, map, flatMap,takeUntil, merge,subscribe,Do} = jb.callbag
 
 		cmp.mousedownEm = jb.ui.fromEvent(cmp,'mousedown',resizerElem)
 		let mouseUpEm = jb.ui.fromEvent(cmp,'mouseup',document)
@@ -6701,9 +6704,8 @@ jb.component('itemlist.drag-and-drop', { /* itemlist.dragAndDrop */
         // ctrl + Up/Down
 //        jb.delay(1).then(_=>{ // wait for the keyboard selection to register keydown
         if (!cmp.onkeydown) return;
-          cmp.onkeydown.filter(e=>
-            e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
-            .subscribe(e=> {
+        jb.subscribe(cmp.onkeydown, e => {
+            if (e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40)) {
               cmp.items = cmp.calcItems()
               const diff = e.keyCode == 40 ? 1 : -1;
               const selectedIndex = cmp.items.indexOf(cmp.state.selected);
@@ -6711,8 +6713,7 @@ jb.component('itemlist.drag-and-drop', { /* itemlist.dragAndDrop */
               const index = (selectedIndex + diff+ cmp.items.length) % cmp.items.length;
               const itemsF = jb.path(jb.ctxDictionary,`${cmp.base.getAttribute('jb-ctx')}.params.items`)
               itemsF && jb.splice(jb.asRef(itemsF()),[[selectedIndex,1],[index,0,cmp.state.selected]],ctx);
-          })
-//        })
+        }})
       }
     })
 })
@@ -7199,11 +7200,12 @@ jb.component('menu.init-popup-menu', { /* menu.initPopupMenu */
 
 				jb.delay(1).then(_=>{ // wait for topMenu keydown initalization
 					if (ctx.vars.topMenu && ctx.vars.topMenu.keydown) {
-						const keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
+            const {pipe, takeUntil } = jb.callbag
+						const keydown = pipe(ctx.vars.topMenu.keydown, takeUntil( cmp.destroyed ))
 
-					jb.subscribe(keydown, e=> e.keyCode == 39 && // right arrow
-						ctx.vars.topMenu.selected == ctx.vars.menuModel && cmp.openPopup && cmp.openPopup())
-          jb.subscribe(keydown, e=> { // left arrow
+					  jb.subscribe(keydown, e=> e.keyCode == 39 && // right arrow
+						  ctx.vars.topMenu.selected == ctx.vars.menuModel && cmp.openPopup && cmp.openPopup())
+            jb.subscribe(keydown, e=> { // left arrow
               if (e.keyCode == 37 && cmp.ctx.vars.topMenu.popups.slice(-1)[0] == ctx.vars.menuModel) {
                 ctx.vars.topMenu.selected = ctx.vars.menuModel;
                 cmp.closePopup();
@@ -7223,7 +7225,7 @@ jb.component('menu.init-menu-option', { /* menu.initMenuOption */
     calcProp({id: 'shortcut', value: '%$menuModel.leaf.shortcut%'}),
     interactive(
         (ctx,{cmp}) => {
-          const {pipe,filter,subscribe} = jb.callbag
+          const {pipe,filter,subscribe,takeUntil} = jb.callbag
 
           cmp.action = jb.ui.wrapWithLauchingElement( () =>
                 jb.ui.dialogs.closePopups().then(() =>	ctx.vars.menuModel.action())
@@ -7296,13 +7298,13 @@ jb.component('menu.selection', { /* menu.selection */
       cmp.items = Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
         .map(el=>(jb.ctxDictionary[el.getAttribute('jb-ctx')] || {}).data)
 
-      const {pipe,map,filter,subscribe,merge,subject,distinctUntilChanged,catchError} = jb.callbag
+      const {pipe,map,filter,subscribe,takeUntil} = jb.callbag
 
 			const keydown = pipe(ctx.vars.topMenu.keydown, takeUntil( cmp.destroyed ))
       pipe(cmp.onmousemove, map(e=> dataOfElems(e.target.ownerDocument.elementsFromPoint(e.pageX, e.pageY))),
-        filter(x=>x).filter(data => data != ctx.vars.topMenu.selected),
+        filter(data => data && data != ctx.vars.topMenu.selected),
         subscribe(data => cmp.select(data)))
-			map(keydown, filter(e=> e.keyCode == 38 || e.keyCode == 40 ),
+			pipe(keydown, filter(e=> e.keyCode == 38 || e.keyCode == 40 ),
 					map(event => {
 						event.stopPropagation();
 						const diff = event.keyCode == 40 ? 1 : -1;
@@ -7310,7 +7312,7 @@ jb.component('menu.selection', { /* menu.selection */
 						const selectedIndex = ctx.vars.topMenu.selected.separator ? 0 : items.indexOf(ctx.vars.topMenu.selected);
 						if (selectedIndex != -1)
 							return items[(selectedIndex + diff + items.length) % items.length];
-				}),filter(x=>x),subscribe(data => cmp.select(data)))
+				}), filter(x=>x), subscribe(data => cmp.select(data)))
 
 			pipe(keydown,filter(e=>e.keyCode == 27), // close all popups
 					subscribe(_=> jb.ui.dialogs.closePopups().then(()=> {
@@ -9126,7 +9128,7 @@ jb.component('tree.selection', { /* tree.selection */
         (ctx,{cmp},{databind,autoSelectFirst,onSelection,onRightClick}) => {
 			const selectedRef = databind()
 			const {pipe,map,filter,subscribe,merge,distinctUntilChanged} = jb.callbag
-			  const databindObs = jb.isWatchable(selectedRef) && map(jb.ui.refObservable(selectedRef,cmp,{srcCtx: ctx}))(e=>jb.val(e.ref))
+			const databindObs = jb.isWatchable(selectedRef) && map(e=>jb.val(e.ref))(jb.ui.refObservable(selectedRef,cmp,{srcCtx: ctx}))
 
 			cmp.setSelected = selected => {
 				cmp.state.selected = selected
@@ -9139,7 +9141,8 @@ jb.component('tree.selection', { /* tree.selection */
 
 
 			pipe(
-				merge(cmp.selectionEmitter(databindObs, map(cmp.onclick)(event => cmp.elemToPath(event.target)))),
+				merge(
+					cmp.selectionEmitter, databindObs, pipe(cmp.onclick, map(event => cmp.elemToPath(event.target)))),
 				distinctUntilChanged(),
 				filter(x=>x),
 				map(x=> jb.val(x)),
@@ -9187,7 +9190,8 @@ jb.component('tree.keyboard-selection', { /* tree.keyboardSelection */
 				vdom.attributes.tabIndex = 0
 			},
 			afterViewInit: cmp=> {
-				const keyDownNoAlts = cmp.onkeydown.filter(e=> !e.ctrlKey && !e.altKey)
+				const {pipe,map,filter,subscribe} = jb.callbag
+				const keyDownNoAlts = pipe(cmp.onkeydown, filter(e=> !e.ctrlKey && !e.altKey))
 
 				context.vars.$tree.regainFocus = cmp.regainFocus = cmp.getKeyboardFocus = cmp.getKeyboardFocus || (_ => {
 					jb.ui.focus(cmp.base,'tree.keyboard-selection regain focus',context);
@@ -9197,7 +9201,6 @@ jb.component('tree.keyboard-selection', { /* tree.keyboardSelection */
 				if (context.params.autoFocus)
 					jb.ui.focus(cmp.base,'tree.keyboard-selection init autofocus',context);
 				
-				const {pipe,map,filter,subscribe} = jb.callbag
 				pipe(keyDownNoAlts, filter(e=> e.keyCode == 13), subscribe(e =>
 					runActionInTreeContext(context.params.onEnter)))
 
@@ -27095,7 +27098,7 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 				cmp.data_ref = cmp.ctx.vars.$model.databind()
 				editor.setValue(jb.tostring(jb.val(cmp.data_ref)))
 
-				const {pipe,map,filter,subscribe,distinctUntilChanged,create,debounceTime} = jb.callbag
+				const {pipe,map,filter,subscribe,distinctUntilChanged,create,debounceTime,takeUntil} = jb.callbag
 
 				pipe(
 					create(obs=> editor.on('change', () => obs.next(editor.getValue()))),
@@ -28407,7 +28410,7 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
             Object.assign(ctx.exp('%$queryParams%'),JSON.parse('{"' + decodeURI(_search).replace(/"/g, '\\"').replace(/&/g, '","').replace(/=/g,'":"') + '"}'))
 
         const {pipe, fromIter, subscribe,merge,create,map,filter} = jb.callbag
-        const browserUrlEm = create(obs=> jb.ui.location.listen(x=> obs.next(x)))
+        const browserUrlEm = create(obs=> jb.ui.location.listen(x=> obs(x)))
 
         const databindEm = pipe(jb.ui.resourceChange(),
             filter(e=> e.path[0] == resource),
@@ -28416,8 +28419,7 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
             map(obj=> urlFormat.objToUrl(obj)))
 
         pipe(
-            merge(browserUrlEm,databindEm,fromIter([location])),
-//            startWith(location),
+            merge(fromIter([location]),browserUrlEm,databindEm),
             subscribe(loc => {
                 const obj = urlFormat.urlToObj(loc);
                 params.forEach(p=>
@@ -29189,7 +29191,7 @@ jb.component('studio.script-history', { /* studio.scriptHistory */
       })
     ],
     features: [
-      watchObservable(ctx => st.compsRefHandler.resourceChange.debounceTime(500)),
+      watchObservable(ctx => st.compsRefHandler.resourceChange, 500),
       css.height({height: '400', overflow: 'auto', minMax: 'max'})
     ]
   })
@@ -31704,7 +31706,7 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
   ],
   impl: (ctx,from) => ({
     afterViewInit: cmp=> {
-      const {pipe,fromEvent,takeUntil,merge,Do, map,debounceTime, last, forEach} = jb.callbag
+      const {pipe,filter, fromEvent,takeUntil,merge,Do, map,debounceTime, last, forEach} = jb.callbag
       if (from === 'studio')
         initStudioEditing()
       const _window = from == 'preview' ? st.previewWindow : window;
@@ -33426,8 +33428,8 @@ jb.component('studio.event-tracker', { /* studio.eventTracker */
     features: [
       {
         '$if': '%$studio%',
-        then: watchObservable(ctx => jb.ui.stateChangeEm.debounceTime(500)),
-        else: watchObservable(ctx => st.previewjb.ui.stateChangeEm.debounceTime(500))
+        then: watchObservable(ctx => jb.ui.stateChangeEm, 500),
+        else: watchObservable(ctx => st.previewjb.ui.stateChangeEm,500)
       }
     ]
   })
@@ -33781,7 +33783,7 @@ jb.component('studio.ctx-counters', { /* studio.ctxCounters */
     text: ctx => (jb.frame.performance && performance.memory && performance.memory.usedJSHeapSize / 1000000)  + 'M',
     features: [
       css('{ background: #F5F5F5; position: absolute; bottom: 0; right: 0; }'),
-      watchObservable(ctx => jb.studio.scriptChange.debounceTime(500))
+      watchObservable(ctx => jb.studio.scriptChange,500)
     ]
   })
 })

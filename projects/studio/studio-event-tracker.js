@@ -107,8 +107,8 @@ jb.component('studio.event-tracker', { /* studio.eventTracker */
     features: [
       {
         '$if': '%$studio%',
-        then: watchObservable(ctx => jb.ui.stateChangeEm.debounceTime(500)),
-        else: watchObservable(ctx => st.previewjb.ui.stateChangeEm.debounceTime(500))
+        then: watchObservable(ctx => jb.ui.stateChangeEm, 500),
+        else: watchObservable(ctx => st.previewjb.ui.stateChangeEm,500)
       }
     ]
   })

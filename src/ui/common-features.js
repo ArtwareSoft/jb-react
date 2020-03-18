@@ -118,11 +118,13 @@ jb.component('watch-observable', { /* watchObservable */
   category: 'watch',
   description: 'subscribes to a custom rx.observable to refresh component',
   params: [
-    {id: 'toWatch', mandatory: true}
+    {id: 'toWatch', mandatory: true},
+    {id: 'debounceTime', as: 'number', description: 'in mSec'}
   ],
   impl: interactive(
-    (ctx,{cmp},{toWatch}) => jb.callbag.pipe(toWatch,
+    (ctx,{cmp},{toWatch, debounceTime}) => jb.callbag.pipe(toWatch,
       jb.callbag.takeUntil(cmp.destroyed),
+      debounceTime && jb.callbag.debounceTime(debounceTime),
       jb.callbag.subscribe(()=>cmp.refresh(null,{srcCtx:ctx.componentContext}))
     ))
 })

@@ -160,7 +160,7 @@ jb.component('dialog-feature.onClose', { /* dialogFeature.onClose */
     {id: 'action', type: 'action', dynamic: true}
   ],
   impl: (ctx,action) => {
-	const {pipe,filter,subscribe} = jb.callbag
+	const {pipe,filter,subscribe,take} = jb.callbag
 	return pipe(ctx.vars.$dialog.em,
 		filter(e => e.type == 'close'), take(1), subscribe(e=> action(ctx.setData(e.OK)))
 	)}
@@ -227,7 +227,7 @@ jb.component('dialog-feature.css-class-on-launching-element', { /* dialogFeature
   type: 'dialog-feature',
   impl: context => ({
 		afterViewInit: cmp => {
-			const {pipe,filter,subscribe} = jb.callbag
+			const {pipe,filter,subscribe,take} = jb.callbag
 			const dialog = context.vars.$dialog;
 			const control = context.vars.$launchingElement.el;
 			jb.ui.addClass(control,'dialog-open');
@@ -295,7 +295,7 @@ jb.component('dialog-feature.resizer', { /* dialogFeature.resizer */
 
 	afterViewInit: function(cmp) {
 		const resizerElem = cmp.base.querySelector('.jb-resizer');
-		const {pipe, map, flatMap,takeUntil, merge,subscribe} = jb.callbag
+		const {pipe, map, flatMap,takeUntil, merge,subscribe,Do} = jb.callbag
 
 		cmp.mousedownEm = jb.ui.fromEvent(cmp,'mousedown',resizerElem)
 		let mouseUpEm = jb.ui.fromEvent(cmp,'mouseup',document)

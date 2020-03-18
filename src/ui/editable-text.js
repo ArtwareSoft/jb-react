@@ -57,7 +57,7 @@ jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
     afterViewInit: cmp => {
       const input = jb.ui.findIncludeSelf(cmp.base,'input')[0];
       if (!input) return;
-      const {pipe,filter,subscribe} = jb.callbag
+      const {pipe,filter,subscribe,delay} = jb.callbag
 
       cmp.openPopup = jb.ui.wrapWithLauchingElement( ctx2 =>
             ctx2.run( openDialog({
@@ -87,7 +87,7 @@ jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
 
       cmp.selectionKeySource = true
       cmp.input = input;
-      const keyup = cmp.keyup = cmp.onkeyup.delay(1); // delay to have input updated
+      const keyup = cmp.keyup = pipe(cmp.onkeyup,delay(1)) // delay to have input updated
 
       jb.delay(500).then(_=>{
 

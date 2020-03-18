@@ -93,7 +93,7 @@ jb.component('editable-text.codemirror', { /* editableText.codemirror */
 				cmp.data_ref = cmp.ctx.vars.$model.databind()
 				editor.setValue(jb.tostring(jb.val(cmp.data_ref)))
 
-				const {pipe,map,filter,subscribe,distinctUntilChanged,create,debounceTime} = jb.callbag
+				const {pipe,map,filter,subscribe,distinctUntilChanged,create,debounceTime,takeUntil} = jb.callbag
 
 				pipe(
 					create(obs=> editor.on('change', () => obs.next(editor.getValue()))),

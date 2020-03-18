@@ -1,7 +1,7 @@
 (function(){
 
 const storeId = Symbol.for("storeId")
-const {pipe,map,filter,subscribe} = jb.callbag
+const {pipe,map,filter,subscribe,take,toPromiseArray} = jb.callbag
 
 jb.ui.serializeCtxOfVdom = function(vdom) {
     const store = {idCounter: 1, ctx: {}, data: {}, strs: []}
@@ -189,7 +189,7 @@ function createWorker(workerId) {
                     filter(({id}) => id == messageId),
                     take(1), 
                     map(({data}) => data),
-                    toPromise)
+                    toPromiseArray)
         }
     })
     return worker

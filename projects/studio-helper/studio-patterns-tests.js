@@ -196,13 +196,13 @@ jb.component('patterns-test.select-style.text', {
   })
 })
 
-jb.component('patterns-test.select-style.card', { 
-  impl: uiTest({
-    vars: [
-      Var('extractedCtrl',() => extractedCtrlCard1),
-      Var('targetPath', 'studio-test.drag-target-card~impl'),
-    ],
-    control: ctx => ctx.run(studio.selectStyle('%$extractedCtrl%','%$targetPath%')),
-    expectedResult: contains['hello','hello']
-  })
-})
+// jb.component('patterns-test.select-style.card', { 
+//   impl: uiTest({
+//     vars: [
+//       Var('extractedCtrl',() => extractedCtrlCard1),
+//       Var('targetPath', 'studio-test.drag-target-card~impl'),
+//     ],
+//     control: ctx => ctx.run(studio.selectStyle('%$extractedCtrl%','%$targetPath%')),
+//     expectedResult: contains['hello','hello']
+//   })
+// })

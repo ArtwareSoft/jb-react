@@ -14,7 +14,7 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
   ],
   impl: (ctx,from) => ({
     afterViewInit: cmp=> {
-      const {pipe,fromEvent,takeUntil,merge,Do, map,debounceTime, last, forEach} = jb.callbag
+      const {pipe,filter, fromEvent,takeUntil,merge,Do, map,debounceTime, last, forEach} = jb.callbag
       if (from === 'studio')
         initStudioEditing()
       const _window = from == 'preview' ? st.previewWindow : window;

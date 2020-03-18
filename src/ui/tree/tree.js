@@ -190,7 +190,7 @@ jb.component('tree.selection', { /* tree.selection */
         (ctx,{cmp},{databind,autoSelectFirst,onSelection,onRightClick}) => {
 			const selectedRef = databind()
 			const {pipe,map,filter,subscribe,merge,distinctUntilChanged} = jb.callbag
-			  const databindObs = jb.isWatchable(selectedRef) && map(jb.ui.refObservable(selectedRef,cmp,{srcCtx: ctx}))(e=>jb.val(e.ref))
+			const databindObs = jb.isWatchable(selectedRef) && map(e=>jb.val(e.ref))(jb.ui.refObservable(selectedRef,cmp,{srcCtx: ctx}))
 
 			cmp.setSelected = selected => {
 				cmp.state.selected = selected
@@ -203,7 +203,8 @@ jb.component('tree.selection', { /* tree.selection */
 
 
 			pipe(
-				merge(cmp.selectionEmitter(databindObs, map(cmp.onclick)(event => cmp.elemToPath(event.target)))),
+				merge(
+					cmp.selectionEmitter, databindObs, pipe(cmp.onclick, map(event => cmp.elemToPath(event.target)))),
 				distinctUntilChanged(),
 				filter(x=>x),
 				map(x=> jb.val(x)),
@@ -251,7 +252,8 @@ jb.component('tree.keyboard-selection', { /* tree.keyboardSelection */
 				vdom.attributes.tabIndex = 0
 			},
 			afterViewInit: cmp=> {
-				const keyDownNoAlts = cmp.onkeydown.filter(e=> !e.ctrlKey && !e.altKey)
+				const {pipe,map,filter,subscribe} = jb.callbag
+				const keyDownNoAlts = pipe(cmp.onkeydown, filter(e=> !e.ctrlKey && !e.altKey))
 
 				context.vars.$tree.regainFocus = cmp.regainFocus = cmp.getKeyboardFocus = cmp.getKeyboardFocus || (_ => {
 					jb.ui.focus(cmp.base,'tree.keyboard-selection regain focus',context);
@@ -261,7 +263,6 @@ jb.component('tree.keyboard-selection', { /* tree.keyboardSelection */
 				if (context.params.autoFocus)
 					jb.ui.focus(cmp.base,'tree.keyboard-selection init autofocus',context);
 				
-				const {pipe,map,filter,subscribe} = jb.callbag
 				pipe(keyDownNoAlts, filter(e=> e.keyCode == 13), subscribe(e =>
 					runActionInTreeContext(context.params.onEnter)))
 

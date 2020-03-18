@@ -189,11 +189,12 @@ jb.component('menu.init-popup-menu', { /* menu.initPopupMenu */
 
 				jb.delay(1).then(_=>{ // wait for topMenu keydown initalization
 					if (ctx.vars.topMenu && ctx.vars.topMenu.keydown) {
-						const keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
+            const {pipe, takeUntil } = jb.callbag
+						const keydown = pipe(ctx.vars.topMenu.keydown, takeUntil( cmp.destroyed ))
 
-					jb.subscribe(keydown, e=> e.keyCode == 39 && // right arrow
-						ctx.vars.topMenu.selected == ctx.vars.menuModel && cmp.openPopup && cmp.openPopup())
-          jb.subscribe(keydown, e=> { // left arrow
+					  jb.subscribe(keydown, e=> e.keyCode == 39 && // right arrow
+						  ctx.vars.topMenu.selected == ctx.vars.menuModel && cmp.openPopup && cmp.openPopup())
+            jb.subscribe(keydown, e=> { // left arrow
               if (e.keyCode == 37 && cmp.ctx.vars.topMenu.popups.slice(-1)[0] == ctx.vars.menuModel) {
                 ctx.vars.topMenu.selected = ctx.vars.menuModel;
                 cmp.closePopup();
@@ -213,7 +214,7 @@ jb.component('menu.init-menu-option', { /* menu.initMenuOption */
     calcProp({id: 'shortcut', value: '%$menuModel.leaf.shortcut%'}),
     interactive(
         (ctx,{cmp}) => {
-          const {pipe,filter,subscribe} = jb.callbag
+          const {pipe,filter,subscribe,takeUntil} = jb.callbag
 
           cmp.action = jb.ui.wrapWithLauchingElement( () =>
                 jb.ui.dialogs.closePopups().then(() =>	ctx.vars.menuModel.action())
@@ -286,13 +287,13 @@ jb.component('menu.selection', { /* menu.selection */
       cmp.items = Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
         .map(el=>(jb.ctxDictionary[el.getAttribute('jb-ctx')] || {}).data)
 
-      const {pipe,map,filter,subscribe,merge,subject,distinctUntilChanged,catchError} = jb.callbag
+      const {pipe,map,filter,subscribe,takeUntil} = jb.callbag
 
 			const keydown = pipe(ctx.vars.topMenu.keydown, takeUntil( cmp.destroyed ))
       pipe(cmp.onmousemove, map(e=> dataOfElems(e.target.ownerDocument.elementsFromPoint(e.pageX, e.pageY))),
-        filter(x=>x).filter(data => data != ctx.vars.topMenu.selected),
+        filter(data => data && data != ctx.vars.topMenu.selected),
         subscribe(data => cmp.select(data)))
-			map(keydown, filter(e=> e.keyCode == 38 || e.keyCode == 40 ),
+			pipe(keydown, filter(e=> e.keyCode == 38 || e.keyCode == 40 ),
 					map(event => {
 						event.stopPropagation();
 						const diff = event.keyCode == 40 ? 1 : -1;
@@ -300,7 +301,7 @@ jb.component('menu.selection', { /* menu.selection */
 						const selectedIndex = ctx.vars.topMenu.selected.separator ? 0 : items.indexOf(ctx.vars.topMenu.selected);
 						if (selectedIndex != -1)
 							return items[(selectedIndex + diff + items.length) % items.length];
-				}),filter(x=>x),subscribe(data => cmp.select(data)))
+				}), filter(x=>x), subscribe(data => cmp.select(data)))
 
 			pipe(keydown,filter(e=>e.keyCode == 27), // close all popups
 					subscribe(_=> jb.ui.dialogs.closePopups().then(()=> {

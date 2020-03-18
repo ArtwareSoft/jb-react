@@ -98,11 +98,9 @@ function do_jb_run(ctx,parentParam,settings) {
     if (delayed.length == 0)
       return [ctx, ...preparedParams.map(param=>ctx.params[param.name])]
 
-    const {pipe,concatMap,fromIter} = jb.callbag
-    return pipe(fromIter(preparedParams),
-        concatMap(param=> ctx.params[param.name]),
-        toPromiseArray())
-          .then(ar => [ctx, ...ar])
+    const {pipe,concatMap,fromIter,toPromiseArray} = jb.callbag
+    return pipe(fromIter(preparedParams), concatMap(param=> ctx.params[param.name]), toPromiseArray)
+            .then(ar => [ctx, ...ar])
   }
 }
 
@@ -747,11 +745,11 @@ Object.assign(jb,{
     const isSynch = ar.filter(v=> jb.isDelayed(v)).length == 0;
     if (isSynch) return ar;
 
-    const {pipe, fromIter, fromAny, concatMap,flatMap,toPromiseArray} = jb.callbag
+    const {pipe, fromIter, toPromiseArray, concatMap,flatMap} = jb.callbag
     return pipe(
           fromIter(ar),
-          concatMap(x=> fromAny(x)),
-//          flatMap(v => Array.isArray(v) ? v : [v]),
+          concatMap(x=>x),
+          flatMap(v => Array.isArray(v) ? v : [v]),
           toPromiseArray)
   },
   subscribe: (source,listener) => jb.callbag.subscribe(listener)(source),

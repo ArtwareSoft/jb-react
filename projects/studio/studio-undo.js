@@ -126,7 +126,7 @@ jb.component('studio.script-history', { /* studio.scriptHistory */
       })
     ],
     features: [
-      watchObservable(ctx => st.compsRefHandler.resourceChange.debounceTime(500)),
+      watchObservable(ctx => st.compsRefHandler.resourceChange, 500),
       css.height({height: '400', overflow: 'auto', minMax: 'max'})
     ]
   })

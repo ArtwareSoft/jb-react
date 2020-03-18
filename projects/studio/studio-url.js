@@ -47,7 +47,7 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
             Object.assign(ctx.exp('%$queryParams%'),JSON.parse('{"' + decodeURI(_search).replace(/"/g, '\\"').replace(/&/g, '","').replace(/=/g,'":"') + '"}'))
 
         const {pipe, fromIter, subscribe,merge,create,map,filter} = jb.callbag
-        const browserUrlEm = create(obs=> jb.ui.location.listen(x=> obs.next(x)))
+        const browserUrlEm = create(obs=> jb.ui.location.listen(x=> obs(x)))
 
         const databindEm = pipe(jb.ui.resourceChange(),
             filter(e=> e.path[0] == resource),
@@ -56,8 +56,7 @@ jb.component('url-history.map-studio-url-to-resource', { /* urlHistory.mapStudio
             map(obj=> urlFormat.objToUrl(obj)))
 
         pipe(
-            merge(browserUrlEm,databindEm,fromIter([location])),
-//            startWith(location),
+            merge(fromIter([location]),browserUrlEm,databindEm),
             subscribe(loc => {
                 const obj = urlFormat.urlToObj(loc);
                 params.forEach(p=>

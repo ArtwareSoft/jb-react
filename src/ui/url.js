@@ -39,7 +39,7 @@ jb.component('url-history.map-url-to-resource', {
 			map(obj=> objToUrl(obj))
 		)
 
-		pipe(merge(browserUrlEm,databindEm,fromIter([jb.ui.location.path()])),
+		pipe(merge(fromIter([jb.ui.location.path()]),browserUrlEm,databindEm),
 				distinctUntilChanged(),
 				subscribe(url => {
 					jb.ui.location.push(Object.assign({},jb.ui.location.location, {pathname: url}));

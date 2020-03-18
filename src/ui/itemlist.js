@@ -315,9 +315,8 @@ jb.component('itemlist.drag-and-drop', { /* itemlist.dragAndDrop */
         // ctrl + Up/Down
 //        jb.delay(1).then(_=>{ // wait for the keyboard selection to register keydown
         if (!cmp.onkeydown) return;
-          cmp.onkeydown.filter(e=>
-            e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40))
-            .subscribe(e=> {
+        jb.subscribe(cmp.onkeydown, e => {
+            if (e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40)) {
               cmp.items = cmp.calcItems()
               const diff = e.keyCode == 40 ? 1 : -1;
               const selectedIndex = cmp.items.indexOf(cmp.state.selected);
@@ -325,8 +324,7 @@ jb.component('itemlist.drag-and-drop', { /* itemlist.dragAndDrop */
               const index = (selectedIndex + diff+ cmp.items.length) % cmp.items.length;
               const itemsF = jb.path(jb.ctxDictionary,`${cmp.base.getAttribute('jb-ctx')}.params.items`)
               itemsF && jb.splice(jb.asRef(itemsF()),[[selectedIndex,1],[index,0,cmp.state.selected]],ctx);
-          })
-//        })
+        }})
       }
     })
 })
