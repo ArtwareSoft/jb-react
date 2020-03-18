@@ -2,7 +2,7 @@ const webpack = require('webpack');
 const path = require('path');
 
 const JBART_DIR = __dirname + '/';
-const UglifyJSPlugin = require('uglifyjs-webpack-plugin');
+//const UglifyJSPlugin = new webpack.optimize.UglifyJsPlugin() //require('uglifyjs-webpack-plugin');
 
 const jbImmutable = {
   mode: 'development',
@@ -53,10 +53,11 @@ const jbJison = {
 };
 
 const jbReactAllMin = {
+  mode: 'production',
   optimization: {
-    minimizer: [new UglifyJsPlugin()],
+    minimize: true,
   },
-  entry: JBART_DIR + 'src/dist/jb-react-all.js',
+  entry: JBART_DIR + 'dist/jb-react-all.js',
   output: {
     path: JBART_DIR + 'dist',
     filename: 'jb-react-all-min.js',
