@@ -123,16 +123,7 @@ jb.component('itemlist-container.search', { /* itemlistContainer.search */
 
 					return items.filter(item=>toSearch == '' || searchIn(ctx.setData(item)).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
 				});
-				const {pipe, takeUntil,fromPromise,subject} = jb.callbag
-				const keydown_src = subject();
-				cmp.base.onkeydown = e => {
-					if ([38,40,13,27].indexOf(e.keyCode) != -1) { // stop propagation for up down arrows
-						keydown_src.next(e);
-						return false;
-					}
-					return true;
-				}
-				ctx.vars.itemlistCntr.keydown = pipe(keydown_src, takeUntil(fromPromise(cmp.destroyed)))
+				ctx.vars.itemlistCntr.keydown = jb.ui.upDownEnterEscObs(cmp)
 			}
 		})
 })

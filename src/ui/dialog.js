@@ -182,7 +182,7 @@ jb.component('dialog-feature.close-when-clicking-outside', { /* dialogFeature.cl
 
 			pipe(clickoutEm,
 				filter(e => jb.ui.closest(e.target,'.jb-dialog') == null),
-   				takeUntil( filter(dialog.em)(e => e.type == 'close')),
+   				takeUntil( pipe(dialog.em, filter(e => e.type == 'close'))),
 				take(1),
 				delay(_delay),
 				subscribe(()=> dialog.close())

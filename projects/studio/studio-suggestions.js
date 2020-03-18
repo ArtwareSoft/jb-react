@@ -9,11 +9,11 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
   ],
   impl: ctx => ({
       afterViewInit: cmp => {
-        const {pipe,map,subscribe,distinctUntilChanged,catchError,startWith,debounceTime} = jb.callbag
+        const {pipe,map,subscribe,distinctUntilChanged,catchError,startWith,debounceTime,takeUntil,delay} = jb.callbag
 
         const selectionKeySourceCmp = jb.ui.parentCmps(cmp.base).find(_cmp=>_cmp.selectionKeySource)
         const pathToTrace = ctx.params.path
-        const keyup = selectionKeySourceCmp.keyup.takeUntil( cmp.destroyed )
+        const keyup = pipe(selectionKeySourceCmp.keyup, takeUntil( cmp.destroyed ))
         const input = selectionKeySourceCmp.input
 
         pipe(keyup,

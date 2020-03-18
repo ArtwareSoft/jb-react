@@ -190,7 +190,8 @@ jb.component('tree.selection', { /* tree.selection */
         (ctx,{cmp},{databind,autoSelectFirst,onSelection,onRightClick}) => {
 			const selectedRef = databind()
 			const {pipe,map,filter,subscribe,merge,distinctUntilChanged} = jb.callbag
-			const databindObs = jb.isWatchable(selectedRef) && map(e=>jb.val(e.ref))(jb.ui.refObservable(selectedRef,cmp,{srcCtx: ctx}))
+			const databindObs = jb.isWatchable(selectedRef) && 
+				pipe(jb.ui.refObservable(selectedRef,cmp,{srcCtx: ctx}), map(e=>jb.val(e.ref)))
 
 			cmp.setSelected = selected => {
 				cmp.state.selected = selected

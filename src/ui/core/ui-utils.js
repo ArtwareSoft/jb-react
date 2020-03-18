@@ -50,7 +50,7 @@ Object.assign(jb.ui,{
     document(ctx) {
         if (jb.frame.isWorker)
             return jb.ui.widgets[ctx.vars.widgetId].top
-        return ctx.vars.elemToTest || typeof document !== 'undefined' && document
+        return ctx.vars.elemToTest || ctx.frame().document
     },
     item(cmp,vdom,data) {
         cmp.extendItemFuncs && cmp.extendItemFuncs.forEach(f=>f(cmp,vdom,data));
@@ -58,7 +58,20 @@ Object.assign(jb.ui,{
     },
     fromEvent: (cmp,event,elem) => jb.callbag.pipe(
           jb.callbag.fromEvent(elem || cmp.base, event),
-          jb.callbag.takeUntil( jb.callbag.fromPromise(cmp.destroyed) ))
+          jb.callbag.takeUntil( jb.callbag.fromPromise(cmp.destroyed) )
+    ),
+    upDownEnterEscObs(cmp) {
+      const {pipe, takeUntil,fromPromise,subject} = jb.callbag
+      const keydown_src = subject();
+      cmp.base.onkeydown = e => {
+        if ([38,40,13,27].indexOf(e.keyCode) != -1) { // stop propagation for up down arrows
+          keydown_src.next(e);
+          return false;
+        }
+        return true;
+      }
+      return pipe(keydown_src, takeUntil(fromPromise(cmp.destroyed)))
+    }
 })
 
 // ****************** html utils ***************
@@ -89,7 +102,7 @@ Object.assign(jb.ui, {
     },
     activeElement() { return document.activeElement },
     find(el,selector,options) {
-        if (el instanceof jb.jbCtx)
+        if (jb.path(el,'constructor.name') == 'jbCtx')
             el = this.document(el) // el is ctx
         return el instanceof jb.ui.VNode ? el.querySelectorAll(selector,options) :
             [... (options && options.includeSelf && ui.matches(el,selector) ? [el] : []),

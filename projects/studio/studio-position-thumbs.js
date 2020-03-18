@@ -211,12 +211,12 @@ jb.component('content-editable.dragable-thumb', { /* contentEditable.dragableThu
     const prop = () => ctx.run(contentEditable.effectiveProp(axis))
     const {pipe,fromEvent,takeUntil,merge,Do, flatMap, map, last, forEach,fromPromise} = jb.callbag
     const destroyed = fromPromise(cmp.destroyed)
-    cmp.mousedownEm = fromEvent(cmp.base, 'mousedown').takeUntil( destroyed );
-    let mouseUpEm = fromEvent(document, 'mouseup').takeUntil( destroyed );
-    let mouseMoveEm = fromEvent(document, 'mousemove').takeUntil( destroyed );
+    cmp.mousedownEm = jb.ui.fromEvent(cmp, 'mousedown')
+    let mouseUpEm = jb.ui.fromEvent(cmp, 'mouseup', document)
+    let mouseMoveEm = jb.ui.fromEvent(cmp, 'mousemove', document)
     if (jb.studio.previewWindow) {
-      mouseUpEm = merge(mouseUpEm,fromEvent(jb.studio.previewWindow.document, 'mouseup')).takeUntil( destroyed )
-      mouseMoveEm = merge(mouseMoveEm,fromEvent(jb.studio.previewWindow.document, 'mousemove')).takeUntil( destroyed )
+      mouseUpEm = merge(mouseUpEm, jb.ui.fromEvent(cmp, 'mouseup', jb.studio.previewWindow.document))
+      mouseMoveEm = merge(mouseMoveEm, jb.ui.fromEvent(cmp, 'mousemove', jb.studio.previewWindow.document))
     }
     const dialog = ctx.vars.$dialog;
     const dialogStyle = dialog.cmp.base.style

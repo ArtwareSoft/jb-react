@@ -4215,7 +4215,7 @@ Object.assign(jb.ui,{
     document(ctx) {
         if (jb.frame.isWorker)
             return jb.ui.widgets[ctx.vars.widgetId].top
-        return ctx.vars.elemToTest || typeof document !== 'undefined' && document
+        return ctx.vars.elemToTest || ctx.frame().document
     },
     item(cmp,vdom,data) {
         cmp.extendItemFuncs && cmp.extendItemFuncs.forEach(f=>f(cmp,vdom,data));
@@ -4223,7 +4223,20 @@ Object.assign(jb.ui,{
     },
     fromEvent: (cmp,event,elem) => jb.callbag.pipe(
           jb.callbag.fromEvent(elem || cmp.base, event),
-          jb.callbag.takeUntil( jb.callbag.fromPromise(cmp.destroyed) ))
+          jb.callbag.takeUntil( jb.callbag.fromPromise(cmp.destroyed) )
+    ),
+    upDownEnterEscObs(cmp) {
+      const {pipe, takeUntil,fromPromise,subject} = jb.callbag
+      const keydown_src = subject();
+      cmp.base.onkeydown = e => {
+        if ([38,40,13,27].indexOf(e.keyCode) != -1) { // stop propagation for up down arrows
+          keydown_src.next(e);
+          return false;
+        }
+        return true;
+      }
+      return pipe(keydown_src, takeUntil(fromPromise(cmp.destroyed)))
+    }
 })
 
 // ****************** html utils ***************
@@ -4254,7 +4267,7 @@ Object.assign(jb.ui, {
     },
     activeElement() { return document.activeElement },
     find(el,selector,options) {
-        if (el instanceof jb.jbCtx)
+        if (jb.path(el,'constructor.name') == 'jbCtx')
             el = this.document(el) // el is ctx
         return el instanceof jb.ui.VNode ? el.querySelectorAll(selector,options) :
             [... (options && options.includeSelf && ui.matches(el,selector) ? [el] : []),
@@ -5806,9 +5819,6 @@ jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
   ],
   impl: ctx =>({
     onkeyup: true,
-    onkeydown: true, // used for arrows
-//    extendCtx: (ctx,cmp) => ctx.setVar('selectionKeySource', {}),
-
     afterViewInit: cmp => {
       const input = jb.ui.findIncludeSelf(cmp.base,'input')[0];
       if (!input) return;
@@ -5844,19 +5854,16 @@ jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
       cmp.input = input;
       const keyup = cmp.keyup = pipe(cmp.onkeyup,delay(1)) // delay to have input updated
 
-      jb.delay(500).then(_=>{
-
-        pipe(cmp.onkeydown,filter(e=> e.keyCode == 13),subscribe(_=>{
-          const showHelper = ctx.params.showHelper(cmp.ctx.setData(input))
-          jb.log('helper-popup', ['onEnter', showHelper, input.value,cmp.ctx,cmp,ctx])
-          if (!showHelper)
-            ctx.params.onEnter(cmp.ctx)
-        }))
-        subscribe(keyup)(e=>e.keyCode == 27 && ctx.params.onEsc(cmp.ctx))
-      })
-
-      subscribe(keyup)(e=> [13,27,37,38,40].indexOf(e.keyCode) == -1 && cmp.refreshSuggestionPopupOpenClose())
-      subscribe(keyup)(e=>e.keyCode == 27 && cmp.closePopup())
+      cmp.onkeydown = jb.ui.upDownEnterEscObs(cmp)
+      pipe(cmp.onkeydown,filter(e=> e.keyCode == 13),subscribe(_=>{
+        const showHelper = ctx.params.showHelper(cmp.ctx.setData(input))
+        jb.log('helper-popup', ['onEnter', showHelper, input.value,cmp.ctx,cmp,ctx])
+        if (!showHelper)
+          ctx.params.onEnter(cmp.ctx)
+      }))
+      jb.subscribe(keyup,e=>e.keyCode == 27 && ctx.params.onEsc(cmp.ctx))
+      jb.subscribe(keyup,e=> [13,27,37,38,40].indexOf(e.keyCode) == -1 && cmp.refreshSuggestionPopupOpenClose())
+      jb.subscribe(keyup,e=>e.keyCode == 27 && cmp.closePopup())
 
       if (ctx.params.autoOpen)
         cmp.refreshSuggestionPopupOpenClose()
@@ -6133,7 +6140,7 @@ jb.component('dialog-feature.close-when-clicking-outside', { /* dialogFeature.cl
 
 			pipe(clickoutEm,
 				filter(e => jb.ui.closest(e.target,'.jb-dialog') == null),
-   				takeUntil( filter(dialog.em)(e => e.type == 'close')),
+   				takeUntil( pipe(dialog.em, filter(e => e.type == 'close'))),
 				take(1),
 				delay(_delay),
 				subscribe(()=> dialog.close())
@@ -6871,16 +6878,7 @@ jb.component('itemlist-container.search', { /* itemlistContainer.search */
 
 					return items.filter(item=>toSearch == '' || searchIn(ctx.setData(item)).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
 				});
-				const {pipe, takeUntil,fromPromise,subject} = jb.callbag
-				const keydown_src = subject();
-				cmp.base.onkeydown = e => {
-					if ([38,40,13,27].indexOf(e.keyCode) != -1) { // stop propagation for up down arrows
-						keydown_src.next(e);
-						return false;
-					}
-					return true;
-				}
-				ctx.vars.itemlistCntr.keydown = pipe(keydown_src, takeUntil(fromPromise(cmp.destroyed)))
+				ctx.vars.itemlistCntr.keydown = jb.ui.upDownEnterEscObs(cmp)
 			}
 		})
 })
@@ -9128,7 +9126,8 @@ jb.component('tree.selection', { /* tree.selection */
         (ctx,{cmp},{databind,autoSelectFirst,onSelection,onRightClick}) => {
 			const selectedRef = databind()
 			const {pipe,map,filter,subscribe,merge,distinctUntilChanged} = jb.callbag
-			const databindObs = jb.isWatchable(selectedRef) && map(e=>jb.val(e.ref))(jb.ui.refObservable(selectedRef,cmp,{srcCtx: ctx}))
+			const databindObs = jb.isWatchable(selectedRef) && 
+				pipe(jb.ui.refObservable(selectedRef,cmp,{srcCtx: ctx}), map(e=>jb.val(e.ref)))
 
 			cmp.setSelected = selected => {
 				cmp.state.selected = selected
@@ -30071,11 +30070,11 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
   ],
   impl: ctx => ({
       afterViewInit: cmp => {
-        const {pipe,map,subscribe,distinctUntilChanged,catchError,startWith,debounceTime} = jb.callbag
+        const {pipe,map,subscribe,distinctUntilChanged,catchError,startWith,debounceTime,takeUntil,delay} = jb.callbag
 
         const selectionKeySourceCmp = jb.ui.parentCmps(cmp.base).find(_cmp=>_cmp.selectionKeySource)
         const pathToTrace = ctx.params.path
-        const keyup = selectionKeySourceCmp.keyup.takeUntil( cmp.destroyed )
+        const keyup = pipe(selectionKeySourceCmp.keyup, takeUntil( cmp.destroyed ))
         const input = selectionKeySourceCmp.input
 
         pipe(keyup,
@@ -35078,12 +35077,12 @@ jb.component('content-editable.dragable-thumb', { /* contentEditable.dragableThu
     const prop = () => ctx.run(contentEditable.effectiveProp(axis))
     const {pipe,fromEvent,takeUntil,merge,Do, flatMap, map, last, forEach,fromPromise} = jb.callbag
     const destroyed = fromPromise(cmp.destroyed)
-    cmp.mousedownEm = fromEvent(cmp.base, 'mousedown').takeUntil( destroyed );
-    let mouseUpEm = fromEvent(document, 'mouseup').takeUntil( destroyed );
-    let mouseMoveEm = fromEvent(document, 'mousemove').takeUntil( destroyed );
+    cmp.mousedownEm = jb.ui.fromEvent(cmp, 'mousedown')
+    let mouseUpEm = jb.ui.fromEvent(cmp, 'mouseup', document)
+    let mouseMoveEm = jb.ui.fromEvent(cmp, 'mousemove', document)
     if (jb.studio.previewWindow) {
-      mouseUpEm = merge(mouseUpEm,fromEvent(jb.studio.previewWindow.document, 'mouseup')).takeUntil( destroyed )
-      mouseMoveEm = merge(mouseMoveEm,fromEvent(jb.studio.previewWindow.document, 'mousemove')).takeUntil( destroyed )
+      mouseUpEm = merge(mouseUpEm, jb.ui.fromEvent(cmp, 'mouseup', jb.studio.previewWindow.document))
+      mouseMoveEm = merge(mouseMoveEm, jb.ui.fromEvent(cmp, 'mousemove', jb.studio.previewWindow.document))
     }
     const dialog = ctx.vars.$dialog;
     const dialogStyle = dialog.cmp.base.style

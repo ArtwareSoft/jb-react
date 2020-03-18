@@ -51,9 +51,6 @@ jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
   ],
   impl: ctx =>({
     onkeyup: true,
-    onkeydown: true, // used for arrows
-//    extendCtx: (ctx,cmp) => ctx.setVar('selectionKeySource', {}),
-
     afterViewInit: cmp => {
       const input = jb.ui.findIncludeSelf(cmp.base,'input')[0];
       if (!input) return;
@@ -89,19 +86,16 @@ jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
       cmp.input = input;
       const keyup = cmp.keyup = pipe(cmp.onkeyup,delay(1)) // delay to have input updated
 
-      jb.delay(500).then(_=>{
-
-        pipe(cmp.onkeydown,filter(e=> e.keyCode == 13),subscribe(_=>{
-          const showHelper = ctx.params.showHelper(cmp.ctx.setData(input))
-          jb.log('helper-popup', ['onEnter', showHelper, input.value,cmp.ctx,cmp,ctx])
-          if (!showHelper)
-            ctx.params.onEnter(cmp.ctx)
-        }))
-        subscribe(keyup)(e=>e.keyCode == 27 && ctx.params.onEsc(cmp.ctx))
-      })
-
-      subscribe(keyup)(e=> [13,27,37,38,40].indexOf(e.keyCode) == -1 && cmp.refreshSuggestionPopupOpenClose())
-      subscribe(keyup)(e=>e.keyCode == 27 && cmp.closePopup())
+      cmp.onkeydown = jb.ui.upDownEnterEscObs(cmp)
+      pipe(cmp.onkeydown,filter(e=> e.keyCode == 13),subscribe(_=>{
+        const showHelper = ctx.params.showHelper(cmp.ctx.setData(input))
+        jb.log('helper-popup', ['onEnter', showHelper, input.value,cmp.ctx,cmp,ctx])
+        if (!showHelper)
+          ctx.params.onEnter(cmp.ctx)
+      }))
+      jb.subscribe(keyup,e=>e.keyCode == 27 && ctx.params.onEsc(cmp.ctx))
+      jb.subscribe(keyup,e=> [13,27,37,38,40].indexOf(e.keyCode) == -1 && cmp.refreshSuggestionPopupOpenClose())
+      jb.subscribe(keyup,e=>e.keyCode == 27 && cmp.closePopup())
 
       if (ctx.params.autoOpen)
         cmp.refreshSuggestionPopupOpenClose()
