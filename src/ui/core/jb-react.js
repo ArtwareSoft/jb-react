@@ -445,7 +445,7 @@ function mountInteractive(elem, keepState) {
     elem._component = mountedCmp
     mountedCmp.recalcPropsFromElem()
 
-    jb.unique(cmp.eventObservables)
+    jb.unique(cmp.eventObservables||[])
         .forEach(op => mountedCmp[op] = jb.ui.fromEvent(mountedCmp,op.slice(2),elem))
 
     ;(cmp.componentDidMountFuncs||[]).forEach(f=> tryWrapper(() => f(mountedCmp), 'componentDidMount'))

@@ -192,8 +192,7 @@ jb.callbag = {
         })
     },
     pipe(..._cbs) {
-        const cbs = _cbs.filter(x=>x).filter(x=>jb.callbag.fromAny(x))
-
+        const cbs = _cbs.filter(x=>x)
         if (!cbs[0]) return
         let res = cbs[0]
         for (let i = 1, n = cbs.length; i < n; i++) res = cbs[i](res)
@@ -1661,7 +1660,7 @@ function mountInteractive(elem, keepState) {
     elem._component = mountedCmp
     mountedCmp.recalcPropsFromElem()
 
-    jb.unique(cmp.eventObservables)
+    jb.unique(cmp.eventObservables||[])
         .forEach(op => mountedCmp[op] = jb.ui.fromEvent(mountedCmp,op.slice(2),elem))
 
     ;(cmp.componentDidMountFuncs||[]).forEach(f=> tryWrapper(() => f(mountedCmp), 'componentDidMount'))
@@ -1743,8 +1742,8 @@ class JbComponent {
         const interactive = (this.interactiveProp||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx)}`).join(',')
         const originators = this.originators.map(ctx=>ui.preserveCtx(ctx)).join(',')
 
-        const atts = jb.frame.workerId ? 
-            { worker: jb.frame.workerId, 'cmp-id': this.cmpId, ...(handlers && {handlers}) } : 
+        const workerId = jb.frame.workerId && jb.frame.workerId(this.ctx)
+        const atts =  workerId ? { worker: workerId, 'cmp-id': this.cmpId, ...(handlers && {handlers}) } : 
             Object.assign(vdom.attributes || {}, {
                 'jb-ctx': ui.preserveCtx(this.originatingCtx()),
                 'cmp-id': this.cmpId, 
@@ -1770,7 +1769,7 @@ class JbComponent {
                 handlers && {handlers}, 
                 originators && {originators},
                 this.ctxForPick && { 'pick-ctx': ui.preserveCtx(this.ctxForPick) },
-                jb.frame.workerId && { 'worker': jb.frame.workerId },
+                workerId && { 'worker': workerId },
                 (this.componentDidMountFuncs || interactive) && {interactive}, 
                 this.renderProps.cmpHash != null && {cmpHash: this.renderProps.cmpHash}
             )
@@ -1793,7 +1792,8 @@ class JbComponent {
         const cssLines = (this.staticCssLines || []).concat((this.dynamicCss || [])
             .map(dynCss=>dynCss(this.calcCtx))).filter(x=>x)
         const cssKey = cssLines.join('\n')
-        const classPrefix = jb.frame.isWorker ? 'w'+frame.workerId : 'jb-'
+        const workerId = jb.frame.workerId && jb.frame.workerId(this.ctx)
+        const classPrefix = workerId ? 'w'+ workerId : 'jb-'
         if (!cssKey) return ''
         if (!cssSelectors_hash[cssKey]) {
             cssId++;
@@ -1940,7 +1940,7 @@ Object.assign(jb.ui,{
     withUnits: v => (v === '' || v === undefined) ? '' : (''+v||'').match(/[^0-9]$/) ? v : `${v}px`,
     propWithUnits: (prop,v) => (v === '' || v === undefined) ? '' : `${prop}: ` + ((''+v||'').match(/[^0-9]$/) ? v : `${v}px`) + ';',
     fixCssLine: css => css.indexOf('/n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css,
-    ctxDictOfElem: elem => (!jb.frame.isWorker && elem.getAttribute('worker') ? jb.ui.workers[elem.getAttribute('worker')] : jb).ctxDictionary,
+    ctxDictOfElem: elem => (!(jb.frame.isWorker && jb.frame.isWorker()) && elem.getAttribute('worker') ? jb.ui.workers[elem.getAttribute('worker')] : jb).ctxDictionary,
     ctxOfElem: (elem,att) => elem && elem.getAttribute && jb.ui.ctxDictOfElem(elem)[elem.getAttribute(att || 'jb-ctx')],
     preserveCtx(ctx) {
         jb.ctxDictionary[ctx.id] = ctx
@@ -1965,7 +1965,7 @@ Object.assign(jb.ui,{
         return el._component || this.parentCmps(el)[0]
     },
     document(ctx) {
-        if (jb.frame.isWorker)
+        if (jb.frame.isWorker && jb.frame.isWorker(ctx))
             return jb.ui.widgets[ctx.vars.widgetId].top
         return ctx.vars.elemToTest || ctx.frame().document
     },
@@ -2102,7 +2102,7 @@ jb.objectDiff = function(newObj, orig) {
     if (orig === newObj) return {}
     if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
     const deletedValues = Object.keys(orig).reduce((acc, key) =>
-        newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: jb.frame.isWorker ? '__undefined' : undefined}
+        newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: jb.frame.isWorker && jb.frame.isWorker() ? '__undefined' : undefined}
     , {})
 
     return Object.keys(newObj).reduce((acc, key) => {

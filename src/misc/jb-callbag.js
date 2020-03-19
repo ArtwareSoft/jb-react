@@ -67,8 +67,7 @@ jb.callbag = {
         })
     },
     pipe(..._cbs) {
-        const cbs = _cbs.filter(x=>x).filter(x=>jb.callbag.fromAny(x))
-
+        const cbs = _cbs.filter(x=>x)
         if (!cbs[0]) return
         let res = cbs[0]
         for (let i = 1, n = cbs.length; i < n; i++) res = cbs[i](res)

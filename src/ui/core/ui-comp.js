@@ -71,8 +71,8 @@ class JbComponent {
         const interactive = (this.interactiveProp||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx)}`).join(',')
         const originators = this.originators.map(ctx=>ui.preserveCtx(ctx)).join(',')
 
-        const atts = jb.frame.workerId ? 
-            { worker: jb.frame.workerId, 'cmp-id': this.cmpId, ...(handlers && {handlers}) } : 
+        const workerId = jb.frame.workerId && jb.frame.workerId(this.ctx)
+        const atts =  workerId ? { worker: workerId, 'cmp-id': this.cmpId, ...(handlers && {handlers}) } : 
             Object.assign(vdom.attributes || {}, {
                 'jb-ctx': ui.preserveCtx(this.originatingCtx()),
                 'cmp-id': this.cmpId, 
@@ -98,7 +98,7 @@ class JbComponent {
                 handlers && {handlers}, 
                 originators && {originators},
                 this.ctxForPick && { 'pick-ctx': ui.preserveCtx(this.ctxForPick) },
-                jb.frame.workerId && { 'worker': jb.frame.workerId },
+                workerId && { 'worker': workerId },
                 (this.componentDidMountFuncs || interactive) && {interactive}, 
                 this.renderProps.cmpHash != null && {cmpHash: this.renderProps.cmpHash}
             )
@@ -121,7 +121,8 @@ class JbComponent {
         const cssLines = (this.staticCssLines || []).concat((this.dynamicCss || [])
             .map(dynCss=>dynCss(this.calcCtx))).filter(x=>x)
         const cssKey = cssLines.join('\n')
-        const classPrefix = jb.frame.isWorker ? 'w'+frame.workerId : 'jb-'
+        const workerId = jb.frame.workerId && jb.frame.workerId(this.ctx)
+        const classPrefix = workerId ? 'w'+ workerId : 'jb-'
         if (!cssKey) return ''
         if (!cssSelectors_hash[cssKey]) {
             cssId++;

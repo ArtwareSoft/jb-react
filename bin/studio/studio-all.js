@@ -2440,8 +2440,7 @@ jb.callbag = {
         })
     },
     pipe(..._cbs) {
-        const cbs = _cbs.filter(x=>x).filter(x=>jb.callbag.fromAny(x))
-
+        const cbs = _cbs.filter(x=>x)
         if (!cbs[0]) return
         let res = cbs[0]
         for (let i = 1, n = cbs.length; i < n; i++) res = cbs[i](res)
@@ -3909,7 +3908,7 @@ function mountInteractive(elem, keepState) {
     elem._component = mountedCmp
     mountedCmp.recalcPropsFromElem()
 
-    jb.unique(cmp.eventObservables)
+    jb.unique(cmp.eventObservables||[])
         .forEach(op => mountedCmp[op] = jb.ui.fromEvent(mountedCmp,op.slice(2),elem))
 
     ;(cmp.componentDidMountFuncs||[]).forEach(f=> tryWrapper(() => f(mountedCmp), 'componentDidMount'))
@@ -3991,8 +3990,8 @@ class JbComponent {
         const interactive = (this.interactiveProp||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx)}`).join(',')
         const originators = this.originators.map(ctx=>ui.preserveCtx(ctx)).join(',')
 
-        const atts = jb.frame.workerId ? 
-            { worker: jb.frame.workerId, 'cmp-id': this.cmpId, ...(handlers && {handlers}) } : 
+        const workerId = jb.frame.workerId && jb.frame.workerId(this.ctx)
+        const atts =  workerId ? { worker: workerId, 'cmp-id': this.cmpId, ...(handlers && {handlers}) } : 
             Object.assign(vdom.attributes || {}, {
                 'jb-ctx': ui.preserveCtx(this.originatingCtx()),
                 'cmp-id': this.cmpId, 
@@ -4018,7 +4017,7 @@ class JbComponent {
                 handlers && {handlers}, 
                 originators && {originators},
                 this.ctxForPick && { 'pick-ctx': ui.preserveCtx(this.ctxForPick) },
-                jb.frame.workerId && { 'worker': jb.frame.workerId },
+                workerId && { 'worker': workerId },
                 (this.componentDidMountFuncs || interactive) && {interactive}, 
                 this.renderProps.cmpHash != null && {cmpHash: this.renderProps.cmpHash}
             )
@@ -4041,7 +4040,8 @@ class JbComponent {
         const cssLines = (this.staticCssLines || []).concat((this.dynamicCss || [])
             .map(dynCss=>dynCss(this.calcCtx))).filter(x=>x)
         const cssKey = cssLines.join('\n')
-        const classPrefix = jb.frame.isWorker ? 'w'+frame.workerId : 'jb-'
+        const workerId = jb.frame.workerId && jb.frame.workerId(this.ctx)
+        const classPrefix = workerId ? 'w'+ workerId : 'jb-'
         if (!cssKey) return ''
         if (!cssSelectors_hash[cssKey]) {
             cssId++;
@@ -4188,7 +4188,7 @@ Object.assign(jb.ui,{
     withUnits: v => (v === '' || v === undefined) ? '' : (''+v||'').match(/[^0-9]$/) ? v : `${v}px`,
     propWithUnits: (prop,v) => (v === '' || v === undefined) ? '' : `${prop}: ` + ((''+v||'').match(/[^0-9]$/) ? v : `${v}px`) + ';',
     fixCssLine: css => css.indexOf('/n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css,
-    ctxDictOfElem: elem => (!jb.frame.isWorker && elem.getAttribute('worker') ? jb.ui.workers[elem.getAttribute('worker')] : jb).ctxDictionary,
+    ctxDictOfElem: elem => (!(jb.frame.isWorker && jb.frame.isWorker()) && elem.getAttribute('worker') ? jb.ui.workers[elem.getAttribute('worker')] : jb).ctxDictionary,
     ctxOfElem: (elem,att) => elem && elem.getAttribute && jb.ui.ctxDictOfElem(elem)[elem.getAttribute(att || 'jb-ctx')],
     preserveCtx(ctx) {
         jb.ctxDictionary[ctx.id] = ctx
@@ -4213,7 +4213,7 @@ Object.assign(jb.ui,{
         return el._component || this.parentCmps(el)[0]
     },
     document(ctx) {
-        if (jb.frame.isWorker)
+        if (jb.frame.isWorker && jb.frame.isWorker(ctx))
             return jb.ui.widgets[ctx.vars.widgetId].top
         return ctx.vars.elemToTest || ctx.frame().document
     },
@@ -4350,7 +4350,7 @@ jb.objectDiff = function(newObj, orig) {
     if (orig === newObj) return {}
     if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
     const deletedValues = Object.keys(orig).reduce((acc, key) =>
-        newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: jb.frame.isWorker ? '__undefined' : undefined}
+        newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: jb.frame.isWorker && jb.frame.isWorker() ? '__undefined' : undefined}
     , {})
 
     return Object.keys(newObj).reduce((acc, key) => {
@@ -35383,12 +35383,16 @@ jb.component('studio.select-style', { /* studio.selectStyle */
       ),
       genericControl: group({
         controls: [
-          ctx => ctx.run(ctx.exp('%$__option%')),
+          ctx => {
+              const previewCtx = jb.studio.closestCtxInPreview(ctx.exp('%$targetPath%'))
+              return (new jb.studio.previewjb.jbCtx()).ctx(previewCtx).run(ctx.exp('%$__option%'))
+          },
           button({
             title: 'select (%$__option/length%)',
             action: runActions(
-              writeValue(studio.ref('%$targetPath%~style'), '%$__option/style%'),
-              dialog.closeContainingPopup()
+                Var('styleSuffix', If(equals('%$__option/style/$%','group'),'','~style')),
+                writeValue(studio.ref('%$targetPath%%$styleSuffix%'), '%$__option/style%'),
+                dialog.closeContainingPopup()
             ),
             features: css('position: absolute; top: 0; left: 30px;')
           })
@@ -35507,73 +35511,48 @@ jb.ui.stylePatterns = {
     },
     group(extractedCtrl, target) {
         const targetContent = flatContent(target,'')
-        const content = flatContent(extractedCtrl,'')
-        const params = ['button','image','text'].flatMap(type=> content.filter(x=>x.ctrl.$ == type).map((elem,i)=>(
-            { id: idOfCtrl(elem.ctrl) || `${type}${i}`, origValue: elem.ctrl, type} )))
-    },
-    group(extractedCtrl, target) {
-        const targetContent = flatContent(target,'')
-        const params = ['button','image','text'].flatMap(type=> targetContent.filter(x=>x.ctrl.$ == type).map((elem,i)=>(
-            { id: idOfCtrl(elem.ctrl) || `${type}${i}`, origValue: elem.ctrl, type} )))
+        const srcContent = flatContent(extractedCtrl,'')
+        const types = ['button','image','text']
+        const srcParams = types.flatMap(type=> srcContent.filter(x=>x.ctrl.$ == type).map((elem,i)=>(
+            { id: `${type}${i}`, origValue: elem.ctrl, type, path: elem.path} )))
+        const srcParamsMap = jb.objFromEntries(srcParams.map(p=>[p.id,p]))
+        const trgParams = types.flatMap(type=> targetContent.filter(x=>x.ctrl.$ == type).map((elem,i)=>(
+            { id: `${type}${i}`, origValue: elem.ctrl, type, path: elem.path} )))
+        const trgParamsMap = jb.objFromEntries(trgParams.map(p=>[p.id,p]))
+        const _permutations = types.map(type => permutations(srcParams.filter(x=>x.type == type).map(p=>p.id), trgParams.filter(x=>x.type == type).map(p=>p.id)))
+        const rawOptions = combinations(_permutations.filter(x=>x.length)).map(comb => comb.split(';')
+            .map(match=> ({ src: srcParamsMap[match.split('-')[0]], trg: trgParamsMap[match.split('-')[1]] })))
 
-        const content = flatContent(extractedCtrl,'')
-        // parents of images that have also text
-        const parentGroups = jb.unique(content.filter(x=>x.ctrl.$ == 'image').flatMap(x=>parents(x.path)))
-            .filter(path=>hasText(path))
-            .slice(-1) // TODO: remove
-        const options = parentGroups.flatMap(top => {
-            const matches = ['button','image','text'].map(type=>{
-                const draggedElemsOfType = content.filter(x=> x.ctrl.$ == type && x.path.indexOf(top) == 0)
-                return permutations(params.filter(p=> p.type == type),draggedElemsOfType).filter(x => x.length)
-            })
-            return combinations(matches.filter(x => x.length))
-                .filter(x => x.length).map(matches=>matchesToOption(matches,top))
-        })
-        return {params, options}
+        const options = rawOptions.map(matches => matchesToOption(matches,''))
+        return {params: trgParams, options}
 
-        // returns all matches between the params and the dragElems
-        // E.g. [ [ {param1, draggedElem1 }, {param2, draggedElem2 }], [{param1, draggedElem2 }, {param2, draggedElem1 }] ] ]
-        // result type [matches] when matches = [match], match: { param, draggedElem }
-        function permutations(params,draggedElems) {
-            if (params.length == 0 || draggedElems.length == 0) return [[]]
-            if (params.length == 1)
-                return [draggedElems.map(draggedElem=>({draggedElem, param: params[0]}))]
-            // match first param with all dragged Elems and combine with the other params/elems recursevely
-            return draggedElems.flatMap( (draggedElem,i)=> {
-                    const resultWithoutFirstParam = permutations(params.slice(1),[...draggedElems.slice(0,i),...draggedElems.slice(i+1) ] )
-                    return resultWithoutFirstParam.map(matches => matches.map(match=> [...match, {draggedElem, param: params[0]}]))
-                }
-            ).filter(x => x.length)
+        function permutations(srcIds,trgIds) {
+            return srcIds.flatMap( (srcId,srcI) => trgIds.flatMap( (trgId,trgI) => {
+                    const resultWithoutPair = permutations([...srcIds.slice(0,srcI),...srcIds.slice(srcI+1) ], 
+                        [...trgIds.slice(0,trgI),...trgIds.slice(trgI+1) ] )
+                    return [...resultWithoutPair,`${srcId}-${trgId}`]
+            }))
         }
-        // returns all combinations of the matches
-        // input [[matchText1, matchText2],[matchImage1, matchImage2],[matchBtn1, matchBtn2] ] 
-        //   => [[...matchText1,...matchImage1,...matchBtn1], [...matchText2,...matchImage1, ...matchBtn1], .. 2*2*2
-        // result is [matches] when matches = [match], match: { param, draggedElem }
         function combinations(arrOfMatches) {
-            if (arrOfMatches.length == 1) return arrOfMatches[0].map(match=>[match])
-            const innerCombinations = combinations(arrOfMatches.slice(1))
-            return arrOfMatches[0].flatMap(match=> innerCombinations.map(matches=>[match,...matches]))
+            if (arrOfMatches.length == 0) return []
+            if (arrOfMatches.length == 1) return arrOfMatches[0]
+            return arrOfMatches[0].flatMap(m1 => combinations(arrOfMatches.slice(1)).map(m2 =>`${m1};${m2}`))
         }
 
         function matchesToOption(matches,top) {
             const boundedCtrl = JSON.parse(JSON.stringify(extractedCtrl))
             const paramValues = {}
             matches.forEach(match => {
-                const overridePath = [...match.option.path.split('/'), paramProps[match.param.type]] 
+                const paramProp = paramProps[match.trg.type]
+                const overridePath = [...match.src.path.split('/'), paramProp] 
                 const draggedValue = jb.path(boundedCtrl,overridePath)
-                paramValues[match.param.id] = {overridePath, draggedValue}
-                jb.path(boundedCtrl,overridePath,match.param.origValue) // set value
+                paramValues[match.trg.id] = {overridePath, draggedValue}
+                jb.path(boundedCtrl,overridePath, match.trg.origValue[paramProp]) // set value
             })
             const ctrl = pathToObj(boundedCtrl, top)
-            return {...styleByControl(ctrl,''), _patternInfo: { top, paramValues } }
+            return {...ctrl, _patternInfo: { top, paramValues }, features: [...jb.asArray(target.features),...jb.asArray(ctrl.features)] }
         }
-        function hasText(path) {
-            return content.filter(x=>x.path.indexOf(path) == 0 && x.ctrl.$ == 'text')[0]
-        }
-        function idOfCtrl(ctrl) {
-            return ctrl && (ctrl.features||[]).filter(f=>f.$ == 'id').map(f=>f.id)[0]
-        }
-    }
+    },
 }
 
 })();

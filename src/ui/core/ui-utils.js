@@ -23,7 +23,7 @@ Object.assign(jb.ui,{
     withUnits: v => (v === '' || v === undefined) ? '' : (''+v||'').match(/[^0-9]$/) ? v : `${v}px`,
     propWithUnits: (prop,v) => (v === '' || v === undefined) ? '' : `${prop}: ` + ((''+v||'').match(/[^0-9]$/) ? v : `${v}px`) + ';',
     fixCssLine: css => css.indexOf('/n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css,
-    ctxDictOfElem: elem => (!jb.frame.isWorker && elem.getAttribute('worker') ? jb.ui.workers[elem.getAttribute('worker')] : jb).ctxDictionary,
+    ctxDictOfElem: elem => (!(jb.frame.isWorker && jb.frame.isWorker()) && elem.getAttribute('worker') ? jb.ui.workers[elem.getAttribute('worker')] : jb).ctxDictionary,
     ctxOfElem: (elem,att) => elem && elem.getAttribute && jb.ui.ctxDictOfElem(elem)[elem.getAttribute(att || 'jb-ctx')],
     preserveCtx(ctx) {
         jb.ctxDictionary[ctx.id] = ctx
@@ -48,7 +48,7 @@ Object.assign(jb.ui,{
         return el._component || this.parentCmps(el)[0]
     },
     document(ctx) {
-        if (jb.frame.isWorker)
+        if (jb.frame.isWorker && jb.frame.isWorker(ctx))
             return jb.ui.widgets[ctx.vars.widgetId].top
         return ctx.vars.elemToTest || ctx.frame().document
     },
@@ -185,7 +185,7 @@ jb.objectDiff = function(newObj, orig) {
     if (orig === newObj) return {}
     if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
     const deletedValues = Object.keys(orig).reduce((acc, key) =>
-        newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: jb.frame.isWorker ? '__undefined' : undefined}
+        newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: jb.frame.isWorker && jb.frame.isWorker() ? '__undefined' : undefined}
     , {})
 
     return Object.keys(newObj).reduce((acc, key) => {
