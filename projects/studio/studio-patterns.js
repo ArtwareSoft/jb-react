@@ -42,7 +42,12 @@ jb.component('studio.select-style', { /* studio.selectStyle */
         controls: [
           ctx => {
               const previewCtx = jb.studio.closestCtxInPreview(ctx.exp('%$targetPath%'))
-              return (new jb.studio.previewjb.jbCtx()).ctx(previewCtx).run(ctx.exp('%$__option%'))
+              const res = (new jb.studio.previewjb.jbCtx()).ctx(previewCtx)
+                .setVar('$runAsWorker','preview')
+                .setVar('widgetId',ctx.id)
+                .run(ctx.exp('%$__option%'))
+              //jb.ui.workerStyleElems.preview
+              return res
           },
           button({
             title: 'select (%$__option/length%)',

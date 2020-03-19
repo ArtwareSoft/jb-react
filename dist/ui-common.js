@@ -1805,7 +1805,7 @@ class JbComponent {
                 return fixed_selector + ' { ' + selectorPlusExp.split('{')[1];
             }).join('\n');
             const remark = `/*style: ${ctx.profile.style && ctx.profile.style.$}, path: ${ctx.path}*/\n`;
-            ui.addStyleElem(remark + cssStyle)
+            ui.addStyleElem(remark + cssStyle,workerId)
         }
         const jbClass = `${classPrefix}${cssSelectors_hash[cssKey]}`
         if (!this.dynamicCss)
@@ -1940,7 +1940,14 @@ Object.assign(jb.ui,{
     withUnits: v => (v === '' || v === undefined) ? '' : (''+v||'').match(/[^0-9]$/) ? v : `${v}px`,
     propWithUnits: (prop,v) => (v === '' || v === undefined) ? '' : `${prop}: ` + ((''+v||'').match(/[^0-9]$/) ? v : `${v}px`) + ';',
     fixCssLine: css => css.indexOf('/n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css,
-    ctxDictOfElem: elem => (!(jb.frame.workerId && jb.frame.workerId()) && elem.getAttribute('worker') ? jb.ui.workers[elem.getAttribute('worker')] : jb).ctxDictionary,
+    ctxDictOfElem: elem => {
+      const runningWorkerId = jb.frame.workerId && jb.frame.workerId()
+      const workerIdAtElem = elem.getAttribute('worker')
+      const _jb = workerIdAtElem == 'preview' ? jb.studio.previewjb 
+        : !runningWorkerId && workerIdAtElem ? jb.ui.workers[elem.getAttribute('worker')] 
+        : jb
+      return _jb.ctxDictionary
+    },
     ctxOfElem: (elem,att) => elem && elem.getAttribute && jb.ui.ctxDictOfElem(elem)[elem.getAttribute(att || 'jb-ctx')],
     preserveCtx(ctx) {
         jb.ctxDictionary[ctx.id] = ctx
@@ -2041,10 +2048,16 @@ Object.assign(jb.ui, {
         elem.innerHTML = html;
         el.appendChild(elem.firstChild)
     },
-    addStyleElem(innerHtml) {
+    addStyleElem(innerHtml,workerId) {
+      if (workerId) {
+        jb.ui.workerStyleElems = jb.ui.workerStyleElems || {}
+        jb.ui.workerStyleElems[workerId] = jb.ui.workerStyleElems[workerId] || []
+        jb.ui.workerStyleElems[workerId].push(innerHtml)
+      } else {
         const style_elem = document.createElement('style');
         style_elem.innerHTML = innerHtml;
         document.head.appendChild(style_elem);
+      }
     }
 })
 

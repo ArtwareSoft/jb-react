@@ -134,7 +134,7 @@ class JbComponent {
                 return fixed_selector + ' { ' + selectorPlusExp.split('{')[1];
             }).join('\n');
             const remark = `/*style: ${ctx.profile.style && ctx.profile.style.$}, path: ${ctx.path}*/\n`;
-            ui.addStyleElem(remark + cssStyle)
+            ui.addStyleElem(remark + cssStyle,workerId)
         }
         const jbClass = `${classPrefix}${cssSelectors_hash[cssKey]}`
         if (!this.dynamicCss)
