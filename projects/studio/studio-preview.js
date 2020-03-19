@@ -68,6 +68,8 @@ st.initPreview = function(preview_window,allowedTypes) {
       jb.exp('%$studio/settings/activateWatchRefViewer%','boolean') && st.activateWatchRefViewer();
       jb.exec(writeValue('%$studio/projectSettings%',() => preview_window.jbProjectSettings))
 
+      st.previewWindow.workerId = ctx => ctx.vars.$runAsWorker
+
 			fixInvalidUrl()
 
 			function fixInvalidUrl() {

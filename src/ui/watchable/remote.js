@@ -111,7 +111,7 @@ jb.ui.deserializeCtxStore = function(storeAsJson) {
 
 let messageCounter = 1;
 
-if (jb.frame.isWorker && jb.frame.isWorker()) 
+if (jb.frame.workerId && jb.frame.workerId()) 
     Object.assign(jb.ui, {
         _stylesToAdd: [],
         widgets: {},
@@ -148,7 +148,6 @@ function createWorker(workerId) {
     }
     const workerCode = `
     self.workerId = () => ${workerId}
-    self.isWorker = () => true
     importScripts('http://${location.host}/dist/jb-react-all.js')
     self.onmessage= ${workerReceive.toString()}`
     const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: 'application/javascript'})));
