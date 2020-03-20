@@ -87,30 +87,13 @@ jb.component('studio.suggested-styles', {
     impl: (ctx,extractedCtrl,targetPath) => {
         const constraints = ctx.exp('%$studio/pattern/constraints%') || []
         const target = jb.studio.valOfPath(targetPath)
-        const {params, options} = jb.ui.stylePatterns[target.$] && jb.ui.stylePatterns[target.$](extractedCtrl,target) || {}
+        const previewCtx = jb.studio.closestCtxInPreview(ctx.exp('%$targetPath%'))
+        const {params, options} = jb.ui.stylePatterns[target.$] && jb.ui.stylePatterns[target.$](extractedCtrl,target,previewCtx) || {}
         if (!params) return []
-        const previewCtx = jb.studio.closestCtxInPreview(ctx.exp('%$targetPath%')).ctx
-        return options.filter(x => checkConstraints(x)).map(x=>mark(x)).sort((x,y) => y.mark - x.mark)
+        return options
 
         function checkConstraints(option) {
             return constraints.reduce((res,cons) => res && cons.match(option),true)
-        }
-
-        function mark(option) {
-            const mark = params.reduce((res,p) => res + paramDiff(p),0)
-            return {...option, mark}
-
-            function paramDiff(param) {
-                if (param.type == 'text') {
-                    const origValue = previewCtx && previewCtx.run(param.origValue) || ''
-                    const draggedValue = option._patternInfo.paramValues[param.id].draggedValue || ''
-                    return Math.abs(origValue.length - draggedValue.length)
-                }
-                if (param.type == 'image') {
-                    // todo image size
-                }
-                return 0
-            }
         }
     }        
 })
@@ -171,34 +154,85 @@ jb.ui.stylePatterns = {
         })
         return {params, options}
     },
-    group(extractedCtrl, target) {
+    group(extractedCtrl, target, previewCtx) {
+        const top = document.createElement('div')
+        jb.ui.renderWidget(extractedCtrl,top)
+        document.body.appendChild(top)
         const targetContent = flatContent(target,'')
         const srcContent = flatContent(extractedCtrl,'')
-        const types = ['button','image','text']
+        const types = ['text','button','image']
         const srcParams = types.flatMap(type=> srcContent.filter(x=>x.ctrl.$ == type).map((elem,i)=>(
-            { id: `${type}${i}`, origValue: elem.ctrl, type, path: elem.path} )))
+            { id: `${type}${i}`, origValue: elem.ctrl, type, path: elem.path, dVal: distanceVal(elem.path, window, top)} )))
         const srcParamsMap = jb.objFromEntries(srcParams.map(p=>[p.id,p]))
         const trgParams = types.flatMap(type=> targetContent.filter(x=>x.ctrl.$ == type).map((elem,i)=>(
-            { id: `${type}${i}`, origValue: elem.ctrl, type, path: elem.path} )))
+            { id: `${type}${i}`, origValue: elem.ctrl, type, path: elem.path, dVal: distanceVal(elem.path, jb.studio.previewWindow) } )))
         const trgParamsMap = jb.objFromEntries(trgParams.map(p=>[p.id,p]))
-        const _permutations = types.map(type => permutations(srcParams.filter(x=>x.type == type).map(p=>p.id), trgParams.filter(x=>x.type == type).map(p=>p.id)))
+        const _permutations = types.map(type => mixedPermutations(type, srcParams.filter(x=>x.type == type).map(p=>p.id), trgParams.filter(x=>x.type == type).map(p=>p.id)))
         const rawOptions = combinations(_permutations.filter(x=>x.length)).map(comb => comb.split(';')
             .map(match=> ({ src: srcParamsMap[match.split('-')[0]], trg: trgParamsMap[match.split('-')[1]] })))
+        
+        document.body.removeChild(top)
 
         const options = rawOptions.map(matches => matchesToOption(matches,''))
         return {params: trgParams, options}
 
-        function permutations(srcIds,trgIds) {
-            return srcIds.flatMap( (srcId,srcI) => trgIds.flatMap( (trgId,trgI) => {
-                    const resultWithoutPair = permutations([...srcIds.slice(0,srcI),...srcIds.slice(srcI+1) ], 
-                        [...trgIds.slice(0,trgI),...trgIds.slice(trgI+1) ] )
-                    return [...resultWithoutPair,`${srcId}-${trgId}`]
-            }))
+        function mixedPermutations(type, srcIds, trgIds) {
+            return jb.unique([bestPermutation(type, srcIds, trgIds),
+                sameOrderPermutation(type, srcIds, trgIds),
+                randomPermutation(type, srcIds, trgIds)
+            ])
         }
+
+        function sameOrderPermutation(type, srcIds, trgIds) {
+            const minSize = Math.min(srcIds.length,trgIds.length)
+            return srcIds.slice(0,minSize).map((srcId,i)=>`${srcId}-${trgIds[i]}`).join(';')
+        }
+
+        function randomPermutation(type, srcIds, trgIds) {
+            if (srcIds.length == 0 || trgIds.length == 0) return ''
+            const iSrc = Math.floor(Math.random()*srcIds.length)
+            const iTrg = Math.floor(Math.random()*trgIds.length)
+            const randomPair = {iSrc, iTrg, pair: `${srcIds[iSrc]}-${trgIds[iTrg]}`, }
+
+            const resultWithoutPair = randomPermutation(type, [...srcIds.slice(0,randomPair.iSrc),...srcIds.slice(randomPair.iSrc+1) ], 
+                [...trgIds.slice(0,randomPair.iTrg),...trgIds.slice(randomPair.iTrg+1) ] )
+            return [randomPair.pair,resultWithoutPair].filter(x=>x).join(';')
+        }
+
+        function bestPermutation(type, srcIds, trgIds) {
+            const bestPair = srcIds.flatMap((srcId,iSrc) => trgIds.flatMap((trgId,iTrg) => 
+                    ({iSrc, iTrg, pair: `${srcId}-${trgId}`, distance: distance(srcParamsMap[srcId].dVal , trgParamsMap[trgId].dVal) } )))
+                    .sort((x,y) => y-x)[0]
+            if (!bestPair) return ''
+
+            const resultWithoutPair = bestPermutation(type, [...srcIds.slice(0,bestPair.iSrc),...srcIds.slice(bestPair.iSrc+1) ], 
+                [...trgIds.slice(0,bestPair.iTrg),...trgIds.slice(bestPair.iTrg+1) ] )
+            return [bestPair.pair,resultWithoutPair].filter(x=>x).join(';')
+
+            function distance(x1,x2) {
+                if (type == 'text')
+                    return Math.abs(x1.fontSize - x2.fontSize)
+                if (type == 'image')
+                    return (Math.abs(x1.width - x2.width) + 2) * (Math.abs(x1.height - x2.height) + 2)
+                if (type == 'button')
+                    return x1.tag == x2.tag ? 0 : 1
+            }
+        }
+        function distanceVal(path, win, top) {
+            const prefix = top ? 'group~impl~' : previewCtx.ctx.path + '~'
+            const pathToCheck = (prefix + path).replace(/\//g,'~')
+            const elem = Array.from((top || win.document).querySelectorAll('[jb-ctx]'))
+                .map(elem=>({elem, ctx: win.jb.ctxDictionary[elem.getAttribute('jb-ctx')]}))
+                .filter(e => e.ctx && e.ctx.path == pathToCheck).map(e=>e.elem)[0]
+            if (!elem) return {}
+            const style = getComputedStyle(elem)
+            return { tag: elem.tagName, width: elem.offsetWidth, height: elem.offsetHeight, fontSize: +style.fontSize.match(/([0-9\.]+)/)[1] }
+        }
+
         function combinations(arrOfMatches) {
             if (arrOfMatches.length == 0) return []
             if (arrOfMatches.length == 1) return arrOfMatches[0]
-            return arrOfMatches[0].flatMap(m1 => combinations(arrOfMatches.slice(1)).map(m2 =>`${m1};${m2}`))
+            return arrOfMatches[0].flatMap(m1 => combinations(arrOfMatches.slice(1)).map(m2 => [m1,m2].filter(x=>x).join(';')))
         }
 
         function matchesToOption(matches,top) {
@@ -213,6 +247,14 @@ jb.ui.stylePatterns = {
             })
             const ctrl = pathToObj(boundedCtrl, top)
             return {...ctrl, _patternInfo: { top, paramValues }, features: [...jb.asArray(target.features),...jb.asArray(ctrl.features)] }
+        }
+
+        function allPermutations(type, srcIds,trgIds) {
+            return srcIds.flatMap( (srcId,srcI) => trgIds.flatMap( (trgId,trgI) => {
+                    const resultWithoutPair = permutations([...srcIds.slice(0,srcI),...srcIds.slice(srcI+1) ], 
+                        [...trgIds.slice(0,trgI),...trgIds.slice(trgI+1) ] )
+                    return [`${srcId}-${trgId}`, ...resultWithoutPair]
+            }))
         }
     },
 }

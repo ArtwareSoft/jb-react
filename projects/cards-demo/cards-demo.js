@@ -61,7 +61,14 @@ jb.component('cards-demo.phone', { /* cardsDemo.phone */
       group({
         controls: [
           text({text: '%title%', title: 'my title'}),
-          image({url: '%image%', width: '200', height: '200'})
+          image({url: '%image%', width: '200', height: '200'}),
+          group({
+            layout: layout.horizontal('20'),
+            controls: [
+              text({text: '%hits% hits', title: 'hits'}),
+              text({text: '%Technology%', title: 'technology'})
+            ]
+          })
         ],
         features: group.data({data: '%$phones[0]%', itemVariable: ''})
       })
