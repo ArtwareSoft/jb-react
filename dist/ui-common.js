@@ -1414,8 +1414,7 @@ function setAtt(elem,att,val) {
         elem.removeAttribute(att)
         jb.log('htmlChange',['remove',...arguments])
     } else if (att === 'checked' && elem.tagName.toLowerCase() === 'input') {
-        if (val === true)
-            elem.checked = true
+        elem.checked = !!val
         jb.log('htmlChange',['checked',...arguments])
     } else if (att === '$text') {
         elem.innerText = val || ''
@@ -2379,6 +2378,7 @@ jb.component('variable', { /* variable */
   ],
   impl: ({}, name, value, watchable) => ({
     destroy: cmp => {
+      if (!watchable) return
       const fullName = name + ':' + cmp.cmpId;
       cmp.ctx.run(writeValue(`%$${fullName}%`,null))
     },
@@ -2483,7 +2483,7 @@ jb.component('feature.keyboard-shortcut', { /* feature.keyboardShortcut */
   ],
   impl: (ctx,key,action) => ({
       afterViewInit: cmp => {
-        jb.callbag.forEach(jb.ui.fromEvent(cmp,'keydown',cmp.base.ownerDocument))(event=>{
+        jb.subscribe(jb.ui.fromEvent(cmp,'keydown',cmp.base.ownerDocument), event=>{
               const keyStr = key.split('+').slice(1).join('+');
               const keyCode = keyStr.charCodeAt(0);
               if (key == 'Delete') keyCode = 46;
@@ -3448,7 +3448,7 @@ jb.component('field.keyboard-shortcut', { /* field.keyboardShortcut */
     (ctx,{cmp},{key,action}) => {
         const elem = cmp.base.querySelector('input') || cmp.base
         if (elem.tabIndex === undefined) elem.tabIndex = -1
-        jb.callbag.forEach(jb.ui.fromEvent(cmp,'keydown',elem))(event=>{
+        jb.subscribe(jb.ui.fromEvent(cmp,'keydown',elem),event=>{
               const keyStr = key.split('+').slice(1).join('+');
               const keyCode = keyStr.charCodeAt(0);
               if (key == 'Delete') keyCode = 46;
@@ -3653,6 +3653,7 @@ jb.component('editable-boolean', { /* editableBoolean */
   ],
   impl: ctx => jb.ui.ctrl(ctx, features(
     calcProp('text',data.if('%$$model/databind%','%$$model/textForTrue%','%$$model/textForFalse%' )),
+    watchRef('%$$model/databind%'),
     defHandler('toggle', writeValue('%$$model/databind%',not('%$$model/databind%'))),
     defHandler('setChecked', writeValue('%$$model/databind%','true')),
 		))
@@ -3661,7 +3662,7 @@ jb.component('editable-boolean', { /* editableBoolean */
 jb.component('editable-boolean.keyboard-support', { /* editableBoolean.keyboardSupport */
   type: 'feature',
   impl: feature.onEvent({
-    event: 'click',
+    event: 'keypress',
     action: action.if(
       () => event.keyCode == 37 || event.keyCode == 39,
       writeValue('%$$model/databind%', not('%$$model/databind%'))
@@ -3882,11 +3883,10 @@ jb.component('dialog-feature.onClose', { /* dialogFeature.onClose */
   params: [
     {id: 'action', type: 'action', dynamic: true}
   ],
-  impl: (ctx,action) => {
-	const {pipe,filter,subscribe,take} = jb.callbag
-	return pipe(ctx.vars.$dialog.em,
-		filter(e => e.type == 'close'), take(1), subscribe(e=> action(ctx.setData(e.OK)))
-	)}
+  impl: interactive( (ctx,{$dialog},{action}) => {
+		const {pipe,filter,subscribe,take} = jb.callbag
+		pipe($dialog.em, filter(e => e.type == 'close'), take(1), subscribe(e=> action(ctx.setData(e.OK)))
+	)})
 })
 
 jb.component('dialog-feature.close-when-clicking-outside', { /* dialogFeature.closeWhenClickingOutside */
@@ -6620,7 +6620,7 @@ jb.component('property-sheet.titles-above', { /* propertySheet.titlesAbove */
 jb.component('editable-boolean.checkbox', { /* editableBoolean.checkbox */
   type: 'editable-boolean.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('input', { type: 'checkbox', checked: state.databind, onchange: 'setChecked', onkeyup: 'setChecked'  }),
+    template: (cmp,state,h) => h('input', { type: 'checkbox', checked: state.databind, onchange: 'toggle', onkeyup: 'toggle'  }),
     features: field.databind()
   })
 })
@@ -6629,7 +6629,21 @@ jb.component('editable-boolean.checkbox-with-title', { /* editableBoolean.checkb
   type: 'editable-boolean.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{}, [h('input', { type: 'checkbox',
-        checked: state.databind, onchange: 'setChecked', onkeyup: 'setChecked'  }), state.text]),
+        checked: state.databind, onchange: 'toggle', onkeyup: 'toggle'  }), state.text]),
+    features: field.databind()
+  })
+})
+
+jb.component('editable-boolean.checkbox-with-label', { /* editableBoolean.checkboxWithLabel */
+  type: 'editable-boolean.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{},[
+        h('input', { type: 'checkbox', id: "switch_"+state.fieldId,
+          checked: state.databind,
+          onchange: 'toggle',
+          onkeyup: 'toggle'  },),
+        h('label',{for: "switch_"+state.fieldId },state.text)
+    ]),
     features: field.databind()
   })
 })
@@ -6674,7 +6688,7 @@ jb.component('editable-boolean.mdc-slide-toggle', { /* editableBoolean.mdcSlideT
       h('div',{class: 'mdc-switch__thumb-underlay'},[
         h('div',{class: 'mdc-switch__thumb'},
           h('input', { type: 'checkbox', role: 'switch', class: 'mdc-switch__native-control', id: 'switch_' + state.fieldId,
-            checked: state.databind, onchange: 'setChecked' })),
+            checked: state.databind, onchange: 'toggle' })),
       ]),
       h('label',{for: 'switch_' + state.fieldId},state.text)
     ]),
@@ -6683,19 +6697,6 @@ jb.component('editable-boolean.mdc-slide-toggle', { /* editableBoolean.mdcSlideT
   })
 })
 
-jb.component('editable-boolean.checkbox-with-label', { /* editableBoolean.checkboxWithLabel */
-  type: 'editable-boolean.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{},[
-        h('input', { type: 'checkbox', id: "switch_"+state.fieldId,
-          checked: state.databind,
-          onchange: 'setChecked',
-          onkeyup: 'setChecked'  },),
-        h('label',{for: "switch_"+state.fieldId },state.text)
-    ]),
-    features: field.databind()
-  })
-})
 
 ;
 

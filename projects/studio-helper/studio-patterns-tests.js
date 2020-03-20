@@ -155,6 +155,150 @@ const extractedCtrlCard1 = group({
   })
 })
 
+const extractedCtrlCard2 = group({
+  title: 'div',
+  style: group.htmlTag(
+    'div'
+  ),
+  controls: [
+    group({
+      title: 'table',
+      style: group.htmlTag('table'),
+      controls: [
+        group({
+          title: 'tbody',
+          style: group.htmlTag('tbody'),
+          controls: [
+            group({
+              title: 'tr',
+              style: group.htmlTag('tr'),
+              controls: [
+                group({
+                  title: 'th',
+                  style: group.htmlTag('th'),
+                  controls: [
+                    text({
+                      text: 'Walt Disney',
+                      title: false,
+                      style: text.htmlTag('div'),
+                      features: [css.layout('display: inline'), css('')]
+                    })
+                  ],
+                  features: [
+                    css.layout('vertical-align: top;text-align: center'),
+                    css.typography('font-size: 15.4px;font-weight: bold'),
+                    css('')
+                  ]
+                })
+              ]
+            }),
+            group({
+              title: 'tr',
+              style: group.htmlTag('tr'),
+              controls: [
+                group({
+                  title: 'td',
+                  style: group.htmlTag('td'),
+                  controls: [
+                    group({
+                      title: 'a',
+                      style: group.htmlTag('a'),
+                      controls: [
+                        image({
+                          url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/Walt_Disney_1946.JPG/220px-Walt_Disney_1946.JPG',
+                          style: image.img(),
+                          features: [
+                            css.layout('vertical-align: middle'),
+                            css(''),
+                            htmlAttribute('width', '220'),
+                            htmlAttribute('height', '330')
+                          ]
+                        })
+                      ],
+                      features: [
+                        css.typography('text-decoration: underline'),
+                        css('color: rgb(250, 167, 0);background: none')
+                      ]
+                    }),
+                    text({text: 'Disney in 1946', title: false, style: text.htmlTag('div')})
+                  ],
+                  features: [css.layout('vertical-align: top;text-align: center'), css('')]
+                })
+              ]
+            }),
+            group({
+              title: 'tr',
+              style: group.htmlTag('tr'),
+              controls: [
+                text({
+                  text: 'Born',
+                  title: false,
+                  style: text.htmlTag('th'),
+                  features: [css.layout('vertical-align: top;text-align: left'), css('')]
+                }),
+                group({
+                  title: 'td',
+                  style: group.htmlTag('td'),
+                  controls: [
+                    text({
+                      text: 'Walter Elias Disney',
+                      title: false,
+                      style: text.htmlTag('div'),
+                      features: [css.layout('display: inline'), css('')]
+                    }),
+                    group({title: 'br', style: group.htmlTag('br')}),
+                    text({text: 'December 5, 1901', title: false, style: text.htmlTag('span')}),
+                    group({title: 'br', style: group.htmlTag('br')}),
+                    group({
+                      title: 'div',
+                      style: group.htmlTag('div'),
+                      controls: [
+                        button({
+                          title: 'Chicago',
+                          style: button.href(),
+                          features: [
+                            css.typography('text-decoration: none'),
+                            css('color: rgb(11, 0, 128);background: none')
+                          ]
+                        }),
+                        text({text: ',', title: false, style: text.htmlTag('span')}),
+                        text({text: ' ', title: false, style: text.htmlTag('span')}),
+                        button({
+                          title: 'Illinois',
+                          style: button.href(),
+                          features: [
+                            css.typography('text-decoration: none'),
+                            css('color: rgb(11, 0, 128);background: none')
+                          ]
+                        }),
+                        text({text: ', U.S.', title: false, style: text.htmlTag('span')})
+                      ],
+                      features: [css.layout('display: inline'), css('')]
+                    })
+                  ],
+                  features: [css.layout('vertical-align: top;text-align: left'), css('')]
+                })
+              ]
+            })
+          ]
+        })
+      ],
+      features: [
+        css.layout('text-align: start'),
+        css.width('22em'),
+        css.margin({top: '0.5em', right: '0', bottom: '0.5em', left: '1em'}),
+        css.padding({top: '0.2em', left: '0.2em', right: '0.2em', bottom: '0.2em'}),
+        css.typography(
+          'font-size: 12.32px;font-family: sans-serif;font-style: normal;font-variant-ligatures: normal;font-variant-caps: normal;font-weight: 400;text-indent: 0px;text-transform: none;-webkit-text-stroke-width: 0px;text-decoration-style: initial;text-decoration-color: initial'
+        ),
+        css(
+          'border: 1px solid rgb(162, 169, 177);border-spacing: 3px;background-color: rgb(248, 249, 250);color: black;clear: right;line-height: 1.5em;letter-spacing: normal;orphans: 2;white-space: normal;widows: 2;word-spacing: 0px'
+        )
+      ]
+    })
+  ]
+})
+
 jb.component('studio-test.drag-target-text', { 
   type: 'control',
   impl: text('paste here')
@@ -165,7 +309,8 @@ jb.component('studio-test.drag-target-card', {
   impl: group({
     controls: [
       text({text: '%title%', title: 'my title'}),
-      image({url: '%image%', width: '200', height: '200'})
+      image({url: '%image%', width: '200', height: '200'}),
+      text({text: '%hits% hits', title: 'hits'})
     ],
     features: group.data({data: '%$phones[0]%', itemVariable: ''})
   })
@@ -196,13 +341,63 @@ jb.component('patterns-test.select-style.text', {
   })
 })
 
-jb.component('patterns-test.select-style.card', { 
+jb.component('patterns-test.select-style.card1', { 
   impl: uiTest({
     vars: [
       Var('extractedCtrl',() => extractedCtrlCard1),
       Var('targetPath', 'studio-test.drag-target-card~impl'),
+      Var('top')
     ],
+    runBefore: ctx => {
+      const top = document.createElement('div')
+      jb.ui.renderWidget({$: 'studio-test.drag-target-card'},top)
+      document.body.appendChild(top)
+      ctx.vars.top = top
+    },
     control: ctx => ctx.run(studio.selectStyle('%$extractedCtrl%','%$targetPath%')),
-    expectedResult: contains['alcatel 3C']
+    expectedResult: contains['alcatel 3C'],
+    cleanUp: ctx => document.body.removeChild(ctx.vars.top)
+  })
+})
+
+jb.component('patterns-test.select-style-delete-unmapped.card1', { 
+  impl: uiTest({
+    vars: [
+      Var('extractedCtrl',() => extractedCtrlCard1),
+      Var('targetPath', 'studio-test.drag-target-card~impl'),
+      Var('top')
+    ],
+    runBefore: runActions(
+      writeValue('%$studio/patterns/deleteUnmapped%',true),
+      ctx => {
+        const top = document.createElement('div')
+        jb.ui.renderWidget({$: 'studio-test.drag-target-card'},top)
+        document.body.appendChild(top)
+        ctx.vars.top = top
+    }),
+    control: ctx => ctx.run(studio.selectStyle('%$extractedCtrl%','%$targetPath%')),
+    expectedResult: contains['alcatel 3C'],
+    cleanUp: ctx => document.body.removeChild(ctx.vars.top)
+  })
+})
+
+jb.component('patterns-test.select-style-delete-unmapped.card2', { 
+  impl: uiTest({
+    vars: [
+      Var('extractedCtrl',() => extractedCtrlCard2),
+      Var('targetPath', 'studio-test.drag-target-card~impl'),
+      Var('top')
+    ],
+    runBefore: runActions(
+      writeValue('%$studio/patterns/deleteUnmapped%',true),
+      ctx => {
+        const top = document.createElement('div')
+        jb.ui.renderWidget({$: 'studio-test.drag-target-card'},top)
+        document.body.appendChild(top)
+        ctx.vars.top = top
+    }),
+    control: ctx => ctx.run(studio.selectStyle('%$extractedCtrl%','%$targetPath%')),
+    expectedResult: contains['alcatel 3C'],
+    cleanUp: ctx => document.body.removeChild(ctx.vars.top)
   })
 })

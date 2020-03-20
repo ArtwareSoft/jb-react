@@ -14,7 +14,7 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
   ],
   impl: (ctx,from) => ({
     afterViewInit: cmp=> {
-      const {pipe,filter, fromEvent,takeUntil,merge,Do, map,debounceTime, last, forEach} = jb.callbag
+      const {pipe,filter, fromEvent,takeUntil,merge,Do, map,debounceTime, last, subscribe} = jb.callbag
       if (from === 'studio')
         initStudioEditing()
       const _window = from == 'preview' ? st.previewWindow : window;
@@ -46,15 +46,14 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
             showBox(cmp,profElem,_window,previewOffset)
           }),
           last(), // esc or user pick
-          forEach(profElem=> {
+          subscribe(profElem=> {
               const pickSelection = ctx.exp('%$pickSelection%')
               pickSelection.ctx = _window.jb.ctxDictionary[profElem.getAttribute('pick-ctx') || profElem.getAttribute('jb-ctx')];
               pickSelection.elem = profElem;
-              // inform watchers
-              ctx.run(writeValue('%$studio/pickSelectionCtxId%',(pickSelection.ctx || {}).id))
-
               ctx.vars.$dialog.close({OK: true});
               _window.document.body.removeChild(cover);
+              // inform watchers
+              ctx.run(writeValue('%$studio/pickSelectionCtxId%',(pickSelection.ctx || {}).id))
           }))
     }
   })

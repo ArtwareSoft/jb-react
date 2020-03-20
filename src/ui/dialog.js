@@ -159,11 +159,10 @@ jb.component('dialog-feature.onClose', { /* dialogFeature.onClose */
   params: [
     {id: 'action', type: 'action', dynamic: true}
   ],
-  impl: (ctx,action) => {
-	const {pipe,filter,subscribe,take} = jb.callbag
-	return pipe(ctx.vars.$dialog.em,
-		filter(e => e.type == 'close'), take(1), subscribe(e=> action(ctx.setData(e.OK)))
-	)}
+  impl: interactive( (ctx,{$dialog},{action}) => {
+		const {pipe,filter,subscribe,take} = jb.callbag
+		pipe($dialog.em, filter(e => e.type == 'close'), take(1), subscribe(e=> action(ctx.setData(e.OK)))
+	)})
 })
 
 jb.component('dialog-feature.close-when-clicking-outside', { /* dialogFeature.closeWhenClickingOutside */

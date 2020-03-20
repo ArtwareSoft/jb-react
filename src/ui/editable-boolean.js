@@ -13,6 +13,7 @@ jb.component('editable-boolean', { /* editableBoolean */
   ],
   impl: ctx => jb.ui.ctrl(ctx, features(
     calcProp('text',data.if('%$$model/databind%','%$$model/textForTrue%','%$$model/textForFalse%' )),
+    watchRef('%$$model/databind%'),
     defHandler('toggle', writeValue('%$$model/databind%',not('%$$model/databind%'))),
     defHandler('setChecked', writeValue('%$$model/databind%','true')),
 		))
@@ -21,7 +22,7 @@ jb.component('editable-boolean', { /* editableBoolean */
 jb.component('editable-boolean.keyboard-support', { /* editableBoolean.keyboardSupport */
   type: 'feature',
   impl: feature.onEvent({
-    event: 'click',
+    event: 'keypress',
     action: action.if(
       () => event.keyCode == 37 || event.keyCode == 39,
       writeValue('%$$model/databind%', not('%$$model/databind%'))

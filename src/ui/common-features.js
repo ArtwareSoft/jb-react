@@ -198,6 +198,7 @@ jb.component('variable', { /* variable */
   ],
   impl: ({}, name, value, watchable) => ({
     destroy: cmp => {
+      if (!watchable) return
       const fullName = name + ':' + cmp.cmpId;
       cmp.ctx.run(writeValue(`%$${fullName}%`,null))
     },
@@ -302,7 +303,7 @@ jb.component('feature.keyboard-shortcut', { /* feature.keyboardShortcut */
   ],
   impl: (ctx,key,action) => ({
       afterViewInit: cmp => {
-        jb.callbag.forEach(jb.ui.fromEvent(cmp,'keydown',cmp.base.ownerDocument))(event=>{
+        jb.subscribe(jb.ui.fromEvent(cmp,'keydown',cmp.base.ownerDocument), event=>{
               const keyStr = key.split('+').slice(1).join('+');
               const keyCode = keyStr.charCodeAt(0);
               if (key == 'Delete') keyCode = 46;

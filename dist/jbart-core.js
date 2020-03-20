@@ -739,7 +739,13 @@ Object.assign(jb,{
     })
     return out;
   },
-  isDelayed: v => v && (Object.prototype.toString.call(v) === "[object Promise]" || jb.callbag.isCallbag(v)),
+  isDelayed: v => {
+    if (!v || v.constructor === {}.constructor) return
+    else if (typeof v === 'object')
+      return Object.prototype.toString.call(v) === "[object Promise]"
+    else if (typeof v === 'function')
+      return jb.callbag.isCallbag(v)
+  },
   toSynchArray: __ar => {
     const ar = jb.asArray(__ar)
     const isSynch = ar.filter(v=> jb.isDelayed(v)).length == 0;

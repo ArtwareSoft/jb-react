@@ -9,6 +9,16 @@ jb.component('studio.select-style', { /* studio.selectStyle */
     {id: 'targetPath', as: 'string'}
   ],
   impl: group({
+    controls: [
+      editableBoolean({
+        databind: '%$studio/patterns/deleteUnmapped%',
+        style: editableBoolean.mdcSlideToggle(),
+        textForTrue: 'delete unmapped',
+        textForFalse: 'keep unmapped'
+      }),
+      group({
+        controls: 
+group({
     layout: layout.grid({columnSizes: list('600'), columnGap: '10px', rowGap: '10px'}),
     style: group.sections({
       titleStyle: header.mdcHeadline6(),
@@ -63,20 +73,26 @@ jb.component('studio.select-style', { /* studio.selectStyle */
       itemVariable: '__option'
     }),
     features: css.height('600')
-    })
+    }),
+    features: [
+        watchRef({ref: '%$studio/patterns%', includeChildren: 'yes', allowSelfRefresh: true}),
+        css.height({height: '600', overflow: 'auto'})
+      ]
+    })]
+  })
 })
 
-jb.component('studio.extract-style', {
-    type: 'action',
-    params: [
-        {id: 'extractedCtrl'},
-        {id: 'targetPath', as: 'string'},
-    ],
-    impl: openDialog({
-        content: studio.selectStyle('%$extractedCtrl%','%$targetPath%'),
-        title: 'select style',
-        features: dialogFeature.uniqueDialog('unique')
-    })
+jb.component('studio.extract-style', { /* studio.extractStyle */
+  type: 'action',
+  params: [
+    {id: 'extractedCtrl'},
+    {id: 'targetPath', as: 'string'}
+  ],
+  impl: openDialog({
+    content: studio.selectStyle('%$extractedCtrl%', '%$targetPath%'),
+    title: 'select style',
+    features: dialogFeature.uniqueDialog('unique')
+  })
 })
 
 jb.component('studio.suggested-styles', {
@@ -88,14 +104,8 @@ jb.component('studio.suggested-styles', {
         const constraints = ctx.exp('%$studio/pattern/constraints%') || []
         const target = jb.studio.valOfPath(targetPath)
         const previewCtx = jb.studio.closestCtxInPreview(ctx.exp('%$targetPath%'))
-        const {params, options} = jb.ui.stylePatterns[target.$] && jb.ui.stylePatterns[target.$](extractedCtrl,target,previewCtx) || {}
-        if (!params) return []
-        return options
-
-        function checkConstraints(option) {
-            return constraints.reduce((res,cons) => res && cons.match(option),true)
-        }
-    }        
+        return jb.ui.stylePatterns[target.$] && jb.ui.stylePatterns[target.$](ctx,extractedCtrl,target,previewCtx) || {}
+    }
 })
 
 jb.component('pattern.path-value-constraint',{
@@ -129,55 +139,70 @@ function flatContent(ctrl ,path) {
     return [{ctrl,path}, ...children]
 }
 
+function cleanUnmappedParams(ctx,ctrl,matches) {
+    if (!ctx.exp('%$studio/patterns/deleteUnmapped%')) return ctrl
+    const usedPaths = {}
+    matches.forEach(match => parents(match.src.path,true).forEach(path=>usedPaths[path] = true))
+    return cleanCtrl(ctrl,'')
+
+    function cleanCtrl(ctrl,path) {
+        if (!ctrl.controls) return ctrl
+        const innerPath = [path,'controls'].filter(x=>x).join('/')
+        const controls = Array.isArray(ctrl.controls) ? 
+            ctrl.controls.flatMap((ch,i) => usedPaths[innerPath +'/'+i] ? [cleanCtrl(ch,innerPath +'/'+i)] : [])
+                .filter(x=>x)
+            : usedPaths[innerPath] ? cleanCtrl(ctrl.controls,innerPath) : null
+
+        return controls && { ...ctrl, controls }
+    }
+}
+
 const paramProps = { text: 'text', button: 'title', image: 'url' }
+const types = ['text','button','image']
 
 jb.ui.stylePatterns = {
-    text(extractedCtrl) {
-        const content = flatContent(extractedCtrl,'')
-        const texts = content.filter(x=>x.ctrl.$ == 'text')
+    text(ctx, extractedCtrl) {
+        const srcContent = flatContent(extractedCtrl,'')
+        const texts = srcContent.filter(x=>x.ctrl.$ == 'text')
         const value = '%$textModel/text%'
-        const params = [{id: 'text', origValue: value, type: 'text'}]
+        const trgParams = [{id: 'text', origValue: value, type: 'text'}]
+        const srcParams = types.flatMap(type=> srcContent.filter(x=>x.ctrl.$ == type).map((elem,i)=>(
+            { id: `${type}${i}`, origValue: elem.ctrl, type, path: elem.path } )))
         const options = texts.flatMap(text=> {
             const boundedCtrl = JSON.parse(JSON.stringify(extractedCtrl))
-            const overridePath = [...text.path.split('/'),'text'] 
-            const draggedValue = jb.path(boundedCtrl,overridePath)
+            const overridePath = [...text.path.split('/'),'text']
             jb.path(boundedCtrl,overridePath,value) // set value
             return parents(text.path,true).map(path => {
                 const ctrl = pathToObj(boundedCtrl, path)
-                return {...styleByControl(ctrl,'textModel'), 
-                    _patternInfo: {
-                        top: path,
-                        paramValues: { text : {overridePath, draggedValue} }
-                    }
-                }
+                return styleByControl(ctrl,'textModel')
             })
         })
-        return {params, options}
+        return options
     },
-    group(extractedCtrl, target, previewCtx) {
+    group(ctx, extractedCtrl, target, previewCtx) {
+        // render the extracted ctrl to calculate sizes and sort options
         const top = document.createElement('div')
         jb.ui.renderWidget(extractedCtrl,top)
-        document.body.appendChild(top)
+        document.body.appendChild(top) 
+
         const targetContent = flatContent(target,'')
         const srcContent = flatContent(extractedCtrl,'')
-        const types = ['text','button','image']
         const srcParams = types.flatMap(type=> srcContent.filter(x=>x.ctrl.$ == type).map((elem,i)=>(
             { id: `${type}${i}`, origValue: elem.ctrl, type, path: elem.path, dVal: distanceVal(elem.path, window, top)} )))
         const srcParamsMap = jb.objFromEntries(srcParams.map(p=>[p.id,p]))
         const trgParams = types.flatMap(type=> targetContent.filter(x=>x.ctrl.$ == type).map((elem,i)=>(
-            { id: `${type}${i}`, origValue: elem.ctrl, type, path: elem.path, dVal: distanceVal(elem.path, jb.studio.previewWindow) } )))
+            { id: `${type}${i}`, origValue: elem.ctrl, type, path: elem.path, dVal: distanceVal(elem.path, jb.studio.previewjb.frame) } )))
         const trgParamsMap = jb.objFromEntries(trgParams.map(p=>[p.id,p]))
         const _permutations = types.map(type => mixedPermutations(type, srcParams.filter(x=>x.type == type).map(p=>p.id), trgParams.filter(x=>x.type == type).map(p=>p.id)))
         const rawOptions = combinations(_permutations.filter(x=>x.length)).map(comb => comb.split(';')
             .map(match=> ({ src: srcParamsMap[match.split('-')[0]], trg: trgParamsMap[match.split('-')[1]] })))
-        
+
         document.body.removeChild(top)
 
-        const options = rawOptions.map(matches => matchesToOption(matches,''))
-        return {params: trgParams, options}
+        return rawOptions.map(matches => matchesToOption(matches,''))
 
         function mixedPermutations(type, srcIds, trgIds) {
-            return jb.unique([bestPermutation(type, srcIds, trgIds),
+            return jb.unique([...bestPermutations(type, srcIds, trgIds,1),
                 sameOrderPermutation(type, srcIds, trgIds),
                 randomPermutation(type, srcIds, trgIds)
             ])
@@ -194,20 +219,21 @@ jb.ui.stylePatterns = {
             const iTrg = Math.floor(Math.random()*trgIds.length)
             const randomPair = {iSrc, iTrg, pair: `${srcIds[iSrc]}-${trgIds[iTrg]}`, }
 
-            const resultWithoutPair = randomPermutation(type, [...srcIds.slice(0,randomPair.iSrc),...srcIds.slice(randomPair.iSrc+1) ], 
+            const resultWithoutPair = randomPermutation(type, [...srcIds.slice(0,randomPair.iSrc),...srcIds.slice(randomPair.iSrc+1) ],
                 [...trgIds.slice(0,randomPair.iTrg),...trgIds.slice(randomPair.iTrg+1) ] )
             return [randomPair.pair,resultWithoutPair].filter(x=>x).join(';')
         }
 
-        function bestPermutation(type, srcIds, trgIds) {
-            const bestPair = srcIds.flatMap((srcId,iSrc) => trgIds.flatMap((trgId,iTrg) => 
+        function bestPermutations(type, srcIds, trgIds,accResults) {
+            if (srcIds.length == 0 || trgIds.length == 0) return ['']
+            const bestPairs = srcIds.flatMap((srcId,iSrc) => trgIds.flatMap((trgId,iTrg) =>
                     ({iSrc, iTrg, pair: `${srcId}-${trgId}`, distance: distance(srcParamsMap[srcId].dVal , trgParamsMap[trgId].dVal) } )))
-                    .sort((x,y) => y-x)[0]
-            if (!bestPair) return ''
-
-            const resultWithoutPair = bestPermutation(type, [...srcIds.slice(0,bestPair.iSrc),...srcIds.slice(bestPair.iSrc+1) ], 
-                [...trgIds.slice(0,bestPair.iTrg),...trgIds.slice(bestPair.iTrg+1) ] )
-            return [bestPair.pair,resultWithoutPair].filter(x=>x).join(';')
+                    .sort((x,y) => y-x).slice(0, accResults < 2 ? 3 : accResults < 10 ? 2: 1)
+            return bestPairs.flatMap(bestPair => {
+                const resultsWithoutPair = bestPermutations(type, [...srcIds.slice(0,bestPair.iSrc),...srcIds.slice(bestPair.iSrc+1) ],
+                    [...trgIds.slice(0,bestPair.iTrg),...trgIds.slice(bestPair.iTrg+1) ], accResults * bestPairs.length)
+                return resultsWithoutPair.flatMap(resultWithoutPair => [bestPair.pair,resultWithoutPair].filter(x=>x).join(';'))
+            })
 
             function distance(x1,x2) {
                 if (type == 'text')
@@ -218,6 +244,13 @@ jb.ui.stylePatterns = {
                     return x1.tag == x2.tag ? 0 : 1
             }
         }
+
+        function combinations(arrOfMatches) {
+            if (arrOfMatches.length == 0) return []
+            if (arrOfMatches.length == 1) return arrOfMatches[0]
+            return arrOfMatches[0].flatMap(m1 => combinations(arrOfMatches.slice(1)).map(m2 => [m1,m2].filter(x=>x).join(';')))
+        }
+
         function distanceVal(path, win, top) {
             const prefix = top ? 'group~impl~' : previewCtx.ctx.path + '~'
             const pathToCheck = (prefix + path).replace(/\//g,'~')
@@ -229,32 +262,15 @@ jb.ui.stylePatterns = {
             return { tag: elem.tagName, width: elem.offsetWidth, height: elem.offsetHeight, fontSize: +style.fontSize.match(/([0-9\.]+)/)[1] }
         }
 
-        function combinations(arrOfMatches) {
-            if (arrOfMatches.length == 0) return []
-            if (arrOfMatches.length == 1) return arrOfMatches[0]
-            return arrOfMatches[0].flatMap(m1 => combinations(arrOfMatches.slice(1)).map(m2 => [m1,m2].filter(x=>x).join(';')))
-        }
-
         function matchesToOption(matches,top) {
             const boundedCtrl = JSON.parse(JSON.stringify(extractedCtrl))
-            const paramValues = {}
             matches.forEach(match => {
                 const paramProp = paramProps[match.trg.type]
-                const overridePath = [...match.src.path.split('/'), paramProp] 
-                const draggedValue = jb.path(boundedCtrl,overridePath)
-                paramValues[match.trg.id] = {overridePath, draggedValue}
+                const overridePath = [...match.src.path.split('/'), paramProp]
                 jb.path(boundedCtrl,overridePath, match.trg.origValue[paramProp]) // set value
             })
-            const ctrl = pathToObj(boundedCtrl, top)
-            return {...ctrl, _patternInfo: { top, paramValues }, features: [...jb.asArray(target.features),...jb.asArray(ctrl.features)] }
-        }
-
-        function allPermutations(type, srcIds,trgIds) {
-            return srcIds.flatMap( (srcId,srcI) => trgIds.flatMap( (trgId,trgI) => {
-                    const resultWithoutPair = permutations([...srcIds.slice(0,srcI),...srcIds.slice(srcI+1) ], 
-                        [...trgIds.slice(0,trgI),...trgIds.slice(trgI+1) ] )
-                    return [`${srcId}-${trgId}`, ...resultWithoutPair]
-            }))
+            const ctrl = cleanUnmappedParams(ctx,pathToObj(boundedCtrl, top),matches,srcParamsMap)
+            return {...ctrl, features: [...jb.asArray(target.features),...jb.asArray(ctrl.features)] }
         }
     },
 }

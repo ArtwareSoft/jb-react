@@ -1,7 +1,7 @@
 jb.component('editable-boolean.checkbox', { /* editableBoolean.checkbox */
   type: 'editable-boolean.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('input', { type: 'checkbox', checked: state.databind, onchange: 'setChecked', onkeyup: 'setChecked'  }),
+    template: (cmp,state,h) => h('input', { type: 'checkbox', checked: state.databind, onchange: 'toggle', onkeyup: 'toggle'  }),
     features: field.databind()
   })
 })
@@ -10,7 +10,21 @@ jb.component('editable-boolean.checkbox-with-title', { /* editableBoolean.checkb
   type: 'editable-boolean.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{}, [h('input', { type: 'checkbox',
-        checked: state.databind, onchange: 'setChecked', onkeyup: 'setChecked'  }), state.text]),
+        checked: state.databind, onchange: 'toggle', onkeyup: 'toggle'  }), state.text]),
+    features: field.databind()
+  })
+})
+
+jb.component('editable-boolean.checkbox-with-label', { /* editableBoolean.checkboxWithLabel */
+  type: 'editable-boolean.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{},[
+        h('input', { type: 'checkbox', id: "switch_"+state.fieldId,
+          checked: state.databind,
+          onchange: 'toggle',
+          onkeyup: 'toggle'  },),
+        h('label',{for: "switch_"+state.fieldId },state.text)
+    ]),
     features: field.databind()
   })
 })
@@ -55,7 +69,7 @@ jb.component('editable-boolean.mdc-slide-toggle', { /* editableBoolean.mdcSlideT
       h('div',{class: 'mdc-switch__thumb-underlay'},[
         h('div',{class: 'mdc-switch__thumb'},
           h('input', { type: 'checkbox', role: 'switch', class: 'mdc-switch__native-control', id: 'switch_' + state.fieldId,
-            checked: state.databind, onchange: 'setChecked' })),
+            checked: state.databind, onchange: 'toggle' })),
       ]),
       h('label',{for: 'switch_' + state.fieldId},state.text)
     ]),
@@ -64,17 +78,4 @@ jb.component('editable-boolean.mdc-slide-toggle', { /* editableBoolean.mdcSlideT
   })
 })
 
-jb.component('editable-boolean.checkbox-with-label', { /* editableBoolean.checkboxWithLabel */
-  type: 'editable-boolean.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{},[
-        h('input', { type: 'checkbox', id: "switch_"+state.fieldId,
-          checked: state.databind,
-          onchange: 'setChecked',
-          onkeyup: 'setChecked'  },),
-        h('label',{for: "switch_"+state.fieldId },state.text)
-    ]),
-    features: field.databind()
-  })
-})
 

@@ -199,8 +199,7 @@ function setAtt(elem,att,val) {
         elem.removeAttribute(att)
         jb.log('htmlChange',['remove',...arguments])
     } else if (att === 'checked' && elem.tagName.toLowerCase() === 'input') {
-        if (val === true)
-            elem.checked = true
+        elem.checked = !!val
         jb.log('htmlChange',['checked',...arguments])
     } else if (att === '$text') {
         elem.innerText = val || ''

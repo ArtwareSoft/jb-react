@@ -739,7 +739,13 @@ Object.assign(jb,{
     })
     return out;
   },
-  isDelayed: v => v && (Object.prototype.toString.call(v) === "[object Promise]" || jb.callbag.isCallbag(v)),
+  isDelayed: v => {
+    if (!v || v.constructor === {}.constructor) return
+    else if (typeof v === 'object')
+      return Object.prototype.toString.call(v) === "[object Promise]"
+    else if (typeof v === 'function')
+      return jb.callbag.isCallbag(v)
+  },
   toSynchArray: __ar => {
     const ar = jb.asArray(__ar)
     const isSynch = ar.filter(v=> jb.isDelayed(v)).length == 0;
@@ -3662,8 +3668,7 @@ function setAtt(elem,att,val) {
         elem.removeAttribute(att)
         jb.log('htmlChange',['remove',...arguments])
     } else if (att === 'checked' && elem.tagName.toLowerCase() === 'input') {
-        if (val === true)
-            elem.checked = true
+        elem.checked = !!val
         jb.log('htmlChange',['checked',...arguments])
     } else if (att === '$text') {
         elem.innerText = val || ''
@@ -4627,6 +4632,7 @@ jb.component('variable', { /* variable */
   ],
   impl: ({}, name, value, watchable) => ({
     destroy: cmp => {
+      if (!watchable) return
       const fullName = name + ':' + cmp.cmpId;
       cmp.ctx.run(writeValue(`%$${fullName}%`,null))
     },
@@ -4731,7 +4737,7 @@ jb.component('feature.keyboard-shortcut', { /* feature.keyboardShortcut */
   ],
   impl: (ctx,key,action) => ({
       afterViewInit: cmp => {
-        jb.callbag.forEach(jb.ui.fromEvent(cmp,'keydown',cmp.base.ownerDocument))(event=>{
+        jb.subscribe(jb.ui.fromEvent(cmp,'keydown',cmp.base.ownerDocument), event=>{
               const keyStr = key.split('+').slice(1).join('+');
               const keyCode = keyStr.charCodeAt(0);
               if (key == 'Delete') keyCode = 46;
@@ -5696,7 +5702,7 @@ jb.component('field.keyboard-shortcut', { /* field.keyboardShortcut */
     (ctx,{cmp},{key,action}) => {
         const elem = cmp.base.querySelector('input') || cmp.base
         if (elem.tabIndex === undefined) elem.tabIndex = -1
-        jb.callbag.forEach(jb.ui.fromEvent(cmp,'keydown',elem))(event=>{
+        jb.subscribe(jb.ui.fromEvent(cmp,'keydown',elem),event=>{
               const keyStr = key.split('+').slice(1).join('+');
               const keyCode = keyStr.charCodeAt(0);
               if (key == 'Delete') keyCode = 46;
@@ -5901,6 +5907,7 @@ jb.component('editable-boolean', { /* editableBoolean */
   ],
   impl: ctx => jb.ui.ctrl(ctx, features(
     calcProp('text',data.if('%$$model/databind%','%$$model/textForTrue%','%$$model/textForFalse%' )),
+    watchRef('%$$model/databind%'),
     defHandler('toggle', writeValue('%$$model/databind%',not('%$$model/databind%'))),
     defHandler('setChecked', writeValue('%$$model/databind%','true')),
 		))
@@ -5909,7 +5916,7 @@ jb.component('editable-boolean', { /* editableBoolean */
 jb.component('editable-boolean.keyboard-support', { /* editableBoolean.keyboardSupport */
   type: 'feature',
   impl: feature.onEvent({
-    event: 'click',
+    event: 'keypress',
     action: action.if(
       () => event.keyCode == 37 || event.keyCode == 39,
       writeValue('%$$model/databind%', not('%$$model/databind%'))
@@ -6130,11 +6137,10 @@ jb.component('dialog-feature.onClose', { /* dialogFeature.onClose */
   params: [
     {id: 'action', type: 'action', dynamic: true}
   ],
-  impl: (ctx,action) => {
-	const {pipe,filter,subscribe,take} = jb.callbag
-	return pipe(ctx.vars.$dialog.em,
-		filter(e => e.type == 'close'), take(1), subscribe(e=> action(ctx.setData(e.OK)))
-	)}
+  impl: interactive( (ctx,{$dialog},{action}) => {
+		const {pipe,filter,subscribe,take} = jb.callbag
+		pipe($dialog.em, filter(e => e.type == 'close'), take(1), subscribe(e=> action(ctx.setData(e.OK)))
+	)})
 })
 
 jb.component('dialog-feature.close-when-clicking-outside', { /* dialogFeature.closeWhenClickingOutside */
@@ -8868,7 +8874,7 @@ jb.component('property-sheet.titles-above', { /* propertySheet.titlesAbove */
 jb.component('editable-boolean.checkbox', { /* editableBoolean.checkbox */
   type: 'editable-boolean.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('input', { type: 'checkbox', checked: state.databind, onchange: 'setChecked', onkeyup: 'setChecked'  }),
+    template: (cmp,state,h) => h('input', { type: 'checkbox', checked: state.databind, onchange: 'toggle', onkeyup: 'toggle'  }),
     features: field.databind()
   })
 })
@@ -8877,7 +8883,21 @@ jb.component('editable-boolean.checkbox-with-title', { /* editableBoolean.checkb
   type: 'editable-boolean.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{}, [h('input', { type: 'checkbox',
-        checked: state.databind, onchange: 'setChecked', onkeyup: 'setChecked'  }), state.text]),
+        checked: state.databind, onchange: 'toggle', onkeyup: 'toggle'  }), state.text]),
+    features: field.databind()
+  })
+})
+
+jb.component('editable-boolean.checkbox-with-label', { /* editableBoolean.checkboxWithLabel */
+  type: 'editable-boolean.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{},[
+        h('input', { type: 'checkbox', id: "switch_"+state.fieldId,
+          checked: state.databind,
+          onchange: 'toggle',
+          onkeyup: 'toggle'  },),
+        h('label',{for: "switch_"+state.fieldId },state.text)
+    ]),
     features: field.databind()
   })
 })
@@ -8922,7 +8942,7 @@ jb.component('editable-boolean.mdc-slide-toggle', { /* editableBoolean.mdcSlideT
       h('div',{class: 'mdc-switch__thumb-underlay'},[
         h('div',{class: 'mdc-switch__thumb'},
           h('input', { type: 'checkbox', role: 'switch', class: 'mdc-switch__native-control', id: 'switch_' + state.fieldId,
-            checked: state.databind, onchange: 'setChecked' })),
+            checked: state.databind, onchange: 'toggle' })),
       ]),
       h('label',{for: 'switch_' + state.fieldId},state.text)
     ]),
@@ -8931,19 +8951,6 @@ jb.component('editable-boolean.mdc-slide-toggle', { /* editableBoolean.mdcSlideT
   })
 })
 
-jb.component('editable-boolean.checkbox-with-label', { /* editableBoolean.checkboxWithLabel */
-  type: 'editable-boolean.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{},[
-        h('input', { type: 'checkbox', id: "switch_"+state.fieldId,
-          checked: state.databind,
-          onchange: 'setChecked',
-          onkeyup: 'setChecked'  },),
-        h('label',{for: "switch_"+state.fieldId },state.text)
-    ]),
-    features: field.databind()
-  })
-})
 
 ;
 
@@ -31720,7 +31727,7 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
   ],
   impl: (ctx,from) => ({
     afterViewInit: cmp=> {
-      const {pipe,filter, fromEvent,takeUntil,merge,Do, map,debounceTime, last, forEach} = jb.callbag
+      const {pipe,filter, fromEvent,takeUntil,merge,Do, map,debounceTime, last, subscribe} = jb.callbag
       if (from === 'studio')
         initStudioEditing()
       const _window = from == 'preview' ? st.previewWindow : window;
@@ -31752,15 +31759,14 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
             showBox(cmp,profElem,_window,previewOffset)
           }),
           last(), // esc or user pick
-          forEach(profElem=> {
+          subscribe(profElem=> {
               const pickSelection = ctx.exp('%$pickSelection%')
               pickSelection.ctx = _window.jb.ctxDictionary[profElem.getAttribute('pick-ctx') || profElem.getAttribute('jb-ctx')];
               pickSelection.elem = profElem;
-              // inform watchers
-              ctx.run(writeValue('%$studio/pickSelectionCtxId%',(pickSelection.ctx || {}).id))
-
               ctx.vars.$dialog.close({OK: true});
               _window.document.body.removeChild(cover);
+              // inform watchers
+              ctx.run(writeValue('%$studio/pickSelectionCtxId%',(pickSelection.ctx || {}).id))
           }))
     }
   })
@@ -34853,7 +34859,7 @@ jb.component('feature.content-editable', { /* feature.contentEditable */
     templateModifier(
         ({},{cmp,vdom},{param}) => {
       const contentEditable = jb.ui.contentEditable
-      if (!contentEditable || !contentEditable.isEnabled() || param && !contentEditable.refOfProp(cmp,param)) return vdom
+      if (!contentEditable || cmp.ctx.vars.$runAsWorker || !contentEditable.isEnabled() || param && !contentEditable.refOfProp(cmp,param)) return vdom
       const attsToInject = cmp.state.contentEditableActive ? {contenteditable: 'true', onblur: true, onmousedown: true, onkeypress: true, onkeydown: true} : {onmousedown: true};
       // fix spacebar bug in button
       if (vdom.tag && vdom.tag.toLowerCase() == 'button' && vdom.children && vdom.children.length == 1 && typeof vdom.children[0] == 'string') {
@@ -35367,6 +35373,16 @@ jb.component('studio.select-style', { /* studio.selectStyle */
     {id: 'targetPath', as: 'string'}
   ],
   impl: group({
+    controls: [
+      editableBoolean({
+        databind: '%$studio/patterns/deleteUnmapped%',
+        style: editableBoolean.mdcSlideToggle(),
+        textForTrue: 'delete unmapped',
+        textForFalse: 'keep unmapped'
+      }),
+      group({
+        controls: 
+group({
     layout: layout.grid({columnSizes: list('600'), columnGap: '10px', rowGap: '10px'}),
     style: group.sections({
       titleStyle: header.mdcHeadline6(),
@@ -35421,20 +35437,26 @@ jb.component('studio.select-style', { /* studio.selectStyle */
       itemVariable: '__option'
     }),
     features: css.height('600')
-    })
+    }),
+    features: [
+        watchRef({ref: '%$studio/patterns%', includeChildren: 'yes', allowSelfRefresh: true}),
+        css.height({height: '600', overflow: 'auto'})
+      ]
+    })]
+  })
 })
 
-jb.component('studio.extract-style', {
-    type: 'action',
-    params: [
-        {id: 'extractedCtrl'},
-        {id: 'targetPath', as: 'string'},
-    ],
-    impl: openDialog({
-        content: studio.selectStyle('%$extractedCtrl%','%$targetPath%'),
-        title: 'select style',
-        features: dialogFeature.uniqueDialog('unique')
-    })
+jb.component('studio.extract-style', { /* studio.extractStyle */
+  type: 'action',
+  params: [
+    {id: 'extractedCtrl'},
+    {id: 'targetPath', as: 'string'}
+  ],
+  impl: openDialog({
+    content: studio.selectStyle('%$extractedCtrl%', '%$targetPath%'),
+    title: 'select style',
+    features: dialogFeature.uniqueDialog('unique')
+  })
 })
 
 jb.component('studio.suggested-styles', {
@@ -35446,14 +35468,8 @@ jb.component('studio.suggested-styles', {
         const constraints = ctx.exp('%$studio/pattern/constraints%') || []
         const target = jb.studio.valOfPath(targetPath)
         const previewCtx = jb.studio.closestCtxInPreview(ctx.exp('%$targetPath%'))
-        const {params, options} = jb.ui.stylePatterns[target.$] && jb.ui.stylePatterns[target.$](extractedCtrl,target,previewCtx) || {}
-        if (!params) return []
-        return options
-
-        function checkConstraints(option) {
-            return constraints.reduce((res,cons) => res && cons.match(option),true)
-        }
-    }        
+        return jb.ui.stylePatterns[target.$] && jb.ui.stylePatterns[target.$](ctx,extractedCtrl,target,previewCtx) || {}
+    }
 })
 
 jb.component('pattern.path-value-constraint',{
@@ -35487,55 +35503,70 @@ function flatContent(ctrl ,path) {
     return [{ctrl,path}, ...children]
 }
 
+function cleanUnmappedParams(ctx,ctrl,matches) {
+    if (!ctx.exp('%$studio/patterns/deleteUnmapped%')) return ctrl
+    const usedPaths = {}
+    matches.forEach(match => parents(match.src.path,true).forEach(path=>usedPaths[path] = true))
+    return cleanCtrl(ctrl,'')
+
+    function cleanCtrl(ctrl,path) {
+        if (!ctrl.controls) return ctrl
+        const innerPath = [path,'controls'].filter(x=>x).join('/')
+        const controls = Array.isArray(ctrl.controls) ? 
+            ctrl.controls.flatMap((ch,i) => usedPaths[innerPath +'/'+i] ? [cleanCtrl(ch,innerPath +'/'+i)] : [])
+                .filter(x=>x)
+            : usedPaths[innerPath] ? cleanCtrl(ctrl.controls,innerPath) : null
+
+        return controls && { ...ctrl, controls }
+    }
+}
+
 const paramProps = { text: 'text', button: 'title', image: 'url' }
+const types = ['text','button','image']
 
 jb.ui.stylePatterns = {
-    text(extractedCtrl) {
-        const content = flatContent(extractedCtrl,'')
-        const texts = content.filter(x=>x.ctrl.$ == 'text')
+    text(ctx, extractedCtrl) {
+        const srcContent = flatContent(extractedCtrl,'')
+        const texts = srcContent.filter(x=>x.ctrl.$ == 'text')
         const value = '%$textModel/text%'
-        const params = [{id: 'text', origValue: value, type: 'text'}]
+        const trgParams = [{id: 'text', origValue: value, type: 'text'}]
+        const srcParams = types.flatMap(type=> srcContent.filter(x=>x.ctrl.$ == type).map((elem,i)=>(
+            { id: `${type}${i}`, origValue: elem.ctrl, type, path: elem.path } )))
         const options = texts.flatMap(text=> {
             const boundedCtrl = JSON.parse(JSON.stringify(extractedCtrl))
-            const overridePath = [...text.path.split('/'),'text'] 
-            const draggedValue = jb.path(boundedCtrl,overridePath)
+            const overridePath = [...text.path.split('/'),'text']
             jb.path(boundedCtrl,overridePath,value) // set value
             return parents(text.path,true).map(path => {
                 const ctrl = pathToObj(boundedCtrl, path)
-                return {...styleByControl(ctrl,'textModel'), 
-                    _patternInfo: {
-                        top: path,
-                        paramValues: { text : {overridePath, draggedValue} }
-                    }
-                }
+                return styleByControl(ctrl,'textModel')
             })
         })
-        return {params, options}
+        return options
     },
-    group(extractedCtrl, target, previewCtx) {
+    group(ctx, extractedCtrl, target, previewCtx) {
+        // render the extracted ctrl to calculate sizes and sort options
         const top = document.createElement('div')
         jb.ui.renderWidget(extractedCtrl,top)
-        document.body.appendChild(top)
+        document.body.appendChild(top) 
+
         const targetContent = flatContent(target,'')
         const srcContent = flatContent(extractedCtrl,'')
-        const types = ['text','button','image']
         const srcParams = types.flatMap(type=> srcContent.filter(x=>x.ctrl.$ == type).map((elem,i)=>(
             { id: `${type}${i}`, origValue: elem.ctrl, type, path: elem.path, dVal: distanceVal(elem.path, window, top)} )))
         const srcParamsMap = jb.objFromEntries(srcParams.map(p=>[p.id,p]))
         const trgParams = types.flatMap(type=> targetContent.filter(x=>x.ctrl.$ == type).map((elem,i)=>(
-            { id: `${type}${i}`, origValue: elem.ctrl, type, path: elem.path, dVal: distanceVal(elem.path, jb.studio.previewWindow) } )))
+            { id: `${type}${i}`, origValue: elem.ctrl, type, path: elem.path, dVal: distanceVal(elem.path, jb.studio.previewjb.frame) } )))
         const trgParamsMap = jb.objFromEntries(trgParams.map(p=>[p.id,p]))
         const _permutations = types.map(type => mixedPermutations(type, srcParams.filter(x=>x.type == type).map(p=>p.id), trgParams.filter(x=>x.type == type).map(p=>p.id)))
         const rawOptions = combinations(_permutations.filter(x=>x.length)).map(comb => comb.split(';')
             .map(match=> ({ src: srcParamsMap[match.split('-')[0]], trg: trgParamsMap[match.split('-')[1]] })))
-        
+
         document.body.removeChild(top)
 
-        const options = rawOptions.map(matches => matchesToOption(matches,''))
-        return {params: trgParams, options}
+        return rawOptions.map(matches => matchesToOption(matches,''))
 
         function mixedPermutations(type, srcIds, trgIds) {
-            return jb.unique([bestPermutation(type, srcIds, trgIds),
+            return jb.unique([...bestPermutations(type, srcIds, trgIds,1),
                 sameOrderPermutation(type, srcIds, trgIds),
                 randomPermutation(type, srcIds, trgIds)
             ])
@@ -35552,20 +35583,21 @@ jb.ui.stylePatterns = {
             const iTrg = Math.floor(Math.random()*trgIds.length)
             const randomPair = {iSrc, iTrg, pair: `${srcIds[iSrc]}-${trgIds[iTrg]}`, }
 
-            const resultWithoutPair = randomPermutation(type, [...srcIds.slice(0,randomPair.iSrc),...srcIds.slice(randomPair.iSrc+1) ], 
+            const resultWithoutPair = randomPermutation(type, [...srcIds.slice(0,randomPair.iSrc),...srcIds.slice(randomPair.iSrc+1) ],
                 [...trgIds.slice(0,randomPair.iTrg),...trgIds.slice(randomPair.iTrg+1) ] )
             return [randomPair.pair,resultWithoutPair].filter(x=>x).join(';')
         }
 
-        function bestPermutation(type, srcIds, trgIds) {
-            const bestPair = srcIds.flatMap((srcId,iSrc) => trgIds.flatMap((trgId,iTrg) => 
+        function bestPermutations(type, srcIds, trgIds,accResults) {
+            if (srcIds.length == 0 || trgIds.length == 0) return ['']
+            const bestPairs = srcIds.flatMap((srcId,iSrc) => trgIds.flatMap((trgId,iTrg) =>
                     ({iSrc, iTrg, pair: `${srcId}-${trgId}`, distance: distance(srcParamsMap[srcId].dVal , trgParamsMap[trgId].dVal) } )))
-                    .sort((x,y) => y-x)[0]
-            if (!bestPair) return ''
-
-            const resultWithoutPair = bestPermutation(type, [...srcIds.slice(0,bestPair.iSrc),...srcIds.slice(bestPair.iSrc+1) ], 
-                [...trgIds.slice(0,bestPair.iTrg),...trgIds.slice(bestPair.iTrg+1) ] )
-            return [bestPair.pair,resultWithoutPair].filter(x=>x).join(';')
+                    .sort((x,y) => y-x).slice(0, accResults < 2 ? 3 : accResults < 10 ? 2: 1)
+            return bestPairs.flatMap(bestPair => {
+                const resultsWithoutPair = bestPermutations(type, [...srcIds.slice(0,bestPair.iSrc),...srcIds.slice(bestPair.iSrc+1) ],
+                    [...trgIds.slice(0,bestPair.iTrg),...trgIds.slice(bestPair.iTrg+1) ], accResults * bestPairs.length)
+                return resultsWithoutPair.flatMap(resultWithoutPair => [bestPair.pair,resultWithoutPair].filter(x=>x).join(';'))
+            })
 
             function distance(x1,x2) {
                 if (type == 'text')
@@ -35576,6 +35608,13 @@ jb.ui.stylePatterns = {
                     return x1.tag == x2.tag ? 0 : 1
             }
         }
+
+        function combinations(arrOfMatches) {
+            if (arrOfMatches.length == 0) return []
+            if (arrOfMatches.length == 1) return arrOfMatches[0]
+            return arrOfMatches[0].flatMap(m1 => combinations(arrOfMatches.slice(1)).map(m2 => [m1,m2].filter(x=>x).join(';')))
+        }
+
         function distanceVal(path, win, top) {
             const prefix = top ? 'group~impl~' : previewCtx.ctx.path + '~'
             const pathToCheck = (prefix + path).replace(/\//g,'~')
@@ -35587,32 +35626,15 @@ jb.ui.stylePatterns = {
             return { tag: elem.tagName, width: elem.offsetWidth, height: elem.offsetHeight, fontSize: +style.fontSize.match(/([0-9\.]+)/)[1] }
         }
 
-        function combinations(arrOfMatches) {
-            if (arrOfMatches.length == 0) return []
-            if (arrOfMatches.length == 1) return arrOfMatches[0]
-            return arrOfMatches[0].flatMap(m1 => combinations(arrOfMatches.slice(1)).map(m2 => [m1,m2].filter(x=>x).join(';')))
-        }
-
         function matchesToOption(matches,top) {
             const boundedCtrl = JSON.parse(JSON.stringify(extractedCtrl))
-            const paramValues = {}
             matches.forEach(match => {
                 const paramProp = paramProps[match.trg.type]
-                const overridePath = [...match.src.path.split('/'), paramProp] 
-                const draggedValue = jb.path(boundedCtrl,overridePath)
-                paramValues[match.trg.id] = {overridePath, draggedValue}
+                const overridePath = [...match.src.path.split('/'), paramProp]
                 jb.path(boundedCtrl,overridePath, match.trg.origValue[paramProp]) // set value
             })
-            const ctrl = pathToObj(boundedCtrl, top)
-            return {...ctrl, _patternInfo: { top, paramValues }, features: [...jb.asArray(target.features),...jb.asArray(ctrl.features)] }
-        }
-
-        function allPermutations(type, srcIds,trgIds) {
-            return srcIds.flatMap( (srcId,srcI) => trgIds.flatMap( (trgId,trgI) => {
-                    const resultWithoutPair = permutations([...srcIds.slice(0,srcI),...srcIds.slice(srcI+1) ], 
-                        [...trgIds.slice(0,trgI),...trgIds.slice(trgI+1) ] )
-                    return [`${srcId}-${trgId}`, ...resultWithoutPair]
-            }))
+            const ctrl = cleanUnmappedParams(ctx,pathToObj(boundedCtrl, top),matches,srcParamsMap)
+            return {...ctrl, features: [...jb.asArray(target.features),...jb.asArray(ctrl.features)] }
         }
     },
 }
