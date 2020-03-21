@@ -52,12 +52,15 @@ group({
         controls: [
           ctx => {
               const previewCtx = jb.studio.closestCtxInPreview(ctx.exp('%$targetPath%'))
-              const res = (new jb.studio.previewjb.jbCtx()).ctx(previewCtx)
+              jb.path(jb,'studio.previewjb.ui.workerStyleElems.preview',[])
+              const cmp = (new jb.studio.previewjb.jbCtx()).ctx(previewCtx)
                 .setVar('$runAsWorker','preview')
                 .setVar('widgetId',ctx.id)
                 .run(ctx.exp('%$__option%'))
-              //jb.ui.workerStyleElems.preview
-              return res
+              const vdom = jb.ui.cloneVNode(cmp.renderVdom())
+              jb.ui.addStyleElem(jb.studio.previewjb.ui.workerStyleElems.preview.join('\n'))
+              jb.path(jb,'studio.previewjb.ui.workerStyleElems.preview',[])
+              return vdom
           },
           button({
             title: 'select (%$__option/length%)',
@@ -106,16 +109,6 @@ jb.component('studio.suggested-styles', {
         const previewCtx = jb.studio.closestCtxInPreview(ctx.exp('%$targetPath%'))
         return jb.ui.stylePatterns[target.$] && jb.ui.stylePatterns[target.$](ctx,extractedCtrl,target,previewCtx) || {}
     }
-})
-
-jb.component('pattern.path-value-constraint',{
-    params: [
-        {id: 'path', as: 'string'},
-        {id: 'value'},
-    ],
-    impl: (ctx,path,value) => ({
-        match: option => option._patternInfo.mapping[path] == value
-    })
 })
 
 function pathToObj(base, path) {

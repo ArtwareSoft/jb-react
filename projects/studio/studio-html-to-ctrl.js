@@ -9,7 +9,7 @@ jb.component('studio.drop-html', {
       defHandler('over', (ctx,{ev}) => ev.preventDefault() ),
       defHandler('dropHtml', (ctx,{cmp, ev},{onDrop}) => {
         ev.preventDefault();
-        return ev.dataTransfer.items[1].getAsString(html =>
+        return Array.from(ev.dataTransfer.items).filter(x=>x.type.match(/html/))[0].getAsString(html =>
                 onDrop(ctx.setVar('newCtrl',jb.ui.htmlToControl(html))))
       })
     )

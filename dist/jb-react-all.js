@@ -3465,7 +3465,16 @@ function toVdomOrStr(val) {
     return res
 }
 
-Object.assign(jb.ui, {VNode, toVdomOrStr});
+function cloneVNode(vdom) {
+    return setClass(JSON.parse(JSON.stringify(vdom)))
+    function setClass(vdomObj) {
+        Object.setPrototypeOf(vdomObj, VNode.prototype);
+        (vdomObj.children || []).forEach(ch=>setClass(ch))
+        return vdomObj
+    }
+}
+
+Object.assign(jb.ui, {VNode, cloneVNode, toVdomOrStr});
 
 (function(){
 const ui = jb.ui;
