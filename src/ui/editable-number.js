@@ -9,7 +9,7 @@ jb.component('editable-number', { /* editableNumber */
     {id: 'style', type: 'editable-number.style', defaultValue: editableText.mdcInput(), dynamic: true},
     {id: 'symbol', as: 'string', description: 'leave empty to parse symbol from value'},
     {id: 'min', as: 'number', defaultValue: 0},
-    {id: 'max', as: 'number', defaultValue: 100},
+    {id: 'max', as: 'number', defaultValue: 10},
     {id: 'displayString', as: 'string', dynamic: true, defaultValue: '%$Value%%$Symbol%'},
     {id: 'dataString', as: 'string', dynamic: true, defaultValue: '%$Value%%$Symbol%'},
     {id: 'autoScale', as: 'boolean', defaultValue: true, description: 'adjust its scale if at edges', type: 'boolean'},

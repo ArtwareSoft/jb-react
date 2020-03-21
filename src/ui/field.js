@@ -35,7 +35,7 @@ jb.component('field.databind', { /* field.databind */
     interactiveProp(
         'jbModel',
         (ctx,{cmp}) => value => 
-          value == null ? ctx.exp('%$$mode/databind','number') : writeFieldData(ctx,cmp,{target:{value}},true)
+          value == null ? ctx.exp('%$$model/databind%','number') : writeFieldData(ctx,cmp,value,true)
       )
   )
 })

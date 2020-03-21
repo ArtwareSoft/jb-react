@@ -115,6 +115,7 @@ jb.component('studio.main-menu', { /* studio.mainMenu */
           menu.menu({
             title: 'Sample Projects',
             options: [
+              studio.sampleProject('style-gallery'),
               studio.sampleProject('itemlists'),
               studio.sampleProject('todos'),
               studio.sampleProject('html-parsing'),
