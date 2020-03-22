@@ -1,11 +1,11 @@
-jb.component('studio.watchable-or-passive', { /* studio.watchableOrPassive */
+jb.component('studio.watchableOrPassive', {
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => path.match(/~watchable/) ? 'Watchable' : 'Passive'
 })
 
-jb.component('studio.copy-data-resource-to-comp', { /* studio.copyDataResourceToComp */
+jb.component('studio.copyDataResourceToComp', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -17,7 +17,7 @@ jb.component('studio.copy-data-resource-to-comp', { /* studio.copyDataResourceTo
   )
 })
 
-jb.component('studio.open-resource', { /* studio.openResource */
+jb.component('studio.openResource', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'},
@@ -47,7 +47,7 @@ jb.component('studio.open-resource', { /* studio.openResource */
   )
 })
 
-jb.component('studio.open-new-resource', { /* studio.openNewResource */
+jb.component('studio.openNewResource', {
   params: [
     {id: 'watchableOrPassive', as: 'string'}
   ],
@@ -91,7 +91,7 @@ hello world
   })
 })
 
-jb.component('studio.data-resource-menu', { /* studio.dataResourceMenu */
+jb.component('studio.dataResourceMenu', {
   type: 'menu.option',
   impl: menu.menu({
     title: 'Data',

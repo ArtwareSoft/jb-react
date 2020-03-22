@@ -1,6 +1,6 @@
 jb.ns('content-editable')
 
-jb.component('content-editable.open-toolbar', { /* contentEditable.openToolbar */
+jb.component('contentEditable.openToolbar', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -14,7 +14,7 @@ jb.component('content-editable.open-toolbar', { /* contentEditable.openToolbar *
   )
 })
 
-jb.component('content-editable.popup-style', { /* contentEditable.popupStyle */
+jb.component('contentEditable.popupStyle', {
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
@@ -34,7 +34,7 @@ jb.component('content-editable.popup-style', { /* contentEditable.popupStyle */
   })
 })
 
-jb.component('studio.open-toolbar-of-last-edit', { /* studio.openToolbarOfLastEdit */
+jb.component('studio.openToolbarOfLastEdit', {
   type: 'action',
   impl: ctx => {
       const path = ctx.run(studio.lastEdit())
@@ -48,7 +48,7 @@ jb.component('studio.open-toolbar-of-last-edit', { /* studio.openToolbarOfLastEd
     }
 })
 
-jb.component('content-editable.deactivate', { /* contentEditable.deactivate */
+jb.component('contentEditable.deactivate', {
   type: 'action',
   impl: ctx => {
     jb.ui.contentEditable.current && jb.ui.contentEditable.current.refresh({contentEditableActive: false})
@@ -57,7 +57,7 @@ jb.component('content-editable.deactivate', { /* contentEditable.deactivate */
   }
 })
 
-jb.component('content-editable.toolbar', { /* contentEditable.toolbar */
+jb.component('contentEditable.toolbar', {
   type: 'control',
   impl: group({
     layout: layout.horizontal(),
@@ -204,7 +204,7 @@ jb.ui.contentEditable = {
   },
 }
 
-jb.component('feature.content-editable', { /* feature.contentEditable */
+jb.component('feature.contentEditable', {
   type: 'feature',
   description: 'studio editing behavior',
   params: [
@@ -214,18 +214,21 @@ jb.component('feature.content-editable', { /* feature.contentEditable */
     feature.keyboardShortcut(
         'Alt+N',
         () => jb.frame.parent.jb.exec({$:'studio.pickAndOpen', from: 'studio'})
-    ),
-    htmlAttribute('ondragover','over'),
-    htmlAttribute('ondrop','dropHtml'),
-    defHandler('over', (ctx,{ev}) => ev.preventDefault() ),
-    defHandler('dropHtml', (ctx,{cmp, ev},{onDrop}) => {
+      ),
+    htmlAttribute('ondragover', 'over'),
+    htmlAttribute('ondrop', 'dropHtml'),
+    defHandler('over', (ctx,{ev}) => ev.preventDefault()),
+    defHandler(
+        'dropHtml',
+        (ctx,{cmp, ev},{onDrop}) => {
       ev.preventDefault();
       return Array.from(ev.dataTransfer.items).filter(x=>x.type.match(/html/))[0].getAsString(html => {
           const targetCtx = jb.studio.previewjb.ctxDictionary[ev.target.getAttribute('jb-ctx')]
           new jb.jbCtx().setVar('newCtrl',jb.ui.htmlToControl(html)).run(
                 studio.extractStyle('%$newCtrl%', () => targetCtx && targetCtx.path ))
           })
-    }),
+    }
+      ),
     interactive(
         ({},{cmp},{param}) => {
       const isHtml = param == 'html'

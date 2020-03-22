@@ -1,4 +1,4 @@
-jb.component('jb-component', { /* jbComponent */
+jb.component('jbComponent', {
   type: 'any',
   params: [
     {id: 'type', as: 'string', mandatory: true},
@@ -11,7 +11,7 @@ jb.component('jb-component', { /* jbComponent */
   impl: ctx => ctx.params
 })
 
-jb.component('jb-param', { /* jbParam */ 
+jb.component('jbParam', {
   type: 'jb-param',
   singleInType: true,
   params: [

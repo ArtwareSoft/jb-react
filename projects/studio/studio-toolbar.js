@@ -1,6 +1,6 @@
 jb.ns('contentEditable')
 
-jb.component('studio.pickAndOpen', { /* studio.pickAndOpen */
+jb.component('studio.pickAndOpen', {
   type: 'action',
   params: [
     {id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'}
@@ -16,7 +16,7 @@ jb.component('studio.pickAndOpen', { /* studio.pickAndOpen */
   )
 })
 
-jb.component('studio.toolbar', { /* studio.toolbar */
+jb.component('studio.toolbar', {
   type: 'control',
   impl: group({
     layout: layout.horizontal('5'),

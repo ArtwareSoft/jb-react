@@ -1,7 +1,7 @@
 (function() {
 const st = jb.studio;
 
-jb.component('source-editor.refresh-editor', { /* sourceEditor.refreshEditor */
+jb.component('sourceEditor.refreshEditor', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -9,7 +9,7 @@ jb.component('source-editor.refresh-editor', { /* sourceEditor.refreshEditor */
   impl: (ctx,path) =>  ctx.vars.refreshEditor && ctx.vars.refreshEditor(path)
 })
 
-jb.component('source-editor.prop-options', { /* sourceEditor.propOptions */
+jb.component('sourceEditor.propOptions', {
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -20,12 +20,12 @@ jb.component('source-editor.prop-options', { /* sourceEditor.propOptions */
   }
 })
 
-jb.component('source-editor.store-to-ref', { /* sourceEditor.storeToRef */
+jb.component('sourceEditor.storeToRef', {
   type: 'action',
   impl: ctx => ctx.vars.editor && ctx.vars.editor() && ctx.vars.editor().storeToRef()
 })
 
-jb.component('source-editor.first-param-as-array-path', { /* sourceEditor.firstParamAsArrayPath */
+jb.component('sourceEditor.firstParamAsArrayPath', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -37,7 +37,7 @@ jb.component('source-editor.first-param-as-array-path', { /* sourceEditor.firstP
   }
 })
 
-jb.component('studio.open-editor', { /* studio.openEditor */
+jb.component('studio.openEditor', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -47,7 +47,7 @@ jb.component('studio.open-editor', { /* studio.openEditor */
   }
 })
 
-jb.component('studio.editable-source', { /* studio.editableSource */
+jb.component('studio.editableSource', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -75,7 +75,7 @@ jb.component('studio.editable-source', { /* studio.editableSource */
 })
 
 
-jb.component('studio.edit-source', { /* studio.editSource */
+jb.component('studio.editSource', {
   type: 'action',
   params: [
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
@@ -91,7 +91,7 @@ jb.component('studio.edit-source', { /* studio.editSource */
   })
 })
 
-jb.component('studio.view-all-files', { /* studio.viewAllFiles */
+jb.component('studio.viewAllFiles', {
   type: 'action',
   params: [
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
@@ -103,7 +103,7 @@ jb.component('studio.view-all-files', { /* studio.viewAllFiles */
       controls: [
         picklist({
           databind: '%$file%',
-          options: picklist.options(keys('%$content/files%')),
+          options: picklist.options(keys('%$content/files%'))
         }),
         editableText({
           title: '',
@@ -128,7 +128,7 @@ jb.component('studio.view-all-files', { /* studio.viewAllFiles */
   })
 })
 
-jb.component('studio.goto-editor-secondary', { /* studio.gotoEditorSecondary */
+jb.component('studio.gotoEditorSecondary', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -141,7 +141,7 @@ jb.component('studio.goto-editor-secondary', { /* studio.gotoEditorSecondary */
   })
 })
 
-jb.component('studio.goto-editor-first', { /* studio.gotoEditorFirst */
+jb.component('studio.gotoEditorFirst', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -154,7 +154,7 @@ jb.component('studio.goto-editor-first', { /* studio.gotoEditorFirst */
   })
 })
 
-jb.component('studio.goto-editor-options', { /* studio.gotoEditorOptions */
+jb.component('studio.gotoEditorOptions', {
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}
@@ -164,7 +164,7 @@ jb.component('studio.goto-editor-options', { /* studio.gotoEditorOptions */
   )
 })
 
-jb.component('studio.open-edit-property', { /* studio.openEditProperty */
+jb.component('studio.openEditProperty', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -314,7 +314,7 @@ jb.component('studio.open-edit-property', { /* studio.openEditProperty */
   )
 })
 
-jb.component('source-editor.suggestions', { /* sourceEditor.suggestions */
+jb.component('sourceEditor.suggestions', {
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -338,7 +338,7 @@ jb.component('source-editor.suggestions', { /* sourceEditor.suggestions */
   )
 })
 
-jb.component('source-editor.add-prop', { /* sourceEditor.addProp */
+jb.component('sourceEditor.addProp', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -381,7 +381,7 @@ jb.component('source-editor.add-prop', { /* sourceEditor.addProp */
   })
 })
 
-jb.component('source-editor.suggestions-itemlist', { /* sourceEditor.suggestionsItemlist */
+jb.component('sourceEditor.suggestionsItemlist', {
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -405,11 +405,11 @@ jb.component('source-editor.suggestions-itemlist', { /* sourceEditor.suggestions
   })
 })
 
-jb.component('source-editor.files-of-project', { /* sourceEditor.filesOfProject */
+jb.component('sourceEditor.filesOfProject', {
   impl: '%$studio/projectSettings/jsFiles%'
 })
 
-jb.component('studio.github-helper', { /* studio.githubHelper */
+jb.component('studio.githubHelper', {
   type: 'action',
   impl: openDialog({
     style: dialog.studioFloating({id: 'github-helper', width: 600}),
@@ -459,10 +459,7 @@ jb.component('studio.github-helper', { /* studio.githubHelper */
             group({
               title: 'options',
               controls: [
-                picklist({
-                  databind: '%$item%',
-                  options: picklist.options(keys('%$content%')),
-                }),
+                picklist({databind: '%$item%', options: picklist.options(keys('%$content%'))}),
                 editableText({
                   databind: pipeline(
                     property('%$item%', '%$content%'),

@@ -1,4 +1,4 @@
-jb.component('studio.categories-marks', { /* studio.categoriesMarks */
+jb.component('studio.categoriesMarks', {
   params: [
     {id: 'type', as: 'string'},
     {id: 'path', as: 'string'}
@@ -56,7 +56,7 @@ jb.component('studio.categories-marks', { /* studio.categoriesMarks */
   )
 })
 
-jb.component('studio.select-profile', { /* studio.selectProfile */
+jb.component('studio.selectProfile', {
   type: 'control',
   params: [
     {id: 'onSelect', type: 'action', dynamic: true},
@@ -193,7 +193,7 @@ jb.component('studio.select-profile', { /* studio.selectProfile */
   })
 })
 
-jb.component('studio.open-new-profile-dialog', { /* studio.openNewProfileDialog */
+jb.component('studio.openNewProfileDialog', {
   type: 'action',
   params: [
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()},
@@ -239,7 +239,7 @@ jb.component('studio.open-new-profile-dialog', { /* studio.openNewProfileDialog 
   })
 })
 
-jb.component('studio.pick-profile', { /* studio.pickProfile */
+jb.component('studio.pickProfile', {
   description: 'picklist for picking a profile in a context',
   type: 'control',
   params: [
@@ -253,7 +253,7 @@ jb.component('studio.pick-profile', { /* studio.pickProfile */
   })
 })
 
-jb.component('studio.open-pick-profile', { /* studio.openPickProfile */
+jb.component('studio.openPickProfile', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -293,7 +293,7 @@ jb.component('studio.open-pick-profile', { /* studio.openPickProfile */
   })
 })
 
-jb.component('studio.open-new-page', { /* studio.openNewPage */
+jb.component('studio.openNewPage', {
   type: 'action',
   impl: openDialog({
     style: dialog.dialogOkCancel(),
@@ -312,11 +312,8 @@ jb.component('studio.open-new-page', { /* studio.openNewPage */
     title: 'New Page',
     onOK: runActions(
       Var('compName', ctx => jb.macroName(ctx.exp('%$dialogData/name%'))),
-      Var('compId', pipeline(list(studio.projectId(),'%$compName%'),join('.'))),
-      studio.newComp(
-        '%$compId%',
-        asIs({type: 'control', impl: group({})})
-      ),
+      Var('compId', pipeline(list(studio.projectId(), '%$compName%'), join('.'))),
+      studio.newComp('%$compId%', asIs({type: 'control', impl: group({})})),
       writeValue('%$studio/profile_path%', '%$compId%~impl'),
       writeValue('%$studio/page%', '%$compName%'),
       studio.openControlTree(),
@@ -328,7 +325,7 @@ jb.component('studio.open-new-page', { /* studio.openNewPage */
   })
 })
 
-jb.component('studio.open-new-function', { /* studio.openNewFunction */
+jb.component('studio.openNewFunction', {
   type: 'action',
   impl: openDialog({
     style: dialog.dialogOkCancel(),
@@ -347,11 +344,11 @@ jb.component('studio.open-new-function', { /* studio.openNewFunction */
     title: 'New Function',
     onOK: runActions(
       Var('compName', ctx => jb.macroName(ctx.exp('%$dialogData/name%'))),
-      Var('compId', pipeline(list(studio.projectId(),'%$compName%'),join('.'))),
+      Var('compId', pipeline(list(studio.projectId(), '%$compName%'), join('.'))),
       studio.newComp(
-        '%$compId%',
-        asIs({type: 'data', impl: pipeline(), testData: 'sampleData'})
-      ),
+          '%$compId%',
+          asIs({type: 'data', impl: pipeline(), testData: 'sampleData'})
+        ),
       writeValue('%$studio/profile_path%', '%$compId%'),
       studio.openJbEditor('%$compId%'),
       refreshControlById('functions')
@@ -361,7 +358,7 @@ jb.component('studio.open-new-function', { /* studio.openNewFunction */
   })
 })
 
-jb.component('studio.insert-comp-option', { /* studio.insertCompOption */
+jb.component('studio.insertCompOption', {
   params: [
     {id: 'title', as: 'string'},
     {id: 'comp', as: 'string'}
@@ -372,7 +369,7 @@ jb.component('studio.insert-comp-option', { /* studio.insertCompOption */
   })
 })
 
-jb.component('studio.insert-control-menu', { /* studio.insertControlMenu */
+jb.component('studio.insertControlMenu', {
   impl: menu.menu({
     title: 'Insert',
     options: [
@@ -435,14 +432,14 @@ jb.component('studio.insert-control-menu', { /* studio.insertControlMenu */
   })
 })
 
-jb.component('studio.new-profile', { /* studio.newProfile */
+jb.component('studio.newProfile', {
   params: [
     {id: 'compName', as: 'string'}
   ],
   impl: (ctx,compName) => jb.studio.newProfile(jb.studio.getComp(compName), compName)
 })
 
-jb.component('studio.new-comp', { /* studio.newComp */
+jb.component('studio.newComp', {
   params: [
     {id: 'compName', as: 'string'},
     {id: 'compContent'}

@@ -1,5 +1,5 @@
 
-jb.component('studio.format-css', { /* studio.formatCss */
+jb.component('studio.formatCss', {
   params: [
     {id: 'css', as: 'string'}
   ],
@@ -12,7 +12,7 @@ jb.component('studio.format-css', { /* studio.formatCss */
   }
 })
 
-jb.component('studio.open-style-menu', { /* studio.openStyleMenu */
+jb.component('studio.openStyleMenu', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -47,7 +47,7 @@ jb.component('studio.open-style-menu', { /* studio.openStyleMenu */
   })
 })
 
-jb.component('studio.style-editor', { /* studio.styleEditor */
+jb.component('studio.styleEditor', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -133,7 +133,7 @@ jb.component('studio.style-editor', { /* studio.styleEditor */
   })
 })
 
-jb.component('studio.style-source', { /* studio.styleSource */
+jb.component('studio.styleSource', {
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -149,7 +149,7 @@ jb.component('studio.style-source', { /* studio.styleSource */
   }
 })
 
-jb.component('studio.open-style-editor', { /* studio.openStyleEditor */
+jb.component('studio.openStyleEditor', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -169,7 +169,7 @@ jb.component('studio.open-style-editor', { /* studio.openStyleEditor */
   })
 })
 
-jb.component('studio.style-editor-options', { /* studio.styleEditorOptions */
+jb.component('studio.styleEditorOptions', {
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}

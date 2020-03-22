@@ -1,7 +1,7 @@
 (function() {
 const st = jb.studio
 
-jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlistRefreshSuggestionsOptions */
+jb.component('studio.itemlistRefreshSuggestionsOptions', {
   type: 'feature',
   params: [
     {id: 'path', as: 'string'},
@@ -40,12 +40,12 @@ jb.component('studio.itemlist-refresh-suggestions-options', { /* studio.itemlist
   })
 })
 
-jb.component('studio.show-suggestions', { /* studio.showSuggestions */
+jb.component('studio.showSuggestions', {
   impl: ctx =>
     new st.suggestions(ctx.data,ctx.exp('%$suggestionData/expressionOnly%')).suggestionsRelevant()
 })
 
-jb.component('studio.paste-suggestion', { /* studio.pasteSuggestion */
+jb.component('studio.pasteSuggestion', {
   type: 'action',
   params: [
     {id: 'option', as: 'single', defaultValue: '%%'},
@@ -59,7 +59,7 @@ jb.component('studio.paste-suggestion', { /* studio.pasteSuggestion */
   }
 })
 
-jb.component('studio.suggestions-itemlist', { /* studio.suggestionsItemlist */
+jb.component('studio.suggestionsItemlist', {
   params: [
     {id: 'path', as: 'string'},
     {id: 'source', as: 'string'}
@@ -93,7 +93,7 @@ jb.component('studio.suggestions-itemlist', { /* studio.suggestionsItemlist */
   })
 })
 
-jb.component('studio.property-primitive', { /* studio.propertyPrimitive */
+jb.component('studio.propertyPrimitive', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -122,7 +122,7 @@ jb.component('studio.property-primitive', { /* studio.propertyPrimitive */
   })
 })
 
-jb.component('studio.jb-floating-input', { /* studio.jbFloatingInput */
+jb.component('studio.jbFloatingInput', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}

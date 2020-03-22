@@ -8,42 +8,42 @@ jb.component('people-array', { /* peopleArray */
   }
 })
 
-jb.component('suggestions-test.default-probe', { /* suggestionsTest.defaultProbe */
+jb.component('suggestionsTest.defaultProbe', {
   type: 'control',
   impl: text(
     ''
   )
 })
 
-jb.component('suggestions-test.simple-vars', { /* suggestionsTest.simpleVars */
+jb.component('suggestionsTest.simpleVars', {
   impl: suggestionsTest({
     expression: '%',
     expectedResult: contains('$people')
   })
 })
 
-jb.component('suggestions-test.vars-filter', { /* suggestionsTest.varsFilter */
+jb.component('suggestionsTest.varsFilter', {
   impl: suggestionsTest({
     expression: '%$p',
     expectedResult: and(contains('$people'), not(contains('$win')))
   })
 })
 
-jb.component('suggestions-test.component', { /* suggestionsTest.component */
+jb.component('suggestionsTest.component', {
   impl: suggestionsTest({
     expression: '=pi',
     expectedResult: contains('pipeline')
   })
 })
 
-jb.component('suggestions-test.inside-array', { /* suggestionsTest.insideArray */
+jb.component('suggestionsTest.insideArray', {
   impl: suggestionsTest({
     expression: '%$peopleArray/',
     expectedResult: and(contains('people'), not(contains('$people')))
   })
 })
 
-jb.component('suggestions-test.1', { /* suggestionsTest.1 */
+jb.component('suggestionsTest.1', {
   impl: suggestionsTest({
     expression: '%',
     expectedResult: contains('people')

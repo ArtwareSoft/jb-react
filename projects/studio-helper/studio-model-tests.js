@@ -1,31 +1,31 @@
-jb.component('studio-data-test.list-for-tests', { /* studioDataTest.listForTests */
+jb.component('studioDataTest.listForTests', {
   impl: list(
 
   )
 })
 
-jb.component('studio-data-test.categories-of-type', { /* studioDataTest.categoriesOfType */
+jb.component('studioDataTest.categoriesOfType', {
   impl: dataTest({
     calculate: pipeline(studio.categoriesOfType('control'), '%code%', join({})),
     expectedResult: contains(['control'])
   })
 })
 
-jb.component('studio-data-test.is-of-type-array', { /* studioDataTest.isOfTypeArray */
+jb.component('studioDataTest.isOfTypeArray', {
   impl: dataTest({
     calculate: studio.isOfType('studio-data-test.list-for-tests~impl~items~0', 'data'),
     expectedResult: '%%'
   })
 })
 
-jb.component('studio-data-test.param-type-array', { /* studioDataTest.paramTypeArray */
+jb.component('studioDataTest.paramTypeArray', {
   impl: dataTest({
     calculate: studio.paramType('studio-data-test.list-for-tests~items~0'),
     expectedResult: '%% == \"data\"'
   })
 })
 
-jb.component('test.simple-pipeline', { /* test.simplePipeline */
+jb.component('test.simplePipeline', {
   type: 'data',
   impl: pipeline(
     'x',
@@ -34,7 +34,7 @@ jb.component('test.simple-pipeline', { /* test.simplePipeline */
   )
 })
 
-jb.component('test.moveInTree', { /* test.moveInTree */
+jb.component('test.moveInTree', {
   type: 'control',
   impl: group({
     controls: [
@@ -83,7 +83,7 @@ jb.component('studio-data-test.moveFixDestination-empty-group', { /* studioDataT
   })
 })
 
-jb.component('studio-data-test.jb-editor-move', { /* studioDataTest.jbEditorMove */
+jb.component('studioDataTest.jbEditorMove', {
   impl: dataTest({
     calculate: pipeline(studio.val('test.moveInTree~impl~controls'), '%text%', join({})),
     runBefore: ctx =>
@@ -92,25 +92,25 @@ jb.component('studio-data-test.jb-editor-move', { /* studioDataTest.jbEditorMove
   })
 })
 
-jb.component('test.setSugarCompSimple', { /* test.setSugarCompSimple */
+jb.component('test.setSugarCompSimple', {
   impl: text({
-    
+
   })
 })
 
-jb.component('test.setSugarCompWrap', { /* test.setSugarCompWrap */
+jb.component('test.setSugarCompWrap', {
   impl: text(
     'a'
   )
 })
 
-jb.component('test.setSugarCompOverride1', { /* test.setSugarCompOverride1 */
+jb.component('test.setSugarCompOverride1', {
   impl: text({
     text: pipeline('a', 'b')
   })
 })
 
-jb.component('test.setSugarCompOverride2', { /* test.setSugarCompOverride2 */
+jb.component('test.setSugarCompOverride2', {
   impl: text({
     text: list('a', 'b')
   })
@@ -151,43 +151,43 @@ jb.component('studio-data-test.setSugarCompOverride2', { /* studioDataTest.setSu
   })
 })
 
-jb.component('test.profile-as-text-example', { /* test.profileAsTextExample */
+jb.component('test.profileAsTextExample', {
   impl: text(
     'a'
   )
 })
 
-jb.component('test.referee', { /* test.referee */
+jb.component('test.referee', {
   impl: ctx => ''
 })
 
-jb.component('test.referer1', { /* test.referer1 */
+jb.component('test.referer1', {
   impl: {
     '$pipline': [test.referee()]
   }
 })
 
-jb.component('test.referer2', { /* test.referer2 */
+jb.component('test.referer2', {
   impl: {
     '$pipline': [test.referee(), test.referee()]
   }
 })
 
-jb.component('studio-ui-test.goto-references-button', { /* studioUiTest.gotoReferencesButton */
+jb.component('studioUiTest.gotoReferencesButton', {
   impl: uiTest({
     control: studio.gotoReferencesButton('test.referee'),
     expectedResult: contains('3 references')
   })
 })
 
-jb.component('studio.completion-prop-of-pt', { /* studio.completionPropOfPt */
+jb.component('studio.completionPropOfPt', {
   impl: dataTest({
     calculate: ctx=> jb.studio.completion.hint("{$: 'group', controls :{$: 'itemlist',"),
     expectedResult: ctx => JSON.stringify(ctx.data || '').indexOf('items') != -1
   })
 })
 
-jb.component('studio.completion-pt-of-type', { /* studio.completionPtOfType */
+jb.component('studio.completionPtOfType', {
   impl: dataTest({
     calculate: ctx=> jb.studio.completion.hint("{$: 'group', controls:{ "),
     expectedResult: ctx =>
@@ -195,7 +195,7 @@ jb.component('studio.completion-pt-of-type', { /* studio.completionPtOfType */
   })
 })
 
-jb.component('studio.completion-pt-of-type-in-array', { /* studio.completionPtOfTypeInArray */
+jb.component('studio.completionPtOfTypeInArray', {
   impl: dataTest({
     calculate: ctx=> jb.studio.completion.hint("{$: 'group', controls :[{$: 'label' }, {$:'"),
     expectedResult: ctx =>

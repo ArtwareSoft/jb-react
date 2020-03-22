@@ -13,7 +13,7 @@ st.initTests = function() {
   st.compsRefHandler = st.compsRefHandler || jb.ui.extraWatchableHandler(compsRef);
 }
 
-jb.component('suggestions-test', { /* suggestionsTest */
+jb.component('suggestionsTest', {
   type: 'test',
   params: [
     {id: 'expression', as: 'string'},
@@ -40,7 +40,7 @@ jb.component('suggestions-test', { /* suggestionsTest */
   })
 })
 
-jb.component('jb-editor-children-test', { /* jbEditorChildrenTest */
+jb.component('jbEditorChildrenTest', {
   type: 'test',
   params: [
     {id: 'path', as: 'string'},
@@ -58,7 +58,7 @@ jb.component('jb-editor-children-test', { /* jbEditorChildrenTest */
   })
 })
 
-jb.component('studio-probe-test', { /* studioProbeTest */
+jb.component('studioProbeTest', {
   type: 'test',
   params: [
     {id: 'circuit', type: 'control', dynamic: true},
@@ -95,7 +95,7 @@ jb.component('studio-probe-test', { /* studioProbeTest */
   }
 })
 
-jb.component('path-change-test', { /* pathChangeTest */
+jb.component('pathChangeTest', {
   type: 'test',
   params: [
     {id: 'path', as: 'string'},

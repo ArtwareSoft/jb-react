@@ -29,15 +29,18 @@ st.animateMessage = function (el) {
 
 // ********* Components ************
 
-jb.component('studio.projectId', { 
+jb.component('studio.projectId', {
   impl: ctx => jb.macroName(ctx.exp('%$studio/project%'))
 })
 
 jb.component('studio.currentPagePath', {
-  impl: pipeline(list(studio.projectId(),'%$studio/page%'),join('.'))
+  impl: pipeline(
+    list(studio.projectId(), '%$studio/page%'),
+    join('.')
+  )
 })
 
-jb.component('studio.currentProfilePath', { /* studio.currentProfilePath */
+jb.component('studio.currentProfilePath', {
   impl: firstSucceeding(
     '%$simulateProfilePath%',
     '%$studio/profile_path%',
@@ -45,7 +48,7 @@ jb.component('studio.currentProfilePath', { /* studio.currentProfilePath */
   )
 })
 
-jb.component('studio.message', { /* studio.message */
+jb.component('studio.message', {
   type: 'action',
   params: [
     {id: 'message', as: 'string'}
@@ -53,12 +56,12 @@ jb.component('studio.message', { /* studio.message */
   impl: (ctx,message) => st.message(message)
 })
 
-jb.component('studio.redraw-studio', { /* studio.redrawStudio */
+jb.component('studio.redrawStudio', {
   type: 'action',
   impl: ctx => st.redrawStudio && st.redrawStudio()
 })
 
-jb.component('studio.last-edit', { /* studio.lastEdit */
+jb.component('studio.lastEdit', {
   type: 'data',
   params: [
     {id: 'justNow', as: 'boolean', type: 'boolean', defaultValue: true}
@@ -73,14 +76,14 @@ jb.component('studio.last-edit', { /* studio.lastEdit */
 	}
 })
 
-jb.component('studio.goto-last-edit', { /* studio.gotoLastEdit */
+jb.component('studio.gotoLastEdit', {
   type: 'action',
   impl: studio.gotoPath(
     studio.lastEdit()
   )
 })
 
-jb.component('studio.comp-source', { /* studio.compSource */
+jb.component('studio.compSource', {
   params: [
     {id: 'comp', as: 'string', defaultValue: studio.currentProfilePath()}
   ],

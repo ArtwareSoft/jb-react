@@ -1,6 +1,6 @@
 jb.ns('studioDialogFeature')
 
-jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
+jb.component('dialog.editSourceStyle', {
   type: 'dialog.style',
   params: [
     {id: 'id', as: 'string'},
@@ -66,7 +66,7 @@ jb.component('dialog.edit-source-style', { /* dialog.editSourceStyle */
   })
 })
 
-jb.component('studio.dialog-particle-style', { /* studio.dialogParticleStyle */
+jb.component('studio.dialogParticleStyle', {
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
@@ -76,7 +76,7 @@ jb.component('studio.dialog-particle-style', { /* studio.dialogParticleStyle */
 })
 
 
-jb.component('dialog.show-source-style', { /* dialog.showSourceStyle */
+jb.component('dialog.showSourceStyle', {
   type: 'dialog.style',
   params: [
     {id: 'id', as: 'string'},
@@ -123,7 +123,7 @@ jb.component('dialog.show-source-style', { /* dialog.showSourceStyle */
   })
 })
 
-jb.component('studio-dialog-feature.studio-popup-location', { /* studioDialogFeature.studioPopupLocation */
+jb.component('studioDialogFeature.studioPopupLocation', {
   type: 'dialog-feature',
   impl: interactive(
     (ctx,{cmp}) => {
@@ -137,7 +137,7 @@ jb.component('studio-dialog-feature.studio-popup-location', { /* studioDialogFea
   )
 })
 
-jb.component('studio-dialog-feature.refresh-title', { /* studioDialogFeature.refreshTitle */
+jb.component('studioDialogFeature.refreshTitle', {
   type: 'dialog-feature',
   impl: interactive(
     (ctx,{cmp}) => jb.callbag.pipe(
@@ -147,7 +147,7 @@ jb.component('studio-dialog-feature.refresh-title', { /* studioDialogFeature.ref
   )
 })
 
-jb.component('studio.code-mirror-mode', { /* studio.codeMirrorMode */
+jb.component('studio.codeMirrorMode', {
   params: [
     {id: 'path', as: 'string'}
   ],
@@ -160,7 +160,7 @@ jb.component('studio.code-mirror-mode', { /* studio.codeMirrorMode */
 	}
 })
 
-jb.component('studio.open-multiline-edit', { /* studio.openMultilineEdit */
+jb.component('studio.openMultilineEdit', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -174,7 +174,7 @@ jb.component('studio.open-multiline-edit', { /* studio.openMultilineEdit */
   })
 })
 
-jb.component('dialog.studio-floating', { /* dialog.studioFloating */
+jb.component('dialog.studioFloating', {
   type: 'dialog.style',
   params: [
     {id: 'id', as: 'string'},
@@ -234,7 +234,7 @@ jb.component('dialog.studio-floating', { /* dialog.studioFloating */
   })
 })
 
-jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePhonePopup */
+jb.component('studio.openResponsivePhonePopup', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -272,14 +272,14 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
               title: 'width',
               style: editableText.mdcInput(),
               min: '%$controlItem/width/min%',
-              max: '%$controlItem/width/max%',
+              max: '%$controlItem/width/max%'
             }),
             editableNumber({
               databind: '%$studio/responsive/{%$controlItem/id%}/height%',
               title: 'height',
               style: editableText.mdcInput(),
               min: '%$controlItem/height/min%',
-              max: '%$controlItem/height/max%',
+              max: '%$controlItem/height/max%'
             })
           ],
           features: [css('{ padding-left: 12px; padding-top: 7px }')]

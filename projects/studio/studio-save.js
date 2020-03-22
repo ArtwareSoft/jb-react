@@ -1,7 +1,7 @@
 (function() {
 const st = jb.studio;
 
-jb.component('studio.save-components', { /* studio.saveComponents */
+jb.component('studio.saveComponents', {
   type: 'action,has-side-effects',
   impl: ctx => {
     const {pipe, fromIter, catchError,toPromiseArray,concatMap,fromPromise,Do} = jb.callbag
@@ -11,7 +11,7 @@ jb.component('studio.save-components', { /* studio.saveComponents */
 
     return pipe(
       fromIter(filesToUpdate),
-      concatMap(e => fromPromise(st.host.getFile(e.path).then(fileContent=> 
+      concatMap(e => fromPromise(st.host.getFile(e.path).then(fileContent=>
         st.host.saveFile(e.path,newFileContent(fileContent, e.comps)).then(() => e)
       ))),
       Do(e=>{
@@ -59,7 +59,7 @@ function newFileContent(fileContent, comps) {
   return lines.join('\n')
 }
 
-jb.component('studio.file-after-changes', { /* studio.fileAfterChanges */
+jb.component('studio.fileAfterChanges', {
   params: [
     {id: 'fileName', as: 'string'},
     {id: 'fileContent', as: 'string'}

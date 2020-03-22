@@ -299,28 +299,28 @@ Object.assign(st, {
 
 // ******* components ***************
 
-jb.component('studio.ref', { /* studio.ref */
+jb.component('studio.ref', {
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
   impl: (ctx,path) => st.refOfPath(path)
 })
 
-jb.component('studio.path-of-ref', { /* studio.pathOfRef */
+jb.component('studio.pathOfRef', {
   params: [
     {id: 'ref', defaultValue: '%%', mandatory: true}
   ],
   impl: (ctx,ref) => st.pathOfRef(ref)
 })
 
-jb.component('studio.name-of-ref', { /* studio.nameOfRef */
+jb.component('studio.nameOfRef', {
   params: [
     {id: 'ref', defaultValue: '%%', mandatory: true}
   ],
   impl: (ctx,ref) => st.nameOfRef(ref)
 })
 
-jb.component('studio.watch-path', { /* studio.watchPath */
+jb.component('studio.watchPath', {
   type: 'feature',
   category: 'group:0',
   params: [
@@ -336,7 +336,7 @@ jb.component('studio.watch-path', { /* studio.watchPath */
   })
 })
 
-jb.component('studio.watch-script-changes', { /* studio.watchScriptChanges */
+jb.component('studio.watchScriptChanges', {
   type: 'feature',
   impl: ctx => ({
 	  afterViewInit: cmp => pipe(st.scriptChange,
@@ -346,7 +346,7 @@ jb.component('studio.watch-script-changes', { /* studio.watchScriptChanges */
    })
 })
 
-jb.component('studio.watch-components', { /* studio.watchComponents */
+jb.component('studio.watchComponents', {
   type: 'feature',
   impl: ctx => ({
 	  afterViewInit: cmp => pipe(st.scriptChange,

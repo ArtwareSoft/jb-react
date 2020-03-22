@@ -1,9 +1,9 @@
-jb.component('studio.all-comps', { /* studio.allComps */
+jb.component('studio.allComps', {
   type: 'data',
   impl: (ctx,cmpId) => Object.keys(jb.studio.previewjb.comps)
 })
 
-jb.component('studio.component-statistics', { /* studio.componentStatistics */
+jb.component('studio.componentStatistics', {
   type: 'data',
   params: [
     {id: 'cmpId', as: 'string', defaultValue: '%%'}
@@ -51,7 +51,7 @@ jb.component('studio.component-statistics', { /* studio.componentStatistics */
 	}
 })
 
-jb.component('studio.references', { /* studio.references */
+jb.component('studio.references', {
   type: 'data',
   params: [
     {id: 'path', as: 'string'}
@@ -76,7 +76,7 @@ jb.component('studio.references', { /* studio.references */
 	}
 })
 
-jb.component('studio.goto-references-options', { /* studio.gotoReferencesOptions */
+jb.component('studio.gotoReferencesOptions', {
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'},
@@ -105,7 +105,7 @@ jb.component('studio.goto-references-options', { /* studio.gotoReferencesOptions
   )
 })
 
-jb.component('studio.goto-references-button', { /* studio.gotoReferencesButton */
+jb.component('studio.gotoReferencesButton', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -126,7 +126,7 @@ jb.component('studio.goto-references-button', { /* studio.gotoReferencesButton *
   )
 })
 
-jb.component('studio.goto-references-menu', { /* studio.gotoReferencesMenu */
+jb.component('studio.gotoReferencesMenu', {
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'}
@@ -145,7 +145,7 @@ jb.component('studio.goto-references-menu', { /* studio.gotoReferencesMenu */
   }
 })
 
-jb.component('studio.components-list', { /* studio.componentsList */
+jb.component('studio.componentsList', {
   type: 'control',
   impl: group({
     controls: [

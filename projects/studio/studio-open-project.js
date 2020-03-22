@@ -1,4 +1,4 @@
-jb.component('studio.goto-project', { /* studio.gotoProject */
+jb.component('studio.gotoProject', {
   type: 'action',
   params: [
     {id: 'name', as: 'string'}
@@ -9,7 +9,7 @@ jb.component('studio.goto-project', { /* studio.gotoProject */
   )
 })
 
-jb.component('studio.choose-project', { /* studio.chooseProject */
+jb.component('studio.chooseProject', {
   type: 'control',
   impl: group({
     title: 'itemlist-with-find',
@@ -44,7 +44,7 @@ jb.component('studio.choose-project', { /* studio.chooseProject */
   })
 })
 
-jb.component('studio.open-project', { /* studio.openProject */
+jb.component('studio.openProject', {
   type: 'action',
   impl: openDialog({
     style: dialog.dialogOkCancel('OK', 'Cancel'),

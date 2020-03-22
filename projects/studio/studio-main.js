@@ -1,4 +1,4 @@
-jb.component('data-resource.studio', { /* dataResource.studio */
+jb.component('dataResource.studio', {
   watchableData: {
     project: '',
     page: '',
@@ -15,7 +15,7 @@ jb.component('data-resource.pickSelection', { /* dataResource.pickSelection */
     elem: null
   }
 })
-jb.component('studio.pages', { /* studio.pages */
+jb.component('studio.pages', {
   type: 'control',
   impl: group({
     title: 'pages',
@@ -63,7 +63,7 @@ jb.component('studio.pages', { /* studio.pages */
           features: [
             feature.onEvent({
               event: 'click',
-              action: studio.openJbEditor(pipeline(list(studio.projectId(),'%%'),join('.')))
+              action: studio.openJbEditor({path: pipeline(list(studio.projectId(), '%%'), join('.'))})
             })
           ]
         }),
@@ -79,18 +79,18 @@ jb.component('studio.pages', { /* studio.pages */
   })
 })
 
-jb.component('studio.ctx-counters', { /* studio.ctxCounters */
+jb.component('studio.ctxCounters', {
   type: 'control',
   impl: text({
     text: ctx => (jb.frame.performance && performance.memory && performance.memory.usedJSHeapSize / 1000000)  + 'M',
     features: [
       css('{ background: #F5F5F5; position: absolute; bottom: 0; right: 0; }'),
-      watchObservable(ctx => jb.studio.scriptChange,500)
+      watchObservable(ctx => jb.studio.scriptChange, 500)
     ]
   })
 })
 
-jb.component('studio.sample-project', { /* studio.sampleProject */
+jb.component('studio.sampleProject', {
   type: 'menu.option',
   params: [
     {id: 'project', as: 'string'}
@@ -104,7 +104,7 @@ jb.component('studio.sample-project', { /* studio.sampleProject */
   })
 })
 
-jb.component('studio.main-menu', { /* studio.mainMenu */
+jb.component('studio.mainMenu', {
   type: 'menu.option',
   impl: menu.menu({
     title: 'main',
@@ -194,7 +194,7 @@ jb.component('studio.main-menu', { /* studio.mainMenu */
   })
 })
 
-jb.component('studio.top-bar', { /* studio.topBar */
+jb.component('studio.topBar', {
   type: 'control',
   impl: group({
     title: 'top bar',
@@ -239,7 +239,7 @@ jb.component('studio.top-bar', { /* studio.topBar */
   })
 })
 
-jb.component('studio.all', { /* studio.all */
+jb.component('studio.all', {
   type: 'control',
   impl: group({
     controls: [
@@ -263,7 +263,7 @@ jb.component('studio.all', { /* studio.all */
   })
 })
 
-jb.component('studio.path-hyperlink', { /* studio.pathHyperlink */
+jb.component('studio.pathHyperlink', {
   type: 'control',
   params: [
     {id: 'path', as: 'string', mandatory: true},

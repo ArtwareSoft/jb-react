@@ -1,4 +1,4 @@
-jb.component('editable-text.studio-primitive-text', { /* editableText.studioPrimitiveText */
+jb.component('editableText.studioPrimitiveText', {
   type: 'editable-text.style',
   impl: customStyle({
     template: (cmp,{databind},h) => h('input', {
@@ -10,7 +10,7 @@ jb.component('editable-text.studio-primitive-text', { /* editableText.studioPrim
   })
 })
 
-jb.component('editable-text.floating-input', { /* editableText.floatingInput */
+jb.component('editableText.floatingInput', {
   type: 'editable-text.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{class:'mdc-text-field'},[
@@ -39,7 +39,7 @@ jb.studio.codeMirrorUtils = Object.assign(jb.studio.codeMirrorUtils || {}, {
   }
 })
 
-jb.component('editable-text.studio-codemirror-tgp', { /* editableText.studioCodemirrorTgp */
+jb.component('editableText.studioCodemirrorTgp', {
   type: 'editable-text.style',
   impl: editableText.codemirror({
     cm_settings: {
@@ -64,7 +64,7 @@ jb.component('editable-text.studio-codemirror-tgp', { /* editableText.studioCode
 })
 
 
-jb.component('button.select-profile-style', { /* button.selectProfileStyle */
+jb.component('button.selectProfileStyle', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title},h) =>
@@ -78,7 +78,7 @@ jb.component('button.select-profile-style', { /* button.selectProfileStyle */
   })
 })
 
-jb.component('studio.property-toolbar-style', { /* studio.propertyToolbarStyle */
+jb.component('studio.propertyToolbarStyle', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,state,h) => h('i',{class: 'material-icons', onclick: true, title: 'more...' },'more_vert'),
@@ -88,7 +88,7 @@ jb.component('studio.property-toolbar-style', { /* studio.propertyToolbarStyle *
   })
 })
 
-jb.component('button.studio-script', { /* button.studioScript */
+jb.component('button.studioScript', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,state,h) =>
@@ -104,7 +104,7 @@ jb.component('button.studio-script', { /* button.studioScript */
   })
 })
 
-jb.component('picklist.studio-enum', { /* picklist.studioEnum */
+jb.component('picklist.studioEnum', {
   type: 'picklist.style',
   impl: customStyle({
     template: (cmp,state,h) => h('select', { value: state.databind, onchange: true },
@@ -125,7 +125,7 @@ jb.component('picklist.studio-enum', { /* picklist.studioEnum */
   })
 })
 
-jb.component('text.studio-message', { /* text.studioMessage */
+jb.component('text.studioMessage', {
   type: 'text.style',
   impl: customStyle({
     template: (cmp,state,h) => h('span',{class: 'studio-message'}, state.text),
@@ -139,7 +139,7 @@ jb.component('text.studio-message', { /* text.studioMessage */
   })
 })
 
-jb.component('dialog.studio-multiline-edit', { /* dialog.studioMultilineEdit */
+jb.component('dialog.studioMultilineEdit', {
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},[

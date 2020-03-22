@@ -131,7 +131,7 @@ st.Probe = class {
     }
 }
 
-jb.component('studio.probe', { /* studio.probe */
+jb.component('studio.probe', {
   type: 'data',
   params: [
     {id: 'path', as: 'string', dynamic: true}

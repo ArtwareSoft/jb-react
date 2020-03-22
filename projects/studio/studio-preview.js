@@ -82,7 +82,7 @@ st.initPreview = function(preview_window,allowedTypes) {
 			}
 }
 
-jb.component('studio.refresh-preview', { /* studio.refreshPreview */
+jb.component('studio.refreshPreview', {
   type: 'action',
   impl: ctx => {
     jb.ui.garbageCollectCtxDictionary(jb.frame.document.body,true);
@@ -94,7 +94,7 @@ jb.component('studio.refresh-preview', { /* studio.refreshPreview */
   }
 })
 
-jb.component('studio.set-preview-size', { /* studio.setPreviewSize */
+jb.component('studio.setPreviewSize', {
   type: 'action',
   params: [
     {id: 'width', as: 'number'},
@@ -113,7 +113,7 @@ jb.component('studio.set-preview-size', { /* studio.setPreviewSize */
   }
 })
 
-jb.component('studio.wait-for-preview-iframe', { /* studio.waitForPreviewIframe */
+jb.component('studio.waitForPreviewIframe', {
   impl: () => jb.ui.waitFor(()=> jb.studio.previewWindow)
 })
 
@@ -125,7 +125,7 @@ jb.studio.pageChange = pipe(jb.ui.resourceChange(), filter(e=>e.path.join('/') =
         return jb.resources.studio.page ? [{page}] : []
 }))
 
-jb.component('studio.preview-widget', { /* studio.previewWidget */
+jb.component('studio.previewWidget', {
   type: 'control',
   params: [
     {id: 'style', type: 'preview-style', dynamic: true, defaultValue: studio.previewWidgetImpl()},
@@ -152,7 +152,7 @@ jb.component('studio.preview-widget', { /* studio.previewWidget */
   ))
 })
 
-jb.component('studio.preview-widget-impl', { /* studio.previewWidgetImpl */
+jb.component('studio.previewWidgetImpl', {
   type: 'preview-style',
   impl: customStyle({
     template: (cmp,{width,height, loadingMessage, src, host },h) => {

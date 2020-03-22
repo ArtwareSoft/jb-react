@@ -23,12 +23,12 @@ jb.component('dataResource.room', { /* dataResource.room */
   passiveData: ''
 })
 
-jb.component('helloWorld.main', { /* helloWorld.main */
+jb.component('helloWorld.main', {
   type: 'control',
   impl: group({
     layout: layout.vertical(),
     controls: [
-      text({text: 'hello world', title: 'my title'})
+      text({text: 'hi there', title: 'my title'})
     ],
     features: css.width('400')
   })

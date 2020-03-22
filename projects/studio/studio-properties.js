@@ -1,4 +1,4 @@
-jb.component('studio.properties', { /* studio.properties */
+jb.component('studio.properties', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'},
@@ -61,7 +61,7 @@ jb.component('studio.properties', { /* studio.properties */
   })
 })
 
-jb.component('studio.prop-field', { /* studio.propField */
+jb.component('studio.propField', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'},
@@ -127,7 +127,7 @@ jb.component('studio.prop-field', { /* studio.propField */
   })
 })
 
-jb.component('studio.property-toolbar', { /* studio.propertyToolbar */
+jb.component('studio.propertyToolbar', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -139,7 +139,7 @@ jb.component('studio.property-toolbar', { /* studio.propertyToolbar */
   })
 })
 
-jb.component('studio.property-toolbar-feature', { /* studio.propertyToolbarFeature */
+jb.component('studio.propertyToolbarFeature', {
   type: 'feature',
   params: [
     {id: 'path', as: 'string'}
@@ -150,7 +150,7 @@ jb.component('studio.property-toolbar-feature', { /* studio.propertyToolbarFeatu
   )
 })
 
-jb.component('studio.property-script', { /* studio.propertyScript */
+jb.component('studio.propertyScript', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -165,7 +165,7 @@ jb.component('studio.property-script', { /* studio.propertyScript */
   })
 })
 
-jb.component('studio.property-boolean', { /* studio.propertyBoolean */
+jb.component('studio.propertyBoolean', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -176,7 +176,7 @@ jb.component('studio.property-boolean', { /* studio.propertyBoolean */
   })
 })
 
-jb.component('studio.property-enum', { /* studio.propertyEnum */
+jb.component('studio.propertyEnum', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -189,7 +189,7 @@ jb.component('studio.property-enum', { /* studio.propertyEnum */
   })
 })
 
-jb.component('studio.jb-floating-input-rich', { /* studio.jbFloatingInputRich */
+jb.component('studio.jbFloatingInputRich', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
@@ -200,7 +200,7 @@ jb.component('studio.jb-floating-input-rich', { /* studio.jbFloatingInputRich */
   })
 })
 
-jb.component('studio.open-properties', { /* studio.openProperties */
+jb.component('studio.openProperties', {
   type: 'action',
   params: [
     {id: 'focus', type: 'boolean', as: 'boolean'}

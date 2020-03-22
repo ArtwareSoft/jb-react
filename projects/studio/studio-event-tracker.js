@@ -4,7 +4,7 @@ const st = jb.studio;
 //ui.stateChangeEm.next({cmp: cmp, opEvent: opEvent})
 //({op: op, ref: ref, srcCtx: srcCtx, oldRef: oldRef, oldResources: oldResources})
 
-jb.component('studio.event-title', { /* studio.eventTitle */
+jb.component('studio.eventTitle', {
   type: 'data',
   params: [
     {id: 'event', as: 'single', defaultValue: '%%'}
@@ -13,7 +13,7 @@ jb.component('studio.event-title', { /* studio.eventTitle */
 		event ? st.pathSummary(event.cmp.ctxForPick.path).replace(/~/g,'/') : ''
 })
 
-jb.component('studio.event-cmp', { /* studio.eventCmp */
+jb.component('studio.eventCmp', {
   type: 'data',
   params: [
     {id: 'event', as: 'single', defaultValue: '%%'}
@@ -22,7 +22,7 @@ jb.component('studio.event-cmp', { /* studio.eventCmp */
 		event ? st.pathSummary(event.cmp.ctxForPick.path).replace(/~/g,'/') : ''
 })
 
-jb.component('studio.event-cause', { /* studio.eventCause */
+jb.component('studio.eventCause', {
   type: 'data',
   params: [
     {id: 'event', as: 'single', defaultValue: '%%'}
@@ -31,7 +31,7 @@ jb.component('studio.event-cause', { /* studio.eventCause */
 		(event && event.opEvent) ? st.nameOfRef(event.opEvent.ref) + ' changed to "' + st.valSummary(event.opEvent.newVal) + '"' : ''
 })
 
-jb.component('studio.state-change-events', { /* studio.stateChangeEvents */
+jb.component('studio.stateChangeEvents', {
   type: 'data',
   params: [
     {id: 'studio', as: 'boolean', type: 'boolean'}
@@ -40,7 +40,7 @@ jb.component('studio.state-change-events', { /* studio.stateChangeEvents */
 		(studio ? st.studioStateChangeEvents : st.stateChangeEvents) || []
 })
 
-jb.component('studio.highlight-event', { /* studio.highlightEvent */
+jb.component('studio.highlightEvent', {
   type: 'action',
   params: [
     {id: 'event', as: 'single', defaultValue: '%%'}
@@ -50,7 +50,7 @@ jb.component('studio.highlight-event', { /* studio.highlightEvent */
   )
 })
 
-jb.component('studio.event-tracker', { /* studio.eventTracker */
+jb.component('studio.eventTracker', {
   type: 'control',
   params: [
     {id: 'studio', as: 'boolean', type: 'boolean'}
@@ -108,14 +108,14 @@ jb.component('studio.event-tracker', { /* studio.eventTracker */
       {
         '$if': '%$studio%',
         then: watchObservable(ctx => jb.ui.stateChangeEm, 500),
-        else: watchObservable(ctx => st.previewjb.ui.stateChangeEm,500)
+        else: watchObservable(ctx => st.previewjb.ui.stateChangeEm, 500)
       }
     ]
   })
 })
 
 
-jb.component('studio.open-event-tracker', { /* studio.openEventTracker */
+jb.component('studio.openEventTracker', {
   type: 'action',
   params: [
     {id: 'studio', as: 'boolean', type: 'boolean'}

@@ -2,7 +2,7 @@
 const st = jb.studio
 jb.ns('animation')
 
-jb.component('studio.position-of-data', { /* studio.positionOfData */
+jb.component('studio.positionOfData', {
   type: 'position',
   params: [
     {id: 'path', as: 'string'}
@@ -68,7 +68,7 @@ function positionsOfCtx(ctx)  {
     return elemsOfCtx(ctx).map(el => fixPreviewOffset(enrichWithCenter(jb.ui.offset(el))))
 }
 
-jb.component('studio.animate-watch-ref-particle', { /* studio.animateWatchRefParticle */
+jb.component('studio.animateWatchRefParticle', {
   type: 'action',
   params: [
     {id: 'from'},
@@ -106,7 +106,7 @@ jb.component('studio.animate-watch-ref-particle', { /* studio.animateWatchRefPar
   })
 })
 
-jb.component('studio.animate-cmp-destroy', { /* studio.animateCmpDestroy */
+jb.component('studio.animateCmpDestroy', {
   type: 'action',
   params: [
     {id: 'pos'}
@@ -148,7 +148,7 @@ jb.component('studio.animate-cmp-destroy', { /* studio.animateCmpDestroy */
   })
 })
 
-jb.component('studio.animate-cmp-refresh', { /* studio.animateCmpRefresh */
+jb.component('studio.animateCmpRefresh', {
   type: 'action',
   params: [
     {id: 'pos'}
@@ -177,7 +177,7 @@ jb.component('studio.animate-cmp-refresh', { /* studio.animateCmpRefresh */
   })
 })
 
-jb.component('animate.refresh-elem', { /* animate.refreshElem */
+jb.component('animate.refreshElem', {
   type: 'action',
   params: [
     {id: 'elem'}

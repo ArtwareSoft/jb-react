@@ -23,7 +23,7 @@ Object.assign(jb.ui,{
   }
 })
 
-jb.component('content-editable.effective-prop', { /* contentEditable.effectiveProp */
+jb.component('contentEditable.effectiveProp', {
   type: 'control',
   params: [
     {id: 'axis', as: 'string', options: 'x,y'}
@@ -34,7 +34,7 @@ jb.component('content-editable.effective-prop', { /* contentEditable.effectivePr
   )
 })
 
-jb.component('content-editable.action-icon', { /* contentEditable.actionIcon */
+jb.component('contentEditable.actionIcon', {
   type: 'control',
   params: [
     {id: 'cssProp', as: 'string'}
@@ -49,7 +49,7 @@ jb.component('content-editable.action-icon', { /* contentEditable.actionIcon */
     : ''
 })
 
-jb.component('content-editable.position-button', { /* contentEditable.positionButton */
+jb.component('contentEditable.positionButton', {
   type: 'control',
   params: [
     {id: 'cssProp', as: 'string'},
@@ -79,7 +79,7 @@ jb.component('content-editable.position-button', { /* contentEditable.positionBu
   })
 })
 
-jb.component('content-editable.position-thumbs', { /* contentEditable.positionThumbs */
+jb.component('contentEditable.positionThumbs', {
   type: 'control',
   params: [
     {id: 'axis', as: 'string', options: 'x,y'}
@@ -150,7 +150,7 @@ jb.component('content-editable.position-thumbs', { /* contentEditable.positionTh
   })
 })
 
-jb.component('content-editable.open-position-thumbs', { /* contentEditable.openPositionThumbs */
+jb.component('contentEditable.openPositionThumbs', {
   type: 'action',
   params: [
     {id: 'axis', as: 'string', options: 'x,y'}
@@ -189,7 +189,7 @@ jb.component('content-editable.open-position-thumbs', { /* contentEditable.openP
   )
 })
 
-jb.component('content-editable.write-pos-to-script', { /* contentEditable.writePosToScript */
+jb.component('contentEditable.writePosToScript', {
   type: 'action',
   impl: ctx => {
     const el = jb.ui.contentEditable.current.base
@@ -200,7 +200,7 @@ jb.component('content-editable.write-pos-to-script', { /* contentEditable.writeP
   }
 })
 
-jb.component('content-editable.dragable-thumb', { /* contentEditable.dragableThumb */
+jb.component('contentEditable.dragableThumb', {
   type: 'feature',
   params: [
     {id: 'axis', as: 'string', options: 'x,y'}
@@ -261,7 +261,7 @@ jb.component('content-editable.dragable-thumb', { /* contentEditable.dragableThu
   )
 })
 
-jb.component('content-editable.position-thumbs-style', { /* contentEditable.positionThumbsStyle */
+jb.component('contentEditable.positionThumbsStyle', {
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),

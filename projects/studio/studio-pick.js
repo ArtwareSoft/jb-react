@@ -7,7 +7,7 @@ function initStudioEditing() {
     st.previewjb.comps[e[0]] = { ...e[1], [jb.location] : [e[1][jb.location][0].replace(/!st!/,''), e[1][jb.location][1]]})
 }
 
-jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
+jb.component('dialogFeature.studioPick', {
   type: 'dialog-feature',
   params: [
     {id: 'from', as: 'string'}
@@ -23,7 +23,7 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
 
       const projectPrefix = ctx.run(studio.currentPagePath())
       const testHost = ctx.exp('%$queryParams/host%') == 'test'
-      const eventToElemPredicate = from == 'preview' ? 
+      const eventToElemPredicate = from == 'preview' ?
         (path => testHost || path.indexOf(projectPrefix) == 0) : (path => st.isStudioCmp(path.split('~')[0]))
       const cover = _window.document.createElement('div')
       cover.className = 'jb-cover'
@@ -59,7 +59,7 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
   })
 })
 
-jb.component('dialog.studio-pick-dialog', { /* dialog.studioPickDialog */
+jb.component('dialog.studioPickDialog', {
   hidden: true,
   type: 'dialog.style',
   params: [
@@ -199,7 +199,7 @@ Object.assign(st, {
   }
 })
 
-jb.component('studio.highlight-by-path', { /* studio.highlightByPath */
+jb.component('studio.highlightByPath', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -214,7 +214,7 @@ jb.component('studio.highlight-by-path', { /* studio.highlightByPath */
   }
 })
 
-jb.component('studio.pick', { /* studio.pick */
+jb.component('studio.pick', {
   type: 'action',
   params: [
     {id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'},
@@ -227,7 +227,7 @@ jb.component('studio.pick', { /* studio.pick */
   })
 })
 
-jb.component('studio.pick-toolbar', { /* studio.pickToolbar */
+jb.component('studio.pickToolbar', {
   type: 'control',
   impl: button({
     title: join({
