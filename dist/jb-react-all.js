@@ -10061,14 +10061,14 @@ jb.ui.workers = {}
 
 jb.component('worker.main', {
   type: 'remote',
-  impl: {
-    getWorker: function() {
+  impl: ctx => ({
+    getWorker() {
             if (jb.ui.mainWorker)
                 return Promise.resolve(jb.ui.mainWorker)
             jb.ui.workers[1] = jb.ui.mainWorker = createWorker(1)
             return jb.ui.mainWorker.exec('"init"').then(()=>jb.ui.mainWorker) // wait for first dummy run with empty input
         },
-    createWidget: function(ctx,main,widgetId) { // widget receives events and updates back with vdom deltas
+    createWidget(ctx,main,widgetId) { // widget receives events and updates back with vdom deltas
             const widgetProf = pipeline({$asIs: {widgetId,main}}, // runs on worker
                 ctx => {
                     const {main, widgetId} = ctx.data
@@ -10099,7 +10099,7 @@ jb.component('worker.main', {
                 return worker.exec(widgetProf)
             })
         }
-  }
+  })
 })
 
 jb.component('remote.initMainWorker', {
