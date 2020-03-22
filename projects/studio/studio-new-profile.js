@@ -304,7 +304,10 @@ jb.component('studio.openNewPage', {
           title: 'page name',
           databind: '%$dialogData/name%',
           style: editableText.mdcInput(),
-          features: feature.onEnter(dialog.closeContainingPopup())
+          features: [
+            feature.onEnter(dialog.closeContainingPopup()),
+            validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid page name')
+          ]
         })
       ],
       features: css.padding({top: '14', left: '11'})
@@ -336,7 +339,10 @@ jb.component('studio.openNewFunction', {
           title: 'function name',
           databind: '%$dialogData/name%',
           style: editableText.mdcInput(),
-          features: feature.onEnter(dialog.closeContainingPopup())
+          features: [
+            feature.onEnter(dialog.closeContainingPopup()),
+            validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid function name')
+          ]
         })
       ],
       features: css.padding({top: '14', left: '11'})

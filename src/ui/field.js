@@ -41,8 +41,10 @@ jb.component('field.databind', {
 })
 
 function writeFieldData(ctx,cmp,value,oneWay) {
-  jb.ui.checkValidationError(cmp,value);
+  if (jb.val(ctx.vars.$model.databind(cmp.ctx)) == value) return
   jb.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx);
+  jb.ui.checkValidationError(cmp,value);
+  cmp.onValueChange && cmp.onValueChange(value) // used to float label
   !oneWay && jb.ui.refreshElem(cmp.base,null,{srcCtx: ctx.componentContext});
 }
 

@@ -1569,11 +1569,12 @@ jb.component('uiTest.validator', {
     control: group({
       controls: [
         editableText({
-          databind: '%$person/name%',
+          title: 'project',
+          databind: '%$person/project%',
           features: [id('fld'), validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid project name')]
         })
       ],
-      features: variable({name: 'formContainer', value: obj(prop('err', ''))})
+//      features: variable({name: 'formContainer', value: obj(prop('err', ''))})
     }),
     action: uiAction.setText('a b', '#fld'),
     expectedResult: contains('invalid project name')

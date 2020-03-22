@@ -28,15 +28,17 @@ jb.component('editableText.mdcInput', {
     {id: 'width', as: 'number'}
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{class: ['mdc-text-field',state.error ? 'is-invalid' : ''].join(' ') },[
-        h('input', { type: 'text', class: 'mdc-text-field__input', id: 'input_' + state.fieldId,
-            value: state.databind, onchange: true, onkeyup: true, onblur: true,
-        }),
-        h('label',{class: 'mdc-floating-label', for: 'input_' + state.fieldId},state.title),
-        h('div',{class: 'mdc-line-ripple' }),
-        h('span',{class: 'mdc-text-field-helper-text' }, state.error || '')
+    template: (cmp,state,h) => h('div',{}, [
+      h('div',{class: 'mdc-text-field' },[
+          h('input', { type: 'text', class: 'mdc-text-field__input', id: 'input_' + state.fieldId,
+              value: state.databind, onchange: true, onkeyup: true, onblur: true,
+          }),
+          h('label',{class: 'mdc-floating-label', for: 'input_' + state.fieldId},state.title),
+          h('div',{class: 'mdc-line-ripple' }) 
+        ]),
+        h('div',{class: 'mdc-text-field-helper-line' }, state.error || '')
       ]),
-    css: '{ {?width: %$width%px?} }',
+    css: `{ {?width: %$width%px?} } ~ .mdc-text-field-helper-line { color: red }`,
     features: [field.databindText(), mdcStyle.initDynamic()]
   })
 })
