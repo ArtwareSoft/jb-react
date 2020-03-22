@@ -441,7 +441,7 @@ jb.component('uiTest.remoteWidgetEditableText', {
     runBefore: remote.initMainWorker(
       ctx => `http://${location.host}/projects/ui-tests/remote-widgets.js`
     ),
-    action: [delay(40), ctx => ctx.run(uiAction.setText('hello', '#inp'))],
+    action: [delay(40), ctx => ctx.run(uiAction.setText('hello', '#inp')),delay(40)],
     expectedResult: contains(['<span', 'hello', '</span'])
   })
 })
