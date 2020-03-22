@@ -1,4 +1,4 @@
-jb.component('open-dialog', { /* openDialog */
+jb.component('openDialog', {
   type: 'action',
   params: [
     {id: 'id', as: 'string'},
@@ -23,7 +23,7 @@ jb.component('open-dialog', { /* openDialog */
 	}
 })
 
-jb.component('dialog.close-containing-popup', { /* dialog.closeContainingPopup */
+jb.component('dialog.closeContainingPopup', {
   description: 'close parent dialog',
   type: 'action',
   params: [
@@ -32,7 +32,7 @@ jb.component('dialog.close-containing-popup', { /* dialog.closeContainingPopup *
   impl: (context,OK) => context.vars.$dialog && context.vars.$dialog.close({OK:OK})
 })
 
-jb.component('dialog-feature.unique-dialog', { /* dialogFeature.uniqueDialog */
+jb.component('dialogFeature.uniqueDialog', {
   description: 'automatic close dialogs of the same id',
   type: 'dialog-feature',
   params: [
@@ -116,7 +116,7 @@ jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
 	})
   })
 
-jb.component('dialog-feature.near-launcher-position', { /* dialogFeature.nearLauncherPosition */
+jb.component('dialogFeature.nearLauncherPosition', {
   type: 'dialog-feature',
   params: [
     {id: 'offsetLeft', as: 'number', dynamic: true, defaultValue: 0},
@@ -165,7 +165,7 @@ jb.component('dialog-feature.onClose', { /* dialogFeature.onClose */
 	)})
 })
 
-jb.component('dialog-feature.close-when-clicking-outside', { /* dialogFeature.closeWhenClickingOutside */
+jb.component('dialogFeature.closeWhenClickingOutside', {
   type: 'dialog-feature',
   params: [
     {id: 'delay', as: 'number', defaultValue: 100}
@@ -190,7 +190,7 @@ jb.component('dialog-feature.close-when-clicking-outside', { /* dialogFeature.cl
 	}
 })
 
-jb.component('dialog.close-dialog', { /* dialog.closeDialog */
+jb.component('dialog.closeDialog', {
   type: 'action',
   params: [
     {id: 'id', as: 'string'},
@@ -199,12 +199,12 @@ jb.component('dialog.close-dialog', { /* dialog.closeDialog */
   impl: (ctx,id,delay) => jb.ui.dialogs.closeDialogs(jb.ui.dialogs.dialogs.filter(d=>d.id == id))
 })
 
-jb.component('dialog.close-all', { /* dialog.closeAll */
+jb.component('dialog.closeAll', {
   type: 'action',
   impl: ctx => jb.ui.dialogs.closeAll()
 })
 
-jb.component('dialog-feature.auto-focus-on-first-input', { /* dialogFeature.autoFocusOnFirstInput */
+jb.component('dialogFeature.autoFocusOnFirstInput', {
   type: 'dialog-feature',
   params: [
     {id: 'selectText', as: 'boolean', type: 'boolean'}
@@ -222,7 +222,7 @@ jb.component('dialog-feature.auto-focus-on-first-input', { /* dialogFeature.auto
 	})
 })
 
-jb.component('dialog-feature.css-class-on-launching-element', { /* dialogFeature.cssClassOnLaunchingElement */
+jb.component('dialogFeature.cssClassOnLaunchingElement', {
   type: 'dialog-feature',
   impl: context => ({
 		afterViewInit: cmp => {
@@ -259,7 +259,7 @@ jb.component('dialog-feature.max-zIndex-on-click', { /* dialogFeature.maxZIndexO
 	}
 })
 
-jb.component('dialog.dialog-ok-cancel', { /* dialog.dialogOkCancel */
+jb.component('dialog.dialogOkCancel', {
   type: 'dialog.style',
   params: [
     {id: 'okLabel', as: 'string', defaultValue: 'OK'},
@@ -279,7 +279,7 @@ jb.component('dialog.dialog-ok-cancel', { /* dialog.dialogOkCancel */
   })
 })
 
-jb.component('dialog-feature.resizer', { /* dialogFeature.resizer */
+jb.component('dialogFeature.resizer', {
   type: 'dialog-feature',
   params: [
     {id: 'resizeInnerCodemirror', as: 'boolean', description: 'effective only for dialog with a single codemirror element', type: 'boolean'}
@@ -335,7 +335,7 @@ jb.component('dialog-feature.resizer', { /* dialogFeature.resizer */
 	}})
 })
 
-jb.component('dialog.popup', { /* dialog.popup */
+jb.component('dialog.popup', {
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
@@ -349,7 +349,7 @@ jb.component('dialog.popup', { /* dialog.popup */
   })
 })
 
-jb.component('dialog.div', { /* dialog.div */
+jb.component('dialog.div', {
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),

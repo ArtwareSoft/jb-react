@@ -3,7 +3,7 @@
 const posToCM = pos => pos && ({line: pos.line, ch: pos.col})
 const posFromCM = pos => pos && ({line: pos.line, col: pos.ch})
 
-jb.component('editable-text.codemirror', { /* editableText.codemirror */
+jb.component('editableText.codemirror', {
   type: 'editable-text.style',
   params: [
     {id: 'cm_settings', as: 'single'},
@@ -197,7 +197,7 @@ function enableFullScreen(editor,width,height) {
 	})
 }
 
-jb.component('text.codemirror', { /* text.codemirror */
+jb.component('text.codemirror', {
   type: 'text.style',
   params: [
     {id: 'cm_settings', as: 'single'},

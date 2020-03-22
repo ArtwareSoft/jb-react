@@ -1,7 +1,7 @@
 jb.ns('table-tree,tree')
 jb.ns('json')
 
-jb.component('table-tree', { /* tableTree */
+jb.component('tableTree', {
   type: 'control',
   params: [
     {id: 'treeModel', type: 'tree.node-model', dynamic: true, mandatory: true},
@@ -14,7 +14,7 @@ jb.component('table-tree', { /* tableTree */
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('tree.model-filter', { /* tree.modelFilter */
+jb.component('tree.modelFilter', {
   type: 'tree.node-model',
   description: 'filters a model by path filter predicate',
   params: [
@@ -26,7 +26,7 @@ jb.component('tree.model-filter', { /* tree.modelFilter */
     })
 })
 
-jb.component('table-tree.init', { /* tableTree.init */
+jb.component('tableTree.init', {
   type: 'feature',
   params: [
     {id: 'autoOpenFirstLevel', as: 'boolean', type: 'boolean'}
@@ -138,7 +138,7 @@ jb.component('table-tree.init', { /* tableTree.init */
   )
 })
 
-jb.component('table-tree.plain', { /* tableTree.plain */
+jb.component('tableTree.plain', {
   type: 'table-tree.style',
   params: [
     {id: 'hideHeaders', as: 'boolean', type: 'boolean'},
@@ -178,7 +178,7 @@ jb.component('table-tree.plain', { /* tableTree.plain */
   })
 })
 
-jb.component('json.path-selector', { /* json.pathSelector */
+jb.component('json.pathSelector', {
   description: 'select, query, goto path',
   params: [
     {id: 'base', as: 'single', description: 'object to start with'},
@@ -191,7 +191,7 @@ jb.component('json.path-selector', { /* json.pathSelector */
     }
 })
 
-jb.component('table-tree.expand-path', { /* tableTree.expandPath */
+jb.component('tableTree.expandPath', {
   type: 'table-tree.style',
   params: [
     {id: 'path', as: 'string'}

@@ -1,4 +1,4 @@
-jb.component('picklist.native', { /* picklist.native */
+jb.component('picklist.native', {
   type: 'picklist.style',
   impl: customStyle({
     template: (cmp,state,h) => h('select', { value: state.databind, onchange: true },
@@ -12,7 +12,7 @@ jb.component('picklist.native', { /* picklist.native */
   })
 })
 
-jb.component('picklist.radio', { /* picklist.radio */
+jb.component('picklist.radio', {
   type: 'picklist.style',
   params: [
     {id: 'radioCss', as: 'string', defaultValue: '', description: 'e.g. display: none'},
@@ -28,7 +28,7 @@ jb.component('picklist.radio', { /* picklist.radio */
   })
 })
 
-jb.component('picklist.radio-vertical', { /* picklist.radioVertical */
+jb.component('picklist.radioVertical', {
   type: 'picklist.style',
   impl: styleWithFeatures(
     picklist.radio(),
@@ -36,7 +36,7 @@ jb.component('picklist.radio-vertical', { /* picklist.radioVertical */
   )
 })
 
-jb.component('picklist.native-md-look-open', { /* picklist.nativeMdLookOpen */
+jb.component('picklist.nativeMdLookOpen', {
   type: 'picklist.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{}, [
@@ -74,7 +74,7 @@ jb.component('picklist.native-md-look-open', { /* picklist.nativeMdLookOpen */
   })
 })
 
-jb.component('picklist.native-md-look', { /* picklist.nativeMdLook */
+jb.component('picklist.nativeMdLook', {
   type: 'picklist.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{},h('select',
@@ -111,7 +111,7 @@ jb.component('picklist.native-md-look', { /* picklist.nativeMdLook */
   })
 })
 
-jb.component('picklist.label-list', { /* picklist.labelList */
+jb.component('picklist.labelList', {
   type: 'picklist.style',
   params: [
     {id: 'labelStyle', type: 'text.style', dynamic: true, defaultValue: text.span()},
@@ -134,7 +134,7 @@ jb.component('picklist.label-list', { /* picklist.labelList */
   )
 })
 
-jb.component('picklist.button-list', { /* picklist.buttonList */
+jb.component('picklist.buttonList', {
   type: 'picklist.style',
   params: [
     {id: 'buttonStyle', type: 'button.style', dynamic: true, defaultValue: button.mdc()},
@@ -157,7 +157,7 @@ jb.component('picklist.button-list', { /* picklist.buttonList */
   )
 })
 
-jb.component('picklist.hyperlinks', { /* picklist.hyperlinks */
+jb.component('picklist.hyperlinks', {
   type: 'picklist.style',
   impl: picklist.buttonList({
     buttonStyle: button.href(),
@@ -166,7 +166,7 @@ jb.component('picklist.hyperlinks', { /* picklist.hyperlinks */
   })
 })
 
-jb.component('picklist.groups', { /* picklist.groups */
+jb.component('picklist.groups', {
   type: 'picklist.style',
   impl: customStyle({
     template: (cmp,state,h) => h('select', { value: state.databind, onchange: true },

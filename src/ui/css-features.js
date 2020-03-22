@@ -2,7 +2,7 @@
 const withUnits = jb.ui.withUnits
 const fixCssLine = jb.ui.fixCssLine
 
-jb.component('css', { /* css */
+jb.component('css', {
   description: 'e.g. {color: red; width: 20px} or div>.myClas {color: red} ',
   type: 'feature,dialog-feature',
   params: [
@@ -11,7 +11,7 @@ jb.component('css', { /* css */
   impl: (ctx,css) => ({css: fixCssLine(css)})
 })
 
-jb.component('css.dynamic', { /* css.dynamic */
+jb.component('css.dynamic', {
   description: 'recalc the css on refresh/watchRef. e.g. {color: %$color%}',
   type: 'feature,dialog-feature',
   params: [
@@ -20,7 +20,7 @@ jb.component('css.dynamic', { /* css.dynamic */
   impl: (ctx,css) => ({dynamicCss: ctx2 => css(ctx2)})
 })
 
-jb.component('css.with-condition', { /* css.withCondition */
+jb.component('css.withCondition', {
   description: 'css with dynamic condition. e.g. .myclz {color: red}',
   type: 'feature,dialog-feature',
   params: [
@@ -30,7 +30,7 @@ jb.component('css.with-condition', { /* css.withCondition */
   impl: (ctx,cond,css) => ({dynamicCss: ctx2 => cond(ctx2) ? fixCssLine(css(ctx2)) : ''})
 })
 
-jb.component('css.class', { /* css.class */
+jb.component('css.class', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'class', mandatory: true, as: 'string'}
@@ -38,7 +38,7 @@ jb.component('css.class', { /* css.class */
   impl: (ctx,clz) => ({class: clz})
 })
 
-jb.component('css.width', { /* css.width */
+jb.component('css.width', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'width', mandatory: true, as: 'string', description: 'e.g. 200, 100%, calc(100% - 100px)'},
@@ -50,7 +50,7 @@ jb.component('css.width', { /* css.width */
     ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}width: ${withUnits(width)} ${overflow ? '; overflow-x:' + overflow + ';' : ''} }`})
 })
 
-jb.component('css.height', { /* css.height */
+jb.component('css.height', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'height', mandatory: true, as: 'string', description: 'e.g. 200, 100%, calc(100% - 100px)'},
@@ -62,7 +62,7 @@ jb.component('css.height', { /* css.height */
     ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}height: ${withUnits(height)} ${overflow ? '; overflow-y:' + overflow : ''} }`})
 })
 
-jb.component('css.opacity', { /* css.opacity */
+jb.component('css.opacity', {
   type: 'feature',
   params: [
     {id: 'opacity', mandatory: true, as: 'string', description: '0-1'},
@@ -72,7 +72,7 @@ jb.component('css.opacity', { /* css.opacity */
     ({css: `${ctx.params.selector} { opacity: ${opacity} }`})
 })
 
-jb.component('css.padding', { /* css.padding */
+jb.component('css.padding', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'top', as: 'string', description: 'e.g. 20, 20%, 0.4em'},
@@ -90,7 +90,7 @@ jb.component('css.padding', { /* css.padding */
   }
 })
 
-jb.component('css.margin', { /* css.margin */
+jb.component('css.margin', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'top', as: 'string', description: 'e.g. 20, 20%, 0.4em, -20'},
@@ -108,7 +108,7 @@ jb.component('css.margin', { /* css.margin */
   }
 })
 
-jb.component('css.margin-all-sides', {
+jb.component('css.marginAllSides', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'value', as: 'string', mandatory: true, description: 'e.g. 20, 20%, 0.4em'},
@@ -117,18 +117,18 @@ jb.component('css.margin-all-sides', {
   impl: (ctx,value,selector) => ({css: `${selector} margin: ${withUnits(value)}`})
 })
 
-jb.component('css.margin-vertical-horizontal', {
+jb.component('css.marginVerticalHorizontal', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'vertical', as: 'string', mandatory: true},
     {id: 'horizontal', as: 'string', mandatory: true},
     {id: 'selector', as: 'string'}
   ],
-  impl: (ctx,vertical,horizontal,selector) => 
+  impl: (ctx,vertical,horizontal,selector) =>
     ({css: `${selector} margin: ${withUnits(vertical)+ ' ' +withUnits(horizontal)}`})
 })
 
-jb.component('css.transform-rotate', { /* css.transformRotate */
+jb.component('css.transformRotate', {
   type: 'feature',
   params: [
     {id: 'angle', as: 'string', description: '0-360'},
@@ -137,7 +137,7 @@ jb.component('css.transform-rotate', { /* css.transformRotate */
   impl: (ctx,angle,selector) => ({css: `${selector} {transform:rotate(${angle}deg)}`})
 })
 
-jb.component('css.color', { /* css.color */
+jb.component('css.color', {
   type: 'feature',
   params: [
     {id: 'color', as: 'string'},
@@ -153,7 +153,7 @@ jb.component('css.color', { /* css.color */
   }
 })
 
-jb.component('css.transform-scale', { /* css.transformScale */
+jb.component('css.transformScale', {
   type: 'feature',
   params: [
     {id: 'x', as: 'string', description: '0-1'},
@@ -163,17 +163,17 @@ jb.component('css.transform-scale', { /* css.transformScale */
   impl: ctx => ({css: `${ctx.params.selector} {transform:scale(${ctx.params.x},${ctx.params.y})}`})
 })
 
-jb.component('css.bold', { /* css.bold */
+jb.component('css.bold', {
   type: 'feature',
   impl: ctx => ({css: `{font-weight: bold}`})
 })
 
-jb.component('css.underline', { /* css.underline */
+jb.component('css.underline', {
   type: 'feature',
   impl: ctx => ({css: `{text-decoration: underline}`})
 })
 
-jb.component('css.box-shadow', { /* css.boxShadow */
+jb.component('css.boxShadow', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'blurRadius', as: 'string', templateValue: '5'},
@@ -191,7 +191,7 @@ jb.component('css.box-shadow', { /* css.boxShadow */
   }
 })
 
-jb.component('css.border', { /* css.border */
+jb.component('css.border', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'width', as: 'string', defaultValue: '1'},
@@ -204,7 +204,7 @@ jb.component('css.border', { /* css.border */
     ({css: `${selector} { border${side?'-'+side:''}: ${withUnits(width)} ${style} ${color} }`})
 })
 
-jb.component('css.line-clamp', { /* css.lineClamp */
+jb.component('css.lineClamp', {
   type: 'feature',
   description: 'ellipsis after X lines',
   params: [

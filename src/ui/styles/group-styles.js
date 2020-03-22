@@ -1,6 +1,6 @@
 jb.ns('css')
 
-jb.component('group.htmlTag', { /* group.htmlTag */
+jb.component('group.htmlTag', {
   type: 'group.style',
   params: [
     {id: 'htmlTag', as: 'string', defaultValue: 'section', options: 'div,ul,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label,form'},
@@ -14,21 +14,21 @@ jb.component('group.htmlTag', { /* group.htmlTag */
   })
 })
 
-jb.component('group.div', { /* group.div */
+jb.component('group.div', {
   type: 'group.style',
   impl: group.htmlTag(
     'div'
   )
 })
 
-jb.component('group.section', { /* group.section */
+jb.component('group.section', {
   type: 'group.style',
   impl: group.htmlTag(
     'section'
   )
 })
 
-jb.component('group.ul-li', { /* group.ulLi */
+jb.component('group.ulLi', {
   type: 'group.style',
   impl: customStyle({
     template: (cmp,{ctrls},h) => h('ul',{ class: 'jb-itemlist'},
@@ -39,7 +39,7 @@ jb.component('group.ul-li', { /* group.ulLi */
   })
 })
 
-jb.component('group.card', { /* group.card */
+jb.component('group.card', {
   type: 'feature',
   category: 'card:100',
   params: [
@@ -57,7 +57,7 @@ jb.component('group.card', { /* group.card */
   )
 })
 
-jb.component('group.chip-set', { /* group.chipSet */
+jb.component('group.chipSet', {
   type: 'feature',
   category: 'chip:100',
   params: [
@@ -69,7 +69,7 @@ jb.component('group.chip-set', { /* group.chipSet */
   )
 })
 
-jb.component('group.tabs', { /* group.tabs */
+jb.component('group.tabs', {
   type: 'group.style',
   params: [
     {id: 'width', as: 'number'},
@@ -105,7 +105,7 @@ jb.component('group.tabs', { /* group.tabs */
   )
 })
 
-jb.component('group.accordion', { /* group.accordion */
+jb.component('group.accordion', {
   type: 'group.style',
   params: [
     {id: 'titleStyle', type: 'button.style', dynamic: true, defaultValue: button.mdc()},
@@ -146,7 +146,7 @@ jb.component('group.accordion', { /* group.accordion */
   )
 })
 
-jb.component('group.sections', { /* group.sections */
+jb.component('group.sections', {
   type: 'group.style',
   params: [
     {id: 'titleStyle', type: 'text.style', dynamic: true, defaultValue: header.mdcHeadline5()},

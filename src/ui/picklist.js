@@ -1,6 +1,6 @@
 jb.ns('picklist')
 
-jb.component('picklist', { /* picklist */
+jb.component('picklist', {
   type: 'control',
   category: 'input:80',
   params: [
@@ -43,7 +43,7 @@ function groupOfOpt(opt) {
   return opt.group || opt.text.split('.').shift();
 }
 
-jb.component('picklist.dynamic-options', { /* picklist.dynamicOptions */
+jb.component('picklist.dynamicOptions', {
   type: 'feature',
   params: [
     {id: 'recalcEm', as: 'single'}
@@ -56,7 +56,7 @@ jb.component('picklist.dynamic-options', { /* picklist.dynamicOptions */
   )
 })
 
-jb.component('picklist.onChange', { /* picklist.onChange */
+jb.component('picklist.onChange', {
   type: 'feature',
   description: 'action on picklist selection',
   params: [
@@ -69,7 +69,7 @@ jb.component('picklist.onChange', { /* picklist.onChange */
 
 // ********* options
 
-jb.component('picklist.optionsByComma', { /* picklist.optionsByComma */
+jb.component('picklist.optionsByComma', {
   type: 'picklist.options',
   params: [
     {id: 'options', as: 'string', mandatory: true},
@@ -81,7 +81,7 @@ jb.component('picklist.optionsByComma', { /* picklist.optionsByComma */
   }
 })
 
-jb.component('picklist.options', { /* picklist.options */
+jb.component('picklist.options', {
   type: 'picklist.options',
   params: [
     {id: 'options', type: 'data', as: 'array', mandatory: true},
@@ -93,7 +93,7 @@ jb.component('picklist.options', { /* picklist.options */
   }
 })
 
-jb.component('picklist.coded-options', { /* picklist.codedOptions */
+jb.component('picklist.codedOptions', {
   type: 'picklist.options',
   params: [
     {id: 'options', as: 'array', mandatory: true},
@@ -107,7 +107,7 @@ jb.component('picklist.coded-options', { /* picklist.codedOptions */
   }
 })
 
-jb.component('picklist.sorted-options', { /* picklist.sortedOptions */
+jb.component('picklist.sortedOptions', {
   type: 'picklist.options',
   params: [
     {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true, composite: true},
@@ -126,7 +126,7 @@ jb.component('picklist.sorted-options', { /* picklist.sortedOptions */
   }
 })
 
-jb.component('picklist.promote', { /* picklist.promote */
+jb.component('picklist.promote', {
   type: 'picklist.promote',
   params: [
     {id: 'groups', as: 'array'},

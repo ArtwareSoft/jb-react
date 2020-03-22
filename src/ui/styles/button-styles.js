@@ -1,4 +1,4 @@
-jb.component('button.href', { /* button.href */
+jb.component('button.href', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
@@ -6,7 +6,7 @@ jb.component('button.href', { /* button.href */
   })
 })
 
-jb.component('button.x', { /* button.x */
+jb.component('button.x', {
   type: 'button.style',
   params: [
     {id: 'size', as: 'number', defaultValue: '21'}
@@ -27,7 +27,7 @@ jb.component('button.x', { /* button.x */
   })
 })
 
-jb.component('button.native', { /* button.native */
+jb.component('button.native', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) => h('button',{class: raised ? 'raised' : '', title, onclick: true },title),
@@ -35,7 +35,7 @@ jb.component('button.native', { /* button.native */
   })
 })
 
-jb.component('button.mdc', { /* button.mdc */
+jb.component('button.mdc', {
   type: 'button.style',
   params: [
     {id: 'ripple', as: 'boolean', defaultValue: true, type: 'boolean'}
@@ -50,7 +50,7 @@ jb.component('button.mdc', { /* button.mdc */
   })
 })
 
-jb.component('button.mdc-icon', { /* button.mdcIcon */
+jb.component('button.mdcIcon', {
   type: 'button.style,icon-with-action.style',
   params: [
     {id: 'icon', as: 'string', defaultValue: 'bookmark_border'},
@@ -68,7 +68,7 @@ jb.component('button.mdc-icon', { /* button.mdcIcon */
   })
 })
 
-jb.component('button.mdc-chip-action', { /* button.mdcChipAction */
+jb.component('button.mdcChipAction', {
   type: 'button.style',
   params: [
 
@@ -84,7 +84,7 @@ jb.component('button.mdc-chip-action', { /* button.mdcChipAction */
   })
 })
 
-jb.component('button.mdc-chip-with-icons', { /* button.mdcChipWithIcons */
+jb.component('button.mdcChipWithIcons', {
   type: 'button.style,icon-with-action.style',
   params: [
     {id: 'leadingIcon', as: 'string', defaultValue: 'code'},
@@ -103,7 +103,7 @@ jb.component('button.mdc-chip-with-icons', { /* button.mdcChipWithIcons */
   })
 })
 
-jb.component('button.mdc-floating-action', { /* button.mdcFloatingAction */
+jb.component('button.mdcFloatingAction', {
   type: 'button.style,icon-with-action.style',
   description: 'fab icon',
   params: [
@@ -121,7 +121,7 @@ jb.component('button.mdc-floating-action', { /* button.mdcFloatingAction */
   })
 })
 
-jb.component('button.mdc-floating-with-title', { /* button.mdcFloatingWithTitle */
+jb.component('button.mdcFloatingWithTitle', {
   type: 'button.style,icon-with-action.style',
   params: [
     {id: 'icon', as: 'string', defaultValue: 'code'},
@@ -139,7 +139,7 @@ jb.component('button.mdc-floating-with-title', { /* button.mdcFloatingWithTitle 
   })
 })
 
-jb.component('button.mdc-icon12', { /* button.mdcIcon12 */
+jb.component('button.mdcIcon12', {
   type: 'button.style,icon-with-action.style',
   params: [
     {id: 'icon', as: 'string', defaultValue: 'code'}

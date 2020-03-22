@@ -24,7 +24,7 @@ jb.stringWithSourceRef.prototype.trim = function() {
 
 jb.jstypes['string-with-source-ref'] = v => v;
 
-jb.component('extract-text', { /* extractText */
+jb.component('extractText', {
   description: 'text breaking according to begin/end markers',
   params: [
     {id: 'text', as: 'string-with-source-ref', defaultValue: '%%'},
@@ -95,7 +95,7 @@ jb.component('extract-text', { /* extractText */
   }
 })
 
-jb.component('break-text', { /* breakText */
+jb.component('breakText', {
   description: 'recursive text breaking according to multi level separators',
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'},
@@ -149,7 +149,7 @@ jb.component('break-text', { /* breakText */
 })
 
 
-jb.component('zip-arrays', { /* zipArrays */
+jb.component('zipArrays', {
   type: 'data',
   description: '[[1,2],[10,20],[100,200]] => [[1,10,100],[2,20,200]]',
   params: [
@@ -160,7 +160,7 @@ jb.component('zip-arrays', { /* zipArrays */
       value.map(line=>line[i]))
 })
 
-jb.component('remove-sections', { /* removeSections */
+jb.component('removeSections', {
   description: 'remove sections between markers',
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'},
@@ -188,7 +188,7 @@ jb.component('remove-sections', { /* removeSections */
   }
 })
 
-jb.component('merge', { /* merge */
+jb.component('merge', {
   type: 'data',
   description: 'assign, merge object properties',
   params: [
@@ -198,7 +198,7 @@ jb.component('merge', { /* merge */
 		Object.assign.apply({},objects)
 })
 
-jb.component('dynamic-object', { /* dynamicObject */
+jb.component('dynamicObject', {
   type: 'data',
   description: 'process items into object properties',
   params: [
@@ -210,7 +210,7 @@ jb.component('dynamic-object', { /* dynamicObject */
     items.reduce((obj,item)=>({ ...obj, [name(ctx.setData(item))]: value(ctx.setData(item)) }),{})
 })
 
-jb.component('filter-empty-properties', { /* filterEmptyProperties */
+jb.component('filterEmptyProperties', {
   type: 'data',
   description: 'remove null or empty string properties',
   params: [
@@ -226,14 +226,14 @@ jb.component('filter-empty-properties', { /* filterEmptyProperties */
   }
 })
 
-jb.component('trim', { /* trim */
+jb.component('trim', {
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
   impl: (ctx,text) => text.trim()
 })
 
-jb.component('remove-prefix-regex', { /* removePrefixRegex */
+jb.component('removePrefixRegex', {
   params: [
     {id: 'prefix', as: 'string', mandatory: true},
     {id: 'text', as: 'string', defaultValue: '%%'}
@@ -242,7 +242,7 @@ jb.component('remove-prefix-regex', { /* removePrefixRegex */
     text.replace(new RegExp('^'+prefix) ,'')
 })
 
-jb.component('wrap-as-object', { /* wrapAsObject */
+jb.component('wrapAsObject', {
   description: 'object from entries, map each item as a property',
   type: 'aggregator',
   params: [
@@ -257,7 +257,7 @@ jb.component('wrap-as-object', { /* wrapAsObject */
   }
 })
 
-jb.component('write-value-asynch', { /* writeValueAsynch */
+jb.component('writeValueAsynch', {
   type: 'action',
   params: [
     {id: 'to', as: 'ref', mandatory: true},

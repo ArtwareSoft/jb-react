@@ -1,4 +1,4 @@
-jb.component('data-test', { /* dataTest */
+jb.component('dataTest', {
   type: 'test',
   params: [
     {id: 'calculate', dynamic: true},
@@ -48,12 +48,12 @@ jb.component('data-test', { /* dataTest */
 	}
 })
 
-jb.component('ui-test-runner', {
-	type: 'control',
-	params: [
-	  {id: 'test', as: 'string', defaultValue: 'ui-test.label'},
-	],
-	impl: (ctx,test) => {
+jb.component('uiTestRunner', {
+  type: 'control',
+  params: [
+    {id: 'test', as: 'string', defaultValue: 'ui-test.label'}
+  ],
+  impl: (ctx,test) => {
 		const profile = jb.path(jb.comps[test],'impl')
 		const ctxWithVars = ctx.setVars(jb.objFromEntries((profile.vars||[]).map(v=>[v.name,ctx.run(v.val)])))
 		const ctxToRun = new jb.jbCtx(ctxWithVars,{ profile, forcePath: test+ '~impl', path: '' } )
@@ -66,7 +66,7 @@ jb.component('ui-test-runner', {
 	}
 })
 
-jb.component('ui-test', { /* uiTest */
+jb.component('uiTest', {
   type: 'test',
   params: [
     {id: 'control', type: 'control', dynamic: true},
@@ -127,13 +127,13 @@ jb.component('ui-test', { /* uiTest */
 	}
 })
 
-jb.component('ui-test.apply-vdom-diff', { // applyVdomDiff
-	type: 'test',
-	params: [
-	 {id: 'controlBefore', type: 'control', dynamic: true},
-	 {id: 'control', type: 'control', dynamic: true},
-	],
-	impl: function(ctx,controlBefore,control,expectedCounters) {
+jb.component('uiTest.applyVdomDiff', {
+  type: 'test',
+  params: [
+    {id: 'controlBefore', type: 'control', dynamic: true},
+    {id: 'control', type: 'control', dynamic: true}
+  ],
+  impl: function(ctx,controlBefore,control,expectedCounters) {
 		console.log('starting ' + ctx.path)
 		const initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
 
@@ -164,7 +164,7 @@ jb.component('ui-test.apply-vdom-diff', { // applyVdomDiff
 		return result
 	  }
 })
-  
+
 function countersErrors(expectedCounters) {
 	if (!jb.spy) return ''
 	if ((jb.spy.logs.exception || [])[0])
@@ -188,7 +188,7 @@ jb.ui.cssOfSelector = (selector,ctx) => {
 }
 
 
-jb.component('ui-action.click', { /* uiAction.click */
+jb.component('uiAction.click', {
   type: 'ui-action',
   params: [
     {id: 'selector', as: 'string'},
@@ -204,7 +204,7 @@ jb.component('ui-action.click', { /* uiAction.click */
 })
 
 
-jb.component('ui-action.keyboard-event', { /* uiAction.keyboardEvent */
+jb.component('uiAction.keyboardEvent', {
   type: 'ui-action',
   params: [
     {id: 'selector', as: 'string'},
@@ -222,12 +222,12 @@ jb.component('ui-action.keyboard-event', { /* uiAction.keyboardEvent */
 	}
 })
 
-jb.component('ui-action.set-text', { /* uiAction.setText */
+jb.component('uiAction.setText', {
   type: 'ui-action',
   macroByValue: true,
   params: [
     {id: 'value', as: 'string', mandatory: true},
-    {id: 'selector', as: 'string', defaultValue: 'input,textarea'},
+    {id: 'selector', as: 'string', defaultValue: 'input,textarea'}
   ],
   impl: (ctx,value,selector,delay) => {
 		const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : ctx.vars.elemToTest;
@@ -250,8 +250,8 @@ jb.component('ui-action.scroll-down', {
 		  jb.ui.handleCmpEvent('',ev)
 	  }
   })
-  
-jb.component('test.dialog-content', { /* test.dialogContent */
+
+jb.component('test.dialogContent', {
   type: 'data',
   params: [
     {id: 'id', as: 'string'}

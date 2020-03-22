@@ -1,26 +1,29 @@
 jb.ns('slider')
 
-jb.component('editable-number.slider-no-text', { /* editableNumber.sliderNoText */
+jb.component('editableNumber.sliderNoText', {
   type: 'editable-number.style',
   impl: features(
-    calcProp('max', ctx => {
+    calcProp({
+        id: 'max',
+        value: ctx => {
       const val = jb.tonumber(ctx.exp('%$editableNumberModel/databind%'))
       if (val > +ctx.vars.$model.max && ctx.vars.$model.autoScale)
         return val + 100
       return +ctx.vars.$model.max
-    }),
+    }
+      }),
     ctx => ({
       template: (cmp,state,h) => h('input',{ type: 'range',
         min: state.min, max: state.max, step: state.step,
         value: state.databind, mouseup: 'onblurHandler', tabindex: -1})
     }),
-    field.databind(), 
-    slider.init(), 
+    field.databind(),
+    slider.init(),
     watchRef('%$editableNumberModel/databind%')
   )
 })
 
-jb.component('editable-number.slider', { /* editableNumber.slider */
+jb.component('editableNumber.slider', {
   type: 'editable-number.style',
   impl: styleByControl(
     group({
@@ -31,7 +34,12 @@ jb.component('editable-number.slider', { /* editableNumber.slider */
           editableText({
             databind: '%$editableNumberModel/databind%',
             style: editableText.input(),
-            features: [slider.handleArrowKeys(), css('width: 30px; padding-left: 3px; border: 0; border-bottom: 1px solid black;') ]
+            features: [
+              slider.handleArrowKeys(),
+              css(
+                'width: 30px; padding-left: 3px; border: 0; border-bottom: 1px solid black;'
+              )
+            ]
           }),
           editableNumber({
             databind: '%$editableNumberModel/databind%',
@@ -49,7 +57,7 @@ jb.component('editable-number.slider', { /* editableNumber.slider */
   )
 })
 
-jb.component('slider.init', { /* slider.init */
+jb.component('slider.init', {
   type: 'feature',
   impl: ctx => ({
       onkeyup: true,
@@ -78,8 +86,8 @@ jb.component('slider.init', { /* slider.init */
         pipe(cmp.onkeydown,subscribe(e=> cmp.handleArrowKey(e)))
 
         // drag
-        pipe(cmp.onmousedown, 
-          flatMap(e=> pipe(cmp.onmousemove, takeUntil(cmp.onmouseup))), 
+        pipe(cmp.onmousedown,
+          flatMap(e=> pipe(cmp.onmousemove, takeUntil(cmp.onmouseup))),
           subscribe(e=> !checkAutoScale() && cmp.jbModel(cmp.base.value)
           ))
 
@@ -97,12 +105,15 @@ jb.component('slider.init', { /* slider.init */
     })
 })
 
-jb.component('slider.handle-arrow-keys', { /* slider.handleArrowKeys */
+jb.component('slider.handleArrowKeys', {
   type: 'feature',
   impl: features(
-    htmlAttribute('onkeydown',true),
-    defHandler('onkeydownHandler', (ctx,{ev}) =>
-        ctx.vars.sliderCtx && sliderCtx.handleArrowKey(ev))
+    htmlAttribute('onkeydown', true),
+    defHandler(
+        'onkeydownHandler',
+        (ctx,{ev}) =>
+        ctx.vars.sliderCtx && sliderCtx.handleArrowKey(ev)
+      )
   )
 })
 

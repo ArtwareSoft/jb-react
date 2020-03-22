@@ -1,6 +1,6 @@
 jb.type('theme');
 
-jb.component('group.theme', { /* group.theme */
+jb.component('group.theme', {
   type: 'feature',
   params: [
     {id: 'theme', type: 'theme'}
@@ -10,7 +10,7 @@ jb.component('group.theme', { /* group.theme */
   })
 })
 
-jb.component('theme.material-design', { /* theme.materialDesign */
+jb.component('theme.materialDesign', {
   type: 'theme',
   impl: () => ({
   	'$theme.editable-text': 'editable-text.mdc-input'

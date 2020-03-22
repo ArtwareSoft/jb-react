@@ -1,4 +1,4 @@
-jb.component('editable-boolean.checkbox', { /* editableBoolean.checkbox */
+jb.component('editableBoolean.checkbox', {
   type: 'editable-boolean.style',
   impl: customStyle({
     template: (cmp,state,h) => h('input', { type: 'checkbox', checked: state.databind, onchange: 'toggle', onkeyup: 'toggle'  }),
@@ -6,7 +6,7 @@ jb.component('editable-boolean.checkbox', { /* editableBoolean.checkbox */
   })
 })
 
-jb.component('editable-boolean.checkbox-with-title', { /* editableBoolean.checkboxWithTitle */
+jb.component('editableBoolean.checkboxWithTitle', {
   type: 'editable-boolean.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{}, [h('input', { type: 'checkbox',
@@ -15,7 +15,7 @@ jb.component('editable-boolean.checkbox-with-title', { /* editableBoolean.checkb
   })
 })
 
-jb.component('editable-boolean.checkbox-with-label', { /* editableBoolean.checkboxWithLabel */
+jb.component('editableBoolean.checkboxWithLabel', {
   type: 'editable-boolean.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{},[
@@ -29,7 +29,7 @@ jb.component('editable-boolean.checkbox-with-label', { /* editableBoolean.checkb
   })
 })
 
-jb.component('editable-boolean.expand-collapse', { /* editableBoolean.expandCollapse */
+jb.component('editableBoolean.expandCollapse', {
   type: 'editable-boolean.style',
   impl: customStyle({
     template: (cmp,{databind},h) => h('i',{class:'material-icons noselect', onclick: 'toggle' },
@@ -39,7 +39,7 @@ jb.component('editable-boolean.expand-collapse', { /* editableBoolean.expandColl
   })
 })
 
-jb.component('editable-boolean.mdc-x-v', { /* editableBoolean.mdcXV */
+jb.component('editableBoolean.mdcXV', {
   type: 'editable-boolean.style',
   description: 'two icons',
   params: [
@@ -58,7 +58,7 @@ jb.component('editable-boolean.mdc-x-v', { /* editableBoolean.mdcXV */
   })
 })
 
-jb.component('editable-boolean.mdc-slide-toggle', { /* editableBoolean.mdcSlideToggle */
+jb.component('editableBoolean.mdcSlideToggle', {
   type: 'editable-boolean.style',
   params: [
     {id: 'width', as: 'string', defaultValue: 80}

@@ -28,7 +28,7 @@ jb.component('helloWorld.main', {
   impl: group({
     layout: layout.vertical(),
     controls: [
-      text({text: 'hi there', title: 'my title'})
+      text({text: 'hello world', title: 'my title'})
     ],
     features: css.width('400')
   })

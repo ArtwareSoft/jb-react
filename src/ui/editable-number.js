@@ -1,6 +1,6 @@
 jb.ns('editableNumber')
 
-jb.component('editable-number', { /* editableNumber */
+jb.component('editableNumber', {
   type: 'control',
   category: 'input:30',
   params: [

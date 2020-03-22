@@ -1,4 +1,4 @@
-jb.component('goto-url', { /* gotoUrl */
+jb.component('gotoUrl', {
   type: 'action',
   description: 'navigate/open a new web page, change href location',
   params: [

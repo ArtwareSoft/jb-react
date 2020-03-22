@@ -1,6 +1,6 @@
 jb.ns('text')
 
-jb.component('text', { /* text */
+jb.component('text', {
   type: 'control',
   category: 'control:100,common:100',
   params: [
@@ -14,7 +14,7 @@ jb.component('text', { /* text */
 
 jb.component('label', {...jb.comps.text,type: 'depricated-control'} )
 
-jb.component('text.bind-text', { /* text.bindText */
+jb.component('text.bindText', {
   type: 'feature',
   category: 'text:0',
   impl: features(
@@ -23,7 +23,7 @@ jb.component('text.bind-text', { /* text.bindText */
   )
 })
 
-jb.component('text.allow-asynch-value', { /* text.allowAsynchValue */
+jb.component('text.allowAsynchValue', {
   type: 'feature',
   impl: features(
     calcProp({id: 'text', value: (ctx,{cmp}) => cmp.text || ctx.vars.$props.text}),
@@ -38,7 +38,7 @@ jb.component('text.allow-asynch-value', { /* text.allowAsynchValue */
   )
 })
 
-jb.component('text.htmlTag', { /* text.htmlTag */
+jb.component('text.htmlTag', {
   type: 'text.style',
   params: [
     {id: 'htmlTag', as: 'string', defaultValue: 'p', options: 'span,p,h1,h2,h3,h4,h5,div,li,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label'},
@@ -50,7 +50,7 @@ jb.component('text.htmlTag', { /* text.htmlTag */
   })
 })
 
-jb.component('text.no-wrapping-tag', { /* text.noWrappingTag */
+jb.component('text.noWrappingTag', {
   type: 'text.style',
   category: 'text:0',
   impl: customStyle({
@@ -59,7 +59,7 @@ jb.component('text.no-wrapping-tag', { /* text.noWrappingTag */
   })
 })
 
-jb.component('text.span', { /* text.span */
+jb.component('text.span', {
   type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('span',{},text),
@@ -99,7 +99,7 @@ jb.component('text.span', { /* text.span */
   })
 }))
 
-jb.component('text.highlight', { /* text.highlight */
+jb.component('text.highlight', {
   type: 'data',
   macroByValue: true,
   params: [

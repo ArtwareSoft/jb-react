@@ -30,7 +30,7 @@ const createItemlistCntr = (ctx,params) => ({
 	}
 })
 
-jb.component('group.itemlist-container', { /* group.itemlistContainer */
+jb.component('group.itemlistContainer', {
   description: 'itemlist writable container to support addition, deletion and selection',
   type: 'feature',
   category: 'itemlist:80,group:70',
@@ -42,21 +42,17 @@ jb.component('group.itemlist-container', { /* group.itemlistContainer */
   impl: features(
     variable({
         name: 'itemlistCntrData',
-        value: {
-          '$': 'object',
-          search_pattern: '',
-          selected: '%$initialSelection%',
-        },
+        value: {'$': 'object', search_pattern: '', selected: '%$initialSelection%'},
         watchable: true
       }),
     variable({
         name: 'itemlistCntr',
         value: ctx => createItemlistCntr(ctx,ctx.componentContext.params)
-      }),
+      })
   )
 })
 
-jb.component('itemlist.itemlist-selected', { /* itemlist.itemlistSelected */
+jb.component('itemlist.itemlistSelected', {
   type: 'feature',
   category: 'itemlist:20,group:0',
   impl: list(
@@ -65,7 +61,7 @@ jb.component('itemlist.itemlist-selected', { /* itemlist.itemlistSelected */
   )
 })
 
-jb.component('itemlist-container.filter', { /* itemlistContainer.filter */
+jb.component('itemlistContainer.filter', {
   type: 'aggregator',
   category: 'itemlist-filter:100',
   requires: ctx => ctx.vars.itemlistCntr,
@@ -90,7 +86,7 @@ jb.component('itemlist-container.filter', { /* itemlistContainer.filter */
 	}
 })
 
-jb.component('itemlist-container.condition-filter', { /* itemlistContainer.conditionFilter */
+jb.component('itemlistContainer.conditionFilter', {
   type: 'boolean',
   category: 'itemlist-filter:100',
   requires: ctx => ctx.vars.itemlistCntr,
@@ -98,7 +94,7 @@ jb.component('itemlist-container.condition-filter', { /* itemlistContainer.condi
 		ctx.vars.itemlistCntr.filters.reduce((res,filter) => res && filter([ctx.data]).length, true)
 })
 
-jb.component('itemlist-container.search', { /* itemlistContainer.search */
+jb.component('itemlistContainer.search', {
   type: 'control',
   category: 'itemlist-filter:100',
   requires: ctx => ctx.vars.itemlistCntr,
@@ -128,7 +124,7 @@ jb.component('itemlist-container.search', { /* itemlistContainer.search */
 		})
 })
 
-jb.component('itemlist-container.more-items-button', { /* itemlistContainer.moreItemsButton */
+jb.component('itemlistContainer.moreItemsButton', {
   type: 'control',
   category: 'itemlist-filter:100',
   requires: ctx => ctx.vars.itemlistCntr,
@@ -170,7 +166,7 @@ jb.ui.extractPropFromExpression = exp => { // performance for simple cases such 
 }
 
 // match fields in pattern itemlistCntrData/FLDNAME_filter to data
-jb.component('itemlist-container.filter-field', { /* itemlistContainer.filterField */
+jb.component('itemlistContainer.filterField', {
   type: 'feature',
   category: 'itemlist:80',
   requires: ctx => ctx.vars.itemlistCntr,
@@ -198,7 +194,7 @@ jb.component('itemlist-container.filter-field', { /* itemlistContainer.filterFie
 	})
 })
 
-jb.component('filter-type.text', { /* filterType.text */
+jb.component('filterType.text', {
   type: 'filter-type',
   params: [
     {id: 'ignoreCase', as: 'boolean', defaultValue: true, type: 'boolean'}
@@ -220,7 +216,7 @@ jb.component('filter-type.text', { /* filterType.text */
 	})
 })
 
-jb.component('filter-type.exact-match', { /* filterType.exactMatch */
+jb.component('filterType.exactMatch', {
   type: 'filter-type',
   impl: ctx => ({
 		filter: (filter,data) =>  {
@@ -230,7 +226,7 @@ jb.component('filter-type.exact-match', { /* filterType.exactMatch */
 	})
 })
 
-jb.component('filter-type.numeric', { /* filterType.numeric */
+jb.component('filterType.numeric', {
   type: 'filter-type',
   impl: ctx => ({
 		filter: (filter,data) => Number(data) >= Number(filter),
@@ -238,7 +234,7 @@ jb.component('filter-type.numeric', { /* filterType.numeric */
 	})
 })
 
-jb.component('itemlist-container.search-in-all-properties', { /* itemlistContainer.searchInAllProperties */
+jb.component('itemlistContainer.searchInAllProperties', {
   type: 'data',
   category: 'itemlist:40',
   impl: ctx => {

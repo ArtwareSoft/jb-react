@@ -1,7 +1,7 @@
 (function() {
 jb.ns('tree')
 
-jb.component('tree', { /* tree */
+jb.component('tree', {
   type: 'control',
   params: [
     {id: 'nodeModel', type: 'tree.node-model', dynamic: true, mandatory: true},
@@ -78,7 +78,7 @@ class TreeRenderer {
 	}
 }
 
-jb.component('tree.plain', { /* tree.plain */
+jb.component('tree.plain', {
   type: 'tree.style',
   params: [
     {id: 'showIcon', as: 'boolean', type: 'boolean'},
@@ -113,7 +113,7 @@ jb.component('tree.plain', { /* tree.plain */
   }))
 })
 
-jb.component('tree.expand-box', { /* tree.expandBox */
+jb.component('tree.expandBox', {
   type: 'tree.style',
   params: [
     {id: 'showIcon', as: 'boolean', type: 'boolean'},
@@ -165,7 +165,7 @@ jb.component('tree.expand-box', { /* tree.expandBox */
 	}))
 })
 
-jb.component('tree.selection', { /* tree.selection */
+jb.component('tree.selection', {
   type: 'feature',
   params: [
     {id: 'databind', as: 'ref', dynamic: true},
@@ -190,7 +190,7 @@ jb.component('tree.selection', { /* tree.selection */
         (ctx,{cmp},{databind,autoSelectFirst,onSelection,onRightClick}) => {
 			const selectedRef = databind()
 			const {pipe,map,filter,subscribe,merge,distinctUntilChanged} = jb.callbag
-			const databindObs = jb.isWatchable(selectedRef) && 
+			const databindObs = jb.isWatchable(selectedRef) &&
 				pipe(jb.ui.refObservable(selectedRef,cmp,{srcCtx: ctx}), map(e=>jb.val(e.ref)))
 
 			cmp.setSelected = selected => {
@@ -237,7 +237,7 @@ jb.component('tree.selection', { /* tree.selection */
   )
 })
 
-jb.component('tree.keyboard-selection', { /* tree.keyboardSelection */
+jb.component('tree.keyboardSelection', {
   type: 'feature',
   params: [
     {id: 'onKeyboardSelection', type: 'action', dynamic: true},
@@ -263,7 +263,7 @@ jb.component('tree.keyboard-selection', { /* tree.keyboardSelection */
 
 				if (context.params.autoFocus)
 					jb.ui.focus(cmp.base,'tree.keyboard-selection init autofocus',context);
-				
+
 				pipe(keyDownNoAlts, filter(e=> e.keyCode == 13), subscribe(e =>
 					runActionInTreeContext(context.params.onEnter)))
 
@@ -305,12 +305,12 @@ jb.component('tree.keyboard-selection', { /* tree.keyboardSelection */
 		})
 })
 
-jb.component('tree.regain-focus', { /* tree.regainFocus */
+jb.component('tree.regainFocus', {
   type: 'action',
   impl: ctx => ctx.vars.$tree && ctx.vars.$tree.regainFocus && ctx.vars.$tree.regainFocus()
 })
 
-jb.component('tree.redraw', { /* tree.redraw */
+jb.component('tree.redraw', {
   type: 'action',
   params: [
     {id: 'strong', type: 'boolean', as: 'boolean'}
@@ -321,7 +321,7 @@ jb.component('tree.redraw', { /* tree.redraw */
 	}
 })
 
-jb.component('tree.expand-path', { /* tree.expandPath */
+jb.component('tree.expandPath', {
   type: 'action',
   params: [
     {id: 'paths', as: 'array', descrition: 'array of paths to be expanded'}
@@ -329,7 +329,7 @@ jb.component('tree.expand-path', { /* tree.expandPath */
   impl: (ctx,paths) => ctx.vars.cmp && paths.forEach(path => jb.ui.treeExpandPath(ctx.vars.cmp.state.expanded, path))
 })
 
-jb.component('tree.path-of-interactive-item', { /* tree.pathOfInteractiveItem */
+jb.component('tree.pathOfInteractiveItem', {
   descrition: 'path of the clicked/dragged item using event.target',
   type: 'data',
   impl: ctx => {
@@ -338,7 +338,7 @@ jb.component('tree.path-of-interactive-item', { /* tree.pathOfInteractiveItem */
 	}
 })
 
-jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
+jb.component('tree.dragAndDrop', {
   type: 'feature',
   impl: ctx => ({
 		onkeydown: true,

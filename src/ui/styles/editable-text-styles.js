@@ -1,6 +1,6 @@
 jb.ns('mdc,mdc-style')
 
-jb.component('editable-text.input', { /* editableText.input */
+jb.component('editableText.input', {
   type: 'editable-text.style',
   impl: customStyle({
     template: (cmp,{databind},h) => h('input', {value: databind, onchange: true, onkeyup: true, onblur: true }),
@@ -8,7 +8,7 @@ jb.component('editable-text.input', { /* editableText.input */
   })
 })
 
-jb.component('editable-text.textarea', { /* editableText.textarea */
+jb.component('editableText.textarea', {
   type: 'editable-text.style',
   params: [
     {id: 'rows', as: 'number', defaultValue: 4},
@@ -22,7 +22,7 @@ jb.component('editable-text.textarea', { /* editableText.textarea */
   })
 })
 
-jb.component('editable-text.mdc-input', { /* editableText.mdcInput */
+jb.component('editableText.mdcInput', {
   type: 'editable-text.style,editable-number.style',
   params: [
     {id: 'width', as: 'number'}
@@ -41,7 +41,7 @@ jb.component('editable-text.mdc-input', { /* editableText.mdcInput */
   })
 })
 
-jb.component('editable-text.mdc-no-label', { /* editableText.mdcNoLabel */
+jb.component('editableText.mdcNoLabel', {
   type: 'editable-text.style',
   params: [
     {id: 'width', as: 'number'}
@@ -56,7 +56,7 @@ jb.component('editable-text.mdc-no-label', { /* editableText.mdcNoLabel */
   })
 })
 
-jb.component('editable-text.mdc-search', { /* editableText.mdcSearch */
+jb.component('editableText.mdcSearch', {
   description: 'debounced and one way binding',
   type: 'editable-text.style',
   impl: customStyle({
@@ -70,7 +70,7 @@ jb.component('editable-text.mdc-search', { /* editableText.mdcSearch */
   })
 })
 
-jb.component('editable-text.expandable', { /* editableText.expandable */
+jb.component('editableText.expandable', {
   description: 'label that changes to editable class on double click',
   type: 'editable-text.style',
   params: [

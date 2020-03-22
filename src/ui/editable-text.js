@@ -1,7 +1,7 @@
 jb.ns('editableText')
 jb.ns('dialog')
 
-jb.component('editable-text', { /* editableText */
+jb.component('editableText', {
   type: 'control',
   category: 'input:100,common:80',
   params: [
@@ -14,7 +14,7 @@ jb.component('editable-text', { /* editableText */
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('editable-text.x-button', { /* editableText.xButton */
+jb.component('editableText.xButton', {
   type: 'feature',
   impl: features(
     defHandler('cleanValue', writeValue('%$$model/databind%', '')),
@@ -38,7 +38,7 @@ jb.component('editable-text.x-button', { /* editableText.xButton */
   )
 })
 
-jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
+jb.component('editableText.helperPopup', {
   type: 'feature',
   params: [
     {id: 'control', type: 'control', dynamic: true, mandatory: true},

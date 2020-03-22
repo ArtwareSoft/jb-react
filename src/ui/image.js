@@ -1,6 +1,6 @@
 jb.ns('image,css')
 
-jb.component('image', { /* image */
+jb.component('image', {
   type: 'control,image',
   category: 'control:50,common:70',
   params: [
@@ -17,7 +17,7 @@ jb.component('image', { /* image */
   })
 })
 
-jb.component('image.width-height', { /* image.widthHeight */
+jb.component('image.widthHeight', {
   type: 'image.resize',
   description: 'fixed size or precentage of the original',
   params: [
@@ -27,19 +27,19 @@ jb.component('image.width-height', { /* image.widthHeight */
   impl: (ctx,width,height) => [ jb.ui.withUnits(width) ||'auto',jb.ui.withUnits(height)||'auto'].join(' ')
 })
 
-jb.component('image.cover', { /* image.cover */
+jb.component('image.cover', {
   description: 'auto resize or crop to cover all area',
   type: 'image.resize',
   impl: 'cover'
 })
 
-jb.component('image.fully-visible', { /* image.fullyVisible */
+jb.component('image.fullyVisible', {
   description: 'contain, auto resize to ensure the image is fully visible',
   type: 'image.resize',
   impl: 'contain'
 })
 
-jb.component('image.position', { /* image.position */
+jb.component('image.position', {
   description: 'offset move shift original image',
   type: 'image.position',
   params: [
@@ -50,7 +50,7 @@ jb.component('image.position', { /* image.position */
     .filter(x=>x).map(x=>`background-position-${x}`).join(';')
 })
 
-jb.component('image.background', { /* image.background */
+jb.component('image.background', {
   type: 'image.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div'),
@@ -62,7 +62,7 @@ jb.component('image.background', { /* image.background */
       Var('width', (ctx,{$model}) => jb.ui.withUnits($model.width)),
       Var('height', (ctx,{$model}) => jb.ui.withUnits($model.height)),
       `
-      { 
+      {
           background-image: url('%$url%');
           {? background-size: %$$model/resize%; ?}
           {? %$$model/position%; ?}
@@ -74,10 +74,9 @@ jb.component('image.background', { /* image.background */
   })
 })
 
-jb.component('image.img', { 
+jb.component('image.img', {
   type: 'image.style',
   impl: customStyle({
-    features: calcProp('url', '%$$model/url%'),
     template: ({},{url},h) => h('img', { src: url}),
     css: pipeline(
       Var('width', (ctx,{$model}) => jb.ui.withUnits($model.width)),
@@ -87,6 +86,7 @@ jb.component('image.img', {
           {?width: %$width%; ?}
           {?height: %$height%; ?}
       }`
-    )
+    ),
+    features: calcProp({id: 'url', value: '%$$model/url%'})
   })
 })

@@ -1,6 +1,6 @@
 jb.ns('mdc,mdc-style')
 
-jb.component('mdc-style.init-dynamic', { /* mdcStyle.initDynamic */
+jb.component('mdcStyle.initDynamic', {
   type: 'feature',
   params: [
     {id: 'query', as: 'string'}
@@ -22,7 +22,7 @@ jb.component('mdc-style.init-dynamic', { /* mdcStyle.initDynamic */
   })
 })
 
-jb.component('mdc.ripple-effect', { /* mdc.rippleEffect */
+jb.component('mdc.rippleEffect', {
   type: 'feature',
   description: 'add ripple effect',
   impl: ctx => ({
@@ -34,7 +34,7 @@ jb.component('mdc.ripple-effect', { /* mdc.rippleEffect */
    })
 })
 
-jb.component('label.mdc-ripple-effect', { /* label.mdcRippleEffect */
+jb.component('label.mdcRippleEffect', {
   type: 'text.style',
   impl: customStyle({
     template: (cmp,state,h) => h('button',{class: 'mdc-button'},[

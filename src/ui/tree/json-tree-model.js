@@ -1,5 +1,5 @@
 (function() {
-jb.component('tree.json-read-only', { /* tree.jsonReadOnly */
+jb.component('tree.jsonReadOnly', {
   type: 'tree.node-model',
   params: [
     {id: 'object', as: 'single'},
@@ -48,7 +48,7 @@ class ROjson {
 	}
 }
 
-jb.component('tree.json', { /* tree.json */
+jb.component('tree.json', {
   type: 'tree.node-model',
   params: [
     {id: 'object', as: 'ref'},

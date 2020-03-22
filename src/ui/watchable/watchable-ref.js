@@ -439,7 +439,7 @@ jb.ui.extraWatchableHandler = (resources,oldHandler) => {
 
 jb.ui.resourceChange = () => jb.mainWatchableHandler.resourceChange;
 
-jb.component('run-transaction', { /* runTransaction */
+jb.component('runTransaction', {
   type: 'action',
   params: [
     {id: 'actions', type: 'action[]', dynamic: true, composite: true, mandatory: true, defaultValue: []},

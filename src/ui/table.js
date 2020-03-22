@@ -1,6 +1,6 @@
 jb.ns('table')
 
-jb.component('table', { /* table */
+jb.component('table', {
   type: 'control,table',
   category: 'group:80,common:70',
   params: [
@@ -15,7 +15,7 @@ jb.component('table', { /* table */
     jb.ui.ctrl(ctx)
 })
 
-jb.component('field', { /* field */
+jb.component('field', {
   type: 'table-field',
   params: [
     {id: 'title', as: 'string', mandatory: true},
@@ -39,7 +39,7 @@ jb.component('field', { /* field */
   })
 })
 
-jb.component('field.index', { /* field.index */
+jb.component('field.index', {
   type: 'table-field',
   params: [
     {id: 'title', as: 'string', defaultValue: 'index'},
@@ -56,7 +56,7 @@ jb.component('field.index', { /* field.index */
   })
 })
 
-jb.component('field.control', { /* field.control */
+jb.component('field.control', {
   type: 'table-field',
   params: [
     {id: 'title', as: 'string', mandatory: true},
@@ -77,7 +77,7 @@ jb.component('field.control', { /* field.control */
 
 // todo - move to styles
 
-jb.component('button.table-cell-href', { /* button.tableCellHref */
+jb.component('button.tableCellHref', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: true}, state.title),
@@ -85,12 +85,12 @@ jb.component('button.table-cell-href', { /* button.tableCellHref */
   })
 })
 
-jb.component('table.init-table-or-itemlist', { /* table.initTableOrItemlist */
+jb.component('table.initTableOrItemlist', {
   type: 'feature',
   impl: ctx => ctx.run(ctx.vars.$model.fields ? table.init() : itemlist.initTable())
 })
 
-jb.component('table.init', { /* table.init */
+jb.component('table.init', {
   type: 'feature',
   category: 'table:10',
   impl: features(
@@ -117,7 +117,7 @@ jb.component('table.init', { /* table.init */
   )
 })
 
-jb.component('table.init-sort', { /* table.initSort */
+jb.component('table.initSort', {
   type: 'feature',
   impl: ctx => ({
       afterViewInit: cmp => {

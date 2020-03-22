@@ -1,6 +1,6 @@
 jb.ns('group,layout,tabs')
 
-jb.component('group', { /* group */
+jb.component('group', {
   type: 'control',
   category: 'group:100,common:90',
   params: [
@@ -13,7 +13,7 @@ jb.component('group', { /* group */
   impl: ctx => jb.ui.ctrl(ctx, ctx.params.layout)
 })
 
-jb.component('group.init-group', { /* group.initGroup */
+jb.component('group.initGroup', {
   type: 'feature',
   category: 'group:0',
   impl: calcProp({
@@ -22,7 +22,7 @@ jb.component('group.init-group', { /* group.initGroup */
   })
 })
 
-jb.component('inline-controls', { /* inlineControls */
+jb.component('inlineControls', {
   type: 'control',
   description: 'controls without a wrapping group',
   params: [
@@ -31,7 +31,7 @@ jb.component('inline-controls', { /* inlineControls */
   impl: ctx => ctx.params.controls().filter(x=>x)
 })
 
-jb.component('dynamic-controls', { /* dynamicControls */
+jb.component('dynamicControls', {
   type: 'control',
   description: 'calculated controls by data items without a wrapping group',
   params: [
@@ -45,7 +45,7 @@ jb.component('dynamic-controls', { /* dynamicControls */
         ctx.setVar(itemVariable,controlItem).setVar(indexVariable,i).setData(controlItem))))
 })
 
-jb.component('group.first-succeeding', { /* group.firstSucceeding */
+jb.component('group.firstSucceeding', {
   type: 'feature',
   category: 'group:70',
   description: 'Used with controlWithCondition. Takes the fhe first succeeding control',
@@ -53,7 +53,7 @@ jb.component('group.first-succeeding', { /* group.firstSucceeding */
     () => ({calcHash: ctx => jb.asArray(ctx.vars.$model.controls.profile).reduce((res,prof,i) => {
         if (res) return res
         const found = prof.condition == undefined || ctx.vars.$model.ctx.setVars(ctx.vars).runInner(prof.condition,{ as: 'boolean'},`controls.${i}.condition`)
-        if (found) 
+        if (found)
           return i + 1 // avoid index 0
       }, null),
     }),
@@ -70,7 +70,7 @@ jb.component('group.first-succeeding', { /* group.firstSucceeding */
   )
 })
 
-jb.component('control-with-condition', { /* controlWithCondition */
+jb.component('controlWithCondition', {
   type: 'control',
   description: 'Used with group.firstSucceeding',
   category: 'group:10',
@@ -83,7 +83,7 @@ jb.component('control-with-condition', { /* controlWithCondition */
   impl: (ctx,condition,ctrl) => condition(ctx) && ctrl(ctx)
 })
 
-jb.component('group.wait', { /* group.wait */
+jb.component('group.wait', {
   type: 'feature',
   category: 'group:70',
   description: 'wait for asynch data before showing the control',

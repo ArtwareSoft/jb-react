@@ -1,7 +1,7 @@
 (function() {
 jb.ui.field_id_counter = jb.ui.field_id_counter || 0;
 
-jb.component('field.databind', { /* field.databind */
+jb.component('field.databind', {
   type: 'feature',
   category: 'field:0',
   params: [
@@ -34,7 +34,7 @@ jb.component('field.databind', { /* field.databind */
       ),
     interactiveProp(
         'jbModel',
-        (ctx,{cmp}) => value => 
+        (ctx,{cmp}) => value =>
           value == null ? ctx.exp('%$$model/databind%','number') : writeFieldData(ctx,cmp,value,true)
       )
   )
@@ -81,7 +81,7 @@ jb.ui.preserveFieldCtxWithItem = (field,item) => {
 	return ctx && jb.ui.preserveCtx(ctx.setData(item))
 }
 
-jb.component('field.databind-text', { /* field.databindText */
+jb.component('field.databindText', {
   type: 'feature',
   category: 'field:0',
   params: [
@@ -94,7 +94,7 @@ jb.component('field.databind-text', { /* field.databindText */
   )
 })
 
-jb.component('field.keyboard-shortcut', { /* field.keyboardShortcut */
+jb.component('field.keyboardShortcut', {
   type: 'feature',
   category: 'events',
   description: 'listen to events at the document level even when the component is not active',
@@ -121,7 +121,7 @@ jb.component('field.keyboard-shortcut', { /* field.keyboardShortcut */
   )
 })
 
-jb.component('field.toolbar', { /* field.toolbar */
+jb.component('field.toolbar', {
   type: 'feature',
   params: [
     {id: 'toolbar', type: 'control', mandatory: true, dynamic: true}
@@ -131,7 +131,7 @@ jb.component('field.toolbar', { /* field.toolbar */
 
 // ***** validation
 
-jb.component('validation', { /* validation */
+jb.component('validation', {
   type: 'feature',
   category: 'validation:100',
   params: [
@@ -150,7 +150,7 @@ jb.component('validation', { /* validation */
   )
 })
 
-jb.component('field.title', { /* field.title */
+jb.component('field.title', {
   description: 'used to set table title in button and label',
   type: 'feature',
   category: 'table:80',
@@ -162,7 +162,7 @@ jb.component('field.title', { /* field.title */
   })
 })
 
-jb.component('field.title-ctrl', { /* field.titleCtrl */
+jb.component('field.titleCtrl', {
   description: 'title as control, buttons are usefull',
   type: 'feature',
   category: 'table:80',
@@ -174,7 +174,7 @@ jb.component('field.title-ctrl', { /* field.titleCtrl */
   })
 })
 
-jb.component('field.column-width', { /* field.columnWidth */
+jb.component('field.columnWidth', {
   description: 'used in itemlist fields',
   type: 'feature',
   category: 'table:80',

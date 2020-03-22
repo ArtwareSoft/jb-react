@@ -1,6 +1,6 @@
 jb.ns('button')
 
-jb.component('button', { /* button */
+jb.component('button', {
   type: 'control,clickable',
   category: 'control:100,common:100',
   params: [
@@ -27,7 +27,7 @@ jb.component('button', { /* button */
     )))
 })
 
-jb.component('ctrl-action', { /* ctrlAction */
+jb.component('ctrlAction', {
   type: 'feature',
   category: 'button:70',
   description: 'action to perform on control+click',
@@ -39,7 +39,7 @@ jb.component('ctrl-action', { /* ctrlAction */
   )
 })
 
-jb.component('alt-action', { /* altAction */
+jb.component('altAction', {
   type: 'feature',
   category: 'button:70',
   description: 'action to perform on alt+click',
@@ -51,7 +51,7 @@ jb.component('alt-action', { /* altAction */
   )
 })
 
-jb.component('button-disabled', { /* buttonDisabled */
+jb.component('buttonDisabled', {
   type: 'feature',
   category: 'button:70',
   description: 'define condition when button is enabled',

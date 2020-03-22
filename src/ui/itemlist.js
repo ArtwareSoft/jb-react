@@ -1,6 +1,6 @@
 jb.ns('itemlist,itemlistContainer')
 
-jb.component('itemlist', { /* itemlist */
+jb.component('itemlist', {
   description: 'list, dynamic group, collection, repeat',
   type: 'control',
   category: 'group:80,common:80',
@@ -16,13 +16,13 @@ jb.component('itemlist', { /* itemlist */
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('itemlist.no-container', { /* itemlist.noContainer */
+jb.component('itemlist.noContainer', {
   type: 'feature',
   category: 'group:20',
   impl: ctx => ({ extendCtx: (ctx,cmp) => ctx.setVars({itemlistCntr: null}) })
 })
 
-jb.component('itemlist.init-container-with-items', { /* itemlist.initContainerWithItems */
+jb.component('itemlist.initContainerWithItems', {
   type: 'feature',
   category: 'itemlist:20',
   impl: calcProp({
@@ -35,7 +35,7 @@ jb.component('itemlist.init-container-with-items', { /* itemlist.initContainerWi
   })
 })
 
-jb.component('itemlist.init', { /* itemlist.init */
+jb.component('itemlist.init', {
   type: 'feature',
   impl: features(
     calcProp({id: 'items', value: '%$$model.items%'}),
@@ -52,13 +52,15 @@ jb.component('itemlist.init', { /* itemlist.init */
   )
 })
 
-jb.component('itemlist.infinite-scroll', { 
+jb.component('itemlist.infiniteScroll', {
   type: 'feature',
   params: [
-    { id: 'pageSize', as: 'number', defaultValue: 2 }
+    {id: 'pageSize', as: 'number', defaultValue: 2}
   ],
   impl: features(
-    defHandler('onscrollHandler', (ctx,{ev, $state},{pageSize}) => {
+    defHandler(
+        'onscrollHandler',
+        (ctx,{ev, $state},{pageSize}) => {
       const elem = ev.target
       if (!ev.scrollPercentFromTop || ev.scrollPercentFromTop < 0.9) return
       const allItems = ctx.vars.$model.items()
@@ -75,12 +77,13 @@ jb.component('itemlist.infinite-scroll', {
         jb.ui.appendItems(elem,itemlistVdom,ctx)
         $state.visualLimit.shownItems += itemsToAppend.length
       }
-    }),
+    }
+      ),
     templateModifier(({},{vdom}) => vdom.setAttribute('onscroll',true))
   )
 })
 
-jb.component('itemlist.init-table', { /* itemlist.initTable */
+jb.component('itemlist.initTable', {
   type: 'feature',
   impl: features(
     calcProp({
@@ -95,7 +98,7 @@ jb.component('itemlist.init-table', { /* itemlist.initTable */
   )
 })
 
-jb.component('itemlist.fast-filter', { /* itemlist.fastFilter */
+jb.component('itemlist.fastFilter', {
   type: 'feature',
   description: 'use display:hide to filter itemlist elements',
   params: [
@@ -110,7 +113,7 @@ jb.component('itemlist.fast-filter', { /* itemlist.fastFilter */
   )
 })
 
-jb.component('itemlist.ul-li', { /* itemlist.ulLi */
+jb.component('itemlist.ulLi', {
   type: 'itemlist.style',
   impl: customStyle({
     template: (cmp,{ctrls},h) => h('ul',{ class: 'jb-itemlist'},
@@ -123,7 +126,7 @@ jb.component('itemlist.ul-li', { /* itemlist.ulLi */
   })
 })
 
-jb.component('itemlist.horizontal', { /* itemlist.horizontal */
+jb.component('itemlist.horizontal', {
   type: 'itemlist.style',
   params: [
     {id: 'spacing', as: 'number', defaultValue: 0}
@@ -150,7 +153,7 @@ jb.ui.addSlicedState = (cmp,items,visualLimit) => {
 
 // ****************** Selection ******************
 
-jb.component('itemlist.selection', { /* itemlist.selection */
+jb.component('itemlist.selection', {
   type: 'feature',
   params: [
     {id: 'databind', as: 'ref', defaultValue: '%$itemlistCntrData/selected%', dynamic: true},
@@ -235,7 +238,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
   })
 })
 
-jb.component('itemlist.keyboard-selection', { /* itemlist.keyboardSelection */
+jb.component('itemlist.keyboardSelection', {
   type: 'feature',
   macroByValue: false,
   params: [
@@ -279,7 +282,7 @@ jb.component('itemlist.keyboard-selection', { /* itemlist.keyboardSelection */
     })
 })
 
-jb.component('itemlist.drag-and-drop', { /* itemlist.dragAndDrop */
+jb.component('itemlist.dragAndDrop', {
   type: 'feature',
   impl: ctx => ({
       afterViewInit: function(cmp) {
@@ -329,7 +332,7 @@ jb.component('itemlist.drag-and-drop', { /* itemlist.dragAndDrop */
     })
 })
 
-jb.component('itemlist.drag-handle', { /* itemlist.dragHandle */
+jb.component('itemlist.dragHandle', {
   description: 'put on the control inside the item which is used to drag the whole line',
   type: 'feature',
   impl: list(
@@ -338,7 +341,7 @@ jb.component('itemlist.drag-handle', { /* itemlist.dragHandle */
   )
 })
 
-jb.component('itemlist.shown-only-on-item-hover', { /* itemlist.shownOnlyOnItemHover */
+jb.component('itemlist.shownOnlyOnItemHover', {
   type: 'feature',
   category: 'itemlist:75',
   description: 'put on the control inside the item which is shown when the mouse enters the line',
@@ -347,7 +350,7 @@ jb.component('itemlist.shown-only-on-item-hover', { /* itemlist.shownOnlyOnItemH
   })
 })
 
-jb.component('itemlist.divider', { /* itemlist.divider */
+jb.component('itemlist.divider', {
   type: 'feature',
   params: [
     {id: 'space', as: 'number', defaultValue: 5}

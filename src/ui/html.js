@@ -1,6 +1,6 @@
 jb.ns('html')
 
-jb.component('html', { /* html */
+jb.component('html', {
   type: 'control',
   description: 'rich text',
   category: 'control:100,common:80',
@@ -13,18 +13,18 @@ jb.component('html', { /* html */
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('html.plain', { /* html.plain */
+jb.component('html.plain', {
   type: 'html.style',
   impl: customStyle({
-    template: (cmp,{html},h) => h('html',{$html: html, jb_external: true } ) ,
+    template: (cmp,{html},h) => h('html',{$html: html, jb_external: true } ),
     features: [
-        watchAndCalcModelProp('html'),
-        () => ({ studioFeatures :{$: 'feature.contentEditable', param: 'html' } })
+      watchAndCalcModelProp('html'),
+      () => ({ studioFeatures :{$: 'feature.contentEditable', param: 'html' } })
     ]
   })
 })
 
-jb.component('html.in-iframe', { /* html.inIframe */
+jb.component('html.inIframe', {
   type: 'html.style',
   params: [
     {id: 'width', as: 'string', defaultValue: '100%'},

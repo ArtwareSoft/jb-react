@@ -1,4 +1,4 @@
-jb.component('layout.vertical', { /* layout.vertical */
+jb.component('layout.vertical', {
   type: 'layout,feature',
   params: [
     {id: 'spacing', as: 'string', defaultValue: 3}
@@ -10,7 +10,7 @@ jb.component('layout.vertical', { /* layout.vertical */
   )
 })
 
-jb.component('layout.horizontal', { /* layout.horizontal */
+jb.component('layout.horizontal', {
   type: 'layout,feature',
   params: [
     {id: 'spacing', as: 'string', defaultValue: 3}
@@ -22,7 +22,7 @@ jb.component('layout.horizontal', { /* layout.horizontal */
   )
 })
 
-jb.component('layout.horizontal-fixed-split', { /* layout.horizontalFixedSplit */
+jb.component('layout.horizontalFixedSplit', {
   type: 'layout,feature',
   params: [
     {id: 'leftWidth', as: 'string', defaultValue: '200px', mandatory: true},
@@ -37,7 +37,7 @@ jb.component('layout.horizontal-fixed-split', { /* layout.horizontalFixedSplit *
   })
 })
 
-jb.component('layout.horizontal-wrapped', { /* layout.horizontalWrapped */
+jb.component('layout.horizontalWrapped', {
   type: 'layout,feature',
   params: [
     {id: 'spacing', as: 'string', defaultValue: 3}
@@ -49,7 +49,7 @@ jb.component('layout.horizontal-wrapped', { /* layout.horizontalWrapped */
   })
 })
 
-jb.component('layout.flex', { /* layout.flex */
+jb.component('layout.flex', {
   type: 'layout,feature',
   params: [
     {id: 'direction', as: 'string', options: ',row,row-reverse,column,column-reverse'},
@@ -66,7 +66,7 @@ jb.component('layout.flex', { /* layout.flex */
   })
 })
 
-jb.component('layout.grid', { /* layout.grid */
+jb.component('layout.grid', {
   type: 'layout,feature',
   params: [
     {id: 'columnSizes', as: 'array', templateValue: list('auto', 'auto'), description: 'grid-template-columns, list of lengths'},
@@ -82,7 +82,7 @@ jb.component('layout.grid', { /* layout.grid */
   })
 })
 
-jb.component('flex-item.grow', { /* flexItem.grow */
+jb.component('flexItem.grow', {
   type: 'feature',
   category: 'flex-item',
   params: [
@@ -94,7 +94,7 @@ jb.component('flex-item.grow', { /* flexItem.grow */
   }
 })
 
-jb.component('flex-item.basis', { /* flexItem.basis */
+jb.component('flexItem.basis', {
   type: 'feature',
   category: 'flex-item',
   params: [
@@ -106,7 +106,7 @@ jb.component('flex-item.basis', { /* flexItem.basis */
   }
 })
 
-jb.component('flex-item.align-self', { /* flexItem.alignSelf */
+jb.component('flexItem.alignSelf', {
   type: 'feature',
   category: 'flex-item',
   params: [

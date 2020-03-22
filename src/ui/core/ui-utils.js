@@ -26,8 +26,8 @@ Object.assign(jb.ui,{
     ctxDictOfElem: elem => {
       const runningWorkerId = jb.frame.workerId && jb.frame.workerId()
       const workerIdAtElem = elem.getAttribute('worker')
-      const _jb = workerIdAtElem == 'preview' ? jb.studio.previewjb 
-        : !runningWorkerId && workerIdAtElem ? jb.ui.workers[elem.getAttribute('worker')] 
+      const _jb = workerIdAtElem == 'preview' ? jb.studio.previewjb
+        : !runningWorkerId && workerIdAtElem ? jb.ui.workers[elem.getAttribute('worker')]
         : jb
       return _jb.ctxDictionary
     },
@@ -71,7 +71,7 @@ Object.assign(jb.ui,{
       const {pipe, takeUntil,fromPromise,subject} = jb.callbag
       const keydown_src = subject();
       cmp.base.onkeydown = e => {
-        if ([38,40,13,27].indexOf(e.keyCode) != -1) { 
+        if ([38,40,13,27].indexOf(e.keyCode) != -1) {
           keydown_src.next(e);
           return false;
         }
@@ -93,7 +93,7 @@ Object.assign(jb.ui, {
     },
     offset(el) { return el.getBoundingClientRect() },
     parents(el,{includeSelf} = {}) {
-        const res = [] 
+        const res = []
         el = includeSelf ? el : el && el.parentNode;
         while(el) {
           res.push(el);
@@ -211,7 +211,7 @@ jb.objectDiff = function(newObj, orig) {
 
 // ****************** components ****************
 
-jb.component('custom-style', { /* customStyle */
+jb.component('customStyle', {
   typePattern: t => /\.style$/.test(t),
   category: 'advanced:10,all:10',
   params: [
@@ -227,7 +227,7 @@ jb.component('custom-style', { /* customStyle */
     })
 })
 
-jb.component('style-by-control', { /* styleByControl */
+jb.component('styleByControl', {
   typePattern: t => /\.style$/.test(t),
   category: 'advanced:10,all:20',
   params: [
@@ -237,7 +237,7 @@ jb.component('style-by-control', { /* styleByControl */
   impl: (ctx,control,modelVar) => control(ctx.setVar(modelVar,ctx.vars.$model))
 })
 
-jb.component('style-with-features', { /* styleWithFeatures */
+jb.component('styleWithFeatures', {
   typePattern: t => /\.style$/.test(t),
   description: 'customize, add more features to style',
   category: 'advanced:10,all:20',
@@ -248,7 +248,7 @@ jb.component('style-with-features', { /* styleWithFeatures */
   impl: (ctx,style,features) => style && {...style,featuresOptions: (style.featuresOptions || []).concat(features())}
 })
 
-jb.component('control-with-features', { /* controlWithFeatures */
+jb.component('controlWithFeatures', {
   type: 'control',
   description: 'customize, add more features to control',
   category: 'advanced:10,all:20',

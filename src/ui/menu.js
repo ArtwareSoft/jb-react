@@ -2,7 +2,7 @@ jb.ns('menuStyle')
 jb.ns('menuSeparator')
 jb.ns('mdc')
 
-jb.component('menu.menu', { /* menu.menu */
+jb.component('menu.menu', {
   type: 'menu.option',
   params: [
     {id: 'title', as: 'string', dynamic: true, mandatory: true},
@@ -19,7 +19,7 @@ jb.component('menu.menu', { /* menu.menu */
 	})
 })
 
-jb.component('menu.options-group', { /* menu.optionsGroup */
+jb.component('menu.optionsGroup', {
   type: 'menu.option',
   params: [
     {id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true}
@@ -27,7 +27,7 @@ jb.component('menu.options-group', { /* menu.optionsGroup */
   impl: (ctx,options) => options()
 })
 
-jb.component('menu.dynamic-options', { /* menu.dynamicOptions */
+jb.component('menu.dynamicOptions', {
   type: 'menu.option',
   params: [
     {id: 'items', type: 'data', as: 'array', mandatory: true, dynamic: true},
@@ -36,7 +36,7 @@ jb.component('menu.dynamic-options', { /* menu.dynamicOptions */
   impl: (ctx,items,generic) => items().map(item => generic(ctx.setData(item)))
 })
 
-jb.component('menu.end-with-separator', { /* menu.endWithSeparator */
+jb.component('menu.endWithSeparator', {
   type: 'menu.option',
   params: [
     {id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true},
@@ -52,12 +52,12 @@ jb.component('menu.end-with-separator', { /* menu.endWithSeparator */
 })
 
 
-jb.component('menu.separator', { /* menu.separator */
+jb.component('menu.separator', {
   type: 'menu.option',
   impl: ctx => ({ separator: true })
 })
 
-jb.component('menu.action', { /* menu.action */
+jb.component('menu.action', {
   type: 'menu.option',
   params: [
     {id: 'title', as: 'string', dynamic: true, mandatory: true},
@@ -83,7 +83,7 @@ jb.component('menu.action', { /* menu.action */
 
 // ********* actions / controls ************
 
-jb.component('menu.control', { /* menu.control */
+jb.component('menu.control', {
   type: 'control,clickable,menu',
   params: [
     {id: 'menu', type: 'menu.option', dynamic: true, mandatory: true},
@@ -99,7 +99,7 @@ jb.component('menu.control', { /* menu.control */
 	}
 })
 
-jb.component('menu.open-context-menu', { /* menu.openContextMenu */
+jb.component('menu.openContextMenu', {
   type: 'action',
   params: [
     {id: 'menu', type: 'menu.option', dynamic: true, mandatory: true},
@@ -115,7 +115,7 @@ jb.component('menu.open-context-menu', { /* menu.openContextMenu */
 
 // ********* styles ************
 
-jb.component('menu-style.pulldown', { /* menuStyle.pulldown */
+jb.component('menuStyle.pulldown', {
   type: 'menu.style',
   params: [
     {id: 'innerMenuStyle', type: 'menu.style', dynamic: true, defaultValue: menuStyle.popupAsOption()},
@@ -140,7 +140,7 @@ jb.component('menu-style.pulldown', { /* menuStyle.pulldown */
   )
 })
 
-jb.component('menu-style.context-menu', { /* menuStyle.contextMenu */
+jb.component('menuStyle.contextMenu', {
   type: 'menu.style',
   params: [
     {id: 'leafOptionStyle', type: 'menu-option.style', dynamic: true, defaultValue: menuStyle.optionLine()}
@@ -161,7 +161,7 @@ jb.component('menu-style.context-menu', { /* menuStyle.contextMenu */
 })
 
 
-jb.component('menu.init-popup-menu', { /* menu.initPopupMenu */
+jb.component('menu.initPopupMenu', {
   type: 'feature',
   params: [
     {id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue: dialog.contextMenuPopup()}
@@ -202,11 +202,12 @@ jb.component('menu.init-popup-menu', { /* menu.initPopupMenu */
           })
 				}
 			})
-		})
+		}
+      )
   )
 })
 
-jb.component('menu.init-menu-option', { /* menu.initMenuOption */
+jb.component('menu.initMenuOption', {
   type: 'feature',
   impl: features(
     calcProp({id: 'title', value: '%$menuModel.leaf.title%'}),
@@ -228,10 +229,12 @@ jb.component('menu.init-menu-option', { /* menu.initMenuOption */
               subscribe(_=> cmp.action()))
           }
 			})
-	}))
+	}
+      )
+  )
 })
 
-jb.component('menu-style.apply-multi-level', { /* menuStyle.applyMultiLevel */
+jb.component('menuStyle.applyMultiLevel', {
   type: 'menu.style',
   params: [
     {id: 'menuStyle', type: 'menu.style', dynamic: true, defaultValue: menuStyle.popupAsOption()},
@@ -266,7 +269,7 @@ jb.component('menu-style.apply-multi-level', { /* menuStyle.applyMultiLevel */
 //     })
 // })
 
-jb.component('menu.selection', { /* menu.selection */
+jb.component('menu.selection', {
   type: 'feature',
   params: [
     {id: 'autoSelectFirst', type: 'boolean'}
@@ -332,7 +335,7 @@ jb.component('menu.selection', { /* menu.selection */
 		})
 })
 
-jb.component('menu-style.option-line', { /* menuStyle.optionLine */
+jb.component('menuStyle.optionLine', {
   type: 'menu-option.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{
@@ -353,7 +356,7 @@ jb.component('menu-style.option-line', { /* menuStyle.optionLine */
   })
 })
 
-jb.component('menu.option-as-icon24', { /* menu.optionAsIcon24 */
+jb.component('menu.optionAsIcon24', {
   type: 'menu-option.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{
@@ -366,7 +369,7 @@ jb.component('menu.option-as-icon24', { /* menu.optionAsIcon24 */
   })
 })
 
-jb.component('menu-style.popup-as-option', { /* menuStyle.popupAsOption */
+jb.component('menuStyle.popupAsOption', {
   type: 'menu.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{
@@ -383,7 +386,7 @@ jb.component('menu-style.popup-as-option', { /* menuStyle.popupAsOption */
   })
 })
 
-jb.component('menu-style.popup-thumb', { /* menuStyle.popupThumb */
+jb.component('menuStyle.popupThumb', {
   type: 'menu.style',
   description: 'used for pulldown',
   impl: customStyle({
@@ -396,7 +399,7 @@ jb.component('menu-style.popup-thumb', { /* menuStyle.popupThumb */
   })
 })
 
-jb.component('dialog.context-menu-popup', { /* dialog.contextMenuPopup */
+jb.component('dialog.contextMenuPopup', {
   type: 'dialog.style',
   params: [
     {id: 'offsetTop', as: 'number'},
@@ -418,7 +421,7 @@ jb.component('dialog.context-menu-popup', { /* dialog.contextMenuPopup */
   })
 })
 
-jb.component('menu-separator.line', { /* menuSeparator.line */
+jb.component('menuSeparator.line', {
   type: 'menu-separator.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div'),

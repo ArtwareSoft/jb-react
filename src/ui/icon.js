@@ -1,6 +1,6 @@
 jb.ns('icon')
 
-jb.component('material-icon', { /* materialIcon */
+jb.component('materialIcon', {
   type: 'control',
   category: 'control:50',
   params: [
@@ -12,7 +12,7 @@ jb.component('material-icon', { /* materialIcon */
   impl: ctx => jb.ui.ctrl(ctx, calcProp('icon','%$$model/icon%'))
 })
 
-jb.component('icon.material', { /* icon.material */
+jb.component('icon.material', {
   type: 'icon-with-action.style',
   impl: customStyle(
     (cmp,{icon},h) => h('i',{ class: 'material-icons' }, icon)

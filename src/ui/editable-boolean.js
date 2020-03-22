@@ -1,6 +1,6 @@
 jb.ns('editableBoolean')
 
-jb.component('editable-boolean', { /* editableBoolean */
+jb.component('editableBoolean', {
   type: 'control',
   category: 'input:20',
   params: [
@@ -19,7 +19,7 @@ jb.component('editable-boolean', { /* editableBoolean */
 		))
 })
 
-jb.component('editable-boolean.keyboard-support', { /* editableBoolean.keyboardSupport */
+jb.component('editableBoolean.keyboardSupport', {
   type: 'feature',
   impl: feature.onEvent({
     event: 'keypress',

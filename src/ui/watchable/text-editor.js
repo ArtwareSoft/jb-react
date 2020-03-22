@@ -35,7 +35,7 @@ function setStrValue(value, ref, ctx) {
        jb.writeValue(ref,newVal,ctx)
 }
 
-jb.component('watchable-as-text', { /* watchableAsText */
+jb.component('watchableAsText', {
   type: 'data',
   params: [
     {id: 'ref', as: 'ref', dynamic: true},
@@ -90,7 +90,7 @@ jb.evalStr = function(str,frame) {
     }
 }
 
-jb.component('text-editor.with-cursor-path', { /* textEditor.withCursorPath */
+jb.component('textEditor.withCursorPath', {
   type: 'action',
   params: [
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
@@ -110,7 +110,7 @@ jb.component('text-editor.with-cursor-path', { /* textEditor.withCursorPath */
     }
 })
 
-jb.component('text-editor.is-dirty', { /* textEditor.isDirty */
+jb.component('textEditor.isDirty', {
   impl: ctx => {
         try {
             return ctx.vars.editor().isDirty()
@@ -144,7 +144,7 @@ jb.component('text-editor.is-dirty', { /* textEditor.isDirty */
 //     }})
 // })
 
-jb.component('textarea.init-textarea-editor', { /* textarea.initTextareaEditor */
+jb.component('textarea.initTextareaEditor', {
   type: 'feature',
   impl: interactive(
     (ctx,{cmp}) => {

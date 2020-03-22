@@ -1,5 +1,5 @@
 jb.ns('mdc.style')
-jb.component('table.plain', { /* table.plain */
+jb.component('table.plain', {
   params: [
     {id: 'hideHeaders', as: 'boolean', type: 'boolean'}
   ],
@@ -24,7 +24,7 @@ jb.component('table.plain', { /* table.plain */
   })
 })
 
-jb.component('table.mdc', { /* table.mdc */
+jb.component('table.mdc', {
   type: 'table.style,itemlist.style',
   params: [
     {id: 'hideHeaders', as: 'boolean', type: 'boolean'},
