@@ -5,10 +5,8 @@ const fs = require('fs');
 require('../src/loader/jb-loader.js');
 
 const JBART_DIR = '../';
-const modulesToLoad = 'common,ui-common,ui-tree,codemirror-styles,animation,testers,pretty-print,studio,studio-tests,parsing,object-encoder'
-const sampleProjects = [ //'style-gallery',
-'itemlists','todos','html-parsing','cards-demo'
-].map(x=>`projects/${x}/${x}.js`)
+const modulesToLoad = 'common,ui-common,ui-tree,codemirror-styles,animation,testers,pretty-print,studio,studio-tests,parsing,object-encoder,cards,md-icons'
+const sampleProjects = ['style-gallery','itemlists','todomvc','html-parsing','cards-demo'].map(x=>`projects/${x}/${x}.js`)
 
 const filesOfModules = modules => modules.split(',').map(m=>{
     if (m == 'studio')

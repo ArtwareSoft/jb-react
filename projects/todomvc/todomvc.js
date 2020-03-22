@@ -8,7 +8,7 @@ jb.component('new-task', { watchableData:
 })
 
 
-jb.component('todomvc.main', { /* todomvc.main */
+jb.component('todomvc.main', {
   type: 'control',
   impl: group({
     controls: [
@@ -81,13 +81,12 @@ jb.component('todomvc.main', { /* todomvc.main */
       group({
         title: 'toolbar',
         layout: layout.flex({
+          justifyContent: 'space-between',
           alignItems: 'center',
-          spacing: '30',
-          justifyContent: 'space-between'
+          spacing: '30'
         }),
         controls: [
           text({
-            title: 'items left',
             text: pipeline(
               '%$todo%',
               filter('%completed% == false'),
@@ -95,8 +94,9 @@ jb.component('todomvc.main', { /* todomvc.main */
               If('%% > 1', '%% items', '%% item'),
               '%% left'
             ),
+            title: 'items left',
             style: text.span(),
-            features: watchRef({ref: '%$todo%', includeChildren: 'yes', delay: ''})
+            features: watchRef({ref: '%$todo%', includeChildren: 'yes'})
           }),
           picklist({
             title: 'filter by',

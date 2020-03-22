@@ -1,6 +1,6 @@
 jb.ns('html-parsing')
 
-jb.component('html-parsing.main', { /* htmlParsing.main */
+jb.component('htmlParsing.main', {
   type: 'control',
   impl: group({
     title: '',
@@ -8,8 +8,8 @@ jb.component('html-parsing.main', { /* htmlParsing.main */
       itemlist({
         items: pipeline('%$phone%', keys()),
         controls: [
-          text({title: 'property', text: '%%', features: field.columnWidth('200')}),
-          text({title: 'value', text: pipeline('%$phone/{%%}%')})
+          text({text: '%%', title: 'property', features: field.columnWidth('200')}),
+          text({text: pipeline('%$phone/{%%}%'), title: 'value'})
         ],
         style: table.plain(),
         features: [css.width('446')]
@@ -17,8 +17,8 @@ jb.component('html-parsing.main', { /* htmlParsing.main */
       itemlist({
         items: '%$phone/spec-list%',
         controls: [
-          text({title: 'feature', text: '%feature%'}),
-          text({title: 'value', text: '%val%'})
+          text({text: '%feature%', title: 'feature'}),
+          text({text: '%val%', title: 'value'})
         ],
         style: table.plain(),
         features: [css.width('400')]
@@ -31,7 +31,7 @@ jb.component('html-parsing.main', { /* htmlParsing.main */
   })
 })
 
-jb.component('html-parsing.device-parser', { /* htmlParsing.deviceParser */
+jb.component('htmlParsing.deviceParser', {
   impl: pipeline(
     Var('input', '%%'),
     dynamicObject({
@@ -74,8 +74,7 @@ jb.component('html-parsing.device-parser', { /* htmlParsing.deviceParser */
 })
 
 
-
-jb.component('html-parsing.makeToDevices', { /* htmlParsing.makeToDevices */
+jb.component('htmlParsing.makeToDevices', {
   type: 'control',
   impl: group({
     controls: [
@@ -110,10 +109,10 @@ jb.component('html-parsing.makeToDevices', { /* htmlParsing.makeToDevices */
       itemlist({
         items: '%$deviceUrls%',
         controls: [
-          text({title: 'url', text: '%%'}),
+          text({text: '%%', title: 'url'}),
           text({
-            title: 'status',
             text: pipeline('%$progress/{%%}%'),
+            title: 'status',
             features: field.columnWidth('100')
           })
         ],
@@ -126,7 +125,7 @@ jb.component('html-parsing.makeToDevices', { /* htmlParsing.makeToDevices */
 })
 
 
-jb.component('html-parsing.parseDevice', { /* htmlParsing.parseDevice */
+jb.component('htmlParsing.parseDevice', {
   type: 'control',
   impl: group({
     controls: [
@@ -134,7 +133,6 @@ jb.component('html-parsing.parseDevice', { /* htmlParsing.parseDevice */
         layout: layout.horizontal(),
         controls: [
           text({
-            title: 'fix values',
             text: pipeline(
               '%$devices%',
               properties(),
@@ -145,13 +143,14 @@ jb.component('html-parsing.parseDevice', { /* htmlParsing.parseDevice */
                     assign(prop('Size', split({separator: 'inch', text: '%Size%', part: 'first'})))
                   )
                 })
-            )
+            ),
+            title: 'fix values'
           }),
           itemlist({
             items: pipeline('%$devices%', properties(), '%val%'),
             controls: [
-              text({title: 'name', text: '%name%', features: field.columnWidth('300')}),
-              text({title: 'price', text: pipeline('%Price%', matchRegex('[0-9]+'))})
+              text({text: '%name%', title: 'name', features: field.columnWidth('300')}),
+              text({text: pipeline('%Price%', matchRegex('[0-9]+')), title: 'price'})
             ],
             style: table.plain(),
             visualSizeLimit: '12',
@@ -165,21 +164,21 @@ jb.component('html-parsing.parseDevice', { /* htmlParsing.parseDevice */
             style: propertySheet.titlesLeft({}),
             controls: [
               text({
-                title: 'size',
-                text: split({separator: 'inches', text: '%Size%', part: 'first'})
+                text: split({separator: 'inches', text: '%Size%', part: 'first'}),
+                title: 'size'
               }),
               text({
-                title: 'weight',
-                text: split({separator: ' ', text: '%Weight%', part: 'first'})
+                text: split({separator: ' ', text: '%Weight%', part: 'first'}),
+                title: 'weight'
               }),
-              text({title: 'battery', text: matchRegex('[0-9]+', '%battery%')}),
+              text({text: matchRegex('[0-9]+', '%battery%'), title: 'battery'}),
               text({
-                title: 'price',
-                text: split({separator: 'out', text: '%Price%', part: 'second'})
+                text: split({separator: 'out', text: '%Price%', part: 'second'}),
+                title: 'price'
               }),
               text({
-                title: 'year',
-                text: split({separator: 'sed', text: '%Status%', part: 'second'})
+                text: split({separator: 'sed', text: '%Status%', part: 'second'}),
+                title: 'year'
               }),
               image({
                 url: '%image%',
@@ -197,13 +196,13 @@ jb.component('html-parsing.parseDevice', { /* htmlParsing.parseDevice */
   })
 })
 
-jb.component('data-resource.progress', { /* dataResource.progress */
+jb.component('dataResource.progress', {
   watchableData: {
-
+    
   }
 })
 
-jb.component('data-resource.sel', { /* dataResource.sel */
+jb.component('dataResource.sel', {
   watchableData: {
     Technology: 'GSM / HSPA / LTE',
     '2G bands': 'GSM 850 / 900 / 1800 / 1900 - SIM 1 & SIM 2 (dual-SIM model only)',
@@ -245,7 +244,7 @@ jb.component('data-resource.sel', { /* dataResource.sel */
   }
 })
 
-jb.component('html-parsing.products-parser', { /* htmlParsing.productsParser */
+jb.component('htmlParsing.productsParser', {
   type: 'data',
   impl: pipeline(
     extractText({startMarkers: 'class=\"makers\"', endMarker: '</ul>'}),

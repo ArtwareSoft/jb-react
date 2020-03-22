@@ -5,7 +5,7 @@ jb.component('people', { watchableData: [
 ]
 })
 
-jb.component('itemlists.main', { /* itemlists.main */
+jb.component('itemlists.main', {
   type: 'control',
   impl: group({
     layout: layout.vertical(),
@@ -28,7 +28,7 @@ jb.component('itemlists.main', { /* itemlists.main */
   })
 })
 
-jb.component('itemlists.table', { /* itemlists.table */
+jb.component('itemlists.table', {
   type: 'control',
   impl: table({
     items: '%$people%',
@@ -40,7 +40,7 @@ jb.component('itemlists.table', { /* itemlists.table */
   })
 })
 
-jb.component('itemlists.large-table', { /* itemlists.largeTable */
+jb.component('itemlists.largeTable', {
   type: 'control',
   impl: group({
     title: 'large-table',
@@ -58,7 +58,7 @@ jb.component('itemlists.large-table', { /* itemlists.largeTable */
   })
 })
 
-jb.component('itemlists.large-table-with-search', { /* itemlists.largeTableWithSearch */
+jb.component('itemlists.largeTableWithSearch', {
   type: 'control',
   impl: group({
     title: 'large-table',
@@ -99,7 +99,7 @@ jb.component('itemlists.large-table-with-search', { /* itemlists.largeTableWithS
   })
 })
 
-jb.component('itemlists.editable-table', { /* itemlists.editableTable */
+jb.component('itemlists.editableTable', {
   type: 'control',
   impl: group({
     controls: [
@@ -145,7 +145,7 @@ jb.component('itemlists.editable-table', { /* itemlists.editableTable */
 })
 
 
-jb.component('itemlists.table-with-search', { /* itemlists.tableWithSearch */
+jb.component('itemlists.tableWithSearch', {
   type: 'control',
   impl: group({
     controls: [
@@ -179,7 +179,7 @@ jb.component('itemlists.table-with-search', { /* itemlists.tableWithSearch */
   })
 })
 
-jb.component('itemlists.table-with-filters', { /* itemlists.tableWithFilters */
+jb.component('itemlists.tableWithFilters', {
   type: 'control',
   impl: group({
     controls: [
@@ -219,7 +219,7 @@ jb.component('itemlists.table-with-filters', { /* itemlists.tableWithFilters */
   })
 })
 
-jb.component('itemlists.master-details-with-container', { /* itemlists.masterDetailsWithContainer */
+jb.component('itemlists.masterDetailsWithContainer', {
   type: 'control',
   impl: group({
     layout: layout.horizontal(),
@@ -250,7 +250,7 @@ jb.component('itemlists.master-details-with-container', { /* itemlists.masterDet
   })
 })
 
-jb.component('itemlists.master-details', { /* itemlists.masterDetails */
+jb.component('itemlists.masterDetails', {
   type: 'control',
   impl: group({
     layout: layout.horizontal(),
@@ -286,12 +286,12 @@ jb.component('itemlists.master-details', { /* itemlists.masterDetails */
   })
 })
 
-jb.component('itemlists.with-sort', { /* itemlists.withSort */
+jb.component('itemlists.withSort', {
   type: 'control',
   impl: group({
     controls: [
       group({
-        style: propertySheet.titlesLeft({vSpacing: '', hSpacing: '', titleWidth: '60'}),
+        style: propertySheet.titlesLeft({}),
         controls: [
           picklist({
             title: 'sort by:',
@@ -305,8 +305,8 @@ jb.component('itemlists.with-sort', { /* itemlists.withSort */
       itemlist({
         items: pipeline('%$people%', sort({propertyName: '%$sortBy%', ascending: 'true'})),
         controls: [
-          text({title: 'name', text: '%name%', features: field.columnWidth('250')}),
-          text({title: 'age', text: '%age%'})
+          text({text: '%name%', title: 'name', features: field.columnWidth('250')}),
+          text({text: '%age%', title: 'age'})
         ],
         style: table.plain(),
         features: watchRef('%$sortBy%')
@@ -315,17 +315,17 @@ jb.component('itemlists.with-sort', { /* itemlists.withSort */
   })
 })
 
-jb.component('data-resource.sortBy', { /* dataResource.sortBy */
+jb.component('data-resource.sortBy', {
   watchableData: 'age'
 })
 
-jb.component('data-resource.selectedItem', { /* dataResource.selectedItem */
+jb.component('data-resource.selectedItem', {
   watchableData: {
 
   }
 })
 
-jb.component('data-resource.people', { /* dataResource.people */
+jb.component('dataResource.people', {
   watchableData: [
     {
       name: 'Homer Simpson',
@@ -343,7 +343,7 @@ jb.component('data-resource.people', { /* dataResource.people */
   ]
 })
 
-jb.component('itemlists.infinite-scroll', { /* itemlists.infiniteScroll */
+jb.component('itemlists.infiniteScroll', {
   type: 'control',
   impl: group({
     controls: [

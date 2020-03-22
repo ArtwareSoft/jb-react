@@ -1,6 +1,6 @@
 jb.ns('cards,cards-demo,style-gallery')
 
-jb.component('cards-demo.main', { /* cardsDemo.main */
+jb.component('cardsDemo.main', {
   impl: group({
     layout: layout.horizontal('20'),
     controls: [
@@ -13,17 +13,17 @@ jb.component('cards-demo.main', { /* cardsDemo.main */
   })
 })
 
-jb.component('style-gallery.styles-of-ui-component', {
+jb.component('styleGallery.stylesOfUiComponent', {
   params: [
     {id: 'component', as: 'string'}
   ],
   impl: (ctx,component) => ctx.frame().parent.jb.studio.PTsOfType(component)
-    .filter(x=>['custom-style','style-by-control','style-with-features'].indexOf(x) == -1).sort()
+    .filter(x=>['customStyle','styleByControl','styleWithFeatures'].indexOf(x) == -1).sort()
 })
 
-'card,card-list,card-filter'.split(',')
+'card,cardList,cardFilter'.split(',')
 .forEach(ctrl=>
-  jb.component(`cards-demo.${ctrl}`,  { type: 'control',
+  jb.component(`cardsDemo.${ctrl}`,  { type: 'control',
   impl: group({
     layout: layout.grid({
       columnSizes: list('600'),
@@ -54,7 +54,7 @@ jb.component('style-gallery.styles-of-ui-component', {
   }),
 }))
 
-jb.component('cards-demo.phone', { /* cardsDemo.phone */
+jb.component('cardsDemo.phone', {
   type: 'control',
   impl: group({
     controls: [
