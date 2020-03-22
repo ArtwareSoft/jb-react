@@ -7,17 +7,17 @@ jb.component('person',{ watchableData : {
   age: 42
 }})
 
-jb.component('style-gallery.styles-of-ui-component', {
+jb.component('styleGallery.stylesOfUiComponent', {
   params: [
     {id: 'component', as: 'string'}
   ],
   impl: (ctx,component) => ctx.frame().parent.jb.studio.PTsOfType(component)
-    .filter(x=>['custom-style','style-by-control','style-with-features'].indexOf(x) == -1).sort()
+    .filter(x=>['customStyle','styleByControl','styleWithFeatures'].indexOf(x) == -1).sort()
 })
 
 const variations = { button: { prop: 'raised', values: [true,false] }}
 
-'button,text,editable-text,editable-number,editable-boolean,group,itemlist,picklist,image'.split(',')
+'button,text,editableText,editableNumber,editableBoolean,group,itemlist,picklist,image'.split(',')
 .forEach(ctrl=>
   jb.component(`style-gallery.${ctrl}`,  { type: 'control',
   impl: group({
@@ -38,7 +38,7 @@ const variations = { button: { prop: 'raised', values: [true,false] }}
       controlItems: styleGallery.stylesOfUiComponent(jb.comps[ctrl].params.find(p=>p.id =='style').type),
       genericControl: group({
         title: pipeline('%$__style%', suffix('.')),
-        controls: [{$: ctrl, 
+        controls: [{$: ctrl,
           ... (ctrl == 'editable-number' ? { databind: '%$person/age%' } : { databind: '%$person/name%' } ),
           title: 'title',
           text: 'hello world',
@@ -59,7 +59,7 @@ const variations = { button: { prop: 'raised', values: [true,false] }}
   }),
 }))
 
-jb.component('data-resource.person', { /* dataResource.person */
+jb.component('dataResource.person', {
   watchableData: {
     name: 'Homer Simpson',
     male: true,
@@ -68,7 +68,14 @@ jb.component('data-resource.person', { /* dataResource.person */
   }
 })
 
-jb.component('data-resource.people',{ watchableData : [
+jb.component('dataResource.people', {
+  watchableData: [
+    {name: 'Homer Simpson', age: 42, male: true},
+    {name: 'Marge Simpson', age: 38, male: false},
+    {name: 'Bart Simpson', age: 12, male: true}
+  ]
+})
+jb.component('dataResource.people',{ watchableData : [
   { "name": "Homer Simpson" ,age: 42 , male: true},
   { "name": "Marge Simpson" ,age: 38 , male: false},
   { "name": "Bart Simpson"  ,age: 12 , male: true}

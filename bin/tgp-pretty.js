@@ -6,6 +6,9 @@ require('../src/loader/jb-loader.js');
 
 const JBART_DIR = '../';
 const modulesToLoad = 'common,ui-common,ui-tree,codemirror-styles,animation,testers,pretty-print,studio,studio-tests,parsing,object-encoder'
+const sampleProjects = [ //'style-gallery',
+'itemlists','todos','html-parsing','cards-demo'
+].map(x=>`projects/${x}/${x}.js`)
 
 const filesOfModules = modules => modules.split(',').map(m=>{
     if (m == 'studio')
@@ -18,7 +21,7 @@ const filesOfModules = modules => modules.split(',').map(m=>{
 const testsFiles = ['data','ui','parsing','object-encoder'].map(x=>`projects/ui-tests/${x}-tests.js`)
 
 // load files
-filesOfModules(modulesToLoad).concat(testsFiles).filter(x=>x).filter(x=>!x.match(/material/)).filter(x=>!x.match(/.css$/))
+filesOfModules(modulesToLoad).concat(testsFiles).concat(sampleProjects).filter(x=>x).filter(x=>!x.match(/material/)).filter(x=>!x.match(/.css$/))
     .map(fn=> require(JBART_DIR+fn));
 
 filesOfModules((getProcessArgument('modules') || '')).filter(x=>x).filter(x=>!x.match(/.css$/)).map(fn=> require(JBART_DIR+fn));
@@ -32,7 +35,9 @@ function run() {
         .filter(({id}) => !id.match(/-json-format$/) && !id.match(/forward-ns-declaration$/))
     
     entries.filter(({file}) => 
-            filePattern.test(file) )
+        sampleProjects.find(x => file.replace(/\\/g,'/').indexOf(x) != -1)
+        //    filePattern.test(file) 
+            )
         .forEach( args => swapComp(args))
 }
 
