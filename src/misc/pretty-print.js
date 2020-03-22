@@ -8,7 +8,7 @@ jb.component('pretty-print', { /* prettyPrint */
 
 jb.prettyPrintComp = function(compId,comp,settings={}) {
   if (comp) {
-    const macroRemark = ` /* ${jb.macroName(compId)} */`
+    const macroRemark = ''; //` /* ${jb.macroName(compId)} */`
     const res = "jb.component('" + compId + "', " + jb.prettyPrint(comp,settings) + ')'
     const withMacroName = res.replace(/\n/, macroRemark + '\n')
     return withMacroName

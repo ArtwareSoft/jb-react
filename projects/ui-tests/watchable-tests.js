@@ -421,7 +421,7 @@ jb.component('ui-test.splice-and-watch-ref-add-twice',  {
 jb.component('ui-test.remote-widget',  {
   impl: uiTest({
     runBefore: remote.initMainWorker({ sourceUrl: ctx => `http://${location.host}/projects/ui-tests/remote-widgets.js` }),
-    control: remote.widget({ main: 'ui-test.hello-from-worker' }),
+    control: remote.widget({ main: 'uiTest.helloFromWorker' }),
     action: delay(20),
     expectedResult: contains('hello from worker')
   })
@@ -430,7 +430,7 @@ jb.component('ui-test.remote-widget',  {
 jb.component('ui-test.remote-widget-editable-text',  {
   impl: uiTest({
     runBefore: remote.initMainWorker({ sourceUrl: ctx => `http://${location.host}/projects/ui-tests/remote-widgets.js` }),
-    control: remote.widget({main: 'ui-test.remote-editable-ctrl' }),
+    control: remote.widget({main: 'uiTest.remoteEditableCtrl' }),
     action: [ delay(40), ctx => ctx.run(uiAction.setText('hello', '#inp'))],
     expectedResult: contains(['<span', 'hello','</span'])
   })
@@ -439,7 +439,7 @@ jb.component('ui-test.remote-widget-editable-text',  {
 jb.component('ui-test.remote-widget-empty-editable-text',  {
   impl: uiTest({
     runBefore: remote.initMainWorker({ sourceUrl: ctx => `http://${location.host}/projects/ui-tests/remote-widgets.js` }),
-    control: remote.widget({main: 'ui-test.remote-editable-ctrl' }),
+    control: remote.widget({main: 'uiTest.remoteEditableCtrl' }),
     action: [ delay(40), ctx => ctx.run(uiAction.setText('', '#inp')), delay(20)],
     expectedResult: and(not(contains('undefined')),not(contains('Homer')))
   })
@@ -448,7 +448,7 @@ jb.component('ui-test.remote-widget-empty-editable-text',  {
 jb.component('ui-test.remote-widget-infinite-scroll',  {
   impl: uiTest({
     runBefore: remote.initMainWorker({ sourceUrl: ctx => `http://${location.host}/projects/ui-tests/remote-widgets.js` }),
-    control: remote.widget({main: 'ui-test.remote-infinite-scroll' }),
+    control: remote.widget({main: 'uiTest.remoteInfiniteScroll' }),
     action: [ delay(40), uiAction.scrollDown('.jb-itemlist'), delay(20)],
     expectedResult: contains('>8<')
   })

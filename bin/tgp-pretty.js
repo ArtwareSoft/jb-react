@@ -54,7 +54,7 @@ function swapComp({id,comp,file}) {
     const fn = '../' + file
     const content = ('' + fs.readFileSync(fn))//.replace(/\r/g,'')
     const lines = content.split('\n').map(x=>x.replace(/[\s]*$/,''))
-    const lineOfComp = lines.findIndex(line=> line.indexOf(`jb.component('${id}'`) == 0 || line.indexOf(`jb.component('${unMacro(id)}'`))
+    const lineOfComp = lines.findIndex(line=> line.indexOf(`jb.component('${id}'`) == 0 || line.indexOf(`jb.component('${unMacro(id)}'`) == 0)
     if (lineOfComp == -1)
         return jb.logError(['can not find component', fn,id])
 
