@@ -51,7 +51,7 @@ jb.component('pipeline', {
   type: 'data',
   description: 'map data arrays one after the other',
   params: [
-    {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true}
+    {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true, description: 'click "=" for functions list'}
   ],
   impl: ctx => jb.pipe(ctx,'$pipeline')
 })

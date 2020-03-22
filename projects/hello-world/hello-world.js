@@ -18,7 +18,6 @@ jb.component('dataResource.people', { /* dataResource.people */
   ]
 })
 
-
 jb.component('dataResource.room', { /* dataResource.room */
   passiveData: ''
 })
@@ -32,4 +31,13 @@ jb.component('helloWorld.main', {
     ],
     features: css.width('400')
   })
+})
+
+jb.component('helloWorld.f1', {
+  type: 'data',
+  impl: pipeline(
+    'dsdsds',
+    'bbbb'
+  ),
+  testData: 'asdsaasd asdas'
 })

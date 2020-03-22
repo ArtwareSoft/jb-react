@@ -78,7 +78,7 @@ Object.assign(st,{
   valOfPath: path => jb.path(st.previewjb.comps,path.split('~')),
   compNameOfPath: (path,silent) => {
     if (path.indexOf('~') == -1)
-      return 'jb-component';
+      return 'jbComponent';
     if (path.match(/~\$vars$/)) return;
     const prof = st.valOfPath(path,silent); // + (path.indexOf('~') == -1 ? '~impl' : '');
   	return jb.compName(prof) || jb.compName(prof,st.paramDef(path))

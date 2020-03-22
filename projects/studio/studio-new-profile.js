@@ -353,7 +353,7 @@ jb.component('studio.openNewFunction', {
       Var('compId', pipeline(list(studio.projectId(), '%$compName%'), join('.'))),
       studio.newComp(
           '%$compId%',
-          asIs({type: 'data', impl: pipeline(), testData: 'sampleData'})
+          asIs({type: 'data', impl: pipeline(''), testData: 'sampleData'})
         ),
       writeValue('%$studio/profile_path%', '%$compId%'),
       studio.openJbEditor('%$compId%'),

@@ -150,12 +150,13 @@ jb.component('studio.jbFloatingInput', {
                 onEnter: runActions(dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus()),
                 onEsc: runActions(dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus())
               }),
-              css.width('100%')
+              css.width('100%'),
+              css('~ input { padding-top: 30px !important}')
             ]
           }),
           text({
             text: pipeline(studio.paramDef('%$path%'), '%description%'),
-            features: css('{    bottom: 0;     left: 4px;     position: absolute; }}')
+            features: css('color: grey')
           })
         ]
       }),
