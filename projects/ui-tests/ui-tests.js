@@ -49,28 +49,28 @@ jb.component('empty-array', {
 })
 
 
-jb.component('ui-test.label', { /* uiTest.label */
+jb.component('uiTest.label', {
   impl: uiTest({
     control: text('hello world'),
     expectedResult: contains('hello world')
   })
 })
 
-jb.component('ui-test.html', { /* uiTest.html */
+jb.component('uiTest.html', {
   impl: uiTest({
     control: html({html: '<p>hello world</p>'}),
     expectedResult: contains('<p>hello world</p>')
   })
 })
 
-jb.component('ui-test.html.in-iframe', { /* uiTest.html.inIframe */
+jb.component('uiTest.html.inIframe', {
   impl: uiTest({
     control: html({html: '<p>hello world</p>', style: html.inIframe()}),
     expectedResult: contains('iframe')
   })
 })
 
-jb.component('ui-test.group', { /* uiTest.group */
+jb.component('uiTest.group', {
   impl: uiTest({
     control: group({
       controls: [
@@ -82,7 +82,7 @@ jb.component('ui-test.group', { /* uiTest.group */
   })
 })
 
-jb.component('ui-test.wait-for-with-pipe', { /* uiTest.waitForWithPipe */
+jb.component('uiTest.waitForWithPipe', {
   impl: uiTest({
     control: group({
       controls: text('%%'),
@@ -127,7 +127,7 @@ jb.component('ui-test.wait-for-with-pipe', { /* uiTest.waitForWithPipe */
 //   })
 // })
 
-jb.component('ui-test.asynch-label', { /* uiTest.asynchLabel */
+jb.component('uiTest.asynchLabel', {
   impl: uiTest({
     control: text({text: pipe(delay(10), 'hello'), features: text.allowAsynchValue()}),
     action: delay(40),
@@ -135,7 +135,7 @@ jb.component('ui-test.asynch-label', { /* uiTest.asynchLabel */
   })
 })
 
-jb.component('ui-test.wait-for-with-var', { /* uiTest.waitForWithVar */
+jb.component('uiTest.waitForWithVar', {
   impl: uiTest({
     control: group({
       controls: text('%$txt%'),
@@ -158,14 +158,14 @@ jb.component('ui-test.wait-for-with-var', { /* uiTest.waitForWithVar */
 //   })
 // })
 
-jb.component('ui-test.button', { /* uiTest.button */
+jb.component('uiTest.button', {
   impl: uiTest({
     control: button({title: 'btn1', action: ctx => alert(1)}),
     expectedResult: contains('btn1')
   })
 })
 
-jb.component('ui-test.button.mdc-icon', { /* uiTest.button.mdcIcon */
+jb.component('uiTest.button.mdcIcon', {
   impl: uiTest({
     control: button({title: 'btn1', action: ctx => alert(1), style: button.mdcIcon('build')}),
     expectedResult: contains('build')
@@ -173,7 +173,7 @@ jb.component('ui-test.button.mdc-icon', { /* uiTest.button.mdcIcon */
 })
 
 
-jb.component('ui-test.group2', { /* uiTest.group2 */
+jb.component('uiTest.group2', {
   impl: uiTest({
     control: group({
       controls: [
@@ -185,7 +185,7 @@ jb.component('ui-test.group2', { /* uiTest.group2 */
   })
 })
 
-jb.component('ui-test.editable-text', { /* uiTest.editableText */
+jb.component('uiTest.editableText', {
   impl: uiTest({
     control: editableText({
       title: 'name',
@@ -196,7 +196,7 @@ jb.component('ui-test.editable-text', { /* uiTest.editableText */
   })
 })
 
-jb.component('ui-test.editable-text-empty', { /* uiTest.editableTextEmpty */
+jb.component('uiTest.editableTextEmpty', {
   impl: uiTest({
     control: editableText({
       title: 'name',
@@ -207,7 +207,7 @@ jb.component('ui-test.editable-text-empty', { /* uiTest.editableTextEmpty */
   })
 })
 
-jb.component('ui-test.editable-text-mdc', { /* uiTest.editableTextMdc */
+jb.component('uiTest.editableTextMdc', {
   impl: uiTest({
     control: editableText({
       title: 'name',
@@ -218,7 +218,7 @@ jb.component('ui-test.editable-text-mdc', { /* uiTest.editableTextMdc */
   })
 })
 
-jb.component('ui-test.editable-text.x-button', { /* uiTest.editableText.xButton */
+jb.component('uiTest.editableText.xButton', {
   impl: uiTest({
     control: editableText({
       title: 'name',
@@ -229,7 +229,7 @@ jb.component('ui-test.editable-text.x-button', { /* uiTest.editableText.xButton 
   })
 })
 
-jb.component('ui-test.editable-text-expandable', { /* uiTest.editableTextExpandable */
+jb.component('uiTest.editableTextExpandable', {
   impl: uiTest({
     control: editableText({
       title: 'name',
@@ -240,7 +240,7 @@ jb.component('ui-test.editable-text-expandable', { /* uiTest.editableTextExpanda
   })
 })
 
-jb.component('ui-test.editable-text-by-control', { /* uiTest.editableTextByControl */
+jb.component('uiTest.editableTextByControl', {
   impl: uiTest({
     control: editableText({
       title: 'name',
@@ -259,7 +259,7 @@ jb.component('ui-test.editable-text-by-control', { /* uiTest.editableTextByContr
   })
 })
 
-jb.component('ui-test.two-way-binding', { /* uiTest.twoWayBinding */
+jb.component('uiTest.twoWayBinding', {
   impl: uiTest({
     control: group({
       controls: [
@@ -272,7 +272,7 @@ jb.component('ui-test.two-way-binding', { /* uiTest.twoWayBinding */
   })
 })
 
-jb.component('ui-test.group-horizontal', { /* uiTest.groupHorizontal */
+jb.component('uiTest.groupHorizontal', {
   impl: uiTest({
     control: group({
       layout: layout.horizontal(30),
@@ -285,7 +285,7 @@ jb.component('ui-test.group-horizontal', { /* uiTest.groupHorizontal */
   })
 })
 
-jb.component('ui-test.layout-vertical', { /* uiTest.layoutVertical */
+jb.component('uiTest.layoutVertical', {
   impl: uiTest({
     control: group({
       layout: layout.vertical(30),
@@ -298,7 +298,7 @@ jb.component('ui-test.layout-vertical', { /* uiTest.layoutVertical */
   })
 })
 
-jb.component('ui-test.open-dialog', { /* uiTest.openDialog */
+jb.component('uiTest.openDialog', {
   impl: uiTest({
     control: button({
       title: 'click me',
@@ -319,7 +319,7 @@ jb.component('ui-test.open-dialog', { /* uiTest.openDialog */
   })
 })
 
-jb.component('ui-test.code-mirror-dialog-resizer', { /* uiTest.codeMirrorDialogResizer */
+jb.component('uiTest.codeMirrorDialogResizer', {
   impl: uiTest({
     control: button({
       title: 'click me',
@@ -336,7 +336,7 @@ jb.component('ui-test.code-mirror-dialog-resizer', { /* uiTest.codeMirrorDialogR
   })
 })
 
-jb.component('ui-test.code-mirror-dialog-resizer-ok-cancel', { /* uiTest.codeMirrorDialogResizerOkCancel */
+jb.component('uiTest.codeMirrorDialogResizerOkCancel', {
   impl: uiTest({
     control: button({
       title: 'click me',
@@ -354,7 +354,7 @@ jb.component('ui-test.code-mirror-dialog-resizer-ok-cancel', { /* uiTest.codeMir
   })
 })
 
-jb.component('ui-test.renderable', { /* uiTest.renderable */
+jb.component('uiTest.renderable', {
   impl: uiTest({
     control: button({
       title: 'click me',
@@ -365,7 +365,7 @@ jb.component('ui-test.renderable', { /* uiTest.renderable */
   })
 })
 
-jb.component('ui-test.refresh-dialog', { /* uiTest.refreshDialog */
+jb.component('uiTest.refreshDialog', {
   impl: uiTest({
     control: button({
       title: 'click me',
@@ -386,7 +386,7 @@ jb.component('ui-test.refresh-dialog', { /* uiTest.refreshDialog */
   })
 })
 
-jb.component('ui-test.dialog-cleanup', { /* uiTest.dialogCleanup */
+jb.component('uiTest.dialogCleanup', {
   impl: uiTest({
     vars: [Var('cleanup', obj(prop('destroy'), prop('tickAfterDestroy')))],
     control: button({
@@ -413,7 +413,7 @@ jb.component('ui-test.dialog-cleanup', { /* uiTest.dialogCleanup */
   })
 })
 
-jb.component('ui-test.dialog-cleanup-bug', { /* uiTest.dialogCleanupBug */
+jb.component('uiTest.dialogCleanupBug', {
   impl: uiTest({
     control: button({
       title: 'click me',
@@ -451,7 +451,7 @@ jb.component('ui-test.updateOnBlur-when-dialog-closed', { /* uiTest.updateOnBlur
   })
 })
 
-jb.component('ui-test.group-flex', { /* uiTest.groupFlex */
+jb.component('uiTest.groupFlex', {
   impl: uiTest({
     control: group({
       layout: layout.flex('row'),
@@ -464,7 +464,7 @@ jb.component('ui-test.group-flex', { /* uiTest.groupFlex */
   })
 })
 
-jb.component('ui-test.button-click', { /* uiTest.buttonClick */
+jb.component('uiTest.buttonClick', {
   impl: uiTest({
     control: button({title: 'Click Me', action: writeValue('%$person/name%', 'mukki')}),
     action: uiAction.click('button'),
@@ -472,21 +472,21 @@ jb.component('ui-test.button-click', { /* uiTest.buttonClick */
   })
 })
 
-jb.component('ui-test.button-x', { /* uiTest.buttonX */
+jb.component('uiTest.buttonX', {
   impl: uiTest({
     control: button({title: 'Click Me', action: () => alert(1), style: button.x()}),
     expectedResult: contains('×')
   })
 })
 
-jb.component('ui-test.resource', { /* uiTest.resource */
+jb.component('uiTest.resource', {
   impl: uiTest({
     control: button('%$person.name%'),
     expectedResult: contains('Homer')
   })
 })
 
-jb.component('ui-test.features-css', { /* uiTest.featuresCss */
+jb.component('uiTest.featuresCss', {
   impl: uiTest({
     control: text({text: 'Hello World', features: css('color: red')}),
     expectedResult: ctx => {
@@ -499,14 +499,14 @@ jb.component('ui-test.features-css', { /* uiTest.featuresCss */
   })
 })
 
-jb.component('ui-test.itemlist', { /* uiTest.itemlist */
+jb.component('uiTest.itemlist', {
   impl: uiTest({
     control: itemlist({items: '%$people%', controls: text('%$item.name% - %name%')}),
     expectedResult: contains(['Homer Simpson - Homer Simpson', 'Bart Simpson - Bart Simpson'])
   })
 })
 
-jb.component('ui-test.itemlist.shown-only-on-item-hover', { /* uiTest.itemlist.shownOnlyOnItemHover */
+jb.component('uiTest.itemlist.shownOnlyOnItemHover', {
   impl: uiTest({
     control: itemlist({
       items: '%$people%',
@@ -524,7 +524,7 @@ jb.component('ui-test.itemlist.shown-only-on-item-hover', { /* uiTest.itemlist.s
   })
 })
 
-jb.component('ui-test.itemlist-with-select', { /* uiTest.itemlistWithSelect */
+jb.component('uiTest.itemlistWithSelect', {
   impl: uiTest({
     control: itemlist({
       items: list('%$people%', '%$people%', '%$people%'),
@@ -573,14 +573,14 @@ jb.component('ui-test.itemlist-DD', { /* uiTest.itemlistDD */
   })
 })
 
-jb.component('ui-test.itemlist-basic', { /* uiTest.itemlistBasic */
+jb.component('uiTest.itemlistBasic', {
   impl: uiTest({
     control: itemlist({items: '%$people%', controls: text('%name%')}),
     expectedResult: contains(['Homer Simpson', 'Bart Simpson'])
   })
 })
 
-jb.component('ui-test.itemlist-add-button', { /* uiTest.itemlistAddButton */
+jb.component('uiTest.itemlistAddButton', {
   impl: uiTest({
     control: group({
       controls: [
@@ -595,7 +595,7 @@ jb.component('ui-test.itemlist-add-button', { /* uiTest.itemlistAddButton */
   })
 })
 
-jb.component('ui-test.itemlist-selection', { /* uiTest.itemlistSelection */
+jb.component('uiTest.itemlistSelection', {
   impl: uiTest({
     control: itemlist({
       items: '%$people%',
@@ -636,7 +636,7 @@ jb.component('ui-test.itemlist-MD-auto-select-first', { /* uiTest.itemlistMDAuto
   })
 })
 
-jb.component('ui-test.itemlist-container-search-ctrl', { /* uiTest.itemlistContainerSearchCtrl */
+jb.component('uiTest.itemlistContainerSearchCtrl', {
   type: 'control',
   impl: group({
     controls: [
@@ -661,7 +661,7 @@ jb.component('ui-test.itemlist-container-search-ctrl', { /* uiTest.itemlistConta
   })
 })
 
-jb.component('ui-test.itemlist-container-search', { /* uiTest.itemlistContainerSearch */
+jb.component('uiTest.itemlistContainerSearch', {
   impl: uiTest({
     control: uiTest.itemlistContainerSearchCtrl(),
     action: uiAction.setText('ho', '.mdc-text-field'),
@@ -669,7 +669,7 @@ jb.component('ui-test.itemlist-container-search', { /* uiTest.itemlistContainerS
   })
 })
 
-jb.component('ui-test.itemlist-container-search-enter-on-li', { /* uiTest.itemlistContainerSearchEnterOnLi */
+jb.component('uiTest.itemlistContainerSearchEnterOnLi', {
   impl: uiTest({
     control: uiTest.itemlistContainerSearchCtrl(),
     action: runActions(
@@ -716,7 +716,7 @@ jb.component('ui-test.search-doesnot-create-ReactClass', { /* uiTest.searchDoesn
   })
 })
 
-jb.component('ui-test.itemlist-with-table-style', { /* uiTest.itemlistWithTableStyle */
+jb.component('uiTest.itemlistWithTableStyle', {
   impl: uiTest({
     control: itemlist({
       items: '%$watchablePeople%',
@@ -738,7 +738,7 @@ jb.component('ui-test.itemlist-with-table-style', { /* uiTest.itemlistWithTableS
   })
 })
 
-jb.component('ui-test.table', { /* uiTest.table */
+jb.component('uiTest.table', {
   impl: uiTest({
     control: table({
       items: '%$people%',
@@ -754,7 +754,7 @@ jb.component('ui-test.table', { /* uiTest.table */
   })
 })
 
-jb.component('ui-test.editable-text-in-group', { /* uiTest.editableTextInGroup */
+jb.component('uiTest.editableTextInGroup', {
   impl: uiTest({
     control: group({
       controls: [
@@ -767,7 +767,7 @@ jb.component('ui-test.editable-text-in-group', { /* uiTest.editableTextInGroup *
   })
 })
 
-jb.component('ui-test.editable-text-with-jb-val', { /* uiTest.editableTextWithJbVal */
+jb.component('uiTest.editableTextWithJbVal', {
   impl: {
     '$': 'ui-test2',
     control: group({
@@ -801,7 +801,7 @@ jb.component('ui-test.editable-text-with-jb-val', { /* uiTest.editableTextWithJb
   }
 })
 
-jb.component('ui-test.property-sheet.titles-above', { /* uiTest.propertySheet.titlesAbove */
+jb.component('uiTest.propertySheet.titlesAbove', {
   impl: uiTest({
     control: group({
       controls: [
@@ -819,7 +819,7 @@ jb.component('ui-test.property-sheet.titles-above', { /* uiTest.propertySheet.ti
   })
 })
 
-jb.component('ui-test.property-sheet.titles-left', { /* uiTest.propertySheet.titlesLeft */
+jb.component('uiTest.propertySheet.titlesLeft', {
   impl: uiTest({
     control: group({
       controls: [
@@ -844,7 +844,7 @@ jb.component('ui-test.property-sheet.titles-left', { /* uiTest.propertySheet.tit
   })
 })
 
-jb.component('ui-test.editable-number', { /* uiTest.editableNumber */
+jb.component('uiTest.editableNumber', {
   impl: uiTest({
     control: group({
       layout: layout.vertical(),
@@ -867,7 +867,7 @@ jb.component('ui-test.editable-number', { /* uiTest.editableNumber */
   })
 })
 
-jb.component('ui-test.editable-number-slider', { /* uiTest.editableNumberSlider */
+jb.component('uiTest.editableNumberSlider', {
   impl: uiTest({
     control: editableNumber({
       databind: '%$person/age%',
@@ -878,7 +878,7 @@ jb.component('ui-test.editable-number-slider', { /* uiTest.editableNumberSlider 
   })
 })
 
-jb.component('ui-test.editable-number-slider-empty', { /* uiTest.editableNumberSliderEmpty */
+jb.component('uiTest.editableNumberSliderEmpty', {
   impl: uiTest({
     control: editableNumber({
       databind: '%$person/age1%',
@@ -889,7 +889,7 @@ jb.component('ui-test.editable-number-slider-empty', { /* uiTest.editableNumberS
   })
 })
 
-jb.component('ui-test.editable-boolean.all-styles', { /* uiTest.editableBoolean.allStyles */
+jb.component('uiTest.editableBoolean.allStyles', {
   impl: uiTest({
     control: group({
       controls: [
@@ -927,7 +927,7 @@ jb.component('ui-test.editable-boolean.all-styles', { /* uiTest.editableBoolean.
   })
 })
 
-jb.component('ui-test.editable-boolean-settings', { /* uiTest.editableBooleanSettings */
+jb.component('uiTest.editableBooleanSettings', {
   impl: uiTest({
     control: group({
       controls: [
@@ -944,7 +944,7 @@ jb.component('ui-test.editable-boolean-settings', { /* uiTest.editableBooleanSet
   })
 })
 
-jb.component('ui-test.editable-boolean.expand-collapse', { /* uiTest.editableBoolean.expandCollapse */
+jb.component('uiTest.editableBoolean.expandCollapse', {
   impl: uiTest({
     control: group({
       controls: [
@@ -965,7 +965,7 @@ jb.component('ui-test.editable-boolean.expand-collapse', { /* uiTest.editableBoo
   })
 })
 
-jb.component('ui-test.expand-collapse-with-default-collapse', { /* uiTest.expandCollapseWithDefaultCollapse */
+jb.component('uiTest.expandCollapseWithDefaultCollapse', {
   type: 'control',
   impl: group({
     controls: [
@@ -997,7 +997,7 @@ jb.component('ui-test.expand-collapse-with-default-collapse', { /* uiTest.expand
   })
 })
 
-jb.component('ui-test.editable-boolean.expand-collapse-with-default-val', { /* uiTest.editableBoolean.expandCollapseWithDefaultVal */
+jb.component('uiTest.editableBoolean.expandCollapseWithDefaultVal', {
   impl: uiTest({
     control: uiTest.expandCollapseWithDefaultCollapse(),
     action: uiAction.click('#default', 'toggle'),
@@ -1005,7 +1005,7 @@ jb.component('ui-test.editable-boolean.expand-collapse-with-default-val', { /* u
   })
 })
 
-jb.component('ui-test.editable-boolean.expand-collapse-with-default-collapse', { /* uiTest.editableBoolean.expandCollapseWithDefaultCollapse */
+jb.component('uiTest.editableBoolean.expandCollapseWithDefaultCollapse', {
   impl: uiTest({
     control: uiTest.expandCollapseWithDefaultCollapse(),
     action: runActions(),
@@ -1013,7 +1013,7 @@ jb.component('ui-test.editable-boolean.expand-collapse-with-default-collapse', {
   })
 })
 
-jb.component('ui-test.code-mirror', { /* uiTest.codeMirror */
+jb.component('uiTest.codeMirror', {
   impl: uiTest({
     control: group({
       vars: [
@@ -1040,7 +1040,7 @@ jb.component('ui-test.code-mirror', { /* uiTest.codeMirror */
   })
 })
 
-jb.component('ui-test.inner-label1-tst', { /* uiTest.innerLabel1Tst */
+jb.component('uiTest.innerLabel1Tst', {
   params: [
     {id: 'title', mandatory: true, dynamic: true}
   ],
@@ -1049,7 +1049,7 @@ jb.component('ui-test.inner-label1-tst', { /* uiTest.innerLabel1Tst */
   })
 })
 
-jb.component('ui-test.inner-label2-tst', { /* uiTest.innerLabel2Tst */
+jb.component('uiTest.innerLabel2Tst', {
   params: [
     {id: 'title', mandatory: true, dynamic: true}
   ],
@@ -1058,7 +1058,7 @@ jb.component('ui-test.inner-label2-tst', { /* uiTest.innerLabel2Tst */
   )
 })
 
-jb.component('ui-test.inner-label3-tst', { /* uiTest.innerLabel3Tst */
+jb.component('uiTest.innerLabel3Tst', {
   params: [
     {id: 'title', mandatory: true, dynamic: true}
   ],
@@ -1087,7 +1087,7 @@ jb.component('ui-test.prettyPrintComp', { /* uiTest.prettyPrintComp */
   }
 })
 
-jb.component('ui-test.picklist', { /* uiTest.picklist */
+jb.component('uiTest.picklist', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1106,7 +1106,7 @@ jb.component('ui-test.picklist', { /* uiTest.picklist */
   })
 })
 
-jb.component('ui-test.picklist-radio', { /* uiTest.picklistRadio */
+jb.component('uiTest.picklistRadio', {
   impl: uiTest({
     control: picklist({
       title: 'city',
@@ -1118,7 +1118,7 @@ jb.component('ui-test.picklist-radio', { /* uiTest.picklistRadio */
   })
 })
 
-jb.component('ui-test.field-title-of-label', { /* uiTest.fieldTitleOfLabel */
+jb.component('uiTest.fieldTitleOfLabel', {
   impl: uiTest({
     control: group({
       style: propertySheet.titlesLeft({}),
@@ -1128,7 +1128,7 @@ jb.component('ui-test.field-title-of-label', { /* uiTest.fieldTitleOfLabel */
   })
 })
 
-jb.component('ui-test.picklist-sort', { /* uiTest.picklistSort */
+jb.component('uiTest.picklistSort', {
   impl: dataTest({
     calculate: pipeline(
       picklist.sortedOptions(
@@ -1150,7 +1150,7 @@ jb.component('ui-test.picklist-sort', { /* uiTest.picklistSort */
   })
 })
 
-jb.component('ui-test.picklist-groups', { /* uiTest.picklistGroups */
+jb.component('uiTest.picklistGroups', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1172,7 +1172,7 @@ jb.component('ui-test.picklist-groups', { /* uiTest.picklistGroups */
   })
 })
 
-jb.component('ui-test.dynamic-controls', { /* uiTest.dynamicControls */
+jb.component('uiTest.dynamicControls', {
   impl: uiTest({
     control: group({
       style: propertySheet.titlesLeft({}),
@@ -1185,7 +1185,7 @@ jb.component('ui-test.dynamic-controls', { /* uiTest.dynamicControls */
   })
 })
 
-jb.component('ui-test.inline-controls', { /* uiTest.inlineControls */
+jb.component('uiTest.inlineControls', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1197,7 +1197,7 @@ jb.component('ui-test.inline-controls', { /* uiTest.inlineControls */
   })
 })
 
-jb.component('ui-test.tabs', { /* uiTest.tabs */
+jb.component('uiTest.tabs', {
   impl: uiTest({
     control: group({
       style: group.tabs(),
@@ -1210,7 +1210,7 @@ jb.component('ui-test.tabs', { /* uiTest.tabs */
   })
 })
 
-jb.component('ui-test.group.accordion', { /* uiTest.group.accordion */
+jb.component('uiTest.group.accordion', {
   impl: uiTest({
     control: group({
       style: group.accordion({}),
@@ -1224,14 +1224,14 @@ jb.component('ui-test.group.accordion', { /* uiTest.group.accordion */
   })
 })
 
-jb.component('ui-test.inner-label', { /* uiTest.innerLabel */
+jb.component('uiTest.innerLabel', {
   impl: uiTest({
     control: uiTest.innerLabel3Tst('Hello World2'),
     expectedResult: contains('Hello World2')
   })
 })
 
-jb.component('ui-test.markdown', { /* uiTest.markdown */
+jb.component('uiTest.markdown', {
   impl: {
     '$': 'ui-test2',
     control: {
@@ -1245,7 +1245,7 @@ jb.component('ui-test.markdown', { /* uiTest.markdown */
   }
 })
 
-jb.component('ui-test.style-by-control', { /* uiTest.styleByControl */
+jb.component('uiTest.styleByControl', {
   impl: uiTest({
     control: text({
       text: 'Hello World',
@@ -1255,7 +1255,7 @@ jb.component('ui-test.style-by-control', { /* uiTest.styleByControl */
   })
 })
 
-jb.component('ui-test.picklist-as-itemlist', { /* uiTest.picklistAsItemlist */
+jb.component('uiTest.picklistAsItemlist', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1271,7 +1271,7 @@ jb.component('ui-test.picklist-as-itemlist', { /* uiTest.picklistAsItemlist */
   })
 })
 
-jb.component('menu-test.menu1', { /* menuTest.menu1 */
+jb.component('menuTest.menu1', {
   impl: menu.menu({
     title: 'main',
     options: [
@@ -1293,7 +1293,7 @@ jb.component('menu-test.menu1', { /* menuTest.menu1 */
   })
 })
 
-jb.component('menu-test.pulldown', { /* menuTest.pulldown */
+jb.component('menuTest.pulldown', {
   impl: uiTest({
     control: menu.control({menu: menuTest.menu1(), style: menuStyle.pulldown({})}),
     action: ctx => jb.delay(1),
@@ -1301,7 +1301,7 @@ jb.component('menu-test.pulldown', { /* menuTest.pulldown */
   })
 })
 
-jb.component('menu-test.context-menu', { /* menuTest.contextMenu */
+jb.component('menuTest.contextMenu', {
   impl: uiTest({
     control: menu.control({menu: menuTest.menu1()}),
     action: ctx => jb.delay(1),
@@ -1309,14 +1309,14 @@ jb.component('menu-test.context-menu', { /* menuTest.contextMenu */
   })
 })
 
-jb.component('menu-test.open-context-menu', { /* menuTest.openContextMenu */
+jb.component('menuTest.openContextMenu', {
   impl: uiTest({
     control: button({title: 'open', action: menu.openContextMenu({menu: menuTest.menu1()})}),
     expectedResult: contains('open')
   })
 })
 
-jb.component('ui-test.refresh-control-by-id', { /* uiTest.refreshControlById */
+jb.component('uiTest.refreshControlById', {
   impl: uiTest({
     vars: [Var('top', asIs({items: [{title: 'i1'}, {title: 'i2'}]}))],
     control: itemlist({
@@ -1333,14 +1333,14 @@ jb.component('ui-test.refresh-control-by-id', { /* uiTest.refreshControlById */
   })
 })
 
-jb.component('ui-test.raw-vdom', { /* uiTest.rawVdom */
+jb.component('uiTest.rawVdom', {
   impl: uiTest({
     control: ctx => jb.ui.h('div',{},'hello world'),
     expectedResult: contains('hello world')
   })
 })
 
-jb.component('ui-test.control.first-succeeding', { /* uiTest.control.firstSucceeding */
+jb.component('uiTest.control.firstSucceeding', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1363,7 +1363,7 @@ jb.component('ui-test.control.first-succeeding', { /* uiTest.control.firstSuccee
   })
 })
 
-jb.component('ui-test.control.first-succeeding-inner-var', { /* uiTest.control.firstSucceedingInnerVar */
+jb.component('uiTest.control.firstSucceedingInnerVar', {
   impl: uiTest({
     control: group({
       controls: controlWithCondition('%$innerVar% == \"5\"', text('innerVar')),
@@ -1373,7 +1373,7 @@ jb.component('ui-test.control.first-succeeding-inner-var', { /* uiTest.control.f
   })
 })
 
-jb.component('ui-test.control.first-succeeding-default', { /* uiTest.control.firstSucceedingDefault */
+jb.component('uiTest.control.firstSucceedingDefault', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1386,7 +1386,7 @@ jb.component('ui-test.control.first-succeeding-default', { /* uiTest.control.fir
   })
 })
 
-jb.component('ui-test.control.first-succeeding-without-condition', { /* uiTest.control.firstSucceedingWithoutCondition */
+jb.component('uiTest.control.firstSucceedingWithoutCondition', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1399,7 +1399,7 @@ jb.component('ui-test.control.first-succeeding-without-condition', { /* uiTest.c
   })
 })
 
-jb.component('ui-test.first-succeeding-watchable-sample', { /* uiTest.firstSucceedingWatchableSample */
+jb.component('uiTest.firstSucceedingWatchableSample', {
   type: 'control',
   impl: group({
     controls: [
@@ -1431,7 +1431,7 @@ jb.component('ui-test.first-succeeding-watchable-sample', { /* uiTest.firstSucce
   })
 })
 
-jb.component('ui-test.first-succeeding.watch-refresh-on-ctrl-change', { /* uiTest.firstSucceeding.watchRefreshOnCtrlChange */
+jb.component('uiTest.firstSucceeding.watchRefreshOnCtrlChange', {
   impl: uiTest({
     control: uiTest.firstSucceedingWatchableSample(),
     action: uiAction.click('#female'),
@@ -1440,7 +1440,7 @@ jb.component('ui-test.first-succeeding.watch-refresh-on-ctrl-change', { /* uiTes
   })
 })
 
-jb.component('ui-test.first-succeeding.same-does-not-recreate', { /* uiTest.firstSucceeding.sameDoesNotRecreate */
+jb.component('uiTest.firstSucceeding.sameDoesNotRecreate', {
   impl: uiTest({
     control: uiTest.firstSucceedingWatchableSample(),
     action: [uiAction.click('#female'), uiAction.click('#zee')],
@@ -1449,7 +1449,7 @@ jb.component('ui-test.first-succeeding.same-does-not-recreate', { /* uiTest.firs
   })
 })
 
-jb.component('ui-test.first-succeeding.watch-refresh-on-ctrl-change-and-back', { /* uiTest.firstSucceeding.watchRefreshOnCtrlChangeAndBack */
+jb.component('uiTest.firstSucceeding.watchRefreshOnCtrlChangeAndBack', {
   impl: uiTest({
     control: uiTest.firstSucceedingWatchableSample(),
     action: runActions(uiAction.click('#female'), uiAction.click('#male')),
@@ -1472,7 +1472,7 @@ jb.component('ui-test.watchRef.recalcVars', { /* uiTest.watchRef.recalcVars */
   })
 })
 
-jb.component('ui-test.focus-on-first-element', { /* uiTest.focusOnFirstElement */
+jb.component('uiTest.focusOnFirstElement', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1485,7 +1485,7 @@ jb.component('ui-test.focus-on-first-element', { /* uiTest.focusOnFirstElement *
   })
 })
 
-jb.component('ui-test.check-box-with-text', { /* uiTest.checkBoxWithText */
+jb.component('uiTest.checkBoxWithText', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1502,7 +1502,7 @@ jb.component('ui-test.check-box-with-text', { /* uiTest.checkBoxWithText */
   })
 })
 
-jb.component('ui-test.hidden-ref-bug', { /* uiTest.hiddenRefBug */
+jb.component('uiTest.hiddenRefBug', {
   impl: uiTest({
     control: group({
       controls: text({text: 'hey', features: hidden('%$hidden%')}),
@@ -1512,7 +1512,7 @@ jb.component('ui-test.hidden-ref-bug', { /* uiTest.hiddenRefBug */
   })
 })
 
-jb.component('ui-test.css-dynamic', { /* uiTest.cssDynamic */
+jb.component('uiTest.cssDynamic', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1534,7 +1534,7 @@ jb.component('ui-test.css-dynamic', { /* uiTest.cssDynamic */
   })
 })
 
-jb.component('ui-test.css-with-condition', { /* uiTest.cssWithCondition */
+jb.component('uiTest.cssWithCondition', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1564,7 +1564,7 @@ jb.component('ui-test.css-with-condition', { /* uiTest.cssWithCondition */
   })
 })
 
-jb.component('ui-test.validator', { /* uiTest.validator */
+jb.component('uiTest.validator', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1580,7 +1580,7 @@ jb.component('ui-test.validator', { /* uiTest.validator */
   })
 })
 
-jb.component('ui-test.watchable-variable-as-proxy', { /* uiTest.watchableVariableAsProxy */
+jb.component('uiTest.watchableVariableAsProxy', {
   impl: uiTest({
     control: group({features: variable({name: 'link', value: '%$person%', watchable: true})}),
     expectedResult: ctx => jb.resources[Object.keys(jb.resources).filter(x=>x.match(/link:[0-9]*/))[0]][Symbol.for("isProxy")]
@@ -1588,7 +1588,7 @@ jb.component('ui-test.watchable-variable-as-proxy', { /* uiTest.watchableVariabl
 })
 
 
-jb.component('ui-test.watchable-link-write-original-watch-link', { /* uiTest.watchableLinkWriteOriginalWatchLink */
+jb.component('uiTest.watchableLinkWriteOriginalWatchLink', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1602,7 +1602,7 @@ jb.component('ui-test.watchable-link-write-original-watch-link', { /* uiTest.wat
   })
 })
 
-jb.component('ui-test.watchable-write-via-link', { /* uiTest.watchableWriteViaLink */
+jb.component('uiTest.watchableWriteViaLink', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1636,7 +1636,7 @@ jb.component('ui-test.watchable-write-via-link', { /* uiTest.watchableWriteViaLi
 //   })
 // })
 
-jb.component('ui-test.watchable-parent-refresh-mask-children', { /* uiTest.watchableParentRefreshMaskChildren */
+jb.component('uiTest.watchableParentRefreshMaskChildren', {
   impl: uiTest({
     control: group({controls: text('%$person/name%'), features: watchRef('%$person/name%')}),
     action: writeValue('%$person/name%', 'hello'),
@@ -1645,14 +1645,14 @@ jb.component('ui-test.watchable-parent-refresh-mask-children', { /* uiTest.watch
   })
 })
 
-jb.component('ui-test.watchable-url', { /* uiTest.watchableUrl */
+jb.component('uiTest.watchableUrl', {
   impl: uiTest({
     control: text('%$person/name%'),
     expectedResult: contains('observe=\"resources://2~name;person~name')
   })
 })
 
-jb.component('ui-test.itemlist-with-group-wait', { /* uiTest.itemlistWithGroupWait */
+jb.component('uiTest.itemlistWithGroupWait', {
   impl: uiTest({
     control: itemlist({
       items: '%$items%',
@@ -1664,7 +1664,7 @@ jb.component('ui-test.itemlist-with-group-wait', { /* uiTest.itemlistWithGroupWa
   })
 })
 
-jb.component('ui-test.watchable-ref-to-inner-elements-when-value-is-empty', { /* uiTest.watchableRefToInnerElementsWhenValueIsEmpty */
+jb.component('uiTest.watchableRefToInnerElementsWhenValueIsEmpty', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1682,10 +1682,10 @@ jb.component('ui-test.watchable-ref-to-inner-elements-when-value-is-empty', { /*
   })
 })
 
-jb.component('ui-test.infinite-scroll', {
+jb.component('uiTest.infiniteScroll', {
   impl: uiTest({
     control: itemlist({
-      items: range(0,10),
+      items: range(0, 10),
       controls: text('%%'),
       visualSizeLimit: '7',
       features: [

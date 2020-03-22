@@ -1,4 +1,4 @@
-jb.component('data-test.object-encoder.stringify', { /* dataTest.objectEncoder.stringify */
+jb.component('dataTest.objectEncoder.stringify', {
   impl: dataTest({
     calculate: ctx =>  {
             const base = { base: true };
@@ -11,7 +11,7 @@ jb.component('data-test.object-encoder.stringify', { /* dataTest.objectEncoder.s
   })
 })
 
-jb.component('data-test.object-encoder.encode-decode', { /* dataTest.objectEncoder.encodeDecode */
+jb.component('dataTest.objectEncoder.encodeDecode', {
   impl: dataTest({
     calculate: ctx =>  {
            const base = { base: true };
@@ -24,7 +24,7 @@ jb.component('data-test.object-encoder.encode-decode', { /* dataTest.objectEncod
   })
 })
 
-jb.component('data-test.object-encoder.encode-jb time', { /* dataTest.objectEncoder.encodeJb time */
+jb.component('dataTest.objectEncoder.encodeJb time', {
   impl: {
     '$': 'data-test-flacky',
     calculate: ctx =>  {
