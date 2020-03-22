@@ -1,4 +1,4 @@
-jb.component('pretty-print', { /* prettyPrint */
+jb.component('prettyPrint', {
   params: [
     {id: 'profile', defaultValue: '%%'},
     {id: 'forceFlat', as: 'boolean', type: 'boolean'}

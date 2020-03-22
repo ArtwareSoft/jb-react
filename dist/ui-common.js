@@ -1124,7 +1124,7 @@ jb.ui.extraWatchableHandler = (resources,oldHandler) => {
 
 jb.ui.resourceChange = () => jb.mainWatchableHandler.resourceChange;
 
-jb.component('run-transaction', { /* runTransaction */
+jb.component('runTransaction', {
   type: 'action',
   params: [
     {id: 'actions', type: 'action[]', dynamic: true, composite: true, mandatory: true, defaultValue: []},
@@ -1951,8 +1951,8 @@ Object.assign(jb.ui,{
     ctxDictOfElem: elem => {
       const runningWorkerId = jb.frame.workerId && jb.frame.workerId()
       const workerIdAtElem = elem.getAttribute('worker')
-      const _jb = workerIdAtElem == 'preview' ? jb.studio.previewjb 
-        : !runningWorkerId && workerIdAtElem ? jb.ui.workers[elem.getAttribute('worker')] 
+      const _jb = workerIdAtElem == 'preview' ? jb.studio.previewjb
+        : !runningWorkerId && workerIdAtElem ? jb.ui.workers[elem.getAttribute('worker')]
         : jb
       return _jb.ctxDictionary
     },
@@ -1996,7 +1996,7 @@ Object.assign(jb.ui,{
       const {pipe, takeUntil,fromPromise,subject} = jb.callbag
       const keydown_src = subject();
       cmp.base.onkeydown = e => {
-        if ([38,40,13,27].indexOf(e.keyCode) != -1) { 
+        if ([38,40,13,27].indexOf(e.keyCode) != -1) {
           keydown_src.next(e);
           return false;
         }
@@ -2018,7 +2018,7 @@ Object.assign(jb.ui, {
     },
     offset(el) { return el.getBoundingClientRect() },
     parents(el,{includeSelf} = {}) {
-        const res = [] 
+        const res = []
         el = includeSelf ? el : el && el.parentNode;
         while(el) {
           res.push(el);
@@ -2136,7 +2136,7 @@ jb.objectDiff = function(newObj, orig) {
 
 // ****************** components ****************
 
-jb.component('custom-style', { /* customStyle */
+jb.component('customStyle', {
   typePattern: t => /\.style$/.test(t),
   category: 'advanced:10,all:10',
   params: [
@@ -2152,7 +2152,7 @@ jb.component('custom-style', { /* customStyle */
     })
 })
 
-jb.component('style-by-control', { /* styleByControl */
+jb.component('styleByControl', {
   typePattern: t => /\.style$/.test(t),
   category: 'advanced:10,all:20',
   params: [
@@ -2162,7 +2162,7 @@ jb.component('style-by-control', { /* styleByControl */
   impl: (ctx,control,modelVar) => control(ctx.setVar(modelVar,ctx.vars.$model))
 })
 
-jb.component('style-with-features', { /* styleWithFeatures */
+jb.component('styleWithFeatures', {
   typePattern: t => /\.style$/.test(t),
   description: 'customize, add more features to style',
   category: 'advanced:10,all:20',
@@ -2173,7 +2173,7 @@ jb.component('style-with-features', { /* styleWithFeatures */
   impl: (ctx,style,features) => style && {...style,featuresOptions: (style.featuresOptions || []).concat(features())}
 })
 
-jb.component('control-with-features', { /* controlWithFeatures */
+jb.component('controlWithFeatures', {
   type: 'control',
   description: 'customize, add more features to control',
   category: 'advanced:10,all:20',
@@ -2683,7 +2683,7 @@ jb.component('feature.byCondition', {
 const withUnits = jb.ui.withUnits
 const fixCssLine = jb.ui.fixCssLine
 
-jb.component('css', { /* css */
+jb.component('css', {
   description: 'e.g. {color: red; width: 20px} or div>.myClas {color: red} ',
   type: 'feature,dialog-feature',
   params: [
@@ -2692,7 +2692,7 @@ jb.component('css', { /* css */
   impl: (ctx,css) => ({css: fixCssLine(css)})
 })
 
-jb.component('css.dynamic', { /* css.dynamic */
+jb.component('css.dynamic', {
   description: 'recalc the css on refresh/watchRef. e.g. {color: %$color%}',
   type: 'feature,dialog-feature',
   params: [
@@ -2701,7 +2701,7 @@ jb.component('css.dynamic', { /* css.dynamic */
   impl: (ctx,css) => ({dynamicCss: ctx2 => css(ctx2)})
 })
 
-jb.component('css.with-condition', { /* css.withCondition */
+jb.component('css.withCondition', {
   description: 'css with dynamic condition. e.g. .myclz {color: red}',
   type: 'feature,dialog-feature',
   params: [
@@ -2711,7 +2711,7 @@ jb.component('css.with-condition', { /* css.withCondition */
   impl: (ctx,cond,css) => ({dynamicCss: ctx2 => cond(ctx2) ? fixCssLine(css(ctx2)) : ''})
 })
 
-jb.component('css.class', { /* css.class */
+jb.component('css.class', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'class', mandatory: true, as: 'string'}
@@ -2719,7 +2719,7 @@ jb.component('css.class', { /* css.class */
   impl: (ctx,clz) => ({class: clz})
 })
 
-jb.component('css.width', { /* css.width */
+jb.component('css.width', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'width', mandatory: true, as: 'string', description: 'e.g. 200, 100%, calc(100% - 100px)'},
@@ -2731,7 +2731,7 @@ jb.component('css.width', { /* css.width */
     ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}width: ${withUnits(width)} ${overflow ? '; overflow-x:' + overflow + ';' : ''} }`})
 })
 
-jb.component('css.height', { /* css.height */
+jb.component('css.height', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'height', mandatory: true, as: 'string', description: 'e.g. 200, 100%, calc(100% - 100px)'},
@@ -2743,7 +2743,7 @@ jb.component('css.height', { /* css.height */
     ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}height: ${withUnits(height)} ${overflow ? '; overflow-y:' + overflow : ''} }`})
 })
 
-jb.component('css.opacity', { /* css.opacity */
+jb.component('css.opacity', {
   type: 'feature',
   params: [
     {id: 'opacity', mandatory: true, as: 'string', description: '0-1'},
@@ -2753,7 +2753,7 @@ jb.component('css.opacity', { /* css.opacity */
     ({css: `${ctx.params.selector} { opacity: ${opacity} }`})
 })
 
-jb.component('css.padding', { /* css.padding */
+jb.component('css.padding', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'top', as: 'string', description: 'e.g. 20, 20%, 0.4em'},
@@ -2771,7 +2771,7 @@ jb.component('css.padding', { /* css.padding */
   }
 })
 
-jb.component('css.margin', { /* css.margin */
+jb.component('css.margin', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'top', as: 'string', description: 'e.g. 20, 20%, 0.4em, -20'},
@@ -2789,7 +2789,7 @@ jb.component('css.margin', { /* css.margin */
   }
 })
 
-jb.component('css.margin-all-sides', {
+jb.component('css.marginAllSides', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'value', as: 'string', mandatory: true, description: 'e.g. 20, 20%, 0.4em'},
@@ -2798,18 +2798,18 @@ jb.component('css.margin-all-sides', {
   impl: (ctx,value,selector) => ({css: `${selector} margin: ${withUnits(value)}`})
 })
 
-jb.component('css.margin-vertical-horizontal', {
+jb.component('css.marginVerticalHorizontal', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'vertical', as: 'string', mandatory: true},
     {id: 'horizontal', as: 'string', mandatory: true},
     {id: 'selector', as: 'string'}
   ],
-  impl: (ctx,vertical,horizontal,selector) => 
+  impl: (ctx,vertical,horizontal,selector) =>
     ({css: `${selector} margin: ${withUnits(vertical)+ ' ' +withUnits(horizontal)}`})
 })
 
-jb.component('css.transform-rotate', { /* css.transformRotate */
+jb.component('css.transformRotate', {
   type: 'feature',
   params: [
     {id: 'angle', as: 'string', description: '0-360'},
@@ -2818,7 +2818,7 @@ jb.component('css.transform-rotate', { /* css.transformRotate */
   impl: (ctx,angle,selector) => ({css: `${selector} {transform:rotate(${angle}deg)}`})
 })
 
-jb.component('css.color', { /* css.color */
+jb.component('css.color', {
   type: 'feature',
   params: [
     {id: 'color', as: 'string'},
@@ -2834,7 +2834,7 @@ jb.component('css.color', { /* css.color */
   }
 })
 
-jb.component('css.transform-scale', { /* css.transformScale */
+jb.component('css.transformScale', {
   type: 'feature',
   params: [
     {id: 'x', as: 'string', description: '0-1'},
@@ -2844,17 +2844,17 @@ jb.component('css.transform-scale', { /* css.transformScale */
   impl: ctx => ({css: `${ctx.params.selector} {transform:scale(${ctx.params.x},${ctx.params.y})}`})
 })
 
-jb.component('css.bold', { /* css.bold */
+jb.component('css.bold', {
   type: 'feature',
   impl: ctx => ({css: `{font-weight: bold}`})
 })
 
-jb.component('css.underline', { /* css.underline */
+jb.component('css.underline', {
   type: 'feature',
   impl: ctx => ({css: `{text-decoration: underline}`})
 })
 
-jb.component('css.box-shadow', { /* css.boxShadow */
+jb.component('css.boxShadow', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'blurRadius', as: 'string', templateValue: '5'},
@@ -2872,7 +2872,7 @@ jb.component('css.box-shadow', { /* css.boxShadow */
   }
 })
 
-jb.component('css.border', { /* css.border */
+jb.component('css.border', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'width', as: 'string', defaultValue: '1'},
@@ -2885,7 +2885,7 @@ jb.component('css.border', { /* css.border */
     ({css: `${selector} { border${side?'-'+side:''}: ${withUnits(width)} ${style} ${color} }`})
 })
 
-jb.component('css.line-clamp', { /* css.lineClamp */
+jb.component('css.lineClamp', {
   type: 'feature',
   description: 'ellipsis after X lines',
   params: [
@@ -2918,7 +2918,7 @@ jb.component('css.typography', {
 
 jb.ns('text')
 
-jb.component('text', { /* text */
+jb.component('text', {
   type: 'control',
   category: 'control:100,common:100',
   params: [
@@ -2932,7 +2932,7 @@ jb.component('text', { /* text */
 
 jb.component('label', {...jb.comps.text,type: 'depricated-control'} )
 
-jb.component('text.bind-text', { /* text.bindText */
+jb.component('text.bindText', {
   type: 'feature',
   category: 'text:0',
   impl: features(
@@ -2941,7 +2941,7 @@ jb.component('text.bind-text', { /* text.bindText */
   )
 })
 
-jb.component('text.allow-asynch-value', { /* text.allowAsynchValue */
+jb.component('text.allowAsynchValue', {
   type: 'feature',
   impl: features(
     calcProp({id: 'text', value: (ctx,{cmp}) => cmp.text || ctx.vars.$props.text}),
@@ -2956,7 +2956,7 @@ jb.component('text.allow-asynch-value', { /* text.allowAsynchValue */
   )
 })
 
-jb.component('text.htmlTag', { /* text.htmlTag */
+jb.component('text.htmlTag', {
   type: 'text.style',
   params: [
     {id: 'htmlTag', as: 'string', defaultValue: 'p', options: 'span,p,h1,h2,h3,h4,h5,div,li,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label'},
@@ -2968,7 +2968,7 @@ jb.component('text.htmlTag', { /* text.htmlTag */
   })
 })
 
-jb.component('text.no-wrapping-tag', { /* text.noWrappingTag */
+jb.component('text.noWrappingTag', {
   type: 'text.style',
   category: 'text:0',
   impl: customStyle({
@@ -2977,7 +2977,7 @@ jb.component('text.no-wrapping-tag', { /* text.noWrappingTag */
   })
 })
 
-jb.component('text.span', { /* text.span */
+jb.component('text.span', {
   type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('span',{},text),
@@ -3017,7 +3017,7 @@ jb.component('text.span', { /* text.span */
   })
 }))
 
-jb.component('text.highlight', { /* text.highlight */
+jb.component('text.highlight', {
   type: 'data',
   macroByValue: true,
   params: [
@@ -3039,7 +3039,7 @@ jb.component('text.highlight', { /* text.highlight */
 
 jb.ns('group,layout,tabs')
 
-jb.component('group', { /* group */
+jb.component('group', {
   type: 'control',
   category: 'group:100,common:90',
   params: [
@@ -3052,7 +3052,7 @@ jb.component('group', { /* group */
   impl: ctx => jb.ui.ctrl(ctx, ctx.params.layout)
 })
 
-jb.component('group.init-group', { /* group.initGroup */
+jb.component('group.initGroup', {
   type: 'feature',
   category: 'group:0',
   impl: calcProp({
@@ -3061,7 +3061,7 @@ jb.component('group.init-group', { /* group.initGroup */
   })
 })
 
-jb.component('inline-controls', { /* inlineControls */
+jb.component('inlineControls', {
   type: 'control',
   description: 'controls without a wrapping group',
   params: [
@@ -3070,7 +3070,7 @@ jb.component('inline-controls', { /* inlineControls */
   impl: ctx => ctx.params.controls().filter(x=>x)
 })
 
-jb.component('dynamic-controls', { /* dynamicControls */
+jb.component('dynamicControls', {
   type: 'control',
   description: 'calculated controls by data items without a wrapping group',
   params: [
@@ -3084,7 +3084,7 @@ jb.component('dynamic-controls', { /* dynamicControls */
         ctx.setVar(itemVariable,controlItem).setVar(indexVariable,i).setData(controlItem))))
 })
 
-jb.component('group.first-succeeding', { /* group.firstSucceeding */
+jb.component('group.firstSucceeding', {
   type: 'feature',
   category: 'group:70',
   description: 'Used with controlWithCondition. Takes the fhe first succeeding control',
@@ -3092,7 +3092,7 @@ jb.component('group.first-succeeding', { /* group.firstSucceeding */
     () => ({calcHash: ctx => jb.asArray(ctx.vars.$model.controls.profile).reduce((res,prof,i) => {
         if (res) return res
         const found = prof.condition == undefined || ctx.vars.$model.ctx.setVars(ctx.vars).runInner(prof.condition,{ as: 'boolean'},`controls.${i}.condition`)
-        if (found) 
+        if (found)
           return i + 1 // avoid index 0
       }, null),
     }),
@@ -3109,7 +3109,7 @@ jb.component('group.first-succeeding', { /* group.firstSucceeding */
   )
 })
 
-jb.component('control-with-condition', { /* controlWithCondition */
+jb.component('controlWithCondition', {
   type: 'control',
   description: 'Used with group.firstSucceeding',
   category: 'group:10',
@@ -3122,7 +3122,7 @@ jb.component('control-with-condition', { /* controlWithCondition */
   impl: (ctx,condition,ctrl) => condition(ctx) && ctrl(ctx)
 })
 
-jb.component('group.wait', { /* group.wait */
+jb.component('group.wait', {
   type: 'feature',
   category: 'group:70',
   description: 'wait for asynch data before showing the control',
@@ -3156,7 +3156,7 @@ jb.component('group.wait', { /* group.wait */
 
 jb.ns('html')
 
-jb.component('html', { /* html */
+jb.component('html', {
   type: 'control',
   description: 'rich text',
   category: 'control:100,common:80',
@@ -3169,18 +3169,18 @@ jb.component('html', { /* html */
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('html.plain', { /* html.plain */
+jb.component('html.plain', {
   type: 'html.style',
   impl: customStyle({
-    template: (cmp,{html},h) => h('html',{$html: html, jb_external: true } ) ,
+    template: (cmp,{html},h) => h('html',{$html: html, jb_external: true } ),
     features: [
-        watchAndCalcModelProp('html'),
-        () => ({ studioFeatures :{$: 'feature.contentEditable', param: 'html' } })
+      watchAndCalcModelProp('html'),
+      () => ({ studioFeatures :{$: 'feature.contentEditable', param: 'html' } })
     ]
   })
 })
 
-jb.component('html.in-iframe', { /* html.inIframe */
+jb.component('html.inIframe', {
   type: 'html.style',
   params: [
     {id: 'width', as: 'string', defaultValue: '100%'},
@@ -3202,7 +3202,7 @@ jb.component('html.in-iframe', { /* html.inIframe */
 
 jb.ns('image,css')
 
-jb.component('image', { /* image */
+jb.component('image', {
   type: 'control,image',
   category: 'control:50,common:70',
   params: [
@@ -3219,7 +3219,7 @@ jb.component('image', { /* image */
   })
 })
 
-jb.component('image.width-height', { /* image.widthHeight */
+jb.component('image.widthHeight', {
   type: 'image.resize',
   description: 'fixed size or precentage of the original',
   params: [
@@ -3229,19 +3229,19 @@ jb.component('image.width-height', { /* image.widthHeight */
   impl: (ctx,width,height) => [ jb.ui.withUnits(width) ||'auto',jb.ui.withUnits(height)||'auto'].join(' ')
 })
 
-jb.component('image.cover', { /* image.cover */
+jb.component('image.cover', {
   description: 'auto resize or crop to cover all area',
   type: 'image.resize',
   impl: 'cover'
 })
 
-jb.component('image.fully-visible', { /* image.fullyVisible */
+jb.component('image.fullyVisible', {
   description: 'contain, auto resize to ensure the image is fully visible',
   type: 'image.resize',
   impl: 'contain'
 })
 
-jb.component('image.position', { /* image.position */
+jb.component('image.position', {
   description: 'offset move shift original image',
   type: 'image.position',
   params: [
@@ -3252,7 +3252,7 @@ jb.component('image.position', { /* image.position */
     .filter(x=>x).map(x=>`background-position-${x}`).join(';')
 })
 
-jb.component('image.background', { /* image.background */
+jb.component('image.background', {
   type: 'image.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div'),
@@ -3264,7 +3264,7 @@ jb.component('image.background', { /* image.background */
       Var('width', (ctx,{$model}) => jb.ui.withUnits($model.width)),
       Var('height', (ctx,{$model}) => jb.ui.withUnits($model.height)),
       `
-      { 
+      {
           background-image: url('%$url%');
           {? background-size: %$$model/resize%; ?}
           {? %$$model/position%; ?}
@@ -3276,10 +3276,9 @@ jb.component('image.background', { /* image.background */
   })
 })
 
-jb.component('image.img', { 
+jb.component('image.img', {
   type: 'image.style',
   impl: customStyle({
-    features: calcProp('url', '%$$model/url%'),
     template: ({},{url},h) => h('img', { src: url}),
     css: pipeline(
       Var('width', (ctx,{$model}) => jb.ui.withUnits($model.width)),
@@ -3289,13 +3288,14 @@ jb.component('image.img', {
           {?width: %$width%; ?}
           {?height: %$height%; ?}
       }`
-    )
+    ),
+    features: calcProp({id: 'url', value: '%$$model/url%'})
   })
 });
 
 jb.ns('button')
 
-jb.component('button', { /* button */
+jb.component('button', {
   type: 'control,clickable',
   category: 'control:100,common:100',
   params: [
@@ -3322,7 +3322,7 @@ jb.component('button', { /* button */
     )))
 })
 
-jb.component('ctrl-action', { /* ctrlAction */
+jb.component('ctrlAction', {
   type: 'feature',
   category: 'button:70',
   description: 'action to perform on control+click',
@@ -3334,7 +3334,7 @@ jb.component('ctrl-action', { /* ctrlAction */
   )
 })
 
-jb.component('alt-action', { /* altAction */
+jb.component('altAction', {
   type: 'feature',
   category: 'button:70',
   description: 'action to perform on alt+click',
@@ -3346,7 +3346,7 @@ jb.component('alt-action', { /* altAction */
   )
 })
 
-jb.component('button-disabled', { /* buttonDisabled */
+jb.component('buttonDisabled', {
   type: 'feature',
   category: 'button:70',
   description: 'define condition when button is enabled',
@@ -3362,7 +3362,7 @@ jb.component('button-disabled', { /* buttonDisabled */
 (function() {
 jb.ui.field_id_counter = jb.ui.field_id_counter || 0;
 
-jb.component('field.databind', { /* field.databind */
+jb.component('field.databind', {
   type: 'feature',
   category: 'field:0',
   params: [
@@ -3395,15 +3395,17 @@ jb.component('field.databind', { /* field.databind */
       ),
     interactiveProp(
         'jbModel',
-        (ctx,{cmp}) => value => 
+        (ctx,{cmp}) => value =>
           value == null ? ctx.exp('%$$model/databind%','number') : writeFieldData(ctx,cmp,value,true)
       )
   )
 })
 
 function writeFieldData(ctx,cmp,value,oneWay) {
-  jb.ui.checkValidationError(cmp,value);
+  if (jb.val(ctx.vars.$model.databind(cmp.ctx)) == value) return
   jb.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx);
+  jb.ui.checkValidationError(cmp,value);
+  cmp.onValueChange && cmp.onValueChange(value) // used to float label
   !oneWay && jb.ui.refreshElem(cmp.base,null,{srcCtx: ctx.componentContext});
 }
 
@@ -3442,7 +3444,7 @@ jb.ui.preserveFieldCtxWithItem = (field,item) => {
 	return ctx && jb.ui.preserveCtx(ctx.setData(item))
 }
 
-jb.component('field.databind-text', { /* field.databindText */
+jb.component('field.databindText', {
   type: 'feature',
   category: 'field:0',
   params: [
@@ -3455,7 +3457,7 @@ jb.component('field.databind-text', { /* field.databindText */
   )
 })
 
-jb.component('field.keyboard-shortcut', { /* field.keyboardShortcut */
+jb.component('field.keyboardShortcut', {
   type: 'feature',
   category: 'events',
   description: 'listen to events at the document level even when the component is not active',
@@ -3482,7 +3484,7 @@ jb.component('field.keyboard-shortcut', { /* field.keyboardShortcut */
   )
 })
 
-jb.component('field.toolbar', { /* field.toolbar */
+jb.component('field.toolbar', {
   type: 'feature',
   params: [
     {id: 'toolbar', type: 'control', mandatory: true, dynamic: true}
@@ -3492,7 +3494,7 @@ jb.component('field.toolbar', { /* field.toolbar */
 
 // ***** validation
 
-jb.component('validation', { /* validation */
+jb.component('validation', {
   type: 'feature',
   category: 'validation:100',
   params: [
@@ -3511,7 +3513,7 @@ jb.component('validation', { /* validation */
   )
 })
 
-jb.component('field.title', { /* field.title */
+jb.component('field.title', {
   description: 'used to set table title in button and label',
   type: 'feature',
   category: 'table:80',
@@ -3523,7 +3525,7 @@ jb.component('field.title', { /* field.title */
   })
 })
 
-jb.component('field.title-ctrl', { /* field.titleCtrl */
+jb.component('field.titleCtrl', {
   description: 'title as control, buttons are usefull',
   type: 'feature',
   category: 'table:80',
@@ -3535,7 +3537,7 @@ jb.component('field.title-ctrl', { /* field.titleCtrl */
   })
 })
 
-jb.component('field.column-width', { /* field.columnWidth */
+jb.component('field.columnWidth', {
   description: 'used in itemlist fields',
   type: 'feature',
   category: 'table:80',
@@ -3553,7 +3555,7 @@ jb.component('field.column-width', { /* field.columnWidth */
 jb.ns('editableText')
 jb.ns('dialog')
 
-jb.component('editable-text', { /* editableText */
+jb.component('editableText', {
   type: 'control',
   category: 'input:100,common:80',
   params: [
@@ -3566,7 +3568,7 @@ jb.component('editable-text', { /* editableText */
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('editable-text.x-button', { /* editableText.xButton */
+jb.component('editableText.xButton', {
   type: 'feature',
   impl: features(
     defHandler('cleanValue', writeValue('%$$model/databind%', '')),
@@ -3590,7 +3592,7 @@ jb.component('editable-text.x-button', { /* editableText.xButton */
   )
 })
 
-jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
+jb.component('editableText.helperPopup', {
   type: 'feature',
   params: [
     {id: 'control', type: 'control', dynamic: true, mandatory: true},
@@ -3659,7 +3661,7 @@ jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
 
 jb.ns('editableBoolean')
 
-jb.component('editable-boolean', { /* editableBoolean */
+jb.component('editableBoolean', {
   type: 'control',
   category: 'input:20',
   params: [
@@ -3678,7 +3680,7 @@ jb.component('editable-boolean', { /* editableBoolean */
 		))
 })
 
-jb.component('editable-boolean.keyboard-support', { /* editableBoolean.keyboardSupport */
+jb.component('editableBoolean.keyboardSupport', {
   type: 'feature',
   impl: feature.onEvent({
     event: 'keypress',
@@ -3692,7 +3694,7 @@ jb.component('editable-boolean.keyboard-support', { /* editableBoolean.keyboardS
 
 jb.ns('editableNumber')
 
-jb.component('editable-number', { /* editableNumber */
+jb.component('editableNumber', {
   type: 'control',
   category: 'input:30',
   params: [
@@ -3741,7 +3743,7 @@ jb.component('editable-number', { /* editableNumber */
 
 ;
 
-jb.component('open-dialog', { /* openDialog */
+jb.component('openDialog', {
   type: 'action',
   params: [
     {id: 'id', as: 'string'},
@@ -3766,7 +3768,7 @@ jb.component('open-dialog', { /* openDialog */
 	}
 })
 
-jb.component('dialog.close-containing-popup', { /* dialog.closeContainingPopup */
+jb.component('dialog.closeContainingPopup', {
   description: 'close parent dialog',
   type: 'action',
   params: [
@@ -3775,7 +3777,7 @@ jb.component('dialog.close-containing-popup', { /* dialog.closeContainingPopup *
   impl: (context,OK) => context.vars.$dialog && context.vars.$dialog.close({OK:OK})
 })
 
-jb.component('dialog-feature.unique-dialog', { /* dialogFeature.uniqueDialog */
+jb.component('dialogFeature.uniqueDialog', {
   description: 'automatic close dialogs of the same id',
   type: 'dialog-feature',
   params: [
@@ -3859,7 +3861,7 @@ jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
 	})
   })
 
-jb.component('dialog-feature.near-launcher-position', { /* dialogFeature.nearLauncherPosition */
+jb.component('dialogFeature.nearLauncherPosition', {
   type: 'dialog-feature',
   params: [
     {id: 'offsetLeft', as: 'number', dynamic: true, defaultValue: 0},
@@ -3908,7 +3910,7 @@ jb.component('dialog-feature.onClose', { /* dialogFeature.onClose */
 	)})
 })
 
-jb.component('dialog-feature.close-when-clicking-outside', { /* dialogFeature.closeWhenClickingOutside */
+jb.component('dialogFeature.closeWhenClickingOutside', {
   type: 'dialog-feature',
   params: [
     {id: 'delay', as: 'number', defaultValue: 100}
@@ -3933,7 +3935,7 @@ jb.component('dialog-feature.close-when-clicking-outside', { /* dialogFeature.cl
 	}
 })
 
-jb.component('dialog.close-dialog', { /* dialog.closeDialog */
+jb.component('dialog.closeDialog', {
   type: 'action',
   params: [
     {id: 'id', as: 'string'},
@@ -3942,12 +3944,12 @@ jb.component('dialog.close-dialog', { /* dialog.closeDialog */
   impl: (ctx,id,delay) => jb.ui.dialogs.closeDialogs(jb.ui.dialogs.dialogs.filter(d=>d.id == id))
 })
 
-jb.component('dialog.close-all', { /* dialog.closeAll */
+jb.component('dialog.closeAll', {
   type: 'action',
   impl: ctx => jb.ui.dialogs.closeAll()
 })
 
-jb.component('dialog-feature.auto-focus-on-first-input', { /* dialogFeature.autoFocusOnFirstInput */
+jb.component('dialogFeature.autoFocusOnFirstInput', {
   type: 'dialog-feature',
   params: [
     {id: 'selectText', as: 'boolean', type: 'boolean'}
@@ -3965,7 +3967,7 @@ jb.component('dialog-feature.auto-focus-on-first-input', { /* dialogFeature.auto
 	})
 })
 
-jb.component('dialog-feature.css-class-on-launching-element', { /* dialogFeature.cssClassOnLaunchingElement */
+jb.component('dialogFeature.cssClassOnLaunchingElement', {
   type: 'dialog-feature',
   impl: context => ({
 		afterViewInit: cmp => {
@@ -4002,7 +4004,7 @@ jb.component('dialog-feature.max-zIndex-on-click', { /* dialogFeature.maxZIndexO
 	}
 })
 
-jb.component('dialog.dialog-ok-cancel', { /* dialog.dialogOkCancel */
+jb.component('dialog.dialogOkCancel', {
   type: 'dialog.style',
   params: [
     {id: 'okLabel', as: 'string', defaultValue: 'OK'},
@@ -4022,7 +4024,7 @@ jb.component('dialog.dialog-ok-cancel', { /* dialog.dialogOkCancel */
   })
 })
 
-jb.component('dialog-feature.resizer', { /* dialogFeature.resizer */
+jb.component('dialogFeature.resizer', {
   type: 'dialog-feature',
   params: [
     {id: 'resizeInnerCodemirror', as: 'boolean', description: 'effective only for dialog with a single codemirror element', type: 'boolean'}
@@ -4078,7 +4080,7 @@ jb.component('dialog-feature.resizer', { /* dialogFeature.resizer */
 	}})
 })
 
-jb.component('dialog.popup', { /* dialog.popup */
+jb.component('dialog.popup', {
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
@@ -4092,7 +4094,7 @@ jb.component('dialog.popup', { /* dialog.popup */
   })
 })
 
-jb.component('dialog.div', { /* dialog.div */
+jb.component('dialog.div', {
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
@@ -4180,7 +4182,7 @@ jb.ui.dialogs = {
 
 jb.ns('itemlist,itemlistContainer')
 
-jb.component('itemlist', { /* itemlist */
+jb.component('itemlist', {
   description: 'list, dynamic group, collection, repeat',
   type: 'control',
   category: 'group:80,common:80',
@@ -4196,13 +4198,13 @@ jb.component('itemlist', { /* itemlist */
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('itemlist.no-container', { /* itemlist.noContainer */
+jb.component('itemlist.noContainer', {
   type: 'feature',
   category: 'group:20',
   impl: ctx => ({ extendCtx: (ctx,cmp) => ctx.setVars({itemlistCntr: null}) })
 })
 
-jb.component('itemlist.init-container-with-items', { /* itemlist.initContainerWithItems */
+jb.component('itemlist.initContainerWithItems', {
   type: 'feature',
   category: 'itemlist:20',
   impl: calcProp({
@@ -4215,7 +4217,7 @@ jb.component('itemlist.init-container-with-items', { /* itemlist.initContainerWi
   })
 })
 
-jb.component('itemlist.init', { /* itemlist.init */
+jb.component('itemlist.init', {
   type: 'feature',
   impl: features(
     calcProp({id: 'items', value: '%$$model.items%'}),
@@ -4232,13 +4234,15 @@ jb.component('itemlist.init', { /* itemlist.init */
   )
 })
 
-jb.component('itemlist.infinite-scroll', { 
+jb.component('itemlist.infiniteScroll', {
   type: 'feature',
   params: [
-    { id: 'pageSize', as: 'number', defaultValue: 2 }
+    {id: 'pageSize', as: 'number', defaultValue: 2}
   ],
   impl: features(
-    defHandler('onscrollHandler', (ctx,{ev, $state},{pageSize}) => {
+    defHandler(
+        'onscrollHandler',
+        (ctx,{ev, $state},{pageSize}) => {
       const elem = ev.target
       if (!ev.scrollPercentFromTop || ev.scrollPercentFromTop < 0.9) return
       const allItems = ctx.vars.$model.items()
@@ -4255,12 +4259,13 @@ jb.component('itemlist.infinite-scroll', {
         jb.ui.appendItems(elem,itemlistVdom,ctx)
         $state.visualLimit.shownItems += itemsToAppend.length
       }
-    }),
+    }
+      ),
     templateModifier(({},{vdom}) => vdom.setAttribute('onscroll',true))
   )
 })
 
-jb.component('itemlist.init-table', { /* itemlist.initTable */
+jb.component('itemlist.initTable', {
   type: 'feature',
   impl: features(
     calcProp({
@@ -4275,7 +4280,7 @@ jb.component('itemlist.init-table', { /* itemlist.initTable */
   )
 })
 
-jb.component('itemlist.fast-filter', { /* itemlist.fastFilter */
+jb.component('itemlist.fastFilter', {
   type: 'feature',
   description: 'use display:hide to filter itemlist elements',
   params: [
@@ -4290,7 +4295,7 @@ jb.component('itemlist.fast-filter', { /* itemlist.fastFilter */
   )
 })
 
-jb.component('itemlist.ul-li', { /* itemlist.ulLi */
+jb.component('itemlist.ulLi', {
   type: 'itemlist.style',
   impl: customStyle({
     template: (cmp,{ctrls},h) => h('ul',{ class: 'jb-itemlist'},
@@ -4303,7 +4308,7 @@ jb.component('itemlist.ul-li', { /* itemlist.ulLi */
   })
 })
 
-jb.component('itemlist.horizontal', { /* itemlist.horizontal */
+jb.component('itemlist.horizontal', {
   type: 'itemlist.style',
   params: [
     {id: 'spacing', as: 'number', defaultValue: 0}
@@ -4330,7 +4335,7 @@ jb.ui.addSlicedState = (cmp,items,visualLimit) => {
 
 // ****************** Selection ******************
 
-jb.component('itemlist.selection', { /* itemlist.selection */
+jb.component('itemlist.selection', {
   type: 'feature',
   params: [
     {id: 'databind', as: 'ref', defaultValue: '%$itemlistCntrData/selected%', dynamic: true},
@@ -4415,7 +4420,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
   })
 })
 
-jb.component('itemlist.keyboard-selection', { /* itemlist.keyboardSelection */
+jb.component('itemlist.keyboardSelection', {
   type: 'feature',
   macroByValue: false,
   params: [
@@ -4459,7 +4464,7 @@ jb.component('itemlist.keyboard-selection', { /* itemlist.keyboardSelection */
     })
 })
 
-jb.component('itemlist.drag-and-drop', { /* itemlist.dragAndDrop */
+jb.component('itemlist.dragAndDrop', {
   type: 'feature',
   impl: ctx => ({
       afterViewInit: function(cmp) {
@@ -4509,7 +4514,7 @@ jb.component('itemlist.drag-and-drop', { /* itemlist.dragAndDrop */
     })
 })
 
-jb.component('itemlist.drag-handle', { /* itemlist.dragHandle */
+jb.component('itemlist.dragHandle', {
   description: 'put on the control inside the item which is used to drag the whole line',
   type: 'feature',
   impl: list(
@@ -4518,7 +4523,7 @@ jb.component('itemlist.drag-handle', { /* itemlist.dragHandle */
   )
 })
 
-jb.component('itemlist.shown-only-on-item-hover', { /* itemlist.shownOnlyOnItemHover */
+jb.component('itemlist.shownOnlyOnItemHover', {
   type: 'feature',
   category: 'itemlist:75',
   description: 'put on the control inside the item which is shown when the mouse enters the line',
@@ -4527,7 +4532,7 @@ jb.component('itemlist.shown-only-on-item-hover', { /* itemlist.shownOnlyOnItemH
   })
 })
 
-jb.component('itemlist.divider', { /* itemlist.divider */
+jb.component('itemlist.divider', {
   type: 'feature',
   params: [
     {id: 'space', as: 'number', defaultValue: 5}
@@ -4569,7 +4574,7 @@ const createItemlistCntr = (ctx,params) => ({
 	}
 })
 
-jb.component('group.itemlist-container', { /* group.itemlistContainer */
+jb.component('group.itemlistContainer', {
   description: 'itemlist writable container to support addition, deletion and selection',
   type: 'feature',
   category: 'itemlist:80,group:70',
@@ -4581,21 +4586,17 @@ jb.component('group.itemlist-container', { /* group.itemlistContainer */
   impl: features(
     variable({
         name: 'itemlistCntrData',
-        value: {
-          '$': 'object',
-          search_pattern: '',
-          selected: '%$initialSelection%',
-        },
+        value: {'$': 'object', search_pattern: '', selected: '%$initialSelection%'},
         watchable: true
       }),
     variable({
         name: 'itemlistCntr',
         value: ctx => createItemlistCntr(ctx,ctx.componentContext.params)
-      }),
+      })
   )
 })
 
-jb.component('itemlist.itemlist-selected', { /* itemlist.itemlistSelected */
+jb.component('itemlist.itemlistSelected', {
   type: 'feature',
   category: 'itemlist:20,group:0',
   impl: list(
@@ -4604,7 +4605,7 @@ jb.component('itemlist.itemlist-selected', { /* itemlist.itemlistSelected */
   )
 })
 
-jb.component('itemlist-container.filter', { /* itemlistContainer.filter */
+jb.component('itemlistContainer.filter', {
   type: 'aggregator',
   category: 'itemlist-filter:100',
   requires: ctx => ctx.vars.itemlistCntr,
@@ -4629,7 +4630,7 @@ jb.component('itemlist-container.filter', { /* itemlistContainer.filter */
 	}
 })
 
-jb.component('itemlist-container.condition-filter', { /* itemlistContainer.conditionFilter */
+jb.component('itemlistContainer.conditionFilter', {
   type: 'boolean',
   category: 'itemlist-filter:100',
   requires: ctx => ctx.vars.itemlistCntr,
@@ -4637,7 +4638,7 @@ jb.component('itemlist-container.condition-filter', { /* itemlistContainer.condi
 		ctx.vars.itemlistCntr.filters.reduce((res,filter) => res && filter([ctx.data]).length, true)
 })
 
-jb.component('itemlist-container.search', { /* itemlistContainer.search */
+jb.component('itemlistContainer.search', {
   type: 'control',
   category: 'itemlist-filter:100',
   requires: ctx => ctx.vars.itemlistCntr,
@@ -4667,7 +4668,7 @@ jb.component('itemlist-container.search', { /* itemlistContainer.search */
 		})
 })
 
-jb.component('itemlist-container.more-items-button', { /* itemlistContainer.moreItemsButton */
+jb.component('itemlistContainer.moreItemsButton', {
   type: 'control',
   category: 'itemlist-filter:100',
   requires: ctx => ctx.vars.itemlistCntr,
@@ -4709,7 +4710,7 @@ jb.ui.extractPropFromExpression = exp => { // performance for simple cases such 
 }
 
 // match fields in pattern itemlistCntrData/FLDNAME_filter to data
-jb.component('itemlist-container.filter-field', { /* itemlistContainer.filterField */
+jb.component('itemlistContainer.filterField', {
   type: 'feature',
   category: 'itemlist:80',
   requires: ctx => ctx.vars.itemlistCntr,
@@ -4737,7 +4738,7 @@ jb.component('itemlist-container.filter-field', { /* itemlistContainer.filterFie
 	})
 })
 
-jb.component('filter-type.text', { /* filterType.text */
+jb.component('filterType.text', {
   type: 'filter-type',
   params: [
     {id: 'ignoreCase', as: 'boolean', defaultValue: true, type: 'boolean'}
@@ -4759,7 +4760,7 @@ jb.component('filter-type.text', { /* filterType.text */
 	})
 })
 
-jb.component('filter-type.exact-match', { /* filterType.exactMatch */
+jb.component('filterType.exactMatch', {
   type: 'filter-type',
   impl: ctx => ({
 		filter: (filter,data) =>  {
@@ -4769,7 +4770,7 @@ jb.component('filter-type.exact-match', { /* filterType.exactMatch */
 	})
 })
 
-jb.component('filter-type.numeric', { /* filterType.numeric */
+jb.component('filterType.numeric', {
   type: 'filter-type',
   impl: ctx => ({
 		filter: (filter,data) => Number(data) >= Number(filter),
@@ -4777,7 +4778,7 @@ jb.component('filter-type.numeric', { /* filterType.numeric */
 	})
 })
 
-jb.component('itemlist-container.search-in-all-properties', { /* itemlistContainer.searchInAllProperties */
+jb.component('itemlistContainer.searchInAllProperties', {
   type: 'data',
   category: 'itemlist:40',
   impl: ctx => {
@@ -4795,7 +4796,7 @@ jb.ns('menuStyle')
 jb.ns('menuSeparator')
 jb.ns('mdc')
 
-jb.component('menu.menu', { /* menu.menu */
+jb.component('menu.menu', {
   type: 'menu.option',
   params: [
     {id: 'title', as: 'string', dynamic: true, mandatory: true},
@@ -4812,7 +4813,7 @@ jb.component('menu.menu', { /* menu.menu */
 	})
 })
 
-jb.component('menu.options-group', { /* menu.optionsGroup */
+jb.component('menu.optionsGroup', {
   type: 'menu.option',
   params: [
     {id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true}
@@ -4820,7 +4821,7 @@ jb.component('menu.options-group', { /* menu.optionsGroup */
   impl: (ctx,options) => options()
 })
 
-jb.component('menu.dynamic-options', { /* menu.dynamicOptions */
+jb.component('menu.dynamicOptions', {
   type: 'menu.option',
   params: [
     {id: 'items', type: 'data', as: 'array', mandatory: true, dynamic: true},
@@ -4829,7 +4830,7 @@ jb.component('menu.dynamic-options', { /* menu.dynamicOptions */
   impl: (ctx,items,generic) => items().map(item => generic(ctx.setData(item)))
 })
 
-jb.component('menu.end-with-separator', { /* menu.endWithSeparator */
+jb.component('menu.endWithSeparator', {
   type: 'menu.option',
   params: [
     {id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true},
@@ -4845,12 +4846,12 @@ jb.component('menu.end-with-separator', { /* menu.endWithSeparator */
 })
 
 
-jb.component('menu.separator', { /* menu.separator */
+jb.component('menu.separator', {
   type: 'menu.option',
   impl: ctx => ({ separator: true })
 })
 
-jb.component('menu.action', { /* menu.action */
+jb.component('menu.action', {
   type: 'menu.option',
   params: [
     {id: 'title', as: 'string', dynamic: true, mandatory: true},
@@ -4876,7 +4877,7 @@ jb.component('menu.action', { /* menu.action */
 
 // ********* actions / controls ************
 
-jb.component('menu.control', { /* menu.control */
+jb.component('menu.control', {
   type: 'control,clickable,menu',
   params: [
     {id: 'menu', type: 'menu.option', dynamic: true, mandatory: true},
@@ -4892,7 +4893,7 @@ jb.component('menu.control', { /* menu.control */
 	}
 })
 
-jb.component('menu.open-context-menu', { /* menu.openContextMenu */
+jb.component('menu.openContextMenu', {
   type: 'action',
   params: [
     {id: 'menu', type: 'menu.option', dynamic: true, mandatory: true},
@@ -4908,7 +4909,7 @@ jb.component('menu.open-context-menu', { /* menu.openContextMenu */
 
 // ********* styles ************
 
-jb.component('menu-style.pulldown', { /* menuStyle.pulldown */
+jb.component('menuStyle.pulldown', {
   type: 'menu.style',
   params: [
     {id: 'innerMenuStyle', type: 'menu.style', dynamic: true, defaultValue: menuStyle.popupAsOption()},
@@ -4933,7 +4934,7 @@ jb.component('menu-style.pulldown', { /* menuStyle.pulldown */
   )
 })
 
-jb.component('menu-style.context-menu', { /* menuStyle.contextMenu */
+jb.component('menuStyle.contextMenu', {
   type: 'menu.style',
   params: [
     {id: 'leafOptionStyle', type: 'menu-option.style', dynamic: true, defaultValue: menuStyle.optionLine()}
@@ -4954,7 +4955,7 @@ jb.component('menu-style.context-menu', { /* menuStyle.contextMenu */
 })
 
 
-jb.component('menu.init-popup-menu', { /* menu.initPopupMenu */
+jb.component('menu.initPopupMenu', {
   type: 'feature',
   params: [
     {id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue: dialog.contextMenuPopup()}
@@ -4995,11 +4996,12 @@ jb.component('menu.init-popup-menu', { /* menu.initPopupMenu */
           })
 				}
 			})
-		})
+		}
+      )
   )
 })
 
-jb.component('menu.init-menu-option', { /* menu.initMenuOption */
+jb.component('menu.initMenuOption', {
   type: 'feature',
   impl: features(
     calcProp({id: 'title', value: '%$menuModel.leaf.title%'}),
@@ -5021,10 +5023,12 @@ jb.component('menu.init-menu-option', { /* menu.initMenuOption */
               subscribe(_=> cmp.action()))
           }
 			})
-	}))
+	}
+      )
+  )
 })
 
-jb.component('menu-style.apply-multi-level', { /* menuStyle.applyMultiLevel */
+jb.component('menuStyle.applyMultiLevel', {
   type: 'menu.style',
   params: [
     {id: 'menuStyle', type: 'menu.style', dynamic: true, defaultValue: menuStyle.popupAsOption()},
@@ -5059,7 +5063,7 @@ jb.component('menu-style.apply-multi-level', { /* menuStyle.applyMultiLevel */
 //     })
 // })
 
-jb.component('menu.selection', { /* menu.selection */
+jb.component('menu.selection', {
   type: 'feature',
   params: [
     {id: 'autoSelectFirst', type: 'boolean'}
@@ -5125,7 +5129,7 @@ jb.component('menu.selection', { /* menu.selection */
 		})
 })
 
-jb.component('menu-style.option-line', { /* menuStyle.optionLine */
+jb.component('menuStyle.optionLine', {
   type: 'menu-option.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{
@@ -5146,7 +5150,7 @@ jb.component('menu-style.option-line', { /* menuStyle.optionLine */
   })
 })
 
-jb.component('menu.option-as-icon24', { /* menu.optionAsIcon24 */
+jb.component('menu.optionAsIcon24', {
   type: 'menu-option.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{
@@ -5159,7 +5163,7 @@ jb.component('menu.option-as-icon24', { /* menu.optionAsIcon24 */
   })
 })
 
-jb.component('menu-style.popup-as-option', { /* menuStyle.popupAsOption */
+jb.component('menuStyle.popupAsOption', {
   type: 'menu.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{
@@ -5176,7 +5180,7 @@ jb.component('menu-style.popup-as-option', { /* menuStyle.popupAsOption */
   })
 })
 
-jb.component('menu-style.popup-thumb', { /* menuStyle.popupThumb */
+jb.component('menuStyle.popupThumb', {
   type: 'menu.style',
   description: 'used for pulldown',
   impl: customStyle({
@@ -5189,7 +5193,7 @@ jb.component('menu-style.popup-thumb', { /* menuStyle.popupThumb */
   })
 })
 
-jb.component('dialog.context-menu-popup', { /* dialog.contextMenuPopup */
+jb.component('dialog.contextMenuPopup', {
   type: 'dialog.style',
   params: [
     {id: 'offsetTop', as: 'number'},
@@ -5211,7 +5215,7 @@ jb.component('dialog.context-menu-popup', { /* dialog.contextMenuPopup */
   })
 })
 
-jb.component('menu-separator.line', { /* menuSeparator.line */
+jb.component('menuSeparator.line', {
   type: 'menu-separator.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div'),
@@ -5222,7 +5226,7 @@ jb.component('menu-separator.line', { /* menuSeparator.line */
 
 jb.ns('picklist')
 
-jb.component('picklist', { /* picklist */
+jb.component('picklist', {
   type: 'control',
   category: 'input:80',
   params: [
@@ -5265,7 +5269,7 @@ function groupOfOpt(opt) {
   return opt.group || opt.text.split('.').shift();
 }
 
-jb.component('picklist.dynamic-options', { /* picklist.dynamicOptions */
+jb.component('picklist.dynamicOptions', {
   type: 'feature',
   params: [
     {id: 'recalcEm', as: 'single'}
@@ -5278,7 +5282,7 @@ jb.component('picklist.dynamic-options', { /* picklist.dynamicOptions */
   )
 })
 
-jb.component('picklist.onChange', { /* picklist.onChange */
+jb.component('picklist.onChange', {
   type: 'feature',
   description: 'action on picklist selection',
   params: [
@@ -5291,7 +5295,7 @@ jb.component('picklist.onChange', { /* picklist.onChange */
 
 // ********* options
 
-jb.component('picklist.optionsByComma', { /* picklist.optionsByComma */
+jb.component('picklist.optionsByComma', {
   type: 'picklist.options',
   params: [
     {id: 'options', as: 'string', mandatory: true},
@@ -5303,7 +5307,7 @@ jb.component('picklist.optionsByComma', { /* picklist.optionsByComma */
   }
 })
 
-jb.component('picklist.options', { /* picklist.options */
+jb.component('picklist.options', {
   type: 'picklist.options',
   params: [
     {id: 'options', type: 'data', as: 'array', mandatory: true},
@@ -5315,7 +5319,7 @@ jb.component('picklist.options', { /* picklist.options */
   }
 })
 
-jb.component('picklist.coded-options', { /* picklist.codedOptions */
+jb.component('picklist.codedOptions', {
   type: 'picklist.options',
   params: [
     {id: 'options', as: 'array', mandatory: true},
@@ -5329,7 +5333,7 @@ jb.component('picklist.coded-options', { /* picklist.codedOptions */
   }
 })
 
-jb.component('picklist.sorted-options', { /* picklist.sortedOptions */
+jb.component('picklist.sortedOptions', {
   type: 'picklist.options',
   params: [
     {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true, composite: true},
@@ -5348,7 +5352,7 @@ jb.component('picklist.sorted-options', { /* picklist.sortedOptions */
   }
 })
 
-jb.component('picklist.promote', { /* picklist.promote */
+jb.component('picklist.promote', {
   type: 'picklist.promote',
   params: [
     {id: 'groups', as: 'array'},
@@ -5360,7 +5364,7 @@ jb.component('picklist.promote', { /* picklist.promote */
 
 jb.type('theme');
 
-jb.component('group.theme', { /* group.theme */
+jb.component('group.theme', {
   type: 'feature',
   params: [
     {id: 'theme', type: 'theme'}
@@ -5370,7 +5374,7 @@ jb.component('group.theme', { /* group.theme */
   })
 })
 
-jb.component('theme.material-design', { /* theme.materialDesign */
+jb.component('theme.materialDesign', {
   type: 'theme',
   impl: () => ({
   	'$theme.editable-text': 'editable-text.mdc-input'
@@ -5380,7 +5384,7 @@ jb.component('theme.material-design', { /* theme.materialDesign */
 
 jb.ns('icon')
 
-jb.component('material-icon', { /* materialIcon */
+jb.component('materialIcon', {
   type: 'control',
   category: 'control:50',
   params: [
@@ -5392,7 +5396,7 @@ jb.component('material-icon', { /* materialIcon */
   impl: ctx => jb.ui.ctrl(ctx, calcProp('icon','%$$model/icon%'))
 })
 
-jb.component('icon.material', { /* icon.material */
+jb.component('icon.material', {
   type: 'icon-with-action.style',
   impl: customStyle(
     (cmp,{icon},h) => h('i',{ class: 'material-icons' }, icon)
@@ -5402,27 +5406,30 @@ jb.component('icon.material', { /* icon.material */
 
 jb.ns('slider')
 
-jb.component('editable-number.slider-no-text', { /* editableNumber.sliderNoText */
+jb.component('editableNumber.sliderNoText', {
   type: 'editable-number.style',
   impl: features(
-    calcProp('max', ctx => {
+    calcProp({
+        id: 'max',
+        value: ctx => {
       const val = jb.tonumber(ctx.exp('%$editableNumberModel/databind%'))
       if (val > +ctx.vars.$model.max && ctx.vars.$model.autoScale)
         return val + 100
       return +ctx.vars.$model.max
-    }),
+    }
+      }),
     ctx => ({
       template: (cmp,state,h) => h('input',{ type: 'range',
         min: state.min, max: state.max, step: state.step,
         value: state.databind, mouseup: 'onblurHandler', tabindex: -1})
     }),
-    field.databind(), 
-    slider.init(), 
+    field.databind(),
+    slider.init(),
     watchRef('%$editableNumberModel/databind%')
   )
 })
 
-jb.component('editable-number.slider', { /* editableNumber.slider */
+jb.component('editableNumber.slider', {
   type: 'editable-number.style',
   impl: styleByControl(
     group({
@@ -5433,7 +5440,12 @@ jb.component('editable-number.slider', { /* editableNumber.slider */
           editableText({
             databind: '%$editableNumberModel/databind%',
             style: editableText.input(),
-            features: [slider.handleArrowKeys(), css('width: 30px; padding-left: 3px; border: 0; border-bottom: 1px solid black;') ]
+            features: [
+              slider.handleArrowKeys(),
+              css(
+                'width: 30px; padding-left: 3px; border: 0; border-bottom: 1px solid black;'
+              )
+            ]
           }),
           editableNumber({
             databind: '%$editableNumberModel/databind%',
@@ -5451,7 +5463,7 @@ jb.component('editable-number.slider', { /* editableNumber.slider */
   )
 })
 
-jb.component('slider.init', { /* slider.init */
+jb.component('slider.init', {
   type: 'feature',
   impl: ctx => ({
       onkeyup: true,
@@ -5480,8 +5492,8 @@ jb.component('slider.init', { /* slider.init */
         pipe(cmp.onkeydown,subscribe(e=> cmp.handleArrowKey(e)))
 
         // drag
-        pipe(cmp.onmousedown, 
-          flatMap(e=> pipe(cmp.onmousemove, takeUntil(cmp.onmouseup))), 
+        pipe(cmp.onmousedown,
+          flatMap(e=> pipe(cmp.onmousemove, takeUntil(cmp.onmouseup))),
           subscribe(e=> !checkAutoScale() && cmp.jbModel(cmp.base.value)
           ))
 
@@ -5499,12 +5511,15 @@ jb.component('slider.init', { /* slider.init */
     })
 })
 
-jb.component('slider.handle-arrow-keys', { /* slider.handleArrowKeys */
+jb.component('slider.handleArrowKeys', {
   type: 'feature',
   impl: features(
-    htmlAttribute('onkeydown',true),
-    defHandler('onkeydownHandler', (ctx,{ev}) =>
-        ctx.vars.sliderCtx && sliderCtx.handleArrowKey(ev))
+    htmlAttribute('onkeydown', true),
+    defHandler(
+        'onkeydownHandler',
+        (ctx,{ev}) =>
+        ctx.vars.sliderCtx && sliderCtx.handleArrowKey(ev)
+      )
   )
 })
 
@@ -5513,7 +5528,7 @@ jb.component('slider.handle-arrow-keys', { /* slider.handleArrowKeys */
 
 jb.ns('table')
 
-jb.component('table', { /* table */
+jb.component('table', {
   type: 'control,table',
   category: 'group:80,common:70',
   params: [
@@ -5528,7 +5543,7 @@ jb.component('table', { /* table */
     jb.ui.ctrl(ctx)
 })
 
-jb.component('field', { /* field */
+jb.component('field', {
   type: 'table-field',
   params: [
     {id: 'title', as: 'string', mandatory: true},
@@ -5552,7 +5567,7 @@ jb.component('field', { /* field */
   })
 })
 
-jb.component('field.index', { /* field.index */
+jb.component('field.index', {
   type: 'table-field',
   params: [
     {id: 'title', as: 'string', defaultValue: 'index'},
@@ -5569,7 +5584,7 @@ jb.component('field.index', { /* field.index */
   })
 })
 
-jb.component('field.control', { /* field.control */
+jb.component('field.control', {
   type: 'table-field',
   params: [
     {id: 'title', as: 'string', mandatory: true},
@@ -5590,7 +5605,7 @@ jb.component('field.control', { /* field.control */
 
 // todo - move to styles
 
-jb.component('button.table-cell-href', { /* button.tableCellHref */
+jb.component('button.tableCellHref', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: true}, state.title),
@@ -5598,12 +5613,12 @@ jb.component('button.table-cell-href', { /* button.tableCellHref */
   })
 })
 
-jb.component('table.init-table-or-itemlist', { /* table.initTableOrItemlist */
+jb.component('table.initTableOrItemlist', {
   type: 'feature',
   impl: ctx => ctx.run(ctx.vars.$model.fields ? table.init() : itemlist.initTable())
 })
 
-jb.component('table.init', { /* table.init */
+jb.component('table.init', {
   type: 'feature',
   category: 'table:10',
   impl: features(
@@ -5630,7 +5645,7 @@ jb.component('table.init', { /* table.init */
   )
 })
 
-jb.component('table.init-sort', { /* table.initSort */
+jb.component('table.initSort', {
   type: 'feature',
   impl: ctx => ({
       afterViewInit: cmp => {
@@ -5679,7 +5694,7 @@ jb.component('table.init-sort', { /* table.initSort */
 })
 ;
 
-jb.component('goto-url', { /* gotoUrl */
+jb.component('gotoUrl', {
   type: 'action',
   description: 'navigate/open a new web page, change href location',
   params: [
@@ -5697,7 +5712,7 @@ jb.component('goto-url', { /* gotoUrl */
 
 jb.ns('mdc,mdc-style')
 
-jb.component('mdc-style.init-dynamic', { /* mdcStyle.initDynamic */
+jb.component('mdcStyle.initDynamic', {
   type: 'feature',
   params: [
     {id: 'query', as: 'string'}
@@ -5706,20 +5721,23 @@ jb.component('mdc-style.init-dynamic', { /* mdcStyle.initDynamic */
     afterViewInit: cmp => {
       if (!jb.ui.material) return jb.logError('please load mdc library')
       cmp.mdc_comps = cmp.mdc_comps || []
-      if (cmp.base.classList.contains('mdc-text-field'))
-        cmp.mdc_comps.push(new jb.ui.material.MDCTextField(cmp.base))
-      else if (cmp.base.classList.contains('mdc-button') || cmp.base.classList.contains('mdc-fab'))
+      const txtElm = jb.ui.findIncludeSelf(cmp.base,'.mdc-text-field')[0]
+      if (txtElm) {
+        cmp.mdc_comps.push(new jb.ui.material.MDCTextField(txtElm))
+        cmp.onValueChange = value => (cmp.mdc_comps||[]).forEach(x=> x.label_ && x.label_.float(!!value))
+      } else if (cmp.base.classList.contains('mdc-button') || cmp.base.classList.contains('mdc-fab'))
         cmp.mdc_comps.push(new jb.ui.material.MDCRipple(cmp.base))
       else if (cmp.base.classList.contains('mdc-switch'))
         cmp.mdc_comps.push(new jb.ui.material.MDCSwitch(cmp.base))
       else if (cmp.base.classList.contains('mdc-chip-set'))
         cmp.mdc_comps.push(new jb.ui.material.MDCChipSet(cmp.base))
+
     },
     destroy: cmp => (cmp.mdc_comps || []).forEach(mdc_cmp=>mdc_cmp.destroy())
   })
 })
 
-jb.component('mdc.ripple-effect', { /* mdc.rippleEffect */
+jb.component('mdc.rippleEffect', {
   type: 'feature',
   description: 'add ripple effect',
   impl: ctx => ({
@@ -5731,7 +5749,7 @@ jb.component('mdc.ripple-effect', { /* mdc.rippleEffect */
    })
 })
 
-jb.component('label.mdc-ripple-effect', { /* label.mdcRippleEffect */
+jb.component('label.mdcRippleEffect', {
   type: 'text.style',
   impl: customStyle({
     template: (cmp,state,h) => h('button',{class: 'mdc-button'},[
@@ -5747,7 +5765,7 @@ jb.component('label.mdc-ripple-effect', { /* label.mdcRippleEffect */
 
 ;
 
-jb.component('button.href', { /* button.href */
+jb.component('button.href', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
@@ -5755,7 +5773,7 @@ jb.component('button.href', { /* button.href */
   })
 })
 
-jb.component('button.x', { /* button.x */
+jb.component('button.x', {
   type: 'button.style',
   params: [
     {id: 'size', as: 'number', defaultValue: '21'}
@@ -5776,7 +5794,7 @@ jb.component('button.x', { /* button.x */
   })
 })
 
-jb.component('button.native', { /* button.native */
+jb.component('button.native', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) => h('button',{class: raised ? 'raised' : '', title, onclick: true },title),
@@ -5784,7 +5802,7 @@ jb.component('button.native', { /* button.native */
   })
 })
 
-jb.component('button.mdc', { /* button.mdc */
+jb.component('button.mdc', {
   type: 'button.style',
   params: [
     {id: 'ripple', as: 'boolean', defaultValue: true, type: 'boolean'}
@@ -5799,7 +5817,7 @@ jb.component('button.mdc', { /* button.mdc */
   })
 })
 
-jb.component('button.mdc-icon', { /* button.mdcIcon */
+jb.component('button.mdcIcon', {
   type: 'button.style,icon-with-action.style',
   params: [
     {id: 'icon', as: 'string', defaultValue: 'bookmark_border'},
@@ -5817,7 +5835,7 @@ jb.component('button.mdc-icon', { /* button.mdcIcon */
   })
 })
 
-jb.component('button.mdc-chip-action', { /* button.mdcChipAction */
+jb.component('button.mdcChipAction', {
   type: 'button.style',
   params: [
 
@@ -5833,7 +5851,7 @@ jb.component('button.mdc-chip-action', { /* button.mdcChipAction */
   })
 })
 
-jb.component('button.mdc-chip-with-icons', { /* button.mdcChipWithIcons */
+jb.component('button.mdcChipWithIcons', {
   type: 'button.style,icon-with-action.style',
   params: [
     {id: 'leadingIcon', as: 'string', defaultValue: 'code'},
@@ -5852,7 +5870,7 @@ jb.component('button.mdc-chip-with-icons', { /* button.mdcChipWithIcons */
   })
 })
 
-jb.component('button.mdc-floating-action', { /* button.mdcFloatingAction */
+jb.component('button.mdcFloatingAction', {
   type: 'button.style,icon-with-action.style',
   description: 'fab icon',
   params: [
@@ -5870,7 +5888,7 @@ jb.component('button.mdc-floating-action', { /* button.mdcFloatingAction */
   })
 })
 
-jb.component('button.mdc-floating-with-title', { /* button.mdcFloatingWithTitle */
+jb.component('button.mdcFloatingWithTitle', {
   type: 'button.style,icon-with-action.style',
   params: [
     {id: 'icon', as: 'string', defaultValue: 'code'},
@@ -5888,7 +5906,7 @@ jb.component('button.mdc-floating-with-title', { /* button.mdcFloatingWithTitle 
   })
 })
 
-jb.component('button.mdc-icon12', { /* button.mdcIcon12 */
+jb.component('button.mdcIcon12', {
   type: 'button.style,icon-with-action.style',
   params: [
     {id: 'icon', as: 'string', defaultValue: 'code'}
@@ -5904,7 +5922,7 @@ jb.component('button.mdc-icon12', { /* button.mdcIcon12 */
 
 jb.ns('mdc,mdc-style')
 
-jb.component('editable-text.input', { /* editableText.input */
+jb.component('editableText.input', {
   type: 'editable-text.style',
   impl: customStyle({
     template: (cmp,{databind},h) => h('input', {value: databind, onchange: true, onkeyup: true, onblur: true }),
@@ -5912,7 +5930,7 @@ jb.component('editable-text.input', { /* editableText.input */
   })
 })
 
-jb.component('editable-text.textarea', { /* editableText.textarea */
+jb.component('editableText.textarea', {
   type: 'editable-text.style',
   params: [
     {id: 'rows', as: 'number', defaultValue: 4},
@@ -5926,26 +5944,28 @@ jb.component('editable-text.textarea', { /* editableText.textarea */
   })
 })
 
-jb.component('editable-text.mdc-input', { /* editableText.mdcInput */
+jb.component('editableText.mdcInput', {
   type: 'editable-text.style,editable-number.style',
   params: [
     {id: 'width', as: 'number'}
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{class: ['mdc-text-field',state.error ? 'is-invalid' : ''].join(' ') },[
-        h('input', { type: 'text', class: 'mdc-text-field__input', id: 'input_' + state.fieldId,
-            value: state.databind, onchange: true, onkeyup: true, onblur: true,
-        }),
-        h('label',{class: 'mdc-floating-label', for: 'input_' + state.fieldId},state.title),
-        h('div',{class: 'mdc-line-ripple' }),
-        h('span',{class: 'mdc-text-field-helper-text' }, state.error || '')
+    template: (cmp,state,h) => h('div',{}, [
+      h('div',{class: 'mdc-text-field' },[
+          h('input', { type: 'text', class: 'mdc-text-field__input', id: 'input_' + state.fieldId,
+              value: state.databind, onchange: true, onkeyup: true, onblur: true,
+          }),
+          h('label',{class: 'mdc-floating-label', for: 'input_' + state.fieldId},state.title),
+          h('div',{class: 'mdc-line-ripple' }) 
+        ]),
+        h('div',{class: 'mdc-text-field-helper-line' }, state.error || '')
       ]),
-    css: '{ {?width: %$width%px?} }',
+    css: `{ {?width: %$width%px?} } ~ .mdc-text-field-helper-line { color: red }`,
     features: [field.databindText(), mdcStyle.initDynamic()]
   })
 })
 
-jb.component('editable-text.mdc-no-label', { /* editableText.mdcNoLabel */
+jb.component('editableText.mdcNoLabel', {
   type: 'editable-text.style',
   params: [
     {id: 'width', as: 'number'}
@@ -5960,7 +5980,7 @@ jb.component('editable-text.mdc-no-label', { /* editableText.mdcNoLabel */
   })
 })
 
-jb.component('editable-text.mdc-search', { /* editableText.mdcSearch */
+jb.component('editableText.mdcSearch', {
   description: 'debounced and one way binding',
   type: 'editable-text.style',
   impl: customStyle({
@@ -5974,7 +5994,7 @@ jb.component('editable-text.mdc-search', { /* editableText.mdcSearch */
   })
 })
 
-jb.component('editable-text.expandable', { /* editableText.expandable */
+jb.component('editableText.expandable', {
   description: 'label that changes to editable class on double click',
   type: 'editable-text.style',
   params: [
@@ -6035,7 +6055,7 @@ jb.component('editable-text.expandable', { /* editableText.expandable */
 })
 ;
 
-jb.component('layout.vertical', { /* layout.vertical */
+jb.component('layout.vertical', {
   type: 'layout,feature',
   params: [
     {id: 'spacing', as: 'string', defaultValue: 3}
@@ -6047,7 +6067,7 @@ jb.component('layout.vertical', { /* layout.vertical */
   )
 })
 
-jb.component('layout.horizontal', { /* layout.horizontal */
+jb.component('layout.horizontal', {
   type: 'layout,feature',
   params: [
     {id: 'spacing', as: 'string', defaultValue: 3}
@@ -6059,7 +6079,7 @@ jb.component('layout.horizontal', { /* layout.horizontal */
   )
 })
 
-jb.component('layout.horizontal-fixed-split', { /* layout.horizontalFixedSplit */
+jb.component('layout.horizontalFixedSplit', {
   type: 'layout,feature',
   params: [
     {id: 'leftWidth', as: 'string', defaultValue: '200px', mandatory: true},
@@ -6074,7 +6094,7 @@ jb.component('layout.horizontal-fixed-split', { /* layout.horizontalFixedSplit *
   })
 })
 
-jb.component('layout.horizontal-wrapped', { /* layout.horizontalWrapped */
+jb.component('layout.horizontalWrapped', {
   type: 'layout,feature',
   params: [
     {id: 'spacing', as: 'string', defaultValue: 3}
@@ -6086,7 +6106,7 @@ jb.component('layout.horizontal-wrapped', { /* layout.horizontalWrapped */
   })
 })
 
-jb.component('layout.flex', { /* layout.flex */
+jb.component('layout.flex', {
   type: 'layout,feature',
   params: [
     {id: 'direction', as: 'string', options: ',row,row-reverse,column,column-reverse'},
@@ -6103,7 +6123,7 @@ jb.component('layout.flex', { /* layout.flex */
   })
 })
 
-jb.component('layout.grid', { /* layout.grid */
+jb.component('layout.grid', {
   type: 'layout,feature',
   params: [
     {id: 'columnSizes', as: 'array', templateValue: list('auto', 'auto'), description: 'grid-template-columns, list of lengths'},
@@ -6119,7 +6139,7 @@ jb.component('layout.grid', { /* layout.grid */
   })
 })
 
-jb.component('flex-item.grow', { /* flexItem.grow */
+jb.component('flexItem.grow', {
   type: 'feature',
   category: 'flex-item',
   params: [
@@ -6131,7 +6151,7 @@ jb.component('flex-item.grow', { /* flexItem.grow */
   }
 })
 
-jb.component('flex-item.basis', { /* flexItem.basis */
+jb.component('flexItem.basis', {
   type: 'feature',
   category: 'flex-item',
   params: [
@@ -6143,7 +6163,7 @@ jb.component('flex-item.basis', { /* flexItem.basis */
   }
 })
 
-jb.component('flex-item.align-self', { /* flexItem.alignSelf */
+jb.component('flexItem.alignSelf', {
   type: 'feature',
   category: 'flex-item',
   params: [
@@ -6159,7 +6179,7 @@ jb.component('flex-item.align-self', { /* flexItem.alignSelf */
 
 jb.ns('css')
 
-jb.component('group.htmlTag', { /* group.htmlTag */
+jb.component('group.htmlTag', {
   type: 'group.style',
   params: [
     {id: 'htmlTag', as: 'string', defaultValue: 'section', options: 'div,ul,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label,form'},
@@ -6173,21 +6193,21 @@ jb.component('group.htmlTag', { /* group.htmlTag */
   })
 })
 
-jb.component('group.div', { /* group.div */
+jb.component('group.div', {
   type: 'group.style',
   impl: group.htmlTag(
     'div'
   )
 })
 
-jb.component('group.section', { /* group.section */
+jb.component('group.section', {
   type: 'group.style',
   impl: group.htmlTag(
     'section'
   )
 })
 
-jb.component('group.ul-li', { /* group.ulLi */
+jb.component('group.ulLi', {
   type: 'group.style',
   impl: customStyle({
     template: (cmp,{ctrls},h) => h('ul',{ class: 'jb-itemlist'},
@@ -6198,7 +6218,7 @@ jb.component('group.ul-li', { /* group.ulLi */
   })
 })
 
-jb.component('group.card', { /* group.card */
+jb.component('group.card', {
   type: 'feature',
   category: 'card:100',
   params: [
@@ -6216,7 +6236,7 @@ jb.component('group.card', { /* group.card */
   )
 })
 
-jb.component('group.chip-set', { /* group.chipSet */
+jb.component('group.chipSet', {
   type: 'feature',
   category: 'chip:100',
   params: [
@@ -6228,7 +6248,7 @@ jb.component('group.chip-set', { /* group.chipSet */
   )
 })
 
-jb.component('group.tabs', { /* group.tabs */
+jb.component('group.tabs', {
   type: 'group.style',
   params: [
     {id: 'width', as: 'number'},
@@ -6264,7 +6284,7 @@ jb.component('group.tabs', { /* group.tabs */
   )
 })
 
-jb.component('group.accordion', { /* group.accordion */
+jb.component('group.accordion', {
   type: 'group.style',
   params: [
     {id: 'titleStyle', type: 'button.style', dynamic: true, defaultValue: button.mdc()},
@@ -6305,7 +6325,7 @@ jb.component('group.accordion', { /* group.accordion */
   )
 })
 
-jb.component('group.sections', { /* group.sections */
+jb.component('group.sections', {
   type: 'group.style',
   params: [
     {id: 'titleStyle', type: 'text.style', dynamic: true, defaultValue: header.mdcHeadline5()},
@@ -6332,7 +6352,7 @@ jb.component('group.sections', { /* group.sections */
 ;
 
 jb.ns('mdc.style')
-jb.component('table.plain', { /* table.plain */
+jb.component('table.plain', {
   params: [
     {id: 'hideHeaders', as: 'boolean', type: 'boolean'}
   ],
@@ -6357,7 +6377,7 @@ jb.component('table.plain', { /* table.plain */
   })
 })
 
-jb.component('table.mdc', { /* table.mdc */
+jb.component('table.mdc', {
   type: 'table.style,itemlist.style',
   params: [
     {id: 'hideHeaders', as: 'boolean', type: 'boolean'},
@@ -6395,7 +6415,7 @@ jb.component('table.mdc', { /* table.mdc */
 })
 ;
 
-jb.component('picklist.native', { /* picklist.native */
+jb.component('picklist.native', {
   type: 'picklist.style',
   impl: customStyle({
     template: (cmp,state,h) => h('select', { value: state.databind, onchange: true },
@@ -6409,7 +6429,7 @@ jb.component('picklist.native', { /* picklist.native */
   })
 })
 
-jb.component('picklist.radio', { /* picklist.radio */
+jb.component('picklist.radio', {
   type: 'picklist.style',
   params: [
     {id: 'radioCss', as: 'string', defaultValue: '', description: 'e.g. display: none'},
@@ -6425,7 +6445,7 @@ jb.component('picklist.radio', { /* picklist.radio */
   })
 })
 
-jb.component('picklist.radio-vertical', { /* picklist.radioVertical */
+jb.component('picklist.radioVertical', {
   type: 'picklist.style',
   impl: styleWithFeatures(
     picklist.radio(),
@@ -6433,7 +6453,7 @@ jb.component('picklist.radio-vertical', { /* picklist.radioVertical */
   )
 })
 
-jb.component('picklist.native-md-look-open', { /* picklist.nativeMdLookOpen */
+jb.component('picklist.nativeMdLookOpen', {
   type: 'picklist.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{}, [
@@ -6471,7 +6491,7 @@ jb.component('picklist.native-md-look-open', { /* picklist.nativeMdLookOpen */
   })
 })
 
-jb.component('picklist.native-md-look', { /* picklist.nativeMdLook */
+jb.component('picklist.nativeMdLook', {
   type: 'picklist.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{},h('select',
@@ -6508,7 +6528,7 @@ jb.component('picklist.native-md-look', { /* picklist.nativeMdLook */
   })
 })
 
-jb.component('picklist.label-list', { /* picklist.labelList */
+jb.component('picklist.labelList', {
   type: 'picklist.style',
   params: [
     {id: 'labelStyle', type: 'text.style', dynamic: true, defaultValue: text.span()},
@@ -6531,7 +6551,7 @@ jb.component('picklist.label-list', { /* picklist.labelList */
   )
 })
 
-jb.component('picklist.button-list', { /* picklist.buttonList */
+jb.component('picklist.buttonList', {
   type: 'picklist.style',
   params: [
     {id: 'buttonStyle', type: 'button.style', dynamic: true, defaultValue: button.mdc()},
@@ -6554,7 +6574,7 @@ jb.component('picklist.button-list', { /* picklist.buttonList */
   )
 })
 
-jb.component('picklist.hyperlinks', { /* picklist.hyperlinks */
+jb.component('picklist.hyperlinks', {
   type: 'picklist.style',
   impl: picklist.buttonList({
     buttonStyle: button.href(),
@@ -6563,7 +6583,7 @@ jb.component('picklist.hyperlinks', { /* picklist.hyperlinks */
   })
 })
 
-jb.component('picklist.groups', { /* picklist.groups */
+jb.component('picklist.groups', {
   type: 'picklist.style',
   impl: customStyle({
     template: (cmp,state,h) => h('select', { value: state.databind, onchange: true },
@@ -6581,7 +6601,7 @@ select::-webkit-input-placeholder { color: #999; }`,
 })
 ;
 
-jb.component('property-sheet.titles-left', { /* propertySheet.titlesLeft */
+jb.component('propertySheet.titlesLeft', {
   type: 'group.style',
   params: [
     {id: 'titleStyle', type: 'text.style', defaultValue: styleWithFeatures(text.span(), css.bold()), dynamic: true},
@@ -6599,7 +6619,7 @@ jb.component('property-sheet.titles-left', { /* propertySheet.titlesLeft */
   })
 })
 
-jb.component('property-sheet.titles-above', { /* propertySheet.titlesAbove */
+jb.component('propertySheet.titlesAbove', {
   type: 'group.style',
   params: [
     {id: 'titleStyle', type: 'text.style', defaultValue: styleWithFeatures(text.span(), css.bold()), dynamic: true},
@@ -6621,7 +6641,7 @@ jb.component('property-sheet.titles-above', { /* propertySheet.titlesAbove */
 })
 ;
 
-jb.component('editable-boolean.checkbox', { /* editableBoolean.checkbox */
+jb.component('editableBoolean.checkbox', {
   type: 'editable-boolean.style',
   impl: customStyle({
     template: (cmp,state,h) => h('input', { type: 'checkbox', checked: state.databind, onchange: 'toggle', onkeyup: 'toggle'  }),
@@ -6629,7 +6649,7 @@ jb.component('editable-boolean.checkbox', { /* editableBoolean.checkbox */
   })
 })
 
-jb.component('editable-boolean.checkbox-with-title', { /* editableBoolean.checkboxWithTitle */
+jb.component('editableBoolean.checkboxWithTitle', {
   type: 'editable-boolean.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{}, [h('input', { type: 'checkbox',
@@ -6638,7 +6658,7 @@ jb.component('editable-boolean.checkbox-with-title', { /* editableBoolean.checkb
   })
 })
 
-jb.component('editable-boolean.checkbox-with-label', { /* editableBoolean.checkboxWithLabel */
+jb.component('editableBoolean.checkboxWithLabel', {
   type: 'editable-boolean.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{},[
@@ -6652,7 +6672,7 @@ jb.component('editable-boolean.checkbox-with-label', { /* editableBoolean.checkb
   })
 })
 
-jb.component('editable-boolean.expand-collapse', { /* editableBoolean.expandCollapse */
+jb.component('editableBoolean.expandCollapse', {
   type: 'editable-boolean.style',
   impl: customStyle({
     template: (cmp,{databind},h) => h('i',{class:'material-icons noselect', onclick: 'toggle' },
@@ -6662,7 +6682,7 @@ jb.component('editable-boolean.expand-collapse', { /* editableBoolean.expandColl
   })
 })
 
-jb.component('editable-boolean.mdc-x-v', { /* editableBoolean.mdcXV */
+jb.component('editableBoolean.mdcXV', {
   type: 'editable-boolean.style',
   description: 'two icons',
   params: [
@@ -6681,7 +6701,7 @@ jb.component('editable-boolean.mdc-x-v', { /* editableBoolean.mdcXV */
   })
 })
 
-jb.component('editable-boolean.mdc-slide-toggle', { /* editableBoolean.mdcSlideToggle */
+jb.component('editableBoolean.mdcSlideToggle', {
   type: 'editable-boolean.style',
   params: [
     {id: 'width', as: 'string', defaultValue: 80}

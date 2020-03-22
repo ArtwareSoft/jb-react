@@ -920,7 +920,7 @@ Object.assign(jb, {
 })
 ;
 
-jb.component('call', { /* call */
+jb.component('call', {
   type: 'any',
   params: [
     {id: 'param', as: 'string'}
@@ -969,48 +969,36 @@ jb.pipe = function(context,ptName) {
 	}
 }
 
-jb.component('pipeline', { /* pipeline */
+jb.component('pipeline', {
   type: 'data',
   description: 'map data arrays one after the other',
   params: [
-    {
-      id: 'items',
-      type: 'data,aggregator[]',
-      ignore: true,
-      mandatory: true,
-      composite: true
-    }
+    {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true, description: 'click "=" for functions list'}
   ],
   impl: ctx => jb.pipe(ctx,'$pipeline')
 })
 
-jb.component('pipe', { /* pipe */
+jb.component('pipe', {
   type: 'data',
   description: 'map asynch data arrays',
   params: [
-    {
-      id: 'items',
-      type: 'data,aggregator[]',
-      ignore: true,
-      mandatory: true,
-      composite: true
-    }
+    {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true}
   ],
   impl: ctx => jb.pipe(ctx,'$pipe')
 })
 
-jb.component('data.if', { /* data.if */
+jb.component('data.if', {
   type: 'data',
   macroByValue: true,
   params: [
-    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true},
+    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true, type: 'boolean'},
     {id: 'then', mandatory: true, dynamic: true},
     {id: 'else', dynamic: true, defaultValue: '%%'}
   ],
   impl: (ctx,cond,_then,_else) =>	cond() ? _then() : _else()
 })
 
-jb.component('action.if', { /* action.if */
+jb.component('action.if', {
   type: 'action',
   description: 'if then else',
   macroByValue: true,
@@ -1022,7 +1010,7 @@ jb.component('action.if', { /* action.if */
   impl: (ctx,cond,_then,_else) =>	cond ? _then() : _else()
 })
 
-jb.component('jb-run', { /* jbRun */
+jb.component('jbRun', {
   type: 'action',
   params: [
     {id: 'profile', as: 'string', mandatory: true, description: 'profile name'},
@@ -1031,7 +1019,7 @@ jb.component('jb-run', { /* jbRun */
   impl: (ctx,profile,params) =>	ctx.run(Object.assign({$:profile},params || {}))
 })
 
-jb.component('list', { /* list */
+jb.component('list', {
   type: 'data',
   description: 'also flatten arrays',
   params: [
@@ -1049,17 +1037,16 @@ jb.component('list', { /* list */
 	}
 })
 
-jb.component('first-succeeding', { /* firstSucceeding */
+jb.component('firstSucceeding', {
   type: 'data',
   params: [
-    {id: 'items', type: 'data[]', as: 'array', composite: true},
-//    {id: 'acceptEmptyString', as: 'boolean'}
+    {id: 'items', type: 'data[]', as: 'array', composite: true}
   ],
   impl: function(ctx,items,acceptEmptyString) {
     for(let i=0;i<items.length;i++) {
       const val = jb.val(items[i])
       const isNumber = typeof val === 'number'
-      if ((acceptEmptyString || val !== '') && val != null 
+      if ((acceptEmptyString || val !== '') && val != null
           && (!isNumber || (!isNaN(val)) && val !== Infinity && val !== -Infinity))
         return items[i]
     }
@@ -1069,7 +1056,7 @@ jb.component('first-succeeding', { /* firstSucceeding */
 	}
 })
 
-jb.component('keys', { /* keys */
+jb.component('keys', {
   type: 'data',
   description: 'Object.keys',
   params: [
@@ -1078,7 +1065,7 @@ jb.component('keys', { /* keys */
   impl: (ctx,obj) => Object.keys(obj && typeof obj === 'object' ? obj : {})
 })
 
-jb.component('properties', { /* properties */
+jb.component('properties', {
   description: 'object entries as id,val',
   type: 'data',
   params: [
@@ -1129,7 +1116,7 @@ jb.component('math.sum', {
   })
 )
 
-jb.component('obj-from-entries', {
+jb.component('objFromEntries', {
   description: 'object from entries',
   type: 'aggregator',
   params: [
@@ -1138,7 +1125,7 @@ jb.component('obj-from-entries', {
   impl: (ctx,entries) => jb.objFromEntries(entries)
 })
 
-jb.component('eval-expression', {
+jb.component('evalExpression', {
   description: 'evaluate javascript expression',
   type: 'data',
   params: [
@@ -1151,7 +1138,7 @@ jb.component('eval-expression', {
   }
 })
 
-jb.component('prefix', { /* prefix */
+jb.component('prefix', {
   type: 'data',
   params: [
     {id: 'separator', as: 'string', mandatory: true},
@@ -1161,7 +1148,7 @@ jb.component('prefix', { /* prefix */
 		(text||'').substring(0,text.indexOf(separator))
 })
 
-jb.component('suffix', { /* suffix */
+jb.component('suffix', {
   type: 'data',
   params: [
     {id: 'separator', as: 'string', mandatory: true},
@@ -1171,7 +1158,7 @@ jb.component('suffix', { /* suffix */
 		(text||'').substring(text.lastIndexOf(separator)+separator.length)
 })
 
-jb.component('remove-prefix', { /* removePrefix */
+jb.component('removePrefix', {
   type: 'data',
   params: [
     {id: 'separator', as: 'string', mandatory: true},
@@ -1181,7 +1168,7 @@ jb.component('remove-prefix', { /* removePrefix */
 		text.indexOf(separator) == -1 ? text : text.substring(text.indexOf(separator)+separator.length)
 })
 
-jb.component('remove-suffix', { /* removeSuffix */
+jb.component('removeSuffix', {
   type: 'data',
   params: [
     {id: 'separator', as: 'string', mandatory: true},
@@ -1191,15 +1178,10 @@ jb.component('remove-suffix', { /* removeSuffix */
 		text.lastIndexOf(separator) == -1 ? text : text.substring(0,text.lastIndexOf(separator))
 })
 
-jb.component('remove-suffix-regex', { /* removeSuffixRegex */
+jb.component('removeSuffixRegex', {
   type: 'data',
   params: [
-    {
-      id: 'suffix',
-      as: 'string',
-      mandatory: true,
-      description: 'regular expression. e.g [0-9]*'
-    },
+    {id: 'suffix', as: 'string', mandatory: true, description: 'regular expression. e.g [0-9]*'},
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
   impl: function(context,suffix,text) {
@@ -1209,7 +1191,7 @@ jb.component('remove-suffix-regex', { /* removeSuffixRegex */
 	}
 })
 
-jb.component('write-value', { /* writeValue */
+jb.component('writeValue', {
   type: 'action',
   params: [
     {id: 'to', as: 'ref', mandatory: true},
@@ -1228,12 +1210,12 @@ jb.component('property', {
   description: 'navigate/select/path property of object',
   params: [
     {id: 'prop', as: 'string', mandatory: true},
-    {id: 'obj', defaultValue: '%%' },
+    {id: 'obj', defaultValue: '%%'}
   ],
   impl: (ctx,prop,obj) =>	jb.objectProperty(obj,prop,ctx)
 })
 
-jb.component('index-of', { /* indexOf */
+jb.component('indexOf', {
   params: [
     {id: 'array', as: 'array', mandatory: true},
     {id: 'item', as: 'single', mandatory: true}
@@ -1241,16 +1223,16 @@ jb.component('index-of', { /* indexOf */
   impl: (ctx,array,item) => array.indexOf(item)
 })
 
-jb.component('add-to-array', { /* addToArray */
+jb.component('addToArray', {
   type: 'action',
   params: [
     {id: 'array', as: 'ref', mandatory: true},
-    {id: 'toAdd', as: 'array', mandatory: true },
+    {id: 'toAdd', as: 'array', mandatory: true}
   ],
   impl: (ctx,array,toAdd) => jb.push(array, JSON.parse(JSON.stringify(toAdd)),ctx)
 })
 
-jb.component('splice', { /* splice */
+jb.component('splice', {
   type: 'action',
   params: [
     {id: 'array', as: 'ref', mandatory: true},
@@ -1262,7 +1244,7 @@ jb.component('splice', { /* splice */
 		jb.splice(array,[[fromIndex,noOfItemsToRemove,...itemsToAdd]],ctx)
 })
 
-jb.component('remove-from-array', { /* removeFromArray */
+jb.component('removeFromArray', {
   type: 'action',
   params: [
     {id: 'array', as: 'ref', mandatory: true},
@@ -1276,7 +1258,7 @@ jb.component('remove-from-array', { /* removeFromArray */
 	}
 })
 
-jb.component('toggle-boolean-value', { /* toggleBooleanValue */
+jb.component('toggleBooleanValue', {
   type: 'action',
   params: [
     {id: 'of', as: 'ref'}
@@ -1284,22 +1266,11 @@ jb.component('toggle-boolean-value', { /* toggleBooleanValue */
   impl: (ctx,_of) => jb.writeValue(_of,jb.val(_of) ? false : true,ctx)
 })
 
-jb.component('slice', { /* slice */
+jb.component('slice', {
   type: 'aggregator',
   params: [
-    {
-      id: 'start',
-      as: 'number',
-      defaultValue: 0,
-      description: '0-based index',
-      mandatory: true
-    },
-    {
-      id: 'end',
-      as: 'number',
-      mandatory: true,
-      description: '0-based index of where to end the selection (not including itself)'
-    }
+    {id: 'start', as: 'number', defaultValue: 0, description: '0-based index', mandatory: true},
+    {id: 'end', as: 'number', mandatory: true, description: '0-based index of where to end the selection (not including itself)'}
   ],
   impl: function({data},start,end) {
 		if (!data || !data.slice) return null;
@@ -1307,7 +1278,7 @@ jb.component('slice', { /* slice */
 	}
 })
 
-jb.component('sort', { /* sort */
+jb.component('sort', {
   type: 'aggregator',
   params: [
     {id: 'propertyName', as: 'string', description: 'sort by property inside object'},
@@ -1328,17 +1299,17 @@ jb.component('sort', { /* sort */
 	}
 })
 
-jb.component('first', { /* first */
+jb.component('first', {
   type: 'aggregator',
   impl: ({data}) => data[0]
 })
 
-jb.component('last', { /* last */
+jb.component('last', {
   type: 'aggregator',
   impl: ({data}) => data.slice(-1)[0]
 })
 
-jb.component('count', { /* count */
+jb.component('count', {
   type: 'aggregator',
   description: 'length, size of array',
   params: [
@@ -1347,7 +1318,7 @@ jb.component('count', { /* count */
   impl: (ctx,items) => items.length
 })
 
-jb.component('reverse', { /* reverse */
+jb.component('reverse', {
   type: 'aggregator',
   params: [
     {id: 'items', as: 'array', defaultValue: '%%'}
@@ -1355,7 +1326,7 @@ jb.component('reverse', { /* reverse */
   impl: (ctx,items) => items.reverse()
 })
 
-jb.component('sample', { /* sample */
+jb.component('sample', {
   type: 'aggregator',
   params: [
     {id: 'size', as: 'number', defaultValue: 300},
@@ -1364,7 +1335,7 @@ jb.component('sample', { /* sample */
   impl: (ctx,size,items) =>	items.filter((x,i)=>i % (Math.floor(items.length/size) ||1) == 0)
 })
 
-jb.component('obj', { /* obj */
+jb.component('obj', {
   description: 'build object (dictionary) from props',
   params: [
     {id: 'props', type: 'prop[]', mandatory: true, sugar: true}
@@ -1373,7 +1344,7 @@ jb.component('obj', { /* obj */
 		jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)]))
 })
 
-jb.component('extend', { /* extend */
+jb.component('extend', {
   description: 'assign and extend with calculated properties',
   params: [
     {id: 'props', type: 'prop[]', mandatory: true, defaultValue: []}
@@ -1383,7 +1354,7 @@ jb.component('extend', { /* extend */
 })
 jb.component('assign', jb.comps.extend)
 
-jb.component('extend-with-index', { /* extendWithIndex */
+jb.component('extendWithIndex', {
   type: 'aggregator',
   description: 'extend with calculated properties. %$index% is available ',
   params: [
@@ -1394,23 +1365,23 @@ jb.component('extend-with-index', { /* extendWithIndex */
 			Object.assign({}, item, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx.setData(item).setVars({index:i})),p.type)]))))
 })
 
-jb.component('prop', { /* prop */
+jb.component('prop', {
   type: 'prop',
   macroByValue: true,
   params: [
     {id: 'title', as: 'string', mandatory: true},
     {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: ''},
-    {id: 'type', as: 'string', options: 'string,number,boolean,object,array', defaultValue: 'string' }
+    {id: 'type', as: 'string', options: 'string,number,boolean,object,array', defaultValue: 'string'}
   ],
   impl: ctx => ctx.params
 })
 
-jb.component('ref-prop', { /* refProp */
+jb.component('refProp', {
   type: 'prop',
   description: 'value by reference allows to change or watch the value',
   params: [
     {id: 'title', as: 'string', mandatory: true},
-    {id: 'val', dynamic: true, as: 'ref', mandatory: true },
+    {id: 'val', dynamic: true, as: 'ref', mandatory: true}
   ],
   impl: ctx => ({ ...ctx.params, type: 'ref' })
 })
@@ -1426,7 +1397,7 @@ jb.component('pipeline.var', {
 })
 
 
-jb.component('Var', { /* Var */
+jb.component('Var', {
   type: 'var,system',
   isSystem: true,
   params: [
@@ -1437,7 +1408,7 @@ jb.component('Var', { /* Var */
 		Object.assign(result,{ $vars: Object.assign(result.$vars || {}, { [self.name]: self.val }) })
 })
 
-jb.component('remark', { /* remark */
+jb.component('remark', {
   type: 'system',
   isSystem: true,
   params: [
@@ -1447,17 +1418,17 @@ jb.component('remark', { /* remark */
 		Object.assign(result,{ remark: self.remark })
 })
 
-jb.component('If', { /* If */
+jb.component('If', {
   macroByValue: true,
   params: [
-    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true},
+    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true, type: 'boolean'},
     {id: 'then', dynamic: true},
     {id: 'Else', dynamic: true}
   ],
   impl: (ctx,cond,_then,_else) =>	cond() ? _then() : _else()
 })
 
-jb.component('not', { /* not */
+jb.component('not', {
   type: 'boolean',
   params: [
     {id: 'of', type: 'boolean', as: 'boolean', mandatory: true, composite: true}
@@ -1465,7 +1436,7 @@ jb.component('not', { /* not */
   impl: (context, of) => !of
 })
 
-jb.component('and', { /* and */
+jb.component('and', {
   description: 'logical and',
   type: 'boolean',
   params: [
@@ -1482,7 +1453,7 @@ jb.component('and', { /* and */
 	}
 })
 
-jb.component('or', { /* or */
+jb.component('or', {
   description: 'logical or',
   type: 'boolean',
   params: [
@@ -1499,7 +1470,7 @@ jb.component('or', { /* or */
 	}
 })
 
-jb.component('between', { /* between */
+jb.component('between', {
   description: 'checks if number is in range',
   type: 'boolean',
   params: [
@@ -1510,7 +1481,7 @@ jb.component('between', { /* between */
   impl: (ctx,from,to,val) => val >= from && val <= to
 })
 
-jb.component('contains', { /* contains */
+jb.component('contains', {
   type: 'boolean',
   params: [
     {id: 'text', type: 'data[]', as: 'array', mandatory: true},
@@ -1528,7 +1499,7 @@ jb.component('contains', { /* contains */
 	}
 })
 
-jb.component('not-contains', { /* notContains */
+jb.component('notContains', {
   type: 'boolean',
   params: [
     {id: 'text', type: 'data[]', as: 'array', mandatory: true},
@@ -1539,7 +1510,7 @@ jb.component('not-contains', { /* notContains */
   )
 })
 
-jb.component('starts-with', { /* startsWith */
+jb.component('startsWith', {
   description: 'begins with, includes, contains',
   type: 'boolean',
   params: [
@@ -1549,7 +1520,7 @@ jb.component('starts-with', { /* startsWith */
   impl: (context,startsWith,text) => text.indexOf(startsWith) == 0
 })
 
-jb.component('ends-with', { /* endsWith */
+jb.component('endsWith', {
   description: 'includes, contains',
   type: 'boolean',
   params: [
@@ -1560,7 +1531,7 @@ jb.component('ends-with', { /* endsWith */
 })
 
 
-jb.component('filter', { /* filter */
+jb.component('filter', {
   type: 'aggregator',
   params: [
     {id: 'filter', type: 'boolean', as: 'boolean', dynamic: true, mandatory: true}
@@ -1568,38 +1539,38 @@ jb.component('filter', { /* filter */
   impl: (context,filter) =>	jb.toarray(context.data).filter(item =>	filter(context,item))
 })
 
-jb.component('match-regex', { /* matchRegex */
+jb.component('matchRegex', {
   description: 'validation with regular expression',
   type: 'boolean',
   params: [
     {id: 'regex', as: 'string', mandatory: true, description: 'e.g: [a-zA-Z]*'},
-    {id: 'text', as: 'string', defaultValue: '%%'},
+    {id: 'text', as: 'string', defaultValue: '%%'}
   ],
   impl: (ctx,regex,text) => text.match(new RegExp(regex))
 })
 
-jb.component('to-uppercase', { /* toUppercase */
+jb.component('toUppercase', {
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
   impl: (ctx,text) =>	text.toUpperCase()
 })
 
-jb.component('to-lowercase', { /* toLowercase */
+jb.component('toLowercase', {
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
   impl: (ctx,text) =>	text.toLowerCase()
 })
 
-jb.component('capitalize', { /* capitalize */
+jb.component('capitalize', {
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
   impl: (ctx,text) =>	text.charAt(0).toUpperCase() + text.slice(1)
 })
 
-jb.component('join', { /* join */
+jb.component('join', {
   params: [
     {id: 'separator', as: 'string', defaultValue: ',', mandatory: true},
     {id: 'prefix', as: 'string'},
@@ -1618,7 +1589,7 @@ jb.component('join', { /* join */
 	}
 })
 
-jb.component('unique', { /* unique */
+jb.component('unique', {
   params: [
     {id: 'id', as: 'string', dynamic: true, defaultValue: '%%'},
     {id: 'items', as: 'array', defaultValue: '%%'}
@@ -1630,7 +1601,7 @@ jb.component('unique', { /* unique */
 	}
 })
 
-jb.component('log', { /* log */
+jb.component('log', {
   params: [
     {id: 'obj', as: 'single', defaultValue: '%%'}
   ],
@@ -1646,14 +1617,14 @@ jb.component('log', { /* log */
 	}
 })
 
-jb.component('asIs', { /* asIs */
+jb.component('asIs', {
   params: [
     {id: '$asIs', ignore: true}
   ],
   impl: ctx => context.profile.$asIs
 })
 
-jb.component('object', { /* object */
+jb.component('object', {
   impl: function(context) {
 		let result = {};
 		const obj = context.profile.$object || context.profile;
@@ -1667,7 +1638,7 @@ jb.component('object', { /* object */
 	}
 })
 
-jb.component('json.stringify', { /* json.stringify */
+jb.component('json.stringify', {
   params: [
     {id: 'value', defaultValue: '%%'},
     {id: 'space', as: 'string', description: 'use space or tab to make pretty output'}
@@ -1675,7 +1646,7 @@ jb.component('json.stringify', { /* json.stringify */
   impl: (context,value,space) => JSON.stringify(jb.val(value),null,space)
 })
 
-jb.component('json.parse', { /* json.parse */
+jb.component('json.parse', {
   params: [
     {id: 'text', as: 'string'}
   ],
@@ -1688,11 +1659,11 @@ jb.component('json.parse', { /* json.parse */
 	}
 })
 
-jb.component('split', { /* split */
+jb.component('split', {
   description: 'breaks string using separator',
   type: 'data',
   params: [
-    {id: 'separator', as: 'string', defaultValue: ',', description: 'E.g., "," or "<a>"' },
+    {id: 'separator', as: 'string', defaultValue: ',', description: 'E.g., \",\" or \"<a>\"'},
     {id: 'text', as: 'string', defaultValue: '%%'},
     {id: 'part', options: ',first,second,last,but first,but last'}
   ],
@@ -1709,7 +1680,7 @@ jb.component('split', { /* split */
 	}
 })
 
-jb.component('replace', { /* replace */
+jb.component('replace', {
   type: 'data',
   params: [
     {id: 'find', as: 'string', mandatory: true},
@@ -1726,7 +1697,7 @@ jb.component('replace', { /* replace */
 	}
 })
 
-jb.component('touch', { /* touch */
+jb.component('touch', {
   description: 'change the value of a watchable variable to acticate its watchers',
   type: 'action',
   params: [
@@ -1738,7 +1709,7 @@ jb.component('touch', { /* touch */
 	}
 })
 
-jb.component('isNull', { /* isNull */
+jb.component('isNull', {
   description: 'is null or undefined',
   type: 'boolean',
   params: [
@@ -1747,7 +1718,7 @@ jb.component('isNull', { /* isNull */
   impl: (ctx, obj) => jb.val(obj) == null
 })
 
-jb.component('isEmpty', { /* isEmpty */
+jb.component('isEmpty', {
   type: 'boolean',
   params: [
     {id: 'item', as: 'single', defaultValue: '%%'}
@@ -1755,7 +1726,7 @@ jb.component('isEmpty', { /* isEmpty */
   impl: (ctx, item) => !item || (Array.isArray(item) && item.length == 0)
 })
 
-jb.component('notEmpty', { /* notEmpty */
+jb.component('notEmpty', {
   type: 'boolean',
   params: [
     {id: 'item', as: 'single', defaultValue: '%%'}
@@ -1763,7 +1734,7 @@ jb.component('notEmpty', { /* notEmpty */
   impl: (ctx, item) => item && !(Array.isArray(item) && item.length == 0)
 })
 
-jb.component('equals', { /* equals */
+jb.component('equals', {
   type: 'boolean',
   params: [
     {id: 'item1', as: 'single', mandatory: true},
@@ -1772,7 +1743,7 @@ jb.component('equals', { /* equals */
   impl: (ctx, item1, item2) => item1 == item2
 })
 
-jb.component('not-equals', { /* notEquals */
+jb.component('notEquals', {
   type: 'boolean',
   params: [
     {id: 'item1', as: 'single', mandatory: true},
@@ -1781,7 +1752,7 @@ jb.component('not-equals', { /* notEquals */
   impl: (ctx, item1, item2) => item1 != item2
 })
 
-jb.component('run-actions', { /* runActions */
+jb.component('runActions', {
   type: 'action',
   params: [
     {id: 'actions', type: 'action[]', ignore: true, composite: true, mandatory: true}
@@ -1797,18 +1768,13 @@ jb.component('run-actions', { /* runActions */
 	}
 })
 
-jb.component('run-action-on-items', { /* runActionOnItems */
+jb.component('runActionOnItems', {
   type: 'action',
   macroByValue: true,
   params: [
     {id: 'items', as: 'ref[]', mandatory: true},
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
-    {
-      id: 'notifications',
-      as: 'string',
-      options: 'wait for all actions,no notifications',
-      description: 'notification for watch-ref, defualt behavior is after each action'
-    }
+    {id: 'notifications', as: 'string', options: 'wait for all actions,no notifications', description: 'notification for watch-ref, defualt behavior is after each action'}
   ],
   impl: (ctx,items,action,notifications) => {
 		if (notifications && jb.mainWatchableHandler) jb.mainWatchableHandler.startTransaction()
@@ -1818,7 +1784,7 @@ jb.component('run-action-on-items', { /* runActionOnItems */
 	}
 })
 
-jb.component('delay', { /* delay */
+jb.component('delay', {
   type: 'action,data',
   params: [
     {id: 'mSec', as: 'number', defaultValue: 1}
@@ -1826,7 +1792,7 @@ jb.component('delay', { /* delay */
   impl: (ctx,mSec) => jb.delay(mSec).then(() => ctx.data)
 })
 
-jb.component('on-next-timer', { /* onNextTimer */
+jb.component('onNextTimer', {
   description: 'run action after delay',
   type: 'action',
   params: [
@@ -1838,14 +1804,10 @@ jb.component('on-next-timer', { /* onNextTimer */
 			action())
 })
 
-jb.component('extract-prefix', { /* extractPrefix */
+jb.component('extractPrefix', {
   type: 'data',
   params: [
-    {
-      id: 'separator',
-      as: 'string',
-      description: '/w- alphnumberic, /s- whitespace, ^- beginline, $-endline'
-    },
+    {id: 'separator', as: 'string', description: '/w- alphnumberic, /s- whitespace, ^- beginline, $-endline'},
     {id: 'text', as: 'string', defaultValue: '%%'},
     {id: 'regex', type: 'boolean', as: 'boolean', description: 'separator is regex'},
     {id: 'keepSeparator', type: 'boolean', as: 'boolean'}
@@ -1861,14 +1823,10 @@ jb.component('extract-prefix', { /* extractPrefix */
 	}
 })
 
-jb.component('extract-suffix', { /* extractSuffix */
+jb.component('extractSuffix', {
   type: 'data',
   params: [
-    {
-      id: 'separator',
-      as: 'string',
-      description: '/w- alphnumberic, /s- whitespace, ^- beginline, $-endline'
-    },
+    {id: 'separator', as: 'string', description: '/w- alphnumberic, /s- whitespace, ^- beginline, $-endline'},
     {id: 'text', as: 'string', defaultValue: '%%'},
     {id: 'regex', type: 'boolean', as: 'boolean', description: 'separator is regex'},
     {id: 'keepSeparator', type: 'boolean', as: 'boolean'}
@@ -1884,7 +1842,7 @@ jb.component('extract-suffix', { /* extractSuffix */
 	}
 })
 
-jb.component('range', { /* range */
+jb.component('range', {
   description: 'returns a range of number, generator, numerator, numbers, index',
   type: 'data',
   params: [
@@ -1894,7 +1852,7 @@ jb.component('range', { /* range */
   impl: (ctx,from,to) => Array.from(Array(to-from+1).keys()).map(x=>x+from)
 })
 
-jb.component('type-of', { /* typeOf */
+jb.component('typeOf', {
   type: 'data',
   params: [
     {id: 'obj', defaultValue: '%%'}
@@ -1905,7 +1863,7 @@ jb.component('type-of', { /* typeOf */
 	}
 })
 
-jb.component('class-name', { /* className */
+jb.component('className', {
   type: 'data',
   params: [
     {id: 'obj', defaultValue: '%%'}
@@ -1916,7 +1874,7 @@ jb.component('class-name', { /* className */
 	}
 })
 
-jb.component('is-of-type', { /* isOfType */
+jb.component('isOfType', {
   type: 'boolean',
   params: [
     {id: 'type', as: 'string', mandatory: true, description: 'e.g., string,boolean,array'},
@@ -1929,7 +1887,7 @@ jb.component('is-of-type', { /* isOfType */
   }
 })
 
-jb.component('in-group', { /* inGroup */
+jb.component('inGroup', {
   type: 'boolean',
   params: [
     {id: 'group', as: 'array', mandatory: true},
@@ -1940,13 +1898,13 @@ jb.component('in-group', { /* inGroup */
 
 jb.urlProxy = (typeof window !== 'undefined' && location.href.match(/^[^:]*/)[0] || 'http') + '://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
 jb.cacheKiller = 0
-jb.component('http.get', { /* http.get */
+jb.component('http.get', {
   type: 'data,action',
   description: 'fetch data from external url',
   params: [
     {id: 'url', as: 'string'},
     {id: 'json', as: 'boolean', description: 'convert result to json', type: 'boolean'},
-    {id: 'useProxy', as: 'string', options: ',localhost-server,cloud'},
+    {id: 'useProxy', as: 'string', options: ',localhost-server,cloud'}
   ],
   impl: (ctx,_url,_json,useProxy) => {
 		if (ctx.probe)
@@ -1965,24 +1923,24 @@ jb.component('http.get', { /* http.get */
 	}
 })
 
-jb.component('http.fetch', { /* http.fetch */
+jb.component('http.fetch', {
   type: 'data,action',
   description: 'fetch, get or post data from external url',
   params: [
     {id: 'url', as: 'string', mandatory: true},
     {id: 'method', as: 'string', options: 'GET,POST', defaultValue: 'GET'},
-    {id: 'headers', as: 'single', templateValue: obj(prop('Content-Type','application/json; charset=UTF-8'))},
+    {id: 'headers', as: 'single', templateValue: obj(prop('Content-Type', 'application/json; charset=UTF-8'))},
     {id: 'body', as: 'single'},
     {id: 'json', as: 'boolean', description: 'convert result to json', type: 'boolean'},
-    {id: 'useProxy', as: 'string', options: ',localhost-server,cloud,cloud-test-local'},
+    {id: 'useProxy', as: 'string', options: ',localhost-server,cloud,cloud-test-local'}
   ],
   impl: (ctx,url,method,headers,body,json,proxy) => {
     const reqObj = {
       url,
       method,
-      headers: headers || {}, 
+      headers: headers || {},
       mode: 'cors',
-      body: (typeof body == 'string' || body == null) ? body : JSON.stringify(body) 
+      body: (typeof body == 'string' || body == null) ? body : JSON.stringify(body)
     }
 
     const reqStr = encodeURIComponent(JSON.stringify(reqObj))
@@ -2003,30 +1961,24 @@ jb.component('http.fetch', { /* http.fetch */
 	}
 })
 
-jb.component('isRef', { /* isRef */
+jb.component('isRef', {
   params: [
     {id: 'obj', mandatory: true}
   ],
   impl: (ctx,obj) => jb.isRef(obj)
 })
 
-jb.component('asRef', { /* asRef */
+jb.component('asRef', {
   params: [
     {id: 'obj', mandatory: true}
   ],
   impl: (ctx,obj) => jb.asRef(obj)
 })
 
-jb.component('data.switch', { /* data.switch */
+jb.component('data.switch', {
   macroByValue: false,
   params: [
-    {
-      id: 'cases',
-      type: 'data.switch-case[]',
-      as: 'array',
-      mandatory: true,
-      defaultValue: []
-    },
+    {id: 'cases', type: 'data.switch-case[]', as: 'array', mandatory: true, defaultValue: []},
     {id: 'default', dynamic: true}
   ],
   impl: (ctx,cases,defaultValue) => {
@@ -2037,7 +1989,7 @@ jb.component('data.switch', { /* data.switch */
 	}
 })
 
-jb.component('data.case', { /* data.case */
+jb.component('data.case', {
   type: 'data.switch-case',
   singleInType: true,
   params: [
@@ -2047,16 +1999,10 @@ jb.component('data.case', { /* data.case */
   impl: ctx => ctx.params
 })
 
-jb.component('action.switch', { /* action.switch */
+jb.component('action.switch', {
   type: 'action',
   params: [
-    {
-      id: 'cases',
-      type: 'action.switch-case[]',
-      as: 'array',
-      mandatory: true,
-      defaultValue: []
-    },
+    {id: 'cases', type: 'action.switch-case[]', as: 'array', mandatory: true, defaultValue: []},
     {id: 'defaultAction', type: 'action', dynamic: true}
   ],
   impl: (ctx,cases,defaultAction) => {
@@ -2067,7 +2013,7 @@ jb.component('action.switch', { /* action.switch */
   }
 })
 
-jb.component('action.switch-case', { /* action.switchCase */
+jb.component('action.switchCase', {
   type: 'action.switch-case',
   singleInType: true,
   params: [
@@ -2077,22 +2023,22 @@ jb.component('action.switch-case', { /* action.switchCase */
   impl: ctx => ctx.params
 })
 
-jb.component('format-date', {
+jb.component('formatDate', {
   description: 'using toLocaleDateString',
   params: [
     {id: 'date', defaultValue: '%%', description: 'Date value'},
-    {id: 'dateStyle', as: 'string', options: 'full,long,medium,short' },
-    {id: 'timeStyle', as: 'string', options: 'full,long,medium,short' },
-    {id: 'weekday', as: 'string', options: 'long,short,narrow' },
-    {id: 'year', as: 'string', options: 'numeric,2-digit' },
-    {id: 'month', as: 'string', options: 'numeric,2-digit,long,short,narrow' },
-    {id: 'day', as: 'string', options: 'numeric,2-digit' },
-    {id: 'hour', as: 'string', options: 'numeric,2-digit' },
-    {id: 'minute', as: 'string', options: 'numeric,2-digit' },
-    {id: 'second', as: 'string', options: 'numeric,2-digit' },
-    {id: 'timeZoneName', as: 'string', options: 'long,short' },
+    {id: 'dateStyle', as: 'string', options: 'full,long,medium,short'},
+    {id: 'timeStyle', as: 'string', options: 'full,long,medium,short'},
+    {id: 'weekday', as: 'string', options: 'long,short,narrow'},
+    {id: 'year', as: 'string', options: 'numeric,2-digit'},
+    {id: 'month', as: 'string', options: 'numeric,2-digit,long,short,narrow'},
+    {id: 'day', as: 'string', options: 'numeric,2-digit'},
+    {id: 'hour', as: 'string', options: 'numeric,2-digit'},
+    {id: 'minute', as: 'string', options: 'numeric,2-digit'},
+    {id: 'second', as: 'string', options: 'numeric,2-digit'},
+    {id: 'timeZoneName', as: 'string', options: 'long,short'}
   ],
-  impl: (ctx,date) => new Date(date).toLocaleDateString(undefined, jb.objFromEntries(jb.entries(ctx.params).filter(e=>e[1]))),
+  impl: (ctx,date) => new Date(date).toLocaleDateString(undefined, jb.objFromEntries(jb.entries(ctx.params).filter(e=>e[1])))
 })
 
 jb.exec = (...args) => new jb.jbCtx().run(...args)
@@ -3379,7 +3325,7 @@ jb.ui.extraWatchableHandler = (resources,oldHandler) => {
 
 jb.ui.resourceChange = () => jb.mainWatchableHandler.resourceChange;
 
-jb.component('run-transaction', { /* runTransaction */
+jb.component('runTransaction', {
   type: 'action',
   params: [
     {id: 'actions', type: 'action[]', dynamic: true, composite: true, mandatory: true, defaultValue: []},
@@ -4206,8 +4152,8 @@ Object.assign(jb.ui,{
     ctxDictOfElem: elem => {
       const runningWorkerId = jb.frame.workerId && jb.frame.workerId()
       const workerIdAtElem = elem.getAttribute('worker')
-      const _jb = workerIdAtElem == 'preview' ? jb.studio.previewjb 
-        : !runningWorkerId && workerIdAtElem ? jb.ui.workers[elem.getAttribute('worker')] 
+      const _jb = workerIdAtElem == 'preview' ? jb.studio.previewjb
+        : !runningWorkerId && workerIdAtElem ? jb.ui.workers[elem.getAttribute('worker')]
         : jb
       return _jb.ctxDictionary
     },
@@ -4251,7 +4197,7 @@ Object.assign(jb.ui,{
       const {pipe, takeUntil,fromPromise,subject} = jb.callbag
       const keydown_src = subject();
       cmp.base.onkeydown = e => {
-        if ([38,40,13,27].indexOf(e.keyCode) != -1) { 
+        if ([38,40,13,27].indexOf(e.keyCode) != -1) {
           keydown_src.next(e);
           return false;
         }
@@ -4273,7 +4219,7 @@ Object.assign(jb.ui, {
     },
     offset(el) { return el.getBoundingClientRect() },
     parents(el,{includeSelf} = {}) {
-        const res = [] 
+        const res = []
         el = includeSelf ? el : el && el.parentNode;
         while(el) {
           res.push(el);
@@ -4391,7 +4337,7 @@ jb.objectDiff = function(newObj, orig) {
 
 // ****************** components ****************
 
-jb.component('custom-style', { /* customStyle */
+jb.component('customStyle', {
   typePattern: t => /\.style$/.test(t),
   category: 'advanced:10,all:10',
   params: [
@@ -4407,7 +4353,7 @@ jb.component('custom-style', { /* customStyle */
     })
 })
 
-jb.component('style-by-control', { /* styleByControl */
+jb.component('styleByControl', {
   typePattern: t => /\.style$/.test(t),
   category: 'advanced:10,all:20',
   params: [
@@ -4417,7 +4363,7 @@ jb.component('style-by-control', { /* styleByControl */
   impl: (ctx,control,modelVar) => control(ctx.setVar(modelVar,ctx.vars.$model))
 })
 
-jb.component('style-with-features', { /* styleWithFeatures */
+jb.component('styleWithFeatures', {
   typePattern: t => /\.style$/.test(t),
   description: 'customize, add more features to style',
   category: 'advanced:10,all:20',
@@ -4428,7 +4374,7 @@ jb.component('style-with-features', { /* styleWithFeatures */
   impl: (ctx,style,features) => style && {...style,featuresOptions: (style.featuresOptions || []).concat(features())}
 })
 
-jb.component('control-with-features', { /* controlWithFeatures */
+jb.component('controlWithFeatures', {
   type: 'control',
   description: 'customize, add more features to control',
   category: 'advanced:10,all:20',
@@ -4938,7 +4884,7 @@ jb.component('feature.byCondition', {
 const withUnits = jb.ui.withUnits
 const fixCssLine = jb.ui.fixCssLine
 
-jb.component('css', { /* css */
+jb.component('css', {
   description: 'e.g. {color: red; width: 20px} or div>.myClas {color: red} ',
   type: 'feature,dialog-feature',
   params: [
@@ -4947,7 +4893,7 @@ jb.component('css', { /* css */
   impl: (ctx,css) => ({css: fixCssLine(css)})
 })
 
-jb.component('css.dynamic', { /* css.dynamic */
+jb.component('css.dynamic', {
   description: 'recalc the css on refresh/watchRef. e.g. {color: %$color%}',
   type: 'feature,dialog-feature',
   params: [
@@ -4956,7 +4902,7 @@ jb.component('css.dynamic', { /* css.dynamic */
   impl: (ctx,css) => ({dynamicCss: ctx2 => css(ctx2)})
 })
 
-jb.component('css.with-condition', { /* css.withCondition */
+jb.component('css.withCondition', {
   description: 'css with dynamic condition. e.g. .myclz {color: red}',
   type: 'feature,dialog-feature',
   params: [
@@ -4966,7 +4912,7 @@ jb.component('css.with-condition', { /* css.withCondition */
   impl: (ctx,cond,css) => ({dynamicCss: ctx2 => cond(ctx2) ? fixCssLine(css(ctx2)) : ''})
 })
 
-jb.component('css.class', { /* css.class */
+jb.component('css.class', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'class', mandatory: true, as: 'string'}
@@ -4974,7 +4920,7 @@ jb.component('css.class', { /* css.class */
   impl: (ctx,clz) => ({class: clz})
 })
 
-jb.component('css.width', { /* css.width */
+jb.component('css.width', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'width', mandatory: true, as: 'string', description: 'e.g. 200, 100%, calc(100% - 100px)'},
@@ -4986,7 +4932,7 @@ jb.component('css.width', { /* css.width */
     ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}width: ${withUnits(width)} ${overflow ? '; overflow-x:' + overflow + ';' : ''} }`})
 })
 
-jb.component('css.height', { /* css.height */
+jb.component('css.height', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'height', mandatory: true, as: 'string', description: 'e.g. 200, 100%, calc(100% - 100px)'},
@@ -4998,7 +4944,7 @@ jb.component('css.height', { /* css.height */
     ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}height: ${withUnits(height)} ${overflow ? '; overflow-y:' + overflow : ''} }`})
 })
 
-jb.component('css.opacity', { /* css.opacity */
+jb.component('css.opacity', {
   type: 'feature',
   params: [
     {id: 'opacity', mandatory: true, as: 'string', description: '0-1'},
@@ -5008,7 +4954,7 @@ jb.component('css.opacity', { /* css.opacity */
     ({css: `${ctx.params.selector} { opacity: ${opacity} }`})
 })
 
-jb.component('css.padding', { /* css.padding */
+jb.component('css.padding', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'top', as: 'string', description: 'e.g. 20, 20%, 0.4em'},
@@ -5026,7 +4972,7 @@ jb.component('css.padding', { /* css.padding */
   }
 })
 
-jb.component('css.margin', { /* css.margin */
+jb.component('css.margin', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'top', as: 'string', description: 'e.g. 20, 20%, 0.4em, -20'},
@@ -5044,7 +4990,7 @@ jb.component('css.margin', { /* css.margin */
   }
 })
 
-jb.component('css.margin-all-sides', {
+jb.component('css.marginAllSides', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'value', as: 'string', mandatory: true, description: 'e.g. 20, 20%, 0.4em'},
@@ -5053,18 +4999,18 @@ jb.component('css.margin-all-sides', {
   impl: (ctx,value,selector) => ({css: `${selector} margin: ${withUnits(value)}`})
 })
 
-jb.component('css.margin-vertical-horizontal', {
+jb.component('css.marginVerticalHorizontal', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'vertical', as: 'string', mandatory: true},
     {id: 'horizontal', as: 'string', mandatory: true},
     {id: 'selector', as: 'string'}
   ],
-  impl: (ctx,vertical,horizontal,selector) => 
+  impl: (ctx,vertical,horizontal,selector) =>
     ({css: `${selector} margin: ${withUnits(vertical)+ ' ' +withUnits(horizontal)}`})
 })
 
-jb.component('css.transform-rotate', { /* css.transformRotate */
+jb.component('css.transformRotate', {
   type: 'feature',
   params: [
     {id: 'angle', as: 'string', description: '0-360'},
@@ -5073,7 +5019,7 @@ jb.component('css.transform-rotate', { /* css.transformRotate */
   impl: (ctx,angle,selector) => ({css: `${selector} {transform:rotate(${angle}deg)}`})
 })
 
-jb.component('css.color', { /* css.color */
+jb.component('css.color', {
   type: 'feature',
   params: [
     {id: 'color', as: 'string'},
@@ -5089,7 +5035,7 @@ jb.component('css.color', { /* css.color */
   }
 })
 
-jb.component('css.transform-scale', { /* css.transformScale */
+jb.component('css.transformScale', {
   type: 'feature',
   params: [
     {id: 'x', as: 'string', description: '0-1'},
@@ -5099,17 +5045,17 @@ jb.component('css.transform-scale', { /* css.transformScale */
   impl: ctx => ({css: `${ctx.params.selector} {transform:scale(${ctx.params.x},${ctx.params.y})}`})
 })
 
-jb.component('css.bold', { /* css.bold */
+jb.component('css.bold', {
   type: 'feature',
   impl: ctx => ({css: `{font-weight: bold}`})
 })
 
-jb.component('css.underline', { /* css.underline */
+jb.component('css.underline', {
   type: 'feature',
   impl: ctx => ({css: `{text-decoration: underline}`})
 })
 
-jb.component('css.box-shadow', { /* css.boxShadow */
+jb.component('css.boxShadow', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'blurRadius', as: 'string', templateValue: '5'},
@@ -5127,7 +5073,7 @@ jb.component('css.box-shadow', { /* css.boxShadow */
   }
 })
 
-jb.component('css.border', { /* css.border */
+jb.component('css.border', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'width', as: 'string', defaultValue: '1'},
@@ -5140,7 +5086,7 @@ jb.component('css.border', { /* css.border */
     ({css: `${selector} { border${side?'-'+side:''}: ${withUnits(width)} ${style} ${color} }`})
 })
 
-jb.component('css.line-clamp', { /* css.lineClamp */
+jb.component('css.lineClamp', {
   type: 'feature',
   description: 'ellipsis after X lines',
   params: [
@@ -5173,7 +5119,7 @@ jb.component('css.typography', {
 
 jb.ns('text')
 
-jb.component('text', { /* text */
+jb.component('text', {
   type: 'control',
   category: 'control:100,common:100',
   params: [
@@ -5187,7 +5133,7 @@ jb.component('text', { /* text */
 
 jb.component('label', {...jb.comps.text,type: 'depricated-control'} )
 
-jb.component('text.bind-text', { /* text.bindText */
+jb.component('text.bindText', {
   type: 'feature',
   category: 'text:0',
   impl: features(
@@ -5196,7 +5142,7 @@ jb.component('text.bind-text', { /* text.bindText */
   )
 })
 
-jb.component('text.allow-asynch-value', { /* text.allowAsynchValue */
+jb.component('text.allowAsynchValue', {
   type: 'feature',
   impl: features(
     calcProp({id: 'text', value: (ctx,{cmp}) => cmp.text || ctx.vars.$props.text}),
@@ -5211,7 +5157,7 @@ jb.component('text.allow-asynch-value', { /* text.allowAsynchValue */
   )
 })
 
-jb.component('text.htmlTag', { /* text.htmlTag */
+jb.component('text.htmlTag', {
   type: 'text.style',
   params: [
     {id: 'htmlTag', as: 'string', defaultValue: 'p', options: 'span,p,h1,h2,h3,h4,h5,div,li,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label'},
@@ -5223,7 +5169,7 @@ jb.component('text.htmlTag', { /* text.htmlTag */
   })
 })
 
-jb.component('text.no-wrapping-tag', { /* text.noWrappingTag */
+jb.component('text.noWrappingTag', {
   type: 'text.style',
   category: 'text:0',
   impl: customStyle({
@@ -5232,7 +5178,7 @@ jb.component('text.no-wrapping-tag', { /* text.noWrappingTag */
   })
 })
 
-jb.component('text.span', { /* text.span */
+jb.component('text.span', {
   type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('span',{},text),
@@ -5272,7 +5218,7 @@ jb.component('text.span', { /* text.span */
   })
 }))
 
-jb.component('text.highlight', { /* text.highlight */
+jb.component('text.highlight', {
   type: 'data',
   macroByValue: true,
   params: [
@@ -5294,7 +5240,7 @@ jb.component('text.highlight', { /* text.highlight */
 
 jb.ns('group,layout,tabs')
 
-jb.component('group', { /* group */
+jb.component('group', {
   type: 'control',
   category: 'group:100,common:90',
   params: [
@@ -5307,7 +5253,7 @@ jb.component('group', { /* group */
   impl: ctx => jb.ui.ctrl(ctx, ctx.params.layout)
 })
 
-jb.component('group.init-group', { /* group.initGroup */
+jb.component('group.initGroup', {
   type: 'feature',
   category: 'group:0',
   impl: calcProp({
@@ -5316,7 +5262,7 @@ jb.component('group.init-group', { /* group.initGroup */
   })
 })
 
-jb.component('inline-controls', { /* inlineControls */
+jb.component('inlineControls', {
   type: 'control',
   description: 'controls without a wrapping group',
   params: [
@@ -5325,7 +5271,7 @@ jb.component('inline-controls', { /* inlineControls */
   impl: ctx => ctx.params.controls().filter(x=>x)
 })
 
-jb.component('dynamic-controls', { /* dynamicControls */
+jb.component('dynamicControls', {
   type: 'control',
   description: 'calculated controls by data items without a wrapping group',
   params: [
@@ -5339,7 +5285,7 @@ jb.component('dynamic-controls', { /* dynamicControls */
         ctx.setVar(itemVariable,controlItem).setVar(indexVariable,i).setData(controlItem))))
 })
 
-jb.component('group.first-succeeding', { /* group.firstSucceeding */
+jb.component('group.firstSucceeding', {
   type: 'feature',
   category: 'group:70',
   description: 'Used with controlWithCondition. Takes the fhe first succeeding control',
@@ -5347,7 +5293,7 @@ jb.component('group.first-succeeding', { /* group.firstSucceeding */
     () => ({calcHash: ctx => jb.asArray(ctx.vars.$model.controls.profile).reduce((res,prof,i) => {
         if (res) return res
         const found = prof.condition == undefined || ctx.vars.$model.ctx.setVars(ctx.vars).runInner(prof.condition,{ as: 'boolean'},`controls.${i}.condition`)
-        if (found) 
+        if (found)
           return i + 1 // avoid index 0
       }, null),
     }),
@@ -5364,7 +5310,7 @@ jb.component('group.first-succeeding', { /* group.firstSucceeding */
   )
 })
 
-jb.component('control-with-condition', { /* controlWithCondition */
+jb.component('controlWithCondition', {
   type: 'control',
   description: 'Used with group.firstSucceeding',
   category: 'group:10',
@@ -5377,7 +5323,7 @@ jb.component('control-with-condition', { /* controlWithCondition */
   impl: (ctx,condition,ctrl) => condition(ctx) && ctrl(ctx)
 })
 
-jb.component('group.wait', { /* group.wait */
+jb.component('group.wait', {
   type: 'feature',
   category: 'group:70',
   description: 'wait for asynch data before showing the control',
@@ -5411,7 +5357,7 @@ jb.component('group.wait', { /* group.wait */
 
 jb.ns('html')
 
-jb.component('html', { /* html */
+jb.component('html', {
   type: 'control',
   description: 'rich text',
   category: 'control:100,common:80',
@@ -5424,18 +5370,18 @@ jb.component('html', { /* html */
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('html.plain', { /* html.plain */
+jb.component('html.plain', {
   type: 'html.style',
   impl: customStyle({
-    template: (cmp,{html},h) => h('html',{$html: html, jb_external: true } ) ,
+    template: (cmp,{html},h) => h('html',{$html: html, jb_external: true } ),
     features: [
-        watchAndCalcModelProp('html'),
-        () => ({ studioFeatures :{$: 'feature.contentEditable', param: 'html' } })
+      watchAndCalcModelProp('html'),
+      () => ({ studioFeatures :{$: 'feature.contentEditable', param: 'html' } })
     ]
   })
 })
 
-jb.component('html.in-iframe', { /* html.inIframe */
+jb.component('html.inIframe', {
   type: 'html.style',
   params: [
     {id: 'width', as: 'string', defaultValue: '100%'},
@@ -5457,7 +5403,7 @@ jb.component('html.in-iframe', { /* html.inIframe */
 
 jb.ns('image,css')
 
-jb.component('image', { /* image */
+jb.component('image', {
   type: 'control,image',
   category: 'control:50,common:70',
   params: [
@@ -5474,7 +5420,7 @@ jb.component('image', { /* image */
   })
 })
 
-jb.component('image.width-height', { /* image.widthHeight */
+jb.component('image.widthHeight', {
   type: 'image.resize',
   description: 'fixed size or precentage of the original',
   params: [
@@ -5484,19 +5430,19 @@ jb.component('image.width-height', { /* image.widthHeight */
   impl: (ctx,width,height) => [ jb.ui.withUnits(width) ||'auto',jb.ui.withUnits(height)||'auto'].join(' ')
 })
 
-jb.component('image.cover', { /* image.cover */
+jb.component('image.cover', {
   description: 'auto resize or crop to cover all area',
   type: 'image.resize',
   impl: 'cover'
 })
 
-jb.component('image.fully-visible', { /* image.fullyVisible */
+jb.component('image.fullyVisible', {
   description: 'contain, auto resize to ensure the image is fully visible',
   type: 'image.resize',
   impl: 'contain'
 })
 
-jb.component('image.position', { /* image.position */
+jb.component('image.position', {
   description: 'offset move shift original image',
   type: 'image.position',
   params: [
@@ -5507,7 +5453,7 @@ jb.component('image.position', { /* image.position */
     .filter(x=>x).map(x=>`background-position-${x}`).join(';')
 })
 
-jb.component('image.background', { /* image.background */
+jb.component('image.background', {
   type: 'image.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div'),
@@ -5519,7 +5465,7 @@ jb.component('image.background', { /* image.background */
       Var('width', (ctx,{$model}) => jb.ui.withUnits($model.width)),
       Var('height', (ctx,{$model}) => jb.ui.withUnits($model.height)),
       `
-      { 
+      {
           background-image: url('%$url%');
           {? background-size: %$$model/resize%; ?}
           {? %$$model/position%; ?}
@@ -5531,10 +5477,9 @@ jb.component('image.background', { /* image.background */
   })
 })
 
-jb.component('image.img', { 
+jb.component('image.img', {
   type: 'image.style',
   impl: customStyle({
-    features: calcProp('url', '%$$model/url%'),
     template: ({},{url},h) => h('img', { src: url}),
     css: pipeline(
       Var('width', (ctx,{$model}) => jb.ui.withUnits($model.width)),
@@ -5544,13 +5489,14 @@ jb.component('image.img', {
           {?width: %$width%; ?}
           {?height: %$height%; ?}
       }`
-    )
+    ),
+    features: calcProp({id: 'url', value: '%$$model/url%'})
   })
 });
 
 jb.ns('button')
 
-jb.component('button', { /* button */
+jb.component('button', {
   type: 'control,clickable',
   category: 'control:100,common:100',
   params: [
@@ -5577,7 +5523,7 @@ jb.component('button', { /* button */
     )))
 })
 
-jb.component('ctrl-action', { /* ctrlAction */
+jb.component('ctrlAction', {
   type: 'feature',
   category: 'button:70',
   description: 'action to perform on control+click',
@@ -5589,7 +5535,7 @@ jb.component('ctrl-action', { /* ctrlAction */
   )
 })
 
-jb.component('alt-action', { /* altAction */
+jb.component('altAction', {
   type: 'feature',
   category: 'button:70',
   description: 'action to perform on alt+click',
@@ -5601,7 +5547,7 @@ jb.component('alt-action', { /* altAction */
   )
 })
 
-jb.component('button-disabled', { /* buttonDisabled */
+jb.component('buttonDisabled', {
   type: 'feature',
   category: 'button:70',
   description: 'define condition when button is enabled',
@@ -5617,7 +5563,7 @@ jb.component('button-disabled', { /* buttonDisabled */
 (function() {
 jb.ui.field_id_counter = jb.ui.field_id_counter || 0;
 
-jb.component('field.databind', { /* field.databind */
+jb.component('field.databind', {
   type: 'feature',
   category: 'field:0',
   params: [
@@ -5650,15 +5596,17 @@ jb.component('field.databind', { /* field.databind */
       ),
     interactiveProp(
         'jbModel',
-        (ctx,{cmp}) => value => 
+        (ctx,{cmp}) => value =>
           value == null ? ctx.exp('%$$model/databind%','number') : writeFieldData(ctx,cmp,value,true)
       )
   )
 })
 
 function writeFieldData(ctx,cmp,value,oneWay) {
-  jb.ui.checkValidationError(cmp,value);
+  if (jb.val(ctx.vars.$model.databind(cmp.ctx)) == value) return
   jb.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx);
+  jb.ui.checkValidationError(cmp,value);
+  cmp.onValueChange && cmp.onValueChange(value) // used to float label
   !oneWay && jb.ui.refreshElem(cmp.base,null,{srcCtx: ctx.componentContext});
 }
 
@@ -5697,7 +5645,7 @@ jb.ui.preserveFieldCtxWithItem = (field,item) => {
 	return ctx && jb.ui.preserveCtx(ctx.setData(item))
 }
 
-jb.component('field.databind-text', { /* field.databindText */
+jb.component('field.databindText', {
   type: 'feature',
   category: 'field:0',
   params: [
@@ -5710,7 +5658,7 @@ jb.component('field.databind-text', { /* field.databindText */
   )
 })
 
-jb.component('field.keyboard-shortcut', { /* field.keyboardShortcut */
+jb.component('field.keyboardShortcut', {
   type: 'feature',
   category: 'events',
   description: 'listen to events at the document level even when the component is not active',
@@ -5737,7 +5685,7 @@ jb.component('field.keyboard-shortcut', { /* field.keyboardShortcut */
   )
 })
 
-jb.component('field.toolbar', { /* field.toolbar */
+jb.component('field.toolbar', {
   type: 'feature',
   params: [
     {id: 'toolbar', type: 'control', mandatory: true, dynamic: true}
@@ -5747,7 +5695,7 @@ jb.component('field.toolbar', { /* field.toolbar */
 
 // ***** validation
 
-jb.component('validation', { /* validation */
+jb.component('validation', {
   type: 'feature',
   category: 'validation:100',
   params: [
@@ -5766,7 +5714,7 @@ jb.component('validation', { /* validation */
   )
 })
 
-jb.component('field.title', { /* field.title */
+jb.component('field.title', {
   description: 'used to set table title in button and label',
   type: 'feature',
   category: 'table:80',
@@ -5778,7 +5726,7 @@ jb.component('field.title', { /* field.title */
   })
 })
 
-jb.component('field.title-ctrl', { /* field.titleCtrl */
+jb.component('field.titleCtrl', {
   description: 'title as control, buttons are usefull',
   type: 'feature',
   category: 'table:80',
@@ -5790,7 +5738,7 @@ jb.component('field.title-ctrl', { /* field.titleCtrl */
   })
 })
 
-jb.component('field.column-width', { /* field.columnWidth */
+jb.component('field.columnWidth', {
   description: 'used in itemlist fields',
   type: 'feature',
   category: 'table:80',
@@ -5808,7 +5756,7 @@ jb.component('field.column-width', { /* field.columnWidth */
 jb.ns('editableText')
 jb.ns('dialog')
 
-jb.component('editable-text', { /* editableText */
+jb.component('editableText', {
   type: 'control',
   category: 'input:100,common:80',
   params: [
@@ -5821,7 +5769,7 @@ jb.component('editable-text', { /* editableText */
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('editable-text.x-button', { /* editableText.xButton */
+jb.component('editableText.xButton', {
   type: 'feature',
   impl: features(
     defHandler('cleanValue', writeValue('%$$model/databind%', '')),
@@ -5845,7 +5793,7 @@ jb.component('editable-text.x-button', { /* editableText.xButton */
   )
 })
 
-jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
+jb.component('editableText.helperPopup', {
   type: 'feature',
   params: [
     {id: 'control', type: 'control', dynamic: true, mandatory: true},
@@ -5914,7 +5862,7 @@ jb.component('editable-text.helper-popup', { /* editableText.helperPopup */
 
 jb.ns('editableBoolean')
 
-jb.component('editable-boolean', { /* editableBoolean */
+jb.component('editableBoolean', {
   type: 'control',
   category: 'input:20',
   params: [
@@ -5933,7 +5881,7 @@ jb.component('editable-boolean', { /* editableBoolean */
 		))
 })
 
-jb.component('editable-boolean.keyboard-support', { /* editableBoolean.keyboardSupport */
+jb.component('editableBoolean.keyboardSupport', {
   type: 'feature',
   impl: feature.onEvent({
     event: 'keypress',
@@ -5947,7 +5895,7 @@ jb.component('editable-boolean.keyboard-support', { /* editableBoolean.keyboardS
 
 jb.ns('editableNumber')
 
-jb.component('editable-number', { /* editableNumber */
+jb.component('editableNumber', {
   type: 'control',
   category: 'input:30',
   params: [
@@ -5996,7 +5944,7 @@ jb.component('editable-number', { /* editableNumber */
 
 ;
 
-jb.component('open-dialog', { /* openDialog */
+jb.component('openDialog', {
   type: 'action',
   params: [
     {id: 'id', as: 'string'},
@@ -6021,7 +5969,7 @@ jb.component('open-dialog', { /* openDialog */
 	}
 })
 
-jb.component('dialog.close-containing-popup', { /* dialog.closeContainingPopup */
+jb.component('dialog.closeContainingPopup', {
   description: 'close parent dialog',
   type: 'action',
   params: [
@@ -6030,7 +5978,7 @@ jb.component('dialog.close-containing-popup', { /* dialog.closeContainingPopup *
   impl: (context,OK) => context.vars.$dialog && context.vars.$dialog.close({OK:OK})
 })
 
-jb.component('dialog-feature.unique-dialog', { /* dialogFeature.uniqueDialog */
+jb.component('dialogFeature.uniqueDialog', {
   description: 'automatic close dialogs of the same id',
   type: 'dialog-feature',
   params: [
@@ -6114,7 +6062,7 @@ jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
 	})
   })
 
-jb.component('dialog-feature.near-launcher-position', { /* dialogFeature.nearLauncherPosition */
+jb.component('dialogFeature.nearLauncherPosition', {
   type: 'dialog-feature',
   params: [
     {id: 'offsetLeft', as: 'number', dynamic: true, defaultValue: 0},
@@ -6163,7 +6111,7 @@ jb.component('dialog-feature.onClose', { /* dialogFeature.onClose */
 	)})
 })
 
-jb.component('dialog-feature.close-when-clicking-outside', { /* dialogFeature.closeWhenClickingOutside */
+jb.component('dialogFeature.closeWhenClickingOutside', {
   type: 'dialog-feature',
   params: [
     {id: 'delay', as: 'number', defaultValue: 100}
@@ -6188,7 +6136,7 @@ jb.component('dialog-feature.close-when-clicking-outside', { /* dialogFeature.cl
 	}
 })
 
-jb.component('dialog.close-dialog', { /* dialog.closeDialog */
+jb.component('dialog.closeDialog', {
   type: 'action',
   params: [
     {id: 'id', as: 'string'},
@@ -6197,12 +6145,12 @@ jb.component('dialog.close-dialog', { /* dialog.closeDialog */
   impl: (ctx,id,delay) => jb.ui.dialogs.closeDialogs(jb.ui.dialogs.dialogs.filter(d=>d.id == id))
 })
 
-jb.component('dialog.close-all', { /* dialog.closeAll */
+jb.component('dialog.closeAll', {
   type: 'action',
   impl: ctx => jb.ui.dialogs.closeAll()
 })
 
-jb.component('dialog-feature.auto-focus-on-first-input', { /* dialogFeature.autoFocusOnFirstInput */
+jb.component('dialogFeature.autoFocusOnFirstInput', {
   type: 'dialog-feature',
   params: [
     {id: 'selectText', as: 'boolean', type: 'boolean'}
@@ -6220,7 +6168,7 @@ jb.component('dialog-feature.auto-focus-on-first-input', { /* dialogFeature.auto
 	})
 })
 
-jb.component('dialog-feature.css-class-on-launching-element', { /* dialogFeature.cssClassOnLaunchingElement */
+jb.component('dialogFeature.cssClassOnLaunchingElement', {
   type: 'dialog-feature',
   impl: context => ({
 		afterViewInit: cmp => {
@@ -6257,7 +6205,7 @@ jb.component('dialog-feature.max-zIndex-on-click', { /* dialogFeature.maxZIndexO
 	}
 })
 
-jb.component('dialog.dialog-ok-cancel', { /* dialog.dialogOkCancel */
+jb.component('dialog.dialogOkCancel', {
   type: 'dialog.style',
   params: [
     {id: 'okLabel', as: 'string', defaultValue: 'OK'},
@@ -6277,7 +6225,7 @@ jb.component('dialog.dialog-ok-cancel', { /* dialog.dialogOkCancel */
   })
 })
 
-jb.component('dialog-feature.resizer', { /* dialogFeature.resizer */
+jb.component('dialogFeature.resizer', {
   type: 'dialog-feature',
   params: [
     {id: 'resizeInnerCodemirror', as: 'boolean', description: 'effective only for dialog with a single codemirror element', type: 'boolean'}
@@ -6333,7 +6281,7 @@ jb.component('dialog-feature.resizer', { /* dialogFeature.resizer */
 	}})
 })
 
-jb.component('dialog.popup', { /* dialog.popup */
+jb.component('dialog.popup', {
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
@@ -6347,7 +6295,7 @@ jb.component('dialog.popup', { /* dialog.popup */
   })
 })
 
-jb.component('dialog.div', { /* dialog.div */
+jb.component('dialog.div', {
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
@@ -6435,7 +6383,7 @@ jb.ui.dialogs = {
 
 jb.ns('itemlist,itemlistContainer')
 
-jb.component('itemlist', { /* itemlist */
+jb.component('itemlist', {
   description: 'list, dynamic group, collection, repeat',
   type: 'control',
   category: 'group:80,common:80',
@@ -6451,13 +6399,13 @@ jb.component('itemlist', { /* itemlist */
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('itemlist.no-container', { /* itemlist.noContainer */
+jb.component('itemlist.noContainer', {
   type: 'feature',
   category: 'group:20',
   impl: ctx => ({ extendCtx: (ctx,cmp) => ctx.setVars({itemlistCntr: null}) })
 })
 
-jb.component('itemlist.init-container-with-items', { /* itemlist.initContainerWithItems */
+jb.component('itemlist.initContainerWithItems', {
   type: 'feature',
   category: 'itemlist:20',
   impl: calcProp({
@@ -6470,7 +6418,7 @@ jb.component('itemlist.init-container-with-items', { /* itemlist.initContainerWi
   })
 })
 
-jb.component('itemlist.init', { /* itemlist.init */
+jb.component('itemlist.init', {
   type: 'feature',
   impl: features(
     calcProp({id: 'items', value: '%$$model.items%'}),
@@ -6487,13 +6435,15 @@ jb.component('itemlist.init', { /* itemlist.init */
   )
 })
 
-jb.component('itemlist.infinite-scroll', { 
+jb.component('itemlist.infiniteScroll', {
   type: 'feature',
   params: [
-    { id: 'pageSize', as: 'number', defaultValue: 2 }
+    {id: 'pageSize', as: 'number', defaultValue: 2}
   ],
   impl: features(
-    defHandler('onscrollHandler', (ctx,{ev, $state},{pageSize}) => {
+    defHandler(
+        'onscrollHandler',
+        (ctx,{ev, $state},{pageSize}) => {
       const elem = ev.target
       if (!ev.scrollPercentFromTop || ev.scrollPercentFromTop < 0.9) return
       const allItems = ctx.vars.$model.items()
@@ -6510,12 +6460,13 @@ jb.component('itemlist.infinite-scroll', {
         jb.ui.appendItems(elem,itemlistVdom,ctx)
         $state.visualLimit.shownItems += itemsToAppend.length
       }
-    }),
+    }
+      ),
     templateModifier(({},{vdom}) => vdom.setAttribute('onscroll',true))
   )
 })
 
-jb.component('itemlist.init-table', { /* itemlist.initTable */
+jb.component('itemlist.initTable', {
   type: 'feature',
   impl: features(
     calcProp({
@@ -6530,7 +6481,7 @@ jb.component('itemlist.init-table', { /* itemlist.initTable */
   )
 })
 
-jb.component('itemlist.fast-filter', { /* itemlist.fastFilter */
+jb.component('itemlist.fastFilter', {
   type: 'feature',
   description: 'use display:hide to filter itemlist elements',
   params: [
@@ -6545,7 +6496,7 @@ jb.component('itemlist.fast-filter', { /* itemlist.fastFilter */
   )
 })
 
-jb.component('itemlist.ul-li', { /* itemlist.ulLi */
+jb.component('itemlist.ulLi', {
   type: 'itemlist.style',
   impl: customStyle({
     template: (cmp,{ctrls},h) => h('ul',{ class: 'jb-itemlist'},
@@ -6558,7 +6509,7 @@ jb.component('itemlist.ul-li', { /* itemlist.ulLi */
   })
 })
 
-jb.component('itemlist.horizontal', { /* itemlist.horizontal */
+jb.component('itemlist.horizontal', {
   type: 'itemlist.style',
   params: [
     {id: 'spacing', as: 'number', defaultValue: 0}
@@ -6585,7 +6536,7 @@ jb.ui.addSlicedState = (cmp,items,visualLimit) => {
 
 // ****************** Selection ******************
 
-jb.component('itemlist.selection', { /* itemlist.selection */
+jb.component('itemlist.selection', {
   type: 'feature',
   params: [
     {id: 'databind', as: 'ref', defaultValue: '%$itemlistCntrData/selected%', dynamic: true},
@@ -6670,7 +6621,7 @@ jb.component('itemlist.selection', { /* itemlist.selection */
   })
 })
 
-jb.component('itemlist.keyboard-selection', { /* itemlist.keyboardSelection */
+jb.component('itemlist.keyboardSelection', {
   type: 'feature',
   macroByValue: false,
   params: [
@@ -6714,7 +6665,7 @@ jb.component('itemlist.keyboard-selection', { /* itemlist.keyboardSelection */
     })
 })
 
-jb.component('itemlist.drag-and-drop', { /* itemlist.dragAndDrop */
+jb.component('itemlist.dragAndDrop', {
   type: 'feature',
   impl: ctx => ({
       afterViewInit: function(cmp) {
@@ -6764,7 +6715,7 @@ jb.component('itemlist.drag-and-drop', { /* itemlist.dragAndDrop */
     })
 })
 
-jb.component('itemlist.drag-handle', { /* itemlist.dragHandle */
+jb.component('itemlist.dragHandle', {
   description: 'put on the control inside the item which is used to drag the whole line',
   type: 'feature',
   impl: list(
@@ -6773,7 +6724,7 @@ jb.component('itemlist.drag-handle', { /* itemlist.dragHandle */
   )
 })
 
-jb.component('itemlist.shown-only-on-item-hover', { /* itemlist.shownOnlyOnItemHover */
+jb.component('itemlist.shownOnlyOnItemHover', {
   type: 'feature',
   category: 'itemlist:75',
   description: 'put on the control inside the item which is shown when the mouse enters the line',
@@ -6782,7 +6733,7 @@ jb.component('itemlist.shown-only-on-item-hover', { /* itemlist.shownOnlyOnItemH
   })
 })
 
-jb.component('itemlist.divider', { /* itemlist.divider */
+jb.component('itemlist.divider', {
   type: 'feature',
   params: [
     {id: 'space', as: 'number', defaultValue: 5}
@@ -6824,7 +6775,7 @@ const createItemlistCntr = (ctx,params) => ({
 	}
 })
 
-jb.component('group.itemlist-container', { /* group.itemlistContainer */
+jb.component('group.itemlistContainer', {
   description: 'itemlist writable container to support addition, deletion and selection',
   type: 'feature',
   category: 'itemlist:80,group:70',
@@ -6836,21 +6787,17 @@ jb.component('group.itemlist-container', { /* group.itemlistContainer */
   impl: features(
     variable({
         name: 'itemlistCntrData',
-        value: {
-          '$': 'object',
-          search_pattern: '',
-          selected: '%$initialSelection%',
-        },
+        value: {'$': 'object', search_pattern: '', selected: '%$initialSelection%'},
         watchable: true
       }),
     variable({
         name: 'itemlistCntr',
         value: ctx => createItemlistCntr(ctx,ctx.componentContext.params)
-      }),
+      })
   )
 })
 
-jb.component('itemlist.itemlist-selected', { /* itemlist.itemlistSelected */
+jb.component('itemlist.itemlistSelected', {
   type: 'feature',
   category: 'itemlist:20,group:0',
   impl: list(
@@ -6859,7 +6806,7 @@ jb.component('itemlist.itemlist-selected', { /* itemlist.itemlistSelected */
   )
 })
 
-jb.component('itemlist-container.filter', { /* itemlistContainer.filter */
+jb.component('itemlistContainer.filter', {
   type: 'aggregator',
   category: 'itemlist-filter:100',
   requires: ctx => ctx.vars.itemlistCntr,
@@ -6884,7 +6831,7 @@ jb.component('itemlist-container.filter', { /* itemlistContainer.filter */
 	}
 })
 
-jb.component('itemlist-container.condition-filter', { /* itemlistContainer.conditionFilter */
+jb.component('itemlistContainer.conditionFilter', {
   type: 'boolean',
   category: 'itemlist-filter:100',
   requires: ctx => ctx.vars.itemlistCntr,
@@ -6892,7 +6839,7 @@ jb.component('itemlist-container.condition-filter', { /* itemlistContainer.condi
 		ctx.vars.itemlistCntr.filters.reduce((res,filter) => res && filter([ctx.data]).length, true)
 })
 
-jb.component('itemlist-container.search', { /* itemlistContainer.search */
+jb.component('itemlistContainer.search', {
   type: 'control',
   category: 'itemlist-filter:100',
   requires: ctx => ctx.vars.itemlistCntr,
@@ -6922,7 +6869,7 @@ jb.component('itemlist-container.search', { /* itemlistContainer.search */
 		})
 })
 
-jb.component('itemlist-container.more-items-button', { /* itemlistContainer.moreItemsButton */
+jb.component('itemlistContainer.moreItemsButton', {
   type: 'control',
   category: 'itemlist-filter:100',
   requires: ctx => ctx.vars.itemlistCntr,
@@ -6964,7 +6911,7 @@ jb.ui.extractPropFromExpression = exp => { // performance for simple cases such 
 }
 
 // match fields in pattern itemlistCntrData/FLDNAME_filter to data
-jb.component('itemlist-container.filter-field', { /* itemlistContainer.filterField */
+jb.component('itemlistContainer.filterField', {
   type: 'feature',
   category: 'itemlist:80',
   requires: ctx => ctx.vars.itemlistCntr,
@@ -6992,7 +6939,7 @@ jb.component('itemlist-container.filter-field', { /* itemlistContainer.filterFie
 	})
 })
 
-jb.component('filter-type.text', { /* filterType.text */
+jb.component('filterType.text', {
   type: 'filter-type',
   params: [
     {id: 'ignoreCase', as: 'boolean', defaultValue: true, type: 'boolean'}
@@ -7014,7 +6961,7 @@ jb.component('filter-type.text', { /* filterType.text */
 	})
 })
 
-jb.component('filter-type.exact-match', { /* filterType.exactMatch */
+jb.component('filterType.exactMatch', {
   type: 'filter-type',
   impl: ctx => ({
 		filter: (filter,data) =>  {
@@ -7024,7 +6971,7 @@ jb.component('filter-type.exact-match', { /* filterType.exactMatch */
 	})
 })
 
-jb.component('filter-type.numeric', { /* filterType.numeric */
+jb.component('filterType.numeric', {
   type: 'filter-type',
   impl: ctx => ({
 		filter: (filter,data) => Number(data) >= Number(filter),
@@ -7032,7 +6979,7 @@ jb.component('filter-type.numeric', { /* filterType.numeric */
 	})
 })
 
-jb.component('itemlist-container.search-in-all-properties', { /* itemlistContainer.searchInAllProperties */
+jb.component('itemlistContainer.searchInAllProperties', {
   type: 'data',
   category: 'itemlist:40',
   impl: ctx => {
@@ -7050,7 +6997,7 @@ jb.ns('menuStyle')
 jb.ns('menuSeparator')
 jb.ns('mdc')
 
-jb.component('menu.menu', { /* menu.menu */
+jb.component('menu.menu', {
   type: 'menu.option',
   params: [
     {id: 'title', as: 'string', dynamic: true, mandatory: true},
@@ -7067,7 +7014,7 @@ jb.component('menu.menu', { /* menu.menu */
 	})
 })
 
-jb.component('menu.options-group', { /* menu.optionsGroup */
+jb.component('menu.optionsGroup', {
   type: 'menu.option',
   params: [
     {id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true}
@@ -7075,7 +7022,7 @@ jb.component('menu.options-group', { /* menu.optionsGroup */
   impl: (ctx,options) => options()
 })
 
-jb.component('menu.dynamic-options', { /* menu.dynamicOptions */
+jb.component('menu.dynamicOptions', {
   type: 'menu.option',
   params: [
     {id: 'items', type: 'data', as: 'array', mandatory: true, dynamic: true},
@@ -7084,7 +7031,7 @@ jb.component('menu.dynamic-options', { /* menu.dynamicOptions */
   impl: (ctx,items,generic) => items().map(item => generic(ctx.setData(item)))
 })
 
-jb.component('menu.end-with-separator', { /* menu.endWithSeparator */
+jb.component('menu.endWithSeparator', {
   type: 'menu.option',
   params: [
     {id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true},
@@ -7100,12 +7047,12 @@ jb.component('menu.end-with-separator', { /* menu.endWithSeparator */
 })
 
 
-jb.component('menu.separator', { /* menu.separator */
+jb.component('menu.separator', {
   type: 'menu.option',
   impl: ctx => ({ separator: true })
 })
 
-jb.component('menu.action', { /* menu.action */
+jb.component('menu.action', {
   type: 'menu.option',
   params: [
     {id: 'title', as: 'string', dynamic: true, mandatory: true},
@@ -7131,7 +7078,7 @@ jb.component('menu.action', { /* menu.action */
 
 // ********* actions / controls ************
 
-jb.component('menu.control', { /* menu.control */
+jb.component('menu.control', {
   type: 'control,clickable,menu',
   params: [
     {id: 'menu', type: 'menu.option', dynamic: true, mandatory: true},
@@ -7147,7 +7094,7 @@ jb.component('menu.control', { /* menu.control */
 	}
 })
 
-jb.component('menu.open-context-menu', { /* menu.openContextMenu */
+jb.component('menu.openContextMenu', {
   type: 'action',
   params: [
     {id: 'menu', type: 'menu.option', dynamic: true, mandatory: true},
@@ -7163,7 +7110,7 @@ jb.component('menu.open-context-menu', { /* menu.openContextMenu */
 
 // ********* styles ************
 
-jb.component('menu-style.pulldown', { /* menuStyle.pulldown */
+jb.component('menuStyle.pulldown', {
   type: 'menu.style',
   params: [
     {id: 'innerMenuStyle', type: 'menu.style', dynamic: true, defaultValue: menuStyle.popupAsOption()},
@@ -7188,7 +7135,7 @@ jb.component('menu-style.pulldown', { /* menuStyle.pulldown */
   )
 })
 
-jb.component('menu-style.context-menu', { /* menuStyle.contextMenu */
+jb.component('menuStyle.contextMenu', {
   type: 'menu.style',
   params: [
     {id: 'leafOptionStyle', type: 'menu-option.style', dynamic: true, defaultValue: menuStyle.optionLine()}
@@ -7209,7 +7156,7 @@ jb.component('menu-style.context-menu', { /* menuStyle.contextMenu */
 })
 
 
-jb.component('menu.init-popup-menu', { /* menu.initPopupMenu */
+jb.component('menu.initPopupMenu', {
   type: 'feature',
   params: [
     {id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue: dialog.contextMenuPopup()}
@@ -7250,11 +7197,12 @@ jb.component('menu.init-popup-menu', { /* menu.initPopupMenu */
           })
 				}
 			})
-		})
+		}
+      )
   )
 })
 
-jb.component('menu.init-menu-option', { /* menu.initMenuOption */
+jb.component('menu.initMenuOption', {
   type: 'feature',
   impl: features(
     calcProp({id: 'title', value: '%$menuModel.leaf.title%'}),
@@ -7276,10 +7224,12 @@ jb.component('menu.init-menu-option', { /* menu.initMenuOption */
               subscribe(_=> cmp.action()))
           }
 			})
-	}))
+	}
+      )
+  )
 })
 
-jb.component('menu-style.apply-multi-level', { /* menuStyle.applyMultiLevel */
+jb.component('menuStyle.applyMultiLevel', {
   type: 'menu.style',
   params: [
     {id: 'menuStyle', type: 'menu.style', dynamic: true, defaultValue: menuStyle.popupAsOption()},
@@ -7314,7 +7264,7 @@ jb.component('menu-style.apply-multi-level', { /* menuStyle.applyMultiLevel */
 //     })
 // })
 
-jb.component('menu.selection', { /* menu.selection */
+jb.component('menu.selection', {
   type: 'feature',
   params: [
     {id: 'autoSelectFirst', type: 'boolean'}
@@ -7380,7 +7330,7 @@ jb.component('menu.selection', { /* menu.selection */
 		})
 })
 
-jb.component('menu-style.option-line', { /* menuStyle.optionLine */
+jb.component('menuStyle.optionLine', {
   type: 'menu-option.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{
@@ -7401,7 +7351,7 @@ jb.component('menu-style.option-line', { /* menuStyle.optionLine */
   })
 })
 
-jb.component('menu.option-as-icon24', { /* menu.optionAsIcon24 */
+jb.component('menu.optionAsIcon24', {
   type: 'menu-option.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{
@@ -7414,7 +7364,7 @@ jb.component('menu.option-as-icon24', { /* menu.optionAsIcon24 */
   })
 })
 
-jb.component('menu-style.popup-as-option', { /* menuStyle.popupAsOption */
+jb.component('menuStyle.popupAsOption', {
   type: 'menu.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{
@@ -7431,7 +7381,7 @@ jb.component('menu-style.popup-as-option', { /* menuStyle.popupAsOption */
   })
 })
 
-jb.component('menu-style.popup-thumb', { /* menuStyle.popupThumb */
+jb.component('menuStyle.popupThumb', {
   type: 'menu.style',
   description: 'used for pulldown',
   impl: customStyle({
@@ -7444,7 +7394,7 @@ jb.component('menu-style.popup-thumb', { /* menuStyle.popupThumb */
   })
 })
 
-jb.component('dialog.context-menu-popup', { /* dialog.contextMenuPopup */
+jb.component('dialog.contextMenuPopup', {
   type: 'dialog.style',
   params: [
     {id: 'offsetTop', as: 'number'},
@@ -7466,7 +7416,7 @@ jb.component('dialog.context-menu-popup', { /* dialog.contextMenuPopup */
   })
 })
 
-jb.component('menu-separator.line', { /* menuSeparator.line */
+jb.component('menuSeparator.line', {
   type: 'menu-separator.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div'),
@@ -7477,7 +7427,7 @@ jb.component('menu-separator.line', { /* menuSeparator.line */
 
 jb.ns('picklist')
 
-jb.component('picklist', { /* picklist */
+jb.component('picklist', {
   type: 'control',
   category: 'input:80',
   params: [
@@ -7520,7 +7470,7 @@ function groupOfOpt(opt) {
   return opt.group || opt.text.split('.').shift();
 }
 
-jb.component('picklist.dynamic-options', { /* picklist.dynamicOptions */
+jb.component('picklist.dynamicOptions', {
   type: 'feature',
   params: [
     {id: 'recalcEm', as: 'single'}
@@ -7533,7 +7483,7 @@ jb.component('picklist.dynamic-options', { /* picklist.dynamicOptions */
   )
 })
 
-jb.component('picklist.onChange', { /* picklist.onChange */
+jb.component('picklist.onChange', {
   type: 'feature',
   description: 'action on picklist selection',
   params: [
@@ -7546,7 +7496,7 @@ jb.component('picklist.onChange', { /* picklist.onChange */
 
 // ********* options
 
-jb.component('picklist.optionsByComma', { /* picklist.optionsByComma */
+jb.component('picklist.optionsByComma', {
   type: 'picklist.options',
   params: [
     {id: 'options', as: 'string', mandatory: true},
@@ -7558,7 +7508,7 @@ jb.component('picklist.optionsByComma', { /* picklist.optionsByComma */
   }
 })
 
-jb.component('picklist.options', { /* picklist.options */
+jb.component('picklist.options', {
   type: 'picklist.options',
   params: [
     {id: 'options', type: 'data', as: 'array', mandatory: true},
@@ -7570,7 +7520,7 @@ jb.component('picklist.options', { /* picklist.options */
   }
 })
 
-jb.component('picklist.coded-options', { /* picklist.codedOptions */
+jb.component('picklist.codedOptions', {
   type: 'picklist.options',
   params: [
     {id: 'options', as: 'array', mandatory: true},
@@ -7584,7 +7534,7 @@ jb.component('picklist.coded-options', { /* picklist.codedOptions */
   }
 })
 
-jb.component('picklist.sorted-options', { /* picklist.sortedOptions */
+jb.component('picklist.sortedOptions', {
   type: 'picklist.options',
   params: [
     {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true, composite: true},
@@ -7603,7 +7553,7 @@ jb.component('picklist.sorted-options', { /* picklist.sortedOptions */
   }
 })
 
-jb.component('picklist.promote', { /* picklist.promote */
+jb.component('picklist.promote', {
   type: 'picklist.promote',
   params: [
     {id: 'groups', as: 'array'},
@@ -7615,7 +7565,7 @@ jb.component('picklist.promote', { /* picklist.promote */
 
 jb.type('theme');
 
-jb.component('group.theme', { /* group.theme */
+jb.component('group.theme', {
   type: 'feature',
   params: [
     {id: 'theme', type: 'theme'}
@@ -7625,7 +7575,7 @@ jb.component('group.theme', { /* group.theme */
   })
 })
 
-jb.component('theme.material-design', { /* theme.materialDesign */
+jb.component('theme.materialDesign', {
   type: 'theme',
   impl: () => ({
   	'$theme.editable-text': 'editable-text.mdc-input'
@@ -7635,7 +7585,7 @@ jb.component('theme.material-design', { /* theme.materialDesign */
 
 jb.ns('icon')
 
-jb.component('material-icon', { /* materialIcon */
+jb.component('materialIcon', {
   type: 'control',
   category: 'control:50',
   params: [
@@ -7647,7 +7597,7 @@ jb.component('material-icon', { /* materialIcon */
   impl: ctx => jb.ui.ctrl(ctx, calcProp('icon','%$$model/icon%'))
 })
 
-jb.component('icon.material', { /* icon.material */
+jb.component('icon.material', {
   type: 'icon-with-action.style',
   impl: customStyle(
     (cmp,{icon},h) => h('i',{ class: 'material-icons' }, icon)
@@ -7657,27 +7607,30 @@ jb.component('icon.material', { /* icon.material */
 
 jb.ns('slider')
 
-jb.component('editable-number.slider-no-text', { /* editableNumber.sliderNoText */
+jb.component('editableNumber.sliderNoText', {
   type: 'editable-number.style',
   impl: features(
-    calcProp('max', ctx => {
+    calcProp({
+        id: 'max',
+        value: ctx => {
       const val = jb.tonumber(ctx.exp('%$editableNumberModel/databind%'))
       if (val > +ctx.vars.$model.max && ctx.vars.$model.autoScale)
         return val + 100
       return +ctx.vars.$model.max
-    }),
+    }
+      }),
     ctx => ({
       template: (cmp,state,h) => h('input',{ type: 'range',
         min: state.min, max: state.max, step: state.step,
         value: state.databind, mouseup: 'onblurHandler', tabindex: -1})
     }),
-    field.databind(), 
-    slider.init(), 
+    field.databind(),
+    slider.init(),
     watchRef('%$editableNumberModel/databind%')
   )
 })
 
-jb.component('editable-number.slider', { /* editableNumber.slider */
+jb.component('editableNumber.slider', {
   type: 'editable-number.style',
   impl: styleByControl(
     group({
@@ -7688,7 +7641,12 @@ jb.component('editable-number.slider', { /* editableNumber.slider */
           editableText({
             databind: '%$editableNumberModel/databind%',
             style: editableText.input(),
-            features: [slider.handleArrowKeys(), css('width: 30px; padding-left: 3px; border: 0; border-bottom: 1px solid black;') ]
+            features: [
+              slider.handleArrowKeys(),
+              css(
+                'width: 30px; padding-left: 3px; border: 0; border-bottom: 1px solid black;'
+              )
+            ]
           }),
           editableNumber({
             databind: '%$editableNumberModel/databind%',
@@ -7706,7 +7664,7 @@ jb.component('editable-number.slider', { /* editableNumber.slider */
   )
 })
 
-jb.component('slider.init', { /* slider.init */
+jb.component('slider.init', {
   type: 'feature',
   impl: ctx => ({
       onkeyup: true,
@@ -7735,8 +7693,8 @@ jb.component('slider.init', { /* slider.init */
         pipe(cmp.onkeydown,subscribe(e=> cmp.handleArrowKey(e)))
 
         // drag
-        pipe(cmp.onmousedown, 
-          flatMap(e=> pipe(cmp.onmousemove, takeUntil(cmp.onmouseup))), 
+        pipe(cmp.onmousedown,
+          flatMap(e=> pipe(cmp.onmousemove, takeUntil(cmp.onmouseup))),
           subscribe(e=> !checkAutoScale() && cmp.jbModel(cmp.base.value)
           ))
 
@@ -7754,12 +7712,15 @@ jb.component('slider.init', { /* slider.init */
     })
 })
 
-jb.component('slider.handle-arrow-keys', { /* slider.handleArrowKeys */
+jb.component('slider.handleArrowKeys', {
   type: 'feature',
   impl: features(
-    htmlAttribute('onkeydown',true),
-    defHandler('onkeydownHandler', (ctx,{ev}) =>
-        ctx.vars.sliderCtx && sliderCtx.handleArrowKey(ev))
+    htmlAttribute('onkeydown', true),
+    defHandler(
+        'onkeydownHandler',
+        (ctx,{ev}) =>
+        ctx.vars.sliderCtx && sliderCtx.handleArrowKey(ev)
+      )
   )
 })
 
@@ -7768,7 +7729,7 @@ jb.component('slider.handle-arrow-keys', { /* slider.handleArrowKeys */
 
 jb.ns('table')
 
-jb.component('table', { /* table */
+jb.component('table', {
   type: 'control,table',
   category: 'group:80,common:70',
   params: [
@@ -7783,7 +7744,7 @@ jb.component('table', { /* table */
     jb.ui.ctrl(ctx)
 })
 
-jb.component('field', { /* field */
+jb.component('field', {
   type: 'table-field',
   params: [
     {id: 'title', as: 'string', mandatory: true},
@@ -7807,7 +7768,7 @@ jb.component('field', { /* field */
   })
 })
 
-jb.component('field.index', { /* field.index */
+jb.component('field.index', {
   type: 'table-field',
   params: [
     {id: 'title', as: 'string', defaultValue: 'index'},
@@ -7824,7 +7785,7 @@ jb.component('field.index', { /* field.index */
   })
 })
 
-jb.component('field.control', { /* field.control */
+jb.component('field.control', {
   type: 'table-field',
   params: [
     {id: 'title', as: 'string', mandatory: true},
@@ -7845,7 +7806,7 @@ jb.component('field.control', { /* field.control */
 
 // todo - move to styles
 
-jb.component('button.table-cell-href', { /* button.tableCellHref */
+jb.component('button.tableCellHref', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,state,h) => h('a',{href: 'javascript:;', onclick: true}, state.title),
@@ -7853,12 +7814,12 @@ jb.component('button.table-cell-href', { /* button.tableCellHref */
   })
 })
 
-jb.component('table.init-table-or-itemlist', { /* table.initTableOrItemlist */
+jb.component('table.initTableOrItemlist', {
   type: 'feature',
   impl: ctx => ctx.run(ctx.vars.$model.fields ? table.init() : itemlist.initTable())
 })
 
-jb.component('table.init', { /* table.init */
+jb.component('table.init', {
   type: 'feature',
   category: 'table:10',
   impl: features(
@@ -7885,7 +7846,7 @@ jb.component('table.init', { /* table.init */
   )
 })
 
-jb.component('table.init-sort', { /* table.initSort */
+jb.component('table.initSort', {
   type: 'feature',
   impl: ctx => ({
       afterViewInit: cmp => {
@@ -7934,7 +7895,7 @@ jb.component('table.init-sort', { /* table.initSort */
 })
 ;
 
-jb.component('goto-url', { /* gotoUrl */
+jb.component('gotoUrl', {
   type: 'action',
   description: 'navigate/open a new web page, change href location',
   params: [
@@ -7952,7 +7913,7 @@ jb.component('goto-url', { /* gotoUrl */
 
 jb.ns('mdc,mdc-style')
 
-jb.component('mdc-style.init-dynamic', { /* mdcStyle.initDynamic */
+jb.component('mdcStyle.initDynamic', {
   type: 'feature',
   params: [
     {id: 'query', as: 'string'}
@@ -7961,20 +7922,23 @@ jb.component('mdc-style.init-dynamic', { /* mdcStyle.initDynamic */
     afterViewInit: cmp => {
       if (!jb.ui.material) return jb.logError('please load mdc library')
       cmp.mdc_comps = cmp.mdc_comps || []
-      if (cmp.base.classList.contains('mdc-text-field'))
-        cmp.mdc_comps.push(new jb.ui.material.MDCTextField(cmp.base))
-      else if (cmp.base.classList.contains('mdc-button') || cmp.base.classList.contains('mdc-fab'))
+      const txtElm = jb.ui.findIncludeSelf(cmp.base,'.mdc-text-field')[0]
+      if (txtElm) {
+        cmp.mdc_comps.push(new jb.ui.material.MDCTextField(txtElm))
+        cmp.onValueChange = value => (cmp.mdc_comps||[]).forEach(x=> x.label_ && x.label_.float(!!value))
+      } else if (cmp.base.classList.contains('mdc-button') || cmp.base.classList.contains('mdc-fab'))
         cmp.mdc_comps.push(new jb.ui.material.MDCRipple(cmp.base))
       else if (cmp.base.classList.contains('mdc-switch'))
         cmp.mdc_comps.push(new jb.ui.material.MDCSwitch(cmp.base))
       else if (cmp.base.classList.contains('mdc-chip-set'))
         cmp.mdc_comps.push(new jb.ui.material.MDCChipSet(cmp.base))
+
     },
     destroy: cmp => (cmp.mdc_comps || []).forEach(mdc_cmp=>mdc_cmp.destroy())
   })
 })
 
-jb.component('mdc.ripple-effect', { /* mdc.rippleEffect */
+jb.component('mdc.rippleEffect', {
   type: 'feature',
   description: 'add ripple effect',
   impl: ctx => ({
@@ -7986,7 +7950,7 @@ jb.component('mdc.ripple-effect', { /* mdc.rippleEffect */
    })
 })
 
-jb.component('label.mdc-ripple-effect', { /* label.mdcRippleEffect */
+jb.component('label.mdcRippleEffect', {
   type: 'text.style',
   impl: customStyle({
     template: (cmp,state,h) => h('button',{class: 'mdc-button'},[
@@ -8002,7 +7966,7 @@ jb.component('label.mdc-ripple-effect', { /* label.mdcRippleEffect */
 
 ;
 
-jb.component('button.href', { /* button.href */
+jb.component('button.href', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
@@ -8010,7 +7974,7 @@ jb.component('button.href', { /* button.href */
   })
 })
 
-jb.component('button.x', { /* button.x */
+jb.component('button.x', {
   type: 'button.style',
   params: [
     {id: 'size', as: 'number', defaultValue: '21'}
@@ -8031,7 +7995,7 @@ jb.component('button.x', { /* button.x */
   })
 })
 
-jb.component('button.native', { /* button.native */
+jb.component('button.native', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) => h('button',{class: raised ? 'raised' : '', title, onclick: true },title),
@@ -8039,7 +8003,7 @@ jb.component('button.native', { /* button.native */
   })
 })
 
-jb.component('button.mdc', { /* button.mdc */
+jb.component('button.mdc', {
   type: 'button.style',
   params: [
     {id: 'ripple', as: 'boolean', defaultValue: true, type: 'boolean'}
@@ -8054,7 +8018,7 @@ jb.component('button.mdc', { /* button.mdc */
   })
 })
 
-jb.component('button.mdc-icon', { /* button.mdcIcon */
+jb.component('button.mdcIcon', {
   type: 'button.style,icon-with-action.style',
   params: [
     {id: 'icon', as: 'string', defaultValue: 'bookmark_border'},
@@ -8072,7 +8036,7 @@ jb.component('button.mdc-icon', { /* button.mdcIcon */
   })
 })
 
-jb.component('button.mdc-chip-action', { /* button.mdcChipAction */
+jb.component('button.mdcChipAction', {
   type: 'button.style',
   params: [
 
@@ -8088,7 +8052,7 @@ jb.component('button.mdc-chip-action', { /* button.mdcChipAction */
   })
 })
 
-jb.component('button.mdc-chip-with-icons', { /* button.mdcChipWithIcons */
+jb.component('button.mdcChipWithIcons', {
   type: 'button.style,icon-with-action.style',
   params: [
     {id: 'leadingIcon', as: 'string', defaultValue: 'code'},
@@ -8107,7 +8071,7 @@ jb.component('button.mdc-chip-with-icons', { /* button.mdcChipWithIcons */
   })
 })
 
-jb.component('button.mdc-floating-action', { /* button.mdcFloatingAction */
+jb.component('button.mdcFloatingAction', {
   type: 'button.style,icon-with-action.style',
   description: 'fab icon',
   params: [
@@ -8125,7 +8089,7 @@ jb.component('button.mdc-floating-action', { /* button.mdcFloatingAction */
   })
 })
 
-jb.component('button.mdc-floating-with-title', { /* button.mdcFloatingWithTitle */
+jb.component('button.mdcFloatingWithTitle', {
   type: 'button.style,icon-with-action.style',
   params: [
     {id: 'icon', as: 'string', defaultValue: 'code'},
@@ -8143,7 +8107,7 @@ jb.component('button.mdc-floating-with-title', { /* button.mdcFloatingWithTitle 
   })
 })
 
-jb.component('button.mdc-icon12', { /* button.mdcIcon12 */
+jb.component('button.mdcIcon12', {
   type: 'button.style,icon-with-action.style',
   params: [
     {id: 'icon', as: 'string', defaultValue: 'code'}
@@ -8159,7 +8123,7 @@ jb.component('button.mdc-icon12', { /* button.mdcIcon12 */
 
 jb.ns('mdc,mdc-style')
 
-jb.component('editable-text.input', { /* editableText.input */
+jb.component('editableText.input', {
   type: 'editable-text.style',
   impl: customStyle({
     template: (cmp,{databind},h) => h('input', {value: databind, onchange: true, onkeyup: true, onblur: true }),
@@ -8167,7 +8131,7 @@ jb.component('editable-text.input', { /* editableText.input */
   })
 })
 
-jb.component('editable-text.textarea', { /* editableText.textarea */
+jb.component('editableText.textarea', {
   type: 'editable-text.style',
   params: [
     {id: 'rows', as: 'number', defaultValue: 4},
@@ -8181,26 +8145,28 @@ jb.component('editable-text.textarea', { /* editableText.textarea */
   })
 })
 
-jb.component('editable-text.mdc-input', { /* editableText.mdcInput */
+jb.component('editableText.mdcInput', {
   type: 'editable-text.style,editable-number.style',
   params: [
     {id: 'width', as: 'number'}
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{class: ['mdc-text-field',state.error ? 'is-invalid' : ''].join(' ') },[
-        h('input', { type: 'text', class: 'mdc-text-field__input', id: 'input_' + state.fieldId,
-            value: state.databind, onchange: true, onkeyup: true, onblur: true,
-        }),
-        h('label',{class: 'mdc-floating-label', for: 'input_' + state.fieldId},state.title),
-        h('div',{class: 'mdc-line-ripple' }),
-        h('span',{class: 'mdc-text-field-helper-text' }, state.error || '')
+    template: (cmp,state,h) => h('div',{}, [
+      h('div',{class: 'mdc-text-field' },[
+          h('input', { type: 'text', class: 'mdc-text-field__input', id: 'input_' + state.fieldId,
+              value: state.databind, onchange: true, onkeyup: true, onblur: true,
+          }),
+          h('label',{class: 'mdc-floating-label', for: 'input_' + state.fieldId},state.title),
+          h('div',{class: 'mdc-line-ripple' }) 
+        ]),
+        h('div',{class: 'mdc-text-field-helper-line' }, state.error || '')
       ]),
-    css: '{ {?width: %$width%px?} }',
+    css: `{ {?width: %$width%px?} } ~ .mdc-text-field-helper-line { color: red }`,
     features: [field.databindText(), mdcStyle.initDynamic()]
   })
 })
 
-jb.component('editable-text.mdc-no-label', { /* editableText.mdcNoLabel */
+jb.component('editableText.mdcNoLabel', {
   type: 'editable-text.style',
   params: [
     {id: 'width', as: 'number'}
@@ -8215,7 +8181,7 @@ jb.component('editable-text.mdc-no-label', { /* editableText.mdcNoLabel */
   })
 })
 
-jb.component('editable-text.mdc-search', { /* editableText.mdcSearch */
+jb.component('editableText.mdcSearch', {
   description: 'debounced and one way binding',
   type: 'editable-text.style',
   impl: customStyle({
@@ -8229,7 +8195,7 @@ jb.component('editable-text.mdc-search', { /* editableText.mdcSearch */
   })
 })
 
-jb.component('editable-text.expandable', { /* editableText.expandable */
+jb.component('editableText.expandable', {
   description: 'label that changes to editable class on double click',
   type: 'editable-text.style',
   params: [
@@ -8290,7 +8256,7 @@ jb.component('editable-text.expandable', { /* editableText.expandable */
 })
 ;
 
-jb.component('layout.vertical', { /* layout.vertical */
+jb.component('layout.vertical', {
   type: 'layout,feature',
   params: [
     {id: 'spacing', as: 'string', defaultValue: 3}
@@ -8302,7 +8268,7 @@ jb.component('layout.vertical', { /* layout.vertical */
   )
 })
 
-jb.component('layout.horizontal', { /* layout.horizontal */
+jb.component('layout.horizontal', {
   type: 'layout,feature',
   params: [
     {id: 'spacing', as: 'string', defaultValue: 3}
@@ -8314,7 +8280,7 @@ jb.component('layout.horizontal', { /* layout.horizontal */
   )
 })
 
-jb.component('layout.horizontal-fixed-split', { /* layout.horizontalFixedSplit */
+jb.component('layout.horizontalFixedSplit', {
   type: 'layout,feature',
   params: [
     {id: 'leftWidth', as: 'string', defaultValue: '200px', mandatory: true},
@@ -8329,7 +8295,7 @@ jb.component('layout.horizontal-fixed-split', { /* layout.horizontalFixedSplit *
   })
 })
 
-jb.component('layout.horizontal-wrapped', { /* layout.horizontalWrapped */
+jb.component('layout.horizontalWrapped', {
   type: 'layout,feature',
   params: [
     {id: 'spacing', as: 'string', defaultValue: 3}
@@ -8341,7 +8307,7 @@ jb.component('layout.horizontal-wrapped', { /* layout.horizontalWrapped */
   })
 })
 
-jb.component('layout.flex', { /* layout.flex */
+jb.component('layout.flex', {
   type: 'layout,feature',
   params: [
     {id: 'direction', as: 'string', options: ',row,row-reverse,column,column-reverse'},
@@ -8358,7 +8324,7 @@ jb.component('layout.flex', { /* layout.flex */
   })
 })
 
-jb.component('layout.grid', { /* layout.grid */
+jb.component('layout.grid', {
   type: 'layout,feature',
   params: [
     {id: 'columnSizes', as: 'array', templateValue: list('auto', 'auto'), description: 'grid-template-columns, list of lengths'},
@@ -8374,7 +8340,7 @@ jb.component('layout.grid', { /* layout.grid */
   })
 })
 
-jb.component('flex-item.grow', { /* flexItem.grow */
+jb.component('flexItem.grow', {
   type: 'feature',
   category: 'flex-item',
   params: [
@@ -8386,7 +8352,7 @@ jb.component('flex-item.grow', { /* flexItem.grow */
   }
 })
 
-jb.component('flex-item.basis', { /* flexItem.basis */
+jb.component('flexItem.basis', {
   type: 'feature',
   category: 'flex-item',
   params: [
@@ -8398,7 +8364,7 @@ jb.component('flex-item.basis', { /* flexItem.basis */
   }
 })
 
-jb.component('flex-item.align-self', { /* flexItem.alignSelf */
+jb.component('flexItem.alignSelf', {
   type: 'feature',
   category: 'flex-item',
   params: [
@@ -8414,7 +8380,7 @@ jb.component('flex-item.align-self', { /* flexItem.alignSelf */
 
 jb.ns('css')
 
-jb.component('group.htmlTag', { /* group.htmlTag */
+jb.component('group.htmlTag', {
   type: 'group.style',
   params: [
     {id: 'htmlTag', as: 'string', defaultValue: 'section', options: 'div,ul,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label,form'},
@@ -8428,21 +8394,21 @@ jb.component('group.htmlTag', { /* group.htmlTag */
   })
 })
 
-jb.component('group.div', { /* group.div */
+jb.component('group.div', {
   type: 'group.style',
   impl: group.htmlTag(
     'div'
   )
 })
 
-jb.component('group.section', { /* group.section */
+jb.component('group.section', {
   type: 'group.style',
   impl: group.htmlTag(
     'section'
   )
 })
 
-jb.component('group.ul-li', { /* group.ulLi */
+jb.component('group.ulLi', {
   type: 'group.style',
   impl: customStyle({
     template: (cmp,{ctrls},h) => h('ul',{ class: 'jb-itemlist'},
@@ -8453,7 +8419,7 @@ jb.component('group.ul-li', { /* group.ulLi */
   })
 })
 
-jb.component('group.card', { /* group.card */
+jb.component('group.card', {
   type: 'feature',
   category: 'card:100',
   params: [
@@ -8471,7 +8437,7 @@ jb.component('group.card', { /* group.card */
   )
 })
 
-jb.component('group.chip-set', { /* group.chipSet */
+jb.component('group.chipSet', {
   type: 'feature',
   category: 'chip:100',
   params: [
@@ -8483,7 +8449,7 @@ jb.component('group.chip-set', { /* group.chipSet */
   )
 })
 
-jb.component('group.tabs', { /* group.tabs */
+jb.component('group.tabs', {
   type: 'group.style',
   params: [
     {id: 'width', as: 'number'},
@@ -8519,7 +8485,7 @@ jb.component('group.tabs', { /* group.tabs */
   )
 })
 
-jb.component('group.accordion', { /* group.accordion */
+jb.component('group.accordion', {
   type: 'group.style',
   params: [
     {id: 'titleStyle', type: 'button.style', dynamic: true, defaultValue: button.mdc()},
@@ -8560,7 +8526,7 @@ jb.component('group.accordion', { /* group.accordion */
   )
 })
 
-jb.component('group.sections', { /* group.sections */
+jb.component('group.sections', {
   type: 'group.style',
   params: [
     {id: 'titleStyle', type: 'text.style', dynamic: true, defaultValue: header.mdcHeadline5()},
@@ -8587,7 +8553,7 @@ jb.component('group.sections', { /* group.sections */
 ;
 
 jb.ns('mdc.style')
-jb.component('table.plain', { /* table.plain */
+jb.component('table.plain', {
   params: [
     {id: 'hideHeaders', as: 'boolean', type: 'boolean'}
   ],
@@ -8612,7 +8578,7 @@ jb.component('table.plain', { /* table.plain */
   })
 })
 
-jb.component('table.mdc', { /* table.mdc */
+jb.component('table.mdc', {
   type: 'table.style,itemlist.style',
   params: [
     {id: 'hideHeaders', as: 'boolean', type: 'boolean'},
@@ -8650,7 +8616,7 @@ jb.component('table.mdc', { /* table.mdc */
 })
 ;
 
-jb.component('picklist.native', { /* picklist.native */
+jb.component('picklist.native', {
   type: 'picklist.style',
   impl: customStyle({
     template: (cmp,state,h) => h('select', { value: state.databind, onchange: true },
@@ -8664,7 +8630,7 @@ jb.component('picklist.native', { /* picklist.native */
   })
 })
 
-jb.component('picklist.radio', { /* picklist.radio */
+jb.component('picklist.radio', {
   type: 'picklist.style',
   params: [
     {id: 'radioCss', as: 'string', defaultValue: '', description: 'e.g. display: none'},
@@ -8680,7 +8646,7 @@ jb.component('picklist.radio', { /* picklist.radio */
   })
 })
 
-jb.component('picklist.radio-vertical', { /* picklist.radioVertical */
+jb.component('picklist.radioVertical', {
   type: 'picklist.style',
   impl: styleWithFeatures(
     picklist.radio(),
@@ -8688,7 +8654,7 @@ jb.component('picklist.radio-vertical', { /* picklist.radioVertical */
   )
 })
 
-jb.component('picklist.native-md-look-open', { /* picklist.nativeMdLookOpen */
+jb.component('picklist.nativeMdLookOpen', {
   type: 'picklist.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{}, [
@@ -8726,7 +8692,7 @@ jb.component('picklist.native-md-look-open', { /* picklist.nativeMdLookOpen */
   })
 })
 
-jb.component('picklist.native-md-look', { /* picklist.nativeMdLook */
+jb.component('picklist.nativeMdLook', {
   type: 'picklist.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{},h('select',
@@ -8763,7 +8729,7 @@ jb.component('picklist.native-md-look', { /* picklist.nativeMdLook */
   })
 })
 
-jb.component('picklist.label-list', { /* picklist.labelList */
+jb.component('picklist.labelList', {
   type: 'picklist.style',
   params: [
     {id: 'labelStyle', type: 'text.style', dynamic: true, defaultValue: text.span()},
@@ -8786,7 +8752,7 @@ jb.component('picklist.label-list', { /* picklist.labelList */
   )
 })
 
-jb.component('picklist.button-list', { /* picklist.buttonList */
+jb.component('picklist.buttonList', {
   type: 'picklist.style',
   params: [
     {id: 'buttonStyle', type: 'button.style', dynamic: true, defaultValue: button.mdc()},
@@ -8809,7 +8775,7 @@ jb.component('picklist.button-list', { /* picklist.buttonList */
   )
 })
 
-jb.component('picklist.hyperlinks', { /* picklist.hyperlinks */
+jb.component('picklist.hyperlinks', {
   type: 'picklist.style',
   impl: picklist.buttonList({
     buttonStyle: button.href(),
@@ -8818,7 +8784,7 @@ jb.component('picklist.hyperlinks', { /* picklist.hyperlinks */
   })
 })
 
-jb.component('picklist.groups', { /* picklist.groups */
+jb.component('picklist.groups', {
   type: 'picklist.style',
   impl: customStyle({
     template: (cmp,state,h) => h('select', { value: state.databind, onchange: true },
@@ -8836,7 +8802,7 @@ select::-webkit-input-placeholder { color: #999; }`,
 })
 ;
 
-jb.component('property-sheet.titles-left', { /* propertySheet.titlesLeft */
+jb.component('propertySheet.titlesLeft', {
   type: 'group.style',
   params: [
     {id: 'titleStyle', type: 'text.style', defaultValue: styleWithFeatures(text.span(), css.bold()), dynamic: true},
@@ -8854,7 +8820,7 @@ jb.component('property-sheet.titles-left', { /* propertySheet.titlesLeft */
   })
 })
 
-jb.component('property-sheet.titles-above', { /* propertySheet.titlesAbove */
+jb.component('propertySheet.titlesAbove', {
   type: 'group.style',
   params: [
     {id: 'titleStyle', type: 'text.style', defaultValue: styleWithFeatures(text.span(), css.bold()), dynamic: true},
@@ -8876,7 +8842,7 @@ jb.component('property-sheet.titles-above', { /* propertySheet.titlesAbove */
 })
 ;
 
-jb.component('editable-boolean.checkbox', { /* editableBoolean.checkbox */
+jb.component('editableBoolean.checkbox', {
   type: 'editable-boolean.style',
   impl: customStyle({
     template: (cmp,state,h) => h('input', { type: 'checkbox', checked: state.databind, onchange: 'toggle', onkeyup: 'toggle'  }),
@@ -8884,7 +8850,7 @@ jb.component('editable-boolean.checkbox', { /* editableBoolean.checkbox */
   })
 })
 
-jb.component('editable-boolean.checkbox-with-title', { /* editableBoolean.checkboxWithTitle */
+jb.component('editableBoolean.checkboxWithTitle', {
   type: 'editable-boolean.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{}, [h('input', { type: 'checkbox',
@@ -8893,7 +8859,7 @@ jb.component('editable-boolean.checkbox-with-title', { /* editableBoolean.checkb
   })
 })
 
-jb.component('editable-boolean.checkbox-with-label', { /* editableBoolean.checkboxWithLabel */
+jb.component('editableBoolean.checkboxWithLabel', {
   type: 'editable-boolean.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{},[
@@ -8907,7 +8873,7 @@ jb.component('editable-boolean.checkbox-with-label', { /* editableBoolean.checkb
   })
 })
 
-jb.component('editable-boolean.expand-collapse', { /* editableBoolean.expandCollapse */
+jb.component('editableBoolean.expandCollapse', {
   type: 'editable-boolean.style',
   impl: customStyle({
     template: (cmp,{databind},h) => h('i',{class:'material-icons noselect', onclick: 'toggle' },
@@ -8917,7 +8883,7 @@ jb.component('editable-boolean.expand-collapse', { /* editableBoolean.expandColl
   })
 })
 
-jb.component('editable-boolean.mdc-x-v', { /* editableBoolean.mdcXV */
+jb.component('editableBoolean.mdcXV', {
   type: 'editable-boolean.style',
   description: 'two icons',
   params: [
@@ -8936,7 +8902,7 @@ jb.component('editable-boolean.mdc-x-v', { /* editableBoolean.mdcXV */
   })
 })
 
-jb.component('editable-boolean.mdc-slide-toggle', { /* editableBoolean.mdcSlideToggle */
+jb.component('editableBoolean.mdcSlideToggle', {
   type: 'editable-boolean.style',
   params: [
     {id: 'width', as: 'string', defaultValue: 80}
@@ -8959,7 +8925,7 @@ jb.component('editable-boolean.mdc-slide-toggle', { /* editableBoolean.mdcSlideT
 
 ;
 
-jb.component('pretty-print', { /* prettyPrint */
+jb.component('prettyPrint', {
   params: [
     {id: 'profile', defaultValue: '%%'},
     {id: 'forceFlat', as: 'boolean', type: 'boolean'}
@@ -9149,7 +9115,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
 (function() {
 jb.ns('tree')
 
-jb.component('tree', { /* tree */
+jb.component('tree', {
   type: 'control',
   params: [
     {id: 'nodeModel', type: 'tree.node-model', dynamic: true, mandatory: true},
@@ -9226,7 +9192,7 @@ class TreeRenderer {
 	}
 }
 
-jb.component('tree.plain', { /* tree.plain */
+jb.component('tree.plain', {
   type: 'tree.style',
   params: [
     {id: 'showIcon', as: 'boolean', type: 'boolean'},
@@ -9261,7 +9227,7 @@ jb.component('tree.plain', { /* tree.plain */
   }))
 })
 
-jb.component('tree.expand-box', { /* tree.expandBox */
+jb.component('tree.expandBox', {
   type: 'tree.style',
   params: [
     {id: 'showIcon', as: 'boolean', type: 'boolean'},
@@ -9313,7 +9279,7 @@ jb.component('tree.expand-box', { /* tree.expandBox */
 	}))
 })
 
-jb.component('tree.selection', { /* tree.selection */
+jb.component('tree.selection', {
   type: 'feature',
   params: [
     {id: 'databind', as: 'ref', dynamic: true},
@@ -9338,7 +9304,7 @@ jb.component('tree.selection', { /* tree.selection */
         (ctx,{cmp},{databind,autoSelectFirst,onSelection,onRightClick}) => {
 			const selectedRef = databind()
 			const {pipe,map,filter,subscribe,merge,distinctUntilChanged} = jb.callbag
-			const databindObs = jb.isWatchable(selectedRef) && 
+			const databindObs = jb.isWatchable(selectedRef) &&
 				pipe(jb.ui.refObservable(selectedRef,cmp,{srcCtx: ctx}), map(e=>jb.val(e.ref)))
 
 			cmp.setSelected = selected => {
@@ -9385,7 +9351,7 @@ jb.component('tree.selection', { /* tree.selection */
   )
 })
 
-jb.component('tree.keyboard-selection', { /* tree.keyboardSelection */
+jb.component('tree.keyboardSelection', {
   type: 'feature',
   params: [
     {id: 'onKeyboardSelection', type: 'action', dynamic: true},
@@ -9411,7 +9377,7 @@ jb.component('tree.keyboard-selection', { /* tree.keyboardSelection */
 
 				if (context.params.autoFocus)
 					jb.ui.focus(cmp.base,'tree.keyboard-selection init autofocus',context);
-				
+
 				pipe(keyDownNoAlts, filter(e=> e.keyCode == 13), subscribe(e =>
 					runActionInTreeContext(context.params.onEnter)))
 
@@ -9453,12 +9419,12 @@ jb.component('tree.keyboard-selection', { /* tree.keyboardSelection */
 		})
 })
 
-jb.component('tree.regain-focus', { /* tree.regainFocus */
+jb.component('tree.regainFocus', {
   type: 'action',
   impl: ctx => ctx.vars.$tree && ctx.vars.$tree.regainFocus && ctx.vars.$tree.regainFocus()
 })
 
-jb.component('tree.redraw', { /* tree.redraw */
+jb.component('tree.redraw', {
   type: 'action',
   params: [
     {id: 'strong', type: 'boolean', as: 'boolean'}
@@ -9469,7 +9435,7 @@ jb.component('tree.redraw', { /* tree.redraw */
 	}
 })
 
-jb.component('tree.expand-path', { /* tree.expandPath */
+jb.component('tree.expandPath', {
   type: 'action',
   params: [
     {id: 'paths', as: 'array', descrition: 'array of paths to be expanded'}
@@ -9477,7 +9443,7 @@ jb.component('tree.expand-path', { /* tree.expandPath */
   impl: (ctx,paths) => ctx.vars.cmp && paths.forEach(path => jb.ui.treeExpandPath(ctx.vars.cmp.state.expanded, path))
 })
 
-jb.component('tree.path-of-interactive-item', { /* tree.pathOfInteractiveItem */
+jb.component('tree.pathOfInteractiveItem', {
   descrition: 'path of the clicked/dragged item using event.target',
   type: 'data',
   impl: ctx => {
@@ -9486,7 +9452,7 @@ jb.component('tree.path-of-interactive-item', { /* tree.pathOfInteractiveItem */
 	}
 })
 
-jb.component('tree.drag-and-drop', { /* tree.dragAndDrop */
+jb.component('tree.dragAndDrop', {
   type: 'feature',
   impl: ctx => ({
 		onkeydown: true,
@@ -9571,7 +9537,7 @@ addToIndex = (path,toAdd) => {
 jb.ns('table-tree,tree')
 jb.ns('json')
 
-jb.component('table-tree', { /* tableTree */
+jb.component('tableTree', {
   type: 'control',
   params: [
     {id: 'treeModel', type: 'tree.node-model', dynamic: true, mandatory: true},
@@ -9584,7 +9550,7 @@ jb.component('table-tree', { /* tableTree */
   impl: ctx => jb.ui.ctrl(ctx)
 })
 
-jb.component('tree.model-filter', { /* tree.modelFilter */
+jb.component('tree.modelFilter', {
   type: 'tree.node-model',
   description: 'filters a model by path filter predicate',
   params: [
@@ -9596,7 +9562,7 @@ jb.component('tree.model-filter', { /* tree.modelFilter */
     })
 })
 
-jb.component('table-tree.init', { /* tableTree.init */
+jb.component('tableTree.init', {
   type: 'feature',
   params: [
     {id: 'autoOpenFirstLevel', as: 'boolean', type: 'boolean'}
@@ -9708,7 +9674,7 @@ jb.component('table-tree.init', { /* tableTree.init */
   )
 })
 
-jb.component('table-tree.plain', { /* tableTree.plain */
+jb.component('tableTree.plain', {
   type: 'table-tree.style',
   params: [
     {id: 'hideHeaders', as: 'boolean', type: 'boolean'},
@@ -9748,7 +9714,7 @@ jb.component('table-tree.plain', { /* tableTree.plain */
   })
 })
 
-jb.component('json.path-selector', { /* json.pathSelector */
+jb.component('json.pathSelector', {
   description: 'select, query, goto path',
   params: [
     {id: 'base', as: 'single', description: 'object to start with'},
@@ -9761,7 +9727,7 @@ jb.component('json.path-selector', { /* json.pathSelector */
     }
 })
 
-jb.component('table-tree.expand-path', { /* tableTree.expandPath */
+jb.component('tableTree.expandPath', {
   type: 'table-tree.style',
   params: [
     {id: 'path', as: 'string'}
@@ -9776,7 +9742,7 @@ jb.component('table-tree.expand-path', { /* tableTree.expandPath */
 ;
 
 (function() {
-jb.component('tree.json-read-only', { /* tree.jsonReadOnly */
+jb.component('tree.jsonReadOnly', {
   type: 'tree.node-model',
   params: [
     {id: 'object', as: 'single'},
@@ -9825,7 +9791,7 @@ class ROjson {
 	}
 }
 
-jb.component('tree.json', { /* tree.json */
+jb.component('tree.json', {
   type: 'tree.node-model',
   params: [
     {id: 'object', as: 'ref'},

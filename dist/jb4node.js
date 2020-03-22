@@ -920,7 +920,7 @@ Object.assign(jb, {
 })
 ;
 
-jb.component('call', { /* call */
+jb.component('call', {
   type: 'any',
   params: [
     {id: 'param', as: 'string'}
@@ -969,48 +969,36 @@ jb.pipe = function(context,ptName) {
 	}
 }
 
-jb.component('pipeline', { /* pipeline */
+jb.component('pipeline', {
   type: 'data',
   description: 'map data arrays one after the other',
   params: [
-    {
-      id: 'items',
-      type: 'data,aggregator[]',
-      ignore: true,
-      mandatory: true,
-      composite: true
-    }
+    {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true, description: 'click "=" for functions list'}
   ],
   impl: ctx => jb.pipe(ctx,'$pipeline')
 })
 
-jb.component('pipe', { /* pipe */
+jb.component('pipe', {
   type: 'data',
   description: 'map asynch data arrays',
   params: [
-    {
-      id: 'items',
-      type: 'data,aggregator[]',
-      ignore: true,
-      mandatory: true,
-      composite: true
-    }
+    {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true}
   ],
   impl: ctx => jb.pipe(ctx,'$pipe')
 })
 
-jb.component('data.if', { /* data.if */
+jb.component('data.if', {
   type: 'data',
   macroByValue: true,
   params: [
-    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true},
+    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true, type: 'boolean'},
     {id: 'then', mandatory: true, dynamic: true},
     {id: 'else', dynamic: true, defaultValue: '%%'}
   ],
   impl: (ctx,cond,_then,_else) =>	cond() ? _then() : _else()
 })
 
-jb.component('action.if', { /* action.if */
+jb.component('action.if', {
   type: 'action',
   description: 'if then else',
   macroByValue: true,
@@ -1022,7 +1010,7 @@ jb.component('action.if', { /* action.if */
   impl: (ctx,cond,_then,_else) =>	cond ? _then() : _else()
 })
 
-jb.component('jb-run', { /* jbRun */
+jb.component('jbRun', {
   type: 'action',
   params: [
     {id: 'profile', as: 'string', mandatory: true, description: 'profile name'},
@@ -1031,7 +1019,7 @@ jb.component('jb-run', { /* jbRun */
   impl: (ctx,profile,params) =>	ctx.run(Object.assign({$:profile},params || {}))
 })
 
-jb.component('list', { /* list */
+jb.component('list', {
   type: 'data',
   description: 'also flatten arrays',
   params: [
@@ -1049,17 +1037,16 @@ jb.component('list', { /* list */
 	}
 })
 
-jb.component('first-succeeding', { /* firstSucceeding */
+jb.component('firstSucceeding', {
   type: 'data',
   params: [
-    {id: 'items', type: 'data[]', as: 'array', composite: true},
-//    {id: 'acceptEmptyString', as: 'boolean'}
+    {id: 'items', type: 'data[]', as: 'array', composite: true}
   ],
   impl: function(ctx,items,acceptEmptyString) {
     for(let i=0;i<items.length;i++) {
       const val = jb.val(items[i])
       const isNumber = typeof val === 'number'
-      if ((acceptEmptyString || val !== '') && val != null 
+      if ((acceptEmptyString || val !== '') && val != null
           && (!isNumber || (!isNaN(val)) && val !== Infinity && val !== -Infinity))
         return items[i]
     }
@@ -1069,7 +1056,7 @@ jb.component('first-succeeding', { /* firstSucceeding */
 	}
 })
 
-jb.component('keys', { /* keys */
+jb.component('keys', {
   type: 'data',
   description: 'Object.keys',
   params: [
@@ -1078,7 +1065,7 @@ jb.component('keys', { /* keys */
   impl: (ctx,obj) => Object.keys(obj && typeof obj === 'object' ? obj : {})
 })
 
-jb.component('properties', { /* properties */
+jb.component('properties', {
   description: 'object entries as id,val',
   type: 'data',
   params: [
@@ -1129,7 +1116,7 @@ jb.component('math.sum', {
   })
 )
 
-jb.component('obj-from-entries', {
+jb.component('objFromEntries', {
   description: 'object from entries',
   type: 'aggregator',
   params: [
@@ -1138,7 +1125,7 @@ jb.component('obj-from-entries', {
   impl: (ctx,entries) => jb.objFromEntries(entries)
 })
 
-jb.component('eval-expression', {
+jb.component('evalExpression', {
   description: 'evaluate javascript expression',
   type: 'data',
   params: [
@@ -1151,7 +1138,7 @@ jb.component('eval-expression', {
   }
 })
 
-jb.component('prefix', { /* prefix */
+jb.component('prefix', {
   type: 'data',
   params: [
     {id: 'separator', as: 'string', mandatory: true},
@@ -1161,7 +1148,7 @@ jb.component('prefix', { /* prefix */
 		(text||'').substring(0,text.indexOf(separator))
 })
 
-jb.component('suffix', { /* suffix */
+jb.component('suffix', {
   type: 'data',
   params: [
     {id: 'separator', as: 'string', mandatory: true},
@@ -1171,7 +1158,7 @@ jb.component('suffix', { /* suffix */
 		(text||'').substring(text.lastIndexOf(separator)+separator.length)
 })
 
-jb.component('remove-prefix', { /* removePrefix */
+jb.component('removePrefix', {
   type: 'data',
   params: [
     {id: 'separator', as: 'string', mandatory: true},
@@ -1181,7 +1168,7 @@ jb.component('remove-prefix', { /* removePrefix */
 		text.indexOf(separator) == -1 ? text : text.substring(text.indexOf(separator)+separator.length)
 })
 
-jb.component('remove-suffix', { /* removeSuffix */
+jb.component('removeSuffix', {
   type: 'data',
   params: [
     {id: 'separator', as: 'string', mandatory: true},
@@ -1191,15 +1178,10 @@ jb.component('remove-suffix', { /* removeSuffix */
 		text.lastIndexOf(separator) == -1 ? text : text.substring(0,text.lastIndexOf(separator))
 })
 
-jb.component('remove-suffix-regex', { /* removeSuffixRegex */
+jb.component('removeSuffixRegex', {
   type: 'data',
   params: [
-    {
-      id: 'suffix',
-      as: 'string',
-      mandatory: true,
-      description: 'regular expression. e.g [0-9]*'
-    },
+    {id: 'suffix', as: 'string', mandatory: true, description: 'regular expression. e.g [0-9]*'},
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
   impl: function(context,suffix,text) {
@@ -1209,7 +1191,7 @@ jb.component('remove-suffix-regex', { /* removeSuffixRegex */
 	}
 })
 
-jb.component('write-value', { /* writeValue */
+jb.component('writeValue', {
   type: 'action',
   params: [
     {id: 'to', as: 'ref', mandatory: true},
@@ -1228,12 +1210,12 @@ jb.component('property', {
   description: 'navigate/select/path property of object',
   params: [
     {id: 'prop', as: 'string', mandatory: true},
-    {id: 'obj', defaultValue: '%%' },
+    {id: 'obj', defaultValue: '%%'}
   ],
   impl: (ctx,prop,obj) =>	jb.objectProperty(obj,prop,ctx)
 })
 
-jb.component('index-of', { /* indexOf */
+jb.component('indexOf', {
   params: [
     {id: 'array', as: 'array', mandatory: true},
     {id: 'item', as: 'single', mandatory: true}
@@ -1241,16 +1223,16 @@ jb.component('index-of', { /* indexOf */
   impl: (ctx,array,item) => array.indexOf(item)
 })
 
-jb.component('add-to-array', { /* addToArray */
+jb.component('addToArray', {
   type: 'action',
   params: [
     {id: 'array', as: 'ref', mandatory: true},
-    {id: 'toAdd', as: 'array', mandatory: true },
+    {id: 'toAdd', as: 'array', mandatory: true}
   ],
   impl: (ctx,array,toAdd) => jb.push(array, JSON.parse(JSON.stringify(toAdd)),ctx)
 })
 
-jb.component('splice', { /* splice */
+jb.component('splice', {
   type: 'action',
   params: [
     {id: 'array', as: 'ref', mandatory: true},
@@ -1262,7 +1244,7 @@ jb.component('splice', { /* splice */
 		jb.splice(array,[[fromIndex,noOfItemsToRemove,...itemsToAdd]],ctx)
 })
 
-jb.component('remove-from-array', { /* removeFromArray */
+jb.component('removeFromArray', {
   type: 'action',
   params: [
     {id: 'array', as: 'ref', mandatory: true},
@@ -1276,7 +1258,7 @@ jb.component('remove-from-array', { /* removeFromArray */
 	}
 })
 
-jb.component('toggle-boolean-value', { /* toggleBooleanValue */
+jb.component('toggleBooleanValue', {
   type: 'action',
   params: [
     {id: 'of', as: 'ref'}
@@ -1284,22 +1266,11 @@ jb.component('toggle-boolean-value', { /* toggleBooleanValue */
   impl: (ctx,_of) => jb.writeValue(_of,jb.val(_of) ? false : true,ctx)
 })
 
-jb.component('slice', { /* slice */
+jb.component('slice', {
   type: 'aggregator',
   params: [
-    {
-      id: 'start',
-      as: 'number',
-      defaultValue: 0,
-      description: '0-based index',
-      mandatory: true
-    },
-    {
-      id: 'end',
-      as: 'number',
-      mandatory: true,
-      description: '0-based index of where to end the selection (not including itself)'
-    }
+    {id: 'start', as: 'number', defaultValue: 0, description: '0-based index', mandatory: true},
+    {id: 'end', as: 'number', mandatory: true, description: '0-based index of where to end the selection (not including itself)'}
   ],
   impl: function({data},start,end) {
 		if (!data || !data.slice) return null;
@@ -1307,7 +1278,7 @@ jb.component('slice', { /* slice */
 	}
 })
 
-jb.component('sort', { /* sort */
+jb.component('sort', {
   type: 'aggregator',
   params: [
     {id: 'propertyName', as: 'string', description: 'sort by property inside object'},
@@ -1328,17 +1299,17 @@ jb.component('sort', { /* sort */
 	}
 })
 
-jb.component('first', { /* first */
+jb.component('first', {
   type: 'aggregator',
   impl: ({data}) => data[0]
 })
 
-jb.component('last', { /* last */
+jb.component('last', {
   type: 'aggregator',
   impl: ({data}) => data.slice(-1)[0]
 })
 
-jb.component('count', { /* count */
+jb.component('count', {
   type: 'aggregator',
   description: 'length, size of array',
   params: [
@@ -1347,7 +1318,7 @@ jb.component('count', { /* count */
   impl: (ctx,items) => items.length
 })
 
-jb.component('reverse', { /* reverse */
+jb.component('reverse', {
   type: 'aggregator',
   params: [
     {id: 'items', as: 'array', defaultValue: '%%'}
@@ -1355,7 +1326,7 @@ jb.component('reverse', { /* reverse */
   impl: (ctx,items) => items.reverse()
 })
 
-jb.component('sample', { /* sample */
+jb.component('sample', {
   type: 'aggregator',
   params: [
     {id: 'size', as: 'number', defaultValue: 300},
@@ -1364,7 +1335,7 @@ jb.component('sample', { /* sample */
   impl: (ctx,size,items) =>	items.filter((x,i)=>i % (Math.floor(items.length/size) ||1) == 0)
 })
 
-jb.component('obj', { /* obj */
+jb.component('obj', {
   description: 'build object (dictionary) from props',
   params: [
     {id: 'props', type: 'prop[]', mandatory: true, sugar: true}
@@ -1373,7 +1344,7 @@ jb.component('obj', { /* obj */
 		jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)]))
 })
 
-jb.component('extend', { /* extend */
+jb.component('extend', {
   description: 'assign and extend with calculated properties',
   params: [
     {id: 'props', type: 'prop[]', mandatory: true, defaultValue: []}
@@ -1383,7 +1354,7 @@ jb.component('extend', { /* extend */
 })
 jb.component('assign', jb.comps.extend)
 
-jb.component('extend-with-index', { /* extendWithIndex */
+jb.component('extendWithIndex', {
   type: 'aggregator',
   description: 'extend with calculated properties. %$index% is available ',
   params: [
@@ -1394,23 +1365,23 @@ jb.component('extend-with-index', { /* extendWithIndex */
 			Object.assign({}, item, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx.setData(item).setVars({index:i})),p.type)]))))
 })
 
-jb.component('prop', { /* prop */
+jb.component('prop', {
   type: 'prop',
   macroByValue: true,
   params: [
     {id: 'title', as: 'string', mandatory: true},
     {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: ''},
-    {id: 'type', as: 'string', options: 'string,number,boolean,object,array', defaultValue: 'string' }
+    {id: 'type', as: 'string', options: 'string,number,boolean,object,array', defaultValue: 'string'}
   ],
   impl: ctx => ctx.params
 })
 
-jb.component('ref-prop', { /* refProp */
+jb.component('refProp', {
   type: 'prop',
   description: 'value by reference allows to change or watch the value',
   params: [
     {id: 'title', as: 'string', mandatory: true},
-    {id: 'val', dynamic: true, as: 'ref', mandatory: true },
+    {id: 'val', dynamic: true, as: 'ref', mandatory: true}
   ],
   impl: ctx => ({ ...ctx.params, type: 'ref' })
 })
@@ -1426,7 +1397,7 @@ jb.component('pipeline.var', {
 })
 
 
-jb.component('Var', { /* Var */
+jb.component('Var', {
   type: 'var,system',
   isSystem: true,
   params: [
@@ -1437,7 +1408,7 @@ jb.component('Var', { /* Var */
 		Object.assign(result,{ $vars: Object.assign(result.$vars || {}, { [self.name]: self.val }) })
 })
 
-jb.component('remark', { /* remark */
+jb.component('remark', {
   type: 'system',
   isSystem: true,
   params: [
@@ -1447,17 +1418,17 @@ jb.component('remark', { /* remark */
 		Object.assign(result,{ remark: self.remark })
 })
 
-jb.component('If', { /* If */
+jb.component('If', {
   macroByValue: true,
   params: [
-    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true},
+    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true, type: 'boolean'},
     {id: 'then', dynamic: true},
     {id: 'Else', dynamic: true}
   ],
   impl: (ctx,cond,_then,_else) =>	cond() ? _then() : _else()
 })
 
-jb.component('not', { /* not */
+jb.component('not', {
   type: 'boolean',
   params: [
     {id: 'of', type: 'boolean', as: 'boolean', mandatory: true, composite: true}
@@ -1465,7 +1436,7 @@ jb.component('not', { /* not */
   impl: (context, of) => !of
 })
 
-jb.component('and', { /* and */
+jb.component('and', {
   description: 'logical and',
   type: 'boolean',
   params: [
@@ -1482,7 +1453,7 @@ jb.component('and', { /* and */
 	}
 })
 
-jb.component('or', { /* or */
+jb.component('or', {
   description: 'logical or',
   type: 'boolean',
   params: [
@@ -1499,7 +1470,7 @@ jb.component('or', { /* or */
 	}
 })
 
-jb.component('between', { /* between */
+jb.component('between', {
   description: 'checks if number is in range',
   type: 'boolean',
   params: [
@@ -1510,7 +1481,7 @@ jb.component('between', { /* between */
   impl: (ctx,from,to,val) => val >= from && val <= to
 })
 
-jb.component('contains', { /* contains */
+jb.component('contains', {
   type: 'boolean',
   params: [
     {id: 'text', type: 'data[]', as: 'array', mandatory: true},
@@ -1528,7 +1499,7 @@ jb.component('contains', { /* contains */
 	}
 })
 
-jb.component('not-contains', { /* notContains */
+jb.component('notContains', {
   type: 'boolean',
   params: [
     {id: 'text', type: 'data[]', as: 'array', mandatory: true},
@@ -1539,7 +1510,7 @@ jb.component('not-contains', { /* notContains */
   )
 })
 
-jb.component('starts-with', { /* startsWith */
+jb.component('startsWith', {
   description: 'begins with, includes, contains',
   type: 'boolean',
   params: [
@@ -1549,7 +1520,7 @@ jb.component('starts-with', { /* startsWith */
   impl: (context,startsWith,text) => text.indexOf(startsWith) == 0
 })
 
-jb.component('ends-with', { /* endsWith */
+jb.component('endsWith', {
   description: 'includes, contains',
   type: 'boolean',
   params: [
@@ -1560,7 +1531,7 @@ jb.component('ends-with', { /* endsWith */
 })
 
 
-jb.component('filter', { /* filter */
+jb.component('filter', {
   type: 'aggregator',
   params: [
     {id: 'filter', type: 'boolean', as: 'boolean', dynamic: true, mandatory: true}
@@ -1568,38 +1539,38 @@ jb.component('filter', { /* filter */
   impl: (context,filter) =>	jb.toarray(context.data).filter(item =>	filter(context,item))
 })
 
-jb.component('match-regex', { /* matchRegex */
+jb.component('matchRegex', {
   description: 'validation with regular expression',
   type: 'boolean',
   params: [
     {id: 'regex', as: 'string', mandatory: true, description: 'e.g: [a-zA-Z]*'},
-    {id: 'text', as: 'string', defaultValue: '%%'},
+    {id: 'text', as: 'string', defaultValue: '%%'}
   ],
   impl: (ctx,regex,text) => text.match(new RegExp(regex))
 })
 
-jb.component('to-uppercase', { /* toUppercase */
+jb.component('toUppercase', {
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
   impl: (ctx,text) =>	text.toUpperCase()
 })
 
-jb.component('to-lowercase', { /* toLowercase */
+jb.component('toLowercase', {
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
   impl: (ctx,text) =>	text.toLowerCase()
 })
 
-jb.component('capitalize', { /* capitalize */
+jb.component('capitalize', {
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
   impl: (ctx,text) =>	text.charAt(0).toUpperCase() + text.slice(1)
 })
 
-jb.component('join', { /* join */
+jb.component('join', {
   params: [
     {id: 'separator', as: 'string', defaultValue: ',', mandatory: true},
     {id: 'prefix', as: 'string'},
@@ -1618,7 +1589,7 @@ jb.component('join', { /* join */
 	}
 })
 
-jb.component('unique', { /* unique */
+jb.component('unique', {
   params: [
     {id: 'id', as: 'string', dynamic: true, defaultValue: '%%'},
     {id: 'items', as: 'array', defaultValue: '%%'}
@@ -1630,7 +1601,7 @@ jb.component('unique', { /* unique */
 	}
 })
 
-jb.component('log', { /* log */
+jb.component('log', {
   params: [
     {id: 'obj', as: 'single', defaultValue: '%%'}
   ],
@@ -1646,14 +1617,14 @@ jb.component('log', { /* log */
 	}
 })
 
-jb.component('asIs', { /* asIs */
+jb.component('asIs', {
   params: [
     {id: '$asIs', ignore: true}
   ],
   impl: ctx => context.profile.$asIs
 })
 
-jb.component('object', { /* object */
+jb.component('object', {
   impl: function(context) {
 		let result = {};
 		const obj = context.profile.$object || context.profile;
@@ -1667,7 +1638,7 @@ jb.component('object', { /* object */
 	}
 })
 
-jb.component('json.stringify', { /* json.stringify */
+jb.component('json.stringify', {
   params: [
     {id: 'value', defaultValue: '%%'},
     {id: 'space', as: 'string', description: 'use space or tab to make pretty output'}
@@ -1675,7 +1646,7 @@ jb.component('json.stringify', { /* json.stringify */
   impl: (context,value,space) => JSON.stringify(jb.val(value),null,space)
 })
 
-jb.component('json.parse', { /* json.parse */
+jb.component('json.parse', {
   params: [
     {id: 'text', as: 'string'}
   ],
@@ -1688,11 +1659,11 @@ jb.component('json.parse', { /* json.parse */
 	}
 })
 
-jb.component('split', { /* split */
+jb.component('split', {
   description: 'breaks string using separator',
   type: 'data',
   params: [
-    {id: 'separator', as: 'string', defaultValue: ',', description: 'E.g., "," or "<a>"' },
+    {id: 'separator', as: 'string', defaultValue: ',', description: 'E.g., \",\" or \"<a>\"'},
     {id: 'text', as: 'string', defaultValue: '%%'},
     {id: 'part', options: ',first,second,last,but first,but last'}
   ],
@@ -1709,7 +1680,7 @@ jb.component('split', { /* split */
 	}
 })
 
-jb.component('replace', { /* replace */
+jb.component('replace', {
   type: 'data',
   params: [
     {id: 'find', as: 'string', mandatory: true},
@@ -1726,7 +1697,7 @@ jb.component('replace', { /* replace */
 	}
 })
 
-jb.component('touch', { /* touch */
+jb.component('touch', {
   description: 'change the value of a watchable variable to acticate its watchers',
   type: 'action',
   params: [
@@ -1738,7 +1709,7 @@ jb.component('touch', { /* touch */
 	}
 })
 
-jb.component('isNull', { /* isNull */
+jb.component('isNull', {
   description: 'is null or undefined',
   type: 'boolean',
   params: [
@@ -1747,7 +1718,7 @@ jb.component('isNull', { /* isNull */
   impl: (ctx, obj) => jb.val(obj) == null
 })
 
-jb.component('isEmpty', { /* isEmpty */
+jb.component('isEmpty', {
   type: 'boolean',
   params: [
     {id: 'item', as: 'single', defaultValue: '%%'}
@@ -1755,7 +1726,7 @@ jb.component('isEmpty', { /* isEmpty */
   impl: (ctx, item) => !item || (Array.isArray(item) && item.length == 0)
 })
 
-jb.component('notEmpty', { /* notEmpty */
+jb.component('notEmpty', {
   type: 'boolean',
   params: [
     {id: 'item', as: 'single', defaultValue: '%%'}
@@ -1763,7 +1734,7 @@ jb.component('notEmpty', { /* notEmpty */
   impl: (ctx, item) => item && !(Array.isArray(item) && item.length == 0)
 })
 
-jb.component('equals', { /* equals */
+jb.component('equals', {
   type: 'boolean',
   params: [
     {id: 'item1', as: 'single', mandatory: true},
@@ -1772,7 +1743,7 @@ jb.component('equals', { /* equals */
   impl: (ctx, item1, item2) => item1 == item2
 })
 
-jb.component('not-equals', { /* notEquals */
+jb.component('notEquals', {
   type: 'boolean',
   params: [
     {id: 'item1', as: 'single', mandatory: true},
@@ -1781,7 +1752,7 @@ jb.component('not-equals', { /* notEquals */
   impl: (ctx, item1, item2) => item1 != item2
 })
 
-jb.component('run-actions', { /* runActions */
+jb.component('runActions', {
   type: 'action',
   params: [
     {id: 'actions', type: 'action[]', ignore: true, composite: true, mandatory: true}
@@ -1797,18 +1768,13 @@ jb.component('run-actions', { /* runActions */
 	}
 })
 
-jb.component('run-action-on-items', { /* runActionOnItems */
+jb.component('runActionOnItems', {
   type: 'action',
   macroByValue: true,
   params: [
     {id: 'items', as: 'ref[]', mandatory: true},
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
-    {
-      id: 'notifications',
-      as: 'string',
-      options: 'wait for all actions,no notifications',
-      description: 'notification for watch-ref, defualt behavior is after each action'
-    }
+    {id: 'notifications', as: 'string', options: 'wait for all actions,no notifications', description: 'notification for watch-ref, defualt behavior is after each action'}
   ],
   impl: (ctx,items,action,notifications) => {
 		if (notifications && jb.mainWatchableHandler) jb.mainWatchableHandler.startTransaction()
@@ -1818,7 +1784,7 @@ jb.component('run-action-on-items', { /* runActionOnItems */
 	}
 })
 
-jb.component('delay', { /* delay */
+jb.component('delay', {
   type: 'action,data',
   params: [
     {id: 'mSec', as: 'number', defaultValue: 1}
@@ -1826,7 +1792,7 @@ jb.component('delay', { /* delay */
   impl: (ctx,mSec) => jb.delay(mSec).then(() => ctx.data)
 })
 
-jb.component('on-next-timer', { /* onNextTimer */
+jb.component('onNextTimer', {
   description: 'run action after delay',
   type: 'action',
   params: [
@@ -1838,14 +1804,10 @@ jb.component('on-next-timer', { /* onNextTimer */
 			action())
 })
 
-jb.component('extract-prefix', { /* extractPrefix */
+jb.component('extractPrefix', {
   type: 'data',
   params: [
-    {
-      id: 'separator',
-      as: 'string',
-      description: '/w- alphnumberic, /s- whitespace, ^- beginline, $-endline'
-    },
+    {id: 'separator', as: 'string', description: '/w- alphnumberic, /s- whitespace, ^- beginline, $-endline'},
     {id: 'text', as: 'string', defaultValue: '%%'},
     {id: 'regex', type: 'boolean', as: 'boolean', description: 'separator is regex'},
     {id: 'keepSeparator', type: 'boolean', as: 'boolean'}
@@ -1861,14 +1823,10 @@ jb.component('extract-prefix', { /* extractPrefix */
 	}
 })
 
-jb.component('extract-suffix', { /* extractSuffix */
+jb.component('extractSuffix', {
   type: 'data',
   params: [
-    {
-      id: 'separator',
-      as: 'string',
-      description: '/w- alphnumberic, /s- whitespace, ^- beginline, $-endline'
-    },
+    {id: 'separator', as: 'string', description: '/w- alphnumberic, /s- whitespace, ^- beginline, $-endline'},
     {id: 'text', as: 'string', defaultValue: '%%'},
     {id: 'regex', type: 'boolean', as: 'boolean', description: 'separator is regex'},
     {id: 'keepSeparator', type: 'boolean', as: 'boolean'}
@@ -1884,7 +1842,7 @@ jb.component('extract-suffix', { /* extractSuffix */
 	}
 })
 
-jb.component('range', { /* range */
+jb.component('range', {
   description: 'returns a range of number, generator, numerator, numbers, index',
   type: 'data',
   params: [
@@ -1894,7 +1852,7 @@ jb.component('range', { /* range */
   impl: (ctx,from,to) => Array.from(Array(to-from+1).keys()).map(x=>x+from)
 })
 
-jb.component('type-of', { /* typeOf */
+jb.component('typeOf', {
   type: 'data',
   params: [
     {id: 'obj', defaultValue: '%%'}
@@ -1905,7 +1863,7 @@ jb.component('type-of', { /* typeOf */
 	}
 })
 
-jb.component('class-name', { /* className */
+jb.component('className', {
   type: 'data',
   params: [
     {id: 'obj', defaultValue: '%%'}
@@ -1916,7 +1874,7 @@ jb.component('class-name', { /* className */
 	}
 })
 
-jb.component('is-of-type', { /* isOfType */
+jb.component('isOfType', {
   type: 'boolean',
   params: [
     {id: 'type', as: 'string', mandatory: true, description: 'e.g., string,boolean,array'},
@@ -1929,7 +1887,7 @@ jb.component('is-of-type', { /* isOfType */
   }
 })
 
-jb.component('in-group', { /* inGroup */
+jb.component('inGroup', {
   type: 'boolean',
   params: [
     {id: 'group', as: 'array', mandatory: true},
@@ -1940,13 +1898,13 @@ jb.component('in-group', { /* inGroup */
 
 jb.urlProxy = (typeof window !== 'undefined' && location.href.match(/^[^:]*/)[0] || 'http') + '://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
 jb.cacheKiller = 0
-jb.component('http.get', { /* http.get */
+jb.component('http.get', {
   type: 'data,action',
   description: 'fetch data from external url',
   params: [
     {id: 'url', as: 'string'},
     {id: 'json', as: 'boolean', description: 'convert result to json', type: 'boolean'},
-    {id: 'useProxy', as: 'string', options: ',localhost-server,cloud'},
+    {id: 'useProxy', as: 'string', options: ',localhost-server,cloud'}
   ],
   impl: (ctx,_url,_json,useProxy) => {
 		if (ctx.probe)
@@ -1965,24 +1923,24 @@ jb.component('http.get', { /* http.get */
 	}
 })
 
-jb.component('http.fetch', { /* http.fetch */
+jb.component('http.fetch', {
   type: 'data,action',
   description: 'fetch, get or post data from external url',
   params: [
     {id: 'url', as: 'string', mandatory: true},
     {id: 'method', as: 'string', options: 'GET,POST', defaultValue: 'GET'},
-    {id: 'headers', as: 'single', templateValue: obj(prop('Content-Type','application/json; charset=UTF-8'))},
+    {id: 'headers', as: 'single', templateValue: obj(prop('Content-Type', 'application/json; charset=UTF-8'))},
     {id: 'body', as: 'single'},
     {id: 'json', as: 'boolean', description: 'convert result to json', type: 'boolean'},
-    {id: 'useProxy', as: 'string', options: ',localhost-server,cloud,cloud-test-local'},
+    {id: 'useProxy', as: 'string', options: ',localhost-server,cloud,cloud-test-local'}
   ],
   impl: (ctx,url,method,headers,body,json,proxy) => {
     const reqObj = {
       url,
       method,
-      headers: headers || {}, 
+      headers: headers || {},
       mode: 'cors',
-      body: (typeof body == 'string' || body == null) ? body : JSON.stringify(body) 
+      body: (typeof body == 'string' || body == null) ? body : JSON.stringify(body)
     }
 
     const reqStr = encodeURIComponent(JSON.stringify(reqObj))
@@ -2003,30 +1961,24 @@ jb.component('http.fetch', { /* http.fetch */
 	}
 })
 
-jb.component('isRef', { /* isRef */
+jb.component('isRef', {
   params: [
     {id: 'obj', mandatory: true}
   ],
   impl: (ctx,obj) => jb.isRef(obj)
 })
 
-jb.component('asRef', { /* asRef */
+jb.component('asRef', {
   params: [
     {id: 'obj', mandatory: true}
   ],
   impl: (ctx,obj) => jb.asRef(obj)
 })
 
-jb.component('data.switch', { /* data.switch */
+jb.component('data.switch', {
   macroByValue: false,
   params: [
-    {
-      id: 'cases',
-      type: 'data.switch-case[]',
-      as: 'array',
-      mandatory: true,
-      defaultValue: []
-    },
+    {id: 'cases', type: 'data.switch-case[]', as: 'array', mandatory: true, defaultValue: []},
     {id: 'default', dynamic: true}
   ],
   impl: (ctx,cases,defaultValue) => {
@@ -2037,7 +1989,7 @@ jb.component('data.switch', { /* data.switch */
 	}
 })
 
-jb.component('data.case', { /* data.case */
+jb.component('data.case', {
   type: 'data.switch-case',
   singleInType: true,
   params: [
@@ -2047,16 +1999,10 @@ jb.component('data.case', { /* data.case */
   impl: ctx => ctx.params
 })
 
-jb.component('action.switch', { /* action.switch */
+jb.component('action.switch', {
   type: 'action',
   params: [
-    {
-      id: 'cases',
-      type: 'action.switch-case[]',
-      as: 'array',
-      mandatory: true,
-      defaultValue: []
-    },
+    {id: 'cases', type: 'action.switch-case[]', as: 'array', mandatory: true, defaultValue: []},
     {id: 'defaultAction', type: 'action', dynamic: true}
   ],
   impl: (ctx,cases,defaultAction) => {
@@ -2067,7 +2013,7 @@ jb.component('action.switch', { /* action.switch */
   }
 })
 
-jb.component('action.switch-case', { /* action.switchCase */
+jb.component('action.switchCase', {
   type: 'action.switch-case',
   singleInType: true,
   params: [
@@ -2077,22 +2023,22 @@ jb.component('action.switch-case', { /* action.switchCase */
   impl: ctx => ctx.params
 })
 
-jb.component('format-date', {
+jb.component('formatDate', {
   description: 'using toLocaleDateString',
   params: [
     {id: 'date', defaultValue: '%%', description: 'Date value'},
-    {id: 'dateStyle', as: 'string', options: 'full,long,medium,short' },
-    {id: 'timeStyle', as: 'string', options: 'full,long,medium,short' },
-    {id: 'weekday', as: 'string', options: 'long,short,narrow' },
-    {id: 'year', as: 'string', options: 'numeric,2-digit' },
-    {id: 'month', as: 'string', options: 'numeric,2-digit,long,short,narrow' },
-    {id: 'day', as: 'string', options: 'numeric,2-digit' },
-    {id: 'hour', as: 'string', options: 'numeric,2-digit' },
-    {id: 'minute', as: 'string', options: 'numeric,2-digit' },
-    {id: 'second', as: 'string', options: 'numeric,2-digit' },
-    {id: 'timeZoneName', as: 'string', options: 'long,short' },
+    {id: 'dateStyle', as: 'string', options: 'full,long,medium,short'},
+    {id: 'timeStyle', as: 'string', options: 'full,long,medium,short'},
+    {id: 'weekday', as: 'string', options: 'long,short,narrow'},
+    {id: 'year', as: 'string', options: 'numeric,2-digit'},
+    {id: 'month', as: 'string', options: 'numeric,2-digit,long,short,narrow'},
+    {id: 'day', as: 'string', options: 'numeric,2-digit'},
+    {id: 'hour', as: 'string', options: 'numeric,2-digit'},
+    {id: 'minute', as: 'string', options: 'numeric,2-digit'},
+    {id: 'second', as: 'string', options: 'numeric,2-digit'},
+    {id: 'timeZoneName', as: 'string', options: 'long,short'}
   ],
-  impl: (ctx,date) => new Date(date).toLocaleDateString(undefined, jb.objFromEntries(jb.entries(ctx.params).filter(e=>e[1]))),
+  impl: (ctx,date) => new Date(date).toLocaleDateString(undefined, jb.objFromEntries(jb.entries(ctx.params).filter(e=>e[1])))
 })
 
 jb.exec = (...args) => new jb.jbCtx().run(...args)
@@ -2253,7 +2199,7 @@ initSpyByUrl()
 })()
 ;
 
-jb.component('pretty-print', { /* prettyPrint */
+jb.component('prettyPrint', {
   params: [
     {id: 'profile', defaultValue: '%%'},
     {id: 'forceFlat', as: 'boolean', type: 'boolean'}
@@ -2988,7 +2934,7 @@ jb.stringWithSourceRef.prototype.trim = function() {
 
 jb.jstypes['string-with-source-ref'] = v => v;
 
-jb.component('extract-text', { /* extractText */
+jb.component('extractText', {
   description: 'text breaking according to begin/end markers',
   params: [
     {id: 'text', as: 'string-with-source-ref', defaultValue: '%%'},
@@ -3059,7 +3005,7 @@ jb.component('extract-text', { /* extractText */
   }
 })
 
-jb.component('break-text', { /* breakText */
+jb.component('breakText', {
   description: 'recursive text breaking according to multi level separators',
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'},
@@ -3113,7 +3059,7 @@ jb.component('break-text', { /* breakText */
 })
 
 
-jb.component('zip-arrays', { /* zipArrays */
+jb.component('zipArrays', {
   type: 'data',
   description: '[[1,2],[10,20],[100,200]] => [[1,10,100],[2,20,200]]',
   params: [
@@ -3124,7 +3070,7 @@ jb.component('zip-arrays', { /* zipArrays */
       value.map(line=>line[i]))
 })
 
-jb.component('remove-sections', { /* removeSections */
+jb.component('removeSections', {
   description: 'remove sections between markers',
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'},
@@ -3152,7 +3098,7 @@ jb.component('remove-sections', { /* removeSections */
   }
 })
 
-jb.component('merge', { /* merge */
+jb.component('merge', {
   type: 'data',
   description: 'assign, merge object properties',
   params: [
@@ -3162,7 +3108,7 @@ jb.component('merge', { /* merge */
 		Object.assign.apply({},objects)
 })
 
-jb.component('dynamic-object', { /* dynamicObject */
+jb.component('dynamicObject', {
   type: 'data',
   description: 'process items into object properties',
   params: [
@@ -3174,7 +3120,7 @@ jb.component('dynamic-object', { /* dynamicObject */
     items.reduce((obj,item)=>({ ...obj, [name(ctx.setData(item))]: value(ctx.setData(item)) }),{})
 })
 
-jb.component('filter-empty-properties', { /* filterEmptyProperties */
+jb.component('filterEmptyProperties', {
   type: 'data',
   description: 'remove null or empty string properties',
   params: [
@@ -3190,14 +3136,14 @@ jb.component('filter-empty-properties', { /* filterEmptyProperties */
   }
 })
 
-jb.component('trim', { /* trim */
+jb.component('trim', {
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
   impl: (ctx,text) => text.trim()
 })
 
-jb.component('remove-prefix-regex', { /* removePrefixRegex */
+jb.component('removePrefixRegex', {
   params: [
     {id: 'prefix', as: 'string', mandatory: true},
     {id: 'text', as: 'string', defaultValue: '%%'}
@@ -3206,7 +3152,7 @@ jb.component('remove-prefix-regex', { /* removePrefixRegex */
     text.replace(new RegExp('^'+prefix) ,'')
 })
 
-jb.component('wrap-as-object', { /* wrapAsObject */
+jb.component('wrapAsObject', {
   description: 'object from entries, map each item as a property',
   type: 'aggregator',
   params: [
@@ -3221,7 +3167,7 @@ jb.component('wrap-as-object', { /* wrapAsObject */
   }
 })
 
-jb.component('write-value-asynch', { /* writeValueAsynch */
+jb.component('writeValueAsynch', {
   type: 'action',
   params: [
     {id: 'to', as: 'ref', mandatory: true},
