@@ -1,43 +1,43 @@
-jb.component('jb-editor-test.cmp1', { /* jbEditorTest.cmp1 */
+jb.component('jbEditorTest.cmp1', {
   impl: list(
     'a.1',
     'b.2'
   )
 })
 
-jb.component('jb-editor-test.cmp3', { /* jbEditorTest.cmp3 */
+jb.component('jbEditorTest.cmp3', {
   impl: list(
     
   )
 })
 
-jb.component('jb-editor-test.cmp4', { /* jbEditorTest.cmp4 */
+jb.component('jbEditorTest.cmp4', {
   impl: list(
     'hello'
   )
 })
 
-jb.component('jb-editor-test.cmp5-json-format', { /* jbEditorTest.cmp5 */
+jb.component('jbEditorTest.cmp5JsonFormat', {
   impl: text({
     text: {$pipeline: ['a','b'] }
   })
 })
 
-jb.component('jb-editor-test.actions-sugar-example1', { /* jbEditorTest.actionsSugarExample1 */
+jb.component('jbEditorTest.actionsSugarExample1', {
   impl: button({
     title: 'hello',
     action: [gotoUrl('google')]
   })
 })
 
-jb.component('jb-editor-test.actions-sugar-example2-json-format', { /* jbEditorTest.actionsSugarExample2 */
+jb.component('jbEditorTest.actionsSugarExample2JsonFormat', {
   impl: button({
     title: 'hello',
     action: {$runActions: [ {$: 'goto-url', url: 'google' }] }
   })
 })
 
-jb.component('jb-editor-test.extra-elem-in-list', { /* jbEditorTest.extraElemInList */
+jb.component('jbEditorTest.extraElemInList', {
   impl: jbEditorChildrenTest({
     path: 'jbEditorTest.cmp1~impl~items',
     childrenType: 'jb-editor',
@@ -45,7 +45,7 @@ jb.component('jb-editor-test.extra-elem-in-list', { /* jbEditorTest.extraElemInL
   })
 })
 
-jb.component('jb-editor-test.empty-pipeline-bug', { /* jbEditorTest.emptyPipelineBug */
+jb.component('jbEditorTest.emptyPipelineBug', {
   impl: jbEditorChildrenTest({
     path: 'jbEditorTest.cmp3~impl~items~0',
     childrenType: 'jb-editor',
