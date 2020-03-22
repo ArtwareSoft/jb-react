@@ -70,7 +70,7 @@ jb.component('urlHistory.mapStudioUrlToResource', {
     }
 })
 
-jb.component('data-resource.queryParams', { /* dataResource.queryParams */
+jb.component('dataResource.queryParams', {
   passiveData: {
 
   }

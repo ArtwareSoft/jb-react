@@ -9,7 +9,7 @@ jb.component('dataResource.studio', {
   }
 })
 
-jb.component('data-resource.pickSelection', { /* dataResource.pickSelection */
+jb.component('dataResource.pickSelection', { /* dataResource.pickSelection */
   passiveData: {
     ctx: null,
     elem: null

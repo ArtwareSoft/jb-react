@@ -315,11 +315,11 @@ jb.component('itemlists.withSort', {
   })
 })
 
-jb.component('data-resource.sortBy', {
+jb.component('dataResource.sortBy', {
   watchableData: 'age'
 })
 
-jb.component('data-resource.selectedItem', {
+jb.component('dataResource.selectedItem', {
   watchableData: {
 
   }

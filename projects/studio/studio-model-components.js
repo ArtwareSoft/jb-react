@@ -46,14 +46,14 @@ jb.component('studio.paramType', {
   impl: (ctx,path) =>	st.paramTypeOfPath(path)
 })
 
-jb.component('studio.PTs-of-type', { /* studio.PTsOfType */
+jb.component('studio.PTsOfType', {
   params: [
     {id: 'type', as: 'string', mandatory: true}
   ],
   impl: (ctx,_type) => st.PTsOfType(_type)
 })
 
-jb.component('studio.profiles-of-PT', { /* studio.profilesOfPT */
+jb.component('studio.profilesOfPT', {
   params: [
     {id: 'PT', as: 'string', mandatory: true}
   ],
