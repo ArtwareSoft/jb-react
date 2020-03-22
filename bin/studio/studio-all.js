@@ -37,7 +37,7 @@ function do_jb_run(ctx,parentParam,settings) {
       case 'ignore': return ctx.data;
       case 'list': return profile.map((inner,i) =>
             ctxWithVars.runInner(inner,null,i));
-      case 'runActions': return jb.comps['run-actions'].impl(new jbCtx(ctxWithVars,{profile: { actions : profile },path:''}));
+      case 'runActions': return jb.comps.runActions.impl(new jbCtx(ctxWithVars,{profile: { actions : profile },path:''}));
       case 'if': {
           const cond = jb_run(run.ifContext, run.IfParentParam);
           if (cond && cond.then)
@@ -656,12 +656,11 @@ return {
 
 Object.assign(jb,{
   comps: {}, resources: {}, consts: {}, location: Symbol.for('location'), studio: { previewjb: jb },
-  removeDataResourcePrefix: id => id.indexOf('data-resource.') == 0 ? id.slice('data-resource.'.length) : id,
-  addDataResourcePrefix: id => id.indexOf('data-resource.') == 0 ? id : 'data-resource.' + id,
+  removeDataResourcePrefix: id => id.indexOf('dataResource.') == 0 ? id.slice('dataResource.'.length) : id,
+  addDataResourcePrefix: id => id.indexOf('dataResource.') == 0 ? id : 'dataResource.' + id,
 
-  component: (id,comp) => {
-    // const id = jb.macroName(_id)
-    // if (_id != id) console.log(_id,id)
+  component: (_id,comp) => {
+    const id = jb.macroName(_id)
     try {
       const errStack = new Error().stack.split(/\r|\n/)
       const line = errStack.filter(x=>x && !x.match(/\)<anonymous>|about:blank|tgp-pretty.js|internal\/modules\/cjs/)).pop()
@@ -905,11 +904,11 @@ Object.assign(jb, {
                 return { $: id, [params[0].id]: args[0], [params[1].id]: args[1] }
             debugger;
         }
-        const unMacro = macroId => macroId.replace(/([A-Z])/g, (all, s) => '-' + s.toLowerCase())
+        //const unMacro = macroId => macroId.replace(/([A-Z])/g, (all, s) => '-' + s.toLowerCase())
         function genericMacroProcessor(ns, macroId) {
             return (...allArgs) => {
                 const { args, system } = splitSystemArgs(allArgs)
-                const out = { $: unMacro(ns) + '.' + unMacro(macroId) }
+                const out = { $: `${ns}.${macroId}` }
                 if (args.length == 1 && typeof args[0] == 'object' && !jb.compName(args[0]))
                     Object.assign(out, args[0])
                 else
@@ -3817,12 +3816,12 @@ Object.assign(jb.ui, {
         if (options && options.extendCtx)
             ctx = options.extendCtx(ctx)
         ctx = ctx.setVar('$refreshElemCall',true)
-        const cmp = ctx.profile.$ == 'open-dialog' ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself()
+        const cmp = ctx.profile.$ == 'openDialog' ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself()
         const hash = cmp.init()
         if (hash != null && hash == elem.getAttribute('cmpHash'))
             return jb.log('refreshElem',['stopped by hash', hash, ...arguments]);
         cmp && applyVdomDiff(elem, h(cmp), {strongRefresh, ctx})
-        jb.execInStudio({ $: 'animate.refresh-elem', elem: () => elem })
+        jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
     },
 
     subscribeToRefChange: watchHandler => jb.subscribe(watchHandler.resourceChange, e=> {
@@ -3890,7 +3889,7 @@ function mountInteractive(elem, keepState) {
     const ctx = jb.ui.ctxOfElem(elem,'mount-ctx')
     if (!ctx)
         return jb.logError('no ctx for elem',[elem])
-    const cmp = (ctx.profile.$ == 'open-dialog') ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself();
+    const cmp = (ctx.profile.$ == 'openDialog') ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself();
     const mountedCmp = {
         state: { ...(keepState && jb.path(elem._component,'state')) },
         base: elem,
@@ -4348,11 +4347,11 @@ ui.renderWidget = function(profile,top) {
         const project = studioWin.jb.resources.studio.project
         const page = studioWin.jb.resources.studio.page
         if (project && page)
-            currentProfile = {$: `${project}.${page}`}
+            currentProfile = {$: `${jb.macroName(project)}.${page}`}
 
         const {pipe,debounceTime,filter,subscribe} = jb.callbag
         pipe(st.pageChange, filter(({page})=>page != currentProfile.$), subscribe(({page})=> doRender(page)))
-        pipe(st.scriptChange, filter(e=>(jb.path(e,'path.0') || '').indexOf('data-resource.') != 0), // do not update on data change
+        pipe(st.scriptChange, filter(e=>(jb.path(e,'path.0') || '').indexOf('dataResource.') != 0), // do not update on data change
             debounceTime(() => Math.min(2000,lastRenderTime*3 + fixedDebounce)),
             subscribe(() =>{
                 doRender()
@@ -4525,7 +4524,7 @@ jb.component('feature.after-load', { /* feature.afterLoad */
   ],
   impl: ctx => ({ afterViewInit: cmp => ctx.params.action(cmp.ctx) })
 })
-jb.component('interactive', jb.comps['feature.after-load'])
+jb.component('interactive', jb.comps['feature.afterLoad'])
 
 jb.component('template-modifier', { /* templateModifier */
   type: 'feature',
@@ -5183,7 +5182,7 @@ jb.component('text.bind-text', { /* text.bindText */
   category: 'text:0',
   impl: features(
     watchAndCalcModelProp('text', ({data}) => jb.ui.toVdomOrStr(data)),
-    () => ({studioFeatures :{$: 'feature.content-editable', param: 'text' }})
+    () => ({studioFeatures :{$: 'feature.contentEditable', param: 'text' }})
   )
 })
 
@@ -5421,7 +5420,7 @@ jb.component('html.plain', { /* html.plain */
     template: (cmp,{html},h) => h('html',{$html: html, jb_external: true } ) ,
     features: [
         watchAndCalcModelProp('html'),
-        () => ({ studioFeatures :{$: 'feature.content-editable', param: 'html' } })
+        () => ({ studioFeatures :{$: 'feature.contentEditable', param: 'html' } })
     ]
   })
 })
@@ -5461,7 +5460,7 @@ jb.component('image', { /* image */
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx, {
-    studioFeatures :{$: 'feature.content-editable' },
+    studioFeatures :{$: 'feature.contentEditable' },
   })
 })
 
@@ -5564,7 +5563,7 @@ jb.component('button', { /* button */
           cmp.action && cmp.action(cmp.ctx.setVar('event',ev))
       }),
       interactive( ({},{cmp}) => cmp.action = jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)),
-      ctx => ({studioFeatures :{$: 'feature.content-editable', param: 'title' }}),
+      ctx => ({studioFeatures :{$: 'feature.contentEditable', param: 'title' }}),
     )))
 })
 
@@ -7216,10 +7215,10 @@ jb.component('menu.init-popup-menu', { /* menu.initPopupMenu */
 				};
 				cmp.openPopup = jb.ui.wrapWithLauchingElement( ctx2 => {
 					cmp.ctx.vars.topMenu.popups.push(ctx.vars.menuModel);
-					ctx2.run( {$: 'menu.open-context-menu',
+					ctx2.run( menu.openContextMenu({
 							popupStyle: _ctx => ctx.componentContext.params.popupStyle(_ctx),
 							menu: _ctx =>	ctx.vars.$model.menu()
-						})
+						}))
 					}, cmp.ctx, cmp.base );
 
 				cmp.closePopup = () => jb.ui.dialogs.closeDialogs(jb.ui.dialogs.dialogs
@@ -29375,11 +29374,19 @@ st.animateMessage = function (el) {
 
 // ********* Components ************
 
+jb.component('studio.projectId', { 
+  impl: ctx => jb.macroName(ctx.exp('%$studio/project%'))
+})
+
+jb.component('studio.currentPagePath', {
+  impl: pipeline(list(studio.projectId(),'%$studio/page%'),join('.'))
+})
+
 jb.component('studio.currentProfilePath', { /* studio.currentProfilePath */
   impl: firstSucceeding(
     '%$simulateProfilePath%',
     '%$studio/profile_path%',
-    '%$studio/project%.%$studio/page%'
+    studio.currentPagePath()
   )
 })
 
@@ -29471,7 +29478,7 @@ st.initPreview = function(preview_window,allowedTypes) {
 
       st.previewWindow = preview_window;
       st.previewjb = preview_window.jb;
-      ['jb-component','jb-param','feature.content-editable'].forEach(comp=>st.previewjb.component(comp,jb.comps[comp]));
+      ['jbComponent','jbParam','feature.contentEditable'].forEach(comp=>st.previewjb.component(comp,jb.comps[comp]));
       st.serverComps = st.previewjb.comps;
       st.previewjb.studio.studioWindow = window;
       st.previewjb.studio.previewjb = st.previewjb;
@@ -29551,7 +29558,7 @@ const {pipe,startWith,filter,flatMap} = jb.callbag
 jb.studio.pageChange = pipe(jb.ui.resourceChange(), filter(e=>e.path.join('/') == 'studio/page'),
       startWith(1),
       flatMap(e=> {
-        const page = jb.resources.studio.project + '.' + jb.resources.studio.page;
+        const page = jb.exec(studio.currentPagePath())
         return jb.resources.studio.page ? [{page}] : []
 }))
 
@@ -29898,7 +29905,6 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
               style: editableText.mdcInput(),
               min: '%$controlItem/width/min%',
               max: '%$controlItem/width/max%',
-              features: [{'$': 'field.default', '$byValue': ['%$controlItem/width/default%']}]
             }),
             editableNumber({
               databind: '%$studio/responsive/{%$controlItem/id%}/height%',
@@ -29906,7 +29912,6 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
               style: editableText.mdcInput(),
               min: '%$controlItem/height/min%',
               max: '%$controlItem/height/max%',
-              features: [{'$': 'field.default', '$byValue': ['%$controlItem/height/default%']}]
             })
           ],
           features: [css('{ padding-left: 12px; padding-top: 7px }')]
@@ -31473,17 +31478,19 @@ jb.component('studio.open-new-page', { /* studio.openNewPage */
       features: css.padding({top: '14', left: '11'})
     }),
     title: 'New Page',
-    onOK: [
+    onOK: runActions(
+      Var('compName', ctx => jb.macroName(ctx.exp('%$dialogData/name%'))),
+      Var('compId', pipeline(list(studio.projectId(),'%$compName%'),join('.'))),
       studio.newComp(
-        '%$studio/project%.%$dialogData/name%',
+        '%$compId%',
         asIs({type: 'control', impl: group({})})
       ),
-      writeValue('%$studio/profile_path%', '%$studio/project%.%$dialogData/name%~impl'),
-      writeValue('%$studio/page%', '%$dialogData/name%'),
+      writeValue('%$studio/profile_path%', '%$compId%~impl'),
+      writeValue('%$studio/page%', '%$compName%'),
       studio.openControlTree(),
       tree.regainFocus(),
       refreshControlById('pages')
-    ],
+    ),
     modal: true,
     features: [dialogFeature.autoFocusOnFirstInput()]
   })
@@ -31507,12 +31514,14 @@ jb.component('studio.open-new-function', { /* studio.openNewFunction */
     }),
     title: 'New Function',
     onOK: runActions(
+      Var('compName', ctx => jb.macroName(ctx.exp('%$dialogData/name%'))),
+      Var('compId', pipeline(list(studio.projectId(),'%$compName%'),join('.'))),
       studio.newComp(
-        '%$studio/project%.%$dialogData/name%',
+        '%$compId%',
         asIs({type: 'data', impl: pipeline(), testData: 'sampleData'})
       ),
-      writeValue('%$studio/profile_path%', '%$studio/project%.%$dialogData/name%'),
-      studio.openJbEditor('%$studio/project%.%$dialogData/name%'),
+      writeValue('%$studio/profile_path%', '%$compId%'),
+      studio.openJbEditor('%$compId%'),
       refreshControlById('functions')
     ),
     modal: true,
@@ -32354,7 +32363,6 @@ jb.component('studio.view-all-files', { /* studio.viewAllFiles */
         picklist({
           databind: '%$file%',
           options: picklist.options(keys('%$content/files%')),
-          style: {'$': 'picklist.horizontal-buttons', '$byValue': []}
         }),
         editableText({
           title: '',
@@ -32713,7 +32721,6 @@ jb.component('studio.github-helper', { /* studio.githubHelper */
                 picklist({
                   databind: '%$item%',
                   options: picklist.options(keys('%$content%')),
-                  style: {'$': 'picklist.horizontal-buttons', '$byValue': []}
                 }),
                 editableText({
                   databind: pipeline(
@@ -33251,7 +33258,7 @@ jb.component('studio.add-variable', { /* studio.addVariable */
 const st = jb.studio;
 
 function initStudioEditing() {
-  if (st.previewjb.comps['dialog.studio-pick-dialog']) return
+  if (st.previewjb.comps['dialog.studioPickDialog']) return
   jb.entries(jb.comps).filter(e=>st.isStudioCmp(e[0]) || !st.previewjb.comps[e[0]]).forEach(e=>
     st.previewjb.comps[e[0]] = { ...e[1], [jb.location] : [e[1][jb.location][0].replace(/!st!/,''), e[1][jb.location][1]]})
 }
@@ -33270,7 +33277,7 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
       const previewOffset = from == 'preview' ? document.querySelector('#jb-preview').getBoundingClientRect().top : 0;
       cmp.titleBelow = false;
 
-      const projectPrefix = ctx.exp('%$studio/project%.%$studio/page%')
+      const projectPrefix = ctx.run(studio.currentPagePath())
       const testHost = ctx.exp('%$queryParams/host%') == 'test'
       const eventToElemPredicate = from == 'preview' ? 
         (path => testHost || path.indexOf(projectPrefix) == 0) : (path => st.isStudioCmp(path.split('~')[0]))
@@ -33430,9 +33437,9 @@ Object.assign(st, {
     const {elem, ctx} = st.findElemsByCtxCondition(ctx => pathStr.indexOf(ctx.path) == 0)[0] || {}
     if (!ctx) return
     ctx.profile = jb.path(jb.comps,ctx.path.split('~'))
-    const cmp = ctx.profile.$ == 'open-dialog' ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself()
+    const cmp = ctx.profile.$ == 'openDialog' ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself()
     cmp && jb.ui.applyVdomDiff(elem, jb.ui.h(cmp), {strongRefresh: true, ctx})
-    jb.exec({ $: 'animate.refresh-elem', elem: () => elem })
+    jb.exec({ $: 'animate.refreshElem', elem: () => elem })
   },
   findElemsByCtxCondition(condition) {
     return [st.previewWindow,window].filter(x=>x).flatMap(win =>
@@ -33682,7 +33689,6 @@ jb.component('studio.open-style-menu', { /* studio.openStyleMenu */
         }),
         menu.action({
           title: 'Extract style as a reusable component',
-          action: {'$': 'studio.open-make-global-style', path: '%$path%'},
           icon: 'build',
           showCondition: "%$styleSource/type% == 'inner'"
         }),
@@ -34844,7 +34850,7 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
       studio.saveNewProject('%$project%'),
       writeValue('%$studio/project%', '%$project%'),
       writeValue('%$studio/page%', 'main'),
-      writeValue('%$studio/profile_path%', '%$project%.main'),
+      writeValue('%$studio/profile_path%', studio.currentPagePath()),
       () => location.reload()
     ),
     modal: true,
@@ -35074,7 +35080,7 @@ jb.component('studio.toolbar', { /* studio.toolbar */
       }),
       button({
         title: 'jbEditor',
-        action: studio.openComponentInJbEditor('%$studio/project%.%$studio/page%'),
+        action: studio.openComponentInJbEditor(studio.currentPagePath()),
         style: button.mdcIcon('build'),
         features: ctrlAction(
           studio.openJbEditor({path: '%$studio/profile_path%', newWindow: true})
@@ -35125,7 +35131,7 @@ jb.component('studio.toolbar', { /* studio.toolbar */
       feature.keyboardShortcut(
         'Alt+X',
         studio.openJbEditor({
-          path: firstSucceeding('%$studio/profile_path%', '%$studio/project%.%$studio/page%')
+          path: firstSucceeding('%$studio/profile_path%', studio.currentPagePath())
         })
       )
     ]
@@ -35293,7 +35299,7 @@ jb.component('studio.pages', { /* studio.pages */
           id('pages'),
           itemlist.selection({
             databind: '%$studio/page%',
-            onSelection: writeValue('%$studio/profile_path%', '{%$studio/project%}.{%$studio/page%}'),
+            onSelection: writeValue('%$studio/profile_path%', studio.currentPagePath()),
             autoSelectFirst: true
           }),
           css.class('studio-pages-items')
@@ -35317,7 +35323,7 @@ jb.component('studio.pages', { /* studio.pages */
           features: [
             feature.onEvent({
               event: 'click',
-              action: studio.openJbEditor('%$studio/project%.%%')
+              action: studio.openJbEditor(pipeline(list(studio.projectId(),'%%'),join('.')))
             })
           ]
         }),
@@ -35875,7 +35881,7 @@ jb.component('studio.probe', { /* studio.probe */
         if (!circuitCtx)
             circuitCtx = st.closestTestCtx(path)
         if (!circuitCtx) {
-            const circuit = jb.tostring(ctx.exp('%$circuit%','string') || ctx.exp('%$studio/project%') && ctx.exp('%$studio/project%.%$studio/page%'))
+            const circuit = jb.tostring(ctx.exp('%$circuit%') || ctx.exp('%$studio/project%') && ctx.run(studio.currentPagePath()))
             circuitCtx = new _jb.jbCtx(new _jb.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} )
         }
         if (circuitCtx)
@@ -35915,7 +35921,7 @@ jb.component('studio.position-of-data', { /* studio.positionOfData */
 function editorOfPath(path) {
     const resource = path.split('~')[0]
     const dialog_elem = Array.from(document.querySelectorAll('[dialogId=edit-data-resource]'))
-        .filter(el=>el._component.ctx.data.path.split('data-resource.').pop() == resource + '~watchableData')[0]
+        .filter(el=>el._component.ctx.data.path.split('dataResource.').pop() == resource + '~watchableData')[0]
     return dialog_elem && dialog_elem.querySelector('.CodeMirror').parentElement._component.editor
 }
 
@@ -35981,7 +35987,7 @@ jb.component('studio.animate-watch-ref-particle', { /* studio.animateWatchRefPar
             {
                 '$': 'animation.start',
                 animation: {
-                  '$': 'animation.move-to',
+                  '$': 'animation.moveTo',
                   X: {'$': 'animation.range', '$byValue': ['%$from/centerX%', '%$to/centerX%']},
                   Y: {'$': 'animation.range', '$byValue': ['%$from/centerY%', '%$to/centerY%']}
                 },
@@ -36011,7 +36017,7 @@ jb.component('studio.animate-cmp-destroy', { /* studio.animateCmpDestroy */
           action: runActions(
             {
                 '$': 'animation.start',
-                animation: {'$': 'animation.move-to', X: '%$pos/centerX%', Y: '%$pos/centerY%'},
+                animation: {'$': 'animation.moveTo', X: '%$pos/centerX%', Y: '%$pos/centerY%'},
                 duration: '1'
               },
             {
@@ -36023,7 +36029,7 @@ jb.component('studio.animate-cmp-destroy', { /* studio.animateCmpDestroy */
                   },
                   {
                     '$': 'animation.easing',
-                    '$byValue': [{'$': 'animation.in-out-easing', '$byValue': ['Cubic', 'Out']}]
+                    '$byValue': [{'$': 'animation.inOutEasing', '$byValue': ['Cubic', 'Out']}]
                   }
                 ],
                 direction: 'reverse',
@@ -36051,7 +36057,7 @@ jb.component('studio.animate-cmp-refresh', { /* studio.animateCmpRefresh */
         action: runActions(
           {
               '$': 'animation.start',
-              animation: {'$': 'animation.move-to', X: '%$pos/centerX%', Y: '%$pos/centerY%'},
+              animation: {'$': 'animation.moveTo', X: '%$pos/centerX%', Y: '%$pos/centerY%'},
               duration: '1'
             },
           {
@@ -36079,7 +36085,7 @@ jb.component('animate.refresh-elem', { /* animate.refreshElem */
         {'$': 'animation.rotate', rotateY: () => [0,25]},
         {
           '$': 'animation.easing',
-          '$byValue': [{'$': 'animation.in-out-easing', '$byValue': ['Quad', 'InOut']}]
+          '$byValue': [{'$': 'animation.inOutEasing', '$byValue': ['Quad', 'InOut']}]
         }
       ],
       duration: '600',
@@ -36105,7 +36111,7 @@ function animateCtxDestroy(ctx) {
 }
 
 jb.studio.activateWatchRefViewer = () => {
-  const {pipe,map,filter,subscribe,merge,subject,distinctUntilChanged,catchError} = jb.callbag
+  const {pipe,filter,subscribe} = jb.callbag
 
     if (!st.previewjb.spy)
         st.previewjb.initSpy({})

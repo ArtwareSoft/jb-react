@@ -217,7 +217,8 @@ function jb_initWidget() {
     document.body.appendChild(mainElem)
   }
   const prof = jbProjectSettings.entry && jbProjectSettings.entry.$ && jbProjectSettings.entry
-  jb.ui.renderWidget(prof || {$: jbProjectSettings.entry || `${jbProjectSettings.project}.main` }, document.getElementById('main'))
+  const fixedProjName = (jbProjectSettings.project||'').replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase())
+  jb.ui.renderWidget(prof || {$: jbProjectSettings.entry || `${fixedProjName}.main` }, document.getElementById('main'))
 }
 
 function pathOfProjectFile(project,fn,baseDir) {

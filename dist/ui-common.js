@@ -1561,12 +1561,12 @@ Object.assign(jb.ui, {
         if (options && options.extendCtx)
             ctx = options.extendCtx(ctx)
         ctx = ctx.setVar('$refreshElemCall',true)
-        const cmp = ctx.profile.$ == 'open-dialog' ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself()
+        const cmp = ctx.profile.$ == 'openDialog' ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself()
         const hash = cmp.init()
         if (hash != null && hash == elem.getAttribute('cmpHash'))
             return jb.log('refreshElem',['stopped by hash', hash, ...arguments]);
         cmp && applyVdomDiff(elem, h(cmp), {strongRefresh, ctx})
-        jb.execInStudio({ $: 'animate.refresh-elem', elem: () => elem })
+        jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
     },
 
     subscribeToRefChange: watchHandler => jb.subscribe(watchHandler.resourceChange, e=> {
@@ -1634,7 +1634,7 @@ function mountInteractive(elem, keepState) {
     const ctx = jb.ui.ctxOfElem(elem,'mount-ctx')
     if (!ctx)
         return jb.logError('no ctx for elem',[elem])
-    const cmp = (ctx.profile.$ == 'open-dialog') ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself();
+    const cmp = (ctx.profile.$ == 'openDialog') ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself();
     const mountedCmp = {
         state: { ...(keepState && jb.path(elem._component,'state')) },
         base: elem,
@@ -2092,11 +2092,11 @@ ui.renderWidget = function(profile,top) {
         const project = studioWin.jb.resources.studio.project
         const page = studioWin.jb.resources.studio.page
         if (project && page)
-            currentProfile = {$: `${project}.${page}`}
+            currentProfile = {$: `${jb.macroName(project)}.${page}`}
 
         const {pipe,debounceTime,filter,subscribe} = jb.callbag
         pipe(st.pageChange, filter(({page})=>page != currentProfile.$), subscribe(({page})=> doRender(page)))
-        pipe(st.scriptChange, filter(e=>(jb.path(e,'path.0') || '').indexOf('data-resource.') != 0), // do not update on data change
+        pipe(st.scriptChange, filter(e=>(jb.path(e,'path.0') || '').indexOf('dataResource.') != 0), // do not update on data change
             debounceTime(() => Math.min(2000,lastRenderTime*3 + fixedDebounce)),
             subscribe(() =>{
                 doRender()
@@ -2269,7 +2269,7 @@ jb.component('feature.after-load', { /* feature.afterLoad */
   ],
   impl: ctx => ({ afterViewInit: cmp => ctx.params.action(cmp.ctx) })
 })
-jb.component('interactive', jb.comps['feature.after-load'])
+jb.component('interactive', jb.comps['feature.afterLoad'])
 
 jb.component('template-modifier', { /* templateModifier */
   type: 'feature',
@@ -2927,7 +2927,7 @@ jb.component('text.bind-text', { /* text.bindText */
   category: 'text:0',
   impl: features(
     watchAndCalcModelProp('text', ({data}) => jb.ui.toVdomOrStr(data)),
-    () => ({studioFeatures :{$: 'feature.content-editable', param: 'text' }})
+    () => ({studioFeatures :{$: 'feature.contentEditable', param: 'text' }})
   )
 })
 
@@ -3165,7 +3165,7 @@ jb.component('html.plain', { /* html.plain */
     template: (cmp,{html},h) => h('html',{$html: html, jb_external: true } ) ,
     features: [
         watchAndCalcModelProp('html'),
-        () => ({ studioFeatures :{$: 'feature.content-editable', param: 'html' } })
+        () => ({ studioFeatures :{$: 'feature.contentEditable', param: 'html' } })
     ]
   })
 })
@@ -3205,7 +3205,7 @@ jb.component('image', { /* image */
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx, {
-    studioFeatures :{$: 'feature.content-editable' },
+    studioFeatures :{$: 'feature.contentEditable' },
   })
 })
 
@@ -3308,7 +3308,7 @@ jb.component('button', { /* button */
           cmp.action && cmp.action(cmp.ctx.setVar('event',ev))
       }),
       interactive( ({},{cmp}) => cmp.action = jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)),
-      ctx => ({studioFeatures :{$: 'feature.content-editable', param: 'title' }}),
+      ctx => ({studioFeatures :{$: 'feature.contentEditable', param: 'title' }}),
     )))
 })
 
@@ -4960,10 +4960,10 @@ jb.component('menu.init-popup-menu', { /* menu.initPopupMenu */
 				};
 				cmp.openPopup = jb.ui.wrapWithLauchingElement( ctx2 => {
 					cmp.ctx.vars.topMenu.popups.push(ctx.vars.menuModel);
-					ctx2.run( {$: 'menu.open-context-menu',
+					ctx2.run( menu.openContextMenu({
 							popupStyle: _ctx => ctx.componentContext.params.popupStyle(_ctx),
 							menu: _ctx =>	ctx.vars.$model.menu()
-						})
+						}))
 					}, cmp.ctx, cmp.base );
 
 				cmp.closePopup = () => jb.ui.dialogs.closeDialogs(jb.ui.dialogs.dialogs

@@ -5,7 +5,7 @@ const fs = require('fs');
 require('../src/loader/jb-loader.js');
 
 const JBART_DIR = '../';
-const modulesToLoad = 'common,ui-common,ui-tree,codemirror-styles,testers,pretty-print,studio,studio-tests,parsing,object-encoder'
+const modulesToLoad = 'common,ui-common,ui-tree,codemirror-styles,animation,testers,pretty-print,studio,studio-tests,parsing,object-encoder'
 
 const filesOfModules = modules => modules.split(',').map(m=>{
     if (m == 'studio')
@@ -47,13 +47,14 @@ run()
 //     .join('\n\n')
 // console.log(content)
 //fs.writeFileSync('x.txt',content)
+function unMacro(macroId) { return macroId.replace(/([A-Z])/g, (all, s) => '-' + s.toLowerCase()) }
 
 function swapComp({id,comp,file}) {
     console.log(id)
     const fn = '../' + file
     const content = ('' + fs.readFileSync(fn))//.replace(/\r/g,'')
     const lines = content.split('\n').map(x=>x.replace(/[\s]*$/,''))
-    const lineOfComp = lines.findIndex(line=> line.indexOf(`jb.component('${id}'`) == 0)
+    const lineOfComp = lines.findIndex(line=> line.indexOf(`jb.component('${id}'`) == 0 || line.indexOf(`jb.component('${unMacro(id)}'`))
     if (lineOfComp == -1)
         return jb.logError(['can not find component', fn,id])
 
