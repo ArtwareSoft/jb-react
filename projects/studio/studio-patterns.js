@@ -2,7 +2,7 @@
 
 jb.ns('patterns')
 
-jb.component('studio.select-style', { /* studio.selectStyle */
+jb.component('studio.selectStyle', {
   type: 'control',
   params: [
     {id: 'extractedCtrl'},
@@ -17,40 +17,39 @@ jb.component('studio.select-style', { /* studio.selectStyle */
         textForFalse: 'keep unmapped'
       }),
       group({
-        controls: 
-group({
-    layout: layout.grid({columnSizes: list('600'), columnGap: '10px', rowGap: '10px'}),
-    style: group.sections({
-      titleStyle: header.mdcHeadline6(),
-      sectionStyle: styleWithFeatures(
-        group.div(),
-        [
-          css.padding({left: '10', bottom: '20'}),
-          css.boxShadow({
-            blurRadius: '2',
-            spreadRadius: '0',
-            shadowColor: '#000000',
-            opacity: 0.5,
-            horizontal: '2',
-            vertical: '2'
+        controls: group({
+          layout: layout.grid({columnSizes: list('600'), columnGap: '10px', rowGap: '10px'}),
+          style: group.sections({
+            titleStyle: header.mdcHeadline6(),
+            sectionStyle: styleWithFeatures(
+              group.div(),
+              [
+                css.padding({left: '10', bottom: '20'}),
+                css.boxShadow({
+                  blurRadius: '2',
+                  spreadRadius: '0',
+                  shadowColor: '#000000',
+                  opacity: 0.5,
+                  horizontal: '2',
+                  vertical: '2'
+                }),
+                css('position: relative')
+              ]
+            ),
+            innerGroupStyle: styleWithFeatures(group.div(), [css.padding({top: '20', right: '20'})])
           }),
-          css('position: relative')
-        ]
-      ),
-      innerGroupStyle: styleWithFeatures(group.div(), [css.padding({top: '20', right: '20'})])
-    }),
-    controls: dynamicControls({
-      controlItems: pipeline(
-        studio.suggestedStyles('%$extractedCtrl%','%$targetPath%'),
-        ctx => {
+          controls: dynamicControls({
+            controlItems: pipeline(
+              studio.suggestedStyles('%$extractedCtrl%', '%$targetPath%'),
+              ctx => {
             const clone = JSON.parse(JSON.stringify(ctx.run(studio.val('%$targetPath%'))))
             const length = JSON.stringify(ctx.exp('%%')).length
             return { ...clone, style: ctx.exp('%%'), length }
         }
-      ),
-      genericControl: group({
-        controls: [
-          ctx => {
+            ),
+            genericControl: group({
+              controls: [
+                ctx => {
               const previewCtx = jb.studio.closestCtxInPreview(ctx.exp('%$targetPath%'))
               jb.path(jb,'studio.previewjb.ui.workerStyleElems.preview',[])
               const cmp = (new jb.studio.previewjb.jbCtx()).ctx(previewCtx)
@@ -62,30 +61,35 @@ group({
               jb.path(jb,'studio.previewjb.ui.workerStyleElems.preview',[])
               return vdom
           },
-          button({
-            title: 'select (%$__option/length%)',
-            action: runActions(
-                Var('styleSuffix', If(equals('%$__option/style/$%','group'),'','~style')),
-                writeValue(studio.ref('%$targetPath%%$styleSuffix%'), '%$__option/style%'),
-                dialog.closeContainingPopup()
-            ),
-            features: css('position: absolute; top: 0; left: 30px;')
-          })
+                button({
+                  title: 'select (%$__option/length%)',
+                  action: runActions(
+                    Var('styleSuffix', If(equals('%$__option/style/$%', 'group'), '', '~style')),
+                    writeValue(studio.ref('%$targetPath%%$styleSuffix%'), '%$__option/style%'),
+                    dialog.closeContainingPopup()
+                  ),
+                  features: css('position: absolute; top: 0; left: 30px;')
+                })
+              ]
+            }),
+            itemVariable: '__option'
+          }),
+          features: css.height('600')
+        }),
+        features: [
+          watchRef({
+            ref: '%$studio/patterns%',
+            includeChildren: 'yes',
+            allowSelfRefresh: true
+          }),
+          css.height({height: '600', overflow: 'auto'})
         ]
-      }),
-      itemVariable: '__option'
-    }),
-    features: css.height('600')
-    }),
-    features: [
-        watchRef({ref: '%$studio/patterns%', includeChildren: 'yes', allowSelfRefresh: true}),
-        css.height({height: '600', overflow: 'auto'})
-      ]
-    })]
+      })
+    ]
   })
 })
 
-jb.component('studio.extract-style', { /* studio.extractStyle */
+jb.component('studio.extractStyle', {
   type: 'action',
   params: [
     {id: 'extractedCtrl'},
@@ -98,12 +102,12 @@ jb.component('studio.extract-style', { /* studio.extractStyle */
   })
 })
 
-jb.component('studio.suggested-styles', {
-    params: [
-        {id: 'extractedCtrl'},
-        {id: 'targetPath', as: 'string'},
-    ],
-    impl: (ctx,extractedCtrl,targetPath) => {
+jb.component('studio.suggestedStyles', {
+  params: [
+    {id: 'extractedCtrl'},
+    {id: 'targetPath', as: 'string'}
+  ],
+  impl: (ctx,extractedCtrl,targetPath) => {
         const constraints = ctx.exp('%$studio/pattern/constraints%') || []
         const target = jb.studio.valOfPath(targetPath)
         const previewCtx = jb.studio.closestCtxInPreview(ctx.exp('%$targetPath%'))
@@ -141,7 +145,7 @@ function cleanUnmappedParams(ctx,ctrl,matches) {
     function cleanCtrl(ctrl,path) {
         if (!ctrl.controls) return ctrl
         const innerPath = [path,'controls'].filter(x=>x).join('/')
-        const controls = Array.isArray(ctrl.controls) ? 
+        const controls = Array.isArray(ctrl.controls) ?
             ctrl.controls.flatMap((ch,i) => usedPaths[innerPath +'/'+i] ? [cleanCtrl(ch,innerPath +'/'+i)] : [])
                 .filter(x=>x)
             : usedPaths[innerPath] ? cleanCtrl(ctrl.controls,innerPath) : null
@@ -176,7 +180,7 @@ jb.ui.stylePatterns = {
         // render the extracted ctrl to calculate sizes and sort options
         const top = document.createElement('div')
         jb.ui.renderWidget(extractedCtrl,top)
-        document.body.appendChild(top) 
+        document.body.appendChild(top)
 
         const targetContent = flatContent(target,'')
         const srcContent = flatContent(extractedCtrl,'')

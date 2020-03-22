@@ -299,12 +299,14 @@ const extractedCtrlCard2 = group({
   ]
 })
 
-jb.component('studioTest.dragTargetText', { 
+jb.component('studioTest.dragTargetText', {
   type: 'control',
-  impl: text('paste here')
+  impl: text(
+    'paste here'
+  )
 })
 
-jb.component('studioTest.dragTargetCard', { 
+jb.component('studioTest.dragTargetCard', {
   type: 'control',
   impl: group({
     controls: [
@@ -316,88 +318,92 @@ jb.component('studioTest.dragTargetCard', {
   })
 })
 
-jb.component('patterns-test.suggested-styles.text', { 
-    impl: dataTest({
-      vars: [
-        Var('extractedCtrl',() => extractedCtrlSimpleText),
-        Var('targetPath', 'studioTest.dragTargetText~impl'),
-      ],
-      calculate: pipeline(
-        studio.suggestedStyles('%$extractedCtrl%','%$targetPath%'),
-        '%control%',property('$'),join(',')
-      ),
-      expectedResult: equals('text,group')
-    })
-})
-
-jb.component('patterns-test.select-style.text', { 
-  impl: uiTest({
+jb.component('patternsTest.suggestedStyles.text', {
+  impl: dataTest({
     vars: [
-      Var('extractedCtrl',() => extractedCtrlSimpleText),
-      Var('targetPath', 'studioTest.dragTargetText~impl'),
+      Var('extractedCtrl', () => extractedCtrlSimpleText),
+      Var('targetPath', 'studioTest.dragTargetText~impl')
     ],
-    control: ctx => ctx.run(studio.selectStyle('%$extractedCtrl%','%$targetPath%')),
-    expectedResult: contains['hello','hello']
+    calculate: pipeline(
+      studio.suggestedStyles('%$extractedCtrl%', '%$targetPath%'),
+      '%control%',
+      property('$'),
+      join(',')
+    ),
+    expectedResult: equals('text,group')
   })
 })
 
-jb.component('patterns-test.select-style.card1', { 
+jb.component('patternsTest.selectStyle.text', {
   impl: uiTest({
     vars: [
-      Var('extractedCtrl',() => extractedCtrlCard1),
+      Var('extractedCtrl', () => extractedCtrlSimpleText),
+      Var('targetPath', 'studioTest.dragTargetText~impl')
+    ],
+    control: ctx => ctx.run(studio.selectStyle('%$extractedCtrl%','%$targetPath%')),
+    expectedResult: contains({text: 'hello', allText: 'hello'})
+  })
+})
+
+jb.component('patternsTest.selectStyle.card1', {
+  impl: uiTest({
+    vars: [
+      Var('extractedCtrl', () => extractedCtrlCard1),
       Var('targetPath', 'studioTest.dragTargetCard~impl'),
       Var('top')
     ],
+    control: ctx => ctx.run(studio.selectStyle('%$extractedCtrl%','%$targetPath%')),
     runBefore: ctx => {
       const top = document.createElement('div')
       jb.ui.renderWidget({$: 'studioTest.dragTargetCard'},top)
       document.body.appendChild(top)
       ctx.vars.top = top
     },
-    control: ctx => ctx.run(studio.selectStyle('%$extractedCtrl%','%$targetPath%')),
-    expectedResult: contains['alcatel 3C'],
+    expectedResult: contains('alcatel 3C'),
     cleanUp: ctx => document.body.removeChild(ctx.vars.top)
   })
 })
 
-jb.component('patterns-test.select-style-delete-unmapped.card1', { 
+jb.component('patternsTest.selectStyleDeleteUnmapped.card1', {
   impl: uiTest({
     vars: [
-      Var('extractedCtrl',() => extractedCtrlCard1),
+      Var('extractedCtrl', () => extractedCtrlCard1),
       Var('targetPath', 'studioTest.dragTargetCard~impl'),
       Var('top')
     ],
+    control: ctx => ctx.run(studio.selectStyle('%$extractedCtrl%','%$targetPath%')),
     runBefore: runActions(
-      writeValue('%$studio/patterns/deleteUnmapped%',true),
+      writeValue('%$studio/patterns/deleteUnmapped%', true),
       ctx => {
         const top = document.createElement('div')
         jb.ui.renderWidget({$: 'studioTest.dragTargetCard'},top)
         document.body.appendChild(top)
         ctx.vars.top = top
-    }),
-    control: ctx => ctx.run(studio.selectStyle('%$extractedCtrl%','%$targetPath%')),
-    expectedResult: contains['alcatel 3C'],
+    }
+    ),
+    expectedResult: contains('alcatel 3C'),
     cleanUp: ctx => document.body.removeChild(ctx.vars.top)
   })
 })
 
-jb.component('patterns-test.select-style-delete-unmapped.card2', { 
+jb.component('patternsTest.selectStyleDeleteUnmapped.card2', {
   impl: uiTest({
     vars: [
-      Var('extractedCtrl',() => extractedCtrlCard2),
+      Var('extractedCtrl', () => extractedCtrlCard2),
       Var('targetPath', 'studioTest.dragTargetCard~impl'),
       Var('top')
     ],
+    control: ctx => ctx.run(studio.selectStyle('%$extractedCtrl%','%$targetPath%')),
     runBefore: runActions(
-      writeValue('%$studio/patterns/deleteUnmapped%',true),
+      writeValue('%$studio/patterns/deleteUnmapped%', true),
       ctx => {
         const top = document.createElement('div')
         jb.ui.renderWidget({$: 'studioTest.dragTargetCard'},top)
         document.body.appendChild(top)
         ctx.vars.top = top
-    }),
-    control: ctx => ctx.run(studio.selectStyle('%$extractedCtrl%','%$targetPath%')),
-    expectedResult: contains['alcatel 3C'],
+    }
+    ),
+    expectedResult: contains('alcatel 3C'),
     cleanUp: ctx => document.body.removeChild(ctx.vars.top)
   })
 })
