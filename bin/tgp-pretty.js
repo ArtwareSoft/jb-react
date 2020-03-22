@@ -5,7 +5,7 @@ const fs = require('fs');
 require('../src/loader/jb-loader.js');
 
 const JBART_DIR = '../';
-const modulesToLoad = 'common,ui-common,ui-tree,codemirror-styles,animation,testers,pretty-print,studio,studio-tests,parsing,object-encoder,cards,md-icons'
+const modulesToLoad = 'common,ui-common,ui-tree,codemirror-styles,animation,testers,pretty-print,studio,studio-tests,parsing,object-encoder,cards,md-icons,remote'
 const sampleProjects = ['style-gallery','itemlists','todomvc','html-parsing','cards-demo'].map(x=>`projects/${x}/${x}.js`)
 
 const filesOfModules = modules => modules.split(',').map(m=>{
@@ -16,9 +16,8 @@ const filesOfModules = modules => modules.split(',').map(m=>{
     else return jb_modules[m] 
 }).flat()
 
-const testsFiles = ['data','ui','parsing','object-encoder'].map(x=>`projects/ui-tests/${x}-tests.js`)
+const testsFiles = 'data,ui,parsing,vdom,tree,watchable,object-encoder'.split(',').map(x=>`projects/ui-tests/${x}-tests.js`)
 
-// load files
 filesOfModules(modulesToLoad).concat(testsFiles).concat(sampleProjects).filter(x=>x).filter(x=>!x.match(/material/)).filter(x=>!x.match(/.css$/))
     .map(fn=> require(JBART_DIR+fn));
 
@@ -33,8 +32,8 @@ function run() {
         .filter(({id}) => !id.match(/-json-format$/) && !id.match(/forward-ns-declaration$/))
     
     entries.filter(({file}) => 
-        sampleProjects.find(x => file.replace(/\\/g,'/').indexOf(x) != -1)
-        //    filePattern.test(file) 
+//        sampleProjects.find(x => file.replace(/\\/g,'/').indexOf(x) != -1)
+           filePattern.test(file) 
             )
         .forEach( args => swapComp(args))
 }

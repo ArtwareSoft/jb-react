@@ -155,7 +155,7 @@ jb.component('htmlParsing.parseDevice', {
             style: table.plain(),
             visualSizeLimit: '12',
             features: [
-              itemlist.selection('%$sel%', undefined),
+              itemlist.selection({databind: '%$sel%'}),
               itemlist.keyboardSelection({}),
               css.width('600')
             ]

@@ -9,7 +9,7 @@ jb.ui.serializeCtxOfVdom = function(vdom) {
     return JSON.stringify(store)
 
     function mountCtxsOfVdom(vdom) { // vdom or delta vdom
-        return jb.unique([...([vdom['mount-ctx']] || []), 
+        return jb.unique([...([vdom['mount-ctx']] || []),
             ...(Object.keys(vdom)
                 .filter(k=> vdom[k] && typeof vdom[k] === 'object')
                     .flatMap(k=>mountCtxsOfVdom(vdom[k])))
@@ -18,9 +18,9 @@ jb.ui.serializeCtxOfVdom = function(vdom) {
     function serializeCtx(ctx) {
         if (ctx == null) return
         // store.ctx[ctx.id] = store.ctx[ctx.id] || { id: ctx.id, path: ctx.path , $inProcess: true}
-        // Object.assign(store.ctx[ctx.id], { 
-        //     componentContext: serializeCtx(ctx.componentContext), 
-        //     vars: serializeData(ctx.vars), 
+        // Object.assign(store.ctx[ctx.id], {
+        //     componentContext: serializeCtx(ctx.componentContext),
+        //     vars: serializeData(ctx.vars),
         //     data: serializeData(ctx.data)
         // })
         // delete store.ctx[ctx.id].$inProcess
@@ -41,7 +41,7 @@ jb.ui.serializeCtxOfVdom = function(vdom) {
 
             if (data instanceof jb.jbCtx)
                  return { $ctx: serializeCtx(data,store) }
-                
+
             if (data[storeId])
                 return store.data[data[storeId]] = data[storeId]
 
@@ -54,7 +54,7 @@ jb.ui.serializeCtxOfVdom = function(vdom) {
             else
                 store.data[data[storeId]] = jb.objFromEntries(jb.entries(data).map(e=> [e[0], serializeData(e[1])]))
             return data[storeId]
-        }    
+        }
     }
 }
 
@@ -68,13 +68,13 @@ jb.ui.deserializeCtxStore = function(storeAsJson) {
         if (id.$ctx)
             return deserializeCtx(id.$ctx)
         const ctx = store.ctx[id]
-        if (resolvedStore.ctx[id]) 
+        if (resolvedStore.ctx[id])
             return resolvedStore.ctx[id]
         resolvedStore.ctx[id] = new jb.jbCtx()
         Object.assign(resolvedStore.ctx[id], { id , path: ctx.path, $inProcess: true })
-        Object.assign(resolvedStore.ctx[id], { 
-            componentContext: ctx.componentContext && deserializeCtx(ctx.componentContext), 
-            vars: deserializeData(ctx.vars) || {}, 
+        Object.assign(resolvedStore.ctx[id], {
+            componentContext: ctx.componentContext && deserializeCtx(ctx.componentContext),
+            vars: deserializeData(ctx.vars) || {},
             data: deserializeData(ctx.data),
             profile: ctx.path.split('~').reduce((o,p) => o && o[p],jb.comps)
         })
@@ -86,7 +86,7 @@ jb.ui.deserializeCtxStore = function(storeAsJson) {
         return resolvedStore.ctx[id]
 
         function deserializeData(data) {
-            if (data == null) 
+            if (data == null)
                 return
             else if (typeof data === 'string')
                 return data.match(/^#[0-9]+$/) ? +data.slice(1) : data.match(/^##[0-9]+$/) ? data.slice(1) : data
@@ -111,7 +111,7 @@ jb.ui.deserializeCtxStore = function(storeAsJson) {
 
 let messageCounter = 1;
 
-if (jb.frame.workerId && jb.frame.workerId()) 
+if (jb.frame.workerId && jb.frame.workerId())
     Object.assign(jb.ui, {
         _stylesToAdd: [],
         widgets: {},
@@ -151,7 +151,7 @@ function createWorker(workerId) {
     importScripts('http://${location.host}/dist/jb-react-all.js')
     self.onmessage= ${workerReceive.toString()}`
     const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: 'application/javascript'})));
-    
+
     Object.assign(worker,{
         response: jb.callbag.subject(),
         onmessage(e) {
@@ -165,15 +165,15 @@ function createWorker(workerId) {
                 .map(el=>el.getAttribute('id'))[0]
             return this.exec(pipeline(
                         {$asIs: {
-                            specificHandler, 
-                            cmpId: el.getAttribute('cmp-id'), 
+                            specificHandler,
+                            cmpId: el.getAttribute('cmp-id'),
                             event: {type: event.type, target: { value: event.target.value}, scrollPercentFromTop: event.scrollPercentFromTop },
                             widgetId
                         }},
                         ctx => jb.ui.handleBrowserEvent(ctx.data)))
         },
         loadSource(sourceUrl) {
-            if (!sourceUrl) 
+            if (!sourceUrl)
                 return worker
             const script = pipeline(sourceUrl, ctx => importScripts(ctx.data))
             return worker.exec(script).then(()=>worker)
@@ -186,7 +186,7 @@ function createWorker(workerId) {
             worker.postMessage(message)
             return pipe(worker.response,
                     filter(({id}) => id == messageId),
-                    take(1), 
+                    take(1),
                     map(({data}) => data),
                     toPromiseArray)
         }
@@ -196,16 +196,16 @@ function createWorker(workerId) {
 
 jb.ui.workers = {}
 
-jb.component('worker.main',{
-    type: 'remote',
-    impl: ({
-        getWorker() {
-            if (jb.ui.mainWorker) 
+jb.component('worker.main', {
+  type: 'remote',
+  impl: {
+    getWorker: () => {
+            if (jb.ui.mainWorker)
                 return Promise.resolve(jb.ui.mainWorker)
             jb.ui.workers[1] = jb.ui.mainWorker = createWorker(1)
             return jb.ui.mainWorker.exec('"init"').then(()=>jb.ui.mainWorker) // wait for first dummy run with empty input
         },
-        createWidget(ctx,main,widgetId) { // widget receives events and updates back with vdom deltas
+    createWidget: (ctx,main,widgetId) => { // widget receives events and updates back with vdom deltas
             const widgetProf = pipeline({$asIs: {widgetId,main}}, // runs on worker
                 ctx => {
                     const {main, widgetId} = ctx.data
@@ -226,36 +226,36 @@ jb.component('worker.main',{
                         const {delta,elemId,cmpId,css,store} = _data
                         jb.ui.mainWorker.ctxDictionary = jb.ui.mainWorker.ctxDictionary || {}
                         Object.assign(jb.ui.mainWorker.ctxDictionary,jb.ui.deserializeCtxStore(store).ctx)
-                        const elem = jb.ui.document(ctx).querySelector('#'+elemId) 
+                        const elem = jb.ui.document(ctx).querySelector('#'+elemId)
                             || jb.ui.document(ctx).querySelector(`[cmp-id="${cmpId}"]`)
                         elem && jb.ui.applyDeltaToDom(elem, delta)
                         css && jb.ui.addStyleElem(css)
-                        jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> 
+                        jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=>
                             el._component ? el._component.recalcPropsFromElem() : jb.ui.mountInteractive(el))
                 }))
                 return worker.exec(widgetProf)
             })
-        },
-    })
+        }
+  }
 })
 
-jb.component('remote.init-main-worker', {
-    type: 'control',
-    params: [
-        {id: 'sourceUrl', as: 'string' },
-        {id: 'remote', type: 'remote', mandatory: true, defaultValue: worker.main() },
-    ],
-    impl: (ctx,sourceUrl,remote) => remote.getWorker().then(worker => worker.loadSource(sourceUrl))
+jb.component('remote.initMainWorker', {
+  type: 'control',
+  params: [
+    {id: 'sourceUrl', as: 'string'},
+    {id: 'remote', type: 'remote', mandatory: true, defaultValue: worker.main()}
+  ],
+  impl: (ctx,sourceUrl,remote) => remote.getWorker().then(worker => worker.loadSource(sourceUrl))
 })
 
 jb.component('remote.widget', {
-    type: 'control',
-    params: [
-        {id: 'main', as: 'string', description: 'main profile to run'},
-        {id: 'id', as: 'string'},
-        {id: 'remote', type: 'remote', mandatory: true, defaultValue: worker.main() },
-    ],
-    impl: (ctx,main,id,remote) => {
+  type: 'control',
+  params: [
+    {id: 'main', as: 'string', description: 'main profile to run'},
+    {id: 'id', as: 'string'},
+    {id: 'remote', type: 'remote', mandatory: true, defaultValue: worker.main()}
+  ],
+  impl: (ctx,main,id,remote) => {
         const widgetId = id || 'widget' + ctx.id
         remote.createWidget(ctx,main,widgetId)
         return jb.ui.h('div',{id: widgetId, widgetTop: 'true'})
