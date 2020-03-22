@@ -209,7 +209,7 @@ jb.component('test.path-src-caller', { /* test.pathSrcCaller */
 jb.component('probe-test.pathSrc-through-$call', { /* probeTest.pathSrcThrough-$call */
   impl: dataTest({
     calculate: ctx => {
-   	 var probe1 = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: {$: 'test.path-src-caller'}, comp: 'test.path-src-caller', path: '' } ),true)
+   	 var probe1 = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: {$: 'test.pathSrcCaller'}, comp: 'test.pathSrcCaller', path: '' } ),true)
       .runCircuit('test.pathSrc-comp~impl~items~1');
     return probe1.then(res=>
     	''+res.result.visits)
@@ -221,8 +221,8 @@ jb.component('probe-test.pathSrc-through-$call', { /* probeTest.pathSrcThrough-$
 jb.component('probe-test.pathSrc-through-$call-2', { /* probeTest.pathSrcThrough-$call-2 */
   impl: dataTest({
     calculate: ctx => {
-   	 var probe1 = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: {$: 'test.path-src-caller'}, comp: 'test.path-src-caller', path: '' } ),true)
-      .runCircuit('test.path-src-caller~impl~items~1');
+   	 var probe1 = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: {$: 'test.pathSrcCaller'}, comp: 'test.pathSrcCaller', path: '' } ),true)
+      .runCircuit('test.pathSrcCaller~impl~items~1');
     return probe1.then(res=>
     	''+res.result.visits)
    },

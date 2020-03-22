@@ -19,7 +19,7 @@ jb.component('text.bind-text', { /* text.bindText */
   category: 'text:0',
   impl: features(
     watchAndCalcModelProp('text', ({data}) => jb.ui.toVdomOrStr(data)),
-    () => ({studioFeatures :{$: 'feature.content-editable', param: 'text' }})
+    () => ({studioFeatures :{$: 'feature.contentEditable', param: 'text' }})
   )
 })
 

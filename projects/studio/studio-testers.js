@@ -18,7 +18,7 @@ jb.component('suggestions-test', { /* suggestionsTest */
   params: [
     {id: 'expression', as: 'string'},
     {id: 'selectionStart', as: 'number', defaultValue: -1},
-    {id: 'path', as: 'string', defaultValue: 'suggestions-test.default-probe~impl~text'},
+    {id: 'path', as: 'string', defaultValue: 'suggestionsTest.defaultProbe~impl~text'},
     {id: 'expectedResult', type: 'boolean', dynamic: true, as: 'boolean'}
   ],
   impl: dataTest({

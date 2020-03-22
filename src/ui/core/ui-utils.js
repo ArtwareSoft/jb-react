@@ -167,11 +167,11 @@ ui.renderWidget = function(profile,top) {
         const project = studioWin.jb.resources.studio.project
         const page = studioWin.jb.resources.studio.page
         if (project && page)
-            currentProfile = {$: `${project}.${page}`}
+            currentProfile = {$: `${jb.macroName(project)}.${page}`}
 
         const {pipe,debounceTime,filter,subscribe} = jb.callbag
         pipe(st.pageChange, filter(({page})=>page != currentProfile.$), subscribe(({page})=> doRender(page)))
-        pipe(st.scriptChange, filter(e=>(jb.path(e,'path.0') || '').indexOf('data-resource.') != 0), // do not update on data change
+        pipe(st.scriptChange, filter(e=>(jb.path(e,'path.0') || '').indexOf('dataResource.') != 0), // do not update on data change
             debounceTime(() => Math.min(2000,lastRenderTime*3 + fixedDebounce)),
             subscribe(() =>{
                 doRender()

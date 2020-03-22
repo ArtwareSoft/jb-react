@@ -20,7 +20,7 @@ jb.component('menus-demo.pulldown', {
           options: [
             {$: 'menu.action', 
               title: 'Open', 
-              action :{$: 'open-dialog', 
+              action :{$: 'openDialog', 
                 content :{$: 'group' }, 
                 title: 'open'
               }, 
@@ -57,13 +57,13 @@ jb.component('menus-demo.popup', {
     controls: [
       {$: 'button', 
         title: 'open menu', 
-        action :{$: 'menu.open-context-menu', 
+        action :{$: 'menu.openContextMenu', 
           menu :{$: 'menu.menu', 
             title: 'Edit', 
             options: [
               {$: 'menu.action', 
                 title: 'Copy', 
-                action :{$: 'open-dialog', 
+                action :{$: 'openDialog', 
                   content :{$: 'group' }, 
                   title: 'hello'
                 }, 

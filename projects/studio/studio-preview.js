@@ -41,7 +41,7 @@ st.initPreview = function(preview_window,allowedTypes) {
 
       st.previewWindow = preview_window;
       st.previewjb = preview_window.jb;
-      ['jb-component','jb-param','feature.content-editable'].forEach(comp=>st.previewjb.component(comp,jb.comps[comp]));
+      ['jbComponent','jbParam','feature.contentEditable'].forEach(comp=>st.previewjb.component(comp,jb.comps[comp]));
       st.serverComps = st.previewjb.comps;
       st.previewjb.studio.studioWindow = window;
       st.previewjb.studio.previewjb = st.previewjb;
@@ -121,7 +121,7 @@ const {pipe,startWith,filter,flatMap} = jb.callbag
 jb.studio.pageChange = pipe(jb.ui.resourceChange(), filter(e=>e.path.join('/') == 'studio/page'),
       startWith(1),
       flatMap(e=> {
-        const page = jb.resources.studio.project + '.' + jb.resources.studio.page;
+        const page = jb.exec(studio.currentPagePath())
         return jb.resources.studio.page ? [{page}] : []
 }))
 

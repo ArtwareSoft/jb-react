@@ -115,7 +115,7 @@ jb.component('style-picker.html-to-control', {
         const target_el = targetElem()
         if (!target_el) return []
         cleanDraggedHTML(target_el)
-        jb.comps['style-picker.generated-ctrl'].impl = vdomToControl(elemToVdom(target_el))
+        jb.comps['stylePicker.generatedCtrl'].impl = vdomToControl(elemToVdom(target_el))
         ctx.run(stylePicker.generatedCtrl())
     }
 })

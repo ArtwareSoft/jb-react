@@ -39,7 +39,7 @@ jb.component('studio.pages', { /* studio.pages */
           id('pages'),
           itemlist.selection({
             databind: '%$studio/page%',
-            onSelection: writeValue('%$studio/profile_path%', '{%$studio/project%}.{%$studio/page%}'),
+            onSelection: writeValue('%$studio/profile_path%', studio.currentPagePath()),
             autoSelectFirst: true
           }),
           css.class('studio-pages-items')
@@ -63,7 +63,7 @@ jb.component('studio.pages', { /* studio.pages */
           features: [
             feature.onEvent({
               event: 'click',
-              action: studio.openJbEditor('%$studio/project%.%%')
+              action: studio.openJbEditor(pipeline(list(studio.projectId(),'%%'),join('.')))
             })
           ]
         }),

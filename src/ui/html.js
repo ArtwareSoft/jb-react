@@ -19,7 +19,7 @@ jb.component('html.plain', { /* html.plain */
     template: (cmp,{html},h) => h('html',{$html: html, jb_external: true } ) ,
     features: [
         watchAndCalcModelProp('html'),
-        () => ({ studioFeatures :{$: 'feature.content-editable', param: 'html' } })
+        () => ({ studioFeatures :{$: 'feature.contentEditable', param: 'html' } })
     ]
   })
 })

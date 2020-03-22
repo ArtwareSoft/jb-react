@@ -319,7 +319,7 @@ const op_get_handlers = {
         .forEach(srcPath=>{
                 const source = ('' + fs.readFileSync(srcPath)).split('\n');
                 source.map((line,no)=> {
-                  if (line.indexOf(`component('${comp}'`) != -1) {
+                  if (line.indexOf(`component('${comp}'`) != -1 || line.indexOf(`/* ${comp} */`) != -1) {
                     gotoFile(srcPath,no)
                   }
                 })

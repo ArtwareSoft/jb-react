@@ -26,7 +26,7 @@ jb.component('studio.position-of-data', { /* studio.positionOfData */
 function editorOfPath(path) {
     const resource = path.split('~')[0]
     const dialog_elem = Array.from(document.querySelectorAll('[dialogId=edit-data-resource]'))
-        .filter(el=>el._component.ctx.data.path.split('data-resource.').pop() == resource + '~watchableData')[0]
+        .filter(el=>el._component.ctx.data.path.split('dataResource.').pop() == resource + '~watchableData')[0]
     return dialog_elem && dialog_elem.querySelector('.CodeMirror').parentElement._component.editor
 }
 
@@ -92,7 +92,7 @@ jb.component('studio.animate-watch-ref-particle', { /* studio.animateWatchRefPar
             {
                 '$': 'animation.start',
                 animation: {
-                  '$': 'animation.move-to',
+                  '$': 'animation.moveTo',
                   X: {'$': 'animation.range', '$byValue': ['%$from/centerX%', '%$to/centerX%']},
                   Y: {'$': 'animation.range', '$byValue': ['%$from/centerY%', '%$to/centerY%']}
                 },
@@ -122,7 +122,7 @@ jb.component('studio.animate-cmp-destroy', { /* studio.animateCmpDestroy */
           action: runActions(
             {
                 '$': 'animation.start',
-                animation: {'$': 'animation.move-to', X: '%$pos/centerX%', Y: '%$pos/centerY%'},
+                animation: {'$': 'animation.moveTo', X: '%$pos/centerX%', Y: '%$pos/centerY%'},
                 duration: '1'
               },
             {
@@ -134,7 +134,7 @@ jb.component('studio.animate-cmp-destroy', { /* studio.animateCmpDestroy */
                   },
                   {
                     '$': 'animation.easing',
-                    '$byValue': [{'$': 'animation.in-out-easing', '$byValue': ['Cubic', 'Out']}]
+                    '$byValue': [{'$': 'animation.inOutEasing', '$byValue': ['Cubic', 'Out']}]
                   }
                 ],
                 direction: 'reverse',
@@ -162,7 +162,7 @@ jb.component('studio.animate-cmp-refresh', { /* studio.animateCmpRefresh */
         action: runActions(
           {
               '$': 'animation.start',
-              animation: {'$': 'animation.move-to', X: '%$pos/centerX%', Y: '%$pos/centerY%'},
+              animation: {'$': 'animation.moveTo', X: '%$pos/centerX%', Y: '%$pos/centerY%'},
               duration: '1'
             },
           {
@@ -190,7 +190,7 @@ jb.component('animate.refresh-elem', { /* animate.refreshElem */
         {'$': 'animation.rotate', rotateY: () => [0,25]},
         {
           '$': 'animation.easing',
-          '$byValue': [{'$': 'animation.in-out-easing', '$byValue': ['Quad', 'InOut']}]
+          '$byValue': [{'$': 'animation.inOutEasing', '$byValue': ['Quad', 'InOut']}]
         }
       ],
       duration: '600',
@@ -216,7 +216,7 @@ function animateCtxDestroy(ctx) {
 }
 
 jb.studio.activateWatchRefViewer = () => {
-  const {pipe,map,filter,subscribe,merge,subject,distinctUntilChanged,catchError} = jb.callbag
+  const {pipe,filter,subscribe} = jb.callbag
 
     if (!st.previewjb.spy)
         st.previewjb.initSpy({})

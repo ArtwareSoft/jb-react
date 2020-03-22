@@ -72,11 +72,11 @@ Object.assign(jb, {
                 return { $: id, [params[0].id]: args[0], [params[1].id]: args[1] }
             debugger;
         }
-        const unMacro = macroId => macroId.replace(/([A-Z])/g, (all, s) => '-' + s.toLowerCase())
+        //const unMacro = macroId => macroId.replace(/([A-Z])/g, (all, s) => '-' + s.toLowerCase())
         function genericMacroProcessor(ns, macroId) {
             return (...allArgs) => {
                 const { args, system } = splitSystemArgs(allArgs)
-                const out = { $: unMacro(ns) + '.' + unMacro(macroId) }
+                const out = { $: `${ns}.${macroId}` }
                 if (args.length == 1 && typeof args[0] == 'object' && !jb.compName(args[0]))
                     Object.assign(out, args[0])
                 else

@@ -13,7 +13,7 @@ jb.component('image', { /* image */
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx, {
-    studioFeatures :{$: 'feature.content-editable' },
+    studioFeatures :{$: 'feature.contentEditable' },
   })
 })
 

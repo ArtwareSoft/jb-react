@@ -2,7 +2,7 @@
 const st = jb.studio;
 
 function initStudioEditing() {
-  if (st.previewjb.comps['dialog.studio-pick-dialog']) return
+  if (st.previewjb.comps['dialog.studioPickDialog']) return
   jb.entries(jb.comps).filter(e=>st.isStudioCmp(e[0]) || !st.previewjb.comps[e[0]]).forEach(e=>
     st.previewjb.comps[e[0]] = { ...e[1], [jb.location] : [e[1][jb.location][0].replace(/!st!/,''), e[1][jb.location][1]]})
 }
@@ -21,7 +21,7 @@ jb.component('dialog-feature.studio-pick', { /* dialogFeature.studioPick */
       const previewOffset = from == 'preview' ? document.querySelector('#jb-preview').getBoundingClientRect().top : 0;
       cmp.titleBelow = false;
 
-      const projectPrefix = ctx.exp('%$studio/project%.%$studio/page%')
+      const projectPrefix = ctx.run(studio.currentPagePath())
       const testHost = ctx.exp('%$queryParams/host%') == 'test'
       const eventToElemPredicate = from == 'preview' ? 
         (path => testHost || path.indexOf(projectPrefix) == 0) : (path => st.isStudioCmp(path.split('~')[0]))
@@ -181,9 +181,9 @@ Object.assign(st, {
     const {elem, ctx} = st.findElemsByCtxCondition(ctx => pathStr.indexOf(ctx.path) == 0)[0] || {}
     if (!ctx) return
     ctx.profile = jb.path(jb.comps,ctx.path.split('~'))
-    const cmp = ctx.profile.$ == 'open-dialog' ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself()
+    const cmp = ctx.profile.$ == 'openDialog' ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself()
     cmp && jb.ui.applyVdomDiff(elem, jb.ui.h(cmp), {strongRefresh: true, ctx})
-    jb.exec({ $: 'animate.refresh-elem', elem: () => elem })
+    jb.exec({ $: 'animate.refreshElem', elem: () => elem })
   },
   findElemsByCtxCondition(condition) {
     return [st.previewWindow,window].filter(x=>x).flatMap(win =>

@@ -177,10 +177,10 @@ jb.component('menu.init-popup-menu', { /* menu.initPopupMenu */
 				};
 				cmp.openPopup = jb.ui.wrapWithLauchingElement( ctx2 => {
 					cmp.ctx.vars.topMenu.popups.push(ctx.vars.menuModel);
-					ctx2.run( {$: 'menu.open-context-menu',
+					ctx2.run( menu.openContextMenu({
 							popupStyle: _ctx => ctx.componentContext.params.popupStyle(_ctx),
 							menu: _ctx =>	ctx.vars.$model.menu()
-						})
+						}))
 					}, cmp.ctx, cmp.base );
 
 				cmp.closePopup = () => jb.ui.dialogs.closeDialogs(jb.ui.dialogs.dialogs

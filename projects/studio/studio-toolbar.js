@@ -65,7 +65,7 @@ jb.component('studio.toolbar', { /* studio.toolbar */
       }),
       button({
         title: 'jbEditor',
-        action: studio.openComponentInJbEditor('%$studio/project%.%$studio/page%'),
+        action: studio.openComponentInJbEditor(studio.currentPagePath()),
         style: button.mdcIcon('build'),
         features: ctrlAction(
           studio.openJbEditor({path: '%$studio/profile_path%', newWindow: true})
@@ -116,7 +116,7 @@ jb.component('studio.toolbar', { /* studio.toolbar */
       feature.keyboardShortcut(
         'Alt+X',
         studio.openJbEditor({
-          path: firstSucceeding('%$studio/profile_path%', '%$studio/project%.%$studio/page%')
+          path: firstSucceeding('%$studio/profile_path%', studio.currentPagePath())
         })
       )
     ]

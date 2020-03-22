@@ -29,11 +29,19 @@ st.animateMessage = function (el) {
 
 // ********* Components ************
 
+jb.component('studio.projectId', { 
+  impl: ctx => jb.macroName(ctx.exp('%$studio/project%'))
+})
+
+jb.component('studio.currentPagePath', {
+  impl: pipeline(list(studio.projectId(),'%$studio/page%'),join('.'))
+})
+
 jb.component('studio.currentProfilePath', { /* studio.currentProfilePath */
   impl: firstSucceeding(
     '%$simulateProfilePath%',
     '%$studio/profile_path%',
-    '%$studio/project%.%$studio/page%'
+    studio.currentPagePath()
   )
 })
 

@@ -32,7 +32,6 @@ jb.component('studio.open-style-menu', { /* studio.openStyleMenu */
         }),
         menu.action({
           title: 'Extract style as a reusable component',
-          action: {'$': 'studio.open-make-global-style', path: '%$path%'},
           icon: 'build',
           showCondition: "%$styleSource/type% == 'inner'"
         }),

@@ -104,7 +104,6 @@ jb.component('studio.view-all-files', { /* studio.viewAllFiles */
         picklist({
           databind: '%$file%',
           options: picklist.options(keys('%$content/files%')),
-          style: {'$': 'picklist.horizontal-buttons', '$byValue': []}
         }),
         editableText({
           title: '',
@@ -463,7 +462,6 @@ jb.component('studio.github-helper', { /* studio.githubHelper */
                 picklist({
                   databind: '%$item%',
                   options: picklist.options(keys('%$content%')),
-                  style: {'$': 'picklist.horizontal-buttons', '$byValue': []}
                 }),
                 editableText({
                   databind: pipeline(

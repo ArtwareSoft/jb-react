@@ -38,7 +38,7 @@ jb.component('suggestions-test.component', { /* suggestionsTest.component */
 
 jb.component('suggestions-test.inside-array', { /* suggestionsTest.insideArray */
   impl: suggestionsTest({
-    expression: '%$people-array/',
+    expression: '%$peopleArray/',
     expectedResult: and(contains('people'), not(contains('$people')))
   })
 })

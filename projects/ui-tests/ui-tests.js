@@ -540,7 +540,7 @@ jb.component('ui-test.itemlist-DD', { /* uiTest.itemlistDD */
     control: group({
       controls: [
         itemlist({
-          items: '%$watchable-people%',
+          items: '%$watchablePeople%',
           controls: text({text: '%name%', features: css.class('drag-handle')}),
           features: [
             itemlist.selection({
@@ -549,14 +549,14 @@ jb.component('ui-test.itemlist-DD', { /* uiTest.itemlistDD */
             }),
             itemlist.keyboardSelection(true),
             itemlist.dragAndDrop(),
-            watchRef('%$watchable-people%'),
+            watchRef('%$watchablePeople%'),
             id('itemlist')
           ]
         }),
         itemlist({
-          items: '%$watchable-people%',
+          items: '%$watchablePeople%',
           controls: text('%name%'),
-          features: watchRef('%$watchable-people%')
+          features: watchRef('%$watchablePeople%')
         })
       ]
     }),
@@ -719,7 +719,7 @@ jb.component('ui-test.search-doesnot-create-ReactClass', { /* uiTest.searchDoesn
 jb.component('ui-test.itemlist-with-table-style', { /* uiTest.itemlistWithTableStyle */
   impl: uiTest({
     control: itemlist({
-      items: '%$watchable-people%',
+      items: '%$watchablePeople%',
       controls: [
         text({text: '%$index%', title: 'index', features: field.columnWidth(40)}),
         text({text: '%name%', title: 'name', features: field.columnWidth(300)}),
@@ -1074,11 +1074,11 @@ jb.component('ui-test.prettyPrintComp', { /* uiTest.prettyPrintComp */
     control: group({
       controls: [
         text({
-          text: ctx => jb_prettyPrintComp('ui-test.inner-label1-tst', jb.comps['ui-test.inner-label1-tst']),
+          text: ctx => jb_prettyPrintComp('uiTest.innerLabel1Tst', jb.comps['uiTest.innerLabel1Tst']),
           style: {'$': 'text.multi-line'}
         }),
         text({
-          text: ctx => jb_prettyPrintComp('editable-text.codemirror', jb.comps['editable-text.codemirror']),
+          text: ctx => jb_prettyPrintComp('editableText.codemirror', jb.comps['editableText.codemirror']),
           style: text.codemirror({})
         })
       ]

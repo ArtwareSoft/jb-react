@@ -80,7 +80,7 @@ jb.component('feature.after-load', { /* feature.afterLoad */
   ],
   impl: ctx => ({ afterViewInit: cmp => ctx.params.action(cmp.ctx) })
 })
-jb.component('interactive', jb.comps['feature.after-load'])
+jb.component('interactive', jb.comps['feature.afterLoad'])
 
 jb.component('template-modifier', { /* templateModifier */
   type: 'feature',

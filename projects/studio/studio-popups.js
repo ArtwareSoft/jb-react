@@ -273,7 +273,6 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
               style: editableText.mdcInput(),
               min: '%$controlItem/width/min%',
               max: '%$controlItem/width/max%',
-              features: [{'$': 'field.default', '$byValue': ['%$controlItem/width/default%']}]
             }),
             editableNumber({
               databind: '%$studio/responsive/{%$controlItem/id%}/height%',
@@ -281,7 +280,6 @@ jb.component('studio.open-responsive-phone-popup', { /* studio.openResponsivePho
               style: editableText.mdcInput(),
               min: '%$controlItem/height/min%',
               max: '%$controlItem/height/max%',
-              features: [{'$': 'field.default', '$byValue': ['%$controlItem/height/default%']}]
             })
           ],
           features: [css('{ padding-left: 12px; padding-top: 7px }')]

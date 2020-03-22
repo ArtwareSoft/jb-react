@@ -445,17 +445,17 @@ jb.component('data-test.data-switch-default', { /* dataTest.dataSwitchDefault */
   })
 })
 
-jb.component('ar-test', { watchableData: { ar: ['0'] }})
+jb.component('arTest', { watchableData: { ar: ['0'] }})
 
 jb.component('data-test.restoreArrayIds-bug', { /* dataTest.restoreArrayIdsBug */
   impl: dataTest({
-    calculate: '%$ar-test/result%',
+    calculate: '%$arTest/result%',
     runBefore: ctx => {
-      const ar_ref = ctx.run('%$ar-test/ar%',{as: 'ref'});
-      const refWithBug = jb.refHandler(ar_ref).refOfPath(['ar-test','ar','0']);
+      const ar_ref = ctx.run('%$arTest/ar%',{as: 'ref'});
+      const refWithBug = jb.refHandler(ar_ref).refOfPath(['arTest','ar','0']);
       jb.splice(ar_ref,[[1,0,'1']],ctx);
       const v = jb.val(refWithBug);
-      jb.writeValue(ctx.exp('%$ar-test/result%','ref'),v,ctx);
+      jb.writeValue(ctx.exp('%$arTest/result%','ref'),v,ctx);
    },
     expectedResult: contains('0')
   })
@@ -521,7 +521,7 @@ jb.component('data-test.obj', { /* dataTest.obj */
 
 jb.component('data-test.pretty-print-macro', { /* dataTest.prettyPrintMacro */
   impl: dataTest({
-    calculate: prettyPrint(ctx => jb.comps['data-test.obj'].impl),
+    calculate: prettyPrint(ctx => jb.comps['dataTest.obj'].impl),
     expectedResult: contains(["prop('a', 1)", ctx => "res: '%%'"])
   })
 })

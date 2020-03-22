@@ -337,12 +337,12 @@ Object.assign(jb.ui, {
         if (options && options.extendCtx)
             ctx = options.extendCtx(ctx)
         ctx = ctx.setVar('$refreshElemCall',true)
-        const cmp = ctx.profile.$ == 'open-dialog' ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself()
+        const cmp = ctx.profile.$ == 'openDialog' ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself()
         const hash = cmp.init()
         if (hash != null && hash == elem.getAttribute('cmpHash'))
             return jb.log('refreshElem',['stopped by hash', hash, ...arguments]);
         cmp && applyVdomDiff(elem, h(cmp), {strongRefresh, ctx})
-        jb.execInStudio({ $: 'animate.refresh-elem', elem: () => elem })
+        jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
     },
 
     subscribeToRefChange: watchHandler => jb.subscribe(watchHandler.resourceChange, e=> {
@@ -410,7 +410,7 @@ function mountInteractive(elem, keepState) {
     const ctx = jb.ui.ctxOfElem(elem,'mount-ctx')
     if (!ctx)
         return jb.logError('no ctx for elem',[elem])
-    const cmp = (ctx.profile.$ == 'open-dialog') ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself();
+    const cmp = (ctx.profile.$ == 'openDialog') ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself();
     const mountedCmp = {
         state: { ...(keepState && jb.path(elem._component,'state')) },
         base: elem,

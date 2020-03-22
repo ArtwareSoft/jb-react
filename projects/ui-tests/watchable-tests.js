@@ -258,15 +258,15 @@ jb.component('ui-test.watch-ref-array-delete-with-run-action-on-items',  {
   impl: uiTest({
     control: group({
       controls: text({
-          text: json.stringify("%$watchable-people%"),
-          features: watchRef({ref: '%$watchable-people%', includeChildren: 'yes'}) 
+          text: json.stringify("%$watchablePeople%"),
+          features: watchRef({ref: '%$watchablePeople%', includeChildren: 'yes'}) 
       }),
       features: [
         feature.afterLoad( 
-          runActionOnItems('%$watchable-people%', 
+          runActionOnItems('%$watchablePeople%', 
             splice({
-              array: "%$watchable-people%",
-              fromIndex: indexOf("%$watchable-people%", '%%'),
+              array: "%$watchablePeople%",
+              fromIndex: indexOf("%$watchablePeople%", '%%'),
               noOfItemsToRemove: '1',
               itemsToAdd: []
             })))
@@ -282,7 +282,7 @@ jb.component('ui-test.watchable-as-text', {
     control: group({
       controls: [
         editableText({
-          databind: watchableAsText('%$watchable-people%'),
+          databind: watchableAsText('%$watchablePeople%'),
           features: [
             id('editor'),
             feature.onKey('Alt-P', textEditor.withCursorPath(writeValue('%$path%','%$cursorPath%'))),
@@ -300,7 +300,7 @@ jb.component('ui-test.watchable-as-text', {
         button({
           features: id('change-name'),
           title: 'change name',
-          action: writeValue('%$watchable-people[1]/name%','mukki')
+          action: writeValue('%$watchablePeople[1]/name%','mukki')
         }),
         text('%$path%'),
       ],
@@ -313,43 +313,43 @@ jb.component('ui-test.watchable-as-text', {
       ctx => jb.ui.cmpOfSelector('#editor',ctx).editor.setSelectionRange({line: 2, col: 20}),
       uiAction.click('#show-path'),
     ),
-    expectedResult: contains('watchable-people~0~name~!value')
+    expectedResult: contains('watchablePeople~0~name~!value')
   })
 })
 
 jb.component('ui-test.watchable-as-text-write', {
   impl: uiTest({
     control: editableText({
-      databind: watchableAsText('%$watchable-people%'),
+      databind: watchableAsText('%$watchablePeople%'),
       features: id('editor'),
       style: editableText.textarea({rows: 30,cols: 80})
     }),
     action: uiAction_setText('hello','#editor'),
-    expectedResult: equals('%$watchable-people%','hello')
+    expectedResult: equals('%$watchablePeople%','hello')
   })
 })
 
 jb.component('ui-test.watchable-as-text-write-object-in-array', {
   impl: uiTest({
     control: editableText({
-      databind: watchableAsText('%$watchable-people%'),
+      databind: watchableAsText('%$watchablePeople%'),
       features: id('editor'),
       style: editableText.textarea({rows: 30,cols: 80})
     }),
     action: uiAction_setText('[{a:3}]','#editor'),
-    expectedResult: equals('%$watchable-people/0/a%','3')
+    expectedResult: equals('%$watchablePeople/0/a%','3')
   })
 })
 
 jb.component('ui-test.watchable-as-text-write-set-object-to-array', {
   impl: uiTest({
     control: editableText({
-      databind: watchableAsText('%$empty-array%'),
+      databind: watchableAsText('%$emptyArray%'),
       features: id('editor'),
       style: editableText.textarea({rows: 30,cols: 80})
     }),
     action: uiAction_setText('[{a:3}]','#editor'),
-    expectedResult: equals('%$empty-array/0/a%','3')
+    expectedResult: equals('%$emptyArray/0/a%','3')
   })
 })
 
@@ -367,10 +367,10 @@ jb.component('data-test.watchable-object-to-primitive-bug', {
 jb.component('ui-test.splice-should-not-fire-full-container-change',  {
   impl: uiTest({
     control: itemlist({
-      items: '%$watchable-people%',
+      items: '%$watchablePeople%',
       controls: text('%name%')
     }),
-    action: addToArray('%$watchable-people%', obj(prop('name','mukki'))),
+    action: addToArray('%$watchablePeople%', obj(prop('name','mukki'))),
     expectedCounters: {refreshElem: 0 },
     expectedResult: not(contains('mukki'))
   })
@@ -379,11 +379,11 @@ jb.component('ui-test.splice-should-not-fire-full-container-change',  {
 jb.component('ui-test.splice-and-watch-ref-strcture',  {
   impl: uiTest({
     control: itemlist({
-      items: '%$watchable-people%',
+      items: '%$watchablePeople%',
       controls: text('%name%'),
-      features: watchRef({ref: '%$watchable-people%', includeChildren: 'structure'})
+      features: watchRef({ref: '%$watchablePeople%', includeChildren: 'structure'})
     }),
-    action: addToArray('%$watchable-people%', obj(prop('name','mukki'))),
+    action: addToArray('%$watchablePeople%', obj(prop('name','mukki'))),
     expectedCounters: {refreshElem: 1 },
     expectedResult: contains('mukki')
   })
@@ -392,11 +392,11 @@ jb.component('ui-test.splice-and-watch-ref-strcture',  {
 jb.component('ui-test.splice-and-watch-ref-without-include-children',  {
   impl: uiTest({
     control: itemlist({
-      items: '%$watchable-people%',
+      items: '%$watchablePeople%',
       controls: text('%name%'),
-      features: watchRef({ref: '%$watchable-people%', includeChildren: 'no'})
+      features: watchRef({ref: '%$watchablePeople%', includeChildren: 'no'})
     }),
-    action: writeValue('%$watchable-people[0]/name%', 'mukki'),
+    action: writeValue('%$watchablePeople[0]/name%', 'mukki'),
     expectedCounters: {refreshElem: 1 },
     expectedResult: contains('mukki')
   })
@@ -405,13 +405,13 @@ jb.component('ui-test.splice-and-watch-ref-without-include-children',  {
 jb.component('ui-test.splice-and-watch-ref-add-twice',  {
   impl: uiTest({
     control: itemlist({
-      items: '%$watchable-people%',
+      items: '%$watchablePeople%',
       controls: text('%name%'),
-      features: watchRef({ref: '%$watchable-people%', includeChildren: 'structure'})
+      features: watchRef({ref: '%$watchablePeople%', includeChildren: 'structure'})
     }),
     action: runActions(
-      addToArray('%$watchable-people%', obj(prop('name','mukki'))),
-      ctx => ctx.run(addToArray('%$watchable-people%', obj(prop('name','kukki'))))
+      addToArray('%$watchablePeople%', obj(prop('name','mukki'))),
+      ctx => ctx.run(addToArray('%$watchablePeople%', obj(prop('name','kukki'))))
     ),
     expectedCounters: {refreshElem: 2 },
     expectedResult: contains('kukki')

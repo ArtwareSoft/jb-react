@@ -23,7 +23,7 @@ jb.component('button', { /* button */
           cmp.action && cmp.action(cmp.ctx.setVar('event',ev))
       }),
       interactive( ({},{cmp}) => cmp.action = jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)),
-      ctx => ({studioFeatures :{$: 'feature.content-editable', param: 'title' }}),
+      ctx => ({studioFeatures :{$: 'feature.contentEditable', param: 'title' }}),
     )))
 })
 

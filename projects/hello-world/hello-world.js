@@ -1,16 +1,6 @@
 jb.ns('helloWorld')
-jb.component('hello-world.main', { /* helloWorld.main */
-  type: 'control',
-  impl: group({
-    layout: layout.vertical(),
-    controls: [
-      text({text: 'hellwer', title: 'my title'})
-    ],
-    features: css.width('400')
-  })
-})
 
-jb.component('data-resource.people', { /* dataResource.people */
+jb.component('dataResource.people', { /* dataResource.people */
   watchableData: [
     {
       name: 'Homer Simpson1',
@@ -29,6 +19,17 @@ jb.component('data-resource.people', { /* dataResource.people */
 })
 
 
-jb.component('data-resource.room', { /* dataResource.room */
+jb.component('dataResource.room', { /* dataResource.room */
   passiveData: ''
+})
+
+jb.component('helloWorld.main', { /* helloWorld.main */
+  type: 'control',
+  impl: group({
+    layout: layout.vertical(),
+    controls: [
+      text({text: 'hello world', title: 'my title'})
+    ],
+    features: css.width('400')
+  })
 })

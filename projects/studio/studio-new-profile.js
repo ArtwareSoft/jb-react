@@ -310,17 +310,19 @@ jb.component('studio.open-new-page', { /* studio.openNewPage */
       features: css.padding({top: '14', left: '11'})
     }),
     title: 'New Page',
-    onOK: [
+    onOK: runActions(
+      Var('compName', ctx => jb.macroName(ctx.exp('%$dialogData/name%'))),
+      Var('compId', pipeline(list(studio.projectId(),'%$compName%'),join('.'))),
       studio.newComp(
-        '%$studio/project%.%$dialogData/name%',
+        '%$compId%',
         asIs({type: 'control', impl: group({})})
       ),
-      writeValue('%$studio/profile_path%', '%$studio/project%.%$dialogData/name%~impl'),
-      writeValue('%$studio/page%', '%$dialogData/name%'),
+      writeValue('%$studio/profile_path%', '%$compId%~impl'),
+      writeValue('%$studio/page%', '%$compName%'),
       studio.openControlTree(),
       tree.regainFocus(),
       refreshControlById('pages')
-    ],
+    ),
     modal: true,
     features: [dialogFeature.autoFocusOnFirstInput()]
   })
@@ -344,12 +346,14 @@ jb.component('studio.open-new-function', { /* studio.openNewFunction */
     }),
     title: 'New Function',
     onOK: runActions(
+      Var('compName', ctx => jb.macroName(ctx.exp('%$dialogData/name%'))),
+      Var('compId', pipeline(list(studio.projectId(),'%$compName%'),join('.'))),
       studio.newComp(
-        '%$studio/project%.%$dialogData/name%',
+        '%$compId%',
         asIs({type: 'data', impl: pipeline(), testData: 'sampleData'})
       ),
-      writeValue('%$studio/profile_path%', '%$studio/project%.%$dialogData/name%'),
-      studio.openJbEditor('%$studio/project%.%$dialogData/name%'),
+      writeValue('%$studio/profile_path%', '%$compId%'),
+      studio.openJbEditor('%$compId%'),
       refreshControlById('functions')
     ),
     modal: true,
