@@ -37,7 +37,7 @@ function do_jb_run(ctx,parentParam,settings) {
       case 'ignore': return ctx.data;
       case 'list': return profile.map((inner,i) =>
             ctxWithVars.runInner(inner,null,i));
-      case 'runActions': return jb.comps.runActions.impl(new jbCtx(ctxWithVars,{profile: { actions : profile },path:''}));
+      case 'runActions': return jb.comps['run-actions'].impl(new jbCtx(ctxWithVars,{profile: { actions : profile },path:''}));
       case 'if': {
           const cond = jb_run(run.ifContext, run.IfParentParam);
           if (cond && cond.then)
@@ -660,6 +660,8 @@ Object.assign(jb,{
   addDataResourcePrefix: id => id.indexOf('data-resource.') == 0 ? id : 'data-resource.' + id,
 
   component: (id,comp) => {
+    // const id = jb.macroName(_id)
+    // if (_id != id) console.log(_id,id)
     try {
       const errStack = new Error().stack.split(/\r|\n/)
       const line = errStack.filter(x=>x && !x.match(/\)<anonymous>|about:blank|tgp-pretty.js|internal\/modules\/cjs/)).pop()

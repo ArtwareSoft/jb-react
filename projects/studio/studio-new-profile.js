@@ -343,7 +343,7 @@ jb.component('studio.open-new-function', { /* studio.openNewFunction */
       features: css.padding({top: '14', left: '11'})
     }),
     title: 'New Function',
-    onOK: [
+    onOK: runActions(
       studio.newComp(
         '%$studio/project%.%$dialogData/name%',
         asIs({type: 'data', impl: pipeline(), testData: 'sampleData'})
@@ -351,7 +351,7 @@ jb.component('studio.open-new-function', { /* studio.openNewFunction */
       writeValue('%$studio/profile_path%', '%$studio/project%.%$dialogData/name%'),
       studio.openJbEditor('%$studio/project%.%$dialogData/name%'),
       refreshControlById('functions')
-    ],
+    ),
     modal: true,
     features: [dialogFeature.autoFocusOnFirstInput()]
   })
@@ -443,9 +443,9 @@ jb.component('studio.new-comp', { /* studio.newComp */
     {id: 'compName', as: 'string'},
     {id: 'compContent'}
   ],
-  impl: (ctx,compName, compContent) => {
+  impl: (ctx, compName, compContent) => {
     const _jb = jb.studio.previewjb
-    _jb. component(compName, compContent)
+    _jb.component(compName, compContent)
     const filePattern = '/' + ctx.exp('%$studio/project%')
     const projectFile = jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=> x && x.indexOf(filePattern) != -1)[0]
     Object.assign(_jb.comps[compName], { [_jb.location]: [projectFile,''] })

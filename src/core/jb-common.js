@@ -859,7 +859,7 @@ jb.component('not-equals', { /* notEquals */
   impl: (ctx, item1, item2) => item1 != item2
 })
 
-jb.component('runActions', { /* runActions */
+jb.component('run-actions', { /* runActions */
   type: 'action',
   params: [
     {id: 'actions', type: 'action[]', ignore: true, composite: true, mandatory: true}
