@@ -446,7 +446,8 @@ const jstypes = {
     },
     boolean(value) {
       if (Array.isArray(value)) value = value[0];
-      return val(value) ? true : false;
+      value = val(value);
+      return value && value != 'false' ? true : false;
     },
     single(value) {
       if (Array.isArray(value))

@@ -5,14 +5,14 @@ const {pipe,filter,subscribe,takeUntil} = jb.callbag
 
 function compsRefOfPreviewJb(previewjb) {
 	st.compsHistory = [];
-	function compsRef(val,opEvent) {
+	function compsRef(val,opEvent,{source}= {}) {
 		if (typeof val == 'undefined')
 			return previewjb.comps;
 		else {
-			if (!opEvent) debugger
 			val.$jb_selectionPreview = opEvent && opEvent.srcCtx && opEvent.srcCtx.vars.selectionPreview;
 			if (!val.$jb_selectionPreview)
-			st.compsHistory.push({before: previewjb.comps, after: val, opEvent: opEvent, undoIndex: st.undoIndex})
+			if (source != 'probe')
+				st.compsHistory.push({before: previewjb.comps, after: val, opEvent: opEvent, undoIndex: st.undoIndex})
 
 			previewjb.comps = val;
 			if (opEvent)
@@ -355,6 +355,20 @@ jb.component('studio.watchComponents', {
 			filter(e=>e.path.length == 1),
         	subscribe(() => cmp.refresh({srcCtx: ctx})))
    })
+})
+
+jb.component('studio.boolRef', {
+  params: [
+    {id: 'path', as: 'string', mandatory: true}
+  ],
+  impl: (ctx,path) => ({
+        $jb_val(value) {
+            if (value === undefined)
+                return jb.toboolean(st.refOfPath(path))
+            else
+				jb.writeValue(st.refOfPath(path),!!value,ctx)
+        }
+	})
 })
 
 })()

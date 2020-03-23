@@ -97,7 +97,7 @@ jb.component('table.init', {
     calcProp({id: 'fields', value: '%$$model.fields%'}),
     calcProp({
         id: 'updateItemlistCntr',
-        value: writeValue('%$itemlistCntr.items%', '%$$props.items%'),
+        value: action.if('%$itemlistCntr%',writeValue('%$itemlistCntr.items%', '%$$props.items%')),
         phase: 100
       }),
     calcProp({

@@ -14,7 +14,7 @@ jb.component('editableBoolean', {
   impl: ctx => jb.ui.ctrl(ctx, features(
     calcProp('text',data.if('%$$model/databind%','%$$model/textForTrue%','%$$model/textForFalse%' )),
     watchRef('%$$model/databind%'),
-    defHandler('toggle', writeValue('%$$model/databind%',not('%$$model/databind%'))),
+    defHandler('toggle', ctx => ctx.run(writeValue('%$$model/databind%',not('%$$model/databind%')))),
     defHandler('setChecked', writeValue('%$$model/databind%','true')),
 		))
 })

@@ -131,18 +131,10 @@ jb.component('studio.jbFloatingInput', {
     layout: layout.horizontal(),
     controls: [
       editableBoolean({
-        databind: '%$val%',
-        style: editableBoolean.mdcXV(),
+        databind: studio.boolRef('%$path%'),
+        style: editableBoolean.mdcSlideToggle(),
         features: [
-          variable({
-            name: 'val',
-            value: If(studio.ref('%$path%'), 'true', 'false'),
-            watchable: true
-          }),
-          feature.onEvent({
-            event: 'change',
-            action: writeValue(studio.ref('%$path%'), '%$val%')
-          }),
+          feature.onEvent({event: 'click', action: dialog.closeContainingPopup()}),
           feature.if(studio.isOfType('%$path%', 'boolean')),
           css.margin({top: '35', right: '20', left: ''})
         ]

@@ -27,10 +27,7 @@ jb.component('itemlist.initContainerWithItems', {
   category: 'itemlist:20',
   impl: calcProp({
     id: 'updateItemlistCntr',
-    value: action.if(
-      '%$itemlistCntr%',
-      writeValue('%$itemlistCntr.items%', '%$$props.items%')
-    ),
+    value: action.if('%$itemlistCntr%',writeValue('%$itemlistCntr.items%', '%$$props.items%')),
     phase: 100
   })
 })

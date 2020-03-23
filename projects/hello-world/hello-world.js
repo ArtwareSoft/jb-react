@@ -30,7 +30,7 @@ jb.component('helloWorld.main', {
       text({
         text: 'hello world',
         title: 'my title',
-        features: watchRef({allowSelfRefresh: 'false'})
+        features: watchRef({allowSelfRefresh: false})
       })
     ],
     features: css.width('400')
