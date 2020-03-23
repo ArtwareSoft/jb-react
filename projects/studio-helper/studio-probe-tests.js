@@ -128,7 +128,7 @@ jb.component('probeTest.insideOpenDialog', {
   })
 })
 
-jb.component('probe-test.inside-open-dialog-onOk', { /* probeTest.insideOpenDialogOnOk */
+jb.component('probeTest.insideOpenDialogOnOk', {
   impl: studioProbeTest({
     circuit: button({
       action: openDialog({
@@ -206,7 +206,7 @@ jb.component('test.pathSrcCaller', {
   )
 })
 
-jb.component('probe-test.pathSrc-through-$call', { /* probeTest.pathSrcThrough-$call */
+jb.component('probeTest.pathSrcThrough-$call', {
   impl: dataTest({
     calculate: ctx => {
    	 var probe1 = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: {$: 'test.pathSrcCaller'}, comp: 'test.pathSrcCaller', path: '' } ),true)
@@ -218,7 +218,7 @@ jb.component('probe-test.pathSrc-through-$call', { /* probeTest.pathSrcThrough-$
   })
 })
 
-jb.component('probe-test.pathSrc-through-$call-2', { /* probeTest.pathSrcThrough-$call-2 */
+jb.component('probeTest.pathSrcThrough-$call-2', {
   impl: dataTest({
     calculate: ctx => {
    	 var probe1 = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: {$: 'test.pathSrcCaller'}, comp: 'test.pathSrcCaller', path: '' } ),true)

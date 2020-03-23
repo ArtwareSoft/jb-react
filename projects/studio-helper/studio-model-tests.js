@@ -51,7 +51,7 @@ jb.component('test.moveInTree', {
   })
 })
 
-jb.component('studio-data-test.moveFixDestination-null-group', { /* studioDataTest.moveFixDestinationNullGroup */
+jb.component('studioDataTest.moveFixDestinationNullGroup', {
   impl: dataTest({
     calculate: pipeline(
       list(
@@ -67,7 +67,7 @@ jb.component('studio-data-test.moveFixDestination-null-group', { /* studioDataTe
   })
 })
 
-jb.component('studio-data-test.moveFixDestination-empty-group', { /* studioDataTest.moveFixDestinationEmptyGroup */
+jb.component('studioDataTest.moveFixDestinationEmptyGroup', {
   impl: dataTest({
     calculate: pipeline(
       list(
@@ -116,7 +116,7 @@ jb.component('test.setSugarCompOverride2', {
   })
 })
 
-jb.component('studio-data-test.setSugarCompSimple', { /* studioDataTest.setSugarCompSimple */
+jb.component('studioDataTest.setSugarCompSimple', {
   impl: dataTest({
     calculate: studio.val('test.setSugarCompSimple~impl~text~$pipeline'),
     runBefore: studio.setComp('test.setSugarCompSimple~impl~text', 'pipeline'),
@@ -124,7 +124,7 @@ jb.component('studio-data-test.setSugarCompSimple', { /* studioDataTest.setSugar
   })
 })
 
-jb.component('studio-data-test.setSugarCompWrap', { /* studioDataTest.setSugarCompWrap */
+jb.component('studioDataTest.setSugarCompWrap', {
   impl: dataTest({
     calculate: studio.val('test.setSugarCompWrap~impl~text~$pipeline'),
     runBefore: studio.setComp('test.setSugarCompWrap~impl~text', 'pipeline'),
@@ -133,7 +133,7 @@ jb.component('studio-data-test.setSugarCompWrap', { /* studioDataTest.setSugarCo
   })
 })
 
-jb.component('studio-data-test.setSugarCompOverride1', { /* studioDataTest.setSugarCompOverride1 */
+jb.component('studioDataTest.setSugarCompOverride1', {
   impl: dataTest({
     calculate: studio.val('test.setSugarCompOverride1~impl~text~$pipeline'),
     runBefore: studio.setComp('test.setSugarCompOverride1~impl~text', 'pipeline'),
@@ -142,7 +142,7 @@ jb.component('studio-data-test.setSugarCompOverride1', { /* studioDataTest.setSu
   })
 })
 
-jb.component('studio-data-test.setSugarCompOverride2', { /* studioDataTest.setSugarCompOverride2 */
+jb.component('studioDataTest.setSugarCompOverride2', {
   impl: dataTest({
     calculate: studio.val('test.setSugarCompOverride2~impl~text~$pipeline'),
     runBefore: studio.setComp('test.setSugarCompOverride2~impl~text', 'pipeline'),
@@ -204,21 +204,21 @@ jb.component('studio.completionPtOfTypeInArray', {
 })
 
 
-jb.component('studio-data-test.pathOfText-inArray', { /* studioDataTest.pathOfTextInArray */
+jb.component('studioDataTest.pathOfTextInArray', {
   impl: dataTest({
     calculate: ctx => jb.studio.completion.pathOfText("{$: 'group', \n\tcontrols: [ {$: 'label', text: 'aa' }, {$: 'label', text: '"),
     expectedResult: ctx => ctx.data.join('~') == "controls~1~text"
   })
 })
 
-jb.component('studio-data-test.pathOfText-prop', { /* studioDataTest.pathOfTextProp */
+jb.component('studioDataTest.pathOfTextProp', {
   impl: dataTest({
     calculate: ctx => jb.studio.completion.pathOfText("{$: 'group', text :{$: 'split' , part: '"),
     expectedResult: ctx => ctx.data.join('~') == "text~part"
   })
 })
 
-jb.component('studio-data-test.pathOfText-prop-top', { /* studioDataTest.pathOfTextPropTop */
+jb.component('studioDataTest.pathOfTextPropTop', {
   impl: dataTest({
     calculate: ctx => jb.studio.completion.pathOfText("{ $:'group', style :{$: 'layo"),
     expectedResult: ctx => ctx.data.join('~') == "style"
@@ -226,7 +226,7 @@ jb.component('studio-data-test.pathOfText-prop-top', { /* studioDataTest.pathOfT
 })
 
 
-jb.component('studio-data-test.pathOfText-prop-after-array', { /* studioDataTest.pathOfTextPropAfterArray */
+jb.component('studioDataTest.pathOfTextPropAfterArray', {
   impl: dataTest({
     calculate: ctx => jb.studio.completion.pathOfText("{ $:'group', controls :[{$: '' }, {$:'label'}], style :{$: 'layo"),
     expectedResult: ctx => ctx.data.join('~') == "style"
