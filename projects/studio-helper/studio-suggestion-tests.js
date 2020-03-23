@@ -1,4 +1,4 @@
-jb.component('people-array', { /* peopleArray */
+jb.component('peopleArray', {
   watchableData: {
     people: [
       {name: 'Homer Simpson', age: 42, male: true},

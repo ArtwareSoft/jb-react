@@ -61,7 +61,7 @@ jb.component('jbEditorTest.emptyPipelineBug', {
 // 	}
 // })
 
-jb.component('jb-editor-test.$pipline', { /* jbEditorTest.$pipline */
+jb.component('jbEditorTest.$pipline', {
   impl: jbEditorChildrenTest({
     path: 'jbEditorTest.cmp5JsonFormat~impl~text',
     childrenType: 'jb-editor',
@@ -69,7 +69,7 @@ jb.component('jb-editor-test.$pipline', { /* jbEditorTest.$pipline */
   })
 })
 
-jb.component('jb-editor-test.actions-sugar1', { /* jbEditorTest.actionsSugar1 */
+jb.component('jbEditorTest.actionsSugar1', {
   impl: jbEditorChildrenTest({
     path: 'jbEditorTest.actionsSugarExample1~impl~action',
     childrenType: 'jb-editor',
@@ -77,7 +77,7 @@ jb.component('jb-editor-test.actions-sugar1', { /* jbEditorTest.actionsSugar1 */
   })
 })
 
-jb.component('jb-editor-test.actions-sugar2a', { /* jbEditorTest.actionsSugar2a */
+jb.component('jbEditorTest.actionsSugar2a', {
   impl: jbEditorChildrenTest({
     path: 'jbEditorTest.actionsSugarExample2JsonFormat~impl~action',
     childrenType: 'jb-editor',
@@ -85,7 +85,7 @@ jb.component('jb-editor-test.actions-sugar2a', { /* jbEditorTest.actionsSugar2a 
   })
 })
 
-jb.component('jb-editor-test.actions-sugar2b', { /* jbEditorTest.actionsSugar2b */
+jb.component('jbEditorTest.actionsSugar2b', {
   impl: jbEditorChildrenTest({
     path: 'jbEditorTest.actionsSugarExample2JsonFormat~impl~action~$runActions',
     childrenType: 'jb-editor',
