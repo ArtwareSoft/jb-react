@@ -1,41 +1,41 @@
 const h = jb.ui.h
 
-jb.component('ui-test.apply-vdom-diff-text', { /* uiTest.applyVdomDiffText */
+jb.component('uiTest.applyVdomDiffText', {
   impl: uiTest.applyVdomDiff(
     ctx => h('div',{},'aa'),
     ctx => h('div',{},'bb')
   )
 })
 
-jb.component('ui-test.apply-vdom-diff-tag', { /* uiTest.applyVdomDiffTag */
+jb.component('uiTest.applyVdomDiffTag', {
   impl: uiTest.applyVdomDiff(
     ctx => h('span',{},'aa'),
     ctx => h('div',{},'bb')
   )
 })
 
-jb.component('ui-test.apply-vdom-diff-to-text', { /* uiTest.applyVdomDiffToText */
+jb.component('uiTest.applyVdomDiffToText', {
   impl: uiTest.applyVdomDiff(
     ctx => h('div',{},'aa'),
     ctx => 'aa'
   )
 })
 
-jb.component('ui-test.apply-vdom-diff-mixed', { /* uiTest.applyVdomDiffMixed */
+jb.component('uiTest.applyVdomDiffMixed', {
   impl: uiTest.applyVdomDiff(
     ctx => h('div',{},'aa'),
     ctx => h('div',{},h('div',{},'bb'))
   )
 })
 
-jb.component('ui-test.apply-vdom-diff-mixed2', { /* uiTest.applyVdomDiffMixed2 */
+jb.component('uiTest.applyVdomDiffMixed2', {
   impl: uiTest.applyVdomDiff(
     ctx => h('div',{},h('div',{},'bb')),
     ctx => h('div',{},'aa')
   )
 })
 
-jb.component('ui-test.apply-vdom-diff-DD-tree1', { /* uiTest.applyVdomDiffDDTree1 */
+jb.component('uiTest.applyVdomDiffDDTree1', {
   impl: uiTest.applyVdomDiff(
     group({
       controls: [
@@ -66,7 +66,7 @@ jb.component('ui-test.apply-vdom-diff-DD-tree1', { /* uiTest.applyVdomDiffDDTree
   )
 })
 
-jb.component('ui-test.apply-vdom-diff-DD-tree2', { /* uiTest.applyVdomDiffDDTree2 */
+jb.component('uiTest.applyVdomDiffDDTree2', {
   impl: uiTest.applyVdomDiff(
     {
       tag: 'div',

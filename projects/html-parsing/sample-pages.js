@@ -43,7 +43,7 @@ jb.component('dataResource.devices', { /* dataResource.devices */
   ]
 })
 
-jb.component('dataResource.samsung_galaxy_m30s-9818', { /* dataResource.samsungGalaxyM30s-9818 */
+jb.component('dataResource.samsung_galaxy_m30s_9818', {
     passiveData: `
   <!doctype html>
   <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US" lang="en-US">

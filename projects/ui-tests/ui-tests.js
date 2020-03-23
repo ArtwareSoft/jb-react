@@ -146,7 +146,7 @@ jb.component('uiTest.waitForWithVar', {
   })
 })
 
-// jb.component('ui-test.watchObservable', {
+// jb.component('uiTest.watchObservable', {
 //   impl: uiTest({
 //     vars: Var('promise', ctx => jb.delay(1)),
 //     control: text({
@@ -426,7 +426,7 @@ jb.component('uiTest.dialogCleanupBug', {
 })
 
 // ensure the right order between the unmount that causes elem._component = null and the blur event which is automatically generated when detaching the dialog
-jb.component('ui-test.updateOnBlur-when-dialog-closed', { /* uiTest.updateOnBlurWhenDialogClosed */
+jb.component(' uiTest.updateOnBlurWhenDialogClosed', {
   impl: uiTest({
     control: group({
       controls: [
@@ -535,7 +535,7 @@ jb.component('uiTest.itemlistWithSelect', {
   })
 })
 
-jb.component('ui-test.itemlist-DD', { /* uiTest.itemlistDD */
+jb.component('uiTest.itemlistDD', {
   impl: uiTest({
     control: group({
       controls: [
@@ -611,7 +611,7 @@ jb.component('uiTest.itemlistSelection', {
   })
 })
 
-jb.component('ui-test.itemlist-MD-auto-select-first', { /* uiTest.itemlistMDAutoSelectFirst */
+jb.component('uiTest.itemlistMDAutoSelectFirst', {
   impl: uiTest({
     control: group({
       controls: [
@@ -679,7 +679,7 @@ jb.component('uiTest.itemlistContainerSearchEnterOnLi', {
   })
 })
 
-jb.component('ui-test.secondaryLink-set-bug', { /* uiTest.secondaryLinkSetBug */
+jb.component('uiTest.secondaryLinkSetBug', {
   impl: uiTest({
     control: itemlist({
       items: '%$people%',
@@ -694,7 +694,7 @@ jb.component('ui-test.secondaryLink-set-bug', { /* uiTest.secondaryLinkSetBug */
   })
 })
 
-jb.component('ui-test.search-doesnot-create-ReactClass', { /* uiTest.searchDoesnotCreateReactClass */
+jb.component('uiTest.searchDoesnotCreateReactClass', {
   impl: uiTest({
     control: group({
       controls: [
@@ -1067,7 +1067,7 @@ jb.component('uiTest.innerLabel3Tst', {
   )
 })
 
-jb.component('ui-test.prettyPrintComp', { /* uiTest.prettyPrintComp */
+jb.component('uiTest.prettyPrintComp', {
   impl: {
     '$': 'ui-test2',
     waitForPromise: delay(50),
@@ -1458,7 +1458,7 @@ jb.component('uiTest.firstSucceeding.watchRefreshOnCtrlChangeAndBack', {
   })
 })
 
-jb.component('ui-test.watchRef.recalcVars', { /* uiTest.watchRef.recalcVars */
+jb.component('uiTest.watchRef.recalcVars', {
   impl: uiTest({
     control: text({
       text: '%$changed%',

@@ -1,4 +1,4 @@
-jb.component('studio.new-project', {
+jb.component('studio.newProject', {
   params: [
     {id: 'project', as: 'string'},
     {id: 'baseDir', as: 'string'}
@@ -39,7 +39,7 @@ jb.component('%$project%.main', {
 
 //# sourceURL=%$project%.js
 
-jb.component('studio.open-new-project', { /* studio.openNewProject */
+jb.component('studio.openNewProject', {
   type: 'action',
   impl: openDialog({
     style: dialog.dialogOkCancel(),
@@ -75,7 +75,7 @@ jb.component('studio.open-new-project', { /* studio.openNewProject */
   })
 })
 
-jb.component('studio.save-new-project', { /* studio.saveNewProject */
+jb.component('studio.saveNewProject', {
   type: 'action,has-side-effects',
   params: [
     { id: 'project', as: 'string' }

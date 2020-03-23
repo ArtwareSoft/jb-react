@@ -48,7 +48,7 @@ jb.component('dialogFeature.uniqueDialog', {
 	}
 })
 
-jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
+jb.component('dialogFeature.dragTitle', {
 	type: 'dialog-feature',
 	params: [
 	  {id: 'id', as: 'string'}
@@ -102,9 +102,9 @@ jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
 				}
 			 }
 	  }
-  })
+})
 
-  jb.component('dialog.default', { /* dialog.default */
+jb.component('dialog.default', { /* dialog.default */
 	type: 'dialog.style',
 	impl: customStyle({
 	  template: (cmp,{title,contentComp},h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
@@ -114,7 +114,7 @@ jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
 		  ]),
 	  features: dialogFeature.dragTitle()
 	})
-  })
+})
 
 jb.component('dialogFeature.nearLauncherPosition', {
   type: 'dialog-feature',
@@ -154,7 +154,7 @@ jb.component('dialogFeature.nearLauncherPosition', {
 	}
 })
 
-jb.component('dialog-feature.onClose', { /* dialogFeature.onClose */
+jb.component('dialogFeature.onClose', {
   type: 'dialog-feature',
   params: [
     {id: 'action', type: 'action', dynamic: true}
@@ -235,7 +235,7 @@ jb.component('dialogFeature.cssClassOnLaunchingElement', {
 	})
 })
 
-jb.component('dialog-feature.max-zIndex-on-click', { /* dialogFeature.maxZIndexOnClick */
+jb.component('dialogFeature.maxZIndexOnClick', {
   type: 'dialog-feature',
   params: [
     {id: 'minZIndex', as: 'number'}

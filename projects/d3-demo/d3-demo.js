@@ -1,7 +1,7 @@
 jb.ns('d3-demo')
 jb.ns('d3Chart,d3Scatter,d3Histogram')
 
-jb.component('d3-demo.main', { /* d3Demo.main */
+jb.component('d3Demo.main', {
   type: 'control',
   impl: group({
     controls: [
