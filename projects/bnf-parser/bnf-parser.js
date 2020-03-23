@@ -1,5 +1,6 @@
 
-jb.component('bnf-parser.main', {
+jb.ns('bnfParser')
+jb.component('bnfParser.main', {
   type: 'control', 
   impl :{$: 'group', 
     controls: [

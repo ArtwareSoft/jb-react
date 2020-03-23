@@ -487,16 +487,3 @@ jb.component('studio.cmpsOfProjectByFiles', {
 
 })();
 
-jb.component('studio.PTsOfType', {
-  params: [
-    {id: 'type', as: 'string', mandatory: true}
-  ],
-  impl: (ctx,_type) => st.PTsOfType(_type)
-})
-
-jb.component('studio.profilesOfPT', {
-  params: [
-    {id: 'PT', as: 'string', mandatory: true}
-  ],
-  impl: (ctx, pt) => st.profilesOfPT(pt)
-})

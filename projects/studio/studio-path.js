@@ -9,13 +9,14 @@ function compsRefOfPreviewJb(previewjb) {
 		if (typeof val == 'undefined')
 			return previewjb.comps;
 		else {
+			if (!opEvent) debugger
 			val.$jb_selectionPreview = opEvent && opEvent.srcCtx && opEvent.srcCtx.vars.selectionPreview;
 			if (!val.$jb_selectionPreview)
 			st.compsHistory.push({before: previewjb.comps, after: val, opEvent: opEvent, undoIndex: st.undoIndex})
 
 			previewjb.comps = val;
 			if (opEvent)
-			st.undoIndex = st.compsHistory.length;
+				st.undoIndex = st.compsHistory.length;
 		}
 	}
 	compsRef.frame = previewjb.frame

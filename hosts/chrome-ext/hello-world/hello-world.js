@@ -1,6 +1,6 @@
-jb.component('hello-world.main', {
+jb.component('helloWorld.main', {
   type: 'control', 
   impl :{$: 'label', title: 'jBart label' }
 })
 
-jb.ui.renderWidget({$:'hello-world.main'},document.getElementById('main'))
+jb.ui.renderWidget({$:'helloWorld.main'},document.getElementById('main'))

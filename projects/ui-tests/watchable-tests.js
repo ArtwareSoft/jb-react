@@ -461,14 +461,14 @@ jb.component('uiTest.remoteWidgetInfiniteScroll', {
   impl: uiTest({
     control: remote.widget('uiTest.remoteInfiniteScroll'),
     runBefore: remote.initMainWorker(
-      ctx => `http://${location.host}/projects/ui-tests/remote-widgets.js`
+      () => `http://${location.host}/projects/ui-tests/remote-widgets.js`
     ),
     action: [delay(40), uiAction.scrollDown('.jb-itemlist'), delay(20)],
     expectedResult: contains('>8<')
   })
 })
 
-jb.component('ui-test.refProp', {
+jb.component('uiTest.refProp', {
   impl: dataTest({
     runBefore: writeValue(pipeline(
       obj(refProp('personName','%$person/name%')),

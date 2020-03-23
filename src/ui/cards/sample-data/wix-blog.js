@@ -1,4 +1,4 @@
-jb.component('data-resource.wix-blog', { /* dataResource.wixBlog */
+jb.component('dataResource.wix-blog', { /* dataResource.wixBlog */
     watchableData: {
       items: [
         {
@@ -235,7 +235,7 @@ jb.component('data-resource.wix-blog', { /* dataResource.wixBlog */
       }
     }
   })
-  jb.component('data-resource.posts', { /* dataResource.posts */
+  jb.component('dataResource.posts', { /* dataResource.posts */
       watchableData: {
         items: [
           {

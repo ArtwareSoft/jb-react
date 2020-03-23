@@ -130,6 +130,6 @@ jb.component('todomvc.main', {
   })
 })
 
-jb.component('data-resource.filterBy', { /* dataResource.filterBy */
+jb.component('dataResource.filterBy', { /* dataResource.filterBy */
   watchableData: 'active'
 })

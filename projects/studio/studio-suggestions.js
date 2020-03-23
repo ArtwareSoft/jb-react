@@ -128,8 +128,25 @@ jb.component('studio.jbFloatingInput', {
     {id: 'path', as: 'string'}
   ],
   impl: group({
-    layout: layout.grid({columnSizes: list('90%', 'auto')}),
+    layout: layout.horizontal(),
     controls: [
+      editableBoolean({
+        databind: '%$val%',
+        style: editableBoolean.mdcXV(),
+        features: [
+          variable({
+            name: 'val',
+            value: If(studio.ref('%$path%'), 'true', 'false'),
+            watchable: true
+          }),
+          feature.onEvent({
+            event: 'change',
+            action: writeValue(studio.ref('%$path%'), '%$val%')
+          }),
+          feature.if(studio.isOfType('%$path%', 'boolean')),
+          css.margin({top: '35', right: '20', left: ''})
+        ]
+      }),
       group({
         title: '',
         controls: [
@@ -158,23 +175,6 @@ jb.component('studio.jbFloatingInput', {
             text: pipeline(studio.paramDef('%$path%'), '%description%'),
             features: css('color: grey')
           })
-        ]
-      }),
-      editableBoolean({
-        databind: '%$val%',
-        style: editableBoolean.mdcXV(),
-        features: [
-          variable({
-            name: 'val',
-            value: If(studio.ref('%$path%'), 'true', 'false'),
-            watchable: true
-          }),
-          feature.onEvent({
-            event: 'change',
-            action: writeValue(studio.ref('%$path%'), '%$val%')
-          }),
-          feature.if(studio.isOfType('%$path%', 'boolean')),
-          css.margin({top: '35', right: '20', left: ''})
         ]
       })
     ],
