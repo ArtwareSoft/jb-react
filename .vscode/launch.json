@@ -6,7 +6,7 @@
             "request": "launch",
             "name": "pretty",
             "program": "${workspaceFolder}/bin/tgp-pretty",
-            "args": ["-file:-demo"],
+            "args": ["-file:data-tests"],
         },
 
         {

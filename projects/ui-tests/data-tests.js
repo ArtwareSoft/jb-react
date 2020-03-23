@@ -156,7 +156,6 @@ jb.component('dataTest.splice', {
   })
 })
 
-
 jb.component('dataTest.writeValueInner', {
   impl: dataTest({
     calculate: '%$person/zz/age%',
@@ -210,7 +209,7 @@ jb.component('dataTest.writeValueViaArrayLink', {
   })
 })
 
-jb.component('data-test.runActionOnItems', { /* dataTest.runActionOnItems */
+jb.component('dataTest.runActionOnItems', {
   impl: dataTest({
     calculate: pipeline('%$personWithChildren/children/name%', join({})),
     runBefore: runActionOnItems(
@@ -221,7 +220,7 @@ jb.component('data-test.runActionOnItems', { /* dataTest.runActionOnItems */
   })
 })
 
-jb.component('data-test.runActionOnItems-array-ref', { /* dataTest.runActionOnItemsArrayRef */
+jb.component('dataTest.runActionOnItemsArrayRef', {
   impl: dataTest({
     calculate: pipeline('%$personWithChildren/children/name%', join({})),
     runBefore: runActionOnItems('%$personWithChildren/children/name%', writeValue('%%', 'a%%')),
@@ -324,7 +323,7 @@ jb.component('dataTest.expWithArrayVar', {
   })
 })
 
-jb.component('data-test.Var', { /* dataTest.Var */
+jb.component('dataTest.Var', {
   impl: dataTest({
     calculate: pipeline(
       Var('children', '%$personWithChildren/children%'),
@@ -447,7 +446,7 @@ jb.component('dataTest.dataSwitchDefault', {
 
 jb.component('arTest', { watchableData: { ar: ['0'] }})
 
-jb.component('data-test.restoreArrayIds-bug', { /* dataTest.restoreArrayIdsBug */
+jb.component('dataTest.restoreArrayIdsBug', {
   impl: dataTest({
     calculate: '%$arTest/result%',
     runBefore: ctx => {
@@ -461,7 +460,7 @@ jb.component('data-test.restoreArrayIds-bug', { /* dataTest.restoreArrayIdsBug *
   })
 })
 
-jb.component('data-test.extendWithIndex', { /* dataTest.extendWithIndex */
+jb.component('dataTest.extendWithIndex', {
   impl: dataTest({
     calculate: pipeline(
       '%$personWithChildren/children%',
@@ -526,7 +525,7 @@ jb.component('dataTest.prettyPrintMacro', {
   })
 })
 
-jb.component('data-test.activateFunction', { /* dataTest.activateFunction */
+jb.component('dataTest.activateFunction', {
   impl: dataTest({
     vars: [Var('f1', ctx => (() => ({ a: 5 })))],
     calculate: '%$f1()/a%',
@@ -603,7 +602,7 @@ jb.component('dataTest.innerOfUndefinedVar', {
   })
 })
 
-// jb.component('data-test.http-get', {
+// jb.component('dataTest.httpGet', {
 //    impl :{$: 'data-test',
 //     calculate: {$pipe : [ {$: 'http.get', url: '/projects/ui-tests/people.json'}, '%people/name%', {$join:','}  ]},
 //     expectedResult :{$: 'contains', text: 'Homer' }
@@ -611,32 +610,38 @@ jb.component('dataTest.innerOfUndefinedVar', {
 // })
 
 jb.component('watchableVar', { watchableData: 'hey' })
-jb.component('data-test.string-watchable-var', {
+
+jb.component('dataTest.stringWatchableVar', {
   impl: dataTest({
-    runBefore: writeValue('%$watchableVar%', 'foo'),
     calculate: '%$watchableVar%',
+    runBefore: writeValue('%$watchableVar%', 'foo'),
     expectedResult: equals('foo')
-})})
+  })
+})
 
 jb.component('passiveVar', { passiveData: 'hey' })
-jb.component('data-test.string-passive-var', {
+
+jb.component('dataTest.stringPassiveVar', {
   impl: dataTest({
-    runBefore: writeValue('%$passiveVar%', 'foo'),
     calculate: '%$passiveVar%',
+    runBefore: writeValue('%$passiveVar%', 'foo'),
     expectedResult: equals('foo')
-})})
+  })
+})
 
-jb.component('data-test.forward-macro', {
+jb.component('dataTest.forwardMacro', {
   impl: dataTest({
-    calculate: data.test1({first: 'a', second: 'b'}),
+    calculate: data.test1('a', 'b'),
     expectedResult: equals('a-b')
-})})
+  })
+})
 
-jb.component('data-test.forward-macro-by-value', {
+jb.component('dataTest.forwardMacroByValue', {
   impl: dataTest({
-    calculate: data.test1('a','b'),
+    calculate: data.test1('a', 'b'),
     expectedResult: equals('a-b')
-})})
+  })
+})
 
 jb.component('data.test1', {
   params: [
@@ -700,7 +705,7 @@ jb.component('dataTest.prettyPrintArray', {
   })
 })
 
-jb.component('dataTest.prettyPrint-$contains', {
+jb.component('dataTest.prettyPrint$contains', {
   impl: dataTest({
     calculate: pipeline(() => jb.prettyPrintWithPositions(
         {$contains: 'hello'}
@@ -730,7 +735,7 @@ jb.component('dataTest.firstSucceeding.withEmptyString', {
   })
 })
 
-jb.component('data-test.DefaultValueComp', {
+jb.component('dataTest.DefaultValueComp', {
   impl: dataTest({
     calculate: test.withDefaultValueComp(),
     expectedResult: equals(5)

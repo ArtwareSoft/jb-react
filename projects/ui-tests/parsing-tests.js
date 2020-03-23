@@ -15,7 +15,7 @@ outside2
 jb.const('textToBreak','l1-a1-b1-c1;l2-a2-b2-c2;l3-a3-b3-c3');
 jb.const('textToBreak2','l1-a1-b1-c1;l2|a2|b2|c2;l3-a3-b3-c3')
 
-jb.component('data-test.stringWithSourceRef', { /* dataTest.stringWithSourceRef */
+jb.component('dataTest.stringWithSourceRef', {
   impl: dataTest({
     calculate: ctx => new jb.stringWithSourceRef(ctx,'textToBreak',6,8),
     expectedResult: '%% == b1'
@@ -37,7 +37,7 @@ jb.component('dataTest.extractTextRepeating', {
   })
 })
 
-jb.component('data-test.extract-text-includingStartMarker', { /* dataTest.extractTextIncludingStartMarker */
+jb.component('dataTest.extractTextIncludingStartMarker', {
   impl: dataTest({
     calculate: pipeline(
       extractText({
@@ -53,7 +53,7 @@ jb.component('data-test.extract-text-includingStartMarker', { /* dataTest.extrac
   })
 })
 
-jb.component('data-test.extract-text-includingEndMarker', { /* dataTest.extractTextIncludingEndMarker */
+jb.component('dataTest.extractTextIncludingEndMarker', {
   impl: dataTest({
     calculate: pipeline(
       extractText({
