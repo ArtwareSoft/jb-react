@@ -1,25 +1,25 @@
 jb.ns('d3g,d3Scatter,d3Histogram')
 
 jb.component('d3g.histogram', {
-  	type: 'control', category: 'group:80,common:70',
-	params: [
-	    { id: 'title', as: 'string' },
-		  { id: 'items', as: 'array', dynamic: true, mandatory: true },
-      { id: 'pivot', type: 'd3g.pivot', mandatory: true, dynamic: true },
-		  { id: 'frame', type: 'd3g.frame', defaultValue :{$: 'd3g.frame', width: 1400, height: 500,
-				top: 30, right: 50, bottom: 40, left: 60 } },
-	    { id: 'itemTitle', as: 'string', dynamic: true },
-	    { id: 'ticks', as: 'number', defaultValue: 5 },
-      { id: 'axes', type: 'd3g.axes', dynamic: true, as: 'array', defaultValue: {$: 'd3g.buttom-and-left-axes'} },
-	    { id: 'style', type: 'd3g.histogram-style', dynamic: true , defaultValue: {$: 'd3-histogram.plain' } },
-	    { id: 'features', type: 'd3-feature[]', dynamic: true, flattenArray: true },
-	],
- 	impl: ctx => jb.ui.ctrl(ctx,{
+  type: 'control',
+  category: 'group:80,common:70',
+  params: [
+    {id: 'title', as: 'string'},
+    {id: 'items', as: 'array', dynamic: true, mandatory: true},
+    {id: 'pivot', type: 'd3g.pivot', mandatory: true, dynamic: true},
+    {id: 'frame', type: 'd3g.frame', defaultValue: d3g.frame({width: 1400, height: 500, top: 30, right: 50, bottom: 40, left: 60})},
+    {id: 'itemTitle', as: 'string', dynamic: true},
+    {id: 'ticks', as: 'number', defaultValue: 5},
+    {id: 'axes', type: 'd3g.axes', dynamic: true, as: 'array', defaultValue: {'$': 'd3g.buttom-and-left-axes'}},
+    {id: 'style', type: 'd3g.histogram-style', dynamic: true, defaultValue: {'$': 'd3-histogram.plain'}},
+    {id: 'features', type: 'd3-feature[]', dynamic: true, flattenArray: true}
+  ],
+  impl: ctx => jb.ui.ctrl(ctx,{
         featuresOptions: ctx.params.axes()
       })
 })
 
-jb.component('d3-histogram.plain', { /* d3Histogram.plain */
+jb.component('d3Histogram.plain', {
   type: 'd3g.histogram-style',
   impl: customStyle({
     template: (cmp,state,h) => h('svg',{width: cmp.width, height: cmp.height},
@@ -41,9 +41,10 @@ jb.component('d3-histogram.plain', { /* d3Histogram.plain */
   })
 })
 
-jb.component('d3-histogram.init', { /* d3Histogram.init */
+jb.component('d3Histogram.init', {
   type: 'd3-feature',
-  impl: feature.init( (ctx,{cmp}) => {
+  impl: feature.init(
+    (ctx,{cmp}) => {
         cmp.pivot = ctx.vars.$model.pivot();
         if (!cmp.pivot) return;
         cmp.items = calcItems().filter(cmp.pivot.valFunc);
@@ -67,10 +68,11 @@ jb.component('d3-histogram.init', { /* d3Histogram.init */
           cmp.sortItems && cmp.sortItems();
           return cmp.items;
         }
-  })
+  }
+  )
 })
 
-jb.component('d3g.buttom-and-left-axes', { /* d3g.buttomAndLeftAxes */
+jb.component('d3g.buttomAndLeftAxes', {
   type: 'd3g.axes',
   impl: ctx => ({
       afterViewInit: cmp => {
@@ -80,7 +82,7 @@ jb.component('d3g.buttom-and-left-axes', { /* d3g.buttomAndLeftAxes */
   })
 })
 
-jb.component('d3g.item-indicator', { /* d3g.itemIndicator */
+jb.component('d3g.itemIndicator', {
   type: 'd3-feature',
   params: [
     {id: 'item', as: 'single'}

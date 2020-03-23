@@ -238,7 +238,7 @@ jb.component('uiAction.setText', {
 	}
 })
 
-jb.component('ui-action.scroll-down', {
+jb.component('uiAction.scrollDown', {
 	type: 'ui-action',
 	macroByValue: true,
 	params: [

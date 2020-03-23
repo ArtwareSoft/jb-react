@@ -4235,11 +4235,13 @@ Object.assign(jb.ui, {
     },
     activeElement() { return document.activeElement },
     find(el,selector,options) {
-        if (jb.path(el,'constructor.name') == 'jbCtx')
-            el = this.document(el) // el is ctx
-        return el instanceof jb.ui.VNode ? el.querySelectorAll(selector,options) :
-            [... (options && options.includeSelf && ui.matches(el,selector) ? [el] : []),
-             ...Array.from(el.querySelectorAll(selector))]
+      if (!el) return []
+      if (jb.path(el,'constructor.name') == 'jbCtx')
+          el = this.document(el) // el is ctx
+      if (!el) return []
+      return el instanceof jb.ui.VNode ? el.querySelectorAll(selector,options) :
+          [... (options && options.includeSelf && ui.matches(el,selector) ? [el] : []),
+            ...Array.from(el.querySelectorAll(selector))]
     },
     findIncludeSelf: (el,selector) => jb.ui.find(el,selector,{includeSelf: true}),
     addClass: (el,clz) => el.classList.add(clz),
@@ -5994,7 +5996,7 @@ jb.component('dialogFeature.uniqueDialog', {
 	}
 })
 
-jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
+jb.component('dialogFeature.dragTitle', {
 	type: 'dialog-feature',
 	params: [
 	  {id: 'id', as: 'string'}
@@ -6048,9 +6050,9 @@ jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
 				}
 			 }
 	  }
-  })
+})
 
-  jb.component('dialog.default', { /* dialog.default */
+jb.component('dialog.default', { /* dialog.default */
 	type: 'dialog.style',
 	impl: customStyle({
 	  template: (cmp,{title,contentComp},h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
@@ -6060,7 +6062,7 @@ jb.component('dialog-feature.drag-title', { /* dialogFeature.dragTitle */
 		  ]),
 	  features: dialogFeature.dragTitle()
 	})
-  })
+})
 
 jb.component('dialogFeature.nearLauncherPosition', {
   type: 'dialog-feature',
@@ -6100,7 +6102,7 @@ jb.component('dialogFeature.nearLauncherPosition', {
 	}
 })
 
-jb.component('dialog-feature.onClose', { /* dialogFeature.onClose */
+jb.component('dialogFeature.onClose', {
   type: 'dialog-feature',
   params: [
     {id: 'action', type: 'action', dynamic: true}
@@ -6181,7 +6183,7 @@ jb.component('dialogFeature.cssClassOnLaunchingElement', {
 	})
 })
 
-jb.component('dialog-feature.max-zIndex-on-click', { /* dialogFeature.maxZIndexOnClick */
+jb.component('dialogFeature.maxZIndexOnClick', {
   type: 'dialog-feature',
   params: [
     {id: 'minZIndex', as: 'number'}

@@ -1,38 +1,29 @@
 jb.ns('d3g,d3Scatter,d3Histogram')
 
-jb.component('d3g.chart-scatter', { /* d3g.chartScatter */
+jb.component('d3g.chartScatter', {
   type: 'control',
   description: 'chart, graph, diagram by d3',
   category: 'chart:80',
   params: [
     {id: 'title', as: 'string'},
     {id: 'items', as: 'array', dynamic: true, mandatory: true},
-    {
-      id: 'frame',
-      type: 'd3g.frame',
-      defaultValue: d3g.frame({width: 1400, height: 500, top: 30, right: 50, bottom: 40, left: 60})
-    },
+    {id: 'frame', type: 'd3g.frame', defaultValue: d3g.frame({width: 1400, height: 500, top: 30, right: 50, bottom: 40, left: 60})},
     {id: 'pivots', type: 'd3g.pivot[]', templateValue: [], mandatory: true, dynamic: true, description: 'potential axis of the chart'},
     {id: 'itemTitle', as: 'string', dynamic: true},
     {id: 'onSelectItem', type: 'action', dynamic: true},
     {id: 'onSelectAxisValue', type: 'action', dynamic: true},
     {id: 'visualSizeLimit', as: 'number', defaultValue: 1000},
-    {
-      id: 'style',
-      type: 'd3g.scatter-style',
-      dynamic: true,
-      defaultValue: d3Scatter.plain()
-    },
+    {id: 'style', type: 'd3g.scatter-style', dynamic: true, defaultValue: d3Scatter.plain()},
     {id: 'features', type: 'feature[]', dynamic: true, flattenArray: true}
   ],
   impl: ctx =>
     	jb.ui.ctrl(ctx)
 })
 
-jb.component('d3-scatter.plain', { /* d3Scatter.plain */
+jb.component('d3Scatter.plain', {
   type: 'd3g.scatter-style',
   impl: customStyle({
-    template: (cmp,{items, frame,xPivot,yPivot,rPivot,colorPivot,itemTitle},h) => 
+    template: (cmp,{items, frame,xPivot,yPivot,rPivot,colorPivot,itemTitle},h) =>
       h('svg',{width: frame.width, height: frame.height, onclick: true},
     	  h('g', { transform: `translate(${frame.left},${frame.top})` },
     		[
@@ -67,24 +58,43 @@ jb.component('d3-scatter.plain', { /* d3Scatter.plain */
   })
 })
 
-jb.component('d3-scatter.init', { /* d3Scatter.init */
+jb.component('d3Scatter.init', {
   type: 'feature',
   impl: features(
-    calcProp('items',(ctx,{cmp,$model,itemlistCntr}) => {
+    calcProp({
+        id: 'items',
+        value: (ctx,{cmp,$model,itemlistCntr}) => {
       const items = jb.toarray(jb.val($model.items(ctx)));
       if (itemlistCntr)
           itemlistCntr.items = items;
       cmp.sortItems && cmp.sortItems();
       return items.slice(0,$model.visualSizeLimit);
-    }),
-    calcProp('frame','%$$model/frame%'),
-    calcProp('pivots', ctx => ctx.exp('%$$model/pivots%')),
-    calcProp('emptyPivot', d3g.pivot({title: 'empty', value: list('0', '1') })),
-    calcProp('x',firstSucceeding('%$$props/pivots[0]%','%$$props/emptyPivot%')),
-    calcProp('y',firstSucceeding('%$$props/pivots[1]%','%$$props/emptyPivot%')),
-    calcProp('radius',firstSucceeding('%$$props/pivots[2]%','%$$props/emptyPivot%')),
-    calcProp('color',firstSucceeding('%$$props/pivots[3]%','%$$props/emptyPivot%')),
-    calcProps((ctx,{cmp,$model})=> {
+    }
+      }),
+    calcProp({id: 'frame', value: '%$$model/frame%'}),
+    calcProp({id: 'pivots', value: ctx => ctx.exp('%$$model/pivots%')}),
+    calcProp({
+        id: 'emptyPivot',
+        value: d3g.pivot({title: 'empty', value: list('0', '1')})
+      }),
+    calcProp({
+        id: 'x',
+        value: firstSucceeding('%$$props/pivots[0]%', '%$$props/emptyPivot%')
+      }),
+    calcProp({
+        id: 'y',
+        value: firstSucceeding('%$$props/pivots[1]%', '%$$props/emptyPivot%')
+      }),
+    calcProp({
+        id: 'radius',
+        value: firstSucceeding('%$$props/pivots[2]%', '%$$props/emptyPivot%')
+      }),
+    calcProp({
+        id: 'color',
+        value: firstSucceeding('%$$props/pivots[3]%', '%$$props/emptyPivot%')
+      }),
+    calcProps(
+        (ctx,{cmp,$model})=> {
       const ctx2 = ctx.setVars({frame: ctx.vars.$props.frame, items: ctx.vars.$props.items})
       const res = {
         xPivot: cmp.renderProps.x.init(ctx2.setVar('xAxis',true)),
@@ -95,8 +105,10 @@ jb.component('d3-scatter.init', { /* d3Scatter.init */
       }
       res.colorPivot.scale = d3.scaleOrdinal(d3.schemeAccent); //.domain(cmp.colorPivot.domain);
       return res
-    }),
-    interactive( (ctx,{cmp}) => {
+    }
+      ),
+    interactive(
+        (ctx,{cmp}) => {
       cmp.base.outerHTML = cmp.base.outerHTML +'' // ???
       d3.select(cmp.base.querySelector('.x.axis')).call(d3.axisBottom().scale(cmp.ctx.vars.$props.xPivot.scale));
       d3.select(cmp.base.querySelector('.y.axis')).call(d3.axisLeft().scale(cmp.ctx.vars.$props.yPivot.scale));
@@ -116,11 +128,12 @@ jb.component('d3-scatter.init', { /* d3Scatter.init */
           action(ctx.setData(items[index]).setVars({event}))
         }
       }
-    })
+    }
+      )
   )
 })
 
-jb.component('d3g.frame', { /* d3g.frame */
+jb.component('d3g.frame', {
   type: 'd3g.frame',
   params: [
     {id: 'width', as: 'number', defaultValue: 900},

@@ -109,11 +109,13 @@ Object.assign(jb.ui, {
     },
     activeElement() { return document.activeElement },
     find(el,selector,options) {
-        if (jb.path(el,'constructor.name') == 'jbCtx')
-            el = this.document(el) // el is ctx
-        return el instanceof jb.ui.VNode ? el.querySelectorAll(selector,options) :
-            [... (options && options.includeSelf && ui.matches(el,selector) ? [el] : []),
-             ...Array.from(el.querySelectorAll(selector))]
+      if (!el) return []
+      if (jb.path(el,'constructor.name') == 'jbCtx')
+          el = this.document(el) // el is ctx
+      if (!el) return []
+      return el instanceof jb.ui.VNode ? el.querySelectorAll(selector,options) :
+          [... (options && options.includeSelf && ui.matches(el,selector) ? [el] : []),
+            ...Array.from(el.querySelectorAll(selector))]
     },
     findIncludeSelf: (el,selector) => jb.ui.find(el,selector,{includeSelf: true}),
     addClass: (el,clz) => el.classList.add(clz),

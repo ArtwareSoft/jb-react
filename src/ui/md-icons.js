@@ -1,4 +1,4 @@
-jb.component('button.md-icon', { /* button.mdIcon */
+jb.component('button.mdIcon', {
     type: 'button.style,icon-with-action.style',
     params: [
       {id: 'icon', as: 'string', defaultValue: 'Yoga'},

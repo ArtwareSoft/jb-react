@@ -1,4 +1,4 @@
-jb.component('cards.wix-post-adapter', { /* cards.wixPostAdapter */
+jb.component('cards.wixPostAdapter', {
     impl: obj(
       refProp('title', '%title%'),
       refProp('content', '%excerpt%'),

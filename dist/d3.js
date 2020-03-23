@@ -18430,7 +18430,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 jb.ns('d3g,d3Scatter,d3Histogram')
 
-jb.component('d3g.pivot', { /* d3g.pivot */
+jb.component('d3g.pivot', {
   type: 'd3g.pivot',
   params: [
     {id: 'title', as: 'string', mandatory: true},
@@ -18438,7 +18438,7 @@ jb.component('d3g.pivot', { /* d3g.pivot */
     {id: 'scale', type: 'd3g.scale', dynamic: true, defaultValue: d3g.linearScale()},
     {id: 'range', type: 'd3g.range', dynamic: true, defaultValue: d3g.autoRange()},
     {id: 'domain', type: 'd3g.domain', dynamic: true, defaultValue: d3g.domainByValues()},
-    {id: 'axisControl', type: 'control', dynamic: true, defaultValue: button('%title%')},
+    {id: 'axisControl', type: 'control', dynamic: true, defaultValue: button('%title%')}
   ],
   impl: (ctx,title,value,scaleFunc,range,domain,axisControl) => ({
     title,
@@ -18457,43 +18457,43 @@ jb.component('d3g.pivot', { /* d3g.pivot */
 	})
 })
 
-jb.component('d3g.linear-scale', { /* d3g.linearScale */
+jb.component('d3g.linearScale', {
   type: 'd3g.scale',
   impl: ctx => d3.scaleLinear()
 })
 
-jb.component('d3g.sqrt-scale', { /* d3g.sqrtScale */
+jb.component('d3g.sqrtScale', {
   type: 'd3g.scale',
   impl: ctx => d3.scaleSqrt()
 })
 
-jb.component('d3g.band-scale', { /* d3g.bandScale */
+jb.component('d3g.bandScale', {
   params: [
-    { id: 'paddingInner' , as: 'number', defaultValue :1, description: 'range [0,1]' },
-    { id: 'paddingOuter' , as: 'number', defaultValue :0.5, description: 'range [0,1]' },
-    { id: 'align' , as: 'number', defaultValue :0.5, description: '0 - aligned left, 0.5 - centered, 1 - aligned right' },
+    {id: 'paddingInner', as: 'number', defaultValue: 1, description: 'range [0,1]'},
+    {id: 'paddingOuter', as: 'number', defaultValue: 0.5, description: 'range [0,1]'},
+    {id: 'align', as: 'number', defaultValue: 0.5, description: '0 - aligned left, 0.5 - centered, 1 - aligned right'}
   ],
   type: 'd3g.scale',
   impl: (ctx,paddingInner,paddingOuter,align) => d3.scaleBand().paddingInner(paddingInner).paddingOuter(paddingOuter).align(align)
 })
 
-jb.component('d3g.ordinal-colors', { 
+jb.component('d3g.ordinalColors', {
   type: 'd3g.scale',
   params: [
     {id: 'scale', as: 'string', options: 'schemeCategory10,schemeAccent,schemePaired,schemeDark2,schemeSet3', defaultValue: 'schemeAccent'}
-  ], 
+  ],
   impl: (ctx,scale) => d3.scaleOrdinal(d3[scale])
 })
 
-jb.component('d3g.interpolate-colors', { 
+jb.component('d3g.interpolateColors', {
   type: 'd3g.scale',
   params: [
     {id: 'scale', as: 'string', options: 'Blues,Greens,Greys,Oranges,Reds,Turbo,Magma,Warm,Cool,Rainbow,BrBG,PRGn,PiYG,RdBu', defaultValue: 'Blues'}
-  ], 
+  ],
   impl: (ctx,scale) => d3.scaleSequential(d3['interpolate'+scale])
 })
 
-jb.component('d3g.auto-range', { /* d3g.autoRange */
+jb.component('d3g.autoRange', {
   type: 'd3g.range',
   impl: ctx => {
 		if (ctx.vars.yAxis)
@@ -18506,7 +18506,7 @@ jb.component('d3g.auto-range', { /* d3g.autoRange */
 	}
 })
 
-jb.component('d3g.from-to', { /* d3g.fromTo */
+jb.component('d3g.fromTo', {
   type: 'd3g.range',
   params: [
     {id: 'from', as: 'number'},
@@ -18515,7 +18515,7 @@ jb.component('d3g.from-to', { /* d3g.fromTo */
   impl: (ctx,from,to) => ([from,to])
 })
 
-jb.component('d3g.domain-by-values', { /* d3g.domainByValues */
+jb.component('d3g.domainByValues', {
   type: 'd3g.domain',
   impl: ctx => {
     const vals = jb.unique(ctx.vars.items.map(x=>ctx.vars.valFunc(x)))
@@ -18529,39 +18529,30 @@ jb.component('d3g.domain-by-values', { /* d3g.domainByValues */
 
 jb.ns('d3g,d3Scatter,d3Histogram')
 
-jb.component('d3g.chart-scatter', { /* d3g.chartScatter */
+jb.component('d3g.chartScatter', {
   type: 'control',
   description: 'chart, graph, diagram by d3',
   category: 'chart:80',
   params: [
     {id: 'title', as: 'string'},
     {id: 'items', as: 'array', dynamic: true, mandatory: true},
-    {
-      id: 'frame',
-      type: 'd3g.frame',
-      defaultValue: d3g.frame({width: 1400, height: 500, top: 30, right: 50, bottom: 40, left: 60})
-    },
+    {id: 'frame', type: 'd3g.frame', defaultValue: d3g.frame({width: 1400, height: 500, top: 30, right: 50, bottom: 40, left: 60})},
     {id: 'pivots', type: 'd3g.pivot[]', templateValue: [], mandatory: true, dynamic: true, description: 'potential axis of the chart'},
     {id: 'itemTitle', as: 'string', dynamic: true},
     {id: 'onSelectItem', type: 'action', dynamic: true},
     {id: 'onSelectAxisValue', type: 'action', dynamic: true},
     {id: 'visualSizeLimit', as: 'number', defaultValue: 1000},
-    {
-      id: 'style',
-      type: 'd3g.scatter-style',
-      dynamic: true,
-      defaultValue: d3Scatter.plain()
-    },
+    {id: 'style', type: 'd3g.scatter-style', dynamic: true, defaultValue: d3Scatter.plain()},
     {id: 'features', type: 'feature[]', dynamic: true, flattenArray: true}
   ],
   impl: ctx =>
     	jb.ui.ctrl(ctx)
 })
 
-jb.component('d3-scatter.plain', { /* d3Scatter.plain */
+jb.component('d3Scatter.plain', {
   type: 'd3g.scatter-style',
   impl: customStyle({
-    template: (cmp,{items, frame,xPivot,yPivot,rPivot,colorPivot,itemTitle},h) => 
+    template: (cmp,{items, frame,xPivot,yPivot,rPivot,colorPivot,itemTitle},h) =>
       h('svg',{width: frame.width, height: frame.height, onclick: true},
     	  h('g', { transform: `translate(${frame.left},${frame.top})` },
     		[
@@ -18596,24 +18587,43 @@ jb.component('d3-scatter.plain', { /* d3Scatter.plain */
   })
 })
 
-jb.component('d3-scatter.init', { /* d3Scatter.init */
+jb.component('d3Scatter.init', {
   type: 'feature',
   impl: features(
-    calcProp('items',(ctx,{cmp,$model,itemlistCntr}) => {
+    calcProp({
+        id: 'items',
+        value: (ctx,{cmp,$model,itemlistCntr}) => {
       const items = jb.toarray(jb.val($model.items(ctx)));
       if (itemlistCntr)
           itemlistCntr.items = items;
       cmp.sortItems && cmp.sortItems();
       return items.slice(0,$model.visualSizeLimit);
-    }),
-    calcProp('frame','%$$model/frame%'),
-    calcProp('pivots', ctx => ctx.exp('%$$model/pivots%')),
-    calcProp('emptyPivot', d3g.pivot({title: 'empty', value: list('0', '1') })),
-    calcProp('x',firstSucceeding('%$$props/pivots[0]%','%$$props/emptyPivot%')),
-    calcProp('y',firstSucceeding('%$$props/pivots[1]%','%$$props/emptyPivot%')),
-    calcProp('radius',firstSucceeding('%$$props/pivots[2]%','%$$props/emptyPivot%')),
-    calcProp('color',firstSucceeding('%$$props/pivots[3]%','%$$props/emptyPivot%')),
-    calcProps((ctx,{cmp,$model})=> {
+    }
+      }),
+    calcProp({id: 'frame', value: '%$$model/frame%'}),
+    calcProp({id: 'pivots', value: ctx => ctx.exp('%$$model/pivots%')}),
+    calcProp({
+        id: 'emptyPivot',
+        value: d3g.pivot({title: 'empty', value: list('0', '1')})
+      }),
+    calcProp({
+        id: 'x',
+        value: firstSucceeding('%$$props/pivots[0]%', '%$$props/emptyPivot%')
+      }),
+    calcProp({
+        id: 'y',
+        value: firstSucceeding('%$$props/pivots[1]%', '%$$props/emptyPivot%')
+      }),
+    calcProp({
+        id: 'radius',
+        value: firstSucceeding('%$$props/pivots[2]%', '%$$props/emptyPivot%')
+      }),
+    calcProp({
+        id: 'color',
+        value: firstSucceeding('%$$props/pivots[3]%', '%$$props/emptyPivot%')
+      }),
+    calcProps(
+        (ctx,{cmp,$model})=> {
       const ctx2 = ctx.setVars({frame: ctx.vars.$props.frame, items: ctx.vars.$props.items})
       const res = {
         xPivot: cmp.renderProps.x.init(ctx2.setVar('xAxis',true)),
@@ -18624,8 +18634,10 @@ jb.component('d3-scatter.init', { /* d3Scatter.init */
       }
       res.colorPivot.scale = d3.scaleOrdinal(d3.schemeAccent); //.domain(cmp.colorPivot.domain);
       return res
-    }),
-    interactive( (ctx,{cmp}) => {
+    }
+      ),
+    interactive(
+        (ctx,{cmp}) => {
       cmp.base.outerHTML = cmp.base.outerHTML +'' // ???
       d3.select(cmp.base.querySelector('.x.axis')).call(d3.axisBottom().scale(cmp.ctx.vars.$props.xPivot.scale));
       d3.select(cmp.base.querySelector('.y.axis')).call(d3.axisLeft().scale(cmp.ctx.vars.$props.yPivot.scale));
@@ -18645,11 +18657,12 @@ jb.component('d3-scatter.init', { /* d3Scatter.init */
           action(ctx.setData(items[index]).setVars({event}))
         }
       }
-    })
+    }
+      )
   )
 })
 
-jb.component('d3g.frame', { /* d3g.frame */
+jb.component('d3g.frame', {
   type: 'd3g.frame',
   params: [
     {id: 'width', as: 'number', defaultValue: 900},
@@ -18669,25 +18682,25 @@ jb.component('d3g.frame', { /* d3g.frame */
 jb.ns('d3g,d3Scatter,d3Histogram')
 
 jb.component('d3g.histogram', {
-  	type: 'control', category: 'group:80,common:70',
-	params: [
-	    { id: 'title', as: 'string' },
-		  { id: 'items', as: 'array', dynamic: true, mandatory: true },
-      { id: 'pivot', type: 'd3g.pivot', mandatory: true, dynamic: true },
-		  { id: 'frame', type: 'd3g.frame', defaultValue :{$: 'd3g.frame', width: 1400, height: 500,
-				top: 30, right: 50, bottom: 40, left: 60 } },
-	    { id: 'itemTitle', as: 'string', dynamic: true },
-	    { id: 'ticks', as: 'number', defaultValue: 5 },
-      { id: 'axes', type: 'd3g.axes', dynamic: true, as: 'array', defaultValue: {$: 'd3g.buttom-and-left-axes'} },
-	    { id: 'style', type: 'd3g.histogram-style', dynamic: true , defaultValue: {$: 'd3-histogram.plain' } },
-	    { id: 'features', type: 'd3-feature[]', dynamic: true, flattenArray: true },
-	],
- 	impl: ctx => jb.ui.ctrl(ctx,{
+  type: 'control',
+  category: 'group:80,common:70',
+  params: [
+    {id: 'title', as: 'string'},
+    {id: 'items', as: 'array', dynamic: true, mandatory: true},
+    {id: 'pivot', type: 'd3g.pivot', mandatory: true, dynamic: true},
+    {id: 'frame', type: 'd3g.frame', defaultValue: d3g.frame({width: 1400, height: 500, top: 30, right: 50, bottom: 40, left: 60})},
+    {id: 'itemTitle', as: 'string', dynamic: true},
+    {id: 'ticks', as: 'number', defaultValue: 5},
+    {id: 'axes', type: 'd3g.axes', dynamic: true, as: 'array', defaultValue: {'$': 'd3g.buttom-and-left-axes'}},
+    {id: 'style', type: 'd3g.histogram-style', dynamic: true, defaultValue: {'$': 'd3-histogram.plain'}},
+    {id: 'features', type: 'd3-feature[]', dynamic: true, flattenArray: true}
+  ],
+  impl: ctx => jb.ui.ctrl(ctx,{
         featuresOptions: ctx.params.axes()
       })
 })
 
-jb.component('d3-histogram.plain', { /* d3Histogram.plain */
+jb.component('d3Histogram.plain', {
   type: 'd3g.histogram-style',
   impl: customStyle({
     template: (cmp,state,h) => h('svg',{width: cmp.width, height: cmp.height},
@@ -18709,9 +18722,10 @@ jb.component('d3-histogram.plain', { /* d3Histogram.plain */
   })
 })
 
-jb.component('d3-histogram.init', { /* d3Histogram.init */
+jb.component('d3Histogram.init', {
   type: 'd3-feature',
-  impl: feature.init( (ctx,{cmp}) => {
+  impl: feature.init(
+    (ctx,{cmp}) => {
         cmp.pivot = ctx.vars.$model.pivot();
         if (!cmp.pivot) return;
         cmp.items = calcItems().filter(cmp.pivot.valFunc);
@@ -18735,10 +18749,11 @@ jb.component('d3-histogram.init', { /* d3Histogram.init */
           cmp.sortItems && cmp.sortItems();
           return cmp.items;
         }
-  })
+  }
+  )
 })
 
-jb.component('d3g.buttom-and-left-axes', { /* d3g.buttomAndLeftAxes */
+jb.component('d3g.buttomAndLeftAxes', {
   type: 'd3g.axes',
   impl: ctx => ({
       afterViewInit: cmp => {
@@ -18748,7 +18763,7 @@ jb.component('d3g.buttom-and-left-axes', { /* d3g.buttomAndLeftAxes */
   })
 })
 
-jb.component('d3g.item-indicator', { /* d3g.itemIndicator */
+jb.component('d3g.itemIndicator', {
   type: 'd3-feature',
   params: [
     {id: 'item', as: 'single'}

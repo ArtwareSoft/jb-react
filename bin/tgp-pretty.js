@@ -5,7 +5,7 @@ const fs = require('fs');
 require('../src/loader/jb-loader.js');
 
 const JBART_DIR = '../';
-const modulesToLoad = 'common,ui-common,ui-tree,codemirror-styles,animate,testers,pretty-print,studio,studio-tests,parsing,object-encoder,cards,md-icons,remote'
+const modulesToLoad = 'common,ui-common,ui-tree,codemirror-styles,animate,testers,pretty-print,studio,studio-tests,parsing,object-encoder,cards,md-icons,remote,d3'
 const sampleProjects = ['style-gallery','itemlists','todomvc'
 ,'html-parsing','cards-demo','animation-demo','menus-demo','studio-helper'].map(x=>`projects/${x}/${x}.js`)
 

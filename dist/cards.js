@@ -1,44 +1,44 @@
 jb.ns('image,card,card-filter,card-list,card-properties')
 
 jb.component('card', {
-    type: 'control',
-    params: [
-        {id: 'data'},
-        {id: 'style', type: 'card.style', dynamic: true },
-        {id: 'adapter', dynamic: true, defaultValue: '%%'},
-    ],
-    impl: (ctx,data,style,adapter) => style(ctx.setData(adapter(ctx.setData(data)))).jbExtend({ctxForPick: ctx },ctx)
+  type: 'control',
+  params: [
+    {id: 'data'},
+    {id: 'style', type: 'card.style', dynamic: true},
+    {id: 'adapter', dynamic: true, defaultValue: '%%'}
+  ],
+  impl: (ctx,data,style,adapter) => style(ctx.setData(adapter(ctx.setData(data)))).jbExtend({ctxForPick: ctx },ctx)
 })
 
-jb.component('card-filter', {
-    type: 'control',
-    params: [
-        {id: 'data'},
-        {id: 'style', type: 'card-filter.style', dynamic: true },
-    ],
-    impl: (ctx,data,style) => style(ctx.setData(data)).jbExtend({ctxForPick: ctx },ctx)
+jb.component('cardFilter', {
+  type: 'control',
+  params: [
+    {id: 'data'},
+    {id: 'style', type: 'card-filter.style', dynamic: true}
+  ],
+  impl: (ctx,data,style) => style(ctx.setData(data)).jbExtend({ctxForPick: ctx },ctx)
 })
 
-jb.component('card-list', {
-    type: 'control',
-    params: [
-        {id: 'data'},
-        {id: 'style', type: 'card-list.style', dynamic: true },
-        {id: 'adapter', dynamic: true, defaultValue: '%%'},
-    ],
-    impl: (ctx,data,style,adapter) => style(adapter(ctx.setData(data))).jbExtend({ctxForPick: ctx },ctx)
+jb.component('cardList', {
+  type: 'control',
+  params: [
+    {id: 'data'},
+    {id: 'style', type: 'card-list.style', dynamic: true},
+    {id: 'adapter', dynamic: true, defaultValue: '%%'}
+  ],
+  impl: (ctx,data,style,adapter) => style(adapter(ctx.setData(data))).jbExtend({ctxForPick: ctx },ctx)
 })
 
 
 jb.component('card.properties', {
   type: 'control',
   params: [
-      {id: 'style', type: 'card-properties.style', defaultValue: cardProperties.simple(), dynamic: true },
+    {id: 'style', type: 'card-properties.style', defaultValue: cardProperties.simple(), dynamic: true}
   ],
   impl: (ctx,style) => style().jbExtend({ctxForPick: ctx },ctx)
 })
 
-jb.component('card-properties.simple', { /* cardProperties.simple */
+jb.component('cardProperties.simple', {
   type: 'card-properties.style',
   impl: group({
     title: 'metadata',
@@ -213,7 +213,7 @@ jb.component('card.full940', { /* singlecard.full940 */
 })
 ;
 
-jb.component('cards.wix-post-adapter', { /* cards.wixPostAdapter */
+jb.component('cards.wixPostAdapter', {
     impl: obj(
       refProp('title', '%title%'),
       refProp('content', '%excerpt%'),
