@@ -19,7 +19,7 @@ const variations = { button: { prop: 'raised', values: [true,false] }}
 
 'button,text,editableText,editableNumber,editableBoolean,group,itemlist,picklist,image'.split(',')
 .forEach(ctrl=>
-  jb.component(`style-gallery.${ctrl}`,  { type: 'control',
+  jb.component(`styleGallery.${ctrl}`,  { type: 'control',
   impl: group({
     layout: layout.grid({
       columnSizes: list('320', '320', '320'),

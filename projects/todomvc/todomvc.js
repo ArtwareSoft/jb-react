@@ -3,7 +3,7 @@ jb.component('todo', { watchableData: [
   {task: 'drink', completed: true},
 ]
 })
-jb.component('new-task', { watchableData:
+jb.component('newTask', { watchableData:
   {task: '', completed: false},
 })
 

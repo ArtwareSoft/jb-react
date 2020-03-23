@@ -9142,7 +9142,7 @@ jb.component('tree.selection', {
 					onSelection(cmp.ctx.setData(selected));
 			}))
 
-			subscribe(cmp.onclick, () =>	cmp.regainFocus && cmp.regainFocus())
+			jb.subscribe(cmp.onclick, () => cmp.regainFocus && cmp.regainFocus())
 
 			if (onRightClick.profile)
 				cmp.base.oncontextmenu = (e=> {
@@ -9177,7 +9177,7 @@ jb.component('tree.keyboardSelection', {
 			onkeydown: true,
 			templateModifier: vdom => {
 				vdom.attributes = vdom.attributes || {};
-				vdom.attributes.tabIndex = 0
+				vdom.attributes.tabIndex = -1
 			},
 			afterViewInit: cmp=> {
 				const {pipe,map,filter,subscribe} = jb.callbag
@@ -9224,9 +9224,9 @@ jb.component('tree.keyboardSelection', {
 					 && (e.keyCode != 17 && e.keyCode != 18)) { // ctrl or alt alone
 						var menu = context.params.applyMenuShortcuts(context.setData(cmp.getSelected()));
 						if (menu && menu.applyShortcut && menu.applyShortcut(e))
-							return false;  // stop propagation
+							return false  // stop propagation
 					}
-					return false;  // stop propagation always
+					return false  // stop propagation always
 				}))
 			}
 		})
@@ -27268,7 +27268,7 @@ jb.component('animation.fixed-pos', {
 })
 
 jb.animate = {
-    anime,
+    anime: jb.frame.anime,
     fixValues(obj) {
         return jb.objFromEntries(jb.entries(obj).filter(e=>e[1]).map(e=>[e[0], 
             typeof e[1] == 'string' && !isNaN(+e[1]) ? +e[1] : e[1]] ))
@@ -28969,13 +28969,14 @@ function compsRefOfPreviewJb(previewjb) {
 		if (typeof val == 'undefined')
 			return previewjb.comps;
 		else {
+			if (!opEvent) debugger
 			val.$jb_selectionPreview = opEvent && opEvent.srcCtx && opEvent.srcCtx.vars.selectionPreview;
 			if (!val.$jb_selectionPreview)
 			st.compsHistory.push({before: previewjb.comps, after: val, opEvent: opEvent, undoIndex: st.undoIndex})
 
 			previewjb.comps = val;
 			if (opEvent)
-			st.undoIndex = st.compsHistory.length;
+				st.undoIndex = st.compsHistory.length;
 		}
 	}
 	compsRef.frame = previewjb.frame
@@ -29974,15 +29975,15 @@ jb.component('urlHistory.mapStudioUrlToResource', {
     }
 })
 
-jb.component('data-resource.queryParams', { /* dataResource.queryParams */
+jb.component('dataResource.queryParams', {
   passiveData: {
-
+    
   }
 })
 
 jb.component('dataResource.queryParams', {
   passiveData: {
-    
+
   }
 })
 ;
@@ -30035,14 +30036,14 @@ jb.component('studio.paramType', {
   impl: (ctx,path) =>	st.paramTypeOfPath(path)
 })
 
-jb.component('studio.PTs-of-type', { /* studio.PTsOfType */
+jb.component('studio.PTsOfType', {
   params: [
     {id: 'type', as: 'string', mandatory: true}
   ],
   impl: (ctx,_type) => st.PTsOfType(_type)
 })
 
-jb.component('studio.profiles-of-PT', { /* studio.profilesOfPT */
+jb.component('studio.profilesOfPT', {
   params: [
     {id: 'PT', as: 'string', mandatory: true}
   ],
@@ -30476,19 +30477,6 @@ jb.component('studio.cmpsOfProjectByFiles', {
 
 })();
 
-jb.component('studio.PTsOfType', {
-  params: [
-    {id: 'type', as: 'string', mandatory: true}
-  ],
-  impl: (ctx,_type) => st.PTsOfType(_type)
-})
-
-jb.component('studio.profilesOfPT', {
-  params: [
-    {id: 'PT', as: 'string', mandatory: true}
-  ],
-  impl: (ctx, pt) => st.profilesOfPT(pt)
-})
 ;
 
 (function() {
@@ -31758,8 +31746,25 @@ jb.component('studio.jbFloatingInput', {
     {id: 'path', as: 'string'}
   ],
   impl: group({
-    layout: layout.grid({columnSizes: list('90%', 'auto')}),
+    layout: layout.horizontal(),
     controls: [
+      editableBoolean({
+        databind: '%$val%',
+        style: editableBoolean.mdcXV(),
+        features: [
+          variable({
+            name: 'val',
+            value: If(studio.ref('%$path%'), 'true', 'false'),
+            watchable: true
+          }),
+          feature.onEvent({
+            event: 'change',
+            action: writeValue(studio.ref('%$path%'), '%$val%')
+          }),
+          feature.if(studio.isOfType('%$path%', 'boolean')),
+          css.margin({top: '35', right: '20', left: ''})
+        ]
+      }),
       group({
         title: '',
         controls: [
@@ -31788,23 +31793,6 @@ jb.component('studio.jbFloatingInput', {
             text: pipeline(studio.paramDef('%$path%'), '%description%'),
             features: css('color: grey')
           })
-        ]
-      }),
-      editableBoolean({
-        databind: '%$val%',
-        style: editableBoolean.checkbox(),
-        features: [
-          variable({
-            name: 'val',
-            value: If(studio.ref('%$path%'), 'true', 'false'),
-            watchable: true
-          }),
-          feature.onEvent({
-            event: 'change',
-            action: writeValue(studio.ref('%$path%'), '%$val%')
-          }),
-          feature.if(studio.isOfType('%$path%', 'boolean')),
-          css.margin({top: '35', right: '20', left: ''})
         ]
       })
     ],
@@ -35269,7 +35257,7 @@ jb.component('dataResource.studio', {
   }
 })
 
-jb.component('data-resource.pickSelection', { /* dataResource.pickSelection */
+jb.component('dataResource.pickSelection', { /* dataResource.pickSelection */
   passiveData: {
     ctx: null,
     elem: null

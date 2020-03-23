@@ -1,4 +1,4 @@
-jb.component('watchable-people', { /* watchablePeople */
+jb.component('watchablePeople', {
     watchableData: [
         {name: 'Homer Simpson - watchable', age: 42, male: true},
         {name: 'Marge Simpson - watchable', age: 38, male: false},
@@ -6,7 +6,7 @@ jb.component('watchable-people', { /* watchablePeople */
     ]
 })
 
-jb.component('people', { /* people */
+jb.component('people', {
     passiveData: [
         {name: 'Homer Simpson', age: 42, male: true},
         {name: 'Marge Simpson', age: 38, male: false},
@@ -14,7 +14,7 @@ jb.component('people', { /* people */
     ]
 })
 
-jb.component('person', { /* person */
+jb.component('person', {
     watchableData: {
         name: 'Homer Simpson',
         male: true,
@@ -23,14 +23,14 @@ jb.component('person', { /* person */
     }
 })
 
-jb.component('personWithAddress', { /* personWithAddress */
+jb.component('personWithAddress', {
     watchableData: {
         name: 'Homer Simpson',
         address: {city: 'Springfield', street: '742 Evergreen Terrace'}
     }
 })
 
-jb.component('personWithChildren', { /* personWithChildren */
+jb.component('personWithChildren', {
     watchableData: {
         name: 'Homer Simpson',
         children: [{name: 'Bart'}, {name: 'Lisa'}, {name: 'Maggie'}],
@@ -38,7 +38,7 @@ jb.component('personWithChildren', { /* personWithChildren */
     }
 })
 
-jb.component('ui-test.remote-editable-ctrl', {
+jb.component('uiTest.remoteEditableCtrl', {
     type: 'control',
     impl: group({
         controls: [
@@ -48,12 +48,12 @@ jb.component('ui-test.remote-editable-ctrl', {
     })
 })
 
-jb.component('ui-test.hello-from-worker', {
+jb.component('uiTest.helloFromWorker', {
     type: 'control',
     impl: text('hello from worker')
 })
 
-jb.component('ui-test.remote-infinite-scroll', {
+jb.component('uiTest.remoteInfiniteScroll', {
     type: 'control',
     impl: itemlist({
         items: range(0,10),

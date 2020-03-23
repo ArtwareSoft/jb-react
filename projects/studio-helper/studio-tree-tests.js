@@ -19,7 +19,7 @@ jb.component('jbEditorTest.cmp4', {
 
 jb.component('jbEditorTest.cmp5JsonFormat', {
   impl: text({
-    text: {$pipeline: ['a','b'] }
+    text: pipeline('a', 'b')
   })
 })
 
@@ -33,7 +33,7 @@ jb.component('jbEditorTest.actionsSugarExample1', {
 jb.component('jbEditorTest.actionsSugarExample2JsonFormat', {
   impl: button({
     title: 'hello',
-    action: {$runActions: [ {$: 'goto-url', url: 'google' }] }
+    action: runActions({'$': 'goto-url', url: 'google'})
   })
 })
 

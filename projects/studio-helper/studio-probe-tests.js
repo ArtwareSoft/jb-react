@@ -206,7 +206,7 @@ jb.component('test.pathSrcCaller', {
   )
 })
 
-jb.component('probeTest.pathSrcThrough-$call', {
+jb.component('probeTest.pathSrcThrough$call', {
   impl: dataTest({
     calculate: ctx => {
    	 var probe1 = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: {$: 'test.pathSrcCaller'}, comp: 'test.pathSrcCaller', path: '' } ),true)
@@ -218,7 +218,7 @@ jb.component('probeTest.pathSrcThrough-$call', {
   })
 })
 
-jb.component('probeTest.pathSrcThrough-$call-2', {
+jb.component('probeTest.pathSrcThrough$call2', {
   impl: dataTest({
     calculate: ctx => {
    	 var probe1 = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: {$: 'test.pathSrcCaller'}, comp: 'test.pathSrcCaller', path: '' } ),true)

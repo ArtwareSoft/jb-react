@@ -1,10 +1,10 @@
-jb.component('globals', { /* globals */
+jb.component('globals', {
   watchableData: {
 
   }
 })
 
-jb.component('watchable-people', { /* watchablePeople */
+jb.component('watchablePeople', {
   watchableData: [
     {name: 'Homer Simpson - watchable', age: 42, male: true},
     {name: 'Marge Simpson - watchable', age: 38, male: false},
@@ -12,7 +12,7 @@ jb.component('watchable-people', { /* watchablePeople */
   ]
 })
 
-jb.component('people', { /* people */
+jb.component('people', {
   passiveData: [
     {name: 'Homer Simpson', age: 42, male: true},
     {name: 'Marge Simpson', age: 38, male: false},
@@ -20,7 +20,7 @@ jb.component('people', { /* people */
   ]
 })
 
-jb.component('person', { /* person */
+jb.component('person', {
   watchableData: {
     name: 'Homer Simpson',
     male: true,
@@ -29,14 +29,14 @@ jb.component('person', { /* person */
   }
 })
 
-jb.component('personWithAddress', { /* personWithAddress */
+jb.component('personWithAddress', {
   watchableData: {
     name: 'Homer Simpson',
     address: {city: 'Springfield', street: '742 Evergreen Terrace'}
   }
 })
 
-jb.component('personWithChildren', { /* personWithChildren */
+jb.component('personWithChildren', {
   watchableData: {
     name: 'Homer Simpson',
     children: [{name: 'Bart'}, {name: 'Lisa'}, {name: 'Maggie'}],
@@ -44,7 +44,7 @@ jb.component('personWithChildren', { /* personWithChildren */
   }
 })
 
-jb.component('empty-array', {
+jb.component('emptyArray', {
   watchableData: []
 })
 
