@@ -1,20 +1,23 @@
-jb.ns('studio-helper,d3g')
+jb.ns('studioHelper,d3g')
 jb.studio.initCompsRefHandler(jb)
 jb.studio.previewWindow = jb.frame
 // fake current path
 jb.delay(100).then(()=>new jb.jbCtx().run(runActions(writeValue('%$studio/project%','studio-helper')),writeValue('%$studio/page%','topBar') ))
 
-jb.component('data-test.parse-project-html', {
+jb.component('dataTest.parseProjectHtml', {
   impl: dataTest({
     calculate: pipeline(
-      list('%$html-dev%', '%$html-user%', '%$html-cloud%'), studio.parseProjectHtml(), prettyPrint()),
+      list('%$html-dev%', '%$html-user%', '%$html-cloud%'),
+      {'$': 'studio.parseProjectHtml', '$byValue': []},
+      prettyPrint()
+    ),
     expectedResult: true
   })
 })
 
-jb.component('studio-helper.top-bar', { /* studioHelper.topBar */
+jb.component('studioHelper.topBar', {
   params: [
-    {id: 'path', defaultValue: 'studio-helper-sample.control'}
+    {id: 'path', defaultValue: 'studioHelperSample.control'}
   ],
   type: 'control',
   impl: studio.topBar(
@@ -22,7 +25,7 @@ jb.component('studio-helper.top-bar', { /* studioHelper.topBar */
   )
 })
 
-jb.component('studio-helper.event-tracker', { /* studioHelper.eventTracker */
+jb.component('studioHelper.eventTracker', {
   type: 'control',
   impl: group({
     title: '',
@@ -35,9 +38,9 @@ jb.component('studio-helper.event-tracker', { /* studioHelper.eventTracker */
   })
 })
 
-jb.component('studio-helper.editable-source', { /* studioHelper.editableSource */
+jb.component('studioHelper.editableSource', {
   params: [
-    {id: 'path', defaultValue: 'studio-helper-sample.control'}
+    {id: 'path', defaultValue: 'studioHelperSample.control'}
   ],
   type: 'control',
   impl: group({
@@ -45,38 +48,40 @@ jb.component('studio-helper.editable-source', { /* studioHelper.editableSource *
   })
 })
 
-jb.component('studio-helper.pages', { /* studioHelper.pages */
+jb.component('studioHelper.pages', {
   type: 'control',
-  impl: studio.pages()
+  impl: studio.pages(
+
+  )
 })
 
-jb.component('studio-helper.control-tree', { /* studioHelper.controlTree */
+jb.component('studioHelper.controlTree', {
   type: 'control',
   params: [
-    {id: 'path', defaultValue: 'studio-helper-sample.control'}
+    {id: 'path', defaultValue: 'studioHelperSample.control'}
   ],
   impl: studio.controlTree(
     Var('simulateProfilePath', '%$path%')
   )
 })
 
-jb.component('studio-helper.pick-profile', { /* studioHelper.pickProfile */
+jb.component('studioHelper.pickProfile', {
   type: 'control',
   impl: studio.pickProfile(
-    'studio-helper-sample.button~action'
+    'studioHelperSample.button~action'
   )
 })
 
-jb.component('studio-helper.jb-editor', { /* studioHelper.jbEditor */
+jb.component('studioHelper.jbEditor', {
   type: 'control',
   params: [
-    {id: 'path', defaultValue: 'studio-helper-sample.component-header'}
+    {id: 'path', defaultValue: 'studioHelperSample.componentHeader'}
   ],
   impl: group({
     title: 'main',
     layout: layout.flex('flex-start'),
     controls: [
-      studio.jbEditor('studio-helper-sample.properties-params-prof'),
+      studio.jbEditor('studioHelperSample.propertiesParamsProf'),
       group({
         controls: [
           editableText({
@@ -92,10 +97,10 @@ jb.component('studio-helper.jb-editor', { /* studioHelper.jbEditor */
   })
 })
 
-jb.component('studio-helper.inteli-tree', { /* studioHelper.inteliTree */
+jb.component('studioHelper.inteliTree', {
   type: 'control',
   params: [
-    {id: 'path', defaultValue: 'studio-helper.empty-group'}
+    {id: 'path', defaultValue: 'studioHelper.emptyGroup'}
   ],
   impl: group({
     title: 'main',
@@ -107,15 +112,13 @@ jb.component('studio-helper.inteli-tree', { /* studioHelper.inteliTree */
   })
 })
 
-jb.component('studio-helper.content-editable-position', { /* studioHelper.contentEditablePosition */
+jb.component('studioHelper.contentEditablePosition', {
   type: 'control',
   impl: text({
     text: 'hello',
     style: header.mdcHeadline2(),
     features: [
-      interactive(
-        (ctx,{cmp}) => jb.ui.contentEditable.activate(cmp)
-      ),
+      interactive((ctx,{cmp}) => jb.ui.contentEditable.activate(cmp)),
       css.height('100'),
       css.padding({top: '', bottom: '40'}),
       css('background: grey')
@@ -123,7 +126,7 @@ jb.component('studio-helper.content-editable-position', { /* studioHelper.conten
   })
 })
 
-jb.component('studio-helper-dummy.simple-label', { /* studioHelperDummy.simpleLabel */
+jb.component('studioHelperDummy.simpleLabel', {
   type: 'control',
   impl: text({
     vars: [Var('check', 2)],
@@ -133,15 +136,17 @@ jb.component('studio-helper-dummy.simple-label', { /* studioHelperDummy.simpleLa
   })
 })
 
-jb.component('studio-helper-sample.button', { /* studioHelperSample.button */
+jb.component('studioHelperSample.button', {
   type: 'control',
   impl: button(
     'btn1'
   ),
-  action: dialog.closeAll()
+  action: dialog.closeAll(
+
+  )
 })
 
-jb.component('studio-helper-sample.control', { /* studioHelperSample.control */
+jb.component('studioHelperSample.control', {
   type: 'control',
   impl: group({
     title: pipeline('main'),
@@ -158,7 +163,7 @@ jb.component('studio-helper-sample.control', { /* studioHelperSample.control */
   })
 })
 
-jb.component('studio-helper.empty-group', { /* studioHelper.emptyGroup */
+jb.component('studioHelper.emptyGroup', {
   type: 'control',
   impl: group({
     controls: [
@@ -167,14 +172,14 @@ jb.component('studio-helper.empty-group', { /* studioHelper.emptyGroup */
   })
 })
 
-jb.component('studio-helper.select-control', { /* studioHelper.selectControl */
+jb.component('studioHelper.selectControl', {
   type: 'control',
   impl: studio.selectProfile({
     type: 'control'
   })
 })
 
-jb.component('studio-helper.select-feature', { /* studioHelper.selectFeature */
+jb.component('studioHelper.selectFeature', {
   type: 'control',
   impl: group({
     title: 'select-feature',
@@ -182,23 +187,26 @@ jb.component('studio-helper.select-feature', { /* studioHelper.selectFeature */
     controls: [
       studio.selectProfile({
         type: 'feature',
-        path: 'studio-helper-sample.picklist~impl~features~0'
+        path: 'studioHelperSample.picklist~impl~features~0'
       })
     ]
   })
 })
 
-jb.component('studio-helper.features', { /* studioHelper.features */
+jb.component('studioHelper.features', {
   type: 'control',
   impl: group({
     title: 'features',
     controls: [
-      studio.propertyArray('studio-helper-dummy.simple-label~impl~features')
+      {
+        '$': 'studio.propertyArray',
+        '$byValue': ['studioHelperDummy.simpleLabel~impl~features']
+      }
     ]
   })
 })
 
-jb.component('studio-helper-sample.control', {
+jb.component('studioHelperSample.control', {
   type: 'control',
   impl: group({
     title: 'main',
@@ -209,7 +217,7 @@ jb.component('studio-helper-sample.control', {
   })
 })
 
-jb.component('studio-helper-sample.table', { /* studioHelperSample.table */
+jb.component('studioHelperSample.table', {
   type: 'control',
   impl: table({
     items: '%$people%',
@@ -220,23 +228,23 @@ jb.component('studio-helper-sample.table', { /* studioHelperSample.table */
   })
 })
 
-jb.component('studio-helper.studio-properties-rich', { /* studioHelper.studioPropertiesRich */
+jb.component('studioHelper.studioPropertiesRich', {
   type: 'control',
   impl: group({
-    vars: [Var('circuit', 'studio-helper-sample.properties-params-prof')],
-    controls: studio.properties('studio-helper-sample.properties-params-prof~impl')
+    vars: [Var('circuit', 'studioHelperSample.propertiesParamsProf')],
+    controls: studio.properties('studioHelperSample.propertiesParamsProf~impl')
   })
 })
 
-jb.component('studio-helper.studio-properties', { /* studioHelper.studioProperties */
+jb.component('studioHelper.studioProperties', {
   type: 'control',
   impl: group({
-    vars: [Var('circuit', 'studio-helper-sample.properties-tgp')],
-    controls: studio.properties('studio-helper-sample.properties-tgp~impl')
+    vars: [Var('circuit', 'studioHelperSample.propertiesTgp')],
+    controls: studio.properties('studioHelperSample.propertiesTgp~impl')
   })
 })
 
-jb.component('studio-helper.script-history', { /* studioHelper.scriptHistory */
+jb.component('studioHelper.scriptHistory', {
   type: 'control',
   impl: group({
     controls: [
@@ -246,10 +254,10 @@ jb.component('studio-helper.script-history', { /* studioHelper.scriptHistory */
   })
 })
 
-jb.component('studio-helper.edit-file', { /* studioHelper.editFile */
+jb.component('studioHelper.editFile', {
   type: 'control',
   impl: editableText({
-    databind: ctx => jb.studio.host.getFile('/projects/studio-helper/studio-helper.js'),
+    databind: ctx => jb.studio.host.getFile('/projects/studio-helper/studioHelper.js'),
     style: editableText.codemirror({
       cm_settings: {
         extraKeys: {
@@ -264,11 +272,11 @@ jb.component('studio-helper.edit-file', { /* studioHelper.editFile */
       },
       height: '100%'
     }),
-    features: textEditor.init()
+    features: {'$': 'textEditor.init', '$byValue': []}
   })
 })
 
-jb.component('studio-helper-sample.properties-params', { /* studioHelperSample.propertiesParams */
+jb.component('studioHelperSample.propertiesParams', {
   type: 'control',
   params: [
     {id: 'simpleStr', as: 'string', description: 'simpler than str'},
@@ -284,14 +292,14 @@ jb.component('studio-helper-sample.properties-params', { /* studioHelperSample.p
     {id: 'style', type: 'button.style', defaultValue: button.mdcIcon()},
     {id: 'groupStyle', type: 'group.style'},
     {id: 'action', type: 'action'},
-    {id: 'features', type: 'feature[]'},
+    {id: 'features', type: 'feature[]'}
   ],
   impl: group({
 
   })
 })
 
-jb.component('studio-helper-sample.properties-params-prof', { /* studioHelperSample.propertiesParamsProf */
+jb.component('studioHelperSample.propertiesParamsProf', {
   type: 'contsdfdswqeqweqwewqe',
   impl: studioHelperSample.propertiesParams({
     simpleStr: 'adasdas',
@@ -319,7 +327,7 @@ jb.component('studio-helper-sample.properties-params-prof', { /* studioHelperSam
   }
 })
 
-jb.component('studio-helper-sample.properties-PT-for-tgp', { /* studioHelperSample.propertiesPTForTgp */
+jb.component('studioHelperSample.propertiesPTForTgp', {
   type: 'control',
   params: [
     {id: 'style1', type: 'button.style'},
@@ -330,7 +338,7 @@ jb.component('studio-helper-sample.properties-PT-for-tgp', { /* studioHelperSamp
   })
 })
 
-jb.component('studio-helper-sample.properties-tgp', { /* studioHelperSample.propertiesTgp */
+jb.component('studioHelperSample.propertiesTgp', {
   type: 'xx',
   impl: studioHelperSample.propertiesPTForTgp(
     button.x(),
@@ -338,42 +346,29 @@ jb.component('studio-helper-sample.properties-tgp', { /* studioHelperSample.prop
   )
 })
 
-jb.component('studio-helper.edit-style', { /* studioHelper.editStyle */
+jb.component('studioHelper.editStyle', {
   type: 'control',
   impl: group({
     controls: [
-      studio.styleEditor('studio-helper-sample.custom-style-comp~impl~style')
+      studio.styleEditor('studioHelperSample.customStyleComp~impl~style')
     ]
   })
 })
 
-jb.component('studio-helper-sample.component-header', { /* studioHelperSample.componentHeader */
+jb.component('studioHelperSample.componentHeader', {
   type: 'control',
   category: 'group:100,common:90',
   params: [
     {id: 'title12', as: 'string', dynamic: true},
-    {
-      id: 'style11',
-      type: 'group.style',
-      defaultValue: layout.vertical(),
-      mandatory: true,
-      dynamic: true
-    },
-    {
-      id: 'controls',
-      type: 'control[]',
-      mandatory: true,
-      flattenArray: true,
-      dynamic: true,
-      composite: true
-    },
+    {id: 'style11', type: 'group.style', defaultValue: layout.vertical(), mandatory: true, dynamic: true},
+    {id: 'controls', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true, composite: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => ''
 })
 
 
-jb.component('studio-helper-sample.control', { /* studioHelperSample.control */
+jb.component('studioHelperSample.control', { /* studioHelperSample.control */
   type: 'control',
   impl: group({
     title: pipeline('main'),

@@ -56,7 +56,7 @@ jb.component('lexer.tokens', {
       [ ('()[]{}+-*/%'.indexOf(x) == -1 ? x : `\\${x}`) ,`return '${x}';`])
 })
 
-jb.component('lexer.ignore-white-space', {
+jb.component('lexer.ignoreWhiteSpace', {
   type: 'lexer-rule',
   impl: ctx => ['\\s+','']
 })
@@ -79,7 +79,7 @@ jb.component('lexer.EOF', {
   impl: ctx => ["$","return 'EOF';"]
 })
 
-jb.component('lexer-rule', {
+jb.component('lexerRule', {
   type: 'lexer-rule',
   params: [
     { id: 'regex', as: 'string', mandatory: true, description: '[a-f0-9]+'},
@@ -88,7 +88,7 @@ jb.component('lexer-rule', {
   impl: (ctx,regex,result) => [regex,result]
 })
 
-jb.component('bnf-expression', {
+jb.component('bnfExpression', {
   type: 'bnf-expression', //singleInType: true,
   params: [
     { id: 'id', as: 'string', mandatory: true},
@@ -97,7 +97,7 @@ jb.component('bnf-expression', {
   impl: ctx => ({ id: ctx.params.id, options: ctx.params.options.filter(x=>x) })
 })
 
-jb.component('expression-option', {
+jb.component('expressionOption', {
   type: 'expression-option', //singleInType: true,
   params: [
     { id: 'syntax', as: 'string', mandatory: true, description: 'e + e'},

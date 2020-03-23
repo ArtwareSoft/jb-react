@@ -59,7 +59,7 @@ jb.component('fs.readdir', {
       funcWrapper('readdir','',directory))
 })
 
-jb.component('fs.directory-content', {
+jb.component('fs.directoryContent', {
   description: 'returns all files content and properties',
   params: [
   	{ id: 'directory', as: 'string', mandatory: true },

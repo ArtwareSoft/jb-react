@@ -21,7 +21,7 @@ jb.component('divider.br', {
     }
 })
 
-jb.component('divider.flex-auto-grow', {
+jb.component('divider.flexAutoGrow', {
     type: 'divider.style',
     impl :{$: 'customStyle', 
         template: '<div></div>',

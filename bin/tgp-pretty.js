@@ -7,7 +7,7 @@ require('../src/loader/jb-loader.js');
 const JBART_DIR = '../';
 const modulesToLoad = 'common,ui-common,ui-tree,codemirror-styles,animate,testers,pretty-print,studio,studio-tests,parsing,object-encoder,cards,md-icons,remote'
 const sampleProjects = ['style-gallery','itemlists','todomvc'
-,'html-parsing','cards-demo','animation-demo','menus-demo'].map(x=>`projects/${x}/${x}.js`)
+,'html-parsing','cards-demo','animation-demo','menus-demo','studio-helper'].map(x=>`projects/${x}/${x}.js`)
 
 const filesOfModules = modules => modules.split(',').map(m=>{
     if (m == 'studio')
@@ -34,8 +34,8 @@ function run() {
     
     entries.filter(({file}) => 
 //        sampleProjects.find(x => file.replace(/\\/g,'/').indexOf(x) != -1)
-           filePattern.test(file) 
-            )
+           filePattern.test(file)
+           )
         .forEach( args => swapComp(args))
 }
 

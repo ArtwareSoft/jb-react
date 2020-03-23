@@ -1,4 +1,4 @@
-jb.component('html-dev', { passiveData: `<!DOCTYPE html>
+jb.component('htmlDev', { passiveData: `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -19,7 +19,7 @@ jb.component('html-dev', { passiveData: `<!DOCTYPE html>
 </body>
 </html>`})
 
-jb.component('html-user',{ passiveData: `<!DOCTYPE html>
+jb.component('htmlUser',{ passiveData: `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -41,7 +41,7 @@ jb.component('html-user',{ passiveData: `<!DOCTYPE html>
 </body>
 </html>`})
 
-jb.component('html-cloud', { passiveData: `<!DOCTYPE html>
+jb.component('htmlCloud', { passiveData: `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -84,7 +84,7 @@ jb.resource('people',[
   { "name": "Bart Simpson"  ,age: 12 , male: true}
 ]);
 
-jb.component('sample-text1',{ passiveData: '#start hello world #end'});
+jb.component('sampleText1',{ passiveData: '#start hello world #end'});
 
 jb.resource('globals', { });
 
