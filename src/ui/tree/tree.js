@@ -215,7 +215,7 @@ jb.component('tree.selection', {
 					onSelection(cmp.ctx.setData(selected));
 			}))
 
-			subscribe(cmp.onclick, () =>	cmp.regainFocus && cmp.regainFocus())
+			jb.subscribe(cmp.onclick, () => cmp.regainFocus && cmp.regainFocus())
 
 			if (onRightClick.profile)
 				cmp.base.oncontextmenu = (e=> {
@@ -250,7 +250,7 @@ jb.component('tree.keyboardSelection', {
 			onkeydown: true,
 			templateModifier: vdom => {
 				vdom.attributes = vdom.attributes || {};
-				vdom.attributes.tabIndex = 0
+				vdom.attributes.tabIndex = -1
 			},
 			afterViewInit: cmp=> {
 				const {pipe,map,filter,subscribe} = jb.callbag
@@ -297,9 +297,9 @@ jb.component('tree.keyboardSelection', {
 					 && (e.keyCode != 17 && e.keyCode != 18)) { // ctrl or alt alone
 						var menu = context.params.applyMenuShortcuts(context.setData(cmp.getSelected()));
 						if (menu && menu.applyShortcut && menu.applyShortcut(e))
-							return false;  // stop propagation
+							return false  // stop propagation
 					}
-					return false;  // stop propagation always
+					return false  // stop propagation always
 				}))
 			}
 		})

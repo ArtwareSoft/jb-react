@@ -72,12 +72,12 @@ jb.component('urlHistory.mapStudioUrlToResource', {
 
 jb.component('dataResource.queryParams', {
   passiveData: {
-
+    
   }
 })
 
 jb.component('dataResource.queryParams', {
   passiveData: {
-    
+
   }
 })

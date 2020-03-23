@@ -162,7 +162,7 @@ jb.component('studio.jbFloatingInput', {
       }),
       editableBoolean({
         databind: '%$val%',
-        style: editableBoolean.checkbox(),
+        style: editableBoolean.mdcXV(),
         features: [
           variable({
             name: 'val',

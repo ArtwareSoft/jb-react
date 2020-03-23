@@ -237,7 +237,7 @@ jb.component('animation.fixed-pos', {
 })
 
 jb.animate = {
-    anime,
+    anime: jb.frame.anime,
     fixValues(obj) {
         return jb.objFromEntries(jb.entries(obj).filter(e=>e[1]).map(e=>[e[0], 
             typeof e[1] == 'string' && !isNaN(+e[1]) ? +e[1] : e[1]] ))

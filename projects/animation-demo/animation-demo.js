@@ -1,6 +1,6 @@
 jb.ns('animation-demo')
 
-jb.component('animation-demo.main', { /* animationDemo.main */
+jb.component('animationDemo.main', {
   type: 'control',
   impl: group({
     controls: [
@@ -31,12 +31,12 @@ jb.component('animation-demo.main', { /* animationDemo.main */
   })
 })
 
-jb.component('animation-demo.itemlist', { /* animationDemo.itemlist */
+jb.component('animationDemo.itemlist', {
   type: 'control',
   impl: group({
     controls: [
       group({
-        layout: layout.flex({alignItems: 'center', spacing: '30', justifyContent: ''}),
+        layout: layout.flex({justifyContent: '', alignItems: 'center', spacing: '30'}),
         controls: [
           button({
             title: 'rotate',
@@ -99,7 +99,7 @@ jb.component('animation-demo.itemlist', { /* animationDemo.itemlist */
   })
 })
 
-jb.component('animation-demo.particle', { /* animationDemo.particle */
+jb.component('animationDemo.particle', {
   type: 'control',
   impl: group({
     layout: layout.horizontal('20'),
@@ -132,7 +132,7 @@ jb.component('animation-demo.particle', { /* animationDemo.particle */
   })
 })
 
-jb.component('animation-demo.watch-ref', { /* animationDemo.watchRef */
+jb.component('animationDemo.watchRef', {
   type: 'control',
   impl: group({
     layout: layout.vertical('30'),
@@ -145,11 +145,11 @@ jb.component('animation-demo.watch-ref', { /* animationDemo.watchRef */
   })
 })
 
-jb.component('data-resource.name', { /* dataResource.name */
+jb.component('dataResource.name', {
   watchableData: 'Dan'
 })
 
-jb.component('data-resource.person', { /* dataResource.person */
+jb.component('dataResource.person', {
   watchableData: {
     name: 'dan11111'
   }
