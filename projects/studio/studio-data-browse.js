@@ -26,7 +26,7 @@ jb.component('studio.openResource', {
   impl: runActions(
     studio.copyDataResourceToComp('%$path%', '%$name%'),
     openDialog({
-        style: dialog.editSourceStyle({id: 'edit-data-resource', width: 600}),
+        style: dialog.editSourceStyle({id: 'editDataResource', width: 600}),
         content: editableText({
           databind: studio.profileAsText('%$path%'),
           style: editableText.studioCodemirrorTgp(),
@@ -61,7 +61,10 @@ jb.component('studio.openNewResource', {
           title: 'resource name',
           databind: '%$name%',
           style: editableText.mdcInput(),
-          features: feature.onEnter(dialog.closeContainingPopup())
+          features: [
+            feature.onEnter(dialog.closeContainingPopup()),
+            validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid name')
+          ]
         })
       ],
       features: css.padding({top: '14', left: '11'})
@@ -69,7 +72,7 @@ jb.component('studio.openNewResource', {
     title: 'New %$watchableOrPassive% Data Source',
     onOK: [
       studio.newComp(
-        'data-resource.%$name%',
+        'dataResource.%$name%',
         obj(
           prop(
               '%$watchableOrPassive%Data',
@@ -81,7 +84,7 @@ hello world
             )
         )
       ),
-      studio.openResource('data-resource.%$name%~%$watchableOrPassive%Data', '%$name%')
+      studio.openResource('dataResource.%$name%~%$watchableOrPassive%Data', '%$name%')
     ],
     modal: true,
     features: [

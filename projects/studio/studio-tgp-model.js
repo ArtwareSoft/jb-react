@@ -91,7 +91,9 @@ st.jbEditorTree = class {
 		let val = st.valOfPath(path);
 		let compName = st.compNameOfPath(path);
 		if (path.indexOf('~') == -1)
-			compName = 'jbComponent';
+			compName = 'jbComponent'
+		if (path.match(/^[^~]+~params~[0-9]+$/))
+			compName = 'jbParam'
 		if (compName && compName.match(/case$/))
       		compName = 'case';
 		let prop = path.split('~').pop();

@@ -35,16 +35,24 @@ jb.component('itemlist.initContainerWithItems', {
 jb.component('itemlist.init', {
   type: 'feature',
   impl: features(
-    calcProp({id: 'items', value: '%$$model.items%'}),
+    calcProp('items', (ctx,{cmp}) => jb.ui.itemlistCalcItems(ctx,cmp)),
     calcProp({
         id: 'ctrls',
-        value: (ctx,{cmp}) => {
+        value: ctx => {
           const controlsOfItem = item =>
             ctx.vars.$model.controls(ctx.setVar(ctx.vars.$model.itemVariable,item).setData(item)).filter(x=>x)
-          return jb.ui.addSlicedState(cmp, ctx.vars.$props.items, ctx.vars.$model.visualSizeLimit).map(item=>
-            Object.assign(controlsOfItem(item),{item})).filter(x=>x.length > 0);
+          return ctx.vars.$props.items.map(item=> Object.assign(controlsOfItem(item),{item})).filter(x=>x.length > 0)
         }
       }),
+    itemlist.initContainerWithItems()
+  )
+})
+
+jb.component('itemlist.initTable', {
+  type: 'feature',
+  impl: features(
+    calcProp('items', (ctx,{cmp}) => jb.ui.itemlistCalcItems(ctx,cmp)),
+    calcProp({id: 'fields', value: '%$$model/controls/field%'}),
     itemlist.initContainerWithItems()
   )
 })
@@ -77,21 +85,6 @@ jb.component('itemlist.infiniteScroll', {
     }
       ),
     templateModifier(({},{vdom}) => vdom.setAttribute('onscroll',true))
-  )
-})
-
-jb.component('itemlist.initTable', {
-  type: 'feature',
-  impl: features(
-    calcProp({
-        id: 'items',
-        value: pipeline(
-          '%$$model.items%',
-          slice(0, firstSucceeding('%$$model.visualSizeLimit%', 100))
-        )
-      }),
-    calcProp({id: 'fields', value: '%$$model/controls/field%'}),
-    itemlist.initContainerWithItems()
   )
 })
 
@@ -140,12 +133,19 @@ jb.component('itemlist.horizontal', {
 })
 
 jb.ui.itemlistInitCalcItems = cmp => cmp.calcItems = cmp.calcItems || (() => Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
-    .map(el=>(jb.ctxDictionary[el.getAttribute('jb-ctx')] || {}).data).filter(x=>x))
+    .map(el=>(jb.ctxDictionary[el.getAttribute('jb-ctx')] || {}).data).filter(x=>x).map(x=>jb.val(x)))
 
-jb.ui.addSlicedState = (cmp,items,visualLimit) => {
-  if (items.length > visualLimit)
-    cmp.state.visualLimit = { totalItems: items.length, shownItems: visualLimit }
-    return items.slice(0,visualLimit)
+jb.ui.itemlistCalcItems = function(ctx,cmp) {
+  const slicedItems = addSlicedState(cmp, ctx.vars.$model.items(), ctx.vars.$model.visualSizeLimit)
+  const itemsRefs = jb.isRef(jb.asRef(slicedItems)) ? 
+      Object.keys(slicedItems).map(i=>jb.objectProperty(slicedItems,i)) : slicedItems
+  return itemsRefs
+
+  function addSlicedState(cmp,items,visualLimit) {
+    if (items.length > visualLimit)
+      cmp.state.visualLimit = { totalItems: items.length, shownItems: visualLimit }
+      return visualLimit < items.length ? items.slice(0,visualLimit) : items
+  }
 }
 
 // ****************** Selection ******************
@@ -283,6 +283,8 @@ jb.component('itemlist.dragAndDrop', {
   type: 'feature',
   impl: ctx => ({
       afterViewInit: function(cmp) {
+        if (!jb.frame.dragula)
+          return jb.logError('itemlist.dragAndDrop - the dragula lib is not loaded')
         jb.ui.itemlistInitCalcItems(cmp)
 
         const drake = dragula([cmp.base.querySelector('.jb-drag-parent') || cmp.base] , {

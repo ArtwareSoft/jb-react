@@ -17,6 +17,7 @@ jb.component('dialog.studioJbEditorPopup', {
             text-shadow: 0 1px 0 #fff;
             font-weight: 700;
             opacity: .2;
+            z-index: 1000
         }
         >.dialog-close:hover { opacity: .5 }
         `,

@@ -46,8 +46,6 @@ class JbComponent {
             this.renderProps[e.prop] = e.transformValue(this.ctx.setData(val == null ? '' : val))
         })
 
-        Object.assign(this.renderProps,(this.styleCtx || {}).params, this.state);
-        
         const filteredPropsByPriority = (this.calcProp || []).filter(toFilter=> 
                 this.calcProp.filter(p=>p.id == toFilter.id && p.priority > toFilter.priority).length == 0)
         filteredPropsByPriority.sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
@@ -55,6 +53,7 @@ class JbComponent {
                 const value = jb.val( tryWrapper(() => prop.value(this.calcCtx),`renderProp:${prop.id}`))
                 Object.assign(this.renderProps, { ...(prop.id == '$props' ? value : { [prop.id]: value })})
             })
+        Object.assign(this.renderProps,(this.styleCtx || {}).params, this.state);
         jb.log('renderProps',[this.renderProps, this])
         if (this.ctx.probe && this.ctx.probe.outOfTime) return
         this.template = this.template || (() => '')

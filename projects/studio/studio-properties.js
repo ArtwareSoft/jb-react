@@ -71,6 +71,9 @@ jb.component('studio.propField', {
     title: studio.propName('%$path%'),
     controls: group({
       controls: [
+        controlWithCondition(pipeline(studio.paramDef('%path%'),'%id%',or(equals('icon'),equals('raisedIcon'))),
+          studio.pickIcon('%$path%')
+        ),
         controlWithCondition(
           and(
             studio.isOfType('%$path%', 'data,boolean'),
@@ -151,6 +154,79 @@ jb.component('studio.propertyToolbarFeature', {
 })
 
 jb.component('studio.propertyScript', {
+  type: 'control',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: group({
+    controls: button({
+      title: prettyPrint(studio.val('%$path%'), true),
+      action: studio.openJbEditor('%$path%'),
+      style: button.studioScript()
+    }),
+    features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
+  })
+})
+
+jb.component('studio.pickIcon', {
+  type: 'control',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: group({
+    controls: button({
+      title: prettyPrint(studio.val('%$path%'), true),
+      action: openDialog({
+        style: dialog.dialogOkCancel(),
+        content: group({
+          controls: [
+            itemlistContainer.search({
+              title: '',
+              searchIn: '%%',
+              databind: '%$itemlistCntrData/search_pattern%'
+            }),
+            itemlist({
+              title: '',
+              items: pipeline(ctx => jb.frame.MDIcons, keys(), itemlistContainer.filter()),
+              controls: [
+                group({
+                  layout: layout.horizontal(),
+                  controls: [
+                    button({title: 'icon', style: button.mdIcon('%%')}),
+                    text({
+                      text: pipeline('%%', text.highlight('%%', '%$itemlistCntrData.search_pattern%')),
+                      title: 'icon name'
+                    })
+                  ]
+                })
+              ],
+              visualSizeLimit: '50',
+              features: [
+                watchRef({ref: '%$itemlistCntrData/search_pattern%', strongRefresh: 'true'}),
+                css.height({height: '300', overflow: 'scroll'}),
+                css.width('600'),
+                itemlist.infiniteScroll(),
+                itemlist.selection({
+                  onDoubleClick: runActions(
+                    writeValue(studio.ref('%$path%'), '%%'),
+                    dialog.closeContainingPopup()
+                  )
+                })
+              ]
+            })
+          ],
+          features: group.itemlistContainer({})
+        }),
+        title: 'pick icon'
+      }),
+      style: button.studioScript(),
+      raised: ''
+    }),
+    features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
+  })
+})
+
+jb.component('studio.iconPicker', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}

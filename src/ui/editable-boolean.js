@@ -15,17 +15,7 @@ jb.component('editableBoolean', {
     calcProp('text',data.if('%$$model/databind%','%$$model/textForTrue%','%$$model/textForFalse%' )),
     watchRef('%$$model/databind%'),
     defHandler('toggle', ctx => ctx.run(writeValue('%$$model/databind%',not('%$$model/databind%')))),
+    defHandler('toggleByKey', (ctx,{ev}) => ev.keyCode != 27 && ctx.run(writeValue('%$$model/databind%',not('%$$model/databind%')))),
     defHandler('setChecked', writeValue('%$$model/databind%','true')),
 		))
-})
-
-jb.component('editableBoolean.keyboardSupport', {
-  type: 'feature',
-  impl: feature.onEvent({
-    event: 'keypress',
-    action: action.if(
-      () => event.keyCode == 37 || event.keyCode == 39,
-      writeValue('%$$model/databind%', not('%$$model/databind%'))
-    )
-  })
 })

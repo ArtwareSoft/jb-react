@@ -5,12 +5,15 @@ const st = jb.studio;
 st.changedComps = function() {
   if (!st.compsHistory || !st.compsHistory.length) return []
 
-  const changedComps = jb.entries(st.compsHistory.slice(-1)[0].after).filter(e=>e[1] != st.serverComps[e[0]])
-  if (changedComps.map(e=>e[0]).indexOf('call') != -1) {
-    jb.logError('bug. servers comps differ from history')
-    return []
-  }
-  return changedComps
+  const changedComps = jb.unique(st.compsHistory.map(e=>jb.path(e,'opEvent.path.0')))
+    .filter(id=> st.previewjb.comps[id] !== st.serverComps[id])
+  return changedComps.map(id=>[id,st.previewjb.comps[id]])
+}
+
+st.initStudioEditing = function() {
+  if (st.previewjb.comps['dialog.studioPickDialog']) return
+  jb.entries(jb.comps).filter(e=>st.isStudioCmp(e[0]) || !st.previewjb.comps[e[0]]).forEach(e=>
+    st.previewjb.comps[e[0]] = { ...e[1], [jb.location] : [e[1][jb.location][0].replace(/!st!/,''), e[1][jb.location][1]]})
 }
 
 jb.ui.waitFor = function(check,times,interval) {

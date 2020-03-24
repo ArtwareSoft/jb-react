@@ -19,7 +19,7 @@ jb.component('studio.itemlistRefreshSuggestionsOptions', {
         pipe(keyup,
           debounceTime(20), // solves timing of closing the floating input
           startWith(1), // compensation for loosing the first event from selectionKeySource
-          map(e=> input.value),
+          map(e=> input.value.slice(0,100)),
           distinctUntilChanged(), // compare input value - if input was not changed - leave it. Alt-Space can be used here
           map(e => st.closestCtxOfLastRun(pathToTrace)),
           map(probeCtx=>
@@ -128,19 +128,33 @@ jb.component('studio.jbFloatingInput', {
     {id: 'path', as: 'string'}
   ],
   impl: group({
-    layout: layout.horizontal(),
+    layout: layout.horizontal('20'),
     controls: [
       editableBoolean({
         databind: studio.boolRef('%$path%'),
         style: editableBoolean.mdcSlideToggle(),
+        title: '',
         features: [
-          feature.onEvent({event: 'click', action: dialog.closeContainingPopup()}),
+          feature.onEvent({
+            event: 'change',
+            action: runActions(dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus())
+          }),
           feature.if(studio.isOfType('%$path%', 'boolean')),
-          css.margin({top: '35', right: '20', left: ''})
+          css.margin({top: '35', right: '45', left: '20'}),
+          interactive(
+            (ctx,{cmp}) => { 
+            //jb.ui.focus(cmp.base,'jbFloatingInput boolean',ctx)
+            const {pipe,skip,subscribe} = jb.callbag
+            pipe(jb.ui.fromEvent(cmp,'keyup'),skip(1),subscribe( () => 
+              (event.keyCode == 13 || event.keyCode == 27) && 
+                ctx.run(runActions(dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus()))))
+          }
+          )
         ]
       }),
       group({
         title: '',
+        layout: layout.vertical(),
         controls: [
           editableText({
             title: studio.propName('%$path%'),
@@ -167,7 +181,8 @@ jb.component('studio.jbFloatingInput', {
             text: pipeline(studio.paramDef('%$path%'), '%description%'),
             features: css('color: grey')
           })
-        ]
+        ],
+        features: css.width('100%')
       })
     ],
     features: [
@@ -191,7 +206,7 @@ st.suggestions = class {
     this.input = input;
     this.expressionOnly = expressionOnly;
     this.pos = input.selectionStart;
-    this.text = input.value.substr(0,this.pos).trim();
+    this.text = input.value.substr(0,this.pos).trim().slice(0,100);
     this.text_with_open_close = this.text.replace(/%([^%;{}\s><"']*)%/g, (match,contents) =>
       '{' + contents + '}');
     this.exp = rev((rev(this.text_with_open_close).match(/([^\}%]*%)/) || ['',''])[1]);
@@ -201,7 +216,7 @@ st.suggestions = class {
     if (this.tailSymbol == '%' && this.exp.slice(0,2) == '%$')
       this.tailSymbol = '%$';
     this.base = this.exp.slice(0,-1-this.tail.length) + '%';
-    this.inputVal = input.value;
+    this.inputVal = input.value.slice(0,100);
     this.inputPos = input.selectionStart;
   }
 

@@ -1,12 +1,6 @@
 (function() {
 const st = jb.studio;
 
-function initStudioEditing() {
-  if (st.previewjb.comps['dialog.studioPickDialog']) return
-  jb.entries(jb.comps).filter(e=>st.isStudioCmp(e[0]) || !st.previewjb.comps[e[0]]).forEach(e=>
-    st.previewjb.comps[e[0]] = { ...e[1], [jb.location] : [e[1][jb.location][0].replace(/!st!/,''), e[1][jb.location][1]]})
-}
-
 jb.component('dialogFeature.studioPick', {
   type: 'dialog-feature',
   params: [
@@ -16,7 +10,7 @@ jb.component('dialogFeature.studioPick', {
     afterViewInit: cmp=> {
       const {pipe,filter, fromEvent,takeUntil,merge,Do, map,debounceTime, last, subscribe} = jb.callbag
       if (from === 'studio')
-        initStudioEditing()
+        st.initStudioEditing()
       const _window = from == 'preview' ? st.previewWindow : window;
       const previewOffset = from == 'preview' ? document.querySelector('#jb-preview').getBoundingClientRect().top : 0;
       cmp.titleBelow = false;

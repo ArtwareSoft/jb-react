@@ -51,7 +51,7 @@ jb.component('button.mdc', {
 })
 
 jb.component('button.mdcIcon', {
-  type: 'button.style,icon-with-action.style',
+  type: 'button.style,icon.style',
   params: [
     {id: 'icon', as: 'string', defaultValue: 'bookmark_border'},
     {id: 'raisedIcon', as: 'string'}
@@ -85,7 +85,7 @@ jb.component('button.mdcChipAction', {
 })
 
 jb.component('button.mdcChipWithIcons', {
-  type: 'button.style,icon-with-action.style',
+  type: 'button.style,icon.style',
   params: [
     {id: 'leadingIcon', as: 'string', defaultValue: 'code'},
     {id: 'trailingIcon', as: 'string', defaultValue: 'code'}
@@ -104,7 +104,7 @@ jb.component('button.mdcChipWithIcons', {
 })
 
 jb.component('button.mdcFloatingAction', {
-  type: 'button.style,icon-with-action.style',
+  type: 'button.style,icon.style',
   description: 'fab icon',
   params: [
     {id: 'icon', as: 'string', defaultValue: 'code'},
@@ -122,7 +122,7 @@ jb.component('button.mdcFloatingAction', {
 })
 
 jb.component('button.mdcFloatingWithTitle', {
-  type: 'button.style,icon-with-action.style',
+  type: 'button.style,icon.style',
   params: [
     {id: 'icon', as: 'string', defaultValue: 'code'},
     {id: 'mini', as: 'boolean', type: 'boolean'}
@@ -140,7 +140,7 @@ jb.component('button.mdcFloatingWithTitle', {
 })
 
 jb.component('button.mdcIcon12', {
-  type: 'button.style,icon-with-action.style',
+  type: 'button.style,icon.style',
   params: [
     {id: 'icon', as: 'string', defaultValue: 'code'}
   ],
@@ -151,3 +151,16 @@ jb.component('button.mdcIcon12', {
   })
 })
 
+jb.component('button.mdIcon', {
+  type: 'button.style,icon.style',
+  params: [
+    {id: 'icon', as: 'string', defaultValue: 'Yoga'},
+    {id: 'raisedIcon', as: 'string'}
+  ],
+  impl: customStyle({
+    template: (cmp,{title,icon,raised,raisedIcon},h) => 
+        h('div',{title, onclick: true,
+          $html: `<svg height="24" width="24"><path d="${jb.path(jb.frame,['MDIcons',icon])}"/></svg>`}),
+    css: '{width: 24px; height: 24px}'
+  })
+})

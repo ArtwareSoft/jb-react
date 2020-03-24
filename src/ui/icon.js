@@ -13,8 +13,9 @@ jb.component('materialIcon', {
 })
 
 jb.component('icon.material', {
-  type: 'icon-with-action.style',
+  type: 'icon.style',
   impl: customStyle(
     (cmp,{icon},h) => h('i',{ class: 'material-icons' }, icon)
   )
 })
+

@@ -19,8 +19,9 @@ function setStrValue(value, ref, ctx) {
     if (newVal === Symbol.for('parseError'))
         return
     // do not save in editing ',' at the end of line means editing
-    if (typeof newVal === 'object' && value.match(/,\s*}/m))
-        return
+    // YET, THIS GUESS DID NOT WORK ...
+    // if (typeof newVal === 'object' && value.match(/,\s*}/m))
+    //     return
     const currentVal = jb.val(ref)
     if (newVal && typeof newVal === 'object' && typeof currentVal === 'object') {
         const diff = jb.objectDiff(newVal,currentVal)

@@ -96,7 +96,7 @@ jb.component('editableText.codemirror', {
 				const {pipe,map,filter,subscribe,distinctUntilChanged,create,debounceTime,takeUntil} = jb.callbag
 
 				pipe(
-					create(obs=> editor.on('change', () => obs.next(editor.getValue()))),
+					create(obs=> editor.on('change', () => obs(editor.getValue()))),
 					takeUntil( cmp.destroyed ),
 					debounceTime(debounceTime),
 					filter(x => x != jb.tostring(jb.val(cmp.data_ref))),

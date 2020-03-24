@@ -1,7 +1,7 @@
 jb.component('editableBoolean.checkbox', {
   type: 'editable-boolean.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('input', { type: 'checkbox', checked: state.databind, onchange: 'toggle', onkeyup: 'toggle'  }),
+    template: (cmp,state,h) => h('input', { type: 'checkbox', checked: state.databind, onchange: 'toggle', onkeyup: 'toggleByKey'  }),
     features: field.databind()
   })
 })
@@ -10,7 +10,7 @@ jb.component('editableBoolean.checkboxWithTitle', {
   type: 'editable-boolean.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{}, [h('input', { type: 'checkbox',
-        checked: state.databind, onchange: 'toggle', onkeyup: 'toggle'  }), state.text]),
+        checked: state.databind, onchange: 'toggle', onkeyup: 'toggleByKey'  }), state.text]),
     features: field.databind()
   })
 })
@@ -22,7 +22,7 @@ jb.component('editableBoolean.checkboxWithLabel', {
         h('input', { type: 'checkbox', id: "switch_"+state.fieldId,
           checked: state.databind,
           onchange: 'toggle',
-          onkeyup: 'toggle'  },),
+          onkeyup: 'toggleByKey'  },),
         h('label',{for: "switch_"+state.fieldId },state.text)
     ]),
     features: field.databind()
@@ -49,7 +49,7 @@ jb.component('editableBoolean.mdcXV', {
   impl: customStyle({
     template: (cmp,{title,databind,yesIcon,noIcon},h) => h('button',{
           class: ['mdc-icon-button material-icons',databind && 'raised mdc-icon-button--on'].filter(x=>x).join(' '),
-          title, tabIndex: -1, onclick: 'toggle'},[
+          title, tabIndex: -1, onclick: 'toggle', onkeyup: 'toggleByKey'},[
             h('i',{class:'material-icons mdc-icon-button__icon mdc-icon-button__icon--on'}, yesIcon),
             h('i',{class:'material-icons mdc-icon-button__icon '}, noIcon),
         ]),
@@ -69,12 +69,12 @@ jb.component('editableBoolean.mdcSlideToggle', {
       h('div',{class: 'mdc-switch__thumb-underlay'},[
         h('div',{class: 'mdc-switch__thumb'},
           h('input', { type: 'checkbox', role: 'switch', class: 'mdc-switch__native-control', id: 'switch_' + state.fieldId,
-            checked: state.databind, onchange: 'toggle' })),
+            checked: state.databind, onchange: 'toggle', onkeyup: 'toggleByKey' })),
       ]),
       h('label',{for: 'switch_' + state.fieldId},state.text)
     ]),
     css: ctx => jb.ui.propWithUnits('width',ctx.params.width),
-    features: [field.databind(), editableBoolean.keyboardSupport(), mdcStyle.initDynamic()]
+    features: [field.databind(), mdcStyle.initDynamic()]
   })
 })
 

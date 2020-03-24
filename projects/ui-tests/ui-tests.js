@@ -36,6 +36,12 @@ jb.component('personWithAddress', {
   }
 })
 
+jb.component('personWithPrimitiveChildren', {
+  watchableData: {
+    childrenNames: ['Bart','Lisa','Maggie'],
+  }
+})
+
 jb.component('personWithChildren', {
   watchableData: {
     name: 'Homer Simpson',
@@ -505,6 +511,43 @@ jb.component('uiTest.itemlist', {
     expectedResult: contains(['Homer Simpson - Homer Simpson', 'Bart Simpson - Bart Simpson'])
   })
 })
+
+jb.component('uiTest.itemlistPrimitiveArray', {
+  impl: uiTest({
+    control: itemlist({items: '%$personWithPrimitiveChildren/childrenNames%', controls: text('%%')}),
+    expectedResult: contains(['Bart','Lisa','Maggie'])
+  })
+})
+
+jb.component('uiTest.itemlistPrimitiveArrayItemShouldBeRef', {
+  impl: uiTest({
+    vars: Var('isResultRef', obj(prop('answer',false))),
+    control: itemlist({items: '%$personWithPrimitiveChildren/childrenNames%', 
+      controls: ctx => { 
+        ctx.run(writeValue('%$isResultRef/answer%', () => !!jb.isRef(ctx.data)))
+        return ctx.run(text('%%'))
+      }
+    }),
+    expectedResult: '%$isResultRef/answer%'
+  })
+})
+
+jb.component('uiTest.itemlistPrimitiveArrayItemShouldBeRef.tableStyle', {
+  impl: uiTest({
+    vars: Var('isResultRef', obj(prop('answer',false))),
+    control: itemlist({items: '%$personWithPrimitiveChildren/childrenNames%', 
+      style: table.mdc(),
+      controls: ctx => { 
+        ctx.run(writeValue('%$isResultRef/answer%', () => !!jb.isRef(ctx.vars.$props.items[0])))
+        return ctx.run(text('%%'))
+      }
+    }),
+    expectedResult: '%$isResultRef/answer%'
+  })
+})
+
+
+
 
 jb.component('uiTest.itemlist.shownOnlyOnItemHover', {
   impl: uiTest({
