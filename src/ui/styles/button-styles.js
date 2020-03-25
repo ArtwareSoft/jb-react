@@ -164,3 +164,19 @@ jb.component('button.mdIcon', {
     css: '{width: 24px; height: 24px}'
   })
 })
+
+jb.component('button.mdcTab', {
+  type: 'button.style,icon.style',
+  params: [
+    {id: 'icon', as: 'string', defaultValue: 'code'},
+  ],
+  impl: customStyle({
+    template: (cmp,{title,raised},h) =>
+      h('button',{ class: ['mdc-tab', raised && 'mdc-tab--active'].filter(x=>x).join(' '),tabIndex: -1, role: 'tab', onclick:  true}, [
+        h('span',{ class: 'mdc-tab__content'}, h('span',{ class: 'mdc-tab__text-label'},title)),
+        h('span',{ class: ['mdc-tab-indicator', raised && 'mdc-tab-indicator--active'].filter(x=>x).join(' ') }, h('span',{ class: 'mdc-tab-indicator__content mdc-tab-indicator__content--underline'})),
+        h('span',{ class: 'mdc-tab__ripple'}),
+      ]),
+    features: mdcStyle.initDynamic()
+  })
+})

@@ -33,7 +33,13 @@ jb.component('picklist', {
             options: options,
             hasEmptyOption: options.filter(x=>!x.text)[0]
           }
-      })
+      }),
+      defHandler('onchangeHandler', (ctx,{cmp, ev}) => {
+        const newVal = ev.target.value
+        if (jb.val(ctx.vars.$model.databind(cmp.ctx)) == newVal) return
+        jb.writeValue(ctx.vars.$model.databind(cmp.ctx),newVal,ctx);        
+        cmp.onChange && cmp.onChange(cmp.ctx.setVar('event',ev).setData(newVal))
+      }),
     ))
 })
 
@@ -57,13 +63,15 @@ jb.component('picklist.dynamicOptions', {
 })
 
 jb.component('picklist.onChange', {
+  category: 'picklist:100',
+  description: 'on picklist selection',
   type: 'feature',
   description: 'action on picklist selection',
   params: [
     {id: 'action', type: 'action', dynamic: true}
   ],
   impl: interactive(
-    (ctx,{cmp},{action}) => cmp.onChange = action
+    (ctx,{cmp},{action}) => cmp.onChange = (ctx2 => action(ctx2))
   )
 })
 

@@ -446,7 +446,8 @@ const jstypes = {
     },
     boolean(value) {
       if (Array.isArray(value)) value = value[0];
-      return val(value) ? true : false;
+      value = val(value);
+      return value && value != 'false' ? true : false;
     },
     single(value) {
       if (Array.isArray(value))
@@ -2865,6 +2866,24 @@ jb.callbag = {
             },duration)
         })
     },
+    skip: max => source => (start, sink) => {
+        if (start !== 0) return;
+        let skipped = 0;
+        let talkback;
+        source(0, (t, d) => {
+          if (t === 0) {
+            talkback = d;
+            sink(t, d);
+          } else if (t === 1) {
+            if (skipped < max) {
+              skipped++;
+              talkback(1);
+            } else sink(t, d);
+          } else {
+            sink(t, d);
+          }
+        });
+    },    
     fromCallBag: source => source,
     fromAny: (source, name, options) => {
         const f = source && 'from' + (Object.prototype.toString.call(source) === "[object Promise]" ? 'Promise'
@@ -3926,8 +3945,6 @@ class JbComponent {
             this.renderProps[e.prop] = e.transformValue(this.ctx.setData(val == null ? '' : val))
         })
 
-        Object.assign(this.renderProps,(this.styleCtx || {}).params, this.state);
-        
         const filteredPropsByPriority = (this.calcProp || []).filter(toFilter=> 
                 this.calcProp.filter(p=>p.id == toFilter.id && p.priority > toFilter.priority).length == 0)
         filteredPropsByPriority.sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
@@ -3935,6 +3952,7 @@ class JbComponent {
                 const value = jb.val( tryWrapper(() => prop.value(this.calcCtx),`renderProp:${prop.id}`))
                 Object.assign(this.renderProps, { ...(prop.id == '$props' ? value : { [prop.id]: value })})
             })
+        Object.assign(this.renderProps,(this.styleCtx || {}).params, this.state);
         jb.log('renderProps',[this.renderProps, this])
         if (this.ctx.probe && this.ctx.probe.outOfTime) return
         this.template = this.template || (() => '')
@@ -5878,20 +5896,10 @@ jb.component('editableBoolean', {
   impl: ctx => jb.ui.ctrl(ctx, features(
     calcProp('text',data.if('%$$model/databind%','%$$model/textForTrue%','%$$model/textForFalse%' )),
     watchRef('%$$model/databind%'),
-    defHandler('toggle', writeValue('%$$model/databind%',not('%$$model/databind%'))),
+    defHandler('toggle', ctx => ctx.run(writeValue('%$$model/databind%',not('%$$model/databind%')))),
+    defHandler('toggleByKey', (ctx,{ev}) => ev.keyCode != 27 && ctx.run(writeValue('%$$model/databind%',not('%$$model/databind%')))),
     defHandler('setChecked', writeValue('%$$model/databind%','true')),
 		))
-})
-
-jb.component('editableBoolean.keyboardSupport', {
-  type: 'feature',
-  impl: feature.onEvent({
-    event: 'keypress',
-    action: action.if(
-      () => event.keyCode == 37 || event.keyCode == 39,
-      writeValue('%$$model/databind%', not('%$$model/databind%'))
-    )
-  })
 })
 ;
 
@@ -6412,10 +6420,7 @@ jb.component('itemlist.initContainerWithItems', {
   category: 'itemlist:20',
   impl: calcProp({
     id: 'updateItemlistCntr',
-    value: action.if(
-      '%$itemlistCntr%',
-      writeValue('%$itemlistCntr.items%', '%$$props.items%')
-    ),
+    value: action.if('%$itemlistCntr%',writeValue('%$itemlistCntr.items%', '%$$props.items%')),
     phase: 100
   })
 })
@@ -6423,16 +6428,24 @@ jb.component('itemlist.initContainerWithItems', {
 jb.component('itemlist.init', {
   type: 'feature',
   impl: features(
-    calcProp({id: 'items', value: '%$$model.items%'}),
+    calcProp('items', (ctx,{cmp}) => jb.ui.itemlistCalcItems(ctx,cmp)),
     calcProp({
         id: 'ctrls',
-        value: (ctx,{cmp}) => {
+        value: ctx => {
           const controlsOfItem = item =>
             ctx.vars.$model.controls(ctx.setVar(ctx.vars.$model.itemVariable,item).setData(item)).filter(x=>x)
-          return jb.ui.addSlicedState(cmp, ctx.vars.$props.items, ctx.vars.$model.visualSizeLimit).map(item=>
-            Object.assign(controlsOfItem(item),{item})).filter(x=>x.length > 0);
+          return ctx.vars.$props.items.map(item=> Object.assign(controlsOfItem(item),{item})).filter(x=>x.length > 0)
         }
       }),
+    itemlist.initContainerWithItems()
+  )
+})
+
+jb.component('itemlist.initTable', {
+  type: 'feature',
+  impl: features(
+    calcProp('items', (ctx,{cmp}) => jb.ui.itemlistCalcItems(ctx,cmp)),
+    calcProp({id: 'fields', value: '%$$model/controls/field%'}),
     itemlist.initContainerWithItems()
   )
 })
@@ -6465,21 +6478,6 @@ jb.component('itemlist.infiniteScroll', {
     }
       ),
     templateModifier(({},{vdom}) => vdom.setAttribute('onscroll',true))
-  )
-})
-
-jb.component('itemlist.initTable', {
-  type: 'feature',
-  impl: features(
-    calcProp({
-        id: 'items',
-        value: pipeline(
-          '%$$model.items%',
-          slice(0, firstSucceeding('%$$model.visualSizeLimit%', 100))
-        )
-      }),
-    calcProp({id: 'fields', value: '%$$model/controls/field%'}),
-    itemlist.initContainerWithItems()
   )
 })
 
@@ -6528,12 +6526,19 @@ jb.component('itemlist.horizontal', {
 })
 
 jb.ui.itemlistInitCalcItems = cmp => cmp.calcItems = cmp.calcItems || (() => Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
-    .map(el=>(jb.ctxDictionary[el.getAttribute('jb-ctx')] || {}).data).filter(x=>x))
+    .map(el=>(jb.ctxDictionary[el.getAttribute('jb-ctx')] || {}).data).filter(x=>x).map(x=>jb.val(x)))
 
-jb.ui.addSlicedState = (cmp,items,visualLimit) => {
-  if (items.length > visualLimit)
-    cmp.state.visualLimit = { totalItems: items.length, shownItems: visualLimit }
-    return items.slice(0,visualLimit)
+jb.ui.itemlistCalcItems = function(ctx,cmp) {
+  const slicedItems = addSlicedState(cmp, ctx.vars.$model.items(), ctx.vars.$model.visualSizeLimit)
+  const itemsRefs = jb.isRef(jb.asRef(slicedItems)) ? 
+      Object.keys(slicedItems).map(i=>jb.objectProperty(slicedItems,i)) : slicedItems
+  return itemsRefs
+
+  function addSlicedState(cmp,items,visualLimit) {
+    if (items.length > visualLimit)
+      cmp.state.visualLimit = { totalItems: items.length, shownItems: visualLimit }
+      return visualLimit < items.length ? items.slice(0,visualLimit) : items
+  }
 }
 
 // ****************** Selection ******************
@@ -6671,6 +6676,8 @@ jb.component('itemlist.dragAndDrop', {
   type: 'feature',
   impl: ctx => ({
       afterViewInit: function(cmp) {
+        if (!jb.frame.dragula)
+          return jb.logError('itemlist.dragAndDrop - the dragula lib is not loaded')
         jb.ui.itemlistInitCalcItems(cmp)
 
         const drake = dragula([cmp.base.querySelector('.jb-drag-parent') || cmp.base] , {
@@ -7462,7 +7469,13 @@ jb.component('picklist', {
             options: options,
             hasEmptyOption: options.filter(x=>!x.text)[0]
           }
-      })
+      }),
+      defHandler('onchangeHandler', (ctx,{cmp, ev}) => {
+        const newVal = ev.target.value
+        if (jb.val(ctx.vars.$model.databind(cmp.ctx)) == newVal) return
+        jb.writeValue(ctx.vars.$model.databind(cmp.ctx),newVal,ctx);        
+        cmp.onChange && cmp.onChange(cmp.ctx.setVar('event',ev).setData(newVal))
+      }),
     ))
 })
 
@@ -7486,13 +7499,15 @@ jb.component('picklist.dynamicOptions', {
 })
 
 jb.component('picklist.onChange', {
+  category: 'picklist:100',
+  description: 'on picklist selection',
   type: 'feature',
   description: 'action on picklist selection',
   params: [
     {id: 'action', type: 'action', dynamic: true}
   ],
   impl: interactive(
-    (ctx,{cmp},{action}) => cmp.onChange = action
+    (ctx,{cmp},{action}) => cmp.onChange = (ctx2 => action(ctx2))
   )
 })
 
@@ -7600,11 +7615,12 @@ jb.component('materialIcon', {
 })
 
 jb.component('icon.material', {
-  type: 'icon-with-action.style',
+  type: 'icon.style',
   impl: customStyle(
     (cmp,{icon},h) => h('i',{ class: 'material-icons' }, icon)
   )
 })
+
 ;
 
 jb.ns('slider')
@@ -7828,7 +7844,7 @@ jb.component('table.init', {
     calcProp({id: 'fields', value: '%$$model.fields%'}),
     calcProp({
         id: 'updateItemlistCntr',
-        value: writeValue('%$itemlistCntr.items%', '%$$props.items%'),
+        value: action.if('%$itemlistCntr%',writeValue('%$itemlistCntr.items%', '%$$props.items%')),
         phase: 100
       }),
     calcProp({
@@ -7934,6 +7950,8 @@ jb.component('mdcStyle.initDynamic', {
         cmp.mdc_comps.push(new jb.ui.material.MDCSwitch(cmp.base))
       else if (cmp.base.classList.contains('mdc-chip-set'))
         cmp.mdc_comps.push(new jb.ui.material.MDCChipSet(cmp.base))
+      else if (cmp.base.classList.contains('mdc-tab-bar'))
+        cmp.mdc_comps.push(new jb.ui.material.MDCChipSet(cmp.base))
 
     },
     destroy: cmp => (cmp.mdc_comps || []).forEach(mdc_cmp=>mdc_cmp.destroy())
@@ -8021,7 +8039,7 @@ jb.component('button.mdc', {
 })
 
 jb.component('button.mdcIcon', {
-  type: 'button.style,icon-with-action.style',
+  type: 'button.style,icon.style',
   params: [
     {id: 'icon', as: 'string', defaultValue: 'bookmark_border'},
     {id: 'raisedIcon', as: 'string'}
@@ -8055,7 +8073,7 @@ jb.component('button.mdcChipAction', {
 })
 
 jb.component('button.mdcChipWithIcons', {
-  type: 'button.style,icon-with-action.style',
+  type: 'button.style,icon.style',
   params: [
     {id: 'leadingIcon', as: 'string', defaultValue: 'code'},
     {id: 'trailingIcon', as: 'string', defaultValue: 'code'}
@@ -8074,7 +8092,7 @@ jb.component('button.mdcChipWithIcons', {
 })
 
 jb.component('button.mdcFloatingAction', {
-  type: 'button.style,icon-with-action.style',
+  type: 'button.style,icon.style',
   description: 'fab icon',
   params: [
     {id: 'icon', as: 'string', defaultValue: 'code'},
@@ -8092,7 +8110,7 @@ jb.component('button.mdcFloatingAction', {
 })
 
 jb.component('button.mdcFloatingWithTitle', {
-  type: 'button.style,icon-with-action.style',
+  type: 'button.style,icon.style',
   params: [
     {id: 'icon', as: 'string', defaultValue: 'code'},
     {id: 'mini', as: 'boolean', type: 'boolean'}
@@ -8110,7 +8128,7 @@ jb.component('button.mdcFloatingWithTitle', {
 })
 
 jb.component('button.mdcIcon12', {
-  type: 'button.style,icon-with-action.style',
+  type: 'button.style,icon.style',
   params: [
     {id: 'icon', as: 'string', defaultValue: 'code'}
   ],
@@ -8121,6 +8139,35 @@ jb.component('button.mdcIcon12', {
   })
 })
 
+jb.component('button.mdIcon', {
+  type: 'button.style,icon.style',
+  params: [
+    {id: 'icon', as: 'string', defaultValue: 'Yoga'},
+    {id: 'raisedIcon', as: 'string'}
+  ],
+  impl: customStyle({
+    template: (cmp,{title,icon,raised,raisedIcon},h) => 
+        h('div',{title, onclick: true,
+          $html: `<svg height="24" width="24"><path d="${jb.path(jb.frame,['MDIcons',icon])}"/></svg>`}),
+    css: '{width: 24px; height: 24px}'
+  })
+})
+
+jb.component('button.mdcTab', {
+  type: 'button.style,icon.style',
+  params: [
+    {id: 'icon', as: 'string', defaultValue: 'code'},
+  ],
+  impl: customStyle({
+    template: (cmp,{title,raised},h) =>
+      h('button',{ class: ['mdc-tab', raised && 'mdc-tab--active'].filter(x=>x).join(' '),tabIndex: -1, role: 'tab', onclick:  true}, [
+        h('span',{ class: 'mdc-tab__content'}, h('span',{ class: 'mdc-tab__text-label'},title)),
+        h('span',{ class: 'mdc-tab-indicator'}, h('span',{ class: 'mdc-tab-indicator__content mdc-tab-indicator__content--underline'})),
+        h('span',{ class: 'mdc-tab__ripple'}),
+      ]),
+    features: mdcStyle.initDynamic()
+  })
+})
 ;
 
 jb.ns('mdc,mdc-style')
@@ -8398,16 +8445,12 @@ jb.component('group.htmlTag', {
 
 jb.component('group.div', {
   type: 'group.style',
-  impl: group.htmlTag(
-    'div'
-  )
+  impl: group.htmlTag('div')
 })
 
 jb.component('group.section', {
   type: 'group.style',
-  impl: group.htmlTag(
-    'section'
-  )
+  impl: group.htmlTag('section')
 })
 
 jb.component('group.ulLi', {
@@ -8454,15 +8497,16 @@ jb.component('group.chipSet', {
 jb.component('group.tabs', {
   type: 'group.style',
   params: [
-    {id: 'width', as: 'number'},
-    {id: 'tabStyle', type: 'button.style', dynamic: true, defaultValue: button.mdc()}
+    {id: 'tabStyle', type: 'button.style', dynamic: true, defaultValue: button.mdcTab()},
+    {id: 'barStyle', type: 'group.style', dynamic: true, defaultValue: group.mdcTabBar()},
+    {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()},
+//    {id: 'width', as: 'number'},
   ],
   impl: styleByControl(
     group({
       controls: [
         group({
-          title: 'thumbs',
-          layout: layout.horizontal(),
+          style: call('barStyle'),
           controls: dynamicControls({
             controlItems: '%$tabsModel/controls%',
             genericControl: button({
@@ -8470,27 +8514,42 @@ jb.component('group.tabs', {
               action: writeValue('%$selectedTab%', '%$tabIndex%'),
               style: call('tabStyle'),
               raised: '%$tabIndex% == %$selectedTab%',
-              features: [css.width('%$width%'), css('{text-align: left}'), watchRef('%$selectedTab%')]
+//              features: [css.width('%$width%'), css('{text-align: left}'), watchRef('%$selectedTab%')]
             }),
             itemVariable: 'tab',
             indexVariable: 'tabIndex'
           })
         }),
-        controlWithFeatures(
-          '%$tabsModel/controls[{%$selectedTab%}]%',
-          watchRef('%$selectedTab%')
-        )
+        group({
+          style: call('innerGroupStyle'),
+          controls: '%$tabsModel/controls[{%$selectedTab%}]%',
+//          features: watchRef('%$selectedTab%')
+        })
       ],
-      features: variable({name: 'selectedTab', value: 0, watchable: true})
+      features: [
+        variable({name: 'selectedTab', value: 0, watchable: true}),
+        watchRef('%$selectedTab%')
+      ]
     }),
     'tabsModel'
   )
 })
 
+jb.component('group.mdcTabBar', {
+  type: 'group.style',
+  impl: customStyle({
+    template: (cmp,{ctrls},h) => 
+      h('div',{class: 'mdc-tab-bar', role: 'tablist'},
+        h('div',{class: 'mdc-tab-scroller'},
+          h('div',{class: 'mdc-tab-scroller__scroll-content'}, ctrls.map(ctrl=>h(ctrl))))),
+    features: [group.initGroup(), mdcStyle.initDynamic()]
+  })
+})
+
 jb.component('group.accordion', {
   type: 'group.style',
   params: [
-    {id: 'titleStyle', type: 'button.style', dynamic: true, defaultValue: button.mdc()},
+    {id: 'titleStyle', type: 'button.style', dynamic: true, defaultValue: button.mdcTab()},
     {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: group.section()},
     {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
   ],
@@ -8532,7 +8591,7 @@ jb.component('group.sections', {
   type: 'group.style',
   params: [
     {id: 'titleStyle', type: 'text.style', dynamic: true, defaultValue: header.mdcHeadline5()},
-    {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: styleWithFeatures(group.div(), [group.card({}), css.padding({})])},
+    {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: group.div()},
     {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
   ],
   impl: styleByControl(
@@ -8847,7 +8906,7 @@ jb.component('propertySheet.titlesAbove', {
 jb.component('editableBoolean.checkbox', {
   type: 'editable-boolean.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('input', { type: 'checkbox', checked: state.databind, onchange: 'toggle', onkeyup: 'toggle'  }),
+    template: (cmp,state,h) => h('input', { type: 'checkbox', checked: state.databind, onchange: 'toggle', onkeyup: 'toggleByKey'  }),
     features: field.databind()
   })
 })
@@ -8856,7 +8915,7 @@ jb.component('editableBoolean.checkboxWithTitle', {
   type: 'editable-boolean.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div',{}, [h('input', { type: 'checkbox',
-        checked: state.databind, onchange: 'toggle', onkeyup: 'toggle'  }), state.text]),
+        checked: state.databind, onchange: 'toggle', onkeyup: 'toggleByKey'  }), state.text]),
     features: field.databind()
   })
 })
@@ -8868,7 +8927,7 @@ jb.component('editableBoolean.checkboxWithLabel', {
         h('input', { type: 'checkbox', id: "switch_"+state.fieldId,
           checked: state.databind,
           onchange: 'toggle',
-          onkeyup: 'toggle'  },),
+          onkeyup: 'toggleByKey'  },),
         h('label',{for: "switch_"+state.fieldId },state.text)
     ]),
     features: field.databind()
@@ -8895,7 +8954,7 @@ jb.component('editableBoolean.mdcXV', {
   impl: customStyle({
     template: (cmp,{title,databind,yesIcon,noIcon},h) => h('button',{
           class: ['mdc-icon-button material-icons',databind && 'raised mdc-icon-button--on'].filter(x=>x).join(' '),
-          title, tabIndex: -1, onclick: 'toggle'},[
+          title, tabIndex: -1, onclick: 'toggle', onkeyup: 'toggleByKey'},[
             h('i',{class:'material-icons mdc-icon-button__icon mdc-icon-button__icon--on'}, yesIcon),
             h('i',{class:'material-icons mdc-icon-button__icon '}, noIcon),
         ]),
@@ -8915,12 +8974,12 @@ jb.component('editableBoolean.mdcSlideToggle', {
       h('div',{class: 'mdc-switch__thumb-underlay'},[
         h('div',{class: 'mdc-switch__thumb'},
           h('input', { type: 'checkbox', role: 'switch', class: 'mdc-switch__native-control', id: 'switch_' + state.fieldId,
-            checked: state.databind, onchange: 'toggle' })),
+            checked: state.databind, onchange: 'toggle', onkeyup: 'toggleByKey' })),
       ]),
       h('label',{for: 'switch_' + state.fieldId},state.text)
     ]),
     css: ctx => jb.ui.propWithUnits('width',ctx.params.width),
-    features: [field.databind(), editableBoolean.keyboardSupport(), mdcStyle.initDynamic()]
+    features: [field.databind(), mdcStyle.initDynamic()]
   })
 })
 

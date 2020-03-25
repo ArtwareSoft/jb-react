@@ -129,7 +129,6 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       ],
       'md-icons': [
         'dist/mdi-lib.js',
-        'src/ui/md-icons.js'
       ],
       babel: [
         'node_modules/babel-standalone/babel.js',

@@ -16,16 +16,12 @@ jb.component('group.htmlTag', {
 
 jb.component('group.div', {
   type: 'group.style',
-  impl: group.htmlTag(
-    'div'
-  )
+  impl: group.htmlTag('div')
 })
 
 jb.component('group.section', {
   type: 'group.style',
-  impl: group.htmlTag(
-    'section'
-  )
+  impl: group.htmlTag('section')
 })
 
 jb.component('group.ulLi', {
@@ -72,15 +68,15 @@ jb.component('group.chipSet', {
 jb.component('group.tabs', {
   type: 'group.style',
   params: [
-    {id: 'width', as: 'number'},
-    {id: 'tabStyle', type: 'button.style', dynamic: true, defaultValue: button.mdc()}
+    {id: 'tabStyle', type: 'button.style', dynamic: true, defaultValue: button.mdcTab()},
+    {id: 'barStyle', type: 'group.style', dynamic: true, defaultValue: group.mdcTabBar()},
+    {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()},
   ],
   impl: styleByControl(
     group({
       controls: [
         group({
-          title: 'thumbs',
-          layout: layout.horizontal(),
+          style: call('barStyle'),
           controls: dynamicControls({
             controlItems: '%$tabsModel/controls%',
             genericControl: button({
@@ -88,27 +84,41 @@ jb.component('group.tabs', {
               action: writeValue('%$selectedTab%', '%$tabIndex%'),
               style: call('tabStyle'),
               raised: '%$tabIndex% == %$selectedTab%',
-              features: [css.width('%$width%'), css('{text-align: left}'), watchRef('%$selectedTab%')]
+              // watchRef breaks mdcTabBar animation
+              features: ctx => ctx.componentContext.params.barStyle.profile.$ !== 'group.mdcTabBar' && watchRef('%$selectedTab%')
             }),
             itemVariable: 'tab',
             indexVariable: 'tabIndex'
           })
         }),
-        controlWithFeatures(
-          '%$tabsModel/controls[{%$selectedTab%}]%',
-          watchRef('%$selectedTab%')
-        )
+        group({
+          style: call('innerGroupStyle'),
+          controls: '%$tabsModel/controls[{%$selectedTab%}]%',
+          features: watchRef('%$selectedTab%')
+        })
       ],
-      features: variable({name: 'selectedTab', value: 0, watchable: true})
+      features: variable({name: 'selectedTab', value: 0, watchable: true}),
     }),
     'tabsModel'
   )
 })
 
+jb.component('group.mdcTabBar', {
+  type: 'group.style',
+  impl: customStyle({
+    template: (cmp,{ctrls},h) => 
+      h('div',{class: 'mdc-tab-bar', role: 'tablist'},
+        h('div',{class: 'mdc-tab-scroller'},
+          h('div',{class: 'mdc-tab-scroller__scroll-area mdc-tab-scroller__scroll-area--scroll'},
+            h('div',{class: 'mdc-tab-scroller__scroll-content'}, ctrls.map(ctrl=>h(ctrl)))))),
+    features: [group.initGroup(), mdcStyle.initDynamic()]
+  })
+})
+
 jb.component('group.accordion', {
   type: 'group.style',
   params: [
-    {id: 'titleStyle', type: 'button.style', dynamic: true, defaultValue: button.mdc()},
+    {id: 'titleStyle', type: 'button.style', dynamic: true, defaultValue: button.mdcTab()},
     {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: group.section()},
     {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
   ],
@@ -150,7 +160,7 @@ jb.component('group.sections', {
   type: 'group.style',
   params: [
     {id: 'titleStyle', type: 'text.style', dynamic: true, defaultValue: header.mdcHeadline5()},
-    {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: styleWithFeatures(group.div(), [group.card({}), css.padding({})])},
+    {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: group.div()},
     {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
   ],
   impl: styleByControl(

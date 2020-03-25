@@ -27,39 +27,36 @@ jb.component('helloWorld.main', {
   impl: group({
     layout: layout.vertical(),
     controls: [
-      text({
-        text: 'hello world',
-        title: 'asdasdas',
-        features: watchRef({allowSelfRefresh: false, strongRefresh: true})
-      }),
       group({
         title: '',
+        layout: layout.vertical(),
+        style: group.tabs(),
         controls: [
           group({
-            title: 'files (js and css)',
+            title: 'Files (js and css)',
             controls: [
               itemlist({
-                title: 'js and css files',
+                title: '',
                 items: '%jsFiles%',
                 controls: [
-                  materialIcon({
-                    icon: 'file',
-                    style: button.mdIcon('FileCodeOutline'),
-                    features: [itemlist.dragHandle(), field.columnWidth(60)]
-                  }),
                   editableText({
-                    title: 'file name (js or css)',
+                    title: 'file',
                     databind: '%%',
-                    style: editableText.mdcNoLabel('400')
+                    style: editableText.mdcNoLabel('580'),
+                    features: css('background-color: transparent;')
                   }),
                   button({
                     title: 'delete',
                     action: removeFromArray({array: '%$projectSettings/jsFiles%', itemToRemove: '%%'}),
                     style: button.x('21'),
-                    features: [itemlist.shownOnlyOnItemHover(), field.columnWidth(60)]
+                    features: [
+                      itemlist.shownOnlyOnItemHover(),
+                      css.margin({top: '20', right: '', left: ''}),
+                      css('z-index: 1000')
+                    ]
                   })
                 ],
-                style: table.mdc(),
+                style: itemlist.ulLi(),
                 features: [
                   watchRef({
                     ref: '%$projectSettings/jsFiles%',
@@ -68,18 +65,86 @@ jb.component('helloWorld.main', {
                   }),
                   itemlist.dragAndDrop()
                 ]
+              }),
+              button({
+                title: 'add file',
+                action: addToArray('%$projectSettings/jsFiles%', 'file.js'),
+                style: button.mdc(),
+                raised: '',
+                features: [css.width('200'), css.margin('10')]
+              })
+            ],
+            features: [css.padding({bottom: '10'})]
+          }),
+          group({
+            title: 'Libs',
+            controls: [
+              group({
+                title: 'chips',
+                layout: layout.flex({wrap: 'wrap'}),
+                controls: [
+                  dynamicControls({
+                    controlItems: '%$studio/libsAsArray%',
+                    genericControl: group({
+                      title: 'chip',
+                      layout: layout.flex({wrap: 'wrap', spacing: '0'}),
+                      controls: [
+                        button({title: '%% ', style: button.mdcChipAction(), raised: 'false'}),
+                        button({
+                          title: 'delete',
+                          style: button.x(),
+                          features: [
+                            css('color: black; z-index: 1000;margin-left: -30px'),
+                            itemlist.shownOnlyOnItemHover()
+                          ]
+                        })
+                      ],
+                      features: [
+                        css('color: black; z-index: 1000'),
+                        feature.onEvent({
+                          event: 'click',
+                          action: removeFromArray({array: '%$studio/libsAsArray%', itemToRemove: '%%'})
+                        }),
+                        css.class('jb-item')
+                      ]
+                    })
+                  })
+                ],
+                features: watchRef({
+                  ref: '%$studio/libsAsArray%',
+                  includeChildren: 'yes',
+                  allowSelfRefresh: true,
+                  strongRefresh: false
+                })
+              }),
+              group({
+                title: 'add lib',
+                layout: layout.horizontal('20'),
+                controls: [
+                  picklist({
+                    title: '',
+                    databind: '%$studio/libToAdd%',
+                    options: picklist.options(keys(ctx => jb.frame.jb_modules)),
+                    features: [css.width('460'), picklist.onChange(addToArray('%$studio/libsAsArray%', '%%'))]
+                  }),
+                  button({
+                    title: '+',
+                    style: button.mdIcon('Plus'),
+                    raised: '',
+                    features: [feature.hoverTitle('add lib'), css.margin('5')]
+                  })
+                ]
               })
             ]
-          }),
-          button({
-            title: 'add file',
-            action: addToArray('%$projectSettings/jsFiles%', 'file.js'),
-            style: button.mdIcon('NotePlusOutline'),
-            raised: 'true',
-            features: [css.width('200'), css.margin('10')]
           })
         ],
-        features: group.data('%$projectSettings%')
+        features: [
+          group.data('%$projectSettings%'),
+          css.width('600'),
+          feature.init(
+            writeValue('%$studio/libsAsArray%', split({text: '%$projectSettings/libs%'}))
+          )
+        ]
       })
     ],
     features: css.width('600')
@@ -99,6 +164,13 @@ jb.component('dataResource.projectSettings', {
   watchableData: {
     project: 'itemlists',
     libs: 'common,ui-common,material,dragula,md-icons',
-    jsFiles: ['file.js', 'file.js', 'file.js']
+    jsFiles: ['file23.js', 'file.js', 'file.js']
+  }
+})
+
+jb.component('dataResource.studio', {
+  watchableData: {
+    libToAdd: 'inner-html',
+    libsAsArray: ['common', 'ui-common', 'material', 'dragula', 'md-icons']
   }
 })

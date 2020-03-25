@@ -19,7 +19,8 @@ jb.component('mdcStyle.initDynamic', {
         cmp.mdc_comps.push(new jb.ui.material.MDCSwitch(cmp.base))
       else if (cmp.base.classList.contains('mdc-chip-set'))
         cmp.mdc_comps.push(new jb.ui.material.MDCChipSet(cmp.base))
-
+      else if (cmp.base.classList.contains('mdc-tab-bar'))
+        cmp.mdc_comps.push(new jb.ui.material.MDCTabBar(cmp.base))
     },
     destroy: cmp => (cmp.mdc_comps || []).forEach(mdc_cmp=>mdc_cmp.destroy())
   })
