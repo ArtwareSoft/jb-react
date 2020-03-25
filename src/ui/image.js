@@ -87,6 +87,6 @@ jb.component('image.img', {
           {?height: %$height%; ?}
       }`
     ),
-    features: calcProp({id: 'url', value: '%$$model/url%'})
+    features: calcProp('url')
   })
 })

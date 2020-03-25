@@ -27,7 +27,8 @@ jb.component('helloWorld.main', {
   impl: group({
     layout: layout.vertical(),
     controls: [
-      text({text: 'my text', title: 'my title'})
+      text({text: 'my text', title: 'my title'}),
+      icon({icon: 'AbjadHebrew', title: 'hey', scale: '5', type: 'mdi'})
     ],
     features: css.width('600')
   })

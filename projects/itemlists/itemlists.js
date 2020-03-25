@@ -106,7 +106,7 @@ jb.component('itemlists.editableTable', {
       itemlist({
         items: '%$people%',
         controls: [
-          materialIcon({
+          icon({
             icon: 'person',
             style: icon.material(),
             features: [itemlist.dragHandle(), field.columnWidth(60)]

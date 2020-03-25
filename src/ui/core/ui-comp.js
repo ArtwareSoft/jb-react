@@ -6,7 +6,7 @@ const cssSelectors_hash = ui.cssSelectors_hash = {};
 const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,this.ctx) }}
 const lifeCycle = new Set('init,componentDidMount,componentWillUpdate,componentDidUpdate,destroy,extendCtx,templateModifier,extendItem'.split(','))
 const arrayProps = new Set('enrichField,dynamicCss,watchAndCalcModelProp,staticCssLines,defHandler,interactiveProp,calcProp'.split(','))
-const singular = new Set('template,calcRenderProps,toolbar,styleCtx,calcHash,ctxForPick'.split(','))
+const singular = new Set('template,calcRenderProps,toolbar,icon,styleCtx,calcHash,ctxForPick'.split(','))
 
 class JbComponent {
     constructor(ctx) {
@@ -50,7 +50,9 @@ class JbComponent {
                 this.calcProp.filter(p=>p.id == toFilter.id && p.priority > toFilter.priority).length == 0)
         filteredPropsByPriority.sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
             .forEach(prop=> { 
-                const value = jb.val( tryWrapper(() => prop.value(this.calcCtx),`renderProp:${prop.id}`))
+                const value = jb.val( tryWrapper(() => 
+                    prop.value.profile === null ? this.calcCtx.vars.$model[prop.id] : prop.value(this.calcCtx),
+                `renderProp:${prop.id}`))
                 Object.assign(this.renderProps, { ...(prop.id == '$props' ? value : { [prop.id]: value })})
             })
         Object.assign(this.renderProps,(this.styleCtx || {}).params, this.state);

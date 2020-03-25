@@ -15,7 +15,7 @@ jb.component('studio.searchList', {
         ),
         fields: [
           field.control({
-            control: materialIcon({
+            control: icon({
               icon: studio.iconOfType('%type%'),
               features: [
                 css.opacity('0.3'),
@@ -107,7 +107,7 @@ jb.component('studio.searchComponent', {
           )
         ]
       }),
-      materialIcon({
+      icon({
         icon: 'search',
         features: [css.margin({top: '5', left: '-30'}), css('z-index: 1000')]
       })

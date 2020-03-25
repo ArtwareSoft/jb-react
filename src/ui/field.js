@@ -11,10 +11,10 @@ jb.component('field.databind', {
   impl: features(
     If(
         '%$oneWay%',
-        calcProp({id: 'databind', value: '%$$model/databind%'}),
+        calcProp('databind','%$$model/databind%'),
         watchAndCalcModelProp('databind')
       ),
-    calcProp({id: 'title', value: '%$$model/title%'}),
+    calcProp('title'),
     calcProp({id: 'fieldId', value: () => jb.ui.field_id_counter++}),
     defHandler(
         'onblurHandler',

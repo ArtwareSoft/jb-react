@@ -136,8 +136,8 @@ jb.component('studio.previewWidget', {
     {id: 'height', as: 'number'}
   ],
   impl: ctx => jb.ui.ctrl(ctx, features(
-      calcProp('width','%$$model/width%'),
-      calcProp('height','%$$model/height%'),
+      calcProp('width'),
+      calcProp('height'),
       calcProp('host', firstSucceeding('%$queryParams/host%','studio')),
       calcProp('loadingMessage', '{? loading project from %$$props/host%::%$queryParams/hostProjectId% ?}'),
       interactive( (ctx,{cmp}) => {
