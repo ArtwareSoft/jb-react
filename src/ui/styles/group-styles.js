@@ -118,7 +118,7 @@ jb.component('group.mdcTabBar', {
 jb.component('group.accordion', {
   type: 'group.style',
   params: [
-    {id: 'titleStyle', type: 'button.style', dynamic: true, defaultValue: button.mdcTab()},
+    {id: 'titleStyle', type: 'button.style', dynamic: true, defaultValue: button.mdcHeader()},
     {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: group.section()},
     {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
   ],
