@@ -28,12 +28,31 @@ jb.component('studio.saveComponents', {
   }
 })
 
+jb.component('studio.saveProjectSettings', {
+  type: 'action,has-side-effects',
+  impl: ctx => {
+    const path = st.host.pathOfJsFile(ctx.exp('%$studio/project%'), 'index.html')
+    return st.host.getFile(path).then( fileContent =>
+      st.host.saveFile(path, newIndexHtmlContent(fileContent, ctx.exp('%$studio/projectSettings%'))))
+      .then(()=>st.showMultiMessages([{text: 'index.html saved with new settings'}]))
+      .catch(e=>st.showMultiMessages([{text: 'error saving index.html '+ (typeof e == 'string' ? e : e.message || e.e), error: true}]))
+  }
+})
+
 function locationOfComp(compE) {
   try {
     return (compE[1] || st.compsHistory[0].before[compE[0]])[jb.location][0]
   } catch (e) {
     return ''
   }
+}
+
+function newIndexHtmlContent(fileContent,jbProjectSettings) {
+  let lines = fileContent.split('\n').map(x=>x.replace(/[\s]*$/,''))
+  const lineOfComp = lines.findIndex(line=> line.match(/^\s*jbProjectSettings/))
+  const compLastLine = lines.slice(lineOfComp).findIndex(line => line.match(/^\s*}/))
+  lines.splice(lineOfComp,compLastLine+1,'jbProjectSettings = ' + jb.prettyPrint(jbProjectSettings))
+  return lines.join('\n')
 }
 
 function newFileContent(fileContent, comps) {
