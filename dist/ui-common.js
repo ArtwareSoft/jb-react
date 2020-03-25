@@ -5749,8 +5749,7 @@ jb.component('mdcStyle.initDynamic', {
       else if (cmp.base.classList.contains('mdc-chip-set'))
         cmp.mdc_comps.push(new jb.ui.material.MDCChipSet(cmp.base))
       else if (cmp.base.classList.contains('mdc-tab-bar'))
-        cmp.mdc_comps.push(new jb.ui.material.MDCChipSet(cmp.base))
-
+        cmp.mdc_comps.push(new jb.ui.material.MDCTabBar(cmp.base))
     },
     destroy: cmp => (cmp.mdc_comps || []).forEach(mdc_cmp=>mdc_cmp.destroy())
   })
@@ -5952,20 +5951,23 @@ jb.component('button.mdIcon', {
 })
 
 jb.component('button.mdcTab', {
-  type: 'button.style,icon.style',
-  params: [
-    {id: 'icon', as: 'string', defaultValue: 'code'},
-  ],
+  type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) =>
       h('button',{ class: ['mdc-tab', raised && 'mdc-tab--active'].filter(x=>x).join(' '),tabIndex: -1, role: 'tab', onclick:  true}, [
         h('span',{ class: 'mdc-tab__content'}, h('span',{ class: 'mdc-tab__text-label'},title)),
-        h('span',{ class: 'mdc-tab-indicator'}, h('span',{ class: 'mdc-tab-indicator__content mdc-tab-indicator__content--underline'})),
+        h('span',{ class: ['mdc-tab-indicator', raised && 'mdc-tab-indicator--active'].filter(x=>x).join(' ') }, h('span',{ class: 'mdc-tab-indicator__content mdc-tab-indicator__content--underline'})),
         h('span',{ class: 'mdc-tab__ripple'}),
       ]),
     features: mdcStyle.initDynamic()
   })
 })
+
+jb.component('button.mdcHeader', {
+  type: 'button.style',
+  impl: styleWithFeatures(button.mdcTab(), [css('width: 100%; border-bottom: 1px solid black; margin-bottom: 7px')])
+})
+
 ;
 
 jb.ns('mdc,mdc-style')
@@ -6298,7 +6300,6 @@ jb.component('group.tabs', {
     {id: 'tabStyle', type: 'button.style', dynamic: true, defaultValue: button.mdcTab()},
     {id: 'barStyle', type: 'group.style', dynamic: true, defaultValue: group.mdcTabBar()},
     {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()},
-//    {id: 'width', as: 'number'},
   ],
   impl: styleByControl(
     group({
@@ -6312,7 +6313,8 @@ jb.component('group.tabs', {
               action: writeValue('%$selectedTab%', '%$tabIndex%'),
               style: call('tabStyle'),
               raised: '%$tabIndex% == %$selectedTab%',
-//              features: [css.width('%$width%'), css('{text-align: left}'), watchRef('%$selectedTab%')]
+              // watchRef breaks mdcTabBar animation
+              features: ctx => ctx.componentContext.params.barStyle.profile.$ !== 'group.mdcTabBar' && watchRef('%$selectedTab%')
             }),
             itemVariable: 'tab',
             indexVariable: 'tabIndex'
@@ -6321,13 +6323,10 @@ jb.component('group.tabs', {
         group({
           style: call('innerGroupStyle'),
           controls: '%$tabsModel/controls[{%$selectedTab%}]%',
-//          features: watchRef('%$selectedTab%')
+          features: watchRef('%$selectedTab%')
         })
       ],
-      features: [
-        variable({name: 'selectedTab', value: 0, watchable: true}),
-        watchRef('%$selectedTab%')
-      ]
+      features: variable({name: 'selectedTab', value: 0, watchable: true}),
     }),
     'tabsModel'
   )
@@ -6339,7 +6338,8 @@ jb.component('group.mdcTabBar', {
     template: (cmp,{ctrls},h) => 
       h('div',{class: 'mdc-tab-bar', role: 'tablist'},
         h('div',{class: 'mdc-tab-scroller'},
-          h('div',{class: 'mdc-tab-scroller__scroll-content'}, ctrls.map(ctrl=>h(ctrl))))),
+          h('div',{class: 'mdc-tab-scroller__scroll-area mdc-tab-scroller__scroll-area--scroll'},
+            h('div',{class: 'mdc-tab-scroller__scroll-content'}, ctrls.map(ctrl=>h(ctrl)))))),
     features: [group.initGroup(), mdcStyle.initDynamic()]
   })
 })
@@ -6347,7 +6347,7 @@ jb.component('group.mdcTabBar', {
 jb.component('group.accordion', {
   type: 'group.style',
   params: [
-    {id: 'titleStyle', type: 'button.style', dynamic: true, defaultValue: button.mdcTab()},
+    {id: 'titleStyle', type: 'button.style', dynamic: true, defaultValue: button.mdcHeader()},
     {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: group.section()},
     {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
   ],
