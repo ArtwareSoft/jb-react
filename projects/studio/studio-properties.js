@@ -192,7 +192,7 @@ jb.component('studio.pickIcon', {
                 group({
                   layout: layout.horizontal(),
                   controls: [
-                    button({title: 'icon', style: button.mdIcon('%%')}),
+                    button({title: 'icon', style: button.mdcIcon(icon({icon: '%%', type: 'mdi'}))}),
                     text({
                       text: pipeline('%%', text.highlight('%%', '%$itemlistCntrData.search_pattern%')),
                       title: 'icon name'

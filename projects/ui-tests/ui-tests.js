@@ -173,7 +173,7 @@ jb.component('uiTest.button', {
 
 jb.component('uiTest.button.mdcIcon', {
   impl: uiTest({
-    control: button({title: 'btn1', action: ctx => alert(1), style: button.mdcIcon('build')}),
+    control: button({title: 'btn1', action: ctx => alert(1), style: button.mdcIcon(icon('build'))}),
     expectedResult: contains('build')
   })
 })

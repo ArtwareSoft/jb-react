@@ -27,12 +27,12 @@ jb.component('studio.openStyleMenu', {
             studio.openStyleEditor('%$styleSource/innerPath%'),
             studio.openProperties(true)
           ],
-          icon: 'build',
+          icon: icon('build'),
           showCondition: "%$styleSource/type% == 'global'"
         }),
         menu.action({
           title: 'Extract style as a reusable component',
-          icon: 'build',
+          icon: icon('build'),
           showCondition: "%$styleSource/type% == 'inner'"
         }),
         menu.action({

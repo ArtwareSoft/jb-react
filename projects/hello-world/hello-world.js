@@ -28,7 +28,16 @@ jb.component('helloWorld.main', {
     layout: layout.vertical(),
     controls: [
       text({text: 'my text', title: 'my title'}),
-      icon({icon: 'AbjadHebrew', title: 'hey', scale: '5', type: 'mdi'})
+      button({
+        title: 'hey1',
+        style: button.mdcFloatingAction(true),
+        raised: '',
+        features: [
+          feature.icon({icon: 'Account', position: 'pre', type: 'mdi'}),
+          feature.icon({icon: 'delete', position: 'post', type: 'mdc'}),
+          feature.icon({icon: 'AccountAlertOutline', position: 'raised', type: 'mdi'})
+        ]
+      })
     ],
     features: css.width('600')
   })

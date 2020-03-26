@@ -75,7 +75,8 @@ jb.component('text.span', {
   })
 }))
 
-;[1,2,3,4,5,6].map(level=>jb.component(`header.mdc-headline${level}`, {
+
+;[1,2,3,4,5,6].map(level=>jb.component(`header.mdcHeadline${level}`, {
   type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--headline${level}`},text),
@@ -83,7 +84,7 @@ jb.component('text.span', {
   })
 }))
 
-;[1,2].map(level=>jb.component(`header.mdc-subtitle${level}`, {
+;[1,2].map(level=>jb.component(`header.mdcSubtitle${level}`, {
   type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--subtitle${level}`},text),
@@ -91,7 +92,24 @@ jb.component('text.span', {
   })
 }))
 
-;[1,2].map(level=>jb.component(`text.mdc-body${level}`, {
+jb.component('header.mdcHeaderWithIcon', {
+  type: 'text.style',
+  params: [
+    {id: 'level', options: '1,2,3,4,5,6', as: 'string', defaultValue: '1'}
+  ],
+  impl: customStyle({
+    template: (cmp,{text,level},h) =>
+        h(`h${level}`,{ class: 'mdc-tab__content'}, [
+          ...jb.ui.chooseIconWithRaised(cmp.icon).map(h),
+          h('span',{ class: 'mdc-tab__text-label'},text),
+          ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-tab__icon'))
+        ]),
+    css: '{justify-content: initial}',
+    features: text.bindText()
+  })
+})
+
+;[1,2].map(level=>jb.component(`text.mdcBody${level}`, {
   type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--body${level}`},text),

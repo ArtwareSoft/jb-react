@@ -85,7 +85,10 @@ jb.component('group.tabs', {
               style: call('tabStyle'),
               raised: '%$tabIndex% == %$selectedTab%',
               // watchRef breaks mdcTabBar animation
-              features: ctx => ctx.componentContext.params.barStyle.profile.$ !== 'group.mdcTabBar' && watchRef('%$selectedTab%')
+              features: [
+                ctx => ctx.componentContext.params.barStyle.profile.$ !== 'group.mdcTabBar' && watchRef('%$selectedTab%'),
+                ctx => ctx.run(features((ctx.vars.tab.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x)))
+              ]
             }),
             itemVariable: 'tab',
             indexVariable: 'tabIndex'
@@ -118,7 +121,7 @@ jb.component('group.mdcTabBar', {
 jb.component('group.accordion', {
   type: 'group.style',
   params: [
-    {id: 'titleStyle', type: 'button.style', dynamic: true, defaultValue: button.mdcHeader()},
+    {id: 'titleStyle', type: 'button.style', dynamic: true, defaultValue: button.mdcHeader(true)},
     {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: group.section()},
     {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
   ],
@@ -137,7 +140,8 @@ jb.component('group.accordion', {
               features: [
                 css.width('%$width%'),
                 css('{justify-content: left}'),
-                watchRef('%$selectedTab%')
+                watchRef('%$selectedTab%'),
+                ctx => ctx.run(features((ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x)))
               ]
             }),
             group({
@@ -159,7 +163,7 @@ jb.component('group.accordion', {
 jb.component('group.sections', {
   type: 'group.style',
   params: [
-    {id: 'titleStyle', type: 'text.style', dynamic: true, defaultValue: header.mdcHeadline5()},
+    {id: 'titleStyle', type: 'text.style', dynamic: true, defaultValue: header.mdcHeaderWithIcon()},
     {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: group.div()},
     {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
   ],
@@ -170,7 +174,10 @@ jb.component('group.sections', {
         genericControl: group({
           style: call('sectionStyle'),
           controls: [
-            text({text: '%$section/field/title%', style: call('titleStyle')}),
+            text({text: '%$section/field/title%', 
+              style: call('titleStyle'),
+              features: ctx => ctx.run(features((ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x)))
+            }),
             group({style: call('innerGroupStyle'), controls: '%$section%'})
           ]
         }),

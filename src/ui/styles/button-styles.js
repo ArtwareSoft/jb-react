@@ -1,3 +1,13 @@
+jb.ui.chooseIconWithRaised = (icons,raised) => {
+  if (!icons) return []
+  const raisedIcon = icons.filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'raised')[0]
+  const otherIcons = (raisedIcon && icons.filter(cmp=>cmp && cmp.ctx.vars.$model.position != 'raised') || icons)
+    .filter(cmp=>cmp && cmp.ctx.vars.$model.position != 'post')
+  if (raised) 
+    return raisedIcon ? [raisedIcon] : otherIcons
+  return otherIcons
+}
+
 jb.component('button.href', {
   type: 'button.style',
   impl: customStyle({
@@ -38,14 +48,32 @@ jb.component('button.native', {
 jb.component('button.mdc', {
   type: 'button.style',
   params: [
-    {id: 'ripple', as: 'boolean', defaultValue: true, type: 'boolean'}
+    {id: 'noRipple', as: 'boolean'},
+    {id: 'noTitle', as: 'boolean'}
   ],
   impl: customStyle({
-    template: (cmp,{title,raised},h) => h('button',{
+    template: (cmp,{title,raised,noRipple,noTitle},h) => h('button',{
       class: ['mdc-button',raised && 'raised mdc-button--raised'].filter(x=>x).join(' '), onclick: true},[
-      h('div',{class:'mdc-button__ripple'}),
-      h('span',{class:'mdc-button__label'},title),
+      ...[!noRipple && h('div',{class:'mdc-button__ripple'})],
+      ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-button__icon')),
+      ...[!noTitle && h('span',{class:'mdc-button__label'},title)],
+      ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-button__icon')),
     ]),
+    features: mdcStyle.initDynamic()
+  })
+})
+
+jb.component('button.mdcChipAction', {
+  type: 'button.style',
+  impl: customStyle({
+    template: (cmp,{title,raised},h) =>
+    h('div',{class: 'mdc-chip-set mdc-chip-set--choice'},
+      h('div',{ class: ['mdc-chip',raised && 'mdc-chip--selected raised'].filter(x=>x).join(' ') }, [
+        h('div',{ class: 'mdc-chip__ripple'}),
+        ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-chip__icon mdc-chip__icon--leading')),
+        h('span',{ role: 'gridcell'}, h('span', {role: 'button', tabindex: -1, class: 'mdc-chip__text'}, title )),
+        ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-chip__icon mdc-chip__icon--trailing')),
+    ])),
     features: mdcStyle.initDynamic()
   })
 })
@@ -53,87 +81,30 @@ jb.component('button.mdc', {
 jb.component('button.mdcIcon', {
   type: 'button.style,icon.style',
   params: [
-    {id: 'icon', as: 'string', defaultValue: 'bookmark_border'},
-    {id: 'raisedIcon', as: 'string'}
+    {id: 'icon', type: 'icon', defaultValue: icon('plus') },
+    {id: 'raisedIcon', type: 'icon' }
   ],
-  impl: customStyle({
-    template: (cmp,{title,icon,raised,raisedIcon},h) => h('button',{
-          class: ['mdc-icon-button material-icons',raised && 'raised mdc-icon-button--on'].filter(x=>x).join(' '),
-          title, tabIndex: -1, onclick:  true},[
-            h('i',{class:'material-icons mdc-icon-button__icon mdc-icon-button__icon--on'}, raisedIcon || icon),
-            h('i',{class:'material-icons mdc-icon-button__icon '}, icon),
-        ]),
-    css: '{ border-radius: 2px; padding: 0; width: 24px; height: 24px;}',
-    features: mdcStyle.initDynamic()
-  })
-})
-
-jb.component('button.mdcChipAction', {
-  type: 'button.style',
-  params: [
-
-  ],
-  impl: customStyle({
-    template: (cmp,{title,raised},h) =>
-    h('div',{class: 'mdc-chip-set mdc-chip-set--choice'},
-      h('div',{ class: ['mdc-chip',raised && 'mdc-chip--selected raised'].filter(x=>x).join(' ') }, [
-        h('div',{ class: 'mdc-chip__ripple'}),
-        h('span',{ role: 'gridcell'}, h('span', {role: 'button', tabindex: -1, class: 'mdc-chip__text'}, title )),
-    ])),
-    features: mdcStyle.initDynamic()
-  })
-})
-
-jb.component('button.mdcChipWithIcons', {
-  type: 'button.style,icon.style',
-  params: [
-    {id: 'leadingIcon', as: 'string', defaultValue: 'code'},
-    {id: 'trailingIcon', as: 'string', defaultValue: 'code'}
-  ],
-  impl: customStyle({
-    template: (cmp,{title,raised,leadingIcon,trailingIcon},h) =>
-    h('div',{class: 'mdc-chip-set mdc-chip-set--choice'},
-      h('div',{ class: ['mdc-chip',raised && 'mdc-chip--selected raised'].filter(x=>x).join(' ') }, [
-        h('div',{ class: 'mdc-chip__ripple'}),
-        ...(leadingIcon ? [h('i',{class:'material-icons mdc-chip__icon mdc-chip__icon--leading'},leadingIcon)] : []),
-        h('span',{ role: 'gridcell'}, h('span', {role: 'button', tabindex: -1, class: 'mdc-chip__text'}, title )),
-        ...(trailingIcon ? [h('i',{class:'material-icons mdc-chip__icon mdc-chip__icon--trailing'},trailingIcon)] : []),
-    ])),
-    features: mdcStyle.initDynamic()
-  })
+  impl: styleWithFeatures(button.mdcFloatingAction({withTitle: false, mini: true}), features(
+    ctx => ctx.run({...ctx.componentContext.params.icon, $: 'feature.icon'}),
+    ctx => [ctx.componentContext.params.raisedIcon && ctx.run({...ctx.componentContext.params.raisedIcon, $: 'feature.icon', position: 'raised'})].filter(x=>x),
+    css('{ box-shadow: 0 0; border-radius: 2px !important; width: 24px; height: 24px; padding: 0; color: black; background-color: transparent;}')
+  ))
 })
 
 jb.component('button.mdcFloatingAction', {
   type: 'button.style,icon.style',
   description: 'fab icon',
   params: [
-    {id: 'icon', as: 'string', defaultValue: 'code'},
-    {id: 'mini', as: 'boolean', type: 'boolean'}
+    {id: 'mini', as: 'boolean'},
+    {id: 'withTitle', as: 'boolean'}
   ],
   impl: customStyle({
-    template: (cmp,{title,icon,mini,raised},h) =>
+    template: (cmp,{title,withTitle,mini,raised},h) =>
       h('button',{ class: ['mdc-fab',raised && 'raised mdc-icon-button--on',mini && 'mdc-fab--mini'].filter(x=>x).join(' ') ,
           title, tabIndex: -1, onclick:  true}, [
             h('div',{ class: 'mdc-fab__ripple'}),
-            h('span',{ class: 'mdc-fab__icon material-icons'},icon),
-      ]),
-    features: mdcStyle.initDynamic()
-  })
-})
-
-jb.component('button.mdcFloatingWithTitle', {
-  type: 'button.style,icon.style',
-  params: [
-    {id: 'icon', as: 'string', defaultValue: 'code'},
-    {id: 'mini', as: 'boolean', type: 'boolean'}
-  ],
-  impl: customStyle({
-    template: (cmp,{title,icon,mini,raised},h) =>
-      h('button',{ class: ['mdc-fab mdc-fab--extended',raised && 'mdc-icon-button--on',mini && 'mdc-fab--mini'].filter(x=>x).join(' ') ,
-          title, tabIndex: -1, onclick:  true}, [
-        h('div',{ class: 'mdc-fab__ripple'}),
-        ...(icon ? [h('span',{ class: 'mdc-fab__icon material-icons'},icon)]: []),
-        h('span',{ class: 'mdc-fab__label'},title),
+            ...jb.ui.chooseIconWithRaised(cmp.icon,raised).filter(x=>x).map(h).map(vdom=>vdom.addClass('mdc-fab__icon')),
+            ...[withTitle && h('span',{ class: 'mdc-fab__label'},title)].filter(x=>x)
       ]),
     features: mdcStyle.initDynamic()
   })
@@ -151,26 +122,16 @@ jb.component('button.mdcIcon12', {
   })
 })
 
-jb.component('button.mdIcon', {
-  type: 'button.style,icon.style',
-  params: [
-    {id: 'icon', as: 'string', defaultValue: 'Yoga'},
-    {id: 'raisedIcon', as: 'string'}
-  ],
-  impl: customStyle({
-    template: (cmp,{title,icon,raised,raisedIcon},h) => 
-        h('div',{title, onclick: true,
-          $html: `<svg height="24" width="24"><path d="${jb.path(jb.frame,['MDIcons',icon])}"/></svg>`}),
-    css: '{width: 24px; height: 24px}'
-  })
-})
-
 jb.component('button.mdcTab', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) =>
       h('button',{ class: ['mdc-tab', raised && 'mdc-tab--active'].filter(x=>x).join(' '),tabIndex: -1, role: 'tab', onclick:  true}, [
-        h('span',{ class: 'mdc-tab__content'}, h('span',{ class: 'mdc-tab__text-label'},title)),
+        h('span',{ class: 'mdc-tab__content'}, [
+          ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-tab__icon')),
+          h('span',{ class: 'mdc-tab__text-label'},title),
+          ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-tab__icon'))
+        ]),
         h('span',{ class: ['mdc-tab-indicator', raised && 'mdc-tab-indicator--active'].filter(x=>x).join(' ') }, h('span',{ class: 'mdc-tab-indicator__content mdc-tab-indicator__content--underline'})),
         h('span',{ class: 'mdc-tab__ripple'}),
       ]),
@@ -180,6 +141,16 @@ jb.component('button.mdcTab', {
 
 jb.component('button.mdcHeader', {
   type: 'button.style',
-  impl: styleWithFeatures(button.mdcTab(), [css('width: 100%; border-bottom: 1px solid black; margin-bottom: 7px')])
+  params: [
+    {id: 'stretch', as: 'boolean'},
+  ],
+  impl: styleWithFeatures(button.mdcTab(), css(pipeline(
+    Var('contentWidth',If('%$stretch%', 'width: 100%;','')),
+    `
+    {width: 100%; border-bottom: 1px solid black; margin-bottom: 7px; padding: 0}
+    ~ .mdc-tab__content { %$contentWidth% display: flex; align-content: space-between;}
+    ~ .mdc-tab__text-label { width: 100% }
+  `)))
 })
+
 

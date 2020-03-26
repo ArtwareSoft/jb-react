@@ -62,7 +62,7 @@ jb.component('menu.action', {
   params: [
     {id: 'title', as: 'string', dynamic: true, mandatory: true},
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
-    {id: 'icon', as: 'string'},
+    {id: 'icon', type: 'icon' },
     {id: 'shortcut', as: 'string'},
     {id: 'showCondition', type: 'boolean', as: 'boolean', defaultValue: true}
   ],
@@ -338,12 +338,13 @@ jb.component('menu.selection', {
 jb.component('menuStyle.optionLine', {
   type: 'menu-option.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{
+    template: (cmp,{icon,title,shortcut},h) => h('div',{
 				class: 'line noselect', onmousedown: 'action'
 			},[
-				h('i',{class:'material-icons'},state.icon),
-				h('span',{class:'title'},state.title),
-				h('span',{class:'shortcut'},state.shortcut),
+        h(cmp.ctx.run({...icon, $: 'control.icon'})),
+				//h('i',{class:'material-icons'},icon),
+				h('span',{class:'title'},title),
+				h('span',{class:'shortcut'},shortcut),
         h('div',{class: 'mdc-line-ripple' }),
 		]),
     css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
@@ -353,19 +354,6 @@ jb.component('menuStyle.optionLine', {
 						>.title { display: block; text-align: left; white-space: nowrap; }
 				>.shortcut { margin-left: auto; text-align: right; padding-right: 15px }`,
     features: [menu.initMenuOption(), mdc.rippleEffect()]
-  })
-})
-
-jb.component('menu.optionAsIcon24', {
-  type: 'menu-option.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{
-				class: 'line noselect', onclick: true, title: state.title
-			},[
-				h('i',{class:'material-icons'},state.icon),
-		]),
-    css: `{ display: flex; cursor: pointer; height: 24px}
-				>i { width: 24px; padding-left: 3px; padding-top: 3px; font-size:16px; }`
   })
 })
 

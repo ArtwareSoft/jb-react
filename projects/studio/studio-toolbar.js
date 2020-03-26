@@ -35,38 +35,38 @@ jb.component('studio.toolbar', {
       button({
         title: 'Select',
         action: studio.pickAndOpen(),
-        style: button.mdcIcon('call_made')
+        style: button.mdcIcon(icon('call_made'))
       }),
       button({
         title: 'Save',
         action: studio.saveComponents(),
-        style: button.mdcIcon('save'),
+        style: button.mdcIcon(icon('save')),
         features: ctrlAction(studio.saveComponents())
       }),
       button({
         title: 'Refresh Preview',
         action: studio.refreshPreview(),
-        style: button.mdcIcon('refresh')
+        style: button.mdcIcon(icon('refresh'))
       }),
       button({
         title: 'Javascript',
         action: studio.editSource(),
-        style: button.mdcIcon('code')
+        style: button.mdcIcon(icon({icon: 'LanguageJavascript', type: 'mdi'}))
       }),
       button({
         title: 'Outline',
         action: studio.openControlTree(),
-        style: button.mdcIcon('format_align_left')
+        style: button.mdcIcon(icon('format_align_left'))
       }),
       button({
         title: 'Properties',
         action: studio.openProperties(true),
-        style: button.mdcIcon('storage')
+        style: button.mdcIcon(icon('storage'))
       }),
       button({
         title: 'jbEditor',
         action: studio.openComponentInJbEditor(studio.currentPagePath()),
-        style: button.mdcIcon('build'),
+        style: button.mdcIcon(icon('build')),
         features: ctrlAction(
           studio.openJbEditor({path: '%$studio/profile_path%', newWindow: true})
         )
@@ -96,13 +96,13 @@ jb.component('studio.toolbar', {
           mode: 'insert-control',
           onClose: studio.gotoLastEdit()
         }),
-        style: button.mdcIcon('add'),
+        style: button.mdcIcon(icon('add')),
         features: studio.dropHtml(studio.insertControl('%$newCtrl%'))
       }),
       button({
         title: 'Responsive',
         action: studio.openResponsivePhonePopup(),
-        style: button.mdcIcon('tablet_android'),
+        style: button.mdcIcon(icon('tablet_android')),
         features: hidden()
       })
     ],

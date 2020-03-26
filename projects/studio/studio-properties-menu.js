@@ -35,26 +35,26 @@ jb.component('studio.openPropertyMenu', {
         menu.action({
           title: 'Inteliscript editor',
           action: studio.openJbEditor('%$path%'),
-          icon: 'code',
+          icon: icon('build'),
           shortcut: 'Ctrl+I'
         }),
         menu.action({
           title: 'Javascript editor',
           action: studio.editSource('%$path%'),
-          icon: 'code',
+          icon: icon({icon: 'LanguageJavascript', type: 'mdi'}),
           shortcut: 'Ctrl+J'
         }),
         studio.gotoEditorOptions('%$path%'),
         menu.action({
           title: 'Delete',
           action: studio.delete('%$path%'),
-          icon: 'delete',
+          icon: icon('delete'),
           shortcut: 'Delete'
         }),
         menu.action({
           title: data.if(studio.disabled('%$path%'), 'Enable', 'Disable'),
           action: studio.toggleDisabled('%$path%'),
-          icon: 'do_not_disturb',
+          icon: icon('do_not_disturb'),
           shortcut: 'Ctrl+X'
         })
       ]
@@ -237,43 +237,43 @@ jb.component('studio.jbEditorMenu', {
           menu.action({
             title: 'Javascript',
             action: studio.editSource('%$path%'),
-            icon: 'code',
+            icon: icon({icon: 'LanguageJavascript', type: 'mdi'}),
             shortcut: 'Ctrl+J'
           }),
           menu.action({
             title: 'Delete',
             action: studio.delete('%$path%'),
-            icon: 'delete',
+            icon: icon('delete'),
             shortcut: 'Delete'
           }),
           menu.action({
             title: {'$if': studio.disabled('%$path%'), then: 'Enable', else: 'Disable'},
             action: studio.toggleDisabled('%$path%'),
-            icon: 'do_not_disturb',
+            icon: icon('do_not_disturb'),
             shortcut: 'Ctrl+X'
           }),
           menu.action({
             title: 'Copy',
             action: studio.copy('%$path%'),
-            icon: 'copy',
+            icon: icon('copy'),
             shortcut: 'Ctrl+C'
           }),
           menu.action({
             title: 'Paste',
             action: studio.paste('%$path%'),
-            icon: 'paste',
+            icon: icon('paste'),
             shortcut: 'Ctrl+V'
           }),
           menu.action({
             title: 'Undo',
             action: studio.undo(),
-            icon: 'undo',
+            icon: icon('undo'),
             shortcut: 'Ctrl+Z'
           }),
           menu.action({
             title: 'Redo',
             action: studio.redo(),
-            icon: 'redo',
+            icon: icon('redo'),
             shortcut: 'Ctrl+Y'
           })
         ],

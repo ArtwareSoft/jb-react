@@ -78,10 +78,9 @@ jb.component('studio.selectProfile', {
             style: editableText.mdcInput('200'),
             features: feature.onEsc(dialog.closeContainingPopup(false))
           }),
-          icon({
+          control.icon({
             icon: 'search',
             title: 'search icon',
-            style: icon.material(),
             features: css.margin({top: '20', left: '-25'})
           })
         ]

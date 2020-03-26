@@ -122,15 +122,15 @@ jb.component('studio.mainMenu', {
               studio.sampleProject('cards-demo')
             ]
           }),
-          menu.action({title: 'New Project', action: studio.openNewProject(), icon: 'new'}),
+          menu.action({title: 'New Project', action: studio.openNewProject(), icon: icon('new')}),
           menu.action({title: 'Open Project ...', action: studio.openProject()}),
           menu.action({
             title: 'Save',
             action: studio.saveComponents(),
-            icon: 'save',
+            icon: icon('save'),
             shortcut: 'Ctrl+S'
           }),
-          menu.action({title: 'Force Save', action: studio.saveComponents(), icon: 'save'}),
+          menu.action({title: 'Force Save', action: studio.saveComponents(), icon: icon('save')}),
           menu.action({
             title: 'Source ...',
             action: studio.viewAllFiles(studio.currentProfilePath())
@@ -238,7 +238,7 @@ jb.component('studio.mainMenu', {
                           }),
                           button({
                             title: '+',
-                            style: button.mdIcon('Plus'),
+                            style: button.mdcIcon(icon({icon: 'Plus', type: 'mdi'})),
                             raised: '',
                             features: [feature.hoverTitle('add lib'), css.margin('5')]
                           })

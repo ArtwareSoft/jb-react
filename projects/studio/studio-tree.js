@@ -51,7 +51,7 @@ jb.component('studio.treeMenu', {
       menu.action({
         title: 'Javascript editor',
         action: studio.editSource('%$path%'),
-        icon: 'code',
+        icon: icon('code'),
         shortcut: 'Ctrl+J'
       }),
       menu.action({
@@ -66,37 +66,37 @@ jb.component('studio.treeMenu', {
       menu.action({
         title: 'Delete',
         action: studio.delete('%$path%'),
-        icon: 'delete',
+        icon: icon('delete'),
         shortcut: 'Delete'
       }),
       menu.action({
         title: {'$if': studio.disabled('%$path%'), then: 'Enable', else: 'Disable'},
         action: studio.toggleDisabled('%$path%'),
-        icon: 'do_not_disturb',
+        icon: icon('do_not_disturb'),
         shortcut: 'Ctrl+X'
       }),
       menu.action({
         title: 'Copy',
         action: studio.copy('%$path%'),
-        icon: 'copy',
+        icon: icon('copy'),
         shortcut: 'Ctrl+C'
       }),
       menu.action({
         title: 'Paste',
         action: studio.paste('%$path%'),
-        icon: 'paste',
+        icon: icon('paste'),
         shortcut: 'Ctrl+V'
       }),
       menu.action({
         title: 'Undo',
         action: studio.undo(),
-        icon: 'undo',
+        icon: icon('undo'),
         shortcut: 'Ctrl+Z'
       }),
       menu.action({
         title: 'Redo',
         action: studio.redo(),
-        icon: 'redo',
+        icon: icon('redo'),
         shortcut: 'Ctrl+Y'
       })
     ]

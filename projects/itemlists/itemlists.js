@@ -10,7 +10,7 @@ jb.component('itemlists.main', {
   impl: group({
     layout: layout.vertical(),
     controls: [
-      button({title: 'click me', style: button.mdIcon('Yoga')}),
+      button({title: 'click me', style: button.mdcIcon(icon({icon: 'Yoga', type: 'mdi'}))}),
       itemlist({
         title: '',
         items: '%$people%',
@@ -106,9 +106,8 @@ jb.component('itemlists.editableTable', {
       itemlist({
         items: '%$people%',
         controls: [
-          icon({
+          control.icon({
             icon: 'person',
-            style: icon.material(),
             features: [itemlist.dragHandle(), field.columnWidth(60)]
           }),
           editableText({
@@ -136,7 +135,7 @@ jb.component('itemlists.editableTable', {
       button({
         title: 'add person',
         action: addToArray('%$people%', obj()),
-        style: button.mdcFloatingWithTitle('add'),
+        style: button.mdcFloatingAction('add'),
         raised: 'true',
         features: [css.width('200'), css.margin('10')]
       })
@@ -372,7 +371,7 @@ jb.component('itemlists.infiniteScroll', {
           group({
             layout: layout.horizontal(),
             controls: [
-              button({title: 'icon', style: button.mdIcon('%%')}),
+              button({title: 'icon', style: button.mdcIcon(icon({icon: '%%', type: 'mdi'}))}),
               text({
                 text: pipeline('%%', text.highlight('%%', '%$itemlistCntrData.search_pattern%')),
                 title: 'icon name'

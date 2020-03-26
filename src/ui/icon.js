@@ -1,19 +1,32 @@
-jb.ns('icon')
+jb.ns('icon,control')
 
-jb.component('icon', {
+jb.component('control.icon', {
   type: 'control',
   category: 'control:50',
   params: [
     {id: 'icon', as: 'string', mandatory: true},
     {id: 'title', as: 'string'},
-    {id: 'scale', as: 'number', defaultValue: 1 },
     {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
+    {id: 'scale', as: 'number', defaultValue: 1 },
     {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx, features(
     calcProp('icon'), calcProp('type'), calcProp('scale'), calcProp('title')
   ))
+})
+
+jb.component('icon', {
+  type: 'icon',
+  params: [
+    {id: 'icon', as: 'string', mandatory: true},
+    {id: 'title', as: 'string'},
+    {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
+    {id: 'scale', as: 'number', defaultValue: 1 },
+    {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx => ctx.params
 })
 
 jb.component('icon.material', {
@@ -32,9 +45,9 @@ jb.component('feature.icon', {
   category: 'control:50',
   params: [
     {id: 'icon', as: 'string', mandatory: true},
-    {id: 'scale', as: 'string', defaultValue: 24 },
-    {id: 'position', as: 'string', options: ',pre,post', defaultValue: '' },
+    {id: 'position', as: 'string', options: ',pre,post,raised', defaultValue: '' },
     {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
+    {id: 'scale', as: 'string', defaultValue: 1 },
     {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],

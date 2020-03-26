@@ -45,12 +45,29 @@ const variations = { button: { prop: 'raised', values: [true,false] }}
           items: '%$people%',
           control: text('%%'),
           ... (ctrl == 'itemlist' && { controls: [text({ text: '%name%', title: 'name'}), text({ text: '%age%', title: 'age'}) ]}),
-          ... (ctrl == 'group' && { controls: [text({ title: 'title1', text: 'text1'} ),text({ title: 'title2', text: 'text2'}) ] }),
+          ... (ctrl == 'group' && { controls: [text({ title: 'title1', text: 'text1',
+                features: [
+                  feature.icon({icon: 'Account', position: 'pre', type: 'mdi'}),
+                  feature.icon({icon: 'delete', position: 'post', type: 'mdc'}),
+                  feature.icon({icon: 'AccountAlertOutline', position: 'raised', type: 'mdi'})
+                ]          
+              } ),text({ title: 'title2', text: 'text2',
+                features: [
+                  feature.icon({icon: 'Account', position: 'pre', type: 'mdi'}),
+//                  feature.icon({icon: 'delete', position: 'post', type: 'mdc'}),
+                  feature.icon({icon: 'AccountAlertOutline', position: 'raised', type: 'mdi'})
+                ]          
+              }) ] }),
           options: picklist.options('%$people/name%'),
           style: ctx => ctx.run({$: ctx.data}),
           url: 'https://freesvg.org/img/UN-CONSTRUCTION-2.png',
           width: 100,
           height: 100,
+          features: [
+            feature.icon({icon: 'Account', position: 'pre', type: 'mdi'}),
+            feature.icon({icon: 'delete', position: 'post', type: 'mdc'}),
+            feature.icon({icon: 'AccountAlertOutline', position: 'raised', type: 'mdi'})
+          ]          
         }].flatMap(prof=>[(variations[ctrl]|| {prop: 'x', values:[1]})].flatMap(e=> e.values.map(val => ({...prof, [e.prop] : val }))))
       }),
       itemVariable: '__style'
