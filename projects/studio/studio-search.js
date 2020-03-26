@@ -95,7 +95,7 @@ jb.component('studio.searchComponent', {
       itemlistContainer.search({
         title: 'Search',
         databind: '%$itemlistCntrData/search_pattern%',
-        style: editableText.mdcNoLabel(),
+        style: editableText.mdcSearch(),
         features: [
           editableText.helperPopup({
             control: studio.searchList(),
@@ -106,12 +106,8 @@ jb.component('studio.searchComponent', {
             '>input {padding-right: 45px; border-bottom-color: white !important} {height: 35px; background: white !important}'
           )
         ]
-      }),
-      control.icon({
-        icon: 'search',
-        features: [css.margin({top: '5', left: '-30'}), css('z-index: 1000')]
       })
     ],
-    features: [group.itemlistContainer({}), css.margin({top: '-3', left: '10'})]
+    features: [group.itemlistContainer({}), css.margin({top: '-30', left: '10'})]
   })
 })

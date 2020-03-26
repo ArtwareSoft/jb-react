@@ -25,18 +25,25 @@ jb.component('editableText.textarea', {
 jb.component('editableText.mdcInput', {
   type: 'editable-text.style,editable-number.style',
   params: [
-    {id: 'width', as: 'number'}
+    {id: 'width', as: 'number'},
+    {id: 'noLabel', as: 'boolean'},
+    {id: 'noRipple', as: 'boolean'},
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{}, [
-      h('div',{class: 'mdc-text-field' },[
-          h('input', { type: 'text', class: 'mdc-text-field__input', id: 'input_' + state.fieldId,
-              value: state.databind, onchange: true, onkeyup: true, onblur: true,
+    template: (cmp,{databind,fieldId,title,noLabel,noRipple,error},h) => h('div',{}, [
+      h('div',{class: ['mdc-text-field', 
+          (cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'pre')[0] && 'mdc-text-field--with-leading-icon',
+          (cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'post')[0] && 'mdc-text-field--with-trailing-icon'
+        ].filter(x=>x).join(' ') },[
+          ...(cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'pre').map(h).map(vdom=>vdom.addClass('mdc-text-field__icon mdc-text-field__icon--leading')),
+          h('input', { type: 'text', class: 'mdc-text-field__input', id: 'input_' + fieldId,
+              value: databind, onchange: true, onkeyup: true, onblur: true,
           }),
-          h('label',{class: 'mdc-floating-label', for: 'input_' + state.fieldId},state.title),
-          h('div',{class: 'mdc-line-ripple' }) 
+          ...(cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-text-field__icon mdc-text-field__icon--trailing')),
+          ...[!noLabel && h('label',{class: 'mdc-floating-label', for: 'input_' + fieldId},title() )].filter(x=>x),
+          ...[!noRipple && h('div',{class: 'mdc-line-ripple' })].filter(x=>x)
         ]),
-        h('div',{class: 'mdc-text-field-helper-line' }, state.error || '')
+        h('div',{class: 'mdc-text-field-helper-line' }, error || '')
       ]),
     css: `{ {?width: %$width%px?} } ~ .mdc-text-field-helper-line { color: red }`,
     features: [field.databindText(), mdcStyle.initDynamic()]
@@ -48,28 +55,13 @@ jb.component('editableText.mdcNoLabel', {
   params: [
     {id: 'width', as: 'number'}
   ],
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{class: 'mdc-text-field mdc-text-field--no-label'},
-        h('input', { class: 'mdc-text-field__input', type: 'text', value: state.databind, onchange: true, onkeyup: true, onblur: true }),
-        h('div',{class: 'mdc-line-ripple' }),
-        ),
-    css: '{ padding: 0 !important; {?width: %$width%px?} } :focus { border-color: #3F51B5; border-width: 2px}',
-    features: [field.databindText(), mdcStyle.initDynamic()]
-  })
+  impl: editableText.mdcInput({width:'%$width%', noLabel: true})
 })
 
 jb.component('editableText.mdcSearch', {
   description: 'debounced and one way binding',
   type: 'editable-text.style',
-  impl: customStyle({
-    template: (cmp,{databind, fieldId, title},h) => h('div',{class:'mdc-text-field'},[
-        h('input', { class: 'mdc-text-field__input', id: 'search_' + fieldId, type: 'text',
-            value: databind, onchange: true, onkeyup: true, onblur: true,
-        }),
-        h('label',{class: 'mdc-floating-label mdc-floating-label--float-above', for: 'search_' + fieldId}, databind ? '' : title)
-      ]),
-    features: [field.databindText(), mdcStyle.initDynamic()]
-  })
+  impl: styleWithFeatures(editableText.mdcInput({width:'%$width%', noLabel: true}), feature.icon({icon: 'search', position: 'post'}))
 })
 
 jb.component('editableText.expandable', {
