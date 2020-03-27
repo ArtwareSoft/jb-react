@@ -74,6 +74,9 @@ jb.component('studio.propField', {
         controlWithCondition(pipeline(studio.paramDef('%path%'),'%id%',or(equals('icon'),equals('raisedIcon'))),
           studio.pickIcon('%$path%')
         ),
+        controlWithCondition(inGroup(split({text:'width,height,top,left,right,bottom'}),pipeline(studio.paramDef('%path%'),'%id%')),
+          studio.propertyNumbericCss('%$path%')
+        ),
         controlWithCondition(
           and(
             studio.isOfType('%$path%', 'data,boolean'),
@@ -181,7 +184,6 @@ jb.component('studio.pickIcon', {
         content: group({
           controls: [
             itemlistContainer.search({
-              title: '',
               searchIn: '%%',
               databind: '%$itemlistCntrData/search_pattern%'
             }),
@@ -215,7 +217,10 @@ jb.component('studio.pickIcon', {
               ]
             })
           ],
-          features: group.itemlistContainer({})
+          features: [
+            group.itemlistContainer({}),
+            group.autoFocusOnFirstInput()
+          ]
         }),
         title: 'pick icon'
       }),
@@ -226,18 +231,14 @@ jb.component('studio.pickIcon', {
   })
 })
 
-jb.component('studio.iconPicker', {
+jb.component('studio.propertyNumbericCss', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: group({
-    controls: button({
-      title: prettyPrint(studio.val('%$path%'), true),
-      action: studio.openJbEditor('%$path%'),
-      style: button.studioScript()
-    }),
-    features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
+  impl: editableNumber({
+    databind: studio.ref('%$path%'),
+    style: editableNumber.mdcSlider()
   })
 })
 

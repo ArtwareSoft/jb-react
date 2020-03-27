@@ -62,14 +62,13 @@ jb.component('editableNumber.mdcSlider', {
             features: [
               slider.handleArrowKeys(),
               css(
-                'width: 40px; padding-left: 3px; border: 0; border-bottom: 1px solid black;'
+                'width: 40px; height: 20px; padding-top: 14px; padding-left: 3px; border: 0; border-bottom: 1px solid black; background: transparent;'
               )
             ]
           }),
           editableNumber({
             databind: '%$editableNumberModel/databind%',
             style: editableNumber.mdcSliderNoText({}),
-            features: css.width(80)
           })
         ],
         features: [
