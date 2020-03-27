@@ -171,66 +171,6 @@ jb.component('studio.propertyScript', {
   })
 })
 
-jb.component('studio.pickIcon', {
-  type: 'control',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: group({
-    controls: button({
-      title: prettyPrint(studio.val('%$path%'), true),
-      action: openDialog({
-        style: dialog.dialogOkCancel(),
-        content: group({
-          controls: [
-            itemlistContainer.search({
-              searchIn: '%%',
-              databind: '%$itemlistCntrData/search_pattern%'
-            }),
-            itemlist({
-              title: '',
-              items: pipeline(ctx => jb.frame.MDIcons, keys(), itemlistContainer.filter()),
-              controls: [
-                group({
-                  layout: layout.horizontal(),
-                  controls: [
-                    button({title: 'icon', style: button.mdcIcon(icon({icon: '%%', type: 'mdi'}))}),
-                    text({
-                      text: pipeline('%%', text.highlight('%%', '%$itemlistCntrData.search_pattern%')),
-                      title: 'icon name'
-                    })
-                  ]
-                })
-              ],
-              visualSizeLimit: '50',
-              features: [
-                watchRef({ref: '%$itemlistCntrData/search_pattern%', strongRefresh: 'true'}),
-                css.height({height: '300', overflow: 'scroll'}),
-                css.width('600'),
-                itemlist.infiniteScroll(),
-                itemlist.selection({
-                  onDoubleClick: runActions(
-                    writeValue(studio.ref('%$path%'), '%%'),
-                    dialog.closeContainingPopup()
-                  )
-                })
-              ]
-            })
-          ],
-          features: [
-            group.itemlistContainer({}),
-            group.autoFocusOnFirstInput()
-          ]
-        }),
-        title: 'pick icon'
-      }),
-      style: button.studioScript(),
-      raised: ''
-    }),
-    features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
-  })
-})
-
 jb.component('studio.propertyNumbericCss', {
   type: 'control',
   params: [

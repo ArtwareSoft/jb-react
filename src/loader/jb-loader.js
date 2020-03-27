@@ -154,7 +154,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'suggestions', 'properties','jb-editor-styles','edit-source','jb-editor','pick','h-to-jsx','style-editor',
         'references','properties-menu','save','open-project','tree',
         'data-browse', 'new-project','event-tracker', 'toolbar','search', 'main', 'component-header', 'hosts', 'probe',
-        'watch-ref-viewer', 'content-editable', 'position-thumbs', 'html-to-ctrl', 'patterns'
+        'watch-ref-viewer', 'content-editable', 'position-thumbs', 'html-to-ctrl', 'patterns', 'pick-icon'
       ],
       'studio-tests': [
         'projects/studio/studio-testers.js',

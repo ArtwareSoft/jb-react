@@ -33,7 +33,7 @@ jb.component('helloWorld.main', {
         style: button.mdcFloatingAction(true),
         raised: '',
         features: [
-          feature.icon({icon: 'Account', position: 'pre', type: 'mdi'}),
+          feature.icon({icon: 'person_pin_circle', position: 'pre', type: 'mdc'}),
           feature.icon({icon: 'delete', position: 'post', type: 'mdc'}),
           feature.icon({icon: 'AccountAlertOutline', position: 'raised', type: 'mdi'})
         ]
