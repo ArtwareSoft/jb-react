@@ -25,11 +25,12 @@ jb.component('editableNumber', {
           if (this.max == null) this.max = NaN;
         }
         numericPart(dataString) {
-          if (!dataString) return NaN;
+          if (typeof dataString == 'number') return dataString
+          if (dataString == '') return NaN;
           var parts = (''+dataString).match(/([^0-9\.\-]*)([0-9\.\-]+)([^0-9\.\-]*)/); // prefix-number-suffix
-          if ((!this.symbol) && parts)
-            this.symbol = parts[1] || parts[3] || this.symbol;
-          return (parts && parts[2]) || '';
+          if (parts)
+            this.symbol = parts[1] || parts[3]
+          return +(parts && parts[2])
         }
 
         calcDisplayString(number,ctx) {

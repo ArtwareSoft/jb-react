@@ -37,7 +37,7 @@ jb.component('interactiveProp', {
     {id: 'id', as: 'string', mandatory: true},
     {id: 'value', mandatory: true, dynamic: true}
   ],
-  impl: (ctx,id) => ({interactiveProp: {id, ctx }})
+  impl: (ctx,id) => ({interactiveProp: {id: id.replace(/-/g,'_'), ctx }})
 })
 
 jb.component('calcProps', {
@@ -60,6 +60,15 @@ jb.component('feature.init', {
     {id: 'phase', as: 'number', defaultValue: 10, description: 'init funcs from different features can use each other, phase defines the calculation order'}
   ],
   impl: (ctx,action,phase) => ({ init: { action, phase }})
+})
+
+jb.component('feature.destroy', {
+  type: 'feature',
+  category: 'lifecycle',
+  params: [
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true},
+  ],
+  impl: ctx => ({ destroy: cmp => ctx.params.action(cmp.ctx) })
 })
 
 jb.component('feature.beforeInit', {

@@ -1175,7 +1175,13 @@ class VNode {
         if (children != null && !Array.isArray(children)) children = [children]
         if (children != null)
             children = children.filter(x=>x).map(item=> typeof item == 'string' ? jb.ui.h('span',{$text: item}) : item)
-        Object.assign(this,{...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,attributes,children})
+        
+        this.attributes = attributes
+        if (typeof cmpOrTag === 'string' && cmpOrTag.indexOf('#') != -1) {
+            this.addClass(cmpOrTag.split('#').pop())
+            cmpOrTag = cmpOrTag.split('#')[0]
+        }
+        Object.assign(this,{...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,children})
     }
     getAttribute(att) {
         return (this.attributes || {})[att]
@@ -1185,6 +1191,10 @@ class VNode {
         this.attributes[att] = val
     }
     addClass(clz) {
+        if (clz.indexOf(' ') != -1) {
+            clz.split(' ').filter(x=>x).forEach(cl=>this.addClass(cl))
+            return this
+        }
         this.attributes = this.attributes || {};
         if (this.attributes.class === undefined) this.attributes.class = ''
         if (clz && this.attributes.class.split(' ').indexOf(clz) == -1)
@@ -1702,7 +1712,7 @@ ui.propCounter = 0
 const cssSelectors_hash = ui.cssSelectors_hash = {};
 const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,this.ctx) }}
 const lifeCycle = new Set('init,componentDidMount,componentWillUpdate,componentDidUpdate,destroy,extendCtx,templateModifier,extendItem'.split(','))
-const arrayProps = new Set('enrichField,dynamicCss,watchAndCalcModelProp,staticCssLines,defHandler,interactiveProp,calcProp'.split(','))
+const arrayProps = new Set('enrichField,dynamicCss,icon,watchAndCalcModelProp,staticCssLines,defHandler,interactiveProp,calcProp'.split(','))
 const singular = new Set('template,calcRenderProps,toolbar,styleCtx,calcHash,ctxForPick'.split(','))
 
 class JbComponent {
@@ -1747,7 +1757,9 @@ class JbComponent {
                 this.calcProp.filter(p=>p.id == toFilter.id && p.priority > toFilter.priority).length == 0)
         filteredPropsByPriority.sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
             .forEach(prop=> { 
-                const value = jb.val( tryWrapper(() => prop.value(this.calcCtx),`renderProp:${prop.id}`))
+                const value = jb.val( tryWrapper(() => 
+                    prop.value.profile === null ? this.calcCtx.vars.$model[prop.id] : prop.value(this.calcCtx),
+                `renderProp:${prop.id}`))
                 Object.assign(this.renderProps, { ...(prop.id == '$props' ? value : { [prop.id]: value })})
             })
         Object.assign(this.renderProps,(this.styleCtx || {}).params, this.state);
@@ -2231,8 +2243,8 @@ jb.component('calcProp', {
   description: 'define a variable to be used in the rendering calculation process',
   params: [
     {id: 'id', as: 'string', mandatory: true},
-    {id: 'value', mandatory: true, dynamic: true},
-    {id: 'priority', as: 'number', defaultValue: 1, description: 'if same prop was defined elsewhere who will win. range 1-1000'},
+    {id: 'value', mandatory: true, dynamic: true, description: 'when empty value is taken from model'},
+    {id: 'priority', as: 'number', defaultValue: 1, description: 'if same prop was defined elsewhere decides who will override. range 1-1000'},
     {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'}
   ],
   impl: ctx => ({calcProp: {... ctx.params, index: jb.ui.propCounter++}})
@@ -3012,7 +3024,8 @@ jb.component('text.span', {
   })
 }))
 
-;[1,2,3,4,5,6].map(level=>jb.component(`header.mdc-headline${level}`, {
+
+;[1,2,3,4,5,6].map(level=>jb.component(`header.mdcHeadline${level}`, {
   type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--headline${level}`},text),
@@ -3020,7 +3033,7 @@ jb.component('text.span', {
   })
 }))
 
-;[1,2].map(level=>jb.component(`header.mdc-subtitle${level}`, {
+;[1,2].map(level=>jb.component(`header.mdcSubtitle${level}`, {
   type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--subtitle${level}`},text),
@@ -3028,7 +3041,24 @@ jb.component('text.span', {
   })
 }))
 
-;[1,2].map(level=>jb.component(`text.mdc-body${level}`, {
+jb.component('header.mdcHeaderWithIcon', {
+  type: 'text.style',
+  params: [
+    {id: 'level', options: '1,2,3,4,5,6', as: 'string', defaultValue: '1'}
+  ],
+  impl: customStyle({
+    template: (cmp,{text,level},h) =>
+        h(`h${level}`,{ class: 'mdc-tab__content'}, [
+          ...jb.ui.chooseIconWithRaised(cmp.icon).map(h),
+          h('span',{ class: 'mdc-tab__text-label'},text),
+          ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-tab__icon'))
+        ]),
+    css: '{justify-content: initial}',
+    features: text.bindText()
+  })
+})
+
+;[1,2].map(level=>jb.component(`text.mdcBody${level}`, {
   type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--body${level}`},text),
@@ -3308,7 +3338,7 @@ jb.component('image.img', {
           {?height: %$height%; ?}
       }`
     ),
-    features: calcProp({id: 'url', value: '%$$model/url%'})
+    features: calcProp('url')
   })
 });
 
@@ -3321,7 +3351,7 @@ jb.component('button', {
     {id: 'title', as: 'ref', mandatory: true, templateValue: 'click me', dynamic: true},
     {id: 'action', type: 'action', mandatory: true, dynamic: true},
     {id: 'style', type: 'button.style', defaultValue: button.mdc(), dynamic: true},
-    {id: 'raised', as: 'boolean', dynamic: true, type: 'boolean'},
+    {id: 'raised', as: 'boolean', dynamic: true },
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx, ctx.run(features(
@@ -3391,10 +3421,10 @@ jb.component('field.databind', {
   impl: features(
     If(
         '%$oneWay%',
-        calcProp({id: 'databind', value: '%$$model/databind%'}),
+        calcProp('databind','%$$model/databind%'),
         watchAndCalcModelProp('databind')
       ),
-    calcProp({id: 'title', value: '%$$model/title%'}),
+    calcProp('title'),
     calcProp({id: 'fieldId', value: () => jb.ui.field_id_counter++}),
     defHandler(
         'onblurHandler',
@@ -4864,7 +4894,7 @@ jb.component('menu.action', {
   params: [
     {id: 'title', as: 'string', dynamic: true, mandatory: true},
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
-    {id: 'icon', as: 'string'},
+    {id: 'icon', type: 'icon' },
     {id: 'shortcut', as: 'string'},
     {id: 'showCondition', type: 'boolean', as: 'boolean', defaultValue: true}
   ],
@@ -5140,12 +5170,13 @@ jb.component('menu.selection', {
 jb.component('menuStyle.optionLine', {
   type: 'menu-option.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{
+    template: (cmp,{icon,title,shortcut},h) => h('div',{
 				class: 'line noselect', onmousedown: 'action'
 			},[
-				h('i',{class:'material-icons'},state.icon),
-				h('span',{class:'title'},state.title),
-				h('span',{class:'shortcut'},state.shortcut),
+        h(cmp.ctx.run({...icon, $: 'control.icon'})),
+				//h('i',{class:'material-icons'},icon),
+				h('span',{class:'title'},title),
+				h('span',{class:'shortcut'},shortcut),
         h('div',{class: 'mdc-line-ripple' }),
 		]),
     css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
@@ -5155,19 +5186,6 @@ jb.component('menuStyle.optionLine', {
 						>.title { display: block; text-align: left; white-space: nowrap; }
 				>.shortcut { margin-left: auto; text-align: right; padding-right: 15px }`,
     features: [menu.initMenuOption(), mdc.rippleEffect()]
-  })
-})
-
-jb.component('menu.optionAsIcon24', {
-  type: 'menu-option.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{
-				class: 'line noselect', onclick: true, title: state.title
-			},[
-				h('i',{class:'material-icons'},state.icon),
-		]),
-    css: `{ display: flex; cursor: pointer; height: 24px}
-				>i { width: 24px; padding-left: 3px; padding-top: 3px; font-size:16px; }`
   })
 })
 
@@ -5398,30 +5416,70 @@ jb.component('theme.materialDesign', {
 })
 ;
 
-jb.ns('icon')
+jb.ns('icon,control')
 
-jb.component('materialIcon', {
+jb.component('control.icon', {
   type: 'control',
   category: 'control:50',
   params: [
     {id: 'icon', as: 'string', mandatory: true},
     {id: 'title', as: 'string'},
+    {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
+    {id: 'scale', as: 'number', defaultValue: 1 },
     {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx => jb.ui.ctrl(ctx, calcProp('icon','%$$model/icon%'))
+  impl: ctx => jb.ui.ctrl(ctx, features(
+    calcProp('icon'), calcProp('type'), calcProp('scale'), calcProp('title')
+  ))
+})
+
+jb.component('icon', {
+  type: 'icon',
+  params: [
+    {id: 'icon', as: 'string', mandatory: true},
+    {id: 'title', as: 'string'},
+    {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
+    {id: 'scale', as: 'number', defaultValue: 1 },
+    {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx => ctx.params
 })
 
 jb.component('icon.material', {
   type: 'icon.style',
-  impl: customStyle(
-    (cmp,{icon},h) => h('i',{ class: 'material-icons' }, icon)
-  )
+  impl: customStyle({
+    template: (cmp,{icon,type,title,scale},h) => type == 'mdc' ? h('i',
+    { class: 'material-icons', title, onclick: true, style: {width: '24px', height: '24px', transform: `scale(${scale}) translate(${(scale-1)*12}px,${(scale-1)*12}px)` } }
+      , icon) 
+      : h('div',{title, onclick: true, style: { transform: `translate(${(scale-1)*12}px,${(scale-1)*12}px)`},
+        $html: `<svg width="24" height="24" transform="scale(${scale})"><path d="${jb.path(jb.frame,['MDIcons',icon])}"/></svg>`}),
+  })
+})
+
+jb.component('feature.icon', {
+  type: 'feature',
+  category: 'control:50',
+  params: [
+    {id: 'icon', as: 'string', mandatory: true},
+    {id: 'position', as: 'string', options: ',pre,post,raised', defaultValue: '' },
+    {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
+    {id: 'scale', as: 'string', defaultValue: 1 },
+    {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx => ({
+    icon: jb.ui.ctrl(ctx, features(
+      calcProp('icon'), calcProp('type'), calcProp('scale'), calcProp('title'),
+      calcProp('iconPosition','%$$model/position%')
+    ))
+  })
 })
 
 ;
 
-jb.ns('slider')
+jb.ns('slider,mdcStyle')
 
 jb.component('editableNumber.sliderNoText', {
   type: 'editable-number.style',
@@ -5478,6 +5536,32 @@ jb.component('editableNumber.slider', {
     }),
     'editableNumberModel'
   )
+})
+
+jb.component('editableNumber.mdcSlider', {
+  type: 'editable-number.style',
+  params: [
+    { id: 'width', as: 'number', defaultValue: 100 },
+    { id: 'height', as: 'number', defaultValue: 100 },
+    { id: 'cx', as: 'number', defaultValue: 10 },
+    { id: 'cy', as: 'number', defaultValue: 10 },
+    { id: 'r', as: 'number', defaultValue: 8 },
+  ],
+  impl: customStyle({
+    template: (cmp,{title,min,max,databind,width, height,cx,cy,r},h) =>
+      h('div#mdc-slider mdc-slider--discrete',{tabIndex: -1, role: 'slider', mousemove: 'onchangeHandler',
+        'aria-valuemin': min, 'aria-valuemax': max, 'aria-valuenow': databind, 'aria-label': title}, [
+        h('div#mdc-slider__track-container',{}, h('div#mdc-slider__track')),
+        h('div#mdc-slider__thumb-container',{}, h('div#mdc-slider__pin',{},h('span#mdc-slider__pin-value-marker'))),
+        h('svg#mdc-slider__thumb',{ width, height}, h('circle',{cx,cy,r})),
+        h('div#mdc-slider__focus-ring')
+      ]),
+    features: [
+      mdcStyle.initDynamic(),
+      field.databind(true),
+      slider.init(),
+    ]      
+  })
 })
 
 jb.component('slider.init', {
@@ -5750,6 +5834,8 @@ jb.component('mdcStyle.initDynamic', {
         cmp.mdc_comps.push(new jb.ui.material.MDCChipSet(cmp.base))
       else if (cmp.base.classList.contains('mdc-tab-bar'))
         cmp.mdc_comps.push(new jb.ui.material.MDCTabBar(cmp.base))
+      else if (cmp.base.classList.contains('mdc-slider'))
+        cmp.mdc_comps.push(new jb.ui.material.MDCSlider(cmp.base))
     },
     destroy: cmp => (cmp.mdc_comps || []).forEach(mdc_cmp=>mdc_cmp.destroy())
   })
@@ -5782,6 +5868,16 @@ jb.component('label.mdcRippleEffect', {
 
 
 ;
+
+jb.ui.chooseIconWithRaised = (icons,raised) => {
+  if (!icons) return []
+  const raisedIcon = icons.filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'raised')[0]
+  const otherIcons = (raisedIcon && icons.filter(cmp=>cmp && cmp.ctx.vars.$model.position != 'raised') || icons)
+    .filter(cmp=>cmp && cmp.ctx.vars.$model.position != 'post')
+  if (raised) 
+    return raisedIcon ? [raisedIcon] : otherIcons
+  return otherIcons
+}
 
 jb.component('button.href', {
   type: 'button.style',
@@ -5823,14 +5919,32 @@ jb.component('button.native', {
 jb.component('button.mdc', {
   type: 'button.style',
   params: [
-    {id: 'ripple', as: 'boolean', defaultValue: true, type: 'boolean'}
+    {id: 'noRipple', as: 'boolean'},
+    {id: 'noTitle', as: 'boolean'}
   ],
   impl: customStyle({
-    template: (cmp,{title,raised},h) => h('button',{
+    template: (cmp,{title,raised,noRipple,noTitle},h) => h('button',{
       class: ['mdc-button',raised && 'raised mdc-button--raised'].filter(x=>x).join(' '), onclick: true},[
-      h('div',{class:'mdc-button__ripple'}),
-      h('span',{class:'mdc-button__label'},title),
+      ...[!noRipple && h('div',{class:'mdc-button__ripple'})],
+      ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-button__icon')),
+      ...[!noTitle && h('span',{class:'mdc-button__label'},title)],
+      ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-button__icon')),
     ]),
+    features: mdcStyle.initDynamic()
+  })
+})
+
+jb.component('button.mdcChipAction', {
+  type: 'button.style',
+  impl: customStyle({
+    template: (cmp,{title,raised},h) =>
+    h('div',{class: 'mdc-chip-set mdc-chip-set--choice'},
+      h('div',{ class: ['mdc-chip',raised && 'mdc-chip--selected raised'].filter(x=>x).join(' ') }, [
+        h('div',{ class: 'mdc-chip__ripple'}),
+        ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-chip__icon mdc-chip__icon--leading')),
+        h('span',{ role: 'gridcell'}, h('span', {role: 'button', tabindex: -1, class: 'mdc-chip__text'}, title )),
+        ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-chip__icon mdc-chip__icon--trailing')),
+    ])),
     features: mdcStyle.initDynamic()
   })
 })
@@ -5838,87 +5952,30 @@ jb.component('button.mdc', {
 jb.component('button.mdcIcon', {
   type: 'button.style,icon.style',
   params: [
-    {id: 'icon', as: 'string', defaultValue: 'bookmark_border'},
-    {id: 'raisedIcon', as: 'string'}
+    {id: 'icon', type: 'icon', defaultValue: icon('plus') },
+    {id: 'raisedIcon', type: 'icon' }
   ],
-  impl: customStyle({
-    template: (cmp,{title,icon,raised,raisedIcon},h) => h('button',{
-          class: ['mdc-icon-button material-icons',raised && 'raised mdc-icon-button--on'].filter(x=>x).join(' '),
-          title, tabIndex: -1, onclick:  true},[
-            h('i',{class:'material-icons mdc-icon-button__icon mdc-icon-button__icon--on'}, raisedIcon || icon),
-            h('i',{class:'material-icons mdc-icon-button__icon '}, icon),
-        ]),
-    css: '{ border-radius: 2px; padding: 0; width: 24px; height: 24px;}',
-    features: mdcStyle.initDynamic()
-  })
-})
-
-jb.component('button.mdcChipAction', {
-  type: 'button.style',
-  params: [
-
-  ],
-  impl: customStyle({
-    template: (cmp,{title,raised},h) =>
-    h('div',{class: 'mdc-chip-set mdc-chip-set--choice'},
-      h('div',{ class: ['mdc-chip',raised && 'mdc-chip--selected raised'].filter(x=>x).join(' ') }, [
-        h('div',{ class: 'mdc-chip__ripple'}),
-        h('span',{ role: 'gridcell'}, h('span', {role: 'button', tabindex: -1, class: 'mdc-chip__text'}, title )),
-    ])),
-    features: mdcStyle.initDynamic()
-  })
-})
-
-jb.component('button.mdcChipWithIcons', {
-  type: 'button.style,icon.style',
-  params: [
-    {id: 'leadingIcon', as: 'string', defaultValue: 'code'},
-    {id: 'trailingIcon', as: 'string', defaultValue: 'code'}
-  ],
-  impl: customStyle({
-    template: (cmp,{title,raised,leadingIcon,trailingIcon},h) =>
-    h('div',{class: 'mdc-chip-set mdc-chip-set--choice'},
-      h('div',{ class: ['mdc-chip',raised && 'mdc-chip--selected raised'].filter(x=>x).join(' ') }, [
-        h('div',{ class: 'mdc-chip__ripple'}),
-        ...(leadingIcon ? [h('i',{class:'material-icons mdc-chip__icon mdc-chip__icon--leading'},leadingIcon)] : []),
-        h('span',{ role: 'gridcell'}, h('span', {role: 'button', tabindex: -1, class: 'mdc-chip__text'}, title )),
-        ...(trailingIcon ? [h('i',{class:'material-icons mdc-chip__icon mdc-chip__icon--trailing'},trailingIcon)] : []),
-    ])),
-    features: mdcStyle.initDynamic()
-  })
+  impl: styleWithFeatures(button.mdcFloatingAction({withTitle: false, mini: true}), features(
+    ctx => ctx.run({...ctx.componentContext.params.icon, $: 'feature.icon'}),
+    ctx => [ctx.componentContext.params.raisedIcon && ctx.run({...ctx.componentContext.params.raisedIcon, $: 'feature.icon', position: 'raised'})].filter(x=>x),
+    css('{ box-shadow: 0 0; border-radius: 2px !important; width: 24px; height: 24px; padding: 0; color: black; background-color: transparent;}')
+  ))
 })
 
 jb.component('button.mdcFloatingAction', {
   type: 'button.style,icon.style',
   description: 'fab icon',
   params: [
-    {id: 'icon', as: 'string', defaultValue: 'code'},
-    {id: 'mini', as: 'boolean', type: 'boolean'}
+    {id: 'mini', as: 'boolean'},
+    {id: 'withTitle', as: 'boolean'}
   ],
   impl: customStyle({
-    template: (cmp,{title,icon,mini,raised},h) =>
+    template: (cmp,{title,withTitle,mini,raised},h) =>
       h('button',{ class: ['mdc-fab',raised && 'raised mdc-icon-button--on',mini && 'mdc-fab--mini'].filter(x=>x).join(' ') ,
           title, tabIndex: -1, onclick:  true}, [
             h('div',{ class: 'mdc-fab__ripple'}),
-            h('span',{ class: 'mdc-fab__icon material-icons'},icon),
-      ]),
-    features: mdcStyle.initDynamic()
-  })
-})
-
-jb.component('button.mdcFloatingWithTitle', {
-  type: 'button.style,icon.style',
-  params: [
-    {id: 'icon', as: 'string', defaultValue: 'code'},
-    {id: 'mini', as: 'boolean', type: 'boolean'}
-  ],
-  impl: customStyle({
-    template: (cmp,{title,icon,mini,raised},h) =>
-      h('button',{ class: ['mdc-fab mdc-fab--extended',raised && 'mdc-icon-button--on',mini && 'mdc-fab--mini'].filter(x=>x).join(' ') ,
-          title, tabIndex: -1, onclick:  true}, [
-        h('div',{ class: 'mdc-fab__ripple'}),
-        ...(icon ? [h('span',{ class: 'mdc-fab__icon material-icons'},icon)]: []),
-        h('span',{ class: 'mdc-fab__label'},title),
+            ...jb.ui.chooseIconWithRaised(cmp.icon,raised).filter(x=>x).map(h).map(vdom=>vdom.addClass('mdc-fab__icon')),
+            ...[withTitle && h('span',{ class: 'mdc-fab__label'},title)].filter(x=>x)
       ]),
     features: mdcStyle.initDynamic()
   })
@@ -5936,28 +5993,18 @@ jb.component('button.mdcIcon12', {
   })
 })
 
-jb.component('button.mdIcon', {
-  type: 'button.style,icon.style',
-  params: [
-    {id: 'icon', as: 'string', defaultValue: 'Yoga'},
-    {id: 'raisedIcon', as: 'string'}
-  ],
-  impl: customStyle({
-    template: (cmp,{title,icon,raised,raisedIcon},h) => 
-        h('div',{title, onclick: true,
-          $html: `<svg height="24" width="24"><path d="${jb.path(jb.frame,['MDIcons',icon])}"/></svg>`}),
-    css: '{width: 24px; height: 24px}'
-  })
-})
-
 jb.component('button.mdcTab', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) =>
       h('button',{ class: ['mdc-tab', raised && 'mdc-tab--active'].filter(x=>x).join(' '),tabIndex: -1, role: 'tab', onclick:  true}, [
-        h('span',{ class: 'mdc-tab__content'}, h('span',{ class: 'mdc-tab__text-label'},title)),
+        h('span#mdc-tab__content',{}, [
+          ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-tab__icon')),
+          h('span#mdc-tab__text-label',{},title),
+          ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-tab__icon'))
+        ]),
         h('span',{ class: ['mdc-tab-indicator', raised && 'mdc-tab-indicator--active'].filter(x=>x).join(' ') }, h('span',{ class: 'mdc-tab-indicator__content mdc-tab-indicator__content--underline'})),
-        h('span',{ class: 'mdc-tab__ripple'}),
+        h('span#mdc-tab__ripple'),
       ]),
     features: mdcStyle.initDynamic()
   })
@@ -5965,8 +6012,18 @@ jb.component('button.mdcTab', {
 
 jb.component('button.mdcHeader', {
   type: 'button.style',
-  impl: styleWithFeatures(button.mdcTab(), [css('width: 100%; border-bottom: 1px solid black; margin-bottom: 7px')])
+  params: [
+    {id: 'stretch', as: 'boolean'},
+  ],
+  impl: styleWithFeatures(button.mdcTab(), css(pipeline(
+    Var('contentWidth',If('%$stretch%', 'width: 100%;','')),
+    `
+    {width: 100%; border-bottom: 1px solid black; margin-bottom: 7px; padding: 0}
+    ~ .mdc-tab__content { %$contentWidth% display: flex; align-content: space-between;}
+    ~ .mdc-tab__text-label { width: 100% }
+  `)))
 })
+
 
 ;
 
@@ -5997,18 +6054,25 @@ jb.component('editableText.textarea', {
 jb.component('editableText.mdcInput', {
   type: 'editable-text.style,editable-number.style',
   params: [
-    {id: 'width', as: 'number'}
+    {id: 'width', as: 'number'},
+    {id: 'noLabel', as: 'boolean'},
+    {id: 'noRipple', as: 'boolean'},
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{}, [
-      h('div',{class: 'mdc-text-field' },[
-          h('input', { type: 'text', class: 'mdc-text-field__input', id: 'input_' + state.fieldId,
-              value: state.databind, onchange: true, onkeyup: true, onblur: true,
+    template: (cmp,{databind,fieldId,title,noLabel,noRipple,error},h) => h('div',{}, [
+      h('div',{class: ['mdc-text-field', 
+          (cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'pre')[0] && 'mdc-text-field--with-leading-icon',
+          (cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'post')[0] && 'mdc-text-field--with-trailing-icon'
+        ].filter(x=>x).join(' ') },[
+          ...(cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'pre').map(h).map(vdom=>vdom.addClass('mdc-text-field__icon mdc-text-field__icon--leading')),
+          h('input', { type: 'text', class: 'mdc-text-field__input', id: 'input_' + fieldId,
+              value: databind, onchange: true, onkeyup: true, onblur: true,
           }),
-          h('label',{class: 'mdc-floating-label', for: 'input_' + state.fieldId},state.title),
-          h('div',{class: 'mdc-line-ripple' }) 
+          ...(cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-text-field__icon mdc-text-field__icon--trailing')),
+          ...[!noLabel && h('label',{class: 'mdc-floating-label', for: 'input_' + fieldId},title() )].filter(x=>x),
+          ...[!noRipple && h('div',{class: 'mdc-line-ripple' })].filter(x=>x)
         ]),
-        h('div',{class: 'mdc-text-field-helper-line' }, state.error || '')
+        h('div',{class: 'mdc-text-field-helper-line' }, error || '')
       ]),
     css: `{ {?width: %$width%px?} } ~ .mdc-text-field-helper-line { color: red }`,
     features: [field.databindText(), mdcStyle.initDynamic()]
@@ -6020,28 +6084,13 @@ jb.component('editableText.mdcNoLabel', {
   params: [
     {id: 'width', as: 'number'}
   ],
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{class: 'mdc-text-field mdc-text-field--no-label'},
-        h('input', { class: 'mdc-text-field__input', type: 'text', value: state.databind, onchange: true, onkeyup: true, onblur: true }),
-        h('div',{class: 'mdc-line-ripple' }),
-        ),
-    css: '{ padding: 0 !important; {?width: %$width%px?} } :focus { border-color: #3F51B5; border-width: 2px}',
-    features: [field.databindText(), mdcStyle.initDynamic()]
-  })
+  impl: editableText.mdcInput({width:'%$width%', noLabel: true})
 })
 
 jb.component('editableText.mdcSearch', {
   description: 'debounced and one way binding',
   type: 'editable-text.style',
-  impl: customStyle({
-    template: (cmp,{databind, fieldId, title},h) => h('div',{class:'mdc-text-field'},[
-        h('input', { class: 'mdc-text-field__input', id: 'search_' + fieldId, type: 'text',
-            value: databind, onchange: true, onkeyup: true, onblur: true,
-        }),
-        h('label',{class: 'mdc-floating-label mdc-floating-label--float-above', for: 'search_' + fieldId}, databind ? '' : title)
-      ]),
-    features: [field.databindText(), mdcStyle.initDynamic()]
-  })
+  impl: styleWithFeatures(editableText.mdcInput({width:'%$width%', noLabel: true}), feature.icon({icon: 'search', position: 'post'}))
 })
 
 jb.component('editableText.expandable', {
@@ -6314,7 +6363,10 @@ jb.component('group.tabs', {
               style: call('tabStyle'),
               raised: '%$tabIndex% == %$selectedTab%',
               // watchRef breaks mdcTabBar animation
-              features: ctx => ctx.componentContext.params.barStyle.profile.$ !== 'group.mdcTabBar' && watchRef('%$selectedTab%')
+              features: [
+                ctx => ctx.componentContext.params.barStyle.profile.$ !== 'group.mdcTabBar' && watchRef('%$selectedTab%'),
+                ctx => ctx.run(features((ctx.vars.tab.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x)))
+              ]
             }),
             itemVariable: 'tab',
             indexVariable: 'tabIndex'
@@ -6347,7 +6399,7 @@ jb.component('group.mdcTabBar', {
 jb.component('group.accordion', {
   type: 'group.style',
   params: [
-    {id: 'titleStyle', type: 'button.style', dynamic: true, defaultValue: button.mdcHeader()},
+    {id: 'titleStyle', type: 'button.style', dynamic: true, defaultValue: button.mdcHeader(true)},
     {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: group.section()},
     {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
   ],
@@ -6366,7 +6418,8 @@ jb.component('group.accordion', {
               features: [
                 css.width('%$width%'),
                 css('{justify-content: left}'),
-                watchRef('%$selectedTab%')
+                watchRef('%$selectedTab%'),
+                ctx => ctx.run(features((ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x)))
               ]
             }),
             group({
@@ -6388,7 +6441,7 @@ jb.component('group.accordion', {
 jb.component('group.sections', {
   type: 'group.style',
   params: [
-    {id: 'titleStyle', type: 'text.style', dynamic: true, defaultValue: header.mdcHeadline5()},
+    {id: 'titleStyle', type: 'text.style', dynamic: true, defaultValue: header.mdcHeaderWithIcon()},
     {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: group.div()},
     {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
   ],
@@ -6399,7 +6452,10 @@ jb.component('group.sections', {
         genericControl: group({
           style: call('sectionStyle'),
           controls: [
-            text({text: '%$section/field/title%', style: call('titleStyle')}),
+            text({text: '%$section/field/title%', 
+              style: call('titleStyle'),
+              features: ctx => ctx.run(features((ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x)))
+            }),
             group({style: call('innerGroupStyle'), controls: '%$section%'})
           ]
         }),

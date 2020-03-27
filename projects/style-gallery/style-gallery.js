@@ -39,7 +39,7 @@ const variations = { button: { prop: 'raised', values: [true,false] }}
       genericControl: group({
         title: pipeline('%$__style%', suffix('.')),
         controls: [{$: ctrl,
-          ... (ctrl == 'editable-number' ? { databind: '%$person/age%' } : { databind: '%$person/name%' } ),
+          ... (ctrl == 'editableNumber' ? { databind: '%$person/age%' } : { databind: '%$person/name%' } ),
           title: 'title',
           text: 'hello world',
           items: '%$people%',

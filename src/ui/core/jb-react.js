@@ -165,7 +165,7 @@ function applyDeltaToDom(elem,delta) {
             }
         })
         toAppend.forEach(e=>{
-            const newChild = elem.ownerDocument.createElement(e.tag)
+            const newChild = createElement(elem.ownerDocument,e.tag)
             elem.appendChild(newChild)
             applyDeltaToDom(newChild,e)
             jb.log('appendChild',[newChild,e,elem,delta])
@@ -233,7 +233,7 @@ function render(vdom,parentElem) {
     jb.log('render',[...arguments])
     function doRender(vdom,parentElem) {
         jb.log('htmlChange',['createElement',...arguments])
-        const elem = parentElem.ownerDocument.createElement(vdom.tag)
+        const elem = createElement(parentElem.ownerDocument, vdom.tag)
         jb.entries(vdom.attributes).forEach(e=>setAtt(elem,e[0],e[1])) // filter(e=>e[0].indexOf('on') != 0 && !isAttUndefined(e[0],vdom.attributes)).
         jb.asArray(vdom.children).map(child=> doRender(child,elem)).forEach(el=>elem.appendChild(el))
         parentElem.appendChild(elem)
@@ -243,6 +243,11 @@ function render(vdom,parentElem) {
     ui.findIncludeSelf(res,'[interactive]').forEach(el=> mountInteractive(el))
     ui.garbageCollectCtxDictionary(parentElem)
     return res
+}
+
+function createElement(parent,tag) {
+    return (['svg','circle','ellipse','image','line','mesh','path','polygon','polyline','rect','text'].indexOf(tag) != -1) ?
+        parent.createElementNS("http://www.w3.org/2000/svg", tag) : parent.createElement(tag)
 }
 
 Object.assign(jb.ui, {
@@ -434,7 +439,7 @@ function mountInteractive(elem, keepState) {
             ;(elem.getAttribute('interactive') || '').split(',').filter(x=>x).forEach(op => {
                 [id, ctxId] = op.split('-')
                 const ctx = jb.ui.ctxDictOfElem(elem)[ctxId]
-                this[id] = jb.val(ctx.setVar('state',this.state).runInner(ctx.profile.value,'value','value'))
+                this[id] = jb.val(ctx.setVar('state',this.state).setVar('cmp',this).runInner(ctx.profile.value,'value','value'))
             })
             this.doRefresh && this.doRefresh()
         },

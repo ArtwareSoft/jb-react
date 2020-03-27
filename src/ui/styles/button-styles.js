@@ -127,13 +127,13 @@ jb.component('button.mdcTab', {
   impl: customStyle({
     template: (cmp,{title,raised},h) =>
       h('button',{ class: ['mdc-tab', raised && 'mdc-tab--active'].filter(x=>x).join(' '),tabIndex: -1, role: 'tab', onclick:  true}, [
-        h('span',{ class: 'mdc-tab__content'}, [
+        h('span#mdc-tab__content',{}, [
           ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-tab__icon')),
-          h('span',{ class: 'mdc-tab__text-label'},title),
+          h('span#mdc-tab__text-label',{},title),
           ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-tab__icon'))
         ]),
         h('span',{ class: ['mdc-tab-indicator', raised && 'mdc-tab-indicator--active'].filter(x=>x).join(' ') }, h('span',{ class: 'mdc-tab-indicator__content mdc-tab-indicator__content--underline'})),
-        h('span',{ class: 'mdc-tab__ripple'}),
+        h('span#mdc-tab__ripple'),
       ]),
     features: mdcStyle.initDynamic()
   })

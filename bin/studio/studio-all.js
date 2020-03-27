@@ -3377,7 +3377,13 @@ class VNode {
         if (children != null && !Array.isArray(children)) children = [children]
         if (children != null)
             children = children.filter(x=>x).map(item=> typeof item == 'string' ? jb.ui.h('span',{$text: item}) : item)
-        Object.assign(this,{...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,attributes,children})
+        
+        this.attributes = attributes
+        if (typeof cmpOrTag === 'string' && cmpOrTag.indexOf('#') != -1) {
+            this.addClass(cmpOrTag.split('#').pop())
+            cmpOrTag = cmpOrTag.split('#')[0]
+        }
+        Object.assign(this,{...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,children})
     }
     getAttribute(att) {
         return (this.attributes || {})[att]
@@ -3387,6 +3393,10 @@ class VNode {
         this.attributes[att] = val
     }
     addClass(clz) {
+        if (clz.indexOf(' ') != -1) {
+            clz.split(' ').filter(x=>x).forEach(cl=>this.addClass(cl))
+            return this
+        }
         this.attributes = this.attributes || {};
         if (this.attributes.class === undefined) this.attributes.class = ''
         if (clz && this.attributes.class.split(' ').indexOf(clz) == -1)
@@ -3904,7 +3914,7 @@ ui.propCounter = 0
 const cssSelectors_hash = ui.cssSelectors_hash = {};
 const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,this.ctx) }}
 const lifeCycle = new Set('init,componentDidMount,componentWillUpdate,componentDidUpdate,destroy,extendCtx,templateModifier,extendItem'.split(','))
-const arrayProps = new Set('enrichField,dynamicCss,watchAndCalcModelProp,staticCssLines,defHandler,interactiveProp,calcProp'.split(','))
+const arrayProps = new Set('enrichField,dynamicCss,icon,watchAndCalcModelProp,staticCssLines,defHandler,interactiveProp,calcProp'.split(','))
 const singular = new Set('template,calcRenderProps,toolbar,styleCtx,calcHash,ctxForPick'.split(','))
 
 class JbComponent {
@@ -3949,7 +3959,9 @@ class JbComponent {
                 this.calcProp.filter(p=>p.id == toFilter.id && p.priority > toFilter.priority).length == 0)
         filteredPropsByPriority.sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
             .forEach(prop=> { 
-                const value = jb.val( tryWrapper(() => prop.value(this.calcCtx),`renderProp:${prop.id}`))
+                const value = jb.val( tryWrapper(() => 
+                    prop.value.profile === null ? this.calcCtx.vars.$model[prop.id] : prop.value(this.calcCtx),
+                `renderProp:${prop.id}`))
                 Object.assign(this.renderProps, { ...(prop.id == '$props' ? value : { [prop.id]: value })})
             })
         Object.assign(this.renderProps,(this.styleCtx || {}).params, this.state);
@@ -4433,8 +4445,8 @@ jb.component('calcProp', {
   description: 'define a variable to be used in the rendering calculation process',
   params: [
     {id: 'id', as: 'string', mandatory: true},
-    {id: 'value', mandatory: true, dynamic: true},
-    {id: 'priority', as: 'number', defaultValue: 1, description: 'if same prop was defined elsewhere who will win. range 1-1000'},
+    {id: 'value', mandatory: true, dynamic: true, description: 'when empty value is taken from model'},
+    {id: 'priority', as: 'number', defaultValue: 1, description: 'if same prop was defined elsewhere decides who will override. range 1-1000'},
     {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'}
   ],
   impl: ctx => ({calcProp: {... ctx.params, index: jb.ui.propCounter++}})
@@ -5214,7 +5226,8 @@ jb.component('text.span', {
   })
 }))
 
-;[1,2,3,4,5,6].map(level=>jb.component(`header.mdc-headline${level}`, {
+
+;[1,2,3,4,5,6].map(level=>jb.component(`header.mdcHeadline${level}`, {
   type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--headline${level}`},text),
@@ -5222,7 +5235,7 @@ jb.component('text.span', {
   })
 }))
 
-;[1,2].map(level=>jb.component(`header.mdc-subtitle${level}`, {
+;[1,2].map(level=>jb.component(`header.mdcSubtitle${level}`, {
   type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--subtitle${level}`},text),
@@ -5230,7 +5243,24 @@ jb.component('text.span', {
   })
 }))
 
-;[1,2].map(level=>jb.component(`text.mdc-body${level}`, {
+jb.component('header.mdcHeaderWithIcon', {
+  type: 'text.style',
+  params: [
+    {id: 'level', options: '1,2,3,4,5,6', as: 'string', defaultValue: '1'}
+  ],
+  impl: customStyle({
+    template: (cmp,{text,level},h) =>
+        h(`h${level}`,{ class: 'mdc-tab__content'}, [
+          ...jb.ui.chooseIconWithRaised(cmp.icon).map(h),
+          h('span',{ class: 'mdc-tab__text-label'},text),
+          ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-tab__icon'))
+        ]),
+    css: '{justify-content: initial}',
+    features: text.bindText()
+  })
+})
+
+;[1,2].map(level=>jb.component(`text.mdcBody${level}`, {
   type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--body${level}`},text),
@@ -5510,7 +5540,7 @@ jb.component('image.img', {
           {?height: %$height%; ?}
       }`
     ),
-    features: calcProp({id: 'url', value: '%$$model/url%'})
+    features: calcProp('url')
   })
 });
 
@@ -5523,7 +5553,7 @@ jb.component('button', {
     {id: 'title', as: 'ref', mandatory: true, templateValue: 'click me', dynamic: true},
     {id: 'action', type: 'action', mandatory: true, dynamic: true},
     {id: 'style', type: 'button.style', defaultValue: button.mdc(), dynamic: true},
-    {id: 'raised', as: 'boolean', dynamic: true, type: 'boolean'},
+    {id: 'raised', as: 'boolean', dynamic: true },
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx, ctx.run(features(
@@ -5593,10 +5623,10 @@ jb.component('field.databind', {
   impl: features(
     If(
         '%$oneWay%',
-        calcProp({id: 'databind', value: '%$$model/databind%'}),
+        calcProp('databind','%$$model/databind%'),
         watchAndCalcModelProp('databind')
       ),
-    calcProp({id: 'title', value: '%$$model/title%'}),
+    calcProp('title'),
     calcProp({id: 'fieldId', value: () => jb.ui.field_id_counter++}),
     defHandler(
         'onblurHandler',
@@ -7066,7 +7096,7 @@ jb.component('menu.action', {
   params: [
     {id: 'title', as: 'string', dynamic: true, mandatory: true},
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
-    {id: 'icon', as: 'string'},
+    {id: 'icon', type: 'icon' },
     {id: 'shortcut', as: 'string'},
     {id: 'showCondition', type: 'boolean', as: 'boolean', defaultValue: true}
   ],
@@ -7342,12 +7372,13 @@ jb.component('menu.selection', {
 jb.component('menuStyle.optionLine', {
   type: 'menu-option.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{
+    template: (cmp,{icon,title,shortcut},h) => h('div',{
 				class: 'line noselect', onmousedown: 'action'
 			},[
-				h('i',{class:'material-icons'},state.icon),
-				h('span',{class:'title'},state.title),
-				h('span',{class:'shortcut'},state.shortcut),
+        h(cmp.ctx.run({...icon, $: 'control.icon'})),
+				//h('i',{class:'material-icons'},icon),
+				h('span',{class:'title'},title),
+				h('span',{class:'shortcut'},shortcut),
         h('div',{class: 'mdc-line-ripple' }),
 		]),
     css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
@@ -7357,19 +7388,6 @@ jb.component('menuStyle.optionLine', {
 						>.title { display: block; text-align: left; white-space: nowrap; }
 				>.shortcut { margin-left: auto; text-align: right; padding-right: 15px }`,
     features: [menu.initMenuOption(), mdc.rippleEffect()]
-  })
-})
-
-jb.component('menu.optionAsIcon24', {
-  type: 'menu-option.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{
-				class: 'line noselect', onclick: true, title: state.title
-			},[
-				h('i',{class:'material-icons'},state.icon),
-		]),
-    css: `{ display: flex; cursor: pointer; height: 24px}
-				>i { width: 24px; padding-left: 3px; padding-top: 3px; font-size:16px; }`
   })
 })
 
@@ -7600,30 +7618,70 @@ jb.component('theme.materialDesign', {
 })
 ;
 
-jb.ns('icon')
+jb.ns('icon,control')
 
-jb.component('materialIcon', {
+jb.component('control.icon', {
   type: 'control',
   category: 'control:50',
   params: [
     {id: 'icon', as: 'string', mandatory: true},
     {id: 'title', as: 'string'},
+    {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
+    {id: 'scale', as: 'number', defaultValue: 1 },
     {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx => jb.ui.ctrl(ctx, calcProp('icon','%$$model/icon%'))
+  impl: ctx => jb.ui.ctrl(ctx, features(
+    calcProp('icon'), calcProp('type'), calcProp('scale'), calcProp('title')
+  ))
+})
+
+jb.component('icon', {
+  type: 'icon',
+  params: [
+    {id: 'icon', as: 'string', mandatory: true},
+    {id: 'title', as: 'string'},
+    {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
+    {id: 'scale', as: 'number', defaultValue: 1 },
+    {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx => ctx.params
 })
 
 jb.component('icon.material', {
   type: 'icon.style',
-  impl: customStyle(
-    (cmp,{icon},h) => h('i',{ class: 'material-icons' }, icon)
-  )
+  impl: customStyle({
+    template: (cmp,{icon,type,title,scale},h) => type == 'mdc' ? h('i',
+    { class: 'material-icons', title, onclick: true, style: {width: '24px', height: '24px', transform: `scale(${scale}) translate(${(scale-1)*12}px,${(scale-1)*12}px)` } }
+      , icon) 
+      : h('div',{title, onclick: true, style: { transform: `translate(${(scale-1)*12}px,${(scale-1)*12}px)`},
+        $html: `<svg width="24" height="24" transform="scale(${scale})"><path d="${jb.path(jb.frame,['MDIcons',icon])}"/></svg>`}),
+  })
+})
+
+jb.component('feature.icon', {
+  type: 'feature',
+  category: 'control:50',
+  params: [
+    {id: 'icon', as: 'string', mandatory: true},
+    {id: 'position', as: 'string', options: ',pre,post,raised', defaultValue: '' },
+    {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
+    {id: 'scale', as: 'string', defaultValue: 1 },
+    {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx => ({
+    icon: jb.ui.ctrl(ctx, features(
+      calcProp('icon'), calcProp('type'), calcProp('scale'), calcProp('title'),
+      calcProp('iconPosition','%$$model/position%')
+    ))
+  })
 })
 
 ;
 
-jb.ns('slider')
+jb.ns('slider,mdcStyle')
 
 jb.component('editableNumber.sliderNoText', {
   type: 'editable-number.style',
@@ -7680,6 +7738,32 @@ jb.component('editableNumber.slider', {
     }),
     'editableNumberModel'
   )
+})
+
+jb.component('editableNumber.mdcSlider', {
+  type: 'editable-number.style',
+  params: [
+    { id: 'width', as: 'number', defaultValue: 100 },
+    { id: 'height', as: 'number', defaultValue: 100 },
+    { id: 'cx', as: 'number', defaultValue: 10 },
+    { id: 'cy', as: 'number', defaultValue: 10 },
+    { id: 'r', as: 'number', defaultValue: 8 },
+  ],
+  impl: customStyle({
+    template: (cmp,{title,min,max,databind,width, height,cx,cy,r},h) =>
+      h('div#mdc-slider mdc-slider--discrete',{tabIndex: -1, role: 'slider', mousemove: 'onchangeHandler',
+        'aria-valuemin': min, 'aria-valuemax': max, 'aria-valuenow': databind, 'aria-label': title}, [
+        h('div#mdc-slider__track-container',{}, h('div#mdc-slider__track')),
+        h('div#mdc-slider__thumb-container',{}, h('div#mdc-slider__pin',{},h('span#mdc-slider__pin-value-marker'))),
+        h('svg#mdc-slider__thumb',{ width, height}, h('circle',{cx,cy,r})),
+        h('div#mdc-slider__focus-ring')
+      ]),
+    features: [
+      mdcStyle.initDynamic(),
+      field.databind(true),
+      slider.init(),
+    ]      
+  })
 })
 
 jb.component('slider.init', {
@@ -7952,6 +8036,8 @@ jb.component('mdcStyle.initDynamic', {
         cmp.mdc_comps.push(new jb.ui.material.MDCChipSet(cmp.base))
       else if (cmp.base.classList.contains('mdc-tab-bar'))
         cmp.mdc_comps.push(new jb.ui.material.MDCTabBar(cmp.base))
+      else if (cmp.base.classList.contains('mdc-slider'))
+        cmp.mdc_comps.push(new jb.ui.material.MDCSlider(cmp.base))
     },
     destroy: cmp => (cmp.mdc_comps || []).forEach(mdc_cmp=>mdc_cmp.destroy())
   })
@@ -7984,6 +8070,16 @@ jb.component('label.mdcRippleEffect', {
 
 
 ;
+
+jb.ui.chooseIconWithRaised = (icons,raised) => {
+  if (!icons) return []
+  const raisedIcon = icons.filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'raised')[0]
+  const otherIcons = (raisedIcon && icons.filter(cmp=>cmp && cmp.ctx.vars.$model.position != 'raised') || icons)
+    .filter(cmp=>cmp && cmp.ctx.vars.$model.position != 'post')
+  if (raised) 
+    return raisedIcon ? [raisedIcon] : otherIcons
+  return otherIcons
+}
 
 jb.component('button.href', {
   type: 'button.style',
@@ -8025,14 +8121,32 @@ jb.component('button.native', {
 jb.component('button.mdc', {
   type: 'button.style',
   params: [
-    {id: 'ripple', as: 'boolean', defaultValue: true, type: 'boolean'}
+    {id: 'noRipple', as: 'boolean'},
+    {id: 'noTitle', as: 'boolean'}
   ],
   impl: customStyle({
-    template: (cmp,{title,raised},h) => h('button',{
+    template: (cmp,{title,raised,noRipple,noTitle},h) => h('button',{
       class: ['mdc-button',raised && 'raised mdc-button--raised'].filter(x=>x).join(' '), onclick: true},[
-      h('div',{class:'mdc-button__ripple'}),
-      h('span',{class:'mdc-button__label'},title),
+      ...[!noRipple && h('div',{class:'mdc-button__ripple'})],
+      ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-button__icon')),
+      ...[!noTitle && h('span',{class:'mdc-button__label'},title)],
+      ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-button__icon')),
     ]),
+    features: mdcStyle.initDynamic()
+  })
+})
+
+jb.component('button.mdcChipAction', {
+  type: 'button.style',
+  impl: customStyle({
+    template: (cmp,{title,raised},h) =>
+    h('div',{class: 'mdc-chip-set mdc-chip-set--choice'},
+      h('div',{ class: ['mdc-chip',raised && 'mdc-chip--selected raised'].filter(x=>x).join(' ') }, [
+        h('div',{ class: 'mdc-chip__ripple'}),
+        ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-chip__icon mdc-chip__icon--leading')),
+        h('span',{ role: 'gridcell'}, h('span', {role: 'button', tabindex: -1, class: 'mdc-chip__text'}, title )),
+        ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-chip__icon mdc-chip__icon--trailing')),
+    ])),
     features: mdcStyle.initDynamic()
   })
 })
@@ -8040,87 +8154,30 @@ jb.component('button.mdc', {
 jb.component('button.mdcIcon', {
   type: 'button.style,icon.style',
   params: [
-    {id: 'icon', as: 'string', defaultValue: 'bookmark_border'},
-    {id: 'raisedIcon', as: 'string'}
+    {id: 'icon', type: 'icon', defaultValue: icon('plus') },
+    {id: 'raisedIcon', type: 'icon' }
   ],
-  impl: customStyle({
-    template: (cmp,{title,icon,raised,raisedIcon},h) => h('button',{
-          class: ['mdc-icon-button material-icons',raised && 'raised mdc-icon-button--on'].filter(x=>x).join(' '),
-          title, tabIndex: -1, onclick:  true},[
-            h('i',{class:'material-icons mdc-icon-button__icon mdc-icon-button__icon--on'}, raisedIcon || icon),
-            h('i',{class:'material-icons mdc-icon-button__icon '}, icon),
-        ]),
-    css: '{ border-radius: 2px; padding: 0; width: 24px; height: 24px;}',
-    features: mdcStyle.initDynamic()
-  })
-})
-
-jb.component('button.mdcChipAction', {
-  type: 'button.style',
-  params: [
-
-  ],
-  impl: customStyle({
-    template: (cmp,{title,raised},h) =>
-    h('div',{class: 'mdc-chip-set mdc-chip-set--choice'},
-      h('div',{ class: ['mdc-chip',raised && 'mdc-chip--selected raised'].filter(x=>x).join(' ') }, [
-        h('div',{ class: 'mdc-chip__ripple'}),
-        h('span',{ role: 'gridcell'}, h('span', {role: 'button', tabindex: -1, class: 'mdc-chip__text'}, title )),
-    ])),
-    features: mdcStyle.initDynamic()
-  })
-})
-
-jb.component('button.mdcChipWithIcons', {
-  type: 'button.style,icon.style',
-  params: [
-    {id: 'leadingIcon', as: 'string', defaultValue: 'code'},
-    {id: 'trailingIcon', as: 'string', defaultValue: 'code'}
-  ],
-  impl: customStyle({
-    template: (cmp,{title,raised,leadingIcon,trailingIcon},h) =>
-    h('div',{class: 'mdc-chip-set mdc-chip-set--choice'},
-      h('div',{ class: ['mdc-chip',raised && 'mdc-chip--selected raised'].filter(x=>x).join(' ') }, [
-        h('div',{ class: 'mdc-chip__ripple'}),
-        ...(leadingIcon ? [h('i',{class:'material-icons mdc-chip__icon mdc-chip__icon--leading'},leadingIcon)] : []),
-        h('span',{ role: 'gridcell'}, h('span', {role: 'button', tabindex: -1, class: 'mdc-chip__text'}, title )),
-        ...(trailingIcon ? [h('i',{class:'material-icons mdc-chip__icon mdc-chip__icon--trailing'},trailingIcon)] : []),
-    ])),
-    features: mdcStyle.initDynamic()
-  })
+  impl: styleWithFeatures(button.mdcFloatingAction({withTitle: false, mini: true}), features(
+    ctx => ctx.run({...ctx.componentContext.params.icon, $: 'feature.icon'}),
+    ctx => [ctx.componentContext.params.raisedIcon && ctx.run({...ctx.componentContext.params.raisedIcon, $: 'feature.icon', position: 'raised'})].filter(x=>x),
+    css('{ box-shadow: 0 0; border-radius: 2px !important; width: 24px; height: 24px; padding: 0; color: black; background-color: transparent;}')
+  ))
 })
 
 jb.component('button.mdcFloatingAction', {
   type: 'button.style,icon.style',
   description: 'fab icon',
   params: [
-    {id: 'icon', as: 'string', defaultValue: 'code'},
-    {id: 'mini', as: 'boolean', type: 'boolean'}
+    {id: 'mini', as: 'boolean'},
+    {id: 'withTitle', as: 'boolean'}
   ],
   impl: customStyle({
-    template: (cmp,{title,icon,mini,raised},h) =>
+    template: (cmp,{title,withTitle,mini,raised},h) =>
       h('button',{ class: ['mdc-fab',raised && 'raised mdc-icon-button--on',mini && 'mdc-fab--mini'].filter(x=>x).join(' ') ,
           title, tabIndex: -1, onclick:  true}, [
             h('div',{ class: 'mdc-fab__ripple'}),
-            h('span',{ class: 'mdc-fab__icon material-icons'},icon),
-      ]),
-    features: mdcStyle.initDynamic()
-  })
-})
-
-jb.component('button.mdcFloatingWithTitle', {
-  type: 'button.style,icon.style',
-  params: [
-    {id: 'icon', as: 'string', defaultValue: 'code'},
-    {id: 'mini', as: 'boolean', type: 'boolean'}
-  ],
-  impl: customStyle({
-    template: (cmp,{title,icon,mini,raised},h) =>
-      h('button',{ class: ['mdc-fab mdc-fab--extended',raised && 'mdc-icon-button--on',mini && 'mdc-fab--mini'].filter(x=>x).join(' ') ,
-          title, tabIndex: -1, onclick:  true}, [
-        h('div',{ class: 'mdc-fab__ripple'}),
-        ...(icon ? [h('span',{ class: 'mdc-fab__icon material-icons'},icon)]: []),
-        h('span',{ class: 'mdc-fab__label'},title),
+            ...jb.ui.chooseIconWithRaised(cmp.icon,raised).filter(x=>x).map(h).map(vdom=>vdom.addClass('mdc-fab__icon')),
+            ...[withTitle && h('span',{ class: 'mdc-fab__label'},title)].filter(x=>x)
       ]),
     features: mdcStyle.initDynamic()
   })
@@ -8138,28 +8195,18 @@ jb.component('button.mdcIcon12', {
   })
 })
 
-jb.component('button.mdIcon', {
-  type: 'button.style,icon.style',
-  params: [
-    {id: 'icon', as: 'string', defaultValue: 'Yoga'},
-    {id: 'raisedIcon', as: 'string'}
-  ],
-  impl: customStyle({
-    template: (cmp,{title,icon,raised,raisedIcon},h) => 
-        h('div',{title, onclick: true,
-          $html: `<svg height="24" width="24"><path d="${jb.path(jb.frame,['MDIcons',icon])}"/></svg>`}),
-    css: '{width: 24px; height: 24px}'
-  })
-})
-
 jb.component('button.mdcTab', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) =>
       h('button',{ class: ['mdc-tab', raised && 'mdc-tab--active'].filter(x=>x).join(' '),tabIndex: -1, role: 'tab', onclick:  true}, [
-        h('span',{ class: 'mdc-tab__content'}, h('span',{ class: 'mdc-tab__text-label'},title)),
+        h('span#mdc-tab__content',{}, [
+          ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-tab__icon')),
+          h('span#mdc-tab__text-label',{},title),
+          ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-tab__icon'))
+        ]),
         h('span',{ class: ['mdc-tab-indicator', raised && 'mdc-tab-indicator--active'].filter(x=>x).join(' ') }, h('span',{ class: 'mdc-tab-indicator__content mdc-tab-indicator__content--underline'})),
-        h('span',{ class: 'mdc-tab__ripple'}),
+        h('span#mdc-tab__ripple'),
       ]),
     features: mdcStyle.initDynamic()
   })
@@ -8167,8 +8214,18 @@ jb.component('button.mdcTab', {
 
 jb.component('button.mdcHeader', {
   type: 'button.style',
-  impl: styleWithFeatures(button.mdcTab(), [css('width: 100%; border-bottom: 1px solid black; margin-bottom: 7px')])
+  params: [
+    {id: 'stretch', as: 'boolean'},
+  ],
+  impl: styleWithFeatures(button.mdcTab(), css(pipeline(
+    Var('contentWidth',If('%$stretch%', 'width: 100%;','')),
+    `
+    {width: 100%; border-bottom: 1px solid black; margin-bottom: 7px; padding: 0}
+    ~ .mdc-tab__content { %$contentWidth% display: flex; align-content: space-between;}
+    ~ .mdc-tab__text-label { width: 100% }
+  `)))
 })
+
 
 ;
 
@@ -8199,18 +8256,25 @@ jb.component('editableText.textarea', {
 jb.component('editableText.mdcInput', {
   type: 'editable-text.style,editable-number.style',
   params: [
-    {id: 'width', as: 'number'}
+    {id: 'width', as: 'number'},
+    {id: 'noLabel', as: 'boolean'},
+    {id: 'noRipple', as: 'boolean'},
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{}, [
-      h('div',{class: 'mdc-text-field' },[
-          h('input', { type: 'text', class: 'mdc-text-field__input', id: 'input_' + state.fieldId,
-              value: state.databind, onchange: true, onkeyup: true, onblur: true,
+    template: (cmp,{databind,fieldId,title,noLabel,noRipple,error},h) => h('div',{}, [
+      h('div',{class: ['mdc-text-field', 
+          (cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'pre')[0] && 'mdc-text-field--with-leading-icon',
+          (cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'post')[0] && 'mdc-text-field--with-trailing-icon'
+        ].filter(x=>x).join(' ') },[
+          ...(cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'pre').map(h).map(vdom=>vdom.addClass('mdc-text-field__icon mdc-text-field__icon--leading')),
+          h('input', { type: 'text', class: 'mdc-text-field__input', id: 'input_' + fieldId,
+              value: databind, onchange: true, onkeyup: true, onblur: true,
           }),
-          h('label',{class: 'mdc-floating-label', for: 'input_' + state.fieldId},state.title),
-          h('div',{class: 'mdc-line-ripple' }) 
+          ...(cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-text-field__icon mdc-text-field__icon--trailing')),
+          ...[!noLabel && h('label',{class: 'mdc-floating-label', for: 'input_' + fieldId},title() )].filter(x=>x),
+          ...[!noRipple && h('div',{class: 'mdc-line-ripple' })].filter(x=>x)
         ]),
-        h('div',{class: 'mdc-text-field-helper-line' }, state.error || '')
+        h('div',{class: 'mdc-text-field-helper-line' }, error || '')
       ]),
     css: `{ {?width: %$width%px?} } ~ .mdc-text-field-helper-line { color: red }`,
     features: [field.databindText(), mdcStyle.initDynamic()]
@@ -8222,28 +8286,13 @@ jb.component('editableText.mdcNoLabel', {
   params: [
     {id: 'width', as: 'number'}
   ],
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{class: 'mdc-text-field mdc-text-field--no-label'},
-        h('input', { class: 'mdc-text-field__input', type: 'text', value: state.databind, onchange: true, onkeyup: true, onblur: true }),
-        h('div',{class: 'mdc-line-ripple' }),
-        ),
-    css: '{ padding: 0 !important; {?width: %$width%px?} } :focus { border-color: #3F51B5; border-width: 2px}',
-    features: [field.databindText(), mdcStyle.initDynamic()]
-  })
+  impl: editableText.mdcInput({width:'%$width%', noLabel: true})
 })
 
 jb.component('editableText.mdcSearch', {
   description: 'debounced and one way binding',
   type: 'editable-text.style',
-  impl: customStyle({
-    template: (cmp,{databind, fieldId, title},h) => h('div',{class:'mdc-text-field'},[
-        h('input', { class: 'mdc-text-field__input', id: 'search_' + fieldId, type: 'text',
-            value: databind, onchange: true, onkeyup: true, onblur: true,
-        }),
-        h('label',{class: 'mdc-floating-label mdc-floating-label--float-above', for: 'search_' + fieldId}, databind ? '' : title)
-      ]),
-    features: [field.databindText(), mdcStyle.initDynamic()]
-  })
+  impl: styleWithFeatures(editableText.mdcInput({width:'%$width%', noLabel: true}), feature.icon({icon: 'search', position: 'post'}))
 })
 
 jb.component('editableText.expandable', {
@@ -8516,7 +8565,10 @@ jb.component('group.tabs', {
               style: call('tabStyle'),
               raised: '%$tabIndex% == %$selectedTab%',
               // watchRef breaks mdcTabBar animation
-              features: ctx => ctx.componentContext.params.barStyle.profile.$ !== 'group.mdcTabBar' && watchRef('%$selectedTab%')
+              features: [
+                ctx => ctx.componentContext.params.barStyle.profile.$ !== 'group.mdcTabBar' && watchRef('%$selectedTab%'),
+                ctx => ctx.run(features((ctx.vars.tab.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x)))
+              ]
             }),
             itemVariable: 'tab',
             indexVariable: 'tabIndex'
@@ -8549,7 +8601,7 @@ jb.component('group.mdcTabBar', {
 jb.component('group.accordion', {
   type: 'group.style',
   params: [
-    {id: 'titleStyle', type: 'button.style', dynamic: true, defaultValue: button.mdcHeader()},
+    {id: 'titleStyle', type: 'button.style', dynamic: true, defaultValue: button.mdcHeader(true)},
     {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: group.section()},
     {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
   ],
@@ -8568,7 +8620,8 @@ jb.component('group.accordion', {
               features: [
                 css.width('%$width%'),
                 css('{justify-content: left}'),
-                watchRef('%$selectedTab%')
+                watchRef('%$selectedTab%'),
+                ctx => ctx.run(features((ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x)))
               ]
             }),
             group({
@@ -8590,7 +8643,7 @@ jb.component('group.accordion', {
 jb.component('group.sections', {
   type: 'group.style',
   params: [
-    {id: 'titleStyle', type: 'text.style', dynamic: true, defaultValue: header.mdcHeadline5()},
+    {id: 'titleStyle', type: 'text.style', dynamic: true, defaultValue: header.mdcHeaderWithIcon()},
     {id: 'sectionStyle', type: 'group.style', dynamic: true, defaultValue: group.div()},
     {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
   ],
@@ -8601,7 +8654,10 @@ jb.component('group.sections', {
         genericControl: group({
           style: call('sectionStyle'),
           controls: [
-            text({text: '%$section/field/title%', style: call('titleStyle')}),
+            text({text: '%$section/field/title%', 
+              style: call('titleStyle'),
+              features: ctx => ctx.run(features((ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x)))
+            }),
             group({style: call('innerGroupStyle'), controls: '%$section%'})
           ]
         }),
@@ -27774,6 +27830,102 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) *
 
 /***/ }),
 
+/***/ "./node_modules/@material/slider/component.js":
+/*!****************************************************!*\
+  !*** ./node_modules/@material/slider/component.js ***!
+  \****************************************************/
+/*! exports provided: MDCSlider */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCSlider\", function() { return MDCSlider; });\n/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ \"./node_modules/tslib/tslib.es6.js\");\n/* harmony import */ var _material_base_component__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/base/component */ \"./node_modules/@material/slider/node_modules/@material/base/component.js\");\n/* harmony import */ var _material_dom_events__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @material/dom/events */ \"./node_modules/@material/slider/node_modules/@material/dom/events.js\");\n/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./constants */ \"./node_modules/@material/slider/constants.js\");\n/* harmony import */ var _foundation__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./foundation */ \"./node_modules/@material/slider/foundation.js\");\n/**\n * @license\n * Copyright 2017 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\n\n\nvar MDCSlider = /** @class */ (function (_super) {\n    tslib__WEBPACK_IMPORTED_MODULE_0__[\"__extends\"](MDCSlider, _super);\n    function MDCSlider() {\n        return _super !== null && _super.apply(this, arguments) || this;\n    }\n    MDCSlider.attachTo = function (root) {\n        return new MDCSlider(root);\n    };\n    Object.defineProperty(MDCSlider.prototype, \"value\", {\n        get: function () {\n            return this.foundation_.getValue();\n        },\n        set: function (value) {\n            this.foundation_.setValue(value);\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCSlider.prototype, \"min\", {\n        get: function () {\n            return this.foundation_.getMin();\n        },\n        set: function (min) {\n            this.foundation_.setMin(min);\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCSlider.prototype, \"max\", {\n        get: function () {\n            return this.foundation_.getMax();\n        },\n        set: function (max) {\n            this.foundation_.setMax(max);\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCSlider.prototype, \"step\", {\n        get: function () {\n            return this.foundation_.getStep();\n        },\n        set: function (step) {\n            this.foundation_.setStep(step);\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCSlider.prototype, \"disabled\", {\n        get: function () {\n            return this.foundation_.isDisabled();\n        },\n        set: function (disabled) {\n            this.foundation_.setDisabled(disabled);\n        },\n        enumerable: true,\n        configurable: true\n    });\n    MDCSlider.prototype.initialize = function () {\n        this.thumbContainer_ = this.root_.querySelector(_constants__WEBPACK_IMPORTED_MODULE_3__[\"strings\"].THUMB_CONTAINER_SELECTOR);\n        this.track_ =\n            this.root_.querySelector(_constants__WEBPACK_IMPORTED_MODULE_3__[\"strings\"].TRACK_SELECTOR);\n        this.pinValueMarker_ = this.root_.querySelector(_constants__WEBPACK_IMPORTED_MODULE_3__[\"strings\"].PIN_VALUE_MARKER_SELECTOR);\n        this.trackMarkerContainer_ = this.root_.querySelector(_constants__WEBPACK_IMPORTED_MODULE_3__[\"strings\"].TRACK_MARKER_CONTAINER_SELECTOR);\n    };\n    MDCSlider.prototype.getDefaultFoundation = function () {\n        var _this = this;\n        // DO NOT INLINE this variable. For backward compatibility, foundations take\n        // a Partial<MDCFooAdapter>. To ensure we don't accidentally omit any\n        // methods, we need a separate, strongly typed adapter variable.\n        // tslint:disable:object-literal-sort-keys Methods should be in the same\n        // order as the adapter interface.\n        var adapter = {\n            hasClass: function (className) { return _this.root_.classList.contains(className); },\n            addClass: function (className) { return _this.root_.classList.add(className); },\n            removeClass: function (className) { return _this.root_.classList.remove(className); },\n            getAttribute: function (name) { return _this.root_.getAttribute(name); },\n            setAttribute: function (name, value) { return _this.root_.setAttribute(name, value); },\n            removeAttribute: function (name) { return _this.root_.removeAttribute(name); },\n            computeBoundingRect: function () { return _this.root_.getBoundingClientRect(); },\n            getTabIndex: function () { return _this.root_.tabIndex; },\n            registerInteractionHandler: function (evtType, handler) {\n                return _this.listen(evtType, handler, Object(_material_dom_events__WEBPACK_IMPORTED_MODULE_2__[\"applyPassive\"])());\n            },\n            deregisterInteractionHandler: function (evtType, handler) {\n                return _this.unlisten(evtType, handler, Object(_material_dom_events__WEBPACK_IMPORTED_MODULE_2__[\"applyPassive\"])());\n            },\n            registerThumbContainerInteractionHandler: function (evtType, handler) {\n                _this.thumbContainer_.addEventListener(evtType, handler, Object(_material_dom_events__WEBPACK_IMPORTED_MODULE_2__[\"applyPassive\"])());\n            },\n            deregisterThumbContainerInteractionHandler: function (evtType, handler) {\n                _this.thumbContainer_.removeEventListener(evtType, handler, Object(_material_dom_events__WEBPACK_IMPORTED_MODULE_2__[\"applyPassive\"])());\n            },\n            registerBodyInteractionHandler: function (evtType, handler) {\n                return document.body.addEventListener(evtType, handler);\n            },\n            deregisterBodyInteractionHandler: function (evtType, handler) {\n                return document.body.removeEventListener(evtType, handler);\n            },\n            registerResizeHandler: function (handler) {\n                return window.addEventListener('resize', handler);\n            },\n            deregisterResizeHandler: function (handler) {\n                return window.removeEventListener('resize', handler);\n            },\n            notifyInput: function () { return _this.emit(_constants__WEBPACK_IMPORTED_MODULE_3__[\"strings\"].INPUT_EVENT, _this); },\n            notifyChange: function () { return _this.emit(_constants__WEBPACK_IMPORTED_MODULE_3__[\"strings\"].CHANGE_EVENT, _this); },\n            setThumbContainerStyleProperty: function (propertyName, value) {\n                _this.thumbContainer_.style.setProperty(propertyName, value);\n            },\n            setTrackStyleProperty: function (propertyName, value) {\n                return _this.track_.style.setProperty(propertyName, value);\n            },\n            setMarkerValue: function (value) { return _this.pinValueMarker_.innerText =\n                value.toLocaleString(); },\n            setTrackMarkers: function (step, max, min) {\n                var stepStr = step.toLocaleString();\n                var maxStr = max.toLocaleString();\n                var minStr = min.toLocaleString();\n                // keep calculation in css for better rounding/subpixel behavior\n                var markerAmount = \"((\" + maxStr + \" - \" + minStr + \") / \" + stepStr + \")\";\n                var markerWidth = \"2px\";\n                var markerBkgdImage = \"linear-gradient(to right, currentColor \" + markerWidth + \", transparent 0)\";\n                var markerBkgdLayout = \"0 center / calc((100% - \" + markerWidth + \") / \" + markerAmount + \") 100% repeat-x\";\n                var markerBkgdShorthand = markerBkgdImage + \" \" + markerBkgdLayout;\n                _this.trackMarkerContainer_.style.setProperty('background', markerBkgdShorthand);\n            },\n            isRTL: function () { return getComputedStyle(_this.root_).direction === 'rtl'; },\n        };\n        // tslint:enable:object-literal-sort-keys\n        return new _foundation__WEBPACK_IMPORTED_MODULE_4__[\"MDCSliderFoundation\"](adapter);\n    };\n    MDCSlider.prototype.initialSyncWithDOM = function () {\n        var origValueNow = this.parseFloat_(this.root_.getAttribute(_constants__WEBPACK_IMPORTED_MODULE_3__[\"strings\"].ARIA_VALUENOW), this.value);\n        var min = this.parseFloat_(this.root_.getAttribute(_constants__WEBPACK_IMPORTED_MODULE_3__[\"strings\"].ARIA_VALUEMIN), this.min);\n        var max = this.parseFloat_(this.root_.getAttribute(_constants__WEBPACK_IMPORTED_MODULE_3__[\"strings\"].ARIA_VALUEMAX), this.max);\n        // min and max need to be set in the right order to avoid throwing an error\n        // when the new min is greater than the default max.\n        if (min >= this.max) {\n            this.max = max;\n            this.min = min;\n        }\n        else {\n            this.min = min;\n            this.max = max;\n        }\n        this.step = this.parseFloat_(this.root_.getAttribute(_constants__WEBPACK_IMPORTED_MODULE_3__[\"strings\"].STEP_DATA_ATTR), this.step);\n        this.value = origValueNow;\n        this.disabled =\n            (this.root_.hasAttribute(_constants__WEBPACK_IMPORTED_MODULE_3__[\"strings\"].ARIA_DISABLED) &&\n                this.root_.getAttribute(_constants__WEBPACK_IMPORTED_MODULE_3__[\"strings\"].ARIA_DISABLED) !== 'false');\n        this.foundation_.setupTrackMarker();\n    };\n    MDCSlider.prototype.layout = function () {\n        this.foundation_.layout();\n    };\n    MDCSlider.prototype.stepUp = function (amount) {\n        if (amount === void 0) { amount = (this.step || 1); }\n        this.value += amount;\n    };\n    MDCSlider.prototype.stepDown = function (amount) {\n        if (amount === void 0) { amount = (this.step || 1); }\n        this.value -= amount;\n    };\n    MDCSlider.prototype.parseFloat_ = function (str, defaultValue) {\n        var num = parseFloat(str); // tslint:disable-line:ban\n        var isNumeric = typeof num === 'number' && isFinite(num);\n        return isNumeric ? num : defaultValue;\n    };\n    return MDCSlider;\n}(_material_base_component__WEBPACK_IMPORTED_MODULE_1__[\"MDCComponent\"]));\n\n//# sourceMappingURL=component.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/slider/component.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/slider/constants.js":
+/*!****************************************************!*\
+  !*** ./node_modules/@material/slider/constants.js ***!
+  \****************************************************/
+/*! exports provided: cssClasses, strings, numbers */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"cssClasses\", function() { return cssClasses; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"strings\", function() { return strings; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"numbers\", function() { return numbers; });\n/**\n * @license\n * Copyright 2017 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\nvar cssClasses = {\n    ACTIVE: 'mdc-slider--active',\n    DISABLED: 'mdc-slider--disabled',\n    DISCRETE: 'mdc-slider--discrete',\n    FOCUS: 'mdc-slider--focus',\n    HAS_TRACK_MARKER: 'mdc-slider--display-markers',\n    IN_TRANSIT: 'mdc-slider--in-transit',\n    IS_DISCRETE: 'mdc-slider--discrete',\n};\nvar strings = {\n    ARIA_DISABLED: 'aria-disabled',\n    ARIA_VALUEMAX: 'aria-valuemax',\n    ARIA_VALUEMIN: 'aria-valuemin',\n    ARIA_VALUENOW: 'aria-valuenow',\n    CHANGE_EVENT: 'MDCSlider:change',\n    INPUT_EVENT: 'MDCSlider:input',\n    PIN_VALUE_MARKER_SELECTOR: '.mdc-slider__pin-value-marker',\n    STEP_DATA_ATTR: 'data-step',\n    THUMB_CONTAINER_SELECTOR: '.mdc-slider__thumb-container',\n    TRACK_MARKER_CONTAINER_SELECTOR: '.mdc-slider__track-marker-container',\n    TRACK_SELECTOR: '.mdc-slider__track',\n};\nvar numbers = {\n    PAGE_FACTOR: 4,\n};\n\n//# sourceMappingURL=constants.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/slider/constants.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/slider/foundation.js":
+/*!*****************************************************!*\
+  !*** ./node_modules/@material/slider/foundation.js ***!
+  \*****************************************************/
+/*! exports provided: MDCSliderFoundation, default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCSliderFoundation\", function() { return MDCSliderFoundation; });\n/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ \"./node_modules/tslib/tslib.es6.js\");\n/* harmony import */ var _material_animation_util__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/animation/util */ \"./node_modules/@material/slider/node_modules/@material/animation/util.js\");\n/* harmony import */ var _material_base_foundation__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @material/base/foundation */ \"./node_modules/@material/slider/node_modules/@material/base/foundation.js\");\n/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./constants */ \"./node_modules/@material/slider/constants.js\");\n/**\n * @license\n * Copyright 2017 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\n\nvar DOWN_EVENTS = ['mousedown', 'pointerdown', 'touchstart'];\nvar UP_EVENTS = ['mouseup', 'pointerup', 'touchend'];\nvar MOVE_EVENT_MAP = {\n    mousedown: 'mousemove',\n    pointerdown: 'pointermove',\n    touchstart: 'touchmove',\n};\nvar KEY_IDS = {\n    ARROW_DOWN: 'ArrowDown',\n    ARROW_LEFT: 'ArrowLeft',\n    ARROW_RIGHT: 'ArrowRight',\n    ARROW_UP: 'ArrowUp',\n    END: 'End',\n    HOME: 'Home',\n    PAGE_DOWN: 'PageDown',\n    PAGE_UP: 'PageUp',\n};\nvar MDCSliderFoundation = /** @class */ (function (_super) {\n    tslib__WEBPACK_IMPORTED_MODULE_0__[\"__extends\"](MDCSliderFoundation, _super);\n    function MDCSliderFoundation(adapter) {\n        var _this = _super.call(this, tslib__WEBPACK_IMPORTED_MODULE_0__[\"__assign\"]({}, MDCSliderFoundation.defaultAdapter, adapter)) || this;\n        /**\n         * We set this to NaN since we want it to be a number, but we can't use '0' or\n         * '-1' because those could be valid tabindices set by the client code.\n         */\n        _this.savedTabIndex_ = NaN;\n        _this.active_ = false;\n        _this.inTransit_ = false;\n        _this.isDiscrete_ = false;\n        _this.hasTrackMarker_ = false;\n        _this.handlingThumbTargetEvt_ = false;\n        _this.min_ = 0;\n        _this.max_ = 100;\n        _this.step_ = 0;\n        _this.value_ = 0;\n        _this.disabled_ = false;\n        _this.preventFocusState_ = false;\n        _this.thumbContainerPointerHandler_ = function () { return _this.handlingThumbTargetEvt_ =\n            true; };\n        _this.interactionStartHandler_ = function (evt) {\n            return _this.handleDown_(evt);\n        };\n        _this.keydownHandler_ = function (evt) { return _this.handleKeydown_(evt); };\n        _this.focusHandler_ = function () { return _this.handleFocus_(); };\n        _this.blurHandler_ = function () { return _this.handleBlur_(); };\n        _this.resizeHandler_ = function () { return _this.layout(); };\n        return _this;\n    }\n    Object.defineProperty(MDCSliderFoundation, \"cssClasses\", {\n        get: function () {\n            return _constants__WEBPACK_IMPORTED_MODULE_3__[\"cssClasses\"];\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCSliderFoundation, \"strings\", {\n        get: function () {\n            return _constants__WEBPACK_IMPORTED_MODULE_3__[\"strings\"];\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCSliderFoundation, \"numbers\", {\n        get: function () {\n            return _constants__WEBPACK_IMPORTED_MODULE_3__[\"numbers\"];\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCSliderFoundation, \"defaultAdapter\", {\n        get: function () {\n            // tslint:disable:object-literal-sort-keys Methods should be in the same\n            // order as the adapter interface.\n            return {\n                hasClass: function () { return false; },\n                addClass: function () { return undefined; },\n                removeClass: function () { return undefined; },\n                getAttribute: function () { return null; },\n                setAttribute: function () { return undefined; },\n                removeAttribute: function () { return undefined; },\n                computeBoundingRect: function () {\n                    return ({ top: 0, right: 0, bottom: 0, left: 0, width: 0, height: 0 });\n                },\n                getTabIndex: function () { return 0; },\n                registerInteractionHandler: function () { return undefined; },\n                deregisterInteractionHandler: function () { return undefined; },\n                registerThumbContainerInteractionHandler: function () { return undefined; },\n                deregisterThumbContainerInteractionHandler: function () { return undefined; },\n                registerBodyInteractionHandler: function () { return undefined; },\n                deregisterBodyInteractionHandler: function () { return undefined; },\n                registerResizeHandler: function () { return undefined; },\n                deregisterResizeHandler: function () { return undefined; },\n                notifyInput: function () { return undefined; },\n                notifyChange: function () { return undefined; },\n                setThumbContainerStyleProperty: function () { return undefined; },\n                setTrackStyleProperty: function () { return undefined; },\n                setMarkerValue: function () { return undefined; },\n                setTrackMarkers: function () { return undefined; },\n                isRTL: function () { return false; },\n            };\n            // tslint:enable:object-literal-sort-keys\n        },\n        enumerable: true,\n        configurable: true\n    });\n    MDCSliderFoundation.prototype.init = function () {\n        var _this = this;\n        this.isDiscrete_ = this.adapter_.hasClass(_constants__WEBPACK_IMPORTED_MODULE_3__[\"cssClasses\"].IS_DISCRETE);\n        this.hasTrackMarker_ = this.adapter_.hasClass(_constants__WEBPACK_IMPORTED_MODULE_3__[\"cssClasses\"].HAS_TRACK_MARKER);\n        DOWN_EVENTS.forEach(function (evtName) {\n            _this.adapter_.registerInteractionHandler(evtName, _this.interactionStartHandler_);\n            _this.adapter_.registerThumbContainerInteractionHandler(evtName, _this.thumbContainerPointerHandler_);\n        });\n        this.adapter_.registerInteractionHandler('keydown', this.keydownHandler_);\n        this.adapter_.registerInteractionHandler('focus', this.focusHandler_);\n        this.adapter_.registerInteractionHandler('blur', this.blurHandler_);\n        this.adapter_.registerResizeHandler(this.resizeHandler_);\n        this.layout();\n        // At last step, provide a reasonable default value to discrete slider\n        if (this.isDiscrete_ && this.getStep() === 0) {\n            this.step_ = 1;\n        }\n    };\n    MDCSliderFoundation.prototype.destroy = function () {\n        var _this = this;\n        DOWN_EVENTS.forEach(function (evtName) {\n            _this.adapter_.deregisterInteractionHandler(evtName, _this.interactionStartHandler_);\n            _this.adapter_.deregisterThumbContainerInteractionHandler(evtName, _this.thumbContainerPointerHandler_);\n        });\n        this.adapter_.deregisterInteractionHandler('keydown', this.keydownHandler_);\n        this.adapter_.deregisterInteractionHandler('focus', this.focusHandler_);\n        this.adapter_.deregisterInteractionHandler('blur', this.blurHandler_);\n        this.adapter_.deregisterResizeHandler(this.resizeHandler_);\n    };\n    MDCSliderFoundation.prototype.setupTrackMarker = function () {\n        if (this.isDiscrete_ && this.hasTrackMarker_ && this.getStep() !== 0) {\n            this.adapter_.setTrackMarkers(this.getStep(), this.getMax(), this.getMin());\n        }\n    };\n    MDCSliderFoundation.prototype.layout = function () {\n        this.rect_ = this.adapter_.computeBoundingRect();\n        this.updateUIForCurrentValue_();\n    };\n    MDCSliderFoundation.prototype.getValue = function () {\n        return this.value_;\n    };\n    MDCSliderFoundation.prototype.setValue = function (value) {\n        this.setValue_(value, false);\n    };\n    MDCSliderFoundation.prototype.getMax = function () {\n        return this.max_;\n    };\n    MDCSliderFoundation.prototype.setMax = function (max) {\n        if (max < this.min_) {\n            throw new Error('Cannot set max to be less than the slider\\'s minimum value');\n        }\n        this.max_ = max;\n        this.setValue_(this.value_, false, true);\n        this.adapter_.setAttribute(_constants__WEBPACK_IMPORTED_MODULE_3__[\"strings\"].ARIA_VALUEMAX, String(this.max_));\n        this.setupTrackMarker();\n    };\n    MDCSliderFoundation.prototype.getMin = function () {\n        return this.min_;\n    };\n    MDCSliderFoundation.prototype.setMin = function (min) {\n        if (min > this.max_) {\n            throw new Error('Cannot set min to be greater than the slider\\'s maximum value');\n        }\n        this.min_ = min;\n        this.setValue_(this.value_, false, true);\n        this.adapter_.setAttribute(_constants__WEBPACK_IMPORTED_MODULE_3__[\"strings\"].ARIA_VALUEMIN, String(this.min_));\n        this.setupTrackMarker();\n    };\n    MDCSliderFoundation.prototype.getStep = function () {\n        return this.step_;\n    };\n    MDCSliderFoundation.prototype.setStep = function (step) {\n        if (step < 0) {\n            throw new Error('Step cannot be set to a negative number');\n        }\n        if (this.isDiscrete_ && (typeof (step) !== 'number' || step < 1)) {\n            step = 1;\n        }\n        this.step_ = step;\n        this.setValue_(this.value_, false, true);\n        this.setupTrackMarker();\n    };\n    MDCSliderFoundation.prototype.isDisabled = function () {\n        return this.disabled_;\n    };\n    MDCSliderFoundation.prototype.setDisabled = function (disabled) {\n        this.disabled_ = disabled;\n        this.toggleClass_(_constants__WEBPACK_IMPORTED_MODULE_3__[\"cssClasses\"].DISABLED, this.disabled_);\n        if (this.disabled_) {\n            this.savedTabIndex_ = this.adapter_.getTabIndex();\n            this.adapter_.setAttribute(_constants__WEBPACK_IMPORTED_MODULE_3__[\"strings\"].ARIA_DISABLED, 'true');\n            this.adapter_.removeAttribute('tabindex');\n        }\n        else {\n            this.adapter_.removeAttribute(_constants__WEBPACK_IMPORTED_MODULE_3__[\"strings\"].ARIA_DISABLED);\n            if (!isNaN(this.savedTabIndex_)) {\n                this.adapter_.setAttribute('tabindex', String(this.savedTabIndex_));\n            }\n        }\n    };\n    /**\n     * Called when the user starts interacting with the slider\n     */\n    MDCSliderFoundation.prototype.handleDown_ = function (downEvent) {\n        var _this = this;\n        if (this.disabled_) {\n            return;\n        }\n        this.preventFocusState_ = true;\n        this.setInTransit_(!this.handlingThumbTargetEvt_);\n        this.handlingThumbTargetEvt_ = false;\n        this.setActive_(true);\n        var moveHandler = function (moveEvent) {\n            _this.handleMove_(moveEvent);\n        };\n        var moveEventType = MOVE_EVENT_MAP[downEvent.type];\n        // Note: upHandler is [de]registered on ALL potential pointer-related\n        // release event types, since some browsers do not always fire these\n        // consistently in pairs. (See\n        // https://github.com/material-components/material-components-web/issues/1192)\n        var upHandler = function () {\n            _this.handleUp_();\n            _this.adapter_.deregisterBodyInteractionHandler(moveEventType, moveHandler);\n            UP_EVENTS.forEach(function (evtName) { return _this.adapter_.deregisterBodyInteractionHandler(evtName, upHandler); });\n        };\n        this.adapter_.registerBodyInteractionHandler(moveEventType, moveHandler);\n        UP_EVENTS.forEach(function (evtName) {\n            return _this.adapter_.registerBodyInteractionHandler(evtName, upHandler);\n        });\n        this.setValueFromEvt_(downEvent);\n    };\n    /**\n     * Called when the user moves the slider\n     */\n    MDCSliderFoundation.prototype.handleMove_ = function (evt) {\n        evt.preventDefault();\n        this.setValueFromEvt_(evt);\n    };\n    /**\n     * Called when the user's interaction with the slider ends\n     */\n    MDCSliderFoundation.prototype.handleUp_ = function () {\n        this.setActive_(false);\n        this.adapter_.notifyChange();\n    };\n    /**\n     * Returns the clientX of the event\n     */\n    MDCSliderFoundation.prototype.getClientX_ = function (evt) {\n        if (evt.targetTouches &&\n            evt.targetTouches.length > 0) {\n            return evt.targetTouches[0].clientX;\n        }\n        return evt.clientX;\n    };\n    /**\n     * Sets the slider value from an event\n     */\n    MDCSliderFoundation.prototype.setValueFromEvt_ = function (evt) {\n        var clientX = this.getClientX_(evt);\n        var value = this.computeValueFromClientX_(clientX);\n        this.setValue_(value, true);\n    };\n    /**\n     * Computes the new value from the clientX position\n     */\n    MDCSliderFoundation.prototype.computeValueFromClientX_ = function (clientX) {\n        var _a = this, max = _a.max_, min = _a.min_;\n        var xPos = clientX - this.rect_.left;\n        var pctComplete = xPos / this.rect_.width;\n        if (this.adapter_.isRTL()) {\n            pctComplete = 1 - pctComplete;\n        }\n        // Fit the percentage complete between the range [min,max]\n        // by remapping from [0, 1] to [min, min+(max-min)].\n        return min + pctComplete * (max - min);\n    };\n    /**\n     * Handles keydown events\n     */\n    MDCSliderFoundation.prototype.handleKeydown_ = function (evt) {\n        var keyId = this.getKeyId_(evt);\n        var value = this.getValueForKeyId_(keyId);\n        if (isNaN(value)) {\n            return;\n        }\n        // Prevent page from scrolling due to key presses that would normally scroll\n        // the page\n        evt.preventDefault();\n        this.adapter_.addClass(_constants__WEBPACK_IMPORTED_MODULE_3__[\"cssClasses\"].FOCUS);\n        this.setValue_(value, true);\n        this.adapter_.notifyChange();\n    };\n    /**\n     * Returns the computed name of the event\n     */\n    MDCSliderFoundation.prototype.getKeyId_ = function (kbdEvt) {\n        if (kbdEvt.key === KEY_IDS.ARROW_LEFT || kbdEvt.keyCode === 37) {\n            return KEY_IDS.ARROW_LEFT;\n        }\n        if (kbdEvt.key === KEY_IDS.ARROW_RIGHT || kbdEvt.keyCode === 39) {\n            return KEY_IDS.ARROW_RIGHT;\n        }\n        if (kbdEvt.key === KEY_IDS.ARROW_UP || kbdEvt.keyCode === 38) {\n            return KEY_IDS.ARROW_UP;\n        }\n        if (kbdEvt.key === KEY_IDS.ARROW_DOWN || kbdEvt.keyCode === 40) {\n            return KEY_IDS.ARROW_DOWN;\n        }\n        if (kbdEvt.key === KEY_IDS.HOME || kbdEvt.keyCode === 36) {\n            return KEY_IDS.HOME;\n        }\n        if (kbdEvt.key === KEY_IDS.END || kbdEvt.keyCode === 35) {\n            return KEY_IDS.END;\n        }\n        if (kbdEvt.key === KEY_IDS.PAGE_UP || kbdEvt.keyCode === 33) {\n            return KEY_IDS.PAGE_UP;\n        }\n        if (kbdEvt.key === KEY_IDS.PAGE_DOWN || kbdEvt.keyCode === 34) {\n            return KEY_IDS.PAGE_DOWN;\n        }\n        return '';\n    };\n    /**\n     * Computes the value given a keyboard key ID\n     */\n    MDCSliderFoundation.prototype.getValueForKeyId_ = function (keyId) {\n        var _a = this, max = _a.max_, min = _a.min_, step = _a.step_;\n        var delta = step || (max - min) / 100;\n        var valueNeedsToBeFlipped = this.adapter_.isRTL() &&\n            (keyId === KEY_IDS.ARROW_LEFT || keyId === KEY_IDS.ARROW_RIGHT);\n        if (valueNeedsToBeFlipped) {\n            delta = -delta;\n        }\n        switch (keyId) {\n            case KEY_IDS.ARROW_LEFT:\n            case KEY_IDS.ARROW_DOWN:\n                return this.value_ - delta;\n            case KEY_IDS.ARROW_RIGHT:\n            case KEY_IDS.ARROW_UP:\n                return this.value_ + delta;\n            case KEY_IDS.HOME:\n                return this.min_;\n            case KEY_IDS.END:\n                return this.max_;\n            case KEY_IDS.PAGE_UP:\n                return this.value_ + delta * _constants__WEBPACK_IMPORTED_MODULE_3__[\"numbers\"].PAGE_FACTOR;\n            case KEY_IDS.PAGE_DOWN:\n                return this.value_ - delta * _constants__WEBPACK_IMPORTED_MODULE_3__[\"numbers\"].PAGE_FACTOR;\n            default:\n                return NaN;\n        }\n    };\n    MDCSliderFoundation.prototype.handleFocus_ = function () {\n        if (this.preventFocusState_) {\n            return;\n        }\n        this.adapter_.addClass(_constants__WEBPACK_IMPORTED_MODULE_3__[\"cssClasses\"].FOCUS);\n    };\n    MDCSliderFoundation.prototype.handleBlur_ = function () {\n        this.preventFocusState_ = false;\n        this.adapter_.removeClass(_constants__WEBPACK_IMPORTED_MODULE_3__[\"cssClasses\"].FOCUS);\n    };\n    /**\n     * Sets the value of the slider\n     */\n    MDCSliderFoundation.prototype.setValue_ = function (value, shouldFireInput, force) {\n        if (force === void 0) { force = false; }\n        if (value === this.value_ && !force) {\n            return;\n        }\n        var _a = this, min = _a.min_, max = _a.max_;\n        var valueSetToBoundary = value === min || value === max;\n        if (this.step_ && !valueSetToBoundary) {\n            value = this.quantize_(value);\n        }\n        if (value < min) {\n            value = min;\n        }\n        else if (value > max) {\n            value = max;\n        }\n        value = value || 0; // coerce -0 to 0\n        this.value_ = value;\n        this.adapter_.setAttribute(_constants__WEBPACK_IMPORTED_MODULE_3__[\"strings\"].ARIA_VALUENOW, String(this.value_));\n        this.updateUIForCurrentValue_();\n        if (shouldFireInput) {\n            this.adapter_.notifyInput();\n            if (this.isDiscrete_) {\n                this.adapter_.setMarkerValue(value);\n            }\n        }\n    };\n    /**\n     * Calculates the quantized value\n     */\n    MDCSliderFoundation.prototype.quantize_ = function (value) {\n        var numSteps = Math.round(value / this.step_);\n        return numSteps * this.step_;\n    };\n    MDCSliderFoundation.prototype.updateUIForCurrentValue_ = function () {\n        var _this = this;\n        var _a = this, max = _a.max_, min = _a.min_, value = _a.value_;\n        var pctComplete = (value - min) / (max - min);\n        var translatePx = pctComplete * this.rect_.width;\n        if (this.adapter_.isRTL()) {\n            translatePx = this.rect_.width - translatePx;\n        }\n        var transformProp = Object(_material_animation_util__WEBPACK_IMPORTED_MODULE_1__[\"getCorrectPropertyName\"])(window, 'transform');\n        var transitionendEvtName = Object(_material_animation_util__WEBPACK_IMPORTED_MODULE_1__[\"getCorrectEventName\"])(window, 'transitionend');\n        if (this.inTransit_) {\n            var onTransitionEnd_1 = function () {\n                _this.setInTransit_(false);\n                _this.adapter_.deregisterThumbContainerInteractionHandler(transitionendEvtName, onTransitionEnd_1);\n            };\n            this.adapter_.registerThumbContainerInteractionHandler(transitionendEvtName, onTransitionEnd_1);\n        }\n        requestAnimationFrame(function () {\n            // NOTE(traviskaufman): It would be nice to use calc() here,\n            // but IE cannot handle calcs in transforms correctly.\n            // See: https://goo.gl/NC2itk\n            // Also note that the -50% offset is used to center the slider thumb.\n            _this.adapter_.setThumbContainerStyleProperty(transformProp, \"translateX(\" + translatePx + \"px) translateX(-50%)\");\n            _this.adapter_.setTrackStyleProperty(transformProp, \"scaleX(\" + pctComplete + \")\");\n        });\n    };\n    /**\n     * Toggles the active state of the slider\n     */\n    MDCSliderFoundation.prototype.setActive_ = function (active) {\n        this.active_ = active;\n        this.toggleClass_(_constants__WEBPACK_IMPORTED_MODULE_3__[\"cssClasses\"].ACTIVE, this.active_);\n    };\n    /**\n     * Toggles the inTransit state of the slider\n     */\n    MDCSliderFoundation.prototype.setInTransit_ = function (inTransit) {\n        this.inTransit_ = inTransit;\n        this.toggleClass_(_constants__WEBPACK_IMPORTED_MODULE_3__[\"cssClasses\"].IN_TRANSIT, this.inTransit_);\n    };\n    /**\n     * Conditionally adds or removes a class based on shouldBePresent\n     */\n    MDCSliderFoundation.prototype.toggleClass_ = function (className, shouldBePresent) {\n        if (shouldBePresent) {\n            this.adapter_.addClass(className);\n        }\n        else {\n            this.adapter_.removeClass(className);\n        }\n    };\n    return MDCSliderFoundation;\n}(_material_base_foundation__WEBPACK_IMPORTED_MODULE_2__[\"MDCFoundation\"]));\n\n// tslint:disable-next-line:no-default-export Needed for backward compatibility\n// with MDC Web v0.44.0 and earlier.\n/* harmony default export */ __webpack_exports__[\"default\"] = (MDCSliderFoundation);\n//# sourceMappingURL=foundation.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/slider/foundation.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/slider/index.js":
+/*!************************************************!*\
+  !*** ./node_modules/@material/slider/index.js ***!
+  \************************************************/
+/*! exports provided: MDCSlider, cssClasses, strings, numbers, MDCSliderFoundation */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _component__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./component */ \"./node_modules/@material/slider/component.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"MDCSlider\", function() { return _component__WEBPACK_IMPORTED_MODULE_0__[\"MDCSlider\"]; });\n\n/* harmony import */ var _constants__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./constants */ \"./node_modules/@material/slider/constants.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"cssClasses\", function() { return _constants__WEBPACK_IMPORTED_MODULE_1__[\"cssClasses\"]; });\n\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"strings\", function() { return _constants__WEBPACK_IMPORTED_MODULE_1__[\"strings\"]; });\n\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"numbers\", function() { return _constants__WEBPACK_IMPORTED_MODULE_1__[\"numbers\"]; });\n\n/* harmony import */ var _foundation__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./foundation */ \"./node_modules/@material/slider/foundation.js\");\n/* harmony reexport (safe) */ __webpack_require__.d(__webpack_exports__, \"MDCSliderFoundation\", function() { return _foundation__WEBPACK_IMPORTED_MODULE_2__[\"MDCSliderFoundation\"]; });\n\n/**\n * @license\n * Copyright 2019 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\n\n//# sourceMappingURL=index.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/slider/index.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/slider/node_modules/@material/animation/util.js":
+/*!********************************************************************************!*\
+  !*** ./node_modules/@material/slider/node_modules/@material/animation/util.js ***!
+  \********************************************************************************/
+/*! exports provided: getCorrectPropertyName, getCorrectEventName */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"getCorrectPropertyName\", function() { return getCorrectPropertyName; });\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"getCorrectEventName\", function() { return getCorrectEventName; });\n/**\n * @license\n * Copyright 2016 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\nvar cssPropertyNameMap = {\n    animation: {\n        prefixed: '-webkit-animation',\n        standard: 'animation',\n    },\n    transform: {\n        prefixed: '-webkit-transform',\n        standard: 'transform',\n    },\n    transition: {\n        prefixed: '-webkit-transition',\n        standard: 'transition',\n    },\n};\nvar jsEventTypeMap = {\n    animationend: {\n        cssProperty: 'animation',\n        prefixed: 'webkitAnimationEnd',\n        standard: 'animationend',\n    },\n    animationiteration: {\n        cssProperty: 'animation',\n        prefixed: 'webkitAnimationIteration',\n        standard: 'animationiteration',\n    },\n    animationstart: {\n        cssProperty: 'animation',\n        prefixed: 'webkitAnimationStart',\n        standard: 'animationstart',\n    },\n    transitionend: {\n        cssProperty: 'transition',\n        prefixed: 'webkitTransitionEnd',\n        standard: 'transitionend',\n    },\n};\nfunction isWindow(windowObj) {\n    return Boolean(windowObj.document) && typeof windowObj.document.createElement === 'function';\n}\nfunction getCorrectPropertyName(windowObj, cssProperty) {\n    if (isWindow(windowObj) && cssProperty in cssPropertyNameMap) {\n        var el = windowObj.document.createElement('div');\n        var _a = cssPropertyNameMap[cssProperty], standard = _a.standard, prefixed = _a.prefixed;\n        var isStandard = standard in el.style;\n        return isStandard ? standard : prefixed;\n    }\n    return cssProperty;\n}\nfunction getCorrectEventName(windowObj, eventType) {\n    if (isWindow(windowObj) && eventType in jsEventTypeMap) {\n        var el = windowObj.document.createElement('div');\n        var _a = jsEventTypeMap[eventType], standard = _a.standard, prefixed = _a.prefixed, cssProperty = _a.cssProperty;\n        var isStandard = cssProperty in el.style;\n        return isStandard ? standard : prefixed;\n    }\n    return eventType;\n}\n//# sourceMappingURL=util.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/slider/node_modules/@material/animation/util.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/slider/node_modules/@material/base/component.js":
+/*!********************************************************************************!*\
+  !*** ./node_modules/@material/slider/node_modules/@material/base/component.js ***!
+  \********************************************************************************/
+/*! exports provided: MDCComponent, default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCComponent\", function() { return MDCComponent; });\n/* harmony import */ var tslib__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! tslib */ \"./node_modules/tslib/tslib.es6.js\");\n/* harmony import */ var _foundation__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./foundation */ \"./node_modules/@material/slider/node_modules/@material/base/foundation.js\");\n/**\n * @license\n * Copyright 2016 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n\n\nvar MDCComponent = /** @class */ (function () {\n    function MDCComponent(root, foundation) {\n        var args = [];\n        for (var _i = 2; _i < arguments.length; _i++) {\n            args[_i - 2] = arguments[_i];\n        }\n        this.root_ = root;\n        this.initialize.apply(this, tslib__WEBPACK_IMPORTED_MODULE_0__[\"__spread\"](args));\n        // Note that we initialize foundation here and not within the constructor's default param so that\n        // this.root_ is defined and can be used within the foundation class.\n        this.foundation_ = foundation === undefined ? this.getDefaultFoundation() : foundation;\n        this.foundation_.init();\n        this.initialSyncWithDOM();\n    }\n    MDCComponent.attachTo = function (root) {\n        // Subclasses which extend MDCBase should provide an attachTo() method that takes a root element and\n        // returns an instantiated component with its root set to that element. Also note that in the cases of\n        // subclasses, an explicit foundation class will not have to be passed in; it will simply be initialized\n        // from getDefaultFoundation().\n        return new MDCComponent(root, new _foundation__WEBPACK_IMPORTED_MODULE_1__[\"MDCFoundation\"]({}));\n    };\n    /* istanbul ignore next: method param only exists for typing purposes; it does not need to be unit tested */\n    MDCComponent.prototype.initialize = function () {\n        var _args = [];\n        for (var _i = 0; _i < arguments.length; _i++) {\n            _args[_i] = arguments[_i];\n        }\n        // Subclasses can override this to do any additional setup work that would be considered part of a\n        // \"constructor\". Essentially, it is a hook into the parent constructor before the foundation is\n        // initialized. Any additional arguments besides root and foundation will be passed in here.\n    };\n    MDCComponent.prototype.getDefaultFoundation = function () {\n        // Subclasses must override this method to return a properly configured foundation class for the\n        // component.\n        throw new Error('Subclasses must override getDefaultFoundation to return a properly configured ' +\n            'foundation class');\n    };\n    MDCComponent.prototype.initialSyncWithDOM = function () {\n        // Subclasses should override this method if they need to perform work to synchronize with a host DOM\n        // object. An example of this would be a form control wrapper that needs to synchronize its internal state\n        // to some property or attribute of the host DOM. Please note: this is *not* the place to perform DOM\n        // reads/writes that would cause layout / paint, as this is called synchronously from within the constructor.\n    };\n    MDCComponent.prototype.destroy = function () {\n        // Subclasses may implement this method to release any resources / deregister any listeners they have\n        // attached. An example of this might be deregistering a resize event from the window object.\n        this.foundation_.destroy();\n    };\n    MDCComponent.prototype.listen = function (evtType, handler, options) {\n        this.root_.addEventListener(evtType, handler, options);\n    };\n    MDCComponent.prototype.unlisten = function (evtType, handler, options) {\n        this.root_.removeEventListener(evtType, handler, options);\n    };\n    /**\n     * Fires a cross-browser-compatible custom event from the component root of the given type, with the given data.\n     */\n    MDCComponent.prototype.emit = function (evtType, evtData, shouldBubble) {\n        if (shouldBubble === void 0) { shouldBubble = false; }\n        var evt;\n        if (typeof CustomEvent === 'function') {\n            evt = new CustomEvent(evtType, {\n                bubbles: shouldBubble,\n                detail: evtData,\n            });\n        }\n        else {\n            evt = document.createEvent('CustomEvent');\n            evt.initCustomEvent(evtType, shouldBubble, false, evtData);\n        }\n        this.root_.dispatchEvent(evt);\n    };\n    return MDCComponent;\n}());\n\n// tslint:disable-next-line:no-default-export Needed for backward compatibility with MDC Web v0.44.0 and earlier.\n/* harmony default export */ __webpack_exports__[\"default\"] = (MDCComponent);\n//# sourceMappingURL=component.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/slider/node_modules/@material/base/component.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/slider/node_modules/@material/base/foundation.js":
+/*!*********************************************************************************!*\
+  !*** ./node_modules/@material/slider/node_modules/@material/base/foundation.js ***!
+  \*********************************************************************************/
+/*! exports provided: MDCFoundation, default */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"MDCFoundation\", function() { return MDCFoundation; });\n/**\n * @license\n * Copyright 2016 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\nvar MDCFoundation = /** @class */ (function () {\n    function MDCFoundation(adapter) {\n        if (adapter === void 0) { adapter = {}; }\n        this.adapter_ = adapter;\n    }\n    Object.defineProperty(MDCFoundation, \"cssClasses\", {\n        get: function () {\n            // Classes extending MDCFoundation should implement this method to return an object which exports every\n            // CSS class the foundation class needs as a property. e.g. {ACTIVE: 'mdc-component--active'}\n            return {};\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCFoundation, \"strings\", {\n        get: function () {\n            // Classes extending MDCFoundation should implement this method to return an object which exports all\n            // semantic strings as constants. e.g. {ARIA_ROLE: 'tablist'}\n            return {};\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCFoundation, \"numbers\", {\n        get: function () {\n            // Classes extending MDCFoundation should implement this method to return an object which exports all\n            // of its semantic numbers as constants. e.g. {ANIMATION_DELAY_MS: 350}\n            return {};\n        },\n        enumerable: true,\n        configurable: true\n    });\n    Object.defineProperty(MDCFoundation, \"defaultAdapter\", {\n        get: function () {\n            // Classes extending MDCFoundation may choose to implement this getter in order to provide a convenient\n            // way of viewing the necessary methods of an adapter. In the future, this could also be used for adapter\n            // validation.\n            return {};\n        },\n        enumerable: true,\n        configurable: true\n    });\n    MDCFoundation.prototype.init = function () {\n        // Subclasses should override this method to perform initialization routines (registering events, etc.)\n    };\n    MDCFoundation.prototype.destroy = function () {\n        // Subclasses should override this method to perform de-initialization routines (de-registering events, etc.)\n    };\n    return MDCFoundation;\n}());\n\n// tslint:disable-next-line:no-default-export Needed for backward compatibility with MDC Web v0.44.0 and earlier.\n/* harmony default export */ __webpack_exports__[\"default\"] = (MDCFoundation);\n//# sourceMappingURL=foundation.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/slider/node_modules/@material/base/foundation.js?");
+
+/***/ }),
+
+/***/ "./node_modules/@material/slider/node_modules/@material/dom/events.js":
+/*!****************************************************************************!*\
+  !*** ./node_modules/@material/slider/node_modules/@material/dom/events.js ***!
+  \****************************************************************************/
+/*! exports provided: applyPassive */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) */ __webpack_require__.d(__webpack_exports__, \"applyPassive\", function() { return applyPassive; });\n/**\n * @license\n * Copyright 2019 Google Inc.\n *\n * Permission is hereby granted, free of charge, to any person obtaining a copy\n * of this software and associated documentation files (the \"Software\"), to deal\n * in the Software without restriction, including without limitation the rights\n * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n * copies of the Software, and to permit persons to whom the Software is\n * furnished to do so, subject to the following conditions:\n *\n * The above copyright notice and this permission notice shall be included in\n * all copies or substantial portions of the Software.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n * THE SOFTWARE.\n */\n/**\n * Determine whether the current browser supports passive event listeners, and\n * if so, use them.\n */\nfunction applyPassive(globalObj) {\n    if (globalObj === void 0) { globalObj = window; }\n    return supportsPassiveOption(globalObj) ?\n        { passive: true } :\n        false;\n}\nfunction supportsPassiveOption(globalObj) {\n    if (globalObj === void 0) { globalObj = window; }\n    // See\n    // https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener\n    var passiveSupported = false;\n    try {\n        var options = {\n            // This function will be called when the browser\n            // attempts to access the passive property.\n            get passive() {\n                passiveSupported = true;\n                return false;\n            }\n        };\n        var handler = function () { };\n        globalObj.document.addEventListener('test', handler, options);\n        globalObj.document.removeEventListener('test', handler, options);\n    }\n    catch (err) {\n        passiveSupported = false;\n    }\n    return passiveSupported;\n}\n//# sourceMappingURL=events.js.map\n\n//# sourceURL=webpack:///./node_modules/@material/slider/node_modules/@material/dom/events.js?");
+
+/***/ }),
+
 /***/ "./node_modules/@material/switch/component.js":
 /*!****************************************************!*\
   !*** ./node_modules/@material/switch/component.js ***!
@@ -28466,7 +28618,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) *
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _material_ripple__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @material/ripple */ \"./node_modules/@material/ripple/index.js\");\n/* harmony import */ var _material_floating_label__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/floating-label */ \"./node_modules/@material/floating-label/index.js\");\n/* harmony import */ var _material_textfield__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @material/textfield */ \"./node_modules/@material/textfield/index.js\");\n/* harmony import */ var _material_switch__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @material/switch */ \"./node_modules/@material/switch/index.js\");\n/* harmony import */ var _material_chips__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @material/chips */ \"./node_modules/@material/chips/index.js\");\n/* harmony import */ var _material_tab_bar__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @material/tab-bar */ \"./node_modules/@material/tab-bar/index.js\");\n\r\n\r\n\r\n\r\n\r\n\r\n\r\njb.ui.material = {MDCFloatingLabel: _material_floating_label__WEBPACK_IMPORTED_MODULE_1__[\"MDCFloatingLabel\"],MDCRipple: _material_ripple__WEBPACK_IMPORTED_MODULE_0__[\"MDCRipple\"],MDCTextField: _material_textfield__WEBPACK_IMPORTED_MODULE_2__[\"MDCTextField\"],MDCSwitch: _material_switch__WEBPACK_IMPORTED_MODULE_3__[\"MDCSwitch\"],MDCChipSet: _material_chips__WEBPACK_IMPORTED_MODULE_4__[\"MDCChipSet\"],MDCTabBar: _material_tab_bar__WEBPACK_IMPORTED_MODULE_5__[\"MDCTabBar\"]};\r\n\n\n//# sourceURL=webpack:///./src/ui/pack-material.js?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _material_ripple__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! @material/ripple */ \"./node_modules/@material/ripple/index.js\");\n/* harmony import */ var _material_floating_label__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! @material/floating-label */ \"./node_modules/@material/floating-label/index.js\");\n/* harmony import */ var _material_textfield__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! @material/textfield */ \"./node_modules/@material/textfield/index.js\");\n/* harmony import */ var _material_switch__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! @material/switch */ \"./node_modules/@material/switch/index.js\");\n/* harmony import */ var _material_chips__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! @material/chips */ \"./node_modules/@material/chips/index.js\");\n/* harmony import */ var _material_tab_bar__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! @material/tab-bar */ \"./node_modules/@material/tab-bar/index.js\");\n/* harmony import */ var _material_slider__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! @material/slider */ \"./node_modules/@material/slider/index.js\");\n\r\n\r\n\r\n\r\n\r\n\r\n\r\n\r\njb.ui.material = {MDCFloatingLabel: _material_floating_label__WEBPACK_IMPORTED_MODULE_1__[\"MDCFloatingLabel\"],MDCRipple: _material_ripple__WEBPACK_IMPORTED_MODULE_0__[\"MDCRipple\"],MDCTextField: _material_textfield__WEBPACK_IMPORTED_MODULE_2__[\"MDCTextField\"],MDCSwitch: _material_switch__WEBPACK_IMPORTED_MODULE_3__[\"MDCSwitch\"],MDCChipSet: _material_chips__WEBPACK_IMPORTED_MODULE_4__[\"MDCChipSet\"],MDCTabBar: _material_tab_bar__WEBPACK_IMPORTED_MODULE_5__[\"MDCTabBar\"],MDCSlider: _material_slider__WEBPACK_IMPORTED_MODULE_6__[\"MDCSlider\"]};\r\n\n\n//# sourceURL=webpack:///./src/ui/pack-material.js?");
 
 /***/ })
 
@@ -30063,8 +30215,8 @@ jb.component('studio.previewWidget', {
     {id: 'height', as: 'number'}
   ],
   impl: ctx => jb.ui.ctrl(ctx, features(
-      calcProp('width','%$$model/width%'),
-      calcProp('height','%$$model/height%'),
+      calcProp('width'),
+      calcProp('height'),
       calcProp('host', firstSucceeding('%$queryParams/host%','studio')),
       calcProp('loadingMessage', '{? loading project from %$$props/host%::%$queryParams/hostProjectId% ?}'),
       interactive( (ctx,{cmp}) => {
@@ -31748,10 +31900,9 @@ jb.component('studio.selectProfile', {
             style: editableText.mdcInput('200'),
             features: feature.onEsc(dialog.closeContainingPopup(false))
           }),
-          materialIcon({
+          control.icon({
             icon: 'search',
             title: 'search icon',
-            style: icon.material(),
             features: css.margin({top: '20', left: '-25'})
           })
         ]
@@ -32658,7 +32809,7 @@ jb.component('studio.pickIcon', {
                 group({
                   layout: layout.horizontal(),
                   controls: [
-                    button({title: 'icon', style: button.mdIcon('%%')}),
+                    button({title: 'icon', style: button.mdcIcon(icon({icon: '%%', type: 'mdi'}))}),
                     text({
                       text: pipeline('%%', text.highlight('%%', '%$itemlistCntrData.search_pattern%')),
                       title: 'icon name'
@@ -34265,12 +34416,12 @@ jb.component('studio.openStyleMenu', {
             studio.openStyleEditor('%$styleSource/innerPath%'),
             studio.openProperties(true)
           ],
-          icon: 'build',
+          icon: icon('build'),
           showCondition: "%$styleSource/type% == 'global'"
         }),
         menu.action({
           title: 'Extract style as a reusable component',
-          icon: 'build',
+          icon: icon('build'),
           showCondition: "%$styleSource/type% == 'inner'"
         }),
         menu.action({
@@ -34674,26 +34825,26 @@ jb.component('studio.openPropertyMenu', {
         menu.action({
           title: 'Inteliscript editor',
           action: studio.openJbEditor('%$path%'),
-          icon: 'code',
+          icon: icon('build'),
           shortcut: 'Ctrl+I'
         }),
         menu.action({
           title: 'Javascript editor',
           action: studio.editSource('%$path%'),
-          icon: 'code',
+          icon: icon({icon: 'LanguageJavascript', type: 'mdi'}),
           shortcut: 'Ctrl+J'
         }),
         studio.gotoEditorOptions('%$path%'),
         menu.action({
           title: 'Delete',
           action: studio.delete('%$path%'),
-          icon: 'delete',
+          icon: icon('delete'),
           shortcut: 'Delete'
         }),
         menu.action({
           title: data.if(studio.disabled('%$path%'), 'Enable', 'Disable'),
           action: studio.toggleDisabled('%$path%'),
-          icon: 'do_not_disturb',
+          icon: icon('do_not_disturb'),
           shortcut: 'Ctrl+X'
         })
       ]
@@ -34876,43 +35027,43 @@ jb.component('studio.jbEditorMenu', {
           menu.action({
             title: 'Javascript',
             action: studio.editSource('%$path%'),
-            icon: 'code',
+            icon: icon({icon: 'LanguageJavascript', type: 'mdi'}),
             shortcut: 'Ctrl+J'
           }),
           menu.action({
             title: 'Delete',
             action: studio.delete('%$path%'),
-            icon: 'delete',
+            icon: icon('delete'),
             shortcut: 'Delete'
           }),
           menu.action({
             title: {'$if': studio.disabled('%$path%'), then: 'Enable', else: 'Disable'},
             action: studio.toggleDisabled('%$path%'),
-            icon: 'do_not_disturb',
+            icon: icon('do_not_disturb'),
             shortcut: 'Ctrl+X'
           }),
           menu.action({
             title: 'Copy',
             action: studio.copy('%$path%'),
-            icon: 'copy',
+            icon: icon('copy'),
             shortcut: 'Ctrl+C'
           }),
           menu.action({
             title: 'Paste',
             action: studio.paste('%$path%'),
-            icon: 'paste',
+            icon: icon('paste'),
             shortcut: 'Ctrl+V'
           }),
           menu.action({
             title: 'Undo',
             action: studio.undo(),
-            icon: 'undo',
+            icon: icon('undo'),
             shortcut: 'Ctrl+Z'
           }),
           menu.action({
             title: 'Redo',
             action: studio.redo(),
-            icon: 'redo',
+            icon: icon('redo'),
             shortcut: 'Ctrl+Y'
           })
         ],
@@ -35126,7 +35277,7 @@ jb.component('studio.treeMenu', {
       menu.action({
         title: 'Javascript editor',
         action: studio.editSource('%$path%'),
-        icon: 'code',
+        icon: icon('code'),
         shortcut: 'Ctrl+J'
       }),
       menu.action({
@@ -35141,37 +35292,37 @@ jb.component('studio.treeMenu', {
       menu.action({
         title: 'Delete',
         action: studio.delete('%$path%'),
-        icon: 'delete',
+        icon: icon('delete'),
         shortcut: 'Delete'
       }),
       menu.action({
         title: {'$if': studio.disabled('%$path%'), then: 'Enable', else: 'Disable'},
         action: studio.toggleDisabled('%$path%'),
-        icon: 'do_not_disturb',
+        icon: icon('do_not_disturb'),
         shortcut: 'Ctrl+X'
       }),
       menu.action({
         title: 'Copy',
         action: studio.copy('%$path%'),
-        icon: 'copy',
+        icon: icon('copy'),
         shortcut: 'Ctrl+C'
       }),
       menu.action({
         title: 'Paste',
         action: studio.paste('%$path%'),
-        icon: 'paste',
+        icon: icon('paste'),
         shortcut: 'Ctrl+V'
       }),
       menu.action({
         title: 'Undo',
         action: studio.undo(),
-        icon: 'undo',
+        icon: icon('undo'),
         shortcut: 'Ctrl+Z'
       }),
       menu.action({
         title: 'Redo',
         action: studio.redo(),
-        icon: 'redo',
+        icon: icon('redo'),
         shortcut: 'Ctrl+Y'
       })
     ]
@@ -35653,38 +35804,38 @@ jb.component('studio.toolbar', {
       button({
         title: 'Select',
         action: studio.pickAndOpen(),
-        style: button.mdcIcon('call_made')
+        style: button.mdcIcon(icon('call_made'))
       }),
       button({
         title: 'Save',
         action: studio.saveComponents(),
-        style: button.mdcIcon('save'),
+        style: button.mdcIcon(icon('save')),
         features: ctrlAction(studio.saveComponents())
       }),
       button({
         title: 'Refresh Preview',
         action: studio.refreshPreview(),
-        style: button.mdcIcon('refresh')
+        style: button.mdcIcon(icon('refresh'))
       }),
       button({
         title: 'Javascript',
         action: studio.editSource(),
-        style: button.mdcIcon('code')
+        style: button.mdcIcon(icon({icon: 'LanguageJavascript', type: 'mdi'}))
       }),
       button({
         title: 'Outline',
         action: studio.openControlTree(),
-        style: button.mdcIcon('format_align_left')
+        style: button.mdcIcon(icon('format_align_left'))
       }),
       button({
         title: 'Properties',
         action: studio.openProperties(true),
-        style: button.mdcIcon('storage')
+        style: button.mdcIcon(icon('storage'))
       }),
       button({
         title: 'jbEditor',
         action: studio.openComponentInJbEditor(studio.currentPagePath()),
-        style: button.mdcIcon('build'),
+        style: button.mdcIcon(icon('build')),
         features: ctrlAction(
           studio.openJbEditor({path: '%$studio/profile_path%', newWindow: true})
         )
@@ -35714,13 +35865,13 @@ jb.component('studio.toolbar', {
           mode: 'insert-control',
           onClose: studio.gotoLastEdit()
         }),
-        style: button.mdcIcon('add'),
+        style: button.mdcIcon(icon('add')),
         features: studio.dropHtml(studio.insertControl('%$newCtrl%'))
       }),
       button({
         title: 'Responsive',
         action: studio.openResponsivePhonePopup(),
-        style: button.mdcIcon('tablet_android'),
+        style: button.mdcIcon(icon('tablet_android')),
         features: hidden()
       })
     ],
@@ -35759,7 +35910,7 @@ jb.component('studio.searchList', {
         ),
         fields: [
           field.control({
-            control: materialIcon({
+            control: control.icon({
               icon: studio.iconOfType('%type%'),
               features: [
                 css.opacity('0.3'),
@@ -35839,7 +35990,7 @@ jb.component('studio.searchComponent', {
       itemlistContainer.search({
         title: 'Search',
         databind: '%$itemlistCntrData/search_pattern%',
-        style: editableText.mdcNoLabel(),
+        style: editableText.mdcSearch(),
         features: [
           editableText.helperPopup({
             control: studio.searchList(),
@@ -35850,13 +36001,9 @@ jb.component('studio.searchComponent', {
             '>input {padding-right: 45px; border-bottom-color: white !important} {height: 35px; background: white !important}'
           )
         ]
-      }),
-      materialIcon({
-        icon: 'search',
-        features: [css.margin({top: '5', left: '-30'}), css('z-index: 1000')]
       })
     ],
-    features: [group.itemlistContainer({}), css.margin({top: '-3', left: '10'})]
+    features: [group.itemlistContainer({}), css.margin({top: '-30', left: '10'})]
   })
 })
 ;
@@ -35985,15 +36132,15 @@ jb.component('studio.mainMenu', {
               studio.sampleProject('cards-demo')
             ]
           }),
-          menu.action({title: 'New Project', action: studio.openNewProject(), icon: 'new'}),
+          menu.action({title: 'New Project', action: studio.openNewProject(), icon: icon('new')}),
           menu.action({title: 'Open Project ...', action: studio.openProject()}),
           menu.action({
             title: 'Save',
             action: studio.saveComponents(),
-            icon: 'save',
+            icon: icon('save'),
             shortcut: 'Ctrl+S'
           }),
-          menu.action({title: 'Force Save', action: studio.saveComponents(), icon: 'save'}),
+          menu.action({title: 'Force Save', action: studio.saveComponents(), icon: icon('save')}),
           menu.action({
             title: 'Source ...',
             action: studio.viewAllFiles(studio.currentProfilePath())
@@ -36101,7 +36248,7 @@ jb.component('studio.mainMenu', {
                           }),
                           button({
                             title: '+',
-                            style: button.mdIcon('Plus'),
+                            style: button.mdcIcon(icon({icon: 'Plus', type: 'mdi'})),
                             raised: '',
                             features: [feature.hoverTitle('add lib'), css.margin('5')]
                           })
@@ -37236,7 +37383,7 @@ jb.component('contentEditable.positionThumbs', {
     controls: [
       group({
         layout: layout.flex({direction: If('%$axis%==y', 'column', 'row'), alignItems: 'center'}),
-        controls: materialIcon({
+        controls: control.icon({
           icon: 'radio_button_unchecked',
           features: [contentEditable.dragableThumb('%$axis%'), css('font-size: 14px')]
         })

@@ -13,7 +13,13 @@ class VNode {
         if (children != null && !Array.isArray(children)) children = [children]
         if (children != null)
             children = children.filter(x=>x).map(item=> typeof item == 'string' ? jb.ui.h('span',{$text: item}) : item)
-        Object.assign(this,{...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,attributes,children})
+        
+        this.attributes = attributes
+        if (typeof cmpOrTag === 'string' && cmpOrTag.indexOf('#') != -1) {
+            this.addClass(cmpOrTag.split('#').pop())
+            cmpOrTag = cmpOrTag.split('#')[0]
+        }
+        Object.assign(this,{...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,children})
     }
     getAttribute(att) {
         return (this.attributes || {})[att]
@@ -23,6 +29,10 @@ class VNode {
         this.attributes[att] = val
     }
     addClass(clz) {
+        if (clz.indexOf(' ') != -1) {
+            clz.split(' ').filter(x=>x).forEach(cl=>this.addClass(cl))
+            return this
+        }
         this.attributes = this.attributes || {};
         if (this.attributes.class === undefined) this.attributes.class = ''
         if (clz && this.attributes.class.split(' ').indexOf(clz) == -1)
