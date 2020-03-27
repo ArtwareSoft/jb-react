@@ -66,12 +66,11 @@ jb.component('itemlistContainer.filter', {
   category: 'itemlist-filter:100',
   requires: ctx => ctx.vars.itemlistCntr,
   params: [
-    {id: 'updateCounters', as: 'boolean', type: 'boolean'}
+    {id: 'updateCounters', as: 'boolean'},
   ],
   impl: (ctx,updateCounters) => {
 			if (!ctx.vars.itemlistCntr) return;
-			const res = ctx.vars.itemlistCntr.filters.reduce((items,filter) =>
-									filter(items), ctx.data || []);
+			const res = ctx.vars.itemlistCntr.filters.reduce((items,filter) => filter(items), ctx.data || []);
 			if (ctx.vars.itemlistCntrData.countAfterFilter != res.length)
 				jb.delay(1).then(_=>ctx.vars.itemlistCntr.reSelectAfterFilter(res));
 			if (updateCounters) { // use merge
@@ -113,6 +112,8 @@ jb.component('itemlistContainer.search', {
 
 				ctx.vars.itemlistCntr.filters.push( items => {
 					const toSearch = jb.val(databindRef) || '';
+					if (jb.frame.Fuse)
+						return new jb.frame.Fuse(items,{}).search(toSearch).map(x=>x.item)
 					if (typeof searchIn.profile == 'function') { // improved performance
 						return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
 					}

@@ -257,17 +257,10 @@ st.suggestions = class {
         jb.toarray(probeCtx.exp(this.base))
           .map(x=>jb.entries(x).map(x=>new ValueOption(x[0],x[1],this.pos,this.tail))) )
 
-    options = jb.unique(options,x=>x.toPaste)
-        .filter(x=> x.toPaste.indexOf('$jb_') != 0)
+    options = jb.unique(options,x=>x.toPaste).filter(x=> x.toPaste.indexOf('$jb_') != 0)
+    this.options = new jb.frame.Fuse(options,{keys: ['toPaste','description']}).search(this.tail || '').map(x=>x.item)
 
-//        .filter(x=> x.toPaste != this.tail)
-        .filter(x=>
-          this.tail == '' || typeof x.toPaste != 'string' || (x.description + x.toPaste).toLowerCase().indexOf(this.tail.toLowerCase()) != -1)
-    if (this.tail)
-      options.sort((x,y)=> (y.toPaste.toLowerCase().indexOf(this.tail.toLowerCase()) == 0 ? 1 : 0) - (x.toPaste.toLowerCase().indexOf(this.tail.toLowerCase()) == 0 ? 1 : 0));
-
-    this.options = options;
-    this.key = options.map(o=>o.toPaste).join(','); // build hash for the options to detect options change
+    this.key = this.options.map(o=>o.toPaste).join(','); // build hash for the options to detect options change
     return this;
   }
 }

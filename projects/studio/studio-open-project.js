@@ -25,7 +25,7 @@ jb.component('studio.chooseProject', {
         controls: button({
           title: text.highlight('%%', '%$itemlistCntrData/search_pattern%'),
           action: studio.gotoProject('%%'),
-          style: button.mdc(),
+          style: button.mdcHeader(true),
           features: css('{ text-align: left; width: 250px }')
         }),
         features: [
