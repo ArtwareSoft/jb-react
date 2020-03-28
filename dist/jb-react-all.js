@@ -835,6 +835,7 @@ Object.assign(jb, {
     macroDef: Symbol('macroDef'), macroNs: {}, 
     macroName: id => id.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
     ns: nsIds => nsIds.split(',').forEach(nsId => jb.registerMacro(nsId + '.$dummyComp', {})),
+    unMacro: macroId => macroId.replace(/([A-Z])/g, (all, s) => ' ' + s.toLowerCase()),
     registerMacro: (id, profile) => {
         const macroId = jb.macroName(id).replace(/\./g, '_')
         const nameSpace = id.indexOf('.') != -1 && jb.macroName(id.split('.')[0])
@@ -3619,7 +3620,7 @@ function applyDeltaToDom(elem,delta) {
             }
         })
         toAppend.forEach(e=>{
-            const newChild = elem.ownerDocument.createElement(e.tag)
+            const newChild = createElement(elem.ownerDocument,e.tag)
             elem.appendChild(newChild)
             applyDeltaToDom(newChild,e)
             jb.log('appendChild',[newChild,e,elem,delta])
@@ -3687,7 +3688,7 @@ function render(vdom,parentElem) {
     jb.log('render',[...arguments])
     function doRender(vdom,parentElem) {
         jb.log('htmlChange',['createElement',...arguments])
-        const elem = parentElem.ownerDocument.createElement(vdom.tag)
+        const elem = createElement(parentElem.ownerDocument, vdom.tag)
         jb.entries(vdom.attributes).forEach(e=>setAtt(elem,e[0],e[1])) // filter(e=>e[0].indexOf('on') != 0 && !isAttUndefined(e[0],vdom.attributes)).
         jb.asArray(vdom.children).map(child=> doRender(child,elem)).forEach(el=>elem.appendChild(el))
         parentElem.appendChild(elem)
@@ -3697,6 +3698,11 @@ function render(vdom,parentElem) {
     ui.findIncludeSelf(res,'[interactive]').forEach(el=> mountInteractive(el))
     ui.garbageCollectCtxDictionary(parentElem)
     return res
+}
+
+function createElement(parent,tag) {
+    return (['svg','circle','ellipse','image','line','mesh','path','polygon','polyline','rect','text'].indexOf(tag) != -1) ?
+        parent.createElementNS("http://www.w3.org/2000/svg", tag) : parent.createElement(tag)
 }
 
 Object.assign(jb.ui, {
@@ -3888,7 +3894,7 @@ function mountInteractive(elem, keepState) {
             ;(elem.getAttribute('interactive') || '').split(',').filter(x=>x).forEach(op => {
                 [id, ctxId] = op.split('-')
                 const ctx = jb.ui.ctxDictOfElem(elem)[ctxId]
-                this[id] = jb.val(ctx.setVar('state',this.state).runInner(ctx.profile.value,'value','value'))
+                this[id] = jb.val(ctx.setVar('state',this.state).setVar('cmp',this).runInner(ctx.profile.value,'value','value'))
             })
             this.doRefresh && this.doRefresh()
         },
@@ -3939,7 +3945,7 @@ class JbComponent {
         return this.renderProps.cmpHash
     }
  
-    renderVdom() {
+    calcRenderProps() {
         jb.log('renderVdom',[this]);
         if (!this.initialized)
             this.init();
@@ -3966,6 +3972,11 @@ class JbComponent {
             })
         Object.assign(this.renderProps,(this.styleCtx || {}).params, this.state);
         jb.log('renderProps',[this.renderProps, this])
+        return this.renderProps
+    }
+
+    renderVdom() {
+        this.calcRenderProps()
         if (this.ctx.probe && this.ctx.probe.outOfTime) return
         this.template = this.template || (() => '')
         const initialVdom = tryWrapper(() => this.template(this,this.renderProps,ui.h), 'template') || {}
@@ -4459,7 +4470,7 @@ jb.component('interactiveProp', {
     {id: 'id', as: 'string', mandatory: true},
     {id: 'value', mandatory: true, dynamic: true}
   ],
-  impl: (ctx,id) => ({interactiveProp: {id, ctx }})
+  impl: (ctx,id) => ({interactiveProp: {id: id.replace(/-/g,'_'), ctx }})
 })
 
 jb.component('calcProps', {
@@ -4482,6 +4493,15 @@ jb.component('feature.init', {
     {id: 'phase', as: 'number', defaultValue: 10, description: 'init funcs from different features can use each other, phase defines the calculation order'}
   ],
   impl: (ctx,action,phase) => ({ init: { action, phase }})
+})
+
+jb.component('feature.destroy', {
+  type: 'feature',
+  category: 'lifecycle',
+  params: [
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true},
+  ],
+  impl: ctx => ({ destroy: cmp => ctx.params.action(cmp.ctx) })
 })
 
 jb.component('feature.beforeInit', {
@@ -5960,11 +5980,12 @@ jb.component('editableNumber', {
           if (this.max == null) this.max = NaN;
         }
         numericPart(dataString) {
-          if (!dataString) return NaN;
+          if (typeof dataString == 'number') return dataString
+          if (dataString == '') return NaN;
           var parts = (''+dataString).match(/([^0-9\.\-]*)([0-9\.\-]+)([^0-9\.\-]*)/); // prefix-number-suffix
-          if ((!this.symbol) && parts)
-            this.symbol = parts[1] || parts[3] || this.symbol;
-          return (parts && parts[2]) || '';
+          if (parts)
+            this.symbol = parts[1] || parts[3]
+          return +(parts && parts[2])
         }
 
         calcDisplayString(number,ctx) {
@@ -6486,11 +6507,9 @@ jb.component('itemlist.infiniteScroll', {
     {id: 'pageSize', as: 'number', defaultValue: 2}
   ],
   impl: features(
-    defHandler(
-        'onscrollHandler',
-        (ctx,{ev, $state},{pageSize}) => {
+    defHandler('onscrollHandler', (ctx,{ev, $state},{pageSize}) => {
       const elem = ev.target
-      if (!ev.scrollPercentFromTop || ev.scrollPercentFromTop < 0.9) return
+      if (!$state.visualLimit || !ev.scrollPercentFromTop || ev.scrollPercentFromTop < 0.9) return
       const allItems = ctx.vars.$model.items()
       const needsToLoadMoreItems = $state.visualLimit.shownItems && $state.visualLimit.shownItems < allItems.length
       if (!needsToLoadMoreItems) return
@@ -6499,10 +6518,11 @@ jb.component('itemlist.infiniteScroll', {
       const itemsToAppend = allItems.slice($state.visualLimit.shownItems, $state.visualLimit.shownItems + pageSize)
       const ctxToRun = cmpCtx.ctx({profile: Object.assign({},cmpCtx.profile,{ items: () => itemsToAppend}), path: ''}) // change the profile to return itemsToAppend
       const vdom = ctxToRun.runItself().renderVdom()
-      const itemlistVdom = jb.ui.findIncludeSelf(vdom,'.jb-itemlist')[0]
+      const itemlistVdom = jb.ui.findIncludeSelf(vdom,'tbody')[0] || jb.ui.findIncludeSelf(vdom,'.jb-itemlist')[0]
+      const elemToExpand = jb.ui.findIncludeSelf(elem,'tbody')[0] || jb.ui.findIncludeSelf(elem,'.jb-itemlist')[0]
       if (itemlistVdom) {
         console.log(itemsToAppend,ev)
-        jb.ui.appendItems(elem,itemlistVdom,ctx)
+        jb.ui.appendItems(elemToExpand,itemlistVdom,ctx)
         $state.visualLimit.shownItems += itemsToAppend.length
       }
     }
@@ -6529,9 +6549,8 @@ jb.component('itemlist.fastFilter', {
 jb.component('itemlist.ulLi', {
   type: 'itemlist.style',
   impl: customStyle({
-    template: (cmp,{ctrls},h) => h('ul',{ class: 'jb-itemlist'},
-        ctrls.map(ctrl=> h('li',
-          {class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
+    template: (cmp,{ctrls},h) => h('ul#jb-itemlist',{},
+        ctrls.map(ctrl=> h('li#jb-item', {'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
           ctrl.map(singleCtrl=>h(singleCtrl))))),
     css: `{ list-style: none; padding: 0; margin: 0;}
     >li { list-style: none; padding: 0; margin: 0;}`,
@@ -6545,8 +6564,8 @@ jb.component('itemlist.horizontal', {
     {id: 'spacing', as: 'number', defaultValue: 0}
   ],
   impl: customStyle({
-    template: (cmp,{ctrls},h) => h('div',{ class: 'jb-drag-parent'},
-        ctrls.map(ctrl=> h('div', {class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
+    template: (cmp,{ctrls},h) => h('div#jb-itemlist jb-drag-parent',{},
+        ctrls.map(ctrl=> h('div#jb-item', {'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
           ctrl.map(singleCtrl=>h(singleCtrl))))),
     css: `{display: flex}
         >* { margin-right: %$spacing%px }
@@ -6850,12 +6869,11 @@ jb.component('itemlistContainer.filter', {
   category: 'itemlist-filter:100',
   requires: ctx => ctx.vars.itemlistCntr,
   params: [
-    {id: 'updateCounters', as: 'boolean', type: 'boolean'}
+    {id: 'updateCounters', as: 'boolean'},
   ],
   impl: (ctx,updateCounters) => {
 			if (!ctx.vars.itemlistCntr) return;
-			const res = ctx.vars.itemlistCntr.filters.reduce((items,filter) =>
-									filter(items), ctx.data || []);
+			const res = ctx.vars.itemlistCntr.filters.reduce((items,filter) => filter(items), ctx.data || []);
 			if (ctx.vars.itemlistCntrData.countAfterFilter != res.length)
 				jb.delay(1).then(_=>ctx.vars.itemlistCntr.reSelectAfterFilter(res));
 			if (updateCounters) { // use merge
@@ -6897,6 +6915,8 @@ jb.component('itemlistContainer.search', {
 
 				ctx.vars.itemlistCntr.filters.push( items => {
 					const toSearch = jb.val(databindRef) || '';
+					if (jb.frame.Fuse)
+						return toSearch ? new jb.frame.Fuse(items,{}).search(toSearch).map(x=>x.item) : items
 					if (typeof searchIn.profile == 'function') { // improved performance
 						return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
 					}
@@ -7625,7 +7645,7 @@ jb.component('control.icon', {
   category: 'control:50',
   params: [
     {id: 'icon', as: 'string', mandatory: true},
-    {id: 'title', as: 'string'},
+    {id: 'title', as: 'string', dynamic: true},
     {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
     {id: 'scale', as: 'number', defaultValue: 1 },
     {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
@@ -7640,7 +7660,7 @@ jb.component('icon', {
   type: 'icon',
   params: [
     {id: 'icon', as: 'string', mandatory: true},
-    {id: 'title', as: 'string'},
+    {id: 'title', as: 'string', dynamic: true},
     {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
     {id: 'scale', as: 'number', defaultValue: 1 },
     {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
@@ -7653,9 +7673,9 @@ jb.component('icon.material', {
   type: 'icon.style',
   impl: customStyle({
     template: (cmp,{icon,type,title,scale},h) => type == 'mdc' ? h('i',
-    { class: 'material-icons', title, onclick: true, style: {width: '24px', height: '24px', transform: `scale(${scale}) translate(${(scale-1)*12}px,${(scale-1)*12}px)` } }
+    { class: 'material-icons', title: title(), onclick: true, style: {width: '24px', height: '24px', transform: `scale(${scale}) translate(${(scale-1)*12}px,${(scale-1)*12}px)` } }
       , icon) 
-      : h('div',{title, onclick: true, style: { transform: `translate(${(scale-1)*12}px,${(scale-1)*12}px)`},
+      : h('div',{title: title(), onclick: true, style: { transform: `translate(${(scale-1)*12}px,${(scale-1)*12}px)`},
         $html: `<svg width="24" height="24" transform="scale(${scale})"><path d="${jb.path(jb.frame,['MDIcons',icon])}"/></svg>`}),
   })
 })
@@ -7665,6 +7685,7 @@ jb.component('feature.icon', {
   category: 'control:50',
   params: [
     {id: 'icon', as: 'string', mandatory: true},
+    {id: 'title', as: 'string', dynamic: true},
     {id: 'position', as: 'string', options: ',pre,post,raised', defaultValue: '' },
     {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
     {id: 'scale', as: 'string', defaultValue: 1 },
@@ -7686,23 +7707,14 @@ jb.ns('slider,mdcStyle')
 jb.component('editableNumber.sliderNoText', {
   type: 'editable-number.style',
   impl: features(
-    calcProp({
-        id: 'max',
-        value: ctx => {
-      const val = jb.tonumber(ctx.exp('%$editableNumberModel/databind%'))
-      if (val > +ctx.vars.$model.max && ctx.vars.$model.autoScale)
-        return val + 100
-      return +ctx.vars.$model.max
-    }
-      }),
     ctx => ({
-      template: (cmp,state,h) => h('input',{ type: 'range',
-        min: state.min, max: state.max, step: state.step,
-        value: state.databind, mouseup: 'onblurHandler', tabindex: -1})
+      template: (cmp,{min,max,step,databind},h) => h('input',{ type: 'range',
+        min, max, step, value: cmp.ctx.vars.editableNumber.numericPart(databind), mouseup: 'onblurHandler', tabindex: -1})
     }),
     field.databind(),
+    slider.checkAutoScale(),
+    slider.initJbModelWithUnits(),
     slider.init(),
-    watchRef('%$editableNumberModel/databind%')
   )
 })
 
@@ -7742,34 +7754,88 @@ jb.component('editableNumber.slider', {
 
 jb.component('editableNumber.mdcSlider', {
   type: 'editable-number.style',
+  impl: styleByControl(
+    group({
+      title: '%$editableNumberModel/title%',
+      controls: group({
+        layout: layout.horizontal(20),
+        controls: [
+          editableText({
+            databind: '%$editableNumberModel/databind%',
+            style: editableText.input(),
+            features: [
+              slider.handleArrowKeys(),
+              css(
+                'width: 40px; height: 20px; padding-top: 14px; padding-left: 3px; border: 0; border-bottom: 1px solid black; background: transparent;'
+              )
+            ]
+          }),
+          editableNumber({
+            databind: '%$editableNumberModel/databind%',
+            style: editableNumber.mdcSliderNoText({}),
+          })
+        ],
+        features: [
+          variable({name: 'sliderCtx', value: {'$': 'object'}}),
+          watchRef('%$editableNumberModel/databind%')
+        ]
+      })
+    }),
+    'editableNumberModel'
+  )
+})
+
+jb.component('editableNumber.mdcSliderNoText', {
+  type: 'editable-number.style',
   params: [
-    { id: 'width', as: 'number', defaultValue: 100 },
-    { id: 'height', as: 'number', defaultValue: 100 },
-    { id: 'cx', as: 'number', defaultValue: 10 },
-    { id: 'cy', as: 'number', defaultValue: 10 },
-    { id: 'r', as: 'number', defaultValue: 8 },
+    { id: 'thumbSize', as: 'number', defaultValue: 21 },
+    { id: 'cx', as: 'number', defaultValue: 10.5 },
+    { id: 'cy', as: 'number', defaultValue: 10.5 },
+    { id: 'r', as: 'number', defaultValue: 7.875 },
   ],
   impl: customStyle({
-    template: (cmp,{title,min,max,databind,width, height,cx,cy,r},h) =>
-      h('div#mdc-slider mdc-slider--discrete',{tabIndex: -1, role: 'slider', mousemove: 'onchangeHandler',
-        'aria-valuemin': min, 'aria-valuemax': max, 'aria-valuenow': databind, 'aria-label': title}, [
+    template: (cmp,{title,min,max,step,databind,thumbSize,cx,cy,r},h) =>
+      h('div#mdc-slider mdc-slider--discrete',{tabIndex: -1, role: 'slider', max, step,
+        'aria-valuemin': min, 'aria-valuemax': max, 'aria-valuenow': cmp.ctx.vars.editableNumber.numericPart(databind), 'aria-label': title()}, [
         h('div#mdc-slider__track-container',{}, h('div#mdc-slider__track')),
-        h('div#mdc-slider__thumb-container',{}, h('div#mdc-slider__pin',{},h('span#mdc-slider__pin-value-marker'))),
-        h('svg#mdc-slider__thumb',{ width, height}, h('circle',{cx,cy,r})),
-        h('div#mdc-slider__focus-ring')
+        h('div#mdc-slider__thumb-container',{},[
+          h('div#mdc-slider__pin',{},h('span#mdc-slider__pin-value-marker')),
+          h('svg#mdc-slider__thumb',{ width: thumbSize, height: thumbSize}, h('circle',{cx,cy,r})),
+          h('div#mdc-slider__focus-ring')
+        ])
       ]),
     features: [
-      mdcStyle.initDynamic(),
-      field.databind(true),
-      slider.init(),
-    ]      
+      field.databind(),
+      slider.initJbModelWithUnits(),
+      //slider.init(),
+      slider.checkAutoScale(),
+      interactiveProp('rebuild mdc on external refresh',(ctx,{cmp}) => {
+        cmp.mdcSlider && cmp.mdcSlider.destroy()
+        cmp.mdcSlider = new jb.ui.material.MDCSlider(cmp.base)
+        cmp.mdcSlider.listen('MDCSlider:change', () =>
+          !cmp.checkAutoScale(cmp.mdcSlider.value) && cmp.jbModelWithUnits(cmp.mdcSlider.value))
+      }),
+      feature.destroy((ctx,{cmp}) => cmp.mdcSlider && cmp.mdcSlider.destroy()),
+    ]
+  })
+})
+
+jb.component('slider.initJbModelWithUnits', {
+  type: 'feature',
+  impl: interactive((ctx,{cmp}) => {
+        cmp.jbModelWithUnits = val => {
+          const numericVal = ctx.vars.editableNumber.numericPart(jb.val(cmp.jbModel()))
+          if (val === undefined)
+            return numericVal
+          else
+            cmp.jbModel(ctx.vars.editableNumber.calcDataString(+val,ctx))
+        }
   })
 })
 
 jb.component('slider.init', {
   type: 'feature',
   impl: ctx => ({
-      onkeyup: true,
       onkeydown: true,
       onmouseup: true,
       onmousedown: true,
@@ -7777,17 +7843,17 @@ jb.component('slider.init', {
       afterViewInit: cmp => {
         const step = (+cmp.base.step) || 1
         cmp.handleArrowKey = e => {
-            const val = jb.tonumber(cmp.jbModel())
+            const val = jb.tonumber(cmp.jbModelWithUnits())
             if (val == null) return
             if (e.keyCode == 46) // delete
               jb.writeValue(ctx.vars.$model.databind(),null, ctx);
             if ([37,39].indexOf(e.keyCode) != -1) {
               var inc = e.shiftKey ? step*9 : step;
               if (val !=null && e.keyCode == 39)
-                cmp.jbModel(Math.min(+cmp.base.max,val+inc));
+                cmp.jbModelWithUnits(Math.min(+cmp.base.max,val+inc));
               if (val !=null && e.keyCode == 37)
-                cmp.jbModel(Math.max(+cmp.base.min,val-inc));
-              checkAutoScale()
+                cmp.jbModelWithUnits(Math.max(+cmp.base.min,val-inc));
+              cmp.checkAutoScale(cmp.base.value)
             }
         }
 
@@ -7797,21 +7863,45 @@ jb.component('slider.init', {
         // drag
         pipe(cmp.onmousedown,
           flatMap(e=> pipe(cmp.onmousemove, takeUntil(cmp.onmouseup))),
-          subscribe(e=> !checkAutoScale() && cmp.jbModel(cmp.base.value)
+          subscribe(e=> !cmp.checkAutoScale(cmp.base.value) && cmp.jbModelWithUnits(cmp.base.value)
           ))
 
         if (ctx.vars.sliderCtx) // supporting left/right arrow keys in the text field as well
           ctx.vars.sliderCtx.handleArrowKey = e => cmp.handleArrowKey(e);
-
-        function checkAutoScale() {
-          if (cmp.base.value == +cmp.base.max && ctx.vars.$model.autoScale) {
-            cmp.jbModel((+cmp.base.value) + step)
-            cmp.refresh(null, {strongRefresh: true})
-            return true
-          }
-        }
       }
     })
+})
+
+jb.component('slider.checkAutoScale', {
+  type: 'feature',
+  impl: features(
+    calcProp('min'),
+    calcProp('step'),
+    calcProp({
+        id: 'max',
+        value: ctx => {
+          const val = ctx.vars.editableNumber.numericPart(jb.val(ctx.vars.$model.databind()))
+          if (val > +ctx.vars.$model.max && ctx.vars.$model.autoScale)
+            return val + 100
+          return +ctx.vars.$model.max
+    }}),
+    interactive((ctx,{cmp}) => {
+      cmp.checkAutoScale = val => {
+        if (!ctx.vars.$model.autoScale) return
+        const max = +(cmp.base.max || cmp.base.getAttribute('max'))
+        const step = +(cmp.base.step || cmp.base.getAttribute('step'))
+        if (val == max) { // scale up
+          cmp.jbModelWithUnits((+val) + step)
+          cmp.refresh(null, {strongRefresh: true})
+          return true
+        }
+        if (max > ctx.vars.$model.max && val < ctx.vars.$model.max) { // scale down
+          cmp.jbModelWithUnits(+val)
+          cmp.refresh(null, {strongRefresh: true})
+          return true
+        }
+      }
+    }))
 })
 
 jb.component('slider.handleArrowKeys', {
@@ -7926,25 +8016,8 @@ jb.component('table.init', {
   category: 'table:10',
   impl: features(
     calcProp({id: 'fields', value: '%$$model.fields%'}),
-    calcProp({
-        id: 'updateItemlistCntr',
-        value: action.if('%$itemlistCntr%',writeValue('%$itemlistCntr.items%', '%$$props.items%')),
-        phase: 100
-      }),
-    calcProp({
-        id: 'items',
-        value: pipeline(
-          '%$$model.items%',
-          slice(0, firstSucceeding('%$$model.visualSizeLimit%', 100))
-        )
-      }),
-    interactiveProp(
-        'items',
-        pipeline(
-          '%$$model.items%',
-          slice(0, firstSucceeding('%$$model.visualSizeLimit%', 100))
-        )
-      )
+    calcProp('items', (ctx,{cmp}) => jb.ui.itemlistCalcItems(ctx,cmp)),
+    itemlist.initContainerWithItems()
   )
 })
 
@@ -8507,7 +8580,7 @@ jb.component('group.section', {
 jb.component('group.ulLi', {
   type: 'group.style',
   impl: customStyle({
-    template: (cmp,{ctrls},h) => h('ul',{ class: 'jb-itemlist'},
+    template: (cmp,{ctrls},h) => h('ul#jb-itemlist',{},
         ctrls.map(ctrl=> h('li', {class: 'jb-item'} ,h(ctrl)))),
     css: `{ list-style: none; padding: 0; margin: 0;}
     >li { list-style: none; padding: 0; margin: 0;}`,
@@ -8676,15 +8749,14 @@ jb.component('table.plain', {
   ],
   type: 'table.style,itemlist.style',
   impl: customStyle({
-    template: (cmp,{items,fields,hideHeaders},h) => h('div',{},h('table',{},[
+    template: (cmp,{items,fields,hideHeaders},h) => h('div#jb-itemlist',{},h('table',{},[
         ...(hideHeaders ? [] : [h('thead',{},h('tr',{},
           fields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} }, jb.ui.fieldTitle(cmp,f,h))) ))]),
-        h('tbody',{class: 'jb-drag-parent'},
-            items.map((item,index)=> jb.ui.item(cmp,h('tr',
-                { class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},fields.map(f=>
-              h('td', jb.filterEmpty({ 'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), class: f.class, title: f.hoverTitle &&  f.hoverTitle(item) }),
-                f.control ? h(f.control(item,index),{index, row: item}) : f.fieldData(item,index))))
-              ,item))
+        h('tbody#jb-drag-parent',{},
+            items.map((item,index)=> jb.ui.item(cmp,h('tr#jb-item',{ 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},
+              fields.map(f=>
+                h('td', jb.filterEmpty({ 'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), class: f.class, title: f.hoverTitle &&  f.hoverTitle(item) }),
+                  f.control ? h(f.control(item,index),{index, row: item}) : f.fieldData(item,index)))) ,item))
         ),
         items.length == 0 ? 'no items' : ''
         ])),
@@ -8702,20 +8774,21 @@ jb.component('table.mdc', {
     {id: 'classForTable', as: 'string', defaultValue: 'mdc-data-table__table mdc-data-table--selectable'}
   ],
   impl: customStyle({
-    template: (cmp,{items,fields,classForTable,classForTd,sortOptions,hideHeaders},h) => h('div',{class: 'mdc-data-table'}, h('table',{ class: classForTable },[
-      ...(hideHeaders ? [] : [h('thead',{},h('tr',{class:'mdc-data-table__header-row'},fields.map((f,i) =>h('th',{
+    template: (cmp,{items,fields,classForTable,classForTd,sortOptions,hideHeaders},h) => 
+      h('div#jb-itemlist mdc-data-table',{}, h('table',{ class: classForTable },[
+      ...(hideHeaders ? [] : [h('thead',{},h('tr#mdc-data-table__header-row',{},
+        fields.map((f,i) =>h('th#mdc-data-table__header-cell',{
           'jb-ctx': f.ctxId, 
-          class: ['mdc-data-table__header-cell']
-            .concat([ 
+          class: [ 
               (sortOptions && sortOptions.filter(o=>o.field == f)[0] || {}).dir == 'asc' ? 'mdc-data-table__header--sorted-ascending': '',
               (sortOptions && sortOptions.filter(o=>o.field == f)[0] || {}).dir == 'des' ? 'mdc-data-table__header--sorted-descending': '',
-            ]).filter(x=>x).join(' '), 
+            ].filter(x=>x).join(' '), 
           style: { width: f.width ? f.width + 'px' : ''},
           onclick: 'toggleSort',
           fieldIndex: i
           }
           ,jb.ui.fieldTitle(cmp,f,h))) ))]),
-        h('tbody',{class: 'jb-drag-parent mdc-data-table__content'},
+        h('tbody#jb-drag-parent mdc-data-table__content',{},
             items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item mdc-data-table__row', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},fields.map(f=>
               h('td', jb.filterEmpty({ 
                 'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), 

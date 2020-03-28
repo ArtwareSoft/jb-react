@@ -18598,8 +18598,7 @@ jb.component('d3Scatter.init', {
           itemlistCntr.items = items;
       cmp.sortItems && cmp.sortItems();
       return items.slice(0,$model.visualSizeLimit);
-    }
-      }),
+    }}),
     calcProp({id: 'frame', value: '%$$model/frame%'}),
     calcProp({id: 'pivots', value: ctx => ctx.exp('%$$model/pivots%')}),
     calcProp({
@@ -18622,8 +18621,7 @@ jb.component('d3Scatter.init', {
         id: 'color',
         value: firstSucceeding('%$$props/pivots[3]%', '%$$props/emptyPivot%')
       }),
-    calcProps(
-        (ctx,{cmp,$model})=> {
+    calcProps((ctx,{cmp,$model})=> {
       const ctx2 = ctx.setVars({frame: ctx.vars.$props.frame, items: ctx.vars.$props.items})
       const res = {
         xPivot: cmp.renderProps.x.init(ctx2.setVar('xAxis',true)),
@@ -18634,16 +18632,15 @@ jb.component('d3Scatter.init', {
       }
       res.colorPivot.scale = d3.scaleOrdinal(d3.schemeAccent); //.domain(cmp.colorPivot.domain);
       return res
-    }
-      ),
-    interactive(
-        (ctx,{cmp}) => {
-      cmp.base.outerHTML = cmp.base.outerHTML +'' // ???
-      d3.select(cmp.base.querySelector('.x.axis')).call(d3.axisBottom().scale(cmp.ctx.vars.$props.xPivot.scale));
-      d3.select(cmp.base.querySelector('.y.axis')).call(d3.axisLeft().scale(cmp.ctx.vars.$props.yPivot.scale));
+    }),
+    interactive((ctx,{cmp}) => {
+      cmp.base.innerHTML = cmp.base.innerHTML +'' // ???
+      const renderProps = cmp.ctx.runItself().calcRenderProps()
+      d3.select(cmp.base.querySelector('.x.axis')).call(d3.axisBottom().scale(renderProps.xPivot.scale));
+      d3.select(cmp.base.querySelector('.y.axis')).call(d3.axisLeft().scale(renderProps.yPivot.scale));
 
       cmp.clicked = ({event,ctx,cmp}) => {
-        const {pivots,items} = cmp.ctx.vars.$props
+        const {pivots,items} = renderProps
         const elem = event.target
         const index = elem.getAttribute('index')
         const parent = jb.path(elem, 'parentElement.parentElement')

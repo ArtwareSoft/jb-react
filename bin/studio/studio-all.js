@@ -835,6 +835,7 @@ Object.assign(jb, {
     macroDef: Symbol('macroDef'), macroNs: {}, 
     macroName: id => id.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
     ns: nsIds => nsIds.split(',').forEach(nsId => jb.registerMacro(nsId + '.$dummyComp', {})),
+    unMacro: macroId => macroId.replace(/([A-Z])/g, (all, s) => ' ' + s.toLowerCase()),
     registerMacro: (id, profile) => {
         const macroId = jb.macroName(id).replace(/\./g, '_')
         const nameSpace = id.indexOf('.') != -1 && jb.macroName(id.split('.')[0])
@@ -3619,7 +3620,7 @@ function applyDeltaToDom(elem,delta) {
             }
         })
         toAppend.forEach(e=>{
-            const newChild = elem.ownerDocument.createElement(e.tag)
+            const newChild = createElement(elem.ownerDocument,e.tag)
             elem.appendChild(newChild)
             applyDeltaToDom(newChild,e)
             jb.log('appendChild',[newChild,e,elem,delta])
@@ -3687,7 +3688,7 @@ function render(vdom,parentElem) {
     jb.log('render',[...arguments])
     function doRender(vdom,parentElem) {
         jb.log('htmlChange',['createElement',...arguments])
-        const elem = parentElem.ownerDocument.createElement(vdom.tag)
+        const elem = createElement(parentElem.ownerDocument, vdom.tag)
         jb.entries(vdom.attributes).forEach(e=>setAtt(elem,e[0],e[1])) // filter(e=>e[0].indexOf('on') != 0 && !isAttUndefined(e[0],vdom.attributes)).
         jb.asArray(vdom.children).map(child=> doRender(child,elem)).forEach(el=>elem.appendChild(el))
         parentElem.appendChild(elem)
@@ -3697,6 +3698,11 @@ function render(vdom,parentElem) {
     ui.findIncludeSelf(res,'[interactive]').forEach(el=> mountInteractive(el))
     ui.garbageCollectCtxDictionary(parentElem)
     return res
+}
+
+function createElement(parent,tag) {
+    return (['svg','circle','ellipse','image','line','mesh','path','polygon','polyline','rect','text'].indexOf(tag) != -1) ?
+        parent.createElementNS("http://www.w3.org/2000/svg", tag) : parent.createElement(tag)
 }
 
 Object.assign(jb.ui, {
@@ -3888,7 +3894,7 @@ function mountInteractive(elem, keepState) {
             ;(elem.getAttribute('interactive') || '').split(',').filter(x=>x).forEach(op => {
                 [id, ctxId] = op.split('-')
                 const ctx = jb.ui.ctxDictOfElem(elem)[ctxId]
-                this[id] = jb.val(ctx.setVar('state',this.state).runInner(ctx.profile.value,'value','value'))
+                this[id] = jb.val(ctx.setVar('state',this.state).setVar('cmp',this).runInner(ctx.profile.value,'value','value'))
             })
             this.doRefresh && this.doRefresh()
         },
@@ -3939,7 +3945,7 @@ class JbComponent {
         return this.renderProps.cmpHash
     }
  
-    renderVdom() {
+    calcRenderProps() {
         jb.log('renderVdom',[this]);
         if (!this.initialized)
             this.init();
@@ -3966,6 +3972,11 @@ class JbComponent {
             })
         Object.assign(this.renderProps,(this.styleCtx || {}).params, this.state);
         jb.log('renderProps',[this.renderProps, this])
+        return this.renderProps
+    }
+
+    renderVdom() {
+        this.calcRenderProps()
         if (this.ctx.probe && this.ctx.probe.outOfTime) return
         this.template = this.template || (() => '')
         const initialVdom = tryWrapper(() => this.template(this,this.renderProps,ui.h), 'template') || {}
@@ -4459,7 +4470,7 @@ jb.component('interactiveProp', {
     {id: 'id', as: 'string', mandatory: true},
     {id: 'value', mandatory: true, dynamic: true}
   ],
-  impl: (ctx,id) => ({interactiveProp: {id, ctx }})
+  impl: (ctx,id) => ({interactiveProp: {id: id.replace(/-/g,'_'), ctx }})
 })
 
 jb.component('calcProps', {
@@ -4482,6 +4493,15 @@ jb.component('feature.init', {
     {id: 'phase', as: 'number', defaultValue: 10, description: 'init funcs from different features can use each other, phase defines the calculation order'}
   ],
   impl: (ctx,action,phase) => ({ init: { action, phase }})
+})
+
+jb.component('feature.destroy', {
+  type: 'feature',
+  category: 'lifecycle',
+  params: [
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true},
+  ],
+  impl: ctx => ({ destroy: cmp => ctx.params.action(cmp.ctx) })
 })
 
 jb.component('feature.beforeInit', {
@@ -5960,11 +5980,12 @@ jb.component('editableNumber', {
           if (this.max == null) this.max = NaN;
         }
         numericPart(dataString) {
-          if (!dataString) return NaN;
+          if (typeof dataString == 'number') return dataString
+          if (dataString == '') return NaN;
           var parts = (''+dataString).match(/([^0-9\.\-]*)([0-9\.\-]+)([^0-9\.\-]*)/); // prefix-number-suffix
-          if ((!this.symbol) && parts)
-            this.symbol = parts[1] || parts[3] || this.symbol;
-          return (parts && parts[2]) || '';
+          if (parts)
+            this.symbol = parts[1] || parts[3]
+          return +(parts && parts[2])
         }
 
         calcDisplayString(number,ctx) {
@@ -6486,11 +6507,9 @@ jb.component('itemlist.infiniteScroll', {
     {id: 'pageSize', as: 'number', defaultValue: 2}
   ],
   impl: features(
-    defHandler(
-        'onscrollHandler',
-        (ctx,{ev, $state},{pageSize}) => {
+    defHandler('onscrollHandler', (ctx,{ev, $state},{pageSize}) => {
       const elem = ev.target
-      if (!ev.scrollPercentFromTop || ev.scrollPercentFromTop < 0.9) return
+      if (!$state.visualLimit || !ev.scrollPercentFromTop || ev.scrollPercentFromTop < 0.9) return
       const allItems = ctx.vars.$model.items()
       const needsToLoadMoreItems = $state.visualLimit.shownItems && $state.visualLimit.shownItems < allItems.length
       if (!needsToLoadMoreItems) return
@@ -6499,10 +6518,11 @@ jb.component('itemlist.infiniteScroll', {
       const itemsToAppend = allItems.slice($state.visualLimit.shownItems, $state.visualLimit.shownItems + pageSize)
       const ctxToRun = cmpCtx.ctx({profile: Object.assign({},cmpCtx.profile,{ items: () => itemsToAppend}), path: ''}) // change the profile to return itemsToAppend
       const vdom = ctxToRun.runItself().renderVdom()
-      const itemlistVdom = jb.ui.findIncludeSelf(vdom,'.jb-itemlist')[0]
+      const itemlistVdom = jb.ui.findIncludeSelf(vdom,'tbody')[0] || jb.ui.findIncludeSelf(vdom,'.jb-itemlist')[0]
+      const elemToExpand = jb.ui.findIncludeSelf(elem,'tbody')[0] || jb.ui.findIncludeSelf(elem,'.jb-itemlist')[0]
       if (itemlistVdom) {
         console.log(itemsToAppend,ev)
-        jb.ui.appendItems(elem,itemlistVdom,ctx)
+        jb.ui.appendItems(elemToExpand,itemlistVdom,ctx)
         $state.visualLimit.shownItems += itemsToAppend.length
       }
     }
@@ -6529,9 +6549,8 @@ jb.component('itemlist.fastFilter', {
 jb.component('itemlist.ulLi', {
   type: 'itemlist.style',
   impl: customStyle({
-    template: (cmp,{ctrls},h) => h('ul',{ class: 'jb-itemlist'},
-        ctrls.map(ctrl=> h('li',
-          {class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
+    template: (cmp,{ctrls},h) => h('ul#jb-itemlist',{},
+        ctrls.map(ctrl=> h('li#jb-item', {'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
           ctrl.map(singleCtrl=>h(singleCtrl))))),
     css: `{ list-style: none; padding: 0; margin: 0;}
     >li { list-style: none; padding: 0; margin: 0;}`,
@@ -6545,8 +6564,8 @@ jb.component('itemlist.horizontal', {
     {id: 'spacing', as: 'number', defaultValue: 0}
   ],
   impl: customStyle({
-    template: (cmp,{ctrls},h) => h('div',{ class: 'jb-drag-parent'},
-        ctrls.map(ctrl=> h('div', {class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
+    template: (cmp,{ctrls},h) => h('div#jb-itemlist jb-drag-parent',{},
+        ctrls.map(ctrl=> h('div#jb-item', {'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
           ctrl.map(singleCtrl=>h(singleCtrl))))),
     css: `{display: flex}
         >* { margin-right: %$spacing%px }
@@ -6850,12 +6869,11 @@ jb.component('itemlistContainer.filter', {
   category: 'itemlist-filter:100',
   requires: ctx => ctx.vars.itemlistCntr,
   params: [
-    {id: 'updateCounters', as: 'boolean', type: 'boolean'}
+    {id: 'updateCounters', as: 'boolean'},
   ],
   impl: (ctx,updateCounters) => {
 			if (!ctx.vars.itemlistCntr) return;
-			const res = ctx.vars.itemlistCntr.filters.reduce((items,filter) =>
-									filter(items), ctx.data || []);
+			const res = ctx.vars.itemlistCntr.filters.reduce((items,filter) => filter(items), ctx.data || []);
 			if (ctx.vars.itemlistCntrData.countAfterFilter != res.length)
 				jb.delay(1).then(_=>ctx.vars.itemlistCntr.reSelectAfterFilter(res));
 			if (updateCounters) { // use merge
@@ -6897,6 +6915,8 @@ jb.component('itemlistContainer.search', {
 
 				ctx.vars.itemlistCntr.filters.push( items => {
 					const toSearch = jb.val(databindRef) || '';
+					if (jb.frame.Fuse)
+						return toSearch ? new jb.frame.Fuse(items,{}).search(toSearch).map(x=>x.item) : items
 					if (typeof searchIn.profile == 'function') { // improved performance
 						return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
 					}
@@ -7625,7 +7645,7 @@ jb.component('control.icon', {
   category: 'control:50',
   params: [
     {id: 'icon', as: 'string', mandatory: true},
-    {id: 'title', as: 'string'},
+    {id: 'title', as: 'string', dynamic: true},
     {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
     {id: 'scale', as: 'number', defaultValue: 1 },
     {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
@@ -7640,7 +7660,7 @@ jb.component('icon', {
   type: 'icon',
   params: [
     {id: 'icon', as: 'string', mandatory: true},
-    {id: 'title', as: 'string'},
+    {id: 'title', as: 'string', dynamic: true},
     {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
     {id: 'scale', as: 'number', defaultValue: 1 },
     {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
@@ -7653,9 +7673,9 @@ jb.component('icon.material', {
   type: 'icon.style',
   impl: customStyle({
     template: (cmp,{icon,type,title,scale},h) => type == 'mdc' ? h('i',
-    { class: 'material-icons', title, onclick: true, style: {width: '24px', height: '24px', transform: `scale(${scale}) translate(${(scale-1)*12}px,${(scale-1)*12}px)` } }
+    { class: 'material-icons', title: title(), onclick: true, style: {width: '24px', height: '24px', transform: `scale(${scale}) translate(${(scale-1)*12}px,${(scale-1)*12}px)` } }
       , icon) 
-      : h('div',{title, onclick: true, style: { transform: `translate(${(scale-1)*12}px,${(scale-1)*12}px)`},
+      : h('div',{title: title(), onclick: true, style: { transform: `translate(${(scale-1)*12}px,${(scale-1)*12}px)`},
         $html: `<svg width="24" height="24" transform="scale(${scale})"><path d="${jb.path(jb.frame,['MDIcons',icon])}"/></svg>`}),
   })
 })
@@ -7665,6 +7685,7 @@ jb.component('feature.icon', {
   category: 'control:50',
   params: [
     {id: 'icon', as: 'string', mandatory: true},
+    {id: 'title', as: 'string', dynamic: true},
     {id: 'position', as: 'string', options: ',pre,post,raised', defaultValue: '' },
     {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
     {id: 'scale', as: 'string', defaultValue: 1 },
@@ -7686,23 +7707,14 @@ jb.ns('slider,mdcStyle')
 jb.component('editableNumber.sliderNoText', {
   type: 'editable-number.style',
   impl: features(
-    calcProp({
-        id: 'max',
-        value: ctx => {
-      const val = jb.tonumber(ctx.exp('%$editableNumberModel/databind%'))
-      if (val > +ctx.vars.$model.max && ctx.vars.$model.autoScale)
-        return val + 100
-      return +ctx.vars.$model.max
-    }
-      }),
     ctx => ({
-      template: (cmp,state,h) => h('input',{ type: 'range',
-        min: state.min, max: state.max, step: state.step,
-        value: state.databind, mouseup: 'onblurHandler', tabindex: -1})
+      template: (cmp,{min,max,step,databind},h) => h('input',{ type: 'range',
+        min, max, step, value: cmp.ctx.vars.editableNumber.numericPart(databind), mouseup: 'onblurHandler', tabindex: -1})
     }),
     field.databind(),
+    slider.checkAutoScale(),
+    slider.initJbModelWithUnits(),
     slider.init(),
-    watchRef('%$editableNumberModel/databind%')
   )
 })
 
@@ -7742,34 +7754,88 @@ jb.component('editableNumber.slider', {
 
 jb.component('editableNumber.mdcSlider', {
   type: 'editable-number.style',
+  impl: styleByControl(
+    group({
+      title: '%$editableNumberModel/title%',
+      controls: group({
+        layout: layout.horizontal(20),
+        controls: [
+          editableText({
+            databind: '%$editableNumberModel/databind%',
+            style: editableText.input(),
+            features: [
+              slider.handleArrowKeys(),
+              css(
+                'width: 40px; height: 20px; padding-top: 14px; padding-left: 3px; border: 0; border-bottom: 1px solid black; background: transparent;'
+              )
+            ]
+          }),
+          editableNumber({
+            databind: '%$editableNumberModel/databind%',
+            style: editableNumber.mdcSliderNoText({}),
+          })
+        ],
+        features: [
+          variable({name: 'sliderCtx', value: {'$': 'object'}}),
+          watchRef('%$editableNumberModel/databind%')
+        ]
+      })
+    }),
+    'editableNumberModel'
+  )
+})
+
+jb.component('editableNumber.mdcSliderNoText', {
+  type: 'editable-number.style',
   params: [
-    { id: 'width', as: 'number', defaultValue: 100 },
-    { id: 'height', as: 'number', defaultValue: 100 },
-    { id: 'cx', as: 'number', defaultValue: 10 },
-    { id: 'cy', as: 'number', defaultValue: 10 },
-    { id: 'r', as: 'number', defaultValue: 8 },
+    { id: 'thumbSize', as: 'number', defaultValue: 21 },
+    { id: 'cx', as: 'number', defaultValue: 10.5 },
+    { id: 'cy', as: 'number', defaultValue: 10.5 },
+    { id: 'r', as: 'number', defaultValue: 7.875 },
   ],
   impl: customStyle({
-    template: (cmp,{title,min,max,databind,width, height,cx,cy,r},h) =>
-      h('div#mdc-slider mdc-slider--discrete',{tabIndex: -1, role: 'slider', mousemove: 'onchangeHandler',
-        'aria-valuemin': min, 'aria-valuemax': max, 'aria-valuenow': databind, 'aria-label': title}, [
+    template: (cmp,{title,min,max,step,databind,thumbSize,cx,cy,r},h) =>
+      h('div#mdc-slider mdc-slider--discrete',{tabIndex: -1, role: 'slider', max, step,
+        'aria-valuemin': min, 'aria-valuemax': max, 'aria-valuenow': cmp.ctx.vars.editableNumber.numericPart(databind), 'aria-label': title()}, [
         h('div#mdc-slider__track-container',{}, h('div#mdc-slider__track')),
-        h('div#mdc-slider__thumb-container',{}, h('div#mdc-slider__pin',{},h('span#mdc-slider__pin-value-marker'))),
-        h('svg#mdc-slider__thumb',{ width, height}, h('circle',{cx,cy,r})),
-        h('div#mdc-slider__focus-ring')
+        h('div#mdc-slider__thumb-container',{},[
+          h('div#mdc-slider__pin',{},h('span#mdc-slider__pin-value-marker')),
+          h('svg#mdc-slider__thumb',{ width: thumbSize, height: thumbSize}, h('circle',{cx,cy,r})),
+          h('div#mdc-slider__focus-ring')
+        ])
       ]),
     features: [
-      mdcStyle.initDynamic(),
-      field.databind(true),
-      slider.init(),
-    ]      
+      field.databind(),
+      slider.initJbModelWithUnits(),
+      //slider.init(),
+      slider.checkAutoScale(),
+      interactiveProp('rebuild mdc on external refresh',(ctx,{cmp}) => {
+        cmp.mdcSlider && cmp.mdcSlider.destroy()
+        cmp.mdcSlider = new jb.ui.material.MDCSlider(cmp.base)
+        cmp.mdcSlider.listen('MDCSlider:change', () =>
+          !cmp.checkAutoScale(cmp.mdcSlider.value) && cmp.jbModelWithUnits(cmp.mdcSlider.value))
+      }),
+      feature.destroy((ctx,{cmp}) => cmp.mdcSlider && cmp.mdcSlider.destroy()),
+    ]
+  })
+})
+
+jb.component('slider.initJbModelWithUnits', {
+  type: 'feature',
+  impl: interactive((ctx,{cmp}) => {
+        cmp.jbModelWithUnits = val => {
+          const numericVal = ctx.vars.editableNumber.numericPart(jb.val(cmp.jbModel()))
+          if (val === undefined)
+            return numericVal
+          else
+            cmp.jbModel(ctx.vars.editableNumber.calcDataString(+val,ctx))
+        }
   })
 })
 
 jb.component('slider.init', {
   type: 'feature',
   impl: ctx => ({
-      onkeyup: true,
       onkeydown: true,
       onmouseup: true,
       onmousedown: true,
@@ -7777,17 +7843,17 @@ jb.component('slider.init', {
       afterViewInit: cmp => {
         const step = (+cmp.base.step) || 1
         cmp.handleArrowKey = e => {
-            const val = jb.tonumber(cmp.jbModel())
+            const val = jb.tonumber(cmp.jbModelWithUnits())
             if (val == null) return
             if (e.keyCode == 46) // delete
               jb.writeValue(ctx.vars.$model.databind(),null, ctx);
             if ([37,39].indexOf(e.keyCode) != -1) {
               var inc = e.shiftKey ? step*9 : step;
               if (val !=null && e.keyCode == 39)
-                cmp.jbModel(Math.min(+cmp.base.max,val+inc));
+                cmp.jbModelWithUnits(Math.min(+cmp.base.max,val+inc));
               if (val !=null && e.keyCode == 37)
-                cmp.jbModel(Math.max(+cmp.base.min,val-inc));
-              checkAutoScale()
+                cmp.jbModelWithUnits(Math.max(+cmp.base.min,val-inc));
+              cmp.checkAutoScale(cmp.base.value)
             }
         }
 
@@ -7797,21 +7863,45 @@ jb.component('slider.init', {
         // drag
         pipe(cmp.onmousedown,
           flatMap(e=> pipe(cmp.onmousemove, takeUntil(cmp.onmouseup))),
-          subscribe(e=> !checkAutoScale() && cmp.jbModel(cmp.base.value)
+          subscribe(e=> !cmp.checkAutoScale(cmp.base.value) && cmp.jbModelWithUnits(cmp.base.value)
           ))
 
         if (ctx.vars.sliderCtx) // supporting left/right arrow keys in the text field as well
           ctx.vars.sliderCtx.handleArrowKey = e => cmp.handleArrowKey(e);
-
-        function checkAutoScale() {
-          if (cmp.base.value == +cmp.base.max && ctx.vars.$model.autoScale) {
-            cmp.jbModel((+cmp.base.value) + step)
-            cmp.refresh(null, {strongRefresh: true})
-            return true
-          }
-        }
       }
     })
+})
+
+jb.component('slider.checkAutoScale', {
+  type: 'feature',
+  impl: features(
+    calcProp('min'),
+    calcProp('step'),
+    calcProp({
+        id: 'max',
+        value: ctx => {
+          const val = ctx.vars.editableNumber.numericPart(jb.val(ctx.vars.$model.databind()))
+          if (val > +ctx.vars.$model.max && ctx.vars.$model.autoScale)
+            return val + 100
+          return +ctx.vars.$model.max
+    }}),
+    interactive((ctx,{cmp}) => {
+      cmp.checkAutoScale = val => {
+        if (!ctx.vars.$model.autoScale) return
+        const max = +(cmp.base.max || cmp.base.getAttribute('max'))
+        const step = +(cmp.base.step || cmp.base.getAttribute('step'))
+        if (val == max) { // scale up
+          cmp.jbModelWithUnits((+val) + step)
+          cmp.refresh(null, {strongRefresh: true})
+          return true
+        }
+        if (max > ctx.vars.$model.max && val < ctx.vars.$model.max) { // scale down
+          cmp.jbModelWithUnits(+val)
+          cmp.refresh(null, {strongRefresh: true})
+          return true
+        }
+      }
+    }))
 })
 
 jb.component('slider.handleArrowKeys', {
@@ -7926,25 +8016,8 @@ jb.component('table.init', {
   category: 'table:10',
   impl: features(
     calcProp({id: 'fields', value: '%$$model.fields%'}),
-    calcProp({
-        id: 'updateItemlistCntr',
-        value: action.if('%$itemlistCntr%',writeValue('%$itemlistCntr.items%', '%$$props.items%')),
-        phase: 100
-      }),
-    calcProp({
-        id: 'items',
-        value: pipeline(
-          '%$$model.items%',
-          slice(0, firstSucceeding('%$$model.visualSizeLimit%', 100))
-        )
-      }),
-    interactiveProp(
-        'items',
-        pipeline(
-          '%$$model.items%',
-          slice(0, firstSucceeding('%$$model.visualSizeLimit%', 100))
-        )
-      )
+    calcProp('items', (ctx,{cmp}) => jb.ui.itemlistCalcItems(ctx,cmp)),
+    itemlist.initContainerWithItems()
   )
 })
 
@@ -8507,7 +8580,7 @@ jb.component('group.section', {
 jb.component('group.ulLi', {
   type: 'group.style',
   impl: customStyle({
-    template: (cmp,{ctrls},h) => h('ul',{ class: 'jb-itemlist'},
+    template: (cmp,{ctrls},h) => h('ul#jb-itemlist',{},
         ctrls.map(ctrl=> h('li', {class: 'jb-item'} ,h(ctrl)))),
     css: `{ list-style: none; padding: 0; margin: 0;}
     >li { list-style: none; padding: 0; margin: 0;}`,
@@ -8676,15 +8749,14 @@ jb.component('table.plain', {
   ],
   type: 'table.style,itemlist.style',
   impl: customStyle({
-    template: (cmp,{items,fields,hideHeaders},h) => h('div',{},h('table',{},[
+    template: (cmp,{items,fields,hideHeaders},h) => h('div#jb-itemlist',{},h('table',{},[
         ...(hideHeaders ? [] : [h('thead',{},h('tr',{},
           fields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} }, jb.ui.fieldTitle(cmp,f,h))) ))]),
-        h('tbody',{class: 'jb-drag-parent'},
-            items.map((item,index)=> jb.ui.item(cmp,h('tr',
-                { class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},fields.map(f=>
-              h('td', jb.filterEmpty({ 'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), class: f.class, title: f.hoverTitle &&  f.hoverTitle(item) }),
-                f.control ? h(f.control(item,index),{index, row: item}) : f.fieldData(item,index))))
-              ,item))
+        h('tbody#jb-drag-parent',{},
+            items.map((item,index)=> jb.ui.item(cmp,h('tr#jb-item',{ 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},
+              fields.map(f=>
+                h('td', jb.filterEmpty({ 'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), class: f.class, title: f.hoverTitle &&  f.hoverTitle(item) }),
+                  f.control ? h(f.control(item,index),{index, row: item}) : f.fieldData(item,index)))) ,item))
         ),
         items.length == 0 ? 'no items' : ''
         ])),
@@ -8702,20 +8774,21 @@ jb.component('table.mdc', {
     {id: 'classForTable', as: 'string', defaultValue: 'mdc-data-table__table mdc-data-table--selectable'}
   ],
   impl: customStyle({
-    template: (cmp,{items,fields,classForTable,classForTd,sortOptions,hideHeaders},h) => h('div',{class: 'mdc-data-table'}, h('table',{ class: classForTable },[
-      ...(hideHeaders ? [] : [h('thead',{},h('tr',{class:'mdc-data-table__header-row'},fields.map((f,i) =>h('th',{
+    template: (cmp,{items,fields,classForTable,classForTd,sortOptions,hideHeaders},h) => 
+      h('div#jb-itemlist mdc-data-table',{}, h('table',{ class: classForTable },[
+      ...(hideHeaders ? [] : [h('thead',{},h('tr#mdc-data-table__header-row',{},
+        fields.map((f,i) =>h('th#mdc-data-table__header-cell',{
           'jb-ctx': f.ctxId, 
-          class: ['mdc-data-table__header-cell']
-            .concat([ 
+          class: [ 
               (sortOptions && sortOptions.filter(o=>o.field == f)[0] || {}).dir == 'asc' ? 'mdc-data-table__header--sorted-ascending': '',
               (sortOptions && sortOptions.filter(o=>o.field == f)[0] || {}).dir == 'des' ? 'mdc-data-table__header--sorted-descending': '',
-            ]).filter(x=>x).join(' '), 
+            ].filter(x=>x).join(' '), 
           style: { width: f.width ? f.width + 'px' : ''},
           onclick: 'toggleSort',
           fieldIndex: i
           }
           ,jb.ui.fieldTitle(cmp,f,h))) ))]),
-        h('tbody',{class: 'jb-drag-parent mdc-data-table__content'},
+        h('tbody#jb-drag-parent mdc-data-table__content',{},
             items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item mdc-data-table__row', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},fields.map(f=>
               h('td', jb.filterEmpty({ 
                 'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), 
@@ -27406,6 +27479,16 @@ jb.animate = {
 
 ;
 
+/**
+ * Fuse.js v5.0.10-beta - Lightweight fuzzy-search (http://fusejs.io)
+ *
+ * Copyright (c) 2020 Kiro Risk (http://kiro.me)
+ * All Rights Reserved. Apache Software License 2.0
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ */
+var t,e;t=this,e=function(){"use strict";function t(t,e){if(!(t instanceof e))throw new TypeError("Cannot call a class as a function")}function e(t,e){for(var r=0;r<e.length;r++){var n=e[r];n.enumerable=n.enumerable||!1,n.configurable=!0,"value"in n&&(n.writable=!0),Object.defineProperty(t,n.key,n)}}function r(t,r,n){return r&&e(t.prototype,r),n&&e(t,n),t}function n(t,e,r){return e in t?Object.defineProperty(t,e,{value:r,enumerable:!0,configurable:!0,writable:!0}):t[e]=r,t}function i(t,e){var r=Object.keys(t);if(Object.getOwnPropertySymbols){var n=Object.getOwnPropertySymbols(t);e&&(n=n.filter((function(e){return Object.getOwnPropertyDescriptor(t,e).enumerable}))),r.push.apply(r,n)}return r}function s(t){for(var e=1;e<arguments.length;e++){var r=null!=arguments[e]?arguments[e]:{};e%2?i(Object(r),!0).forEach((function(e){n(t,e,r[e])})):Object.getOwnPropertyDescriptors?Object.defineProperties(t,Object.getOwnPropertyDescriptors(r)):i(Object(r)).forEach((function(e){Object.defineProperty(t,e,Object.getOwnPropertyDescriptor(r,e))}))}return t}function o(t,e){var r=e.errors,n=void 0===r?0:r,i=e.currentLocation,s=void 0===i?0:i,o=e.expectedLocation,a=void 0===o?0:o,h=e.distance,c=void 0===h?100:h,u=n/t.length,f=Math.abs(a-s);return c?u+f/c:f?1:u}var a=function(){function e(r,n){var i=n.location,s=void 0===i?0:i,o=n.distance,a=void 0===o?100:o,h=n.threshold,c=void 0===h?.6:h,u=n.isCaseSensitive,f=void 0!==u&&u,l=n.findAllMatches,v=void 0!==l&&l,d=n.minMatchCharLength,p=void 0===d?1:d,g=n.includeMatches,y=void 0!==g&&g;if(t(this,e),this.options={location:s,distance:a,threshold:c,isCaseSensitive:f,findAllMatches:v,includeMatches:y,minMatchCharLength:p},r.length>32)throw new Error("Pattern length exceeds max of ".concat(32,"."));this.pattern=f?r:r.toLowerCase(),this.patternAlphabet=function(t){for(var e={},r=t.length,n=0;n<r;n+=1)e[t.charAt(n)]=0;for(var i=0;i<r;i+=1)e[t.charAt(i)]|=1<<r-i-1;return e}(this.pattern)}return r(e,[{key:"searchIn",value:function(t){var e=t.$;return this.searchInString(e)}},{key:"searchInString",value:function(t){var e=this.options,r=e.isCaseSensitive,n=e.includeMatches;if(r||(t=t.toLowerCase()),this.pattern===t){var i={isMatch:!0,score:0};return n&&(i.matchedIndices=[[0,t.length-1]]),i}var s=this.options,a=s.location,h=s.distance,c=s.threshold,u=s.findAllMatches,f=s.minMatchCharLength;return function(t,e,r,n){for(var i=n.location,s=void 0===i?0:i,a=n.distance,h=void 0===a?100:a,c=n.threshold,u=void 0===c?.6:c,f=n.findAllMatches,l=void 0!==f&&f,v=n.minMatchCharLength,d=void 0===v?1:v,p=n.includeMatches,g=void 0!==p&&p,y=e.length,m=t.length,k=Math.max(0,Math.min(s,m)),b=u,M=t.indexOf(e,k),x=[],_=0;_<m;_+=1)x[_]=0;if(-1!==M){var w=o(e,{errors:0,currentLocation:M,expectedLocation:k,distance:h});if(b=Math.min(w,b),-1!==(M=t.lastIndexOf(e,k+y))){var S=o(e,{errors:0,currentLocation:M,expectedLocation:k,distance:h});b=Math.min(S,b)}}M=-1;for(var O=[],I=1,A=y+m,L=1<<(y<=31?y-1:30),C=0;C<y;C+=1){for(var j=0,$=A;j<$;)o(e,{errors:C,currentLocation:k+$,expectedLocation:k,distance:h})<=b?j=$:A=$,$=Math.floor((A-j)/2+j);A=$;var P=Math.max(1,k-$+1),N=l?m:Math.min(k+$,m)+y,E=Array(N+2);E[N+1]=(1<<C)-1;for(var F=N;F>=P;F-=1){var z=F-1,q=r[t.charAt(z)];if(q&&(x[z]=1),E[F]=(E[F+1]<<1|1)&q,0!==C&&(E[F]|=(O[F+1]|O[F])<<1|1|O[F+1]),E[F]&L&&(I=o(e,{errors:C,currentLocation:z,expectedLocation:k,distance:h}))<=b){if(b=I,(M=z)<=k)break;P=Math.max(1,2*k-M)}}if(o(e,{errors:C+1,currentLocation:k,expectedLocation:k,distance:h})>b)break;O=E}var D={isMatch:M>=0,score:I||.001};return g&&(D.matchedIndices=function(){for(var t=arguments.length>0&&void 0!==arguments[0]?arguments[0]:[],e=arguments.length>1&&void 0!==arguments[1]?arguments[1]:1,r=[],n=-1,i=-1,s=0,o=t.length;s<o;s+=1){var a=t[s];a&&-1===n?n=s:a||-1===n||((i=s-1)-n+1>=e&&r.push([n,i]),n=-1)}return t[s-1]&&s-n>=e&&r.push([n,s-1]),r}(x,d)),D}(t,this.pattern,this.patternAlphabet,{location:a,distance:h,threshold:c,findAllMatches:u,minMatchCharLength:f,includeMatches:n})}}]),e}(),h=function(t){return t.substr(1)},c=function(t){return"'"==t.charAt(0)},u=function(t,e){var r=h(t);return{isMatch:e.indexOf(r)>-1,score:0}},f=function(t){return t.substr(1)},l=function(t){return"!"==t.charAt(0)},v=function(t,e){var r=f(t);return{isMatch:-1===e.indexOf(r),score:0}},d=function(t){return t.substr(1)},p=function(t){return"^"==t.charAt(0)},g=function(t,e){var r=d(t);return{isMatch:e.startsWith(r),score:0}},y=function(t){return t.substr(2)},m=function(t){return"!"==t.charAt(0)&&"^"==t.charAt(1)},k=function(t,e){var r=y(t);return{isMatch:!e.startsWith(r),score:0}},b=function(t){return t.substr(0,t.length-1)},M=function(t){return"$"==t.charAt(t.length-1)},x=function(t,e){var r=b(t);return{isMatch:e.endsWith(r),score:0}},_=function(t){return t.substring(1,t.length-1)},w=function(t){return"!"==t.charAt(0)&&"$"==t.charAt(t.length-1)},S=function(t,e){var r=_(t);return{isMatch:!e.endsWith(r),score:0}},O=function(t){return Array.isArray?Array.isArray(t):"[object Array]"===Object.prototype.toString.call(t)},I=function(t){return"string"==typeof t},A=function(t){return"number"==typeof t},L=function(t){return null!=t},C=function(){function e(r,n){t(this,e);var i=n.isCaseSensitive;this.query=null,this.options=n,this._fuzzyCache={},I(r)&&r.trim().length>0&&(this.pattern=i?r:r.toLowerCase(),this.query=function(t){return t.split("|").map((function(t){return t.trim().split(/ +/g)}))}(this.pattern))}return r(e,[{key:"searchIn",value:function(t){var e=this.query;if(!this.query)return{isMatch:!1,score:1};var r=t.$;r=this.options.isCaseSensitive?r:r.toLowerCase();for(var n=!1,i=0,s=e.length;i<s;i+=1){var o=e[i],a=null;n=!0;for(var h=0,c=o.length;h<c;h+=1){var u=o[h];if(!(a=this._search(u,r)).isMatch){n=!1;break}}if(n)return a}return{isMatch:!1,score:1}}},{key:"_search",value:function(t,e){if(c(t))return u(t,e);if(p(t))return g(t,e);if(m(t))return k(t,e);if(w(t))return S(t,e);if(M(t))return x(t,e);if(l(t))return v(t,e);var r=this._fuzzyCache[t];return r||(r=new a(t,this.options),this._fuzzyCache[t]=r),r.searchInString(e)}}]),e}();function j(t,e){var r=e.n,n=void 0===r?3:r,i=e.pad,s=void 0===i||i,o=e.sort,a=void 0!==o&&o,h=[];if(null==t)return h;t=t.toLowerCase(),s&&(t=" ".concat(t," "));var c=t.length-n+1;if(c<1)return h;for(;c--;)h[c]=t.substr(c,n);return a&&h.sort((function(t,e){return t==e?0:t<e?-1:1})),h}var $=function(){function e(r){var n=arguments.length>1&&void 0!==arguments[1]?arguments[1]:{threshold:.6};t(this,e),this.options=n,this.patternNgram=j(r,{sort:!0})}return r(e,[{key:"searchIn",value:function(t){var e=t.ng;e||(e=j(t.$,{sort:!0}),t.ng=e);var r,n,i,s=(r=this.patternNgram,i=function(t,e){for(var r=[],n=0,i=0;n<t.length&&i<e.length;){var s=t[n],o=e[i];s<o?(r.push(s),n+=1):o<s?(r.push(o),i+=1):(r.push(o),n+=1,i+=1)}for(;n<t.length;)r.push(t[n]),n+=1;for(;i<e.length;)r.push(e[i]),i+=1;return r}(r,n=e),1-function(t,e){for(var r=[],n=0,i=0;n<t.length&&i<e.length;){var s=t[n],o=e[i];s==o?(r.push(s),n+=1,i+=1):s<o?n+=1:(s>o||(n+=1),i+=1)}return r}(r,n).length/i.length),o=s<this.options.threshold;return{score:o?s:1,isMatch:o}}}]),e}();function P(t,e){var r=[],n=!1;return function t(e,i){if(i){var s=i.indexOf("."),o=i,a=null;-1!==s&&(o=i.slice(0,s),a=i.slice(s+1));var h=e[o];if(L(h))if(a||!I(h)&&!A(h))if(O(h)){n=!0;for(var c=0,u=h.length;c<u;c+=1)t(h[c],a)}else a&&t(h,a);else r.push(function(t){return null==t?"":function(t){if("string"==typeof t)return t;var e=t+"";return"0"==e&&1/t==-1/0?"-0":e}(t)}(h))}else r.push(e)}(t,e),n?r:r[0]}function N(t,e){var r=arguments.length>2&&void 0!==arguments[2]?arguments[2]:{},n=r.getFn,i=void 0===n?P:n,s=r.ngrams,o=void 0!==s&&s,a=[];if(I(e[0]))for(var h=0,c=e.length;h<c;h+=1){var u=e[h];if(L(u)){var f={$:u,idx:h};o&&(f.ng=j(u,{sort:!0})),a.push(f)}}else for(var l=t.length,v=0,d=e.length;v<d;v+=1){for(var p=e[v],g={idx:v,$:{}},y=0;y<l;y+=1){var m=t[y],k=i(p,m);if(L(k))if(O(k)){for(var b=[],M=[{arrayIndex:-1,value:k}];M.length;){var x=M.pop(),_=x.arrayIndex,w=x.value;if(L(w))if(I(w)){var S={$:w,idx:_};o&&(S.ng=j(w,{sort:!0})),b.push(S)}else if(O(w))for(var A=0,C=w.length;A<C;A+=1)M.push({arrayIndex:A,value:w[A]})}g.$[m]=b}else{var $={$:k};o&&($.ng=j(k,{sort:!0})),g.$[m]=$}}a.push(g)}return a}var E=function(){function e(r){if(t(this,e),this._keys={},this._keyNames=[],this._length=r.length,r.length&&I(r[0]))for(var n=0;n<this._length;n+=1){var i=r[n];this._keys[i]={weight:1},this._keyNames.push(i)}else{for(var s=0,o=0;o<this._length;o+=1){var a=r[o];if(!Object.prototype.hasOwnProperty.call(a,"name"))throw new Error('Missing "name" property in key object');var h=a.name;if(this._keyNames.push(h),!Object.prototype.hasOwnProperty.call(a,"weight"))throw new Error('Missing "weight" property in key object');var c=a.weight;if(c<=0||c>=1)throw new Error('"weight" property in key must bein the range of (0, 1)');this._keys[h]={weight:c},s+=c}for(var u=0;u<this._length;u+=1){var f=this._keyNames[u],l=this._keys[f].weight;this._keys[f].weight=l/s}}}return r(e,[{key:"get",value:function(t,e){return this._keys[t]?this._keys[t][e]:-1}},{key:"keys",value:function(){return this._keyNames}},{key:"count",value:function(){return this._length}},{key:"toJSON",value:function(){return JSON.stringify(this._keys)}}]),e}();function F(t,e){var r=t.matches;if(e.matches=[],L(r))for(var n=0,i=r.length;n<i;n+=1){var s=r[n];if(L(s.indices)&&0!==s.indices.length){var o={indices:s.indices,value:s.value};s.key&&(o.key=s.key),s.idx>-1&&(o.refIndex=s.idx),e.matches.push(o)}}}function z(t,e){e.score=t.score}var q={isCaseSensitive:!1,distance:100,findAllMatches:!1,getFn:P,includeMatches:!1,includeScore:!1,keys:[],location:0,minMatchCharLength:1,shouldSort:!0,sortFn:function(t,e){return t.score-e.score},threshold:.6,useExtendedSearch:!1},D=function(){function e(r){var n=arguments.length>1&&void 0!==arguments[1]?arguments[1]:q,i=arguments.length>2&&void 0!==arguments[2]?arguments[2]:null;t(this,e),this.options=s({},q,{},n),this.options.isCaseSensitive=n.caseSensitive,delete this.options.caseSensitive,this._processKeys(this.options.keys),this.setCollection(r,i)}return r(e,[{key:"setCollection",value:function(t){var e=arguments.length>1&&void 0!==arguments[1]?arguments[1]:null;this.list=t,this.listIsStringArray=I(t[0]),e?this.setIndex(e):this.setIndex(this._createIndex())}},{key:"setIndex",value:function(t){this._indexedList=t}},{key:"_processKeys",value:function(t){this._keyStore=new E(t)}},{key:"_createIndex",value:function(){return N(this._keyStore.keys(),this.list,{getFn:this.options.getFn})}},{key:"search",value:function(t){var e=arguments.length>1&&void 0!==arguments[1]?arguments[1]:{limit:!1},r=this.options,n=r.useExtendedSearch,i=r.shouldSort,s=null;s=n?new C(t,this.options):t.length>32?new $(t,this.options):new a(t,this.options);var o=this._searchUsing(s);return this._computeScore(o),i&&this._sort(o),e.limit&&A(e.limit)&&(o=o.slice(0,e.limit)),this._format(o)}},{key:"_searchUsing",value:function(t){var e=this._indexedList,r=[],n=this.options.includeMatches;if(this.listIsStringArray)for(var i=0,s=e.length;i<s;i+=1){var o=e[i],a=o.$,h=o.idx;if(L(a)){var c=t.searchIn(o),u=c.isMatch,f=c.score;if(u){var l={score:f,value:a};n&&(l.indices=c.matchedIndices),r.push({item:a,idx:h,matches:[l]})}}}else for(var v=this._keyStore.keys(),d=this._keyStore.count(),p=0,g=e.length;p<g;p+=1){var y=e[p],m=y.$,k=y.idx;if(L(m)){for(var b=[],M=0;M<d;M+=1){var x=v[M],_=m[x];if(L(_))if(O(_))for(var w=0,S=_.length;w<S;w+=1){var I=_[w],A=I.$,C=I.idx;if(L(A)){var j=t.searchIn(I),$=j.isMatch,P=j.score;if($){var N={score:P,key:x,value:A,idx:C};n&&(N.indices=j.matchedIndices),b.push(N)}}}else{var E=_.$,F=t.searchIn(_),z=F.isMatch,q=F.score;if(!z)continue;var D={score:q,key:x,value:E};n&&(D.indices=F.matchedIndices),b.push(D)}}b.length&&r.push({idx:k,item:m,matches:b})}}return r}},{key:"_computeScore",value:function(t){for(var e=0,r=t.length;e<r;e+=1){for(var n=t[e],i=n.matches,s=i.length,o=1,a=0;a<s;a+=1){var h=i[a],c=h.key,u=this._keyStore.get(c,"weight"),f=u>-1?u:1,l=0===h.score&&u>-1?Number.EPSILON:h.score;o*=Math.pow(l,f)}n.score=o}}},{key:"_sort",value:function(t){t.sort(this.options.sortFn)}},{key:"_format",value:function(t){var e=[],r=this.options,n=r.includeMatches,i=r.includeScore,s=[];n&&s.push(F),i&&s.push(z);for(var o=0,a=t.length;o<a;o+=1){var h=t[o],c=h.idx,u={item:this.list[c],refIndex:c};if(s.length)for(var f=0,l=s.length;f<l;f+=1)s[f](h,u);e.push(u)}return e}}]),e}();return D.version="5.0.10-beta",D.createIndex=N,D},"object"==typeof exports&&"undefined"!=typeof module?module.exports=e():"function"==typeof define&&define.amd?define(e):(t=t||self).Fuse=e();;
+
 /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -29439,19 +29522,25 @@ jb.component('editableText.studioPrimitiveText', {
           class: 'mdc-text-field__input',
           value: databind, onchange: true, onkeyup: true, onblur: true
     }),
-    css: '{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom: 7px;} :focus { border-color: #3F51B5; border-width: 2px}',
+    css: '{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom1: 7px;} :focus { border-color: #3F51B5; border-width: 2px}',
     features: field.databindText(500, false)
   })
 })
 
 jb.component('editableText.floatingInput', {
   type: 'editable-text.style',
+  impl: styleWithFeatures(editableText.mdcInput(),
+    css(`~ .mdc-text-field__input  { font-size: 1.2rem; } ~ .mdc-text-field { width: 100%; margin-right: 13px;}`))
+})
+
+jb.component('editableText.floatingInputToDelete', {
+  type: 'editable-text.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{class:'mdc-text-field'},[
-      h('input', { class: 'mdc-text-field__input', type: 'text', autocomplete: 'nop',
+    template: (cmp,state,h) => h('div#mdc-text-field',{},[
+      h('input#mdc-text-field__input', { type: 'text', autocomplete: 'nop',
           value: state.databind, onchange: true, onkeyup: true, onblur: true,
       }),
-      h('label',{class: 'mdc-floating-label', for: 'jb_input_' + state.fieldId},state.title)
+      h('label#mdc-floating-label', {for: 'jb_input_' + state.fieldId},state.title)
     ]),
     css: `>input { font-size: 1.2rem; }
     { margin-right: 13px;}`,
@@ -29505,7 +29594,7 @@ jb.component('button.selectProfileStyle', {
         h('input', { class: 'mdc-text-field__input', type: 'text', readonly: true, title,
             value: title, onmouseup: 'onclickHandler', onkeydown: 'clickedEnter',
         }),
-    css: '{ cursor: pointer; padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom: 7px; } :focus { border-color: #3F51B5; border-width: 2px}',
+    css: '{ cursor: pointer; padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom1: 7px; } :focus { border-color: #3F51B5; border-width: 2px}',
     features: interactive(
       (ctx,{cmp}) => cmp.clickedEnter = () => event.keyCode == 13 && cmp.onclickHandler()
     )
@@ -29531,7 +29620,7 @@ jb.component('button.studioScript', {
             onmouseup: 'onclickHandler',
             onkeydown: 'clickedEnter',
         }),
-    css: '{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom: 7px;; cursor: pointer; opacity: 0.8; font-style: italic; }',
+    css: '{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom1: 7px; cursor: pointer; opacity: 0.8; font-style: italic; }',
     features: interactive(
       (ctx,{cmp}) => cmp.clickedEnter = ev => event.keyCode == 13 && cmp.onclickHandler()
     )
@@ -30072,6 +30161,10 @@ jb.component('studio.compSource', {
     {id: 'comp', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
   impl: (context,comp) =>	st.compAsStr(comp.split('~')[0])
+})
+
+jb.component('studio.unMacro', {
+  impl: ({data}) => data && data.replace(/([A-Z])/g, (all, s) => ' ' + s.toLowerCase()),
 })
 
 })();
@@ -31911,7 +32004,7 @@ jb.component('studio.selectProfile', {
         title: 'categories and items',
         layout: layout.horizontal('33'),
         controls: [
-          table({
+          itemlist({
             items: pipeline(
               '%$Categories%',
               filter(
@@ -31924,13 +32017,12 @@ jb.component('studio.selectProfile', {
               itemlistContainer.filter(),
               unique('%%', '%%')
             ),
-            fields: field({
+            controls: text({
               title: 'profile',
-              data: '%%',
-              hoverTitle: ({data}) => (jb.studio.previewjb.comps[data]||{}).description || ''
+              text: studio.unMacro('%%'),
+              feature: feature.hoverTitle( ({data}) => (jb.studio.previewjb.comps[data]||{}).description || '')
             }),
-            style: table.plain(true),
-            visualSizeLimit: 500,
+            visualSizeLimit: '30',
             features: [
               itemlist.selection({
                 databind: '%$itemlistCntrData/selected%',
@@ -31953,7 +32045,8 @@ jb.component('studio.selectProfile', {
               watchRef('%$itemlistCntrData/search_pattern%'),
               css.margin({top: '3', selector: '>li'}),
               css.height({height: '360', overflow: 'auto'}),
-              css.width('200')
+              css.width('200'),
+              itemlist.infiniteScroll('2')
             ]
           }),
           picklist({
@@ -32351,7 +32444,7 @@ jb.component('studio.suggestionsItemlist', {
   impl: itemlist({
     items: '%$suggestionData/options%',
     controls: text({
-      text: '%text%',
+      text: pipeline('%text%', studio.unMacro()),
       features: [
         css.padding({left: '3', right: '2'}),
         feature.hoverTitle(
@@ -32414,6 +32507,12 @@ jb.component('studio.jbFloatingInput', {
   impl: group({
     layout: layout.horizontal('20'),
     controls: [
+      control.icon({
+        icon: 'FunctionVariant',
+        title: "hit '=' to calculate with function",
+        type: 'mdi',
+        features: [css.margin('25')]
+      }),
       editableBoolean({
         databind: studio.boolRef('%$path%'),
         style: editableBoolean.mdcSlideToggle(),
@@ -32541,17 +32640,13 @@ st.suggestions = class {
         jb.toarray(probeCtx.exp(this.base))
           .map(x=>jb.entries(x).map(x=>new ValueOption(x[0],x[1],this.pos,this.tail))) )
 
-    options = jb.unique(options,x=>x.toPaste)
-        .filter(x=> x.toPaste.indexOf('$jb_') != 0)
+    options = jb.unique(options,x=>x.toPaste).filter(x=> x.toPaste.indexOf('$jb_') != 0)
+    if (this.tail == '')// || typeof x.toPaste != 'string')
+      this.options = options
+    else
+      this.options = new jb.frame.Fuse(options,{keys: ['toPaste','description']}).search(this.tail || '').map(x=>x.item)
 
-//        .filter(x=> x.toPaste != this.tail)
-        .filter(x=>
-          this.tail == '' || typeof x.toPaste != 'string' || (x.description + x.toPaste).toLowerCase().indexOf(this.tail.toLowerCase()) != -1)
-    if (this.tail)
-      options.sort((x,y)=> (y.toPaste.toLowerCase().indexOf(this.tail.toLowerCase()) == 0 ? 1 : 0) - (x.toPaste.toLowerCase().indexOf(this.tail.toLowerCase()) == 0 ? 1 : 0));
-
-    this.options = options;
-    this.key = options.map(o=>o.toPaste).join(','); // build hash for the options to detect options change
+    this.key = this.options.map(o=>o.toPaste).join(','); // build hash for the options to detect options change
     return this;
   }
 }
@@ -32691,6 +32786,9 @@ jb.component('studio.propField', {
         controlWithCondition(pipeline(studio.paramDef('%path%'),'%id%',or(equals('icon'),equals('raisedIcon'))),
           studio.pickIcon('%$path%')
         ),
+        controlWithCondition(inGroup(split({text:'width,height,top,left,right,bottom'}),pipeline(studio.paramDef('%path%'),'%id%')),
+          studio.propertyNumbericCss('%$path%')
+        ),
         controlWithCondition(
           and(
             studio.isOfType('%$path%', 'data,boolean'),
@@ -32785,76 +32883,14 @@ jb.component('studio.propertyScript', {
   })
 })
 
-jb.component('studio.pickIcon', {
+jb.component('studio.propertyNumbericCss', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: group({
-    controls: button({
-      title: prettyPrint(studio.val('%$path%'), true),
-      action: openDialog({
-        style: dialog.dialogOkCancel(),
-        content: group({
-          controls: [
-            itemlistContainer.search({
-              title: '',
-              searchIn: '%%',
-              databind: '%$itemlistCntrData/search_pattern%'
-            }),
-            itemlist({
-              title: '',
-              items: pipeline(ctx => jb.frame.MDIcons, keys(), itemlistContainer.filter()),
-              controls: [
-                group({
-                  layout: layout.horizontal(),
-                  controls: [
-                    button({title: 'icon', style: button.mdcIcon(icon({icon: '%%', type: 'mdi'}))}),
-                    text({
-                      text: pipeline('%%', text.highlight('%%', '%$itemlistCntrData.search_pattern%')),
-                      title: 'icon name'
-                    })
-                  ]
-                })
-              ],
-              visualSizeLimit: '50',
-              features: [
-                watchRef({ref: '%$itemlistCntrData/search_pattern%', strongRefresh: 'true'}),
-                css.height({height: '300', overflow: 'scroll'}),
-                css.width('600'),
-                itemlist.infiniteScroll(),
-                itemlist.selection({
-                  onDoubleClick: runActions(
-                    writeValue(studio.ref('%$path%'), '%%'),
-                    dialog.closeContainingPopup()
-                  )
-                })
-              ]
-            })
-          ],
-          features: group.itemlistContainer({})
-        }),
-        title: 'pick icon'
-      }),
-      style: button.studioScript(),
-      raised: ''
-    }),
-    features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
-  })
-})
-
-jb.component('studio.iconPicker', {
-  type: 'control',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: group({
-    controls: button({
-      title: prettyPrint(studio.val('%$path%'), true),
-      action: studio.openJbEditor('%$path%'),
-      style: button.studioScript()
-    }),
-    features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
+  impl: editableNumber({
+    databind: studio.ref('%$path%'),
+    style: editableNumber.mdcSlider()
   })
 })
 
@@ -32865,7 +32901,8 @@ jb.component('studio.propertyBoolean', {
   ],
   impl: editableBoolean({
     databind: studio.ref('%$path%'),
-    style: editableBoolean.mdcSlideToggle()
+    style: editableBoolean.mdcSlideToggle(),
+    features: css('{flex-direction: row;     display: flex;} ~ label {padding-left: 10px }')
   })
 })
 
@@ -32878,7 +32915,10 @@ jb.component('studio.propertyEnum', {
     databind: studio.ref('%$path%'),
     options: studio.enumOptions('%$path%'),
     style: picklist.nativeMdLookOpen(),
-    features: css.width({width: '100', minMax: 'min'})
+    features: [
+      css.width({width: '100', minMax: 'min'}),
+      css('~ input {font-size: 1.2rem; border-bottom-color: black }')
+    ]
   })
 })
 
@@ -34612,18 +34652,19 @@ jb.component('studio.componentStatistics', {
 
     const cmp = _jb.comps[cmpId], refs = _jb.statistics
     if (!cmp) return {}
+    const asStr = '' //jb.prettyPrint(cmp.impl || '',{comps: _jb.comps})
 
     return {
       id: cmpId,
       file: (cmp[_jb.location] || [])[0],
       lineInFile: +(cmp[_jb.location] ||[])[1],
-      linesOfCode: (jb.prettyPrint(cmp.impl || '',{comps: _jb.comps}).match(/\n/g)||[]).length,
+      linesOfCode: (asStr.match(/\n/g)||[]).length,
       refs: refs[cmpId].refs,
       referredBy: refs[cmpId].by,
       type: cmp.type || 'data',
       implType: typeof cmp.impl,
       refCount: refs[cmpId].by.length,
-      size: jb.prettyPrintComp(cmpId,cmp).length
+      size: asStr.length
     }
 
     function calcRefs(profile) {
@@ -35196,7 +35237,7 @@ jb.component('studio.chooseProject', {
         controls: button({
           title: text.highlight('%%', '%$itemlistCntrData/search_pattern%'),
           action: studio.gotoProject('%%'),
-          style: button.mdc(),
+          style: button.mdcHeader(true),
           features: css('{ text-align: left; width: 250px }')
         }),
         features: [
@@ -35898,30 +35939,23 @@ jb.component('studio.searchList', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: group({
-    controls: [
-      table({
+  impl: itemlist({
         items: pipeline(
           studio.allComps(),
           itemlistContainer.filter(),
           studio.componentStatistics('%%'),
-          sort('refCount'),
-          slice('0', '50')
         ),
-        fields: [
-          field.control({
-            control: control.icon({
+        visualSizeLimit: 30,
+        controls: [
+          control.icon({
               icon: studio.iconOfType('%type%'),
               features: [
                 css.opacity('0.3'),
                 css('{ font-size: 16px }'),
                 css.padding({top: '5', left: '5'})
               ]
-            })
           }),
-          field.control({
-            title: 'id',
-            control: button({
+          button({
               title: pipeline(
                 text.highlight(
                     '%id%',
@@ -35930,31 +35964,31 @@ jb.component('studio.searchList', {
                   )
               ),
               action: studio.openJbEditor('%id%'),
-              style: button.href()
-            }),
-            width: '200'
+              style: button.href(),
+              features: [field.columnWidth(200), field.title('id')]
           }),
-          field.control({
-            title: 'refs',
-            control: button({
+          button({
               title: '%refCount%',
               action: menu.openContextMenu({
                 menu: menu.menu({
                   options: [studio.gotoReferencesOptions('%id%', studio.references('%id%'))]
                 })
               }),
-              style: button.href()
-            })
+              style: button.href(),
+              features: field.title('refCount')
           }),
-          field({title: 'type', data: '%type%'}),
-          field({
-            title: 'file',
-            data: pipeline('%file%', split({separator: '/', part: 'last'}))
+          text({
+            text: '%type%',
+            features: field.title('type')
           }),
-          field({
-            title: 'impl',
-            data: pipeline('%implType%', data.if('%% = \"function\"', 'javascript', ''))
-          })
+          text({
+            text: pipeline('%file%', split({separator: '/', part: 'last'})),
+            features: field.title('file')
+          }),
+          text({
+            text: pipeline('%implType%', data.if('%% = \"function\"', 'javascript', '')),
+            features: field.title('impl')
+          }),
         ],
         style: table.plain(),
         features: [
@@ -35965,17 +35999,14 @@ jb.component('studio.searchList', {
             databindToSelected: '%%',
             cssForSelected: 'background: #bbb !important; color: #fff !important'
           }),
-          itemlist.keyboardSelection({onEnter: studio.gotoPath('%id%')})
-        ]
-      })
-    ],
-    features: [
-      css.boxShadow({shadowColor: '#cccccc'}),
-      css.padding({top: '4', right: '5'}),
-      css.height({height: '600', overflow: 'auto', minMax: 'max'}),
-      css.width({width: '400', minMax: 'min'})
-    ]
-  })
+          itemlist.infiniteScroll(),
+          itemlist.keyboardSelection({onEnter: studio.gotoPath('%id%')}),
+          css.boxShadow({shadowColor: '#cccccc'}),
+          css.padding({top: '4', right: '5'}),
+          css.height({height: '600', overflow: 'auto', minMax: 'max'}),
+          css.width({width: '400', minMax: 'min'})
+      ]
+    }),
 })
 
 jb.component('studio.searchComponent', {
@@ -35995,15 +36026,18 @@ jb.component('studio.searchComponent', {
           editableText.helperPopup({
             control: studio.searchList(),
             popupId: 'search-component',
-            popupStyle: dialog.popup()
+            popupStyle: styleWithFeatures(
+              dialog.popup(),
+              dialogFeature.nearLauncherPosition({ offsetTop: 50 }))
           }),
+          css.margin({top: '-30', left: '10'}),
           css(
             '>input {padding-right: 45px; border-bottom-color: white !important} {height: 35px; background: white !important}'
           )
         ]
       })
     ],
-    features: [group.itemlistContainer({}), css.margin({top: '-30', left: '10'})]
+    features: [group.itemlistContainer({})]
   })
 })
 ;
@@ -38047,4 +38081,100 @@ jb.ui.stylePatterns = {
 }
 
 })();
+
+jb.component('studio.pickIcon', {
+  type: 'control',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: group({
+    controls: button({
+      title: prettyPrint(studio.val('%$path%'), true),
+      action: openDialog({
+        style: dialog.studioFloating({}),
+        content: group({
+          vars: [Var('type', property('type', studio.ref(studio.parentPath('%$path%'))))],
+          controls: [
+            group({
+              layout: layout.horizontal(),
+              controls: [
+                picklist({
+                  title: 'type',
+                  databind: '%$type%',
+                  options: picklist.optionsByComma('mdi,mdc'),
+                  style: picklist.buttonList({})
+                }),
+                itemlistContainer.search({
+                  searchIn: '%%',
+                  databind: '%$itemlistCntrData/search_pattern%',
+                  style: styleWithFeatures(
+                    editableText.mdcSearch(),
+                    [
+                      css('~ .mdc-text-field {height: 32px }'),
+                      css('~ input { padding: 0 0 0 10px; }'),
+                      css('~ .mdc-text-field__icon { top: 20%;}')
+                    ]
+                  )
+                })
+              ]
+            }),
+            itemlist({
+              title: '',
+              items: pipeline(
+                If(
+                    equals('mdi', '%$type%'),
+                    pipeline(ctx => jb.frame.MDIcons, keys()),
+                    ctx => jb.ui.mdcIconNames.split(',')
+                  ),
+                itemlistContainer.filter()
+              ),
+              controls: [
+                group({
+                  title: '',
+                  layout: layout.horizontal(),
+                  controls: [
+                    control.icon({icon: '%%', type: '%$type%'}),
+                    text({
+                      text: pipeline('%%', text.highlight('%%', '%$itemlistCntrData.search_pattern%')),
+                      title: 'icon name'
+                    })
+                  ]
+                })
+              ],
+              visualSizeLimit: '50',
+              features: [
+                watchRef({ref: '%$itemlistCntrData/search_pattern%', strongRefresh: 'true'}),
+                watchRef({ref: '%$type%', strongRefresh: 'true'}),
+                css.height({height: '500', overflow: 'scroll'}),
+                css.width('600'),
+                itemlist.infiniteScroll(),
+                itemlist.selection({
+                  onDoubleClick: runActions(
+                    writeValue(studio.ref('%$path%'), '%%'),
+                    delay(),
+                    dialog.closeContainingPopup()
+                  )
+                }),
+                itemlist.keyboardSelection({
+                  onEnter: runActions(
+                    writeValue(studio.ref('%$path%'), '%%'),
+                    delay(),
+                    dialog.closeContainingPopup()
+                  )
+                })
+              ]
+            })
+          ],
+          features: [group.itemlistContainer({}), group.autoFocusOnFirstInput()]
+        }),
+        title: 'pick icon'
+      }),
+      style: button.studioScript(),
+      raised: ''
+    }),
+    features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
+  })
+})
+
+jb.ui.mdcIconNames = 'add_alert,3d_rotation,accessibility,accessibility_new,accessible,accessible_forward,account_balance,account_balance_wallet,account_box,account_circle,add_shopping_cart,alarm,alarm_add,alarm_off,alarm_on,all_inbox,all_out,android,announcement,arrow_right_alt,aspect_ratio,assessment,assignment,assignment_ind,assignment_late,assignment_return,assignment_returned,assignment_turned_in,autorenew,backup,book,bookmark,bookmark_border,bookmarks,bug_report,build,cached,calendar_today,calendar_view_day,camera_enhance,cancel_schedule_send,card_giftcard,card_membership,card_travel,change_history,check_circle,check_circle_outline,chrome_reader_mode,class,code,commute,compare_arrows,contact_support,contactless,copyright,credit_card,dashboard,date_range,delete,delete_forever,delete_outline,description,dns,done,done_all,done_outline,donut_large,donut_small,drag_indicator,eco,eject,euro_symbol,event,event_seat,exit_to_app,explore,explore_off,extension,face,favorite,favorite_border,feedback,find_in_page,find_replace,fingerprint,flight_land,flight_takeoff,flip_to_back,flip_to_front,g_translate,gavel,get_app,gif,grade,group_work,help,help_outline,highlight_off,history,home,horizontal_split,hourglass_empty,hourglass_full,http,https,important_devices,info,input,invert_colors,label,label_important,label_off,language,launch,line_style,line_weight,list,lock,lock_open,loyalty,markunread_mailbox,maximize,minimize,note_add,offline_bolt,offline_pin,opacity,open_in_browser,open_in_new,open_with,pageview,pan_tool,payment,perm_camera_mic,perm_contact_calendar,perm_data_setting,perm_device_information,perm_identity,perm_media,perm_phone_msg,perm_scan_wifi,pets,picture_in_picture,picture_in_picture_alt,play_for_work,polymer,power_settings_new,pregnant_woman,print,query_builder,question_answer,receipt,record_voice_over,redeem,remove_shopping_cart,reorder,report_problem,restore,restore_from_trash,restore_page,room,rounded_corner,rowing,schedule,search,settings,settings_applications,settings_backup_restore,settings_bluetooth,settings_brightness,settings_cell,settings_ethernet,settings_input_antenna,settings_input_component,settings_input_composite,settings_input_hdmi,settings_input_svideo,settings_overscan,settings_phone,settings_power,settings_remote,settings_voice,shop,shop_two,shopping_basket,shopping_cart,speaker_notes,speaker_notes_off,spellcheck,stars,store,subject,supervised_user_circle,supervisor_account,swap_horiz,swap_horizontal_circle,swap_vert,swap_vertical_circle,sync_alt,system_update_alt,tab,tab_unselected,text_rotate_up,text_rotate_vertical,text_rotation_angledown,text_rotation_angleup,text_rotation_down,text_rotation_none,theaters,thumb_down,thumb_up,thumbs_up_down,timeline,toc,today,toll,touch_app,track_changes,translate,trending_down,trending_flat,trending_up,turned_in,turned_in_not,update,verified_user,vertical_split,view_agenda,view_array,view_carousel,view_column,view_day,view_headline,view_list,view_module,view_quilt,view_stream,view_week,visibility,visibility_off,voice_over_off,watch_later,work,work_off,work_outline,youtube_searched_for,zoom_in,zoom_out,add_alert,error,error_outline,notification_important,warning,4k,add_to_queue,airplay,album,art_track,av_timer,branding_watermark,call_to_action,closed_caption,control_camera,equalizer,explicit,fast_forward,fast_rewind,featured_play_list,featured_video,fiber_dvr,fiber_manual_record,fiber_new,fiber_pin,fiber_smart_record,forward_10,forward_30,forward_5,games,hd,hearing,high_quality,library_add,library_add_check,library_books,library_music,loop,mic,mic_none,mic_off,missed_video_call,movie,music_video,new_releases,not_interested,note,pause,pause_circle_filled,pause_circle_outline,play_arrow,play_circle_filled,play_circle_outline,playlist_add,playlist_add_check,playlist_play,queue,queue_music,queue_play_next,radio,recent_actors,remove_from_queue,repeat,repeat_one,replay,replay_10,replay_30,replay_5,shuffle,skip_next,skip_previous,slow_motion_video,snooze,sort_by_alpha,speed,stop,subscriptions,subtitles,surround_sound,video_call,video_label,video_library,videocam,videocam_off,volume_down,volume_mute,volume_off,volume_up,web,web_asset,add_ic_call,alternate_email,business,call,call_end,call_made,call_merge,call_missed,call_missed_outgoing,call_received,call_split,cancel_presentation,chat,chat_bubble,chat_bubble_outline,clear_all,comment,contact_mail,contact_phone,contacts,desktop_access_disabled,dialer_sip,dialpad,domain_disabled,duo,email,forum,import_contacts,import_export,invert_colors_off,list_alt,live_help,location_off,location_on,mail_outline,message,mobile_screen_share,no_sim,pause_presentation,person_add_disabled,phone,phone_disabled,phone_enabled,phonelink_erase,phonelink_lock,phonelink_ring,phonelink_setup,portable_wifi_off,present_to_all,print_disabled,ring_volume,rss_feed,screen_share,sentiment_satisfied_alt,speaker_phone,stay_current_landscape,stay_current_portrait,stay_primary_landscape,stay_primary_portrait,stop_screen_share,swap_calls,textsms,unsubscribe,voicemail,vpn_key,add,add_box,add_circle,add_circle_outline,amp_stories,archive,backspace,ballot,block,clear,create,delete_sweep,drafts,dynamic_feed,file_copy,filter_list,flag,font_download,forward,gesture,how_to_reg,how_to_vote,inbox,link,link_off,low_priority,mail,markunread,move_to_inbox,next_week,outlined_flag,policy,redo,remove,remove_circle,remove_circle_outline,reply,reply_all,report,report_off,save,save_alt,select_all,send,sort,square_foot,text_format,unarchive,undo,waves,weekend,where_to_vote,access_alarm,access_alarms,access_time,add_alarm,add_to_home_screen,airplanemode_active,airplanemode_inactive,battery_alert,battery_charging_full,battery_full,battery_std,battery_unknown,bluetooth,bluetooth_connected,bluetooth_disabled,bluetooth_searching,brightness_auto,brightness_high,brightness_low,brightness_medium,data_usage,developer_mode,devices,dvr,gps_fixed,gps_not_fixed,gps_off,graphic_eq,location_disabled,location_searching,mobile_friendly,mobile_off,nfc,screen_lock_landscape,screen_lock_portrait,screen_lock_rotation,screen_rotation,sd_storage,settings_system_daydream,signal_cellular_4_bar,signal_cellular_alt,signal_cellular_connected_no_internet_4_bar,signal_cellular_no_sim,signal_cellular_null,signal_cellular_off,signal_wifi_4_bar,signal_wifi_4_bar_lock,signal_wifi_off,storage,usb,wallpaper,widgets,wifi_lock,wifi_tethering,add_comment,attach_file,attach_money,bar_chart,border_all,border_bottom,border_clear,border_horizontal,border_inner,border_left,border_outer,border_right,border_style,border_top,border_vertical,bubble_chart,drag_handle,format_align_center,format_align_justify,format_align_left,format_align_right,format_bold,format_clear,format_color_reset,format_indent_decrease,format_indent_increase,format_italic,format_line_spacing,format_list_bulleted,format_list_numbered,format_list_numbered_rtl,format_paint,format_quote,format_shapes,format_size,format_strikethrough,format_textdirection_l_to_r,format_textdirection_r_to_l,format_underlined,functions,height,highlight,insert_chart,insert_chart_outlined,insert_comment,insert_drive_file,insert_emoticon,insert_invitation,insert_link,insert_photo,linear_scale,merge_type,mode_comment,monetization_on,money_off,multiline_chart,notes,pie_chart,post_add,publish,scatter_plot,score,short_text,show_chart,space_bar,strikethrough_s,table_chart,text_fields,title,vertical_align_bottom,vertical_align_center,vertical_align_top,wrap_text,attachment,cloud,cloud_circle,cloud_done,cloud_download,cloud_off,cloud_queue,cloud_upload,create_new_folder,folder,folder_open,folder_shared,cast,cast_connected,computer,desktop_mac,desktop_windows,developer_board,device_hub,device_unknown,devices_other,dock,gamepad,headset,headset_mic,keyboard,keyboard_arrow_down,keyboard_arrow_left,keyboard_arrow_right,keyboard_arrow_up,keyboard_backspace,keyboard_capslock,keyboard_hide,keyboard_return,keyboard_tab,keyboard_voice,laptop,laptop_chromebook,laptop_mac,laptop_windows,memory,mouse,phone_android,phone_iphone,phonelink,phonelink_off,power_input,router,scanner,security,sim_card,smartphone,speaker,speaker_group,tablet,tablet_android,tablet_mac,toys,tv,videogame_asset,watch,add_a_photo,add_photo_alternate,add_to_photos,adjust,assistant,assistant_photo,audiotrack,blur_circular,blur_linear,blur_off,blur_on,brightness_1,brightness_2,brightness_3,brightness_4,brightness_5,brightness_6,brightness_7,broken_image,brush,burst_mode,camera,camera_alt,camera_front,camera_rear,camera_roll,center_focus_strong,center_focus_weak,collections,collections_bookmark,color_lens,colorize,compare,control_point,control_point_duplicate,crop,crop_16_9,crop_3_2,crop_5_4,crop_7_5,crop_din,crop_free,crop_landscape,crop_original,crop_portrait,crop_rotate,crop_square,dehaze,details,edit,euro,exposure,exposure_neg_1,exposure_neg_2,exposure_plus_1,exposure_plus_2,exposure_zero,filter,filter_1,filter_2,filter_3,filter_4,filter_5,filter_6,filter_7,filter_8,filter_9,filter_9_plus,filter_b_and_w,filter_center_focus,filter_drama,filter_frames,filter_hdr,filter_none,filter_tilt_shift,filter_vintage,flare,flash_auto,flash_off,flash_on,flip,flip_camera_android,flip_camera_ios,gradient,grain,grid_off,grid_on,hdr_off,hdr_on,hdr_strong,hdr_weak,healing,image,image_aspect_ratio,image_search,iso,landscape,leak_add,leak_remove,lens,linked_camera,looks,looks_3,looks_4,looks_5,looks_6,looks_one,looks_two,loupe,monochrome_photos,movie_creation,movie_filter,music_note,music_off,nature,nature_people,navigate_before,navigate_next,palette,panorama,panorama_fish_eye,panorama_horizontal,panorama_vertical,panorama_wide_angle,photo,photo_album,photo_camera,photo_filter,photo_library,photo_size_select_actual,photo_size_select_large,photo_size_select_small,picture_as_pdf,portrait,remove_red_eye,rotate_90_degrees_ccw,rotate_left,rotate_right,shutter_speed,slideshow,straighten,style,switch_camera,switch_video,tag_faces,texture,timelapse,timer,timer_10,timer_3,timer_off,tonality,transform,tune,view_comfy,view_compact,vignette,wb_auto,wb_cloudy,wb_incandescent,wb_iridescent,wb_sunny,360,add_location,atm,beenhere,category,compass_calibration,departure_board,directions,directions_bike,directions_boat,directions_bus,directions_car,directions_railway,directions_run,directions_subway,directions_transit,directions_walk,edit_attributes,edit_location,ev_station,fastfood,flight,hotel,layers,layers_clear,local_activity,local_airport,local_atm,local_bar,local_cafe,local_car_wash,local_convenience_store,local_dining,local_drink,local_florist,local_gas_station,local_grocery_store,local_hospital,local_hotel,local_laundry_service,local_library,local_mall,local_movies,local_offer,local_parking,local_pharmacy,local_phone,local_pizza,local_play,local_post_office,local_printshop,local_see,local_shipping,local_taxi,map,menu_book,money,museum,my_location,navigation,near_me,not_listed_location,person_pin,person_pin_circle,pin_drop,place,rate_review,restaurant,restaurant_menu,satellite,store_mall_directory,streetview,subway,terrain,traffic,train,tram,transfer_within_a_station,transit_enterexit,trip_origin,two_wheeler,zoom_out_map,apps,arrow_back,arrow_back_ios,arrow_downward,arrow_drop_down,arrow_drop_down_circle,arrow_drop_up,arrow_forward,arrow_forward_ios,arrow_left,arrow_right,arrow_upward,cancel,check,chevron_left,chevron_right,close,double_arrow,expand_less,expand_more,first_page,fullscreen,fullscreen_exit,home_work,last_page,menu,menu_open,more_horiz,more_vert,refresh,subdirectory_arrow_left,subdirectory_arrow_right,unfold_less,unfold_more,account_tree,adb,airline_seat_flat,airline_seat_flat_angled,airline_seat_individual_suite,airline_seat_legroom_extra,airline_seat_legroom_normal,airline_seat_legroom_reduced,airline_seat_recline_extra,airline_seat_recline_normal,bluetooth_audio,confirmation_number,disc_full,drive_eta,enhanced_encryption,event_available,event_busy,event_note,folder_special,live_tv,mms,more,network_check,network_locked,no_encryption,ondemand_video,personal_video,phone_bluetooth_speaker,phone_callback,phone_forwarded,phone_in_talk,phone_locked,phone_missed,phone_paused,power,power_off,priority_high,sd_card,sms,sms_failed,sync,sync_disabled,sync_problem,system_update,tap_and_play,time_to_leave,tv_off,vibration,voice_chat,vpn_lock,wc,wifi,wifi_off,ac_unit,airport_shuttle,all_inclusive,apartment,bathtub,beach_access,business_center,casino,child_care,child_friendly,fitness_center,free_breakfast,golf_course,hot_tub,house,kitchen,meeting_room,no_meeting_room,pool,room_service,rv_hookup,smoke_free,smoking_rooms,spa,storefront,cake,deck,domain,emoji_emotions,emoji_events,emoji_flags,emoji_food_beverage,emoji_nature,emoji_objects,emoji_people,emoji_symbols,emoji_transportation,fireplace,group,group_add,king_bed,location_city,mood,mood_bad,nights_stay,notifications,notifications_active,notifications_none,notifications_off,notifications_paused,outdoor_grill,pages,party_mode,people,people_alt,people_outline,person,person_add,person_outline,plus_one,poll,public,school,sentiment_dissatisfied,sentiment_satisfied,sentiment_very_dissatisfied,sentiment_very_satisfied,share,single_bed,sports,sports_baseball,sports_basketball,sports_cricket,sports_esports,sports_football,sports_golf,sports_handball,sports_hockey,sports_kabaddi,sports_mma,sports_motorsports,sports_rugby,sports_soccer,sports_tennis,sports_volleyball,thumb_down_alt,thumb_up_alt,whatshot,check_box,check_box_outline_blank,indeterminate_check_box,radio_button_checked,radio_button_unchecked,star,star_border,star_half,star_outline,toggle_off,toggle_on';
 
