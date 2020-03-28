@@ -23,14 +23,26 @@ jb.component('studio.toolbar', {
     controls: [
       editableBoolean({
         databind: '%$studio/settings/contentEditable%',
-        style: editableBoolean.mdcXV('location_searching', 'location_disabled'),
+        style: editableBoolean.buttonXV({
+          yesIcon: icon({icon: 'location_searching', type: 'mdc'}),
+          noIcon: icon({icon: 'location_disabled', type: 'mdc'}),
+          buttonStyle: button.mdcFloatingAction(true, true)
+        }),
         title: 'Inline content editing',
-        features: [feature.onEvent({event: 'click', action: contentEditable.deactivate()})]
+        features: [
+          feature.onEvent({event: 'click', action: contentEditable.deactivate()}),
+          css('background: grey')
+        ]
       }),
       editableBoolean({
         databind: '%$studio/settings/activateWatchRefViewer%',
-        style: editableBoolean.mdcXV('blur_on', 'blur_off'),
-        title: 'Watch Data Connections'
+        style: editableBoolean.buttonXV({
+          yesIcon: icon({icon: 'blur_on', type: 'mdc'}),
+          noIcon: icon({icon: 'blur_off', type: 'mdc'}),
+          buttonStyle: button.mdcFloatingAction(true, false)
+        }),
+        title: 'Watch Data Connections',
+        features: css('background: grey')
       }),
       button({
         title: 'Select',

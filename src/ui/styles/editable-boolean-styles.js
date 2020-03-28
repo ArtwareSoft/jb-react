@@ -58,6 +58,22 @@ jb.component('editableBoolean.mdcXV', {
   })
 })
 
+jb.component('editableBoolean.buttonXV', {
+  type: 'editable-boolean.style',
+  description: 'two icons',
+  params: [
+    {id: 'yesIcon', type: 'icon', mandatory: true, defaultValue: icon('check')},
+    {id: 'noIcon', type: 'icon', mandatory: true, defaultValue: icon('close') },
+    {id: 'buttonStyle', type: 'button.style', mandatory: true, defaultValue: button.mdcFloatingAction() }
+  ],
+  impl: styleWithFeatures(call('buttonStyle'), features(
+      htmlAttribute('onclick','toggle'),
+      ctx => ctx.run({...ctx.componentContext.params[jb.toboolean(ctx.vars.$model.databind()) ? 'yesIcon' : 'noIcon' ], 
+        title: ctx.exp('%$$model/title%'), $: 'feature.icon'}),
+    ))
+})
+
+
 jb.component('editableBoolean.mdcSlideToggle', {
   type: 'editable-boolean.style',
   params: [

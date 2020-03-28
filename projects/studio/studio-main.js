@@ -337,7 +337,12 @@ jb.component('studio.topBar', {
                 style: menuStyle.pulldown({}),
                 features: [id('mainMenu'), css.height('30')]
               }),
-              studio.toolbar(),
+              group({
+                controls: [
+                  studio.toolbar()
+                ],
+                features: css.margin('-10')
+              }),
               studio.searchComponent()
             ],
             features: [css.width('960')]

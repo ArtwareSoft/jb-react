@@ -85,9 +85,10 @@ jb.component('button.mdcIcon', {
     {id: 'raisedIcon', type: 'icon' }
   ],
   impl: styleWithFeatures(button.mdcFloatingAction({withTitle: false, mini: true}), features(
-    ctx => ctx.run({...ctx.componentContext.params.icon, $: 'feature.icon'}),
-    ctx => [ctx.componentContext.params.raisedIcon && ctx.run({...ctx.componentContext.params.raisedIcon, $: 'feature.icon', position: 'raised'})].filter(x=>x),
-    css('{ box-shadow: 0 0; border-radius: 2px !important; width: 24px; height: 24px; padding: 0; color: black; background-color: transparent;}')
+    ctx => ctx.run({...ctx.componentContext.params.icon, title: ctx.exp('%$$model/title%'), $: 'feature.icon'}),
+    ctx => [ctx.componentContext.params.raisedIcon && ctx.run({...ctx.componentContext.params.raisedIcon, $: 'feature.icon', position: 'raised', title: ctx.exp('%$$model/title%')})].filter(x=>x),
+    //css(`{ box-shadow: 0 0; border-radius: 2px; width: 24px; height: 24px; padding: 0; color: black; background-color: transparent}`),
+    css(`{ background-color: grey}`),
   ))
 })
 
@@ -106,7 +107,7 @@ jb.component('button.mdcFloatingAction', {
             ...jb.ui.chooseIconWithRaised(cmp.icon,raised).filter(x=>x).map(h).map(vdom=>vdom.addClass('mdc-fab__icon')),
             ...[withTitle && h('span',{ class: 'mdc-fab__label'},title)].filter(x=>x)
       ]),
-    features: mdcStyle.initDynamic()
+    features: mdcStyle.initDynamic(),
   })
 })
 
