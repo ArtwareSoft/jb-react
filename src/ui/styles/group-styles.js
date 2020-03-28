@@ -27,7 +27,7 @@ jb.component('group.section', {
 jb.component('group.ulLi', {
   type: 'group.style',
   impl: customStyle({
-    template: (cmp,{ctrls},h) => h('ul',{ class: 'jb-itemlist'},
+    template: (cmp,{ctrls},h) => h('ul#jb-itemlist',{},
         ctrls.map(ctrl=> h('li', {class: 'jb-item'} ,h(ctrl)))),
     css: `{ list-style: none; padding: 0; margin: 0;}
     >li { list-style: none; padding: 0; margin: 0;}`,

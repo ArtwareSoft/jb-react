@@ -90,4 +90,8 @@ jb.component('studio.compSource', {
   impl: (context,comp) =>	st.compAsStr(comp.split('~')[0])
 })
 
+jb.component('studio.unMacro', {
+  impl: ({data}) => data && data.replace(/([A-Z])/g, (all, s) => ' ' + s.toLowerCase()),
+})
+
 })();

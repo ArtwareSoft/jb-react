@@ -30,7 +30,7 @@ class JbComponent {
         return this.renderProps.cmpHash
     }
  
-    renderVdom() {
+    calcRenderProps() {
         jb.log('renderVdom',[this]);
         if (!this.initialized)
             this.init();
@@ -57,6 +57,11 @@ class JbComponent {
             })
         Object.assign(this.renderProps,(this.styleCtx || {}).params, this.state);
         jb.log('renderProps',[this.renderProps, this])
+        return this.renderProps
+    }
+
+    renderVdom() {
+        this.calcRenderProps()
         if (this.ctx.probe && this.ctx.probe.outOfTime) return
         this.template = this.template || (() => '')
         const initialVdom = tryWrapper(() => this.template(this,this.renderProps,ui.h), 'template') || {}

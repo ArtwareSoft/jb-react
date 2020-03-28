@@ -95,25 +95,8 @@ jb.component('table.init', {
   category: 'table:10',
   impl: features(
     calcProp({id: 'fields', value: '%$$model.fields%'}),
-    calcProp({
-        id: 'updateItemlistCntr',
-        value: action.if('%$itemlistCntr%',writeValue('%$itemlistCntr.items%', '%$$props.items%')),
-        phase: 100
-      }),
-    calcProp({
-        id: 'items',
-        value: pipeline(
-          '%$$model.items%',
-          slice(0, firstSucceeding('%$$model.visualSizeLimit%', 100))
-        )
-      }),
-    interactiveProp(
-        'items',
-        pipeline(
-          '%$$model.items%',
-          slice(0, firstSucceeding('%$$model.visualSizeLimit%', 100))
-        )
-      )
+    calcProp('items', (ctx,{cmp}) => jb.ui.itemlistCalcItems(ctx,cmp)),
+    itemlist.initContainerWithItems()
   )
 })
 

@@ -5,19 +5,25 @@ jb.component('editableText.studioPrimitiveText', {
           class: 'mdc-text-field__input',
           value: databind, onchange: true, onkeyup: true, onblur: true
     }),
-    css: '{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom: 7px;} :focus { border-color: #3F51B5; border-width: 2px}',
+    css: '{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom1: 7px;} :focus { border-color: #3F51B5; border-width: 2px}',
     features: field.databindText(500, false)
   })
 })
 
 jb.component('editableText.floatingInput', {
   type: 'editable-text.style',
+  impl: styleWithFeatures(editableText.mdcInput(),
+    css(`~ .mdc-text-field__input  { font-size: 1.2rem; } ~ .mdc-text-field { width: 100%; margin-right: 13px;}`))
+})
+
+jb.component('editableText.floatingInputToDelete', {
+  type: 'editable-text.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{class:'mdc-text-field'},[
-      h('input', { class: 'mdc-text-field__input', type: 'text', autocomplete: 'nop',
+    template: (cmp,state,h) => h('div#mdc-text-field',{},[
+      h('input#mdc-text-field__input', { type: 'text', autocomplete: 'nop',
           value: state.databind, onchange: true, onkeyup: true, onblur: true,
       }),
-      h('label',{class: 'mdc-floating-label', for: 'jb_input_' + state.fieldId},state.title)
+      h('label#mdc-floating-label', {for: 'jb_input_' + state.fieldId},state.title)
     ]),
     css: `>input { font-size: 1.2rem; }
     { margin-right: 13px;}`,
@@ -71,7 +77,7 @@ jb.component('button.selectProfileStyle', {
         h('input', { class: 'mdc-text-field__input', type: 'text', readonly: true, title,
             value: title, onmouseup: 'onclickHandler', onkeydown: 'clickedEnter',
         }),
-    css: '{ cursor: pointer; padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom: 7px; } :focus { border-color: #3F51B5; border-width: 2px}',
+    css: '{ cursor: pointer; padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom1: 7px; } :focus { border-color: #3F51B5; border-width: 2px}',
     features: interactive(
       (ctx,{cmp}) => cmp.clickedEnter = () => event.keyCode == 13 && cmp.onclickHandler()
     )
@@ -97,7 +103,7 @@ jb.component('button.studioScript', {
             onmouseup: 'onclickHandler',
             onkeydown: 'clickedEnter',
         }),
-    css: '{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom: 7px;; cursor: pointer; opacity: 0.8; font-style: italic; }',
+    css: '{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom1: 7px; cursor: pointer; opacity: 0.8; font-style: italic; }',
     features: interactive(
       (ctx,{cmp}) => cmp.clickedEnter = ev => event.keyCode == 13 && cmp.onclickHandler()
     )

@@ -1,23 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script type="text/javascript">
-    startTime = new Date().getTime();
+    jbProjectSettings = {
+      project: 'd3-demo',
+      libs: 'common,ui-common,d3',
+      jsFiles: ['phones.js','d3-demo.js'],
+    }
   </script>
-<!-- start-jb-scripts -->
-<script type="text/javascript" src="//unpkg.com/jb-react/dist/jb-react-all.js"></script>
-<script type="text/javascript" src="//unpkg.com/jb-react/dist/d3.js"></script>
-<script type="text/javascript" src="phones.js"></script>
-<script type="text/javascript" src="d3-demo.js"></script>
-
-<!-- end-jb-scripts -->
+  <script type="text/javascript" src="/src/loader/jb-loader.js"></script>
 </head>
 <body>
-  <div id="main"> </div>
   <script>
-    jb.ui.renderWidget({$:'d3-demo.main'},document.getElementById('main'))
+    window.jb_initWidget && jb_initWidget()
   </script>
 </body>
 </html>

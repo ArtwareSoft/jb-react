@@ -89,7 +89,7 @@ jb.component('studio.selectProfile', {
         title: 'categories and items',
         layout: layout.horizontal('33'),
         controls: [
-          table({
+          itemlist({
             items: pipeline(
               '%$Categories%',
               filter(
@@ -102,13 +102,12 @@ jb.component('studio.selectProfile', {
               itemlistContainer.filter(),
               unique('%%', '%%')
             ),
-            fields: field({
+            controls: text({
               title: 'profile',
-              data: '%%',
-              hoverTitle: ({data}) => (jb.studio.previewjb.comps[data]||{}).description || ''
+              text: studio.unMacro('%%'),
+              feature: feature.hoverTitle( ({data}) => (jb.studio.previewjb.comps[data]||{}).description || '')
             }),
-            style: table.plain(true),
-            visualSizeLimit: 500,
+            visualSizeLimit: '30',
             features: [
               itemlist.selection({
                 databind: '%$itemlistCntrData/selected%',
@@ -131,7 +130,8 @@ jb.component('studio.selectProfile', {
               watchRef('%$itemlistCntrData/search_pattern%'),
               css.margin({top: '3', selector: '>li'}),
               css.height({height: '360', overflow: 'auto'}),
-              css.width('200')
+              css.width('200'),
+              itemlist.infiniteScroll('2')
             ]
           }),
           picklist({

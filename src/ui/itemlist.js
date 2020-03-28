@@ -63,11 +63,9 @@ jb.component('itemlist.infiniteScroll', {
     {id: 'pageSize', as: 'number', defaultValue: 2}
   ],
   impl: features(
-    defHandler(
-        'onscrollHandler',
-        (ctx,{ev, $state},{pageSize}) => {
+    defHandler('onscrollHandler', (ctx,{ev, $state},{pageSize}) => {
       const elem = ev.target
-      if (!ev.scrollPercentFromTop || ev.scrollPercentFromTop < 0.9) return
+      if (!$state.visualLimit || !ev.scrollPercentFromTop || ev.scrollPercentFromTop < 0.9) return
       const allItems = ctx.vars.$model.items()
       const needsToLoadMoreItems = $state.visualLimit.shownItems && $state.visualLimit.shownItems < allItems.length
       if (!needsToLoadMoreItems) return
@@ -76,10 +74,11 @@ jb.component('itemlist.infiniteScroll', {
       const itemsToAppend = allItems.slice($state.visualLimit.shownItems, $state.visualLimit.shownItems + pageSize)
       const ctxToRun = cmpCtx.ctx({profile: Object.assign({},cmpCtx.profile,{ items: () => itemsToAppend}), path: ''}) // change the profile to return itemsToAppend
       const vdom = ctxToRun.runItself().renderVdom()
-      const itemlistVdom = jb.ui.findIncludeSelf(vdom,'.jb-itemlist')[0]
+      const itemlistVdom = jb.ui.findIncludeSelf(vdom,'tbody')[0] || jb.ui.findIncludeSelf(vdom,'.jb-itemlist')[0]
+      const elemToExpand = jb.ui.findIncludeSelf(elem,'tbody')[0] || jb.ui.findIncludeSelf(elem,'.jb-itemlist')[0]
       if (itemlistVdom) {
         console.log(itemsToAppend,ev)
-        jb.ui.appendItems(elem,itemlistVdom,ctx)
+        jb.ui.appendItems(elemToExpand,itemlistVdom,ctx)
         $state.visualLimit.shownItems += itemsToAppend.length
       }
     }
@@ -106,9 +105,8 @@ jb.component('itemlist.fastFilter', {
 jb.component('itemlist.ulLi', {
   type: 'itemlist.style',
   impl: customStyle({
-    template: (cmp,{ctrls},h) => h('ul',{ class: 'jb-itemlist'},
-        ctrls.map(ctrl=> h('li',
-          {class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
+    template: (cmp,{ctrls},h) => h('ul#jb-itemlist',{},
+        ctrls.map(ctrl=> h('li#jb-item', {'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
           ctrl.map(singleCtrl=>h(singleCtrl))))),
     css: `{ list-style: none; padding: 0; margin: 0;}
     >li { list-style: none; padding: 0; margin: 0;}`,
@@ -122,8 +120,8 @@ jb.component('itemlist.horizontal', {
     {id: 'spacing', as: 'number', defaultValue: 0}
   ],
   impl: customStyle({
-    template: (cmp,{ctrls},h) => h('div',{ class: 'jb-drag-parent'},
-        ctrls.map(ctrl=> h('div', {class: 'jb-item', 'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
+    template: (cmp,{ctrls},h) => h('div#jb-itemlist jb-drag-parent',{},
+        ctrls.map(ctrl=> h('div#jb-item', {'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
           ctrl.map(singleCtrl=>h(singleCtrl))))),
     css: `{display: flex}
         >* { margin-right: %$spacing%px }

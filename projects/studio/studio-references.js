@@ -29,18 +29,19 @@ jb.component('studio.componentStatistics', {
 
     const cmp = _jb.comps[cmpId], refs = _jb.statistics
     if (!cmp) return {}
+    const asStr = '' //jb.prettyPrint(cmp.impl || '',{comps: _jb.comps})
 
     return {
       id: cmpId,
       file: (cmp[_jb.location] || [])[0],
       lineInFile: +(cmp[_jb.location] ||[])[1],
-      linesOfCode: (jb.prettyPrint(cmp.impl || '',{comps: _jb.comps}).match(/\n/g)||[]).length,
+      linesOfCode: (asStr.match(/\n/g)||[]).length,
       refs: refs[cmpId].refs,
       referredBy: refs[cmpId].by,
       type: cmp.type || 'data',
       implType: typeof cmp.impl,
       refCount: refs[cmpId].by.length,
-      size: jb.prettyPrintComp(cmpId,cmp).length
+      size: asStr.length
     }
 
     function calcRefs(profile) {

@@ -67,7 +67,7 @@ jb.component('studio.suggestionsItemlist', {
   impl: itemlist({
     items: '%$suggestionData/options%',
     controls: text({
-      text: '%text%',
+      text: pipeline('%text%', studio.unMacro()),
       features: [
         css.padding({left: '3', right: '2'}),
         feature.hoverTitle(
@@ -130,6 +130,12 @@ jb.component('studio.jbFloatingInput', {
   impl: group({
     layout: layout.horizontal('20'),
     controls: [
+      control.icon({
+        icon: 'FunctionVariant',
+        title: "hit '=' to calculate with function",
+        type: 'mdi',
+        features: [css.margin('25')]
+      }),
       editableBoolean({
         databind: studio.boolRef('%$path%'),
         style: editableBoolean.mdcSlideToggle(),
@@ -258,7 +264,10 @@ st.suggestions = class {
           .map(x=>jb.entries(x).map(x=>new ValueOption(x[0],x[1],this.pos,this.tail))) )
 
     options = jb.unique(options,x=>x.toPaste).filter(x=> x.toPaste.indexOf('$jb_') != 0)
-    this.options = new jb.frame.Fuse(options,{keys: ['toPaste','description']}).search(this.tail || '').map(x=>x.item)
+    if (this.tail == '')// || typeof x.toPaste != 'string')
+      this.options = options
+    else
+      this.options = new jb.frame.Fuse(options,{keys: ['toPaste','description']}).search(this.tail || '').map(x=>x.item)
 
     this.key = this.options.map(o=>o.toPaste).join(','); // build hash for the options to detect options change
     return this;

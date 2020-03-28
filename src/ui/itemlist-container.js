@@ -113,7 +113,7 @@ jb.component('itemlistContainer.search', {
 				ctx.vars.itemlistCntr.filters.push( items => {
 					const toSearch = jb.val(databindRef) || '';
 					if (jb.frame.Fuse)
-						return new jb.frame.Fuse(items,{}).search(toSearch).map(x=>x.item)
+						return toSearch ? new jb.frame.Fuse(items,{}).search(toSearch).map(x=>x.item) : items
 					if (typeof searchIn.profile == 'function') { // improved performance
 						return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
 					}

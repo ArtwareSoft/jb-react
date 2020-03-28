@@ -189,7 +189,8 @@ jb.component('studio.propertyBoolean', {
   ],
   impl: editableBoolean({
     databind: studio.ref('%$path%'),
-    style: editableBoolean.mdcSlideToggle()
+    style: editableBoolean.mdcSlideToggle(),
+    features: css('{flex-direction: row;     display: flex;} ~ label {padding-left: 10px }')
   })
 })
 
@@ -202,7 +203,10 @@ jb.component('studio.propertyEnum', {
     databind: studio.ref('%$path%'),
     options: studio.enumOptions('%$path%'),
     style: picklist.nativeMdLookOpen(),
-    features: css.width({width: '100', minMax: 'min'})
+    features: [
+      css.width({width: '100', minMax: 'min'}),
+      css('~ input {font-size: 1.2rem; border-bottom-color: black }')
+    ]
   })
 })
 
