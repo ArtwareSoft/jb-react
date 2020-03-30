@@ -82,13 +82,12 @@ jb.component('button.mdcIcon', {
   type: 'button.style,icon.style',
   params: [
     {id: 'icon', type: 'icon', defaultValue: icon('plus') },
-    {id: 'raisedIcon', type: 'icon' }
+    {id: 'scale', as: 'number', description: 'e.g. : 0.5, 2' },
   ],
   impl: styleWithFeatures(button.mdcFloatingAction({withTitle: false, mini: true}), features(
-    ctx => ctx.run({...ctx.componentContext.params.icon, title: ctx.exp('%$$model/title%'), $: 'feature.icon'}),
-    ctx => [ctx.componentContext.params.raisedIcon && ctx.run({...ctx.componentContext.params.raisedIcon, $: 'feature.icon', position: 'raised', title: ctx.exp('%$$model/title%')})].filter(x=>x),
-    //css(`{ box-shadow: 0 0; border-radius: 2px; width: 24px; height: 24px; padding: 0; color: black; background-color: transparent}`),
-    css(`{ background-color: grey}`),
+    (ctx,{$model},{icon}) => ctx.run({...icon, title: $model.title, $: 'feature.icon'}),
+    (ctx,{},{scale}) => scale && ctx.run(css.transformScale({x: scale, y: scale})),
+    css('background-color: grey'),
   ))
 })
 
@@ -104,7 +103,8 @@ jb.component('button.mdcFloatingAction', {
       h('button',{ class: ['mdc-fab',raised && 'raised mdc-icon-button--on',mini && 'mdc-fab--mini'].filter(x=>x).join(' ') ,
           title, tabIndex: -1, onclick:  true}, [
             h('div',{ class: 'mdc-fab__ripple'}),
-            ...jb.ui.chooseIconWithRaised(cmp.icon,raised).filter(x=>x).map(h).map(vdom=>vdom.addClass('mdc-fab__icon')),
+            ...jb.ui.chooseIconWithRaised(cmp.icon,raised).filter(x=>x).map(h).map(vdom=>
+                vdom.addClass('mdc-fab__icon').setAttribute('title',vdom.getAttribute('title') || title)),
             ...[withTitle && h('span',{ class: 'mdc-fab__label'},title)].filter(x=>x)
       ]),
     features: mdcStyle.initDynamic(),

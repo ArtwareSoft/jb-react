@@ -1,4 +1,4 @@
-jb.component('card.box290', { /* card.box290 */
+jb.component('card.box290', {
   type: 'card.style',
   impl: group({
     layout: layout.flex('column'),
@@ -16,7 +16,10 @@ jb.component('card.box290', { /* card.box290 */
         features: [
           css('font: 16px proxima-n-w01-reg, sans-serif; font-weight:700;'),
           css('margin: 24px;'),
-          feature.byCondition('%image%', css.lineClamp('2'))
+          feature.byCondition('%image%', css.lineClamp('2')),
+          css.height(17.7656),
+          css.padding(0),
+          css.margin(0)
         ]
       }),
       html({

@@ -9,7 +9,8 @@ jb.component('contentEditable.openToolbar', {
     writeValue('%$studio/profile_path%', '%$path%'),
     openDialog({
         style: contentEditable.popupStyle(),
-        content: contentEditable.toolbar()
+        content: contentEditable.toolbar(),
+        features: [css('background: transparent; box-shadow: 0 0; border: 0')]
       })
   )
 })
@@ -17,18 +18,19 @@ jb.component('contentEditable.openToolbar', {
 jb.component('contentEditable.popupStyle', {
   type: 'dialog.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
+    template: (cmp,state,h) => h('div#jb-dialog jb-popup',{},h(state.contentComp)),
     css: `{ position: absolute; background: white; padding: 6px;
               box-shadow: 2px 2px 3px #d5d5d5; border: 1px solid rgb(213, 213, 213); }
       `,
     features: [
+      dialogFeature.dragTitle('','*'),
       dialogFeature.uniqueDialog('content-editable-toolbar'),
       dialogFeature.maxZIndexOnClick(),
       dialogFeature.closeWhenClickingOutside(),
       dialogFeature.nearLauncherPosition({
         offsetLeft: 100,
         offsetTop: ctx =>
-          jb.ui.studioFixYPos - jb.ui.computeStyle(jb.ui.contentEditable.current.base,'marginBottom')
+          jb.ui.studioFixYPos() - jb.ui.computeStyle(jb.ui.contentEditable.current.base,'marginBottom')
       })
     ]
   })
@@ -60,7 +62,7 @@ jb.component('contentEditable.deactivate', {
 jb.component('contentEditable.toolbar', {
   type: 'control',
   impl: group({
-    layout: layout.horizontal(),
+    layout: layout.horizontal('-10'),
     controls: [
       button({
         title: 'Change Style',
@@ -71,7 +73,7 @@ jb.component('contentEditable.toolbar', {
             join({separator: '~', items: list(studio.currentProfilePath(), 'style')})
           )
         ),
-        style: button.mdcIcon('style')
+        style: button.mdcIcon(icon('style'), '0.6')
       }),
       button({
         title: 'Insert Control',
@@ -80,13 +82,13 @@ jb.component('contentEditable.toolbar', {
           mode: 'insert-control',
           onClose: studio.openToolbarOfLastEdit()
         }),
-        style: button.mdcIcon('add')
+        style: button.mdcIcon(icon('add'), '0.6')
       }),
       button({
         title: 'Duplicate data item',
         action: ctx => jb.ui.contentEditable.duplicateDataItem(ctx),
-        style: button.mdcIcon('control_point'),
-        features: feature.if('%$sourceItem%')
+        style: button.mdcIcon(icon({icon: 'PlusBoxOutline', type: 'mdi'}), '0.6'),
+        features: [feature.if('%$sourceItem%')]
       }),
       button({
         vars: [
@@ -98,17 +100,17 @@ jb.component('contentEditable.toolbar', {
         ],
         title: 'Layout',
         action: studio.openPickProfile('%$parentLayout%'),
-        style: button.mdcIcon('view_quilt')
+        style: button.mdcIcon(icon('view_quilt'), '0.6')
       }),
       button({
         title: 'Properties',
         action: studio.openProperties(true),
-        style: button.mdcIcon('storage')
+        style: button.mdcIcon(icon('storage'), '0.6')
       }),
       button({
         title: 'Delete',
         action: studio.delete(studio.currentProfilePath()),
-        style: button.mdcIcon('delete')
+        style: button.mdcIcon(icon('delete'), '0.6')
       })
     ],
     features: variable({name: 'showTree', value: false, watchable: true})

@@ -89,6 +89,14 @@ jb.component('studio.selectStyle', {
   })
 })
 
+jb.component('studio.flatternControlToGrid', {
+  type: 'control',
+  params: [
+    {id: 'ctrl'},
+  ],
+  impl: ctx => ctx.run(flatternControlToGrid(ctx.params.ctrl))
+})
+
 jb.component('studio.extractStyle', {
   type: 'action',
   params: [
@@ -196,7 +204,7 @@ jb.ui.stylePatterns = {
 
         document.body.removeChild(top)
 
-        return rawOptions.map(matches => matchesToOption(matches,''))
+        return [extractedCtrl, ...rawOptions.map(matches => matchesToOption(matches,''))].flatMap(x=>[x,flatternControlToGrid(x)])
 
         function mixedPermutations(type, srcIds, trgIds) {
             return jb.unique([...bestPermutations(type, srcIds, trgIds,1),
@@ -267,9 +275,72 @@ jb.ui.stylePatterns = {
                 jb.path(boundedCtrl,overridePath, match.trg.origValue[paramProp]) // set value
             })
             const ctrl = cleanUnmappedParams(ctx,pathToObj(boundedCtrl, top),matches,srcParamsMap)
-            return {...ctrl, features: [...jb.asArray(target.features),...jb.asArray(ctrl.features)] }
+            const res  = {...ctrl, features: [...jb.asArray(target.features),...jb.asArray(ctrl.features)] }
+            return res
         }
     },
+}
+
+function flatternControlToGrid(ctrl) {
+    // render the extracted ctrl to calculate sizes and sort options
+    const top = document.createElement('div')
+    jb.ui.renderWidget(ctrl,top)
+    document.body.appendChild(top)
+    const topRect = top.getBoundingClientRect()
+    const X = topRect.x, Y = topRect.y
+    const srcParams = types.flatMap(type=> flatContent(ctrl,'').filter(x=>x.ctrl.$ == type).map((elem,i)=>(
+        { id: `${type}${i}`, ctrl: elem.ctrl, type, path: elem.path, pos: pos(elem.path, window, top)} )))
+    document.body.removeChild(top)
+
+    const largetsX = srcParams.map(p=>p.pos.x1).sort((x,y)=>y-x)[0]
+    const largetsY = srcParams.map(p=>p.pos.y1).sort((x,y)=>y-x)[0]
+    const Xs = filterNeighbours([largetsX,...srcParams.map(p=>p.pos.x0)].sort((x,y)=>x-y))
+    const Ys = filterNeighbours([largetsY,...srcParams.map(p=>p.pos.y0)].sort((x,y)=>x-y))
+
+    // grid-area: 1 / 2 / span 2 / span 3;
+    srcParams.forEach(p=> {
+      const y = indexOf(Ys,p.pos.y0), x = indexOf(Xs,p.pos.x0)
+      p.area = [ y, x, 'span ' + (indexOf(Ys,p.pos.y1)-y+1) , 'span ' + (indexOf(Xs,p.pos.x1)-x+1) ].join(' / ')
+    });
+    return group({
+      layout: layout.grid({columnSizes: list(...diffs(Xs)), rowSizes: list(...diffs(Ys))}),
+      controls: srcParams.map(p=>({...p.ctrl, features: [...featuresFromParents(p), css(`{ grid-area: ${p.area}}`) ] })),
+      features: css(`width: ${topRect.width}px; height: ${topRect.height}px;`),
+    })
+
+  function pos(path, win, top) {
+      const prefix = top ? 'group~impl~' : previewCt+x.ctx.path + '~'
+      const pathToCheck = (prefix + path).replace(/\//g,'~')
+      const elem = Array.from((top || win.document).querySelectorAll('[jb-ctx]'))
+          .map(elem=>({elem, ctx: win.jb.ctxDictionary[elem.getAttribute('jb-ctx')]}))
+          .filter(e => e.ctx && e.ctx.path == pathToCheck).map(e=>e.elem)[0]
+      if (!elem) return {}
+      const rect = elem.getBoundingClientRect()
+      return { x0: Math.floor(rect.x - X), y0: Math.floor(rect.y - Y), x1: Math.floor(rect.right - X), y1: Math.floor(rect.bottom - Y) }
+  }
+
+  function diffs(Xs) {
+    return Xs.map((item,i) => i ? Xs[i] - Xs[i-1] : Xs[i])
+  }
+  function filterNeighbours(Xs) {
+    return Xs.filter((item,i) => i == 0 || Xs[i] - Xs[i-1] > 5)
+  }
+  function featuresFromParents(param) {
+    const _parents = parents(param.path).reverse()
+    const features = [
+      ...(_parents[0].features || []),
+      ..._parents.slice(1).reduce((features, path) => [...features,
+        jb.asArray(pathToObj(ctrl, path).features).filter(x=>x && ['css.typography','css','css.detailedColor'].indexOf(x.$) != -1)] ,[]) ,
+      ...(param.ctrl.features || [])
+    ].flatMap(x=>jb.asArray(x))
+    return jb.ui.cleanRedundentCssFeatures(features)
+  }
+
+  function indexOf(arr,val) {
+    const res = arr.findIndex(x=> x > val+3) + 1
+    return res || arr.length
+  }
+
 }
 
 })()

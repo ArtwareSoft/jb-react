@@ -114,8 +114,7 @@ jb.component('studio.toolbar', {
       button({
         title: 'Responsive',
         action: studio.openResponsivePhonePopup(),
-        style: button.mdcIcon(icon('tablet_android')),
-        features: hidden()
+        style: button.mdcIcon(icon('tablet_android'))
       })
     ],
     features: [
@@ -130,7 +129,8 @@ jb.component('studio.toolbar', {
         studio.openJbEditor({
           path: firstSucceeding('%$studio/profile_path%', studio.currentPagePath())
         })
-      )
+      ),
+      css.transformScale({x: '0.8', y: '0.8'})
     ]
   })
 })

@@ -28,25 +28,22 @@ jb.component('helloWorld.main', {
     title: '',
     layout: layout.vertical(),
     controls: [
-      text({text: 'my text', title: 'my title'}),
-      button({
-        title: 'hey1',
-        style: button.mdcFloatingAction(true),
-        raised: '',
-        features: [
-          feature.icon({
-            icon: 'SkipPreviousCircle',
-            title: '',
-            position: 'pre',
-            type: 'mdi',
-            scale: '1',
-            style: icon.material(),
-            features: watchRef({ref: '', allowSelfRefresh: true, strongRefresh: true})
-          }),
-          feature.icon({icon: 'delete', position: 'post', type: 'mdc'}),
-          feature.icon({icon: 'AccountAlertOutline', position: 'raised', type: 'mdi'}),
-          watchRef({allowSelfRefresh: false})
+      group({
+        title: '',
+        controls: [
+          
         ]
+      }),
+      button({title: 'click me', style: button.mdcIcon(icon('add_alert'))}),
+      button({
+        title: 'click me',
+        style: button.mdcFloatingAction(),
+        features: feature.icon({icon: 'add_alert'})
+      }),
+      button({
+        title: 'click me',
+        style: button.mdcFloatingAction(),
+        features: feature.icon('add_alert', undefined)
       })
     ],
     features: css.width('600')

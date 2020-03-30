@@ -109,7 +109,7 @@ jb.component('features', {
   params: [
     {id: 'features', type: 'feature[]', as: 'array', composite: true}
   ],
-  impl: (ctx,features) => features.flatMap(x=>Array.isArray(x) ? x: [x])
+  impl: (ctx,features) => features.flatMap(x=> Array.isArray(x) ? x: [x])
 })
 
 jb.component('watchRef', {
@@ -128,7 +128,7 @@ jb.component('watchRef', {
 jb.component('watchObservable', {
   type: 'feature',
   category: 'watch',
-  description: 'subscribes to a custom rx.observable to refresh component',
+  description: 'subscribes to a custom observable to refresh component',
   params: [
     {id: 'toWatch', mandatory: true},
     {id: 'debounceTime', as: 'number', description: 'in mSec'}
@@ -140,6 +140,19 @@ jb.component('watchObservable', {
       jb.callbag.subscribe(()=>cmp.refresh(null,{srcCtx:ctx.componentContext}))
     )
   )
+})
+
+jb.component('feature.onDataChange', {
+  type: 'feature',
+  category: 'watch',
+  description: 'watch observable data reference, subscribe and run action',
+  params: [
+    {id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data'},
+    {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
+    {id: 'action', type: 'action', dynamic: true, description: 'run on change'}
+  ],
+  impl: interactive((ctx,{cmp},{ref,includeChildren,action}) => 
+      jb.subscribe(jb.ui.refObservable(ref(),cmp,{includeChildren, srcCtx: ctx}), () => action()))
 })
 
 jb.component('group.data', {

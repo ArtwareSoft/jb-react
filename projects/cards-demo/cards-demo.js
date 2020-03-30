@@ -69,10 +69,10 @@ jb.component('cardsDemo.phone', {
               text({text: '%Technology%', title: 'technology'})
             ]
           })
-        ],
-        features: group.data({data: '%$phones[0]%', itemVariable: ''})
+        ]
       })
-    ]
+    ],
+    features: group.data({data: '%$phones/0%', itemVariable: ''})
   })
 })
 

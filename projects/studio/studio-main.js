@@ -309,7 +309,7 @@ jb.component('studio.topBar', {
   type: 'control',
   impl: group({
     title: 'top bar',
-    layout: layout.flex({alignItems: 'start', spacing: '3'}),
+    layout: layout.flex({alignItems: 'start', spacing: ''}),
     controls: [
       image({
         url: '%$studio/baseStudioUrl%css/jbartlogo.png',
@@ -330,7 +330,7 @@ jb.component('studio.topBar', {
           }),
           group({
             title: 'menu and toolbar',
-            layout: layout.flex({justifyContent: 'space-between'}),
+            layout: layout.horizontal('160'),
             controls: [
               menu.control({
                 menu: studio.mainMenu(),
@@ -338,20 +338,20 @@ jb.component('studio.topBar', {
                 features: [id('mainMenu'), css.height('30')]
               }),
               group({
+                title: 'toolbar',
                 controls: [
                   studio.toolbar()
                 ],
                 features: css.margin('-10')
               }),
               studio.searchComponent()
-            ],
-            features: [css.width('960')]
+            ]
           })
         ],
         features: css('padding-left: 18px; width: 100%; ')
       })
     ],
-    features: css('height: 73px; border-bottom: 1px #d9d9d9 solid;')
+    features: [css('height: 73px; border-bottom: 1px #d9d9d9 solid;')]
   })
 })
 

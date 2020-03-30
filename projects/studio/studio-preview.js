@@ -70,6 +70,7 @@ st.initPreview = function(preview_window,allowedTypes) {
 
       jb.exp('%$studio/settings/activateWatchRefViewer%','boolean') && st.activateWatchRefViewer();
       jb.exec(writeValue('%$studio/projectSettings%',() => JSON.parse(JSON.stringify(preview_window.jbProjectSettings)) ))
+      writeValue('%$studio/preview%', () => ({width: 1280, height: 520 })),
 
       st.previewWindow.workerId = ctx => ctx && ctx.vars.$runAsWorker
 

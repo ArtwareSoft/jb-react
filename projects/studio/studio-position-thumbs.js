@@ -91,6 +91,7 @@ jb.component('contentEditable.positionThumbs', {
         layout: layout.flex({direction: If('%$axis%==y', 'column', 'row'), alignItems: 'center'}),
         controls: control.icon({
           icon: 'radio_button_unchecked',
+          type: 'mdc',
           features: [contentEditable.dragableThumb('%$axis%'), css('font-size: 14px')]
         })
       }),

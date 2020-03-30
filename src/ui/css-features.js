@@ -216,21 +216,13 @@ jb.component('css.lineClamp', {
   )
 })
 
-jb.component('css.layout', {
+;['layout','typography','detailedBorder','detailedColor'].forEach(f=>
+jb.component(`css.${f}`, {
   type: 'feature:0',
   params: [
     {id: 'css', mandatory: true, as: 'string'}
   ],
   impl: (ctx,css) => ({css: fixCssLine(css)})
-})
-
-jb.component('css.typography', {
-  type: 'feature:0',
-  params: [
-    {id: 'css', mandatory: true, as: 'string'}
-  ],
-  impl: (ctx,css) => ({css: fixCssLine(css)})
-})
-
+}))
 
 })()

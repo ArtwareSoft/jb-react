@@ -27,6 +27,7 @@ class VNode {
     setAttribute(att,val) {
         this.attributes = this.attributes || {}
         this.attributes[att] = val
+        return this
     }
     addClass(clz) {
         if (clz.indexOf(' ') != -1) {

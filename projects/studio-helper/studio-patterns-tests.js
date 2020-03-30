@@ -185,8 +185,8 @@ const extractedCtrlCard2 = group({
                     })
                   ],
                   features: [
-                    css.layout('vertical-align: top;text-align: center'),
-                    css.typography('font-size: 15.4px;font-weight: bold'),
+                    css.layout('vertical-align: top'),
+                    css.typography('font-size: 15.4px;font-weight: bold;text-align: center'),
                     css('')
                   ]
                 })
@@ -222,7 +222,7 @@ const extractedCtrlCard2 = group({
                     }),
                     text({text: 'Disney in 1946', title: false, style: text.htmlTag('div')})
                   ],
-                  features: [css.layout('vertical-align: top;text-align: center'), css('')]
+                  features: [css.layout('vertical-align: top;'), css.typography('text-align: center')]
                 })
               ]
             }),
@@ -234,7 +234,7 @@ const extractedCtrlCard2 = group({
                   text: 'Born',
                   title: false,
                   style: text.htmlTag('th'),
-                  features: [css.layout('vertical-align: top;text-align: left'), css('')]
+                  features: [css.layout('vertical-align: top'), css.typography('text-align: left')]
                 }),
                 group({
                   title: 'td',
@@ -276,7 +276,7 @@ const extractedCtrlCard2 = group({
                       features: [css.layout('display: inline'), css('')]
                     })
                   ],
-                  features: [css.layout('vertical-align: top;text-align: left'), css('')]
+                  features: [css.layout('vertical-align: top'), css.typography('text-align: left')]
                 })
               ]
             })
@@ -284,12 +284,11 @@ const extractedCtrlCard2 = group({
         })
       ],
       features: [
-        css.layout('text-align: start'),
         css.width('22em'),
         css.margin({top: '0.5em', right: '0', bottom: '0.5em', left: '1em'}),
         css.padding({top: '0.2em', left: '0.2em', right: '0.2em', bottom: '0.2em'}),
         css.typography(
-          'font-size: 12.32px;font-family: sans-serif;font-style: normal;font-variant-ligatures: normal;font-variant-caps: normal;font-weight: 400;text-indent: 0px;text-transform: none;-webkit-text-stroke-width: 0px;text-decoration-style: initial;text-decoration-color: initial'
+          'text-align: start;font-size: 12.32px;font-family: sans-serif;font-style: normal;font-variant-ligatures: normal;font-variant-caps: normal;font-weight: 400;text-indent: 0px;text-transform: none;-webkit-text-stroke-width: 0px;text-decoration-style: initial;text-decoration-color: initial'
         ),
         css(
           'border: 1px solid rgb(162, 169, 177);border-spacing: 3px;background-color: rgb(248, 249, 250);color: black;clear: right;line-height: 1.5em;letter-spacing: normal;orphans: 2;white-space: normal;widows: 2;word-spacing: 0px'
@@ -405,5 +404,19 @@ jb.component('patternsTest.selectStyleDeleteUnmapped.card2', {
     ),
     expectedResult: contains('alcatel 3C'),
     cleanUp: ctx => document.body.removeChild(ctx.vars.top)
+  })
+})
+
+jb.component('patternsTest.flatternControlToGrid.card2', {
+  impl: uiTest({
+    control: studio.flatternControlToGrid(() => extractedCtrlCard2),
+    expectedResult: contains('Disney in 1946'),
+  })
+})
+
+jb.component('patternsTest.flatternControlToGrid.card1', {
+  impl: uiTest({
+    control: studio.flatternControlToGrid(() => extractedCtrlCard1),
+    expectedResult: contains('T3.com'),
   })
 })

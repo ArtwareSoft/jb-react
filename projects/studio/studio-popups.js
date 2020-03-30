@@ -240,52 +240,95 @@ jb.component('studio.openResponsivePhonePopup', {
     {id: 'path', as: 'string'}
   ],
   impl: openDialog({
-    style: dialog.studioFloating('responsive'),
+    style: dialog.popup(),
     content: group({
-      style: group.tabs(),
-      controls: dynamicControls({
-        controlItems: asIs(
-          [
-            {
-              width: {min: 320, max: 479, default: 400},
-              height: {min: 300, max: 700, default: 600},
-              id: 'phone'
-            },
-            {
-              width: {min: 480, max: 1024, default: 600},
-              height: {min: 300, max: 1440, default: 850},
-              id: 'tablet'
-            },
-            {
-              width: {min: 1024, max: 2048, default: 1280},
-              height: {min: 300, max: 1440, default: 520},
-              id: 'desktop'
-            }
-          ]
-        ),
-        genericControl: group({
-          title: '%$controlItem/id%',
-          layout: layout.horizontal('70'),
+      layout: layout.vertical('10'),
+      controls: [
+        group({
+          title: 'buttons',
+          layout: layout.horizontal('10'),
           controls: [
-            editableNumber({
-              databind: '%$studio/responsive/{%$controlItem/id%}/width%',
-              title: 'width',
-              style: editableText.mdcInput(),
-              min: '%$controlItem/width/min%',
-              max: '%$controlItem/width/max%'
+            button({
+              title: 'phone',
+              action: runTransaction(
+                [
+                  writeValue('%$studio/preview/width%', '400'),
+                  writeValue('%$studio/preview/height%', '600')
+                ]
+              ),
+              style: button.mdcFloatingAction(true),
+              features: feature.icon({icon: 'phone_android', title: '', type: 'mdc'})
             }),
-            editableNumber({
-              databind: '%$studio/responsive/{%$controlItem/id%}/height%',
-              title: 'height',
-              style: editableText.mdcInput(),
-              min: '%$controlItem/height/min%',
-              max: '%$controlItem/height/max%'
+            button({
+              title: 'tablet',
+              action: runActions(
+                writeValue('%$studio/preview/width%', '600'),
+                writeValue('%$studio/preview/height%', '850')
+              ),
+              style: button.mdcFloatingAction(true),
+              features: feature.icon({icon: 'tablet', title: '', type: 'mdc'})
+            }),
+            button({
+              title: 'desktop',
+              action: runActions(
+                writeValue('%$studio/preview/width%', '1280'),
+                writeValue('%$studio/preview/height%', '520')
+              ),
+              style: button.mdcFloatingAction(true),
+              features: feature.icon({icon: 'desktop_mac', type: 'mdc'})
             })
           ],
-          features: [css('{ padding-left: 12px; padding-top: 7px }')]
+          features: css.padding({top: '7', left: '4', right: '4'})
+        }),
+        group({
+          title: 'width-height',
+          layout: layout.horizontal(),
+          controls: [
+            editableNumber({
+              databind: '%$studio/preview/width%',
+              title: 'width',
+              style: editableText.mdcInput({}),
+              features: [watchRef('%$studio/preview/width%')]
+            }),
+            editableNumber({
+              databind: '%$studio/preview/height%',
+              title: 'height',
+              style: editableText.mdcInput({}),
+              features: watchRef('%$studio/preview/height%')
+            })
+          ],
+          features: hidden()
         })
+      ],
+      features: feature.onDataChange({
+        ref: '%$studio/preview%',
+        includeChildren: 'yes',
+        action: studio.setPreviewSize('%$studio/preview/width%', '%$studio/preview/height%')
       })
     }),
     title: 'responsive'
   })
 })
+
+
+// style: group.tabs(),
+// controls: dynamicControls({
+//   controlItems: asIs(
+//     [
+//       {
+//         width: {min: 320, max: 479, default: 400},
+//         height: {min: 300, max: 700, default: 600},
+//         id: 'phone'
+//       },
+//       {
+//         width: {min: 480, max: 1024, default: 600},
+//         height: {min: 300, max: 1440, default: 850},
+//         id: 'tablet'
+//       },
+//       {
+//         width: {min: 1024, max: 2048, default: 1280},
+//         height: {min: 300, max: 1440, default: 520},
+//         id: 'desktop'
+//       }
+//     ]
+//   ),

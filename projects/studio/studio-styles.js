@@ -88,7 +88,7 @@ jb.component('studio.propertyToolbarStyle', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,state,h) => h('i',{class: 'material-icons', onclick: true, title: 'more...' },'more_vert'),
-    css: `{ cursor: pointer;width: 16px; font-size: 16px; vertical-align: super; opacity: 0.5}
+    css: `{ cursor: pointer;width: 16px; font-size: 16px; vertical-align: super; opacity: 0.5; transform: translate(-5px, 10px);}
       ~:hover { opacity: 1}
     `
   })

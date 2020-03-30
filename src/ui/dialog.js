@@ -51,15 +51,17 @@ jb.component('dialogFeature.uniqueDialog', {
 jb.component('dialogFeature.dragTitle', {
 	type: 'dialog-feature',
 	params: [
-	  {id: 'id', as: 'string'}
+	  {id: 'id', as: 'string'},
+	  {id: 'selector', as: 'string', defaultValue: '.dialog-title'},
 	],
-	impl: function(context, id) {
+	impl: function(context, id,selector) {
+
 		  const dialog = context.vars.$dialog;
 		  const {pipe,fromEvent,takeUntil,merge,Do, map,flatMap,distinctUntilChanged,fromPromise, forEach} = jb.callbag
 		  return {
-				 css: '>.dialog-title { cursor: pointer }',
+				 css: `${selector} { cursor: pointer }`,
 				 afterViewInit: function(cmp) {
-					const titleElem = cmp.base.querySelector('.dialog-title');
+					const titleElem = cmp.base.querySelector(selector);
 					const destroyed = fromPromise(cmp.destroyed)
 					cmp.mousedownEm = pipe(fromEvent(titleElem, 'mousedown'),takeUntil(destroyed));
 
@@ -107,9 +109,9 @@ jb.component('dialogFeature.dragTitle', {
 jb.component('dialog.default', { /* dialog.default */
 	type: 'dialog.style',
 	impl: customStyle({
-	  template: (cmp,{title,contentComp},h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
-			  h('div',{class: 'dialog-title'},title),
-			  h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
+	  template: (cmp,{title,contentComp},h) => h('div#jb-dialog jb-default-dialog',{},[
+			  h('div#dialog-title',{},title),
+			  h('button#dialog-close', {onclick: 'dialogClose' },'×'),
 			  h(contentComp),
 		  ]),
 	  features: dialogFeature.dragTitle()

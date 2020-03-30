@@ -71,10 +71,18 @@ jb.component('studio.propField', {
     title: studio.propName('%$path%'),
     controls: group({
       controls: [
-        controlWithCondition(pipeline(studio.paramDef('%path%'),'%id%',or(equals('icon'),equals('raisedIcon'))),
+        controlWithCondition(
+          and(
+            studio.isOfType(studio.parentPath('%$path%'), 'icon'),
+            equals('icon',pipeline(studio.paramDef('%$path%'), '%id%'))
+          ),
           studio.pickIcon('%$path%')
         ),
-        controlWithCondition(inGroup(split({text:'width,height,top,left,right,bottom'}),pipeline(studio.paramDef('%path%'),'%id%')),
+        controlWithCondition(
+          inGroup(
+            split({text: 'width,height,top,left,right,bottom'}),
+            pipeline(studio.paramDef('%$path%'), '%id%')
+          ),
           studio.propertyNumbericCss('%$path%')
         ),
         controlWithCondition(
@@ -239,7 +247,8 @@ jb.component('studio.openProperties', {
                 title: studio.shortTitle('%$path%'),
                 comp: studio.compName('%$path%')
               },
-            'Properties of %comp% %title%'
+            If(equals('%comp%', '%title%'), '%comp%', '%comp% %title%'),
+            'Properties of %%'
           ),
           features: [
             feature.keyboardShortcut('Ctrl+Left', studio.openControlTree()),

@@ -442,15 +442,24 @@ jb.ui.resourceChange = () => jb.mainWatchableHandler.resourceChange;
 jb.component('runTransaction', {
   type: 'action',
   params: [
-    {id: 'actions', type: 'action[]', dynamic: true, composite: true, mandatory: true, defaultValue: []},
+    {id: 'actions', type: 'action[]', ignore: true, composite: true, mandatory: true},
     {id: 'disableNotifications', as: 'boolean', type: 'boolean'}
   ],
-  impl: (ctx,actions,disableNotifications) => {
-		jb.mainWatchableHandler.startTransaction()
-		return actions.reduce((def,action,index) =>
+  impl: ctx => {
+		const actions = jb.asArray(ctx.profile.actions || ctx.profile['$runActions'] || []).filter(x=>x);
+		const innerPath =  (ctx.profile.actions && ctx.profile.actions.sugar) ? ''
+			: (ctx.profile['$runActions'] ? '$runActions~' : 'items~');
+    jb.mainWatchableHandler.startTransaction()
+    return actions.reduce((def,action,index) =>
 				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index )) ,Promise.resolve())
-			.catch(e => jb.logException(e,ctx))
-			.then(() => jb.mainWatchableHandler.endTransaction(disableNotifications))
+			.catch((e) => jb.logException(e,ctx))
+      .then(() => jb.mainWatchableHandler.endTransaction(ctx.params.disableNotifications))
+
+		// jb.mainWatchableHandler.startTransaction()
+		// return ctx.profile.actions.reduce((def,action,index) =>
+		// 		def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index )) ,Promise.resolve())
+		// 	.catch(e => jb.logException(e,ctx))
+		// 	.then(() => jb.mainWatchableHandler.endTransaction(disableNotifications))
 	}
 })
 

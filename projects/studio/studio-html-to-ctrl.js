@@ -27,8 +27,8 @@ jb.component('studio.htmlToControl', {
 
 jb.ui.cssProcessors = {
     layout: {
-        filter: prop => prop.match(/flex|grid|align/) ||
-            ['display','order','top','left','right','bottom','box-sizing'].find(x=>prop.indexOf(x+':') == 0),
+        filter: prop => prop.match(/flex|grid|justify-|align-/) ||
+            ['position','display','order','top','left','right','bottom','box-sizing','vertical-align'].find(x=>prop.indexOf(x+':') == 0),
         features: props => css.layout(props.join(';'))
     },
     width: {
@@ -87,10 +87,37 @@ jb.ui.cssProcessors = {
                 : css.padding({top: vals[0], right: vals[1], bottom: vals[2], left: vals[3] })
         }
     },
+    detailedBorder: {
+        filter: x => x.match(/border|box-shadow|outline/),
+        features: props => css.detailedBorder(props.join(';'))
+    },    
+    detailedColor: {
+        filter: x => x.match(/^color:/) || x.match(/background-color/),
+        features: props => css.detailedColor(props.join(';'))
+    },    
     typography: {
         filter: x => x.match(/font|text-/),
         features: props => css.typography(props.join(';'))
     },
+}
+
+function cssToFeatures(cssProps) {
+    const res = Object.values(jb.ui.cssProcessors).reduce((agg,proc) => {
+        const props4Features = agg.props.filter(p=>proc.filter(p,cssProps))
+        const features = props4Features.length ? jb.asArray(proc.features(props4Features)).filter(x=>x) : []
+        return {
+            props: agg.props.filter(p=>! proc.filter(p,cssProps)),
+            features: [...agg.features, ...features]
+    }}, {props: cssProps, features: []})
+    return res.features.concat([css(res.props.join(';'))])
+}
+
+jb.ui.cleanRedundentCssFeatures = function(cssFeatures) {
+    const _features = cssFeatures.map(f=>({f, o: jb.exec(f)}))
+    const props = _features.filter(x=>x.o.css).flatMap(x=>x.o.css.split(';').flatMap(x=>x.split(';')))
+            .map(x=>x.replace('{','').replace('}','').replace(/\s*:\s*/g,':').trim() )
+            .filter(x=>x)
+    return [...cssToFeatures(jb.unique(props)),..._features.filter(x=>!x.o.css).map(x=>x.f)]
 }
 
 jb.ui.htmlToControl = function(html) {
@@ -150,19 +177,7 @@ jb.ui.htmlToControl = function(html) {
         function extractFeatures() {
             const attfeatures = ['width','height','tabindex'].filter(att => atts[att])
                 .map(att=> htmlAttribute(att,atts[att]))
-            return [atts.class && css.class(atts.class), ...cssToFeatures(), ...attfeatures].filter(x=>x)
-        }
-
-        function cssToFeatures() {
-            if (!styleCss) return []
-            const res = Object.values(jb.ui.cssProcessors).reduce((agg,proc) => {
-                const props4Features = agg.props.filter(p=>proc.filter(p,featureProps))
-                const features = props4Features.length ? jb.asArray(proc.features(props4Features)).filter(x=>x) : []
-                return {
-                    props: agg.props.filter(p=>! proc.filter(p,featureProps)),
-                    features: [...agg.features, ...features]
-            }}, {props: featureProps, features: []})
-            return res.features.concat([css(res.props.join(';'))])
+            return [atts.class && css.class(atts.class), ...(styleCss && cssToFeatures(featureProps) || []), ...attfeatures].filter(x=>x)
         }
 
         function extractStyle() {
