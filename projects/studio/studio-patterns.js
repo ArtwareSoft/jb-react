@@ -89,12 +89,12 @@ jb.component('studio.selectStyle', {
   })
 })
 
-jb.component('studio.flatternControlToGrid', {
+jb.component('studio.flattenControlToGrid', {
   type: 'control',
   params: [
     {id: 'ctrl'},
   ],
-  impl: ctx => ctx.run(flatternControlToGrid(ctx.params.ctrl))
+  impl: ctx => ctx.run(flattenControlToGrid(ctx.params.ctrl))
 })
 
 jb.component('studio.extractStyle', {
@@ -116,10 +116,10 @@ jb.component('studio.suggestedStyles', {
     {id: 'targetPath', as: 'string'}
   ],
   impl: (ctx,extractedCtrl,targetPath) => {
-        const constraints = ctx.exp('%$studio/pattern/constraints%') || []
+        const options = ctx.exp('%$studio/pattern/options%') || { flattenToGrid: false }
         const target = jb.studio.valOfPath(targetPath)
         const previewCtx = jb.studio.closestCtxInPreview(ctx.exp('%$targetPath%'))
-        return jb.ui.stylePatterns[target.$] && jb.ui.stylePatterns[target.$](ctx,extractedCtrl,target,previewCtx) || {}
+        return jb.ui.stylePatterns[target.$] && jb.ui.stylePatterns[target.$](ctx,extractedCtrl,target,previewCtx,options) || {}
     }
 })
 
@@ -184,10 +184,11 @@ jb.ui.stylePatterns = {
         })
         return options
     },
-    group(ctx, extractedCtrl, target, previewCtx) {
+    group(ctx, extractedCtrl, target, previewCtx, options = {}) {
         // render the extracted ctrl to calculate sizes and sort options
         const top = document.createElement('div')
         jb.ui.renderWidget(extractedCtrl,top)
+        top.style.position = 'relative'
         document.body.appendChild(top)
 
         const targetContent = flatContent(target,'')
@@ -204,7 +205,8 @@ jb.ui.stylePatterns = {
 
         document.body.removeChild(top)
 
-        return [extractedCtrl, ...rawOptions.map(matches => matchesToOption(matches,''))].flatMap(x=>[x,flatternControlToGrid(x)])
+        return [extractedCtrl, ...rawOptions.map(matches => matchesToOption(matches,''))]
+          .flatMap(x=>[x,options.flattenToGrid && flattenToGrid(x)].filter(x=>x))
 
         function mixedPermutations(type, srcIds, trgIds) {
             return jb.unique([...bestPermutations(type, srcIds, trgIds,1),
@@ -281,26 +283,30 @@ jb.ui.stylePatterns = {
     },
 }
 
-function flatternControlToGrid(ctrl) {
+function flattenControlToGrid(ctrl) {
     // render the extracted ctrl to calculate sizes and sort options
     const top = document.createElement('div')
     jb.ui.renderWidget(ctrl,top)
+    top.style.position = 'relative'
     document.body.appendChild(top)
     const topRect = top.getBoundingClientRect()
     const X = topRect.x, Y = topRect.y
-    const srcParams = types.flatMap(type=> flatContent(ctrl,'').filter(x=>x.ctrl.$ == type).map((elem,i)=>(
-        { id: `${type}${i}`, ctrl: elem.ctrl, type, path: elem.path, pos: pos(elem.path, window, top)} )))
+    const content = flatContent(ctrl,'')
+    const srcParams = types.flatMap(type=> content.filter(x=>x.ctrl.$ == type).map((elem,i)=>(
+        { id: `${type}${i}`, ctrl: elem.ctrl, type, path: elem.path, pos: pos(elem.path) } )))
+    const xKeepList = new Set(), yKeepList = new Set()
+    calcPadding()
     document.body.removeChild(top)
 
     const largetsX = srcParams.map(p=>p.pos.x1).sort((x,y)=>y-x)[0]
     const largetsY = srcParams.map(p=>p.pos.y1).sort((x,y)=>y-x)[0]
-    const Xs = filterNeighbours([largetsX,...srcParams.map(p=>p.pos.x0)].sort((x,y)=>x-y))
-    const Ys = filterNeighbours([largetsY,...srcParams.map(p=>p.pos.y0)].sort((x,y)=>x-y))
+    const Xs = filterCloseNeighbours([largetsX,...srcParams.flatMap(p=>[p.pos.x0,p.hasBackground && p.pos.x1].filter(x=>x))].sort((x,y)=>x-y),xKeepList)
+    const Ys = filterCloseNeighbours([largetsY,...srcParams.flatMap(p=>[p.pos.y0,p.hasBackground && p.pos.y1].filter(x=>x))].sort((x,y)=>x-y),yKeepList)
 
     // grid-area: 1 / 2 / span 2 / span 3;
     srcParams.forEach(p=> {
-      const y = indexOf(Ys,p.pos.y0), x = indexOf(Xs,p.pos.x0)
-      p.area = [ y, x, 'span ' + (indexOf(Ys,p.pos.y1)-y+1) , 'span ' + (indexOf(Xs,p.pos.x1)-x+1) ].join(' / ')
+      const y = indexInGrid(Ys,p.pos.y0,p), x = indexInGrid(Xs,p.pos.x0,p)
+      p.area = [ y, x, 'span ' + (indexInGrid(Ys,p.pos.y1-1,p)-y+1) , 'span ' + (indexInGrid(Xs,p.pos.x1-1,p)-x+1) ].join(' / ')
     });
     return group({
       layout: layout.grid({columnSizes: list(...diffs(Xs)), rowSizes: list(...diffs(Ys))}),
@@ -308,37 +314,76 @@ function flatternControlToGrid(ctrl) {
       features: css(`width: ${topRect.width}px; height: ${topRect.height}px;`),
     })
 
-  function pos(path, win, top) {
-      const prefix = top ? 'group~impl~' : previewCt+x.ctx.path + '~'
-      const pathToCheck = (prefix + path).replace(/\//g,'~')
-      const elem = Array.from((top || win.document).querySelectorAll('[jb-ctx]'))
-          .map(elem=>({elem, ctx: win.jb.ctxDictionary[elem.getAttribute('jb-ctx')]}))
-          .filter(e => e.ctx && e.ctx.path == pathToCheck).map(e=>e.elem)[0]
-      if (!elem) return {}
-      const rect = elem.getBoundingClientRect()
-      return { x0: Math.floor(rect.x - X), y0: Math.floor(rect.y - Y), x1: Math.floor(rect.right - X), y1: Math.floor(rect.bottom - Y) }
+  function pos(path) {
+    const elem = elemOfPath(path)
+    if (!elem) return {}
+    const rect = elem.getBoundingClientRect()
+    return { x0: Math.floor(rect.x - X), y0: Math.floor(rect.y - Y), x1: Math.floor(rect.right - X), y1: Math.floor(rect.bottom - Y) }
+  }
+
+  function elemOfPath(path) {
+    const win = jb.frame
+    const prefix = top ? 'group~impl~' : previewCt+x.ctx.path + '~'
+    const pathToCheck = (prefix + path).replace(/\//g,'~')
+    return Array.from((top || win.document).querySelectorAll('[jb-ctx]'))
+        .map(elem=>({elem, ctx: win.jb.ctxDictionary[elem.getAttribute('jb-ctx')]}))
+        .filter(e => e.ctx && e.ctx.path == pathToCheck).map(e=>e.elem)[0]
   }
 
   function diffs(Xs) {
     return Xs.map((item,i) => i ? Xs[i] - Xs[i-1] : Xs[i])
   }
-  function filterNeighbours(Xs) {
-    return Xs.filter((item,i) => i == 0 || Xs[i] - Xs[i-1] > 5)
+  // unify grid line neighbours
+  function filterCloseNeighbours(Xs,keepList) {
+    return Xs.filter((pos,i) => i == 0 || keepList.has(pos) || Xs[i] - Xs[i-1] > 8)
   }
   function featuresFromParents(param) {
     const _parents = parents(param.path).reverse()
     const features = [
       ...(_parents[0].features || []),
       ..._parents.slice(1).reduce((features, path) => [...features,
-        jb.asArray(pathToObj(ctrl, path).features).filter(x=>x && ['css.typography','css','css.detailedColor'].indexOf(x.$) != -1)] ,[]) ,
-      ...(param.ctrl.features || [])
+        jb.asArray(pathToObj(ctrl, path).features)
+          .filter(x=>x && ['css.typography','css','css.detailedColor'].indexOf(x.$) != -1)] ,[]) ,
+      ...(param.ctrl.features || []),
+      ...(param.ctrl.$ == 'image' ? [css('z-index:-1')] : [])
     ].flatMap(x=>jb.asArray(x))
     return jb.ui.cleanRedundentCssFeatures(features)
   }
 
-  function indexOf(arr,val) {
-    const res = arr.findIndex(x=> x > val+3) + 1
+  function indexInGrid(arr,val,param) {
+    const offset = param.hasBackground ? 0 : 3
+    const res = arr.findIndex(x=> x > val+ offset) + 1
     return res || arr.length
+  }
+
+  function calcPadding() {
+    srcParams.filter(p=>p.type != 'image').forEach(param=>{
+      const parentPaths = parents(param.path)
+      const idx = parentPaths.findIndex(path=>{ 
+        const parentCtrl = pathToObj(ctrl,path)
+        return Array.isArray(parentCtrl.controls) && parentCtrl.controls.length >1
+      })
+      param.hasBackground = [param.path,...parentPaths.slice(0,idx-1)]
+        .reduce((acc,path)=> acc || hasBackground(path),false)
+      if (!param.hasBackground) return
+      const highestPathForSingle = parentPaths[idx-1]
+      const parentPos = pos(highestPathForSingle)
+      param.ctrl.features = [...jb.asArray(param.ctrl.features||[]),
+        css.padding({left: param.pos.x0 - parentPos.x0, top: param.pos.y0 - parentPos.y0})]
+      console.log('changing elem',param.path,highestPathForSingle,param.pos, parentPos)
+      param.pos = parentPos
+      xKeepList.add(parentPos.x0);xKeepList.add(parentPos.x1)
+      yKeepList.add(parentPos.y0);yKeepList.add(parentPos.y1)
+      if (param.hasBackground)
+        console.log('hasBackground',param)
+    })
+
+    function hasBackground(path) {
+      const elem = elemOfPath(path)
+      if (!elem) return
+      const style = getComputedStyle(elem)
+      return style.backgroundColor != 'rgba(0, 0, 0, 0)' || style.borderWidth != '0px' || style.boxShadow != 'none'
+    }
   }
 
 }

@@ -157,11 +157,11 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'suggestions', 'properties','jb-editor-styles','edit-source','jb-editor','pick','h-to-jsx','style-editor',
         'references','properties-menu','save','open-project','tree',
         'data-browse', 'new-project','event-tracker', 'toolbar','search', 'main', 'component-header', 'hosts', 'probe',
-        'watch-ref-viewer', 'content-editable', 'position-thumbs', 'html-to-ctrl', 'patterns', 'pick-icon'
+        'watch-ref-viewer', 'content-editable', 'position-thumbs', 'html-to-ctrl', 'patterns', 'pick-icon', //'grid-editor'
       ],
       'studio-tests': [
         'projects/studio/studio-testers.js',
-        'probe','model','tree','suggestion','patterns'
+        'probe','model','tree','suggestion','patterns','content-editable'
       ],
 })
 

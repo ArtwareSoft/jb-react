@@ -93,7 +93,7 @@ jb.ui.cssProcessors = {
     },    
     detailedColor: {
         filter: x => x.match(/^color:/) || x.match(/background-color/),
-        features: props => css.detailedColor(props.join(';'))
+        features: props => css.detailedColor(props.filter(x=>!x.match(/background-color:transparent/)).join(';'))
     },    
     typography: {
         filter: x => x.match(/font|text-/),
@@ -112,19 +112,29 @@ function cssToFeatures(cssProps) {
     return res.features.concat([css(res.props.join(';'))])
 }
 
-jb.ui.cleanRedundentCssFeatures = function(cssFeatures) {
+jb.ui.cleanRedundentCssFeatures = function(cssFeatures,{remove} = {}) {
+    const removeMap = jb.objFromEntries((remove||[]).map(x=>[x,true]))
     const _features = cssFeatures.map(f=>({f, o: jb.exec(f)}))
     const props = _features.filter(x=>x.o.css).flatMap(x=>x.o.css.split(';').flatMap(x=>x.split(';')))
             .map(x=>x.replace('{','').replace('}','').replace(/\s*:\s*/g,':').trim() )
             .filter(x=>x)
+            .filter(x=>!removeMap[x])
     return [...cssToFeatures(jb.unique(props)),..._features.filter(x=>!x.o.css).map(x=>x.f)]
 }
 
 jb.ui.htmlToControl = function(html) {
     const elem = document.createElement('div')
     elem.innerHTML = html
+    elem.style.position = 'relative'
+    document.body.appendChild(elem)
+    const height = Array.from(elem.querySelectorAll('*')).map(x=>x.getBoundingClientRect().bottom).sort((x,y)=>y-x)[0]
+    const width = Array.from(elem.querySelectorAll('*')).map(x=>x.getBoundingClientRect().right).sort((x,y)=>y-x)[0]
     clean(elem)
-    return vdomToControl(elemToVdom(elem))
+    document.body.removeChild(elem)
+
+    const res = vdomToControl(elemToVdom(elem))
+    res.features = (res.features ||[]).concat(css.width(width), css.height(height))
+    return res
 
     function elemToVdom(elem) {
         if (elem.nodeType == Node.TEXT_NODE && elem.nodeValue.match(/^\s*$/)) return
@@ -134,7 +144,7 @@ jb.ui.htmlToControl = function(html) {
         const singleTextChild = elem.childNodes.length == 1 && jb.path(elem,'firstChild.nodeName') == '#text' && elem.firstChild.nodeValue
         return {
             elem,
-            tag: elem.tagName.toLowerCase(),
+            tag: fixTag(elem.tagName.toLowerCase()),
             attributes: jb.objFromEntries([
                 ...Array.from(elem.attributes).map(e=>[e.name,e.value]),
                 ...( singleTextChild ? [['$text',singleTextChild]] : [])
@@ -142,6 +152,9 @@ jb.ui.htmlToControl = function(html) {
             ...( (elem.childNodes[0] && !singleTextChild) && { children:
                 Array.from(elem.childNodes).map(el=> elemToVdom(el)).filter(x=>x) })
         }
+    }
+    function fixTag(tag) {
+        return tag.match(/h/i) ? 'div' : tag
     }
 
     function clean(elem) {
@@ -177,7 +190,9 @@ jb.ui.htmlToControl = function(html) {
         function extractFeatures() {
             const attfeatures = ['width','height','tabindex'].filter(att => atts[att])
                 .map(att=> htmlAttribute(att,atts[att]))
-            return [atts.class && css.class(atts.class), ...(styleCss && cssToFeatures(featureProps) || []), ...attfeatures].filter(x=>x)
+            return [
+                atts.class && css.class(atts.class), 
+                ...(styleCss && cssToFeatures(featureProps) || []), ...attfeatures].filter(x=>x)
         }
 
         function extractStyle() {

@@ -265,8 +265,8 @@ jb.component('contentEditable.dragableThumb', {
 jb.component('contentEditable.positionThumbsStyle', {
   type: 'dialog.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
-    css: '{ display: block; position: absolute; background: white; mix-blend-mode: multiply;  }',
+    template: (cmp,state,h) => h('div#jb-dialog jb-popup',{},h(state.contentComp)),
+    css: '{ display: block; position: absolute; background: white; }',
     features: [dialogFeature.maxZIndexOnClick(), dialogFeature.closeWhenClickingOutside()]
   })
 })

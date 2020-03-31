@@ -162,12 +162,10 @@ jb.ui.contentEditable = {
     this.current && this.current.refresh({contentEditableActive: false})
     this.current = cmp
     new jb.jbCtx().setVar('$launchingElement',{ el : cmp.base}).run(runActions(
-//      delay(10),
       () => cmp.refresh({contentEditableActive: true}),
-//      delay(10),
       contentEditable.openToolbar(cmp.ctx.path),
-      contentEditable.openPositionThumbs('x'),
-      contentEditable.openPositionThumbs('y'),
+      // contentEditable.openPositionThumbs('x'),
+      // contentEditable.openPositionThumbs('y'),
     ))
     cmp.base.focus()
   },
@@ -206,6 +204,23 @@ jb.ui.contentEditable = {
   },
 }
 
+jb.component('feature.contentEditableDropHtml', {
+  type: 'feature',
+  impl: features(
+    htmlAttribute('ondragover', 'over'),
+    htmlAttribute('ondrop', 'dropHtml'),
+    defHandler('over', (ctx,{ev}) => ev.preventDefault()),
+    defHandler('dropHtml',(ctx,{ev}) => { 
+      ev.preventDefault();
+      return Array.from(ev.dataTransfer.items).filter(x=>x.type.match(/html/))[0].getAsString(html => {
+          const targetCtx = jb.studio.previewjb.ctxDictionary[ev.target.getAttribute('jb-ctx')]
+          new jb.jbCtx().setVar('newCtrl',jb.ui.htmlToControl(html)).run(
+                studio.extractStyle('%$newCtrl%', () => targetCtx && targetCtx.path ))
+          })
+    })
+  )
+})
+
 jb.component('feature.contentEditable', {
   type: 'feature',
   description: 'studio editing behavior',
@@ -213,26 +228,8 @@ jb.component('feature.contentEditable', {
     {id: 'param', as: 'string', description: 'name of param mapped to the content editable element'}
   ],
   impl: features(
-    feature.keyboardShortcut(
-        'Alt+N',
-        () => jb.frame.parent.jb.exec({$:'studio.pickAndOpen', from: 'studio'})
-      ),
-    htmlAttribute('ondragover', 'over'),
-    htmlAttribute('ondrop', 'dropHtml'),
-    defHandler('over', (ctx,{ev}) => ev.preventDefault()),
-    defHandler(
-        'dropHtml',
-        (ctx,{cmp, ev},{onDrop}) => {
-      ev.preventDefault();
-      return Array.from(ev.dataTransfer.items).filter(x=>x.type.match(/html/))[0].getAsString(html => {
-          const targetCtx = jb.studio.previewjb.ctxDictionary[ev.target.getAttribute('jb-ctx')]
-          new jb.jbCtx().setVar('newCtrl',jb.ui.htmlToControl(html)).run(
-                studio.extractStyle('%$newCtrl%', () => targetCtx && targetCtx.path ))
-          })
-    }
-      ),
-    interactive(
-        ({},{cmp},{param}) => {
+    feature.keyboardShortcut('Alt+N', () => jb.frame.parent.jb.exec({$:'studio.pickAndOpen', from: 'studio'})),
+    interactive(({},{cmp},{param}) => {
       const isHtml = param == 'html'
       const contentEditable = jb.ui.contentEditable
       if (contentEditable && contentEditable.isEnabled()) {
@@ -241,10 +238,8 @@ jb.component('feature.contentEditable', {
           cmp.onkeydownHandler = cmp.onkeypressHandler = ev => contentEditable.handleKeyEvent(ev,cmp,param)
         cmp.onmousedownHandler = ev => jb.ui.contentEditable.activate(cmp,ev)
       }
-    }
-      ),
-    templateModifier(
-        ({},{cmp,vdom},{param}) => {
+    }),
+    templateModifier(({},{cmp,vdom},{param}) => {
       const contentEditable = jb.ui.contentEditable
       if (!contentEditable || cmp.ctx.vars.$runAsWorker || !contentEditable.isEnabled() || param && !contentEditable.refOfProp(cmp,param)) return vdom
       const attsToInject = cmp.state.contentEditableActive ? {contenteditable: 'true', onblur: true, onmousedown: true, onkeypress: true, onkeydown: true} : {onmousedown: true};
@@ -260,8 +255,7 @@ jb.component('feature.contentEditable', {
       vdom.attributes = vdom.attributes || {};
       Object.assign(vdom.attributes,attsToInject)
       return vdom;
-    }
-      ),
+    }),
     css.dynamic(
         If(
           '%$cmp.state.contentEditableActive%',
