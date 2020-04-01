@@ -472,7 +472,7 @@ jb.component('refreshControlById', {
     const elem = jb.ui.document(ctx).querySelector('#'+id)
     if (!elem)
       return jb.logError('refresh-control-by-id can not find elem for #'+id, ctx)
-    jb.ui.refreshElem(elem,null,{srcCtx: ctx})
+    return jb.ui.refreshElem(elem,null,{srcCtx: ctx})
   }
 })
 

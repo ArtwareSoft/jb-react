@@ -30,7 +30,7 @@ jb.component('contentEditable.popupStyle', {
       dialogFeature.nearLauncherPosition({
         offsetLeft: 100,
         offsetTop: ctx =>
-          jb.ui.studioFixYPos() - jb.ui.computeStyle(jb.ui.contentEditable.current.base,'marginBottom')
+          jb.ui.studioFixYPos() - jb.ui.computeStyle(jb.ui.contentEditable.current,'marginBottom')
       })
     ]
   })
@@ -53,7 +53,8 @@ jb.component('studio.openToolbarOfLastEdit', {
 jb.component('contentEditable.deactivate', {
   type: 'action',
   impl: ctx => {
-    jb.ui.contentEditable.current && jb.ui.contentEditable.current.refresh({contentEditableActive: false})
+    const previewUI = jb.studio.previewjb.ui
+    jb.ui.contentEditable.current && previewUI.refreshElem(jb.ui.contentEditable.current,{contentEditableActive: false})
     jb.ui.dialogs.closePopups()
     jb.ui.contentEditable.current = null
   }
@@ -61,17 +62,18 @@ jb.component('contentEditable.deactivate', {
 
 jb.component('contentEditable.toolbar', {
   type: 'control',
+  params:[
+    {id: 'path'}
+  ],
   impl: group({
     layout: layout.horizontal('-10'),
     controls: [
       button({
         title: 'Change Style',
         action: action.if(
-          equals(studio.compName(studio.currentProfilePath()), 'image'),
+          equals(studio.compName('%$path%'), 'image'),
           studio.openProperties(),
-          studio.openPickProfile(
-            join({separator: '~', items: list(studio.currentProfilePath(), 'style')})
-          )
+          studio.openPickProfile('%$path%~style')
         ),
         style: button.mdcIcon(icon('style'), '0.6')
       }),
@@ -95,7 +97,7 @@ jb.component('contentEditable.toolbar', {
           Var(
             'parentLayout',
             ctx =>
-          jb.studio.parents(ctx.run(studio.currentProfilePath())).find(path=> jb.studio.compNameOfPath(path) == 'group') + '~layout'
+          jb.studio.parents(ctx.run('%$path%')).find(path=> jb.studio.compNameOfPath(path) == 'group') + '~layout'
           )
         ],
         title: 'Layout',
@@ -109,11 +111,14 @@ jb.component('contentEditable.toolbar', {
       }),
       button({
         title: 'Delete',
-        action: studio.delete(studio.currentProfilePath()),
+        action: studio.delete('%$path%'),
         style: button.mdcIcon(icon('delete'), '0.6')
       })
     ],
-    features: variable({name: 'showTree', value: false, watchable: true})
+    features: [
+      interactive(action.if( equals(studio.compName('%$path%~layout'), 'layout.grid'),
+          runActions( contentEditable.openGridEditor('Columns'), contentEditable.openGridEditor('Rows'))))
+    ]
   })
 })
 
@@ -143,6 +148,11 @@ jb.ui.contentEditable = {
           jb.push(featuresRef,featureComp,ctx)
       }
   },
+  setGridPosScript(val, el, axis, gridIndex, ctx) {
+    const path = jb.studio.previewjb.ctxDictionary[el.getAttribute('jb-ctx')].path
+    const ref = jb.studio.refOfPath(path + `~layout~${axis.toLowerCase().slice(0,-1)}Sizes~items~${gridIndex}`)
+    jb.writeValue(ref,val,ctx)
+  },
   setScriptData(ev,cmp,prop,isHtml) {
       const vdomCmp = jb.studio.previewjb.ctxDictionary[cmp.base.getAttribute('jb-ctx')].runItself()
       vdomCmp.renderVdom()
@@ -157,17 +167,19 @@ jb.ui.contentEditable = {
   isEnabled() {
     return new jb.jbCtx().exp('%$studio/settings/contentEditable%')
   },
-  activate(cmp) {
+  activate(el) {
     if (!this.isEnabled()) return
-    this.current && this.current.refresh({contentEditableActive: false})
-    this.current = cmp
-    new jb.jbCtx().setVar('$launchingElement',{ el : cmp.base}).run(runActions(
-      () => cmp.refresh({contentEditableActive: true}),
-      contentEditable.openToolbar(cmp.ctx.path),
+    const jbUi = jb.studio.previewjb.ui
+    this.current && jbUi.refreshElem(this.current,{contentEditableActive: false})
+    this.current = el
+    const ctx = new jb.jbCtx() //.setVar('$launchingElement',{el})
+    ctx.run(runActions(
+      () => jbUi.refreshElem(el,{contentEditableActive: true}),
+      contentEditable.openToolbar(() => jbUi.ctxOfElem(el).path),
       // contentEditable.openPositionThumbs('x'),
       // contentEditable.openPositionThumbs('y'),
     ))
-    cmp.base.focus()
+    jb.ui.focus(el,'contentEditable activate',ctx)
   },
   handleKeyEvent(ev,cmp,prop) {
       if (ev.keyCode == 13) {
@@ -236,7 +248,7 @@ jb.component('feature.contentEditable', {
         cmp.onblurHandler = ev => contentEditable.setScriptData(ev,cmp,param,isHtml)
         if (!isHtml)
           cmp.onkeydownHandler = cmp.onkeypressHandler = ev => contentEditable.handleKeyEvent(ev,cmp,param)
-        cmp.onmousedownHandler = ev => jb.ui.contentEditable.activate(cmp,ev)
+        cmp.onmousedownHandler = ev => jb.ui.contentEditable.activate(cmp.base)
       }
     }),
     templateModifier(({},{cmp,vdom},{param}) => {

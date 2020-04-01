@@ -59,9 +59,13 @@ jb.component('uiTestRunner', {
 		const ctxToRun = new jb.jbCtx(ctxWithVars,{ profile, forcePath: test+ '~impl', path: '' } )
 		return ctxToRun.run(group({
 			controls: () => ctxToRun.runInner(profile.control,{type: 'control'}, 'control'),
-			features: group.wait({
-				for: () => profile.runBefore && ctxToRun.runInner(profile.runBefore,{type: 'runBefore'}, 'runBefore')
-			})
+			features: [
+				group.wait({
+					for: () => profile.runBefore && ctxToRun.runInner(profile.runBefore,{type: 'runBefore'}, 'runBefore')
+				}),
+				interactive(ctx=>
+					profile.runInPreview && ctxToRun.runInner(profile.runInPreview,{type: 'runInPreview'}, 'runInPreview'))
+			]
 		}))
 	}
 })
@@ -73,11 +77,14 @@ jb.component('uiTest', {
     {id: 'runBefore', type: 'action', dynamic: true},
     {id: 'action', type: 'action', dynamic: true},
     {id: 'expectedResult', type: 'boolean', dynamic: true},
-    {id: 'cleanUp', type: 'action', dynamic: true},
-    {id: 'expectedCounters', as: 'single'}
+	{id: 'cleanUp', type: 'action', dynamic: true},
+    {id: 'expectedCounters', as: 'single'},
+	{id: 'renderDOM', type: 'boolean', descrition: 'actially render the vdom, because the test checks calculated sizes' },
+	{id: 'runInPreview', type: 'action', dynamic: true, descrition: 'not for test mode'},
   ],
-  impl: function(ctx,control,runBefore,action,expectedResult,cleanUp,expectedCounters) {
+  impl: function(ctx,control,runBefore,action,expectedResult,cleanUp,expectedCounters,renderDOM) {
 		console.log('starting ' + ctx.path )
+		const show = new URL(location.href).searchParams.get('show') !== null
 		const initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
 		return Promise.resolve(runBefore())
 			.then(_ => {
@@ -86,9 +93,11 @@ jb.component('uiTest', {
 						jb.initSpy({spyParam: 'ui-test'})
 					jb.spy.clear()
 					const elem = document.createElement('div');
+					elem.setAttribute('id','jb-testResult')
 					const ctxForTst = ctx.setVars({elemToTest : elem })
 					const vdom = jb.ui.h(control(ctxForTst));
 					const cmp = jb.ui.render(vdom, elem)._component;
+					if (renderDOM) document.body.appendChild(elem)
 					return Promise.resolve(cmp && cmp.delayed)
 						.then(_ => jb.delay(1))
 						.then(_=> elem)
@@ -107,9 +116,10 @@ jb.component('uiTest', {
 				})
 				const countersErr = countersErrors(expectedCounters);
 				const success = !! (expectedResult(new jb.jbCtx(ctx,{ data: elem.outerHTML }).setVars({elemToTest: elem})) && !countersErr);
-				return { id: ctx.vars.testID, success, elem, reason: countersErr}
+				if (renderDOM && !show) document.body.removeChild(elem)
+				return { id: ctx.vars.testID, success, elem, reason: countersErr, renderDOM}
 			}).then(result=> { // default cleanup
-				if (new URL(location.href).searchParams.get('show') === null) {
+				if (!show) {
 					jb.ui.dialogs.dialogs.forEach(d=>d.close())
 					jb.ui.unmount(result.elem)
 					jb.rebuildRefHandler && jb.rebuildRefHandler();
@@ -135,6 +145,8 @@ jb.component('uiTest.applyVdomDiff', {
   ],
   impl: function(ctx,controlBefore,control,expectedCounters) {
 		console.log('starting ' + ctx.path)
+		const show = new URL(location.href).searchParams.get('show') !== null
+
 		const initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
 
 		const elem1 = document.createElement('div');
@@ -151,7 +163,7 @@ jb.component('uiTest.applyVdomDiff', {
 		const success = !!(expectedHtml.replace(/[0-9]/g,'') == actualHtml.replace(/[0-9]/g,''));
 		const reason = !success ? ('html is different ' + jb.prettyPrint(jb.objectDiff(expectedVdom,actualVdom))) : ''
 		const result = { id: ctx.vars.testID, success, elem, reason }
-		if (new URL(location.href).searchParams.get('show') === null) {
+		if (!show) {
 			jb.ui.dialogs.dialogs.forEach(d=>d.close())
 			jb.ui.unmount(elem)
 			jb.rebuildRefHandler && jb.rebuildRefHandler();
@@ -292,12 +304,8 @@ if (typeof startTime === 'undefined')
 	startTime = new Date().getTime();
 startTime = startTime || new Date().getTime();
 
-jb.testers.runTests = function({testType,specificTest,show,pattern,rerun}) {
-	const {pipe, fromIter, subscribe,concatMap, flatMap, fromPromise, merge} = jb.callbag
-	// pipe(fromIter([1,2,3]),concatMap(x=> Promise.resolve(x))
-	// 	,subscribe(x=>console.log(x)))
-	// return
-
+jb.testers.runTests = function({testType,specificTest,show,pattern}) {
+	const {pipe, fromIter, subscribe,concatMap, fromPromise} = jb.callbag
 
 	jb.studio.initTests() && jb.studio.initTests()
 	const initial_resources = JSON.stringify(jb.resources).replace(/\"\$jb_id":[0-9]*,/g,'')
@@ -313,9 +321,6 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,rerun}) {
 	document.write(`<div style="font-size: 20px"><span id="fail-counter" onclick="hide_success_lines()"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span><span id="memory-usage"></span></div>`);
 
 	return pipe(
-		// fromIter(Array.from(Array(rerun ? Number(rerun) : 1).keys())),
-		// //concatMap(i=> (i % 20 == 0) ? jb.delay(300): [1]),
-		// concatMap(pipe(
 			fromIter(tests),
 			concatMap(e=> {
 			//	return Promise.resolve({ id: e[0], success: false, reason: 'empty result'})
@@ -332,6 +337,7 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,rerun}) {
 			 }))
 		}),
 		subscribe(res=> {
+			if (res.renderDOM && show) return
 			if (res.success)
 				jb_success_counter++;
 			else

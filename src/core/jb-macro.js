@@ -2,7 +2,6 @@ Object.assign(jb, {
     macroDef: Symbol('macroDef'), macroNs: {}, 
     macroName: id => id.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
     ns: nsIds => nsIds.split(',').forEach(nsId => jb.registerMacro(nsId + '.$dummyComp', {})),
-    unMacro: macroId => macroId.replace(/([A-Z])/g, (all, s) => ' ' + s.toLowerCase()),
     registerMacro: (id, profile) => {
         const macroId = jb.macroName(id).replace(/\./g, '_')
         const nameSpace = id.indexOf('.') != -1 && jb.macroName(id.split('.')[0])

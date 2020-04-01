@@ -456,6 +456,7 @@ jb.callbag = {
           if (t === 1 || t === 0) talkback(1)  // Pull
           if (t === 2 && !d && complete) complete()
           if (t === 2 && !!d && error) error( d )
+          if (t === 2 && listener.finally) listener.finally( d )
         })
         return () => talkback && talkback(2) // dispose
     },

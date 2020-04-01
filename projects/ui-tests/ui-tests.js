@@ -1359,20 +1359,15 @@ jb.component('menuTest.openContextMenu', {
   })
 })
 
-jb.component('uiTest.refreshControlById', {
+jb.component('uiTest.refreshControlById.text', {
   impl: uiTest({
-    vars: [Var('top', asIs({items: [{title: 'i1'}, {title: 'i2'}]}))],
-    control: itemlist({
-      items: '%$top/items%',
-      controls: text('%title%'),
-      features: id('itemlist')
-    }),
+    vars: Var('person1', () => ({name: 'Homer'})), // non watchable var
+    control: text({ text: '%$person1/name%', features: id('t1') }),
     action: runActions(
-      addToArray('%$top/items%', asIs([{title: 'i2'}, {title: 'i3'}])),
-      refreshControlById('itemlist'),
-      delay(1)
+      writeValue('%$person1/name%','Dan'),
+      refreshControlById('t1'),
     ),
-    expectedResult: contains(['i1', 'i2', 'i3'])
+    expectedResult: ctx => ctx.run(contains('Dan'))
   })
 })
 

@@ -347,7 +347,7 @@ Object.assign(jb.ui, {
         if (hash != null && hash == elem.getAttribute('cmpHash'))
             return jb.log('refreshElem',['stopped by hash', hash, ...arguments]);
         cmp && applyVdomDiff(elem, h(cmp), {strongRefresh, ctx})
-        jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
+        //jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
     },
 
     subscribeToRefChange: watchHandler => jb.subscribe(watchHandler.resourceChange, e=> {

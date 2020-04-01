@@ -119,7 +119,7 @@ jb.component('contentEditable.positionThumbs', {
             text: pipeline(
               Var(
                   'inspectElemStyle',
-                  ctx => getComputedStyle(jb.ui.contentEditable.current.base)
+                  ctx => getComputedStyle(jb.ui.contentEditable.current)
                 ),
               Var('prop', contentEditable.effectiveProp('%$axis%')),
               '%$inspectElemStyle/{%$prop%}%',
@@ -159,6 +159,7 @@ jb.component('contentEditable.openPositionThumbs', {
   impl: runActions(
     delay(100),
     openDialog({
+        id: 'positionThumbs',
         style: contentEditable.positionThumbsStyle(),
         content: contentEditable.positionThumbs('%$axis%'),
         features: [
@@ -175,7 +176,7 @@ jb.component('contentEditable.openPositionThumbs', {
           ),
           css(
             (ctx,{},{axis}) => {
-            const el = jb.ui.contentEditable.current.base
+            const el = jb.ui.contentEditable.current
             const elemRect = el.getBoundingClientRect()
             const iconOffset = [-3, -8]
             const left = (axis == 'x' ? elemRect.right + iconOffset[0] : elemRect.left) + 'px'
@@ -193,7 +194,7 @@ jb.component('contentEditable.openPositionThumbs', {
 jb.component('contentEditable.writePosToScript', {
   type: 'action',
   impl: ctx => {
-    const el = jb.ui.contentEditable.current.base
+    const el = jb.ui.contentEditable.current
     const prop = ctx.exp('%$studio/dragPos/prop%')
     if (!prop) return
     const val = jb.ui.computeStyle(el,prop)
@@ -208,7 +209,7 @@ jb.component('contentEditable.dragableThumb', {
   ],
   impl: interactive(
     (ctx,{cmp},{axis})=> {
-    const el = jb.ui.contentEditable.current.base
+    const el = jb.ui.contentEditable.current
     const prop = () => ctx.run(contentEditable.effectiveProp(axis))
     const {pipe,fromEvent,takeUntil,merge,Do, flatMap, map, last, forEach,fromPromise} = jb.callbag
     const destroyed = fromPromise(cmp.destroyed)

@@ -135,7 +135,7 @@ st.projectHosts = {
                 jsFiles: ['remote-widgets','phones-3',...['data','ui','vdom','tree','watchable','parsing','object-encoder'].map(x=>x+'-tests')]
                     .map(x=>`/projects/ui-tests/${x}.js`),
                 project, 
-                entry: { $: 'ui-test-runner', test: project }
+                entry: { $: 'uiTestRunner', test: project }
             })
         }
     }

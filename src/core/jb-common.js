@@ -852,11 +852,12 @@ jb.component('runActionOnItems', {
   params: [
     {id: 'items', as: 'ref[]', mandatory: true},
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
-    {id: 'notifications', as: 'string', options: 'wait for all actions,no notifications', description: 'notification for watch-ref, defualt behavior is after each action'}
+    {id: 'notifications', as: 'string', options: 'wait for all actions,no notifications', description: 'notification for watch-ref, default behavior is after each action'},
+    {id: 'indexVariable', as: 'string'}
   ],
-  impl: (ctx,items,action,notifications) => {
+  impl: (ctx,items,action,notifications,indexVariable) => {
 		if (notifications && jb.mainWatchableHandler) jb.mainWatchableHandler.startTransaction()
-		return jb.val(items).reduce((def,item) => def.then(_ => action(ctx.setData(item))) ,Promise.resolve())
+		return jb.val(items).reduce((def,item,i) => def.then(_ => action(ctx.setVar(indexVariable,i).setData(item))) ,Promise.resolve())
 			.catch((e) => jb.logException(e,ctx))
 			.then(() => notifications && jb.mainWatchableHandler && jb.mainWatchableHandler.endTransaction(notifications === 'no notifications'));
 	}
