@@ -1550,57 +1550,27 @@ jb.component('uiTest.hiddenRefBug', {
   })
 })
 
-jb.component('uiTest.cssDynamic', {
-  impl: uiTest({
-    control: group({
-      controls: [
-        text({
-          text: '%$color%',
-          features: [css.dynamic('{ color: %$color% }'), id('label')]
-        }),
-        button({
-          title: 'green',
-          action: writeValue('%$color%', 'green'),
-          features: id('green')
-        }),
-        button({title: 'blue', action: writeValue('%$color%', 'blue')})
-      ],
-      features: variable({name: 'color', value: 'blue', watchable: true})
-    }),
-    action: uiAction.click('#green'),
-    expectedResult: pipeline(ctx => jb.ui.cssOfSelector('#label',ctx), contains('color: green'))
-  })
-})
-
-jb.component('uiTest.cssWithCondition', {
-  impl: uiTest({
-    control: group({
-      controls: [
-        text({
-          text: '%$color%',
-          features: [
-            css.dynamic('{ color: %$color% }'),
-            css.withCondition('%$color%==blue', '{background: white}'),
-            css.withCondition('%$color%==green', '{background: grey}'),
-            id('label')
-          ]
-        }),
-        button({
-          title: 'green',
-          action: writeValue('%$color%', 'green'),
-          features: id('green')
-        }),
-        button({title: 'blue', action: writeValue('%$color%', 'blue')})
-      ],
-      features: variable({name: 'color', value: 'blue', watchable: true})
-    }),
-    action: uiAction.click('#green'),
-    expectedResult: pipeline(
-      ctx => jb.ui.cssOfSelector('#label',ctx),
-      contains(['color: green', 'grey'])
-    )
-  })
-})
+// jb.component('uiTest.cssDynamic', {
+//   impl: uiTest({
+//     control: group({
+//       controls: [
+//         text({
+//           text: '%$color%',
+//           features: [css.dynamic('{ color: %$color% }'), id('label')]
+//         }),
+//         button({
+//           title: 'green',
+//           action: writeValue('%$color%', 'green'),
+//           features: id('green')
+//         }),
+//         button({title: 'blue', action: writeValue('%$color%', 'blue')})
+//       ],
+//       features: variable({name: 'color', value: 'blue', watchable: true})
+//     }),
+//     action: uiAction.click('#green'),
+//     expectedResult: pipeline(ctx => jb.ui.cssOfSelector('#label',ctx), contains('color: green'))
+//   })
+// })
 
 jb.component('uiTest.validator', {
   impl: uiTest({

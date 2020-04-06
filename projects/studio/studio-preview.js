@@ -55,7 +55,7 @@ st.initPreview = function(preview_window,allowedTypes) {
       st.initCompsRefHandler(st.previewjb, allowedTypes)
       changedComps.forEach(e=>{
         st.compsRefHandler.resourceReferred(e[0])
-        st.writeValue(st.compsRefHandler.refOfPath([e[0]]), eval(`(${jb.prettyPrint(e[1])})`), new jb.jbCtx()) // update the history for future save
+        st.writeValue(st.compsRefHandler.refOfPath([e[0]]), eval(`(${jb.prettyPrint(e[1],{noMacros: true})})`), new jb.jbCtx()) // update the history for future save
         jb.val(st.compsRefHandler.refOfPath([e[0]]))[jb.location] = e[1][jb.location]
       })
       jb.entries(st.previewWindow.JSON.parse(st.resourcesFromPrevRun || '{}')).forEach(e=>st.previewjb.resource(e[0],e[1]))

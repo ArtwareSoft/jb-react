@@ -11,6 +11,7 @@ const spySettings = {
     extraIgnoredEvents: [], MAX_LOG_SIZE: 10000
 }
 const frame = jb.frame
+jb.spySettings = spySettings
 
 jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) {
 	Error = Error || frame.Error,

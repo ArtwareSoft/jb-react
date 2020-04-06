@@ -108,6 +108,7 @@ jb.component('editableNumber.mdcSliderNoText', {
       interactiveProp('rebuild mdc on external refresh',(ctx,{cmp}) => {
         cmp.mdcSlider && cmp.mdcSlider.destroy()
         cmp.mdcSlider = new jb.ui.material.MDCSlider(cmp.base)
+        //cmp.mdcSlider.listen('MDCSlider:input', ({detail}) =>  !cmp.checkAutoScale(detail.value) && cmp.jbModelWithUnits(detail.value))
         cmp.mdcSlider.listen('MDCSlider:change', () =>
           !cmp.checkAutoScale(cmp.mdcSlider.value) && cmp.jbModelWithUnits(cmp.mdcSlider.value))
       }),

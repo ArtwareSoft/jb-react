@@ -7,7 +7,7 @@ jb.resource('people',[
 jb.component('menusDemo.main', {
   type: 'control',
   impl: group({
-    
+
   })
 })
 
@@ -45,7 +45,7 @@ jb.component('menusDemo.pulldown', {
         })
       ]
     }),
-    style: {'$': 'menu-style.pulldown'}
+    style: menuStyle.pulldown()
   })
 })
 
@@ -62,21 +62,59 @@ jb.component('menusDemo.popup', {
               menu.action({
                 title: 'Copy',
                 action: openDialog({content: group({}), title: 'hello'}),
+                icon: icon({icon: 'ContentCopy', type: 'mdi'}),
                 shortcut: 'c',
                 showCondition: true
               }),
-              menu.action({title: 'Paste', showCondition: true}),
+              menu.action({
+                title: 'Paste',
+                icon: icon({icon: 'ContentPaste', type: 'mdi'}),
+                showCondition: true
+              }),
               menu.menu({
                 title: 'Change case',
                 options: [
                   menu.action({title: 'uppercase', showCondition: true}),
                   menu.action({title: 'lowercase', showCondition: true})
-                ]
+                ],
+                icon: icon({icon: 'text_format', type: 'mdc'})
               })
-            ]
-          })
+            ],
+            icon: icon({icon: 'edit', type: 'mdc'})
+          }),
+          popupStyle: dialog.contextMenuPopup({toolbar: true}),
+          menuStyle: menuStyle.toolbar({scale: '0.8'})
         }),
-        style: button.mdc()
+        style: button.mdcIcon(icon({icon: 'menu', type: 'mdc', scale: '1'})),
+        features: css.transformScale({x: '0.8', y: '0.8'})
+      }),
+      button({
+        title: 'click me',
+        style: button.mdcIcon(
+          icon({
+            icon: '3d_rotation',
+            scale: '',
+            style: icon.material(),
+            features: css('transform: translate(10px,0px) !important')
+          }),
+          '0.8'
+        ),
+        features: feature.icon({
+          icon: 'more_vert',
+          type: 'mdc',
+          scale: '',
+          features: css('transform: translate(3px,0px) !important')
+        })
+      }),
+      button({
+        title: 'more',
+        style: button.mdcIcon(
+          icon({
+            icon: 'ArrowDownDropCircle',
+            type: 'mdi',
+            features: css('transform: translate(0px,10px) !important')
+          })
+        )
       })
     ]
   }),
@@ -90,18 +128,17 @@ jb.component('menusDemo.dynamic', {
   type: 'control',
   impl: menu.control({
     menu: menu.menu({
-      options: {
-        '$': 'menu.dynamic-options',
+      options: menu.dynamicOptions({
         items: '%$people%',
         genericOption: menu.menu({
-          title: pipeline('%$menuData/name%', {'$': 'to-uppercase', text: '%%'}),
+          title: pipeline('%$menuData/name%', toUpperCase()),
           options: [
             menu.action({title: '%$menuData/name% name', showCondition: true}),
             menu.action({title: 'show address', showCondition: true})
           ]
         })
-      }
+      })
     }),
-    style: {'$': 'menu-style.pulldown'}
+    style: menuStyle.pulldown()
   })
 })

@@ -52,6 +52,8 @@ box-shadow: 2px 2px 3px #d5d5d5;
 padding: 3px 0;
 border: 1px solid rgb(213, 213, 213);}
 
+.toolbar-popup { position: absolute; }
+
 .pulldown-mainmenu-popup .pulldown-menu-remove-top-border { background: #fff; height: 3px; position: absolute; top: -2px; left: 0; }
 /* .pulldown-menu-item */
 .pulldown-menu-item { -webkit-user-select: none;  padding: 6px 10px 6px 29px; font-size: 13px; display: block; background: #fff;  border: none; width: 100%; text-align: left; cursor: pointer;   position: relative;}

@@ -124,37 +124,27 @@ jb.component('studio.suggestedStyles', {
 })
 
 function pathToObj(base, path) {
-    return path.split('/').filter(x=>x).reduce((o,p) => o[p],base)
-}
-
-function parents(path,includeThis) {
-    const result = ['']
-    path.split('/').reduce((acc,p) => {
-        const path = [acc,p].filter(x=>x).join('/')
-        result.push(path)
-        return path
-    } ,'')
-    return result.reverse().slice(includeThis ? 0 : 1)
+    return path.split('~').filter(x=>x).reduce((o,p) => o[p],base)
 }
 
 function flatContent(ctrl ,path) {
     const children = jb.asArray(ctrl.controls||[])
         .flatMap((ch,i) => flatContent(ch,
-            [path,'controls',Array.isArray(ctrl.controls) ? i : ''].filter(x=>x!=='').join('/')))
+            [path,'controls',Array.isArray(ctrl.controls) ? i : ''].filter(x=>x!=='').join('~')))
     return [{ctrl,path}, ...children]
 }
 
 function cleanUnmappedParams(ctx,ctrl,matches) {
     if (!ctx.exp('%$studio/patterns/deleteUnmapped%')) return ctrl
     const usedPaths = {}
-    matches.forEach(match => parents(match.src.path,true).forEach(path=>usedPaths[path] = true))
+    matches.forEach(match => jb.studio.pathParents(match.src.path,true).forEach(path=>usedPaths[path] = true))
     return cleanCtrl(ctrl,'')
 
     function cleanCtrl(ctrl,path) {
         if (!ctrl.controls) return ctrl
-        const innerPath = [path,'controls'].filter(x=>x).join('/')
+        const innerPath = [path,'controls'].filter(x=>x).join('~')
         const controls = Array.isArray(ctrl.controls) ?
-            ctrl.controls.flatMap((ch,i) => usedPaths[innerPath +'/'+i] ? [cleanCtrl(ch,innerPath +'/'+i)] : [])
+            ctrl.controls.flatMap((ch,i) => usedPaths[innerPath +'~'+i] ? [cleanCtrl(ch,innerPath +'~'+i)] : [])
                 .filter(x=>x)
             : usedPaths[innerPath] ? cleanCtrl(ctrl.controls,innerPath) : null
 
@@ -175,9 +165,9 @@ jb.ui.stylePatterns = {
             { id: `${type}${i}`, origValue: elem.ctrl, type, path: elem.path } )))
         const options = texts.flatMap(text=> {
             const boundedCtrl = JSON.parse(JSON.stringify(extractedCtrl))
-            const overridePath = [...text.path.split('/'),'text']
+            const overridePath = [...text.path.split('~'),'text']
             jb.path(boundedCtrl,overridePath,value) // set value
-            return parents(text.path,true).map(path => {
+            return jb.studio.pathParents(text.path,true).map(path => {
                 const ctrl = pathToObj(boundedCtrl, path)
                 return styleByControl(ctrl,'textModel')
             })
@@ -273,7 +263,7 @@ jb.ui.stylePatterns = {
             const boundedCtrl = JSON.parse(JSON.stringify(extractedCtrl))
             matches.forEach(match => {
                 const paramProp = paramProps[match.trg.type]
-                const overridePath = [...match.src.path.split('/'), paramProp]
+                const overridePath = [...match.src.path.split('~'), paramProp]
                 jb.path(boundedCtrl,overridePath, match.trg.origValue[paramProp]) // set value
             })
             const ctrl = cleanUnmappedParams(ctx,pathToObj(boundedCtrl, top),matches,srcParamsMap)
@@ -310,7 +300,7 @@ function flattenControlToGrid(ctrl) {
     });
     return group({
       layout: layout.grid({columnSizes: list(...diffs(Xs)), rowSizes: list(...diffs(Ys))}),
-      controls: srcParams.map(p=>({...p.ctrl, features: [...featuresFromParents(p), css(`{ grid-area: ${p.area}}`) ] })),
+      controls: srcParams.map(p=>({...p.ctrl, features: [...featuresFromParents(p), css.gridArea(`grid-area: ${p.area}`) ] })),
       features: css(`width: ${topRect.width}px; height: ${topRect.height}px;`),
     })
 
@@ -338,7 +328,7 @@ function flattenControlToGrid(ctrl) {
     return Xs.filter((pos,i) => i == 0 || keepList.has(pos) || Xs[i] - Xs[i-1] > 8)
   }
   function featuresFromParents(param) {
-    const _parents = parents(param.path).reverse()
+    const _parents = jb.studio.pathParents(param.path).reverse()
     const features = [
       ...(_parents[0].features || []),
       ..._parents.slice(1).reduce((features, path) => [...features,
@@ -358,7 +348,7 @@ function flattenControlToGrid(ctrl) {
 
   function calcPadding() {
     srcParams.filter(p=>p.type != 'image').forEach(param=>{
-      const parentPaths = parents(param.path)
+      const parentPaths = jb.studio.pathParents(param.path)
       const idx = parentPaths.findIndex(path=>{ 
         const parentCtrl = pathToObj(ctrl,path)
         return Array.isArray(parentCtrl.controls) && parentCtrl.controls.length >1

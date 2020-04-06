@@ -29,9 +29,12 @@ jb.component('helloWorld.main', {
     layout: layout.vertical(),
     controls: [
       group({
-        title: '',
         controls: [
-          
+          text({
+            text: 'my text',
+            title: 'my title',
+            features: css.padding({top: '19', left: '53'})
+          })
         ]
       }),
       button({title: 'click me', style: button.mdcIcon(icon('add_alert'))}),

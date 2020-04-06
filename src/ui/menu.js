@@ -1,17 +1,17 @@
-jb.ns('menuStyle')
-jb.ns('menuSeparator')
-jb.ns('mdc')
+jb.ns('menuStyle,menuSeparator,mdc,icon')
 
 jb.component('menu.menu', {
   type: 'menu.option',
   params: [
     {id: 'title', as: 'string', dynamic: true, mandatory: true},
     {id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true, defaultValue: []},
+    {id: 'icon', type: 'icon' },
     {id: 'optionsFilter', type: 'data', dynamic: true, defaultValue: '%%'}
   ],
   impl: ctx => ({
 		options: ctx2 => ctx.params.optionsFilter(ctx.setData(ctx.params.options(ctx2))),
-		title: ctx.params.title(),
+    title: ctx.params.title(),
+    icon: ctx.params.icon,
 		applyShortcut: function(e) {
 			return this.options().reduce((res,o)=> res || (o.applyShortcut && o.applyShortcut(e)),false)
 		},
@@ -104,11 +104,12 @@ jb.component('menu.openContextMenu', {
   params: [
     {id: 'menu', type: 'menu.option', dynamic: true, mandatory: true},
     {id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue: dialog.contextMenuPopup()},
+    {id: 'menuStyle', type: 'menu.style', dynamic: true, defaultValue: menuStyle.contextMenu()},
     {id: 'features', type: 'dialog-feature[]', dynamic: true}
   ],
   impl: openDialog({
     style: call('popupStyle'),
-    content: menu.control({menu: call('menu'), style: menuStyle.contextMenu()}),
+    content: menu.control({menu: call('menu'), style: call('menuStyle')}),
     features: call('features')
   })
 })
@@ -160,7 +161,6 @@ jb.component('menuStyle.contextMenu', {
   )
 })
 
-
 jb.component('menu.initPopupMenu', {
   type: 'feature',
   params: [
@@ -179,7 +179,7 @@ jb.component('menu.initPopupMenu', {
 					cmp.ctx.vars.topMenu.popups.push(ctx.vars.menuModel);
 					ctx2.run( menu.openContextMenu({
 							popupStyle: _ctx => ctx.componentContext.params.popupStyle(_ctx),
-							menu: _ctx =>	ctx.vars.$model.menu()
+							menu: _ctx =>	_ctx.vars.innerMenu ? ctx.vars.innerMenu.menu() : ctx.vars.$model.menu()
 						}))
 					}, cmp.ctx, cmp.base );
 
@@ -202,8 +202,7 @@ jb.component('menu.initPopupMenu', {
           })
 				}
 			})
-		}
-      )
+		})
   )
 })
 
@@ -338,14 +337,11 @@ jb.component('menu.selection', {
 jb.component('menuStyle.optionLine', {
   type: 'menu-option.style',
   impl: customStyle({
-    template: (cmp,{icon,title,shortcut},h) => h('div',{
-				class: 'line noselect', onmousedown: 'action'
-			},[
+    template: (cmp,{icon,title,shortcut},h) => h('div#line noselect', { onmousedown: 'action' },[
         h(cmp.ctx.run({...icon, $: 'control.icon'})),
-				//h('i',{class:'material-icons'},icon),
-				h('span',{class:'title'},title),
-				h('span',{class:'shortcut'},shortcut),
-        h('div',{class: 'mdc-line-ripple' }),
+				h('span#title',{},title),
+				h('span#shortcut',{},shortcut),
+        h('div#mdc-line-ripple'),
 		]),
     css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
 				.selected { background: #d8d8d8 }
@@ -360,11 +356,9 @@ jb.component('menuStyle.optionLine', {
 jb.component('menuStyle.popupAsOption', {
   type: 'menu.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{
-				class: 'line noselect', onmousedown: 'action'
-			},[
-				h('span',{class:'title'},state.title),
-				h('i',{class:'material-icons', onmouseenter: 'openPopup' },'play_arrow'),
+    template: (cmp,state,h) => h('div#line noselect', { onmousedown: 'action' },[
+				h('span#title',{},state.title),
+				h('i#material-icons', { onmouseenter: 'openPopup' },'play_arrow'),
 		]),
     css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
 				>i { width: 100%; text-align: right; font-size:16px; padding-right: 3px; padding-top: 3px; }
@@ -391,11 +385,12 @@ jb.component('dialog.contextMenuPopup', {
   type: 'dialog.style',
   params: [
     {id: 'offsetTop', as: 'number'},
-    {id: 'rightSide', as: 'boolean', type: 'boolean'}
+    {id: 'rightSide', as: 'boolean', type: 'boolean'},
+    {id: 'toolbar', as: 'boolean', type: 'boolean'},
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup context-menu-popup pulldown-mainmenu-popup'},
-				h(state.contentComp)),
+    template: (cmp,{contentComp,toolbar},h) => h('div#jb-dialog jb-popup context-menu-popup', 
+      { class: toolbar ? 'toolbar-popup' : 'pulldown-mainmenu-popup'}, h(contentComp)),
     features: [
       dialogFeature.uniqueDialog('%$optionsParentId%', false),
       dialogFeature.maxZIndexOnClick(),
@@ -415,4 +410,66 @@ jb.component('menuSeparator.line', {
     template: (cmp,state,h) => h('div'),
     css: '{ margin: 6px 0; border-bottom: 1px solid #EBEBEB;}'
   })
+})
+
+/***** icon menus */
+
+jb.component('menuStyle.toolbar', {
+  type: 'menu.style',
+  params: [
+    {id: 'leafOptionStyle', type: 'menu-option.style', dynamic: true, defaultValue: menuStyle.icon()},
+    {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.horizontal(5)},
+    {id: 'scale', as: 'number', defaultValue: 1, description: 'e.g. : 0.5, 2' },
+  ],
+  impl: styleByControl(
+    Var('optionsParentId', ctx => ctx.id),
+    Var('leafOptionStyle', ctx => ctx.componentContext.params.leafOptionStyle),
+    itemlist({
+      vars: [
+        Var('optionsParentId', ctx => ctx.id),
+        Var('leafOptionStyle', ctx => ctx.componentContext.params.leafOptionStyle)
+      ],
+      style: call('itemlistStyle'),
+      items: ctx => ctx.vars.menuModel.options && ctx.vars.menuModel.options().filter(x=>x) || [],
+      controls: menu.control({menu: '%$item%', style: menuStyle.applyMultiLevel({
+        menuStyle: menuStyle.iconMenu(), leafStyle: menuStyle.icon()
+      })}),
+      features: css.transformScale({x: '%$scale%', y: '%$scale%'})
+    })
+  )
+})
+
+jb.component('menuStyle.icon', {
+  type: 'menu-option.style',
+  impl: styleWithFeatures(
+      button.mdcIcon('%$menuModel/leaf/icon%'),
+      [
+        htmlAttribute('onclick',true),
+        defHandler('onclickHandler', ctx => ctx.vars.menuModel.action())
+      ]
+  )
+})
+
+jb.component('menuStyle.iconMenu', {
+  type: 'menu.style',
+  impl: styleByControl(
+      button({
+        title: '%title%',
+        action: (ctx,{cmp}) => cmp.openPopup(),
+        style: button.mdcIcon(
+          icon({
+            icon: '%icon/icon%',
+            type: '%icon/type%',
+            features: css('transform: translate(7px,0px) !important')
+          }),
+        ),
+        features: [feature.icon({
+          icon: 'more_vert',
+          type: 'mdc',
+          features: css('transform: translate(-3px,0px) !important')
+        }),
+          menu.initPopupMenu(dialog.contextMenuPopup({toolbar: true, rightSide: true}))
+        ]
+      }),
+    'innerMenu'),
 })

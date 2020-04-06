@@ -31,7 +31,6 @@ class WatchableValueByRef {
       const opVal = opOnRef.$set || opOnRef.$merge || opOnRef.$push || opOnRef.$splice;
       if (!this.isRef(ref))
         ref = this.asRef(ref);
-      jb.log('doOp',[this.asStr(ref),opVal,...arguments]);
 
       const path = this.removeLinksFromPath(this.pathOfRef(ref)), op = {}, oldVal = this.valOfPath(path);
       if (!path || ref.$jb_val) return;
@@ -71,6 +70,7 @@ class WatchableValueByRef {
         this.primitiveArraysDeltas[ref.$jb_obj[jbId]].push(opOnRef.$splice)
       }
       opEvent.newVal = newVal;
+      jb.log('doOp',[opEvent,...arguments]);
       // TODO: split splice event to delete, push, and insert
       if (this.transactionEventsLog)
         this.transactionEventsLog.push(opEvent)

@@ -86,8 +86,8 @@ jb.component('studio.toolbar', {
       button({
         title: 'Event Tracker',
         action: studio.openEventTracker(),
-        style: button.mdcIcon('hearing'),
-        features: [ctrlAction(studio.openEventTracker('true')), hidden()]
+        style: button.mdcIcon(icon({icon: 'bug_report', type: 'mdc'})),
+        features: [ctrlAction(studio.openEventTracker('true'))]
       }),
       button({
         title: 'History',

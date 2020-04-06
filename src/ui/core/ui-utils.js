@@ -173,17 +173,45 @@ ui.renderWidget = function(profile,top) {
 
         const {pipe,debounceTime,filter,subscribe} = jb.callbag
         pipe(st.pageChange, filter(({page})=>page != currentProfile.$), subscribe(({page})=> doRender(page)))
-        pipe(st.scriptChange, filter(e=>(jb.path(e,'path.0') || '').indexOf('dataResource.') != 0), // do not update on data change
+        
+        pipe(st.scriptChange, filter(e=>isCssChange(st,e.path)),
+          subscribe(({path}) => {
+            let featureIndex = path.lastIndexOf('features')
+            if (featureIndex == -1) featureIndex = path.lastIndexOf('layout')
+            const ctrlPath = path.slice(0,featureIndex).join('~')
+            const elems = Array.from(document.querySelectorAll('[jb-ctx]'))
+              .map(elem=>({elem, ctx: jb.ctxDictionary[elem.getAttribute('jb-ctx')] }))
+              .filter(e => e.ctx && e.ctx.path == ctrlPath)
+            elems.forEach(e=>jb.ui.refreshElem(e.elem,null,{cssOnly: true}))
+        }))
+
+        pipe(st.scriptChange, filter(e=>!isCssChange(st,e.path)),
+            filter(e=>(jb.path(e,'path.0') || '').indexOf('dataResource.') != 0), // do not update on data change
             debounceTime(() => Math.min(2000,lastRenderTime*3 + fixedDebounce)),
             subscribe(() =>{
                 doRender()
                 jb.ui.dialogs.reRenderAll()
-            }))
+        }))
     }
     const elem = top.ownerDocument.createElement('div')
     top.appendChild(elem)
 
     doRender()
+
+  function isCssChange(st,path) {
+    const compPath = pathOfCssFeature(st,path)
+    return compPath && st.compNameOfPath(compPath).match(/^(css|layout)/)
+  }
+
+  function pathOfCssFeature(st,path) {
+    const featureIndex = path.lastIndexOf('features')
+    if (featureIndex == -1) {
+      const layoutIndex = path.lastIndexOf('layout')
+      return layoutIndex != -1 && path.slice(0,layoutIndex+1).join('~')
+    }
+    const array = Array.isArray(st.valOfPath(path.slice(0,featureIndex+1).join('~')))
+    return path.slice(0,featureIndex+(array?2:1)).join('~')
+  }
 
 	function doRender(page) {
         if (page) currentProfile = {$: page}
@@ -193,7 +221,7 @@ ui.renderWidget = function(profile,top) {
         top.innerHTML = ''
         jb.ui.render(ui.h(cmp),top)
         lastRenderTime = new Date().getTime() - start
-    }
+  }
 }
 
 jb.objectDiff = function(newObj, orig) {
@@ -247,7 +275,11 @@ jb.component('styleWithFeatures', {
     {id: 'style', type: '$asParent', mandatory: true, composite: true},
     {id: 'features', type: 'feature[]', templateValue: [], dynamic: true, mandatory: true}
   ],
-  impl: (ctx,style,features) => style && {...style,featuresOptions: (style.featuresOptions || []).concat(features())}
+  impl: (ctx,style,features) => {
+    if (style instanceof jb.ui.JbComponent)
+      return style.jbExtend(features(),ctx)
+    return style && {...style,featuresOptions: (style.featuresOptions || []).concat(features())}
+  }
 })
 
 jb.component('controlWithFeatures', {

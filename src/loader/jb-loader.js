@@ -30,6 +30,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/group.js',
         'src/ui/html.js',
         'src/ui/image.js',
+        'src/ui/icon.js',
         'src/ui/button.js',
         'src/ui/field.js',
         'src/ui/editable-text.js',
@@ -41,7 +42,6 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/menu.js',
         'src/ui/picklist.js',
         'src/ui/theme.js',
-        'src/ui/icon.js',
         'src/ui/slider.js',
         'src/ui/table.js',
         'src/ui/window.js',
@@ -157,11 +157,12 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'suggestions', 'properties','jb-editor-styles','edit-source','jb-editor','pick','h-to-jsx','style-editor',
         'references','properties-menu','save','open-project','tree',
         'data-browse', 'new-project','event-tracker', 'toolbar','search', 'main', 'component-header', 'hosts', 'probe',
-        'watch-ref-viewer', 'content-editable', 'position-thumbs', 'html-to-ctrl', 'patterns', 'pick-icon', 'grid-editor'
+        'watch-ref-viewer', 'content-editable', 'position-thumbs', 'html-to-ctrl', 'patterns', 'pick-icon', 
+        'inplace-edit', 'grid-editor'
       ],
       'studio-tests': [
         'projects/studio/studio-testers.js',
-        'probe','model','tree','suggestion','patterns','content-editable'
+        'probe','model','tree','suggestion','patterns','inplace-edit'
       ],
 })
 

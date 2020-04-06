@@ -210,7 +210,7 @@ Object.assign(st,{
 			return [path]
 	},
 	isControlType: type =>
-		(type||'').match(/^(control|options|menu|table-field|d3g.pivot)/),
+		(type||'').split('[')[0].match(/^(control|options|menu|table-field|d3g.pivot)$/),
 	controlParams: path =>
 		st.paramsOfPath(path).filter(p=>st.isControlType(p.type)).map(p=>p.id),
 
@@ -390,6 +390,16 @@ Object.assign(st,{
 		if (testData)
 			return _ctx.ctx({profile: pipeline(testData, {$: compId}), path: '' })
 	},
+	pathParents(path,includeThis) {
+		const result = ['']
+		path.split('~').reduce((acc,p) => {
+			const path = [acc,p].filter(x=>x).join('~')
+			result.push(path)
+			return path
+		} ,'')
+		return result.reverse().slice(includeThis ? 0 : 1)
+	}
+	
 })
 
 })()

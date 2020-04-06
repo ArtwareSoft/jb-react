@@ -1,3 +1,89 @@
+jb.component('studio.openPickIcon', {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: openDialog({
+    style: dialog.studioFloating({}),
+    content: group({
+      vars: [Var('type', property('type', studio.ref(studio.parentPath('%$path%'))))],
+      controls: [
+        group({
+          layout: layout.horizontal(),
+          controls: [
+            picklist({
+              title: 'type',
+              databind: '%$type%',
+              options: picklist.optionsByComma('mdi,mdc'),
+              style: picklist.buttonList({})
+            }),
+            itemlistContainer.search({
+              searchIn: '%%',
+              databind: '%$itemlistCntrData/search_pattern%',
+              style: styleWithFeatures(
+                editableText.mdcSearch(),
+                [
+                  css('~ .mdc-text-field {height: 32px }'),
+                  css('~ input { padding: 0 0 0 10px; }'),
+                  css('~ .mdc-text-field__icon { top: 20%;}')
+                ]
+              )
+            })
+          ]
+        }),
+        itemlist({
+          title: '',
+          items: pipeline(
+            If(
+                equals('mdi', '%$type%'),
+                pipeline(ctx => jb.frame.MDIcons, keys()),
+                ctx => jb.ui.mdcIconNames.split(',')
+              ),
+            itemlistContainer.filter()
+          ),
+          controls: [
+            group({
+              title: '',
+              layout: layout.horizontal(),
+              controls: [
+                control.icon({icon: '%%', type: firstSucceeding('%$type%', 'mdc')}),
+                text({
+                  text: pipeline('%%', text.highlight('%%', '%$itemlistCntrData.search_pattern%')),
+                  title: 'icon name'
+                })
+              ]
+            })
+          ],
+          visualSizeLimit: '50',
+          features: [
+            watchRef({ref: '%$itemlistCntrData/search_pattern%', strongRefresh: 'true'}),
+            watchRef({ref: '%$type%', strongRefresh: 'true'}),
+            css.height({height: '500', overflow: 'scroll'}),
+            css.width('600'),
+            itemlist.infiniteScroll(),
+            itemlist.selection({
+              onDoubleClick: runActions(
+                writeValue(studio.ref('%$path%'), '%%'),
+                delay(),
+                dialog.closeContainingPopup()
+              )
+            }),
+            itemlist.keyboardSelection({
+              onEnter: runActions(
+                writeValue(studio.ref('%$path%'), '%%'),
+                delay(),
+                dialog.closeContainingPopup()
+              )
+            })
+          ]
+        })
+      ],
+      features: [group.itemlistContainer({}), group.autoFocusOnFirstInput()]
+    }),
+    title: 'pick icon'
+  })
+})
+
 jb.component('studio.pickIcon', {
   type: 'control',
   params: [
@@ -6,87 +92,8 @@ jb.component('studio.pickIcon', {
   impl: group({
     controls: button({
       title: prettyPrint(studio.val('%$path%'), true),
-      action: openDialog({
-        style: dialog.studioFloating({}),
-        content: group({
-          vars: [Var('type', property('type', studio.ref(studio.parentPath('%$path%'))))],
-          controls: [
-            group({
-              layout: layout.horizontal(),
-              controls: [
-                picklist({
-                  title: 'type',
-                  databind: '%$type%',
-                  options: picklist.optionsByComma('mdi,mdc'),
-                  style: picklist.buttonList({})
-                }),
-                itemlistContainer.search({
-                  searchIn: '%%',
-                  databind: '%$itemlistCntrData/search_pattern%',
-                  style: styleWithFeatures(
-                    editableText.mdcSearch(),
-                    [
-                      css('~ .mdc-text-field {height: 32px }'),
-                      css('~ input { padding: 0 0 0 10px; }'),
-                      css('~ .mdc-text-field__icon { top: 20%;}')
-                    ]
-                  )
-                })
-              ]
-            }),
-            itemlist({
-              title: '',
-              items: pipeline(
-                If(
-                    equals('mdi', '%$type%'),
-                    pipeline(ctx => jb.frame.MDIcons, keys()),
-                    ctx => jb.ui.mdcIconNames.split(',')
-                  ),
-                itemlistContainer.filter()
-              ),
-              controls: [
-                group({
-                  title: '',
-                  layout: layout.horizontal(),
-                  controls: [
-                    control.icon({icon: '%%', type: '%$type%'}),
-                    text({
-                      text: pipeline('%%', text.highlight('%%', '%$itemlistCntrData.search_pattern%')),
-                      title: 'icon name'
-                    })
-                  ]
-                })
-              ],
-              visualSizeLimit: '50',
-              features: [
-                watchRef({ref: '%$itemlistCntrData/search_pattern%', strongRefresh: 'true'}),
-                watchRef({ref: '%$type%', strongRefresh: 'true'}),
-                css.height({height: '500', overflow: 'scroll'}),
-                css.width('600'),
-                itemlist.infiniteScroll(),
-                itemlist.selection({
-                  onDoubleClick: runActions(
-                    writeValue(studio.ref('%$path%'), '%%'),
-                    delay(),
-                    dialog.closeContainingPopup()
-                  )
-                }),
-                itemlist.keyboardSelection({
-                  onEnter: runActions(
-                    writeValue(studio.ref('%$path%'), '%%'),
-                    delay(),
-                    dialog.closeContainingPopup()
-                  )
-                })
-              ]
-            })
-          ],
-          features: [group.itemlistContainer({}), group.autoFocusOnFirstInput()]
-        }),
-        title: 'pick icon'
-      }),
+      action: studio.openPickIcon('%$path%'),
       style: button.studioScript(),
-      raised: ''
     }),
     features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
   })

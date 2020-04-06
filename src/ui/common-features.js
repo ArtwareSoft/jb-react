@@ -77,10 +77,7 @@ jb.component('feature.beforeInit', {
   params: [
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
-  impl: feature.init(
-    '%$action%',
-    5
-  )
+  impl: feature.init('%$action%',5)
 })
 
 jb.component('feature.afterLoad', {
@@ -119,8 +116,10 @@ jb.component('watchRef', {
   params: [
     {id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data'},
     {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
-    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
-    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and reinit wait for data', type: 'boolean'}
+    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children'},
+    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and reinit wait for data'},
+    {id: 'cssOnly', as: 'boolean', description: 'refresh only css features'},
+    {id: 'phase', as: 'number', description: 'controls the order of updates on the same event. default is 0'}
   ],
   impl: ctx => ({ watchRef: {refF: ctx.params.ref, ...ctx.params}})
 })
@@ -152,7 +151,7 @@ jb.component('feature.onDataChange', {
     {id: 'action', type: 'action', dynamic: true, description: 'run on change'}
   ],
   impl: interactive((ctx,{cmp},{ref,includeChildren,action}) => 
-      jb.subscribe(jb.ui.refObservable(ref(),cmp,{includeChildren, srcCtx: ctx}), () => action()))
+      jb.subscribe(jb.ui.refObservable(ref(),cmp,{includeChildren, srcCtx: ctx}), () => action(ctx.setVar('cmp',cmp))))
 })
 
 jb.component('group.data', {

@@ -19,7 +19,9 @@ Object.assign(jb.ui,{
     return basePos
   },
   studioFixYPos() {
-    return (document.querySelector('#jb-preview') && document.querySelector('#jb-preview').getBoundingClientRect().top) || 0
+    if (this._studioFixYPos == null)
+      this._studioFixYPos = (document.querySelector('#jb-preview') && document.querySelector('#jb-preview').getBoundingClientRect().top) || 0
+    return this._studioFixYPos
   }
 })
 
@@ -170,10 +172,8 @@ jb.component('contentEditable.openPositionThumbs', {
             {display: flex; align-items: center;}
           `
           ),
-          css.dynamic(If('%$axis%==y', '{flex-direction: column}')),
-          css.dynamic(
-            If('%$axis%==y', '~ i {cursor: row-resize}', '~ i {cursor: col-resize}')
-          ),
+          css(If('%$axis%==y', '{flex-direction: column}')),
+          css(If('%$axis%==y', '~ i {cursor: row-resize}', '~ i {cursor: col-resize}')),
           css(
             (ctx,{},{axis}) => {
             const el = jb.ui.contentEditable.current

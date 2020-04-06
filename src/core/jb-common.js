@@ -627,14 +627,14 @@ jb.component('matchRegex', {
   impl: (ctx,regex,text) => text.match(new RegExp(regex))
 })
 
-jb.component('toUppercase', {
+jb.component('toUpperCase', {
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
   impl: (ctx,text) =>	text.toUpperCase()
 })
 
-jb.component('toLowercase', {
+jb.component('toLowerCase', {
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],

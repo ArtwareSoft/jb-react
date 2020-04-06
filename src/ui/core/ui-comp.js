@@ -1,19 +1,55 @@
 (function(){
 const ui = jb.ui
-let cssId = 0, cmpId = 0;
+let cmpId = 0;
 ui.propCounter = 0
-const cssSelectors_hash = ui.cssSelectors_hash = {};
 const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,this.ctx) }}
 const lifeCycle = new Set('init,componentDidMount,componentWillUpdate,componentDidUpdate,destroy,extendCtx,templateModifier,extendItem'.split(','))
-const arrayProps = new Set('enrichField,dynamicCss,icon,watchAndCalcModelProp,staticCssLines,defHandler,interactiveProp,calcProp'.split(','))
+const arrayProps = new Set('enrichField,icon,watchAndCalcModelProp,cssLines,defHandler,interactiveProp,calcProp'.split(','))
 const singular = new Set('template,calcRenderProps,toolbar,styleCtx,calcHash,ctxForPick'.split(','))
+
+Object.assign(jb.ui,{
+    cssHashCounter: 0,
+    cssHashMap: {},
+    hashCss(_cssLines,ctx,{existingClass, cssStyleElem} = {}) {
+        const cssLines = (_cssLines||[]).filter(x=>x)
+        const cssKey = cssLines.join('\n')
+        if (!cssKey) return ''
+
+        const workerId = jb.frame.workerId && jb.frame.workerId(ctx)
+        const classPrefix = workerId ? 'w'+ workerId : 'jb-'
+
+        if (!this.cssHashMap[cssKey]) {
+            this.cssHashCounter++;
+            const classId = existingClass || `${classPrefix}${this.cssHashCounter}`
+            this.cssHashMap[cssKey] = {classId, paths : {[ctx.path]: true}}
+            const cssContent = linesToCssStyle(classId)
+            if (cssStyleElem)
+                cssStyleElem.innerText = cssContent
+            else
+                ui.addStyleElem(cssContent,workerId)
+        }
+        Object.assign(this.cssHashMap[cssKey].paths, {[ctx.path] : true})
+        return this.cssHashMap[cssKey].classId
+
+        function linesToCssStyle(classId) {
+            const cssStyle = cssLines.map(selectorPlusExp=>{
+                const selector = selectorPlusExp.split('{')[0];
+                const fixed_selector = selector.split(',').map(x=>x.trim().replace('|>',' '))
+                    .map(x=>x.indexOf('~') == -1 ? `.${classId}${x}` : x.replace('~',`.${classId}`));
+                return fixed_selector + ' { ' + selectorPlusExp.split('{')[1];
+            }).join('\n');
+            const remark = `/*style: ${ctx.profile.style && ctx.profile.style.$}, path: ${ctx.path}*/\n`;
+            return remark + cssStyle
+        }
+    },
+})
 
 class JbComponent {
     constructor(ctx) {
         this.ctx = ctx // used to calc features
         this.cmpId = cmpId++
         this.eventObservables = []
-        this.staticCssLines = []
+        this.cssLines = []
         this.contexts = []
         this.originators = [ctx]
     }
@@ -69,10 +105,11 @@ class JbComponent {
                 (vd && typeof vd === 'object') ? tryWrapper(() => modifier(vd,this,this.renderProps,ui.h) || vd, 'templateModifier') 
                     : vd ,initialVdom)
 
-        const observe = this.toObserve.map(x=>[x.ref.handler.urlOfRef(x.ref),
-            x.includeChildren ? `includeChildren=${x.includeChildren}` : '',
-            x.strongRefresh ? `strongRefresh` : ''
-        ].join(';')).join(',')
+        const observe = this.toObserve.map(x=>[
+            x.ref.handler.urlOfRef(x.ref),
+            x.includeChildren && `includeChildren=${x.includeChildren}`,
+            x.strongRefresh && `strongRefresh`,  x.cssOnly && `cssOnly`,  
+            x.phase && `phase=${x.phase}`].filter(x=>x).join(';')).join(',')
         const handlers = (this.defHandler||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx)}`).join(',')
         const interactive = (this.interactiveProp||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx)}`).join(',')
         const originators = this.originators.map(ctx=>ui.preserveCtx(ctx)).join(',')
@@ -121,31 +158,7 @@ class JbComponent {
     }
 
     jbCssClass() {
-        if (this.cachedClass)
-            return this.cachedClass
-        const ctx = this.ctx
-        const cssLines = (this.staticCssLines || []).concat((this.dynamicCss || [])
-            .map(dynCss=>dynCss(this.calcCtx))).filter(x=>x)
-        const cssKey = cssLines.join('\n')
-        const workerId = jb.frame.workerId && jb.frame.workerId(this.ctx)
-        const classPrefix = workerId ? 'w'+ workerId : 'jb-'
-        if (!cssKey) return ''
-        if (!cssSelectors_hash[cssKey]) {
-            cssId++;
-            cssSelectors_hash[cssKey] = cssId;
-            const cssStyle = cssLines.map(selectorPlusExp=>{
-                const selector = selectorPlusExp.split('{')[0];
-                const fixed_selector = selector.split(',').map(x=>x.trim().replace('|>',' '))
-                    .map(x=>x.indexOf('~') == -1 ? `.${classPrefix}${cssId}${x}` : x.replace('~',`.${classPrefix}${cssId}`));
-                return fixed_selector + ' { ' + selectorPlusExp.split('{')[1];
-            }).join('\n');
-            const remark = `/*style: ${ctx.profile.style && ctx.profile.style.$}, path: ${ctx.path}*/\n`;
-            ui.addStyleElem(remark + cssStyle,workerId)
-        }
-        const jbClass = `${classPrefix}${cssSelectors_hash[cssKey]}`
-        if (!this.dynamicCss)
-            this.cachedClass = jbClass
-        return jbClass
+        return ui.hashCss(this.cssLines,this.ctx)
     }
     originatingCtx() {
         return this.originators[this.originators.length-1]
@@ -226,7 +239,7 @@ class JbComponent {
         this.eventObservables = this.eventObservables.concat(Object.keys(options).filter(op=>op.indexOf('on') == 0))
 
         if (options.css)
-            this.staticCssLines = (this.staticCssLines || []).concat(options.css.split(/}\s*/m)
+            this.cssLines = (this.cssLines || []).concat(options.css.split(/}\s*/m)
                 .map(x=>x.trim()).filter(x=>x)
                 .map(x=>x+'}')
                 .map(x=>x.replace(/^!/,' ')));

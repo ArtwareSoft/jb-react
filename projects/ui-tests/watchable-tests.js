@@ -219,6 +219,40 @@ jb.component('uiTest.labelNotWatchingBasicVar', {
   })
 })
 
+jb.component('uiTest.watchRefCssOnly', {
+  impl: uiTest({
+    control: text({
+      text: 'hey',
+      features: [
+        watchRef({ref: '%$person/name%', cssOnly: true}),
+        css(If('%$person/name% == \"Homer Simpson\"','color: red; /*css-only*/', 'color: green; /*css-only*/'))
+      ]
+    }),
+    action: writeValue('%$person/name%','Dan'),
+    expectedResult: ctx => Array.from(document.querySelectorAll('style')).map(el=>el.innerText).filter(x=>x.indexOf('color: green; /*css-only*/') != -1)[0],
+  })
+})
+
+jb.component('uiTest.watchRefPhase', {
+  impl: uiTest({
+    vars: Var('arr', () => []),
+    control: group({
+      controls: [
+        text({
+          text: (ctx,{arr}) => { arr.push(1); return 'hey' },
+          features: watchRef({ref: '%$person/name%', phase: 20}),
+        }),
+        text({
+          text: (ctx,{arr}) => { arr.push(2); return 'hey' },
+          features: watchRef({ref: '%$person/name%', phase: 5}),
+        }),
+      ]
+    }),
+    action: writeValue('%$person/name%','Dan'),
+    expectedResult: (ctx,{arr}) => arr.join(',') == '1,2,2,1',
+  })
+})
+
 jb.component('uiTest.groupWatchingWithoutIncludeChildren', {
   impl: uiTest({
     control: group({

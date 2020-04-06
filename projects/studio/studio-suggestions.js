@@ -158,6 +158,24 @@ jb.component('studio.jbFloatingInput', {
           )
         ]
       }),
+      button({
+        title: 'choose icon',
+        action: studio.openPickIcon('%$path%'),
+        style: button.mdcIcon(icon({icon: 'insert_emoticon', type: 'mdc'}), ''),
+        features: [
+          feature.if(
+            and(
+              inGroup(
+                  list('feature.icon', 'icon'),
+                  studio.compName(studio.parentPath('%$path%'))
+                ),
+              equals('icon', pipeline(studio.paramDef('%$path%'), '%id%'))
+            )
+          ),
+          css.transformScale({x: '1', y: '0.8'}),
+          css.margin('15')
+        ]
+      }),
       group({
         title: '',
         layout: layout.vertical(),

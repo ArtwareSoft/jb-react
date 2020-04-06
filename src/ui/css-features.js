@@ -11,25 +11,6 @@ jb.component('css', {
   impl: (ctx,css) => ({css: fixCssLine(css)})
 })
 
-jb.component('css.dynamic', {
-  description: 'recalc the css on refresh/watchRef. e.g. {color: %$color%}',
-  type: 'feature,dialog-feature',
-  params: [
-    {id: 'css', mandatory: true, as: 'string', dynamic: true}
-  ],
-  impl: (ctx,css) => ({dynamicCss: ctx2 => css(ctx2)})
-})
-
-jb.component('css.withCondition', {
-  description: 'css with dynamic condition. e.g. .myclz {color: red}',
-  type: 'feature,dialog-feature',
-  params: [
-    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true, type: 'boolean'},
-    {id: 'css', mandatory: true, as: 'string', dynamic: true}
-  ],
-  impl: (ctx,cond,css) => ({dynamicCss: ctx2 => cond(ctx2) ? fixCssLine(css(ctx2)) : ''})
-})
-
 jb.component('css.class', {
   type: 'feature,dialog-feature',
   params: [
@@ -83,7 +64,7 @@ jb.component('css.padding', {
   ],
   impl: ctx => {
     const css = ['top','left','right','bottom']
-      .filter(x=>ctx.params[x] != null)
+      .filter(x=>ctx.params[x] != '')
       .map(x=> `padding-${x}: ${withUnits(ctx.params[x])}`)
       .join('; ');
     return {css: `${ctx.params.selector} {${css}}`};
@@ -94,9 +75,9 @@ jb.component('css.margin', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'top', as: 'string', description: 'e.g. 20, 20%, 0.4em, -20'},
-    {id: 'right', as: 'string'},
-    {id: 'bottom', as: 'string'},
     {id: 'left', as: 'string'},
+    {id: 'bottom', as: 'string'},
+    {id: 'right', as: 'string'},
     {id: 'selector', as: 'string'}
   ],
   impl: ctx => {
@@ -163,6 +144,17 @@ jb.component('css.transformScale', {
   impl: ctx => ({css: `${ctx.params.selector} {transform:scale(${ctx.params.x},${ctx.params.y})}`})
 })
 
+jb.component('css.transformTranslate', {
+  type: 'feature',
+  description: 'margin, move, shift, offset',
+  params: [
+    {id: 'x', as: 'string', description: '10px', defaultValue: '0'},
+    {id: 'y', as: 'string', description: '20px', defaultValue: '0'},
+    {id: 'selector', as: 'string'}
+  ],
+  impl: ctx => ({css: `${ctx.params.selector} {transform:translate(${withUnits(ctx.params.x)},${withUnits(ctx.params.y)})}`})
+})
+
 jb.component('css.bold', {
   type: 'feature',
   impl: ctx => ({css: `{font-weight: bold}`})
@@ -216,7 +208,7 @@ jb.component('css.lineClamp', {
   )
 })
 
-;['layout','typography','detailedBorder','detailedColor'].forEach(f=>
+;['layout','typography','detailedBorder','detailedColor','gridArea'].forEach(f=>
 jb.component(`css.${f}`, {
   type: 'feature:0',
   params: [

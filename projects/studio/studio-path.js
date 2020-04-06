@@ -138,7 +138,7 @@ Object.assign(st, {
 		const val = st.valOfPath(path);
 		const parent_ref = st.getOrCreateControlArrayRef(st.parentPath(st.parentPath(path)));
 		if (parent_ref) {
-			const clone = st.evalProfile(jb.prettyPrint(val));
+			const clone = st.evalProfile(jb.prettyPrint(val,{noMacros: true}));
 			st.splice(parent_ref,[[Number(prop), 0,clone]],srcCtx);
 		}
 	},
@@ -147,7 +147,7 @@ Object.assign(st, {
 		const val = st.valOfPath(path);
 		const parent_ref = st.refOfPath(st.parentPath(path));
 		if (parent_ref && Array.isArray(st.val(parent_ref))) {
-			const clone = st.evalProfile(jb.prettyPrint(val));
+			const clone = st.evalProfile(jb.prettyPrint(val,{noMacros: true}));
 			st.splice(parent_ref,[[Number(prop), 0,clone]],srcCtx);
 		}
 	},
@@ -263,7 +263,7 @@ Object.assign(st, {
 	makeLocal: (path,srcCtx) =>{
 		var comp = st.compOfPath(path);
 		if (!comp || typeof comp.impl != 'object') return;
-		st.writeValueOfPath(path,st.evalProfile(jb.prettyPrint(comp.impl)),srcCtx);
+		st.writeValueOfPath(path,st.evalProfile(jb.prettyPrint(comp.impl,{noMacros: true})),srcCtx);
 	},
 	getOrCreateControlArrayRef: (path,srcCtx) => {
 		var val = st.valOfPath(path);

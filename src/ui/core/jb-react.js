@@ -333,7 +333,6 @@ Object.assign(jb.ui, {
     refreshElem(elem, state, options) {
         if (jb.path(elem,'_component.status') == 'initializing') 
             return jb.logError('circular refresh',[...arguments]);
-        jb.log('refreshElem',[...arguments]);
         const _ctx = ui.ctxOfElem(elem)
         if (!_ctx) 
             return jb.logError('refreshElem - no ctx for elem',elem)
@@ -342,12 +341,21 @@ Object.assign(jb.ui, {
         if (options && options.extendCtx)
             ctx = options.extendCtx(ctx)
         ctx = ctx.setVar('$refreshElemCall',true)
+        if (jb.ui.inStudio()) // updating to latest version of profile
+            ctx.profile = jb.execInStudio({$: 'studio.val', path: ctx.path})
         const cmp = ctx.profile.$ == 'openDialog' ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself()
+        jb.log('refreshElem',[ctx,cmp, ...arguments]);
+
+        if (jb.path(options,'cssOnly')) {
+            const existingClass = (elem.className.match(/(w|jb-)[0-9]+/)||[''])[0]
+            const cssStyleElem = Array.from(document.querySelectorAll('style')).map(el=>({el,txt: el.innerText})).filter(x=>x.txt.indexOf(existingClass + ' ') != -1)[0].el
+            return jb.ui.hashCss(cmp.cssLines,cmp.ctx,{existingClass, cssStyleElem})
+        }
         const hash = cmp.init()
         if (hash != null && hash == elem.getAttribute('cmpHash'))
             return jb.log('refreshElem',['stopped by hash', hash, ...arguments]);
         cmp && applyVdomDiff(elem, h(cmp), {strongRefresh, ctx})
-        //jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
+        jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
     },
 
     subscribeToRefChange: watchHandler => jb.subscribe(watchHandler.resourceChange, e=> {
@@ -355,11 +363,12 @@ Object.assign(jb.ui, {
         if (!changed_path) debugger
         //observe="resources://2~name;person~name
         const elemsToCheck = jb.ui.find(e.srcCtx,'[observe]')
-        const elemsToCheckCtx = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
+        const elemsToCheckCtxBefore = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
         jb.log('notifyObservableElems',['elemsToCheck',elemsToCheck,e])
         elemsToCheck.forEach((elem,i) => {
-            if (elemsToCheckCtx[i] != elem.getAttribute('jb-ctx')) return // the elem was changed by it parent 
-            let refresh = false, strongRefresh = false
+            //.map((elem,i) => ({elem,i, phase: phaseOfElem(elem,i) })).sort((x1,x2)=>x1.phase-x2.phase).forEach(({elem,i}) => {
+            if (elemsToCheckCtxBefore[i] != elem.getAttribute('jb-ctx')) return // the elem was already refreshed during this process, probably by its parent
+            let refresh = false, strongRefresh = false, cssOnly = true
             elem.getAttribute('observe').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{
                 const path = jb.path(elem,'_component.ctx.componentContext.callerPath')
                 //if (!obs.allowSelfRefresh && path && e.srcCtx && e.srcCtx.callStack().indexOf(path) != -1)  return
@@ -367,6 +376,7 @@ Object.assign(jb.ui, {
                 if (!obsPath)
                     return jb.logError('observer ref path is empty',obs,e)
                 strongRefresh = strongRefresh || obs.strongRefresh
+                cssOnly = cssOnly && obs.cssOnly
                 const diff = ui.comparePaths(changed_path, obsPath)
                 const isChildOfChange = diff == 1
                 const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
@@ -377,16 +387,21 @@ Object.assign(jb.ui, {
                     refresh = true
                 }
             })
-            refresh && ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh})
+            refresh && ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly})
         })
+
+        function phaseOfElem(el,i) {
+            return +((el.getAttribute('observe').match(/phase=([0-9]+)/) || ['',0])[1])*1000 + i
+        }
 
         function observerFromStr(obsStr) {
             const parts = obsStr.split('://')
             const innerParts = parts[1].split(';')
-            const includeChildren = (innerParts[2].match(/includeChildren=([a-z]+)/) || ['',''])[1]
-            const strongRefresh = innerParts[3] === 'strongRefresh'
+            const includeChildren = ((innerParts[2] ||'').match(/includeChildren=([a-z]+)/) || ['',''])[1]
+            const strongRefresh = innerParts.indexOf('strongRefresh') != -1
+            const cssOnly = innerParts.indexOf('cssOnly') != -1
             return parts[0] == watchHandler.resources.id && 
-                { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh }
+                { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh, cssOnly }
         }
     }),
 })

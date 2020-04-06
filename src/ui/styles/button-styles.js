@@ -67,9 +67,9 @@ jb.component('button.mdcChipAction', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) =>
-    h('div',{class: 'mdc-chip-set mdc-chip-set--choice'},
-      h('div',{ class: ['mdc-chip',raised && 'mdc-chip--selected raised'].filter(x=>x).join(' ') }, [
-        h('div',{ class: 'mdc-chip__ripple'}),
+    h('div#mdc-chip-set mdc-chip-set--choice', {onclick: true},
+      h('div#mdc-chip',{ class: [raised && 'mdc-chip--selected raised'].filter(x=>x).join(' ') }, [
+        h('div#mdc-chip__ripple'),
         ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-chip__icon mdc-chip__icon--leading')),
         h('span',{ role: 'gridcell'}, h('span', {role: 'button', tabindex: -1, class: 'mdc-chip__text'}, title )),
         ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-chip__icon mdc-chip__icon--trailing')),
@@ -111,7 +111,7 @@ jb.component('button.mdcFloatingAction', {
   })
 })
 
-jb.component('button.mdcIcon12', {
+jb.component  ('button.mdcIcon12', {
   type: 'button.style,icon.style',
   params: [
     {id: 'icon', as: 'string', defaultValue: 'code'}

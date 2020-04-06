@@ -73,7 +73,7 @@ jb.component('studio.propField', {
       controls: [
         controlWithCondition(
           and(
-            studio.isOfType(studio.parentPath('%$path%'), 'icon'),
+            inGroup(list('feature.icon','icon'),studio.compName(studio.parentPath('%$path%'))),
             equals('icon',pipeline(studio.paramDef('%$path%'), '%id%'))
           ),
           studio.pickIcon('%$path%')

@@ -129,12 +129,17 @@ jb.component('dialogFeature.nearLauncherPosition', {
 		return {
 			afterViewInit: function(cmp) {
 				let offsetLeft = offsetLeftF() || 0, offsetTop = offsetTopF() || 0;
-				if (!context.vars.$launchingElement)
-					return console.log('no launcher for dialog');
+				const jbDialog = jb.ui.findIncludeSelf(cmp.base,'.jb-dialog')[0];
+				if (!context.vars.$launchingElement) {
+					if (typeof event == 'undefined')
+						return console.log('no launcher for dialog');
+					jbDialog.style.left = offsetLeft + event.clientX + 'px'
+					jbDialog.style.top = offsetTop + event.clientY + 'px'
+					return
+				}
 				const control = context.vars.$launchingElement.el;
 				const launcherHeightFix = context.vars.$launchingElement.launcherHeightFix || jb.ui.outerHeight(control)
 				const pos = jb.ui.offset(control);
-				const jbDialog = jb.ui.findIncludeSelf(cmp.base,'.jb-dialog')[0];
 				offsetLeft += rightSide ? jb.ui.outerWidth(control) : 0;
 				const fixedPosition = fixDialogOverflow(control,jbDialog,offsetLeft,offsetTop);
 				jbDialog.style.display = 'block';
@@ -228,6 +233,7 @@ jb.component('dialogFeature.cssClassOnLaunchingElement', {
   type: 'dialog-feature',
   impl: context => ({
 		afterViewInit: cmp => {
+			if (!context.vars.$launchingElement) return
 			const {pipe,filter,subscribe,take} = jb.callbag
 			const dialog = context.vars.$dialog;
 			const control = context.vars.$launchingElement.el;
