@@ -24,7 +24,7 @@ jb.component('studio.pages', {
       button({
         title: 'new page',
         action: studio.openNewPage(),
-        style: button.mdcIcon12('add'),
+        style: button.mdcIcon(icon('add'),16),
         features: [css('{margin: 5px}'), feature.hoverTitle('new page')]
       }),
       itemlist({
@@ -49,7 +49,7 @@ jb.component('studio.pages', {
       button({
         title: 'new function',
         action: studio.openNewFunction(),
-        style: button.mdcIcon12('add'),
+        style: button.mdcIcon(icon('add'),16),
         features: [css('{margin: 5px}'), feature.hoverTitle('new function')]
       }),
       itemlist({

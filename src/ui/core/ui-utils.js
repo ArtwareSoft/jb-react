@@ -200,7 +200,7 @@ ui.renderWidget = function(profile,top) {
 
   function isCssChange(st,path) {
     const compPath = pathOfCssFeature(st,path)
-    return compPath && st.compNameOfPath(compPath).match(/^(css|layout)/)
+    return compPath && (st.compNameOfPath(compPath) || '').match(/^(css|layout)/)
   }
 
   function pathOfCssFeature(st,path) {

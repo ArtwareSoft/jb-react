@@ -835,7 +835,6 @@ Object.assign(jb, {
     macroDef: Symbol('macroDef'), macroNs: {}, 
     macroName: id => id.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
     ns: nsIds => nsIds.split(',').forEach(nsId => jb.registerMacro(nsId + '.$dummyComp', {})),
-    unMacro: macroId => macroId.replace(/([A-Z])/g, (all, s) => ' ' + s.toLowerCase()),
     registerMacro: (id, profile) => {
         const macroId = jb.macroName(id).replace(/\./g, '_')
         const nameSpace = id.indexOf('.') != -1 && jb.macroName(id.split('.')[0])
@@ -881,9 +880,7 @@ Object.assign(jb, {
                 return false
             }
             if (jb.frame[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$dummyComp$/))
-                jb.logError(macroId + ' is defined more than once, using last definition ' + id)
-            // if (jb.frame[macroId] !== undefined && !isNS && jb.macroNs[macroId])
-            //     jb.logError(macroId + ' is already defined as ns, using last definition ' + id)
+                jb.logError(macroId.replace(/_/g,'.') + ' is defined more than once, using last definition ' + id)
             return true;
         }
 
@@ -1551,14 +1548,14 @@ jb.component('matchRegex', {
   impl: (ctx,regex,text) => text.match(new RegExp(regex))
 })
 
-jb.component('toUppercase', {
+jb.component('toUpperCase', {
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
   impl: (ctx,text) =>	text.toUpperCase()
 })
 
-jb.component('toLowercase', {
+jb.component('toLowerCase', {
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
@@ -1776,11 +1773,12 @@ jb.component('runActionOnItems', {
   params: [
     {id: 'items', as: 'ref[]', mandatory: true},
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
-    {id: 'notifications', as: 'string', options: 'wait for all actions,no notifications', description: 'notification for watch-ref, defualt behavior is after each action'}
+    {id: 'notifications', as: 'string', options: 'wait for all actions,no notifications', description: 'notification for watch-ref, default behavior is after each action'},
+    {id: 'indexVariable', as: 'string'}
   ],
-  impl: (ctx,items,action,notifications) => {
+  impl: (ctx,items,action,notifications,indexVariable) => {
 		if (notifications && jb.mainWatchableHandler) jb.mainWatchableHandler.startTransaction()
-		return jb.val(items).reduce((def,item) => def.then(_ => action(ctx.setData(item))) ,Promise.resolve())
+		return jb.val(items).reduce((def,item,i) => def.then(_ => action(ctx.setVar(indexVariable,i).setData(item))) ,Promise.resolve())
 			.catch((e) => jb.logException(e,ctx))
 			.then(() => notifications && jb.mainWatchableHandler && jb.mainWatchableHandler.endTransaction(notifications === 'no notifications'));
 	}
@@ -1910,11 +1908,11 @@ jb.component('http.get', {
   ],
   impl: (ctx,_url,_json,useProxy) => {
 		if (ctx.probe)
-			return jb.http_get_cache[url];
-    const json = _json || url.match(/json$/);
+			return jb.http_get_cache[_url];
+    const json = _json || _url.match(/json$/);
     let url = _url
     if (useProxy == 'localhost-server')
-      url = `//localhost:8082/?op=fetch&req={url:"${url}"}&cacheKiller=${jb.cacheKiller++}`
+      url = `/?op=fetch&req=${JSON.stringify({url})}&cacheKiller=${jb.cacheKiller++}`
     else if (useProxy == 'cloud')
       url = `//jbart5-server.appspot.com/?op=fetch&req={url:"${url}"}&cacheKiller=${jb.cacheKiller++}`
 
@@ -1950,7 +1948,7 @@ jb.component('http.fetch', {
 			return jb.http_get_cache[reqStr];
 
     if (proxy == 'localhost-server')
-      reqObj.url = `//localhost:8082/?op=fetch&req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
+      reqObj.url = `/?op=fetch&req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
     else if (proxy == 'cloud')
       reqObj.url = `//jbart5-server.appspot.com/fetch?req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
     else if (proxy == 'cloud-test-local')
@@ -2060,6 +2058,7 @@ const spySettings = {
     extraIgnoredEvents: [], MAX_LOG_SIZE: 10000
 }
 const frame = jb.frame
+jb.spySettings = spySettings
 
 jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) {
 	Error = Error || frame.Error,

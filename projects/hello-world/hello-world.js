@@ -25,31 +25,15 @@ jb.component('dataResource.room', { /* dataResource.room */
 jb.component('helloWorld.main', {
   type: 'control',
   impl: group({
-    title: '',
-    layout: layout.vertical(),
     controls: [
-      group({
-        controls: [
-          text({
-            text: 'my text',
-            title: 'my title',
-            features: css.padding({top: '19', left: '53'})
-          })
-        ]
-      }),
-      button({title: 'click me', style: button.mdcIcon(icon('add_alert'))}),
       button({
         title: 'click me',
-        style: button.mdcFloatingAction(),
-        features: feature.icon({icon: 'add_alert'})
-      }),
-      button({
-        title: 'click me',
-        style: button.mdcFloatingAction(),
-        features: feature.icon('add_alert', undefined)
+        action: http.get({
+          url: 'https://www.quora.com/What-is-the-most-embarrassing-experience-you-ve-had-involving-your-private-parts',
+          useProxy: 'localhost-server'
+        })
       })
-    ],
-    features: css.width('600')
+    ]
   })
 })
 

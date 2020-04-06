@@ -338,16 +338,16 @@ jb.component('menuStyle.optionLine', {
   type: 'menu-option.style',
   impl: customStyle({
     template: (cmp,{icon,title,shortcut},h) => h('div#line noselect', { onmousedown: 'action' },[
-        h(cmp.ctx.run({...icon, $: 'control.icon'})),
+        h(cmp.ctx.run({$: 'control.icon', ...icon, size: 20})),
 				h('span#title',{},title),
 				h('span#shortcut',{},shortcut),
         h('div#mdc-line-ripple'),
 		]),
     css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
 				.selected { background: #d8d8d8 }
-				>i { width: 24px; padding-left: 3px; padding-top: 3px; font-size:16px; }
+				>i { padding: 3px 8px 0 3px }
 				>span { padding-top: 3px }
-						>.title { display: block; text-align: left; white-space: nowrap; }
+				>.title { display: block; text-align: left; white-space: nowrap; }
 				>.shortcut { margin-left: auto; text-align: right; padding-right: 15px }`,
     features: [menu.initMenuOption(), mdc.rippleEffect()]
   })
@@ -419,7 +419,6 @@ jb.component('menuStyle.toolbar', {
   params: [
     {id: 'leafOptionStyle', type: 'menu-option.style', dynamic: true, defaultValue: menuStyle.icon()},
     {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.horizontal(5)},
-    {id: 'scale', as: 'number', defaultValue: 1, description: 'e.g. : 0.5, 2' },
   ],
   impl: styleByControl(
     Var('optionsParentId', ctx => ctx.id),
@@ -434,15 +433,17 @@ jb.component('menuStyle.toolbar', {
       controls: menu.control({menu: '%$item%', style: menuStyle.applyMultiLevel({
         menuStyle: menuStyle.iconMenu(), leafStyle: menuStyle.icon()
       })}),
-      features: css.transformScale({x: '%$scale%', y: '%$scale%'})
     })
   )
 })
 
 jb.component('menuStyle.icon', {
   type: 'menu-option.style',
+  params: [
+    {id: 'buttonSize', as: 'number', defaultValue: 20 },
+  ],
   impl: styleWithFeatures(
-      button.mdcIcon('%$menuModel/leaf/icon%'),
+      button.mdcIcon('%$menuModel/leaf/icon%','%$buttonSize%'),
       [
         htmlAttribute('onclick',true),
         defHandler('onclickHandler', ctx => ctx.vars.menuModel.action())
@@ -461,8 +462,7 @@ jb.component('menuStyle.iconMenu', {
             icon: '%icon/icon%',
             type: '%icon/type%',
             features: css('transform: translate(7px,0px) !important')
-          }),
-        ),
+          }), 16),
         features: [feature.icon({
           icon: 'more_vert',
           type: 'mdc',

@@ -26,7 +26,7 @@ jb.component('studio.toolbar', {
         style: editableBoolean.buttonXV({
           yesIcon: icon({icon: 'location_searching', type: 'mdc'}),
           noIcon: icon({icon: 'location_disabled', type: 'mdc'}),
-          buttonStyle: button.mdcFloatingAction(true, true)
+          buttonStyle: button.mdcFloatingAction('40', true)
         }),
         title: 'Inline content editing',
         features: [
@@ -39,7 +39,7 @@ jb.component('studio.toolbar', {
         style: editableBoolean.buttonXV({
           yesIcon: icon({icon: 'blur_on', type: 'mdc'}),
           noIcon: icon({icon: 'blur_off', type: 'mdc'}),
-          buttonStyle: button.mdcFloatingAction(true, false)
+          buttonStyle: button.mdcFloatingAction('40', false)
         }),
         title: 'Watch Data Connections',
         features: css('background: grey')
@@ -87,7 +87,7 @@ jb.component('studio.toolbar', {
         title: 'Event Tracker',
         action: studio.openEventTracker(),
         style: button.mdcIcon(icon({icon: 'bug_report', type: 'mdc'})),
-        features: [ctrlAction(studio.openEventTracker('true'))]
+        features: [ctrlAction(studio.openEventTracker())]
       }),
       button({
         title: 'History',

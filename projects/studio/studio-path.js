@@ -161,7 +161,7 @@ Object.assign(st, {
 			st.writeValue(st.refOfPath(path+'~$disabled'),prof.$disabled ? null : true,srcCtx)
 	},
 	newProfile: (comp,compName) => {
-		const result = comp.singleInType ? {} : { $: compName };
+		const result = { $: compName };
 		jb.compParams(comp).forEach(p=>{
 			if (p.composite)
 				result[p.id] = [];

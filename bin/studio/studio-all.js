@@ -835,7 +835,6 @@ Object.assign(jb, {
     macroDef: Symbol('macroDef'), macroNs: {}, 
     macroName: id => id.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
     ns: nsIds => nsIds.split(',').forEach(nsId => jb.registerMacro(nsId + '.$dummyComp', {})),
-    unMacro: macroId => macroId.replace(/([A-Z])/g, (all, s) => ' ' + s.toLowerCase()),
     registerMacro: (id, profile) => {
         const macroId = jb.macroName(id).replace(/\./g, '_')
         const nameSpace = id.indexOf('.') != -1 && jb.macroName(id.split('.')[0])
@@ -881,9 +880,7 @@ Object.assign(jb, {
                 return false
             }
             if (jb.frame[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$dummyComp$/))
-                jb.logError(macroId + ' is defined more than once, using last definition ' + id)
-            // if (jb.frame[macroId] !== undefined && !isNS && jb.macroNs[macroId])
-            //     jb.logError(macroId + ' is already defined as ns, using last definition ' + id)
+                jb.logError(macroId.replace(/_/g,'.') + ' is defined more than once, using last definition ' + id)
             return true;
         }
 
@@ -1551,14 +1548,14 @@ jb.component('matchRegex', {
   impl: (ctx,regex,text) => text.match(new RegExp(regex))
 })
 
-jb.component('toUppercase', {
+jb.component('toUpperCase', {
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
   impl: (ctx,text) =>	text.toUpperCase()
 })
 
-jb.component('toLowercase', {
+jb.component('toLowerCase', {
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
@@ -1776,11 +1773,12 @@ jb.component('runActionOnItems', {
   params: [
     {id: 'items', as: 'ref[]', mandatory: true},
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
-    {id: 'notifications', as: 'string', options: 'wait for all actions,no notifications', description: 'notification for watch-ref, defualt behavior is after each action'}
+    {id: 'notifications', as: 'string', options: 'wait for all actions,no notifications', description: 'notification for watch-ref, default behavior is after each action'},
+    {id: 'indexVariable', as: 'string'}
   ],
-  impl: (ctx,items,action,notifications) => {
+  impl: (ctx,items,action,notifications,indexVariable) => {
 		if (notifications && jb.mainWatchableHandler) jb.mainWatchableHandler.startTransaction()
-		return jb.val(items).reduce((def,item) => def.then(_ => action(ctx.setData(item))) ,Promise.resolve())
+		return jb.val(items).reduce((def,item,i) => def.then(_ => action(ctx.setVar(indexVariable,i).setData(item))) ,Promise.resolve())
 			.catch((e) => jb.logException(e,ctx))
 			.then(() => notifications && jb.mainWatchableHandler && jb.mainWatchableHandler.endTransaction(notifications === 'no notifications'));
 	}
@@ -1910,11 +1908,11 @@ jb.component('http.get', {
   ],
   impl: (ctx,_url,_json,useProxy) => {
 		if (ctx.probe)
-			return jb.http_get_cache[url];
-    const json = _json || url.match(/json$/);
+			return jb.http_get_cache[_url];
+    const json = _json || _url.match(/json$/);
     let url = _url
     if (useProxy == 'localhost-server')
-      url = `//localhost:8082/?op=fetch&req={url:"${url}"}&cacheKiller=${jb.cacheKiller++}`
+      url = `/?op=fetch&req=${JSON.stringify({url})}&cacheKiller=${jb.cacheKiller++}`
     else if (useProxy == 'cloud')
       url = `//jbart5-server.appspot.com/?op=fetch&req={url:"${url}"}&cacheKiller=${jb.cacheKiller++}`
 
@@ -1950,7 +1948,7 @@ jb.component('http.fetch', {
 			return jb.http_get_cache[reqStr];
 
     if (proxy == 'localhost-server')
-      reqObj.url = `//localhost:8082/?op=fetch&req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
+      reqObj.url = `/?op=fetch&req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
     else if (proxy == 'cloud')
       reqObj.url = `//jbart5-server.appspot.com/fetch?req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
     else if (proxy == 'cloud-test-local')
@@ -2060,6 +2058,7 @@ const spySettings = {
     extraIgnoredEvents: [], MAX_LOG_SIZE: 10000
 }
 const frame = jb.frame
+jb.spySettings = spySettings
 
 jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) {
 	Error = Error || frame.Error,
@@ -2784,6 +2783,7 @@ jb.callbag = {
           if (t === 1 || t === 0) talkback(1)  // Pull
           if (t === 2 && !d && complete) complete()
           if (t === 2 && !!d && error) error( d )
+          if (t === 2 && listener.finally) listener.finally( d )
         })
         return () => talkback && talkback(2) // dispose
     },
@@ -2937,7 +2937,6 @@ class WatchableValueByRef {
       const opVal = opOnRef.$set || opOnRef.$merge || opOnRef.$push || opOnRef.$splice;
       if (!this.isRef(ref))
         ref = this.asRef(ref);
-      jb.log('doOp',[this.asStr(ref),opVal,...arguments]);
 
       const path = this.removeLinksFromPath(this.pathOfRef(ref)), op = {}, oldVal = this.valOfPath(path);
       if (!path || ref.$jb_val) return;
@@ -2977,6 +2976,7 @@ class WatchableValueByRef {
         this.primitiveArraysDeltas[ref.$jb_obj[jbId]].push(opOnRef.$splice)
       }
       opEvent.newVal = newVal;
+      jb.log('doOp',[opEvent,...arguments]);
       // TODO: split splice event to delete, push, and insert
       if (this.transactionEventsLog)
         this.transactionEventsLog.push(opEvent)
@@ -3348,15 +3348,24 @@ jb.ui.resourceChange = () => jb.mainWatchableHandler.resourceChange;
 jb.component('runTransaction', {
   type: 'action',
   params: [
-    {id: 'actions', type: 'action[]', dynamic: true, composite: true, mandatory: true, defaultValue: []},
+    {id: 'actions', type: 'action[]', ignore: true, composite: true, mandatory: true},
     {id: 'disableNotifications', as: 'boolean', type: 'boolean'}
   ],
-  impl: (ctx,actions,disableNotifications) => {
-		jb.mainWatchableHandler.startTransaction()
-		return actions.reduce((def,action,index) =>
+  impl: ctx => {
+		const actions = jb.asArray(ctx.profile.actions || ctx.profile['$runActions'] || []).filter(x=>x);
+		const innerPath =  (ctx.profile.actions && ctx.profile.actions.sugar) ? ''
+			: (ctx.profile['$runActions'] ? '$runActions~' : 'items~');
+    jb.mainWatchableHandler.startTransaction()
+    return actions.reduce((def,action,index) =>
 				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index )) ,Promise.resolve())
-			.catch(e => jb.logException(e,ctx))
-			.then(() => jb.mainWatchableHandler.endTransaction(disableNotifications))
+			.catch((e) => jb.logException(e,ctx))
+      .then(() => jb.mainWatchableHandler.endTransaction(ctx.params.disableNotifications))
+
+		// jb.mainWatchableHandler.startTransaction()
+		// return ctx.profile.actions.reduce((def,action,index) =>
+		// 		def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index )) ,Promise.resolve())
+		// 	.catch(e => jb.logException(e,ctx))
+		// 	.then(() => jb.mainWatchableHandler.endTransaction(disableNotifications))
 	}
 })
 
@@ -3392,6 +3401,7 @@ class VNode {
     setAttribute(att,val) {
         this.attributes = this.attributes || {}
         this.attributes[att] = val
+        return this
     }
     addClass(clz) {
         if (clz.indexOf(' ') != -1) {
@@ -3788,7 +3798,6 @@ Object.assign(jb.ui, {
     refreshElem(elem, state, options) {
         if (jb.path(elem,'_component.status') == 'initializing') 
             return jb.logError('circular refresh',[...arguments]);
-        jb.log('refreshElem',[...arguments]);
         const _ctx = ui.ctxOfElem(elem)
         if (!_ctx) 
             return jb.logError('refreshElem - no ctx for elem',elem)
@@ -3797,7 +3806,16 @@ Object.assign(jb.ui, {
         if (options && options.extendCtx)
             ctx = options.extendCtx(ctx)
         ctx = ctx.setVar('$refreshElemCall',true)
+        if (jb.ui.inStudio()) // updating to latest version of profile
+            ctx.profile = jb.execInStudio({$: 'studio.val', path: ctx.path})
         const cmp = ctx.profile.$ == 'openDialog' ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself()
+        jb.log('refreshElem',[ctx,cmp, ...arguments]);
+
+        if (jb.path(options,'cssOnly')) {
+            const existingClass = (elem.className.match(/(w|jb-)[0-9]+/)||[''])[0]
+            const cssStyleElem = Array.from(document.querySelectorAll('style')).map(el=>({el,txt: el.innerText})).filter(x=>x.txt.indexOf(existingClass + ' ') != -1)[0].el
+            return jb.ui.hashCss(cmp.cssLines,cmp.ctx,{existingClass, cssStyleElem})
+        }
         const hash = cmp.init()
         if (hash != null && hash == elem.getAttribute('cmpHash'))
             return jb.log('refreshElem',['stopped by hash', hash, ...arguments]);
@@ -3810,11 +3828,12 @@ Object.assign(jb.ui, {
         if (!changed_path) debugger
         //observe="resources://2~name;person~name
         const elemsToCheck = jb.ui.find(e.srcCtx,'[observe]')
-        const elemsToCheckCtx = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
+        const elemsToCheckCtxBefore = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
         jb.log('notifyObservableElems',['elemsToCheck',elemsToCheck,e])
         elemsToCheck.forEach((elem,i) => {
-            if (elemsToCheckCtx[i] != elem.getAttribute('jb-ctx')) return // the elem was changed by it parent 
-            let refresh = false, strongRefresh = false
+            //.map((elem,i) => ({elem,i, phase: phaseOfElem(elem,i) })).sort((x1,x2)=>x1.phase-x2.phase).forEach(({elem,i}) => {
+            if (elemsToCheckCtxBefore[i] != elem.getAttribute('jb-ctx')) return // the elem was already refreshed during this process, probably by its parent
+            let refresh = false, strongRefresh = false, cssOnly = true
             elem.getAttribute('observe').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{
                 const path = jb.path(elem,'_component.ctx.componentContext.callerPath')
                 //if (!obs.allowSelfRefresh && path && e.srcCtx && e.srcCtx.callStack().indexOf(path) != -1)  return
@@ -3822,6 +3841,7 @@ Object.assign(jb.ui, {
                 if (!obsPath)
                     return jb.logError('observer ref path is empty',obs,e)
                 strongRefresh = strongRefresh || obs.strongRefresh
+                cssOnly = cssOnly && obs.cssOnly
                 const diff = ui.comparePaths(changed_path, obsPath)
                 const isChildOfChange = diff == 1
                 const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
@@ -3832,16 +3852,21 @@ Object.assign(jb.ui, {
                     refresh = true
                 }
             })
-            refresh && ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh})
+            refresh && ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly})
         })
+
+        function phaseOfElem(el,i) {
+            return +((el.getAttribute('observe').match(/phase=([0-9]+)/) || ['',0])[1])*1000 + i
+        }
 
         function observerFromStr(obsStr) {
             const parts = obsStr.split('://')
             const innerParts = parts[1].split(';')
-            const includeChildren = (innerParts[2].match(/includeChildren=([a-z]+)/) || ['',''])[1]
-            const strongRefresh = innerParts[3] === 'strongRefresh'
+            const includeChildren = ((innerParts[2] ||'').match(/includeChildren=([a-z]+)/) || ['',''])[1]
+            const strongRefresh = innerParts.indexOf('strongRefresh') != -1
+            const cssOnly = innerParts.indexOf('cssOnly') != -1
             return parts[0] == watchHandler.resources.id && 
-                { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh }
+                { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh, cssOnly }
         }
     }),
 })
@@ -3915,20 +3940,56 @@ function mountInteractive(elem, keepState) {
 
 (function(){
 const ui = jb.ui
-let cssId = 0, cmpId = 0;
+let cmpId = 0;
 ui.propCounter = 0
-const cssSelectors_hash = ui.cssSelectors_hash = {};
 const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,this.ctx) }}
 const lifeCycle = new Set('init,componentDidMount,componentWillUpdate,componentDidUpdate,destroy,extendCtx,templateModifier,extendItem'.split(','))
-const arrayProps = new Set('enrichField,dynamicCss,icon,watchAndCalcModelProp,staticCssLines,defHandler,interactiveProp,calcProp'.split(','))
+const arrayProps = new Set('enrichField,icon,watchAndCalcModelProp,cssLines,defHandler,interactiveProp,calcProp'.split(','))
 const singular = new Set('template,calcRenderProps,toolbar,styleCtx,calcHash,ctxForPick'.split(','))
+
+Object.assign(jb.ui,{
+    cssHashCounter: 0,
+    cssHashMap: {},
+    hashCss(_cssLines,ctx,{existingClass, cssStyleElem} = {}) {
+        const cssLines = (_cssLines||[]).filter(x=>x)
+        const cssKey = cssLines.join('\n')
+        if (!cssKey) return ''
+
+        const workerId = jb.frame.workerId && jb.frame.workerId(ctx)
+        const classPrefix = workerId ? 'w'+ workerId : 'jb-'
+
+        if (!this.cssHashMap[cssKey]) {
+            this.cssHashCounter++;
+            const classId = existingClass || `${classPrefix}${this.cssHashCounter}`
+            this.cssHashMap[cssKey] = {classId, paths : {[ctx.path]: true}}
+            const cssContent = linesToCssStyle(classId)
+            if (cssStyleElem)
+                cssStyleElem.innerText = cssContent
+            else
+                ui.addStyleElem(cssContent,workerId)
+        }
+        Object.assign(this.cssHashMap[cssKey].paths, {[ctx.path] : true})
+        return this.cssHashMap[cssKey].classId
+
+        function linesToCssStyle(classId) {
+            const cssStyle = cssLines.map(selectorPlusExp=>{
+                const selector = selectorPlusExp.split('{')[0];
+                const fixed_selector = selector.split(',').map(x=>x.trim().replace('|>',' '))
+                    .map(x=>x.indexOf('~') == -1 ? `.${classId}${x}` : x.replace('~',`.${classId}`));
+                return fixed_selector + ' { ' + selectorPlusExp.split('{')[1];
+            }).join('\n');
+            const remark = `/*style: ${ctx.profile.style && ctx.profile.style.$}, path: ${ctx.path}*/\n`;
+            return remark + cssStyle
+        }
+    },
+})
 
 class JbComponent {
     constructor(ctx) {
         this.ctx = ctx // used to calc features
         this.cmpId = cmpId++
         this.eventObservables = []
-        this.staticCssLines = []
+        this.cssLines = []
         this.contexts = []
         this.originators = [ctx]
     }
@@ -3954,7 +4015,10 @@ class JbComponent {
    
         this.toObserve = this.watchRef ? this.watchRef.map(obs=>({...obs,ref: obs.refF(this.ctx)})).filter(obs=>jb.isWatchable(obs.ref)) : []
         this.watchAndCalcModelProp && this.watchAndCalcModelProp.forEach(e=>{
-            const ref = this.ctx.vars.$model[e.prop](this.ctx)
+            const modelProp = this.ctx.vars.$model[e.prop]
+            if (!modelProp)
+                return jb.logError('calcRenderProps',`missing model prop "${e.prop}"`,this.ctx.vars.$model,this.ctx)
+            const ref = modelProp(this.ctx)
             if (jb.isWatchable(ref))
                 this.toObserve.push({id: e.prop, cmp: this, ref,...e})
             const val = jb.val(ref)
@@ -3984,10 +4048,11 @@ class JbComponent {
                 (vd && typeof vd === 'object') ? tryWrapper(() => modifier(vd,this,this.renderProps,ui.h) || vd, 'templateModifier') 
                     : vd ,initialVdom)
 
-        const observe = this.toObserve.map(x=>[x.ref.handler.urlOfRef(x.ref),
-            x.includeChildren ? `includeChildren=${x.includeChildren}` : '',
-            x.strongRefresh ? `strongRefresh` : ''
-        ].join(';')).join(',')
+        const observe = this.toObserve.map(x=>[
+            x.ref.handler.urlOfRef(x.ref),
+            x.includeChildren && `includeChildren=${x.includeChildren}`,
+            x.strongRefresh && `strongRefresh`,  x.cssOnly && `cssOnly`,  
+            x.phase && `phase=${x.phase}`].filter(x=>x).join(';')).join(',')
         const handlers = (this.defHandler||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx)}`).join(',')
         const interactive = (this.interactiveProp||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx)}`).join(',')
         const originators = this.originators.map(ctx=>ui.preserveCtx(ctx)).join(',')
@@ -4036,31 +4101,7 @@ class JbComponent {
     }
 
     jbCssClass() {
-        if (this.cachedClass)
-            return this.cachedClass
-        const ctx = this.ctx
-        const cssLines = (this.staticCssLines || []).concat((this.dynamicCss || [])
-            .map(dynCss=>dynCss(this.calcCtx))).filter(x=>x)
-        const cssKey = cssLines.join('\n')
-        const workerId = jb.frame.workerId && jb.frame.workerId(this.ctx)
-        const classPrefix = workerId ? 'w'+ workerId : 'jb-'
-        if (!cssKey) return ''
-        if (!cssSelectors_hash[cssKey]) {
-            cssId++;
-            cssSelectors_hash[cssKey] = cssId;
-            const cssStyle = cssLines.map(selectorPlusExp=>{
-                const selector = selectorPlusExp.split('{')[0];
-                const fixed_selector = selector.split(',').map(x=>x.trim().replace('|>',' '))
-                    .map(x=>x.indexOf('~') == -1 ? `.${classPrefix}${cssId}${x}` : x.replace('~',`.${classPrefix}${cssId}`));
-                return fixed_selector + ' { ' + selectorPlusExp.split('{')[1];
-            }).join('\n');
-            const remark = `/*style: ${ctx.profile.style && ctx.profile.style.$}, path: ${ctx.path}*/\n`;
-            ui.addStyleElem(remark + cssStyle,workerId)
-        }
-        const jbClass = `${classPrefix}${cssSelectors_hash[cssKey]}`
-        if (!this.dynamicCss)
-            this.cachedClass = jbClass
-        return jbClass
+        return ui.hashCss(this.cssLines,this.ctx)
     }
     originatingCtx() {
         return this.originators[this.originators.length-1]
@@ -4141,13 +4182,13 @@ class JbComponent {
         this.eventObservables = this.eventObservables.concat(Object.keys(options).filter(op=>op.indexOf('on') == 0))
 
         if (options.css)
-            this.staticCssLines = (this.staticCssLines || []).concat(options.css.split(/}\s*/m)
+            this.cssLines = (this.cssLines || []).concat(options.css.split(/}\s*/m)
                 .map(x=>x.trim()).filter(x=>x)
                 .map(x=>x+'}')
                 .map(x=>x.replace(/^!/,' ')));
 
-        jb.asArray(options.featuresOptions || []).forEach(f => this.jbExtend(f.$ ? ctx.run(f) : f , ctx))
-        jb.asArray(ui.inStudio() && options.studioFeatures).forEach(f => this.jbExtend(ctx.run(f), ctx))
+        jb.asArray(options.featuresOptions || []).filter(x=>x).forEach(f => this.jbExtend(f.$ ? ctx.run(f) : f , ctx))
+        jb.asArray(ui.inStudio() && options.studioFeatures).filter(x=>x).forEach(f => this.jbExtend(ctx.run(f), ctx))
         return this;
     }
 }
@@ -4340,17 +4381,45 @@ ui.renderWidget = function(profile,top) {
 
         const {pipe,debounceTime,filter,subscribe} = jb.callbag
         pipe(st.pageChange, filter(({page})=>page != currentProfile.$), subscribe(({page})=> doRender(page)))
-        pipe(st.scriptChange, filter(e=>(jb.path(e,'path.0') || '').indexOf('dataResource.') != 0), // do not update on data change
+        
+        pipe(st.scriptChange, filter(e=>isCssChange(st,e.path)),
+          subscribe(({path}) => {
+            let featureIndex = path.lastIndexOf('features')
+            if (featureIndex == -1) featureIndex = path.lastIndexOf('layout')
+            const ctrlPath = path.slice(0,featureIndex).join('~')
+            const elems = Array.from(document.querySelectorAll('[jb-ctx]'))
+              .map(elem=>({elem, ctx: jb.ctxDictionary[elem.getAttribute('jb-ctx')] }))
+              .filter(e => e.ctx && e.ctx.path == ctrlPath)
+            elems.forEach(e=>jb.ui.refreshElem(e.elem,null,{cssOnly: true}))
+        }))
+
+        pipe(st.scriptChange, filter(e=>!isCssChange(st,e.path)),
+            filter(e=>(jb.path(e,'path.0') || '').indexOf('dataResource.') != 0), // do not update on data change
             debounceTime(() => Math.min(2000,lastRenderTime*3 + fixedDebounce)),
             subscribe(() =>{
                 doRender()
                 jb.ui.dialogs.reRenderAll()
-            }))
+        }))
     }
     const elem = top.ownerDocument.createElement('div')
     top.appendChild(elem)
 
     doRender()
+
+  function isCssChange(st,path) {
+    const compPath = pathOfCssFeature(st,path)
+    return compPath && (st.compNameOfPath(compPath) || '').match(/^(css|layout)/)
+  }
+
+  function pathOfCssFeature(st,path) {
+    const featureIndex = path.lastIndexOf('features')
+    if (featureIndex == -1) {
+      const layoutIndex = path.lastIndexOf('layout')
+      return layoutIndex != -1 && path.slice(0,layoutIndex+1).join('~')
+    }
+    const array = Array.isArray(st.valOfPath(path.slice(0,featureIndex+1).join('~')))
+    return path.slice(0,featureIndex+(array?2:1)).join('~')
+  }
 
 	function doRender(page) {
         if (page) currentProfile = {$: page}
@@ -4360,7 +4429,7 @@ ui.renderWidget = function(profile,top) {
         top.innerHTML = ''
         jb.ui.render(ui.h(cmp),top)
         lastRenderTime = new Date().getTime() - start
-    }
+  }
 }
 
 jb.objectDiff = function(newObj, orig) {
@@ -4414,7 +4483,11 @@ jb.component('styleWithFeatures', {
     {id: 'style', type: '$asParent', mandatory: true, composite: true},
     {id: 'features', type: 'feature[]', templateValue: [], dynamic: true, mandatory: true}
   ],
-  impl: (ctx,style,features) => style && {...style,featuresOptions: (style.featuresOptions || []).concat(features())}
+  impl: (ctx,style,features) => {
+    if (style instanceof jb.ui.JbComponent)
+      return style.jbExtend(features(),ctx)
+    return style && {...style,featuresOptions: (style.featuresOptions || []).concat(features())}
+  }
 })
 
 jb.component('controlWithFeatures', {
@@ -4510,10 +4583,7 @@ jb.component('feature.beforeInit', {
   params: [
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
-  impl: feature.init(
-    '%$action%',
-    5
-  )
+  impl: feature.init('%$action%',5)
 })
 
 jb.component('feature.afterLoad', {
@@ -4542,7 +4612,7 @@ jb.component('features', {
   params: [
     {id: 'features', type: 'feature[]', as: 'array', composite: true}
   ],
-  impl: (ctx,features) => features.flatMap(x=>Array.isArray(x) ? x: [x])
+  impl: (ctx,features) => features.flatMap(x=> Array.isArray(x) ? x: [x])
 })
 
 jb.component('watchRef', {
@@ -4552,8 +4622,10 @@ jb.component('watchRef', {
   params: [
     {id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data'},
     {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
-    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
-    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and reinit wait for data', type: 'boolean'}
+    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children'},
+    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and reinit wait for data'},
+    {id: 'cssOnly', as: 'boolean', description: 'refresh only css features'},
+    {id: 'phase', as: 'number', description: 'controls the order of updates on the same event. default is 0'}
   ],
   impl: ctx => ({ watchRef: {refF: ctx.params.ref, ...ctx.params}})
 })
@@ -4561,7 +4633,7 @@ jb.component('watchRef', {
 jb.component('watchObservable', {
   type: 'feature',
   category: 'watch',
-  description: 'subscribes to a custom rx.observable to refresh component',
+  description: 'subscribes to a custom observable to refresh component',
   params: [
     {id: 'toWatch', mandatory: true},
     {id: 'debounceTime', as: 'number', description: 'in mSec'}
@@ -4573,6 +4645,19 @@ jb.component('watchObservable', {
       jb.callbag.subscribe(()=>cmp.refresh(null,{srcCtx:ctx.componentContext}))
     )
   )
+})
+
+jb.component('feature.onDataChange', {
+  type: 'feature',
+  category: 'watch',
+  description: 'watch observable data reference, subscribe and run action',
+  params: [
+    {id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data'},
+    {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
+    {id: 'action', type: 'action', dynamic: true, description: 'run on change'}
+  ],
+  impl: interactive((ctx,{cmp},{ref,includeChildren,action}) => 
+      jb.subscribe(jb.ui.refObservable(ref(),cmp,{includeChildren, srcCtx: ctx}), () => action(ctx.setVar('cmp',cmp))))
 })
 
 jb.component('group.data', {
@@ -4892,7 +4977,7 @@ jb.component('refreshControlById', {
     const elem = jb.ui.document(ctx).querySelector('#'+id)
     if (!elem)
       return jb.logError('refresh-control-by-id can not find elem for #'+id, ctx)
-    jb.ui.refreshElem(elem,null,{srcCtx: ctx})
+    return jb.ui.refreshElem(elem,null,{srcCtx: ctx})
   }
 })
 
@@ -4943,25 +5028,6 @@ jb.component('css', {
     {id: 'css', mandatory: true, as: 'string'}
   ],
   impl: (ctx,css) => ({css: fixCssLine(css)})
-})
-
-jb.component('css.dynamic', {
-  description: 'recalc the css on refresh/watchRef. e.g. {color: %$color%}',
-  type: 'feature,dialog-feature',
-  params: [
-    {id: 'css', mandatory: true, as: 'string', dynamic: true}
-  ],
-  impl: (ctx,css) => ({dynamicCss: ctx2 => css(ctx2)})
-})
-
-jb.component('css.withCondition', {
-  description: 'css with dynamic condition. e.g. .myclz {color: red}',
-  type: 'feature,dialog-feature',
-  params: [
-    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true, type: 'boolean'},
-    {id: 'css', mandatory: true, as: 'string', dynamic: true}
-  ],
-  impl: (ctx,cond,css) => ({dynamicCss: ctx2 => cond(ctx2) ? fixCssLine(css(ctx2)) : ''})
 })
 
 jb.component('css.class', {
@@ -5017,7 +5083,7 @@ jb.component('css.padding', {
   ],
   impl: ctx => {
     const css = ['top','left','right','bottom']
-      .filter(x=>ctx.params[x] != null)
+      .filter(x=>ctx.params[x] != '')
       .map(x=> `padding-${x}: ${withUnits(ctx.params[x])}`)
       .join('; ');
     return {css: `${ctx.params.selector} {${css}}`};
@@ -5028,9 +5094,9 @@ jb.component('css.margin', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'top', as: 'string', description: 'e.g. 20, 20%, 0.4em, -20'},
-    {id: 'right', as: 'string'},
-    {id: 'bottom', as: 'string'},
     {id: 'left', as: 'string'},
+    {id: 'bottom', as: 'string'},
+    {id: 'right', as: 'string'},
     {id: 'selector', as: 'string'}
   ],
   impl: ctx => {
@@ -5097,6 +5163,17 @@ jb.component('css.transformScale', {
   impl: ctx => ({css: `${ctx.params.selector} {transform:scale(${ctx.params.x},${ctx.params.y})}`})
 })
 
+jb.component('css.transformTranslate', {
+  type: 'feature',
+  description: 'margin, move, shift, offset',
+  params: [
+    {id: 'x', as: 'string', description: '10px', defaultValue: '0'},
+    {id: 'y', as: 'string', description: '20px', defaultValue: '0'},
+    {id: 'selector', as: 'string'}
+  ],
+  impl: ctx => ({css: `${ctx.params.selector} {transform:translate(${withUnits(ctx.params.x)},${withUnits(ctx.params.y)})}`})
+})
+
 jb.component('css.bold', {
   type: 'feature',
   impl: ctx => ({css: `{font-weight: bold}`})
@@ -5150,22 +5227,14 @@ jb.component('css.lineClamp', {
   )
 })
 
-jb.component('css.layout', {
+;['layout','typography','detailedBorder','detailedColor','gridArea'].forEach(f=>
+jb.component(`css.${f}`, {
   type: 'feature:0',
   params: [
     {id: 'css', mandatory: true, as: 'string'}
   ],
   impl: (ctx,css) => ({css: fixCssLine(css)})
-})
-
-jb.component('css.typography', {
-  type: 'feature:0',
-  params: [
-    {id: 'css', mandatory: true, as: 'string'}
-  ],
-  impl: (ctx,css) => ({css: fixCssLine(css)})
-})
-
+}))
 
 })();
 
@@ -5443,7 +5512,7 @@ jb.component('html', {
 jb.component('html.plain', {
   type: 'html.style',
   impl: customStyle({
-    template: (cmp,{html},h) => h('html',{$html: html, jb_external: true } ),
+    template: (cmp,{html},h) => h('div',{$html: html, jb_external: true } ),
     features: [
       watchAndCalcModelProp('html'),
       () => ({ studioFeatures :{$: 'feature.contentEditable', param: 'html' } })
@@ -5563,6 +5632,69 @@ jb.component('image.img', {
     features: calcProp('url')
   })
 });
+
+jb.ns('icon,control')
+
+jb.component('control.icon', {
+  type: 'control',
+  category: 'control:50',
+  params: [
+    {id: 'icon', as: 'string', mandatory: true},
+    {id: 'title', as: 'string', dynamic: true},
+    {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
+    {id: 'size', as: 'number', defaultValue: 24 },
+    {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx => jb.ui.ctrl(ctx, features(
+    calcProp('icon'), calcProp('type'), calcProp('title'), calcProp('size')
+  ))
+})
+
+jb.component('icon', {
+  type: 'icon',
+  params: [
+    {id: 'icon', as: 'string', mandatory: true},
+    {id: 'title', as: 'string', dynamic: true},
+    {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
+    {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx => ctx.params
+})
+
+jb.component('icon.material', {
+  type: 'icon.style',
+  impl: customStyle({
+    template: (cmp,{icon,type,title,size},h) => type == 'mdc' ? h('i',
+    { class: 'material-icons', title: title(), onclick: true, style: {'font-size': `${size}px`, width: `${size}px`, height: `${size}px` } }
+      , icon) 
+      : h('div',{title: title(), onclick: true,
+        $html: `<svg width="24" height="24" transform="scale(${size/24})"><path d="${jb.path(jb.frame,['MDIcons',icon])}"/></svg>`}),
+  })
+})
+
+jb.component('feature.icon', {
+  type: 'feature',
+  category: 'control:50',
+  params: [
+    {id: 'icon', as: 'string', mandatory: true},
+    {id: 'title', as: 'string', dynamic: true},
+    {id: 'position', as: 'string', options: ',pre,post,raised', defaultValue: '' },
+    {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
+    {id: 'size', as: 'number', defaultValue: 24 },
+    {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx => ({
+    icon: jb.ui.ctrl(ctx, features(
+      calcProp('icon'), calcProp('type'), calcProp('title'), calcProp('size'),
+      calcProp('iconPosition','%$$model/position%')
+    ))
+  })
+})
+
+;
 
 jb.ns('button')
 
@@ -6058,15 +6190,17 @@ jb.component('dialogFeature.uniqueDialog', {
 jb.component('dialogFeature.dragTitle', {
 	type: 'dialog-feature',
 	params: [
-	  {id: 'id', as: 'string'}
+	  {id: 'id', as: 'string'},
+	  {id: 'selector', as: 'string', defaultValue: '.dialog-title'},
 	],
-	impl: function(context, id) {
+	impl: function(context, id,selector) {
+
 		  const dialog = context.vars.$dialog;
 		  const {pipe,fromEvent,takeUntil,merge,Do, map,flatMap,distinctUntilChanged,fromPromise, forEach} = jb.callbag
 		  return {
-				 css: '>.dialog-title { cursor: pointer }',
+				 css: `${selector} { cursor: pointer }`,
 				 afterViewInit: function(cmp) {
-					const titleElem = cmp.base.querySelector('.dialog-title');
+					const titleElem = cmp.base.querySelector(selector);
 					const destroyed = fromPromise(cmp.destroyed)
 					cmp.mousedownEm = pipe(fromEvent(titleElem, 'mousedown'),takeUntil(destroyed));
 
@@ -6114,9 +6248,9 @@ jb.component('dialogFeature.dragTitle', {
 jb.component('dialog.default', { /* dialog.default */
 	type: 'dialog.style',
 	impl: customStyle({
-	  template: (cmp,{title,contentComp},h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
-			  h('div',{class: 'dialog-title'},title),
-			  h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
+	  template: (cmp,{title,contentComp},h) => h('div#jb-dialog jb-default-dialog',{},[
+			  h('div#dialog-title',{},title),
+			  h('button#dialog-close', {onclick: 'dialogClose' },'×'),
 			  h(contentComp),
 		  ]),
 	  features: dialogFeature.dragTitle()
@@ -6134,12 +6268,17 @@ jb.component('dialogFeature.nearLauncherPosition', {
 		return {
 			afterViewInit: function(cmp) {
 				let offsetLeft = offsetLeftF() || 0, offsetTop = offsetTopF() || 0;
-				if (!context.vars.$launchingElement)
-					return console.log('no launcher for dialog');
+				const jbDialog = jb.ui.findIncludeSelf(cmp.base,'.jb-dialog')[0];
+				if (!context.vars.$launchingElement) {
+					if (typeof event == 'undefined')
+						return console.log('no launcher for dialog');
+					jbDialog.style.left = offsetLeft + event.clientX + 'px'
+					jbDialog.style.top = offsetTop + event.clientY + 'px'
+					return
+				}
 				const control = context.vars.$launchingElement.el;
 				const launcherHeightFix = context.vars.$launchingElement.launcherHeightFix || jb.ui.outerHeight(control)
 				const pos = jb.ui.offset(control);
-				const jbDialog = jb.ui.findIncludeSelf(cmp.base,'.jb-dialog')[0];
 				offsetLeft += rightSide ? jb.ui.outerWidth(control) : 0;
 				const fixedPosition = fixDialogOverflow(control,jbDialog,offsetLeft,offsetTop);
 				jbDialog.style.display = 'block';
@@ -6233,6 +6372,7 @@ jb.component('dialogFeature.cssClassOnLaunchingElement', {
   type: 'dialog-feature',
   impl: context => ({
 		afterViewInit: cmp => {
+			if (!context.vars.$launchingElement) return
 			const {pipe,filter,subscribe,take} = jb.callbag
 			const dialog = context.vars.$dialog;
 			const control = context.vars.$launchingElement.el;
@@ -7052,20 +7192,20 @@ jb.component('itemlistContainer.searchInAllProperties', {
 })()
 ;
 
-jb.ns('menuStyle')
-jb.ns('menuSeparator')
-jb.ns('mdc')
+jb.ns('menuStyle,menuSeparator,mdc,icon')
 
 jb.component('menu.menu', {
   type: 'menu.option',
   params: [
     {id: 'title', as: 'string', dynamic: true, mandatory: true},
     {id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true, defaultValue: []},
+    {id: 'icon', type: 'icon' },
     {id: 'optionsFilter', type: 'data', dynamic: true, defaultValue: '%%'}
   ],
   impl: ctx => ({
 		options: ctx2 => ctx.params.optionsFilter(ctx.setData(ctx.params.options(ctx2))),
-		title: ctx.params.title(),
+    title: ctx.params.title(),
+    icon: ctx.params.icon,
 		applyShortcut: function(e) {
 			return this.options().reduce((res,o)=> res || (o.applyShortcut && o.applyShortcut(e)),false)
 		},
@@ -7158,11 +7298,12 @@ jb.component('menu.openContextMenu', {
   params: [
     {id: 'menu', type: 'menu.option', dynamic: true, mandatory: true},
     {id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue: dialog.contextMenuPopup()},
+    {id: 'menuStyle', type: 'menu.style', dynamic: true, defaultValue: menuStyle.contextMenu()},
     {id: 'features', type: 'dialog-feature[]', dynamic: true}
   ],
   impl: openDialog({
     style: call('popupStyle'),
-    content: menu.control({menu: call('menu'), style: menuStyle.contextMenu()}),
+    content: menu.control({menu: call('menu'), style: call('menuStyle')}),
     features: call('features')
   })
 })
@@ -7214,7 +7355,6 @@ jb.component('menuStyle.contextMenu', {
   )
 })
 
-
 jb.component('menu.initPopupMenu', {
   type: 'feature',
   params: [
@@ -7233,7 +7373,7 @@ jb.component('menu.initPopupMenu', {
 					cmp.ctx.vars.topMenu.popups.push(ctx.vars.menuModel);
 					ctx2.run( menu.openContextMenu({
 							popupStyle: _ctx => ctx.componentContext.params.popupStyle(_ctx),
-							menu: _ctx =>	ctx.vars.$model.menu()
+							menu: _ctx =>	_ctx.vars.innerMenu ? ctx.vars.innerMenu.menu() : ctx.vars.$model.menu()
 						}))
 					}, cmp.ctx, cmp.base );
 
@@ -7256,8 +7396,7 @@ jb.component('menu.initPopupMenu', {
           })
 				}
 			})
-		}
-      )
+		})
   )
 })
 
@@ -7392,20 +7531,17 @@ jb.component('menu.selection', {
 jb.component('menuStyle.optionLine', {
   type: 'menu-option.style',
   impl: customStyle({
-    template: (cmp,{icon,title,shortcut},h) => h('div',{
-				class: 'line noselect', onmousedown: 'action'
-			},[
-        h(cmp.ctx.run({...icon, $: 'control.icon'})),
-				//h('i',{class:'material-icons'},icon),
-				h('span',{class:'title'},title),
-				h('span',{class:'shortcut'},shortcut),
-        h('div',{class: 'mdc-line-ripple' }),
+    template: (cmp,{icon,title,shortcut},h) => h('div#line noselect', { onmousedown: 'action' },[
+        h(cmp.ctx.run({$: 'control.icon', ...icon, size: 20})),
+				h('span#title',{},title),
+				h('span#shortcut',{},shortcut),
+        h('div#mdc-line-ripple'),
 		]),
     css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
 				.selected { background: #d8d8d8 }
-				>i { width: 24px; padding-left: 3px; padding-top: 3px; font-size:16px; }
+				>i { padding: 3px 8px 0 3px }
 				>span { padding-top: 3px }
-						>.title { display: block; text-align: left; white-space: nowrap; }
+				>.title { display: block; text-align: left; white-space: nowrap; }
 				>.shortcut { margin-left: auto; text-align: right; padding-right: 15px }`,
     features: [menu.initMenuOption(), mdc.rippleEffect()]
   })
@@ -7414,11 +7550,9 @@ jb.component('menuStyle.optionLine', {
 jb.component('menuStyle.popupAsOption', {
   type: 'menu.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{
-				class: 'line noselect', onmousedown: 'action'
-			},[
-				h('span',{class:'title'},state.title),
-				h('i',{class:'material-icons', onmouseenter: 'openPopup' },'play_arrow'),
+    template: (cmp,state,h) => h('div#line noselect', { onmousedown: 'action' },[
+				h('span#title',{},state.title),
+				h('i#material-icons', { onmouseenter: 'openPopup' },'play_arrow'),
 		]),
     css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
 				>i { width: 100%; text-align: right; font-size:16px; padding-right: 3px; padding-top: 3px; }
@@ -7445,11 +7579,12 @@ jb.component('dialog.contextMenuPopup', {
   type: 'dialog.style',
   params: [
     {id: 'offsetTop', as: 'number'},
-    {id: 'rightSide', as: 'boolean', type: 'boolean'}
+    {id: 'rightSide', as: 'boolean', type: 'boolean'},
+    {id: 'toolbar', as: 'boolean', type: 'boolean'},
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup context-menu-popup pulldown-mainmenu-popup'},
-				h(state.contentComp)),
+    template: (cmp,{contentComp,toolbar},h) => h('div#jb-dialog jb-popup context-menu-popup', 
+      { class: toolbar ? 'toolbar-popup' : 'pulldown-mainmenu-popup'}, h(contentComp)),
     features: [
       dialogFeature.uniqueDialog('%$optionsParentId%', false),
       dialogFeature.maxZIndexOnClick(),
@@ -7469,6 +7604,68 @@ jb.component('menuSeparator.line', {
     template: (cmp,state,h) => h('div'),
     css: '{ margin: 6px 0; border-bottom: 1px solid #EBEBEB;}'
   })
+})
+
+/***** icon menus */
+
+jb.component('menuStyle.toolbar', {
+  type: 'menu.style',
+  params: [
+    {id: 'leafOptionStyle', type: 'menu-option.style', dynamic: true, defaultValue: menuStyle.icon()},
+    {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.horizontal(5)},
+  ],
+  impl: styleByControl(
+    Var('optionsParentId', ctx => ctx.id),
+    Var('leafOptionStyle', ctx => ctx.componentContext.params.leafOptionStyle),
+    itemlist({
+      vars: [
+        Var('optionsParentId', ctx => ctx.id),
+        Var('leafOptionStyle', ctx => ctx.componentContext.params.leafOptionStyle)
+      ],
+      style: call('itemlistStyle'),
+      items: ctx => ctx.vars.menuModel.options && ctx.vars.menuModel.options().filter(x=>x) || [],
+      controls: menu.control({menu: '%$item%', style: menuStyle.applyMultiLevel({
+        menuStyle: menuStyle.iconMenu(), leafStyle: menuStyle.icon()
+      })}),
+    })
+  )
+})
+
+jb.component('menuStyle.icon', {
+  type: 'menu-option.style',
+  params: [
+    {id: 'buttonSize', as: 'number', defaultValue: 20 },
+  ],
+  impl: styleWithFeatures(
+      button.mdcIcon('%$menuModel/leaf/icon%','%$buttonSize%'),
+      [
+        htmlAttribute('onclick',true),
+        defHandler('onclickHandler', ctx => ctx.vars.menuModel.action())
+      ]
+  )
+})
+
+jb.component('menuStyle.iconMenu', {
+  type: 'menu.style',
+  impl: styleByControl(
+      button({
+        title: '%title%',
+        action: (ctx,{cmp}) => cmp.openPopup(),
+        style: button.mdcIcon(
+          icon({
+            icon: '%icon/icon%',
+            type: '%icon/type%',
+            features: css('transform: translate(7px,0px) !important')
+          }), 16),
+        features: [feature.icon({
+          icon: 'more_vert',
+          type: 'mdc',
+          features: css('transform: translate(-3px,0px) !important')
+        }),
+          menu.initPopupMenu(dialog.contextMenuPopup({toolbar: true, rightSide: true}))
+        ]
+      }),
+    'innerMenu'),
 })
 ;
 
@@ -7638,70 +7835,6 @@ jb.component('theme.materialDesign', {
 })
 ;
 
-jb.ns('icon,control')
-
-jb.component('control.icon', {
-  type: 'control',
-  category: 'control:50',
-  params: [
-    {id: 'icon', as: 'string', mandatory: true},
-    {id: 'title', as: 'string', dynamic: true},
-    {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
-    {id: 'scale', as: 'number', defaultValue: 1 },
-    {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
-    {id: 'features', type: 'feature[]', dynamic: true}
-  ],
-  impl: ctx => jb.ui.ctrl(ctx, features(
-    calcProp('icon'), calcProp('type'), calcProp('scale'), calcProp('title')
-  ))
-})
-
-jb.component('icon', {
-  type: 'icon',
-  params: [
-    {id: 'icon', as: 'string', mandatory: true},
-    {id: 'title', as: 'string', dynamic: true},
-    {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
-    {id: 'scale', as: 'number', defaultValue: 1 },
-    {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
-    {id: 'features', type: 'feature[]', dynamic: true}
-  ],
-  impl: ctx => ctx.params
-})
-
-jb.component('icon.material', {
-  type: 'icon.style',
-  impl: customStyle({
-    template: (cmp,{icon,type,title,scale},h) => type == 'mdc' ? h('i',
-    { class: 'material-icons', title: title(), onclick: true, style: {width: '24px', height: '24px', transform: `scale(${scale}) translate(${(scale-1)*12}px,${(scale-1)*12}px)` } }
-      , icon) 
-      : h('div',{title: title(), onclick: true, style: { transform: `translate(${(scale-1)*12}px,${(scale-1)*12}px)`},
-        $html: `<svg width="24" height="24" transform="scale(${scale})"><path d="${jb.path(jb.frame,['MDIcons',icon])}"/></svg>`}),
-  })
-})
-
-jb.component('feature.icon', {
-  type: 'feature',
-  category: 'control:50',
-  params: [
-    {id: 'icon', as: 'string', mandatory: true},
-    {id: 'title', as: 'string', dynamic: true},
-    {id: 'position', as: 'string', options: ',pre,post,raised', defaultValue: '' },
-    {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
-    {id: 'scale', as: 'string', defaultValue: 1 },
-    {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
-    {id: 'features', type: 'feature[]', dynamic: true}
-  ],
-  impl: ctx => ({
-    icon: jb.ui.ctrl(ctx, features(
-      calcProp('icon'), calcProp('type'), calcProp('scale'), calcProp('title'),
-      calcProp('iconPosition','%$$model/position%')
-    ))
-  })
-})
-
-;
-
 jb.ns('slider,mdcStyle')
 
 jb.component('editableNumber.sliderNoText', {
@@ -7812,6 +7945,7 @@ jb.component('editableNumber.mdcSliderNoText', {
       interactiveProp('rebuild mdc on external refresh',(ctx,{cmp}) => {
         cmp.mdcSlider && cmp.mdcSlider.destroy()
         cmp.mdcSlider = new jb.ui.material.MDCSlider(cmp.base)
+        //cmp.mdcSlider.listen('MDCSlider:input', ({detail}) =>  !cmp.checkAutoScale(detail.value) && cmp.jbModelWithUnits(detail.value))
         cmp.mdcSlider.listen('MDCSlider:change', () =>
           !cmp.checkAutoScale(cmp.mdcSlider.value) && cmp.jbModelWithUnits(cmp.mdcSlider.value))
       }),
@@ -8213,9 +8347,9 @@ jb.component('button.mdcChipAction', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) =>
-    h('div',{class: 'mdc-chip-set mdc-chip-set--choice'},
-      h('div',{ class: ['mdc-chip',raised && 'mdc-chip--selected raised'].filter(x=>x).join(' ') }, [
-        h('div',{ class: 'mdc-chip__ripple'}),
+    h('div#mdc-chip-set mdc-chip-set--choice', {onclick: true},
+      h('div#mdc-chip',{ class: [raised && 'mdc-chip--selected raised'].filter(x=>x).join(' ') }, [
+        h('div#mdc-chip__ripple'),
         ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-chip__icon mdc-chip__icon--leading')),
         h('span',{ role: 'gridcell'}, h('span', {role: 'button', tabindex: -1, class: 'mdc-chip__text'}, title )),
         ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-chip__icon mdc-chip__icon--trailing')),
@@ -8224,35 +8358,44 @@ jb.component('button.mdcChipAction', {
   })
 })
 
+jb.component('button.plainIcon', {
+  type: 'button.style',
+  impl: customStyle({
+    template: (cmp,{title,raised},h) => 
+      jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=> vdom.setAttribute('title',vdom.getAttribute('title') || title))[0]
+  })
+})
+
 jb.component('button.mdcIcon', {
   type: 'button.style,icon.style',
   params: [
-    {id: 'icon', type: 'icon', defaultValue: icon('plus') },
-    {id: 'raisedIcon', type: 'icon' }
+    {id: 'icon', type: 'icon' },
+    {id: 'buttonSize', as: 'number', defaultValue: 40, description: 'button size is larger than the icon size, usually at the rate of 40/24' },
   ],
-  impl: styleWithFeatures(button.mdcFloatingAction({withTitle: false, mini: true}), features(
-    ctx => ctx.run({...ctx.componentContext.params.icon, title: ctx.exp('%$$model/title%'), $: 'feature.icon'}),
-    ctx => [ctx.componentContext.params.raisedIcon && ctx.run({...ctx.componentContext.params.raisedIcon, $: 'feature.icon', position: 'raised', title: ctx.exp('%$$model/title%')})].filter(x=>x),
-    //css(`{ box-shadow: 0 0; border-radius: 2px; width: 24px; height: 24px; padding: 0; color: black; background-color: transparent}`),
-    css(`{ background-color: grey}`),
-  ))
+  impl: styleWithFeatures(button.mdcFloatingAction({withTitle: false, buttonSize: '%$buttonSize%'}), features(
+      ((ctx,{},{icon}) => icon && ctx.run({$: 'feature.icon', ...icon, title: '%$model.title%', 
+        size: ({},{},{buttonSize}) => buttonSize * 24/40 })),
+      css('background-color: grey'),
+    ))
 })
 
 jb.component('button.mdcFloatingAction', {
   type: 'button.style,icon.style',
   description: 'fab icon',
   params: [
-    {id: 'mini', as: 'boolean'},
+    {id: 'buttonSize', as: 'number', defaultValue: 60, description: 'mini is 40'},
     {id: 'withTitle', as: 'boolean'}
   ],
   impl: customStyle({
-    template: (cmp,{title,withTitle,mini,raised},h) =>
-      h('button',{ class: ['mdc-fab',raised && 'raised mdc-icon-button--on',mini && 'mdc-fab--mini'].filter(x=>x).join(' ') ,
+    template: (cmp,{title,withTitle,raised},h) =>
+      h('button',{ class: ['mdc-fab',raised && 'raised mdc-icon-button--on'].filter(x=>x).join(' ') ,
           title, tabIndex: -1, onclick:  true}, [
             h('div',{ class: 'mdc-fab__ripple'}),
-            ...jb.ui.chooseIconWithRaised(cmp.icon,raised).filter(x=>x).map(h).map(vdom=>vdom.addClass('mdc-fab__icon')),
+            ...jb.ui.chooseIconWithRaised(cmp.icon,raised).filter(x=>x).map(h).map(vdom=>
+                vdom.addClass('mdc-fab__icon').setAttribute('title',vdom.getAttribute('title') || title)),
             ...[withTitle && h('span',{ class: 'mdc-fab__label'},title)].filter(x=>x)
       ]),
+    css: '{width: %$buttonSize%px; height: %$buttonSize%px;}',  
     features: mdcStyle.initDynamic(),
   })
 })
@@ -24706,7 +24849,7 @@ jb.prettyPrint.advanceLineCol = function({line,col},text) {
 }
 jb.prettyPrint.spaces = Array.from(new Array(200)).map(_=>' ').join('');
 
-jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath='',showNulls,comps,forceFlat} = {}) {
+jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath='',noMacros,comps,forceFlat} = {}) {
   comps = comps || jb.comps
   if (!val || typeof val !== 'object')
     return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
@@ -24775,7 +24918,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
     const comp = comps[id]
     if (comp)
       jb.fixByValue(profile,comp)
-    if (!id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
+    if (noMacros || !id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
       const props = Object.keys(profile)
       if (props.indexOf('$') > 0) { // make the $ first
         props.splice(props.indexOf('$'),1);
@@ -29622,7 +29765,7 @@ jb.component('studio.propertyToolbarStyle', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,state,h) => h('i',{class: 'material-icons', onclick: true, title: 'more...' },'more_vert'),
-    css: `{ cursor: pointer;width: 16px; font-size: 16px; vertical-align: super; opacity: 0.5}
+    css: `{ cursor: pointer;width: 16px; font-size: 16px; vertical-align: super; opacity: 0.5; transform: translate(-5px, 10px);}
       ~:hover { opacity: 1}
     `
   })
@@ -29852,7 +29995,7 @@ Object.assign(st, {
 		const val = st.valOfPath(path);
 		const parent_ref = st.getOrCreateControlArrayRef(st.parentPath(st.parentPath(path)));
 		if (parent_ref) {
-			const clone = st.evalProfile(jb.prettyPrint(val));
+			const clone = st.evalProfile(jb.prettyPrint(val,{noMacros: true}));
 			st.splice(parent_ref,[[Number(prop), 0,clone]],srcCtx);
 		}
 	},
@@ -29861,7 +30004,7 @@ Object.assign(st, {
 		const val = st.valOfPath(path);
 		const parent_ref = st.refOfPath(st.parentPath(path));
 		if (parent_ref && Array.isArray(st.val(parent_ref))) {
-			const clone = st.evalProfile(jb.prettyPrint(val));
+			const clone = st.evalProfile(jb.prettyPrint(val,{noMacros: true}));
 			st.splice(parent_ref,[[Number(prop), 0,clone]],srcCtx);
 		}
 	},
@@ -29875,7 +30018,7 @@ Object.assign(st, {
 			st.writeValue(st.refOfPath(path+'~$disabled'),prof.$disabled ? null : true,srcCtx)
 	},
 	newProfile: (comp,compName) => {
-		const result = comp.singleInType ? {} : { $: compName };
+		const result = { $: compName };
 		jb.compParams(comp).forEach(p=>{
 			if (p.composite)
 				result[p.id] = [];
@@ -29977,7 +30120,7 @@ Object.assign(st, {
 	makeLocal: (path,srcCtx) =>{
 		var comp = st.compOfPath(path);
 		if (!comp || typeof comp.impl != 'object') return;
-		st.writeValueOfPath(path,st.evalProfile(jb.prettyPrint(comp.impl)),srcCtx);
+		st.writeValueOfPath(path,st.evalProfile(jb.prettyPrint(comp.impl,{noMacros: true})),srcCtx);
 	},
 	getOrCreateControlArrayRef: (path,srcCtx) => {
 		var val = st.valOfPath(path);
@@ -30244,7 +30387,7 @@ st.initPreview = function(preview_window,allowedTypes) {
       st.initCompsRefHandler(st.previewjb, allowedTypes)
       changedComps.forEach(e=>{
         st.compsRefHandler.resourceReferred(e[0])
-        st.writeValue(st.compsRefHandler.refOfPath([e[0]]), eval(`(${jb.prettyPrint(e[1])})`), new jb.jbCtx()) // update the history for future save
+        st.writeValue(st.compsRefHandler.refOfPath([e[0]]), eval(`(${jb.prettyPrint(e[1],{noMacros: true})})`), new jb.jbCtx()) // update the history for future save
         jb.val(st.compsRefHandler.refOfPath([e[0]]))[jb.location] = e[1][jb.location]
       })
       jb.entries(st.previewWindow.JSON.parse(st.resourcesFromPrevRun || '{}')).forEach(e=>st.previewjb.resource(e[0],e[1]))
@@ -30259,6 +30402,7 @@ st.initPreview = function(preview_window,allowedTypes) {
 
       jb.exp('%$studio/settings/activateWatchRefViewer%','boolean') && st.activateWatchRefViewer();
       jb.exec(writeValue('%$studio/projectSettings%',() => JSON.parse(JSON.stringify(preview_window.jbProjectSettings)) ))
+      writeValue('%$studio/preview%', () => ({width: 1280, height: 520 })),
 
       st.previewWindow.workerId = ctx => ctx && ctx.vars.$runAsWorker
 
@@ -30627,55 +30771,98 @@ jb.component('studio.openResponsivePhonePopup', {
     {id: 'path', as: 'string'}
   ],
   impl: openDialog({
-    style: dialog.studioFloating('responsive'),
+    style: dialog.popup(),
     content: group({
-      style: group.tabs(),
-      controls: dynamicControls({
-        controlItems: asIs(
-          [
-            {
-              width: {min: 320, max: 479, default: 400},
-              height: {min: 300, max: 700, default: 600},
-              id: 'phone'
-            },
-            {
-              width: {min: 480, max: 1024, default: 600},
-              height: {min: 300, max: 1440, default: 850},
-              id: 'tablet'
-            },
-            {
-              width: {min: 1024, max: 2048, default: 1280},
-              height: {min: 300, max: 1440, default: 520},
-              id: 'desktop'
-            }
-          ]
-        ),
-        genericControl: group({
-          title: '%$controlItem/id%',
-          layout: layout.horizontal('70'),
+      layout: layout.vertical('10'),
+      controls: [
+        group({
+          title: 'buttons',
+          layout: layout.horizontal('10'),
           controls: [
-            editableNumber({
-              databind: '%$studio/responsive/{%$controlItem/id%}/width%',
-              title: 'width',
-              style: editableText.mdcInput(),
-              min: '%$controlItem/width/min%',
-              max: '%$controlItem/width/max%'
+            button({
+              title: 'phone',
+              action: runTransaction(
+                [
+                  writeValue('%$studio/preview/width%', '400'),
+                  writeValue('%$studio/preview/height%', '600')
+                ]
+              ),
+              style: button.mdcFloatingAction(true),
+              features: feature.icon({icon: 'phone_android', title: '', type: 'mdc'})
             }),
-            editableNumber({
-              databind: '%$studio/responsive/{%$controlItem/id%}/height%',
-              title: 'height',
-              style: editableText.mdcInput(),
-              min: '%$controlItem/height/min%',
-              max: '%$controlItem/height/max%'
+            button({
+              title: 'tablet',
+              action: runActions(
+                writeValue('%$studio/preview/width%', '600'),
+                writeValue('%$studio/preview/height%', '850')
+              ),
+              style: button.mdcFloatingAction(true),
+              features: feature.icon({icon: 'tablet', title: '', type: 'mdc'})
+            }),
+            button({
+              title: 'desktop',
+              action: runActions(
+                writeValue('%$studio/preview/width%', '1280'),
+                writeValue('%$studio/preview/height%', '520')
+              ),
+              style: button.mdcFloatingAction(true),
+              features: feature.icon({icon: 'desktop_mac', type: 'mdc'})
             })
           ],
-          features: [css('{ padding-left: 12px; padding-top: 7px }')]
+          features: css.padding({top: '7', left: '4', right: '4'})
+        }),
+        group({
+          title: 'width-height',
+          layout: layout.horizontal(),
+          controls: [
+            editableNumber({
+              databind: '%$studio/preview/width%',
+              title: 'width',
+              style: editableText.mdcInput({}),
+              features: [watchRef('%$studio/preview/width%')]
+            }),
+            editableNumber({
+              databind: '%$studio/preview/height%',
+              title: 'height',
+              style: editableText.mdcInput({}),
+              features: watchRef('%$studio/preview/height%')
+            })
+          ],
+          features: hidden()
         })
+      ],
+      features: feature.onDataChange({
+        ref: '%$studio/preview%',
+        includeChildren: 'yes',
+        action: studio.setPreviewSize('%$studio/preview/width%', '%$studio/preview/height%')
       })
     }),
     title: 'responsive'
   })
 })
+
+
+// style: group.tabs(),
+// controls: dynamicControls({
+//   controlItems: asIs(
+//     [
+//       {
+//         width: {min: 320, max: 479, default: 400},
+//         height: {min: 300, max: 700, default: 600},
+//         id: 'phone'
+//       },
+//       {
+//         width: {min: 480, max: 1024, default: 600},
+//         height: {min: 300, max: 1440, default: 850},
+//         id: 'tablet'
+//       },
+//       {
+//         width: {min: 1024, max: 2048, default: 1280},
+//         height: {min: 300, max: 1440, default: 520},
+//         id: 'desktop'
+//       }
+//     ]
+//   ),
 ;
 
 jb.component('urlHistory.mapStudioUrlToResource', {
@@ -31745,7 +31932,7 @@ Object.assign(st,{
 			return [path]
 	},
 	isControlType: type =>
-		(type||'').match(/^(control|options|menu|table-field|d3g.pivot)/),
+		(type||'').split('[')[0].match(/^(control|options|menu|table-field|d3g.pivot)$/),
 	controlParams: path =>
 		st.paramsOfPath(path).filter(p=>st.isControlType(p.type)).map(p=>p.id),
 
@@ -31925,6 +32112,16 @@ Object.assign(st,{
 		if (testData)
 			return _ctx.ctx({profile: pipeline(testData, {$: compId}), path: '' })
 	},
+	pathParents(path,includeThis) {
+		const result = ['']
+		path.split('~').reduce((acc,p) => {
+			const path = [acc,p].filter(x=>x).join('~')
+			result.push(path)
+			return path
+		} ,'')
+		return result.reverse().slice(includeThis ? 0 : 1)
+	}
+	
 })
 
 })()
@@ -32552,6 +32749,24 @@ jb.component('studio.jbFloatingInput', {
           )
         ]
       }),
+      button({
+        title: 'choose icon',
+        action: studio.openPickIcon('%$path%'),
+        style: button.mdcIcon(icon({icon: 'insert_emoticon', type: 'mdc'}), ''),
+        features: [
+          feature.if(
+            and(
+              inGroup(
+                  list('feature.icon', 'icon'),
+                  studio.compName(studio.parentPath('%$path%'))
+                ),
+              equals('icon', pipeline(studio.paramDef('%$path%'), '%id%'))
+            )
+          ),
+          css.transformScale({x: '1', y: '0.8'}),
+          css.margin('15')
+        ]
+      }),
       group({
         title: '',
         layout: layout.vertical(),
@@ -32800,10 +33015,18 @@ jb.component('studio.propField', {
     title: studio.propName('%$path%'),
     controls: group({
       controls: [
-        controlWithCondition(pipeline(studio.paramDef('%path%'),'%id%',or(equals('icon'),equals('raisedIcon'))),
+        controlWithCondition(
+          and(
+            inGroup(list('feature.icon','icon'),studio.compName(studio.parentPath('%$path%'))),
+            equals('icon',pipeline(studio.paramDef('%$path%'), '%id%'))
+          ),
           studio.pickIcon('%$path%')
         ),
-        controlWithCondition(inGroup(split({text:'width,height,top,left,right,bottom'}),pipeline(studio.paramDef('%path%'),'%id%')),
+        controlWithCondition(
+          inGroup(
+            split({text: 'width,height,top,left,right,bottom'}),
+            pipeline(studio.paramDef('%$path%'), '%id%')
+          ),
           studio.propertyNumbericCss('%$path%')
         ),
         controlWithCondition(
@@ -32968,7 +33191,8 @@ jb.component('studio.openProperties', {
                 title: studio.shortTitle('%$path%'),
                 comp: studio.compName('%$path%')
               },
-            'Properties of %comp% %title%'
+            If(equals('%comp%', '%title%'), '%comp%', '%comp% %title%'),
+            'Properties of %%'
           ),
           features: [
             feature.keyboardShortcut('Ctrl+Left', studio.openControlTree()),
@@ -35693,137 +35917,230 @@ jb.component('studio.saveNewProject', {
   }
 });
 
-(function() {
-const st = jb.studio;
-
-//ui.stateChangeEm.next({cmp: cmp, opEvent: opEvent})
-//({op: op, ref: ref, srcCtx: srcCtx, oldRef: oldRef, oldResources: oldResources})
-
-jb.component('studio.eventTitle', {
-  type: 'data',
-  params: [
-    {id: 'event', as: 'single', defaultValue: '%%'}
-  ],
-  impl: (context,event) =>
-		event ? st.pathSummary(event.cmp.ctxForPick.path).replace(/~/g,'/') : ''
-})
-
-jb.component('studio.eventCmp', {
-  type: 'data',
-  params: [
-    {id: 'event', as: 'single', defaultValue: '%%'}
-  ],
-  impl: (context,event) =>
-		event ? st.pathSummary(event.cmp.ctxForPick.path).replace(/~/g,'/') : ''
-})
-
-jb.component('studio.eventCause', {
-  type: 'data',
-  params: [
-    {id: 'event', as: 'single', defaultValue: '%%'}
-  ],
-  impl: (context,event) =>
-		(event && event.opEvent) ? st.nameOfRef(event.opEvent.ref) + ' changed to "' + st.valSummary(event.opEvent.newVal) + '"' : ''
-})
-
-jb.component('studio.stateChangeEvents', {
-  type: 'data',
-  params: [
-    {id: 'studio', as: 'boolean', type: 'boolean'}
-  ],
-  impl: (ctx,studio) =>
-		(studio ? st.studioStateChangeEvents : st.stateChangeEvents) || []
+jb.component('studio.openEventTracker', {
+  type: 'action',
+  impl: openDialog({
+    style: dialog.studioFloating({id: 'event-tracker', width: '700', height: '400'}),
+    content: studio.eventTracker(),
+    title: 'Spy',
+    features: dialogFeature.resizer()
+  })
 })
 
 jb.component('studio.highlightEvent', {
   type: 'action',
   params: [
-    {id: 'event', as: 'single', defaultValue: '%%'}
+    {id: 'path', as: 'string'}
   ],
-  impl: studio.highlightByPath(
-    '%$event/cmp/ctx/path%'
-  )
+  impl: studio.highlightByPath('%$path%')
 })
 
 jb.component('studio.eventTracker', {
   type: 'control',
-  params: [
-    {id: 'studio', as: 'boolean', type: 'boolean'}
-  ],
   impl: group({
     controls: [
-      table({
-        items: studio.stateChangeEvents('%$studio%'),
-        fields: [
-          field.control({
-            title: 'changed',
-            control: button({
-              title: studio.nameOfRef('%opEvent/ref%'),
-              action: studio.gotoPath(studio.pathOfRef('%opEvent/ref%')),
-              style: button.href(),
-              features: feature.hoverTitle(studio.pathOfRef('%opEvent/ref%'))
+      group({
+        layout: layout.horizontal(),
+        controls: [
+          menu.control({
+            menu: menu.menu({
+              options: [
+                menu.action({
+                  title: 'clear',
+                  action: runActions(() => jb.spy && jb.spy.clear(), refreshControlById('event-logs')),
+                  icon: icon({icon: 'block', type: 'mdc'})
+                }),
+                menu.action({
+                  title: 'start',
+                  action: runActions(() => jb.spy && jb.spy.clear(), refreshControlById('event-logs')),
+                  icon: icon({icon: 'hearing', type: 'mdc', features: [css.transformRotate('90')]})
+                }),
+                menu.action({
+                  title: 'stop',
+                  action: runActions(() => jb.spy && jb.spy.clear(), refreshControlById('event-logs')),
+                  icon: icon({icon: 'stop', type: 'mdc', features: [css.transformRotate('90')]})
+                }),
+                menu.action({
+                  title: 'refresh',
+                  action: refreshControlById('event-logs', true),
+                  icon: icon({icon: 'refresh', type: 'mdc', features: [css.transformRotate('90')]})
+                })
+              ]
             }),
-            width: '100'
+            style: menuStyle.toolbar(menuStyle.icon('30')),
+            features: css.margin('9')
           }),
-          field({title: 'from', data: prettyPrint('%opEvent/oldVal%'), width: '200'}),
-          field({title: 'to', data: prettyPrint('%opEvent/newVal%'), width: '200'}),
-          field.control({
-            title: 'action',
-            control: button({
-              title: '%opEvent/srcCtx/path%',
-              action: studio.gotoPath('%opEvent/srcCtx/path%'),
-              style: button.href()
-            }),
-            width: '100'
-          }),
-          field.control({
-            title: 'refreshing',
-            control: button({
-              title: studio.eventCmp(),
-              action: studio.gotoPath('%cmp/ctxForPick/path%'),
-              style: button.href(),
-              features: [feature.onHover({action: studio.highlightEvent()})]
-            }),
-            width: '200'
-          }),
-          field.control({
-            title: 'watched at',
-            control: button({
-              title: '%watchedAt/path%',
-              action: studio.gotoPath('%watchedAt/path%'),
-              style: button.href()
-            }),
-            width: '100'
+          group({
+            title: 'logs',
+            layout: layout.horizontal(),
+            controls: [
+              group({
+                title: 'chips',
+                layout: layout.flex({wrap: 'wrap'}),
+                controls: [
+                  dynamicControls({
+                    controlItems: '%$studio/spyLogs%',
+                    genericControl: group({
+                      title: 'chip',
+                      layout: layout.flex({wrap: 'wrap', spacing: '0'}),
+                      controls: [
+                        button({title: '%% ', style: button.mdcChipAction(), raised: 'false'}),
+                        button({
+                          title: 'delete',
+                          style: button.x(),
+                          features: [
+                            css('color: black; z-index: 1000;margin-left: -30px'),
+                            itemlist.shownOnlyOnItemHover()
+                          ]
+                        })
+                      ],
+                      features: [
+                        css('color: black; z-index: 1000'),
+                        feature.onEvent({
+                          event: 'click',
+                          action: removeFromArray({array: '%$studio/spyLogs%', itemToRemove: '%%'})
+                        }),
+                        css.class('jb-item')
+                      ]
+                    })
+                  })
+                ],
+                features: watchRef({
+                  ref: '%$studio/spyLogs%',
+                  includeChildren: 'yes',
+                  allowSelfRefresh: true,
+                  strongRefresh: false
+                })
+              }),
+              group({
+                title: 'add log',
+                layout: layout.horizontal('20'),
+                controls: [
+                  picklist({
+                    options: picklist.options(
+                      list(keys(() => jb.spySettings.groups), () => jb.spySettings.moreLogs.split(','))
+                    ),
+                    features: [
+                      picklist.onChange(
+                        runActions(ctx => ctx.run(addToArray('%$studio/spyLogs%', '%%')))
+                      ),
+                      css.margin('6')
+                    ]
+                  })
+                ],
+                features: css.margin({left: '10'})
+              })
+            ],
+            features: feature.init(
+              ctx=> ctx.run(writeValue('%$studio/spyLogs%', split({text: 'doOp,refreshElem'})))
+            )
           })
+        ]
+      }),
+      itemlist({
+        items: studio.eventItems(),
+        controls: [
+          button({
+            title: '%0%: %1%',
+            action: menu.openContextMenu({
+              menu: menu.menu({
+                options: [
+                  menu.action({
+                    title: 'show in console',
+                    action: ({data}) => jb.frame.console.log(data)
+                  }),
+                  menu.action('group by %1%'),
+                  menu.action('filter only %1%'),
+                  menu.action('filter out %1%'),
+                  menu.action('remove items before'),
+                  menu.action('remove items after')
+                ]
+              })
+            }),
+            style: button.mdcIcon(undefined, '24'),
+            features: [
+              field.title('log'),
+              field.columnWidth('20'),
+              feature.byCondition('%1% == error', [css.color({background: 'red'})]),
+              feature.icon({
+                icon: data.switch({
+                  cases: [data.case('%1% == error', 'error')],
+                  default: 'linear_scale'
+                })
+              })
+            ]
+          }),
+          text({text: '%1%', title: 'event'}),
+          studio.eventView()
         ],
-        style: table.plain()
+        style: table.plain(),
+        visualSizeLimit: '30',
+        features: [
+          id('event-logs'),
+          itemlist.infiniteScroll('5'),
+          css.height({height: '400', overflow: 'scroll'}),
+          itemlist.selection({}),
+          itemlist.keyboardSelection({})
+        ]
       })
-    ],
-    features: [
-      {
-        '$if': '%$studio%',
-        then: watchObservable(ctx => jb.ui.stateChangeEm, 500),
-        else: watchObservable(ctx => st.previewjb.ui.stateChangeEm, 500)
-      }
     ]
   })
 })
 
-
-jb.component('studio.openEventTracker', {
-  type: 'action',
-  params: [
-    {id: 'studio', as: 'boolean', type: 'boolean'}
-  ],
-  impl: openDialog({
-    style: dialog.studioFloating({id: 'event-tracker', width: '700', height: '400'}),
-    content: studio.eventTracker('%$studio%'),
-    title: {'$if': '%$studio%', then: 'Studio Event Tracking', else: 'Event Tracking'},
-    features: [dialogFeature.resizer()]
+jb.component('studio.eventView', {
+  type: 'control',
+  impl: group({
+    controls: [
+      controlWithCondition('%path%', text('%compName%')),
+      controlWithCondition('%opEvent%', text('%op%: %opEvent/opVal%')),
+      controlWithCondition(
+        '%srcCtx%',
+        text({
+          text: 'activated by: %compName%',
+          features: [
+            variable({name: 'path', value: '%srcCtx/path%'}),
+            variable({name: 'compName', value: studio.compName('%path%')})
+          ]
+        })
+      ),
+      controlWithCondition(
+        isOfType('string', '%2%'),
+        text({
+          text: '%2%',
+          features: [
+            variable({name: 'path', value: '%srcCtx/path%'}),
+            variable({name: 'compName', value: studio.compName('%path%')})
+          ]
+        })
+      )
+    ]
   })
 })
 
-})();
+jb.component('studio.eventItems', {
+  type: 'action',
+  impl: ctx => {
+    const events = jb.spy && jb.spy.all() || []
+    const st = jb.studio
+    return events.map(x=>enrich(x))
+
+    function enrich(ev) {
+      if (ev.enriched) return ev
+      ev.enriched = true
+      ev.ctx = (ev || []).filter(x=>x && x.componentContext)[0]
+      ev.path = ev.ctx && ev.ctx.path
+      ev.compName = ev.path && st.compNameOfPath(ev.path)
+      ev.cmp = (ev || []).filter(x=>x && x.base && x.refresh)[0]
+      ev.elem = ev.cmp && ev.cmp.base || (ev || []).filter(x=>x && x.nodeType)[0]
+      ev.opEvent = (ev || []).filter(x=>x && x.opVal)[0]
+      ev.op = ev.opEvent && Object.keys(ev.opEvent.op).filter(x=>x.match(/^$/))[0]
+      ev.srcCtx = (ev || []).filter(x=>x && x.srcCtx).map(x=>x.srcCtx)[0]
+      return ev
+    }
+  }
+})
+
+;
 
 jb.ns('contentEditable')
 
@@ -35853,7 +36170,7 @@ jb.component('studio.toolbar', {
         style: editableBoolean.buttonXV({
           yesIcon: icon({icon: 'location_searching', type: 'mdc'}),
           noIcon: icon({icon: 'location_disabled', type: 'mdc'}),
-          buttonStyle: button.mdcFloatingAction(true, true)
+          buttonStyle: button.mdcFloatingAction('40', true)
         }),
         title: 'Inline content editing',
         features: [
@@ -35866,7 +36183,7 @@ jb.component('studio.toolbar', {
         style: editableBoolean.buttonXV({
           yesIcon: icon({icon: 'blur_on', type: 'mdc'}),
           noIcon: icon({icon: 'blur_off', type: 'mdc'}),
-          buttonStyle: button.mdcFloatingAction(true, false)
+          buttonStyle: button.mdcFloatingAction('40', false)
         }),
         title: 'Watch Data Connections',
         features: css('background: grey')
@@ -35913,8 +36230,8 @@ jb.component('studio.toolbar', {
       button({
         title: 'Event Tracker',
         action: studio.openEventTracker(),
-        style: button.mdcIcon('hearing'),
-        features: [ctrlAction(studio.openEventTracker('true')), hidden()]
+        style: button.mdcIcon(icon({icon: 'bug_report', type: 'mdc'})),
+        features: [ctrlAction(studio.openEventTracker())]
       }),
       button({
         title: 'History',
@@ -35941,8 +36258,7 @@ jb.component('studio.toolbar', {
       button({
         title: 'Responsive',
         action: studio.openResponsivePhonePopup(),
-        style: button.mdcIcon(icon('tablet_android')),
-        features: hidden()
+        style: button.mdcIcon(icon('tablet_android'))
       })
     ],
     features: [
@@ -35957,7 +36273,8 @@ jb.component('studio.toolbar', {
         studio.openJbEditor({
           path: firstSucceeding('%$studio/profile_path%', studio.currentPagePath())
         })
-      )
+      ),
+      css.transformScale({x: '0.8', y: '0.8'})
     ]
   })
 })
@@ -36097,7 +36414,7 @@ jb.component('studio.pages', {
       button({
         title: 'new page',
         action: studio.openNewPage(),
-        style: button.mdcIcon12('add'),
+        style: button.mdcIcon(icon('add'),16),
         features: [css('{margin: 5px}'), feature.hoverTitle('new page')]
       }),
       itemlist({
@@ -36122,7 +36439,7 @@ jb.component('studio.pages', {
       button({
         title: 'new function',
         action: studio.openNewFunction(),
-        style: button.mdcIcon12('add'),
+        style: button.mdcIcon(icon('add'),16),
         features: [css('{margin: 5px}'), feature.hoverTitle('new function')]
       }),
       itemlist({
@@ -36382,7 +36699,7 @@ jb.component('studio.topBar', {
   type: 'control',
   impl: group({
     title: 'top bar',
-    layout: layout.flex({alignItems: 'start', spacing: '3'}),
+    layout: layout.flex({alignItems: 'start', spacing: ''}),
     controls: [
       image({
         url: '%$studio/baseStudioUrl%css/jbartlogo.png',
@@ -36403,7 +36720,7 @@ jb.component('studio.topBar', {
           }),
           group({
             title: 'menu and toolbar',
-            layout: layout.flex({justifyContent: 'space-between'}),
+            layout: layout.horizontal('160'),
             controls: [
               menu.control({
                 menu: studio.mainMenu(),
@@ -36411,20 +36728,20 @@ jb.component('studio.topBar', {
                 features: [id('mainMenu'), css.height('30')]
               }),
               group({
+                title: 'toolbar',
                 controls: [
                   studio.toolbar()
                 ],
                 features: css.margin('-10')
               }),
               studio.searchComponent()
-            ],
-            features: [css.width('960')]
+            ]
           })
         ],
         features: css('padding-left: 18px; width: 100%; ')
       })
     ],
-    features: css('height: 73px; border-bottom: 1px #d9d9d9 solid;')
+    features: [css('height: 73px; border-bottom: 1px #d9d9d9 solid;')]
   })
 })
 
@@ -36646,7 +36963,7 @@ st.projectHosts = {
                 jsFiles: ['remote-widgets','phones-3',...['data','ui','vdom','tree','watchable','parsing','object-encoder'].map(x=>x+'-tests')]
                     .map(x=>`/projects/ui-tests/${x}.js`),
                 project, 
-                entry: { $: 'ui-test-runner', test: project }
+                entry: { $: 'uiTestRunner', test: project }
             })
         }
     }
@@ -37088,149 +37405,9 @@ jb.studio.activateWatchRefViewer = () => {
 
 })();
 
-jb.ns('content-editable')
-
-jb.component('contentEditable.openToolbar', {
-  type: 'action',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: runActions(
-    writeValue('%$studio/profile_path%', '%$path%'),
-    openDialog({
-        style: contentEditable.popupStyle(),
-        content: contentEditable.toolbar()
-      })
-  )
-})
-
-jb.component('contentEditable.popupStyle', {
-  type: 'dialog.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
-    css: `{ position: absolute; background: white; padding: 6px;
-              box-shadow: 2px 2px 3px #d5d5d5; border: 1px solid rgb(213, 213, 213); }
-      `,
-    features: [
-      dialogFeature.uniqueDialog('content-editable-toolbar'),
-      dialogFeature.maxZIndexOnClick(),
-      dialogFeature.closeWhenClickingOutside(),
-      dialogFeature.nearLauncherPosition({
-        offsetLeft: 100,
-        offsetTop: ctx =>
-          jb.ui.studioFixYPos - jb.ui.computeStyle(jb.ui.contentEditable.current.base,'marginBottom')
-      })
-    ]
-  })
-})
-
-jb.component('studio.openToolbarOfLastEdit', {
-  type: 'action',
-  impl: ctx => {
-      const path = ctx.run(studio.lastEdit())
-      jb.delay(500).then(()=>{
-        const _window = jb.studio.previewWindow;
-        const el = Array.from(_window.document.querySelectorAll('[jb-ctx]'))
-          .filter(e=> jb.path(_window.jb.ctxDictionary[e.getAttribute('jb-ctx')],'path') == path)[0]
-        if (el)
-          new jb.jbCtx().setVar('$launchingElement',{ el }).run({$: 'content-editable.open-toolbar', path })
-      })
-    }
-})
-
-jb.component('contentEditable.deactivate', {
-  type: 'action',
-  impl: ctx => {
-    jb.ui.contentEditable.current && jb.ui.contentEditable.current.refresh({contentEditableActive: false})
-    jb.ui.dialogs.closePopups()
-    jb.ui.contentEditable.current = null
-  }
-})
-
-jb.component('contentEditable.toolbar', {
-  type: 'control',
-  impl: group({
-    layout: layout.horizontal(),
-    controls: [
-      button({
-        title: 'Change Style',
-        action: action.if(
-          equals(studio.compName(studio.currentProfilePath()), 'image'),
-          studio.openProperties(),
-          studio.openPickProfile(
-            join({separator: '~', items: list(studio.currentProfilePath(), 'style')})
-          )
-        ),
-        style: button.mdcIcon('style')
-      }),
-      button({
-        title: 'Insert Control',
-        action: studio.openNewProfileDialog({
-          type: 'control',
-          mode: 'insert-control',
-          onClose: studio.openToolbarOfLastEdit()
-        }),
-        style: button.mdcIcon('add')
-      }),
-      button({
-        title: 'Duplicate data item',
-        action: ctx => jb.ui.contentEditable.duplicateDataItem(ctx),
-        style: button.mdcIcon('control_point'),
-        features: feature.if('%$sourceItem%')
-      }),
-      button({
-        vars: [
-          Var(
-            'parentLayout',
-            ctx =>
-          jb.studio.parents(ctx.run(studio.currentProfilePath())).find(path=> jb.studio.compNameOfPath(path) == 'group') + '~layout'
-          )
-        ],
-        title: 'Layout',
-        action: studio.openPickProfile('%$parentLayout%'),
-        style: button.mdcIcon('view_quilt')
-      }),
-      button({
-        title: 'Properties',
-        action: studio.openProperties(true),
-        style: button.mdcIcon('storage')
-      }),
-      button({
-        title: 'Delete',
-        action: studio.delete(studio.currentProfilePath()),
-        style: button.mdcIcon('delete')
-      })
-    ],
-    features: variable({name: 'showTree', value: false, watchable: true})
-  })
-})
+jb.ns('contentEditable')
 
 jb.ui.contentEditable = {
-  setPositionScript(el,fullProp,value,ctx) {
-      let {side,prop} = jb.ui.splitCssProp(fullProp)
-      if (fullProp == 'height' || fullProp == 'width')
-        side = prop = fullProp
-      const featureComp = {$: `css.${prop}`, [side] : value }
-      const originatingCtx = jb.studio.previewjb.ctxDictionary[el.getAttribute('jb-ctx')]
-      let featuresRef = jb.studio.refOfPath(originatingCtx.path + '~features')
-      let featuresVal = jb.val(featuresRef)
-      if (!featuresVal) {
-        jb.writeValue(featuresRef,featureComp,ctx)
-      } else if (!Array.isArray(featuresVal) && featuresVal.$ == featureComp.$) {
-        jb.writeValue(jb.studio.refOfPath(originatingCtx.path + `~features~${side}`),value,ctx)
-      } else {
-        if (!Array.isArray(featuresVal)) { // wrap with array
-          jb.writeValue(featuresRef,[featuresVal],ctx)
-          featuresRef = jb.studio.refOfPath(originatingCtx.path + '~features')
-          featuresVal = jb.val(featuresRef)
-        }
-        const existingFeature = featuresVal.findIndex(f=>f.$ == featureComp.$)
-        if (existingFeature != -1)
-          jb.writeValue(jb.studio.refOfPath(originatingCtx.path + `~features~${existingFeature}~${side}`),value,ctx)
-        else
-          jb.push(featuresRef,featureComp,ctx)
-      }
-  },
   setScriptData(ev,cmp,prop,isHtml) {
       const vdomCmp = jb.studio.previewjb.ctxDictionary[cmp.base.getAttribute('jb-ctx')].runItself()
       vdomCmp.renderVdom()
@@ -37245,54 +37422,53 @@ jb.ui.contentEditable = {
   isEnabled() {
     return new jb.jbCtx().exp('%$studio/settings/contentEditable%')
   },
-  activate(cmp) {
-    if (!this.isEnabled()) return
-    this.current && this.current.refresh({contentEditableActive: false})
-    this.current = cmp
-    new jb.jbCtx().setVar('$launchingElement',{ el : cmp.base}).run(runActions(
-//      delay(10),
-      () => cmp.refresh({contentEditableActive: true}),
-//      delay(10),
-      contentEditable.openToolbar(cmp.ctx.path),
-      contentEditable.openPositionThumbs('x'),
-      contentEditable.openPositionThumbs('y'),
-    ))
-    cmp.base.focus()
+  activate(el) {
+    if (!this.isEnabled() || this.current == el) return
+    const jbUi = jb.studio.previewjb.ui
+    if (this.current)
+      jbUi.refreshElem(this.current,{contentEditableActive: false})
+    this.current = el
+    const ctx = new jb.jbCtx().setVar('$launchingElement',{ el })
+    jbUi.refreshElem(el,{contentEditableActive: true})
+    jb.ui.focus(el,'contentEditable activate',ctx)
+    return ctx.run(inplaceEdit.activate(jbUi.ctxOfElem(el).path,el))
   },
   handleKeyEvent(ev,cmp,prop) {
-      if (ev.keyCode == 13) {
-          this.setScriptData(ev,cmp,prop)
-          new jb.jbCtx().run(runActions(
-            delay(1), // can not wait for script change delay
-            contentEditable.deactivate()
-          ))
-          return false // stop propagation. sometimes does not work..
-      }
-  },
-  scriptRef(cmp,prop) {
-        const ref = jb.studio.refOfPath(cmp.originatingCtx().path + '~' + prop)
-        const val = jb.val(ref)
-        return typeof val === 'string' && cmp.ctx.exp(val) === val && ref
-  },
-  refOfProp(cmp,prop) {
-      return cmp.toObserve.filter(e=>e.id == prop).map(e=>e.ref)[0] || this.scriptRef(cmp,prop)
-  },
-  duplicateDataItem(ctx) {
-    const st = jb.studio
-    const item = ctx.vars.sourceItem
-    const _jb = st.previewjb
-    const ref = _jb.asRef(item)
-    const handler = _jb.refHandler(ref)
-    const path = handler.pathOfRef(ref)
-    const parent_ref = handler.refOfPath(path.slice(0,-1))
-    if (parent_ref && Array.isArray(_jb.val(parent_ref))) {
-      const clone = st.previewWindow.JSON.parse(JSON.stringify(item));
-      const index = Number(path.slice(-1));
-      _jb.splice(parent_ref,[[index, 0,clone]],ctx);
-      ctx.run(runActions(dialog.closeAll(), studio.refreshPreview()))
+    if (ev.keyCode == 13) {
+        this.setScriptData(ev,cmp,prop)
+        new jb.jbCtx().run(runActions(
+          delay(1), // can not wait for script change delay
+          contentEditable.deactivate()
+        ))
+        return false // stop propagation. sometimes does not work..
     }
   },
+  scriptRef(cmp,prop) {
+    const ref = jb.studio.refOfPath(cmp.originatingCtx().path + '~' + prop)
+    const val = jb.val(ref)
+    return typeof val === 'string' && cmp.ctx.exp(val) === val && ref
+  },
+  refOfProp(cmp,prop) {
+    return cmp.toObserve.filter(e=>e.id == prop).map(e=>e.ref)[0] || this.scriptRef(cmp,prop)
+  },
 }
+
+jb.component('feature.contentEditableDropHtml', {
+  type: 'feature',
+  impl: features(
+    htmlAttribute('ondragover', 'over'),
+    htmlAttribute('ondrop', 'dropHtml'),
+    defHandler('over', (ctx,{ev}) => ev.preventDefault()),
+    defHandler('dropHtml',(ctx,{ev}) => { 
+      ev.preventDefault();
+      return Array.from(ev.dataTransfer.items).filter(x=>x.type.match(/html/))[0].getAsString(html => {
+          const targetCtx = jb.studio.previewjb.ctxDictionary[ev.target.getAttribute('jb-ctx')]
+          new jb.jbCtx().setVar('newCtrl',jb.ui.htmlToControl(html)).run(
+                studio.extractStyle('%$newCtrl%', () => targetCtx && targetCtx.path ))
+          })
+    })
+  )
+})
 
 jb.component('feature.contentEditable', {
   type: 'feature',
@@ -37301,38 +37477,18 @@ jb.component('feature.contentEditable', {
     {id: 'param', as: 'string', description: 'name of param mapped to the content editable element'}
   ],
   impl: features(
-    feature.keyboardShortcut(
-        'Alt+N',
-        () => jb.frame.parent.jb.exec({$:'studio.pickAndOpen', from: 'studio'})
-      ),
-    htmlAttribute('ondragover', 'over'),
-    htmlAttribute('ondrop', 'dropHtml'),
-    defHandler('over', (ctx,{ev}) => ev.preventDefault()),
-    defHandler(
-        'dropHtml',
-        (ctx,{cmp, ev},{onDrop}) => {
-      ev.preventDefault();
-      return Array.from(ev.dataTransfer.items).filter(x=>x.type.match(/html/))[0].getAsString(html => {
-          const targetCtx = jb.studio.previewjb.ctxDictionary[ev.target.getAttribute('jb-ctx')]
-          new jb.jbCtx().setVar('newCtrl',jb.ui.htmlToControl(html)).run(
-                studio.extractStyle('%$newCtrl%', () => targetCtx && targetCtx.path ))
-          })
-    }
-      ),
-    interactive(
-        ({},{cmp},{param}) => {
+    feature.keyboardShortcut('Alt+N', () => jb.frame.parent.jb.exec({$:'studio.pickAndOpen', from: 'studio'})),
+    interactive(({},{cmp},{param}) => {
       const isHtml = param == 'html'
       const contentEditable = jb.ui.contentEditable
       if (contentEditable && contentEditable.isEnabled()) {
         cmp.onblurHandler = ev => contentEditable.setScriptData(ev,cmp,param,isHtml)
         if (!isHtml)
           cmp.onkeydownHandler = cmp.onkeypressHandler = ev => contentEditable.handleKeyEvent(ev,cmp,param)
-        cmp.onmousedownHandler = ev => jb.ui.contentEditable.activate(cmp,ev)
+        cmp.onmousedownHandler = () => jb.ui.contentEditable.activate(cmp.base)
       }
-    }
-      ),
-    templateModifier(
-        ({},{cmp,vdom},{param}) => {
+    }),
+    templateModifier(({},{cmp,vdom},{param}) => {
       const contentEditable = jb.ui.contentEditable
       if (!contentEditable || cmp.ctx.vars.$runAsWorker || !contentEditable.isEnabled() || param && !contentEditable.refOfProp(cmp,param)) return vdom
       const attsToInject = cmp.state.contentEditableActive ? {contenteditable: 'true', onblur: true, onmousedown: true, onkeypress: true, onkeydown: true} : {onmousedown: true};
@@ -37348,15 +37504,23 @@ jb.component('feature.contentEditable', {
       vdom.attributes = vdom.attributes || {};
       Object.assign(vdom.attributes,attsToInject)
       return vdom;
-    }
-      ),
-    css.dynamic(
+    }),
+    css(
         If(
           '%$cmp.state.contentEditableActive%',
           '{ border: 1px dashed grey; background-image: linear-gradient(90deg,rgba(243,248,255,.03) 63.45%,rgba(207,214,229,.27) 98%); border-radius: 3px;}'
         )
       )
   )
+})
+
+jb.component('contentEditable.deactivate', {
+  type: 'action',
+  impl: ctx => {
+    const previewUI = jb.studio.previewjb.ui
+    jb.ui.contentEditable.current && previewUI.refreshElem(jb.ui.contentEditable.current,{contentEditableActive: false})
+    jb.ui.contentEditable.current = null
+  }
 })
 ;
 
@@ -37381,7 +37545,9 @@ Object.assign(jb.ui,{
     return basePos
   },
   studioFixYPos() {
-    return (document.querySelector('#jb-preview') && document.querySelector('#jb-preview').getBoundingClientRect().top) || 0
+    if (this._studioFixYPos == null)
+      this._studioFixYPos = (document.querySelector('#jb-preview') && document.querySelector('#jb-preview').getBoundingClientRect().top) || 0
+    return this._studioFixYPos
   }
 })
 
@@ -37453,6 +37619,7 @@ jb.component('contentEditable.positionThumbs', {
         layout: layout.flex({direction: If('%$axis%==y', 'column', 'row'), alignItems: 'center'}),
         controls: control.icon({
           icon: 'radio_button_unchecked',
+          type: 'mdc',
           features: [contentEditable.dragableThumb('%$axis%'), css('font-size: 14px')]
         })
       }),
@@ -37480,7 +37647,7 @@ jb.component('contentEditable.positionThumbs', {
             text: pipeline(
               Var(
                   'inspectElemStyle',
-                  ctx => getComputedStyle(jb.ui.contentEditable.current.base)
+                  ctx => getComputedStyle(jb.ui.contentEditable.current)
                 ),
               Var('prop', contentEditable.effectiveProp('%$axis%')),
               '%$inspectElemStyle/{%$prop%}%',
@@ -37520,6 +37687,7 @@ jb.component('contentEditable.openPositionThumbs', {
   impl: runActions(
     delay(100),
     openDialog({
+        id: 'positionThumbs',
         style: contentEditable.positionThumbsStyle(),
         content: contentEditable.positionThumbs('%$axis%'),
         features: [
@@ -37530,13 +37698,11 @@ jb.component('contentEditable.openPositionThumbs', {
             {display: flex; align-items: center;}
           `
           ),
-          css.dynamic(If('%$axis%==y', '{flex-direction: column}')),
-          css.dynamic(
-            If('%$axis%==y', '~ i {cursor: row-resize}', '~ i {cursor: col-resize}')
-          ),
+          css(If('%$axis%==y', '{flex-direction: column}')),
+          css(If('%$axis%==y', '~ i {cursor: row-resize}', '~ i {cursor: col-resize}')),
           css(
             (ctx,{},{axis}) => {
-            const el = jb.ui.contentEditable.current.base
+            const el = jb.ui.contentEditable.current
             const elemRect = el.getBoundingClientRect()
             const iconOffset = [-3, -8]
             const left = (axis == 'x' ? elemRect.right + iconOffset[0] : elemRect.left) + 'px'
@@ -37554,7 +37720,7 @@ jb.component('contentEditable.openPositionThumbs', {
 jb.component('contentEditable.writePosToScript', {
   type: 'action',
   impl: ctx => {
-    const el = jb.ui.contentEditable.current.base
+    const el = jb.ui.contentEditable.current
     const prop = ctx.exp('%$studio/dragPos/prop%')
     if (!prop) return
     const val = jb.ui.computeStyle(el,prop)
@@ -37569,7 +37735,7 @@ jb.component('contentEditable.dragableThumb', {
   ],
   impl: interactive(
     (ctx,{cmp},{axis})=> {
-    const el = jb.ui.contentEditable.current.base
+    const el = jb.ui.contentEditable.current
     const prop = () => ctx.run(contentEditable.effectiveProp(axis))
     const {pipe,fromEvent,takeUntil,merge,Do, flatMap, map, last, forEach,fromPromise} = jb.callbag
     const destroyed = fromPromise(cmp.destroyed)
@@ -37626,8 +37792,8 @@ jb.component('contentEditable.dragableThumb', {
 jb.component('contentEditable.positionThumbsStyle', {
   type: 'dialog.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
-    css: '{ display: block; position: absolute; background: white; mix-blend-mode: multiply;  }',
+    template: (cmp,state,h) => h('div#jb-dialog jb-popup',{},h(state.contentComp)),
+    css: '{ display: block; position: absolute; background: white; }',
     features: [dialogFeature.maxZIndexOnClick(), dialogFeature.closeWhenClickingOutside()]
   })
 })
@@ -37662,8 +37828,8 @@ jb.component('studio.htmlToControl', {
 
 jb.ui.cssProcessors = {
     layout: {
-        filter: prop => prop.match(/flex|grid|align/) ||
-            ['display','order','top','left','right','bottom','box-sizing'].find(x=>prop.indexOf(x+':') == 0),
+        filter: prop => prop.match(/flex|grid|justify-|align-/) ||
+            ['position','display','order','top','left','right','bottom','box-sizing','vertical-align'].find(x=>prop.indexOf(x+':') == 0),
         features: props => css.layout(props.join(';'))
     },
     width: {
@@ -37722,17 +37888,54 @@ jb.ui.cssProcessors = {
                 : css.padding({top: vals[0], right: vals[1], bottom: vals[2], left: vals[3] })
         }
     },
+    detailedBorder: {
+        filter: x => x.match(/border|box-shadow|outline/),
+        features: props => css.detailedBorder(props.join(';'))
+    },    
+    detailedColor: {
+        filter: x => x.match(/^color:/) || x.match(/background-color/),
+        features: props => css.detailedColor(props.filter(x=>!x.match(/background-color:transparent/)).join(';'))
+    },    
     typography: {
         filter: x => x.match(/font|text-/),
         features: props => css.typography(props.join(';'))
     },
 }
 
+function cssToFeatures(cssProps) {
+    const res = Object.values(jb.ui.cssProcessors).reduce((agg,proc) => {
+        const props4Features = agg.props.filter(p=>proc.filter(p,cssProps))
+        const features = props4Features.length ? jb.asArray(proc.features(props4Features)).filter(x=>x) : []
+        return {
+            props: agg.props.filter(p=>! proc.filter(p,cssProps)),
+            features: [...agg.features, ...features]
+    }}, {props: cssProps, features: []})
+    return res.features.concat([css(res.props.join(';'))])
+}
+
+jb.ui.cleanRedundentCssFeatures = function(cssFeatures,{remove} = {}) {
+    const removeMap = jb.objFromEntries((remove||[]).map(x=>[x,true]))
+    const _features = cssFeatures.map(f=>({f, o: jb.exec(f)}))
+    const props = _features.filter(x=>x.o.css).flatMap(x=>x.o.css.split(';').flatMap(x=>x.split(';')))
+            .map(x=>x.replace('{','').replace('}','').replace(/\s*:\s*/g,':').trim() )
+            .filter(x=>x)
+            .filter(x=>!removeMap[x])
+    return [...cssToFeatures(jb.unique(props)),..._features.filter(x=>!x.o.css).map(x=>x.f)]
+}
+
 jb.ui.htmlToControl = function(html) {
     const elem = document.createElement('div')
     elem.innerHTML = html
+    elem.style.position = 'relative'
+    document.body.appendChild(elem)
+    const height = Array.from(elem.querySelectorAll('*')).map(x=>x.getBoundingClientRect().bottom).sort((x,y)=>y-x)[0]
+    const width = Array.from(elem.querySelectorAll('*')).map(x=>x.getBoundingClientRect().right).sort((x,y)=>y-x)[0]
     clean(elem)
-    return vdomToControl(elemToVdom(elem))
+    document.body.removeChild(elem)
+
+    const res = vdomToControl(elemToVdom(elem))
+    res.features = (res.features ||[]).concat(css.width(width), css.height(height))
+    return res
 
     function elemToVdom(elem) {
         if (elem.nodeType == Node.TEXT_NODE && elem.nodeValue.match(/^\s*$/)) return
@@ -37742,7 +37945,7 @@ jb.ui.htmlToControl = function(html) {
         const singleTextChild = elem.childNodes.length == 1 && jb.path(elem,'firstChild.nodeName') == '#text' && elem.firstChild.nodeValue
         return {
             elem,
-            tag: elem.tagName.toLowerCase(),
+            tag: fixTag(elem.tagName.toLowerCase()),
             attributes: jb.objFromEntries([
                 ...Array.from(elem.attributes).map(e=>[e.name,e.value]),
                 ...( singleTextChild ? [['$text',singleTextChild]] : [])
@@ -37750,6 +37953,9 @@ jb.ui.htmlToControl = function(html) {
             ...( (elem.childNodes[0] && !singleTextChild) && { children:
                 Array.from(elem.childNodes).map(el=> elemToVdom(el)).filter(x=>x) })
         }
+    }
+    function fixTag(tag) {
+        return tag.match(/h/i) ? 'div' : tag
     }
 
     function clean(elem) {
@@ -37785,19 +37991,9 @@ jb.ui.htmlToControl = function(html) {
         function extractFeatures() {
             const attfeatures = ['width','height','tabindex'].filter(att => atts[att])
                 .map(att=> htmlAttribute(att,atts[att]))
-            return [atts.class && css.class(atts.class), ...cssToFeatures(), ...attfeatures].filter(x=>x)
-        }
-
-        function cssToFeatures() {
-            if (!styleCss) return []
-            const res = Object.values(jb.ui.cssProcessors).reduce((agg,proc) => {
-                const props4Features = agg.props.filter(p=>proc.filter(p,featureProps))
-                const features = props4Features.length ? jb.asArray(proc.features(props4Features)).filter(x=>x) : []
-                return {
-                    props: agg.props.filter(p=>! proc.filter(p,featureProps)),
-                    features: [...agg.features, ...features]
-            }}, {props: featureProps, features: []})
-            return res.features.concat([css(res.props.join(';'))])
+            return [
+                atts.class && css.class(atts.class), 
+                ...(styleCss && cssToFeatures(featureProps) || []), ...attfeatures].filter(x=>x)
         }
 
         function extractStyle() {
@@ -37931,6 +38127,14 @@ jb.component('studio.selectStyle', {
   })
 })
 
+jb.component('studio.flattenControlToGrid', {
+  type: 'control',
+  params: [
+    {id: 'ctrl'},
+  ],
+  impl: ctx => ctx.run(flattenControlToGrid(ctx.params.ctrl))
+})
+
 jb.component('studio.extractStyle', {
   type: 'action',
   params: [
@@ -37950,45 +38154,35 @@ jb.component('studio.suggestedStyles', {
     {id: 'targetPath', as: 'string'}
   ],
   impl: (ctx,extractedCtrl,targetPath) => {
-        const constraints = ctx.exp('%$studio/pattern/constraints%') || []
+        const options = ctx.exp('%$studio/pattern/options%') || { flattenToGrid: false }
         const target = jb.studio.valOfPath(targetPath)
         const previewCtx = jb.studio.closestCtxInPreview(ctx.exp('%$targetPath%'))
-        return jb.ui.stylePatterns[target.$] && jb.ui.stylePatterns[target.$](ctx,extractedCtrl,target,previewCtx) || {}
+        return jb.ui.stylePatterns[target.$] && jb.ui.stylePatterns[target.$](ctx,extractedCtrl,target,previewCtx,options) || {}
     }
 })
 
 function pathToObj(base, path) {
-    return path.split('/').filter(x=>x).reduce((o,p) => o[p],base)
-}
-
-function parents(path,includeThis) {
-    const result = ['']
-    path.split('/').reduce((acc,p) => {
-        const path = [acc,p].filter(x=>x).join('/')
-        result.push(path)
-        return path
-    } ,'')
-    return result.reverse().slice(includeThis ? 0 : 1)
+    return path.split('~').filter(x=>x).reduce((o,p) => o[p],base)
 }
 
 function flatContent(ctrl ,path) {
     const children = jb.asArray(ctrl.controls||[])
         .flatMap((ch,i) => flatContent(ch,
-            [path,'controls',Array.isArray(ctrl.controls) ? i : ''].filter(x=>x!=='').join('/')))
+            [path,'controls',Array.isArray(ctrl.controls) ? i : ''].filter(x=>x!=='').join('~')))
     return [{ctrl,path}, ...children]
 }
 
 function cleanUnmappedParams(ctx,ctrl,matches) {
     if (!ctx.exp('%$studio/patterns/deleteUnmapped%')) return ctrl
     const usedPaths = {}
-    matches.forEach(match => parents(match.src.path,true).forEach(path=>usedPaths[path] = true))
+    matches.forEach(match => jb.studio.pathParents(match.src.path,true).forEach(path=>usedPaths[path] = true))
     return cleanCtrl(ctrl,'')
 
     function cleanCtrl(ctrl,path) {
         if (!ctrl.controls) return ctrl
-        const innerPath = [path,'controls'].filter(x=>x).join('/')
+        const innerPath = [path,'controls'].filter(x=>x).join('~')
         const controls = Array.isArray(ctrl.controls) ?
-            ctrl.controls.flatMap((ch,i) => usedPaths[innerPath +'/'+i] ? [cleanCtrl(ch,innerPath +'/'+i)] : [])
+            ctrl.controls.flatMap((ch,i) => usedPaths[innerPath +'~'+i] ? [cleanCtrl(ch,innerPath +'~'+i)] : [])
                 .filter(x=>x)
             : usedPaths[innerPath] ? cleanCtrl(ctrl.controls,innerPath) : null
 
@@ -38009,19 +38203,20 @@ jb.ui.stylePatterns = {
             { id: `${type}${i}`, origValue: elem.ctrl, type, path: elem.path } )))
         const options = texts.flatMap(text=> {
             const boundedCtrl = JSON.parse(JSON.stringify(extractedCtrl))
-            const overridePath = [...text.path.split('/'),'text']
+            const overridePath = [...text.path.split('~'),'text']
             jb.path(boundedCtrl,overridePath,value) // set value
-            return parents(text.path,true).map(path => {
+            return jb.studio.pathParents(text.path,true).map(path => {
                 const ctrl = pathToObj(boundedCtrl, path)
                 return styleByControl(ctrl,'textModel')
             })
         })
         return options
     },
-    group(ctx, extractedCtrl, target, previewCtx) {
+    group(ctx, extractedCtrl, target, previewCtx, options = {}) {
         // render the extracted ctrl to calculate sizes and sort options
         const top = document.createElement('div')
         jb.ui.renderWidget(extractedCtrl,top)
+        top.style.position = 'relative'
         document.body.appendChild(top)
 
         const targetContent = flatContent(target,'')
@@ -38038,7 +38233,8 @@ jb.ui.stylePatterns = {
 
         document.body.removeChild(top)
 
-        return rawOptions.map(matches => matchesToOption(matches,''))
+        return [extractedCtrl, ...rawOptions.map(matches => matchesToOption(matches,''))]
+          .flatMap(x=>[x,options.flattenToGrid && flattenToGrid(x)].filter(x=>x))
 
         function mixedPermutations(type, srcIds, trgIds) {
             return jb.unique([...bestPermutations(type, srcIds, trgIds,1),
@@ -38105,16 +38301,208 @@ jb.ui.stylePatterns = {
             const boundedCtrl = JSON.parse(JSON.stringify(extractedCtrl))
             matches.forEach(match => {
                 const paramProp = paramProps[match.trg.type]
-                const overridePath = [...match.src.path.split('/'), paramProp]
+                const overridePath = [...match.src.path.split('~'), paramProp]
                 jb.path(boundedCtrl,overridePath, match.trg.origValue[paramProp]) // set value
             })
             const ctrl = cleanUnmappedParams(ctx,pathToObj(boundedCtrl, top),matches,srcParamsMap)
-            return {...ctrl, features: [...jb.asArray(target.features),...jb.asArray(ctrl.features)] }
+            const res  = {...ctrl, features: [...jb.asArray(target.features),...jb.asArray(ctrl.features)] }
+            return res
         }
     },
 }
 
+function flattenControlToGrid(ctrl) {
+    // render the extracted ctrl to calculate sizes and sort options
+    const top = document.createElement('div')
+    jb.ui.renderWidget(ctrl,top)
+    top.style.position = 'relative'
+    document.body.appendChild(top)
+    const topRect = top.getBoundingClientRect()
+    const X = topRect.x, Y = topRect.y
+    const content = flatContent(ctrl,'')
+    const srcParams = types.flatMap(type=> content.filter(x=>x.ctrl.$ == type).map((elem,i)=>(
+        { id: `${type}${i}`, ctrl: elem.ctrl, type, path: elem.path, pos: pos(elem.path) } )))
+    const xKeepList = new Set(), yKeepList = new Set()
+    calcPadding()
+    document.body.removeChild(top)
+
+    const largetsX = srcParams.map(p=>p.pos.x1).sort((x,y)=>y-x)[0]
+    const largetsY = srcParams.map(p=>p.pos.y1).sort((x,y)=>y-x)[0]
+    const Xs = filterCloseNeighbours([largetsX,...srcParams.flatMap(p=>[p.pos.x0,p.hasBackground && p.pos.x1].filter(x=>x))].sort((x,y)=>x-y),xKeepList)
+    const Ys = filterCloseNeighbours([largetsY,...srcParams.flatMap(p=>[p.pos.y0,p.hasBackground && p.pos.y1].filter(x=>x))].sort((x,y)=>x-y),yKeepList)
+
+    // grid-area: 1 / 2 / span 2 / span 3;
+    srcParams.forEach(p=> {
+      const y = indexInGrid(Ys,p.pos.y0,p), x = indexInGrid(Xs,p.pos.x0,p)
+      p.area = [ y, x, 'span ' + (indexInGrid(Ys,p.pos.y1-1,p)-y+1) , 'span ' + (indexInGrid(Xs,p.pos.x1-1,p)-x+1) ].join(' / ')
+    });
+    return group({
+      layout: layout.grid({columnSizes: list(...diffs(Xs)), rowSizes: list(...diffs(Ys))}),
+      controls: srcParams.map(p=>({...p.ctrl, features: [...featuresFromParents(p), css.gridArea(`grid-area: ${p.area}`) ] })),
+      features: css(`width: ${topRect.width}px; height: ${topRect.height}px;`),
+    })
+
+  function pos(path) {
+    const elem = elemOfPath(path)
+    if (!elem) return {}
+    const rect = elem.getBoundingClientRect()
+    return { x0: Math.floor(rect.x - X), y0: Math.floor(rect.y - Y), x1: Math.floor(rect.right - X), y1: Math.floor(rect.bottom - Y) }
+  }
+
+  function elemOfPath(path) {
+    const win = jb.frame
+    const prefix = top ? 'group~impl~' : previewCt+x.ctx.path + '~'
+    const pathToCheck = (prefix + path).replace(/\//g,'~')
+    return Array.from((top || win.document).querySelectorAll('[jb-ctx]'))
+        .map(elem=>({elem, ctx: win.jb.ctxDictionary[elem.getAttribute('jb-ctx')]}))
+        .filter(e => e.ctx && e.ctx.path == pathToCheck).map(e=>e.elem)[0]
+  }
+
+  function diffs(Xs) {
+    return Xs.map((item,i) => i ? Xs[i] - Xs[i-1] : Xs[i])
+  }
+  // unify grid line neighbours
+  function filterCloseNeighbours(Xs,keepList) {
+    return Xs.filter((pos,i) => i == 0 || keepList.has(pos) || Xs[i] - Xs[i-1] > 8)
+  }
+  function featuresFromParents(param) {
+    const _parents = jb.studio.pathParents(param.path).reverse()
+    const features = [
+      ...(_parents[0].features || []),
+      ..._parents.slice(1).reduce((features, path) => [...features,
+        jb.asArray(pathToObj(ctrl, path).features)
+          .filter(x=>x && ['css.typography','css','css.detailedColor'].indexOf(x.$) != -1)] ,[]) ,
+      ...(param.ctrl.features || []),
+      ...(param.ctrl.$ == 'image' ? [css('z-index:-1')] : [])
+    ].flatMap(x=>jb.asArray(x))
+    return jb.ui.cleanRedundentCssFeatures(features)
+  }
+
+  function indexInGrid(arr,val,param) {
+    const offset = param.hasBackground ? 0 : 3
+    const res = arr.findIndex(x=> x > val+ offset) + 1
+    return res || arr.length
+  }
+
+  function calcPadding() {
+    srcParams.filter(p=>p.type != 'image').forEach(param=>{
+      const parentPaths = jb.studio.pathParents(param.path)
+      const idx = parentPaths.findIndex(path=>{ 
+        const parentCtrl = pathToObj(ctrl,path)
+        return Array.isArray(parentCtrl.controls) && parentCtrl.controls.length >1
+      })
+      param.hasBackground = [param.path,...parentPaths.slice(0,idx-1)]
+        .reduce((acc,path)=> acc || hasBackground(path),false)
+      if (!param.hasBackground) return
+      const highestPathForSingle = parentPaths[idx-1]
+      const parentPos = pos(highestPathForSingle)
+      param.ctrl.features = [...jb.asArray(param.ctrl.features||[]),
+        css.padding({left: param.pos.x0 - parentPos.x0, top: param.pos.y0 - parentPos.y0})]
+      console.log('changing elem',param.path,highestPathForSingle,param.pos, parentPos)
+      param.pos = parentPos
+      xKeepList.add(parentPos.x0);xKeepList.add(parentPos.x1)
+      yKeepList.add(parentPos.y0);yKeepList.add(parentPos.y1)
+      if (param.hasBackground)
+        console.log('hasBackground',param)
+    })
+
+    function hasBackground(path) {
+      const elem = elemOfPath(path)
+      if (!elem) return
+      const style = getComputedStyle(elem)
+      return style.backgroundColor != 'rgba(0, 0, 0, 0)' || style.borderWidth != '0px' || style.boxShadow != 'none'
+    }
+  }
+
+}
+
 })();
+
+jb.component('studio.openPickIcon', {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: openDialog({
+    style: dialog.studioFloating({}),
+    content: group({
+      vars: [Var('type', property('type', studio.ref(studio.parentPath('%$path%'))))],
+      controls: [
+        group({
+          layout: layout.horizontal(),
+          controls: [
+            picklist({
+              title: 'type',
+              databind: '%$type%',
+              options: picklist.optionsByComma('mdi,mdc'),
+              style: picklist.buttonList({})
+            }),
+            itemlistContainer.search({
+              searchIn: '%%',
+              databind: '%$itemlistCntrData/search_pattern%',
+              style: styleWithFeatures(
+                editableText.mdcSearch(),
+                [
+                  css('~ .mdc-text-field {height: 32px }'),
+                  css('~ input { padding: 0 0 0 10px; }'),
+                  css('~ .mdc-text-field__icon { top: 20%;}')
+                ]
+              )
+            })
+          ]
+        }),
+        itemlist({
+          title: '',
+          items: pipeline(
+            If(
+                equals('mdi', '%$type%'),
+                pipeline(ctx => jb.frame.MDIcons, keys()),
+                ctx => jb.ui.mdcIconNames.split(',')
+              ),
+            itemlistContainer.filter()
+          ),
+          controls: [
+            group({
+              title: '',
+              layout: layout.horizontal(),
+              controls: [
+                control.icon({icon: '%%', type: firstSucceeding('%$type%', 'mdc')}),
+                text({
+                  text: pipeline('%%', text.highlight('%%', '%$itemlistCntrData.search_pattern%')),
+                  title: 'icon name'
+                })
+              ]
+            })
+          ],
+          visualSizeLimit: '50',
+          features: [
+            watchRef({ref: '%$itemlistCntrData/search_pattern%', strongRefresh: 'true'}),
+            watchRef({ref: '%$type%', strongRefresh: 'true'}),
+            css.height({height: '500', overflow: 'scroll'}),
+            css.width('600'),
+            itemlist.infiniteScroll(),
+            itemlist.selection({
+              onDoubleClick: runActions(
+                writeValue(studio.ref('%$path%'), '%%'),
+                delay(),
+                dialog.closeContainingPopup()
+              )
+            }),
+            itemlist.keyboardSelection({
+              onEnter: runActions(
+                writeValue(studio.ref('%$path%'), '%%'),
+                delay(),
+                dialog.closeContainingPopup()
+              )
+            })
+          ]
+        })
+      ],
+      features: [group.itemlistContainer({}), group.autoFocusOnFirstInput()]
+    }),
+    title: 'pick icon'
+  })
+})
 
 jb.component('studio.pickIcon', {
   type: 'control',
@@ -38124,91 +38512,441 @@ jb.component('studio.pickIcon', {
   impl: group({
     controls: button({
       title: prettyPrint(studio.val('%$path%'), true),
-      action: openDialog({
-        style: dialog.studioFloating({}),
-        content: group({
-          vars: [Var('type', property('type', studio.ref(studio.parentPath('%$path%'))))],
-          controls: [
-            group({
-              layout: layout.horizontal(),
-              controls: [
-                picklist({
-                  title: 'type',
-                  databind: '%$type%',
-                  options: picklist.optionsByComma('mdi,mdc'),
-                  style: picklist.buttonList({})
-                }),
-                itemlistContainer.search({
-                  searchIn: '%%',
-                  databind: '%$itemlistCntrData/search_pattern%',
-                  style: styleWithFeatures(
-                    editableText.mdcSearch(),
-                    [
-                      css('~ .mdc-text-field {height: 32px }'),
-                      css('~ input { padding: 0 0 0 10px; }'),
-                      css('~ .mdc-text-field__icon { top: 20%;}')
-                    ]
-                  )
-                })
-              ]
-            }),
-            itemlist({
-              title: '',
-              items: pipeline(
-                If(
-                    equals('mdi', '%$type%'),
-                    pipeline(ctx => jb.frame.MDIcons, keys()),
-                    ctx => jb.ui.mdcIconNames.split(',')
-                  ),
-                itemlistContainer.filter()
-              ),
-              controls: [
-                group({
-                  title: '',
-                  layout: layout.horizontal(),
-                  controls: [
-                    control.icon({icon: '%%', type: '%$type%'}),
-                    text({
-                      text: pipeline('%%', text.highlight('%%', '%$itemlistCntrData.search_pattern%')),
-                      title: 'icon name'
-                    })
-                  ]
-                })
-              ],
-              visualSizeLimit: '50',
-              features: [
-                watchRef({ref: '%$itemlistCntrData/search_pattern%', strongRefresh: 'true'}),
-                watchRef({ref: '%$type%', strongRefresh: 'true'}),
-                css.height({height: '500', overflow: 'scroll'}),
-                css.width('600'),
-                itemlist.infiniteScroll(),
-                itemlist.selection({
-                  onDoubleClick: runActions(
-                    writeValue(studio.ref('%$path%'), '%%'),
-                    delay(),
-                    dialog.closeContainingPopup()
-                  )
-                }),
-                itemlist.keyboardSelection({
-                  onEnter: runActions(
-                    writeValue(studio.ref('%$path%'), '%%'),
-                    delay(),
-                    dialog.closeContainingPopup()
-                  )
-                })
-              ]
-            })
-          ],
-          features: [group.itemlistContainer({}), group.autoFocusOnFirstInput()]
-        }),
-        title: 'pick icon'
-      }),
+      action: studio.openPickIcon('%$path%'),
       style: button.studioScript(),
-      raised: ''
     }),
     features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
   })
 })
 
 jb.ui.mdcIconNames = 'add_alert,3d_rotation,accessibility,accessibility_new,accessible,accessible_forward,account_balance,account_balance_wallet,account_box,account_circle,add_shopping_cart,alarm,alarm_add,alarm_off,alarm_on,all_inbox,all_out,android,announcement,arrow_right_alt,aspect_ratio,assessment,assignment,assignment_ind,assignment_late,assignment_return,assignment_returned,assignment_turned_in,autorenew,backup,book,bookmark,bookmark_border,bookmarks,bug_report,build,cached,calendar_today,calendar_view_day,camera_enhance,cancel_schedule_send,card_giftcard,card_membership,card_travel,change_history,check_circle,check_circle_outline,chrome_reader_mode,class,code,commute,compare_arrows,contact_support,contactless,copyright,credit_card,dashboard,date_range,delete,delete_forever,delete_outline,description,dns,done,done_all,done_outline,donut_large,donut_small,drag_indicator,eco,eject,euro_symbol,event,event_seat,exit_to_app,explore,explore_off,extension,face,favorite,favorite_border,feedback,find_in_page,find_replace,fingerprint,flight_land,flight_takeoff,flip_to_back,flip_to_front,g_translate,gavel,get_app,gif,grade,group_work,help,help_outline,highlight_off,history,home,horizontal_split,hourglass_empty,hourglass_full,http,https,important_devices,info,input,invert_colors,label,label_important,label_off,language,launch,line_style,line_weight,list,lock,lock_open,loyalty,markunread_mailbox,maximize,minimize,note_add,offline_bolt,offline_pin,opacity,open_in_browser,open_in_new,open_with,pageview,pan_tool,payment,perm_camera_mic,perm_contact_calendar,perm_data_setting,perm_device_information,perm_identity,perm_media,perm_phone_msg,perm_scan_wifi,pets,picture_in_picture,picture_in_picture_alt,play_for_work,polymer,power_settings_new,pregnant_woman,print,query_builder,question_answer,receipt,record_voice_over,redeem,remove_shopping_cart,reorder,report_problem,restore,restore_from_trash,restore_page,room,rounded_corner,rowing,schedule,search,settings,settings_applications,settings_backup_restore,settings_bluetooth,settings_brightness,settings_cell,settings_ethernet,settings_input_antenna,settings_input_component,settings_input_composite,settings_input_hdmi,settings_input_svideo,settings_overscan,settings_phone,settings_power,settings_remote,settings_voice,shop,shop_two,shopping_basket,shopping_cart,speaker_notes,speaker_notes_off,spellcheck,stars,store,subject,supervised_user_circle,supervisor_account,swap_horiz,swap_horizontal_circle,swap_vert,swap_vertical_circle,sync_alt,system_update_alt,tab,tab_unselected,text_rotate_up,text_rotate_vertical,text_rotation_angledown,text_rotation_angleup,text_rotation_down,text_rotation_none,theaters,thumb_down,thumb_up,thumbs_up_down,timeline,toc,today,toll,touch_app,track_changes,translate,trending_down,trending_flat,trending_up,turned_in,turned_in_not,update,verified_user,vertical_split,view_agenda,view_array,view_carousel,view_column,view_day,view_headline,view_list,view_module,view_quilt,view_stream,view_week,visibility,visibility_off,voice_over_off,watch_later,work,work_off,work_outline,youtube_searched_for,zoom_in,zoom_out,add_alert,error,error_outline,notification_important,warning,4k,add_to_queue,airplay,album,art_track,av_timer,branding_watermark,call_to_action,closed_caption,control_camera,equalizer,explicit,fast_forward,fast_rewind,featured_play_list,featured_video,fiber_dvr,fiber_manual_record,fiber_new,fiber_pin,fiber_smart_record,forward_10,forward_30,forward_5,games,hd,hearing,high_quality,library_add,library_add_check,library_books,library_music,loop,mic,mic_none,mic_off,missed_video_call,movie,music_video,new_releases,not_interested,note,pause,pause_circle_filled,pause_circle_outline,play_arrow,play_circle_filled,play_circle_outline,playlist_add,playlist_add_check,playlist_play,queue,queue_music,queue_play_next,radio,recent_actors,remove_from_queue,repeat,repeat_one,replay,replay_10,replay_30,replay_5,shuffle,skip_next,skip_previous,slow_motion_video,snooze,sort_by_alpha,speed,stop,subscriptions,subtitles,surround_sound,video_call,video_label,video_library,videocam,videocam_off,volume_down,volume_mute,volume_off,volume_up,web,web_asset,add_ic_call,alternate_email,business,call,call_end,call_made,call_merge,call_missed,call_missed_outgoing,call_received,call_split,cancel_presentation,chat,chat_bubble,chat_bubble_outline,clear_all,comment,contact_mail,contact_phone,contacts,desktop_access_disabled,dialer_sip,dialpad,domain_disabled,duo,email,forum,import_contacts,import_export,invert_colors_off,list_alt,live_help,location_off,location_on,mail_outline,message,mobile_screen_share,no_sim,pause_presentation,person_add_disabled,phone,phone_disabled,phone_enabled,phonelink_erase,phonelink_lock,phonelink_ring,phonelink_setup,portable_wifi_off,present_to_all,print_disabled,ring_volume,rss_feed,screen_share,sentiment_satisfied_alt,speaker_phone,stay_current_landscape,stay_current_portrait,stay_primary_landscape,stay_primary_portrait,stop_screen_share,swap_calls,textsms,unsubscribe,voicemail,vpn_key,add,add_box,add_circle,add_circle_outline,amp_stories,archive,backspace,ballot,block,clear,create,delete_sweep,drafts,dynamic_feed,file_copy,filter_list,flag,font_download,forward,gesture,how_to_reg,how_to_vote,inbox,link,link_off,low_priority,mail,markunread,move_to_inbox,next_week,outlined_flag,policy,redo,remove,remove_circle,remove_circle_outline,reply,reply_all,report,report_off,save,save_alt,select_all,send,sort,square_foot,text_format,unarchive,undo,waves,weekend,where_to_vote,access_alarm,access_alarms,access_time,add_alarm,add_to_home_screen,airplanemode_active,airplanemode_inactive,battery_alert,battery_charging_full,battery_full,battery_std,battery_unknown,bluetooth,bluetooth_connected,bluetooth_disabled,bluetooth_searching,brightness_auto,brightness_high,brightness_low,brightness_medium,data_usage,developer_mode,devices,dvr,gps_fixed,gps_not_fixed,gps_off,graphic_eq,location_disabled,location_searching,mobile_friendly,mobile_off,nfc,screen_lock_landscape,screen_lock_portrait,screen_lock_rotation,screen_rotation,sd_storage,settings_system_daydream,signal_cellular_4_bar,signal_cellular_alt,signal_cellular_connected_no_internet_4_bar,signal_cellular_no_sim,signal_cellular_null,signal_cellular_off,signal_wifi_4_bar,signal_wifi_4_bar_lock,signal_wifi_off,storage,usb,wallpaper,widgets,wifi_lock,wifi_tethering,add_comment,attach_file,attach_money,bar_chart,border_all,border_bottom,border_clear,border_horizontal,border_inner,border_left,border_outer,border_right,border_style,border_top,border_vertical,bubble_chart,drag_handle,format_align_center,format_align_justify,format_align_left,format_align_right,format_bold,format_clear,format_color_reset,format_indent_decrease,format_indent_increase,format_italic,format_line_spacing,format_list_bulleted,format_list_numbered,format_list_numbered_rtl,format_paint,format_quote,format_shapes,format_size,format_strikethrough,format_textdirection_l_to_r,format_textdirection_r_to_l,format_underlined,functions,height,highlight,insert_chart,insert_chart_outlined,insert_comment,insert_drive_file,insert_emoticon,insert_invitation,insert_link,insert_photo,linear_scale,merge_type,mode_comment,monetization_on,money_off,multiline_chart,notes,pie_chart,post_add,publish,scatter_plot,score,short_text,show_chart,space_bar,strikethrough_s,table_chart,text_fields,title,vertical_align_bottom,vertical_align_center,vertical_align_top,wrap_text,attachment,cloud,cloud_circle,cloud_done,cloud_download,cloud_off,cloud_queue,cloud_upload,create_new_folder,folder,folder_open,folder_shared,cast,cast_connected,computer,desktop_mac,desktop_windows,developer_board,device_hub,device_unknown,devices_other,dock,gamepad,headset,headset_mic,keyboard,keyboard_arrow_down,keyboard_arrow_left,keyboard_arrow_right,keyboard_arrow_up,keyboard_backspace,keyboard_capslock,keyboard_hide,keyboard_return,keyboard_tab,keyboard_voice,laptop,laptop_chromebook,laptop_mac,laptop_windows,memory,mouse,phone_android,phone_iphone,phonelink,phonelink_off,power_input,router,scanner,security,sim_card,smartphone,speaker,speaker_group,tablet,tablet_android,tablet_mac,toys,tv,videogame_asset,watch,add_a_photo,add_photo_alternate,add_to_photos,adjust,assistant,assistant_photo,audiotrack,blur_circular,blur_linear,blur_off,blur_on,brightness_1,brightness_2,brightness_3,brightness_4,brightness_5,brightness_6,brightness_7,broken_image,brush,burst_mode,camera,camera_alt,camera_front,camera_rear,camera_roll,center_focus_strong,center_focus_weak,collections,collections_bookmark,color_lens,colorize,compare,control_point,control_point_duplicate,crop,crop_16_9,crop_3_2,crop_5_4,crop_7_5,crop_din,crop_free,crop_landscape,crop_original,crop_portrait,crop_rotate,crop_square,dehaze,details,edit,euro,exposure,exposure_neg_1,exposure_neg_2,exposure_plus_1,exposure_plus_2,exposure_zero,filter,filter_1,filter_2,filter_3,filter_4,filter_5,filter_6,filter_7,filter_8,filter_9,filter_9_plus,filter_b_and_w,filter_center_focus,filter_drama,filter_frames,filter_hdr,filter_none,filter_tilt_shift,filter_vintage,flare,flash_auto,flash_off,flash_on,flip,flip_camera_android,flip_camera_ios,gradient,grain,grid_off,grid_on,hdr_off,hdr_on,hdr_strong,hdr_weak,healing,image,image_aspect_ratio,image_search,iso,landscape,leak_add,leak_remove,lens,linked_camera,looks,looks_3,looks_4,looks_5,looks_6,looks_one,looks_two,loupe,monochrome_photos,movie_creation,movie_filter,music_note,music_off,nature,nature_people,navigate_before,navigate_next,palette,panorama,panorama_fish_eye,panorama_horizontal,panorama_vertical,panorama_wide_angle,photo,photo_album,photo_camera,photo_filter,photo_library,photo_size_select_actual,photo_size_select_large,photo_size_select_small,picture_as_pdf,portrait,remove_red_eye,rotate_90_degrees_ccw,rotate_left,rotate_right,shutter_speed,slideshow,straighten,style,switch_camera,switch_video,tag_faces,texture,timelapse,timer,timer_10,timer_3,timer_off,tonality,transform,tune,view_comfy,view_compact,vignette,wb_auto,wb_cloudy,wb_incandescent,wb_iridescent,wb_sunny,360,add_location,atm,beenhere,category,compass_calibration,departure_board,directions,directions_bike,directions_boat,directions_bus,directions_car,directions_railway,directions_run,directions_subway,directions_transit,directions_walk,edit_attributes,edit_location,ev_station,fastfood,flight,hotel,layers,layers_clear,local_activity,local_airport,local_atm,local_bar,local_cafe,local_car_wash,local_convenience_store,local_dining,local_drink,local_florist,local_gas_station,local_grocery_store,local_hospital,local_hotel,local_laundry_service,local_library,local_mall,local_movies,local_offer,local_parking,local_pharmacy,local_phone,local_pizza,local_play,local_post_office,local_printshop,local_see,local_shipping,local_taxi,map,menu_book,money,museum,my_location,navigation,near_me,not_listed_location,person_pin,person_pin_circle,pin_drop,place,rate_review,restaurant,restaurant_menu,satellite,store_mall_directory,streetview,subway,terrain,traffic,train,tram,transfer_within_a_station,transit_enterexit,trip_origin,two_wheeler,zoom_out_map,apps,arrow_back,arrow_back_ios,arrow_downward,arrow_drop_down,arrow_drop_down_circle,arrow_drop_up,arrow_forward,arrow_forward_ios,arrow_left,arrow_right,arrow_upward,cancel,check,chevron_left,chevron_right,close,double_arrow,expand_less,expand_more,first_page,fullscreen,fullscreen_exit,home_work,last_page,menu,menu_open,more_horiz,more_vert,refresh,subdirectory_arrow_left,subdirectory_arrow_right,unfold_less,unfold_more,account_tree,adb,airline_seat_flat,airline_seat_flat_angled,airline_seat_individual_suite,airline_seat_legroom_extra,airline_seat_legroom_normal,airline_seat_legroom_reduced,airline_seat_recline_extra,airline_seat_recline_normal,bluetooth_audio,confirmation_number,disc_full,drive_eta,enhanced_encryption,event_available,event_busy,event_note,folder_special,live_tv,mms,more,network_check,network_locked,no_encryption,ondemand_video,personal_video,phone_bluetooth_speaker,phone_callback,phone_forwarded,phone_in_talk,phone_locked,phone_missed,phone_paused,power,power_off,priority_high,sd_card,sms,sms_failed,sync,sync_disabled,sync_problem,system_update,tap_and_play,time_to_leave,tv_off,vibration,voice_chat,vpn_lock,wc,wifi,wifi_off,ac_unit,airport_shuttle,all_inclusive,apartment,bathtub,beach_access,business_center,casino,child_care,child_friendly,fitness_center,free_breakfast,golf_course,hot_tub,house,kitchen,meeting_room,no_meeting_room,pool,room_service,rv_hookup,smoke_free,smoking_rooms,spa,storefront,cake,deck,domain,emoji_emotions,emoji_events,emoji_flags,emoji_food_beverage,emoji_nature,emoji_objects,emoji_people,emoji_symbols,emoji_transportation,fireplace,group,group_add,king_bed,location_city,mood,mood_bad,nights_stay,notifications,notifications_active,notifications_none,notifications_off,notifications_paused,outdoor_grill,pages,party_mode,people,people_alt,people_outline,person,person_add,person_outline,plus_one,poll,public,school,sentiment_dissatisfied,sentiment_satisfied,sentiment_very_dissatisfied,sentiment_very_satisfied,share,single_bed,sports,sports_baseball,sports_basketball,sports_cricket,sports_esports,sports_football,sports_golf,sports_handball,sports_hockey,sports_kabaddi,sports_mma,sports_motorsports,sports_rugby,sports_soccer,sports_tennis,sports_volleyball,thumb_down_alt,thumb_up_alt,whatshot,check_box,check_box_outline_blank,indeterminate_check_box,radio_button_checked,radio_button_unchecked,star,star_border,star_half,star_outline,toggle_off,toggle_on';
+
+jb.ns('inplaceEdit')
+
+jb.component('inplaceEdit.activate', {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'},
+    {id: 'elem'},
+  ],
+  impl: runActions(
+    Var('inplaceElem', (ctx,{},{path,elem})=> {
+        const el = elem || (jb.studio.findElemsByCtxCondition(ctx => ctx.path == path)[0] || {}).elem
+        if (!el) debugger
+        return el
+    }),
+    Var('parentGroup', ctx => jb.studio.pathParents(ctx.exp('%$path%'), true).find(path=>jb.studio.compNameOfPath(path) == 'group')),
+    Var('parentLayout', studio.compName('%$parentGroup%~layout')),
+    action.if( '%$parentLayout% == layout.grid', inplaceEdit.openGridEditor('%$parentGroup%')),
+    writeValue('%$studio/profile_path%', '%$path%'),
+    openDialog({
+        style: inplaceEdit.popupStyle(),
+        content: inplaceEdit.toolbar('%$path%'),
+        features: [css('background: transparent; box-shadow: 0 0; border: 0')]
+    })
+  )
+})
+
+jb.component('inplaceEdit.popupStyle', {
+  type: 'dialog.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div#jb-dialog jb-popup',{},h(state.contentComp)),
+    css: `{ position: absolute; background: white; padding: 6px;
+              box-shadow: 2px 2px 3px #d5d5d5; border: 1px solid rgb(213, 213, 213); }
+      `,
+    features: [
+      dialogFeature.dragTitle('','*'),
+      dialogFeature.uniqueDialog('inplace-edit-toolbar'),
+      dialogFeature.maxZIndexOnClick(),
+      dialogFeature.closeWhenClickingOutside(),
+      dialogFeature.nearLauncherPosition({
+        offsetLeft: 100,
+        offsetTop: (ctx,{inplaceElem}) =>
+          jb.ui.studioFixYPos() - jb.ui.computeStyle(inplaceElem,'marginBottom')
+      })
+    ]
+  })
+})
+
+jb.component('inplaceEdit.openToolbarOfLastEdit', {
+  type: 'action',
+  impl: ctx => {
+      const path = ctx.run(studio.lastEdit())
+      jb.delay(500).then(()=>{
+        const _window = jb.studio.previewWindow;
+        const el = Array.from(_window.document.querySelectorAll('[jb-ctx]'))
+          .filter(e=> jb.path(_window.jb.ctxDictionary[e.getAttribute('jb-ctx')],'path') == path)[0]
+        if (el)
+          new jb.jbCtx().setVar('$launchingElement',{ el }).run({$: 'inplaceEdit.openToolbar', path })
+      })
+    }
+})
+
+jb.component('inplaceEdit.toolbar', {
+  type: 'control',
+  params: [
+    {id: 'path'}
+  ],
+  impl: group({
+    layout: layout.horizontal('-10'),
+    controls: [
+      button({
+        title: 'edit grid',
+        action: inplaceEdit.activate('%$parentGroup%'),
+        style: button.mdcIcon(icon({icon: 'grid_on', type: 'mdc'}), '0.6'),
+        features: feature.if('%$parentLayout% == layout.grid')
+      }),
+      button({
+        title: 'Change Style',
+        action: action.if(
+          equals(studio.compName('%$path%'), 'image'),
+          studio.openProperties(),
+          studio.openPickProfile('%$path%~style')
+        ),
+        style: button.mdcIcon(icon('style'), '0.6')
+      }),
+      button({
+        title: 'Insert Control',
+        action: studio.openNewProfileDialog({
+          type: 'control',
+          mode: 'insert-control',
+          onClose: inplaceEdit.openToolbarOfLastEdit()
+        }),
+        style: button.mdcIcon(icon('add'), '0.6')
+      }),
+      button({
+        title: 'Duplicate data item',
+        action: ctx => jb.ui.inplaceEdit.duplicateDataItem(ctx),
+        style: button.mdcIcon(icon({icon: 'PlusBoxOutline', type: 'mdi'}), '0.6'),
+        features: feature.if('%$sourceItem%')
+      }),
+      button({
+        vars: [
+          Var(
+            'parentLayout',
+            ctx => jb.studio.parents(ctx.run('%$path%')).find(path=> jb.studio.compNameOfPath(path) == 'group') + '~layout'
+          )
+        ],
+        title: 'Layout',
+        action: studio.openPickProfile('%$parentLayout%'),
+        style: button.mdcIcon(icon('view_quilt'), '0.6')
+      }),
+      button({
+        title: 'Properties',
+        action: studio.openProperties(true),
+        style: button.mdcIcon(icon('storage'), '0.6')
+      }),
+      button({
+        title: 'Delete',
+        action: studio.delete('%$path%'),
+        style: button.mdcIcon(icon('delete'), '0.6')
+      })
+    ]
+  })
+})
+
+jb.ui.inPlaceEdit = {
+  setPositionScript(el,fullProp,value,ctx) {
+      let {side,prop} = jb.ui.splitCssProp(fullProp)
+      if (fullProp == 'height' || fullProp == 'width')
+        side = prop = fullProp
+      const featureComp = {$: `css.${prop}`, [side] : value }
+      const originatingCtx = jb.studio.previewjb.ctxOfElem(el)
+      let featuresRef = jb.studio.refOfPath(originatingCtx.path + '~features')
+      let featuresVal = jb.val(featuresRef)
+      if (!featuresVal) {
+        jb.writeValue(featuresRef,featureComp,ctx)
+      } else if (!Array.isArray(featuresVal) && featuresVal.$ == featureComp.$) {
+        jb.writeValue(jb.studio.refOfPath(originatingCtx.path + `~features~${side}`),value,ctx)
+      } else {
+        if (!Array.isArray(featuresVal)) { // wrap with array
+          jb.writeValue(featuresRef,[featuresVal],ctx)
+          featuresRef = jb.studio.refOfPath(originatingCtx.path + '~features')
+          featuresVal = jb.val(featuresRef)
+        }
+        const existingFeature = featuresVal.findIndex(f=>f.$ == featureComp.$)
+        if (existingFeature != -1)
+          jb.writeValue(jb.studio.refOfPath(originatingCtx.path + `~features~${existingFeature}~${side}`),value,ctx)
+        else
+          jb.push(featuresRef,featureComp,ctx)
+      }
+  },
+  duplicateDataItem(ctx) {
+    const st = jb.studio
+    const item = ctx.vars.sourceItem
+    const _jb = st.previewjb
+    const ref = _jb.asRef(item)
+    const handler = _jb.refHandler(ref)
+    const path = handler.pathOfRef(ref)
+    const parent_ref = handler.refOfPath(path.slice(0,-1))
+    if (parent_ref && Array.isArray(_jb.val(parent_ref))) {
+      const clone = st.previewWindow.JSON.parse(JSON.stringify(item));
+      const index = Number(path.slice(-1));
+      _jb.splice(parent_ref,[[index, 0,clone]],ctx);
+      ctx.run(runActions(dialog.closeAll(), studio.refreshPreview()))
+    }
+  },
+}
+
+jb.component('feature.inplaceEditDropHtml', {
+  type: 'feature',
+  impl: features(
+    htmlAttribute('ondragover', 'over'),
+    htmlAttribute('ondrop', 'dropHtml'),
+    defHandler('over', (ctx,{ev}) => ev.preventDefault()),
+    defHandler('dropHtml',(ctx,{ev}) => {
+      ev.preventDefault();
+      return Array.from(ev.dataTransfer.items).filter(x=>x.type.match(/html/))[0].getAsString(html => {
+          const targetCtx = jb.studio.previewjb.ctxDictionary[ev.target.getAttribute('jb-ctx')]
+          new jb.jbCtx().setVar('newCtrl',jb.ui.htmlToControl(html)).run(
+                studio.extractStyle('%$newCtrl%', () => targetCtx && targetCtx.path ))
+          })
+    })
+  )
+})
+
+jb.component('inplaceEdit.thumbStyle', {
+    type: 'dialog.style',
+    impl: customStyle({
+      template: (cmp,state,h) => h('div#jb-dialog jb-popup',{},h(state.contentComp)),
+      css: '{ display: block; position: absolute; }',
+      features: [dialogFeature.maxZIndexOnClick(), dialogFeature.closeWhenClickingOutside()]
+    })
+});
+
+jb.ns('gridEditor')
+
+Object.assign(jb.ui,{
+  getGridVals(el,axis) {
+    const prop = `gridTemplate${axis}`
+    const grid = jb.studio.previewWindow.getComputedStyle(el)[prop] || '' // <tt>78.2969px 74px 83px 120px 16px</tt>
+    return grid.replace(/<\/?tt>/g,'').replace(/px /,' ').replace(/px/g,'').split(' ').map(x=>+(x.trim()))
+  },
+})
+
+jb.component('inplaceEdit.openGridEditor', {
+    params: [
+        {id: 'path', as: 'string'}
+    ],
+    type: 'action',
+    impl: runActions(
+        Var('gridPath','%$path%'),
+        Var('gridAccVals', obj()),
+        gridEditor.openGridLineThumb('Columns'),
+        gridEditor.openGridLineThumb('Rows'),
+        gridEditor.openGridItemThumbs()
+    )
+})
+
+jb.component('gridEditor.openGridLineThumb', {
+  type: 'action',
+  params: [
+    {id: 'axis', as: 'string', options: 'Columns,Rows'}
+  ],
+  impl: runActionOnItems(
+    Var('otherAxis', If('%$axis%==Rows', 'Columns', 'Rows')),
+    Var('otherAxisSize', ({},{otherAxis,inplaceElem}) => jb.ui.getGridVals(inplaceElem, otherAxis).reduce((sum,x) => sum+x,0) ),
+    Var('$launchingElement', null),
+
+    (ctx,{inplaceElem},{axis}) => [0,...jb.ui.getGridVals(inplaceElem, axis)],
+    openDialog({
+      id: 'gridLineThumb',
+      style: inplaceEdit.thumbStyle(),
+      content: text(),
+      features: [
+        htmlAttribute('onclick',true),
+        defHandler('onclickHandler', 
+        menu.openContextMenu({
+          menu: menu.menu({
+            options: [
+              menu.action({title: 'delete tab', icon: icon('delete')}),
+              menu.action({title: 'new tab', icon: icon({icon: 'Plus', type: 'mdi'})})
+            ]
+          }),
+        })),
+        gridEditor.dragableGridLineThumb('%$axis%'),
+        watchRef({ ref: studio.ref('%$gridPath%~layout'), includeChildren: 'yes', cssOnly: true}),
+        css(
+          (ctx,{$dialog,gridIndex,otherAxis,gridAccVals,inplaceElem},{axis}) => {
+                Object.assign($dialog, {axis, gridIndex})
+                Object.assign(gridAccVals,{
+                  Rows: jb.ui.getGridVals(inplaceElem, 'Rows').reduce((sums,x) => [...sums,x + sums.slice(-1)[0]],[0]),
+                  Columns: jb.ui.getGridVals(inplaceElem, 'Columns').reduce((sums,x) => [...sums,x + sums.slice(-1)[0]],[0])
+                })
+                const otherAxisSize = gridAccVals[otherAxis].slice(-1)[0]
+                const elemRect = inplaceElem.getBoundingClientRect()
+                const offset = jb.ui.getGridVals(inplaceElem, axis).slice(0,gridIndex).reduce((sum,x) => sum+x,0) 
+                const left = (axis == 'Columns' ? offset + elemRect.left : elemRect.left) + 'px'
+                const top = jb.ui.studioFixYPos() + (axis == 'Rows' ? elemRect.top + offset : elemRect.top) + 'px'
+                const width = `width: ${axis == 'Rows' ? otherAxisSize : 0}px;`
+                const height = `height: ${axis == 'Columns' ? otherAxisSize: 0}px;`
+                return `left: ${left}; top: ${top}; ${width}${height}`
+            }
+        ),
+        css(
+          pipeline(
+            Var('side', If('%$axis%==Rows', 'top', 'left')),
+            Var('cursor', If('%$axis%==Rows', 'row', 'col')),
+            '{border-%$side%: 5px dashed black; opacity: 0.1; cursor: %$cursor%-resize} ~:hover{opacity: 1}'
+          )
+        )
+      ]
+    }),
+    undefined,
+    'gridIndex'
+  )
+})
+
+jb.component('gridEditor.dragableGridLineThumb', {
+  type: 'feature',
+  params: [
+    {id: 'axis', as: 'string', options: 'Columns,Rows'},
+  ],
+  impl: interactive( (ctx,{cmp,gridIndex,inplaceElem,gridPath},{axis})=> {
+    const {pipe,takeUntil,merge,Do, flatMap, map, subscribe,last} = jb.callbag
+    cmp.mousedownEm = jb.ui.fromEvent(cmp, 'mousedown')
+    let mouseUpEm = jb.ui.fromEvent(cmp, 'mouseup', document)
+    let mouseMoveEm = jb.ui.fromEvent(cmp, 'mousemove', document)
+    if (jb.studio.previewWindow) {
+      mouseUpEm = merge(mouseUpEm, jb.ui.fromEvent(cmp, 'mouseup', jb.studio.previewWindow.document))
+      mouseMoveEm = merge(mouseMoveEm, jb.ui.fromEvent(cmp, 'mousemove', jb.studio.previewWindow.document))
+    }
+    let startPos = 0, base = 0, accVals
+    pipe(cmp.mousedownEm,
+      Do(e => e.preventDefault()),
+      Do(e => {
+          startPos = HandlerPos(e)
+          base = gridIndex ? jb.ui.getGridVals(inplaceElem, axis)[gridIndex-1] : 0
+          accVals = jb.ui.getGridVals(inplaceElem, axis).slice(gridIndex).reduce((sums,x) => [...sums,x + sums.slice(-1)[0]],[0])
+      }),
+      flatMap(() => pipe(
+        mouseMoveEm,
+        takeUntil(mouseUpEm),
+        map(e => base + moveHandlersAndCalcDiff(e)),
+        Do(val => setGridPosScript(val, axis, gridIndex-1, ctx)),
+        last(),
+      )),
+      subscribe(() => jb.ui.dialogs.closePopups())
+    )
+    function HandlerPos(e) {
+        return axis == 'Rows' ? e.clientY - jb.ui.studioFixYPos() : e.clientX
+    }
+    function moveHandlersAndCalcDiff(e) {
+        const newPos = HandlerPos(e)
+        const overflow = base + newPos - startPos
+        const fixBack = (overflow < 0) ? -overflow : 0
+        console.log(base,startPos,newPos, newPos - startPos,overflow,fixBack)
+        jb.ui.dialogs.dialogs.filter(dlg => dlg.axis == axis &&  dlg.gridIndex >= gridIndex -1)
+            .forEach(dlg=>{
+                if (axis == 'Rows')
+                    dlg.el.style.top = e.clientY + fixBack + accVals[dlg.gridIndex-gridIndex] + 'px'
+                else
+                    dlg.el.style.left = e.clientX + fixBack + accVals[dlg.gridIndex-gridIndex] + 'px'
+            })
+        return newPos + fixBack - startPos
+    }
+    function setGridPosScript(val, axis, i, ctx) {
+        const ref = jb.studio.refOfPath(`${gridPath}~layout~${axis.toLowerCase().slice(0,-1)}Sizes~items~${i}`)
+        jb.writeValue(ref,val,ctx)
+    }
+  })
+})
+
+jb.component('gridEditor.openGridItemThumbs', {
+  type: 'action',
+  impl: runActionOnItems(
+    Var('$launchingElement', null),
+    (ctx,{inplaceElem}) => jb.ui.find(inplaceElem,'*'),
+    openDialog({
+      vars: Var('gridItemElem'),
+      id: 'gridItemThumb',
+      style: inplaceEdit.thumbStyle(),
+      content: text(''),
+      features: [
+        gridEditor.dragableGridItemThumb(),
+        feature.init((ctx,{$dialog,gridItemElem}) => {                 
+            $dialog.gridItem = true
+            $dialog.gridItemElem = gridItemElem
+        }),
+        css((ctx,{gridItemElem}) => {
+              const elemRect = gridItemElem.getBoundingClientRect()
+              const left = elemRect.left + 5 + 'px'
+              const top = jb.ui.studioFixYPos() + elemRect.top + 5 + 'px'
+              const width = `width: ${elemRect.width - 10}px;`
+              const height = `height: ${elemRect.height - 10}px;`
+              return `left: ${left}; top: ${top}; ${width}${height}`
+        }),
+        css('{cursor: grab; box-shadow: 3px 3px; background: grey; opacity: 0.2} ~:hover {opacity: 0.7}' ),
+        feature.onDataChange({ ref: studio.ref('%$gridPath%'), includeChildren: 'yes', 
+          action: (ctx,{cmp}) => jb.delay(300).then(()=> cmp.refresh()) 
+        })
+      ]
+    })
+  )
+})
+
+jb.component('gridEditor.dragableGridItemThumb', {
+  type: 'feature',
+  impl: interactive( (ctx,{cmp,gridItemElem,inplaceElem,gridAccVals})=> {
+    const {pipe,takeUntil,merge,Do, flatMap, last, subscribe} = jb.callbag
+    cmp.mousedownEm = jb.ui.fromEvent(cmp, 'mousedown')
+    let mouseUpEm = jb.ui.fromEvent(cmp, 'mouseup', document)
+    let mouseMoveEm = jb.ui.fromEvent(cmp, 'mousemove', document)
+    if (jb.studio.previewWindow) {
+      mouseUpEm = merge(mouseUpEm, jb.ui.fromEvent(cmp, 'mouseup', jb.studio.previewWindow.document))
+      mouseMoveEm = merge(mouseMoveEm, jb.ui.fromEvent(cmp, 'mousemove', jb.studio.previewWindow.document))
+    }
+    const gridRect = inplaceElem.getBoundingClientRect()
+    const elemRect = gridItemElem.getBoundingClientRect()
+    let offsetX, offsetY, span, basePos
+    pipe(cmp.mousedownEm,
+      Do(e => e.preventDefault()),
+      Do(e => {
+          span = e.ctrlKey
+          basePos = posToGridPos([e.clientX - gridRect.x, e.clientY - gridRect.y])
+          offsetY = e.clientY - elemRect.top
+          offsetX = e.clientX - elemRect.left
+      }),
+      flatMap(() => pipe(
+        mouseMoveEm,
+        takeUntil(mouseUpEm),
+        Do(e => moveHandler(e)),
+        Do(e => moveGridItem(e)),
+        last(),
+      )),
+      subscribe(() => jb.ui.dialogs.closePopups())
+    )
+
+    function moveHandler(e) {
+        if (span) {
+            //TODO span..
+
+        } else {
+            cmp.base.style.top = (e.clientY - offsetY + jb.ui.studioFixYPos()) + 'px'
+            cmp.base.style.left = (e.clientX - offsetX) + 'px'
+        }
+    }
+    function moveGridItem(e) {
+        const pos = [e.clientY - jb.ui.studioFixYPos() - gridRect.y, e.clientX - gridRect.x]
+        const gridArea = posToGridPos(pos)
+        setGridAreaValsInScript(gridArea)
+    }
+    function setGridAreaValsInScript(vals) {
+        const gridItemPath = gridItemElem._component.ctx.path
+        const gridAreaFeatureIndex = jb.studio.valOfPath(`${gridItemPath}~features`).findIndex(f=>f.$ == 'css.gridArea')
+        const gridAreaRef = jb.studio.refOfPath(`${gridItemPath}~features~${gridAreaFeatureIndex}~css`)
+        const scriptValues = jb.val(gridAreaRef).replace(/;?\s*}?\s*$/,'').replace(/^\s*{?\s*grid-area\s*:/,'').split('/') // grid-area: 1 / 2 / span 2 / span 3;
+        if (!span && scriptValues.slice(0,2).map(x=>x.trim()).join(',') == vals.join(',')) return
+        if (span)
+            [0,1].forEach(axis =>scriptValues[2+axis] = ` span ${vals[axis] -basePos[axis]} `)
+         else
+            [0,1].forEach(i=>scriptValues[i] = ` ${vals[i]} `)
+        jb.writeValue(gridAreaRef,`grid-area: ${scriptValues.join('/')}`,ctx)
+    }
+    function posToGridPos(pos) {
+        return pos.map((val,i) => gridAccVals[i ? 'Columns' : 'Rows'].findIndex(x=>x>val))
+    }
+  })
+})
+;
 

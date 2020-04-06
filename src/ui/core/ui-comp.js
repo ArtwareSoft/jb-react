@@ -75,7 +75,10 @@ class JbComponent {
    
         this.toObserve = this.watchRef ? this.watchRef.map(obs=>({...obs,ref: obs.refF(this.ctx)})).filter(obs=>jb.isWatchable(obs.ref)) : []
         this.watchAndCalcModelProp && this.watchAndCalcModelProp.forEach(e=>{
-            const ref = this.ctx.vars.$model[e.prop](this.ctx)
+            const modelProp = this.ctx.vars.$model[e.prop]
+            if (!modelProp)
+                return jb.logError('calcRenderProps',`missing model prop "${e.prop}"`,this.ctx.vars.$model,this.ctx)
+            const ref = modelProp(this.ctx)
             if (jb.isWatchable(ref))
                 this.toObserve.push({id: e.prop, cmp: this, ref,...e})
             const val = jb.val(ref)

@@ -26,7 +26,7 @@ jb.prettyPrint.advanceLineCol = function({line,col},text) {
 }
 jb.prettyPrint.spaces = Array.from(new Array(200)).map(_=>' ').join('');
 
-jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath='',showNulls,comps,forceFlat} = {}) {
+jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath='',noMacros,comps,forceFlat} = {}) {
   comps = comps || jb.comps
   if (!val || typeof val !== 'object')
     return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
@@ -95,7 +95,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
     const comp = comps[id]
     if (comp)
       jb.fixByValue(profile,comp)
-    if (!id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
+    if (noMacros || !id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
       const props = Object.keys(profile)
       if (props.indexOf('$') > 0) { // make the $ first
         props.splice(props.indexOf('$'),1);

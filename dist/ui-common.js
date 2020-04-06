@@ -581,6 +581,7 @@ jb.callbag = {
           if (t === 1 || t === 0) talkback(1)  // Pull
           if (t === 2 && !d && complete) complete()
           if (t === 2 && !!d && error) error( d )
+          if (t === 2 && listener.finally) listener.finally( d )
         })
         return () => talkback && talkback(2) // dispose
     },
@@ -734,7 +735,6 @@ class WatchableValueByRef {
       const opVal = opOnRef.$set || opOnRef.$merge || opOnRef.$push || opOnRef.$splice;
       if (!this.isRef(ref))
         ref = this.asRef(ref);
-      jb.log('doOp',[this.asStr(ref),opVal,...arguments]);
 
       const path = this.removeLinksFromPath(this.pathOfRef(ref)), op = {}, oldVal = this.valOfPath(path);
       if (!path || ref.$jb_val) return;
@@ -774,6 +774,7 @@ class WatchableValueByRef {
         this.primitiveArraysDeltas[ref.$jb_obj[jbId]].push(opOnRef.$splice)
       }
       opEvent.newVal = newVal;
+      jb.log('doOp',[opEvent,...arguments]);
       // TODO: split splice event to delete, push, and insert
       if (this.transactionEventsLog)
         this.transactionEventsLog.push(opEvent)
@@ -1145,15 +1146,24 @@ jb.ui.resourceChange = () => jb.mainWatchableHandler.resourceChange;
 jb.component('runTransaction', {
   type: 'action',
   params: [
-    {id: 'actions', type: 'action[]', dynamic: true, composite: true, mandatory: true, defaultValue: []},
+    {id: 'actions', type: 'action[]', ignore: true, composite: true, mandatory: true},
     {id: 'disableNotifications', as: 'boolean', type: 'boolean'}
   ],
-  impl: (ctx,actions,disableNotifications) => {
-		jb.mainWatchableHandler.startTransaction()
-		return actions.reduce((def,action,index) =>
+  impl: ctx => {
+		const actions = jb.asArray(ctx.profile.actions || ctx.profile['$runActions'] || []).filter(x=>x);
+		const innerPath =  (ctx.profile.actions && ctx.profile.actions.sugar) ? ''
+			: (ctx.profile['$runActions'] ? '$runActions~' : 'items~');
+    jb.mainWatchableHandler.startTransaction()
+    return actions.reduce((def,action,index) =>
 				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index )) ,Promise.resolve())
-			.catch(e => jb.logException(e,ctx))
-			.then(() => jb.mainWatchableHandler.endTransaction(disableNotifications))
+			.catch((e) => jb.logException(e,ctx))
+      .then(() => jb.mainWatchableHandler.endTransaction(ctx.params.disableNotifications))
+
+		// jb.mainWatchableHandler.startTransaction()
+		// return ctx.profile.actions.reduce((def,action,index) =>
+		// 		def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index )) ,Promise.resolve())
+		// 	.catch(e => jb.logException(e,ctx))
+		// 	.then(() => jb.mainWatchableHandler.endTransaction(disableNotifications))
 	}
 })
 
@@ -1189,6 +1199,7 @@ class VNode {
     setAttribute(att,val) {
         this.attributes = this.attributes || {}
         this.attributes[att] = val
+        return this
     }
     addClass(clz) {
         if (clz.indexOf(' ') != -1) {
@@ -1585,7 +1596,6 @@ Object.assign(jb.ui, {
     refreshElem(elem, state, options) {
         if (jb.path(elem,'_component.status') == 'initializing') 
             return jb.logError('circular refresh',[...arguments]);
-        jb.log('refreshElem',[...arguments]);
         const _ctx = ui.ctxOfElem(elem)
         if (!_ctx) 
             return jb.logError('refreshElem - no ctx for elem',elem)
@@ -1594,7 +1604,16 @@ Object.assign(jb.ui, {
         if (options && options.extendCtx)
             ctx = options.extendCtx(ctx)
         ctx = ctx.setVar('$refreshElemCall',true)
+        if (jb.ui.inStudio()) // updating to latest version of profile
+            ctx.profile = jb.execInStudio({$: 'studio.val', path: ctx.path})
         const cmp = ctx.profile.$ == 'openDialog' ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself()
+        jb.log('refreshElem',[ctx,cmp, ...arguments]);
+
+        if (jb.path(options,'cssOnly')) {
+            const existingClass = (elem.className.match(/(w|jb-)[0-9]+/)||[''])[0]
+            const cssStyleElem = Array.from(document.querySelectorAll('style')).map(el=>({el,txt: el.innerText})).filter(x=>x.txt.indexOf(existingClass + ' ') != -1)[0].el
+            return jb.ui.hashCss(cmp.cssLines,cmp.ctx,{existingClass, cssStyleElem})
+        }
         const hash = cmp.init()
         if (hash != null && hash == elem.getAttribute('cmpHash'))
             return jb.log('refreshElem',['stopped by hash', hash, ...arguments]);
@@ -1607,11 +1626,12 @@ Object.assign(jb.ui, {
         if (!changed_path) debugger
         //observe="resources://2~name;person~name
         const elemsToCheck = jb.ui.find(e.srcCtx,'[observe]')
-        const elemsToCheckCtx = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
+        const elemsToCheckCtxBefore = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
         jb.log('notifyObservableElems',['elemsToCheck',elemsToCheck,e])
         elemsToCheck.forEach((elem,i) => {
-            if (elemsToCheckCtx[i] != elem.getAttribute('jb-ctx')) return // the elem was changed by it parent 
-            let refresh = false, strongRefresh = false
+            //.map((elem,i) => ({elem,i, phase: phaseOfElem(elem,i) })).sort((x1,x2)=>x1.phase-x2.phase).forEach(({elem,i}) => {
+            if (elemsToCheckCtxBefore[i] != elem.getAttribute('jb-ctx')) return // the elem was already refreshed during this process, probably by its parent
+            let refresh = false, strongRefresh = false, cssOnly = true
             elem.getAttribute('observe').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{
                 const path = jb.path(elem,'_component.ctx.componentContext.callerPath')
                 //if (!obs.allowSelfRefresh && path && e.srcCtx && e.srcCtx.callStack().indexOf(path) != -1)  return
@@ -1619,6 +1639,7 @@ Object.assign(jb.ui, {
                 if (!obsPath)
                     return jb.logError('observer ref path is empty',obs,e)
                 strongRefresh = strongRefresh || obs.strongRefresh
+                cssOnly = cssOnly && obs.cssOnly
                 const diff = ui.comparePaths(changed_path, obsPath)
                 const isChildOfChange = diff == 1
                 const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
@@ -1629,16 +1650,21 @@ Object.assign(jb.ui, {
                     refresh = true
                 }
             })
-            refresh && ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh})
+            refresh && ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly})
         })
+
+        function phaseOfElem(el,i) {
+            return +((el.getAttribute('observe').match(/phase=([0-9]+)/) || ['',0])[1])*1000 + i
+        }
 
         function observerFromStr(obsStr) {
             const parts = obsStr.split('://')
             const innerParts = parts[1].split(';')
-            const includeChildren = (innerParts[2].match(/includeChildren=([a-z]+)/) || ['',''])[1]
-            const strongRefresh = innerParts[3] === 'strongRefresh'
+            const includeChildren = ((innerParts[2] ||'').match(/includeChildren=([a-z]+)/) || ['',''])[1]
+            const strongRefresh = innerParts.indexOf('strongRefresh') != -1
+            const cssOnly = innerParts.indexOf('cssOnly') != -1
             return parts[0] == watchHandler.resources.id && 
-                { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh }
+                { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh, cssOnly }
         }
     }),
 })
@@ -1712,20 +1738,56 @@ function mountInteractive(elem, keepState) {
 
 (function(){
 const ui = jb.ui
-let cssId = 0, cmpId = 0;
+let cmpId = 0;
 ui.propCounter = 0
-const cssSelectors_hash = ui.cssSelectors_hash = {};
 const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,this.ctx) }}
 const lifeCycle = new Set('init,componentDidMount,componentWillUpdate,componentDidUpdate,destroy,extendCtx,templateModifier,extendItem'.split(','))
-const arrayProps = new Set('enrichField,dynamicCss,icon,watchAndCalcModelProp,staticCssLines,defHandler,interactiveProp,calcProp'.split(','))
+const arrayProps = new Set('enrichField,icon,watchAndCalcModelProp,cssLines,defHandler,interactiveProp,calcProp'.split(','))
 const singular = new Set('template,calcRenderProps,toolbar,styleCtx,calcHash,ctxForPick'.split(','))
+
+Object.assign(jb.ui,{
+    cssHashCounter: 0,
+    cssHashMap: {},
+    hashCss(_cssLines,ctx,{existingClass, cssStyleElem} = {}) {
+        const cssLines = (_cssLines||[]).filter(x=>x)
+        const cssKey = cssLines.join('\n')
+        if (!cssKey) return ''
+
+        const workerId = jb.frame.workerId && jb.frame.workerId(ctx)
+        const classPrefix = workerId ? 'w'+ workerId : 'jb-'
+
+        if (!this.cssHashMap[cssKey]) {
+            this.cssHashCounter++;
+            const classId = existingClass || `${classPrefix}${this.cssHashCounter}`
+            this.cssHashMap[cssKey] = {classId, paths : {[ctx.path]: true}}
+            const cssContent = linesToCssStyle(classId)
+            if (cssStyleElem)
+                cssStyleElem.innerText = cssContent
+            else
+                ui.addStyleElem(cssContent,workerId)
+        }
+        Object.assign(this.cssHashMap[cssKey].paths, {[ctx.path] : true})
+        return this.cssHashMap[cssKey].classId
+
+        function linesToCssStyle(classId) {
+            const cssStyle = cssLines.map(selectorPlusExp=>{
+                const selector = selectorPlusExp.split('{')[0];
+                const fixed_selector = selector.split(',').map(x=>x.trim().replace('|>',' '))
+                    .map(x=>x.indexOf('~') == -1 ? `.${classId}${x}` : x.replace('~',`.${classId}`));
+                return fixed_selector + ' { ' + selectorPlusExp.split('{')[1];
+            }).join('\n');
+            const remark = `/*style: ${ctx.profile.style && ctx.profile.style.$}, path: ${ctx.path}*/\n`;
+            return remark + cssStyle
+        }
+    },
+})
 
 class JbComponent {
     constructor(ctx) {
         this.ctx = ctx // used to calc features
         this.cmpId = cmpId++
         this.eventObservables = []
-        this.staticCssLines = []
+        this.cssLines = []
         this.contexts = []
         this.originators = [ctx]
     }
@@ -1751,7 +1813,10 @@ class JbComponent {
    
         this.toObserve = this.watchRef ? this.watchRef.map(obs=>({...obs,ref: obs.refF(this.ctx)})).filter(obs=>jb.isWatchable(obs.ref)) : []
         this.watchAndCalcModelProp && this.watchAndCalcModelProp.forEach(e=>{
-            const ref = this.ctx.vars.$model[e.prop](this.ctx)
+            const modelProp = this.ctx.vars.$model[e.prop]
+            if (!modelProp)
+                return jb.logError('calcRenderProps',`missing model prop "${e.prop}"`,this.ctx.vars.$model,this.ctx)
+            const ref = modelProp(this.ctx)
             if (jb.isWatchable(ref))
                 this.toObserve.push({id: e.prop, cmp: this, ref,...e})
             const val = jb.val(ref)
@@ -1781,10 +1846,11 @@ class JbComponent {
                 (vd && typeof vd === 'object') ? tryWrapper(() => modifier(vd,this,this.renderProps,ui.h) || vd, 'templateModifier') 
                     : vd ,initialVdom)
 
-        const observe = this.toObserve.map(x=>[x.ref.handler.urlOfRef(x.ref),
-            x.includeChildren ? `includeChildren=${x.includeChildren}` : '',
-            x.strongRefresh ? `strongRefresh` : ''
-        ].join(';')).join(',')
+        const observe = this.toObserve.map(x=>[
+            x.ref.handler.urlOfRef(x.ref),
+            x.includeChildren && `includeChildren=${x.includeChildren}`,
+            x.strongRefresh && `strongRefresh`,  x.cssOnly && `cssOnly`,  
+            x.phase && `phase=${x.phase}`].filter(x=>x).join(';')).join(',')
         const handlers = (this.defHandler||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx)}`).join(',')
         const interactive = (this.interactiveProp||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx)}`).join(',')
         const originators = this.originators.map(ctx=>ui.preserveCtx(ctx)).join(',')
@@ -1833,31 +1899,7 @@ class JbComponent {
     }
 
     jbCssClass() {
-        if (this.cachedClass)
-            return this.cachedClass
-        const ctx = this.ctx
-        const cssLines = (this.staticCssLines || []).concat((this.dynamicCss || [])
-            .map(dynCss=>dynCss(this.calcCtx))).filter(x=>x)
-        const cssKey = cssLines.join('\n')
-        const workerId = jb.frame.workerId && jb.frame.workerId(this.ctx)
-        const classPrefix = workerId ? 'w'+ workerId : 'jb-'
-        if (!cssKey) return ''
-        if (!cssSelectors_hash[cssKey]) {
-            cssId++;
-            cssSelectors_hash[cssKey] = cssId;
-            const cssStyle = cssLines.map(selectorPlusExp=>{
-                const selector = selectorPlusExp.split('{')[0];
-                const fixed_selector = selector.split(',').map(x=>x.trim().replace('|>',' '))
-                    .map(x=>x.indexOf('~') == -1 ? `.${classPrefix}${cssId}${x}` : x.replace('~',`.${classPrefix}${cssId}`));
-                return fixed_selector + ' { ' + selectorPlusExp.split('{')[1];
-            }).join('\n');
-            const remark = `/*style: ${ctx.profile.style && ctx.profile.style.$}, path: ${ctx.path}*/\n`;
-            ui.addStyleElem(remark + cssStyle,workerId)
-        }
-        const jbClass = `${classPrefix}${cssSelectors_hash[cssKey]}`
-        if (!this.dynamicCss)
-            this.cachedClass = jbClass
-        return jbClass
+        return ui.hashCss(this.cssLines,this.ctx)
     }
     originatingCtx() {
         return this.originators[this.originators.length-1]
@@ -1938,13 +1980,13 @@ class JbComponent {
         this.eventObservables = this.eventObservables.concat(Object.keys(options).filter(op=>op.indexOf('on') == 0))
 
         if (options.css)
-            this.staticCssLines = (this.staticCssLines || []).concat(options.css.split(/}\s*/m)
+            this.cssLines = (this.cssLines || []).concat(options.css.split(/}\s*/m)
                 .map(x=>x.trim()).filter(x=>x)
                 .map(x=>x+'}')
                 .map(x=>x.replace(/^!/,' ')));
 
-        jb.asArray(options.featuresOptions || []).forEach(f => this.jbExtend(f.$ ? ctx.run(f) : f , ctx))
-        jb.asArray(ui.inStudio() && options.studioFeatures).forEach(f => this.jbExtend(ctx.run(f), ctx))
+        jb.asArray(options.featuresOptions || []).filter(x=>x).forEach(f => this.jbExtend(f.$ ? ctx.run(f) : f , ctx))
+        jb.asArray(ui.inStudio() && options.studioFeatures).filter(x=>x).forEach(f => this.jbExtend(ctx.run(f), ctx))
         return this;
     }
 }
@@ -2137,17 +2179,45 @@ ui.renderWidget = function(profile,top) {
 
         const {pipe,debounceTime,filter,subscribe} = jb.callbag
         pipe(st.pageChange, filter(({page})=>page != currentProfile.$), subscribe(({page})=> doRender(page)))
-        pipe(st.scriptChange, filter(e=>(jb.path(e,'path.0') || '').indexOf('dataResource.') != 0), // do not update on data change
+        
+        pipe(st.scriptChange, filter(e=>isCssChange(st,e.path)),
+          subscribe(({path}) => {
+            let featureIndex = path.lastIndexOf('features')
+            if (featureIndex == -1) featureIndex = path.lastIndexOf('layout')
+            const ctrlPath = path.slice(0,featureIndex).join('~')
+            const elems = Array.from(document.querySelectorAll('[jb-ctx]'))
+              .map(elem=>({elem, ctx: jb.ctxDictionary[elem.getAttribute('jb-ctx')] }))
+              .filter(e => e.ctx && e.ctx.path == ctrlPath)
+            elems.forEach(e=>jb.ui.refreshElem(e.elem,null,{cssOnly: true}))
+        }))
+
+        pipe(st.scriptChange, filter(e=>!isCssChange(st,e.path)),
+            filter(e=>(jb.path(e,'path.0') || '').indexOf('dataResource.') != 0), // do not update on data change
             debounceTime(() => Math.min(2000,lastRenderTime*3 + fixedDebounce)),
             subscribe(() =>{
                 doRender()
                 jb.ui.dialogs.reRenderAll()
-            }))
+        }))
     }
     const elem = top.ownerDocument.createElement('div')
     top.appendChild(elem)
 
     doRender()
+
+  function isCssChange(st,path) {
+    const compPath = pathOfCssFeature(st,path)
+    return compPath && (st.compNameOfPath(compPath) || '').match(/^(css|layout)/)
+  }
+
+  function pathOfCssFeature(st,path) {
+    const featureIndex = path.lastIndexOf('features')
+    if (featureIndex == -1) {
+      const layoutIndex = path.lastIndexOf('layout')
+      return layoutIndex != -1 && path.slice(0,layoutIndex+1).join('~')
+    }
+    const array = Array.isArray(st.valOfPath(path.slice(0,featureIndex+1).join('~')))
+    return path.slice(0,featureIndex+(array?2:1)).join('~')
+  }
 
 	function doRender(page) {
         if (page) currentProfile = {$: page}
@@ -2157,7 +2227,7 @@ ui.renderWidget = function(profile,top) {
         top.innerHTML = ''
         jb.ui.render(ui.h(cmp),top)
         lastRenderTime = new Date().getTime() - start
-    }
+  }
 }
 
 jb.objectDiff = function(newObj, orig) {
@@ -2211,7 +2281,11 @@ jb.component('styleWithFeatures', {
     {id: 'style', type: '$asParent', mandatory: true, composite: true},
     {id: 'features', type: 'feature[]', templateValue: [], dynamic: true, mandatory: true}
   ],
-  impl: (ctx,style,features) => style && {...style,featuresOptions: (style.featuresOptions || []).concat(features())}
+  impl: (ctx,style,features) => {
+    if (style instanceof jb.ui.JbComponent)
+      return style.jbExtend(features(),ctx)
+    return style && {...style,featuresOptions: (style.featuresOptions || []).concat(features())}
+  }
 })
 
 jb.component('controlWithFeatures', {
@@ -2307,10 +2381,7 @@ jb.component('feature.beforeInit', {
   params: [
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
-  impl: feature.init(
-    '%$action%',
-    5
-  )
+  impl: feature.init('%$action%',5)
 })
 
 jb.component('feature.afterLoad', {
@@ -2339,7 +2410,7 @@ jb.component('features', {
   params: [
     {id: 'features', type: 'feature[]', as: 'array', composite: true}
   ],
-  impl: (ctx,features) => features.flatMap(x=>Array.isArray(x) ? x: [x])
+  impl: (ctx,features) => features.flatMap(x=> Array.isArray(x) ? x: [x])
 })
 
 jb.component('watchRef', {
@@ -2349,8 +2420,10 @@ jb.component('watchRef', {
   params: [
     {id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data'},
     {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
-    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
-    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and reinit wait for data', type: 'boolean'}
+    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children'},
+    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and reinit wait for data'},
+    {id: 'cssOnly', as: 'boolean', description: 'refresh only css features'},
+    {id: 'phase', as: 'number', description: 'controls the order of updates on the same event. default is 0'}
   ],
   impl: ctx => ({ watchRef: {refF: ctx.params.ref, ...ctx.params}})
 })
@@ -2358,7 +2431,7 @@ jb.component('watchRef', {
 jb.component('watchObservable', {
   type: 'feature',
   category: 'watch',
-  description: 'subscribes to a custom rx.observable to refresh component',
+  description: 'subscribes to a custom observable to refresh component',
   params: [
     {id: 'toWatch', mandatory: true},
     {id: 'debounceTime', as: 'number', description: 'in mSec'}
@@ -2370,6 +2443,19 @@ jb.component('watchObservable', {
       jb.callbag.subscribe(()=>cmp.refresh(null,{srcCtx:ctx.componentContext}))
     )
   )
+})
+
+jb.component('feature.onDataChange', {
+  type: 'feature',
+  category: 'watch',
+  description: 'watch observable data reference, subscribe and run action',
+  params: [
+    {id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data'},
+    {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
+    {id: 'action', type: 'action', dynamic: true, description: 'run on change'}
+  ],
+  impl: interactive((ctx,{cmp},{ref,includeChildren,action}) => 
+      jb.subscribe(jb.ui.refObservable(ref(),cmp,{includeChildren, srcCtx: ctx}), () => action(ctx.setVar('cmp',cmp))))
 })
 
 jb.component('group.data', {
@@ -2689,7 +2775,7 @@ jb.component('refreshControlById', {
     const elem = jb.ui.document(ctx).querySelector('#'+id)
     if (!elem)
       return jb.logError('refresh-control-by-id can not find elem for #'+id, ctx)
-    jb.ui.refreshElem(elem,null,{srcCtx: ctx})
+    return jb.ui.refreshElem(elem,null,{srcCtx: ctx})
   }
 })
 
@@ -2740,25 +2826,6 @@ jb.component('css', {
     {id: 'css', mandatory: true, as: 'string'}
   ],
   impl: (ctx,css) => ({css: fixCssLine(css)})
-})
-
-jb.component('css.dynamic', {
-  description: 'recalc the css on refresh/watchRef. e.g. {color: %$color%}',
-  type: 'feature,dialog-feature',
-  params: [
-    {id: 'css', mandatory: true, as: 'string', dynamic: true}
-  ],
-  impl: (ctx,css) => ({dynamicCss: ctx2 => css(ctx2)})
-})
-
-jb.component('css.withCondition', {
-  description: 'css with dynamic condition. e.g. .myclz {color: red}',
-  type: 'feature,dialog-feature',
-  params: [
-    {id: 'condition', as: 'boolean', mandatory: true, dynamic: true, type: 'boolean'},
-    {id: 'css', mandatory: true, as: 'string', dynamic: true}
-  ],
-  impl: (ctx,cond,css) => ({dynamicCss: ctx2 => cond(ctx2) ? fixCssLine(css(ctx2)) : ''})
 })
 
 jb.component('css.class', {
@@ -2814,7 +2881,7 @@ jb.component('css.padding', {
   ],
   impl: ctx => {
     const css = ['top','left','right','bottom']
-      .filter(x=>ctx.params[x] != null)
+      .filter(x=>ctx.params[x] != '')
       .map(x=> `padding-${x}: ${withUnits(ctx.params[x])}`)
       .join('; ');
     return {css: `${ctx.params.selector} {${css}}`};
@@ -2825,9 +2892,9 @@ jb.component('css.margin', {
   type: 'feature,dialog-feature',
   params: [
     {id: 'top', as: 'string', description: 'e.g. 20, 20%, 0.4em, -20'},
-    {id: 'right', as: 'string'},
-    {id: 'bottom', as: 'string'},
     {id: 'left', as: 'string'},
+    {id: 'bottom', as: 'string'},
+    {id: 'right', as: 'string'},
     {id: 'selector', as: 'string'}
   ],
   impl: ctx => {
@@ -2894,6 +2961,17 @@ jb.component('css.transformScale', {
   impl: ctx => ({css: `${ctx.params.selector} {transform:scale(${ctx.params.x},${ctx.params.y})}`})
 })
 
+jb.component('css.transformTranslate', {
+  type: 'feature',
+  description: 'margin, move, shift, offset',
+  params: [
+    {id: 'x', as: 'string', description: '10px', defaultValue: '0'},
+    {id: 'y', as: 'string', description: '20px', defaultValue: '0'},
+    {id: 'selector', as: 'string'}
+  ],
+  impl: ctx => ({css: `${ctx.params.selector} {transform:translate(${withUnits(ctx.params.x)},${withUnits(ctx.params.y)})}`})
+})
+
 jb.component('css.bold', {
   type: 'feature',
   impl: ctx => ({css: `{font-weight: bold}`})
@@ -2947,22 +3025,14 @@ jb.component('css.lineClamp', {
   )
 })
 
-jb.component('css.layout', {
+;['layout','typography','detailedBorder','detailedColor','gridArea'].forEach(f=>
+jb.component(`css.${f}`, {
   type: 'feature:0',
   params: [
     {id: 'css', mandatory: true, as: 'string'}
   ],
   impl: (ctx,css) => ({css: fixCssLine(css)})
-})
-
-jb.component('css.typography', {
-  type: 'feature:0',
-  params: [
-    {id: 'css', mandatory: true, as: 'string'}
-  ],
-  impl: (ctx,css) => ({css: fixCssLine(css)})
-})
-
+}))
 
 })();
 
@@ -3240,7 +3310,7 @@ jb.component('html', {
 jb.component('html.plain', {
   type: 'html.style',
   impl: customStyle({
-    template: (cmp,{html},h) => h('html',{$html: html, jb_external: true } ),
+    template: (cmp,{html},h) => h('div',{$html: html, jb_external: true } ),
     features: [
       watchAndCalcModelProp('html'),
       () => ({ studioFeatures :{$: 'feature.contentEditable', param: 'html' } })
@@ -3360,6 +3430,69 @@ jb.component('image.img', {
     features: calcProp('url')
   })
 });
+
+jb.ns('icon,control')
+
+jb.component('control.icon', {
+  type: 'control',
+  category: 'control:50',
+  params: [
+    {id: 'icon', as: 'string', mandatory: true},
+    {id: 'title', as: 'string', dynamic: true},
+    {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
+    {id: 'size', as: 'number', defaultValue: 24 },
+    {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx => jb.ui.ctrl(ctx, features(
+    calcProp('icon'), calcProp('type'), calcProp('title'), calcProp('size')
+  ))
+})
+
+jb.component('icon', {
+  type: 'icon',
+  params: [
+    {id: 'icon', as: 'string', mandatory: true},
+    {id: 'title', as: 'string', dynamic: true},
+    {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
+    {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx => ctx.params
+})
+
+jb.component('icon.material', {
+  type: 'icon.style',
+  impl: customStyle({
+    template: (cmp,{icon,type,title,size},h) => type == 'mdc' ? h('i',
+    { class: 'material-icons', title: title(), onclick: true, style: {'font-size': `${size}px`, width: `${size}px`, height: `${size}px` } }
+      , icon) 
+      : h('div',{title: title(), onclick: true,
+        $html: `<svg width="24" height="24" transform="scale(${size/24})"><path d="${jb.path(jb.frame,['MDIcons',icon])}"/></svg>`}),
+  })
+})
+
+jb.component('feature.icon', {
+  type: 'feature',
+  category: 'control:50',
+  params: [
+    {id: 'icon', as: 'string', mandatory: true},
+    {id: 'title', as: 'string', dynamic: true},
+    {id: 'position', as: 'string', options: ',pre,post,raised', defaultValue: '' },
+    {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
+    {id: 'size', as: 'number', defaultValue: 24 },
+    {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
+    {id: 'features', type: 'feature[]', dynamic: true}
+  ],
+  impl: ctx => ({
+    icon: jb.ui.ctrl(ctx, features(
+      calcProp('icon'), calcProp('type'), calcProp('title'), calcProp('size'),
+      calcProp('iconPosition','%$$model/position%')
+    ))
+  })
+})
+
+;
 
 jb.ns('button')
 
@@ -3855,15 +3988,17 @@ jb.component('dialogFeature.uniqueDialog', {
 jb.component('dialogFeature.dragTitle', {
 	type: 'dialog-feature',
 	params: [
-	  {id: 'id', as: 'string'}
+	  {id: 'id', as: 'string'},
+	  {id: 'selector', as: 'string', defaultValue: '.dialog-title'},
 	],
-	impl: function(context, id) {
+	impl: function(context, id,selector) {
+
 		  const dialog = context.vars.$dialog;
 		  const {pipe,fromEvent,takeUntil,merge,Do, map,flatMap,distinctUntilChanged,fromPromise, forEach} = jb.callbag
 		  return {
-				 css: '>.dialog-title { cursor: pointer }',
+				 css: `${selector} { cursor: pointer }`,
 				 afterViewInit: function(cmp) {
-					const titleElem = cmp.base.querySelector('.dialog-title');
+					const titleElem = cmp.base.querySelector(selector);
 					const destroyed = fromPromise(cmp.destroyed)
 					cmp.mousedownEm = pipe(fromEvent(titleElem, 'mousedown'),takeUntil(destroyed));
 
@@ -3911,9 +4046,9 @@ jb.component('dialogFeature.dragTitle', {
 jb.component('dialog.default', { /* dialog.default */
 	type: 'dialog.style',
 	impl: customStyle({
-	  template: (cmp,{title,contentComp},h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
-			  h('div',{class: 'dialog-title'},title),
-			  h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
+	  template: (cmp,{title,contentComp},h) => h('div#jb-dialog jb-default-dialog',{},[
+			  h('div#dialog-title',{},title),
+			  h('button#dialog-close', {onclick: 'dialogClose' },'×'),
 			  h(contentComp),
 		  ]),
 	  features: dialogFeature.dragTitle()
@@ -3931,12 +4066,17 @@ jb.component('dialogFeature.nearLauncherPosition', {
 		return {
 			afterViewInit: function(cmp) {
 				let offsetLeft = offsetLeftF() || 0, offsetTop = offsetTopF() || 0;
-				if (!context.vars.$launchingElement)
-					return console.log('no launcher for dialog');
+				const jbDialog = jb.ui.findIncludeSelf(cmp.base,'.jb-dialog')[0];
+				if (!context.vars.$launchingElement) {
+					if (typeof event == 'undefined')
+						return console.log('no launcher for dialog');
+					jbDialog.style.left = offsetLeft + event.clientX + 'px'
+					jbDialog.style.top = offsetTop + event.clientY + 'px'
+					return
+				}
 				const control = context.vars.$launchingElement.el;
 				const launcherHeightFix = context.vars.$launchingElement.launcherHeightFix || jb.ui.outerHeight(control)
 				const pos = jb.ui.offset(control);
-				const jbDialog = jb.ui.findIncludeSelf(cmp.base,'.jb-dialog')[0];
 				offsetLeft += rightSide ? jb.ui.outerWidth(control) : 0;
 				const fixedPosition = fixDialogOverflow(control,jbDialog,offsetLeft,offsetTop);
 				jbDialog.style.display = 'block';
@@ -4030,6 +4170,7 @@ jb.component('dialogFeature.cssClassOnLaunchingElement', {
   type: 'dialog-feature',
   impl: context => ({
 		afterViewInit: cmp => {
+			if (!context.vars.$launchingElement) return
 			const {pipe,filter,subscribe,take} = jb.callbag
 			const dialog = context.vars.$dialog;
 			const control = context.vars.$launchingElement.el;
@@ -4849,20 +4990,20 @@ jb.component('itemlistContainer.searchInAllProperties', {
 })()
 ;
 
-jb.ns('menuStyle')
-jb.ns('menuSeparator')
-jb.ns('mdc')
+jb.ns('menuStyle,menuSeparator,mdc,icon')
 
 jb.component('menu.menu', {
   type: 'menu.option',
   params: [
     {id: 'title', as: 'string', dynamic: true, mandatory: true},
     {id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true, defaultValue: []},
+    {id: 'icon', type: 'icon' },
     {id: 'optionsFilter', type: 'data', dynamic: true, defaultValue: '%%'}
   ],
   impl: ctx => ({
 		options: ctx2 => ctx.params.optionsFilter(ctx.setData(ctx.params.options(ctx2))),
-		title: ctx.params.title(),
+    title: ctx.params.title(),
+    icon: ctx.params.icon,
 		applyShortcut: function(e) {
 			return this.options().reduce((res,o)=> res || (o.applyShortcut && o.applyShortcut(e)),false)
 		},
@@ -4955,11 +5096,12 @@ jb.component('menu.openContextMenu', {
   params: [
     {id: 'menu', type: 'menu.option', dynamic: true, mandatory: true},
     {id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue: dialog.contextMenuPopup()},
+    {id: 'menuStyle', type: 'menu.style', dynamic: true, defaultValue: menuStyle.contextMenu()},
     {id: 'features', type: 'dialog-feature[]', dynamic: true}
   ],
   impl: openDialog({
     style: call('popupStyle'),
-    content: menu.control({menu: call('menu'), style: menuStyle.contextMenu()}),
+    content: menu.control({menu: call('menu'), style: call('menuStyle')}),
     features: call('features')
   })
 })
@@ -5011,7 +5153,6 @@ jb.component('menuStyle.contextMenu', {
   )
 })
 
-
 jb.component('menu.initPopupMenu', {
   type: 'feature',
   params: [
@@ -5030,7 +5171,7 @@ jb.component('menu.initPopupMenu', {
 					cmp.ctx.vars.topMenu.popups.push(ctx.vars.menuModel);
 					ctx2.run( menu.openContextMenu({
 							popupStyle: _ctx => ctx.componentContext.params.popupStyle(_ctx),
-							menu: _ctx =>	ctx.vars.$model.menu()
+							menu: _ctx =>	_ctx.vars.innerMenu ? ctx.vars.innerMenu.menu() : ctx.vars.$model.menu()
 						}))
 					}, cmp.ctx, cmp.base );
 
@@ -5053,8 +5194,7 @@ jb.component('menu.initPopupMenu', {
           })
 				}
 			})
-		}
-      )
+		})
   )
 })
 
@@ -5189,20 +5329,17 @@ jb.component('menu.selection', {
 jb.component('menuStyle.optionLine', {
   type: 'menu-option.style',
   impl: customStyle({
-    template: (cmp,{icon,title,shortcut},h) => h('div',{
-				class: 'line noselect', onmousedown: 'action'
-			},[
-        h(cmp.ctx.run({...icon, $: 'control.icon'})),
-				//h('i',{class:'material-icons'},icon),
-				h('span',{class:'title'},title),
-				h('span',{class:'shortcut'},shortcut),
-        h('div',{class: 'mdc-line-ripple' }),
+    template: (cmp,{icon,title,shortcut},h) => h('div#line noselect', { onmousedown: 'action' },[
+        h(cmp.ctx.run({$: 'control.icon', ...icon, size: 20})),
+				h('span#title',{},title),
+				h('span#shortcut',{},shortcut),
+        h('div#mdc-line-ripple'),
 		]),
     css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
 				.selected { background: #d8d8d8 }
-				>i { width: 24px; padding-left: 3px; padding-top: 3px; font-size:16px; }
+				>i { padding: 3px 8px 0 3px }
 				>span { padding-top: 3px }
-						>.title { display: block; text-align: left; white-space: nowrap; }
+				>.title { display: block; text-align: left; white-space: nowrap; }
 				>.shortcut { margin-left: auto; text-align: right; padding-right: 15px }`,
     features: [menu.initMenuOption(), mdc.rippleEffect()]
   })
@@ -5211,11 +5348,9 @@ jb.component('menuStyle.optionLine', {
 jb.component('menuStyle.popupAsOption', {
   type: 'menu.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{
-				class: 'line noselect', onmousedown: 'action'
-			},[
-				h('span',{class:'title'},state.title),
-				h('i',{class:'material-icons', onmouseenter: 'openPopup' },'play_arrow'),
+    template: (cmp,state,h) => h('div#line noselect', { onmousedown: 'action' },[
+				h('span#title',{},state.title),
+				h('i#material-icons', { onmouseenter: 'openPopup' },'play_arrow'),
 		]),
     css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
 				>i { width: 100%; text-align: right; font-size:16px; padding-right: 3px; padding-top: 3px; }
@@ -5242,11 +5377,12 @@ jb.component('dialog.contextMenuPopup', {
   type: 'dialog.style',
   params: [
     {id: 'offsetTop', as: 'number'},
-    {id: 'rightSide', as: 'boolean', type: 'boolean'}
+    {id: 'rightSide', as: 'boolean', type: 'boolean'},
+    {id: 'toolbar', as: 'boolean', type: 'boolean'},
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup context-menu-popup pulldown-mainmenu-popup'},
-				h(state.contentComp)),
+    template: (cmp,{contentComp,toolbar},h) => h('div#jb-dialog jb-popup context-menu-popup', 
+      { class: toolbar ? 'toolbar-popup' : 'pulldown-mainmenu-popup'}, h(contentComp)),
     features: [
       dialogFeature.uniqueDialog('%$optionsParentId%', false),
       dialogFeature.maxZIndexOnClick(),
@@ -5266,6 +5402,68 @@ jb.component('menuSeparator.line', {
     template: (cmp,state,h) => h('div'),
     css: '{ margin: 6px 0; border-bottom: 1px solid #EBEBEB;}'
   })
+})
+
+/***** icon menus */
+
+jb.component('menuStyle.toolbar', {
+  type: 'menu.style',
+  params: [
+    {id: 'leafOptionStyle', type: 'menu-option.style', dynamic: true, defaultValue: menuStyle.icon()},
+    {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.horizontal(5)},
+  ],
+  impl: styleByControl(
+    Var('optionsParentId', ctx => ctx.id),
+    Var('leafOptionStyle', ctx => ctx.componentContext.params.leafOptionStyle),
+    itemlist({
+      vars: [
+        Var('optionsParentId', ctx => ctx.id),
+        Var('leafOptionStyle', ctx => ctx.componentContext.params.leafOptionStyle)
+      ],
+      style: call('itemlistStyle'),
+      items: ctx => ctx.vars.menuModel.options && ctx.vars.menuModel.options().filter(x=>x) || [],
+      controls: menu.control({menu: '%$item%', style: menuStyle.applyMultiLevel({
+        menuStyle: menuStyle.iconMenu(), leafStyle: menuStyle.icon()
+      })}),
+    })
+  )
+})
+
+jb.component('menuStyle.icon', {
+  type: 'menu-option.style',
+  params: [
+    {id: 'buttonSize', as: 'number', defaultValue: 20 },
+  ],
+  impl: styleWithFeatures(
+      button.mdcIcon('%$menuModel/leaf/icon%','%$buttonSize%'),
+      [
+        htmlAttribute('onclick',true),
+        defHandler('onclickHandler', ctx => ctx.vars.menuModel.action())
+      ]
+  )
+})
+
+jb.component('menuStyle.iconMenu', {
+  type: 'menu.style',
+  impl: styleByControl(
+      button({
+        title: '%title%',
+        action: (ctx,{cmp}) => cmp.openPopup(),
+        style: button.mdcIcon(
+          icon({
+            icon: '%icon/icon%',
+            type: '%icon/type%',
+            features: css('transform: translate(7px,0px) !important')
+          }), 16),
+        features: [feature.icon({
+          icon: 'more_vert',
+          type: 'mdc',
+          features: css('transform: translate(-3px,0px) !important')
+        }),
+          menu.initPopupMenu(dialog.contextMenuPopup({toolbar: true, rightSide: true}))
+        ]
+      }),
+    'innerMenu'),
 })
 ;
 
@@ -5435,70 +5633,6 @@ jb.component('theme.materialDesign', {
 })
 ;
 
-jb.ns('icon,control')
-
-jb.component('control.icon', {
-  type: 'control',
-  category: 'control:50',
-  params: [
-    {id: 'icon', as: 'string', mandatory: true},
-    {id: 'title', as: 'string', dynamic: true},
-    {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
-    {id: 'scale', as: 'number', defaultValue: 1 },
-    {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
-    {id: 'features', type: 'feature[]', dynamic: true}
-  ],
-  impl: ctx => jb.ui.ctrl(ctx, features(
-    calcProp('icon'), calcProp('type'), calcProp('scale'), calcProp('title')
-  ))
-})
-
-jb.component('icon', {
-  type: 'icon',
-  params: [
-    {id: 'icon', as: 'string', mandatory: true},
-    {id: 'title', as: 'string', dynamic: true},
-    {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
-    {id: 'scale', as: 'number', defaultValue: 1 },
-    {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
-    {id: 'features', type: 'feature[]', dynamic: true}
-  ],
-  impl: ctx => ctx.params
-})
-
-jb.component('icon.material', {
-  type: 'icon.style',
-  impl: customStyle({
-    template: (cmp,{icon,type,title,scale},h) => type == 'mdc' ? h('i',
-    { class: 'material-icons', title: title(), onclick: true, style: {width: '24px', height: '24px', transform: `scale(${scale}) translate(${(scale-1)*12}px,${(scale-1)*12}px)` } }
-      , icon) 
-      : h('div',{title: title(), onclick: true, style: { transform: `translate(${(scale-1)*12}px,${(scale-1)*12}px)`},
-        $html: `<svg width="24" height="24" transform="scale(${scale})"><path d="${jb.path(jb.frame,['MDIcons',icon])}"/></svg>`}),
-  })
-})
-
-jb.component('feature.icon', {
-  type: 'feature',
-  category: 'control:50',
-  params: [
-    {id: 'icon', as: 'string', mandatory: true},
-    {id: 'title', as: 'string', dynamic: true},
-    {id: 'position', as: 'string', options: ',pre,post,raised', defaultValue: '' },
-    {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
-    {id: 'scale', as: 'string', defaultValue: 1 },
-    {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
-    {id: 'features', type: 'feature[]', dynamic: true}
-  ],
-  impl: ctx => ({
-    icon: jb.ui.ctrl(ctx, features(
-      calcProp('icon'), calcProp('type'), calcProp('scale'), calcProp('title'),
-      calcProp('iconPosition','%$$model/position%')
-    ))
-  })
-})
-
-;
-
 jb.ns('slider,mdcStyle')
 
 jb.component('editableNumber.sliderNoText', {
@@ -5609,6 +5743,7 @@ jb.component('editableNumber.mdcSliderNoText', {
       interactiveProp('rebuild mdc on external refresh',(ctx,{cmp}) => {
         cmp.mdcSlider && cmp.mdcSlider.destroy()
         cmp.mdcSlider = new jb.ui.material.MDCSlider(cmp.base)
+        //cmp.mdcSlider.listen('MDCSlider:input', ({detail}) =>  !cmp.checkAutoScale(detail.value) && cmp.jbModelWithUnits(detail.value))
         cmp.mdcSlider.listen('MDCSlider:change', () =>
           !cmp.checkAutoScale(cmp.mdcSlider.value) && cmp.jbModelWithUnits(cmp.mdcSlider.value))
       }),
@@ -6010,9 +6145,9 @@ jb.component('button.mdcChipAction', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) =>
-    h('div',{class: 'mdc-chip-set mdc-chip-set--choice'},
-      h('div',{ class: ['mdc-chip',raised && 'mdc-chip--selected raised'].filter(x=>x).join(' ') }, [
-        h('div',{ class: 'mdc-chip__ripple'}),
+    h('div#mdc-chip-set mdc-chip-set--choice', {onclick: true},
+      h('div#mdc-chip',{ class: [raised && 'mdc-chip--selected raised'].filter(x=>x).join(' ') }, [
+        h('div#mdc-chip__ripple'),
         ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-chip__icon mdc-chip__icon--leading')),
         h('span',{ role: 'gridcell'}, h('span', {role: 'button', tabindex: -1, class: 'mdc-chip__text'}, title )),
         ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-chip__icon mdc-chip__icon--trailing')),
@@ -6021,35 +6156,44 @@ jb.component('button.mdcChipAction', {
   })
 })
 
+jb.component('button.plainIcon', {
+  type: 'button.style',
+  impl: customStyle({
+    template: (cmp,{title,raised},h) => 
+      jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=> vdom.setAttribute('title',vdom.getAttribute('title') || title))[0]
+  })
+})
+
 jb.component('button.mdcIcon', {
   type: 'button.style,icon.style',
   params: [
-    {id: 'icon', type: 'icon', defaultValue: icon('plus') },
-    {id: 'raisedIcon', type: 'icon' }
+    {id: 'icon', type: 'icon' },
+    {id: 'buttonSize', as: 'number', defaultValue: 40, description: 'button size is larger than the icon size, usually at the rate of 40/24' },
   ],
-  impl: styleWithFeatures(button.mdcFloatingAction({withTitle: false, mini: true}), features(
-    ctx => ctx.run({...ctx.componentContext.params.icon, title: ctx.exp('%$$model/title%'), $: 'feature.icon'}),
-    ctx => [ctx.componentContext.params.raisedIcon && ctx.run({...ctx.componentContext.params.raisedIcon, $: 'feature.icon', position: 'raised', title: ctx.exp('%$$model/title%')})].filter(x=>x),
-    //css(`{ box-shadow: 0 0; border-radius: 2px; width: 24px; height: 24px; padding: 0; color: black; background-color: transparent}`),
-    css(`{ background-color: grey}`),
-  ))
+  impl: styleWithFeatures(button.mdcFloatingAction({withTitle: false, buttonSize: '%$buttonSize%'}), features(
+      ((ctx,{},{icon}) => icon && ctx.run({$: 'feature.icon', ...icon, title: '%$model.title%', 
+        size: ({},{},{buttonSize}) => buttonSize * 24/40 })),
+      css('background-color: grey'),
+    ))
 })
 
 jb.component('button.mdcFloatingAction', {
   type: 'button.style,icon.style',
   description: 'fab icon',
   params: [
-    {id: 'mini', as: 'boolean'},
+    {id: 'buttonSize', as: 'number', defaultValue: 60, description: 'mini is 40'},
     {id: 'withTitle', as: 'boolean'}
   ],
   impl: customStyle({
-    template: (cmp,{title,withTitle,mini,raised},h) =>
-      h('button',{ class: ['mdc-fab',raised && 'raised mdc-icon-button--on',mini && 'mdc-fab--mini'].filter(x=>x).join(' ') ,
+    template: (cmp,{title,withTitle,raised},h) =>
+      h('button',{ class: ['mdc-fab',raised && 'raised mdc-icon-button--on'].filter(x=>x).join(' ') ,
           title, tabIndex: -1, onclick:  true}, [
             h('div',{ class: 'mdc-fab__ripple'}),
-            ...jb.ui.chooseIconWithRaised(cmp.icon,raised).filter(x=>x).map(h).map(vdom=>vdom.addClass('mdc-fab__icon')),
+            ...jb.ui.chooseIconWithRaised(cmp.icon,raised).filter(x=>x).map(h).map(vdom=>
+                vdom.addClass('mdc-fab__icon').setAttribute('title',vdom.getAttribute('title') || title)),
             ...[withTitle && h('span',{ class: 'mdc-fab__label'},title)].filter(x=>x)
       ]),
+    css: '{width: %$buttonSize%px; height: %$buttonSize%px;}',  
     features: mdcStyle.initDynamic(),
   })
 })

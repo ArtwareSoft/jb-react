@@ -78,40 +78,49 @@ jb.component('button.mdcChipAction', {
   })
 })
 
+jb.component('button.plainIcon', {
+  type: 'button.style',
+  impl: customStyle({
+    template: (cmp,{title,raised},h) => 
+      jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=> vdom.setAttribute('title',vdom.getAttribute('title') || title))[0]
+  })
+})
+
 jb.component('button.mdcIcon', {
   type: 'button.style,icon.style',
   params: [
-    {id: 'icon', type: 'icon', defaultValue: icon('plus') },
-    {id: 'scale', as: 'number', description: 'e.g. : 0.5, 2' },
+    {id: 'icon', type: 'icon' },
+    {id: 'buttonSize', as: 'number', defaultValue: 40, description: 'button size is larger than the icon size, usually at the rate of 40/24' },
   ],
-  impl: styleWithFeatures(button.mdcFloatingAction({withTitle: false, mini: true}), features(
-    (ctx,{$model},{icon}) => ctx.run({...icon, title: $model.title, $: 'feature.icon'}),
-    (ctx,{},{scale}) => scale && ctx.run(css.transformScale({x: scale, y: scale})),
-    css('background-color: grey'),
-  ))
+  impl: styleWithFeatures(button.mdcFloatingAction({withTitle: false, buttonSize: '%$buttonSize%'}), features(
+      ((ctx,{},{icon}) => icon && ctx.run({$: 'feature.icon', ...icon, title: '%$model.title%', 
+        size: ({},{},{buttonSize}) => buttonSize * 24/40 })),
+      css('background-color: grey'),
+    ))
 })
 
 jb.component('button.mdcFloatingAction', {
   type: 'button.style,icon.style',
   description: 'fab icon',
   params: [
-    {id: 'mini', as: 'boolean'},
+    {id: 'buttonSize', as: 'number', defaultValue: 60, description: 'mini is 40'},
     {id: 'withTitle', as: 'boolean'}
   ],
   impl: customStyle({
-    template: (cmp,{title,withTitle,mini,raised},h) =>
-      h('button',{ class: ['mdc-fab',raised && 'raised mdc-icon-button--on',mini && 'mdc-fab--mini'].filter(x=>x).join(' ') ,
+    template: (cmp,{title,withTitle,raised},h) =>
+      h('button',{ class: ['mdc-fab',raised && 'raised mdc-icon-button--on'].filter(x=>x).join(' ') ,
           title, tabIndex: -1, onclick:  true}, [
             h('div',{ class: 'mdc-fab__ripple'}),
             ...jb.ui.chooseIconWithRaised(cmp.icon,raised).filter(x=>x).map(h).map(vdom=>
                 vdom.addClass('mdc-fab__icon').setAttribute('title',vdom.getAttribute('title') || title)),
             ...[withTitle && h('span',{ class: 'mdc-fab__label'},title)].filter(x=>x)
       ]),
+    css: '{width: %$buttonSize%px; height: %$buttonSize%px;}',  
     features: mdcStyle.initDynamic(),
   })
 })
 
-jb.component  ('button.mdcIcon12', {
+jb.component('button.mdcIcon12', {
   type: 'button.style,icon.style',
   params: [
     {id: 'icon', as: 'string', defaultValue: 'code'}

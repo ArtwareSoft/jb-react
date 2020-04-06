@@ -987,11 +987,11 @@ jb.component('http.get', {
   ],
   impl: (ctx,_url,_json,useProxy) => {
 		if (ctx.probe)
-			return jb.http_get_cache[url];
-    const json = _json || url.match(/json$/);
+			return jb.http_get_cache[_url];
+    const json = _json || _url.match(/json$/);
     let url = _url
     if (useProxy == 'localhost-server')
-      url = `//localhost:8082/?op=fetch&req={url:"${url}"}&cacheKiller=${jb.cacheKiller++}`
+      url = `/?op=fetch&req=${JSON.stringify({url})}&cacheKiller=${jb.cacheKiller++}`
     else if (useProxy == 'cloud')
       url = `//jbart5-server.appspot.com/?op=fetch&req={url:"${url}"}&cacheKiller=${jb.cacheKiller++}`
 
@@ -1027,7 +1027,7 @@ jb.component('http.fetch', {
 			return jb.http_get_cache[reqStr];
 
     if (proxy == 'localhost-server')
-      reqObj.url = `//localhost:8082/?op=fetch&req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
+      reqObj.url = `/?op=fetch&req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
     else if (proxy == 'cloud')
       reqObj.url = `//jbart5-server.appspot.com/fetch?req=${reqStr}&cacheKiller=${jb.cacheKiller++}`
     else if (proxy == 'cloud-test-local')

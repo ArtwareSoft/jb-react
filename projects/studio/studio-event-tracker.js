@@ -48,7 +48,8 @@ jb.component('studio.eventTracker', {
                 })
               ]
             }),
-            style: menuStyle.toolbar({scale: '0.6'})
+            style: menuStyle.toolbar(menuStyle.icon('30')),
+            features: css.margin('9')
           }),
           group({
             title: 'logs',
@@ -121,19 +122,46 @@ jb.component('studio.eventTracker', {
         items: studio.eventItems(),
         controls: [
           button({
-            title: '%1%',
-            style: button.mdcFloatingAction(true, true),
-            features: [field.title('log'), feature.icon('linear_scale', undefined)]
+            title: '%0%: %1%',
+            action: menu.openContextMenu({
+              menu: menu.menu({
+                options: [
+                  menu.action({
+                    title: 'show in console',
+                    action: ({data}) => jb.frame.console.log(data)
+                  }),
+                  menu.action('group by %1%'),
+                  menu.action('filter only %1%'),
+                  menu.action('filter out %1%'),
+                  menu.action('remove items before'),
+                  menu.action('remove items after')
+                ]
+              })
+            }),
+            style: button.mdcIcon(undefined, '24'),
+            features: [
+              field.title('log'),
+              field.columnWidth('20'),
+              feature.byCondition('%1% == error', [css.color({background: 'red'})]),
+              feature.icon({
+                icon: data.switch({
+                  cases: [data.case('%1% == error', 'error')],
+                  default: 'linear_scale'
+                })
+              })
+            ]
           }),
-          studio.eventView(),
-          button({title: 'console.log', action: ({data}) => jb.frame.console.log(data)})
+          text({text: '%1%', title: 'event'}),
+          studio.eventView()
         ],
         style: table.plain(),
         visualSizeLimit: '30',
         features: [
           id('event-logs'),
           itemlist.infiniteScroll('5'),
-          css.height({height: '400', overflow: 'scroll'})
+          css.height({height: '400', overflow: 'scroll'}),
+          itemlist.selection({}),
+          itemlist.keyboardSelection({})
         ]
       })
     ]
@@ -146,14 +174,27 @@ jb.component('studio.eventView', {
     controls: [
       controlWithCondition('%path%', text('%compName%')),
       controlWithCondition('%opEvent%', text('%op%: %opEvent/opVal%')),
-      controlWithCondition('%srcCtx%', text({
-        features: [
-          variable('path', '%srcCtx/path%' ),
-          variable('compName', studio.compName('%path%') )
-        ],
-        text: 'activated by: %compName%'
-      })),
-    ],
+      controlWithCondition(
+        '%srcCtx%',
+        text({
+          text: 'activated by: %compName%',
+          features: [
+            variable({name: 'path', value: '%srcCtx/path%'}),
+            variable({name: 'compName', value: studio.compName('%path%')})
+          ]
+        })
+      ),
+      controlWithCondition(
+        isOfType('string', '%2%'),
+        text({
+          text: '%2%',
+          features: [
+            variable({name: 'path', value: '%srcCtx/path%'}),
+            variable({name: 'compName', value: studio.compName('%path%')})
+          ]
+        })
+      )
+    ]
   })
 })
 
