@@ -8,7 +8,7 @@ jb.component('picklist.native', {
 { display: block; width: 100%; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857; color: #555555; background-color: #fff; background-image: none; border: 1px solid #ccc; border-radius: 4px; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); -webkit-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; -o-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; }
 :focus { border-color: #66afe9; outline: 0; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); }
 ::-webkit-input-placeholder { color: #999; }`,
-    features: field.databind()
+    features: [field.databind(), picklist.init()]
   })
 })
 
@@ -24,7 +24,7 @@ jb.component('picklist.radio', {
               type: 'radio', name: fieldId, id: i, checked: databind === option.code, value: option.code, onchange: true
             }), h('label',{for: i}, text(cmp.ctx.setData(option))) ] )),
     css: '>input { %$radioCss% }',
-    features: field.databind()
+    features: [field.databind(), picklist.init()]
   })
 })
 
@@ -70,7 +70,7 @@ jb.component('picklist.nativeMdLookOpen', {
         border-right: .25em solid transparent;
         border-top: .375em solid rgba(0,0,0, 0.12);
         pointer-events: none; }`,
-    features: field.databind()
+    features: [field.databind(), picklist.init()]
   })
 })
 
@@ -107,7 +107,7 @@ jb.component('picklist.nativeMdLook', {
         border-right: .25em solid transparent;
         border-top: .375em solid rgba(0,0,0, 0.12);
         pointer-events: none; }`,
-    features: field.databind()
+    features: [field.databind(), picklist.init()]
   })
 })
 
@@ -169,9 +169,9 @@ jb.component('picklist.hyperlinks', {
 jb.component('picklist.groups', {
   type: 'picklist.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('select', { value: state.databind, onchange: true },
-          (state.hasEmptyOption ? [h('option',{value:''},'')] : []).concat(
-            state.groups.map(group=>h('optgroup',{label: group.text},
+    template: (cmp,{databind,hasEmptyOption,groups},h) => h('select', { value: databind, onchange: true },
+          (hasEmptyOption ? [h('option',{value:''},'')] : []).concat(
+            groups.map(group=>h('optgroup',{label: group.text},
               group.options.map(option=>h('option',{value: option.code},option.text))
               ))
       )),
@@ -179,6 +179,6 @@ jb.component('picklist.groups', {
  { display: block; width: 100%; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857; color: #555555; background-color: #fff; background-image: none; border: 1px solid #ccc; border-radius: 4px; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); -webkit-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; -o-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; }
 select:focus { border-color: #66afe9; outline: 0; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); }
 select::-webkit-input-placeholder { color: #999; }`,
-    features: field.databind()
+    features: [field.databind(), picklist.init(),  picklist.initGroups()]
   })
 })

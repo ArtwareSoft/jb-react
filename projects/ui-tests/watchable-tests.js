@@ -233,25 +233,25 @@ jb.component('uiTest.watchRefCssOnly', {
   })
 })
 
-jb.component('uiTest.watchRefPhase', {
-  impl: uiTest({
-    vars: Var('arr', () => []),
-    control: group({
-      controls: [
-        text({
-          text: (ctx,{arr}) => { arr.push(1); return 'hey' },
-          features: watchRef({ref: '%$person/name%', phase: 20}),
-        }),
-        text({
-          text: (ctx,{arr}) => { arr.push(2); return 'hey' },
-          features: watchRef({ref: '%$person/name%', phase: 5}),
-        }),
-      ]
-    }),
-    action: writeValue('%$person/name%','Dan'),
-    expectedResult: (ctx,{arr}) => arr.join(',') == '1,2,2,1',
-  })
-})
+// jb.component('uiTest.watchRefPhase', {
+//   impl: uiTest({
+//     vars: Var('arr', () => []),
+//     control: group({
+//       controls: [
+//         text({
+//           text: (ctx,{arr}) => { arr.push(1); return 'hey' },
+//           features: watchRef({ref: '%$person/name%', phase: 20}),
+//         }),
+//         text({
+//           text: (ctx,{arr}) => { arr.push(2); return 'hey' },
+//           features: watchRef({ref: '%$person/name%', phase: 5}),
+//         }),
+//       ]
+//     }),
+//     action: writeValue('%$person/name%','Dan'),
+//     expectedResult: (ctx,{arr}) => arr.join(',') == '1,2,2,1',
+//   })
+// })
 
 jb.component('uiTest.groupWatchingWithoutIncludeChildren', {
   impl: uiTest({

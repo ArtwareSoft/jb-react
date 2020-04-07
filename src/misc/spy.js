@@ -25,7 +25,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 	if (resetSpyToNull)
 		return jb.spy = null
     
-    jb.spy = {
+    return jb.spy = {
 		logs: {},
 		spyParam,
 		otherSpies: [],

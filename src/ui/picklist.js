@@ -6,48 +6,54 @@ jb.component('picklist', {
   params: [
     {id: 'title', as: 'string', dynamic: true},
     {id: 'databind', as: 'ref', mandaroy: true, dynamic: true},
-    {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true, defaultValue: {'$': 'picklist.options-by-comma', '$byValue': []}},
+    {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true, templateValue: picklist.optionsByComma()},
     {id: 'promote', type: 'picklist.promote', dynamic: true},
     {id: 'style', type: 'picklist.style', defaultValue: picklist.native(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx =>
-    jb.ui.ctrl(ctx,features(
-      calcProps( () => {
-          var options = ctx.params.options(ctx);
-          var groupsHash = {};
-          var promotedGroups = (ctx.params.promote() || {}).groups || [];
-          var groups = [];
-          options.filter(x=>x.text).forEach(o=>{
-            var groupId = groupOfOpt(o);
-            var group = groupsHash[groupId] || { options: [], text: groupId};
-            if (!groupsHash[groupId]) {
-              groups.push(group);
-              groupsHash[groupId] = group;
-            }
-            group.options.push({text: (o.text||'').split('.').pop(), code: o.code });
-          })
-          groups.sort((p1,p2)=>promotedGroups.indexOf(p2.text) - promotedGroups.indexOf(p1.text));
-          return {
-            groups: groups,
-            options: options,
-            hasEmptyOption: options.filter(x=>!x.text)[0]
-          }
-      }),
-      defHandler('onchangeHandler', (ctx,{cmp, ev}) => {
-        const newVal = ev.target.value
-        if (jb.val(ctx.vars.$model.databind(cmp.ctx)) == newVal) return
-        jb.writeValue(ctx.vars.$model.databind(cmp.ctx),newVal,ctx);        
-        cmp.onChange && cmp.onChange(cmp.ctx.setVar('event',ev).setData(newVal))
-      }),
-    ))
+  impl: ctx => jb.ui.ctrl(ctx)
 })
 
-function groupOfOpt(opt) {
-  if (!opt.group && opt.text.indexOf('.') == -1)
-    return '---';
-  return opt.group || opt.text.split('.').shift();
-}
+jb.component('picklist.init', {
+  type: 'feature',
+  impl: features(
+    calcProp('options', '%$$model/options%'),
+    calcProp('hasEmptyOption', (ctx,{$props}) => $props.options.filter(x=>!x.text)[0]),
+    defHandler('onchangeHandler', (ctx,{cmp, ev}) => {
+      const newVal = ev.target.value
+      if (jb.val(ctx.vars.$model.databind(cmp.ctx)) == newVal) return
+      jb.writeValue(ctx.vars.$model.databind(cmp.ctx),newVal,ctx);        
+      cmp.onChange && cmp.onChange(cmp.ctx.setVar('event',ev).setData(newVal))
+    })
+  )
+})
+
+jb.component('picklist.initGroups', {
+  type: 'feature',
+  impl: calcProp({id: 'groups', phase: 20, value: (ctx,{$model, $props}) => {
+    const options = $props.options;
+    const groupsHash = {};
+    const promotedGroups = ($model.promote() || {}).groups || [];
+    const groups = [];
+    options.filter(x=>x.text).forEach(o=>{
+      const groupId = groupOfOpt(o);
+      const group = groupsHash[groupId] || { options: [], text: groupId};
+      if (!groupsHash[groupId]) {
+        groups.push(group);
+        groupsHash[groupId] = group;
+      }
+      group.options.push({text: (o.text||'').split('.').pop(), code: o.code });
+    })
+    groups.sort((p1,p2)=>promotedGroups.indexOf(p2.text) - promotedGroups.indexOf(p1.text));
+    return groups
+
+    function groupOfOpt(opt) {
+      if (!opt.group && opt.text.indexOf('.') == -1)
+        return '---';
+      return opt.group || opt.text.split('.').shift();
+    }
+  }}),
+})
 
 jb.component('picklist.dynamicOptions', {
   type: 'feature',
@@ -83,7 +89,7 @@ jb.component('picklist.optionsByComma', {
     {id: 'options', as: 'string', mandatory: true},
     {id: 'allowEmptyValue', type: 'boolean'}
   ],
-  impl: function(ctx,options,allowEmptyValue) {
+  impl: (ctx,options,allowEmptyValue) => {
     const emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
     return emptyValue.concat((options||'').split(',').map(code=> ({ code: code, text: code })));
   }

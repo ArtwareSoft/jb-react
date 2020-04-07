@@ -188,6 +188,7 @@ jb.component('itemlist.selection', {
             .filter(elem=> (jb.ctxDictionary[elem.getAttribute('jb-ctx')] || {}).data === selected)
             .forEach(elem=> {elem.classList.add('selected'); elem.scrollIntoViewIfNeeded()})
         }
+        cmp.doRefresh = () => cmp.setSelected(cmp.state.selected)
 
         pipe(merge(cmp.selectionEmitter,cmp.clickEmitter),
           distinctUntilChanged(),

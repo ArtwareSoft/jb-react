@@ -28,94 +28,27 @@ jb.component('studio.eventTracker', {
               options: [
                 menu.action({
                   title: 'clear',
-                  action: runActions(() => jb.spy && jb.spy.clear(), refreshControlById('event-logs')),
-                  icon: icon({icon: 'block', type: 'mdc'})
+                  action: runActions(() => {
+                    jb.spy.clear(); jb.spy._all = null
+                  }, refreshControlById('event-logs')),
+                  icon: icon('block')
                 }),
-                menu.action({
-                  title: 'start',
-                  action: runActions(() => jb.spy && jb.spy.clear(), refreshControlById('event-logs')),
-                  icon: icon({icon: 'hearing', type: 'mdc', features: [css.transformRotate('90')]})
-                }),
-                menu.action({
+                menu.action({ // TODO: move to dialog close
                   title: 'stop',
                   action: runActions(() => jb.spy && jb.spy.clear(), refreshControlById('event-logs')),
-                  icon: icon({icon: 'stop', type: 'mdc', features: [css.transformRotate('90')]})
+                  icon: icon('stop')
                 }),
                 menu.action({
                   title: 'refresh',
                   action: refreshControlById('event-logs', true),
-                  icon: icon({icon: 'refresh', type: 'mdc', features: [css.transformRotate('90')]})
+                  icon: icon('refresh')
                 })
               ]
             }),
             style: menuStyle.toolbar(menuStyle.icon('30')),
             features: css.margin('9')
           }),
-          group({
-            title: 'logs',
-            layout: layout.horizontal(),
-            controls: [
-              group({
-                title: 'chips',
-                layout: layout.flex({wrap: 'wrap'}),
-                controls: [
-                  dynamicControls({
-                    controlItems: '%$studio/spyLogs%',
-                    genericControl: group({
-                      title: 'chip',
-                      layout: layout.flex({wrap: 'wrap', spacing: '0'}),
-                      controls: [
-                        button({title: '%% ', style: button.mdcChipAction(), raised: 'false'}),
-                        button({
-                          title: 'delete',
-                          style: button.x(),
-                          features: [
-                            css('color: black; z-index: 1000;margin-left: -30px'),
-                            itemlist.shownOnlyOnItemHover()
-                          ]
-                        })
-                      ],
-                      features: [
-                        css('color: black; z-index: 1000'),
-                        feature.onEvent({
-                          event: 'click',
-                          action: removeFromArray({array: '%$studio/spyLogs%', itemToRemove: '%%'})
-                        }),
-                        css.class('jb-item')
-                      ]
-                    })
-                  })
-                ],
-                features: watchRef({
-                  ref: '%$studio/spyLogs%',
-                  includeChildren: 'yes',
-                  allowSelfRefresh: true,
-                  strongRefresh: false
-                })
-              }),
-              group({
-                title: 'add log',
-                layout: layout.horizontal('20'),
-                controls: [
-                  picklist({
-                    options: picklist.options(
-                      list(keys(() => jb.spySettings.groups), () => jb.spySettings.moreLogs.split(','))
-                    ),
-                    features: [
-                      picklist.onChange(
-                        runActions(ctx => ctx.run(addToArray('%$studio/spyLogs%', '%%')))
-                      ),
-                      css.margin('6')
-                    ]
-                  })
-                ],
-                features: css.margin({left: '10'})
-              })
-            ],
-            features: feature.init(
-              ctx=> ctx.run(writeValue('%$studio/spyLogs%', split({text: 'doOp,refreshElem'})))
-            )
-          })
+          studio.selectSpyLogs()
         ]
       }),
       itemlist({
@@ -168,6 +101,75 @@ jb.component('studio.eventTracker', {
   })
 })
 
+jb.component('studio.selectSpyLogs', {
+  type: 'control',
+  impl: group({
+    title: 'logs',
+    layout: layout.horizontal(),
+    controls: [
+      group({
+        title: 'logs',
+        layout: layout.flex({wrap: 'wrap'}),
+        controls: [
+          dynamicControls({
+            controlItems: '%$studio/spyLogs%',
+            genericControl: group({
+              title: 'chip',
+              layout: layout.flex({wrap: 'wrap', spacing: '0'}),
+              controls: [
+                button({title: '%% ', style: button.mdcChipAction(), raised: 'false'}),
+                button({
+                  title: 'delete',
+                  style: button.x(),
+                  features: [
+                    css('color: black; z-index: 1000;margin-left: -30px'),
+                    itemlist.shownOnlyOnItemHover()
+                  ]
+                })
+              ],
+              features: [
+                css('color: black; z-index: 1000'),
+                feature.onEvent({
+                  event: 'click',
+                  action: removeFromArray({array: '%$studio/spyLogs%', itemToRemove: '%%'})
+                }),
+                css.class('jb-item')
+              ]
+            })
+          })
+        ],
+        features: watchRef({
+          ref: '%$studio/spyLogs%',
+          includeChildren: 'yes',
+          allowSelfRefresh: true,
+          strongRefresh: false
+        })
+      }),
+      group({
+        title: 'add log',
+        layout: layout.horizontal('20'),
+        controls: [
+          picklist({
+            options: picklist.options(
+              list(keys(() => jb.spySettings.groups), () => jb.spySettings.moreLogs.split(','))
+            ),
+            features: [
+              picklist.onChange(
+                runActions(ctx => ctx.run(addToArray('%$studio/spyLogs%', '%%')))
+              ),
+              css.margin('6')
+            ]
+          })
+        ],
+        features: css.margin({left: '10'})
+      })
+    ],
+    features: feature.init(
+      ctx=> ctx.run(writeValue('%$studio/spyLogs%', split({text: 'doOp,refreshElem'})))
+    )
+  })
+})
+
 jb.component('studio.eventView', {
   type: 'control',
   impl: group({
@@ -201,9 +203,10 @@ jb.component('studio.eventView', {
 jb.component('studio.eventItems', {
   type: 'action',
   impl: ctx => {
-    const events = jb.spy && jb.spy.all() || []
     const st = jb.studio
-    return events.map(x=>enrich(x))
+    const spy = st.previewjb.spy || st.previewWindow.initSpy({spyParam: ctx.exp('%$studio/spyLogs%').join(',')})
+    const events = (spy._all = spy._all || spy.all().map(x=>enrich(x)))
+    return events
 
     function enrich(ev) {
       if (ev.enriched) return ev
