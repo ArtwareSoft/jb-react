@@ -286,6 +286,8 @@ jb.component('itemlist.dragAndDrop', {
           return jb.logError('itemlist.dragAndDrop - the dragula lib is not loaded')
         jb.ui.itemlistInitCalcItems(cmp)
 
+        cmp.itemsAsRef = cmp.itemsAsRef || jb.asRef(jb.path(jb.ctxDictionary,`${cmp.base.getAttribute('jb-ctx')}.params.items`)())
+
         const drake = dragula([cmp.base.querySelector('.jb-drag-parent') || cmp.base] , {
           moves: (el,source,handle) =>
             jb.ui.hasClass(handle,'drag-handle')
@@ -293,7 +295,7 @@ jb.component('itemlist.dragAndDrop', {
 
         drake.on('drag', function(el, source) {
           cmp.items = cmp.calcItems()
-          let item = el.getAttribute('jb-ctx') && jb.ctxDictionary[el.getAttribute('jb-ctx')].data;
+          let item = jb.val(el.getAttribute('jb-ctx') && jb.ctxDictionary[el.getAttribute('jb-ctx')].data);
           if (!item) {
             const item_comp = el._component || (el.firstElementChild && el.firstElementChild._component);
             item = item_comp && item_comp.ctx.data;
@@ -307,7 +309,7 @@ jb.component('itemlist.dragAndDrop', {
         drake.on('drop', (dropElm, target, source,sibling) => {
             const draggedIndex = cmp.items.indexOf(dropElm.dragged.item);
             const targetIndex = sibling ? jb.ui.index(sibling) : cmp.items.length;
-            jb.splice(jb.asRef(cmp.items),[[draggedIndex,1],[targetIndex-1,0,dropElm.dragged.item]],ctx);
+            jb.splice(cmp.itemsAsRef,[[draggedIndex,1],[targetIndex-1,0,dropElm.dragged.item]],ctx);
 
             dropElm.dragged = null;
         })
@@ -323,8 +325,8 @@ jb.component('itemlist.dragAndDrop', {
               const selectedIndex = cmp.items.indexOf(cmp.state.selected);
               if (selectedIndex == -1) return;
               const index = (selectedIndex + diff+ cmp.items.length) % cmp.items.length;
-              const itemsF = jb.path(jb.ctxDictionary,`${cmp.base.getAttribute('jb-ctx')}.params.items`)
-              itemsF && jb.splice(jb.asRef(itemsF()),[[selectedIndex,1],[index,0,cmp.state.selected]],ctx);
+              //const itemsF = jb.path(jb.ctxDictionary,`${cmp.base.getAttribute('jb-ctx')}.params.items`)
+              jb.splice(cmp.itemsAsRef,[[selectedIndex,1],[index,0,cmp.state.selected]],ctx);
         }})
       }
     })

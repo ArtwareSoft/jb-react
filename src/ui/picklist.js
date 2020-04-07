@@ -2,6 +2,7 @@ jb.ns('picklist')
 
 jb.component('picklist', {
   type: 'control',
+  description: 'select, choose, pick, choice',
   category: 'input:80',
   params: [
     {id: 'title', as: 'string', dynamic: true},
@@ -98,26 +99,15 @@ jb.component('picklist.optionsByComma', {
 jb.component('picklist.options', {
   type: 'picklist.options',
   params: [
-    {id: 'options', type: 'data', as: 'array', mandatory: true},
+    {id: 'options', type: 'data', as: 'array', dynamic: true, mandatory: true},
+    {id: 'code', as: 'string', dynamic: true, defaultValue: '%%' },
+    {id: 'text', as: 'string', dynamic: true, defaultValue: '%%'},
+    {id: 'icon', type: 'icon', dynamic: true },
     {id: 'allowEmptyValue', type: 'boolean'}
   ],
-  impl: function(context,options,allowEmptyValue) {
+  impl: (ctx,options,code,text,icon,allowEmptyValue) => {
     const emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
-    return emptyValue.concat(options.map(code=> ({ code: code, text: code })));
-  }
-})
-
-jb.component('picklist.codedOptions', {
-  type: 'picklist.options',
-  params: [
-    {id: 'options', as: 'array', mandatory: true},
-    {id: 'code', as: 'string', dynamic: true, mandatory: true},
-    {id: 'text', as: 'string', dynamic: true, mandatory: true},
-    {id: 'allowEmptyValue', type: 'boolean'}
-  ],
-  impl: function(ctx,options,code,text,allowEmptyValue) {
-    const emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
-    return emptyValue.concat(options.map(option => ({ code: code(null,option), text: text(null,option) })))
+    return emptyValue.concat(options().map(option => ({ code: code(ctx.setData(option)), text: text(ctx.setData(option)), icon: icon(ctx.setData(option)) })));
   }
 })
 
