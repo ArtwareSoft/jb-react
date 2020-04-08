@@ -967,6 +967,7 @@ jb.component('isOfType', {
 })
 
 jb.component('inGroup', {
+  description: 'is in list, contains in array',
   type: 'boolean',
   params: [
     {id: 'group', as: 'array', mandatory: true},

@@ -12,6 +12,15 @@ jb.component('picklist.native', {
   })
 })
 
+jb.component('picklist.plusIcon', {
+  type: 'feature',
+  categories: 'feature:0,picklist:50',
+  impl: features(
+    css('-webkit-appearance: none; appearance: none; width: 7px; height: 26px; background-repeat: no-repeat;'),
+    css(`background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z'/></svg>");`),
+  )
+})
+
 jb.component('picklist.radio', {
   type: 'picklist.style',
   params: [

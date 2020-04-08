@@ -92,12 +92,13 @@ jb.component('studio.searchComponent', {
             popupId: 'search-component',
             popupStyle: styleWithFeatures(
               dialog.popup(),
-              dialogFeature.nearLauncherPosition({ offsetTop: 50 }))
+              dialogFeature.nearLauncherPosition({offsetTop: 50})
+            )
           }),
           css.margin({top: '-30', left: '10'}),
-          css(
-            '>input {padding-right: 45px; border-bottom-color: white !important} {height: 35px; background: white !important}'
-          )
+          css('~ input {border: 0 } {height: 35px; background: white !important;}'),
+          css(''),
+          css('~ i { top: 40px !important; right: 0px !important}')
         ]
       })
     ],

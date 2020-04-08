@@ -67,7 +67,7 @@ jb.component('button.mdcChipAction', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) =>
-    h('div#mdc-chip-set mdc-chip-set--choice', {onclick: true},
+    h('div#mdc-chip-set mdc-chip-set--filter', {onclick: true},
       h('div#mdc-chip',{ class: [raised && 'mdc-chip--selected raised'].filter(x=>x).join(' ') }, [
         h('div#mdc-chip__ripple'),
         ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-chip__icon mdc-chip__icon--leading')),

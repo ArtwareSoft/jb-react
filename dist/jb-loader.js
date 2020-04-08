@@ -41,6 +41,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/itemlist-container.js',
         'src/ui/menu.js',
         'src/ui/picklist.js',
+        'src/ui/multi-select.js',
         'src/ui/theme.js',
         'src/ui/slider.js',
         'src/ui/table.js',

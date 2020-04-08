@@ -289,8 +289,7 @@ jb.component('itemlist.dragAndDrop', {
         cmp.itemsAsRef = cmp.itemsAsRef || jb.asRef(jb.path(jb.ctxDictionary,`${cmp.base.getAttribute('jb-ctx')}.params.items`)())
 
         const drake = dragula([cmp.base.querySelector('.jb-drag-parent') || cmp.base] , {
-          moves: (el,source,handle) =>
-            jb.ui.hasClass(handle,'drag-handle')
+          moves: (el,source,handle) => jb.ui.parents(handle).some(x=>jb.ui.hasClass(x,'drag-handle'))
         });
 
         drake.on('drag', function(el, source) {

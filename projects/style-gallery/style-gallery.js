@@ -7,6 +7,10 @@ jb.component('person',{ watchableData : {
   age: 42
 }})
 
+jb.component('galleryMultiChoice',{ watchableData : {
+  result: ["Homer Simpson"],
+}})
+
 jb.component('styleGallery.stylesOfUiComponent', {
   params: [
     {id: 'component', as: 'string'}
@@ -17,7 +21,7 @@ jb.component('styleGallery.stylesOfUiComponent', {
 
 const variations = { button: { prop: 'raised', values: [true,false] }}
 
-'button,text,editableText,editableNumber,editableBoolean,group,itemlist,picklist,image'.split(',')
+'button,text,editableText,editableNumber,editableBoolean,group,itemlist,picklist,image,multiSelect'.split(',')
 .forEach(ctrl=>
   jb.component(`styleGallery.${ctrl}`,  { type: 'control',
   impl: group({
@@ -39,7 +43,9 @@ const variations = { button: { prop: 'raised', values: [true,false] }}
       genericControl: group({
         title: pipeline('%$__style%', suffix('.')),
         controls: [{$: ctrl,
-          ... (ctrl == 'editableNumber' ? { databind: '%$person/age%' } : { databind: '%$person/name%' } ),
+          ... (ctrl == 'editableNumber' ? { databind: '%$person/age%' }
+            : ctrl == 'multiSelect' ? { databind: '%$galleryMultiChoice/result%' }
+            : { databind: '%$person/name%' } ),
           title: 'title',
           text: 'hello world',
           items: '%$people%',

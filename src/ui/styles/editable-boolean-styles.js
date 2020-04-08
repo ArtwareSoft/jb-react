@@ -9,8 +9,8 @@ jb.component('editableBoolean.checkbox', {
 jb.component('editableBoolean.checkboxWithTitle', {
   type: 'editable-boolean.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{}, [h('input', { type: 'checkbox',
-        checked: state.databind, onchange: 'toggle', onkeyup: 'toggleByKey'  }), state.text]),
+    template: (cmp,{text,databind},h) => h('div',{}, [h('input', { type: 'checkbox',
+        checked: databind, onchange: 'toggle', onkeyup: 'toggleByKey'  }), text]),
     features: field.databind()
   })
 })
@@ -18,12 +18,12 @@ jb.component('editableBoolean.checkboxWithTitle', {
 jb.component('editableBoolean.checkboxWithLabel', {
   type: 'editable-boolean.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{},[
-        h('input', { type: 'checkbox', id: "switch_"+state.fieldId,
-          checked: state.databind,
+    template: (cmp,{text,databind,fieldId},h) => h('div',{},[
+        h('input', { type: 'checkbox', id: "switch_"+fieldId,
+          checked: databind,
           onchange: 'toggle',
           onkeyup: 'toggleByKey'  },),
-        h('label',{for: "switch_"+state.fieldId },state.text)
+        h('label',{for: "switch_"+fieldId },text)
     ]),
     features: field.databind()
   })

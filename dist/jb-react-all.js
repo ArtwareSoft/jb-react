@@ -1888,6 +1888,7 @@ jb.component('isOfType', {
 })
 
 jb.component('inGroup', {
+  description: 'is in list, contains in array',
   type: 'boolean',
   params: [
     {id: 'group', as: 'array', mandatory: true},
@@ -2072,7 +2073,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 	if (resetSpyToNull)
 		return jb.spy = null
     
-    jb.spy = {
+    return jb.spy = {
 		logs: {},
 		spyParam,
 		otherSpies: [],
@@ -4326,9 +4327,9 @@ Object.assign(jb.ui, {
             ...Array.from(el.querySelectorAll(selector))]
     },
     findIncludeSelf: (el,selector) => jb.ui.find(el,selector,{includeSelf: true}),
-    addClass: (el,clz) => el.classList.add(clz),
-    removeClass: (el,clz) => el.classList.remove(clz),
-    hasClass: (el,clz) => el && el.classList.contains(clz),
+    addClass: (el,clz) => el && el.classList && el.classList.add(clz),
+    removeClass: (el,clz) => el && el.classList && el.classList.remove(clz),
+    hasClass: (el,clz) => el && el.classList && el.classList.contains(clz),
     matches: (el,query) => el && el.matches && el.matches(query),
     index: el => Array.from(el.parentNode.children).indexOf(el),
     limitStringLength(str,maxLength) {
@@ -5303,6 +5304,14 @@ jb.component('text.span', {
   type: 'text.style',
   impl: customStyle({
     template: (cmp,{text},h) => h('span',{},text),
+    features: text.bindText()
+  })
+})
+
+jb.component('text.chip', {
+  type: 'text.style',
+  impl: customStyle({
+    template: (cmp,{text},h) => h('div#jb-chip',{},h('span',{},text)),
     features: text.bindText()
   })
 })
@@ -6772,6 +6781,7 @@ jb.component('itemlist.selection', {
             .filter(elem=> (jb.ctxDictionary[elem.getAttribute('jb-ctx')] || {}).data === selected)
             .forEach(elem=> {elem.classList.add('selected'); elem.scrollIntoViewIfNeeded()})
         }
+        cmp.doRefresh = () => cmp.setSelected(cmp.state.selected)
 
         pipe(merge(cmp.selectionEmitter,cmp.clickEmitter),
           distinctUntilChanged(),
@@ -6869,14 +6879,15 @@ jb.component('itemlist.dragAndDrop', {
           return jb.logError('itemlist.dragAndDrop - the dragula lib is not loaded')
         jb.ui.itemlistInitCalcItems(cmp)
 
+        cmp.itemsAsRef = cmp.itemsAsRef || jb.asRef(jb.path(jb.ctxDictionary,`${cmp.base.getAttribute('jb-ctx')}.params.items`)())
+
         const drake = dragula([cmp.base.querySelector('.jb-drag-parent') || cmp.base] , {
-          moves: (el,source,handle) =>
-            jb.ui.hasClass(handle,'drag-handle')
+          moves: (el,source,handle) => jb.ui.parents(handle).some(x=>jb.ui.hasClass(x,'drag-handle'))
         });
 
         drake.on('drag', function(el, source) {
           cmp.items = cmp.calcItems()
-          let item = el.getAttribute('jb-ctx') && jb.ctxDictionary[el.getAttribute('jb-ctx')].data;
+          let item = jb.val(el.getAttribute('jb-ctx') && jb.ctxDictionary[el.getAttribute('jb-ctx')].data);
           if (!item) {
             const item_comp = el._component || (el.firstElementChild && el.firstElementChild._component);
             item = item_comp && item_comp.ctx.data;
@@ -6890,7 +6901,7 @@ jb.component('itemlist.dragAndDrop', {
         drake.on('drop', (dropElm, target, source,sibling) => {
             const draggedIndex = cmp.items.indexOf(dropElm.dragged.item);
             const targetIndex = sibling ? jb.ui.index(sibling) : cmp.items.length;
-            jb.splice(jb.asRef(cmp.items),[[draggedIndex,1],[targetIndex-1,0,dropElm.dragged.item]],ctx);
+            jb.splice(cmp.itemsAsRef,[[draggedIndex,1],[targetIndex-1,0,dropElm.dragged.item]],ctx);
 
             dropElm.dragged = null;
         })
@@ -6906,8 +6917,8 @@ jb.component('itemlist.dragAndDrop', {
               const selectedIndex = cmp.items.indexOf(cmp.state.selected);
               if (selectedIndex == -1) return;
               const index = (selectedIndex + diff+ cmp.items.length) % cmp.items.length;
-              const itemsF = jb.path(jb.ctxDictionary,`${cmp.base.getAttribute('jb-ctx')}.params.items`)
-              itemsF && jb.splice(jb.asRef(itemsF()),[[selectedIndex,1],[index,0,cmp.state.selected]],ctx);
+              //const itemsF = jb.path(jb.ctxDictionary,`${cmp.base.getAttribute('jb-ctx')}.params.items`)
+              jb.splice(cmp.itemsAsRef,[[selectedIndex,1],[index,0,cmp.state.selected]],ctx);
         }})
       }
     })
@@ -7673,52 +7684,53 @@ jb.ns('picklist')
 
 jb.component('picklist', {
   type: 'control',
+  description: 'select, choose, pick, choice',
   category: 'input:80',
   params: [
     {id: 'title', as: 'string', dynamic: true},
     {id: 'databind', as: 'ref', mandaroy: true, dynamic: true},
-    {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true, defaultValue: {'$': 'picklist.options-by-comma', '$byValue': []}},
+    {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true, templateValue: picklist.optionsByComma()},
     {id: 'promote', type: 'picklist.promote', dynamic: true},
     {id: 'style', type: 'picklist.style', defaultValue: picklist.native(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx =>
-    jb.ui.ctrl(ctx,features(
-      calcProps( () => {
-          var options = ctx.params.options(ctx);
-          var groupsHash = {};
-          var promotedGroups = (ctx.params.promote() || {}).groups || [];
-          var groups = [];
-          options.filter(x=>x.text).forEach(o=>{
-            var groupId = groupOfOpt(o);
-            var group = groupsHash[groupId] || { options: [], text: groupId};
-            if (!groupsHash[groupId]) {
-              groups.push(group);
-              groupsHash[groupId] = group;
-            }
-            group.options.push({text: (o.text||'').split('.').pop(), code: o.code });
-          })
-          groups.sort((p1,p2)=>promotedGroups.indexOf(p2.text) - promotedGroups.indexOf(p1.text));
-          return {
-            groups: groups,
-            options: options,
-            hasEmptyOption: options.filter(x=>!x.text)[0]
-          }
-      }),
-      defHandler('onchangeHandler', (ctx,{cmp, ev}) => {
-        const newVal = ev.target.value
-        if (jb.val(ctx.vars.$model.databind(cmp.ctx)) == newVal) return
-        jb.writeValue(ctx.vars.$model.databind(cmp.ctx),newVal,ctx);        
-        cmp.onChange && cmp.onChange(cmp.ctx.setVar('event',ev).setData(newVal))
-      }),
-    ))
+  impl: ctx => jb.ui.ctrl(ctx)
 })
 
-function groupOfOpt(opt) {
-  if (!opt.group && opt.text.indexOf('.') == -1)
-    return '---';
-  return opt.group || opt.text.split('.').shift();
-}
+jb.component('picklist.init', {
+  type: 'feature',
+  impl: features(
+    calcProp('options', '%$$model/options%'),
+    calcProp('hasEmptyOption', (ctx,{$props}) => $props.options.filter(x=>!x.text)[0]),
+  )
+})
+
+jb.component('picklist.initGroups', {
+  type: 'feature',
+  impl: calcProp({id: 'groups', phase: 20, value: (ctx,{$model, $props}) => {
+    const options = $props.options;
+    const groupsHash = {};
+    const promotedGroups = ($model.promote() || {}).groups || [];
+    const groups = [];
+    options.filter(x=>x.text).forEach(o=>{
+      const groupId = groupOfOpt(o);
+      const group = groupsHash[groupId] || { options: [], text: groupId};
+      if (!groupsHash[groupId]) {
+        groups.push(group);
+        groupsHash[groupId] = group;
+      }
+      group.options.push({text: (o.text||'').split('.').pop(), code: o.code });
+    })
+    groups.sort((p1,p2)=>promotedGroups.indexOf(p2.text) - promotedGroups.indexOf(p1.text));
+    return groups
+
+    function groupOfOpt(opt) {
+      if (!opt.group && opt.text.indexOf('.') == -1)
+        return '---';
+      return opt.group || opt.text.split('.').shift();
+    }
+  }}),
+})
 
 jb.component('picklist.dynamicOptions', {
   type: 'feature',
@@ -7742,7 +7754,7 @@ jb.component('picklist.onChange', {
     {id: 'action', type: 'action', dynamic: true}
   ],
   impl: interactive(
-    (ctx,{cmp},{action}) => cmp.onChange = (ctx2 => action(ctx2))
+    (ctx,{cmp},{action}) => cmp.onValueChange = (data => action(ctx.setData(data)))
   )
 })
 
@@ -7754,7 +7766,7 @@ jb.component('picklist.optionsByComma', {
     {id: 'options', as: 'string', mandatory: true},
     {id: 'allowEmptyValue', type: 'boolean'}
   ],
-  impl: function(ctx,options,allowEmptyValue) {
+  impl: (ctx,options,allowEmptyValue) => {
     const emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
     return emptyValue.concat((options||'').split(',').map(code=> ({ code: code, text: code })));
   }
@@ -7763,26 +7775,15 @@ jb.component('picklist.optionsByComma', {
 jb.component('picklist.options', {
   type: 'picklist.options',
   params: [
-    {id: 'options', type: 'data', as: 'array', mandatory: true},
+    {id: 'options', type: 'data', as: 'array', dynamic: true, mandatory: true},
+    {id: 'code', as: 'string', dynamic: true, defaultValue: '%%' },
+    {id: 'text', as: 'string', dynamic: true, defaultValue: '%%'},
+    {id: 'icon', type: 'icon', dynamic: true },
     {id: 'allowEmptyValue', type: 'boolean'}
   ],
-  impl: function(context,options,allowEmptyValue) {
+  impl: (ctx,options,code,text,icon,allowEmptyValue) => {
     const emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
-    return emptyValue.concat(options.map(code=> ({ code: code, text: code })));
-  }
-})
-
-jb.component('picklist.codedOptions', {
-  type: 'picklist.options',
-  params: [
-    {id: 'options', as: 'array', mandatory: true},
-    {id: 'code', as: 'string', dynamic: true, mandatory: true},
-    {id: 'text', as: 'string', dynamic: true, mandatory: true},
-    {id: 'allowEmptyValue', type: 'boolean'}
-  ],
-  impl: function(ctx,options,code,text,allowEmptyValue) {
-    const emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
-    return emptyValue.concat(options.map(option => ({ code: code(null,option), text: text(null,option) })))
+    return emptyValue.concat(options().map(option => ({ code: code(ctx.setData(option)), text: text(ctx.setData(option)), icon: icon(ctx.setData(option)) })));
   }
 })
 
@@ -7812,6 +7813,112 @@ jb.component('picklist.promote', {
     {id: 'options', as: 'array'}
   ],
   impl: ctx => ctx.params
+})
+;
+
+jb.ns('multiSelect')
+
+jb.component('multiSelect', {
+    type: 'control',
+    description: 'select list of options, check multiple',
+    category: 'input:80',
+    params: [
+      {id: 'title', as: 'string', dynamic: true},
+      {id: 'databind', as: 'ref', mandaroy: true, dynamic: true },
+      {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true },
+      {id: 'promote', type: 'picklist.promote', dynamic: true},
+      {id: 'style', type: 'multiSelect.style', defaultValue: picklist.native(), dynamic: true},
+      {id: 'features', type: 'feature[]', dynamic: true}
+    ],
+    impl: ctx => jb.ui.ctrl(ctx)
+})
+
+jb.component('multiSelect.modelAsBooleanRef',{
+    params: [
+        {id: 'multiSelectModel'},
+        {id: 'code'},
+    ],
+    impl: (ctx,multiSelectModel,code) => {
+        const ref = multiSelectModel.databind()
+        return { $jb_val: val => val === undefined ? has() : val === true ? add() : remove() }
+
+        function has() { return jb.val(ref).indexOf(code) != -1 }
+        function add() { if (!has(code)) jb.push(ref, code,ctx) }
+        function remove() { 
+            const index = jb.val(ref).indexOf(code)
+            index != -1 && jb.splice(ref,[[index,1]],ctx)
+        }
+    }
+})
+
+jb.component('multiSelect.choiceList', {
+    type: 'multiSelect.style',
+    params: [
+      {id: 'choiceStyle', type: 'editable-boolean.style', dynamic: true, defaultValue: editableBoolean.checkboxWithTitle()},
+      {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.ulLi()},
+    ],
+    impl: styleByControl(
+      itemlist({
+        items: '%$multiSelectModel/options%',
+        controls: editableBoolean({
+            textForTrue: '%text%',
+            textForFalse: '%text%',
+            databind: multiSelect.modelAsBooleanRef('%$multiSelectModel%','%code%'),
+            style: call('choiceStyle')
+        }),
+        style: call('itemlistStyle'),
+        features: watchRef({ref: '%$multiSelectModel/databind%', includeChildren: 'yes'})
+      }),
+      'multiSelectModel'
+    )
+})
+
+jb.component('multiSelect.chips', {
+    type: 'multiSelect.style',
+    params: [
+      {id: 'chipStyle', type: 'text.style', dynamic: true, defaultValue: text.chip()},
+      {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.horizontal()},
+    ],
+    type: 'multiSelect.style',
+    impl: styleByControl(group({
+        layout: layout.horizontal(),
+        controls: [
+            itemlist({
+                items: '%$multiSelectModel/databind%',
+                style: call('itemlistStyle'),
+                controls: group({
+                    layout: layout.flex({wrap: 'wrap', spacing: '4'}),
+                    controls: [
+                        text({
+                            text: '%% ', 
+                            style: call('chipStyle'),
+                            features: itemlist.dragHandle()
+                        }),
+                        button({
+                            title: 'delete',
+                            style: button.x(),
+                            action: removeFromArray('%$multiSelectModel/databind%','%%'),
+                            features: [
+                                css('color: black; z-index: 1000;margin-left: -25px'),
+                                itemlist.shownOnlyOnItemHover()
+                            ]
+                        })
+                ]}),
+                features: itemlist.dragAndDrop()
+            }),
+            picklist({
+                options: pipeline('%$multiSelectModel/options%',filter(not(inGroup('%$multiSelectModel/databind%','%code%')))),
+                features: [
+                    picklist.onChange(addToArray('%$multiSelectModel/databind%','%%')),
+                    picklist.plusIcon(),
+                    css('margin-top: 3px')
+                ]
+            }),
+        ],
+        features: watchRef({
+            ref: '%$multiSelectModel/databind%', includeChildren: 'yes', allowSelfRefresh: true, strongRefresh: false
+        })
+    }), 'multiSelectModel')
 })
 ;
 
@@ -8347,7 +8454,7 @@ jb.component('button.mdcChipAction', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) =>
-    h('div#mdc-chip-set mdc-chip-set--choice', {onclick: true},
+    h('div#mdc-chip-set mdc-chip-set--filter', {onclick: true},
       h('div#mdc-chip',{ class: [raised && 'mdc-chip--selected raised'].filter(x=>x).join(' ') }, [
         h('div#mdc-chip__ripple'),
         ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-chip__icon mdc-chip__icon--leading')),
@@ -8960,8 +9067,17 @@ jb.component('picklist.native', {
 { display: block; width: 100%; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857; color: #555555; background-color: #fff; background-image: none; border: 1px solid #ccc; border-radius: 4px; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); -webkit-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; -o-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; }
 :focus { border-color: #66afe9; outline: 0; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); }
 ::-webkit-input-placeholder { color: #999; }`,
-    features: field.databind()
+    features: [field.databind(), picklist.init()]
   })
+})
+
+jb.component('picklist.plusIcon', {
+  type: 'feature',
+  categories: 'feature:0,picklist:50',
+  impl: features(
+    css('-webkit-appearance: none; appearance: none; width: 7px; height: 26px; background-repeat: no-repeat;'),
+    css(`background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z'/></svg>");`),
+  )
 })
 
 jb.component('picklist.radio', {
@@ -8976,7 +9092,7 @@ jb.component('picklist.radio', {
               type: 'radio', name: fieldId, id: i, checked: databind === option.code, value: option.code, onchange: true
             }), h('label',{for: i}, text(cmp.ctx.setData(option))) ] )),
     css: '>input { %$radioCss% }',
-    features: field.databind()
+    features: [field.databind(), picklist.init()]
   })
 })
 
@@ -9022,7 +9138,7 @@ jb.component('picklist.nativeMdLookOpen', {
         border-right: .25em solid transparent;
         border-top: .375em solid rgba(0,0,0, 0.12);
         pointer-events: none; }`,
-    features: field.databind()
+    features: [field.databind(), picklist.init()]
   })
 })
 
@@ -9059,7 +9175,7 @@ jb.component('picklist.nativeMdLook', {
         border-right: .25em solid transparent;
         border-top: .375em solid rgba(0,0,0, 0.12);
         pointer-events: none; }`,
-    features: field.databind()
+    features: [field.databind(), picklist.init()]
   })
 })
 
@@ -9121,9 +9237,9 @@ jb.component('picklist.hyperlinks', {
 jb.component('picklist.groups', {
   type: 'picklist.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('select', { value: state.databind, onchange: true },
-          (state.hasEmptyOption ? [h('option',{value:''},'')] : []).concat(
-            state.groups.map(group=>h('optgroup',{label: group.text},
+    template: (cmp,{databind,hasEmptyOption,groups},h) => h('select', { value: databind, onchange: true },
+          (hasEmptyOption ? [h('option',{value:''},'')] : []).concat(
+            groups.map(group=>h('optgroup',{label: group.text},
               group.options.map(option=>h('option',{value: option.code},option.text))
               ))
       )),
@@ -9131,9 +9247,10 @@ jb.component('picklist.groups', {
  { display: block; width: 100%; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857; color: #555555; background-color: #fff; background-image: none; border: 1px solid #ccc; border-radius: 4px; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); -webkit-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; -o-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; }
 select:focus { border-color: #66afe9; outline: 0; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); }
 select::-webkit-input-placeholder { color: #999; }`,
-    features: field.databind()
+    features: [field.databind(), picklist.init(),  picklist.initGroups()]
   })
 })
+
 ;
 
 jb.component('propertySheet.titlesLeft', {
@@ -9187,8 +9304,8 @@ jb.component('editableBoolean.checkbox', {
 jb.component('editableBoolean.checkboxWithTitle', {
   type: 'editable-boolean.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{}, [h('input', { type: 'checkbox',
-        checked: state.databind, onchange: 'toggle', onkeyup: 'toggleByKey'  }), state.text]),
+    template: (cmp,{text,databind},h) => h('div',{}, [h('input', { type: 'checkbox',
+        checked: databind, onchange: 'toggle', onkeyup: 'toggleByKey'  }), text]),
     features: field.databind()
   })
 })
@@ -9196,12 +9313,12 @@ jb.component('editableBoolean.checkboxWithTitle', {
 jb.component('editableBoolean.checkboxWithLabel', {
   type: 'editable-boolean.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{},[
-        h('input', { type: 'checkbox', id: "switch_"+state.fieldId,
-          checked: state.databind,
+    template: (cmp,{text,databind,fieldId},h) => h('div',{},[
+        h('input', { type: 'checkbox', id: "switch_"+fieldId,
+          checked: databind,
           onchange: 'toggle',
           onkeyup: 'toggleByKey'  },),
-        h('label',{for: "switch_"+state.fieldId },state.text)
+        h('label',{for: "switch_"+fieldId },text)
     ]),
     features: field.databind()
   })

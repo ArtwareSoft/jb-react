@@ -129,6 +129,25 @@ border: 1px solid rgb(213, 213, 213);}
 
 .jb-dialogs {
   position: absolute; top: 0; left: 0
+}
+
+.jb-chip {
+  border-radius: 16px;
+  background-color: #e0e0e0;
+  padding: 0 12px;
+  color: rgba(0, 0, 0, 0.87);
+  font-family: Roboto, sans-serif;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: antialiased;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 400;
+  height: 32px;
+  display: inline-flex;  
+}
+
+.jb-chip>* {
+  padding-top: 6px; white-space: nowrap;
 }@keyframes slide_from_top {
     0%   {margin-top: -50px;}
     10%  {margin-top: 0;}
@@ -464,6 +483,25 @@ border: 1px solid rgb(213, 213, 213);}
 
 .jb-dialogs {
   position: absolute; top: 0; left: 0
+}
+
+.jb-chip {
+  border-radius: 16px;
+  background-color: #e0e0e0;
+  padding: 0 12px;
+  color: rgba(0, 0, 0, 0.87);
+  font-family: Roboto, sans-serif;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: antialiased;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 400;
+  height: 32px;
+  display: inline-flex;  
+}
+
+.jb-chip>* {
+  padding-top: 6px; white-space: nowrap;
 }.CodeMirror-dialog {
   position: absolute;
   left: 0; right: 0;

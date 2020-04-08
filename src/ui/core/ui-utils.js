@@ -118,9 +118,9 @@ Object.assign(jb.ui, {
             ...Array.from(el.querySelectorAll(selector))]
     },
     findIncludeSelf: (el,selector) => jb.ui.find(el,selector,{includeSelf: true}),
-    addClass: (el,clz) => el.classList.add(clz),
-    removeClass: (el,clz) => el.classList.remove(clz),
-    hasClass: (el,clz) => el && el.classList.contains(clz),
+    addClass: (el,clz) => el && el.classList && el.classList.add(clz),
+    removeClass: (el,clz) => el && el.classList && el.classList.remove(clz),
+    hasClass: (el,clz) => el && el.classList && el.classList.contains(clz),
     matches: (el,query) => el && el.matches && el.matches(query),
     index: el => Array.from(el.parentNode.children).indexOf(el),
     limitStringLength(str,maxLength) {

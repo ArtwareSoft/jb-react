@@ -67,6 +67,14 @@ jb.component('text.span', {
   })
 })
 
+jb.component('text.chip', {
+  type: 'text.style',
+  impl: customStyle({
+    template: (cmp,{text},h) => h('div#jb-chip',{},h('span',{},text)),
+    features: text.bindText()
+  })
+})
+
 ;[1,2,3,4,5,6].map(level=>jb.component(`header.h${level}`, {
   type: 'text.style',
   impl: customStyle({
