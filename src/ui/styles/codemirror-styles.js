@@ -36,7 +36,7 @@ jb.component('editableText.codemirror', {
 		try {
 			cmp.data_ref = cmp.ctx.vars.$model.databind()
 			if (cmp.data_ref instanceof Promise)
-				jb.delay(1).then(() => cmp.refresh())
+				jb.delay(1).then(() => cmp.refresh(null,{srcCtx: ctx.componentContext}))
 			cm_settings = cm_settings||{};
 			const adjustedExtraKeys = jb.objFromEntries(jb.entries(cm_settings.extraKeys).map(e=>[
 				e[0], _ => jb.ui.wrapWithLauchingElement(ctx2 => ctx2.run(e[1]), cmp.ctx, cmp.base,

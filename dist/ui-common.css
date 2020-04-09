@@ -196,10 +196,9 @@ border: 1px solid rgb(213, 213, 213);}
   font-size: 0.875rem;
   line-height: 1.25rem;
   font-weight: 400;
-  height: 32px;
-  display: inline-flex;  
+  display: inline-flex;
 }
 
 .jb-chip>* {
-  padding-top: 6px; white-space: nowrap;
+  padding-top: 3px; white-space: nowrap;
 }

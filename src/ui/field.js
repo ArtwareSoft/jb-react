@@ -12,7 +12,7 @@ jb.component('field.databind', {
     If(
         '%$oneWay%',
         calcProp('databind','%$$model/databind%'),
-        watchAndCalcModelProp('databind')
+        watchAndCalcModelProp({prop: 'databind', allowSelfRefresh: true})
       ),
     calcProp('title'),
     calcProp({id: 'fieldId', value: () => jb.ui.field_id_counter++}),
@@ -43,16 +43,16 @@ jb.component('field.databind', {
 function writeFieldData(ctx,cmp,value,oneWay) {
   if (jb.val(ctx.vars.$model.databind(cmp.ctx)) == value) return
   jb.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx);
-  jb.ui.checkValidationError(cmp,value);
-  cmp.onValueChange && cmp.onValueChange(value) // used to float label
+  jb.ui.checkValidationError(cmp,value,ctx);
+  cmp.onValueChange && cmp.onValueChange(value)
   !oneWay && jb.ui.refreshElem(cmp.base,null,{srcCtx: ctx.componentContext});
 }
 
-jb.ui.checkValidationError = (cmp,val) => {
+jb.ui.checkValidationError = (cmp,val,ctx) => {
   const err = validationError();
   if (cmp.state.error != err) {
     jb.log('field',['setErrState',cmp,err])
-    cmp.refresh({valid: !err, error:err});
+    cmp.refresh({valid: !err, error:err}, {srcCtx: ctx.componentContext});
   }
 
   function validationError() {
@@ -82,6 +82,15 @@ jb.ui.preserveFieldCtxWithItem = (field,item) => {
 	const ctx = jb.ctxDictionary[field.ctxId]
 	return ctx && jb.ui.preserveCtx(ctx.setData(item))
 }
+jb.component('field.onChange', {
+  category: 'field:100',
+  description: 'on picklist selection, text or boolean value change',
+  type: 'feature',
+  params: [
+    {id: 'action', type: 'action', dynamic: true}
+  ],
+  impl: feature.onDataChange({ref: '%$$model/databind%', action: call('action') })
+})
 
 jb.component('field.databindText', {
   type: 'feature',

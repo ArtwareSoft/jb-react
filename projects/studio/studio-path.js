@@ -82,7 +82,7 @@ Object.assign(st,{
       return 'jbComponent';
     if (path.match(/~\$vars$/)) return;
     const prof = st.valOfPath(path,silent); // + (path.indexOf('~') == -1 ? '~impl' : '');
-  	return jb.compName(prof) || jb.compName(prof,st.paramDef(path))
+  	return jb.compName(prof) || jb.compName(prof,st.paramDef(path)) || path.split('~')[0]
   },
   compOfPath: (path,silent) => st.getComp(st.compNameOfPath(path,silent)),
   paramsOfPath: (path,silent) => jb.compParams(st.compOfPath(path,silent)), //.concat(st.compHeaderParams(path)),
@@ -342,7 +342,7 @@ jb.component('studio.watchScriptChanges', {
   impl: ctx => ({
 	  afterViewInit: cmp => pipe(st.scriptChange,
 		takeUntil( cmp.destroyed ),
-		subscribe(() => cmp.refresh({srcCtx: ctx}))
+		subscribe(() => cmp.refresh(null,{srcCtx: ctx}))
 	  )
    })
 })
@@ -353,7 +353,7 @@ jb.component('studio.watchComponents', {
 	  afterViewInit: cmp => pipe(st.scriptChange,
 			takeUntil( cmp.destroyed ),
 			filter(e=>e.path.length == 1),
-        	subscribe(() => cmp.refresh({srcCtx: ctx})))
+        	subscribe(() => cmp.refresh(null,{srcCtx: ctx})))
    })
 })
 

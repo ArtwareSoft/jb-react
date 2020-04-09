@@ -136,26 +136,24 @@ jb.component('studio.jbFloatingInput', {
         type: 'mdi',
         features: [css.margin('25')]
       }),
-      editableBoolean({
-        databind: studio.boolRef('%$path%'),
-        style: editableBoolean.mdcSlideToggle(),
-        title: '',
+      button({
+        title: 'set to false',
+        action: writeValue(studio.boolRef('%$path%'), false),
+        style: button.mdcIcon(icon({icon: 'cancel', type: 'mdc'}), '24'),
         features: [
-          feature.onEvent({
-            event: 'change',
-            action: runActions(dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus())
-          }),
-          feature.if(studio.isOfType('%$path%', 'boolean')),
-          css.margin({top: '35', right: '45', left: '20'}),
-          interactive(
-            (ctx,{cmp}) => { 
-            //jb.ui.focus(cmp.base,'jbFloatingInput boolean',ctx)
-            const {pipe,skip,subscribe} = jb.callbag
-            pipe(jb.ui.fromEvent(cmp,'keyup'),skip(1),subscribe( () => 
-              (event.keyCode == 13 || event.keyCode == 27) && 
-                ctx.run(runActions(dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus()))))
-          }
-          )
+          feature.if(ctx => ctx.run(studio.isOfType('%$path%', 'boolean'))),
+          css.margin('26'),
+          css.width('38')
+        ]
+      }),
+      button({
+        title: 'set to true',
+        action: writeValue(studio.boolRef('%$path%'), true),
+        style: button.mdcIcon(icon({icon: 'done', type: 'mdc'}), '24'),
+        features: [
+          feature.if(ctx => ctx.run(studio.isOfType('%$path%', 'boolean'))),
+          css.margin('26'),
+          css.width('38')
         ]
       }),
       button({

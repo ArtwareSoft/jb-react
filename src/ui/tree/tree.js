@@ -19,14 +19,14 @@ jb.component('tree', {
 				const path = cmp.elemToPath(event.target)
 				if (!path) debugger
 				cmp.state.expanded[path] = !(cmp.state.expanded[path]);
-				cmp.refresh();
+				cmp.refresh(null,{srcCtx: ctx.componentContext});
 			}),
 			interactiveProp('model', '%$$model.nodeModel%'),
 			interactive( (ctx,{cmp}) => {
 				cmp.state.expanded =  { [cmp.model.rootPath] : true }
 				tree.cmp = cmp
 				cmp.selectionEmitter = jb.callbag.subject()
-				tree.redraw = cmp.redraw = () => cmp.refresh()
+				tree.redraw = cmp.redraw = () => cmp.refresh(null,{srcCtx: ctx.componentContext})
 
 				cmp.expandPath = path => {
 					const changed = jb.ui.treeExpandPath(cmp.state.expanded,path)

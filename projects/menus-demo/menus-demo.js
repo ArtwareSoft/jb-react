@@ -83,7 +83,7 @@ jb.component('menusDemo.popup', {
             icon: icon({icon: 'edit', type: 'mdc'})
           }),
           popupStyle: dialog.contextMenuPopup({toolbar: true}),
-          menuStyle: menuStyle.toolbar({scale: '0.8'})
+          menuStyle: menuStyle.toolbar()
         }),
         style: button.mdcIcon(icon({icon: 'menu', type: 'mdc', scale: '1'})),
         features: css.transformScale({x: '0.8', y: '0.8'})

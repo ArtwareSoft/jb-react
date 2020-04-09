@@ -116,7 +116,7 @@ jb.component('table.initSort', {
           option.dir = directions[(directions.indexOf(option.dir)+1)%directions.length];
           if (option.dir == 'none')
             sortOptions.splice(sortOptions.indexOf(option),1);
-          cmp.refresh({sortOptions: sortOptions});
+          cmp.refresh({sortOptions: sortOptions},{srcCtx: ctx});
         }
         cmp.sortItems = () => {
           if (!cmp.items || !cmp.renderProps.sortOptions || cmp.renderProps.sortOptions.length == 0) return;

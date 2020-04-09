@@ -90,7 +90,7 @@ jb.component('tableTree.init', {
                     return inner
                 },null)
                 cmp.state.expanded[path] = !(cmp.state.expanded[path]);
-                cmp.refresh();
+                cmp.refresh(null,{srcCtx: ctx.componentContext});
             }
             function elemToPath(el) { return el && (el.getAttribute('path') || jb.ui.closest(el,'.jb-item') && jb.ui.closest(el,'.jb-item').getAttribute('path')) }
         }

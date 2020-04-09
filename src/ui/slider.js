@@ -189,12 +189,12 @@ jb.component('slider.checkAutoScale', {
         const step = +(cmp.base.step || cmp.base.getAttribute('step'))
         if (val == max) { // scale up
           cmp.jbModelWithUnits((+val) + step)
-          cmp.refresh(null, {strongRefresh: true})
+          cmp.refresh(null, {strongRefresh: true},{srcCtx: ctx.componentContext})
           return true
         }
         if (max > ctx.vars.$model.max && val < ctx.vars.$model.max) { // scale down
           cmp.jbModelWithUnits(+val)
-          cmp.refresh(null, {strongRefresh: true})
+          cmp.refresh(null, {strongRefresh: true},{srcCtx: ctx.componentContext})
           return true
         }
       }

@@ -34,7 +34,7 @@ jb.component('studio.openResource', {
             interactive(
               (ctx,{cmp}) => ctx.vars.$dialog.cmp.refresh = () => {
               ctx.run(studio.copyDataResourceToComp('%$path%','%$name%'))
-              cmp.refresh && cmp.refresh()}
+              cmp.refresh && cmp.refresh(null,{srcCtx: ctx.componentContext})}
             )
           ]
         }),

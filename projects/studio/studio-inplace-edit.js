@@ -65,13 +65,13 @@ jb.component('inplaceEdit.toolbar', {
     {id: 'path'}
   ],
   impl: group({
-    layout: layout.horizontal('-10'),
+    layout: layout.horizontal('3'),
     controls: [
       button({
         title: 'edit grid',
         action: inplaceEdit.activate('%$parentGroup%'),
-        style: button.mdcIcon(icon({icon: 'grid_on', type: 'mdc'}), '0.6'),
-        features: feature.if('%$parentLayout% == layout.grid')
+        style: button.mdcIcon(icon({icon: 'grid_on', type: 'mdc'}), '20'),
+        features: ctx => ctx.run(feature.if('%$parentLayout% == layout.grid'))
       }),
       button({
         title: 'Change Style',
@@ -80,7 +80,7 @@ jb.component('inplaceEdit.toolbar', {
           studio.openProperties(),
           studio.openPickProfile('%$path%~style')
         ),
-        style: button.mdcIcon(icon('style'), '0.6')
+        style: button.mdcIcon(icon('style'), '20')
       }),
       button({
         title: 'Insert Control',
@@ -89,12 +89,12 @@ jb.component('inplaceEdit.toolbar', {
           mode: 'insert-control',
           onClose: inplaceEdit.openToolbarOfLastEdit()
         }),
-        style: button.mdcIcon(icon('add'), '0.6')
+        style: button.mdcIcon(icon('add'), '20')
       }),
       button({
         title: 'Duplicate data item',
         action: ctx => jb.ui.inplaceEdit.duplicateDataItem(ctx),
-        style: button.mdcIcon(icon({icon: 'PlusBoxOutline', type: 'mdi'}), '0.6'),
+        style: button.mdcIcon(icon({icon: 'PlusBoxOutline', type: 'mdi'}), '20'),
         features: feature.if('%$sourceItem%')
       }),
       button({
@@ -106,17 +106,17 @@ jb.component('inplaceEdit.toolbar', {
         ],
         title: 'Layout',
         action: studio.openPickProfile('%$parentLayout%'),
-        style: button.mdcIcon(icon('view_quilt'), '0.6')
+        style: button.mdcIcon(icon('view_quilt'), '20')
       }),
       button({
         title: 'Properties',
         action: studio.openProperties(true),
-        style: button.mdcIcon(icon('storage'), '0.6')
+        style: button.mdcIcon(icon('storage'), '20')
       }),
       button({
         title: 'Delete',
         action: studio.delete('%$path%'),
-        style: button.mdcIcon(icon('delete'), '0.6')
+        style: button.mdcIcon(icon('delete'), '20')
       })
     ]
   })

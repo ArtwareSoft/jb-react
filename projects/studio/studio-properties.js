@@ -80,7 +80,7 @@ jb.component('studio.propField', {
         ),
         controlWithCondition(
           inGroup(
-            split({text: 'width,height,top,left,right,bottom'}),
+            split({text: 'width,height,top,left,right,bottom,spacing'}),
             pipeline(studio.paramDef('%$path%'), '%id%')
           ),
           studio.propertyNumbericCss('%$path%')

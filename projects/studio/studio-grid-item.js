@@ -1,3 +1,0 @@
-Object.assign(jb.ui,{
-})
-

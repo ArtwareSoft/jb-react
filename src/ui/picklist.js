@@ -58,7 +58,7 @@ jb.component('picklist.dynamicOptions', {
   impl: interactive(
     (ctx,{cmp},{recalcEm}) => {
       const {pipe,takeUntil,subscribe} = jb.callbag
-      recalcEm && pipe(recalcEm, takeUntil( cmp.destroyed ), subscribe(() => cmp.refresh()))
+      recalcEm && pipe(recalcEm, takeUntil( cmp.destroyed ), subscribe(() => cmp.refresh(null,{srcCtx: ctx.componentContext})))
     }
   )
 })

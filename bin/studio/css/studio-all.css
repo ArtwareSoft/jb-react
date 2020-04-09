@@ -142,12 +142,11 @@ border: 1px solid rgb(213, 213, 213);}
   font-size: 0.875rem;
   line-height: 1.25rem;
   font-weight: 400;
-  height: 32px;
-  display: inline-flex;  
+  display: inline-flex;
 }
 
 .jb-chip>* {
-  padding-top: 6px; white-space: nowrap;
+  padding-top: 3px; white-space: nowrap;
 }@keyframes slide_from_top {
     0%   {margin-top: -50px;}
     10%  {margin-top: 0;}
@@ -496,12 +495,11 @@ border: 1px solid rgb(213, 213, 213);}
   font-size: 0.875rem;
   line-height: 1.25rem;
   font-weight: 400;
-  height: 32px;
-  display: inline-flex;  
+  display: inline-flex;
 }
 
 .jb-chip>* {
-  padding-top: 6px; white-space: nowrap;
+  padding-top: 3px; white-space: nowrap;
 }.CodeMirror-dialog {
   position: absolute;
   left: 0; right: 0;

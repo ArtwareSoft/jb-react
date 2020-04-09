@@ -1,11 +1,15 @@
 jb.ns('gridEditor')
 
-Object.assign(jb.ui,{
+Object.assign(jb.ui, {
   getGridVals(el,axis) {
     const prop = `gridTemplate${axis}`
     const grid = jb.studio.previewWindow.getComputedStyle(el)[prop] || '' // <tt>78.2969px 74px 83px 120px 16px</tt>
     return grid.replace(/<\/?tt>/g,'').replace(/px /,' ').replace(/px/g,'').split(' ').map(x=>+(x.trim()))
   },
+  calcGridAccVals(inplaceElem) { return {
+    Rows: jb.ui.getGridVals(inplaceElem, 'Rows').reduce((sums,x) => [...sums,x + sums.slice(-1)[0]],[0]),
+    Columns: jb.ui.getGridVals(inplaceElem, 'Columns').reduce((sums,x) => [...sums,x + sums.slice(-1)[0]],[0])
+  }}
 })
 
 jb.component('inplaceEdit.openGridEditor', {
@@ -15,10 +19,9 @@ jb.component('inplaceEdit.openGridEditor', {
     type: 'action',
     impl: runActions(
         Var('gridPath','%$path%'),
-        Var('gridAccVals', obj()),
-        gridEditor.openGridLineThumb('Columns'),
-        gridEditor.openGridLineThumb('Rows'),
-        gridEditor.openGridItemThumbs()
+        // gridEditor.openGridLineThumb('Columns'),
+        // gridEditor.openGridLineThumb('Rows'),
+        gridEditor.openGridItemThumbs(),
     )
 })
 
@@ -51,12 +54,9 @@ jb.component('gridEditor.openGridLineThumb', {
         gridEditor.dragableGridLineThumb('%$axis%'),
         watchRef({ ref: studio.ref('%$gridPath%~layout'), includeChildren: 'yes', cssOnly: true}),
         css(
-          (ctx,{$dialog,gridIndex,otherAxis,gridAccVals,inplaceElem},{axis}) => {
+          (ctx,{$dialog,gridIndex,otherAxis,inplaceElem},{axis}) => {
                 Object.assign($dialog, {axis, gridIndex})
-                Object.assign(gridAccVals,{
-                  Rows: jb.ui.getGridVals(inplaceElem, 'Rows').reduce((sums,x) => [...sums,x + sums.slice(-1)[0]],[0]),
-                  Columns: jb.ui.getGridVals(inplaceElem, 'Columns').reduce((sums,x) => [...sums,x + sums.slice(-1)[0]],[0])
-                })
+                const gridAccVals = jb.ui.calcGridAccVals(inplaceElem)
                 const otherAxisSize = gridAccVals[otherAxis].slice(-1)[0]
                 const elemRect = inplaceElem.getBoundingClientRect()
                 const offset = jb.ui.getGridVals(inplaceElem, axis).slice(0,gridIndex).reduce((sum,x) => sum+x,0) 
@@ -162,7 +162,7 @@ jb.component('gridEditor.openGridItemThumbs', {
         }),
         css('{cursor: grab; box-shadow: 3px 3px; background: grey; opacity: 0.2} ~:hover {opacity: 0.7}' ),
         feature.onDataChange({ ref: studio.ref('%$gridPath%'), includeChildren: 'yes', 
-          action: (ctx,{cmp}) => jb.delay(300).then(()=> cmp.refresh()) 
+          action: (ctx,{cmp}) => jb.delay(300).then(()=> cmp.refresh(null,{srcCtx: ctx.componentContext})) 
         })
       ]
     })
@@ -171,7 +171,7 @@ jb.component('gridEditor.openGridItemThumbs', {
 
 jb.component('gridEditor.dragableGridItemThumb', {
   type: 'feature',
-  impl: interactive( (ctx,{cmp,gridItemElem,inplaceElem,gridAccVals})=> {
+  impl: interactive( (ctx,{cmp,gridItemElem,inplaceElem})=> {
     const {pipe,takeUntil,merge,Do, flatMap, last, subscribe} = jb.callbag
     cmp.mousedownEm = jb.ui.fromEvent(cmp, 'mousedown')
     let mouseUpEm = jb.ui.fromEvent(cmp, 'mouseup', document)
@@ -198,7 +198,7 @@ jb.component('gridEditor.dragableGridItemThumb', {
         Do(e => moveGridItem(e)),
         last(),
       )),
-      subscribe(() => jb.ui.dialogs.closePopups())
+      subscribe(() => {}) //jb.ui.dialogs.closePopups())
     )
 
     function moveHandler(e) {
@@ -221,6 +221,7 @@ jb.component('gridEditor.dragableGridItemThumb', {
         const gridAreaRef = jb.studio.refOfPath(`${gridItemPath}~features~${gridAreaFeatureIndex}~css`)
         const scriptValues = jb.val(gridAreaRef).replace(/;?\s*}?\s*$/,'').replace(/^\s*{?\s*grid-area\s*:/,'').split('/') // grid-area: 1 / 2 / span 2 / span 3;
         if (!span && scriptValues.slice(0,2).map(x=>x.trim()).join(',') == vals.join(',')) return
+        jb.log('setGridAreaVals',[vals,scriptValues,ctx,cmp,gridItemElem,inplaceElem])
         if (span)
             [0,1].forEach(axis =>scriptValues[2+axis] = ` span ${vals[axis] -basePos[axis]} `)
          else
@@ -228,7 +229,8 @@ jb.component('gridEditor.dragableGridItemThumb', {
         jb.writeValue(gridAreaRef,`grid-area: ${scriptValues.join('/')}`,ctx)
     }
     function posToGridPos(pos) {
-        return pos.map((val,i) => gridAccVals[i ? 'Columns' : 'Rows'].findIndex(x=>x>val))
+      const gridAccVals = jb.ui.calcGridAccVals(inplaceElem)
+      return pos.map((val,i) => gridAccVals[i ? 'Columns' : 'Rows'].findIndex(x=> x > val))
     }
   })
 })

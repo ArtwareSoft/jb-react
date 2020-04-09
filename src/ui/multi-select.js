@@ -93,7 +93,6 @@ jb.component('multiSelect.chips', {
                 features: [
                     picklist.onChange(addToArray('%$multiSelectModel/databind%','%%')),
                     picklist.plusIcon(),
-                    css('margin-top: 3px')
                 ]
             }),
         ],

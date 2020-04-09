@@ -370,8 +370,8 @@ Object.assign(jb.ui, {
             if (elemsToCheckCtxBefore[i] != elem.getAttribute('jb-ctx')) return // the elem was already refreshed during this process, probably by its parent
             let refresh = false, strongRefresh = false, cssOnly = true
             elem.getAttribute('observe').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{
-                const path = jb.path(elem,'_component.ctx.componentContext.callerPath')
-                //if (!obs.allowSelfRefresh && path && e.srcCtx && e.srcCtx.callStack().indexOf(path) != -1)  return
+                if (!obs.allowSelfRefresh && elem == jb.path(e.srcCtx, 'vars.cmp.base')) 
+                    return jb.log('notifyObservableElems',['blocking self refresh', elem, obs,e])
                 const obsPath = watchHandler.removeLinksFromPath(watchHandler.pathOfRef(obs.ref))
                 if (!obsPath)
                     return jb.logError('observer ref path is empty',obs,e)
@@ -383,7 +383,6 @@ Object.assign(jb.ui, {
                 const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
                 if (diff == -1 || diff == 0 || includeChildrenYes || includeChildrenStructure) {
                     jb.log('notifyObservableElem',['notify refresh',elem,e.srcCtx,obs,e])
-                    //if (!checkCircularity({srcCtx: e.srcCtx, callerPath: elem._component.ctx.componentContext.callerPath, ...obs}))
                     refresh = true
                 }
             })
@@ -400,31 +399,15 @@ Object.assign(jb.ui, {
             const includeChildren = ((innerParts[2] ||'').match(/includeChildren=([a-z]+)/) || ['',''])[1]
             const strongRefresh = innerParts.indexOf('strongRefresh') != -1
             const cssOnly = innerParts.indexOf('cssOnly') != -1
+            const allowSelfRefresh = innerParts.indexOf('allowSelfRefresh') != -1
+            
             return parts[0] == watchHandler.resources.id && 
-                { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh, cssOnly }
+                { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh, cssOnly, allowSelfRefresh }
         }
     }),
 })
 
 ui.subscribeToRefChange(jb.mainWatchableHandler)
-
-function checkCircularity(obs) {
-    let ctxStack=[]; for(let innerCtx=obs.srcCtx; innerCtx; innerCtx = innerCtx.componentContext) ctxStack = ctxStack.concat(innerCtx)
-    const callerPaths = ctxStack.filter(x=>x).map(ctx=>ctx.callerPath).filter(x=>x)
-        .filter(x=>x.indexOf('jb-editor') == -1)
-        .filter(x=>!x.match(/^studio-helper/))
-    const callerPathsUniqe = jb.unique(callerPaths)
-    if (callerPathsUniqe.length !== callerPaths.length) {
-        jb.logError('circular watchRef',callerPaths)
-        return true
-    }
-
-    if (!obs.allowSelfRefresh && obs.srcCtx && obs.callerPath) {
-        const callerPathsToCompare = callerPaths.map(x=> x.replace(/~features~?[0-9]*$/,'').replace(/~style$/,''))
-        const ctxStylePath = obs.callerPath.replace(/~features~?[0-9]*$/,'')
-        return callerPathsToCompare.reduce((res,path) => res || path.indexOf(ctxStylePath) == 0, false)
-    }
-}
 
 function mountInteractive(elem, keepState) {
     const ctx = jb.ui.ctxOfElem(elem,'mount-ctx')

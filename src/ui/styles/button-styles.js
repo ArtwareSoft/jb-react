@@ -120,18 +120,6 @@ jb.component('button.mdcFloatingAction', {
   })
 })
 
-jb.component('button.mdcIcon12', {
-  type: 'button.style,icon.style',
-  params: [
-    {id: 'icon', as: 'string', defaultValue: 'code'}
-  ],
-  impl: customStyle({
-    template: (cmp,{icon,raised},h) => h('i',{class: ['material-icons',raised && 'raised mdc-icon-button--on'].filter(x=>x).join(' ') 
-      , onclick: true},icon),
-    css: '{ font-size:12px; cursor: pointer }'
-  })
-})
-
 jb.component('button.mdcTab', {
   type: 'button.style',
   impl: customStyle({

@@ -2048,7 +2048,7 @@ jb.exp = (...args) => new jb.jbCtx().exp(...args);
 
 (function() {
 const spySettings = { 
-	moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable,scriptChange,resLog', 
+	moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable,scriptChange,resLog,setGridAreaVals', 
 	groups: {
 		watchable: 'doOp,writeValue,removeCmpObservable,registerCmpObservable,notifyCmpObservable,notifyObservableElems,notifyObservableElem,scriptChange',
 		react: 'applyDeltaTop,applyDelta,unmount,render,initCmp,refreshReq,refreshElem,childDiffRes,htmlChange,appendChild,removeChild,replaceTop',
@@ -3836,8 +3836,8 @@ Object.assign(jb.ui, {
             if (elemsToCheckCtxBefore[i] != elem.getAttribute('jb-ctx')) return // the elem was already refreshed during this process, probably by its parent
             let refresh = false, strongRefresh = false, cssOnly = true
             elem.getAttribute('observe').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{
-                const path = jb.path(elem,'_component.ctx.componentContext.callerPath')
-                //if (!obs.allowSelfRefresh && path && e.srcCtx && e.srcCtx.callStack().indexOf(path) != -1)  return
+                if (!obs.allowSelfRefresh && elem == jb.path(e.srcCtx, 'vars.cmp.base')) 
+                    return jb.log('notifyObservableElems',['blocking self refresh', elem, obs,e])
                 const obsPath = watchHandler.removeLinksFromPath(watchHandler.pathOfRef(obs.ref))
                 if (!obsPath)
                     return jb.logError('observer ref path is empty',obs,e)
@@ -3849,7 +3849,6 @@ Object.assign(jb.ui, {
                 const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
                 if (diff == -1 || diff == 0 || includeChildrenYes || includeChildrenStructure) {
                     jb.log('notifyObservableElem',['notify refresh',elem,e.srcCtx,obs,e])
-                    //if (!checkCircularity({srcCtx: e.srcCtx, callerPath: elem._component.ctx.componentContext.callerPath, ...obs}))
                     refresh = true
                 }
             })
@@ -3866,31 +3865,15 @@ Object.assign(jb.ui, {
             const includeChildren = ((innerParts[2] ||'').match(/includeChildren=([a-z]+)/) || ['',''])[1]
             const strongRefresh = innerParts.indexOf('strongRefresh') != -1
             const cssOnly = innerParts.indexOf('cssOnly') != -1
+            const allowSelfRefresh = innerParts.indexOf('allowSelfRefresh') != -1
+            
             return parts[0] == watchHandler.resources.id && 
-                { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh, cssOnly }
+                { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh, cssOnly, allowSelfRefresh }
         }
     }),
 })
 
 ui.subscribeToRefChange(jb.mainWatchableHandler)
-
-function checkCircularity(obs) {
-    let ctxStack=[]; for(let innerCtx=obs.srcCtx; innerCtx; innerCtx = innerCtx.componentContext) ctxStack = ctxStack.concat(innerCtx)
-    const callerPaths = ctxStack.filter(x=>x).map(ctx=>ctx.callerPath).filter(x=>x)
-        .filter(x=>x.indexOf('jb-editor') == -1)
-        .filter(x=>!x.match(/^studio-helper/))
-    const callerPathsUniqe = jb.unique(callerPaths)
-    if (callerPathsUniqe.length !== callerPaths.length) {
-        jb.logError('circular watchRef',callerPaths)
-        return true
-    }
-
-    if (!obs.allowSelfRefresh && obs.srcCtx && obs.callerPath) {
-        const callerPathsToCompare = callerPaths.map(x=> x.replace(/~features~?[0-9]*$/,'').replace(/~style$/,''))
-        const ctxStylePath = obs.callerPath.replace(/~features~?[0-9]*$/,'')
-        return callerPathsToCompare.reduce((res,path) => res || path.indexOf(ctxStylePath) == 0, false)
-    }
-}
 
 function mountInteractive(elem, keepState) {
     const ctx = jb.ui.ctxOfElem(elem,'mount-ctx')
@@ -4052,7 +4035,7 @@ class JbComponent {
         const observe = this.toObserve.map(x=>[
             x.ref.handler.urlOfRef(x.ref),
             x.includeChildren && `includeChildren=${x.includeChildren}`,
-            x.strongRefresh && `strongRefresh`,  x.cssOnly && `cssOnly`,  
+            x.strongRefresh && `strongRefresh`,  x.cssOnly && `cssOnly`, x.allowSelfRefresh && `allowSelfRefresh`,  
             x.phase && `phase=${x.phase}`].filter(x=>x).join(';')).join(',')
         const handlers = (this.defHandler||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx)}`).join(',')
         const interactive = (this.interactiveProp||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx)}`).join(',')
@@ -4520,9 +4503,10 @@ jb.component('watchAndCalcModelProp', {
   description: 'Use a model property in the rendering and watch its changes (refresh on change)',
   params: [
     {id: 'prop', as: 'string', mandatory: true},
-    {id: 'transformValue', dynamic: true, defaultValue: '%%'}
+    {id: 'transformValue', dynamic: true, defaultValue: '%%'},
+    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children'},
   ],
-  impl: (ctx,prop,transformValue) => ({watchAndCalcModelProp: { prop, transformValue }})
+  impl: ctx => ({watchAndCalcModelProp: ctx.params})
 })
 
 jb.component('calcProp', {
@@ -4643,7 +4627,7 @@ jb.component('watchObservable', {
     (ctx,{cmp},{toWatch, debounceTime}) => jb.callbag.pipe(toWatch,
       jb.callbag.takeUntil(cmp.destroyed),
       debounceTime && jb.callbag.debounceTime(debounceTime),
-      jb.callbag.subscribe(()=>cmp.refresh(null,{srcCtx:ctx.componentContext}))
+      jb.callbag.subscribe(()=>cmp.refresh(null, {srcCtx: ctx}))
     )
   )
 })
@@ -4972,13 +4956,14 @@ jb.component('refreshControlById', {
   type: 'action',
   params: [
     {id: 'id', as: 'string', mandatory: true},
-    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and promises', type: 'boolean'}
+    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and reinit wait for data'},
+    {id: 'cssOnly', as: 'boolean', description: 'refresh only css features'},
   ],
   impl: (ctx,id) => {
     const elem = jb.ui.document(ctx).querySelector('#'+id)
     if (!elem)
-      return jb.logError('refresh-control-by-id can not find elem for #'+id, ctx)
-    return jb.ui.refreshElem(elem,null,{srcCtx: ctx})
+      return jb.logError('refreshControlById can not find elem for #'+id, ctx)
+    return jb.ui.refreshElem(elem,null,{srcCtx: ctx, ...ctx.params})
   }
 })
 
@@ -5259,7 +5244,7 @@ jb.component('text.bindText', {
   type: 'feature',
   category: 'text:0',
   impl: features(
-    watchAndCalcModelProp('text', ({data}) => jb.ui.toVdomOrStr(data)),
+    watchAndCalcModelProp({prop: 'text', transformValue: ({data}) => jb.ui.toVdomOrStr(data)}),
     () => ({studioFeatures :{$: 'feature.contentEditable', param: 'text' }})
   )
 })
@@ -5785,7 +5770,7 @@ jb.component('field.databind', {
     If(
         '%$oneWay%',
         calcProp('databind','%$$model/databind%'),
-        watchAndCalcModelProp('databind')
+        watchAndCalcModelProp({prop: 'databind', allowSelfRefresh: true})
       ),
     calcProp('title'),
     calcProp({id: 'fieldId', value: () => jb.ui.field_id_counter++}),
@@ -5816,16 +5801,16 @@ jb.component('field.databind', {
 function writeFieldData(ctx,cmp,value,oneWay) {
   if (jb.val(ctx.vars.$model.databind(cmp.ctx)) == value) return
   jb.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx);
-  jb.ui.checkValidationError(cmp,value);
-  cmp.onValueChange && cmp.onValueChange(value) // used to float label
+  jb.ui.checkValidationError(cmp,value,ctx);
+  cmp.onValueChange && cmp.onValueChange(value)
   !oneWay && jb.ui.refreshElem(cmp.base,null,{srcCtx: ctx.componentContext});
 }
 
-jb.ui.checkValidationError = (cmp,val) => {
+jb.ui.checkValidationError = (cmp,val,ctx) => {
   const err = validationError();
   if (cmp.state.error != err) {
     jb.log('field',['setErrState',cmp,err])
-    cmp.refresh({valid: !err, error:err});
+    cmp.refresh({valid: !err, error:err}, {srcCtx: ctx.componentContext});
   }
 
   function validationError() {
@@ -5855,6 +5840,15 @@ jb.ui.preserveFieldCtxWithItem = (field,item) => {
 	const ctx = jb.ctxDictionary[field.ctxId]
 	return ctx && jb.ui.preserveCtx(ctx.setData(item))
 }
+jb.component('field.onChange', {
+  category: 'field:100',
+  description: 'on picklist selection, text or boolean value change',
+  type: 'feature',
+  params: [
+    {id: 'action', type: 'action', dynamic: true}
+  ],
+  impl: feature.onDataChange({ref: '%$$model/databind%', action: call('action') })
+})
 
 jb.component('field.databindText', {
   type: 'feature',
@@ -6086,7 +6080,7 @@ jb.component('editableBoolean', {
   ],
   impl: ctx => jb.ui.ctrl(ctx, features(
     calcProp('text',data.if('%$$model/databind%','%$$model/textForTrue%','%$$model/textForFalse%' )),
-    watchRef('%$$model/databind%'),
+    watchRef({ref: '%$$model/databind%', allowSelfRefresh: true}),
     defHandler('toggle', ctx => ctx.run(writeValue('%$$model/databind%',not('%$$model/databind%')))),
     defHandler('toggleByKey', (ctx,{ev}) => ev.keyCode != 27 && ctx.run(writeValue('%$$model/databind%',not('%$$model/databind%')))),
     defHandler('setChecked', writeValue('%$$model/databind%','true')),
@@ -7740,7 +7734,7 @@ jb.component('picklist.dynamicOptions', {
   impl: interactive(
     (ctx,{cmp},{recalcEm}) => {
       const {pipe,takeUntil,subscribe} = jb.callbag
-      recalcEm && pipe(recalcEm, takeUntil( cmp.destroyed ), subscribe(() => cmp.refresh()))
+      recalcEm && pipe(recalcEm, takeUntil( cmp.destroyed ), subscribe(() => cmp.refresh(null,{srcCtx: ctx.componentContext})))
     }
   )
 })
@@ -7911,7 +7905,6 @@ jb.component('multiSelect.chips', {
                 features: [
                     picklist.onChange(addToArray('%$multiSelectModel/databind%','%%')),
                     picklist.plusIcon(),
-                    css('margin-top: 3px')
                 ]
             }),
         ],
@@ -8133,12 +8126,12 @@ jb.component('slider.checkAutoScale', {
         const step = +(cmp.base.step || cmp.base.getAttribute('step'))
         if (val == max) { // scale up
           cmp.jbModelWithUnits((+val) + step)
-          cmp.refresh(null, {strongRefresh: true})
+          cmp.refresh(null, {strongRefresh: true},{srcCtx: ctx.componentContext})
           return true
         }
         if (max > ctx.vars.$model.max && val < ctx.vars.$model.max) { // scale down
           cmp.jbModelWithUnits(+val)
-          cmp.refresh(null, {strongRefresh: true})
+          cmp.refresh(null, {strongRefresh: true},{srcCtx: ctx.componentContext})
           return true
         }
       }
@@ -8278,7 +8271,7 @@ jb.component('table.initSort', {
           option.dir = directions[(directions.indexOf(option.dir)+1)%directions.length];
           if (option.dir == 'none')
             sortOptions.splice(sortOptions.indexOf(option),1);
-          cmp.refresh({sortOptions: sortOptions});
+          cmp.refresh({sortOptions: sortOptions},{srcCtx: ctx});
         }
         cmp.sortItems = () => {
           if (!cmp.items || !cmp.renderProps.sortOptions || cmp.renderProps.sortOptions.length == 0) return;
@@ -8504,18 +8497,6 @@ jb.component('button.mdcFloatingAction', {
       ]),
     css: '{width: %$buttonSize%px; height: %$buttonSize%px;}',  
     features: mdcStyle.initDynamic(),
-  })
-})
-
-jb.component('button.mdcIcon12', {
-  type: 'button.style,icon.style',
-  params: [
-    {id: 'icon', as: 'string', defaultValue: 'code'}
-  ],
-  impl: customStyle({
-    template: (cmp,{icon,raised},h) => h('i',{class: ['material-icons',raised && 'raised mdc-icon-button--on'].filter(x=>x).join(' ') 
-      , onclick: true},icon),
-    css: '{ font-size:12px; cursor: pointer }'
   })
 })
 
@@ -9075,8 +9056,8 @@ jb.component('picklist.plusIcon', {
   type: 'feature',
   categories: 'feature:0,picklist:50',
   impl: features(
-    css('-webkit-appearance: none; appearance: none; width: 7px; height: 26px; background-repeat: no-repeat;'),
-    css(`background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z'/></svg>");`),
+    css('-webkit-appearance: none; appearance: none; width: 6px; height: 23px; background-repeat: no-repeat; background-position-y: -1px;'),
+    css(`background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M17,13 H13 V17 H11 V13 H7 V11 H11 V7 H13 V11 H17 V13 Z'/></svg>");`),
   )
 })
 
@@ -9368,6 +9349,18 @@ jb.component('editableBoolean.buttonXV', {
     ))
 })
 
+jb.component('editableBoolean.iconWithSlash', {
+  type: 'editable-boolean.style',
+  params: [
+    {id: 'buttonSize', as: 'number', defaultValue: 40, description: 'button size is larger than the icon size, usually at the rate of 40/24' },
+  ],
+  impl: styleWithFeatures(button.mdcIcon({buttonSize: '%$buttonSize%'}), features(
+      htmlAttribute('onclick','toggle'),
+      htmlAttribute('title','%$$model/title%'),
+      css(If('%$$model/databind%','',`background-repeat: no-repeat; background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='%$buttonSize%' viewBox='0 0 %$buttonSize% %$buttonSize%' width='%$buttonSize%' xmlns='http://www.w3.org/2000/svg'><line x1='0' y1='0' x2='%$buttonSize%' y2='%$buttonSize%' style='stroke:white;stroke-width:2' /></svg>")`))
+    ))
+})
+
 
 jb.component('editableBoolean.mdcSlideToggle', {
   type: 'editable-boolean.style',
@@ -9600,14 +9593,14 @@ jb.component('tree', {
 				const path = cmp.elemToPath(event.target)
 				if (!path) debugger
 				cmp.state.expanded[path] = !(cmp.state.expanded[path]);
-				cmp.refresh();
+				cmp.refresh(null,{srcCtx: ctx.componentContext});
 			}),
 			interactiveProp('model', '%$$model.nodeModel%'),
 			interactive( (ctx,{cmp}) => {
 				cmp.state.expanded =  { [cmp.model.rootPath] : true }
 				tree.cmp = cmp
 				cmp.selectionEmitter = jb.callbag.subject()
-				tree.redraw = cmp.redraw = () => cmp.refresh()
+				tree.redraw = cmp.redraw = () => cmp.refresh(null,{srcCtx: ctx.componentContext})
 
 				cmp.expandPath = path => {
 					const changed = jb.ui.treeExpandPath(cmp.state.expanded,path)
@@ -10093,7 +10086,7 @@ jb.component('tableTree.init', {
                     return inner
                 },null)
                 cmp.state.expanded[path] = !(cmp.state.expanded[path]);
-                cmp.refresh();
+                cmp.refresh(null,{srcCtx: ctx.componentContext});
             }
             function elemToPath(el) { return el && (el.getAttribute('path') || jb.ui.closest(el,'.jb-item') && jb.ui.closest(el,'.jb-item').getAttribute('path')) }
         }

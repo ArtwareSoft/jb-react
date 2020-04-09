@@ -13,7 +13,7 @@ jb.component('editableBoolean', {
   ],
   impl: ctx => jb.ui.ctrl(ctx, features(
     calcProp('text',data.if('%$$model/databind%','%$$model/textForTrue%','%$$model/textForFalse%' )),
-    watchRef('%$$model/databind%'),
+    watchRef({ref: '%$$model/databind%', allowSelfRefresh: true}),
     defHandler('toggle', ctx => ctx.run(writeValue('%$$model/databind%',not('%$$model/databind%')))),
     defHandler('toggleByKey', (ctx,{ev}) => ev.keyCode != 27 && ctx.run(writeValue('%$$model/databind%',not('%$$model/databind%')))),
     defHandler('setChecked', writeValue('%$$model/databind%','true')),

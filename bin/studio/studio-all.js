@@ -2048,7 +2048,7 @@ jb.exp = (...args) => new jb.jbCtx().exp(...args);
 
 (function() {
 const spySettings = { 
-	moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable,scriptChange,resLog', 
+	moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable,scriptChange,resLog,setGridAreaVals', 
 	groups: {
 		watchable: 'doOp,writeValue,removeCmpObservable,registerCmpObservable,notifyCmpObservable,notifyObservableElems,notifyObservableElem,scriptChange',
 		react: 'applyDeltaTop,applyDelta,unmount,render,initCmp,refreshReq,refreshElem,childDiffRes,htmlChange,appendChild,removeChild,replaceTop',
@@ -3836,8 +3836,8 @@ Object.assign(jb.ui, {
             if (elemsToCheckCtxBefore[i] != elem.getAttribute('jb-ctx')) return // the elem was already refreshed during this process, probably by its parent
             let refresh = false, strongRefresh = false, cssOnly = true
             elem.getAttribute('observe').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{
-                const path = jb.path(elem,'_component.ctx.componentContext.callerPath')
-                //if (!obs.allowSelfRefresh && path && e.srcCtx && e.srcCtx.callStack().indexOf(path) != -1)  return
+                if (!obs.allowSelfRefresh && elem == jb.path(e.srcCtx, 'vars.cmp.base')) 
+                    return jb.log('notifyObservableElems',['blocking self refresh', elem, obs,e])
                 const obsPath = watchHandler.removeLinksFromPath(watchHandler.pathOfRef(obs.ref))
                 if (!obsPath)
                     return jb.logError('observer ref path is empty',obs,e)
@@ -3849,7 +3849,6 @@ Object.assign(jb.ui, {
                 const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
                 if (diff == -1 || diff == 0 || includeChildrenYes || includeChildrenStructure) {
                     jb.log('notifyObservableElem',['notify refresh',elem,e.srcCtx,obs,e])
-                    //if (!checkCircularity({srcCtx: e.srcCtx, callerPath: elem._component.ctx.componentContext.callerPath, ...obs}))
                     refresh = true
                 }
             })
@@ -3866,31 +3865,15 @@ Object.assign(jb.ui, {
             const includeChildren = ((innerParts[2] ||'').match(/includeChildren=([a-z]+)/) || ['',''])[1]
             const strongRefresh = innerParts.indexOf('strongRefresh') != -1
             const cssOnly = innerParts.indexOf('cssOnly') != -1
+            const allowSelfRefresh = innerParts.indexOf('allowSelfRefresh') != -1
+            
             return parts[0] == watchHandler.resources.id && 
-                { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh, cssOnly }
+                { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh, cssOnly, allowSelfRefresh }
         }
     }),
 })
 
 ui.subscribeToRefChange(jb.mainWatchableHandler)
-
-function checkCircularity(obs) {
-    let ctxStack=[]; for(let innerCtx=obs.srcCtx; innerCtx; innerCtx = innerCtx.componentContext) ctxStack = ctxStack.concat(innerCtx)
-    const callerPaths = ctxStack.filter(x=>x).map(ctx=>ctx.callerPath).filter(x=>x)
-        .filter(x=>x.indexOf('jb-editor') == -1)
-        .filter(x=>!x.match(/^studio-helper/))
-    const callerPathsUniqe = jb.unique(callerPaths)
-    if (callerPathsUniqe.length !== callerPaths.length) {
-        jb.logError('circular watchRef',callerPaths)
-        return true
-    }
-
-    if (!obs.allowSelfRefresh && obs.srcCtx && obs.callerPath) {
-        const callerPathsToCompare = callerPaths.map(x=> x.replace(/~features~?[0-9]*$/,'').replace(/~style$/,''))
-        const ctxStylePath = obs.callerPath.replace(/~features~?[0-9]*$/,'')
-        return callerPathsToCompare.reduce((res,path) => res || path.indexOf(ctxStylePath) == 0, false)
-    }
-}
 
 function mountInteractive(elem, keepState) {
     const ctx = jb.ui.ctxOfElem(elem,'mount-ctx')
@@ -4052,7 +4035,7 @@ class JbComponent {
         const observe = this.toObserve.map(x=>[
             x.ref.handler.urlOfRef(x.ref),
             x.includeChildren && `includeChildren=${x.includeChildren}`,
-            x.strongRefresh && `strongRefresh`,  x.cssOnly && `cssOnly`,  
+            x.strongRefresh && `strongRefresh`,  x.cssOnly && `cssOnly`, x.allowSelfRefresh && `allowSelfRefresh`,  
             x.phase && `phase=${x.phase}`].filter(x=>x).join(';')).join(',')
         const handlers = (this.defHandler||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx)}`).join(',')
         const interactive = (this.interactiveProp||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx)}`).join(',')
@@ -4520,9 +4503,10 @@ jb.component('watchAndCalcModelProp', {
   description: 'Use a model property in the rendering and watch its changes (refresh on change)',
   params: [
     {id: 'prop', as: 'string', mandatory: true},
-    {id: 'transformValue', dynamic: true, defaultValue: '%%'}
+    {id: 'transformValue', dynamic: true, defaultValue: '%%'},
+    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children'},
   ],
-  impl: (ctx,prop,transformValue) => ({watchAndCalcModelProp: { prop, transformValue }})
+  impl: ctx => ({watchAndCalcModelProp: ctx.params})
 })
 
 jb.component('calcProp', {
@@ -4643,7 +4627,7 @@ jb.component('watchObservable', {
     (ctx,{cmp},{toWatch, debounceTime}) => jb.callbag.pipe(toWatch,
       jb.callbag.takeUntil(cmp.destroyed),
       debounceTime && jb.callbag.debounceTime(debounceTime),
-      jb.callbag.subscribe(()=>cmp.refresh(null,{srcCtx:ctx.componentContext}))
+      jb.callbag.subscribe(()=>cmp.refresh(null, {srcCtx: ctx}))
     )
   )
 })
@@ -4972,13 +4956,14 @@ jb.component('refreshControlById', {
   type: 'action',
   params: [
     {id: 'id', as: 'string', mandatory: true},
-    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and promises', type: 'boolean'}
+    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and reinit wait for data'},
+    {id: 'cssOnly', as: 'boolean', description: 'refresh only css features'},
   ],
   impl: (ctx,id) => {
     const elem = jb.ui.document(ctx).querySelector('#'+id)
     if (!elem)
-      return jb.logError('refresh-control-by-id can not find elem for #'+id, ctx)
-    return jb.ui.refreshElem(elem,null,{srcCtx: ctx})
+      return jb.logError('refreshControlById can not find elem for #'+id, ctx)
+    return jb.ui.refreshElem(elem,null,{srcCtx: ctx, ...ctx.params})
   }
 })
 
@@ -5259,7 +5244,7 @@ jb.component('text.bindText', {
   type: 'feature',
   category: 'text:0',
   impl: features(
-    watchAndCalcModelProp('text', ({data}) => jb.ui.toVdomOrStr(data)),
+    watchAndCalcModelProp({prop: 'text', transformValue: ({data}) => jb.ui.toVdomOrStr(data)}),
     () => ({studioFeatures :{$: 'feature.contentEditable', param: 'text' }})
   )
 })
@@ -5785,7 +5770,7 @@ jb.component('field.databind', {
     If(
         '%$oneWay%',
         calcProp('databind','%$$model/databind%'),
-        watchAndCalcModelProp('databind')
+        watchAndCalcModelProp({prop: 'databind', allowSelfRefresh: true})
       ),
     calcProp('title'),
     calcProp({id: 'fieldId', value: () => jb.ui.field_id_counter++}),
@@ -5816,16 +5801,16 @@ jb.component('field.databind', {
 function writeFieldData(ctx,cmp,value,oneWay) {
   if (jb.val(ctx.vars.$model.databind(cmp.ctx)) == value) return
   jb.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx);
-  jb.ui.checkValidationError(cmp,value);
-  cmp.onValueChange && cmp.onValueChange(value) // used to float label
+  jb.ui.checkValidationError(cmp,value,ctx);
+  cmp.onValueChange && cmp.onValueChange(value)
   !oneWay && jb.ui.refreshElem(cmp.base,null,{srcCtx: ctx.componentContext});
 }
 
-jb.ui.checkValidationError = (cmp,val) => {
+jb.ui.checkValidationError = (cmp,val,ctx) => {
   const err = validationError();
   if (cmp.state.error != err) {
     jb.log('field',['setErrState',cmp,err])
-    cmp.refresh({valid: !err, error:err});
+    cmp.refresh({valid: !err, error:err}, {srcCtx: ctx.componentContext});
   }
 
   function validationError() {
@@ -5855,6 +5840,15 @@ jb.ui.preserveFieldCtxWithItem = (field,item) => {
 	const ctx = jb.ctxDictionary[field.ctxId]
 	return ctx && jb.ui.preserveCtx(ctx.setData(item))
 }
+jb.component('field.onChange', {
+  category: 'field:100',
+  description: 'on picklist selection, text or boolean value change',
+  type: 'feature',
+  params: [
+    {id: 'action', type: 'action', dynamic: true}
+  ],
+  impl: feature.onDataChange({ref: '%$$model/databind%', action: call('action') })
+})
 
 jb.component('field.databindText', {
   type: 'feature',
@@ -6086,7 +6080,7 @@ jb.component('editableBoolean', {
   ],
   impl: ctx => jb.ui.ctrl(ctx, features(
     calcProp('text',data.if('%$$model/databind%','%$$model/textForTrue%','%$$model/textForFalse%' )),
-    watchRef('%$$model/databind%'),
+    watchRef({ref: '%$$model/databind%', allowSelfRefresh: true}),
     defHandler('toggle', ctx => ctx.run(writeValue('%$$model/databind%',not('%$$model/databind%')))),
     defHandler('toggleByKey', (ctx,{ev}) => ev.keyCode != 27 && ctx.run(writeValue('%$$model/databind%',not('%$$model/databind%')))),
     defHandler('setChecked', writeValue('%$$model/databind%','true')),
@@ -7740,7 +7734,7 @@ jb.component('picklist.dynamicOptions', {
   impl: interactive(
     (ctx,{cmp},{recalcEm}) => {
       const {pipe,takeUntil,subscribe} = jb.callbag
-      recalcEm && pipe(recalcEm, takeUntil( cmp.destroyed ), subscribe(() => cmp.refresh()))
+      recalcEm && pipe(recalcEm, takeUntil( cmp.destroyed ), subscribe(() => cmp.refresh(null,{srcCtx: ctx.componentContext})))
     }
   )
 })
@@ -7911,7 +7905,6 @@ jb.component('multiSelect.chips', {
                 features: [
                     picklist.onChange(addToArray('%$multiSelectModel/databind%','%%')),
                     picklist.plusIcon(),
-                    css('margin-top: 3px')
                 ]
             }),
         ],
@@ -8133,12 +8126,12 @@ jb.component('slider.checkAutoScale', {
         const step = +(cmp.base.step || cmp.base.getAttribute('step'))
         if (val == max) { // scale up
           cmp.jbModelWithUnits((+val) + step)
-          cmp.refresh(null, {strongRefresh: true})
+          cmp.refresh(null, {strongRefresh: true},{srcCtx: ctx.componentContext})
           return true
         }
         if (max > ctx.vars.$model.max && val < ctx.vars.$model.max) { // scale down
           cmp.jbModelWithUnits(+val)
-          cmp.refresh(null, {strongRefresh: true})
+          cmp.refresh(null, {strongRefresh: true},{srcCtx: ctx.componentContext})
           return true
         }
       }
@@ -8278,7 +8271,7 @@ jb.component('table.initSort', {
           option.dir = directions[(directions.indexOf(option.dir)+1)%directions.length];
           if (option.dir == 'none')
             sortOptions.splice(sortOptions.indexOf(option),1);
-          cmp.refresh({sortOptions: sortOptions});
+          cmp.refresh({sortOptions: sortOptions},{srcCtx: ctx});
         }
         cmp.sortItems = () => {
           if (!cmp.items || !cmp.renderProps.sortOptions || cmp.renderProps.sortOptions.length == 0) return;
@@ -8504,18 +8497,6 @@ jb.component('button.mdcFloatingAction', {
       ]),
     css: '{width: %$buttonSize%px; height: %$buttonSize%px;}',  
     features: mdcStyle.initDynamic(),
-  })
-})
-
-jb.component('button.mdcIcon12', {
-  type: 'button.style,icon.style',
-  params: [
-    {id: 'icon', as: 'string', defaultValue: 'code'}
-  ],
-  impl: customStyle({
-    template: (cmp,{icon,raised},h) => h('i',{class: ['material-icons',raised && 'raised mdc-icon-button--on'].filter(x=>x).join(' ') 
-      , onclick: true},icon),
-    css: '{ font-size:12px; cursor: pointer }'
   })
 })
 
@@ -9075,8 +9056,8 @@ jb.component('picklist.plusIcon', {
   type: 'feature',
   categories: 'feature:0,picklist:50',
   impl: features(
-    css('-webkit-appearance: none; appearance: none; width: 7px; height: 26px; background-repeat: no-repeat;'),
-    css(`background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z'/></svg>");`),
+    css('-webkit-appearance: none; appearance: none; width: 6px; height: 23px; background-repeat: no-repeat; background-position-y: -1px;'),
+    css(`background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M17,13 H13 V17 H11 V13 H7 V11 H11 V7 H13 V11 H17 V13 Z'/></svg>");`),
   )
 })
 
@@ -9368,6 +9349,18 @@ jb.component('editableBoolean.buttonXV', {
     ))
 })
 
+jb.component('editableBoolean.iconWithSlash', {
+  type: 'editable-boolean.style',
+  params: [
+    {id: 'buttonSize', as: 'number', defaultValue: 40, description: 'button size is larger than the icon size, usually at the rate of 40/24' },
+  ],
+  impl: styleWithFeatures(button.mdcIcon({buttonSize: '%$buttonSize%'}), features(
+      htmlAttribute('onclick','toggle'),
+      htmlAttribute('title','%$$model/title%'),
+      css(If('%$$model/databind%','',`background-repeat: no-repeat; background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='%$buttonSize%' viewBox='0 0 %$buttonSize% %$buttonSize%' width='%$buttonSize%' xmlns='http://www.w3.org/2000/svg'><line x1='0' y1='0' x2='%$buttonSize%' y2='%$buttonSize%' style='stroke:white;stroke-width:2' /></svg>")`))
+    ))
+})
+
 
 jb.component('editableBoolean.mdcSlideToggle', {
   type: 'editable-boolean.style',
@@ -9413,14 +9406,14 @@ jb.component('tree', {
 				const path = cmp.elemToPath(event.target)
 				if (!path) debugger
 				cmp.state.expanded[path] = !(cmp.state.expanded[path]);
-				cmp.refresh();
+				cmp.refresh(null,{srcCtx: ctx.componentContext});
 			}),
 			interactiveProp('model', '%$$model.nodeModel%'),
 			interactive( (ctx,{cmp}) => {
 				cmp.state.expanded =  { [cmp.model.rootPath] : true }
 				tree.cmp = cmp
 				cmp.selectionEmitter = jb.callbag.subject()
-				tree.redraw = cmp.redraw = () => cmp.refresh()
+				tree.redraw = cmp.redraw = () => cmp.refresh(null,{srcCtx: ctx.componentContext})
 
 				cmp.expandPath = path => {
 					const changed = jb.ui.treeExpandPath(cmp.state.expanded,path)
@@ -9906,7 +9899,7 @@ jb.component('tableTree.init', {
                     return inner
                 },null)
                 cmp.state.expanded[path] = !(cmp.state.expanded[path]);
-                cmp.refresh();
+                cmp.refresh(null,{srcCtx: ctx.componentContext});
             }
             function elemToPath(el) { return el && (el.getAttribute('path') || jb.ui.closest(el,'.jb-item') && jb.ui.closest(el,'.jb-item').getAttribute('path')) }
         }
@@ -29579,7 +29572,7 @@ jb.component('editableText.codemirror', {
 		try {
 			cmp.data_ref = cmp.ctx.vars.$model.databind()
 			if (cmp.data_ref instanceof Promise)
-				jb.delay(1).then(() => cmp.refresh())
+				jb.delay(1).then(() => cmp.refresh(null,{srcCtx: ctx.componentContext}))
 			cm_settings = cm_settings||{};
 			const adjustedExtraKeys = jb.objFromEntries(jb.entries(cm_settings.extraKeys).map(e=>[
 				e[0], _ => jb.ui.wrapWithLauchingElement(ctx2 => ctx2.run(e[1]), cmp.ctx, cmp.base,
@@ -30056,7 +30049,7 @@ Object.assign(st,{
       return 'jbComponent';
     if (path.match(/~\$vars$/)) return;
     const prof = st.valOfPath(path,silent); // + (path.indexOf('~') == -1 ? '~impl' : '');
-  	return jb.compName(prof) || jb.compName(prof,st.paramDef(path))
+  	return jb.compName(prof) || jb.compName(prof,st.paramDef(path)) || path.split('~')[0]
   },
   compOfPath: (path,silent) => st.getComp(st.compNameOfPath(path,silent)),
   paramsOfPath: (path,silent) => jb.compParams(st.compOfPath(path,silent)), //.concat(st.compHeaderParams(path)),
@@ -30316,7 +30309,7 @@ jb.component('studio.watchScriptChanges', {
   impl: ctx => ({
 	  afterViewInit: cmp => pipe(st.scriptChange,
 		takeUntil( cmp.destroyed ),
-		subscribe(() => cmp.refresh({srcCtx: ctx}))
+		subscribe(() => cmp.refresh(null,{srcCtx: ctx}))
 	  )
    })
 })
@@ -30327,7 +30320,7 @@ jb.component('studio.watchComponents', {
 	  afterViewInit: cmp => pipe(st.scriptChange,
 			takeUntil( cmp.destroyed ),
 			filter(e=>e.path.length == 1),
-        	subscribe(() => cmp.refresh({srcCtx: ctx})))
+        	subscribe(() => cmp.refresh(null,{srcCtx: ctx})))
    })
 })
 
@@ -30598,7 +30591,7 @@ jb.component('studio.previewWidget', {
             return st.projectHosts[host].fetchProject(ctx.exp('%$queryParams/hostProjectId%'),project)
               .then(projectSettings => {
                 jb.exec(writeValue('%$studio/project%', projectSettings.project))
-                cmp.refresh({ projectLoaded: true, projectSettings })
+                cmp.refresh({ projectLoaded: true, projectSettings },{srcCtx: ctx})
             })
           }
         })
@@ -32844,26 +32837,24 @@ jb.component('studio.jbFloatingInput', {
         type: 'mdi',
         features: [css.margin('25')]
       }),
-      editableBoolean({
-        databind: studio.boolRef('%$path%'),
-        style: editableBoolean.mdcSlideToggle(),
-        title: '',
+      button({
+        title: 'set to false',
+        action: writeValue(studio.boolRef('%$path%'), false),
+        style: button.mdcIcon(icon({icon: 'cancel', type: 'mdc'}), '24'),
         features: [
-          feature.onEvent({
-            event: 'change',
-            action: runActions(dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus())
-          }),
-          feature.if(studio.isOfType('%$path%', 'boolean')),
-          css.margin({top: '35', right: '45', left: '20'}),
-          interactive(
-            (ctx,{cmp}) => { 
-            //jb.ui.focus(cmp.base,'jbFloatingInput boolean',ctx)
-            const {pipe,skip,subscribe} = jb.callbag
-            pipe(jb.ui.fromEvent(cmp,'keyup'),skip(1),subscribe( () => 
-              (event.keyCode == 13 || event.keyCode == 27) && 
-                ctx.run(runActions(dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus()))))
-          }
-          )
+          feature.if(ctx => ctx.run(studio.isOfType('%$path%', 'boolean'))),
+          css.margin('26'),
+          css.width('38')
+        ]
+      }),
+      button({
+        title: 'set to true',
+        action: writeValue(studio.boolRef('%$path%'), true),
+        style: button.mdcIcon(icon({icon: 'done', type: 'mdc'}), '24'),
+        features: [
+          feature.if(ctx => ctx.run(studio.isOfType('%$path%', 'boolean'))),
+          css.margin('26'),
+          css.width('38')
         ]
       }),
       button({
@@ -33141,7 +33132,7 @@ jb.component('studio.propField', {
         ),
         controlWithCondition(
           inGroup(
-            split({text: 'width,height,top,left,right,bottom'}),
+            split({text: 'width,height,top,left,right,bottom,spacing'}),
             pipeline(studio.paramDef('%$path%'), '%id%')
           ),
           studio.propertyNumbericCss('%$path%')
@@ -35838,7 +35829,7 @@ jb.component('studio.openResource', {
             interactive(
               (ctx,{cmp}) => ctx.vars.$dialog.cmp.refresh = () => {
               ctx.run(studio.copyDataResourceToComp('%$path%','%$name%'))
-              cmp.refresh && cmp.refresh()}
+              cmp.refresh && cmp.refresh(null,{srcCtx: ctx.componentContext})}
             )
           ]
         }),
@@ -36034,6 +36025,11 @@ jb.component('studio.saveNewProject', {
   }
 });
 
+jb.ui.getSpy = ctx => {
+  const _jb = ctx.exp('%$studio/spyStudio%') ? jb : jb.studio.previewjb
+  return _jb.spy || _jb.initSpy({spyParam: ctx.exp('%$studio/spyLogs%').join(',')})
+}
+
 jb.component('studio.openEventTracker', {
   type: 'action',
   impl: openDialog({
@@ -36052,31 +36048,49 @@ jb.component('studio.highlightEvent', {
   impl: studio.highlightByPath('%$path%')
 })
 
+jb.component('studio.highlightLogItem', {
+  type: 'action',
+  params: [
+    {id: 'item', defaultValue: '%%'}
+  ],
+  impl: runActions(
+    If('%$item/srcElem%',studio.openElemMarker('%$item/srcElem%','border: 1px solid green')),
+    If('%$item/elem%',studio.openElemMarker('%$item/elem%','border: 1px solid blue'))
+  )
+})
+
+jb.component('studio.refreshSpy', {
+  type: 'action',
+  params: [
+    {id: 'clear', as: 'boolean'}
+  ],
+  impl: (ctx,clear) => {
+    const spy = jb.ui.getSpy(ctx)
+    clear && spy.clear();
+    spy._all = null;
+    spy.setLogs(ctx.exp('%$studio/spyLogs%').join(','))
+    ctx.run(refreshControlById({id: 'event-logs', strongRefresh: true}))
+  }
+})
+
 jb.component('studio.eventTracker', {
   type: 'control',
   impl: group({
     controls: [
       group({
-        layout: layout.horizontal(),
+        layout: layout.horizontal('14'),
         controls: [
           menu.control({
             menu: menu.menu({
               options: [
                 menu.action({
-                  title: 'clear',
-                  action: runActions(() => {
-                    jb.spy.clear(); jb.spy._all = null
-                  }, refreshControlById('event-logs')),
-                  icon: icon('block')
-                }),
-                menu.action({ // TODO: move to dialog close
-                  title: 'stop',
-                  action: runActions(() => jb.spy && jb.spy.clear(), refreshControlById('event-logs')),
-                  icon: icon('stop')
+                  title: 'reset',
+                  action: studio.refreshSpy(true),
+                  icon: icon({icon: 'block', type: 'mdc'})
                 }),
                 menu.action({
                   title: 'refresh',
-                  action: refreshControlById('event-logs', true),
+                  action: studio.refreshSpy(),
                   icon: icon('refresh')
                 })
               ]
@@ -36084,14 +36098,44 @@ jb.component('studio.eventTracker', {
             style: menuStyle.toolbar(menuStyle.icon('30')),
             features: css.margin('9')
           }),
-          studio.selectSpyLogs()
+          editableBoolean({
+            databind: '%$studio/spyStudio%',
+            style: editableBoolean.iconWithSlash('30'),
+            title: 'spy studio',
+            textForTrue: 'spy studio',
+            textForFalse: 'spy preview',
+            features: [
+              feature.icon({icon: 'AndroidStudio', type: 'mdi', size: '20'}),
+              css.margin({top: '9', left: '-10'})
+            ]
+          }),
+          editableBoolean({
+            databind: '%$studio/spyWatchLogs%',
+            style: editableBoolean.iconWithSlash('30'),
+            title: 'auto refresh (slow)',
+            textForTrue: 'on',
+            textForFalse: 'off',
+            features: [
+              feature.icon({icon: 'Autorenew', type: 'mdi', size: '20'}),
+              css.margin({top: '9', left: '-10', right: ''}),
+              field.onChange(studio.refreshSpy())
+            ]
+          }),
+          multiSelect({
+            title: 'logs',
+            databind: '%$studio/spyLogs%',
+            options: picklist.options(() => jb.studio.previewjb.spySettings.moreLogs.split(',')),
+            style: multiSelect.chips(),
+            features: css.margin('9')
+          })
         ]
       }),
+      html({title: 'hr', html: '<hr/>'}),
       itemlist({
         items: studio.eventItems(),
         controls: [
           button({
-            title: '%0%: %1%',
+            title: '%index%: %log%',
             action: menu.openContextMenu({
               menu: menu.menu({
                 options: [
@@ -36099,28 +36143,35 @@ jb.component('studio.eventTracker', {
                     title: 'show in console',
                     action: ({data}) => jb.frame.console.log(data)
                   }),
-                  menu.action('group by %1%'),
-                  menu.action('filter only %1%'),
-                  menu.action('filter out %1%'),
+                  menu.action('group by %log%'),
+                  menu.action('filter only %log%'),
+                  menu.action('filter out %log%'),
                   menu.action('remove items before'),
                   menu.action('remove items after')
                 ]
               })
             }),
-            style: button.mdcIcon(undefined, '24'),
+            style: button.plainIcon(),
             features: [
               field.title('log'),
               field.columnWidth('20'),
-              feature.byCondition('%1% == error', [css.color({background: 'red'})]),
+              feature.byCondition('%log% == error', css.color({background: 'red'})),
               feature.icon({
                 icon: data.switch({
-                  cases: [data.case('%1% == error', 'error')],
-                  default: 'linear_scale'
-                })
-              })
+                  cases: [
+                    data.case('%log% == error', 'error'),
+                    data.case('%log% == refreshElem', 'CircleOutline'),
+                    data.case('%log% == doOp', 'Database')
+                  ],
+                  default: 'RectangleOutline'
+                }),
+                type: 'mdi',
+                size: '16'
+              }),
+              css('background-color: transparent; color: grey;')
             ]
           }),
-          text({text: '%1%', title: 'event'}),
+          text({text: '%log%', title: 'event'}),
           studio.eventView()
         ],
         style: table.plain(),
@@ -36129,106 +36180,57 @@ jb.component('studio.eventTracker', {
           id('event-logs'),
           itemlist.infiniteScroll('5'),
           css.height({height: '400', overflow: 'scroll'}),
-          itemlist.selection({}),
-          itemlist.keyboardSelection({})
+          itemlist.selection({
+            onSelection: ({data}) => { 
+            jb.studio.highlightElems([data.srcElem, data.elem].filter(x=>x))
+          }
+          }),
+          itemlist.keyboardSelection({}),
+          watchObservable(
+            ctx => ctx.exp('%$studio/spyWatchLogs%') && jb.ui.getSpy(ctx).observable()
+          ),
         ]
       })
-    ]
-  })
-})
-
-jb.component('studio.selectSpyLogs', {
-  type: 'control',
-  impl: group({
-    title: 'logs',
-    layout: layout.horizontal(),
-    controls: [
-      group({
-        title: 'logs',
-        layout: layout.flex({wrap: 'wrap'}),
-        controls: [
-          dynamicControls({
-            controlItems: '%$studio/spyLogs%',
-            genericControl: group({
-              title: 'chip',
-              layout: layout.flex({wrap: 'wrap', spacing: '0'}),
-              controls: [
-                button({title: '%% ', style: button.mdcChipAction(), raised: 'false'}),
-                button({
-                  title: 'delete',
-                  style: button.x(),
-                  features: [
-                    css('color: black; z-index: 1000;margin-left: -30px'),
-                    itemlist.shownOnlyOnItemHover()
-                  ]
-                })
-              ],
-              features: [
-                css('color: black; z-index: 1000'),
-                feature.onEvent({
-                  event: 'click',
-                  action: removeFromArray({array: '%$studio/spyLogs%', itemToRemove: '%%'})
-                }),
-                css.class('jb-item')
-              ]
-            })
-          })
-        ],
-        features: watchRef({
-          ref: '%$studio/spyLogs%',
-          includeChildren: 'yes',
-          allowSelfRefresh: true,
-          strongRefresh: false
-        })
-      }),
-      group({
-        title: 'add log',
-        layout: layout.horizontal('20'),
-        controls: [
-          picklist({
-            options: picklist.options(
-              list(keys(() => jb.spySettings.groups), () => jb.spySettings.moreLogs.split(','))
-            ),
-            features: [
-              picklist.onChange(
-                runActions(ctx => ctx.run(addToArray('%$studio/spyLogs%', '%%')))
-              ),
-              css.margin('6')
-            ]
-          })
-        ],
-        features: css.margin({left: '10'})
-      })
     ],
-    features: feature.init(
-      ctx=> ctx.run(writeValue('%$studio/spyLogs%', split({text: 'doOp,refreshElem'})))
-    )
+    features: [
+      variable({name: 'eventTracker', value: obj()}),
+      feature.init(
+        runActions(
+          action.if(
+              not('%$studio/spyLogs%'),
+              writeValue('%$studio/spyLogs%', list('doOp', 'refreshElem'))
+            ),
+          studio.refreshSpy(true)
+        )
+      )
+    ]
   })
 })
 
 jb.component('studio.eventView', {
   type: 'control',
   impl: group({
+    layout: layout.horizontal('4'),
+    features: feature.onHover({
+      action: studio.highlightLogItem(),
+      onLeave: dialog.closeDialog('elem-marker'), 
+    }),
     controls: [
+      controlWithCondition(isOfType('string', '%event/2%'), text('%event/2%')),
       controlWithCondition('%path%', text('%compName%')),
-      controlWithCondition('%opEvent%', text('%op%: %opEvent/opVal%')),
+      controlWithCondition('%op%', text('%op%')),
       controlWithCondition(
-        '%srcCtx%',
-        text({
-          text: 'activated by: %compName%',
-          features: [
-            variable({name: 'path', value: '%srcCtx/path%'}),
-            variable({name: 'compName', value: studio.compName('%path%')})
-          ]
-        })
-      ),
-      controlWithCondition(
-        isOfType('string', '%2%'),
-        text({
-          text: '%2%',
-          features: [
-            variable({name: 'path', value: '%srcCtx/path%'}),
-            variable({name: 'compName', value: studio.compName('%path%')})
+        '%srcCompName%',
+        group({
+          layout: layout.horizontal(),
+          controls: [
+            text('activated by:'),
+            button({
+              title: '%srcCompName%',
+              action: studio.openJbEditor('%srcPath%'),
+              style: button.href(),
+              features: feature.hoverTitle('%srcPath%')
+            })
           ]
         })
       )
@@ -36240,27 +36242,59 @@ jb.component('studio.eventItems', {
   type: 'action',
   impl: ctx => {
     const st = jb.studio
-    const spy = st.previewjb.spy || st.previewWindow.initSpy({spyParam: ctx.exp('%$studio/spyLogs%').join(',')})
-    const events = (spy._all = spy._all || spy.all().map(x=>enrich(x)))
+    const spy = jb.ui.getSpy(ctx)
+    const events = (spy._all = ctx.vars.eventTracker.lastIndex == spy.logs.$index ? spy._all : spy.all().map(x=>enrich(x)))
+    ctx.vars.eventTracker.lastIndex = spy.logs.$index
     return events
 
-    function enrich(ev) {
-      if (ev.enriched) return ev
-      ev.enriched = true
-      ev.ctx = (ev || []).filter(x=>x && x.componentContext)[0]
+    function enrich(event) {
+      const ev = { event, log: event[1], index: event[0] }
+      ev.ctx = (event || []).filter(x=>x && x.componentContext)[0]
       ev.path = ev.ctx && ev.ctx.path
       ev.compName = ev.path && st.compNameOfPath(ev.path)
-      ev.cmp = (ev || []).filter(x=>x && x.base && x.refresh)[0]
-      ev.elem = ev.cmp && ev.cmp.base || (ev || []).filter(x=>x && x.nodeType)[0]
-      ev.opEvent = (ev || []).filter(x=>x && x.opVal)[0]
-      ev.op = ev.opEvent && Object.keys(ev.opEvent.op).filter(x=>x.match(/^$/))[0]
-      ev.srcCtx = (ev || []).filter(x=>x && x.srcCtx).map(x=>x.srcCtx)[0]
+      ev.cmp = (event || []).filter(x=>x && x.base && x.refresh)[0]
+      ev.elem = ev.cmp && ev.cmp.base || (event || []).filter(x=>x && x.nodeType)[0]
+      ev.opEvent = (event || []).filter(x=>x && x.opVal)[0]
+      ev.op = ev.opEvent && jb.prettyPrint(ev.opEvent.op,{forceFlat: true}).replace(/{|}|\$/g,'')
+      ev.srcCtx = (event || []).filter(x=>x && x.srcCtx).map(x=>x.srcCtx)[0]
+      ev.srcElem = jb.path(ev.srcCtx, 'vars.cmp.base')
+      ev.srcPath = jb.path(ev.srcCtx, 'vars.cmp.ctx.path')
+      ev.srcCompName = ev.srcPath && st.compNameOfPath(ev.srcPath)
       return ev
     }
   }
 })
 
-;
+jb.component('studio.openElemMarker', {
+  type: 'action',
+  params: [
+    {id: 'elem'},
+    {id: 'css', as: 'string'}
+  ],
+  impl: openDialog({
+      id: 'elem-marker',
+      style: studio.elemMarkerDialog(),
+      content: text(''),
+      features: [
+        css((ctx,{},{elem}) => {
+              const elemRect = elem.getBoundingClientRect()
+              const left = elemRect.left + 'px'
+              const top = jb.ui.studioFixYPos() + elemRect.top + 'px'
+              return `left: ${left}; top: ${top}; width: ${elemRect.width}px; height: ${elemRect.height}px;`
+        }),
+        css((ctx,{},{css}) => css)
+      ]
+    })
+})
+
+jb.component('studio.elemMarkerDialog', {
+  type: 'dialog.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div#jb-dialog jb-popup',{},h(state.contentComp)),
+    css: '{ display: block; position: absolute; background: transparent}',
+    features: [dialogFeature.maxZIndexOnClick(), dialogFeature.closeWhenClickingOutside()]
+  })
+});
 
 jb.ns('contentEditable')
 
@@ -37080,7 +37114,7 @@ st.projectHosts = {
     test: {
         fetchProject(id,project) {
             return Promise.resolve({
-                libs: 'common,ui-common,material,ui-tree,dragula,codemirror,testers,pretty-print,studio,studio-tests,object-encoder,remote',
+                libs: 'common,ui-common,material,ui-tree,dragula,codemirror,testers,pretty-print,studio,studio-tests,object-encoder,remote,md-icons',
                 jsFiles: ['remote-widgets','phones-3',...['data','ui','vdom','tree','watchable','parsing','object-encoder'].map(x=>x+'-tests')]
                     .map(x=>`/projects/ui-tests/${x}.js`),
                 project, 
@@ -37544,15 +37578,17 @@ jb.ui.contentEditable = {
     return new jb.jbCtx().exp('%$studio/settings/contentEditable%')
   },
   activate(el) {
-    if (!this.isEnabled() || this.current == el) return
-    const jbUi = jb.studio.previewjb.ui
-    if (this.current)
-      jbUi.refreshElem(this.current,{contentEditableActive: false})
-    this.current = el
+    if (!this.isEnabled()) return
     const ctx = new jb.jbCtx().setVar('$launchingElement',{ el })
+    const jbUi = jb.studio.previewjb.ui
+    ctx.run(inplaceEdit.activate(jbUi.ctxOfElem(el).path,el))
+    if (this.current == el) return
+    if (this.current)
+        jbUi.refreshElem(this.current,{contentEditableActive: false})
+        
     jbUi.refreshElem(el,{contentEditableActive: true})
+    this.current = el
     jb.ui.focus(el,'contentEditable activate',ctx)
-    return ctx.run(inplaceEdit.activate(jbUi.ctxOfElem(el).path,el))
   },
   handleKeyEvent(ev,cmp,prop) {
     if (ev.keyCode == 13) {
@@ -38709,13 +38745,13 @@ jb.component('inplaceEdit.toolbar', {
     {id: 'path'}
   ],
   impl: group({
-    layout: layout.horizontal('-10'),
+    layout: layout.horizontal('3'),
     controls: [
       button({
         title: 'edit grid',
         action: inplaceEdit.activate('%$parentGroup%'),
-        style: button.mdcIcon(icon({icon: 'grid_on', type: 'mdc'}), '0.6'),
-        features: feature.if('%$parentLayout% == layout.grid')
+        style: button.mdcIcon(icon({icon: 'grid_on', type: 'mdc'}), '20'),
+        features: ctx => ctx.run(feature.if('%$parentLayout% == layout.grid'))
       }),
       button({
         title: 'Change Style',
@@ -38724,7 +38760,7 @@ jb.component('inplaceEdit.toolbar', {
           studio.openProperties(),
           studio.openPickProfile('%$path%~style')
         ),
-        style: button.mdcIcon(icon('style'), '0.6')
+        style: button.mdcIcon(icon('style'), '20')
       }),
       button({
         title: 'Insert Control',
@@ -38733,12 +38769,12 @@ jb.component('inplaceEdit.toolbar', {
           mode: 'insert-control',
           onClose: inplaceEdit.openToolbarOfLastEdit()
         }),
-        style: button.mdcIcon(icon('add'), '0.6')
+        style: button.mdcIcon(icon('add'), '20')
       }),
       button({
         title: 'Duplicate data item',
         action: ctx => jb.ui.inplaceEdit.duplicateDataItem(ctx),
-        style: button.mdcIcon(icon({icon: 'PlusBoxOutline', type: 'mdi'}), '0.6'),
+        style: button.mdcIcon(icon({icon: 'PlusBoxOutline', type: 'mdi'}), '20'),
         features: feature.if('%$sourceItem%')
       }),
       button({
@@ -38750,17 +38786,17 @@ jb.component('inplaceEdit.toolbar', {
         ],
         title: 'Layout',
         action: studio.openPickProfile('%$parentLayout%'),
-        style: button.mdcIcon(icon('view_quilt'), '0.6')
+        style: button.mdcIcon(icon('view_quilt'), '20')
       }),
       button({
         title: 'Properties',
         action: studio.openProperties(true),
-        style: button.mdcIcon(icon('storage'), '0.6')
+        style: button.mdcIcon(icon('storage'), '20')
       }),
       button({
         title: 'Delete',
         action: studio.delete('%$path%'),
-        style: button.mdcIcon(icon('delete'), '0.6')
+        style: button.mdcIcon(icon('delete'), '20')
       })
     ]
   })
@@ -38837,12 +38873,16 @@ jb.component('inplaceEdit.thumbStyle', {
 
 jb.ns('gridEditor')
 
-Object.assign(jb.ui,{
+Object.assign(jb.ui, {
   getGridVals(el,axis) {
     const prop = `gridTemplate${axis}`
     const grid = jb.studio.previewWindow.getComputedStyle(el)[prop] || '' // <tt>78.2969px 74px 83px 120px 16px</tt>
     return grid.replace(/<\/?tt>/g,'').replace(/px /,' ').replace(/px/g,'').split(' ').map(x=>+(x.trim()))
   },
+  calcGridAccVals(inplaceElem) { return {
+    Rows: jb.ui.getGridVals(inplaceElem, 'Rows').reduce((sums,x) => [...sums,x + sums.slice(-1)[0]],[0]),
+    Columns: jb.ui.getGridVals(inplaceElem, 'Columns').reduce((sums,x) => [...sums,x + sums.slice(-1)[0]],[0])
+  }}
 })
 
 jb.component('inplaceEdit.openGridEditor', {
@@ -38852,10 +38892,9 @@ jb.component('inplaceEdit.openGridEditor', {
     type: 'action',
     impl: runActions(
         Var('gridPath','%$path%'),
-        Var('gridAccVals', obj()),
-        gridEditor.openGridLineThumb('Columns'),
-        gridEditor.openGridLineThumb('Rows'),
-        gridEditor.openGridItemThumbs()
+        // gridEditor.openGridLineThumb('Columns'),
+        // gridEditor.openGridLineThumb('Rows'),
+        gridEditor.openGridItemThumbs(),
     )
 })
 
@@ -38888,12 +38927,9 @@ jb.component('gridEditor.openGridLineThumb', {
         gridEditor.dragableGridLineThumb('%$axis%'),
         watchRef({ ref: studio.ref('%$gridPath%~layout'), includeChildren: 'yes', cssOnly: true}),
         css(
-          (ctx,{$dialog,gridIndex,otherAxis,gridAccVals,inplaceElem},{axis}) => {
+          (ctx,{$dialog,gridIndex,otherAxis,inplaceElem},{axis}) => {
                 Object.assign($dialog, {axis, gridIndex})
-                Object.assign(gridAccVals,{
-                  Rows: jb.ui.getGridVals(inplaceElem, 'Rows').reduce((sums,x) => [...sums,x + sums.slice(-1)[0]],[0]),
-                  Columns: jb.ui.getGridVals(inplaceElem, 'Columns').reduce((sums,x) => [...sums,x + sums.slice(-1)[0]],[0])
-                })
+                const gridAccVals = jb.ui.calcGridAccVals(inplaceElem)
                 const otherAxisSize = gridAccVals[otherAxis].slice(-1)[0]
                 const elemRect = inplaceElem.getBoundingClientRect()
                 const offset = jb.ui.getGridVals(inplaceElem, axis).slice(0,gridIndex).reduce((sum,x) => sum+x,0) 
@@ -38999,7 +39035,7 @@ jb.component('gridEditor.openGridItemThumbs', {
         }),
         css('{cursor: grab; box-shadow: 3px 3px; background: grey; opacity: 0.2} ~:hover {opacity: 0.7}' ),
         feature.onDataChange({ ref: studio.ref('%$gridPath%'), includeChildren: 'yes', 
-          action: (ctx,{cmp}) => jb.delay(300).then(()=> cmp.refresh()) 
+          action: (ctx,{cmp}) => jb.delay(300).then(()=> cmp.refresh(null,{srcCtx: ctx.componentContext})) 
         })
       ]
     })
@@ -39008,7 +39044,7 @@ jb.component('gridEditor.openGridItemThumbs', {
 
 jb.component('gridEditor.dragableGridItemThumb', {
   type: 'feature',
-  impl: interactive( (ctx,{cmp,gridItemElem,inplaceElem,gridAccVals})=> {
+  impl: interactive( (ctx,{cmp,gridItemElem,inplaceElem})=> {
     const {pipe,takeUntil,merge,Do, flatMap, last, subscribe} = jb.callbag
     cmp.mousedownEm = jb.ui.fromEvent(cmp, 'mousedown')
     let mouseUpEm = jb.ui.fromEvent(cmp, 'mouseup', document)
@@ -39035,7 +39071,7 @@ jb.component('gridEditor.dragableGridItemThumb', {
         Do(e => moveGridItem(e)),
         last(),
       )),
-      subscribe(() => jb.ui.dialogs.closePopups())
+      subscribe(() => {}) //jb.ui.dialogs.closePopups())
     )
 
     function moveHandler(e) {
@@ -39058,6 +39094,7 @@ jb.component('gridEditor.dragableGridItemThumb', {
         const gridAreaRef = jb.studio.refOfPath(`${gridItemPath}~features~${gridAreaFeatureIndex}~css`)
         const scriptValues = jb.val(gridAreaRef).replace(/;?\s*}?\s*$/,'').replace(/^\s*{?\s*grid-area\s*:/,'').split('/') // grid-area: 1 / 2 / span 2 / span 3;
         if (!span && scriptValues.slice(0,2).map(x=>x.trim()).join(',') == vals.join(',')) return
+        jb.log('setGridAreaVals',[vals,scriptValues,ctx,cmp,gridItemElem,inplaceElem])
         if (span)
             [0,1].forEach(axis =>scriptValues[2+axis] = ` span ${vals[axis] -basePos[axis]} `)
          else
@@ -39065,7 +39102,8 @@ jb.component('gridEditor.dragableGridItemThumb', {
         jb.writeValue(gridAreaRef,`grid-area: ${scriptValues.join('/')}`,ctx)
     }
     function posToGridPos(pos) {
-        return pos.map((val,i) => gridAccVals[i ? 'Columns' : 'Rows'].findIndex(x=>x>val))
+      const gridAccVals = jb.ui.calcGridAccVals(inplaceElem)
+      return pos.map((val,i) => gridAccVals[i ? 'Columns' : 'Rows'].findIndex(x=> x > val))
     }
   })
 })

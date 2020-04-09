@@ -18,7 +18,7 @@ jb.component('text.bindText', {
   type: 'feature',
   category: 'text:0',
   impl: features(
-    watchAndCalcModelProp('text', ({data}) => jb.ui.toVdomOrStr(data)),
+    watchAndCalcModelProp({prop: 'text', transformValue: ({data}) => jb.ui.toVdomOrStr(data)}),
     () => ({studioFeatures :{$: 'feature.contentEditable', param: 'text' }})
   )
 })

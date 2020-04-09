@@ -13,9 +13,10 @@ jb.component('watchAndCalcModelProp', {
   description: 'Use a model property in the rendering and watch its changes (refresh on change)',
   params: [
     {id: 'prop', as: 'string', mandatory: true},
-    {id: 'transformValue', dynamic: true, defaultValue: '%%'}
+    {id: 'transformValue', dynamic: true, defaultValue: '%%'},
+    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children'},
   ],
-  impl: (ctx,prop,transformValue) => ({watchAndCalcModelProp: { prop, transformValue }})
+  impl: ctx => ({watchAndCalcModelProp: ctx.params})
 })
 
 jb.component('calcProp', {
@@ -136,7 +137,7 @@ jb.component('watchObservable', {
     (ctx,{cmp},{toWatch, debounceTime}) => jb.callbag.pipe(toWatch,
       jb.callbag.takeUntil(cmp.destroyed),
       debounceTime && jb.callbag.debounceTime(debounceTime),
-      jb.callbag.subscribe(()=>cmp.refresh(null,{srcCtx:ctx.componentContext}))
+      jb.callbag.subscribe(()=>cmp.refresh(null, {srcCtx: ctx}))
     )
   )
 })
@@ -465,13 +466,14 @@ jb.component('refreshControlById', {
   type: 'action',
   params: [
     {id: 'id', as: 'string', mandatory: true},
-    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and promises', type: 'boolean'}
+    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and reinit wait for data'},
+    {id: 'cssOnly', as: 'boolean', description: 'refresh only css features'},
   ],
   impl: (ctx,id) => {
     const elem = jb.ui.document(ctx).querySelector('#'+id)
     if (!elem)
-      return jb.logError('refresh-control-by-id can not find elem for #'+id, ctx)
-    return jb.ui.refreshElem(elem,null,{srcCtx: ctx})
+      return jb.logError('refreshControlById can not find elem for #'+id, ctx)
+    return jb.ui.refreshElem(elem,null,{srcCtx: ctx, ...ctx.params})
   }
 })
 

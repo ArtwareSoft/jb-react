@@ -16,15 +16,17 @@ jb.ui.contentEditable = {
     return new jb.jbCtx().exp('%$studio/settings/contentEditable%')
   },
   activate(el) {
-    if (!this.isEnabled() || this.current == el) return
-    const jbUi = jb.studio.previewjb.ui
-    if (this.current)
-      jbUi.refreshElem(this.current,{contentEditableActive: false})
-    this.current = el
+    if (!this.isEnabled()) return
     const ctx = new jb.jbCtx().setVar('$launchingElement',{ el })
+    const jbUi = jb.studio.previewjb.ui
+    ctx.run(inplaceEdit.activate(jbUi.ctxOfElem(el).path,el))
+    if (this.current == el) return
+    if (this.current)
+        jbUi.refreshElem(this.current,{contentEditableActive: false})
+        
     jbUi.refreshElem(el,{contentEditableActive: true})
+    this.current = el
     jb.ui.focus(el,'contentEditable activate',ctx)
-    return ctx.run(inplaceEdit.activate(jbUi.ctxOfElem(el).path,el))
   },
   handleKeyEvent(ev,cmp,prop) {
     if (ev.keyCode == 13) {

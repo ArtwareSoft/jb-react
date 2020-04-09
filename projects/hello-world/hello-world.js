@@ -32,7 +32,9 @@ jb.component('helloWorld.main', {
           url: 'https://www.quora.com/What-is-the-most-embarrassing-experience-you-ve-had-involving-your-private-parts',
           useProxy: 'localhost-server'
         })
-      })
+      }),
+      text({text: '%$people/name%', title: 'my title'}),
+      editableText({title: '', databind: '%$people/name%'})
     ]
   })
 })

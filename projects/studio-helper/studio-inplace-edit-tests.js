@@ -55,7 +55,7 @@ jb.component('test.wixIslandGridCtrl', {
           css(
             'background:transparent;overflow-wrap:break-word;letter-spacing:normal;orphans:2;white-space:normal;widows:2;word-spacing:0px;pointer-events:none;pointer-events:auto'
           ),
-          css.gridArea('{ grid-area: 5 / 2 / span 1 / span 3}')
+          css.gridArea('grid-area:  4 / 3 / span 1 / span 3')
         ]
       }),
       text({
@@ -163,7 +163,20 @@ jb.component('inPlaceEditTest.grid.inStudio', {
 
 jb.component('test.eventTracker.inStudio', {
   impl: uiTest({
-    control: studio.eventTracker(),
+    control: group({
+      controls: [
+        studio.eventTracker(),
+        group({
+          controls: [
+            text({
+              text: '%$person/name%',
+              features: feature.icon({icon: 'CircleOutline', type: 'mdi'})
+            }),
+            editableText({databind: '%$person/name%'})
+          ]
+        })
+      ]
+    }),
     expectedResult: false
   })
 })

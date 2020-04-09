@@ -1,3 +1,8 @@
+jb.ui.getSpy = ctx => {
+  const _jb = ctx.exp('%$studio/spyStudio%') ? jb : jb.studio.previewjb
+  return _jb.spy || _jb.initSpy({spyParam: ctx.exp('%$studio/spyLogs%').join(',')})
+}
+
 jb.component('studio.openEventTracker', {
   type: 'action',
   impl: openDialog({
@@ -16,31 +21,49 @@ jb.component('studio.highlightEvent', {
   impl: studio.highlightByPath('%$path%')
 })
 
+jb.component('studio.highlightLogItem', {
+  type: 'action',
+  params: [
+    {id: 'item', defaultValue: '%%'}
+  ],
+  impl: runActions(
+    If('%$item/srcElem%',studio.openElemMarker('%$item/srcElem%','border: 1px solid green')),
+    If('%$item/elem%',studio.openElemMarker('%$item/elem%','border: 1px solid blue'))
+  )
+})
+
+jb.component('studio.refreshSpy', {
+  type: 'action',
+  params: [
+    {id: 'clear', as: 'boolean'}
+  ],
+  impl: (ctx,clear) => {
+    const spy = jb.ui.getSpy(ctx)
+    clear && spy.clear();
+    spy._all = null;
+    spy.setLogs(ctx.exp('%$studio/spyLogs%').join(','))
+    ctx.run(refreshControlById({id: 'event-logs', strongRefresh: true}))
+  }
+})
+
 jb.component('studio.eventTracker', {
   type: 'control',
   impl: group({
     controls: [
       group({
-        layout: layout.horizontal(),
+        layout: layout.horizontal('14'),
         controls: [
           menu.control({
             menu: menu.menu({
               options: [
                 menu.action({
-                  title: 'clear',
-                  action: runActions(() => {
-                    jb.spy.clear(); jb.spy._all = null
-                  }, refreshControlById('event-logs')),
-                  icon: icon('block')
-                }),
-                menu.action({ // TODO: move to dialog close
-                  title: 'stop',
-                  action: runActions(() => jb.spy && jb.spy.clear(), refreshControlById('event-logs')),
-                  icon: icon('stop')
+                  title: 'reset',
+                  action: studio.refreshSpy(true),
+                  icon: icon({icon: 'block', type: 'mdc'})
                 }),
                 menu.action({
                   title: 'refresh',
-                  action: refreshControlById('event-logs', true),
+                  action: studio.refreshSpy(),
                   icon: icon('refresh')
                 })
               ]
@@ -48,14 +71,44 @@ jb.component('studio.eventTracker', {
             style: menuStyle.toolbar(menuStyle.icon('30')),
             features: css.margin('9')
           }),
-          studio.selectSpyLogs()
+          editableBoolean({
+            databind: '%$studio/spyStudio%',
+            style: editableBoolean.iconWithSlash('30'),
+            title: 'spy studio',
+            textForTrue: 'spy studio',
+            textForFalse: 'spy preview',
+            features: [
+              feature.icon({icon: 'AndroidStudio', type: 'mdi', size: '20'}),
+              css.margin({top: '9', left: '-10'})
+            ]
+          }),
+          editableBoolean({
+            databind: '%$studio/spyWatchLogs%',
+            style: editableBoolean.iconWithSlash('30'),
+            title: 'auto refresh (slow)',
+            textForTrue: 'on',
+            textForFalse: 'off',
+            features: [
+              feature.icon({icon: 'Autorenew', type: 'mdi', size: '20'}),
+              css.margin({top: '9', left: '-10', right: ''}),
+              field.onChange(studio.refreshSpy())
+            ]
+          }),
+          multiSelect({
+            title: 'logs',
+            databind: '%$studio/spyLogs%',
+            options: picklist.options(() => jb.studio.previewjb.spySettings.moreLogs.split(',')),
+            style: multiSelect.chips(),
+            features: css.margin('9')
+          })
         ]
       }),
+      html({title: 'hr', html: '<hr/>'}),
       itemlist({
         items: studio.eventItems(),
         controls: [
           button({
-            title: '%0%: %1%',
+            title: '%index%: %log%',
             action: menu.openContextMenu({
               menu: menu.menu({
                 options: [
@@ -63,28 +116,35 @@ jb.component('studio.eventTracker', {
                     title: 'show in console',
                     action: ({data}) => jb.frame.console.log(data)
                   }),
-                  menu.action('group by %1%'),
-                  menu.action('filter only %1%'),
-                  menu.action('filter out %1%'),
+                  menu.action('group by %log%'),
+                  menu.action('filter only %log%'),
+                  menu.action('filter out %log%'),
                   menu.action('remove items before'),
                   menu.action('remove items after')
                 ]
               })
             }),
-            style: button.mdcIcon(undefined, '24'),
+            style: button.plainIcon(),
             features: [
               field.title('log'),
               field.columnWidth('20'),
-              feature.byCondition('%1% == error', [css.color({background: 'red'})]),
+              feature.byCondition('%log% == error', css.color({background: 'red'})),
               feature.icon({
                 icon: data.switch({
-                  cases: [data.case('%1% == error', 'error')],
-                  default: 'linear_scale'
-                })
-              })
+                  cases: [
+                    data.case('%log% == error', 'error'),
+                    data.case('%log% == refreshElem', 'CircleOutline'),
+                    data.case('%log% == doOp', 'Database')
+                  ],
+                  default: 'RectangleOutline'
+                }),
+                type: 'mdi',
+                size: '16'
+              }),
+              css('background-color: transparent; color: grey;')
             ]
           }),
-          text({text: '%1%', title: 'event'}),
+          text({text: '%log%', title: 'event'}),
           studio.eventView()
         ],
         style: table.plain(),
@@ -93,106 +153,57 @@ jb.component('studio.eventTracker', {
           id('event-logs'),
           itemlist.infiniteScroll('5'),
           css.height({height: '400', overflow: 'scroll'}),
-          itemlist.selection({}),
-          itemlist.keyboardSelection({})
+          itemlist.selection({
+            onSelection: ({data}) => { 
+            jb.studio.highlightElems([data.srcElem, data.elem].filter(x=>x))
+          }
+          }),
+          itemlist.keyboardSelection({}),
+          watchObservable(
+            ctx => ctx.exp('%$studio/spyWatchLogs%') && jb.ui.getSpy(ctx).observable()
+          ),
         ]
       })
-    ]
-  })
-})
-
-jb.component('studio.selectSpyLogs', {
-  type: 'control',
-  impl: group({
-    title: 'logs',
-    layout: layout.horizontal(),
-    controls: [
-      group({
-        title: 'logs',
-        layout: layout.flex({wrap: 'wrap'}),
-        controls: [
-          dynamicControls({
-            controlItems: '%$studio/spyLogs%',
-            genericControl: group({
-              title: 'chip',
-              layout: layout.flex({wrap: 'wrap', spacing: '0'}),
-              controls: [
-                button({title: '%% ', style: button.mdcChipAction(), raised: 'false'}),
-                button({
-                  title: 'delete',
-                  style: button.x(),
-                  features: [
-                    css('color: black; z-index: 1000;margin-left: -30px'),
-                    itemlist.shownOnlyOnItemHover()
-                  ]
-                })
-              ],
-              features: [
-                css('color: black; z-index: 1000'),
-                feature.onEvent({
-                  event: 'click',
-                  action: removeFromArray({array: '%$studio/spyLogs%', itemToRemove: '%%'})
-                }),
-                css.class('jb-item')
-              ]
-            })
-          })
-        ],
-        features: watchRef({
-          ref: '%$studio/spyLogs%',
-          includeChildren: 'yes',
-          allowSelfRefresh: true,
-          strongRefresh: false
-        })
-      }),
-      group({
-        title: 'add log',
-        layout: layout.horizontal('20'),
-        controls: [
-          picklist({
-            options: picklist.options(
-              list(keys(() => jb.spySettings.groups), () => jb.spySettings.moreLogs.split(','))
-            ),
-            features: [
-              picklist.onChange(
-                runActions(ctx => ctx.run(addToArray('%$studio/spyLogs%', '%%')))
-              ),
-              css.margin('6')
-            ]
-          })
-        ],
-        features: css.margin({left: '10'})
-      })
     ],
-    features: feature.init(
-      ctx=> ctx.run(writeValue('%$studio/spyLogs%', split({text: 'doOp,refreshElem'})))
-    )
+    features: [
+      variable({name: 'eventTracker', value: obj()}),
+      feature.init(
+        runActions(
+          action.if(
+              not('%$studio/spyLogs%'),
+              writeValue('%$studio/spyLogs%', list('doOp', 'refreshElem'))
+            ),
+          studio.refreshSpy(true)
+        )
+      )
+    ]
   })
 })
 
 jb.component('studio.eventView', {
   type: 'control',
   impl: group({
+    layout: layout.horizontal('4'),
+    features: feature.onHover({
+      action: studio.highlightLogItem(),
+      onLeave: dialog.closeDialog('elem-marker'), 
+    }),
     controls: [
+      controlWithCondition(isOfType('string', '%event/2%'), text('%event/2%')),
       controlWithCondition('%path%', text('%compName%')),
-      controlWithCondition('%opEvent%', text('%op%: %opEvent/opVal%')),
+      controlWithCondition('%op%', text('%op%')),
       controlWithCondition(
-        '%srcCtx%',
-        text({
-          text: 'activated by: %compName%',
-          features: [
-            variable({name: 'path', value: '%srcCtx/path%'}),
-            variable({name: 'compName', value: studio.compName('%path%')})
-          ]
-        })
-      ),
-      controlWithCondition(
-        isOfType('string', '%2%'),
-        text({
-          text: '%2%',
-          features: [
-            variable({name: 'path', value: '%srcCtx/path%'}),
-            variable({name: 'compName', value: studio.compName('%path%')})
+        '%srcCompName%',
+        group({
+          layout: layout.horizontal(),
+          controls: [
+            text('activated by:'),
+            button({
+              title: '%srcCompName%',
+              action: studio.openJbEditor('%srcPath%'),
+              style: button.href(),
+              features: feature.hoverTitle('%srcPath%')
+            })
           ]
         })
       )
@@ -204,23 +215,56 @@ jb.component('studio.eventItems', {
   type: 'action',
   impl: ctx => {
     const st = jb.studio
-    const spy = st.previewjb.spy || st.previewWindow.initSpy({spyParam: ctx.exp('%$studio/spyLogs%').join(',')})
-    const events = (spy._all = spy._all || spy.all().map(x=>enrich(x)))
+    const spy = jb.ui.getSpy(ctx)
+    const events = (spy._all = ctx.vars.eventTracker.lastIndex == spy.logs.$index ? spy._all : spy.all().map(x=>enrich(x)))
+    ctx.vars.eventTracker.lastIndex = spy.logs.$index
     return events
 
-    function enrich(ev) {
-      if (ev.enriched) return ev
-      ev.enriched = true
-      ev.ctx = (ev || []).filter(x=>x && x.componentContext)[0]
+    function enrich(event) {
+      const ev = { event, log: event[1], index: event[0] }
+      ev.ctx = (event || []).filter(x=>x && x.componentContext)[0]
       ev.path = ev.ctx && ev.ctx.path
       ev.compName = ev.path && st.compNameOfPath(ev.path)
-      ev.cmp = (ev || []).filter(x=>x && x.base && x.refresh)[0]
-      ev.elem = ev.cmp && ev.cmp.base || (ev || []).filter(x=>x && x.nodeType)[0]
-      ev.opEvent = (ev || []).filter(x=>x && x.opVal)[0]
-      ev.op = ev.opEvent && Object.keys(ev.opEvent.op).filter(x=>x.match(/^$/))[0]
-      ev.srcCtx = (ev || []).filter(x=>x && x.srcCtx).map(x=>x.srcCtx)[0]
+      ev.cmp = (event || []).filter(x=>x && x.base && x.refresh)[0]
+      ev.elem = ev.cmp && ev.cmp.base || (event || []).filter(x=>x && x.nodeType)[0]
+      ev.opEvent = (event || []).filter(x=>x && x.opVal)[0]
+      ev.op = ev.opEvent && jb.prettyPrint(ev.opEvent.op,{forceFlat: true}).replace(/{|}|\$/g,'')
+      ev.srcCtx = (event || []).filter(x=>x && x.srcCtx).map(x=>x.srcCtx)[0]
+      ev.srcElem = jb.path(ev.srcCtx, 'vars.cmp.base')
+      ev.srcPath = jb.path(ev.srcCtx, 'vars.cmp.ctx.path')
+      ev.srcCompName = ev.srcPath && st.compNameOfPath(ev.srcPath)
       return ev
     }
   }
 })
 
+jb.component('studio.openElemMarker', {
+  type: 'action',
+  params: [
+    {id: 'elem'},
+    {id: 'css', as: 'string'}
+  ],
+  impl: openDialog({
+      id: 'elem-marker',
+      style: studio.elemMarkerDialog(),
+      content: text(''),
+      features: [
+        css((ctx,{},{elem}) => {
+              const elemRect = elem.getBoundingClientRect()
+              const left = elemRect.left + 'px'
+              const top = jb.ui.studioFixYPos() + elemRect.top + 'px'
+              return `left: ${left}; top: ${top}; width: ${elemRect.width}px; height: ${elemRect.height}px;`
+        }),
+        css((ctx,{},{css}) => css)
+      ]
+    })
+})
+
+jb.component('studio.elemMarkerDialog', {
+  type: 'dialog.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div#jb-dialog jb-popup',{},h(state.contentComp)),
+    css: '{ display: block; position: absolute; background: transparent}',
+    features: [dialogFeature.maxZIndexOnClick(), dialogFeature.closeWhenClickingOutside()]
+  })
+})

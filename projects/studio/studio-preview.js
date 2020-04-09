@@ -149,7 +149,7 @@ jb.component('studio.previewWidget', {
             return st.projectHosts[host].fetchProject(ctx.exp('%$queryParams/hostProjectId%'),project)
               .then(projectSettings => {
                 jb.exec(writeValue('%$studio/project%', projectSettings.project))
-                cmp.refresh({ projectLoaded: true, projectSettings })
+                cmp.refresh({ projectLoaded: true, projectSettings },{srcCtx: ctx})
             })
           }
         })

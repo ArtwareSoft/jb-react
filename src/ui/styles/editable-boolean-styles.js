@@ -73,6 +73,18 @@ jb.component('editableBoolean.buttonXV', {
     ))
 })
 
+jb.component('editableBoolean.iconWithSlash', {
+  type: 'editable-boolean.style',
+  params: [
+    {id: 'buttonSize', as: 'number', defaultValue: 40, description: 'button size is larger than the icon size, usually at the rate of 40/24' },
+  ],
+  impl: styleWithFeatures(button.mdcIcon({buttonSize: '%$buttonSize%'}), features(
+      htmlAttribute('onclick','toggle'),
+      htmlAttribute('title','%$$model/title%'),
+      css(If('%$$model/databind%','',`background-repeat: no-repeat; background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='%$buttonSize%' viewBox='0 0 %$buttonSize% %$buttonSize%' width='%$buttonSize%' xmlns='http://www.w3.org/2000/svg'><line x1='0' y1='0' x2='%$buttonSize%' y2='%$buttonSize%' style='stroke:white;stroke-width:2' /></svg>")`))
+    ))
+})
+
 
 jb.component('editableBoolean.mdcSlideToggle', {
   type: 'editable-boolean.style',
