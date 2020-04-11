@@ -26,15 +26,8 @@ jb.component('helloWorld.main', {
   type: 'control',
   impl: group({
     controls: [
-      button({
-        title: 'click me',
-        action: http.get({
-          url: 'https://www.quora.com/What-is-the-most-embarrassing-experience-you-ve-had-involving-your-private-parts',
-          useProxy: 'localhost-server'
-        })
-      }),
-      text({text: '%$people/name%', title: 'my title'}),
-      editableText({title: '', databind: '%$people/name%'})
+      button('click me'),
+      text({text: 'my text', title: 'my title'})
     ]
   })
 })

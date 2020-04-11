@@ -1,21 +1,5 @@
 jb.ns('contentEditable')
 
-jb.component('studio.pickAndOpen', {
-  type: 'action',
-  params: [
-    {id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'}
-  ],
-  impl: studio.pick(
-    '%$from%',
-    [
-      writeValue('%$studio/last_pick_selection%', '%%'),
-      writeValue('%$studio/profile_path%', '%path%'),
-      studio.openControlTree(),
-      studio.openProperties(true)
-    ]
-  )
-})
-
 jb.component('studio.toolbar', {
   type: 'control',
   impl: group({

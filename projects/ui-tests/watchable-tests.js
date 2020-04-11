@@ -225,11 +225,28 @@ jb.component('uiTest.watchRefCssOnly', {
       text: 'hey',
       features: [
         watchRef({ref: '%$person/name%', cssOnly: true}),
-        css(If('%$person/name% == \"Homer Simpson\"','color: red; /*css-only*/', 'color: green; /*css-only*/'))
+        css(If('%$person/name% == Homer Simpson','color: red; /*css-only*/', 'color: green; /*css-only*/'))
       ]
     }),
     action: writeValue('%$person/name%','Dan'),
     expectedResult: ctx => Array.from(document.querySelectorAll('style')).map(el=>el.innerText).filter(x=>x.indexOf('color: green; /*css-only*/') != -1)[0],
+  })
+})
+
+jb.component('uiTest.CssOnly.SetAndBack', {
+  impl: uiTest({
+    control: text({
+      text: 'hey',
+      features: [
+        watchRef({ref: '%$person/name%', cssOnly: true}),
+        css(If('%$person/name% == Homer Simpson','color: red; /*css-only*/', 'color: green; /*css-only*/'))
+      ]
+    }),
+    action: [
+      writeValue('%$person/name%','Dan'),
+      writeValue('%$person/name%','Homer Simpson'),
+    ],
+    expectedResult: ctx => Array.from(document.querySelectorAll('style')).map(el=>el.innerText).filter(x=>x.indexOf('color: red; /*css-only*/') != -1)[0],
   })
 })
 

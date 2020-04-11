@@ -1,54 +1,104 @@
 (function() {
 const st = jb.studio;
 
+jb.component('studio.pick', {
+  type: 'action',
+  impl: openDialog({
+    id: 'studio.pick',
+    style: dialog.studioPickDialog('preview'),
+    content: text(''),
+  })
+})
+
+jb.component('studio.pickAndOpen', {
+  type: 'action',
+  params: [
+    {id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'}
+  ],
+  impl: openDialog({
+    id: 'studio.pick',
+    style: dialog.studioPickDialog('%$from%'),
+    content: text(''),
+    onOK: ctx => ctx.run(runActions(
+      writeValue('%$studio/profile_path%', '%$dialogData/path%'),
+      studio.openControlTree(),
+      studio.openProperties(true)
+    ))
+  })
+})
+
+jb.component('studio.pickToolbar', {
+  type: 'control',
+  impl: group({
+    features: css.class('pick-toolbar'),
+    layout: layout.horizontal(),
+    controls: [
+      button({
+        title: studio.compName('%$dialogData/path%'),
+        action: '%$$dialog/endPick%',
+        style: button.href(),
+        features: feature.hoverTitle('%$dialogData/path%')
+      }),
+      button({
+        title: '...',
+        style: button.href(),
+        action: studio.showStack({ 
+          ctx: '%$dialogData/ctx%', 
+          onSelect: ctx => ctx.componentContext.vars.$dialog.endPick(ctx.data.ctx) 
+        })
+      })
+    ]
+  })
+})
+
 jb.component('dialogFeature.studioPick', {
   type: 'dialog-feature',
   params: [
     {id: 'from', as: 'string'}
   ],
   impl: (ctx,from) => ({
-    afterViewInit: cmp=> {
-      const {pipe,filter, fromEvent,takeUntil,merge,Do, map,debounceTime, last, subscribe} = jb.callbag
-      if (from === 'studio')
-        st.initStudioEditing()
+    destroy: cmp => {
       const _window = from == 'preview' ? st.previewWindow : window;
-      const previewOffset = from == 'preview' ? document.querySelector('#jb-preview').getBoundingClientRect().top : 0;
-      cmp.titleBelow = false;
-
+      cmp.cover.parentElement == _window.document.body && _window.document.body.removeChild(cmp.cover);
+    },
+    afterViewInit: cmp=> {
+      const {pipe,filter, Do, map,debounceTime, subscribe,distinctUntilChanged,skip} = jb.callbag
+      if (from === 'studio') st.initStudioEditing()
+      const _window = from == 'preview' ? st.previewWindow : window;
       const projectPrefix = ctx.run(studio.currentPagePath())
       const testHost = ctx.exp('%$queryParams/host%') == 'test'
       const eventToElemPredicate = from == 'preview' ?
         (path => testHost || path.indexOf(projectPrefix) == 0) : (path => st.isStudioCmp(path.split('~')[0]))
-      const cover = _window.document.createElement('div')
+
+      const cover = cmp.cover = _window.document.querySelector('.jb-cover') || _window.document.createElement('div')
       cover.className = 'jb-cover'
       cover.style.position= 'absolute'; cover.style.width= '100%'; cover.style.height= '100%'; cover.style.background= 'white'; cover.style.opacity= '0'; cover.style.top= 0; cover.style.left= 0;
       _window.document.body.appendChild(cover);
-      const mouseMoveEm = fromEvent(_window.document, 'mousemove');
-      let userPick = fromEvent(document, 'mousedown');
-      let keyUpEm = fromEvent(document, 'keyup');
-      if (st.previewWindow) {
-          userPick =  merge(userPick,fromEvent(st.previewWindow.document, 'mousedown'))
-          keyUpEm = merge(keyUpEm,fromEvent(st.previewWindow.document, 'keyup'))
+
+      ctx.vars.$dialog.endPick = function(pickedCtx) {
+        if (pickedCtx)
+          Object.assign(ctx.vars.dialogData,{ ctx: pickedCtx, path: pickedCtx.path })
+        ctx.run(writeValue('%$studio/pickSelectionCtxId%',(pickedCtx || ctx.vars.dialogData.ctx || {}).id))
+        ctx.vars.$dialog.close({OK: true})
       }
+      cmp.counter = 0
+
+      pipe(jb.ui.fromEvent(cmp,'mousedown',cmp.cover), subscribe(() => ctx.vars.$dialog.endPick()))
+
+      const mouseMoveEm = jb.ui.fromEvent(cmp,'mousemove',_window.document);
       pipe(mouseMoveEm,
           debounceTime(50),
-          takeUntil(merge(pipe(keyUpEm,filter(e=>e.keyCode == 27)), userPick)),
           map(e=> eventToElem(e,_window,eventToElemPredicate)),
           filter(x=>x && x.getAttribute),
+          distinctUntilChanged(),
           Do(profElem=> {
-            ctx.exp('%$pickSelection%').elem = profElem
-            showBox(cmp,profElem,_window,previewOffset)
+            const elemCtx = _window.jb.ctxDictionary[profElem.getAttribute('pick-ctx') || profElem.getAttribute('jb-ctx')]
+            if (!elemCtx) return
+            Object.assign(ctx.vars.dialogData,{ elem: profElem, ctx: elemCtx, path: elemCtx.path })
+            ctx.run(writeValue('%$studio/refreshPick%',() => cmp.counter++))
           }),
-          last(), // esc or user pick
-          subscribe(profElem=> {
-              const pickSelection = ctx.exp('%$pickSelection%')
-              pickSelection.ctx = _window.jb.ctxDictionary[profElem.getAttribute('pick-ctx') || profElem.getAttribute('jb-ctx')];
-              pickSelection.elem = profElem;
-              ctx.vars.$dialog.close({OK: true});
-              _window.document.body.removeChild(cover);
-              // inform watchers
-              ctx.run(writeValue('%$studio/pickSelectionCtxId%',(pickSelection.ctx || {}).id))
-          }))
+          subscribe(() => {})
+      )
     }
   })
 })
@@ -60,37 +110,27 @@ jb.component('dialog.studioPickDialog', {
     {id: 'from', as: 'string'}
   ],
   impl: customStyle({
-    template: (cmp,{width,height,top,left,titleTop,titleLeft,titleBelow},h) => h('div',{ class: 'jb-dialog' },[
-      h('div',{ class: 'edge top', style: { width: width + 'px', top: top + 'px', left: left + 'px' }}) ,
-      h('div',{ class: 'edge left', style: { height: height +'px', top: top + 'px', left: left + 'px' }}),
-      h('div',{ class: 'edge right', style: { height: height +'px', top: top + 'px', left: (left + width) + 'px' }}) ,
-      h('div',{ class: 'edge bottom', style: { width: width + 'px', top: (top + height) +'px', left: left + 'px' }}) ,
-      h('div',{ class: 'title' + (titleBelow ? ' bottom' : ''), style: { top: titleTop + 'px', left: titleLeft + 'px'} },
-      [
-          h(cmp.ctx.run(studio.pickToolbar())),
-          h('div',{ class: 'triangle'}),
-    ])]),
-    css: `
->.edge {
-    z-index: 6001;
-    position: absolute;
-    background: red;
-    box-shadow: 0 0 1px 1px gray;
-    width: 1px; height: 1px;
-    cursor: pointer;
-}
->.title {
-    z-index: 6001;
-    position: absolute;
-    font: 14px arial; padding: 0; cursor: pointer;
-    transition:top 100ms, left 100ms;
-}
->.title .triangle {	width:0;height:0; border-style: solid; 	border-color: #e0e0e0 transparent transparent transparent; border-width: 6px; margin-left: 14px;}
->.title .text {	background: #e0e0e0; font: 14px arial; padding: 3px; }
->.title.bottom .triangle { background: #fff; border-color: transparent transparent #e0e0e0 transparent; transform: translateY(-28px);}
->.title.bottom .text { transform: translateY(6px);}
-                `,
-    features: [dialogFeature.studioPick('%$from%')]
+    template: (cmp,{},h) => h('div#jb-dialog',{},[
+      h('div#edge top'), h('div#edge left'), h('div#edge right'), h('div#edge bottom'), h(cmp.ctx.run(studio.pickToolbar()))
+    ]),
+    css: `{ display: block; position: absolute; width: 0; height:0 }
+    >.edge { position: absolute; box-shadow: 0 0 1px 1px gray; width: 1px; height: 1px; cursor: pointer; }`,    
+    features: [
+      css(pipeline( (ctx,{dialogData},{from}) => {
+        if (!dialogData.elem) return {}
+        const elemRect = dialogData.elem.getBoundingClientRect()
+        const top = (from == 'preview' ? jb.ui.studioFixYPos() : 0) + elemRect.top
+        return { top: `top: ${top}px`, left: `left: ${elemRect.left}px`, width: `width: ${elemRect.width}px`, 
+            height: `height: ${elemRect.height}px`, widthVal: elemRect.width + 'px', heightVal: elemRect.height + 'px'
+          }
+        },
+        `{ %top%; %left% } ~ .pick-toolbar { margin-top: -20px }
+        >.top{ %width% } >.left{ %height% } >.right{ left: %widthVal%;  %height% } >.bottom{ top: %heightVal%; %width% }`
+      )),
+      watchRef('%$studio/refreshPick%'),
+      dialogFeature.studioPick('%$from%'),
+      dialogFeature.closeWhenClickingOutside(),
+    ]
   })
 })
 
@@ -115,22 +155,6 @@ function eventToElem(e,_window, predicate) {
   function checkCtxId(ctxId) {
     return ctxId && predicate(_window.jb.ctxDictionary[ctxId].path)
   }
-}
-
-function showBox(cmp,profElem,_window,previewOffset) {
-  const profElem_offset = jb.ui.offset(profElem);
-  if (profElem_offset == null || jb.ui.offset(document.querySelector('#jb-preview')) == null)
-    return;
-
-    cmp.refresh({
-        top: previewOffset + profElem_offset.top,
-        left: profElem_offset.left,
-        width: jb.ui.outerWidth(profElem) == jb.ui.outerWidth(_window.document.body) ? jb.ui.outerWidth(profElem) -10 : cmp.width = jb.ui.outerWidth(profElem),
-        height: jb.ui.outerHeight(profElem),
-//        pickTitle: st.shortTitle(pathFromElem(_window,profElem)),
-        titleTop: previewOffset + profElem_offset.top - 20,
-        titleLeft: profElem_offset.left
-    })
 }
 
 Object.assign(st, {
@@ -206,52 +230,6 @@ jb.component('studio.highlightByPath', {
 
     st.highlightElems(elems);
   }
-})
-
-jb.component('studio.pick', {
-  type: 'action',
-  params: [
-    {id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'},
-    {id: 'onSelect', type: 'action', dynamic: true}
-  ],
-  impl: openDialog({
-    style: dialog.studioPickDialog('%$from%'),
-    content: text(''),
-    onOK: ctx => ctx.componentContext.params.onSelect(ctx.setData(ctx.exp('%$pickSelection/ctx%')))
-  })
-})
-
-jb.component('studio.pickToolbar', {
-  type: 'control',
-  impl: button({
-    title: join({
-      separator: '',
-      items: list(
-        studio.shortTitle('%$path%'),
-        '(',
-        split({separator: '~', part: 'first'}),
-        ')'
-      )
-    }),
-    action: studio.gotoPath('%$path%'),
-    style: button.href(),
-    features: [
-      css('{background: white} :hover {color: black}'),
-      variable({
-        name: 'path',
-        value: ctx =>{
-          const elem = ctx.exp('%$pickSelection/elem%')
-          if (!elem) return ''
-          const _jb = elem.ownerDocument === jb.frame.document ? jb : st.previewjb
-          const res = elem ? [elem.getAttribute('pick-ctx'), elem.getAttribute('jb-ctx')]
-              .map(id=>_jb.ctxDictionary[id])
-              .filter(x=>x)
-              .map(ctx=>ctx.path).slice(0,1) : []
-          return res
-        }
-      })
-    ]
-  })
 })
 
 })()

@@ -379,12 +379,18 @@ jb.component('sort', {
 
 jb.component('first', {
   type: 'aggregator',
-  impl: ({data}) => data[0]
+  params: [
+    {id: 'items', as: 'array', defaultValue: '%%'}
+  ],
+  impl: (ctx,items) => items[0]
 })
 
 jb.component('last', {
   type: 'aggregator',
-  impl: ({data}) => data.slice(-1)[0]
+  params: [
+    {id: 'items', as: 'array', defaultValue: '%%'}
+  ],
+  impl: (ctx,items) => items.slice(-1)[0]
 })
 
 jb.component('count', {

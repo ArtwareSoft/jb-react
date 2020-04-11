@@ -18,7 +18,8 @@ Object.assign(jb.ui,{
         : otherSidePos + jb.ui.computeStyle(el,'padding'+otherSideUpper)
     return basePos
   },
-  studioFixYPos() {
+  studioFixYPos(elem) {
+    if (elem && elem.ownerDocument == jb.frame.document) return 0
     if (this._studioFixYPos == null)
       this._studioFixYPos = (document.querySelector('#jb-preview') && document.querySelector('#jb-preview').getBoundingClientRect().top) || 0
     return this._studioFixYPos

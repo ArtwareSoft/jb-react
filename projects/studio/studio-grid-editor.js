@@ -6,6 +6,10 @@ Object.assign(jb.ui, {
     const grid = jb.studio.previewWindow.getComputedStyle(el)[prop] || '' // <tt>78.2969px 74px 83px 120px 16px</tt>
     return grid.replace(/<\/?tt>/g,'').replace(/px /,' ').replace(/px/g,'').split(' ').map(x=>+(x.trim()))
   },
+  removeGridTab(gridPath,gridIndex,axis,ctx) {
+    const ref = jb.studio.refOfPath(`${gridPath}~layout~${axis.toLowerCase().slice(0,-1)}Sizes~items`)
+    jb.splice(ref,[[gridIndex,1]],ctx)
+  },
   calcGridAccVals(inplaceElem) { return {
     Rows: jb.ui.getGridVals(inplaceElem, 'Rows').reduce((sums,x) => [...sums,x + sums.slice(-1)[0]],[0]),
     Columns: jb.ui.getGridVals(inplaceElem, 'Columns').reduce((sums,x) => [...sums,x + sums.slice(-1)[0]],[0])
@@ -19,8 +23,8 @@ jb.component('inplaceEdit.openGridEditor', {
     type: 'action',
     impl: runActions(
         Var('gridPath','%$path%'),
-        // gridEditor.openGridLineThumb('Columns'),
-        // gridEditor.openGridLineThumb('Rows'),
+        gridEditor.openGridLineThumb('Columns'),
+        gridEditor.openGridLineThumb('Rows'),
         gridEditor.openGridItemThumbs(),
     )
 })
@@ -33,7 +37,7 @@ jb.component('gridEditor.openGridLineThumb', {
   impl: runActionOnItems(
     Var('otherAxis', If('%$axis%==Rows', 'Columns', 'Rows')),
     Var('otherAxisSize', ({},{otherAxis,inplaceElem}) => jb.ui.getGridVals(inplaceElem, otherAxis).reduce((sum,x) => sum+x,0) ),
-    Var('$launchingElement', null),
+    Var('$launchingElement', () => null),
 
     (ctx,{inplaceElem},{axis}) => [0,...jb.ui.getGridVals(inplaceElem, axis)],
     openDialog({
@@ -43,14 +47,28 @@ jb.component('gridEditor.openGridLineThumb', {
       features: [
         htmlAttribute('onclick',true),
         defHandler('onclickHandler', 
-        menu.openContextMenu({
-          menu: menu.menu({
-            options: [
-              menu.action({title: 'delete tab', icon: icon('delete')}),
-              menu.action({title: 'new tab', icon: icon({icon: 'Plus', type: 'mdi'})})
-            ]
-          }),
-        })),
+          If('%$ev/ctrlKey%',
+          menu.openContextMenu({
+            menu: menu.menu({
+              options: [
+                menu.action({
+                  title: 'delete tab', 
+                  icon: icon('delete'),
+                  action: runActions(
+                    (ctx,{gridIndex,gridPath},{axis}) => jb.ui.removeGridTab(gridPath,gridIndex,axis,ctx),
+                    delay(100),
+                    inplaceEdit.openGridEditor('%$gridPath%'))
+                }),
+                menu.action({
+                  title: 'new tab', 
+                  icon: icon({icon: 'Plus', type: 'mdi'}),
+                  action: runActions(
+                    (ctx,{gridIndex,gridPath},{axis}) => jb.ui.addGridTab(gridPath,gridIndex,axis,ctx),
+                    inplaceEdit.openGridEditor('%$gridPath%'))
+                })
+              ]
+            }),
+          }))),
         gridEditor.dragableGridLineThumb('%$axis%'),
         watchRef({ ref: studio.ref('%$gridPath%~layout'), includeChildren: 'yes', cssOnly: true}),
         css(
@@ -108,9 +126,8 @@ jb.component('gridEditor.dragableGridLineThumb', {
         takeUntil(mouseUpEm),
         map(e => base + moveHandlersAndCalcDiff(e)),
         Do(val => setGridPosScript(val, axis, gridIndex-1, ctx)),
-        last(),
       )),
-      subscribe(() => jb.ui.dialogs.closePopups())
+      subscribe(() => {})
     )
     function HandlerPos(e) {
         return axis == 'Rows' ? e.clientY - jb.ui.studioFixYPos() : e.clientX
@@ -119,7 +136,6 @@ jb.component('gridEditor.dragableGridLineThumb', {
         const newPos = HandlerPos(e)
         const overflow = base + newPos - startPos
         const fixBack = (overflow < 0) ? -overflow : 0
-        console.log(base,startPos,newPos, newPos - startPos,overflow,fixBack)
         jb.ui.dialogs.dialogs.filter(dlg => dlg.axis == axis &&  dlg.gridIndex >= gridIndex -1)
             .forEach(dlg=>{
                 if (axis == 'Rows')
@@ -145,7 +161,7 @@ jb.component('gridEditor.openGridItemThumbs', {
       vars: Var('gridItemElem'),
       id: 'gridItemThumb',
       style: inplaceEdit.thumbStyle(),
-      content: text(''),
+      content: text('Ctrl to span'),
       features: [
         gridEditor.dragableGridItemThumb(),
         feature.init((ctx,{$dialog,gridItemElem}) => {                 
@@ -153,16 +169,17 @@ jb.component('gridEditor.openGridItemThumbs', {
             $dialog.gridItemElem = gridItemElem
         }),
         css((ctx,{gridItemElem}) => {
-              const elemRect = gridItemElem.getBoundingClientRect()
-              const left = elemRect.left + 5 + 'px'
-              const top = jb.ui.studioFixYPos() + elemRect.top + 5 + 'px'
-              const width = `width: ${elemRect.width - 10}px;`
-              const height = `height: ${elemRect.height - 10}px;`
-              return `left: ${left}; top: ${top}; ${width}${height}`
+            const elemRect = gridItemElem.getBoundingClientRect()
+            const left = elemRect.left + 5 + 'px'
+            const top = jb.ui.studioFixYPos() + elemRect.top + 5 + 'px'
+            const width = `width: ${elemRect.width - 10}px;`
+            const height = `height: ${elemRect.height - 10}px;`
+            const res = `left: ${left}; top: ${top}; ${width}${height}`
+            return res
         }),
-        css('{cursor: grab; box-shadow: 3px 3px; background: grey; opacity: 0.2} ~:hover {opacity: 0.7}' ),
+        css('{cursor: grab; box-shadow: 3px 3px; background: grey; opacity: 0.2; display: flex; flex-flow: row-reverse} ~:hover {opacity: 0.7}' ),
         feature.onDataChange({ ref: studio.ref('%$gridPath%'), includeChildren: 'yes', 
-          action: (ctx,{cmp}) => jb.delay(300).then(()=> cmp.refresh(null,{srcCtx: ctx.componentContext})) 
+          action: (ctx,{cmp}) => jb.delay(1).then(()=> cmp.refresh(null,{srcCtx: ctx.componentContext})) 
         })
       ]
     })
@@ -172,7 +189,7 @@ jb.component('gridEditor.openGridItemThumbs', {
 jb.component('gridEditor.dragableGridItemThumb', {
   type: 'feature',
   impl: interactive( (ctx,{cmp,gridItemElem,inplaceElem})=> {
-    const {pipe,takeUntil,merge,Do, flatMap, last, subscribe} = jb.callbag
+    const {pipe,takeUntil,merge,Do, flatMap, last, subscribe, map, distinctUntilChanged} = jb.callbag
     cmp.mousedownEm = jb.ui.fromEvent(cmp, 'mousedown')
     let mouseUpEm = jb.ui.fromEvent(cmp, 'mouseup', document)
     let mouseMoveEm = jb.ui.fromEvent(cmp, 'mousemove', document)
@@ -180,57 +197,47 @@ jb.component('gridEditor.dragableGridItemThumb', {
       mouseUpEm = merge(mouseUpEm, jb.ui.fromEvent(cmp, 'mouseup', jb.studio.previewWindow.document))
       mouseMoveEm = merge(mouseMoveEm, jb.ui.fromEvent(cmp, 'mousemove', jb.studio.previewWindow.document))
     }
+    let spanBase,screenToClient
     const gridRect = inplaceElem.getBoundingClientRect()
-    const elemRect = gridItemElem.getBoundingClientRect()
-    let offsetX, offsetY, span, basePos
     pipe(cmp.mousedownEm,
       Do(e => e.preventDefault()),
-      Do(e => {
-          span = e.ctrlKey
-          basePos = posToGridPos([e.clientX - gridRect.x, e.clientY - gridRect.y])
-          offsetY = e.clientY - elemRect.top
-          offsetX = e.clientX - elemRect.left
-      }),
       flatMap(() => pipe(
         mouseMoveEm,
+        // strange bug in chrome mouse position of clientY. Using screenY with offset of first click that works fine
+        Do(e=> { screenToClient = screenToClient || { x: e.screenX - e.clientX, y: e.screenY - e.clientY} }),
+        Do(e=> console.log(e,e.ctrlKey)),
+        map(e=> ({ ctrlKey: e.ctrlKey, gridPos: posToGridPos([e.screenY - screenToClient.y - gridRect.top - jb.ui.studioFixYPos(),
+            e.screenX - screenToClient.x - gridRect.left])})),
+        distinctUntilChanged((x,y) => x.gridPos.join(',') == y.gridPos.join(',')),
+        Do(e=> {
+          if (spanBase && !e.ctrlKey) spanBase = null
+          if (!spanBase && e.ctrlKey) spanBase = e.ctrlKey && !spanBase && posToGridPos([e.screenY - screenToClient.y - gridRect.top - jb.ui.studioFixYPos(),
+            e.screenX - screenToClient.x - gridRect.left])
+        }),
+        Do(e=>jb.log('dragableGridItemThumb',['changed to ' + e.gridPos.join(','), e])),
+        Do(e => setGridAreaValsInScript(e.gridPos)),
         takeUntil(mouseUpEm),
-        Do(e => moveHandler(e)),
-        Do(e => moveGridItem(e)),
-        last(),
       )),
-      subscribe(() => {}) //jb.ui.dialogs.closePopups())
+      subscribe(() => {})
     )
 
-    function moveHandler(e) {
-        if (span) {
-            //TODO span..
-
-        } else {
-            cmp.base.style.top = (e.clientY - offsetY + jb.ui.studioFixYPos()) + 'px'
-            cmp.base.style.left = (e.clientX - offsetX) + 'px'
-        }
-    }
-    function moveGridItem(e) {
-        const pos = [e.clientY - jb.ui.studioFixYPos() - gridRect.y, e.clientX - gridRect.x]
-        const gridArea = posToGridPos(pos)
-        setGridAreaValsInScript(gridArea)
-    }
     function setGridAreaValsInScript(vals) {
-        const gridItemPath = gridItemElem._component.ctx.path
-        const gridAreaFeatureIndex = jb.studio.valOfPath(`${gridItemPath}~features`).findIndex(f=>f.$ == 'css.gridArea')
-        const gridAreaRef = jb.studio.refOfPath(`${gridItemPath}~features~${gridAreaFeatureIndex}~css`)
-        const scriptValues = jb.val(gridAreaRef).replace(/;?\s*}?\s*$/,'').replace(/^\s*{?\s*grid-area\s*:/,'').split('/') // grid-area: 1 / 2 / span 2 / span 3;
-        if (!span && scriptValues.slice(0,2).map(x=>x.trim()).join(',') == vals.join(',')) return
-        jb.log('setGridAreaVals',[vals,scriptValues,ctx,cmp,gridItemElem,inplaceElem])
-        if (span)
-            [0,1].forEach(axis =>scriptValues[2+axis] = ` span ${vals[axis] -basePos[axis]} `)
-         else
-            [0,1].forEach(i=>scriptValues[i] = ` ${vals[i]} `)
-        jb.writeValue(gridAreaRef,`grid-area: ${scriptValues.join('/')}`,ctx)
+      console.log('changed to ' + vals, spanBase)
+      const gridItemPath = gridItemElem._component.ctx.path
+      const gridAreaFeatureIndex = jb.studio.valOfPath(`${gridItemPath}~features`).findIndex(f=>f.$ == 'css.gridArea')
+      const gridAreaRef = jb.studio.refOfPath(`${gridItemPath}~features~${gridAreaFeatureIndex}~css`)
+      spanBase && [0,1].forEach(i=>{
+          spanBase[i] = Math.min(spanBase[i],vals[i])
+          vals[i] = Math.max(spanBase[i],vals[i])
+        })
+      const spans = spanBase && [0,1].map(i => `span ${Math.max(1,vals[i] -spanBase[i] + 1)}`)
+      const newScriptValues = spanBase ? [...spanBase, ...spans] : vals
+      jb.writeValue(gridAreaRef,`grid-area: ${newScriptValues.join(' / ')}`,ctx)
     }
     function posToGridPos(pos) {
       const gridAccVals = jb.ui.calcGridAccVals(inplaceElem)
       return pos.map((val,i) => gridAccVals[i ? 'Columns' : 'Rows'].findIndex(x=> x > val))
+        .map((val,i) => val == -1 ? gridAccVals[i ? 'Columns' : 'Rows'].length : val)
     }
   })
 })

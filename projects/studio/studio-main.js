@@ -9,12 +9,6 @@ jb.component('dataResource.studio', {
   }
 })
 
-jb.component('dataResource.pickSelection', { /* dataResource.pickSelection */
-  passiveData: {
-    ctx: null,
-    elem: null
-  }
-})
 jb.component('studio.pages', {
   type: 'control',
   impl: group({

@@ -19,7 +19,12 @@ Object.assign(jb.ui,{
         const classPrefix = workerId ? 'w'+ workerId : 'jb-'
 
         if (!this.cssHashMap[cssKey]) {
-            this.cssHashCounter++;
+            if (existingClass) {
+                const existingKey = Object.keys(this.cssHashMap).filter(k=>this.cssHashMap[k].classId == existingClass)[0]
+                existingKey && delete this.cssHashMap[existingKey]
+            } else {
+                this.cssHashCounter++;
+            }
             const classId = existingClass || `${classPrefix}${this.cssHashCounter}`
             this.cssHashMap[cssKey] = {classId, paths : {[ctx.path]: true}}
             const cssContent = linesToCssStyle(classId)

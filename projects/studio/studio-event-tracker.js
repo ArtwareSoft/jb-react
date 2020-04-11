@@ -83,9 +83,9 @@ jb.component('studio.eventTracker', {
             ]
           }),
           editableBoolean({
-            databind: '%$studio/spyWatchLogs%',
+            databind: '%$studio/manualRefresh%',
             style: editableBoolean.iconWithSlash('30'),
-            title: 'auto refresh (slow)',
+            title: 'manual refresh',
             textForTrue: 'on',
             textForFalse: 'off',
             features: [
@@ -99,7 +99,7 @@ jb.component('studio.eventTracker', {
             databind: '%$studio/spyLogs%',
             options: picklist.options(() => jb.studio.previewjb.spySettings.moreLogs.split(',')),
             style: multiSelect.chips(),
-            features: css.margin('9')
+            features: css.margin('15')
           })
         ]
       }),
@@ -138,13 +138,20 @@ jb.component('studio.eventTracker', {
                   ],
                   default: 'RectangleOutline'
                 }),
-                type: 'mdi',
+                type: data.switch({cases: [data.case('%log% == error', 'mdc')], default: 'mdi'}),
                 size: '16'
               }),
               css('background-color: transparent; color: grey;')
             ]
           }),
-          text({text: '%log%', title: 'event'}),
+          text({
+            text: '%log%',
+            title: 'event',
+            features: feature.onHover({
+              action: studio.highlightLogItem(),
+              onLeave: dialog.closeDialog('elem-marker')
+            })
+          }),
           studio.eventView()
         ],
         style: table.plain(),
@@ -153,15 +160,12 @@ jb.component('studio.eventTracker', {
           id('event-logs'),
           itemlist.infiniteScroll('5'),
           css.height({height: '400', overflow: 'scroll'}),
-          itemlist.selection({
-            onSelection: ({data}) => { 
-            jb.studio.highlightElems([data.srcElem, data.elem].filter(x=>x))
-          }
-          }),
+          itemlist.selection({onSelection: ({data}) => jb.frame.console.log(data)}),
           itemlist.keyboardSelection({}),
           watchObservable(
-            ctx => ctx.exp('%$studio/spyWatchLogs%') && jb.ui.getSpy(ctx).observable()
-          ),
+            ctx => !ctx.exp('%$studio/manualRefresh%') &&
+             jb.callbag.filter(x => !(jb.path(x,'record.2.ctx.path') ||'').match(/eventTracker/))(jb.ui.getSpy(ctx).observable())
+          )
         ]
       })
     ],
@@ -184,14 +188,13 @@ jb.component('studio.eventView', {
   type: 'control',
   impl: group({
     layout: layout.horizontal('4'),
-    features: feature.onHover({
-      action: studio.highlightLogItem(),
-      onLeave: dialog.closeDialog('elem-marker'), 
-    }),
     controls: [
-      controlWithCondition(isOfType('string', '%event/2%'), text('%event/2%')),
-      controlWithCondition('%path%', text('%compName%')),
-      controlWithCondition('%op%', text('%op%')),
+      controlWithCondition('%opPath%', button({
+        title: last('%opPath%'),
+        style: button.href(),
+        features: feature.hoverTitle(join({separator: '/', items: '%opPath%'}))
+      })),
+      controlWithCondition('%opValue%', text('<- %opValue%')),
       controlWithCondition(
         '%srcCompName%',
         group({
@@ -200,13 +203,21 @@ jb.component('studio.eventView', {
             text('activated by:'),
             button({
               title: '%srcCompName%',
-              action: studio.openJbEditor('%srcPath%'),
+              action: studio.showStack('%srcCtx%'),
               style: button.href(),
               features: feature.hoverTitle('%srcPath%')
             })
           ]
         })
-      )
+      ),
+      controlWithCondition(isOfType('string', '%event/2%'), text('%event/2%')),
+      controlWithCondition('%log% == setGridAreaVals%', text(join({separator: '/', items: '%event/4%'}))),
+      controlWithCondition('%path%', button({
+        title: '%compName%',
+        action: studio.showStack('%ctx%'),
+        style: button.href(),
+        features: feature.hoverTitle('%path%')
+      })),
     ]
   })
 })
@@ -216,7 +227,8 @@ jb.component('studio.eventItems', {
   impl: ctx => {
     const st = jb.studio
     const spy = jb.ui.getSpy(ctx)
-    const events = (spy._all = ctx.vars.eventTracker.lastIndex == spy.logs.$index ? spy._all : spy.all().map(x=>enrich(x)))
+    const events = spy._all = ctx.vars.eventTracker.lastIndex == spy.logs.$index ? spy._all :
+        spy.all().map(x=>enrich(x)).filter(x=>!(x.path || '').match(/studio.eventTracker/))
     ctx.vars.eventTracker.lastIndex = spy.logs.$index
     return events
 
@@ -228,7 +240,8 @@ jb.component('studio.eventItems', {
       ev.cmp = (event || []).filter(x=>x && x.base && x.refresh)[0]
       ev.elem = ev.cmp && ev.cmp.base || (event || []).filter(x=>x && x.nodeType)[0]
       ev.opEvent = (event || []).filter(x=>x && x.opVal)[0]
-      ev.op = ev.opEvent && jb.prettyPrint(ev.opEvent.op,{forceFlat: true}).replace(/{|}|\$/g,'')
+      ev.opPath = ev.opEvent && ev.opEvent.path
+      ev.opValue = ev.opEvent && jb.prettyPrint(ev.opEvent.op,{forceFlat: true}).replace(/{|}|\$/g,'').replace("'set': ",'')
       ev.srcCtx = (event || []).filter(x=>x && x.srcCtx).map(x=>x.srcCtx)[0]
       ev.srcElem = jb.path(ev.srcCtx, 'vars.cmp.base')
       ev.srcPath = jb.path(ev.srcCtx, 'vars.cmp.ctx.path')
@@ -252,7 +265,7 @@ jb.component('studio.openElemMarker', {
         css((ctx,{},{elem}) => {
               const elemRect = elem.getBoundingClientRect()
               const left = elemRect.left + 'px'
-              const top = jb.ui.studioFixYPos() + elemRect.top + 'px'
+              const top = jb.ui.studioFixYPos(elem) + elemRect.top + 'px'
               return `left: ${left}; top: ${top}; width: ${elemRect.width}px; height: ${elemRect.height}px;`
         }),
         css((ctx,{},{css}) => css)
@@ -268,3 +281,32 @@ jb.component('studio.elemMarkerDialog', {
     features: [dialogFeature.maxZIndexOnClick(), dialogFeature.closeWhenClickingOutside()]
   })
 })
+
+jb.component('studio.showStack', {
+  type: 'action',
+  params: [
+    {id: 'ctx'},
+    {id: 'onSelect', type: 'action', dynamic: true, defaultValue: studio.openJbEditor('%path%') }
+  ],
+  impl: openDialog({
+    id: 'show-stack',
+    style: dialog.popup(),
+    content: itemlist({
+      items: ({},{},{ctx}) => {
+          const ctxStack=[];
+          for(let innerCtx= ctx; innerCtx; innerCtx = innerCtx.componentContext)
+            ctxStack.push(innerCtx)
+          return jb.unique([...ctxStack.slice(1).map(ctx=> ({ctx, path: ctx.callerPath})),
+            ...ctxStack.filter(ctx => ctx.vars.cmp).map(ctx=>({ctx, path: ctx.vars.cmp.ctx.path}))])
+      },
+      controls: button({
+        title: studio.compName('%path%'),
+        action: runActions(call('onSelect'),dialog.closeDialog('show-stack')),
+        style: button.href(),
+        features: feature.hoverTitle('%path%')
+      }),
+      features: css.padding({left: '4', right: '4'})
+    }),
+  })
+})
+

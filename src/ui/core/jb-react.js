@@ -349,13 +349,14 @@ Object.assign(jb.ui, {
         if (jb.path(options,'cssOnly')) {
             const existingClass = (elem.className.match(/(w|jb-)[0-9]+/)||[''])[0]
             const cssStyleElem = Array.from(document.querySelectorAll('style')).map(el=>({el,txt: el.innerText})).filter(x=>x.txt.indexOf(existingClass + ' ') != -1)[0].el
+            jb.log('refreshElem',['hashCss',cmp.cssLines,ctx,cmp, ...arguments]);
             return jb.ui.hashCss(cmp.cssLines,cmp.ctx,{existingClass, cssStyleElem})
         }
         const hash = cmp.init()
         if (hash != null && hash == elem.getAttribute('cmpHash'))
             return jb.log('refreshElem',['stopped by hash', hash, ...arguments]);
         cmp && applyVdomDiff(elem, h(cmp), {strongRefresh, ctx})
-        jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
+        //jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
     },
 
     subscribeToRefChange: watchHandler => jb.subscribe(watchHandler.resourceChange, e=> {

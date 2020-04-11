@@ -143,7 +143,7 @@ jb.component('studio.probe', {
         if (jb.path(_jb.comps,[path.split('~')[0],'testData']))
             circuitCtx = st.closestTestCtx(path)
         if (!circuitCtx)
-            circuitCtx = ctx.exp('%$pickSelection/ctx%')
+            circuitCtx = _jb.ctxDictionary[ctx.exp('%$studio/pickSelectionCtxId%')]
         if (!circuitCtx) {
             const circuitInPreview = st.closestCtxInPreview(path)
             circuitCtx = circuitInPreview && circuitInPreview.ctx
