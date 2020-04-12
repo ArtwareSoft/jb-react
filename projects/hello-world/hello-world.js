@@ -25,9 +25,19 @@ jb.component('dataResource.room', { /* dataResource.room */
 jb.component('helloWorld.main', {
   type: 'control',
   impl: group({
+    title: '',
+    layout: layout.grid({
+      columnSizes: list(286, 50, 269, 247, 311),
+      rowSizes: list('70'),
+      columnGap: ''
+    }),
     controls: [
-      button('click me'),
-      text({text: 'my text', title: 'my title'})
+      text({text: 'my text', title: 'my title'}),
+      text({
+        text: 'my text',
+        title: 'my title',
+        features: css.gridArea('grid-area: 1 / 4')
+      })
     ]
   })
 })

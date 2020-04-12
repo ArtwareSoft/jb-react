@@ -46,8 +46,8 @@ function h_to_jsx({types: t}) {
 }
 
 jb.studio.initJsxToH = _ => {
-  if (jb.studio._initJsxToH) return;
-  Babel.registerPlugin('h-to-jsx',h_to_jsx);
+  if (jb.studio._initJsxToH || !jb.frame.Babel) return;
+  jb.frame.Babel.registerPlugin('h-to-jsx',h_to_jsx);
   jb.studio._initJsxToH = true;
 }
 

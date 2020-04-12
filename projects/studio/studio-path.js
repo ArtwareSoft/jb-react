@@ -2,7 +2,6 @@
 const st = jb.studio;
 const {pipe,filter,subscribe,takeUntil} = jb.callbag
 
-
 function compsRefOfPreviewJb(previewjb) {
 	st.compsHistory = [];
 	function compsRef(val,opEvent,{source}= {}) {
@@ -92,7 +91,6 @@ Object.assign(st,{
   isStudioCmp: id => (jb.path(jb.comps,[id,jb.location,0]) || '').indexOf('projects/studio') != -1
 })
 
-
 // write operations with logic
 
 Object.assign(st, {
@@ -107,10 +105,9 @@ Object.assign(st, {
 		}
 	},
 
-	wrapWithGroup: (path,srcCtx) =>
-		st.writeValueOfPath(path,{ $: 'group', controls: [ st.valOfPath(path) ] },srcCtx),
+	wrapWithGroup: (path,srcCtx) => st.writeValueOfPath(path,{ $: 'group', controls: [ st.valOfPath(path) ] },srcCtx),
 
-	wrap: (path,compName,srcCtx) => {
+	wrap(path,compName,srcCtx) {
 		const comp = st.getComp(compName);
 		const compositeParam = jb.compParams(comp).filter(p=>p.composite)[0];
 		if (compositeParam) {
@@ -122,7 +119,7 @@ Object.assign(st, {
 			st.writeValueOfPath(path,result,srcCtx);
 		}
 	},
-	addProperty: (path,srcCtx) => {
+	addProperty(path,srcCtx) {
 		// if (st.paramTypeOfPath(path) == 'data')
 		// 	return st.writeValueOfPath(path,'');
 		const param = st.paramDef(path);
@@ -133,7 +130,7 @@ Object.assign(st, {
 			result = [];
 		st.writeValueOfPath(path,result,srcCtx);
 	},
-	duplicateControl: (path,srcCtx) => {
+	duplicateControl(path,srcCtx) {
 		const prop = path.split('~').pop();
 		const val = st.valOfPath(path);
 		const parent_ref = st.getOrCreateControlArrayRef(st.parentPath(st.parentPath(path)));
@@ -142,7 +139,7 @@ Object.assign(st, {
 			st.splice(parent_ref,[[Number(prop), 0,clone]],srcCtx);
 		}
 	},
-	duplicateArrayItem: (path,srcCtx) => {
+	duplicateArrayItem(path,srcCtx) {
 		const prop = path.split('~').pop();
 		const val = st.valOfPath(path);
 		const parent_ref = st.refOfPath(st.parentPath(path));
@@ -151,16 +148,16 @@ Object.assign(st, {
 			st.splice(parent_ref,[[Number(prop), 0,clone]],srcCtx);
 		}
 	},
-	disabled: path => {
+	disabled(path) {
 		const prof = st.valOfPath(path);
 		return prof && typeof prof == 'object' && prof.$disabled;
 	},
-	toggleDisabled: (path,srcCtx) => {
+	toggleDisabled(path,srcCtx) {
 		const prof = st.valOfPath(path);
 		if (prof && typeof prof == 'object' && !Array.isArray(prof))
 			st.writeValue(st.refOfPath(path+'~$disabled'),prof.$disabled ? null : true,srcCtx)
 	},
-	newProfile: (comp,compName) => {
+	newProfile(comp,compName) {
 		const result = { $: compName };
 		jb.compParams(comp).forEach(p=>{
 			if (p.composite)
@@ -170,7 +167,7 @@ Object.assign(st, {
 		})
 		return result
 	},
-	setComp: (path,compName,srcCtx) => {
+	setComp(path,compName,srcCtx) {
 		const comp = compName && st.getComp(compName);
 		if (!compName || !comp) return;
 		const params = jb.compParams(comp);
@@ -186,11 +183,11 @@ Object.assign(st, {
 		st.writeValue(st.refOfPath(path),result,srcCtx)
 	},
 
-	setSugarComp: (path,compName,param,srcCtx) => {
-		var emptyVal = (param.type||'').indexOf('[') == -1 ? '' : [];
-		var currentVal = st.valOfPath(path);
+	setSugarComp(path,compName,param,srcCtx) {
+		const emptyVal = (param.type||'').indexOf('[') == -1 ? '' : [];
+		let currentVal = st.valOfPath(path);
 		if (currentVal && typeof currentVal == 'object') {
-			var properties = Object.getOwnPropertyNames(currentVal);
+			const properties = Object.getOwnPropertyNames(currentVal);
 			if (properties.length == 1 && properties[0].indexOf('$') == 0)
 				currentVal = currentVal[properties[0]];
 			else
@@ -201,7 +198,7 @@ Object.assign(st, {
 		st.writeValue(st.refOfPath(path),{['$'+compName]: currentVal || emptyVal} ,srcCtx)
 	},
 
-	insertControl: (path,compToInsert,srcCtx) => {
+	insertControl(path,compToInsert,srcCtx) {
 		let newCtrl = compToInsert
 		if (typeof compToInsert == 'string') {
 			const comp = compToInsert && st.getComp(compToInsert);
@@ -236,7 +233,7 @@ Object.assign(st, {
 		return jb.move(st.refOfPath(from),st.refOfPath(to),srcCtx)
 	},
 
-	addArrayItem: (path,{toAdd,srcCtx, index} = {}) => {
+	addArrayItem(path,{toAdd,srcCtx, index} = {}) {
 		const val = st.valOfPath(path);
 		toAdd = toAdd === undefined ? {$:''} : toAdd;
 		if (Array.isArray(val)) {
@@ -244,33 +241,31 @@ Object.assign(st, {
 				st.push(st.refOfPath(path),[toAdd],srcCtx);
 			else
 				st.splice(st.refOfPath(path),[[val.length,0,toAdd]],srcCtx);
-//			return { newPath: path + '~' + (val.length-1) }
 		}
 		else if (!val) {
 			st.writeValueOfPath(path,toAdd,srcCtx);
 		} else {
 			st.writeValueOfPath(path,[val].concat(toAdd),srcCtx);
-//			return { newPath: path + '~1' }
 		}
 	},
 
-	wrapWithArray: (path,srcCtx) => {
-		var val = st.valOfPath(path);
+	wrapWithArray(path,srcCtx) {
+		const val = st.valOfPath(path);
 		if (val && !Array.isArray(val))
 			st.writeValueOfPath(path,[val],srcCtx);
 	},
 
-	makeLocal: (path,srcCtx) =>{
-		var comp = st.compOfPath(path);
+	makeLocal(path,srcCtx) {
+		const comp = st.compOfPath(path);
 		if (!comp || typeof comp.impl != 'object') return;
 		st.writeValueOfPath(path,st.evalProfile(jb.prettyPrint(comp.impl,{noMacros: true})),srcCtx);
 	},
-	getOrCreateControlArrayRef: (path,srcCtx) => {
-		var val = st.valOfPath(path);
-		var prop = st.controlParams(path)[0];
+	getOrCreateControlArrayRef(path,srcCtx) {
+		const val = st.valOfPath(path);
+		const prop = st.controlParams(path)[0];
 		if (!prop)
-			return console.log('getOrCreateControlArrayRef: no control param');
-		var ref = st.refOfPath(path+'~'+prop);
+			return jb.logError('getOrCreateControlArrayRef: no control param',[path,srcCtx]);
+		let ref = st.refOfPath(path+'~'+prop);
 		if (val[prop] === undefined)
 			jb.writeValue(ref,[],srcCtx);
 		else if (!Array.isArray(val[prop])) // wrap
@@ -278,7 +273,8 @@ Object.assign(st, {
 		ref = st.refOfPath(path+'~'+prop);
 		return ref;
 	},
-	evalProfile: prof_str => {
+
+	evalProfile(prof_str) {
 		try {
 			return (st.previewWindow || window).eval('('+prof_str+')')
 		} catch (e) {
@@ -369,6 +365,38 @@ jb.component('studio.boolRef', {
 				jb.writeValue(st.refOfPath(path),!!value,ctx)
         }
 	})
+})
+
+jb.component('studio.getOrCreateCompInArray', {
+	type: 'action',
+	params: [
+		{id: 'path', as: 'string', mandatory: true},
+		{id: 'compName', as: 'string', mandatory: true}
+	],
+	impl: (ctx,path,compName) => {
+		let arrayRef = st.refOfPath(path)
+		let arrayVal = jb.val(arrayRef)
+		if (!arrayVal) {
+		  jb.writeValue(arrayRef,{$: compName},ctx)
+		  return arrayRef
+		} else if (!Array.isArray(arrayVal) && arrayVal.$ == compName) {
+		  return arrayRef
+		} else {
+		  if (!Array.isArray(arrayVal)) { // If a different comp, wrap with array
+			jb.writeValue(arrayRef,[arrayVal],ctx)
+			arrayRef = st.refOfPath(path)
+			arrayVal = jb.val(arrayRef)
+		  }
+		  const existingFeature = arrayVal.findIndex(f=>f.$ == compName)
+		  if (existingFeature != -1) {
+			return jb.refOfPath(`${path}~${existingFeature}`)
+		  } else {
+			const length = arrayVal.length
+			jb.push(arrayRef,{$: compName},ctx)
+			return jb.refOfPath(`${path}~${length}`)
+		  }
+		}
+	}
 })
 
 })()

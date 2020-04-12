@@ -6,7 +6,7 @@ jb.component('field.databind', {
   category: 'field:0',
   params: [
     {id: 'debounceTime', as: 'number', defaultValue: 0},
-    {id: 'oneWay', type: 'boolean', as: 'boolean'}
+    {id: 'oneWay', as: 'boolean'}
   ],
   impl: features(
     If(

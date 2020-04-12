@@ -1300,12 +1300,18 @@ jb.component('sort', {
 
 jb.component('first', {
   type: 'aggregator',
-  impl: ({data}) => data[0]
+  params: [
+    {id: 'items', as: 'array', defaultValue: '%%'}
+  ],
+  impl: (ctx,items) => items[0]
 })
 
 jb.component('last', {
   type: 'aggregator',
-  impl: ({data}) => data.slice(-1)[0]
+  params: [
+    {id: 'items', as: 'array', defaultValue: '%%'}
+  ],
+  impl: (ctx,items) => items.slice(-1)[0]
 })
 
 jb.component('count', {
@@ -2048,7 +2054,7 @@ jb.exp = (...args) => new jb.jbCtx().exp(...args);
 
 (function() {
 const spySettings = { 
-	moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable,scriptChange,resLog,setGridAreaVals', 
+	moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable,scriptChange,resLog,setGridAreaVals,dragableGridItemThumb', 
 	groups: {
 		watchable: 'doOp,writeValue,removeCmpObservable,registerCmpObservable,notifyCmpObservable,notifyObservableElems,notifyObservableElem,scriptChange',
 		react: 'applyDeltaTop,applyDelta,unmount,render,initCmp,refreshReq,refreshElem,childDiffRes,htmlChange,appendChild,removeChild,replaceTop',
@@ -3815,20 +3821,21 @@ Object.assign(jb.ui, {
         if (jb.path(options,'cssOnly')) {
             const existingClass = (elem.className.match(/(w|jb-)[0-9]+/)||[''])[0]
             const cssStyleElem = Array.from(document.querySelectorAll('style')).map(el=>({el,txt: el.innerText})).filter(x=>x.txt.indexOf(existingClass + ' ') != -1)[0].el
+            jb.log('refreshElem',['hashCss',cmp.cssLines,ctx,cmp, ...arguments]);
             return jb.ui.hashCss(cmp.cssLines,cmp.ctx,{existingClass, cssStyleElem})
         }
         const hash = cmp.init()
         if (hash != null && hash == elem.getAttribute('cmpHash'))
             return jb.log('refreshElem',['stopped by hash', hash, ...arguments]);
         cmp && applyVdomDiff(elem, h(cmp), {strongRefresh, ctx})
-        jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
+        //jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
     },
 
     subscribeToRefChange: watchHandler => jb.subscribe(watchHandler.resourceChange, e=> {
         const changed_path = watchHandler.removeLinksFromPath(watchHandler.pathOfRef(e.ref))
         if (!changed_path) debugger
         //observe="resources://2~name;person~name
-        const elemsToCheck = jb.ui.find(e.srcCtx,'[observe]')
+        const elemsToCheck = jb.ui.find(jb.frame.document,'[observe]')
         const elemsToCheckCtxBefore = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
         jb.log('notifyObservableElems',['elemsToCheck',elemsToCheck,e])
         elemsToCheck.forEach((elem,i) => {
@@ -3943,7 +3950,12 @@ Object.assign(jb.ui,{
         const classPrefix = workerId ? 'w'+ workerId : 'jb-'
 
         if (!this.cssHashMap[cssKey]) {
-            this.cssHashCounter++;
+            if (existingClass) {
+                const existingKey = Object.keys(this.cssHashMap).filter(k=>this.cssHashMap[k].classId == existingClass)[0]
+                existingKey && delete this.cssHashMap[existingKey]
+            } else {
+                this.cssHashCounter++;
+            }
             const classId = existingClass || `${classPrefix}${this.cssHashCounter}`
             this.cssHashMap[cssKey] = {classId, paths : {[ctx.path]: true}}
             const cssContent = linesToCssStyle(classId)
@@ -5764,7 +5776,7 @@ jb.component('field.databind', {
   category: 'field:0',
   params: [
     {id: 'debounceTime', as: 'number', defaultValue: 0},
-    {id: 'oneWay', type: 'boolean', as: 'boolean'}
+    {id: 'oneWay', as: 'boolean'}
   ],
   impl: features(
     If(
@@ -7561,7 +7573,7 @@ jb.component('menuStyle.popupAsOption', {
 		]),
     css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
 				>i { width: 100%; text-align: right; font-size:16px; padding-right: 3px; padding-top: 3px; }
-						>.title { display: block; text-align: left; padding-top: 3px; padding-left: 26px; white-space: nowrap; }
+						>.title { display: block; text-align: left; padding-top: 3px; padding-left: 32px; white-space: nowrap; }
 			`,
     features: menu.initPopupMenu(dialog.contextMenuPopup(-24, true))
   })

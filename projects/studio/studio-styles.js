@@ -6,7 +6,7 @@ jb.component('editableText.studioPrimitiveText', {
           value: databind, onchange: true, onkeyup: true, onblur: true
     }),
     css: '{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom1: 7px;} :focus { border-color: #3F51B5; border-width: 2px}',
-    features: field.databindText(500, false)
+    features: field.databindText(0, false)
   })
 })
 
@@ -14,21 +14,6 @@ jb.component('editableText.floatingInput', {
   type: 'editable-text.style',
   impl: styleWithFeatures(editableText.mdcInput(),
     css(`~ .mdc-text-field__input  { font-size: 1.2rem; } ~ .mdc-text-field { width: 100%; margin-right: 13px;}`))
-})
-
-jb.component('editableText.floatingInputToDelete', {
-  type: 'editable-text.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('div#mdc-text-field',{},[
-      h('input#mdc-text-field__input', { type: 'text', autocomplete: 'nop',
-          value: state.databind, onchange: true, onkeyup: true, onblur: true,
-      }),
-      h('label#mdc-floating-label', {for: 'jb_input_' + state.fieldId},state.title)
-    ]),
-    css: `>input { font-size: 1.2rem; }
-    { margin-right: 13px;}`,
-    features: [field.databindText(300, true), mdcStyle.initDynamic()]
-  })
 })
 
 jb.studio.codeMirrorUtils = Object.assign(jb.studio.codeMirrorUtils || {}, {

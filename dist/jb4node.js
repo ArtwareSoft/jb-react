@@ -1300,12 +1300,18 @@ jb.component('sort', {
 
 jb.component('first', {
   type: 'aggregator',
-  impl: ({data}) => data[0]
+  params: [
+    {id: 'items', as: 'array', defaultValue: '%%'}
+  ],
+  impl: (ctx,items) => items[0]
 })
 
 jb.component('last', {
   type: 'aggregator',
-  impl: ({data}) => data.slice(-1)[0]
+  params: [
+    {id: 'items', as: 'array', defaultValue: '%%'}
+  ],
+  impl: (ctx,items) => items.slice(-1)[0]
 })
 
 jb.component('count', {
@@ -2048,7 +2054,7 @@ jb.exp = (...args) => new jb.jbCtx().exp(...args);
 
 (function() {
 const spySettings = { 
-	moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable,scriptChange,resLog,setGridAreaVals', 
+	moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable,scriptChange,resLog,setGridAreaVals,dragableGridItemThumb', 
 	groups: {
 		watchable: 'doOp,writeValue,removeCmpObservable,registerCmpObservable,notifyCmpObservable,notifyObservableElems,notifyObservableElem,scriptChange',
 		react: 'applyDeltaTop,applyDelta,unmount,render,initCmp,refreshReq,refreshElem,childDiffRes,htmlChange,appendChild,removeChild,replaceTop',

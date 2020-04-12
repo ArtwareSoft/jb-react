@@ -6,14 +6,35 @@ Object.assign(jb.ui, {
     const grid = jb.studio.previewWindow.getComputedStyle(el)[prop] || '' // <tt>78.2969px 74px 83px 120px 16px</tt>
     return grid.replace(/<\/?tt>/g,'').replace(/px /,' ').replace(/px/g,'').split(' ').map(x=>+(x.trim()))
   },
-  removeGridTab(gridPath,gridIndex,axis,ctx) {
-    const ref = jb.studio.refOfPath(`${gridPath}~layout~${axis.toLowerCase().slice(0,-1)}Sizes~items`)
-    jb.splice(ref,[[gridIndex,1]],ctx)
-  },
   calcGridAccVals(inplaceElem) { return {
     Rows: jb.ui.getGridVals(inplaceElem, 'Rows').reduce((sums,x) => [...sums,x + sums.slice(-1)[0]],[0]),
     Columns: jb.ui.getGridVals(inplaceElem, 'Columns').reduce((sums,x) => [...sums,x + sums.slice(-1)[0]],[0])
-  }}
+  }},
+  canRemoveGridTab(gridPath,gridIndex,axis,ctx) {
+    const ref = jb.ui.getOrCreateSizesRef(gridPath,axis,ctx)
+    return gridIndex > 0 && gridIndex < jb.val(ref).length
+  },
+  removeGridTab(gridPath,gridIndex,axis,ctx) {
+    const ref = jb.ui.getOrCreateSizesRef(gridPath,axis,ctx)
+    const arr = jb.val(ref)
+    const together = Number(arr[gridIndex-1]) + Number(arr[gridIndex])
+    jb.splice(ref,[[gridIndex-1,2,together]],ctx)
+  },
+  addGridTab(gridPath,gridIndex,axis,ctx) {
+    const ref = jb.ui.getOrCreateSizesRef(gridPath,axis,ctx)
+    if (jb.val(ref).length == gridIndex) {
+      jb.push(ref,100,ctx)
+    } else {
+      const half = Number(jb.val(ref)[gridIndex])/2
+      jb.splice(ref,[[gridIndex,1,half,half]],ctx)
+    }
+  },
+  getOrCreateSizesRef(gridPath,axis,ctx) {
+    const sizesProp = `${axis.toLowerCase().slice(0,-1)}Sizes`
+    if (!jb.studio.valOfPath(`${gridPath}~layout~${sizesProp}`))
+      ctx.run(writeValue(studio.ref(`${gridPath}~layout~${sizesProp}`), { [sizesProp]: list(100) }))
+    return jb.studio.refOfPath(`${gridPath}~layout~${sizesProp}~items`)      
+  },
 })
 
 jb.component('inplaceEdit.openGridEditor', {
@@ -54,6 +75,7 @@ jb.component('gridEditor.openGridLineThumb', {
                 menu.action({
                   title: 'delete tab', 
                   icon: icon('delete'),
+                  showCondition: (ctx,{gridIndex,gridPath},{axis}) => jb.ui.canRemoveGridTab(gridPath,gridIndex,axis,ctx),
                   action: runActions(
                     (ctx,{gridIndex,gridPath},{axis}) => jb.ui.removeGridTab(gridPath,gridIndex,axis,ctx),
                     delay(100),
@@ -189,7 +211,7 @@ jb.component('gridEditor.openGridItemThumbs', {
 jb.component('gridEditor.dragableGridItemThumb', {
   type: 'feature',
   impl: interactive( (ctx,{cmp,gridItemElem,inplaceElem})=> {
-    const {pipe,takeUntil,merge,Do, flatMap, last, subscribe, map, distinctUntilChanged} = jb.callbag
+    const {pipe,takeUntil,merge,Do, flatMap, subscribe, map, distinctUntilChanged} = jb.callbag
     cmp.mousedownEm = jb.ui.fromEvent(cmp, 'mousedown')
     let mouseUpEm = jb.ui.fromEvent(cmp, 'mouseup', document)
     let mouseMoveEm = jb.ui.fromEvent(cmp, 'mousemove', document)
@@ -205,7 +227,7 @@ jb.component('gridEditor.dragableGridItemThumb', {
         mouseMoveEm,
         // strange bug in chrome mouse position of clientY. Using screenY with offset of first click that works fine
         Do(e=> { screenToClient = screenToClient || { x: e.screenX - e.clientX, y: e.screenY - e.clientY} }),
-        Do(e=> console.log(e,e.ctrlKey)),
+//        Do(e=> console.log(e,e.ctrlKey)),
         map(e=> ({ ctrlKey: e.ctrlKey, gridPos: posToGridPos([e.screenY - screenToClient.y - gridRect.top - jb.ui.studioFixYPos(),
             e.screenX - screenToClient.x - gridRect.left])})),
         distinctUntilChanged((x,y) => x.gridPos.join(',') == y.gridPos.join(',')),
@@ -222,10 +244,8 @@ jb.component('gridEditor.dragableGridItemThumb', {
     )
 
     function setGridAreaValsInScript(vals) {
-      console.log('changed to ' + vals, spanBase)
-      const gridItemPath = gridItemElem._component.ctx.path
-      const gridAreaFeatureIndex = jb.studio.valOfPath(`${gridItemPath}~features`).findIndex(f=>f.$ == 'css.gridArea')
-      const gridAreaRef = jb.studio.refOfPath(`${gridItemPath}~features~${gridAreaFeatureIndex}~css`)
+      const gridAreaRef = ctx.run(pipeline(
+        studio.getOrCreateCompInArray('%$gridItemElem/_component/ctx/path%~features','css.gridArea'), '%css%'), {as: 'ref'})
       spanBase && [0,1].forEach(i=>{
           spanBase[i] = Math.min(spanBase[i],vals[i])
           vals[i] = Math.max(spanBase[i],vals[i])

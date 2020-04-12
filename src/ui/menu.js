@@ -362,7 +362,7 @@ jb.component('menuStyle.popupAsOption', {
 		]),
     css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
 				>i { width: 100%; text-align: right; font-size:16px; padding-right: 3px; padding-top: 3px; }
-						>.title { display: block; text-align: left; padding-top: 3px; padding-left: 26px; white-space: nowrap; }
+						>.title { display: block; text-align: left; padding-top: 3px; padding-left: 32px; white-space: nowrap; }
 			`,
     features: menu.initPopupMenu(dialog.contextMenuPopup(-24, true))
   })

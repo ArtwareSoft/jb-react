@@ -73,6 +73,9 @@ jb.component('feature.contentEditable', {
   ],
   impl: features(
     feature.keyboardShortcut('Alt+N', () => jb.frame.parent.jb.exec({$:'studio.pickAndOpen', from: 'studio'})),
+    feature.keyboardShortcut('Ctrl+Z', () => jb.frame.parent.jb.exec({$:'studio.undo', from: 'studio'})),
+    feature.keyboardShortcut('Ctrl+Y', () => jb.frame.parent.jb.exec({$:'studio.redo', from: 'studio'})),
+
     interactive(({},{cmp},{param}) => {
       const isHtml = param == 'html'
       const contentEditable = jb.ui.contentEditable

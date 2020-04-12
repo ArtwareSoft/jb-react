@@ -1300,12 +1300,18 @@ jb.component('sort', {
 
 jb.component('first', {
   type: 'aggregator',
-  impl: ({data}) => data[0]
+  params: [
+    {id: 'items', as: 'array', defaultValue: '%%'}
+  ],
+  impl: (ctx,items) => items[0]
 })
 
 jb.component('last', {
   type: 'aggregator',
-  impl: ({data}) => data.slice(-1)[0]
+  params: [
+    {id: 'items', as: 'array', defaultValue: '%%'}
+  ],
+  impl: (ctx,items) => items.slice(-1)[0]
 })
 
 jb.component('count', {
@@ -2048,7 +2054,7 @@ jb.exp = (...args) => new jb.jbCtx().exp(...args);
 
 (function() {
 const spySettings = { 
-	moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable,scriptChange,resLog,setGridAreaVals', 
+	moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable,scriptChange,resLog,setGridAreaVals,dragableGridItemThumb', 
 	groups: {
 		watchable: 'doOp,writeValue,removeCmpObservable,registerCmpObservable,notifyCmpObservable,notifyObservableElems,notifyObservableElem,scriptChange',
 		react: 'applyDeltaTop,applyDelta,unmount,render,initCmp,refreshReq,refreshElem,childDiffRes,htmlChange,appendChild,removeChild,replaceTop',
@@ -3815,20 +3821,21 @@ Object.assign(jb.ui, {
         if (jb.path(options,'cssOnly')) {
             const existingClass = (elem.className.match(/(w|jb-)[0-9]+/)||[''])[0]
             const cssStyleElem = Array.from(document.querySelectorAll('style')).map(el=>({el,txt: el.innerText})).filter(x=>x.txt.indexOf(existingClass + ' ') != -1)[0].el
+            jb.log('refreshElem',['hashCss',cmp.cssLines,ctx,cmp, ...arguments]);
             return jb.ui.hashCss(cmp.cssLines,cmp.ctx,{existingClass, cssStyleElem})
         }
         const hash = cmp.init()
         if (hash != null && hash == elem.getAttribute('cmpHash'))
             return jb.log('refreshElem',['stopped by hash', hash, ...arguments]);
         cmp && applyVdomDiff(elem, h(cmp), {strongRefresh, ctx})
-        jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
+        //jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
     },
 
     subscribeToRefChange: watchHandler => jb.subscribe(watchHandler.resourceChange, e=> {
         const changed_path = watchHandler.removeLinksFromPath(watchHandler.pathOfRef(e.ref))
         if (!changed_path) debugger
         //observe="resources://2~name;person~name
-        const elemsToCheck = jb.ui.find(e.srcCtx,'[observe]')
+        const elemsToCheck = jb.ui.find(jb.frame.document,'[observe]')
         const elemsToCheckCtxBefore = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
         jb.log('notifyObservableElems',['elemsToCheck',elemsToCheck,e])
         elemsToCheck.forEach((elem,i) => {
@@ -3943,7 +3950,12 @@ Object.assign(jb.ui,{
         const classPrefix = workerId ? 'w'+ workerId : 'jb-'
 
         if (!this.cssHashMap[cssKey]) {
-            this.cssHashCounter++;
+            if (existingClass) {
+                const existingKey = Object.keys(this.cssHashMap).filter(k=>this.cssHashMap[k].classId == existingClass)[0]
+                existingKey && delete this.cssHashMap[existingKey]
+            } else {
+                this.cssHashCounter++;
+            }
             const classId = existingClass || `${classPrefix}${this.cssHashCounter}`
             this.cssHashMap[cssKey] = {classId, paths : {[ctx.path]: true}}
             const cssContent = linesToCssStyle(classId)
@@ -5764,7 +5776,7 @@ jb.component('field.databind', {
   category: 'field:0',
   params: [
     {id: 'debounceTime', as: 'number', defaultValue: 0},
-    {id: 'oneWay', type: 'boolean', as: 'boolean'}
+    {id: 'oneWay', as: 'boolean'}
   ],
   impl: features(
     If(
@@ -7561,7 +7573,7 @@ jb.component('menuStyle.popupAsOption', {
 		]),
     css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
 				>i { width: 100%; text-align: right; font-size:16px; padding-right: 3px; padding-top: 3px; }
-						>.title { display: block; text-align: left; padding-top: 3px; padding-left: 26px; white-space: nowrap; }
+						>.title { display: block; text-align: left; padding-top: 3px; padding-left: 32px; white-space: nowrap; }
 			`,
     features: menu.initPopupMenu(dialog.contextMenuPopup(-24, true))
   })
@@ -29793,7 +29805,7 @@ jb.component('editableText.studioPrimitiveText', {
           value: databind, onchange: true, onkeyup: true, onblur: true
     }),
     css: '{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom1: 7px;} :focus { border-color: #3F51B5; border-width: 2px}',
-    features: field.databindText(500, false)
+    features: field.databindText(0, false)
   })
 })
 
@@ -29801,21 +29813,6 @@ jb.component('editableText.floatingInput', {
   type: 'editable-text.style',
   impl: styleWithFeatures(editableText.mdcInput(),
     css(`~ .mdc-text-field__input  { font-size: 1.2rem; } ~ .mdc-text-field { width: 100%; margin-right: 13px;}`))
-})
-
-jb.component('editableText.floatingInputToDelete', {
-  type: 'editable-text.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('div#mdc-text-field',{},[
-      h('input#mdc-text-field__input', { type: 'text', autocomplete: 'nop',
-          value: state.databind, onchange: true, onkeyup: true, onblur: true,
-      }),
-      h('label#mdc-floating-label', {for: 'jb_input_' + state.fieldId},state.title)
-    ]),
-    css: `>input { font-size: 1.2rem; }
-    { margin-right: 13px;}`,
-    features: [field.databindText(300, true), mdcStyle.initDynamic()]
-  })
 })
 
 jb.studio.codeMirrorUtils = Object.assign(jb.studio.codeMirrorUtils || {}, {
@@ -29969,7 +29966,6 @@ jb.component('dialog.studioMultilineEdit', {
 const st = jb.studio;
 const {pipe,filter,subscribe,takeUntil} = jb.callbag
 
-
 function compsRefOfPreviewJb(previewjb) {
 	st.compsHistory = [];
 	function compsRef(val,opEvent,{source}= {}) {
@@ -30049,7 +30045,7 @@ Object.assign(st,{
       return 'jbComponent';
     if (path.match(/~\$vars$/)) return;
     const prof = st.valOfPath(path,silent); // + (path.indexOf('~') == -1 ? '~impl' : '');
-  	return jb.compName(prof) || jb.compName(prof,st.paramDef(path)) || path.split('~')[0]
+  	return jb.compName(prof) || jb.compName(prof,st.paramDef(path)) // || path.split('~')[0]
   },
   compOfPath: (path,silent) => st.getComp(st.compNameOfPath(path,silent)),
   paramsOfPath: (path,silent) => jb.compParams(st.compOfPath(path,silent)), //.concat(st.compHeaderParams(path)),
@@ -30058,7 +30054,6 @@ Object.assign(st,{
   compAsStr: id => jb.prettyPrintComp(id,st.getComp(id)),
   isStudioCmp: id => (jb.path(jb.comps,[id,jb.location,0]) || '').indexOf('projects/studio') != -1
 })
-
 
 // write operations with logic
 
@@ -30074,10 +30069,9 @@ Object.assign(st, {
 		}
 	},
 
-	wrapWithGroup: (path,srcCtx) =>
-		st.writeValueOfPath(path,{ $: 'group', controls: [ st.valOfPath(path) ] },srcCtx),
+	wrapWithGroup: (path,srcCtx) => st.writeValueOfPath(path,{ $: 'group', controls: [ st.valOfPath(path) ] },srcCtx),
 
-	wrap: (path,compName,srcCtx) => {
+	wrap(path,compName,srcCtx) {
 		const comp = st.getComp(compName);
 		const compositeParam = jb.compParams(comp).filter(p=>p.composite)[0];
 		if (compositeParam) {
@@ -30089,7 +30083,7 @@ Object.assign(st, {
 			st.writeValueOfPath(path,result,srcCtx);
 		}
 	},
-	addProperty: (path,srcCtx) => {
+	addProperty(path,srcCtx) {
 		// if (st.paramTypeOfPath(path) == 'data')
 		// 	return st.writeValueOfPath(path,'');
 		const param = st.paramDef(path);
@@ -30100,7 +30094,7 @@ Object.assign(st, {
 			result = [];
 		st.writeValueOfPath(path,result,srcCtx);
 	},
-	duplicateControl: (path,srcCtx) => {
+	duplicateControl(path,srcCtx) {
 		const prop = path.split('~').pop();
 		const val = st.valOfPath(path);
 		const parent_ref = st.getOrCreateControlArrayRef(st.parentPath(st.parentPath(path)));
@@ -30109,7 +30103,7 @@ Object.assign(st, {
 			st.splice(parent_ref,[[Number(prop), 0,clone]],srcCtx);
 		}
 	},
-	duplicateArrayItem: (path,srcCtx) => {
+	duplicateArrayItem(path,srcCtx) {
 		const prop = path.split('~').pop();
 		const val = st.valOfPath(path);
 		const parent_ref = st.refOfPath(st.parentPath(path));
@@ -30118,16 +30112,16 @@ Object.assign(st, {
 			st.splice(parent_ref,[[Number(prop), 0,clone]],srcCtx);
 		}
 	},
-	disabled: path => {
+	disabled(path) {
 		const prof = st.valOfPath(path);
 		return prof && typeof prof == 'object' && prof.$disabled;
 	},
-	toggleDisabled: (path,srcCtx) => {
+	toggleDisabled(path,srcCtx) {
 		const prof = st.valOfPath(path);
 		if (prof && typeof prof == 'object' && !Array.isArray(prof))
 			st.writeValue(st.refOfPath(path+'~$disabled'),prof.$disabled ? null : true,srcCtx)
 	},
-	newProfile: (comp,compName) => {
+	newProfile(comp,compName) {
 		const result = { $: compName };
 		jb.compParams(comp).forEach(p=>{
 			if (p.composite)
@@ -30137,7 +30131,7 @@ Object.assign(st, {
 		})
 		return result
 	},
-	setComp: (path,compName,srcCtx) => {
+	setComp(path,compName,srcCtx) {
 		const comp = compName && st.getComp(compName);
 		if (!compName || !comp) return;
 		const params = jb.compParams(comp);
@@ -30153,11 +30147,11 @@ Object.assign(st, {
 		st.writeValue(st.refOfPath(path),result,srcCtx)
 	},
 
-	setSugarComp: (path,compName,param,srcCtx) => {
-		var emptyVal = (param.type||'').indexOf('[') == -1 ? '' : [];
-		var currentVal = st.valOfPath(path);
+	setSugarComp(path,compName,param,srcCtx) {
+		const emptyVal = (param.type||'').indexOf('[') == -1 ? '' : [];
+		let currentVal = st.valOfPath(path);
 		if (currentVal && typeof currentVal == 'object') {
-			var properties = Object.getOwnPropertyNames(currentVal);
+			const properties = Object.getOwnPropertyNames(currentVal);
 			if (properties.length == 1 && properties[0].indexOf('$') == 0)
 				currentVal = currentVal[properties[0]];
 			else
@@ -30168,7 +30162,7 @@ Object.assign(st, {
 		st.writeValue(st.refOfPath(path),{['$'+compName]: currentVal || emptyVal} ,srcCtx)
 	},
 
-	insertControl: (path,compToInsert,srcCtx) => {
+	insertControl(path,compToInsert,srcCtx) {
 		let newCtrl = compToInsert
 		if (typeof compToInsert == 'string') {
 			const comp = compToInsert && st.getComp(compToInsert);
@@ -30203,7 +30197,7 @@ Object.assign(st, {
 		return jb.move(st.refOfPath(from),st.refOfPath(to),srcCtx)
 	},
 
-	addArrayItem: (path,{toAdd,srcCtx, index} = {}) => {
+	addArrayItem(path,{toAdd,srcCtx, index} = {}) {
 		const val = st.valOfPath(path);
 		toAdd = toAdd === undefined ? {$:''} : toAdd;
 		if (Array.isArray(val)) {
@@ -30211,33 +30205,31 @@ Object.assign(st, {
 				st.push(st.refOfPath(path),[toAdd],srcCtx);
 			else
 				st.splice(st.refOfPath(path),[[val.length,0,toAdd]],srcCtx);
-//			return { newPath: path + '~' + (val.length-1) }
 		}
 		else if (!val) {
 			st.writeValueOfPath(path,toAdd,srcCtx);
 		} else {
 			st.writeValueOfPath(path,[val].concat(toAdd),srcCtx);
-//			return { newPath: path + '~1' }
 		}
 	},
 
-	wrapWithArray: (path,srcCtx) => {
-		var val = st.valOfPath(path);
+	wrapWithArray(path,srcCtx) {
+		const val = st.valOfPath(path);
 		if (val && !Array.isArray(val))
 			st.writeValueOfPath(path,[val],srcCtx);
 	},
 
-	makeLocal: (path,srcCtx) =>{
-		var comp = st.compOfPath(path);
+	makeLocal(path,srcCtx) {
+		const comp = st.compOfPath(path);
 		if (!comp || typeof comp.impl != 'object') return;
 		st.writeValueOfPath(path,st.evalProfile(jb.prettyPrint(comp.impl,{noMacros: true})),srcCtx);
 	},
-	getOrCreateControlArrayRef: (path,srcCtx) => {
-		var val = st.valOfPath(path);
-		var prop = st.controlParams(path)[0];
+	getOrCreateControlArrayRef(path,srcCtx) {
+		const val = st.valOfPath(path);
+		const prop = st.controlParams(path)[0];
 		if (!prop)
-			return console.log('getOrCreateControlArrayRef: no control param');
-		var ref = st.refOfPath(path+'~'+prop);
+			return jb.logError('getOrCreateControlArrayRef: no control param',[path,srcCtx]);
+		let ref = st.refOfPath(path+'~'+prop);
 		if (val[prop] === undefined)
 			jb.writeValue(ref,[],srcCtx);
 		else if (!Array.isArray(val[prop])) // wrap
@@ -30245,7 +30237,8 @@ Object.assign(st, {
 		ref = st.refOfPath(path+'~'+prop);
 		return ref;
 	},
-	evalProfile: prof_str => {
+
+	evalProfile(prof_str) {
 		try {
 			return (st.previewWindow || window).eval('('+prof_str+')')
 		} catch (e) {
@@ -30336,6 +30329,38 @@ jb.component('studio.boolRef', {
 				jb.writeValue(st.refOfPath(path),!!value,ctx)
         }
 	})
+})
+
+jb.component('studio.getOrCreateCompInArray', {
+	type: 'action',
+	params: [
+		{id: 'path', as: 'string', mandatory: true},
+		{id: 'compName', as: 'string', mandatory: true}
+	],
+	impl: (ctx,path,compName) => {
+		let arrayRef = st.refOfPath(path)
+		let arrayVal = jb.val(arrayRef)
+		if (!arrayVal) {
+		  jb.writeValue(arrayRef,{$: compName},ctx)
+		  return arrayRef
+		} else if (!Array.isArray(arrayVal) && arrayVal.$ == compName) {
+		  return arrayRef
+		} else {
+		  if (!Array.isArray(arrayVal)) { // If a different comp, wrap with array
+			jb.writeValue(arrayRef,[arrayVal],ctx)
+			arrayRef = st.refOfPath(path)
+			arrayVal = jb.val(arrayRef)
+		  }
+		  const existingFeature = arrayVal.findIndex(f=>f.$ == compName)
+		  if (existingFeature != -1) {
+			return jb.refOfPath(`${path}~${existingFeature}`)
+		  } else {
+			const length = arrayVal.length
+			jb.push(arrayRef,{$: compName},ctx)
+			return jb.refOfPath(`${path}~${length}`)
+		  }
+		}
+	}
 })
 
 })()
@@ -33456,7 +33481,7 @@ jb.component('studio.editableSource', {
     }),
     features: [
       interactive(
-        (ctx,{cmp}) => ctx.vars.$dialog.refresh = () => cmp.refresh && cmp.refresh()
+        (ctx,{cmp}) => ctx.vars.$dialog.refresh = () => cmp.refresh && cmp.refresh(null,{srcCtx: ctx.componentContext})
       ),
       feature.onKey('Ctrl-I', studio.openJbEditor('%$path%'))
     ]
@@ -34384,54 +34409,110 @@ jb.component('studio.addVariable', {
 (function() {
 const st = jb.studio;
 
+jb.component('studio.pick', {
+  type: 'action',
+  impl: openDialog({
+    id: 'studio.pick',
+    style: dialog.studioPickDialog('preview'),
+    content: text(''),
+  })
+})
+
+jb.component('studio.pickAndOpen', {
+  type: 'action',
+  params: [
+    {id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'}
+  ],
+  impl: openDialog({
+    id: 'studio.pick',
+    style: dialog.studioPickDialog('%$from%'),
+    content: text(''),
+    onOK: ctx => ctx.run(runActions(
+      writeValue('%$studio/profile_path%', '%$dialogData/path%'),
+      studio.openControlTree(),
+      studio.openProperties(true)
+    ))
+  })
+})
+
+jb.component('studio.pickToolbar', {
+  type: 'control',
+  impl: group({
+    features: css.class('pick-toolbar'),
+    layout: layout.horizontal(),
+    controls: [
+      button({
+        title: studio.compName('%$dialogData/path%'),
+        action: '%$$dialog/endPick%',
+        style: button.href(),
+        features: feature.hoverTitle('%$dialogData/path%')
+      }),
+      button({
+        title: '...',
+        style: button.href(),
+        action: studio.showStack({ 
+          ctx: '%$dialogData/ctx%', 
+          onSelect: ctx => ctx.componentContext.vars.$dialog.endPick(ctx.data.ctx) 
+        })
+      })
+    ]
+  })
+})
+
 jb.component('dialogFeature.studioPick', {
   type: 'dialog-feature',
   params: [
     {id: 'from', as: 'string'}
   ],
   impl: (ctx,from) => ({
-    afterViewInit: cmp=> {
-      const {pipe,filter, fromEvent,takeUntil,merge,Do, map,debounceTime, last, subscribe} = jb.callbag
-      if (from === 'studio')
-        st.initStudioEditing()
+    destroy: cmp => {
       const _window = from == 'preview' ? st.previewWindow : window;
-      const previewOffset = from == 'preview' ? document.querySelector('#jb-preview').getBoundingClientRect().top : 0;
-      cmp.titleBelow = false;
-
+      cmp.cover.parentElement == _window.document.body && _window.document.body.removeChild(cmp.cover);
+    },
+    afterViewInit: cmp=> {
+      const {pipe,filter, Do, map,debounceTime, subscribe,distinctUntilChanged,merge} = jb.callbag
+      if (from === 'studio') st.initStudioEditing()
+      const _window = from == 'preview' ? st.previewWindow : window;
       const projectPrefix = ctx.run(studio.currentPagePath())
       const testHost = ctx.exp('%$queryParams/host%') == 'test'
       const eventToElemPredicate = from == 'preview' ?
         (path => testHost || path.indexOf(projectPrefix) == 0) : (path => st.isStudioCmp(path.split('~')[0]))
-      const cover = _window.document.createElement('div')
+
+      const cover = cmp.cover = _window.document.querySelector('.jb-cover') || _window.document.createElement('div')
       cover.className = 'jb-cover'
       cover.style.position= 'absolute'; cover.style.width= '100%'; cover.style.height= '100%'; cover.style.background= 'white'; cover.style.opacity= '0'; cover.style.top= 0; cover.style.left= 0;
       _window.document.body.appendChild(cover);
-      const mouseMoveEm = fromEvent(_window.document, 'mousemove');
-      let userPick = fromEvent(document, 'mousedown');
-      let keyUpEm = fromEvent(document, 'keyup');
-      if (st.previewWindow) {
-          userPick =  merge(userPick,fromEvent(st.previewWindow.document, 'mousedown'))
-          keyUpEm = merge(keyUpEm,fromEvent(st.previewWindow.document, 'keyup'))
+
+      ctx.vars.$dialog.endPick = function(pickedCtx) {
+        if (pickedCtx)
+          Object.assign(ctx.vars.dialogData,{ ctx: pickedCtx, path: pickedCtx.path })
+        ctx.run(writeValue('%$studio/pickSelectionCtxId%',(pickedCtx || ctx.vars.dialogData.ctx || {}).id))
+        ctx.vars.$dialog.close({OK: true})
       }
+      cmp.counter = 0
+
+      let userPick = jb.ui.fromEvent(cmp, 'mousedown', document)
+      let keyUpEm = jb.ui.fromEvent(cmp, 'keyup', document)
+      if (jb.studio.previewWindow) {
+        userPick = merge(userPick, jb.ui.fromEvent(cmp, 'mousedown', jb.studio.previewWindow.document))
+        keyUpEm = merge(keyUpEm, jb.ui.fromEvent(cmp, 'keyup', jb.studio.previewWindow.document))
+      }
+      pipe(merge(pipe(keyUpEm,filter(e=>e.keyCode == 27)), userPick), subscribe(() => ctx.vars.$dialog.endPick()))
+
+      const mouseMoveEm = jb.ui.fromEvent(cmp,'mousemove',_window.document);
       pipe(mouseMoveEm,
           debounceTime(50),
-          takeUntil(merge(pipe(keyUpEm,filter(e=>e.keyCode == 27)), userPick)),
           map(e=> eventToElem(e,_window,eventToElemPredicate)),
           filter(x=>x && x.getAttribute),
+          distinctUntilChanged(),
           Do(profElem=> {
-            ctx.exp('%$pickSelection%').elem = profElem
-            showBox(cmp,profElem,_window,previewOffset)
+            const elemCtx = _window.jb.ctxDictionary[profElem.getAttribute('pick-ctx') || profElem.getAttribute('jb-ctx')]
+            if (!elemCtx) return
+            Object.assign(ctx.vars.dialogData,{ elem: profElem, ctx: elemCtx, path: elemCtx.path })
+            ctx.run(writeValue('%$studio/refreshPick%',() => cmp.counter++))
           }),
-          last(), // esc or user pick
-          subscribe(profElem=> {
-              const pickSelection = ctx.exp('%$pickSelection%')
-              pickSelection.ctx = _window.jb.ctxDictionary[profElem.getAttribute('pick-ctx') || profElem.getAttribute('jb-ctx')];
-              pickSelection.elem = profElem;
-              ctx.vars.$dialog.close({OK: true});
-              _window.document.body.removeChild(cover);
-              // inform watchers
-              ctx.run(writeValue('%$studio/pickSelectionCtxId%',(pickSelection.ctx || {}).id))
-          }))
+          subscribe(() => {})
+      )
     }
   })
 })
@@ -34443,37 +34524,27 @@ jb.component('dialog.studioPickDialog', {
     {id: 'from', as: 'string'}
   ],
   impl: customStyle({
-    template: (cmp,{width,height,top,left,titleTop,titleLeft,titleBelow},h) => h('div',{ class: 'jb-dialog' },[
-      h('div',{ class: 'edge top', style: { width: width + 'px', top: top + 'px', left: left + 'px' }}) ,
-      h('div',{ class: 'edge left', style: { height: height +'px', top: top + 'px', left: left + 'px' }}),
-      h('div',{ class: 'edge right', style: { height: height +'px', top: top + 'px', left: (left + width) + 'px' }}) ,
-      h('div',{ class: 'edge bottom', style: { width: width + 'px', top: (top + height) +'px', left: left + 'px' }}) ,
-      h('div',{ class: 'title' + (titleBelow ? ' bottom' : ''), style: { top: titleTop + 'px', left: titleLeft + 'px'} },
-      [
-          h(cmp.ctx.run(studio.pickToolbar())),
-          h('div',{ class: 'triangle'}),
-    ])]),
-    css: `
->.edge {
-    z-index: 6001;
-    position: absolute;
-    background: red;
-    box-shadow: 0 0 1px 1px gray;
-    width: 1px; height: 1px;
-    cursor: pointer;
-}
->.title {
-    z-index: 6001;
-    position: absolute;
-    font: 14px arial; padding: 0; cursor: pointer;
-    transition:top 100ms, left 100ms;
-}
->.title .triangle {	width:0;height:0; border-style: solid; 	border-color: #e0e0e0 transparent transparent transparent; border-width: 6px; margin-left: 14px;}
->.title .text {	background: #e0e0e0; font: 14px arial; padding: 3px; }
->.title.bottom .triangle { background: #fff; border-color: transparent transparent #e0e0e0 transparent; transform: translateY(-28px);}
->.title.bottom .text { transform: translateY(6px);}
-                `,
-    features: [dialogFeature.studioPick('%$from%')]
+    template: (cmp,{},h) => h('div#jb-dialog jb-pick',{},[
+      h('div#edge top'), h('div#edge left'), h('div#edge right'), h('div#edge bottom'), h(cmp.ctx.run(studio.pickToolbar()))
+    ]),
+    css: `{ display: block; position: absolute; width: 0; height:0; z-index: 10000 !important; }
+    >.edge { position: absolute; box-shadow: 0 0 1px 1px gray; width: 1px; height: 1px; cursor: pointer; }`,    
+    features: [
+      css(pipeline( (ctx,{dialogData},{from}) => {
+        if (!dialogData.elem) return {}
+        const elemRect = dialogData.elem.getBoundingClientRect()
+        const top = (from == 'preview' ? jb.ui.studioFixYPos() : 0) + elemRect.top
+        return { top: `top: ${top}px`, left: `left: ${elemRect.left}px`, width: `width: ${elemRect.width}px`, 
+            height: `height: ${elemRect.height}px`, widthVal: elemRect.width + 'px', heightVal: elemRect.height + 'px'
+          }
+        },
+        `{ %top%; %left% } ~ .pick-toolbar { margin-top: -20px }
+        >.top{ %width% } >.left{ %height% } >.right{ left: %widthVal%;  %height% } >.bottom{ top: %heightVal%; %width% }`
+      )),
+      watchRef('%$studio/refreshPick%'),
+      dialogFeature.studioPick('%$from%'),
+      dialogFeature.closeWhenClickingOutside(),
+    ]
   })
 })
 
@@ -34498,22 +34569,6 @@ function eventToElem(e,_window, predicate) {
   function checkCtxId(ctxId) {
     return ctxId && predicate(_window.jb.ctxDictionary[ctxId].path)
   }
-}
-
-function showBox(cmp,profElem,_window,previewOffset) {
-  const profElem_offset = jb.ui.offset(profElem);
-  if (profElem_offset == null || jb.ui.offset(document.querySelector('#jb-preview')) == null)
-    return;
-
-    cmp.refresh({
-        top: previewOffset + profElem_offset.top,
-        left: profElem_offset.left,
-        width: jb.ui.outerWidth(profElem) == jb.ui.outerWidth(_window.document.body) ? jb.ui.outerWidth(profElem) -10 : cmp.width = jb.ui.outerWidth(profElem),
-        height: jb.ui.outerHeight(profElem),
-//        pickTitle: st.shortTitle(pathFromElem(_window,profElem)),
-        titleTop: previewOffset + profElem_offset.top - 20,
-        titleLeft: profElem_offset.left
-    })
 }
 
 Object.assign(st, {
@@ -34591,52 +34646,6 @@ jb.component('studio.highlightByPath', {
   }
 })
 
-jb.component('studio.pick', {
-  type: 'action',
-  params: [
-    {id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'},
-    {id: 'onSelect', type: 'action', dynamic: true}
-  ],
-  impl: openDialog({
-    style: dialog.studioPickDialog('%$from%'),
-    content: text(''),
-    onOK: ctx => ctx.componentContext.params.onSelect(ctx.setData(ctx.exp('%$pickSelection/ctx%')))
-  })
-})
-
-jb.component('studio.pickToolbar', {
-  type: 'control',
-  impl: button({
-    title: join({
-      separator: '',
-      items: list(
-        studio.shortTitle('%$path%'),
-        '(',
-        split({separator: '~', part: 'first'}),
-        ')'
-      )
-    }),
-    action: studio.gotoPath('%$path%'),
-    style: button.href(),
-    features: [
-      css('{background: white} :hover {color: black}'),
-      variable({
-        name: 'path',
-        value: ctx =>{
-          const elem = ctx.exp('%$pickSelection/elem%')
-          if (!elem) return ''
-          const _jb = elem.ownerDocument === jb.frame.document ? jb : st.previewjb
-          const res = elem ? [elem.getAttribute('pick-ctx'), elem.getAttribute('jb-ctx')]
-              .map(id=>_jb.ctxDictionary[id])
-              .filter(x=>x)
-              .map(ctx=>ctx.path).slice(0,1) : []
-          return res
-        }
-      })
-    ]
-  })
-})
-
 })()
 ;
 
@@ -34688,8 +34697,8 @@ function h_to_jsx({types: t}) {
 }
 
 jb.studio.initJsxToH = _ => {
-  if (jb.studio._initJsxToH) return;
-  Babel.registerPlugin('h-to-jsx',h_to_jsx);
+  if (jb.studio._initJsxToH || !jb.frame.Babel) return;
+  jb.frame.Babel.registerPlugin('h-to-jsx',h_to_jsx);
   jb.studio._initJsxToH = true;
 }
 
@@ -36110,9 +36119,9 @@ jb.component('studio.eventTracker', {
             ]
           }),
           editableBoolean({
-            databind: '%$studio/spyWatchLogs%',
+            databind: '%$studio/manualRefresh%',
             style: editableBoolean.iconWithSlash('30'),
-            title: 'auto refresh (slow)',
+            title: 'manual refresh',
             textForTrue: 'on',
             textForFalse: 'off',
             features: [
@@ -36126,7 +36135,7 @@ jb.component('studio.eventTracker', {
             databind: '%$studio/spyLogs%',
             options: picklist.options(() => jb.studio.previewjb.spySettings.moreLogs.split(',')),
             style: multiSelect.chips(),
-            features: css.margin('9')
+            features: css.margin('15')
           })
         ]
       }),
@@ -36165,13 +36174,20 @@ jb.component('studio.eventTracker', {
                   ],
                   default: 'RectangleOutline'
                 }),
-                type: 'mdi',
+                type: data.switch({cases: [data.case('%log% == error', 'mdc')], default: 'mdi'}),
                 size: '16'
               }),
               css('background-color: transparent; color: grey;')
             ]
           }),
-          text({text: '%log%', title: 'event'}),
+          text({
+            text: '%log%',
+            title: 'event',
+            features: feature.onHover({
+              action: studio.highlightLogItem(),
+              onLeave: dialog.closeDialog('elem-marker')
+            })
+          }),
           studio.eventView()
         ],
         style: table.plain(),
@@ -36180,15 +36196,12 @@ jb.component('studio.eventTracker', {
           id('event-logs'),
           itemlist.infiniteScroll('5'),
           css.height({height: '400', overflow: 'scroll'}),
-          itemlist.selection({
-            onSelection: ({data}) => { 
-            jb.studio.highlightElems([data.srcElem, data.elem].filter(x=>x))
-          }
-          }),
+          itemlist.selection({onSelection: ({data}) => jb.frame.console.log(data)}),
           itemlist.keyboardSelection({}),
           watchObservable(
-            ctx => ctx.exp('%$studio/spyWatchLogs%') && jb.ui.getSpy(ctx).observable()
-          ),
+            ctx => !ctx.exp('%$studio/manualRefresh%') &&
+             jb.callbag.filter(x => !(jb.path(x,'record.2.ctx.path') ||'').match(/eventTracker/))(jb.ui.getSpy(ctx).observable())
+          )
         ]
       })
     ],
@@ -36211,14 +36224,13 @@ jb.component('studio.eventView', {
   type: 'control',
   impl: group({
     layout: layout.horizontal('4'),
-    features: feature.onHover({
-      action: studio.highlightLogItem(),
-      onLeave: dialog.closeDialog('elem-marker'), 
-    }),
     controls: [
-      controlWithCondition(isOfType('string', '%event/2%'), text('%event/2%')),
-      controlWithCondition('%path%', text('%compName%')),
-      controlWithCondition('%op%', text('%op%')),
+      controlWithCondition('%opPath%', button({
+        title: last('%opPath%'),
+        style: button.href(),
+        features: feature.hoverTitle(join({separator: '/', items: '%opPath%'}))
+      })),
+      controlWithCondition('%opValue%', text('<- %opValue%')),
       controlWithCondition(
         '%srcCompName%',
         group({
@@ -36227,13 +36239,21 @@ jb.component('studio.eventView', {
             text('activated by:'),
             button({
               title: '%srcCompName%',
-              action: studio.openJbEditor('%srcPath%'),
+              action: studio.showStack('%srcCtx%'),
               style: button.href(),
               features: feature.hoverTitle('%srcPath%')
             })
           ]
         })
-      )
+      ),
+      controlWithCondition(isOfType('string', '%event/2%'), text('%event/2%')),
+      controlWithCondition('%log% == setGridAreaVals%', text(join({separator: '/', items: '%event/4%'}))),
+      controlWithCondition('%path%', button({
+        title: '%compName%',
+        action: studio.showStack('%ctx%'),
+        style: button.href(),
+        features: feature.hoverTitle('%path%')
+      })),
     ]
   })
 })
@@ -36243,7 +36263,8 @@ jb.component('studio.eventItems', {
   impl: ctx => {
     const st = jb.studio
     const spy = jb.ui.getSpy(ctx)
-    const events = (spy._all = ctx.vars.eventTracker.lastIndex == spy.logs.$index ? spy._all : spy.all().map(x=>enrich(x)))
+    const events = spy._all = ctx.vars.eventTracker.lastIndex == spy.logs.$index ? spy._all :
+        spy.all().map(x=>enrich(x)).filter(x=>!(x.path || '').match(/studio.eventTracker/))
     ctx.vars.eventTracker.lastIndex = spy.logs.$index
     return events
 
@@ -36255,7 +36276,8 @@ jb.component('studio.eventItems', {
       ev.cmp = (event || []).filter(x=>x && x.base && x.refresh)[0]
       ev.elem = ev.cmp && ev.cmp.base || (event || []).filter(x=>x && x.nodeType)[0]
       ev.opEvent = (event || []).filter(x=>x && x.opVal)[0]
-      ev.op = ev.opEvent && jb.prettyPrint(ev.opEvent.op,{forceFlat: true}).replace(/{|}|\$/g,'')
+      ev.opPath = ev.opEvent && ev.opEvent.path
+      ev.opValue = ev.opEvent && jb.prettyPrint(ev.opEvent.op,{forceFlat: true}).replace(/{|}|\$/g,'').replace("'set': ",'')
       ev.srcCtx = (event || []).filter(x=>x && x.srcCtx).map(x=>x.srcCtx)[0]
       ev.srcElem = jb.path(ev.srcCtx, 'vars.cmp.base')
       ev.srcPath = jb.path(ev.srcCtx, 'vars.cmp.ctx.path')
@@ -36279,7 +36301,7 @@ jb.component('studio.openElemMarker', {
         css((ctx,{},{elem}) => {
               const elemRect = elem.getBoundingClientRect()
               const left = elemRect.left + 'px'
-              const top = jb.ui.studioFixYPos() + elemRect.top + 'px'
+              const top = jb.ui.studioFixYPos(elem) + elemRect.top + 'px'
               return `left: ${left}; top: ${top}; width: ${elemRect.width}px; height: ${elemRect.height}px;`
         }),
         css((ctx,{},{css}) => css)
@@ -36294,25 +36316,39 @@ jb.component('studio.elemMarkerDialog', {
     css: '{ display: block; position: absolute; background: transparent}',
     features: [dialogFeature.maxZIndexOnClick(), dialogFeature.closeWhenClickingOutside()]
   })
-});
+})
 
-jb.ns('contentEditable')
-
-jb.component('studio.pickAndOpen', {
+jb.component('studio.showStack', {
   type: 'action',
   params: [
-    {id: 'from', options: 'studio,preview', as: 'string', defaultValue: 'preview'}
+    {id: 'ctx'},
+    {id: 'onSelect', type: 'action', dynamic: true, defaultValue: studio.openJbEditor('%path%') }
   ],
-  impl: studio.pick(
-    '%$from%',
-    [
-      writeValue('%$studio/last_pick_selection%', '%%'),
-      writeValue('%$studio/profile_path%', '%path%'),
-      studio.openControlTree(),
-      studio.openProperties(true)
-    ]
-  )
+  impl: openDialog({
+    id: 'show-stack',
+    style: dialog.popup(),
+    content: itemlist({
+      items: ({},{},{ctx}) => {
+          const ctxStack=[];
+          for(let innerCtx= ctx; innerCtx; innerCtx = innerCtx.componentContext)
+            ctxStack.push(innerCtx)
+          return jb.unique([...ctxStack.slice(1).map(ctx=> ({ctx, path: ctx.callerPath})),
+            ...ctxStack.filter(ctx => ctx.vars.cmp).map(ctx=>({ctx, path: ctx.vars.cmp.ctx.path}))])
+      },
+      controls: button({
+        title: studio.compName('%path%'),
+        action: runActions(call('onSelect'),dialog.closeDialog('show-stack')),
+        style: button.href(),
+        features: feature.hoverTitle('%path%')
+      }),
+      features: css.padding({left: '4', right: '4'})
+    }),
+  })
 })
+
+;
+
+jb.ns('contentEditable')
 
 jb.component('studio.toolbar', {
   type: 'control',
@@ -36422,6 +36458,8 @@ jb.component('studio.toolbar', {
         studio.openNewProfileDialog({type: 'control', mode: 'insert-control'})
       ),
       feature.keyboardShortcut('Alt+N', studio.pickAndOpen('studio')),
+      feature.keyboardShortcut('Ctrl+Z', studio.undo()),
+      feature.keyboardShortcut('Ctrl+Y', studio.redo()),
       feature.keyboardShortcut(
         'Alt+X',
         studio.openJbEditor({
@@ -36554,12 +36592,6 @@ jb.component('dataResource.studio', {
   }
 })
 
-jb.component('dataResource.pickSelection', { /* dataResource.pickSelection */
-  passiveData: {
-    ctx: null,
-    elem: null
-  }
-})
 jb.component('studio.pages', {
   type: 'control',
   impl: group({
@@ -36667,7 +36699,11 @@ jb.component('studio.mainMenu', {
               studio.sampleProject('cards-demo')
             ]
           }),
-          menu.action({title: 'New Project', action: studio.openNewProject(), icon: icon('new')}),
+          menu.action({
+            title: 'New Project',
+            action: studio.openNewProject(),
+            icon: icon('new')
+          }),
           menu.action({title: 'Open Project ...', action: studio.openProject()}),
           menu.action({
             title: 'Save',
@@ -36675,7 +36711,11 @@ jb.component('studio.mainMenu', {
             icon: icon('save'),
             shortcut: 'Ctrl+S'
           }),
-          menu.action({title: 'Force Save', action: studio.saveComponents(), icon: icon('save')}),
+          menu.action({
+            title: 'Force Save',
+            action: studio.saveComponents(),
+            icon: icon('save')
+          }),
           menu.action({
             title: 'Source ...',
             action: studio.viewAllFiles(studio.currentProfilePath())
@@ -36709,7 +36749,7 @@ jb.component('studio.mainMenu', {
                             style: button.x('21'),
                             features: [
                               itemlist.shownOnlyOnItemHover(),
-                              css.margin({top: '20', right: '', left: ''}),
+                              css.margin({top: '20', left: '', right: ''}),
                               css('background-color: transparent !important')
                             ]
                           })
@@ -36778,7 +36818,7 @@ jb.component('studio.mainMenu', {
                           picklist({
                             title: '',
                             databind: '%$studio/libToAdd%',
-                            options: picklist.options(keys(ctx => jb.frame.jb_modules)),
+                            options: picklist.options({options: keys(ctx => jb.studio.previewjb.frame.jb_modules)}),
                             features: [css.width('160'), picklist.onChange(addToArray('%$studio/libsAsArray%', '%%'))]
                           }),
                           button({
@@ -36809,6 +36849,23 @@ jb.component('studio.mainMenu', {
               ),
               features: dialogFeature.dragTitle()
             })
+          })
+        ]
+      }),
+      menu.menu({
+        title: 'Edit',
+        options: [
+          menu.action({
+            title: 'Undo',
+            action: studio.undo(),
+            icon: icon('undo'),
+            shortcut: 'Ctrl+Z'
+          }),
+          menu.action({
+            title: 'Redo',
+            action: studio.redo(),
+            icon: icon('redo'),
+            shortcut: 'Ctrl+Y'
           })
         ]
       }),
@@ -37272,7 +37329,7 @@ jb.component('studio.probe', {
         if (jb.path(_jb.comps,[path.split('~')[0],'testData']))
             circuitCtx = st.closestTestCtx(path)
         if (!circuitCtx)
-            circuitCtx = ctx.exp('%$pickSelection/ctx%')
+            circuitCtx = _jb.ctxDictionary[ctx.exp('%$studio/pickSelectionCtxId%')]
         if (!circuitCtx) {
             const circuitInPreview = st.closestCtxInPreview(path)
             circuitCtx = circuitInPreview && circuitInPreview.ctx
@@ -37635,6 +37692,9 @@ jb.component('feature.contentEditable', {
   ],
   impl: features(
     feature.keyboardShortcut('Alt+N', () => jb.frame.parent.jb.exec({$:'studio.pickAndOpen', from: 'studio'})),
+    feature.keyboardShortcut('Ctrl+Z', () => jb.frame.parent.jb.exec({$:'studio.undo', from: 'studio'})),
+    feature.keyboardShortcut('Ctrl+Y', () => jb.frame.parent.jb.exec({$:'studio.redo', from: 'studio'})),
+
     interactive(({},{cmp},{param}) => {
       const isHtml = param == 'html'
       const contentEditable = jb.ui.contentEditable
@@ -37701,7 +37761,8 @@ Object.assign(jb.ui,{
         : otherSidePos + jb.ui.computeStyle(el,'padding'+otherSideUpper)
     return basePos
   },
-  studioFixYPos() {
+  studioFixYPos(elem) {
+    if (elem && elem.ownerDocument == jb.frame.document) return 0
     if (this._studioFixYPos == null)
       this._studioFixYPos = (document.querySelector('#jb-preview') && document.querySelector('#jb-preview').getBoundingClientRect().top) || 0
     return this._studioFixYPos
@@ -38773,7 +38834,7 @@ jb.component('inplaceEdit.toolbar', {
       }),
       button({
         title: 'Duplicate data item',
-        action: ctx => jb.ui.inplaceEdit.duplicateDataItem(ctx),
+        action: ctx => jb.ui.duplicateDataItem(ctx),
         style: button.mdcIcon(icon({icon: 'PlusBoxOutline', type: 'mdi'}), '20'),
         features: feature.if('%$sourceItem%')
       }),
@@ -38802,31 +38863,39 @@ jb.component('inplaceEdit.toolbar', {
   })
 })
 
-jb.ui.inPlaceEdit = {
+Object.assign(jb.ui, {
+  setOrCreateArrayComp(path,newComp) {
+    let arrayRef = jb.studio.refOfPath(path)
+    let arrayVal = jb.val(arrayRef)
+    if (!arrayVal) {
+      jb.writeValue(arrayRef,newComp,ctx)
+    } else if (!Array.isArray(arrayVal) && arrayVal.$ == newComp.$) {
+      writeToExistingComp(path)
+    } else {
+      if (!Array.isArray(arrayVal)) { // wrap with array
+        jb.writeValue(arrayRef,[arrayVal],ctx)
+        arrayRef = jb.studio.refOfPath(path)
+        arrayVal = jb.val(arrayRef)
+      }
+      const existingFeature = arrayVal.findIndex(f=>f.$ == newComp.$)
+      if (existingFeature != -1)
+        writeToExistingComp(`${path}~${existingFeature}`)
+      else
+        jb.push(arrayRef,newComp,ctx)
+    }
+
+    function writeToExistingComp(compPath) {
+      Object.keys(newComp).filter(prop=>prop != '$').forEach(prop=>
+        jb.writeValue(jb.studio.refOfPath(`${compPath}~${prop}`),newComp[prop],ctx))
+    }
+  },
   setPositionScript(el,fullProp,value,ctx) {
       let {side,prop} = jb.ui.splitCssProp(fullProp)
       if (fullProp == 'height' || fullProp == 'width')
         side = prop = fullProp
       const featureComp = {$: `css.${prop}`, [side] : value }
       const originatingCtx = jb.studio.previewjb.ctxOfElem(el)
-      let featuresRef = jb.studio.refOfPath(originatingCtx.path + '~features')
-      let featuresVal = jb.val(featuresRef)
-      if (!featuresVal) {
-        jb.writeValue(featuresRef,featureComp,ctx)
-      } else if (!Array.isArray(featuresVal) && featuresVal.$ == featureComp.$) {
-        jb.writeValue(jb.studio.refOfPath(originatingCtx.path + `~features~${side}`),value,ctx)
-      } else {
-        if (!Array.isArray(featuresVal)) { // wrap with array
-          jb.writeValue(featuresRef,[featuresVal],ctx)
-          featuresRef = jb.studio.refOfPath(originatingCtx.path + '~features')
-          featuresVal = jb.val(featuresRef)
-        }
-        const existingFeature = featuresVal.findIndex(f=>f.$ == featureComp.$)
-        if (existingFeature != -1)
-          jb.writeValue(jb.studio.refOfPath(originatingCtx.path + `~features~${existingFeature}~${side}`),value,ctx)
-        else
-          jb.push(featuresRef,featureComp,ctx)
-      }
+      jb.ui.setOrCreateArrayComp(originatingCtx.path+ '~features',featureComp,ctx)
   },
   duplicateDataItem(ctx) {
     const st = jb.studio
@@ -38843,7 +38912,7 @@ jb.ui.inPlaceEdit = {
       ctx.run(runActions(dialog.closeAll(), studio.refreshPreview()))
     }
   },
-}
+})
 
 jb.component('feature.inplaceEditDropHtml', {
   type: 'feature',
@@ -38882,7 +38951,32 @@ Object.assign(jb.ui, {
   calcGridAccVals(inplaceElem) { return {
     Rows: jb.ui.getGridVals(inplaceElem, 'Rows').reduce((sums,x) => [...sums,x + sums.slice(-1)[0]],[0]),
     Columns: jb.ui.getGridVals(inplaceElem, 'Columns').reduce((sums,x) => [...sums,x + sums.slice(-1)[0]],[0])
-  }}
+  }},
+  canRemoveGridTab(gridPath,gridIndex,axis,ctx) {
+    const ref = jb.ui.getOrCreateSizesRef(gridPath,axis,ctx)
+    return gridIndex > 0 && gridIndex < jb.val(ref).length
+  },
+  removeGridTab(gridPath,gridIndex,axis,ctx) {
+    const ref = jb.ui.getOrCreateSizesRef(gridPath,axis,ctx)
+    const arr = jb.val(ref)
+    const together = Number(arr[gridIndex-1]) + Number(arr[gridIndex])
+    jb.splice(ref,[[gridIndex-1,2,together]],ctx)
+  },
+  addGridTab(gridPath,gridIndex,axis,ctx) {
+    const ref = jb.ui.getOrCreateSizesRef(gridPath,axis,ctx)
+    if (jb.val(ref).length == gridIndex) {
+      jb.push(ref,100,ctx)
+    } else {
+      const half = Number(jb.val(ref)[gridIndex])/2
+      jb.splice(ref,[[gridIndex,1,half,half]],ctx)
+    }
+  },
+  getOrCreateSizesRef(gridPath,axis,ctx) {
+    const sizesProp = `${axis.toLowerCase().slice(0,-1)}Sizes`
+    if (!jb.studio.valOfPath(`${gridPath}~layout~${sizesProp}`))
+      ctx.run(writeValue(studio.ref(`${gridPath}~layout~${sizesProp}`), { [sizesProp]: list(100) }))
+    return jb.studio.refOfPath(`${gridPath}~layout~${sizesProp}~items`)      
+  },
 })
 
 jb.component('inplaceEdit.openGridEditor', {
@@ -38892,8 +38986,8 @@ jb.component('inplaceEdit.openGridEditor', {
     type: 'action',
     impl: runActions(
         Var('gridPath','%$path%'),
-        // gridEditor.openGridLineThumb('Columns'),
-        // gridEditor.openGridLineThumb('Rows'),
+        gridEditor.openGridLineThumb('Columns'),
+        gridEditor.openGridLineThumb('Rows'),
         gridEditor.openGridItemThumbs(),
     )
 })
@@ -38906,7 +39000,7 @@ jb.component('gridEditor.openGridLineThumb', {
   impl: runActionOnItems(
     Var('otherAxis', If('%$axis%==Rows', 'Columns', 'Rows')),
     Var('otherAxisSize', ({},{otherAxis,inplaceElem}) => jb.ui.getGridVals(inplaceElem, otherAxis).reduce((sum,x) => sum+x,0) ),
-    Var('$launchingElement', null),
+    Var('$launchingElement', () => null),
 
     (ctx,{inplaceElem},{axis}) => [0,...jb.ui.getGridVals(inplaceElem, axis)],
     openDialog({
@@ -38916,14 +39010,29 @@ jb.component('gridEditor.openGridLineThumb', {
       features: [
         htmlAttribute('onclick',true),
         defHandler('onclickHandler', 
-        menu.openContextMenu({
-          menu: menu.menu({
-            options: [
-              menu.action({title: 'delete tab', icon: icon('delete')}),
-              menu.action({title: 'new tab', icon: icon({icon: 'Plus', type: 'mdi'})})
-            ]
-          }),
-        })),
+          If('%$ev/ctrlKey%',
+          menu.openContextMenu({
+            menu: menu.menu({
+              options: [
+                menu.action({
+                  title: 'delete tab', 
+                  icon: icon('delete'),
+                  showCondition: (ctx,{gridIndex,gridPath},{axis}) => jb.ui.canRemoveGridTab(gridPath,gridIndex,axis,ctx),
+                  action: runActions(
+                    (ctx,{gridIndex,gridPath},{axis}) => jb.ui.removeGridTab(gridPath,gridIndex,axis,ctx),
+                    delay(100),
+                    inplaceEdit.openGridEditor('%$gridPath%'))
+                }),
+                menu.action({
+                  title: 'new tab', 
+                  icon: icon({icon: 'Plus', type: 'mdi'}),
+                  action: runActions(
+                    (ctx,{gridIndex,gridPath},{axis}) => jb.ui.addGridTab(gridPath,gridIndex,axis,ctx),
+                    inplaceEdit.openGridEditor('%$gridPath%'))
+                })
+              ]
+            }),
+          }))),
         gridEditor.dragableGridLineThumb('%$axis%'),
         watchRef({ ref: studio.ref('%$gridPath%~layout'), includeChildren: 'yes', cssOnly: true}),
         css(
@@ -38981,9 +39090,8 @@ jb.component('gridEditor.dragableGridLineThumb', {
         takeUntil(mouseUpEm),
         map(e => base + moveHandlersAndCalcDiff(e)),
         Do(val => setGridPosScript(val, axis, gridIndex-1, ctx)),
-        last(),
       )),
-      subscribe(() => jb.ui.dialogs.closePopups())
+      subscribe(() => {})
     )
     function HandlerPos(e) {
         return axis == 'Rows' ? e.clientY - jb.ui.studioFixYPos() : e.clientX
@@ -38992,7 +39100,6 @@ jb.component('gridEditor.dragableGridLineThumb', {
         const newPos = HandlerPos(e)
         const overflow = base + newPos - startPos
         const fixBack = (overflow < 0) ? -overflow : 0
-        console.log(base,startPos,newPos, newPos - startPos,overflow,fixBack)
         jb.ui.dialogs.dialogs.filter(dlg => dlg.axis == axis &&  dlg.gridIndex >= gridIndex -1)
             .forEach(dlg=>{
                 if (axis == 'Rows')
@@ -39018,7 +39125,7 @@ jb.component('gridEditor.openGridItemThumbs', {
       vars: Var('gridItemElem'),
       id: 'gridItemThumb',
       style: inplaceEdit.thumbStyle(),
-      content: text(''),
+      content: text('Ctrl to span'),
       features: [
         gridEditor.dragableGridItemThumb(),
         feature.init((ctx,{$dialog,gridItemElem}) => {                 
@@ -39026,16 +39133,17 @@ jb.component('gridEditor.openGridItemThumbs', {
             $dialog.gridItemElem = gridItemElem
         }),
         css((ctx,{gridItemElem}) => {
-              const elemRect = gridItemElem.getBoundingClientRect()
-              const left = elemRect.left + 5 + 'px'
-              const top = jb.ui.studioFixYPos() + elemRect.top + 5 + 'px'
-              const width = `width: ${elemRect.width - 10}px;`
-              const height = `height: ${elemRect.height - 10}px;`
-              return `left: ${left}; top: ${top}; ${width}${height}`
+            const elemRect = gridItemElem.getBoundingClientRect()
+            const left = elemRect.left + 5 + 'px'
+            const top = jb.ui.studioFixYPos() + elemRect.top + 5 + 'px'
+            const width = `width: ${elemRect.width - 10}px;`
+            const height = `height: ${elemRect.height - 10}px;`
+            const res = `left: ${left}; top: ${top}; ${width}${height}`
+            return res
         }),
-        css('{cursor: grab; box-shadow: 3px 3px; background: grey; opacity: 0.2} ~:hover {opacity: 0.7}' ),
+        css('{cursor: grab; box-shadow: 3px 3px; background: grey; opacity: 0.2; display: flex; flex-flow: row-reverse} ~:hover {opacity: 0.7}' ),
         feature.onDataChange({ ref: studio.ref('%$gridPath%'), includeChildren: 'yes', 
-          action: (ctx,{cmp}) => jb.delay(300).then(()=> cmp.refresh(null,{srcCtx: ctx.componentContext})) 
+          action: (ctx,{cmp}) => jb.delay(1).then(()=> cmp.refresh(null,{srcCtx: ctx.componentContext})) 
         })
       ]
     })
@@ -39045,7 +39153,7 @@ jb.component('gridEditor.openGridItemThumbs', {
 jb.component('gridEditor.dragableGridItemThumb', {
   type: 'feature',
   impl: interactive( (ctx,{cmp,gridItemElem,inplaceElem})=> {
-    const {pipe,takeUntil,merge,Do, flatMap, last, subscribe} = jb.callbag
+    const {pipe,takeUntil,merge,Do, flatMap, subscribe, map, distinctUntilChanged} = jb.callbag
     cmp.mousedownEm = jb.ui.fromEvent(cmp, 'mousedown')
     let mouseUpEm = jb.ui.fromEvent(cmp, 'mouseup', document)
     let mouseMoveEm = jb.ui.fromEvent(cmp, 'mousemove', document)
@@ -39053,57 +39161,45 @@ jb.component('gridEditor.dragableGridItemThumb', {
       mouseUpEm = merge(mouseUpEm, jb.ui.fromEvent(cmp, 'mouseup', jb.studio.previewWindow.document))
       mouseMoveEm = merge(mouseMoveEm, jb.ui.fromEvent(cmp, 'mousemove', jb.studio.previewWindow.document))
     }
+    let spanBase,screenToClient
     const gridRect = inplaceElem.getBoundingClientRect()
-    const elemRect = gridItemElem.getBoundingClientRect()
-    let offsetX, offsetY, span, basePos
     pipe(cmp.mousedownEm,
       Do(e => e.preventDefault()),
-      Do(e => {
-          span = e.ctrlKey
-          basePos = posToGridPos([e.clientX - gridRect.x, e.clientY - gridRect.y])
-          offsetY = e.clientY - elemRect.top
-          offsetX = e.clientX - elemRect.left
-      }),
       flatMap(() => pipe(
         mouseMoveEm,
+        // strange bug in chrome mouse position of clientY. Using screenY with offset of first click that works fine
+        Do(e=> { screenToClient = screenToClient || { x: e.screenX - e.clientX, y: e.screenY - e.clientY} }),
+//        Do(e=> console.log(e,e.ctrlKey)),
+        map(e=> ({ ctrlKey: e.ctrlKey, gridPos: posToGridPos([e.screenY - screenToClient.y - gridRect.top - jb.ui.studioFixYPos(),
+            e.screenX - screenToClient.x - gridRect.left])})),
+        distinctUntilChanged((x,y) => x.gridPos.join(',') == y.gridPos.join(',')),
+        Do(e=> {
+          if (spanBase && !e.ctrlKey) spanBase = null
+          if (!spanBase && e.ctrlKey) spanBase = e.ctrlKey && !spanBase && posToGridPos([e.screenY - screenToClient.y - gridRect.top - jb.ui.studioFixYPos(),
+            e.screenX - screenToClient.x - gridRect.left])
+        }),
+        Do(e=>jb.log('dragableGridItemThumb',['changed to ' + e.gridPos.join(','), e])),
+        Do(e => setGridAreaValsInScript(e.gridPos)),
         takeUntil(mouseUpEm),
-        Do(e => moveHandler(e)),
-        Do(e => moveGridItem(e)),
-        last(),
       )),
-      subscribe(() => {}) //jb.ui.dialogs.closePopups())
+      subscribe(() => {})
     )
 
-    function moveHandler(e) {
-        if (span) {
-            //TODO span..
-
-        } else {
-            cmp.base.style.top = (e.clientY - offsetY + jb.ui.studioFixYPos()) + 'px'
-            cmp.base.style.left = (e.clientX - offsetX) + 'px'
-        }
-    }
-    function moveGridItem(e) {
-        const pos = [e.clientY - jb.ui.studioFixYPos() - gridRect.y, e.clientX - gridRect.x]
-        const gridArea = posToGridPos(pos)
-        setGridAreaValsInScript(gridArea)
-    }
     function setGridAreaValsInScript(vals) {
-        const gridItemPath = gridItemElem._component.ctx.path
-        const gridAreaFeatureIndex = jb.studio.valOfPath(`${gridItemPath}~features`).findIndex(f=>f.$ == 'css.gridArea')
-        const gridAreaRef = jb.studio.refOfPath(`${gridItemPath}~features~${gridAreaFeatureIndex}~css`)
-        const scriptValues = jb.val(gridAreaRef).replace(/;?\s*}?\s*$/,'').replace(/^\s*{?\s*grid-area\s*:/,'').split('/') // grid-area: 1 / 2 / span 2 / span 3;
-        if (!span && scriptValues.slice(0,2).map(x=>x.trim()).join(',') == vals.join(',')) return
-        jb.log('setGridAreaVals',[vals,scriptValues,ctx,cmp,gridItemElem,inplaceElem])
-        if (span)
-            [0,1].forEach(axis =>scriptValues[2+axis] = ` span ${vals[axis] -basePos[axis]} `)
-         else
-            [0,1].forEach(i=>scriptValues[i] = ` ${vals[i]} `)
-        jb.writeValue(gridAreaRef,`grid-area: ${scriptValues.join('/')}`,ctx)
+      const gridAreaRef = ctx.run(pipeline(
+        studio.getOrCreateCompInArray('%$gridItemElem/_component/ctx/path%~features','css.gridArea'), '%css%'), {as: 'ref'})
+      spanBase && [0,1].forEach(i=>{
+          spanBase[i] = Math.min(spanBase[i],vals[i])
+          vals[i] = Math.max(spanBase[i],vals[i])
+        })
+      const spans = spanBase && [0,1].map(i => `span ${Math.max(1,vals[i] -spanBase[i] + 1)}`)
+      const newScriptValues = spanBase ? [...spanBase, ...spans] : vals
+      jb.writeValue(gridAreaRef,`grid-area: ${newScriptValues.join(' / ')}`,ctx)
     }
     function posToGridPos(pos) {
       const gridAccVals = jb.ui.calcGridAccVals(inplaceElem)
       return pos.map((val,i) => gridAccVals[i ? 'Columns' : 'Rows'].findIndex(x=> x > val))
+        .map((val,i) => val == -1 ? gridAccVals[i ? 'Columns' : 'Rows'].length : val)
     }
   })
 })

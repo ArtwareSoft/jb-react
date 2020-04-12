@@ -353,7 +353,7 @@ jb.testers.runTests = function({testType,specificTest,show,pattern}) {
 			document.getElementById('fail-counter').innerHTML = 'failures ' + jb_fail_counter;
 			document.getElementById('fail-counter').style.color = jb_fail_counter ? 'red' : 'green';
 			document.getElementById('fail-counter').style.cursor = 'pointer';
-			document.getElementById('memory-usage').innerHTML = ', ' + (performance.memory.usedJSHeapSize / 1000000)  + 'M memory used';
+			document.getElementById('memory-usage').innerHTML = ', ' + (jb.path(jb.frame,'performance.memory.usedJSHeapSize' || 0) / 1000000)  + 'M memory used';
 
 			document.getElementById('time').innerHTML = ', ' + (new Date().getTime() - startTime) +' mSec';
 			jb.ui.addHTML(document.body,elem);

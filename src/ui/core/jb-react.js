@@ -363,7 +363,7 @@ Object.assign(jb.ui, {
         const changed_path = watchHandler.removeLinksFromPath(watchHandler.pathOfRef(e.ref))
         if (!changed_path) debugger
         //observe="resources://2~name;person~name
-        const elemsToCheck = jb.ui.find(e.srcCtx,'[observe]')
+        const elemsToCheck = jb.ui.find(jb.frame.document,'[observe]')
         const elemsToCheckCtxBefore = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
         jb.log('notifyObservableElems',['elemsToCheck',elemsToCheck,e])
         elemsToCheck.forEach((elem,i) => {

@@ -93,7 +93,7 @@ jb.component('inplaceEdit.toolbar', {
       }),
       button({
         title: 'Duplicate data item',
-        action: ctx => jb.ui.inplaceEdit.duplicateDataItem(ctx),
+        action: ctx => jb.ui.duplicateDataItem(ctx),
         style: button.mdcIcon(icon({icon: 'PlusBoxOutline', type: 'mdi'}), '20'),
         features: feature.if('%$sourceItem%')
       }),
@@ -122,31 +122,39 @@ jb.component('inplaceEdit.toolbar', {
   })
 })
 
-jb.ui.inPlaceEdit = {
+Object.assign(jb.ui, {
+  setOrCreateArrayComp(path,newComp) {
+    let arrayRef = jb.studio.refOfPath(path)
+    let arrayVal = jb.val(arrayRef)
+    if (!arrayVal) {
+      jb.writeValue(arrayRef,newComp,ctx)
+    } else if (!Array.isArray(arrayVal) && arrayVal.$ == newComp.$) {
+      writeToExistingComp(path)
+    } else {
+      if (!Array.isArray(arrayVal)) { // wrap with array
+        jb.writeValue(arrayRef,[arrayVal],ctx)
+        arrayRef = jb.studio.refOfPath(path)
+        arrayVal = jb.val(arrayRef)
+      }
+      const existingFeature = arrayVal.findIndex(f=>f.$ == newComp.$)
+      if (existingFeature != -1)
+        writeToExistingComp(`${path}~${existingFeature}`)
+      else
+        jb.push(arrayRef,newComp,ctx)
+    }
+
+    function writeToExistingComp(compPath) {
+      Object.keys(newComp).filter(prop=>prop != '$').forEach(prop=>
+        jb.writeValue(jb.studio.refOfPath(`${compPath}~${prop}`),newComp[prop],ctx))
+    }
+  },
   setPositionScript(el,fullProp,value,ctx) {
       let {side,prop} = jb.ui.splitCssProp(fullProp)
       if (fullProp == 'height' || fullProp == 'width')
         side = prop = fullProp
       const featureComp = {$: `css.${prop}`, [side] : value }
       const originatingCtx = jb.studio.previewjb.ctxOfElem(el)
-      let featuresRef = jb.studio.refOfPath(originatingCtx.path + '~features')
-      let featuresVal = jb.val(featuresRef)
-      if (!featuresVal) {
-        jb.writeValue(featuresRef,featureComp,ctx)
-      } else if (!Array.isArray(featuresVal) && featuresVal.$ == featureComp.$) {
-        jb.writeValue(jb.studio.refOfPath(originatingCtx.path + `~features~${side}`),value,ctx)
-      } else {
-        if (!Array.isArray(featuresVal)) { // wrap with array
-          jb.writeValue(featuresRef,[featuresVal],ctx)
-          featuresRef = jb.studio.refOfPath(originatingCtx.path + '~features')
-          featuresVal = jb.val(featuresRef)
-        }
-        const existingFeature = featuresVal.findIndex(f=>f.$ == featureComp.$)
-        if (existingFeature != -1)
-          jb.writeValue(jb.studio.refOfPath(originatingCtx.path + `~features~${existingFeature}~${side}`),value,ctx)
-        else
-          jb.push(featuresRef,featureComp,ctx)
-      }
+      jb.ui.setOrCreateArrayComp(originatingCtx.path+ '~features',featureComp,ctx)
   },
   duplicateDataItem(ctx) {
     const st = jb.studio
@@ -163,7 +171,7 @@ jb.ui.inPlaceEdit = {
       ctx.run(runActions(dialog.closeAll(), studio.refreshPreview()))
     }
   },
-}
+})
 
 jb.component('feature.inplaceEditDropHtml', {
   type: 'feature',

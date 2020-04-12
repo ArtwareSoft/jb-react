@@ -116,7 +116,11 @@ jb.component('studio.mainMenu', {
               studio.sampleProject('cards-demo')
             ]
           }),
-          menu.action({title: 'New Project', action: studio.openNewProject(), icon: icon('new')}),
+          menu.action({
+            title: 'New Project',
+            action: studio.openNewProject(),
+            icon: icon('new')
+          }),
           menu.action({title: 'Open Project ...', action: studio.openProject()}),
           menu.action({
             title: 'Save',
@@ -124,7 +128,11 @@ jb.component('studio.mainMenu', {
             icon: icon('save'),
             shortcut: 'Ctrl+S'
           }),
-          menu.action({title: 'Force Save', action: studio.saveComponents(), icon: icon('save')}),
+          menu.action({
+            title: 'Force Save',
+            action: studio.saveComponents(),
+            icon: icon('save')
+          }),
           menu.action({
             title: 'Source ...',
             action: studio.viewAllFiles(studio.currentProfilePath())
@@ -158,7 +166,7 @@ jb.component('studio.mainMenu', {
                             style: button.x('21'),
                             features: [
                               itemlist.shownOnlyOnItemHover(),
-                              css.margin({top: '20', right: '', left: ''}),
+                              css.margin({top: '20', left: '', right: ''}),
                               css('background-color: transparent !important')
                             ]
                           })
@@ -227,7 +235,7 @@ jb.component('studio.mainMenu', {
                           picklist({
                             title: '',
                             databind: '%$studio/libToAdd%',
-                            options: picklist.options(keys(ctx => jb.frame.jb_modules)),
+                            options: picklist.options({options: keys(ctx => jb.studio.previewjb.frame.jb_modules)}),
                             features: [css.width('160'), picklist.onChange(addToArray('%$studio/libsAsArray%', '%%'))]
                           }),
                           button({
@@ -258,6 +266,23 @@ jb.component('studio.mainMenu', {
               ),
               features: dialogFeature.dragTitle()
             })
+          })
+        ]
+      }),
+      menu.menu({
+        title: 'Edit',
+        options: [
+          menu.action({
+            title: 'Undo',
+            action: studio.undo(),
+            icon: icon('undo'),
+            shortcut: 'Ctrl+Z'
+          }),
+          menu.action({
+            title: 'Redo',
+            action: studio.redo(),
+            icon: icon('redo'),
+            shortcut: 'Ctrl+Y'
           })
         ]
       }),

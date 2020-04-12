@@ -62,7 +62,7 @@ jb.component('dialogFeature.studioPick', {
       cmp.cover.parentElement == _window.document.body && _window.document.body.removeChild(cmp.cover);
     },
     afterViewInit: cmp=> {
-      const {pipe,filter, Do, map,debounceTime, subscribe,distinctUntilChanged,skip} = jb.callbag
+      const {pipe,filter, Do, map,debounceTime, subscribe,distinctUntilChanged,merge} = jb.callbag
       if (from === 'studio') st.initStudioEditing()
       const _window = from == 'preview' ? st.previewWindow : window;
       const projectPrefix = ctx.run(studio.currentPagePath())
@@ -83,7 +83,13 @@ jb.component('dialogFeature.studioPick', {
       }
       cmp.counter = 0
 
-      pipe(jb.ui.fromEvent(cmp,'mousedown',cmp.cover), subscribe(() => ctx.vars.$dialog.endPick()))
+      let userPick = jb.ui.fromEvent(cmp, 'mousedown', document)
+      let keyUpEm = jb.ui.fromEvent(cmp, 'keyup', document)
+      if (jb.studio.previewWindow) {
+        userPick = merge(userPick, jb.ui.fromEvent(cmp, 'mousedown', jb.studio.previewWindow.document))
+        keyUpEm = merge(keyUpEm, jb.ui.fromEvent(cmp, 'keyup', jb.studio.previewWindow.document))
+      }
+      pipe(merge(pipe(keyUpEm,filter(e=>e.keyCode == 27)), userPick), subscribe(() => ctx.vars.$dialog.endPick()))
 
       const mouseMoveEm = jb.ui.fromEvent(cmp,'mousemove',_window.document);
       pipe(mouseMoveEm,
@@ -110,10 +116,10 @@ jb.component('dialog.studioPickDialog', {
     {id: 'from', as: 'string'}
   ],
   impl: customStyle({
-    template: (cmp,{},h) => h('div#jb-dialog',{},[
+    template: (cmp,{},h) => h('div#jb-dialog jb-pick',{},[
       h('div#edge top'), h('div#edge left'), h('div#edge right'), h('div#edge bottom'), h(cmp.ctx.run(studio.pickToolbar()))
     ]),
-    css: `{ display: block; position: absolute; width: 0; height:0 }
+    css: `{ display: block; position: absolute; width: 0; height:0; z-index: 10000 !important; }
     >.edge { position: absolute; box-shadow: 0 0 1px 1px gray; width: 1px; height: 1px; cursor: pointer; }`,    
     features: [
       css(pipeline( (ctx,{dialogData},{from}) => {
