@@ -142,120 +142,7 @@ jb.component('studio.mainMenu', {
             title: 'Settings...',
             action: openDialog({
               style: dialog.dialogOkCancel(),
-              content: group({
-                title: '',
-                layout: layout.vertical(),
-                style: group.tabs({}),
-                controls: [
-                  group({
-                    title: 'Files (js and css)',
-                    controls: [
-                      itemlist({
-                        title: '',
-                        items: '%jsFiles%',
-                        controls: [
-                          editableText({
-                            title: 'file',
-                            databind: '%%',
-                            style: editableText.mdcNoLabel('540'),
-                            features: css('background-color: transparent !important')
-                          }),
-                          button({
-                            title: 'delete',
-                            action: removeFromArray({array: '%$studio/projectSettings/jsFiles%', itemToRemove: '%%'}),
-                            style: button.x('21'),
-                            features: [
-                              itemlist.shownOnlyOnItemHover(),
-                              css.margin({top: '20', left: '', right: ''}),
-                              css('background-color: transparent !important')
-                            ]
-                          })
-                        ],
-                        style: itemlist.ulLi(),
-                        features: [
-                          watchRef({ref: '%jsFiles%', includeChildren: 'structure', allowSelfRefresh: true}),
-                          itemlist.dragAndDrop()
-                        ]
-                      }),
-                      button({
-                        title: 'add file',
-                        action: addToArray('%jsFiles%', 'file.js'),
-                        style: button.mdc(),
-                        raised: '',
-                        features: [css.width('200'), css.margin('10')]
-                      })
-                    ],
-                    features: [css.padding({bottom: '10'})]
-                  }),
-                  group({
-                    title: 'Libs',
-                    controls: [
-                      group({
-                        title: 'chips',
-                        layout: layout.flex({wrap: 'wrap'}),
-                        controls: [
-                          dynamicControls({
-                            controlItems: '%$studio/libsAsArray%',
-                            genericControl: group({
-                              title: 'chip',
-                              layout: layout.flex({wrap: 'wrap', spacing: '0'}),
-                              controls: [
-                                button({title: '%% ', style: button.mdcChipAction(), raised: 'false'}),
-                                button({
-                                  title: 'delete',
-                                  style: button.x(),
-                                  features: [
-                                    css('color: black; z-index: 1000;margin-left: -30px'),
-                                    itemlist.shownOnlyOnItemHover()
-                                  ]
-                                })
-                              ],
-                              features: [
-                                css('color: black; z-index: 1000'),
-                                feature.onEvent({
-                                  event: 'click',
-                                  action: removeFromArray({array: '%$studio/libsAsArray%', itemToRemove: '%%'})
-                                }),
-                                css.class('jb-item')
-                              ]
-                            })
-                          })
-                        ],
-                        features: watchRef({
-                          ref: '%$studio/libsAsArray%',
-                          includeChildren: 'yes',
-                          allowSelfRefresh: true,
-                          strongRefresh: false
-                        })
-                      }),
-                      group({
-                        title: 'add lib',
-                        layout: layout.horizontal('20'),
-                        controls: [
-                          picklist({
-                            title: '',
-                            databind: '%$studio/libToAdd%',
-                            options: picklist.options({options: keys(ctx => jb.studio.previewjb.frame.jb_modules)}),
-                            features: [css.width('160'), picklist.onChange(addToArray('%$studio/libsAsArray%', '%%'))]
-                          }),
-                          button({
-                            title: '+',
-                            style: button.mdcIcon(icon({icon: 'Plus', type: 'mdi'})),
-                            raised: '',
-                            features: [feature.hoverTitle('add lib'), css.margin('5')]
-                          })
-                        ],
-                        features: css.margin({left: '10'})
-                      })
-                    ]
-                  })
-                ],
-                features: [
-                  group.data('%$studio/projectSettings%'),
-                  css.width('600'),
-                  feature.init(writeValue('%$studio/libsAsArray%', split({text: '%libs%'})))
-                ]
-              }),
+              content: studio.projectSettings(),
               title: 'Project Settings',
               onOK: runActions(
                 writeValue(
@@ -418,6 +305,106 @@ jb.component('studio.pathHyperlink', {
         style: button.href(),
         features: feature.hoverTitle('%$path%')
       })
+    ]
+  })
+})
+
+jb.component('studio.projectSettings', {
+  type: 'control',
+  impl: group({
+    title: '',
+    layout: layout.vertical(),
+    style: group.sections({
+      titleStyle: styleByControl(
+        group({
+          title: 'div',
+          style: group.htmlTag('div'),
+          controls: [
+            text({
+              text: '%$textModel/text%',
+              features: [
+                css.layout('position: relative;display: flex;flex-direction: column'),
+                css.padding({top: '1rem', left: '1rem', right: '3rem', bottom: '1rem'}),
+                css.detailedBorder('border-bottom: 1px solid rgb(3, 181, 210)'),
+                css.detailedColor(
+                  'color: rgb(3, 181, 210);background-color: rgb(255, 255, 255)'
+                ),
+                css.typography(
+                  'font-size: 1.15rem;font-weight: 400;font-family: Hind, sans-serif;font-style: normal;font-variant-ligatures: normal;font-variant-caps: normal;text-align: start;text-indent: 0px;text-transform: none;-webkit-text-stroke-width: 0px;text-decoration-style: initial;text-decoration-color: initial'
+                ),
+                css(
+                  '-webkit-box-orient: vertical;-webkit-box-direction: normal;cursor: pointer;letter-spacing: normal;orphans: 2;white-space: normal;widows: 2;word-spacing: 0px'
+                )
+              ]
+            })
+          ],
+          features: []
+        }),
+        'textModel'
+      )
+    }),
+    controls: [
+      group({
+        title: 'Files',
+        controls: [
+          itemlist({
+            title: '',
+            items: '%jsFiles%',
+            controls: [
+              group({
+                layout: layout.horizontal(),
+                controls: [
+                  editableText({
+                    title: 'file',
+                    databind: '%%',
+                    style: editableText.mdcNoLabel('540'),
+                    features: [
+                      css('background-color: transparent !important; width: 100%;'),
+                      css('~ .mdc-text-field{ width: 100% }')
+                    ]
+                  }),
+                  button({
+                    title: 'delete',
+                    action: removeFromArray({array: '%$studio/projectSettings/jsFiles%', itemToRemove: '%%'}),
+                    style: button.x('21'),
+                    features: [
+                      itemlist.shownOnlyOnItemHover(),
+                      css.margin({top: '20', left: '-20', right: ''}),
+                      css('background-color: transparent !important; z-index: 10000')
+                    ]
+                  })
+                ]
+              })
+            ],
+            style: itemlist.ulLi(),
+            features: [
+              watchRef({ref: '%jsFiles%', includeChildren: 'structure', allowSelfRefresh: true}),
+              itemlist.dragAndDrop(),
+              css.width('100%')
+            ]
+          }),
+          button({
+            title: 'add file',
+            action: addToArray('%jsFiles%', 'myFile.js'),
+            style: button.mdcChipAction()
+          })
+        ]
+      }),
+      multiSelect({
+        title: 'Libs',
+        databind: '%$studio/libsAsArray%',
+        options: picklist.optionsByComma(
+          `remote,codemirror,fuse,animate,cards,cards-sample-data,d3,dragula,md-icons,material,pretty-print,xml,jison,parsing
+`
+        ),
+        style: multiSelect.chips(),
+        features: css.margin('15')
+      })
+    ],
+    features: [
+      group.data('%$studio/projectSettings%'),
+      css.width('600'),
+      feature.init(writeValue('%$studio/libsAsArray%', split({text: '%libs%'})))
     ]
   })
 })

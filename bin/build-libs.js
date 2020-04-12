@@ -20,7 +20,7 @@ function removeExports(target) {
 const filesOfModules = modules => modules.split(',').map(m=>jb_modules[m]).flat().filter(x=>typeof x == 'string')
 
 const jbReactFiles = filesOfModules('common,ui-common,pretty-print,ui-tree,remote').filter(x=>!x.match(/.css$/));
-const studioFiles = filesOfModules('common,ui-common,ui-tree,dragula,codemirror,pretty-print,history,animate,fuse').filter(x=>!x.match(/.css$/))
+const studioFiles = filesOfModules('common,ui-common,ui-tree,dragula,codemirror,pretty-print,history,animate,fuse,md-icons').filter(x=>!x.match(/.css$/))
     .concat(jb_modules.studio.map(file => file.match(/\//) ? file : 'projects/studio/studio-' + file + '.js'));
 const studioCssFiles = ['/css/styles.css', '/projects/studio/css/studio.css']
   .concat(filesOfModules('ui-common-css,codemirror-css,material-css')).filter(x=>x.match(/.css$/));
