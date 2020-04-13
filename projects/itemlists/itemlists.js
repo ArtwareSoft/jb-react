@@ -129,15 +129,20 @@ jb.component('itemlists.editableTable', {
         style: table.mdc(),
         features: [
           watchRef({ref: '%$people%', includeChildren: 'structure', allowSelfRefresh: true}),
-          itemlist.dragAndDrop()
+          itemlist.dragAndDrop(),
+          itemlist.keyboardSelection({}),
+          itemlist.selection({})
         ]
       }),
       button({
         title: 'add person',
         action: addToArray('%$people%', obj()),
-        style: button.mdcFloatingAction('add'),
         raised: 'true',
-        features: [css.width('200'), css.margin('10')]
+        features: [
+          css.width('200'),
+          css.margin('10'),
+          feature.icon('person_add_disabled', undefined)
+        ]
       })
     ]
   })

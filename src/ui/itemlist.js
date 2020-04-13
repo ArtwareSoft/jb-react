@@ -199,7 +199,7 @@ jb.component('itemlist.selection', {
           Array.from(cmp.base.querySelectorAll('.jb-item.selected,*>.jb-item.selected,*>*>.jb-item.selected'))
             .forEach(elem=>elem.classList.remove('selected'))
           Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
-            .filter(elem=> (jb.ctxDictionary[elem.getAttribute('jb-ctx')] || {}).data === selected)
+            .filter(elem=> jb.val((jb.ctxDictionary[elem.getAttribute('jb-ctx')] || {}).data) === jb.val(selected))
             .forEach(elem=> {elem.classList.add('selected'); elem.scrollIntoViewIfNeeded()})
         }
         cmp.doRefresh = () => cmp.setSelected(cmp.state.selected)
@@ -300,11 +300,11 @@ jb.component('itemlist.dragAndDrop', {
           return jb.logError('itemlist.dragAndDrop - the dragula lib is not loaded')
         jb.ui.itemlistInitCalcItems(cmp)
 
-        cmp.itemsAsRef = cmp.itemsAsRef || jb.asRef(jb.path(jb.ctxDictionary,`${cmp.base.getAttribute('jb-ctx')}.params.items`)())
+        cmp.itemsAsRef = () => jb.asRef(jb.path(jb.ctxDictionary,`${cmp.base.getAttribute('jb-ctx')}.params.items`)())
 
         const drake = dragula([cmp.base.querySelector('.jb-drag-parent') || cmp.base] , {
-          moves: (el,source,handle) => jb.ui.parents(handle).some(x=>jb.ui.hasClass(x,'drag-handle'))
-        });
+          moves: (el,source,handle) => jb.ui.parents(handle,{includeSelf: true}).some(x=>jb.ui.hasClass(x,'drag-handle'))
+        })
 
         drake.on('drag', function(el, source) {
           cmp.items = cmp.calcItems()
@@ -320,27 +320,29 @@ jb.component('itemlist.dragAndDrop', {
           cmp.selectionEmitter && cmp.selectionEmitter.next(el.dragged.item);
         });
         drake.on('drop', (dropElm, target, source,sibling) => {
-            const draggedIndex = cmp.items.indexOf(dropElm.dragged.item);
-            const targetIndex = sibling ? jb.ui.index(sibling) : cmp.items.length;
-            jb.splice(cmp.itemsAsRef,[[draggedIndex,1],[targetIndex-1,0,dropElm.dragged.item]],ctx);
-
+            const draggedIndex = cmp.items.indexOf(dropElm.dragged.item)
+            const targetIndex = sibling ? jb.ui.index(sibling) : cmp.items.length
+            jb.move(jb.asRef(cmp.items[draggedIndex]),jb.asRef(cmp.items[targetIndex-1]),ctx)
             dropElm.dragged = null;
+            cmp.doRefresh && cmp.doRefresh()
         })
         cmp.dragAndDropActive = true
 
         // ctrl + Up/Down
-//        jb.delay(1).then(_=>{ // wait for the keyboard selection to register keydown
+        jb.delay(1).then(_=>{ // wait for the keyboard selection to register keydown
         if (!cmp.onkeydown) return;
         jb.subscribe(cmp.onkeydown, e => {
             if (e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40)) {
               cmp.items = cmp.calcItems()
               const diff = e.keyCode == 40 ? 1 : -1;
-              const selectedIndex = cmp.items.indexOf(cmp.state.selected);
+              const selectedIndex = cmp.items.indexOf(jb.val(cmp.state.selected))
               if (selectedIndex == -1) return;
-              const index = (selectedIndex + diff+ cmp.items.length) % cmp.items.length;
-              //const itemsF = jb.path(jb.ctxDictionary,`${cmp.base.getAttribute('jb-ctx')}.params.items`)
-              jb.splice(cmp.itemsAsRef,[[selectedIndex,1],[index,0,cmp.state.selected]],ctx);
+              const targetIndex = (selectedIndex + diff+ cmp.items.length) % cmp.items.length;
+              jb.move(jb.asRef(cmp.state.selected),jb.asRef(cmp.items[targetIndex]),ctx)
+              cmp.items = cmp.calcItems()
+              cmp.selectionEmitter && cmp.selectionEmitter.next(cmp.items[targetIndex])
         }})
+        })
       }
     })
 })

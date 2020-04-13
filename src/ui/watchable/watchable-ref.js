@@ -54,7 +54,6 @@ class WatchableValueByRef {
         this.addObjToMap(newVal,path)
         opEvent.ref.$jb_path = () => path
       } else if (opOnRef.$splice) {
-        // TODO: make is more effecient in case of move
         opOnRef.$splice.forEach(ar=> {
           oldVal.slice(ar[0],ar[0]+ar[1]).forEach(toRemove=>this.removeObjFromMap(toRemove));
           jb.asArray(ar[2]).forEach(toAdd=>this.addObjToMap(toAdd,path.concat(newVal.indexOf(toAdd))))

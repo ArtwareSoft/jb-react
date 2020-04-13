@@ -1,7 +1,5 @@
 jb.component('globals', {
-  watchableData: {
-
-  }
+  watchableData: {}
 })
 
 jb.component('watchablePeople', {

@@ -86,7 +86,10 @@ jb.resource('people',[
 
 jb.component('sampleText1',{ passiveData: '#start hello world #end'});
 
-jb.resource('globals', { });
+jb.component('globals', {
+  watchableData: {}
+})
+
 
 jb.resource('group-with-custom-style',
   {$: 'group',
