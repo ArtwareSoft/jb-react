@@ -10020,11 +10020,13 @@ jb.component('tree.dragAndDrop', {
 				if (isNaN(selectedIndex)) return;
 				const no_of_siblings = Array.from(cmp.base.querySelector('.treenode.selected').parentNode.children).length;
 				const diff = e.keyCode == 40 ? 1 : -1;
-				let target = (selectedIndex + diff+ no_of_siblings) % no_of_siblings;
-				const state = treeStateAsRefs(tree);
-				cmp.model.move(selected, selected.split('~').slice(0,-1).concat([target]).join('~'),ctx)
-					
-				restoreTreeStateFromRefs(cmp,state);
+				const target = (selectedIndex + diff+ no_of_siblings) % no_of_siblings;
+				//const state = treeStateAsRefs(tree);
+				const targetPath = selected.split('~').slice(0,-1).concat([target]).join('~')
+				cmp.model.move(selected, targetPath,ctx)
+				cmp.selectionEmitter && cmp.selectionEmitter.next(targetPath)
+				jb.delay(10).then(()=>cmp.regainFocus && cmp.regainFocus())
+				//restoreTreeStateFromRefs(cmp,state);
 			}))
       	},
   	})
