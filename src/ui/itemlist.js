@@ -9,11 +9,12 @@ jb.component('itemlist', {
     {id: 'items', as: 'array', dynamic: true, mandatory: true},
     {id: 'controls', type: 'control[]', mandatory: true, dynamic: true},
     {id: 'style', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.ulLi()},
+    {id: 'layout', type: 'layout'},
     {id: 'itemVariable', as: 'string', defaultValue: 'item'},
     {id: 'visualSizeLimit', as: 'number', defaultValue: 100, description: 'by default itemlist is limmited to 100 shown items'},
     {id: 'features', type: 'feature[]', dynamic: true, flattenArray: true}
   ],
-  impl: ctx => jb.ui.ctrl(ctx)
+  impl: ctx => jb.ui.ctrl(ctx, ctx.params.layout)
 })
 
 jb.component('itemlist.noContainer', {
@@ -110,6 +111,19 @@ jb.component('itemlist.ulLi', {
           ctrl.map(singleCtrl=>h(singleCtrl))))),
     css: `{ list-style: none; padding: 0; margin: 0;}
     >li { list-style: none; padding: 0; margin: 0;}`,
+    features: itemlist.init()
+  })
+})
+
+jb.component('itemlist.div', {
+  type: 'itemlist.style',
+  params: [
+    {id: 'spacing', as: 'number', defaultValue: 0}
+  ],
+  impl: customStyle({
+    template: (cmp,{ctrls},h) => h('div#jb-itemlist jb-drag-parent',{},
+        ctrls.map(ctrl=> h('div#jb-item', {'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
+          ctrl.map(singleCtrl=>h(singleCtrl))))),
     features: itemlist.init()
   })
 })

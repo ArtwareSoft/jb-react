@@ -105,9 +105,11 @@ jb.component('menu.openContextMenu', {
     {id: 'menu', type: 'menu.option', dynamic: true, mandatory: true},
     {id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue: dialog.contextMenuPopup()},
     {id: 'menuStyle', type: 'menu.style', dynamic: true, defaultValue: menuStyle.contextMenu()},
-    {id: 'features', type: 'dialog-feature[]', dynamic: true}
+    {id: 'features', type: 'dialog-feature[]', dynamic: true},
+    {id: 'id', as: 'string' } 
   ],
   impl: openDialog({
+    id: '%$id%',
     style: call('popupStyle'),
     content: menu.control({menu: call('menu'), style: call('menuStyle')}),
     features: call('features')

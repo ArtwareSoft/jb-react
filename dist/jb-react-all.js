@@ -6500,7 +6500,7 @@ jb.component('dialogFeature.resizer', {
 jb.component('dialog.popup', {
   type: 'dialog.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
+	template: (cmp,state,h) => h('div#jb-dialog jb-popup',{},h(state.contentComp)),
     css: '{ position: absolute; background: white; box-shadow: 2px 2px 3px #d5d5d5; padding: 3px 0; border: 1px solid rgb(213, 213, 213) }',
     features: [
       dialogFeature.maxZIndexOnClick(),
@@ -6511,6 +6511,20 @@ jb.component('dialog.popup', {
   })
 })
 
+jb.component('dialog.transparent-popup', {
+	type: 'dialog.style',
+	impl: customStyle({
+	  template: (cmp,state,h) => h('div#jb-dialog jb-popup',{},h(state.contentComp)),
+	  css: '{ position: absolute; padding: 3px 0; }',
+	  features: [
+		dialogFeature.maxZIndexOnClick(),
+		dialogFeature.closeWhenClickingOutside(),
+		dialogFeature.cssClassOnLaunchingElement(),
+		dialogFeature.nearLauncherPosition({})
+	  ]
+	})
+  })
+  
 jb.component('dialog.div', {
   type: 'dialog.style',
   impl: customStyle({
@@ -6608,11 +6622,12 @@ jb.component('itemlist', {
     {id: 'items', as: 'array', dynamic: true, mandatory: true},
     {id: 'controls', type: 'control[]', mandatory: true, dynamic: true},
     {id: 'style', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.ulLi()},
+    {id: 'layout', type: 'layout'},
     {id: 'itemVariable', as: 'string', defaultValue: 'item'},
     {id: 'visualSizeLimit', as: 'number', defaultValue: 100, description: 'by default itemlist is limmited to 100 shown items'},
     {id: 'features', type: 'feature[]', dynamic: true, flattenArray: true}
   ],
-  impl: ctx => jb.ui.ctrl(ctx)
+  impl: ctx => jb.ui.ctrl(ctx, ctx.params.layout)
 })
 
 jb.component('itemlist.noContainer', {
@@ -6709,6 +6724,19 @@ jb.component('itemlist.ulLi', {
           ctrl.map(singleCtrl=>h(singleCtrl))))),
     css: `{ list-style: none; padding: 0; margin: 0;}
     >li { list-style: none; padding: 0; margin: 0;}`,
+    features: itemlist.init()
+  })
+})
+
+jb.component('itemlist.div', {
+  type: 'itemlist.style',
+  params: [
+    {id: 'spacing', as: 'number', defaultValue: 0}
+  ],
+  impl: customStyle({
+    template: (cmp,{ctrls},h) => h('div#jb-itemlist jb-drag-parent',{},
+        ctrls.map(ctrl=> h('div#jb-item', {'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
+          ctrl.map(singleCtrl=>h(singleCtrl))))),
     features: itemlist.init()
   })
 })
@@ -7059,7 +7087,7 @@ jb.component('itemlistContainer.search', {
   requires: ctx => ctx.vars.itemlistCntr,
   params: [
     {id: 'title', as: 'string', dynamic: true, defaultValue: 'Search'},
-    {id: 'searchIn', as: 'string', dynamic: true, defaultValue: itemlistContainer.searchInAllProperties()},
+    {id: 'searchIn', type: 'search-in', dynamic: true, defaultValue: itemlistContainer.searchInAllProperties()},
     {id: 'databind', as: 'ref', dynamic: true, defaultValue: '%$itemlistCntrData/search_pattern%'},
     {id: 'style', type: 'editable-text.style', defaultValue: editableText.mdcSearch(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
@@ -7072,8 +7100,11 @@ jb.component('itemlistContainer.search', {
 
 				ctx.vars.itemlistCntr.filters.push( items => {
 					const toSearch = jb.val(databindRef) || '';
-					if (jb.frame.Fuse)
-						return toSearch ? new jb.frame.Fuse(items,{}).search(toSearch).map(x=>x.item) : items
+					if (jb.frame.Fuse) {
+						const _searchIn = searchIn()
+						const options = jb.path(_searchIn,'fuseOptions') && _searchIn || {}
+						return toSearch ? new jb.frame.Fuse(items, options).search(toSearch).map(x=>x.item) : items
+					}
 					if (typeof searchIn.profile == 'function') { // improved performance
 						return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
 					}
@@ -7196,8 +7227,7 @@ jb.component('filterType.numeric', {
 })
 
 jb.component('itemlistContainer.searchInAllProperties', {
-  type: 'data',
-  category: 'itemlist:40',
+  type: 'search-in',
   impl: ctx => {
 		if (typeof ctx.data == 'string') return ctx.data;
 		if (typeof ctx.data != 'object') return '';
@@ -7205,6 +7235,22 @@ jb.component('itemlistContainer.searchInAllProperties', {
 	}
 })
 
+jb.component('itemlistContainer.fuseOptions', {
+	type: 'search-in',
+	params: [
+		{ id: 'keys', as: 'array', defaultValue: list('prop1') },
+		{ id: 'findAllMatches', as: 'boolean', defaultValue: false },
+		{ id: 'isCaseSensitive', as: 'boolean', defaultValue: false },
+		{ id: 'includeScore', as: 'boolean', defaultValue: false },
+		{ id: 'includeMatches', as: 'boolean', defaultValue: false },
+		{ id: 'minMatchCharLength', as: 'number', defaultValue: 1 },
+		{ id: 'shouldSort', as: 'boolean', defaultValue: true },
+		// { id: 'location', as: 'number', defaultValue: 0 },
+		// { id: 'threshold', as: 'number', defaultValue: 0.6 },
+	],
+	impl: ctx => ({ fuseOptions: true, ...ctx.params})
+})
+  
 
 })()
 ;
@@ -7316,9 +7362,11 @@ jb.component('menu.openContextMenu', {
     {id: 'menu', type: 'menu.option', dynamic: true, mandatory: true},
     {id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue: dialog.contextMenuPopup()},
     {id: 'menuStyle', type: 'menu.style', dynamic: true, defaultValue: menuStyle.contextMenu()},
-    {id: 'features', type: 'dialog-feature[]', dynamic: true}
+    {id: 'features', type: 'dialog-feature[]', dynamic: true},
+    {id: 'id', as: 'string' } 
   ],
   impl: openDialog({
+    id: '%$id%',
     style: call('popupStyle'),
     content: menu.control({menu: call('menu'), style: call('menuStyle')}),
     features: call('features')

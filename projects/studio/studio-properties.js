@@ -44,13 +44,31 @@ jb.component('studio.properties', {
           tableTree.expandPath(studio.lastEdit())
         ]
       }),
-      button({
-        title: 'new feature',
-        action: studio.openNewProfileDialog({path: '%$path%~features', type: 'feature'}),
-        style: button.href(),
-        features: [
-          feature.if(studio.isOfType('%$path%~features', 'feature')),
-          css.margin({top: '20', left: '5'})
+      group({
+        title: '',
+        layout: layout.flex({justifyContent: 'flex-end', alignItems: 'flex-end', spacing: '7'}),
+        controls: [
+          button({
+            title: 'new feature',
+            action: studio.openNewProfileDialog({path: '%$path%~features', type: 'feature'}),
+            style: button.href(),
+            features: [
+              feature.if(studio.isOfType('%$path%~features', 'feature')),
+              css.margin({top: '20', left: '5'})
+            ]
+          }),
+          button({
+            title: 'new icon',
+            action: studio.getOrCreateCompInArray('%$path%~features', 'feature.icon'),
+            style: button.mdcIcon(undefined, '24'),
+            features: feature.icon({icon: 'Creation', type: 'mdi', size: '16'})
+          }),
+          button({
+            title: 'new css',
+            action: studio.getOrCreateCompInArray('%$path%~features', 'css'),
+            style: button.mdcIcon(undefined, '24'),
+            features: feature.icon({icon: 'LanguageCss3', type: 'mdi', size: '16'})
+          })
         ]
       })
     ],

@@ -140,10 +140,10 @@ jb.component('studio.jbEditorMenu', {
       menu.endWithSeparator(
         [
           menu.action({
-            vars: [Var('compName', split({separator: '~', text: '%$root%', part: 'first'}))],
             title: 'Goto parent',
-            action: studio.openComponentInJbEditor('%$path%', '%$fromPath%'),
-            showCondition: contains({text: '~', allText: '%$root%'})
+            action: studio.openJbEditor(studio.parentPath('%$path%'), studio.parent('%$fromPath%')),
+            showCondition: contains({text: '~', allText: '%$root%'}),
+            shortcut: 'Ctrl+P',
           }),
           menu.action({
             vars: [Var('compName', studio.compName('%$path%'))],

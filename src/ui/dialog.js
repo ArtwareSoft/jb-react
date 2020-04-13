@@ -346,7 +346,7 @@ jb.component('dialogFeature.resizer', {
 jb.component('dialog.popup', {
   type: 'dialog.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
+	template: (cmp,state,h) => h('div#jb-dialog jb-popup',{},h(state.contentComp)),
     css: '{ position: absolute; background: white; box-shadow: 2px 2px 3px #d5d5d5; padding: 3px 0; border: 1px solid rgb(213, 213, 213) }',
     features: [
       dialogFeature.maxZIndexOnClick(),
@@ -357,6 +357,20 @@ jb.component('dialog.popup', {
   })
 })
 
+jb.component('dialog.transparent-popup', {
+	type: 'dialog.style',
+	impl: customStyle({
+	  template: (cmp,state,h) => h('div#jb-dialog jb-popup',{},h(state.contentComp)),
+	  css: '{ position: absolute; padding: 3px 0; }',
+	  features: [
+		dialogFeature.maxZIndexOnClick(),
+		dialogFeature.closeWhenClickingOutside(),
+		dialogFeature.cssClassOnLaunchingElement(),
+		dialogFeature.nearLauncherPosition({})
+	  ]
+	})
+  })
+  
 jb.component('dialog.div', {
   type: 'dialog.style',
   impl: customStyle({

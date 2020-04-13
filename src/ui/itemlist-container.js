@@ -99,7 +99,7 @@ jb.component('itemlistContainer.search', {
   requires: ctx => ctx.vars.itemlistCntr,
   params: [
     {id: 'title', as: 'string', dynamic: true, defaultValue: 'Search'},
-    {id: 'searchIn', as: 'string', dynamic: true, defaultValue: itemlistContainer.searchInAllProperties()},
+    {id: 'searchIn', type: 'search-in', dynamic: true, defaultValue: itemlistContainer.searchInAllProperties()},
     {id: 'databind', as: 'ref', dynamic: true, defaultValue: '%$itemlistCntrData/search_pattern%'},
     {id: 'style', type: 'editable-text.style', defaultValue: editableText.mdcSearch(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
@@ -112,8 +112,11 @@ jb.component('itemlistContainer.search', {
 
 				ctx.vars.itemlistCntr.filters.push( items => {
 					const toSearch = jb.val(databindRef) || '';
-					if (jb.frame.Fuse)
-						return toSearch ? new jb.frame.Fuse(items,{}).search(toSearch).map(x=>x.item) : items
+					if (jb.frame.Fuse) {
+						const _searchIn = searchIn()
+						const options = jb.path(_searchIn,'fuseOptions') && _searchIn || {}
+						return toSearch ? new jb.frame.Fuse(items, options).search(toSearch).map(x=>x.item) : items
+					}
 					if (typeof searchIn.profile == 'function') { // improved performance
 						return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
 					}
@@ -236,8 +239,7 @@ jb.component('filterType.numeric', {
 })
 
 jb.component('itemlistContainer.searchInAllProperties', {
-  type: 'data',
-  category: 'itemlist:40',
+  type: 'search-in',
   impl: ctx => {
 		if (typeof ctx.data == 'string') return ctx.data;
 		if (typeof ctx.data != 'object') return '';
@@ -245,5 +247,21 @@ jb.component('itemlistContainer.searchInAllProperties', {
 	}
 })
 
+jb.component('itemlistContainer.fuseOptions', {
+	type: 'search-in',
+	params: [
+		{ id: 'keys', as: 'array', defaultValue: list('prop1') },
+		{ id: 'findAllMatches', as: 'boolean', defaultValue: false },
+		{ id: 'isCaseSensitive', as: 'boolean', defaultValue: false },
+		{ id: 'includeScore', as: 'boolean', defaultValue: false },
+		{ id: 'includeMatches', as: 'boolean', defaultValue: false },
+		{ id: 'minMatchCharLength', as: 'number', defaultValue: 1 },
+		{ id: 'shouldSort', as: 'boolean', defaultValue: true },
+		// { id: 'location', as: 'number', defaultValue: 0 },
+		// { id: 'threshold', as: 'number', defaultValue: 0.6 },
+	],
+	impl: ctx => ({ fuseOptions: true, ...ctx.params})
+})
+  
 
 })()

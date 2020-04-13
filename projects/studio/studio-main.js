@@ -314,69 +314,43 @@ jb.component('studio.projectSettings', {
   impl: group({
     title: '',
     layout: layout.vertical(),
-    style: group.sections({
-      titleStyle: styleByControl(
-        group({
-          title: 'div',
-          style: group.htmlTag('div'),
-          controls: [
-            text({
-              text: '%$textModel/text%',
-              features: [
-                css.layout('position: relative;display: flex;flex-direction: column'),
-                css.padding({top: '1rem', left: '1rem', right: '3rem', bottom: '1rem'}),
-                css.detailedBorder('border-bottom: 1px solid rgb(3, 181, 210)'),
-                css.detailedColor(
-                  'color: rgb(3, 181, 210);background-color: rgb(255, 255, 255)'
-                ),
-                css.typography(
-                  'font-size: 1.15rem;font-weight: 400;font-family: Hind, sans-serif;font-style: normal;font-variant-ligatures: normal;font-variant-caps: normal;text-align: start;text-indent: 0px;text-transform: none;-webkit-text-stroke-width: 0px;text-decoration-style: initial;text-decoration-color: initial'
-                ),
-                css(
-                  '-webkit-box-orient: vertical;-webkit-box-direction: normal;cursor: pointer;letter-spacing: normal;orphans: 2;white-space: normal;widows: 2;word-spacing: 0px'
-                )
-              ]
-            })
-          ],
-          features: []
-        }),
-        'textModel'
-      )
-    }),
+    style: group.tabs({}),
     controls: [
       group({
-        title: 'Files',
+        title: 'Files (%$studio/projectSettings/jsFiles/length%)',
         controls: [
           itemlist({
             title: '',
             items: '%jsFiles%',
             controls: [
               group({
-                layout: layout.horizontal(),
+                layout: layout.horizontal('1'),
                 controls: [
                   editableText({
                     title: 'file',
                     databind: '%%',
-                    style: editableText.mdcNoLabel('540'),
+                    style: editableText.mdcNoLabel('200'),
                     features: [
-                      css('background-color: transparent !important; width: 100%;'),
-                      css('~ .mdc-text-field{ width: 100% }')
+                      css('background-color: transparent !important;'),
+                      css.padding({left: '30', right: ''})
                     ]
                   }),
                   button({
                     title: 'delete',
                     action: removeFromArray({array: '%$studio/projectSettings/jsFiles%', itemToRemove: '%%'}),
-                    style: button.x('21'),
+                    style: button.plainIcon(),
                     features: [
                       itemlist.shownOnlyOnItemHover(),
-                      css.margin({top: '20', left: '-20', right: ''}),
-                      css('background-color: transparent !important; z-index: 10000')
+                      css('background-color: transparent !important; z-index: 10000; cursor: pointer'),
+                      feature.icon({icon: 'cancel', type: 'mdc'}),
+                      css.margin({top: '20', left: '-30'})
                     ]
                   })
                 ]
               })
             ],
-            style: itemlist.ulLi(),
+            style: itemlist.div(),
+            layout: layout.flex({direction: '', justifyContent: '', wrap: 'wrap'}),
             features: [
               watchRef({ref: '%jsFiles%', includeChildren: 'structure', allowSelfRefresh: true}),
               itemlist.dragAndDrop(),
@@ -388,21 +362,29 @@ jb.component('studio.projectSettings', {
             action: addToArray('%jsFiles%', 'myFile.js'),
             style: button.mdcChipAction()
           })
-        ]
+        ],
+        features: [feature.icon({icon: 'FileOutline', type: 'mdi'})]
       }),
       multiSelect({
-        title: 'Libs',
+        title: 'Libs (%$studio/libsAsArray/length%)',
         databind: '%$studio/libsAsArray%',
         options: picklist.optionsByComma(
           `remote,codemirror,fuse,animate,cards,cards-sample-data,d3,dragula,md-icons,material,pretty-print,xml,jison,parsing
 `
         ),
         style: multiSelect.chips(),
-        features: css.margin('15')
+        features: [
+          css.margin({top: '15', left: '10'}),
+          feature.icon({icon: 'Library', type: 'mdi'})
+        ]
       })
     ],
     features: [
-      group.data('%$studio/projectSettings%'),
+      group.data({
+        data: '%$studio/projectSettings%',
+        watch: true,
+        includeChildren: 'structure'
+      }),
       css.width('600'),
       feature.init(writeValue('%$studio/libsAsArray%', split({text: '%libs%'})))
     ]

@@ -9,7 +9,7 @@ jb.component('test.wixIslandGridCtrl', {
   type: 'control',
   impl: group({
     layout: layout.grid({
-      columnSizes: list(13, 74, 321, 120, 16),
+      columnSizes: list(13, 74, 321, 55.5, 55.5, 16),
       rowSizes: list(11, 177, 79, 33, 74, 4, 31, 9, 21)
     }),
     controls: [

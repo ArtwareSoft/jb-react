@@ -73,7 +73,7 @@ jb.component('studio.selectProfile', {
         controls: [
           itemlistContainer.search({
             title: 'search',
-            searchIn: itemlistContainer.searchInAllProperties(),
+            searchIn: itemlistContainer.fuseOptions({keys: list('id', 'desc', 'name')}),
             databind: '%$itemlistCntrData/search_pattern%',
             style: editableText.mdcInput('200'),
             features: feature.onEsc(dialog.closeContainingPopup(false))
@@ -99,14 +99,14 @@ jb.component('studio.selectProfile', {
                   )
                 ),
               '%pts%',
+              ({data}) => ({ id: data, desc: jb.studio.previewjb.comps[data
+].description }),
               itemlistContainer.filter(),
+              '%id%',
               unique('%%', '%%')
             ),
-            controls: text({
-              title: 'profile',
-              text: studio.unMacro('%%'),
-              feature: feature.hoverTitle( ({data}) => (jb.studio.previewjb.comps[data]||{}).description || '')
-            }),
+            controls: text({text: studio.unMacro(), title: 'profile'}),
+            style: itemlist.ulLi(),
             visualSizeLimit: '30',
             features: [
               itemlist.selection({

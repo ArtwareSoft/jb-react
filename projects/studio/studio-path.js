@@ -389,11 +389,11 @@ jb.component('studio.getOrCreateCompInArray', {
 		  }
 		  const existingFeature = arrayVal.findIndex(f=>f.$ == compName)
 		  if (existingFeature != -1) {
-			return jb.refOfPath(`${path}~${existingFeature}`)
+			return jb.studio.refOfPath(`${path}~${existingFeature}`)
 		  } else {
 			const length = arrayVal.length
 			jb.push(arrayRef,{$: compName},ctx)
-			return jb.refOfPath(`${path}~${length}`)
+			return jb.studio.refOfPath(`${path}~${length}`)
 		  }
 		}
 	}

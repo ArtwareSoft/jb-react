@@ -69,10 +69,8 @@ st.ControlTree = class {
 
 	// private
 	innerControlPaths(path) {
-		return ['action~content'] // add more inner paths here
-			.map(x=>path+'~'+x)
-			.filter(p=>
-				st.paramTypeOfPath(p) == 'control');
+		return ['action~content','action~menu'] // add more inner paths here
+			.map(x=>path+'~'+x).filter(p=>st.isControlType(st.paramTypeOfPath(p)))
 	}
 	fixTitles(title,path) {
 		if (title == 'control-with-condition')
@@ -210,7 +208,7 @@ Object.assign(st,{
 			return [path]
 	},
 	isControlType: type =>
-		(type||'').split('[')[0].match(/^(control|options|menu|table-field|d3g.pivot)$/),
+		(type||'').split('[')[0].match(/^(control|options|menu.option|table-field|d3g.pivot)$/),
 	controlParams: path =>
 		st.paramsOfPath(path).filter(p=>st.isControlType(p.type)).map(p=>p.id),
 
