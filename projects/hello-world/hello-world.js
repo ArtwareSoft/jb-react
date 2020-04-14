@@ -25,59 +25,16 @@ jb.component('dataResource.room', { /* dataResource.room */
 jb.component('helloWorld.main', {
   type: 'control',
   impl: group({
-    title: '',
-    layout: layout.vertical('3'),
     controls: [
-      button({
-        title: 'add',
-        action: menu.openContextMenu({
-          menu: menu.menu({
-            options: [
-              menu.action({title: 'add', icon: icon('account_balance')}),
-              menu.action({title: 'add', icon: icon('account_balance')}),
-              menu.action({title: 'add', icon: icon('account_balance')})
-            ]
-          }),
-          menuStyle: menuStyle.toolbar()
-        }),
-        style: button.mdcIcon(undefined, '16'),
-        features: [feature.icon({icon: 'add', size: '12'})]
-      }),
-      button({
-        title: 'remove',
-        style: button.mdcIcon(undefined, '16'),
-        features: [feature.icon({icon: 'remove', size: '12'})]
-      }),
-      menu.control({
-        menu: menu.menu({
-          options: [
-            menu.action({title: 'add', icon: icon('account_balance')}),
-            menu.action({title: 'add', icon: icon('account_balance')}),
-            menu.action({title: 'add', icon: icon('account_balance')})
-          ]
-        }),
-        style: menuStyle.toolbar()
+      text({
+        text: 'my text',
+        title: 'my title',
+        features: [css.padding({top: '16', left: '7'}), css.margin('13')]
       })
     ]
   })
 })
 
-jb.component('helloWorld.f1', {
-  type: 'data',
-  impl: pipeline(
-    'dsdsds',
-    'bbbb'
-  ),
-  testData: 'asdsaasd asdas'
-})
-
-jb.component('dataResource.projectSettings', {
-  watchableData: {
-    project: 'itemlists',
-    libs: 'common,ui-common,material,dragula,md-icons',
-    jsFiles: ['file23.js', 'file.js', 'file.js']
-  }
-})
 
 jb.component('dataResource.studio', {
   watchableData: {

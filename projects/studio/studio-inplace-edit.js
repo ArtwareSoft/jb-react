@@ -1,4 +1,4 @@
-jb.ns('inplaceEdit')
+jb.ns('inplaceEdit,sizesEditor')
 
 jb.component('inplaceEdit.activate', {
   type: 'action',
@@ -67,6 +67,11 @@ jb.component('inplaceEdit.toolbar', {
   impl: group({
     layout: layout.horizontal('3'),
     controls: [
+      button({
+        title: 'sizes',
+        action: studio.openSizesEditor(),
+        style: button.mdcIcon(icon('business'), '20')
+      }),
       button({
         title: 'edit grid',
         action: inplaceEdit.activate('%$parentGroup%'),

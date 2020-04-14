@@ -368,7 +368,7 @@ jb.component('studio.boolRef', {
 })
 
 jb.component('studio.getOrCreateCompInArray', {
-	type: 'action',
+	type: 'data',
 	params: [
 		{id: 'path', as: 'string', mandatory: true},
 		{id: 'compName', as: 'string', mandatory: true}
@@ -378,9 +378,9 @@ jb.component('studio.getOrCreateCompInArray', {
 		let arrayVal = jb.val(arrayRef)
 		if (!arrayVal) {
 		  jb.writeValue(arrayRef,{$: compName},ctx)
-		  return arrayRef
+		  return path
 		} else if (!Array.isArray(arrayVal) && arrayVal.$ == compName) {
-		  return arrayRef
+		  return path
 		} else {
 		  if (!Array.isArray(arrayVal)) { // If a different comp, wrap with array
 			jb.writeValue(arrayRef,[arrayVal],ctx)
@@ -389,11 +389,11 @@ jb.component('studio.getOrCreateCompInArray', {
 		  }
 		  const existingFeature = arrayVal.findIndex(f=>f.$ == compName)
 		  if (existingFeature != -1) {
-			return jb.studio.refOfPath(`${path}~${existingFeature}`)
+			return `${path}~${existingFeature}`
 		  } else {
 			const length = arrayVal.length
 			jb.push(arrayRef,{$: compName},ctx)
-			return jb.studio.refOfPath(`${path}~${length}`)
+			return `${path}~${length}`
 		  }
 		}
 	}

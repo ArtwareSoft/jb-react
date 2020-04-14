@@ -196,6 +196,15 @@ jb.component('css.border', {
     ({css: `${selector} { border${side?'-'+side:''}: ${withUnits(width)} ${style} ${color} }`})
 })
 
+jb.component('css.borderRadius', {
+  type: 'feature,dialog-feature',
+  params: [
+    {id: 'radius', as: 'string', defaultValue: '5'},
+    {id: 'selector', as: 'string'}
+  ],
+  impl: (ctx,radius,selector) => ({css: `${selector} { border-radius: ${withUnits(radius)}}`})
+})
+
 jb.component('css.lineClamp', {
   type: 'feature',
   description: 'ellipsis after X lines',

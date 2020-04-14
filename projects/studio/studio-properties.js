@@ -1,8 +1,41 @@
+jb.component('studio.openProperties', {
+  type: 'action',
+  params: [
+    {id: 'focus', type: 'boolean', as: 'boolean'},
+    {id: 'innerPath', as: 'string'},
+  ],
+  impl: runActions(
+    Var('path', studio.currentProfilePath()),
+    action.if(
+        studio.compName('%$path%'),
+        openDialog({
+          style: dialog.studioFloating({id: 'studio-properties', width: '500'}),
+          content: studio.properties({path: '%$path%', innerPath: '%$innerPath%', focus: '%$focus%'}),
+          title: pipeline(
+            {
+                '$': 'object',
+                title: studio.shortTitle('%$path%'),
+                comp: studio.compName('%$path%')
+              },
+            If(equals('%comp%', '%title%'), '%comp%', '%comp% %title%'),
+            'Properties of %%'
+          ),
+          features: [
+            feature.keyboardShortcut('Ctrl+Left', studio.openControlTree()),
+            dialogFeature.resizer()
+          ]
+        })
+      )
+  )
+})
+
+
 jb.component('studio.properties', {
   type: 'control',
   params: [
     {id: 'path', as: 'string'},
-    {id: 'focus', type: 'boolean', as: 'boolean'}
+    {id: 'innerPath', as: 'string'},
+    {id: 'focus', as: 'boolean'}
   ],
   impl: group({
     controls: [
@@ -41,7 +74,8 @@ jb.component('studio.properties', {
             includeChildren: 'structure',
             allowSelfRefresh: true
           }),
-          tableTree.expandPath(studio.lastEdit())
+          tableTree.expandPath(studio.lastEdit()),
+          tableTree.expandPath('%$innerPath%')
         ]
       }),
       group({
@@ -68,6 +102,12 @@ jb.component('studio.properties', {
             action: studio.getOrCreateCompInArray('%$path%~features', 'css'),
             style: button.mdcIcon(undefined, '24'),
             features: feature.icon({icon: 'LanguageCss3', type: 'mdi', size: '16'})
+          }),
+          button({
+            title: 'size, padding & margin',
+            action: studio.openSizesEditor('%$path%'),
+            style: button.mdcIcon(undefined, '24'),
+            features: feature.icon({icon: 'business', type: 'mdc', size: '16'})
           })
         ]
       })
@@ -98,10 +138,17 @@ jb.component('studio.propField', {
         ),
         controlWithCondition(
           inGroup(
-            split({text: 'width,height,top,left,right,bottom,spacing'}),
+            split({text: 'width,height,top,left,right,bottom,spacing,blurRadius,spreadRadius,horizontal,vertical,radius'}),
             pipeline(studio.paramDef('%$path%'), '%id%')
           ),
           studio.propertyNumbericCss('%$path%')
+        ),
+        controlWithCondition(
+          inGroup(
+            split({text: 'opacity'}),
+            pipeline(studio.paramDef('%$path%'), '%id%')
+          ),
+          studio.propertyNumbericZeroToOne('%$path%')
         ),
         controlWithCondition(
           and(
@@ -204,7 +251,23 @@ jb.component('studio.propertyNumbericCss', {
   ],
   impl: editableNumber({
     databind: studio.ref('%$path%'),
-    style: editableNumber.mdcSlider()
+    style: editableNumber.slider(),
+    max: 20,
+    features: css('~ .text-input {width: 40px} ~ .slider-input { width: 100% }')
+  })
+})
+
+jb.component('studio.propertyNumbericZeroToOne', {
+  type: 'control',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: editableNumber({
+    databind: studio.ref('%$path%'),
+    style: editableNumber.slider(),
+    step: 0.1,
+    max: 1,
+    features: css('~ .text-input {width: 40px} ~ .slider-input { width: 100% }')
   })
 })
 
@@ -245,35 +308,5 @@ jb.component('studio.jbFloatingInputRich', {
     controls: studio.propField('%$path%'),
     features: css('{padding: 20px}')
   })
-})
-
-jb.component('studio.openProperties', {
-  type: 'action',
-  params: [
-    {id: 'focus', type: 'boolean', as: 'boolean'}
-  ],
-  impl: runActions(
-    Var('path', studio.currentProfilePath()),
-    action.if(
-        studio.compName('%$path%'),
-        openDialog({
-          style: dialog.studioFloating({id: 'studio-properties', width: '500'}),
-          content: studio.properties('%$path%', '%$focus%'),
-          title: pipeline(
-            {
-                '$': 'object',
-                title: studio.shortTitle('%$path%'),
-                comp: studio.compName('%$path%')
-              },
-            If(equals('%comp%', '%title%'), '%comp%', '%comp% %title%'),
-            'Properties of %%'
-          ),
-          features: [
-            feature.keyboardShortcut('Ctrl+Left', studio.openControlTree()),
-            dialogFeature.resizer()
-          ]
-        })
-      )
-  )
 })
 

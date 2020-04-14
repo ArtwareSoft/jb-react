@@ -1,4 +1,4 @@
-jb.ns('inplaceEdit')
+jb.ns('inplaceEdit,sizesEditor')
 
 jb.component('test.helloWorldCtrl',{
   type: 'control',
@@ -141,7 +141,7 @@ jb.component('inPlaceEditTest.grid', {
     renderDOM: true, // needed for position thumbs
     control: test.wixIslandGridCtrl(),
     action: runActions(inplaceEdit.activate('test.wixIslandGridCtrl~impl'),delay(10)),
-    expectedResult: contains({text: 'div', allText: test.dialogContent('gridThumb')})
+    expectedResult: contains({text: 'div', allText: test.dialogContent('gridLineThumb')})
   })
 })
 
@@ -157,7 +157,18 @@ jb.component('inPlaceEditTest.grid.inStudio', {
         studiojb.exec(studioWin.inplaceEdit.activate('test.wixIslandGridCtrl~impl'))
       }
     ),
-    expectedResult: contains({text: 'radio_button_unchecked', allText: ctx => ctx.run(test.dialogContent('gridThumb'))})
+    expectedResult: true
+  })
+})
+
+jb.component('inPlaceEditTest.sizesEditor.inStudio', {
+  impl: uiTest({
+    control: text({
+      text: 'hello world',
+      features: [css('padding: 132px;margin-left: 3px'), {'$': 'css.'}]
+    }),
+    expectedResult: true,
+    runInStudio: studio.openSizesEditor('inPlaceEditTest.sizesEditor.inStudio~impl~control')
   })
 })
 
@@ -177,6 +188,6 @@ jb.component('test.eventTracker.inStudio', {
         })
       ]
     }),
-    expectedResult: false
+    expectedResult: true
   })
 })

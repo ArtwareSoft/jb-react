@@ -286,7 +286,9 @@ jb.component('gridEditor.dragableGridItemThumb', {
 
     function setGridAreaValsInScript(vals) {
       const gridAreaRef = ctx.run(pipeline(
-        studio.getOrCreateCompInArray('%$gridItemElem/_component/ctx/path%~features','css.gridArea'), '%css%'), {as: 'ref'})
+        studio.getOrCreateCompInArray('%$gridItemElem/_component/ctx/path%~features','css.gridArea'), 
+        '%css%', 
+        studio.ref('%%')))     //{as: 'ref'})
       spanBase && [0,1].forEach(i=>{
           spanBase[i] = Math.min(spanBase[i],vals[i])
           vals[i] = Math.max(spanBase[i],vals[i])

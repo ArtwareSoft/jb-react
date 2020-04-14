@@ -29,13 +29,17 @@ jb.component('editableNumber.slider', {
               slider.handleArrowKeys(),
               css(
                 'width: 30px; padding-left: 3px; border: 0; border-bottom: 1px solid black;'
-              )
+              ),
+              css.class('text-input')
             ]
           }),
           editableNumber({
             databind: '%$editableNumberModel/databind%',
             style: editableNumber.sliderNoText(),
-            features: css.width(80)
+            max: '%$editableNumberModel/max%',
+            min: '%$editableNumberModel/min%',
+            step: '%$editableNumberModel/step%',            
+            features: [css.width(80), css.class('slider-input')]
           })
         ],
         features: [
@@ -63,11 +67,15 @@ jb.component('editableNumber.mdcSlider', {
               slider.handleArrowKeys(),
               css(
                 'width: 40px; height: 20px; padding-top: 14px; padding-left: 3px; border: 0; border-bottom: 1px solid black; background: transparent;'
-              )
+              ),
+              css.class('text-input')
             ]
           }),
           editableNumber({
             databind: '%$editableNumberModel/databind%',
+            max: '%$editableNumberModel/max%',
+            min: '%$editableNumberModel/min%',
+            step: '%$editableNumberModel/step%',
             style: editableNumber.mdcSliderNoText({}),
           })
         ],
@@ -173,7 +181,7 @@ jb.component('slider.checkAutoScale', {
   type: 'feature',
   impl: features(
     calcProp('min'),
-    calcProp('step'),
+    calcProp('step'),      
     calcProp({
         id: 'max',
         value: ctx => {

@@ -57,6 +57,7 @@ jb.component('uiTestRunner', {
 		const profile = jb.path(jb.comps[test],'impl')
 		const ctxWithVars = ctx.setVars(jb.objFromEntries((profile.vars||[]).map(v=>[v.name,ctx.run(v.val)])))
 		const ctxToRun = new jb.jbCtx(ctxWithVars,{ profile, forcePath: test+ '~impl', path: '' } )
+		const studiojb = ctx.frame().parent.jb
 		return ctxToRun.run(group({
 			controls: () => ctxToRun.runInner(profile.control,{type: 'control'}, 'control'),
 			features: [
@@ -64,7 +65,8 @@ jb.component('uiTestRunner', {
 					for: () => profile.runBefore && ctxToRun.runInner(profile.runBefore,{type: 'runBefore'}, 'runBefore')
 				}),
 				interactive(ctx=>
-					profile.runInPreview && ctxToRun.runInner(profile.runInPreview,{type: 'runInPreview'}, 'runInPreview'))
+					profile.runInPreview && ctxToRun.runInner(profile.runInPreview,{type: 'runInPreview'}, 'runInPreview')),
+				interactive(runActions(ctx => studiojb.exec(studio.waitForPreviewIframe) ,ctx => profile.runInStudio && studiojb.exec(profile.runInStudio)))
 			]
 		}))
 	}
@@ -81,6 +83,7 @@ jb.component('uiTest', {
     {id: 'expectedCounters', as: 'single'},
 	{id: 'renderDOM', type: 'boolean', descrition: 'actially render the vdom, because the test checks calculated sizes' },
 	{id: 'runInPreview', type: 'action', dynamic: true, descrition: 'not for test mode'},
+	{id: 'runInStudio', type: 'action', dynamic: true, descrition: 'not for test mode'},
   ],
   impl: function(ctx,control,runBefore,action,expectedResult,cleanUp,expectedCounters,renderDOM) {
 		console.log('starting ' + ctx.path )

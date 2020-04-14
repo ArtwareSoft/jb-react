@@ -3004,6 +3004,15 @@ jb.component('css.border', {
     ({css: `${selector} { border${side?'-'+side:''}: ${withUnits(width)} ${style} ${color} }`})
 })
 
+jb.component('css.borderRadius', {
+  type: 'feature,dialog-feature',
+  params: [
+    {id: 'radius', as: 'string', defaultValue: '5'},
+    {id: 'selector', as: 'string'}
+  ],
+  impl: (ctx,radius,selector) => ({css: `${selector} { border-radius: ${withUnits(radius)}}`})
+})
+
 jb.component('css.lineClamp', {
   type: 'feature',
   description: 'ellipsis after X lines',
@@ -5819,13 +5828,17 @@ jb.component('editableNumber.slider', {
               slider.handleArrowKeys(),
               css(
                 'width: 30px; padding-left: 3px; border: 0; border-bottom: 1px solid black;'
-              )
+              ),
+              css.class('text-input')
             ]
           }),
           editableNumber({
             databind: '%$editableNumberModel/databind%',
             style: editableNumber.sliderNoText(),
-            features: css.width(80)
+            max: '%$editableNumberModel/max%',
+            min: '%$editableNumberModel/min%',
+            step: '%$editableNumberModel/step%',            
+            features: [css.width(80), css.class('slider-input')]
           })
         ],
         features: [
@@ -5853,11 +5866,15 @@ jb.component('editableNumber.mdcSlider', {
               slider.handleArrowKeys(),
               css(
                 'width: 40px; height: 20px; padding-top: 14px; padding-left: 3px; border: 0; border-bottom: 1px solid black; background: transparent;'
-              )
+              ),
+              css.class('text-input')
             ]
           }),
           editableNumber({
             databind: '%$editableNumberModel/databind%',
+            max: '%$editableNumberModel/max%',
+            min: '%$editableNumberModel/min%',
+            step: '%$editableNumberModel/step%',
             style: editableNumber.mdcSliderNoText({}),
           })
         ],
@@ -5963,7 +5980,7 @@ jb.component('slider.checkAutoScale', {
   type: 'feature',
   impl: features(
     calcProp('min'),
-    calcProp('step'),
+    calcProp('step'),      
     calcProp({
         id: 'max',
         value: ctx => {
