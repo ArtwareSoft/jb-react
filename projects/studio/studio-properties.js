@@ -151,6 +151,10 @@ jb.component('studio.propField', {
           studio.propertyNumbericZeroToOne('%$path%')
         ),
         controlWithCondition(
+          inGroup(split({text: 'color,shadowColor,background'}),pipeline(studio.paramDef('%$path%'), '%id%')),
+          studio.colorPicker('%$path%')
+        ),
+        controlWithCondition(
           and(
             studio.isOfType('%$path%', 'data,boolean'),
             not(isOfType('string,number,boolean,undefined', '%$val%'))
@@ -254,6 +258,34 @@ jb.component('studio.propertyNumbericCss', {
     style: editableNumber.slider(),
     max: 20,
     features: css('~ .text-input {width: 40px} ~ .slider-input { width: 100% }')
+  })
+})
+
+jb.component('studio.colorPicker', {
+  type: 'control',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: group({
+    controls:
+      button({
+      title: prettyPrint(studio.val('%$path%'), true),
+      style: button.studioScript(),
+      action: (ctx,{cmp},{path}) => {        
+          const parent = document.createElement('div')
+          const elemRect = cmp.base.getBoundingClientRect()
+          parent.style = `position: absolute; z-index: 10000; top: ${elemRect.top+ 10}px; left: ${elemRect.left+40}px;`
+          document.body.appendChild(parent)
+          const picker = new Picker({
+            parent,
+            color: jb.studio.valOfPath(path),
+            onChange: color => ctx.run(writeValue(studio.ref(path),color.rgbaString)),
+            onDone: () => { picker.destroy(); document.body.removeChild(parent) }
+          }) 
+          picker.show()
+        },
+      }),
+    features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
   })
 })
 
