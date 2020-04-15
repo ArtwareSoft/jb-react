@@ -45,6 +45,41 @@ jb.component('picklist.radioVertical', {
   )
 })
 
+jb.component('picklist.mdcSelect', {
+  type: 'picklist.style',
+  params: [
+    {id: 'width', as: 'number', defaultValue: 300},
+    {id: 'noLabel', as: 'boolean'},
+    {id: 'noRipple', as: 'boolean'},
+  ],
+  impl: customStyle({
+    template: (cmp,{databind,options,title,noLabel,noRipple},h) => h('div#mdc-select',{}, [
+      h('div#mdc-select__anchor',{onclick: true},[
+          ...(cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'pre').map(h).map(vdom=>vdom.addClass('mdc-text-field__icon mdc-text-field__icon--leading')),
+          h('i#mdc-select__dropdown-icon', {}),
+          h('div#mdc-select__selected-text',{},databind),
+          ...[!noLabel && h('label',{class: 'mdc-floating-label'},title() )].filter(x=>x),
+          ...[!noRipple && h('div',{class: 'mdc-line-ripple' })].filter(x=>x)
+        ]),
+      h('div#mdc-select__menu mdc-menu mdc-menu-surface demo-width-class',{},[
+        h('ul#mdc-list',{},[
+          h('li#mdc-list-item mdc-list-item--selected',{'data-value': '', 'aria-selected': "true"}),
+          ...options.map(option=>h('li#mdc-list-item',{'data-value': option.code}, h('span#mdc-list-item__text', {}, option.text)))
+        ])
+      ])
+    ]),
+    features: [
+      field.databind(), 
+      picklist.init(), 
+      mdcStyle.initDynamic(),
+      css( ({},{},{width}) => `>* { ${jb.ui.propWithUnits('width', width)} }`),
+      interactive((ctx,{cmp}) =>
+          cmp.mdc_comps.forEach(mdcCmp => mdcCmp.listen('MDCSelect:change', () => cmp.ctx.setData(mdcCmp.value)))
+      ),
+    ]
+  })
+})
+
 jb.component('picklist.nativeMdLookOpen', {
   type: 'picklist.style',
   impl: customStyle({

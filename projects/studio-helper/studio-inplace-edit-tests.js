@@ -191,3 +191,19 @@ jb.component('test.eventTracker.inStudio', {
     expectedResult: true
   })
 })
+
+jb.component('test.extractComponentDialog.inStudio', {
+  params: [
+    {id: 'path', as: 'text', defaultValue: 'hello world'}
+  ],
+  impl: uiTest({
+    control: group({
+      controls: [
+        studio.extractComponentDialog('test.extractComponentDialog.inStudio~impl~control~controls~1'),
+        text('%$path%')
+      ]
+    }),
+    expectedResult: true
+  })
+})
+

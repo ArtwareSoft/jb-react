@@ -129,16 +129,14 @@ jb.component('studio.nonControlChildren', {
     {id: 'path', as: 'string'},
     {id: 'includeFeatures', as: 'boolean', type: 'boolean'}
   ],
-  impl: (ctx,path,includeFeatures) =>
-		st.nonControlChildren(path,includeFeatures)
+  impl: (ctx,path,includeFeatures) =>	st.nonControlChildren(path,includeFeatures)
 })
 
 jb.component('studio.asArrayChildren', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>
-		st.asArrayChildren(path)
+  impl: (ctx,path) =>	st.asArrayChildren(path)
 })
 
 jb.component('studio.compName', {
@@ -167,16 +165,14 @@ jb.component('studio.propName', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>
-		st.propName(path)
+  impl: (ctx,path) =>	st.propName(path)
 })
 
 jb.component('studio.moreParams', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>
-				st.jbEditorMoreParams(path)
+  impl: (ctx,path) =>	st.jbEditorMoreParams(path)
 })
 
 
@@ -268,8 +264,7 @@ jb.component('studio.wrap', {
     {id: 'path', as: 'string'},
     {id: 'comp', as: 'string'}
   ],
-  impl: (ctx,path,comp) =>
-		st.wrap(path,comp,ctx)
+  impl: (ctx,path,comp) => st.wrap(path,comp,ctx)
 })
 
 jb.component('studio.wrapWithGroup', {
@@ -277,8 +272,7 @@ jb.component('studio.wrapWithGroup', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>
-		st.wrapWithGroup(path,ctx)
+  impl: (ctx,path) =>		st.wrapWithGroup(path,ctx)
 })
 
 jb.component('studio.addProperty', {
@@ -286,8 +280,7 @@ jb.component('studio.addProperty', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>
-		st.addProperty(path,ctx)
+  impl: (ctx,path) =>	st.addProperty(path,ctx)
 })
 
 jb.component('studio.duplicateControl', {
@@ -295,8 +288,7 @@ jb.component('studio.duplicateControl', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>
-		st.duplicateControl(path,ctx)
+  impl: (ctx,path) =>	st.duplicateControl(path,ctx)
 })
 
 jb.component('studio.duplicateArrayItem', {
@@ -304,8 +296,7 @@ jb.component('studio.duplicateArrayItem', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>
-		st.duplicateArrayItem(path,ctx)
+  impl: (ctx,path) =>	st.duplicateArrayItem(path,ctx)
 })
 
 jb.component('studio.newArrayItem', {
@@ -313,8 +304,7 @@ jb.component('studio.newArrayItem', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>
-		st.addArrayItem(path,{srcCtx: ctx})
+  impl: (ctx,path) =>	st.addArrayItem(path,{srcCtx: ctx})
 })
 
 jb.component('studio.addArrayItem', {
@@ -343,8 +333,7 @@ jb.component('studio.canWrapWithArray', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>
-			st.paramDef(path) && (st.paramDef(path).type || '').indexOf('[') != -1 && !Array.isArray(st.valOfPath(path))
+  impl: (ctx,path) =>	st.paramDef(path) && (st.paramDef(path).type || '').indexOf('[') != -1 && !Array.isArray(st.valOfPath(path))
 })
 
 jb.component('studio.isArrayItem', {
@@ -352,8 +341,7 @@ jb.component('studio.isArrayItem', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>
-			Array.isArray(st.valOfPath(st.parentPath(path)))
+  impl: (ctx,path) =>	Array.isArray(st.valOfPath(st.parentPath(path)))
 })
 
 
@@ -363,8 +351,7 @@ jb.component('studio.setComp', {
     {id: 'path', as: 'string'},
     {id: 'comp', as: 'single'}
   ],
-  impl: (ctx,path,comp) =>
-		st.setComp(path, comp,ctx)
+  impl: (ctx,path,comp) => st.setComp(path, comp,ctx)
 })
 
 jb.component('studio.delete', {
@@ -404,8 +391,7 @@ jb.component('studio.jbEditorNodes', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>
-			new st.jbEditorTree(path,true)
+  impl: (ctx,path) =>	new st.jbEditorTree(path,true)
 })
 
 jb.component('studio.iconOfType', {
@@ -432,8 +418,7 @@ jb.component('studio.isDisabled', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>
-			st.disabled(path)
+  impl: (ctx,path) =>	st.disabled(path)
 })
 
 jb.component('studio.disabledSupport', {

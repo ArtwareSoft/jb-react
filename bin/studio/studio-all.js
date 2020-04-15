@@ -822,7 +822,7 @@ Object.assign(jb,{
   move: (ref,toRef,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.move(ref,toRef,srcCtx)),
   push: (ref,toAdd,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.push(ref,toAdd,srcCtx)),
   isRef: ref => jb.refHandler(ref),
-  isWatchable: ref => false, // overriden by the watchable-ref.js (if loaded)
+  isWatchable: () => false, // overriden by the watchable-ref.js (if loaded)
   isValid: ref => jb.safeRefCall(ref, h=>h.isValid(ref)),
   refreshRef: ref => jb.safeRefCall(ref, h=>h.refresh(ref)),
 })
@@ -8420,6 +8420,8 @@ jb.component('mdcStyle.initDynamic', {
         cmp.mdc_comps.push(new jb.ui.material.MDCTabBar(cmp.base))
       else if (cmp.base.classList.contains('mdc-slider'))
         cmp.mdc_comps.push(new jb.ui.material.MDCSlider(cmp.base))
+      else if (cmp.base.classList.contains('mdc-select'))
+        cmp.mdc_comps.push(new jb.ui.material.MDCSelect(cmp.base))
     },
     destroy: cmp => (cmp.mdc_comps || []).forEach(mdc_cmp=>mdc_cmp.destroy())
   })
@@ -9158,6 +9160,41 @@ jb.component('picklist.radioVertical', {
     picklist.radio(),
     layout.grid({columnSizes: list('30px', 'auto')})
   )
+})
+
+jb.component('picklist.mdcSelect', {
+  type: 'picklist.style',
+  params: [
+    {id: 'width', as: 'number', defaultValue: 300},
+    {id: 'noLabel', as: 'boolean'},
+    {id: 'noRipple', as: 'boolean'},
+  ],
+  impl: customStyle({
+    template: (cmp,{databind,options,title,noLabel,noRipple},h) => h('div#mdc-select',{}, [
+      h('div#mdc-select__anchor',{onclick: true},[
+          ...(cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'pre').map(h).map(vdom=>vdom.addClass('mdc-text-field__icon mdc-text-field__icon--leading')),
+          h('i#mdc-select__dropdown-icon', {}),
+          h('div#mdc-select__selected-text',{},databind),
+          ...[!noLabel && h('label',{class: 'mdc-floating-label'},title() )].filter(x=>x),
+          ...[!noRipple && h('div',{class: 'mdc-line-ripple' })].filter(x=>x)
+        ]),
+      h('div#mdc-select__menu mdc-menu mdc-menu-surface demo-width-class',{},[
+        h('ul#mdc-list',{},[
+          h('li#mdc-list-item mdc-list-item--selected',{'data-value': '', 'aria-selected': "true"}),
+          ...options.map(option=>h('li#mdc-list-item',{'data-value': option.code}, h('span#mdc-list-item__text', {}, option.text)))
+        ])
+      ])
+    ]),
+    features: [
+      field.databind(), 
+      picklist.init(), 
+      mdcStyle.initDynamic(),
+      css( ({},{},{width}) => `>* { ${jb.ui.propWithUnits('width', width)} }`),
+      interactive((ctx,{cmp}) =>
+          cmp.mdc_comps.forEach(mdcCmp => mdcCmp.listen('MDCSelect:change', () => cmp.ctx.setData(mdcCmp.value)))
+      ),
+    ]
+  })
 })
 
 jb.component('picklist.nativeMdLookOpen', {
@@ -35086,7 +35123,7 @@ function writeValueToDataResource(path,value) {
 	if (path.length > 1 && ['watchableData','passiveData'].indexOf(path[1]) != -1) {
 		const resource = jb.removeDataResourcePrefix(path[0])
 		const dataPath = '%$' + [resource, ...path.slice(2)].map(x=>isNaN(+x) ? x : `[${x}]`).join('/') + '%'
-		return (new st.previewjb.jbCtx()).run(writeValue(dataPath,_=>value))
+		return st.previewjb.exec(writeValue(dataPath,_=>value))
 	}
 }
 
@@ -35094,14 +35131,14 @@ function writeValueToDataResource(path,value) {
 
 Object.assign(st,{
   val: v => st.compsRefHandler.val(v),
-  writeValue: (ref,value,srcCtx) => st.compsRefHandler.writeValue(ref,value,srcCtx),
+  writeValue: (ref,value,ctx) => st.compsRefHandler.writeValue(ref,value,ctx),
   objectProperty: (obj,prop) => st.compsRefHandler.objectProperty(obj,prop),
-  splice: (ref,args,srcCtx) => st.compsRefHandler.splice(ref,args,srcCtx),
-  push: (ref,value,srcCtx) => st.compsRefHandler.push(ref,value,srcCtx),
-  merge: (ref,value,srcCtx) => st.compsRefHandler.merge(ref,value,srcCtx),
-  isRef: (ref) => st.compsRefHandler.isRef(ref),
-  asRef: (obj) => st.compsRefHandler.asRef(obj),
-  refreshRef: (ref) => st.compsRefHandler.refresh(ref),
+  splice: (ref,args,ctx) => st.compsRefHandler.splice(ref,args,ctx),
+  push: (ref,value,ctx) => st.compsRefHandler.push(ref,value,ctx),
+  merge: (ref,value,ctx) => st.compsRefHandler.merge(ref,value,ctx),
+  isRef: ref => st.compsRefHandler.isRef(ref),
+  asRef: obj => st.compsRefHandler.asRef(obj),
+  refreshRef: ref => st.compsRefHandler.refresh(ref),
   refOfPath: (path,silent) => {
 		const _path = path.split('~');
 		st.compsRefHandler.resourceReferred && st.compsRefHandler.resourceReferred(_path[0]);
@@ -35122,7 +35159,7 @@ Object.assign(st,{
   },
   compOfPath: (path,silent) => st.getComp(st.compNameOfPath(path,silent)),
   paramsOfPath: (path,silent) => jb.compParams(st.compOfPath(path,silent)), //.concat(st.compHeaderParams(path)),
-  writeValueOfPath: (path,value,srcCtx) => st.writeValue(st.refOfPath(path),value,srcCtx),
+  writeValueOfPath: (path,value,ctx) => st.writeValue(st.refOfPath(path),value,ctx),
   getComp: id => st.previewjb.comps[id],
   compAsStr: id => jb.prettyPrintComp(id,st.getComp(id)),
   isStudioCmp: id => (jb.path(jb.comps,[id,jb.location,0]) || '').indexOf('projects/studio') != -1
@@ -35167,23 +35204,23 @@ Object.assign(st, {
 			result = [];
 		st.writeValueOfPath(path,result,srcCtx);
 	},
+	clone(profile) {
+		if (typeof profile !== 'object') return profile
+		return st.evalProfile(jb.prettyPrint(profile,{noMacros: true}))
+	},
 	duplicateControl(path,srcCtx) {
 		const prop = path.split('~').pop();
 		const val = st.valOfPath(path);
 		const parent_ref = st.getOrCreateControlArrayRef(st.parentPath(st.parentPath(path)));
-		if (parent_ref) {
-			const clone = st.evalProfile(jb.prettyPrint(val,{noMacros: true}));
-			st.splice(parent_ref,[[Number(prop), 0,clone]],srcCtx);
-		}
+		if (parent_ref)
+			st.splice(parent_ref,[[Number(prop), 0,st.clone(val)]],srcCtx)
 	},
 	duplicateArrayItem(path,srcCtx) {
 		const prop = path.split('~').pop();
 		const val = st.valOfPath(path);
 		const parent_ref = st.refOfPath(st.parentPath(path));
-		if (parent_ref && Array.isArray(st.val(parent_ref))) {
-			const clone = st.evalProfile(jb.prettyPrint(val,{noMacros: true}));
-			st.splice(parent_ref,[[Number(prop), 0,clone]],srcCtx);
-		}
+		if (parent_ref && Array.isArray(st.val(parent_ref)))
+			st.splice(parent_ref,[[Number(prop), 0,st.clone(val)]],srcCtx)
 	},
 	disabled(path) {
 		const prof = st.valOfPath(path);
@@ -36290,16 +36327,14 @@ jb.component('studio.nonControlChildren', {
     {id: 'path', as: 'string'},
     {id: 'includeFeatures', as: 'boolean', type: 'boolean'}
   ],
-  impl: (ctx,path,includeFeatures) =>
-		st.nonControlChildren(path,includeFeatures)
+  impl: (ctx,path,includeFeatures) =>	st.nonControlChildren(path,includeFeatures)
 })
 
 jb.component('studio.asArrayChildren', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>
-		st.asArrayChildren(path)
+  impl: (ctx,path) =>	st.asArrayChildren(path)
 })
 
 jb.component('studio.compName', {
@@ -36328,16 +36363,14 @@ jb.component('studio.propName', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>
-		st.propName(path)
+  impl: (ctx,path) =>	st.propName(path)
 })
 
 jb.component('studio.moreParams', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>
-				st.jbEditorMoreParams(path)
+  impl: (ctx,path) =>	st.jbEditorMoreParams(path)
 })
 
 
@@ -36429,8 +36462,7 @@ jb.component('studio.wrap', {
     {id: 'path', as: 'string'},
     {id: 'comp', as: 'string'}
   ],
-  impl: (ctx,path,comp) =>
-		st.wrap(path,comp,ctx)
+  impl: (ctx,path,comp) => st.wrap(path,comp,ctx)
 })
 
 jb.component('studio.wrapWithGroup', {
@@ -36438,8 +36470,7 @@ jb.component('studio.wrapWithGroup', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>
-		st.wrapWithGroup(path,ctx)
+  impl: (ctx,path) =>		st.wrapWithGroup(path,ctx)
 })
 
 jb.component('studio.addProperty', {
@@ -36447,8 +36478,7 @@ jb.component('studio.addProperty', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>
-		st.addProperty(path,ctx)
+  impl: (ctx,path) =>	st.addProperty(path,ctx)
 })
 
 jb.component('studio.duplicateControl', {
@@ -36456,8 +36486,7 @@ jb.component('studio.duplicateControl', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>
-		st.duplicateControl(path,ctx)
+  impl: (ctx,path) =>	st.duplicateControl(path,ctx)
 })
 
 jb.component('studio.duplicateArrayItem', {
@@ -36465,8 +36494,7 @@ jb.component('studio.duplicateArrayItem', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>
-		st.duplicateArrayItem(path,ctx)
+  impl: (ctx,path) =>	st.duplicateArrayItem(path,ctx)
 })
 
 jb.component('studio.newArrayItem', {
@@ -36474,8 +36502,7 @@ jb.component('studio.newArrayItem', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>
-		st.addArrayItem(path,{srcCtx: ctx})
+  impl: (ctx,path) =>	st.addArrayItem(path,{srcCtx: ctx})
 })
 
 jb.component('studio.addArrayItem', {
@@ -36504,8 +36531,7 @@ jb.component('studio.canWrapWithArray', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>
-			st.paramDef(path) && (st.paramDef(path).type || '').indexOf('[') != -1 && !Array.isArray(st.valOfPath(path))
+  impl: (ctx,path) =>	st.paramDef(path) && (st.paramDef(path).type || '').indexOf('[') != -1 && !Array.isArray(st.valOfPath(path))
 })
 
 jb.component('studio.isArrayItem', {
@@ -36513,8 +36539,7 @@ jb.component('studio.isArrayItem', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>
-			Array.isArray(st.valOfPath(st.parentPath(path)))
+  impl: (ctx,path) =>	Array.isArray(st.valOfPath(st.parentPath(path)))
 })
 
 
@@ -36524,8 +36549,7 @@ jb.component('studio.setComp', {
     {id: 'path', as: 'string'},
     {id: 'comp', as: 'single'}
   ],
-  impl: (ctx,path,comp) =>
-		st.setComp(path, comp,ctx)
+  impl: (ctx,path,comp) => st.setComp(path, comp,ctx)
 })
 
 jb.component('studio.delete', {
@@ -36565,8 +36589,7 @@ jb.component('studio.jbEditorNodes', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>
-			new st.jbEditorTree(path,true)
+  impl: (ctx,path) =>	new st.jbEditorTree(path,true)
 })
 
 jb.component('studio.iconOfType', {
@@ -36593,8 +36616,7 @@ jb.component('studio.isDisabled', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>
-			st.disabled(path)
+  impl: (ctx,path) =>	st.disabled(path)
 })
 
 jb.component('studio.disabledSupport', {
@@ -37783,13 +37805,14 @@ jb.component('studio.newProfile', {
 jb.component('studio.newComp', {
   params: [
     {id: 'compName', as: 'string'},
-    {id: 'compContent'}
+    {id: 'compContent'},
+    {id: 'file', as: 'string'},
   ],
-  impl: (ctx, compName, compContent) => {
+  impl: (ctx, compName, compContent,file) => {
     const _jb = jb.studio.previewjb
     _jb.component(compName, compContent)
     const filePattern = '/' + ctx.exp('%$studio/project%')
-    const projectFile = jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=> x && x.indexOf(filePattern) != -1)[0]
+    const projectFile = file || jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=> x && x.indexOf(filePattern) != -1)[0]
     Object.assign(_jb.comps[compName], { [_jb.location]: [projectFile,''] })
   }
 })
@@ -44509,6 +44532,134 @@ jb.component('sizesEditor.editor', {
       })
     ]
   })
+})
+;
+
+jb.component('studio.calcExtractComponent', {
+	description: 'returns the suggested component comp with save action',
+	type: 'data',
+	params: [
+        {id: 'path', as: 'string', mandatory: true},
+		{id: 'compName', as: 'string', mandatory: true},
+		{id: 'description', as: 'string' },
+		{id: 'file', as: 'string' }
+	],
+	impl: (ctx,path,compName,description) => {
+        const st = jb.studio
+		const parentComp = st.getComp(path.split('~')[0])
+		const impl = st.clone(st.valOfPath(path))
+		const usedParams = parentComp.params.map(p=> ({ ...p, fRegExp: new RegExp(`\\b${p.id}\\b`), sRegExp: new RegExp(`%\\$${p.id}`) }))
+            .filter(p=>usesParam(p,impl))
+        const newComp = {
+            params: usedParams.map(p=> st.clone(parentComp.params.filter(pr => pr.id == p.id)[0])),
+            ...(description && { description }),
+            ...(parentComp.type && { type: parentComp.type }),
+            impl
+        }
+
+		return {
+            cmp: jb.prettyPrint(newComp),
+            save() {
+                ctx.run(studio.newComp({compName: '%$compName%', compContent: () => newComp, file: '%$file%' }));
+                jb.writeValue(jb.studio.refOfPath(path),
+                    {$: compName, ...jb.objFromEntries(newComp.params.map(p=>[p.id,`%$${p.id}%`]))},ctx)
+            }
+		}
+
+		function usesParam(param, prof) {
+			if (typeof prof == 'string')
+				return param.sRegExp.test(prof)
+			if (typeof prof == 'function')
+				return param.fRegExp.test(prof.toString().split('=>')[0])
+			if (typeof prof == 'object')
+				return Object.keys(prof).reduce((agg,k) => agg || usesParam(param,prof[k]), false)
+		}
+	}
+})
+
+jb.component('studio.calcExtractParam', {
+	type: 'data',
+	params: [
+        {id: 'path', as: 'string', mandatory: true},
+		{id: 'paramName', as: 'string' },
+		{id: 'description', as: 'string' },
+	],
+	impl: (ctx,path,paramName,description) => {
+        const st = jb.studio
+        const compName = path.split('~')[0]
+        const parentComp = st.getComp(compName)
+        const paramToAdd = {...(st.paramDef(path) || {}),
+            defaultValue: st.valOfPath(path),
+            ...(paramName && { id: paramName }),
+            ...(description && { description })
+        }
+		const newParams = [...(jb.compParams(parentComp) || []), paramToAdd]
+
+		return {
+            paramToAdd,
+            save() {
+                jb.writeValue(st.refOfPath(`${compName}~params`),newParams, ctx),
+                jb.writeValue(st.refOfPath(path), `%$${paramName}%`,ctx)
+            }
+		}
+	}
+})
+
+jb.component('studio.extractComponentDialog', {
+  type: 'control',
+  params: [
+    {id: 'path', as: 'string', mandatory: true}
+  ],
+  impl: group({
+    controls: [
+      group({
+        title: '',
+        layout: layout.vertical('40'),
+        controls: [
+          group({
+            layout: layout.horizontal('50'),
+            controls: [
+              editableText({
+                title: 'component name',
+                databind: '%$studio/refactor/name%',
+                features: [
+                  validation(matchRegex('^[A-Za-z_][\\.A-Za-z_0-9]*$', '%%'), 'invalid comp name'),
+                  validation(
+                    not(inGroup(() => Object.keys(jb.studio.previewjb.comps))),
+                    'component \"%%\" already exists'
+                  )
+                ]
+              }),
+              picklist({
+                title: 'file',
+                databind: '%$studio/refactor/file%',
+                options: picklist.options({options: sourceEditor.filesOfProject(), code: ''}),
+                style: picklist.nativeMdLook()
+              })
+            ]
+          }),
+          editableText({
+            title: 'content',
+            databind: '%$refactor/cmp%',
+            style: editableText.codemirror({})
+          })
+        ]
+      })
+    ],
+    features: variable({name: 'refactor', value: studio.calcExtractComponent('%$path%')})
+  })
+})
+
+jb.component('studio.openExtractComponent', {
+    type: 'action',
+    params: [
+        {id: 'path', as: 'string', mandatory: true},
+    ],
+    impl: openDialog({
+        style: dialog.dialogOkCancel(),
+        content: studio.extractComponentDialog('%$path%'),
+        features: dialogFeature.resizer()
+     })
 })
 ;
 

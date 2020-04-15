@@ -447,13 +447,14 @@ jb.component('studio.newProfile', {
 jb.component('studio.newComp', {
   params: [
     {id: 'compName', as: 'string'},
-    {id: 'compContent'}
+    {id: 'compContent'},
+    {id: 'file', as: 'string'},
   ],
-  impl: (ctx, compName, compContent) => {
+  impl: (ctx, compName, compContent,file) => {
     const _jb = jb.studio.previewjb
     _jb.component(compName, compContent)
     const filePattern = '/' + ctx.exp('%$studio/project%')
-    const projectFile = jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=> x && x.indexOf(filePattern) != -1)[0]
+    const projectFile = file || jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=> x && x.indexOf(filePattern) != -1)[0]
     Object.assign(_jb.comps[compName], { [_jb.location]: [projectFile,''] })
   }
 })

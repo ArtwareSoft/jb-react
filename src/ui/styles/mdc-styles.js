@@ -23,6 +23,8 @@ jb.component('mdcStyle.initDynamic', {
         cmp.mdc_comps.push(new jb.ui.material.MDCTabBar(cmp.base))
       else if (cmp.base.classList.contains('mdc-slider'))
         cmp.mdc_comps.push(new jb.ui.material.MDCSlider(cmp.base))
+      else if (cmp.base.classList.contains('mdc-select'))
+        cmp.mdc_comps.push(new jb.ui.material.MDCSelect(cmp.base))
     },
     destroy: cmp => (cmp.mdc_comps || []).forEach(mdc_cmp=>mdc_cmp.destroy())
   })

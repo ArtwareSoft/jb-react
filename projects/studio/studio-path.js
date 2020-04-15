@@ -49,7 +49,7 @@ function writeValueToDataResource(path,value) {
 	if (path.length > 1 && ['watchableData','passiveData'].indexOf(path[1]) != -1) {
 		const resource = jb.removeDataResourcePrefix(path[0])
 		const dataPath = '%$' + [resource, ...path.slice(2)].map(x=>isNaN(+x) ? x : `[${x}]`).join('/') + '%'
-		return (new st.previewjb.jbCtx()).run(writeValue(dataPath,_=>value))
+		return st.previewjb.exec(writeValue(dataPath,_=>value))
 	}
 }
 
@@ -57,14 +57,14 @@ function writeValueToDataResource(path,value) {
 
 Object.assign(st,{
   val: v => st.compsRefHandler.val(v),
-  writeValue: (ref,value,srcCtx) => st.compsRefHandler.writeValue(ref,value,srcCtx),
+  writeValue: (ref,value,ctx) => st.compsRefHandler.writeValue(ref,value,ctx),
   objectProperty: (obj,prop) => st.compsRefHandler.objectProperty(obj,prop),
-  splice: (ref,args,srcCtx) => st.compsRefHandler.splice(ref,args,srcCtx),
-  push: (ref,value,srcCtx) => st.compsRefHandler.push(ref,value,srcCtx),
-  merge: (ref,value,srcCtx) => st.compsRefHandler.merge(ref,value,srcCtx),
-  isRef: (ref) => st.compsRefHandler.isRef(ref),
-  asRef: (obj) => st.compsRefHandler.asRef(obj),
-  refreshRef: (ref) => st.compsRefHandler.refresh(ref),
+  splice: (ref,args,ctx) => st.compsRefHandler.splice(ref,args,ctx),
+  push: (ref,value,ctx) => st.compsRefHandler.push(ref,value,ctx),
+  merge: (ref,value,ctx) => st.compsRefHandler.merge(ref,value,ctx),
+  isRef: ref => st.compsRefHandler.isRef(ref),
+  asRef: obj => st.compsRefHandler.asRef(obj),
+  refreshRef: ref => st.compsRefHandler.refresh(ref),
   refOfPath: (path,silent) => {
 		const _path = path.split('~');
 		st.compsRefHandler.resourceReferred && st.compsRefHandler.resourceReferred(_path[0]);
@@ -85,7 +85,7 @@ Object.assign(st,{
   },
   compOfPath: (path,silent) => st.getComp(st.compNameOfPath(path,silent)),
   paramsOfPath: (path,silent) => jb.compParams(st.compOfPath(path,silent)), //.concat(st.compHeaderParams(path)),
-  writeValueOfPath: (path,value,srcCtx) => st.writeValue(st.refOfPath(path),value,srcCtx),
+  writeValueOfPath: (path,value,ctx) => st.writeValue(st.refOfPath(path),value,ctx),
   getComp: id => st.previewjb.comps[id],
   compAsStr: id => jb.prettyPrintComp(id,st.getComp(id)),
   isStudioCmp: id => (jb.path(jb.comps,[id,jb.location,0]) || '').indexOf('projects/studio') != -1
@@ -130,23 +130,23 @@ Object.assign(st, {
 			result = [];
 		st.writeValueOfPath(path,result,srcCtx);
 	},
+	clone(profile) {
+		if (typeof profile !== 'object') return profile
+		return st.evalProfile(jb.prettyPrint(profile,{noMacros: true}))
+	},
 	duplicateControl(path,srcCtx) {
 		const prop = path.split('~').pop();
 		const val = st.valOfPath(path);
 		const parent_ref = st.getOrCreateControlArrayRef(st.parentPath(st.parentPath(path)));
-		if (parent_ref) {
-			const clone = st.evalProfile(jb.prettyPrint(val,{noMacros: true}));
-			st.splice(parent_ref,[[Number(prop), 0,clone]],srcCtx);
-		}
+		if (parent_ref)
+			st.splice(parent_ref,[[Number(prop), 0,st.clone(val)]],srcCtx)
 	},
 	duplicateArrayItem(path,srcCtx) {
 		const prop = path.split('~').pop();
 		const val = st.valOfPath(path);
 		const parent_ref = st.refOfPath(st.parentPath(path));
-		if (parent_ref && Array.isArray(st.val(parent_ref))) {
-			const clone = st.evalProfile(jb.prettyPrint(val,{noMacros: true}));
-			st.splice(parent_ref,[[Number(prop), 0,clone]],srcCtx);
-		}
+		if (parent_ref && Array.isArray(st.val(parent_ref)))
+			st.splice(parent_ref,[[Number(prop), 0,st.clone(val)]],srcCtx)
 	},
 	disabled(path) {
 		const prof = st.valOfPath(path);
