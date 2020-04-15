@@ -62,6 +62,7 @@ jb.component('studio.redrawStudio', {
 })
 
 jb.component('studio.lastEdit', {
+  description: 'latest edited path',
   type: 'data',
   params: [
     {id: 'justNow', as: 'boolean', type: 'boolean', defaultValue: true}

@@ -102,7 +102,7 @@ jb.component('sizesEditor.editor', {
     controls: [
         text({text:'', features: css('position: absolute; top: 65px; left: 65px; width: 60px; height: 60px; background: white') }),
         text({text:'', features: css('position: absolute; top: 175px; left: 0; width: 180px; height: 16px; background: white') }),
-        sizesEditor.widthHeight('width','65px'),
+        sizesEditor.widthHeight('width','73px'),
         sizesEditor.widthHeight('height','85px'),
         sizesEditor.prop('boxShadow','top: 175px; left: 0px;'),
         sizesEditor.prop('border','top: 175px; left: 75px;'),

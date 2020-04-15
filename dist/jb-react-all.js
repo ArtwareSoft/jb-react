@@ -1581,15 +1581,11 @@ jb.component('join', {
     {id: 'prefix', as: 'string'},
     {id: 'suffix', as: 'string'},
     {id: 'items', as: 'array', defaultValue: '%%'},
-    {id: 'itemName', as: 'string', defaultValue: 'item'},
     {id: 'itemText', as: 'string', dynamic: true, defaultValue: '%%'}
   ],
   type: 'aggregator',
-  impl: function(ctx,separator,prefix,suffix,items,itemName,itemText) {
-		const itemToText = (ctx.profile.itemText) ?
-			item => itemText(itemName ? new jb.jbCtx(ctx, {data: item, vars: {[itemName]: item} }): ctx.setData(item)) :
-			item => jb.tostring(item);	// performance
-
+  impl: (ctx,separator,prefix,suffix,items,itemText) => {
+		const itemToText = ctx.profile.itemText ?	item => itemText(ctx.setData(item)) :	item => jb.tostring(item);	// performance
 		return prefix + items.map(itemToText).join(separator) + suffix;
 	}
 })
@@ -10275,7 +10271,7 @@ jb.component('tableTree.expandPath', {
   ],
   impl: calcProp({
     id: 'pathsToExtend',
-    value: ({},{pathsToExtend},{path}) => [...path.split(','), ...(pathsToExtend || [])],
+    value: ({},{$props},{path}) => [...path.split(','), ...($props.pathsToExtend || [])],
     phase: 5
   })
 })

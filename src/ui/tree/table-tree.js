@@ -198,7 +198,7 @@ jb.component('tableTree.expandPath', {
   ],
   impl: calcProp({
     id: 'pathsToExtend',
-    value: ({},{pathsToExtend},{path}) => [...path.split(','), ...(pathsToExtend || [])],
+    value: ({},{$props},{path}) => [...path.split(','), ...($props.pathsToExtend || [])],
     phase: 5
   })
 })

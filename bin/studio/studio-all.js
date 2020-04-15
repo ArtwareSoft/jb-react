@@ -1581,15 +1581,11 @@ jb.component('join', {
     {id: 'prefix', as: 'string'},
     {id: 'suffix', as: 'string'},
     {id: 'items', as: 'array', defaultValue: '%%'},
-    {id: 'itemName', as: 'string', defaultValue: 'item'},
     {id: 'itemText', as: 'string', dynamic: true, defaultValue: '%%'}
   ],
   type: 'aggregator',
-  impl: function(ctx,separator,prefix,suffix,items,itemName,itemText) {
-		const itemToText = (ctx.profile.itemText) ?
-			item => itemText(itemName ? new jb.jbCtx(ctx, {data: item, vars: {[itemName]: item} }): ctx.setData(item)) :
-			item => jb.tostring(item);	// performance
-
+  impl: (ctx,separator,prefix,suffix,items,itemText) => {
+		const itemToText = ctx.profile.itemText ?	item => itemText(ctx.setData(item)) :	item => jb.tostring(item);	// performance
 		return prefix + items.map(itemToText).join(separator) + suffix;
 	}
 })
@@ -10088,7 +10084,7 @@ jb.component('tableTree.expandPath', {
   ],
   impl: calcProp({
     id: 'pathsToExtend',
-    value: ({},{pathsToExtend},{path}) => [...path.split(','), ...(pathsToExtend || [])],
+    value: ({},{$props},{path}) => [...path.split(','), ...($props.pathsToExtend || [])],
     phase: 5
   })
 })
@@ -35507,6 +35503,7 @@ jb.component('studio.redrawStudio', {
 })
 
 jb.component('studio.lastEdit', {
+  description: 'latest edited path',
   type: 'data',
   params: [
     {id: 'justNow', as: 'boolean', type: 'boolean', defaultValue: true}
@@ -44479,7 +44476,7 @@ jb.component('sizesEditor.editor', {
     controls: [
         text({text:'', features: css('position: absolute; top: 65px; left: 65px; width: 60px; height: 60px; background: white') }),
         text({text:'', features: css('position: absolute; top: 175px; left: 0; width: 180px; height: 16px; background: white') }),
-        sizesEditor.widthHeight('width','65px'),
+        sizesEditor.widthHeight('width','73px'),
         sizesEditor.widthHeight('height','85px'),
         sizesEditor.prop('boxShadow','top: 175px; left: 0px;'),
         sizesEditor.prop('border','top: 175px; left: 75px;'),
