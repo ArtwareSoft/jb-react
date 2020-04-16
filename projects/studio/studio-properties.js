@@ -131,27 +131,21 @@ jb.component('studio.propField', {
       controls: [
         controlWithCondition(
           and(
-            inGroup(list('feature.icon','icon'),studio.compName(studio.parentPath('%$path%'))),
+            inGroup(list('feature.icon','icon','control.icon'),studio.compName(studio.parentPath('%$path%'))),
             equals('icon',pipeline(studio.paramDef('%$path%'), '%id%'))
           ),
           studio.pickIcon('%$path%')
         ),
         controlWithCondition(
-          inGroup(
-            split({text: 'width,height,top,left,right,bottom,spacing,blurRadius,spreadRadius,horizontal,vertical,radius'}),
-            pipeline(studio.paramDef('%$path%'), '%id%')
-          ),
+          studio.editAs({ path: '%$path%', type: 'numericCss', anyParamIds: 'width,height,top,left,right,bottom,spacing,blurRadius,spreadRadius,horizontal,vertical,radius'}),
           studio.propertyNumbericCss('%$path%')
         ),
         controlWithCondition(
-          inGroup(
-            split({text: 'opacity'}),
-            pipeline(studio.paramDef('%$path%'), '%id%')
-          ),
+          studio.editAs({ path: '%$path%', type: 'numericZeroToOne', anyParamIds: 'opacity'}),
           studio.propertyNumbericZeroToOne('%$path%')
         ),
         controlWithCondition(
-          inGroup(split({text: 'color,shadowColor,background'}),pipeline(studio.paramDef('%$path%'), '%id%')),
+          studio.editAs({ path: '%$path%', type: 'color', anyParamIds: 'color,shadowColor'}),
           studio.colorPicker('%$path%')
         ),
         controlWithCondition(
@@ -342,3 +336,16 @@ jb.component('studio.jbFloatingInputRich', {
   })
 })
 
+jb.component('studio.editAs',{
+  description: 'has editHas param',
+  type: 'boolean',
+  params: [
+    {id: 'path', as: 'string'},
+    {id: 'type', as: 'string'},
+    {id: 'anyParamIds', as: 'string'},
+  ],
+  impl: or(
+    Var('paramDef',studio.paramDef('%$path%')),
+    equals('%$paramDef/editAs%','%$type%'),
+    inGroup(split({text: '%$anyParamIds%'}),'%$paramDef/id%')),
+})

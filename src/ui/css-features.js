@@ -122,7 +122,7 @@ jb.component('css.color', {
   type: 'feature',
   params: [
     {id: 'color', as: 'string'},
-    {id: 'background', as: 'string'},
+    {id: 'background', as: 'string', editAs: 'color'},
     {id: 'selector', as: 'string'}
   ],
   impl: (ctx,color) => {
