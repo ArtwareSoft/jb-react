@@ -23,7 +23,7 @@ jb.component('editableText.codemirror', {
     calcProp({id: 'text', value: '%$$model/databind%'}),
     calcProp({
         id: 'textAreaAlternative',
-        value: ({},{$props},{maxLength}) => $props.text.length > maxLength
+        value: ({},{$props},{maxLength}) => ($props.text || '').length > maxLength
       }),
     ctx => ({
 		  template: (cmp,{text,textAreaAlternative},h) =>

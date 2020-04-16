@@ -36,7 +36,8 @@ jb.component('field.databind', {
         'jbModel',
         (ctx,{cmp}) => value =>
           value == null ? ctx.exp('%$$model/databind%','number') : writeFieldData(ctx,cmp,value,true)
-      )
+      ),
+    interactive((ctx,{$dialog})=> $dialog && ($dialog.hasFields = true))
   )
 })
 
@@ -61,10 +62,15 @@ jb.ui.checkValidationError = (cmp,val,ctx) => {
     const err = (cmp.validations || [])
       .filter(validator=>!validator.validCondition(ctx))
       .map(validator=>validator.errorMessage(ctx))[0];
-    if (ctx.exp('formContainer'))
+    if (ctx.exp('%$formContainer%'))
       ctx.run(writeValue('%$formContainer/err%',err));
     return err;
   }
+}
+
+jb.ui.checkFormValidation = function(elem) {
+  jb.ui.find(elem,'[jb-ctx]').map(el=>el._component).filter(cmp => cmp && cmp.validations).forEach(cmp => 
+    jb.ui.checkValidationError(cmp,jb.val(cmp.ctx.vars.$model.databind(cmp.ctx)), cmp.ctx))
 }
 
 jb.ui.fieldTitle = function(cmp,fieldOrCtrl,h) {

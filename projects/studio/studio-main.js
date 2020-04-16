@@ -30,13 +30,13 @@ jb.component('studio.pages', {
         controls: text({text: extractSuffix('.'), features: css.class('studio-page')}),
         style: itemlist.horizontal(),
         features: [
-          id('pages'),
           itemlist.selection({
             databind: '%$studio/page%',
             onSelection: writeValue('%$studio/profile_path%', studio.currentPagePath()),
             autoSelectFirst: true
           }),
-          css.class('studio-pages-items')
+          css.class('studio-pages-items'),
+          studio.watchComponents()
         ]
       }),
       text('|'),
@@ -62,13 +62,12 @@ jb.component('studio.pages', {
           ]
         }),
         style: itemlist.horizontal(),
-        features: [id('functions'), css.class('studio-pages-items')]
+        features: [id('functions'), css.class('studio-pages-items'), studio.watchComponents()]
       })
     ],
     features: [
       css.class('studio-pages'),
-      group.wait({for: studio.waitForPreviewIframe(), loadingControl: text({})}),
-      studio.watchComponents()
+      group.wait({for: studio.waitForPreviewIframe(), loadingControl: text({})})
     ]
   })
 })
@@ -170,6 +169,18 @@ jb.component('studio.mainMenu', {
             action: studio.redo(),
             icon: icon('redo'),
             shortcut: 'Ctrl+Y'
+          }),
+          menu.action({
+            title: 'Extract Component',
+            action: studio.openExtractComponent(),
+            shortcut: '',
+            showCondition: studio.canExtractParam()
+          }),
+          menu.action({
+            title: 'Extract Param',
+            action: studio.openExtractParam(),
+            shortcut: '',
+            showCondition: studio.canExtractParam()
           })
         ]
       }),

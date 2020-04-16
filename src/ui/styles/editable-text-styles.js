@@ -31,22 +31,26 @@ jb.component('editableText.mdcInput', {
   ],
   impl: customStyle({
     template: (cmp,{databind,fieldId,title,noLabel,noRipple,error},h) => h('div',{}, [
-      h('div',{class: ['mdc-text-field', 
+      h('div#mdc-text-field',{class: [ 
           (cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'pre')[0] && 'mdc-text-field--with-leading-icon',
           (cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'post')[0] && 'mdc-text-field--with-trailing-icon'
         ].filter(x=>x).join(' ') },[
           ...(cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'pre').map(h).map(vdom=>vdom.addClass('mdc-text-field__icon mdc-text-field__icon--leading')),
-          h('input', { type: 'text', class: 'mdc-text-field__input', id: 'input_' + fieldId,
+          h('input#mdc-text-field__input', { type: 'text', id: 'input_' + fieldId,
               value: databind, onchange: true, onkeyup: true, onblur: true,
           }),
           ...(cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-text-field__icon mdc-text-field__icon--trailing')),
-          ...[!noLabel && h('label',{class: 'mdc-floating-label', for: 'input_' + fieldId},title() )].filter(x=>x),
-          ...[!noRipple && h('div',{class: 'mdc-line-ripple' })].filter(x=>x)
+          ...[!noLabel && h('label#mdc-floating-label', { class: databind ? 'mdc-floating-label--float-above' : '', for: 'input_' + fieldId},title() )].filter(x=>x),
+          ...[!noRipple && h('div#mdc-line-ripple')].filter(x=>x)
         ]),
-        h('div',{class: 'mdc-text-field-helper-line' }, error || '')
+        h('div#mdc-text-field-helper-line', {}, error || '')
       ]),
-    css: `{ {?width: %$width%px?} } ~ .mdc-text-field-helper-line { color: red }`,
-    features: [field.databindText(), mdcStyle.initDynamic()]
+    css: `~ .mdc-text-field-helper-line { color: red }`,
+    features: [
+      field.databindText(), 
+      mdcStyle.initDynamic(),
+      css( ({},{},{width}) => `>.mdc-text-field { ${jb.ui.propWithUnits('width', width)} }`),
+    ]
   })
 })
 

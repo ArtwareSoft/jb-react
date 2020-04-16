@@ -16,7 +16,7 @@ class VNode {
         
         this.attributes = attributes
         if (typeof cmpOrTag === 'string' && cmpOrTag.indexOf('#') != -1) {
-            this.addClass(cmpOrTag.split('#').pop())
+            this.addClass(cmpOrTag.split('#').pop().trim())
             cmpOrTag = cmpOrTag.split('#')[0]
         }
         Object.assign(this,{...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,children})
@@ -36,8 +36,9 @@ class VNode {
         }
         this.attributes = this.attributes || {};
         if (this.attributes.class === undefined) this.attributes.class = ''
-        if (clz && this.attributes.class.split(' ').indexOf(clz) == -1)
+        if (clz && this.attributes.class.split(' ').indexOf(clz) == -1) {
             this.attributes.class = [this.attributes.class,clz].filter(x=>x).join(' ');
+        }
         return this;
     }
     hasClass(clz) {

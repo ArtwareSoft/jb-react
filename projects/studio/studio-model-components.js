@@ -440,6 +440,14 @@ jb.component('studio.paramsOfPath', {
   impl: (ctx,path) => st.paramsOfPath(path)
 })
 
+jb.component('studio.macroName', {
+  type: 'data',
+  params: [
+    {id: 'name', as: 'string', defaultValue: '%%'}
+  ],
+  impl: (ctx,name) => jb.macroName(name)
+})
+
 jb.component('studio.cmpsOfProject', {
   type: 'data',
   impl: () => st.projectCompsAsEntries().filter(e=>e[1].impl),

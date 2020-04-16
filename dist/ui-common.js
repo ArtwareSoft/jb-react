@@ -1187,7 +1187,7 @@ class VNode {
         
         this.attributes = attributes
         if (typeof cmpOrTag === 'string' && cmpOrTag.indexOf('#') != -1) {
-            this.addClass(cmpOrTag.split('#').pop())
+            this.addClass(cmpOrTag.split('#').pop().trim())
             cmpOrTag = cmpOrTag.split('#')[0]
         }
         Object.assign(this,{...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,children})
@@ -1207,8 +1207,9 @@ class VNode {
         }
         this.attributes = this.attributes || {};
         if (this.attributes.class === undefined) this.attributes.class = ''
-        if (clz && this.attributes.class.split(' ').indexOf(clz) == -1)
+        if (clz && this.attributes.class.split(' ').indexOf(clz) == -1) {
             this.attributes.class = [this.attributes.class,clz].filter(x=>x).join(' ');
+        }
         return this;
     }
     hasClass(clz) {
@@ -3606,7 +3607,8 @@ jb.component('field.databind', {
         'jbModel',
         (ctx,{cmp}) => value =>
           value == null ? ctx.exp('%$$model/databind%','number') : writeFieldData(ctx,cmp,value,true)
-      )
+      ),
+    interactive((ctx,{$dialog})=> $dialog && ($dialog.hasFields = true))
   )
 })
 
@@ -3631,10 +3633,15 @@ jb.ui.checkValidationError = (cmp,val,ctx) => {
     const err = (cmp.validations || [])
       .filter(validator=>!validator.validCondition(ctx))
       .map(validator=>validator.errorMessage(ctx))[0];
-    if (ctx.exp('formContainer'))
+    if (ctx.exp('%$formContainer%'))
       ctx.run(writeValue('%$formContainer/err%',err));
     return err;
   }
+}
+
+jb.ui.checkFormValidation = function(elem) {
+  jb.ui.find(elem,'[jb-ctx]').map(el=>el._component).filter(cmp => cmp && cmp.validations).forEach(cmp => 
+    jb.ui.checkValidationError(cmp,jb.val(cmp.ctx.vars.$model.databind(cmp.ctx)), cmp.ctx))
 }
 
 jb.ui.fieldTitle = function(cmp,fieldOrCtrl,h) {
@@ -4365,8 +4372,11 @@ jb.ui.dialogs = {
 
 		dialog.close = function(args) {
 			jb.log('closeDialog',[dialog])
-			if (ctx.vars.formContainer.err && args && args.OK) // not closing dialog with errors
-				return;
+			if (this.hasFields && jb.ui.checkFormValidation) {
+				jb.ui.checkFormValidation(dialog.el)
+				if (ctx.vars.formContainer.err && args && args.OK) // not closing dialog with errors
+					return;
+			}
 			return Promise.resolve().then(_=>{
 				if (dialog.closing) return;
 				dialog.closing = true;
@@ -6439,22 +6449,26 @@ jb.component('editableText.mdcInput', {
   ],
   impl: customStyle({
     template: (cmp,{databind,fieldId,title,noLabel,noRipple,error},h) => h('div',{}, [
-      h('div',{class: ['mdc-text-field', 
+      h('div#mdc-text-field',{class: [ 
           (cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'pre')[0] && 'mdc-text-field--with-leading-icon',
           (cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'post')[0] && 'mdc-text-field--with-trailing-icon'
         ].filter(x=>x).join(' ') },[
           ...(cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'pre').map(h).map(vdom=>vdom.addClass('mdc-text-field__icon mdc-text-field__icon--leading')),
-          h('input', { type: 'text', class: 'mdc-text-field__input', id: 'input_' + fieldId,
+          h('input#mdc-text-field__input', { type: 'text', id: 'input_' + fieldId,
               value: databind, onchange: true, onkeyup: true, onblur: true,
           }),
           ...(cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-text-field__icon mdc-text-field__icon--trailing')),
-          ...[!noLabel && h('label',{class: 'mdc-floating-label', for: 'input_' + fieldId},title() )].filter(x=>x),
-          ...[!noRipple && h('div',{class: 'mdc-line-ripple' })].filter(x=>x)
+          ...[!noLabel && h('label#mdc-floating-label', { class: databind ? 'mdc-floating-label--float-above' : '', for: 'input_' + fieldId},title() )].filter(x=>x),
+          ...[!noRipple && h('div#mdc-line-ripple')].filter(x=>x)
         ]),
-        h('div',{class: 'mdc-text-field-helper-line' }, error || '')
+        h('div#mdc-text-field-helper-line', {}, error || '')
       ]),
-    css: `{ {?width: %$width%px?} } ~ .mdc-text-field-helper-line { color: red }`,
-    features: [field.databindText(), mdcStyle.initDynamic()]
+    css: `~ .mdc-text-field-helper-line { color: red }`,
+    features: [
+      field.databindText(), 
+      mdcStyle.initDynamic(),
+      css( ({},{},{width}) => `>.mdc-text-field { ${jb.ui.propWithUnits('width', width)} }`),
+    ]
   })
 })
 
@@ -6550,8 +6564,7 @@ jb.component('layout.horizontal', {
   params: [
     {id: 'spacing', as: 'string', defaultValue: 3}
   ],
-  impl: css(
-    ({},{},{spacing}) =>  `{display: flex}
+  impl: css(({},{},{spacing}) =>  `{display: flex}
         >* { ${jb.ui.propWithUnits('margin-right', spacing)} }
         >*:last-child { margin-right:0 }`
   )
@@ -6965,19 +6978,18 @@ jb.component('picklist.mdcSelect', {
     {id: 'noRipple', as: 'boolean'},
   ],
   impl: customStyle({
-    template: (cmp,{databind,options,title,noLabel,noRipple},h) => h('div#mdc-select',{}, [
+    template: (cmp,{databind,options,title,noLabel,noRipple,hasEmptyOption},h) => h('div#mdc-select',{}, [
       h('div#mdc-select__anchor',{onclick: true},[
           ...(cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'pre').map(h).map(vdom=>vdom.addClass('mdc-text-field__icon mdc-text-field__icon--leading')),
           h('i#mdc-select__dropdown-icon', {}),
-          h('div#mdc-select__selected-text',{},databind),
-          ...[!noLabel && h('label',{class: 'mdc-floating-label'},title() )].filter(x=>x),
-          ...[!noRipple && h('div',{class: 'mdc-line-ripple' })].filter(x=>x)
-        ]),
+          h('div#mdc-select__selected-text',{'aria-required': !hasEmptyOption},databind),
+          ...[!noLabel && h('label#mdc-floating-label',{ class: databind ? 'mdc-floating-label--float-above' : ''},title() )].filter(x=>x),
+          ...[!noRipple && h('div#mdc-line-ripple')].filter(x=>x)
+      ]),
       h('div#mdc-select__menu mdc-menu mdc-menu-surface demo-width-class',{},[
-        h('ul#mdc-list',{},[
-          h('li#mdc-list-item mdc-list-item--selected',{'data-value': '', 'aria-selected': "true"}),
-          ...options.map(option=>h('li#mdc-list-item',{'data-value': option.code}, h('span#mdc-list-item__text', {}, option.text)))
-        ])
+        h('ul#mdc-list',{},options.map(option=>h('li#mdc-list-item',{'data-value': option.code, 
+          class: option.code == databind ? 'mdc-list-item--selected': ''}, 
+          h('span#mdc-list-item__text', {}, option.text))))
       ])
     ]),
     features: [
@@ -6986,7 +6998,7 @@ jb.component('picklist.mdcSelect', {
       mdcStyle.initDynamic(),
       css( ({},{},{width}) => `>* { ${jb.ui.propWithUnits('width', width)} }`),
       interactive((ctx,{cmp}) =>
-          cmp.mdc_comps.forEach(mdcCmp => mdcCmp.listen('MDCSelect:change', () => cmp.ctx.setData(mdcCmp.value)))
+          cmp.mdc_comps.forEach(mdcCmp => mdcCmp.listen('MDCSelect:change', () => cmp.jbModel(mdcCmp.value)))
       ),
     ]
   })

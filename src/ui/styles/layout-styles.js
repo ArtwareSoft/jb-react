@@ -15,8 +15,7 @@ jb.component('layout.horizontal', {
   params: [
     {id: 'spacing', as: 'string', defaultValue: 3}
   ],
-  impl: css(
-    ({},{},{spacing}) =>  `{display: flex}
+  impl: css(({},{},{spacing}) =>  `{display: flex}
         >* { ${jb.ui.propWithUnits('margin-right', spacing)} }
         >*:last-child { margin-right:0 }`
   )

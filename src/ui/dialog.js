@@ -411,8 +411,11 @@ jb.ui.dialogs = {
 
 		dialog.close = function(args) {
 			jb.log('closeDialog',[dialog])
-			if (ctx.vars.formContainer.err && args && args.OK) // not closing dialog with errors
-				return;
+			if (this.hasFields && jb.ui.checkFormValidation) {
+				jb.ui.checkFormValidation(dialog.el)
+				if (ctx.vars.formContainer.err && args && args.OK) // not closing dialog with errors
+					return;
+			}
 			return Promise.resolve().then(_=>{
 				if (dialog.closing) return;
 				dialog.closing = true;

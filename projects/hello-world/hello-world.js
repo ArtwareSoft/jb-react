@@ -26,15 +26,10 @@ jb.component('helloWorld.main', {
   type: 'control',
   impl: group({
     controls: [
-      text({
-        text: 'my text',
-        title: 'my title',
-        features: [css.padding({top: '16', left: '7'}), css.margin('13')]
-      })
+      text('asdasdas')
     ]
   })
 })
-
 
 jb.component('dataResource.studio', {
   watchableData: {
@@ -42,3 +37,4 @@ jb.component('dataResource.studio', {
     libsAsArray: ['common', 'ui-common', 'material', 'dragula', 'md-icons']
   }
 })
+

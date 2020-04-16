@@ -175,7 +175,7 @@ jb.component('studio.eventTracker', {
         runActions(
           action.if(
               not('%$studio/spyLogs%'),
-              writeValue('%$studio/spyLogs%', list('doOp', 'refreshElem'))
+              writeValue('%$studio/spyLogs%', list('doOp', 'refreshElem','notifyCmpObservable'))
             ),
           studio.refreshSpy(true)
         )

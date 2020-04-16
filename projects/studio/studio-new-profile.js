@@ -320,7 +320,6 @@ jb.component('studio.openNewPage', {
       writeValue('%$studio/page%', '%$compName%'),
       studio.openControlTree(),
       tree.regainFocus(),
-      refreshControlById('pages')
     ),
     modal: true,
     features: [dialogFeature.autoFocusOnFirstInput()]
@@ -455,7 +454,9 @@ jb.component('studio.newComp', {
     _jb.component(compName, compContent)
     const filePattern = '/' + ctx.exp('%$studio/project%')
     const projectFile = file || jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=> x && x.indexOf(filePattern) != -1)[0]
-    Object.assign(_jb.comps[compName], { [_jb.location]: [projectFile,''] })
+    const compWithLocation = { ...compContent, ...{ [_jb.location]: [projectFile,''] }}
+    // fake change for refresh page and save
+    jb.studio.writeValue(jb.studio.refOfPath(compName),compWithLocation,ctx)
   }
 })
 
