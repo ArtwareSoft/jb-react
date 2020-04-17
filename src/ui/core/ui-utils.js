@@ -249,11 +249,11 @@ jb.component('customStyle', {
     {id: 'css', as: 'string'},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: (context,css,features) => ({
-          template: context.profile.template,
+  impl: (ctx,css,features) => ({
+          template: ctx.profile.template,
           css: css,
           featuresOptions: features(),
-          styleCtx: context._parent
+          styleParams: ctx.componentContext.params
     })
 })
 

@@ -246,6 +246,7 @@ function render(vdom,parentElem) {
 }
 
 function createElement(parent,tag) {
+    tag = tag || 'div'
     return (['svg','circle','ellipse','image','line','mesh','path','polygon','polyline','rect','text'].indexOf(tag) != -1) ?
         parent.createElementNS("http://www.w3.org/2000/svg", tag) : parent.createElement(tag)
 }

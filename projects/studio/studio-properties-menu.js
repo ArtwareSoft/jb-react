@@ -277,17 +277,20 @@ jb.component('studio.jbEditorMenu', {
             shortcut: 'Ctrl+Y'
           }),
           menu.action({
+            title: 'Make Local',
+            action: studio.openMakeLocal('%$path%'),
+            showCondition: studio.canMakeLocal('%$path%')
+          }),          
+          menu.action({
             title: 'Extract Component',
             action: studio.openExtractComponent('%$path%'),
-            shortcut: '',
             showCondition: studio.canExtractParam('%$path%')
           }),
           menu.action({
             title: 'Extract Param',
             action: studio.openExtractParam('%$path%'),
-            shortcut: '',
             showCondition: studio.canExtractParam('%$path%')
-          })
+          }),
         ],
         optionsFilter: '%%'
       })

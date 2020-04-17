@@ -103,16 +103,7 @@ jb.component('list', {
   params: [
     {id: 'items', type: 'data[]', as: 'array', composite: true}
   ],
-  impl: function(context,items) {
-		let out = [];
-		items.forEach(item => {
-			if (Array.isArray(item))
-				out = out.concat(item);
-			else
-				out.push(item);
-		});
-		return out;
-	}
+  impl: (ctx,items) => items.flatMap(item=>Array.isArray(item) ? item : [item])
 })
 
 jb.component('firstSucceeding', {
@@ -120,17 +111,14 @@ jb.component('firstSucceeding', {
   params: [
     {id: 'items', type: 'data[]', as: 'array', composite: true}
   ],
-  impl: function(ctx,items,acceptEmptyString) {
+  impl: (ctx,items) => {
     for(let i=0;i<items.length;i++) {
       const val = jb.val(items[i])
       const isNumber = typeof val === 'number'
-      if ((acceptEmptyString || val !== '') && val != null
-          && (!isNumber || (!isNaN(val)) && val !== Infinity && val !== -Infinity))
+      if (val !== '' && val != null && (!isNumber || (!isNaN(val)) && val !== Infinity && val !== -Infinity))
         return items[i]
     }
-		// return last one even if zero or empty string
-		const last = items.slice(-1)[0];
-		return (last != null) && jb.val(last);
+		return items.slice(-1)[0];
 	}
 })
 

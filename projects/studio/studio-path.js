@@ -255,11 +255,6 @@ Object.assign(st, {
 			st.writeValueOfPath(path,[val],srcCtx);
 	},
 
-	makeLocal(path,srcCtx) {
-		const comp = st.compOfPath(path);
-		if (!comp || typeof comp.impl != 'object') return;
-		st.writeValueOfPath(path,st.evalProfile(jb.prettyPrint(comp.impl,{noMacros: true})),srcCtx);
-	},
 	getOrCreateControlArrayRef(path,srcCtx) {
 		const val = st.valOfPath(path);
 		const prop = st.controlParams(path)[0];

@@ -378,14 +378,6 @@ jb.component('studio.toggleDisabled', {
   impl: (ctx,path) => st.toggleDisabled(path,ctx)
 })
 
-jb.component('studio.makeLocal', {
-  type: 'action',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: (ctx,path) => st.makeLocal(path,ctx)
-})
-
 jb.component('studio.jbEditorNodes', {
   type: 'tree.node-model',
   params: [

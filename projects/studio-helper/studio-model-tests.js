@@ -1,24 +1,19 @@
-jb.component('studioDataTest.listForTests', {
-  impl: list(
 
-  )
-})
-
-jb.component('studioDataTest.categoriesOfType', {
+jb.component('studioTest.categoriesOfType', {
   impl: dataTest({
     calculate: pipeline(studio.categoriesOfType('control'), '%code%', join({})),
     expectedResult: contains(['control'])
   })
 })
 
-jb.component('studioDataTest.isOfTypeArray', {
+jb.component('studioTest.isOfTypeArray', {
   impl: dataTest({
     calculate: studio.isOfType('studio-data-test.list-for-tests~impl~items~0', 'data'),
     expectedResult: '%%'
   })
 })
 
-jb.component('studioDataTest.paramTypeArray', {
+jb.component('studioTest.paramTypeArray', {
   impl: dataTest({
     calculate: studio.paramType('studio-data-test.list-for-tests~items~0'),
     expectedResult: '%% == \"data\"'
@@ -51,7 +46,7 @@ jb.component('test.moveInTree', {
   })
 })
 
-jb.component('studioDataTest.moveFixDestinationNullGroup', {
+jb.component('studioTest.moveFixDestinationNullGroup', {
   impl: dataTest({
     calculate: pipeline(
       list(
@@ -67,7 +62,7 @@ jb.component('studioDataTest.moveFixDestinationNullGroup', {
   })
 })
 
-jb.component('studioDataTest.moveFixDestinationEmptyGroup', {
+jb.component('studioTest.moveFixDestinationEmptyGroup', {
   impl: dataTest({
     calculate: pipeline(
       list(
@@ -83,7 +78,7 @@ jb.component('studioDataTest.moveFixDestinationEmptyGroup', {
   })
 })
 
-jb.component('studioDataTest.jbEditorMove', {
+jb.component('studioTest.jbEditorMove', {
   impl: dataTest({
     calculate: pipeline(studio.val('test.moveInTree~impl~controls'), '%text%', join({})),
     runBefore: ctx =>
@@ -116,7 +111,7 @@ jb.component('test.setSugarCompOverride2', {
   })
 })
 
-jb.component('studioDataTest.setSugarCompSimple', {
+jb.component('studioTest.setSugarCompSimple', {
   impl: dataTest({
     calculate: studio.val('test.setSugarCompSimple~impl~text~$pipeline'),
     runBefore: studio.setComp('test.setSugarCompSimple~impl~text', 'pipeline'),
@@ -124,7 +119,7 @@ jb.component('studioDataTest.setSugarCompSimple', {
   })
 })
 
-jb.component('studioDataTest.setSugarCompWrap', {
+jb.component('studioTest.setSugarCompWrap', {
   impl: dataTest({
     calculate: studio.val('test.setSugarCompWrap~impl~text~$pipeline'),
     runBefore: studio.setComp('test.setSugarCompWrap~impl~text', 'pipeline'),
@@ -133,7 +128,7 @@ jb.component('studioDataTest.setSugarCompWrap', {
   })
 })
 
-jb.component('studioDataTest.setSugarCompOverride1', {
+jb.component('studioTest.setSugarCompOverride1', {
   impl: dataTest({
     calculate: studio.val('test.setSugarCompOverride1~impl~text~$pipeline'),
     runBefore: studio.setComp('test.setSugarCompOverride1~impl~text', 'pipeline'),
@@ -142,7 +137,7 @@ jb.component('studioDataTest.setSugarCompOverride1', {
   })
 })
 
-jb.component('studioDataTest.setSugarCompOverride2', {
+jb.component('studioTest.setSugarCompOverride2', {
   impl: dataTest({
     calculate: studio.val('test.setSugarCompOverride2~impl~text~$pipeline'),
     runBefore: studio.setComp('test.setSugarCompOverride2~impl~text', 'pipeline'),
@@ -204,31 +199,69 @@ jb.component('studio.completionPtOfTypeInArray', {
 })
 
 
-jb.component('studioDataTest.pathOfTextInArray', {
+jb.component('studioTest.pathOfTextInArray', {
   impl: dataTest({
     calculate: ctx => jb.studio.completion.pathOfText("{$: 'group', \n\tcontrols: [ {$: 'label', text: 'aa' }, {$: 'label', text: '"),
     expectedResult: ctx => ctx.data.join('~') == "controls~1~text"
   })
 })
 
-jb.component('studioDataTest.pathOfTextProp', {
+jb.component('studioTest.pathOfTextProp', {
   impl: dataTest({
     calculate: ctx => jb.studio.completion.pathOfText("{$: 'group', text :{$: 'split' , part: '"),
     expectedResult: ctx => ctx.data.join('~') == "text~part"
   })
 })
 
-jb.component('studioDataTest.pathOfTextPropTop', {
+jb.component('studioTest.pathOfTextPropTop', {
   impl: dataTest({
     calculate: ctx => jb.studio.completion.pathOfText("{ $:'group', style :{$: 'layo"),
     expectedResult: ctx => ctx.data.join('~') == "style"
   })
 })
 
-
-jb.component('studioDataTest.pathOfTextPropAfterArray', {
+jb.component('studioTest.pathOfTextPropAfterArray', {
   impl: dataTest({
     calculate: ctx => jb.studio.completion.pathOfText("{ $:'group', controls :[{$: '' }, {$:'label'}], style :{$: 'layo"),
     expectedResult: ctx => ctx.data.join('~') == "style"
+  })
+})
+
+jb.component('studioTest.pathOfTextPropAfterArray', {
+  impl: dataTest({
+    calculate: ctx => jb.studio.completion.pathOfText("{ $:'group', controls :[{$: '' }, {$:'label'}], style :{$: 'layo"),
+    expectedResult: ctx => ctx.data.join('~') == "style"
+  })
+})
+
+jb.component('test.makeLocalCases', {
+  type: 'data',
+  params:[
+    { id: 'oneSimpleUsage' },
+    { id: 'simpleAndComplex' },
+    { id: 'multiSimpleUsages' },
+    { id: 'usedInFunc' },
+    { id: 'toCall' },
+  ],
+  impl: list(
+    '%$oneSimpleUsage%',
+    '%$simpleAndComplex%',
+    '%$simpleAndComplex/length%',
+    '%$multiSimpleUsages%',
+    '%$multiSimpleUsages%',
+    call('toCall'),
+    (ctx,{},{usedInFunc}) => usedInFunc
+  )
+})
+
+jb.component('studioTest.makeLocal', {
+  impl: dataTest({
+    runBefore: test.makeLocalCases({oneSimpleUsage:'1', simpleAndComplex: '200', multiSimpleUsages: '10', usedInFunc: '4', toCall: '%$aa%'}),
+    calculate: pipeline(
+        Var('aa',75),
+        studio.calcMakeLocal('studioTest.makeLocal~impl~runBefore'),
+        ctx => ctx.run(ctx.data), 
+        join(',')),
+    expectedResult: equals('%%','1,200,3,10,10,75,4')
   })
 })

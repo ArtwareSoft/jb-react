@@ -25,8 +25,17 @@ jb.component('dataResource.room', { /* dataResource.room */
 jb.component('helloWorld.main', {
   type: 'control',
   impl: group({
+    title: '',
     controls: [
-      text('asdasdas')
+      text({
+        text: 'my text',
+        title: 'my title',
+        style: customStyle({
+          vars: [Var('htmlTag', 'span'), Var('cssClass')],
+          template: (cmp,{text,htmlTag,cssClass},h) => h(htmlTag,{class: cssClass},text),
+          features: text.bindText()
+        })
+      })
     ]
   })
 })
