@@ -1509,6 +1509,7 @@ function render(vdom,parentElem) {
 }
 
 function createElement(parent,tag) {
+    tag = tag || 'div'
     return (['svg','circle','ellipse','image','line','mesh','path','polygon','polyline','rect','text'].indexOf(tag) != -1) ?
         parent.createElementNS("http://www.w3.org/2000/svg", tag) : parent.createElement(tag)
 }
@@ -1728,7 +1729,7 @@ ui.propCounter = 0
 const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,this.ctx) }}
 const lifeCycle = new Set('init,componentDidMount,componentWillUpdate,componentDidUpdate,destroy,extendCtx,templateModifier,extendItem'.split(','))
 const arrayProps = new Set('enrichField,icon,watchAndCalcModelProp,cssLines,defHandler,interactiveProp,calcProp'.split(','))
-const singular = new Set('template,calcRenderProps,toolbar,styleCtx,calcHash,ctxForPick'.split(','))
+const singular = new Set('template,calcRenderProps,toolbar,styleParams,calcHash,ctxForPick'.split(','))
 
 Object.assign(jb.ui,{
     cssHashCounter: 0,
@@ -1822,7 +1823,7 @@ class JbComponent {
                 `renderProp:${prop.id}`))
                 Object.assign(this.renderProps, { ...(prop.id == '$props' ? value : { [prop.id]: value })})
             })
-        Object.assign(this.renderProps,(this.styleCtx || {}).params, this.state);
+        Object.assign(this.renderProps,this.styleParams, this.state);
         jb.log('renderProps',[this.renderProps, this])
         return this.renderProps
     }
@@ -2245,11 +2246,11 @@ jb.component('customStyle', {
     {id: 'css', as: 'string'},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: (context,css,features) => ({
-          template: context.profile.template,
+  impl: (ctx,css,features) => ({
+          template: ctx.profile.template,
           css: css,
           featuresOptions: features(),
-          styleCtx: context._parent
+          styleParams: ctx.componentContext.params
     })
 })
 
@@ -2931,7 +2932,7 @@ jb.component('css.color', {
   type: 'feature',
   params: [
     {id: 'color', as: 'string'},
-    {id: 'background', as: 'string'},
+    {id: 'background', as: 'string', editAs: 'color'},
     {id: 'selector', as: 'string'}
   ],
   impl: (ctx,color) => {
@@ -3076,93 +3077,6 @@ jb.component('text.allowAsynchValue', {
       )
   )
 })
-
-jb.component('text.htmlTag', {
-  type: 'text.style',
-  params: [
-    {id: 'htmlTag', as: 'string', defaultValue: 'p', options: 'span,p,h1,h2,h3,h4,h5,div,li,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label'},
-    {id: 'cssClass', as: 'string'}
-  ],
-  impl: customStyle({
-    template: (cmp,{text,htmlTag,cssClass},h) => h(htmlTag,{class: cssClass},text),
-    features: text.bindText()
-  })
-})
-
-jb.component('text.noWrappingTag', {
-  type: 'text.style',
-  category: 'text:0',
-  impl: customStyle({
-    template: (cmp,{text},h) => text,
-    features: text.bindText()
-  })
-})
-
-jb.component('text.span', {
-  type: 'text.style',
-  impl: customStyle({
-    template: (cmp,{text},h) => h('span',{},text),
-    features: text.bindText()
-  })
-})
-
-jb.component('text.chip', {
-  type: 'text.style',
-  impl: customStyle({
-    template: (cmp,{text},h) => h('div#jb-chip',{},h('span',{},text)),
-    features: text.bindText()
-  })
-})
-
-;[1,2,3,4,5,6].map(level=>jb.component(`header.h${level}`, {
-  type: 'text.style',
-  impl: customStyle({
-    template: (cmp,{text},h) => h(`h${level}`,{},text),
-    features: text.bindText()
-  })
-}))
-
-
-;[1,2,3,4,5,6].map(level=>jb.component(`header.mdcHeadline${level}`, {
-  type: 'text.style',
-  impl: customStyle({
-    template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--headline${level}`},text),
-    features: text.bindText()
-  })
-}))
-
-;[1,2].map(level=>jb.component(`header.mdcSubtitle${level}`, {
-  type: 'text.style',
-  impl: customStyle({
-    template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--subtitle${level}`},text),
-    features: text.bindText()
-  })
-}))
-
-jb.component('header.mdcHeaderWithIcon', {
-  type: 'text.style',
-  params: [
-    {id: 'level', options: '1,2,3,4,5,6', as: 'string', defaultValue: '1'}
-  ],
-  impl: customStyle({
-    template: (cmp,{text,level},h) =>
-        h(`h${level}`,{ class: 'mdc-tab__content'}, [
-          ...jb.ui.chooseIconWithRaised(cmp.icon).map(h),
-          h('span',{ class: 'mdc-tab__text-label'},text),
-          ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-tab__icon'))
-        ]),
-    css: '{justify-content: initial}',
-    features: text.bindText()
-  })
-})
-
-;[1,2].map(level=>jb.component(`text.mdcBody${level}`, {
-  type: 'text.style',
-  impl: customStyle({
-    template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--body${level}`},text),
-    features: text.bindText()
-  })
-}))
 
 jb.component('text.highlight', {
   type: 'data',
@@ -6260,6 +6174,94 @@ jb.component('label.mdcRippleEffect', {
 
 ;
 
+jb.component('text.htmlTag', {
+    type: 'text.style',
+    params: [
+      {id: 'htmlTag', as: 'string', defaultValue: 'p', options: 'span,p,h1,h2,h3,h4,h5,div,li,article,aside,details,figcaption,figure,footer,header,main,mark,nav,section,summary,label'},
+      {id: 'cssClass', as: 'string'}
+    ],
+    impl: customStyle({
+      template: (cmp,{text,htmlTag,cssClass},h) => h(`${htmlTag}#${cssClass}`,{},text),
+      features: text.bindText()
+    })
+})
+  
+jb.component('text.noWrappingTag', {
+    type: 'text.style',
+    category: 'text:0',
+    impl: customStyle({
+      template: (cmp,{text},h) => text,
+      features: text.bindText()
+    })
+})
+  
+jb.component('text.span', {
+    type: 'text.style',
+    impl: customStyle({
+      template: (cmp,{text},h) => h('span',{},text),
+      features: text.bindText()
+    })
+})
+  
+jb.component('text.chip', {
+    type: 'text.style',
+    impl: customStyle({
+      template: (cmp,{text},h) => h('div#jb-chip',{},h('span',{},text)),
+      features: text.bindText()
+    })
+})
+  
+;[1,2,3,4,5,6].map(level=>jb.component(`header.h${level}`, {
+    type: 'text.style',
+    impl: customStyle({
+      template: (cmp,{text},h) => h(`h${level}`,{},text),
+      features: text.bindText()
+    })
+}))
+  
+  
+;[1,2,3,4,5,6].map(level=>jb.component(`header.mdcHeadline${level}`, {
+    type: 'text.style',
+    impl: customStyle({
+      template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--headline${level}`},text),
+      features: text.bindText()
+    })
+}))
+  
+;[1,2].map(level=>jb.component(`header.mdcSubtitle${level}`, {
+    type: 'text.style',
+    impl: customStyle({
+      template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--subtitle${level}`},text),
+      features: text.bindText()
+    })
+}))
+
+jb.component('header.mdcHeaderWithIcon', {
+    type: 'text.style',
+    params: [
+      {id: 'level', options: '1,2,3,4,5,6', as: 'string', defaultValue: '1'}
+    ],
+    impl: customStyle({
+      template: (cmp,{text,level},h) =>
+          h(`h${level}`,{ class: 'mdc-tab__content'}, [
+            ...jb.ui.chooseIconWithRaised(cmp.icon).map(h),
+            h('span',{ class: 'mdc-tab__text-label'},text),
+            ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-tab__icon'))
+          ]),
+      css: '{justify-content: initial}',
+      features: text.bindText()
+    })
+})
+  
+  ;[1,2].map(level=>jb.component(`text.mdcBody${level}`, {
+    type: 'text.style',
+    impl: customStyle({
+      template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--body${level}`},text),
+      features: text.bindText()
+    })
+}))
+  ;
+
 jb.ui.chooseIconWithRaised = (icons,raised) => {
   if (!icons) return []
   const raisedIcon = icons.filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'raised')[0]
@@ -6486,65 +6488,6 @@ jb.component('editableText.mdcSearch', {
   impl: styleWithFeatures(editableText.mdcInput({width:'%$width%', noLabel: true}), feature.icon({icon: 'search', position: 'post'}))
 })
 
-jb.component('editableText.expandable', {
-  description: 'label that changes to editable class on double click',
-  type: 'editable-text.style',
-  params: [
-    {id: 'buttonFeatures', type: 'feature[]', flattenArray: true, dynamic: true},
-    {id: 'editableFeatures', type: 'feature[]', flattenArray: true, dynamic: true},
-    {id: 'buttonStyle', type: 'button.style', dynamic: true, defaultValue: button.href()},
-    {id: 'editableStyle', type: 'editable-text.style', dynamic: true, defaultValue: editableText.input()},
-    {id: 'onToggle', type: 'action', dynamic: true}
-  ],
-  impl: styleByControl(
-    group({
-      controls: [
-        editableText({
-          databind: '%$editableTextModel/databind%',
-          updateOnBlur: true,
-          style: call('editableStyle'),
-          features: [
-            watchRef('%$editable%'),
-            hidden('%$editable%'),
-            (ctx,{expandableContext}) => ({
-              afterViewInit: cmp => {
-                const elem = cmp.base.matches('input,textarea') ? cmp.base : cmp.base.querySelector('input,textarea')
-                if (elem) {
-                  elem.onblur = () => cmp.ctx.run(runActions(
-                      toggleBooleanValue('%$editable%'),
-                      (ctx,vars,{onToggle}) => onToggle(ctx)
-                   ))
-                }
-                expandableContext.regainFocus = () =>
-                  jb.delay(1).then(() => jb.ui.focus(elem, 'editable-text.expandable', ctx))
-              }
-            }),
-            (ctx,vars,{editableFeatures}) => editableFeatures(ctx)
-          ]
-        }),
-        button({
-          title: '%$editableTextModel/databind%',
-          action: runActions(
-            toggleBooleanValue('%$editable%'),
-            (ctx,{expandableContext}) => expandableContext.regainFocus(),
-            (ctx,vars,{onToggle}) => onToggle(ctx)
-          ),
-          style: call('buttonStyle'),
-          features: [
-            watchRef('%$editable%'),
-            hidden(not('%$editable%')),
-            (ctx,vars,{buttonFeatures}) => buttonFeatures(ctx)
-          ]
-        })
-      ],
-      features: [
-        variable({name: 'editable', watchable: true}),
-        variable({name: 'expandableContext', value: obj()})
-      ]
-    }),
-    'editableTextModel'
-  )
-})
 ;
 
 jb.component('layout.vertical', {

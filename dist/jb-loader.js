@@ -48,6 +48,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/window.js',
 
         'src/ui/styles/mdc-styles.js',
+        'src/ui/styles/text-styles.js',
         'src/ui/styles/button-styles.js',
         'src/ui/styles/editable-text-styles.js',
         'src/ui/styles/layout-styles.js',
