@@ -160,7 +160,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'references','properties-menu','save','open-project','tree',
         'data-browse', 'new-project','event-tracker', 'toolbar','search', 'main', 'component-header', 'hosts', 'probe',
         'watch-ref-viewer', 'content-editable', 'position-thumbs', 'html-to-ctrl', 'patterns', 'pick-icon', 
-        'inplace-edit', 'grid-editor', 'sizes-editor', 'refactor'
+        'inplace-edit', 'grid-editor', 'sizes-editor', 'refactor', 'vscode'
       ],
       'studio-tests': [
         'projects/studio/studio-testers.js',
@@ -238,9 +238,11 @@ function pathOfProjectFile(project,fn,baseDir) {
  }
  
  function loadFile(url) {
-   if (url.match(/\.js$/))
-     document.write('<script src="' + url + '" charset="UTF-8"></script>')
+  if (window.jbBaseProjUrl)
+    url = window.jbBaseProjUrl + url
+  if (url.match(/\.js$/))
+     document.write(`<script src="${url}" charset="UTF-8"></script>`)
    else
-     document.write('<link rel="stylesheet" type="text/css" href="' + url + '" />');
+     document.write(`<link rel="stylesheet" type="text/css" href="${url}" />`);
  }
  

@@ -238,6 +238,7 @@ function pathOfProjectFile(project,fn,baseDir) {
  }
  
  function loadFile(url) {
+   console.log('url')
    if (url.match(/\.js$/))
      document.write('<script src="' + url + '" charset="UTF-8"></script>')
    else

@@ -241,7 +241,7 @@ jb.component('itemlist.selection', {
         function dataOfElem(el) {
           const itemElem = jb.ui.closest(el,'.jb-item')
           const ctxId = itemElem && itemElem.getAttribute('jb-ctx')
-          return ((ctxId && jb.ctxDictionary[ctxId]) || {}).data
+          return jb.val(((ctxId && jb.ctxDictionary[ctxId]) || {}).data)
         }
     },
     css: ['>.selected','>*>.selected','>*>*>.selected'].map(sel=>sel+ ' ' + jb.ui.fixCssLine(ctx.params.cssForSelected)).join('\n')

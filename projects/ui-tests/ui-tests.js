@@ -677,6 +677,62 @@ jb.component('uiTest.itemlistMDAutoSelectFirst', {
   })
 })
 
+jb.component('uiTest.itemlistMDOfRefs', {
+  impl: uiTest({
+    control: group({
+      controls: [
+        itemlist({
+          items: '%$watchablePeople%',
+          controls: text('%$item.name%'),
+          features: [
+            id('itemlist'),
+            itemlist.selection({
+              databind: '%$globals/selectedPerson%',
+              autoSelectFirst: true
+            }),
+            itemlist.keyboardSelection(true)
+          ]
+        }),
+        text({
+          text: '%$globals/selectedPerson/name% selected',
+          features: watchRef('%$globals/selectedPerson%')
+        })
+      ]
+    }),
+    action: uiAction.keyboardEvent({ selector: '#itemlist',type: 'keydown', keyCode: 40 }),
+    expectedResult: contains(['Marge Simpson', 'Marge Simpson - watchable selected'])
+  })
+})
+
+jb.component('uiTest.itemlistMDOfRefs.refChangeBug', {
+  impl: uiTest({
+    control: group({
+      controls: [
+        itemlist({
+          items: '%$watchablePeople%',
+          controls: text('%$item.name%'),
+          features: [
+            id('itemlist'),
+            itemlist.selection({
+              databind: '%$globals/selectedPerson%',
+              autoSelectFirst: true
+            }),
+            itemlist.keyboardSelection(true)
+          ]
+        }),
+        text({
+          text: '%$globals/selectedPerson/name% selected',
+          features: watchRef('%$globals/selectedPerson%')
+        })
+      ]
+    }),
+    action: runActions(uiAction.click('#itemlist>li:nth-Child(3)'),
+    uiAction.click('#itemlist>li:nth-Child(2)')
+    ),
+    expectedResult: contains(['Marge Simpson', 'Marge Simpson - watchable selected'])
+  })
+})
+
 jb.component('uiTest.itemlistContainerSearchCtrl', {
   type: 'control',
   impl: group({
@@ -713,9 +769,7 @@ jb.component('uiTest.itemlistContainerSearch', {
 jb.component('uiTest.itemlistContainerSearchEnterOnLi', {
   impl: uiTest({
     control: uiTest.itemlistContainerSearchCtrl(),
-    action: runActions(
-      uiAction.keyboardEvent({selector: '.jb-itemlist', type: 'keydown', keyCode: 13})
-    ),
+    action: uiAction.keyboardEvent({selector: '.jb-itemlist', type: 'keydown', keyCode: 13}),
     expectedResult: equals('%$person/selected%', 'Homer Simpson')
   })
 })

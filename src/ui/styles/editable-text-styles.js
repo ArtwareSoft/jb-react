@@ -63,6 +63,9 @@ jb.component('editableText.mdcNoLabel', {
 })
 
 jb.component('editableText.mdcSearch', {
+  params: [
+    {id: 'width', as: 'number'}
+  ],
   description: 'debounced and one way binding',
   type: 'editable-text.style',
   impl: styleWithFeatures(editableText.mdcInput({width:'%$width%', noLabel: true}), feature.icon({icon: 'search', position: 'post'}))

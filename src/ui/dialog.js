@@ -65,8 +65,8 @@ jb.component('dialogFeature.dragTitle', {
 					const destroyed = fromPromise(cmp.destroyed)
 					cmp.mousedownEm = pipe(fromEvent(titleElem, 'mousedown'),takeUntil(destroyed));
 
-					if (id && sessionStorage.getItem(id)) {
-						  const pos = JSON.parse(sessionStorage.getItem(id));
+					if (id && jb.sessionStorage(id)) {
+						  const pos = JSON.parse(jb.sessionStorage(id));
 						  dialog.el.style.top  = pos.top  + 'px';
 						  dialog.el.style.left = pos.left + 'px';
 					}
@@ -98,7 +98,7 @@ jb.component('dialogFeature.dragTitle', {
 							forEach(pos => {
 								dialog.el.style.top  = pos.top  + 'px';
 								dialog.el.style.left = pos.left + 'px';
-								if (id) sessionStorage.setItem(id, JSON.stringify(pos))
+								if (id) jb.sessionStorage(id, JSON.stringify(pos))
 							})
 					)
 				}

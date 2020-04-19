@@ -73,7 +73,14 @@ jb.component('studio.selectProfile', {
         controls: [
           itemlistContainer.search({
             title: 'search',
-            searchIn: itemlistContainer.fuseOptions({keys: list('id', 'desc', 'name')}),
+            searchIn: search.fuse({
+              keys: list(
+                obj(prop('name', 'id'), prop('weight', '0.6', 'number')),
+                obj(prop('name', 'desc'), prop('weight', '0.2', 'number')),
+                obj(prop('name', 'name'), prop('weight', '0.4', 'number'))
+              ),
+              threshold: '0.3'
+            }),
             databind: '%$itemlistCntrData/search_pattern%',
             style: editableText.mdcInput('200'),
             features: feature.onEsc(dialog.closeContainingPopup(false))

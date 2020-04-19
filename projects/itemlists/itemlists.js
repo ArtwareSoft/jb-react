@@ -63,7 +63,7 @@ jb.component('itemlists.largeTableWithSearch', {
   impl: group({
     title: 'large-table',
     controls: [
-      itemlistContainer.search({}),
+      itemlistContainer.search({searchIn: search.fuse({})}),
       table({
         items: pipeline(
           range(1, '1000'),
@@ -158,9 +158,9 @@ jb.component('itemlists.tableWithSearch', {
         controls: [
           itemlistContainer.search({
             title: 'Search',
-            searchIn: itemlistContainer.searchInAllProperties(),
+            searchIn: search.searchInAllProperties(),
             databind: '%$itemlistCntrData/search_pattern%',
-            style: editableText.mdcSearch()
+            style: editableText.mdcSearch('300')
           }),
           table({
             items: pipeline('%$people%', itemlistContainer.filter()),

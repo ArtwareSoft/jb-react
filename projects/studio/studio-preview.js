@@ -62,11 +62,6 @@ st.initPreview = function(preview_window,allowedTypes) {
 
       st.previewjb.http_get_cache = {}
       st.previewjb.ctxByPath = {}
-      //jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
-
-      // st.initEventTracker();
-      // if (preview_window.location.href.match(/\/studio-helper/))
-      //   st.previewjb.studio.initEventTracker();
 
       jb.exp('%$studio/settings/activateWatchRefViewer%','boolean') && st.activateWatchRefViewer();
       jb.exec(writeValue('%$studio/projectSettings%',() => JSON.parse(JSON.stringify(preview_window.jbProjectSettings)) ))
@@ -148,6 +143,7 @@ jb.component('studio.previewWidget', {
             document.title = `${project} with jBart`;
             return st.projectHosts[host].fetchProject(ctx.exp('%$queryParams/hostProjectId%'),project)
               .then(projectSettings => {
+                console.log(jb.exec('%$studio/project%'),projectSettings.project)
                 jb.exec(writeValue('%$studio/project%', projectSettings.project))
                 cmp.refresh({ projectLoaded: true, projectSettings },{srcCtx: ctx})
             })
@@ -177,16 +173,19 @@ jb.component('studio.previewWidgetImpl', {
 })
 
 st.injectProjectToPreview = function(previewWin,projectSettings) {
+const baseProjUrl = jb.frame.jbBaseProjUrl ? `jbBaseProjUrl = '${jbBaseProjUrl}'` : ''
+const vscodeZoomFix = jb.frame.jbInvscode? 'style="zoom: 0.8"' : ''
 const html = `<!DOCTYPE html>
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script type="text/javascript">
+    ${baseProjUrl}
     jbProjectSettings = ${JSON.stringify(projectSettings)}
   </script>
   <script type="text/javascript" src="${st.host.jbLoader}"></script>
 </head>
-<body>
+<body ${vscodeZoomFix}>
   <script>
     window.jb_initWidget && jb_initWidget()
   </script>

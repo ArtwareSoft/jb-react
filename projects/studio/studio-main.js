@@ -290,8 +290,8 @@ jb.component('studio.all', {
           Object.assign(ctx.exp('%$studio/settings%'), typeof settings == 'string' ? JSON.parse(settings) : {})))),
         loadingControl: text('')
       }),
-      group.data({data: '%$studio/project%', watch: true}),
-      feature.init(urlHistory.mapStudioUrlToResource('studio'))
+      group.data({data: '%$studio/project%', watch1: true}),
+      feature.init(runActions(urlHistory.mapStudioUrlToResource('studio'), studio.vscodeMapStateToResource('studio')))
     ]
   })
 })

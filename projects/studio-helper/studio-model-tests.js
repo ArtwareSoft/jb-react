@@ -227,13 +227,6 @@ jb.component('studioTest.pathOfTextPropAfterArray', {
   })
 })
 
-jb.component('studioTest.pathOfTextPropAfterArray', {
-  impl: dataTest({
-    calculate: ctx => jb.studio.completion.pathOfText("{ $:'group', controls :[{$: '' }, {$:'label'}], style :{$: 'layo"),
-    expectedResult: ctx => ctx.data.join('~') == "style"
-  })
-})
-
 jb.component('test.makeLocalCases', {
   type: 'data',
   params:[

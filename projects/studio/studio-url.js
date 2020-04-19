@@ -5,7 +5,7 @@ jb.component('urlHistory.mapStudioUrlToResource', {
     {id: 'onUrlChange', type: 'action', dynamic: true}
   ],
   impl: function(ctx,resource) {
-        if (jb.ui.location || typeof window == 'undefined') return;
+        if (jb.ui.location || typeof window == 'undefined' || jb.frame.jbInvscode) return;
         const base = location.pathname.indexOf('studio-bin') != -1 ? 'studio-bin' : 'studio'
 
         const urlFormat = location.pathname.match(/\.html$/) ? {
@@ -50,7 +50,7 @@ jb.component('urlHistory.mapStudioUrlToResource', {
         const browserUrlEm = create(obs=> jb.ui.location.listen(x=> obs(x)))
 
         const databindEm = pipe(jb.ui.resourceChange(),
-            filter(e=> e.path[0] == resource),
+            filter(e=> e.path[0] == resource && params.indexOf(e.path[1]) != -1),
             map(_=> jb.resource(resource)),
             filter(obj=> obj[params[0]]),
             map(obj=> urlFormat.objToUrl(obj)))

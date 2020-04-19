@@ -3,7 +3,7 @@ const st = jb.studio;
 
 const devHost = {
     settings: () => fetch(`/?op=settings`).then(res=>res.text()),
-    rootExists: () => fetch(`/?op=rootExists`).then(res=>res.text()).then(res=>res==='true'),
+    //used in save
     getFile: path => fetch(`/?op=getFile&path=${path}`).then(res=>res.text()),
     locationToPath: path => path.replace(/^[0-9]*\//,''),
     saveFile: (path, contents) => {
@@ -11,45 +11,48 @@ const devHost = {
         {method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' } , body: JSON.stringify({ Path: path, Contents: contents }) })
         .then(res=>res.json())
     },
-    htmlAsCloud: (html,project) => html.replace(/\/dist\//g,'//unpkg.com/jb-react/dist/').replace(/src="\.\.\//g,'src="').replace(`/${project}/`,''),
+    pathOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
+
+    // new project
     createProject: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
         Object.assign(request,{baseDir: `projects/${request.project}` })) }),
-    scriptForLoadLibraries: libs => `<script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,${libs.join(',')}"></script>`,
-    srcOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
+    // goto project
+    projectUrlInStudio: project => `/project/studio/${project}`,
+    // preview
+    jbLoader: '/src/loader/jb-loader.js',
+    // state
+    sessionStorage(id,val) {
+        if (val == undefined) 
+            return jb.frame.sessionStorage[id]
+        jb.frame.sessionStorage[id] = val
+    }
+}
+
+const vscodeHost = {
+    settings: () => Promise.resolve('{}'),
+    getFile: path => '',
+    locationToPath: path => '',
+    saveFile: (path, contents) => {},
+    createProject: request => {},
     pathOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
     projectUrlInStudio: project => `/project/studio/${project}`,
-    jbLoader: '/src/loader/jb-loader.js',
-    isDevHost: true
+    jbLoader: `${jb.frame.jbBaseProjUrl}/src/loader/jb-loader.js`,
 }
 
 const userLocalHost = Object.assign({},devHost,{
     createProject: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
         Object.assign(request,{baseDir: request.baseDir || request.project })) }),
-    scriptForLoadLibraries: libs => {
-        const libScripts = libs.map(lib=>`<script type="text/javascript" src="/dist/${lib}.js"></script>`)
-            + libs.filter(lib=>jb_modules[lib+'-css']).map(lib=>`<link rel="stylesheet" type="text/css" href="/dist/${lib}.css"/>`)
-        return '<link rel="stylesheet" type="text/css" href="/dist/css/styles.css"/>\n<script type="text/javascript" src="/dist/jb-react-all.js"></script>\n' + libScripts
-    },
     locationToPath: path => path.replace(/^[0-9]*\//,'').replace(/^projects\//,''),
-    srcOfJsFile: (project,fn,baseDir) => baseDir == './' ? `../${fn}` : `/${project}/${fn}`,
     pathOfJsFile: (project,fn,baseDir) => baseDir == './' ? fn : `/${project}/${fn}`,
     projectUrlInStudio: project => `/studio-bin/${project}`,
     jbLoader: '/dist/jb-loader.js',
-    isDevHost: false
 })
 
 const cloudHost = {
     settings: () => Promise.resolve(({})),
-    rootExists: () => Promise.resolve(false),
     getFile: path => jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files' }}),
-    htmlAsCloud: (html,project) => html.replace(/\/dist\//g,'//unpkg.com/jb-react/dist/').replace(/src="\.\.\//g,'src="').replace(`/${project}/`,''),
     locationToPath: path => path.replace(/^[0-9]*\//,''),
     createProject: request => jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files'}}),
-    scriptForLoadLibraries: libs => {
-        const libScripts = libs.map(lib=>`<script type="text/javascript" src="//unpkg.com/jb-react/dist/${lib}.js"></script>`)
-            + libs.filter(lib=>jb_modules[lib+'-css']).map(lib=>`<link rel="stylesheet" type="text/css" href="//unpkg.com/jb-react/dist/${lib}.css"/>`)
-        return '<link rel="stylesheet" type="text/css" href="//unpkg.com/jb-react/dist/css/styles.css"/>\n<script type="text/javascript" src="//unpkg.com/jb-react/dist/jb-react-all.js"></script>\n' + libScripts
-    },
     pathOfJsFile: (project,fn) => fn,
     projectUrlInStudio: project => ``,
     canNotSave: true,
@@ -59,8 +62,9 @@ const cloudHost = {
 //     fiddle.jshell.net/davidbyd/47m1e2tk/show/?studio =>  //unpkg.com/jb-react/bin/studio/studio-cloud.html?entry=//fiddle.jshell.net/davidbyd/47m1e2tk/show/
 
 st.chooseHostByUrl = entryUrl => {
-    if (!entryUrl) return devHost // maybe testHost...
-    st.host = entryUrl.match(/localhost:[0-9]*\/project\/studio/) ?
+    entryUrl = entryUrl || ''
+    st.host = jb.frame.jbInvscode ? vscodeHost
+        : entryUrl.match(/localhost:[0-9]*\/project\/studio/) ?
             devHost
         : entryUrl.match(/studio-cloud/) ?
             cloudHost
@@ -121,6 +125,10 @@ st.projectHosts = {
     },
     studio: {
         fetchProject(id,project) {
+            if (jb.frame.jbPreviewProjectSettings) {
+                jb.exec(writeValue('%$studio/projectSettings%',jb.frame.jbPreviewProjectSettings))
+                return Promise.resolve(jb.frame.jbPreviewProjectSettings)
+            }
             const baseUrl = `/project/${project}?cacheKiller=${Math.floor(Math.random()*100000)}`
             return fetch(baseUrl).then(r=>r.text()).then(html =>{
                 const settings = eval('({' + _extractText(html,'jbProjectSettings = {','}') + '})')
