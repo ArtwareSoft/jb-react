@@ -212,8 +212,9 @@ jb.component('uiAction.click', {
   impl: (ctx,selector,methodToActivate) => {
 		const elems = selector ? Array.from(ctx.vars.elemToTest.querySelectorAll(selector)) : [ctx.vars.elemToTest];
 		elems.forEach(e=> {
-			const ev = { type: 'click', currentTarget: e, target: e}
-			jb.ui.handleCmpEvent(methodToActivate,ev)
+			e.click()
+			// const ev = { type: 'click', currentTarget: e, target: e}
+			// jb.ui.handleCmpEvent(methodToActivate,ev)
 		})
 	}
 })

@@ -20,20 +20,15 @@ const devHost = {
     projectUrlInStudio: project => `/project/studio/${project}`,
     // preview
     jbLoader: '/src/loader/jb-loader.js',
-    // state
-    sessionStorage(id,val) {
-        if (val == undefined) 
-            return jb.frame.sessionStorage[id]
-        jb.frame.sessionStorage[id] = val
-    }
 }
 
 const vscodeHost = {
     settings: () => Promise.resolve('{}'),
-    getFile: path => '',
-    locationToPath: path => '',
-    saveFile: (path, contents) => {},
-    createProject: request => {},
+    getFile: path => jb.studio.vscodeService({$: 'getFile', path}),
+    locationToPath: path => decodeURIComponent(path.split('//file//').pop()).replace(/\\/g,'/'),
+    saveDelta: (path, edits) => jb.studio.vscodeService({$: 'saveDelta', path, edits}),
+    saveFile: (path, contents) => jb.studio.vscodeService({$: 'saveFile', path, contents}),
+    createProject: request => jb.studio.vscodeService({$: 'createProject', request}),
     pathOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
     projectUrlInStudio: project => `/project/studio/${project}`,
     jbLoader: `${jb.frame.jbBaseProjUrl}/src/loader/jb-loader.js`,

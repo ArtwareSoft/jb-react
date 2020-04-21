@@ -52,6 +52,7 @@ st.initPreview = function(preview_window,allowedTypes) {
       st.previewjb.lastRun = {}
 
       // reload the changed components and rebuild the history
+      jb.frame.jbActiveDoc && st.previewWindow.eval(jbActiveDoc.content) // used by vscode to reload the content of unsaved doc
       st.initCompsRefHandler(st.previewjb, allowedTypes)
       changedComps.forEach(e=>{
         st.compsRefHandler.resourceReferred(e[0])
@@ -78,7 +79,7 @@ st.initPreview = function(preview_window,allowedTypes) {
 				while (profile_path && jb.studio.valOfPath(profile_path,true) == null)
 					profile_path = jb.studio.parentPath(profile_path);
 				window.location.pathname = location.pathname.split('/').slice(0,-1).concat([profile_path]).join('/')
-			}
+      }
 }
 
 jb.component('studio.refreshPreview', {
@@ -142,6 +143,7 @@ jb.component('studio.previewWidget', {
             const project = ctx.exp('%$studio/project%')
             document.title = `${project} with jBart`;
             return st.projectHosts[host].fetchProject(ctx.exp('%$queryParams/hostProjectId%'),project)
+//              .then(x=>jb.delay(5000).then(()=>x))
               .then(projectSettings => {
                 console.log(jb.exec('%$studio/project%'),projectSettings.project)
                 jb.exec(writeValue('%$studio/project%', projectSettings.project))

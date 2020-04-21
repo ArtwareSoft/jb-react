@@ -1,9 +1,9 @@
 jb.ns('helloWorld')
 
-jb.component('dataResource.people', { /* dataResource.people */
+jb.component('dataResource.people', {
   watchableData: [
     {
-      name: 'Homer Simpson1',
+      name: 'Homer asdas',
       age: 42,
       male: false,
       children: [{name: 'Bart'}, {name: 'Lisa'}, {name: 'Maggie'}]
@@ -18,14 +18,17 @@ jb.component('dataResource.people', { /* dataResource.people */
   ]
 })
 
-jb.component('dataResource.room', { /* dataResource.room */
+jb.component('dataResource.room', {
   passiveData: ''
 })
 
 jb.component('helloWorld.main', {
   type: 'control',
-  impl: text('sdd')
+  impl: group({
+    controls: text({text: 'hello', features: css.borderRadius('11')})
+  })
 })
+
 
 jb.component('dataResource.studio', {
   watchableData: {

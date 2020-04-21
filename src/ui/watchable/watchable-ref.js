@@ -15,6 +15,7 @@ class WatchableValueByRef {
     this.resources = resources
     this.objToPath = new Map()
     this.idCounter = 1
+    this.opCounter = 1
     this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])]
     this.resourceChange = jb.callbag.subject()
     this.observables = []
@@ -40,7 +41,7 @@ class WatchableValueByRef {
       jb.path(op,path,opOnRef) // create op as nested object
       const insertedIndex = jb.path(opOnRef.$splice,[0,2]) && jb.path(opOnRef.$splice,[0,0])
       const insertedPath = insertedIndex != null && path.concat(insertedIndex)
-      const opEvent = {op: opOnRef, path: [...path], insertedPath, ref, srcCtx, oldVal, opVal, timeStamp: new Date().getTime()}
+      const opEvent = {op: opOnRef, path: [...path], insertedPath, ref, srcCtx, oldVal, opVal, timeStamp: new Date().getTime(), opCounter: this.opCounter++}
       this.resources(jb.ui.update(this.resources(),op),opEvent)
       const newVal = (opVal != null && opVal[isProxy]) ? opVal : this.valOfPath(path);
       if (opOnRef.$push) {

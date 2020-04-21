@@ -22,7 +22,7 @@ Object.assign(jb.ui,{
     },
     withUnits: v => (v === '' || v === undefined) ? '' : (''+v||'').match(/[^0-9]$/) ? v : `${v}px`,
     propWithUnits: (prop,v) => (v === '' || v === undefined) ? '' : `${prop}: ` + ((''+v||'').match(/[^0-9]$/) ? v : `${v}px`) + ';',
-    fixCssLine: css => css.indexOf('/n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css,
+    fixCssLine: css => css.indexOf('\n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css,
     ctxDictOfElem: elem => {
       const runningWorkerId = jb.frame.workerId && jb.frame.workerId()
       const workerIdAtElem = elem.getAttribute('worker')

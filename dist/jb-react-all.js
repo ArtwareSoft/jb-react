@@ -664,7 +664,7 @@ Object.assign(jb,{
     const id = jb.macroName(_id)
     try {
       const errStack = new Error().stack.split(/\r|\n/)
-      const line = errStack.filter(x=>x && !x.match(/\)<anonymous>|about:blank|tgp-pretty.js|internal\/modules\/cjs/)).pop()
+      const line = errStack.filter(x=>x && !x.match(/<anonymous>|about:blank|tgp-pretty.js|internal\/modules\/cjs|at jb_initWidget|at Object.ui.renderWidget/)).pop()
       comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3)
     
       if (comp.watchableData !== undefined) {
@@ -825,6 +825,7 @@ Object.assign(jb,{
   isWatchable: () => false, // overriden by the watchable-ref.js (if loaded)
   isValid: ref => jb.safeRefCall(ref, h=>h.isValid(ref)),
   refreshRef: ref => jb.safeRefCall(ref, h=>h.refresh(ref)),
+  sessionStorage: (id,val) => val == undefined ? jb.frame.sessionStorage[id] : jb.frame.sessionStorage[id] = val
 })
 if (typeof self != 'undefined')
   self.jb = jb
@@ -2912,6 +2913,7 @@ class WatchableValueByRef {
     this.resources = resources
     this.objToPath = new Map()
     this.idCounter = 1
+    this.opCounter = 1
     this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])]
     this.resourceChange = jb.callbag.subject()
     this.observables = []
@@ -2937,7 +2939,7 @@ class WatchableValueByRef {
       jb.path(op,path,opOnRef) // create op as nested object
       const insertedIndex = jb.path(opOnRef.$splice,[0,2]) && jb.path(opOnRef.$splice,[0,0])
       const insertedPath = insertedIndex != null && path.concat(insertedIndex)
-      const opEvent = {op: opOnRef, path: [...path], insertedPath, ref, srcCtx, oldVal, opVal, timeStamp: new Date().getTime()}
+      const opEvent = {op: opOnRef, path: [...path], insertedPath, ref, srcCtx, oldVal, opVal, timeStamp: new Date().getTime(), opCounter: this.opCounter++}
       this.resources(jb.ui.update(this.resources(),op),opEvent)
       const newVal = (opVal != null && opVal[isProxy]) ? opVal : this.valOfPath(path);
       if (opOnRef.$push) {
@@ -4212,7 +4214,7 @@ Object.assign(jb.ui,{
     },
     withUnits: v => (v === '' || v === undefined) ? '' : (''+v||'').match(/[^0-9]$/) ? v : `${v}px`,
     propWithUnits: (prop,v) => (v === '' || v === undefined) ? '' : `${prop}: ` + ((''+v||'').match(/[^0-9]$/) ? v : `${v}px`) + ';',
-    fixCssLine: css => css.indexOf('/n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css,
+    fixCssLine: css => css.indexOf('\n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css,
     ctxDictOfElem: elem => {
       const runningWorkerId = jb.frame.workerId && jb.frame.workerId()
       const workerIdAtElem = elem.getAttribute('worker')
@@ -6133,8 +6135,8 @@ jb.component('dialogFeature.dragTitle', {
 					const destroyed = fromPromise(cmp.destroyed)
 					cmp.mousedownEm = pipe(fromEvent(titleElem, 'mousedown'),takeUntil(destroyed));
 
-					if (id && sessionStorage.getItem(id)) {
-						  const pos = JSON.parse(sessionStorage.getItem(id));
+					if (id && jb.sessionStorage(id)) {
+						  const pos = JSON.parse(jb.sessionStorage(id));
 						  dialog.el.style.top  = pos.top  + 'px';
 						  dialog.el.style.left = pos.left + 'px';
 					}
@@ -6166,7 +6168,7 @@ jb.component('dialogFeature.dragTitle', {
 							forEach(pos => {
 								dialog.el.style.top  = pos.top  + 'px';
 								dialog.el.style.left = pos.left + 'px';
-								if (id) sessionStorage.setItem(id, JSON.stringify(pos))
+								if (id) jb.sessionStorage(id, JSON.stringify(pos))
 							})
 					)
 				}
@@ -6771,7 +6773,7 @@ jb.component('itemlist.selection', {
         function dataOfElem(el) {
           const itemElem = jb.ui.closest(el,'.jb-item')
           const ctxId = itemElem && itemElem.getAttribute('jb-ctx')
-          return ((ctxId && jb.ctxDictionary[ctxId]) || {}).data
+          return jb.val(((ctxId && jb.ctxDictionary[ctxId]) || {}).data)
         }
     },
     css: ['>.selected','>*>.selected','>*>*>.selected'].map(sel=>sel+ ' ' + jb.ui.fixCssLine(ctx.params.cssForSelected)).join('\n')
@@ -6906,6 +6908,7 @@ jb.component('itemlist.divider', {
 ;
 
 (function() {
+jb.ns('search')
 
 const createItemlistCntr = (ctx,params) => ({
 	id: params.id,
@@ -6959,15 +6962,6 @@ jb.component('group.itemlistContainer', {
   )
 })
 
-jb.component('itemlist.itemlistSelected', {
-  type: 'feature',
-  category: 'itemlist:20,group:0',
-  impl: list(
-    group.data('%$itemlistCntrData/selected%'),
-    hidden(notEmpty('%$itemlistCntrData/selected%'))
-  )
-})
-
 jb.component('itemlistContainer.filter', {
   type: 'aggregator',
   category: 'itemlist-filter:100',
@@ -7006,7 +7000,7 @@ jb.component('itemlistContainer.search', {
   requires: ctx => ctx.vars.itemlistCntr,
   params: [
     {id: 'title', as: 'string', dynamic: true, defaultValue: 'Search'},
-    {id: 'searchIn', type: 'search-in', dynamic: true, defaultValue: itemlistContainer.searchInAllProperties()},
+    {id: 'searchIn', type: 'search-in', dynamic: true, defaultValue: search.searchInAllProperties()},
     {id: 'databind', as: 'ref', dynamic: true, defaultValue: '%$itemlistCntrData/search_pattern%'},
     {id: 'style', type: 'editable-text.style', defaultValue: editableText.mdcSearch(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
@@ -7015,18 +7009,12 @@ jb.component('itemlistContainer.search', {
 		jb.ui.ctrl(ctx,{
 			afterViewInit: cmp => {
 				if (!ctx.vars.itemlistCntr) return;
-				const databindRef = databind()
-
 				ctx.vars.itemlistCntr.filters.push( items => {
-					const toSearch = jb.val(databindRef) || '';
-					if (jb.frame.Fuse) {
-						const _searchIn = searchIn()
-						const options = jb.path(_searchIn,'fuseOptions') && _searchIn || {}
-						return toSearch ? new jb.frame.Fuse(items, options).search(toSearch).map(x=>x.item) : items
-					}
-					if (typeof searchIn.profile == 'function') { // improved performance
+					const toSearch = jb.val(databind()) || '';
+					if (jb.frame.Fuse && jb.path(searchIn,'profile.$') == 'search.fuse')
+						return toSearch ? new jb.frame.Fuse(items, searchIn()).search(toSearch).map(x=>x.item) : items
+					if (typeof searchIn.profile == 'function') // improved performance
 						return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
-					}
 
 					return items.filter(item=>toSearch == '' || searchIn(ctx.setData(item)).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
 				});
@@ -7145,7 +7133,7 @@ jb.component('filterType.numeric', {
 	})
 })
 
-jb.component('itemlistContainer.searchInAllProperties', {
+jb.component('search.searchInAllProperties', {
   type: 'search-in',
   impl: ctx => {
 		if (typeof ctx.data == 'string') return ctx.data;
@@ -7154,18 +7142,20 @@ jb.component('itemlistContainer.searchInAllProperties', {
 	}
 })
 
-jb.component('itemlistContainer.fuseOptions', {
+jb.component('search.fuse', {
 	type: 'search-in',
+	description: 'fuse.js search https://fusejs.io/api/options.html#basic-options',
 	params: [
-		{ id: 'keys', as: 'array', defaultValue: list('prop1') },
-		{ id: 'findAllMatches', as: 'boolean', defaultValue: false },
+		{ id: 'keys', as: 'array', defaultValue: list('id','name'), description: 'List of keys that will be searched. This supports nested paths, weighted search, searching in arrays of strings and objects' },
+		{ id: 'findAllMatches', as: 'boolean', defaultValue: false, description: 'When true, the matching function will continue to the end of a search pattern even if a perfect match has already been located in the string' },
 		{ id: 'isCaseSensitive', as: 'boolean', defaultValue: false },
-		{ id: 'includeScore', as: 'boolean', defaultValue: false },
-		{ id: 'includeMatches', as: 'boolean', defaultValue: false },
-		{ id: 'minMatchCharLength', as: 'number', defaultValue: 1 },
-		{ id: 'shouldSort', as: 'boolean', defaultValue: true },
-		// { id: 'location', as: 'number', defaultValue: 0 },
-		// { id: 'threshold', as: 'number', defaultValue: 0.6 },
+		{ id: 'minMatchCharLength', as: 'number', defaultValue: 1, description: 'Only the matches whose length exceeds this value will be returned. (For instance, if you want to ignore single character matches in the result, set it to 2)' },
+		{ id: 'shouldSort', as: 'boolean', defaultValue: true, description: 'Whether to sort the result list, by score' },
+		{ id: 'location', as: 'number', defaultValue: 0, description: 'Determines approximately where in the text is the pattern expected to be found' },
+		{ id: 'threshold', as: 'number', defaultValue: 0.6, description: 'At what point does the match algorithm give up. A threshold of 0.0 requires a perfect match (of both letters and location), a threshold of 1.0 would match anything' },
+		{ id: 'distance', as: 'number', defaultValue: 100, description: 'Determines how close the match must be to the fuzzy location (specified by location). An exact letter match which is distance characters away from the fuzzy location would score as a complete mismatch' },
+//		{ id: 'includeScore', as: 'boolean', defaultValue: false },
+//		{ id: 'includeMatches', as: 'boolean', defaultValue: false },
 	],
 	impl: ctx => ({ fuseOptions: true, ...ctx.params})
 })
@@ -8676,6 +8666,9 @@ jb.component('editableText.mdcNoLabel', {
 })
 
 jb.component('editableText.mdcSearch', {
+  params: [
+    {id: 'width', as: 'number'}
+  ],
   description: 'debounced and one way binding',
   type: 'editable-text.style',
   impl: styleWithFeatures(editableText.mdcInput({width:'%$width%', noLabel: true}), feature.icon({icon: 'search', position: 'post'}))

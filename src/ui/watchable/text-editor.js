@@ -18,8 +18,7 @@ function setStrValue(value, ref, ctx) {
     const newVal = notPrimitive ? jb.evalStr(value,ref.handler.frame()) : value;
     if (newVal === Symbol.for('parseError'))
         return
-    // do not save in editing ',' at the end of line means editing
-    // YET, THIS GUESS DID NOT WORK ...
+    // I had i guess that ',' at the end of line means editing, YET, THIS GUESS DID NOT WORK ...
     // if (typeof newVal === 'object' && value.match(/,\s*}/m))
     //     return
     const currentVal = jb.val(ref)
@@ -32,8 +31,10 @@ function setStrValue(value, ref, ctx) {
             return jb.writeValue(ref.handler.refOfPath(fullInnerPath),innerValue,ctx)
         }
     }
-    if (newVal !== undefined) // many diffs
+    if (newVal !== undefined) { // many diffs {
+       currentVal[jb.location] && typeof newVal == 'object' && (newVal[jb.location] = currentVal[jb.location])
        jb.writeValue(ref,newVal,ctx)
+    }
 }
 
 jb.component('watchableAsText', {
@@ -174,13 +175,14 @@ jb.component('textarea.initTextareaEditor', {
   )
 })
 
-
 jb.textEditor = {
+    setStrValue,
     refreshEditor,
     getSuggestions,
     offsetToLineCol,
     lineColToOffset,
     cm_hint,
+    closestComp,
     formatComponent
 }
 
@@ -255,20 +257,26 @@ function getSuggestions(fileContent, pos, jbToUse = jb) {
     return { path, suggestions: new jbToUse.jbCtx().run(sourceEditor.suggestions(path.path)) }
 }
 
-function formatComponent(fileContent, pos, jbToUse = jb) {
+function closestComp(fileContent, pos) {
     const lines = fileContent.split('\n')
     const closestComp = lines.slice(0,pos.line+1).reverse().findIndex(line => line.match(/^jb.component\(/))
-    if (closestComp == -1) return []
+    if (closestComp == -1) return {}
     const componentHeaderIndex = pos.line - closestComp
     const compId = (lines[componentHeaderIndex].match(/'([^']+)'/)||['',''])[1]
-    if (!compId) return []
     const linesFromComp = lines.slice(componentHeaderIndex)
     const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
     const nextjbComponent = lines.slice(componentHeaderIndex+1).findIndex(line => line.match(/^jb.component/))
-    if (nextjbComponent != -1 && nextjbComponent < compLastLine)
-      return jb.logError(['can not find end of component', compId, linesFromComp])
-    const linesOfComp = linesFromComp.slice(0,compLastLine+1)
-    const compSrc = linesOfComp.join('\n')
+    if (nextjbComponent != -1 && nextjbComponent < compLastLine) {
+      jb.logError(['can not find end of component', compId, linesFromComp])
+      return {}
+    }
+    const compSrc = linesFromComp.slice(0,compLastLine+1).join('\n')
+    return {compId, compSrc, componentHeaderIndex, compLastLine}
+}
+
+function formatComponent(fileContent, pos, jbToUse = jb) {
+    const {compId, compSrc, componentHeaderIndex, compLastLine} = closestComp(fileContent, pos)
+    if (!compId) return {}
     if (jb.evalStr(compSrc,jbToUse.frame) === Symbol.for('parseError'))
         return []
     return {text: jb.prettyPrintComp(compId,jbToUse.comps[compId],{comps: jbToUse.comps}) + '\n',

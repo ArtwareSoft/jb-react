@@ -291,7 +291,10 @@ jb.component('studio.all', {
         loadingControl: text('')
       }),
       group.data({data: '%$studio/project%', watch1: true}),
-      feature.init(runActions(urlHistory.mapStudioUrlToResource('studio'), studio.vscodeMapStateToResource('studio')))
+      feature.init(runActions(urlHistory.mapStudioUrlToResource('studio'), 
+        studio.initVscodeAdapter('studio'),
+        studio.initAutoSave()
+      ))
     ]
   })
 })

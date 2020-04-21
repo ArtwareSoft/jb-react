@@ -664,7 +664,7 @@ Object.assign(jb,{
     const id = jb.macroName(_id)
     try {
       const errStack = new Error().stack.split(/\r|\n/)
-      const line = errStack.filter(x=>x && !x.match(/\)<anonymous>|about:blank|tgp-pretty.js|internal\/modules\/cjs/)).pop()
+      const line = errStack.filter(x=>x && !x.match(/<anonymous>|about:blank|tgp-pretty.js|internal\/modules\/cjs|at jb_initWidget|at Object.ui.renderWidget/)).pop()
       comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3)
     
       if (comp.watchableData !== undefined) {
@@ -825,6 +825,7 @@ Object.assign(jb,{
   isWatchable: () => false, // overriden by the watchable-ref.js (if loaded)
   isValid: ref => jb.safeRefCall(ref, h=>h.isValid(ref)),
   refreshRef: ref => jb.safeRefCall(ref, h=>h.refresh(ref)),
+  sessionStorage: (id,val) => val == undefined ? jb.frame.sessionStorage[id] : jb.frame.sessionStorage[id] = val
 })
 if (typeof self != 'undefined')
   self.jb = jb
@@ -2912,6 +2913,7 @@ class WatchableValueByRef {
     this.resources = resources
     this.objToPath = new Map()
     this.idCounter = 1
+    this.opCounter = 1
     this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])]
     this.resourceChange = jb.callbag.subject()
     this.observables = []
@@ -2937,7 +2939,7 @@ class WatchableValueByRef {
       jb.path(op,path,opOnRef) // create op as nested object
       const insertedIndex = jb.path(opOnRef.$splice,[0,2]) && jb.path(opOnRef.$splice,[0,0])
       const insertedPath = insertedIndex != null && path.concat(insertedIndex)
-      const opEvent = {op: opOnRef, path: [...path], insertedPath, ref, srcCtx, oldVal, opVal, timeStamp: new Date().getTime()}
+      const opEvent = {op: opOnRef, path: [...path], insertedPath, ref, srcCtx, oldVal, opVal, timeStamp: new Date().getTime(), opCounter: this.opCounter++}
       this.resources(jb.ui.update(this.resources(),op),opEvent)
       const newVal = (opVal != null && opVal[isProxy]) ? opVal : this.valOfPath(path);
       if (opOnRef.$push) {
@@ -4212,7 +4214,7 @@ Object.assign(jb.ui,{
     },
     withUnits: v => (v === '' || v === undefined) ? '' : (''+v||'').match(/[^0-9]$/) ? v : `${v}px`,
     propWithUnits: (prop,v) => (v === '' || v === undefined) ? '' : `${prop}: ` + ((''+v||'').match(/[^0-9]$/) ? v : `${v}px`) + ';',
-    fixCssLine: css => css.indexOf('/n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css,
+    fixCssLine: css => css.indexOf('\n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css,
     ctxDictOfElem: elem => {
       const runningWorkerId = jb.frame.workerId && jb.frame.workerId()
       const workerIdAtElem = elem.getAttribute('worker')
@@ -6133,8 +6135,8 @@ jb.component('dialogFeature.dragTitle', {
 					const destroyed = fromPromise(cmp.destroyed)
 					cmp.mousedownEm = pipe(fromEvent(titleElem, 'mousedown'),takeUntil(destroyed));
 
-					if (id && sessionStorage.getItem(id)) {
-						  const pos = JSON.parse(sessionStorage.getItem(id));
+					if (id && jb.sessionStorage(id)) {
+						  const pos = JSON.parse(jb.sessionStorage(id));
 						  dialog.el.style.top  = pos.top  + 'px';
 						  dialog.el.style.left = pos.left + 'px';
 					}
@@ -6166,7 +6168,7 @@ jb.component('dialogFeature.dragTitle', {
 							forEach(pos => {
 								dialog.el.style.top  = pos.top  + 'px';
 								dialog.el.style.left = pos.left + 'px';
-								if (id) sessionStorage.setItem(id, JSON.stringify(pos))
+								if (id) jb.sessionStorage(id, JSON.stringify(pos))
 							})
 					)
 				}
@@ -6771,7 +6773,7 @@ jb.component('itemlist.selection', {
         function dataOfElem(el) {
           const itemElem = jb.ui.closest(el,'.jb-item')
           const ctxId = itemElem && itemElem.getAttribute('jb-ctx')
-          return ((ctxId && jb.ctxDictionary[ctxId]) || {}).data
+          return jb.val(((ctxId && jb.ctxDictionary[ctxId]) || {}).data)
         }
     },
     css: ['>.selected','>*>.selected','>*>*>.selected'].map(sel=>sel+ ' ' + jb.ui.fixCssLine(ctx.params.cssForSelected)).join('\n')
@@ -6906,6 +6908,7 @@ jb.component('itemlist.divider', {
 ;
 
 (function() {
+jb.ns('search')
 
 const createItemlistCntr = (ctx,params) => ({
 	id: params.id,
@@ -6959,15 +6962,6 @@ jb.component('group.itemlistContainer', {
   )
 })
 
-jb.component('itemlist.itemlistSelected', {
-  type: 'feature',
-  category: 'itemlist:20,group:0',
-  impl: list(
-    group.data('%$itemlistCntrData/selected%'),
-    hidden(notEmpty('%$itemlistCntrData/selected%'))
-  )
-})
-
 jb.component('itemlistContainer.filter', {
   type: 'aggregator',
   category: 'itemlist-filter:100',
@@ -7006,7 +7000,7 @@ jb.component('itemlistContainer.search', {
   requires: ctx => ctx.vars.itemlistCntr,
   params: [
     {id: 'title', as: 'string', dynamic: true, defaultValue: 'Search'},
-    {id: 'searchIn', type: 'search-in', dynamic: true, defaultValue: itemlistContainer.searchInAllProperties()},
+    {id: 'searchIn', type: 'search-in', dynamic: true, defaultValue: search.searchInAllProperties()},
     {id: 'databind', as: 'ref', dynamic: true, defaultValue: '%$itemlistCntrData/search_pattern%'},
     {id: 'style', type: 'editable-text.style', defaultValue: editableText.mdcSearch(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
@@ -7015,18 +7009,12 @@ jb.component('itemlistContainer.search', {
 		jb.ui.ctrl(ctx,{
 			afterViewInit: cmp => {
 				if (!ctx.vars.itemlistCntr) return;
-				const databindRef = databind()
-
 				ctx.vars.itemlistCntr.filters.push( items => {
-					const toSearch = jb.val(databindRef) || '';
-					if (jb.frame.Fuse) {
-						const _searchIn = searchIn()
-						const options = jb.path(_searchIn,'fuseOptions') && _searchIn || {}
-						return toSearch ? new jb.frame.Fuse(items, options).search(toSearch).map(x=>x.item) : items
-					}
-					if (typeof searchIn.profile == 'function') { // improved performance
+					const toSearch = jb.val(databind()) || '';
+					if (jb.frame.Fuse && jb.path(searchIn,'profile.$') == 'search.fuse')
+						return toSearch ? new jb.frame.Fuse(items, searchIn()).search(toSearch).map(x=>x.item) : items
+					if (typeof searchIn.profile == 'function') // improved performance
 						return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
-					}
 
 					return items.filter(item=>toSearch == '' || searchIn(ctx.setData(item)).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
 				});
@@ -7145,7 +7133,7 @@ jb.component('filterType.numeric', {
 	})
 })
 
-jb.component('itemlistContainer.searchInAllProperties', {
+jb.component('search.searchInAllProperties', {
   type: 'search-in',
   impl: ctx => {
 		if (typeof ctx.data == 'string') return ctx.data;
@@ -7154,18 +7142,20 @@ jb.component('itemlistContainer.searchInAllProperties', {
 	}
 })
 
-jb.component('itemlistContainer.fuseOptions', {
+jb.component('search.fuse', {
 	type: 'search-in',
+	description: 'fuse.js search https://fusejs.io/api/options.html#basic-options',
 	params: [
-		{ id: 'keys', as: 'array', defaultValue: list('prop1') },
-		{ id: 'findAllMatches', as: 'boolean', defaultValue: false },
+		{ id: 'keys', as: 'array', defaultValue: list('id','name'), description: 'List of keys that will be searched. This supports nested paths, weighted search, searching in arrays of strings and objects' },
+		{ id: 'findAllMatches', as: 'boolean', defaultValue: false, description: 'When true, the matching function will continue to the end of a search pattern even if a perfect match has already been located in the string' },
 		{ id: 'isCaseSensitive', as: 'boolean', defaultValue: false },
-		{ id: 'includeScore', as: 'boolean', defaultValue: false },
-		{ id: 'includeMatches', as: 'boolean', defaultValue: false },
-		{ id: 'minMatchCharLength', as: 'number', defaultValue: 1 },
-		{ id: 'shouldSort', as: 'boolean', defaultValue: true },
-		// { id: 'location', as: 'number', defaultValue: 0 },
-		// { id: 'threshold', as: 'number', defaultValue: 0.6 },
+		{ id: 'minMatchCharLength', as: 'number', defaultValue: 1, description: 'Only the matches whose length exceeds this value will be returned. (For instance, if you want to ignore single character matches in the result, set it to 2)' },
+		{ id: 'shouldSort', as: 'boolean', defaultValue: true, description: 'Whether to sort the result list, by score' },
+		{ id: 'location', as: 'number', defaultValue: 0, description: 'Determines approximately where in the text is the pattern expected to be found' },
+		{ id: 'threshold', as: 'number', defaultValue: 0.6, description: 'At what point does the match algorithm give up. A threshold of 0.0 requires a perfect match (of both letters and location), a threshold of 1.0 would match anything' },
+		{ id: 'distance', as: 'number', defaultValue: 100, description: 'Determines how close the match must be to the fuzzy location (specified by location). An exact letter match which is distance characters away from the fuzzy location would score as a complete mismatch' },
+//		{ id: 'includeScore', as: 'boolean', defaultValue: false },
+//		{ id: 'includeMatches', as: 'boolean', defaultValue: false },
 	],
 	impl: ctx => ({ fuseOptions: true, ...ctx.params})
 })
@@ -8676,6 +8666,9 @@ jb.component('editableText.mdcNoLabel', {
 })
 
 jb.component('editableText.mdcSearch', {
+  params: [
+    {id: 'width', as: 'number'}
+  ],
   description: 'debounced and one way binding',
   type: 'editable-text.style',
   impl: styleWithFeatures(editableText.mdcInput({width:'%$width%', noLabel: true}), feature.icon({icon: 'search', position: 'post'}))
@@ -34617,8 +34610,7 @@ function setStrValue(value, ref, ctx) {
     const newVal = notPrimitive ? jb.evalStr(value,ref.handler.frame()) : value;
     if (newVal === Symbol.for('parseError'))
         return
-    // do not save in editing ',' at the end of line means editing
-    // YET, THIS GUESS DID NOT WORK ...
+    // I had i guess that ',' at the end of line means editing, YET, THIS GUESS DID NOT WORK ...
     // if (typeof newVal === 'object' && value.match(/,\s*}/m))
     //     return
     const currentVal = jb.val(ref)
@@ -34631,8 +34623,10 @@ function setStrValue(value, ref, ctx) {
             return jb.writeValue(ref.handler.refOfPath(fullInnerPath),innerValue,ctx)
         }
     }
-    if (newVal !== undefined) // many diffs
+    if (newVal !== undefined) { // many diffs {
+       currentVal[jb.location] && typeof newVal == 'object' && (newVal[jb.location] = currentVal[jb.location])
        jb.writeValue(ref,newVal,ctx)
+    }
 }
 
 jb.component('watchableAsText', {
@@ -34773,13 +34767,14 @@ jb.component('textarea.initTextareaEditor', {
   )
 })
 
-
 jb.textEditor = {
+    setStrValue,
     refreshEditor,
     getSuggestions,
     offsetToLineCol,
     lineColToOffset,
     cm_hint,
+    closestComp,
     formatComponent
 }
 
@@ -34854,20 +34849,26 @@ function getSuggestions(fileContent, pos, jbToUse = jb) {
     return { path, suggestions: new jbToUse.jbCtx().run(sourceEditor.suggestions(path.path)) }
 }
 
-function formatComponent(fileContent, pos, jbToUse = jb) {
+function closestComp(fileContent, pos) {
     const lines = fileContent.split('\n')
     const closestComp = lines.slice(0,pos.line+1).reverse().findIndex(line => line.match(/^jb.component\(/))
-    if (closestComp == -1) return []
+    if (closestComp == -1) return {}
     const componentHeaderIndex = pos.line - closestComp
     const compId = (lines[componentHeaderIndex].match(/'([^']+)'/)||['',''])[1]
-    if (!compId) return []
     const linesFromComp = lines.slice(componentHeaderIndex)
     const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
     const nextjbComponent = lines.slice(componentHeaderIndex+1).findIndex(line => line.match(/^jb.component/))
-    if (nextjbComponent != -1 && nextjbComponent < compLastLine)
-      return jb.logError(['can not find end of component', compId, linesFromComp])
-    const linesOfComp = linesFromComp.slice(0,compLastLine+1)
-    const compSrc = linesOfComp.join('\n')
+    if (nextjbComponent != -1 && nextjbComponent < compLastLine) {
+      jb.logError(['can not find end of component', compId, linesFromComp])
+      return {}
+    }
+    const compSrc = linesFromComp.slice(0,compLastLine+1).join('\n')
+    return {compId, compSrc, componentHeaderIndex, compLastLine}
+}
+
+function formatComponent(fileContent, pos, jbToUse = jb) {
+    const {compId, compSrc, componentHeaderIndex, compLastLine} = closestComp(fileContent, pos)
+    if (!compId) return {}
     if (jb.evalStr(compSrc,jbToUse.frame) === Symbol.for('parseError'))
         return []
     return {text: jb.prettyPrintComp(compId,jbToUse.comps[compId],{comps: jbToUse.comps}) + '\n',
@@ -36132,6 +36133,7 @@ st.initPreview = function(preview_window,allowedTypes) {
       st.previewjb.lastRun = {}
 
       // reload the changed components and rebuild the history
+      jb.frame.jbActiveDoc && st.previewWindow.eval(jbActiveDoc.content) // used by vscode to reload the content of unsaved doc
       st.initCompsRefHandler(st.previewjb, allowedTypes)
       changedComps.forEach(e=>{
         st.compsRefHandler.resourceReferred(e[0])
@@ -36142,11 +36144,6 @@ st.initPreview = function(preview_window,allowedTypes) {
 
       st.previewjb.http_get_cache = {}
       st.previewjb.ctxByPath = {}
-      //jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
-
-      // st.initEventTracker();
-      // if (preview_window.location.href.match(/\/studio-helper/))
-      //   st.previewjb.studio.initEventTracker();
 
       jb.exp('%$studio/settings/activateWatchRefViewer%','boolean') && st.activateWatchRefViewer();
       jb.exec(writeValue('%$studio/projectSettings%',() => JSON.parse(JSON.stringify(preview_window.jbProjectSettings)) ))
@@ -36163,7 +36160,7 @@ st.initPreview = function(preview_window,allowedTypes) {
 				while (profile_path && jb.studio.valOfPath(profile_path,true) == null)
 					profile_path = jb.studio.parentPath(profile_path);
 				window.location.pathname = location.pathname.split('/').slice(0,-1).concat([profile_path]).join('/')
-			}
+      }
 }
 
 jb.component('studio.refreshPreview', {
@@ -36227,7 +36224,9 @@ jb.component('studio.previewWidget', {
             const project = ctx.exp('%$studio/project%')
             document.title = `${project} with jBart`;
             return st.projectHosts[host].fetchProject(ctx.exp('%$queryParams/hostProjectId%'),project)
+//              .then(x=>jb.delay(5000).then(()=>x))
               .then(projectSettings => {
+                console.log(jb.exec('%$studio/project%'),projectSettings.project)
                 jb.exec(writeValue('%$studio/project%', projectSettings.project))
                 cmp.refresh({ projectLoaded: true, projectSettings },{srcCtx: ctx})
             })
@@ -36257,16 +36256,19 @@ jb.component('studio.previewWidgetImpl', {
 })
 
 st.injectProjectToPreview = function(previewWin,projectSettings) {
+const baseProjUrl = jb.frame.jbBaseProjUrl ? `jbBaseProjUrl = '${jbBaseProjUrl}'` : ''
+const vscodeZoomFix = jb.frame.jbInvscode? 'style="zoom: 0.8"' : ''
 const html = `<!DOCTYPE html>
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script type="text/javascript">
+    ${baseProjUrl}
     jbProjectSettings = ${JSON.stringify(projectSettings)}
   </script>
   <script type="text/javascript" src="${st.host.jbLoader}"></script>
 </head>
-<body>
+<body ${vscodeZoomFix}>
   <script>
     window.jb_initWidget && jb_initWidget()
   </script>
@@ -36408,7 +36410,7 @@ jb.component('studioDialogFeature.studioPopupLocation', {
     (ctx,{cmp}) => {
 			const dialog = cmp.dialog;
 			const id = (dialog.id||'').replace(/\s/g,'_');
-			if (id && !sessionStorage[id]) {
+			if (id && !jb.sessionStorage(id)) {
 				dialog.el.classList.add(id);
 				dialog.el.classList.add('default-location')
 			}
@@ -36620,7 +36622,8 @@ jb.component('urlHistory.mapStudioUrlToResource', {
     {id: 'onUrlChange', type: 'action', dynamic: true}
   ],
   impl: function(ctx,resource) {
-        if (jb.ui.location || typeof window == 'undefined') return;
+        if (jb.ui.location || typeof window == 'undefined' || jb.frame.jbInvscode || jb.studio.urlHistoryInitialized) return;
+        jb.studio.urlHistoryInitialized = true
         const base = location.pathname.indexOf('studio-bin') != -1 ? 'studio-bin' : 'studio'
 
         const urlFormat = location.pathname.match(/\.html$/) ? {
@@ -36665,7 +36668,7 @@ jb.component('urlHistory.mapStudioUrlToResource', {
         const browserUrlEm = create(obs=> jb.ui.location.listen(x=> obs(x)))
 
         const databindEm = pipe(jb.ui.resourceChange(),
-            filter(e=> e.path[0] == resource),
+            filter(e=> e.path[0] == resource && params.indexOf(e.path[1]) != -1),
             map(_=> jb.resource(resource)),
             filter(obj=> obj[params[0]]),
             map(obj=> urlFormat.objToUrl(obj)))
@@ -37933,7 +37936,14 @@ jb.component('studio.selectProfile', {
         controls: [
           itemlistContainer.search({
             title: 'search',
-            searchIn: itemlistContainer.fuseOptions({keys: list('id', 'desc', 'name')}),
+            searchIn: search.fuse({
+              keys: list(
+                obj(prop('name', 'id'), prop('weight', '0.6', 'number')),
+                obj(prop('name', 'desc'), prop('weight', '0.2', 'number')),
+                obj(prop('name', 'name'), prop('weight', '0.4', 'number'))
+              ),
+              threshold: '0.3'
+            }),
             databind: '%$itemlistCntrData/search_pattern%',
             style: editableText.mdcInput('200'),
             features: feature.onEsc(dialog.closeContainingPopup(false))
@@ -41201,6 +41211,37 @@ jb.component('studio.saveComponents', {
   }
 })
 
+jb.component('studio.initAutoSave', {
+  type: 'action,has-side-effects',
+  impl: ctx => {
+    if (!jb.frame.jbInvscode || jb.studio.autoSaveInitialized) return
+    jb.studio.autoSaveInitialized = true
+    const {pipe, catchError,subscribe,concatMap,fromPromise,fromIter,map} = jb.callbag
+    const messages = []
+    const st = jb.studio
+
+    return pipe(
+      st.scriptChange,
+      concatMap(e => pipe(
+        fromIter([e]),
+        map(e=>({...e, compId: e.path[0]})), 
+        map(e=>({...e, comp: st.previewjb.comps[e.compId]})), 
+        map(e=>({...e, loc: e.comp[jb.location]})),
+        map(e=>({...e, fn: st.host.locationToPath(e.loc[0])})),
+
+        concatMap(e => fromPromise(st.host.getFile(e.fn).then(fileContent=>({...e, fileContent})))),
+        map(e=>({...e, edits: [e.fileContent && deltaFileContent(e.fileContent,e)].filter(x=>x) })),
+        concatMap(e => e.fileContent ? fromPromise(st.host.saveDelta(e.fn,e.edits).then(()=>e)) : [e]),
+      )),
+			catchError(e=> {
+        messages.push({ text: 'error saving: ' + (typeof e == 'string' ? e : e.message || e.e), error: true })
+				jb.logException(e,'error while saving ' + e.id,ctx) || []
+      }),
+      subscribe(()=>{})
+    )
+  }
+})
+
 jb.component('studio.saveProjectSettings', {
   type: 'action,has-side-effects',
   impl: ctx => {
@@ -41249,6 +41290,33 @@ function newFileContent(fileContent, comps) {
     lines = lines.concat(newComp).concat('')
   })
   return lines.join('\n')
+}
+
+function deltaFileContent(fileContent, {compId,comp}) {
+  const lines = fileContent.split('\n').map(x=>x.replace(/[\s]*$/,''))
+  const lineOfComp = lines.findIndex(line=> line.indexOf(`jb.component('${compId}'`) == 0)
+  const linesFromComp = lines.slice(lineOfComp)
+  const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
+  const nextjbComponent = lines.slice(lineOfComp+1).findIndex(line => line.match(/^jb.component/))
+  if (nextjbComponent != -1 && nextjbComponent < compLastLine)
+    return jb.logError(['can not find end of component', compId, linesFromComp])
+  const newCompLines = comp ? jb.prettyPrintComp(compId,comp,{initialPath: compId, comps: st.previewjb.comps}).split('\n') : []
+  const oldlines = linesFromComp.slice(0,compLastLine+1)
+  const {common, oldText, newText} = calcDiff(oldlines.join('\n'), newCompLines.join('\n'))
+  const commonStartSplit = common.split('\n')
+  // using vscode terminology
+  const start = {line: lineOfComp + commonStartSplit.length - 1, character: commonStartSplit.slice(-1)[0].length }
+  const end = { line: start.line + oldText.split('\n').length -1, 
+    character : (oldText.split('\n').length-1 ? 0 : start.character) + oldText.split('\n').pop().length }
+  return { range: {start, end} , newText }
+
+  // the diff is continuous, so we cut the common parts at the begining and end 
+  function calcDiff(oldText,newText)  {
+    let i=0;j=0;
+    while(newText[i] == oldText[i] && i < newText.length) i++
+    while(newText[newText.length-j] == oldText[oldText.length-j] && i < newText.length) j++
+    return {firstDiff: i, common: oldText.slice(0,i), oldText: oldText.slice(i,-j+1), newText: newText.slice(i,-j+1)}
+  }
 }
 
 jb.component('studio.fileAfterChanges', {
@@ -42571,8 +42639,11 @@ jb.component('studio.all', {
           Object.assign(ctx.exp('%$studio/settings%'), typeof settings == 'string' ? JSON.parse(settings) : {})))),
         loadingControl: text('')
       }),
-      group.data({data: '%$studio/project%', watch: true}),
-      feature.init(urlHistory.mapStudioUrlToResource('studio'))
+      group.data({data: '%$studio/project%', watch1: true}),
+      feature.init(runActions(urlHistory.mapStudioUrlToResource('studio'), 
+        studio.initVscodeAdapter('studio'),
+        studio.initAutoSave()
+      ))
     ]
   })
 })
@@ -42721,7 +42792,7 @@ const st = jb.studio;
 
 const devHost = {
     settings: () => fetch(`/?op=settings`).then(res=>res.text()),
-    rootExists: () => fetch(`/?op=rootExists`).then(res=>res.text()).then(res=>res==='true'),
+    //used in save
     getFile: path => fetch(`/?op=getFile&path=${path}`).then(res=>res.text()),
     locationToPath: path => path.replace(/^[0-9]*\//,''),
     saveFile: (path, contents) => {
@@ -42729,45 +42800,43 @@ const devHost = {
         {method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' } , body: JSON.stringify({ Path: path, Contents: contents }) })
         .then(res=>res.json())
     },
-    htmlAsCloud: (html,project) => html.replace(/\/dist\//g,'//unpkg.com/jb-react/dist/').replace(/src="\.\.\//g,'src="').replace(`/${project}/`,''),
+    pathOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
+
+    // new project
     createProject: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
         Object.assign(request,{baseDir: `projects/${request.project}` })) }),
-    scriptForLoadLibraries: libs => `<script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,${libs.join(',')}"></script>`,
-    srcOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
+    // goto project
+    projectUrlInStudio: project => `/project/studio/${project}`,
+    // preview
+    jbLoader: '/src/loader/jb-loader.js',
+}
+
+const vscodeHost = {
+    settings: () => Promise.resolve('{}'),
+    getFile: path => jb.studio.vscodeService({$: 'getFile', path}),
+    locationToPath: path => decodeURIComponent(path.split('//file//').pop()).replace(/\\/g,'/'),
+    saveDelta: (path, edits) => jb.studio.vscodeService({$: 'saveDelta', path, edits}),
+    saveFile: (path, contents) => jb.studio.vscodeService({$: 'saveFile', path, contents}),
+    createProject: request => jb.studio.vscodeService({$: 'createProject', request}),
     pathOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
     projectUrlInStudio: project => `/project/studio/${project}`,
-    jbLoader: '/src/loader/jb-loader.js',
-    isDevHost: true
+    jbLoader: `${jb.frame.jbBaseProjUrl}/src/loader/jb-loader.js`,
 }
 
 const userLocalHost = Object.assign({},devHost,{
     createProject: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
         Object.assign(request,{baseDir: request.baseDir || request.project })) }),
-    scriptForLoadLibraries: libs => {
-        const libScripts = libs.map(lib=>`<script type="text/javascript" src="/dist/${lib}.js"></script>`)
-            + libs.filter(lib=>jb_modules[lib+'-css']).map(lib=>`<link rel="stylesheet" type="text/css" href="/dist/${lib}.css"/>`)
-        return '<link rel="stylesheet" type="text/css" href="/dist/css/styles.css"/>\n<script type="text/javascript" src="/dist/jb-react-all.js"></script>\n' + libScripts
-    },
     locationToPath: path => path.replace(/^[0-9]*\//,'').replace(/^projects\//,''),
-    srcOfJsFile: (project,fn,baseDir) => baseDir == './' ? `../${fn}` : `/${project}/${fn}`,
     pathOfJsFile: (project,fn,baseDir) => baseDir == './' ? fn : `/${project}/${fn}`,
     projectUrlInStudio: project => `/studio-bin/${project}`,
     jbLoader: '/dist/jb-loader.js',
-    isDevHost: false
 })
 
 const cloudHost = {
     settings: () => Promise.resolve(({})),
-    rootExists: () => Promise.resolve(false),
     getFile: path => jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files' }}),
-    htmlAsCloud: (html,project) => html.replace(/\/dist\//g,'//unpkg.com/jb-react/dist/').replace(/src="\.\.\//g,'src="').replace(`/${project}/`,''),
     locationToPath: path => path.replace(/^[0-9]*\//,''),
     createProject: request => jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files'}}),
-    scriptForLoadLibraries: libs => {
-        const libScripts = libs.map(lib=>`<script type="text/javascript" src="//unpkg.com/jb-react/dist/${lib}.js"></script>`)
-            + libs.filter(lib=>jb_modules[lib+'-css']).map(lib=>`<link rel="stylesheet" type="text/css" href="//unpkg.com/jb-react/dist/${lib}.css"/>`)
-        return '<link rel="stylesheet" type="text/css" href="//unpkg.com/jb-react/dist/css/styles.css"/>\n<script type="text/javascript" src="//unpkg.com/jb-react/dist/jb-react-all.js"></script>\n' + libScripts
-    },
     pathOfJsFile: (project,fn) => fn,
     projectUrlInStudio: project => ``,
     canNotSave: true,
@@ -42777,8 +42846,9 @@ const cloudHost = {
 //     fiddle.jshell.net/davidbyd/47m1e2tk/show/?studio =>  //unpkg.com/jb-react/bin/studio/studio-cloud.html?entry=//fiddle.jshell.net/davidbyd/47m1e2tk/show/
 
 st.chooseHostByUrl = entryUrl => {
-    if (!entryUrl) return devHost // maybe testHost...
-    st.host = entryUrl.match(/localhost:[0-9]*\/project\/studio/) ?
+    entryUrl = entryUrl || ''
+    st.host = jb.frame.jbInvscode ? vscodeHost
+        : entryUrl.match(/localhost:[0-9]*\/project\/studio/) ?
             devHost
         : entryUrl.match(/studio-cloud/) ?
             cloudHost
@@ -42839,6 +42909,10 @@ st.projectHosts = {
     },
     studio: {
         fetchProject(id,project) {
+            if (jb.frame.jbPreviewProjectSettings) {
+                jb.exec(writeValue('%$studio/projectSettings%',jb.frame.jbPreviewProjectSettings))
+                return Promise.resolve(jb.frame.jbPreviewProjectSettings)
+            }
             const baseUrl = `/project/${project}?cacheKiller=${Math.floor(Math.random()*100000)}`
             return fetch(baseUrl).then(r=>r.text()).then(html =>{
                 const settings = eval('({' + _extractText(html,'jbProjectSettings = {','}') + '})')
@@ -45439,5 +45513,71 @@ jb.component('studio.openMakeLocal', {
             css.width('500')
         ]
     }))
+});
+
+jb.component('studio.initVscodeAdapter', {
+  type: 'action',
+  params: [
+    {id: 'resource', as: 'string', mandatory: true, description: 'mapped to state' },
+  ],
+  impl: function(ctx,resource) {
+        if (! jb.frame.jbInvscode || jb.VscodeAdapterInitialized) return
+        jb.VscodeAdapterInitialized = true
+        const vscode = jb.studio.vsCodeApi
+        const params = ['project','page','profile_path']
+
+        const {pipe, subscribe,create,filter} = jb.callbag
+        jb.studio.vscodeEm = create(obs=> jb.frame.addEventListener('message', e => obs(e)))
+
+        const state = {...jb.frame.jbPreviewProjectSettings, ...vscode.getState()}
+        params.forEach(p => state[p] != null && ctx.run(writeValue(`%${resource}/${p}%`,state[p]) ))
+
+        pipe(jb.ui.resourceChange(), 
+            filter(e=> e.path[0] == resource && params.indexOf(e.path[1]) != -1),
+            subscribe(e =>
+                vscode.setState(jb.objFromEntries(params.map(p=>[p,ctx.exp(`%${resource}/${p}%`)])))
+        ))
+
+        jb.sessionStorage = function(id,val) {
+            return val == undefined ? (vscode.getState() ||{})[id] : vscode.setState({...vscode.getState(),id: val})
+        }
+
+        let messageID = 0
+        const promises = {}
+        jb.frame.addEventListener('message', event => {
+            const message = event.data
+            console.log('get response ', message.messageID, message)
+            if (message && message.messageID) {
+                const req = promises[message.messageID].req // for debug
+                promises[message.messageID].resolve(message.result)
+                delete promises[message.messageID]
+            }
+            if (message.$)
+                ctx.run(message)
+        })
+
+        jb.studio.vscodeService = req => new Promise((resolve,reject) => {
+            messageID++
+            promises[messageID] = {resolve,reject,req}
+            console.log('send req ',messageID,req)
+            vscode.postMessage({...req, messageID})
+        })
+    }
+})
+
+jb.component('studio.profileChanged', {
+    type: 'action',
+    params: [
+        { id: 'fileContent', as: 'string'},
+        { id: 'line', as: 'number'},
+        { id: 'col', as: 'number'},
+    ],
+    impl: (ctx,fileContent,line,col) => {
+        const {compId, compSrc} = jb.textEditor.closestComp(fileContent, {line,col})
+        if (!compId) return
+        const compRef = jb.studio.refOfPath(compId)
+        const newVal = '({' + compSrc.split('\n').slice(1).join('\n')
+        jb.textEditor.setStrValue(newVal, compRef, ctx)
+    }
 });
 
