@@ -174,7 +174,7 @@ function jb_dynamicLoad(modules,prefix) {
   const isDist = document.currentScript.getAttribute('src').indexOf('/dist/') != -1
   if (isDist) {
     const scriptSrc = document.currentScript.getAttribute('src')
-    const base = window.jbModuleUrl || scriptSrc.slice(0,scriptSrc.lastIndexOf('/'))
+    const base = window.jbModuleUrl && (window.jbModuleUrl + '/dist') || scriptSrc.slice(0,scriptSrc.lastIndexOf('/'))
     modules.split(',').flatMap(m=>[m+'.js',...(jb_modules[`${m}-css`] ? [`${m}.css`]: [])])
       .forEach(m=>loadFile([base,m].join('/')))
   } else {
