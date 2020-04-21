@@ -43,9 +43,7 @@ class jBartStudio {
     getHtmlForWebview(webview) {
         const ws = workspace.workspaceFolders && workspace.workspaceFolders[0] || { uri: { path: '' } }
         const jbBaseProjUrl = webview.asWebviewUri(Uri.file(ws.uri.path))
-        const jbModulePath = ws.uri.path + 'node_modules/jb-react'
-        const jbModuleUrl = fs.existsSync(jbModulePath) ? Uri.file(jbModulePath) : ''
-        const jbBaseProjUrl = webview.asWebviewUri(Uri.file(ws.uri.path))
+        const jbModuleUrl = fs.existsSync(ws.uri.fsPath + '/node_modules/jb-react') ? webview.asWebviewUri(Uri.file(ws.uri.path + '/node_modules/jb-react')) : ''
         return this.studioHtml(jbModuleUrl, jbBaseProjUrl, JSON.stringify(this.calcProjectSettings()), JSON.stringify(this.calcDocsDiffFromFiles(webview)))
     }
 
@@ -68,6 +66,13 @@ class jBartStudio {
     }
 
     studioHtml(jbModuleUrl, jbBaseProjUrl, jbProjectSettings, jbDocsDiffFromFiles) {
+        const studioBin = `<script type="text/javascript" src="${jbModuleUrl}/bin/studio/studio-all.js"></script>
+        <link rel="stylesheet" type="text/css" href="${jbModuleUrl}/bin/studio/css/studio-all.css"/>`
+
+        const studioDev = `<script type="text/javascript" src="${jbBaseProjUrl}/src/loader/jb-loader.js"
+        modules="common,ui-common,material,ui-tree,dragula,codemirror,pretty-print,studio,history,animate,md-icons,fuse" prefix1="!st!"></script>
+    <link rel="stylesheet" type="text/css" href="${jbBaseProjUrl}/projects/studio/css/studio.css"/>`
+
         return `<!DOCTYPE html>
 <html>
 	<head>
@@ -77,10 +82,8 @@ class jBartStudio {
 			jbBaseProjUrl = '${jbBaseProjUrl}'
 			jbPreviewProjectSettings= ${jbProjectSettings}
 			jbDocsDiffFromFiles = ${jbDocsDiffFromFiles}
-	    </script>		
-		<script type="text/javascript" src="${jbBaseProjUrl}/src/loader/jb-loader.js"
-			modules="common,ui-common,material,ui-tree,dragula,codemirror,pretty-print,studio,history,animate,md-icons,fuse" prefix1="!st!"></script>
-		<link rel="stylesheet" type="text/css" href="${jbBaseProjUrl}/projects/studio/css/studio.css"/>
+        </script>
+        ${jbModuleUrl ? studioBin : studioDev}
 	</head>
 	<body style="zoom: 0.8">
 		<div id="studio" style="background-color: white;width:1280px;"> </div>
