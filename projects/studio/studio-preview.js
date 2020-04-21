@@ -177,7 +177,7 @@ jb.component('studio.previewWidgetImpl', {
 st.injectProjectToPreview = function(previewWin,projectSettings) {
 const baseProjUrl = jb.frame.jbBaseProjUrl ? `jbBaseProjUrl = '${jbBaseProjUrl}'` : ''
 const moduleUrl = jb.frame.jbModuleUrl ? `jbModuleUrl = '${jbModuleUrl}'` : ''
-const baseUrl = jb.frame.jbModuleUrl ? { baseUrl: baseProjUrl} : {}
+const baseUrl = jb.frame.jbModuleUrl ? { baseUrl: jbBaseProjUrl} : {}
 
 const vscodeZoomFix = jb.frame.jbInvscode? 'style="zoom: 0.8"' : ''
 const html = `<!DOCTYPE html>
