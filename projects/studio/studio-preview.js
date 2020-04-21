@@ -176,6 +176,8 @@ jb.component('studio.previewWidgetImpl', {
 
 st.injectProjectToPreview = function(previewWin,projectSettings) {
 const baseProjUrl = jb.frame.jbBaseProjUrl ? `jbBaseProjUrl = '${jbBaseProjUrl}'` : ''
+const jbModuleUrl = jb.frame.jbModuleUrl ? `jbModuleUrl = '${jbModuleUrl}'` : ''
+
 const vscodeZoomFix = jb.frame.jbInvscode? 'style="zoom: 0.8"' : ''
 const html = `<!DOCTYPE html>
 <html>
@@ -183,6 +185,7 @@ const html = `<!DOCTYPE html>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script type="text/javascript">
     ${baseProjUrl}
+    ${jbModuleUrl}
     jbProjectSettings = ${JSON.stringify(projectSettings)}
   </script>
   <script type="text/javascript" src="${st.host.jbLoader}"></script>

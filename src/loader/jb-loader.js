@@ -174,9 +174,9 @@ function jb_dynamicLoad(modules,prefix) {
   const isDist = document.currentScript.getAttribute('src').indexOf('/dist/') != -1
   if (isDist) {
     const scriptSrc = document.currentScript.getAttribute('src')
-    const base = scriptSrc.slice(0,scriptSrc.lastIndexOf('/')+1)
+    const base = window.jbModuleUrl || scriptSrc.slice(0,scriptSrc.lastIndexOf('/'))
     modules.split(',').flatMap(m=>[m+'.js',...(jb_modules[`${m}-css`] ? [`${m}.css`]: [])])
-      .forEach(m=>loadFile(base+m))
+      .forEach(m=>loadFile([base,m].join('/')))
   } else {
     modules.split(',').flatMap(m=>[m,...(jb_modules[`${m}-css`] ? [`${m}-css`]: [])]).forEach(m=>{
       (jb_modules[m] || []).forEach(file=>{
@@ -238,7 +238,7 @@ function pathOfProjectFile(project,fn,baseDir) {
  }
  
  function loadFile(url) {
-  if (window.jbBaseProjUrl)
+  if (window.jbBaseProjUrl && !url.match('//'))
     url = window.jbBaseProjUrl + url
   if (url.match(/\.js$/))
      document.write(`<script src="${url}" charset="UTF-8"></script>`)
