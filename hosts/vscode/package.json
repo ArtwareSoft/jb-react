@@ -1,7 +1,8 @@
 {
-	"name": "jBart Studio",
+	"name": "jbart-studio",
+	"displayName": "jBart Studio",
 	"description": "Javascript Visual Editor",
-	"version": "0.5.0",
+	"version": "0.5.1",
 	"publisher": "artwaresoft",
 	"engines": {
 		"vscode": "^1.38.0"
@@ -9,6 +10,9 @@
 	"categories": [
 		"Other"
 	],
+	"icon": "logo128.png",
+	"keywords": ["javascript", "visual programming", "visual", "html5", "web development", "css"],
+	"repository": "https://github.com/Artwaresoft/jb-react",
 	"activationEvents": [
 		"onCommand:jb.studio.openJbEditor",
 		"onCommand:jb.studio.openProperties"
@@ -29,10 +33,6 @@
 		]
 	},
 	"scripts": {
-		"vscode:prepublish": "npm run compile",
-		"compile": "tsc -p ./",
-		"lint": "tslint -p ./",
-		"watch": "tsc -w -p ./"
 	},
 	"dependencies": {},
 	"devDependencies": {

@@ -8,7 +8,6 @@ function activate(context) {
     context.subscriptions.push(commands.registerCommand('jb.studio.openJbEditor', () => jBartStudio.createOrShow()));
     context.subscriptions.push(commands.registerCommand('jb.studio.openProperties', () => jBartStudio.createOrShow()));
 }
-
 exports.activate = activate;
 
 class jBartStudio {
@@ -33,22 +32,29 @@ class jBartStudio {
             });
         }, null, this._disposables);
     }
+
     static createOrShow() {
         const win = vscode.window;
         const column = win.activeTextEditor ? (win.activeTextEditor.viewColumn || 0) + 1 : undefined;
         const panel = win.createWebviewPanel(jBartStudio.viewType, 'jBart Studio', column || ViewColumn.One, { enableScripts: true });
         new jBartStudio(panel);
     }
+
     getHtmlForWebview(webview) {
-        const ws = workspace.workspaceFolders && workspace.workspaceFolders[0] || { uri: { path: '' } };
-        const jbBaseProjUrl = webview.asWebviewUri(Uri.file(ws.uri.path));
-        return this.studioHtml(jbBaseProjUrl, JSON.stringify(this.calcProjectSettings()), JSON.stringify(this.calcDocsDiffFromFiles(webview)));
+        const ws = workspace.workspaceFolders && workspace.workspaceFolders[0] || { uri: { path: '' } }
+        const jbBaseProjUrl = webview.asWebviewUri(Uri.file(ws.uri.path))
+        const jbModulePath = ws.uri.path + 'node_modules/jb-react'
+        const jbModuleUrl = fs.existsSync(jbModulePath) ? Uri.file(jbModulePath) : ''
+        const jbBaseProjUrl = webview.asWebviewUri(Uri.file(ws.uri.path))
+        return this.studioHtml(jbModuleUrl, jbBaseProjUrl, JSON.stringify(this.calcProjectSettings()), JSON.stringify(this.calcDocsDiffFromFiles(webview)))
     }
+
     calcDocsDiffFromFiles(webview) {
         return workspace.textDocuments.filter(doc => doc.fileName.match(/\.(ts|js|csv)$/))
             .filter(doc => doc.getText() != fs.readFileSync(doc.fileName, 'utf8'))
             .map(doc => [doc.getText(), `//# sourceURL=${webview.asWebviewUri(doc.uri)}`].join('\n'));
     }
+
     calcProjectSettings() {
         const editor = vscode.window.activeTextEditor;
         if (!editor)
@@ -60,12 +66,14 @@ class jBartStudio {
             return Object.assign(Object.assign({}, res), { line: editor.selection.active.line, col: editor.selection.active.character });
         }
     }
-    studioHtml(jbBaseProjUrl, jbProjectSettings, jbDocsDiffFromFiles) {
+
+    studioHtml(jbModuleUrl, jbBaseProjUrl, jbProjectSettings, jbDocsDiffFromFiles) {
         return `<!DOCTYPE html>
 <html>
 	<head>
 		<script type="text/javascript">
-			jbInvscode = true
+            jbInvscode = true
+            jbModuleUrl = '${jbModuleUrl}'
 			jbBaseProjUrl = '${jbBaseProjUrl}'
 			jbPreviewProjectSettings= ${jbProjectSettings}
 			jbDocsDiffFromFiles = ${jbDocsDiffFromFiles}

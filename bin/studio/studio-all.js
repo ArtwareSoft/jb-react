@@ -42811,7 +42811,7 @@ const devHost = {
     jbLoader: '/src/loader/jb-loader.js',
 }
 
-const vscodeHost = {
+const vscodeDevHost = {
     settings: () => Promise.resolve('{}'),
     getFile: path => jb.studio.vscodeService({$: 'getFile', path}),
     locationToPath: path => decodeURIComponent(path.split('//file//').pop()).replace(/\\/g,'/'),
@@ -42822,6 +42822,12 @@ const vscodeHost = {
     projectUrlInStudio: project => `/project/studio/${project}`,
     jbLoader: `${jb.frame.jbBaseProjUrl}/src/loader/jb-loader.js`,
 }
+
+const vscodeUserHost = Object.assign({},vscodeDevHost,{
+    locationToPath: path => decodeURIComponent(path.split('//file//').pop()).replace(/\\/g,'/').replace(/^projects\//,''),
+    pathOfJsFile: (project,fn,baseDir) => baseDir == './' ? fn : `/${project}/${fn}`,
+    jbLoader: `${jb.frame.jbBaseProjUrl}/node_modules/jb-react/dist/jb-loader.js`,
+})
 
 const userLocalHost = Object.assign({},devHost,{
     createProject: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
@@ -42847,7 +42853,7 @@ const cloudHost = {
 
 st.chooseHostByUrl = entryUrl => {
     entryUrl = entryUrl || ''
-    st.host = jb.frame.jbInvscode ? vscodeHost
+    st.host = jb.frame.jbInvscode ? jbModuleUrl ? vscodeUserHost : vscodeDevHost
         : entryUrl.match(/localhost:[0-9]*\/project\/studio/) ?
             devHost
         : entryUrl.match(/studio-cloud/) ?
