@@ -9,7 +9,13 @@
             "program": "${workspaceFolder}/bin/tgp-pretty",
             "args": ["-file:d3-"],
         },
-
+        {
+            "name": "Run Extension",
+            "type": "extensionHost",
+            "request": "launch",
+            "runtimeExecutable": "${execPath}",
+            "args": ["--extensionDevelopmentPath=${workspaceRoot}/hosts/vscode"],
+        },
         {
             "name": "Launch",
             "type": "node",

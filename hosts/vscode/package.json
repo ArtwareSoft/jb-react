@@ -1,0 +1,44 @@
+{
+	"name": "jBart Studio",
+	"description": "Javascript Visual Editor",
+	"version": "0.5.0",
+	"publisher": "artwaresoft",
+	"engines": {
+		"vscode": "^1.38.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+		"onCommand:jb.studio.openJbEditor",
+		"onCommand:jb.studio.openProperties"
+	],
+	"main": "extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "jb.studio.openJbEditor",
+				"title": "Open jBart Editor",
+				"category": "jBart"
+			},
+			{
+				"command": "jb.studio.openProperties",
+				"title": "Open jBart Properties",
+				"category": "jBart"
+			}
+		]
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"lint": "tslint -p ./",
+		"watch": "tsc -w -p ./"
+	},
+	"dependencies": {},
+	"devDependencies": {
+		"@types/node": "^12.12.0",
+		"tslint": "^5.19.0",
+		"typescript": "^3.8.3",
+		"@types/vscode": "^1.38.0"
+	}
+}

@@ -51,8 +51,8 @@ st.initPreview = function(preview_window,allowedTypes) {
       st.previewjb.studio.studiojb = jb;
       st.previewjb.lastRun = {}
 
-      // reload the changed components and rebuild the history
-      jb.frame.jbActiveDoc && st.previewWindow.eval(jbActiveDoc.content) // used by vscode to reload the content of unsaved doc
+      ;(jb.frame.jbDocsDiffFromFiles || []).forEach(doc=> st.previewWindow.eval(doc)) // used by vscode to reload the content of unsaved doc
+
       st.initCompsRefHandler(st.previewjb, allowedTypes)
       changedComps.forEach(e=>{
         st.compsRefHandler.resourceReferred(e[0])
