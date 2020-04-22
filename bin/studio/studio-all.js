@@ -42828,8 +42828,7 @@ const vscodeDevHost = {
 }
 
 const vscodeUserHost = Object.assign({},vscodeDevHost,{
-    locationToPath: path => decodeURIComponent(path.split('//file//').pop()).replace(/\\/g,'/').replace(/^projects\//,''),
-    pathOfJsFile: (project,fn,baseDir) => baseDir == './' ? fn : `/${project}/${fn}`,
+    pathOfJsFile: (project,fn) => `${project}/${fn}`,
     jbLoader: `${jb.frame.jbBaseProjUrl}/node_modules/jb-react/dist/jb-loader.js`,
 })
 
