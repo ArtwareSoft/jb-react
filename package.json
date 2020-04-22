@@ -34,7 +34,7 @@
     "helloWorld": "start http://localhost:8082/project/studio/hello-world",
     "test": "start http://localhost:8082/projects/ui-tests/tests.html",
     "pub": "yarn build-libs && git commit -am build-lib",
-    "update-corona-proj": "node node_modules/copyfiles/copyfiles bin/* ../projects/corona-stat/node_modules/jb-react/bin & node node_modules/copyfiles/copyfiles dist/* ../projects/corona-stat/node_modules/jb-react/dist"
+    "update-corona-proj": "node node_modules/copyfiles/copyfiles -V dist/* bin/studio/* ../projects/corona-stat/node_modules/jb-react" 
   },
   "bin": {
     "studio": "bin/studio"

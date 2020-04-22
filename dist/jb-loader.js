@@ -228,6 +228,7 @@ function jb_initWidget() {
 }
 
 function pathOfProjectFile(fn,{project,baseUrl,source} = {}) {
+  debugger
   if (baseUrl.indexOf('//') != -1) // external
     return baseUrl + fn
   else if (baseUrl)
