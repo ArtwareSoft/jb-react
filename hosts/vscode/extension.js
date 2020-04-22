@@ -44,6 +44,8 @@ class jBartStudio {
         const ws = workspace.workspaceFolders && workspace.workspaceFolders[0] || { uri: { path: '' } }
         const jbBaseProjUrl = webview.asWebviewUri(Uri.file(ws.uri.path))
         const jbModuleUrl = fs.existsSync(ws.uri.fsPath + '/node_modules/jb-react') ? webview.asWebviewUri(Uri.file(ws.uri.path + '/node_modules/jb-react')) : ''
+        if (!jbModuleUrl && !ws.uri.path.match(/jb-react/))
+            return this.installHtml()
         return this.studioHtml(jbModuleUrl, jbBaseProjUrl, JSON.stringify(this.calcProjectSettings(jbModuleUrl)), JSON.stringify(this.calcDocsDiffFromFiles(webview)))
     }
 
@@ -94,6 +96,19 @@ class jBartStudio {
 		  jb.studio.vsCodeApi = acquireVsCodeApi()
 		  jb.ui.render(jb.ui.h(jb.exec({$:'studio.all'})), document.getElementById('studio'))
 		</script>
+	</body>
+</html>`;
+    }
+
+    installHtml() {
+        return `<!DOCTYPE html>
+<html>
+	<head>
+    <body>
+        <h4>jBart is not installed in this project</h4>
+        <p>please install jBart in your project</p>
+        <div><code>npm i --save jb-react</code></div>
+        <div>dev version: <code><div>npm i --save artwaresoft/jb-react</code></div>
 	</body>
 </html>`;
     }

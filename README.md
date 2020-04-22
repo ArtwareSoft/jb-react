@@ -19,21 +19,22 @@ jBart suggests a revolutionary approach for visual development of complex apps t
 - enjoy.. use the tutorial at http://jb-letmesee.appspot.com/LetMeSee/p80kd9kkn6.html?roomid=hd8mns
 
 ## Visual Development Concepts
-- pick & edit (like in Chrome debugger)
+- drag any visual element from the web
+- pick & edit (pick like in Chrome debugger, edit like in powerpoint)
+- integrated studios for different developments scenarios: ui development, forms, data binding, parsing, etc.
+- coding is not forbeeden - clean textual representation of your code in declarative javascript
 - work by example data
-- smart data/code guidance in context
-- preserve the full power of react & javascript
 
 ## Visual Development Benefits
 - faster delivery
 - enhance quality
 - reduce development/maintenance costs
-- less technical people can build complex business apps
+- non technical people can build complex business apps
 - develop larger projects
 - enhance team work effectiveness
 
 ## jBart is written by itself
-- core is written in react
+- core is written as a react compatible engine
 - studio is written by itself (like the C compiler written in C)
 
 ## Learn jbart
