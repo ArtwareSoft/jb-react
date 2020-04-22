@@ -1,3 +1,35 @@
+.vscode-studio .jb-default-dialog { background: var(--vscode-editor-background) }
+.vscode-studio .jb-default-dialog>.dialog-title { background: var(--vscode-editor-background) }
+#jb-preview { background: white }
+.vscode-studio input { 
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground)
+}
+.vscode-studio
+  #mainMenu {
+    background-color: var(--vscode-menu-background);
+    color: var(--vscode-menu-foreground);
+
+  }
+  
+  .vscode-studio
+  #mainMenu .selected {
+    background-color: var(--vscode-menu-selectionBackground);
+    color: var(--vscode-menu-selectionForeground);
+  }
+
+  .vscode-studio .pulldown-mainmenu-popup
+  {
+    background: var(--vscode-badge-background);
+    color: var(--vscode-badge-foreground);
+  }
+
+  .vscode-studio
+  .pulldown-mainmenu-popup .selected {
+    background-color: var(--vscode-menu-selectionBackground);
+    color: var(--vscode-menu-selectionForeground);
+  }
+
 @keyframes slide_from_top {
     0%   {margin-top: -50px;}
     10%  {margin-top: 0;}
@@ -24,7 +56,7 @@
   z-index: 10000;
 }
 
-.studio-pages { background: #F5F5F5; position: absolute; bottom: 20px; left: 0; width: 100%; border-top: 1px solid #aaa}
+.studio-pages { background1: #F5F5F5; position: absolute; bottom: 20px; left: 0; width: 100%; border-top: 1px solid #aaa}
 .studio-pages-items { list-style: none; padding: 0; margin: 0; margin-left: 20px; font-family: "Arial" }
 .studio-pages-items>* { list-style: none; display: inline-block; padding: 0 5px; font-size: 12px; border: 1px solid transparent; cursor: pointer;}
 .studio-pages-items>* label { cursor: inherit; }
