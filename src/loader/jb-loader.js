@@ -230,7 +230,7 @@ function jb_initWidget() {
 function pathOfProjectFile(fn,{project,baseUrl,source} = {}) {
   debugger
   if (source == 'vscodeUserHost')
-    return `${project}/${fn}`
+    return `${baseUrl}/${project}/${fn}`
   else if (source == 'vscodeDevHost')
     return `/projects/${project}/${fn}`
   else if (baseUrl.indexOf('//') != -1) // external
