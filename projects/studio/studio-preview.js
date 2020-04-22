@@ -143,7 +143,7 @@ jb.component('studio.previewWidget', {
             const project = ctx.exp('%$studio/project%')
             document.title = `${project} with jBart`;
             return st.projectHosts[host].fetchProject(ctx.exp('%$queryParams/hostProjectId%'),project)
-              .then(x=>jb.delay(5000).then(()=>x))
+//              .then(x=>jb.delay(5000).then(()=>x))
               .then(projectSettings => {
                 console.log(jb.exec('%$studio/project%'),projectSettings.project)
                 jb.exec(writeValue('%$studio/project%', projectSettings.project))
@@ -177,7 +177,7 @@ jb.component('studio.previewWidgetImpl', {
 st.injectProjectToPreview = function(previewWin,projectSettings) {
 const baseProjUrl = jb.frame.jbBaseProjUrl ? `jbBaseProjUrl = '${jbBaseProjUrl}'` : ''
 const moduleUrl = jb.frame.jbModuleUrl ? `jbModuleUrl = '${jbModuleUrl}'` : ''
-const baseUrl = jb.frame.jbModuleUrl ? { baseUrl: jbBaseProjUrl + '/'} : {}
+const baseUrl = jb.frame.jbModuleUrl ? { baseUrl: jbBaseProjUrl } : {}
 
 const vscodeZoomFix = jb.frame.jbInvscode? 'style="zoom: 0.8"' : ''
 const html = `<!DOCTYPE html>
