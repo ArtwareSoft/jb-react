@@ -2,6 +2,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       'core': [
         'src/core/jb-core.js',
         'src/core/jb-macro.js',
+        'src/misc/spy.js',
       ],
       'common': [
         'src/core/jb-core.js',
@@ -12,10 +13,9 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       'ui-common-css': [
         'css/font.css',
         'css/styles.css',
-      ],      
+      ],
       'ui-common': [
         'dist/jb-immutable.js', // the immutable-helper lib
-//        'dist/jb-rx.js', // todo: remove
         'src/misc/jb-callbag.js',
 
         'src/ui/watchable/watchable-ref.js',
@@ -78,6 +78,9 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       'fuse': [
         'dist/fuse.js',
       ],
+      'callbag': [
+        'src/misc/jb-callbag.js',
+      ],            
       'codemirror-js-files': [
         'node_modules/codemirror/lib/codemirror.js',
         'node_modules/codemirror/mode/xml/xml.js',
@@ -171,7 +174,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
 function jb_dynamicLoad(modules,prefix) {
   prefix = prefix || '';
   modules = modules || '';
-  const isDist = document.currentScript.getAttribute('src').indexOf('/dist/') != -1
+  const isDist = typeof window != 'undefined' && document.currentScript.getAttribute('src').indexOf('/dist/') != -1
   if (isDist) {
     const scriptSrc = document.currentScript.getAttribute('src')
     const base = window.jbModuleUrl && (window.jbModuleUrl + '/dist') || scriptSrc.slice(0,scriptSrc.lastIndexOf('/'))

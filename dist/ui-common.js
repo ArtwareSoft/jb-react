@@ -198,42 +198,31 @@ jb.callbag = {
         for (let i = 1, n = cbs.length; i < n; i++) res = cbs[i](res)
         return res
     },
-    distinctUntilChanged(compare = is) {
-        return source => (start, sink) => {
-            if (start !== 0) return
-            let inited = false
-            let prev
-            let talkback
-            source(0, (type, data) => {
-                if (type === 0) {
-                    talkback = data
-                }
-
-                if (type !== 1) {
-                    sink(type, data)
-                    return
-                }
-
-                if (inited && compare(prev, data)) {
-                    talkback(1)
-                    return
-                }
-
-                inited = true
-                prev = data
-                sink(1, data)
-            })
-        }
+    distinctUntilChanged: compare => source => (start, sink) => {
+        compare = compare || is
+        if (start !== 0) return
+        let inited = false, prev, talkback
+        source(0, (type, data) => {
+            if (type === 0) talkback = data
+            if (type !== 1) {
+                sink(type, data)
+                return
+            }
+            if (inited && compare(prev, data)) {
+                talkback(1)
+                return
+            }
+            inited = true
+            prev = data
+            sink(1, data)
+        })
     },
     takeUntil(notifier) {
         if (Object.prototype.toString.call(notifier) === "[object Promise]")
             notifier = jb.callbag.fromPromise(notifier)
         return source => (start, sink) => {
             if (start !== 0) return
-            let sourceTalkback
-            let notifierTalkback
-            let inited = false
-            let done = UNIQUE
+            let sourceTalkback, notifierTalkback, inited = false, done = UNIQUE
 
             source(0, (t, d) => {
                 if (t === 0) {
@@ -277,11 +266,9 @@ jb.callbag = {
             })
         }
     },
-    flatMap: (_makeSource, combineResults) => inputSource => (start, sink) => {
+    flatMap: (_makeSource, combineResults) => source => (start, sink) => {
         if (start !== 0) return
         const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
-
-
         if (!combineResults) combineResults = (x, y) => y
 
         let index = 0
@@ -317,7 +304,7 @@ jb.callbag = {
                 }
             }
 
-        inputSource(0, (t, d) => {
+        source(0, (t, d) => {
             if (t === 0) {
                 inputSourceTalkback = d
                 sink(0, pullHandle)
@@ -667,22 +654,17 @@ jb.callbag = {
     },
     skip: max => source => (start, sink) => {
         if (start !== 0) return;
-        let skipped = 0;
-        let talkback;
+        let skipped = 0, talkback;
         source(0, (t, d) => {
-          if (t === 0) {
-            talkback = d;
-            sink(t, d);
-          } else if (t === 1) {
-            if (skipped < max) {
+          if (t === 0) talkback = d
+          if (t === 1 && skipped < max) {
               skipped++;
               talkback(1);
-            } else sink(t, d);
-          } else {
-            sink(t, d);
+              return
           }
+          sink(t, d);
         });
-    },    
+    },
     fromCallBag: source => source,
     fromAny: (source, name, options) => {
         const f = source && 'from' + (Object.prototype.toString.call(source) === "[object Promise]" ? 'Promise'

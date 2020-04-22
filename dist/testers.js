@@ -43,7 +43,7 @@ jb.component('dataTest', {
 			})
 			.then(result =>
 					Promise.resolve(cleanUp())
-					.then(_=> console.log('end ' + ctx.path ))
+					.then(_=> console.log('end      ' + ctx.path ))
 					.then(_=>result) )
 	}
 })
@@ -135,7 +135,7 @@ jb.component('uiTest', {
 				return result;
 			}).then(result =>
 				Promise.resolve(cleanUp())
-				.then(_=> console.log('end ' + ctx.path ))
+				.then(_=> console.log('end      ' + ctx.path ))
 				.then(_=>result) )
 	}
 })
@@ -309,7 +309,7 @@ if (typeof startTime === 'undefined')
 startTime = startTime || new Date().getTime();
 
 jb.testers.runTests = function({testType,specificTest,show,pattern}) {
-	const {pipe, fromIter, subscribe,concatMap, fromPromise} = jb.callbag
+	const {pipe, fromIter, subscribe,concatMap, fromPromise } = jb.callbag
 
 	jb.studio.initTests() && jb.studio.initTests()
 	const initial_resources = JSON.stringify(jb.resources).replace(/\"\$jb_id":[0-9]*,/g,'')
@@ -326,7 +326,7 @@ jb.testers.runTests = function({testType,specificTest,show,pattern}) {
 
 	return pipe(
 			fromIter(tests),
-			concatMap(e=> {
+			concatMap(e => {
 			//	return Promise.resolve({ id: e[0], success: false, reason: 'empty result'})
 			  jb.logs.error = [];
 			  return fromPromise(Promise.resolve(new jb.jbCtx().setVars({testID: e[0], initial_resources }).run({$:e[0]}))
