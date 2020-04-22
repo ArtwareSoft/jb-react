@@ -36224,7 +36224,7 @@ jb.component('studio.previewWidget', {
             const project = ctx.exp('%$studio/project%')
             document.title = `${project} with jBart`;
             return st.projectHosts[host].fetchProject(ctx.exp('%$queryParams/hostProjectId%'),project)
-              .then(x=>jb.delay(5000).then(()=>x))
+//              .then(x=>jb.delay(5000).then(()=>x))
               .then(projectSettings => {
                 console.log(jb.exec('%$studio/project%'),projectSettings.project)
                 jb.exec(writeValue('%$studio/project%', projectSettings.project))
@@ -42900,7 +42900,7 @@ st.projectHosts = {
                 const html = _extractText(json,'html: "','js:   "').trim().slice(0,-2)
                 const js = _extractText(json,'js:   "','css:  "').trim().slice(0,-2)
                 if (html)
-                    return {project, files: { [`${project}.html`]: html, [`${project}.js`]: js } }
+                    return {project, files: { [`${project}.html`]: html, [`${project}.js`]: js },source:'jsFiddle' }
             })
         }
     },
@@ -42912,8 +42912,7 @@ st.projectHosts = {
             const project = baseUrl.split('/').filter(x=>x).pop()
             return getUrlContent(gitHubUrl).then(html =>{
                 const settings = eval('({' + _extractText(html,'jbProjectSettings = {','}') + '})')
-                return {...settings,baseUrl,project}
-
+                return {...settings,baseUrl,project,source:'github'}
             })
         }
     },
@@ -42926,7 +42925,7 @@ st.projectHosts = {
             const baseUrl = `/project/${project}?cacheKiller=${Math.floor(Math.random()*100000)}`
             return fetch(baseUrl).then(r=>r.text()).then(html =>{
                 const settings = eval('({' + _extractText(html,'jbProjectSettings = {','}') + '})')
-                return {...settings, project}
+                return {...settings, project,source:'studio'}
             })
         }
     },
@@ -42937,7 +42936,8 @@ st.projectHosts = {
                 jsFiles: ['remote-widgets','phones-3',...['data','ui','vdom','tree','watchable','parsing','object-encoder'].map(x=>x+'-tests')]
                     .map(x=>`/projects/ui-tests/${x}.js`),
                 project, 
-                entry: { $: 'uiTestRunner', test: project }
+                entry: { $: 'uiTestRunner', test: project },
+                source:'test'
             })
         }
     }

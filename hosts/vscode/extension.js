@@ -44,7 +44,7 @@ class jBartStudio {
         const ws = workspace.workspaceFolders && workspace.workspaceFolders[0] || { uri: { path: '' } }
         const jbBaseProjUrl = webview.asWebviewUri(Uri.file(ws.uri.path))
         const jbModuleUrl = fs.existsSync(ws.uri.fsPath + '/node_modules/jb-react') ? webview.asWebviewUri(Uri.file(ws.uri.path + '/node_modules/jb-react')) : ''
-        return this.studioHtml(jbModuleUrl, jbBaseProjUrl, JSON.stringify(this.calcProjectSettings()), JSON.stringify(this.calcDocsDiffFromFiles(webview)))
+        return this.studioHtml(jbModuleUrl, jbBaseProjUrl, JSON.stringify(this.calcProjectSettings(jbModuleUrl)), JSON.stringify(this.calcDocsDiffFromFiles(webview)))
     }
 
     calcDocsDiffFromFiles(webview) {
@@ -53,7 +53,7 @@ class jBartStudio {
             .map(doc => [doc.getText(), `//# sourceURL=${webview.asWebviewUri(doc.uri)}`].join('\n'));
     }
 
-    calcProjectSettings() {
+    calcProjectSettings(jbModuleUrl) {
         const editor = vscode.window.activeTextEditor;
         if (!editor)
             return {};
@@ -61,7 +61,10 @@ class jBartStudio {
         if (fs.existsSync(htmlFile)) {
             const html = fs.readFileSync(htmlFile, 'utf8');
             const res = eval('({' + _extractText(html, 'jbProjectSettings = {', '}', '') + '})');
-            return Object.assign(Object.assign({}, res), { line: editor.selection.active.line, col: editor.selection.active.character });
+            return Object.assign(Object.assign({}, res), { 
+                source: jbModuleUrl ? 'vscodeUserHost' : 'vscodeDevHost', 
+                line: editor.selection.active.line, col: editor.selection.active.character 
+            });
         }
     }
 

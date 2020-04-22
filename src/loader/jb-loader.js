@@ -208,11 +208,12 @@ loadProject()
 
 function loadProject() {
   if (typeof jbProjectSettings == 'undefined') return
+  jbProjectSettings.baseUrl = jbProjectSettings.baseUrl || ''
 
   jb_dynamicLoad(jbProjectSettings.libs); // may load packaged libs from dist
 
   [...(jbProjectSettings.jsFiles || []), ...(jbProjectSettings.cssFiles || [])]
-    .forEach(fn=> loadFile(pathOfProjectFile(jbProjectSettings.project,fn,jbProjectSettings.baseUrl || '')) )
+    .forEach(fn=> loadFile(pathOfProjectFile(fn,jbProjectSettings)) )
 }
 
 function jb_initWidget() {
@@ -226,14 +227,16 @@ function jb_initWidget() {
   jb.ui.renderWidget(prof || {$: jbProjectSettings.entry || `${fixedProjName}.main` }, document.getElementById('main'))
 }
 
-function pathOfProjectFile(project,fn,baseDir) {
-  if (baseDir.indexOf('//') != -1) // external
-    return baseDir + fn
-  else if (baseDir)
-   return baseDir == './' ? fn : `/${project}/${fn}`
+function pathOfProjectFile(fn,{project,baseUrl,source} = {}) {
+  if (baseUrl.indexOf('//') != -1) // external
+    return baseUrl + fn
+  else if (baseUrl)
+    return baseUrl == './' ? fn : `/${project}/${fn}`
   else if (fn[0] == '/')
     return fn
-  else
+  else if (source == 'vscodeUserHost')
+    return `${project}/${fn}`
+  else if (source == 'studio' || source == 'vscodeDevHost')
     return `/projects/${project}/${fn}`
  }
  
