@@ -134,7 +134,7 @@ jb.component('pptr.waitForSelector', {
     ],
     impl: (ctx,selector,visible,hidden,whenDone,timeout,frame,phase) => 
         ({ ctx, phase, 
-            do: cmp => frame(cmp.page).waitForSelector(selector,{visible,hidden, timeout}).then(()=>whenDone(ctx.setVar('pptrPage',comp))) 
+            do: cmp => frame(cmp.page).waitForSelector(selector,{visible,hidden, timeout}).then(()=>whenDone(ctx.setVar('pptrPage',cmp))) 
         })
 })
 
@@ -151,7 +151,7 @@ jb.component('pptr.waitForNavigation', {
         {id: 'phase', as: 'number', defaultValue: 10, description: 'phase of registration'}
     ],
     impl: (ctx,waitUntil,whenDone,timeout,phase) => 
-        ({ ctx, phase, do: cmp => frame(cmp.page).waitForNavigation({waitUntil, timeout}).then(()=>whenDone(ctx.setVar('pptrPage',comp)))})
+        ({ ctx, phase, do: cmp => frame(cmp.page).waitForNavigation({waitUntil, timeout}).then(()=>whenDone(ctx.setVar('pptrPage',cmp)))})
 })
 
 jb.component('pptr.delay', {
@@ -161,7 +161,7 @@ jb.component('pptr.delay', {
       {id: 'phase', as: 'number', defaultValue: 10, description: 'phase of registration'},
       {id: 'whenDone', type: 'action', dynamic: true },
     ],
-    impl: (ctx,mSec,phase) => ({ ctx, phase, do: comp => jb.delay(mSec).then(()=>whenDone(ctx.setVar('pptrPage',comp))) })
+    impl: (ctx,mSec,phase) => ({ ctx, phase, do: cmp => jb.delay(mSec).then(()=>whenDone(ctx.setVar('pptrPage',cmp))) })
 })
 
 jb.component('pptr.pageId', {
