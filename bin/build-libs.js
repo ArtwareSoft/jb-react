@@ -25,35 +25,23 @@ const studioFiles = filesOfModules('common,ui-common,ui-tree,dragula,codemirror,
 const studioCssFiles = ['/css/styles.css', '/projects/studio/css/studio.css']
   .concat(filesOfModules('ui-common-css,codemirror-css,material-css')).filter(x=>x.match(/.css$/));
 const nodeFiles = filesOfModules('common,node,pretty-print,xml,jison,parsing').filter(x=>!x.match(/.css$/));
-const coreFiles = jb_modules['core'];
 
-concatFiles(filesOfModules('common'),'common.js')
-concatFiles(filesOfModules('ui-common'),'ui-common.js')
+'core,common,ui-common,animate,d3,cards,cards-sample-data,pretty-print,parsing,xml,puppeteer,callbag,md-icons'
+  .split(',').forEach(m=>concatFiles(jb_modules[m],`${m}.js`))
+
 concatFiles(filesOfModules('ui-common-css'),'ui-common.css')
-
 concatFiles(filesOfModules('codemirror-js-files'),'codemirror.js')
-concatFiles(filesOfModules('animate'),'animate.js')
 removeExports('animate.js')
-concatFiles(filesOfModules('d3'),'d3.js');
-concatFiles(filesOfModules('cards'),'cards.js');
-concatFiles(filesOfModules('cards-sample-data'),'cards-sample-data.js');
 
 concatFiles(['node_modules/dragula/dist/dragula.js'],'dragula.js')
 concatFiles(['node_modules/history/umd/history.js'],'history.js')
 
 concatFiles(jbReactFiles,'jb-react-all.js');
 concatFiles(nodeFiles,'jb4node.js');
-concatFiles(coreFiles,'jbart-core.js');
-concatFiles(jb_modules['pretty-print'],'pretty-print.js');
-concatFiles(jb_modules['parsing'],'parsing.js');
-concatFiles(jb_modules['xml'],'xml.js');
 concatFiles(studioCssFiles,'../bin/studio/css/studio-all.css');
 
 concatFiles(studioFiles,'../bin/studio/studio-all.js');
 concatFiles(['/src/loader/jb-loader.js'],'jb-loader.js');
 concatFiles(['/src/testing/testers.js'],'testers.js');
-
 concatFiles(filesOfModules('codemirror-css'),'codemirror.css')
 concatFiles(['node_modules/dragula/dist/dragula.css'],'dragula.css')
-
-concatFiles(filesOfModules('md-icons'),'md-icons.js')
