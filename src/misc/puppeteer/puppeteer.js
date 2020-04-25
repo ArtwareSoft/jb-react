@@ -41,7 +41,7 @@ jb.component('pptr.extractContent', {
     ],
     impl: (ctx,selector,extract,multiple) => ({ ctx, do: 
         ({page}) => {
-            page.$eval(`_jb_extract = ${extract}`).then(()=>
+            page.$eval(`_jb_extract = '${extract}'`).then(()=>
                 multiple? page.$$eval(selector, elems => elems.map(el=>el[_jb_extract])): 
                 page.$eval(selector, el => el[_jb_extract])) 
             }
