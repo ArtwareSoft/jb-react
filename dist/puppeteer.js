@@ -72,12 +72,15 @@ Object.assign(jb.pptr, {
             if (!st.host) return Promise.resolve()
             return toPromiseArray(pipe(receive,take(1))).then(([m]) =>{
                 if (m == 'loadCodeReq') {
-                    return 'common,callbag,puppeteer'.split(',').reduce((pr,module) => 
-                        pr.then(() => st.host.getFile(`${st.host.pathOfDistFolder()}/${module}.js`)
-                            .catch(e=> console.log(e))
-                            .then( loadCode => socket.send(JSON.stringify({ loadCode, moduleFileName: `${st.host.pathOfDistFolder()}/${module}.js` })))),
-                        Promise.resolve() )
-                            .then(() => socket.send(JSON.stringify({ require: 'puppeteer', writeTo: 'jb.pptr.impl'})))
+                    return 'common,callbag,puppeteer'.split(',').reduce((pr,module) => pr.then(() => {
+                            const moduleFileName = `${st.host.pathOfDistFolder()}/${module}.js`
+                            return st.host.getFile(moduleFileName).then( loadCode => socket.send(JSON.stringify({ loadCode, moduleFileName })))
+                        }), Promise.resolve())
+                        .then(() => {
+                            const moduleFileName = st.host.pathOfDistFolder().replace(/\/dist$/,'/src/misc/puppeteer/puppeteer.js')
+                            return st.host.getFile(moduleFileName).then( loadCode => socket.send(JSON.stringify({ loadCode, moduleFileName })))
+                        })
+                        .then(() => socket.send(JSON.stringify({ require: 'puppeteer', writeTo: 'jb.pptr.impl'})))
                 }
             })
         }
