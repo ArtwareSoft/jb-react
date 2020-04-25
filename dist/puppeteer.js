@@ -65,7 +65,7 @@ Object.assign(jb.pptr, {
         function loadServerCode() {
             const st = (jb.path(jb,'studio.studiojb') || jb).studio
             if (!st.host) return Promise.resolve()
-            return pipe(receive,take(1),toPromiseArray).then(([m]) =>{
+            return toPromiseArray(pipe(receive,take(1))).then(([m]) =>{
                 if (m == 'loadCodeReq') {
                     return 'common,callbag,puppeteer'.split(',').reduce((pr,module) => 
                         pr.then(() => st.host.getFile(`${st.host.pathOfDistFolder()}/${module}.js`)
