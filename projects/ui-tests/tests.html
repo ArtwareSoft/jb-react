@@ -1,30 +1,27 @@
 <!DOCTYPE html>
 <html>
-<title>tests</title>
 <head>
-	<script type="text/javascript">
-		startTime = new Date().getTime();
-	</script>
-	<script type="text/javascript" src="/src/loader/jb-loader.js"
-		modules="common,ui-common,material,ui-tree,dragula,codemirror,testers,pretty-print,studio,studio-tests,object-encoder,remote,fuse,animate"></script>
-	<script type="text/javascript" src="data-tests.js"></script>
-	<script type="text/javascript" src="ui-tests.js"></script>
-	<script type="text/javascript" src="vdom-tests.js"></script>
-	<script type="text/javascript" src="tree-tests.js"></script>
-	<script type="text/javascript" src="phones-3.js"></script>
-	<script type="text/javascript" src="remote-widgets.js"></script>
-	<script type="text/javascript" src="watchable-tests.js"></script>
-	<script type="text/javascript" src="parsing-tests.js"></script>
-	<script type="text/javascript" src="object-encoder-tests.js"></script>
-	<style>
-		.editor { opacity: 0 }
-		.editor:hover { opacity: 1 }
-	</style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+jbProjectSettings = {
+	libs: 'common,ui-common,material,ui-tree,dragula,codemirror,testers,pretty-print,studio,studio-tests,object-encoder,remote,md-icons,fuse,puppeteer',
+		jsFiles: ['remote-widgets','phones-3',
+		...['data','ui','vdom','tree','watchable','parsing','puppeteer','object-encoder'].map(x=>x+'-tests')]
+                    .map(x=>'/projects/ui-tests/'+x+'.js'),
+		project: 'tests'
+}
+</script>
+<script type="text/javascript" src="/src/loader/jb-loader.js"></script>
+<style>
+	.editor { opacity: 0 }
+	.editor:hover { opacity: 1 }
+</style>
 </head>
 <body>
-<div id="mem"> </div>
-<div id="test"> </div>
-<script>
+	<div id="mem"> </div>
+	<div id="test"> </div>
+ <script>
+	window.jb_initWidget && jb_initWidget()
 	const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
 	const params = { 
 		testType: '',
@@ -35,6 +32,6 @@
 	}
 	console.log(params)
 	jb.testers.runTests(params)
-</script>
+  </script>
 </body>
 </html>

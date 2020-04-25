@@ -29,7 +29,6 @@ jb.component('studio.openProperties', {
   )
 })
 
-
 jb.component('studio.properties', {
   type: 'control',
   params: [

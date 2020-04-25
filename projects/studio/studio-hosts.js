@@ -12,6 +12,7 @@ const devHost = {
         .then(res=>res.json())
     },
     pathOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
+    pathOfDistFolder: () => '/dist',
 
     // new project
     createProject: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
@@ -31,12 +32,14 @@ const vscodeDevHost = {
     createProject: request => jb.studio.vscodeService({$: 'createProject', request}),
     pathOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
     projectUrlInStudio: project => `/project/studio/${project}`,
+    pathOfDistFolder: () => `${jb.frame.jbBaseProjUrl}/dist`,
     jbLoader: `${jb.frame.jbBaseProjUrl}/src/loader/jb-loader.js`,
 }
 
 const vscodeUserHost = Object.assign({},vscodeDevHost,{
     pathOfJsFile: (project,fn) => `${project}/${fn}`,
     jbLoader: `${jb.frame.jbBaseProjUrl}/node_modules/jb-react/dist/jb-loader.js`,
+    pathOfDistFolder: () => `${jb.frame.jbBaseProjUrl}/node_modules/jb-react/dist`,
 })
 
 const userLocalHost = Object.assign({},devHost,{
@@ -50,16 +53,15 @@ const userLocalHost = Object.assign({},devHost,{
 
 const cloudHost = {
     settings: () => Promise.resolve(({})),
-    getFile: path => jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files' }}),
+    getFile: path => fetch(`https://artwaresoft.github.io/jb-react/${path}`).then(res=>res.text()),
     locationToPath: path => path.replace(/^[0-9]*\//,''),
     createProject: request => jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files'}}),
     pathOfJsFile: (project,fn) => fn,
     projectUrlInStudio: project => ``,
     canNotSave: true,
+    pathOfDistFolder: () => 'https://artwaresoft.github.io/jb-react/dist',
     jbLoader: 'https://artwaresoft.github.io/jb-react/dist/jb-loader.js',
 }
-
-//     fiddle.jshell.net/davidbyd/47m1e2tk/show/?studio =>  //unpkg.com/jb-react/bin/studio/studio-cloud.html?entry=//fiddle.jshell.net/davidbyd/47m1e2tk/show/
 
 st.chooseHostByUrl = entryUrl => {
     entryUrl = entryUrl || ''
@@ -137,13 +139,12 @@ st.projectHosts = {
     },
     test: {
         fetchProject(id,project) {
-            return Promise.resolve({
-                libs: 'common,ui-common,material,ui-tree,dragula,codemirror,testers,pretty-print,studio,studio-tests,object-encoder,remote,md-icons',
-                jsFiles: ['remote-widgets','phones-3',...['data','ui','vdom','tree','watchable','parsing','object-encoder'].map(x=>x+'-tests')]
-                    .map(x=>`/projects/ui-tests/${x}.js`),
-                project, 
-                entry: { $: 'uiTestRunner', test: project },
-                source:'test'
+            return fetch('/projects/ui-tests/tests.html').then(r=>r.text()).then(html =>{
+                const settings = eval('({' + _extractText(html,'jbProjectSettings = {','}') + '})')
+                return {...settings, project, 
+                    entry: { $: 'uiTestRunner', test: project },
+                    source:'test'
+                }
             })
         }
     }

@@ -482,17 +482,17 @@ jb.callbag = {
         })
         if (end) return
         clean = prod((v) => {
-          if (!end) sink(1, v)
-        }, (e) => {
-          if (!end && e !== undefined) {
-            end = true
-            sink(2, e)
-          }
-        }, () => {
-          if (!end) {
-            end = true
-            sink(2)
-          }
+            if (!end) sink(1, v)
+          }, (e) => {
+            if (!end && e !== undefined) {
+              end = true
+              sink(2, e)
+            }
+          }, () => {
+            if (!end) {
+              end = true
+              sink(2)
+            }
         })
     },
     debounceTime: duration => source => (start, sink) => {

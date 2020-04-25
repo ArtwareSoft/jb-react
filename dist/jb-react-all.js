@@ -2676,17 +2676,17 @@ jb.callbag = {
         })
         if (end) return
         clean = prod((v) => {
-          if (!end) sink(1, v)
-        }, (e) => {
-          if (!end && e !== undefined) {
-            end = true
-            sink(2, e)
-          }
-        }, () => {
-          if (!end) {
-            end = true
-            sink(2)
-          }
+            if (!end) sink(1, v)
+          }, (e) => {
+            if (!end && e !== undefined) {
+              end = true
+              sink(2, e)
+            }
+          }, () => {
+            if (!end) {
+              end = true
+              sink(2)
+            }
         })
     },
     debounceTime: duration => source => (start, sink) => {
@@ -10559,7 +10559,7 @@ jb.component('worker.main', {
                 return Promise.resolve(jb.ui.mainWorker)
             jb.ui.workers[1] = jb.ui.mainWorker = createWorker(1)
             return jb.ui.mainWorker.exec('"init"').then(()=>jb.ui.mainWorker) // wait for first dummy run with empty input
-        },
+    },
     createWidget(ctx,main,widgetId) { // widget receives events and updates back with vdom deltas
             const widgetProf = pipeline({$asIs: {widgetId,main}}, // runs on worker
                 ctx => {

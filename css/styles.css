@@ -33,19 +33,19 @@ padding: 10px 10px 10px 27px; color1: #6D6E71; min-height: 12px; border-bottom: 
 
 /********* pulldown menu ********* */
 
-.pulldown-top-menu { background1: #fff; position: absolute; top:0; height: 60px; left: 40px;right:0; border-bottom: 1px solid #E5E5E5;}
+.pulldown-top-menu { background: #fff; position: absolute; top:0; height: 60px; left: 40px;right:0; border-bottom: 1px solid #E5E5E5;}
 .pulldown-main-menu { position: absolute; top: 31px; left: 8px; display: -webkit-box; -webkit-box-orient: horizontal; }
 .pulldown-top-menu-item {
   cursor: pointer; font-size: 13px; padding: 5px 7px; color1: #000; -webkit-user-select: none;
-    display: block;  background1: #fff;  border: none; text-align: left;
+    display: block;  background: #fff;  border: none; text-align: left;
 }
-.pulldown-top-menu-item:hover { background1: #eee; }
-.pulldown-top-menu-item.dialog-open { border: 1px solid rgba(0,0,0,0.2); border-bottom: none; background1: #eee; }
+.pulldown-top-menu-item:hover { background: #eee; }
+.pulldown-top-menu-item.dialog-open { border: 1px solid rgba(0,0,0,0.2); border-bottom: none; background: #eee; }
 .pulldown-top-menu-item { border: 1px solid transparent; }
 
 .pulldown-menu-separator { margin: 6px 0; border-bottom: 1px solid #EBEBEB;}
 
-.pulldown-mainmenu-popup { background1: #fff; position: absolute; /*top: 50px; left: 52px;*/
+.pulldown-mainmenu-popup { background: #fff; position: absolute; /*top: 50px; left: 52px;*/
 min-width: 280px;
 min-height: 30px;
 box-shadow: 2px 2px 3px #d5d5d5;
@@ -54,10 +54,10 @@ border: 1px solid rgb(213, 213, 213);}
 
 .toolbar-popup { position: absolute; }
 
-.pulldown-mainmenu-popup .pulldown-menu-remove-top-border { background1: #fff; height: 3px; position: absolute; top: -2px; left: 0; }
+.pulldown-mainmenu-popup .pulldown-menu-remove-top-border { background: #fff; height: 3px; position: absolute; top: -2px; left: 0; }
 /* .pulldown-menu-item */
-.pulldown-menu-item { -webkit-user-select: none;  padding: 6px 10px 6px 29px; font-size: 13px; display: block; background1: #fff;  border: none; width: 100%; text-align: left; cursor: pointer;   position: relative;}
-.pulldown-menu-item:hover { background1: #eee; }
+.pulldown-menu-item { -webkit-user-select: none;  padding: 6px 10px 6px 29px; font-size: 13px; display: block; background: #fff;  border: none; width: 100%; text-align: left; cursor: pointer;   position: relative;}
+.pulldown-menu-item:hover { background: #eee; }
 .pulldown-menu-item1:focus { outline: none; }
 .pulldown-menu-item span { background: url('icons1.png?v=16_02') no-repeat; width: 16px; height: 16px; display: block; position: absolute; top: 5px; left: 6px;}
 

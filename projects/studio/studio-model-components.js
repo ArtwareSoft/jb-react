@@ -158,7 +158,7 @@ jb.component('studio.enumOptions', {
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) =>
-		((st.paramDef(path) || {}).options ||'').split(',').map(x=>({code:x,text:x}))
+		((st.paramDef(path) || {}).options ||'').split(',').map(x=> ({code: x.split(':')[0],text: x.split(':').pop()}))
 })
 
 jb.component('studio.propName', {

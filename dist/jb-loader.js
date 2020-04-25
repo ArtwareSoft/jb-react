@@ -80,6 +80,11 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       ],
       'callbag': [
         'src/misc/jb-callbag.js',
+      ],
+      'puppeteer': [
+        'src/misc/puppeteer/pptr-remote.js',
+        'src/misc/puppeteer/puppeteer.js',
+        'src/misc/puppeteer/crawler.js',
       ],            
       'codemirror-js-files': [
         'node_modules/codemirror/lib/codemirror.js',
@@ -253,5 +258,7 @@ function pathOfProjectFile(fn,{project,baseUrl,source} = {}) {
    else
      document.write(`<link rel="stylesheet" type="text/css" href="${url}" />`);
  }
- ;
+ 
+ if (typeof module != 'undefined')
+  module.exports = jb_modules;
 

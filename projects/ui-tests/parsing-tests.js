@@ -121,3 +121,4 @@ jb.component('dataTest.zipArrays', {
     expectedResult: ({data}) => JSON.stringify(data) == JSON.stringify([[1,10,100],[2,20,200]])
   })
 })
+
