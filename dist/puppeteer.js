@@ -28,7 +28,7 @@ Object.assign(jb.pptr, {
             }
         }
 
-        getOrCreateBrowser(showBrowser)
+        this.getOrCreateBrowser(showBrowser)
             .then(browser => browser.newPage())
             .then(page=> (comp.page = page).goto(url))
             .then(()=>applyFeatures())
@@ -47,13 +47,11 @@ Object.assign(jb.pptr, {
                 comp.endSession()
             return sortedFeatures.reduce((pr,feature) => pr.then(()=>comp.em.next({feature})).then(feature.do(comp)), Promise.resolve())
         }
-
-        function getOrCreateBrowser() {
-            if (this._browser) return Promise.resolve(this._browser)
-            return this.impl.launch({headless: !showBrowser}).then(browser => this._browser = browser)
-        }
     },
-
+    getOrCreateBrowser() {
+        if (this._browser) return Promise.resolve(this._browser)
+        return this.impl.launch({headless: !showBrowser}).then(browser => this._browser = browser)
+    },
     createProxyComp(profile) {
         const {pipe,skip,take,toPromiseArray,subject} = jb.callbag
         const receive = subject()

@@ -36,6 +36,6 @@ function toJson(res,depth) {
         return JSON.stringify({res}) 
     } catch (error) { // recursive error - return on level down
         return !depth && 
-            toJson(Object.keys(res).reduce((acc,k) => ({...acc, [k]: res[k].toString() }), {}), 1)
+            toJson(Object.keys(res).reduce((acc,k) => ({...acc, [k]: res[k] && res[k].toString() }), {}), 1)
     }
 }
