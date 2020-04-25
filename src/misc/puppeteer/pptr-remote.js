@@ -53,8 +53,8 @@ Object.assign(jb.pptr, {
     },
 
     createProxyComp(profile) {
-        const {pipe,skip,take,toPromiseArray} = jb.callbag
-        const receive = jb.callbag.subject()
+        const {pipe,skip,take,toPromiseArray,subject} = jb.callbag
+        const receive = subject()
         socket = new WebSocket(`ws:${location.hostname}:8090`)
         socket.onmessage = ({data}) => receive.next(JSON.parse(data).res)
         socket.onerror = e => receive.error(e)
@@ -70,10 +70,9 @@ Object.assign(jb.pptr, {
                     return 'common,callbag,puppeteer'.split(',').reduce((pr,module) => 
                         pr.then(() => st.host.getFile(`${st.host.pathOfDistFolder()}/${module}.js`)
                             .catch(e=> console.log(e))
-                            .then( content => socket.send(JSON.stringify({
-                                loadCode: `${content}\n//# sourceURL=${st.host.pathOfDistFolder()}/${module}.js` })))), 
+                            .then( loadCode => socket.send(JSON.stringify({ loadCode, moduleFileName: `${st.host.pathOfDistFolder()}/${module}.js` })))),
                         Promise.resolve() )
-                            .then(() => socket.send(JSON.stringify({ writeTo: 'jb.pptr.impl', require: 'puppeteer'})))
+                            .then(() => socket.send(JSON.stringify({ require: 'puppeteer', writeTo: 'jb.pptr.impl'})))
                 }
             })
         }

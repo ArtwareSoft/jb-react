@@ -1,6 +1,4 @@
 jb.pptr = { hasPptrServer: typeof hasPptrServer != 'undefined' }
-// if (jb.pptr.hasPptrServer)
-//     jb.pptr.impl = require('puppeteer')
 
 Object.assign(jb.pptr, {
     getOrCreateBrowser(showBrowser) {
@@ -12,6 +10,14 @@ Object.assign(jb.pptr, {
         comp.dataEm = jb.callbag.filter(e => e.$ == 'result-data')(comp.em)
         jb.callbag.subscribe(e => comp.results.push(e.data))(comp.dataEm)
         return comp
+    },
+    closeBrowser() {
+        if (jb.pptr.hasPptrServer) {
+            this._browser && this._browser.close()
+        } else {
+            socket = new WebSocket(`ws:${location.hostname}:8090`)
+            socket.onopen = () => socket.send(JSON.stringify({profile: {$: 'pptr.closeBrowser'}}))
+        }
     },
     createServerComp(ctx,url,extract,features,showBrowser) {
         const comp = {
@@ -47,8 +53,8 @@ Object.assign(jb.pptr, {
     },
 
     createProxyComp(profile) {
-        const {pipe,skip,take,toPromise,map,subscribe,toPromiseArray} = jb.callbag
-        const receive = jb.callbag.subject()
+        const {pipe,skip,take,toPromiseArray,subject} = jb.callbag
+        const receive = subject()
         socket = new WebSocket(`ws:${location.hostname}:8090`)
         socket.onmessage = ({data}) => receive.next(JSON.parse(data).res)
         socket.onerror = e => receive.error(e)
@@ -57,8 +63,6 @@ Object.assign(jb.pptr, {
         return { em: skip(1)(receive), results: [] }
 
         function loadServerCode() {
-            // pipe(receive,take(1),map (x=>x), subscribe(x=>console.log(x)))
-            // return Promise.resolve()
             const st = (jb.path(jb,'studio.studiojb') || jb).studio
             if (!st.host) return Promise.resolve()
             return pipe(receive,take(1),toPromiseArray).then(([m]) =>{
@@ -66,10 +70,9 @@ Object.assign(jb.pptr, {
                     return 'common,callbag,puppeteer'.split(',').reduce((pr,module) => 
                         pr.then(() => st.host.getFile(`${st.host.pathOfDistFolder()}/${module}.js`)
                             .catch(e=> console.log(e))
-                            .then( content => socket.send(JSON.stringify({
-                                loadCode: `${content}\n//# sourceURL=${st.host.pathOfDistFolder()}/${module}.js` })))), 
+                            .then( loadCode => socket.send(JSON.stringify({ loadCode, moduleFileName: `${st.host.pathOfDistFolder()}/${module}.js` })))),
                         Promise.resolve() )
-                            .then(() => socket.send(JSON.stringify({ writeTo: 'jb.pptr.impl', require: 'puppeteer'})))
+                            .then(() => socket.send(JSON.stringify({ require: 'puppeteer', writeTo: 'jb.pptr.impl'})))
                 }
             })
         }
@@ -125,6 +128,11 @@ jb.component('pptr.htmlFromPage', {
 jb.component('pptr.endSession', {
     type: 'action',
     impl: ctx => ctx.vars.pptrPage && ctx.vars.pptrPage.endSession()
+})
+
+jb.component('pptr.closeBrowser', {
+    type: 'action',
+    impl: () => jb.pptr.closeBrowser()
 })
 
 jb.component('pptr.extractContent', {

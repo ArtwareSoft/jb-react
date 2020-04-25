@@ -8,13 +8,12 @@ wss.on('connection', ws => {
   ws.on('message', _data => {
     try {
         const data = JSON.parse(_data)
-        if (data.loadCode) { // use # sourceURL to preserve file name
-            vm.runInThisContext(data.loadCode)
+        if (data.loadCode) {
+            vm.runInThisContext(data.loadCode,data.moduleFileName)
             global.jb = jb
         }
         if (data.require) {
             jb.path(global, data.writeTo, require(data.require))
-            console.log(jb.pptr.impl)
         }
         if (data.profile && typeof jb != 'undefined') { 
             const result = jb.exec(data.profile)
