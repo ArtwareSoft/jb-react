@@ -24,17 +24,18 @@ jb.component('text.bindText', {
 })
 
 jb.component('text.allowAsynchValue', {
+  params: [
+    { id: 'propId', defaultValue: 'text'}
+  ],
   type: 'feature',
   impl: features(
-    calcProp({id: 'text', value: (ctx,{cmp}) => cmp.text || ctx.vars.$props.text}),
-    interactive(
-        (ctx,{cmp}) => {
-      if (cmp.text) return
-      const val = jb.ui.toVdomOrStr(ctx.vars.$model.text(cmp.ctx))
+    calcProp({id: '%$propId%', value: (ctx,{cmp},{propId}) => cmp[propId] || ctx.vars.$props[propId]}),
+    interactive((ctx,{cmp},{propId}) => {
+      if (cmp[propId]) return
+      const val = jb.ui.toVdomOrStr(ctx.vars.$model[propId](cmp.ctx))
       if (val && typeof val.then == 'function')
-        val.then(res=>cmp.refresh({text: jb.ui.toVdomOrStr(res)},{srcCtx: ctx.componentContext}))
-    }
-      )
+        val.then(res=>cmp.refresh({[propId]: jb.ui.toVdomOrStr(res)},{srcCtx: ctx.componentContext}))
+    })
   )
 })
 

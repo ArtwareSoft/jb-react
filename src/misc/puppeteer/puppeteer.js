@@ -18,7 +18,7 @@ jb.component('pptr.htmlFromPage', {
     ],
     impl: (ctx,page) => {
         const cmp = page()
-        return jb.callbag.toPromiseArray(cmp.em).then(() => cmp.results.join(''))
+        return jb.callbag.toPromiseArray(cmp.em).then(() => cmp.results)
     }
 })
 

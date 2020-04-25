@@ -5234,17 +5234,18 @@ jb.component('text.bindText', {
 })
 
 jb.component('text.allowAsynchValue', {
+  params: [
+    { id: 'propId', defaultValue: 'text'}
+  ],
   type: 'feature',
   impl: features(
-    calcProp({id: 'text', value: (ctx,{cmp}) => cmp.text || ctx.vars.$props.text}),
-    interactive(
-        (ctx,{cmp}) => {
-      if (cmp.text) return
-      const val = jb.ui.toVdomOrStr(ctx.vars.$model.text(cmp.ctx))
+    calcProp({id: '%$propId%', value: (ctx,{cmp},{propId}) => cmp[propId] || ctx.vars.$props[propId]}),
+    interactive((ctx,{cmp},{propId}) => {
+      if (cmp[propId]) return
+      const val = jb.ui.toVdomOrStr(ctx.vars.$model[propId](cmp.ctx))
       if (val && typeof val.then == 'function')
-        val.then(res=>cmp.refresh({text: jb.ui.toVdomOrStr(res)},{srcCtx: ctx.componentContext}))
-    }
-      )
+        val.then(res=>cmp.refresh({[propId]: jb.ui.toVdomOrStr(res)},{srcCtx: ctx.componentContext}))
+    })
   )
 })
 
@@ -5437,7 +5438,7 @@ jb.component('image', {
   type: 'control,image',
   category: 'control:50,common:70',
   params: [
-    {id: 'url', as: 'string', mandatory: true, templateValue: 'https://freesvg.org/img/UN-CONSTRUCTION-2.png'},
+    {id: 'url', as: 'string', mandatory: true, dynamic: true, templateValue: 'https://freesvg.org/img/UN-CONSTRUCTION-2.png'},
     {id: 'width', as: 'string', mandatory: true, templateValue: '100', description: 'e.g: 100, 20%'},
     {id: 'height', as: 'string', mandatory: true, description: 'e.g: 100, 20%'},
     {id: 'resize', type: 'image.resize', description: 'background-size, resize the image', defaultValue: image.fullyVisible()},
@@ -5490,7 +5491,7 @@ jb.component('image.background', {
     css: pipeline(
       Var(
           'url',
-          (ctx,{$model}) => $model.url.replace(/__WIDTH__/,$model.width).replace(/__HEIGHT__/,$model.height)
+          (ctx,{$model}) => $model.url().replace(/__WIDTH__/,$model.width).replace(/__HEIGHT__/,$model.height)
         ),
       Var('width', (ctx,{$model}) => jb.ui.withUnits($model.width)),
       Var('height', (ctx,{$model}) => jb.ui.withUnits($model.height)),

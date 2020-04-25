@@ -34,8 +34,10 @@ Object.assign(jb.pptr, {
             .then(()=>applyFeatures())
             .catch(e => console.log(e))
 
-        if (!showBrowser)
-            pipe(comp.em, last(), subscribe(e=> comp.page.close()))
+        pipe(comp.em, last(), subscribe(e=> {
+            this.prevPage && this.prevPage.close() 
+            this.prevPage = comp.page
+        }))
 
         return comp
 
@@ -108,7 +110,7 @@ jb.component('pptr.htmlFromPage', {
     ],
     impl: (ctx,page) => {
         const cmp = page()
-        return jb.callbag.toPromiseArray(cmp.em).then(() => cmp.results.join(''))
+        return jb.callbag.toPromiseArray(cmp.em).then(() => cmp.results)
     }
 })
 
