@@ -1597,18 +1597,10 @@ jb.component('unique', {
 
 jb.component('log', {
   params: [
-    {id: 'obj', as: 'single', defaultValue: '%%'}
+    {id: 'log', as: 'string', mandatory: 'true' },
+    {id: 'toLog', as: 'array', defaultValue: '%%'}
   ],
-  impl: function(context,obj) {
-		let out = obj;
-		if (typeof GLOBAL != 'undefined' && typeof(obj) == 'object')
-			out = JSON.stringify(obj,null," ");
-		if (typeof window != 'undefined')
-			(window.parent || window).console.log(out);
-		else
-			console.log(out);
-		return out;
-	}
+  impl: (ctx,log,array) => jb.log(log,array)
 })
 
 jb.component('asIs', {
