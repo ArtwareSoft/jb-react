@@ -48,7 +48,7 @@ Object.assign(jb.pptr, {
             return sortedFeatures.reduce((pr,feature) => pr.then(()=>comp.em.next({feature})).then(feature.do(comp)), Promise.resolve())
         }
     },
-    getOrCreateBrowser() {
+    getOrCreateBrowser(showBrowser) {
         if (this._browser) return Promise.resolve(this._browser)
         return this.impl.launch({headless: !showBrowser}).then(browser => this._browser = browser)
     },
