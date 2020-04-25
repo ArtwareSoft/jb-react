@@ -34,10 +34,10 @@ Object.assign(jb.pptr, {
             .then(()=>applyFeatures())
             .catch(e => console.log(e))
 
-        pipe(comp.em, last(), subscribe(e=> {
-            this.prevPage && this.prevPage.close() 
-            this.prevPage = comp.page
-        }))
+        // pipe(comp.em, last(), subscribe(e=> {
+        //     this.prevPage && this.prevPage.close() 
+        //     this.prevPage = comp.page
+        // }))
 
         return comp
 
