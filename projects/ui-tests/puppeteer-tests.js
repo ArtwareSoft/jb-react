@@ -39,7 +39,7 @@ jb.component('fb.example1', {
   })
 })
 
-jb.component('puppeteer.google.basic', {
+jb.component('puppeteer.artwaresoft.basic', {
   impl: dataTest({
     calculate: pptr.htmlFromPage(
           pptr.headlessPage({

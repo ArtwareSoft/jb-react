@@ -1,10 +1,6 @@
 jb.pptr = { hasPptrServer: typeof hasPptrServer != 'undefined' }
 
 Object.assign(jb.pptr, {
-    getOrCreateBrowser(showBrowser) {
-        if (this._browser) return Promise.resolve(this._browser)
-        return this.impl.launch({headless: !showBrowser}).then(browser => this._browser = browser)
-    },
     createComp(ctx,url,extract,features) {
         const comp = jb.pptr.hasPptrServer ? this.createServerComp(...arguments) : this.createProxyComp(ctx.profile)
         comp.dataEm = jb.callbag.filter(e => e.$ == 'result-data')(comp.em)
@@ -32,13 +28,14 @@ Object.assign(jb.pptr, {
             }
         }
 
-        jb.pptr.getOrCreateBrowser(showBrowser)
+        getOrCreateBrowser(showBrowser)
             .then(browser => browser.newPage())
             .then(page=> (comp.page = page).goto(url))
             .then(()=>applyFeatures())
             .catch(e => console.log(e))
 
-//        pipe(comp.em, last(), subscribe(e=> comp.page.close()))
+        if (!showBrowser)
+            pipe(comp.em, last(), subscribe(e=> comp.page.close()))
 
         return comp
 
@@ -49,6 +46,11 @@ Object.assign(jb.pptr, {
             if (sortedFeatures.length == 0)
                 comp.endSession()
             return sortedFeatures.reduce((pr,feature) => pr.then(()=>comp.em.next({feature})).then(feature.do(comp)), Promise.resolve())
+        }
+
+        function getOrCreateBrowser() {
+            if (this._browser) return Promise.resolve(this._browser)
+            return this.impl.launch({headless: !showBrowser}).then(browser => this._browser = browser)
         }
     },
 
@@ -78,24 +80,3 @@ Object.assign(jb.pptr, {
         }
     },
 })
-
-// if (! jb.pptr.hasPptrServer) Object.assign(jb.pptr, { // mock for debugger
-//     impl: {
-//         launch: () => Promise.resolve({
-//             newPage: () => Promise.resolve({
-//                 close:() => Promise.resolve({}),
-//                 $eval:() => Promise.resolve({}),
-//                 $$eval:() => Promise.resolve({}),
-//                 mainFrame: () => jb.pptr.frame,
-//                 frames: () => [jb.pptr.frame]
-//             })
-//         })
-//     },
-//     frame: {
-//         evalute: () => Promise.resolve({}),
-//         click: () => Promise.resolve({}),
-//         waitForFunction: () => Promise.resolve({}),
-//         waitForSelector: () => Promise.resolve({}),
-//         waitForNavigation: () => Promise.resolve({}),
-//     }
-// })

@@ -9,7 +9,7 @@ wss.on('connection', ws => {
     try {
         const data = JSON.parse(_data)
         if (data.loadCode) {
-            vm.runInThisContext(data.loadCode,data.moduleFileName)
+            vm.runInThisContext(data.loadCode, data.moduleFileName)
             global.jb = jb
         }
         if (data.require) {
