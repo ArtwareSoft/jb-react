@@ -2,7 +2,7 @@ jb.pptr = { hasPptrServer: typeof hasPptrServer != 'undefined' }
 
 Object.assign(jb.pptr, {
     createComp(ctx,url,extract,features) {
-        const comp = jb.pptr.hasPptrServer ? this.createServerComp(...arguments) : this.createProxyComp(ctx.profile)
+        const comp = jb.pptr.hasPptrServer ? this.createServerComp(...arguments) : this.createProxyComp(ctx)
         comp.dataEm = jb.callbag.filter(e => e.$ == 'result-data')(comp.em)
         jb.callbag.subscribe(e => comp.results.push(e.data))(comp.dataEm)
         return comp
@@ -11,7 +11,7 @@ Object.assign(jb.pptr, {
         if (jb.pptr.hasPptrServer) {
             this._browser && this._browser.close()
         } else {
-            socket = new WebSocket(`ws:${location.hostname}:8090`)
+            socket = new WebSocket(`ws:${(jb.studio.studioWindow || jb.frame).location.hostname}:8090`)
             socket.onopen = () => socket.send(JSON.stringify({profile: {$: 'pptr.closeBrowser'}}))
         }
     },
@@ -52,14 +52,19 @@ Object.assign(jb.pptr, {
         if (this._browser) return Promise.resolve(this._browser)
         return this.impl.launch({headless: !showBrowser}).then(browser => this._browser = browser)
     },
-    createProxyComp(profile) {
+    createProxyComp(ctx) {
         const {pipe,skip,take,toPromiseArray,subject} = jb.callbag
         const receive = subject()
-        const socket = new WebSocket(`ws:${location.hostname}:8090`)
-        socket.onmessage = ({data}) => receive.next(JSON.parse(data).res)
+        const socket = new WebSocket(`ws:${(jb.studio.studioWindow || jb.frame).location.hostname}:8090`)
+        socket.onmessage = ({data}) => {
+            const _data = JSON.parse(data)
+            if (_data.error)
+                jb.logError('error from puppeteer',[_data.error,ctx])
+            _data.res && receive.next(_data.res)
+        }
         socket.onerror = e => receive.error(e)
         socket.onclose = () => receive.complete()
-        socket.onopen = () => loadServerCode().then(() => socket.send(JSON.stringify({profile})))
+        socket.onopen = () => loadServerCode().then(() => socket.send(JSON.stringify({profile: ctx.profile})))
         return { em: skip(1)(receive), results: [] }
 
         function loadServerCode() {
@@ -87,7 +92,7 @@ jb.component('pptr.headlessPage', {
     params: [
         {id: 'url', as: 'string', mandatory: true },
         {id: 'extract', type: 'pptr.extract', defaultValue: pptr.extractContent('body') },
-        {id: 'features', type: 'pptr.features[]', as: 'array', flattenArray: true},
+        {id: 'features', type: 'pptr.feature[]', as: 'array', flattenArray: true},
         {id: 'showBrowser', as: 'boolean' },
     ],
     impl: (...args) => jb.pptr.createComp(...args)
@@ -122,9 +127,12 @@ jb.component('pptr.extractContent', {
         {id: 'multiple', as: 'boolean' },
     ],
     impl: (ctx,selector,extract,multiple) => ({ ctx, do: 
-        ({page}) => multiple? page.$$eval(selector, elems => elems.map(el=>el[extract])): 
-            page.$eval(selector, 
-                el => el.innerHTML) })
+        ({page}) => {
+            page.$eval(`_jb_extract = ${extract}`).then(()=>
+                multiple? page.$$eval(selector, elems => elems.map(el=>el[_jb_extract])): 
+                page.$eval(selector, el => el[_jb_extract])) 
+            }
+        })
 })
 
 jb.component('pptr.evaluate', {
@@ -249,7 +257,6 @@ jb.component('pptr.pageId', {
     impl: ctx => ctx.params
 })
 
-
 jb.component('pptr.features', {
     type: 'pptr.feature',
     params: [
@@ -277,7 +284,7 @@ jb.component('pptr.control', {
         const comp = page()
         return ctx.run(html({
             html: () => comp.results.join(''),
-            features: watchObservable(comp.dataEm)
+            features: watchObservable(() => comp.dataEm)
         })) 
     }
 })

@@ -291,7 +291,7 @@ jb.component('studio.all', {
         loadingControl: text('')
       }),
       group.data({data: '%$studio/project%', watch1: true}),
-      feature.init(runActions(urlHistory.mapStudioUrlToResource('studio'), 
+      feature.init(runActions(urlHistory.mapStudioUrlToResource('studio'),
         studio.initVscodeAdapter('studio'),
         studio.initAutoSave()
       ))
@@ -383,8 +383,8 @@ jb.component('studio.projectSettings', {
         title: 'Libs (%$studio/libsAsArray/length%)',
         databind: '%$studio/libsAsArray%',
         options: picklist.optionsByComma(
-          `remote,codemirror,fuse,animate,cards,cards-sample-data,d3,dragula,md-icons,material,pretty-print,xml,jison,parsing
-`
+          'remote,codemirror,fuse,animate,cards,cards-sample-data,d3,dragula,md-icons,material,pretty-print,xml,jison,parsing,puppeteer',
+          ''
         ),
         style: multiSelect.chips(),
         features: [

@@ -5,7 +5,7 @@ jb.component('pptr.headlessPage', {
     params: [
         {id: 'url', as: 'string', mandatory: true },
         {id: 'extract', type: 'pptr.extract', defaultValue: pptr.extractContent('body') },
-        {id: 'features', type: 'pptr.features[]', as: 'array', flattenArray: true},
+        {id: 'features', type: 'pptr.feature[]', as: 'array', flattenArray: true},
         {id: 'showBrowser', as: 'boolean' },
     ],
     impl: (...args) => jb.pptr.createComp(...args)
@@ -40,9 +40,12 @@ jb.component('pptr.extractContent', {
         {id: 'multiple', as: 'boolean' },
     ],
     impl: (ctx,selector,extract,multiple) => ({ ctx, do: 
-        ({page}) => multiple? page.$$eval(selector, elems => elems.map(el=>el[extract])): 
-            page.$eval(selector, 
-                el => el.innerHTML) })
+        ({page}) => {
+            page.$eval(`_jb_extract = ${extract}`).then(()=>
+                multiple? page.$$eval(selector, elems => elems.map(el=>el[_jb_extract])): 
+                page.$eval(selector, el => el[_jb_extract])) 
+            }
+        })
 })
 
 jb.component('pptr.evaluate', {
@@ -167,7 +170,6 @@ jb.component('pptr.pageId', {
     impl: ctx => ctx.params
 })
 
-
 jb.component('pptr.features', {
     type: 'pptr.feature',
     params: [
@@ -195,7 +197,7 @@ jb.component('pptr.control', {
         const comp = page()
         return ctx.run(html({
             html: () => comp.results.join(''),
-            features: watchObservable(comp.dataEm)
+            features: watchObservable(() => comp.dataEm)
         })) 
     }
 })
