@@ -16,8 +16,9 @@ Object.assign(jb.pptr, {
         }
     },
     createServerComp(ctx,url,extract,features,showBrowser) {
+        const {pipe,last,subject,subscribe} = jb.callbag
         const comp = {
-            em: jb.callbag.subject(),
+            em: subject(),
             results: [],
             endSession() {
                 comp.em.next({profile: extract.ctx.profile, path: extract.ctx.path}) // for debug/logs
@@ -34,10 +35,10 @@ Object.assign(jb.pptr, {
             .then(()=>applyFeatures())
             .catch(e => console.log(e))
 
-        // pipe(comp.em, last(), subscribe(e=> {
-        //     this.prevPage && this.prevPage.close() 
-        //     this.prevPage = comp.page
-        // }))
+        pipe(comp.em, last(), subscribe(e=> {
+            this.prevPage && this.prevPage.close() 
+            this.prevPage = comp.page
+        }))
 
         return comp
 
