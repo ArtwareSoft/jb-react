@@ -825,8 +825,12 @@ Object.assign(jb,{
   isWatchable: () => false, // overriden by the watchable-ref.js (if loaded)
   isValid: ref => jb.safeRefCall(ref, h=>h.isValid(ref)),
   refreshRef: ref => jb.safeRefCall(ref, h=>h.refresh(ref)),
-  sessionStorage: (id,val) => val == undefined ? jb.frame.sessionStorage[id] : jb.frame.sessionStorage[id] = val
+  sessionStorage: (id,val) => val == undefined ? jb.frame.sessionStorage[id] : jb.frame.sessionStorage[id] = val,
+  exec: (...args) => new jb.jbCtx().run(...args),
+  exp: (...args) => new jb.jbCtx().exp(...args),
+  execInStudio: (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.jbCtx().run(...args)
 })
+
 if (typeof self != 'undefined')
   self.jb = jb
 if (typeof module != 'undefined')
@@ -2032,10 +2036,7 @@ jb.component('formatDate', {
   ],
   impl: (ctx,date) => new Date(date).toLocaleDateString(undefined, jb.objFromEntries(jb.entries(ctx.params).filter(e=>e[1])))
 })
-
-jb.exec = (...args) => new jb.jbCtx().run(...args)
-jb.execInStudio = (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.jbCtx().run(...args)
-jb.exp = (...args) => new jb.jbCtx().exp(...args);
+;
 
 (function() {
 const spySettings = { 

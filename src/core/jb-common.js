@@ -1110,7 +1110,3 @@ jb.component('formatDate', {
   ],
   impl: (ctx,date) => new Date(date).toLocaleDateString(undefined, jb.objFromEntries(jb.entries(ctx.params).filter(e=>e[1])))
 })
-
-jb.exec = (...args) => new jb.jbCtx().run(...args)
-jb.execInStudio = (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.jbCtx().run(...args)
-jb.exp = (...args) => new jb.jbCtx().exp(...args)
