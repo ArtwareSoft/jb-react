@@ -57,7 +57,7 @@ Object.assign(jb.pptr, {
     createProxyComp(profile) {
         const {pipe,skip,take,toPromiseArray,subject} = jb.callbag
         const receive = subject()
-        socket = new WebSocket(`ws:${location.hostname}:8090`)
+        const socket = new WebSocket(`ws:${location.hostname}:8090`)
         socket.onmessage = ({data}) => receive.next(JSON.parse(data).res)
         socket.onerror = e => receive.error(e)
         socket.onclose = () => receive.complete()
