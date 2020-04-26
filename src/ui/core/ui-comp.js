@@ -84,6 +84,7 @@ class JbComponent {
             const modelProp = this.ctx.vars.$model[e.prop]
             if (!modelProp)
                 return jb.logError('calcRenderProps',`missing model prop "${e.prop}"`,this.ctx.vars.$model,this.ctx)
+            jb.log('calcRenderProp',[this])                
             const ref = modelProp(this.ctx)
             if (jb.isWatchable(ref))
                 this.toObserve.push({id: e.prop, cmp: this, ref,...e})

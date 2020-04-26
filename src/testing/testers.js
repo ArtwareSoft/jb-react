@@ -202,7 +202,6 @@ jb.ui.cssOfSelector = (selector,ctx) => {
 	return jb.entries(jb.ui.cssSelectors_hash).filter(e=>e[1] == jbClass)[0] || ''
 }
 
-
 jb.component('uiAction.click', {
   type: 'ui-action',
   params: [
@@ -218,7 +217,6 @@ jb.component('uiAction.click', {
 		})
 	}
 })
-
 
 jb.component('uiAction.keyboardEvent', {
   type: 'ui-action',
@@ -308,7 +306,7 @@ if (typeof startTime === 'undefined')
 	startTime = new Date().getTime();
 startTime = startTime || new Date().getTime();
 
-jb.testers.runTests = function({testType,specificTest,show,pattern}) {
+jb.testers.runTests = function({testType,specificTest,show,pattern,includeHeavy}) {
 	const {pipe, fromIter, subscribe,concatMap, fromPromise } = jb.callbag
 
 	jb.studio.initTests() && jb.studio.initTests()
@@ -319,8 +317,8 @@ jb.testers.runTests = function({testType,specificTest,show,pattern}) {
 		.filter(e=>isCompNameOfType(e[0],'test'))
 		.filter(e=>!testType || e[1].impl.$ == testType)
 		.filter(e=>!specificTest || e[0] == specificTest)
-		.filter(e=>!pattern || e[0].match(pattern));
-
+		.filter(e=>!pattern || e[0].match(pattern))
+		.filter(e=>includeHeavy || specificTest || !e[1].impl.heavy)
 
 	document.write(`<div style="font-size: 20px"><span id="fail-counter" onclick="hide_success_lines()"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span><span id="memory-usage"></span></div>`);
 

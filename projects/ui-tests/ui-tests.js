@@ -136,17 +136,7 @@ jb.component('uiTest.asynchLabel', {
     control: text({text: pipe(delay(10), 'hello'), features: text.allowAsynchValue()}),
     action: delay(40),
     expectedResult: contains('hello'),
-    expectedCounters: {renderVdom: 2, req: 68},
-  })
-})
-
-jb.component('uiTest.asynchImage', {
-  impl: uiTest({
-    control: image({url: pipe(delay(10), 'https://freesvg.org/img/UN-CONSTRUCTION-2.png'), 
-      width: 200, height: 200, features: text.allowAsynchValue('url') }),
-    action: delay(40),
-    expectedResult: contains('UN-CONSTRUCTION-2'),
-    expectedCounters: {renderVdom: 2, req: 58},
+    expectedCounters: {renderVdom: 2, calcRenderProp: 1},
   })
 })
 
@@ -161,17 +151,18 @@ jb.component('uiTest.waitForWithVar', {
   })
 })
 
-// jb.component('uiTest.watchObservable', {
-//   impl: uiTest({
-//     vars: Var('promise', ctx => jb.delay(1)),
-//     control: text({
-//       text: '%$person/name%',
-//       features: watchObservable({ toWatch: (ctx,{promise}) => jb.callbag.fromPromise(promise) })
-//     }),
-//     expectedCounters: {setState: 1},
-//     expectedResult: true
-//   })
-// })
+jb.component('uiTest.watchObservable', {
+  impl: uiTest({
+    vars: Var('promise', ctx => jb.delay(1)),
+    control: text({
+      text: '%$person/name%',
+      features: watchObservable({ toWatch: (ctx,{promise}) => jb.callbag.fromPromise(promise) })
+    }),
+    expectedCounters: {renderVdom: 2},
+    action: delay(40),
+    expectedResult: contains('Homer Simpson')
+  })
+})
 
 jb.component('uiTest.button', {
   impl: uiTest({

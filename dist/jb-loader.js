@@ -236,13 +236,15 @@ function jb_initWidget() {
 }
 
 function pathOfProjectFile(fn,{project,baseUrl,source} = {}) {
-  const isVscode = source.indexOf('vscode') == 0
-  if (isVscode && baseUrl[0] == '/' || (!isVscode && baseUrl.indexOf('//') != -1)) // absolute - ignore project
-    return baseUrl + fn  
+  const isVscode = (source||'').indexOf('vscode') == 0
+  if (isVscode && fn[0] == '/')
+    return fn  
   else if (source == 'vscodeUserHost')
     return `${baseUrl}/${project}/${fn}`
   else if (source == 'vscodeDevHost')
     return `/projects/${project}/${fn}`
+  else if (!isVscode && baseUrl.indexOf('//') != -1)
+    return baseUrl + fn  
   else if (baseUrl)
     return baseUrl == './' ? fn : `/${project}/${fn}`
   else if (fn[0] == '/')

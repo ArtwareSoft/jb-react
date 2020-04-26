@@ -41,6 +41,7 @@ jb.component('fb.example1', {
 
 jb.component('puppeteer.artwaresoft.basic', {
   impl: dataTest({
+    heavy: true,
     calculate: pptr.htmlFromPage(
           pptr.headlessPage({
             showBrowser: true,
