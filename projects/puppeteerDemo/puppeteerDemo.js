@@ -4,7 +4,6 @@ jb.component('puppeteerDemo.main', {
   type: 'control',
   impl: group({
     controls: [
-      button('my button'),
       pptr.control(
         pptr.headlessPage({
           url: 'http://www.google.com',
@@ -15,7 +14,7 @@ jb.component('puppeteerDemo.main', {
       ),
       group({
         controls: [
-          image({url: pipeline('%$url/1%'), width: '100', height: '245'})
+          image({url: pipeline('%$url/1%'), width: '595', height: '343'})
         ],
         features: group.wait({
           for: pptr.htmlFromPage(

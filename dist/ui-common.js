@@ -1787,6 +1787,7 @@ class JbComponent {
    
         this.toObserve = this.watchRef ? this.watchRef.map(obs=>({...obs,ref: obs.refF(this.ctx)})).filter(obs=>jb.isWatchable(obs.ref)) : []
         this.watchAndCalcModelProp && this.watchAndCalcModelProp.forEach(e=>{
+            if (this.state[e.prop] != undefined) return // we have the value in the state, probably asynch value so do not calc again
             const modelProp = this.ctx.vars.$model[e.prop]
             if (!modelProp)
                 return jb.logError('calcRenderProps',`missing model prop "${e.prop}"`,this.ctx.vars.$model,this.ctx)
@@ -3055,8 +3056,9 @@ jb.component('text.allowAsynchValue', {
     calcProp({id: '%$propId%', value: (ctx,{cmp},{propId}) => cmp[propId] || ctx.vars.$props[propId]}),
     interactive((ctx,{cmp},{propId}) => {
       if (cmp[propId]) return
-      const val = jb.ui.toVdomOrStr(ctx.vars.$model[propId](cmp.ctx))
-      if (val && typeof val.then == 'function')
+      let val = jb.ui.toVdomOrStr(ctx.vars.$model[propId])
+      if (typeof val == 'function') val = val(cmp.ctx)
+      if (val && Object.prototype.toString.call(val) === "[object Promise]")
         val.then(res=>cmp.refresh({[propId]: jb.ui.toVdomOrStr(res)},{srcCtx: ctx.componentContext}))
     })
   )
@@ -3251,7 +3253,7 @@ jb.component('image', {
   type: 'control,image',
   category: 'control:50,common:70',
   params: [
-    {id: 'url', as: 'string', mandatory: true, dynamic: true, templateValue: 'https://freesvg.org/img/UN-CONSTRUCTION-2.png'},
+    {id: 'url', as: 'string', mandatory: true, templateValue: 'https://freesvg.org/img/UN-CONSTRUCTION-2.png'},
     {id: 'width', as: 'string', mandatory: true, templateValue: '100', description: 'e.g: 100, 20%'},
     {id: 'height', as: 'string', mandatory: true, description: 'e.g: 100, 20%'},
     {id: 'resize', type: 'image.resize', description: 'background-size, resize the image', defaultValue: image.fullyVisible()},
@@ -3304,7 +3306,7 @@ jb.component('image.background', {
     css: pipeline(
       Var(
           'url',
-          (ctx,{$model}) => $model.url().replace(/__WIDTH__/,$model.width).replace(/__HEIGHT__/,$model.height)
+          (ctx,{$model}) => $model.url.replace(/__WIDTH__/,$model.width).replace(/__HEIGHT__/,$model.height)
         ),
       Var('width', (ctx,{$model}) => jb.ui.withUnits($model.width)),
       Var('height', (ctx,{$model}) => jb.ui.withUnits($model.height)),
@@ -3413,7 +3415,7 @@ jb.component('button', {
     {id: 'raised', as: 'boolean', dynamic: true },
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx => jb.ui.ctrl(ctx, ctx.run(features(
+  impl: ctx => jb.ui.ctrl(ctx, features(
       watchAndCalcModelProp('title'),
       watchAndCalcModelProp('raised'),
       defHandler('onclickHandler', (ctx,{cmp, ev}) => {
@@ -3427,7 +3429,7 @@ jb.component('button', {
       }),
       interactive( ({},{cmp}) => cmp.action = jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)),
       ctx => ({studioFeatures :{$: 'feature.contentEditable', param: 'title' }}),
-    )))
+    ))
 })
 
 jb.component('ctrlAction', {

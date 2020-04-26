@@ -4,7 +4,7 @@ jb.component('image', {
   type: 'control,image',
   category: 'control:50,common:70',
   params: [
-    {id: 'url', as: 'string', mandatory: true, dynamic: true, templateValue: 'https://freesvg.org/img/UN-CONSTRUCTION-2.png'},
+    {id: 'url', as: 'string', mandatory: true, templateValue: 'https://freesvg.org/img/UN-CONSTRUCTION-2.png'},
     {id: 'width', as: 'string', mandatory: true, templateValue: '100', description: 'e.g: 100, 20%'},
     {id: 'height', as: 'string', mandatory: true, description: 'e.g: 100, 20%'},
     {id: 'resize', type: 'image.resize', description: 'background-size, resize the image', defaultValue: image.fullyVisible()},
@@ -57,7 +57,7 @@ jb.component('image.background', {
     css: pipeline(
       Var(
           'url',
-          (ctx,{$model}) => $model.url().replace(/__WIDTH__/,$model.width).replace(/__HEIGHT__/,$model.height)
+          (ctx,{$model}) => $model.url.replace(/__WIDTH__/,$model.width).replace(/__HEIGHT__/,$model.height)
         ),
       Var('width', (ctx,{$model}) => jb.ui.withUnits($model.width)),
       Var('height', (ctx,{$model}) => jb.ui.withUnits($model.height)),

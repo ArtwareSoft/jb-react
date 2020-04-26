@@ -10,7 +10,7 @@ jb.component('button', {
     {id: 'raised', as: 'boolean', dynamic: true },
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx => jb.ui.ctrl(ctx, ctx.run(features(
+  impl: ctx => jb.ui.ctrl(ctx, features(
       watchAndCalcModelProp('title'),
       watchAndCalcModelProp('raised'),
       defHandler('onclickHandler', (ctx,{cmp, ev}) => {
@@ -24,7 +24,7 @@ jb.component('button', {
       }),
       interactive( ({},{cmp}) => cmp.action = jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)),
       ctx => ({studioFeatures :{$: 'feature.contentEditable', param: 'title' }}),
-    )))
+    ))
 })
 
 jb.component('ctrlAction', {

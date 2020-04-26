@@ -32,8 +32,9 @@ jb.component('text.allowAsynchValue', {
     calcProp({id: '%$propId%', value: (ctx,{cmp},{propId}) => cmp[propId] || ctx.vars.$props[propId]}),
     interactive((ctx,{cmp},{propId}) => {
       if (cmp[propId]) return
-      const val = jb.ui.toVdomOrStr(ctx.vars.$model[propId](cmp.ctx))
-      if (val && typeof val.then == 'function')
+      let val = jb.ui.toVdomOrStr(ctx.vars.$model[propId])
+      if (typeof val == 'function') val = val(cmp.ctx)
+      if (val && Object.prototype.toString.call(val) === "[object Promise]")
         val.then(res=>cmp.refresh({[propId]: jb.ui.toVdomOrStr(res)},{srcCtx: ctx.componentContext}))
     })
   )

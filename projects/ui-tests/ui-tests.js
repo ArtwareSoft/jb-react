@@ -135,7 +135,18 @@ jb.component('uiTest.asynchLabel', {
   impl: uiTest({
     control: text({text: pipe(delay(10), 'hello'), features: text.allowAsynchValue()}),
     action: delay(40),
-    expectedResult: contains('hello')
+    expectedResult: contains('hello'),
+    expectedCounters: {renderVdom: 2, req: 68},
+  })
+})
+
+jb.component('uiTest.asynchImage', {
+  impl: uiTest({
+    control: image({url: pipe(delay(10), 'https://freesvg.org/img/UN-CONSTRUCTION-2.png'), 
+      width: 200, height: 200, features: text.allowAsynchValue('url') }),
+    action: delay(40),
+    expectedResult: contains('UN-CONSTRUCTION-2'),
+    expectedCounters: {renderVdom: 2, req: 58},
   })
 })
 
