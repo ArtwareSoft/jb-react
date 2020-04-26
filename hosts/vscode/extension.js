@@ -131,8 +131,7 @@ class jBartStudio {
     processMessage(message) {
         if (message.$ == 'getFile') {
             return workspace.textDocuments.filter(doc => doc.uri.path.toLowerCase() == message.path.toLowerCase())
-                .map(x => x.getText()).join('');
-            //return fs.readFileSync(message.path,'utf8')
+                .map(x => x.getText()).join('') || fs.readFileSync(message.path.replace(/^\//,''),'utf8')
         }
         else if (message.$ == 'saveDelta') {
             const edit = new WorkspaceEdit();

@@ -255,7 +255,7 @@ function pathOfProjectFile(fn,{project,baseUrl,source} = {}) {
  
  function loadFile(url) {
   if (window.jbBaseProjUrl && !url.match('//'))
-    url = [window.jbBaseProjUrl,url].join('/')
+    url = [window.jbBaseProjUrl.replace(/\/$/,''),url.replace(/^\//,'')].join('/')
   if (url.match(/\.js$/))
      document.write(`<script src="${url}" charset="UTF-8"></script>`)
    else
