@@ -4,11 +4,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script>
 jbProjectSettings = {
-	libs: 'common,ui-common,material,ui-tree,dragula,codemirror,testers,pretty-print,studio,studio-tests,object-encoder,remote,md-icons,fuse,puppeteer',
-		jsFiles: ['remote-widgets','phones-3',
-		...['data','ui','vdom','tree','watchable','parsing','puppeteer','object-encoder'].map(x=>x+'-tests')]
-                    .map(x=>'/projects/ui-tests/'+x+'.js'),
-		project: 'tests'
+	libs: 'common,ui-common,material,ui-tree,dragula,codemirror,testers,pretty-print,studio,studio-tests,object-encoder,remote,md-icons,fuse,puppeteer,animation,cards',
+	jsFiles: [
+	'/projects/ui-tests/remote-widgets.js',
+	'/projects/ui-tests/phones-3.js',
+	'/projects/ui-tests/data-tests.js',
+	'/projects/ui-tests/ui-tests.js',
+	'/projects/ui-tests/vdom-tests.js',
+	'/projects/ui-tests/tree-tests.js',
+	'/projects/ui-tests/watchable-tests.js',
+	'/projects/ui-tests/parsing-tests.js',
+	'/projects/ui-tests/puppeteer-tests.js',
+	'/projects/ui-tests/object-encoder-tests.js',
+	],
+	project: 'tests'
 }
 </script>
 <script type="text/javascript" src="/src/loader/jb-loader.js"></script>

@@ -59,7 +59,7 @@ jb.component('uiTestRunner', {
 		const ctxToRun = new jb.jbCtx(ctxWithVars,{ profile, forcePath: test+ '~impl', path: '' } )
 		const studiojb = ctx.frame().parent.jb
 		return ctxToRun.run(group({
-			controls: () => ctxToRun.runInner(profile.control,{type: 'control'}, 'control'),
+			controls: group({controls: () => ctxToRun.runInner(profile.control,{type: 'control'}, 'control') }),
 			features: [
 				group.wait({
 					for: () => profile.runBefore && ctxToRun.runInner(profile.runBefore,{type: 'runBefore'}, 'runBefore')

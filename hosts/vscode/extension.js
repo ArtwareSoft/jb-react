@@ -59,15 +59,22 @@ class jBartStudio {
         const editor = vscode.window.activeTextEditor;
         if (!editor)
             return {};
-        const htmlFile = [...editor.document.uri.path.split('/').slice(0, -1), 'index.html'].slice(1).join('/');
-        if (fs.existsSync(htmlFile)) {
-            const html = fs.readFileSync(htmlFile, 'utf8');
-            const res = eval('({' + _extractText(html, 'jbProjectSettings = {', '}', '') + '})');
-            return Object.assign(Object.assign({}, res), { 
-                source: jbModuleUrl ? 'vscodeUserHost' : 'vscodeDevHost', 
-                line: editor.selection.active.line, col: editor.selection.active.character 
-            });
-        }
+        const splitedPath = editor.document.uri.path.split('/').slice(1, -1)
+        const jbartFolder = splitedPath.slice(0,splitedPath.indexOf('jb-react')+1)
+        const htmlFileCandidates = [
+            [...splitedPath, 'index.html'].join('/'),
+            [...jbartFolder,'projects/ui-tests/tests.html'].join('/')
+        ]
+        return htmlFileCandidates
+            .filter(htmlFile=>fs.existsSync(htmlFile))
+            .map(htmlFile => {
+                const html = fs.readFileSync(htmlFile, 'utf8');
+                const res = eval('({' + _extractText(html, 'jbProjectSettings = {', '}', '') + '})');
+                return Object.assign(Object.assign({}, res), { 
+                    source: jbModuleUrl ? 'vscodeUserHost' : 'vscodeDevHost', 
+                    line: editor.selection.active.line, col: editor.selection.active.character 
+                }) 
+            })[0]
     }
 
     studioHtml(jbModuleUrl, jbBaseProjUrl, jbProjectSettings, jbDocsDiffFromFiles) {
