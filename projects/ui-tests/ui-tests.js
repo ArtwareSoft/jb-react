@@ -432,7 +432,7 @@ jb.component('uiTest.dialogCleanupBug', {
 })
 
 // ensure the right order between the unmount that causes elem._component = null and the blur event which is automatically generated when detaching the dialog
-jb.component(' uiTest.updateOnBlurWhenDialogClosed', {
+jb.component('uiTest.updateOnBlurWhenDialogClosed', {
   impl: uiTest({
     control: group({
       controls: [

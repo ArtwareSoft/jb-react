@@ -4384,7 +4384,7 @@ ui.renderWidget = function(profile,top) {
 
 	function doRender(page) {
         if (page) currentProfile = {$: page}
-        const profileToRun = ['dataText','uiTest'].indexOf(currentProfile.$) != -1 ? { $: 'test.showTestInStudio', testId: page} : currentProfile
+        const profileToRun = ['dataTest','uiTest'].indexOf(jb.path(jb.comps[currentProfile.$],'impl.$')) != -1 ? { $: 'test.showTestInStudio', testId: currentProfile.$} : currentProfile
         const cmp = new jb.jbCtx().run(profileToRun)
         const start = new Date().getTime()
         jb.ui.unmount(top)
@@ -36198,10 +36198,10 @@ jb.component('studio.waitForPreviewIframe', {
 })
 
 const {pipe,startWith,filter,flatMap} = jb.callbag
-jb.studio.pageChange = pipe(jb.ui.resourceChange(), filter(e=>e.path.join('/') == 'studio/currentPagePath'),
+jb.studio.pageChange = pipe(jb.ui.resourceChange(), filter(e=>e.path.join('/') == 'studio/page'),
       startWith(1),
       flatMap(e=> {
-        const page = jb.resources.studio.currentPagePath
+        const page = jb.resources.studio.page
         return page ? [{page}] : []
 }))
 

@@ -8,10 +8,9 @@ jb.test = {
 		.then(_ => jb.test.runInner('calculate',ctx))
 		.then(v => Array.isArray(v) ? jb.toSynchArray(v) : v)
 		.then(value => {
-			const countersErr = countersErrors(expectedCounters);
-			const success = !! (jb.test.runInner('expectedResult',ctx.setData(value)) && !countersErr);
-			return { success, reason: countersErr, value}
-		})			
+			const success = !! jb.test.runInner('expectedResult',ctx.setData(value))
+			return { success, value}
+		})
 	},
 	runInStudio(profile) {
 		return profile && jb.frame.parent.jb.exec(profile)
@@ -29,32 +28,38 @@ jb.component('test.showTestInStudio', {
 		  const ctxToRun = new jb.jbCtx(ctxWithVars,{ profile, forcePath: testId+ '~impl', path: '' } )
 		  if (profile.$ == 'dataTest')
 			  return ctxToRun.run(test.dataTestView(testId, () => jb.test.dataTestResult(ctxToRun)))
-		  if (profile.$ == 'uiTest') 
+		  if (profile.$ == 'uiTest')
 			  return ctxToRun.run(test.uiTestRunner(testId,() => ctxToRun))
 	  }
 })
 
 jb.component('test.dataTestView', {
-	type: 'control',
-	params: [
-	  {id: 'testId', as: 'string', defaultValue: 'ui-test.label'},
-	  {id: 'testResult'}
-	],
-	impl: group({
-		controls: group({
-			controls:[
-				button({
-					title: '%$testId%',
-					action: (ctx,{},{testId}) => jb.test.runInStudio({$: 'studio.openComponentInJbEditor', path: `${testId}~impl~calculate` }), 
-					style: button.href(),
-					features: pipeline(Var('color',If('%success%','green','red')),css('color: %$color%'))
-				}),
-				text({title: 'calculate', text: 'value: %value%' }),
-				text({title: 'reason', text: '{?reason: %reason%?}' }),
-			]
-		}),
-		features: group.wait({for: '%$testResult%'})
-	})
+  type: 'control',
+  params: [
+    {id: 'testId', as: 'string', defaultValue: 'ui-test.label'},
+    {id: 'testResult'}
+  ],
+  impl: group({
+    controls: group({
+      layout: layout.vertical('12'),
+      controls: [
+        button({
+          title: '%$testId%',
+          action: (ctx,{},{testId}) => jb.test.runInStudio({$: 'studio.openComponentInJbEditor', path: `${testId}~impl~calculate` }),
+          style: button.href(),
+          features: pipeline(Var('color', If('%success%', 'green', 'red')), css('color: %$color%'))
+        }),
+        group({
+          style: propertySheet.titlesLeft(),
+          controls: [
+            text({text: '%value%', title: 'calculate', features: css.width('300')})
+          ],
+          features: css.width({width: '127', selector: ''})
+        })
+      ]
+    }),
+    features: group.wait('%$testResult%')
+  })
 })
 
 jb.component('test.uiTestRunner', {
@@ -66,10 +71,10 @@ jb.component('test.uiTestRunner', {
 	impl: group({
 		controls: [
 			button({
-				title: '%$testId%', 
-				action: (ctx,{},{testId}) => jb.test.runInStudio({$: 'studio.openComponentInJbEditor', path: `${testId}~impl~control` }), 
+				title: '%$testId%',
+				action: (ctx,{},{testId}) => jb.test.runInStudio({$: 'studio.openComponentInJbEditor', path: `${testId}~impl~control` }),
 				style: button.href(),
-			}),					
+			}),
 			group({controls: (ctx,{},{ctxToRun}) => ctxToRun.runInner(ctxToRun.profile.control,{type: 'control'}, 'control') })
 		],
 		features: [
@@ -130,7 +135,7 @@ jb.component('dataTest', {
 					  .then(_=>result) )
 	  }
 })
-  
+
 jb.component('uiTest', {
   type: 'test',
   params: [

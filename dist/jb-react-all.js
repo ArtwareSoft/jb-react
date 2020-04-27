@@ -4384,7 +4384,7 @@ ui.renderWidget = function(profile,top) {
 
 	function doRender(page) {
         if (page) currentProfile = {$: page}
-        const profileToRun = ['dataText','uiTest'].indexOf(currentProfile.$) != -1 ? { $: 'test.showTestInStudio', testId: page} : currentProfile
+        const profileToRun = ['dataTest','uiTest'].indexOf(jb.path(jb.comps[currentProfile.$],'impl.$')) != -1 ? { $: 'test.showTestInStudio', testId: currentProfile.$} : currentProfile
         const cmp = new jb.jbCtx().run(profileToRun)
         const start = new Date().getTime()
         jb.ui.unmount(top)

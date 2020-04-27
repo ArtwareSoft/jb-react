@@ -119,10 +119,10 @@ jb.component('studio.waitForPreviewIframe', {
 })
 
 const {pipe,startWith,filter,flatMap} = jb.callbag
-jb.studio.pageChange = pipe(jb.ui.resourceChange(), filter(e=>e.path.join('/') == 'studio/currentPagePath'),
+jb.studio.pageChange = pipe(jb.ui.resourceChange(), filter(e=>e.path.join('/') == 'studio/page'),
       startWith(1),
       flatMap(e=> {
-        const page = jb.resources.studio.currentPagePath
+        const page = jb.resources.studio.page
         return page ? [{page}] : []
 }))
 
