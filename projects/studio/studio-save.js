@@ -62,7 +62,8 @@ jb.component('studio.initAutoSave', {
 jb.component('studio.saveProjectSettings', {
   type: 'action,has-side-effects',
   impl: ctx => {
-    const path = st.host.pathOfJsFile(ctx.exp('%$studio/project%'), 'index.html')
+    if (!ctx.exp('%$studio/projectFolder%')) return
+    const path = st.host.pathOfJsFile(ctx.exp('%$studio/projectFolder%'), 'index.html')
     return st.host.getFile(path).then( fileContent =>
       st.host.saveFile(path, newIndexHtmlContent(fileContent, ctx.exp('%$studio/projectSettings%'))))
       .then(()=>st.showMultiMessages([{text: 'index.html saved with new settings'}]))

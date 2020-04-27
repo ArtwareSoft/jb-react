@@ -56,7 +56,7 @@ st.Probe = class {
     simpleRun() {
         const st = jb.studio
         return Promise.resolve(this.context.runItself()).then(res=>{
-            if (res.renderVdom) {
+            if (res && res.renderVdom) {
                 const vdom = res.renderVdom()
                 return ({props: res.renderProps, vdom , cmp: res})
             }

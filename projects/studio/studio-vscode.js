@@ -1,3 +1,5 @@
+jb.ns('vscode')
+
 jb.component('studio.initVscodeAdapter', {
   type: 'action',
   params: [
@@ -7,12 +9,12 @@ jb.component('studio.initVscodeAdapter', {
         if (! jb.frame.jbInvscode || jb.VscodeAdapterInitialized) return
         jb.VscodeAdapterInitialized = true
         const vscode = jb.studio.vsCodeApi
-        const params = ['project','page','profile_path']
+        const params = ['project','page','profile_path','vscode']
 
         const {pipe, subscribe,create,filter} = jb.callbag
         jb.studio.vscodeEm = create(obs=> jb.frame.addEventListener('message', e => obs(e)))
 
-        const state = {...jb.frame.jbPreviewProjectSettings, ...vscode.getState()}
+        const state = {...jb.frame.jbPreviewProjectSettings, ...vscode.getState(), vscode: true}
         params.forEach(p => state[p] != null && ctx.run(writeValue(`%${resource}/${p}%`,state[p]) ))
 
         pipe(jb.ui.resourceChange(), 
@@ -63,3 +65,17 @@ jb.component('studio.profileChanged', {
         jb.textEditor.setStrValue(newVal, compRef, ctx)
     }
 })
+
+jb.component('vscode.openjbEditor', {
+    type: 'action',
+    impl: If(vscode.pathByActiveEditor(), studio.openComponentInJbEditor(vscode.pathByActiveEditor()))
+})
+
+jb.component('vscode.pathByActiveEditor', {
+    impl: () => {
+        if (!jb.frame.jbActiveEditorPosition) return
+        const {compId, componentHeaderIndex, line, col } = jb.frame.jbActiveEditorPosition
+        return jb.textEditor.getPathOfPos(compId, {line: line-componentHeaderIndex,col},jb.studio.previewjb)
+    }
+})
+

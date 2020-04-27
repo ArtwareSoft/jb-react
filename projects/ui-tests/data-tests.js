@@ -714,6 +714,13 @@ jb.component('dataTest.prettyPrint$contains', {
   })
 })
 
+jb.component('dataTest.textEditor.getPosOfPath', {
+  impl: dataTest({
+    calculate: pipeline(() => jb.textEditor.getPosOfPath('dataTest.textEditor.getPosOfPath~impl~expectedResult~!profile'), slice(0,2), join()),
+    expectedResult: equals('7,20')
+  })
+})
+
 jb.component('dataTest.evalExpression', {
   impl: dataTest({
     calculate: evalExpression('1+1'),

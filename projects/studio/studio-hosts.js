@@ -142,7 +142,7 @@ st.projectHosts = {
             return fetch('/projects/ui-tests/tests.html').then(r=>r.text()).then(html =>{
                 const settings = eval('({' + _extractText(html,'jbProjectSettings = {','}') + '})')
                 return {...settings, project, 
-                    entry: { $: 'uiTestRunner', test: project },
+                    entry: { $: 'test.showTestInStudio', testId: project },
                     source:'test'
                 }
             })

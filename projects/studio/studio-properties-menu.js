@@ -80,7 +80,7 @@ jb.component('studio.jbEditorMenu', {
               editableText({
                 title: 'property name',
                 databind: '%$name%',
-                style: editableText.mdcInput(),
+                style: editableText.mdcInput({}),
                 features: [
                   feature.onEnter(
                     writeValue(studio.ref('%$path%~%$name%'), ''),
@@ -141,9 +141,12 @@ jb.component('studio.jbEditorMenu', {
         [
           menu.action({
             title: 'Goto parent',
-            action: studio.openJbEditor(studio.parentPath('%$path%'), studio.parent('%$fromPath%')),
-            showCondition: contains({text: '~', allText: '%$root%'}),
+            action: studio.openJbEditor({
+              path: studio.parentPath('%$path%'),
+              fromPath: {'$': 'studio.parent', '$byValue': ['%$fromPath%']}
+            }),
             shortcut: 'Ctrl+P',
+            showCondition: contains({text: '~', allText: '%$root%'})
           }),
           menu.action({
             vars: [Var('compName', studio.compName('%$path%'))],
@@ -194,6 +197,13 @@ jb.component('studio.jbEditorMenu', {
         showCondition: studio.isArrayItem('%$path%')
       }),
       menu.separator(),
+      menu.action({
+        title: 'Set as current page',
+        action: writeValue(
+          '%$studio/page%',
+          split({separator: '~', text: '%$path%', part: 'first'})
+        )
+      }),
       menu.menu({
         title: 'More',
         options: [
@@ -211,7 +221,7 @@ jb.component('studio.jbEditorMenu', {
                   editableText({
                     title: 'remark',
                     databind: '%$remark%',
-                    style: editableText.mdcInput(),
+                    style: editableText.mdcInput({}),
                     features: [
                       feature.onEnter(
                         writeValue(studio.ref('%$path%~remark'), '%$remark%'),
@@ -280,7 +290,7 @@ jb.component('studio.jbEditorMenu', {
             title: 'Make Local',
             action: studio.openMakeLocal('%$path%'),
             showCondition: studio.canMakeLocal('%$path%')
-          }),          
+          }),
           menu.action({
             title: 'Extract Component',
             action: studio.openExtractComponent('%$path%'),
@@ -290,7 +300,7 @@ jb.component('studio.jbEditorMenu', {
             title: 'Extract Param',
             action: studio.openExtractParam('%$path%'),
             showCondition: studio.canExtractParam('%$path%')
-          }),
+          })
         ],
         optionsFilter: '%%'
       })

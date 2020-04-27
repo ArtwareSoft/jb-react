@@ -311,8 +311,9 @@ jb.component('studio.openNewPage', {
           databind: '%$dialogData/name%',
           style: editableText.mdcInput(),
           features: [
+            feature.init(writeValue('%$dialogData/name%', '%$studio/project%.myCtrl')),
             feature.onEnter(dialog.closeContainingPopup()),
-            validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid page name')
+            validation(matchRegex('^[a-zA-Z_0-9\.]+$'), 'invalid page name')
           ]
         })
       ],
@@ -321,9 +322,8 @@ jb.component('studio.openNewPage', {
     title: 'New Page',
     onOK: runActions(
       Var('compName', ctx => jb.macroName(ctx.exp('%$dialogData/name%'))),
-      Var('compId', pipeline(list(studio.projectId(), '%$compName%'), join('.'))),
-      studio.newComp('%$compId%', asIs({type: 'control', impl: group({})})),
-      writeValue('%$studio/profile_path%', '%$compId%~impl'),
+      studio.newComp('%$compName%', asIs({type: 'control', impl: group({})})),
+      writeValue('%$studio/profile_path%', '%$compName%~impl'),
       writeValue('%$studio/page%', '%$compName%'),
       studio.openControlTree(),
       tree.regainFocus(),
@@ -345,8 +345,9 @@ jb.component('studio.openNewFunction', {
           databind: '%$dialogData/name%',
           style: editableText.mdcInput(),
           features: [
+            feature.init(writeValue('%$dialogData/name%', '%$studio/project%.myFunc')),
             feature.onEnter(dialog.closeContainingPopup()),
-            validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid function name')
+            validation(matchRegex('^[a-zA-Z_0-9\.]+$'), 'invalid function name')
           ]
         })
       ],
@@ -355,13 +356,12 @@ jb.component('studio.openNewFunction', {
     title: 'New Function',
     onOK: runActions(
       Var('compName', ctx => jb.macroName(ctx.exp('%$dialogData/name%'))),
-      Var('compId', pipeline(list(studio.projectId(), '%$compName%'), join('.'))),
       studio.newComp(
-          '%$compId%',
+          '%$compName%',
           asIs({type: 'data', impl: pipeline(''), testData: 'sampleData'})
         ),
-      writeValue('%$studio/profile_path%', '%$compId%'),
-      studio.openJbEditor('%$compId%'),
+      writeValue('%$studio/profile_path%', '%$compName%'),
+      studio.openJbEditor('%$compName%'),
       refreshControlById('functions')
     ),
     modal: true,
@@ -459,7 +459,7 @@ jb.component('studio.newComp', {
   impl: (ctx, compName, compContent,file) => {
     const _jb = jb.studio.previewjb
     _jb.component(compName, compContent)
-    const filePattern = '/' + ctx.exp('%$studio/project%')
+    const filePattern = '/' + ctx.exp('%$studio/projectFolder%')
     const projectFile = file || jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=> x && x.indexOf(filePattern) != -1)[0]
     const compWithLocation = { ...compContent, ...{ [_jb.location]: [projectFile,''] }}
     // fake change for refresh page and save

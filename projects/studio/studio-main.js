@@ -5,7 +5,8 @@ jb.component('dataResource.studio', {
     profile_path: '',
     pickSelectionCtxId: '',
     settings: {contentEditable: true, activateWatchRefViewer: true},
-    baseStudioUrl: '//unpkg.com/jb-react/bin/studio/'
+    baseStudioUrl: (jb.frame.jbBaseProjUrl || '//unpkg.com/jb-react') + '/bin/studio/',
+    vscode: jb.frame.jbInvscode
   }
 })
 
@@ -24,15 +25,16 @@ jb.component('studio.pages', {
       itemlist({
         items: pipeline(
           studio.cmpsOfProject(),
-          filter(studio.isOfType('%%', 'control')),
-          suffix('.')
+          filter(studio.isOfType('%%', 'control'))
         ),
-        controls: text({text: extractSuffix('.'), features: css.class('studio-page')}),
+        controls: text({
+          text: pipeline(suffix('.'),extractSuffix('.')), 
+          features: css.class('studio-page')}),
         style: itemlist.horizontal(),
         features: [
           itemlist.selection({
             databind: '%$studio/page%',
-            onSelection: writeValue('%$studio/profile_path%', studio.currentPagePath()),
+            onSelection: writeValue('%$studio/profile_path%', '%$studio/page%'),
             autoSelectFirst: true
           }),
           css.class('studio-pages-items'),
@@ -53,11 +55,11 @@ jb.component('studio.pages', {
           suffix('.')
         ),
         controls: text({
-          text: extractSuffix('.'),
+          text: pipeline(suffix('.'),extractSuffix('.')),
           features: [
             feature.onEvent({
               event: 'click',
-              action: studio.openJbEditor({path: pipeline(list(studio.projectId(), '%%'), join('.'))})
+              action: studio.openJbEditor('%%')
             })
           ]
         }),
@@ -272,11 +274,62 @@ jb.component('studio.topBar', {
   })
 })
 
+jb.component('studio.vscodeTopBar', {
+  type: 'control',
+  impl: group({
+    title: 'top bar',
+    layout: layout.flex({alignItems: 'start', spacing: ''}),
+    controls: [
+      image({
+        url: '%$studio/baseStudioUrl%css/jbartlogo.png',
+        features: [css.margin({top: '5', left: '5'}), css.width('80'), css.height('100')]
+      }),
+      group({
+        title: 'title and menu',
+        layout: layout.vertical('11'),
+        controls: [
+          text({text: 'message', style: text.studioMessage()}),
+          text({
+            text: replace({find: '_', replace: ' ', text: '%$studio/project%'}),
+            style: text.htmlTag('div'),
+            features: [
+              css('{ font: 20px Arial; margin-left: 6px; margin-top: 6px}'),
+              watchRef('%$studio/project%')
+            ]
+          }),
+          group({
+            title: 'menu and toolbar',
+            layout: layout.horizontal('16'),
+            controls: [
+              studio.searchComponent(''),
+              menu.control({
+                menu: studio.mainMenu(),
+                style: menuStyle.pulldown({}),
+                features: [id('mainMenu'), css.height('30')]
+              }),
+              group({
+                title: 'toolbar',
+                controls: [
+                  studio.toolbar()
+                ],
+                features: css.margin('-10')
+              })
+            ]
+          })
+        ],
+        features: css('padding-left: 18px; width: 100%; ')
+      })
+    ],
+    features: [css('height: 73px; border-bottom: 1px #d9d9d9 solid;')]
+  })
+})
+
 jb.component('studio.all', {
   type: 'control',
   impl: group({
     controls: [
-      studio.topBar(),
+      controlWithCondition(not('%$studio/vscode%'), studio.topBar()),
+      controlWithCondition('%$studio/vscode%', studio.vscodeTopBar()),
       group({
         controls: studio.previewWidget({width: 1280, height: 520}),
         features: id('preview-parent')
@@ -290,7 +343,7 @@ jb.component('studio.all', {
           Object.assign(ctx.exp('%$studio/settings%'), typeof settings == 'string' ? JSON.parse(settings) : {})))),
         loadingControl: text('')
       }),
-      group.data({data: '%$studio/project%', watch1: true}),
+//      group.data({data: '%$studio/project%', watch1: true}),
       feature.init(runActions(urlHistory.mapStudioUrlToResource('studio'),
         studio.initVscodeAdapter('studio'),
         studio.initAutoSave()

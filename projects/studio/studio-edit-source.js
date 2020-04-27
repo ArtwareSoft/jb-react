@@ -43,7 +43,16 @@ jb.component('studio.openEditor', {
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => {
-    path && fetch(`/?op=gotoSource&comp=${path.split('~')[0]}`)
+    if (!path) return
+    if (jb.frame.jbInvscode) {
+        const comp = path.split('~')[0]
+        const loc = st.previewjb.comps[comp][jb.location]
+        const fn = st.host.locationToPath(loc[0])
+        const pos = jb.textEditor.getPosOfPath(path+'~!profile',st.previewjb)
+        jb.studio.vscodeService({$: 'openEditor', path,comp,loc,fn, pos })
+    } else {
+        fetch(`/?op=gotoSource&comp=${path.split('~')[0]}`)
+    }
   }
 })
 
@@ -74,13 +83,12 @@ jb.component('studio.editableSource', {
   })
 })
 
-
 jb.component('studio.editSource', {
   type: 'action',
   params: [
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
-  impl: openDialog({
+  impl: action.If('%$studio/vscode%', studio.openEditor('%$path%'), openDialog({
     style: dialog.editSourceStyle({id: 'editor', width: 600}),
     content: studio.editableSource('%$path%'),
     title: studio.shortTitle('%$path%'),
@@ -88,7 +96,7 @@ jb.component('studio.editSource', {
       css('.jb-dialog-content-parent {overflow-y: hidden}'),
       dialogFeature.resizer(true)
     ]
-  })
+  }))
 })
 
 jb.component('studio.viewAllFiles', {
@@ -113,7 +121,7 @@ jb.component('studio.viewAllFiles', {
         })
       ],
       features: [
-        variable({name: 'file', value: '%$studio/project%.html', watchable: true}),
+        variable({name: 'file', value: '%$studio/projectFolder%.html', watchable: true}),
         group.wait({
           for: ctx => jb.studio.projectUtils.projectContent(ctx),
           varName: 'content'

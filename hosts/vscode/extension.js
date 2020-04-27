@@ -5,39 +5,40 @@ const {commands,ViewColumn,Uri,workspace, WorkspaceEdit} = vscode
 const fs = require("fs")
 
 function activate(context) {
-    context.subscriptions.push(commands.registerCommand('jb.studio.openJbEditor', () => jBartStudio.createOrShow()));
+    context.subscriptions.push(commands.registerCommand('jb.studio.openJbEditor', () => jBartStudio.createOrShow('vscode.openjbEditor')));
     context.subscriptions.push(commands.registerCommand('jb.studio.openProperties', () => jBartStudio.createOrShow()));
 }
 exports.activate = activate;
 
 class jBartStudio {
-    constructor(panel) {
-        this._disposables = [];
-        this._panel = panel;
-        panel.webview.html = this.getHtmlForWebview(panel.webview);
-        panel.onDidDispose(() => this.dispose(), null, this._disposables);
-        panel.onDidChangeViewState(e => { if (panel.visible) { } }, null, this._disposables);
-        const fileSystemWatcher = workspace.createFileSystemWatcher("**/*.{ts,js}");
+    constructor(panel,command) {
+        this._disposables = []
+        this._panel = panel
+        this.command = command
+        panel.webview.html = this.getHtmlForWebview(panel.webview)
+        panel.onDidDispose(() => this.dispose(), null, this._disposables)
+        panel.onDidChangeViewState(e => { if (panel.visible) { } }, null, this._disposables)
+        const fileSystemWatcher = workspace.createFileSystemWatcher("**/*.{ts,js}")
         fileSystemWatcher.onDidChange(() => {
-            const editor = vscode.window.activeTextEditor;
+            const editor = vscode.window.activeTextEditor
             editor && this._panel.webview.postMessage({ $: 'studio.profileChanged',
                 line: editor.selection.active.line, col: editor.selection.active.character,
                 fileContent: editor.document.getText()
-            });
-        });
+            })
+        })
         panel.webview.onDidReceiveMessage(message => {
             Promise.resolve(this.processMessage(message)).then(result => {
                 if (message.messageID)
-                    this._panel.webview.postMessage({ result, messageID: message.messageID });
-            });
-        }, null, this._disposables);
+                    this._panel.webview.postMessage({ result, messageID: message.messageID })
+            })
+        }, null, this._disposables)
     }
 
-    static createOrShow() {
-        const win = vscode.window;
-        const column = win.activeTextEditor ? (win.activeTextEditor.viewColumn || 0) + 1 : undefined;
-        const panel = win.createWebviewPanel(jBartStudio.viewType, 'jBart Studio', column || ViewColumn.One, { enableScripts: true });
-        new jBartStudio(panel);
+    static createOrShow(command) {
+        const win = vscode.window
+        const column = win.activeTextEditor ? (win.activeTextEditor.viewColumn || 0) + 1 : undefined
+        const panel = win.createWebviewPanel(jBartStudio.viewType, 'jBart Studio', column || ViewColumn.One, { enableScripts: true })
+        new jBartStudio(panel,command)
     }
 
     getHtmlForWebview(webview) {
@@ -46,7 +47,10 @@ class jBartStudio {
         const jbModuleUrl = fs.existsSync(ws.uri.fsPath + '/node_modules/jb-react') ? webview.asWebviewUri(Uri.file(ws.uri.path + '/node_modules/jb-react')) : ''
         if (!jbModuleUrl && !ws.uri.path.match(/jb-react/))
             return this.installHtml()
-        return this.studioHtml(jbModuleUrl, jbBaseProjUrl, JSON.stringify(this.calcProjectSettings(jbModuleUrl)), JSON.stringify(this.calcDocsDiffFromFiles(webview)))
+        return this.studioHtml(jbModuleUrl, jbBaseProjUrl, JSON.stringify(this.calcProjectSettings(jbModuleUrl)), 
+            JSON.stringify(this.calcDocsDiffFromFiles(webview)),
+            JSON.stringify(this.calcActiveEditorPosition())
+            )
     }
 
     calcDocsDiffFromFiles(webview) {
@@ -55,10 +59,16 @@ class jBartStudio {
             .map(doc => [doc.getText(), `//# sourceURL=${webview.asWebviewUri(doc.uri)}`].join('\n'));
     }
 
+    calcActiveEditorPosition() {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) return {};
+        const closestComp = _closestComp(doc.getText(),editor.selection.active.line)
+        return { ...closestComp, line: editor.selection.active.line, col: editor.selection.active.character }
+    }
+
     calcProjectSettings(jbModuleUrl) {
         const editor = vscode.window.activeTextEditor;
-        if (!editor)
-            return {};
+        if (!editor) return {};
         const splitedPath = editor.document.uri.path.split('/').slice(1, -1)
         const jbartFolder = splitedPath.slice(0,splitedPath.indexOf('jb-react')+1)
         const htmlFileCandidates = [
@@ -71,13 +81,12 @@ class jBartStudio {
                 const html = fs.readFileSync(htmlFile, 'utf8');
                 const res = eval('({' + _extractText(html, 'jbProjectSettings = {', '}', '') + '})');
                 return Object.assign(Object.assign({}, res), { 
-                    source: jbModuleUrl ? 'vscodeUserHost' : 'vscodeDevHost', 
-                    line: editor.selection.active.line, col: editor.selection.active.character 
+                    source: jbModuleUrl ? 'vscodeUserHost' : 'vscodeDevHost',
                 }) 
             })[0]
     }
 
-    studioHtml(jbModuleUrl, jbBaseProjUrl, jbProjectSettings, jbDocsDiffFromFiles) {
+    studioHtml(jbModuleUrl, jbBaseProjUrl, jbProjectSettings, jbDocsDiffFromFiles, jbActiveEditorPosition) {
         const studioBin = `<script type="text/javascript" src="${jbModuleUrl}/bin/studio/studio-all.js"></script>
         <link rel="stylesheet" type="text/css" href="${jbModuleUrl}/bin/studio/css/studio-all.css"/>`
 
@@ -93,7 +102,9 @@ class jBartStudio {
             jbModuleUrl = '${jbModuleUrl}'
 			jbBaseProjUrl = '${jbBaseProjUrl}'
 			jbPreviewProjectSettings= ${jbProjectSettings}
-			jbDocsDiffFromFiles = ${jbDocsDiffFromFiles}
+            jbDocsDiffFromFiles = ${jbDocsDiffFromFiles}
+            jbStartCommand = {$: '${this.command}'}
+            jbActiveEditorPosition = ${jbActiveEditorPosition}
         </script>
         ${jbModuleUrl ? studioBin : studioDev}
 	</head>
@@ -132,12 +143,19 @@ class jBartStudio {
         if (message.$ == 'getFile') {
             return workspace.textDocuments.filter(doc => doc.uri.path.toLowerCase() == message.path.toLowerCase())
                 .map(x => x.getText()).join('') || fs.readFileSync(message.path.replace(/^\//,''),'utf8')
-        }
-        else if (message.$ == 'saveDelta') {
+        } else if (message.$ == 'saveDelta') {
             const edit = new WorkspaceEdit();
             edit.set(Uri.file(message.path), message.edits);
             workspace.applyEdit(edit);
             return {};
+        } else if (message.$ == 'openEditor') {
+            const {fn, pos}  = message
+            vscode.workspace.openTextDocument(fn).then(doc => {
+                vscode.window.showTextDocument(doc).then( editor =>{
+                    editor.selection = new vscode.Selection(pos[0], pos[1], pos[2], pos[3])
+                })
+            })
+            message.path
         }
     }
 }
@@ -149,4 +167,12 @@ function _extractText(str, startMarker, endMarker, replaceWith) {
     if (replaceWith)
         return str.slice(0, pos1 + startMarker.length) + replaceWith + str.slice(pos2);
     return str.slice(pos1 + startMarker.length, pos2);
+}
+
+function _closestComp(fileContent, line) {
+    const lines = fileContent.split('\n')
+    const closestComp = lines.slice(0,line+1).reverse().findIndex(line => line.match(/^jb.component\(/))
+    if (closestComp == -1) return
+    const componentHeaderIndex = line - closestComp
+    return { compId: (lines[componentHeaderIndex].match(/'([^']+)'/)||['',''])[1], componentHeaderIndex }
 }

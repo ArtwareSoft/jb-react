@@ -183,7 +183,8 @@ jb.textEditor = {
     lineColToOffset,
     cm_hint,
     closestComp,
-    formatComponent
+    formatComponent,
+    getPosOfPath, getPathOfPos
 }
 
 function pathOfPosition(ref,_pos) {
@@ -255,6 +256,26 @@ function getSuggestions(fileContent, pos, jbToUse = jb) {
     const cursorOffset = lineColToOffset(srcForImpl, {line: pos.line - componentHeaderIndex, col: pos.col})
     const path = pathOfPosition({text, locationMap}, cursorOffset)
     return { path, suggestions: new jbToUse.jbCtx().run(sourceEditor.suggestions(path.path)) }
+}
+
+function getPosOfPath(path,jbToUse = jb) {
+    const compId = path.split('~')[0]
+    const {map} = jb.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
+    return map[path]
+}
+
+function getPathOfPos(compId,pos,jbToUse = jb) {
+    const locationMap = jb.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps}).map
+    const closest = Object.keys(locationMap).map(k=>({k, distance: distance(k)})).sort((x,y) => x.distance - y.distance)[0].k
+    return closest.split('!').pop()
+
+    function distance(k) {
+        const loc = locationMap[k]
+        return dist(loc[0],loc[0],pos.line,pos.col) + dist(loc[1],loc[2],pos.line,pos.col)
+    }
+    function dist(line1,col1,line2,col2) {
+        return Math.abs(line1-line2) * 1000 + Math.abs(col1-col2)
+    }
 }
 
 function closestComp(fileContent, pos) {

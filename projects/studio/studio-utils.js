@@ -34,10 +34,7 @@ jb.component('studio.projectId', {
 })
 
 jb.component('studio.currentPagePath', {
-  impl: pipeline(
-    list(studio.projectId(), '%$studio/page%'),
-    join('.')
-  )
+  impl: '%$studio/page%'
 })
 
 jb.component('studio.currentProfilePath', {

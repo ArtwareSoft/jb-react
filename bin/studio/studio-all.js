@@ -4338,7 +4338,7 @@ ui.renderWidget = function(profile,top) {
         const project = studioWin.jb.resources.studio.project
         const page = studioWin.jb.resources.studio.page
         if (project && page)
-            currentProfile = {$: `${jb.macroName(project)}.${page}`}
+            currentProfile = {$: page}
 
         const {pipe,debounceTime,filter,subscribe} = jb.callbag
         pipe(st.pageChange, filter(({page})=>page != currentProfile.$), subscribe(({page})=> doRender(page)))
@@ -4384,7 +4384,8 @@ ui.renderWidget = function(profile,top) {
 
 	function doRender(page) {
         if (page) currentProfile = {$: page}
-        const cmp = new jb.jbCtx().run(currentProfile)
+        const profileToRun = ['dataText','uiTest'].indexOf(currentProfile.$) != -1 ? { $: 'test.showTestInStudio', testId: page} : currentProfile
+        const cmp = new jb.jbCtx().run(profileToRun)
         const start = new Date().getTime()
         jb.ui.unmount(top)
         top.innerHTML = ''
@@ -34754,7 +34755,8 @@ jb.textEditor = {
     lineColToOffset,
     cm_hint,
     closestComp,
-    formatComponent
+    formatComponent,
+    getPosOfPath, getPathOfPos
 }
 
 function pathOfPosition(ref,_pos) {
@@ -34826,6 +34828,26 @@ function getSuggestions(fileContent, pos, jbToUse = jb) {
     const cursorOffset = lineColToOffset(srcForImpl, {line: pos.line - componentHeaderIndex, col: pos.col})
     const path = pathOfPosition({text, locationMap}, cursorOffset)
     return { path, suggestions: new jbToUse.jbCtx().run(sourceEditor.suggestions(path.path)) }
+}
+
+function getPosOfPath(path,jbToUse = jb) {
+    const compId = path.split('~')[0]
+    const {map} = jb.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
+    return map[path]
+}
+
+function getPathOfPos(compId,pos,jbToUse = jb) {
+    const locationMap = jb.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps}).map
+    const closest = Object.keys(locationMap).map(k=>({k, distance: distance(k)})).sort((x,y) => x.distance - y.distance)[0].k
+    return closest.split('!').pop()
+
+    function distance(k) {
+        const loc = locationMap[k]
+        return dist(loc[0],loc[0],pos.line,pos.col) + dist(loc[1],loc[2],pos.line,pos.col)
+    }
+    function dist(line1,col1,line2,col2) {
+        return Math.abs(line1-line2) * 1000 + Math.abs(col1-col2)
+    }
 }
 
 function closestComp(fileContent, pos) {
@@ -35994,10 +36016,7 @@ jb.component('studio.projectId', {
 })
 
 jb.component('studio.currentPagePath', {
-  impl: pipeline(
-    list(studio.projectId(), '%$studio/page%'),
-    join('.')
-  )
+  impl: '%$studio/page%'
 })
 
 jb.component('studio.currentProfilePath', {
@@ -36130,7 +36149,8 @@ st.initPreview = function(preview_window,allowedTypes) {
 
       st.previewWindow.workerId = ctx => ctx && ctx.vars.$runAsWorker
 
-			fixInvalidUrl()
+      fixInvalidUrl()
+      jb.frame.jbStartCommand && jb.exec(jb.frame.jbStartCommand) // used by vscode to open jbEditor
 
 			function fixInvalidUrl() {
         if (location.pathname.indexOf('/project/studio/') != 0) return;
@@ -36178,11 +36198,11 @@ jb.component('studio.waitForPreviewIframe', {
 })
 
 const {pipe,startWith,filter,flatMap} = jb.callbag
-jb.studio.pageChange = pipe(jb.ui.resourceChange(), filter(e=>e.path.join('/') == 'studio/page'),
+jb.studio.pageChange = pipe(jb.ui.resourceChange(), filter(e=>e.path.join('/') == 'studio/currentPagePath'),
       startWith(1),
       flatMap(e=> {
-        const page = jb.exec(studio.currentPagePath())
-        return jb.resources.studio.page ? [{page}] : []
+        const page = jb.resources.studio.currentPagePath
+        return page ? [{page}] : []
 }))
 
 jb.component('studio.previewWidget', {
@@ -36205,8 +36225,10 @@ jb.component('studio.previewWidget', {
             return st.projectHosts[host].fetchProject(ctx.exp('%$queryParams/hostProjectId%'),project)
 //              .then(x=>jb.delay(5000).then(()=>x))
               .then(projectSettings => {
-                console.log(jb.exec('%$studio/project%'),projectSettings.project)
+                jb.log('loadingPreviewProject',[projectSettings])
                 jb.exec(writeValue('%$studio/project%', projectSettings.project))
+                if (projectSettings.project != 'test')
+                  jb.exec(writeValue('%$studio/projectFolder%', projectSettings.project))
                 cmp.refresh({ projectLoaded: true, projectSettings },{srcCtx: ctx})
             })
           }
@@ -37128,7 +37150,7 @@ jb.component('studio.macroName', {
 
 jb.component('studio.cmpsOfProject', {
   type: 'data',
-  impl: () => st.projectCompsAsEntries().filter(e=>e[1].impl),
+  impl: () => st.projectCompsAsEntries().filter(e=>e[1].impl).map(e=>e[0]),
   testData: 'sampleData'
 })
 
@@ -38157,8 +38179,9 @@ jb.component('studio.openNewPage', {
           databind: '%$dialogData/name%',
           style: editableText.mdcInput(),
           features: [
+            feature.init(writeValue('%$dialogData/name%', '%$studio/project%.myCtrl')),
             feature.onEnter(dialog.closeContainingPopup()),
-            validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid page name')
+            validation(matchRegex('^[a-zA-Z_0-9\.]+$'), 'invalid page name')
           ]
         })
       ],
@@ -38167,9 +38190,8 @@ jb.component('studio.openNewPage', {
     title: 'New Page',
     onOK: runActions(
       Var('compName', ctx => jb.macroName(ctx.exp('%$dialogData/name%'))),
-      Var('compId', pipeline(list(studio.projectId(), '%$compName%'), join('.'))),
-      studio.newComp('%$compId%', asIs({type: 'control', impl: group({})})),
-      writeValue('%$studio/profile_path%', '%$compId%~impl'),
+      studio.newComp('%$compName%', asIs({type: 'control', impl: group({})})),
+      writeValue('%$studio/profile_path%', '%$compName%~impl'),
       writeValue('%$studio/page%', '%$compName%'),
       studio.openControlTree(),
       tree.regainFocus(),
@@ -38191,8 +38213,9 @@ jb.component('studio.openNewFunction', {
           databind: '%$dialogData/name%',
           style: editableText.mdcInput(),
           features: [
+            feature.init(writeValue('%$dialogData/name%', '%$studio/project%.myFunc')),
             feature.onEnter(dialog.closeContainingPopup()),
-            validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid function name')
+            validation(matchRegex('^[a-zA-Z_0-9\.]+$'), 'invalid function name')
           ]
         })
       ],
@@ -38201,13 +38224,12 @@ jb.component('studio.openNewFunction', {
     title: 'New Function',
     onOK: runActions(
       Var('compName', ctx => jb.macroName(ctx.exp('%$dialogData/name%'))),
-      Var('compId', pipeline(list(studio.projectId(), '%$compName%'), join('.'))),
       studio.newComp(
-          '%$compId%',
+          '%$compName%',
           asIs({type: 'data', impl: pipeline(''), testData: 'sampleData'})
         ),
-      writeValue('%$studio/profile_path%', '%$compId%'),
-      studio.openJbEditor('%$compId%'),
+      writeValue('%$studio/profile_path%', '%$compName%'),
+      studio.openJbEditor('%$compName%'),
       refreshControlById('functions')
     ),
     modal: true,
@@ -38305,7 +38327,7 @@ jb.component('studio.newComp', {
   impl: (ctx, compName, compContent,file) => {
     const _jb = jb.studio.previewjb
     _jb.component(compName, compContent)
-    const filePattern = '/' + ctx.exp('%$studio/project%')
+    const filePattern = '/' + ctx.exp('%$studio/projectFolder%')
     const projectFile = file || jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=> x && x.indexOf(filePattern) != -1)[0]
     const compWithLocation = { ...compContent, ...{ [_jb.location]: [projectFile,''] }}
     // fake change for refresh page and save
@@ -39132,7 +39154,16 @@ jb.component('studio.openEditor', {
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => {
-    path && fetch(`/?op=gotoSource&comp=${path.split('~')[0]}`)
+    if (!path) return
+    if (jb.frame.jbInvscode) {
+        const comp = path.split('~')[0]
+        const loc = st.previewjb.comps[comp][jb.location]
+        const fn = st.host.locationToPath(loc[0])
+        const pos = jb.textEditor.getPosOfPath(path+'~!profile',st.previewjb)
+        jb.studio.vscodeService({$: 'openEditor', path,comp,loc,fn, pos })
+    } else {
+        fetch(`/?op=gotoSource&comp=${path.split('~')[0]}`)
+    }
   }
 })
 
@@ -39163,13 +39194,12 @@ jb.component('studio.editableSource', {
   })
 })
 
-
 jb.component('studio.editSource', {
   type: 'action',
   params: [
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
-  impl: openDialog({
+  impl: action.If('%$studio/vscode%', studio.openEditor('%$path%'), openDialog({
     style: dialog.editSourceStyle({id: 'editor', width: 600}),
     content: studio.editableSource('%$path%'),
     title: studio.shortTitle('%$path%'),
@@ -39177,7 +39207,7 @@ jb.component('studio.editSource', {
       css('.jb-dialog-content-parent {overflow-y: hidden}'),
       dialogFeature.resizer(true)
     ]
-  })
+  }))
 })
 
 jb.component('studio.viewAllFiles', {
@@ -39202,7 +39232,7 @@ jb.component('studio.viewAllFiles', {
         })
       ],
       features: [
-        variable({name: 'file', value: '%$studio/project%.html', watchable: true}),
+        variable({name: 'file', value: '%$studio/projectFolder%.html', watchable: true}),
         group.wait({
           for: ctx => jb.studio.projectUtils.projectContent(ctx),
           varName: 'content'
@@ -40944,7 +40974,7 @@ jb.component('studio.jbEditorMenu', {
               editableText({
                 title: 'property name',
                 databind: '%$name%',
-                style: editableText.mdcInput(),
+                style: editableText.mdcInput({}),
                 features: [
                   feature.onEnter(
                     writeValue(studio.ref('%$path%~%$name%'), ''),
@@ -41005,9 +41035,12 @@ jb.component('studio.jbEditorMenu', {
         [
           menu.action({
             title: 'Goto parent',
-            action: studio.openJbEditor(studio.parentPath('%$path%'), studio.parent('%$fromPath%')),
-            showCondition: contains({text: '~', allText: '%$root%'}),
+            action: studio.openJbEditor({
+              path: studio.parentPath('%$path%'),
+              fromPath: {'$': 'studio.parent', '$byValue': ['%$fromPath%']}
+            }),
             shortcut: 'Ctrl+P',
+            showCondition: contains({text: '~', allText: '%$root%'})
           }),
           menu.action({
             vars: [Var('compName', studio.compName('%$path%'))],
@@ -41058,6 +41091,13 @@ jb.component('studio.jbEditorMenu', {
         showCondition: studio.isArrayItem('%$path%')
       }),
       menu.separator(),
+      menu.action({
+        title: 'Set as current page',
+        action: writeValue(
+          '%$studio/page%',
+          split({separator: '~', text: '%$path%', part: 'first'})
+        )
+      }),
       menu.menu({
         title: 'More',
         options: [
@@ -41075,7 +41115,7 @@ jb.component('studio.jbEditorMenu', {
                   editableText({
                     title: 'remark',
                     databind: '%$remark%',
-                    style: editableText.mdcInput(),
+                    style: editableText.mdcInput({}),
                     features: [
                       feature.onEnter(
                         writeValue(studio.ref('%$path%~remark'), '%$remark%'),
@@ -41144,7 +41184,7 @@ jb.component('studio.jbEditorMenu', {
             title: 'Make Local',
             action: studio.openMakeLocal('%$path%'),
             showCondition: studio.canMakeLocal('%$path%')
-          }),          
+          }),
           menu.action({
             title: 'Extract Component',
             action: studio.openExtractComponent('%$path%'),
@@ -41154,7 +41194,7 @@ jb.component('studio.jbEditorMenu', {
             title: 'Extract Param',
             action: studio.openExtractParam('%$path%'),
             showCondition: studio.canExtractParam('%$path%')
-          }),
+          })
         ],
         optionsFilter: '%%'
       })
@@ -41227,7 +41267,8 @@ jb.component('studio.initAutoSave', {
 jb.component('studio.saveProjectSettings', {
   type: 'action,has-side-effects',
   impl: ctx => {
-    const path = st.host.pathOfJsFile(ctx.exp('%$studio/project%'), 'index.html')
+    if (!ctx.exp('%$studio/projectFolder%')) return
+    const path = st.host.pathOfJsFile(ctx.exp('%$studio/projectFolder%'), 'index.html')
     return st.host.getFile(path).then( fileContent =>
       st.host.saveFile(path, newIndexHtmlContent(fileContent, ctx.exp('%$studio/projectSettings%'))))
       .then(()=>st.showMultiMessages([{text: 'index.html saved with new settings'}]))
@@ -41750,7 +41791,8 @@ jb.component('studio.openNewProject', {
       Var('project','%$dialogData/name%'),
       studio.saveNewProject('%$project%'),
       writeValue('%$studio/project%', '%$project%'),
-      writeValue('%$studio/page%', 'main'),
+      writeValue('%$studio/projectFolder%', '%$project%'),
+      writeValue('%$studio/page%', '%$project%.main'),
       writeValue('%$studio/profile_path%', studio.currentPagePath()),
       () => location.reload()
     ),
@@ -42307,7 +42349,10 @@ jb.component('studio.searchComponent', {
       itemlistContainer.search({
         title: 'Search',
         databind: '%$itemlistCntrData/search_pattern%',
-        style: editableText.mdcSearch(),
+        style: styleWithFeatures(
+          editableText.mdcInput({noLabel: true}),
+          feature.icon({icon: 'search', position: 'pre', features: []})
+        ),
         features: [
           editableText.helperPopup({
             control: studio.searchList(),
@@ -42317,10 +42362,11 @@ jb.component('studio.searchComponent', {
               dialogFeature.nearLauncherPosition({offsetTop: 50})
             )
           }),
-          css.margin({top: '-30', left: '10'}),
+          css.margin({top: '-10', left: '10'}),
           css('~ input {border: 0 } {height: 35px; background: white !important;}'),
-          css(''),
-          css('~ i { top: 40px !important; right: 0px !important}')
+          css('~ i { top: 30px !important; left: 10px !important}'),
+          css.height({height: '40', selector: '~ .mdc-text-field'}),
+          css.width({width: '200', selector: '~ .mdc-text-field'})
         ]
       })
     ],
@@ -42336,7 +42382,8 @@ jb.component('dataResource.studio', {
     profile_path: '',
     pickSelectionCtxId: '',
     settings: {contentEditable: true, activateWatchRefViewer: true},
-    baseStudioUrl: '//unpkg.com/jb-react/bin/studio/'
+    baseStudioUrl: (jb.frame.jbBaseProjUrl || '//unpkg.com/jb-react') + '/bin/studio/',
+    vscode: jb.frame.jbInvscode
   }
 })
 
@@ -42355,15 +42402,16 @@ jb.component('studio.pages', {
       itemlist({
         items: pipeline(
           studio.cmpsOfProject(),
-          filter(studio.isOfType('%%', 'control')),
-          suffix('.')
+          filter(studio.isOfType('%%', 'control'))
         ),
-        controls: text({text: extractSuffix('.'), features: css.class('studio-page')}),
+        controls: text({
+          text: pipeline(suffix('.'),extractSuffix('.')), 
+          features: css.class('studio-page')}),
         style: itemlist.horizontal(),
         features: [
           itemlist.selection({
             databind: '%$studio/page%',
-            onSelection: writeValue('%$studio/profile_path%', studio.currentPagePath()),
+            onSelection: writeValue('%$studio/profile_path%', '%$studio/page%'),
             autoSelectFirst: true
           }),
           css.class('studio-pages-items'),
@@ -42384,11 +42432,11 @@ jb.component('studio.pages', {
           suffix('.')
         ),
         controls: text({
-          text: extractSuffix('.'),
+          text: pipeline(suffix('.'),extractSuffix('.')),
           features: [
             feature.onEvent({
               event: 'click',
-              action: studio.openJbEditor({path: pipeline(list(studio.projectId(), '%%'), join('.'))})
+              action: studio.openJbEditor('%%')
             })
           ]
         }),
@@ -42603,11 +42651,62 @@ jb.component('studio.topBar', {
   })
 })
 
+jb.component('studio.vscodeTopBar', {
+  type: 'control',
+  impl: group({
+    title: 'top bar',
+    layout: layout.flex({alignItems: 'start', spacing: ''}),
+    controls: [
+      image({
+        url: '%$studio/baseStudioUrl%css/jbartlogo.png',
+        features: [css.margin({top: '5', left: '5'}), css.width('80'), css.height('100')]
+      }),
+      group({
+        title: 'title and menu',
+        layout: layout.vertical('11'),
+        controls: [
+          text({text: 'message', style: text.studioMessage()}),
+          text({
+            text: replace({find: '_', replace: ' ', text: '%$studio/project%'}),
+            style: text.htmlTag('div'),
+            features: [
+              css('{ font: 20px Arial; margin-left: 6px; margin-top: 6px}'),
+              watchRef('%$studio/project%')
+            ]
+          }),
+          group({
+            title: 'menu and toolbar',
+            layout: layout.horizontal('16'),
+            controls: [
+              studio.searchComponent(''),
+              menu.control({
+                menu: studio.mainMenu(),
+                style: menuStyle.pulldown({}),
+                features: [id('mainMenu'), css.height('30')]
+              }),
+              group({
+                title: 'toolbar',
+                controls: [
+                  studio.toolbar()
+                ],
+                features: css.margin('-10')
+              })
+            ]
+          })
+        ],
+        features: css('padding-left: 18px; width: 100%; ')
+      })
+    ],
+    features: [css('height: 73px; border-bottom: 1px #d9d9d9 solid;')]
+  })
+})
+
 jb.component('studio.all', {
   type: 'control',
   impl: group({
     controls: [
-      studio.topBar(),
+      controlWithCondition(not('%$studio/vscode%'), studio.topBar()),
+      controlWithCondition('%$studio/vscode%', studio.vscodeTopBar()),
       group({
         controls: studio.previewWidget({width: 1280, height: 520}),
         features: id('preview-parent')
@@ -42621,7 +42720,7 @@ jb.component('studio.all', {
           Object.assign(ctx.exp('%$studio/settings%'), typeof settings == 'string' ? JSON.parse(settings) : {})))),
         loadingControl: text('')
       }),
-      group.data({data: '%$studio/project%', watch1: true}),
+//      group.data({data: '%$studio/project%', watch1: true}),
       feature.init(runActions(urlHistory.mapStudioUrlToResource('studio'),
         studio.initVscodeAdapter('studio'),
         studio.initAutoSave()
@@ -42913,7 +43012,7 @@ st.projectHosts = {
             return fetch('/projects/ui-tests/tests.html').then(r=>r.text()).then(html =>{
                 const settings = eval('({' + _extractText(html,'jbProjectSettings = {','}') + '})')
                 return {...settings, project, 
-                    entry: { $: 'uiTestRunner', test: project },
+                    entry: { $: 'test.showTestInStudio', testId: project },
                     source:'test'
                 }
             })
@@ -42982,7 +43081,7 @@ st.Probe = class {
     simpleRun() {
         const st = jb.studio
         return Promise.resolve(this.context.runItself()).then(res=>{
-            if (res.renderVdom) {
+            if (res && res.renderVdom) {
                 const vdom = res.renderVdom()
                 return ({props: res.renderProps, vdom , cmp: res})
             }
@@ -45503,6 +45602,8 @@ jb.component('studio.openMakeLocal', {
     }))
 });
 
+jb.ns('vscode')
+
 jb.component('studio.initVscodeAdapter', {
   type: 'action',
   params: [
@@ -45512,12 +45613,12 @@ jb.component('studio.initVscodeAdapter', {
         if (! jb.frame.jbInvscode || jb.VscodeAdapterInitialized) return
         jb.VscodeAdapterInitialized = true
         const vscode = jb.studio.vsCodeApi
-        const params = ['project','page','profile_path']
+        const params = ['project','page','profile_path','vscode']
 
         const {pipe, subscribe,create,filter} = jb.callbag
         jb.studio.vscodeEm = create(obs=> jb.frame.addEventListener('message', e => obs(e)))
 
-        const state = {...jb.frame.jbPreviewProjectSettings, ...vscode.getState()}
+        const state = {...jb.frame.jbPreviewProjectSettings, ...vscode.getState(), vscode: true}
         params.forEach(p => state[p] != null && ctx.run(writeValue(`%${resource}/${p}%`,state[p]) ))
 
         pipe(jb.ui.resourceChange(), 
@@ -45567,5 +45668,20 @@ jb.component('studio.profileChanged', {
         const newVal = '({' + compSrc.split('\n').slice(1).join('\n')
         jb.textEditor.setStrValue(newVal, compRef, ctx)
     }
-});
+})
+
+jb.component('vscode.openjbEditor', {
+    type: 'action',
+    impl: If(vscode.pathByActiveEditor(), studio.openComponentInJbEditor(vscode.pathByActiveEditor()))
+})
+
+jb.component('vscode.pathByActiveEditor', {
+    impl: () => {
+        if (!jb.frame.jbActiveEditorPosition) return
+        const {compId, componentHeaderIndex, line, col } = jb.frame.jbActiveEditorPosition
+        return jb.textEditor.getPathOfPos(compId, {line: line-componentHeaderIndex,col},jb.studio.previewjb)
+    }
+})
+
+;
 

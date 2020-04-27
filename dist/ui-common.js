@@ -2151,7 +2151,7 @@ ui.renderWidget = function(profile,top) {
         const project = studioWin.jb.resources.studio.project
         const page = studioWin.jb.resources.studio.page
         if (project && page)
-            currentProfile = {$: `${jb.macroName(project)}.${page}`}
+            currentProfile = {$: page}
 
         const {pipe,debounceTime,filter,subscribe} = jb.callbag
         pipe(st.pageChange, filter(({page})=>page != currentProfile.$), subscribe(({page})=> doRender(page)))
@@ -2197,7 +2197,8 @@ ui.renderWidget = function(profile,top) {
 
 	function doRender(page) {
         if (page) currentProfile = {$: page}
-        const cmp = new jb.jbCtx().run(currentProfile)
+        const profileToRun = ['dataText','uiTest'].indexOf(currentProfile.$) != -1 ? { $: 'test.showTestInStudio', testId: page} : currentProfile
+        const cmp = new jb.jbCtx().run(profileToRun)
         const start = new Date().getTime()
         jb.ui.unmount(top)
         top.innerHTML = ''

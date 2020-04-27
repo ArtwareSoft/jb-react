@@ -442,7 +442,7 @@ jb.component('studio.macroName', {
 
 jb.component('studio.cmpsOfProject', {
   type: 'data',
-  impl: () => st.projectCompsAsEntries().filter(e=>e[1].impl),
+  impl: () => st.projectCompsAsEntries().filter(e=>e[1].impl).map(e=>e[0]),
   testData: 'sampleData'
 })
 

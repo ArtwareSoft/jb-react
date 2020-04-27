@@ -1,77 +1,136 @@
-jb.component('dataTest', {
-  type: 'test',
-  params: [
-    {id: 'calculate', dynamic: true},
-    {id: 'runBefore', type: 'action', dynamic: true},
-    {id: 'expectedResult', type: 'boolean', dynamic: true},
-    {id: 'cleanUp', type: 'action', dynamic: true},
-    {id: 'expectedCounters', as: 'single'}
-  ],
-  impl: function(ctx,calculate,runBefore,expectedResult,cleanUp,expectedCounters) {
-		console.log('starting ' + ctx.path )
-		var initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
-		if (expectedCounters) {
-			if (!jb.spy)
-				jb.initSpy({spyParam: 'data-test'})
-			jb.spy.clear()
-		}
-		return Promise.resolve(runBefore())
-			.then(_ =>
-				calculate())
-			.then(v=>
-				Array.isArray(v) ? jb.toSynchArray(v) : v)
-			.then(value=> {
-				const countersErr = countersErrors(expectedCounters);
-				const success = !! (expectedResult(new jb.jbCtx(ctx,{ data: value })) && !countersErr);
-				const result = { id: ctx.vars.testID, success, reason: countersErr}
-				return result
-			})
-			.catch(e=> {
-				jb.logException(e,ctx)
-				return { id: ctx.vars.testID, success: false, reason: 'Exception ' + e}
-			})
-			.then(result => { // default cleanup
-				if (expectedCounters)
-					jb.initSpy({resetSpyToNull: true})
-				jb.resources = JSON.parse(ctx.vars.initial_resources); jb.rebuildRefHandler && jb.rebuildRefHandler();
-				jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
-				return result;
-			})
-			.catch(e=> {
-				jb.logException(e,ctx)
-				return { id: ctx.vars.testID, success: false, reason: 'Exception ' + e}
-			})
-			.then(result =>
-					Promise.resolve(cleanUp())
-					.then(_=> console.log('end      ' + ctx.path ))
-					.then(_=>result) )
+jb.test = {
+	runInner(propName, ctx) {
+		const profile = ctx.profile
+		return profile[propName] && ctx.runInner(profile[propName],{type: 'data'}, 'propName')
+	},
+	dataTestResult(ctx) {
+		return Promise.resolve(jb.test.runInner('runBefore',ctx))
+		.then(_ => jb.test.runInner('calculate',ctx))
+		.then(v => Array.isArray(v) ? jb.toSynchArray(v) : v)
+		.then(value => {
+			const countersErr = countersErrors(expectedCounters);
+			const success = !! (jb.test.runInner('expectedResult',ctx.setData(value)) && !countersErr);
+			return { success, reason: countersErr, value}
+		})			
+	},
+	runInStudio(profile) {
+		return profile && jb.frame.parent.jb.exec(profile)
 	}
+}
+
+jb.component('test.showTestInStudio', {
+	type: 'control',
+	params: [
+	  {id: 'testId', as: 'string', defaultValue: 'uiTest.label'}
+	],
+	impl: (ctx,testId) => {
+		  const profile = jb.path(jb.comps[testId],'impl')
+		  const ctxWithVars = ctx.setVars(jb.objFromEntries((profile.vars||[]).map(v=>[v.name,ctx.run(v.val)])))
+		  const ctxToRun = new jb.jbCtx(ctxWithVars,{ profile, forcePath: testId+ '~impl', path: '' } )
+		  if (profile.$ == 'dataTest')
+			  return ctxToRun.run(test.dataTestView(testId, () => jb.test.dataTestResult(ctxToRun)))
+		  if (profile.$ == 'uiTest') 
+			  return ctxToRun.run(test.uiTestRunner(testId,() => ctxToRun))
+	  }
 })
 
-jb.component('uiTestRunner', {
-  type: 'control',
-  params: [
-    {id: 'test', as: 'string', defaultValue: 'ui-test.label'}
-  ],
-  impl: (ctx,test) => {
-		const profile = jb.path(jb.comps[test],'impl')
-		const ctxWithVars = ctx.setVars(jb.objFromEntries((profile.vars||[]).map(v=>[v.name,ctx.run(v.val)])))
-		const ctxToRun = new jb.jbCtx(ctxWithVars,{ profile, forcePath: test+ '~impl', path: '' } )
-		const studiojb = ctx.frame().parent.jb
-		return ctxToRun.run(group({
-			controls: group({controls: () => ctxToRun.runInner(profile.control,{type: 'control'}, 'control') }),
-			features: [
-				group.wait({
-					for: () => profile.runBefore && ctxToRun.runInner(profile.runBefore,{type: 'runBefore'}, 'runBefore')
+jb.component('test.dataTestView', {
+	type: 'control',
+	params: [
+	  {id: 'testId', as: 'string', defaultValue: 'ui-test.label'},
+	  {id: 'testResult'}
+	],
+	impl: group({
+		controls: group({
+			controls:[
+				button({
+					title: '%$testId%',
+					action: (ctx,{},{testId}) => jb.test.runInStudio({$: 'studio.openComponentInJbEditor', path: `${testId}~impl~calculate` }), 
+					style: button.href(),
+					features: pipeline(Var('color',If('%success%','green','red')),css('color: %$color%'))
 				}),
-				interactive(ctx=>
-					profile.runInPreview && ctxToRun.runInner(profile.runInPreview,{type: 'runInPreview'}, 'runInPreview')),
-				interactive(runActions(ctx => studiojb.exec(studio.waitForPreviewIframe) ,ctx => profile.runInStudio && studiojb.exec(profile.runInStudio)))
+				text({title: 'calculate', text: 'value: %value%' }),
+				text({title: 'reason', text: '{?reason: %reason%?}' }),
 			]
-		}))
-	}
+		}),
+		features: group.wait({for: '%$testResult%'})
+	})
 })
 
+jb.component('test.uiTestRunner', {
+	type: 'control',
+	params: [
+	  {id: 'testId', as: 'string', defaultValue: 'ui-test.label'},
+	  {id: 'ctxToRun'}
+	],
+	impl: group({
+		controls: [
+			button({
+				title: '%$testId%', 
+				action: (ctx,{},{testId}) => jb.test.runInStudio({$: 'studio.openComponentInJbEditor', path: `${testId}~impl~control` }), 
+				style: button.href(),
+			}),					
+			group({controls: (ctx,{},{ctxToRun}) => ctxToRun.runInner(ctxToRun.profile.control,{type: 'control'}, 'control') })
+		],
+		features: [
+			group.wait({for: (ctx,{},{ctxToRun}) => jb.test.runInner('runBefore',ctxToRun) }),
+			interactive((ctx,{},{ctxToRun}) => {
+				return jb.test.runInStudio(studio.waitForPreviewIframe())
+					.then(() => jb.test.runInner('runInPreview',ctxToRun))
+					.then(() => jb.test.runInStudio(ctxToRun.profile.runInStudio))
+			})
+		]
+	})
+})
+
+jb.component('dataTest', {
+	type: 'test',
+	params: [
+	  {id: 'calculate', dynamic: true},
+	  {id: 'runBefore', type: 'action', dynamic: true},
+	  {id: 'expectedResult', type: 'boolean', dynamic: true},
+	  {id: 'cleanUp', type: 'action', dynamic: true},
+	  {id: 'expectedCounters', as: 'single'}
+	],
+	impl: function(ctx,calculate,runBefore,expectedResult,cleanUp,expectedCounters) {
+		  console.log('starting ' + ctx.path )
+		  var initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
+		  if (expectedCounters) {
+			  if (!jb.spy)
+				  jb.initSpy({spyParam: 'data-test'})
+			  jb.spy.clear()
+		  }
+		  return Promise.resolve(runBefore())
+			  .then(_ => calculate())
+			  .then(v => Array.isArray(v) ? jb.toSynchArray(v) : v)
+			  .then(value => {
+				  const countersErr = countersErrors(expectedCounters);
+				  const success = !! (expectedResult(new jb.jbCtx(ctx,{ data: value })) && !countersErr);
+				  const result = { id: ctx.vars.testID, success, reason: countersErr}
+				  return result
+			  })
+			  .catch(e=> {
+				  jb.logException(e,ctx)
+				  return { id: ctx.vars.testID, success: false, reason: 'Exception ' + e}
+			  })
+			  .then(result => { // default cleanup
+				  if (expectedCounters)
+					  jb.initSpy({resetSpyToNull: true})
+				  jb.resources = JSON.parse(ctx.vars.initial_resources || '{}'); jb.rebuildRefHandler && jb.rebuildRefHandler();
+				  jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
+				  return result;
+			  })
+			  .catch(e=> {
+				  jb.logException(e,ctx)
+				  return { id: ctx.vars.testID, success: false, reason: 'Exception ' + e}
+			  })
+			  .then(result =>
+					  Promise.resolve(cleanUp())
+					  .then(_=> console.log('end      ' + ctx.path ))
+					  .then(_=>result) )
+	  }
+})
+  
 jb.component('uiTest', {
   type: 'test',
   params: [
@@ -126,7 +185,7 @@ jb.component('uiTest', {
 					jb.ui.dialogs.dialogs.forEach(d=>d.close())
 					jb.ui.unmount(result.elem)
 					jb.rebuildRefHandler && jb.rebuildRefHandler();
-					jb.entries(JSON.parse(ctx.vars.initial_resources)).forEach(e=>jb.resource(e[0],e[1]))
+					jb.entries(JSON.parse(ctx.vars.initial_resources || '{}')).forEach(e=>jb.resource(e[0],e[1]))
 					jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
 					jb.ui.subscribeToRefChange(jb.mainWatchableHandler)
 					//if (expectedCounters)
@@ -170,7 +229,7 @@ jb.component('uiTest.applyVdomDiff', {
 			jb.ui.dialogs.dialogs.forEach(d=>d.close())
 			jb.ui.unmount(elem)
 			jb.rebuildRefHandler && jb.rebuildRefHandler();
-			jb.entries(JSON.parse(ctx.vars.initial_resources)).forEach(e=>jb.resource(e[0],e[1]))
+			jb.entries(JSON.parse(ctx.vars.initial_resources || '{}')).forEach(e=>jb.resource(e[0],e[1]))
 			jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
 			jb.ui.subscribeToRefChange(jb.mainWatchableHandler)
 			if (expectedCounters)
@@ -310,7 +369,7 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,includeHeavy}
 	const {pipe, fromIter, subscribe,concatMap, fromPromise } = jb.callbag
 
 	jb.studio.initTests() && jb.studio.initTests()
-	const initial_resources = JSON.stringify(jb.resources).replace(/\"\$jb_id":[0-9]*,/g,'')
+	const initial_resources = JSON.stringify(jb.resources); //.replace(/\"\$jb_id":[0-9]*,/g,'')
 	const tests = jb.entries(jb.comps)
 		.filter(e=>typeof e[1].impl == 'object')
 		.filter(e=>e[1].type != 'test') // exclude the testers

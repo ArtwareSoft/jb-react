@@ -70,7 +70,8 @@ st.initPreview = function(preview_window,allowedTypes) {
 
       st.previewWindow.workerId = ctx => ctx && ctx.vars.$runAsWorker
 
-			fixInvalidUrl()
+      fixInvalidUrl()
+      jb.frame.jbStartCommand && jb.exec(jb.frame.jbStartCommand) // used by vscode to open jbEditor
 
 			function fixInvalidUrl() {
         if (location.pathname.indexOf('/project/studio/') != 0) return;
@@ -118,11 +119,11 @@ jb.component('studio.waitForPreviewIframe', {
 })
 
 const {pipe,startWith,filter,flatMap} = jb.callbag
-jb.studio.pageChange = pipe(jb.ui.resourceChange(), filter(e=>e.path.join('/') == 'studio/page'),
+jb.studio.pageChange = pipe(jb.ui.resourceChange(), filter(e=>e.path.join('/') == 'studio/currentPagePath'),
       startWith(1),
       flatMap(e=> {
-        const page = jb.exec(studio.currentPagePath())
-        return jb.resources.studio.page ? [{page}] : []
+        const page = jb.resources.studio.currentPagePath
+        return page ? [{page}] : []
 }))
 
 jb.component('studio.previewWidget', {
@@ -145,8 +146,10 @@ jb.component('studio.previewWidget', {
             return st.projectHosts[host].fetchProject(ctx.exp('%$queryParams/hostProjectId%'),project)
 //              .then(x=>jb.delay(5000).then(()=>x))
               .then(projectSettings => {
-                console.log(jb.exec('%$studio/project%'),projectSettings.project)
+                jb.log('loadingPreviewProject',[projectSettings])
                 jb.exec(writeValue('%$studio/project%', projectSettings.project))
+                if (projectSettings.project != 'test')
+                  jb.exec(writeValue('%$studio/projectFolder%', projectSettings.project))
                 cmp.refresh({ projectLoaded: true, projectSettings },{srcCtx: ctx})
             })
           }

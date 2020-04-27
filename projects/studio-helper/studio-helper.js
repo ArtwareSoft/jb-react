@@ -2,7 +2,8 @@ jb.ns('studioHelper,d3g')
 jb.studio.initCompsRefHandler(jb)
 jb.studio.previewWindow = jb.frame
 // fake current path
-jb.delay(100).then(()=>new jb.jbCtx().run(runActions(writeValue('%$studio/project%','studio-helper')),writeValue('%$studio/page%','topBar') ))
+jb.delay(100).then(()=>new jb.jbCtx().run(runActions(writeValue('%$studio/project%','studio-helper')),
+  writeValue('%$studio/page%','studio-helper.topBar') ))
 
 jb.component('dataTest.parseProjectHtml', {
   impl: dataTest({

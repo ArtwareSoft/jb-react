@@ -63,7 +63,8 @@ jb.component('studio.openNewProject', {
       Var('project','%$dialogData/name%'),
       studio.saveNewProject('%$project%'),
       writeValue('%$studio/project%', '%$project%'),
-      writeValue('%$studio/page%', 'main'),
+      writeValue('%$studio/projectFolder%', '%$project%'),
+      writeValue('%$studio/page%', '%$project%.main'),
       writeValue('%$studio/profile_path%', studio.currentPagePath()),
       () => location.reload()
     ),
