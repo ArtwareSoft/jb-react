@@ -4,73 +4,70 @@ jb.component('studio.searchList', {
     {id: 'path', as: 'string'}
   ],
   impl: itemlist({
-        items: pipeline(
-          studio.allComps(),
-          itemlistContainer.filter(),
-          studio.componentStatistics('%%'),
-        ),
-        visualSizeLimit: 30,
-        controls: [
-          control.icon({
-              icon: studio.iconOfType('%type%'),
-              features: [
-                css.opacity('0.3'),
-                css('{ font-size: 16px }'),
-                css.padding({top: '5', left: '5'})
-              ]
-          }),
-          button({
-              title: pipeline(
-                text.highlight(
-                    '%id%',
-                    '%$itemlistCntrData/search_pattern%',
-                    'mdl-color-text--deep-purple-A700'
-                  )
-              ),
-              action: studio.openJbEditor('%id%'),
-              style: button.href(),
-              features: [field.columnWidth(200), field.title('id')]
-          }),
-          button({
-              title: '%refCount%',
-              action: menu.openContextMenu({
-                menu: menu.menu({
-                  options: [studio.gotoReferencesOptions('%id%', studio.references('%id%'))]
-                })
-              }),
-              style: button.href(),
-              features: field.title('refCount')
-          }),
-          text({
-            text: '%type%',
-            features: field.title('type')
-          }),
-          text({
-            text: pipeline('%file%', split({separator: '/', part: 'last'})),
-            features: field.title('file')
-          }),
-          text({
-            text: pipeline('%implType%', data.if('%% = \"function\"', 'javascript', '')),
-            features: field.title('impl')
-          }),
-        ],
-        style: table.plain(),
+    items: pipeline(
+      studio.allComps(),
+      itemlistContainer.filter(),
+      studio.componentStatistics('%%')
+    ),
+    controls: [
+      control.icon({
+        icon: studio.iconOfType('%type%'),
         features: [
-          watchRef('%$itemlistCntrData/search_pattern%'),
-          itemlist.selection({
-            databind: '%$itemlistCntrData/selected%',
-            selectedToDatabind: '%%',
-            databindToSelected: '%%',
-            cssForSelected: 'background: #bbb !important; color: #fff !important'
-          }),
-          itemlist.infiniteScroll(),
-          itemlist.keyboardSelection({onEnter: studio.gotoPath('%id%')}),
-          css.boxShadow({shadowColor: '#cccccc'}),
-          css.padding({top: '4', right: '5'}),
-          css.height({height: '600', overflow: 'auto', minMax: 'max'}),
-          css.width({width: '400', minMax: 'min'})
-      ]
-    }),
+          css.opacity('0.3'),
+          css('{ font-size: 16px }'),
+          css.padding({top: '5', left: '5'})
+        ]
+      }),
+      button({
+        title: pipeline(
+          text.highlight(
+              '%id%',
+              '%$itemlistCntrData/search_pattern%',
+              'mdl-color-text--deep-purple-A700'
+            )
+        ),
+        action: runActions(writeValue('%$studio/page%', '%id%'), dialog.closeContainingPopup()),
+        style: button.href(),
+        features: [field.columnWidth(200), field.title('id')]
+      }),
+      button({
+        title: '%refCount%',
+        action: menu.openContextMenu({
+          menu: menu.menu({
+            options: [studio.gotoReferencesOptions('%id%', studio.references('%id%'))]
+          })
+        }),
+        style: button.href(),
+        features: field.title('refCount')
+      }),
+      text({text: '%type%', features: field.title('type')}),
+      text({
+        text: pipeline('%file%', split({separator: '/', part: 'last'})),
+        features: field.title('file')
+      }),
+      text({
+        text: pipeline('%implType%', data.if('%% = \"function\"', 'javascript', '')),
+        features: field.title('impl')
+      })
+    ],
+    style: table.plain(),
+    visualSizeLimit: 30,
+    features: [
+      watchRef('%$itemlistCntrData/search_pattern%'),
+      itemlist.selection({
+        databind: '%$itemlistCntrData/selected%',
+        selectedToDatabind: '%%',
+        databindToSelected: '%%',
+        cssForSelected: 'background: #bbb !important; color: #fff !important'
+      }),
+      itemlist.infiniteScroll(),
+      itemlist.keyboardSelection({onEnter: studio.gotoPath('%id%')}),
+      css.boxShadow({shadowColor: '#cccccc'}),
+      css.padding({top: '4', right: '5'}),
+      css.height({height: '600', overflow: 'auto', minMax: 'max'}),
+      css.width({width: '400', minMax: 'min'})
+    ]
+  })
 })
 
 jb.component('studio.searchComponent', {

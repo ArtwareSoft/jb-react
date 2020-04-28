@@ -132,8 +132,10 @@ function deltaFileContent(fileContent, {compId,comp}) {
   function calcDiff(oldText,newText)  {
     let i=0;j=0;
     while(newText[i] == oldText[i] && i < newText.length) i++
-    while(newText[newText.length-j] == oldText[oldText.length-j] && i < newText.length) j++
-    return {firstDiff: i, common: oldText.slice(0,i), oldText: oldText.slice(i,-j+1), newText: newText.slice(i,-j+1)}
+    const common = oldText.slice(0,i)
+    oldText = oldText.slice(i); newText = newText.slice(i);
+    while(newText[newText.length-j] == oldText[oldText.length-j] && j < newText.length) j++
+    return {firstDiff: i, common, oldText: oldText.slice(0,-j+1), newText: newText.slice(0,-j+1)}
   }
 }
 

@@ -1,4 +1,7 @@
-jb.pptr = { hasPptrServer: typeof hasPptrServer != 'undefined' }
+jb.pptr = { 
+    hasPptrServer: typeof hasPptrServer != 'undefined',
+    createProxySocket: () => new WebSocket(`ws:${(jb.studio.studioWindow || jb.frame).location.hostname || 'localhost'}:8090`)
+}
 
 Object.assign(jb.pptr, {
     createComp(ctx,url,extract,features) {
@@ -11,7 +14,7 @@ Object.assign(jb.pptr, {
         if (jb.pptr.hasPptrServer) {
             this._browser && this._browser.close()
         } else {
-            socket = new WebSocket(`ws:${(jb.studio.studioWindow || jb.frame).location.hostname}:8090`)
+            socket = jb.pptr.createProxySocket()
             socket.onopen = () => socket.send(JSON.stringify({profile: {$: 'pptr.closeBrowser'}}))
         }
     },
@@ -58,7 +61,7 @@ Object.assign(jb.pptr, {
     createProxyComp(ctx) {
         const {pipe,skip,take,toPromiseArray,subject} = jb.callbag
         const receive = subject()
-        const socket = new WebSocket(`ws:${(jb.studio.studioWindow || jb.frame).location.hostname}:8090`)
+        const socket = jb.pptr.createProxySocket()
         socket.onmessage = ({data}) => {
             const _data = JSON.parse(data)
             if (_data.error)

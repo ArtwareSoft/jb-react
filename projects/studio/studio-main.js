@@ -147,8 +147,8 @@ jb.component('studio.mainMenu', {
               title: 'Project Settings',
               onOK: runActions(
                 writeValue(
-                    '%$studio/projectSettings/libs%',
-                    pipeline('%$studio/libsAsArray%', join(','))
+                    'common,ui-common,material,ui-tree,dragula,codemirror,testers,pretty-print,studio,studio-tests,object-encoder,remote,md-icons,fuse,puppeteer,animation,cards',
+                    pipeline('', join(','))
                   ),
                 studio.saveProjectSettings()
               ),
@@ -290,11 +290,16 @@ jb.component('studio.vscodeTopBar', {
         controls: [
           text({text: 'message', style: text.studioMessage()}),
           text({
-            text: replace({find: '_', replace: ' ', text: '%$studio/project%'}),
+            text: If(
+              '%$studio/project%==tests',
+              '%$studio/page%',
+              replace({find: '_', replace: ' ', text: '%$studio/project%'})
+            ),
             style: text.htmlTag('div'),
             features: [
               css('{ font: 20px Arial; margin-left: 6px; margin-top: 6px}'),
-              watchRef('%$studio/project%')
+              watchRef('%$studio/project%'),
+              watchRef('%$studio/page%')
             ]
           }),
           group({

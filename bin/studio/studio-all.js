@@ -34837,17 +34837,11 @@ function getPosOfPath(path,jbToUse = jb) {
 }
 
 function getPathOfPos(compId,pos,jbToUse = jb) {
-    const locationMap = jb.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps}).map
-    const closest = Object.keys(locationMap).map(k=>({k, distance: distance(k)})).sort((x,y) => x.distance - y.distance)[0].k
-    return closest.split('!').pop()
-
-    function distance(k) {
-        const loc = locationMap[k]
-        return dist(loc[0],loc[0],pos.line,pos.col) + dist(loc[1],loc[2],pos.line,pos.col)
-    }
-    function dist(line1,col1,line2,col2) {
-        return Math.abs(line1-line2) * 1000 + Math.abs(col1-col2)
-    }
+    const { text, map } = jb.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
+    map.cursor = [pos.line,pos.col,pos.line,pos.col]
+    const locationMap = enrichMapWithOffsets(text, map)
+    const res = pathOfPosition({text, locationMap}, locationMap.cursor.offset_from )
+    return res && res.path.split('~!')[0]
 }
 
 function closestComp(fileContent, pos) {
@@ -39159,7 +39153,9 @@ jb.component('studio.openEditor', {
         const comp = path.split('~')[0]
         const loc = st.previewjb.comps[comp][jb.location]
         const fn = st.host.locationToPath(loc[0])
+        const lineOfComp = (+loc[1]) || 0
         const pos = jb.textEditor.getPosOfPath(path+'~!profile',st.previewjb)
+        pos[0] += lineOfComp; pos[2] += lineOfComp
         jb.studio.vscodeService({$: 'openEditor', path,comp,loc,fn, pos })
     } else {
         fetch(`/?op=gotoSource&comp=${path.split('~')[0]}`)
@@ -39199,7 +39195,7 @@ jb.component('studio.editSource', {
   params: [
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
-  impl: action.If('%$studio/vscode%', studio.openEditor('%$path%'), openDialog({
+  impl: If('%$studio/vscode%', studio.openEditor('%$path%'), openDialog({
     style: dialog.editSourceStyle({id: 'editor', width: 600}),
     content: studio.editableSource('%$path%'),
     title: studio.shortTitle('%$path%'),
@@ -41337,8 +41333,10 @@ function deltaFileContent(fileContent, {compId,comp}) {
   function calcDiff(oldText,newText)  {
     let i=0;j=0;
     while(newText[i] == oldText[i] && i < newText.length) i++
-    while(newText[newText.length-j] == oldText[oldText.length-j] && i < newText.length) j++
-    return {firstDiff: i, common: oldText.slice(0,i), oldText: oldText.slice(i,-j+1), newText: newText.slice(i,-j+1)}
+    const common = oldText.slice(0,i)
+    oldText = oldText.slice(i); newText = newText.slice(i);
+    while(newText[newText.length-j] == oldText[oldText.length-j] && j < newText.length) j++
+    return {firstDiff: i, common, oldText: oldText.slice(0,-j+1), newText: newText.slice(0,-j+1)}
   }
 }
 
@@ -42268,73 +42266,70 @@ jb.component('studio.searchList', {
     {id: 'path', as: 'string'}
   ],
   impl: itemlist({
-        items: pipeline(
-          studio.allComps(),
-          itemlistContainer.filter(),
-          studio.componentStatistics('%%'),
-        ),
-        visualSizeLimit: 30,
-        controls: [
-          control.icon({
-              icon: studio.iconOfType('%type%'),
-              features: [
-                css.opacity('0.3'),
-                css('{ font-size: 16px }'),
-                css.padding({top: '5', left: '5'})
-              ]
-          }),
-          button({
-              title: pipeline(
-                text.highlight(
-                    '%id%',
-                    '%$itemlistCntrData/search_pattern%',
-                    'mdl-color-text--deep-purple-A700'
-                  )
-              ),
-              action: studio.openJbEditor('%id%'),
-              style: button.href(),
-              features: [field.columnWidth(200), field.title('id')]
-          }),
-          button({
-              title: '%refCount%',
-              action: menu.openContextMenu({
-                menu: menu.menu({
-                  options: [studio.gotoReferencesOptions('%id%', studio.references('%id%'))]
-                })
-              }),
-              style: button.href(),
-              features: field.title('refCount')
-          }),
-          text({
-            text: '%type%',
-            features: field.title('type')
-          }),
-          text({
-            text: pipeline('%file%', split({separator: '/', part: 'last'})),
-            features: field.title('file')
-          }),
-          text({
-            text: pipeline('%implType%', data.if('%% = \"function\"', 'javascript', '')),
-            features: field.title('impl')
-          }),
-        ],
-        style: table.plain(),
+    items: pipeline(
+      studio.allComps(),
+      itemlistContainer.filter(),
+      studio.componentStatistics('%%')
+    ),
+    controls: [
+      control.icon({
+        icon: studio.iconOfType('%type%'),
         features: [
-          watchRef('%$itemlistCntrData/search_pattern%'),
-          itemlist.selection({
-            databind: '%$itemlistCntrData/selected%',
-            selectedToDatabind: '%%',
-            databindToSelected: '%%',
-            cssForSelected: 'background: #bbb !important; color: #fff !important'
-          }),
-          itemlist.infiniteScroll(),
-          itemlist.keyboardSelection({onEnter: studio.gotoPath('%id%')}),
-          css.boxShadow({shadowColor: '#cccccc'}),
-          css.padding({top: '4', right: '5'}),
-          css.height({height: '600', overflow: 'auto', minMax: 'max'}),
-          css.width({width: '400', minMax: 'min'})
-      ]
-    }),
+          css.opacity('0.3'),
+          css('{ font-size: 16px }'),
+          css.padding({top: '5', left: '5'})
+        ]
+      }),
+      button({
+        title: pipeline(
+          text.highlight(
+              '%id%',
+              '%$itemlistCntrData/search_pattern%',
+              'mdl-color-text--deep-purple-A700'
+            )
+        ),
+        action: runActions(writeValue('%$studio/page%', '%id%'), dialog.closeContainingPopup()),
+        style: button.href(),
+        features: [field.columnWidth(200), field.title('id')]
+      }),
+      button({
+        title: '%refCount%',
+        action: menu.openContextMenu({
+          menu: menu.menu({
+            options: [studio.gotoReferencesOptions('%id%', studio.references('%id%'))]
+          })
+        }),
+        style: button.href(),
+        features: field.title('refCount')
+      }),
+      text({text: '%type%', features: field.title('type')}),
+      text({
+        text: pipeline('%file%', split({separator: '/', part: 'last'})),
+        features: field.title('file')
+      }),
+      text({
+        text: pipeline('%implType%', data.if('%% = \"function\"', 'javascript', '')),
+        features: field.title('impl')
+      })
+    ],
+    style: table.plain(),
+    visualSizeLimit: 30,
+    features: [
+      watchRef('%$itemlistCntrData/search_pattern%'),
+      itemlist.selection({
+        databind: '%$itemlistCntrData/selected%',
+        selectedToDatabind: '%%',
+        databindToSelected: '%%',
+        cssForSelected: 'background: #bbb !important; color: #fff !important'
+      }),
+      itemlist.infiniteScroll(),
+      itemlist.keyboardSelection({onEnter: studio.gotoPath('%id%')}),
+      css.boxShadow({shadowColor: '#cccccc'}),
+      css.padding({top: '4', right: '5'}),
+      css.height({height: '600', overflow: 'auto', minMax: 'max'}),
+      css.width({width: '400', minMax: 'min'})
+    ]
+  })
 })
 
 jb.component('studio.searchComponent', {
@@ -42524,8 +42519,8 @@ jb.component('studio.mainMenu', {
               title: 'Project Settings',
               onOK: runActions(
                 writeValue(
-                    '%$studio/projectSettings/libs%',
-                    pipeline('%$studio/libsAsArray%', join(','))
+                    'common,ui-common,material,ui-tree,dragula,codemirror,testers,pretty-print,studio,studio-tests,object-encoder,remote,md-icons,fuse,puppeteer,animation,cards',
+                    pipeline('', join(','))
                   ),
                 studio.saveProjectSettings()
               ),
@@ -42667,11 +42662,16 @@ jb.component('studio.vscodeTopBar', {
         controls: [
           text({text: 'message', style: text.studioMessage()}),
           text({
-            text: replace({find: '_', replace: ' ', text: '%$studio/project%'}),
+            text: If(
+              '%$studio/project%==tests',
+              '%$studio/page%',
+              replace({find: '_', replace: ' ', text: '%$studio/project%'})
+            ),
             style: text.htmlTag('div'),
             features: [
               css('{ font: 20px Arial; margin-left: 6px; margin-top: 6px}'),
-              watchRef('%$studio/project%')
+              watchRef('%$studio/project%'),
+              watchRef('%$studio/page%')
             ]
           }),
           group({
@@ -45635,7 +45635,7 @@ jb.component('studio.initVscodeAdapter', {
         const promises = {}
         jb.frame.addEventListener('message', event => {
             const message = event.data
-            console.log('get response ', message.messageID, message)
+            console.log('get response', message.messageID, message)
             if (message && message.messageID) {
                 const req = promises[message.messageID].req // for debug
                 promises[message.messageID].resolve(message.result)
@@ -45672,13 +45672,21 @@ jb.component('studio.profileChanged', {
 
 jb.component('vscode.openjbEditor', {
     type: 'action',
-    impl: If(vscode.pathByActiveEditor(), studio.openComponentInJbEditor(vscode.pathByActiveEditor()))
+    params: [
+        { id: 'activeEditorPosition'}
+    ],
+    impl: If('%$activeEditorPosition%', runActions(
+        writeValue('%$studio/page%','%$activeEditorPosition/compId%'),
+        studio.openComponentInJbEditor(vscode.pathByActiveEditor('%$activeEditorPosition%')))
+    )
 })
 
 jb.component('vscode.pathByActiveEditor', {
-    impl: () => {
-        if (!jb.frame.jbActiveEditorPosition) return
-        const {compId, componentHeaderIndex, line, col } = jb.frame.jbActiveEditorPosition
+    params: [
+        { id: 'activeEditorPosition'}
+    ],
+    impl: (ctx,activeEditorPosition) => {
+        const {compId, componentHeaderIndex, line, col } = activeEditorPosition
         return jb.textEditor.getPathOfPos(compId, {line: line-componentHeaderIndex,col},jb.studio.previewjb)
     }
 })

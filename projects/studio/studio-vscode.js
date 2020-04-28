@@ -31,7 +31,7 @@ jb.component('studio.initVscodeAdapter', {
         const promises = {}
         jb.frame.addEventListener('message', event => {
             const message = event.data
-            console.log('get response ', message.messageID, message)
+            console.log('get response', message.messageID, message)
             if (message && message.messageID) {
                 const req = promises[message.messageID].req // for debug
                 promises[message.messageID].resolve(message.result)
@@ -68,13 +68,21 @@ jb.component('studio.profileChanged', {
 
 jb.component('vscode.openjbEditor', {
     type: 'action',
-    impl: If(vscode.pathByActiveEditor(), studio.openComponentInJbEditor(vscode.pathByActiveEditor()))
+    params: [
+        { id: 'activeEditorPosition'}
+    ],
+    impl: If('%$activeEditorPosition%', runActions(
+        writeValue('%$studio/page%','%$activeEditorPosition/compId%'),
+        studio.openComponentInJbEditor(vscode.pathByActiveEditor('%$activeEditorPosition%')))
+    )
 })
 
 jb.component('vscode.pathByActiveEditor', {
-    impl: () => {
-        if (!jb.frame.jbActiveEditorPosition) return
-        const {compId, componentHeaderIndex, line, col } = jb.frame.jbActiveEditorPosition
+    params: [
+        { id: 'activeEditorPosition'}
+    ],
+    impl: (ctx,activeEditorPosition) => {
+        const {compId, componentHeaderIndex, line, col } = activeEditorPosition
         return jb.textEditor.getPathOfPos(compId, {line: line-componentHeaderIndex,col},jb.studio.previewjb)
     }
 })

@@ -265,17 +265,11 @@ function getPosOfPath(path,jbToUse = jb) {
 }
 
 function getPathOfPos(compId,pos,jbToUse = jb) {
-    const locationMap = jb.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps}).map
-    const closest = Object.keys(locationMap).map(k=>({k, distance: distance(k)})).sort((x,y) => x.distance - y.distance)[0].k
-    return closest.split('!').pop()
-
-    function distance(k) {
-        const loc = locationMap[k]
-        return dist(loc[0],loc[0],pos.line,pos.col) + dist(loc[1],loc[2],pos.line,pos.col)
-    }
-    function dist(line1,col1,line2,col2) {
-        return Math.abs(line1-line2) * 1000 + Math.abs(col1-col2)
-    }
+    const { text, map } = jb.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
+    map.cursor = [pos.line,pos.col,pos.line,pos.col]
+    const locationMap = enrichMapWithOffsets(text, map)
+    const res = pathOfPosition({text, locationMap}, locationMap.cursor.offset_from )
+    return res && res.path.split('~!')[0]
 }
 
 function closestComp(fileContent, pos) {

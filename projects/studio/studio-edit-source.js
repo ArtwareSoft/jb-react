@@ -48,7 +48,9 @@ jb.component('studio.openEditor', {
         const comp = path.split('~')[0]
         const loc = st.previewjb.comps[comp][jb.location]
         const fn = st.host.locationToPath(loc[0])
+        const lineOfComp = (+loc[1]) || 0
         const pos = jb.textEditor.getPosOfPath(path+'~!profile',st.previewjb)
+        pos[0] += lineOfComp; pos[2] += lineOfComp
         jb.studio.vscodeService({$: 'openEditor', path,comp,loc,fn, pos })
     } else {
         fetch(`/?op=gotoSource&comp=${path.split('~')[0]}`)
@@ -88,7 +90,7 @@ jb.component('studio.editSource', {
   params: [
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
-  impl: action.If('%$studio/vscode%', studio.openEditor('%$path%'), openDialog({
+  impl: If('%$studio/vscode%', studio.openEditor('%$path%'), openDialog({
     style: dialog.editSourceStyle({id: 'editor', width: 600}),
     content: studio.editableSource('%$path%'),
     title: studio.shortTitle('%$path%'),
