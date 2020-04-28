@@ -42377,7 +42377,7 @@ jb.component('dataResource.studio', {
     profile_path: '',
     pickSelectionCtxId: '',
     settings: {contentEditable: true, activateWatchRefViewer: true},
-    baseStudioUrl: (jb.frame.jbBaseProjUrl || jb.frame.location.host || '//unpkg.com/jb-react') + '/bin/studio/',
+    baseStudioUrl: (jb.frame.jbBaseProjUrl || jb.frame.location.host) + '/bin/studio/',
     vscode: jb.frame.jbInvscode
   }
 })
@@ -42400,7 +42400,7 @@ jb.component('studio.pages', {
           filter(studio.isOfType('%%', 'control'))
         ),
         controls: text({
-          text: pipeline(suffix('.'),extractSuffix('.')), 
+          text: pipeline(suffix('.'),extractSuffix('.')),
           features: css.class('studio-page')}),
         style: itemlist.horizontal(),
         features: [
@@ -42519,8 +42519,8 @@ jb.component('studio.mainMenu', {
               title: 'Project Settings',
               onOK: runActions(
                 writeValue(
-                    'common,ui-common,material,ui-tree,dragula,codemirror,testers,pretty-print,studio,studio-tests,object-encoder,remote,md-icons,fuse,puppeteer,animation,cards',
-                    pipeline('', join(','))
+                    '%$studio/projectSettings/libs%',
+                    pipeline('%$studio/libsAsArray%', join(','))
                   ),
                 studio.saveProjectSettings()
               ),
