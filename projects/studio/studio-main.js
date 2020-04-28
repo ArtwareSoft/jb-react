@@ -5,7 +5,7 @@ jb.component('dataResource.studio', {
     profile_path: '',
     pickSelectionCtxId: '',
     settings: {contentEditable: true, activateWatchRefViewer: true},
-    baseStudioUrl: (jb.frame.jbBaseProjUrl || '//unpkg.com/jb-react') + '/bin/studio/',
+    baseStudioUrl: (jb.frame.jbBaseProjUrl || jb.frame.host || '//unpkg.com/jb-react') + '/bin/studio/',
     vscode: jb.frame.jbInvscode
   }
 })
