@@ -5,7 +5,7 @@ jb.component('dataResource.studio', {
     profile_path: '',
     pickSelectionCtxId: '',
     settings: {contentEditable: true, activateWatchRefViewer: true},
-    baseStudioUrl: (jb.frame.jbBaseProjUrl || jb.frame.location.host) + '/bin/studio/',
+    baseStudioUrl: (jb.frame.jbBaseProjUrl || jb.frame.location.origin) + '/bin/studio/',
     vscode: jb.frame.jbInvscode
   }
 })
@@ -231,8 +231,13 @@ jb.component('studio.topBar', {
     layout: layout.flex({alignItems: 'start', spacing: ''}),
     controls: [
       image({
-        url: '%$studio/baseStudioUrl%css/jbartlogo.png',
-        features: [css.margin({top: '5', left: '5'}), css.width('80'), css.height('100')]
+        url: ctx => ctx.exp('%$studio/baseStudioUrl%css/jbartlogo.png'),
+        width: '',
+        features: [
+          css.margin({top: '5', left: '5'}),
+          css.width({width: '80', minMax: 'min'}),
+          css.height('100')
+        ]
       }),
       group({
         title: 'title and menu',
