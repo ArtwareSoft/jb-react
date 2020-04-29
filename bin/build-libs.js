@@ -1,4 +1,6 @@
 const fs = require('fs');
+const copyFiles = require('copyfiles');
+
 require('../src/loader/jb-loader.js');
 
 const JBART_DIR = __dirname + '/../';

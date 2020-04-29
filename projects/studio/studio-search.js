@@ -82,24 +82,17 @@ jb.component('studio.searchComponent', {
       itemlistContainer.search({
         title: 'Search',
         databind: '%$itemlistCntrData/search_pattern%',
-        style: styleWithFeatures(
-          editableText.mdcInput({noLabel: true}),
-          feature.icon({icon: 'search', position: 'pre', features: []})
-        ),
+        style: editableText.mdcInput({}),
         features: [
           editableText.helperPopup({
             control: studio.searchList(),
             popupId: 'search-component',
             popupStyle: styleWithFeatures(
               dialog.popup(),
-              dialogFeature.nearLauncherPosition({offsetTop: 50})
+              dialogFeature.nearLauncherPosition()
             )
           }),
-          css.margin({top: '-10', left: '10'}),
-          css('~ input {border: 0 } {height: 35px; background: white !important;}'),
-          css('~ i { top: 30px !important; left: 10px !important}'),
-          css.height({height: '40', selector: '~ .mdc-text-field'}),
-          css.width({width: '200', selector: '~ .mdc-text-field'})
+          css.height({height: '40', selector: '~ .mdc-text-field'})
         ]
       })
     ],

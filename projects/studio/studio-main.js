@@ -254,7 +254,7 @@ jb.component('studio.topBar', {
           }),
           group({
             title: 'menu and toolbar',
-            layout: layout.horizontal('160'),
+            layout: layout.flex({spacing: '160'}),
             controls: [
               menu.control({
                 menu: studio.mainMenu(),
@@ -268,7 +268,10 @@ jb.component('studio.topBar', {
                 ],
                 features: css.margin('-10')
               }),
-              studio.searchComponent()
+              controlWithFeatures(
+                studio.searchComponent(),
+                [css.margin({top: '-10', left: '-100'})]
+              )
             ]
           })
         ],
@@ -285,52 +288,54 @@ jb.component('studio.vscodeTopBar', {
     title: 'top bar',
     layout: layout.flex({alignItems: 'start', spacing: ''}),
     controls: [
-      image({
-        url: '%$studio/baseStudioUrl%css/jbartlogo.png',
-        features: [css.margin({top: '5', left: '5'}), css.width('80'), css.height('100')]
-      }),
       group({
         title: 'title and menu',
-        layout: layout.vertical('11'),
+        layout: layout.vertical('8'),
         controls: [
           text({text: 'message', style: text.studioMessage()}),
-          text({
-            text: If(
-              '%$studio/project%==tests',
-              '%$studio/page%',
-              replace({find: '_', replace: ' ', text: '%$studio/project%'})
-            ),
-            style: text.htmlTag('div'),
-            features: [
-              css('{ font: 20px Arial; margin-left: 6px; margin-top: 6px}'),
-              watchRef('%$studio/project%'),
-              watchRef('%$studio/page%')
-            ]
-          }),
           group({
             title: 'menu and toolbar',
-            layout: layout.horizontal('16'),
+            layout: layout.flex({alignItems: 'baseline', spacing: '16'}),
+            style: group.htmlTag({}),
             controls: [
               studio.searchComponent(''),
               menu.control({
                 menu: studio.mainMenu(),
                 style: menuStyle.pulldown({}),
-                features: [id('mainMenu'), css.height('30')]
+                features: [id('mainMenu'), css.margin('5')]
               }),
               group({
                 title: 'toolbar',
                 controls: [
                   studio.toolbar()
-                ],
-                features: css.margin('-10')
+                ]
+              }),
+              text({
+                text: If(
+                  '%$studio/project%==tests',
+                  '%$studio/page%',
+                  replace({find: '_', replace: ' ', text: '%$studio/project%'})
+                ),
+                style: text.htmlTag('div'),
+                features: [
+                  watchRef('%$studio/project%'),
+                  watchRef('%$studio/page%'),
+                  css('text-align: bottom')
+                ]
               })
             ]
           })
         ],
-        features: css('padding-left: 18px; width: 100%; ')
+        features: css('width: 100%; ')
+      }),
+      image({
+        url: '%$studio/baseStudioUrl%css/jbartlogo.png',
+        width: '50',
+        height: '40',
+        features: [css.margin({top: '', left: '', right: '0'})]
       })
     ],
-    features: [css('height: 73px; border-bottom: 1px #d9d9d9 solid;')]
+    features: css.margin('13')
   })
 })
 
@@ -406,7 +411,7 @@ jb.component('studio.projectSettings', {
                   editableText({
                     title: 'file',
                     databind: '%%',
-                    style: editableText.mdcNoLabel('200'),
+                    style: editableText.mdcNoLabel('262'),
                     features: [
                       css('background-color: transparent !important;'),
                       css.padding({left: '30', right: ''})
@@ -427,7 +432,7 @@ jb.component('studio.projectSettings', {
               })
             ],
             style: itemlist.div(),
-            layout: layout.flex({direction: '', justifyContent: '', wrap: 'wrap'}),
+            layout: layout.flex({wrap: 'wrap'}),
             features: [
               watchRef({ref: '%jsFiles%', includeChildren: 'structure', allowSelfRefresh: true}),
               itemlist.dragAndDrop(),

@@ -136,7 +136,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       ],
       'jb-d3': ['dist/jb-d3.js'],
       'css-files': [
-        'dist/material.css',
+        'dist/css/material.css',
         'css/font.css',
         'css/styles.css',
       ],
@@ -151,7 +151,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'dist/material.js',
       ],
       'material-css': [
-        'dist/material.css',
+        'dist/css/material.css',
       ],
       'history': [ 'dist/history.js' ],
       'node-adapter': [ 'src/node-adapter/node-adapter.js' ],

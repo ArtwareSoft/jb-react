@@ -25,7 +25,11 @@ const devHost = {
 
 const vscodeDevHost = {
     settings: () => Promise.resolve('{}'),
-    getFile: path => jb.studio.vscodeService({$: 'getFile', path}),
+    getFile: path => { 
+        const res = jb.studio.vscodeService({$: 'getFile', path}) 
+        if (!res) jb.logError('vscode.getFile: no file for path ',[path])
+        return res
+    },
     locationToPath: path => decodeURIComponent(path.split('//file//').pop()).replace(/\\/g,'/'),
     saveDelta: (path, edits) => jb.studio.vscodeService({$: 'saveDelta', path, edits}),
     saveFile: (path, contents) => jb.studio.vscodeService({$: 'saveFile', path, contents}),

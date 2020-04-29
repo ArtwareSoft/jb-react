@@ -130,9 +130,18 @@ class jBartStudio {
 	<head>
     <body>
         <h4>jBart is not installed in this project</h4>
-        <p>please install jBart in your project</p>
-        <div><code>npm i --save jb-react</code></div>
+        <p>Please clone the template project <code>git clone https://github.com/ArtwareSoft/jbart-template.git</code> and open vscode inside hello-world/hello-world.js</p>
+
+        <p>You can also install jBart inside your project</p>
+        <div>npm i --save jb-react</code> </a> </div>
         <div>dev version: <code><div>npm i --save artwaresoft/jb-react</code></div>
+		<script>
+          const vscode = acquireVsCodeApi()
+          function installjBart(module) {
+            vscode.postMessage(JSON.stringify({$: 'installPackage', module }))
+          }
+		</script>
+
 	</body>
 </html>`;
     }
@@ -163,6 +172,9 @@ class jBartStudio {
                 })
             })
             message.path
+        } else if (message.$ == 'installPackage') {
+            const cp = require('child_process')
+            message.module && cp.exec(`npm -i --save ${message.module}`)
         }
     }
 }
