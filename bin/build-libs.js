@@ -31,7 +31,7 @@ const nodeFiles = filesOfModules('common,node,pretty-print,xml,jison,parsing').f
 'core,common,ui-common,animate,d3,cards,cards-sample-data,pretty-print,parsing,xml,puppeteer,callbag,md-icons'
   .split(',').forEach(m=>concatFiles(jb_modules[m],`${m}.js`))
 
-concatFiles(filesOfModules('ui-common-css'),'ui-common.css')
+concatFiles(filesOfModules('ui-common-css'),'css/ui-common.css')
 concatFiles(filesOfModules('codemirror-js-files'),'codemirror.js')
 removeExports('animate.js')
 
@@ -45,5 +45,5 @@ concatFiles(studioCssFiles,'../bin/studio/css/studio-all.css');
 concatFiles(studioFiles,'../bin/studio/studio-all.js');
 concatFiles(['/src/loader/jb-loader.js'],'jb-loader.js');
 concatFiles(['/src/testing/testers.js'],'testers.js');
-concatFiles(filesOfModules('codemirror-css'),'codemirror.css')
-concatFiles(['node_modules/dragula/dist/dragula.css'],'dragula.css')
+concatFiles(filesOfModules('codemirror-css'),'css/codemirror.css')
+concatFiles(['node_modules/dragula/dist/dragula.css'],'css/dragula.css')

@@ -132,7 +132,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       ],
       'dragula': [
           'dist/dragula.js',
-          'dist/dragula.css',
+          'dist/css/dragula.css',
       ],
       'jb-d3': ['dist/jb-d3.js'],
       'css-files': [
@@ -183,7 +183,7 @@ function jb_dynamicLoad(modules,prefix) {
   if (isDist) {
     const scriptSrc = document.currentScript.getAttribute('src')
     const base = window.jbModuleUrl && (window.jbModuleUrl + '/dist') || scriptSrc.slice(0,scriptSrc.lastIndexOf('/'))
-    modules.split(',').flatMap(m=>[m+'.js',...(jb_modules[`${m}-css`] ? [`${m}.css`]: [])])
+    modules.split(',').flatMap(m=>[m+'.js', `css/${m}.css`])
       .forEach(m=>loadFile([base,m].join('/')))
   } else {
     modules.split(',').flatMap(m=>[m,...(jb_modules[`${m}-css`] ? [`${m}-css`]: [])]).forEach(m=>{

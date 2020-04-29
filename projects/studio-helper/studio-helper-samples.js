@@ -28,7 +28,7 @@ jb.component('htmlUser',{ passiveData: `<!DOCTYPE html>
   </script>
 <!-- start-jb-scripts -->
 <script type="text/javascript" src="/dist/jb-react-all.js"></script>
-<script type="text/javascript" src="/dist/material.js"></script><link rel="stylesheet" type="text/css" href="/dist/material.css"/>
+<script type="text/javascript" src="/dist/material.js"></script><link rel="stylesheet" type="text/css" href="/dist/css/material.css"/>
 <script type="text/javascript" src="/sample1/sample1.js"></script>
 
 <!-- end-jb-scripts -->
@@ -50,7 +50,7 @@ jb.component('htmlCloud', { passiveData: `<!DOCTYPE html>
   </script>
 <!-- start-jb-scripts -->
 <script type="text/javascript" src="//unpkg.com/jb-react/dist/jb-react-all.js"></script>
-<script type="text/javascript" src="//unpkg.com/jb-react/dist/material.js"></script><link rel="stylesheet" type="text/css" href="//unpkg.com/jb-react/dist/material.css"/>
+<script type="text/javascript" src="//unpkg.com/jb-react/dist/material.js"></script><link rel="stylesheet" type="text/css" href="//unpkg.com/jb-react/dist/css/material.css"/>
 <script type="text/javascript" src="/sample1/sample1.js"></script>
 
 <!-- end-jb-scripts -->
