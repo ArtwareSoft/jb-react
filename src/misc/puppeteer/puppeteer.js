@@ -5,7 +5,7 @@ jb.component('pptr.headlessPage', {
     params: [
         {id: 'url', as: 'string', mandatory: true },
         {id: 'extract', type: 'pptr.extract', defaultValue: pptr.extractContent('body') },
-        {id: 'features', type: 'pptr.feature[]', as: 'array', flattenArray: true},
+        {id: 'features', type: 'pptr.feature[]', as: 'array', dynamic: true ,flattenArray: true},
         {id: 'showBrowser', as: 'boolean' },
     ],
     impl: (...args) => jb.pptr.createComp(...args)
@@ -55,7 +55,7 @@ jb.component('pptr.evaluate', {
         {id: 'whenDone', type: 'action', dynamic: true },
         {id: 'frame', type: 'pptr.frame', defaultValue: pptr.mainFrame() },
     ],
-    impl: (ctx,expression,phase,whenDone,frame) => ({ ctx, phase, do: cmp => frame(cmp.page).evalute(expression).then(() => whenDone(ctx.setVar('pptrPage',cmp))) })
+    impl: (ctx,expression,phase,whenDone,frame) => ({ ctx, phase, do: cmp => frame(cmp.page).evaluate(expression).then(() => whenDone(ctx.setVar('pptrPage',cmp))) })
 })
 
 jb.component('pptr.repeatingAction', {
@@ -65,7 +65,7 @@ jb.component('pptr.repeatingAction', {
         {id: 'intervalTime', as: 'number', defaultValue: 500 },
         {id: 'phase', as: 'number', defaultValue: 100, description: 'feature activation order'}
     ],
-    impl: pptr.evaluate('setInterval(() => %$action% ,%$intervalTime%)','%$phase%')
+    impl: pptr.evaluate('setInterval(() => { %$action% } ,%$intervalTime%)','%$phase%')
 })
 
 jb.component('pptr.click', {
@@ -173,16 +173,16 @@ jb.component('pptr.pageId', {
 jb.component('pptr.features', {
     type: 'pptr.feature',
     params: [
-        {id: 'features', type: 'pptr.feature[]', as: 'array', flattenArray: true },
+        {id: 'features', type: 'pptr.feature[]', as: 'array', dynamic: true ,flattenArray: true},
     ],
-    impl: '%$features%'
+    impl: (ctx,features)=>features()
 })
 
 jb.component('pptr.endlessScrollDown', {
     type: 'pptr.feature',
-    impl: pptr.features(
-        pptr.repeatingAction('scrollPos = scrollPos || []; scrollPos.push(window.scrollY); window.scrollBy(0,100)'),
-        pptr.waitForFunction('Math.max.apply(0,scrollPos.slice(-4)) == Math.min.apply(0,scrollPos.slice(-4))')
+    impl: ctx => ctx.run(pptr.features(
+        pptr.repeatingAction('window.scrollPos = window.scrollPos || []; window.scrollPos.push(window.scrollY); window.scrollTo(0,document.body.scrollHeight)' ,500),
+        pptr.waitForFunction('window.scrollPos && Math.max.apply(0,window.scrollPos.slice(-4)) == Math.min.apply(0,window.scrollPos.slice(-4))'))
     )
 })
 
