@@ -52,6 +52,7 @@ const userLocalHost = Object.assign({},devHost,{
     locationToPath: path => path.replace(/^[0-9]*\//,'').replace(/^projects\//,''),
     pathOfJsFile: (project,fn,baseDir) => baseDir == './' ? fn : `/${project}/${fn}`,
     projectUrlInStudio: project => `/studio-bin/${project}`,
+    pathOfDistFolder: () => '/node_modules/jb-react/dist',
     jbLoader: '/dist/jb-loader.js',
 })
 

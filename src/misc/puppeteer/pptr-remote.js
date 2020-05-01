@@ -4,7 +4,7 @@ jb.pptr = {
 }
 
 Object.assign(jb.pptr, {
-    createComp(ctx,url,extract,features) {
+    createComp(ctx,url,extract,featuresF) {
         const comp = jb.pptr.hasPptrServer ? this.createServerComp(...arguments) : this.createProxyComp(ctx)
         comp.dataEm = jb.callbag.filter(e => e.$ == 'result-data')(comp.em)
         jb.callbag.subscribe(e => comp.results.push(e.data))(comp.dataEm)
@@ -18,7 +18,7 @@ Object.assign(jb.pptr, {
             socket.onopen = () => socket.send(JSON.stringify({profile: {$: 'pptr.closeBrowser'}}))
         }
     },
-    createServerComp(ctx,url,extract,features,showBrowser) {
+    createServerComp(ctx,url,extract,featuresF,showBrowser) {
         const {pipe,last,subject,subscribe} = jb.callbag
         const comp = {
             em: subject(),
@@ -46,6 +46,7 @@ Object.assign(jb.pptr, {
         return comp
 
         function applyFeatures() {
+            const features= featuresF().filter(x=>x);
             features.forEach((f,i)=>f.index = i)
             features.filter(f=>f && !f.phase).forEach(f=>Object.assign(comp,f))
             const sortedFeatures = features.filter(f=>f.phase).sort((x1,x2) => x2.phase * 1000 + x2.index - x1.phase*1000 - x1.index)
