@@ -63,12 +63,12 @@ Object.assign(jb.ui,{
         cmp.extendItemFuncs && cmp.extendItemFuncs.forEach(f=>f(cmp,vdom,data));
         return vdom;
     },
-    fromEvent: (cmp,event,elem) => jb.callbag.pipe(
-          jb.callbag.fromEvent(elem || cmp.base, event),
-          jb.callbag.takeUntil( jb.callbag.fromPromise(cmp.destroyed) )
+    fromEvent: (cmp,event,elem,options) => jb.callbag.pipe(
+          jb.callbag.fromEvent(event, elem || cmp.base, options),
+          jb.callbag.takeUntil(cmp.destroyed)
     ),
     upDownEnterEscObs(cmp) { // and stop propagation !!!
-      const {pipe, takeUntil,fromPromise,subject} = jb.callbag
+      const {pipe, takeUntil,subject} = jb.callbag
       const keydown_src = subject();
       cmp.base.onkeydown = e => {
         if ([38,40,13,27].indexOf(e.keyCode) != -1) {
@@ -77,7 +77,7 @@ Object.assign(jb.ui,{
         }
         return true;
       }
-      return pipe(keydown_src, takeUntil(fromPromise(cmp.destroyed)))
+      return pipe(keydown_src, takeUntil(cmp.destroyed))
     }
 })
 

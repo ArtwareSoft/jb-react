@@ -168,7 +168,7 @@ jb.component('gridEditor.dragableGridLineThumb', {
     }
     let startPos = 0, base = 0, accVals
     pipe(cmp.mousedownEm,
-      Do(e => e.preventDefault()),
+//      Do(e => e.preventDefault()),
       Do(e => {
           startPos = HandlerPos(e)
           base = gridIndex ? jb.ui.getGridVals(inplaceElem, axis)[gridIndex-1] : 0
@@ -249,7 +249,7 @@ jb.component('gridEditor.openGridItemThumbs', {
 
 jb.component('gridEditor.dragableGridItemThumb', {
   type: 'feature',
-  impl: interactive( (ctx,{cmp,gridItemElem,inplaceElem})=> {
+  impl: interactive( (ctx,{cmp,inplaceElem})=> {
     const {pipe,takeUntil,merge,Do, flatMap, subscribe, map, last, distinctUntilChanged} = jb.callbag
     cmp.mousedownEm = jb.ui.fromEvent(cmp, 'mousedown')
     let mouseUpEm = jb.ui.fromEvent(cmp, 'mouseup', document)

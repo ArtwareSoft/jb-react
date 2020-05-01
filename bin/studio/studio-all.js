@@ -2311,20 +2311,13 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var immu
 /******/ });;
 
 (function() {
+// inspired (and also many lines of code taken) from André Staltz, https://staltz.com/why-we-need-callbags.html
 const is = (previous, current) => previous === current
 const UNIQUE = {}
 const kTrue = () => true
 const identity = a => a
 
 jb.callbag = {
-    forEach: operation => source => {
-        let talkback
-        source(0, (t, d) => {
-            if (t === 0) talkback = d
-            if (t === 1) operation(d)
-            if (t === 1 || t === 0) talkback(1)
-        })
-    },
     fromIter: iter => (start, sink) => {
         if (start !== 0) return
         const iterator =
@@ -2350,6 +2343,13 @@ jb.callbag = {
                 if (!inloop && !(res && res.done)) loop()
             }
         })
+    },
+    pipe(..._cbs) {
+      const cbs = _cbs.filter(x=>x)
+      if (!cbs[0]) return
+      let res = cbs[0]
+      for (let i = 1, n = cbs.length; i < n; i++) res = cbs[i](res)
+      return res
     },
     Do: f => source => (start, sink) => {
         if (start !== 0) return
@@ -2377,13 +2377,6 @@ jb.callbag = {
         source(0, (t, d) => {
             sink(t, t === 1 ? f(d) : d)
         })
-    },
-    pipe(..._cbs) {
-        const cbs = _cbs.filter(x=>x)
-        if (!cbs[0]) return
-        let res = cbs[0]
-        for (let i = 1, n = cbs.length; i < n; i++) res = cbs[i](res)
-        return res
     },
     distinctUntilChanged: compare => source => (start, sink) => {
         compare = compare || is
@@ -2537,8 +2530,8 @@ jb.callbag = {
             })
           }
         }
-    },
-    fromEvent: (node, name, options) => (start, sink) => {
+    }, // elem,event,options
+    fromEvent: (event, elem, options) => (start, sink) => {
         if (start !== 0) return
         let disposed = false
         const handler = ev => sink(1, ev)
@@ -2548,18 +2541,18 @@ jb.callbag = {
             return
           }
           disposed = true
-          if (node.removeEventListener) node.removeEventListener(name, handler, options)
-          else if (node.removeListener) node.removeListener(name, handler)
-          else throw new Error('cannot remove listener from node. No method found.')
+          if (elem.removeEventListener) elem.removeEventListener(event, handler, options)
+          else if (elem.removeListener) elem.removeListener(event, handler)
+          else throw new Error('cannot remove listener from elem. No method found.')
         })
       
         if (disposed) {
           return
         }
       
-        if (node.addEventListener) node.addEventListener(name, handler, options)
-        else if (node.addListener) node.addListener(name, handler)
-        else throw new Error('cannot add listener to node. No method found.')
+        if (elem.addEventListener) elem.addEventListener(event, handler, options)
+        else if (elem.addListener) elem.addListener(event, handler)
+        else throw new Error('cannot add listener to elem. No method found.')
     },
     fromPromise: promise => (start, sink) => {
         if (start !== 0) return
@@ -2722,7 +2715,7 @@ jb.callbag = {
           }
         })
     },
-    last: (predicate = kTrue, resultSelector = identity) => source => (start, sink) => {
+    last: () => source => (start, sink) => {
         if (start !== 0) return
         let talkback
         let lastVal
@@ -2732,18 +2725,24 @@ jb.callbag = {
             talkback = d
             sink(t, d)
           } else if (t === 1) {
-            if (predicate(d)) {
-              lastVal = d
-              matched = true
-            }
+            lastVal = d
+            matched = true
             talkback(1)
           } else if (t === 2) {
-            if (matched) sink(1, resultSelector(lastVal))
+            if (matched) sink(1, lastVal)
             sink(2)
           } else {
             sink(t, d)
           }
         })
+    },
+    forEach: operation => source => {
+      let talkback
+      source(0, (t, d) => {
+          if (t === 0) talkback = d
+          if (t === 1) operation(d)
+          if (t === 1 || t === 0) talkback(1)
+      })
     },
     subscribe: (listener = {}) => source => {
         if (typeof listener === "function") listener = { next: listener }
@@ -2759,6 +2758,7 @@ jb.callbag = {
         })
         return () => talkback && talkback(2) // dispose
     },
+    mapPromise: promiseF => jb.callbag.concatMap(e => jb.callbag.fromPromise(promiseF(e))),
     toPromise(source) {
         return new Promise((resolve, reject) => {
           jb.callbag.subscribe({
@@ -2784,6 +2784,16 @@ jb.callbag = {
                     if (t === 2 && !!d) reject( d )
             })
         })
+    },
+    interval: period => (start, sink) => {
+      if (start !== 0) return
+      let i = 0;
+      const id = setInterval(() => {
+        sink(1, i++)
+      }, period)
+      sink(0, t => {
+        if (t === 2) clearInterval(id)
+      })
     },
     startWith: (...xs) => inputSource => (start, sink) => {
         if (start !== 0) return
@@ -2836,7 +2846,7 @@ jb.callbag = {
             let id = setTimeout(()=> {
                 clearTimeout(id)
                 sink(1,d)
-            },duration)
+            }, typeof duration == 'function' ? duration() : duration)
         })
     },
     skip: max => source => (start, sink) => {
@@ -2867,9 +2877,8 @@ jb.callbag = {
     },
     isCallbag: source => source.toString().split('=>')[0].replace(/\s/g,'').match(/start,sink|t,d/)
 }
-
-
-})();
+})()
+;
 
 (function() {
 
@@ -4232,12 +4241,12 @@ Object.assign(jb.ui,{
         cmp.extendItemFuncs && cmp.extendItemFuncs.forEach(f=>f(cmp,vdom,data));
         return vdom;
     },
-    fromEvent: (cmp,event,elem) => jb.callbag.pipe(
-          jb.callbag.fromEvent(elem || cmp.base, event),
-          jb.callbag.takeUntil( jb.callbag.fromPromise(cmp.destroyed) )
+    fromEvent: (cmp,event,elem,options) => jb.callbag.pipe(
+          jb.callbag.fromEvent(event, elem || cmp.base, options),
+          jb.callbag.takeUntil(cmp.destroyed)
     ),
     upDownEnterEscObs(cmp) { // and stop propagation !!!
-      const {pipe, takeUntil,fromPromise,subject} = jb.callbag
+      const {pipe, takeUntil,subject} = jb.callbag
       const keydown_src = subject();
       cmp.base.onkeydown = e => {
         if ([38,40,13,27].indexOf(e.keyCode) != -1) {
@@ -4246,7 +4255,7 @@ Object.assign(jb.ui,{
         }
         return true;
       }
-      return pipe(keydown_src, takeUntil(fromPromise(cmp.destroyed)))
+      return pipe(keydown_src, takeUntil(cmp.destroyed))
     }
 })
 
@@ -6107,31 +6116,20 @@ jb.component('dialogFeature.dragTitle', {
 	impl: function(context, id,selector) {
 
 		  const dialog = context.vars.$dialog;
-		  const {pipe,fromEvent,takeUntil,merge,Do, map,flatMap,distinctUntilChanged,fromPromise, forEach} = jb.callbag
+		  const {pipe,takeUntil,merge,Do, map,flatMap, subscribe} = jb.callbag
 		  return {
 				 css: `${selector} { cursor: pointer }`,
 				 afterViewInit: function(cmp) {
 					const titleElem = cmp.base.querySelector(selector);
-					const destroyed = fromPromise(cmp.destroyed)
-					cmp.mousedownEm = pipe(fromEvent(titleElem, 'mousedown'),takeUntil(destroyed));
-
-					if (id && jb.sessionStorage(id)) {
-						  const pos = JSON.parse(jb.sessionStorage(id));
-						  dialog.el.style.top  = pos.top  + 'px';
-						  dialog.el.style.left = pos.left + 'px';
-					}
-
-					let mouseUpEm = pipe(fromEvent(document, 'mouseup'), takeUntil(destroyed))
-					let mouseMoveEm = pipe(fromEvent(document, 'mousemove'), takeUntil(destroyed))
-
+					cmp.mousedownEm = jb.ui.fromEvent(cmp, 'mousedown',titleElem,{capture: true})
+					let mouseUpEm = jb.ui.fromEvent(cmp, 'mouseup', document)
+					let mouseMoveEm = jb.ui.fromEvent(cmp, 'mousemove', document)
 					if (jb.studio.previewWindow) {
-						mouseUpEm = merge(mouseUpEm, pipe(fromEvent(jb.studio.previewWindow.document, 'mouseup')), takeUntil(destroyed))
-						mouseMoveEm = merge(mouseMoveEm, pipe(fromEvent(jb.studio.previewWindow.document, 'mousemove')), takeUntil(destroyed))
+					  mouseUpEm = merge(mouseUpEm, jb.ui.fromEvent(cmp, 'mouseup', jb.studio.previewWindow.document))
+					  mouseMoveEm = merge(mouseMoveEm, jb.ui.fromEvent(cmp, 'mousemove', jb.studio.previewWindow.document))
 					}
-
 					pipe(
 							cmp.mousedownEm,
-							Do(e => e.preventDefault()),
 							map(e =>  ({
 								left: e.clientX - dialog.el.getBoundingClientRect().left,
 								top:  e.clientY - dialog.el.getBoundingClientRect().top
@@ -6145,7 +6143,7 @@ jb.component('dialogFeature.dragTitle', {
 								 )
 							),
 							//distinctUntilChanged(),
-							forEach(pos => {
+							subscribe(pos => {
 								dialog.el.style.top  = pos.top  + 'px';
 								dialog.el.style.left = pos.left + 'px';
 								if (id) jb.sessionStorage(id, JSON.stringify(pos))
@@ -6232,9 +6230,9 @@ jb.component('dialogFeature.closeWhenClickingOutside', {
 		dialog.isPopup = true;
 		jb.delay(10).then(() =>  { // delay - close older before
 			const {pipe, fromEvent, takeUntil,subscribe, merge,filter,take,delay} = jb.callbag
-			let clickoutEm = fromEvent(document, 'mousedown');
+			let clickoutEm = fromEvent('mousedown',document);
 			if (jb.studio.previewWindow)
-				clickoutEm = merge(clickoutEm, fromEvent((jb.studio.previewWindow || {}).document, 'mousedown'))
+				clickoutEm = merge(clickoutEm, fromEvent('mousedown',(jb.studio.previewWindow || {}).document))
 
 			pipe(clickoutEm,
 				filter(e => jb.ui.closest(e.target,'.jb-dialog') == null),
@@ -40192,15 +40190,15 @@ jb.component('dialogFeature.studioPick', {
       }
       cmp.counter = 0
 
-      let userPick = jb.ui.fromEvent(cmp, 'mousedown', document)
-      let keyUpEm = jb.ui.fromEvent(cmp, 'keyup', document)
+      let userPick = jb.ui.fromEvent(cmp, 'mousedown', document,{capture: true})
+      let keyUpEm = jb.ui.fromEvent(cmp, 'keyup', document,{capture: true})
       if (jb.studio.previewWindow) {
-        userPick = merge(userPick, jb.ui.fromEvent(cmp, 'mousedown', jb.studio.previewWindow.document))
-        keyUpEm = merge(keyUpEm, jb.ui.fromEvent(cmp, 'keyup', jb.studio.previewWindow.document))
+        userPick = merge(userPick, jb.ui.fromEvent(cmp, 'mousedown', jb.studio.previewWindow.document,{capture: true}))
+        keyUpEm = merge(keyUpEm, jb.ui.fromEvent(cmp, 'keyup', jb.studio.previewWindow.document,{capture: true}))
       }
       pipe(merge(pipe(keyUpEm,filter(e=>e.keyCode == 27)), userPick), subscribe(() => ctx.vars.$dialog.endPick()))
 
-      const mouseMoveEm = jb.ui.fromEvent(cmp,'mousemove',_window.document);
+      const mouseMoveEm = jb.ui.fromEvent(cmp,'mousemove',_window.document,{capture: true});
       pipe(mouseMoveEm,
           debounceTime(50),
           map(e=> eventToElem(e,_window,eventToElemPredicate)),
@@ -41247,7 +41245,8 @@ jb.component('studio.initAutoSave', {
         map(e=>({...e, loc: e.comp[jb.location]})),
         map(e=>({...e, fn: st.host.locationToPath(e.loc[0])})),
 
-        concatMap(e => fromPromise(st.host.getFile(e.fn).then(fileContent=>({...e, fileContent})))),
+        mapPromise(e => st.host.getFile(e.fn).then(fileContent=>({...e, fileContent}))),
+//        concatMap(e => fromPromise(st.host.getFile(e.fn).then(fileContent=>({...e, fileContent})))),
         map(e=>({...e, edits: [e.fileContent && deltaFileContent(e.fileContent,e)].filter(x=>x) })),
         concatMap(e => e.fileContent ? fromPromise(st.host.saveDelta(e.fn,e.edits).then(()=>e)) : [e]),
       )),
@@ -42925,6 +42924,7 @@ const userLocalHost = Object.assign({},devHost,{
     locationToPath: path => path.replace(/^[0-9]*\//,'').replace(/^projects\//,''),
     pathOfJsFile: (project,fn,baseDir) => baseDir == './' ? fn : `/${project}/${fn}`,
     projectUrlInStudio: project => `/studio-bin/${project}`,
+    pathOfDistFolder: () => '/node_modules/jb-react/dist',
     jbLoader: '/dist/jb-loader.js',
 })
 
@@ -43801,8 +43801,7 @@ jb.component('contentEditable.dragableThumb', {
     (ctx,{cmp},{axis})=> {
     const el = jb.ui.contentEditable.current
     const prop = () => ctx.run(contentEditable.effectiveProp(axis))
-    const {pipe,fromEvent,takeUntil,merge,Do, flatMap, map, last, forEach,fromPromise} = jb.callbag
-    const destroyed = fromPromise(cmp.destroyed)
+    const {pipe,takeUntil,merge,Do, flatMap, map, last, forEach} = jb.callbag
     cmp.mousedownEm = jb.ui.fromEvent(cmp, 'mousedown')
     let mouseUpEm = jb.ui.fromEvent(cmp, 'mouseup', document)
     let mouseMoveEm = jb.ui.fromEvent(cmp, 'mousemove', document)
@@ -44961,7 +44960,7 @@ jb.component('gridEditor.dragableGridLineThumb', {
     }
     let startPos = 0, base = 0, accVals
     pipe(cmp.mousedownEm,
-      Do(e => e.preventDefault()),
+//      Do(e => e.preventDefault()),
       Do(e => {
           startPos = HandlerPos(e)
           base = gridIndex ? jb.ui.getGridVals(inplaceElem, axis)[gridIndex-1] : 0
@@ -45042,7 +45041,7 @@ jb.component('gridEditor.openGridItemThumbs', {
 
 jb.component('gridEditor.dragableGridItemThumb', {
   type: 'feature',
-  impl: interactive( (ctx,{cmp,gridItemElem,inplaceElem})=> {
+  impl: interactive( (ctx,{cmp,inplaceElem})=> {
     const {pipe,takeUntil,merge,Do, flatMap, subscribe, map, last, distinctUntilChanged} = jb.callbag
     cmp.mousedownEm = jb.ui.fromEvent(cmp, 'mousedown')
     let mouseUpEm = jb.ui.fromEvent(cmp, 'mouseup', document)

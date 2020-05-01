@@ -83,15 +83,15 @@ jb.component('dialogFeature.studioPick', {
       }
       cmp.counter = 0
 
-      let userPick = jb.ui.fromEvent(cmp, 'mousedown', document)
-      let keyUpEm = jb.ui.fromEvent(cmp, 'keyup', document)
+      let userPick = jb.ui.fromEvent(cmp, 'mousedown', document,{capture: true})
+      let keyUpEm = jb.ui.fromEvent(cmp, 'keyup', document,{capture: true})
       if (jb.studio.previewWindow) {
-        userPick = merge(userPick, jb.ui.fromEvent(cmp, 'mousedown', jb.studio.previewWindow.document))
-        keyUpEm = merge(keyUpEm, jb.ui.fromEvent(cmp, 'keyup', jb.studio.previewWindow.document))
+        userPick = merge(userPick, jb.ui.fromEvent(cmp, 'mousedown', jb.studio.previewWindow.document,{capture: true}))
+        keyUpEm = merge(keyUpEm, jb.ui.fromEvent(cmp, 'keyup', jb.studio.previewWindow.document,{capture: true}))
       }
       pipe(merge(pipe(keyUpEm,filter(e=>e.keyCode == 27)), userPick), subscribe(() => ctx.vars.$dialog.endPick()))
 
-      const mouseMoveEm = jb.ui.fromEvent(cmp,'mousemove',_window.document);
+      const mouseMoveEm = jb.ui.fromEvent(cmp,'mousemove',_window.document,{capture: true});
       pipe(mouseMoveEm,
           debounceTime(50),
           map(e=> eventToElem(e,_window,eventToElemPredicate)),

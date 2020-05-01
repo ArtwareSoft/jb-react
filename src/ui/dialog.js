@@ -57,31 +57,20 @@ jb.component('dialogFeature.dragTitle', {
 	impl: function(context, id,selector) {
 
 		  const dialog = context.vars.$dialog;
-		  const {pipe,fromEvent,takeUntil,merge,Do, map,flatMap,distinctUntilChanged,fromPromise, forEach} = jb.callbag
+		  const {pipe,takeUntil,merge,Do, map,flatMap, subscribe} = jb.callbag
 		  return {
 				 css: `${selector} { cursor: pointer }`,
 				 afterViewInit: function(cmp) {
 					const titleElem = cmp.base.querySelector(selector);
-					const destroyed = fromPromise(cmp.destroyed)
-					cmp.mousedownEm = pipe(fromEvent(titleElem, 'mousedown'),takeUntil(destroyed));
-
-					if (id && jb.sessionStorage(id)) {
-						  const pos = JSON.parse(jb.sessionStorage(id));
-						  dialog.el.style.top  = pos.top  + 'px';
-						  dialog.el.style.left = pos.left + 'px';
-					}
-
-					let mouseUpEm = pipe(fromEvent(document, 'mouseup'), takeUntil(destroyed))
-					let mouseMoveEm = pipe(fromEvent(document, 'mousemove'), takeUntil(destroyed))
-
+					cmp.mousedownEm = jb.ui.fromEvent(cmp, 'mousedown',titleElem,{capture: true})
+					let mouseUpEm = jb.ui.fromEvent(cmp, 'mouseup', document)
+					let mouseMoveEm = jb.ui.fromEvent(cmp, 'mousemove', document)
 					if (jb.studio.previewWindow) {
-						mouseUpEm = merge(mouseUpEm, pipe(fromEvent(jb.studio.previewWindow.document, 'mouseup')), takeUntil(destroyed))
-						mouseMoveEm = merge(mouseMoveEm, pipe(fromEvent(jb.studio.previewWindow.document, 'mousemove')), takeUntil(destroyed))
+					  mouseUpEm = merge(mouseUpEm, jb.ui.fromEvent(cmp, 'mouseup', jb.studio.previewWindow.document))
+					  mouseMoveEm = merge(mouseMoveEm, jb.ui.fromEvent(cmp, 'mousemove', jb.studio.previewWindow.document))
 					}
-
 					pipe(
 							cmp.mousedownEm,
-							Do(e => e.preventDefault()),
 							map(e =>  ({
 								left: e.clientX - dialog.el.getBoundingClientRect().left,
 								top:  e.clientY - dialog.el.getBoundingClientRect().top
@@ -95,7 +84,7 @@ jb.component('dialogFeature.dragTitle', {
 								 )
 							),
 							//distinctUntilChanged(),
-							forEach(pos => {
+							subscribe(pos => {
 								dialog.el.style.top  = pos.top  + 'px';
 								dialog.el.style.left = pos.left + 'px';
 								if (id) jb.sessionStorage(id, JSON.stringify(pos))
@@ -182,9 +171,9 @@ jb.component('dialogFeature.closeWhenClickingOutside', {
 		dialog.isPopup = true;
 		jb.delay(10).then(() =>  { // delay - close older before
 			const {pipe, fromEvent, takeUntil,subscribe, merge,filter,take,delay} = jb.callbag
-			let clickoutEm = fromEvent(document, 'mousedown');
+			let clickoutEm = fromEvent('mousedown',document);
 			if (jb.studio.previewWindow)
-				clickoutEm = merge(clickoutEm, fromEvent((jb.studio.previewWindow || {}).document, 'mousedown'))
+				clickoutEm = merge(clickoutEm, fromEvent('mousedown',(jb.studio.previewWindow || {}).document))
 
 			pipe(clickoutEm,
 				filter(e => jb.ui.closest(e.target,'.jb-dialog') == null),

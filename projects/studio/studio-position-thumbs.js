@@ -212,8 +212,7 @@ jb.component('contentEditable.dragableThumb', {
     (ctx,{cmp},{axis})=> {
     const el = jb.ui.contentEditable.current
     const prop = () => ctx.run(contentEditable.effectiveProp(axis))
-    const {pipe,fromEvent,takeUntil,merge,Do, flatMap, map, last, forEach,fromPromise} = jb.callbag
-    const destroyed = fromPromise(cmp.destroyed)
+    const {pipe,takeUntil,merge,Do, flatMap, map, last, forEach} = jb.callbag
     cmp.mousedownEm = jb.ui.fromEvent(cmp, 'mousedown')
     let mouseUpEm = jb.ui.fromEvent(cmp, 'mouseup', document)
     let mouseMoveEm = jb.ui.fromEvent(cmp, 'mousemove', document)

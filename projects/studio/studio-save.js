@@ -46,7 +46,8 @@ jb.component('studio.initAutoSave', {
         map(e=>({...e, loc: e.comp[jb.location]})),
         map(e=>({...e, fn: st.host.locationToPath(e.loc[0])})),
 
-        concatMap(e => fromPromise(st.host.getFile(e.fn).then(fileContent=>({...e, fileContent})))),
+        mapPromise(e => st.host.getFile(e.fn).then(fileContent=>({...e, fileContent}))),
+//        concatMap(e => fromPromise(st.host.getFile(e.fn).then(fileContent=>({...e, fileContent})))),
         map(e=>({...e, edits: [e.fileContent && deltaFileContent(e.fileContent,e)].filter(x=>x) })),
         concatMap(e => e.fileContent ? fromPromise(st.host.saveDelta(e.fn,e.edits).then(()=>e)) : [e]),
       )),

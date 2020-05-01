@@ -4,7 +4,7 @@ jb.pptr = {
 }
 
 Object.assign(jb.pptr, {
-    createComp(ctx,url,extract,features) {
+    createComp(ctx,url,extract,featuresF) {
         const comp = jb.pptr.hasPptrServer ? this.createServerComp(...arguments) : this.createProxyComp(ctx)
         comp.dataEm = jb.callbag.filter(e => e.$ == 'result-data')(comp.em)
         jb.callbag.subscribe(e => comp.results.push(e.data))(comp.dataEm)
@@ -18,7 +18,7 @@ Object.assign(jb.pptr, {
             socket.onopen = () => socket.send(JSON.stringify({profile: {$: 'pptr.closeBrowser'}}))
         }
     },
-    createServerComp(ctx,url,extract,features,showBrowser) {
+    createServerComp(ctx,url,extract,featuresF,showBrowser) {
         const {pipe,last,subject,subscribe} = jb.callbag
         const comp = {
             em: subject(),
@@ -46,6 +46,7 @@ Object.assign(jb.pptr, {
         return comp
 
         function applyFeatures() {
+            const features= featuresF().filter(x=>x);
             features.forEach((f,i)=>f.index = i)
             features.filter(f=>f && !f.phase).forEach(f=>Object.assign(comp,f))
             const sortedFeatures = features.filter(f=>f.phase).sort((x1,x2) => x2.phase * 1000 + x2.index - x1.phase*1000 - x1.index)
@@ -101,7 +102,7 @@ jb.component('pptr.headlessPage', {
     params: [
         {id: 'url', as: 'string', mandatory: true },
         {id: 'extract', type: 'pptr.extract', defaultValue: pptr.extractContent('body') },
-        {id: 'features', type: 'pptr.feature[]', as: 'array', flattenArray: true},
+        {id: 'features', type: 'pptr.feature[]', as: 'array', dynamic: true ,flattenArray: true},
         {id: 'showBrowser', as: 'boolean' },
     ],
     impl: (...args) => jb.pptr.createComp(...args)
@@ -151,7 +152,7 @@ jb.component('pptr.evaluate', {
         {id: 'whenDone', type: 'action', dynamic: true },
         {id: 'frame', type: 'pptr.frame', defaultValue: pptr.mainFrame() },
     ],
-    impl: (ctx,expression,phase,whenDone,frame) => ({ ctx, phase, do: cmp => frame(cmp.page).evalute(expression).then(() => whenDone(ctx.setVar('pptrPage',cmp))) })
+    impl: (ctx,expression,phase,whenDone,frame) => ({ ctx, phase, do: cmp => frame(cmp.page).evaluate(expression).then(() => whenDone(ctx.setVar('pptrPage',cmp))) })
 })
 
 jb.component('pptr.repeatingAction', {
@@ -161,7 +162,7 @@ jb.component('pptr.repeatingAction', {
         {id: 'intervalTime', as: 'number', defaultValue: 500 },
         {id: 'phase', as: 'number', defaultValue: 100, description: 'feature activation order'}
     ],
-    impl: pptr.evaluate('setInterval(() => %$action% ,%$intervalTime%)','%$phase%')
+    impl: pptr.evaluate('setInterval(() => { %$action% } ,%$intervalTime%)','%$phase%')
 })
 
 jb.component('pptr.click', {
@@ -269,16 +270,16 @@ jb.component('pptr.pageId', {
 jb.component('pptr.features', {
     type: 'pptr.feature',
     params: [
-        {id: 'features', type: 'pptr.feature[]', as: 'array', flattenArray: true },
+        {id: 'features', type: 'pptr.feature[]', as: 'array', dynamic: true ,flattenArray: true},
     ],
-    impl: '%$features%'
+    impl: (ctx,features)=>features()
 })
 
 jb.component('pptr.endlessScrollDown', {
     type: 'pptr.feature',
-    impl: pptr.features(
-        pptr.repeatingAction('scrollPos = scrollPos || []; scrollPos.push(window.scrollY); window.scrollBy(0,100)'),
-        pptr.waitForFunction('Math.max.apply(0,scrollPos.slice(-4)) == Math.min.apply(0,scrollPos.slice(-4))')
+    impl: ctx => ctx.run(pptr.features(
+        pptr.repeatingAction('window.scrollPos = window.scrollPos || []; window.scrollPos.push(window.scrollY); window.scrollTo(0,document.body.scrollHeight)' ,500),
+        pptr.waitForFunction('window.scrollPos && Math.max.apply(0,window.scrollPos.slice(-4)) == Math.min.apply(0,window.scrollPos.slice(-4))'))
     )
 })
 
@@ -330,7 +331,7 @@ jb.component('pptr.pageCrawler', {
     type: 'pptr.page-crawler',
     params: [
         {id: 'url', as: 'string' },
-        {id: 'features', type: 'pptr.features[]', as: 'array', flattenArray: true},
+        {id: 'features', type: 'pptr.feature[]', as: 'array', dynamic: true ,flattenArray: true},
         {id: 'extract', type: 'pptr.extract', mandatory: true },
         {id: 'transformToResultItems', dynamic: true, description: 'single or array, better to have id'},
         {id: 'transformToUrlRequests', dynamic: true, templateValue: obj(prop('url','%%')), description: 'optional props: varsForFollowing, nextPptrPageType' },
