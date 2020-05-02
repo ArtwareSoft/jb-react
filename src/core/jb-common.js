@@ -17,13 +17,14 @@ jb.component('call', {
  	}
 })
 
-jb.pipe = function(context,ptName) {
-	const start = [jb.toarray(context.data)[0]]; // use only one data item, the first or null
-	if (typeof context.profile.items == 'string')
-		return context.runInner(context.profile.items,null,'items');
-	const profiles = jb.asArray(context.profile.items || context.profile[ptName]);
-	const innerPath = (context.profile.items && context.profile.items.sugar) ? ''
-		: (context.profile[ptName] ? (ptName + '~') : 'items~');
+jb.pipe = function(ctx,ptName) {
+  let start = jb.toarray(ctx.data)
+  if (start.length == 0) start = [null]
+	if (typeof ctx.profile.items == 'string')
+		return ctx.runInner(ctx.profile.items,null,'items');
+	const profiles = jb.asArray(ctx.profile.items || ctx.profile[ptName]);
+	const innerPath = (ctx.profile.items && ctx.profile.items.sugar) ? ''
+		: (ctx.profile[ptName] ? (ptName + '~') : 'items~');
 
 	if (ptName == '$pipe') // promise pipe
 		return profiles.reduce((deferred,prof,index) =>
@@ -31,19 +32,21 @@ jb.pipe = function(context,ptName) {
     , Promise.resolve(start))
       .then(data=>jb.toSynchArray(data))
 
-	return profiles.reduce((data,prof,index) =>
-		step(prof,index,data), start)
-
+	return profiles.reduce((data,prof,index) => step(prof,index,data), start)
 
 	function step(profile,i,data) {
-    	if (!profile || profile.$disabled) return data;
-		const parentParam = (i < profiles.length - 1) ? { as: 'array'} : (context.parentParam || {}) ;
+    if (!profile || profile.$disabled) return data;
+    const path = innerPath+i
+		const parentParam = (i < profiles.length - 1) ? { as: 'array'} : (ctx.parentParam || {}) ;
 		if (jb.profileType(profile) == 'aggregator')
-			return jb.run( new jb.jbCtx(context, { data: data, profile: profile, path: innerPath+i }), parentParam);
+			return jb.run( new jb.jbCtx(ctx, { data, profile, path }), parentParam);
 		return [].concat.apply([],data.map(item =>
-				jb.run(new jb.jbCtx(context,{data: item, profile: profile, path: innerPath+i}), parentParam))
+				jb.run(new jb.jbCtx(ctx,{data: item, profile, path}), parentParam))
 			.filter(x=>x!=null)
-			.map(x=> Array.isArray(jb.val(x)) ? jb.val(x) : x ));
+			.map(x=> {
+        const val = jb.val(x)
+        return Array.isArray(val) ? val : x 
+      }));
 	}
 }
 

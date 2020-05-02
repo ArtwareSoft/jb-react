@@ -120,12 +120,21 @@ st.Probe = class {
             this.probe[path] = []
             this.probe[path].visits = 0
         }
+        let snifferRes
+        if (typeof out == 'function' && jb.callbag.isCallbagFunc(out)) {
+            const {sniffer,toPromiseArray,subject,subscribe,isCallbag,sourceSniffer} = ctx.frame().jb.callbag
+            // wrap cb with sniffer
+            const cbSniffer = subject()
+            //subscribe(x=>console.log(x))(cbSniffer)
+            snifferRes = toPromiseArray(cbSniffer).then(res=>{res.snifferResult = true; return res})
+            out = isCallbag(out) ? sourceSniffer(out, cbSniffer) : sniffer(out, cbSniffer)
+        }
         this.probe[path].visits++
         const found = this.probe[path].find(x=>jb.compareArrays(x.in.data,ctx.data))
         if (found)
             found.counter++
         else
-            this.probe[path].push({in: ctx, out, counter: 0})
+            this.probe[path].push({in: ctx, out: snifferRes || out, counter: 0})
 
         return out
     }

@@ -86,7 +86,7 @@ jb.callbag = {
         })
     },
     takeUntil(notifier) {
-        if (Object.prototype.toString.call(notifier) === "[object Promise]")
+        if (jb.isPromise(notifier))
             notifier = jb.callbag.fromPromise(notifier)
         return source => (start, sink) => {
             if (start !== 0) return
@@ -447,7 +447,7 @@ jb.callbag = {
         return () => talkback && talkback(2) // dispose
     },
     mapPromise: promiseF => jb.callbag.concatMap(e => jb.callbag.fromPromise(promiseF(e))),
-    toPromise(source) {
+    toPromise: source => {
         return new Promise((resolve, reject) => {
           jb.callbag.subscribe({
             next: resolve,
@@ -460,7 +460,7 @@ jb.callbag = {
           })(jb.callbag.last(source))
         })
     },
-    toPromiseArray(source) {
+    toPromiseArray: source => {
         const res = []
         let talkback
         return new Promise((resolve, reject) => {
@@ -483,7 +483,7 @@ jb.callbag = {
         if (t === 2) clearInterval(id)
       })
     },
-    startWith: (...xs) => inputSource => (start, sink) => {
+    startWith: (...xs) => source => (start, sink) => {
         if (start !== 0) return
         let disposed = false
         let inputTalkback
@@ -513,7 +513,7 @@ jb.callbag = {
       
         if (disposed) return
       
-        inputSource(0, (t, d) => {
+        source(0, (t, d) => {
           if (t === 0) {
             inputTalkback = d
             trackPull = false
@@ -529,7 +529,7 @@ jb.callbag = {
     },
     delay: duration => source => (start, sink) => {
         if (start !== 0) return
-        source(0,(t,d)=>{
+        source(0,(t,d) => {
             if (t !== 1) return sink(t,d)
             let id = setTimeout(()=> {
                 clearTimeout(id)
@@ -538,21 +538,67 @@ jb.callbag = {
         })
     },
     skip: max => source => (start, sink) => {
-        if (start !== 0) return;
-        let skipped = 0, talkback;
+        if (start !== 0) return
+        let skipped = 0, talkback
         source(0, (t, d) => {
           if (t === 0) talkback = d
           if (t === 1 && skipped < max) {
-              skipped++;
-              talkback(1);
+              skipped++
+              talkback(1)
               return
           }
-          sink(t, d);
-        });
+          sink(t, d)
+        })
+    },
+    sourceSniffer: (cb, snifferSubject) => (start, sink) => {
+      if (start !== 0) return
+      jb.log('snifferStarted',[])
+      cb(0, (t,d) => {
+        snif('out',t,d)
+        sink(t,d)
+      })
+      sink(0,(t,d) => snif('talkback',t,d))
+
+      function snif(dir,t,d) {
+        const now = new Date()
+        const time = `${now.getSeconds()}:${now.getMilliseconds()}`
+        if (t == 1) snifferSubject.next({dir, d, time})
+        if (t == 2) {
+          jb.log('snifferCompleted',[])
+          snifferSubject.complete()
+        }
+      }
+    },
+    sniffer: (cb, snifferSubject) => source => (start, sink) => {
+      if (start !== 0) return
+      jb.log('snifferStarted',[])
+      const cbSource = (start, sink) => {
+        if (start != 0) return
+        source(0, (t,d) => {
+          snif('in',t,d)
+          sink(t,d)
+        })
+      }
+
+      // cbSink
+      cb(cbSource)(0, (t,d) => {
+        snif('out',t,d)
+        sink(t,d)
+      })
+
+      function snif(dir,t,d) {
+        const now = new Date()
+        const time = `${now.getSeconds()}:${now.getMilliseconds()}`
+        if (t == 1) snifferSubject.next({dir, d, time})
+        if (t == 2) {
+          jb.log('snifferCompleted',[])
+          snifferSubject.complete()
+        }
+      }
     },
     fromCallBag: source => source,
     fromAny: (source, name, options) => {
-        const f = source && 'from' + (Object.prototype.toString.call(source) === "[object Promise]" ? 'Promise'
+        const f = source && 'from' + (jb.isPromise(source) ? 'Promise'
             : source.addEventListener ? 'Event'
             : typeof source[Symbol.iterator] === 'function' ? 'Iter'
             : '')
@@ -563,6 +609,8 @@ jb.callbag = {
         else
             return jb.callbag.fromIter([source])
     },
-    isCallbag: source => source.toString().split('=>')[0].replace(/\s/g,'').match(/start,sink|t,d/)
+    isCallbag: source => typeof source == 'function' && source.toString().split('=>')[0].replace(/\s/g,'').match(/start,sink|t,d/),
+    isCallbagFunc: source => typeof source == 'function' && source.toString().split('\n')[0].replace(/\s/g,'').match(/source|start,sink|t,d/)
 }
+
 })()

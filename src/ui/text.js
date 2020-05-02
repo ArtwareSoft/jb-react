@@ -34,7 +34,7 @@ jb.component('text.allowAsynchValue', {
       if (cmp[propId]) return
       let val = jb.ui.toVdomOrStr(ctx.vars.$model[propId])
       if (typeof val == 'function') val = val(cmp.ctx)
-      if (val && Object.prototype.toString.call(val) === "[object Promise]")
+      if (jb.isPromise(val))
         val.then(res=>cmp.refresh({[propId]: jb.ui.toVdomOrStr(res)},{srcCtx: ctx.componentContext}))
     })
   )

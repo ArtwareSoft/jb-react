@@ -64,9 +64,10 @@ jb.component('studioProbeTest', {
     {id: 'circuit', type: 'control', dynamic: true},
     {id: 'probePath', as: 'string'},
     {id: 'allowClosestPath', as: 'boolean', type: 'boolean'},
-    {id: 'expectedVisits', as: 'number', defaultValue: -1}
+    {id: 'expectedVisits', as: 'number', defaultValue: -1},
+	  {id: 'expectedOutResult', type: 'boolean', dynamic: true, defaultValue: true},
   ],
-  impl: (ctx,circuit,probePath,allowClosestPath,expectedVisits)=> {
+  impl: (ctx,circuit,probePath,allowClosestPath,expectedVisits,expectedOutResult)=> {
     st.initTests();
 
     const testId = ctx.vars.testID;
@@ -76,21 +77,23 @@ jb.component('studioProbeTest', {
     const full_path = testId + '~impl~circuit~' + probePath;
     const probeRes = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: circuit.profile, forcePath: testId+ '~impl~circuit', path: '' } ))
       .runCircuit(full_path);
-    return probeRes.then(res=>{
-          try {
-						if (expectedVisits == 0 && res.closestPath)
-							return success();
-            if (!allowClosestPath && res.closestPath)
-              return failure('no probe results at path ' + probePath);
-            if (res.result.visits != expectedVisits && expectedVisits != -1)
-              return failure(`expected visits error actual/expected: ${res.result.visits}/${expectedVisits}`);
-            if (!res.result[0])
-                return failure('no probe results at path ' + probePath);
-          } catch(e) {
-            jb.logException(e,'jb-path-test',ctx);
-            return failure('exception');
-          }
+    return probeRes.then(res=> {
+      try {
+        if (expectedVisits == 0 && res.closestPath)
           return success();
+        if (!allowClosestPath && res.closestPath)
+          return failure('no probe results at path ' + probePath);
+        if (res.result.visits != expectedVisits && expectedVisits != -1)
+          return failure(`expected visits error actual/expected: ${res.result.visits}/${expectedVisits}`);
+        if (!res.result[0])
+            return failure('no probe results at path ' + probePath)
+        if (!expectedOutResult(ctx.setData(res.result[0].out)))
+            return failure('wrong out result ' + JSON.stringify(res.result[0].out))
+      } catch(e) {
+        jb.logException(e,'jb-path-test',ctx);
+        return failure('exception');
+      }
+      return success();
     })
   }
 })

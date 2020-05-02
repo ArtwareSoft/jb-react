@@ -5,9 +5,9 @@ function jb_run(ctx,parentParam,settings) {
   if (ctx.probe && ctx.probe.outOfTime)
     return
   if (jb.ctxByPath) jb.ctxByPath[ctx.path] = ctx
-  const res = do_jb_run(...arguments);
+  let res = do_jb_run(...arguments);
   if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
-      ctx.probe.record(ctx,res)
+      res = ctx.probe.record(ctx,res) || res
   log('res', [ctx,res,parentParam,settings])
   return res;
 }
@@ -91,16 +91,10 @@ function do_jb_run(ctx,parentParam,settings) {
   }
 
   function prepareGCArgs(ctx,preparedParams) {
-    const delayed = preparedParams.filter(param => {
-      const v = ctx.params[param.name] || {};
-      return jb.isDelayed(v) && param.param.as != 'observable'
-    });
-    if (delayed.length == 0)
-      return [ctx, ...preparedParams.map(param=>ctx.params[param.name])]
-
-    const {pipe,concatMap,fromIter,toPromiseArray} = jb.callbag
-    return pipe(fromIter(preparedParams), concatMap(param=> ctx.params[param.name]), toPromiseArray)
-            .then(ar => [ctx, ...ar])
+    const synched = jb.toSynchArray(preparedParams)
+    if (jb.isPromise(synched))
+      return synched.then(ar => [ctx, ...ar])
+    return [ctx, ...preparedParams.map(param=>ctx.params[param.name])]
   }
 }
 
@@ -741,22 +735,24 @@ Object.assign(jb,{
     })
     return out;
   },
+  isPromise: v => v && Object.prototype.toString.call(v) === '[object Promise]',
   isDelayed: v => {
-    if (!v || v.constructor === {}.constructor) return
+    if (!v || v.constructor === {}.constructor || Array.isArray(v)) return
     else if (typeof v === 'object')
-      return Object.prototype.toString.call(v) === "[object Promise]"
+      return jb.isPromise(v)
     else if (typeof v === 'function')
       return jb.callbag.isCallbag(v)
   },
-  toSynchArray: __ar => {
-    const ar = jb.asArray(__ar)
-    const isSynch = ar.filter(v=> jb.isDelayed(v)).length == 0;
-    if (isSynch) return ar;
+  toSynchArray: item => {
+    if (! jb.asArray(item).find(v=> jb.callbag.isCallbag(v) || jb.isPromise(v))) return item;
+    const {pipe, fromIter, toPromiseArray, mapPromise,flatMap, isCallbag} = jb.callbag
+    if (isCallbag(item)) return toPromiseArray(item)
+    if (Array.isArray(item) && isCallbag(item[0])) return toPromiseArray(item[0])
 
-    const {pipe, fromIter, toPromiseArray, concatMap,flatMap} = jb.callbag
+
     return pipe(
-          fromIter(ar),
-          concatMap(x=>x),
+          fromIter(jb.asArray(item)),
+          mapPromise(x=> Promise.resolve(x)),
           flatMap(v => Array.isArray(v) ? v : [v]),
           toPromiseArray)
   },

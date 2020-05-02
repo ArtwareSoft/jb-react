@@ -80,10 +80,11 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       ],
       'callbag': [
         'src/misc/jb-callbag.js',
+        'src/misc/callbag-comps.js',
       ],
       'puppeteer': [
         'src/misc/puppeteer/pptr-remote.js',
-        'src/misc/puppeteer/puppeteer.js',
+        'src/misc/puppeteer/pptr.js',
         'src/misc/puppeteer/crawler.js',
       ],            
       'codemirror-js-files': [

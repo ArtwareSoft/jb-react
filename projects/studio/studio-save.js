@@ -33,7 +33,7 @@ jb.component('studio.initAutoSave', {
   impl: ctx => {
     if (!jb.frame.jbInvscode || jb.studio.autoSaveInitialized) return
     jb.studio.autoSaveInitialized = true
-    const {pipe, catchError,subscribe,concatMap,fromPromise,fromIter,map} = jb.callbag
+    const {pipe, catchError,subscribe,concatMap,fromPromise,fromIter,map,mapPromise} = jb.callbag
     const messages = []
     const st = jb.studio
 

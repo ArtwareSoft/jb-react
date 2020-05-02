@@ -50,9 +50,15 @@ jb.component('test.dataTestView', {
           features: pipeline(Var('color', If('%success%', 'green', 'red')), css('color: %$color%'))
         }),
         group({
-          style: propertySheet.titlesLeft(),
+          style: propertySheet.titlesLeft({}),
           controls: [
-            text({text: '%value%', title: 'calculate', features: css.width('300')})
+            text({
+              text: '%value%',
+              title: 'calculate',
+              style: text.span(),
+              features: css.width('300')
+            }),
+            editableText({databind: '%value%', style: editableText.textarea({})})
           ],
           features: css.width({width: '127', selector: ''})
         })
@@ -107,7 +113,7 @@ jb.component('dataTest', {
 		  }
 		  return Promise.resolve(runBefore())
 			  .then(_ => calculate())
-			  .then(v => Array.isArray(v) ? jb.toSynchArray(v) : v)
+			  .then(v => jb.toSynchArray(v))
 			  .then(value => {
 				  const countersErr = countersErrors(expectedCounters);
 				  const success = !! (expectedResult(new jb.jbCtx(ctx,{ data: value })) && !countersErr);

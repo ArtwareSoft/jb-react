@@ -76,7 +76,7 @@ jb.component('studio.probeResults', {
 jb.component('studio.dataBrowse', {
   type: 'control',
   params: [
-    {id: 'obj', mandatory: true, as: 'value', defaultValue: '%%'},
+    {id: 'objToShow', mandatory: true, as: 'value', defaultValue: '%%'},
     {id: 'width', as: 'number', defaultValue: 200}
   ],
   impl: group({
@@ -86,17 +86,25 @@ jb.component('studio.dataBrowse', {
           controlWithCondition(isOfType('string,boolean,number', '%$obj%'), text('%$obj%')),
           controlWithCondition(
             isOfType('array', '%$obj%'),
-            table({
-              items: pipeline('%$obj%', slice(0, '%$maxItems%')),
-              fields: field.control({
-                title: pipeline(count('%$obj%'), '%% items'),
-                control: studio.dataBrowse('%%', 200)
-              }),
+            itemlist({
+              items: '%$obj%',
+              controls: group({title: '%$obj/length% items', controls: studio.dataBrowse('%%', 200)}),
               style: table.mdc(),
-              features: [watchRef('%$maxItems%')]
+              visualSizeLimit: 7,
+              features: [itemlist.infiniteScroll(), css.height({height: '400', minMax: 'max'})]
             })
           ),
           controlWithCondition(isNull('%$obj%'), text('null')),
+          controlWithCondition(
+            '%snifferResult%',
+            itemlist({
+              items: '%$obj%',
+              controls: group({title: '%$obj/length% items', controls: studio.dataBrowse('%%', 200)}),
+              style: table.mdc(),
+              visualSizeLimit: 7,
+              features: [itemlist.infiniteScroll(), css.height({height: '400', minMax: 'max'})]
+            })
+          ),
           tree({
             nodeModel: tree.jsonReadOnly('%$obj%', '%$title%'),
             style: tree.expandBox({}),
@@ -116,7 +124,7 @@ jb.component('studio.dataBrowse', {
           action: openDialog({
             style: dialog.showSourceStyle('show-data'),
             content: group({
-              style: group.tabs(),
+              style: group.tabs({}),
               controls: [
                 editableText({
                   title: 'text',
@@ -138,19 +146,9 @@ jb.component('studio.dataBrowse', {
           style: button.href()
         }),
         'long text'
-      ),
-      controlWithCondition(
-        and('%$obj/length% > 5', isOfType('array', '%$obj%'), '%$maxItems% == 5'),
-        button({
-          title: 'show (%$obj/length%)',
-          action: writeValue('%$maxItems%', '100'),
-          style: button.href(),
-          features: [watchRef('%$maxItems%'), hidden('%$maxItems% == 5')]
-        }),
-        'large array'
       )
     ],
-    features: [variable({name: 'maxItems', value: '5', watchable: 'true'})]
+    features: group.wait({for: '%$objToShow%', loadingControl: text('...'), varName: 'obj'})
   })
 })
 
@@ -178,8 +176,10 @@ jb.component('studio.probeDataView', {
           }),
           group({
             title: 'out',
-            controls: studio.dataBrowse('%out%'),
-            features: field.columnWidth(100)
+            controls: studio.dataBrowse('%%'),
+            features: [field.columnWidth(100),
+              group.wait({for: '%out%' })
+            ]
           })
         ],
         style: table.mdc(),

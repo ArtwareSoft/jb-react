@@ -412,28 +412,6 @@ jb.component('dataTest.pipeWithPromise3', {
   })
 })
 
-jb.component('dataTest.pipeWithObservable', {
-  impl: dataTest({
-    calculate: pipe(ctx => jb.callbag.fromIter([1,2]), '%%a', join({})),
-    expectedResult: equals('1a,2a')
-  })
-})
-
-jb.component('dataTest.callbag.mapPromise', {
-  impl: dataTest({
-    calculate: pipe(ctx => jb.callbag.pipe(jb.callbag.fromIter([1]),jb.callbag.mapPromise(x=>jb.delay(1).then(()=>x))),
-      '%%a'),
-    expectedResult: equals('1a')
-  })
-})
-
-jb.component('dataTest.callbag.interval', {
-  impl: dataTest({
-    calculate: pipe(ctx => jb.callbag.interval(1,3),join(',')),
-    expectedResult: equals('1,2,3')
-  })
-})
-
 jb.component('dataTest.dataSwitch', {
   impl: dataTest({
     calculate: pipeline(

@@ -5,9 +5,9 @@ function jb_run(ctx,parentParam,settings) {
   if (ctx.probe && ctx.probe.outOfTime)
     return
   if (jb.ctxByPath) jb.ctxByPath[ctx.path] = ctx
-  const res = do_jb_run(...arguments);
+  let res = do_jb_run(...arguments);
   if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
-      ctx.probe.record(ctx,res)
+      res = ctx.probe.record(ctx,res) || res
   log('res', [ctx,res,parentParam,settings])
   return res;
 }
@@ -91,16 +91,10 @@ function do_jb_run(ctx,parentParam,settings) {
   }
 
   function prepareGCArgs(ctx,preparedParams) {
-    const delayed = preparedParams.filter(param => {
-      const v = ctx.params[param.name] || {};
-      return jb.isDelayed(v) && param.param.as != 'observable'
-    });
-    if (delayed.length == 0)
-      return [ctx, ...preparedParams.map(param=>ctx.params[param.name])]
-
-    const {pipe,concatMap,fromIter,toPromiseArray} = jb.callbag
-    return pipe(fromIter(preparedParams), concatMap(param=> ctx.params[param.name]), toPromiseArray)
-            .then(ar => [ctx, ...ar])
+    const synched = jb.toSynchArray(preparedParams)
+    if (jb.isPromise(synched))
+      return synched.then(ar => [ctx, ...ar])
+    return [ctx, ...preparedParams.map(param=>ctx.params[param.name])]
   }
 }
 
@@ -741,22 +735,24 @@ Object.assign(jb,{
     })
     return out;
   },
+  isPromise: v => v && Object.prototype.toString.call(v) === '[object Promise]',
   isDelayed: v => {
-    if (!v || v.constructor === {}.constructor) return
+    if (!v || v.constructor === {}.constructor || Array.isArray(v)) return
     else if (typeof v === 'object')
-      return Object.prototype.toString.call(v) === "[object Promise]"
+      return jb.isPromise(v)
     else if (typeof v === 'function')
       return jb.callbag.isCallbag(v)
   },
-  toSynchArray: __ar => {
-    const ar = jb.asArray(__ar)
-    const isSynch = ar.filter(v=> jb.isDelayed(v)).length == 0;
-    if (isSynch) return ar;
+  toSynchArray: item => {
+    if (! jb.asArray(item).find(v=> jb.callbag.isCallbag(v) || jb.isPromise(v))) return item;
+    const {pipe, fromIter, toPromiseArray, mapPromise,flatMap, isCallbag} = jb.callbag
+    if (isCallbag(item)) return toPromiseArray(item)
+    if (Array.isArray(item) && isCallbag(item[0])) return toPromiseArray(item[0])
 
-    const {pipe, fromIter, toPromiseArray, concatMap,flatMap} = jb.callbag
+
     return pipe(
-          fromIter(ar),
-          concatMap(x=>x),
+          fromIter(jb.asArray(item)),
+          mapPromise(x=> Promise.resolve(x)),
           flatMap(v => Array.isArray(v) ? v : [v]),
           toPromiseArray)
   },
@@ -943,13 +939,14 @@ jb.component('call', {
  	}
 })
 
-jb.pipe = function(context,ptName) {
-	const start = [jb.toarray(context.data)[0]]; // use only one data item, the first or null
-	if (typeof context.profile.items == 'string')
-		return context.runInner(context.profile.items,null,'items');
-	const profiles = jb.asArray(context.profile.items || context.profile[ptName]);
-	const innerPath = (context.profile.items && context.profile.items.sugar) ? ''
-		: (context.profile[ptName] ? (ptName + '~') : 'items~');
+jb.pipe = function(ctx,ptName) {
+  let start = jb.toarray(ctx.data)
+  if (start.length == 0) start = [null]
+	if (typeof ctx.profile.items == 'string')
+		return ctx.runInner(ctx.profile.items,null,'items');
+	const profiles = jb.asArray(ctx.profile.items || ctx.profile[ptName]);
+	const innerPath = (ctx.profile.items && ctx.profile.items.sugar) ? ''
+		: (ctx.profile[ptName] ? (ptName + '~') : 'items~');
 
 	if (ptName == '$pipe') // promise pipe
 		return profiles.reduce((deferred,prof,index) =>
@@ -957,19 +954,21 @@ jb.pipe = function(context,ptName) {
     , Promise.resolve(start))
       .then(data=>jb.toSynchArray(data))
 
-	return profiles.reduce((data,prof,index) =>
-		step(prof,index,data), start)
-
+	return profiles.reduce((data,prof,index) => step(prof,index,data), start)
 
 	function step(profile,i,data) {
-    	if (!profile || profile.$disabled) return data;
-		const parentParam = (i < profiles.length - 1) ? { as: 'array'} : (context.parentParam || {}) ;
+    if (!profile || profile.$disabled) return data;
+    const path = innerPath+i
+		const parentParam = (i < profiles.length - 1) ? { as: 'array'} : (ctx.parentParam || {}) ;
 		if (jb.profileType(profile) == 'aggregator')
-			return jb.run( new jb.jbCtx(context, { data: data, profile: profile, path: innerPath+i }), parentParam);
+			return jb.run( new jb.jbCtx(ctx, { data, profile, path }), parentParam);
 		return [].concat.apply([],data.map(item =>
-				jb.run(new jb.jbCtx(context,{data: item, profile: profile, path: innerPath+i}), parentParam))
+				jb.run(new jb.jbCtx(ctx,{data: item, profile, path}), parentParam))
 			.filter(x=>x!=null)
-			.map(x=> Array.isArray(jb.val(x)) ? jb.val(x) : x ));
+			.map(x=> {
+        const val = jb.val(x)
+        return Array.isArray(val) ? val : x 
+      }));
 	}
 }
 
@@ -2398,7 +2397,7 @@ jb.callbag = {
         })
     },
     takeUntil(notifier) {
-        if (Object.prototype.toString.call(notifier) === "[object Promise]")
+        if (jb.isPromise(notifier))
             notifier = jb.callbag.fromPromise(notifier)
         return source => (start, sink) => {
             if (start !== 0) return
@@ -2759,7 +2758,7 @@ jb.callbag = {
         return () => talkback && talkback(2) // dispose
     },
     mapPromise: promiseF => jb.callbag.concatMap(e => jb.callbag.fromPromise(promiseF(e))),
-    toPromise(source) {
+    toPromise: source => {
         return new Promise((resolve, reject) => {
           jb.callbag.subscribe({
             next: resolve,
@@ -2772,7 +2771,7 @@ jb.callbag = {
           })(jb.callbag.last(source))
         })
     },
-    toPromiseArray(source) {
+    toPromiseArray: source => {
         const res = []
         let talkback
         return new Promise((resolve, reject) => {
@@ -2795,7 +2794,7 @@ jb.callbag = {
         if (t === 2) clearInterval(id)
       })
     },
-    startWith: (...xs) => inputSource => (start, sink) => {
+    startWith: (...xs) => source => (start, sink) => {
         if (start !== 0) return
         let disposed = false
         let inputTalkback
@@ -2825,7 +2824,7 @@ jb.callbag = {
       
         if (disposed) return
       
-        inputSource(0, (t, d) => {
+        source(0, (t, d) => {
           if (t === 0) {
             inputTalkback = d
             trackPull = false
@@ -2841,7 +2840,7 @@ jb.callbag = {
     },
     delay: duration => source => (start, sink) => {
         if (start !== 0) return
-        source(0,(t,d)=>{
+        source(0,(t,d) => {
             if (t !== 1) return sink(t,d)
             let id = setTimeout(()=> {
                 clearTimeout(id)
@@ -2850,21 +2849,67 @@ jb.callbag = {
         })
     },
     skip: max => source => (start, sink) => {
-        if (start !== 0) return;
-        let skipped = 0, talkback;
+        if (start !== 0) return
+        let skipped = 0, talkback
         source(0, (t, d) => {
           if (t === 0) talkback = d
           if (t === 1 && skipped < max) {
-              skipped++;
-              talkback(1);
+              skipped++
+              talkback(1)
               return
           }
-          sink(t, d);
-        });
+          sink(t, d)
+        })
+    },
+    sourceSniffer: (cb, snifferSubject) => (start, sink) => {
+      if (start !== 0) return
+      jb.log('snifferStarted',[])
+      cb(0, (t,d) => {
+        snif('out',t,d)
+        sink(t,d)
+      })
+      sink(0,(t,d) => snif('talkback',t,d))
+
+      function snif(dir,t,d) {
+        const now = new Date()
+        const time = `${now.getSeconds()}:${now.getMilliseconds()}`
+        if (t == 1) snifferSubject.next({dir, d, time})
+        if (t == 2) {
+          jb.log('snifferCompleted',[])
+          snifferSubject.complete()
+        }
+      }
+    },
+    sniffer: (cb, snifferSubject) => source => (start, sink) => {
+      if (start !== 0) return
+      jb.log('snifferStarted',[])
+      const cbSource = (start, sink) => {
+        if (start != 0) return
+        source(0, (t,d) => {
+          snif('in',t,d)
+          sink(t,d)
+        })
+      }
+
+      // cbSink
+      cb(cbSource)(0, (t,d) => {
+        snif('out',t,d)
+        sink(t,d)
+      })
+
+      function snif(dir,t,d) {
+        const now = new Date()
+        const time = `${now.getSeconds()}:${now.getMilliseconds()}`
+        if (t == 1) snifferSubject.next({dir, d, time})
+        if (t == 2) {
+          jb.log('snifferCompleted',[])
+          snifferSubject.complete()
+        }
+      }
     },
     fromCallBag: source => source,
     fromAny: (source, name, options) => {
-        const f = source && 'from' + (Object.prototype.toString.call(source) === "[object Promise]" ? 'Promise'
+        const f = source && 'from' + (jb.isPromise(source) ? 'Promise'
             : source.addEventListener ? 'Event'
             : typeof source[Symbol.iterator] === 'function' ? 'Iter'
             : '')
@@ -2875,8 +2920,10 @@ jb.callbag = {
         else
             return jb.callbag.fromIter([source])
     },
-    isCallbag: source => source.toString().split('=>')[0].replace(/\s/g,'').match(/start,sink|t,d/)
+    isCallbag: source => typeof source == 'function' && source.toString().split('=>')[0].replace(/\s/g,'').match(/start,sink|t,d/),
+    isCallbagFunc: source => typeof source == 'function' && source.toString().split('\n')[0].replace(/\s/g,'').match(/source|start,sink|t,d/)
 }
+
 })()
 ;
 
@@ -5256,7 +5303,7 @@ jb.component('text.allowAsynchValue', {
       if (cmp[propId]) return
       let val = jb.ui.toVdomOrStr(ctx.vars.$model[propId])
       if (typeof val == 'function') val = val(cmp.ctx)
-      if (val && Object.prototype.toString.call(val) === "[object Promise]")
+      if (jb.isPromise(val))
         val.then(res=>cmp.refresh({[propId]: jb.ui.toVdomOrStr(res)},{srcCtx: ctx.componentContext}))
     })
   )
@@ -5372,10 +5419,10 @@ jb.component('group.wait', {
   category: 'group:70',
   description: 'wait for asynch data before showing the control',
   params: [
-    {id: 'for', mandatory: true, dynamic: true},
+    {id: 'for', mandatory: true, dynamic: true, description: 'a promise to wait for'},
     {id: 'loadingControl', type: 'control', defaultValue: text('loading ...'), dynamic: true},
     {id: 'error', type: 'control', defaultValue: text('error: %$error%'), dynamic: true},
-    {id: 'varName', as: 'string'}
+    {id: 'varName', as: 'string', description: 'variable for the promise result'}
   ],
   impl: features(
     calcProp({

@@ -49,7 +49,7 @@ jb.component('studio.openEditor', {
         const loc = st.previewjb.comps[comp][jb.location]
         const fn = st.host.locationToPath(loc[0])
         const lineOfComp = (+loc[1]) || 0
-        const pos = jb.textEditor.getPosOfPath(path+'~!profile',st.previewjb)
+        const pos = jb.textEditor.getPosOfPath(path+'~!profile',st.previewjb) || [0,0,0,0]
         pos[0] += lineOfComp; pos[2] += lineOfComp
         jb.studio.vscodeService({$: 'openEditor', path,comp,loc,fn, pos })
     } else {

@@ -1,3 +1,5 @@
+jb.ns('rx')
+
 jb.component('person', { watchableData: {
 	name: "Homer Simpson",
 	male: true,
@@ -165,11 +167,21 @@ jb.component('probeTest.insideActionWithSideEffects', {
   })
 })
 
-
 jb.component('probeTest.filterNoSugar', {
   impl: studioProbeTest({
     circuit: group({controls: text({text: pipeline('hello', filter('%% == \"hello\"'))})}),
     probePath: 'controls~text~items~1~filter'
+  })
+})
+
+jb.component('probeTest.callbag.sniffer', {
+  impl: studioProbeTest({
+    circuit: pipe(rx.pipe(rx.fromIter(list('1', '2', '3', '4')), rx.map('-%%-')), join(',')),
+    probePath: 'items~0~elems~1',
+    expectedOutResult: equals(
+      pipeline(filter('%dir%==out'), join({separator: ',', itemText: '%d%'})),
+      '-1-,-2-,-3-,-4-'
+    )
   })
 })
 

@@ -361,20 +361,23 @@ Object.assign(st,{
 	},
 
 	closestCtxOfLastRun: pathToTrace => {
-		let path = pathToTrace.split('~')
+		let path = pathToTrace.split('~'),res
 		if (pathToTrace.match(/items~0$/) && st.isExtraElem(pathToTrace)) {
 				const pipelineCtx = st.previewjb.ctxByPath[path.slice(0,-2).join('~')]
 				if (pipelineCtx)
-					return pipelineCtx.setVars(pipelineCtx.profile.$vars || {})
+					res = pipelineCtx.setVars(pipelineCtx.profile.$vars || {})
 			}
-		if (pathToTrace.match(/items~[1-9][0-9]*$/) && st.isExtraElem(pathToTrace)) {
+		else if (pathToTrace.match(/items~[1-9][0-9]*$/) && st.isExtraElem(pathToTrace)) {
             const formerIndex = Number(pathToTrace.match(/items~([1-9][0-9]*)$/)[1])-1
 			path[path.length-1] = formerIndex
         }
 
 		for (;path.length > 0 && !st.previewjb.ctxByPath[path.join('~')];path.pop());
 		if (path.length)
-			return st.previewjb.ctxByPath[path.join('~')]
+			res = st.previewjb.ctxByPath[path.join('~')]
+			
+		if (res && (res.profile.$ ||'').indexOf('rx.') != 0) // ignore rx ctxs
+			return res
 	},
 
 	closestTestCtx: pathToTrace => {

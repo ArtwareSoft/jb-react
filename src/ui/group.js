@@ -88,10 +88,10 @@ jb.component('group.wait', {
   category: 'group:70',
   description: 'wait for asynch data before showing the control',
   params: [
-    {id: 'for', mandatory: true, dynamic: true},
+    {id: 'for', mandatory: true, dynamic: true, description: 'a promise to wait for'},
     {id: 'loadingControl', type: 'control', defaultValue: text('loading ...'), dynamic: true},
     {id: 'error', type: 'control', defaultValue: text('error: %$error%'), dynamic: true},
-    {id: 'varName', as: 'string'}
+    {id: 'varName', as: 'string', description: 'variable for the promise result'}
   ],
   impl: features(
     calcProp({
