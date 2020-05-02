@@ -658,7 +658,8 @@ Object.assign(jb,{
     const id = jb.macroName(_id)
     try {
       const errStack = new Error().stack.split(/\r|\n/)
-      const line = errStack.filter(x=>x && !x.match(/<anonymous>|about:blank|tgp-pretty.js|internal\/modules\/cjs|at jb_initWidget|at Object.ui.renderWidget/)).pop()
+      const line = errStack.filter(x=>x && x != 'Error' && !x.match(/at Object.component/)).shift()
+      //const line = errStack.filter(x=>x && !x.match(/<anonymous>|about:blank|tgp-pretty.js|internal\/modules\/cjs|at jb_initWidget|at Object.ui.renderWidget/)).pop()
       comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3)
     
       if (comp.watchableData !== undefined) {

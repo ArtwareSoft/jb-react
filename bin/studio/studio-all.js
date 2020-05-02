@@ -658,7 +658,8 @@ Object.assign(jb,{
     const id = jb.macroName(_id)
     try {
       const errStack = new Error().stack.split(/\r|\n/)
-      const line = errStack.filter(x=>x && !x.match(/<anonymous>|about:blank|tgp-pretty.js|internal\/modules\/cjs|at jb_initWidget|at Object.ui.renderWidget/)).pop()
+      const line = errStack.filter(x=>x && x != 'Error' && !x.match(/at Object.component/)).shift()
+      //const line = errStack.filter(x=>x && !x.match(/<anonymous>|about:blank|tgp-pretty.js|internal\/modules\/cjs|at jb_initWidget|at Object.ui.renderWidget/)).pop()
       comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3)
     
       if (comp.watchableData !== undefined) {
@@ -3400,7 +3401,7 @@ class VNode {
         const attributes = jb.objFromEntries(jb.entries(_attributes).map(e=>[e[0].toLowerCase(),e[1]]))
         let children = (_children === '') ? null : _children
         if (['string','boolean','number'].indexOf(typeof children) !== -1) {
-            attributes.$text = children
+            attributes.$text = ''+children
             children = null
         }
         if (children && typeof children.then == 'function') {
@@ -5383,7 +5384,7 @@ jb.component('group.firstSucceeding', {
   impl: features(
     () => ({calcHash: ctx => jb.asArray(ctx.vars.$model.controls.profile).reduce((res,prof,i) => {
         if (res) return res
-        const found = prof.condition == undefined || ctx.vars.$model.ctx.setVars(ctx.vars).runInner(prof.condition,{ as: 'boolean'},`controls.${i}.condition`)
+        const found = prof.condition == undefined || ctx.vars.$model.ctx.setVars(ctx.vars).runInner(prof.condition,{ as: 'boolean'},`controls~${i}~condition`)
         if (found)
           return i + 1 // avoid index 0
       }, null),
@@ -5394,7 +5395,7 @@ jb.component('group.firstSucceeding', {
       const index = ctx.vars.$props.cmpHash-1
       if (isNaN(index)) return []
       const prof = jb.asArray(ctx.vars.$model.controls.profile)[index]
-      return [ctx.vars.$model.ctx.setVars(ctx.vars).runInner(prof,{type: 'control'},`controls.${index}`)]
+      return [ctx.vars.$model.ctx.setVars(ctx.vars).runInner(prof,{type: 'control'},`controls~${index}`)]
      },
         priority: 5
       })
@@ -37883,10 +37884,10 @@ Object.assign(st,{
 	},
 
 	closestTestCtx: pathToTrace => {
+		const _ctx = new st.previewjb.jbCtx()
 		const compId = pathToTrace.split('~')[0]
 		const statistics = new jb.jbCtx().run(studio.componentStatistics(ctx=>compId))
-		const test = statistics.referredBy && statistics.referredBy.filter(refferer=>st.isOfType(refferer,'test'))[0]
-		const _ctx = new st.previewjb.jbCtx()
+		const test = jb.path(jb.comps[compId],'impl.expectedResult') ? compId : statistics.referredBy && statistics.referredBy.filter(refferer=>st.isOfType(refferer,'test'))[0]
 		if (test)
 			return _ctx.ctx({ profile: {$: test}, comp: test, path: ''})
 		const testData = st.previewjb.comps[compId].testData
@@ -39746,13 +39747,11 @@ jb.component('studio.jbEditorContainer', {
     {id: 'initialSelection', as: 'string', defaultValue: '%$path%'},
     {id: 'circuit', as: 'single', description: 'path or ctx of circuit to run the probe'}
   ],
-  impl: list(
-    variable({
+  impl: variable({
         name: 'jbEditorCntrData',
         value: {'$': 'object', selected: '%$initialSelection%', circuit: '%$circuit%'},
         watchable: true
-      })
-  )
+  })
 })
 
 jb.component('studio.probeResults', {
@@ -39788,20 +39787,10 @@ jb.component('studio.dataBrowse', {
               controls: group({title: '%$obj/length% items', controls: studio.dataBrowse('%%', 200)}),
               style: table.mdc(),
               visualSizeLimit: 7,
-              features: [itemlist.infiniteScroll(), css.height({height: '400', minMax: 'max'})]
+              features: [itemlist.infiniteScroll(), css.height({height: '100%', minMax: 'max'})]
             })
           ),
           controlWithCondition(isNull('%$obj%'), text('null')),
-          controlWithCondition(
-            '%snifferResult%',
-            itemlist({
-              items: '%$obj%',
-              controls: group({title: '%$obj/length% items', controls: studio.dataBrowse('%%', 200)}),
-              style: table.mdc(),
-              visualSizeLimit: 7,
-              features: [itemlist.infiniteScroll(), css.height({height: '400', minMax: 'max'})]
-            })
-          ),
           tree({
             nodeModel: tree.jsonReadOnly('%$obj%', '%$title%'),
             style: tree.expandBox({}),
@@ -39852,52 +39841,81 @@ jb.component('studio.dataBrowse', {
 jb.component('studio.probeDataView', {
   type: 'control',
   impl: group({
-    controls: [
-      itemlist({
-        items: pipeline('%$probeResult%', slice(0, '%$maxItems%')),
+    controls: group({
+      controls: group({
         controls: [
-          group({
-            title: 'in (%$probeResult/length%)',
-            controls: studio.dataBrowse(({data}) => st.previewjb.val(data.in.data)),
-            features: [
-              field.columnWidth(100),
-              field.titleCtrl(
-                button({
-                  title: 'in (%$probeResult/length%)',
-                  action: writeValue('%$maxItems%', '100'),
-                  style: button.href(),
-                  features: [watchRef('%$maxItems%')]
+          controlWithCondition(
+            ({},{probeResult}) => jb.path(probeResult,'0.out.snifferResult'),
+            itemlist({
+              items: '%$probeResult/0/out%',
+              controls: group({
+                title: pipeline(
+                  Var('in', pipeline('%$probeResult/out%', filter('%dir%==in'), count())),
+                  Var('out', pipeline('%$probeResult/out%', filter('%dir%==out'), count())),
+                  'reactive operation: %$in% in, %$out% out'
+                ),
+                controls: group({
+                  layout: layout.flex({
+                    direction: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'stretch'
+                  }),
+                  controls: [
+                    button({
+                      title: '%dir%',
+                      features: feature.icon({
+                        icon: data.if('%dir%==out', 'MessageArrowLeftOutline', 'MessageArrowRightOutline'),
+                        type: 'mdi'
+                      })
+                    }),
+                    text('%d%'),
+                    text({text: '%time%', title: '', style: text.span()})
+                  ]
                 })
-              )
-            ]
-          }),
-          group({
-            title: 'out',
-            controls: studio.dataBrowse('%%'),
-            features: [field.columnWidth(100),
-              group.wait({for: '%out%' })
+              }),
+              style: table.mdc(),
+              visualSizeLimit: 7,
+              features: [itemlist.infiniteScroll(), css.height({height: '400', minMax: 'max'})]
+            })
+          ),
+          itemlist({
+            items: '%$probeResult%',
+            controls: [
+              group({
+                title: 'in (%$probeResult/length%)',
+                controls: studio.dataBrowse(({data}) => st.previewjb.val(data.in.data))
+              }),
+              group({
+                title: 'out',
+                controls: studio.dataBrowse('%$probeResult/out%'),
+                features: field.columnWidth(100)
+              })
+            ],
+            style: table.mdc(),
+            visualSizeLimit: 7,
+            features: [
+              itemlist.infiniteScroll(),
+              css.height({height: '100%', minMax: 'max'}),
+              field.columnWidth(100),
+              css('{white-space: normal}')
             ]
           })
         ],
-        style: table.mdc(),
-        features: [
-          watchRef('%$maxItems%'),
-          feature.if('%$jbEditorCntrData/selected%'),
-          group.wait({
-            for: studio.probeResults('%$jbEditorCntrData/selected%'),
-            loadingControl: text('...'),
-            varName: 'probeResult'
-          }),
-          css('{white-space: normal}')
-        ]
-      })
-    ],
+        features: group.firstSucceeding()
+      }),
+      features: [
+        feature.if('%$jbEditorCntrData/selected%'),
+        group.wait({
+          for: studio.probeResults('%$jbEditorCntrData/selected%'),
+          loadingControl: text('...'),
+          varName: 'probeResult'
+        })
+      ]
+    }),
     features: [
-      css.height({height: '600', overflow: 'auto', minMax: 'max'}),
       watchRef({ref: '%$jbEditorCntrData/selected%', strongRefresh: true}),
       watchRef({ref: '%$studio/pickSelectionCtxId%', strongRefresh: true}),
-      watchRef({ref: '%$studio/refreshProbe%', strongRefresh: true}),
-      variable({name: 'maxItems', value: '5', watchable: true})
+      watchRef({ref: '%$studio/refreshProbe%', strongRefresh: true})
     ]
   })
 })
@@ -40021,7 +40039,7 @@ jb.component('studio.openJbEditor', {
       Var('dialogId', {'$if': '%$newWindow%', then: '', else: 'jb-editor'}),
       Var('fromPath', '%$fromPath%')
     ],
-    style: dialog.studioFloating({id: '%$dialogId%', width: '860', height: '400'}),
+    style: dialog.studioFloating({id: '%$dialogId%', width: '860', height: '100%'}),
     content: studio.jbEditor('%$path%'),
     menu: button({
       action: studio.openJbEditorMenu('%$path%', '%$path%'),
@@ -40042,7 +40060,7 @@ jb.component('studio.openComponentInJbEditor', {
     Var('compPath', split({separator: '~', text: '%$path%', part: 'first'})),
     Var('fromPath', '%$fromPath%'),
     openDialog({
-        style: dialog.studioFloating({id: 'jb-editor', width: '860', height: '400'}),
+        style: dialog.studioFloating({id: 'jb-editor', width: '860', height: '100%'}),
         content: studio.jbEditor('%$compPath%'),
         menu: button({
           action: studio.openJbEditorMenu('%$jbEditorCntrData/selected%', '%$path%'),
@@ -40331,7 +40349,7 @@ Object.assign(st, {
     return doc.querySelector('#preview-box');
   },
   highlightCtx(ctx) {
-      ctx && [st.previewWindow,window].forEach(win=>
+      ctx && [st.previewWindow,window].forEach(win=> win &&
         st.highlightElems(Array.from(win.document.querySelectorAll(`[jb-ctx="${ctx.id}"]`))))
   },
   highlightByScriptPath(path) {
@@ -43129,8 +43147,10 @@ st.Probe = class {
                 jb.log('probe',['completed',pathToTrace, this.result, this.totalTime, this])
                 // make values out of ref
                 this.result.forEach(obj=> { obj.out = jb.val(obj.out) ; obj.in.data = jb.val(obj.in.data)})
-                st.previewjb.watchableValueByRef && st.previewjb.watchableValueByRef.resources(initial_resources,null,{source: 'probe'})
-                initial_comps && st.compsRefHandler.resources(initial_comps,null,{source: 'probe'})
+                if (jb.resources.studio.project) { // studio and probe development
+                    st.previewjb.watchableValueByRef && st.previewjb.watchableValueByRef.resources(initial_resources,null,{source: 'probe'})
+                    initial_comps && st.compsRefHandler.resources(initial_comps,null,{source: 'probe'})
+                }
                 return this
             })
     }

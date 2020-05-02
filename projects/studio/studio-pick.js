@@ -174,7 +174,7 @@ Object.assign(st, {
     return doc.querySelector('#preview-box');
   },
   highlightCtx(ctx) {
-      ctx && [st.previewWindow,window].forEach(win=>
+      ctx && [st.previewWindow,window].forEach(win=> win &&
         st.highlightElems(Array.from(win.document.querySelectorAll(`[jb-ctx="${ctx.id}"]`))))
   },
   highlightByScriptPath(path) {

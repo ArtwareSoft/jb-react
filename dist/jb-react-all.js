@@ -658,7 +658,8 @@ Object.assign(jb,{
     const id = jb.macroName(_id)
     try {
       const errStack = new Error().stack.split(/\r|\n/)
-      const line = errStack.filter(x=>x && !x.match(/<anonymous>|about:blank|tgp-pretty.js|internal\/modules\/cjs|at jb_initWidget|at Object.ui.renderWidget/)).pop()
+      const line = errStack.filter(x=>x && x != 'Error' && !x.match(/at Object.component/)).shift()
+      //const line = errStack.filter(x=>x && !x.match(/<anonymous>|about:blank|tgp-pretty.js|internal\/modules\/cjs|at jb_initWidget|at Object.ui.renderWidget/)).pop()
       comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3)
     
       if (comp.watchableData !== undefined) {
@@ -3400,7 +3401,7 @@ class VNode {
         const attributes = jb.objFromEntries(jb.entries(_attributes).map(e=>[e[0].toLowerCase(),e[1]]))
         let children = (_children === '') ? null : _children
         if (['string','boolean','number'].indexOf(typeof children) !== -1) {
-            attributes.$text = children
+            attributes.$text = ''+children
             children = null
         }
         if (children && typeof children.then == 'function') {
@@ -5383,7 +5384,7 @@ jb.component('group.firstSucceeding', {
   impl: features(
     () => ({calcHash: ctx => jb.asArray(ctx.vars.$model.controls.profile).reduce((res,prof,i) => {
         if (res) return res
-        const found = prof.condition == undefined || ctx.vars.$model.ctx.setVars(ctx.vars).runInner(prof.condition,{ as: 'boolean'},`controls.${i}.condition`)
+        const found = prof.condition == undefined || ctx.vars.$model.ctx.setVars(ctx.vars).runInner(prof.condition,{ as: 'boolean'},`controls~${i}~condition`)
         if (found)
           return i + 1 // avoid index 0
       }, null),
@@ -5394,7 +5395,7 @@ jb.component('group.firstSucceeding', {
       const index = ctx.vars.$props.cmpHash-1
       if (isNaN(index)) return []
       const prof = jb.asArray(ctx.vars.$model.controls.profile)[index]
-      return [ctx.vars.$model.ctx.setVars(ctx.vars).runInner(prof,{type: 'control'},`controls.${index}`)]
+      return [ctx.vars.$model.ctx.setVars(ctx.vars).runInner(prof,{type: 'control'},`controls~${index}`)]
      },
         priority: 5
       })

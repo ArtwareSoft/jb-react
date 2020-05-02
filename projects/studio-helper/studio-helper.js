@@ -1,9 +1,9 @@
 jb.ns('studioHelper,d3g')
-jb.studio.initCompsRefHandler(jb)
-jb.studio.previewWindow = jb.frame
-// fake current path
-jb.delay(100).then(()=>new jb.jbCtx().run(runActions(writeValue('%$studio/project%','studio-helper')),
-  writeValue('%$studio/page%','studio-helper.topBar') ))
+// jb.studio.initCompsRefHandler(jb)
+// jb.studio.previewWindow = jb.frame
+// // fake current path
+// jb.delay(100).then(()=>new jb.jbCtx().run(runActions(writeValue('%$studio/project%','studio-helper')),
+//   writeValue('%$studio/page%','studio-helper.topBar') ))
 
 jb.component('dataTest.parseProjectHtml', {
   impl: dataTest({
@@ -95,6 +95,19 @@ jb.component('studioHelper.jbEditor', {
       })
     ],
     features: [css('{ height: 200px; padding: 50px }'), studio.jbEditorContainer('helper')]
+  })
+})
+
+jb.component('studioHelper.jbEditor.callbag', {
+  type: 'control',
+  impl: group({
+    controls: [
+      studio.jbEditor('dataTest.callbag.pipe~impl')
+    ],
+    features: [
+      css('{ height: 200px; padding: 50px }'),
+      studio.jbEditorContainer({id: 'helper', initialSelection: 'dataTest.callbag.pipe~impl~calculate~items~0~elems~0', circuit: 'dataTest.callbag.pipe'})
+    ]
   })
 })
 

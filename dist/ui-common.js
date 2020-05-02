@@ -1214,7 +1214,7 @@ class VNode {
         const attributes = jb.objFromEntries(jb.entries(_attributes).map(e=>[e[0].toLowerCase(),e[1]]))
         let children = (_children === '') ? null : _children
         if (['string','boolean','number'].indexOf(typeof children) !== -1) {
-            attributes.$text = children
+            attributes.$text = ''+children
             children = null
         }
         if (children && typeof children.then == 'function') {
@@ -3197,7 +3197,7 @@ jb.component('group.firstSucceeding', {
   impl: features(
     () => ({calcHash: ctx => jb.asArray(ctx.vars.$model.controls.profile).reduce((res,prof,i) => {
         if (res) return res
-        const found = prof.condition == undefined || ctx.vars.$model.ctx.setVars(ctx.vars).runInner(prof.condition,{ as: 'boolean'},`controls.${i}.condition`)
+        const found = prof.condition == undefined || ctx.vars.$model.ctx.setVars(ctx.vars).runInner(prof.condition,{ as: 'boolean'},`controls~${i}~condition`)
         if (found)
           return i + 1 // avoid index 0
       }, null),
@@ -3208,7 +3208,7 @@ jb.component('group.firstSucceeding', {
       const index = ctx.vars.$props.cmpHash-1
       if (isNaN(index)) return []
       const prof = jb.asArray(ctx.vars.$model.controls.profile)[index]
-      return [ctx.vars.$model.ctx.setVars(ctx.vars).runInner(prof,{type: 'control'},`controls.${index}`)]
+      return [ctx.vars.$model.ctx.setVars(ctx.vars).runInner(prof,{type: 'control'},`controls~${index}`)]
      },
         priority: 5
       })

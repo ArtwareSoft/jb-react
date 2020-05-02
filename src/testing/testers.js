@@ -125,6 +125,7 @@ jb.component('dataTest', {
 				  return { id: ctx.vars.testID, success: false, reason: 'Exception ' + e}
 			  })
 			  .then(result => { // default cleanup
+				  if (ctx.probe) return
 				  if (expectedCounters)
 					  jb.initSpy({resetSpyToNull: true})
 				  jb.resources = JSON.parse(ctx.vars.initial_resources || '{}'); jb.rebuildRefHandler && jb.rebuildRefHandler();

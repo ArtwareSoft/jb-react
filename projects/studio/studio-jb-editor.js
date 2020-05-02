@@ -49,13 +49,11 @@ jb.component('studio.jbEditorContainer', {
     {id: 'initialSelection', as: 'string', defaultValue: '%$path%'},
     {id: 'circuit', as: 'single', description: 'path or ctx of circuit to run the probe'}
   ],
-  impl: list(
-    variable({
+  impl: variable({
         name: 'jbEditorCntrData',
         value: {'$': 'object', selected: '%$initialSelection%', circuit: '%$circuit%'},
         watchable: true
-      })
-  )
+  })
 })
 
 jb.component('studio.probeResults', {
@@ -91,20 +89,10 @@ jb.component('studio.dataBrowse', {
               controls: group({title: '%$obj/length% items', controls: studio.dataBrowse('%%', 200)}),
               style: table.mdc(),
               visualSizeLimit: 7,
-              features: [itemlist.infiniteScroll(), css.height({height: '400', minMax: 'max'})]
+              features: [itemlist.infiniteScroll(), css.height({height: '100%', minMax: 'max'})]
             })
           ),
           controlWithCondition(isNull('%$obj%'), text('null')),
-          controlWithCondition(
-            '%snifferResult%',
-            itemlist({
-              items: '%$obj%',
-              controls: group({title: '%$obj/length% items', controls: studio.dataBrowse('%%', 200)}),
-              style: table.mdc(),
-              visualSizeLimit: 7,
-              features: [itemlist.infiniteScroll(), css.height({height: '400', minMax: 'max'})]
-            })
-          ),
           tree({
             nodeModel: tree.jsonReadOnly('%$obj%', '%$title%'),
             style: tree.expandBox({}),
@@ -155,52 +143,81 @@ jb.component('studio.dataBrowse', {
 jb.component('studio.probeDataView', {
   type: 'control',
   impl: group({
-    controls: [
-      itemlist({
-        items: pipeline('%$probeResult%', slice(0, '%$maxItems%')),
+    controls: group({
+      controls: group({
         controls: [
-          group({
-            title: 'in (%$probeResult/length%)',
-            controls: studio.dataBrowse(({data}) => st.previewjb.val(data.in.data)),
-            features: [
-              field.columnWidth(100),
-              field.titleCtrl(
-                button({
-                  title: 'in (%$probeResult/length%)',
-                  action: writeValue('%$maxItems%', '100'),
-                  style: button.href(),
-                  features: [watchRef('%$maxItems%')]
+          controlWithCondition(
+            ({},{probeResult}) => jb.path(probeResult,'0.out.snifferResult'),
+            itemlist({
+              items: '%$probeResult/0/out%',
+              controls: group({
+                title: pipeline(
+                  Var('in', pipeline('%$probeResult/out%', filter('%dir%==in'), count())),
+                  Var('out', pipeline('%$probeResult/out%', filter('%dir%==out'), count())),
+                  'reactive operation: %$in% in, %$out% out'
+                ),
+                controls: group({
+                  layout: layout.flex({
+                    direction: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'stretch'
+                  }),
+                  controls: [
+                    button({
+                      title: '%dir%',
+                      features: feature.icon({
+                        icon: data.if('%dir%==out', 'MessageArrowLeftOutline', 'MessageArrowRightOutline'),
+                        type: 'mdi'
+                      })
+                    }),
+                    text('%d%'),
+                    text({text: '%time%', title: '', style: text.span()})
+                  ]
                 })
-              )
-            ]
-          }),
-          group({
-            title: 'out',
-            controls: studio.dataBrowse('%%'),
-            features: [field.columnWidth(100),
-              group.wait({for: '%out%' })
+              }),
+              style: table.mdc(),
+              visualSizeLimit: 7,
+              features: [itemlist.infiniteScroll(), css.height({height: '400', minMax: 'max'})]
+            })
+          ),
+          itemlist({
+            items: '%$probeResult%',
+            controls: [
+              group({
+                title: 'in (%$probeResult/length%)',
+                controls: studio.dataBrowse(({data}) => st.previewjb.val(data.in.data))
+              }),
+              group({
+                title: 'out',
+                controls: studio.dataBrowse('%$probeResult/out%'),
+                features: field.columnWidth(100)
+              })
+            ],
+            style: table.mdc(),
+            visualSizeLimit: 7,
+            features: [
+              itemlist.infiniteScroll(),
+              css.height({height: '100%', minMax: 'max'}),
+              field.columnWidth(100),
+              css('{white-space: normal}')
             ]
           })
         ],
-        style: table.mdc(),
-        features: [
-          watchRef('%$maxItems%'),
-          feature.if('%$jbEditorCntrData/selected%'),
-          group.wait({
-            for: studio.probeResults('%$jbEditorCntrData/selected%'),
-            loadingControl: text('...'),
-            varName: 'probeResult'
-          }),
-          css('{white-space: normal}')
-        ]
-      })
-    ],
+        features: group.firstSucceeding()
+      }),
+      features: [
+        feature.if('%$jbEditorCntrData/selected%'),
+        group.wait({
+          for: studio.probeResults('%$jbEditorCntrData/selected%'),
+          loadingControl: text('...'),
+          varName: 'probeResult'
+        })
+      ]
+    }),
     features: [
-      css.height({height: '600', overflow: 'auto', minMax: 'max'}),
       watchRef({ref: '%$jbEditorCntrData/selected%', strongRefresh: true}),
       watchRef({ref: '%$studio/pickSelectionCtxId%', strongRefresh: true}),
-      watchRef({ref: '%$studio/refreshProbe%', strongRefresh: true}),
-      variable({name: 'maxItems', value: '5', watchable: true})
+      watchRef({ref: '%$studio/refreshProbe%', strongRefresh: true})
     ]
   })
 })
@@ -324,7 +341,7 @@ jb.component('studio.openJbEditor', {
       Var('dialogId', {'$if': '%$newWindow%', then: '', else: 'jb-editor'}),
       Var('fromPath', '%$fromPath%')
     ],
-    style: dialog.studioFloating({id: '%$dialogId%', width: '860', height: '400'}),
+    style: dialog.studioFloating({id: '%$dialogId%', width: '860', height: '100%'}),
     content: studio.jbEditor('%$path%'),
     menu: button({
       action: studio.openJbEditorMenu('%$path%', '%$path%'),
@@ -345,7 +362,7 @@ jb.component('studio.openComponentInJbEditor', {
     Var('compPath', split({separator: '~', text: '%$path%', part: 'first'})),
     Var('fromPath', '%$fromPath%'),
     openDialog({
-        style: dialog.studioFloating({id: 'jb-editor', width: '860', height: '400'}),
+        style: dialog.studioFloating({id: 'jb-editor', width: '860', height: '100%'}),
         content: studio.jbEditor('%$compPath%'),
         menu: button({
           action: studio.openJbEditorMenu('%$jbEditorCntrData/selected%', '%$path%'),

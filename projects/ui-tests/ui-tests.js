@@ -60,6 +60,14 @@ jb.component('uiTest.label', {
   })
 })
 
+jb.component('uiTest.label0', {
+  impl: uiTest({
+    control: text(0),
+    expectedResult: contains('>0<')
+  })
+})
+
+
 jb.component('uiTest.html', {
   impl: uiTest({
     control: html({html: '<p>hello world</p>'}),

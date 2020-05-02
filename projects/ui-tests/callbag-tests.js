@@ -24,7 +24,7 @@ jb.component('dataTest.callbag.pipe', {
 
 jb.component('dataTest.callbag.interval', {
   impl: dataTest({
-    calculate: pipe(rx.pipe(rx.interval(100), rx.take(4), rx.map('-%%-')), join(',')),
+    calculate: pipe(rx.pipe(rx.interval(100), rx.take('4'), rx.map('-%%-')), join(',')),
     expectedResult: equals('-0-,-1-,-2-,-3-')
   })
 })
@@ -43,5 +43,18 @@ jb.component('dataTest.callbag.sniffer', {
       join({separator: ',', itemText: trim()})
     ),
     expectedResult: equals('in 1,out 10,in 2,out 20')
+  })
+})
+
+jb.component('studioHelper.jbEditor.callbag', {
+  type: 'control',
+  impl: group({
+    controls: [
+      studio.jbEditor('dataTest.callbag.pipe~impl')
+    ],
+    features: [
+      css('{ height: 200px; padding: 50px }'),
+      studio.jbEditorContainer({id: 'helper', initialSelection: 'dataTest.callbag.pipe~impl~calculate~items~0~elems~0', circuit: 'dataTest.callbag.pipe'})
+    ]
   })
 })

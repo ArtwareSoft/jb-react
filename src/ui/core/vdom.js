@@ -3,7 +3,7 @@ class VNode {
         const attributes = jb.objFromEntries(jb.entries(_attributes).map(e=>[e[0].toLowerCase(),e[1]]))
         let children = (_children === '') ? null : _children
         if (['string','boolean','number'].indexOf(typeof children) !== -1) {
-            attributes.$text = children
+            attributes.$text = ''+children
             children = null
         }
         if (children && typeof children.then == 'function') {
