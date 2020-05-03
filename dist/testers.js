@@ -6,7 +6,7 @@ jb.test = {
 	dataTestResult(ctx) {
 		return Promise.resolve(jb.test.runInner('runBefore',ctx))
 		.then(_ => jb.test.runInner('calculate',ctx))
-		.then(v => Array.isArray(v) ? jb.toSynchArray(v) : v)
+		.then(v => jb.toSynchArray(v))
 		.then(value => {
 			const success = !! jb.test.runInner('expectedResult',ctx.setData(value))
 			return { success, value}

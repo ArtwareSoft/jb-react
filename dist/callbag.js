@@ -655,7 +655,71 @@ jb.component('rx.var', {
     {id: 'name', as: 'string', mandatory: true},
     {id: 'value', dynamic: true, defaultValue: '%%', mandatory: true},
   ],
-  impl: (ctx,name,value) => source => (start, sink) => start == 0 && source(0, (t, d) => sink(t, t === 1 ? d && d.setVar && d.setVar(name,value(d)) : d))
+  impl: (ctx,name,value) => source => (start, sink) => start == 0 && source(0, (t, d) => sink(t, t === 1 ? d.setVar(name,value(d)) : d))
+})
+
+jb.component('rx.reduce', {
+  type: 'rx',
+  description: 'incrementally aggregates/accumulates data in a variable, e.g. count, concat, max, etc',
+  params: [
+    {id: 'varName', as: 'string', mandatory: true, description: 'the result is accumulated in this var', templateValue: 'acc'},
+    {id: 'initialValue', dynamic: true, description: 'receives first value as input', mandatory: true},
+    {id: 'value', dynamic: true, defaultValue: '%%', description: 'the accumulated var is available. E,g. %$acc%,%% ',  mandatory: true},
+    {id: 'avoidFirst', as: 'boolean', description: 'used for join with separators, initialValue uses the first value without adding the separtor'},
+  ],
+  impl: (ctx,varName,initialValue,value,avoidFirst) => source => (start, sink) => {
+    if (start !== 0) return
+    let acc, first = true
+    source(0, (t, d) => {
+      if (t == 1) {
+        if (first) {
+          acc = initialValue(d)
+          first = false
+          if (!avoidFirst)
+            acc = value(d.setVar(varName,acc))
+        } else {
+          acc = value(d.setVar(varName,acc))
+        }
+        sink(t, acc == null ? d : d.setVar(varName, acc))
+      } else {
+        sink(t, d)
+      }
+    })
+  }
+})
+
+jb.component('rx.count', {
+  params: [
+    {id: 'varName', as: 'string', mandatory: true, defaultValue: 'count'}
+  ],
+  impl: rx.reduce({
+    varName: '%$varName%',
+    initialValue: 0,
+    value: (ctx,{},{varName}) => ctx.vars[varName]+1
+  })
+})
+
+jb.component('rx.join', {
+  params: [
+    {id: 'varName', as: 'string', mandatory: true, defaultValue: 'join'},
+    {id: 'separator', as: 'string', defaultValue: ','}
+  ],
+  impl: rx.reduce({
+    varName: '%$varName%',
+    initialValue: '%%',
+    value: (ctx,{},{varName,separator}) => [ctx.vars[varName],ctx.data].join(separator),
+    avoidFirst: true
+  })
+})
+
+jb.component('rx.max', {
+  params: [
+    {id: 'varName', as: 'string', mandatory: true, defaultValue: 'max'},
+    {id: 'value', dynamic: true, defaultValue: '%%' },
+  ],
+  impl: rx.reduce({
+    varName: '%$varName%', initialValue: Number.NEGATIVE_INFINITY, value: (ctx,{},{varName,value}) => Math.max(ctx.vars[varName],value(ctx))
+  })
 })
 
 
