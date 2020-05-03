@@ -80,7 +80,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       ],
       'callbag': [
         'src/misc/jb-callbag.js',
-        'src/misc/callbag-comps.js',
+        'src/misc/rx-comps.js',
       ],
       'puppeteer': [
         'src/misc/puppeteer/pptr-remote.js',

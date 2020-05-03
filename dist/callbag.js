@@ -625,7 +625,7 @@ jb.component('rx.pipe', {
   params: [
     {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, templateValue: []}
   ],
-  impl: (ctx,elems) => jb.callbag.pipe(...elems)
+  impl: (ctx,elems) => jb.callbag.pipe(...elems, jb.callbag.map(x=>x.data))
 })
 
 jb.component('rx.merge', {
@@ -647,6 +647,19 @@ jb.component('rx.startWith', {
     ],
     impl: (ctx,sources) => jb.callbag.startWith(...sources)
 })
+
+jb.component('rx.var', {
+  type: 'rx',
+  description: 'define a variable that can be used later in the pipe',
+  params: [
+    {id: 'name', as: 'string', mandatory: true},
+    {id: 'value', dynamic: true, defaultValue: '%%', mandatory: true},
+  ],
+  impl: (ctx,name,value) => source => (start, sink) => start == 0 && source(0, (t, d) => sink(t, t === 1 ? d && d.setVar && d.setVar(name,value(d)) : d))
+})
+
+
+// ************ sources
   
 jb.component('rx.fromEvent', {
   type: 'rx',
@@ -656,7 +669,7 @@ jb.component('rx.fromEvent', {
     {id: 'elem', description: 'html element', defaultValue: () => jb.frame.document },
     {id: 'options', description: 'addEventListener options, https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener' },
   ],
-  impl: (ctx,event,elem,options) => jb.callbag.fromEvent(event,elem,options)
+  impl: (ctx,event,elem,options) => jb.callbag.map(x=>ctx.ctx({data:x, profile: '', forcePath: ''}))(jb.callbag.fromEvent(event,elem,options))
 })
 
 jb.component('rx.fromIter', {
@@ -665,7 +678,7 @@ jb.component('rx.fromIter', {
   params: [
     {id: 'iter', mandatory: true, as: 'array', description: 'array or js Iterators or Generators. https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_Generators '},
   ],
-  impl: (ctx,iter) => jb.callbag.fromIter(iter)
+  impl: (ctx,iter) => jb.callbag.map(x=>ctx.ctx({data:x, profile: '', forcePath: ''}))(jb.callbag.fromIter(iter))
 })
 
 jb.component('rx.fromAny', {
@@ -674,7 +687,7 @@ jb.component('rx.fromAny', {
   params: [
     {id: 'source', mandatory: true, description: 'the source is detected by its type: promise, iterable, single, callbag element, etc..'},
   ],
-  impl: (ctx,source) => jb.callbag.fromAny(source || [])
+  impl: (ctx,source) => jb.callbag.map(x=>ctx.ctx({data:x, profile: '', forcePath: ''}))(jb.callbag.fromAny(source || []))
 })
 
 jb.component('rx.fromPromise', {
@@ -683,7 +696,7 @@ jb.component('rx.fromPromise', {
   params: [
     {id: 'promise', mandatory: true},
   ],
-  impl: (ctx,promise) => jb.callbag.fromPromise(promise || Promise.resolve())
+  impl: (ctx,promise) => jb.callbag.map(x=>ctx.ctx({data:x, profile: '', forcePath: ''}))(jb.callbag.fromPromise(promise || Promise.resolve()))
 })
 
 jb.component('rx.interval', {
@@ -692,7 +705,7 @@ jb.component('rx.interval', {
   params: [
     {id: 'interval', as: 'number', templateValue: '1000', description: 'time in mSec'}
   ],
-  impl: (ctx,interval) => jb.callbag.interval(interval)
+  impl: (ctx,interval) => jb.callbag.map(x=>ctx.ctx({data:x, profile: '', forcePath: ''}))(jb.callbag.interval(interval))
 })
 
 // ******** operators *****
@@ -703,7 +716,7 @@ jb.component('rx.do', {
   params: [
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
   ],
-  impl: (ctx,action) => jb.callbag.Do(x => action(ctx.setData(x)))
+  impl: (ctx,action) => jb.callbag.Do(ctx2 => action(ctx2))
 })
 
 jb.component('rx.map', {
@@ -712,7 +725,7 @@ jb.component('rx.map', {
   params: [
     {id: 'func', dynamic: true, mandatory: true},
   ],
-  impl: (ctx,func) => jb.callbag.map(x => func(ctx.setData(x)))
+  impl: (ctx,func) => jb.callbag.map(ctx2 => ctx2.setData(func(ctx2)))
 })
 
 jb.component('rx.filter', {
@@ -721,7 +734,7 @@ jb.component('rx.filter', {
   params: [
     {id: 'filter', type: 'boolean', dynamic: true, mandatory: true},
   ],
-  impl: (ctx,filter) => jb.callbag.map(x => filter(ctx.setData(x)))
+  impl: (ctx,filter) => jb.callbag.map(ctx2 => filter(ctx2))
 })
 
 jb.component('rx.flatMap', {
@@ -730,7 +743,7 @@ jb.component('rx.flatMap', {
   params: [
     {id: 'func', dynamic: true, mandatory: true, description: 'can return array, promise or callbag'},
   ],
-  impl: (ctx,func) => jb.callbag.flatMap(x => func(ctx.setData(x)))
+  impl: (ctx,func) => jb.callbag.flatMap(ctx2 => func(ctx2))
 })
 
 jb.component('rx.concatMap', {
@@ -739,7 +752,7 @@ jb.component('rx.concatMap', {
   params: [
     {id: 'func', dynamic: true, mandatory: true, description: 'keeps the order of the results, can return array, promise or callbag'},
   ],
-  impl: (ctx,func) => jb.callbag.concatMap(x => func(ctx.setData(x)))
+  impl: (ctx,func) => jb.callbag.concatMap(ctx2 => func(ctx2))
 })
 
 jb.component('rx.distinctUntilChanged', {
@@ -749,7 +762,7 @@ jb.component('rx.distinctUntilChanged', {
   params: [
     {id: 'compareFunc', dynamic: true, description: 'default is identical, compare %prev% to %data%'},
   ],
-  impl: (ctx,compareFunc) => jb.callbag.distinctUntilChanged(compareFunc && ((prev, data) => compareFunc(ctx.setData({prev, data}))))
+  impl: (ctx,compareFunc) => jb.callbag.distinctUntilChanged(compareFunc && ((prev, data) => compareFunc(ctx.setData({prev: prev.data, data: data.data}))))
 })
 
 jb.component('rx.catchError', {
@@ -758,7 +771,7 @@ jb.component('rx.catchError', {
     params: [
       {id: 'handler', type: 'action', dynamic: true, mandatory: true },
     ],
-    impl: (ctx,handler) => jb.callbag.catchError(err => handler(ctx.setData(err)))
+    impl: (ctx,handler) => jb.callbag.catchError(ctx2 => handler(ctx2))
 })
 
 jb.component('rx.debounceTime', {
@@ -823,7 +836,7 @@ jb.component('rx.subscribe', {
       {id: 'error', type: 'action', dynamic: true},
       {id: 'complete', type: 'action', dynamic: true},
     ],
-    impl: (ctx,next, error, complete) => jb.callbag.subscribe(x => next(ctx.setData(x)), err => error(ctx.setData(err)), () => complete())
+    impl: (ctx,next, error, complete) => jb.callbag.subscribe(ctx2 => next(ctx2), ctx2 => error(ctx2), () => complete())
 })
 
 

@@ -39791,6 +39791,15 @@ jb.component('studio.dataBrowse', {
               features: [itemlist.infiniteScroll(), css.height({height: '100%', minMax: 'max'})]
             })
           ),
+          controlWithCondition(
+            '%$obj/_parent%',
+            group({
+              layout: layout.flex({spacing: '10'}),
+              controls: [
+                studio.dataBrowse('%$obj/data%')
+              ]
+            })
+          ),
           controlWithCondition(isNull('%$obj%'), text('null')),
           tree({
             nodeModel: tree.jsonReadOnly('%$obj%', '%$title%'),
@@ -39847,39 +39856,66 @@ jb.component('studio.probeDataView', {
         controls: [
           controlWithCondition(
             ({},{probeResult}) => jb.path(probeResult,'0.out.snifferResult'),
-            itemlist({
-              items: '%$probeResult/0/out%',
-              controls: group({
-                title: pipeline(
-                  Var('in', pipeline('%$probeResult/out%', filter('%dir%==in'), count())),
-                  Var('out', pipeline('%$probeResult/out%', filter('%dir%==out'), count())),
-                  'reactive operation: %$in% in, %$out% out'
-                ),
-                controls: group({
-                  layout: layout.flex({
-                    direction: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'stretch'
-                  }),
-                  controls: [
-                    button({
-                      title: '%dir%',
-                      features: [
-                        feature.icon({
-                          icon: data.if('%dir%==out', 'MessageArrowLeftOutline', 'MessageArrowRightOutline'),
-                          type: 'mdi'
+            group({
+              controls: [
+                text({
+                  text: pipeline(
+                    Var('in', pipeline('%$probeResult/out%', filter('%dir%==in'), count())),
+                    Var('out', pipeline('%$probeResult/out%', filter('%dir%==out'), count())),
+                    'reactive operation: %$in% in, %$out% out'
+                  )
+                }),
+                itemlist({
+                  title: '',
+                  items: '%$probeResult/0/out%',
+                  controls: group({
+                    title: pipeline(
+                      Var('in', pipeline('%$probeResult/out%', filter('%dir%==in'), count())),
+                      Var('out', pipeline('%$probeResult/out%', filter('%dir%==out'), count())),
+                      'reactive operation: %$in% in, %$out% out'
+                    ),
+                    controls: group({
+                      layout: layout.flex({spacing: '0'}),
+                      controls: [
+                        group({
+                          title: 'data',
+                          layout: layout.flex({justifyContent: data.if('%dir%==in', 'flex-start', 'flex-end')}),
+                          controls: [
+                            studio.dataBrowse('%d%')
+                          ],
+                          features: [css.width('100%'), css.margin({left: '10'})]
                         }),
-                        css.width('100')
+                        button({
+                          title: '%dir%',
+                          action: openDialog({
+                            id: '',
+                            style: dialog.popup(),
+                            content: group({
+                              controls: [
+                                studio.dataBrowse('%d/vars%')
+                              ]
+                            }),
+                            title: 'variables',
+                            features: dialogFeature.uniqueDialog('variables')
+                          }),
+                          style: button.href(),
+                          features: [css.margin({left: '10'}), feature.hoverTitle('show variables')]
+                        }),
+                        text({
+                          text: '%time%',
+                          title: 'time',
+                          style: text.span(),
+                          features: [css.opacity('0.5'), css.margin({left: '10'})]
+                        })
                       ]
                     }),
-                    text('%d%'),
-                    text({text: '%time%', title: '', style: text.span()})
-                  ]
+                    features: feature.byCondition('%dir%==out', css.color({background: 'lightGray'}))
+                  }),
+                  style: itemlist.ulLi(),
+                  visualSizeLimit: 7,
+                  features: [itemlist.infiniteScroll(), css.height({height: '400', minMax: 'max'})]
                 })
-              }),
-              style: table.mdc(),
-              visualSizeLimit: 7,
-              features: [itemlist.infiniteScroll(), css.height({height: '400', minMax: 'max'})]
+              ]
             })
           ),
           itemlist({
