@@ -25,7 +25,7 @@ jb.component('dataResource.room', {
 jb.component('helloWorld.main', {
   type: 'control',
   impl: group({
-    controls: text({text: 'hello', features: css.borderRadius('11')})
+    controls: text('%$people/age%')
   })
 })
 

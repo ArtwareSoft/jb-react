@@ -39699,6 +39699,7 @@ git push - copy the local repostiry to github's cloud repository`
 (function() {
 const st = jb.studio
 jb.studio.probeResultCustomizers = []
+jb.ns('tree')
 
 jb.component('studio.jbEditorPathForEdit', {
   type: 'data',
@@ -39863,10 +39864,13 @@ jb.component('studio.probeDataView', {
                   controls: [
                     button({
                       title: '%dir%',
-                      features: feature.icon({
-                        icon: data.if('%dir%==out', 'MessageArrowLeftOutline', 'MessageArrowRightOutline'),
-                        type: 'mdi'
-                      })
+                      features: [
+                        feature.icon({
+                          icon: data.if('%dir%==out', 'MessageArrowLeftOutline', 'MessageArrowRightOutline'),
+                          type: 'mdi'
+                        }),
+                        css.width('100')
+                      ]
                     }),
                     text('%d%'),
                     text({text: '%time%', title: '', style: text.span()})

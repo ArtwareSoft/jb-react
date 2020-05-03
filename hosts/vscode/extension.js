@@ -35,7 +35,7 @@ class jBartStudio {
             const editor = vscode.window.activeTextEditor
             editor && this._panel.webview.postMessage({ $: 'studio.profileChanged',
                 line: editor.selection.active.line, col: editor.selection.active.character,
-                fileContent: editor.document.getText()
+                fileContent: { $asIs: editor.document.getText() }
             })
         })
         panel.webview.onDidReceiveMessage(message => {
