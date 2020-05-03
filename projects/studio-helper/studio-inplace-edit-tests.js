@@ -194,7 +194,7 @@ jb.component('test.eventTracker.inStudio', {
 
 jb.component('test.extractComponentDialog.inStudio', {
   params: [
-    {id: 'path', as: 'text', defaultValue: 'hello world'}
+    {id: 'path', as: 'string', defaultValue: 'hello world'}
   ],
   impl: uiTest({
     control: group({

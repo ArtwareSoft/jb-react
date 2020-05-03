@@ -27,7 +27,7 @@ jb.component('dataTest.callbag.pipe', {
 
 jb.component('dataTest.callbag.interval', {
   impl: dataTest({
-    calculate: pipe(rx.pipe(rx.interval(100), rx.take('4'), rx.map('-%%-')), join(',')),
+    calculate: pipe(rx.pipe(rx.interval(1), rx.take('4'), rx.map('-%%-')), join(',')),
     expectedResult: equals('-0-,-1-,-2-,-3-')
   })
 })
@@ -37,7 +37,7 @@ jb.component('dataTest.callbag.var', {
     vars: [Var('a', 'hello')],
     calculate: pipe(
       rx.pipe(
-          rx.interval(100),
+          rx.interval(1),
           rx.take('4'),
           rx.var('origin'),
           rx.map('-%%-'),
@@ -50,6 +50,27 @@ jb.component('dataTest.callbag.var', {
   })
 })
 
+jb.component('dataTest.callbag.reduceCount', {
+  impl: dataTest({
+    calculate: rx.pipe(rx.interval(1),rx.take('4'),rx.count(),rx.map('%$count%'),rx.last() ),
+    expectedResult: equals(4)
+  })
+})
+
+jb.component('dataTest.callbag.reduceMax', {
+  impl: dataTest({
+    calculate: rx.pipe(rx.interval(1),rx.take('4'),rx.max(),rx.map('%$max%'),rx.last()),
+    expectedResult: equals(3)
+  })
+})
+
+jb.component('dataTest.callbag.reduceJoin', {
+  impl: dataTest({
+    calculate: rx.pipe(rx.interval(1),rx.take('4'),rx.join('res',';'),rx.map('%$res%'),rx.last()),
+    expectedResult: equals('0;1;2;3')
+  })
+})
+
 jb.component('dataTest.callbag.sniffer', {
   impl: dataTest({
     calculate: pipe(
@@ -59,6 +80,7 @@ jb.component('dataTest.callbag.sniffer', {
           const ret = toPromiseArray(mySniffer)
           pipe(fromIter([1,2]), sniffer(map(x=>x*10), mySniffer), subscribe(() => {}))
           return ret
+
       },
       '%dir% %d%',
       join({separator: ',', itemText: trim()})
