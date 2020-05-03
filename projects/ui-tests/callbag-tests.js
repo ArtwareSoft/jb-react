@@ -8,7 +8,10 @@ jb.component('dataTest.pipeWithObservable', {
 jb.component('dataTest.callbag.mapPromise', {
   impl: dataTest({
     calculate: pipe(
-      rx.pipe(rx.fromIter(list(1)) ,() => jb.callbag.mapPromise(x=>jb.delay(1).then(()=>x))),
+      rx.pipe(
+          rx.fromIter(list(1)),
+          () => jb.callbag.mapPromise(x=>jb.delay(1).then(()=>x))
+        ),
       '%%a'
     ),
     expectedResult: equals('1a')
@@ -26,6 +29,24 @@ jb.component('dataTest.callbag.interval', {
   impl: dataTest({
     calculate: pipe(rx.pipe(rx.interval(100), rx.take('4'), rx.map('-%%-')), join(',')),
     expectedResult: equals('-0-,-1-,-2-,-3-')
+  })
+})
+
+jb.component('dataTest.callbag.var', {
+  impl: dataTest({
+    vars: [Var('a', 'hello')],
+    calculate: pipe(
+      rx.pipe(
+          rx.interval(100),
+          rx.take('4'),
+          rx.var('origin'),
+          rx.map('-%%-'),
+          rx.map('%$a%;%%;%$origin%'),
+          rx.last()
+        ),
+      join(',')
+    ),
+    expectedResult: equals('hello;-3-;3')
   })
 })
 

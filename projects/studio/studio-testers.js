@@ -65,7 +65,7 @@ jb.component('studioProbeTest', {
     {id: 'probePath', as: 'string'},
     {id: 'allowClosestPath', as: 'boolean', type: 'boolean'},
     {id: 'expectedVisits', as: 'number', defaultValue: -1},
-	  {id: 'expectedOutResult', type: 'boolean', dynamic: true, defaultValue: true},
+    {id: 'expectedOutResult', type: 'boolean', dynamic: true, defaultValue: true}
   ],
   impl: (ctx,circuit,probePath,allowClosestPath,expectedVisits,expectedOutResult)=> {
     st.initTests();
@@ -88,7 +88,7 @@ jb.component('studioProbeTest', {
         if (!res.result[0])
             return failure('no probe results at path ' + probePath)
         if (!expectedOutResult(ctx.setData(res.result[0].out)))
-            return failure('wrong out result ' + JSON.stringify(res.result[0].out))
+            return failure('wrong out result ' + JSON.stringify(res.result[0].out.data))
       } catch(e) {
         jb.logException(e,'jb-path-test',ctx);
         return failure('exception');
