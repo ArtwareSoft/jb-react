@@ -86,7 +86,7 @@ jb.component('pptr.gotoPage', {
     type: 'rx',
     params: [
         {id: 'url', as: 'string', mandatory: true },
-        {id: 'frame', type: 'pptr.frame', defaultValue: pptr.mainFrame() },
+        {id: 'frame', type: 'pptr.frame', dynamic: true, defaultValue: pptr.mainFrame() },
         {id: 'waitUntil', as: 'string', options: [
             'load:load event is fired','domcontentloaded:DOMContentLoaded event is fired',
             'networkidle0:no more than 0 network connections for at least 500 ms',
