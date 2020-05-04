@@ -7,7 +7,9 @@ jb.component('rx.pipe', {
   params: [
     {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, templateValue: []}
   ],
-  impl: (ctx,elems) => jb.callbag.pipe(...elems, jb.callbag.map(x=>x.data))
+  impl: (ctx,elems) => ctx.path.match(/elems~[0-9]+$/) 
+    ? source => jb.callbag.pipe(source, ...elems)
+    : jb.callbag.pipe(...elems, jb.callbag.map(x=>x.data))
 })
 
 jb.component('rx.merge', {

@@ -1,6 +1,6 @@
 if (typeof frame == 'undefined')
   frame = typeof self === 'object' ? self : typeof global === 'object' ? global : {};
-jb = (function() {
+var jb = (function() {
 function jb_run(ctx,parentParam,settings) {
   log('req', [ctx,parentParam,settings])
   if (ctx.probe && ctx.probe.outOfTime)

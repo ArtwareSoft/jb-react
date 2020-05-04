@@ -25,6 +25,33 @@ jb.component('dataTest.callbag.pipe', {
   })
 })
 
+jb.component('dataTest.callbag.pipeInsidePipeWithConcatMap', {
+  impl: dataTest({
+    calculate: ctx => {
+      const {pipe,fromIter, map, concatMap, toPromiseArray} = jb.callbag
+      return toPromiseArray(pipe(fromIter([1,2]), concatMap(x => pipe(fromIter([x]), map(x=>`-${x}-`))))).then(ar=>ar.join(','))
+    },
+    expectedResult: equals('-1-,-2-')
+  })
+})
+
+jb.component('dataTest.callbag.rawPipeInsidePipe', {
+  impl: dataTest({
+    calculate: ctx => {
+      const {pipe,fromIter, map, toPromiseArray} = jb.callbag
+      return toPromiseArray(pipe(fromIter([1,2]), x => pipe(x, map(x=>`-${x}-`)))).then(ar=>ar.join(','))
+    },
+    expectedResult: equals('-1-,-2-')
+  })
+})
+
+jb.component('dataTest.callbag.pipeInsidePipe', {
+  impl: dataTest({
+    calculate: pipe(rx.pipe( rx.fromIter(list('1','2')),rx.pipe(rx.map('-%%-'))),join(',')),
+    expectedResult: equals('-1-,-2-')
+  })
+})
+
 jb.component('dataTest.callbag.interval', {
   impl: dataTest({
     calculate: pipe(rx.pipe(rx.interval(1), rx.take('4'), rx.map('-%%-')), join(',')),
