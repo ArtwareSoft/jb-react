@@ -57,7 +57,7 @@ jb.pptr = {
             if (!st.host) return Promise.resolve()
             return toPromiseArray(pipe(receive,take(1))).then(([m]) =>{
 //                if (m == 'loadCodeReq') {
-                    return 'common,callbag,puppeteer'.split(',').reduce((pr,module) => pr.then(() => {
+                    return 'common,rx,puppeteer'.split(',').reduce((pr,module) => pr.then(() => {
                             const moduleFileName = `${st.host.pathOfDistFolder()}/${module}.js`
                             return st.host.getFile(moduleFileName).then( loadCode => socket.send(JSON.stringify({ loadCode, moduleFileName })))
                         }), Promise.resolve())
