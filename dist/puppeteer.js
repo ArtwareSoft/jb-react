@@ -4,9 +4,12 @@ jb.pptr = {
     createComp(ctx,args) {
         return jb.pptr.hasPptrServer() ? this.createServerComp(ctx,args) : this.createProxyComp(ctx)
     },
+    puppeteer() {
+        return puppeteer
+    },
     getOrCreateBrowser(showBrowser) {
         if (this._browser) return Promise.resolve(this._browser)
-        return this.impl.launch({headless: !showBrowser}).then(browser => this._browser = browser)
+        return this.puppeteer().launch({headless: !showBrowser}).then(browser => this._browser = browser)
     },
     createServerComp(ctx,{showBrowser,actions}) {
         const {subject, subscribe, pipe, mapPromise} = jb.callbag
@@ -14,7 +17,7 @@ jb.pptr = {
             events: subject(),
             commands: subject(),
         }
-        new ctx.frame().jbCtx().setVar('comp',comp).run(
+        ctx.setVar('comp',comp).run(
             rx.pipe(
                 rx.fromPromise(() => this.getOrCreateBrowser(showBrowser)),
                 rx.var('browser'),
@@ -52,13 +55,13 @@ jb.pptr = {
             const st = (jb.path(jb,'studio.studiojb') || jb).studio
             if (!st.host) return Promise.resolve()
             return toPromiseArray(pipe(receive,take(1))).then(([m]) =>{
-                if (m == 'loadCodeReq') {
+//                if (m == 'loadCodeReq') {
                     return 'common,callbag,puppeteer'.split(',').reduce((pr,module) => pr.then(() => {
                             const moduleFileName = `${st.host.pathOfDistFolder()}/${module}.js`
                             return st.host.getFile(moduleFileName).then( loadCode => socket.send(JSON.stringify({ loadCode, moduleFileName })))
                         }), Promise.resolve())
-                        .then(() => socket.send(JSON.stringify({ require: 'puppeteer', writeTo: 'jb.pptr.impl'})))
-                }
+//                        .then(() => socket.send(JSON.stringify({ require: 'puppeteer', writeTo: 'puppeteer'})))
+//                }
             })
         }
     },
