@@ -25,7 +25,7 @@ jb.component('pptr.gotoPage', {
         rx.var('url', ({},{},{url}) => url),
         pptr.logActivity('start navigation','%$url%'),
         rx.do( ({},{page},{url}) => page.goto(url)),
-        rx.map((ctx,{page},{frame}) => frame(page)),
+        rx.map((ctx,{},{frame}) => frame(ctx)),
         rx.var('frame'),
         rx.do( (ctx,{frame},{waitUntil,timeout}) => frame.waitForNavigation({waitUntil, timeout})),
         pptr.logActivity('end navigation','%$url%')
@@ -171,7 +171,7 @@ jb.component('pptr.endlessScrollDown', {
 
 jb.component('pptr.mainFrame', {
     type: 'pptr.frame',
-    impl: () => page => page.mainFrame()
+    impl: (ctx,{page}) => page.mainFrame()
 })
 
 jb.component('pptr.frameByIndex', {
@@ -179,7 +179,7 @@ jb.component('pptr.frameByIndex', {
     params: [
         {id: 'index', as: 'number', defaultValue: 0, mandatory: true}
     ],    
-    impl: (ctx,index) => page => page.frames()[index]
+    impl: (ctx,{page}) => page.frames()[index]
 })
 
 // page.mouse.move(100, 100);
