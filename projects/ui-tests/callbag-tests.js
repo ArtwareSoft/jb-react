@@ -18,6 +18,20 @@ jb.component('dataTest.callbag.mapPromise', {
   })
 })
 
+jb.component('dataTest.callbag.mapPromiseActiveSource', {
+  impl: dataTest({
+    calculate: pipe(
+      rx.pipe(
+          rx.interval(1),
+          rx.take(1),
+          rx.mapPromise(({data}) =>jb.delay(1).then(()=> data+2))
+        ),
+      '%%a'
+    ),
+    expectedResult: equals('2a')
+  })
+})
+
 jb.component('dataTest.callbag.doPromise', {
   impl: dataTest({
     calculate: pipe(
@@ -29,6 +43,21 @@ jb.component('dataTest.callbag.doPromise', {
       '%%a'
     ),
     expectedResult: equals('3a')
+  })
+})
+
+jb.component('dataTest.callbag.doPromiseActiveSource', {
+  impl: dataTest({
+    calculate: pipe(
+      rx.pipe(
+          rx.interval(1),
+          rx.take(1),
+          rx.mapPromise(({data}) =>jb.delay(1).then(()=> data+2)),
+          rx.doPromise(({data})=>jb.delay(1).then(()=>data *10))
+        ),
+      '%%a'
+    ),
+    expectedResult: equals('2a')
   })
 })
 
@@ -59,10 +88,21 @@ jb.component('dataTest.callbag.rawPipeInsidePipe', {
   })
 })
 
-jb.component('dataTest.callbag.pipeInsidePipe', {
+jb.component('dataTest.callbag.innerPipe', {
   impl: dataTest({
-    calculate: pipe(rx.pipe( rx.fromIter(list('1','2')),rx.innerPipe(rx.map('-%%-'))),join(',')),
-    expectedResult: equals('-1-,-2-')
+    calculate: pipe(
+      rx.pipe(
+          rx.interval(1),
+          rx.take(2),
+          rx.innerPipe(
+              rx.mapPromise(pipe(delay(1), '-%%-')),
+              rx.var('a', '-%%-'),
+              rx.map('-%$a%-')
+            )
+        ),
+      join(',')
+    ),
+    expectedResult: equals('---1---,---2---')
   })
 })
 

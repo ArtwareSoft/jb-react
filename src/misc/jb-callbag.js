@@ -290,7 +290,7 @@
           source(0, (t, d) => t === 2 && typeof d !== 'undefined' ? fn(d) : sink(t, d))
       },
       concatMap(_project) {
-          const project = (...args) => jb.callbag.fromAny(_project(...args))
+        const project = (...args) => jb.callbag.fromAny(_project(...args))
           return source => (start, sink) => {
             if (start !== 0) return
             const queue = []
@@ -446,8 +446,8 @@
           })
           return () => talkback && talkback(2) // dispose
       },
-      mapPromise: promiseF => jb.callbag.concatMap(e => jb.callbag.fromPromise(promiseF(e))),
-      doPromise: promiseF => jb.callbag.concatMap(e => jb.callbag.map(()=>e)(jb.callbag.fromPromise(promiseF(e)))),
+      mapPromise: promiseF => source => jb.callbag.flatMap(d => jb.callbag.fromPromise(Promise.resolve(promiseF(d))))(source),
+      doPromise: promiseF => source => jb.callbag.flatMap(d => jb.callbag.fromPromise( Promise.resolve(promiseF(d)).then(()=>d) ))(source),
       toPromise: source => {
           return new Promise((resolve, reject) => {
             jb.callbag.subscribe({

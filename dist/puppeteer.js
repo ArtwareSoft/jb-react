@@ -93,8 +93,9 @@ jb.component('pptr.gotoPage', {
             'networkidle2:no more than 2 network connections for at least 500 ms'].join(',')},
         {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait for in milliseconds' },
     ],
-    impl: rx.innerPipe(rx.mapPromise( (ctx,{browser}) => browser.newPage()),
-        rx.var('page'),
+    impl: rx.innerPipe(
+        rx.mapPromise( (ctx,{browser}) => browser.newPage()),
+        rx.var('page', ({data}) => data),
         rx.var('url', ({},{},{url}) => url),
         pptr.logActivity('start navigation','%$url%'),
         rx.doPromise( ({},{page},{url}) => page.goto(url)),

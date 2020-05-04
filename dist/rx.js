@@ -202,7 +202,7 @@ jb.component('rx.mapPromise', {
   params: [
     {id: 'func', dynamic: true, mandatory: true},
   ],
-  impl: (ctx,func) => jb.callbag.mapPromise(ctx2 => func(ctx2).then(res => ctx2.setData(res)))
+  impl: (ctx,func) => jb.callbag.mapPromise(ctx2 => Promise.resolve(func(ctx2)).then(res => ctx2.setData(res)))
 })
 
 jb.component('rx.filter', {
