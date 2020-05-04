@@ -21,7 +21,8 @@ jb.pptr = {
             rx.pipe(
                 rx.fromPromise(() => this.getOrCreateBrowser(showBrowser)),
                 rx.var('browser'),
-                ...actions()
+                ...actions(),
+                rx.subscribe('')
             )
         )
         pipe(comp.commands, map(cmd=> ctx.run(cmd)), subscribe(() => {}) )
