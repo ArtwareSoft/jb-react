@@ -1,7 +1,7 @@
 jb.ns('rx')
 
 jb.component('rx.pipe', {
-  type: 'rx,data',
+  type: 'rx,data,action',
   category: 'combine',
   description: 'pipeline of reactive observables',
   params: [
@@ -285,9 +285,6 @@ jb.component('rx.subscribe', {
     impl: (ctx,next, error, complete) => jb.callbag.subscribe(ctx2 => next(ctx2), ctx2 => error(ctx2), () => complete())
 })
 
-
-
-
 // ********** subject 
 jb.component('rx.subject', {
     type: 'data',
@@ -304,7 +301,7 @@ jb.component('rx.subjectAsSource', {
     impl: '%$subject%'
 })
 
-jb.component('rx.subject.next', {
+jb.component('rx.subjectNext', {
     type: 'action',
     params: [
         {id: 'subject', dynamic: true, mandatory: true },
@@ -313,7 +310,7 @@ jb.component('rx.subject.next', {
     impl: (ctx,subject,data) => subject().next(data())
 })
 
-jb.component('rx.subject.complete', {
+jb.component('rx.subjectComplete', {
     type: 'action',
     params: [
         {id: 'subject', dynamic: true, mandatory: true },
@@ -321,7 +318,7 @@ jb.component('rx.subject.complete', {
     impl: (ctx,subject) => subject().complete()
 })
 
-jb.component('rx.subject.error', {
+jb.component('rx.subjectError', {
     type: 'action',
     params: [
         {id: 'subject', dynamic: true, mandatory: true },

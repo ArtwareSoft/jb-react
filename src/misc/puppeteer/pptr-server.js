@@ -5,23 +5,18 @@ global.hasPptrServer = true
 
 wss.on('connection', ws => {
   ws.send(JSON.stringify({res: typeof jb == 'undefined' ? 'loadCodeReq' : 'ready'}))
-  ws.on('message', _data => {
+  ws.on('message', _message => {
     try {
-        const data = JSON.parse(_data)
-        if (data.loadCode) {
-            vm.runInThisContext(data.loadCode, data.moduleFileName)
+        const message = JSON.parse(_message)
+        if (message.loadCode) {
+            vm.runInThisContext(message.loadCode, message.moduleFileName)
             global.jb = jb
         }
-        if (data.require) {
-            jb.path(global, data.writeTo, require(data.require))
+        if (message.require) {
+            jb.path(global, message.writeTo, require(message.require))
         }
-        if (data.profile && typeof jb != 'undefined') { 
-            const result = jb.exec(data.profile)
-            const {pipe,fromAny,subscribe} = jb.callbag
-            pipe(fromAny(result && result.em || result), subscribe( { 
-                next: res => ws.send(toJson(res)),
-                complete: () => ws.close()
-            }))
+        if (message.run && typeof jb != 'undefined') { 
+            new jb.jbCtx().setVar('clientSocket',ws).run(message.run)
         }
       } catch(error) {
         ws.send(JSON.stringify({error}))
@@ -30,12 +25,3 @@ wss.on('connection', ws => {
   })
 })
 console.log('opened WS server on', wss.address().port)
-
-function toJson(res,depth) {
-    try {
-        return JSON.stringify({res}) 
-    } catch (error) { // recursive error - return on level down
-        return !depth && 
-            toJson(Object.keys(res).reduce((acc,k) => ({...acc, [k]: res[k] && res[k].toString() }), {}), 1)
-    }
-}

@@ -8,6 +8,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/core/jb-core.js',
         'src/core/jb-macro.js',
         'src/core/jb-common.js',
+        'src/misc/jb-callbag.js',
         'src/misc/spy.js',
       ],
       'ui-common-css': [
@@ -16,7 +17,6 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       ],
       'ui-common': [
         'dist/jb-immutable.js', // the immutable-helper lib
-        'src/misc/jb-callbag.js',
 
         'src/ui/watchable/watchable-ref.js',
         'src/ui/core/vdom.js',
@@ -78,8 +78,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       'fuse': [
         'dist/fuse.js',
       ],
-      'callbag': [
-        'src/misc/jb-callbag.js',
+      'rx': [
         'src/misc/rx-comps.js',
       ],
       'puppeteer': [

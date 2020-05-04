@@ -39,7 +39,7 @@ jb.component('studio.properties', {
   impl: group({
     controls: [
       tableTree({
-        treeModel: (ctx,{},{path}) => new jb.studio.PropertiesTree(path),
+        treeModel: (ctx,{},{path}) => Object.assign(new jb.studio.PropertiesTree(path),{maxDepth: 7}),
         commonFields: [
           group({
             controls: studio.propField('%path%', '%expanded%'),

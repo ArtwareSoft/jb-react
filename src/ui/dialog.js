@@ -55,12 +55,16 @@ jb.component('dialogFeature.dragTitle', {
 	  {id: 'selector', as: 'string', defaultValue: '.dialog-title'},
 	],
 	impl: function(context, id,selector) {
-
 		  const dialog = context.vars.$dialog;
-		  const {pipe,takeUntil,merge,Do, map,flatMap, subscribe} = jb.callbag
+		  const {pipe,takeUntil,merge, map,flatMap, subscribe} = jb.callbag
 		  return {
 				 css: `${selector} { cursor: pointer }`,
 				 afterViewInit: function(cmp) {
+					if (id && jb.sessionStorage(id)) {
+						const pos = JSON.parse(jb.sessionStorage(id))
+						dialog.el.style.top  = pos.top  + 'px';
+						dialog.el.style.left = pos.left + 'px';
+					}
 					const titleElem = cmp.base.querySelector(selector);
 					cmp.mousedownEm = jb.ui.fromEvent(cmp, 'mousedown',titleElem,{capture: true})
 					let mouseUpEm = jb.ui.fromEvent(cmp, 'mouseup', document)

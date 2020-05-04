@@ -66,7 +66,13 @@ jb.component('dataTest.callbag.reduceMax', {
 
 jb.component('dataTest.callbag.reduceJoin', {
   impl: dataTest({
-    calculate: rx.pipe(rx.interval(1),rx.take('4'),rx.join('res',';'),rx.map('%$res%'),rx.last()),
+    calculate: rx.pipe(
+      rx.interval(1),
+      rx.take('4'),
+      rx.join('res', ';'),
+      rx.map('%$res%'),
+      rx.last()
+    ),
     expectedResult: equals('0;1;2;3')
   })
 })

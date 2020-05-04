@@ -451,7 +451,7 @@ jb.component('studio.projectSettings', {
         title: 'Libs (%$studio/libsAsArray/length%)',
         databind: '%$studio/libsAsArray%',
         options: picklist.optionsByComma(
-          'remote,codemirror,fuse,animate,cards,cards-sample-data,d3,dragula,md-icons,material,pretty-print,xml,jison,parsing,puppeteer',
+          'remote,codemirror,fuse,animate,cards,cards-sample-data,d3,dragula,md-icons,material,pretty-print,xml,jison,parsing,puppeteer,rx',
           ''
         ),
         style: multiSelect.chips(),

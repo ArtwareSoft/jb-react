@@ -1,67 +1,38 @@
 jb.pptr = { 
-    hasPptrServer: typeof hasPptrServer != 'undefined',
-    createProxySocket: () => new WebSocket(`ws:${(jb.studio.studioWindow || jb.frame).location.hostname || 'localhost'}:8090`)
-}
-
-Object.assign(jb.pptr, {
-    createComp(ctx,url,extract,featuresF) {
-        const comp = jb.pptr.hasPptrServer ? this.createServerComp(...arguments) : this.createProxyComp(ctx)
-        comp.dataEm = jb.callbag.filter(e => e.$ == 'result-data')(comp.em)
-        jb.callbag.subscribe(e => comp.results.push(e.data))(comp.dataEm)
-        return comp
-    },
-    closeBrowser() {
-        if (jb.pptr.hasPptrServer) {
-            this._browser && this._browser.close()
-        } else {
-            socket = jb.pptr.createProxySocket()
-            socket.onopen = () => socket.send(JSON.stringify({profile: {$: 'pptr.closeBrowser'}}))
-        }
-    },
-    createServerComp(ctx,url,extract,featuresF,showBrowser) {
-        const {pipe,last,subject,subscribe} = jb.callbag
-        const comp = {
-            em: subject(),
-            results: [],
-            endSession() {
-                comp.em.next({profile: extract.ctx.profile, path: extract.ctx.path}) // for debug/logs
-                return Promise.resolve(extract.do(comp)).then(x=> {
-                    jb.asArray(x).forEach(data=>comp.em.next({$: 'result-data', data}));
-                    comp.em.complete()
-                })
-            }
-        }
-
-        this.getOrCreateBrowser(showBrowser)
-            .then(browser => browser.newPage())
-            .then(page=> (comp.page = page).goto(url))
-            .then(()=>applyFeatures())
-            .catch(e => console.log(e))
-
-        pipe(comp.em, last(), subscribe(e=> {
-            this.prevPage && this.prevPage.close() 
-            this.prevPage = comp.page
-        }))
-
-        return comp
-
-        function applyFeatures() {
-            const features= featuresF().filter(x=>x);
-            features.forEach((f,i)=>f.index = i)
-            features.filter(f=>f && !f.phase).forEach(f=>Object.assign(comp,f))
-            const sortedFeatures = features.filter(f=>f.phase).sort((x1,x2) => x2.phase * 1000 + x2.index - x1.phase*1000 - x1.index)
-            if (sortedFeatures.length == 0)
-                comp.endSession()
-            return sortedFeatures.reduce((pr,feature) => pr.then(()=>comp.em.next({feature})).then(feature.do(comp)), Promise.resolve())
-        }
+    hasPptrServer: () => typeof hasPptrServer != 'undefined',
+    createProxySocket: () => new WebSocket(`ws:${(jb.studio.studioWindow || jb.frame).location.hostname || 'localhost'}:8090`),
+    createComp(ctx,args) {
+        return jb.pptr.hasPptrServer() ? this.createServerComp(ctx,args) : this.createProxyComp(ctx)
     },
     getOrCreateBrowser(showBrowser) {
         if (this._browser) return Promise.resolve(this._browser)
         return this.impl.launch({headless: !showBrowser}).then(browser => this._browser = browser)
     },
+    createServerComp(ctx,{showBrowser,actions}) {
+        const {subject, subscribe, pipe, mapPromise} = jb.callbag
+        const comp = {
+            events: subject(),
+            commands: subject(),
+        }
+        new ctx.frame().jbCtx().setVar('comp',comp).run(
+            rx.pipe(
+                rx.fromPromise(() => this.getOrCreateBrowser(showBrowser)),
+                rx.var('browser'),
+                ...actions
+            )
+        )
+        pipe(comp.commands, mapPromise(cmd=> Promise.resolve(ctx.run(cmd))), subscribe(() => {}) )
+        pipe(comp.events, subscribe( ev => ctx.vars.clientSocket.send(eventToJson(ev))))
+        return comp
+
+        function eventToJson(ev) {
+            const vars = jb.objFromEntries(jb.entries(jb.path(ev,'ctx.vars')).filter(e=> ['string','boolean','number'].indexOf(typeof e[1]) != -1))
+            return JSON.stringify({ ...ev, ctx: null, data: (ev.ctx || {}).data, vars })
+        }
+    },
     createProxyComp(ctx) {
-        const {pipe,skip,take,toPromiseArray,subject} = jb.callbag
-        const receive = subject()
+        const {pipe,skip,take,toPromiseArray,subject,subscribe} = jb.callbag
+        const receive = subject(), commands = subject()
         const socket = jb.pptr.createProxySocket()
         socket.onmessage = ({data}) => {
             const _data = JSON.parse(data)
@@ -71,8 +42,11 @@ Object.assign(jb.pptr, {
         }
         socket.onerror = e => receive.error(e)
         socket.onclose = () => receive.complete()
-        socket.onopen = () => loadServerCode().then(() => socket.send(JSON.stringify({profile: ctx.profile})))
-        return { em: skip(1)(receive), results: [] }
+        socket.onopen = () => loadServerCode().then(()=> commands.next({run: ctx.profile}))
+        
+        pipe(commands, subscribe(cmd => socket.send(JSON.stringify(cmd))))
+
+        return { events: skip(1)(receive), commands }
 
         function loadServerCode() {
             const st = (jb.path(jb,'studio.studiojb') || jb).studio
@@ -83,116 +57,155 @@ Object.assign(jb.pptr, {
                             const moduleFileName = `${st.host.pathOfDistFolder()}/${module}.js`
                             return st.host.getFile(moduleFileName).then( loadCode => socket.send(JSON.stringify({ loadCode, moduleFileName })))
                         }), Promise.resolve())
-                        .then(() => {
-                            const moduleFileName = st.host.pathOfDistFolder().replace(/\/dist$/,'/src/misc/puppeteer/puppeteer.js')
-                            return st.host.getFile(moduleFileName).then( loadCode => socket.send(JSON.stringify({ loadCode, moduleFileName })))
-                        })
                         .then(() => socket.send(JSON.stringify({ require: 'puppeteer', writeTo: 'jb.pptr.impl'})))
                 }
             })
         }
     },
-})
+}
+
+
 ;
 
-jb.ns('pptr')
+jb.ns('pptr,rx')
 
-jb.component('pptr.headlessPage', {
-    type: 'pptr.page',
+jb.component('pptr.session', {
+    type: 'rx',
+    params: [
+        {id: 'showBrowser', as: 'boolean' },
+        {id: 'actions', type: 'rx[]', dynamic: true, templateValue: [] },
+    ],
+    impl: (ctx,showBrowser,actions) => jb.pptr.createComp(ctx,{showBrowser, actions})
+})
+
+jb.component('pptr.gotoPage', {
+    type: 'rx',
     params: [
         {id: 'url', as: 'string', mandatory: true },
-        {id: 'extract', type: 'pptr.extract', defaultValue: pptr.extractContent('body') },
-        {id: 'features', type: 'pptr.feature[]', as: 'array', dynamic: true ,flattenArray: true},
-        {id: 'showBrowser', as: 'boolean' },
+        {id: 'frame', type: 'pptr.frame', defaultValue: pptr.mainFrame() },
+        {id: 'waitUntil', as: 'string', options: [
+            'load:load event is fired','domcontentloaded:DOMContentLoaded event is fired',
+            'networkidle0:no more than 0 network connections for at least 500 ms',
+            'networkidle2:no more than 2 network connections for at least 500 ms'].join(',')},
+        {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait for in milliseconds' },
     ],
-    impl: (...args) => jb.pptr.createComp(...args)
+    impl: rx.pipe(rx.fromPromise( (ctx,{browser}) => browser.newPage()),
+        rx.var('page'),
+        rx.var('url', ({},{},{url}) => url),
+        pptr.logActivity('start navigation','%$url%'),
+        rx.do( ({},{page},{url}) => page.goto(url)),
+        rx.mapPromise((ctx,{page},{frame}) => frame(page)),
+        rx.var('frame'),
+        rx.do( (ctx,{frame},{waitUntil,timeout}) => frame.waitForNavigation({waitUntil, timeout})),
+        pptr.logActivity('end navigation','%$url%')
+    )
 })
 
-jb.component('pptr.htmlFromPage', {
-    type: 'data',
+jb.component('pptr.logData', {
+    type: 'rx',
+    impl: rx.do((ctx,{comp}) => comp.events.next({$: 'result-data', ctx }))
+})
+
+jb.component('pptr.logActivity', {
+    type: 'rx',
     params: [
-        {id: 'page', type: 'pptr.page', mandatory: true, dynamic: true },
+        {id: 'activity', as: 'string', mandatory: true },
+        {id: 'description', as: 'string' },
     ],
-    impl: (ctx,page) => {
-        const cmp = page()
-        return jb.callbag.toPromiseArray(cmp.em).then(() => cmp.results)
-    }
+    impl: rx.do((ctx,{comp},{activity, description}) => comp.events.next({$: activity, description, ctx }))
 })
 
-jb.component('pptr.endSession', {
-    type: 'action',
-    impl: ctx => ctx.vars.pptrPage && ctx.vars.pptrPage.endSession()
-})
-
-jb.component('pptr.closeBrowser', {
-    type: 'action',
-    impl: () => jb.pptr.closeBrowser()
-})
-
-jb.component('pptr.extractContent', {
-    type: 'pptr.extract',
+jb.component('pptr.extractWithSelector', {
+    type: 'rx',
     params: [
         {id: 'selector', as: 'string' },
         {id: 'extract', as: 'string', options: 'value,innerHTML,outerHTML,href', defaultValue: 'innerHTML'},
         {id: 'multiple', as: 'boolean' },
     ],
-    impl: (ctx,selector,extract,multiple) => ({ ctx, do: 
-        ({page}) => page.evaluate(`_jb_extract = '${extract}'`).then(()=>
-                multiple? page.$$eval(selector, elems => elems.map(el=>el[_jb_extract])): 
-                page.$eval(selector, el => el[_jb_extract]))
-        })
+    impl: rx.pipe(rx.fromPromise((ctx,{frame},{selector,extract,multiple}) => 
+        frame.evaluate(`_jb_extract = '${extract}'`).then(()=>
+                multiple ? frame.$$eval(selector, elems => elems.map(el=>el[_jb_extract]))
+                : frame.$eval(selector, el => [el[_jb_extract]] ))), 
+                rx.flatMap('%%'), 
+                pptr.logData()
+            )
 })
 
-jb.component('pptr.evaluate', {
-    type: 'pptr.feature',
-    description: 'evaluate in page context',
+jb.component('pptr.extractWithEval', {
+    type: 'rx',
+    description: 'evaluate javascript expression',
     params: [
         {id: 'expression', as: 'string'},
-        {id: 'phase', as: 'number', defaultValue: 3, description: 'feature activation order'},
-        {id: 'whenDone', type: 'action', dynamic: true },
-        {id: 'frame', type: 'pptr.frame', defaultValue: pptr.mainFrame() },
     ],
-    impl: (ctx,expression,phase,whenDone,frame) => ({ ctx, phase, do: cmp => frame(cmp.page).evaluate(expression).then(() => whenDone(ctx.setVar('pptrPage',cmp))) })
+    impl: rx.pipe(rx.fromPromise((ctx,{frame},{expression}) => frame.evaluate(expression)), pptr.logData())
 })
 
-jb.component('pptr.repeatingAction', {
-    type: 'pptr.feature',
+jb.component('pptr.eval', {
+    type: 'rx',
+    description: 'evaluate javascript expression',
     params: [
-        {id: 'action', as: 'string' },
-        {id: 'intervalTime', as: 'number', defaultValue: 500 },
-        {id: 'phase', as: 'number', defaultValue: 100, description: 'feature activation order'}
+        {id: 'expression', as: 'string'},
     ],
-    impl: pptr.evaluate('setInterval(() => { %$action% } ,%$intervalTime%)','%$phase%')
+    impl: rx.fromPromise((ctx,{frame},{expression}) => frame.evaluate(expression))
 })
 
-jb.component('pptr.click', {
-    type: 'pptr.feature',
+jb.component('pptr.mouseClick', {
+    type: 'rx',
     params: [
         {id: 'selector', as: 'string' },
-        {id: 'phase', as: 'number', defaultValue: 100, description: 'feature activation order'},
-        {id: 'whenDone', type: 'action', dynamic: true },
         {id: 'button', as: 'string', options:'left,right,middle'},
         {id: 'clickCount', as: 'number', description: 'default is 1' },
         {id: 'delay', as: 'number', description: 'Time to wait between mousedown and mouseup in milliseconds. Defaults to 0' },
-        {id: 'frame', type: 'pptr.frame', defaultValue: pptr.mainFrame() },
     ],
-    impl: (ctx,selector,phase,whenDone,button,clickCount,delay,frame) => ({ ctx, phase, do: cmp => 
-        frame(cmp.page).click(selector, {button,clickCount,delay}).then(() => whenDone(ctx.setVar('pptrPage',cmp))) })
+    impl: rx.fromPromise((ctx,{frame},{selector,button,clickCount,delay}) => frame.click(selector, {button,clickCount,delay}))
 })
 
 jb.component('pptr.waitForFunction', {
-    type: 'pptr.feature',
+    type: 'rx',
     params: [
         {id: 'condition', as: 'string' },
         {id: 'polling', type: 'pptr.polling', defaultValue: pptr.raf() },
         {id: 'timeout', as: 'number', defaultValue: 30000, description: '0 to disable, maximum time to wait for in milliseconds' },
-        {id: 'whenDone', type: 'action', dynamic: true, templateValue: pptr.endSession() },
-        {id: 'frame', type: 'pptr.frame', defaultValue: pptr.mainFrame() },
-        {id: 'phase', as: 'number', defaultValue: 10, description: 'phase of registration'}
     ],
-    impl: (ctx,condition,polling,timeout,whenDone,frame,phase) => 
-        ({ ctx, phase, do: cmp => frame(cmp.page).waitForFunction(condition,{polling, timeout})
-            .then(() => whenDone(ctx.setVar('pptrPage',cmp))) })
+    impl: rx.fromPromise((ctx,{frame},{condition,polling,timeout}) => frame.waitForFunction(condition,{polling, timeout}))
+})
+
+jb.component('pptr.waitForSelector', {
+    type: 'rx',
+    params: [
+        {id: 'selector', as: 'string' },
+        {id: 'visible', as: 'boolean', description: 'wait for element to be present in DOM and to be visible, i.e. to not have display: none or visibility: hidden CSS properties' },
+        {id: 'hidden ', as: 'boolean', description: 'wait for element to not be found in the DOM or to be hidden' },
+        {id: 'whenDone', type: 'action', dynamic: true, templateValue: pptr.endSession() },
+        {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait for in milliseconds' },
+    ],
+    impl: rx.fromPromise((ctx,{frame},{selector,visible,hidden, timeout}) => frame.waitForSelector(selector,{visible,hidden, timeout}))
+})
+
+jb.component('pptr.waitForNavigation', {
+    type: 'rx',
+    params: [
+        {id: 'waitUntil', as: 'string', options: [
+            'load:load event is fired','domcontentloaded:DOMContentLoaded event is fired',
+            'networkidle0:no more than 0 network connections for at least 500 ms',
+            'networkidle2:no more than 2 network connections for at least 500 ms'].join(',')},
+        {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait for in milliseconds' },
+    ],
+    impl: rx.fromPromise((ctx,{frame},{waitUntil,timeout}) => frame.waitForNavigation({waitUntil, timeout}))
+})
+
+jb.component('pptr.closeBrowser', {
+    type: 'action',
+    impl: (ctx,{browser}) => browser.close()
+})
+
+jb.component('pptr.repeatingAction', {
+    type: 'pptr.action',
+    params: [
+        {id: 'action', as: 'string' },
+        {id: 'intervalTime', as: 'number', defaultValue: 500 },
+    ],
+    impl: pptr.eval('setInterval(() => { %$action% } ,%$intervalTime%)')
 })
 
 jb.component('pptr.interval', {
@@ -216,87 +229,11 @@ jb.component('pptr.mutation', {
     impl: () => 'mutation'
 })
 
-jb.component('pptr.waitForSelector', {
-    type: 'pptr.feature',
-    params: [
-        {id: 'selector', as: 'string' },
-        {id: 'visible', as: 'boolean', description: 'wait for element to be present in DOM and to be visible, i.e. to not have display: none or visibility: hidden CSS properties' },
-        {id: 'hidden ', as: 'boolean', description: 'wait for element to not be found in the DOM or to be hidden' },
-        {id: 'whenDone', type: 'action', dynamic: true, templateValue: pptr.endSession() },
-        {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait for in milliseconds' },
-        {id: 'frame', type: 'pptr.frame', defaultValue: pptr.mainFrame() },
-        {id: 'phase', as: 'number', defaultValue: 10, description: 'phase of registration'}
-    ],
-    impl: (ctx,selector,visible,hidden,whenDone,timeout,frame,phase) => 
-        ({ ctx, phase, 
-            do: cmp => frame(cmp.page).waitForSelector(selector,{visible,hidden, timeout}).then(()=>whenDone(ctx.setVar('pptrPage',cmp))) 
-        })
-})
-
-jb.component('pptr.waitForNavigation', {
-    type: 'pptr.feature',
-    params: [
-        {id: 'waitUntil', as: 'string', options: [
-            'load:load event is fired','domcontentloaded:DOMContentLoaded event is fired',
-            'networkidle0:no more than 0 network connections for at least 500 ms',
-            'networkidle2:no more than 2 network connections for at least 500 ms'].join(',')},
-        {id: 'whenDone', type: 'action', dynamic: true, templateValue: pptr.endSession() },
-        {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait for in milliseconds' },
-        {id: 'frame', type: 'pptr.frame', defaultValue: pptr.mainFrame() },
-        {id: 'phase', as: 'number', defaultValue: 10, description: 'phase of registration'}
-    ],
-    impl: (ctx,waitUntil,whenDone,timeout,phase) => 
-        ({ ctx, phase, do: cmp => frame(cmp.page).waitForNavigation({waitUntil, timeout}).then(()=>whenDone(ctx.setVar('pptrPage',cmp)))})
-})
-
-jb.component('pptr.delay', {
-    type: 'pptr.feature',
-    params: [
-      {id: 'mSec', as: 'number', defaultValue: 1},
-      {id: 'phase', as: 'number', defaultValue: 10, description: 'phase of registration'},
-      {id: 'whenDone', type: 'action', dynamic: true },
-    ],
-    impl: (ctx,mSec,phase) => ({ ctx, phase, do: cmp => jb.delay(mSec).then(()=>whenDone(ctx.setVar('pptrPage',cmp))) })
-})
-
-jb.component('pptr.pageId', {
-    type: 'pptr.feature',
-    params: [
-        {id: 'id', as: 'string' },
-    ],
-    impl: ctx => ctx.params
-})
-
-jb.component('pptr.features', {
-    type: 'pptr.feature',
-    params: [
-        {id: 'features', type: 'pptr.feature[]', as: 'array', dynamic: true ,flattenArray: true},
-    ],
-    impl: (ctx,features)=>features()
-})
-
 jb.component('pptr.endlessScrollDown', {
     type: 'pptr.feature',
-    impl: ctx => ctx.run(pptr.features(
+    impl: rx.pipe(
         pptr.repeatingAction('window.scrollPos = window.scrollPos || []; window.scrollPos.push(window.scrollY); window.scrollTo(0,document.body.scrollHeight)' ,500),
         pptr.waitForFunction('window.scrollPos && Math.max.apply(0,window.scrollPos.slice(-4)) == Math.min.apply(0,window.scrollPos.slice(-4))'))
-    )
-})
-
-// ************ control *******
-
-jb.component('pptr.control', {
-    type: 'control',
-    params: [
-      {id: 'page', type: 'pptr.page', mandatory: true, dynamic: true },
-    ],
-    impl: (ctx,page) => {
-        const comp = page()
-        return ctx.run(html({
-            html: () => comp.results.join(''),
-            features: watchObservable(() => comp.dataEm)
-        })) 
-    }
 })
 
 // ************ frames *********
@@ -312,7 +249,12 @@ jb.component('pptr.frameByIndex', {
         {id: 'index', as: 'number', defaultValue: 0, mandatory: true}
     ],    
     impl: (ctx,index) => page => page.frames()[index]
-});
+})
+
+// page.mouse.move(100, 100);
+// page.mouse.down();
+// page.mouse.move(200, 200);
+// page.mouse.up();;
 
 jb.ns('pptr')
 

@@ -660,7 +660,7 @@ Object.assign(jb,{
       const errStack = new Error().stack.split(/\r|\n/)
       const line = errStack.filter(x=>x && x != 'Error' && !x.match(/at Object.component/)).shift()
       //const line = errStack.filter(x=>x && !x.match(/<anonymous>|about:blank|tgp-pretty.js|internal\/modules\/cjs|at jb_initWidget|at Object.ui.renderWidget/)).pop()
-      comp[jb.location] = (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3)
+      comp[jb.location] = line ? (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
     
       if (comp.watchableData !== undefined) {
         jb.comps[jb.addDataResourcePrefix(id)] = comp
@@ -822,7 +822,7 @@ Object.assign(jb,{
   isWatchable: () => false, // overriden by the watchable-ref.js (if loaded)
   isValid: ref => jb.safeRefCall(ref, h=>h.isValid(ref)),
   refreshRef: ref => jb.safeRefCall(ref, h=>h.refresh(ref)),
-  sessionStorage: (id,val) => val == undefined ? jb.frame.sessionStorage[id] : jb.frame.sessionStorage[id] = val,
+  sessionStorage: (id,val) => val == undefined ? jb.frame.sessionStorage.getItem(id) : jb.frame.sessionStorage.setItem(id,val),
   exec: (...args) => new jb.jbCtx().run(...args),
   exp: (...args) => new jb.jbCtx().exp(...args),
   execInStudio: (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.jbCtx().run(...args)
