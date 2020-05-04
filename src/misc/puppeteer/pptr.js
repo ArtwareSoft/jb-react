@@ -20,21 +20,21 @@ jb.component('pptr.gotoPage', {
             'networkidle2:no more than 2 network connections for at least 500 ms'].join(',')},
         {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait for in milliseconds' },
     ],
-    impl: rx.innerPipe(rx.map( (ctx,{browser}) => browser.newPage()),
+    impl: rx.innerPipe(rx.mapPromise( (ctx,{browser}) => browser.newPage()),
         rx.var('page'),
         rx.var('url', ({},{},{url}) => url),
         pptr.logActivity('start navigation','%$url%'),
-        rx.do( ({},{page},{url}) => page.goto(url)),
-        rx.map((ctx,{},{frame}) => frame(ctx)),
+        rx.doPromise( ({},{page},{url}) => page.goto(url)),
+        rx.mapPromise((ctx,{},{frame}) => frame(ctx)),
         rx.var('frame'),
-        rx.do( (ctx,{frame},{waitUntil,timeout}) => frame.waitForNavigation({waitUntil, timeout})),
+        rx.doPromise( (ctx,{frame},{waitUntil,timeout}) => frame.waitForNavigation({waitUntil, timeout})),
         pptr.logActivity('end navigation','%$url%')
     )
 })
 
 jb.component('pptr.logData', {
     type: 'rx',
-    impl: rx.do((ctx,{comp}) => comp.events.next({$: 'result-data', ctx }))
+    impl: rx.doPromise((ctx,{comp}) => comp.events.next({$: 'result-data', ctx }))
 })
 
 jb.component('pptr.logActivity', {
@@ -43,7 +43,7 @@ jb.component('pptr.logActivity', {
         {id: 'activity', as: 'string', mandatory: true },
         {id: 'description', as: 'string' },
     ],
-    impl: rx.do((ctx,{comp},{activity, description}) => comp.events.next({$: activity, description, ctx }))
+    impl: rx.doPromise((ctx,{comp},{activity, description}) => comp.events.next({$: activity, description, ctx }))
 })
 
 jb.component('pptr.extractWithSelector', {
@@ -53,7 +53,7 @@ jb.component('pptr.extractWithSelector', {
         {id: 'extract', as: 'string', options: 'value,innerHTML,outerHTML,href', defaultValue: 'innerHTML'},
         {id: 'multiple', as: 'boolean' },
     ],
-    impl: rx.innerPipe(rx.map((ctx,{frame},{selector,extract,multiple}) => 
+    impl: rx.innerPipe(rx.mapPromise((ctx,{frame},{selector,extract,multiple}) => 
         frame.evaluate(`_jb_extract = '${extract}'`).then(()=>
                 multiple ? frame.$$eval(selector, elems => elems.map(el=>el[_jb_extract]))
                 : frame.$eval(selector, el => [el[_jb_extract]] ))), 
@@ -68,7 +68,7 @@ jb.component('pptr.extractWithEval', {
     params: [
         {id: 'expression', as: 'string'},
     ],
-    impl: rx.innerPipe(rx.map((ctx,{frame},{expression}) => frame.evaluate(expression)), pptr.logData())
+    impl: rx.innerPipe(rx.mapPromise((ctx,{frame},{expression}) => frame.evaluate(expression)), pptr.logData())
 })
 
 jb.component('pptr.eval', {
@@ -77,7 +77,7 @@ jb.component('pptr.eval', {
     params: [
         {id: 'expression', as: 'string'},
     ],
-    impl: rx.map((ctx,{frame},{expression}) => frame.evaluate(expression))
+    impl: rx.mapPromise((ctx,{frame},{expression}) => frame.evaluate(expression))
 })
 
 jb.component('pptr.mouseClick', {
@@ -88,7 +88,7 @@ jb.component('pptr.mouseClick', {
         {id: 'clickCount', as: 'number', description: 'default is 1' },
         {id: 'delay', as: 'number', description: 'Time to wait between mousedown and mouseup in milliseconds. Defaults to 0' },
     ],
-    impl: rx.map((ctx,{frame},{selector,button,clickCount,delay}) => frame.click(selector, {button,clickCount,delay}))
+    impl: rx.mapPromise((ctx,{frame},{selector,button,clickCount,delay}) => frame.click(selector, {button,clickCount,delay}))
 })
 
 jb.component('pptr.waitForFunction', {
@@ -98,7 +98,7 @@ jb.component('pptr.waitForFunction', {
         {id: 'polling', type: 'pptr.polling', defaultValue: pptr.raf() },
         {id: 'timeout', as: 'number', defaultValue: 30000, description: '0 to disable, maximum time to wait for in milliseconds' },
     ],
-    impl: rx.map((ctx,{frame},{condition,polling,timeout}) => frame.waitForFunction(condition,{polling, timeout}))
+    impl: rx.mapPromise((ctx,{frame},{condition,polling,timeout}) => frame.waitForFunction(condition,{polling, timeout}))
 })
 
 jb.component('pptr.waitForSelector', {
@@ -110,7 +110,7 @@ jb.component('pptr.waitForSelector', {
         {id: 'whenDone', type: 'action', dynamic: true, templateValue: pptr.endSession() },
         {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait for in milliseconds' },
     ],
-    impl: rx.map((ctx,{frame},{selector,visible,hidden, timeout}) => frame.waitForSelector(selector,{visible,hidden, timeout}))
+    impl: rx.mapPromise((ctx,{frame},{selector,visible,hidden, timeout}) => frame.waitForSelector(selector,{visible,hidden, timeout}))
 })
 
 jb.component('pptr.waitForNavigation', {
@@ -122,7 +122,7 @@ jb.component('pptr.waitForNavigation', {
             'networkidle2:no more than 2 network connections for at least 500 ms'].join(',')},
         {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait for in milliseconds' },
     ],
-    impl: rx.map((ctx,{frame},{waitUntil,timeout}) => frame.waitForNavigation({waitUntil, timeout}))
+    impl: rx.mapPromise((ctx,{frame},{waitUntil,timeout}) => frame.waitForNavigation({waitUntil, timeout}))
 })
 
 jb.component('pptr.closeBrowser', {

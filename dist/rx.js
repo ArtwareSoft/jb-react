@@ -155,7 +155,7 @@ jb.component('rx.fromPromise', {
   params: [
     {id: 'promise', mandatory: true},
   ],
-  impl: (ctx,promise) => jb.callbag.map(x=>ctx.ctx({data:x, profile: '', forcePath: ''}))(jb.callbag.fromPromise(promise || Promise.resolve()))
+  impl: (ctx,promise) => jb.callbag.map(x=>ctx.ctx({data:x, profile: '', forcePath: ''}))(jb.callbag.fromPromise(promise))
 })
 
 jb.component('rx.interval', {
@@ -178,6 +178,15 @@ jb.component('rx.do', {
   impl: (ctx,action) => jb.callbag.Do(ctx2 => action(ctx2))
 })
 
+jb.component('rx.doPromise', {
+  type: 'rx',
+  category: 'operator',
+  params: [
+    {id: 'action', type: 'action', dynamic: true, mandatory: true},
+  ],
+  impl: (ctx,action) => jb.callbag.doPromise(ctx2 => action(ctx2))
+})
+
 jb.component('rx.map', {
   type: 'rx',
   category: 'operator',
@@ -187,13 +196,22 @@ jb.component('rx.map', {
   impl: (ctx,func) => jb.callbag.map(ctx2 => ctx2.setData(func(ctx2)))
 })
 
+jb.component('rx.mapPromise', {
+  type: 'rx',
+  category: 'operator',
+  params: [
+    {id: 'func', dynamic: true, mandatory: true},
+  ],
+  impl: (ctx,func) => jb.callbag.mapPromise(ctx2 => func(ctx2).then(res => ctx2.setData(res)))
+})
+
 jb.component('rx.filter', {
   type: 'rx',
   category: 'filter',
   params: [
     {id: 'filter', type: 'boolean', dynamic: true, mandatory: true},
   ],
-  impl: (ctx,filter) => jb.callbag.map(ctx2 => filter(ctx2))
+  impl: (ctx,filter) => jb.callbag.filter(ctx2 => filter(ctx2))
 })
 
 jb.component('rx.flatMap', {

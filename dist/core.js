@@ -747,13 +747,13 @@ Object.assign(jb,{
   },
   toSynchArray: item => {
     if (! jb.asArray(item).find(v=> jb.callbag.isCallbag(v) || jb.isPromise(v))) return item;
-    const {pipe, fromIter, toPromiseArray, map,flatMap, isCallbag} = jb.callbag
+    const {pipe, fromIter, toPromiseArray, mapPromise,flatMap, isCallbag} = jb.callbag
     if (isCallbag(item)) return toPromiseArray(item)
     if (Array.isArray(item) && isCallbag(item[0])) return toPromiseArray(item[0])
 
     return pipe(
           fromIter(jb.asArray(item)),
-          map(x=> Promise.resolve(x)),
+          mapPromise(x=> Promise.resolve(x)),
           flatMap(v => Array.isArray(v) ? v : [v]),
           toPromiseArray)
   },

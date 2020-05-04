@@ -10,14 +10,28 @@ jb.component('dataTest.callbag.mapPromise', {
     calculate: pipe(
       rx.pipe(
           rx.fromIter(list(1)),
-          () => jb.callbag.map(x=>jb.delay(1).then(()=>x))
+          rx.mapPromise(({data}) =>jb.delay(1).then(()=> data+2))
         ),
       '%%a'
     ),
-    expectedResult: equals('1a')
+    expectedResult: equals('3a')
   })
 })
-  
+
+jb.component('dataTest.callbag.doPromise', {
+  impl: dataTest({
+    calculate: pipe(
+      rx.pipe(
+          rx.fromIter(list(1)),
+          rx.mapPromise(({data}) =>jb.delay(1).then(()=> data+2)),
+          rx.doPromise(({data})=>jb.delay(1).then(()=>data *10))
+        ),
+      '%%a'
+    ),
+    expectedResult: equals('3a')
+  })
+})
+
 jb.component('dataTest.callbag.pipe', {
   impl: dataTest({
     calculate: pipe(rx.pipe( rx.fromIter(list('1','2','3','4')),rx.map('-%%-')),join(',')),    
