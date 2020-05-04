@@ -10,7 +10,7 @@ jb.component('puppeteerDemo.main', {
     controls: [
       group({
         title: '',
-        layout: layout.horizontal('10'),
+        layout: layout.flex({alignItems: 'baseline', spacing: '10'}),
         controls: [
           editableText({title: 'query', databind: '%$query%'}),
           button({
