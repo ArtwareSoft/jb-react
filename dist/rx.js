@@ -339,3 +339,5 @@ jb.component('rx.subjectError', {
     ],
     impl: (ctx,subject,error) => subject().error(error())
 })
+;
+

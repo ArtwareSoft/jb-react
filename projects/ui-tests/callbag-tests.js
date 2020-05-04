@@ -47,7 +47,7 @@ jb.component('dataTest.callbag.rawPipeInsidePipe', {
 
 jb.component('dataTest.callbag.pipeInsidePipe', {
   impl: dataTest({
-    calculate: pipe(rx.pipe( rx.fromIter(list('1','2')),rx.pipe(rx.map('-%%-'))),join(',')),
+    calculate: pipe(rx.pipe( rx.fromIter(list('1','2')),rx.innerPipe(rx.map('-%%-'))),join(',')),
     expectedResult: equals('-1-,-2-')
   })
 })

@@ -93,7 +93,7 @@ jb.component('pptr.gotoPage', {
             'networkidle2:no more than 2 network connections for at least 500 ms'].join(',')},
         {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait for in milliseconds' },
     ],
-    impl: rx.pipe(rx.map( (ctx,{browser}) => browser.newPage()),
+    impl: rx.innerPipe(rx.map( (ctx,{browser}) => browser.newPage()),
         rx.var('page'),
         rx.var('url', ({},{},{url}) => url),
         pptr.logActivity('start navigation','%$url%'),
@@ -126,7 +126,7 @@ jb.component('pptr.extractWithSelector', {
         {id: 'extract', as: 'string', options: 'value,innerHTML,outerHTML,href', defaultValue: 'innerHTML'},
         {id: 'multiple', as: 'boolean' },
     ],
-    impl: rx.pipe(rx.map((ctx,{frame},{selector,extract,multiple}) => 
+    impl: rx.innerPipe(rx.map((ctx,{frame},{selector,extract,multiple}) => 
         frame.evaluate(`_jb_extract = '${extract}'`).then(()=>
                 multiple ? frame.$$eval(selector, elems => elems.map(el=>el[_jb_extract]))
                 : frame.$eval(selector, el => [el[_jb_extract]] ))), 
@@ -141,7 +141,7 @@ jb.component('pptr.extractWithEval', {
     params: [
         {id: 'expression', as: 'string'},
     ],
-    impl: rx.pipe(rx.map((ctx,{frame},{expression}) => frame.evaluate(expression)), pptr.logData())
+    impl: rx.innerPipe(rx.map((ctx,{frame},{expression}) => frame.evaluate(expression)), pptr.logData())
 })
 
 jb.component('pptr.eval', {
@@ -235,7 +235,7 @@ jb.component('pptr.mutation', {
 
 jb.component('pptr.endlessScrollDown', {
     type: 'pptr.feature',
-    impl: rx.pipe(
+    impl: rx.innerPipe(
         pptr.repeatingAction('window.scrollPos = window.scrollPos || []; window.scrollPos.push(window.scrollY); window.scrollTo(0,document.body.scrollHeight)' ,500),
         pptr.waitForFunction('window.scrollPos && Math.max.apply(0,window.scrollPos.slice(-4)) == Math.min.apply(0,window.scrollPos.slice(-4))'))
 })
