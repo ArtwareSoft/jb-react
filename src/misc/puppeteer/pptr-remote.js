@@ -12,7 +12,7 @@ jb.pptr = {
         return this.puppeteer().launch({headless: !showBrowser}).then(browser => this._browser = browser)
     },
     createServerComp(ctx,{showBrowser,actions}) {
-        const {subject, subscribe, pipe, mapPromise} = jb.callbag
+        const {subject, subscribe, pipe, map} = jb.callbag
         const comp = {
             events: subject(),
             commands: subject(),
@@ -24,7 +24,7 @@ jb.pptr = {
                 ...actions()
             )
         )
-        pipe(comp.commands, mapPromise(cmd=> Promise.resolve(ctx.run(cmd))), subscribe(() => {}) )
+        pipe(comp.commands, map(cmd=> ctx.run(cmd)), subscribe(() => {}) )
         pipe(comp.events, subscribe( ev => ctx.vars.clientSocket.send(eventToJson(ev))))
         return comp
 

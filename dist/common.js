@@ -1,5 +1,5 @@
-const frame = typeof self === 'object' ? self : typeof global === 'object' ? global : {};
-const jb = (function() {
+var frame = typeof self === 'object' ? self : typeof global === 'object' ? global : {};
+var jb = (function() {
 function jb_run(ctx,parentParam,settings) {
   log('req', [ctx,parentParam,settings])
   if (ctx.probe && ctx.probe.outOfTime)
@@ -746,14 +746,13 @@ Object.assign(jb,{
   },
   toSynchArray: item => {
     if (! jb.asArray(item).find(v=> jb.callbag.isCallbag(v) || jb.isPromise(v))) return item;
-    const {pipe, fromIter, toPromiseArray, mapPromise,flatMap, isCallbag} = jb.callbag
+    const {pipe, fromIter, toPromiseArray, map,flatMap, isCallbag} = jb.callbag
     if (isCallbag(item)) return toPromiseArray(item)
     if (Array.isArray(item) && isCallbag(item[0])) return toPromiseArray(item[0])
 
-
     return pipe(
           fromIter(jb.asArray(item)),
-          mapPromise(x=> Promise.resolve(x)),
+          map(x=> Promise.resolve(x)),
           flatMap(v => Array.isArray(v) ? v : [v]),
           toPromiseArray)
   },
@@ -2072,11 +2071,18 @@ jb.callbag = {
       return res
     },
     Do: f => source => (start, sink) => {
-        if (start !== 0) return
-        source(0, (t, d) => {
-            if (t == 1) f(d)
-            sink(t, d)
-        })
+      if (start !== 0) return
+      source(0, (t, d) => {
+        if (t == 1) {
+          const res = f(d)
+          if (jb.isPromise(res))
+            res.then(()=>sink(1,d))
+          else
+            sink(1,d)
+        } else {
+          sink(t,d)
+        }
+      })
     },
     filter: condition => source => (start, sink) => {
         if (start !== 0) return
@@ -2093,10 +2099,18 @@ jb.callbag = {
         })
     },
     map: f => source => (start, sink) => {
-        if (start !== 0) return
-        source(0, (t, d) => {
-            sink(t, t === 1 ? f(d) : d)
-        })
+      if (start !== 0) return
+      source(0, (t, d) => {
+        if (t == 1) {
+          const res = f(d)
+          if (jb.isPromise(res))
+            res.then(x=>sink(1,x))
+          else
+            sink(1,res)
+        } else {
+          sink(t,d)
+        }
+      })
     },
     distinctUntilChanged: compare => source => (start, sink) => {
         compare = compare || is
@@ -2478,7 +2492,6 @@ jb.callbag = {
         })
         return () => talkback && talkback(2) // dispose
     },
-    mapPromise: promiseF => jb.callbag.concatMap(e => jb.callbag.fromPromise(promiseF(e))),
     toPromise: source => {
         return new Promise((resolve, reject) => {
           jb.callbag.subscribe({

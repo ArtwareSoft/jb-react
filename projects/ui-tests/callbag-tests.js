@@ -10,7 +10,7 @@ jb.component('dataTest.callbag.mapPromise', {
     calculate: pipe(
       rx.pipe(
           rx.fromIter(list(1)),
-          () => jb.callbag.mapPromise(x=>jb.delay(1).then(()=>x))
+          () => jb.callbag.map(x=>jb.delay(1).then(()=>x))
         ),
       '%%a'
     ),
