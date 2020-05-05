@@ -26,6 +26,7 @@ jb.pptr = {
                 rx.var('browser'),
                 () => source => pipe(source, ...wrappedActions),
                 //rx.innerPipe(...wrappedActions),
+                rx.catchError(err =>comp.events.next({$: 'error', err })),
                 rx.subscribe('')
             )
         )
