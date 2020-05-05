@@ -12,16 +12,20 @@ jb.pptr = {
         return this.puppeteer().launch({headless: !showBrowser}).then(browser => this._browser = browser)
     },
     createServerComp(ctx,{showBrowser,actions}) {
-        const {subject, subscribe, pipe, map} = jb.callbag
+        const {subject, subscribe, pipe, map, Do} = jb.callbag
         const comp = {
             events: subject(),
             commands: subject(),
         }
+        const wrappedActions = actions().map( action => 
+            Do( () => comp.events.next({$: 'afterAction', path: action.ctx && action.ctx.path })) (action) )
+            
         ctx.setVar('comp',comp).run(
             rx.pipe(
                 rx.fromPromise(() => this.getOrCreateBrowser(showBrowser)),
                 rx.var('browser'),
-                () => source => jb.callbag.pipe(source, ...actions()),
+                () => source => pipe(source, ...wrappedActions),
+                // rx.innerPipe(...wrappedActions)
                 rx.subscribe('')
             )
         )

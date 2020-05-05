@@ -10,6 +10,7 @@ function jb_run(ctx,parentParam,settings) {
   if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
       res = ctx.probe.record(ctx,res) || res
   log('res', [ctx,res,parentParam,settings])
+  if (typeof res == 'function') res.ctx = ctx
   return res;
 }
 
