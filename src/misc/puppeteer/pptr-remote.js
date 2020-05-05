@@ -12,9 +12,9 @@ jb.pptr = {
         return this.puppeteer().launch({headless: !showBrowser}).then(browser => this._browser = browser)
     },
     createServerComp(ctx,{showBrowser,actions}) {
-        const {subject, subscribe, pipe, map, Do, startsWith} = jb.callbag
+        const {subject, subscribe, pipe, map, Do } = jb.callbag
         const comp = {
-            events: startsWith({$: 'compId', id: browsersCounter })(subject()),
+            events: subject(),
             commands: subject(),
         }
         const wrappedActions = actions.map( (action,i) => 
