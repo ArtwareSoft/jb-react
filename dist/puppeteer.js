@@ -56,27 +56,34 @@ jb.pptr = {
         }
         socket.onerror = e => receive.error(e)
         socket.onclose = () => receive.complete()
-        socket.onopen = () => loadServerCode().then(()=> commands.next({run: ctx.profile}))
-        
         pipe(commands, subscribe(cmd => socket.send(JSON.stringify(cmd))))
 
-        return { events: skip(1)(receive), commands }
+        const comp = { events: skip(1)(receive), commands }
+        socket.onopen = () => loadServerCode().then(()=> comp.commands.next({run: ctx.profile}))
+        return comp
 
         function loadServerCode() {
             const st = (jb.path(jb,'studio.studiojb') || jb).studio
             if (!st.host) return Promise.resolve()
-            return toPromiseArray(pipe(receive,take(1))).then(([m]) =>{
-                if (m == 'loadCodeReq') {
-                    return 'common,rx,puppeteer'.split(',').reduce((pr,module) => pr.then(() => {
-                            const moduleFileName = `${st.host.pathOfDistFolder()}/${module}.js`
-                            return st.host.getFile(moduleFileName).then( loadCode => socket.send(JSON.stringify({ loadCode, moduleFileName })))
-                        }), Promise.resolve())
+            return toPromiseArray(pipe(receive,take(1))).then(([m]) => m == 'loadCodeReq' && ctx.setVar('comp',comp).run(pptr.sendCodeToServer()))
+                    // return 'common,rx,puppeteer'.split(',').reduce((pr,module) => pr.then(() => {
+                    //         const moduleFileName = `${st.host.pathOfDistFolder()}/${module}.js`
+                    //         return st.host.getFile(moduleFileName).then( loadCode => socket.send(JSON.stringify({ loadCode, moduleFileName })))
+                    //     }), Promise.resolve())
 //                        .then(() => socket.send(JSON.stringify({ require: 'puppeteer', writeTo: 'puppeteer'})))
-                }
-            })
         }
     },
 }
+
+jb.component('pptr.sendCodeToServer', {
+    params: [
+      {id: 'modules', as: 'string', defaultValue: 'common,rx,puppeteer'},
+    ],
+    impl: (ctx,modules) => modules.split(',').reduce((pr,module) => pr.then(() => {
+        const moduleFileName = `${st.host.pathOfDistFolder()}/${module}.js`
+        return st.host.getFile(moduleFileName).then( loadCode => ctx.vars.comp.commands.next(JSON.stringify({ loadCode, moduleFileName })))
+    }), Promise.resolve())
+})
 
 
 ;
