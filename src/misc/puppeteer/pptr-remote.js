@@ -17,9 +17,10 @@ jb.pptr = {
             events: subject(),
             commands: subject(),
         }
-        const wrappedActions = actions().map( action => 
-            Do( () => comp.events.next({$: 'afterAction', path: action.ctx && action.ctx.path })) (action) )
-            
+        const acts = actions()
+        const wrappedActions = acts.map( action => 
+            source => action(Do( () => comp.events.next({$: 'beforeAction', path: action.ctx && action.ctx.path }))(source)))
+
         ctx.setVar('comp',comp).run(
             rx.pipe(
                 rx.fromPromise(() => this.getOrCreateBrowser(showBrowser)),
