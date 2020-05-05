@@ -597,7 +597,7 @@ function entries(obj) {
   if (!obj || typeof obj != 'object') return [];
   let ret = [];
   for(let i in obj) // please do not change. its keeps definition order !!!!
-      if (obj.hasOwnProperty(i) && i.indexOf('$jb_') != 0)
+      if (obj.hasOwnProperty && obj.hasOwnProperty(i) && i.indexOf('$jb_') != 0)
         ret.push([i,obj[i]])
   return ret;
 }
