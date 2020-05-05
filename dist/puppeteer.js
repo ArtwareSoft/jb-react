@@ -17,7 +17,7 @@ jb.pptr = {
             events: subject(),
             commands: subject(),
         }
-        const wrappedActions = actions().map( (action,i) => 
+        const wrappedActions = actions.map( (action,i) => 
             source => action(Do( () => comp.events.next({$: 'beforeAction', index: i }))(source)))
 
         ctx.setVar('comp',comp).run(
@@ -87,7 +87,7 @@ jb.component('pptr.session', {
     type: 'rx',
     params: [
         {id: 'showBrowser', as: 'boolean' },
-        {id: 'actions', type: 'rx[]', dynamic: true, templateValue: [] },
+        {id: 'actions', type: 'rx[]', templateValue: [] },
     ],
     impl: (ctx,showBrowser,actions) => jb.pptr.createComp(ctx,{showBrowser, actions})
 })
@@ -109,7 +109,6 @@ jb.component('pptr.gotoPage', {
     pptr.logActivity('after goto page', '%$url%'),
     rx.mapPromise((ctx,{},{frame}) => frame(ctx)),
     rx.var('frame'),
-    pptr.logActivity('frame', '%$frame%'),
     // rx.doPromise(
     //     ({},{frame},{waitUntil,timeout}) => frame.waitForNavigation({waitUntil, timeout})
     //   ),

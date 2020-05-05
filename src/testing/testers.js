@@ -47,7 +47,10 @@ jb.component('test.dataTestView', {
           title: '%$testId%',
           action: (ctx,{},{testId}) => jb.test.runInStudio({$: 'studio.openComponentInJbEditor', path: `${testId}~impl~calculate` }),
           style: button.href(),
-          features: pipeline(Var('color', If('%success%', 'green', 'red')), css('color: %$color%'))
+          features: [
+            css(pipeline(If('%success%', 'green', 'red'), 'color: %%')),
+            ctrlAction(gotoUrl('http://www.google.com'))
+          ]
         }),
         group({
           style: propertySheet.titlesLeft({}),

@@ -17,7 +17,7 @@ jb.pptr = {
             events: subject(),
             commands: subject(),
         }
-        const wrappedActions = actions().map( (action,i) => 
+        const wrappedActions = actions.map( (action,i) => 
             source => action(Do( () => comp.events.next({$: 'beforeAction', index: i }))(source)))
 
         ctx.setVar('comp',comp).run(
