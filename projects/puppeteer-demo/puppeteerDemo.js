@@ -21,7 +21,14 @@ jb.component('puppeteerDemo.main', {
           button({
             title: 'search',
             action: rx.pipe(
-              pptr.session(true, pptr.gotoPage('http://www.artwaresoft.com/#?page=home'))
+              pptr.session(
+                  true,
+                  [
+                    pptr.gotoPage('http://www.artwaresoft.com/#?page=home'),
+                    pptr.waitForSelector({selector: '.fld__Label3'}),
+                    pptr.extractWithSelector('.fld__Label3')
+                  ]
+                )
             ),
             raised: 'true'
           })
