@@ -14,8 +14,9 @@ jb.component('puppeteerDemo.main', {
         controls: [
           editableText({title: 'query', databind: '%$query%'}),
           button({
-            title: 'goto page',
-            action: pptr.remoteActions(pptr.gotoPage('http://artwaresoft.com'))
+            title: 'refresh server code',
+            action: pptr.sendCodeToServer(),
+            raised: 'true'
           }),
           button({
             title: 'search',

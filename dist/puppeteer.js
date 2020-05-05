@@ -68,6 +68,7 @@ jb.pptr = {
 }
 
 jb.component('pptr.sendCodeToServer', {
+    type: 'action',
     params: [
       {id: 'modules', as: 'string', defaultValue: 'common,rx,puppeteer'},
     ],
