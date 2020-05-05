@@ -17,10 +17,7 @@ jb.component('rx.innerPipe', {
   params: [
     {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, templateValue: []},
   ],
-  impl: (ctx,elems) => {
-    console.log('rx.innerPipe', ctx.parentParam)
-    return source => jb.callbag.pipe(source, ...elems)
-  }
+  impl: (ctx,elems) => source => jb.callbag.pipe(source, ...elems)
 })
 
 jb.component('rx.merge', {

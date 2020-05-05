@@ -24,8 +24,8 @@ jb.pptr = {
             rx.pipe(
                 rx.fromPromise(() => this.getOrCreateBrowser(showBrowser)),
                 rx.var('browser'),
-                //() => source => pipe(source, ...wrappedActions),
-                rx.innerPipe(...wrappedActions),
+                () => source => pipe(source, ...wrappedActions),
+                //rx.innerPipe(...wrappedActions),
                 rx.subscribe('')
             )
         )
