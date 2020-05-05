@@ -17,16 +17,15 @@ jb.pptr = {
             events: subject(),
             commands: subject(),
         }
-        const acts = actions()
-        const wrappedActions = acts.map( action => 
-            source => action(Do( () => comp.events.next({$: 'beforeAction', path: action.ctx && action.ctx.path }))(source)))
+        const wrappedActions = actions().map( (action,i) => 
+            source => action(Do( () => comp.events.next({$: 'beforeAction', index: i }))(source)))
 
         ctx.setVar('comp',comp).run(
             rx.pipe(
                 rx.fromPromise(() => this.getOrCreateBrowser(showBrowser)),
                 rx.var('browser'),
-                () => source => pipe(source, ...wrappedActions),
-                // rx.innerPipe(...wrappedActions)
+                //() => source => pipe(source, ...wrappedActions),
+                rx.innerPipe(...wrappedActions),
                 rx.subscribe('')
             )
         )

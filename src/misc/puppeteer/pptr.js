@@ -14,8 +14,8 @@ jb.component('pptr.gotoPage', {
   params: [
     {id: 'url', as: 'string', mandatory: true},
     {id: 'frame', type: 'pptr.frame', dynamic: true, defaultValue: pptr.mainFrame()},
-    {id: 'waitUntil', as: 'string', defaultValue:'load', options: 'load:load event is fired,domcontentloaded:DOMContentLoaded event is fired,networkidle0:no more than 0 network connections for at least 500 ms,networkidle2:no more than 2 network connections for at least 500 ms'},
-    {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait for in milliseconds'}
+    // {id: 'waitUntil', as: 'string', defaultValue:'load', options: 'load:load event is fired,domcontentloaded:DOMContentLoaded event is fired,networkidle0:no more than 0 network connections for at least 500 ms,networkidle2:no more than 2 network connections for at least 500 ms'},
+    // {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait for in milliseconds'}
   ],
   impl: rx.innerPipe(
     rx.mapPromise(({},{browser}) => browser.newPage()),
@@ -27,9 +27,9 @@ jb.component('pptr.gotoPage', {
     rx.mapPromise((ctx,{},{frame}) => frame(ctx)),
     rx.var('frame'),
     pptr.logActivity('frame', '%$frame%'),
-    rx.doPromise(
-        ({},{frame},{waitUntil,timeout}) => frame.waitForNavigation({waitUntil, timeout})
-      ),
+    // rx.doPromise(
+    //     ({},{frame},{waitUntil,timeout}) => frame.waitForNavigation({waitUntil, timeout})
+    //   ),
     pptr.logActivity('end navigation', '%$url%')
   )
 })
