@@ -47,7 +47,11 @@ jb.component('rx.var', {
     {id: 'name', as: 'string', mandatory: true},
     {id: 'value', dynamic: true, defaultValue: '%%', mandatory: true},
   ],
-  impl: (ctx,name,value) => source => (start, sink) => start == 0 && source(0, (t, d) => sink(t, t === 1 ? d.setVar(name,value(d)) : d))
+  impl: (ctx,name,value) => source => (start, sink) => {
+    if (start != 0) return 
+    return source(0, (t, d) => 
+      sink(t, t === 1 ? d && d.setVar && d.setVar(name,value(d)) : d))
+  }
 })
 
 jb.component('rx.reduce', {
