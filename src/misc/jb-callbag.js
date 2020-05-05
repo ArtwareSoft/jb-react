@@ -137,54 +137,57 @@
       flatMap: (_makeSource, combineResults) => source => (start, sink) => {
           if (start !== 0) return
           const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
-          if (!combineResults) combineResults = (x, y) => y
+          if (!combineResults) combineResults = (input, inner) => inner
   
           let index = 0
-          let talkbacks = {}
+          const talkbacks = {}
           let sourceEnded = false
           let inputSourceTalkback = null
-  
-          let pullHandle = (t, d) => {
-              var currTalkback = Object.values(talkbacks).pop()
-              if (t === 1) {
-                  if (currTalkback) currTalkback(1)
-                  else if (!sourceEnded) inputSourceTalkback(1)
-                  else sink(2)
-              }
-              if (t === 2) {
-                  if (currTalkback) currTalkback(2)
-                  inputSourceTalkback(2)
-              }
-          }
-  
-          let stopOrContinue = d => {
-              if (sourceEnded && Object.keys(talkbacks).length === 0) sink(2, d)
-              else inputSourceTalkback(1)
-          }
-  
-          let makeSink = (i, d, talkbacks) =>
-              (currT, currD) => {
-                  if (currT === 0) {talkbacks[i] = currD; talkbacks[i](1)}
-                  if (currT === 1) sink(1, combineResults(d, currD))
-                  if (currT === 2) {
-                      delete talkbacks[i]
-                      stopOrContinue(currD)
-                  }
-              }
-  
+
           source(0, (t, d) => {
-              if (t === 0) {
-                  inputSourceTalkback = d
-                  sink(0, pullHandle)
-              }
-              if (t === 1) {
-                  makeSource(d)(0, makeSink(index++, d, talkbacks))
-              }
+            if (t === 0) {
+                inputSourceTalkback = d
+                sink(0, pullHandle)
+            }
+            if (t === 1) {
+                const sink = makeSink(index++, d)
+                makeSource(d)(0, sink)
+            }
+            if (t === 2) {
+                sourceEnded = true
+                stopOrContinue(d)
+            }
+          })
+
+          function makeSink(i, input) { 
+            return (t, d) => {
+              if (t === 0) {talkbacks[i] = d; talkbacks[i](1)}
+              if (t === 1) sink(1, combineResults(input, d))
               if (t === 2) {
-                  sourceEnded = true
+                  delete talkbacks[i]
                   stopOrContinue(d)
               }
-      })
+          }}
+
+          function stopOrContinue(d) {
+            if (sourceEnded && Object.keys(talkbacks).length === 0) 
+              sink(2, d)
+            else 
+              inputSourceTalkback(1)
+          }
+
+          function pullHandle(t, d) {
+            const currTalkback = Object.values(talkbacks).pop()
+            if (t === 1) {
+                if (currTalkback) currTalkback(1)
+                else if (!sourceEnded) inputSourceTalkback(1)
+                else sink(2)
+            }
+            if (t === 2) {
+                if (currTalkback) currTalkback(2)
+                inputSourceTalkback(2)
+            }
+          }
       },
       merge(..._sources) {
           const sources = _sources.filter(x=>x).filter(x=>jb.callbag.fromAny(x))

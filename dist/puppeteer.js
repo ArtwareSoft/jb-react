@@ -1,4 +1,4 @@
-jb.pptr = { 
+jb.pptr = {
     hasPptrServer: () => typeof hasPptrServer != 'undefined',
     createProxySocket: () => new WebSocket(`ws:${(jb.studio.studioWindow || jb.frame).location.hostname || 'localhost'}:8090`),
     createComp(ctx,args) {
@@ -12,9 +12,9 @@ jb.pptr = {
         return this.puppeteer().launch({headless: !showBrowser}).then(browser => this._browser = browser)
     },
     createServerComp(ctx,{showBrowser,actions}) {
-        const {subject, subscribe, pipe, map, Do} = jb.callbag
+        const {subject, subscribe, pipe, map, Do, startsWith} = jb.callbag
         const comp = {
-            events: subject(),
+            events: startsWith({$: 'compId', id: browsersCounter })(subject()),
             commands: subject(),
         }
         const wrappedActions = actions.map( (action,i) => 
@@ -45,7 +45,7 @@ jb.pptr = {
         }
     },
     createProxyComp(ctx) {
-        const {pipe,skip,take,toPromiseArray,subject,subscribe} = jb.callbag
+        const {pipe,skip,take,toPromiseArray,subject,subscribe,doPromise} = jb.callbag
         const receive = subject(), commands = subject()
         const socket = jb.pptr.createProxySocket()
         socket.onmessage = ({data}) => {
@@ -59,19 +59,11 @@ jb.pptr = {
         pipe(commands, subscribe(cmd => socket.send(JSON.stringify(cmd))))
 
         const comp = { events: skip(1)(receive), commands }
-        socket.onopen = () => loadServerCode().then(()=> comp.commands.next({run: ctx.profile}))
+        pipe(receive,take(1),
+            doPromise(m => m == 'loadCodeReq' && ctx.setVar('comp',comp).run(pptr.sendCodeToServer())),
+            subscribe(()=> comp.commands.next({run: ctx.profile})))
+        
         return comp
-
-        function loadServerCode() {
-            const st = (jb.path(jb,'studio.studiojb') || jb).studio
-            if (!st.host) return Promise.resolve()
-            return toPromiseArray(pipe(receive,take(1))).then(([m]) => m == 'loadCodeReq' && ctx.setVar('comp',comp).run(pptr.sendCodeToServer()))
-                    // return 'common,rx,puppeteer'.split(',').reduce((pr,module) => pr.then(() => {
-                    //         const moduleFileName = `${st.host.pathOfDistFolder()}/${module}.js`
-                    //         return st.host.getFile(moduleFileName).then( loadCode => socket.send(JSON.stringify({ loadCode, moduleFileName })))
-                    //     }), Promise.resolve())
-//                        .then(() => socket.send(JSON.stringify({ require: 'puppeteer', writeTo: 'puppeteer'})))
-        }
     },
 }
 
@@ -79,19 +71,18 @@ jb.component('pptr.sendCodeToServer', {
     params: [
       {id: 'modules', as: 'string', defaultValue: 'common,rx,puppeteer'},
     ],
-    impl: (ctx,modules) => modules.split(',').reduce((pr,module) => pr.then(() => {
-        const moduleFileName = `${st.host.pathOfDistFolder()}/${module}.js`
-        return st.host.getFile(moduleFileName).then( loadCode => ctx.vars.comp.commands.next(JSON.stringify({ loadCode, moduleFileName })))
-    }), Promise.resolve())
+    impl: (ctx,modules) => {
+        const st = (jb.path(jb,'studio.studiojb') || jb).studio
+        if (!st.host) return Promise.resolve()
+        return modules.split(',').reduce((pr,module) => pr.then(() => {
+            const moduleFileName = `${st.host.pathOfDistFolder()}/${module}.js`
+            return st.host.getFile(moduleFileName).then( loadCode => ctx.vars.comp.commands.next({ loadCode, moduleFileName }))
+        }), Promise.resolve())
+    }
 })
 
-
-;
-
-jb.ns('pptr,rx')
-
 jb.component('pptr.session', {
-    type: 'rx',
+    description: 'returns session object that can be used to interact with the server',
     params: [
         {id: 'showBrowser', as: 'boolean' },
         {id: 'actions', type: 'rx[]', templateValue: [] },
@@ -99,8 +90,20 @@ jb.component('pptr.session', {
     impl: (ctx,showBrowser,actions) => jb.pptr.createComp(ctx,{showBrowser, actions})
 })
 
+jb.component('pptr.remoteActions', {
+    type: 'action',
+    params: [
+        {id: 'actions', type: 'pptr[]', ignore: true },
+        {id: 'session', defaultValue: '%$pptrSession%' },
+    ],
+    impl: ctx => jb.asArray(ctx.profile.actions).forEach(profile => ctx.params.session && ctx.params.session.commands.next({run: profile}))
+})
+;
+
+jb.ns('pptr,rx')
+
 jb.component('pptr.gotoPage', {
-  type: 'rx',
+  type: 'rx,pptr',
   params: [
     {id: 'url', as: 'string', mandatory: true},
     {id: 'frame', type: 'pptr.frame', dynamic: true, defaultValue: pptr.mainFrame()},
@@ -124,12 +127,12 @@ jb.component('pptr.gotoPage', {
 })
 
 jb.component('pptr.logData', {
-    type: 'rx',
+    type: 'rx,pptr',
     impl: rx.doPromise((ctx,{comp}) => comp.events.next({$: 'result-data', ctx }))
 })
 
 jb.component('pptr.logActivity', {
-    type: 'rx',
+    type: 'rx,pptr',
     params: [
         {id: 'activity', as: 'string', mandatory: true },
         {id: 'description', as: 'string' },
@@ -138,7 +141,7 @@ jb.component('pptr.logActivity', {
 })
 
 jb.component('pptr.extractWithSelector', {
-    type: 'rx',
+    type: 'rx,pptr',
     params: [
         {id: 'selector', as: 'string' },
         {id: 'extract', as: 'string', options: 'value,innerHTML,outerHTML,href', defaultValue: 'innerHTML'},
@@ -154,7 +157,7 @@ jb.component('pptr.extractWithSelector', {
 })
 
 jb.component('pptr.extractWithEval', {
-    type: 'rx',
+    type: 'rx,pptr',
     description: 'evaluate javascript expression',
     params: [
         {id: 'expression', as: 'string'},
@@ -163,7 +166,7 @@ jb.component('pptr.extractWithEval', {
 })
 
 jb.component('pptr.eval', {
-    type: 'rx',
+    type: 'rx,pptr',
     description: 'evaluate javascript expression',
     params: [
         {id: 'expression', as: 'string'},
@@ -172,7 +175,7 @@ jb.component('pptr.eval', {
 })
 
 jb.component('pptr.mouseClick', {
-    type: 'rx',
+    type: 'rx,pptr',
     params: [
         {id: 'selector', as: 'string' },
         {id: 'button', as: 'string', options:'left,right,middle'},
@@ -183,7 +186,7 @@ jb.component('pptr.mouseClick', {
 })
 
 jb.component('pptr.waitForFunction', {
-    type: 'rx',
+    type: 'rx,pptr',
     params: [
         {id: 'condition', as: 'string' },
         {id: 'polling', type: 'pptr.polling', defaultValue: pptr.raf() },
@@ -193,7 +196,7 @@ jb.component('pptr.waitForFunction', {
 })
 
 jb.component('pptr.waitForSelector', {
-    type: 'rx',
+    type: 'rx,pptr',
     params: [
         {id: 'selector', as: 'string' },
         {id: 'visible', as: 'boolean', description: 'wait for element to be present in DOM and to be visible, i.e. to not have display: none or visibility: hidden CSS properties' },
@@ -205,7 +208,7 @@ jb.component('pptr.waitForSelector', {
 })
 
 jb.component('pptr.waitForNavigation', {
-    type: 'rx',
+    type: 'rx,pptr',
     params: [
         {id: 'waitUntil', as: 'string', options: [
             'load:load event is fired','domcontentloaded:DOMContentLoaded event is fired',

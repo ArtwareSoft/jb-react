@@ -221,7 +221,7 @@ jb.component('rx.flatMap', {
   params: [
     {id: 'func', dynamic: true, mandatory: true, description: 'can return array, promise or callbag'},
   ],
-  impl: (ctx,func) => jb.callbag.flatMap(ctx2 => func(ctx2))
+  impl: (ctx,func) => jb.callbag.flatMap(ctx2 => func(ctx2), (_ctx,res) => ctx.setData(res) )
 })
 
 jb.component('rx.concatMap', {

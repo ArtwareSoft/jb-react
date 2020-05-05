@@ -62,6 +62,93 @@ jb.component('dataTest.callbag.doPromiseActiveSource', {
   })
 })
 
+jb.component('dataTest.callbag.RawflatMapPassivePassive', {
+  impl: dataTest({
+    calculate: ctx => { const {flatMap,fromIter,pipe,map,toPromiseArray} = jb.callbag
+      return toPromiseArray(pipe(fromIter([0]), flatMap(x=> pipe(fromIter([0]),map(x=>`-${x}-`) ) )))
+    },
+    expectedResult: equals('-0-')
+  })
+})
+
+jb.component('dataTest.callbag.RawflatMapActivePassive', {
+  impl: dataTest({
+    calculate: ctx => { const {interval, take,flatMap,fromIter,pipe,map,toPromiseArray} = jb.callbag
+      return toPromiseArray(pipe(interval(1), take(1), flatMap(x=> pipe(fromIter([0]),map(x=>`-${x}-`) ) )))
+    },
+    expectedResult: equals('-0-')
+  })
+})
+
+jb.component('dataTest.callbag.RawflatMapPassiveActive', {
+  impl: dataTest({
+    calculate: ctx => { const {interval, take,flatMap,fromIter,pipe,map,toPromiseArray} = jb.callbag
+      return toPromiseArray(pipe(fromIter([0]), flatMap(x=> pipe(interval(1), take(1),map(x=>`-${x}-`) ) )))
+    },
+    expectedResult: equals('-0-')
+  })
+})
+
+jb.component('dataTest.callbag.RawflatMapActivePassive', {
+  impl: dataTest({
+    calculate: ctx => { const {interval, take,flatMap,fromIter,pipe,map,toPromiseArray} = jb.callbag
+      return toPromiseArray(pipe(interval(1), take(1), flatMap(x=> pipe(fromIter([0]),map(x=>`-${x}-`) ) )))
+    },
+    expectedResult: equals('-0-')
+  })
+})
+
+jb.component('dataTest.callbag.RawflatMapActiveActive', {
+  impl: dataTest({
+    calculate: ctx => { const {interval, take,flatMap,fromIter,pipe,map,toPromiseArray} = jb.callbag
+      return toPromiseArray(pipe(interval(1), take(1), flatMap(x=> pipe(interval(1), take(1),map(x=>`-${x}-`) ) )))
+    },
+    expectedResult: equals('-0-')
+  })
+})
+
+jb.component('dataTest.callbag.flatMapPassivePassive', {
+  impl: dataTest({
+    calculate: rx.pipe(
+          rx.fromIter(list(0)),
+          rx.flatMap(rx.pipe(rx.fromIter(list(0)), rx.map('-%%-'))),
+    ),
+    expectedResult: equals('-0-')
+  })
+})
+
+jb.component('dataTest.callbag.flatMapActivePassive', {
+  impl: dataTest({
+    calculate: rx.pipe(
+        rx.interval(1), rx.take(1),
+        rx.flatMap(rx.pipe(rx.fromIter(list(0)), rx.map('-%%-'))),
+    ),
+    expectedResult: equals('-0-')
+  })
+})
+
+jb.component('dataTest.callbag.flatMapPassiveActive', {
+  impl: dataTest({
+    calculate: rx.pipe(
+        rx.fromIter(list(0)),
+        rx.flatMap(rx.pipe(rx.interval(1), rx.take(1), rx.map('-%%-'))),
+    ),
+    expectedResult: equals('-0-')
+  })
+})
+
+jb.component('dataTest.callbag.flatMapActiveActive', {
+  impl: dataTest({
+    calculate: rx.pipe(
+          rx.interval(1), rx.take(1),
+          rx.flatMap(rx.pipe(rx.interval(1), rx.take(1), rx.map('-%%-'))),
+    ),
+    expectedResult: equals('-0-')
+  })
+})
+
+
+
 jb.component('dataTest.callbag.pipe', {
   impl: dataTest({
     calculate: pipe(rx.pipe( rx.fromIter(list('1','2','3','4')),rx.map('-%%-')),join(',')),    

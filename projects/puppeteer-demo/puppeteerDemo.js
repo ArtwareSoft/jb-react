@@ -14,15 +14,20 @@ jb.component('puppeteerDemo.main', {
         controls: [
           editableText({title: 'query', databind: '%$query%'}),
           button({
+            title: 'goto page',
+            action: pptr.remoteActions(pptr.gotoPage('http://artwaresoft.com'))
+          }),
+          button({
             title: 'search',
             action: rx.pipe(
               pptr.session(true, pptr.gotoPage('http://www.artwaresoft.com/#?page=home')),
-              pptr.waitForSelector({selector: 'fld__Label3'}),
+              pptr.waitForSelector('fld__Label3'),
               pptr.extractWithSelector('fld__Label3')
             ),
             raised: 'true'
           })
-        ]
+        ],
+        features: variable({name: 'pptrSession', value: pptr.session(true, [])})
       }),
       itemlist({
         items: '%$events%',
