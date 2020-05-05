@@ -30,8 +30,12 @@ jb.pptr = {
         return comp
 
         function eventToJson(ev) {
-            const vars = jb.objFromEntries(jb.entries(jb.path(ev,'ctx.vars')).filter(e=> ['string','boolean','number'].indexOf(typeof e[1]) != -1))
-            return JSON.stringify({ ...ev, ctx: null, data: (ev.ctx || {}).data, vars })
+            return JSON.stringify(chopObj(ev,4))
+        }
+        function chopObj(obj, depth) {
+            if (depth < 1) return
+            if (['string','boolean','number'].indexOf(typeof obj) != -1) return obj
+            return typeof obj == 'object' && jb.objFromEntries( jb.entries(obj).filter(e =>typeof e[1] == 'object').map(([id,val])=>[id,chopObj(val, depth-1)]))
         }
     },
     createProxyComp(ctx) {
@@ -56,13 +60,13 @@ jb.pptr = {
             const st = (jb.path(jb,'studio.studiojb') || jb).studio
             if (!st.host) return Promise.resolve()
             return toPromiseArray(pipe(receive,take(1))).then(([m]) =>{
-//                if (m == 'loadCodeReq') {
+                if (m == 'loadCodeReq') {
                     return 'common,rx,puppeteer'.split(',').reduce((pr,module) => pr.then(() => {
                             const moduleFileName = `${st.host.pathOfDistFolder()}/${module}.js`
                             return st.host.getFile(moduleFileName).then( loadCode => socket.send(JSON.stringify({ loadCode, moduleFileName })))
                         }), Promise.resolve())
 //                        .then(() => socket.send(JSON.stringify({ require: 'puppeteer', writeTo: 'puppeteer'})))
-//                }
+                }
             })
         }
     },

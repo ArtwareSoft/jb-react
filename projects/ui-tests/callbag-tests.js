@@ -24,7 +24,8 @@ jb.component('dataTest.callbag.mapPromiseActiveSource', {
       rx.pipe(
           rx.interval(1),
           rx.take(1),
-          rx.mapPromise(({data}) =>jb.delay(1).then(()=> data+2))
+          rx.mapPromise(({data}) =>jb.delay(1).then(()=> data+2)),
+          rx.map('%%')
         ),
       '%%a'
     ),
@@ -102,7 +103,7 @@ jb.component('dataTest.callbag.innerPipe', {
         ),
       join(',')
     ),
-    expectedResult: equals('---1---,---2---')
+    expectedResult: equals('---0---,---1---')
   })
 })
 

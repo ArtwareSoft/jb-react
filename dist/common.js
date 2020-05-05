@@ -2790,7 +2790,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 } 
 
 function initSpyByUrl() {
-	const getUrl = () => { try { return frame.location.href } catch(e) {} }
+	const getUrl = () => { try { return frame.location && frame.location.href } catch(e) {} }
 	const getParentUrl = () => { try { return frame.parent && frame.parent.location.href } catch(e) {} }
 	const getSpyParam = url => (url.match('[?&]spy=([^&]+)') || ['', ''])[1]
 	const spyParam = getSpyParam(getParentUrl() || '') || getSpyParam(getUrl() || '')
