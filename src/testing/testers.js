@@ -381,7 +381,7 @@ if (typeof startTime === 'undefined')
 startTime = startTime || new Date().getTime();
 
 jb.testers.runTests = function({testType,specificTest,show,pattern,includeHeavy}) {
-	const {pipe, fromIter, subscribe,concatMap, fromPromise } = jb.callbag
+	const {pipe, fromIter, subscribe,concatMap, flatMap, fromPromise } = jb.callbag
 
 	jb.studio.initTests() && jb.studio.initTests()
 	const initial_resources = JSON.stringify(jb.resources); //.replace(/\"\$jb_id":[0-9]*,/g,'')

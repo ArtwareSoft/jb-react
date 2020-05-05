@@ -134,6 +134,63 @@
               })
           }
       },
+      concatMap(_makeSource) {
+        const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
+        return source => (start, sink) => {
+            if (start !== 0) return
+            const queue = []
+            let innerTalkback, sourceTalkback, sourceEnded
+        
+            const innerSink = (t, d) => {
+              if (t === 0) {
+                innerTalkback = d
+                innerTalkback(1)
+              } else if (t === 1) {
+                sink(1, d)
+                innerTalkback(1)
+              } else if (t === 2) {
+                innerTalkback = null
+                if (queue.length === 0) {
+                  stopOrContinue(d)
+                  return
+                }
+                const src = makeSource(queue.shift())
+                src(0, innerSink)
+              }
+            }
+        
+            const wrappedSink = (t, d) => {
+              if (t === 2 && innerTalkback) innerTalkback(2, d)
+              sourceTalkback(t, d)
+            }
+        
+            source(0, (t, d) => {
+              if (t === 0) {
+                sourceTalkback = d
+                sink(0, wrappedSink)
+                return
+              } else if (t === 1) {
+                if (innerTalkback) 
+                  queue.push(d) 
+                else {
+                  const src = makeSource(d)
+                  src(0, innerSink)
+                  src(1)
+                }
+              } else if (t === 2) {
+                sourceEnded = true
+                stopOrContinue(d)
+              }
+            })
+
+            function stopOrContinue(d) {
+              if (sourceEnded && !innerTalkback && queue.length == 0) 
+                sink(2, d)
+              else 
+               innerTalkback && innerTalkback(1)
+            }
+          }
+      },
       flatMap: (_makeSource, combineResults) => source => (start, sink) => {
           if (start !== 0) return
           const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
@@ -150,8 +207,7 @@
                 sink(0, pullHandle)
             }
             if (t === 1) {
-                const sink = makeSink(index++, d)
-                makeSource(d)(0, sink)
+                makeSource(d)(0, makeSink(index++, d))
             }
             if (t === 2) {
                 sourceEnded = true
@@ -162,7 +218,10 @@
           function makeSink(i, input) { 
             return (t, d) => {
               if (t === 0) {talkbacks[i] = d; talkbacks[i](1)}
-              if (t === 1) sink(1, combineResults(input, d))
+              if (t === 1) {
+                const data = combineResults(input, d)
+                sink(1, data)
+              }
               if (t === 2) {
                   delete talkbacks[i]
                   stopOrContinue(d)
@@ -173,19 +232,17 @@
             if (sourceEnded && Object.keys(talkbacks).length === 0) 
               sink(2, d)
             else 
-              inputSourceTalkback(1)
+              !sourceEnded && inputSourceTalkback && inputSourceTalkback(1)
           }
 
           function pullHandle(t, d) {
             const currTalkback = Object.values(talkbacks).pop()
             if (t === 1) {
-                if (currTalkback) currTalkback(1)
-                else if (!sourceEnded) inputSourceTalkback(1)
-                else sink(2)
+              currTalkback && currTalkback(1)
+              if (!sourceEnded) inputSourceTalkback(1)
             }
             if (t === 2) {
-                if (currTalkback) currTalkback(2)
-                inputSourceTalkback(2)
+              stopOrContinue(d)
             }
           }
       },
@@ -291,50 +348,6 @@
       catchError: fn => source => (start, sink) => {
           if (start !== 0) return
           source(0, (t, d) => t === 2 && typeof d !== 'undefined' ? fn(d) : sink(t, d))
-      },
-      concatMap(_project) {
-        const project = (...args) => jb.callbag.fromAny(_project(...args))
-          return source => (start, sink) => {
-            if (start !== 0) return
-            const queue = []
-            let innerTalkback = null
-            let sourceTalkback
-        
-            const innerSink = (t, d) => {
-              if (t === 0) {
-                innerTalkback = d
-                innerTalkback(1)
-              } else if (t === 1) {
-                sink(1, d)
-                innerTalkback(1)
-              } else if (t === 2) {
-                innerTalkback = null
-                if (queue.length === 0) return
-                project(queue.shift())(0, innerSink)
-              }
-            }
-        
-            const wrappedSink = (t, d) => {
-              if (t === 2 && innerTalkback !== null) innerTalkback(2, d)
-              sourceTalkback(t, d)
-            }
-        
-            source(0, (t, d) => {
-              if (t === 0) {
-                sourceTalkback = d
-                sink(0, wrappedSink)
-                return
-              } else if (t === 1) {
-                if (innerTalkback !== null) 
-                  queue.push(d) 
-                else 
-                  project(d)(0, innerSink)
-              } else if (t === 2) {
-                sink(2, d)
-                if (innerTalkback !== null) innerTalkback(2, d)
-              }
-            })
-          }
       },
       create: prod => (start, sink) => {
           if (start !== 0) return
@@ -449,8 +462,8 @@
           })
           return () => talkback && talkback(2) // dispose
       },
-      mapPromise: promiseF => source => jb.callbag.flatMap(d => jb.callbag.fromPromise(Promise.resolve(promiseF(d))))(source),
-      doPromise: promiseF => source => jb.callbag.flatMap(d => jb.callbag.fromPromise( Promise.resolve(promiseF(d)).then(()=>d) ))(source),
+      mapPromise: promiseF => source => jb.callbag.concatMap(d => jb.callbag.fromPromise(Promise.resolve(promiseF(d))))(source),
+      doPromise: promiseF => source =>  jb.callbag.concatMap(d => jb.callbag.fromPromise(Promise.resolve(promiseF(d)).then(()=>d)))(source),
       toPromise: source => {
           return new Promise((resolve, reject) => {
             jb.callbag.subscribe({

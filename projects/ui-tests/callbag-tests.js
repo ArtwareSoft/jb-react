@@ -7,62 +7,103 @@ jb.component('dataTest.pipeWithObservable', {
   
 jb.component('dataTest.callbag.mapPromise', {
   impl: dataTest({
-    calculate: pipe(
-      rx.pipe(
-          rx.fromIter(list(1)),
+    calculate: rx.pipe(
+          rx.fromIter(list(0)),
           rx.mapPromise(({data}) =>jb.delay(1).then(()=> data+2))
         ),
-      '%%a'
-    ),
-    expectedResult: equals('3a')
+    expectedResult: equals('2')
   })
 })
 
 jb.component('dataTest.callbag.mapPromiseActiveSource', {
   impl: dataTest({
-    calculate: pipe(
-      rx.pipe(
+    calculate: rx.pipe(
           rx.interval(1),
           rx.take(1),
           rx.mapPromise(({data}) =>jb.delay(1).then(()=> data+2)),
-          rx.map('%%')
+//          rx.map('%%')
         ),
-      '%%a'
-    ),
-    expectedResult: equals('2a')
+    expectedResult: equals(2)
+  })
+})
+
+jb.component('dataTest.callbag.rawMapPromiseTwice', {
+  impl: dataTest({
+    calculate: ctx => { const {fromIter,pipe,mapPromise,toPromiseArray} = jb.callbag
+      return toPromiseArray(pipe(fromIter([0]), mapPromise(data =>jb.delay(1).then(()=> data+2)), mapPromise(data =>jb.delay(1).then(()=> data+2))))
+    },    
+    expectedResult: equals('4')
+  })
+})
+
+jb.component('dataTest.callbag.mapPromiseTwice', {
+  impl: dataTest({
+    calculate: rx.pipe(
+          rx.fromIter(list(0)),
+          rx.mapPromise(({data}) =>jb.delay(1).then(()=> data+2)),
+          rx.mapPromise(({data}) =>jb.delay(1).then(()=> data+2)),
+        ),
+    expectedResult: equals('4')
   })
 })
 
 jb.component('dataTest.callbag.doPromise', {
   impl: dataTest({
-    calculate: pipe(
-      rx.pipe(
+    calculate: rx.pipe(
           rx.fromIter(list(1)),
+          rx.doPromise(({data})=> jb.delay(1).then(()=>data *10)),
           rx.mapPromise(({data}) =>jb.delay(1).then(()=> data+2)),
-          rx.doPromise(({data})=>jb.delay(1).then(()=>data *10))
         ),
-      '%%a'
+    expectedResult: equals('3')
+  })
+})
+
+jb.component('dataTest.callbagConcatMapBug1', {
+  impl: dataTest({
+    calculate: rx.pipe(
+      rx.interval(1),
+      rx.take(1),
+      rx.concatMap(rx.fromPromise(({data}) => jb.delay(1).then(()=> data+2)))
     ),
-    expectedResult: equals('3a')
+    expectedResult: equals('2')
+  })
+})
+
+jb.component('dataTest.callbagRawConcatMapBug1', {
+  impl: dataTest({
+    calculate: ctx => { const {interval,take,pipe,concatMap,fromPromise,toPromiseArray} = jb.callbag
+      return pipe(interval(1),take(1), concatMap(data => fromPromise(jb.delay(1).then(()=> data+2) ), toPromiseArray))
+    },
+    expectedResult: equals('2')
+  })
+})
+
+jb.component('dataTest.callbagRawFlatMapBug1', {
+  impl: dataTest({
+    calculate: ctx => { const {interval,take,pipe,flatMap,fromPromise,toPromiseArray} = jb.callbag
+      return pipe(interval(1),take(1), 
+        flatMap(data => fromPromise(jb.delay(100).then(()=> data+2) ),null,'first'), 
+        flatMap(data => fromPromise(jb.delay(100).then(()=> data+2) ),null,'second'),
+        toPromiseArray)
+    },
+    expectedResult: equals(4)
   })
 })
 
 jb.component('dataTest.callbag.doPromiseActiveSource', {
   impl: dataTest({
-    calculate: pipe(
-      rx.pipe(
+    calculate: rx.pipe(
           rx.interval(1),
           rx.take(1),
+//          rx.var('aa'),
+          rx.doPromise(({data})=>jb.delay(1).then(()=>data *10)),
           rx.mapPromise(({data}) =>jb.delay(1).then(()=> data+2)),
-          rx.doPromise(({data})=>jb.delay(1).then(()=>data *10))
-        ),
-      '%%a'
     ),
-    expectedResult: equals('2a')
+    expectedResult: equals('2')
   })
 })
 
-jb.component('dataTest.callbag.RawflatMapPassivePassive', {
+jb.component('dataTest.callbag.rawFlatMapPassivePassive', {
   impl: dataTest({
     calculate: ctx => { const {flatMap,fromIter,pipe,map,toPromiseArray} = jb.callbag
       return toPromiseArray(pipe(fromIter([0]), flatMap(x=> pipe(fromIter([0]),map(x=>`-${x}-`) ) )))
@@ -71,7 +112,7 @@ jb.component('dataTest.callbag.RawflatMapPassivePassive', {
   })
 })
 
-jb.component('dataTest.callbag.RawflatMapActivePassive', {
+jb.component('dataTest.callbag.rawflatMapActivePassive', {
   impl: dataTest({
     calculate: ctx => { const {interval, take,flatMap,fromIter,pipe,map,toPromiseArray} = jb.callbag
       return toPromiseArray(pipe(interval(1), take(1), flatMap(x=> pipe(fromIter([0]),map(x=>`-${x}-`) ) )))
@@ -80,7 +121,7 @@ jb.component('dataTest.callbag.RawflatMapActivePassive', {
   })
 })
 
-jb.component('dataTest.callbag.RawflatMapPassiveActive', {
+jb.component('dataTest.callbag.rawflatMapPassiveActive', {
   impl: dataTest({
     calculate: ctx => { const {interval, take,flatMap,fromIter,pipe,map,toPromiseArray} = jb.callbag
       return toPromiseArray(pipe(fromIter([0]), flatMap(x=> pipe(interval(1), take(1),map(x=>`-${x}-`) ) )))
@@ -89,7 +130,7 @@ jb.component('dataTest.callbag.RawflatMapPassiveActive', {
   })
 })
 
-jb.component('dataTest.callbag.RawflatMapActivePassive', {
+jb.component('dataTest.callbag.rawflatMapActivePassive', {
   impl: dataTest({
     calculate: ctx => { const {interval, take,flatMap,fromIter,pipe,map,toPromiseArray} = jb.callbag
       return toPromiseArray(pipe(interval(1), take(1), flatMap(x=> pipe(fromIter([0]),map(x=>`-${x}-`) ) )))
@@ -98,7 +139,7 @@ jb.component('dataTest.callbag.RawflatMapActivePassive', {
   })
 })
 
-jb.component('dataTest.callbag.RawflatMapActiveActive', {
+jb.component('dataTest.callbag.rawflatMapActiveActive', {
   impl: dataTest({
     calculate: ctx => { const {interval, take,flatMap,fromIter,pipe,map,toPromiseArray} = jb.callbag
       return toPromiseArray(pipe(interval(1), take(1), flatMap(x=> pipe(interval(1), take(1),map(x=>`-${x}-`) ) )))

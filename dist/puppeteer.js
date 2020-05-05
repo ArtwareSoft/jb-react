@@ -118,14 +118,14 @@ jb.component('pptr.gotoPage', {
     rx.var('page', ({data}) => data),
     rx.var('url', ({},{},{url}) => url),
     pptr.logActivity('start navigation', '%$url%'),
-    //rx.doPromise(({},{page},{url}) => page.goto(url)),
+    rx.doPromise(({},{page},{url}) => page.goto(url)),
     pptr.logActivity('after goto page', '%$url%'),
-    // rx.mapPromise((ctx,{},{frame}) => frame(ctx)),
-    // rx.var('frame'),
-    // // rx.doPromise(
-    // //     ({},{frame},{waitUntil,timeout}) => frame.waitForNavigation({waitUntil, timeout})
-    // //   ),
-    // pptr.logActivity('end navigation', '%$url%')
+    rx.mapPromise((ctx,{},{frame}) => frame(ctx)),
+    rx.var('frame'),
+    // rx.doPromise(
+    //     ({},{frame},{waitUntil,timeout}) => frame.waitForNavigation({waitUntil, timeout})
+    //   ),
+    pptr.logActivity('end navigation', '%$url%')
   )
 })
 
