@@ -56,7 +56,7 @@ jb.pptr = {
         }
         socket.onerror = e => receive.error(e)
         socket.onclose = () => receive.complete()
-        pipe(commands, subscribe(cmd => socket.send(JSON.stringify(cmd))))
+        socket.onopen = () => pipe(commands, subscribe(cmd => socket.send(JSON.stringify(cmd))))
 
         const comp = { events: skip(1)(receive), commands }
         jb.pptr._proxyComp = comp

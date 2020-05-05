@@ -56,7 +56,7 @@ jb.pptr = {
         }
         socket.onerror = e => receive.error(e)
         socket.onclose = () => receive.complete()
-        pipe(commands, subscribe(cmd => socket.send(JSON.stringify(cmd))))
+        socket.onopen = () => pipe(commands, subscribe(cmd => socket.send(JSON.stringify(cmd))))
 
         const comp = { events: skip(1)(receive), commands }
         jb.pptr._proxyComp = comp
@@ -115,17 +115,17 @@ jb.component('pptr.gotoPage', {
   ],
   impl: rx.innerPipe(
     rx.mapPromise(({},{browser}) => browser.newPage()),
-    rx.var('page', ({data}) => data),
-    rx.var('url', ({},{},{url}) => url),
-    pptr.logActivity('start navigation', '%$url%'),
-    rx.doPromise(({},{page},{url}) => page.goto(url)),
-    pptr.logActivity('after goto page', '%$url%'),
-    rx.mapPromise((ctx,{},{frame}) => frame(ctx)),
-    rx.var('frame'),
-    // rx.doPromise(
-    //     ({},{frame},{waitUntil,timeout}) => frame.waitForNavigation({waitUntil, timeout})
-    //   ),
-    pptr.logActivity('end navigation', '%$url%')
+    // rx.var('page', ({data}) => data),
+    // rx.var('url', ({},{},{url}) => url),
+    // pptr.logActivity('start navigation', '%$url%'),
+    // rx.doPromise(({},{page},{url}) => page.goto(url)),
+    // pptr.logActivity('after goto page', '%$url%'),
+    // rx.mapPromise((ctx,{},{frame}) => frame(ctx)),
+    // rx.var('frame'),
+    // // rx.doPromise(
+    // //     ({},{frame},{waitUntil,timeout}) => frame.waitForNavigation({waitUntil, timeout})
+    // //   ),
+    // pptr.logActivity('end navigation', '%$url%')
   )
 })
 
