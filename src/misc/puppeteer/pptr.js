@@ -23,7 +23,7 @@ jb.component('pptr.gotoPage', {
     rx.var('url', ({},{},{url}) => url),
     pptr.logActivity('start navigation', '%$url%'),
     rx.doPromise(({},{page},{url}) => page.goto(url)),
-    rx.mapPromise(({},{},{frame}) => frame()),
+    rx.mapPromise((ctx,{},{frame}) => frame(ctx)),
     rx.var('frame'),
     rx.doPromise(
         ({},{frame},{waitUntil,timeout}) => frame.waitForNavigation({waitUntil, timeout})
