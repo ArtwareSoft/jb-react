@@ -10,27 +10,26 @@ jb.component('pptr.session', {
 })
 
 jb.component('pptr.gotoPage', {
-    type: 'rx',
-    params: [
-        {id: 'url', as: 'string', mandatory: true },
-        {id: 'frame', type: 'pptr.frame', dynamic: true, defaultValue: pptr.mainFrame() },
-        {id: 'waitUntil', as: 'string', options: [
-            'load:load event is fired','domcontentloaded:DOMContentLoaded event is fired',
-            'networkidle0:no more than 0 network connections for at least 500 ms',
-            'networkidle2:no more than 2 network connections for at least 500 ms'].join(',')},
-        {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait for in milliseconds' },
-    ],
-    impl: rx.innerPipe(
-        rx.mapPromise( (ctx,{browser}) => browser.newPage()),
-        rx.var('page', ({data}) => data),
-        rx.var('url', ({},{},{url}) => url),
-        pptr.logActivity('start navigation','%$url%'),
-        rx.doPromise( ({},{page},{url}) => page.goto(url)),
-        rx.mapPromise((ctx,{},{frame}) => frame(ctx)),
-        rx.var('frame'),
-        rx.doPromise( (ctx,{frame},{waitUntil,timeout}) => frame.waitForNavigation({waitUntil, timeout})),
-        pptr.logActivity('end navigation','%$url%')
-    )
+  type: 'rx',
+  params: [
+    {id: 'url', as: 'string', mandatory: true},
+    {id: 'frame', type: 'pptr.frame', dynamic: true, defaultValue: pptr.mainFrame()},
+    {id: 'waitUntil', as: 'string', options: 'load:load event is fired,domcontentloaded:DOMContentLoaded event is fired,networkidle0:no more than 0 network connections for at least 500 ms,networkidle2:no more than 2 network connections for at least 500 ms'},
+    {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait for in milliseconds'}
+  ],
+  impl: rx.innerPipe(
+    rx.mapPromise(({},{browser}) => browser.newPage()),
+    rx.var('page', ({data}) => data),
+    rx.var('url', ({},{},{url}) => url),
+    pptr.logActivity('start navigation', '%$url%'),
+    rx.doPromise(({},{page},{url}) => page.goto(url)),
+    rx.mapPromise(({},{},{frame}) => frame()),
+    rx.var('frame'),
+    rx.doPromise(
+        ({},{frame},{waitUntil,timeout}) => frame.waitForNavigation({waitUntil, timeout})
+      ),
+    pptr.logActivity('end navigation', '%$url%')
+  )
 })
 
 jb.component('pptr.logData', {
@@ -172,7 +171,7 @@ jb.component('pptr.endlessScrollDown', {
 
 jb.component('pptr.mainFrame', {
     type: 'pptr.frame',
-    impl: (ctx,{page}) => page.mainFrame()
+    impl: ctx => ctx.vars.page.mainFrame()
 })
 
 jb.component('pptr.frameByIndex', {
@@ -180,7 +179,7 @@ jb.component('pptr.frameByIndex', {
     params: [
         {id: 'index', as: 'number', defaultValue: 0, mandatory: true}
     ],    
-    impl: (ctx,{page}) => page.frames()[index]
+    impl: ctx => ctx.vars.page.frames()[index]
 })
 
 // page.mouse.move(100, 100);
