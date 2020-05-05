@@ -59,6 +59,7 @@ jb.pptr = {
         pipe(commands, subscribe(cmd => socket.send(JSON.stringify(cmd))))
 
         const comp = { events: skip(1)(receive), commands }
+        jb.pptr._proxyComp = comp
         pipe(receive,take(1),
             doPromise(m => m == 'loadCodeReq' && ctx.setVar('comp',comp).run(pptr.sendCodeToServer())),
             subscribe(()=> comp.commands.next({run: ctx.profile})))
@@ -77,7 +78,8 @@ jb.component('pptr.sendCodeToServer', {
         if (!st.host) return Promise.resolve()
         return modules.split(',').reduce((pr,module) => pr.then(() => {
             const moduleFileName = `${st.host.pathOfDistFolder()}/${module}.js`
-            return st.host.getFile(moduleFileName).then( loadCode => ctx.vars.comp.commands.next({ loadCode, moduleFileName }))
+            return st.host.getFile(moduleFileName).then( 
+                loadCode => (ctx.vars.comp || jb.pptr._proxyComp).commands.next({ loadCode, moduleFileName }))
         }), Promise.resolve())
     }
 })
