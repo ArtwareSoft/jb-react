@@ -91,7 +91,7 @@ jb.component('pptr.gotoPage', {
   params: [
     {id: 'url', as: 'string', mandatory: true},
     {id: 'frame', type: 'pptr.frame', dynamic: true, defaultValue: pptr.mainFrame()},
-    {id: 'waitUntil', as: 'string', options: 'load:load event is fired,domcontentloaded:DOMContentLoaded event is fired,networkidle0:no more than 0 network connections for at least 500 ms,networkidle2:no more than 2 network connections for at least 500 ms'},
+    {id: 'waitUntil', as: 'string', defaultValue:'load', options: 'load:load event is fired,domcontentloaded:DOMContentLoaded event is fired,networkidle0:no more than 0 network connections for at least 500 ms,networkidle2:no more than 2 network connections for at least 500 ms'},
     {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait for in milliseconds'}
   ],
   impl: rx.innerPipe(
@@ -262,7 +262,10 @@ jb.component('pptr.frameByIndex', {
 // page.mouse.move(100, 100);
 // page.mouse.down();
 // page.mouse.move(200, 200);
-// page.mouse.up();;
+// page.mouse.up();
+// await page.type('#mytextarea', 'Hello'); // Types instantly
+// await page.type('#mytextarea', 'World', {delay: 100}); // Types slower, like a user
+//page.setJavaScriptEnabled(enabled);
 
 jb.ns('pptr')
 
