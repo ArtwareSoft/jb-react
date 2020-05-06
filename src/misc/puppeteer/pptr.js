@@ -125,9 +125,10 @@ jb.component('pptr.type', {
     params: [
         {id: 'text', as: 'string', mandatory: true },
         {id: 'selector', as: 'string', defaultValue: 'form input[type=text]' },
+        {id: 'enterAtEnd', as: 'boolean', defaultValue: true },
         {id: 'delay', as: 'number', defaultValue: 100, description: 'time between clicks' },
     ],
-    impl: rx.mapPromise((ctx,{frame},{text, selector,delay}) => frame.type(selector, text, {delay}))
+    impl: rx.mapPromise((ctx,{frame},{text, enterAtEnd, selector,delay}) => frame.type(selector, text + enterAtEnd ? String.fromCharCode(13): '', {delay}))
 })
 
 jb.component('pptr.closeBrowser', {
