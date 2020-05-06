@@ -24,8 +24,7 @@ jb.component('puppeteerDemo.main', {
               true,
               [
                 pptr.gotoPage('http://www.artwaresoft.com/#?page=home'),
-                pptr.waitForSelector('.fld__Label3'),
-                pptr.extractWithSelector('.fld__Label3')
+                pptr.extractBySelector('.fld__Label3')
               ]
             ),
             raised: 'true'
@@ -52,7 +51,7 @@ jb.component('puppeteerDemo.main', {
                 '$': 'pptr.headlessPage',
                 url: 'http://www.google.com',
                 extract: {'$': 'pptr.extractContent', selector: 'img', extract: 'src', multiple: true},
-                features: pptr.waitForSelector({selector: 'img'}),
+                features: pptr.waitForSelector('img'),
                 showBrowser: true
               }
             ]

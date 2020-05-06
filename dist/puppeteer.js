@@ -144,14 +144,16 @@ jb.component('pptr.logActivity', {
     impl: rx.doPromise((ctx,{comp},{activity, description}) => comp.events.next({$: activity, description, ctx }))
 })
 
-jb.component('pptr.extractWithSelector', {
+jb.component('pptr.extractBySelector', {
     type: 'rx,pptr',
     params: [
         {id: 'selector', as: 'string' },
         {id: 'extract', as: 'string', options: 'value,innerHTML,outerHTML,href', defaultValue: 'innerHTML'},
         {id: 'multiple', as: 'boolean' },
+        {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait in milliseconds' },
     ],
     impl: rx.innerPipe(
+        rx.doPromise((ctx,{frame},{selector,timeout}) => frame.waitForSelector(selector,{timeout})),
         rx.mapPromise((ctx,{frame},{selector,extract,multiple}) => 
             frame.evaluate(`_jb_extract = '${extract}'`).then(()=>
                 multiple ? frame.$$eval(selector, elems => elems.map(el=>el[_jb_extract]))
@@ -159,6 +161,17 @@ jb.component('pptr.extractWithSelector', {
                 rx.toMany('%%'), 
         pptr.logData()
     )
+})
+
+jb.component('pptr.waitForSelector', {
+    type: 'rx,pptr',
+    params: [
+        {id: 'selector', as: 'string' },
+        {id: 'visible', as: 'boolean', description: 'wait for element to be present in DOM and to be visible, i.e. to not have display: none or visibility: hidden CSS properties' },
+        {id: 'hidden ', as: 'boolean', description: 'wait for element to not be found in the DOM or to be hidden' },
+        {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait for in milliseconds' },
+    ],
+    impl: rx.doPromise((ctx,{frame},{selector,visible,hidden, timeout}) => frame.waitForSelector(selector,{visible,hidden, timeout}))
 })
 
 jb.component('pptr.extractWithEval', {
@@ -198,17 +211,6 @@ jb.component('pptr.waitForFunction', {
         {id: 'timeout', as: 'number', defaultValue: 30000, description: '0 to disable, maximum time to wait for in milliseconds' },
     ],
     impl: rx.mapPromise((ctx,{frame},{condition,polling,timeout}) => frame.waitForFunction(condition,{polling, timeout}))
-})
-
-jb.component('pptr.waitForSelector', {
-    type: 'rx,pptr',
-    params: [
-        {id: 'selector', as: 'string' },
-        {id: 'visible', as: 'boolean', description: 'wait for element to be present in DOM and to be visible, i.e. to not have display: none or visibility: hidden CSS properties' },
-        {id: 'hidden ', as: 'boolean', description: 'wait for element to not be found in the DOM or to be hidden' },
-        {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait for in milliseconds' },
-    ],
-    impl: rx.mapPromise((ctx,{frame},{selector,visible,hidden, timeout}) => frame.waitForSelector(selector,{visible,hidden, timeout}))
 })
 
 jb.component('pptr.waitForNavigation', {
