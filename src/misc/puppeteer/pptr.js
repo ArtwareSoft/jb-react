@@ -45,13 +45,14 @@ jb.component('pptr.extractWithSelector', {
         {id: 'extract', as: 'string', options: 'value,innerHTML,outerHTML,href', defaultValue: 'innerHTML'},
         {id: 'multiple', as: 'boolean' },
     ],
-    impl: rx.innerPipe(rx.mapPromise((ctx,{frame},{selector,extract,multiple}) => 
-        frame.evaluate(`_jb_extract = '${extract}'`).then(()=>
+    impl: rx.innerPipe(
+        rx.mapPromise((ctx,{frame},{selector,extract,multiple}) => 
+            frame.evaluate(`_jb_extract = '${extract}'`).then(()=>
                 multiple ? frame.$$eval(selector, elems => elems.map(el=>el[_jb_extract]))
                 : frame.$eval(selector, el => [el[_jb_extract]] ))), 
 //                rx.flatMap('%%'), 
-                pptr.logData()
-            )
+        pptr.logData()
+    )
 })
 
 jb.component('pptr.extractWithEval', {
@@ -99,7 +100,6 @@ jb.component('pptr.waitForSelector', {
         {id: 'selector', as: 'string' },
         {id: 'visible', as: 'boolean', description: 'wait for element to be present in DOM and to be visible, i.e. to not have display: none or visibility: hidden CSS properties' },
         {id: 'hidden ', as: 'boolean', description: 'wait for element to not be found in the DOM or to be hidden' },
-        {id: 'whenDone', type: 'action', dynamic: true, templateValue: pptr.endSession() },
         {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait for in milliseconds' },
     ],
     impl: rx.mapPromise((ctx,{frame},{selector,visible,hidden, timeout}) => frame.waitForSelector(selector,{visible,hidden, timeout}))

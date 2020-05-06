@@ -84,6 +84,10 @@ jb.component('studio.dataBrowse', {
         controls: [
           controlWithCondition(isOfType('string,boolean,number', '%$obj%'), text('%$obj%')),
           controlWithCondition(
+            and(isOfType('array', '%$obj%'), '%$obj/time%', '%$obj/dir%'),
+            studio.showRxSniffer('%$obj%')
+          ),
+          controlWithCondition(
             isOfType('array', '%$obj%'),
             itemlist({
               items: '%$obj%',
@@ -146,7 +150,76 @@ jb.component('studio.dataBrowse', {
         'long text'
       )
     ],
-    features: group.wait({for: '%$objToShow%', loadingControl: text('...'), varName: 'obj'})
+    features: group.wait({
+      for: ctx => ctx.exp('%$objToShow%'),
+      loadingControl: text('...'),
+      varName: 'obj'
+    })
+  })
+})
+
+jb.component('studio.showRxSniffer', {
+  type: 'control',
+  params: [
+    {id: 'snifferArray'}
+  ],
+  impl: group({
+    controls: [
+      text({
+        text: pipeline(
+          Var('in', pipeline('%$snifferArray%', filter('%dir%==in'), count())),
+          Var('out', pipeline('%$snifferArray%', filter('%dir%==out'), count())),
+          'reactive operation: %$in% in, %$out% out'
+        )
+      }),
+      itemlist({
+        title: '',
+        items: '%$snifferArray%',
+        controls: group({
+          layout: layout.flex({spacing: '0'}),
+          controls: [
+            group({
+              title: 'data',
+              layout: layout.flex({justifyContent: data.if('%dir%==in', 'flex-start', 'flex-end')}),
+              controls: [
+                studio.dataBrowse('%d%')
+              ],
+              features: [css.width('100%'), css.margin({left: '10'})]
+            }),
+            button({
+              title: '%dir%',
+              action: openDialog({
+                id: '',
+                style: dialog.popup(),
+                content: group({
+                  controls: [
+                    studio.dataBrowse('%d/vars%')
+                  ]
+                }),
+                title: 'variables',
+                features: dialogFeature.uniqueDialog('variables')
+              }),
+              style: button.href(),
+              features: [css.margin({left: '10'}), feature.hoverTitle('show variables')]
+            }),
+            text({
+              text: '%time%',
+              title: 'time',
+              style: text.span(),
+              features: [css.opacity('0.5'), css.margin({left: '10'})]
+            })
+          ],
+          features: feature.byCondition('%dir%==out', css.color({background: 'lightGray'}))
+        }),
+        style: itemlist.ulLi(),
+        visualSizeLimit: 7,
+        features: [
+          itemlist.infiniteScroll(),
+          css.height({height: '150', overflow: 'scroll', minMax: 'max'})
+        ]
+      })
+    ],
+    features: [css.width('400')]
   })
 })
 
@@ -158,67 +231,7 @@ jb.component('studio.probeDataView', {
         controls: [
           controlWithCondition(
             ({},{probeResult}) => jb.path(probeResult,'0.out.snifferResult'),
-            group({
-              controls: [
-                text({
-                  text: pipeline(
-                    Var('in', pipeline('%$probeResult/out%', filter('%dir%==in'), count())),
-                    Var('out', pipeline('%$probeResult/out%', filter('%dir%==out'), count())),
-                    'reactive operation: %$in% in, %$out% out'
-                  )
-                }),
-                itemlist({
-                  title: '',
-                  items: '%$probeResult/0/out%',
-                  controls: group({
-                    title: pipeline(
-                      Var('in', pipeline('%$probeResult/out%', filter('%dir%==in'), count())),
-                      Var('out', pipeline('%$probeResult/out%', filter('%dir%==out'), count())),
-                      'reactive operation: %$in% in, %$out% out'
-                    ),
-                    controls: group({
-                      layout: layout.flex({spacing: '0'}),
-                      controls: [
-                        group({
-                          title: 'data',
-                          layout: layout.flex({justifyContent: data.if('%dir%==in', 'flex-start', 'flex-end')}),
-                          controls: [
-                            studio.dataBrowse('%d%')
-                          ],
-                          features: [css.width('100%'), css.margin({left: '10'})]
-                        }),
-                        button({
-                          title: '%dir%',
-                          action: openDialog({
-                            id: '',
-                            style: dialog.popup(),
-                            content: group({
-                              controls: [
-                                studio.dataBrowse('%d/vars%')
-                              ]
-                            }),
-                            title: 'variables',
-                            features: dialogFeature.uniqueDialog('variables')
-                          }),
-                          style: button.href(),
-                          features: [css.margin({left: '10'}), feature.hoverTitle('show variables')]
-                        }),
-                        text({
-                          text: '%time%',
-                          title: 'time',
-                          style: text.span(),
-                          features: [css.opacity('0.5'), css.margin({left: '10'})]
-                        })
-                      ]
-                    }),
-                    features: feature.byCondition('%dir%==out', css.color({background: 'lightGray'}))
-                  }),
-                  style: itemlist.ulLi(),
-                  visualSizeLimit: 7,
-                  features: [itemlist.infiniteScroll(), css.height({height: '400', minMax: 'max'})]
-                })
-              ]
-            })
+            studio.showRxSniffer('%$probeResult/out%')
           ),
           itemlist({
             items: '%$probeResult%',

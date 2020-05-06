@@ -41,7 +41,7 @@ jb.pptr = {
             if (depth < 1) return
             if (['string','boolean','number'].indexOf(typeof obj) != -1) return obj
             if (typeof obj == 'object' && !(obj.constructor.name||'').match(/^Object|Array$/)) return obj.constructor.name
-            return typeof obj == 'object' && jb.objFromEntries( jb.entries(obj).filter(e =>typeof e[1] == 'object').map(([id,val])=>[id,chopObj(val, depth-1)]))
+            return typeof obj == 'object' && jb.objFromEntries( jb.entries(obj).map(([id,val])=>[id,chopObj(val, depth-1)]))
         }
     },
     createProxyComp(ctx) {

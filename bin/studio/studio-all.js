@@ -5437,7 +5437,7 @@ jb.component('group.wait', {
   category: 'group:70',
   description: 'wait for asynch data before showing the control',
   params: [
-    {id: 'for', mandatory: true, dynamic: true, description: 'a promise to wait for'},
+    {id: 'for', mandatory: true, dynamic: true, description: 'a promise or rx'},
     {id: 'loadingControl', type: 'control', defaultValue: text('loading ...'), dynamic: true},
     {id: 'error', type: 'control', defaultValue: text('error: %$error%'), dynamic: true},
     {id: 'varName', as: 'string', description: 'variable for the promise result'}
@@ -5453,7 +5453,7 @@ jb.component('group.wait', {
       }),
     interactive(
         (ctx,{cmp},{varName}) => !cmp.state.dataArrived && !cmp.state.error &&
-      Promise.resolve(ctx.componentContext.params.for()).then(data =>
+        Promise.resolve(jb.toSynchArray(ctx.componentContext.params.for())).then(data =>
           cmp.refresh({ dataArrived: true }, {
             srcCtx: ctx.componentContext,
             extendCtx: ctx => ctx.setVar(varName,data).setData(data)
@@ -39803,6 +39803,10 @@ jb.component('studio.dataBrowse', {
         controls: [
           controlWithCondition(isOfType('string,boolean,number', '%$obj%'), text('%$obj%')),
           controlWithCondition(
+            and(isOfType('array', '%$obj%'), '%$obj/time%', '%$obj/dir%'),
+            studio.showRxSniffer('%$obj%')
+          ),
+          controlWithCondition(
             isOfType('array', '%$obj%'),
             itemlist({
               items: '%$obj%',
@@ -39865,7 +39869,76 @@ jb.component('studio.dataBrowse', {
         'long text'
       )
     ],
-    features: group.wait({for: '%$objToShow%', loadingControl: text('...'), varName: 'obj'})
+    features: group.wait({
+      for: ctx => ctx.exp('%$objToShow%'),
+      loadingControl: text('...'),
+      varName: 'obj'
+    })
+  })
+})
+
+jb.component('studio.showRxSniffer', {
+  type: 'control',
+  params: [
+    {id: 'snifferArray'}
+  ],
+  impl: group({
+    controls: [
+      text({
+        text: pipeline(
+          Var('in', pipeline('%$snifferArray%', filter('%dir%==in'), count())),
+          Var('out', pipeline('%$snifferArray%', filter('%dir%==out'), count())),
+          'reactive operation: %$in% in, %$out% out'
+        )
+      }),
+      itemlist({
+        title: '',
+        items: '%$snifferArray%',
+        controls: group({
+          layout: layout.flex({spacing: '0'}),
+          controls: [
+            group({
+              title: 'data',
+              layout: layout.flex({justifyContent: data.if('%dir%==in', 'flex-start', 'flex-end')}),
+              controls: [
+                studio.dataBrowse('%d%')
+              ],
+              features: [css.width('100%'), css.margin({left: '10'})]
+            }),
+            button({
+              title: '%dir%',
+              action: openDialog({
+                id: '',
+                style: dialog.popup(),
+                content: group({
+                  controls: [
+                    studio.dataBrowse('%d/vars%')
+                  ]
+                }),
+                title: 'variables',
+                features: dialogFeature.uniqueDialog('variables')
+              }),
+              style: button.href(),
+              features: [css.margin({left: '10'}), feature.hoverTitle('show variables')]
+            }),
+            text({
+              text: '%time%',
+              title: 'time',
+              style: text.span(),
+              features: [css.opacity('0.5'), css.margin({left: '10'})]
+            })
+          ],
+          features: feature.byCondition('%dir%==out', css.color({background: 'lightGray'}))
+        }),
+        style: itemlist.ulLi(),
+        visualSizeLimit: 7,
+        features: [
+          itemlist.infiniteScroll(),
+          css.height({height: '150', overflow: 'scroll', minMax: 'max'})
+        ]
+      })
+    ],
+    features: [css.width('400')]
   })
 })
 
@@ -39877,67 +39950,7 @@ jb.component('studio.probeDataView', {
         controls: [
           controlWithCondition(
             ({},{probeResult}) => jb.path(probeResult,'0.out.snifferResult'),
-            group({
-              controls: [
-                text({
-                  text: pipeline(
-                    Var('in', pipeline('%$probeResult/out%', filter('%dir%==in'), count())),
-                    Var('out', pipeline('%$probeResult/out%', filter('%dir%==out'), count())),
-                    'reactive operation: %$in% in, %$out% out'
-                  )
-                }),
-                itemlist({
-                  title: '',
-                  items: '%$probeResult/0/out%',
-                  controls: group({
-                    title: pipeline(
-                      Var('in', pipeline('%$probeResult/out%', filter('%dir%==in'), count())),
-                      Var('out', pipeline('%$probeResult/out%', filter('%dir%==out'), count())),
-                      'reactive operation: %$in% in, %$out% out'
-                    ),
-                    controls: group({
-                      layout: layout.flex({spacing: '0'}),
-                      controls: [
-                        group({
-                          title: 'data',
-                          layout: layout.flex({justifyContent: data.if('%dir%==in', 'flex-start', 'flex-end')}),
-                          controls: [
-                            studio.dataBrowse('%d%')
-                          ],
-                          features: [css.width('100%'), css.margin({left: '10'})]
-                        }),
-                        button({
-                          title: '%dir%',
-                          action: openDialog({
-                            id: '',
-                            style: dialog.popup(),
-                            content: group({
-                              controls: [
-                                studio.dataBrowse('%d/vars%')
-                              ]
-                            }),
-                            title: 'variables',
-                            features: dialogFeature.uniqueDialog('variables')
-                          }),
-                          style: button.href(),
-                          features: [css.margin({left: '10'}), feature.hoverTitle('show variables')]
-                        }),
-                        text({
-                          text: '%time%',
-                          title: 'time',
-                          style: text.span(),
-                          features: [css.opacity('0.5'), css.margin({left: '10'})]
-                        })
-                      ]
-                    }),
-                    features: feature.byCondition('%dir%==out', css.color({background: 'lightGray'}))
-                  }),
-                  style: itemlist.ulLi(),
-                  visualSizeLimit: 7,
-                  features: [itemlist.infiniteScroll(), css.height({height: '400', minMax: 'max'})]
-                })
-              ]
-            })
+            studio.showRxSniffer('%$probeResult/out%')
           ),
           itemlist({
             items: '%$probeResult%',
@@ -43162,6 +43175,9 @@ st.projectHosts = {
 (function() {
 const st = jb.studio
 
+function resolve(x) {
+    return Promise.resolve(jb.toSynchArray(x))
+}
 let probeCounter = 0
 st.Probe = class {
     constructor(ctx, noGaps) {
@@ -43189,7 +43205,7 @@ st.Probe = class {
         if (st.probeDisabled) {
             this.completed = false
             this.remark = 'probe disabled'
-            return Promise.resolve(this)
+            return resolve(this)
         }
 
         return this.simpleRun()
@@ -43199,8 +43215,8 @@ st.Probe = class {
             .catch(e => jb.logException(e,'probe run'))
             .then(() => // resolve all top promises in result.out
             (this.result || []).reduce((pr,item,i) =>
-                pr.then(_=>Promise.resolve(item.out)).then(resolved=> this.result[i].out =resolved),
-            Promise.resolve())
+                pr.then(_=>resolve(item.out)).then(resolved=> this.result[i].out =resolved),
+            resolve())
             )
             .then(() =>{
                 this.completed = true
@@ -43218,7 +43234,7 @@ st.Probe = class {
 
     simpleRun() {
         const st = jb.studio
-        return Promise.resolve(this.context.runItself()).then(res=>{
+        return resolve(this.context.runItself()).then(res=>{
             if (res && res.renderVdom) {
                 const vdom = res.renderVdom()
                 return ({props: res.renderProps, vdom , cmp: res})
@@ -43254,11 +43270,11 @@ st.Probe = class {
         const obj = this.probe[_path][0].out
         const hasSideEffect = st.previewjb.comps[st.compNameOfPath(breakingPath)] && (st.previewjb.comps[st.compNameOfPath(breakingPath)].type ||'').indexOf('has-side-effects') != -1
         if (obj && !hasSideEffect && obj[breakingProp] && typeof obj[breakingProp] == 'function')
-            return Promise.resolve(obj[breakingProp]())
+            return resolve(obj[breakingProp]())
                 .then(_=>this.handleGaps(_path))
 
         if (!hasSideEffect)
-            return Promise.resolve(parentCtx.runInner(parentCtx.profile[breakingProp],st.paramDef(breakingPath),breakingProp))
+            return resolve(parentCtx.runInner(parentCtx.profile[breakingProp],st.paramDef(breakingPath),breakingProp))
                 .then(_=>this.handleGaps(_path))
 
         // could not solve the gap

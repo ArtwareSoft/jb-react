@@ -1,6 +1,9 @@
 (function() {
 const st = jb.studio
 
+function resolve(x) {
+    return Promise.resolve(jb.toSynchArray(x))
+}
 let probeCounter = 0
 st.Probe = class {
     constructor(ctx, noGaps) {
@@ -28,7 +31,7 @@ st.Probe = class {
         if (st.probeDisabled) {
             this.completed = false
             this.remark = 'probe disabled'
-            return Promise.resolve(this)
+            return resolve(this)
         }
 
         return this.simpleRun()
@@ -38,8 +41,8 @@ st.Probe = class {
             .catch(e => jb.logException(e,'probe run'))
             .then(() => // resolve all top promises in result.out
             (this.result || []).reduce((pr,item,i) =>
-                pr.then(_=>Promise.resolve(item.out)).then(resolved=> this.result[i].out =resolved),
-            Promise.resolve())
+                pr.then(_=>resolve(item.out)).then(resolved=> this.result[i].out =resolved),
+            resolve())
             )
             .then(() =>{
                 this.completed = true
@@ -57,7 +60,7 @@ st.Probe = class {
 
     simpleRun() {
         const st = jb.studio
-        return Promise.resolve(this.context.runItself()).then(res=>{
+        return resolve(this.context.runItself()).then(res=>{
             if (res && res.renderVdom) {
                 const vdom = res.renderVdom()
                 return ({props: res.renderProps, vdom , cmp: res})
@@ -93,11 +96,11 @@ st.Probe = class {
         const obj = this.probe[_path][0].out
         const hasSideEffect = st.previewjb.comps[st.compNameOfPath(breakingPath)] && (st.previewjb.comps[st.compNameOfPath(breakingPath)].type ||'').indexOf('has-side-effects') != -1
         if (obj && !hasSideEffect && obj[breakingProp] && typeof obj[breakingProp] == 'function')
-            return Promise.resolve(obj[breakingProp]())
+            return resolve(obj[breakingProp]())
                 .then(_=>this.handleGaps(_path))
 
         if (!hasSideEffect)
-            return Promise.resolve(parentCtx.runInner(parentCtx.profile[breakingProp],st.paramDef(breakingPath),breakingProp))
+            return resolve(parentCtx.runInner(parentCtx.profile[breakingProp],st.paramDef(breakingPath),breakingProp))
                 .then(_=>this.handleGaps(_path))
 
         // could not solve the gap

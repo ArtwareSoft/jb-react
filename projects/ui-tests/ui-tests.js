@@ -106,6 +106,18 @@ jb.component('uiTest.waitForWithPipe', {
   })
 })
 
+jb.component('uiTest.waitForRx', {
+  impl: uiTest({
+    control: group({
+      controls: text('%%'),
+      features: group.wait({for: rx.pipe(rx.interval(10), rx.take(1), rx.map('hello'))})
+    }),
+    action: delay(40),
+    expectedResult: and(contains('hello'), not(contains('loading'))),
+    expectedCounters: {initCmp: 4}
+  })
+})
+
 // jb.component('ui-test.wait-for-with-MD', {
 //   impl: uiTest({
 //     control: group({
