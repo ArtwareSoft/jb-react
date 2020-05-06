@@ -22,9 +22,9 @@ jb.pptr = {
 
         ctx.run(
             rx.pipe(
-                rx.var('comp',comp),
                 rx.fromPromise(() => this.getOrCreateBrowser(showBrowser)),
                 rx.var('browser'),
+                rx.var('comp',comp),
                 () => source => pipe(source, ...wrappedActions),
                 rx.catchError(err =>comp.events.next({$: 'error', err })),
                 rx.subscribe('')
