@@ -25,7 +25,7 @@
               }
               inloop = false
           }
-          sink(0, (t, d) => {
+          sink(0, function fromIter(t, d) {
               if (t === 1) {
                   got1 = true
                   if (!inloop && !(res && res.done)) loop()
@@ -41,7 +41,7 @@
       },
       Do: f => source => (start, sink) => {
           if (start !== 0) return
-          source(0, (t, d) => {
+          source(0, function Do(t, d) {
               if (t == 1) f(d)
               sink(t, d)
           })
@@ -49,7 +49,7 @@
       filter: condition => source => (start, sink) => {
           if (start !== 0) return
           let talkback
-          source(0, (t, d) => {
+          source(0, function filter(t, d) {
             if (t === 0) {
               talkback = d
               sink(t, d)
@@ -62,7 +62,7 @@
       },
       map: f => source => (start, sink) => {
           if (start !== 0) return
-          source(0, (t, d) => {
+          source(0, function map(t, d) {
               sink(t, t === 1 ? f(d) : d)
           })
       },
@@ -70,7 +70,7 @@
           compare = compare || is
           if (start !== 0) return
           let inited = false, prev, talkback
-          source(0, (type, data) => {
+          source(0, function distinctUntilChanged(type, data) {
               if (type === 0) talkback = data
               if (type !== 1) {
                   sink(type, data)
@@ -92,11 +92,11 @@
               if (start !== 0) return
               let sourceTalkback, notifierTalkback, inited = false, done = UNIQUE
   
-              source(0, (t, d) => {
+              source(0, function takeUntil(t, d) {
                   if (t === 0) {
                       sourceTalkback = d
   
-                      notifier(0, (t, d) => {
+                      notifier(0, function takeUntilNotifier(t, d) {
                           if (t === 0) {
                               notifierTalkback = d
                               notifierTalkback(1)
@@ -120,7 +120,7 @@
                       })
                       inited = true
   
-                      sink(0, (t, d) => {
+                      sink(0, function takeUntilSink(t, d) {
                           if (done !== UNIQUE) return
                           if (t === 2 && notifierTalkback) notifierTalkback(2)
                           sourceTalkback(t, d)
@@ -141,7 +141,26 @@
             const queue = []
             let innerTalkback, sourceTalkback, sourceEnded
         
-            const innerSink = (t, d) => {
+            source(0, function concatMap(t, d) {
+              if (t === 0) {
+                sourceTalkback = d
+                sink(0, wrappedSink)
+                return
+              } else if (t === 1) {
+                if (innerTalkback) 
+                  queue.push(d) 
+                else {
+                  const src = makeSource(d)
+                  src(0, concatMapSink)
+                  src(1)
+                }
+              } else if (t === 2) {
+                sourceEnded = true
+                stopOrContinue(d)
+              }
+            })
+
+            function concatMapSink(t, d) {
               if (t === 0) {
                 innerTalkback = d
                 innerTalkback(1)
@@ -155,34 +174,15 @@
                   return
                 }
                 const src = makeSource(queue.shift())
-                src(0, innerSink)
+                src(0, concatMapSink)
               }
             }
         
-            const wrappedSink = (t, d) => {
+            function wrappedSink(t, d) {
               if (t === 2 && innerTalkback) innerTalkback(2, d)
               sourceTalkback(t, d)
             }
         
-            source(0, (t, d) => {
-              if (t === 0) {
-                sourceTalkback = d
-                sink(0, wrappedSink)
-                return
-              } else if (t === 1) {
-                if (innerTalkback) 
-                  queue.push(d) 
-                else {
-                  const src = makeSource(d)
-                  src(0, innerSink)
-                  src(1)
-                }
-              } else if (t === 2) {
-                sourceEnded = true
-                stopOrContinue(d)
-              }
-            })
-
             function stopOrContinue(d) {
               if (sourceEnded && !innerTalkback && queue.length == 0) 
                 sink(2, d)
@@ -201,7 +201,7 @@
           let sourceEnded = false
           let inputSourceTalkback = null
 
-          source(0, (t, d) => {
+          source(0, function flatMap(t, d) {
             if (t === 0) {
                 inputSourceTalkback = d
                 sink(0, pullHandle)
@@ -248,7 +248,7 @@
       },
       merge(..._sources) {
           const sources = _sources.filter(x=>x).filter(x=>jb.callbag.fromAny(x))
-          return (start, sink) => {
+          return function merge(start, sink) {
             if (start !== 0) return
             const n = sources.length
             const sourceTalkbacks = new Array(n)
@@ -284,7 +284,7 @@
           let disposed = false
           const handler = ev => sink(1, ev)
         
-          sink(0, (t, d) => {
+          sink(0, function fromEvent(t, d) {
             if (t !== 2) {
               return
             }
@@ -316,7 +316,7 @@
             sink(2, err)
           }
           Promise.resolve(promise).then(onfulfilled, onrejected)
-          sink(0, (t, d) => {
+          sink(0, function fromPromise(t, d) {
             if (t === 2) ended = true
           })
       },
@@ -347,7 +347,7 @@
       },
       catchError: fn => source => (start, sink) => {
           if (start !== 0) return
-          source(0, (t, d) => t === 2 && typeof d !== 'undefined' ? fn(d) : sink(t, d))
+          source(0, function catchError(t, d) { return t === 2 && typeof d !== 'undefined' ? fn(d) : sink(t, d) } )
       },
       create: prod => (start, sink) => {
           if (start !== 0) return
@@ -382,7 +382,7 @@
       debounceTime: duration => source => (start, sink) => {
           if (start !== 0) return
           let timeout
-          source(0, (t, d) => {
+          source(0, function debounceTime(t, d) {
             // every event clears the existing timeout, if any
             if (timeout) clearTimeout(timeout)
             if (t === 1) timeout = setTimeout(() => sink(1, d), typeof duration == 'function' ? duration() : duration)
@@ -400,7 +400,7 @@
               sourceTalkback(t, d)
             } else if (taken < max) sourceTalkback(t, d)
           }
-          source(0, (t, d) => {
+          source(0, function take(t, d) {
             if (t === 0) {
               sourceTalkback = d
               sink(0, talkback)
@@ -424,7 +424,7 @@
           let talkback
           let lastVal
           let matched = false
-          source(0, (t, d) => {
+          source(0, function last(t, d) {
             if (t === 0) {
               talkback = d
               sink(t, d)
@@ -442,7 +442,7 @@
       },
       forEach: operation => source => {
         let talkback
-        source(0, (t, d) => {
+        source(0, function forEach(t, d) {
             if (t === 0) talkback = d
             if (t === 1) operation(d)
             if (t === 1 || t === 0) talkback(1)
@@ -452,7 +452,7 @@
           if (typeof listener === "function") listener = { next: listener }
           let { next, error, complete } = listener
           let talkback
-          source(0, (t, d) => {
+          source(0, function subscribe(t, d) {
             if (t === 0) talkback = d
             if (t === 1 && next) next(d)
             if (t === 1 || t === 0) talkback(1)  // Pull
@@ -481,7 +481,7 @@
           const res = []
           let talkback
           return new Promise((resolve, reject) => {
-                  source(0, (t, d) => {
+                  source(0, function toPromiseArray(t, d) {
                       if (t === 0) talkback = d
                       if (t === 1) res.push(d)
                       if (t === 1 || t === 0) talkback(1)  // Pull
@@ -493,7 +493,7 @@
       interval: period => (start, sink) => {
         if (start !== 0) return
         let i = 0;
-        const id = setInterval(() => {
+        const id = setInterval(function set_interval() {
           sink(1, i++)
         }, period)
         sink(0, t => {
@@ -507,7 +507,7 @@
           let trackPull = false
           let lastPull
         
-          sink(0, (t, d) => {
+          sink(0, function startWith(t, d) {
             if (trackPull && t === 1) {
               lastPull = [1, d]
             }
@@ -530,7 +530,7 @@
         
           if (disposed) return
         
-          source(0, (t, d) => {
+          source(0, function startWith(t, d) {
             if (t === 0) {
               inputTalkback = d
               trackPull = false
@@ -546,7 +546,7 @@
       },
       delay: duration => source => (start, sink) => {
           if (start !== 0) return
-          source(0,(t,d) => {
+          source(0, function delay(t,d) {
               if (t !== 1) return sink(t,d)
               let id = setTimeout(()=> {
                   clearTimeout(id)
@@ -557,7 +557,7 @@
       skip: max => source => (start, sink) => {
           if (start !== 0) return
           let skipped = 0, talkback
-          source(0, (t, d) => {
+          source(0, function skip(t, d) {
             if (t === 0) talkback = d
             if (t === 1 && skipped < max) {
                 skipped++
@@ -570,7 +570,7 @@
       sourceSniffer: (cb, snifferSubject) => (start, sink) => {
         if (start !== 0) return
         jb.log('snifferStarted',[])
-        cb(0, (t,d) => {
+        cb(0, function sniffer(t,d) {
           snif('out',t,d)
           sink(t,d)
         })
@@ -626,7 +626,7 @@
           else
               return jb.callbag.fromIter([source])
       },
-      isCallbag: source => typeof source == 'function' && source.toString().split('=>')[0].replace(/\s/g,'').match(/start,sink|t,d/),
+      isCallbag: source => typeof source == 'function' && source.toString().split('=>')[0].split('{')[0].replace(/\s/g,'').match(/start,sink|t,d/),
       isCallbagFunc: source => typeof source == 'function' && source.toString().split('\n')[0].replace(/\s/g,'').match(/source|start,sink|t,d/)
   }
   

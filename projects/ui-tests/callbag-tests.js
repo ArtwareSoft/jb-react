@@ -163,15 +163,6 @@ jb.component('dataTest.callbag.rawFlatMapPassivePassive', {
   })
 })
 
-jb.component('dataTest.callbag.rawflatMapActivePassive', {
-  impl: dataTest({
-    calculate: ctx => { const {interval, take,flatMap,fromIter,pipe,map,toPromiseArray} = jb.callbag
-      return toPromiseArray(pipe(interval(1), take(1), flatMap(x=> pipe(fromIter([0]),map(x=>`-${x}-`) ) )))
-    },
-    expectedResult: equals('-0-')
-  })
-})
-
 jb.component('dataTest.callbag.rawflatMapPassiveActive', {
   impl: dataTest({
     calculate: ctx => { const {interval, take,flatMap,fromIter,pipe,map,toPromiseArray} = jb.callbag
@@ -245,7 +236,6 @@ jb.component('dataTest.callbag.mapPromiseActiveSource', {
           rx.interval(1),
           rx.take(1),
           rx.mapPromise(({data}) =>jb.delay(1).then(()=> data+2)),
-//          rx.map('%%')
         ),
     expectedResult: equals(2)
   })
@@ -275,8 +265,9 @@ jb.component('dataTest.callbagConcatMapBug1', {
   impl: dataTest({
     calculate: rx.pipe(
       rx.interval(1),
-      rx.take('10'),
-      rx.concatMap(rx.fromPromise(({data}) => jb.delay(1).then(()=> data+2)))
+      rx.take(10),
+      rx.concatMap(rx.fromPromise(({data}) => jb.delay(1).then(()=> data+2))),
+      rx.take('1')
     ),
     expectedResult: equals('2')
   })
@@ -293,14 +284,59 @@ jb.component('dataTest.callbagConcatMapOrderTiming', {
   })
 })
 
-jb.component('dataTest.callbagFlatMapTiming', {
+jb.component('dataTest.callbagConcatMapWithInterval', {
+  impl: dataTest({
+    calculate: rx.pipe(
+      rx.fromIter(list(1)),
+      rx.concatMap(rx.pipe(rx.interval(20), rx.take(1))),
+    ),
+    expectedResult: equals(0)
+  })
+})
+
+jb.component('dataTest.callbagFlatMapCtx', {
   impl: dataTest({
     calculate: pipe(rx.pipe(
-      rx.fromIter(list(1,2,3)),
+      rx.fromIter(list(1)),
       rx.var('inp'),
-      rx.concatMap(rx.pipe(rx.delay(({data}) => data *20),rx.interval(100), rx.take(3), rx.map('%$inp%-%%') )),
+      rx.flatMap(rx.pipe(rx.fromIter(list(1)),rx.map('%$inp%'))),
     ), join(',')),
-    expectedResult: equals('1-0,2-0,3-0,1-1,2-1,3-1,1-2,2-2,3-2,')
+    expectedResult: equals('1')
+  })
+})
+
+jb.component('dataTest.callbagFlatMapReturnArray', {
+  impl: dataTest({
+    calculate: pipe(rx.pipe(
+      rx.fromIter(list('1,2,3')),
+      rx.flatMap(ctx => ctx.data.split(',').map(x=>ctx.setData(x))),
+    ), join(',')),
+    expectedResult: equals('1,2,3')
+  })
+})
+
+jb.component('dataTest.callbagToMany', {
+  impl: dataTest({
+    calculate: pipe(rx.pipe(
+      rx.fromIter(list('1,2,3')),
+      rx.ToMany(split(',')),
+    ), join(',')),
+    expectedResult: equals('1,2,3')
+  })
+})
+
+jb.component('dataTest.callbagFlatMapTiming', {
+  impl: dataTest({
+    calculate: pipe(
+      rx.pipe(
+          rx.interval('20'),
+          rx.take('3'),
+          rx.var('inp'),
+          rx.flatMap(rx.pipe(rx.interval(200), rx.take(3), rx.map('%$inp%-%%')))
+        ),
+      join(',')
+    ),
+    expectedResult: equals('0-0,1-0,2-0,0-1,1-1,2-1,0-2,1-2,2-2')
   })
 })
 

@@ -376,7 +376,7 @@ Object.assign(st,{
 		if (path.length)
 			res = st.previewjb.ctxByPath[path.join('~')]
 			
-		if (res && (res.profile.$ ||'').indexOf('rx.') != 0) // ignore rx ctxs
+		if ((jb.path(res,'profile.$') ||'').indexOf('rx.') != 0) // ignore rx ctxs
 			return res
 	},
 

@@ -2,14 +2,14 @@ jb.component('studio.openProperties', {
   type: 'action',
   params: [
     {id: 'focus', type: 'boolean', as: 'boolean'},
-    {id: 'innerPath', as: 'string'},
+    {id: 'innerPath', as: 'string'}
   ],
   impl: runActions(
     Var('path', studio.currentProfilePath()),
     action.if(
         studio.compName('%$path%'),
         openDialog({
-          style: dialog.studioFloating({id: 'studio-properties', width: '500'}),
+          style: dialog.studioFloating({id: 'studio-properties', width: '520'}),
           content: studio.properties({path: '%$path%', innerPath: '%$innerPath%', focus: '%$focus%'}),
           title: pipeline(
             {
@@ -264,7 +264,7 @@ jb.component('studio.colorPicker', {
       button({
       title: prettyPrint(studio.val('%$path%'), true),
       style: button.studioScript(),
-      action: (ctx,{cmp},{path}) => {        
+      action: (ctx,{cmp},{path}) => {
           const parent = document.createElement('div')
           const elemRect = cmp.base.getBoundingClientRect()
           parent.style = `position: absolute; z-index: 10000; top: ${elemRect.top+ 10}px; left: ${elemRect.left+40}px;`
@@ -274,7 +274,7 @@ jb.component('studio.colorPicker', {
             color: jb.studio.valOfPath(path),
             onChange: color => ctx.run(writeValue(studio.ref(path),color.rgbaString)),
             onDone: () => { picker.destroy(); document.body.removeChild(parent) }
-          }) 
+          })
           picker.show()
         },
       }),

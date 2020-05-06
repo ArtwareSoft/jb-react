@@ -51,18 +51,15 @@ function do_jb_run(ctx,parentParam,settings) {
         if (!run.impl)
           run.ctx.callerPath = ctx.path;
 
-        run.preparedParams.forEach(paramObj => {
+        run.preparedParams.forEach(function prepareParam(paramObj) {
           switch (paramObj.type) {
             case 'function': run.ctx.params[paramObj.name] = paramObj.outerFunc(run.ctx) ;  break;
             case 'array': run.ctx.params[paramObj.name] =
-                paramObj.array.map((prof,i) =>
-                  jb_run(new jbCtx(run.ctx,{profile: prof, forcePath: paramObj.forcePath || ctx.path + '~' + paramObj.path+ '~' + i, path: ''}), paramObj.param))
-                  //run.ctx.runInner(prof, paramObj.param, paramObj.path+'~'+i) )
+                paramObj.array.map(function prepareParamItem(prof,i) {
+                  return jb_run(new jbCtx(run.ctx,{profile: prof, forcePath: paramObj.forcePath || ctx.path + '~' + paramObj.path+ '~' + i, path: ''}), paramObj.param)}) 
               ; break;  // maybe we should [].concat and handle nulls
             default: run.ctx.params[paramObj.name] =
               jb_run(new jbCtx(run.ctx,{profile: paramObj.prof, forcePath: paramObj.forcePath || ctx.path + '~' + paramObj.path, path: ''}), paramObj.param);
-            //run.ctx.runInner(paramObj.prof, paramObj.param, paramObj.path)
-            //jb_run(paramObj.ctx, paramObj.param);
           }
         });
         let out;
@@ -748,11 +745,11 @@ Object.assign(jb,{
   },
   toSynchArray: item => {
     if (! jb.asArray(item).find(v=> jb.callbag.isCallbag(v) || jb.isPromise(v))) return item;
-    const {pipe, fromIter, toPromiseArray, mapPromise,flatMap, isCallbag} = jb.callbag
-    if (isCallbag(item)) return toPromiseArray(item)
-    if (Array.isArray(item) && isCallbag(item[0])) return toPromiseArray(item[0])
+    const {pipe, fromIter, toPromiseArray, mapPromise,flatMap, map, isCallbag} = jb.callbag
+    if (isCallbag(item)) return toPromiseArray(pipe(item,map(x=> x && x._parent ? x.data : x )))
+    if (Array.isArray(item) && isCallbag(item[0])) return toPromiseArray(pipe(item[0], map(x=> x && x._parent ? x.data : x )))
 
-    return pipe(
+    return pipe( // array of promises
           fromIter(jb.asArray(item)),
           mapPromise(x=> Promise.resolve(x)),
           flatMap(v => Array.isArray(v) ? v : [v]),

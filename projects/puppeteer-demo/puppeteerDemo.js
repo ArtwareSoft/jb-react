@@ -20,15 +20,13 @@ jb.component('puppeteerDemo.main', {
           }),
           button({
             title: 'search',
-            action: rx.pipe(
-              pptr.session(
-                  true,
-                  [
-                    pptr.gotoPage('http://www.artwaresoft.com/#?page=home'),
-                    pptr.waitForSelector({selector: '.fld__Label3'}),
-                    pptr.extractWithSelector('.fld__Label3')
-                  ]
-                )
+            action: pptr.session(
+              true,
+              [
+                pptr.gotoPage('http://www.artwaresoft.com/#?page=home'),
+                pptr.waitForSelector('.fld__Label3'),
+                pptr.extractWithSelector('.fld__Label3')
+              ]
             ),
             raised: 'true'
           })
@@ -54,10 +52,7 @@ jb.component('puppeteerDemo.main', {
                 '$': 'pptr.headlessPage',
                 url: 'http://www.google.com',
                 extract: {'$': 'pptr.extractContent', selector: 'img', extract: 'src', multiple: true},
-                features: pptr.waitForSelector({
-                  selector: 'img',
-                  whenDone: {'$': 'pptr.endSession', '$byValue': []}
-                }),
+                features: pptr.waitForSelector({selector: 'img'}),
                 showBrowser: true
               }
             ]

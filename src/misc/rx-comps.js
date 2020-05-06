@@ -7,7 +7,7 @@ jb.component('rx.pipe', {
   params: [
     {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, templateValue: []},
   ],
-  impl: (ctx,elems) => jb.callbag.pipe(...elems, jb.callbag.map(x=>x.data))
+  impl: (ctx,elems) => jb.callbag.pipe(...elems) //, jb.callbag.map(x=>x.data))
 })
 
 jb.component('rx.innerPipe', {
@@ -49,8 +49,9 @@ jb.component('rx.var', {
   ],
   impl: (ctx,name,value) => source => (start, sink) => {
     if (start != 0) return 
-    return source(0, (t, d) => 
-      sink(t, t === 1 ? d && d.setVar && d.setVar(name,value(d)) : d))
+    return source(0, function Var(t, d) {
+      sink(t, t === 1 ? d && d.setVar && d.setVar(name,value(d)) : d)
+    })
   }
 })
 
@@ -66,7 +67,7 @@ jb.component('rx.reduce', {
   impl: (ctx,varName,initialValue,value,avoidFirst) => source => (start, sink) => {
     if (start !== 0) return
     let acc, first = true
-    source(0, (t, d) => {
+    source(0, function reduce(t, d) {
       if (t == 1) {
         if (first) {
           acc = initialValue(d)
@@ -219,9 +220,18 @@ jb.component('rx.flatMap', {
   type: 'rx',
   category: 'operator,combine',
   params: [
-    {id: 'func', dynamic: true, mandatory: true, description: 'can return array, promise or callbag'},
+    {id: 'func', dynamic: true, mandatory: true, description: 'can return promise or callbag'},
   ],
-  impl: (ctx,func) => jb.callbag.flatMap(ctx2 => func(ctx2), (_ctx,res) => ctx.setData(res) )
+  impl: (ctx,func) => jb.callbag.flatMap(ctx2 => func(ctx2)) //, (_ctx,res) => ctx.setData(res) )
+})
+
+jb.component('rx.toMany', {
+  type: 'rx',
+  category: 'operator,combine',
+  params: [
+    {id: 'func', dynamic: true, mandatory: true, description: 'should return array'},
+  ],
+  impl: (ctx,func) => jb.callbag.flatMap(ctx2 => jb.asArray(func(ctx2)), (_ctx,res) => ctx.setData(res) )
 })
 
 jb.component('rx.concatMap', {
