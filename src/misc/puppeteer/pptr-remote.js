@@ -2,7 +2,7 @@ jb.pptr = {
     hasPptrServer: () => typeof hasPptrServer != 'undefined',
     createProxySocket: () => new WebSocket(`ws:${(jb.studio.studioWindow || jb.frame).location.hostname || 'localhost'}:8090`),
     createComp(ctx,args) {
-        return jb.pptr.hasPptrServer() ? this.createServerComp(ctx,args) : this.createProxyComp(ctx)
+        return jb.pptr.hasPptrServer() ? this.createServerComp(ctx,args) : this.createProxyComp(ctx,args)
     },
     puppeteer() {
         return puppeteer
@@ -45,7 +45,7 @@ jb.pptr = {
             return typeof obj == 'object' && jb.objFromEntries( jb.entries(obj).map(([id,val])=>[id,chopObj(val, depth-1)]))
         }
     },
-    createProxyComp(ctx) {
+    createProxyComp(ctx,{databindEvents}) {
         const {pipe,skip,take,toPromiseArray,subject,subscribe,doPromise} = jb.callbag
         const receive = subject(), commands = subject()
         const socket = jb.pptr.createProxySocket()
@@ -64,6 +64,7 @@ jb.pptr = {
         pipe(receive,take(1),
             doPromise(m => m == 'loadCodeReq' && ctx.setVar('comp',comp).run(pptr.sendCodeToServer())),
             subscribe(()=> comp.commands.next({run: ctx.profile})))
+        pipe(comp.events,subscribe(message =>jb.push(databindEvents, message,ctx)))
         
         return comp
     },
@@ -89,9 +90,10 @@ jb.component('pptr.session', {
     description: 'returns session object that can be used to interact with the server',
     params: [
         {id: 'showBrowser', as: 'boolean' },
+        {id: 'databindEvents', as: 'ref', description: 'bind events from puppeteer to array (watchable)' },
         {id: 'actions', type: 'rx[]', templateValue: [] },
     ],
-    impl: (ctx,showBrowser,actions) => jb.pptr.createComp(ctx,{showBrowser, actions})
+    impl: (ctx,showBrowser,databindEvents,actions) => jb.pptr.createComp(ctx,{showBrowser,databindEvents, actions})
 })
 
 jb.component('pptr.remoteActions', {

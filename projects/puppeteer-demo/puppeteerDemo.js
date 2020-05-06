@@ -20,22 +20,26 @@ jb.component('puppeteerDemo.main', {
           }),
           button({
             title: 'search',
-            action: pptr.session(
-              true,
-              [
+            action: pptr.session({
+              showBrowser: true,
+              databindEvents: '%$events%',
+              actions: [
                 pptr.gotoPage('http://www.artwaresoft.com/#?page=home'),
                 pptr.extractBySelector('.fld__Label3')
               ]
-            ),
+            }),
             raised: 'true'
           })
         ],
-        features: variable({name: 'pptrSession', value: pptr.session(true, [])})
+        features: variable({
+          name: 'pptrSession',
+          value: pptr.session({showBrowser: true, databindEvents: []})
+        })
       }),
       itemlist({
         items: '%$events%',
         controls: [
-          text('%%')
+          text({text: json.stringify('%%')})
         ],
         features: watchRef('%$events%')
       }),
