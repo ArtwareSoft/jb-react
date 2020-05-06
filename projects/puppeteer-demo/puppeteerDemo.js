@@ -27,7 +27,14 @@ jb.component('puppeteerDemo.main', {
               databindEvents: '%$events%',
               actions: [
                 pptr.gotoPage('http://www.google.com/'),
-                pptr.type({text: '%$query%', selector: 'form input[type=text]', delay: '100'})
+                pptr.waitForSelector('form input[name=q]'),
+                pptr.mouseClick('form input[name=q]'),
+                pptr.type({
+                  text: 'vitamin',
+                  selector: 'form input[name=q]',
+                  enterAtEnd: true,
+                  delay: '100'
+                })
               ]
             }),
             raised: 'true'
