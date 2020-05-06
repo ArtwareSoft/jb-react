@@ -26,10 +26,7 @@ jb.component('puppeteerDemo.main', {
               showBrowser: true,
               databindEvents: '%$events%',
               actions: [
-                pptr.gotoPage({
-                  url: 'http://www.google.com/',
-                  waitUntil: 'no more than 0 network connections for at least 500 ms'
-                }),
+                pptr.gotoPage({url: 'http://www.google.com/', waitUntil: 'networkidle0'}),
                 pptr.waitForSelector('form input[name=q]'),
                 pptr.type({
                   text: 'vitamin',
