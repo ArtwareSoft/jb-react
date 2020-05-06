@@ -1,7 +1,9 @@
 jb.ns('puppeteerDemo')
 
 jb.component('dataResource.events', {
-  watchableData: []
+  watchableData: [
+    
+  ]
 })
 
 jb.component('puppeteerDemo.main', {
@@ -23,10 +25,7 @@ jb.component('puppeteerDemo.main', {
             action: pptr.session({
               showBrowser: true,
               databindEvents: '%$events%',
-              actions: [
-                pptr.gotoPage('http://www.artwaresoft.com/#?page=home'),
-                pptr.extractBySelector('.fld__Label3')
-              ]
+              actions: [pptr.gotoPage('http://www.google.com/'), pptr.extractBySelector('.fld__Label3')]
             }),
             raised: 'true'
           })
@@ -41,7 +40,7 @@ jb.component('puppeteerDemo.main', {
         controls: [
           text({text: json.stringify('%%')})
         ],
-        features: watchRef('%$events%')
+        features: watchRef({ref: '%$events%', includeChildren: 'yes'})
       }),
       group({
         controls: [

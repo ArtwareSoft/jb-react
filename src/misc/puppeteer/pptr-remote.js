@@ -53,7 +53,7 @@ jb.pptr = {
             const _data = JSON.parse(data)
             if (_data.error)
                 jb.logError('error from puppeteer',[_data.error,ctx])
-            _data.res && receive.next(_data.res)
+            receive.next(_data)
         }
         socket.onerror = e => receive.error(e)
         socket.onclose = () => receive.complete()
@@ -64,7 +64,7 @@ jb.pptr = {
         pipe(receive,take(1),
             doPromise(m => m == 'loadCodeReq' && ctx.setVar('comp',comp).run(pptr.sendCodeToServer())),
             subscribe(()=> comp.commands.next({run: ctx.profile})))
-        pipe(comp.events,subscribe(message =>jb.push(databindEvents, message,ctx)))
+        pipe(receive,subscribe(message =>jb.push(databindEvents, message,ctx)))
         
         return comp
     },

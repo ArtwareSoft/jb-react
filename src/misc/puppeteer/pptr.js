@@ -119,6 +119,17 @@ jb.component('pptr.waitForNavigation', {
     impl: rx.mapPromise((ctx,{frame},{waitUntil,timeout}) => frame.waitForNavigation({waitUntil, timeout}))
 })
 
+jb.component('pptr.type', {
+    description: 'enter input form field data',
+    type: 'rx,pptr',
+    params: [
+        {id: 'text', as: 'string', mandatory: true },
+        {id: 'selector', as: 'string', defaultValue: 'form input[type=text]' },
+        {id: 'delay', as: 'number', defaultValue: 100, description: 'time between clicks' },
+    ],
+    impl: rx.mapPromise((ctx,{frame},{text, selector,delay}) => frame.type(selector, text, {delay}))
+})
+
 jb.component('pptr.closeBrowser', {
     type: 'action',
     impl: (ctx,{browser}) => browser.close()
@@ -155,7 +166,7 @@ jb.component('pptr.mutation', {
 })
 
 jb.component('pptr.endlessScrollDown', {
-    type: 'pptr.feature',
+    type: 'pptr',
     impl: rx.innerPipe(
         pptr.repeatingAction('window.scrollPos = window.scrollPos || []; window.scrollPos.push(window.scrollY); window.scrollTo(0,document.body.scrollHeight)' ,500),
         pptr.waitForFunction('window.scrollPos && Math.max.apply(0,window.scrollPos.slice(-4)) == Math.min.apply(0,window.scrollPos.slice(-4))'))
