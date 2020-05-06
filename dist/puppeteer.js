@@ -155,7 +155,7 @@ jb.component('pptr.extractWithSelector', {
             frame.evaluate(`_jb_extract = '${extract}'`).then(()=>
                 multiple ? frame.$$eval(selector, elems => elems.map(el=>el[_jb_extract]))
                 : frame.$eval(selector, el => [el[_jb_extract]] ))), 
-//                rx.flatMap('%%'), 
+                rx.toMany('%%'), 
         pptr.logData()
     )
 })
