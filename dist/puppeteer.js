@@ -235,8 +235,12 @@ jb.component('pptr.type', {
         {id: 'selector', as: 'string', defaultValue: 'form input[type=text]' },
         {id: 'enterAtEnd', as: 'boolean', defaultValue: true },
         {id: 'delay', as: 'number', defaultValue: 100, description: 'time between clicks' },
+        {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait in milliseconds' },
     ],
-    impl: rx.mapPromise((ctx,{frame},{text, enterAtEnd, selector,delay}) => frame.type(selector, text + enterAtEnd ? String.fromCharCode(13): '', {delay}))
+    impl: rx.innerPipe(
+        rx.doPromise((ctx,{frame},{selector,timeout}) => frame.waitForSelector(selector,{timeout})),
+        rx.doPromise((ctx,{frame},{text, enterAtEnd, selector,delay}) => frame.type(selector, text + enterAtEnd ? String.fromCharCode(13): '', {delay}))
+    )
 })
 
 jb.component('pptr.closeBrowser', {

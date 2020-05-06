@@ -2,7 +2,7 @@ jb.ns('puppeteerDemo')
 
 jb.component('dataResource.events', {
   watchableData: [
-    
+
   ]
 })
 
@@ -25,7 +25,10 @@ jb.component('puppeteerDemo.main', {
             action: pptr.session({
               showBrowser: true,
               databindEvents: '%$events%',
-              actions: [pptr.gotoPage('http://www.google.com/'), pptr.extractBySelector('.fld__Label3')]
+              actions: [
+                pptr.gotoPage('http://www.google.com/'),
+                pptr.type({text: '%$query%', selector: 'form input[type=text]', delay: '100'})
+              ]
             }),
             raised: 'true'
           })
