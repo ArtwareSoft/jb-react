@@ -26,15 +26,19 @@ jb.component('puppeteerDemo.main', {
               showBrowser: true,
               databindEvents: '%$events%',
               actions: [
-                pptr.gotoPage('http://www.google.com/'),
+                pptr.gotoPage({
+                  url: 'http://www.google.com/',
+                  waitUntil: 'no more than 0 network connections for at least 500 ms'
+                }),
                 pptr.waitForSelector('form input[name=q]'),
-                pptr.mouseClick('form input[name=q]'),
                 pptr.type({
                   text: 'vitamin',
                   selector: 'form input[name=q]',
                   enterAtEnd: true,
                   delay: '100'
-                })
+                }),
+                pptr.mouseClick('input[type=\"submit\"]'),
+                pptr.extractBySelector({selector: 'h3 a', extract: 'value'})
               ]
             }),
             raised: 'true'

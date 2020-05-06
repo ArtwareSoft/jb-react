@@ -39,7 +39,7 @@ jb.component('pptr.extractBySelector', {
     type: 'rx,pptr',
     params: [
         {id: 'selector', as: 'string' },
-        {id: 'extract', as: 'string', options: 'value,innerHTML,outerHTML,href', defaultValue: 'innerHTML'},
+        {id: 'extract', as: 'string', options: 'value,innerHTML,outerHTML,href,textContent', defaultValue: 'textContent'},
         {id: 'multiple', as: 'boolean' },
         {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait in milliseconds' },
     ],
