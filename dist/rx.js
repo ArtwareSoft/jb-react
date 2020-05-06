@@ -231,7 +231,7 @@ jb.component('rx.toMany', {
   params: [
     {id: 'func', dynamic: true, mandatory: true, description: 'should return array'},
   ],
-  impl: (ctx,func) => jb.callbag.flatMap(ctx2 => jb.asArray(func(ctx2)), (_ctx,res) => ctx.setData(res) )
+  impl: (ctx,func) => jb.callbag.flatMap(ctx2 => jb.asArray(func(ctx2)), (_ctx,res) => _ctx.setData(res) )
 })
 
 jb.component('rx.concatMap', {
