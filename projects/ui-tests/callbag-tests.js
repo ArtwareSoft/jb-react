@@ -317,10 +317,7 @@ jb.component('dataTest.callbagFlatMapReturnArray', {
 
 jb.component('dataTest.callbagToMany', {
   impl: dataTest({
-    calculate: pipe(rx.pipe(
-      rx.fromIter(list('1,2,3')),
-      rx.ToMany(split(',')),
-    ), join(',')),
+    calculate: pipe(rx.pipe(rx.fromIter(list('1,2,3')), rx.toMany(split({}))), join(',')),
     expectedResult: equals('1,2,3')
   })
 })
