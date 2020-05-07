@@ -220,16 +220,16 @@ jb.component('rx.flatMap', {
   type: 'rx',
   category: 'operator,combine',
   params: [
-    {id: 'func', dynamic: true, mandatory: true, description: 'can return promise or callbag'},
+    {id: 'func', dynamic: true, mandatory: true, description: 'map each input to promise or callbag'},
   ],
-  impl: (ctx,func) => jb.callbag.flatMap(ctx2 => func(ctx2)) //, (_ctx,res) => ctx.setData(res) )
+  impl: (ctx,func) => jb.callbag.flatMap(ctx2 => func(ctx2))
 })
 
 jb.component('rx.toMany', {
   type: 'rx',
-  category: 'operator,combine',
+  category: 'operator',
   params: [
-    {id: 'func', dynamic: true, mandatory: true, description: 'should return array'},
+    {id: 'func', dynamic: true, mandatory: true, description: 'should return array, pass items one by one'},
   ],
   impl: (ctx,func) => jb.callbag.flatMap(ctx2 => jb.asArray(func(ctx2)), (_ctx,res) => _ctx.setData(res) )
 })
