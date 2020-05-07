@@ -300,7 +300,7 @@ jb.component('pptr.frameByIndex', {
 jb.component('pptr.function', {
     type: 'rx,pptr',
     params: [
-        {id: 'fun', dynamic: true },
+        {id: 'func', dynamic: true },
     ],
     impl: rx.doPromise((ctx,{},{func}) => func(ctx))
 })
