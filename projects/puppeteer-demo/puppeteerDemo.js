@@ -39,6 +39,25 @@ jb.component('puppeteerDemo.main', {
               ]
             }),
             raised: 'true'
+          }),
+          button({
+            title: 'search2',
+            action: pptr.session({
+              showBrowser: true,
+              databindEvents: '%$events%',
+              actions: pptr.function(
+                `async (ctx,{page}) => { 
+  await page.goto('https://google.com', { waitUntil: 'networkidle0' }) 
+const title = await page.title()
+await page.type('input[name=q]', 'puppeteer', { delay: 100 })
+    await page.click('input[type="submit"]')
+    await page.waitForSelector('h3 a')
+    return await page.$$eval('h3 a', anchors => { return anchors.map(a => { return a.textContent }) })
+
+} `
+              )
+            }),
+            raised: 'true'
           })
         ],
         features: variable({

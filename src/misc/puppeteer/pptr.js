@@ -189,6 +189,14 @@ jb.component('pptr.frameByIndex', {
     impl: ctx => ctx.vars.page.frames()[index]
 })
 
+jb.component('pptr.function', {
+    type: 'rx,pptr',
+    params: [
+        {id: 'fun', dynamic: true },
+    ],
+    impl: rx.doPromise((ctx,{},{func}) => func(ctx))
+})
+
 // page.mouse.move(100, 100);
 // page.mouse.down();
 // page.mouse.move(200, 200);
