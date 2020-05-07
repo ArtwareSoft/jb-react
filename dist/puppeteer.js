@@ -24,6 +24,8 @@ jb.pptr = {
             rx.pipe(
                 rx.fromPromise(() => this.getOrCreateBrowser(showBrowser)),
                 rx.var('browser'),
+                rx.mapPromise(({},{browser}) => browser.newPage()),
+                rx.var('page', ({data}) => data),
                 rx.var('comp',comp),
                 () => source => pipe(source, ...wrappedActions),
                 rx.catchError(err =>comp.events.next({$: 'error', err })),
@@ -57,7 +59,7 @@ jb.pptr = {
         }
         socket.onerror = e => receive.error(e)
         socket.onclose = () => receive.complete()
-        socket.onopen = () => pipe(commands, subscribe(cmd => socket.send(jb.prettyPrint(cmd,{noMacros: true}))))
+        socket.onopen = () => pipe(commands, subscribe(cmd => socket.send(cmd.run ? jb.prettyPrint(cmd,{noMacros: true}) : JSON.stringify(cmd))))
 
         const comp = { events: skip(1)(receive), commands }
         jb.pptr._proxyComp = comp
@@ -117,8 +119,6 @@ jb.component('pptr.gotoPage', {
     {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait for in milliseconds'}
   ],
   impl: rx.innerPipe(
-    rx.mapPromise(({},{browser}) => browser.newPage()),
-    rx.var('page', ({data}) => data),
     rx.var('url', ({},{},{url}) => url),
     pptr.logActivity('start navigation', '%$url%'),
     rx.doPromise(({},{page},{url,waitUntil,timeout}) => page.goto(url,{waitUntil, timeout})),

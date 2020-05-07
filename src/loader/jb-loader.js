@@ -220,7 +220,7 @@ function jb_dynamicLoad(modules,prefix) {
     return res;
   }
   function calcDependencies(modules) {
-      return unique(modules.split(',').flatMap(m=>[ ...(m.dependencies || []), m]))
+      return unique(modules.split(',').flatMap(m=>[ ...(jb_modules[m] && jb_modules[m].dependencies || []), m]))
   }
 }
 

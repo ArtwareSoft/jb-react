@@ -9,8 +9,6 @@ jb.component('pptr.gotoPage', {
     {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait for in milliseconds'}
   ],
   impl: rx.innerPipe(
-    rx.mapPromise(({},{browser}) => browser.newPage()),
-    rx.var('page', ({data}) => data),
     rx.var('url', ({},{},{url}) => url),
     pptr.logActivity('start navigation', '%$url%'),
     rx.doPromise(({},{page},{url,waitUntil,timeout}) => page.goto(url,{waitUntil, timeout})),
