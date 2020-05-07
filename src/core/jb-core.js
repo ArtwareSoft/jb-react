@@ -758,7 +758,7 @@ Object.assign(jb,{
   subscribe: (source,listener) => jb.callbag.subscribe(listener)(source),
   unique: (ar,f) => {
     f = f || (x=>x);
-    let keys = {}, res = [];
+    const keys = {}, res = [];
     ar.forEach(e=>{
       if (!keys[f(e)]) {
         keys[f(e)] = true;

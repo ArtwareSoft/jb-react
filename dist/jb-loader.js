@@ -174,7 +174,12 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'projects/studio/studio-testers.js',
         'probe','model','tree','suggestion','patterns','inplace-edit'
       ],
+      $dependencies: {
+        puppeteer: ['pretty-print','rx']
+      }
 })
+
+Object.keys(jb_modules.$dependencies).forEach(m => jb_modules[m].dependencies = jb_modules.$dependencies[m])
 
 function jb_dynamicLoad(modules,prefix) {
   prefix = prefix || '';
@@ -183,10 +188,10 @@ function jb_dynamicLoad(modules,prefix) {
   if (isDist) {
     const scriptSrc = document.currentScript.getAttribute('src')
     const base = window.jbModuleUrl && (window.jbModuleUrl + '/dist') || scriptSrc.slice(0,scriptSrc.lastIndexOf('/'))
-    modules.split(',').flatMap(m=>[m+'.js', `css/${m}.css`])
+    calcDependencies(modules).flatMap(m=>[m+'.js', `css/${m}.css`])
       .forEach(m=>loadFile([base,m].join('/')))
   } else {
-    modules.split(',').flatMap(m=>[m,...(jb_modules[`${m}-css`] ? [`${m}-css`]: [])]).forEach(m=>{
+    calcDependencies(modules).flatMap(m=>[m,...(jb_modules[`${m}-css`] ? [`${m}-css`]: [])]).forEach(m=>{
       (jb_modules[m] || []).forEach(file=>{
         if (m == 'studio' && !file.match(/\//))
           file = 'projects/studio/studio-' + file + '.js';
@@ -203,6 +208,19 @@ function jb_dynamicLoad(modules,prefix) {
         loadFile(url)
       })
     })
+  }
+  function unique(ar) {
+    const keys = {}, res = [];
+    ar.forEach(e=>{
+      if (!keys[e]) {
+        keys[e] = true;
+        res.push(e)
+      }
+    })
+    return res;
+  }
+  function calcDependencies(modules) {
+      return unique(modules.split(',').flatMap(m=>[ ...(m.dependencies || []), m]))
   }
 }
 
