@@ -33,10 +33,7 @@ jb.component('puppeteerDemo.main', {
                   enterAtEnd: true,
                   delay: 100
                 }),
-                pptr.waitForSelector('input[type=submit]'),
-                pptr.mouseClick('input[type=submit]'),
-                pptr.waitForSelector('h3 a'),
-                pptr.extractBySelector({selector: 'h3 a', extract: 'textContent'})
+                pptr.extractBySelector({selector: 'h3', extract: 'textContent', multiple: true})
               ]
             }),
             raised: 'true'
@@ -72,7 +69,7 @@ await frame.type('input[name=q]', 'puppeteer'+String.fromCharCode(13), { delay: 
       itemlist({
         items: '%$events%',
         controls: [
-          text({text: json.stringify('%%')})
+          text({text: json.stringify('%data%')})
         ],
         features: watchRef({ref: '%$events%', includeChildren: 'yes'})
       }),
