@@ -236,7 +236,7 @@ jb.component('pptr.type', {
     ],
     impl: rx.innerPipe(
         rx.doPromise((ctx,{frame},{selector,timeout}) => frame.waitForSelector(selector,{timeout})),
-        rx.doPromise((ctx,{frame},{text, enterAtEnd, selector,delay}) => frame.type(selector, text + enterAtEnd ? String.fromCharCode(13): '', {delay}))
+        rx.doPromise((ctx,{frame},{text, enterAtEnd, selector,delay}) => frame.type(selector, text + (enterAtEnd ? String.fromCharCode(13): ''), {delay}))
     )
 })
 

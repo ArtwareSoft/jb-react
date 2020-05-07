@@ -26,33 +26,37 @@ jb.component('puppeteerDemo.main', {
               showBrowser: true,
               databindEvents: '%$events%',
               actions: [
-                pptr.gotoPage({url: 'http://www.google.com/', waitUntil: 'networkidle0'}),
-                pptr.waitForSelector('form input[name=q]'),
+                pptr.gotoPage({url: 'https://google.com/', waitUntil: 'networkidle0'}),
                 pptr.type({
                   text: 'vitamin',
-                  selector: 'form input[name=q]',
+                  selector: 'input[name=q]',
                   enterAtEnd: true,
-                  delay: '100'
+                  delay: 100
                 }),
-                pptr.mouseClick('input[type=\"submit\"]'),
-                pptr.extractBySelector({selector: 'h3 a', extract: 'value'})
+                pptr.waitForSelector('input[type=submit]'),
+                pptr.mouseClick('input[type=submit]'),
+                pptr.waitForSelector('h3 a'),
+                pptr.extractBySelector({selector: 'h3 a', extract: 'textContent'})
               ]
             }),
             raised: 'true'
           }),
           button({
-            title: 'search2',
+            title: 'search with js code',
             action: pptr.session({
               showBrowser: true,
               databindEvents: '%$events%',
               actions: pptr.function(
                 async (ctx,{page}) => { 
   await page.goto('https://google.com', { waitUntil: 'networkidle0' }) 
-const title = await page.title()
-await page.type('input[name=q]', 'puppeteer', { delay: 100 })
-    await page.click('input[type="submit"]')
-    await page.waitForSelector('h3 a')
-    return await page.$$eval('h3 a', anchors => { return anchors.map(a => { return a.textContent }) })
+//const title = await page.title()
+const frame = await page.mainFrame()
+await frame.type('input[name=q]', 'puppeteer'+String.fromCharCode(13), { delay: 100 })
+    await frame.waitForSelector('input[type=submit]')
+	await jb.delay(1000)
+    await frame.click('input[type=submit]')
+    await frame.waitForSelector('h3 a')
+    return await frame.$$eval('h3 a', anchors => { return anchors.map(a => { return a.textContent }) })
 
 }
               )
