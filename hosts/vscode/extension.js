@@ -130,17 +130,31 @@ class jBartStudio {
 	<head>
     <body>
         <h4>jBart is not installed in this project</h4>
-        <p>Please clone the template project <code>git clone https://github.com/ArtwareSoft/jbart-template.git</code> and open vscode inside hello-world/hello-world.js</p>
 
-        <p>You can also install jBart inside your project</p>
-        <div>npm i --save jb-react</code> </a> </div>
-        <div>dev version: <code><div>npm i --save artwaresoft/jb-react</code></div>
-		<script>
-          const vscode = acquireVsCodeApi()
-          function installjBart(module) {
-            vscode.postMessage(JSON.stringify({$: 'installPackage', module }))
-          }
-		</script>
+        <h2>Option1: install jBart sample project</h2>
+        <p>goto sample project <a href="https://github.com/ArtwareSoft/jbart-template">https://github.com/ArtwareSoft/jbart-template</a> and fork it</p>
+<div style="display: flex; flex-direction: column">
+<img src="https://github-images.s3.amazonaws.com/enterprise/2.13/assets/images/help/repository/fork_button.jpg" style="width:320px">
+<p>git clone your forked project</p>
+
+<img src="https://github-images.s3.amazonaws.com/enterprise/2.13/assets/images/help/repository/clone-repo-clone-url-button.png" style="width:320px">
+<img src="https://github-images.s3.amazonaws.com/enterprise/2.13/assets/images/help/repository/https-url-clone.png" style="width:320px">
+<div>
+
+<code>git clone https://github.com/YOUR-USERNAME/jbart-template.git</code>
+
+<ul>
+<li>goto file itemlists/itemlists.js</li>
+<li>click ctrl-shift-j inside to open jBart</li>
+
+        <h2>Option2: install jBart inside your project</h2>
+        <div><code>npm install --save jb-react</code> </a> </div>
+        <div>dev version: <code><div>npm install --save artwaresoft/jb-react</code></div>
+
+        <h2>Puppeteer server (optional)</h2>
+        <p>clone the server project <code>git clone https://github.com/ArtwareSoft/jb-puppeteer-server.git</p>
+        <code>npm install</code>
+        <code>npm start</code>
 
 	</body>
 </html>`;

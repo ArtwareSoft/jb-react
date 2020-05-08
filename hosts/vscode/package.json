@@ -2,7 +2,7 @@
 	"name": "jbart-studio",
 	"displayName": "jBart Studio",
 	"description": "Javascript Visual Editor for widgets, parsers, charts, and more (alpha)",
-	"version": "0.6.1",
+	"version": "0.6.2",
 	"publisher": "artwaresoft",
 	"engines": {
 		"vscode": "^1.38.0"
