@@ -77,7 +77,12 @@ jb.component('studioProbeTest', {
     const full_path = testId + '~impl~circuit~' + probePath;
     const probeRes = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: circuit.profile, forcePath: testId+ '~impl~circuit', path: '' } ))
       .runCircuit(full_path);
-    return probeRes.then(res=> {
+    return probeRes.then(res=> jb.path(res,'result.0.out') && jb.callbag.isCallbag(res.result[0].out) &&
+        jb.toSynchArray(res.result[0].out, true).then(out => {
+          res.result[0].out = out
+          return res
+        }) || res)
+    .then(res=> {
       try {
         if (expectedVisits == 0 && res.closestPath)
           return success();

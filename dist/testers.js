@@ -6,7 +6,7 @@ jb.test = {
 	dataTestResult(ctx) {
 		return Promise.resolve(jb.test.runInner('runBefore',ctx))
 		.then(_ => jb.test.runInner('calculate',ctx))
-		.then(v => jb.toSynchArray(v))
+		.then(v => jb.toSynchArray(v,true))
 		.then(value => {
 			const success = !! jb.test.runInner('expectedResult',ctx.setData(value))
 			return { success, value}
@@ -116,7 +116,7 @@ jb.component('dataTest', {
 		  }
 		  return Promise.resolve(runBefore())
 			  .then(_ => calculate())
-			  .then(v => jb.toSynchArray(v))
+			  .then(v => jb.toSynchArray(v,true))
 			  .then(value => {
 				  const countersErr = countersErrors(expectedCounters);
 				  const success = !! (expectedResult(new jb.jbCtx(ctx,{ data: value })) && !countersErr);

@@ -84,8 +84,11 @@ jb.component('studio.dataBrowse', {
         controls: [
           controlWithCondition(isOfType('string,boolean,number', '%$obj%'), text('%$obj%')),
           controlWithCondition(
-            and(isOfType('array', '%$obj%'), '%$obj/time%', '%$obj/dir%'),
-            studio.showRxSniffer('%$obj%')
+            '%$obj.snifferResult%', studio.showRxSniffer('%$obj%')
+          ),
+          controlWithCondition(
+            (ctx,{obj}) => jb.callbag.isCallbag(obj),
+            studio.browseRx('%$obj%')
           ),
           controlWithCondition(
             isOfType('array', '%$obj%'),
@@ -153,37 +156,42 @@ jb.component('studio.dataBrowse', {
     features: group.wait({
       for: ctx => ctx.exp('%$objToShow%'),
       loadingControl: text('...'),
-      varName: 'obj'
+      varName: 'obj',
+      passRx: true
     })
+  })
+})
+
+jb.component('studio.browseRx', {
+  type: 'control',
+  params: [
+    {id: 'rx'}
+  ],
+  impl: itemlist({
+        items: '%$rx%',
+        controls: studio.dataBrowse('%d/vars%'),
+        style: itemlist.ulLi(),
+        features: [
+          itemlist.incrementalFromRx(),
+          css.height({height: '100%', overflow: 'scroll', minMax: 'max'})
+        ]
   })
 })
 
 jb.component('studio.showRxSniffer', {
   type: 'control',
   params: [
-    {id: 'snifferArray'}
+    {id: 'snifferRx'}
   ],
-  impl: group({
-    controls: [
-      text({
-        text: pipeline(
-          Var('in', pipeline('%$snifferArray%', filter('%dir%==in'), count())),
-          Var('out', pipeline('%$snifferArray%', filter('%dir%==out'), count())),
-          'reactive operation: %$in% in, %$out% out'
-        )
-      }),
-      itemlist({
-        title: '',
-        items: '%$snifferArray%',
+  impl: itemlist({
+        items: '%$snifferRx%',
         controls: group({
           layout: layout.flex({spacing: '0'}),
           controls: [
             group({
               title: 'data',
               layout: layout.flex({justifyContent: data.if('%dir%==in', 'flex-start', 'flex-end')}),
-              controls: [
-                studio.dataBrowse('%d%')
-              ],
+              controls: studio.dataBrowse('%d%'),
               features: [css.width('100%'), css.margin({left: '10'})]
             }),
             button({
@@ -214,13 +222,10 @@ jb.component('studio.showRxSniffer', {
         style: itemlist.ulLi(),
         visualSizeLimit: 7,
         features: [
-          itemlist.infiniteScroll(),
-          css.height({height: '150', overflow: 'scroll', minMax: 'max'})
+          itemlist.incrementalFromRx(),
+          css.height({height: '100%', overflow: 'scroll', minMax: 'max'})
         ]
-      })
-    ],
-    features: [css.width('400')]
-  })
+   })
 })
 
 jb.component('studio.probeDataView', {
@@ -263,7 +268,8 @@ jb.component('studio.probeDataView', {
         group.wait({
           for: studio.probeResults('%$jbEditorCntrData/selected%'),
           loadingControl: text('...'),
-          varName: 'probeResult'
+          varName: 'probeResult',
+          passRx: true
         })
       ]
     }),

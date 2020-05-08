@@ -37,8 +37,7 @@ function do_jb_run(ctx,parentParam,settings) {
       case 'function': return castToParam(profile(ctx,ctx.vars,ctx.componentContext && ctx.componentContext.params),parentParam);
       case 'null': return castToParam(null,parentParam);
       case 'ignore': return ctx.data;
-      case 'list': return profile.map((inner,i) =>
-            ctxWithVars.runInner(inner,null,i));
+      case 'list': return profile.map((inner,i) => ctxWithVars.runInner(inner,null,i));
       case 'runActions': return jb.comps.runActions.impl(new jbCtx(ctxWithVars,{profile: { actions : profile },path:''}));
       case 'if': {
           const cond = jb_run(run.ifContext, run.IfParentParam);
@@ -63,16 +62,11 @@ function do_jb_run(ctx,parentParam,settings) {
           }
         });
         let out;
+        if (profile.$debugger) debugger;
         if (run.impl) {
-          const args = prepareGCArgs(run.ctx,run.preparedParams);
-          if (profile.$debugger) debugger;
-          if (! args.then)
-            out = run.impl.apply(null,args);
-          else
-            return args.then(args=>
-              castToParam(run.impl.apply(null,args),parentParam))
-        }
-        else {
+          const args = [run.ctx, ...run.preparedParams.map(param=>run.ctx.params[param.name])] // TODO : [run.ctx,run.ctx.vars,run.ctx.params]
+          out = run.impl.apply(null,args);
+        } else {
           out = jb_run(new jbCtx(run.ctx, { componentContext: run.ctx }),parentParam);
         }
 
@@ -87,13 +81,6 @@ function do_jb_run(ctx,parentParam,settings) {
 //    log('exception', [e && e.message, e, ctx,parentParam,settings])
     logException(e,'exception while running run',ctx,parentParam,settings);
     //if (ctx.vars.$throw) throw e;
-  }
-
-  function prepareGCArgs(ctx,preparedParams) {
-    const synched = jb.toSynchArray(preparedParams)
-    if (jb.isPromise(synched))
-      return synched.then(ar => [ctx, ...ar])
-    return [ctx, ...preparedParams.map(param=>ctx.params[param.name])]
   }
 }
 
@@ -215,9 +202,6 @@ function prepare(ctx,parentParam) {
 }
 
 function resolveFinishedPromise(val) {
-  if (!val) return val;
-  if (val.$jb_parent)
-    val.$jb_parent = resolveFinishedPromise(val.$jb_parent);
   if (val && typeof val == 'object' && val._state == 1) // finished promise
     return val._result;
   return val;
@@ -743,11 +727,11 @@ Object.assign(jb,{
     else if (typeof v === 'function')
       return jb.callbag.isCallbag(v)
   },
-  toSynchArray: item => {
+  toSynchArray: (item, synchCallbag) => {
     if (! jb.asArray(item).find(v=> jb.callbag.isCallbag(v) || jb.isPromise(v))) return item;
     const {pipe, fromIter, toPromiseArray, mapPromise,flatMap, map, isCallbag} = jb.callbag
-    if (isCallbag(item)) return toPromiseArray(pipe(item,map(x=> x && x._parent ? x.data : x )))
-    if (Array.isArray(item) && isCallbag(item[0])) return toPromiseArray(pipe(item[0], map(x=> x && x._parent ? x.data : x )))
+    if (isCallbag(item)) return synchCallbag ? toPromiseArray(pipe(item,map(x=> x && x._parent ? x.data : x ))) : item
+    if (Array.isArray(item) && isCallbag(item[0])) return synchCallbag ? toPromiseArray(pipe(item[0], map(x=> x && x._parent ? x.data : x ))) : item
 
     return pipe( // array of promises
           fromIter(jb.asArray(item)),

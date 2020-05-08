@@ -10,7 +10,7 @@ jb.component('dataTest.callbag.mapPromise', {
     calculate: rx.pipe(
           rx.fromIter(list(0)),
           rx.mapPromise(({data}) =>jb.delay(1).then(()=> data+2))
-        ),
+    ),
     expectedResult: equals('2')
   })
 })
@@ -353,6 +353,7 @@ jb.component('dataTest.callbagRawFlatMapBug1', {
         flatMap(data => fromPromise(jb.delay(100).then(()=> data+2) ),null,'first'), 
         flatMap(data => fromPromise(jb.delay(100).then(()=> data+2) ),null,'second'),
         toPromiseArray)
+
     },
     expectedResult: equals(4)
   })
@@ -361,13 +362,20 @@ jb.component('dataTest.callbagRawFlatMapBug1', {
 jb.component('dataTest.callbag.doPromiseActiveSource', {
   impl: dataTest({
     calculate: rx.pipe(
-          rx.interval(1),
-          rx.take(1),
-//          rx.var('aa'),
-          rx.doPromise(({data})=>jb.delay(1).then(()=>data *10)),
-          rx.mapPromise(({data}) =>jb.delay(1).then(()=> data+2)),
+      rx.interval(1),
+      rx.take(1),
+      rx.doPromise(({data})=>jb.delay(1).then(()=>data *10)),
+      rx.mapPromise(({data}) =>jb.delay(1).then(()=> data+2))
     ),
     expectedResult: equals('2')
   })
 })
 
+jb.component('dataTest.callbag.subjectReplay', {
+  impl: dataTest({
+    vars: [Var('subj', rx.subject(true))],
+    calculate: pipe(rx.pipe(rx.fromSubject('%$subj%'))),
+    runBefore: runActions(rx.subjectNext('%$subj%', '1'), rx.subjectComplete('%$subj%')),
+    expectedResult: equals('1')
+  })
+})

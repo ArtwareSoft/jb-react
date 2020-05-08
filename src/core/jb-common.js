@@ -17,7 +17,7 @@ jb.component('call', {
  	}
 })
 
-jb.pipe = function(ctx,ptName) {
+jb.pipe = function(ctx,ptName,passRx) {
   let start = jb.toarray(ctx.data)
   if (start.length == 0) start = [null]
 	if (typeof ctx.profile.items == 'string')
@@ -28,9 +28,9 @@ jb.pipe = function(ctx,ptName) {
 
 	if (ptName == '$pipe') // promise pipe
 		return profiles.reduce((deferred,prof,index) =>
-			deferred.then(data=>jb.toSynchArray(data)).then(data=>step(prof,index,data))
+			deferred.then(data=>jb.toSynchArray(data, !passRx)).then(data=>step(prof,index,data))
     , Promise.resolve(start))
-      .then(data=>jb.toSynchArray(data))
+      .then(data=>jb.toSynchArray(data, !passRx))
 
 	return profiles.reduce((data,prof,index) => step(prof,index,data), start)
 
@@ -52,7 +52,7 @@ jb.pipe = function(ctx,ptName) {
 
 jb.component('pipeline', {
   type: 'data',
-  description: 'map data arrays one after the other',
+  description: 'map data arrays one after the other, do not wait for promises and rx',
   params: [
     {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true, description: 'click "=" for functions list'}
   ],
@@ -61,11 +61,20 @@ jb.component('pipeline', {
 
 jb.component('pipe', {
   type: 'data',
-  description: 'map asynch data arrays',
+  description: 'synch data, wait for promises and reactive (callbag) data',
   params: [
     {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true}
   ],
-  impl: ctx => jb.pipe(ctx,'$pipe')
+  impl: ctx => jb.pipe(ctx,'$pipe',false)
+})
+
+jb.component('pipePassRx', {
+  type: 'data',
+  description: 'wait for promises, do not wait for reactive data',
+  params: [
+    {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true}
+  ],
+  impl: ctx => jb.pipe(ctx,'$pipe',true)
 })
 
 jb.component('data.if', {

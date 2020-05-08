@@ -137,13 +137,13 @@ function elemToVdom(elem) {
     }
 }
 
-function appendItems(elem, vdomToAppend,ctx) { // used in infinite scroll
+function appendItems(elem, vdomToAppend,{ctx,prepend} = {}) { // used in infinite scroll
     if (elem instanceof ui.VNode) { // runs on worker
         const cmpId = elem.getAttribute('cmp-id'), elemId = elem.getAttribute('id')
         // TODO: update the elem
         return jb.ui.updateRenderer(vdomToAppend,elemId,cmpId,ctx && ctx.vars.widgetId) // deligate to the main thread 
     }
-    (vdomToAppend.children ||[]).forEach(vdom => render(vdom,elem))
+    (vdomToAppend.children ||[]).forEach(vdom => render(vdom,elem,prepend))
 }
 
 function applyDeltaToDom(elem,delta) {
@@ -229,14 +229,14 @@ function unmount(elem) {
     jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> el._component && el._component.destroy())
 }
 
-function render(vdom,parentElem) {
+function render(vdom,parentElem,prepend) {
     jb.log('render',[...arguments])
     function doRender(vdom,parentElem) {
         jb.log('htmlChange',['createElement',...arguments])
         const elem = createElement(parentElem.ownerDocument, vdom.tag)
         jb.entries(vdom.attributes).forEach(e=>setAtt(elem,e[0],e[1])) // filter(e=>e[0].indexOf('on') != 0 && !isAttUndefined(e[0],vdom.attributes)).
         jb.asArray(vdom.children).map(child=> doRender(child,elem)).forEach(el=>elem.appendChild(el))
-        parentElem.appendChild(elem)
+        prepend ? parentElem.prepend(elem) : parentElem.appendChild(elem)
         return elem
     }
     const res = doRender(vdom,parentElem)

@@ -276,34 +276,40 @@ jb.component('studio.openResponsivePhonePopup', {
               ),
               style: button.mdcFloatingAction(true),
               features: feature.icon({icon: 'desktop_mac', type: 'mdc'})
+            }),
+            button({
+              title: 'full screen',
+              action: runActions(
+                writeValue('%$studio/preview/width%', '100%'),
+                writeValue('%$studio/preview/height%', '100%')
+              ),
+              style: button.mdcFloatingAction(true),
+              features: feature.icon({icon: 'fullscreen', type: 'mdc'})
             })
           ],
           features: css.padding({top: '7', left: '4', right: '4'})
         }),
         group({
-          title: 'width-height',
-          layout: layout.horizontal(),
+          title: 'Zoom',
+          style: propertySheet.titlesAbove({}),
           controls: [
             editableNumber({
-              databind: '%$studio/preview/width%',
-              title: 'width',
-              style: editableText.mdcInput({}),
-              features: [watchRef('%$studio/preview/width%')]
-            }),
-            editableNumber({
-              databind: '%$studio/preview/height%',
-              title: 'height',
-              style: editableText.mdcInput({}),
-              features: watchRef('%$studio/preview/height%')
+              databind: '%$studio/preview/zoom%',
+              title: 'zoom',
+              style: editableNumber.mdcSliderNoText({}),
+              symbol: '',
+              min: '1',
+              max: '20',
+              displayString: '%%px'
             })
           ],
-          features: hidden()
+          features: css.margin({left: '10', bottom: '10'})
         })
       ],
       features: feature.onDataChange({
         ref: '%$studio/preview%',
         includeChildren: 'yes',
-        action: studio.setPreviewSize('%$studio/preview/width%', '%$studio/preview/height%')
+        action: studio.setPreviewSize({ width: '%$studio/preview/width%', height: '%$studio/preview/height%', zoom: '%$studio/preview/zoom%'})
       })
     }),
     title: 'responsive'

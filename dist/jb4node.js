@@ -37,8 +37,7 @@ function do_jb_run(ctx,parentParam,settings) {
       case 'function': return castToParam(profile(ctx,ctx.vars,ctx.componentContext && ctx.componentContext.params),parentParam);
       case 'null': return castToParam(null,parentParam);
       case 'ignore': return ctx.data;
-      case 'list': return profile.map((inner,i) =>
-            ctxWithVars.runInner(inner,null,i));
+      case 'list': return profile.map((inner,i) => ctxWithVars.runInner(inner,null,i));
       case 'runActions': return jb.comps.runActions.impl(new jbCtx(ctxWithVars,{profile: { actions : profile },path:''}));
       case 'if': {
           const cond = jb_run(run.ifContext, run.IfParentParam);
@@ -63,16 +62,11 @@ function do_jb_run(ctx,parentParam,settings) {
           }
         });
         let out;
+        if (profile.$debugger) debugger;
         if (run.impl) {
-          const args = prepareGCArgs(run.ctx,run.preparedParams);
-          if (profile.$debugger) debugger;
-          if (! args.then)
-            out = run.impl.apply(null,args);
-          else
-            return args.then(args=>
-              castToParam(run.impl.apply(null,args),parentParam))
-        }
-        else {
+          const args = [run.ctx, ...run.preparedParams.map(param=>run.ctx.params[param.name])] // TODO : [run.ctx,run.ctx.vars,run.ctx.params]
+          out = run.impl.apply(null,args);
+        } else {
           out = jb_run(new jbCtx(run.ctx, { componentContext: run.ctx }),parentParam);
         }
 
@@ -87,13 +81,6 @@ function do_jb_run(ctx,parentParam,settings) {
 //    log('exception', [e && e.message, e, ctx,parentParam,settings])
     logException(e,'exception while running run',ctx,parentParam,settings);
     //if (ctx.vars.$throw) throw e;
-  }
-
-  function prepareGCArgs(ctx,preparedParams) {
-    const synched = jb.toSynchArray(preparedParams)
-    if (jb.isPromise(synched))
-      return synched.then(ar => [ctx, ...ar])
-    return [ctx, ...preparedParams.map(param=>ctx.params[param.name])]
   }
 }
 
@@ -215,9 +202,6 @@ function prepare(ctx,parentParam) {
 }
 
 function resolveFinishedPromise(val) {
-  if (!val) return val;
-  if (val.$jb_parent)
-    val.$jb_parent = resolveFinishedPromise(val.$jb_parent);
   if (val && typeof val == 'object' && val._state == 1) // finished promise
     return val._result;
   return val;
@@ -743,11 +727,11 @@ Object.assign(jb,{
     else if (typeof v === 'function')
       return jb.callbag.isCallbag(v)
   },
-  toSynchArray: item => {
+  toSynchArray: (item, synchCallbag) => {
     if (! jb.asArray(item).find(v=> jb.callbag.isCallbag(v) || jb.isPromise(v))) return item;
     const {pipe, fromIter, toPromiseArray, mapPromise,flatMap, map, isCallbag} = jb.callbag
-    if (isCallbag(item)) return toPromiseArray(pipe(item,map(x=> x && x._parent ? x.data : x )))
-    if (Array.isArray(item) && isCallbag(item[0])) return toPromiseArray(pipe(item[0], map(x=> x && x._parent ? x.data : x )))
+    if (isCallbag(item)) return synchCallbag ? toPromiseArray(pipe(item,map(x=> x && x._parent ? x.data : x ))) : item
+    if (Array.isArray(item) && isCallbag(item[0])) return synchCallbag ? toPromiseArray(pipe(item[0], map(x=> x && x._parent ? x.data : x ))) : item
 
     return pipe( // array of promises
           fromIter(jb.asArray(item)),
@@ -938,7 +922,7 @@ jb.component('call', {
  	}
 })
 
-jb.pipe = function(ctx,ptName) {
+jb.pipe = function(ctx,ptName,passRx) {
   let start = jb.toarray(ctx.data)
   if (start.length == 0) start = [null]
 	if (typeof ctx.profile.items == 'string')
@@ -949,9 +933,9 @@ jb.pipe = function(ctx,ptName) {
 
 	if (ptName == '$pipe') // promise pipe
 		return profiles.reduce((deferred,prof,index) =>
-			deferred.then(data=>jb.toSynchArray(data)).then(data=>step(prof,index,data))
+			deferred.then(data=>jb.toSynchArray(data, !passRx)).then(data=>step(prof,index,data))
     , Promise.resolve(start))
-      .then(data=>jb.toSynchArray(data))
+      .then(data=>jb.toSynchArray(data, !passRx))
 
 	return profiles.reduce((data,prof,index) => step(prof,index,data), start)
 
@@ -973,7 +957,7 @@ jb.pipe = function(ctx,ptName) {
 
 jb.component('pipeline', {
   type: 'data',
-  description: 'map data arrays one after the other',
+  description: 'map data arrays one after the other, do not wait for promises and rx',
   params: [
     {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true, description: 'click "=" for functions list'}
   ],
@@ -982,11 +966,20 @@ jb.component('pipeline', {
 
 jb.component('pipe', {
   type: 'data',
-  description: 'map asynch data arrays',
+  description: 'synch data, wait for promises and reactive (callbag) data',
   params: [
     {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true}
   ],
-  impl: ctx => jb.pipe(ctx,'$pipe')
+  impl: ctx => jb.pipe(ctx,'$pipe',false)
+})
+
+jb.component('pipePassRx', {
+  type: 'data',
+  description: 'wait for promises, do not wait for reactive data',
+  params: [
+    {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true}
+  ],
+  impl: ctx => jb.pipe(ctx,'$pipe',true)
 })
 
 jb.component('data.if', {
@@ -2352,16 +2345,16 @@ jb.component('formatDate', {
       },
       subject() {
           let sinks = []
-          const subj = (t, d) => {
+          function subj(t, d) {
               if (t === 0) {
                   const sink = d
                   sinks.push(sink)
-                  sink(0, t => {
+                  sink(0, function subject(t,d) {
                       if (t === 2) {
                           const i = sinks.indexOf(sink)
                           if (i > -1) sinks.splice(i, 1)
                       }
-              })
+                  })
               } else {
                       const zinkz = sinks.slice(0)
                       for (let i = 0, n = zinkz.length, sink; i < n; i++) {
@@ -2374,6 +2367,46 @@ jb.component('formatDate', {
           subj.complete = () => subj(2)
           subj.error = err => subj(2,err)
           return subj
+      },
+      replay: keep => source => {
+        keep = keep || 0
+        let store = [], sinks = [], talkback, done = false
+      
+        const sliceNum = keep > 0 ? -1 * keep : 0;
+      
+        source(0, function replay(t, d) {
+          if (t == 0) {
+            talkback = d
+            return
+          }
+          if (t == 1) {
+            store.push(d)
+            sinks.forEach(sink => sink(1, d))
+          }
+          if (t == 2) {
+            done = true
+            sinks.forEach(sink => sink(2))
+            sinks = []
+          }
+        })
+      
+        return function replay(start, sink) {
+          if (start !== 0) return
+          sinks.push(sink)
+          sink(0, function replay(t, d) {
+            if (t == 0) return
+            if (t == 1) {
+              talkback(1)
+              return
+            }
+            if (t == 2)
+              sinks = sinks.filter(s => s !== sink)
+          })
+      
+          store.slice(sliceNum).forEach(entry => sink(1, entry))
+      
+          if (done) sink(2)
+        }
       },
       catchError: fn => source => (start, sink) => {
           if (start !== 0) return
@@ -2597,6 +2630,7 @@ jb.component('formatDate', {
             sink(t, d)
           })
       },
+      // sniffer to be used on source E.g. interval
       sourceSniffer: (cb, snifferSubject) => (start, sink) => {
         if (start !== 0) return
         jb.log('snifferStarted',[])
@@ -2616,6 +2650,7 @@ jb.component('formatDate', {
           }
         }
       },
+      // sniffer to be used in a middle pipe element. E.g., map
       sniffer: (cb, snifferSubject) => source => (start, sink) => {
         if (start !== 0) return
         jb.log('snifferStarted',[])

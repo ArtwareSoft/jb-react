@@ -322,16 +322,16 @@
       },
       subject() {
           let sinks = []
-          const subj = (t, d) => {
+          function subj(t, d) {
               if (t === 0) {
                   const sink = d
                   sinks.push(sink)
-                  sink(0, t => {
+                  sink(0, function subject(t,d) {
                       if (t === 2) {
                           const i = sinks.indexOf(sink)
                           if (i > -1) sinks.splice(i, 1)
                       }
-              })
+                  })
               } else {
                       const zinkz = sinks.slice(0)
                       for (let i = 0, n = zinkz.length, sink; i < n; i++) {
@@ -344,6 +344,46 @@
           subj.complete = () => subj(2)
           subj.error = err => subj(2,err)
           return subj
+      },
+      replay: keep => source => {
+        keep = keep || 0
+        let store = [], sinks = [], talkback, done = false
+      
+        const sliceNum = keep > 0 ? -1 * keep : 0;
+      
+        source(0, function replay(t, d) {
+          if (t == 0) {
+            talkback = d
+            return
+          }
+          if (t == 1) {
+            store.push(d)
+            sinks.forEach(sink => sink(1, d))
+          }
+          if (t == 2) {
+            done = true
+            sinks.forEach(sink => sink(2))
+            sinks = []
+          }
+        })
+      
+        return function replay(start, sink) {
+          if (start !== 0) return
+          sinks.push(sink)
+          sink(0, function replay(t, d) {
+            if (t == 0) return
+            if (t == 1) {
+              talkback(1)
+              return
+            }
+            if (t == 2)
+              sinks = sinks.filter(s => s !== sink)
+          })
+      
+          store.slice(sliceNum).forEach(entry => sink(1, entry))
+      
+          if (done) sink(2)
+        }
       },
       catchError: fn => source => (start, sink) => {
           if (start !== 0) return
@@ -567,6 +607,7 @@
             sink(t, d)
           })
       },
+      // sniffer to be used on source E.g. interval
       sourceSniffer: (cb, snifferSubject) => (start, sink) => {
         if (start !== 0) return
         jb.log('snifferStarted',[])
@@ -586,6 +627,7 @@
           }
         }
       },
+      // sniffer to be used in a middle pipe element. E.g., map
       sniffer: (cb, snifferSubject) => source => (start, sink) => {
         if (start !== 0) return
         jb.log('snifferStarted',[])

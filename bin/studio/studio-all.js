@@ -37,8 +37,7 @@ function do_jb_run(ctx,parentParam,settings) {
       case 'function': return castToParam(profile(ctx,ctx.vars,ctx.componentContext && ctx.componentContext.params),parentParam);
       case 'null': return castToParam(null,parentParam);
       case 'ignore': return ctx.data;
-      case 'list': return profile.map((inner,i) =>
-            ctxWithVars.runInner(inner,null,i));
+      case 'list': return profile.map((inner,i) => ctxWithVars.runInner(inner,null,i));
       case 'runActions': return jb.comps.runActions.impl(new jbCtx(ctxWithVars,{profile: { actions : profile },path:''}));
       case 'if': {
           const cond = jb_run(run.ifContext, run.IfParentParam);
@@ -63,16 +62,11 @@ function do_jb_run(ctx,parentParam,settings) {
           }
         });
         let out;
+        if (profile.$debugger) debugger;
         if (run.impl) {
-          const args = prepareGCArgs(run.ctx,run.preparedParams);
-          if (profile.$debugger) debugger;
-          if (! args.then)
-            out = run.impl.apply(null,args);
-          else
-            return args.then(args=>
-              castToParam(run.impl.apply(null,args),parentParam))
-        }
-        else {
+          const args = [run.ctx, ...run.preparedParams.map(param=>run.ctx.params[param.name])] // TODO : [run.ctx,run.ctx.vars,run.ctx.params]
+          out = run.impl.apply(null,args);
+        } else {
           out = jb_run(new jbCtx(run.ctx, { componentContext: run.ctx }),parentParam);
         }
 
@@ -87,13 +81,6 @@ function do_jb_run(ctx,parentParam,settings) {
 //    log('exception', [e && e.message, e, ctx,parentParam,settings])
     logException(e,'exception while running run',ctx,parentParam,settings);
     //if (ctx.vars.$throw) throw e;
-  }
-
-  function prepareGCArgs(ctx,preparedParams) {
-    const synched = jb.toSynchArray(preparedParams)
-    if (jb.isPromise(synched))
-      return synched.then(ar => [ctx, ...ar])
-    return [ctx, ...preparedParams.map(param=>ctx.params[param.name])]
   }
 }
 
@@ -215,9 +202,6 @@ function prepare(ctx,parentParam) {
 }
 
 function resolveFinishedPromise(val) {
-  if (!val) return val;
-  if (val.$jb_parent)
-    val.$jb_parent = resolveFinishedPromise(val.$jb_parent);
   if (val && typeof val == 'object' && val._state == 1) // finished promise
     return val._result;
   return val;
@@ -743,11 +727,11 @@ Object.assign(jb,{
     else if (typeof v === 'function')
       return jb.callbag.isCallbag(v)
   },
-  toSynchArray: item => {
+  toSynchArray: (item, synchCallbag) => {
     if (! jb.asArray(item).find(v=> jb.callbag.isCallbag(v) || jb.isPromise(v))) return item;
     const {pipe, fromIter, toPromiseArray, mapPromise,flatMap, map, isCallbag} = jb.callbag
-    if (isCallbag(item)) return toPromiseArray(pipe(item,map(x=> x && x._parent ? x.data : x )))
-    if (Array.isArray(item) && isCallbag(item[0])) return toPromiseArray(pipe(item[0], map(x=> x && x._parent ? x.data : x )))
+    if (isCallbag(item)) return synchCallbag ? toPromiseArray(pipe(item,map(x=> x && x._parent ? x.data : x ))) : item
+    if (Array.isArray(item) && isCallbag(item[0])) return synchCallbag ? toPromiseArray(pipe(item[0], map(x=> x && x._parent ? x.data : x ))) : item
 
     return pipe( // array of promises
           fromIter(jb.asArray(item)),
@@ -938,7 +922,7 @@ jb.component('call', {
  	}
 })
 
-jb.pipe = function(ctx,ptName) {
+jb.pipe = function(ctx,ptName,passRx) {
   let start = jb.toarray(ctx.data)
   if (start.length == 0) start = [null]
 	if (typeof ctx.profile.items == 'string')
@@ -949,9 +933,9 @@ jb.pipe = function(ctx,ptName) {
 
 	if (ptName == '$pipe') // promise pipe
 		return profiles.reduce((deferred,prof,index) =>
-			deferred.then(data=>jb.toSynchArray(data)).then(data=>step(prof,index,data))
+			deferred.then(data=>jb.toSynchArray(data, !passRx)).then(data=>step(prof,index,data))
     , Promise.resolve(start))
-      .then(data=>jb.toSynchArray(data))
+      .then(data=>jb.toSynchArray(data, !passRx))
 
 	return profiles.reduce((data,prof,index) => step(prof,index,data), start)
 
@@ -973,7 +957,7 @@ jb.pipe = function(ctx,ptName) {
 
 jb.component('pipeline', {
   type: 'data',
-  description: 'map data arrays one after the other',
+  description: 'map data arrays one after the other, do not wait for promises and rx',
   params: [
     {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true, description: 'click "=" for functions list'}
   ],
@@ -982,11 +966,20 @@ jb.component('pipeline', {
 
 jb.component('pipe', {
   type: 'data',
-  description: 'map asynch data arrays',
+  description: 'synch data, wait for promises and reactive (callbag) data',
   params: [
     {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true}
   ],
-  impl: ctx => jb.pipe(ctx,'$pipe')
+  impl: ctx => jb.pipe(ctx,'$pipe',false)
+})
+
+jb.component('pipePassRx', {
+  type: 'data',
+  description: 'wait for promises, do not wait for reactive data',
+  params: [
+    {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true}
+  ],
+  impl: ctx => jb.pipe(ctx,'$pipe',true)
 })
 
 jb.component('data.if', {
@@ -2352,16 +2345,16 @@ jb.component('formatDate', {
       },
       subject() {
           let sinks = []
-          const subj = (t, d) => {
+          function subj(t, d) {
               if (t === 0) {
                   const sink = d
                   sinks.push(sink)
-                  sink(0, t => {
+                  sink(0, function subject(t,d) {
                       if (t === 2) {
                           const i = sinks.indexOf(sink)
                           if (i > -1) sinks.splice(i, 1)
                       }
-              })
+                  })
               } else {
                       const zinkz = sinks.slice(0)
                       for (let i = 0, n = zinkz.length, sink; i < n; i++) {
@@ -2374,6 +2367,46 @@ jb.component('formatDate', {
           subj.complete = () => subj(2)
           subj.error = err => subj(2,err)
           return subj
+      },
+      replay: keep => source => {
+        keep = keep || 0
+        let store = [], sinks = [], talkback, done = false
+      
+        const sliceNum = keep > 0 ? -1 * keep : 0;
+      
+        source(0, function replay(t, d) {
+          if (t == 0) {
+            talkback = d
+            return
+          }
+          if (t == 1) {
+            store.push(d)
+            sinks.forEach(sink => sink(1, d))
+          }
+          if (t == 2) {
+            done = true
+            sinks.forEach(sink => sink(2))
+            sinks = []
+          }
+        })
+      
+        return function replay(start, sink) {
+          if (start !== 0) return
+          sinks.push(sink)
+          sink(0, function replay(t, d) {
+            if (t == 0) return
+            if (t == 1) {
+              talkback(1)
+              return
+            }
+            if (t == 2)
+              sinks = sinks.filter(s => s !== sink)
+          })
+      
+          store.slice(sliceNum).forEach(entry => sink(1, entry))
+      
+          if (done) sink(2)
+        }
       },
       catchError: fn => source => (start, sink) => {
           if (start !== 0) return
@@ -2597,6 +2630,7 @@ jb.component('formatDate', {
             sink(t, d)
           })
       },
+      // sniffer to be used on source E.g. interval
       sourceSniffer: (cb, snifferSubject) => (start, sink) => {
         if (start !== 0) return
         jb.log('snifferStarted',[])
@@ -2616,6 +2650,7 @@ jb.component('formatDate', {
           }
         }
       },
+      // sniffer to be used in a middle pipe element. E.g., map
       sniffer: (cb, snifferSubject) => source => (start, sink) => {
         if (start !== 0) return
         jb.log('snifferStarted',[])
@@ -3641,13 +3676,13 @@ function elemToVdom(elem) {
     }
 }
 
-function appendItems(elem, vdomToAppend,ctx) { // used in infinite scroll
+function appendItems(elem, vdomToAppend,{ctx,prepend} = {}) { // used in infinite scroll
     if (elem instanceof ui.VNode) { // runs on worker
         const cmpId = elem.getAttribute('cmp-id'), elemId = elem.getAttribute('id')
         // TODO: update the elem
         return jb.ui.updateRenderer(vdomToAppend,elemId,cmpId,ctx && ctx.vars.widgetId) // deligate to the main thread 
     }
-    (vdomToAppend.children ||[]).forEach(vdom => render(vdom,elem))
+    (vdomToAppend.children ||[]).forEach(vdom => render(vdom,elem,prepend))
 }
 
 function applyDeltaToDom(elem,delta) {
@@ -3733,14 +3768,14 @@ function unmount(elem) {
     jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> el._component && el._component.destroy())
 }
 
-function render(vdom,parentElem) {
+function render(vdom,parentElem,prepend) {
     jb.log('render',[...arguments])
     function doRender(vdom,parentElem) {
         jb.log('htmlChange',['createElement',...arguments])
         const elem = createElement(parentElem.ownerDocument, vdom.tag)
         jb.entries(vdom.attributes).forEach(e=>setAtt(elem,e[0],e[1])) // filter(e=>e[0].indexOf('on') != 0 && !isAttUndefined(e[0],vdom.attributes)).
         jb.asArray(vdom.children).map(child=> doRender(child,elem)).forEach(el=>elem.appendChild(el))
-        parentElem.appendChild(elem)
+        prepend ? parentElem.prepend(elem) : parentElem.appendChild(elem)
         return elem
     }
     const res = doRender(vdom,parentElem)
@@ -5437,7 +5472,8 @@ jb.component('group.wait', {
     {id: 'for', mandatory: true, dynamic: true, description: 'a promise or rx'},
     {id: 'loadingControl', type: 'control', defaultValue: text('loading ...'), dynamic: true},
     {id: 'error', type: 'control', defaultValue: text('error: %$error%'), dynamic: true},
-    {id: 'varName', as: 'string', description: 'variable for the promise result'}
+    {id: 'varName', as: 'string', description: 'variable for the promise result'},
+    {id: 'passRx', as: 'boolean', description: 'do not wait for reactive data to end, and pass it as is' },
   ],
   impl: features(
     calcProp({
@@ -5449,9 +5485,9 @@ jb.component('group.wait', {
         priority: ctx => jb.path(ctx.vars.$state,'dataArrived') ? 0: 10
       }),
     interactive(
-        (ctx,{cmp},{varName}) => !cmp.state.dataArrived && !cmp.state.error &&
-        Promise.resolve(jb.toSynchArray(ctx.componentContext.params.for())).then(data =>
-          cmp.refresh({ dataArrived: true }, {
+        (ctx,{cmp},{varName,passRx}) => !cmp.state.dataArrived && !cmp.state.error &&
+        Promise.resolve(jb.toSynchArray(ctx.componentContext.params.for(),!passRx))
+        .then(data => cmp.refresh({ dataArrived: true }, {
             srcCtx: ctx.componentContext,
             extendCtx: ctx => ctx.setVar(varName,data).setData(data)
           }))
@@ -6621,7 +6657,7 @@ jb.component('itemlist.init', {
           return ctx.vars.$props.items.map(item=> Object.assign(controlsOfItem(item),{item})).filter(x=>x.length > 0)
         }
       }),
-    itemlist.initContainerWithItems()
+    itemlist.initContainerWithItems(),
   )
 })
 
@@ -6654,14 +6690,38 @@ jb.component('itemlist.infiniteScroll', {
       const itemlistVdom = jb.ui.findIncludeSelf(vdom,'tbody')[0] || jb.ui.findIncludeSelf(vdom,'.jb-itemlist')[0]
       const elemToExpand = jb.ui.findIncludeSelf(elem,'tbody')[0] || jb.ui.findIncludeSelf(elem,'.jb-itemlist')[0]
       if (itemlistVdom) {
-        console.log(itemsToAppend,ev)
-        jb.ui.appendItems(elemToExpand,itemlistVdom,ctx)
+        jb.ui.appendItems(elemToExpand,itemlistVdom,{ctx})
         $state.visualLimit.shownItems += itemsToAppend.length
       }
     }
       ),
     templateModifier(({},{vdom}) => vdom.setAttribute('onscroll',true))
   )
+})
+
+jb.component('itemlist.incrementalFromRx', {
+  type: 'feature',
+  params: [
+    {id: 'prepend', as: 'boolean', boolean: 'last at top' }
+  ],
+  impl: features(
+    interactive(
+      (ctx,{cmp, $state}) => $state.rxItems && jb.callbag.pipe(
+          ctx.vars.$model.items()[0],
+          jb.callbag.takeUntil( cmp.destroyed ),
+          jb.callbag.subscribe(item => jb.ui.runActionOfElem(cmp.base,'nextItem',{item, elem: cmp.base}))
+    )),
+    defHandler('nextItem', (ctx,{ev},{prepend}) => {
+      const {elem} = ev
+      const item = ev.item && ev.item._parent ? ev.item.data : ev.item
+      const cmpCtx = jb.ui.ctxOfElem(elem)
+      if (!cmpCtx) return
+      const ctxToRun = cmpCtx.ctx({profile: Object.assign({},cmpCtx.profile,{ items: () => [item]}), path: ''}) // change the profile to return itemsToAppend
+      const vdom = ctxToRun.runItself().renderVdom()
+      const itemlistVdom = jb.ui.findIncludeSelf(vdom,'tbody')[0] || jb.ui.findIncludeSelf(vdom,'.jb-itemlist')[0]
+      const elemToExpand = jb.ui.findIncludeSelf(elem,'tbody')[0] || jb.ui.findIncludeSelf(elem,'.jb-itemlist')[0]
+      itemlistVdom && jb.ui.appendItems(elemToExpand,itemlistVdom,{ctx, prepend })
+    }))
 })
 
 jb.component('itemlist.fastFilter', {
@@ -6724,7 +6784,12 @@ jb.ui.itemlistInitCalcItems = cmp => cmp.calcItems = cmp.calcItems || (() => Arr
     .map(el=>(jb.ctxDictionary[el.getAttribute('jb-ctx')] || {}).data).filter(x=>x).map(x=>jb.val(x)))
 
 jb.ui.itemlistCalcItems = function(ctx,cmp) {
-  const slicedItems = addSlicedState(cmp, ctx.vars.$model.items(), ctx.vars.$model.visualSizeLimit)
+  const items = ctx.vars.$model.items()
+  if (jb.callbag.isCallbag(items[0])) {
+    cmp.state.rxItems = true
+    return []
+  }
+  const slicedItems = addSlicedState(cmp, items, ctx.vars.$model.visualSizeLimit)
   const itemsRefs = jb.isRef(jb.asRef(slicedItems)) ? 
       Object.keys(slicedItems).map(i=>jb.objectProperty(slicedItems,i)) : slicedItems
   return itemsRefs
@@ -36205,7 +36270,6 @@ st.initPreview = function(preview_window,allowedTypes) {
 
       jb.exp('%$studio/settings/activateWatchRefViewer%','boolean') && st.activateWatchRefViewer();
       jb.exec(writeValue('%$studio/projectSettings%',() => JSON.parse(JSON.stringify(preview_window.jbProjectSettings)) ))
-      writeValue('%$studio/preview%', () => ({width: 1280, height: 520 })),
 
       st.previewWindow.workerId = ctx => ctx && ctx.vars.$runAsWorker
 
@@ -36237,19 +36301,27 @@ jb.component('studio.refreshPreview', {
 jb.component('studio.setPreviewSize', {
   type: 'action',
   params: [
-    {id: 'width', as: 'number'},
-    {id: 'height', as: 'number'}
+    {id: 'width', as: 'string'},
+    {id: 'height', as: 'string'},
+    {id: 'zoom', as: 'number'}
   ],
-  impl: (ctx,width,height) => {
-    document.querySelector('.preview-iframe').style.width = `${width}px`
+  impl: (ctx,width,height,zoom) => {
+    ['html','body','#studio','#studio>div','#preview-parent'].map(s => document.querySelector(s)).filter(x=>x)
+      .forEach(el => {el.style.height = '100%'; el.style.width = '100%'} )
+    
+    const zoomRatio = zoom <= 10 ? zoom / 10 : Math.pow(1.2, zoom-10)
+
+    document.querySelector('.preview-iframe').style.width = jb.ui.withUnits(width)
     if (width) {
-      document.querySelector('.preview-iframe').style.width = `${width}px`
+      document.querySelector('.preview-iframe').style.width = jb.ui.withUnits(width)
       document.querySelector('.preview-iframe').setAttribute('width',width);
     }
     if (height) {
-      document.querySelector('.preview-iframe').style.height = `${height}px`
+      document.querySelector('.preview-iframe').style.height = jb.ui.withUnits(height)
       document.querySelector('.preview-iframe').setAttribute('height',height);
     }
+    if (zoomRatio)
+      document.querySelector('#jb-preview').contentDocument.body.style.zoom = zoomRatio
   }
 })
 
@@ -36269,12 +36341,10 @@ jb.component('studio.previewWidget', {
   type: 'control',
   params: [
     {id: 'style', type: 'preview-style', dynamic: true, defaultValue: studio.previewWidgetImpl()},
-    {id: 'width', as: 'number'},
-    {id: 'height', as: 'number'}
   ],
   impl: ctx => jb.ui.ctrl(ctx, features(
-      calcProp('width'),
-      calcProp('height'),
+      calcProp('width','%$studio/preview/width%'),
+      calcProp('height','%$studio/preview/height%'),
       calcProp('host', firstSucceeding('%$queryParams/host%','studio')),
       calcProp('loadingMessage', '{? loading project from %$$props/host%::%$queryParams/hostProjectId% ?}'),
       interactive( (ctx,{cmp}) => {
@@ -36622,34 +36692,40 @@ jb.component('studio.openResponsivePhonePopup', {
               ),
               style: button.mdcFloatingAction(true),
               features: feature.icon({icon: 'desktop_mac', type: 'mdc'})
+            }),
+            button({
+              title: 'full screen',
+              action: runActions(
+                writeValue('%$studio/preview/width%', '100%'),
+                writeValue('%$studio/preview/height%', '100%')
+              ),
+              style: button.mdcFloatingAction(true),
+              features: feature.icon({icon: 'fullscreen', type: 'mdc'})
             })
           ],
           features: css.padding({top: '7', left: '4', right: '4'})
         }),
         group({
-          title: 'width-height',
-          layout: layout.horizontal(),
+          title: 'Zoom',
+          style: propertySheet.titlesAbove({}),
           controls: [
             editableNumber({
-              databind: '%$studio/preview/width%',
-              title: 'width',
-              style: editableText.mdcInput({}),
-              features: [watchRef('%$studio/preview/width%')]
-            }),
-            editableNumber({
-              databind: '%$studio/preview/height%',
-              title: 'height',
-              style: editableText.mdcInput({}),
-              features: watchRef('%$studio/preview/height%')
+              databind: '%$studio/preview/zoom%',
+              title: 'zoom',
+              style: editableNumber.mdcSliderNoText({}),
+              symbol: '',
+              min: '1',
+              max: '20',
+              displayString: '%%px'
             })
           ],
-          features: hidden()
+          features: css.margin({left: '10', bottom: '10'})
         })
       ],
       features: feature.onDataChange({
         ref: '%$studio/preview%',
         includeChildren: 'yes',
-        action: studio.setPreviewSize('%$studio/preview/width%', '%$studio/preview/height%')
+        action: studio.setPreviewSize({ width: '%$studio/preview/width%', height: '%$studio/preview/height%', zoom: '%$studio/preview/zoom%'})
       })
     }),
     title: 'responsive'
@@ -39802,8 +39878,11 @@ jb.component('studio.dataBrowse', {
         controls: [
           controlWithCondition(isOfType('string,boolean,number', '%$obj%'), text('%$obj%')),
           controlWithCondition(
-            and(isOfType('array', '%$obj%'), '%$obj/time%', '%$obj/dir%'),
-            studio.showRxSniffer('%$obj%')
+            '%$obj.snifferResult%', studio.showRxSniffer('%$obj%')
+          ),
+          controlWithCondition(
+            (ctx,{obj}) => jb.callbag.isCallbag(obj),
+            studio.browseRx('%$obj%')
           ),
           controlWithCondition(
             isOfType('array', '%$obj%'),
@@ -39871,37 +39950,42 @@ jb.component('studio.dataBrowse', {
     features: group.wait({
       for: ctx => ctx.exp('%$objToShow%'),
       loadingControl: text('...'),
-      varName: 'obj'
+      varName: 'obj',
+      passRx: true
     })
+  })
+})
+
+jb.component('studio.browseRx', {
+  type: 'control',
+  params: [
+    {id: 'rx'}
+  ],
+  impl: itemlist({
+        items: '%$rx%',
+        controls: studio.dataBrowse('%d/vars%'),
+        style: itemlist.ulLi(),
+        features: [
+          itemlist.incrementalFromRx(),
+          css.height({height: '100%', overflow: 'scroll', minMax: 'max'})
+        ]
   })
 })
 
 jb.component('studio.showRxSniffer', {
   type: 'control',
   params: [
-    {id: 'snifferArray'}
+    {id: 'snifferRx'}
   ],
-  impl: group({
-    controls: [
-      text({
-        text: pipeline(
-          Var('in', pipeline('%$snifferArray%', filter('%dir%==in'), count())),
-          Var('out', pipeline('%$snifferArray%', filter('%dir%==out'), count())),
-          'reactive operation: %$in% in, %$out% out'
-        )
-      }),
-      itemlist({
-        title: '',
-        items: '%$snifferArray%',
+  impl: itemlist({
+        items: '%$snifferRx%',
         controls: group({
           layout: layout.flex({spacing: '0'}),
           controls: [
             group({
               title: 'data',
               layout: layout.flex({justifyContent: data.if('%dir%==in', 'flex-start', 'flex-end')}),
-              controls: [
-                studio.dataBrowse('%d%')
-              ],
+              controls: studio.dataBrowse('%d%'),
               features: [css.width('100%'), css.margin({left: '10'})]
             }),
             button({
@@ -39932,13 +40016,10 @@ jb.component('studio.showRxSniffer', {
         style: itemlist.ulLi(),
         visualSizeLimit: 7,
         features: [
-          itemlist.infiniteScroll(),
-          css.height({height: '150', overflow: 'scroll', minMax: 'max'})
+          itemlist.incrementalFromRx(),
+          css.height({height: '100%', overflow: 'scroll', minMax: 'max'})
         ]
-      })
-    ],
-    features: [css.width('400')]
-  })
+   })
 })
 
 jb.component('studio.probeDataView', {
@@ -39981,7 +40062,8 @@ jb.component('studio.probeDataView', {
         group.wait({
           for: studio.probeResults('%$jbEditorCntrData/selected%'),
           loadingControl: text('...'),
-          varName: 'probeResult'
+          varName: 'probeResult',
+          passRx: true
         })
       ]
     }),
@@ -42509,6 +42591,7 @@ jb.component('dataResource.studio', {
     page: '',
     profile_path: '',
     pickSelectionCtxId: '',
+    preview: {width: 1280, height: 520, zoom: jb.frame.jbInvscode ? 8 : 10},
     settings: {contentEditable: true, activateWatchRefViewer: true},
     baseStudioUrl: (jb.frame.jbBaseProjUrl || jb.frame.location.origin) + '/bin/studio/',
     vscode: jb.frame.jbInvscode
@@ -42851,7 +42934,7 @@ jb.component('studio.all', {
       controlWithCondition(not('%$studio/vscode%'), studio.topBar()),
       controlWithCondition('%$studio/vscode%', studio.vscodeTopBar()),
       group({
-        controls: studio.previewWidget({width: 1280, height: 520}),
+        controls: studio.previewWidget(),
         features: id('preview-parent')
       }),
       studio.pages(),
@@ -42867,7 +42950,7 @@ jb.component('studio.all', {
       feature.init(runActions(urlHistory.mapStudioUrlToResource('studio'),
         studio.initVscodeAdapter('studio'),
         studio.initAutoSave()
-      ))
+      )),
     ]
   })
 })
@@ -43175,7 +43258,8 @@ st.projectHosts = {
 const st = jb.studio
 
 function resolve(x) {
-    return Promise.resolve(jb.toSynchArray(x))
+    if (jb.callbag.isCallbag(x)) return x
+    return Promise.resolve(x)
 }
 let probeCounter = 0
 st.Probe = class {
@@ -43298,21 +43382,22 @@ st.Probe = class {
             this.probe[path] = []
             this.probe[path].visits = 0
         }
-        let snifferRes
+        let cbSnifferSrc
         if (typeof out == 'function' && jb.callbag.isCallbagFunc(out)) {
-            const {sniffer,toPromiseArray,subject,subscribe,isCallbag,sourceSniffer} = ctx.frame().jb.callbag
+            const {sniffer,subject,replay,isCallbag,sourceSniffer} = ctx.frame().jb.callbag
             // wrap cb with sniffer
-            const cbSniffer = subject()
-            //subscribe(x=>console.log(x))(cbSniffer)
-            snifferRes = toPromiseArray(cbSniffer).then(res=>{res.snifferResult = true; return res})
-            out = isCallbag(out) ? sourceSniffer(out, cbSniffer) : sniffer(out, cbSniffer)
+            const snifferRcvr = subject()
+            cbSnifferSrc = replay()(snifferRcvr)
+            cbSnifferSrc.snifferResult = true
+            setTimeout(()=>snifferRcvr.complete(), 2000) // do not listen for more that 2 sec !!!
+            out = isCallbag(out) ? sourceSniffer(out, snifferRcvr) : sniffer(out, snifferRcvr)
         }
         this.probe[path].visits++
         const found = this.probe[path].find(x=>jb.compareArrays(x.in.data,ctx.data))
         if (found)
             found.counter++
         else
-            this.probe[path].push({in: ctx, out: snifferRes || out, counter: 0})
+            this.probe[path].push({in: ctx, out: cbSnifferSrc || out, counter: 0})
 
         return out
     }

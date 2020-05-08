@@ -66,7 +66,6 @@ st.initPreview = function(preview_window,allowedTypes) {
 
       jb.exp('%$studio/settings/activateWatchRefViewer%','boolean') && st.activateWatchRefViewer();
       jb.exec(writeValue('%$studio/projectSettings%',() => JSON.parse(JSON.stringify(preview_window.jbProjectSettings)) ))
-      writeValue('%$studio/preview%', () => ({width: 1280, height: 520 })),
 
       st.previewWindow.workerId = ctx => ctx && ctx.vars.$runAsWorker
 
@@ -98,19 +97,27 @@ jb.component('studio.refreshPreview', {
 jb.component('studio.setPreviewSize', {
   type: 'action',
   params: [
-    {id: 'width', as: 'number'},
-    {id: 'height', as: 'number'}
+    {id: 'width', as: 'string'},
+    {id: 'height', as: 'string'},
+    {id: 'zoom', as: 'number'}
   ],
-  impl: (ctx,width,height) => {
-    document.querySelector('.preview-iframe').style.width = `${width}px`
+  impl: (ctx,width,height,zoom) => {
+    ['html','body','#studio','#studio>div','#preview-parent'].map(s => document.querySelector(s)).filter(x=>x)
+      .forEach(el => {el.style.height = '100%'; el.style.width = '100%'} )
+    
+    const zoomRatio = zoom <= 10 ? zoom / 10 : Math.pow(1.2, zoom-10)
+
+    document.querySelector('.preview-iframe').style.width = jb.ui.withUnits(width)
     if (width) {
-      document.querySelector('.preview-iframe').style.width = `${width}px`
+      document.querySelector('.preview-iframe').style.width = jb.ui.withUnits(width)
       document.querySelector('.preview-iframe').setAttribute('width',width);
     }
     if (height) {
-      document.querySelector('.preview-iframe').style.height = `${height}px`
+      document.querySelector('.preview-iframe').style.height = jb.ui.withUnits(height)
       document.querySelector('.preview-iframe').setAttribute('height',height);
     }
+    if (zoomRatio)
+      document.querySelector('#jb-preview').contentDocument.body.style.zoom = zoomRatio
   }
 })
 
@@ -130,12 +137,10 @@ jb.component('studio.previewWidget', {
   type: 'control',
   params: [
     {id: 'style', type: 'preview-style', dynamic: true, defaultValue: studio.previewWidgetImpl()},
-    {id: 'width', as: 'number'},
-    {id: 'height', as: 'number'}
   ],
   impl: ctx => jb.ui.ctrl(ctx, features(
-      calcProp('width'),
-      calcProp('height'),
+      calcProp('width','%$studio/preview/width%'),
+      calcProp('height','%$studio/preview/height%'),
       calcProp('host', firstSucceeding('%$queryParams/host%','studio')),
       calcProp('loadingMessage', '{? loading project from %$$props/host%::%$queryParams/hostProjectId% ?}'),
       interactive( (ctx,{cmp}) => {

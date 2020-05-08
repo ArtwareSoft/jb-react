@@ -280,10 +280,19 @@ jb.component('rx.delay', {
     impl: (ctx,time) => jb.callbag.delay(time)
 })
 
+jb.component('rx.replay', {
+  type: 'rx',
+  description: 'stores messages and replay them for later subscription', 
+  params: [
+    {id: 'itemsToKeep', as: 'number', description: 'empty for unlimited'},
+  ],
+  impl: (ctx,keep) => jb.callbag.replay(keep)
+})
+
 jb.component('rx.takeUntil', {
     type: 'rx',
     description: 'closes the stream when events comes from notifier', 
-    category: 'destructor',
+    category: 'terminate',
     params: [
       {id: 'notifier', dynamic: true, type: 'rx', description: 'can be also promise or any other' },
     ],
@@ -293,7 +302,7 @@ jb.component('rx.takeUntil', {
 jb.component('rx.take', {
   type: 'rx',
   description: 'closes the stream after taking some items',
-  category: 'destructor',
+  category: 'terminate',
   params: [
     {id: 'count', as: 'number', dynamic: true, mandatory: true}
   ],
@@ -332,41 +341,49 @@ jb.component('rx.subject', {
     type: 'data',
     description: 'callbag "variable" that you can write or listen to', 
     category: 'variable',
-    impl: () => jb.callbag.subject()
+    params: [
+      {id: 'replay', as: 'boolean', description: 'keep pushed items for late subscription'},
+      {id: 'itemsToKeep', as: 'number', description: 'relevant for replay, empty for unlimited'},
+    ],
+    impl: (ctx,replay,itemsToKeep) => {
+      const rcvr = jb.callbag.subject()
+      return { rcvr, source: replay ? jb.callbag.replay(itemsToKeep)(rcvr): rcvr } 
+    }
 })
   
-jb.component('rx.subjectAsSource', {
+jb.component('rx.fromSubject', {
     type: 'rx',
+    category: 'source',
     params: [
-        {id: 'subject', dynamic: true, mandatory: true },
+        {id: 'subject', mandatory: true },
       ],
-    impl: '%$subject%'
+    impl: (ctx,subj) => subj.source
 })
 
 jb.component('rx.subjectNext', {
     type: 'action',
     params: [
-        {id: 'subject', dynamic: true, mandatory: true },
+        {id: 'subject', mandatory: true },
         {id: 'data', dynamic: true, mandatory: true },
     ],
-    impl: (ctx,subject,data) => subject().next(data())
+    impl: (ctx,subject,data) => subject.rcvr.next(ctx.ctx({data: data(), profile: '', forcePath: ''}))
 })
 
 jb.component('rx.subjectComplete', {
     type: 'action',
     params: [
-        {id: 'subject', dynamic: true, mandatory: true },
+        {id: 'subject', mandatory: true },
     ],
-    impl: (ctx,subject) => subject().complete()
+    impl: (ctx,subject) => subject.rcvr.complete()
 })
 
 jb.component('rx.subjectError', {
     type: 'action',
     params: [
-        {id: 'subject', dynamic: true, mandatory: true },
+        {id: 'subject', mandatory: true },
         {id: 'error', dynamic: true, mandatory: true },
     ],
-    impl: (ctx,subject,error) => subject().error(error())
+    impl: (ctx,subject,error) => subject.rcvr.error(error())
 })
 ;
 

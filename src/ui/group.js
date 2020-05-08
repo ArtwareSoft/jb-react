@@ -91,7 +91,8 @@ jb.component('group.wait', {
     {id: 'for', mandatory: true, dynamic: true, description: 'a promise or rx'},
     {id: 'loadingControl', type: 'control', defaultValue: text('loading ...'), dynamic: true},
     {id: 'error', type: 'control', defaultValue: text('error: %$error%'), dynamic: true},
-    {id: 'varName', as: 'string', description: 'variable for the promise result'}
+    {id: 'varName', as: 'string', description: 'variable for the promise result'},
+    {id: 'passRx', as: 'boolean', description: 'do not wait for reactive data to end, and pass it as is' },
   ],
   impl: features(
     calcProp({
@@ -103,9 +104,9 @@ jb.component('group.wait', {
         priority: ctx => jb.path(ctx.vars.$state,'dataArrived') ? 0: 10
       }),
     interactive(
-        (ctx,{cmp},{varName}) => !cmp.state.dataArrived && !cmp.state.error &&
-        Promise.resolve(jb.toSynchArray(ctx.componentContext.params.for())).then(data =>
-          cmp.refresh({ dataArrived: true }, {
+        (ctx,{cmp},{varName,passRx}) => !cmp.state.dataArrived && !cmp.state.error &&
+        Promise.resolve(jb.toSynchArray(ctx.componentContext.params.for(),!passRx))
+        .then(data => cmp.refresh({ dataArrived: true }, {
             srcCtx: ctx.componentContext,
             extendCtx: ctx => ctx.setVar(varName,data).setData(data)
           }))

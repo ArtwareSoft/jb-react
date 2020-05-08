@@ -566,8 +566,16 @@ jb.component('uiTest.itemlistPrimitiveArrayItemShouldBeRef.tableStyle', {
   })
 })
 
-
-
+jb.component('uiTest.itemlistRxSource', {
+  impl: uiTest({
+    control: itemlist({
+      items: rx.fromIter('%$people%'),
+      controls: text('%$item.name% - %name%'),
+      features: itemlist.incrementalFromRx()
+    }),
+    expectedResult: contains(['Homer Simpson - Homer Simpson', 'Bart Simpson - Bart Simpson'])
+  })
+})
 
 jb.component('uiTest.itemlist.shownOnlyOnItemHover', {
   impl: uiTest({

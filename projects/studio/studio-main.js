@@ -4,6 +4,7 @@ jb.component('dataResource.studio', {
     page: '',
     profile_path: '',
     pickSelectionCtxId: '',
+    preview: {width: 1280, height: 520, zoom: jb.frame.jbInvscode ? 8 : 10},
     settings: {contentEditable: true, activateWatchRefViewer: true},
     baseStudioUrl: (jb.frame.jbBaseProjUrl || jb.frame.location.origin) + '/bin/studio/',
     vscode: jb.frame.jbInvscode
@@ -346,7 +347,7 @@ jb.component('studio.all', {
       controlWithCondition(not('%$studio/vscode%'), studio.topBar()),
       controlWithCondition('%$studio/vscode%', studio.vscodeTopBar()),
       group({
-        controls: studio.previewWidget({width: 1280, height: 520}),
+        controls: studio.previewWidget(),
         features: id('preview-parent')
       }),
       studio.pages(),
@@ -362,7 +363,7 @@ jb.component('studio.all', {
       feature.init(runActions(urlHistory.mapStudioUrlToResource('studio'),
         studio.initVscodeAdapter('studio'),
         studio.initAutoSave()
-      ))
+      )),
     ]
   })
 })

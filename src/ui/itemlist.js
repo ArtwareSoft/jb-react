@@ -45,7 +45,7 @@ jb.component('itemlist.init', {
           return ctx.vars.$props.items.map(item=> Object.assign(controlsOfItem(item),{item})).filter(x=>x.length > 0)
         }
       }),
-    itemlist.initContainerWithItems()
+    itemlist.initContainerWithItems(),
   )
 })
 
@@ -78,14 +78,38 @@ jb.component('itemlist.infiniteScroll', {
       const itemlistVdom = jb.ui.findIncludeSelf(vdom,'tbody')[0] || jb.ui.findIncludeSelf(vdom,'.jb-itemlist')[0]
       const elemToExpand = jb.ui.findIncludeSelf(elem,'tbody')[0] || jb.ui.findIncludeSelf(elem,'.jb-itemlist')[0]
       if (itemlistVdom) {
-        console.log(itemsToAppend,ev)
-        jb.ui.appendItems(elemToExpand,itemlistVdom,ctx)
+        jb.ui.appendItems(elemToExpand,itemlistVdom,{ctx})
         $state.visualLimit.shownItems += itemsToAppend.length
       }
     }
       ),
     templateModifier(({},{vdom}) => vdom.setAttribute('onscroll',true))
   )
+})
+
+jb.component('itemlist.incrementalFromRx', {
+  type: 'feature',
+  params: [
+    {id: 'prepend', as: 'boolean', boolean: 'last at top' }
+  ],
+  impl: features(
+    interactive(
+      (ctx,{cmp, $state}) => $state.rxItems && jb.callbag.pipe(
+          ctx.vars.$model.items()[0],
+          jb.callbag.takeUntil( cmp.destroyed ),
+          jb.callbag.subscribe(item => jb.ui.runActionOfElem(cmp.base,'nextItem',{item, elem: cmp.base}))
+    )),
+    defHandler('nextItem', (ctx,{ev},{prepend}) => {
+      const {elem} = ev
+      const item = ev.item && ev.item._parent ? ev.item.data : ev.item
+      const cmpCtx = jb.ui.ctxOfElem(elem)
+      if (!cmpCtx) return
+      const ctxToRun = cmpCtx.ctx({profile: Object.assign({},cmpCtx.profile,{ items: () => [item]}), path: ''}) // change the profile to return itemsToAppend
+      const vdom = ctxToRun.runItself().renderVdom()
+      const itemlistVdom = jb.ui.findIncludeSelf(vdom,'tbody')[0] || jb.ui.findIncludeSelf(vdom,'.jb-itemlist')[0]
+      const elemToExpand = jb.ui.findIncludeSelf(elem,'tbody')[0] || jb.ui.findIncludeSelf(elem,'.jb-itemlist')[0]
+      itemlistVdom && jb.ui.appendItems(elemToExpand,itemlistVdom,{ctx, prepend })
+    }))
 })
 
 jb.component('itemlist.fastFilter', {
@@ -148,7 +172,12 @@ jb.ui.itemlistInitCalcItems = cmp => cmp.calcItems = cmp.calcItems || (() => Arr
     .map(el=>(jb.ctxDictionary[el.getAttribute('jb-ctx')] || {}).data).filter(x=>x).map(x=>jb.val(x)))
 
 jb.ui.itemlistCalcItems = function(ctx,cmp) {
-  const slicedItems = addSlicedState(cmp, ctx.vars.$model.items(), ctx.vars.$model.visualSizeLimit)
+  const items = ctx.vars.$model.items()
+  if (jb.callbag.isCallbag(items[0])) {
+    cmp.state.rxItems = true
+    return []
+  }
+  const slicedItems = addSlicedState(cmp, items, ctx.vars.$model.visualSizeLimit)
   const itemsRefs = jb.isRef(jb.asRef(slicedItems)) ? 
       Object.keys(slicedItems).map(i=>jb.objectProperty(slicedItems,i)) : slicedItems
   return itemsRefs

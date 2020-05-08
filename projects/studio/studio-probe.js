@@ -2,7 +2,8 @@
 const st = jb.studio
 
 function resolve(x) {
-    return Promise.resolve(jb.toSynchArray(x))
+    if (jb.callbag.isCallbag(x)) return x
+    return Promise.resolve(x)
 }
 let probeCounter = 0
 st.Probe = class {
@@ -125,21 +126,22 @@ st.Probe = class {
             this.probe[path] = []
             this.probe[path].visits = 0
         }
-        let snifferRes
+        let cbSnifferSrc
         if (typeof out == 'function' && jb.callbag.isCallbagFunc(out)) {
-            const {sniffer,toPromiseArray,subject,subscribe,isCallbag,sourceSniffer} = ctx.frame().jb.callbag
+            const {sniffer,subject,replay,isCallbag,sourceSniffer} = ctx.frame().jb.callbag
             // wrap cb with sniffer
-            const cbSniffer = subject()
-            //subscribe(x=>console.log(x))(cbSniffer)
-            snifferRes = toPromiseArray(cbSniffer).then(res=>{res.snifferResult = true; return res})
-            out = isCallbag(out) ? sourceSniffer(out, cbSniffer) : sniffer(out, cbSniffer)
+            const snifferRcvr = subject()
+            cbSnifferSrc = replay()(snifferRcvr)
+            cbSnifferSrc.snifferResult = true
+            setTimeout(()=>snifferRcvr.complete(), 2000) // do not listen for more that 2 sec !!!
+            out = isCallbag(out) ? sourceSniffer(out, snifferRcvr) : sniffer(out, snifferRcvr)
         }
         this.probe[path].visits++
         const found = this.probe[path].find(x=>jb.compareArrays(x.in.data,ctx.data))
         if (found)
             found.counter++
         else
-            this.probe[path].push({in: ctx, out: snifferRes || out, counter: 0})
+            this.probe[path].push({in: ctx, out: cbSnifferSrc || out, counter: 0})
 
         return out
     }
