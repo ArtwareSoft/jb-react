@@ -5,17 +5,20 @@ jBart suggests a refreshing approach for visual development of complex apps, pow
 
 goto sample project https://github.com/ArtwareSoft/jbart-template and fork it
 
-![fork](https://github-images.s3.amazonaws.com/enterprise/2.13/assets/images/help/repository/fork_button.jpg)
+<img src="https://github-images.s3.amazonaws.com/enterprise/2.13/assets/images/help/repository/fork_button.jpg" width="320px">
 
 git clone your forked project
 
-![](https://github-images.s3.amazonaws.com/enterprise/2.13/assets/images/help/repository/clone-repo-clone-url-button.png)
-![](https://github-images.s3.amazonaws.com/enterprise/2.13/assets/images/help/repository/https-url-clone.png)
+<img src="https://github-images.s3.amazonaws.com/enterprise/2.13/assets/images/help/repository/clone-repo-clone-url-button.png" width="320px">
+<img src="https://github-images.s3.amazonaws.com/enterprise/2.13/assets/images/help/repository/https-url-clone.png" width="320px">
 
 <code>git clone https://github.com/YOUR-USERNAME/jbart-template.git</code>
 
-- goto file itemlists/itemlists.js
-- click ctrl-shift-j inside to open jBart
+- in the project directory <code>>npm install</code>
+- restart vscode 
+- in vscode File->Add Folder to Wordkspace... and select jbart-template
+- goto file itemlists/itemlists.js line 10
+- click ctrl-shift-j to open jBart
 
 
 ## Visual Development Concepts

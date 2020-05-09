@@ -1,8 +1,13 @@
+.vscode-studio {
+  --mdc-theme-primary: var(--vscode-breadcrumb-activeSelectionForeground)
+}
+
+.vscode-studio { background: var(--vscode-editor-background) }
 .vscode-studio .jb-default-dialog { background: var(--vscode-editor-background) }
 .vscode-studio .jb-default-dialog>.dialog-title { background: var(--vscode-editor-background) }
 #jb-preview { background: white }
-.vscode-studio input { 
-  background: var(--vscode-input-background);
+.vscode-studio .mdc-text-field:not(.mdc-text-field--disabled) .mdc-text-field__input { 
+  background-color: var(--vscode-input-background);
   color: var(--vscode-input-foreground)
 }
 .vscode-studio

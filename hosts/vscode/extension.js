@@ -115,7 +115,7 @@ class jBartStudio {
         ${jbModuleUrl ? studioBin : studioDev}
 	</head>
 	<body style="zoom: 0.8">
-		<div id="studio" style="background-color: white;width:1280px;"> </div>
+		<div id="studio" class="vscode-studio" style="width:1280px;"> </div>
 		<script>
 		  jb.studio.vsCodeApi = acquireVsCodeApi()
 		  jb.ui.render(jb.ui.h(jb.exec({$:'studio.all'})), document.getElementById('studio'))
@@ -144,8 +144,12 @@ class jBartStudio {
 <code>git clone https://github.com/YOUR-USERNAME/jbart-template.git</code>
 
 <ul>
-<li>goto file itemlists/itemlists.js</li>
-<li>click ctrl-shift-j inside to open jBart</li>
+<li>in the project directory <code>>npm install</code></li>
+<li>restart vscode </li>
+<li>in vscode File->Add Folder to Wordkspace... and select jbart-template</li>
+<li>goto file itemlists/itemlists.js line 10</li>
+<li>click ctrl-shift-j to open jBart</li>
+</ul>
 
         <h2>Option2: install jBart inside your project</h2>
         <div><code>npm install --save jb-react</code> </a> </div>

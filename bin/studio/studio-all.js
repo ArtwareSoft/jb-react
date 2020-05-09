@@ -43218,7 +43218,7 @@ st.projectHosts = {
         fetchProject(gitHubUrl) {
             gitHubUrl = gitHubUrl.match(/\/$/) ? gitHubUrl : gitHubUrl + '/'
             const baseUrl = decodeURIComponent(gitHubUrl).replace(/^https?:/,'')
-            const project = baseUrl.split('/').filter(x=>x).pop()
+        const project = baseUrl.split('/').filter(x=>x).pop()
             return getUrlContent(gitHubUrl).then(html =>{
                 const settings = eval('({' + _extractText(html,'jbProjectSettings = {','}') + '})')
                 return {...settings,baseUrl,project,source:'github'}
@@ -45933,7 +45933,7 @@ jb.component('vscode.pathByActiveEditor', {
     ],
     impl: (ctx,activeEditorPosition) => {
         const {compId, componentHeaderIndex, line, col } = activeEditorPosition
-        return jb.textEditor.getPathOfPos(compId, {line: line-componentHeaderIndex,col},jb.studio.previewjb)
+        return jb.studio.previewjb.comps[compId] && jb.textEditor.getPathOfPos(compId, {line: line-componentHeaderIndex,col},jb.studio.previewjb) || ''
     }
 })
 

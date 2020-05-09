@@ -83,7 +83,7 @@ jb.component('vscode.pathByActiveEditor', {
     ],
     impl: (ctx,activeEditorPosition) => {
         const {compId, componentHeaderIndex, line, col } = activeEditorPosition
-        return jb.textEditor.getPathOfPos(compId, {line: line-componentHeaderIndex,col},jb.studio.previewjb)
+        return jb.studio.previewjb.comps[compId] && jb.textEditor.getPathOfPos(compId, {line: line-componentHeaderIndex,col},jb.studio.previewjb) || ''
     }
 })
 

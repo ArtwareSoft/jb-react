@@ -122,7 +122,7 @@ st.projectHosts = {
         fetchProject(gitHubUrl) {
             gitHubUrl = gitHubUrl.match(/\/$/) ? gitHubUrl : gitHubUrl + '/'
             const baseUrl = decodeURIComponent(gitHubUrl).replace(/^https?:/,'')
-            const project = baseUrl.split('/').filter(x=>x).pop()
+        const project = baseUrl.split('/').filter(x=>x).pop()
             return getUrlContent(gitHubUrl).then(html =>{
                 const settings = eval('({' + _extractText(html,'jbProjectSettings = {','}') + '})')
                 return {...settings,baseUrl,project,source:'github'}
