@@ -112,10 +112,10 @@ class jBartStudio {
             jbDocsDiffFromFiles = ${jbDocsDiffFromFiles}
             jbStartCommand = ${jbStartCommand}
         </script>
-        ${jbModuleUrl ? studioBin : studioDev}
 	</head>
 	<body style="zoom: 0.8">
-		<div id="studio" class="vscode-studio" style="width:1280px;"> </div>
+        ${jbModuleUrl ? studioBin : studioDev}
+        <div id="studio" class="vscode-studio" style="width:1280px;"> </div>
 		<script>
 		  jb.studio.vsCodeApi = acquireVsCodeApi()
 		  jb.ui.render(jb.ui.h(jb.exec({$:'studio.all'})), document.getElementById('studio'))

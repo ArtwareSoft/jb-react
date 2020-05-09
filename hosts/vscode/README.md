@@ -1,5 +1,6 @@
 # Visual Development
-jBart suggests a refreshing approach for visual development of complex apps, powerfull enough that jBart studio was developed by itself.
+jBart suggests a refreshing approach for visual development of complex apps, powerfull enough that jBart studio was developed by itself. 
+jBart may assist in building rich **material design** components, **puppeteer scripts** and data harvesting, **d3** charts, and complex **rxjs**/**callbag** flows 
 
 ## open in vscode
 
@@ -12,24 +13,28 @@ git clone your forked project
 <img src="https://github-images.s3.amazonaws.com/enterprise/2.13/assets/images/help/repository/clone-repo-clone-url-button.png" width="320px">
 <img src="https://github-images.s3.amazonaws.com/enterprise/2.13/assets/images/help/repository/https-url-clone.png" width="320px">
 
-<code>git clone https://github.com/YOUR-USERNAME/jbart-template.git</code>
+goto your "projects" directory (or any place not inside a git project...)
 
-- in the project directory <code>>npm install</code>
+- <code>>git clone https://github.com/YOUR-USERNAME/jbart-template.git</code>
+- <code>>cd jbart-template</code>
+- <code>>npm install</code>
 - restart vscode 
-- in vscode File->Add Folder to Wordkspace... and select jbart-template
-- goto file itemlists/itemlists.js line 10
-- click ctrl-shift-j to open jBart
+- in vscode <code>>File->Add Folder to Wordkspace...</code> select jbart-template
+- goto file <code>itemlists/itemlists.js</code> line 10
+- click Ctrl-Shift-j to open jBart
 
+## Optional: visual puppeteer scripts (alpha)
+To visually build puppeteer scripts you need to install and run puppeteer server.
+In your "projects" directory
+
+- <code>>git clone https://github.com/ArtwareSoft/jb-puppeteer-server.git</code>
+- <code>>cd jb-puppeteer-server</code>
+- <code>>npm install</code>
+- <code>>npm start</code>
 
 ## Visual Development Concepts
-- coding is not forbeeden - clean textual representation of your code in declarative javascript
-- drag any visual element from the web
-- pick & databind (pick like in Chrome debugger)
-- watchable data and guided refresh by data changes
-- integrated mini-studios for different developments scenarios: ui development, forms, data binding, parsing, etc. (all self written in jBart)
-
-![jBart](https://storage.googleapis.com/letmesee1/p80kd9kkn6/files/a350b50375cf4e1a8b98d1d4137879e4_data_binding.gif)
-
+- coding is not forbeeden - inside vscode, your javascript code is available for read/write via both the text editor and our studio
+- integrated mini-studios for different developments scenarios: ui development, data binding, parsing, reactive, browser activation, etc. (all self written in jBart)
 
 ## Learn jbart
 To learn more about jBart visual development concepts, please start with [tutorial](https://jb-letmesee.appspot.com/LetMeSee/p80kd9kkn6.html?roomid=hd8mns)
