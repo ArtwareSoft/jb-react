@@ -178,7 +178,7 @@ jb.component('studio.previewWidgetImpl', {
             `javascript: parent.jb.studio.injectProjectToPreview(this,${JSON.stringify(cmp.state.projectSettings)})` : 'javascript: '
         })
     },
-    css: '{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; }'
+    css: '{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; background: var(--jb-preview-background) }'
   })
 })
 

@@ -55,8 +55,8 @@ jb.component('table.mdc', {
         ),
         items.length == 0 ? 'no items' : ''
         ])),
-    css: `{width: 100%} 
-    ~ .mdc-data-table__header-cell {font-weight: 700}`,
+    css: `{width: 100%}  
+    ~ .mdc-data-table__header-cell, ~ .mdc-data-table__cell {color: var(--jb-foreground)}`,
     features: [table.initTableOrItemlist(), table.initSort(), mdcStyle.initDynamic()]
   })
 })

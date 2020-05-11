@@ -17,7 +17,7 @@ jb.component('divider.br', {
     ],
     impl :{$: 'customStyle', 
         template: '<div></div>',
-        css: `{ border-top-color: rgba(0,0,0,0.12); display: block; border-top-width: 1px; border-top-style: solid;margin-top: 10px; margin-bottom: 10px;} `
+        css: `{ border-top-color: var(--jb-menu-separatorBackground); display: block; border-top-width: 1px; border-top-style: solid;margin-top: 10px; margin-bottom: 10px;} `
     }
 })
 

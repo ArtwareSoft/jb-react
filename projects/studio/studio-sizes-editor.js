@@ -70,7 +70,7 @@ jb.component('sizesEditor.widthHeight', {
           dialog.closeContainingPopup()
         ),
         features: css(`{position: absolute; top: %$top%; left: 65px; font-size: 9px; width: 100px;} 
-        ~:hover { font-size: 16px; background: white; z-index: 10000}`),
+        ~:hover { font-size: 16px; background: var(--vscode-editor-background); z-index: 10000}`),
         style: button.href()
       })
 })

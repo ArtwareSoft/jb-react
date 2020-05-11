@@ -217,6 +217,15 @@ jb.component('css.lineClamp', {
   )
 })
 
+jb.component('css.valueOfCssVar',{
+  description: 'value of css variable --var under element',
+  params: [
+    {id: 'varName', description: 'without the -- prefix'},
+    {id: 'parent', description: 'html element under which to check the var, default is document.body' }
+  ],
+  impl: (ctx,varName,parent) => jb.ui.valueOfCssVar(varName,parent)
+})
+
 ;['layout','typography','detailedBorder','detailedColor','gridArea'].forEach(f=>
 jb.component(`css.${f}`, {
   type: 'feature:0',
@@ -225,5 +234,6 @@ jb.component(`css.${f}`, {
   ],
   impl: (ctx,css) => ({css: fixCssLine(css)})
 }))
+
 
 })()

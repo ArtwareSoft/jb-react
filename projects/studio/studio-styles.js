@@ -5,7 +5,10 @@ jb.component('editableText.studioPrimitiveText', {
           class: 'mdc-text-field__input',
           value: databind, onchange: true, onkeyup: true, onblur: true
     }),
-    css: '{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom1: 7px;} :focus { border-color: #3F51B5; border-width: 2px}',
+    css: `{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; margin-bottom1: 7px;
+        color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-titleBar-inactiveBackground);
+    } 
+    :focus { border-color: var(--jb-titleBar-activeBackground); border-width: 2px}`,
     features: field.databindText(0, false)
   })
 })
@@ -13,7 +16,7 @@ jb.component('editableText.studioPrimitiveText', {
 jb.component('editableText.floatingInput', {
   type: 'editable-text.style',
   impl: styleWithFeatures(editableText.mdcInput(),
-    css(`~ .mdc-text-field__input  { font-size: 1.2rem; } ~ .mdc-text-field { width: 100%; margin-right: 13px;}`))
+    css(`~ .mdc-text-field { width: 100%; margin-right: 13px;}`))
 })
 
 jb.studio.codeMirrorUtils = Object.assign(jb.studio.codeMirrorUtils || {}, {
@@ -58,11 +61,12 @@ jb.component('editableText.studioCodemirrorTgp', {
 jb.component('button.selectProfileStyle', {
   type: 'button.style',
   impl: customStyle({
-    template: (cmp,{title},h) =>
-        h('input', { class: 'mdc-text-field__input', type: 'text', readonly: true, title,
+    template: (cmp,{title},h) => h('input', { class: 'mdc-text-field__input', type: 'text', readonly: true, title,
             value: title, onmouseup: 'onclickHandler', onkeydown: 'clickedEnter',
         }),
-    css: '{ cursor: pointer; padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom1: 7px; } :focus { border-color: #3F51B5; border-width: 2px}',
+    css: `{ cursor: pointer; padding-left: 2px; padding-top: 5px; padding-bottom: 0;
+    color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-titleBar-inactiveBackground); }
+    :focus { border-color: var(--jb-titleBar-activeBackground); border-width: 2px}`,
     features: interactive(
       (ctx,{cmp}) => cmp.clickedEnter = () => event.keyCode == 13 && cmp.onclickHandler()
     )
@@ -88,7 +92,9 @@ jb.component('button.studioScript', {
             onmouseup: 'onclickHandler',
             onkeydown: 'clickedEnter',
         }),
-    css: '{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom1: 7px; cursor: pointer; opacity: 0.8; font-style: italic; }',
+    css: `{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; 
+      color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-titleBar-inactiveBackground);
+      cursor: pointer; opacity: 0.8; font-style: italic; }`,
     features: interactive(
       (ctx,{cmp}) => cmp.clickedEnter = ev => event.keyCode == 13 && cmp.onclickHandler()
     )

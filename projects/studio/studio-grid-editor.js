@@ -136,7 +136,7 @@ jb.component('gridEditor.openGridLineThumb', {
             }
         ),
         css(
-          '>span { display: none; width: 150px; white-space: nowrap; padding: 7px; color: white; background: gray;}'
+          '>span { display: none; width: 150px; white-space: nowrap; padding: 7px; color: var(--jb-statusBar-foreground); background: var(--jb-statusBar-background);}'
         ),
         css(
           pipeline(
@@ -236,9 +236,9 @@ jb.component('gridEditor.openGridItemThumbs', {
 
         css((ctx,{gridItemElem}) => {
           const elemRect = gridItemElem.getBoundingClientRect()
-          return `>span { display: none; color: white; position: absolute; white-space: nowrap; padding: 7px; background: gray; opacity: 1; top: ${elemRect.height- 7 }px}`
+          return `>span { display: none; position: absolute; white-space: nowrap; padding: 7px; color: var(--jb-statusBar-foreground); background: var(--jb-statusBar-background); opacity: 1; top: ${elemRect.height- 7 }px}`
         }),
-        css('{cursor: grab; box-shadow: 3px 3px; background: grey; opacity: 0.2; display: flex; flex-flow: row-reverse} ~:hover {opacity: 0.7}' ),
+        css('{cursor: grab; box-shadow: 3px 3px; var(--jb-statusBar-background); opacity: 0.2; display: flex; flex-flow: row-reverse} ~:hover {opacity: 0.7}' ),
         feature.onDataChange({ ref: studio.ref('%$gridPath%'), includeChildren: 'yes',
           action: (ctx,{cmp}) => jb.delay(1).then(()=> cmp.refresh(null,{srcCtx: ctx.componentContext}))
         })

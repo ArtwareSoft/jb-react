@@ -15,7 +15,8 @@
 	"repository": "https://github.com/Artwaresoft/jb-react",
 	"activationEvents": [
 		"onCommand:jb.studio.openJbEditor",
-		"onCommand:jb.studio.openProperties"
+		"onCommand:jb.studio.openProperties",
+		"onWebviewPanel:jb.studio"
 	],
 	"main": "extension.js",
 	"contributes": {

@@ -5,9 +5,12 @@ jb.component('picklist.native', {
           state.options.map(option=>h('option',{value: option.code},option.text))
         ),
     css: `
-{ display: block; width: 100%; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857; color: #555555; background-color: #fff; background-image: none; border: 1px solid #ccc; border-radius: 4px; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); -webkit-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; -o-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; }
-:focus { border-color: #66afe9; outline: 0; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); }
-::-webkit-input-placeholder { color: #999; }`,
+{ display: block; width: 100%; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857; 
+  color: var(--jb-menu-foreground); background: var(--jb-menu-background); 
+  background-image: none; border: 1px solid #ccc; border-radius: 4px; box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+}
+:focus { border-color: #66afe9; outline: 0; box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); }
+::input-placeholder { color: #999; }`,
     features: [field.databind(), picklist.init()]
   })
 })
@@ -86,22 +89,18 @@ jb.component('picklist.nativeMdLookOpen', {
         h('input', { type: 'text', value: state.databind, list: 'list_' + cmp.ctx.id, onchange: true }),
         h('datalist', {id: 'list_' + cmp.ctx.id}, state.options.map(option=>h('option',{},option.text)))
     ]),
-    css: `>input {  appearance: none; -webkit-appearance: none; font-family: inherit;
-  background-color: transparent;
+    css: `>input {  appearance: none; -webkit-appearance: none;
   padding: 6px 0;
-  font-size: 14px;
   width: 100%;
   color: rgba(0,0,0, 0.82);
   border: none;
-  border-bottom: 1px solid rgba(0,0,0, 0.12); }
+  border-bottom: 1px solid var(--jb-titleBar-inactiveBackground);
+  color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background);
+}
+  { position: relative;}
+  >input:focus { border-color: var(--jb-titleBar-activeBackground); border-width: 2px}
 
-  {
-    font-family: 'Roboto','Helvetica','Arial',sans-serif;
-    position: relative;
-  }
-  >input:focus { border-color: #3F51B5; border-width: 2px}
-
-  :after { position: absolute;
+  :after1 { position: absolute;
         top: 0.75em;
         right: 0.5em;
         /* Styling the down arrow */
@@ -111,7 +110,7 @@ jb.component('picklist.nativeMdLookOpen', {
         content: '';
         border-left: .25em solid transparent;
         border-right: .25em solid transparent;
-        border-top: .375em solid rgba(0,0,0, 0.12);
+        border-top: .375em solid var(--mdc-theme-text-primary-on-background);
         pointer-events: none; }`,
     features: [field.databind(), picklist.init()]
   })
@@ -123,33 +122,29 @@ jb.component('picklist.nativeMdLook', {
     template: (cmp,state,h) => h('div',{},h('select',
       { value: state.databind, onchange: true },
           state.options.map(option=>h('option',{value: option.code},option.text)))),
-    css: `>select {  appearance: none; -webkit-appearance: none; font-family: inherit;
-  background-color: transparent;
-  padding: 6px 0;
-  font-size: 14px;
-  width: 100%;
-  color: rgba(0,0,0, 0.82);
-  border: none;
-  border-bottom: 1px solid rgba(0,0,0, 0.12); }
-
-  {
-    font-family: 'Roboto','Helvetica','Arial',sans-serif;
-    position: relative;
-  }
-  >select:focus { border-color: #3F51B5; border-width: 2px}
-
-  :after { position: absolute;
-        top: 0.75em;
-        right: 0.5em;
-        /* Styling the down arrow */
-        width: 0;
-        height: 0;
-        padding: 0;
-        content: '';
-        border-left: .25em solid transparent;
-        border-right: .25em solid transparent;
-        border-top: .375em solid rgba(0,0,0, 0.12);
-        pointer-events: none; }`,
+    css: `>input {  appearance: none; -webkit-appearance: none;
+      padding: 6px 0;
+      width: 100%;
+      color: rgba(0,0,0, 0.82);
+      border: none;
+      border-bottom: 1px solid var(--jb-titleBar-inactiveBackground);
+      color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background);
+    }
+      { position: relative;}
+      >input:focus { border-color: var(--jb-titleBar-activeBackground); border-width: 2px}
+    
+      :after1 { position: absolute;
+            top: 0.75em;
+            right: 0.5em;
+            /* Styling the down arrow */
+            width: 0;
+            height: 0;
+            padding: 0;
+            content: '';
+            border-left: .25em solid transparent;
+            border-right: .25em solid transparent;
+            border-top: .375em solid var(--mdc-theme-text-primary-on-background);
+            pointer-events: none; }`,
     features: [field.databind(), picklist.init()]
   })
 })

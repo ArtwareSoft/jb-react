@@ -24,13 +24,11 @@ jb.component('studio.pages', {
         features: [css('{margin: 5px}'), feature.hoverTitle('new page')]
       }),
       itemlist({
-        items: pipeline(
-          studio.cmpsOfProject(),
-          filter(studio.isOfType('%%', 'control'))
-        ),
+        items: pipeline(studio.cmpsOfProject(), filter(studio.isOfType('%%', 'control'))),
         controls: text({
-          text: pipeline(suffix('.'),extractSuffix('.')),
-          features: css.class('studio-page')}),
+          text: pipeline(suffix('.'), extractSuffix('.')),
+          features: css.class('studio-page')
+        }),
         style: itemlist.horizontal(),
         features: [
           itemlist.selection({
@@ -50,19 +48,10 @@ jb.component('studio.pages', {
         features: [css('{margin: 5px}'), feature.hoverTitle('new function')]
       }),
       itemlist({
-        items: pipeline(
-          studio.cmpsOfProject(),
-          filter(studio.isOfType('%%', 'data')),
-          suffix('.')
-        ),
+        items: pipeline(studio.cmpsOfProject(), filter(studio.isOfType('%%', 'data'))),
         controls: text({
-          text: pipeline(suffix('.'),extractSuffix('.')),
-          features: [
-            feature.onEvent({
-              event: 'click',
-              action: studio.openJbEditor('%%')
-            })
-          ]
+          text: pipeline(suffix('.'), extractSuffix('.')),
+          features: [feature.onEvent({event: 'click', action: studio.openJbEditor('%%')})]
         }),
         style: itemlist.horizontal(),
         features: [id('functions'), css.class('studio-pages-items'), studio.watchComponents()]

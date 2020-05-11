@@ -14,17 +14,22 @@ jb.component('studio.initVscodeAdapter', {
         const {pipe, subscribe,create,filter} = jb.callbag
         jb.studio.vscodeEm = create(obs=> jb.frame.addEventListener('message', e => obs(e)))
 
+        vscode.setState({...vscode.getState(), ...jb.frame.jbWorkspaceState})
         const state = {...jb.frame.jbPreviewProjectSettings, ...vscode.getState(), vscode: true}
         params.forEach(p => state[p] != null && ctx.run(writeValue(`%${resource}/${p}%`,state[p]) ))
 
         pipe(jb.ui.resourceChange(), 
             filter(e=> e.path[0] == resource && params.indexOf(e.path[1]) != -1),
-            subscribe(e =>
-                vscode.setState(jb.objFromEntries(params.map(p=>[p,ctx.exp(`%${resource}/${p}%`)])))
+            subscribe(e => {
+                vscode.setState({...vscode.getState(),...jb.objFromEntries(params.map(p=>[p,ctx.exp(`%${resource}/${p}%`)]))})
+                jb.studio.vscodeService({$: 'storeWorkspaceState', state})
+            }
         ))
 
         jb.sessionStorage = function(id,val) {
-            return val == undefined ? (vscode.getState() ||{})[id] : vscode.setState({...vscode.getState(),id: val})
+            const state = val == undefined ? (vscode.getState() ||{})[id] : vscode.setState({...vscode.getState(),[id]: val})
+            val && jb.studio.vscodeService({$: 'storeWorkspaceState', state})
+            return state
         }
 
         let messageID = 0

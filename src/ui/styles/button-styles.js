@@ -12,7 +12,7 @@ jb.component('button.href', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
-    css: '{color: grey} .raised { font-weight: bold }'
+    css: '{color: var(--jb-textLink-foreground)} .raised { color: var(--jb-textLink-activeForeground) }'
   })
 })
 
@@ -29,11 +29,11 @@ jb.component('button.x', {
             font: %$size%px sans-serif;
             border: none;
             background: transparent;
-            color: rgba(0,0,0,0.2);
+            color: var(--jb-titleBar-inactiveForeground);
             text-shadow: 0 1px 0 #fff;
             font-weight: 700;
         }
-        :hover { color: rgba(0,0,0,0.5) }`
+        :hover { color: var(--jb-titleBar-activeForeground) }`
   })
 })
 
@@ -95,7 +95,6 @@ jb.component('button.mdcIcon', {
   impl: styleWithFeatures(button.mdcFloatingAction({withTitle: false, buttonSize: '%$buttonSize%'}), features(
       ((ctx,{},{icon}) => icon && ctx.run({$: 'feature.icon', ...icon, title: '%$model.title%', 
         size: ({},{},{buttonSize}) => buttonSize * 24/40 })),
-      css('background-color: grey'),
     ))
 })
 

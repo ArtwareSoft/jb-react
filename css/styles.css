@@ -1,3 +1,75 @@
+.justACopy { /* source is in ui-utils*
+/* vscode compatible with light theme */
+  --jb-font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif;
+  --jb-font-size: 13px;
+  --jb-font-weight: normal;
+  --jb-foreground: #616161;
+
+  --jb-menu-background: #ffffff;
+  --jb-menu-foreground: #616161;
+  --jb-menu-selectionBackground: #0074e8;
+  --jb-menu-selectionForeground: #ffffff;
+  --jb-menu-separatorBackground: #888888;
+  --jb-menubar-selectionBackground: rgba(0, 0, 0, 0.1);
+  --jb-menubar-selectionForeground: #333333;
+  --jb-titleBar-activeBackground: #dddddd;
+  --jb-titleBar-activeForeground: #333333;
+  --jb-titleBar-inactiveBackground: rgba(221, 221, 221, 0.6);
+  --jb-titleBar-inactiveForeground: rgba(51, 51, 51, 0.6);
+  --jb-dropdown-background: #ffffff;
+  --jb-dropdown-border: #cecece;
+  --jb-errorForeground: #a1260d;
+
+  --jb-input-background: #ffffff;
+  --jb-input-foreground: #616161;  
+  --jb-textLink-activeForeground: #034775;
+  --jb-textLink-foreground: #006ab1;
+
+  --jb-icon-foreground: #424242;
+
+  --jb-list-activeSelectionBackground: #0074e8;
+  --jb-list-activeSelectionForeground: #ffffff;
+
+
+/* mdc mappaing */
+  --mdc-theme-primary: var(--jb-titleBar-inactiveBackground); /* The theme primary color*/
+  --mdc-theme-secondary: var(--jb-titleBar-activeBackground);
+  --mdc-theme-background: var(--jb-menu-background);
+  --mdc-theme-surface: var(--jb-menu-background);
+  --mdc-theme-error: var(--jb-errorForeground);
+
+  --mdc-theme-on-primary: var(--jb-input-foreground); /* Primary text on top of a theme primary color background */
+  --mdc-theme-on-secondary: var(--jb-input-foreground);
+  --mdc-theme-on-surface: --jb-input-foreground;
+  --mdc-theme-on-error: var(--jb-input-background);
+
+  --mdc-theme-text-primary-on-background: var(--jb-input-foreground); /* Primary text on top of the theme background color. */
+  --mdc-theme-text-secondary-on-background: var(--jb-input-foreground);
+  --mdc-theme-text-hint-on-background: var(--jb-input-foreground);
+  --mdc-theme-text-disabled-on-background: var(--jb-input-foreground);
+  --mdc-theme-text-icon-on-background: var(--jb-input-foreground);
+  
+  --mdc-theme-text-primary-on-light: var(--jb-input-foreground); /* Primary text on top of a light-colored background */
+  --mdc-theme-text-secondary-on-light: var(--jb-input-foreground);
+  --mdc-theme-text-hint-on-light: var(--jb-input-foreground);
+  --mdc-theme-text-disabled-on-light: var(--jb-input-foreground);
+  --mdc-theme-text-icon-on-light: var(--jb-input-foreground);
+
+  --mdc-theme-text-primary-on-dark: var(--jb-menu-selectionForeground);
+  --mdc-theme-text-secondary-on-dark: var(--jb-menu-selectionForeground);
+  --mdc-theme-text-hint-on-dark: var(--jb-menu-selectionForeground);
+  --mdc-theme-text-disabled-on-dark: var(--jb-menu-selectionForeground);
+  --mdc-theme-text-icon-on-dark: var(--jb-menu-selectionForeground);
+/* jBart only */
+  --jb-dropdown-shadow: #a8a8a8;
+  --jb-tree-value: #ce9178;
+  --jb-expandbox-background: green;
+}
+
+:root {
+  font-size: var(--jb-font-size); font-family: var(--jb-font-family); font-weight: var(--jb-font-weight);
+}
+
 *:focus { outline: none }
 .noselect { user-select: none }
 
@@ -23,53 +95,51 @@
 .jb-item .jb-shown-on-item-hover { opacity: 0  !important}
 
 /* dialog: jb-default-dialog */
-.jb-default-dialog { position: absolute; top: 40px; left: 40px; background: #F9F9F9; border: 1px solid #BEBEBE; box-shadow: 0 0px 9px #ccc; min-width: 300px; min-height: 50px; overflow: auto;}
-.jb-default-dialog>.dialog-title { text-align: left; background: #fff no-repeat 5px 10px; font-size 13px; font-weight: bold;
-padding: 10px 10px 10px 27px; color: #6D6E71; min-height: 12px; border-bottom: 1px solid #BEBEBE; text-transform: capitalize;}
-.jb-default-dialog>.dialog-close { position: absolute; cursor: pointer; right: 4px; top: 4px; font: 21px sans-serif; border: none; background: transparent; color: #000; text-shadow: 0 1px 0 #fff; font-weight: 700; opacity: .2;}
+.jb-default-dialog { position: absolute; top: 40px; left: 40px; background: var(--jb-menu-background); color: var(--jb-menu-foreground);
+  border: 1px solid var(--jb-dropdown-border); box-shadow: 0 0px 9px var(--jb-dropdown-shadow); 
+  min-width: 300px; min-height: 50px; overflow: auto;
+}
+.jb-default-dialog>.dialog-title { text-align: left; background: var(--jb-titleBar-activeBackground) no-repeat 5px 10px; 
+  font-size: var(--jb-font-size); font-weight: bold; padding: 10px 10px 10px 27px; 
+  color: var(--jb-titleBar-activeForeground); min-height: 12px; border-bottom: 1px solid var(--jb-dropdown-border); text-transform: capitalize;}
+.jb-default-dialog>.dialog-close { position: absolute; cursor: pointer; right: 4px; top: 4px; font: 21px sans-serif; border: none; background: transparent; 
+  color: var(--jb-menu-foreground); text-shadow: 0 1px 0 var(--jb-menu-background); font-weight: 700; opacity: .2;}
 .jb-default-dialog>.dialog-close:hover { opacity: .5; }
 
 .highlight { font-weight: bold; }
 
 /********* pulldown menu ********* */
 
-.pulldown-top-menu { background: #fff; position: absolute; top:0; height: 60px; left: 40px;right:0; border-bottom: 1px solid #E5E5E5;}
-.pulldown-main-menu { position: absolute; top: 31px; left: 8px; display: -webkit-box; -webkit-box-orient: horizontal; }
+.pulldown-top-menu { color: var(--jb-menu-foreground); background: var(--jb-menu-background); position: absolute; top:0; height: 60px; left: 40px;right:0; 
+  border-bottom: 1px solid var(--jb-dropdown-border);}
+.pulldown-main-menu { position: absolute; top: 31px; left: 8px; display: -webkit-box1; -webkit-box-orient1: horizontal; }
 .pulldown-top-menu-item {
-  cursor: pointer; font-size: 13px; padding: 5px 7px; color: #000; -webkit-user-select: none;
-    display: block;  background: #fff;  border: none; text-align: left;
+  cursor: pointer; font-size: var(--jb-font-size); padding: 5px 7px; color: var(--jb-menu-foreground);  background: var(--jb-menu-background); -webkit-user-select: none;
+    display: block;  border: none; text-align: left;
 }
-.pulldown-top-menu-item:hover { background: #eee; }
-.pulldown-top-menu-item.dialog-open { border: 1px solid rgba(0,0,0,0.2); border-bottom: none; background: #eee; }
+.pulldown-top-menu-item:hover { color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) }
+.pulldown-top-menu-item.dialog-open { border: 1px solid var(--jb-dropdown-border); border-bottom: none; 
+  color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) }
 .pulldown-top-menu-item { border: 1px solid transparent; }
 
-.pulldown-menu-separator { margin: 6px 0; border-bottom: 1px solid #EBEBEB;}
+.pulldown-menu-separator { margin: 6px 0; border-bottom: 1px solid var(--jb-menu-separatorBackground);}
 
-.pulldown-mainmenu-popup { background: #fff; position: absolute; /*top: 50px; left: 52px;*/
+.pulldown-mainmenu-popup { background: var(--jb-menu-background); position: absolute; /*top: 50px; left: 52px;*/
 min-width: 280px;
 min-height: 30px;
-box-shadow: 2px 2px 3px #d5d5d5;
+box-shadow: 2px 2px 3px var(--jb-dropdown-shadow);
 padding: 3px 0;
-border: 1px solid rgb(213, 213, 213);}
+border: 1px solid var(--jb-dropdown-border)}
 
 .toolbar-popup { position: absolute; }
 
-.pulldown-mainmenu-popup .pulldown-menu-remove-top-border { background: #fff; height: 3px; position: absolute; top: -2px; left: 0; }
+.pulldown-mainmenu-popup .pulldown-menu-remove-top-border { background: var(--jb-menu-background); height: 3px; position: absolute; top: -2px; left: 0; }
 /* .pulldown-menu-item */
-.pulldown-menu-item { -webkit-user-select: none;  padding: 6px 10px 6px 29px; font-size: 13px; display: block; background: #fff;  border: none; width: 100%; text-align: left; cursor: pointer;   position: relative;}
-.pulldown-menu-item:hover { background: #eee; }
+.pulldown-menu-item { -webkit-user-select: none;  padding: 6px 10px 6px 29px; font-size: var(--jb-font-size); display: block; 
+  background: var(--jb-menu-background);  border: none; width: 100%; text-align: left; cursor: pointer;   position: relative;}
+.pulldown-menu-item:hover { color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) }
 .pulldown-menu-item1:focus { outline: none; }
 .pulldown-menu-item span { background: url('icons1.png?v=16_02') no-repeat; width: 16px; height: 16px; display: block; position: absolute; top: 5px; left: 6px;}
-
-
-/* editable-boolean-expand-collapse */
-.editable-boolean-expand-collapse { margin-left: 3px; border: none; background: none; width: 11px; height: 11px; position: relative; padding: 0;}
-.editable-boolean-expand-collapse .frame { background: #F8FFF9; border-radius: 3px;  border: 1px solid #91B193;  position: absolute;  top: 0px;  left: 0px;  right: 0px;  bottom: 0px; }
-.editable-boolean-expand-collapse .line1 { position: absolute; background: #91B193; top: 5px; left: 3px; width: 5px; height: 1px; box-shadow: 1px 1px 1px -1px #89A385; }
-.editable-boolean-expand-collapse .line2 { position: absolute; background: #91B193; left: 5px; top: 3px; height: 5px; width: 1px; box-shadow: 1px 1px 1px -1px #89A385; display: none; }
-
-.editable-boolean-expand-collapse.collapsed .line2 { display: block; }
-.editable-boolean-expand-collapse:focus { outline: none; }
 
 .modal-overlay {
    position: fixed;
@@ -84,7 +154,7 @@ border: 1px solid rgb(213, 213, 213);}
 
 @keyframes jb-highlight-comp-changed {
     0% { opacity: 1; }
-    50% { opacity: 0.5; box-shadow:  2px 2px 6px 1px gray;}
+    50% { opacity: 0.5; box-shadow:  2px 2px 6px 1px var(--jb-dropdown-shadow);}
     100% { opacity: 1; }
 }
 
@@ -113,7 +183,7 @@ border: 1px solid rgb(213, 213, 213);}
   content:url("resizer.gif")
 }
 
-.jb-cover { position: 'absolute'; width: '100%'; height: '100%'; background: 'white'; opacity: '0'; top: 0; left: 0; }
+.jb-cover { position: absolute; width: 100%; height: 100%; background: white; opacity: 0; top: 0; left: 0; }
 
 .jb-textarea-alternative-for-codemirror { width: 100%; padding-right: 0; resize: none; height: 100% }
 

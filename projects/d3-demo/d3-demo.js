@@ -4,6 +4,9 @@ jb.ns('d3Chart,d3Scatter,d3Histogram')
 jb.component('d3Demo.main', {
   type: 'control',
   impl: group({
+    title: '',
+    layout: layout.vertical('12'),
+    style: group.htmlTag({htmlTag: 'details', groupClass: '', itemClass: ''}),
     controls: [
       d3g.chartScatter({
         title: 'phones',
@@ -28,5 +31,6 @@ jb.component('d3Demo.main', {
         style: d3Scatter.plain()
       })
     ]
-  })
+  }),
+  category: ''
 })

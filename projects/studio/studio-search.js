@@ -14,7 +14,6 @@ jb.component('studio.searchList', {
         icon: studio.iconOfType('%type%'),
         features: [
           css.opacity('0.3'),
-          css('{ font-size: 16px }'),
           css.padding({top: '5', left: '5'})
         ]
       }),
@@ -23,7 +22,7 @@ jb.component('studio.searchList', {
           text.highlight(
               '%id%',
               '%$itemlistCntrData/search_pattern%',
-              'mdl-color-text--deep-purple-A700'
+              'var(--vscode-editor-findMatchHighlightBackground)'
             )
         ),
         action: runActions(writeValue('%$studio/page%', '%id%'), dialog.closeContainingPopup()),
@@ -65,7 +64,8 @@ jb.component('studio.searchList', {
       css.boxShadow({shadowColor: '#cccccc'}),
       css.padding({top: '4', right: '5'}),
       css.height({height: '600', overflow: 'auto', minMax: 'max'}),
-      css.width({width: '400', minMax: 'min'})
+      css.width({width: '400', minMax: 'min'}),
+      css.class('searchList'),
     ]
   })
 })

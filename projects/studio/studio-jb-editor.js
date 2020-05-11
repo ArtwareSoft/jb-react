@@ -83,9 +83,7 @@ jb.component('studio.dataBrowse', {
       group({
         controls: [
           controlWithCondition(isOfType('string,boolean,number', '%$obj%'), text('%$obj%')),
-          controlWithCondition(
-            '%$obj.snifferResult%', studio.showRxSniffer('%$obj%')
-          ),
+          controlWithCondition('%$obj.snifferResult%', studio.showRxSniffer('%$obj%')),
           controlWithCondition(
             (ctx,{obj}) => jb.callbag.isCallbag(obj),
             studio.browseRx('%$obj%')
@@ -97,7 +95,7 @@ jb.component('studio.dataBrowse', {
               controls: group({title: '%$obj/length% items', controls: studio.dataBrowse('%%', 200)}),
               style: table.mdc(),
               visualSizeLimit: 7,
-              features: [itemlist.infiniteScroll(), css.height({height: '100%', minMax: 'max'})]
+              features: [itemlist.infiniteScroll(), css.height({height: '400', minMax: 'max'})]
             })
           ),
           controlWithCondition(
@@ -114,6 +112,7 @@ jb.component('studio.dataBrowse', {
             nodeModel: tree.jsonReadOnly('%$obj%', '%$title%'),
             style: tree.expandBox({}),
             features: [
+              css.class('jb-editor'),
               tree.selection({}),
               tree.keyboardSelection({}),
               css.width({width: '%$width%', minMax: 'max'})
@@ -153,12 +152,16 @@ jb.component('studio.dataBrowse', {
         'long text'
       )
     ],
-    features: group.wait({
-      for: ctx => ctx.exp('%$objToShow%'),
-      loadingControl: text('...'),
-      varName: 'obj',
-      passRx: true
-    })
+    features: [
+      group.wait({
+        for: ctx => ctx.exp('%$objToShow%'),
+        loadingControl: text('...'),
+        varName: 'obj',
+        passRx: true
+      }),
+      css.height({height: '400', overflow: 'auto', minMax: 'max'}),
+      css.width({overflow: 'auto', minMax: 'max'})
+    ]
   })
 })
 
@@ -243,7 +246,8 @@ jb.component('studio.probeDataView', {
             controls: [
               group({
                 title: 'in (%$probeResult/length%)',
-                controls: studio.dataBrowse(({data}) => st.previewjb.val(data.in.data))
+                controls: studio.dataBrowse(({data}) => st.previewjb.val(data.in.data)),
+                features: css.width({width: '300', minMax: 'max'})
               }),
               group({
                 title: 'out',

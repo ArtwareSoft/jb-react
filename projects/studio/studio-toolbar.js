@@ -15,7 +15,6 @@ jb.component('studio.toolbar', {
         title: 'Inline content editing',
         features: [
           feature.onEvent({event: 'click', action: contentEditable.deactivate()}),
-          css('background: grey')
         ]
       }),
       editableBoolean({
@@ -26,7 +25,6 @@ jb.component('studio.toolbar', {
           buttonStyle: button.mdcFloatingAction('40', false)
         }),
         title: 'Watch Data Connections',
-        features: css('background: grey')
       }),
       button({
         title: 'Select',

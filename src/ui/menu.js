@@ -332,7 +332,7 @@ jb.component('menu.selection', {
         return ((ctxId && jb.ctxDictionary[ctxId]) || {}).data
       }
 		},
-		css: '>.selected { background: #bbb !important; color: #fff !important }',
+		css: '>.selected { color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) }',
 		})
 })
 
@@ -345,8 +345,8 @@ jb.component('menuStyle.optionLine', {
 				h('span#shortcut',{},shortcut),
         h('div#mdc-line-ripple'),
 		]),
-    css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
-				.selected { background: #d8d8d8 }
+    css: `{ display: flex; cursor: pointer; font1: 13px Arial; height: 24px}
+				.selected { color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) }
 				>i { padding: 3px 8px 0 3px }
 				>span { padding-top: 3px }
 				>.title { display: block; text-align: left; white-space: nowrap; }
@@ -362,7 +362,7 @@ jb.component('menuStyle.popupAsOption', {
 				h('span#title',{},state.title),
 				h('i#material-icons', { onmouseenter: 'openPopup' },'play_arrow'),
 		]),
-    css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
+    css: `{ display: flex; cursor: pointer; font1: 13px Arial; height: 24px}
 				>i { width: 100%; text-align: right; font-size:16px; padding-right: 3px; padding-top: 3px; }
 						>.title { display: block; text-align: left; padding-top: 3px; padding-left: 32px; white-space: nowrap; }
 			`,

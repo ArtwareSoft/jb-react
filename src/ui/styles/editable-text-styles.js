@@ -27,7 +27,7 @@ jb.component('editableText.mdcInput', {
   params: [
     {id: 'width', as: 'number'},
     {id: 'noLabel', as: 'boolean'},
-    {id: 'noRipple', as: 'boolean'},
+    {id: 'noRipple', as: 'boolean'}
   ],
   impl: customStyle({
     template: (cmp,{databind,fieldId,title,noLabel,noRipple,error},h) => h('div',{}, [
@@ -45,11 +45,16 @@ jb.component('editableText.mdcInput', {
         ]),
         h('div#mdc-text-field-helper-line', {}, error || '')
       ]),
-    css: `~ .mdc-text-field-helper-line { color: red }`,
+    css: `~ .mdc-text-field-helper-line { color: var(--jb-errorForeground) }
+    ~ .mdc-text-field:not(.mdc-text-field--disabled) .mdc-text-field__input { color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-titleBar-inactiveBackground); }
+    ~ .mdc-text-field--focused:not(.mdc-text-field--disabled) .mdc-floating-label { color: var(--mdc-theme-primary) }
+    `,
     features: [
-      field.databindText(), 
+      field.databindText(),
       mdcStyle.initDynamic(),
-      css( ({},{},{width}) => `>.mdc-text-field { ${jb.ui.propWithUnits('width', width)} }`),
+      css(
+        ({},{},{width}) => `>.mdc-text-field { ${jb.ui.propWithUnits('width', width)} }`
+      )
     ]
   })
 })

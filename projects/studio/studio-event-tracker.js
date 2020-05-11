@@ -128,7 +128,7 @@ jb.component('studio.eventTracker', {
             features: [
               field.title('log'),
               field.columnWidth('20'),
-              feature.byCondition('%log% == error', css.color({background: 'red'})),
+              feature.byCondition('%log% == error', css.color({color: 'var(--jb-errorForeground)'})),
               feature.icon({
                 icon: data.switch({
                   cases: [
@@ -141,7 +141,7 @@ jb.component('studio.eventTracker', {
                 type: data.switch({cases: [data.case('%log% == error', 'mdc')], default: 'mdi'}),
                 size: '16'
               }),
-              css('background-color: transparent; color: grey;')
+              css('background-color: transparent; color: var(--jb-descriptionForeground);')
             ]
           }),
           text({

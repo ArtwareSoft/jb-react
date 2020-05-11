@@ -5,7 +5,7 @@ jb.component('dialog.studioJbEditorPopup', {
         h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
         h(contentComp),
       ]),
-    css: `{ background: #fff; position: absolute }
+    css: `{ background: var(--jb-editor-background); position: absolute }
         >.dialog-close {
             position: absolute;
             cursor: pointer;
@@ -52,7 +52,7 @@ jb.component('dialog.studioSuggestionsPopup', {
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup' },[
         h(state.contentComp),
       ]),
-    css: '{ background: #fff; position: absolute; padding: 3px 5px }',
+    css: '{ background: var(--jb-editor-background); position: absolute; padding: 3px 5px }',
     features: [
       dialogFeature.maxZIndexOnClick(),
       dialogFeature.closeWhenClickingOutside(),

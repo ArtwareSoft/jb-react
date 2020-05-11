@@ -1460,7 +1460,7 @@ Object.assign(jb.ui,{
     inStudio() { return jb.studio && jb.studio.studioWindow },
     inPreview() {
         try {
-            return !ui.inStudio() && jb.frame.parent.jb.studio.initPreview
+            return !ui.inStudio() && jb.frame.parent && jb.frame.parent.jb.studio.initPreview
         } catch(e) {}
     },
     parentCmps(el) {
@@ -1564,6 +1564,16 @@ Object.assign(jb.ui, {
         style_elem.innerHTML = innerHtml;
         document.head.appendChild(style_elem);
       }
+    },
+    valueOfCssVar(varName,parent) {
+      parent = parent || document.body
+      el = parent.ownerDocument.createElement('div')
+      el.style.display = 'none'
+      el.style.color = `var(--${varName})`
+      parent.appendChild(el)
+      const ret = getComputedStyle(el).color
+      parent.removeChild(el)
+      return ret
     }
 })
 
@@ -1713,6 +1723,77 @@ jb.component('controlWithFeatures', {
     {id: 'features', type: 'feature[]', templateValue: [], mandatory: true}
   ],
   impl: (ctx,control,features) => control.jbExtend(features,ctx).orig(ctx)
+})
+
+jb.component('defaultTheme', {
+  impl: ctx => ui.addStyleElem(`
+    body {
+      /* vscode compatible with light theme */
+      --jb-font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif;
+      --jb-font-size: 13px;
+      --jb-font-weight: normal;
+      --jb-foreground: #616161;
+    
+      --jb-menu-background: #ffffff;
+      --jb-menu-foreground: #616161;
+      --jb-menu-selectionBackground: #0074e8;
+      --jb-menu-selectionForeground: #ffffff;
+      --jb-menu-separatorBackground: #888888;
+      --jb-menubar-selectionBackground: rgba(0, 0, 0, 0.1);
+      --jb-menubar-selectionForeground: #333333;
+      --jb-titleBar-activeBackground: #dddddd;
+      --jb-titleBar-activeForeground: #333333;
+      --jb-titleBar-inactiveBackground: rgba(221, 221, 221, 0.6);
+      --jb-titleBar-inactiveForeground: rgba(51, 51, 51, 0.6);
+      --jb-dropdown-background: #ffffff;
+      --jb-dropdown-border: #cecece;
+      --jb-errorForeground: #a1260d;
+    
+      --jb-input-background: #ffffff;
+      --jb-input-foreground: #616161;  
+      --jb-textLink-activeForeground: #034775;
+      --jb-textLink-foreground: #006ab1;
+    
+      --jb-icon-foreground: #424242;
+    
+      --jb-list-activeSelectionBackground: #0074e8;
+      --jb-list-activeSelectionForeground: #ffffff;
+    
+    
+    /* mdc mappaing */
+      --mdc-theme-primary: #616161; /* The theme primary color*/
+      --mdc-theme-secondary: var(--jb-titleBar-activeBackground);
+      --mdc-theme-background: var(--jb-input-background);
+      --mdc-theme-surface: var(--jb-input-background);
+      --mdc-theme-error: var(--jb-errorForeground);
+    
+      --mdc-theme-on-primary: var(--jb-input-foreground); /* Primary text on top of a theme primary color background */
+      --mdc-theme-on-secondary: var(--jb-input-foreground);
+      --mdc-theme-on-surface: --jb-input-foreground;
+      --mdc-theme-on-error: var(--jb-input-background);
+    
+      --mdc-theme-text-primary-on-background: var(--jb-input-foreground); /* Primary text on top of the theme background color. */
+      --mdc-theme-text-secondary-on-background: var(--jb-input-foreground);
+      --mdc-theme-text-hint-on-background: var(--jb-input-foreground);
+      --mdc-theme-text-disabled-on-background: var(--jb-input-foreground);
+      --mdc-theme-text-icon-on-background: var(--jb-input-foreground);
+      
+      --mdc-theme-text-primary-on-light: var(--jb-input-foreground); /* Primary text on top of a light-colored background */
+      --mdc-theme-text-secondary-on-light: var(--jb-input-foreground);
+      --mdc-theme-text-hint-on-light: var(--jb-input-foreground);
+      --mdc-theme-text-disabled-on-light: var(--jb-input-foreground);
+      --mdc-theme-text-icon-on-light: var(--jb-input-foreground);
+                                
+      --mdc-theme-text-primary-on-dark: var(--jb-menu-selectionForeground);
+      --mdc-theme-text-secondary-on-dark: var(--jb-menu-selectionForeground);
+      --mdc-theme-text-hint-on-dark: var(--jb-menu-selectionForeground);
+      --mdc-theme-text-disabled-on-dark: var(--jb-menu-selectionForeground);
+      --mdc-theme-text-icon-on-dark: var(--jb-menu-selectionForeground);
+    /* jBart only */
+      --jb-dropdown-shadow: #a8a8a8;
+      --jb-tree-value: red;
+      --jb-expandbox-background: green;
+ `)
 })
 
 })()
@@ -2452,6 +2533,15 @@ jb.component('css.lineClamp', {
   )
 })
 
+jb.component('css.valueOfCssVar',{
+  description: 'value of css variable --var under element',
+  params: [
+    {id: 'varName', description: 'without the -- prefix'},
+    {id: 'parent', description: 'html element under which to check the var, default is document.body' }
+  ],
+  impl: (ctx,varName,parent) => jb.ui.valueOfCssVar(varName,parent)
+})
+
 ;['layout','typography','detailedBorder','detailedColor','gridArea'].forEach(f=>
 jb.component(`css.${f}`, {
   type: 'feature:0',
@@ -2460,6 +2550,7 @@ jb.component(`css.${f}`, {
   ],
   impl: (ctx,css) => ({css: fixCssLine(css)})
 }))
+
 
 })();
 
@@ -3643,7 +3734,7 @@ jb.component('dialog.popup', {
   type: 'dialog.style',
   impl: customStyle({
 	template: (cmp,state,h) => h('div#jb-dialog jb-popup',{},h(state.contentComp)),
-    css: '{ position: absolute; background: white; box-shadow: 2px 2px 3px #d5d5d5; padding: 3px 0; border: 1px solid rgb(213, 213, 213) }',
+    css: '{ position: absolute; background: var(--jb-background); box-shadow: 2px 2px 3px var(--jb-dropdown-shadow); padding: 3px 0; border: 1px solid var(--jb-dropdown-border) }',
     features: [
       dialogFeature.maxZIndexOnClick(),
       dialogFeature.closeWhenClickingOutside(),
@@ -3958,7 +4049,7 @@ jb.component('itemlist.selection', {
     {id: 'onSelection', type: 'action', dynamic: true},
     {id: 'onDoubleClick', type: 'action', dynamic: true},
     {id: 'autoSelectFirst', type: 'boolean'},
-    {id: 'cssForSelected', as: 'string', description: 'e.g. background: #bbb', defaultValue: 'background: #bbb !important; color: #fff !important'}
+    {id: 'cssForSelected', as: 'string', defaultValue: 'color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground)'}
   ],
   impl: (ctx,databind) => ({
     onclick: true,
@@ -4753,7 +4844,7 @@ jb.component('menu.selection', {
         return ((ctxId && jb.ctxDictionary[ctxId]) || {}).data
       }
 		},
-		css: '>.selected { background: #bbb !important; color: #fff !important }',
+		css: '>.selected { color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) }',
 		})
 })
 
@@ -4766,8 +4857,8 @@ jb.component('menuStyle.optionLine', {
 				h('span#shortcut',{},shortcut),
         h('div#mdc-line-ripple'),
 		]),
-    css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
-				.selected { background: #d8d8d8 }
+    css: `{ display: flex; cursor: pointer; font1: 13px Arial; height: 24px}
+				.selected { color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) }
 				>i { padding: 3px 8px 0 3px }
 				>span { padding-top: 3px }
 				>.title { display: block; text-align: left; white-space: nowrap; }
@@ -4783,7 +4874,7 @@ jb.component('menuStyle.popupAsOption', {
 				h('span#title',{},state.title),
 				h('i#material-icons', { onmouseenter: 'openPopup' },'play_arrow'),
 		]),
-    css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
+    css: `{ display: flex; cursor: pointer; font1: 13px Arial; height: 24px}
 				>i { width: 100%; text-align: right; font-size:16px; padding-right: 3px; padding-top: 3px; }
 						>.title { display: block; text-align: left; padding-top: 3px; padding-left: 32px; white-space: nowrap; }
 			`,
@@ -5117,7 +5208,7 @@ jb.component('multiSelect.chips', {
                             style: button.x(),
                             action: removeFromArray('%$multiSelectModel/databind%','%%'),
                             features: [
-                                css('color: black; z-index: 1000;margin-left: -25px'),
+                                css('z-index: 1000;margin-left: -25px'),
                                 itemlist.shownOnlyOnItemHover()
                             ]
                         })
@@ -5189,8 +5280,9 @@ jb.component('editableNumber.slider', {
             features: [
               slider.handleArrowKeys(),
               css(
-                'width: 30px; padding-left: 3px; border: 0; border-bottom: 1px solid black;'
+                'width: 30px; padding-left: 3px; border: 0; border-bottom: 1px solid var(--jb-titleBar-inactiveBackground);'
               ),
+              css('color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background)'),
               css.class('text-input')
             ]
           }),
@@ -5714,7 +5806,7 @@ jb.component('button.href', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
-    css: '{color: grey} .raised { font-weight: bold }'
+    css: '{color: var(--jb-textLink-foreground)} .raised { color: var(--jb-textLink-activeForeground) }'
   })
 })
 
@@ -5731,11 +5823,11 @@ jb.component('button.x', {
             font: %$size%px sans-serif;
             border: none;
             background: transparent;
-            color: rgba(0,0,0,0.2);
+            color: var(--jb-titleBar-inactiveForeground);
             text-shadow: 0 1px 0 #fff;
             font-weight: 700;
         }
-        :hover { color: rgba(0,0,0,0.5) }`
+        :hover { color: var(--jb-titleBar-activeForeground) }`
   })
 })
 
@@ -5797,7 +5889,6 @@ jb.component('button.mdcIcon', {
   impl: styleWithFeatures(button.mdcFloatingAction({withTitle: false, buttonSize: '%$buttonSize%'}), features(
       ((ctx,{},{icon}) => icon && ctx.run({$: 'feature.icon', ...icon, title: '%$model.title%', 
         size: ({},{},{buttonSize}) => buttonSize * 24/40 })),
-      css('background-color: grey'),
     ))
 })
 
@@ -5885,7 +5976,7 @@ jb.component('editableText.mdcInput', {
   params: [
     {id: 'width', as: 'number'},
     {id: 'noLabel', as: 'boolean'},
-    {id: 'noRipple', as: 'boolean'},
+    {id: 'noRipple', as: 'boolean'}
   ],
   impl: customStyle({
     template: (cmp,{databind,fieldId,title,noLabel,noRipple,error},h) => h('div',{}, [
@@ -5903,11 +5994,16 @@ jb.component('editableText.mdcInput', {
         ]),
         h('div#mdc-text-field-helper-line', {}, error || '')
       ]),
-    css: `~ .mdc-text-field-helper-line { color: red }`,
+    css: `~ .mdc-text-field-helper-line { color: var(--jb-errorForeground) }
+    ~ .mdc-text-field:not(.mdc-text-field--disabled) .mdc-text-field__input { color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-titleBar-inactiveBackground); }
+    ~ .mdc-text-field--focused:not(.mdc-text-field--disabled) .mdc-floating-label { color: var(--mdc-theme-primary) }
+    `,
     features: [
-      field.databindText(), 
+      field.databindText(),
       mdcStyle.initDynamic(),
-      css( ({},{},{width}) => `>.mdc-text-field { ${jb.ui.propWithUnits('width', width)} }`),
+      css(
+        ({},{},{width}) => `>.mdc-text-field { ${jb.ui.propWithUnits('width', width)} }`
+      )
     ]
   })
 })
@@ -6300,8 +6396,8 @@ jb.component('table.mdc', {
         ),
         items.length == 0 ? 'no items' : ''
         ])),
-    css: `{width: 100%} 
-    ~ .mdc-data-table__header-cell {font-weight: 700}`,
+    css: `{width: 100%}  
+    ~ .mdc-data-table__header-cell, ~ .mdc-data-table__cell {color: var(--jb-foreground)}`,
     features: [table.initTableOrItemlist(), table.initSort(), mdcStyle.initDynamic()]
   })
 })
@@ -6314,9 +6410,12 @@ jb.component('picklist.native', {
           state.options.map(option=>h('option',{value: option.code},option.text))
         ),
     css: `
-{ display: block; width: 100%; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857; color: #555555; background-color: #fff; background-image: none; border: 1px solid #ccc; border-radius: 4px; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); -webkit-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; -o-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; }
-:focus { border-color: #66afe9; outline: 0; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); }
-::-webkit-input-placeholder { color: #999; }`,
+{ display: block; width: 100%; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857; 
+  color: var(--jb-menu-foreground); background: var(--jb-menu-background); 
+  background-image: none; border: 1px solid #ccc; border-radius: 4px; box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+}
+:focus { border-color: #66afe9; outline: 0; box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); }
+::input-placeholder { color: #999; }`,
     features: [field.databind(), picklist.init()]
   })
 })
@@ -6395,22 +6494,18 @@ jb.component('picklist.nativeMdLookOpen', {
         h('input', { type: 'text', value: state.databind, list: 'list_' + cmp.ctx.id, onchange: true }),
         h('datalist', {id: 'list_' + cmp.ctx.id}, state.options.map(option=>h('option',{},option.text)))
     ]),
-    css: `>input {  appearance: none; -webkit-appearance: none; font-family: inherit;
-  background-color: transparent;
+    css: `>input {  appearance: none; -webkit-appearance: none;
   padding: 6px 0;
-  font-size: 14px;
   width: 100%;
   color: rgba(0,0,0, 0.82);
   border: none;
-  border-bottom: 1px solid rgba(0,0,0, 0.12); }
+  border-bottom: 1px solid var(--jb-titleBar-inactiveBackground);
+  color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background);
+}
+  { position: relative;}
+  >input:focus { border-color: var(--jb-titleBar-activeBackground); border-width: 2px}
 
-  {
-    font-family: 'Roboto','Helvetica','Arial',sans-serif;
-    position: relative;
-  }
-  >input:focus { border-color: #3F51B5; border-width: 2px}
-
-  :after { position: absolute;
+  :after1 { position: absolute;
         top: 0.75em;
         right: 0.5em;
         /* Styling the down arrow */
@@ -6420,7 +6515,7 @@ jb.component('picklist.nativeMdLookOpen', {
         content: '';
         border-left: .25em solid transparent;
         border-right: .25em solid transparent;
-        border-top: .375em solid rgba(0,0,0, 0.12);
+        border-top: .375em solid var(--mdc-theme-text-primary-on-background);
         pointer-events: none; }`,
     features: [field.databind(), picklist.init()]
   })
@@ -6432,33 +6527,29 @@ jb.component('picklist.nativeMdLook', {
     template: (cmp,state,h) => h('div',{},h('select',
       { value: state.databind, onchange: true },
           state.options.map(option=>h('option',{value: option.code},option.text)))),
-    css: `>select {  appearance: none; -webkit-appearance: none; font-family: inherit;
-  background-color: transparent;
-  padding: 6px 0;
-  font-size: 14px;
-  width: 100%;
-  color: rgba(0,0,0, 0.82);
-  border: none;
-  border-bottom: 1px solid rgba(0,0,0, 0.12); }
-
-  {
-    font-family: 'Roboto','Helvetica','Arial',sans-serif;
-    position: relative;
-  }
-  >select:focus { border-color: #3F51B5; border-width: 2px}
-
-  :after { position: absolute;
-        top: 0.75em;
-        right: 0.5em;
-        /* Styling the down arrow */
-        width: 0;
-        height: 0;
-        padding: 0;
-        content: '';
-        border-left: .25em solid transparent;
-        border-right: .25em solid transparent;
-        border-top: .375em solid rgba(0,0,0, 0.12);
-        pointer-events: none; }`,
+    css: `>input {  appearance: none; -webkit-appearance: none;
+      padding: 6px 0;
+      width: 100%;
+      color: rgba(0,0,0, 0.82);
+      border: none;
+      border-bottom: 1px solid var(--jb-titleBar-inactiveBackground);
+      color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background);
+    }
+      { position: relative;}
+      >input:focus { border-color: var(--jb-titleBar-activeBackground); border-width: 2px}
+    
+      :after1 { position: absolute;
+            top: 0.75em;
+            right: 0.5em;
+            /* Styling the down arrow */
+            width: 0;
+            height: 0;
+            padding: 0;
+            content: '';
+            border-left: .25em solid transparent;
+            border-right: .25em solid transparent;
+            border-top: .375em solid var(--mdc-theme-text-primary-on-background);
+            pointer-events: none; }`,
     features: [field.databind(), picklist.init()]
   })
 })
@@ -6658,12 +6749,12 @@ jb.component('editableBoolean.iconWithSlash', {
     {id: 'buttonSize', as: 'number', defaultValue: 40, description: 'button size is larger than the icon size, usually at the rate of 40/24' },
   ],
   impl: styleWithFeatures(button.mdcIcon({buttonSize: '%$buttonSize%'}), features(
+      Var('strokeColor', css.valueOfCssVar('mdc-theme-on-secondary')),
       htmlAttribute('onclick','toggle'),
       htmlAttribute('title','%$$model/title%'),
-      css(If('%$$model/databind%','',`background-repeat: no-repeat; background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='%$buttonSize%' viewBox='0 0 %$buttonSize% %$buttonSize%' width='%$buttonSize%' xmlns='http://www.w3.org/2000/svg'><line x1='0' y1='0' x2='%$buttonSize%' y2='%$buttonSize%' style='stroke:white;stroke-width:2' /></svg>")`))
+      css(If('%$$model/databind%','',`background-repeat: no-repeat; background-image: url("data:image/svg+xml;utf8,<svg width='%$buttonSize%' height='%$buttonSize%' viewBox='0 0 %$buttonSize% %$buttonSize%' xmlns='http://www.w3.org/2000/svg'><line x1='0' y1='0' x2='%$buttonSize%' y2='%$buttonSize%' style='stroke:%$strokeColor%;stroke-width:2' /></svg>")`))
     ))
 })
-
 
 jb.component('editableBoolean.mdcSlideToggle', {
   type: 'editable-boolean.style',

@@ -4314,7 +4314,7 @@ Object.assign(jb.ui,{
     inStudio() { return jb.studio && jb.studio.studioWindow },
     inPreview() {
         try {
-            return !ui.inStudio() && jb.frame.parent.jb.studio.initPreview
+            return !ui.inStudio() && jb.frame.parent && jb.frame.parent.jb.studio.initPreview
         } catch(e) {}
     },
     parentCmps(el) {
@@ -4418,6 +4418,16 @@ Object.assign(jb.ui, {
         style_elem.innerHTML = innerHtml;
         document.head.appendChild(style_elem);
       }
+    },
+    valueOfCssVar(varName,parent) {
+      parent = parent || document.body
+      el = parent.ownerDocument.createElement('div')
+      el.style.display = 'none'
+      el.style.color = `var(--${varName})`
+      parent.appendChild(el)
+      const ret = getComputedStyle(el).color
+      parent.removeChild(el)
+      return ret
     }
 })
 
@@ -4567,6 +4577,77 @@ jb.component('controlWithFeatures', {
     {id: 'features', type: 'feature[]', templateValue: [], mandatory: true}
   ],
   impl: (ctx,control,features) => control.jbExtend(features,ctx).orig(ctx)
+})
+
+jb.component('defaultTheme', {
+  impl: ctx => ui.addStyleElem(`
+    body {
+      /* vscode compatible with light theme */
+      --jb-font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif;
+      --jb-font-size: 13px;
+      --jb-font-weight: normal;
+      --jb-foreground: #616161;
+    
+      --jb-menu-background: #ffffff;
+      --jb-menu-foreground: #616161;
+      --jb-menu-selectionBackground: #0074e8;
+      --jb-menu-selectionForeground: #ffffff;
+      --jb-menu-separatorBackground: #888888;
+      --jb-menubar-selectionBackground: rgba(0, 0, 0, 0.1);
+      --jb-menubar-selectionForeground: #333333;
+      --jb-titleBar-activeBackground: #dddddd;
+      --jb-titleBar-activeForeground: #333333;
+      --jb-titleBar-inactiveBackground: rgba(221, 221, 221, 0.6);
+      --jb-titleBar-inactiveForeground: rgba(51, 51, 51, 0.6);
+      --jb-dropdown-background: #ffffff;
+      --jb-dropdown-border: #cecece;
+      --jb-errorForeground: #a1260d;
+    
+      --jb-input-background: #ffffff;
+      --jb-input-foreground: #616161;  
+      --jb-textLink-activeForeground: #034775;
+      --jb-textLink-foreground: #006ab1;
+    
+      --jb-icon-foreground: #424242;
+    
+      --jb-list-activeSelectionBackground: #0074e8;
+      --jb-list-activeSelectionForeground: #ffffff;
+    
+    
+    /* mdc mappaing */
+      --mdc-theme-primary: #616161; /* The theme primary color*/
+      --mdc-theme-secondary: var(--jb-titleBar-activeBackground);
+      --mdc-theme-background: var(--jb-input-background);
+      --mdc-theme-surface: var(--jb-input-background);
+      --mdc-theme-error: var(--jb-errorForeground);
+    
+      --mdc-theme-on-primary: var(--jb-input-foreground); /* Primary text on top of a theme primary color background */
+      --mdc-theme-on-secondary: var(--jb-input-foreground);
+      --mdc-theme-on-surface: --jb-input-foreground;
+      --mdc-theme-on-error: var(--jb-input-background);
+    
+      --mdc-theme-text-primary-on-background: var(--jb-input-foreground); /* Primary text on top of the theme background color. */
+      --mdc-theme-text-secondary-on-background: var(--jb-input-foreground);
+      --mdc-theme-text-hint-on-background: var(--jb-input-foreground);
+      --mdc-theme-text-disabled-on-background: var(--jb-input-foreground);
+      --mdc-theme-text-icon-on-background: var(--jb-input-foreground);
+      
+      --mdc-theme-text-primary-on-light: var(--jb-input-foreground); /* Primary text on top of a light-colored background */
+      --mdc-theme-text-secondary-on-light: var(--jb-input-foreground);
+      --mdc-theme-text-hint-on-light: var(--jb-input-foreground);
+      --mdc-theme-text-disabled-on-light: var(--jb-input-foreground);
+      --mdc-theme-text-icon-on-light: var(--jb-input-foreground);
+                                
+      --mdc-theme-text-primary-on-dark: var(--jb-menu-selectionForeground);
+      --mdc-theme-text-secondary-on-dark: var(--jb-menu-selectionForeground);
+      --mdc-theme-text-hint-on-dark: var(--jb-menu-selectionForeground);
+      --mdc-theme-text-disabled-on-dark: var(--jb-menu-selectionForeground);
+      --mdc-theme-text-icon-on-dark: var(--jb-menu-selectionForeground);
+    /* jBart only */
+      --jb-dropdown-shadow: #a8a8a8;
+      --jb-tree-value: red;
+      --jb-expandbox-background: green;
+ `)
 })
 
 })()
@@ -5306,6 +5387,15 @@ jb.component('css.lineClamp', {
   )
 })
 
+jb.component('css.valueOfCssVar',{
+  description: 'value of css variable --var under element',
+  params: [
+    {id: 'varName', description: 'without the -- prefix'},
+    {id: 'parent', description: 'html element under which to check the var, default is document.body' }
+  ],
+  impl: (ctx,varName,parent) => jb.ui.valueOfCssVar(varName,parent)
+})
+
 ;['layout','typography','detailedBorder','detailedColor','gridArea'].forEach(f=>
 jb.component(`css.${f}`, {
   type: 'feature:0',
@@ -5314,6 +5404,7 @@ jb.component(`css.${f}`, {
   ],
   impl: (ctx,css) => ({css: fixCssLine(css)})
 }))
+
 
 })();
 
@@ -6497,7 +6588,7 @@ jb.component('dialog.popup', {
   type: 'dialog.style',
   impl: customStyle({
 	template: (cmp,state,h) => h('div#jb-dialog jb-popup',{},h(state.contentComp)),
-    css: '{ position: absolute; background: white; box-shadow: 2px 2px 3px #d5d5d5; padding: 3px 0; border: 1px solid rgb(213, 213, 213) }',
+    css: '{ position: absolute; background: var(--jb-background); box-shadow: 2px 2px 3px var(--jb-dropdown-shadow); padding: 3px 0; border: 1px solid var(--jb-dropdown-border) }',
     features: [
       dialogFeature.maxZIndexOnClick(),
       dialogFeature.closeWhenClickingOutside(),
@@ -6812,7 +6903,7 @@ jb.component('itemlist.selection', {
     {id: 'onSelection', type: 'action', dynamic: true},
     {id: 'onDoubleClick', type: 'action', dynamic: true},
     {id: 'autoSelectFirst', type: 'boolean'},
-    {id: 'cssForSelected', as: 'string', description: 'e.g. background: #bbb', defaultValue: 'background: #bbb !important; color: #fff !important'}
+    {id: 'cssForSelected', as: 'string', defaultValue: 'color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground)'}
   ],
   impl: (ctx,databind) => ({
     onclick: true,
@@ -7607,7 +7698,7 @@ jb.component('menu.selection', {
         return ((ctxId && jb.ctxDictionary[ctxId]) || {}).data
       }
 		},
-		css: '>.selected { background: #bbb !important; color: #fff !important }',
+		css: '>.selected { color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) }',
 		})
 })
 
@@ -7620,8 +7711,8 @@ jb.component('menuStyle.optionLine', {
 				h('span#shortcut',{},shortcut),
         h('div#mdc-line-ripple'),
 		]),
-    css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
-				.selected { background: #d8d8d8 }
+    css: `{ display: flex; cursor: pointer; font1: 13px Arial; height: 24px}
+				.selected { color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) }
 				>i { padding: 3px 8px 0 3px }
 				>span { padding-top: 3px }
 				>.title { display: block; text-align: left; white-space: nowrap; }
@@ -7637,7 +7728,7 @@ jb.component('menuStyle.popupAsOption', {
 				h('span#title',{},state.title),
 				h('i#material-icons', { onmouseenter: 'openPopup' },'play_arrow'),
 		]),
-    css: `{ display: flex; cursor: pointer; font: 13px Arial; height: 24px}
+    css: `{ display: flex; cursor: pointer; font1: 13px Arial; height: 24px}
 				>i { width: 100%; text-align: right; font-size:16px; padding-right: 3px; padding-top: 3px; }
 						>.title { display: block; text-align: left; padding-top: 3px; padding-left: 32px; white-space: nowrap; }
 			`,
@@ -7971,7 +8062,7 @@ jb.component('multiSelect.chips', {
                             style: button.x(),
                             action: removeFromArray('%$multiSelectModel/databind%','%%'),
                             features: [
-                                css('color: black; z-index: 1000;margin-left: -25px'),
+                                css('z-index: 1000;margin-left: -25px'),
                                 itemlist.shownOnlyOnItemHover()
                             ]
                         })
@@ -8043,8 +8134,9 @@ jb.component('editableNumber.slider', {
             features: [
               slider.handleArrowKeys(),
               css(
-                'width: 30px; padding-left: 3px; border: 0; border-bottom: 1px solid black;'
+                'width: 30px; padding-left: 3px; border: 0; border-bottom: 1px solid var(--jb-titleBar-inactiveBackground);'
               ),
+              css('color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background)'),
               css.class('text-input')
             ]
           }),
@@ -8568,7 +8660,7 @@ jb.component('button.href', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
-    css: '{color: grey} .raised { font-weight: bold }'
+    css: '{color: var(--jb-textLink-foreground)} .raised { color: var(--jb-textLink-activeForeground) }'
   })
 })
 
@@ -8585,11 +8677,11 @@ jb.component('button.x', {
             font: %$size%px sans-serif;
             border: none;
             background: transparent;
-            color: rgba(0,0,0,0.2);
+            color: var(--jb-titleBar-inactiveForeground);
             text-shadow: 0 1px 0 #fff;
             font-weight: 700;
         }
-        :hover { color: rgba(0,0,0,0.5) }`
+        :hover { color: var(--jb-titleBar-activeForeground) }`
   })
 })
 
@@ -8651,7 +8743,6 @@ jb.component('button.mdcIcon', {
   impl: styleWithFeatures(button.mdcFloatingAction({withTitle: false, buttonSize: '%$buttonSize%'}), features(
       ((ctx,{},{icon}) => icon && ctx.run({$: 'feature.icon', ...icon, title: '%$model.title%', 
         size: ({},{},{buttonSize}) => buttonSize * 24/40 })),
-      css('background-color: grey'),
     ))
 })
 
@@ -8739,7 +8830,7 @@ jb.component('editableText.mdcInput', {
   params: [
     {id: 'width', as: 'number'},
     {id: 'noLabel', as: 'boolean'},
-    {id: 'noRipple', as: 'boolean'},
+    {id: 'noRipple', as: 'boolean'}
   ],
   impl: customStyle({
     template: (cmp,{databind,fieldId,title,noLabel,noRipple,error},h) => h('div',{}, [
@@ -8757,11 +8848,16 @@ jb.component('editableText.mdcInput', {
         ]),
         h('div#mdc-text-field-helper-line', {}, error || '')
       ]),
-    css: `~ .mdc-text-field-helper-line { color: red }`,
+    css: `~ .mdc-text-field-helper-line { color: var(--jb-errorForeground) }
+    ~ .mdc-text-field:not(.mdc-text-field--disabled) .mdc-text-field__input { color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-titleBar-inactiveBackground); }
+    ~ .mdc-text-field--focused:not(.mdc-text-field--disabled) .mdc-floating-label { color: var(--mdc-theme-primary) }
+    `,
     features: [
-      field.databindText(), 
+      field.databindText(),
       mdcStyle.initDynamic(),
-      css( ({},{},{width}) => `>.mdc-text-field { ${jb.ui.propWithUnits('width', width)} }`),
+      css(
+        ({},{},{width}) => `>.mdc-text-field { ${jb.ui.propWithUnits('width', width)} }`
+      )
     ]
   })
 })
@@ -9154,8 +9250,8 @@ jb.component('table.mdc', {
         ),
         items.length == 0 ? 'no items' : ''
         ])),
-    css: `{width: 100%} 
-    ~ .mdc-data-table__header-cell {font-weight: 700}`,
+    css: `{width: 100%}  
+    ~ .mdc-data-table__header-cell, ~ .mdc-data-table__cell {color: var(--jb-foreground)}`,
     features: [table.initTableOrItemlist(), table.initSort(), mdcStyle.initDynamic()]
   })
 })
@@ -9168,9 +9264,12 @@ jb.component('picklist.native', {
           state.options.map(option=>h('option',{value: option.code},option.text))
         ),
     css: `
-{ display: block; width: 100%; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857; color: #555555; background-color: #fff; background-image: none; border: 1px solid #ccc; border-radius: 4px; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); -webkit-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; -o-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; }
-:focus { border-color: #66afe9; outline: 0; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); }
-::-webkit-input-placeholder { color: #999; }`,
+{ display: block; width: 100%; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857; 
+  color: var(--jb-menu-foreground); background: var(--jb-menu-background); 
+  background-image: none; border: 1px solid #ccc; border-radius: 4px; box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+}
+:focus { border-color: #66afe9; outline: 0; box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); }
+::input-placeholder { color: #999; }`,
     features: [field.databind(), picklist.init()]
   })
 })
@@ -9249,22 +9348,18 @@ jb.component('picklist.nativeMdLookOpen', {
         h('input', { type: 'text', value: state.databind, list: 'list_' + cmp.ctx.id, onchange: true }),
         h('datalist', {id: 'list_' + cmp.ctx.id}, state.options.map(option=>h('option',{},option.text)))
     ]),
-    css: `>input {  appearance: none; -webkit-appearance: none; font-family: inherit;
-  background-color: transparent;
+    css: `>input {  appearance: none; -webkit-appearance: none;
   padding: 6px 0;
-  font-size: 14px;
   width: 100%;
   color: rgba(0,0,0, 0.82);
   border: none;
-  border-bottom: 1px solid rgba(0,0,0, 0.12); }
+  border-bottom: 1px solid var(--jb-titleBar-inactiveBackground);
+  color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background);
+}
+  { position: relative;}
+  >input:focus { border-color: var(--jb-titleBar-activeBackground); border-width: 2px}
 
-  {
-    font-family: 'Roboto','Helvetica','Arial',sans-serif;
-    position: relative;
-  }
-  >input:focus { border-color: #3F51B5; border-width: 2px}
-
-  :after { position: absolute;
+  :after1 { position: absolute;
         top: 0.75em;
         right: 0.5em;
         /* Styling the down arrow */
@@ -9274,7 +9369,7 @@ jb.component('picklist.nativeMdLookOpen', {
         content: '';
         border-left: .25em solid transparent;
         border-right: .25em solid transparent;
-        border-top: .375em solid rgba(0,0,0, 0.12);
+        border-top: .375em solid var(--mdc-theme-text-primary-on-background);
         pointer-events: none; }`,
     features: [field.databind(), picklist.init()]
   })
@@ -9286,33 +9381,29 @@ jb.component('picklist.nativeMdLook', {
     template: (cmp,state,h) => h('div',{},h('select',
       { value: state.databind, onchange: true },
           state.options.map(option=>h('option',{value: option.code},option.text)))),
-    css: `>select {  appearance: none; -webkit-appearance: none; font-family: inherit;
-  background-color: transparent;
-  padding: 6px 0;
-  font-size: 14px;
-  width: 100%;
-  color: rgba(0,0,0, 0.82);
-  border: none;
-  border-bottom: 1px solid rgba(0,0,0, 0.12); }
-
-  {
-    font-family: 'Roboto','Helvetica','Arial',sans-serif;
-    position: relative;
-  }
-  >select:focus { border-color: #3F51B5; border-width: 2px}
-
-  :after { position: absolute;
-        top: 0.75em;
-        right: 0.5em;
-        /* Styling the down arrow */
-        width: 0;
-        height: 0;
-        padding: 0;
-        content: '';
-        border-left: .25em solid transparent;
-        border-right: .25em solid transparent;
-        border-top: .375em solid rgba(0,0,0, 0.12);
-        pointer-events: none; }`,
+    css: `>input {  appearance: none; -webkit-appearance: none;
+      padding: 6px 0;
+      width: 100%;
+      color: rgba(0,0,0, 0.82);
+      border: none;
+      border-bottom: 1px solid var(--jb-titleBar-inactiveBackground);
+      color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background);
+    }
+      { position: relative;}
+      >input:focus { border-color: var(--jb-titleBar-activeBackground); border-width: 2px}
+    
+      :after1 { position: absolute;
+            top: 0.75em;
+            right: 0.5em;
+            /* Styling the down arrow */
+            width: 0;
+            height: 0;
+            padding: 0;
+            content: '';
+            border-left: .25em solid transparent;
+            border-right: .25em solid transparent;
+            border-top: .375em solid var(--mdc-theme-text-primary-on-background);
+            pointer-events: none; }`,
     features: [field.databind(), picklist.init()]
   })
 })
@@ -9512,12 +9603,12 @@ jb.component('editableBoolean.iconWithSlash', {
     {id: 'buttonSize', as: 'number', defaultValue: 40, description: 'button size is larger than the icon size, usually at the rate of 40/24' },
   ],
   impl: styleWithFeatures(button.mdcIcon({buttonSize: '%$buttonSize%'}), features(
+      Var('strokeColor', css.valueOfCssVar('mdc-theme-on-secondary')),
       htmlAttribute('onclick','toggle'),
       htmlAttribute('title','%$$model/title%'),
-      css(If('%$$model/databind%','',`background-repeat: no-repeat; background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='%$buttonSize%' viewBox='0 0 %$buttonSize% %$buttonSize%' width='%$buttonSize%' xmlns='http://www.w3.org/2000/svg'><line x1='0' y1='0' x2='%$buttonSize%' y2='%$buttonSize%' style='stroke:white;stroke-width:2' /></svg>")`))
+      css(If('%$$model/databind%','',`background-repeat: no-repeat; background-image: url("data:image/svg+xml;utf8,<svg width='%$buttonSize%' height='%$buttonSize%' viewBox='0 0 %$buttonSize% %$buttonSize%' xmlns='http://www.w3.org/2000/svg'><line x1='0' y1='0' x2='%$buttonSize%' y2='%$buttonSize%' style='stroke:%$strokeColor%;stroke-width:2' /></svg>")`))
     ))
 })
-
 
 jb.component('editableBoolean.mdcSlideToggle', {
   type: 'editable-boolean.style',
@@ -9645,14 +9736,15 @@ jb.component('tree.plain', {
 	css: `|>.treenode-children { padding-left: 10px; min-height: 7px }
 	|>.treenode-label { margin-top: -1px }
 
-	|>.treenode-label .treenode-val { color: red; padding-left: 4px; }
+	|>.treenode-label .treenode-val { color: var(--jb-tree-value); padding-left: 4px; }
 	|>.treenode-line { display: flex; box-orient: horizontal; padding-bottom: 3px; align-items: center }
 
 	|>.treenode { display: block }
 	|>.flip-icon { font-size: 16px; margin-right: 2px;}
 	|>.treenode-icon { font-size: 16px; margin-right: 2px; }
 
-	|>.treenode.selected>*>.treenode-label,.treenode.selected>*>.treenode-label  { background: #D9E8FB;}
+	|>.treenode.selected>*>.treenode-label,.treenode.selected>*>.treenode-label  { 
+		color: var(--jb-menu-selectionForeground); background: var(--jb-menu-selectionBackground)}
 	`
   }))
 })
@@ -9687,20 +9779,21 @@ jb.component('tree.expandBox', {
 	  },
 	  css: `|>.treenode-children { padding-left: 10px; min-height: 7px }
 	|>.treenode-label { margin-top: -2px }
-	|>.treenode-label .treenode-val { color: red; padding-left: 4px; }
+	|>.treenode-label .treenode-val { color: var(--jb-tree-value); padding-left: 4px; }
 	|>.treenode-line { display: flex; box-orient: horizontal; width: ${lineWidth}; padding-bottom: 3px;}
 
 	|>.treenode { display: block }
-	|>.treenode.selected>*>.treenode-label,.treenode.selected>*>.treenode-label  { background: #D9E8FB;}
+	|>.treenode.selected>*>.treenode-label,.treenode.selected>*>.treenode-label  
+		{ color: var(--jb-menu-selectionForeground); background: var(--jb-menu-selectionBackground)}
 
 	|>.treenode-icon { font-size: 16px; margin-right: 2px; }
 	|>.treenode-expandbox { border: none; background: none; position: relative; width:9px; height:9px; padding: 0; vertical-align: top;
 		margin-top: 5px;  margin-right: 5px;  cursor: pointer;}
 	|>.treenode-expandbox.showIcon { margin-top: 3px }
 	|>.treenode-expandbox div { position: absolute; }
-	|>.treenode-expandbox .frame { background: #F8FFF9; border-radius: 3px; border: 1px solid #91B193; top: 0; left: 0; right: 0; bottom: 0; }
-	|>.treenode-expandbox .line-lr { background: #91B193; top: 4px; left: 2px; width: 5px; height: 1px; }
-	|>.treenode-expandbox .line-tb { background: #91B193; left: 4px; top: 2px; height: 5px; width: 1px; display: none;}
+	|>.treenode-expandbox .frame { background: var(--jb-menu-background); border-radius: 3px; border: 1px solid var(--jb-expandbox-background); top: 0; left: 0; right: 0; bottom: 0; }
+	|>.treenode-expandbox .line-lr { background: var(--jb-expandbox-background); top: 4px; left: 2px; width: 5px; height: 1px; }
+	|>.treenode-expandbox .line-tb { background: var(--jb-expandbox-background); left: 4px; top: 2px; height: 5px; width: 1px; display: none;}
 	|>.treenode-line.collapsed .line-tb { display: block; }
 	|>.treenode.collapsed .line-tb { display: block; }
 	|>.treenode-expandbox.nochildren .frame { display: none; }
@@ -35548,7 +35641,10 @@ jb.component('editableText.studioPrimitiveText', {
           class: 'mdc-text-field__input',
           value: databind, onchange: true, onkeyup: true, onblur: true
     }),
-    css: '{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom1: 7px;} :focus { border-color: #3F51B5; border-width: 2px}',
+    css: `{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; margin-bottom1: 7px;
+        color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-titleBar-inactiveBackground);
+    } 
+    :focus { border-color: var(--jb-titleBar-activeBackground); border-width: 2px}`,
     features: field.databindText(0, false)
   })
 })
@@ -35556,7 +35652,7 @@ jb.component('editableText.studioPrimitiveText', {
 jb.component('editableText.floatingInput', {
   type: 'editable-text.style',
   impl: styleWithFeatures(editableText.mdcInput(),
-    css(`~ .mdc-text-field__input  { font-size: 1.2rem; } ~ .mdc-text-field { width: 100%; margin-right: 13px;}`))
+    css(`~ .mdc-text-field { width: 100%; margin-right: 13px;}`))
 })
 
 jb.studio.codeMirrorUtils = Object.assign(jb.studio.codeMirrorUtils || {}, {
@@ -35601,11 +35697,12 @@ jb.component('editableText.studioCodemirrorTgp', {
 jb.component('button.selectProfileStyle', {
   type: 'button.style',
   impl: customStyle({
-    template: (cmp,{title},h) =>
-        h('input', { class: 'mdc-text-field__input', type: 'text', readonly: true, title,
+    template: (cmp,{title},h) => h('input', { class: 'mdc-text-field__input', type: 'text', readonly: true, title,
             value: title, onmouseup: 'onclickHandler', onkeydown: 'clickedEnter',
         }),
-    css: '{ cursor: pointer; padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom1: 7px; } :focus { border-color: #3F51B5; border-width: 2px}',
+    css: `{ cursor: pointer; padding-left: 2px; padding-top: 5px; padding-bottom: 0;
+    color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-titleBar-inactiveBackground); }
+    :focus { border-color: var(--jb-titleBar-activeBackground); border-width: 2px}`,
     features: interactive(
       (ctx,{cmp}) => cmp.clickedEnter = () => event.keyCode == 13 && cmp.onclickHandler()
     )
@@ -35631,7 +35728,9 @@ jb.component('button.studioScript', {
             onmouseup: 'onclickHandler',
             onkeydown: 'clickedEnter',
         }),
-    css: '{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; font-size: 1.2rem; margin-bottom1: 7px; cursor: pointer; opacity: 0.8; font-style: italic; }',
+    css: `{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; 
+      color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-titleBar-inactiveBackground);
+      cursor: pointer; opacity: 0.8; font-style: italic; }`,
     features: interactive(
       (ctx,{cmp}) => cmp.clickedEnter = ev => event.keyCode == 13 && cmp.onclickHandler()
     )
@@ -36382,7 +36481,7 @@ jb.component('studio.previewWidgetImpl', {
             `javascript: parent.jb.studio.injectProjectToPreview(this,${JSON.stringify(cmp.state.projectSettings)})` : 'javascript: '
         })
     },
-    css: '{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; }'
+    css: '{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; background: var(--jb-preview-background) }'
   })
 })
 
@@ -36436,13 +36535,12 @@ jb.component('dialog.editSourceStyle', {
 				].filter(x=>x) ),
 			]),
     css: `{ position: fixed;
-						background: #F9F9F9;
 						width: %$width%px;
 						min-height: %$height%px;
 						overflow: auto;
 						border-radius: 4px;
 						padding: 0 12px 12px 12px;
-						box-shadow: 0px 7px 8px -4px rgba(0, 0, 0, 0.2), 0px 13px 19px 2px rgba(0, 0, 0, 0.14), 0px 5px 24px 4px rgba(0, 0, 0, 0.12)
+						box-shadow: 0 0px 9px var(--jb-dropdown-shadow)
 				}
 				>.dialog-title { background: none; padding: 10px 5px; }
 				>.jb-dialog-content-parent { padding: 0; overflow-y: auto; overflow-x: hidden; }
@@ -36452,9 +36550,7 @@ jb.component('dialog.editSourceStyle', {
 						right: 4px; top: 4px;
 						font: 21px sans-serif;
 						border: none;
-						background: transparent;
-						color: #000;
-						text-shadow: 0 1px 0 #fff;
+						color: var(--jb-menu-foreground); text-shadow: 0 1px 0 var(--jb-menu-background); 
 						font-weight: 700;
 						opacity: .2;
 				}
@@ -36464,9 +36560,7 @@ jb.component('dialog.editSourceStyle', {
 						right: 24px; top: 0;
 						font: 21px sans-serif;
 						border: none;
-						background: transparent;
-						color: #000;
-						text-shadow: 0 1px 0 #fff;
+						color: var(--jb-menu-foreground); text-shadow: 0 1px 0 var(--jb-menu-background); 
 						font-weight: 700;
 						opacity: .2;
 				}
@@ -36506,13 +36600,12 @@ jb.component('dialog.showSourceStyle', {
 				  h('div',{class: 'jb-dialog-content-parent stretchedToMargin'},h(contentComp)),
 			  ]),
     css: `{ position: fixed;
-						  background: #F9F9F9;
 						  width: %$width%px;
 						  height: %$height%px;
 						  overflow: auto;
 						  border-radius: 4px;
 						  padding: 0 12px 12px 12px;
-						  box-shadow: 0px 7px 8px -4px rgba(0, 0, 0, 0.2), 0px 13px 19px 2px rgba(0, 0, 0, 0.14), 0px 5px 24px 4px rgba(0, 0, 0, 0.12)
+						  box-shadow: 0 0px 9px var(--jb-dropdown-shadow)
 				  }
 				  >.dialog-title { background: none; padding: 10px 5px; }
 				  >.jb-dialog-content-parent { padding: 0; overflow-y: hidden; overflow-x: hidden; top: 40px}
@@ -36522,9 +36615,7 @@ jb.component('dialog.showSourceStyle', {
 						  right: 4px; top: 4px;
 						  font: 21px sans-serif;
 						  border: none;
-						  background: transparent;
-						  color: #000;
-						  text-shadow: 0 1px 0 #fff;
+						  color: var(--jb-menu-foreground); text-shadow: 0 1px 0 var(--jb-menu-background); 
 						  font-weight: 700;
 						  opacity: .2;
 				  }
@@ -36605,13 +36696,12 @@ jb.component('dialog.studioFloating', {
 				h('div',{class: 'jb-dialog-content-parent'},h(contentComp)),
 			]),
     css: `{ position: fixed;
-						background: #F9F9F9;
 						width: %$width%px;
 						min-height: %$height%px;
 						overflow: auto;
 						border-radius: 4px;
 						padding: 0 12px 12px 12px;
-						box-shadow: 0px 7px 8px -4px rgba(0, 0, 0, 0.2), 0px 13px 19px 2px rgba(0, 0, 0, 0.14), 0px 5px 24px 4px rgba(0, 0, 0, 0.12)
+						box-shadow: 0 0px 9px var(--jb-dropdown-shadow)
 				}
 				>.dialog-title { background: none; padding: 10px 5px; }
 				>.jb-dialog-content-parent { padding: 0; overflow-y: auto; overflow-x: hidden; }
@@ -36621,9 +36711,7 @@ jb.component('dialog.studioFloating', {
 						right: 4px; top: 4px;
 						font: 21px sans-serif;
 						border: none;
-						background: transparent;
-						color: #000;
-						text-shadow: 0 1px 0 #fff;
+						color: var(--jb-menu-foreground); text-shadow: 0 1px 0 var(--jb-menu-background); 
 						font-weight: 700;
 						opacity: .2;
 				}
@@ -36633,9 +36721,7 @@ jb.component('dialog.studioFloating', {
 						right: 24px; top: 4px;
 						font: 21px sans-serif;
 						border: none;
-						background: transparent;
-						color: #000;
-						text-shadow: 0 1px 0 #fff;
+						color: var(--jb-menu-foreground); text-shadow: 0 1px 0 var(--jb-menu-background); 
 						font-weight: 700;
 						opacity: .2;
 				}
@@ -38005,6 +38091,8 @@ Object.assign(st,{
 })()
 ;
 
+jb.ns('sourceEditor')
+
 jb.component('studio.categoriesMarks', {
   params: [
     {id: 'type', as: 'string'},
@@ -38343,36 +38431,59 @@ jb.component('studio.openNewPage', {
 jb.component('studio.openNewFunction', {
   type: 'action',
   impl: openDialog({
+    id: '',
     style: dialog.dialogOkCancel(),
     content: group({
+      title: '',
+      layout: layout.horizontal('11'),
       style: group.div(),
       controls: [
         editableText({
           title: 'function name',
           databind: '%$dialogData/name%',
-          style: editableText.mdcInput(),
+          style: editableText.mdcInput({}),
           features: [
             feature.init(writeValue('%$dialogData/name%', '%$studio/project%.myFunc')),
             feature.onEnter(dialog.closeContainingPopup()),
-            validation(matchRegex('^[a-zA-Z_0-9\.]+$'), 'invalid function name')
+            validation(matchRegex('^[a-zA-Z_0-9.]+$'), 'invalid function name')
+          ]
+        }),
+        picklist({
+          title: 'file',
+          databind: '%$dialogData/file%',
+          options: picklist.options({options: sourceEditor.filesOfProject()}),
+          style: picklist.mdcSelect({}),
+          features: [
+            feature.init(
+              writeValue(
+                '%$dialogData/file%',
+                pipeline(sourceEditor.filesOfProject(), first())
+              )
+            ),
+            validation(notEmpty('%%'), 'mandatory')
           ]
         })
       ],
-      features: css.padding({top: '14', left: '11'})
+      features: [css.padding({top: '14', left: '11'}), css.width('600'), css.height('200')]
     }),
     title: 'New Function',
     onOK: runActions(
       Var('compName', ctx => jb.macroName(ctx.exp('%$dialogData/name%'))),
-      studio.newComp(
-          '%$compName%',
-          asIs({type: 'data', impl: pipeline(''), testData: 'sampleData'})
-        ),
+      studio.newComp({
+          compName: '%$compName%',
+          compContent: asIs({type: 'data', impl: pipeline(''), testData: 'sampleData'}),
+          file: '%$dialogData/file%'
+        }),
       writeValue('%$studio/profile_path%', '%$compName%'),
       studio.openJbEditor('%$compName%'),
       refreshControlById('functions')
     ),
     modal: true,
-    features: [dialogFeature.autoFocusOnFirstInput()]
+    features: [
+      dialogFeature.autoFocusOnFirstInput(),
+      dialogFeature.maxZIndexOnClick(),
+      dialogFeature.dragTitle()
+    ]
   })
 })
 
@@ -38465,7 +38576,7 @@ jb.component('studio.newComp', {
   ],
   impl: (ctx, compName, compContent,file) => {
     const _jb = jb.studio.previewjb
-    _jb.component(compName, compContent)
+    _jb.component(compName, JSON.parse(JSON.stringify(compContent)))
     const filePattern = '/' + ctx.exp('%$studio/projectFolder%')
     const projectFile = file || jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=> x && x.indexOf(filePattern) != -1)[0]
     const compWithLocation = { ...compContent, ...{ [_jb.location]: [projectFile,''] }}
@@ -38858,7 +38969,7 @@ jb.component('studio.properties', {
   params: [
     {id: 'path', as: 'string'},
     {id: 'innerPath', as: 'string'},
-    {id: 'focus', as: 'boolean'}
+    {id: 'focus', as: 'boolean', type: 'boolean'}
   ],
   impl: group({
     controls: [
@@ -38911,7 +39022,8 @@ jb.component('studio.properties', {
             style: button.href(),
             features: [
               feature.if(studio.isOfType('%$path%~features', 'feature')),
-              css.margin({top: '20', left: '5'})
+              css.margin({top: '20', left: '5'}),
+              css.width('100%')
             ]
           }),
           button({
@@ -39078,34 +39190,6 @@ jb.component('studio.propertyNumbericCss', {
   })
 })
 
-jb.component('studio.colorPicker', {
-  type: 'control',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: group({
-    controls:
-      button({
-      title: prettyPrint(studio.val('%$path%'), true),
-      style: button.studioScript(),
-      action: (ctx,{cmp},{path}) => {
-          const parent = document.createElement('div')
-          const elemRect = cmp.base.getBoundingClientRect()
-          parent.style = `position: absolute; z-index: 10000; top: ${elemRect.top+ 10}px; left: ${elemRect.left+40}px;`
-          document.body.appendChild(parent)
-          const picker = new Picker({
-            parent,
-            color: jb.studio.valOfPath(path),
-            onChange: color => ctx.run(writeValue(studio.ref(path),color.rgbaString)),
-            onDone: () => { picker.destroy(); document.body.removeChild(parent) }
-          })
-          picker.show()
-        },
-      }),
-    features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
-  })
-})
-
 jb.component('studio.propertyNumbericZeroToOne', {
   type: 'control',
   params: [
@@ -39143,7 +39227,6 @@ jb.component('studio.propertyEnum', {
     style: picklist.nativeMdLookOpen(),
     features: [
       css.width({width: '100', minMax: 'min'}),
-      css('~ input {font-size: 1.2rem; border-bottom-color: black }')
     ]
   })
 })
@@ -39172,7 +39255,80 @@ jb.component('studio.editAs',{
     equals('%$paramDef/editAs%','%$type%'),
     inGroup(split({text: '%$anyParamIds%'}),'%$paramDef/id%')),
 })
-;
+
+jb.component('studio.rawColorPicker', {
+  type: 'control',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: group({
+    controls:
+      button({
+      title: prettyPrint(studio.val('%$path%'), true),
+      style: button.studioScript(),
+      action: (ctx,{cmp},{path}) => {
+          const parent = document.createElement('div')
+          const elemRect = cmp.base.getBoundingClientRect()
+          parent.style = `position: absolute; z-index: 10000; top: ${elemRect.top+ 10}px; left: ${elemRect.left+40}px;`
+          document.body.appendChild(parent)
+          const picker = new Picker({
+            parent,
+            color: jb.studio.valOfPath(path),
+            onChange: color => ctx.run(writeValue(studio.ref(path),color.rgbaString)),
+            onDone: () => { picker.destroy(); document.body.removeChild(parent) }
+          })
+          picker.show()
+        },
+      }),
+    features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
+  })
+})
+
+jb.component('studio.colorPicker', {
+  type: 'control',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: group({
+    controls: button({
+      title: prettyPrint(studio.val('%$path%'), true),
+      action: openDialog({
+        style: dialog.studioJbEditorPopup(),
+        content: itemlist({
+          title: '',
+          items: studio.colorVariables(),
+          controls: group({
+            title: '',
+            layout: layout.flex({alignItems: 'center', spacing: '5'}),
+            controls: [
+              control.icon({
+                icon: 'MoonFull',
+                type: 'mdi',
+                features: css('~ svg { fill: %color% }')
+              }),
+              text('%varName%')
+            ],
+            features: css.width('300')
+          }),
+          features: itemlist.selection({
+            onSelection: writeValue(studio.ref('%$path%'), 'var(--%varName%)')
+          })
+        }),
+        features: studio.nearLauncherPosition()
+      }),
+      style: button.studioScript()
+    }),
+    features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
+  })
+})
+
+jb.component('studio.colorVariables', {
+  impl: ctx => {
+    const doc = jb.studio.previewWindow.document
+    return Array.from(doc.querySelectorAll('style')).map(x=>x.innerHTML).join('\n').split('\n').filter(x=>x.match(/--/)).filter(x=>!x.match(/font/)).map(x=>x.split(':')[0].trim().slice(2))
+      .map(varName=> ({ varName, color : jb.ui.valueOfCssVar(varName,doc.body) }))
+    }
+});
 
 jb.component('dialog.studioJbEditorPopup', {
   type: 'dialog.style',
@@ -39181,7 +39337,7 @@ jb.component('dialog.studioJbEditorPopup', {
         h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
         h(contentComp),
       ]),
-    css: `{ background: #fff; position: absolute }
+    css: `{ background: var(--jb-editor-background); position: absolute }
         >.dialog-close {
             position: absolute;
             cursor: pointer;
@@ -39228,7 +39384,7 @@ jb.component('dialog.studioSuggestionsPopup', {
     template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup' },[
         h(state.contentComp),
       ]),
-    css: '{ background: #fff; position: absolute; padding: 3px 5px }',
+    css: '{ background: var(--jb-editor-background); position: absolute; padding: 3px 5px }',
     features: [
       dialogFeature.maxZIndexOnClick(),
       dialogFeature.closeWhenClickingOutside(),
@@ -39658,7 +39814,7 @@ jb.component('sourceEditor.suggestionsItemlist', {
       itemlist.keyboardSelection(false),
       css.height({height: '500', overflow: 'auto', minMax: 'max'}),
       css.width({width: '300', overflow: 'auto', minMax: 'min'}),
-      css('{ position: absolute; z-index:1000; background: white }'),
+      css('{ position: absolute; z-index:1000; background: var(--jb-editor-background) }'),
       css.border({width: '1', color: '#cdcdcd'}),
       css.padding({top: '2', left: '3', selector: 'li'})
     ]
@@ -39877,9 +40033,7 @@ jb.component('studio.dataBrowse', {
       group({
         controls: [
           controlWithCondition(isOfType('string,boolean,number', '%$obj%'), text('%$obj%')),
-          controlWithCondition(
-            '%$obj.snifferResult%', studio.showRxSniffer('%$obj%')
-          ),
+          controlWithCondition('%$obj.snifferResult%', studio.showRxSniffer('%$obj%')),
           controlWithCondition(
             (ctx,{obj}) => jb.callbag.isCallbag(obj),
             studio.browseRx('%$obj%')
@@ -39891,7 +40045,7 @@ jb.component('studio.dataBrowse', {
               controls: group({title: '%$obj/length% items', controls: studio.dataBrowse('%%', 200)}),
               style: table.mdc(),
               visualSizeLimit: 7,
-              features: [itemlist.infiniteScroll(), css.height({height: '100%', minMax: 'max'})]
+              features: [itemlist.infiniteScroll(), css.height({height: '400', minMax: 'max'})]
             })
           ),
           controlWithCondition(
@@ -39908,6 +40062,7 @@ jb.component('studio.dataBrowse', {
             nodeModel: tree.jsonReadOnly('%$obj%', '%$title%'),
             style: tree.expandBox({}),
             features: [
+              css.class('jb-editor'),
               tree.selection({}),
               tree.keyboardSelection({}),
               css.width({width: '%$width%', minMax: 'max'})
@@ -39947,12 +40102,16 @@ jb.component('studio.dataBrowse', {
         'long text'
       )
     ],
-    features: group.wait({
-      for: ctx => ctx.exp('%$objToShow%'),
-      loadingControl: text('...'),
-      varName: 'obj',
-      passRx: true
-    })
+    features: [
+      group.wait({
+        for: ctx => ctx.exp('%$objToShow%'),
+        loadingControl: text('...'),
+        varName: 'obj',
+        passRx: true
+      }),
+      css.height({height: '400', overflow: 'auto', minMax: 'max'}),
+      css.width({overflow: 'auto', minMax: 'max'})
+    ]
   })
 })
 
@@ -40037,7 +40196,8 @@ jb.component('studio.probeDataView', {
             controls: [
               group({
                 title: 'in (%$probeResult/length%)',
-                controls: studio.dataBrowse(({data}) => st.previewjb.val(data.in.data))
+                controls: studio.dataBrowse(({data}) => st.previewjb.val(data.in.data)),
+                features: css.width({width: '300', minMax: 'max'})
               }),
               group({
                 title: 'out',
@@ -42174,7 +42334,7 @@ jb.component('studio.eventTracker', {
             features: [
               field.title('log'),
               field.columnWidth('20'),
-              feature.byCondition('%log% == error', css.color({background: 'red'})),
+              feature.byCondition('%log% == error', css.color({color: 'var(--jb-errorForeground)'})),
               feature.icon({
                 icon: data.switch({
                   cases: [
@@ -42187,7 +42347,7 @@ jb.component('studio.eventTracker', {
                 type: data.switch({cases: [data.case('%log% == error', 'mdc')], default: 'mdi'}),
                 size: '16'
               }),
-              css('background-color: transparent; color: grey;')
+              css('background-color: transparent; color: var(--jb-descriptionForeground);')
             ]
           }),
           text({
@@ -42375,7 +42535,6 @@ jb.component('studio.toolbar', {
         title: 'Inline content editing',
         features: [
           feature.onEvent({event: 'click', action: contentEditable.deactivate()}),
-          css('background: grey')
         ]
       }),
       editableBoolean({
@@ -42386,7 +42545,6 @@ jb.component('studio.toolbar', {
           buttonStyle: button.mdcFloatingAction('40', false)
         }),
         title: 'Watch Data Connections',
-        features: css('background: grey')
       }),
       button({
         title: 'Select',
@@ -42498,7 +42656,6 @@ jb.component('studio.searchList', {
         icon: studio.iconOfType('%type%'),
         features: [
           css.opacity('0.3'),
-          css('{ font-size: 16px }'),
           css.padding({top: '5', left: '5'})
         ]
       }),
@@ -42507,7 +42664,7 @@ jb.component('studio.searchList', {
           text.highlight(
               '%id%',
               '%$itemlistCntrData/search_pattern%',
-              'mdl-color-text--deep-purple-A700'
+              'var(--vscode-editor-findMatchHighlightBackground)'
             )
         ),
         action: runActions(writeValue('%$studio/page%', '%id%'), dialog.closeContainingPopup()),
@@ -42549,7 +42706,8 @@ jb.component('studio.searchList', {
       css.boxShadow({shadowColor: '#cccccc'}),
       css.padding({top: '4', right: '5'}),
       css.height({height: '600', overflow: 'auto', minMax: 'max'}),
-      css.width({width: '400', minMax: 'min'})
+      css.width({width: '400', minMax: 'min'}),
+      css.class('searchList'),
     ]
   })
 })
@@ -42611,13 +42769,11 @@ jb.component('studio.pages', {
         features: [css('{margin: 5px}'), feature.hoverTitle('new page')]
       }),
       itemlist({
-        items: pipeline(
-          studio.cmpsOfProject(),
-          filter(studio.isOfType('%%', 'control'))
-        ),
+        items: pipeline(studio.cmpsOfProject(), filter(studio.isOfType('%%', 'control'))),
         controls: text({
-          text: pipeline(suffix('.'),extractSuffix('.')),
-          features: css.class('studio-page')}),
+          text: pipeline(suffix('.'), extractSuffix('.')),
+          features: css.class('studio-page')
+        }),
         style: itemlist.horizontal(),
         features: [
           itemlist.selection({
@@ -42637,19 +42793,10 @@ jb.component('studio.pages', {
         features: [css('{margin: 5px}'), feature.hoverTitle('new function')]
       }),
       itemlist({
-        items: pipeline(
-          studio.cmpsOfProject(),
-          filter(studio.isOfType('%%', 'data')),
-          suffix('.')
-        ),
+        items: pipeline(studio.cmpsOfProject(), filter(studio.isOfType('%%', 'data'))),
         controls: text({
-          text: pipeline(suffix('.'),extractSuffix('.')),
-          features: [
-            feature.onEvent({
-              event: 'click',
-              action: studio.openJbEditor('%%')
-            })
-          ]
+          text: pipeline(suffix('.'), extractSuffix('.')),
+          features: [feature.onEvent({event: 'click', action: studio.openJbEditor('%%')})]
         }),
         style: itemlist.horizontal(),
         features: [id('functions'), css.class('studio-pages-items'), studio.watchComponents()]
@@ -44096,7 +44243,7 @@ jb.component('contentEditable.positionThumbsStyle', {
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div#jb-dialog jb-popup',{},h(state.contentComp)),
-    css: '{ display: block; position: absolute; background: white; }',
+    css: '{ display: block; position: absolute; background: var(--jb-background); }',
     features: [dialogFeature.maxZIndexOnClick(), dialogFeature.closeWhenClickingOutside()]
   })
 })
@@ -44854,7 +45001,7 @@ jb.component('inplaceEdit.popupStyle', {
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div#jb-dialog jb-popup',{},h(state.contentComp)),
-    css: `{ position: absolute; background: white; padding: 6px;
+    css: `{ position: absolute; background: var(--jb-editor-background); padding: 6px;
               box-shadow: 2px 2px 3px #d5d5d5; border: 1px solid rgb(213, 213, 213); }
       `,
     features: [
@@ -45168,7 +45315,7 @@ jb.component('gridEditor.openGridLineThumb', {
             }
         ),
         css(
-          '>span { display: none; width: 150px; white-space: nowrap; padding: 7px; color: white; background: gray;}'
+          '>span { display: none; width: 150px; white-space: nowrap; padding: 7px; color: var(--jb-statusBar-foreground); background: var(--jb-statusBar-background);}'
         ),
         css(
           pipeline(
@@ -45268,9 +45415,9 @@ jb.component('gridEditor.openGridItemThumbs', {
 
         css((ctx,{gridItemElem}) => {
           const elemRect = gridItemElem.getBoundingClientRect()
-          return `>span { display: none; color: white; position: absolute; white-space: nowrap; padding: 7px; background: gray; opacity: 1; top: ${elemRect.height- 7 }px}`
+          return `>span { display: none; position: absolute; white-space: nowrap; padding: 7px; color: var(--jb-statusBar-foreground); background: var(--jb-statusBar-background); opacity: 1; top: ${elemRect.height- 7 }px}`
         }),
-        css('{cursor: grab; box-shadow: 3px 3px; background: grey; opacity: 0.2; display: flex; flex-flow: row-reverse} ~:hover {opacity: 0.7}' ),
+        css('{cursor: grab; box-shadow: 3px 3px; var(--jb-statusBar-background); opacity: 0.2; display: flex; flex-flow: row-reverse} ~:hover {opacity: 0.7}' ),
         feature.onDataChange({ ref: studio.ref('%$gridPath%'), includeChildren: 'yes',
           action: (ctx,{cmp}) => jb.delay(1).then(()=> cmp.refresh(null,{srcCtx: ctx.componentContext}))
         })
@@ -45410,7 +45557,7 @@ jb.component('sizesEditor.widthHeight', {
           dialog.closeContainingPopup()
         ),
         features: css(`{position: absolute; top: %$top%; left: 65px; font-size: 9px; width: 100px;} 
-        ~:hover { font-size: 16px; background: white; z-index: 10000}`),
+        ~:hover { font-size: 16px; background: var(--vscode-editor-background); z-index: 10000}`),
         style: button.href()
       })
 })
@@ -45864,17 +46011,22 @@ jb.component('studio.initVscodeAdapter', {
         const {pipe, subscribe,create,filter} = jb.callbag
         jb.studio.vscodeEm = create(obs=> jb.frame.addEventListener('message', e => obs(e)))
 
+        vscode.setState({...vscode.getState(), ...jb.frame.jbWorkspaceState})
         const state = {...jb.frame.jbPreviewProjectSettings, ...vscode.getState(), vscode: true}
         params.forEach(p => state[p] != null && ctx.run(writeValue(`%${resource}/${p}%`,state[p]) ))
 
         pipe(jb.ui.resourceChange(), 
             filter(e=> e.path[0] == resource && params.indexOf(e.path[1]) != -1),
-            subscribe(e =>
-                vscode.setState(jb.objFromEntries(params.map(p=>[p,ctx.exp(`%${resource}/${p}%`)])))
+            subscribe(e => {
+                vscode.setState({...vscode.getState(),...jb.objFromEntries(params.map(p=>[p,ctx.exp(`%${resource}/${p}%`)]))})
+                jb.studio.vscodeService({$: 'storeWorkspaceState', state})
+            }
         ))
 
         jb.sessionStorage = function(id,val) {
-            return val == undefined ? (vscode.getState() ||{})[id] : vscode.setState({...vscode.getState(),id: val})
+            const state = val == undefined ? (vscode.getState() ||{})[id] : vscode.setState({...vscode.getState(),[id]: val})
+            val && jb.studio.vscodeService({$: 'storeWorkspaceState', state})
+            return state
         }
 
         let messageID = 0

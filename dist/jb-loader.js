@@ -248,9 +248,14 @@ function jb_initWidget() {
     mainElem.setAttribute('id','main')
     document.body.appendChild(mainElem)
   }
-  const prof = jbProjectSettings.entry && jbProjectSettings.entry.$ && jbProjectSettings.entry
   const fixedProjName = (jbProjectSettings.project||'').replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase())
-  jb.ui.renderWidget(prof || {$: jbProjectSettings.entry || `${fixedProjName}.main` }, document.getElementById('main'))
+  const initTheme = jbProjectSettings.theme || jb.path(jb.comps,'defaultTheme.impl')
+  const entryProf = jbProjectSettings.entry && {$: jbProjectSettings.entry} || jb.path(jb.comps[`${fixedProjName}.main`],'impl')
+  const el = document.getElementById('main');
+  (async () => {
+    await initTheme && jb.exec(initTheme)
+    await entryProf && jb.ui.renderWidget(entryProf, el)
+  })()
 }
 
 function pathOfProjectFile(fn,{project,baseUrl,source} = {}) {

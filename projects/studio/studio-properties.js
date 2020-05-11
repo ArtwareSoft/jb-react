@@ -34,7 +34,7 @@ jb.component('studio.properties', {
   params: [
     {id: 'path', as: 'string'},
     {id: 'innerPath', as: 'string'},
-    {id: 'focus', as: 'boolean'}
+    {id: 'focus', as: 'boolean', type: 'boolean'}
   ],
   impl: group({
     controls: [
@@ -87,7 +87,8 @@ jb.component('studio.properties', {
             style: button.href(),
             features: [
               feature.if(studio.isOfType('%$path%~features', 'feature')),
-              css.margin({top: '20', left: '5'})
+              css.margin({top: '20', left: '5'}),
+              css.width('100%')
             ]
           }),
           button({
@@ -254,34 +255,6 @@ jb.component('studio.propertyNumbericCss', {
   })
 })
 
-jb.component('studio.colorPicker', {
-  type: 'control',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: group({
-    controls:
-      button({
-      title: prettyPrint(studio.val('%$path%'), true),
-      style: button.studioScript(),
-      action: (ctx,{cmp},{path}) => {
-          const parent = document.createElement('div')
-          const elemRect = cmp.base.getBoundingClientRect()
-          parent.style = `position: absolute; z-index: 10000; top: ${elemRect.top+ 10}px; left: ${elemRect.left+40}px;`
-          document.body.appendChild(parent)
-          const picker = new Picker({
-            parent,
-            color: jb.studio.valOfPath(path),
-            onChange: color => ctx.run(writeValue(studio.ref(path),color.rgbaString)),
-            onDone: () => { picker.destroy(); document.body.removeChild(parent) }
-          })
-          picker.show()
-        },
-      }),
-    features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
-  })
-})
-
 jb.component('studio.propertyNumbericZeroToOne', {
   type: 'control',
   params: [
@@ -319,7 +292,6 @@ jb.component('studio.propertyEnum', {
     style: picklist.nativeMdLookOpen(),
     features: [
       css.width({width: '100', minMax: 'min'}),
-      css('~ input {font-size: 1.2rem; border-bottom-color: black }')
     ]
   })
 })
@@ -347,4 +319,78 @@ jb.component('studio.editAs',{
     Var('paramDef',studio.paramDef('%$path%')),
     equals('%$paramDef/editAs%','%$type%'),
     inGroup(split({text: '%$anyParamIds%'}),'%$paramDef/id%')),
+})
+
+jb.component('studio.rawColorPicker', {
+  type: 'control',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: group({
+    controls:
+      button({
+      title: prettyPrint(studio.val('%$path%'), true),
+      style: button.studioScript(),
+      action: (ctx,{cmp},{path}) => {
+          const parent = document.createElement('div')
+          const elemRect = cmp.base.getBoundingClientRect()
+          parent.style = `position: absolute; z-index: 10000; top: ${elemRect.top+ 10}px; left: ${elemRect.left+40}px;`
+          document.body.appendChild(parent)
+          const picker = new Picker({
+            parent,
+            color: jb.studio.valOfPath(path),
+            onChange: color => ctx.run(writeValue(studio.ref(path),color.rgbaString)),
+            onDone: () => { picker.destroy(); document.body.removeChild(parent) }
+          })
+          picker.show()
+        },
+      }),
+    features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
+  })
+})
+
+jb.component('studio.colorPicker', {
+  type: 'control',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: group({
+    controls: button({
+      title: prettyPrint(studio.val('%$path%'), true),
+      action: openDialog({
+        style: dialog.studioJbEditorPopup(),
+        content: itemlist({
+          title: '',
+          items: studio.colorVariables(),
+          controls: group({
+            title: '',
+            layout: layout.flex({alignItems: 'center', spacing: '5'}),
+            controls: [
+              control.icon({
+                icon: 'MoonFull',
+                type: 'mdi',
+                features: css('~ svg { fill: %color% }')
+              }),
+              text('%varName%')
+            ],
+            features: css.width('300')
+          }),
+          features: itemlist.selection({
+            onSelection: writeValue(studio.ref('%$path%'), 'var(--%varName%)')
+          })
+        }),
+        features: studio.nearLauncherPosition()
+      }),
+      style: button.studioScript()
+    }),
+    features: studio.watchPath({path: '%$path%', includeChildren: 'yes'})
+  })
+})
+
+jb.component('studio.colorVariables', {
+  impl: ctx => {
+    const doc = jb.studio.previewWindow.document
+    return Array.from(doc.querySelectorAll('style')).map(x=>x.innerHTML).join('\n').split('\n').filter(x=>x.match(/--/)).filter(x=>!x.match(/font/)).map(x=>x.split(':')[0].trim().slice(2))
+      .map(varName=> ({ varName, color : jb.ui.valueOfCssVar(varName,doc.body) }))
+    }
 })

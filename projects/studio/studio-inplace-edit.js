@@ -28,7 +28,7 @@ jb.component('inplaceEdit.popupStyle', {
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div#jb-dialog jb-popup',{},h(state.contentComp)),
-    css: `{ position: absolute; background: white; padding: 6px;
+    css: `{ position: absolute; background: var(--jb-editor-background); padding: 6px;
               box-shadow: 2px 2px 3px #d5d5d5; border: 1px solid rgb(213, 213, 213); }
       `,
     features: [

@@ -1,3 +1,5 @@
+jb.ns('sourceEditor')
+
 jb.component('studio.categoriesMarks', {
   params: [
     {id: 'type', as: 'string'},
@@ -336,36 +338,59 @@ jb.component('studio.openNewPage', {
 jb.component('studio.openNewFunction', {
   type: 'action',
   impl: openDialog({
+    id: '',
     style: dialog.dialogOkCancel(),
     content: group({
+      title: '',
+      layout: layout.horizontal('11'),
       style: group.div(),
       controls: [
         editableText({
           title: 'function name',
           databind: '%$dialogData/name%',
-          style: editableText.mdcInput(),
+          style: editableText.mdcInput({}),
           features: [
             feature.init(writeValue('%$dialogData/name%', '%$studio/project%.myFunc')),
             feature.onEnter(dialog.closeContainingPopup()),
-            validation(matchRegex('^[a-zA-Z_0-9\.]+$'), 'invalid function name')
+            validation(matchRegex('^[a-zA-Z_0-9.]+$'), 'invalid function name')
+          ]
+        }),
+        picklist({
+          title: 'file',
+          databind: '%$dialogData/file%',
+          options: picklist.options({options: sourceEditor.filesOfProject()}),
+          style: picklist.mdcSelect({}),
+          features: [
+            feature.init(
+              writeValue(
+                '%$dialogData/file%',
+                pipeline(sourceEditor.filesOfProject(), first())
+              )
+            ),
+            validation(notEmpty('%%'), 'mandatory')
           ]
         })
       ],
-      features: css.padding({top: '14', left: '11'})
+      features: [css.padding({top: '14', left: '11'}), css.width('600'), css.height('200')]
     }),
     title: 'New Function',
     onOK: runActions(
       Var('compName', ctx => jb.macroName(ctx.exp('%$dialogData/name%'))),
-      studio.newComp(
-          '%$compName%',
-          asIs({type: 'data', impl: pipeline(''), testData: 'sampleData'})
-        ),
+      studio.newComp({
+          compName: '%$compName%',
+          compContent: asIs({type: 'data', impl: pipeline(''), testData: 'sampleData'}),
+          file: '%$dialogData/file%'
+        }),
       writeValue('%$studio/profile_path%', '%$compName%'),
       studio.openJbEditor('%$compName%'),
       refreshControlById('functions')
     ),
     modal: true,
-    features: [dialogFeature.autoFocusOnFirstInput()]
+    features: [
+      dialogFeature.autoFocusOnFirstInput(),
+      dialogFeature.maxZIndexOnClick(),
+      dialogFeature.dragTitle()
+    ]
   })
 })
 
@@ -458,7 +483,7 @@ jb.component('studio.newComp', {
   ],
   impl: (ctx, compName, compContent,file) => {
     const _jb = jb.studio.previewjb
-    _jb.component(compName, compContent)
+    _jb.component(compName, JSON.parse(JSON.stringify(compContent)))
     const filePattern = '/' + ctx.exp('%$studio/projectFolder%')
     const projectFile = file || jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=> x && x.indexOf(filePattern) != -1)[0]
     const compWithLocation = { ...compContent, ...{ [_jb.location]: [projectFile,''] }}

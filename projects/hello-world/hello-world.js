@@ -25,7 +25,24 @@ jb.component('dataResource.room', {
 jb.component('helloWorld.main', {
   type: 'control',
   impl: group({
-    controls: text('%$people/age%')
+    title: '',
+    layout: layout.flex({}),
+    controls: [
+      text('%$people/age%'),
+      button({
+        title: 'click me',
+        action: openDialog({
+          style: dialog.default(),
+          content: group({
+            controls: [
+              text({text: 'my text', title: 'my title'})
+            ]
+          }),
+          title: 'asdqwsa'
+        })
+      })
+    ],
+    features: css.color({})
   })
 })
 

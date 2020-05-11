@@ -81,7 +81,7 @@ jb.component('multiSelect.chips', {
                             style: button.x(),
                             action: removeFromArray('%$multiSelectModel/databind%','%%'),
                             features: [
-                                css('color: black; z-index: 1000;margin-left: -25px'),
+                                css('z-index: 1000;margin-left: -25px'),
                                 itemlist.shownOnlyOnItemHover()
                             ]
                         })

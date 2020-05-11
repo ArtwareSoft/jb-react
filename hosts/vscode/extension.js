@@ -5,31 +5,33 @@ const {commands,ViewColumn,Uri,workspace, WorkspaceEdit} = vscode
 const fs = require("fs")
 
 function activate(context) {
-    context.subscriptions.push(commands.registerCommand('jb.studio.openJbEditor', () => createOrDo({ $: 'vscode.openjbEditor'})))
-    context.subscriptions.push(commands.registerCommand('jb.studio.openProperties', () => createOrDo()))
+    const startCommnad = { $: 'vscode.openjbEditor'}
+    context.subscriptions.push(commands.registerCommand('jb.studio.openJbEditor', () => createOrDo(context,startCommnad)))
+    context.subscriptions.push(commands.registerCommand('jb.studio.openProperties', () => createOrDo(context)))
 }
 exports.activate = activate;
 let studio
 
-function createOrDo(command) {
+function createOrDo(context, command) {
     if (!studio) {
         const win = vscode.window
         const column = win.activeTextEditor ? (win.activeTextEditor.viewColumn || 0) + 1 : ViewColumn.One
         const panel = win.createWebviewPanel(jBartStudio.viewType, 'jBart Studio', column, { enableScripts: true })
-        studio = new jBartStudio(panel,command)
+        studio = new jBartStudio(context, panel,command)
     } else {
         studio.runCommand({...command, activeEditorPosition: studio.calcActiveEditorPosition()})
     }
 }
 
 class jBartStudio {
-    constructor(panel,startCommand) {
+    constructor(context, panel,startCommand) {
         this._disposables = []
         this._panel = panel
+        this.context = context
         this.startCommand = startCommand
         panel.webview.html = this.getHtmlForWebview(panel.webview)
         panel.onDidDispose(() => this.dispose(), null, this._disposables)
-        panel.onDidChangeViewState(e => { if (panel.visible) { } }, null, this._disposables)
+//        panel.onDidChangeViewState(e => { if (panel.visible) { } }, null, this._disposables)
         const fileSystemWatcher = workspace.createFileSystemWatcher("**/*.{ts,js}")
         fileSystemWatcher.onDidChange(() => {
             const editor = vscode.window.activeTextEditor
@@ -100,7 +102,7 @@ class jBartStudio {
         modules="common,ui-common,material,ui-tree,dragula,codemirror,pretty-print,studio,history,animate,md-icons,fuse" prefix1="!st!"></script>
     <link rel="stylesheet" type="text/css" href="${jbBaseProjUrl}/projects/studio/css/studio.css"/>`
         const jbStartCommand = this.startCommand ? JSON.stringify({...this.startCommand, activeEditorPosition: this.calcActiveEditorPosition()}) : "''"
-
+        const jbWorkspaceState = JSON.stringify(this.context.workspaceState.get('jbartStudio') || {})
         return `<!DOCTYPE html>
 <html>
 	<head>
@@ -111,13 +113,15 @@ class jBartStudio {
 			jbPreviewProjectSettings= ${jbProjectSettings}
             jbDocsDiffFromFiles = ${jbDocsDiffFromFiles}
             jbStartCommand = ${jbStartCommand}
+            jbWorkspaceState = ${jbWorkspaceState}
         </script>
-	</head>
-	<body style="zoom: 0.8">
         ${jbModuleUrl ? studioBin : studioDev}
-        <div id="studio" class="vscode-studio" style="width:1280px;"> </div>
+	</head>
+	<body class="vscode-studio">
+		<div id="studio" style="width:1280px;"> </div>
 		<script>
-		  jb.studio.vsCodeApi = acquireVsCodeApi()
+          jb.studio.vsCodeApi = acquireVsCodeApi()
+          jb.exec({$: 'defaultTheme'})
 		  jb.ui.render(jb.ui.h(jb.exec({$:'studio.all'})), document.getElementById('studio'))
 		</script>
 	</body>
@@ -193,6 +197,8 @@ class jBartStudio {
         } else if (message.$ == 'installPackage') {
             const cp = require('child_process')
             message.module && cp.exec(`npm -i --save ${message.module}`)
+        } else if (message.$ == 'storeWorkspaceState') {
+            this.context.workspaceState.update('jbartStudio', message.state)
         }
     }
 }

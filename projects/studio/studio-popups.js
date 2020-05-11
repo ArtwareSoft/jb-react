@@ -20,13 +20,12 @@ jb.component('dialog.editSourceStyle', {
 				].filter(x=>x) ),
 			]),
     css: `{ position: fixed;
-						background: #F9F9F9;
 						width: %$width%px;
 						min-height: %$height%px;
 						overflow: auto;
 						border-radius: 4px;
 						padding: 0 12px 12px 12px;
-						box-shadow: 0px 7px 8px -4px rgba(0, 0, 0, 0.2), 0px 13px 19px 2px rgba(0, 0, 0, 0.14), 0px 5px 24px 4px rgba(0, 0, 0, 0.12)
+						box-shadow: 0 0px 9px var(--jb-dropdown-shadow)
 				}
 				>.dialog-title { background: none; padding: 10px 5px; }
 				>.jb-dialog-content-parent { padding: 0; overflow-y: auto; overflow-x: hidden; }
@@ -36,9 +35,7 @@ jb.component('dialog.editSourceStyle', {
 						right: 4px; top: 4px;
 						font: 21px sans-serif;
 						border: none;
-						background: transparent;
-						color: #000;
-						text-shadow: 0 1px 0 #fff;
+						color: var(--jb-menu-foreground); text-shadow: 0 1px 0 var(--jb-menu-background); 
 						font-weight: 700;
 						opacity: .2;
 				}
@@ -48,9 +45,7 @@ jb.component('dialog.editSourceStyle', {
 						right: 24px; top: 0;
 						font: 21px sans-serif;
 						border: none;
-						background: transparent;
-						color: #000;
-						text-shadow: 0 1px 0 #fff;
+						color: var(--jb-menu-foreground); text-shadow: 0 1px 0 var(--jb-menu-background); 
 						font-weight: 700;
 						opacity: .2;
 				}
@@ -90,13 +85,12 @@ jb.component('dialog.showSourceStyle', {
 				  h('div',{class: 'jb-dialog-content-parent stretchedToMargin'},h(contentComp)),
 			  ]),
     css: `{ position: fixed;
-						  background: #F9F9F9;
 						  width: %$width%px;
 						  height: %$height%px;
 						  overflow: auto;
 						  border-radius: 4px;
 						  padding: 0 12px 12px 12px;
-						  box-shadow: 0px 7px 8px -4px rgba(0, 0, 0, 0.2), 0px 13px 19px 2px rgba(0, 0, 0, 0.14), 0px 5px 24px 4px rgba(0, 0, 0, 0.12)
+						  box-shadow: 0 0px 9px var(--jb-dropdown-shadow)
 				  }
 				  >.dialog-title { background: none; padding: 10px 5px; }
 				  >.jb-dialog-content-parent { padding: 0; overflow-y: hidden; overflow-x: hidden; top: 40px}
@@ -106,9 +100,7 @@ jb.component('dialog.showSourceStyle', {
 						  right: 4px; top: 4px;
 						  font: 21px sans-serif;
 						  border: none;
-						  background: transparent;
-						  color: #000;
-						  text-shadow: 0 1px 0 #fff;
+						  color: var(--jb-menu-foreground); text-shadow: 0 1px 0 var(--jb-menu-background); 
 						  font-weight: 700;
 						  opacity: .2;
 				  }
@@ -189,13 +181,12 @@ jb.component('dialog.studioFloating', {
 				h('div',{class: 'jb-dialog-content-parent'},h(contentComp)),
 			]),
     css: `{ position: fixed;
-						background: #F9F9F9;
 						width: %$width%px;
 						min-height: %$height%px;
 						overflow: auto;
 						border-radius: 4px;
 						padding: 0 12px 12px 12px;
-						box-shadow: 0px 7px 8px -4px rgba(0, 0, 0, 0.2), 0px 13px 19px 2px rgba(0, 0, 0, 0.14), 0px 5px 24px 4px rgba(0, 0, 0, 0.12)
+						box-shadow: 0 0px 9px var(--jb-dropdown-shadow)
 				}
 				>.dialog-title { background: none; padding: 10px 5px; }
 				>.jb-dialog-content-parent { padding: 0; overflow-y: auto; overflow-x: hidden; }
@@ -205,9 +196,7 @@ jb.component('dialog.studioFloating', {
 						right: 4px; top: 4px;
 						font: 21px sans-serif;
 						border: none;
-						background: transparent;
-						color: #000;
-						text-shadow: 0 1px 0 #fff;
+						color: var(--jb-menu-foreground); text-shadow: 0 1px 0 var(--jb-menu-background); 
 						font-weight: 700;
 						opacity: .2;
 				}
@@ -217,9 +206,7 @@ jb.component('dialog.studioFloating', {
 						right: 24px; top: 4px;
 						font: 21px sans-serif;
 						border: none;
-						background: transparent;
-						color: #000;
-						text-shadow: 0 1px 0 #fff;
+						color: var(--jb-menu-foreground); text-shadow: 0 1px 0 var(--jb-menu-background); 
 						font-weight: 700;
 						opacity: .2;
 				}
