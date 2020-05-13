@@ -32,3 +32,4 @@ jb.component('mdcFixer.rgbas', {
       )
   )
 })
+

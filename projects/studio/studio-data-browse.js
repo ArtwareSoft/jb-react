@@ -1,3 +1,5 @@
+jb.ns('sourceEditor')
+
 jb.component('studio.watchableOrPassive', {
   params: [
     {id: 'path', as: 'string'}
@@ -47,48 +49,77 @@ jb.component('studio.openResource', {
   )
 })
 
-jb.component('studio.openNewResource', {
+jb.component('studio.newDataSource', {
+  type: 'control',
+  impl: group({
+    title: '',
+    layout: layout.vertical('11'),
+    style: group.div(),
+    controls: [
+      editableText({
+        title: 'name',
+        databind: '%$dialogData/name%',
+        style: editableText.mdcInput({}),
+        features: [validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid name')]
+      }),
+      picklist({
+        title: 'type',
+        databind: '%$dialogData/type%',
+        options: picklist.optionsByComma('text,array,card,collection'),
+        style: picklist.radio(),
+        features: feature.init(
+          action.if(
+            not('%$dialogData/type%'),
+            writeValue('%$dialogData/type%', 'collection')
+          )
+        )
+      }),
+      editableBoolean({
+        databind: '%$dialogData/watchable%',
+        style: editableBoolean.mdcCheckBox(),
+        title: 'watchable',
+        textForTrue: 'watchable',
+        textForFalse: 'passive'
+      }),
+      group({
+        layout: layout.flex({alignItems: 'baseline', spacing: '11'}),
+        controls: [
+          editableBoolean({
+            databind: '%$existingFile%',
+            style: editableBoolean.mdcSlideToggle(),
+            title: 'file',
+            textForTrue: 'existing file',
+            textForFalse: 'new file'
+          }),
+          picklist({
+            title: 'file',
+            databind: '%$dialogData/file%',
+            options: picklist.options({options: sourceEditor.filesOfProject()}),
+            style: picklist.mdcSelect({}),
+            features: [hidden(ctx => ctx.exp('%$existingFile%')), watchRef('%$existingFile%')]
+          })
+        ]
+      })
+    ],
+    features: [
+      css.padding({top: '14', left: '11'}),
+      css.width('600'),
+      css.height('200'),
+      variable({name: 'dialogData', value: firstSucceeding('%$dialogData%', obj())}),
+      variable({name: 'existingFile', watchable: true})
+    ]
+  })
+})
+
+jb.component('studio.openNewDataSource', {
   type: 'action',
-  params: [
-    {id: 'watchableOrPassive', as: 'string'}
-  ],
   impl: openDialog({
     style: dialog.dialogOkCancel(),
-    content: group({
-      title: '',
-      layout: layout.vertical('11'),
-      style: group.div(),
-      controls: [
-        group({
-          layout: layout.horizontal('11'),
-          controls: [
-            editableText({
-              title: 'name',
-              databind: '%$dialogData/name%',
-              style: editableText.mdcInput({}),
-              features: [validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid name')]
-            }),
-            picklist({
-              title: 'file',
-              databind: '%$dialogData/file%',
-              options: picklist.options({options: sourceEditor.filesOfProject()}),
-              style: picklist.mdcSelect({})
-            })
-          ]
-        }),
-        picklist({
-          title: 'type',
-          databind: '%$dialogData/type%',
-          options: picklist.optionsByComma('text,array,card,collection'),
-          style: picklist.radio(),
-          features: feature.init(writeValue('%$dialogData/type%', 'collection'))
-        })
-      ],
-      features: [css.padding({top: '14', left: '11'}), css.width('600'), css.height('200')]
-    }),
-    title: 'New %$watchableOrPassive% Data Source',
+    content: studio.newDataSource(),
+    title: 'New Data Source',
     onOK: runActions(
-      Var('compName', ctx => jb.macroName(ctx.exp('%$dialogData/name%'))),
+      Var('watchableOrPassive', If('%$dialogData/watchable%', 'watchable', 'passive')),
+      Var('name', studio.macroName('%$dialogData/name%')),
       If(
           not('%$dialogData/file%'),
           runActions(
@@ -107,14 +138,15 @@ jb.component('studio.openNewResource', {
                     data.case('%$dialogData/type%==array', '[]'),
                     data.case(
                       '%$dialogData/type%==card',
-                      '{ title: \"\", description: \"\", image: \"\"}'
+                      asIs({title: '', description: '', image: ''})
                     ),
                     data.case(
                       '%$dialogData/type%==collection',
-                      '[{ title: \"\", description: \"\", image: \"\"}]'
+                      asIs([{title: '', description: '', image: ''}])
                     )
                   ]
-                )
+                ),
+                ''
               )
           ),
           file: '%$dialogData/file%'
@@ -126,54 +158,6 @@ jb.component('studio.openNewResource', {
       dialogFeature.autoFocusOnFirstInput(),
       dialogFeature.maxZIndexOnClick(),
       dialogFeature.dragTitle()
-    ]
-  })
-})
-
-
-jb.component('studio.openNewResourceOld', {
-  params: [
-    {id: 'watchableOrPassive', as: 'string'}
-  ],
-  type: 'action',
-  impl: openDialog({
-    style: dialog.dialogOkCancel(),
-    content: group({
-      style: group.div(),
-      controls: [
-        editableText({
-          title: 'resource name',
-          databind: '%$name%',
-          style: editableText.mdcInput(),
-          features: [
-            feature.onEnter(dialog.closeContainingPopup()),
-            validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid name')
-          ]
-        })
-      ],
-      features: css.padding({top: '14', left: '11'})
-    }),
-    title: 'New %$watchableOrPassive% Data Source',
-    onOK: [
-      studio.newComp(
-        'dataResource.%$name%',
-        obj(
-          prop(
-              '%$watchableOrPassive%Data',
-              `put your data here.
-E.g.
-hello world
-[1,2,3]
-{ x: 7, y: 3}`
-            )
-        )
-      ),
-      studio.openResource('dataResource.%$name%~%$watchableOrPassive%Data', '%$name%')
-    ],
-    modal: true,
-    features: [
-      variable({name: 'name', watchable: true}),
-      dialogFeature.autoFocusOnFirstInput()
     ]
   })
 })
@@ -204,11 +188,7 @@ jb.component('studio.dataResourceMenu', {
           })
         })
       }),
-      menu.action({
-        title: 'New Watchable...',
-        action: studio.openNewResource('watchable')
-      }),
-      menu.action({title: 'New Passive...', action: studio.openNewResource('passive')})
+      menu.action('New ...', studio.openNewDataSource()),
     ]
   })
 })

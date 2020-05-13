@@ -186,13 +186,12 @@ class jBartStudio {
             return {};
         } else if (message.$ == 'openEditor') {
             const {fn, pos}  = message
-            vscode.workspace.openTextDocument(fn).then(doc => {
+            return vscode.workspace.openTextDocument(fn).then(doc => {
                 vscode.window.showTextDocument(doc,vscode.ViewColumn.One).then( editor =>{
                     editor.revealRange(new vscode.Range(...pos))
                     editor.selection = new vscode.Selection(pos[0], pos[1], pos[2], pos[3])
                 })
             })
-            message.path
         } else if (message.$ == 'installPackage') {
             const cp = require('child_process')
             message.module && cp.exec(`npm -i --save ${message.module}`)
@@ -205,6 +204,7 @@ class jBartStudio {
             if (!dirExists)
                 fs.mkdirSync(message.baseDir)
             Object.keys(message.files).forEach(f => fs.writeFileSync(message.baseDir+ '/' + f,message.files[f]) )
+            return `${Object.keys(message.files).length} files written`
         }
     }
 }

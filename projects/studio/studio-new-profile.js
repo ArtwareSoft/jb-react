@@ -480,7 +480,7 @@ jb.component('studio.newComp', {
   impl: (ctx, compName, compContent,file) => {
     const _jb = jb.studio.previewjb
     _jb.component(compName, _jb.frame.JSON.parse(JSON.stringify({...compContent, type: '_'})))
-    const path = (jb.frame.jbBaseProjUrl || '') + jb.studio.host.pathOfJsFile(ctx.exp('%$studio/projectFolder%'), file)
+    const path = (jb.frame.jbBaseProjUrl || '') + jb.studio.host.pathOfJsFile(ctx.exp('%$studio/project%'), file)
 //    const projectFile = file || jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=> x && x.indexOf(filePattern) != -1)[0]
     _jb.comps[compName][_jb.location] = [path,'new']
     // fake change to trigger refresh page and save

@@ -28,9 +28,9 @@ jb.component('helloWorld.main', {
     title: '',
     layout: layout.flex({}),
     controls: [
-      text('%$people/age%'),
+      text({text: '%$aaa/title%', title: ''}),
       button({
-        title: 'click me',
+        title: '%$aaa/title%',
         action: openDialog({
           style: dialog.default(),
           content: group({
@@ -47,10 +47,4 @@ jb.component('helloWorld.main', {
 })
 
 
-jb.component('dataResource.studio', {
-  watchableData: {
-    libToAdd: 'inner-html',
-    libsAsArray: ['common', 'ui-common', 'material', 'dragula', 'md-icons']
-  }
-})
 

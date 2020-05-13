@@ -1360,7 +1360,7 @@ jb.component('prop', {
   params: [
     {id: 'title', as: 'string', mandatory: true},
     {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: ''},
-    {id: 'type', as: 'string', options: 'string,number,boolean,object,array', defaultValue: 'string'}
+    {id: 'type', as: 'string', options: 'string,number,boolean,object,array,asIs', defaultValue: 'asIs'}
   ],
   impl: ctx => ctx.params
 })
@@ -4962,8 +4962,7 @@ jb.component('hidden', {
   ],
   impl: (ctx,showCondition) => ({
     templateModifier: (vdom,cmp) => {
-      if (!jb.toboolean(showCondition(cmp.ctx)))
-        jb.path(vdom,['attributes','style','display'],'none')
+      jb.path(vdom,['attributes','style','display'],jb.toboolean(showCondition(cmp.ctx)) ? 'inherit' : 'none')
       return vdom
     }
   })
@@ -5164,6 +5163,14 @@ jb.component('focusOnFirstElement', {
         const elem = document.querySelector(selector)
         elem && jb.ui.focus(elem,'focus-on-first-element',ctx)
     })
+})
+
+jb.component('refreshIfNotWatchable', {
+  type: 'action',
+  params: [
+    {id: 'data' }
+  ],
+  impl: (ctx, data) => !jb.isWatchable(data) && ctx.vars.cmp.refresh()
 })
 
 jb.component('feature.byCondition', {
@@ -6198,9 +6205,12 @@ jb.component('editableBoolean', {
   impl: ctx => jb.ui.ctrl(ctx, features(
     calcProp('text',data.if('%$$model/databind%','%$$model/textForTrue%','%$$model/textForFalse%' )),
     watchRef({ref: '%$$model/databind%', allowSelfRefresh: true}),
-    defHandler('toggle', ctx => ctx.run(writeValue('%$$model/databind%',not('%$$model/databind%')))),
-    defHandler('toggleByKey', (ctx,{ev}) => ev.keyCode != 27 && ctx.run(writeValue('%$$model/databind%',not('%$$model/databind%')))),
-    defHandler('setChecked', writeValue('%$$model/databind%','true')),
+    defHandler('toggle', runActions(
+        writeValue('%$$model/databind%',not('%$$model/databind%')),
+        refreshIfNotWatchable('%$$model/databind%')
+    )),
+    defHandler('toggleByKey', (ctx,{cmp, ev}) => 
+      ev.keyCode != 27 && jb.ui.runActionOfElem(cmp.base,'toggle',ev))
 		))
 })
 ;
@@ -9627,13 +9637,13 @@ jb.component('editableBoolean.mdcSlideToggle', {
     {id: 'width', as: 'string', defaultValue: 80}
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{class: 'mdc-switch'},[
-      h('div',{class: 'mdc-switch__track'}),
-      h('div',{class: 'mdc-switch__thumb-underlay'},[
-        h('div',{class: 'mdc-switch__thumb'},
-          h('input', { type: 'checkbox', role: 'switch', class: 'mdc-switch__native-control', id: 'switch_' + state.fieldId,
-            checked: state.databind, onchange: 'toggle', onkeyup: 'toggleByKey' })),
-      ]),
+    template: (cmp,state,h) => h('div#mdc-switch',{class: state.databind ? 'mdc-switch--checked': '' },[
+      h('div#mdc-switch__track'),
+      h('div#mdc-switch__thumb-underlay',{},
+        h('div#mdc-switch__thumb',{},
+          h('input#mdc-switch__native-control', { type: 'checkbox', role: 'switch', id: 'switch_' + state.fieldId,
+            checked: state.databind, onchange: 'toggle', onkeyup: 'toggleByKey' }
+      ))),
       h('label',{for: 'switch_' + state.fieldId},state.text)
     ]),
     css: ctx => jb.ui.propWithUnits('width',ctx.params.width),
@@ -9641,7 +9651,37 @@ jb.component('editableBoolean.mdcSlideToggle', {
   })
 })
 
-
+jb.component('editableBoolean.mdcCheckBox', {
+  type: 'editable-boolean.style',
+  params: [
+    {id: 'width', as: 'string', defaultValue: 80}
+  ],
+  impl: customStyle({
+    template: (cmp,state,h) => h('div#mdc-form-field', {},[
+        h('div#mdc-checkbox',{}, [
+          h('input#mdc-checkbox__native-control', { type: 'checkbox', id: 'checkbox_' + state.fieldId,
+            checked: state.databind, onchange: 'toggle', onkeyup: 'toggleByKey' }),
+          h('div#mdc-checkbox__background',{}, [
+            h('svg#mdc-checkbox__checkmark',{viewBox: '0 0 24 24'},
+              h('path#mdc-checkbox__checkmark-path', { fill: 'none', d: 'M1.73,12.91 8.1,19.28 22.79,4.59' }
+            )),
+            h('div#mdc-checkbox__mixedmark')
+          ]),
+          h('div#mdc-checkbox__ripple')
+        ]),
+        h('label',{for: 'checkbox_' + state.fieldId},state.text)
+    ]),
+    css: ctx => jb.ui.propWithUnits('width',ctx.params.width),
+    features: [
+      field.databind(), 
+      interactiveProp('dummy',(ctx,{cmp}) => {
+        // svg refresh bug (maybe a jb-react bug)
+        const bck = cmp.base.querySelector('.mdc-checkbox__background')
+        bck.outerHTML = ''+ bck.outerHTML
+      })
+    ]
+  })
+})
 ;
 
 jb.component('prettyPrint', {

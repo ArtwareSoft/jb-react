@@ -92,13 +92,13 @@ jb.component('editableBoolean.mdcSlideToggle', {
     {id: 'width', as: 'string', defaultValue: 80}
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{class: 'mdc-switch'},[
-      h('div',{class: 'mdc-switch__track'}),
-      h('div',{class: 'mdc-switch__thumb-underlay'},[
-        h('div',{class: 'mdc-switch__thumb'},
-          h('input', { type: 'checkbox', role: 'switch', class: 'mdc-switch__native-control', id: 'switch_' + state.fieldId,
-            checked: state.databind, onchange: 'toggle', onkeyup: 'toggleByKey' })),
-      ]),
+    template: (cmp,state,h) => h('div#mdc-switch',{class: state.databind ? 'mdc-switch--checked': '' },[
+      h('div#mdc-switch__track'),
+      h('div#mdc-switch__thumb-underlay',{},
+        h('div#mdc-switch__thumb',{},
+          h('input#mdc-switch__native-control', { type: 'checkbox', role: 'switch', id: 'switch_' + state.fieldId,
+            checked: state.databind, onchange: 'toggle', onkeyup: 'toggleByKey' }
+      ))),
       h('label',{for: 'switch_' + state.fieldId},state.text)
     ]),
     css: ctx => jb.ui.propWithUnits('width',ctx.params.width),
@@ -106,4 +106,34 @@ jb.component('editableBoolean.mdcSlideToggle', {
   })
 })
 
-
+jb.component('editableBoolean.mdcCheckBox', {
+  type: 'editable-boolean.style',
+  params: [
+    {id: 'width', as: 'string', defaultValue: 80}
+  ],
+  impl: customStyle({
+    template: (cmp,state,h) => h('div#mdc-form-field', {},[
+        h('div#mdc-checkbox',{}, [
+          h('input#mdc-checkbox__native-control', { type: 'checkbox', id: 'checkbox_' + state.fieldId,
+            checked: state.databind, onchange: 'toggle', onkeyup: 'toggleByKey' }),
+          h('div#mdc-checkbox__background',{}, [
+            h('svg#mdc-checkbox__checkmark',{viewBox: '0 0 24 24'},
+              h('path#mdc-checkbox__checkmark-path', { fill: 'none', d: 'M1.73,12.91 8.1,19.28 22.79,4.59' }
+            )),
+            h('div#mdc-checkbox__mixedmark')
+          ]),
+          h('div#mdc-checkbox__ripple')
+        ]),
+        h('label',{for: 'checkbox_' + state.fieldId},state.text)
+    ]),
+    css: ctx => jb.ui.propWithUnits('width',ctx.params.width),
+    features: [
+      field.databind(), 
+      interactiveProp('dummy',(ctx,{cmp}) => {
+        // svg refresh bug (maybe a jb-react bug)
+        const bck = cmp.base.querySelector('.mdc-checkbox__background')
+        bck.outerHTML = ''+ bck.outerHTML
+      })
+    ]
+  })
+})

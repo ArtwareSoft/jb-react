@@ -33,7 +33,7 @@ jb.component('studio.initAutoSave', {
   impl: ctx => {
     if (!jb.frame.jbInvscode || jb.studio.autoSaveInitialized) return
     jb.studio.autoSaveInitialized = true
-    const {pipe, catchError,subscribe,concatMap,doPromise,fromPromise,fromIter,map,mapPromise} = jb.callbag
+    const {pipe, subscribe} = jb.callbag
     const messages = []
     const st = jb.studio
 
@@ -50,31 +50,8 @@ jb.component('studio.initAutoSave', {
           messages.push({ text: 'error saving: ' + (typeof e == 'string' ? e : e.message || e.e), error: true })
           jb.logException(e,'error while saving ' + e.id,ctx) || []
         }
-      }),
+      })
     )
-
-//     return pipe(
-//       st.scriptChange,
-//       concatMap(e => pipe(
-//         fromIter([e]),
-//         map(e=>({...e, compId: e.path[0]})), 
-//         map(e=>({...e, comp: st.previewjb.comps[e.compId]})), 
-//         map(e=>({...e, loc: e.comp[jb.location]})),
-//         map(e=>({...e, fn: st.host.locationToPath(e.loc[0])})),
-
-//         mapPromise(e => st.host.getFile(e.fn).then(fileContent=>({...e, fileContent}))),
-//         catchError(e => { console.log(e); return {} }),
-
-// //        concatMap(e => fromPromise(st.host.getFile(e.fn).then(fileContent=>({...e, fileContent})))),
-//         map(e=>({...e, edits: [e.fileContent && deltaFileContent(e.fileContent,e)].filter(x=>x) })),
-//         concatMap(e => e.fileContent ? fromPromise(st.host.saveDelta(e.fn,e.edits).then(()=>e)) : [e]),
-//       )),
-// 			catchError(e=> {
-//         messages.push({ text: 'error saving: ' + (typeof e == 'string' ? e : e.message || e.e), error: true })
-// 				jb.logException(e,'error while saving ' + e.id,ctx) || []
-//       }),
-//       subscribe(()=>{})
-//     )
   }
 })
 
@@ -82,7 +59,7 @@ jb.component('studio.saveProjectSettings', {
   type: 'action,has-side-effects',
   impl: ctx => {
     if (!ctx.exp('%$studio/projectFolder%')) return
-    const path = st.host.pathOfJsFile(ctx.exp('%$studio/projectFolder%'), 'index.html')
+    const path = (jb.frame.jbBaseProjUrl || '') + st.host.pathOfJsFile(ctx.exp('%$studio/projectFolder%'), 'index.html')
     return st.host.getFile(path).then( fileContent =>
       st.host.saveFile(path, newIndexHtmlContent(fileContent, ctx.exp('%$studio/projectSettings%'))))
       .then(()=>st.showMultiMessages([{text: 'index.html saved with new settings'}]))
@@ -162,17 +139,5 @@ function deltaFileContent(fileContent, {compId,comp}) {
     return {firstDiff: i, common, oldText: oldText.slice(0,-j+1), newText: newText.slice(0,-j+1)}
   }
 }
-
-jb.component('studio.fileAfterChanges', {
-  params: [
-    {id: 'fileName', as: 'string'},
-    {id: 'fileContent', as: 'string'}
-  ],
-  impl: (ctx, fileName, fileContent) => {
-    const location = jb.location
-    const comps = st.changedComps().filter(e=>e[1][location] && e[1][location][0].indexOf(fileName) != -1)
-    return newFileContent(fileContent, comps)
-  }
-})
 
 })();

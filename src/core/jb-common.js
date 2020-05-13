@@ -455,7 +455,7 @@ jb.component('prop', {
   params: [
     {id: 'title', as: 'string', mandatory: true},
     {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: ''},
-    {id: 'type', as: 'string', options: 'string,number,boolean,object,array', defaultValue: 'string'}
+    {id: 'type', as: 'string', options: 'string,number,boolean,object,array,asIs', defaultValue: 'asIs'}
   ],
   impl: ctx => ctx.params
 })

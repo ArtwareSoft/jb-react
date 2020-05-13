@@ -1,11 +1,10 @@
 jb.component('studio.newProject', {
   params: [
     {id: 'project', as: 'string'},
-    {id: 'baseDir', as: 'string'}
+    {id: 'type', as: 'string', options: 'material,puppeteer'}
   ],
   impl: obj(
     prop('project','%$project%'),
-    prop('baseDir','%$baseDir%'),
     prop('files', obj(prop('index.html', `<!DOCTYPE html>
 <html>
 <head>
@@ -86,11 +85,17 @@ jb.component('studio.createProjectFile', {
       override: true,
       project: ctx.exp('%$studio/project%'), 
       files: {[fileName]: ''}, 
-      baseDir: ctx.exp('%$studio/projectFolder%')
+      baseDir: ctx.run(studio.projectBaseDir())
     }),
     addToArray('%$studio/projectSettings/jsFiles%','%$fileName%'),
     studio.saveProjectSettings()
   )
+})
+
+jb.component('studio.projectBaseDir', {
+  impl: ctx => st.host.locationToPath(
+      (jb.frame.jbBaseProjUrl || '') + jb.studio.host.pathOfJsFile(ctx.exp('%$studio/project%'), ''))
+  .split('/').slice(0,-1).join('/')
 })
 
 jb.component('studio.saveNewProject', {
@@ -99,8 +104,8 @@ jb.component('studio.saveNewProject', {
     { id: 'project', as: 'string' }
   ],
   impl: (ctx,project) => {
-    const {files, baseDir} = ctx.run(studio.newProject(()=> project))
-    return jb.studio.host.createDirectoryWithFiles({project, files, baseDir})
+    const {files} = ctx.run(studio.newProject(()=> project))
+    return jb.studio.host.createDirectoryWithFiles({project, files, baseDir: ctx.run(studio.projectBaseDir()) })
         .then(r => r.json())
         .catch(e => {
           jb.studio.message(`error saving project ${project}: ` + (e && e.desc));

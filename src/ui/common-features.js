@@ -296,8 +296,7 @@ jb.component('hidden', {
   ],
   impl: (ctx,showCondition) => ({
     templateModifier: (vdom,cmp) => {
-      if (!jb.toboolean(showCondition(cmp.ctx)))
-        jb.path(vdom,['attributes','style','display'],'none')
+      jb.path(vdom,['attributes','style','display'],jb.toboolean(showCondition(cmp.ctx)) ? 'inherit' : 'none')
       return vdom
     }
   })
@@ -498,6 +497,14 @@ jb.component('focusOnFirstElement', {
         const elem = document.querySelector(selector)
         elem && jb.ui.focus(elem,'focus-on-first-element',ctx)
     })
+})
+
+jb.component('refreshIfNotWatchable', {
+  type: 'action',
+  params: [
+    {id: 'data' }
+  ],
+  impl: (ctx, data) => !jb.isWatchable(data) && ctx.vars.cmp.refresh()
 })
 
 jb.component('feature.byCondition', {

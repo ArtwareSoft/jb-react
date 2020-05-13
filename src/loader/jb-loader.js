@@ -161,7 +161,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       'jison': [ 'dist/jb-jison.js', 'src/misc/jison.js' ],
       'parsing': [ 'src/misc/parsing.js' ],
       studio: [
-        'dist/material.js', 'src/ui/watchable/text-editor.js', 'dist/vanilla-picker.js',
+        'dist/material.js', 'src/ui/watchable/text-editor.js',
         'src/misc/parsing.js', 'src/ui/styles/codemirror-styles.js',
         'styles', 'path','utils', 'preview','popups','url','model-components', 'completion', 'undo','tgp-model', 'new-profile',
         'suggestions', 'properties','jb-editor-styles','edit-source','jb-editor','pick','h-to-jsx','style-editor',

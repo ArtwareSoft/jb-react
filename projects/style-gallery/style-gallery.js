@@ -1,12 +1,5 @@
 jb.ns('style-gallery')
 
-jb.component('person',{ watchableData : {
-  name: "Homer Simpson",
-  male: true,
-  isMale: 'yes',
-  age: 42
-}})
-
 jb.component('galleryMultiChoice',{ watchableData : {
   result: ["Homer Simpson"],
 }})
@@ -45,6 +38,7 @@ const variations = { button: { prop: 'raised', values: [true,false] }}
         controls: [{$: ctrl,
           ... (ctrl == 'editableNumber' ? { databind: '%$person/age%' }
             : ctrl == 'multiSelect' ? { databind: '%$galleryMultiChoice/result%' }
+            : ctrl == 'editableBoolean' ? { databind: '%$person/male%' }
             : { databind: '%$person/name%' } ),
           title: 'title',
           text: 'hello world',
@@ -69,6 +63,8 @@ const variations = { button: { prop: 'raised', values: [true,false] }}
           url: 'https://freesvg.org/img/UN-CONSTRUCTION-2.png',
           width: 100,
           height: 100,
+          textForTrue: 'male',
+          textForFalse: 'female',
           features: [
             feature.icon({icon: 'Account', position: 'pre', type: 'mdi'}),
             feature.icon({icon: 'delete', position: 'post', type: 'mdc'}),
@@ -98,10 +94,3 @@ jb.component('dataResource.people', {
     {name: 'Bart Simpson', age: 12, male: true}
   ]
 })
-jb.component('dataResource.people',{ watchableData : [
-  { "name": "Homer Simpson" ,age: 42 , male: true},
-  { "name": "Marge Simpson" ,age: 38 , male: false},
-  { "name": "Bart Simpson"  ,age: 12 , male: true}
-]});
-
-
