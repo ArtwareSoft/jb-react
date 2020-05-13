@@ -31,7 +31,6 @@ class jBartStudio {
         this.startCommand = startCommand
         panel.webview.html = this.getHtmlForWebview(panel.webview)
         panel.onDidDispose(() => this.dispose(), null, this._disposables)
-//        panel.onDidChangeViewState(e => { if (panel.visible) { } }, null, this._disposables)
         const fileSystemWatcher = workspace.createFileSystemWatcher("**/*.{ts,js}")
         fileSystemWatcher.onDidChange(() => {
             const editor = vscode.window.activeTextEditor
@@ -41,10 +40,10 @@ class jBartStudio {
             })
         })
         panel.webview.onDidReceiveMessage(message => {
-            Promise.resolve(this.processMessage(message)).then(result => {
-                if (message.messageID)
-                    this._panel.webview.postMessage({ result, messageID: message.messageID })
-            })
+            Promise.resolve(this.processMessage(message)).then(result =>
+                message.messageID && this._panel.webview.postMessage({ result, messageID: message.messageID })
+            , error => 
+                this._panel.webview.postMessage({ isError: true, error, messageID: message && message.messageID }))
         }, null, this._disposables)
     }
     runCommand(command) {
@@ -99,7 +98,7 @@ class jBartStudio {
         <link rel="stylesheet" type="text/css" href="${jbModuleUrl}/bin/studio/css/studio-all.css"/>`
 
         const studioDev = `<script type="text/javascript" src="${jbBaseProjUrl}/src/loader/jb-loader.js"
-        modules="common,ui-common,material,ui-tree,dragula,codemirror,pretty-print,studio,history,animate,md-icons,fuse" prefix1="!st!"></script>
+        modules="common,ui-common,material,ui-tree,dragula,codemirror,pretty-print,studio,history,animate,md-icons,fuse" suffix="?studio"></script>
     <link rel="stylesheet" type="text/css" href="${jbBaseProjUrl}/projects/studio/css/studio.css"/>`
         const jbStartCommand = this.startCommand ? JSON.stringify({...this.startCommand, activeEditorPosition: this.calcActiveEditorPosition()}) : "''"
         const jbWorkspaceState = JSON.stringify(this.context.workspaceState.get('jbartStudio') || {})
@@ -199,6 +198,13 @@ class jBartStudio {
             message.module && cp.exec(`npm -i --save ${message.module}`)
         } else if (message.$ == 'storeWorkspaceState') {
             this.context.workspaceState.update('jbartStudio', message.state)
+        } else if (message.$ == 'createDirectoryWithFiles') {
+            const dirExists = fs.existsSync(message.baseDir)
+            if (!message.override && dirExists)
+                throw 'Project already exists'
+            if (!dirExists)
+                fs.mkdirSync(message.baseDir)
+            Object.keys(message.files).forEach(f => fs.writeFileSync(message.baseDir+ '/' + f,message.files[f]) )
         }
     }
 }

@@ -136,7 +136,7 @@ jb.studio.pageChange = pipe(jb.ui.resourceChange(), filter(e=>e.path.join('/') =
 jb.component('studio.previewWidget', {
   type: 'control',
   params: [
-    {id: 'style', type: 'preview-style', dynamic: true, defaultValue: studio.previewWidgetImpl()},
+    {id: 'style', type: 'preview-style', dynamic: true, defaultValue: studio.previewWidgetImpl()}
   ],
   impl: ctx => jb.ui.ctrl(ctx, features(
       calcProp('width','%$studio/preview/width%'),
@@ -149,7 +149,7 @@ jb.component('studio.previewWidget', {
             const project = ctx.exp('%$studio/project%')
             document.title = `${project} with jBart`;
             return st.projectHosts[host].fetchProject(ctx.exp('%$queryParams/hostProjectId%'),project)
-//              .then(x=>jb.delay(5000).then(()=>x))
+//              .then(x=>jb.delay(2000).then(()=>{debugger; return x}))
               .then(projectSettings => {
                 jb.log('loadingPreviewProject',[projectSettings])
                 jb.exec(writeValue('%$studio/project%', projectSettings.project))
@@ -159,6 +159,7 @@ jb.component('studio.previewWidget', {
             })
           }
         })
+
   ))
 })
 

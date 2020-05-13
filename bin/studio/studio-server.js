@@ -178,8 +178,11 @@ const op_post_handlers = {
         if (!clientReq)
            return endWithFailure(res,'Can not parse json request');
         const projDir = clientReq.baseDir || projectDirectory(clientReq.project)
-        if (fs.existsSync(projDir))
+        const dirExists = fs.existsSync(projDir)
+        if (!clientReq.override && dirExists)
           return endWithFailure(res,'Project already exists');
+        if (!dirExists)
+            fs.mkdirSync(projDir)
 
         fs.mkdirSync(projDir);
         Object.keys(clientReq.files).forEach(f=>

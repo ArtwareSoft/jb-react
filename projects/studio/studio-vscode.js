@@ -9,7 +9,7 @@ jb.component('studio.initVscodeAdapter', {
         if (! jb.frame.jbInvscode || jb.VscodeAdapterInitialized) return
         jb.VscodeAdapterInitialized = true
         const vscode = jb.studio.vsCodeApi
-        const params = ['project','page','profile_path','vscode']
+        const params = ['project','page','profile_path','vscode','projectFolder']
 
         const {pipe, subscribe,create,filter} = jb.callbag
         jb.studio.vscodeEm = create(obs=> jb.frame.addEventListener('message', e => obs(e)))
@@ -39,16 +39,25 @@ jb.component('studio.initVscodeAdapter', {
             console.log('get response', message.messageID, message)
             if (message && message.messageID) {
                 const req = promises[message.messageID].req // for debug
-                promises[message.messageID].resolve(message.result)
+                if (message.isError)
+                    promises[message.messageID].reject(message.error)
+                else
+                    promises[message.messageID].resolve(message.result)
+                clearTimeout(promises[message.messageID].timer)
                 delete promises[message.messageID]
             }
             if (message.$)
                 ctx.run(message)
         })
 
-        jb.studio.vscodeService = req => new Promise((resolve,reject) => {
+        jb.studio.vscodeService = (req,timeout) => new Promise((resolve,reject) => {
+            timeout = timeout || 3000
             messageID++
-            promises[messageID] = {resolve,reject,req}
+            const timer = setTimeout(() => {
+                promises[messageID] && reject('timeout')
+                jb.logError('vscodeService timeout',promises[messageID])
+            }, timeout);
+            promises[messageID] = {resolve,reject,req, timer}
             console.log('send req ',messageID,req)
             vscode.postMessage({...req, messageID})
         })

@@ -379,3 +379,21 @@ jb.component('dataTest.callbag.subjectReplay', {
     expectedResult: equals('1')
   })
 })
+
+jb.component('dataTest.callbag.promiseRejection', {
+  impl: dataTest({
+    calculate: rx.pipe(rx.fromPromise( () => new Promise((res,rej) => jb.delay(1).then(()=>rej('err'))) ), rx.catchError('%%1') ),
+    expectedResult: equals('err1')
+  })
+})
+
+jb.component('dataTest.callbag.promiseRejectionInDoPromise', {
+  impl: dataTest({
+    calculate: rx.pipe(
+      rx.fromIter([1]),
+      rx.doPromise( () => new Promise((res,rej) => jb.delay(1).then(()=>rej('err'))) ), 
+      rx.catchError('%%1')
+    ),
+    expectedResult: equals('err1')
+  })
+})

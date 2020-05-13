@@ -234,19 +234,27 @@ jb.component('studio.profileValueAsText', {
   impl: (ctx,path) => ({
 		$jb_path: () => path.split('~'),
 			$jb_val: function(value) {
-				if (typeof value == 'undefined') {
-					var val = st.valOfPath(path);
+				if (value == undefined) {
+					const val = st.valOfPath(path);
 					if (val == null)
 						return '';
 					if (st.isPrimitiveValue(val))
-						return ''+val;
+						return '' + val
 					if (st.compNameOfPath(path))
-						return '=' + st.compNameOfPath(path);
+						return '=' + st.compNameOfPath(path)
 				}
 				else if (value.indexOf('=') != 0)
-					st.writeValueOfPath(path, value,ctx);
-			}
-		})
+					st.writeValueOfPath(path, valToWrite(value),ctx);
+
+        function valToWrite(val) {
+          const type = (st.paramDef(path) || {}).as
+          if (type == 'number' && Number(val)) return +val
+          if (type == 'boolean')
+            return val === 'true' ? true : val === 'false' ? false : '' + val
+          return '' + val
+        }
+      }
+    })
 })
 
 jb.component('studio.insertControl', {

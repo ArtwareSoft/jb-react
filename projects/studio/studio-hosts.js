@@ -15,8 +15,8 @@ const devHost = {
     pathOfDistFolder: () => '/dist',
 
     // new project
-    createProject: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
-        Object.assign(request,{baseDir: `projects/${request.project}` })) }),
+    createDirectoryWithFiles: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, 
+        body: JSON.stringify({...request,baseDir: `projects/${request.project}` }) }),
     // goto project
     projectUrlInStudio: project => `/project/studio/${project}`,
     // preview
@@ -33,7 +33,7 @@ const vscodeDevHost = {
     locationToPath: path => decodeURIComponent(path.split('//file//').pop()).replace(/\\/g,'/'),
     saveDelta: (path, edits) => jb.studio.vscodeService({$: 'saveDelta', path, edits}),
     saveFile: (path, contents) => jb.studio.vscodeService({$: 'saveFile', path, contents}),
-    createProject: request => jb.studio.vscodeService({$: 'createProject', request}),
+    createDirectoryWithFiles: request => jb.studio.vscodeService({$: 'createDirectoryWithFiles', ...request}),
     pathOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
     projectUrlInStudio: project => `/project/studio/${project}`,
     pathOfDistFolder: () => `${jb.frame.jbBaseProjUrl}/dist`,
@@ -47,7 +47,7 @@ const vscodeUserHost = Object.assign({},vscodeDevHost,{
 })
 
 const userLocalHost = Object.assign({},devHost,{
-    createProject: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
+    createDirectoryWithFiles: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
         Object.assign(request,{baseDir: request.baseDir || request.project })) }),
     locationToPath: path => path.replace(/^[0-9]*\//,'').replace(/^projects\//,''),
     pathOfJsFile: (project,fn,baseDir) => baseDir == './' ? fn : `/${project}/${fn}`,
@@ -60,7 +60,7 @@ const cloudHost = {
     settings: () => Promise.resolve(({})),
     getFile: path => fetch(`https://artwaresoft.github.io/jb-react/${path}`).then(res=>res.text()),
     locationToPath: path => path.replace(/^[0-9]*\//,''),
-    createProject: request => jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files'}}),
+    createDirectoryWithFiles: request => jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files'}}),
     pathOfJsFile: (project,fn) => fn,
     projectUrlInStudio: project => ``,
     canNotSave: true,
@@ -70,7 +70,7 @@ const cloudHost = {
 
 st.chooseHostByUrl = entryUrl => {
     entryUrl = entryUrl || ''
-    st.host = jb.frame.jbInvscode ? jbModuleUrl ? vscodeUserHost : vscodeDevHost
+    st.host = jb.frame.jbInvscode ? (jbModuleUrl ? vscodeUserHost : vscodeDevHost)
         : entryUrl.match(/localhost:[0-9]*\/project\/studio/) ?
             devHost
         : entryUrl.match(/studio-cloud/) ?

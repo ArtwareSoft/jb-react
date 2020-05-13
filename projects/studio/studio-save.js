@@ -33,30 +33,48 @@ jb.component('studio.initAutoSave', {
   impl: ctx => {
     if (!jb.frame.jbInvscode || jb.studio.autoSaveInitialized) return
     jb.studio.autoSaveInitialized = true
-    const {pipe, catchError,subscribe,concatMap,fromPromise,fromIter,map,mapPromise} = jb.callbag
+    const {pipe, catchError,subscribe,concatMap,doPromise,fromPromise,fromIter,map,mapPromise} = jb.callbag
     const messages = []
     const st = jb.studio
 
-    return pipe(
-      st.scriptChange,
-      concatMap(e => pipe(
-        fromIter([e]),
-        map(e=>({...e, compId: e.path[0]})), 
-        map(e=>({...e, comp: st.previewjb.comps[e.compId]})), 
-        map(e=>({...e, loc: e.comp[jb.location]})),
-        map(e=>({...e, fn: st.host.locationToPath(e.loc[0])})),
-
-        mapPromise(e => st.host.getFile(e.fn).then(fileContent=>({...e, fileContent}))),
-//        concatMap(e => fromPromise(st.host.getFile(e.fn).then(fileContent=>({...e, fileContent})))),
-        map(e=>({...e, edits: [e.fileContent && deltaFileContent(e.fileContent,e)].filter(x=>x) })),
-        concatMap(e => e.fileContent ? fromPromise(st.host.saveDelta(e.fn,e.edits).then(()=>e)) : [e]),
-      )),
-			catchError(e=> {
-        messages.push({ text: 'error saving: ' + (typeof e == 'string' ? e : e.message || e.e), error: true })
-				jb.logException(e,'error while saving ' + e.id,ctx) || []
+    pipe(st.scriptChange, subscribe(async e => {
+        try {
+          const compId = e.path[0]
+          const comp = st.previewjb.comps[compId]
+          const fn = st.host.locationToPath(comp[jb.location][0])
+          const fileContent = await st.host.getFile(fn)
+          if (!fileContent) return
+          const edits = [deltaFileContent(fileContent, {compId,comp})].filter(x=>x)
+          await st.host.saveDelta(fn,edits)
+        } catch (e) {
+          messages.push({ text: 'error saving: ' + (typeof e == 'string' ? e : e.message || e.e), error: true })
+          jb.logException(e,'error while saving ' + e.id,ctx) || []
+        }
       }),
-      subscribe(()=>{})
     )
+
+//     return pipe(
+//       st.scriptChange,
+//       concatMap(e => pipe(
+//         fromIter([e]),
+//         map(e=>({...e, compId: e.path[0]})), 
+//         map(e=>({...e, comp: st.previewjb.comps[e.compId]})), 
+//         map(e=>({...e, loc: e.comp[jb.location]})),
+//         map(e=>({...e, fn: st.host.locationToPath(e.loc[0])})),
+
+//         mapPromise(e => st.host.getFile(e.fn).then(fileContent=>({...e, fileContent}))),
+//         catchError(e => { console.log(e); return {} }),
+
+// //        concatMap(e => fromPromise(st.host.getFile(e.fn).then(fileContent=>({...e, fileContent})))),
+//         map(e=>({...e, edits: [e.fileContent && deltaFileContent(e.fileContent,e)].filter(x=>x) })),
+//         concatMap(e => e.fileContent ? fromPromise(st.host.saveDelta(e.fn,e.edits).then(()=>e)) : [e]),
+//       )),
+// 			catchError(e=> {
+//         messages.push({ text: 'error saving: ' + (typeof e == 'string' ? e : e.message || e.e), error: true })
+// 				jb.logException(e,'error while saving ' + e.id,ctx) || []
+//       }),
+//       subscribe(()=>{})
+//     )
   }
 })
 
@@ -114,12 +132,17 @@ function newFileContent(fileContent, comps) {
 function deltaFileContent(fileContent, {compId,comp}) {
   const lines = fileContent.split('\n').map(x=>x.replace(/[\s]*$/,''))
   const lineOfComp = lines.findIndex(line=> line.indexOf(`jb.component('${compId}'`) == 0)
+  const newCompLines = comp ? jb.prettyPrintComp(compId,comp,{initialPath: compId, comps: st.previewjb.comps}).split('\n') : []
+  const justCreatedComp = lineOfComp == -1 && comp[jb.location][1] == 'new'
+  if (justCreatedComp) {
+    comp[jb.location][1] == lines.length
+    return { range: {start: { line: lines.length, character: 0}, end: {line: lines.length, character: 0} } , newText: '\n\n' + newCompLines.join('\n') }
+  }
   const linesFromComp = lines.slice(lineOfComp)
   const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
   const nextjbComponent = lines.slice(lineOfComp+1).findIndex(line => line.match(/^jb.component/))
   if (nextjbComponent != -1 && nextjbComponent < compLastLine)
     return jb.logError(['can not find end of component', compId, linesFromComp])
-  const newCompLines = comp ? jb.prettyPrintComp(compId,comp,{initialPath: compId, comps: st.previewjb.comps}).split('\n') : []
   const oldlines = linesFromComp.slice(0,compLastLine+1)
   const {common, oldText, newText} = calcDiff(oldlines.join('\n'), newCompLines.join('\n'))
   const commonStartSplit = common.split('\n')

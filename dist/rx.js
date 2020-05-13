@@ -259,7 +259,7 @@ jb.component('rx.catchError', {
     params: [
       {id: 'handler', type: 'action', dynamic: true, mandatory: true },
     ],
-    impl: (ctx,handler) => jb.callbag.catchError(ctx2 => handler(ctx2))
+    impl: (ctx,handler) => jb.callbag.catchError(err => handler(ctx.ctx({data: err, profile: '', forcePath: ''})))
 })
 
 jb.component('rx.debounceTime', {

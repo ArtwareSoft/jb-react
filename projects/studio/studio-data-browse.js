@@ -48,6 +48,90 @@ jb.component('studio.openResource', {
 })
 
 jb.component('studio.openNewResource', {
+  type: 'action',
+  params: [
+    {id: 'watchableOrPassive', as: 'string'}
+  ],
+  impl: openDialog({
+    style: dialog.dialogOkCancel(),
+    content: group({
+      title: '',
+      layout: layout.vertical('11'),
+      style: group.div(),
+      controls: [
+        group({
+          layout: layout.horizontal('11'),
+          controls: [
+            editableText({
+              title: 'name',
+              databind: '%$dialogData/name%',
+              style: editableText.mdcInput({}),
+              features: [validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid name')]
+            }),
+            picklist({
+              title: 'file',
+              databind: '%$dialogData/file%',
+              options: picklist.options({options: sourceEditor.filesOfProject()}),
+              style: picklist.mdcSelect({})
+            })
+          ]
+        }),
+        picklist({
+          title: 'type',
+          databind: '%$dialogData/type%',
+          options: picklist.optionsByComma('text,array,card,collection'),
+          style: picklist.radio(),
+          features: feature.init(writeValue('%$dialogData/type%', 'collection'))
+        })
+      ],
+      features: [css.padding({top: '14', left: '11'}), css.width('600'), css.height('200')]
+    }),
+    title: 'New %$watchableOrPassive% Data Source',
+    onOK: runActions(
+      Var('compName', ctx => jb.macroName(ctx.exp('%$dialogData/name%'))),
+      If(
+          not('%$dialogData/file%'),
+          runActions(
+            writeValue('%$dialogData/file%', '%$dialogData/name%.js'),
+            studio.createProjectFile('%$dialogData/name%.js')
+          )
+        ),
+      studio.newComp({
+          compName: 'dataResource.%$name%',
+          compContent: obj(
+            prop(
+                '%$watchableOrPassive%Data',
+                data.switch(
+                  [
+                    data.case('%$dialogData/type%==text', ''),
+                    data.case('%$dialogData/type%==array', '[]'),
+                    data.case(
+                      '%$dialogData/type%==card',
+                      '{ title: \"\", description: \"\", image: \"\"}'
+                    ),
+                    data.case(
+                      '%$dialogData/type%==collection',
+                      '[{ title: \"\", description: \"\", image: \"\"}]'
+                    )
+                  ]
+                )
+              )
+          ),
+          file: '%$dialogData/file%'
+        }),
+      studio.openResource('dataResource.%$name%~%$watchableOrPassive%Data', '%$name%')
+    ),
+    modal: true,
+    features: [
+      dialogFeature.autoFocusOnFirstInput(),
+      dialogFeature.maxZIndexOnClick(),
+      dialogFeature.dragTitle()
+    ]
+  })
+})
+
+
+jb.component('studio.openNewResourceOld', {
   params: [
     {id: 'watchableOrPassive', as: 'string'}
   ],
@@ -121,10 +205,10 @@ jb.component('studio.dataResourceMenu', {
         })
       }),
       menu.action({
-        title: 'New Watchable',
+        title: 'New Watchable...',
         action: studio.openNewResource('watchable')
       }),
-      menu.action({title: 'New Passive', action: studio.openNewResource('passive')})
+      menu.action({title: 'New Passive...', action: studio.openNewResource('passive')})
     ]
   })
 })

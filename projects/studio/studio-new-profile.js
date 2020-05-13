@@ -303,42 +303,48 @@ jb.component('studio.openPickProfile', {
 
 jb.component('studio.openNewPage', {
   type: 'action',
-  impl: openDialog({
-    style: dialog.dialogOkCancel(),
-    content: group({
-      style: group.div(),
-      controls: [
-        editableText({
-          title: 'page name',
-          databind: '%$dialogData/name%',
-          style: editableText.mdcInput(),
-          features: [
-            feature.init(writeValue('%$dialogData/name%', '%$studio/project%.myCtrl')),
-            feature.onEnter(dialog.closeContainingPopup()),
-            validation(matchRegex('^[a-zA-Z_0-9\.]+$'), 'invalid page name')
-          ]
-        })
-      ],
-      features: css.padding({top: '14', left: '11'})
-    }),
-    title: 'New Page',
+  impl: studio.openNewProfile({
+    title: 'New Reusable Control (page)',
     onOK: runActions(
-      Var('compName', ctx => jb.macroName(ctx.exp('%$dialogData/name%'))),
-      studio.newComp('%$compName%', asIs({type: 'control', impl: group({})})),
+      Var('compName', studio.macroName('%$dialogData/name%')),
+      studio.newComp({
+        compName: '%$compName%',
+        compContent:  asIs({type: 'control', impl: group({})}),
+        file: '%$dialogData/file%'
+      }),
       writeValue('%$studio/profile_path%', '%$compName%~impl'),
       writeValue('%$studio/page%', '%$compName%'),
       studio.openControlTree(),
       tree.regainFocus(),
-    ),
-    modal: true,
-    features: [dialogFeature.autoFocusOnFirstInput()]
+    )
   })
 })
 
 jb.component('studio.openNewFunction', {
   type: 'action',
+  impl: studio.openNewProfile({
+    title: 'New Function',
+    onOK: runActions(
+      Var('compName', studio.macroName('%$dialogData/name%')),
+      studio.newComp({
+          compName: '%$compName%',
+          compContent: asIs({type: 'data', impl: pipeline(''), testData: 'sampleData'}),
+          file: '%$dialogData/file%'
+      }),
+      writeValue('%$studio/profile_path%', '%$compName%'),
+      studio.openJbEditor('%$compName%'),
+      refreshControlById('functions')
+    )
+  })
+})
+
+jb.component('studio.openNewProfile', {
+  type: 'action',
+  params: [
+    {id: 'title', as: 'string' },
+    {id: 'onOK', type: 'action', dynamic: true },
+  ],
   impl: openDialog({
-    id: '',
     style: dialog.dialogOkCancel(),
     content: group({
       title: '',
@@ -346,13 +352,13 @@ jb.component('studio.openNewFunction', {
       style: group.div(),
       controls: [
         editableText({
-          title: 'function name',
+          title: 'name',
           databind: '%$dialogData/name%',
           style: editableText.mdcInput({}),
           features: [
-            feature.init(writeValue('%$dialogData/name%', '%$studio/project%.myFunc')),
+            feature.init(writeValue('%$dialogData/name%', '%$studio/project%.myComp')),
             feature.onEnter(dialog.closeContainingPopup()),
-            validation(matchRegex('^[a-zA-Z_0-9.]+$'), 'invalid function name')
+            validation(matchRegex('^[a-zA-Z_0-9.]+$'), 'invalid name')
           ]
         }),
         picklist({
@@ -373,18 +379,8 @@ jb.component('studio.openNewFunction', {
       ],
       features: [css.padding({top: '14', left: '11'}), css.width('600'), css.height('200')]
     }),
-    title: 'New Function',
-    onOK: runActions(
-      Var('compName', ctx => jb.macroName(ctx.exp('%$dialogData/name%'))),
-      studio.newComp({
-          compName: '%$compName%',
-          compContent: asIs({type: 'data', impl: pipeline(''), testData: 'sampleData'}),
-          file: '%$dialogData/file%'
-        }),
-      writeValue('%$studio/profile_path%', '%$compName%'),
-      studio.openJbEditor('%$compName%'),
-      refreshControlById('functions')
-    ),
+    title: '%$title%',
+    onOK: call('onOK'),
     modal: true,
     features: [
       dialogFeature.autoFocusOnFirstInput(),
@@ -483,12 +479,12 @@ jb.component('studio.newComp', {
   ],
   impl: (ctx, compName, compContent,file) => {
     const _jb = jb.studio.previewjb
-    _jb.component(compName, JSON.parse(JSON.stringify(compContent)))
-    const filePattern = '/' + ctx.exp('%$studio/projectFolder%')
-    const projectFile = file || jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=> x && x.indexOf(filePattern) != -1)[0]
-    const compWithLocation = { ...compContent, ...{ [_jb.location]: [projectFile,''] }}
-    // fake change for refresh page and save
-    jb.studio.writeValue(jb.studio.refOfPath(compName),compWithLocation,ctx)
+    _jb.component(compName, _jb.frame.JSON.parse(JSON.stringify({...compContent, type: '_'})))
+    const path = (jb.frame.jbBaseProjUrl || '') + jb.studio.host.pathOfJsFile(ctx.exp('%$studio/projectFolder%'), file)
+//    const projectFile = file || jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=> x && x.indexOf(filePattern) != -1)[0]
+    _jb.comps[compName][_jb.location] = [path,'new']
+    // fake change to trigger refresh page and save
+    jb.studio.writeValue(jb.studio.refOfPath(`${compName}~type`),compContent.type || '',ctx)
   }
 })
 

@@ -76,6 +76,23 @@ jb.component('studio.openNewProject', {
   })
 })
 
+jb.component('studio.createProjectFile', {
+  type: 'action,has-side-effects',
+  params: [
+    { id: 'fileName', as: 'string' },
+  ],
+  impl: runActions(
+    (ctx,{},{fileName}) => jb.studio.host.createDirectoryWithFiles({
+      override: true,
+      project: ctx.exp('%$studio/project%'), 
+      files: {[fileName]: ''}, 
+      baseDir: ctx.exp('%$studio/projectFolder%')
+    }),
+    addToArray('%$studio/projectSettings/jsFiles%','%$fileName%'),
+    studio.saveProjectSettings()
+  )
+})
+
 jb.component('studio.saveNewProject', {
   type: 'action,has-side-effects',
   params: [
@@ -83,7 +100,7 @@ jb.component('studio.saveNewProject', {
   ],
   impl: (ctx,project) => {
     const {files, baseDir} = ctx.run(studio.newProject(()=> project))
-    return jb.studio.host.createProject({project, files, baseDir})
+    return jb.studio.host.createDirectoryWithFiles({project, files, baseDir})
         .then(r => r.json())
         .catch(e => {
           jb.studio.message(`error saving project ${project}: ` + (e && e.desc));

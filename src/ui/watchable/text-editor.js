@@ -32,8 +32,8 @@ function setStrValue(value, ref, ctx) {
         }
     }
     if (newVal !== undefined) { // many diffs {
-       currentVal[jb.location] && typeof newVal == 'object' && (newVal[jb.location] = currentVal[jb.location])
-       jb.writeValue(ref,newVal,ctx)
+        currentVal && currentVal[jb.location] && typeof newVal == 'object' && (newVal[jb.location] = currentVal[jb.location])
+        jb.writeValue(ref,newVal,ctx)
     }
 }
 

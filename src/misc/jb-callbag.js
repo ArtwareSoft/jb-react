@@ -138,7 +138,7 @@
         const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
         return source => (start, sink) => {
             if (start !== 0) return
-            const queue = []
+            let queue = []
             let innerTalkback, sourceTalkback, sourceEnded
         
             source(0, function concatMap(t, d) {
@@ -184,10 +184,17 @@
             }
         
             function stopOrContinue(d) {
-              if (sourceEnded && !innerTalkback && queue.length == 0) 
+              if (d != undefined) {
+                queue = []
+                innerTalkback = innerTalkback = null
                 sink(2, d)
-              else 
-               innerTalkback && innerTalkback(1)
+                return
+              }
+              if (sourceEnded && !innerTalkback && queue.length == 0) {
+                sink(2, d)
+                return
+              }
+              innerTalkback && innerTalkback(1)
             }
           }
       },
@@ -387,7 +394,11 @@
       },
       catchError: fn => source => (start, sink) => {
           if (start !== 0) return
-          source(0, function catchError(t, d) { return t === 2 && typeof d !== 'undefined' ? fn(d) : sink(t, d) } )
+          source(0, function catchError(t, d) {
+            if (t === 2 && d !== undefined) { sink(1, fn(d)); sink(2) } 
+            else sink(t, d) 
+          }
+        )
       },
       create: prod => (start, sink) => {
           if (start !== 0) return

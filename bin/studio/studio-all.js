@@ -642,8 +642,8 @@ Object.assign(jb,{
     try {
       const errStack = new Error().stack.split(/\r|\n/)
       const line = errStack.filter(x=>x && x != 'Error' && !x.match(/at Object.component/)).shift()
-      //const line = errStack.filter(x=>x && !x.match(/<anonymous>|about:blank|tgp-pretty.js|internal\/modules\/cjs|at jb_initWidget|at Object.ui.renderWidget/)).pop()
       comp[jb.location] = line ? (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
+      comp[jb.location][0] = comp[jb.location][0].split('?')[0]
     
       if (comp.watchableData !== undefined) {
         jb.comps[jb.addDataResourcePrefix(id)] = comp
@@ -2161,7 +2161,7 @@ jb.component('formatDate', {
         const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
         return source => (start, sink) => {
             if (start !== 0) return
-            const queue = []
+            let queue = []
             let innerTalkback, sourceTalkback, sourceEnded
         
             source(0, function concatMap(t, d) {
@@ -2207,10 +2207,17 @@ jb.component('formatDate', {
             }
         
             function stopOrContinue(d) {
-              if (sourceEnded && !innerTalkback && queue.length == 0) 
+              if (d != undefined) {
+                queue = []
+                innerTalkback = innerTalkback = null
                 sink(2, d)
-              else 
-               innerTalkback && innerTalkback(1)
+                return
+              }
+              if (sourceEnded && !innerTalkback && queue.length == 0) {
+                sink(2, d)
+                return
+              }
+              innerTalkback && innerTalkback(1)
             }
           }
       },
@@ -2410,7 +2417,11 @@ jb.component('formatDate', {
       },
       catchError: fn => source => (start, sink) => {
           if (start !== 0) return
-          source(0, function catchError(t, d) { return t === 2 && typeof d !== 'undefined' ? fn(d) : sink(t, d) } )
+          source(0, function catchError(t, d) {
+            if (t === 2 && d !== undefined) { sink(1, fn(d)); sink(2) } 
+            else sink(t, d) 
+          }
+        )
       },
       create: prod => (start, sink) => {
           if (start !== 0) return
@@ -9736,7 +9747,7 @@ jb.component('tree.plain', {
 	css: `|>.treenode-children { padding-left: 10px; min-height: 7px }
 	|>.treenode-label { margin-top: -1px }
 
-	|>.treenode-label .treenode-val { color: var(--jb-tree-value); padding-left: 4px; }
+	|>.treenode-label .treenode-val { color: var(--jb-tree-value); padding-left: 4px; display: inline-block;}
 	|>.treenode-line { display: flex; box-orient: horizontal; padding-bottom: 3px; align-items: center }
 
 	|>.treenode { display: block }
@@ -9779,7 +9790,7 @@ jb.component('tree.expandBox', {
 	  },
 	  css: `|>.treenode-children { padding-left: 10px; min-height: 7px }
 	|>.treenode-label { margin-top: -2px }
-	|>.treenode-label .treenode-val { color: var(--jb-tree-value); padding-left: 4px; }
+	|>.treenode-label .treenode-val { color: var(--jb-tree-value); padding-left: 4px; display: inline-block;}
 	|>.treenode-line { display: flex; box-orient: horizontal; width: ${lineWidth}; padding-bottom: 3px;}
 
 	|>.treenode { display: block }
@@ -34828,8 +34839,8 @@ function setStrValue(value, ref, ctx) {
         }
     }
     if (newVal !== undefined) { // many diffs {
-       currentVal[jb.location] && typeof newVal == 'object' && (newVal[jb.location] = currentVal[jb.location])
-       jb.writeValue(ref,newVal,ctx)
+        currentVal && currentVal[jb.location] && typeof newVal == 'object' && (newVal[jb.location] = currentVal[jb.location])
+        jb.writeValue(ref,newVal,ctx)
     }
 }
 
@@ -36439,7 +36450,7 @@ jb.studio.pageChange = pipe(jb.ui.resourceChange(), filter(e=>e.path.join('/') =
 jb.component('studio.previewWidget', {
   type: 'control',
   params: [
-    {id: 'style', type: 'preview-style', dynamic: true, defaultValue: studio.previewWidgetImpl()},
+    {id: 'style', type: 'preview-style', dynamic: true, defaultValue: studio.previewWidgetImpl()}
   ],
   impl: ctx => jb.ui.ctrl(ctx, features(
       calcProp('width','%$studio/preview/width%'),
@@ -36452,7 +36463,7 @@ jb.component('studio.previewWidget', {
             const project = ctx.exp('%$studio/project%')
             document.title = `${project} with jBart`;
             return st.projectHosts[host].fetchProject(ctx.exp('%$queryParams/hostProjectId%'),project)
-//              .then(x=>jb.delay(5000).then(()=>x))
+//              .then(x=>jb.delay(2000).then(()=>{debugger; return x}))
               .then(projectSettings => {
                 jb.log('loadingPreviewProject',[projectSettings])
                 jb.exec(writeValue('%$studio/project%', projectSettings.project))
@@ -36462,6 +36473,7 @@ jb.component('studio.previewWidget', {
             })
           }
         })
+
   ))
 })
 
@@ -37164,19 +37176,27 @@ jb.component('studio.profileValueAsText', {
   impl: (ctx,path) => ({
 		$jb_path: () => path.split('~'),
 			$jb_val: function(value) {
-				if (typeof value == 'undefined') {
-					var val = st.valOfPath(path);
+				if (value == undefined) {
+					const val = st.valOfPath(path);
 					if (val == null)
 						return '';
 					if (st.isPrimitiveValue(val))
-						return ''+val;
+						return '' + val
 					if (st.compNameOfPath(path))
-						return '=' + st.compNameOfPath(path);
+						return '=' + st.compNameOfPath(path)
 				}
 				else if (value.indexOf('=') != 0)
-					st.writeValueOfPath(path, value,ctx);
-			}
-		})
+					st.writeValueOfPath(path, valToWrite(value),ctx);
+
+        function valToWrite(val) {
+          const type = (st.paramDef(path) || {}).as
+          if (type == 'number' && Number(val)) return +val
+          if (type == 'boolean')
+            return val === 'true' ? true : val === 'false' ? false : '' + val
+          return '' + val
+        }
+      }
+    })
 })
 
 jb.component('studio.insertControl', {
@@ -37791,11 +37811,11 @@ st.jbEditorTree = class {
 		val = val.toString();
 
 		if (compName)
-			return jb.ui.h('div',{},[prop + '= ',jb.ui.h('span',{class:'treenode-val', title: compName+summary},jb.ui.limitStringLength(compName+summary,50))]);
+			return jb.ui.h('div',{},[prop,jb.ui.h('span',{class:'treenode-val', title: compName+summary},jb.ui.limitStringLength(compName+summary,50))]);
 		else if (prop === '$vars')
 			return jb.ui.h('div',{},['vars= ',jb.ui.h('span',{class:'treenode-val', title: summary},jb.ui.limitStringLength(summary,50))]);
 		else if (['string','boolean','number'].indexOf(typeof val) != -1)
-			return jb.ui.h('div',{},[prop + (collapsed ? ': ': ''),jb.ui.h('span',{class:'treenode-val', title: ''+val},jb.ui.limitStringLength(''+val,50))]);
+			return jb.ui.h('div',{},[prop,jb.ui.h('span',{class:'treenode-val', title: ''+val},jb.ui.limitStringLength(''+val,50))]);
 
 		return prop + (Array.isArray(val) ? ` (${val.length})` : '');
 	}
@@ -38396,42 +38416,48 @@ jb.component('studio.openPickProfile', {
 
 jb.component('studio.openNewPage', {
   type: 'action',
-  impl: openDialog({
-    style: dialog.dialogOkCancel(),
-    content: group({
-      style: group.div(),
-      controls: [
-        editableText({
-          title: 'page name',
-          databind: '%$dialogData/name%',
-          style: editableText.mdcInput(),
-          features: [
-            feature.init(writeValue('%$dialogData/name%', '%$studio/project%.myCtrl')),
-            feature.onEnter(dialog.closeContainingPopup()),
-            validation(matchRegex('^[a-zA-Z_0-9\.]+$'), 'invalid page name')
-          ]
-        })
-      ],
-      features: css.padding({top: '14', left: '11'})
-    }),
-    title: 'New Page',
+  impl: studio.openNewProfile({
+    title: 'New Reusable Control (page)',
     onOK: runActions(
-      Var('compName', ctx => jb.macroName(ctx.exp('%$dialogData/name%'))),
-      studio.newComp('%$compName%', asIs({type: 'control', impl: group({})})),
+      Var('compName', studio.macroName('%$dialogData/name%')),
+      studio.newComp({
+        compName: '%$compName%',
+        compContent:  asIs({type: 'control', impl: group({})}),
+        file: '%$dialogData/file%'
+      }),
       writeValue('%$studio/profile_path%', '%$compName%~impl'),
       writeValue('%$studio/page%', '%$compName%'),
       studio.openControlTree(),
       tree.regainFocus(),
-    ),
-    modal: true,
-    features: [dialogFeature.autoFocusOnFirstInput()]
+    )
   })
 })
 
 jb.component('studio.openNewFunction', {
   type: 'action',
+  impl: studio.openNewProfile({
+    title: 'New Function',
+    onOK: runActions(
+      Var('compName', studio.macroName('%$dialogData/name%')),
+      studio.newComp({
+          compName: '%$compName%',
+          compContent: asIs({type: 'data', impl: pipeline(''), testData: 'sampleData'}),
+          file: '%$dialogData/file%'
+      }),
+      writeValue('%$studio/profile_path%', '%$compName%'),
+      studio.openJbEditor('%$compName%'),
+      refreshControlById('functions')
+    )
+  })
+})
+
+jb.component('studio.openNewProfile', {
+  type: 'action',
+  params: [
+    {id: 'title', as: 'string' },
+    {id: 'onOK', type: 'action', dynamic: true },
+  ],
   impl: openDialog({
-    id: '',
     style: dialog.dialogOkCancel(),
     content: group({
       title: '',
@@ -38439,13 +38465,13 @@ jb.component('studio.openNewFunction', {
       style: group.div(),
       controls: [
         editableText({
-          title: 'function name',
+          title: 'name',
           databind: '%$dialogData/name%',
           style: editableText.mdcInput({}),
           features: [
-            feature.init(writeValue('%$dialogData/name%', '%$studio/project%.myFunc')),
+            feature.init(writeValue('%$dialogData/name%', '%$studio/project%.myComp')),
             feature.onEnter(dialog.closeContainingPopup()),
-            validation(matchRegex('^[a-zA-Z_0-9.]+$'), 'invalid function name')
+            validation(matchRegex('^[a-zA-Z_0-9.]+$'), 'invalid name')
           ]
         }),
         picklist({
@@ -38466,18 +38492,8 @@ jb.component('studio.openNewFunction', {
       ],
       features: [css.padding({top: '14', left: '11'}), css.width('600'), css.height('200')]
     }),
-    title: 'New Function',
-    onOK: runActions(
-      Var('compName', ctx => jb.macroName(ctx.exp('%$dialogData/name%'))),
-      studio.newComp({
-          compName: '%$compName%',
-          compContent: asIs({type: 'data', impl: pipeline(''), testData: 'sampleData'}),
-          file: '%$dialogData/file%'
-        }),
-      writeValue('%$studio/profile_path%', '%$compName%'),
-      studio.openJbEditor('%$compName%'),
-      refreshControlById('functions')
-    ),
+    title: '%$title%',
+    onOK: call('onOK'),
     modal: true,
     features: [
       dialogFeature.autoFocusOnFirstInput(),
@@ -38576,12 +38592,12 @@ jb.component('studio.newComp', {
   ],
   impl: (ctx, compName, compContent,file) => {
     const _jb = jb.studio.previewjb
-    _jb.component(compName, JSON.parse(JSON.stringify(compContent)))
-    const filePattern = '/' + ctx.exp('%$studio/projectFolder%')
-    const projectFile = file || jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=> x && x.indexOf(filePattern) != -1)[0]
-    const compWithLocation = { ...compContent, ...{ [_jb.location]: [projectFile,''] }}
-    // fake change for refresh page and save
-    jb.studio.writeValue(jb.studio.refOfPath(compName),compWithLocation,ctx)
+    _jb.component(compName, _jb.frame.JSON.parse(JSON.stringify({...compContent, type: '_'})))
+    const path = (jb.frame.jbBaseProjUrl || '') + jb.studio.host.pathOfJsFile(ctx.exp('%$studio/projectFolder%'), file)
+//    const projectFile = file || jb.entries(_jb.comps).map(e=>e[1][_jb.location][0]).filter(x=> x && x.indexOf(filePattern) != -1)[0]
+    _jb.comps[compName][_jb.location] = [path,'new']
+    // fake change to trigger refresh page and save
+    jb.studio.writeValue(jb.studio.refOfPath(`${compName}~type`),compContent.type || '',ctx)
   }
 })
 
@@ -41615,30 +41631,48 @@ jb.component('studio.initAutoSave', {
   impl: ctx => {
     if (!jb.frame.jbInvscode || jb.studio.autoSaveInitialized) return
     jb.studio.autoSaveInitialized = true
-    const {pipe, catchError,subscribe,concatMap,fromPromise,fromIter,map,mapPromise} = jb.callbag
+    const {pipe, catchError,subscribe,concatMap,doPromise,fromPromise,fromIter,map,mapPromise} = jb.callbag
     const messages = []
     const st = jb.studio
 
-    return pipe(
-      st.scriptChange,
-      concatMap(e => pipe(
-        fromIter([e]),
-        map(e=>({...e, compId: e.path[0]})), 
-        map(e=>({...e, comp: st.previewjb.comps[e.compId]})), 
-        map(e=>({...e, loc: e.comp[jb.location]})),
-        map(e=>({...e, fn: st.host.locationToPath(e.loc[0])})),
-
-        mapPromise(e => st.host.getFile(e.fn).then(fileContent=>({...e, fileContent}))),
-//        concatMap(e => fromPromise(st.host.getFile(e.fn).then(fileContent=>({...e, fileContent})))),
-        map(e=>({...e, edits: [e.fileContent && deltaFileContent(e.fileContent,e)].filter(x=>x) })),
-        concatMap(e => e.fileContent ? fromPromise(st.host.saveDelta(e.fn,e.edits).then(()=>e)) : [e]),
-      )),
-			catchError(e=> {
-        messages.push({ text: 'error saving: ' + (typeof e == 'string' ? e : e.message || e.e), error: true })
-				jb.logException(e,'error while saving ' + e.id,ctx) || []
+    pipe(st.scriptChange, subscribe(async e => {
+        try {
+          const compId = e.path[0]
+          const comp = st.previewjb.comps[compId]
+          const fn = st.host.locationToPath(comp[jb.location][0])
+          const fileContent = await st.host.getFile(fn)
+          if (!fileContent) return
+          const edits = [deltaFileContent(fileContent, {compId,comp})].filter(x=>x)
+          await st.host.saveDelta(fn,edits)
+        } catch (e) {
+          messages.push({ text: 'error saving: ' + (typeof e == 'string' ? e : e.message || e.e), error: true })
+          jb.logException(e,'error while saving ' + e.id,ctx) || []
+        }
       }),
-      subscribe(()=>{})
     )
+
+//     return pipe(
+//       st.scriptChange,
+//       concatMap(e => pipe(
+//         fromIter([e]),
+//         map(e=>({...e, compId: e.path[0]})), 
+//         map(e=>({...e, comp: st.previewjb.comps[e.compId]})), 
+//         map(e=>({...e, loc: e.comp[jb.location]})),
+//         map(e=>({...e, fn: st.host.locationToPath(e.loc[0])})),
+
+//         mapPromise(e => st.host.getFile(e.fn).then(fileContent=>({...e, fileContent}))),
+//         catchError(e => { console.log(e); return {} }),
+
+// //        concatMap(e => fromPromise(st.host.getFile(e.fn).then(fileContent=>({...e, fileContent})))),
+//         map(e=>({...e, edits: [e.fileContent && deltaFileContent(e.fileContent,e)].filter(x=>x) })),
+//         concatMap(e => e.fileContent ? fromPromise(st.host.saveDelta(e.fn,e.edits).then(()=>e)) : [e]),
+//       )),
+// 			catchError(e=> {
+//         messages.push({ text: 'error saving: ' + (typeof e == 'string' ? e : e.message || e.e), error: true })
+// 				jb.logException(e,'error while saving ' + e.id,ctx) || []
+//       }),
+//       subscribe(()=>{})
+//     )
   }
 })
 
@@ -41696,12 +41730,17 @@ function newFileContent(fileContent, comps) {
 function deltaFileContent(fileContent, {compId,comp}) {
   const lines = fileContent.split('\n').map(x=>x.replace(/[\s]*$/,''))
   const lineOfComp = lines.findIndex(line=> line.indexOf(`jb.component('${compId}'`) == 0)
+  const newCompLines = comp ? jb.prettyPrintComp(compId,comp,{initialPath: compId, comps: st.previewjb.comps}).split('\n') : []
+  const justCreatedComp = lineOfComp == -1 && comp[jb.location][1] == 'new'
+  if (justCreatedComp) {
+    comp[jb.location][1] == lines.length
+    return { range: {start: { line: lines.length, character: 0}, end: {line: lines.length, character: 0} } , newText: '\n\n' + newCompLines.join('\n') }
+  }
   const linesFromComp = lines.slice(lineOfComp)
   const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
   const nextjbComponent = lines.slice(lineOfComp+1).findIndex(line => line.match(/^jb.component/))
   if (nextjbComponent != -1 && nextjbComponent < compLastLine)
     return jb.logError(['can not find end of component', compId, linesFromComp])
-  const newCompLines = comp ? jb.prettyPrintComp(compId,comp,{initialPath: compId, comps: st.previewjb.comps}).split('\n') : []
   const oldlines = linesFromComp.slice(0,compLastLine+1)
   const {common, oldText, newText} = calcDiff(oldlines.join('\n'), newCompLines.join('\n'))
   const commonStartSplit = common.split('\n')
@@ -42021,6 +42060,90 @@ jb.component('studio.openResource', {
 })
 
 jb.component('studio.openNewResource', {
+  type: 'action',
+  params: [
+    {id: 'watchableOrPassive', as: 'string'}
+  ],
+  impl: openDialog({
+    style: dialog.dialogOkCancel(),
+    content: group({
+      title: '',
+      layout: layout.vertical('11'),
+      style: group.div(),
+      controls: [
+        group({
+          layout: layout.horizontal('11'),
+          controls: [
+            editableText({
+              title: 'name',
+              databind: '%$dialogData/name%',
+              style: editableText.mdcInput({}),
+              features: [validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid name')]
+            }),
+            picklist({
+              title: 'file',
+              databind: '%$dialogData/file%',
+              options: picklist.options({options: sourceEditor.filesOfProject()}),
+              style: picklist.mdcSelect({})
+            })
+          ]
+        }),
+        picklist({
+          title: 'type',
+          databind: '%$dialogData/type%',
+          options: picklist.optionsByComma('text,array,card,collection'),
+          style: picklist.radio(),
+          features: feature.init(writeValue('%$dialogData/type%', 'collection'))
+        })
+      ],
+      features: [css.padding({top: '14', left: '11'}), css.width('600'), css.height('200')]
+    }),
+    title: 'New %$watchableOrPassive% Data Source',
+    onOK: runActions(
+      Var('compName', ctx => jb.macroName(ctx.exp('%$dialogData/name%'))),
+      If(
+          not('%$dialogData/file%'),
+          runActions(
+            writeValue('%$dialogData/file%', '%$dialogData/name%.js'),
+            studio.createProjectFile('%$dialogData/name%.js')
+          )
+        ),
+      studio.newComp({
+          compName: 'dataResource.%$name%',
+          compContent: obj(
+            prop(
+                '%$watchableOrPassive%Data',
+                data.switch(
+                  [
+                    data.case('%$dialogData/type%==text', ''),
+                    data.case('%$dialogData/type%==array', '[]'),
+                    data.case(
+                      '%$dialogData/type%==card',
+                      '{ title: \"\", description: \"\", image: \"\"}'
+                    ),
+                    data.case(
+                      '%$dialogData/type%==collection',
+                      '[{ title: \"\", description: \"\", image: \"\"}]'
+                    )
+                  ]
+                )
+              )
+          ),
+          file: '%$dialogData/file%'
+        }),
+      studio.openResource('dataResource.%$name%~%$watchableOrPassive%Data', '%$name%')
+    ),
+    modal: true,
+    features: [
+      dialogFeature.autoFocusOnFirstInput(),
+      dialogFeature.maxZIndexOnClick(),
+      dialogFeature.dragTitle()
+    ]
+  })
+})
+
+
+jb.component('studio.openNewResourceOld', {
   params: [
     {id: 'watchableOrPassive', as: 'string'}
   ],
@@ -42094,10 +42217,10 @@ jb.component('studio.dataResourceMenu', {
         })
       }),
       menu.action({
-        title: 'New Watchable',
+        title: 'New Watchable...',
         action: studio.openNewResource('watchable')
       }),
-      menu.action({title: 'New Passive', action: studio.openNewResource('passive')})
+      menu.action({title: 'New Passive...', action: studio.openNewResource('passive')})
     ]
   })
 })
@@ -42184,6 +42307,23 @@ jb.component('studio.openNewProject', {
   })
 })
 
+jb.component('studio.createProjectFile', {
+  type: 'action,has-side-effects',
+  params: [
+    { id: 'fileName', as: 'string' },
+  ],
+  impl: runActions(
+    (ctx,{},{fileName}) => jb.studio.host.createDirectoryWithFiles({
+      override: true,
+      project: ctx.exp('%$studio/project%'), 
+      files: {[fileName]: ''}, 
+      baseDir: ctx.exp('%$studio/projectFolder%')
+    }),
+    addToArray('%$studio/projectSettings/jsFiles%','%$fileName%'),
+    studio.saveProjectSettings()
+  )
+})
+
 jb.component('studio.saveNewProject', {
   type: 'action,has-side-effects',
   params: [
@@ -42191,7 +42331,7 @@ jb.component('studio.saveNewProject', {
   ],
   impl: (ctx,project) => {
     const {files, baseDir} = ctx.run(studio.newProject(()=> project))
-    return jb.studio.host.createProject({project, files, baseDir})
+    return jb.studio.host.createDirectoryWithFiles({project, files, baseDir})
         .then(r => r.json())
         .catch(e => {
           jb.studio.message(`error saving project ${project}: ` + (e && e.desc));
@@ -43258,8 +43398,8 @@ const devHost = {
     pathOfDistFolder: () => '/dist',
 
     // new project
-    createProject: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
-        Object.assign(request,{baseDir: `projects/${request.project}` })) }),
+    createDirectoryWithFiles: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, 
+        body: JSON.stringify({...request,baseDir: `projects/${request.project}` }) }),
     // goto project
     projectUrlInStudio: project => `/project/studio/${project}`,
     // preview
@@ -43276,7 +43416,7 @@ const vscodeDevHost = {
     locationToPath: path => decodeURIComponent(path.split('//file//').pop()).replace(/\\/g,'/'),
     saveDelta: (path, edits) => jb.studio.vscodeService({$: 'saveDelta', path, edits}),
     saveFile: (path, contents) => jb.studio.vscodeService({$: 'saveFile', path, contents}),
-    createProject: request => jb.studio.vscodeService({$: 'createProject', request}),
+    createDirectoryWithFiles: request => jb.studio.vscodeService({$: 'createDirectoryWithFiles', ...request}),
     pathOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
     projectUrlInStudio: project => `/project/studio/${project}`,
     pathOfDistFolder: () => `${jb.frame.jbBaseProjUrl}/dist`,
@@ -43290,7 +43430,7 @@ const vscodeUserHost = Object.assign({},vscodeDevHost,{
 })
 
 const userLocalHost = Object.assign({},devHost,{
-    createProject: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
+    createDirectoryWithFiles: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
         Object.assign(request,{baseDir: request.baseDir || request.project })) }),
     locationToPath: path => path.replace(/^[0-9]*\//,'').replace(/^projects\//,''),
     pathOfJsFile: (project,fn,baseDir) => baseDir == './' ? fn : `/${project}/${fn}`,
@@ -43303,7 +43443,7 @@ const cloudHost = {
     settings: () => Promise.resolve(({})),
     getFile: path => fetch(`https://artwaresoft.github.io/jb-react/${path}`).then(res=>res.text()),
     locationToPath: path => path.replace(/^[0-9]*\//,''),
-    createProject: request => jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files'}}),
+    createDirectoryWithFiles: request => jb.delay(1).then(() => { throw { desc: 'Cloud mode - can not save files'}}),
     pathOfJsFile: (project,fn) => fn,
     projectUrlInStudio: project => ``,
     canNotSave: true,
@@ -43313,7 +43453,7 @@ const cloudHost = {
 
 st.chooseHostByUrl = entryUrl => {
     entryUrl = entryUrl || ''
-    st.host = jb.frame.jbInvscode ? jbModuleUrl ? vscodeUserHost : vscodeDevHost
+    st.host = jb.frame.jbInvscode ? (jbModuleUrl ? vscodeUserHost : vscodeDevHost)
         : entryUrl.match(/localhost:[0-9]*\/project\/studio/) ?
             devHost
         : entryUrl.match(/studio-cloud/) ?
@@ -46006,7 +46146,7 @@ jb.component('studio.initVscodeAdapter', {
         if (! jb.frame.jbInvscode || jb.VscodeAdapterInitialized) return
         jb.VscodeAdapterInitialized = true
         const vscode = jb.studio.vsCodeApi
-        const params = ['project','page','profile_path','vscode']
+        const params = ['project','page','profile_path','vscode','projectFolder']
 
         const {pipe, subscribe,create,filter} = jb.callbag
         jb.studio.vscodeEm = create(obs=> jb.frame.addEventListener('message', e => obs(e)))
@@ -46036,16 +46176,25 @@ jb.component('studio.initVscodeAdapter', {
             console.log('get response', message.messageID, message)
             if (message && message.messageID) {
                 const req = promises[message.messageID].req // for debug
-                promises[message.messageID].resolve(message.result)
+                if (message.isError)
+                    promises[message.messageID].reject(message.error)
+                else
+                    promises[message.messageID].resolve(message.result)
+                clearTimeout(promises[message.messageID].timer)
                 delete promises[message.messageID]
             }
             if (message.$)
                 ctx.run(message)
         })
 
-        jb.studio.vscodeService = req => new Promise((resolve,reject) => {
+        jb.studio.vscodeService = (req,timeout) => new Promise((resolve,reject) => {
+            timeout = timeout || 3000
             messageID++
-            promises[messageID] = {resolve,reject,req}
+            const timer = setTimeout(() => {
+                promises[messageID] && reject('timeout')
+                jb.logError('vscodeService timeout',promises[messageID])
+            }, timeout);
+            promises[messageID] = {resolve,reject,req, timer}
             console.log('send req ',messageID,req)
             vscode.postMessage({...req, messageID})
         })

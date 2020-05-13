@@ -101,7 +101,7 @@ jb.component('tree.plain', {
 	css: `|>.treenode-children { padding-left: 10px; min-height: 7px }
 	|>.treenode-label { margin-top: -1px }
 
-	|>.treenode-label .treenode-val { color: var(--jb-tree-value); padding-left: 4px; }
+	|>.treenode-label .treenode-val { color: var(--jb-tree-value); padding-left: 4px; display: inline-block;}
 	|>.treenode-line { display: flex; box-orient: horizontal; padding-bottom: 3px; align-items: center }
 
 	|>.treenode { display: block }
@@ -144,7 +144,7 @@ jb.component('tree.expandBox', {
 	  },
 	  css: `|>.treenode-children { padding-left: 10px; min-height: 7px }
 	|>.treenode-label { margin-top: -2px }
-	|>.treenode-label .treenode-val { color: var(--jb-tree-value); padding-left: 4px; }
+	|>.treenode-label .treenode-val { color: var(--jb-tree-value); padding-left: 4px; display: inline-block;}
 	|>.treenode-line { display: flex; box-orient: horizontal; width: ${lineWidth}; padding-bottom: 3px;}
 
 	|>.treenode { display: block }

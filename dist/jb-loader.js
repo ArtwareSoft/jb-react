@@ -181,8 +181,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
 
 Object.keys(jb_modules.$dependencies).forEach(m => jb_modules[m].dependencies = jb_modules.$dependencies[m])
 
-function jb_dynamicLoad(modules,prefix) {
-  prefix = prefix || '';
+function jb_dynamicLoad(modules,prefix,suffix) {
   modules = modules || '';
   const isDist = typeof window != 'undefined' && document.currentScript.getAttribute('src').indexOf('/dist/') != -1
   if (isDist) {
@@ -198,11 +197,12 @@ function jb_dynamicLoad(modules,prefix) {
         if (m == 'studio-tests' && !file.match(/\//))
           file = 'projects/studio-helper/studio-' + file + '-tests.js';
 
-        if (prefix) { // avoid muliple source files with the same name in the debugger
+        if (prefix) { // avoid multiple source files with the same name in the debugger
           const file_path = file.split('/');
           file_path.push(prefix+file_path.pop());
           file = file_path.join('/');
         }
+        if (suffix) file += suffix
 
         const url = (window.jbLoaderRelativePath ? '' : '/') + file;
         loadFile(url)
@@ -226,7 +226,7 @@ function jb_dynamicLoad(modules,prefix) {
 
 if (typeof window != 'undefined')
   if (document.currentScript && document.currentScript.getAttribute('modules'))
-    jb_dynamicLoad(document.currentScript.getAttribute('modules'),document.currentScript.getAttribute('prefix'));
+    jb_dynamicLoad(document.currentScript.getAttribute('modules'),document.currentScript.getAttribute('prefix'),document.currentScript.getAttribute('suffix'));
 
 if (typeof global != 'undefined') global.jb_modules = jb_modules;
 
@@ -279,7 +279,7 @@ function pathOfProjectFile(fn,{project,baseUrl,source} = {}) {
  function loadFile(url) {
   if (window.jbBaseProjUrl && !url.match('//'))
     url = [window.jbBaseProjUrl.replace(/\/$/,''),url.replace(/^\//,'')].join('/')
-  if (url.match(/\.js$/))
+  if (url.match(/\.js$|\.js\?/))
      document.write(`<script src="${url}" charset="UTF-8"></script>`)
    else
      document.write(`<link rel="stylesheet" type="text/css" href="${url}" />`);

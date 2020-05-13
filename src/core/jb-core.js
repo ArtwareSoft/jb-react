@@ -642,8 +642,8 @@ Object.assign(jb,{
     try {
       const errStack = new Error().stack.split(/\r|\n/)
       const line = errStack.filter(x=>x && x != 'Error' && !x.match(/at Object.component/)).shift()
-      //const line = errStack.filter(x=>x && !x.match(/<anonymous>|about:blank|tgp-pretty.js|internal\/modules\/cjs|at jb_initWidget|at Object.ui.renderWidget/)).pop()
       comp[jb.location] = line ? (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
+      comp[jb.location][0] = comp[jb.location][0].split('?')[0]
     
       if (comp.watchableData !== undefined) {
         jb.comps[jb.addDataResourcePrefix(id)] = comp

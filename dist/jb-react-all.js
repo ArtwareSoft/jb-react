@@ -642,8 +642,8 @@ Object.assign(jb,{
     try {
       const errStack = new Error().stack.split(/\r|\n/)
       const line = errStack.filter(x=>x && x != 'Error' && !x.match(/at Object.component/)).shift()
-      //const line = errStack.filter(x=>x && !x.match(/<anonymous>|about:blank|tgp-pretty.js|internal\/modules\/cjs|at jb_initWidget|at Object.ui.renderWidget/)).pop()
       comp[jb.location] = line ? (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
+      comp[jb.location][0] = comp[jb.location][0].split('?')[0]
     
       if (comp.watchableData !== undefined) {
         jb.comps[jb.addDataResourcePrefix(id)] = comp
@@ -2161,7 +2161,7 @@ jb.component('formatDate', {
         const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
         return source => (start, sink) => {
             if (start !== 0) return
-            const queue = []
+            let queue = []
             let innerTalkback, sourceTalkback, sourceEnded
         
             source(0, function concatMap(t, d) {
@@ -2207,10 +2207,17 @@ jb.component('formatDate', {
             }
         
             function stopOrContinue(d) {
-              if (sourceEnded && !innerTalkback && queue.length == 0) 
+              if (d != undefined) {
+                queue = []
+                innerTalkback = innerTalkback = null
                 sink(2, d)
-              else 
-               innerTalkback && innerTalkback(1)
+                return
+              }
+              if (sourceEnded && !innerTalkback && queue.length == 0) {
+                sink(2, d)
+                return
+              }
+              innerTalkback && innerTalkback(1)
             }
           }
       },
@@ -2410,7 +2417,11 @@ jb.component('formatDate', {
       },
       catchError: fn => source => (start, sink) => {
           if (start !== 0) return
-          source(0, function catchError(t, d) { return t === 2 && typeof d !== 'undefined' ? fn(d) : sink(t, d) } )
+          source(0, function catchError(t, d) {
+            if (t === 2 && d !== undefined) { sink(1, fn(d)); sink(2) } 
+            else sink(t, d) 
+          }
+        )
       },
       create: prod => (start, sink) => {
           if (start !== 0) return
@@ -9925,7 +9936,7 @@ jb.component('tree.plain', {
 	css: `|>.treenode-children { padding-left: 10px; min-height: 7px }
 	|>.treenode-label { margin-top: -1px }
 
-	|>.treenode-label .treenode-val { color: var(--jb-tree-value); padding-left: 4px; }
+	|>.treenode-label .treenode-val { color: var(--jb-tree-value); padding-left: 4px; display: inline-block;}
 	|>.treenode-line { display: flex; box-orient: horizontal; padding-bottom: 3px; align-items: center }
 
 	|>.treenode { display: block }
@@ -9968,7 +9979,7 @@ jb.component('tree.expandBox', {
 	  },
 	  css: `|>.treenode-children { padding-left: 10px; min-height: 7px }
 	|>.treenode-label { margin-top: -2px }
-	|>.treenode-label .treenode-val { color: var(--jb-tree-value); padding-left: 4px; }
+	|>.treenode-label .treenode-val { color: var(--jb-tree-value); padding-left: 4px; display: inline-block;}
 	|>.treenode-line { display: flex; box-orient: horizontal; width: ${lineWidth}; padding-bottom: 3px;}
 
 	|>.treenode { display: block }

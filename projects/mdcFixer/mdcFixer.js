@@ -13,7 +13,7 @@ jb.component('mdcFixer.main', {
           text({text: '%op%', title: 'opacity', features: field.columnWidth('50')})
         ],
         style: table.mdc(),
-        visualSizeLimit: '50',
+        visualSizeLimit: 50,
         features: css.width('200')
       })
     ]
