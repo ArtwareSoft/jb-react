@@ -4,15 +4,17 @@ jb.component('htmlParsing.main', {
   type: 'control',
   impl: group({
     title: '',
+    layout: layout.horizontal(),
     controls: [
       itemlist({
+        title: '',
         items: pipeline('%$phone%', keys()),
         controls: [
           text({text: '%%', title: 'property', features: field.columnWidth('200')}),
           text({text: pipeline('%$phone/{%%}%'), title: 'value'})
         ],
-        style: table.plain(),
-        features: [css.width('446')]
+        style: table.mdc(),
+        features: css.width('5005')
       }),
       itemlist({
         items: '%$phone/spec-list%',
@@ -20,13 +22,13 @@ jb.component('htmlParsing.main', {
           text({text: '%feature%', title: 'feature'}),
           text({text: '%val%', title: 'value'})
         ],
-        style: table.plain(),
+        style: table.mdc(),
         features: [css.width('400')]
       })
     ],
     features: variable({
       name: 'phone',
-      value: pipeline('%$samsung_galaxy_m30s-9818%', htmlParsing.deviceParser())
+      value: pipeline('%$samsungGalaxyM30s_9818%', htmlParsing.deviceParser())
     })
   })
 })
@@ -70,7 +72,7 @@ jb.component('htmlParsing.deviceParser', {
       ),
     first()
   ),
-  testData: '%$samsung_galaxy_m30s-9818%'
+  testData: '%$samsungGalaxyM30s_9818%'
 })
 
 
@@ -132,30 +134,16 @@ jb.component('htmlParsing.parseDevice', {
       group({
         layout: layout.horizontal(),
         controls: [
-          text({
-            text: pipeline(
-              '%$devices%',
-              properties(),
-              wrapAsObject({
-                  propertyName: '%id%',
-                  value: pipeline(
-                    '%val%',
-                    assign(prop('Size', split({separator: 'inch', text: '%Size%', part: 'first'})))
-                  )
-                })
-            ),
-            title: 'fix values'
-          }),
           itemlist({
             items: pipeline('%$devices%', properties(), '%val%'),
             controls: [
               text({text: '%name%', title: 'name', features: field.columnWidth('300')}),
               text({text: pipeline('%Price%', matchRegex('[0-9]+')), title: 'price'})
             ],
-            style: table.plain(),
+            style: table.mdc(),
             visualSizeLimit: '12',
             features: [
-              itemlist.selection({databind: '%$sel%'}),
+              itemlist.selection('%$selected2%', undefined),
               itemlist.keyboardSelection({}),
               css.width('600')
             ]
@@ -187,7 +175,7 @@ jb.component('htmlParsing.parseDevice', {
                 features: field.title('image')
               })
             ],
-            features: [group.data('%$selected2%'), watchRef('%$selected%')]
+            features: [group.data('%$selected2%'), watchRef('%$selected2%')]
           })
         ],
         features: variable({name: 'selected2', watchable: true})
