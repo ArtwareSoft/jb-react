@@ -197,10 +197,12 @@ class jBartStudio {
             message.module && cp.exec(`npm -i --save ${message.module}`)
         } else if (message.$ == 'storeWorkspaceState') {
             this.context.workspaceState.update('jbartStudio', message.state)
+        } else if (message.$ == 'saveFile') {
+            return fs.writeFileSync(message.path,message.contents)
         } else if (message.$ == 'createDirectoryWithFiles') {
+            if (!message.baseDir) throw 'no base dir'
             const dirExists = fs.existsSync(message.baseDir)
-            if (!message.override && dirExists)
-                throw 'Project already exists'
+            if (!message.override && dirExists) throw 'Project already exists'
             if (!dirExists)
                 fs.mkdirSync(message.baseDir)
             Object.keys(message.files).forEach(f => fs.writeFileSync(message.baseDir+ '/' + f,message.files[f]) )

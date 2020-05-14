@@ -6541,8 +6541,8 @@ jb.component('dialog.dialogOkCancel', {
 			h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
 			h(contentComp),
 			h('div',{class: 'dialog-buttons'},[
-				h('button',{class: 'mdc-button', onclick: 'dialogClose' },cancelLabel),
-				h('button',{class: 'mdc-button', onclick: 'dialogCloseOK' },okLabel),
+				h('button#mdc-button', {onclick: 'dialogClose' }, [h('div#mdc-button__ripple'), h('span#mdc-button__label',{},cancelLabel)]),
+				h('button#mdc-button', {onclick: 'dialogCloseOK' },[h('div#mdc-button__ripple'), h('span#mdc-button__label',{},okLabel)]),
 			]),
 		]),
     css: '>.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }'
@@ -8723,9 +8723,9 @@ jb.component('button.mdc', {
   impl: customStyle({
     template: (cmp,{title,raised,noRipple,noTitle},h) => h('button',{
       class: ['mdc-button',raised && 'raised mdc-button--raised'].filter(x=>x).join(' '), onclick: true},[
-      ...[!noRipple && h('div',{class:'mdc-button__ripple'})],
+      ...[!noRipple && h('div#mdc-button__ripple')],
       ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-button__icon')),
-      ...[!noTitle && h('span',{class:'mdc-button__label'},title)],
+      ...[!noTitle && h('span#mdc-button__label',{},title)],
       ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-button__icon')),
     ]),
     features: mdcStyle.initDynamic()
@@ -9332,8 +9332,8 @@ jb.component('picklist.mdcSelect', {
   type: 'picklist.style',
   params: [
     {id: 'width', as: 'number', defaultValue: 300},
-    {id: 'noLabel', as: 'boolean'},
-    {id: 'noRipple', as: 'boolean'},
+    {id: 'noLabel', as: 'boolean', type: 'boolean'},
+    {id: 'noRipple', as: 'boolean', type: 'boolean'}
   ],
   impl: customStyle({
     template: (cmp,{databind,options,title,noLabel,noRipple,hasEmptyOption},h) => h('div#mdc-select',{}, [
@@ -9346,18 +9346,23 @@ jb.component('picklist.mdcSelect', {
       ]),
       h('div#mdc-select__menu mdc-menu mdc-menu-surface demo-width-class',{},[
         h('ul#mdc-list',{},options.map(option=>h('li#mdc-list-item',{'data-value': option.code, 
-          class: option.code == databind ? 'mdc-list-item--selected': ''}, 
+          class: option.code == databind ? 'mdc-list-item--selected': ''},    
           h('span#mdc-list-item__text', {}, option.text))))
       ])
     ]),
     features: [
-      field.databind(), 
-      picklist.init(), 
+      field.databind(),
+      picklist.init(),
       mdcStyle.initDynamic(),
-      css( ({},{},{width}) => `>* { ${jb.ui.propWithUnits('width', width)} }`),
-      interactive((ctx,{cmp}) =>
+      css(({},{},{width}) => `>* { ${jb.ui.propWithUnits('width', width)} }`),
+      interactive(
+        (ctx,{cmp}) =>
           cmp.mdc_comps.forEach(mdcCmp => mdcCmp.listen('MDCSelect:change', () => cmp.jbModel(mdcCmp.value)))
       ),
+      css(
+        `~.mdc-select:not(.mdc-select--disabled) .mdc-select__selected-text { color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-titleBar-inactiveBackground); }
+        ~.mdc-select:not(.mdc-select--disabled) .mdc-floating-label { color: var(--mdc-theme-primary) }`
+      )
     ]
   })
 })
@@ -35391,6 +35396,17 @@ jb.component('trim', {
   impl: (ctx,text) => text.trim()
 })
 
+jb.component('splitToLines', {
+  params: [
+    {id: 'text', as: 'string', defaultValue: '%%'}
+  ],
+  impl: (ctx,text) => text.split('\n')
+})
+
+jb.component('newLine', {
+  impl: '\n'
+})
+
 jb.component('removePrefixRegex', {
   params: [
     {id: 'prefix', as: 'string', mandatory: true},
@@ -35414,16 +35430,7 @@ jb.component('wrapAsObject', {
     return out;
   }
 })
-
-jb.component('writeValueAsynch', {
-  type: 'action',
-  params: [
-    {id: 'to', as: 'ref', mandatory: true},
-    {id: 'value', mandatory: true}
-  ],
-  impl: (ctx,to,value) =>
-		Promise.resolve(jb.val(value)).then(val=>jb.writeValue(to,val,ctx))
-});
+;
 
 (function() {
 
@@ -38722,8 +38729,8 @@ jb.component('studio.suggestionsItemlist', {
       itemlist.keyboardSelection(false),
       css.height({height: '500', overflow: 'auto', minMax: 'max'}),
       css.width({width: '300', overflow: 'auto', minMax: 'min'}),
-      css('{ position: absolute; z-index:1000; background: white }'),
-      css.border({width: '1', color: '#cdcdcd'}),
+      css('{ position: absolute; z-index:1000; background: var(--jb-dropdown-background) }'),
+      css.border({width: '1', color: 'var(--jb-dropdown-border)' }),
       css.padding({top: '2', left: '3', selector: 'li'})
     ]
   })
@@ -39091,7 +39098,8 @@ jb.component('studio.properties', {
             style: button.mdcIcon(undefined, '24'),
             features: feature.icon({icon: 'business', type: 'mdc', size: '16'})
           })
-        ]
+        ],
+        features: css.margin({bottom: '10', right: '5'})
       })
     ],
     features: feature.byCondition(
@@ -40128,15 +40136,18 @@ jb.component('studio.dataBrowse', {
               style: group.tabs({}),
               controls: [
                 editableText({
-                  title: 'text',
+                  title: 'codemirror',
                   databind: '%$obj%',
                   style: editableText.codemirror({
                     enableFullScreen: true,
-                    height: '200',
+                    resizer: true,
+                    height: '',
                     mode: 'text',
                     debounceTime: 300,
+                    lineWrapping: false,
                     lineNumbers: true,
-                    readOnly: true
+                    readOnly: true,
+                    maxLength: ''
                   })
                 }),
                 html({title: 'html', html: '%$obj%', style: html.inIframe()})
@@ -41672,7 +41683,7 @@ jb.component('studio.initAutoSave', {
           const comp = st.previewjb.comps[compId]
           const fn = st.host.locationToPath(comp[jb.location][0])
           const fileContent = await st.host.getFile(fn)
-          if (!fileContent) return
+          if (fileContent == null) return
           const edits = [deltaFileContent(fileContent, {compId,comp})].filter(x=>x)
           await st.host.saveDelta(fn,edits)
         } catch (e) {
@@ -41688,7 +41699,7 @@ jb.component('studio.saveProjectSettings', {
   type: 'action,has-side-effects',
   impl: ctx => {
     if (!ctx.exp('%$studio/projectFolder%')) return
-    const path = (jb.frame.jbBaseProjUrl || '') + st.host.pathOfJsFile(ctx.exp('%$studio/projectFolder%'), 'index.html')
+    const path = ctx.run(studio.projectBaseDir()) + '/index.html'
     return st.host.getFile(path).then( fileContent =>
       st.host.saveFile(path, newIndexHtmlContent(fileContent, ctx.exp('%$studio/projectSettings%'))))
       .then(()=>st.showMultiMessages([{text: 'index.html saved with new settings'}]))
@@ -42068,19 +42079,25 @@ jb.component('studio.newDataSource', {
         title: 'name',
         databind: '%$dialogData/name%',
         style: editableText.mdcInput({}),
-        features: [validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid name')]
+        features: [
+          validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid name'),
+          css.margin({left: '10'})
+        ]
       }),
       picklist({
         title: 'type',
         databind: '%$dialogData/type%',
         options: picklist.optionsByComma('text,array,card,collection'),
         style: picklist.radio(),
-        features: feature.init(
-          action.if(
-            not('%$dialogData/type%'),
-            writeValue('%$dialogData/type%', 'collection')
-          )
-        )
+        features: [
+          feature.init(
+            action.if(
+              not('%$dialogData/type%'),
+              writeValue('%$dialogData/type%', 'collection')
+            )
+          ),
+          css.margin({left: '10'})
+        ]
       }),
       editableBoolean({
         databind: '%$dialogData/watchable%',
@@ -42090,20 +42107,21 @@ jb.component('studio.newDataSource', {
         textForFalse: 'passive'
       }),
       group({
-        layout: layout.flex({alignItems: 'baseline', spacing: '11'}),
+        layout: layout.horizontal('11'),
         controls: [
           editableBoolean({
             databind: '%$existingFile%',
             style: editableBoolean.mdcSlideToggle(),
-            title: 'file',
+            title: 'new file',
             textForTrue: 'existing file',
-            textForFalse: 'new file'
+            textForFalse: 'new  file',
+            features: css.margin({left: '14'})
           }),
           picklist({
             title: 'file',
             databind: '%$dialogData/file%',
             options: picklist.options({options: sourceEditor.filesOfProject()}),
-            style: picklist.mdcSelect({}),
+            style: picklist.mdcSelect('150'),
             features: [hidden(ctx => ctx.exp('%$existingFile%')), watchRef('%$existingFile%')]
           })
         ]
@@ -42111,8 +42129,8 @@ jb.component('studio.newDataSource', {
     ],
     features: [
       css.padding({top: '14', left: '11'}),
-      css.width('600'),
-      css.height('200'),
+      css.width('273'),
+      css.height('247'),
       variable({name: 'dialogData', value: firstSucceeding('%$dialogData%', obj())}),
       variable({name: 'existingFile', watchable: true})
     ]
@@ -42243,7 +42261,7 @@ jb.component('%$project%.main', {
 )
 })
 
-//# sourceURL=%$project%.js
+/* //# sourceURL=%$project%.js */
 
 jb.component('studio.openNewProject', {
   type: 'action',
@@ -42300,9 +42318,9 @@ jb.component('studio.createProjectFile', {
 })
 
 jb.component('studio.projectBaseDir', {
-  impl: ctx => st.host.locationToPath(
+  impl: ctx => jb.studio.host.locationToPath(
       (jb.frame.jbBaseProjUrl || '') + jb.studio.host.pathOfJsFile(ctx.exp('%$studio/project%'), ''))
-  .split('/').slice(0,-1).join('/')
+  .split('/').slice(0,-1).join('/').slice(1)
 })
 
 jb.component('studio.saveNewProject', {

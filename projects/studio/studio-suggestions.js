@@ -86,8 +86,8 @@ jb.component('studio.suggestionsItemlist', {
       itemlist.keyboardSelection(false),
       css.height({height: '500', overflow: 'auto', minMax: 'max'}),
       css.width({width: '300', overflow: 'auto', minMax: 'min'}),
-      css('{ position: absolute; z-index:1000; background: white }'),
-      css.border({width: '1', color: '#cdcdcd'}),
+      css('{ position: absolute; z-index:1000; background: var(--jb-dropdown-background) }'),
+      css.border({width: '1', color: 'var(--jb-dropdown-border)' }),
       css.padding({top: '2', left: '3', selector: 'li'})
     ]
   })

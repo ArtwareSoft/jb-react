@@ -52,8 +52,8 @@ jb.component('picklist.mdcSelect', {
   type: 'picklist.style',
   params: [
     {id: 'width', as: 'number', defaultValue: 300},
-    {id: 'noLabel', as: 'boolean'},
-    {id: 'noRipple', as: 'boolean'},
+    {id: 'noLabel', as: 'boolean', type: 'boolean'},
+    {id: 'noRipple', as: 'boolean', type: 'boolean'}
   ],
   impl: customStyle({
     template: (cmp,{databind,options,title,noLabel,noRipple,hasEmptyOption},h) => h('div#mdc-select',{}, [
@@ -66,18 +66,23 @@ jb.component('picklist.mdcSelect', {
       ]),
       h('div#mdc-select__menu mdc-menu mdc-menu-surface demo-width-class',{},[
         h('ul#mdc-list',{},options.map(option=>h('li#mdc-list-item',{'data-value': option.code, 
-          class: option.code == databind ? 'mdc-list-item--selected': ''}, 
+          class: option.code == databind ? 'mdc-list-item--selected': ''},    
           h('span#mdc-list-item__text', {}, option.text))))
       ])
     ]),
     features: [
-      field.databind(), 
-      picklist.init(), 
+      field.databind(),
+      picklist.init(),
       mdcStyle.initDynamic(),
-      css( ({},{},{width}) => `>* { ${jb.ui.propWithUnits('width', width)} }`),
-      interactive((ctx,{cmp}) =>
+      css(({},{},{width}) => `>* { ${jb.ui.propWithUnits('width', width)} }`),
+      interactive(
+        (ctx,{cmp}) =>
           cmp.mdc_comps.forEach(mdcCmp => mdcCmp.listen('MDCSelect:change', () => cmp.jbModel(mdcCmp.value)))
       ),
+      css(
+        `~.mdc-select:not(.mdc-select--disabled) .mdc-select__selected-text { color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-titleBar-inactiveBackground); }
+        ~.mdc-select:not(.mdc-select--disabled) .mdc-floating-label { color: var(--mdc-theme-primary) }`
+      )
     ]
   })
 })

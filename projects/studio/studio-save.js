@@ -43,7 +43,7 @@ jb.component('studio.initAutoSave', {
           const comp = st.previewjb.comps[compId]
           const fn = st.host.locationToPath(comp[jb.location][0])
           const fileContent = await st.host.getFile(fn)
-          if (!fileContent) return
+          if (fileContent == null) return
           const edits = [deltaFileContent(fileContent, {compId,comp})].filter(x=>x)
           await st.host.saveDelta(fn,edits)
         } catch (e) {
@@ -59,7 +59,7 @@ jb.component('studio.saveProjectSettings', {
   type: 'action,has-side-effects',
   impl: ctx => {
     if (!ctx.exp('%$studio/projectFolder%')) return
-    const path = (jb.frame.jbBaseProjUrl || '') + st.host.pathOfJsFile(ctx.exp('%$studio/projectFolder%'), 'index.html')
+    const path = ctx.run(studio.projectBaseDir()) + '/index.html'
     return st.host.getFile(path).then( fileContent =>
       st.host.saveFile(path, newIndexHtmlContent(fileContent, ctx.exp('%$studio/projectSettings%'))))
       .then(()=>st.showMultiMessages([{text: 'index.html saved with new settings'}]))

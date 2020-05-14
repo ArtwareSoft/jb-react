@@ -6541,8 +6541,8 @@ jb.component('dialog.dialogOkCancel', {
 			h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
 			h(contentComp),
 			h('div',{class: 'dialog-buttons'},[
-				h('button',{class: 'mdc-button', onclick: 'dialogClose' },cancelLabel),
-				h('button',{class: 'mdc-button', onclick: 'dialogCloseOK' },okLabel),
+				h('button#mdc-button', {onclick: 'dialogClose' }, [h('div#mdc-button__ripple'), h('span#mdc-button__label',{},cancelLabel)]),
+				h('button#mdc-button', {onclick: 'dialogCloseOK' },[h('div#mdc-button__ripple'), h('span#mdc-button__label',{},okLabel)]),
 			]),
 		]),
     css: '>.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }'
@@ -8723,9 +8723,9 @@ jb.component('button.mdc', {
   impl: customStyle({
     template: (cmp,{title,raised,noRipple,noTitle},h) => h('button',{
       class: ['mdc-button',raised && 'raised mdc-button--raised'].filter(x=>x).join(' '), onclick: true},[
-      ...[!noRipple && h('div',{class:'mdc-button__ripple'})],
+      ...[!noRipple && h('div#mdc-button__ripple')],
       ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-button__icon')),
-      ...[!noTitle && h('span',{class:'mdc-button__label'},title)],
+      ...[!noTitle && h('span#mdc-button__label',{},title)],
       ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-button__icon')),
     ]),
     features: mdcStyle.initDynamic()
@@ -9332,8 +9332,8 @@ jb.component('picklist.mdcSelect', {
   type: 'picklist.style',
   params: [
     {id: 'width', as: 'number', defaultValue: 300},
-    {id: 'noLabel', as: 'boolean'},
-    {id: 'noRipple', as: 'boolean'},
+    {id: 'noLabel', as: 'boolean', type: 'boolean'},
+    {id: 'noRipple', as: 'boolean', type: 'boolean'}
   ],
   impl: customStyle({
     template: (cmp,{databind,options,title,noLabel,noRipple,hasEmptyOption},h) => h('div#mdc-select',{}, [
@@ -9346,18 +9346,23 @@ jb.component('picklist.mdcSelect', {
       ]),
       h('div#mdc-select__menu mdc-menu mdc-menu-surface demo-width-class',{},[
         h('ul#mdc-list',{},options.map(option=>h('li#mdc-list-item',{'data-value': option.code, 
-          class: option.code == databind ? 'mdc-list-item--selected': ''}, 
+          class: option.code == databind ? 'mdc-list-item--selected': ''},    
           h('span#mdc-list-item__text', {}, option.text))))
       ])
     ]),
     features: [
-      field.databind(), 
-      picklist.init(), 
+      field.databind(),
+      picklist.init(),
       mdcStyle.initDynamic(),
-      css( ({},{},{width}) => `>* { ${jb.ui.propWithUnits('width', width)} }`),
-      interactive((ctx,{cmp}) =>
+      css(({},{},{width}) => `>* { ${jb.ui.propWithUnits('width', width)} }`),
+      interactive(
+        (ctx,{cmp}) =>
           cmp.mdc_comps.forEach(mdcCmp => mdcCmp.listen('MDCSelect:change', () => cmp.jbModel(mdcCmp.value)))
       ),
+      css(
+        `~.mdc-select:not(.mdc-select--disabled) .mdc-select__selected-text { color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-titleBar-inactiveBackground); }
+        ~.mdc-select:not(.mdc-select--disabled) .mdc-floating-label { color: var(--mdc-theme-primary) }`
+      )
     ]
   })
 })

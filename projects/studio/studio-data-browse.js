@@ -60,19 +60,25 @@ jb.component('studio.newDataSource', {
         title: 'name',
         databind: '%$dialogData/name%',
         style: editableText.mdcInput({}),
-        features: [validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid name')]
+        features: [
+          validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid name'),
+          css.margin({left: '10'})
+        ]
       }),
       picklist({
         title: 'type',
         databind: '%$dialogData/type%',
         options: picklist.optionsByComma('text,array,card,collection'),
         style: picklist.radio(),
-        features: feature.init(
-          action.if(
-            not('%$dialogData/type%'),
-            writeValue('%$dialogData/type%', 'collection')
-          )
-        )
+        features: [
+          feature.init(
+            action.if(
+              not('%$dialogData/type%'),
+              writeValue('%$dialogData/type%', 'collection')
+            )
+          ),
+          css.margin({left: '10'})
+        ]
       }),
       editableBoolean({
         databind: '%$dialogData/watchable%',
@@ -82,20 +88,21 @@ jb.component('studio.newDataSource', {
         textForFalse: 'passive'
       }),
       group({
-        layout: layout.flex({alignItems: 'baseline', spacing: '11'}),
+        layout: layout.horizontal('11'),
         controls: [
           editableBoolean({
             databind: '%$existingFile%',
             style: editableBoolean.mdcSlideToggle(),
-            title: 'file',
+            title: 'new file',
             textForTrue: 'existing file',
-            textForFalse: 'new file'
+            textForFalse: 'new  file',
+            features: css.margin({left: '14'})
           }),
           picklist({
             title: 'file',
             databind: '%$dialogData/file%',
             options: picklist.options({options: sourceEditor.filesOfProject()}),
-            style: picklist.mdcSelect({}),
+            style: picklist.mdcSelect('150'),
             features: [hidden(ctx => ctx.exp('%$existingFile%')), watchRef('%$existingFile%')]
           })
         ]
@@ -103,8 +110,8 @@ jb.component('studio.newDataSource', {
     ],
     features: [
       css.padding({top: '14', left: '11'}),
-      css.width('600'),
-      css.height('200'),
+      css.width('273'),
+      css.height('247'),
       variable({name: 'dialogData', value: firstSucceeding('%$dialogData%', obj())}),
       variable({name: 'existingFile', watchable: true})
     ]

@@ -28,18 +28,9 @@ jb.component('helloWorld.main', {
     title: '',
     layout: layout.flex({}),
     controls: [
-      text({text: '%$aaa/title%', title: ''}),
       button({
-        title: '%$aaa/title%',
-        action: openDialog({
-          style: dialog.default(),
-          content: group({
-            controls: [
-              text({text: 'my text', title: 'my title'})
-            ]
-          }),
-          title: 'asdqwsa'
-        })
+        title: 'click me',
+        action: openDialog({style: dialog.dialogOkCancel(), content: group({})})
       })
     ],
     features: css.color({})

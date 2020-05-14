@@ -54,9 +54,9 @@ jb.component('button.mdc', {
   impl: customStyle({
     template: (cmp,{title,raised,noRipple,noTitle},h) => h('button',{
       class: ['mdc-button',raised && 'raised mdc-button--raised'].filter(x=>x).join(' '), onclick: true},[
-      ...[!noRipple && h('div',{class:'mdc-button__ripple'})],
+      ...[!noRipple && h('div#mdc-button__ripple')],
       ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-button__icon')),
-      ...[!noTitle && h('span',{class:'mdc-button__label'},title)],
+      ...[!noTitle && h('span#mdc-button__label',{},title)],
       ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-button__icon')),
     ]),
     features: mdcStyle.initDynamic()

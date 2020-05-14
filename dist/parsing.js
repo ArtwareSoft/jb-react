@@ -233,6 +233,17 @@ jb.component('trim', {
   impl: (ctx,text) => text.trim()
 })
 
+jb.component('splitToLines', {
+  params: [
+    {id: 'text', as: 'string', defaultValue: '%%'}
+  ],
+  impl: (ctx,text) => text.split('\n')
+})
+
+jb.component('newLine', {
+  impl: '\n'
+})
+
 jb.component('removePrefixRegex', {
   params: [
     {id: 'prefix', as: 'string', mandatory: true},
@@ -256,14 +267,5 @@ jb.component('wrapAsObject', {
     return out;
   }
 })
-
-jb.component('writeValueAsynch', {
-  type: 'action',
-  params: [
-    {id: 'to', as: 'ref', mandatory: true},
-    {id: 'value', mandatory: true}
-  ],
-  impl: (ctx,to,value) =>
-		Promise.resolve(jb.val(value)).then(val=>jb.writeValue(to,val,ctx))
-});
+;
 

@@ -36,7 +36,7 @@ jb.component('%$project%.main', {
 )
 })
 
-//# sourceURL=%$project%.js
+/* //# sourceURL=%$project%.js */
 
 jb.component('studio.openNewProject', {
   type: 'action',
@@ -93,9 +93,9 @@ jb.component('studio.createProjectFile', {
 })
 
 jb.component('studio.projectBaseDir', {
-  impl: ctx => st.host.locationToPath(
+  impl: ctx => jb.studio.host.locationToPath(
       (jb.frame.jbBaseProjUrl || '') + jb.studio.host.pathOfJsFile(ctx.exp('%$studio/project%'), ''))
-  .split('/').slice(0,-1).join('/')
+  .split('/').slice(0,-1).join('/').slice(1)
 })
 
 jb.component('studio.saveNewProject', {

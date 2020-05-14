@@ -131,15 +131,18 @@ jb.component('studio.dataBrowse', {
               style: group.tabs({}),
               controls: [
                 editableText({
-                  title: 'text',
+                  title: 'codemirror',
                   databind: '%$obj%',
                   style: editableText.codemirror({
                     enableFullScreen: true,
-                    height: '200',
+                    resizer: true,
+                    height: '',
                     mode: 'text',
                     debounceTime: 300,
+                    lineWrapping: false,
                     lineNumbers: true,
-                    readOnly: true
+                    readOnly: true,
+                    maxLength: ''
                   })
                 }),
                 html({title: 'html', html: '%$obj%', style: html.inIframe()})

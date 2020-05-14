@@ -109,7 +109,8 @@ jb.component('studio.properties', {
             style: button.mdcIcon(undefined, '24'),
             features: feature.icon({icon: 'business', type: 'mdc', size: '16'})
           })
-        ]
+        ],
+        features: css.margin({bottom: '10', right: '5'})
       })
     ],
     features: feature.byCondition(
