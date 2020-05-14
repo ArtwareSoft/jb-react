@@ -82,9 +82,13 @@ jb.component('studio.sampleProject', {
   ],
   impl: menu.action({
     title: '%$project%',
-    action: gotoUrl(
-      'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/%$project%&project=%$project%',
-      'new tab'
+    action: action.if(
+      studio.inVscode(),
+      studio.reOpenStudio(pipeline(studio.projectsBaseDir(),'%%/%$project%/%$project%.js'), 0),
+      gotoUrl(
+        'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/%$project%&project=%$project%',
+        'new tab'
+      )
     )
   })
 })
@@ -102,7 +106,7 @@ jb.component('studio.mainMenu', {
             options: [
               studio.sampleProject('style-gallery'),
               studio.sampleProject('itemlists'),
-              studio.sampleProject('todos'),
+              studio.sampleProject('todomvc'),
               studio.sampleProject('html-parsing'),
               studio.sampleProject('cards-demo')
             ]

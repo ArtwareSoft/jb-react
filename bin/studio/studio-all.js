@@ -987,7 +987,7 @@ jb.component('data.if', {
   macroByValue: true,
   params: [
     {id: 'condition', as: 'boolean', mandatory: true, dynamic: true, type: 'boolean'},
-    {id: 'then', mandatory: true, dynamic: true},
+    {id: 'then', mandatory: true, dynamic: true, composite: true},
     {id: 'else', dynamic: true, defaultValue: '%%'}
   ],
   impl: (ctx,cond,_then,_else) =>	cond() ? _then() : _else()
@@ -999,7 +999,7 @@ jb.component('action.if', {
   macroByValue: true,
   params: [
     {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
-    {id: 'then', type: 'action', mandatory: true, dynamic: true},
+    {id: 'then', type: 'action', mandatory: true, dynamic: true, composite: true},
     {id: 'else', type: 'action', dynamic: true}
   ],
   impl: (ctx,cond,_then,_else) =>	cond ? _then() : _else()
@@ -3019,7 +3019,7 @@ class WatchableValueByRef {
   }
   doOp(ref,opOnRef,srcCtx) {
     try {
-      const opVal = opOnRef.$set || opOnRef.$merge || opOnRef.$push || opOnRef.$splice;
+      const opVal = opOnRef.$merge || opOnRef.$push || opOnRef.$splice || opOnRef.$set
       if (!this.isRef(ref))
         ref = this.asRef(ref);
 
@@ -5107,7 +5107,7 @@ jb.component('feature.onEnter', {
   type: 'feature',
   category: 'events',
   params: [
-    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
+    {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
   impl: feature.onKey(
     'Enter',
@@ -5753,8 +5753,8 @@ jb.component('control.icon', {
   params: [
     {id: 'icon', as: 'string', mandatory: true},
     {id: 'title', as: 'string', dynamic: true},
-    {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
-    {id: 'size', as: 'number', defaultValue: 24 },
+    {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc'},
+    {id: 'size', as: 'number', defaultValue: 24},
     {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
@@ -5782,7 +5782,7 @@ jb.component('icon.material', {
     { class: 'material-icons', title: title(), onclick: true, style: {'font-size': `${size}px`, width: `${size}px`, height: `${size}px` } }
       , icon) 
       : h('div',{title: title(), onclick: true,
-        $html: `<svg width="24" height="24" transform="scale(${size/24})"><path d="${jb.path(jb.frame,['MDIcons',icon])}"/></svg>`}),
+        $html: `<svg width="24" height="24" fill="currentColor" transform="scale(${size/24})"><path d="${jb.path(jb.frame,['MDIcons',icon])}"/></svg>`}),
   })
 })
 
@@ -8749,10 +8749,10 @@ jb.component('button.mdcChipAction', {
 
 jb.component('button.plainIcon', {
   type: 'button.style',
-  impl: customStyle({
-    template: (cmp,{title,raised},h) => 
+  impl: customStyle(
+    (cmp,{title,raised},h) => 
       jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=> vdom.setAttribute('title',vdom.getAttribute('title') || title))[0]
-  })
+  )
 })
 
 jb.component('button.mdcIcon', {
@@ -8900,7 +8900,66 @@ jb.component('editableText.mdcSearch', {
   impl: styleWithFeatures(editableText.mdcInput({width:'%$width%', noLabel: true}), feature.icon({icon: 'search', position: 'post'}))
 })
 
-;
+jb.component('editableText.expandable', {
+  description: 'label that changes to editable class on double click',
+  type: 'editable-text.style',
+  params: [
+    {id: 'buttonFeatures', type: 'feature[]', flattenArray: true, dynamic: true},
+    {id: 'editableFeatures', type: 'feature[]', flattenArray: true, dynamic: true},
+    {id: 'buttonStyle', type: 'button.style', dynamic: true, defaultValue: button.href()},
+    {id: 'editableStyle', type: 'editable-text.style', dynamic: true, defaultValue: editableText.input()},
+    {id: 'onToggle', type: 'action', dynamic: true}
+  ],
+  impl: styleByControl(
+    group({
+      controls: [
+        editableText({
+          databind: '%$editableTextModel/databind%',
+          style: call('editableStyle'),
+          features: [
+            watchRef({ref: '%$editable%', allowSelfRefresh: true}),
+            hidden('%$editable%'),
+            interactive(
+              (ctx,{cmp, expandableContext}) => {
+                const elem = cmp.base.matches('input,textarea') ? cmp.base : cmp.base.querySelector('input,textarea')
+                if (elem) {
+                  elem.onblur = () => expandableContext.exitEditable()
+                  elem.onkeyup = ev => (ev.keyCode == 13 || ev.keyCode == 27) && elem.blur()
+                }
+                expandableContext.exitEditable = () => cmp.ctx.run(runActions(
+                  writeValue('%$editable%',false),
+                  (ctx,{},{onToggle}) => onToggle(ctx)
+                ))
+                expandableContext.regainFocus = () =>
+                  jb.delay(1).then(() => jb.ui.focus(elem, 'editable-text.expandable', ctx))
+            }
+            ),
+            (ctx,{},{editableFeatures}) => editableFeatures(ctx)
+          ]
+        }),
+        button({
+          title: '%$editableTextModel/databind%',
+          action: runActions(
+            writeValue('%$editable%', true),
+            (ctx,{expandableContext}) => expandableContext.regainFocus && expandableContext.regainFocus(),
+            call('onToggle')
+          ),
+          style: call('buttonStyle'),
+          features: [
+            watchRef({ref: '%$editable%', allowSelfRefresh: true}),
+            hidden(not('%$editable%')),
+            (ctx,{},{buttonFeatures}) => buttonFeatures(ctx)
+          ]
+        })
+      ],
+      features: [
+        variable({name: 'editable', watchable: true}),
+        variable({name: 'expandableContext', value: obj()})
+      ]
+    }),
+    'editableTextModel'
+  )
+});
 
 jb.component('layout.vertical', {
   type: 'layout,feature',
@@ -36437,6 +36496,8 @@ st.initPreview = function(preview_window,allowedTypes) {
 jb.component('studio.refreshPreview', {
   type: 'action',
   impl: ctx => {
+    if (jb.frame.jbInvscode)
+      return jb.studio.host.reOpenStudio()
     jb.ui.garbageCollectCtxDictionary(jb.frame.document.body,true);
     jb.studio.previewjb.ui.garbageCollectCtxDictionary(jb.studio.previewjb.frame.document.body, true);
     jb.studio.resourcesFromPrevRun = st.previewWindow.JSON.stringify(jb.studio.previewjb.resources)
@@ -41511,7 +41572,7 @@ jb.component('studio.jbEditorMenu', {
       menu.studioWrapWith({
         path: '%$path%',
         type: 'action',
-        components: list('runActions', 'runActionOnItems')
+        components: list('runActions', 'runActionOnItems','action.if')
       }),
       menu.studioWrapWith({
         path: '%$path%',
@@ -42286,7 +42347,7 @@ jb.component('studio.openNewProject', {
       writeValue('%$studio/projectFolder%', '%$project%'),
       writeValue('%$studio/page%', '%$project%.main'),
       writeValue('%$studio/profile_path%', studio.currentPagePath()),
-      ctx => jb.studio.host.reOpenStudio(ctx.exp('%$mainFileName%')[0],5)
+      studio.reOpenStudio('%$mainFileName%',5)
     ),
     modal: true,
     features: [
@@ -42296,6 +42357,15 @@ jb.component('studio.openNewProject', {
     ]
   })
 })
+
+jb.component('studio.reOpenStudio', {
+  params:[
+    {id: 'fileName', as: 'string'},
+    {id: 'line', as: 'number'},
+  ],
+  impl: (ctx,fn,line) => jb.studio.host.reOpenStudio(fn,line)
+})
+
 
 jb.component('studio.createProjectFile', {
   type: 'action,has-side-effects',
@@ -42491,7 +42561,7 @@ jb.component('studio.eventTracker', {
                 type: data.switch({cases: [data.case('%log% == error', 'mdc')], default: 'mdi'}),
                 size: '16'
               }),
-              css('background-color: transparent; color: var(--jb-descriptionForeground);')
+              css('background-color1: transparent; color1: var(--jb-descriptionForeground);')
             ]
           }),
           text({
@@ -42539,12 +42609,15 @@ jb.component('studio.eventView', {
   impl: group({
     layout: layout.horizontal('4'),
     controls: [
-      controlWithCondition('%opPath%', button({
-        title: last('%opPath%'),
-        style: button.href(),
-        features: feature.hoverTitle(join({separator: '/', items: '%opPath%'}))
-      })),
-      controlWithCondition('%opValue%', text('<- %opValue%')),
+      controlWithCondition(
+        '%opPath%',
+        button({
+          title: last('%opPath%'),
+          style: button.href(),
+          features: feature.hoverTitle(join({separator: '/', items: '%opPath%'}))
+        })
+      ),
+      controlWithCondition(({data}) => data.opValue != null, text('<- %opValue%')),
       controlWithCondition(
         '%srcCompName%',
         group({
@@ -42555,19 +42628,31 @@ jb.component('studio.eventView', {
               title: '%srcCompName%',
               action: studio.showStack('%srcCtx%'),
               style: button.href(),
-              features: feature.hoverTitle('%srcPath%')
+              features: [
+                feature.hoverTitle('%srcPath%'),
+                feature.onHover({action: studio.highlightByPath('%srcPath%')})
+              ]
             })
           ]
         })
       ),
       controlWithCondition(isOfType('string', '%event/2%'), text('%event/2%')),
-      controlWithCondition('%log% == setGridAreaVals%', text(join({separator: '/', items: '%event/4%'}))),
-      controlWithCondition('%path%', button({
-        title: '%compName%',
-        action: studio.showStack('%ctx%'),
-        style: button.href(),
-        features: feature.hoverTitle('%path%')
-      })),
+      controlWithCondition(
+        '%log% == setGridAreaVals%',
+        text({text: join({separator: '/', items: '%event/4%'})})
+      ),
+      controlWithCondition(
+        '%path%',
+        button({
+          title: '%compName%',
+          action: studio.showStack('%ctx%'),
+          style: button.href(),
+          features: [
+            feature.hoverTitle('%path%'),
+            feature.onHover({action: studio.highlightByPath('%path%')})
+          ]
+        })
+      )
     ]
   })
 })
@@ -42589,9 +42674,12 @@ jb.component('studio.eventItems', {
       ev.compName = ev.path && st.compNameOfPath(ev.path)
       ev.cmp = (event || []).filter(x=>x && x.base && x.refresh)[0]
       ev.elem = ev.cmp && ev.cmp.base || (event || []).filter(x=>x && x.nodeType)[0]
-      ev.opEvent = (event || []).filter(x=>x && x.opVal)[0]
+      ev.opEvent = (event || []).filter(x=>x && x.opVal != null)[0]
       ev.opPath = ev.opEvent && ev.opEvent.path
-      ev.opValue = ev.opEvent && jb.prettyPrint(ev.opEvent.op,{forceFlat: true}).replace(/{|}|\$/g,'').replace("'set': ",'')
+      const op = ev.opEvent && ev.opEvent.op
+      ev.opValue = op && op.$set != null && op.$set
+      if (ev.opValue == null && op)
+        ev.opValue = jb.prettyPrint(op,{forceFlat: true}).replace(/{|}|\$/g,'').replace("'set': ",'')
       ev.srcCtx = (event || []).filter(x=>x && x.srcCtx).map(x=>x.srcCtx)[0]
       ev.srcElem = jb.path(ev.srcCtx, 'vars.cmp.base')
       ev.srcPath = jb.path(ev.srcCtx, 'vars.cmp.ctx.path')
@@ -42969,9 +43057,13 @@ jb.component('studio.sampleProject', {
   ],
   impl: menu.action({
     title: '%$project%',
-    action: gotoUrl(
-      'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/%$project%&project=%$project%',
-      'new tab'
+    action: action.if(
+      studio.inVscode(),
+      studio.reOpenStudio(pipeline(studio.projectsBaseDir(),'%%/%$project%/%$project%.js'), 0),
+      gotoUrl(
+        'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/%$project%&project=%$project%',
+        'new tab'
+      )
     )
   })
 })
@@ -42989,7 +43081,7 @@ jb.component('studio.mainMenu', {
             options: [
               studio.sampleProject('style-gallery'),
               studio.sampleProject('itemlists'),
-              studio.sampleProject('todos'),
+              studio.sampleProject('todomvc'),
               studio.sampleProject('html-parsing'),
               studio.sampleProject('cards-demo')
             ]
@@ -46235,9 +46327,12 @@ jb.component('vscode.openjbEditor', {
     params: [
         { id: 'activeEditorPosition'}
     ],
-    impl: If('%$activeEditorPosition%', runActions(
-        writeValue('%$studio/page%','%$activeEditorPosition/compId%'),
-        studio.openComponentInJbEditor(vscode.pathByActiveEditor('%$activeEditorPosition%')))
+    impl: If( (ctx,{},{activeEditorPosition}) => activeEditorPosition && activeEditorPosition.compId 
+                && jb.studio.previewjb && jb.studio.previewjb.comps[activeEditorPosition.compId], 
+        runActions(
+            writeValue('%$studio/page%','%$activeEditorPosition/compId%'),
+            studio.openComponentInJbEditor(vscode.pathByActiveEditor('%$activeEditorPosition%'))
+        )
     )
 })
 

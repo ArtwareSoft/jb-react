@@ -80,10 +80,10 @@ jb.component('button.mdcChipAction', {
 
 jb.component('button.plainIcon', {
   type: 'button.style',
-  impl: customStyle({
-    template: (cmp,{title,raised},h) => 
+  impl: customStyle(
+    (cmp,{title,raised},h) => 
       jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=> vdom.setAttribute('title',vdom.getAttribute('title') || title))[0]
-  })
+  )
 })
 
 jb.component('button.mdcIcon', {

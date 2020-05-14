@@ -1,4 +1,4 @@
-jb.ns('html-parsing')
+jb.ns('htmlParsing')
 
 jb.component('htmlParsing.main', {
   type: 'control',

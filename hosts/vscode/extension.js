@@ -6,21 +6,18 @@ const fs = require("fs")
 
 function activate(context) {
     const startCommnad = { $: 'vscode.openjbEditor'}
-    context.subscriptions.push(commands.registerCommand('jb.studio.openJbEditor', () => createOrDo(context,startCommnad)))
-    context.subscriptions.push(commands.registerCommand('jb.studio.openProperties', () => createOrDo(context)))
+    context.subscriptions.push(commands.registerCommand('jb.studio.openJbEditor', () => reopen(context,startCommnad)))
+    context.subscriptions.push(commands.registerCommand('jb.studio.openProperties', () => reopen(context)))
 }
 exports.activate = activate;
 let studio
 
-function createOrDo(context, command) {
-    if (!studio) {
-        const win = vscode.window
-        const column = win.activeTextEditor ? (win.activeTextEditor.viewColumn || 0) + 1 : ViewColumn.One
-        const panel = win.createWebviewPanel(jBartStudio.viewType, 'jBart Studio', column, { enableScripts: true })
-        studio = new jBartStudio(context, panel,command)
-    } else {
-        studio.runCommand({...command, activeEditorPosition: studio.calcActiveEditorPosition()})
-    }
+async function reopen(context, command) {
+    const win = vscode.window
+    const column = win.activeTextEditor ? (win.activeTextEditor.viewColumn || 0) + 1 : ViewColumn.One
+    await studio && studio.dispose()
+    const panel = win.createWebviewPanel(jBartStudio.viewType, 'jBart Studio', column, { enableScripts: true })
+    studio = new jBartStudio(context, panel,command)
 }
 
 class jBartStudio {
@@ -197,12 +194,14 @@ class jBartStudio {
         } else if (message.$ == 'reOpenStudio') {
             const {fn, pos} = message
             return (async () => {
-                const doc = await vscode.workspace.openTextDocument(Uri.file(fn))
-                const editor = await vscode.window.showTextDocument(doc,vscode.ViewColumn.One)
-                editor.revealRange(new vscode.Range(...pos))
-                editor.selection = new vscode.Selection(pos[0], pos[1], pos[2], pos[3])
-                await this._panel.dispose()
-                await createOrDo(this.context)
+                if (fn) {
+                    const doc = await vscode.workspace.openTextDocument(Uri.file(fn))
+                    const editor = await vscode.window.showTextDocument(doc,vscode.ViewColumn.One)
+                    editor.revealRange(new vscode.Range(...pos))
+                    editor.selection = new vscode.Selection(pos[0], pos[1], pos[2], pos[3])
+                }
+                //await this._panel.dispose()
+                await reopen(this.context)
                 return { type: 'success' }
             })()
         } else if (message.$ == 'installPackage') {

@@ -29,7 +29,7 @@ class WatchableValueByRef {
   }
   doOp(ref,opOnRef,srcCtx) {
     try {
-      const opVal = opOnRef.$set || opOnRef.$merge || opOnRef.$push || opOnRef.$splice;
+      const opVal = opOnRef.$merge || opOnRef.$push || opOnRef.$splice || opOnRef.$set
       if (!this.isRef(ref))
         ref = this.asRef(ref);
 

@@ -182,7 +182,7 @@ jb.component('studio.jbEditorMenu', {
       menu.studioWrapWith({
         path: '%$path%',
         type: 'action',
-        components: list('runActions', 'runActionOnItems')
+        components: list('runActions', 'runActionOnItems','action.if')
       }),
       menu.studioWrapWith({
         path: '%$path%',

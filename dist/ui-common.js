@@ -154,7 +154,7 @@ class WatchableValueByRef {
   }
   doOp(ref,opOnRef,srcCtx) {
     try {
-      const opVal = opOnRef.$set || opOnRef.$merge || opOnRef.$push || opOnRef.$splice;
+      const opVal = opOnRef.$merge || opOnRef.$push || opOnRef.$splice || opOnRef.$set
       if (!this.isRef(ref))
         ref = this.asRef(ref);
 
@@ -2242,7 +2242,7 @@ jb.component('feature.onEnter', {
   type: 'feature',
   category: 'events',
   params: [
-    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
+    {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
   impl: feature.onKey(
     'Enter',
@@ -2888,8 +2888,8 @@ jb.component('control.icon', {
   params: [
     {id: 'icon', as: 'string', mandatory: true},
     {id: 'title', as: 'string', dynamic: true},
-    {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc' },
-    {id: 'size', as: 'number', defaultValue: 24 },
+    {id: 'type', as: 'string', options: 'mdi,mdc', defaultValue: 'mdc'},
+    {id: 'size', as: 'number', defaultValue: 24},
     {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
@@ -2917,7 +2917,7 @@ jb.component('icon.material', {
     { class: 'material-icons', title: title(), onclick: true, style: {'font-size': `${size}px`, width: `${size}px`, height: `${size}px` } }
       , icon) 
       : h('div',{title: title(), onclick: true,
-        $html: `<svg width="24" height="24" transform="scale(${size/24})"><path d="${jb.path(jb.frame,['MDIcons',icon])}"/></svg>`}),
+        $html: `<svg width="24" height="24" fill="currentColor" transform="scale(${size/24})"><path d="${jb.path(jb.frame,['MDIcons',icon])}"/></svg>`}),
   })
 })
 
@@ -5884,10 +5884,10 @@ jb.component('button.mdcChipAction', {
 
 jb.component('button.plainIcon', {
   type: 'button.style',
-  impl: customStyle({
-    template: (cmp,{title,raised},h) => 
+  impl: customStyle(
+    (cmp,{title,raised},h) => 
       jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=> vdom.setAttribute('title',vdom.getAttribute('title') || title))[0]
-  })
+  )
 })
 
 jb.component('button.mdcIcon', {
@@ -6035,7 +6035,66 @@ jb.component('editableText.mdcSearch', {
   impl: styleWithFeatures(editableText.mdcInput({width:'%$width%', noLabel: true}), feature.icon({icon: 'search', position: 'post'}))
 })
 
-;
+jb.component('editableText.expandable', {
+  description: 'label that changes to editable class on double click',
+  type: 'editable-text.style',
+  params: [
+    {id: 'buttonFeatures', type: 'feature[]', flattenArray: true, dynamic: true},
+    {id: 'editableFeatures', type: 'feature[]', flattenArray: true, dynamic: true},
+    {id: 'buttonStyle', type: 'button.style', dynamic: true, defaultValue: button.href()},
+    {id: 'editableStyle', type: 'editable-text.style', dynamic: true, defaultValue: editableText.input()},
+    {id: 'onToggle', type: 'action', dynamic: true}
+  ],
+  impl: styleByControl(
+    group({
+      controls: [
+        editableText({
+          databind: '%$editableTextModel/databind%',
+          style: call('editableStyle'),
+          features: [
+            watchRef({ref: '%$editable%', allowSelfRefresh: true}),
+            hidden('%$editable%'),
+            interactive(
+              (ctx,{cmp, expandableContext}) => {
+                const elem = cmp.base.matches('input,textarea') ? cmp.base : cmp.base.querySelector('input,textarea')
+                if (elem) {
+                  elem.onblur = () => expandableContext.exitEditable()
+                  elem.onkeyup = ev => (ev.keyCode == 13 || ev.keyCode == 27) && elem.blur()
+                }
+                expandableContext.exitEditable = () => cmp.ctx.run(runActions(
+                  writeValue('%$editable%',false),
+                  (ctx,{},{onToggle}) => onToggle(ctx)
+                ))
+                expandableContext.regainFocus = () =>
+                  jb.delay(1).then(() => jb.ui.focus(elem, 'editable-text.expandable', ctx))
+            }
+            ),
+            (ctx,{},{editableFeatures}) => editableFeatures(ctx)
+          ]
+        }),
+        button({
+          title: '%$editableTextModel/databind%',
+          action: runActions(
+            writeValue('%$editable%', true),
+            (ctx,{expandableContext}) => expandableContext.regainFocus && expandableContext.regainFocus(),
+            call('onToggle')
+          ),
+          style: call('buttonStyle'),
+          features: [
+            watchRef({ref: '%$editable%', allowSelfRefresh: true}),
+            hidden(not('%$editable%')),
+            (ctx,{},{buttonFeatures}) => buttonFeatures(ctx)
+          ]
+        })
+      ],
+      features: [
+        variable({name: 'editable', watchable: true}),
+        variable({name: 'expandableContext', value: obj()})
+      ]
+    }),
+    'editableTextModel'
+  )
+});
 
 jb.component('layout.vertical', {
   type: 'layout,feature',

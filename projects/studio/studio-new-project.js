@@ -66,7 +66,7 @@ jb.component('studio.openNewProject', {
       writeValue('%$studio/projectFolder%', '%$project%'),
       writeValue('%$studio/page%', '%$project%.main'),
       writeValue('%$studio/profile_path%', studio.currentPagePath()),
-      ctx => jb.studio.host.reOpenStudio(ctx.exp('%$mainFileName%')[0],5)
+      studio.reOpenStudio('%$mainFileName%',5)
     ),
     modal: true,
     features: [
@@ -76,6 +76,15 @@ jb.component('studio.openNewProject', {
     ]
   })
 })
+
+jb.component('studio.reOpenStudio', {
+  params:[
+    {id: 'fileName', as: 'string'},
+    {id: 'line', as: 'number'},
+  ],
+  impl: (ctx,fn,line) => jb.studio.host.reOpenStudio(fn,line)
+})
+
 
 jb.component('studio.createProjectFile', {
   type: 'action,has-side-effects',

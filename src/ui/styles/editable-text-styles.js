@@ -76,3 +76,63 @@ jb.component('editableText.mdcSearch', {
   impl: styleWithFeatures(editableText.mdcInput({width:'%$width%', noLabel: true}), feature.icon({icon: 'search', position: 'post'}))
 })
 
+jb.component('editableText.expandable', {
+  description: 'label that changes to editable class on double click',
+  type: 'editable-text.style',
+  params: [
+    {id: 'buttonFeatures', type: 'feature[]', flattenArray: true, dynamic: true},
+    {id: 'editableFeatures', type: 'feature[]', flattenArray: true, dynamic: true},
+    {id: 'buttonStyle', type: 'button.style', dynamic: true, defaultValue: button.href()},
+    {id: 'editableStyle', type: 'editable-text.style', dynamic: true, defaultValue: editableText.input()},
+    {id: 'onToggle', type: 'action', dynamic: true}
+  ],
+  impl: styleByControl(
+    group({
+      controls: [
+        editableText({
+          databind: '%$editableTextModel/databind%',
+          style: call('editableStyle'),
+          features: [
+            watchRef({ref: '%$editable%', allowSelfRefresh: true}),
+            hidden('%$editable%'),
+            interactive(
+              (ctx,{cmp, expandableContext}) => {
+                const elem = cmp.base.matches('input,textarea') ? cmp.base : cmp.base.querySelector('input,textarea')
+                if (elem) {
+                  elem.onblur = () => expandableContext.exitEditable()
+                  elem.onkeyup = ev => (ev.keyCode == 13 || ev.keyCode == 27) && elem.blur()
+                }
+                expandableContext.exitEditable = () => cmp.ctx.run(runActions(
+                  writeValue('%$editable%',false),
+                  (ctx,{},{onToggle}) => onToggle(ctx)
+                ))
+                expandableContext.regainFocus = () =>
+                  jb.delay(1).then(() => jb.ui.focus(elem, 'editable-text.expandable', ctx))
+            }
+            ),
+            (ctx,{},{editableFeatures}) => editableFeatures(ctx)
+          ]
+        }),
+        button({
+          title: '%$editableTextModel/databind%',
+          action: runActions(
+            writeValue('%$editable%', true),
+            (ctx,{expandableContext}) => expandableContext.regainFocus && expandableContext.regainFocus(),
+            call('onToggle')
+          ),
+          style: call('buttonStyle'),
+          features: [
+            watchRef({ref: '%$editable%', allowSelfRefresh: true}),
+            hidden(not('%$editable%')),
+            (ctx,{},{buttonFeatures}) => buttonFeatures(ctx)
+          ]
+        })
+      ],
+      features: [
+        variable({name: 'editable', watchable: true}),
+        variable({name: 'expandableContext', value: obj()})
+      ]
+    }),
+    'editableTextModel'
+  )
+})

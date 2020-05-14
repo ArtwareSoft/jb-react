@@ -441,7 +441,7 @@ jb.component('feature.onEnter', {
   type: 'feature',
   category: 'events',
   params: [
-    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
+    {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
   impl: feature.onKey(
     'Enter',

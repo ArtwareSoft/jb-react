@@ -987,7 +987,7 @@ jb.component('data.if', {
   macroByValue: true,
   params: [
     {id: 'condition', as: 'boolean', mandatory: true, dynamic: true, type: 'boolean'},
-    {id: 'then', mandatory: true, dynamic: true},
+    {id: 'then', mandatory: true, dynamic: true, composite: true},
     {id: 'else', dynamic: true, defaultValue: '%%'}
   ],
   impl: (ctx,cond,_then,_else) =>	cond() ? _then() : _else()
@@ -999,7 +999,7 @@ jb.component('action.if', {
   macroByValue: true,
   params: [
     {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true},
-    {id: 'then', type: 'action', mandatory: true, dynamic: true},
+    {id: 'then', type: 'action', mandatory: true, dynamic: true, composite: true},
     {id: 'else', type: 'action', dynamic: true}
   ],
   impl: (ctx,cond,_then,_else) =>	cond ? _then() : _else()

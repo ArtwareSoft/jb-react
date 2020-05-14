@@ -1,36 +1,43 @@
-jb.component('todo', { watchableData: [
+jb.component('dataResource.todo', { watchableData: [
   {task: 'eat', completed: false},
   {task: 'drink', completed: true},
 ]
 })
-jb.component('newTask', { watchableData:
-  {task: '', completed: false},
-})
 
+jb.component('dataResource.newTask', {
+  watchableData: {
+    task: 'sleep well',
+    completed: false
+  }
+})
 
 jb.component('todomvc.main', {
   type: 'control',
   impl: group({
+    title: '',
     controls: [
       text({text: 'todos', style: text.htmlTag('h1')}),
       editableText({
         title: 'input',
-        databind: '%$new-task/task%',
+        databind: '%$newTask/task%',
         style: editableText.input(),
         features: [
           feature.onEnter(
-            runActions(addToArray('%$todo%', '%$new-task%'), writeValue('%$new-task/task%'))
+            runActions(
+              addToArray('%$todo%', '%$newTask%'),
+              writeValue('%$newTask/task%', '')
+            )
           ),
-          css.class('new-tod'),
           css.class('new-todo'),
-          htmlAttribute('placeholder', 'What needs to be done?')
+          htmlAttribute('placeholder', 'What needs to be done?'),
+          watchRef({ref: '%$newTask/task%', allowSelfRefresh: true})
         ]
       }),
       group({
         title: 'main',
         controls: [
           itemlist({
-            title: 'todo-list',
+            title: '',
             items: pipeline(
               '%$todo%',
               filter(
@@ -60,10 +67,10 @@ jb.component('todomvc.main', {
                     features: css.class('editable-text')
                   }),
                   button({
-                    title: 'delete',
+                    title: '',
                     action: removeFromArray({array: '%$todo%', itemToRemove: '%%'}),
                     style: button.native(),
-                    features: [itemlist.shownOnlyOnItemHover(), css.class('destroy')]
+                    features: [itemlist.shownOnlyOnItemHover(), css.class('destroy'), field.title('delete')]
                   })
                 ],
                 features: conditionalClass('completed', '%completed%')
@@ -126,7 +133,7 @@ jb.component('todomvc.main', {
         features: css.class('footer')
       })
     ],
-    features: css.class('todoapp')
+    features: [css.class('todoapp'), css.width('600')]
   })
 })
 

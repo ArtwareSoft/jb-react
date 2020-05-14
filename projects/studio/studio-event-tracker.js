@@ -141,7 +141,7 @@ jb.component('studio.eventTracker', {
                 type: data.switch({cases: [data.case('%log% == error', 'mdc')], default: 'mdi'}),
                 size: '16'
               }),
-              css('background-color: transparent; color: var(--jb-descriptionForeground);')
+              css('background-color1: transparent; color1: var(--jb-descriptionForeground);')
             ]
           }),
           text({
@@ -189,12 +189,15 @@ jb.component('studio.eventView', {
   impl: group({
     layout: layout.horizontal('4'),
     controls: [
-      controlWithCondition('%opPath%', button({
-        title: last('%opPath%'),
-        style: button.href(),
-        features: feature.hoverTitle(join({separator: '/', items: '%opPath%'}))
-      })),
-      controlWithCondition('%opValue%', text('<- %opValue%')),
+      controlWithCondition(
+        '%opPath%',
+        button({
+          title: last('%opPath%'),
+          style: button.href(),
+          features: feature.hoverTitle(join({separator: '/', items: '%opPath%'}))
+        })
+      ),
+      controlWithCondition(({data}) => data.opValue != null, text('<- %opValue%')),
       controlWithCondition(
         '%srcCompName%',
         group({
@@ -205,19 +208,31 @@ jb.component('studio.eventView', {
               title: '%srcCompName%',
               action: studio.showStack('%srcCtx%'),
               style: button.href(),
-              features: feature.hoverTitle('%srcPath%')
+              features: [
+                feature.hoverTitle('%srcPath%'),
+                feature.onHover({action: studio.highlightByPath('%srcPath%')})
+              ]
             })
           ]
         })
       ),
       controlWithCondition(isOfType('string', '%event/2%'), text('%event/2%')),
-      controlWithCondition('%log% == setGridAreaVals%', text(join({separator: '/', items: '%event/4%'}))),
-      controlWithCondition('%path%', button({
-        title: '%compName%',
-        action: studio.showStack('%ctx%'),
-        style: button.href(),
-        features: feature.hoverTitle('%path%')
-      })),
+      controlWithCondition(
+        '%log% == setGridAreaVals%',
+        text({text: join({separator: '/', items: '%event/4%'})})
+      ),
+      controlWithCondition(
+        '%path%',
+        button({
+          title: '%compName%',
+          action: studio.showStack('%ctx%'),
+          style: button.href(),
+          features: [
+            feature.hoverTitle('%path%'),
+            feature.onHover({action: studio.highlightByPath('%path%')})
+          ]
+        })
+      )
     ]
   })
 })
@@ -239,9 +254,12 @@ jb.component('studio.eventItems', {
       ev.compName = ev.path && st.compNameOfPath(ev.path)
       ev.cmp = (event || []).filter(x=>x && x.base && x.refresh)[0]
       ev.elem = ev.cmp && ev.cmp.base || (event || []).filter(x=>x && x.nodeType)[0]
-      ev.opEvent = (event || []).filter(x=>x && x.opVal)[0]
+      ev.opEvent = (event || []).filter(x=>x && x.opVal != null)[0]
       ev.opPath = ev.opEvent && ev.opEvent.path
-      ev.opValue = ev.opEvent && jb.prettyPrint(ev.opEvent.op,{forceFlat: true}).replace(/{|}|\$/g,'').replace("'set': ",'')
+      const op = ev.opEvent && ev.opEvent.op
+      ev.opValue = op && op.$set != null && op.$set
+      if (ev.opValue == null && op)
+        ev.opValue = jb.prettyPrint(op,{forceFlat: true}).replace(/{|}|\$/g,'').replace("'set': ",'')
       ev.srcCtx = (event || []).filter(x=>x && x.srcCtx).map(x=>x.srcCtx)[0]
       ev.srcElem = jb.path(ev.srcCtx, 'vars.cmp.base')
       ev.srcPath = jb.path(ev.srcCtx, 'vars.cmp.ctx.path')

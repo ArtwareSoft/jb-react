@@ -87,9 +87,12 @@ jb.component('vscode.openjbEditor', {
     params: [
         { id: 'activeEditorPosition'}
     ],
-    impl: If('%$activeEditorPosition%', runActions(
-        writeValue('%$studio/page%','%$activeEditorPosition/compId%'),
-        studio.openComponentInJbEditor(vscode.pathByActiveEditor('%$activeEditorPosition%')))
+    impl: If( (ctx,{},{activeEditorPosition}) => activeEditorPosition && activeEditorPosition.compId 
+                && jb.studio.previewjb && jb.studio.previewjb.comps[activeEditorPosition.compId], 
+        runActions(
+            writeValue('%$studio/page%','%$activeEditorPosition/compId%'),
+            studio.openComponentInJbEditor(vscode.pathByActiveEditor('%$activeEditorPosition%'))
+        )
     )
 })
 
