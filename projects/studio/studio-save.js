@@ -5,7 +5,6 @@ jb.component('studio.saveComponents', {
   type: 'action,has-side-effects',
   impl: ctx => {
     const {pipe, fromIter, catchError,toPromiseArray,concatMap,fromPromise,Do} = jb.callbag
-    const messages = []
     const filesToUpdate = jb.unique(st.changedComps().map(e=>locationOfComp(e)).filter(x=>x))
       .map(fn=>({fn, path: st.host.locationToPath(fn), comps: st.changedComps().filter(e=>locationOfComp(e) == fn)}))
 
@@ -15,14 +14,13 @@ jb.component('studio.saveComponents', {
         st.host.saveFile(e.path,newFileContent(fileContent, e.comps)).then(() => e)
       ))),
       Do(e=>{
-        messages.push({text: 'file ' + e.path + ' updated with components :' + e.comps.map(e=>e[0]).join(', ') })
+        st.host.showInformationMessage('file ' + e.path + ' updated with components :' + e.comps.map(e=>e[0]).join(', '))
         e.comps.forEach(([id]) => st.serverComps[id] = st.previewjb.comps[id])
       }),
 			catchError(e=> {
-        messages.push({ text: 'error saving: ' + (typeof e == 'string' ? e : e.message || e.e), error: true })
+        st.host.showError('error saving: ' + (typeof e == 'string' ? e : e.message || e.e))
 				jb.logException(e,'error while saving ' + e.id,ctx) || []
       }),
-      Do(() => st.showMultiMessages(messages)),
       toPromiseArray
     )
   }
@@ -34,9 +32,6 @@ jb.component('studio.initAutoSave', {
     if (!jb.frame.jbInvscode || jb.studio.autoSaveInitialized) return
     jb.studio.autoSaveInitialized = true
     const {pipe, subscribe} = jb.callbag
-    const messages = []
-    const st = jb.studio
-
     pipe(st.scriptChange, subscribe(async e => {
         try {
           const compId = e.path[0]
@@ -47,7 +42,7 @@ jb.component('studio.initAutoSave', {
           const edits = [deltaFileContent(fileContent, {compId,comp})].filter(x=>x)
           await st.host.saveDelta(fn,edits)
         } catch (e) {
-          messages.push({ text: 'error saving: ' + (typeof e == 'string' ? e : e.message || e.e), error: true })
+          st.host.showError('error saving: ' + (typeof e == 'string' ? e : e.message || e.e))
           jb.logException(e,'error while saving ' + e.id,ctx) || []
         }
       })
@@ -62,8 +57,8 @@ jb.component('studio.saveProjectSettings', {
     const path = ctx.run(studio.projectBaseDir()) + '/index.html'
     return st.host.getFile(path).then( fileContent =>
       st.host.saveFile(path, newIndexHtmlContent(fileContent, ctx.exp('%$studio/projectSettings%'))))
-      .then(()=>st.showMultiMessages([{text: 'index.html saved with new settings'}]))
-      .catch(e=>st.showMultiMessages([{text: 'error saving index.html '+ (typeof e == 'string' ? e : e.message || e.e), error: true}]))
+      .then(()=> st.host.showInformationMessage('index.html saved with new settings'))
+      .catch(e=> st.host.showError('error saving index.html '+ (typeof e == 'string' ? e : e.message || e.e)))
   }
 })
 

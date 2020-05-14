@@ -38,12 +38,14 @@ jb.component('studio.initVscodeAdapter', {
             const message = event.data
             console.log('get response', message.messageID, message)
             if (message && message.messageID) {
-                const req = promises[message.messageID].req // for debug
-                if (message.isError)
-                    promises[message.messageID].reject(message.error)
-                else
-                    promises[message.messageID].resolve(message.result)
+                const req = promises[message.messageID].req
                 clearTimeout(promises[message.messageID].timer)
+                if (message.type == 'error') {
+                    jb.logError('vscode ', message, req)
+                    promises[message.messageID].reject(message)
+                } else {
+                    promises[message.messageID].resolve(message)
+                }
                 delete promises[message.messageID]
             }
             if (message.$)
@@ -54,7 +56,7 @@ jb.component('studio.initVscodeAdapter', {
             timeout = timeout || 3000
             messageID++
             const timer = setTimeout(() => {
-                promises[messageID] && reject('timeout')
+                promises[messageID] && reject({ type: 'error', desc: 'timeout' })
                 jb.logError('vscodeService timeout',promises[messageID])
             }, timeout);
             promises[messageID] = {resolve,reject,req, timer}

@@ -41645,7 +41645,6 @@ jb.component('studio.saveComponents', {
   type: 'action,has-side-effects',
   impl: ctx => {
     const {pipe, fromIter, catchError,toPromiseArray,concatMap,fromPromise,Do} = jb.callbag
-    const messages = []
     const filesToUpdate = jb.unique(st.changedComps().map(e=>locationOfComp(e)).filter(x=>x))
       .map(fn=>({fn, path: st.host.locationToPath(fn), comps: st.changedComps().filter(e=>locationOfComp(e) == fn)}))
 
@@ -41655,14 +41654,13 @@ jb.component('studio.saveComponents', {
         st.host.saveFile(e.path,newFileContent(fileContent, e.comps)).then(() => e)
       ))),
       Do(e=>{
-        messages.push({text: 'file ' + e.path + ' updated with components :' + e.comps.map(e=>e[0]).join(', ') })
+        st.host.showInformationMessage('file ' + e.path + ' updated with components :' + e.comps.map(e=>e[0]).join(', '))
         e.comps.forEach(([id]) => st.serverComps[id] = st.previewjb.comps[id])
       }),
 			catchError(e=> {
-        messages.push({ text: 'error saving: ' + (typeof e == 'string' ? e : e.message || e.e), error: true })
+        st.host.showError('error saving: ' + (typeof e == 'string' ? e : e.message || e.e))
 				jb.logException(e,'error while saving ' + e.id,ctx) || []
       }),
-      Do(() => st.showMultiMessages(messages)),
       toPromiseArray
     )
   }
@@ -41674,9 +41672,6 @@ jb.component('studio.initAutoSave', {
     if (!jb.frame.jbInvscode || jb.studio.autoSaveInitialized) return
     jb.studio.autoSaveInitialized = true
     const {pipe, subscribe} = jb.callbag
-    const messages = []
-    const st = jb.studio
-
     pipe(st.scriptChange, subscribe(async e => {
         try {
           const compId = e.path[0]
@@ -41687,7 +41682,7 @@ jb.component('studio.initAutoSave', {
           const edits = [deltaFileContent(fileContent, {compId,comp})].filter(x=>x)
           await st.host.saveDelta(fn,edits)
         } catch (e) {
-          messages.push({ text: 'error saving: ' + (typeof e == 'string' ? e : e.message || e.e), error: true })
+          st.host.showError('error saving: ' + (typeof e == 'string' ? e : e.message || e.e))
           jb.logException(e,'error while saving ' + e.id,ctx) || []
         }
       })
@@ -41702,8 +41697,8 @@ jb.component('studio.saveProjectSettings', {
     const path = ctx.run(studio.projectBaseDir()) + '/index.html'
     return st.host.getFile(path).then( fileContent =>
       st.host.saveFile(path, newIndexHtmlContent(fileContent, ctx.exp('%$studio/projectSettings%'))))
-      .then(()=>st.showMultiMessages([{text: 'index.html saved with new settings'}]))
-      .catch(e=>st.showMultiMessages([{text: 'error saving index.html '+ (typeof e == 'string' ? e : e.message || e.e), error: true}]))
+      .then(()=> st.host.showInformationMessage('index.html saved with new settings'))
+      .catch(e=> st.host.showError('error saving index.html '+ (typeof e == 'string' ? e : e.message || e.e)))
   }
 })
 
@@ -42285,12 +42280,13 @@ jb.component('studio.openNewProject', {
     title: 'New Project',
     onOK: runActions(
       Var('project', '%$dialogData/name%'),
+      Var('mainFileName', pipeline(studio.projectsBaseDir(),'%%/%$project%/%$project%.js')),
       studio.saveNewProject('%$project%'),
       writeValue('%$studio/project%', '%$project%'),
       writeValue('%$studio/projectFolder%', '%$project%'),
       writeValue('%$studio/page%', '%$project%.main'),
       writeValue('%$studio/profile_path%', studio.currentPagePath()),
-      () => location.reload()
+      ctx => jb.studio.host.reOpenStudio(ctx.exp('%$mainFileName%')[0],5)
     ),
     modal: true,
     features: [
@@ -42324,6 +42320,13 @@ jb.component('studio.projectBaseDir', {
   .split('/').slice(0,-1).join('/').slice(1)
 })
 
+jb.component('studio.projectsBaseDir', {
+  impl: ctx => jb.studio.host.locationToPath(
+      (jb.frame.jbBaseProjUrl || '') + jb.studio.host.pathOfJsFile('', ''))
+  .split('/').slice(0,-2).join('/').slice(1)
+})
+
+
 jb.component('studio.saveNewProject', {
   type: 'action,has-side-effects',
   params: [
@@ -42331,15 +42334,16 @@ jb.component('studio.saveNewProject', {
   ],
   impl: (ctx,project) => {
     const {files} = ctx.run(studio.newProject(()=> project))
-    return jb.studio.host.createDirectoryWithFiles({project, files, baseDir: ctx.run(studio.projectBaseDir()) })
-        .then(r => r.json())
+    const st = jb.studio
+    return jb.studio.host.createDirectoryWithFiles({project, files, baseDir: ctx.run(studio.projectsBaseDir()) + `/${project}` })
+        .then(r => r.json ? r.json() : r)
         .catch(e => {
-          jb.studio.message(`error saving project ${project}: ` + (e && e.desc));
+          st.host.showError(`error saving project ${project}: ` + (e && e.desc))
           jb.logException(e,'',ctx)
         })
-        .then(res=>{
-          if (res.type == 'error')
-              return jb.studio.message(`error saving project ${project}: ` + (res && jb.prettyPrint(res.desc)));
+        .then(res => {
+          res && res.type == 'error' && st.host.showError(`error saving project ${project}: ` + (res && jb.prettyPrint(res.desc)))
+          res && res.type == 'success' && st.host.showInformationMessage(`new project ${project} created`)
         })
   }
 });
@@ -42952,7 +42956,7 @@ jb.component('studio.ctxCounters', {
   impl: text({
     text: ctx => (jb.frame.performance && performance.memory && performance.memory.usedJSHeapSize / 1000000)  + 'M',
     features: [
-      css('{ background: #F5F5F5; position: absolute; bottom: 0; right: 0; }'),
+      css('{ position: absolute; bottom: 0; right: 0; }'),
       watchObservable(ctx => jb.studio.scriptChange, 500)
     ]
   })
@@ -43401,6 +43405,9 @@ const devHost = {
     },
     pathOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
     pathOfDistFolder: () => '/dist',
+    showError: text => jb.studio.showMultiMessages([{text, error: true}]),
+    showInformationMessage: text => jb.studio.showMultiMessages([{text}]),
+    reOpenStudio: () => jb.frame.location && jb.frame.location.reload(),
 
     // new project
     createDirectoryWithFiles: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, 
@@ -43413,15 +43420,14 @@ const devHost = {
 
 const vscodeDevHost = {
     settings: () => Promise.resolve('{}'),
-    getFile: path => { 
-        const res = jb.studio.vscodeService({$: 'getFile', path}) 
-        if (!res) jb.logError('vscode.getFile: no file for path ',[path])
-        return res
-    },
+    getFile: path => jb.studio.vscodeService({$: 'getFile', path}).then( res=>res.content ),
     locationToPath: path => decodeURIComponent(path.split('//file//').pop()).replace(/\\/g,'/'),
     saveDelta: (path, edits) => jb.studio.vscodeService({$: 'saveDelta', path, edits}),
     saveFile: (path, contents) => jb.studio.vscodeService({$: 'saveFile', path, contents}),
     createDirectoryWithFiles: request => jb.studio.vscodeService({$: 'createDirectoryWithFiles', ...request}),
+    showError: text => jb.studio.vscodeService({$: 'showErrorMessage', text }),
+    showInformationMessage: text => jb.studio.vscodeService({$: 'showInformationMessage', text }),
+    reOpenStudio: (fn,line) => jb.studio.vscodeService({$: 'reOpenStudio', fn, pos: [line,0,line,0] }),
     pathOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
     projectUrlInStudio: project => `/project/studio/${project}`,
     pathOfDistFolder: () => `${jb.frame.jbBaseProjUrl}/dist`,
@@ -43436,7 +43442,7 @@ const vscodeUserHost = Object.assign({},vscodeDevHost,{
 
 const userLocalHost = Object.assign({},devHost,{
     createDirectoryWithFiles: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
-        Object.assign(request,{baseDir: request.baseDir || request.project })) }),
+        Object.assign(request,{baseDir: request.project })) }),
     locationToPath: path => path.replace(/^[0-9]*\//,'').replace(/^projects\//,''),
     pathOfJsFile: (project,fn,baseDir) => baseDir == './' ? fn : `/${project}/${fn}`,
     projectUrlInStudio: project => `/studio-bin/${project}`,
@@ -46180,12 +46186,14 @@ jb.component('studio.initVscodeAdapter', {
             const message = event.data
             console.log('get response', message.messageID, message)
             if (message && message.messageID) {
-                const req = promises[message.messageID].req // for debug
-                if (message.isError)
-                    promises[message.messageID].reject(message.error)
-                else
-                    promises[message.messageID].resolve(message.result)
+                const req = promises[message.messageID].req
                 clearTimeout(promises[message.messageID].timer)
+                if (message.type == 'error') {
+                    jb.logError('vscode ', message, req)
+                    promises[message.messageID].reject(message)
+                } else {
+                    promises[message.messageID].resolve(message)
+                }
                 delete promises[message.messageID]
             }
             if (message.$)
@@ -46196,7 +46204,7 @@ jb.component('studio.initVscodeAdapter', {
             timeout = timeout || 3000
             messageID++
             const timer = setTimeout(() => {
-                promises[messageID] && reject('timeout')
+                promises[messageID] && reject({ type: 'error', desc: 'timeout' })
                 jb.logError('vscodeService timeout',promises[messageID])
             }, timeout);
             promises[messageID] = {resolve,reject,req, timer}

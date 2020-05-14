@@ -41,9 +41,9 @@ class jBartStudio {
         })
         panel.webview.onDidReceiveMessage(message => {
             Promise.resolve(this.processMessage(message)).then(result =>
-                message.messageID && this._panel.webview.postMessage({ result, messageID: message.messageID })
+                message.messageID && this._panel.webview.postMessage({ ...result, messageID: message.messageID })
             , error => 
-                this._panel.webview.postMessage({ isError: true, error, messageID: message && message.messageID }))
+                this._panel.webview.postMessage({ type: 'error', error, messageID: message && message.messageID }))
         }, null, this._disposables)
     }
     runCommand(command) {
@@ -177,36 +177,55 @@ class jBartStudio {
     }
     processMessage(message) {
         if (message.$ == 'getFile') {
-            return workspace.textDocuments.filter(doc => doc.uri.path.toLowerCase() == message.path.toLowerCase())
+            const content = workspace.textDocuments.filter(doc => doc.uri.path.toLowerCase() == message.path.toLowerCase())
                 .map(x => x.getText()).join('') || fs.readFileSync(message.path.replace(/^\//,''),'utf8')
+            return { type: 'success', content }
         } else if (message.$ == 'saveDelta') {
             const edit = new WorkspaceEdit();
             edit.set(Uri.file(message.path), message.edits);
             workspace.applyEdit(edit);
-            return {};
+            return { type: 'success' }
         } else if (message.$ == 'openEditor') {
             const {fn, pos}  = message
             return vscode.workspace.openTextDocument(fn).then(doc => {
                 vscode.window.showTextDocument(doc,vscode.ViewColumn.One).then( editor =>{
                     editor.revealRange(new vscode.Range(...pos))
                     editor.selection = new vscode.Selection(pos[0], pos[1], pos[2], pos[3])
+                    return { type: 'success' }
                 })
             })
+        } else if (message.$ == 'reOpenStudio') {
+            const {fn, pos} = message
+            return (async () => {
+                const doc = await vscode.workspace.openTextDocument(Uri.file(fn))
+                const editor = await vscode.window.showTextDocument(doc,vscode.ViewColumn.One)
+                editor.revealRange(new vscode.Range(...pos))
+                editor.selection = new vscode.Selection(pos[0], pos[1], pos[2], pos[3])
+                await this._panel.dispose()
+                await createOrDo(this.context)
+                return { type: 'success' }
+            })()
         } else if (message.$ == 'installPackage') {
             const cp = require('child_process')
             message.module && cp.exec(`npm -i --save ${message.module}`)
+            return { type: 'success' }
         } else if (message.$ == 'storeWorkspaceState') {
             this.context.workspaceState.update('jbartStudio', message.state)
+            return { type: 'success' }
         } else if (message.$ == 'saveFile') {
             return fs.writeFileSync(message.path,message.contents)
         } else if (message.$ == 'createDirectoryWithFiles') {
-            if (!message.baseDir) throw 'no base dir'
+            if (!message.baseDir) return { type: 'error', desc: 'no base dir in request' }
             const dirExists = fs.existsSync(message.baseDir)
-            if (!message.override && dirExists) throw 'Project already exists'
+            if (!message.override && dirExists) return { type: 'error', desc: `directory ${message.baseDir} already exists` }
             if (!dirExists)
                 fs.mkdirSync(message.baseDir)
             Object.keys(message.files).forEach(f => fs.writeFileSync(message.baseDir+ '/' + f,message.files[f]) )
-            return `${Object.keys(message.files).length} files written`
+            return { type: 'success', desc: `${Object.keys(message.files).length} files written` }
+        } else if (message.$ == 'showErrorMessage') {
+            vscode.window.showErrorMessage(message.text)
+        } else if (message.$ == 'showInformationMessage') {
+            vscode.window.showInformationMessage(message.text)
         }
     }
 }

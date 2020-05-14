@@ -36,6 +36,3 @@ jb.component('helloWorld.main', {
     features: css.color({})
   })
 })
-
-
-

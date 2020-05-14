@@ -4,6 +4,7 @@
   --jb-font-size: 13px;
   --jb-font-weight: normal;
   --jb-foreground: #616161;
+  --jb-logo-color: #215968;
 
   --jb-menu-background: #ffffff;
   --jb-menu-foreground: #616161;
@@ -739,6 +740,7 @@ html, body {
   --jb-font-size: 13px;
   --jb-font-weight: normal;
   --jb-foreground: #616161;
+  --jb-logo-color: #215968;
 
   --jb-menu-background: #ffffff;
   --jb-menu-foreground: #616161;

@@ -60,12 +60,13 @@ jb.component('studio.openNewProject', {
     title: 'New Project',
     onOK: runActions(
       Var('project', '%$dialogData/name%'),
+      Var('mainFileName', pipeline(studio.projectsBaseDir(),'%%/%$project%/%$project%.js')),
       studio.saveNewProject('%$project%'),
       writeValue('%$studio/project%', '%$project%'),
       writeValue('%$studio/projectFolder%', '%$project%'),
       writeValue('%$studio/page%', '%$project%.main'),
       writeValue('%$studio/profile_path%', studio.currentPagePath()),
-      () => location.reload()
+      ctx => jb.studio.host.reOpenStudio(ctx.exp('%$mainFileName%')[0],5)
     ),
     modal: true,
     features: [
@@ -99,6 +100,13 @@ jb.component('studio.projectBaseDir', {
   .split('/').slice(0,-1).join('/').slice(1)
 })
 
+jb.component('studio.projectsBaseDir', {
+  impl: ctx => jb.studio.host.locationToPath(
+      (jb.frame.jbBaseProjUrl || '') + jb.studio.host.pathOfJsFile('', ''))
+  .split('/').slice(0,-2).join('/').slice(1)
+})
+
+
 jb.component('studio.saveNewProject', {
   type: 'action,has-side-effects',
   params: [
@@ -106,15 +114,16 @@ jb.component('studio.saveNewProject', {
   ],
   impl: (ctx,project) => {
     const {files} = ctx.run(studio.newProject(()=> project))
-    return jb.studio.host.createDirectoryWithFiles({project, files, baseDir: ctx.run(studio.projectBaseDir()) })
-        .then(r => r.json())
+    const st = jb.studio
+    return jb.studio.host.createDirectoryWithFiles({project, files, baseDir: ctx.run(studio.projectsBaseDir()) + `/${project}` })
+        .then(r => r.json ? r.json() : r)
         .catch(e => {
-          jb.studio.message(`error saving project ${project}: ` + (e && e.desc));
+          st.host.showError(`error saving project ${project}: ` + (e && e.desc))
           jb.logException(e,'',ctx)
         })
-        .then(res=>{
-          if (res.type == 'error')
-              return jb.studio.message(`error saving project ${project}: ` + (res && jb.prettyPrint(res.desc)));
+        .then(res => {
+          res && res.type == 'error' && st.host.showError(`error saving project ${project}: ` + (res && jb.prettyPrint(res.desc)))
+          res && res.type == 'success' && st.host.showInformationMessage(`new project ${project} created`)
         })
   }
 })

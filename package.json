@@ -35,7 +35,7 @@
     "helloWorld": "start http://localhost:8082/project/studio/hello-world",
     "test": "start http://localhost:8082/projects/ui-tests/tests.html",
     "pub": "yarn build-libs && git commit -am build-lib",
-    "update-corona-proj": "node node_modules/copyfiles/copyfiles -V dist/* bin/studio/* ../projects/corona-stat/node_modules/jb-react"
+    "vscode-package": "vsce package"
   },
   "bin": {
     "studio": "bin/studio"

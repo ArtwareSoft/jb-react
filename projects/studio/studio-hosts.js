@@ -13,6 +13,9 @@ const devHost = {
     },
     pathOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
     pathOfDistFolder: () => '/dist',
+    showError: text => jb.studio.showMultiMessages([{text, error: true}]),
+    showInformationMessage: text => jb.studio.showMultiMessages([{text}]),
+    reOpenStudio: () => jb.frame.location && jb.frame.location.reload(),
 
     // new project
     createDirectoryWithFiles: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, 
@@ -25,15 +28,14 @@ const devHost = {
 
 const vscodeDevHost = {
     settings: () => Promise.resolve('{}'),
-    getFile: path => { 
-        const res = jb.studio.vscodeService({$: 'getFile', path}) 
-        if (!res) jb.logError('vscode.getFile: no file for path ',[path])
-        return res
-    },
+    getFile: path => jb.studio.vscodeService({$: 'getFile', path}).then( res=>res.content ),
     locationToPath: path => decodeURIComponent(path.split('//file//').pop()).replace(/\\/g,'/'),
     saveDelta: (path, edits) => jb.studio.vscodeService({$: 'saveDelta', path, edits}),
     saveFile: (path, contents) => jb.studio.vscodeService({$: 'saveFile', path, contents}),
     createDirectoryWithFiles: request => jb.studio.vscodeService({$: 'createDirectoryWithFiles', ...request}),
+    showError: text => jb.studio.vscodeService({$: 'showErrorMessage', text }),
+    showInformationMessage: text => jb.studio.vscodeService({$: 'showInformationMessage', text }),
+    reOpenStudio: (fn,line) => jb.studio.vscodeService({$: 'reOpenStudio', fn, pos: [line,0,line,0] }),
     pathOfJsFile: (project,fn) => `/projects/${project}/${fn}`,
     projectUrlInStudio: project => `/project/studio/${project}`,
     pathOfDistFolder: () => `${jb.frame.jbBaseProjUrl}/dist`,
@@ -48,7 +50,7 @@ const vscodeUserHost = Object.assign({},vscodeDevHost,{
 
 const userLocalHost = Object.assign({},devHost,{
     createDirectoryWithFiles: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
-        Object.assign(request,{baseDir: request.baseDir || request.project })) }),
+        Object.assign(request,{baseDir: request.project })) }),
     locationToPath: path => path.replace(/^[0-9]*\//,'').replace(/^projects\//,''),
     pathOfJsFile: (project,fn,baseDir) => baseDir == './' ? fn : `/${project}/${fn}`,
     projectUrlInStudio: project => `/studio-bin/${project}`,
