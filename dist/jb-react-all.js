@@ -6609,7 +6609,7 @@ jb.component('dialog.popup', {
   type: 'dialog.style',
   impl: customStyle({
 	template: (cmp,state,h) => h('div#jb-dialog jb-popup',{},h(state.contentComp)),
-    css: '{ position: absolute; background: var(--jb-background); box-shadow: 2px 2px 3px var(--jb-dropdown-shadow); padding: 3px 0; border: 1px solid var(--jb-dropdown-border) }',
+    css: '{ position: absolute; background: var(--jb-dropdown-background); box-shadow: 2px 2px 3px var(--jb-dropdown-shadow); padding: 3px 0; border: 1px solid var(--jb-dropdown-border) }',
     features: [
       dialogFeature.maxZIndexOnClick(),
       dialogFeature.closeWhenClickingOutside(),

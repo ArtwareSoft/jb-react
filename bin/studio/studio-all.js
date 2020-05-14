@@ -6609,7 +6609,7 @@ jb.component('dialog.popup', {
   type: 'dialog.style',
   impl: customStyle({
 	template: (cmp,state,h) => h('div#jb-dialog jb-popup',{},h(state.contentComp)),
-    css: '{ position: absolute; background: var(--jb-background); box-shadow: 2px 2px 3px var(--jb-dropdown-shadow); padding: 3px 0; border: 1px solid var(--jb-dropdown-border) }',
+    css: '{ position: absolute; background: var(--jb-dropdown-background); box-shadow: 2px 2px 3px var(--jb-dropdown-shadow); padding: 3px 0; border: 1px solid var(--jb-dropdown-border) }',
     features: [
       dialogFeature.maxZIndexOnClick(),
       dialogFeature.closeWhenClickingOutside(),
@@ -42273,7 +42273,7 @@ jb.component('studio.openNewProject', {
         editableText({
           title: 'project name',
           databind: '%$dialogData/name%',
-          style: editableText.mdcInput(),
+          style: editableText.mdcInput('280'),
           features: [
             feature.onEnter(dialog.closeContainingPopup()),
             validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid project name')
@@ -42284,7 +42284,7 @@ jb.component('studio.openNewProject', {
     }),
     title: 'New Project',
     onOK: runActions(
-      Var('project','%$dialogData/name%'),
+      Var('project', '%$dialogData/name%'),
       studio.saveNewProject('%$project%'),
       writeValue('%$studio/project%', '%$project%'),
       writeValue('%$studio/projectFolder%', '%$project%'),
@@ -42295,7 +42295,8 @@ jb.component('studio.openNewProject', {
     modal: true,
     features: [
       dialogFeature.autoFocusOnFirstInput(),
-      dialogFeature.nearLauncherPosition({offsetLeft: '300', offsetTop: '100'})
+      dialogFeature.nearLauncherPosition({offsetLeft: '300', offsetTop: '100'}),
+      dialogFeature.dragTitle('newProject')
     ]
   })
 })
@@ -42672,9 +42673,7 @@ jb.component('studio.toolbar', {
           buttonStyle: button.mdcFloatingAction('40', true)
         }),
         title: 'Inline content editing',
-        features: [
-          feature.onEvent({event: 'click', action: contentEditable.deactivate()}),
-        ]
+        features: [feature.onEvent({event: 'click', action: contentEditable.deactivate()})]
       }),
       editableBoolean({
         databind: '%$studio/settings/activateWatchRefViewer%',
@@ -42683,7 +42682,7 @@ jb.component('studio.toolbar', {
           noIcon: icon({icon: 'blur_off', type: 'mdc'}),
           buttonStyle: button.mdcFloatingAction('40', false)
         }),
-        title: 'Watch Data Connections',
+        title: 'Watch Data Connections'
       }),
       button({
         title: 'Select',
@@ -42694,7 +42693,7 @@ jb.component('studio.toolbar', {
         title: 'Save',
         action: studio.saveComponents(),
         style: button.mdcIcon(icon('save')),
-        features: ctrlAction(studio.saveComponents())
+        features: [ctrlAction(studio.saveComponents()), feature.if(not(studio.inVscode()))]
       }),
       button({
         title: 'Refresh Preview',
@@ -42996,23 +42995,30 @@ jb.component('studio.mainMenu', {
             action: studio.openNewProject(),
             icon: icon('new')
           }),
-          menu.action({title: 'Open Project ...', action: studio.openProject()}),
+          menu.action({
+            title: 'Open Project ...',
+            action: studio.openProject(),
+            showCondition: not(studio.inVscode()),
+          }),
           menu.action({
             title: 'Save',
             action: studio.saveComponents(),
             icon: icon('save'),
+            showCondition: not(studio.inVscode()),
             shortcut: 'Ctrl+S'
           }),
           menu.action({
             title: 'Force Save',
             action: studio.saveComponents(),
+            showCondition: not(studio.inVscode()),
             icon: icon('save')
           }),
           menu.action({
             title: 'Source ...',
+            showCondition: not(studio.inVscode()),
             action: studio.viewAllFiles(studio.currentProfilePath())
           }),
-          menu.action({title: 'Github helper...', action: studio.githubHelper()}),
+          menu.action({title: 'Github helper...', showCondition: not(studio.inVscode()), action: studio.githubHelper()}),
           menu.action({
             title: 'Settings...',
             action: openDialog({
@@ -44382,7 +44388,7 @@ jb.component('contentEditable.positionThumbsStyle', {
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div#jb-dialog jb-popup',{},h(state.contentComp)),
-    css: '{ display: block; position: absolute; background: var(--jb-background); }',
+    css: '{ display: block; position: absolute; background: var(--jb-dropdown-background); }',
     features: [dialogFeature.maxZIndexOnClick(), dialogFeature.closeWhenClickingOutside()]
   })
 })
@@ -46237,5 +46243,8 @@ jb.component('vscode.pathByActiveEditor', {
     }
 })
 
-;
+jb.component('studio.inVscode',{
+    type: 'boolean',
+    impl: () => jb.frame.jbInvscode
+});
 

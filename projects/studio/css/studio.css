@@ -36,6 +36,8 @@
   --jb-tree-value:                      var(--vscode-symbolIcon-enumeratorForeground);
   --jb-expandbox-background:            var(--vscode-debugIcon-restartForeground);
   --jb-dropdown-shadow:                 var(--vscode-scrollbar-shadow);
+
+  --mdc-theme-secondary:                var(--jb-logo-color);
 }
 
 .vscode-vars-just-to-see {

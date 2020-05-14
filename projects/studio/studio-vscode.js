@@ -101,3 +101,7 @@ jb.component('vscode.pathByActiveEditor', {
     }
 })
 
+jb.component('studio.inVscode',{
+    type: 'boolean',
+    impl: () => jb.frame.jbInvscode
+})

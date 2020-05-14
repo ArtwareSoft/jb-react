@@ -112,23 +112,30 @@ jb.component('studio.mainMenu', {
             action: studio.openNewProject(),
             icon: icon('new')
           }),
-          menu.action({title: 'Open Project ...', action: studio.openProject()}),
+          menu.action({
+            title: 'Open Project ...',
+            action: studio.openProject(),
+            showCondition: not(studio.inVscode()),
+          }),
           menu.action({
             title: 'Save',
             action: studio.saveComponents(),
             icon: icon('save'),
+            showCondition: not(studio.inVscode()),
             shortcut: 'Ctrl+S'
           }),
           menu.action({
             title: 'Force Save',
             action: studio.saveComponents(),
+            showCondition: not(studio.inVscode()),
             icon: icon('save')
           }),
           menu.action({
             title: 'Source ...',
+            showCondition: not(studio.inVscode()),
             action: studio.viewAllFiles(studio.currentProfilePath())
           }),
-          menu.action({title: 'Github helper...', action: studio.githubHelper()}),
+          menu.action({title: 'Github helper...', showCondition: not(studio.inVscode()), action: studio.githubHelper()}),
           menu.action({
             title: 'Settings...',
             action: openDialog({

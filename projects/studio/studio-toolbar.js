@@ -13,9 +13,7 @@ jb.component('studio.toolbar', {
           buttonStyle: button.mdcFloatingAction('40', true)
         }),
         title: 'Inline content editing',
-        features: [
-          feature.onEvent({event: 'click', action: contentEditable.deactivate()}),
-        ]
+        features: [feature.onEvent({event: 'click', action: contentEditable.deactivate()})]
       }),
       editableBoolean({
         databind: '%$studio/settings/activateWatchRefViewer%',
@@ -24,7 +22,7 @@ jb.component('studio.toolbar', {
           noIcon: icon({icon: 'blur_off', type: 'mdc'}),
           buttonStyle: button.mdcFloatingAction('40', false)
         }),
-        title: 'Watch Data Connections',
+        title: 'Watch Data Connections'
       }),
       button({
         title: 'Select',
@@ -35,7 +33,7 @@ jb.component('studio.toolbar', {
         title: 'Save',
         action: studio.saveComponents(),
         style: button.mdcIcon(icon('save')),
-        features: ctrlAction(studio.saveComponents())
+        features: [ctrlAction(studio.saveComponents()), feature.if(not(studio.inVscode()))]
       }),
       button({
         title: 'Refresh Preview',

@@ -48,7 +48,7 @@ jb.component('studio.openNewProject', {
         editableText({
           title: 'project name',
           databind: '%$dialogData/name%',
-          style: editableText.mdcInput(),
+          style: editableText.mdcInput('280'),
           features: [
             feature.onEnter(dialog.closeContainingPopup()),
             validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid project name')
@@ -59,7 +59,7 @@ jb.component('studio.openNewProject', {
     }),
     title: 'New Project',
     onOK: runActions(
-      Var('project','%$dialogData/name%'),
+      Var('project', '%$dialogData/name%'),
       studio.saveNewProject('%$project%'),
       writeValue('%$studio/project%', '%$project%'),
       writeValue('%$studio/projectFolder%', '%$project%'),
@@ -70,7 +70,8 @@ jb.component('studio.openNewProject', {
     modal: true,
     features: [
       dialogFeature.autoFocusOnFirstInput(),
-      dialogFeature.nearLauncherPosition({offsetLeft: '300', offsetTop: '100'})
+      dialogFeature.nearLauncherPosition({offsetLeft: '300', offsetTop: '100'}),
+      dialogFeature.dragTitle('newProject')
     ]
   })
 })
