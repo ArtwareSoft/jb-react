@@ -41,7 +41,7 @@
 
   --mdc-theme-on-primary: var(--jb-input-foreground); /* Primary text on top of a theme primary color background */
   --mdc-theme-on-secondary: var(--jb-input-foreground);
-  --mdc-theme-on-surface: --jb-input-foreground;
+  --mdc-theme-on-surface: var(--jb-input-foreground);
   --mdc-theme-on-error: var(--jb-input-background);
 
   --mdc-theme-text-primary-on-background: var(--jb-input-foreground); /* Primary text on top of the theme background color. */
