@@ -2453,16 +2453,48 @@ jb.component('formatDate', {
               }
           })
       },
-      debounceTime: duration => source => (start, sink) => {
+      debounceTime: (duration,immediate)  => source => (start, sink) => {
           if (start !== 0) return
           let timeout
           source(0, function debounceTime(t, d) {
             // every event clears the existing timeout, if any
+            if (!timeout && (immediate === undefined || immediate)) sink(t,d)
             if (timeout) clearTimeout(timeout)
-            if (t === 1) timeout = setTimeout(() => sink(1, d), typeof duration == 'function' ? duration() : duration)
+            if (t === 1) timeout = setTimeout(() => {sink(1, d); timeout = null}, typeof duration == 'function' ? duration() : duration)
             else sink(t, d)
           })
       },
+      throttleTime: (duration,emitLast) => source => (start, sink) => {
+        if (start !== 0) return
+        let talkbackToSource, sourceTerminated = false, sinkTerminated = false, last, timeout
+        sink(0, function throttle(t, d) {
+          if (t === 2) sinkTerminated = true
+        })
+        source(0, function throttle(t, d) {
+          if (t === 0) {
+            talkbackToSource = d
+            talkbackToSource(1)
+          } else if (sinkTerminated) {
+            return
+          } else if (t === 1) {
+            if (!timeout) {
+              sink(t, d)
+              last = null
+              timeout = setTimeout(() => {
+                timeout = null
+                if (!sourceTerminated) talkbackToSource(1)
+                if ((emitLast === undefined || emitLast) && last != null)
+                  sink(t,d)
+              }, typeof duration == 'function' ? duration() : duration)
+            } else {
+              last = d
+            }
+          } else if (t === 2) {
+            sourceTerminated = true
+            sink(t, d)
+          }
+        })
+      },      
       take: max => source => (start, sink) => {
           if (start !== 0) return
           let taken = 0
@@ -40734,9 +40766,11 @@ jb.component('dialog.studioPickDialog', {
       css(pipeline( (ctx,{dialogData},{from}) => {
         if (!dialogData.elem) return {}
         const elemRect = dialogData.elem.getBoundingClientRect()
-        const top = (from == 'preview' ? jb.ui.studioFixYPos() : 0) + elemRect.top
-        return { top: `top: ${top}px`, left: `left: ${elemRect.left}px`, width: `width: ${elemRect.width}px`, 
-            height: `height: ${elemRect.height}px`, widthVal: elemRect.width + 'px', heightVal: elemRect.height + 'px'
+        const zoom = +jb.studio.previewWindow.document.body.style.zoom || 1
+        const top = (from == 'preview' ? jb.ui.studioFixYPos() : 0) + elemRect.top*zoom
+        const left = (from == 'preview' ? jb.ui.studioFixXPos() : 0) + elemRect.left*zoom
+        return { top: `top: ${top}px`, left: `left: ${left}px`, width: `width: ${elemRect.width*zoom}px`, 
+            height: `height: ${elemRect.height*zoom}px`, widthVal: `${elemRect.width*zoom}px`, heightVal: `${elemRect.height*zoom}px`
           }
         },
         `{ %top%; %left% } ~ .pick-toolbar { margin-top: -20px }
@@ -40754,21 +40788,27 @@ function eventToElem(e,_window, predicate) {
   const elems = _window.document.elementsFromPoint(mousePos.x, mousePos.y);
   const results = elems.flatMap(el=>jb.ui.parents(el,{includeSelf: true}))
       .filter(e => e && e.getAttribute)
-      .filter(e => checkCtxId(e.getAttribute('pick-ctx')) || checkCtxId(e.getAttribute('jb-ctx')) )
+      .map( el => ({el, ctxId: checkCtxId(el.getAttribute('pick-ctx')) || checkCtxId(el.getAttribute('jb-ctx')) }))
+      .filter(({ctxId}) =>  ctxId)
   if (results.length == 0) return [];
 
   // promote parents if the mouse is near the edge
   const first_result = results.shift(); // shift also removes first item from results!
-  const edgeY = Math.max(3,Math.floor(jb.ui.outerHeight(first_result) / 10));
-  const edgeX = Math.max(3,Math.floor(jb.ui.outerWidth(first_result) / 10));
+  const edgeY = Math.max(3,Math.floor(jb.ui.outerHeight(first_result.el) / 10));
+  const edgeX = Math.max(3,Math.floor(jb.ui.outerWidth(first_result.el) / 10));
+  const zoom = +_window.document.body.style.zoom || 1
 
-  const orderedResults = results.filter(elem=>{
-      return Math.abs(mousePos.y - jb.ui.offset(elem).top) < edgeY || Math.abs(mousePos.x - jb.ui.offset(elem).left) < edgeX;
-  }).concat([first_result]);
-  return orderedResults[0];
+  const orderedResults = jb.unique(results.filter( ({el}) => {
+      return Math.abs(mousePos.y - jb.ui.offset(el).top*zoom) < edgeY || Math.abs(mousePos.x - jb.ui.offset(el).left*zoom) < edgeX;
+  }).concat([first_result]), ({ctxId}) => ctxId)
+  let rnd = Math.floor(Math.random()*orderedResults.length *2) // use random to let the user flip between choices
+  if (rnd >= orderedResults.length) rnd = 0 // first result get twice weight
+
+  console.log(orderedResults)
+  return orderedResults[rnd].el;
 
   function checkCtxId(ctxId) {
-    return ctxId && predicate(_window.jb.ctxDictionary[ctxId].path)
+    return ctxId && predicate(_window.jb.ctxDictionary[ctxId].path) && ctxId
   }
 }
 
@@ -40791,9 +40831,20 @@ Object.assign(st, {
       const result = st.closestCtxInPreview(pathStr)
       st.highlightCtx(result.ctx)
   },
+  highlightElemsEm: jb.callbag.subject(),
   highlightElems(elems) {
-    if (!elems || !elems.length) return
-    const html = elems.map(el => {
+    elems && elems.length && st.highlightElemsEm.next(elems)
+
+    if (!st.highlightElemsEm._initialized) {
+      st.highlightElemsEm._initialized = true
+      const {pipe,throttleTime,subscribe} = jb.callbag
+      pipe(st.highlightElemsEm,
+        throttleTime(300),
+        subscribe(elems => st.doHighlightElems(elems) ))
+    }
+  },
+  doHighlightElems(elems) {
+      const html = elems.map(el => {
       const offset = jb.ui.offset(el)
       let width = jb.ui.outerWidth(el)
       if (width == jb.ui.outerWidth(document.body))
@@ -43094,27 +43145,31 @@ jb.component('studio.mainMenu', {
           menu.action({
             title: 'Open Project ...',
             action: studio.openProject(),
-            showCondition: not(studio.inVscode()),
+            showCondition: not(studio.inVscode())
           }),
           menu.action({
             title: 'Save',
             action: studio.saveComponents(),
             icon: icon('save'),
-            showCondition: not(studio.inVscode()),
-            shortcut: 'Ctrl+S'
+            shortcut: 'Ctrl+S',
+            showCondition: not(studio.inVscode())
           }),
           menu.action({
             title: 'Force Save',
             action: studio.saveComponents(),
-            showCondition: not(studio.inVscode()),
-            icon: icon('save')
+            icon: icon('save'),
+            showCondition: not(studio.inVscode())
           }),
           menu.action({
             title: 'Source ...',
-            showCondition: not(studio.inVscode()),
-            action: studio.viewAllFiles(studio.currentProfilePath())
+            action: studio.viewAllFiles(studio.currentProfilePath()),
+            showCondition: not(studio.inVscode())
           }),
-          menu.action({title: 'Github helper...', showCondition: not(studio.inVscode()), action: studio.githubHelper()}),
+          menu.action({
+            title: 'Github helper...',
+            action: studio.githubHelper(),
+            showCondition: not(studio.inVscode())
+          }),
           menu.action({
             title: 'Settings...',
             action: openDialog({
@@ -43126,7 +43181,8 @@ jb.component('studio.mainMenu', {
                     '%$studio/projectSettings/libs%',
                     pipeline('%$studio/libsAsArray%', join(','))
                   ),
-                studio.saveProjectSettings()
+                studio.saveProjectSettings(),
+                studio.refreshPreview()
               ),
               features: dialogFeature.dragTitle()
             })
@@ -43311,7 +43367,6 @@ jb.component('studio.vscodeTopBar', {
         features: [css.margin({top: '', left: '', right: '0'})]
       })
     ],
-    features: css.margin('13')
   })
 })
 
@@ -44239,9 +44294,19 @@ Object.assign(jb.ui,{
   },
   studioFixYPos(elem) {
     if (elem && elem.ownerDocument == jb.frame.document) return 0
-    if (this._studioFixYPos == null)
-      this._studioFixYPos = (document.querySelector('#jb-preview') && document.querySelector('#jb-preview').getBoundingClientRect().top) || 0
+    //if (this._studioFixYPos == null) {
+      const zoom = +document.body.style.zoom || 1
+      this._studioFixYPos = ((document.querySelector('#jb-preview') && document.querySelector('#jb-preview').getBoundingClientRect().top) || 0)/zoom
+    //}
     return this._studioFixYPos
+  },
+  studioFixXPos(elem) {
+    if (elem && elem.ownerDocument == jb.frame.document) return 0
+    //if (this._studioFixXPos == null) {
+      const zoom = +document.body.style.zoom || 1
+      this._studioFixXPos = (document.querySelector('#jb-preview') && document.querySelector('#jb-preview').getBoundingClientRect().left) || 0
+    //}
+    return this._studioFixXPos
   }
 })
 

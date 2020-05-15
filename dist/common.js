@@ -2453,16 +2453,48 @@ jb.component('formatDate', {
               }
           })
       },
-      debounceTime: duration => source => (start, sink) => {
+      debounceTime: (duration,immediate)  => source => (start, sink) => {
           if (start !== 0) return
           let timeout
           source(0, function debounceTime(t, d) {
             // every event clears the existing timeout, if any
+            if (!timeout && (immediate === undefined || immediate)) sink(t,d)
             if (timeout) clearTimeout(timeout)
-            if (t === 1) timeout = setTimeout(() => sink(1, d), typeof duration == 'function' ? duration() : duration)
+            if (t === 1) timeout = setTimeout(() => {sink(1, d); timeout = null}, typeof duration == 'function' ? duration() : duration)
             else sink(t, d)
           })
       },
+      throttleTime: (duration,emitLast) => source => (start, sink) => {
+        if (start !== 0) return
+        let talkbackToSource, sourceTerminated = false, sinkTerminated = false, last, timeout
+        sink(0, function throttle(t, d) {
+          if (t === 2) sinkTerminated = true
+        })
+        source(0, function throttle(t, d) {
+          if (t === 0) {
+            talkbackToSource = d
+            talkbackToSource(1)
+          } else if (sinkTerminated) {
+            return
+          } else if (t === 1) {
+            if (!timeout) {
+              sink(t, d)
+              last = null
+              timeout = setTimeout(() => {
+                timeout = null
+                if (!sourceTerminated) talkbackToSource(1)
+                if ((emitLast === undefined || emitLast) && last != null)
+                  sink(t,d)
+              }, typeof duration == 'function' ? duration() : duration)
+            } else {
+              last = d
+            }
+          } else if (t === 2) {
+            sourceTerminated = true
+            sink(t, d)
+          }
+        })
+      },      
       take: max => source => (start, sink) => {
           if (start !== 0) return
           let taken = 0

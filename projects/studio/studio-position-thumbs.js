@@ -20,9 +20,19 @@ Object.assign(jb.ui,{
   },
   studioFixYPos(elem) {
     if (elem && elem.ownerDocument == jb.frame.document) return 0
-    if (this._studioFixYPos == null)
-      this._studioFixYPos = (document.querySelector('#jb-preview') && document.querySelector('#jb-preview').getBoundingClientRect().top) || 0
+    //if (this._studioFixYPos == null) {
+      const zoom = +document.body.style.zoom || 1
+      this._studioFixYPos = ((document.querySelector('#jb-preview') && document.querySelector('#jb-preview').getBoundingClientRect().top) || 0)/zoom
+    //}
     return this._studioFixYPos
+  },
+  studioFixXPos(elem) {
+    if (elem && elem.ownerDocument == jb.frame.document) return 0
+    //if (this._studioFixXPos == null) {
+      const zoom = +document.body.style.zoom || 1
+      this._studioFixXPos = (document.querySelector('#jb-preview') && document.querySelector('#jb-preview').getBoundingClientRect().left) || 0
+    //}
+    return this._studioFixXPos
   }
 })
 

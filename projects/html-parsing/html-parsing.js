@@ -143,7 +143,7 @@ jb.component('htmlParsing.parseDevice', {
             style: table.mdc(),
             visualSizeLimit: '12',
             features: [
-              itemlist.selection('%$selected2%', undefined),
+              itemlist.selection({databind: '%$selected2%'}),
               itemlist.keyboardSelection({}),
               css.width('600')
             ]
@@ -176,7 +176,8 @@ jb.component('htmlParsing.parseDevice', {
               })
             ],
             features: [group.data('%$selected2%'), watchRef('%$selected2%')]
-          })
+          }),
+          card({data: '%$selected2%', style: card.flat940(), adapter: ''})
         ],
         features: variable({name: 'selected2', watchable: true})
       })

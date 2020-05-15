@@ -264,11 +264,24 @@ jb.component('rx.catchError', {
 
 jb.component('rx.debounceTime', {
     type: 'rx',
+    description: 'waits for a cooldown period, them emits the last arrived',
     category: 'operator',
     params: [
-      {id: 'time', dynamic: true, description: 'can be dynamic' },
+      {id: 'cooldownPeriod', dynamic: true, description: 'can be dynamic' },
+      {id: 'immediate', as: 'boolean', description: 'emits the first event immediately, default is true' },
     ],
-    impl: (ctx,time) => jb.callbag.debounceTime(time)
+    impl: (ctx,cooldownPeriod,immediate) => jb.callbag.debounceTime(cooldownPeriod,immediate)
+})
+
+jb.component('rx.throttleTime', {
+  type: 'rx',
+  description: 'enforces a cooldown period. Any data that arrives during the quiet time is ignored',
+  category: 'operator',
+  params: [
+    {id: 'cooldownPeriod', dynamic: true, description: 'can be dynamic' },
+    {id: 'emitLast', as: 'boolean', description: 'emits the last event arrived at the end of the cooldown, default is true' },
+  ],
+  impl: (ctx,cooldownPeriod,emitLast) => jb.callbag.throttleTime(cooldownPeriod,emitLast)
 })
 
 jb.component('rx.delay', {

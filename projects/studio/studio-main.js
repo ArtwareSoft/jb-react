@@ -119,27 +119,31 @@ jb.component('studio.mainMenu', {
           menu.action({
             title: 'Open Project ...',
             action: studio.openProject(),
-            showCondition: not(studio.inVscode()),
+            showCondition: not(studio.inVscode())
           }),
           menu.action({
             title: 'Save',
             action: studio.saveComponents(),
             icon: icon('save'),
-            showCondition: not(studio.inVscode()),
-            shortcut: 'Ctrl+S'
+            shortcut: 'Ctrl+S',
+            showCondition: not(studio.inVscode())
           }),
           menu.action({
             title: 'Force Save',
             action: studio.saveComponents(),
-            showCondition: not(studio.inVscode()),
-            icon: icon('save')
+            icon: icon('save'),
+            showCondition: not(studio.inVscode())
           }),
           menu.action({
             title: 'Source ...',
-            showCondition: not(studio.inVscode()),
-            action: studio.viewAllFiles(studio.currentProfilePath())
+            action: studio.viewAllFiles(studio.currentProfilePath()),
+            showCondition: not(studio.inVscode())
           }),
-          menu.action({title: 'Github helper...', showCondition: not(studio.inVscode()), action: studio.githubHelper()}),
+          menu.action({
+            title: 'Github helper...',
+            action: studio.githubHelper(),
+            showCondition: not(studio.inVscode())
+          }),
           menu.action({
             title: 'Settings...',
             action: openDialog({
@@ -151,7 +155,8 @@ jb.component('studio.mainMenu', {
                     '%$studio/projectSettings/libs%',
                     pipeline('%$studio/libsAsArray%', join(','))
                   ),
-                studio.saveProjectSettings()
+                studio.saveProjectSettings(),
+                studio.refreshPreview()
               ),
               features: dialogFeature.dragTitle()
             })
@@ -336,7 +341,6 @@ jb.component('studio.vscodeTopBar', {
         features: [css.margin({top: '', left: '', right: '0'})]
       })
     ],
-    features: css.margin('13')
   })
 })
 

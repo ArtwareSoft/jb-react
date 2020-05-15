@@ -192,15 +192,22 @@ class jBartStudio {
                 })
             })
         } else if (message.$ == 'reOpenStudio') {
-            const {fn, pos} = message
+            let {fn, pos} = message
             return (async () => {
+                if (!fn) {
+                    const editor = vscode.window.activeTextEditor;
+                    if (editor) {
+                        fn = editor.document.uri.path
+                        const line = editor.selection.active.line
+                        pos = [line,0,line,0]
+                    }
+                }
                 if (fn) {
                     const doc = await vscode.workspace.openTextDocument(Uri.file(fn))
                     const editor = await vscode.window.showTextDocument(doc,vscode.ViewColumn.One)
                     editor.revealRange(new vscode.Range(...pos))
                     editor.selection = new vscode.Selection(pos[0], pos[1], pos[2], pos[3])
                 }
-                //await this._panel.dispose()
                 await reopen(this.context)
                 return { type: 'success' }
             })()

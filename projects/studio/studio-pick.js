@@ -125,9 +125,11 @@ jb.component('dialog.studioPickDialog', {
       css(pipeline( (ctx,{dialogData},{from}) => {
         if (!dialogData.elem) return {}
         const elemRect = dialogData.elem.getBoundingClientRect()
-        const top = (from == 'preview' ? jb.ui.studioFixYPos() : 0) + elemRect.top
-        return { top: `top: ${top}px`, left: `left: ${elemRect.left}px`, width: `width: ${elemRect.width}px`, 
-            height: `height: ${elemRect.height}px`, widthVal: elemRect.width + 'px', heightVal: elemRect.height + 'px'
+        const zoom = +jb.studio.previewWindow.document.body.style.zoom || 1
+        const top = (from == 'preview' ? jb.ui.studioFixYPos() : 0) + elemRect.top*zoom
+        const left = (from == 'preview' ? jb.ui.studioFixXPos() : 0) + elemRect.left*zoom
+        return { top: `top: ${top}px`, left: `left: ${left}px`, width: `width: ${elemRect.width*zoom}px`, 
+            height: `height: ${elemRect.height*zoom}px`, widthVal: `${elemRect.width*zoom}px`, heightVal: `${elemRect.height*zoom}px`
           }
         },
         `{ %top%; %left% } ~ .pick-toolbar { margin-top: -20px }
@@ -145,21 +147,27 @@ function eventToElem(e,_window, predicate) {
   const elems = _window.document.elementsFromPoint(mousePos.x, mousePos.y);
   const results = elems.flatMap(el=>jb.ui.parents(el,{includeSelf: true}))
       .filter(e => e && e.getAttribute)
-      .filter(e => checkCtxId(e.getAttribute('pick-ctx')) || checkCtxId(e.getAttribute('jb-ctx')) )
+      .map( el => ({el, ctxId: checkCtxId(el.getAttribute('pick-ctx')) || checkCtxId(el.getAttribute('jb-ctx')) }))
+      .filter(({ctxId}) =>  ctxId)
   if (results.length == 0) return [];
 
   // promote parents if the mouse is near the edge
   const first_result = results.shift(); // shift also removes first item from results!
-  const edgeY = Math.max(3,Math.floor(jb.ui.outerHeight(first_result) / 10));
-  const edgeX = Math.max(3,Math.floor(jb.ui.outerWidth(first_result) / 10));
+  const edgeY = Math.max(3,Math.floor(jb.ui.outerHeight(first_result.el) / 10));
+  const edgeX = Math.max(3,Math.floor(jb.ui.outerWidth(first_result.el) / 10));
+  const zoom = +_window.document.body.style.zoom || 1
 
-  const orderedResults = results.filter(elem=>{
-      return Math.abs(mousePos.y - jb.ui.offset(elem).top) < edgeY || Math.abs(mousePos.x - jb.ui.offset(elem).left) < edgeX;
-  }).concat([first_result]);
-  return orderedResults[0];
+  const orderedResults = jb.unique(results.filter( ({el}) => {
+      return Math.abs(mousePos.y - jb.ui.offset(el).top*zoom) < edgeY || Math.abs(mousePos.x - jb.ui.offset(el).left*zoom) < edgeX;
+  }).concat([first_result]), ({ctxId}) => ctxId)
+  let rnd = Math.floor(Math.random()*orderedResults.length *2) // use random to let the user flip between choices
+  if (rnd >= orderedResults.length) rnd = 0 // first result get twice weight
+
+  console.log(orderedResults)
+  return orderedResults[rnd].el;
 
   function checkCtxId(ctxId) {
-    return ctxId && predicate(_window.jb.ctxDictionary[ctxId].path)
+    return ctxId && predicate(_window.jb.ctxDictionary[ctxId].path) && ctxId
   }
 }
 
@@ -182,9 +190,20 @@ Object.assign(st, {
       const result = st.closestCtxInPreview(pathStr)
       st.highlightCtx(result.ctx)
   },
+  highlightElemsEm: jb.callbag.subject(),
   highlightElems(elems) {
-    if (!elems || !elems.length) return
-    const html = elems.map(el => {
+    elems && elems.length && st.highlightElemsEm.next(elems)
+
+    if (!st.highlightElemsEm._initialized) {
+      st.highlightElemsEm._initialized = true
+      const {pipe,throttleTime,subscribe} = jb.callbag
+      pipe(st.highlightElemsEm,
+        throttleTime(300),
+        subscribe(elems => st.doHighlightElems(elems) ))
+    }
+  },
+  doHighlightElems(elems) {
+      const html = elems.map(el => {
       const offset = jb.ui.offset(el)
       let width = jb.ui.outerWidth(el)
       if (width == jb.ui.outerWidth(document.body))
