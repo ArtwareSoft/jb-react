@@ -6,7 +6,7 @@
 .vscode-studio {
   --jb-editor-background:               var(--vscode-editor-background);
   --jb-font-family:                     var(--vscode-editor-font-family);
-  --jb-font-size:                       11px;
+  --jb-font-size:                       16px;
   --jb-font-weight:                     var(--vscode-editor-font-weight);
   --jb-foreground:                      var(--vscode-foreground);
   --jb-menu-background:                 var(--vscode-menu-background);

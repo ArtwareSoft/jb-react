@@ -301,14 +301,14 @@ jb.component('studio.vscodeTopBar', {
           text({text: 'message', style: text.studioMessage()}),
           group({
             title: 'menu and toolbar',
-            layout: layout.flex({alignItems: 'baseline', spacing: '16'}),
+            layout: layout.flex({spacing: '16'}),
             style: group.htmlTag({}),
             controls: [
               studio.searchComponent(''),
               menu.control({
                 menu: studio.mainMenu(),
                 style: menuStyle.pulldown({}),
-                features: [id('mainMenu'), css.margin('5')]
+                features: [id('mainMenu')]
               }),
               group({
                 title: 'toolbar',
@@ -340,7 +340,7 @@ jb.component('studio.vscodeTopBar', {
         height: '40',
         features: [css.margin({top: '', left: '', right: '0'})]
       })
-    ],
+    ]
   })
 })
 
