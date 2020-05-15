@@ -29,8 +29,8 @@ jb.component('button.x', {
             font: %$size%px sans-serif;
             border: none;
             background: transparent;
-            color: var(--jb-titleBar-inactiveForeground);
-            text-shadow: 0 1px 0 #fff;
+            color: var(--mdc-theme-text-primary-on-background);
+            text-shadow: 0 1px 0 var(--jb-dropdown-shadow);
             font-weight: 700;
         }
         :hover { color: var(--jb-titleBar-activeForeground) }`

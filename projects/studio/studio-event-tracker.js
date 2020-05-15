@@ -199,6 +199,18 @@ jb.component('studio.eventView', {
       ),
       controlWithCondition(({data}) => data.opValue != null, text('<- %opValue%')),
       controlWithCondition(
+        '%path%',
+        button({
+          title: '%compName%',
+          action: studio.showStack('%ctx%'),
+          style: button.href(),
+          features: [
+            feature.hoverTitle('%path%'),
+            feature.onHover({action: studio.highlightByPath('%path%')})
+          ]
+        })
+      ),
+      controlWithCondition(
         '%srcCompName%',
         group({
           layout: layout.horizontal(),
@@ -220,18 +232,6 @@ jb.component('studio.eventView', {
       controlWithCondition(
         '%log% == setGridAreaVals%',
         text({text: join({separator: '/', items: '%event/4%'})})
-      ),
-      controlWithCondition(
-        '%path%',
-        button({
-          title: '%compName%',
-          action: studio.showStack('%ctx%'),
-          style: button.href(),
-          features: [
-            feature.hoverTitle('%path%'),
-            feature.onHover({action: studio.highlightByPath('%path%')})
-          ]
-        })
       )
     ]
   })

@@ -8730,8 +8730,8 @@ jb.component('button.x', {
             font: %$size%px sans-serif;
             border: none;
             background: transparent;
-            color: var(--jb-titleBar-inactiveForeground);
-            text-shadow: 0 1px 0 #fff;
+            color: var(--mdc-theme-text-primary-on-background);
+            text-shadow: 0 1px 0 var(--jb-dropdown-shadow);
             font-weight: 700;
         }
         :hover { color: var(--jb-titleBar-activeForeground) }`
@@ -9390,8 +9390,9 @@ jb.component('picklist.plusIcon', {
   type: 'feature',
   categories: 'feature:0,picklist:50',
   impl: features(
+    Var('color',css.valueOfCssVar('--mdc-theme-text-primary-on-background')),
     css('-webkit-appearance: none; appearance: none; width: 6px; height: 23px; background-repeat: no-repeat; background-position-y: -1px;'),
-    css(`background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M17,13 H13 V17 H11 V13 H7 V11 H11 V7 H13 V11 H17 V13 Z'/></svg>");`),
+    css(`background-image: url("data:image/svg+xml;utf8,<svg fill='%$color%' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M17,13 H13 V17 H11 V13 H7 V11 H11 V7 H13 V11 H17 V13 Z'/></svg>");`),
   )
 })
 
@@ -40714,7 +40715,7 @@ jb.component('dialogFeature.studioPick', {
       const cover = cmp.cover = _window.document.querySelector('.jb-cover') || _window.document.createElement('div')
       cover.className = 'jb-cover'
       cover.style.position= 'absolute'; cover.style.width= '100%'; cover.style.height= '100%'; cover.style.background= 'white'; cover.style.opacity= '0'; cover.style.top= 0; cover.style.left= 0;
-      _window.document.body.appendChild(cover);
+      _window.document.body.appendChild(cover)
 
       ctx.vars.$dialog.endPick = function(pickedCtx) {
         if (pickedCtx)
@@ -40765,8 +40766,9 @@ jb.component('dialog.studioPickDialog', {
     features: [
       css(pipeline( (ctx,{dialogData},{from}) => {
         if (!dialogData.elem) return {}
+        const _window = from == 'preview' ? st.previewWindow : window;
         const elemRect = dialogData.elem.getBoundingClientRect()
-        const zoom = +jb.studio.previewWindow.document.body.style.zoom || 1
+        const zoom = +_window.document.body.style.zoom || 1
         const top = (from == 'preview' ? jb.ui.studioFixYPos() : 0) + elemRect.top*zoom
         const left = (from == 'preview' ? jb.ui.studioFixXPos() : 0) + elemRect.left*zoom
         return { top: `top: ${top}px`, left: `left: ${left}px`, width: `width: ${elemRect.width*zoom}px`, 
@@ -42670,6 +42672,18 @@ jb.component('studio.eventView', {
       ),
       controlWithCondition(({data}) => data.opValue != null, text('<- %opValue%')),
       controlWithCondition(
+        '%path%',
+        button({
+          title: '%compName%',
+          action: studio.showStack('%ctx%'),
+          style: button.href(),
+          features: [
+            feature.hoverTitle('%path%'),
+            feature.onHover({action: studio.highlightByPath('%path%')})
+          ]
+        })
+      ),
+      controlWithCondition(
         '%srcCompName%',
         group({
           layout: layout.horizontal(),
@@ -42691,18 +42705,6 @@ jb.component('studio.eventView', {
       controlWithCondition(
         '%log% == setGridAreaVals%',
         text({text: join({separator: '/', items: '%event/4%'})})
-      ),
-      controlWithCondition(
-        '%path%',
-        button({
-          title: '%compName%',
-          action: studio.showStack('%ctx%'),
-          style: button.href(),
-          features: [
-            feature.hoverTitle('%path%'),
-            feature.onHover({action: studio.highlightByPath('%path%')})
-          ]
-        })
       )
     ]
   })

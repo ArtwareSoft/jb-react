@@ -2,7 +2,7 @@
 	"name": "jbart-studio",
 	"displayName": "jBart Studio",
 	"description": "Javascript Visual Editor for material design, puppeteer, d3, rxjs/callbag, and more (alpha)",
-	"version": "0.6.7",
+	"version": "0.6.8",
 	"publisher": "artwaresoft",
 	"engines": {
 		"vscode": "^1.38.0"

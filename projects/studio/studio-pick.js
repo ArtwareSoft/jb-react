@@ -73,7 +73,7 @@ jb.component('dialogFeature.studioPick', {
       const cover = cmp.cover = _window.document.querySelector('.jb-cover') || _window.document.createElement('div')
       cover.className = 'jb-cover'
       cover.style.position= 'absolute'; cover.style.width= '100%'; cover.style.height= '100%'; cover.style.background= 'white'; cover.style.opacity= '0'; cover.style.top= 0; cover.style.left= 0;
-      _window.document.body.appendChild(cover);
+      _window.document.body.appendChild(cover)
 
       ctx.vars.$dialog.endPick = function(pickedCtx) {
         if (pickedCtx)
@@ -124,8 +124,9 @@ jb.component('dialog.studioPickDialog', {
     features: [
       css(pipeline( (ctx,{dialogData},{from}) => {
         if (!dialogData.elem) return {}
+        const _window = from == 'preview' ? st.previewWindow : window;
         const elemRect = dialogData.elem.getBoundingClientRect()
-        const zoom = +jb.studio.previewWindow.document.body.style.zoom || 1
+        const zoom = +_window.document.body.style.zoom || 1
         const top = (from == 'preview' ? jb.ui.studioFixYPos() : 0) + elemRect.top*zoom
         const left = (from == 'preview' ? jb.ui.studioFixXPos() : 0) + elemRect.left*zoom
         return { top: `top: ${top}px`, left: `left: ${left}px`, width: `width: ${elemRect.width*zoom}px`, 

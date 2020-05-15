@@ -35,7 +35,8 @@
     "helloWorld": "start http://localhost:8082/project/studio/hello-world",
     "test": "start http://localhost:8082/projects/ui-tests/tests.html",
     "pub": "yarn build-libs && git commit -am build-lib",
-    "vscode-package": "vsce package"
+    "vscode-package": "vsce package",
+    "copy-projects-to-template": "node bin/copy-projects-to-template.js"
   },
   "bin": {
     "studio": "bin/studio"
