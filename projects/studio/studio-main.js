@@ -292,19 +292,34 @@ jb.component('studio.vscodeTopBar', {
   type: 'control',
   impl: group({
     title: 'top bar',
-    layout: layout.flex({alignItems: 'start', spacing: ''}),
+    layout: layout.flex({direction: 'column', alignItems: 'start', spacing: ''}),
     controls: [
+      text({
+        text: If(
+          '%$studio/project%==tests',
+          '%$studio/page%',
+          replace({find: '_', replace: ' ', text: '%$studio/project%'})
+        ),
+        style: header.h1(),
+        features: [
+          watchRef('%$studio/project%'),
+          watchRef('%$studio/page%'),
+          css('font-size: var(--jb-font-size)'),
+          field.title('project name')
+        ]
+      }),
       group({
         title: 'title and menu',
-        layout: layout.vertical('8'),
         controls: [
-          text({text: 'message', style: text.studioMessage()}),
           group({
             title: 'menu and toolbar',
-            layout: layout.flex({spacing: '16'}),
+            layout: layout.flex({
+              justifyContent: 'space-between',
+              alignItems: 'baseline',
+              spacing: ''
+            }),
             style: group.htmlTag({}),
             controls: [
-              studio.searchComponent(''),
               menu.control({
                 menu: studio.mainMenu(),
                 style: menuStyle.pulldown({}),
@@ -316,29 +331,11 @@ jb.component('studio.vscodeTopBar', {
                   studio.toolbar()
                 ]
               }),
-              text({
-                text: If(
-                  '%$studio/project%==tests',
-                  '%$studio/page%',
-                  replace({find: '_', replace: ' ', text: '%$studio/project%'})
-                ),
-                style: text.htmlTag('div'),
-                features: [
-                  watchRef('%$studio/project%'),
-                  watchRef('%$studio/page%'),
-                  css('text-align: bottom')
-                ]
-              })
+              studio.searchComponent('')
             ]
           })
         ],
         features: css('width: 100%; ')
-      }),
-      image({
-        url: '%$studio/baseStudioUrl%css/jbartlogo.png',
-        width: '50',
-        height: '40',
-        features: [css.margin({top: '', left: '', right: '0'})]
       })
     ]
   })

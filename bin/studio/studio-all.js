@@ -8639,7 +8639,7 @@ jb.component('text.span', {
       features: text.bindText()
     })
 })
-  
+
 jb.component('text.chip', {
     type: 'text.style',
     impl: customStyle({
@@ -8674,30 +8674,39 @@ jb.component('text.chip', {
 }))
 
 jb.component('header.mdcHeaderWithIcon', {
-    type: 'text.style',
-    params: [
-      {id: 'level', options: '1,2,3,4,5,6', as: 'string', defaultValue: '1'}
-    ],
-    impl: customStyle({
-      template: (cmp,{text,level},h) =>
+  type: 'text.style',
+  params: [
+    {id: 'level', options: '1,2,3,4,5,6', as: 'string', defaultValue: '1'}
+  ],
+  impl: customStyle({
+    template: (cmp,{text,level},h) =>
           h(`h${level}`,{ class: 'mdc-tab__content'}, [
             ...jb.ui.chooseIconWithRaised(cmp.icon).map(h),
             h('span',{ class: 'mdc-tab__text-label'},text),
             ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-tab__icon'))
           ]),
-      css: '{justify-content: initial}',
-      features: text.bindText()
-    })
+    css: '{justify-content: initial}',
+    features: text.bindText()
+  })
 })
-  
-  ;[1,2].map(level=>jb.component(`text.mdcBody${level}`, {
+
+jb.component('text.alignToBottom', {
+  type: 'text.style',
+  impl: customStyle({
+    template: (cmp,{text},h) => h('div',{},h('span',{},text)),
+    css: '{position: relative } ~>span { position: absolute; left: 0; bottom: 0 }',
+    features: text.bindText()
+  })
+})
+
+;[1,2].map(level=>jb.component(`text.mdcBody${level}`, {
     type: 'text.style',
     impl: customStyle({
       template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--body${level}`},text),
       features: text.bindText()
     })
 }))
-  ;
+;
 
 jb.ui.chooseIconWithRaised = (icons,raised) => {
   if (!icons) return []
@@ -39129,8 +39138,9 @@ jb.component('studio.properties', {
             features: [field.columnWidth('300')]
           }),
           group({
+            title: '',
             controls: studio.propertyToolbar('%path%'),
-            features: [field.columnWidth('20'), css('{ text-align: right }')]
+            features: [field.columnWidth('20'), css('{ text-align: right; height: 100% }')]
           })
         ],
         chapterHeadline: text({
@@ -42917,7 +42927,11 @@ jb.component('studio.toolbar', {
           path: firstSucceeding('%$studio/profile_path%', studio.currentPagePath())
         })
       ),
-      css.transformScale({x: '0.8', y: '0.8'})
+      css.transformScale({x: '0.7', y: '0.7'}),
+      css.color({
+        background: 'var(--jb-menubar-selectionBackground)',
+        selector: '~ button'
+      })
     ]
   })
 })
@@ -43320,23 +43334,38 @@ jb.component('studio.vscodeTopBar', {
   type: 'control',
   impl: group({
     title: 'top bar',
-    layout: layout.flex({alignItems: 'start', spacing: ''}),
+    layout: layout.flex({direction: 'column', alignItems: 'start', spacing: ''}),
     controls: [
+      text({
+        text: If(
+          '%$studio/project%==tests',
+          '%$studio/page%',
+          replace({find: '_', replace: ' ', text: '%$studio/project%'})
+        ),
+        style: header.h1(),
+        features: [
+          watchRef('%$studio/project%'),
+          watchRef('%$studio/page%'),
+          css('font-size: var(--jb-font-size)'),
+          field.title('project name')
+        ]
+      }),
       group({
         title: 'title and menu',
-        layout: layout.vertical('8'),
         controls: [
-          text({text: 'message', style: text.studioMessage()}),
           group({
             title: 'menu and toolbar',
-            layout: layout.flex({alignItems: 'baseline', spacing: '16'}),
+            layout: layout.flex({
+              justifyContent: 'space-between',
+              alignItems: 'baseline',
+              spacing: ''
+            }),
             style: group.htmlTag({}),
             controls: [
-              studio.searchComponent(''),
               menu.control({
                 menu: studio.mainMenu(),
                 style: menuStyle.pulldown({}),
-                features: [id('mainMenu'), css.margin('5')]
+                features: [id('mainMenu')]
               }),
               group({
                 title: 'toolbar',
@@ -43344,31 +43373,13 @@ jb.component('studio.vscodeTopBar', {
                   studio.toolbar()
                 ]
               }),
-              text({
-                text: If(
-                  '%$studio/project%==tests',
-                  '%$studio/page%',
-                  replace({find: '_', replace: ' ', text: '%$studio/project%'})
-                ),
-                style: text.htmlTag('div'),
-                features: [
-                  watchRef('%$studio/project%'),
-                  watchRef('%$studio/page%'),
-                  css('text-align: bottom')
-                ]
-              })
+              studio.searchComponent('')
             ]
           })
         ],
         features: css('width: 100%; ')
-      }),
-      image({
-        url: '%$studio/baseStudioUrl%css/jbartlogo.png',
-        width: '50',
-        height: '40',
-        features: [css.margin({top: '', left: '', right: '0'})]
       })
-    ],
+    ]
   })
 })
 

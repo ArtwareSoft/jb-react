@@ -46,8 +46,9 @@ jb.component('studio.properties', {
             features: [field.columnWidth('300')]
           }),
           group({
+            title: '',
             controls: studio.propertyToolbar('%path%'),
-            features: [field.columnWidth('20'), css('{ text-align: right }')]
+            features: [field.columnWidth('20'), css('{ text-align: right; height: 100% }')]
           })
         ],
         chapterHeadline: text({

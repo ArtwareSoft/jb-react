@@ -41,7 +41,7 @@
 
   --mdc-theme-on-primary: var(--jb-input-foreground); /* Primary text on top of a theme primary color background */
   --mdc-theme-on-secondary: var(--jb-input-foreground);
-  --mdc-theme-on-surface: --jb-input-foreground;
+  --mdc-theme-on-surface: var(--jb-input-foreground);
   --mdc-theme-on-error: var(--jb-input-background);
 
   --mdc-theme-text-primary-on-background: var(--jb-input-foreground); /* Primary text on top of the theme background color. */
@@ -226,7 +226,7 @@ border: 1px solid var(--jb-dropdown-border)}
 .vscode-studio {
   --jb-editor-background:               var(--vscode-editor-background);
   --jb-font-family:                     var(--vscode-editor-font-family);
-  --jb-font-size:                       11px;
+  --jb-font-size:                       16px;
   --jb-font-weight:                     var(--vscode-editor-font-weight);
   --jb-foreground:                      var(--vscode-foreground);
   --jb-menu-background:                 var(--vscode-menu-background);
@@ -777,7 +777,7 @@ html, body {
 
   --mdc-theme-on-primary: var(--jb-input-foreground); /* Primary text on top of a theme primary color background */
   --mdc-theme-on-secondary: var(--jb-input-foreground);
-  --mdc-theme-on-surface: --jb-input-foreground;
+  --mdc-theme-on-surface: var(--jb-input-foreground);
   --mdc-theme-on-error: var(--jb-input-background);
 
   --mdc-theme-text-primary-on-background: var(--jb-input-foreground); /* Primary text on top of the theme background color. */
@@ -9572,7 +9572,7 @@ li.CodeMirror-hint-active {
     height: var(--mdc-ripple-fg-size, 100%);
   }
   .mdc-text-field:not(.mdc-text-field--disabled) .mdc-floating-label {
-    color: rgba(0, 0, 0, 0.6);
+    color:var(--mdc-theme-text-primary-on-background);
   }
   .mdc-text-field:not(.mdc-text-field--disabled) .mdc-text-field__input {
     color: rgba(0, 0, 0, 0.87);

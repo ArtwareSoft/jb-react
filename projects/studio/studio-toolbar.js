@@ -112,7 +112,11 @@ jb.component('studio.toolbar', {
           path: firstSucceeding('%$studio/profile_path%', studio.currentPagePath())
         })
       ),
-      css.transformScale({x: '0.8', y: '0.8'})
+      css.transformScale({x: '0.7', y: '0.7'}),
+      css.color({
+        background: 'var(--jb-menubar-selectionBackground)',
+        selector: '~ button'
+      })
     ]
   })
 })

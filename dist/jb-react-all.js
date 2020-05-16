@@ -8639,7 +8639,7 @@ jb.component('text.span', {
       features: text.bindText()
     })
 })
-  
+
 jb.component('text.chip', {
     type: 'text.style',
     impl: customStyle({
@@ -8674,30 +8674,39 @@ jb.component('text.chip', {
 }))
 
 jb.component('header.mdcHeaderWithIcon', {
-    type: 'text.style',
-    params: [
-      {id: 'level', options: '1,2,3,4,5,6', as: 'string', defaultValue: '1'}
-    ],
-    impl: customStyle({
-      template: (cmp,{text,level},h) =>
+  type: 'text.style',
+  params: [
+    {id: 'level', options: '1,2,3,4,5,6', as: 'string', defaultValue: '1'}
+  ],
+  impl: customStyle({
+    template: (cmp,{text,level},h) =>
           h(`h${level}`,{ class: 'mdc-tab__content'}, [
             ...jb.ui.chooseIconWithRaised(cmp.icon).map(h),
             h('span',{ class: 'mdc-tab__text-label'},text),
             ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-tab__icon'))
           ]),
-      css: '{justify-content: initial}',
-      features: text.bindText()
-    })
+    css: '{justify-content: initial}',
+    features: text.bindText()
+  })
 })
-  
-  ;[1,2].map(level=>jb.component(`text.mdcBody${level}`, {
+
+jb.component('text.alignToBottom', {
+  type: 'text.style',
+  impl: customStyle({
+    template: (cmp,{text},h) => h('div',{},h('span',{},text)),
+    css: '{position: relative } ~>span { position: absolute; left: 0; bottom: 0 }',
+    features: text.bindText()
+  })
+})
+
+;[1,2].map(level=>jb.component(`text.mdcBody${level}`, {
     type: 'text.style',
     impl: customStyle({
       template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--body${level}`},text),
       features: text.bindText()
     })
 }))
-  ;
+;
 
 jb.ui.chooseIconWithRaised = (icons,raised) => {
   if (!icons) return []
