@@ -8023,7 +8023,7 @@
     height: var(--mdc-ripple-fg-size, 100%);
   }
   .mdc-text-field:not(.mdc-text-field--disabled) .mdc-floating-label {
-    color: rgba(0, 0, 0, 0.6);
+    color:var(--mdc-theme-text-primary-on-background);
   }
   .mdc-text-field:not(.mdc-text-field--disabled) .mdc-text-field__input {
     color: rgba(0, 0, 0, 0.87);
