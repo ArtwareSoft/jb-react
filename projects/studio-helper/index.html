@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script>
+jbProjectSettings = {
+	project: 'studio-helper',
+	libs: 'common,ui-common,material,ui-tree,dragula,codemirror,pretty-print,studio,history,animate,md-icons,fuse,testers,puppeteer',
+	jsFiles: ['studio-helper.js', 'studio-helper-samples.js'],
+}
+</script>
+<script type="text/javascript" src="/src/loader/jb-loader.js"></script>
+<body>
+<div id="main"> </div>
+<script>
+  jb.ui.renderWidget({$:'studio-helper.control-tree'},document.getElementById('main'))
+</script>
+</body>
+</html>
