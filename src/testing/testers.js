@@ -243,7 +243,7 @@ jb.component('uiTest.applyVdomDiff', {
 		const actualHtml = elem.innerHTML
 		const actualVdom = jb.ui.elemToVdom(elem)
 		const success = !!(expectedHtml.replace(/[0-9]/g,'') == actualHtml.replace(/[0-9]/g,''));
-		const reason = !success ? ('html is different ' + jb.prettyPrint(jb.objectDiff(expectedVdom,actualVdom))) : ''
+		const reason = !success ? ('html is different ' + jb.prettyPrint(jb.objectDiff(expectedVdom,actualVdom),{noMacros: true})) : ''
 		const result = { id: ctx.vars.testID, success, elem, reason }
 		if (!show) {
 			jb.ui.dialogs.dialogs.forEach(d=>d.close())

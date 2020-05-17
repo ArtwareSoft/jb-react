@@ -46,9 +46,8 @@ jb.component('studio.properties', {
             features: [field.columnWidth('300')]
           }),
           group({
-            title: '',
             controls: studio.propertyToolbar('%path%'),
-            features: [field.columnWidth('20'), css('{ text-align: right; height: 100% }')]
+            features: [field.columnWidth('20'), css('{ text-align: right }')]
           })
         ],
         chapterHeadline: text({
@@ -165,8 +164,7 @@ jb.component('studio.propField', {
         controlWithCondition(
           and(
             '%$paramDef/as%==\"boolean\"',
-            or(inGroup(list(true, false), '%$val%'), isEmpty('%$val%')),
-            not('%$paramDef/dynamic%')
+            or((inGroup(list(true, false,'true','false'), '%$val%')), isEmpty('%$val%')),
           ),
           studio.propertyBoolean('%$path%')
         ),

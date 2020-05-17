@@ -131,7 +131,7 @@ jb.component('studio.saveNewProject', {
           jb.logException(e,'',ctx)
         })
         .then(res => {
-          res && res.type == 'error' && st.host.showError(`error saving project ${project}: ` + (res && jb.prettyPrint(res.desc)))
+          res && res.type == 'error' && st.host.showError(`error saving project ${project}: ` + (res && jb.prettyPrint(res.desc,{noMacros: true})))
           res && res.type == 'success' && st.host.showInformationMessage(`new project ${project} created`)
         })
   }

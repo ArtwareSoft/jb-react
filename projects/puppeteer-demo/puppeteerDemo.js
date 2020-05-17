@@ -74,24 +74,12 @@ await frame.type('input[name=q]', 'puppeteer'+String.fromCharCode(13), { delay: 
         features: watchRef({ref: '%$events%', includeChildren: 'yes'})
       }),
       group({
+        layout: layout.vertical(),
         controls: [
-          image({url: pipeline('%$url/1%'), width: '595', height: '343'})
-        ],
-        features: group.wait({
-          for: {
-            '$': 'pptr.htmlFromPage',
-            '$byValue': [
-              {
-                '$': 'pptr.headlessPage',
-                url: 'http://www.google.com',
-                extract: {'$': 'pptr.extractContent', selector: 'img', extract: 'src', multiple: true},
-                features: pptr.waitForSelector('img'),
-                showBrowser: true
-              }
-            ]
-          },
-          varName: 'url'
-        })
+          text({text: 'start puppeteer server:', title: 'my title', style: header.h4()}),
+          text({text: 'cd .../projects/jb-puppeteer-server/', title: 'my title'}),
+          text({text: 'npm start', title: 'my title'})
+        ]
       })
     ]
   })

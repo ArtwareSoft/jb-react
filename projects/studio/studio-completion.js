@@ -106,7 +106,7 @@ if (typeof CodeMirror != 'undefined') {
             if (option.type == 'prop') {
                 const separator = /,\s*$/.test(textToToken) ? '' : ','
                 const space = /\s+$/.test(textToToken) ? '' : ' '
-                let value = option.prop.defaultValue && jb.prettyPrint(option.prop.defaultValue)
+                let value = option.prop.defaultValue && jb.studio.previewjb.prettyPrint(option.prop.defaultValue)
                 value = value || ((option.prop.type &&  option.prop.type != 'data') ? "{$: '' }" : "''")
                 const spaceBeforeValue = value.indexOf('$') == -1 ? ' ' : ''
                 const spaceBeforeColon = value.indexOf('$') == -1 ? '' : ' '

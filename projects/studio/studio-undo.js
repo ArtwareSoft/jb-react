@@ -69,7 +69,7 @@ jb.component('studio.copy', {
   impl: (ctx, path) => {
     try {
       const val = st.valOfPath(path)
-      st.clipboard = typeof val == 'string' ? val : eval('(' + jb.prettyPrint(val) + ')')
+      st.clipboard = typeof val == 'string' ? val : eval('(' + jb.prettyPrint(val,{noMacros: true}) + ')')
     } catch(e) {
       jb.logExecption(e,'copy')
     }

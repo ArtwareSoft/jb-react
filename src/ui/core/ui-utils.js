@@ -332,7 +332,10 @@ jb.component('defaultTheme', {
       --jb-input-foreground: #616161;  
       --jb-textLink-activeForeground: #034775;
       --jb-textLink-foreground: #006ab1;
-    
+
+      --jb-on-primary: #ffffff;
+      --jb-on-secondary: #616161;
+      
       --jb-icon-foreground: #424242;
     
       --jb-list-activeSelectionBackground: #0074e8;
@@ -346,9 +349,9 @@ jb.component('defaultTheme', {
       --mdc-theme-surface: var(--jb-input-background);
       --mdc-theme-error: var(--jb-errorForeground);
     
-      --mdc-theme-on-primary: var(--jb-input-foreground); /* Primary text on top of a theme primary color background */
-      --mdc-theme-on-secondary: var(--jb-input-foreground);
-      --mdc-theme-on-surface: --jb-input-foreground;
+      --mdc-theme-on-primary: var(--jb-on-primary); /* Primary text on top of a theme primary color background */
+      --mdc-theme-on-secondary: var(--jb-on-secondary);
+      --mdc-theme-on-surface: var(--jb-input-foreground);
       --mdc-theme-on-error: var(--jb-input-background);
     
       --mdc-theme-text-primary-on-background: var(--jb-input-foreground); /* Primary text on top of the theme background color. */

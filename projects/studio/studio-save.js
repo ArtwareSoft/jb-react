@@ -74,7 +74,7 @@ function newIndexHtmlContent(fileContent,jbProjectSettings) {
   let lines = fileContent.split('\n').map(x=>x.replace(/[\s]*$/,''))
   const lineOfComp = lines.findIndex(line=> line.match(/^\s*jbProjectSettings/))
   const compLastLine = lines.slice(lineOfComp).findIndex(line => line.match(/^\s*}/))
-  lines.splice(lineOfComp,compLastLine+1,'jbProjectSettings = ' + jb.prettyPrint(jbProjectSettings))
+  lines.splice(lineOfComp,compLastLine+1,'jbProjectSettings = ' + jb.prettyPrint(jbProjectSettings,{noMacros: true}))
   return lines.join('\n')
 }
 
@@ -89,13 +89,13 @@ function newFileContent(fileContent, comps) {
     const nextjbComponent = lines.slice(lineOfComp+1).findIndex(line => line.match(/^jb.component/))
     if (nextjbComponent != -1 && nextjbComponent < compLastLine)
       return jb.logError(['can not find end of component', fn,id, linesFromComp])
-    const newComp = comp ? jb.prettyPrintComp(id,comp,{initialPath: id, comps: st.previewjb.comps}).split('\n') : []
+    const newComp = comp ? st.previewjb.prettyPrintComp(id,comp,{initialPath: id}).split('\n') : []
     if (JSON.stringify(linesFromComp.slice(0,compLastLine+1)) === JSON.stringify(newComp))
         return
     lines.splice(lineOfComp,compLastLine+1,...newComp)
   })
   compsToAdd.forEach(([id,comp])=>{
-    const newComp = jb.prettyPrintComp(id,comp,{initialPath: id, comps: st.previewjb.comps}).split('\n')
+    const newComp = st.previewjb.prettyPrintComp(id,comp,{initialPath: id}).split('\n')
     lines = lines.concat(newComp).concat('')
   })
   return lines.join('\n')
@@ -104,7 +104,7 @@ function newFileContent(fileContent, comps) {
 function deltaFileContent(fileContent, {compId,comp}) {
   const lines = fileContent.split('\n').map(x=>x.replace(/[\s]*$/,''))
   const lineOfComp = lines.findIndex(line=> line.indexOf(`jb.component('${compId}'`) == 0)
-  const newCompLines = comp ? jb.prettyPrintComp(compId,comp,{initialPath: compId, comps: st.previewjb.comps}).split('\n') : []
+  const newCompLines = comp ? st.previewjb.prettyPrintComp(compId,comp,{initialPath: compId}).split('\n') : []
   const justCreatedComp = lineOfComp == -1 && comp[jb.location][1] == 'new'
   if (justCreatedComp) {
     comp[jb.location][1] == lines.length

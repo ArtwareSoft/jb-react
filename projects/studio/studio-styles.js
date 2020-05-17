@@ -44,12 +44,6 @@ jb.component('editableText.studioCodemirrorTgp', {
         },
         'Alt-Right': editor => {
           jb.studio.codeMirrorUtils.incNumberAtCursor(editor, {inc:1})
-        },
-        'Alt-F': editor => {
-          try {
-            const prof = eval('('+editor.getValue()+')')
-            editor.setValue(jb.prettyPrint(prof))
-          } catch (e) {}
         }
       }
     },

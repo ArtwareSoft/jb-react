@@ -2898,9 +2898,9 @@ initSpyByUrl()
 jb.component('prettyPrint', {
   params: [
     {id: 'profile', defaultValue: '%%'},
-    {id: 'forceFlat', as: 'boolean', type: 'boolean'}
+    {id: 'forceFlat', as: 'boolean', type: 'boolean'},
   ],
-  impl: (ctx,profile) => jb.prettyPrint(jb.val(profile),ctx.params)
+  impl: (ctx,profile) => jb.studio.previewjb.prettyPrint(jb.val(profile),ctx.params)
 })
 
 jb.prettyPrintComp = function(compId,comp,settings={}) {

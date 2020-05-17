@@ -4650,7 +4650,10 @@ jb.component('defaultTheme', {
       --jb-input-foreground: #616161;  
       --jb-textLink-activeForeground: #034775;
       --jb-textLink-foreground: #006ab1;
-    
+
+      --jb-on-primary: #ffffff;
+      --jb-on-secondary: #616161;
+      
       --jb-icon-foreground: #424242;
     
       --jb-list-activeSelectionBackground: #0074e8;
@@ -4664,9 +4667,9 @@ jb.component('defaultTheme', {
       --mdc-theme-surface: var(--jb-input-background);
       --mdc-theme-error: var(--jb-errorForeground);
     
-      --mdc-theme-on-primary: var(--jb-input-foreground); /* Primary text on top of a theme primary color background */
-      --mdc-theme-on-secondary: var(--jb-input-foreground);
-      --mdc-theme-on-surface: --jb-input-foreground;
+      --mdc-theme-on-primary: var(--jb-on-primary); /* Primary text on top of a theme primary color background */
+      --mdc-theme-on-secondary: var(--jb-on-secondary);
+      --mdc-theme-on-surface: var(--jb-input-foreground);
       --mdc-theme-on-error: var(--jb-input-background);
     
       --mdc-theme-text-primary-on-background: var(--jb-input-foreground); /* Primary text on top of the theme background color. */
@@ -9381,16 +9384,49 @@ jb.component('table.mdc', {
 jb.component('picklist.native', {
   type: 'picklist.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('select', { value: state.databind, onchange: true },
-          state.options.map(option=>h('option',{value: option.code},option.text))
-        ),
+    template: (cmp,{databind,options},h) => 
+      h('select', { value: databind, onchange: true }, options.map(option=>h('option',{value: option.code},option.text))),
     css: `
 { display: block; width: 100%; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857; 
   color: var(--jb-menu-foreground); background: var(--jb-menu-background); 
-  background-image: none; border: 1px solid #ccc; border-radius: 4px; box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075);
+  background-image: none; border: 1px solid var(--jb-titleBar-inactiveBackground); border-radius: 4px; box-shadow: inset 0 1px 1px var(--jb-dropdown-shadow);
 }
-:focus { border-color: #66afe9; outline: 0; box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); }
-::input-placeholder { color: #999; }`,
+:focus { border-color: border-color: var(--jb-titleBar-activeBackground); outline: 0; box-shadow: inset 0 1px 1px var(--jb-dropdown-shadow); }
+::input-placeholder { color: var(--jb-menu-foreground) }`,
+    features: [field.databind(), picklist.init()]
+  })
+})
+
+jb.component('picklist.nativeMdLookOpen', {
+  type: 'picklist.style',
+  impl: customStyle({
+    template: (cmp,state,h) => h('div',{}, [
+        h('input', { type: 'text', value: state.databind, list: 'list_' + cmp.ctx.id, onchange: true }),
+        h('datalist', {id: 'list_' + cmp.ctx.id}, state.options.map(option=>h('option',{},option.text)))
+    ]),
+    css: `>input {  appearance: none; -webkit-appearance: none;
+  padding: 6px 0;
+  width: 100%;
+  color: rgba(0,0,0, 0.82);
+  border: none;
+  border-bottom: 1px solid var(--jb-titleBar-inactiveBackground);
+  color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background);
+}
+  { position: relative;}
+  >input:focus { border-color: var(--jb-titleBar-activeBackground); border-width: 2px}
+
+  :after { position: absolute;
+        top: 0.75em;
+        right: 0.5em;
+        /* Styling the down arrow */
+        width: 0;
+        height: 0;
+        padding: 0;
+        content: '';
+        border-left: .25em solid transparent;
+        border-right: .25em solid transparent;
+        border-top: .375em solid var(--mdc-theme-text-primary-on-background);
+        pointer-events: none; }`,
     features: [field.databind(), picklist.init()]
   })
 })
@@ -9468,73 +9504,6 @@ jb.component('picklist.mdcSelect', {
   })
 })
 
-jb.component('picklist.nativeMdLookOpen', {
-  type: 'picklist.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{}, [
-        h('input', { type: 'text', value: state.databind, list: 'list_' + cmp.ctx.id, onchange: true }),
-        h('datalist', {id: 'list_' + cmp.ctx.id}, state.options.map(option=>h('option',{},option.text)))
-    ]),
-    css: `>input {  appearance: none; -webkit-appearance: none;
-  padding: 6px 0;
-  width: 100%;
-  color: rgba(0,0,0, 0.82);
-  border: none;
-  border-bottom: 1px solid var(--jb-titleBar-inactiveBackground);
-  color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background);
-}
-  { position: relative;}
-  >input:focus { border-color: var(--jb-titleBar-activeBackground); border-width: 2px}
-
-  :after1 { position: absolute;
-        top: 0.75em;
-        right: 0.5em;
-        /* Styling the down arrow */
-        width: 0;
-        height: 0;
-        padding: 0;
-        content: '';
-        border-left: .25em solid transparent;
-        border-right: .25em solid transparent;
-        border-top: .375em solid var(--mdc-theme-text-primary-on-background);
-        pointer-events: none; }`,
-    features: [field.databind(), picklist.init()]
-  })
-})
-
-jb.component('picklist.nativeMdLook', {
-  type: 'picklist.style',
-  impl: customStyle({
-    template: (cmp,state,h) => h('div',{},h('select',
-      { value: state.databind, onchange: true },
-          state.options.map(option=>h('option',{value: option.code},option.text)))),
-    css: `>input {  appearance: none; -webkit-appearance: none;
-      padding: 6px 0;
-      width: 100%;
-      color: rgba(0,0,0, 0.82);
-      border: none;
-      border-bottom: 1px solid var(--jb-titleBar-inactiveBackground);
-      color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background);
-    }
-      { position: relative;}
-      >input:focus { border-color: var(--jb-titleBar-activeBackground); border-width: 2px}
-    
-      :after1 { position: absolute;
-            top: 0.75em;
-            right: 0.5em;
-            /* Styling the down arrow */
-            width: 0;
-            height: 0;
-            padding: 0;
-            content: '';
-            border-left: .25em solid transparent;
-            border-right: .25em solid transparent;
-            border-top: .375em solid var(--mdc-theme-text-primary-on-background);
-            pointer-events: none; }`,
-    features: [field.databind(), picklist.init()]
-  })
-})
-
 jb.component('picklist.labelList', {
   type: 'picklist.style',
   params: [
@@ -9599,10 +9568,6 @@ jb.component('picklist.groups', {
               group.options.map(option=>h('option',{value: option.code},option.text))
               ))
       )),
-    css: `
- { display: block; width: 100%; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857; color: #555555; background-color: #fff; background-image: none; border: 1px solid #ccc; border-radius: 4px; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075); -webkit-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; -o-transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; transition: border-color ease-in-out 0.15s, box-shadow ease-in-out 0.15s; }
-select:focus { border-color: #66afe9; outline: 0; -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6); }
-select::-webkit-input-placeholder { color: #999; }`,
     features: [field.databind(), picklist.init(),  picklist.initGroups()]
   })
 })
@@ -25343,9 +25308,9 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
 jb.component('prettyPrint', {
   params: [
     {id: 'profile', defaultValue: '%%'},
-    {id: 'forceFlat', as: 'boolean', type: 'boolean'}
+    {id: 'forceFlat', as: 'boolean', type: 'boolean'},
   ],
-  impl: (ctx,profile) => jb.prettyPrint(jb.val(profile),ctx.params)
+  impl: (ctx,profile) => jb.studio.previewjb.prettyPrint(jb.val(profile),ctx.params)
 })
 
 jb.prettyPrintComp = function(compId,comp,settings={}) {
@@ -35830,12 +35795,6 @@ jb.component('editableText.studioCodemirrorTgp', {
         },
         'Alt-Right': editor => {
           jb.studio.codeMirrorUtils.incNumberAtCursor(editor, {inc:1})
-        },
-        'Alt-F': editor => {
-          try {
-            const prof = eval('('+editor.getValue()+')')
-            editor.setValue(jb.prettyPrint(prof))
-          } catch (e) {}
         }
       }
     },
@@ -36044,7 +36003,7 @@ Object.assign(st,{
   paramsOfPath: (path,silent) => jb.compParams(st.compOfPath(path,silent)), //.concat(st.compHeaderParams(path)),
   writeValueOfPath: (path,value,ctx) => st.writeValue(st.refOfPath(path),value,ctx),
   getComp: id => st.previewjb.comps[id],
-  compAsStr: id => jb.prettyPrintComp(id,st.getComp(id)),
+  compAsStr: id => st.previewjb.prettyPrintComp(id,st.getComp(id)),
   isStudioCmp: id => (jb.path(jb.comps,[id,jb.location,0]) || '').indexOf('projects/studio') != -1
 })
 
@@ -37673,7 +37632,7 @@ if (typeof CodeMirror != 'undefined') {
             if (option.type == 'prop') {
                 const separator = /,\s*$/.test(textToToken) ? '' : ','
                 const space = /\s+$/.test(textToToken) ? '' : ' '
-                let value = option.prop.defaultValue && jb.prettyPrint(option.prop.defaultValue)
+                let value = option.prop.defaultValue && jb.studio.previewjb.prettyPrint(option.prop.defaultValue)
                 value = value || ((option.prop.type &&  option.prop.type != 'data') ? "{$: '' }" : "''")
                 const spaceBeforeValue = value.indexOf('$') == -1 ? ' ' : ''
                 const spaceBeforeColon = value.indexOf('$') == -1 ? '' : ' '
@@ -37769,7 +37728,7 @@ jb.component('studio.copy', {
   impl: (ctx, path) => {
     try {
       const val = st.valOfPath(path)
-      st.clipboard = typeof val == 'string' ? val : eval('(' + jb.prettyPrint(val) + ')')
+      st.clipboard = typeof val == 'string' ? val : eval('(' + jb.prettyPrint(val,{noMacros: true}) + ')')
     } catch(e) {
       jb.logExecption(e,'copy')
     }
@@ -39138,9 +39097,8 @@ jb.component('studio.properties', {
             features: [field.columnWidth('300')]
           }),
           group({
-            title: '',
             controls: studio.propertyToolbar('%path%'),
-            features: [field.columnWidth('20'), css('{ text-align: right; height: 100% }')]
+            features: [field.columnWidth('20'), css('{ text-align: right }')]
           })
         ],
         chapterHeadline: text({
@@ -39257,8 +39215,7 @@ jb.component('studio.propField', {
         controlWithCondition(
           and(
             '%$paramDef/as%==\"boolean\"',
-            or(inGroup(list(true, false), '%$val%'), isEmpty('%$val%')),
-            not('%$paramDef/dynamic%')
+            or((inGroup(list(true, false,'true','false'), '%$val%')), isEmpty('%$val%')),
           ),
           studio.propertyBoolean('%$path%')
         ),
@@ -41838,7 +41795,7 @@ function newIndexHtmlContent(fileContent,jbProjectSettings) {
   let lines = fileContent.split('\n').map(x=>x.replace(/[\s]*$/,''))
   const lineOfComp = lines.findIndex(line=> line.match(/^\s*jbProjectSettings/))
   const compLastLine = lines.slice(lineOfComp).findIndex(line => line.match(/^\s*}/))
-  lines.splice(lineOfComp,compLastLine+1,'jbProjectSettings = ' + jb.prettyPrint(jbProjectSettings))
+  lines.splice(lineOfComp,compLastLine+1,'jbProjectSettings = ' + jb.prettyPrint(jbProjectSettings,{noMacros: true}))
   return lines.join('\n')
 }
 
@@ -41853,13 +41810,13 @@ function newFileContent(fileContent, comps) {
     const nextjbComponent = lines.slice(lineOfComp+1).findIndex(line => line.match(/^jb.component/))
     if (nextjbComponent != -1 && nextjbComponent < compLastLine)
       return jb.logError(['can not find end of component', fn,id, linesFromComp])
-    const newComp = comp ? jb.prettyPrintComp(id,comp,{initialPath: id, comps: st.previewjb.comps}).split('\n') : []
+    const newComp = comp ? st.previewjb.prettyPrintComp(id,comp,{initialPath: id}).split('\n') : []
     if (JSON.stringify(linesFromComp.slice(0,compLastLine+1)) === JSON.stringify(newComp))
         return
     lines.splice(lineOfComp,compLastLine+1,...newComp)
   })
   compsToAdd.forEach(([id,comp])=>{
-    const newComp = jb.prettyPrintComp(id,comp,{initialPath: id, comps: st.previewjb.comps}).split('\n')
+    const newComp = st.previewjb.prettyPrintComp(id,comp,{initialPath: id}).split('\n')
     lines = lines.concat(newComp).concat('')
   })
   return lines.join('\n')
@@ -41868,7 +41825,7 @@ function newFileContent(fileContent, comps) {
 function deltaFileContent(fileContent, {compId,comp}) {
   const lines = fileContent.split('\n').map(x=>x.replace(/[\s]*$/,''))
   const lineOfComp = lines.findIndex(line=> line.indexOf(`jb.component('${compId}'`) == 0)
-  const newCompLines = comp ? jb.prettyPrintComp(compId,comp,{initialPath: compId, comps: st.previewjb.comps}).split('\n') : []
+  const newCompLines = comp ? st.previewjb.prettyPrintComp(compId,comp,{initialPath: compId}).split('\n') : []
   const justCreatedComp = lineOfComp == -1 && comp[jb.location][1] == 'new'
   if (justCreatedComp) {
     comp[jb.location][1] == lines.length
@@ -42475,7 +42432,7 @@ jb.component('studio.saveNewProject', {
           jb.logException(e,'',ctx)
         })
         .then(res => {
-          res && res.type == 'error' && st.host.showError(`error saving project ${project}: ` + (res && jb.prettyPrint(res.desc)))
+          res && res.type == 'error' && st.host.showError(`error saving project ${project}: ` + (res && jb.prettyPrint(res.desc,{noMacros: true})))
           res && res.type == 'success' && st.host.showInformationMessage(`new project ${project} created`)
         })
   }
