@@ -6049,14 +6049,6 @@ jb.component('field.keyboardShortcut', {
   )
 })
 
-jb.component('field.toolbar', {
-  type: 'feature',
-  params: [
-    {id: 'toolbar', type: 'control', mandatory: true, dynamic: true}
-  ],
-  impl: (ctx,toolbar) => ({ toolbar: toolbar() })
-})
-
 // ***** validation
 
 jb.component('validation', {

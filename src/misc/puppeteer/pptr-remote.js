@@ -89,7 +89,9 @@ jb.component('pptr.sendCodeToServer', {
 })
 
 jb.component('pptr.session', {
-    description: 'returns session object that can be used to interact with the server',
+    description: 'starts puppeteer session, returns object that can be used to interact with the server',
+    type: 'rx,has-side-effects',
+    category: 'source',    
     params: [
         {id: 'showBrowser', as: 'boolean' },
         {id: 'databindEvents', as: 'ref', description: 'bind events from puppeteer to array (watchable)' },
@@ -99,7 +101,7 @@ jb.component('pptr.session', {
 })
 
 jb.component('pptr.remoteActions', {
-    type: 'action',
+    type: 'action,has-side-effects',
     params: [
         {id: 'actions', type: 'pptr[]', ignore: true },
         {id: 'session', defaultValue: '%$pptrSession%' },

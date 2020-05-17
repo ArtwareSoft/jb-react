@@ -47,7 +47,12 @@ jb.component('studio.properties', {
           }),
           group({
             controls: studio.propertyToolbar('%path%'),
-            features: [field.columnWidth('20'), css('{ text-align: right }')]
+            features: [field.columnWidth('20')]
+          }),
+          group({
+            title: 'pptr actions',
+            controls: studio.pptrToolbar('%path%'),
+            features: [field.columnWidth('20')]
           })
         ],
         chapterHeadline: text({
@@ -190,7 +195,6 @@ jb.component('studio.propField', {
       ]
     }),
     features: [
-      studio.propertyToolbarFeature('%$path%'),
       field.keyboardShortcut('Ctrl+I', studio.openJbEditor('%$path%')),
       If(
         not(isOfType('string,number,boolean,undefined', studio.val('%$path%'))),
@@ -214,17 +218,6 @@ jb.component('studio.propertyToolbar', {
     action: studio.openPropertyMenu('%$path%'),
     style: studio.propertyToolbarStyle()
   })
-})
-
-jb.component('studio.propertyToolbarFeature', {
-  type: 'feature',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: features(
-    field.toolbar(studio.propertyToolbar('%$path%')),
-    studio.disabledSupport('%$path%')
-  )
 })
 
 jb.component('studio.propertyScript', {

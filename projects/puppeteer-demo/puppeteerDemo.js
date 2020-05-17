@@ -36,7 +36,7 @@ jb.component('puppeteerDemo.main', {
                 pptr.extractBySelector({selector: 'h3', extract: 'textContent', multiple: true})
               ]
             }),
-            raised: 'true'
+            raised: true
           }),
           button({
             title: 'search with js code',
@@ -68,9 +68,7 @@ await frame.type('input[name=q]', 'puppeteer'+String.fromCharCode(13), { delay: 
       }),
       itemlist({
         items: '%$events%',
-        controls: [
-          text({text: json.stringify('%data%')})
-        ],
+        controls: [text({text: json.stringify('%data%')})],
         features: watchRef({ref: '%$events%', includeChildren: 'yes'})
       }),
       group({

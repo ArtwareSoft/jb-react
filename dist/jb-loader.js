@@ -168,7 +168,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'references','properties-menu','save','open-project','tree',
         'data-browse', 'new-project','event-tracker', 'toolbar','search', 'main', 'component-header', 'hosts', 'probe',
         'watch-ref-viewer', 'content-editable', 'position-thumbs', 'html-to-ctrl', 'patterns', 'pick-icon', 
-        'inplace-edit', 'grid-editor', 'sizes-editor', 'refactor', 'vscode'
+        'inplace-edit', 'grid-editor', 'sizes-editor', 'refactor', 'vscode', 'pptr'
       ],
       'studio-tests': [
         'projects/studio/studio-testers.js',

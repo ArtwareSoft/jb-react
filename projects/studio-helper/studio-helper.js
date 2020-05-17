@@ -1,6 +1,6 @@
-jb.ns('studioHelper,d3g')
-// jb.studio.initCompsRefHandler(jb)
-// jb.studio.previewWindow = jb.frame
+jb.ns('studioHelper,d3g,dataTest,pptr')
+jb.studio.initCompsRefHandler(jb)
+jb.studio.previewWindow = jb.frame
 // // fake current path
 // jb.delay(100).then(()=>new jb.jbCtx().run(runActions(writeValue('%$studio/project%','studio-helper')),
 //   writeValue('%$studio/page%','studio-helper.topBar') ))
@@ -16,7 +16,7 @@ jb.component('dataTest.parseProjectHtml', {
   })
 })
 
-jb.component('studioHelper.topBar', {
+jb.component('studioHelper.main', {
   params: [
     {id: 'path', defaultValue: 'studioHelperSample.control'}
   ],
@@ -241,6 +241,16 @@ jb.component('studioHelperSample.table', {
   })
 })
 
+jb.component('studioHelper.studioPropertiesPptr', {
+  type: 'control',
+  impl: group({
+    vars: [Var('circuit', 'studioHelperSample.pptr')],
+    title: '',
+    controls: studio.properties('studioHelperSample.pptr'),
+    features: css.width('500')
+  })
+})
+
 jb.component('studioHelper.studioPropertiesRich', {
   type: 'control',
   impl: group({
@@ -338,6 +348,23 @@ jb.component('studioHelperSample.propertiesParamsProf', {
   '$vars': {
 
   }
+})
+
+jb.component('studioHelperSample.pptr', {
+  impl: pptr.session({
+    showBrowser: true,
+    databindEvents: '%$events%',
+    actions: [
+      pptr.gotoPage({url: 'https://google.com/', waitUntil: 'networkidle0'}),
+      pptr.type({
+        text: 'vitamin',
+        selector: 'input[name=q]',
+        enterAtEnd: true,
+        delay: 100
+      }),
+      pptr.extractBySelector({selector: 'h3', extract: 'textContent', multiple: true})
+    ]
+  })
 })
 
 jb.component('studioHelperSample.propertiesPTForTgp', {

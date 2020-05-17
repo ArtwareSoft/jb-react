@@ -19,11 +19,11 @@ jb.component('studio.pickAndOpen', {
     id: 'studio.pick',
     style: dialog.studioPickDialog('%$from%'),
     content: text(''),
-    onOK: ctx => ctx.run(runActions(
+    onOK: runActions(
       writeValue('%$studio/profile_path%', '%$dialogData/path%'),
       studio.openControlTree(),
       studio.openProperties(true)
-    ))
+    )
   })
 })
 
@@ -66,7 +66,7 @@ jb.component('dialogFeature.studioPick', {
       if (from === 'studio') st.initStudioEditing()
       const _window = from == 'preview' ? st.previewWindow : window;
       const projectPrefix = ctx.run(studio.currentPagePath())
-      const testHost = ctx.exp('%$queryParams/host%') == 'test'
+      const testHost = ['tests','studio-helper'].indexOf(ctx.exp('%$studio/project%')) != -1
       const eventToElemPredicate = from == 'preview' ?
         (path => testHost || path.indexOf(projectPrefix) == 0) : (path => st.isStudioCmp(path.split('~')[0]))
 
@@ -106,6 +106,8 @@ jb.component('dialogFeature.studioPick', {
           subscribe(() => {})
       )
     }
+
+
   })
 })
 

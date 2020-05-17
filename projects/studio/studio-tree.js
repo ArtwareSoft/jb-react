@@ -57,7 +57,11 @@ jb.component('studio.treeMenu', {
       menu.action({
         vars: [Var('compName', studio.compName('%$path%'))],
         title: 'Goto %$compName%',
-        action: studio.gotoPath('%$compName%'),
+        action: runActions(
+          writeValue('%$studio/profile_path%', '%$compName%~impl'),
+          studio.openControlTree(),
+          studio.openProperties(true)
+        ),
         showCondition: '%$compName%'
       }),
       studio.gotoEditorOptions('%$path%'),

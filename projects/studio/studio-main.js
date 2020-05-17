@@ -24,6 +24,7 @@ jb.component('studio.pages', {
         features: [css('{margin: 5px}'), feature.hoverTitle('new page')]
       }),
       itemlist({
+        title: '',
         items: pipeline(studio.cmpsOfProject(), filter(studio.isOfType('%%', 'control'))),
         controls: text({
           text: pipeline(suffix('.'), extractSuffix('.')),
@@ -37,7 +38,8 @@ jb.component('studio.pages', {
             autoSelectFirst: true
           }),
           css.class('studio-pages-items'),
-          studio.watchComponents()
+          studio.watchComponents(),
+          css.width({width: '1200', overflow: 'auto'})
         ]
       }),
       text('|'),

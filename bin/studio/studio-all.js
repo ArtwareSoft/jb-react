@@ -6049,14 +6049,6 @@ jb.component('field.keyboardShortcut', {
   )
 })
 
-jb.component('field.toolbar', {
-  type: 'feature',
-  params: [
-    {id: 'toolbar', type: 'control', mandatory: true, dynamic: true}
-  ],
-  impl: (ctx,toolbar) => ({ toolbar: toolbar() })
-})
-
 // ***** validation
 
 jb.component('validation', {
@@ -39098,7 +39090,12 @@ jb.component('studio.properties', {
           }),
           group({
             controls: studio.propertyToolbar('%path%'),
-            features: [field.columnWidth('20'), css('{ text-align: right }')]
+            features: [field.columnWidth('20')]
+          }),
+          group({
+            title: 'pptr actions',
+            controls: studio.pptrToolbar('%path%'),
+            features: [field.columnWidth('20')]
           })
         ],
         chapterHeadline: text({
@@ -39241,7 +39238,6 @@ jb.component('studio.propField', {
       ]
     }),
     features: [
-      studio.propertyToolbarFeature('%$path%'),
       field.keyboardShortcut('Ctrl+I', studio.openJbEditor('%$path%')),
       If(
         not(isOfType('string,number,boolean,undefined', studio.val('%$path%'))),
@@ -39265,17 +39261,6 @@ jb.component('studio.propertyToolbar', {
     action: studio.openPropertyMenu('%$path%'),
     style: studio.propertyToolbarStyle()
   })
-})
-
-jb.component('studio.propertyToolbarFeature', {
-  type: 'feature',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: features(
-    field.toolbar(studio.propertyToolbar('%$path%')),
-    studio.disabledSupport('%$path%')
-  )
 })
 
 jb.component('studio.propertyScript', {
@@ -40628,11 +40613,11 @@ jb.component('studio.pickAndOpen', {
     id: 'studio.pick',
     style: dialog.studioPickDialog('%$from%'),
     content: text(''),
-    onOK: ctx => ctx.run(runActions(
+    onOK: runActions(
       writeValue('%$studio/profile_path%', '%$dialogData/path%'),
       studio.openControlTree(),
       studio.openProperties(true)
-    ))
+    )
   })
 })
 
@@ -40675,7 +40660,7 @@ jb.component('dialogFeature.studioPick', {
       if (from === 'studio') st.initStudioEditing()
       const _window = from == 'preview' ? st.previewWindow : window;
       const projectPrefix = ctx.run(studio.currentPagePath())
-      const testHost = ctx.exp('%$queryParams/host%') == 'test'
+      const testHost = ['tests','studio-helper'].indexOf(ctx.exp('%$studio/project%')) != -1
       const eventToElemPredicate = from == 'preview' ?
         (path => testHost || path.indexOf(projectPrefix) == 0) : (path => st.isStudioCmp(path.split('~')[0]))
 
@@ -40715,6 +40700,8 @@ jb.component('dialogFeature.studioPick', {
           subscribe(() => {})
       )
     }
+
+
   })
 })
 
@@ -41973,7 +41960,11 @@ jb.component('studio.treeMenu', {
       menu.action({
         vars: [Var('compName', studio.compName('%$path%'))],
         title: 'Goto %$compName%',
-        action: studio.gotoPath('%$compName%'),
+        action: runActions(
+          writeValue('%$studio/profile_path%', '%$compName%~impl'),
+          studio.openControlTree(),
+          studio.openProperties(true)
+        ),
         showCondition: '%$compName%'
       }),
       studio.gotoEditorOptions('%$path%'),
@@ -43023,6 +43014,7 @@ jb.component('studio.pages', {
         features: [css('{margin: 5px}'), feature.hoverTitle('new page')]
       }),
       itemlist({
+        title: '',
         items: pipeline(studio.cmpsOfProject(), filter(studio.isOfType('%%', 'control'))),
         controls: text({
           text: pipeline(suffix('.'), extractSuffix('.')),
@@ -43036,7 +43028,8 @@ jb.component('studio.pages', {
             autoSelectFirst: true
           }),
           css.class('studio-pages-items'),
-          studio.watchComponents()
+          studio.watchComponents(),
+          css.width({width: '1200', overflow: 'auto'})
         ]
       }),
       text('|'),
@@ -46385,4 +46378,29 @@ jb.component('studio.inVscode',{
     type: 'boolean',
     impl: () => jb.frame.jbInvscode
 });
+
+jb.component('studio.pptrToolbar', {
+  type: 'control',
+  params: [
+    {id: 'path', as: 'string'},
+    {id: 'expanded', as: 'boolean', type: 'boolean'}
+  ],
+  impl: group({
+    controls: [
+      controlWithCondition('%val.$%==pptr.session%', text('run icon')),
+      controlWithCondition(
+        studio.isOfType('%$path%', 'pptr'),
+        text('runninng indicator')
+      ),
+      text('')
+    ],
+    features: [
+      group.firstSucceeding(),
+      studio.watchPath({path: '%$path%', includeChildren: 'yes', recalcVars: true}),
+      variable({name: 'paramDef', value: studio.paramDef('%$path%')}),
+      variable({name: 'val', value: studio.val('%$path%')})
+    ]
+  })
+})
+;
 
