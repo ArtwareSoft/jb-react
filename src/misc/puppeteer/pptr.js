@@ -21,7 +21,7 @@ jb.component('pptr.gotoPage', {
 
 jb.component('pptr.logData', {
     type: 'rx,pptr',
-    impl: rx.doPromise((ctx,{comp}) => comp.events.next({$: 'result-data', ctx }))
+    impl: rx.doPromise((ctx,{comp}) => comp.events.next({$: 'ResultData', ctx }))
 })
 
 jb.component('pptr.logActivity', {
@@ -30,7 +30,7 @@ jb.component('pptr.logActivity', {
         {id: 'activity', as: 'string', mandatory: true },
         {id: 'description', as: 'string' },
     ],
-    impl: rx.doPromise((ctx,{comp},{activity, description}) => comp.events.next({$: activity, description, ctx }))
+    impl: rx.doPromise((ctx,{comp},{activity, description}) => comp.events.next({$: 'Activity', activity, description, ctx }))
 })
 
 jb.component('pptr.extractBySelector', {
