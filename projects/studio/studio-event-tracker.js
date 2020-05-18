@@ -96,6 +96,7 @@ jb.component('studio.eventTracker', {
           }),
           picklist({
             title: 'pick group',
+            databind: '%$studio/spyGroup%',
             options: picklist.options({
               options: pipeline(() => jb.frame.jb.spySettings.groups, keys())
             }),
@@ -273,6 +274,7 @@ jb.component('studio.eventItems', {
     function enrich(event) {
       const ev = { event, log: event[1], index: event[0] }
       ev.ctx = (event || []).filter(x=>x && x.componentContext)[0]
+      ev.ctx = ev.ctx || (event || []).filter(x=>x && x.path)[0]
       ev.path = ev.ctx && ev.ctx.path
       ev.compName = ev.path && st.compNameOfPath(ev.path)
       ev.cmp = (event || []).filter(x=>x && x.base && x.refresh)[0]
