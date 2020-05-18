@@ -19,9 +19,9 @@ jb.pptr = {
         }
         const actions = jb.asArray(ctx.profile.actions)
         const wrappedActions = actions.flatMap( (action,i) => action ? [
-                rx.doPromise( ctx => comp.events.next({$: 'ActionStarted', ctx, path: `actions~${i}` })),
+                rx.doPromise( ctx => comp.events.next({$: 'Started', ctx, path: `actions~${i}` })),
                 actions[i],
-                rx.doPromise( ctx => comp.events.next({$: 'ActionEnded', ctx, path: `actions~${i}` })),
+                rx.doPromise( ctx => comp.events.next({$: 'Emit', ctx, path: `actions~${i}` })),
         ] : [])
 
         ctx.run(
