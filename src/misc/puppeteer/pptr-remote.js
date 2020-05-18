@@ -100,9 +100,9 @@ jb.component('pptr.session', {
     params: [
         {id: 'showBrowser', as: 'boolean' },
         {id: 'databindEvents', as: 'ref', description: 'bind events from puppeteer to array (watchable)' },
-        {id: 'actions', type: 'rx[]', dynamic: true, templateValue: [] },
+        {id: 'actions', type: 'rx[]', ignore: true, templateValue: [] },
     ],
-    impl: (ctx,showBrowser,databindEvents,actions) => jb.pptr.createComp(ctx,{showBrowser,databindEvents, actions})
+    impl: (ctx,showBrowser,databindEvents,actions) => jb.pptr.createComp(ctx,{showBrowser,databindEvents, actions: jb.asArray(ctx.profile.actions)})
 })
 
 jb.component('pptr.remoteActions', {
