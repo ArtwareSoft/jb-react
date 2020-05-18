@@ -1789,7 +1789,7 @@ jb.component('uiTest.infiniteScroll', {
   })
 })
 
-jb.component('uiTest.recursiveCtrl',{
+jb.component('uiTest.recursiveCtrl', {
   type: 'control',
   params: [
     { id: 'data'}

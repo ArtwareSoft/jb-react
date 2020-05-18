@@ -39,7 +39,7 @@ jb.component('studio.pages', {
           }),
           css.class('studio-pages-items'),
           studio.watchComponents(),
-          css.width({width: '1200', overflow: 'auto'})
+          css.width({width: '1200', overflow: 'auto', minMax: 'max'})
         ]
       }),
       text('|'),

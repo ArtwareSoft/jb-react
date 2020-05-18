@@ -36028,9 +36028,7 @@ Object.assign(st, {
 			st.writeValueOfPath(path,undefined,srcCtx);
 		}
 	},
-
 	wrapWithGroup: (path,srcCtx) => st.writeValueOfPath(path,{ $: 'group', controls: [ st.valOfPath(path) ] },srcCtx),
-
 	wrap(path,compName,srcCtx) {
 		const comp = st.getComp(compName);
 		const compositeParam = jb.compParams(comp).filter(p=>p.composite)[0];
@@ -36471,7 +36469,11 @@ st.initPreview = function(preview_window,allowedTypes) {
       st.previewjb.studio.studiojb = jb;
       st.previewjb.lastRun = {}
 
-      ;(jb.frame.jbDocsDiffFromFiles || []).forEach(doc=> st.previewWindow.eval(doc)) // used by vscode to reload the content of unsaved doc
+      ;(jb.frame.jbDocsDiffFromFiles || []).forEach(doc=> {
+          try{ 
+            st.previewWindow.eval(doc) // used by vscode to reload the content of unsaved doc
+          } catch (e) {}
+      })
 
       st.initCompsRefHandler(st.previewjb, allowedTypes)
       changedComps.forEach(e=>{
@@ -42705,6 +42707,25 @@ jb.component('studio.eventView', {
       controlWithCondition(
         '%log% == setGridAreaVals%',
         text({text: join({separator: '/', items: '%event/4%'})})
+      ),
+      controlWithCondition(
+        '%ctx%',
+        text({text: pipeline('%ctx/data%', slice('0', 20))})
+      ),
+      controlWithCondition(
+        '%ctx%',
+        button({
+          vars: Var('count',pipeline('%ctx/vars%',keys(),count())),
+          title: 'vars (%$count%)',
+          action: openDialog({
+            style: dialog.popup(),
+            content: group({controls: studio.dataBrowse('%ctx/vars%')}),
+            title: 'variables',
+            features: dialogFeature.uniqueDialog('variables')
+          }),
+          style: button.href(),
+          features: [css.margin({left: '10'}), feature.hoverTitle('show variables')]
+        })
       )
     ]
   })
@@ -43072,7 +43093,7 @@ jb.component('studio.pages', {
           }),
           css.class('studio-pages-items'),
           studio.watchComponents(),
-          css.width({width: '1200', overflow: 'auto'})
+          css.width({width: '1200', overflow: 'auto', minMax: 'max'})
         ]
       }),
       text('|'),

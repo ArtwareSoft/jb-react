@@ -51,7 +51,11 @@ st.initPreview = function(preview_window,allowedTypes) {
       st.previewjb.studio.studiojb = jb;
       st.previewjb.lastRun = {}
 
-      ;(jb.frame.jbDocsDiffFromFiles || []).forEach(doc=> st.previewWindow.eval(doc)) // used by vscode to reload the content of unsaved doc
+      ;(jb.frame.jbDocsDiffFromFiles || []).forEach(doc=> {
+          try{ 
+            st.previewWindow.eval(doc) // used by vscode to reload the content of unsaved doc
+          } catch (e) {}
+      })
 
       st.initCompsRefHandler(st.previewjb, allowedTypes)
       changedComps.forEach(e=>{

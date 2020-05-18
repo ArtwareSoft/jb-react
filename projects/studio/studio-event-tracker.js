@@ -256,6 +256,25 @@ jb.component('studio.eventView', {
       controlWithCondition(
         '%log% == setGridAreaVals%',
         text({text: join({separator: '/', items: '%event/4%'})})
+      ),
+      controlWithCondition(
+        '%ctx%',
+        text({text: pipeline('%ctx/data%', slice('0', 20))})
+      ),
+      controlWithCondition(
+        '%ctx%',
+        button({
+          vars: Var('count',pipeline('%ctx/vars%',keys(),count())),
+          title: 'vars (%$count%)',
+          action: openDialog({
+            style: dialog.popup(),
+            content: group({controls: studio.dataBrowse('%ctx/vars%')}),
+            title: 'variables',
+            features: dialogFeature.uniqueDialog('variables')
+          }),
+          style: button.href(),
+          features: [css.margin({left: '10'}), feature.hoverTitle('show variables')]
+        })
       )
     ]
   })

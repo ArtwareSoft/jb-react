@@ -42,13 +42,14 @@ jb.pptr = {
 
         function eventToJson(ev) {
             ev.ctx = ev.ctx || {}
+            
             return JSON.stringify({ ...ev, err: chopObj(ev.err,3), ctx: null, vars: chopObj(ev.ctx.vars,3), data: chopObj(ev.ctx.data ,2) } )
         }
         function chopObj(obj, depth) {
             if (depth < 1) return
             if (['string','boolean','number'].indexOf(typeof obj) != -1) return obj
-            if (typeof obj == 'object' && !(obj.constructor.name||'').match(/^Object|Array$/)) return obj.constructor.name
-            return typeof obj == 'object' && jb.objFromEntries( jb.entries(obj).map(([id,val])=>[id,chopObj(val, depth-1)]))
+            if (typeof obj == 'object' && !(obj.constructor.name||'').match(/^Object|Array$/)) return
+            return typeof obj == 'object' && jb.objFromEntries( jb.entries(obj).map(([id,val])=>[id,chopObj(val, depth-1)]).filter(e=>e[1] != null) )
         }
     },
     createProxyComp(ctx,{databindEvents}) {

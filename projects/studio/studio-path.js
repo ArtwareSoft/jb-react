@@ -104,9 +104,7 @@ Object.assign(st, {
 			st.writeValueOfPath(path,undefined,srcCtx);
 		}
 	},
-
 	wrapWithGroup: (path,srcCtx) => st.writeValueOfPath(path,{ $: 'group', controls: [ st.valOfPath(path) ] },srcCtx),
-
 	wrap(path,compName,srcCtx) {
 		const comp = st.getComp(compName);
 		const compositeParam = jb.compParams(comp).filter(p=>p.composite)[0];
