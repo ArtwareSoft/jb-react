@@ -67,7 +67,6 @@ jb.component('uiTest.label0', {
   })
 })
 
-
 jb.component('uiTest.html', {
   impl: uiTest({
     control: html({html: '<p>hello world</p>'}),
@@ -1787,6 +1786,32 @@ jb.component('uiTest.infiniteScroll', {
     }),
     action: uiAction.scrollDown('.jb-itemlist'),
     expectedResult: contains('>8<')
+  })
+})
+
+jb.component('uiTest.recursiveCtrl',{
+  type: 'control',
+  params: [
+    { id: 'data'}
+  ],
+  impl: group({
+    controls: [
+      text('%$data/text%'),
+      uiTest.recursiveCtrl('%$data/child%'),
+    ],
+    features: group.eliminateRecursion(5),
+  })
+})
+
+jb.component('uiTest.eliminateRecursion', {
+  impl: uiTest({
+    vars: Var('recData', () => {
+      const res = {text: 'txt'}
+      res.child = res
+      return res
+    }),
+    control: uiTest.recursiveCtrl('%$recData%'),
+    expectedResult: contains(['txt','txt','txt','txt','txt'])
   })
 })
 

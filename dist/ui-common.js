@@ -2742,6 +2742,20 @@ jb.component('group.wait', {
       )
   )
 })
+
+jb.component('group.eliminateRecursion', {
+  type: 'feature',
+  description: 'can be put on a global top group',
+  params: [
+    { id: 'maxDepth', as: 'number' }
+  ],
+  impl: (ctx,maxDepth) => {
+    const protectedComp = ctx.componentContext.componentContext.path
+    const timesInStack = ctx.callStack().filter(x=>x && x.indexOf(protectedComp) != -1).length
+    if (timesInStack > maxDepth)
+      return ctx.run( calcProp({id: 'ctrls', value: () => [], phase: 1, priority: 100 }))
+  }
+})
 ;
 
 jb.ns('html')

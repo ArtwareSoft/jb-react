@@ -76,7 +76,8 @@ jb.component('studio.dataBrowse', {
   type: 'control',
   params: [
     {id: 'objToShow', mandatory: true, as: 'value', defaultValue: '%%'},
-    {id: 'width', as: 'number', defaultValue: 200}
+    {id: 'width', as: 'number', defaultValue: 200},
+    {id: 'depth', as: 'number' },
   ],
   impl: group({
     controls: [
@@ -163,7 +164,8 @@ jb.component('studio.dataBrowse', {
         passRx: true
       }),
       css.height({height: '400', overflow: 'auto', minMax: 'max'}),
-      css.width({overflow: 'auto', minMax: 'max'})
+      css.width({overflow: 'auto', minMax: 'max'}),
+      group.eliminateRecursion(5)
     ]
   })
 })
