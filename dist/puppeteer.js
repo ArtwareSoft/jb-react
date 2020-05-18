@@ -42,8 +42,10 @@ jb.pptr = {
 
         function eventToJson(ev) {
             ev.ctx = ev.ctx || {}
+            const res = { ...ev, err: chopObj(ev.err,3), ctx: null, vars: chopObj(ev.ctx.vars,3), data: chopObj(ev.ctx.data ,2) }
+            res.vars && res.vars.comp && delete res.vars['comp']
             
-            return JSON.stringify({ ...ev, err: chopObj(ev.err,3), ctx: null, vars: chopObj(ev.ctx.vars,3), data: chopObj(ev.ctx.data ,2) } )
+            return JSON.stringify(res)
         }
         function chopObj(obj, depth) {
             if (depth < 1) return
