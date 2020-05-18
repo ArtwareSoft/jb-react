@@ -11,7 +11,7 @@ jb.pptr = {
         if (this._browser) return Promise.resolve(this._browser)
         return this.puppeteer().launch({headless: !showBrowser}).then(browser => this._browser = browser)
     },
-    createServerComp(ctx,{showBrowser,actions}) {
+    createServerComp(ctx,{showBrowser}) {
         const {subject, subscribe, pipe, map, Do } = jb.callbag
         const comp = {
             events: subject(),
