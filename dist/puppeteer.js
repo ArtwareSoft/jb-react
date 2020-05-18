@@ -19,9 +19,9 @@ jb.pptr = {
         }
         const actions = jb.asArray(ctx.profile.actions)
         const wrappedActions = actions.flatMap( (action,i) => action ? [
-                pptr.logActivity('starting action',ctx.path + `~actions~${i}`),
+                rx.doPromise( () => comp.events.next({$: 'ActionStarted', path: ctx.path + `~actions~${i}` })),
                 actions[i],
-                pptr.logActivity('end action',ctx.path + `~actions~${i}`),
+                rx.doPromise( () => comp.events.next({$: 'ActionEnded', path: ctx.path + `~actions~${i}` })),
         ] : [])
 
         ctx.run(
@@ -59,7 +59,7 @@ jb.pptr = {
             const message = JSON.parse(data)
             if (message.error)
                 jb.logError('error from puppeteer',[message.error,ctx])
-            jb.log('pptr'+(message.$ ||''),[message]) // pptrActivity,pptrResultData
+            jb.log('pptr'+(message.$ ||''),[message]) // pptrActionStarted,pptrActionEnded,pptrActivity,pptrResultData
             receive.next(message)
         }
         socket.onerror = e => receive.error(e)
