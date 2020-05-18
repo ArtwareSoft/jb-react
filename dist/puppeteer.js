@@ -17,12 +17,12 @@ jb.pptr = {
             events: subject(),
             commands: subject(),
         }
+        const actions = jb.asArray(ctx.profile.actions)
         const wrappedActions = actions.flatMap( (action,i) => action ? [
-                pptr.logActivity('starting action',actions.ctx.path + `~action~${i}`),
-                actions.profile[i],
-                pptr.logActivity('end action',actions.ctx.path + `~action~${i}`),
+                pptr.logActivity('starting action',ctx.path + `~actions~${i}`),
+                actions[i],
+                pptr.logActivity('end action',ctx.path + `~actions~${i}`),
         ] : [])
-//            source => action(Do( () => comp.events.next({$: 'beforeAction', index: i }))(source)))
 
         ctx.run(
             rx.pipe(
@@ -102,7 +102,7 @@ jb.component('pptr.session', {
         {id: 'databindEvents', as: 'ref', description: 'bind events from puppeteer to array (watchable)' },
         {id: 'actions', type: 'rx[]', ignore: true, templateValue: [] },
     ],
-    impl: (ctx,showBrowser,databindEvents,actions) => jb.pptr.createComp(ctx,{showBrowser,databindEvents, actions: jb.asArray(ctx.profile.actions)})
+    impl: (ctx,showBrowser,databindEvents) => jb.pptr.createComp(ctx,{showBrowser,databindEvents})
 })
 
 jb.component('pptr.remoteActions', {
