@@ -25,11 +25,10 @@ jb.component('studio.chooseProject', {
         controls: button({
           title: text.highlight('%%', '%$itemlistCntrData/search_pattern%'),
           action: studio.gotoProject('%%'),
-          style: button.mdcHeader(true),
+          style: button.mdcChipAction(),
           features: css('{ text-align: left; width: 250px }')
         }),
         features: [
-          itemlist.selection({}),
           itemlist.keyboardSelection({autoFocus: true, onEnter: studio.gotoProject('%%')}),
           watchRef('%$itemlistCntrData/search_pattern%'),
           css.height({height: '400', overflow: 'scroll'})

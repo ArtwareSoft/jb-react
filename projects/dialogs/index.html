@@ -1,21 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script type="text/javascript">
-    startTime = new Date().getTime();
+    jbProjectSettings = {
+      project: 'dialogs',
+      libs: 'common,ui-common,material',
+      jsFiles: ['dialogs.js'],
+    }
   </script>
-<!-- start-jb-scripts -->
-<script type="text/javascript" src="/src/loader/jb-loader.js" modules="common,ui-common,material"></script>
-<script type="text/javascript" src="/projects/dialogs/dialogs.js"></script>
-
-<!-- end-jb-scripts -->
+  <script type="text/javascript" src="/src/loader/jb-loader.js"></script>
 </head>
 <body>
-  <div id="main"> </div>
   <script>
-    jb.ui.renderWidget({$:'dialogs.main'},document.getElementById('main'))
+    window.jb_initWidget && jb_initWidget()
   </script>
 </body>
 </html>

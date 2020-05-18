@@ -264,7 +264,7 @@ jb.component('studio.eventView', {
       controlWithCondition(
         '%ctx%',
         button({
-          vars: Var('count',pipeline('%ctx/vars%',keys(),count())),
+          vars: [Var('count', pipeline('%ctx/vars%', keys(), count()))],
           title: 'vars (%$count%)',
           action: openDialog({
             style: dialog.popup(),

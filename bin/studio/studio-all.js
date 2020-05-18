@@ -25318,7 +25318,7 @@ jb.component('prettyPrint', {
     {id: 'profile', defaultValue: '%%'},
     {id: 'forceFlat', as: 'boolean', type: 'boolean'},
   ],
-  impl: (ctx,profile) => jb.studio.previewjb.prettyPrint(jb.val(profile),ctx.params)
+  impl: (ctx,profile) => jb.prettyPrint(jb.val(profile),{ ...ctx.params, comps: jb.studio.previewjb.comps})
 })
 
 jb.prettyPrintComp = function(compId,comp,settings={}) {
@@ -36011,7 +36011,7 @@ Object.assign(st,{
   paramsOfPath: (path,silent) => jb.compParams(st.compOfPath(path,silent)), //.concat(st.compHeaderParams(path)),
   writeValueOfPath: (path,value,ctx) => st.writeValue(st.refOfPath(path),value,ctx),
   getComp: id => st.previewjb.comps[id],
-  compAsStr: id => st.previewjb.prettyPrintComp(id,st.getComp(id)),
+  compAsStr: id => jb.prettyPrintComp(id,st.getComp(id),{comps: jb.studio.previewjb.comps}),
   isStudioCmp: id => (jb.path(jb.comps,[id,jb.location,0]) || '').indexOf('projects/studio') != -1
 })
 
@@ -37642,7 +37642,7 @@ if (typeof CodeMirror != 'undefined') {
             if (option.type == 'prop') {
                 const separator = /,\s*$/.test(textToToken) ? '' : ','
                 const space = /\s+$/.test(textToToken) ? '' : ' '
-                let value = option.prop.defaultValue && jb.studio.previewjb.prettyPrint(option.prop.defaultValue)
+                let value = option.prop.defaultValue && jb.prettyPrint(option.prop.defaultValue,{comps: jb.studio.previewjb.comps})
                 value = value || ((option.prop.type &&  option.prop.type != 'data') ? "{$: '' }" : "''")
                 const spaceBeforeValue = value.indexOf('$') == -1 ? ' ' : ''
                 const spaceBeforeColon = value.indexOf('$') == -1 ? '' : ' '
@@ -41817,13 +41817,13 @@ function newFileContent(fileContent, comps) {
     const nextjbComponent = lines.slice(lineOfComp+1).findIndex(line => line.match(/^jb.component/))
     if (nextjbComponent != -1 && nextjbComponent < compLastLine)
       return jb.logError(['can not find end of component', fn,id, linesFromComp])
-    const newComp = comp ? st.previewjb.prettyPrintComp(id,comp,{initialPath: id}).split('\n') : []
+    const newComp = comp ? jb.prettyPrintComp(id,comp,{initialPath: id, comps: st.previewjb.comps}).split('\n') : []
     if (JSON.stringify(linesFromComp.slice(0,compLastLine+1)) === JSON.stringify(newComp))
         return
     lines.splice(lineOfComp,compLastLine+1,...newComp)
   })
   compsToAdd.forEach(([id,comp])=>{
-    const newComp = st.previewjb.prettyPrintComp(id,comp,{initialPath: id}).split('\n')
+    const newComp = jb.prettyPrintComp(id,comp,{initialPath: id, comps: st.previewjb.comps}).split('\n')
     lines = lines.concat(newComp).concat('')
   })
   return lines.join('\n')
@@ -41832,7 +41832,7 @@ function newFileContent(fileContent, comps) {
 function deltaFileContent(fileContent, {compId,comp}) {
   const lines = fileContent.split('\n').map(x=>x.replace(/[\s]*$/,''))
   const lineOfComp = lines.findIndex(line=> line.indexOf(`jb.component('${compId}'`) == 0)
-  const newCompLines = comp ? st.previewjb.prettyPrintComp(compId,comp,{initialPath: compId}).split('\n') : []
+  const newCompLines = comp ? jb.prettyPrintComp(compId,comp,{initialPath: compId, comps: st.previewjb.comps}).split('\n') : []
   const justCreatedComp = lineOfComp == -1 && comp[jb.location][1] == 'new'
   if (justCreatedComp) {
     comp[jb.location][1] == lines.length
@@ -41893,11 +41893,10 @@ jb.component('studio.chooseProject', {
         controls: button({
           title: text.highlight('%%', '%$itemlistCntrData/search_pattern%'),
           action: studio.gotoProject('%%'),
-          style: button.mdcHeader(true),
+          style: button.mdcChipAction(),
           features: css('{ text-align: left; width: 250px }')
         }),
         features: [
-          itemlist.selection({}),
           itemlist.keyboardSelection({autoFocus: true, onEnter: studio.gotoProject('%%')}),
           watchRef('%$itemlistCntrData/search_pattern%'),
           css.height({height: '400', overflow: 'scroll'})
@@ -42715,7 +42714,7 @@ jb.component('studio.eventView', {
       controlWithCondition(
         '%ctx%',
         button({
-          vars: Var('count',pipeline('%ctx/vars%',keys(),count())),
+          vars: [Var('count', pipeline('%ctx/vars%', keys(), count()))],
           title: 'vars (%$count%)',
           action: openDialog({
             style: dialog.popup(),
@@ -43160,11 +43159,11 @@ jb.component('studio.mainMenu', {
           menu.menu({
             title: 'Sample Projects',
             options: [
-              studio.sampleProject('style-gallery'),
+              studio.sampleProject('styleGallery'),
               studio.sampleProject('itemlists'),
               studio.sampleProject('todomvc'),
-              studio.sampleProject('html-parsing'),
-              studio.sampleProject('cards-demo')
+              studio.sampleProject('htmlParsing'),
+              studio.sampleProject('cardsDemo')
             ]
           }),
           menu.action({
