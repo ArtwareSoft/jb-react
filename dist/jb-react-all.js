@@ -2744,6 +2744,8 @@ jb.component('formatDate', {
 const spySettings = { 
 	moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable,scriptChange,resLog,setGridAreaVals,dragableGridItemThumb,pptrActionStarted,pptrActionEnded,pptrActivity,pptrResultData', 
 	groups: {
+		refresh: 'doOp,refreshElem,notifyCmpObservable',
+		puppeteer: 'pptrActionStarted,pptrActionEnded,pptrActivity,pptrResultData',
 		watchable: 'doOp,writeValue,removeCmpObservable,registerCmpObservable,notifyCmpObservable,notifyObservableElems,notifyObservableElem,scriptChange',
 		react: 'applyDeltaTop,applyDelta,unmount,render,initCmp,refreshReq,refreshElem,childDiffRes,htmlChange,appendChild,removeChild,replaceTop,calcRenderProp',
 		dialog: 'addDialog,closeDialog,refreshDialogs'

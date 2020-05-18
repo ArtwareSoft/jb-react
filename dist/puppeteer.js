@@ -18,10 +18,11 @@ jb.pptr = {
             commands: subject(),
         }
         const actions = jb.asArray(ctx.profile.actions)
+        const actionsPath = ctx.path + '~actions'
         const wrappedActions = actions.flatMap( (action,i) => action ? [
-                rx.doPromise( () => comp.events.next({$: 'ActionStarted', path: ctx.path + `~actions~${i}` })),
+                rx.doPromise( ctx => comp.events.next({$: 'ActionStarted', ctx, path: `${actionsPath}~${i}` })),
                 actions[i],
-                rx.doPromise( () => comp.events.next({$: 'ActionEnded', path: ctx.path + `~actions~${i}` })),
+                rx.doPromise( ctx => comp.events.next({$: 'ActionEnded', ctx, path: `${actionsPath}~${i}` })),
         ] : [])
 
         ctx.run(
@@ -127,12 +128,9 @@ jb.component('pptr.gotoPage', {
   ],
   impl: rx.innerPipe(
     rx.var('url', ({},{},{url}) => url),
-    pptr.logActivity('start navigation', '%$url%'),
     rx.doPromise(({},{page},{url,waitUntil,timeout}) => page.goto(url,{waitUntil, timeout})),
-    pptr.logActivity('after goto page', '%$url%'),
     rx.mapPromise((ctx,{},{frame}) => frame(ctx)),
     rx.var('frame'),
-    pptr.logActivity('end navigation', '%$url%')
   )
 })
 

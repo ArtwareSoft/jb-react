@@ -2744,6 +2744,8 @@ jb.component('formatDate', {
 const spySettings = { 
 	moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable,scriptChange,resLog,setGridAreaVals,dragableGridItemThumb,pptrActionStarted,pptrActionEnded,pptrActivity,pptrResultData', 
 	groups: {
+		refresh: 'doOp,refreshElem,notifyCmpObservable',
+		puppeteer: 'pptrActionStarted,pptrActionEnded,pptrActivity,pptrResultData',
 		watchable: 'doOp,writeValue,removeCmpObservable,registerCmpObservable,notifyCmpObservable,notifyObservableElems,notifyObservableElem,scriptChange',
 		react: 'applyDeltaTop,applyDelta,unmount,render,initCmp,refreshReq,refreshElem,childDiffRes,htmlChange,appendChild,removeChild,replaceTop,calcRenderProp',
 		dialog: 'addDialog,closeDialog,refreshDialogs'
@@ -42525,6 +42527,26 @@ jb.component('studio.eventTracker', {
               field.onChange(studio.refreshSpy())
             ]
           }),
+          picklist({
+            title: 'pick group',
+            options: picklist.options({
+              options: pipeline(() => jb.frame.jb.spySettings.groups, keys())
+            }),
+            style: picklist.native(),
+            features: [
+              css.width('151'),
+              css.margin('9'),
+              picklist.onChange(
+                runActions(
+                  writeValue(
+                      '%$studio/spyLogs%',
+                      pipeline(ctx => jb.frame.jb.spySettings.groups[ctx.data], split({}))
+                    ),
+                  studio.refreshSpy()
+                )
+              )
+            ]
+          }),
           multiSelect({
             title: 'logs',
             databind: '%$studio/spyLogs%',
@@ -42559,7 +42581,7 @@ jb.component('studio.eventTracker', {
             features: [
               field.title('log'),
               field.columnWidth('20'),
-              feature.byCondition('%log% == error', css.color({color: 'var(--jb-errorForeground)'})),
+              feature.byCondition('%log% == error', css.color('var(--jb-errorForeground)')),
               feature.icon({
                 icon: data.switch({
                   cases: [
@@ -42606,7 +42628,10 @@ jb.component('studio.eventTracker', {
         runActions(
           action.if(
               not('%$studio/spyLogs%'),
-              writeValue('%$studio/spyLogs%', list('doOp', 'refreshElem','notifyCmpObservable'))
+              writeValue(
+                '%$studio/spyLogs%',
+                list('doOp', 'refreshElem', 'notifyCmpObservable')
+              )
             ),
           studio.refreshSpy(true)
         )

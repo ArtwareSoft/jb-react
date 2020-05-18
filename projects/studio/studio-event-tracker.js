@@ -94,6 +94,26 @@ jb.component('studio.eventTracker', {
               field.onChange(studio.refreshSpy())
             ]
           }),
+          picklist({
+            title: 'pick group',
+            options: picklist.options({
+              options: pipeline(() => jb.frame.jb.spySettings.groups, keys())
+            }),
+            style: picklist.native(),
+            features: [
+              css.width('151'),
+              css.margin('9'),
+              picklist.onChange(
+                runActions(
+                  writeValue(
+                      '%$studio/spyLogs%',
+                      pipeline(ctx => jb.frame.jb.spySettings.groups[ctx.data], split({}))
+                    ),
+                  studio.refreshSpy()
+                )
+              )
+            ]
+          }),
           multiSelect({
             title: 'logs',
             databind: '%$studio/spyLogs%',
@@ -128,7 +148,7 @@ jb.component('studio.eventTracker', {
             features: [
               field.title('log'),
               field.columnWidth('20'),
-              feature.byCondition('%log% == error', css.color({color: 'var(--jb-errorForeground)'})),
+              feature.byCondition('%log% == error', css.color('var(--jb-errorForeground)')),
               feature.icon({
                 icon: data.switch({
                   cases: [
@@ -175,7 +195,10 @@ jb.component('studio.eventTracker', {
         runActions(
           action.if(
               not('%$studio/spyLogs%'),
-              writeValue('%$studio/spyLogs%', list('doOp', 'refreshElem','notifyCmpObservable'))
+              writeValue(
+                '%$studio/spyLogs%',
+                list('doOp', 'refreshElem', 'notifyCmpObservable')
+              )
             ),
           studio.refreshSpy(true)
         )
