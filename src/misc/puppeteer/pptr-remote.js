@@ -73,7 +73,7 @@ jb.pptr = {
         const comp = { events: skip(1)(receive), commands }
         jb.pptr._proxyComp = comp
         pipe(receive,take(1),
-            doPromise(m => m == 'loadCodeReq' && ctx.setVar('comp',comp).run(pptr.sendCodeToServer())),
+            doPromise(m => m.res == 'loadCodeReq' && ctx.setVar('comp',comp).run(pptr.sendCodeToServer())),
             subscribe(()=> comp.commands.next({run: ctx.profile})))
         pipe(receive,subscribe(message =>jb.push(databindEvents, message,ctx)))
         

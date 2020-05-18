@@ -44,8 +44,8 @@ jb.component('puppeteerDemo.main', {
               showBrowser: true,
               databindEvents: '%$events%',
               actions: pptr.function(
-                async (ctx,{page}) => { 
-  await page.goto('https://google.com', { waitUntil: 'networkidle0' }) 
+                async (ctx,{page}) => {
+  await page.goto('https://google.com', { waitUntil: 'networkidle0' })
 //const title = await page.title()
 const frame = await page.mainFrame()
 await frame.type('input[name=q]', 'puppeteer'+String.fromCharCode(13), { delay: 100 })
@@ -85,4 +85,35 @@ await frame.type('input[name=q]', 'puppeteer'+String.fromCharCode(13), { delay: 
 
 jb.component('dataResource.query', {
   watchableData: 'vitamins'
+})
+
+jb.component('puppeteerDemo.jbart', {
+  type: 'control',
+  impl: group({
+    title: '',
+    controls: [
+      button({
+        title: 'search in itemlist',
+        action: rx.pipe(
+          pptr.session({
+              showBrowser: true,
+              actions: [
+                pptr.gotoPage(
+                  'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?project=itemlists&page=itemlists.main&profile_path=itemlists.main&host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/itemlists'
+                ),
+                pptr.waitForSelector({selector: '.studio-pages-items>.jb-item:nth-child(5)'}),
+                pptr.mouseClick({
+                  selector: '.studio-pages-items>.jb-item:nth-child(6)',
+                  button: 'left',
+                  clickCount: '1',
+                  delay: '100'
+                }),
+                pptr.waitForSelector('#input_0'),
+                pptr.type({text: '22', selector: '#input_0', delay: 100})
+              ]
+            })
+        )
+      })
+    ]
+  })
 })
