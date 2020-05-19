@@ -84,7 +84,7 @@ jb.component('pptr.extractWithEval', {
     type: 'rx,pptr',
     description: 'evaluate javascript expression',
     params: [
-        {id: 'expression', as: 'string'},
+        {id: 'expression', as: 'string', mandatory: true},
     ],
     impl: rx.innerPipe(rx.mapPromise((ctx,{frame},{expression}) => frame.evaluate(expression)), pptr.logData())
 })
@@ -93,10 +93,14 @@ jb.component('pptr.eval', {
     type: 'rx,pptr',
     description: 'evaluate javascript expression',
     params: [
-        {id: 'expression', as: 'string'},
+        {id: 'expression', as: 'string', mandatory: true},
         {id: 'varName', as: 'string', description: 'leave empty for no vars' },
     ],
-    impl: rx.mapPromise((ctx,{frame},{expression}) => frame.evaluate(expression))
+    impl: (ctx,exp,varName) => varName ? ctx.run(
+        rx.pipe(
+            rx.mapPromise((ctx,{frame},{expression}) => frame.evaluate(expression)),
+            rx.var(varName)       
+        )) : ctx.run(rx.mapPromise((ctx,{frame},{expression}) => frame.evaluate(expression)))
 })
 
 jb.component('pptr.mouseClick', {
