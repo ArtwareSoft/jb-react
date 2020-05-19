@@ -68,7 +68,9 @@ await frame.type('input[name=q]', 'puppeteer'+String.fromCharCode(13), { delay: 
       }),
       itemlist({
         items: '%$events%',
-        controls: [text({text: json.stringify('%data%')})],
+        controls: [
+          text({text: json.stringify('%data%')})
+        ],
         features: watchRef({ref: '%$events%', includeChildren: 'yes'})
       }),
       group({

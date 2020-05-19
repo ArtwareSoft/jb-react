@@ -66,8 +66,17 @@ jb.pptr = {
             jb.log('pptr'+(message.$ ||''),[message]) // pptrActionStarted,pptrActionEnded,pptrActivity,pptrResultData
             receive.next(message)
         }
-        socket.onerror = e => receive.error(e)
-        socket.onclose = () => receive.complete()
+        socket.onerror = e => {
+            receive.error(e)
+        }
+        socket.onclose = e => {
+            const host = jb.path(jb.studio,'studiojb.studio.host')
+            if (host && e.code == 1006)
+                host.showError('puppeteer server is down. please install and run from https://github.com/ArtwareSoft/jb-puppeteer-server.git')
+            else if (host && e.code != 1000)
+                host.showError('puppeteer server error: ' + e.code)
+            receive.complete()
+        }
         socket.onopen = () => pipe(commands, subscribe(cmd => socket.send(cmd.run ? jb.prettyPrint(cmd,{noMacros: true}) : JSON.stringify(cmd))))
 
         const comp = { events: skip(1)(receive), commands }
@@ -87,11 +96,11 @@ jb.component('pptr.sendCodeToServer', {
       {id: 'modules', as: 'string', defaultValue: 'common,rx,puppeteer'},
     ],
     impl: (ctx,modules) => {
-        const st = (jb.path(jb,'studio.studiojb') || jb).studio
-        if (!st.host) return Promise.resolve()
+        const host = jb.path(jb.studio,'studiojb.studio.host')
+        if (!host) return Promise.resolve()
         return modules.split(',').reduce((pr,module) => pr.then(() => {
-            const moduleFileName = `${st.host.pathOfDistFolder()}/${module}.js`
-            return st.host.getFile(moduleFileName).then( 
+            const moduleFileName = host.locationToPath(`${host.pathOfDistFolder()}/${module}.js`)
+            return host.getFile(moduleFileName).then( 
                 loadCode => (ctx.vars.comp || jb.pptr._proxyComp).commands.next({ loadCode, moduleFileName }))
         }), Promise.resolve())
     }
