@@ -41,6 +41,15 @@ jb.component('pptr.logActivity', {
     impl: rx.doPromise((ctx,{comp},{activity, description}) => comp.events.next({$: 'Activity', activity, description, ctx }))
 })
 
+jb.component('pptr.Info', {
+    type: 'rx,pptr',
+    params: [
+        {id: 'info', as: 'string', mandatory: true },
+        {id: 'description', as: 'string' },
+    ],
+    impl: rx.doPromise((ctx,{comp},{info, description}) => comp.events.next({$: 'Info', info, description, ctx }))
+})
+
 jb.component('pptr.extractBySelector', {
     type: 'rx,pptr',
     params: [
@@ -188,11 +197,16 @@ jb.component('pptr.mainFrame', {
 })
 
 jb.component('pptr.frameByIndex', {
-    type: 'pptr.frame',
-    params: [
-        {id: 'index', as: 'number', defaultValue: 0, mandatory: true}
-    ],    
-    impl: (ctx,index) => ctx.vars.page.frames()[index]
+  type: 'pptr.frame',
+  params: [
+    {id: 'index', as: 'number', mandatory: true, description: 'starting with 0' }
+  ],
+  impl: (ctx,index) => {
+      const frames = ctx.vars.page.frames().slice(1)
+      if (!frames[index])
+        ctx.run(pptr.Info(frames.length + ' frames: ', frames.map(f=>f._url).join(', ') ))
+      return frames[index] || ctx.vars.frame
+  }
 })
 
 jb.component('pptr.function', {
