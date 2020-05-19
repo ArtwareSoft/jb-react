@@ -192,7 +192,7 @@ jb.component('pptr.frameByIndex', {
     params: [
         {id: 'index', as: 'number', defaultValue: 0, mandatory: true}
     ],    
-    impl: ctx => ctx.vars.page.frames()[index]
+    impl: (ctx,index) => ctx.vars.page.frames()[index]
 })
 
 jb.component('pptr.function', {
