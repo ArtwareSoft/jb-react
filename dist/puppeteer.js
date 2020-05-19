@@ -132,32 +132,23 @@ jb.component('pptr.gotoPage', {
   type: 'rx,pptr',
   params: [
     {id: 'url', as: 'string', mandatory: true},
-    {id: 'frame', type: 'pptr.frame', dynamic: true, defaultValue: pptr.mainFrame()},
-    {id: 'waitUntil', as: 'string', defaultValue:'load', options: 'load:load event is fired,domcontentloaded:DOMContentLoaded event is fired,networkidle0:no more than 0 network connections for at least 500 ms,networkidle2:no more than 2 network connections for at least 500 ms'},
+    {id: 'waitUntil', as: 'string', defaultValue: 'load', options: 'load:load event is fired,domcontentloaded:DOMContentLoaded event is fired,networkidle0:no more than 0 network connections for at least 500 ms,networkidle2:no more than 2 network connections for at least 500 ms'},
     {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait for in milliseconds'}
   ],
   impl: rx.innerPipe(
     rx.var('url', ({},{},{url}) => url),
-    rx.doPromise(({},{page},{url,waitUntil,timeout}) => page.goto(url,{waitUntil, timeout})),
-    rx.mapPromise((ctx,{},{frame}) => frame(ctx)),
-    rx.var('frame'),
+    rx.doPromise(
+        ({},{page},{url,waitUntil,timeout}) => page.goto(url,{waitUntil, timeout})
+      ),
+    pptr.gotoMainFrame()
   )
 })
 
-jb.component('pptr.gotoFrame', {
-    type: 'rx,pptr',
-    params: [
-      {id: 'frame', type: 'pptr.frame', dynamic: true, mandatory: true},
-    ],
-    impl: rx.innerPipe(
-      rx.mapPromise((ctx,{},{frame}) => frame(ctx)),
-      rx.var('frame'),
-    )
-})
-  
 jb.component('pptr.logData', {
-    type: 'rx,pptr',
-    impl: rx.doPromise((ctx,{comp}) => comp.events.next({$: 'ResultData', ctx }))
+  type: 'rx,pptr',
+  impl: rx.doPromise(
+    (ctx,{comp}) => comp.events.next({$: 'ResultData', ctx })
+  )
 })
 
 jb.component('pptr.logActivity', {
@@ -176,6 +167,15 @@ jb.component('pptr.Info', {
         {id: 'description', as: 'string' },
     ],
     impl: rx.doPromise((ctx,{comp},{info, description}) => comp.events.next({$: 'Info', info, description, ctx }))
+})
+
+jb.component('pptr.Error', {
+    type: 'rx,pptr',
+    params: [
+        {id: 'error', as: 'string', mandatory: true },
+        {id: 'description', as: 'string' },
+    ],
+    impl: rx.doPromise((ctx,{comp},{error, description}) => comp.events.next({$: 'Error', error, description, ctx }))
 })
 
 jb.component('pptr.extractBySelector', {
@@ -222,6 +222,7 @@ jb.component('pptr.eval', {
     description: 'evaluate javascript expression',
     params: [
         {id: 'expression', as: 'string'},
+        {id: 'varName', as: 'string', description: 'leave empty for no vars' },
     ],
     impl: rx.mapPromise((ctx,{frame},{expression}) => frame.evaluate(expression))
 })
@@ -319,30 +320,22 @@ jb.component('pptr.endlessScrollDown', {
 
 // ************ frames *********
 
-jb.component('pptr.mainFrame', {
-    type: 'pptr.frame',
-    impl: ctx => ctx.vars.page.mainFrame()
+jb.component('pptr.gotoMainFrame', {
+    type: 'rx,pptr',
+    impl: rx.var('frame', () => pptr.mainFrame())
 })
 
-jb.component('pptr.frameByIndex', {
-  type: 'pptr.frame',
+jb.component('pptr.gotoFrameByIndex', {
+  type: 'rx,pptr',
   params: [
     {id: 'index', as: 'number', mandatory: true, description: 'starting with 0' }
   ],
-  impl: (ctx,index) => {
-      const frames = ctx.vars.page.frames().slice(1)
-      if (!frames[index])
-        ctx.run(pptr.Info(frames.length + ' frames: ', frames.map(f=>f._url).join(', ') ))
-      return frames[index] || ctx.vars.frame
-  }
-})
-
-jb.component('pptr.function', {
-    type: 'rx,pptr',
-    params: [
-        {id: 'func', dynamic: true },
-    ],
-    impl: rx.doPromise((ctx,{},{func}) => func(ctx))
+  impl: rx.var('frame', (ctx,{frame},{index}) => {
+    const frames = ctx.vars.page.frames().slice(1)
+    if (!frames[index])
+      ctx.run(pptr.Error('no frame at index ' + index, frames.length + ' frames exists'))
+    return frames[index] || frame
+  })
 })
 
 // page.mouse.move(100, 100);
