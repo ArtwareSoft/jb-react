@@ -328,8 +328,11 @@ jb.component('pptr.endlessScrollDown', {
 // ************ frames *********
 
 jb.component('pptr.gotoMainFrame', {
-    type: 'rx,pptr',
-    impl: rx.var('frame', ctx => ctx.vars.page.mainFrame())
+  type: 'rx,pptr',
+  impl: rx.var(
+    'frame',
+    (ctx,{page}) => page.mainFrame()
+  )
 })
 
 jb.component('pptr.gotoFrameByIndex', {
