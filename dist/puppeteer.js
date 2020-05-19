@@ -227,11 +227,10 @@ jb.component('pptr.eval', {
     {id: 'expression', as: 'string', mandatory: true},
     {id: 'varName', as: 'string', description: 'leave empty for no vars'}
   ],
-  impl: (ctx,expression,varName) => varName ? ctx.run(
-        rx.innerPipe(
-            rx.mapPromise((ctx,{frame}) => frame.evaluate(expression)),
+  impl: If('%$varName%', rx.innerPipe(
+            rx.mapPromise((ctx,{frame},{expression}) => frame.evaluate(expression)),
             rx.var(varName)
-        )) : ctx.run(rx.mapPromise((ctx,{frame}) => frame.evaluate(expression)))
+        ), rx.mapPromise((ctx,{frame},{expression}) => frame.evaluate(expression)))
 })
 
 jb.component('pptr.mouseClick', {
@@ -340,8 +339,8 @@ jb.component('pptr.gotoFrameByIndex', {
   params: [
     {id: 'index', as: 'number', mandatory: true, description: 'starting with 0' }
   ],
-  impl: rx.var('frame', (ctx,{frame},{index}) => {
-    const frames = ctx.vars.page.frames().slice(1)
+  impl: rx.var('frame', (ctx,{page,frame},{index}) => {
+    const frames = page.frames().slice(1)
     if (!frames[index])
       ctx.run(pptr.Error('no frame at index ' + index, frames.length + ' frames exists'))
     return frames[index] || frame
