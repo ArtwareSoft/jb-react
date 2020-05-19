@@ -229,7 +229,7 @@ jb.component('pptr.eval', {
   ],
   impl: If('%$varName%', rx.innerPipe(
             rx.mapPromise((ctx,{frame},{expression}) => frame.evaluate(expression)),
-            rx.var(varName)
+            rx.var('%$varName%')
         ), rx.mapPromise((ctx,{frame},{expression}) => frame.evaluate(expression)))
 })
 
