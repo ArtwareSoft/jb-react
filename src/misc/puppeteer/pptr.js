@@ -16,6 +16,17 @@ jb.component('pptr.gotoPage', {
   )
 })
 
+jb.component('pptr.gotoFrame', {
+    type: 'rx,pptr',
+    params: [
+      {id: 'frame', type: 'pptr.frame', dynamic: true, mandatory: true},
+    ],
+    impl: rx.innerPipe(
+      rx.mapPromise((ctx,{},{frame}) => frame(ctx)),
+      rx.var('frame'),
+    )
+})
+  
 jb.component('pptr.logData', {
     type: 'rx,pptr',
     impl: rx.doPromise((ctx,{comp}) => comp.events.next({$: 'ResultData', ctx }))

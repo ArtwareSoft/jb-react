@@ -63,12 +63,10 @@ jb.pptr = {
             if (message.error)
                 jb.logError('error from puppeteer',[message.error,ctx])
             message.path = [ctx.path,message.path ||''].join('~')
-            jb.log('pptr'+(message.$ ||''),[message]) // pptrActionStarted,pptrActionEnded,pptrActivity,pptrResultData
+            jb.log('pptr'+(message.$ ||''),[message])
             receive.next(message)
         }
-        socket.onerror = e => {
-            receive.error(e)
-        }
+        socket.onerror = e => receive.error(e)
         socket.onclose = e => {
             const host = jb.path(jb.studio,'studiojb.studio.host')
             if (host && e.code == 1006)
