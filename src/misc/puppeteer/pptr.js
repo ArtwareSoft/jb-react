@@ -99,15 +99,11 @@ jb.component('pptr.eval', {
     {id: 'expression', as: 'string', mandatory: true},
     {id: 'varName', as: 'string', description: 'leave empty for no vars'}
   ],
-  impl: (ctx,exp,varName) => varName ? ctx.run(
+  impl: (ctx,expression,varName) => varName ? ctx.run(
         rx.innerPipe(
-            rx.mapPromise((ctx,{frame},{expression}) => frame.evaluate(expression)),
-            rx.var(varName)       
-       
-       
-       
-       
-        )) : ctx.run(rx.mapPromise((ctx,{frame},{expression}) => frame.evaluate(expression)))
+            rx.mapPromise((ctx,{frame}) => frame.evaluate(expression)),
+            rx.var(varName)
+        )) : ctx.run(rx.mapPromise((ctx,{frame}) => frame.evaluate(expression)))
 })
 
 jb.component('pptr.mouseClick', {
