@@ -50,7 +50,7 @@ jb.pptr = {
         function chopObj(obj, depth) {
             if (depth < 1) return
             if (obj && typeof obj == 'object') {
-                if (frame.constructor.name == 'Frame')
+                if (obj.constructor.name == 'Frame')
                     obj = `Frame: ${obj._url}`
                 else if (!(obj.constructor.name||'').match(/^Object|Array$/))
                     obj = obj.constructor.name
