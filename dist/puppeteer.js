@@ -49,7 +49,12 @@ jb.pptr = {
         }
         function chopObj(obj, depth) {
             if (depth < 1) return
-            if (obj && typeof obj == 'object' && !(obj.constructor.name||'').match(/^Object|Array$/)) obj = obj.constructor.name
+            if (obj && typeof obj == 'object') {
+                if (frame.constructor.name == 'Frame')
+                    obj = `Frame: ${obj._url}`
+                else if (!(obj.constructor.name||'').match(/^Object|Array$/))
+                    obj = obj.constructor.name
+            }
             if (['string','boolean','number'].indexOf(typeof obj) != -1) return obj
             return obj && typeof obj == 'object' && jb.objFromEntries( jb.entries(obj).map(([id,val])=>[id,chopObj(val, depth-1)]).filter(e=>e[1] != null) )
         }
@@ -140,6 +145,8 @@ jb.component('pptr.gotoPage', {
     rx.doPromise(
         ({},{page},{url,waitUntil,timeout}) => page.goto(url,{waitUntil, timeout})
       ),
+    rx.mapPromise(({},{page}) => page.title()),
+    rx.var('pageTitle'),
     pptr.gotoMainFrame()
   )
 })

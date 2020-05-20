@@ -12,6 +12,8 @@ jb.component('pptr.gotoPage', {
     rx.doPromise(
         ({},{page},{url,waitUntil,timeout}) => page.goto(url,{waitUntil, timeout})
       ),
+    rx.mapPromise(({},{page}) => page.title()),
+    rx.var('pageTitle'),
     pptr.gotoMainFrame()
   )
 })
