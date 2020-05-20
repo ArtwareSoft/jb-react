@@ -220,8 +220,7 @@ jb.component('pptr.gotoMainFrame', {
 jb.component('pptr.contentFrame', {
     type: 'rx,pptr',
     impl: rx.innerPipe(
-        rx.mapPromise(({data},{frame}) => Promise.resolve()
-            .then(() => data && data.contentFrame && data.contentFrame())),
+        rx.mapPromise(({data}) => Promise.resolve().then(() => data.contentFrame())),
         rx.var('frame')
     )
 })
