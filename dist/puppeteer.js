@@ -346,7 +346,7 @@ jb.component('pptr.gotoMainFrame', {
 jb.component('pptr.contentFrame', {
     type: 'rx,pptr',
     impl: rx.innerPipe(
-        rx.mapPromise(({data}) => data.contentFrame && data.contentFrame()),
+        rx.mapPromise(({data},{frame}) => data && data.contentFrame && data.contentFrame() || frame),
         rx.var('frame')
     )
 })
