@@ -49,8 +49,8 @@ jb.pptr = {
         }
         function chopObj(obj, depth) {
             if (depth < 1) return
+            if (typeof obj == 'object' && !(obj.constructor.name||'').match(/^Object|Array$/)) obj = obj.constructor.name
             if (['string','boolean','number'].indexOf(typeof obj) != -1) return obj
-            if (typeof obj == 'object' && !(obj.constructor.name||'').match(/^Object|Array$/)) return
             return typeof obj == 'object' && jb.objFromEntries( jb.entries(obj).map(([id,val])=>[id,chopObj(val, depth-1)]).filter(e=>e[1] != null) )
         }
     },
