@@ -106,7 +106,7 @@ jb.component('pptr.sendCodeToServer', {
 
 jb.component('pptr.session', {
     description: 'starts puppeteer session, returns object that can be used to interact with the server',
-    type: 'rx,has-side-effects',
+    type: 'action,rx,has-side-effects',
     category: 'source',    
     params: [
         {id: 'showBrowser', as: 'boolean' },

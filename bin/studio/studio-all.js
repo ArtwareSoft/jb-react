@@ -1644,7 +1644,7 @@ jb.component('split', {
     {id: 'text', as: 'string', defaultValue: '%%'},
     {id: 'part', options: ',first,second,last,but first,but last'}
   ],
-  impl: function(context,separator,text,part) {
+  impl: function(ctx,separator,text,part) {
 		const out = text.split(separator.replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n'));
 		switch (part) {
 			case 'first': return out[0];
@@ -42519,29 +42519,35 @@ jb.component('studio.eventTracker', {
               ]
             }),
             style: menuStyle.toolbar(menuStyle.icon('30')),
-            features: css.margin('9')
+            features: [css.margin('9')]
           }),
-          editableBoolean({
-            databind: '%$studio/spyStudio%',
-            style: editableBoolean.iconWithSlash('30'),
-            title: 'spy studio',
-            textForTrue: 'spy studio',
-            textForFalse: 'spy preview',
-            features: [
-              feature.icon({icon: 'AndroidStudio', type: 'mdi', size: '20'}),
-              css.margin({top: '9', left: '-10'})
-            ]
-          }),
-          editableBoolean({
-            databind: '%$studio/manualRefresh%',
-            style: editableBoolean.iconWithSlash('30'),
-            title: 'manual refresh',
-            textForTrue: 'on',
-            textForFalse: 'off',
-            features: [
-              feature.icon({icon: 'Autorenew', type: 'mdi', size: '20'}),
-              css.margin({top: '9', left: '-10', right: ''}),
-              field.onChange(studio.refreshSpy())
+          group({
+            title: 'toolbar2',
+            layout: layout.horizontal('15'),
+            controls: [
+              editableBoolean({
+                databind: '%$studio/spyStudio%',
+                style: editableBoolean.iconWithSlash('30'),
+                title: 'spy studio',
+                textForTrue: 'spy studio',
+                textForFalse: 'spy preview',
+                features: [
+                  feature.icon({icon: 'AndroidStudio', type: 'mdi', size: '20'}),
+                  css.margin({top: '9', left: '-10'})
+                ]
+              }),
+              editableBoolean({
+                databind: '%$studio/manualRefresh%',
+                style: editableBoolean.iconWithSlash('30'),
+                title: 'manual refresh',
+                textForTrue: 'on',
+                textForFalse: 'off',
+                features: [
+                  feature.icon({icon: 'Autorenew', type: 'mdi', size: '20'}),
+                  css.margin({top: '9', left: '-10', right: ''}),
+                  field.onChange(studio.refreshSpy())
+                ]
+              })
             ]
           }),
           picklist({
@@ -42645,10 +42651,17 @@ jb.component('studio.eventTracker', {
       feature.init(
         runActions(
           action.if(
+            not('%$studio/spyGroup%'),
+            writeValue('%$studio/spyGroup%', If( contains({text: 'puppeteer', allText: '%$studio/projectSettings/libs%'}),
+            'puppeteer',
+            'refresh'
+          ))),
+          action.if(
+              Var('group','%$studio/spyGroup%'),
               not('%$studio/spyLogs%'),
               writeValue(
                 '%$studio/spyLogs%',
-                list('doOp', 'refreshElem', 'notifyCmpObservable')
+                pipeline((ctx,{group}) => jb.frame.jb.spySettings.groups[group], split({}))
               )
             ),
           studio.refreshSpy(true)

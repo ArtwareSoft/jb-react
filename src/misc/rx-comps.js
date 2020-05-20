@@ -219,17 +219,19 @@ jb.component('rx.filter', {
 jb.component('rx.flatMap', {
   type: 'rx',
   category: 'operator,combine',
+  description: 'match inputs the callbags or promises',
   params: [
     {id: 'func', dynamic: true, mandatory: true, description: 'map each input to promise or callbag'},
   ],
   impl: (ctx,func) => jb.callbag.flatMap(ctx2 => func(ctx2))
 })
 
-jb.component('rx.toMany', {
+jb.component('rx.flatMapArrays', {
   type: 'rx',
   category: 'operator',
+  description: 'match inputs to data arrays',
   params: [
-    {id: 'func', dynamic: true, mandatory: true, description: 'should return array, pass items one by one'},
+    {id: 'func', dynamic: true, defaultValue: '%%', description: 'should return array, items will be passes one by one'},
   ],
   impl: (ctx,func) => jb.callbag.flatMap(ctx2 => jb.asArray(func(ctx2)), (_ctx,res) => _ctx.setData(res) )
 })

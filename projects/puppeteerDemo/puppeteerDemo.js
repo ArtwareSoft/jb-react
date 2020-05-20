@@ -96,25 +96,51 @@ jb.component('puppeteerDemo.jbart', {
     controls: [
       button({
         title: 'search in itemlist',
-        action: rx.pipe(
-          pptr.session({
-              showBrowser: true,
-              actions: [
-                pptr.gotoPage(
-                  'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?project=itemlists&page=itemlists.main&profile_path=itemlists.main&host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/itemlists'
-                ),
-                pptr.waitForSelector({selector: '.studio-pages-items>.jb-item:nth-child(5)'}),
-                pptr.mouseClick({
-                  selector: '.studio-pages-items>.jb-item:nth-child(6)',
-                  button: 'left',
-                  clickCount: '1',
-                  delay: '100'
-                }),
-                pptr.waitForSelector('#input_0'),
-                pptr.type({text: '22', selector: '#input_0', delay: 100})
-              ]
-            })
-        )
+        action: pptr.session({
+          showBrowser: true,
+          actions: [
+            pptr.gotoPage(
+              'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?project=itemlists&page=itemlists.main&profile_path=itemlists.main&host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/itemlists'
+            ),
+            pptr.waitForSelector('.studio-pages-items>.jb-item:nth-child(5)'),
+            pptr.mouseClick({
+              selector: '.studio-pages-items>.jb-item:nth-child(6)',
+              button: 'left',
+              clickCount: '1',
+              delay: '100'
+            }),
+            pptr.waitForSelector('#input_0'),
+            pptr.type({text: '22', selector: '#input_0', delay: 100})
+          ]
+        })
+      })
+    ]
+  })
+})
+
+
+jb.component('puppeteerDemo.preview', {
+  type: 'control',
+  impl: group({
+    title: '',
+    controls: [
+      button({
+        title: 'refresh server code',
+        action: pptr.sendCodeToServer(),
+        raised: false
+      }),
+      button({
+        title: 'preview',
+        action: pptr.session({
+          showBrowser: true,
+          actions: [
+            pptr.gotoPage(
+              'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?project=itemlists&page=itemlists.main&profile_path=itemlists.main&host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/itemlists'
+            ),
+            pptr.gotoFrameByIndex('1'),
+            pptr.extractBySelector({selector: '.jb-item span', extract: 'textContent'})
+          ]
+        })
       })
     ]
   })

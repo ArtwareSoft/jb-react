@@ -739,7 +739,7 @@ jb.component('split', {
     {id: 'text', as: 'string', defaultValue: '%%'},
     {id: 'part', options: ',first,second,last,but first,but last'}
   ],
-  impl: function(context,separator,text,part) {
+  impl: function(ctx,separator,text,part) {
 		const out = text.split(separator.replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n'));
 		switch (part) {
 			case 'first': return out[0];

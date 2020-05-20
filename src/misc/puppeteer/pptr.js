@@ -64,8 +64,20 @@ jb.component('pptr.extractBySelector', {
             frame.evaluate(`_jb_extract = '${extract}'`).then(()=>
                 multiple ? frame.$$eval(selector, elems => elems.map(el=>el[_jb_extract]))
                 : frame.$eval(selector, el => [el[_jb_extract]] ))), 
-                rx.toMany('%%'), 
+                rx.flatMapArrays('%%'),
         pptr.logData()
+    )
+})
+
+jb.component('pptr.querySelector', {
+    type: 'rx,pptr',
+    params: [
+        {id: 'selector', as: 'string' },
+        {id: 'multiple', as: 'boolean', description: 'querySelectorAll' },
+    ],
+    impl: rx.pipe(
+        rx.mapPromise((ctx,{frame},{selector,multiple}) => multiple ? frame.$$(selector) : [frame.$(selector)]),
+        rx.flatMapArrays('%%')
     )
 })
 
