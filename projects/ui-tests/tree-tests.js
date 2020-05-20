@@ -200,6 +200,33 @@ jb.component('uiTest.tableTree.expandPath', {
   })
 })
 
+jb.component('uiTest.tableTree.DD', {
+  impl: uiTest({
+    control: tableTree({
+      treeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
+      chapterHeadline: text({
+        text: If(
+          matchRegex('[0-9]*', suffix('~', '%path%')),
+          '%val/name%',
+          suffix('~', '%path%')
+        )
+      }),
+      style: tableTree.plain({}),
+      features: [
+        id('tableTree'),
+        tableTree.expandPath('personWithChildren~children'),
+        tableTree.dragAndDrop(),
+        watchRef({ref: '%$personWithChildren/children%', strongRefresh: true})
+      ]
+    }),
+    action: runActions(
+      ctx => jb.move(ctx.exp('%$personWithChildren/children[2]%', 'ref'), ctx.exp('%$personWithChildren/children[0]%', 'ref'),ctx),
+      ctx => jb.move(ctx.exp('%$personWithChildren/children[2]%', 'ref'), ctx.exp('%$personWithChildren/children[0]%', 'ref'),ctx),
+    ),
+    expectedResult: contains(['Lisa','Maggie','Bart']),
+  })
+})
+
 jb.component('uiTest.tableTreeRefresh1', {
   impl: uiTest({
     control: tableTree({

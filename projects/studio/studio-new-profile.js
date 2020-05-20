@@ -160,7 +160,7 @@ jb.component('studio.selectProfile', {
                   features: [
                     itemlist.selection({
                       databind: '%$SelectedCategory%',
-                      cssForSelected: 'box-shadow: 3px 0px 0 0 #304ffe inset; color: black !important; background: none !important; !important'
+                      cssForSelected: 'box-shadow: 3px 0px 0 0 var(--jb-dropdown-shadow) inset; color: black !important; background: none !important; !important'
                     })
                   ]
                 }),

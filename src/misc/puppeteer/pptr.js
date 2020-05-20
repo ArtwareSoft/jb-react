@@ -75,10 +75,7 @@ jb.component('pptr.querySelector', {
         {id: 'selector', as: 'string' },
         {id: 'multiple', as: 'boolean', description: 'querySelectorAll' },
     ],
-    impl: rx.pipe(
-        rx.mapPromise((ctx,{frame},{selector,multiple}) => multiple ? frame.$$(selector) : [frame.$(selector)]),
-        rx.flatMapArrays('%%')
-    )
+    impl: rx.mapPromise((ctx,{frame},{selector,multiple}) => multiple ? frame.$$(selector) : frame.$(selector)),
 })
 
 jb.component('pptr.waitForSelector', {
@@ -218,17 +215,21 @@ jb.component('pptr.gotoMainFrame', {
   )
 })
 
-jb.component('pptr.gotoFrameByIndex', {
-  type: 'rx,pptr',
-  params: [
-    {id: 'index', as: 'number', mandatory: true, description: 'starting with 0' }
-  ],
-  impl: rx.var('frame', (ctx,{page,frame},{index}) => {
-    const frames = page.frames().slice(1)
-    if (!frames[index])
-      ctx.run(pptr.Error('no frame at index ' + index, frames.length + ' frames exists'))
-    return frames[index] || frame
-  })
+jb.component('pptr.contentFrame', {
+    type: 'rx,pptr',
+    impl: rx.mapPromise(({data}) => data.contentFrame && data.contentFrame()),
+})
+
+jb.component('pptr.gotoFrameById', {
+    type: 'rx,pptr',
+    params: [
+      {id: 'frameId', as: 'string', mandatory: true }
+    ],
+    impl: rx.innerPipe(
+        pptr.querySelector('%$frameId%'),
+        pptr.contentFrame(),
+        rx.var('frame')
+    )
 })
 
 // page.mouse.move(100, 100);

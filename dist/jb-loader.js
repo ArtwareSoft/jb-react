@@ -250,7 +250,8 @@ function jb_initWidget() {
   }
   const fixedProjName = (jbProjectSettings.project||'').replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase())
   const initTheme = jbProjectSettings.theme || jb.path(jb.comps,'defaultTheme.impl')
-  const entryProf = jbProjectSettings.entry && {$: jbProjectSettings.entry} || jb.path(jb.comps[`${fixedProjName}.main`],'impl')
+  const entryProf = jbProjectSettings.entry && jbProjectSettings.entry.$ ? jbProjectSettings.entry : {$: jbProjectSettings.entry} 
+    || jb.path(jb.comps[`${fixedProjName}.main`],'impl')
   const el = document.getElementById('main');
   (async () => {
     await initTheme && jb.exec(initTheme)

@@ -41,7 +41,7 @@ jb.component('studio.refreshSpy', {
     const spy = jb.ui.getSpy(ctx)
     clear && spy.clear();
     spy._all = null;
-    spy.setLogs(ctx.exp('%$studio/spyLogs%').join(','))
+    spy.setLogs([...ctx.exp('%$studio/spyLogs%'),'error'].join(','))
     ctx.run(refreshControlById({id: 'event-logs', strongRefresh: true}))
   }
 })
@@ -308,6 +308,8 @@ jb.component('studio.eventItems', {
       ev.ctx = (event || []).filter(x=>x && x.componentContext)[0]
       ev.ctx = ev.ctx || (event || []).filter(x=>x && x.path)[0]
       ev.path = ev.ctx && ev.ctx.path
+      if (Array.isArray(ev.path)) ev.path = ev.path.join('~')
+      if (typeof ev.path != 'string') ev.path = null
       ev.compName = ev.path && st.compNameOfPath(ev.path)
       ev.cmp = (event || []).filter(x=>x && x.base && x.refresh)[0]
       ev.elem = ev.cmp && ev.cmp.base || (event || []).filter(x=>x && x.nodeType)[0]

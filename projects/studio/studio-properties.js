@@ -79,7 +79,8 @@ jb.component('studio.properties', {
             allowSelfRefresh: true
           }),
           tableTree.expandPath(studio.lastEdit()),
-          tableTree.expandPath('%$innerPath%')
+          tableTree.expandPath('%$innerPath%'),
+          tableTree.dragAndDrop()
         ]
       }),
       group({

@@ -167,12 +167,12 @@ jb.component('studio.jbEditorMenu', {
       menu.studioWrapWith({
         path: '%$path%',
         type: 'style',
-        components: list('style-with-features')
+        components: list('styleWithFeatures')
       }),
       menu.studioWrapWith({
         path: '%$path%',
         type: 'data',
-        components: list('pipeline', 'list', 'first-succeeding')
+        components: list('pipeline', 'list', 'firstSucceeding')
       }),
       menu.studioWrapWith({
         path: '%$path%',

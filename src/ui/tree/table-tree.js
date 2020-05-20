@@ -79,10 +79,11 @@ jb.component('tableTree.init', {
     interactiveProp('treeModel', '%$$model.treeModel%'),
     interactive(
         (ctx,{cmp}) => {
-            cmp.state.expanded = jb.objFromEntries(Array.from(cmp.base.querySelectorAll('[expanded=true]'))
+          cmp.elemToPath = el => el && (el.getAttribute('path') || jb.ui.closest(el,'.jb-item') && jb.ui.closest(el,'.jb-item').getAttribute('path'))
+          cmp.state.expanded = jb.objFromEntries(Array.from(cmp.base.querySelectorAll('[expanded=true]'))
                     .map(x=>x.getAttribute('path')).concat([cmp.treeModel.rootPath]).map(x=>[x,true]))
             cmp.flip = (event) => {
-                const path = elemToPath(event.target)
+                const path = cmp.elemToPath(event.target)
                 if (!path) debugger
                 path.split('~').slice(0,-1).reduce((base, x) => {
                     const inner = base != null ? (base + '~' + x) : x;
@@ -92,7 +93,6 @@ jb.component('tableTree.init', {
                 cmp.state.expanded[path] = !(cmp.state.expanded[path]);
                 cmp.refresh(null,{srcCtx: ctx.componentContext});
             }
-            function elemToPath(el) { return el && (el.getAttribute('path') || jb.ui.closest(el,'.jb-item') && jb.ui.closest(el,'.jb-item').getAttribute('path')) }
         }
       ),
     feature.init(
@@ -156,8 +156,8 @@ jb.component('tableTree.plain', {
         Array.from(new Array(maxDepth+1)).map(f=>h('th',{class: 'th-expand-collapse'})).concat(
             [...cmp.leafFields, ...cmp.commonFields].map(f=>h('th',{'jb-ctx': f.ctxId},jb.ui.fieldTitle(cmp,f,h))) )))]),
         h('tbody',{class: 'jb-drag-parent'},
-          items.map((item,index)=> h('tr',{ class: 'jb-item', path: item.path, expanded: expanded[item.path] },
-            [...cmp.expandingFieldsOfItem(item).map(f=>h('td',
+          items.map((item,index)=> h('tr#jb-item', {path: item.path, expanded: expanded[item.path] },
+            [...cmp.expandingFieldsOfItem(item).map(f=>h('td#drag-handle',
               f.empty ? { class: 'empty-expand-collapse'} :
                 f.toggle ? {class: 'expandbox' } : {class: 'headline', colSpan: f.colSpan, onclick: 'flip' },
               f.empty ? '' : f.toggle ? h('span',{}, h('i',{class:'material-icons noselect', onclick: 'flip'  },
@@ -203,3 +203,42 @@ jb.component('tableTree.expandPath', {
   })
 })
 
+jb.component('tableTree.dragAndDrop', {
+  type: 'feature',
+  impl: ctx => ({
+		onkeydown: true,
+    componentDidUpdate : cmp => cmp.drake && (cmp.drake.containers = jb.ui.find(cmp.base,'.jb-drag-parent')),
+  		afterViewInit: cmp => {
+        const drake = cmp.drake = dragula([], {
+          moves: (el, source, handle) => jb.ui.parents(handle,{includeSelf: true}).some(x=>jb.ui.hasClass(x,'drag-handle')) && (el.getAttribute('path') || '').match(/[0-9]$/)
+	    	})
+        drake.containers = jb.ui.find(cmp.base,'.jb-drag-parent')
+          //jb.ui.findIncludeSelf(cmp.base,'.jb-array-node').map(el=>el.children()).filter('.treenode-children').get();
+        drake.on('drag', function(el, source) {
+          const path = cmp.elemToPath(el)
+          el.dragged = { path, expanded: cmp.state.expanded[path]}
+          delete cmp.state.expanded[path]; // collapse when dragging
+        })
+
+        drake.on('drop', (dropElm, target, source,_targetSibling) => {
+          if (!dropElm.dragged) return;
+          dropElm.parentNode.removeChild(dropElm);
+          cmp.state.expanded[dropElm.dragged.path] = dropElm.dragged.expanded; // restore expanded state
+//          const state = treeStateAsRefs(cmp);
+          const targetSibling = _targetSibling; // || target.lastElementChild == dropElm && target.previousElementSibling
+          let targetPath = targetSibling ? cmp.elemToPath(targetSibling) : target.lastElementChild ? addToIndex(cmp.elemToPath(target.lastElementChild),1) : cmp.elemToPath(target);
+          // strange dragule behavior fix
+          const draggedIndex = Number(dropElm.dragged.path.split('~').pop());
+          const targetIndex = Number(targetPath.split('~').pop()) || 0;
+          if (target === source && targetIndex > draggedIndex)
+            targetPath = addToIndex(targetPath,-1)
+          const sameParent = dropElm.dragged.path.split('~').slice(0,-1).join('~') == targetPath.split('~').slice(0,-1).join('~')
+          if (sameParent)
+            cmp.treeModel.move(dropElm.dragged.path,targetPath,ctx);
+//          restoreTreeStateFromRefs(cmp,state);
+          dropElm.dragged = null;
+          cmp.refresh({strongRefresh: true},{srcCtx: ctx})
+          })
+      	},
+  	})
+})

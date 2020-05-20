@@ -9,7 +9,7 @@ jb.component('letmesee.main', {
         controls: [
           {$: 'itemlist', 
             items: '%$room-eng/items/paragraph%', 
-            controls :{$: 'control.first-succeeding', 
+            controls :{$: 'control.firstSucceeding', 
               controls: [
                 {$: 'control-with-condition', 
                   condition: '%type% == "image"', 
