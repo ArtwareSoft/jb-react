@@ -82,7 +82,7 @@ jb.pptr = {
         pipe(receive,take(1),
             doPromise(m => m.res == 'loadCodeReq' && ctx.setVar('comp',comp).run(pptr.sendCodeToServer())),
             subscribe(()=> comp.commands.next({run: ctx.profile})))
-        pipe(receive,subscribe(message =>jb.push(databindEvents, message,ctx)))
+        pipe(receive,subscribe(message =>databindEvents && jb.push(databindEvents, message,ctx)))
         
         return comp
     },
@@ -105,15 +105,15 @@ jb.component('pptr.sendCodeToServer', {
 })
 
 jb.component('pptr.session', {
-    description: 'starts puppeteer session, returns object that can be used to interact with the server',
-    type: 'action,rx,has-side-effects',
-    category: 'source',    
-    params: [
-        {id: 'showBrowser', as: 'boolean' },
-        {id: 'databindEvents', as: 'ref', description: 'bind events from puppeteer to array (watchable)' },
-        {id: 'actions', type: 'rx[]', ignore: true, templateValue: [] },
-    ],
-    impl: (ctx,showBrowser,databindEvents) => jb.pptr.createComp(ctx,{showBrowser,databindEvents})
+  description: 'starts puppeteer session, returns object that can be used to interact with the server',
+  type: 'action,rx,has-side-effects',
+  category: 'source',
+  params: [
+    {id: 'showBrowser', as: 'boolean'},
+    {id: 'databindEvents', as: 'ref', description: 'bind events from puppeteer to array (watchable)'},
+    {id: 'actions', type: 'rx[]', ignore: true, templateValue: []}
+  ],
+  impl: (ctx,showBrowser,databindEvents) => jb.pptr.createComp(ctx,{showBrowser,databindEvents})
 })
 
 jb.component('pptr.remoteActions', {

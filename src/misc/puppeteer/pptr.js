@@ -217,7 +217,10 @@ jb.component('pptr.gotoMainFrame', {
 
 jb.component('pptr.contentFrame', {
     type: 'rx,pptr',
-    impl: rx.mapPromise(({data}) => data.contentFrame && data.contentFrame()),
+    impl: rx.innerPipe(
+        rx.mapPromise(({data}) => data.contentFrame && data.contentFrame()),
+        rx.var('frame')
+    )
 })
 
 jb.component('pptr.gotoFrameById', {
@@ -226,9 +229,8 @@ jb.component('pptr.gotoFrameById', {
       {id: 'frameId', as: 'string', mandatory: true }
     ],
     impl: rx.innerPipe(
-        pptr.querySelector('%$frameId%'),
+        pptr.querySelector('#%$frameId%'),
         pptr.contentFrame(),
-        rx.var('frame')
     )
 })
 

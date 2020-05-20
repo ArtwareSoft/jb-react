@@ -137,7 +137,8 @@ jb.component('puppeteerDemo.preview', {
             pptr.gotoPage(
               'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?project=itemlists&page=itemlists.main&profile_path=itemlists.main&host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/itemlists'
             ),
-            pptr.gotoFrameById('jb-preview'),
+            pptr.querySelector('#jb-preview'),
+            pptr.contentFrame(),
             pptr.extractBySelector({selector: '.jb-item span', extract: 'textContent'})
           ]
         })

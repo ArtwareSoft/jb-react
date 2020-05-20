@@ -44,13 +44,13 @@ jb.component('rx.var', {
   type: 'rx',
   description: 'define a variable that can be used later in the pipe',
   params: [
-    {id: 'name', as: 'string', mandatory: true},
+    {id: 'name', as: 'string', dynamic: true, mandatory: true, description: 'if empty, does nothing'},
     {id: 'value', dynamic: true, defaultValue: '%%', mandatory: true},
   ],
   impl: (ctx,name,value) => source => (start, sink) => {
     if (start != 0) return 
     return source(0, function Var(t, d) {
-      sink(t, t === 1 ? d && d.setVar && d.setVar(name,value(d)) : d)
+      sink(t, t === 1 ? d && d.setVar && d.setVar(name(),value(d)) : d)
     })
   }
 })
