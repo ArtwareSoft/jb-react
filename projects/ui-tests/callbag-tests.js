@@ -391,7 +391,18 @@ jb.component('dataTest.callbag.promiseRejectionInDoPromise', {
   impl: dataTest({
     calculate: rx.pipe(
       rx.fromIter([1]),
-      rx.doPromise( () => new Promise((res,rej) => jb.delay(1).then(()=>rej('err'))) ), 
+      rx.doPromise(() => new Promise((res,rej) => jb.delay(1).then(()=>rej('err')))), 
+      rx.catchError('%%1')
+    ),
+    expectedResult: equals('err1')
+  })
+})
+
+jb.component('dataTest.callbag.ThrowInMapPromise', {
+  impl: dataTest({
+    calculate: rx.pipe(
+      rx.fromIter([1]),
+      rx.mapPromise(() => jb.delay(1).then(() => { throw 'err' })), 
       rx.catchError('%%1')
     ),
     expectedResult: equals('err1')
