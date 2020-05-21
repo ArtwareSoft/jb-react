@@ -5,15 +5,13 @@ jb.component('pptr.gotoPage', {
   params: [
     {id: 'url', as: 'string', mandatory: true},
     {id: 'waitUntil', as: 'string', defaultValue: 'load', options: 'load:load event is fired,domcontentloaded:DOMContentLoaded event is fired,networkidle0:no more than 0 network connections for at least 500 ms,networkidle2:no more than 2 network connections for at least 500 ms'},
-    {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait for in milliseconds'}
+    {id: 'timeout', as: 'number', defaultValue: 5000, description: 'maximum time to wait for in milliseconds'}
   ],
   impl: rx.innerPipe(
     rx.var('url', '%$url%'),
     rx.doPromise(
         ({},{page},{url,waitUntil,timeout}) => page.goto(url,{waitUntil, timeout})
-      ),
-    rx.mapPromise(({},{page}) => page.title()),
-    rx.var('pageTitle'),
+      )
   )
 })
 

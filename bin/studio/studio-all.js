@@ -40500,7 +40500,12 @@ jb.component('studio.jbEditor', {
     layout: layout.horizontalFixedSplit({leftWidth: '350px', rightWidth: '100%'}),
     controls: [
       studio.jbEditorInteliTree('%$path%'),
-      studio.probeDataView()
+      group({
+        controls: [
+          studio.probeDataView()
+        ],
+        features: [feature.if(not('%$studio/hideProbe%')), watchRef('%$studio/hideProbe%')]
+      })
     ],
     features: [id('jbEditor'), css.padding('10'), css.height({height: '800', minMax: 'max'})]
   })
