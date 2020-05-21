@@ -377,6 +377,15 @@ jb.component('pptr.gotoFrameById', {
     )
 })
 
+jb.component('pptr.javascriptOnPptr', {
+    type: 'rx,pptr',
+    description: 'run the function on the pptr server using pptr api',
+    params: [
+        {id: 'func', dynamic: true, mandatory: true}
+    ],
+    impl: rx.mapPromise((ctx,{},{func}) => func())
+})
+
 // page.mouse.move(100, 100);
 // page.mouse.down();
 // page.mouse.move(200, 200);

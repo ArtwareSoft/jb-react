@@ -243,7 +243,13 @@ jb.component('studio.eventView', {
           style: button.href(),
           features: [
             feature.hoverTitle('%path%'),
-            feature.onHover({action: studio.highlightByPath('%path%')})
+            feature.onHover({action: studio.highlightByPath('%path%')}),
+            ctrlAction(
+              runActions(
+                writeValue('%$studio/profile_path%', '%$path%'),
+                studio.openProperties()
+              )
+            )
           ]
         })
       ),
