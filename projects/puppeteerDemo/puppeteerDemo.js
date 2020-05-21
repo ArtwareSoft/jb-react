@@ -43,7 +43,7 @@ jb.component('puppeteerDemo.main', {
             action: pptr.session({
               showBrowser: true,
               databindEvents: '%$events%',
-              actions: pptr.function(
+              actions: pptr.javascriptOnPptr(
                 async (ctx,{page}) => {
   await page.goto('https://google.com', { waitUntil: 'networkidle0' })
 //const title = await page.title()

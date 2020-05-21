@@ -383,7 +383,7 @@ jb.component('pptr.javascriptOnPptr', {
     params: [
         {id: 'func', dynamic: true, mandatory: true}
     ],
-    impl: rx.mapPromise((ctx,{},{func}) => func())
+    impl: rx.mapPromise((ctx,{},{func}) => func(ctx))
 })
 
 // page.mouse.move(100, 100);
