@@ -100,6 +100,10 @@ jb.pptr = {
         
         return comp
     },
+    runMethod(ctx,method,...args) {
+        const obj = [ctx.data,ctx.vars.frame,ctx.vars.page].filter(x=>x[method])[0]
+        return obj && obj[method](...args)
+    }
 }
 
 jb.component('pptr.sendCodeToServer', {
@@ -184,12 +188,8 @@ jb.component('pptr.extractBySelector', {
         {id: 'timeout', as: 'number', defaultValue: 5000, description: 'maximum time to wait in milliseconds' },
     ],
     impl: rx.innerPipe(
-        rx.doPromise((ctx,{frame},{selector,timeout}) => frame.waitForSelector(selector,{timeout})),
-        rx.mapPromise((ctx,{frame},{selector,extract,multiple}) => 
-            frame.evaluate(`_jb_extract = '${extract}'`).then(()=>
-                multiple ? frame.$$eval(selector, elems => elems.map(el=>el[_jb_extract]))
-                : frame.$eval(selector, el => [el[_jb_extract]] ))), 
-                rx.flatMapArrays('%%'),
+        rx.doPromise((ctx,{},{selector,timeout}) => jb.pptr.runMethod(ctx,'waitForSelector',selector,{timeout})),
+        rx.mapPromise((ctx,{},{selector,multiple}) => jb.pptr.runMethod(ctx,multiple ? '$$' : '$',selector)),
         pptr.logData()
     )
 })
@@ -200,7 +200,7 @@ jb.component('pptr.querySelector', {
         {id: 'selector', as: 'string' },
         {id: 'multiple', as: 'boolean', description: 'querySelectorAll' },
     ],
-    impl: rx.mapPromise((ctx,{frame},{selector,multiple}) => multiple ? frame.$$(selector) : frame.$(selector)),
+    impl: rx.mapPromise((ctx,{},{selector,multiple}) => jb.pptr.runMethod(ctx,multiple ? '$$' : '$',selector)),
 })
 
 jb.component('pptr.waitForSelector', {
@@ -211,7 +211,7 @@ jb.component('pptr.waitForSelector', {
         {id: 'hidden ', as: 'boolean', description: 'wait for element to not be found in the DOM or to be hidden' },
         {id: 'timeout', as: 'number', defaultValue: 5000, description: 'maximum time to wait for in milliseconds' },
     ],
-    impl: rx.doPromise((ctx,{frame},{selector,visible,hidden, timeout}) => frame.waitForSelector(selector,{visible,hidden, timeout}))
+    impl: rx.doPromise((ctx,{},{selector,visible,hidden, timeout}) => jb.pptr.runMethod(ctx,'waitForSelector',selector,{visible,hidden, timeout}))
 })
 
 jb.component('pptr.extractWithEval', {
@@ -221,7 +221,7 @@ jb.component('pptr.extractWithEval', {
     {id: 'expression', as: 'string', mandatory: true}
   ],
   impl: rx.innerPipe(
-    rx.mapPromise((ctx,{frame},{expression}) => frame.evaluate(expression)),
+    rx.mapPromise((ctx,{},{expression}) => jb.pptr.runMethod(ctx,'evaluate',expression)),
     pptr.logData()
   )
 })
@@ -234,9 +234,9 @@ jb.component('pptr.eval', {
     {id: 'varName', as: 'string', description: 'leave empty for no vars'}
   ],
   impl: If('%$varName%', rx.innerPipe(
-            rx.mapPromise((ctx,{frame},{expression}) => frame.evaluate(expression)),
+            rx.mapPromise((ctx,{},{expression}) => jb.pptr.runMethod(ctx,'evaluate',expression)),
             rx.var('%$varName%')
-        ), rx.mapPromise((ctx,{frame},{expression}) => frame.evaluate(expression)))
+        ), rx.mapPromise((ctx,{},{expression}) => jb.pptr.runMethod(ctx,'evaluate',expression)))
 })
 
 jb.component('pptr.mouseClick', {
@@ -247,7 +247,7 @@ jb.component('pptr.mouseClick', {
         {id: 'clickCount', as: 'number', description: 'default is 1' },
         {id: 'delay', as: 'number', description: 'Time to wait between mousedown and mouseup in milliseconds. Defaults to 0' },
     ],
-    impl: rx.mapPromise((ctx,{frame},{selector,button,clickCount,delay}) => frame.click(selector, {button,clickCount,delay}))
+    impl: rx.mapPromise((ctx,{},{selector,button,clickCount,delay}) => jb.pptr.runMethod(ctx,'click',selector, {button,clickCount,delay}))
 })
 
 jb.component('pptr.waitForFunction', {
@@ -255,21 +255,9 @@ jb.component('pptr.waitForFunction', {
     params: [
         {id: 'condition', as: 'string' },
         {id: 'polling', type: 'pptr.polling', defaultValue: pptr.raf() },
-        {id: 'timeout', as: 'number', defaultValue: 30000, description: '0 to disable, maximum time to wait for in milliseconds' },
+        {id: 'timeout', as: 'number', defaultValue: 5000, description: '0 to disable, maximum time to wait for in milliseconds' },
     ],
-    impl: rx.mapPromise((ctx,{frame},{condition,polling,timeout}) => frame.waitForFunction(condition,{polling, timeout}))
-})
-
-jb.component('pptr.waitForNavigation', {
-    type: 'rx,pptr',
-    params: [
-        {id: 'waitUntil', as: 'string', options: [
-            'load:load event is fired','domcontentloaded:DOMContentLoaded event is fired',
-            'networkidle0:no more than 0 network connections for at least 500 ms',
-            'networkidle2:no more than 2 network connections for at least 500 ms'].join(',')},
-        {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait for in milliseconds' },
-    ],
-    impl: rx.mapPromise((ctx,{frame},{waitUntil,timeout}) => frame.waitForNavigation({waitUntil, timeout}))
+    impl: rx.mapPromise((ctx,{},{condition,polling,timeout}) => jb.pptr.runMethod(ctx,'waitForFunction',condition,{polling, timeout}))
 })
 
 jb.component('pptr.type', {
@@ -280,11 +268,10 @@ jb.component('pptr.type', {
         {id: 'selector', as: 'string', defaultValue: 'form input[type=text]' },
         {id: 'enterAtEnd', as: 'boolean', defaultValue: true },
         {id: 'delay', as: 'number', defaultValue: 100, description: 'time between clicks' },
-        {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait in milliseconds' },
     ],
     impl: rx.innerPipe(
-        rx.doPromise((ctx,{frame},{selector,timeout}) => frame.waitForSelector(selector,{timeout})),
-        rx.doPromise((ctx,{frame},{text, enterAtEnd, selector,delay}) => frame.type(selector, text + (enterAtEnd ? String.fromCharCode(13): ''), {delay}))
+        rx.waitForSelector('%$selector%'),
+        rx.doPromise((ctx,{},{text, enterAtEnd, selector,delay}) => jb.pptr.runMethod(ctx,'type',selector, text + (enterAtEnd ? String.fromCharCode(13): ''), {delay}))
     )
 })
 
@@ -332,30 +319,12 @@ jb.component('pptr.endlessScrollDown', {
 
 // ************ frames *********
 
-jb.component('pptr.gotoMainFrame', {
-  type: 'rx,pptr',
-  impl: rx.var(
-    'frame',
-    (ctx,{page}) => page.mainFrame()
-  )
-})
-
-jb.component('pptr.contentFrame', {
+jb.component('pptr.gotoInnerFrameBody', {
     type: 'rx,pptr',
     impl: rx.innerPipe(
-        rx.mapPromise(({data}) => Promise.resolve().then(() => data.contentFrame())),
-        rx.var('frame')
-    )
-})
-
-jb.component('pptr.gotoFrameById', {
-    type: 'rx,pptr',
-    params: [
-      {id: 'frameId', as: 'string', mandatory: true }
-    ],
-    impl: rx.innerPipe(
-        pptr.querySelector('#%$frameId%'),
-        pptr.contentFrame(),
+        pptr.waitForSelector('iframe'),
+        pptr.waitForFunction("document.querySelector('iframe').contentDocument"),
+        pptr.waitForFunction("document.querySelector('iframe').contentDocument.body"),
     )
 })
 
