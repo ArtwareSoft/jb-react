@@ -168,7 +168,6 @@ jb.component('studio.eventTracker', {
                 type: data.switch({cases: [data.case('%log% == error', 'mdc')], default: 'mdi'}),
                 size: '16'
               }),
-              css('background-color1: transparent; color1: var(--jb-descriptionForeground);')
             ]
           }),
           text({
@@ -281,6 +280,10 @@ jb.component('studio.eventView', {
         text({text: pipeline('%ctx/data%', slice('0', 20))})
       ),
       controlWithCondition(
+        '%error%',
+        text({text: pipeline('%error/message%', slice('0', 30))})
+      ),      
+      controlWithCondition(
         '%ctx%',
         button({
           vars: [Var('count', pipeline('%ctx/vars%', keys(), count()))],
@@ -311,6 +314,10 @@ jb.component('studio.eventItems', {
 
     function enrich(event) {
       const ev = { event, log: event[1], index: event[0] }
+      if (ev.log == 'pptrError') {
+        ev.log = 'error'
+        ev.error = event[2].err
+      }
       ev.ctx = (event || []).filter(x=>x && x.componentContext)[0]
       ev.ctx = ev.ctx || (event || []).filter(x=>x && x.path)[0]
       ev.path = ev.ctx && ev.ctx.path
