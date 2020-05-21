@@ -139,8 +139,13 @@ jb.component('puppeteerDemo.preview', {
             ),
             pptr.waitForSelector('#jb-preview'),
             pptr.querySelector('#jb-preview'),
-            pptr.contentFrame(),
-            pptr.waitForSelector('.jb-item span')
+            pptr.javascriptOnPptr(
+              async (ctx,{page}) => {
+const frame = await ctx.data.contentFrame()
+const content = await frame.content()
+return content
+}
+            )
           ]
         })
       })

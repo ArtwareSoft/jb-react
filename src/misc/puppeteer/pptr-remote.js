@@ -62,7 +62,7 @@ jb.pptr = {
             if (typeof obj == 'object') {
                 if (obj.constructor.name == 'Frame') obj = `Frame: ${obj._url}`
                 else if (obj.message && obj.stack) obj = {$: 'error', message: obj.message, stack: obj.stack}
-                else if (obj.constructor.name == 'ElementHandle') obj = `Elem: ${obj.toString()}`
+                else if (obj.constructor.name == 'ElementHandle') obj = `Elem: ${obj._remoteObject.description}`
                 else if (!(obj.constructor.name||'').match(/^Object|Array$/))
                     obj = obj.constructor.name
             }
