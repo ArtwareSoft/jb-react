@@ -79,8 +79,8 @@ function do_jb_run(ctx,parentParam,settings) {
     }
   } catch (e) {
 //    log('exception', [e && e.message, e, ctx,parentParam,settings])
+    if (ctx.vars.$throw) throw e;
     logException(e,'exception while running run',ctx,parentParam,settings);
-    //if (ctx.vars.$throw) throw e;
   }
 }
 
@@ -2568,8 +2568,8 @@ jb.component('formatDate', {
           })
           return () => talkback && talkback(2) // dispose
       },
-      mapPromise: promiseF => source => jb.callbag.concatMap(d => jb.callbag.fromPromise(Promise.resolve(promiseF(d))))(source),
-      doPromise: promiseF => source =>  jb.callbag.concatMap(d => jb.callbag.fromPromise(Promise.resolve(promiseF(d)).then(()=>d)))(source),
+      mapPromise: promiseF => source => jb.callbag.concatMap(d => jb.callbag.fromPromise(Promise.resolve().then(()=>promiseF(d))))(source),
+      doPromise: promiseF => source =>  jb.callbag.concatMap(d => jb.callbag.fromPromise(Promise.resolve().then(()=>promiseF(d)).then(()=>d)))(source),
       toPromise: source => {
           return new Promise((resolve, reject) => {
             jb.callbag.subscribe({

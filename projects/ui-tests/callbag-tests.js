@@ -398,11 +398,23 @@ jb.component('dataTest.callbag.promiseRejectionInDoPromise', {
   })
 })
 
-jb.component('dataTest.callbag.ThrowInMapPromise', {
+jb.component('dataTest.callbag.throwInMapPromise', {
   impl: dataTest({
     calculate: rx.pipe(
-      rx.fromIter([1]),
+      rx.fromIter([2]),
       rx.mapPromise(() => jb.delay(1).then(() => { throw 'err' })), 
+      rx.catchError('%%1')
+    ),
+    expectedResult: equals('err1')
+  })
+})
+
+jb.component('dataTest.callbag.throwInMapPromise2', {
+  impl: dataTest({
+    vars: Var('$throw',true),
+    calculate: rx.pipe(
+      rx.fromIter([2]),
+      rx.mapPromise(() => { throw 'err'}),
       rx.catchError('%%1')
     ),
     expectedResult: equals('err1')

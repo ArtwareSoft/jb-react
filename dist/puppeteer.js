@@ -18,15 +18,21 @@ jb.pptr = {
             commands: subject(),
         }
         const actions = jb.asArray(ctx.profile.actions)
+        let lastCtx = ctx
         const wrappedActions = actions.flatMap( (action,i) => action ? [
                 rx.doPromise( ctx => comp.events.next({$: 'Started', ctx, path: `actions~${i}` })),
                 actions[i],
-                rx.catchError( error => { comp.events.next({$: 'Error', error, path: `actions~${i}`, ctx }); return ctx }),
-                rx.doPromise( ctx => comp.events.next({$: 'Emit', ctx, path: `actions~${i}` })),
+                rx.catchError( error => { comp.events.next({$: 'Error', error, path: `actions~${i}`, ctx }); return lastCtx }),
+                rx.doPromise( ctx => {
+                    lastCtx = ctx; 
+                    comp.events.next({$: 'Emit', ctx, path: `actions~${i}` }) 
+                }),
         ] : [])
+
 
         ctx.run(
             rx.pipe(
+                Var('$throw',true),
                 rx.fromPromise(() => this.getOrCreateBrowser(showBrowser)),
                 rx.var('browser'),
                 rx.mapPromise(({},{browser}) => browser.newPage()),

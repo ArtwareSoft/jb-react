@@ -79,8 +79,8 @@ function do_jb_run(ctx,parentParam,settings) {
     }
   } catch (e) {
 //    log('exception', [e && e.message, e, ctx,parentParam,settings])
+    if (ctx.vars.$throw) throw e;
     logException(e,'exception while running run',ctx,parentParam,settings);
-    //if (ctx.vars.$throw) throw e;
   }
 }
 
