@@ -140,7 +140,7 @@ jb.component('puppeteerDemo.preview', {
             pptr.waitForSelector('#jb-preview'),
             pptr.querySelector('#jb-preview'),
             pptr.contentFrame(),
-            pptr.extractBySelector({selector: '.jb-item span', extract: 'textContent'})
+            pptr.waitForSelector('.jb-item span')
           ]
         })
       })
