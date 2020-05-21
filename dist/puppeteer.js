@@ -22,7 +22,7 @@ jb.pptr = {
         const wrappedActions = actions.flatMap( (action,i) => action ? [
                 rx.doPromise( ctx => comp.events.next({$: 'Started', ctx, path: `actions~${i}` })),
                 actions[i],
-                rx.catchError( errCtx => { comp.events.next({$: 'Error', error: errCtx.data, path: `actions~${i}`, ctx }); return lastCtx }),
+                rx.catchError( err => { comp.events.next({$: 'Error', err, path: `actions~${i}`, ctx }); return lastCtx }),
                 rx.doPromise( ctx => {
                     lastCtx = ctx; 
                     comp.events.next({$: 'Emit', ctx, path: `actions~${i}` }) 
@@ -172,26 +172,6 @@ jb.component('pptr.logActivity', {
     ],
     impl: rx.doPromise((ctx,{comp},{activity, description}) => comp.events.next({$: 'Activity', activity, description, ctx }))
 })
-
-/*
-jb.component('pptr.info', {
-    type: 'rx,pptr',
-    params: [
-        {id: 'info', as: 'string', mandatory: true },
-        {id: 'description', as: 'string' },
-    ],
-    impl: rx.doPromise((ctx,{comp},{info, description}) => comp.events.next({$: 'Info', info, description, ctx }))
-})
-
-jb.component('pptr.Error', {
-    type: 'rx,pptr',
-    params: [
-        {id: 'error', as: 'string', mandatory: true },
-        {id: 'description', as: 'string' },
-    ],
-    impl: rx.doPromise((ctx,{comp},{error, description}) => comp.events.next({$: 'Error', error, description, ctx }))
-})
-*/
 
 jb.component('pptr.extractBySelector', {
     type: 'rx,pptr',
