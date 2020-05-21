@@ -22,7 +22,7 @@ jb.pptr = {
         const wrappedActions = actions.flatMap( (action,i) => action ? [
                 rx.doPromise( ctx => comp.events.next({$: 'Started', ctx, path: `actions~${i}` })),
                 actions[i],
-                rx.catchError( err => { comp.events.next({$: 'Error', err, path: `actions~${i}`, ctx }); return lastCtx }),
+                rx.catchError( err => { comp.events.next({$: 'Error', err: err && err.data || err, path: `actions~${i}`, ctx }); return lastCtx }),
                 rx.doPromise( ctx => {
                     lastCtx = ctx; 
                     comp.events.next({$: 'Emit', ctx, path: `actions~${i}` }) 
