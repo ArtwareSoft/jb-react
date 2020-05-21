@@ -360,7 +360,7 @@ jb.component('studio.jbEditorInteliTree', {
   ],
   impl: tree({
     nodeModel: studio.jbEditorNodes('%$path%'),
-    style: tree.expandBox(true),
+    style: tree.expandBox({showIcon: true, lineWidth: '800px'}),
     features: [
       css.class('jb-editor'),
       tree.selection({

@@ -315,8 +315,8 @@ jb.component('defaultTheme', {
     
       --jb-menu-background: #ffffff;
       --jb-menu-foreground: #616161;
-      --jb-menu-selectionBackground: #0074e8;
-      --jb-menu-selectionForeground: #ffffff;
+      --jb-menu-selectionBackground: #eee;
+      --jb-menu-selectionForeground: #111;
       --jb-menu-separatorBackground: #888888;
       --jb-menubar-selectionBackground: rgba(0, 0, 0, 0.1);
       --jb-menubar-selectionForeground: #333333;

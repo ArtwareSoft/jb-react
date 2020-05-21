@@ -9,7 +9,8 @@ jb.pptr = {
     },
     getOrCreateBrowser(showBrowser) {
         if (this._browser) return Promise.resolve(this._browser)
-        return this.puppeteer().launch({headless: !showBrowser}).then(browser => this._browser = browser)
+        return this.puppeteer().launch({headless: !showBrowser, args: ['--disable-web-security',
+        '--disable-features=IsolateOrigins,site-per-process']}).then(browser => this._browser = browser)
     },
     createServerComp(ctx,{showBrowser}) {
         const {subject, subscribe, pipe, map, Do } = jb.callbag

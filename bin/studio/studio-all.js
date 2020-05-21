@@ -4635,8 +4635,8 @@ jb.component('defaultTheme', {
     
       --jb-menu-background: #ffffff;
       --jb-menu-foreground: #616161;
-      --jb-menu-selectionBackground: #0074e8;
-      --jb-menu-selectionForeground: #ffffff;
+      --jb-menu-selectionBackground: #eee;
+      --jb-menu-selectionForeground: #111;
       --jb-menu-separatorBackground: #888888;
       --jb-menubar-selectionBackground: rgba(0, 0, 0, 0.1);
       --jb-menubar-selectionForeground: #333333;
@@ -40469,7 +40469,7 @@ jb.component('studio.jbEditorInteliTree', {
   ],
   impl: tree({
     nodeModel: studio.jbEditorNodes('%$path%'),
-    style: tree.expandBox(true),
+    style: tree.expandBox({showIcon: true, lineWidth: '800px'}),
     features: [
       css.class('jb-editor'),
       tree.selection({
@@ -42733,12 +42733,7 @@ jb.component('studio.eventView', {
           features: [
             feature.hoverTitle('%path%'),
             feature.onHover({action: studio.highlightByPath('%path%')}),
-            ctrlAction(
-              runActions(
-                writeValue('%$studio/profile_path%', '%$path%'),
-                studio.openProperties()
-              )
-            )
+            ctrlAction(studio.openComponentInJbEditor('%path%'))
           ]
         })
       ),
@@ -42772,7 +42767,7 @@ jb.component('studio.eventView', {
       controlWithCondition(
         '%error%',
         text({text: pipeline('%error/message%', slice('0', 30))})
-      ),      
+      ),
       controlWithCondition(
         '%ctx%',
         button({

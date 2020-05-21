@@ -243,12 +243,7 @@ jb.component('studio.eventView', {
           features: [
             feature.hoverTitle('%path%'),
             feature.onHover({action: studio.highlightByPath('%path%')}),
-            ctrlAction(
-              runActions(
-                writeValue('%$studio/profile_path%', '%$path%'),
-                studio.openProperties()
-              )
-            )
+            ctrlAction(studio.openComponentInJbEditor('%path%'))
           ]
         })
       ),
@@ -282,7 +277,7 @@ jb.component('studio.eventView', {
       controlWithCondition(
         '%error%',
         text({text: pipeline('%error/message%', slice('0', 30))})
-      ),      
+      ),
       controlWithCondition(
         '%ctx%',
         button({
