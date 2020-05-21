@@ -43506,6 +43506,22 @@ jb.component('studio.pathHyperlink', {
         action: studio.gotoPath('%$path%'),
         style: button.href(),
         features: feature.hoverTitle('%$path%')
+      }),
+      menu.control({
+        menu: menu.menu({
+          options: menu.action({title: 'undo', action: studio.undo(), icon: icon('undo')}),
+          icon: icon('undo')
+        }),
+        style: menuStyle.toolbar(),
+        features: css.margin({left: '100'})
+      }),
+      editableBoolean({
+        databind: '%$studio/hideProbe%',
+        style: editableBoolean.iconWithSlash('18'),
+        title: 'hide input-output',
+        textForTrue: 'hide probe',
+        textForFalse: 'show probe',
+        features: feature.icon({icon: 'power_input', type: 'mdc'})
       })
     ]
   })

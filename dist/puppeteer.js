@@ -150,13 +150,12 @@ jb.component('pptr.gotoPage', {
     {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait for in milliseconds'}
   ],
   impl: rx.innerPipe(
-    rx.var('url', ({},{},{url}) => url),
+    rx.var('url', '%$url%'),
     rx.doPromise(
         ({},{page},{url,waitUntil,timeout}) => page.goto(url,{waitUntil, timeout})
       ),
     rx.mapPromise(({},{page}) => page.title()),
     rx.var('pageTitle'),
-    pptr.gotoMainFrame()
   )
 })
 
@@ -182,7 +181,7 @@ jb.component('pptr.extractBySelector', {
         {id: 'selector', as: 'string' },
         {id: 'extract', as: 'string', options: 'value,innerHTML,outerHTML,href,textContent', defaultValue: 'textContent'},
         {id: 'multiple', as: 'boolean' },
-        {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait in milliseconds' },
+        {id: 'timeout', as: 'number', defaultValue: 5000, description: 'maximum time to wait in milliseconds' },
     ],
     impl: rx.innerPipe(
         rx.doPromise((ctx,{frame},{selector,timeout}) => frame.waitForSelector(selector,{timeout})),
@@ -210,7 +209,7 @@ jb.component('pptr.waitForSelector', {
         {id: 'selector', as: 'string' },
         {id: 'visible', as: 'boolean', description: 'wait for element to be present in DOM and to be visible, i.e. to not have display: none or visibility: hidden CSS properties' },
         {id: 'hidden ', as: 'boolean', description: 'wait for element to not be found in the DOM or to be hidden' },
-        {id: 'timeout', as: 'number', defaultValue: 30000, description: 'maximum time to wait for in milliseconds' },
+        {id: 'timeout', as: 'number', defaultValue: 5000, description: 'maximum time to wait for in milliseconds' },
     ],
     impl: rx.doPromise((ctx,{frame},{selector,visible,hidden, timeout}) => frame.waitForSelector(selector,{visible,hidden, timeout}))
 })
