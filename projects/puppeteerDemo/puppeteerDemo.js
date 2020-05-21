@@ -138,14 +138,15 @@ jb.component('puppeteerDemo.preview', {
               'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?project=itemlists&page=itemlists.main&profile_path=itemlists.main&host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/itemlists'
             ),
             pptr.waitForSelector('#jb-preview'),
+            pptr.waitForFunction("document.querySelector('iframe').contentDocument.body"),
             pptr.querySelector('#jb-preview'),
-            pptr.javascriptOnPptr(
-              async (ctx,{page}) => {
-const frame = await ctx.data.contentFrame()
-const content = await frame.content()
-return content
-}
-            )
+            pptr.waitForFunction("document.querySelector('iframe').contentDocument.body"),
+            pptr.contentFrame(),
+            pptr.extractBySelector({
+              selector: '.jb-item span',
+              extract: 'textContent',
+              multiple: true
+            })
           ]
         })
       })
