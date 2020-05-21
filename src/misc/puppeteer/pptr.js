@@ -177,6 +177,7 @@ jb.component('pptr.gotoInnerFrameBody', {
         pptr.waitForSelector('iframe'),
         pptr.waitForFunction("document.querySelector('iframe').contentDocument"),
         pptr.waitForFunction("document.querySelector('iframe').contentDocument.body"),
+        pptr.eval("document.querySelector('iframe').contentDocument.body")
     )
 })
 

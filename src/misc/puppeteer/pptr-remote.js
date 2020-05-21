@@ -101,7 +101,7 @@ jb.pptr = {
         return comp
     },
     runMethod(ctx,method,...args) {
-        const obj = [ctx.data,ctx.vars.frame,ctx.vars.page].filter(x=>x[method])[0]
+        const obj = [ctx.data,ctx.vars.frame,ctx.vars.page].filter(x=>x && x[method])[0]
         return obj && obj[method](...args)
     }
 }
