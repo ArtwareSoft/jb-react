@@ -22,7 +22,7 @@ jb.pptr = {
         const wrappedActions = actions.flatMap( (action,i) => action ? [
                 rx.doPromise( ctx => comp.events.next({$: 'Started', ctx, path: `actions~${i}` })),
                 actions[i],
-                rx.catchError( error => { comp.events.next({$: 'Error', error, path: `actions~${i}`, ctx }); return lastCtx }),
+                rx.catchError( errCtx => { comp.events.next({$: 'Error', error: errCtx.data, path: `actions~${i}`, ctx }); return lastCtx }),
                 rx.doPromise( ctx => {
                     lastCtx = ctx; 
                     comp.events.next({$: 'Emit', ctx, path: `actions~${i}` }) 
@@ -73,8 +73,6 @@ jb.pptr = {
         const socket = jb.pptr.createProxySocket()
         socket.onmessage = ({data}) => {
             const message = JSON.parse(data)
-            if (message.error)
-                jb.logError('error from puppeteer',[message.error,ctx])
             message.path = [ctx.path,message.path ||''].join('~')
             jb.log('pptr'+(message.$ ||''),[message])
             receive.next(message)

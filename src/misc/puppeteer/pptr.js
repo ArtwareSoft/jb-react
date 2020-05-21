@@ -34,7 +34,8 @@ jb.component('pptr.logActivity', {
     impl: rx.doPromise((ctx,{comp},{activity, description}) => comp.events.next({$: 'Activity', activity, description, ctx }))
 })
 
-jb.component('pptr.Info', {
+/*
+jb.component('pptr.info', {
     type: 'rx,pptr',
     params: [
         {id: 'info', as: 'string', mandatory: true },
@@ -51,6 +52,7 @@ jb.component('pptr.Error', {
     ],
     impl: rx.doPromise((ctx,{comp},{error, description}) => comp.events.next({$: 'Error', error, description, ctx }))
 })
+*/
 
 jb.component('pptr.extractBySelector', {
     type: 'rx,pptr',
