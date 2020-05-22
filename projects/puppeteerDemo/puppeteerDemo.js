@@ -145,7 +145,10 @@ jb.component('puppeteerDemo.preview', {
               selector: '.jb-item span',
               extract: 'textContent',
               multiple: true
-            })
+            }),
+            rx.flatMapArrays(),
+            pptr.getProperty('textContent'),
+            pptr.logData()
           ]
         })
       })

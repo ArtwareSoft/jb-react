@@ -84,7 +84,7 @@ jb.component('pptr.getProperty', {
     params: [
       {id: 'propName', as: 'string',  options: 'value,innerHTML,outerHTML,href,textContent', mandatory: true}
     ],
-    impl: rx.mapPromise((ctx,{},{propName}) => jb.pptr.runMethod(ctx,'getProperty',propName)),
+    impl: rx.mapPromise((ctx,{},{propName}) => jb.pptr.runMethod(ctx,'evaluate',x=>x[propName])),
 })
 
 jb.component('pptr.eval', {
