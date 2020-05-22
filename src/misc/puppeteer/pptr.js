@@ -10,7 +10,7 @@ jb.component('pptr.gotoPage', {
   impl: rx.innerPipe(
     rx.var('url', '%$url%'),
     rx.doPromise(
-        ({},{page},{url,waitUntil,timeout}) => page.goto(url,{waitUntil, timeout})
+        ({},{},{url,waitUntil,timeout}) => jb.pptr.runMethod(ctx,'goto',url,{waitUntil, timeout})
       )
   )
 })
@@ -76,6 +76,15 @@ jb.component('pptr.extractWithEval', {
     rx.mapPromise((ctx,{},{expression}) => jb.pptr.runMethod(ctx,'evaluate',expression)),
     pptr.logData()
   )
+})
+
+jb.component('pptr.getProperty', {
+    type: 'rx,pptr',
+    description: 'get property of object',
+    params: [
+      {id: 'propName', as: 'string',  options: 'value,innerHTML,outerHTML,href,textContent', mandatory: true}
+    ],
+    impl: rx.mapPromise((ctx,{},{propName}) => jb.pptr.runMethod(ctx,'getProperty',propName)),
 })
 
 jb.component('pptr.eval', {
@@ -176,8 +185,7 @@ jb.component('pptr.gotoInnerFrameBody', {
     impl: rx.innerPipe(
         pptr.waitForSelector('iframe'),
         pptr.waitForFunction("document.querySelector('iframe').contentDocument"),
-        pptr.waitForFunction("document.querySelector('iframe').contentDocument.body"),
-        pptr.eval("document.querySelector('iframe').contentDocument.body")
+        pptr.waitForFunction("document.querySelector('iframe').contentDocument.body")
     )
 })
 
