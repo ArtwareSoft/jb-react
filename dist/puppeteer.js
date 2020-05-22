@@ -10,18 +10,19 @@ jb.pptr = {
     getOrCreateBrowser(showBrowser) {
         if (this._browser) return Promise.resolve(this._browser)
         return this.puppeteer().launch({headless: !showBrowser, 
-            args: ['--disable-features=site-per-process'],
+            args: ['--disable-features=site-per-process','--enable-devtools-experiments'],
             args1: ['--disable-web-security', '--disable-features=IsolateOrigins,site-per-process']}).then(browser => this._browser = browser)
     },
-    createServerComp(ctx,{showBrowser}) {
-        const {subject, subscribe, pipe, map, Do } = jb.callbag
+    createServerComp(ctx,{showBrowser,immediate}) {
+        const {subject, subscribe, pipe, merge, Do } = jb.callbag
         const comp = {
+            immediate,
             events: subject(),
             commands: subject(),
         }
         const actions = jb.asArray(ctx.profile.actions)
         let lastCtx = ctx
-        const wrappedActions = actions.flatMap( (action,i) => action ? [
+        const wrappedActions = immediate ? [] : actions.flatMap( (action,i) => action ? [
                 rx.doPromise( ctx => comp.events.next({$: 'Started', ctx, path: `actions~${i}` })),
                 actions[i],
                 rx.catchError( err => { comp.events.next({$: 'Error', err: err && err.data || err, path: `actions~${i}`, ctx }); return lastCtx }),
@@ -38,14 +39,14 @@ jb.pptr = {
                 rx.fromPromise(() => this.getOrCreateBrowser(showBrowser)),
                 rx.var('browser'),
                 rx.mapPromise(({},{browser}) => browser.newPage()),
-                rx.var('page', ({data}) => data),
+                rx.var('page', '%%'),
                 rx.var('comp',comp),
                 ...wrappedActions,
                 rx.catchError(err =>comp.events.next({$: 'error', err })),
                 rx.subscribe('')
             )
         )
-        pipe(comp.commands, map(cmd=> ctx.run(cmd)), subscribe(() => {}) )
+        pipe(comp.commands, Do(cmd=> ctx.run(cmd)), subscribe(() => {}) )
         pipe(comp.events, subscribe( ev => ctx.vars.clientSocket.send(eventToJson(ev))))
         return comp
 
@@ -70,7 +71,7 @@ jb.pptr = {
             return obj && typeof obj == 'object' && jb.objFromEntries( jb.entries(obj).map(([id,val])=>[id,chopObj(val, depth-1)]).filter(e=>e[1] != null) )
         }
     },
-    createProxyComp(ctx,{databindEvents}) {
+    createProxyComp(ctx,{databindEvents,immediate}) {
         const {pipe,skip,take,subject,subscribe,doPromise} = jb.callbag
         const receive = subject(), commands = subject()
         const socket = jb.pptr.createProxySocket()
@@ -91,7 +92,7 @@ jb.pptr = {
         }
         socket.onopen = () => pipe(commands, subscribe(cmd => socket.send(cmd.run ? jb.prettyPrint(cmd,{noMacros: true}) : JSON.stringify(cmd))))
 
-        const comp = { events: skip(1)(receive), commands }
+        const comp = { immediate, events: skip(1)(receive), commands }
         jb.pptr._proxyComp = comp
         pipe(receive,take(1),
             doPromise(m => m.res == 'loadCodeReq' && ctx.setVar('comp',comp).run(pptr.sendCodeToServer())),
@@ -101,8 +102,15 @@ jb.pptr = {
         return comp
     },
     runMethod(ctx,method,...args) {
-        const obj = [ctx.data,ctx.vars.frame,ctx.vars.page].filter(x=>x && x[method])[0]
-        return obj && obj[method](...args)
+        if (jb.pptr.hasPptrServer() && !ctx.vars.comp.immediate) {
+            const obj = [ctx.data,ctx.vars.frame,ctx.vars.page].filter(x=>x && x[method])[0]
+            return obj && obj[method](...args)
+        } else if (!jb.pptr.hasPptrServer() && ctx.vars.comp.immediate) {
+            this.runMethodFromClient(ctx,method,...args)
+        }
+    },
+    runMethodFromClient(ctx,method,...args) {
+        (ctx.vars.comp || jb.pptr._proxyComp).commands.next({ $: 'runDevToolProtocol',  })
     }
 }
 
@@ -128,10 +136,11 @@ jb.component('pptr.session', {
   category: 'source',
   params: [
     {id: 'showBrowser', as: 'boolean'},
+    {id: 'immediate', as: 'boolean'},
     {id: 'databindEvents', as: 'ref', description: 'bind events from puppeteer to array (watchable)'},
     {id: 'actions', type: 'rx[]', ignore: true, templateValue: []}
   ],
-  impl: (ctx,showBrowser,databindEvents) => jb.pptr.createComp(ctx,{showBrowser,databindEvents})
+  impl: (ctx,showBrowser,immediate,databindEvents) => jb.pptr.createComp(ctx,{showBrowser,immediate,databindEvents})
 })
 
 jb.component('pptr.remoteActions', {
