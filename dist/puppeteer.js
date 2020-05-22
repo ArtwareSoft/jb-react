@@ -165,7 +165,7 @@ jb.component('pptr.gotoPage', {
   impl: rx.innerPipe(
     rx.var('url', '%$url%'),
     rx.doPromise(
-        ({},{},{url,waitUntil,timeout}) => jb.pptr.runMethod(ctx,'goto',url,{waitUntil, timeout})
+        (ctx,{},{url,waitUntil,timeout}) => jb.pptr.runMethod(ctx,'goto',url,{waitUntil, timeout})
       )
   )
 })
