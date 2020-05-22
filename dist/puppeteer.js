@@ -239,7 +239,7 @@ jb.component('pptr.getProperty', {
     params: [
       {id: 'propName', as: 'string',  options: 'value,innerHTML,outerHTML,href,textContent', mandatory: true}
     ],
-    impl: rx.mapPromise((ctx,{},{propName}) => jb.pptr.runMethod(ctx,'evaluate',x=>x[propName])),
+    impl: rx.mapPromise((ctx,{},{propName}) => jb.pptr.runMethod(ctx,'evaluate',(x,prop)=>x[prop],ctx.data,propName )),
 })
 
 jb.component('pptr.eval', {
