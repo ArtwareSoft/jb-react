@@ -42770,6 +42770,10 @@ jb.component('studio.eventView', {
         text({text: pipeline('%ctx/data%', slice('0', 20))})
       ),
       controlWithCondition(
+        '%description%',
+        text({text: pipeline('%description%', slice('0', 30))})
+      ),      
+      controlWithCondition(
         '%error%',
         text({text: pipeline('%error/message%', slice('0', 30))})
       ),
@@ -42826,6 +42830,7 @@ jb.component('studio.eventItems', {
       ev.srcElem = jb.path(ev.srcCtx, 'vars.cmp.base')
       ev.srcPath = jb.path(ev.srcCtx, 'vars.cmp.ctx.path')
       ev.srcCompName = ev.srcPath && st.compNameOfPath(ev.srcPath)
+      ev.description = jb.path(ev,'ctx.data.description')
       return ev
     }
   }

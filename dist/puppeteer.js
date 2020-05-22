@@ -60,7 +60,8 @@ jb.pptr = {
         function chopObj(obj, depth) {
             if (depth < 1) return
             if (obj == null) obj = 'null'
-            if (typeof obj == 'object') {
+            if (obj._remoteObject) obj = obj._remoteObject
+            else if (typeof obj == 'object') {
                 if (obj.constructor.name == 'Frame') obj = `Frame: ${obj._url}`
                 else if (obj.message && obj.stack) obj = {$: 'error', message: obj.message, stack: obj.stack}
                 else if (obj.constructor.name == 'ElementHandle') obj = `Elem: ${obj._remoteObject.description}`
