@@ -285,7 +285,7 @@ jb.component('studio.eventView', {
         })
       ),      
       controlWithCondition(
-        and('%ctx%', not(isOfType('object', '%ctx/data%'))),
+        and('%ctx%', not(isOfType('array', '%ctx/data%')), not(isOfType('object', '%ctx/data%'))),
         text({text: pipeline('%ctx/data%', slice('0', 20))})
       ),
       controlWithCondition(

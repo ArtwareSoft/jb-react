@@ -142,7 +142,6 @@ jb.component('puppeteerDemo.preview', {
             pptr.mouseClick({button: 'left', clickCount: 1, delay: 100}),
             pptr.waitForFunction("document.querySelector('iframe').contentDocument"),
             pptr.waitForFunction("document.querySelector('iframe').contentDocument.body"),
-            pptr.eval("document.querySelector('iframe').contentDocument.body", 'frame'),
             pptr.type('Homer'),
             pptr.runMethodOnPptr('$$'),
             rx.flatMapArrays(),
