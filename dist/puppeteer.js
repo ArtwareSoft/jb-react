@@ -51,7 +51,7 @@ jb.pptr = {
 
         function eventToJson(ev) {
             ev.ctx = ev.ctx || {}
-            const res = { ...ev, err: chopObj(ev.err,3), ctx: null, vars: chopObj(ev.ctx.vars,3), data: chopObj(ev.ctx.data ,2) }
+            const res = { ...ev, err: chopObj(ev.err,3), ctx: null, vars: chopObj(ev.ctx.vars,3), data: chopObj(ev.ctx.data ,3) }
             res.vars && res.vars.pptrSession && delete res.vars['pptrSession']
             
             return JSON.stringify(res)

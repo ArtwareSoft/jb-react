@@ -134,9 +134,7 @@ jb.component('puppeteerDemo.preview', {
         action: pptr.session({
           showBrowser: true,
           actions: [
-            pptr.gotoPage(
-              'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?project=itemlists&page=itemlists.main&profile_path=itemlists.main&host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/itemlists'
-            ),
+            pptr.gotoPage('http://localhost:8082/project/studio/itemlists'),
             pptr.waitForSelector('iframe'),
             pptr.waitForFunction("document.querySelector('iframe').contentDocument"),
             pptr.waitForFunction("document.querySelector('iframe').contentDocument.body"),
