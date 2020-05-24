@@ -278,7 +278,7 @@ jb.component('pptr.waitForFunction', {
         {id: 'polling', type: 'pptr.polling', defaultValue: pptr.raf() },
         {id: 'timeout', as: 'number', defaultValue: 5000, description: '0 to disable, maximum time to wait for in milliseconds' },
     ],
-    impl: rx.mapPromise((ctx,{},{condition,polling,timeout}) => jb.pptr.runMethod(ctx,'waitForFunction',condition,{polling, timeout}))
+    impl: rx.doPromise((ctx,{},{condition,polling,timeout}) => jb.pptr.runMethod(ctx,'waitForFunction',condition,{polling, timeout}))
 })
 
 jb.component('pptr.type', {
