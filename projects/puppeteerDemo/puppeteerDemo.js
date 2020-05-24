@@ -140,13 +140,12 @@ jb.component('puppeteerDemo.preview', {
             pptr.waitForSelector('iframe'),
             pptr.waitForFunction("document.querySelector('iframe').contentDocument"),
             pptr.waitForFunction("document.querySelector('iframe').contentDocument.body"),
-            pptr.extractBySelector({
-              selector: '.jb-item td:first-child span',
-              extract: 'textContent',
-              multiple: true
-            }),
+            pptr.type('Homer'),
+            rx.delay('100'),
+            rx.var('frame'),
+            rx.mapPromise(ctx => jb.pptr.runMethod(ctx,'$$','.jb-item')),
             rx.flatMapArrays(),
-            pptr.getProperty('textContent'),
+            pptr.getProperty('%$propName%'),
             pptr.logData()
           ]
         })

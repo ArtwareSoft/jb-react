@@ -42766,13 +42766,13 @@ jb.component('studio.eventView', {
         text({text: join({separator: '/', items: '%event/4%'})})
       ),
       controlWithCondition(
-        and('%ctx%',not(isOfType('object', '%ctx/data%'))),
+        and('%ctx%', not(isOfType('object', '%ctx/data%'))),
         text({text: pipeline('%ctx/data%', slice('0', 20))})
       ),
       controlWithCondition(
         '%description%',
         text({text: pipeline('%description%', slice('0', 30))})
-      ),      
+      ),
       controlWithCondition(
         '%error%',
         text({text: pipeline('%error/message%', slice('0', 30))})
@@ -42784,7 +42784,12 @@ jb.component('studio.eventView', {
           title: 'vars (%$count%)',
           action: openDialog({
             style: dialog.popup(),
-            content: group({controls: studio.dataBrowse('%ctx/vars%')}),
+            content: group({
+              controls: [
+                studio.dataBrowse('%ctx/data%'),
+                studio.dataBrowse('%ctx/vars%')
+              ]
+            }),
             title: 'variables',
             features: dialogFeature.uniqueDialog('variables')
           }),

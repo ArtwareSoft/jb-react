@@ -354,6 +354,17 @@ jb.component('pptr.javascriptOnPptr', {
     impl: rx.mapPromise((ctx,{},{func}) => func(ctx))
 })
 
+jb.component('pptr.runMethodOnPptr', {
+    type: 'rx,pptr',
+    description: 'run method on the current object on pptr server using pptr api',
+    params: [
+      {id: 'method', as: 'string', mandatory: true},
+      {id: 'param1', as: 'string'},
+      {id: 'param2', as: 'string'},
+    ],
+    impl: rx.mapPromise((ctx,{},{method,param1,param2}) => jb.pptr.runMethod(ctx,method,param1,param2)),
+})
+
 // page.mouse.move(100, 100);
 // page.mouse.down();
 // page.mouse.move(200, 200);
