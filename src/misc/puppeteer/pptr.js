@@ -125,14 +125,10 @@ jb.component('pptr.type', {
     type: 'rx,pptr',
     params: [
         {id: 'text', as: 'string', mandatory: true },
-        {id: 'selector', as: 'string', defaultValue: 'form input[type=text]' },
         {id: 'enterAtEnd', as: 'boolean', defaultValue: true },
         {id: 'delay', as: 'number', defaultValue: 100, description: 'time between clicks' },
     ],
-    impl: rx.innerPipe(
-        pptr.querySelector('%$selector%'),
-        rx.doPromise((ctx,{},{text, enterAtEnd, delay}) => jb.pptr.runMethod(ctx,'type', text + (enterAtEnd ? String.fromCharCode(13): ''), {delay}))
-    )
+    impl: rx.doPromise((ctx,{},{text, enterAtEnd, delay}) => jb.pptr.runMethod(ctx,'type', text + (enterAtEnd ? String.fromCharCode(13): ''), {delay}))
 })
 
 jb.component('pptr.closeBrowser', {
