@@ -118,7 +118,7 @@ jb.component('pptr.sendCodeToServer', {
         return modules.split(',').reduce((pr,module) => pr.then(() => {
             const moduleFileName = host.locationToPath(`${host.pathOfDistFolder()}/${module}.js`)
             return host.getFile(moduleFileName).then( 
-                loadCode => (ctx.vars.comp || jb.pptr._proxySession).commands.next({ loadCode, moduleFileName }))
+                loadCode => (ctx.vars.pptrSession || jb.pptr._proxySession).commands.next({ loadCode, moduleFileName }))
         }), Promise.resolve())
     }
 })
@@ -133,15 +133,6 @@ jb.component('pptr.session', {
     {id: 'actions', type: 'rx[]', ignore: true, templateValue: []}
   ],
   impl: (ctx,showBrowser,databindEvents) => jb.pptr.createSession(ctx,{showBrowser,databindEvents})
-})
-
-jb.component('pptr.remoteActions', {
-    type: 'action,has-side-effects',
-    params: [
-        {id: 'actions', type: 'pptr[]', ignore: true },
-        {id: 'session', defaultValue: '%$pptrSession%' },
-    ],
-    impl: ctx => jb.asArray(ctx.profile.actions).forEach(profile => ctx.params.session && ctx.params.session.commands.next({run: profile}))
 })
 
 jb.component('pptr.logData', {
