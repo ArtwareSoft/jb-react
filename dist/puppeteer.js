@@ -204,7 +204,7 @@ jb.component('pptr.querySelector', {
         {id: 'multiple', as: 'boolean', description: 'querySelectorAll' },
         {id: 'xpath', as: 'boolean', description: "e.g, //img div[contains(., 'Hello')]" },
     ],
-    impl: rx.mapPromise((ctx,{},{selector,multiple}) => jb.pptr.runMethod(ctx,xpath ? '$x' : multiple ? '$$' : '$',selector)),
+    impl: rx.mapPromise((ctx,{},{selector,multiple,xpath}) => jb.pptr.runMethod(ctx,xpath ? '$x' : multiple ? '$$' : '$',selector)),
 })
 
 jb.component('pptr.waitForSelector', {
