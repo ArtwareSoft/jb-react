@@ -103,7 +103,10 @@ jb.component('pptr.queryContainsText', {
     params: [
         {id: 'text', as: 'string', mandatory: true },
     ],
-    impl: rx.mapPromise((ctx,{},{text}) => jb.pptr.runMethod(ctx,'$x',`//*[contains(text(),'${text}')]`)),
+    impl: rx.innerPipe(
+        rx.mapPromise((ctx,{},{text}) => jb.pptr.runMethod(ctx,'$x',`//*[contains(text(),'${text}')]`)),
+        rx.flatMapArrays()
+    )
 })
 
 jb.component('pptr.mouseClick', {
