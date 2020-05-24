@@ -271,6 +271,20 @@ jb.component('studio.eventView', {
         text({text: join({separator: '/', items: '%event/4%'})})
       ),
       controlWithCondition(
+        and('%ctx%', isOfType('array', '%ctx/data%'),),
+        button({
+          title: 'array (%ctx/data/length%)',
+          action: openDialog({
+            style: dialog.popup(),
+            content: studio.dataBrowse('%ctx/data%'),
+            title: 'data',
+            features: dialogFeature.uniqueDialog('variables')
+          }),
+          style: button.href(),
+          features: [css.margin({left: '10'}), feature.hoverTitle('show values')]
+        })
+      ),      
+      controlWithCondition(
         and('%ctx%', not(isOfType('object', '%ctx/data%'))),
         text({text: pipeline('%ctx/data%', slice('0', 20))})
       ),

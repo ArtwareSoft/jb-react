@@ -68,6 +68,7 @@ jb.pptr = {
                     obj = obj.constructor.name
             }
             if (['string','boolean','number'].indexOf(typeof obj) != -1) return obj
+            if (Array.isArray(obj)) return obj.map(val =>chopObj(val, depth-1))
             return obj && typeof obj == 'object' && jb.objFromEntries( jb.entries(obj).map(([id,val])=>[id,chopObj(val, depth-1)]).filter(e=>e[1] != null) )
         }
     },
