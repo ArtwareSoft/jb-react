@@ -191,13 +191,13 @@ jb.component('pptr.extractBySelector', {
     type: 'rx,pptr',
     params: [
         {id: 'selector', as: 'string' },
-        {id: 'extract', as: 'string', options: 'value,innerHTML,outerHTML,href,textContent', defaultValue: 'textContent'},
+        {id: 'propName', as: 'string', options: 'value,innerHTML,outerHTML,href,textContent', defaultValue: 'textContent'},
         {id: 'multiple', as: 'boolean' },
         {id: 'timeout', as: 'number', defaultValue: 5000, description: 'maximum time to wait in milliseconds' },
     ],
     impl: rx.innerPipe(
-        rx.doPromise((ctx,{},{selector,timeout}) => jb.pptr.runMethod(ctx,'waitForSelector',selector,{timeout})),
         rx.mapPromise((ctx,{},{selector,multiple}) => jb.pptr.runMethod(ctx,multiple ? '$$' : '$',selector)),
+        pptr.getProperty('%$propName%'),
         pptr.logData()
     )
 })
