@@ -5,7 +5,7 @@ jb.component('pptr.gotoPage', {
   params: [
     {id: 'url', as: 'string', mandatory: true},
     {id: 'waitUntil', as: 'string', defaultValue: 'load', options: 'load:load event is fired,domcontentloaded:DOMContentLoaded event is fired,networkidle0:no more than 0 network connections for at least 500 ms,networkidle2:no more than 2 network connections for at least 500 ms'},
-    {id: 'timeout', as: 'number', defaultValue: 5000, description: 'maximum time to wait for in milliseconds'}
+    {id: 'timeout', as: 'number', defaultValue: 20000, description: 'maximum time to wait for in milliseconds'}
   ],
   impl: rx.innerPipe(
     rx.var('url', '%$url%'),
@@ -125,7 +125,7 @@ jb.component('pptr.type', {
         {id: 'delay', as: 'number', defaultValue: 100, description: 'time between clicks' },
     ],
     impl: rx.innerPipe(
-        rx.waitForSelector('%$selector%'),
+        pptr.waitForSelector('%$selector%'),
         rx.doPromise((ctx,{},{text, enterAtEnd, selector,delay}) => jb.pptr.runMethod(ctx,'type',selector, text + (enterAtEnd ? String.fromCharCode(13): ''), {delay}))
     )
 })
