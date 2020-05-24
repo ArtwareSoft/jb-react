@@ -15,22 +15,6 @@ jb.component('pptr.gotoPage', {
   )
 })
 
-jb.component('pptr.logData', {
-  type: 'rx,pptr',
-  impl: rx.doPromise(
-    (ctx,{comp}) => comp.events.next({$: 'ResultData', ctx })
-  )
-})
-
-jb.component('pptr.logActivity', {
-    type: 'rx,pptr',
-    params: [
-        {id: 'activity', as: 'string', mandatory: true },
-        {id: 'description', as: 'string' },
-    ],
-    impl: rx.doPromise((ctx,{comp},{activity, description}) => comp.events.next({$: 'Activity', activity, description, ctx }))
-})
-
 jb.component('pptr.extractBySelector', {
     type: 'rx,pptr',
     params: [
@@ -51,8 +35,9 @@ jb.component('pptr.querySelector', {
     params: [
         {id: 'selector', as: 'string' },
         {id: 'multiple', as: 'boolean', description: 'querySelectorAll' },
+        {id: 'xpath', as: 'boolean', description: "e.g, //img div[contains(., 'Hello')]" },
     ],
-    impl: rx.mapPromise((ctx,{},{selector,multiple}) => jb.pptr.runMethod(ctx,multiple ? '$$' : '$',selector)),
+    impl: rx.mapPromise((ctx,{},{selector,multiple}) => jb.pptr.runMethod(ctx,xpath ? '$x' : multiple ? '$$' : '$',selector)),
 })
 
 jb.component('pptr.waitForSelector', {
@@ -98,6 +83,15 @@ jb.component('pptr.eval', {
             rx.mapPromise((ctx,{},{expression}) => jb.pptr.runMethod(ctx,'evaluate',expression)),
             rx.var('%$varName%')
         ), rx.mapPromise((ctx,{},{expression}) => jb.pptr.runMethod(ctx,'evaluate',expression)))
+})
+
+jb.component('pptr.queryContainsText', {
+    type: 'rx,pptr',
+    description: 'look for a node with text',
+    params: [
+        {id: 'text', as: 'string' },
+    ],
+    impl: rx.mapPromise((ctx,{},{text}) => jb.pptr.runMethod(ctx,'$x',`//*[contains(text(),'${text}')]`)),
 })
 
 jb.component('pptr.mouseClick', {
@@ -196,17 +190,6 @@ jb.component('pptr.javascriptOnPptr', {
         {id: 'func', dynamic: true, mandatory: true}
     ],
     impl: rx.mapPromise((ctx,{},{func}) => func(ctx))
-})
-
-jb.component('pptr.runMethodOnPptr', {
-    type: 'rx,pptr',
-    description: 'run method on the current object on pptr server using pptr api',
-    params: [
-      {id: 'method', as: 'string', mandatory: true},
-      {id: 'param1', as: 'string'},
-      {id: 'param2', as: 'string'},
-    ],
-    impl: rx.mapPromise((ctx,{},{method,param1,param2}) => jb.pptr.runMethod(ctx,method,param1,param2)),
 })
 
 // page.mouse.move(100, 100);

@@ -140,12 +140,18 @@ jb.component('puppeteerDemo.preview', {
             pptr.waitForSelector('iframe'),
             pptr.waitForFunction("document.querySelector('iframe').contentDocument"),
             pptr.waitForFunction("document.querySelector('iframe').contentDocument.body"),
-            pptr.type('Homer'),
-            rx.delay('100'),
+            rx.innerPipe(),
+            pptr.mouseClick({
+              selector: '.jb-item:nth-child[5]',
+              button: 'left',
+              clickCount: 1,
+              delay: 100
+            }),
             rx.var('frame'),
-            rx.mapPromise(ctx => jb.pptr.runMethod(ctx,'$$','.jb-item')),
+            pptr.type('Homer'),
+            pptr.runMethodOnPptr({method: '$$', param1: '.jb-item td:first-child span'}),
             rx.flatMapArrays(),
-            pptr.getProperty('%$propName%'),
+            pptr.getProperty('textContent'),
             pptr.logData()
           ]
         })

@@ -1,8 +1,8 @@
 jb.pptr = {
-    hasPptrServer: () => typeof hasPptrServer != 'undefined',
+    isPptrServer: () => typeof hasPptrServer != 'undefined',
     createProxySocket: () => new WebSocket(`ws:${(jb.studio.studioWindow || jb.frame).location.hostname || 'localhost'}:8090`),
-    createComp(ctx,args) {
-        return jb.pptr.hasPptrServer() ? this.createServerComp(ctx,args) : this.createProxyComp(ctx,args)
+    createSession(ctx,args) {
+        return jb.pptr.isPptrServer() ? this.createServerSession(ctx,args) : this.createProxySession(ctx,args)
     },
     puppeteer() {
         return puppeteer
@@ -11,24 +11,23 @@ jb.pptr = {
         if (this._browser) return Promise.resolve(this._browser)
         return this.puppeteer().launch({headless: !showBrowser, 
             args: ['--disable-features=site-per-process','--enable-devtools-experiments'],
-            args1: ['--disable-web-security', '--disable-features=IsolateOrigins,site-per-process']}).then(browser => this._browser = browser)
+            }).then(browser => this._browser = browser)
     },
-    createServerComp(ctx,{showBrowser,immediate}) {
-        const {subject, subscribe, pipe, merge, Do } = jb.callbag
-        const comp = {
-            immediate,
+    createServerSession(ctx,{showBrowser}) {
+        const {subject, subscribe, pipe, Do } = jb.callbag
+        const pptrSession = {
             events: subject(),
             commands: subject(),
         }
         const actions = jb.asArray(ctx.profile.actions)
         let lastCtx = ctx
-        const wrappedActions = immediate ? [] : actions.flatMap( (action,i) => action ? [
-                rx.doPromise( ctx => comp.events.next({$: 'Started', ctx, path: `actions~${i}` })),
+        const wrappedActions = actions.flatMap( (action,i) => action ? [
+                rx.doPromise( ctx => pptrSession.events.next({$: 'Started', ctx, path: `actions~${i}` })),
                 actions[i],
-                rx.catchError( err => { comp.events.next({$: 'Error', err: err && err.data || err, path: `actions~${i}`, ctx }); return lastCtx }),
+                rx.catchError( err => { pptrSession.events.next({$: 'Error', err: err && err.data || err, path: `actions~${i}`, ctx }); return lastCtx }),
                 rx.doPromise( ctx => {
                     lastCtx = ctx; 
-                    comp.events.next({$: 'Emit', ctx, path: `actions~${i}` }) 
+                    pptrSession.events.next({$: 'Emit', ctx, path: `actions~${i}` }) 
                 }),
         ] : [])
 
@@ -40,20 +39,20 @@ jb.pptr = {
                 rx.var('browser'),
                 rx.mapPromise(({},{browser}) => browser.newPage()),
                 rx.var('page', '%%'),
-                rx.var('comp',comp),
+                rx.var('pptrSession',pptrSession),
                 ...wrappedActions,
-                rx.catchError(err =>comp.events.next({$: 'error', err })),
+                rx.catchError(err =>pptrSession.events.next({$: 'error', err })),
                 rx.subscribe('')
             )
         )
-        pipe(comp.commands, Do(cmd=> ctx.run(cmd)), subscribe(() => {}) )
-        pipe(comp.events, subscribe( ev => ctx.vars.clientSocket.send(eventToJson(ev))))
-        return comp
+        pipe(pptrSession.commands, Do(cmd=> ctx.run(cmd)), subscribe(() => {}) )
+        pipe(pptrSession.events, subscribe( ev => ctx.vars.clientSocket.send(eventToJson(ev))))
+        return pptrSession
 
         function eventToJson(ev) {
             ev.ctx = ev.ctx || {}
             const res = { ...ev, err: chopObj(ev.err,3), ctx: null, vars: chopObj(ev.ctx.vars,3), data: chopObj(ev.ctx.data ,2) }
-            res.vars && res.vars.comp && delete res.vars['comp']
+            res.vars && res.vars.pptrSession && delete res.vars['pptrSession']
             
             return JSON.stringify(res)
         }
@@ -72,7 +71,7 @@ jb.pptr = {
             return obj && typeof obj == 'object' && jb.objFromEntries( jb.entries(obj).map(([id,val])=>[id,chopObj(val, depth-1)]).filter(e=>e[1] != null) )
         }
     },
-    createProxyComp(ctx,{databindEvents,immediate}) {
+    createProxySession(ctx,{databindEvents}) {
         const {pipe,skip,take,subject,subscribe,doPromise} = jb.callbag
         const receive = subject(), commands = subject()
         const socket = jb.pptr.createProxySocket()
@@ -93,25 +92,18 @@ jb.pptr = {
         }
         socket.onopen = () => pipe(commands, subscribe(cmd => socket.send(cmd.run ? jb.prettyPrint(cmd,{noMacros: true}) : JSON.stringify(cmd))))
 
-        const comp = { immediate, events: skip(1)(receive), commands }
-        jb.pptr._proxyComp = comp
+        const pptrSession = { events: skip(1)(receive), commands }
+        jb.pptr._proxySession = pptrSession
         pipe(receive,take(1),
-            doPromise(m => m.res == 'loadCodeReq' && ctx.setVar('comp',comp).run(pptr.sendCodeToServer())),
-            subscribe(()=> comp.commands.next({run: ctx.profile})))
+            doPromise(m => m.res == 'loadCodeReq' && ctx.setVar('pptrSession',pptrSession).run(pptr.sendCodeToServer())),
+            subscribe(()=> pptrSession.commands.next({run: ctx.profile})))
         pipe(receive,subscribe(message =>databindEvents && jb.push(databindEvents, message,ctx)))
         
-        return comp
+        return pptrSession
     },
     runMethod(ctx,method,...args) {
-        if (jb.pptr.hasPptrServer() && !ctx.vars.comp.immediate) {
-            const obj = [ctx.data,ctx.vars.frame,ctx.vars.page].filter(x=>x && x[method])[0]
-            return obj && obj[method](...args)
-        } else if (!jb.pptr.hasPptrServer() && ctx.vars.comp.immediate) {
-            this.runMethodFromClient(ctx,method,...args)
-        }
-    },
-    runMethodFromClient(ctx,method,...args) {
-        (ctx.vars.comp || jb.pptr._proxyComp).commands.next({ $: 'runDevToolProtocol',  })
+        const obj = [ctx.data,ctx.vars.frame,ctx.vars.page].filter(x=>x && x[method])[0]
+        return obj && obj[method](...args)
     }
 }
 
@@ -126,7 +118,7 @@ jb.component('pptr.sendCodeToServer', {
         return modules.split(',').reduce((pr,module) => pr.then(() => {
             const moduleFileName = host.locationToPath(`${host.pathOfDistFolder()}/${module}.js`)
             return host.getFile(moduleFileName).then( 
-                loadCode => (ctx.vars.comp || jb.pptr._proxyComp).commands.next({ loadCode, moduleFileName }))
+                loadCode => (ctx.vars.comp || jb.pptr._proxySession).commands.next({ loadCode, moduleFileName }))
         }), Promise.resolve())
     }
 })
@@ -137,11 +129,10 @@ jb.component('pptr.session', {
   category: 'source',
   params: [
     {id: 'showBrowser', as: 'boolean'},
-    {id: 'immediate', as: 'boolean'},
     {id: 'databindEvents', as: 'ref', description: 'bind events from puppeteer to array (watchable)'},
     {id: 'actions', type: 'rx[]', ignore: true, templateValue: []}
   ],
-  impl: (ctx,showBrowser,immediate,databindEvents) => jb.pptr.createComp(ctx,{showBrowser,immediate,databindEvents})
+  impl: (ctx,showBrowser,databindEvents) => jb.pptr.createSession(ctx,{showBrowser,databindEvents})
 })
 
 jb.component('pptr.remoteActions', {
@@ -151,6 +142,32 @@ jb.component('pptr.remoteActions', {
         {id: 'session', defaultValue: '%$pptrSession%' },
     ],
     impl: ctx => jb.asArray(ctx.profile.actions).forEach(profile => ctx.params.session && ctx.params.session.commands.next({run: profile}))
+})
+
+jb.component('pptr.logData', {
+    type: 'rx,pptr',
+    impl: rx.doPromise(
+      (ctx,{pptrSession}) => pptrSession.events.next({$: 'ResultData', ctx })
+    )
+})
+
+jb.component('pptr.logActivity', {
+    type: 'rx,pptr',
+    params: [
+        {id: 'activity', as: 'string', mandatory: true },
+        {id: 'description', as: 'string' },
+    ],
+    impl: rx.doPromise((ctx,{pptrSession},{activity, description}) => pptrSession.events.next({$: 'Activity', activity, description, ctx }))
+})
+
+jb.component('pptr.runMethodOnPptr', {
+    type: 'rx,pptr',
+    description: 'run method on the current object on pptr server using pptr api',
+    params: [
+      {id: 'method', as: 'string', mandatory: true},
+      {id: 'args', as: 'array'},
+    ],
+    impl: rx.mapPromise((ctx,{},{method,args}) => jb.pptr.runMethod(ctx,method,args)),
 })
 ;
 
@@ -169,22 +186,6 @@ jb.component('pptr.gotoPage', {
         (ctx,{},{url,waitUntil,timeout}) => jb.pptr.runMethod(ctx,'goto',url,{waitUntil, timeout})
       )
   )
-})
-
-jb.component('pptr.logData', {
-  type: 'rx,pptr',
-  impl: rx.doPromise(
-    (ctx,{comp}) => comp.events.next({$: 'ResultData', ctx })
-  )
-})
-
-jb.component('pptr.logActivity', {
-    type: 'rx,pptr',
-    params: [
-        {id: 'activity', as: 'string', mandatory: true },
-        {id: 'description', as: 'string' },
-    ],
-    impl: rx.doPromise((ctx,{comp},{activity, description}) => comp.events.next({$: 'Activity', activity, description, ctx }))
 })
 
 jb.component('pptr.extractBySelector', {
@@ -207,8 +208,9 @@ jb.component('pptr.querySelector', {
     params: [
         {id: 'selector', as: 'string' },
         {id: 'multiple', as: 'boolean', description: 'querySelectorAll' },
+        {id: 'xpath', as: 'boolean', description: "e.g, //img div[contains(., 'Hello')]" },
     ],
-    impl: rx.mapPromise((ctx,{},{selector,multiple}) => jb.pptr.runMethod(ctx,multiple ? '$$' : '$',selector)),
+    impl: rx.mapPromise((ctx,{},{selector,multiple}) => jb.pptr.runMethod(ctx,xpath ? '$x' : multiple ? '$$' : '$',selector)),
 })
 
 jb.component('pptr.waitForSelector', {
@@ -254,6 +256,15 @@ jb.component('pptr.eval', {
             rx.mapPromise((ctx,{},{expression}) => jb.pptr.runMethod(ctx,'evaluate',expression)),
             rx.var('%$varName%')
         ), rx.mapPromise((ctx,{},{expression}) => jb.pptr.runMethod(ctx,'evaluate',expression)))
+})
+
+jb.component('pptr.queryContainsText', {
+    type: 'rx,pptr',
+    description: 'look for a node with text',
+    params: [
+        {id: 'text', as: 'string' },
+    ],
+    impl: rx.mapPromise((ctx,{},{text}) => jb.pptr.runMethod(ctx,'$x',`//*[contains(text(),'${text}')]`)),
 })
 
 jb.component('pptr.mouseClick', {
@@ -352,17 +363,6 @@ jb.component('pptr.javascriptOnPptr', {
         {id: 'func', dynamic: true, mandatory: true}
     ],
     impl: rx.mapPromise((ctx,{},{func}) => func(ctx))
-})
-
-jb.component('pptr.runMethodOnPptr', {
-    type: 'rx,pptr',
-    description: 'run method on the current object on pptr server using pptr api',
-    params: [
-      {id: 'method', as: 'string', mandatory: true},
-      {id: 'param1', as: 'string'},
-      {id: 'param2', as: 'string'},
-    ],
-    impl: rx.mapPromise((ctx,{},{method,param1,param2}) => jb.pptr.runMethod(ctx,method,param1,param2)),
 })
 
 // page.mouse.move(100, 100);
