@@ -297,8 +297,8 @@ jb.component('pptr.type', {
         {id: 'delay', as: 'number', defaultValue: 100, description: 'time between clicks' },
     ],
     impl: rx.innerPipe(
-        pptr.waitForSelector('%$selector%'),
-        rx.doPromise((ctx,{},{text, enterAtEnd, selector,delay}) => jb.pptr.runMethod(ctx,'type',selector, text + (enterAtEnd ? String.fromCharCode(13): ''), {delay}))
+        pptr.querySelector('%$selector%'),
+        rx.doPromise((ctx,{},{text, enterAtEnd, delay}) => jb.pptr.runMethod(ctx,'type', text + (enterAtEnd ? String.fromCharCode(13): ''), {delay}))
     )
 })
 

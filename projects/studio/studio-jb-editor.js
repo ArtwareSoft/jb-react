@@ -225,7 +225,7 @@ jb.component('studio.showRxSniffer', {
               features: [css.opacity('0.5'), css.margin({left: '10'})]
             })
           ],
-          features: feature.byCondition('%dir%==out', css.color({background: 'lightGray'}))
+          features: feature.byCondition('%dir%==out', css.color({background: 'var(--jb-titleBar-inactiveBackground)'}))
         }),
         style: itemlist.ulLi(),
         visualSizeLimit: 7,

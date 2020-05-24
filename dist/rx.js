@@ -193,7 +193,7 @@ jb.component('rx.map', {
   type: 'rx',
   category: 'operator',
   params: [
-    {id: 'func', dynamic: true, mandatory: true},
+    {id: 'func', dynamic: true, mandatory: true}
   ],
   impl: (ctx,func) => jb.callbag.map(ctx2 => ctx2.setData(func(ctx2)))
 })
@@ -202,9 +202,32 @@ jb.component('rx.mapPromise', {
   type: 'rx',
   category: 'operator',
   params: [
-    {id: 'func', dynamic: true, mandatory: true},
+    {id: 'func', dynamic: true, mandatory: true}
   ],
   impl: (ctx,func) => jb.callbag.mapPromise(ctx2 => Promise.resolve(func(ctx2)).then(res => ctx2.setData(res)))
+})
+
+jb.component('rx.retry', {
+  type: 'rx',
+  category: 'operator',
+  params: [
+    {id: 'operator', type: 'rx', mandatory: true, dynamic: true},
+    {id: 'interval', as: 'number', defaultValue: 300},
+    {id: 'times', as: 'number', defaultValue: 50}
+  ],
+  impl: rx.innerPipe(
+    rx.var('inp'),
+    rx.concatMap(
+        rx.pipe(
+          rx.interval('%$interval%'),
+          rx.throwError('%%>%$times%', 'retry failed after %$times% times'),
+          rx.map('%$inp%'),
+          (ctx,{},{operator}) => operator(ctx),
+          rx.filter('%%'),
+          rx.take(1)
+        )
+      )
+  )
 })
 
 jb.component('rx.filter', {
@@ -262,6 +285,16 @@ jb.component('rx.catchError', {
       {id: 'handler', type: 'action', dynamic: true, mandatory: true },
     ],
     impl: (ctx,handler) => jb.callbag.catchError(err => handler(ctx.ctx({data: err, profile: '', forcePath: ''})))
+})
+
+jb.component('rx.throwError', {
+  type: 'rx',
+  category: 'error',
+  params: [
+    {id: 'condition', as: 'boolean', dynamic: true, mandatory: true},
+    {id: 'error', mandatory: true}
+  ],
+  impl: (ctx,condition,error) => jb.callbag.throwError(ctx2=>condition(ctx2), error)
 })
 
 jb.component('rx.debounceTime', {

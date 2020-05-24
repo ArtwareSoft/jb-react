@@ -2089,6 +2089,19 @@ jb.component('formatDate', {
               sink(t, t === 1 ? f(d) : d)
           })
       },
+      throwError: (condition,err) => source => (start, sink) => {
+        let talkback
+        if (start !== 0) return
+        source(0, function throwError(t, d) {
+          if (t === 0) talkback = d
+          if (t == 1 && condition(d)) {
+            talkback && talkback(2)
+            sink(2,err)
+          } else {
+            sink(t, d)
+          }
+        })
+      },
       distinctUntilChanged: compare => source => (start, sink) => {
           compare = compare || is
           if (start !== 0) return
@@ -2417,8 +2430,10 @@ jb.component('formatDate', {
       },
       catchError: fn => source => (start, sink) => {
           if (start !== 0) return
+          let done
           source(0, function catchError(t, d) {
-            if (t === 2 && d !== undefined) { sink(1, fn(d)); sink(2) } 
+            if (done) return
+            if (t === 2 && d !== undefined) { done= true; sink(1, fn(d)); sink(2) } 
             else sink(t, d) 
           }
         )

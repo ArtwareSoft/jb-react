@@ -1,6 +1,6 @@
 jb.component('dataTest.pipeWithObservable', {
   impl: dataTest({
-    calculate: pipe(ctx => jb.callbag.fromIter([1,2]), '%%a', join()),
+    calculate: pipe(ctx => jb.callbag.fromIter([1,2]), '%%a', join({})),
     expectedResult: equals('1a,2a')
   })
 })
@@ -420,3 +420,92 @@ jb.component('dataTest.callbag.throwInMapPromise2', {
     expectedResult: equals('err1')
   })
 })
+
+jb.component('dataTest.rx.throwError', {
+  impl: dataTest({
+    calculate: pipe(
+      rx.pipe(
+          rx.fromIter([1, 2, 3, 4]),
+          rx.throwError('%%==3', 'error'),
+          rx.catchError('%%')
+        ),
+      join(',')
+    ),
+    expectedResult: equals('1,2,error')
+  })
+})
+
+jb.component('dataTest.rx.throwErrorInterval', {
+  impl: dataTest({
+    calculate: pipe(
+      rx.pipe(
+          rx.interval(1),
+          rx.take(10),
+          rx.throwError('%%==3', 'error'),
+          rx.catchError('%%')
+        ),
+      join(',')
+    ),
+    expectedResult: equals('0,1,2,error')
+  })
+})
+
+jb.component('dataTest.rx.retrySrc', {
+  impl: dataTest({
+    vars: [
+      Var('counters', () => ({ counter: 0, retries: 0})),
+      Var('interval', 300),
+      Var('times', 10)
+    ],
+    calculate: rx.pipe(
+      rx.fromIter([1, 2]),
+      rx.var('inp'),
+      rx.concatMap(
+          rx.pipe(
+            rx.interval('%$interval%'),
+            rx.throwError('%%>%$times%', 'retry failed after %$times% times'),
+            rx.map('%$inp%'),
+            rx.map(
+                ({data},{counters}) => {
+          if (counters.counter > data) {
+            counters.counter = 0
+            return 'done'
+          }
+          counters.counter++
+          counters.retries++
+          return null // failed - will retry
+        }
+              ),
+            rx.filter('%%'),
+            rx.take(1)
+          )
+        )
+    ),
+    expectedResult: '%$counters/retries%==5'
+  })
+})
+
+
+jb.component('dataTest.rx.retry', {
+  impl: dataTest({
+    vars: [Var('counters', () => ({ counter: 0, retries: 0}))],
+    calculate: rx.pipe(
+      rx.fromIter([1, 2]),
+      rx.retry({
+          operator: rx.map(
+            ({data},{counters}) => {
+        if (counters.counter > data) {
+          counters.counter = 0
+          return 'done'
+        }
+        counters.counter++
+        counters.retries++
+        return null // failed - will retry
+      }
+          )
+        })
+    ),
+    expectedResult: '%$counters/retries%==5'
+  })
+})
+
