@@ -117,8 +117,10 @@ jb.component('pptr.sendCodeToServer', {
         if (!host) return Promise.resolve()
         return modules.split(',').reduce((pr,module) => pr.then(() => {
             const moduleFileName = host.locationToPath(`${host.pathOfDistFolder()}/${module}.js`)
-            return host.getFile(moduleFileName).then( 
-                loadCode => (ctx.vars.pptrSession || jb.pptr._proxySession).commands.next({ loadCode, moduleFileName }))
+            return host.getFile(moduleFileName).then(loadCode => {
+                const session = ctx.vars.pptrSession || jb.pptr._proxySession
+                session && session.commands.next({ loadCode, moduleFileName })
+            })
         }), Promise.resolve())
     }
 })

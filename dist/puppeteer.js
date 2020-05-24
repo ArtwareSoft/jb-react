@@ -117,8 +117,10 @@ jb.component('pptr.sendCodeToServer', {
         if (!host) return Promise.resolve()
         return modules.split(',').reduce((pr,module) => pr.then(() => {
             const moduleFileName = host.locationToPath(`${host.pathOfDistFolder()}/${module}.js`)
-            return host.getFile(moduleFileName).then( 
-                loadCode => (ctx.vars.pptrSession || jb.pptr._proxySession).commands.next({ loadCode, moduleFileName }))
+            return host.getFile(moduleFileName).then(loadCode => {
+                const session = ctx.vars.pptrSession || jb.pptr._proxySession
+                session && session.commands.next({ loadCode, moduleFileName })
+            })
         }), Promise.resolve())
     }
 })
@@ -253,20 +255,20 @@ jb.component('pptr.queryContainsText', {
     type: 'rx,pptr',
     description: 'look for a node with text',
     params: [
-        {id: 'text', as: 'string' },
+        {id: 'text', as: 'string', mandatory: true },
     ],
     impl: rx.mapPromise((ctx,{},{text}) => jb.pptr.runMethod(ctx,'$x',`//*[contains(text(),'${text}')]`)),
 })
 
 jb.component('pptr.mouseClick', {
     type: 'rx,pptr',
+    description: 'clicks on current element',
     params: [
-        {id: 'selector', as: 'string' },
         {id: 'button', as: 'string', options:'left,right,middle'},
         {id: 'clickCount', as: 'number', description: 'default is 1' },
         {id: 'delay', as: 'number', description: 'Time to wait between mousedown and mouseup in milliseconds. Defaults to 0' },
     ],
-    impl: rx.mapPromise((ctx,{},{selector,button,clickCount,delay}) => jb.pptr.runMethod(ctx,'click',selector, {button,clickCount,delay}))
+    impl: rx.doPromise(({data},{},args) => data && data.constructor.name == 'ElementHandle' && data.click(args))
 })
 
 jb.component('pptr.waitForFunction', {

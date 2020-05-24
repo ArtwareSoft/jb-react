@@ -140,16 +140,11 @@ jb.component('puppeteerDemo.preview', {
             pptr.waitForSelector('iframe'),
             pptr.waitForFunction("document.querySelector('iframe').contentDocument"),
             pptr.waitForFunction("document.querySelector('iframe').contentDocument.body"),
-            rx.innerPipe(),
-            pptr.mouseClick({
-              selector: '.jb-item:nth-child[5]',
-              button: 'left',
-              clickCount: 1,
-              delay: 100
-            }),
+            pptr.queryContainsText('tableWithSearch'),
+            pptr.mouseClick({button: 'left', clickCount: 1, delay: 100}),
             rx.var('frame'),
             pptr.type('Homer'),
-            pptr.runMethodOnPptr({method: '$$', param1: '.jb-item td:first-child span'}),
+            pptr.runMethodOnPptr('$$'),
             rx.flatMapArrays(),
             pptr.getProperty('textContent'),
             pptr.logData()
