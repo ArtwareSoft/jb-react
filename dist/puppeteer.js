@@ -185,8 +185,8 @@ jb.component('pptr.gotoPage', {
 jb.component('pptr.selectElement', {
     type: 'rx,pptr',
     params: [
-        {id: 'select', type: 'pptr.selector', mandatory: true },
-        {id: 'startAt', defaultValue: '%%' },
+        {id: 'select', type: 'pptr.selector', mandatory: true, dynamic: true },
+        {id: 'startAt', defaultValue: '%%', dynamic: true },
         {id: 'retryInterval', as: 'number', defaultValue: 100, description: 'zero means no retries' },
         {id: 'retryTimes', as: 'number', defaultValue: 30 },
         {id: 'resultVar', as: 'string', description: 'empty for no var' },

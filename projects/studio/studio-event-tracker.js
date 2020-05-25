@@ -360,15 +360,16 @@ jb.component('studio.eventItems', {
       ev.srcPath = jb.path(ev.srcCtx, 'vars.cmp.ctx.path')
       ev.srcCompName = ev.srcPath && st.compNameOfPath(ev.srcPath)
 
-      ev.description = jb.path(ev,'ctx.data.description') || jb.path(event[2],'data.description') // pptr
+      ev.description = event[1] == 'pptrEmit' && jb.path(event[2],'data.description')
+      ev.description = ev.description || event[1] == 'setGridAreaVals' && jb.asArray(event[4]).join('/')
+      ev.description = ev.description || event[1] == 'htmlChange' && [event[4],event[5]].join(' <- ')
+
       ev.elem = event[1] == 'applyDelta' && event[2]
       ev.delta = event[1] == 'applyDelta' && event[3]
-      ev.description = event[1] == 'setGridAreaVals' && jb.asArray(event[4]).join('/')
 
       ev.delta = ev.delta || event[1] == 'applyDeltaTop' && event[2] == 'apply' && event[5]
       ev.elem = ev.elem || event[1] == 'applyDeltaTop' && event[2] == 'start' && event[3]
       ev.vdom = ev.vdom || event[1] == 'applyDeltaTop' && event[2] == 'start' && event[4]
-      ev.description = ev.description || event[1] == 'htmlChange' && [event[4],event[5]].join(' <- ')
 
       ev.val = event[1] == 'calcRenderProp' && event[3]
 
