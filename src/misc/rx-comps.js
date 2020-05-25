@@ -216,7 +216,7 @@ jb.component('rx.retry', {
     {id: 'interval', as: 'number', defaultValue: 300, description: '0 means no retry'},
     {id: 'times', as: 'number', defaultValue: 50}
   ],
-  impl: If((ctx,{},{interval,times}) => interval*times,
+  impl: If('%$interval%',
     rx.innerPipe(
       rx.var('inp'),
       rx.concatMap(
