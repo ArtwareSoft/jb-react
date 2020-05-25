@@ -29,7 +29,7 @@ jb.component('pptr.selectElement', {
 })
 
 jb.component('pptr.querySelector', {
-    type: 'pptr.selector',
+    type: 'rx,pptr,pptr.selector',
     params: [
         {id: 'selector', as: 'string' },
         {id: 'multiple', as: 'boolean', description: 'querySelectorAll' },
