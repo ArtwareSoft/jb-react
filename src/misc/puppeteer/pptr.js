@@ -52,7 +52,7 @@ jb.component('pptr.jsFunction', {
     ],
     impl: rx.innerPipe(
         rx.mapPromise((ctx,{},{expression}) => jb.pptr.runMethod(ctx,'evaluate',expression)),
-        rx.catchError('')
+        rx.catchError(ctx=>null)
     )
 })
 
