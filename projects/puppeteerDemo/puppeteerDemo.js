@@ -141,10 +141,12 @@ jb.component('puppeteerDemo.preview', {
             }),
             pptr.selectElement({select: pptr.elementWithText('tableWithSearch')}),
             pptr.mouseClick({button: 'left', clickCount: 1, delay: 100}),
+            pptr.selectElement({select: pptr.querySelector('body'), startAt: '%$page%'}),
             pptr.selectElement({
               select: pptr.jsFunction(
                 "document.querySelector('iframe').contentDocument.body.querySelector('input')"
-              )
+              ),
+              startAt: '%$page%'
             }),
             pptr.type('Marg'),
             pptr.selectElement({select: pptr.querySelector('.jb-item td', true)}),
