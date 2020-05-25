@@ -217,7 +217,7 @@ jb.component('pptr.jsFunction', {
     params: [
         {id: 'expression', as: 'string', mandatory: true },
     ],
-    impl: rx.pipe(
+    impl: rx.innerPipe(
         rx.mapPromise((ctx,{},{expression}) => jb.pptr.runMethod(ctx,'evaluate',expression)),
         rx.catchError('')
     )
