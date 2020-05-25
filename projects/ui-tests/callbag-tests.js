@@ -543,3 +543,25 @@ jb.component('dataTest.rx.emptyVar', {
     expectedResult: '%%==1'
   })
 })
+
+jb.component('test.paramedRxPipe', {
+  type: 'rx',
+  params: [
+    {id: 'first', type: 'rx'},
+    {id: 'last', type: 'rx'}
+  ],
+  impl: rx.pipe(
+    '%$first%',
+    '%$last%'
+  )
+})
+
+jb.component('dataTest.rx.dynamicParam', {
+  impl: dataTest({
+    calculate: test.paramedRxPipe(
+      rx.fromIter([1]),
+      rx.map('a%%'),
+    ),
+    expectedResult: '%%==a1'
+  })
+})

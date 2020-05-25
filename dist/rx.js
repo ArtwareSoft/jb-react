@@ -271,7 +271,7 @@ jb.component('rx.concatMap', {
   category: 'operator,combine',
   params: [
     {id: 'func', dynamic: true, mandatory: true, description: 'keeps the order of the results, can return array, promise or callbag'},
-    {id: 'combineResultWithInput', dynamic: true, description: 'combines %$input% with the inner result'}
+    {id: 'combineResultWithInput', dynamic: true, description: 'combines %$input% with the inner result %%'}
   ],
   impl: (ctx,func,combine) => combine.profile ? jb.callbag.concatMap(ctx2 => func(ctx2), (input,inner) => combine(inner.setVar('input',input.data)))  
     : jb.callbag.concatMap(ctx2 => func(ctx2))
@@ -351,7 +351,7 @@ jb.component('rx.takeUntil', {
     description: 'closes the stream when events comes from notifier', 
     category: 'terminate',
     params: [
-      {id: 'notifier', dynamic: true, type: 'rx', description: 'can be also promise or any other' },
+      {id: 'notifier', type: 'rx', description: 'can be also promise or any other' },
     ],
     impl: (ctx,notifier) => jb.callbag.takeUntil(notifier)
 })
