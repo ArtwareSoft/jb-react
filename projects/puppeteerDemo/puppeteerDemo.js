@@ -135,17 +135,15 @@ jb.component('puppeteerDemo.preview', {
           showBrowser: true,
           actions: [
             pptr.gotoPage('http://localhost:8082/project/studio/itemlists'),
-            pptr.selectElement({select: pptr.querySelector('body')}),
             pptr.selectElement({
-              select: pptr.jsFunction("document.querySelector('iframe')")
+              select: pptr.jsFunction("document.querySelector('iframe').contentDocument.body"),
+              resultVar: 'innerFrame'
             }),
             pptr.selectElement({select: pptr.elementWithText('tableWithSearch')}),
             pptr.mouseClick({button: 'left', clickCount: 1, delay: 100}),
             pptr.selectElement({
-              select: pptr.jsFunction(
-                "document.querySelector('iframe').contentDocument.body.querySelector('input')"
-              ),
-              startAt: '%$page%'
+              select: pptr.querySelector('input'),
+              startAt: '%$innerFrame%'
             }),
             pptr.type('Marg'),
             pptr.selectElement({select: pptr.querySelector('.jb-item td', true)}),

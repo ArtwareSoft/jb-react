@@ -364,6 +364,7 @@ jb.component('studio.eventItems', {
       ev.description = ev.description || event[1] == 'pptrActivity' && [event[2].activity, event[2].description].join(': ')
       ev.description = ev.description || event[1] == 'setGridAreaVals' && jb.asArray(event[4]).join('/')
       ev.description = ev.description || event[1] == 'htmlChange' && [event[4],event[5]].join(' <- ')
+      ev.description = ev.description || event[1] == 'pptrError' && event[2].err
 
       ev.elem = event[1] == 'applyDelta' && event[2]
       ev.delta = event[1] == 'applyDelta' && event[3]
