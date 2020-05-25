@@ -220,7 +220,7 @@ jb.component('pptr.jsFunction', {
     impl: rx.innerPipe(
         rx.mapPromise((ctx,{},{expression}) => jb.pptr.runMethod(ctx,'evaluate',expression)),
         rx.catchError(ctx=>null),
-        rx.do((ctx,{},{expression}) => (ctx.data == null) && pptrSession.events.next({$: 'Activity', activity: 'catch', description: `${expression} failed`, ctx }) )
+        rx.do((ctx,{pptrSession},{expression}) => (ctx.data == null) && pptrSession.events.next({$: 'Activity', activity: 'catch', description: `${expression} failed`, ctx }) )
     )
 })
 
