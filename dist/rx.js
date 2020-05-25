@@ -47,12 +47,12 @@ jb.component('rx.var', {
     {id: 'name', as: 'string', dynamic: true, mandatory: true, description: 'if empty, does nothing'},
     {id: 'value', dynamic: true, defaultValue: '%%', mandatory: true},
   ],
-  impl: (ctx,name,value) => source => (start, sink) => {
+  impl: If('%$name%', (ctx,{},{name,value}) => source => (start, sink) => {
     if (start != 0) return 
     return source(0, function Var(t, d) {
       sink(t, t === 1 ? d && d.setVar && d.setVar(name(),value(d)) : d)
     })
-  }
+  }, null)
 })
 
 jb.component('rx.reduce', {
@@ -207,26 +207,33 @@ jb.component('rx.mapPromise', {
   impl: (ctx,func) => jb.callbag.mapPromise(ctx2 => Promise.resolve(func(ctx2)).then(res => ctx2.setData(res)))
 })
 
+
 jb.component('rx.retry', {
   type: 'rx',
   category: 'operator',
   params: [
-    {id: 'operator', type: 'rx', mandatory: true, dynamic: true},
-    {id: 'interval', as: 'number', defaultValue: 300},
+    {id: 'operator', type: 'rx', mandatory: true},
+    {id: 'interval', as: 'number', defaultValue: 300, description: '0 means no retry'},
     {id: 'times', as: 'number', defaultValue: 50}
   ],
-  impl: rx.innerPipe(
-    rx.var('inp'),
-    rx.concatMap(
-        rx.pipe(
-          rx.interval('%$interval%'),
-          rx.throwError('%%>%$times%', 'retry failed after %$times% times'),
-          rx.map('%$inp%'),
-          (ctx,{},{operator}) => operator(ctx),
-          rx.filter('%%'),
-          rx.take(1)
+  impl: If((ctx,{},{interval,times}) => interval*times,
+    rx.innerPipe(
+      rx.var('inp'),
+      rx.concatMap(
+          rx.pipe(
+            rx.interval('%$interval%'),
+            rx.throwError(
+                '%%>%$times%',
+                (ctx,{},{interval,times}) => `retry failed after ${interval*times} mSec`
+              ),
+            rx.map('%$inp%'),
+            '%$operator%',
+            rx.filter('%%'),
+            rx.take(1)
+          )
         )
-      )
+    ),
+    '%$operator%'
   )
 })
 
@@ -264,8 +271,10 @@ jb.component('rx.concatMap', {
   category: 'operator,combine',
   params: [
     {id: 'func', dynamic: true, mandatory: true, description: 'keeps the order of the results, can return array, promise or callbag'},
+    {id: 'combineResultWithInput', dynamic: true, description: 'combines %$input% with the inner result'}
   ],
-  impl: (ctx,func) => jb.callbag.concatMap(ctx2 => func(ctx2))
+  impl: (ctx,func,combine) => combine.profile ? jb.callbag.concatMap(ctx2 => func(ctx2), (input,inner) => combine(inner.setVar('input',input.data)))  
+    : jb.callbag.concatMap(ctx2 => func(ctx2))
 })
 
 jb.component('rx.distinctUntilChanged', {

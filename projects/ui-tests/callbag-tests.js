@@ -275,11 +275,16 @@ jb.component('dataTest.callbagConcatMapBug1', {
 
 jb.component('dataTest.callbagConcatMapOrderTiming', {
   impl: dataTest({
-    calculate: pipe(rx.pipe(
-      rx.fromIter(list(1,2,3)),
-      rx.var('inp'),
-      rx.concatMap(rx.pipe(rx.interval(({data}) => data *20), rx.take(3), rx.map('%$inp%-%%') )),
-    ), join(',')),
+    calculate: pipe(
+      rx.pipe(
+          rx.fromIter(list(1, 2, 3)),
+          rx.var('inp'),
+          rx.concatMap(
+              rx.pipe(rx.interval(({data}) => data *20), rx.take(3), rx.map('%$inp%-%%'))
+            )
+        ),
+      join(',')
+    ),
     expectedResult: equals('1-0,1-1,1-2,2-0,2-1,2-2,3-0,3-1,3-2')
   })
 })
@@ -291,6 +296,16 @@ jb.component('dataTest.callbagConcatMapWithInterval', {
       rx.concatMap(rx.pipe(rx.interval(20), rx.take(1))),
     ),
     expectedResult: equals(0)
+  })
+})
+
+jb.component('dataTest.concatMapCombine', {
+  impl: dataTest({
+    calculate: pipe(
+      rx.pipe(rx.fromIter([1, 2]), rx.concatMap(rx.fromIter([30]), '%$input%-%%')),
+      join(',')
+    ),
+    expectedResult: equals('1-30,2-30')
   })
 })
 
@@ -340,7 +355,7 @@ jb.component('dataTest.callbagFlatMapTiming', {
 jb.component('dataTest.callbagRawConcatMapBug1', {
   impl: dataTest({
     calculate: ctx => { const {interval,take,pipe,concatMap,fromPromise,toPromiseArray} = jb.callbag
-      return pipe(interval(1),take(1), concatMap(data => fromPromise(jb.delay(1).then(()=> data+2) ), toPromiseArray))
+      return pipe(interval(1),take(1), concatMap(data => fromPromise(jb.delay(1).then(()=> data+2) )), toPromiseArray)
     },
     expectedResult: equals('2')
   })
@@ -350,8 +365,8 @@ jb.component('dataTest.callbagRawFlatMapBug1', {
   impl: dataTest({
     calculate: ctx => { const {interval,take,pipe,flatMap,fromPromise,toPromiseArray} = jb.callbag
       return pipe(interval(1),take(1), 
-        flatMap(data => fromPromise(jb.delay(100).then(()=> data+2) ),null,'first'), 
-        flatMap(data => fromPromise(jb.delay(100).then(()=> data+2) ),null,'second'),
+        flatMap(data => fromPromise(jb.delay(100).then(()=> data+2) )), 
+        flatMap(data => fromPromise(jb.delay(100).then(()=> data+2) )),
         toPromiseArray)
 
     },
@@ -485,7 +500,6 @@ jb.component('dataTest.rx.retrySrc', {
   })
 })
 
-
 jb.component('dataTest.rx.retry', {
   impl: dataTest({
     vars: [Var('counters', () => ({ counter: 0, retries: 0}))],
@@ -509,3 +523,23 @@ jb.component('dataTest.rx.retry', {
   })
 })
 
+jb.component('dataTest.rx.retryFailure', {
+  impl: dataTest({
+    calculate: rx.pipe(
+      rx.fromIter([1]),
+      rx.retry({operator: rx.map(()=>null), interval: 10, times: 3}),
+      rx.catchError('%%')
+    ),
+    expectedResult: '%%==retry failed after 30 mSec'
+  })
+})
+
+jb.component('dataTest.rx.emptyVar', {
+  impl: dataTest({
+    calculate: rx.pipe(
+      rx.fromIter([1]),
+      rx.var(''),
+    ),
+    expectedResult: '%%==1'
+  })
+})

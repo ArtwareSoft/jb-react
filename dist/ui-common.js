@@ -697,7 +697,7 @@ function h(cmpOrTag,attributes,children) {
 
 function compareVdom(b,a) {
     const attributes = jb.objectDiff(a.attributes || {}, b.attributes || {})
-    if (attributes.style == undefined) delete attributes.style // do not delete style attributes defined by interactive
+//    if (attributes.style == undefined) delete attributes.style // do not delete style attributes defined by interactive
     const children = childDiff(b.children || [],a.children || [])
     return { 
         ...(Object.keys(attributes).length ? {attributes} : {}), 
@@ -1230,12 +1230,12 @@ class JbComponent {
             const modelProp = this.ctx.vars.$model[e.prop]
             if (!modelProp)
                 return jb.logError('calcRenderProps',`missing model prop "${e.prop}"`,this.ctx.vars.$model,this.ctx)
-            jb.log('calcRenderProp',[this])                
             const ref = modelProp(this.ctx)
             if (jb.isWatchable(ref))
                 this.toObserve.push({id: e.prop, cmp: this, ref,...e})
             const val = jb.val(ref)
             this.renderProps[e.prop] = e.transformValue(this.ctx.setData(val == null ? '' : val))
+            jb.log('calcRenderProp',[e.prop,this.renderProps[e.prop],this])                
         })
 
         const filteredPropsByPriority = (this.calcProp || []).filter(toFilter=> 
@@ -6726,7 +6726,7 @@ jb.component('propertySheet.titlesAbove', {
 jb.component('editableBoolean.checkbox', {
   type: 'editable-boolean.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('input', { type: 'checkbox', checked: state.databind, onchange: 'toggle', onkeyup: 'toggleByKey'  }),
+    template: (cmp,state,h) => h('input', { type: 'checkbox', checked: state.databind, onclick: 'toggle', onchange: 'toggle', onkeyup: 'toggleByKey'  }),
     features: field.databind()
   })
 })

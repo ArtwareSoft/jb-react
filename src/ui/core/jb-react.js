@@ -12,7 +12,7 @@ function h(cmpOrTag,attributes,children) {
 
 function compareVdom(b,a) {
     const attributes = jb.objectDiff(a.attributes || {}, b.attributes || {})
-    if (attributes.style == undefined) delete attributes.style // do not delete style attributes defined by interactive
+//    if (attributes.style == undefined) delete attributes.style // do not delete style attributes defined by interactive
     const children = childDiff(b.children || [],a.children || [])
     return { 
         ...(Object.keys(attributes).length ? {attributes} : {}), 

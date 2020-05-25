@@ -2170,13 +2170,33 @@ jb.component('formatDate', {
               })
           }
       },
-      concatMap(_makeSource) {
+      concatMap(_makeSource,combineResults) {
         const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
         return source => (start, sink) => {
             if (start !== 0) return
             let queue = []
             let innerTalkback, sourceTalkback, sourceEnded
-        
+            if (!combineResults) combineResults = (input, inner) => inner
+
+            const concatMapSink= input => function concatMap(t, d) {
+              if (t === 0) {
+                innerTalkback = d
+                innerTalkback(1)
+              } else if (t === 1) {
+                sink(1, combineResults(input,d))
+                innerTalkback(1)
+              } else if (t === 2) {
+                innerTalkback = null
+                if (queue.length === 0) {
+                  stopOrContinue(d)
+                  return
+                }
+                const input = queue.shift()
+                const src = makeSource(input)
+                src(0, concatMapSink(input))
+              }
+            }
+
             source(0, function concatMap(t, d) {
               if (t === 0) {
                 sourceTalkback = d
@@ -2187,7 +2207,7 @@ jb.component('formatDate', {
                   queue.push(d) 
                 else {
                   const src = makeSource(d)
-                  src(0, concatMapSink)
+                  src(0, concatMapSink(d))
                   src(1)
                 }
               } else if (t === 2) {
@@ -2196,24 +2216,6 @@ jb.component('formatDate', {
               }
             })
 
-            function concatMapSink(t, d) {
-              if (t === 0) {
-                innerTalkback = d
-                innerTalkback(1)
-              } else if (t === 1) {
-                sink(1, d)
-                innerTalkback(1)
-              } else if (t === 2) {
-                innerTalkback = null
-                if (queue.length === 0) {
-                  stopOrContinue(d)
-                  return
-                }
-                const src = makeSource(queue.shift())
-                src(0, concatMapSink)
-              }
-            }
-        
             function wrappedSink(t, d) {
               if (t === 2 && innerTalkback) innerTalkback(2, d)
               sourceTalkback(t, d)
@@ -3611,7 +3613,7 @@ function h(cmpOrTag,attributes,children) {
 
 function compareVdom(b,a) {
     const attributes = jb.objectDiff(a.attributes || {}, b.attributes || {})
-    if (attributes.style == undefined) delete attributes.style // do not delete style attributes defined by interactive
+//    if (attributes.style == undefined) delete attributes.style // do not delete style attributes defined by interactive
     const children = childDiff(b.children || [],a.children || [])
     return { 
         ...(Object.keys(attributes).length ? {attributes} : {}), 
@@ -4144,12 +4146,12 @@ class JbComponent {
             const modelProp = this.ctx.vars.$model[e.prop]
             if (!modelProp)
                 return jb.logError('calcRenderProps',`missing model prop "${e.prop}"`,this.ctx.vars.$model,this.ctx)
-            jb.log('calcRenderProp',[this])                
             const ref = modelProp(this.ctx)
             if (jb.isWatchable(ref))
                 this.toObserve.push({id: e.prop, cmp: this, ref,...e})
             const val = jb.val(ref)
             this.renderProps[e.prop] = e.transformValue(this.ctx.setData(val == null ? '' : val))
+            jb.log('calcRenderProp',[e.prop,this.renderProps[e.prop],this])                
         })
 
         const filteredPropsByPriority = (this.calcProp || []).filter(toFilter=> 
@@ -9640,7 +9642,7 @@ jb.component('propertySheet.titlesAbove', {
 jb.component('editableBoolean.checkbox', {
   type: 'editable-boolean.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('input', { type: 'checkbox', checked: state.databind, onchange: 'toggle', onkeyup: 'toggleByKey'  }),
+    template: (cmp,state,h) => h('input', { type: 'checkbox', checked: state.databind, onclick: 'toggle', onchange: 'toggle', onkeyup: 'toggleByKey'  }),
     features: field.databind()
   })
 })
@@ -42510,7 +42512,7 @@ jb.component('studio.saveNewProject', {
 
 jb.ui.getSpy = ctx => {
   const _jb = ctx.exp('%$studio/spyStudio%') ? jb : jb.studio.previewjb
-  return _jb.spy || _jb.initSpy({spyParam: ctx.exp('%$studio/spyLogs%').join(',')})
+  return _jb.spy || _jb.initSpy({spyParam: (ctx.exp('%$studio/spyLogs%') || []).join(',')})
 }
 
 jb.component('studio.openEventTracker', {
@@ -42735,6 +42737,8 @@ jb.component('studio.eventView', {
   impl: group({
     layout: layout.horizontal('4'),
     controls: [
+      studio.slicedString('%title%',20),
+      studio.showLowFootprintObj('%val%','val'),
       controlWithCondition(
         '%opPath%',
         button({
@@ -42775,60 +42779,59 @@ jb.component('studio.eventView', {
           ]
         })
       ),
-      controlWithCondition(isOfType('string', '%event/2%'), text('%event/2%')),
-      controlWithCondition(
-        '%log% == setGridAreaVals%',
-        text({text: join({separator: '/', items: '%event/4%'})})
-      ),
-      controlWithCondition(
-        and('%ctx%', isOfType('array', '%ctx/data%'),),
-        button({
-          title: 'array (%ctx/data/length%)',
-          action: openDialog({
-            style: dialog.popup(),
-            content: studio.dataBrowse('%ctx/data%'),
-            title: 'data',
-            features: dialogFeature.uniqueDialog('variables')
-          }),
-          style: button.href(),
-          features: [css.margin({left: '10'}), feature.hoverTitle('show values')]
-        })
-      ),      
-      controlWithCondition(
-        and('%ctx%', not(isOfType('array', '%ctx/data%')), not(isOfType('object', '%ctx/data%'))),
-        text({text: pipeline('%ctx/data%', slice('0', 20))})
-      ),
-      controlWithCondition(
-        '%description%',
-        text({text: pipeline('%description%', slice('0', 30))})
-      ),
-      controlWithCondition(
-        '%error%',
-        text({text: pipeline('%error/message%', slice('0', 30))})
-      ),
-      controlWithCondition(
-        '%ctx%',
-        button({
-          vars: [Var('count', pipeline('%ctx/vars%', keys(), count()))],
-          title: 'vars (%$count%)',
-          action: openDialog({
-            style: dialog.popup(),
-            content: group({
-              controls: [
-                studio.dataBrowse('%ctx/data%'),
-                studio.dataBrowse('%ctx/vars%')
-              ]
-            }),
-            title: 'variables',
-            features: dialogFeature.uniqueDialog('variables')
-          }),
-          style: button.href(),
-          features: [css.margin({left: '10'}), feature.hoverTitle('show variables')]
-        })
-      )
+      studio.showLowFootprintObj('%ctx/data%','data'),
+      studio.showLowFootprintObj('%ctx/vars%','vars'),
+      studio.showLowFootprintObj('%data%','data'),
+      studio.showLowFootprintObj('%jbComp%','jbComp'),
+      studio.showLowFootprintObj('%delta%','delta'),
+      studio.showLowFootprintObj('%vdom%','vdom'),
+      studio.slicedString('%description%'),
+      studio.slicedString('%error/message%'),
     ]
   })
 })
+
+jb.component('studio.showLowFootprintObj', {
+  params: [
+    {id: 'obj', mandatory: true },
+    {id: 'title', mandatory: true },
+    {id: 'length', as: 'number', defaultValue: 20 },
+  ],
+  impl: controlWithCondition('%$obj%', group({
+    controls: [
+      controlWithCondition(
+        isOfType('object', '%$obj%'),
+        button({
+          title: If(isOfType('array', '%$obj%'),'%$title% (%obj/length%)', '%$title%'),
+          action: openDialog({
+            style: dialog.popup(),
+            content: studio.dataBrowse('%$obj%'),
+            title: 'data',
+            features: dialogFeature.uniqueDialog('showObj')
+          }),
+          style: button.href(),
+          features: [css.margin({left: '10'}), feature.hoverTitle('open')]
+        })
+      ),
+      controlWithCondition(
+        isOfType('string', '%$obj%'),
+        text({text: pipeline('%$obj%', slice(0, 20))})
+      ),
+    ]
+  }))
+})
+
+jb.component('studio.slicedString', {
+  params: [
+    {id: 'data', mandatory: true },
+    {id: 'length', as: 'number', defaultValue: 30 },
+  ],
+  impl: controlWithCondition(
+        isOfType('string', '%$data%'),
+        text({text: pipeline('%$data%', slice(0, '%$length%'))})
+    )
+})
+
 
 jb.component('studio.eventItems', {
   type: 'action',
@@ -42846,8 +42849,12 @@ jb.component('studio.eventItems', {
         ev.log = 'error'
         ev.error = event[2].err
       }
+      ev.title = typeof event[2] == 'string' && event[2]
       ev.ctx = (event || []).filter(x=>x && x.componentContext)[0]
       ev.ctx = ev.ctx || (event || []).filter(x=>x && x.path)[0]
+      ev.jbComp = (event || []).filter(x=> jb.path(x,'constructor.name') == 'JbComponent')[0]
+      ev.ctx = ev.ctx || ev.jbComp && ev.jbComp.ctx
+
       ev.path = ev.ctx && ev.ctx.path
       if (Array.isArray(ev.path)) ev.path = ev.path.join('~')
       if (typeof ev.path != 'string') ev.path = null
@@ -42864,7 +42871,19 @@ jb.component('studio.eventItems', {
       ev.srcElem = jb.path(ev.srcCtx, 'vars.cmp.base')
       ev.srcPath = jb.path(ev.srcCtx, 'vars.cmp.ctx.path')
       ev.srcCompName = ev.srcPath && st.compNameOfPath(ev.srcPath)
+
       ev.description = jb.path(ev,'ctx.data.description') || jb.path(event[2],'data.description') // pptr
+      ev.elem = event[1] == 'applyDelta' && event[2]
+      ev.delta = event[1] == 'applyDelta' && event[3]
+      ev.description = event[1] == 'setGridAreaVals' && jb.asArray(event[4]).join('/')
+
+      ev.delta = ev.delta || event[1] == 'applyDeltaTop' && event[2] == 'apply' && event[5]
+      ev.elem = ev.elem || event[1] == 'applyDeltaTop' && event[2] == 'start' && event[3]
+      ev.vdom = ev.vdom || event[1] == 'applyDeltaTop' && event[2] == 'start' && event[4]
+      ev.description = ev.description || event[1] == 'htmlChange' && [event[4],event[5]].join(' <- ')
+
+      ev.val = event[1] == 'calcRenderProp' && event[3]
+
       return ev
     }
   }
@@ -42883,9 +42902,10 @@ jb.component('studio.openElemMarker', {
       features: [
         css((ctx,{},{elem}) => {
               const elemRect = elem.getBoundingClientRect()
-              const left = elemRect.left + 'px'
+              const left = jb.ui.studioFixXPos(elem) + elemRect.left + 'px'
               const top = jb.ui.studioFixYPos(elem) + elemRect.top + 'px'
-              return `left: ${left}; top: ${top}; width: ${elemRect.width}px; height: ${elemRect.height}px;`
+              const width = Math.max(10,elemRect.width), height = Math.max(10,elemRect.height)
+              return `left: ${left}; top: ${top}; width: ${width}px; height: ${height}px;`
         }),
         css((ctx,{},{css}) => css)
       ]

@@ -135,16 +135,21 @@ jb.component('puppeteerDemo.preview', {
           showBrowser: true,
           actions: [
             pptr.gotoPage('http://localhost:8082/project/studio/itemlists'),
-            pptr.waitForSelector('iframe'),
-            pptr.waitForSelector('.studio-page'),
-            pptr.queryContainsText('tableWithSearch'),
+            pptr.selectElement({
+              select: pptr.jsFunction("document.querySelector('iframe').contentDocument.body"),
+              onlyWait: true
+            }),
+            pptr.selectElement({select: pptr.elementWithText('tableWithSearch')}),
             pptr.mouseClick({button: 'left', clickCount: 1, delay: 100}),
-            pptr.waitForFunction("document.querySelector('iframe').contentDocument"),
-            pptr.waitForFunction("document.querySelector('iframe').contentDocument.body"),
-            pptr.type({text: 'Homer', selector: 'input'}),
-            pptr.querySelector('.jb-item td:first-child span'),
+            pptr.selectElement({
+              select: pptr.jsFunction(
+                "document.querySelector('iframe').contentDocument.body.querySelector('input')"
+              )
+            }),
+            pptr.type({text: 'Marg'}),
+            pptr.selectElement({select: pptr.querySelector('.jb-item td', true)}),
             rx.flatMapArrays(),
-            pptr.getProperty('textContent'),
+            pptr.selectElement({select: pptr.jsProperty('textContent')}),
             pptr.logData()
           ]
         })

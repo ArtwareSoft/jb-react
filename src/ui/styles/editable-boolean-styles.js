@@ -1,7 +1,7 @@
 jb.component('editableBoolean.checkbox', {
   type: 'editable-boolean.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('input', { type: 'checkbox', checked: state.databind, onchange: 'toggle', onkeyup: 'toggleByKey'  }),
+    template: (cmp,state,h) => h('input', { type: 'checkbox', checked: state.databind, onclick: 'toggle', onchange: 'toggle', onkeyup: 'toggleByKey'  }),
     features: field.databind()
   })
 })

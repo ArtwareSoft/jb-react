@@ -2170,13 +2170,33 @@ jb.component('formatDate', {
               })
           }
       },
-      concatMap(_makeSource) {
+      concatMap(_makeSource,combineResults) {
         const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
         return source => (start, sink) => {
             if (start !== 0) return
             let queue = []
             let innerTalkback, sourceTalkback, sourceEnded
-        
+            if (!combineResults) combineResults = (input, inner) => inner
+
+            const concatMapSink= input => function concatMap(t, d) {
+              if (t === 0) {
+                innerTalkback = d
+                innerTalkback(1)
+              } else if (t === 1) {
+                sink(1, combineResults(input,d))
+                innerTalkback(1)
+              } else if (t === 2) {
+                innerTalkback = null
+                if (queue.length === 0) {
+                  stopOrContinue(d)
+                  return
+                }
+                const input = queue.shift()
+                const src = makeSource(input)
+                src(0, concatMapSink(input))
+              }
+            }
+
             source(0, function concatMap(t, d) {
               if (t === 0) {
                 sourceTalkback = d
@@ -2187,7 +2207,7 @@ jb.component('formatDate', {
                   queue.push(d) 
                 else {
                   const src = makeSource(d)
-                  src(0, concatMapSink)
+                  src(0, concatMapSink(d))
                   src(1)
                 }
               } else if (t === 2) {
@@ -2196,24 +2216,6 @@ jb.component('formatDate', {
               }
             })
 
-            function concatMapSink(t, d) {
-              if (t === 0) {
-                innerTalkback = d
-                innerTalkback(1)
-              } else if (t === 1) {
-                sink(1, d)
-                innerTalkback(1)
-              } else if (t === 2) {
-                innerTalkback = null
-                if (queue.length === 0) {
-                  stopOrContinue(d)
-                  return
-                }
-                const src = makeSource(queue.shift())
-                src(0, concatMapSink)
-              }
-            }
-        
             function wrappedSink(t, d) {
               if (t === 2 && innerTalkback) innerTalkback(2, d)
               sourceTalkback(t, d)

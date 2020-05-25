@@ -84,12 +84,12 @@ class JbComponent {
             const modelProp = this.ctx.vars.$model[e.prop]
             if (!modelProp)
                 return jb.logError('calcRenderProps',`missing model prop "${e.prop}"`,this.ctx.vars.$model,this.ctx)
-            jb.log('calcRenderProp',[this])                
             const ref = modelProp(this.ctx)
             if (jb.isWatchable(ref))
                 this.toObserve.push({id: e.prop, cmp: this, ref,...e})
             const val = jb.val(ref)
             this.renderProps[e.prop] = e.transformValue(this.ctx.setData(val == null ? '' : val))
+            jb.log('calcRenderProp',[e.prop,this.renderProps[e.prop],this])                
         })
 
         const filteredPropsByPriority = (this.calcProp || []).filter(toFilter=> 
