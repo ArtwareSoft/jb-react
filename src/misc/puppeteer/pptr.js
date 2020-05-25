@@ -25,8 +25,7 @@ jb.component('pptr.selectElement', {
         {id: 'resultVar', as: 'string', description: 'empty for no var' },
 //        {id: 'onlyWait', as: 'boolean', description: 'returns the existing current value' },
     ],
-    impl: '%$select%'
-    //rx.retry({ operator: rx.innerPipe(rx.map(ctx => ctx.run('%$startAt%')), '%$select%', rx.var('%$resultVar%') ), interval: '%$retryInterval%', times: '%$retryTimes%'  }), 
+    impl: rx.retry({ operator: rx.innerPipe(rx.map(ctx => ctx.run('%$startAt%')), '%$select%', rx.var('%$resultVar%') ), interval: '%$retryInterval%', times: '%$retryTimes%'  }), 
 })
 
 jb.component('pptr.querySelector', {

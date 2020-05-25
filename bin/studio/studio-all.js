@@ -39160,7 +39160,7 @@ jb.component('studio.properties', {
         commonFields: [
           group({
             controls: studio.propField('%path%', '%expanded%'),
-            features: [field.columnWidth('300')]
+            features: [field.columnWidth('300'), studio.disabledSupport('%path%')]
           }),
           group({
             controls: studio.propertyToolbar('%path%'),
