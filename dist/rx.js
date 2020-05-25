@@ -207,7 +207,6 @@ jb.component('rx.mapPromise', {
   impl: (ctx,func) => jb.callbag.mapPromise(ctx2 => Promise.resolve(func(ctx2)).then(res => ctx2.setData(res)))
 })
 
-
 jb.component('rx.retry', {
   type: 'rx',
   category: 'operator',
