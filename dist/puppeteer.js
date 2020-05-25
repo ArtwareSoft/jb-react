@@ -192,7 +192,7 @@ jb.component('pptr.selectElement', {
         {id: 'resultVar', as: 'string', description: 'empty for no var' },
 //        {id: 'onlyWait', as: 'boolean', description: 'returns the existing current value' },
     ],
-    impl: rx.retry({ operator: rx.innerPipe('%$startAt()%','%$select%', rx.var('%$resultVar%') ), interval: '%$retryInterval%', times: '%$retryTimes%'  }), 
+    impl: rx.innerPipe(rx.retry({ operator: '%$select%', interval: '%$retryInterval%', times: '%$retryTimes%'  }),rx.var('%$resultVar%')), 
 })
 // rx.map(ctx => ctx.run('%$startAt%')),
 
