@@ -186,15 +186,16 @@ jb.component('pptr.selectElement', {
     type: 'rx,pptr',
     params: [
         {id: 'select', type: 'pptr.selector', mandatory: true },
-        {id: 'startAt', dynamic: true },
+        {id: 'startAt', defaultValue: '%%', dynamic: true },
         {id: 'retryInterval', as: 'number', defaultValue: 100, description: 'zero means no retries' },
         {id: 'retryTimes', as: 'number', defaultValue: 30 },
         {id: 'resultVar', as: 'string', description: 'empty for no var' },
 //        {id: 'onlyWait', as: 'boolean', description: 'returns the existing current value' },
     ],
-    impl: rx.innerPipe((ctx,{},{startAt}) => startAt.profile ? rx.map(()=>startAt()) : null, rx.retry({ operator: '%$select%', interval: '%$retryInterval%', times: '%$retryTimes%'  }),rx.var('%$resultVar%')), 
+    impl: rx.innerPipe(
+        rx.map('%$startAt()%'), 
+        rx.retry({ operator: '%$select%', interval: '%$retryInterval%', times: '%$retryTimes%'  }),rx.var('%$resultVar%')), 
 })
-// rx.map(ctx => ctx.run('%$startAt%')),
 
 jb.component('pptr.querySelector', {
     type: 'rx,pptr,pptr.selector',
