@@ -155,6 +155,22 @@ jb.component('puppeteerDemo.preview', {
             pptr.logData()
           ]
         })
+      }),
+      button({
+        title: 'preview2',
+        action: pptr.session({
+          showBrowser: true,
+          actions: [
+            pptr.gotoPage('http://localhost:8082/project/studio/itemlists'),
+            pptr.selectElement({
+              select: pptr.elementWithText('itemlists'),
+              startAt: '%%',
+              retryInterval: 100,
+              retryTimes: 5
+            }),
+            pptr.logData()
+          ]
+        })
       })
     ]
   })
