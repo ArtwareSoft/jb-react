@@ -23,11 +23,9 @@ jb.component('pptr.selectElement', {
         {id: 'retryInterval', as: 'number', defaultValue: 100, description: 'zero means no retries' },
         {id: 'retryTimes', as: 'number', defaultValue: 30 },
         {id: 'resultVar', as: 'string', description: 'empty for no var' },
-        {id: 'onlyWait', as: 'boolean', description: 'returns the existing current value' },
+//        {id: 'onlyWait', as: 'boolean', description: 'returns the existing current value' },
     ],
-    impl: If('%$onlyWait%', 
-        rx.doPromise(rx.retry({ operator: rx.innerPipe(rx.map('%$startAt%'), '%$select%', rx.var('%$resultVar%') ), interval: '%$retryInterval%', times: '%$retryTimes%'  })), 
-        rx.mapPromise(rx.retry({ operator: rx.innerPipe(rx.map('%$startAt%'), '%$select%', rx.var('%$resultVar%') ), interval: '%$retryInterval%', times: '%$retryTimes%'  })))
+    impl: rx.retry({ operator: rx.innerPipe(rx.map('%$startAt%'), '%$select%', rx.var('%$resultVar%') ), interval: '%$retryInterval%', times: '%$retryTimes%'  }), 
 })
 
 jb.component('pptr.querySelector', {
