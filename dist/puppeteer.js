@@ -185,14 +185,15 @@ jb.component('pptr.gotoPage', {
 jb.component('pptr.selectElement', {
     type: 'rx,pptr',
     params: [
-        {id: 'select', type: 'pptr.selector', mandatory: true},
+        {id: 'select', type: 'pptr.selector', mandatory: true, dynamic: true },
         {id: 'startAt', defaultValue: '%%', dynamic: true },
         {id: 'retryInterval', as: 'number', defaultValue: 100, description: 'zero means no retries' },
         {id: 'retryTimes', as: 'number', defaultValue: 30 },
         {id: 'resultVar', as: 'string', description: 'empty for no var' },
 //        {id: 'onlyWait', as: 'boolean', description: 'returns the existing current value' },
     ],
-    impl: rx.retry({ operator: rx.innerPipe(rx.map(ctx => ctx.run('%$startAt%')), '%$select%', rx.var('%$resultVar%') ), interval: '%$retryInterval%', times: '%$retryTimes%'  }), 
+    impl: '%$select%'
+    //rx.retry({ operator: rx.innerPipe(rx.map(ctx => ctx.run('%$startAt%')), '%$select%', rx.var('%$resultVar%') ), interval: '%$retryInterval%', times: '%$retryTimes%'  }), 
 })
 
 jb.component('pptr.querySelector', {

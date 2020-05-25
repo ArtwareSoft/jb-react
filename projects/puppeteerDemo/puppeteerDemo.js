@@ -163,10 +163,9 @@ jb.component('puppeteerDemo.preview', {
           actions: [
             pptr.gotoPage('http://localhost:8082/project/studio/itemlists'),
             pptr.selectElement({
-              select: pptr.elementWithText('itemlists'),
-              startAt: '%%',
-              retryInterval: 100,
-              retryTimes: 5
+              select: pptr.querySelector('body'),
+              retryInterval: '0',
+              retryTimes: '0'
             }),
             pptr.logData()
           ]
