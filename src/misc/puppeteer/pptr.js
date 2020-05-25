@@ -19,13 +19,13 @@ jb.component('pptr.selectElement', {
     type: 'rx,pptr',
     params: [
         {id: 'select', type: 'pptr.selector', mandatory: true },
-        {id: 'startAt', defaultValue: '%%', dynamic: true },
+        {id: 'startAt', defaultValue: '%%' },
         {id: 'retryInterval', as: 'number', defaultValue: 100, description: 'zero means no retries' },
         {id: 'retryTimes', as: 'number', defaultValue: 30 },
         {id: 'resultVar', as: 'string', description: 'empty for no var' },
 //        {id: 'onlyWait', as: 'boolean', description: 'returns the existing current value' },
     ],
-    impl: rx.innerPipe(rx.retry({ operator: '%$select%', interval: '%$retryInterval%', times: '%$retryTimes%'  }),rx.var('%$resultVar%')), 
+    impl: rx.innerPipe(rx.map('%$startAt%'), rx.retry({ operator: '%$select%', interval: '%$retryInterval%', times: '%$retryTimes%'  }),rx.var('%$resultVar%')), 
 })
 // rx.map(ctx => ctx.run('%$startAt%')),
 
