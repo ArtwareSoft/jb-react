@@ -171,6 +171,7 @@ jb.component('puppeteerDemo.gsmArena', {
             pptr.xpath('..//a/@href'),
             rx.flatMapArrays(),
             pptr.jsProperty('value'),
+            rx.take(2),
             pptr.newPage('https://www.gsmarena.com/%%')
           ]
         })
