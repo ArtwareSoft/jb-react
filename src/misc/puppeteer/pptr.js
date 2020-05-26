@@ -212,6 +212,12 @@ jb.component('pptr.javascriptOnPptr', {
     impl: rx.mapPromise((ctx,{},{func}) => func(ctx))
 })
 
+jb.component('pptr.contentFrame', {
+    type: 'rx,pptr',
+    description: 'retruns a frame object of the current element',
+    impl: rx.mapPromise(({data}) => data.contentFrame && data.contentFrame())
+})
+
 // page.mouse.move(100, 100);
 // page.mouse.down();
 // page.mouse.move(200, 200);
