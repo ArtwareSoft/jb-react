@@ -23,12 +23,12 @@ jb.pptr = {
         let lastCtx = ctx
         const wrappedActions = actions.flatMap( (action,i) => action ? [
                 rx.var('actionIndex',i),
-                rx.doPromise( ctx => pptrSession.events.next({$: 'Started' })),
+                rx.doPromise( ctx => pptrSession.events.next({$: 'Started', ctx })),
                 actions[i],
-                rx.catchError( err => { pptrSession.events.next({$: 'Error', err: err && err.data || err }); return lastCtx }),
+                rx.catchError( err => { pptrSession.events.next({$: 'Error', err: err && err.data || err, ctx }); return lastCtx }),
                 rx.doPromise( ctx => {
                     lastCtx = ctx
-                    pptrSession.events.next({$: 'Emit' }) 
+                    pptrSession.events.next({$: 'Emit', ctx }) 
                 }),
         ] : [])
 
@@ -80,7 +80,7 @@ jb.pptr = {
         const socket = jb.pptr.createProxySocket()
         socket.onmessage = ({data}) => {
             const message = JSON.parse(data)
-            message.path = [ctx.path,message.path ||''].join('~')
+            //message.path = [ctx.path,message.path ||''].join('~')
             jb.log('pptr'+(message.$ ||''),[message])
             receive.next(message)
         }
@@ -107,7 +107,7 @@ jb.pptr = {
     runMethod(ctx,method,...args) {
         const obj = [ctx.data,ctx.vars.frame,ctx.vars.page].filter(x=>x && x[method])[0]
         return obj && Promise.resolve().then(()=>obj[method](...args)).catch(err=> {
-            ctx.vars.pptrSession.events.next({$: 'Error', message: err.message, stack: err.stack })
+            ctx.vars.pptrSession.events.next({$: 'Error', message: err.message, stack: err.stack, ctx })
             return null
         })
     }
