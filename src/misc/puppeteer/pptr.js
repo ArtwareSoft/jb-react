@@ -64,7 +64,7 @@ jb.component('pptr.jsProperty', {
     params: [
         {id: 'propName', as: 'string',  options: 'value,innerHTML,outerHTML,href,textContent', mandatory: true}
     ],
-    impl: rx.mapPromise((ctx,{},{propName}) => jb.pptr.runMethod(ctx,'evaluate',eval(`x => x && x.${propName} `,ctx.data)))
+    impl: rx.mapPromise((ctx,{},{propName}) => jb.pptr.runMethod(ctx,'evaluate',eval(`x => x && x.${propName} `),ctx.data))
 })
 
 jb.component('pptr.elementWithText', {
