@@ -24,6 +24,7 @@ jb.component('pptr.selectElement', {
         {id: 'retryTimes', as: 'number', defaultValue: 30 },
     ],
     impl: rx.innerPipe(
+        rx.map('%$startAt%'),
         rx.retry({ 
             operator: '%$select%', 
             interval: '%$retryInterval%', 

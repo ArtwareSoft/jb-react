@@ -42872,9 +42872,9 @@ jb.component('studio.eventItems', {
       ev.srcElem = jb.path(ev.srcCtx, 'vars.cmp.base')
       ev.srcPath = jb.path(ev.srcCtx, 'vars.cmp.ctx.path')
       ev.srcCompName = ev.srcPath && st.compNameOfPath(ev.srcPath)
-
-      ev.description = event[1] == 'pptrEmit' && jb.path(event[2],'data.description')
+      const isPptr = typeof event[1] == 'string' && event[1].indexOf('pptr') == 0
       ev.description = ev.description || event[1] == 'pptrActivity' && [event[2].activity, event[2].description].join(': ')
+      ev.description = ev.description || isPptr && jb.path(event[2],'data.description')
       ev.description = ev.description || event[1] == 'setGridAreaVals' && jb.asArray(event[4]).join('/')
       ev.description = ev.description || event[1] == 'htmlChange' && [event[4],event[5]].join(' <- ')
       ev.description = ev.description || event[1] == 'pptrError' && event[2].message

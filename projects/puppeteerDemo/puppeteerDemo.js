@@ -138,7 +138,10 @@ jb.component('puppeteerDemo.preview', {
             pptr.selectElement({
               select: pptr.jsFunction("document.querySelector('iframe').contentDocument.body")
             }),
-            pptr.selectElement({select: pptr.elementWithText('tableWithSearch')}),
+            pptr.selectElement({
+              select: pptr.elementWithText('tableWithSearch'),
+              startAt: '%$page%'
+            }),
             pptr.mouseClick({button: 'left', clickCount: 1, delay: 100}),
             pptr.selectElement({
               select: pptr.querySelector('input'),
