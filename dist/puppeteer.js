@@ -79,6 +79,8 @@ jb.pptr = {
         const socket = jb.pptr.createProxySocket()
         socket.onmessage = ({data}) => {
             const message = JSON.parse(data)
+            if (message.vars)
+                message.path = [ctx.path,'actions',message.vars.actionIndex].join('~')
             jb.log('pptr'+(message.$ ||''),[message])
             receive.next(message)
         }
@@ -198,7 +200,7 @@ jb.component('pptr.selectElement', {
             operator: '%$select%', 
             interval: '%$retryInterval%', 
             times: '%$retryTimes%', 
-            onRetry: (ctx,{pptrSession}) => pptrSession.events.next({$: 'Activity', activity: `retry ${ctx.data}`, ctx}) 
+            onRetry: (ctx,{pptrSession},{retryTimes}) => pptrSession.events.next({$: 'Activity', activity: `retry ${ctx.data} of ${retryTimes}`, ctx}) 
         }),
         rx.var('%$resultVar%')), 
 })

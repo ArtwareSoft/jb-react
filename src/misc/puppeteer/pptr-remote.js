@@ -79,6 +79,8 @@ jb.pptr = {
         const socket = jb.pptr.createProxySocket()
         socket.onmessage = ({data}) => {
             const message = JSON.parse(data)
+            if (message.vars)
+                message.path = [ctx.path,'actions',message.vars.actionIndex].join('~')
             jb.log('pptr'+(message.$ ||''),[message])
             receive.next(message)
         }
