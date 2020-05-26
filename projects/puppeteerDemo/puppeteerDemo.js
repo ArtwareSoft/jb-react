@@ -148,7 +148,7 @@ jb.component('puppeteerDemo.preview', {
             pptr.selectElement({
               select: pptr.jsFunction("document.querySelector('iframe')")
             }),
-            pptr.runMethodOnPptr(({data}) => data.contentFrame()),
+            pptr.contentFrame(),
             rx.var('frame'),
             pptr.selectElement({select: pptr.querySelector('input')}),
             pptr.type('Marg'),

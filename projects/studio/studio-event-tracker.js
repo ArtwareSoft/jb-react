@@ -288,10 +288,10 @@ jb.component('studio.showLowFootprintObj', {
   impl: controlWithCondition('%$obj%', group({
     controls: [
       controlWithCondition(
-        isOfType('object', '%$obj%'),
+        or(isOfType('object', '%$obj%'),isOfType('array', '%$obj%')),
         button({
           vars: Var('count', pipeline('%$obj%',keys(),count())),
-          title: '%$title% (%$count%)',
+          title: If(isOfType('array', '%$obj%'), '%$title%[%$obj/length%]','%$title% (%$count%)'),
           action: openDialog({
             style: dialog.popup(),
             content: studio.dataBrowse('%$obj%'),
