@@ -20,17 +20,15 @@ jb.component('pptr.selectElement', {
     params: [
         {id: 'select', type: 'pptr.selector', mandatory: true },
         {id: 'startAt', defaultValue: '%%', dynamic: true },
-        {id: 'retryInterval', as: 'number', defaultValue: 100, description: '0 means no retries' },
+        {id: 'retryInterval', as: 'number', defaultValue: 300, description: '0 means no retries' },
         {id: 'retryTimes', as: 'number', defaultValue: 30 },
-        {id: 'resultVar', as: 'string', description: 'empty for no var' },
-//        {id: 'onlyWait', as: 'boolean', description: 'returns the existing current value' },
     ],
     impl: rx.innerPipe(
         rx.retry({ 
             operator: '%$select%', 
             interval: '%$retryInterval%', 
             times: '%$retryTimes%', 
-            onRetry: pptr.logActivity('retry: %% time') 
+            onRetry: ({data},{pptrSession}) => pptrSession.events.next({$: 'Activity', activity: `retry ${data}`}) 
         }),
         rx.var('%$resultVar%')), 
 })
