@@ -36,7 +36,6 @@ jb.pptr = {
         ctx.run(
             rx.pipe(
                 Var('$throw',true),
-                Var('actionsPath',ctx.path),
                 rx.fromPromise(() => this.getOrCreateBrowser(showBrowser)),
                 rx.var('browser'),
                 rx.mapPromise(({},{browser}) => browser.newPage()),
