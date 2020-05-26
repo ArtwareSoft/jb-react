@@ -38,8 +38,6 @@ jb.pptr = {
                 Var('$throw',true),
                 rx.fromPromise(() => this.getOrCreateBrowser(showBrowser)),
                 rx.var('browser'),
-                rx.mapPromise(({},{browser}) => browser.newPage()),
-                rx.var('page', '%%'),
                 rx.var('pptrSession',pptrSession),
                 ...wrappedActions,
                 rx.catchError(err =>pptrSession.events.next({$: 'Error', err })),

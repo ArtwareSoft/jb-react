@@ -1,18 +1,35 @@
 jb.ns('pptr,rx')
 
-jb.component('pptr.gotoPage', {
-  type: 'rx,pptr',
-  params: [
-    {id: 'url', as: 'string', mandatory: true},
-    {id: 'waitUntil', as: 'string', defaultValue: 'load', options: 'load:load event is fired,domcontentloaded:DOMContentLoaded event is fired,networkidle0:no more than 0 network connections for at least 500 ms,networkidle2:no more than 2 network connections for at least 500 ms'},
-    {id: 'timeout', as: 'number', defaultValue: 20000, description: 'maximum time to wait for in milliseconds'}
-  ],
-  impl: rx.innerPipe(
-    rx.var('url', '%$url%'),
-    rx.doPromise(
-        (ctx,{},{url,waitUntil,timeout}) => jb.pptr.runMethod(ctx,'goto',url,{waitUntil, timeout})
-      )
-  )
+// jb.component('pptr.gotoPage', {
+//   type: 'rx,pptr',
+//   params: [
+//     {id: 'url', as: 'string', mandatory: true},
+//     {id: 'waitUntil', as: 'string', defaultValue: 'load', options: 'load:load event is fired,domcontentloaded:DOMContentLoaded event is fired,networkidle0:no more than 0 network connections for at least 500 ms,networkidle2:no more than 2 network connections for at least 500 ms'},
+//     {id: 'timeout', as: 'number', defaultValue: 20000, description: 'maximum time to wait for in milliseconds'}
+//   ],
+//   impl: rx.innerPipe(
+//     rx.var('url', '%$url%'),
+//     rx.doPromise(
+//         (ctx,{},{url,waitUntil,timeout}) => jb.pptr.runMethod(ctx,'goto',url,{waitUntil, timeout})
+//       )
+//   )
+// })
+
+jb.component('pptr.newPage', {
+    type: 'rx,pptr',
+    params: [
+        {id: 'url', as: 'string', mandatory: true},
+        {id: 'waitUntil', as: 'string', defaultValue: 'load', options: 'load:load event is fired,domcontentloaded:DOMContentLoaded event is fired,networkidle0:no more than 0 network connections for at least 500 ms,networkidle2:no more than 2 network connections for at least 500 ms'},
+        {id: 'timeout', as: 'number', defaultValue: 20000, description: 'maximum time to wait for in milliseconds'}
+    ],
+    impl: rx.innerPipe(
+        rx.mapPromise(({},{browser}) => browser.newPage()),
+        rx.var('page', '%%'),
+        rx.var('url', '%$url%'),
+        rx.doPromise(
+            (ctx,{},{url,waitUntil,timeout}) => jb.pptr.runMethod(ctx,'goto',url,{waitUntil, timeout})
+          )
+     )
 })
 
 jb.component('pptr.selectElement', {
@@ -35,16 +52,18 @@ jb.component('pptr.selectElement', {
 })
 
 jb.component('pptr.querySelector', {
-    type: 'rx,pptr,pptr.selector',
-    params: [
-        {id: 'selector', as: 'string' },
-        {id: 'multiple', as: 'boolean', description: 'querySelectorAll' },
-    ],
-    impl: rx.mapPromise((ctx,{},{selector,multiple}) => jb.pptr.runMethod(ctx, multiple ? '$$' : '$',selector)),
+  type: 'rx,pptr,pptr.selector',
+  params: [
+    {id: 'selector', as: 'string'},
+    {id: 'multiple', as: 'boolean', description: 'querySelectorAll'}
+  ],
+  impl: rx.mapPromise(
+    (ctx,{},{selector,multiple}) => jb.pptr.runMethod(ctx, multiple ? '$$' : '$',selector)
+  )
 })
 
 jb.component('pptr.xpath', {
-    type: 'pptr.selector',
+    type: 'rx,pptr,pptr.selector',
     params: [
         {id: 'xpath', as: 'string', mandatory: true, description: "e.g, //*[contains(text(), 'Hello')]" },
     ],
@@ -52,15 +71,17 @@ jb.component('pptr.xpath', {
 })
 
 jb.component('pptr.jsFunction', {
-    type: 'pptr.selector',
-    params: [
-        {id: 'expression', as: 'string', mandatory: true },
-    ],
-    impl: rx.mapPromise((ctx,{frame,page},{expression}) => (frame || page).waitForFunction(expression,{},ctx.data))
+  type: 'rx,pptr,pptr.selector',
+  params: [
+    {id: 'expression', as: 'string', mandatory: true}
+  ],
+  impl: rx.mapPromise(
+    (ctx,{frame,page},{expression}) => (frame || page).waitForFunction(expression,{},ctx.data)
+  )
 })
 
 jb.component('pptr.jsProperty', {
-    type: 'pptr.selector',
+    type: 'rx,pptr,pptr.selector',
     params: [
         {id: 'propName', as: 'string',  options: 'value,innerHTML,outerHTML,href,textContent', mandatory: true}
     ],
@@ -68,7 +89,7 @@ jb.component('pptr.jsProperty', {
 })
 
 jb.component('pptr.elementWithText', {
-    type: 'pptr.selector',
+    type: 'rx,pptr,pptr.selector',
     description: 'look for a node with text',
     params: [
         {id: 'text', as: 'string', mandatory: true },
@@ -189,7 +210,7 @@ jb.component('pptr.repeatingAction', {
 })
 
 jb.component('pptr.endlessScrollDown', {
-    type: 'pptr',
+    type: 'rx,pptr',
     impl: rx.innerPipe(
         pptr.repeatingAction('window.scrollPos = window.scrollPos || []; window.scrollPos.push(window.scrollY); window.scrollTo(0,document.body.scrollHeight)' ,500),
         pptr.waitForFunction('window.scrollPos && Math.max.apply(0,window.scrollPos.slice(-4)) == Math.min.apply(0,window.scrollPos.slice(-4))'))

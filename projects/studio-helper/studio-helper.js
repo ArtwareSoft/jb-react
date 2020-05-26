@@ -355,7 +355,7 @@ jb.component('studioHelperSample.pptr', {
     showBrowser: true,
     databindEvents: '%$events%',
     actions: [
-      pptr.gotoPage({url: 'https://google.com/', waitUntil: 'networkidle0'}),
+      pptr.newPage({url: 'https://google.com/', waitUntil: 'networkidle0'}),
       pptr.type({
         text: 'vitamin',
         selector: 'input[name=q]',

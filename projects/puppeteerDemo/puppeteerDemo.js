@@ -26,7 +26,7 @@ jb.component('puppeteerDemo.main', {
               showBrowser: true,
               databindEvents: '%$events%',
               actions: [
-                pptr.gotoPage({url: 'https://google.com/', waitUntil: 'networkidle0'}),
+                pptr.newPage({url: 'https://google.com/', waitUntil: 'networkidle0'}),
                 pptr.selectElement({select: pptr.querySelector('input')}),
                 pptr.type({text: 'vitamin', enterAtEnd: true, delay: 100}),
                 pptr.selectElement({select: pptr.querySelector('h3', true), startAt: '%$page%'}),
@@ -97,7 +97,7 @@ jb.component('puppeteerDemo.jbart', {
         action: pptr.session({
           showBrowser: true,
           actions: [
-            pptr.gotoPage(
+            pptr.newPage(
               'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?project=itemlists&page=itemlists.main&profile_path=itemlists.main&host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/itemlists'
             ),
             pptr.waitForSelector('.studio-pages-items>.jb-item:nth-child(5)'),
@@ -132,7 +132,7 @@ jb.component('puppeteerDemo.preview', {
         action: pptr.session({
           showBrowser: true,
           actions: [
-            pptr.gotoPage('http://localhost:8082/project/studio/itemlists'),
+            pptr.newPage('http://localhost:8082/project/studio/itemlists'),
             pptr.selectElement({select: pptr.elementWithText('tableWithSearch')}),
             pptr.mouseClick({button: 'left', clickCount: 1, delay: 100}),
             pptr.selectElement({
@@ -152,6 +152,29 @@ jb.component('puppeteerDemo.preview', {
           ]
         })
       })
+    ]
+  })
+})
+
+jb.component('puppeteerDemo.gsmArena', {
+  type: 'control',
+  impl: group({
+    title: '',
+    controls: [
+      button({
+        title: 'get phones',
+        action: pptr.session({
+          showBrowser: true,
+          actions: [
+            pptr.newPage({url: 'https://www.gsmarena.com/', waitUntil: 'load'}),
+            pptr.elementWithText('Top 10 by daily interest'),
+            pptr.xpath('..//a/@href'),
+            rx.flatMapArrays(),
+            pptr.jsProperty('value'),
+            pptr.newPage('https://www.gsmarena.com/%%')
+          ]
+        })
+      })      
     ]
   })
 })
