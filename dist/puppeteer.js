@@ -201,7 +201,7 @@ jb.component('pptr.selectElement', {
             operator: '%$select%', 
             interval: '%$retryInterval%', 
             times: '%$retryTimes%', 
-            onRetry: (ctx,{pptrSession},{retryTimes}) => pptrSession.events.next({$: 'Activity', activity: `retry ${ctx.data} of ${retryTimes}`, ctx}) 
+//            onRetry: (ctx,{pptrSession},{retryTimes}) => pptrSession.events.next({$: 'Activity', activity: `retry ${ctx.data} of ${retryTimes}`, ctx}) 
         }),
         rx.var('%$resultVar%')), 
 })
@@ -236,7 +236,7 @@ jb.component('pptr.jsProperty', {
     params: [
         {id: 'propName', as: 'string',  options: 'value,innerHTML,outerHTML,href,textContent', mandatory: true}
     ],
-    impl: rx.mapPromise((ctx,{},{propName}) => (frame || page).waitForFunction(eval(`x => x && x.${propName} `),{},ctx.data))
+    impl: rx.mapPromise((ctx,{frame,page},{propName}) => (frame || page).waitForFunction(eval(`x => x && x.${propName} `),{},ctx.data))
     //jb.pptr.runMethod(ctx,'evaluate',eval(`x => x && x.${propName} `)))
 })
 
