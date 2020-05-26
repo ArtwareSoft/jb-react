@@ -236,8 +236,7 @@ jb.component('pptr.jsProperty', {
     params: [
         {id: 'propName', as: 'string',  options: 'value,innerHTML,outerHTML,href,textContent', mandatory: true}
     ],
-    impl: rx.mapPromise((ctx,{frame,page},{propName}) => (frame || page).waitForFunction(eval(`x => x && x.${propName} `),{},ctx.data))
-    //jb.pptr.runMethod(ctx,'evaluate',eval(`x => x && x.${propName} `)))
+    impl: rx.mapPromise((ctx,{},{propName}) => jb.pptr.runMethod(ctx,'evaluate',eval(`x => x && x.${propName} `)))
 })
 
 jb.component('pptr.elementWithText', {
