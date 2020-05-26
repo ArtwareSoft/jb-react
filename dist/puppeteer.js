@@ -36,7 +36,7 @@ jb.pptr = {
         ctx.run(
             rx.pipe(
                 Var('$throw',true),
-                Var('actionsCtx',ctx),
+                Var('actionsPath',ctx.path),
                 rx.fromPromise(() => this.getOrCreateBrowser(showBrowser)),
                 rx.var('browser'),
                 rx.mapPromise(({},{browser}) => browser.newPage()),
@@ -80,7 +80,6 @@ jb.pptr = {
         const socket = jb.pptr.createProxySocket()
         socket.onmessage = ({data}) => {
             const message = JSON.parse(data)
-            //message.path = [ctx.path,message.path ||''].join('~')
             jb.log('pptr'+(message.$ ||''),[message])
             receive.next(message)
         }
