@@ -27,13 +27,11 @@ jb.component('puppeteerDemo.main', {
               databindEvents: '%$events%',
               actions: [
                 pptr.gotoPage({url: 'https://google.com/', waitUntil: 'networkidle0'}),
-                pptr.type({
-                  text: 'vitamin',
-                  selector: 'input[name=q]',
-                  enterAtEnd: true,
-                  delay: 100
-                }),
-                pptr.extractBySelector({selector: 'h3', extract: 'textContent', multiple: true})
+                pptr.selectElement({select: pptr.querySelector('input')}),
+                pptr.type({text: 'vitamin', enterAtEnd: true, delay: 100}),
+                pptr.selectElement({select: pptr.querySelector('h3', true), startAt: '%$page%'}),
+                rx.flatMapArrays(),
+                pptr.selectElement({select: pptr.jsProperty('textContent')})
               ]
             }),
             raised: true
