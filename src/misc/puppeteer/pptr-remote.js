@@ -41,7 +41,7 @@ jb.pptr = {
                 rx.var('page', '%%'),
                 rx.var('pptrSession',pptrSession),
                 ...wrappedActions,
-                rx.catchError(err =>pptrSession.events.next({$: 'error', err })),
+                rx.catchError(err =>pptrSession.events.next({$: 'Error', err })),
                 rx.subscribe('')
             )
         )
@@ -62,7 +62,7 @@ jb.pptr = {
             if (obj._remoteObject) obj = obj._remoteObject
             else if (typeof obj == 'object') {
                 if (obj.constructor.name == 'Frame') obj = `Frame: ${obj._url}`
-                else if (obj.message && obj.stack) obj = {$: 'error', message: obj.message, stack: obj.stack}
+                else if (obj.message && obj.stack) obj = {$: 'Error', message: obj.message, stack: obj.stack}
                 else if (obj.constructor.name == 'ElementHandle') obj = `Elem: ${obj._remoteObject.description}`
                 else if (!(obj.constructor.name||'').match(/^Object|Array$/))
                     obj = obj.constructor.name
@@ -104,7 +104,10 @@ jb.pptr = {
     },
     runMethod(ctx,method,...args) {
         const obj = [ctx.data,ctx.vars.frame,ctx.vars.page].filter(x=>x && x[method])[0]
-        return obj && obj[method](...args)
+        return obj && Promise.resolve().then(()=>obj[method](...args)).catch(err=> {
+            ctx.vars.pptrSession.events.next({$: 'Error', message: err.message, stack: err.stack })
+            return null
+        })
     }
 }
 
