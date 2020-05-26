@@ -64,7 +64,7 @@ jb.component('pptr.jsProperty', {
     params: [
         {id: 'propName', as: 'string',  options: 'value,innerHTML,outerHTML,href,textContent', mandatory: true}
     ],
-    impl: rx.mapPromise((ctx,{},{propName}) => jb.pptr.runMethod(ctx,'evaluate',eval(`x => x && x.${propName} `)))
+    impl: rx.mapPromise((ctx,{},{propName}) => jb.pptr.runMethod(ctx,'evaluate',eval(`x => x && x.${propName} `,ctx.data)))
 })
 
 jb.component('pptr.elementWithText', {
@@ -74,7 +74,7 @@ jb.component('pptr.elementWithText', {
         {id: 'text', as: 'string', mandatory: true },
     ],
     impl: rx.innerPipe(
-        rx.mapPromise((ctx,{},{text}) => jb.pptr.runMethod(ctx,'$x',`//*[contains(text(),'${text}')]`)),
+        rx.mapPromise((ctx,{},{text}) => jb.pptr.runMethod(ctx,'$x',`//*[contains(text(),'${text}')]`,ctx.data)),
         rx.flatMapArrays()
     )
 })
