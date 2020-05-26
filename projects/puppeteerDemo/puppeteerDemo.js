@@ -146,17 +146,15 @@ jb.component('puppeteerDemo.preview', {
             }),
             pptr.mouseClick({button: 'left', clickCount: 1, delay: 100}),
             pptr.selectElement({
-              select: pptr.jsFunction(
-                "document.querySelector('iframe').contentDocument.body.querySelector('input'))"
-              ),
-              startAt: '%$page%'
+              select: pptr.jsFunction("document.querySelector('iframe').contentDocument")
             }),
+            rx.var('frame'),
+            pptr.selectElement({select: pptr.querySelector('input')}),
             pptr.type('Marg'),
             pptr.selectElement({
-              select: pptr.jsFunction("document.querySelector('iframe').contentDocument.body"),
-              startAt: '%$page%'
+              select: pptr.querySelector('.jb-item td', true),
+              startAt: '%$frame%'
             }),
-            pptr.selectElement({select: pptr.querySelector('.jb-item td', true)}),
             rx.flatMapArrays(),
             pptr.selectElement({select: pptr.jsProperty('textContent')}),
             pptr.logData()
