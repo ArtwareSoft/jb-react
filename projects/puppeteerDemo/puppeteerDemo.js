@@ -136,8 +136,7 @@ jb.component('puppeteerDemo.preview', {
           actions: [
             pptr.gotoPage('http://localhost:8082/project/studio/itemlists'),
             pptr.selectElement({
-              select: pptr.jsFunction("document.querySelector('iframe').contentDocument.body"),
-              resultVar: 'innerFrame'
+              select: pptr.jsFunction("document.querySelector('iframe').contentDocument.body")
             }),
             pptr.selectElement({select: pptr.elementWithText('tableWithSearch')}),
             pptr.mouseClick({button: 'left', clickCount: 1, delay: 100}),

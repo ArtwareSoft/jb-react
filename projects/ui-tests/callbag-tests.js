@@ -508,15 +508,16 @@ jb.component('dataTest.rx.retry', {
       rx.retry({
           operator: rx.map(
             ({data},{counters}) => {
-        if (counters.counter > data) {
-          counters.counter = 0
-          return 'done'
-        }
-        counters.counter++
-        counters.retries++
-        return null // failed - will retry
-      }
-          )
+              if (counters.counter > data) {
+                counters.counter = 0
+                return 'done'
+              }
+              counters.counter++
+              counters.retries++
+              return null // failed - will retry
+            }
+          ),
+          onRetry: ({data},{inp}) => console.log(`retry ${inp}-${data}`)
         })
     ),
     expectedResult: '%$counters/retries%==5'

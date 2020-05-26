@@ -25,7 +25,14 @@ jb.component('pptr.selectElement', {
         {id: 'resultVar', as: 'string', description: 'empty for no var' },
 //        {id: 'onlyWait', as: 'boolean', description: 'returns the existing current value' },
     ],
-    impl: rx.innerPipe(rx.retry({ operator: '%$select%', interval: '%$retryInterval%', times: '%$retryTimes%'}),rx.var('%$resultVar%')), 
+    impl: rx.innerPipe(
+        rx.retry({ 
+            operator: '%$select%', 
+            interval: '%$retryInterval%', 
+            times: '%$retryTimes%', 
+            onRetry: pptr.logActivity('retry: %% time') 
+        }),
+        rx.var('%$resultVar%')), 
 })
 
 jb.component('pptr.querySelector', {

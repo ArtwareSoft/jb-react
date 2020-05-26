@@ -213,7 +213,8 @@ jb.component('rx.retry', {
   params: [
     {id: 'operator', type: 'rx', mandatory: true},
     {id: 'interval', as: 'number', defaultValue: 300, description: '0 means no retry'},
-    {id: 'times', as: 'number', defaultValue: 50}
+    {id: 'times', as: 'number', defaultValue: 50},
+    {id: 'onRetry', dynamic: true, mandatory: true}
   ],
   impl: If('%$interval%',
     rx.innerPipe(
@@ -221,6 +222,7 @@ jb.component('rx.retry', {
       rx.concatMap(
           rx.pipe(
             rx.interval('%$interval%'),
+            rx.do((ctx,{},{onRetry}) => ctx.data && onRetry(ctx)),
             rx.throwError(
                 '%%>%$times%',
                 (ctx,{},{interval,times}) => `retry failed after ${interval*times} mSec`
