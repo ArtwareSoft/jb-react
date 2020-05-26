@@ -23,7 +23,7 @@ jb.component('pptr.newPage', {
     {id: 'timeout', as: 'number', defaultValue: 20000, description: 'maximum time to wait for in milliseconds'}
   ],
   impl: rx.innerPipe(
-    rx.var('url', '%$url()%'),
+    rx.var('url', '%$url%'),
     rx.mapPromise(({},{browser}) => browser.newPage()),
     rx.var('page', '%%'),
     rx.doPromise(
