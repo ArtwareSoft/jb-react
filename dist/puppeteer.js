@@ -218,7 +218,7 @@ jb.component('pptr.selectElement', {
             times: '%$retryTimes%', 
 //            onRetry: (ctx,{pptrSession},{retryTimes}) => pptrSession.events.next({$: 'Activity', activity: `retry ${ctx.data} of ${retryTimes}`, ctx}) 
         }),
-        rx.var('%$resultVar%')), 
+        rx.var('%$resultVar%')),
 })
 
 jb.component('pptr.querySelector', {
