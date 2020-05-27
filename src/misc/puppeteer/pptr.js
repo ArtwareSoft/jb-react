@@ -18,16 +18,16 @@ jb.ns('pptr,rx')
 jb.component('pptr.newPage', {
   type: 'rx,pptr',
   params: [
-    {id: 'url', dynamic: true, mandatory: true},
+    {id: 'url', as: 'string', dynamic: true, mandatory: true},
     {id: 'waitUntil', as: 'string', defaultValue: 'load', options: 'load:load event is fired,domcontentloaded:DOMContentLoaded event is fired,networkidle0:no more than 0 network connections for at least 500 ms,networkidle2:no more than 2 network connections for at least 500 ms'},
     {id: 'timeout', as: 'number', defaultValue: 20000, description: 'maximum time to wait for in milliseconds'}
   ],
   impl: rx.innerPipe(
-    rx.var('url', '%$url()%'),
+    rx.var('url', '%$url%'),
     rx.mapPromise(({},{browser}) => browser.newPage()),
     rx.var('page', '%%'),
     rx.doPromise(
-        (ctx,{},{url,waitUntil,timeout}) => jb.pptr.runMethod(ctx,'goto',url,{waitUntil, timeout})
+        (ctx,{url},{waitUntil,timeout}) => jb.pptr.runMethod(ctx,'goto',url,{waitUntil, timeout})
       )
   )
 })
