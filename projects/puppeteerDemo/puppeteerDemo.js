@@ -165,6 +165,8 @@ jb.component('puppeteerDemo.gsmArena', {
         title: 'get phones',
         action: pptr.session({
           showBrowser: true,
+          databindEvents: '%$phones%',
+          processData: rx.innerPipe(rx.map(obj(prop('title', slice('0', 10))))),
           actions: [
             pptr.newPage({url: 'https://www.gsmarena.com/', waitUntil: 'load'}),
             pptr.elementWithText('Top 10 by daily interest'),
@@ -172,10 +174,20 @@ jb.component('puppeteerDemo.gsmArena', {
             rx.flatMapArrays(),
             pptr.jsProperty('value'),
             rx.take(2),
-            pptr.newPage('https://www.gsmarena.com/%%')
+            pptr.newPage('https://www.gsmarena.com/%%'),
+            pptr.selectElement({select: pptr.querySelector('.article-info')}),
+            pptr.jsProperty('innerHTML'),
+            pptr.logData()
           ]
         })
-      })      
+      }),
+      itemlist({
+        title: '',
+        items: '%$phones%',
+        controls: [
+          text({text: '%title%', title: 'my title'})
+        ]
+      })
     ]
   })
 })

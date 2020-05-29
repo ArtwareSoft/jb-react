@@ -36633,8 +36633,8 @@ jb.component('studio.previewWidget', {
               .then(projectSettings => {
                 jb.log('loadingPreviewProject',[projectSettings])
                 jb.exec(writeValue('%$studio/project%', projectSettings.project))
-                if (projectSettings.project != 'test')
-                  jb.exec(writeValue('%$studio/projectFolder%', projectSettings.project))
+//                if (projectSettings.project != 'test')
+//                  jb.exec(writeValue('%$studio/projectFolder%', projectSettings.project))
                 cmp.refresh({ projectLoaded: true, projectSettings },{srcCtx: ctx})
             })
           }
@@ -39705,7 +39705,7 @@ jb.component('studio.viewAllFiles', {
         })
       ],
       features: [
-        variable({name: 'file', value: '%$studio/projectFolder%.html', watchable: true}),
+        variable({name: 'file', value: pipeline(studio.projectsDir(),'%%/%$studio/project%/index.html'), watchable: true}),
         group.wait({
           for: ctx => jb.studio.projectUtils.projectContent(ctx),
           varName: 'content'
@@ -41843,10 +41843,10 @@ jb.component('studio.initAutoSave', {
 jb.component('studio.saveProjectSettings', {
   type: 'action,has-side-effects',
   impl: ctx => {
-    if (!ctx.exp('%$studio/projectFolder%')) return
-    const path = ctx.run(studio.projectBaseDir()) + '/index.html'
-    return st.host.getFile(path).then( fileContent =>
-      st.host.saveFile(path, newIndexHtmlContent(fileContent, ctx.exp('%$studio/projectSettings%'))))
+//    if (!ctx.exp('%$studio/projectFolder%')) return
+    const path = ctx.run(pipeline(studio.projectsDir(),'%%/%$studio/project%/index.html'))[0]
+    return path && st.host.getFile(path).then( fileContent =>
+      fileContent && st.host.saveFile(path, newIndexHtmlContent(fileContent, ctx.exp('%$studio/projectSettings%'))))
       .then(()=> st.host.showInformationMessage('index.html saved with new settings'))
       .catch(e=> st.host.showError('error saving index.html '+ (typeof e == 'string' ? e : e.message || e.e)))
   }
@@ -42433,10 +42433,10 @@ jb.component('studio.openNewProject', {
     title: 'New Project',
     onOK: runActions(
       Var('project', '%$dialogData/name%'),
-      Var('mainFileName', pipeline(studio.projectsBaseDir(),'%%/%$project%/%$project%.js')),
+      Var('mainFileName', pipeline(studio.projectsDir(),'%%/%$project%/%$project%.js')),
       studio.saveNewProject('%$project%'),
       writeValue('%$studio/project%', '%$project%'),
-      writeValue('%$studio/projectFolder%', '%$project%'),
+//      writeValue('%$studio/projectFolder%', '%$project%'),
       writeValue('%$studio/page%', '%$project%.main'),
       writeValue('%$studio/profile_path%', studio.currentPagePath()),
       studio.reOpenStudio('%$mainFileName%',5)
@@ -42465,11 +42465,12 @@ jb.component('studio.createProjectFile', {
     { id: 'fileName', as: 'string' },
   ],
   impl: runActions(
+    Var('project','%$studio/project%'),
     (ctx,{},{fileName}) => jb.studio.host.createDirectoryWithFiles({
       override: true,
-      project: ctx.exp('%$studio/project%'), 
+      project: ctx.exp('%$project%'), 
       files: {[fileName]: ''}, 
-      baseDir: ctx.run(studio.projectBaseDir())
+      baseDir: ctx.run(pipeline(studio.projectsDir(),'%%/%$project%'))[0]
     }),
     addToArray('%$studio/projectSettings/jsFiles%','%$fileName%'),
     studio.saveProjectSettings()
@@ -42482,10 +42483,8 @@ jb.component('studio.projectBaseDir', {
   .split('/').slice(0,-1).join('/').slice(1)
 })
 
-jb.component('studio.projectsBaseDir', {
-  impl: ctx => jb.studio.host.locationToPath(
-      (jb.frame.jbBaseProjUrl || '') + jb.studio.host.pathOfJsFile('', ''))
-  .split('/').slice(0,-2).join('/').slice(1)
+jb.component('studio.projectsDir', {
+  impl: () => jb.studio.host.projectsDir()
 })
 
 
@@ -43271,7 +43270,7 @@ jb.component('studio.sampleProject', {
     title: '%$project%',
     action: action.if(
       studio.inVscode(),
-      studio.reOpenStudio(pipeline(studio.projectsBaseDir(),'%%/%$project%/%$project%.js'), 0),
+      studio.reOpenStudio(pipeline(studio.projectsDir(),'%%/%$project%/%$project%.js'), 0),
       gotoUrl(
         'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/%$project%&project=%$project%',
         'new tab'
@@ -43729,6 +43728,7 @@ const devHost = {
     showError: text => jb.studio.showMultiMessages([{text, error: true}]),
     showInformationMessage: text => jb.studio.showMultiMessages([{text}]),
     reOpenStudio: () => jb.frame.location && jb.frame.location.reload(),
+    projectsDir: () => '/projects',
 
     // new project
     createDirectoryWithFiles: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, 
@@ -43742,7 +43742,7 @@ const devHost = {
 const vscodeDevHost = {
     settings: () => Promise.resolve('{}'),
     getFile: path => jb.studio.vscodeService({$: 'getFile', path}).then( res=>res.content ),
-    locationToPath: path => decodeURIComponent(path.split('//file//').pop()).replace(/\\/g,'/'),
+    locationToPath: loc => decodeURIComponent(loc.split('//file//').pop()).replace(/\\/g,'/'),
     saveDelta: (path, edits) => jb.studio.vscodeService({$: 'saveDelta', path, edits}),
     saveFile: (path, contents) => jb.studio.vscodeService({$: 'saveFile', path, contents}),
     createDirectoryWithFiles: request => jb.studio.vscodeService({$: 'createDirectoryWithFiles', ...request}),
@@ -43753,12 +43753,14 @@ const vscodeDevHost = {
     projectUrlInStudio: project => `/project/studio/${project}`,
     pathOfDistFolder: () => `${jb.frame.jbBaseProjUrl}/dist`,
     jbLoader: `${jb.frame.jbBaseProjUrl}/src/loader/jb-loader.js`,
+    projectsDir: () => `${decodeURIComponent(jb.frame.jbBaseProjUrl).split('//file///').pop()}/projects`
 }
 
 const vscodeUserHost = Object.assign({},vscodeDevHost,{
     pathOfJsFile: (project,fn) => `${project}/${fn}`,
     jbLoader: `${jb.frame.jbBaseProjUrl}/node_modules/jb-react/dist/jb-loader.js`,
     pathOfDistFolder: () => `${jb.frame.jbBaseProjUrl}/node_modules/jb-react/dist`,
+    projectsDir: () => decodeURIComponent(jb.frame.jbBaseProjUrl).split('//file///').pop()
 })
 
 const userLocalHost = Object.assign({},devHost,{
@@ -46488,7 +46490,7 @@ jb.component('studio.initVscodeAdapter', {
         if (! jb.frame.jbInvscode || jb.VscodeAdapterInitialized) return
         jb.VscodeAdapterInitialized = true
         const vscode = jb.studio.vsCodeApi
-        const params = ['project','page','profile_path','vscode','projectFolder']
+        const params = ['project','page','profile_path','vscode']
 
         const {pipe, subscribe,create,filter} = jb.callbag
         jb.studio.vscodeEm = create(obs=> jb.frame.addEventListener('message', e => obs(e)))

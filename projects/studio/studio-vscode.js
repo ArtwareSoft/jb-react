@@ -9,7 +9,7 @@ jb.component('studio.initVscodeAdapter', {
         if (! jb.frame.jbInvscode || jb.VscodeAdapterInitialized) return
         jb.VscodeAdapterInitialized = true
         const vscode = jb.studio.vsCodeApi
-        const params = ['project','page','profile_path','vscode','projectFolder']
+        const params = ['project','page','profile_path','vscode']
 
         const {pipe, subscribe,create,filter} = jb.callbag
         jb.studio.vscodeEm = create(obs=> jb.frame.addEventListener('message', e => obs(e)))

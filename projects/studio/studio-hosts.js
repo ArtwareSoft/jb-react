@@ -16,6 +16,7 @@ const devHost = {
     showError: text => jb.studio.showMultiMessages([{text, error: true}]),
     showInformationMessage: text => jb.studio.showMultiMessages([{text}]),
     reOpenStudio: () => jb.frame.location && jb.frame.location.reload(),
+    projectsDir: () => '/projects',
 
     // new project
     createDirectoryWithFiles: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, 
@@ -29,7 +30,7 @@ const devHost = {
 const vscodeDevHost = {
     settings: () => Promise.resolve('{}'),
     getFile: path => jb.studio.vscodeService({$: 'getFile', path}).then( res=>res.content ),
-    locationToPath: path => decodeURIComponent(path.split('//file//').pop()).replace(/\\/g,'/'),
+    locationToPath: loc => decodeURIComponent(loc.split('//file//').pop()).replace(/\\/g,'/'),
     saveDelta: (path, edits) => jb.studio.vscodeService({$: 'saveDelta', path, edits}),
     saveFile: (path, contents) => jb.studio.vscodeService({$: 'saveFile', path, contents}),
     createDirectoryWithFiles: request => jb.studio.vscodeService({$: 'createDirectoryWithFiles', ...request}),
@@ -40,12 +41,14 @@ const vscodeDevHost = {
     projectUrlInStudio: project => `/project/studio/${project}`,
     pathOfDistFolder: () => `${jb.frame.jbBaseProjUrl}/dist`,
     jbLoader: `${jb.frame.jbBaseProjUrl}/src/loader/jb-loader.js`,
+    projectsDir: () => `${decodeURIComponent(jb.frame.jbBaseProjUrl).split('//file///').pop()}/projects`
 }
 
 const vscodeUserHost = Object.assign({},vscodeDevHost,{
     pathOfJsFile: (project,fn) => `${project}/${fn}`,
     jbLoader: `${jb.frame.jbBaseProjUrl}/node_modules/jb-react/dist/jb-loader.js`,
     pathOfDistFolder: () => `${jb.frame.jbBaseProjUrl}/node_modules/jb-react/dist`,
+    projectsDir: () => decodeURIComponent(jb.frame.jbBaseProjUrl).split('//file///').pop()
 })
 
 const userLocalHost = Object.assign({},devHost,{

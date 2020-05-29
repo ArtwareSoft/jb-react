@@ -123,7 +123,7 @@ jb.component('studio.viewAllFiles', {
         })
       ],
       features: [
-        variable({name: 'file', value: '%$studio/projectFolder%.html', watchable: true}),
+        variable({name: 'file', value: pipeline(studio.projectsDir(),'%%/%$studio/project%/index.html'), watchable: true}),
         group.wait({
           for: ctx => jb.studio.projectUtils.projectContent(ctx),
           varName: 'content'

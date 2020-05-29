@@ -60,10 +60,10 @@ jb.component('studio.openNewProject', {
     title: 'New Project',
     onOK: runActions(
       Var('project', '%$dialogData/name%'),
-      Var('mainFileName', pipeline(studio.projectsBaseDir(),'%%/%$project%/%$project%.js')),
+      Var('mainFileName', pipeline(studio.projectsDir(),'%%/%$project%/%$project%.js')),
       studio.saveNewProject('%$project%'),
       writeValue('%$studio/project%', '%$project%'),
-      writeValue('%$studio/projectFolder%', '%$project%'),
+//      writeValue('%$studio/projectFolder%', '%$project%'),
       writeValue('%$studio/page%', '%$project%.main'),
       writeValue('%$studio/profile_path%', studio.currentPagePath()),
       studio.reOpenStudio('%$mainFileName%',5)
@@ -92,11 +92,12 @@ jb.component('studio.createProjectFile', {
     { id: 'fileName', as: 'string' },
   ],
   impl: runActions(
+    Var('project','%$studio/project%'),
     (ctx,{},{fileName}) => jb.studio.host.createDirectoryWithFiles({
       override: true,
-      project: ctx.exp('%$studio/project%'), 
+      project: ctx.exp('%$project%'), 
       files: {[fileName]: ''}, 
-      baseDir: ctx.run(studio.projectBaseDir())
+      baseDir: ctx.run(pipeline(studio.projectsDir(),'%%/%$project%'))[0]
     }),
     addToArray('%$studio/projectSettings/jsFiles%','%$fileName%'),
     studio.saveProjectSettings()
@@ -109,10 +110,8 @@ jb.component('studio.projectBaseDir', {
   .split('/').slice(0,-1).join('/').slice(1)
 })
 
-jb.component('studio.projectsBaseDir', {
-  impl: ctx => jb.studio.host.locationToPath(
-      (jb.frame.jbBaseProjUrl || '') + jb.studio.host.pathOfJsFile('', ''))
-  .split('/').slice(0,-2).join('/').slice(1)
+jb.component('studio.projectsDir', {
+  impl: () => jb.studio.host.projectsDir()
 })
 
 

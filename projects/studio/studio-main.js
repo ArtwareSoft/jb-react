@@ -86,7 +86,7 @@ jb.component('studio.sampleProject', {
     title: '%$project%',
     action: action.if(
       studio.inVscode(),
-      studio.reOpenStudio(pipeline(studio.projectsBaseDir(),'%%/%$project%/%$project%.js'), 0),
+      studio.reOpenStudio(pipeline(studio.projectsDir(),'%%/%$project%/%$project%.js'), 0),
       gotoUrl(
         'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/%$project%&project=%$project%',
         'new tab'

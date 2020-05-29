@@ -53,10 +53,10 @@ jb.component('studio.initAutoSave', {
 jb.component('studio.saveProjectSettings', {
   type: 'action,has-side-effects',
   impl: ctx => {
-    if (!ctx.exp('%$studio/projectFolder%')) return
-    const path = ctx.run(studio.projectBaseDir()) + '/index.html'
-    return st.host.getFile(path).then( fileContent =>
-      st.host.saveFile(path, newIndexHtmlContent(fileContent, ctx.exp('%$studio/projectSettings%'))))
+//    if (!ctx.exp('%$studio/projectFolder%')) return
+    const path = ctx.run(pipeline(studio.projectsDir(),'%%/%$studio/project%/index.html'))[0]
+    return path && st.host.getFile(path).then( fileContent =>
+      fileContent && st.host.saveFile(path, newIndexHtmlContent(fileContent, ctx.exp('%$studio/projectSettings%'))))
       .then(()=> st.host.showInformationMessage('index.html saved with new settings'))
       .catch(e=> st.host.showError('error saving index.html '+ (typeof e == 'string' ? e : e.message || e.e)))
   }

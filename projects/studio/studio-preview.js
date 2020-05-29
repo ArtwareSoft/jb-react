@@ -159,8 +159,8 @@ jb.component('studio.previewWidget', {
               .then(projectSettings => {
                 jb.log('loadingPreviewProject',[projectSettings])
                 jb.exec(writeValue('%$studio/project%', projectSettings.project))
-                if (projectSettings.project != 'test')
-                  jb.exec(writeValue('%$studio/projectFolder%', projectSettings.project))
+//                if (projectSettings.project != 'test')
+//                  jb.exec(writeValue('%$studio/projectFolder%', projectSettings.project))
                 cmp.refresh({ projectLoaded: true, projectSettings },{srcCtx: ctx})
             })
           }

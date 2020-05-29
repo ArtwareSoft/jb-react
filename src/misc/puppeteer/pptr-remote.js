@@ -71,8 +71,8 @@ jb.pptr = {
             return obj && typeof obj == 'object' && jb.objFromEntries( jb.entries(obj).map(([id,val])=>[id,chopObj(val, depth-1)]).filter(e=>e[1] != null) )
         }
     },
-    createProxySession(ctx,{databindEvents}) {
-        const {pipe,skip,take,subject,subscribe,doPromise} = jb.callbag
+    createProxySession(ctx,{processData,databindEvents}) {
+        const {pipe,skip,take,map,filter,subject,subscribe,doPromise} = jb.callbag
         const receive = subject(), commands = subject()
         const socket = jb.pptr.createProxySocket()
         socket.onmessage = ({data}) => {
@@ -98,7 +98,7 @@ jb.pptr = {
         pipe(receive,take(1),
             doPromise(m => m.res == 'loadCodeReq' && ctx.setVar('pptrSession',pptrSession).run(pptr.sendCodeToServer())),
             subscribe(()=> pptrSession.commands.next({run: ctx.profile})))
-        pipe(receive,subscribe(message =>databindEvents && jb.push(databindEvents, message,ctx)))
+        pipe(receive, filter(x=>x.$ == 'ResultData'), map(x=> ctx.setData(x.data)), processData, subscribe(message =>databindEvents && jb.push(databindEvents, message,ctx)))
         
         return pptrSession
     },
@@ -136,9 +136,10 @@ jb.component('pptr.session', {
   params: [
     {id: 'showBrowser', as: 'boolean'},
     {id: 'databindEvents', as: 'ref', description: 'bind events from puppeteer to array (watchable)'},
-    {id: 'actions', type: 'rx[]', ignore: true, templateValue: []}
+    {id: 'processData', type: 'rx' , templateValue: rx.innerPipe() },
+    {id: 'actions', type: 'rx[]', ignore: true, templateValue: []},
   ],
-  impl: (ctx,showBrowser,databindEvents) => jb.pptr.createSession(ctx,{showBrowser,databindEvents})
+  impl: (ctx,showBrowser,databindEvents,processData) => jb.pptr.createSession(ctx,{showBrowser,databindEvents,processData})
 })
 
 jb.component('pptr.logData', {
