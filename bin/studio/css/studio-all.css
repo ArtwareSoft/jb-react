@@ -259,7 +259,7 @@ border: 1px solid var(--jb-dropdown-border)}
   --jb-expandbox-background:            var(--vscode-debugIcon-restartForeground);
   --jb-dropdown-shadow:                 var(--vscode-scrollbar-shadow);
 
-  --mdc-theme-secondary:                var(--jb-logo-color);
+  --mdc-theme-secondary:                var(--jb-menubar-selectionBackground);
 }
 
 .vscode-vars-just-to-see {
