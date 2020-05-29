@@ -90,7 +90,7 @@ jb.component('studio.refreshPreview', {
   type: 'action',
   impl: ctx => {
     if (jb.frame.jbInvscode)
-      return jb.studio.host.reOpenStudio()
+      return ctx.run(studio.reOpenStudio())
     jb.ui.garbageCollectCtxDictionary(jb.frame.document.body,true);
     jb.studio.previewjb.ui.garbageCollectCtxDictionary(jb.studio.previewjb.frame.document.body, true);
     jb.studio.resourcesFromPrevRun = st.previewWindow.JSON.stringify(jb.studio.previewjb.resources)

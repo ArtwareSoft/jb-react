@@ -79,8 +79,8 @@ jb.component('studio.openNewProject', {
 
 jb.component('studio.reOpenStudio', {
   params:[
-    {id: 'fileName', as: 'string'},
-    {id: 'line', as: 'number'},
+    {id: 'fileName', as: 'string', defaultValue: pipeline(studio.projectsDir(),'%%/%$studio/project%/%$studio/project%.js')},
+    {id: 'line', as: 'number', defaultValue: 0},
   ],
   impl: (ctx,fn,line) => jb.studio.host.reOpenStudio(fn,line)
 })

@@ -36564,7 +36564,7 @@ jb.component('studio.refreshPreview', {
   type: 'action',
   impl: ctx => {
     if (jb.frame.jbInvscode)
-      return jb.studio.host.reOpenStudio()
+      return ctx.run(studio.reOpenStudio())
     jb.ui.garbageCollectCtxDictionary(jb.frame.document.body,true);
     jb.studio.previewjb.ui.garbageCollectCtxDictionary(jb.studio.previewjb.frame.document.body, true);
     jb.studio.resourcesFromPrevRun = st.previewWindow.JSON.stringify(jb.studio.previewjb.resources)
@@ -42452,8 +42452,8 @@ jb.component('studio.openNewProject', {
 
 jb.component('studio.reOpenStudio', {
   params:[
-    {id: 'fileName', as: 'string'},
-    {id: 'line', as: 'number'},
+    {id: 'fileName', as: 'string', defaultValue: pipeline(studio.projectsDir(),'%%/%$studio/project%/%$studio/project%.js')},
+    {id: 'line', as: 'number', defaultValue: 0},
   ],
   impl: (ctx,fn,line) => jb.studio.host.reOpenStudio(fn,line)
 })
