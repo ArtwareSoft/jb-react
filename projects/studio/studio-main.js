@@ -39,7 +39,8 @@ jb.component('studio.pages', {
           }),
           css.class('studio-pages-items'),
           studio.watchComponents(),
-          css.width({width: '1200', overflow: 'auto', minMax: 'max'})
+          css.width({width: '1200', overflow: 'auto', minMax: 'max'}),
+          css('align-items: center;')
         ]
       }),
       text('|'),
@@ -53,6 +54,7 @@ jb.component('studio.pages', {
         items: pipeline(studio.cmpsOfProject(), filter(studio.isOfType('%%', 'data'))),
         controls: text({
           text: pipeline(suffix('.'), extractSuffix('.')),
+          style: text.alignToBottom(),
           features: [feature.onEvent({event: 'click', action: studio.openJbEditor('%%')})]
         }),
         style: itemlist.horizontal(),
@@ -401,11 +403,11 @@ jb.component('studio.pathHyperlink', {
       }),
       editableBoolean({
         databind: '%$studio/hideProbe%',
-        style: editableBoolean.iconWithSlash('18'),
+        style: editableBoolean.iconWithSlash('20'),
         title: 'hide input-output',
         textForTrue: 'hide probe',
         textForFalse: 'show probe',
-        features: feature.icon({icon: 'power_input', type: 'mdc'})
+        features: feature.icon({icon: 'power_input', type: 'mdc', size: '12'})
       })
     ]
   })
