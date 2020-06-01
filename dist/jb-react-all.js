@@ -10771,19 +10771,20 @@ jb.remote = {
         jb.callbag.fromEvent('message',remote),
 //        jb.remote.talkbackToRemote(remote, id),
         jb.callbag.map(m=> jb.remote.evalFunctions(JSON.parse(m.data))), 
-        jb.callbag.filter(m=> m.id == id)
+        jb.callbag.filter(m=> m.id == id),
+        jb.callbag.map(m=> m.data)
     ),
     remoteSink: (remote, id) => source => jb.callbag.pipe(
         source, 
         jb.callbag.map(m => ({ data: jb.remote.prepareForClone(m), id } )), 
         jb.callbag.Do(m => remote.postMessage(JSON.stringify(m)))
     ),
-    talkbackToRemote: source => (start,sink) => {
-        if (start == 0) sink(0, function talkbackToRemote(t,d) {
-            if (t == 1 && d == null)
-                remote.postMessage(JSON.stringify({id, t: 1}))
-        })
-    },
+    // talkbackToRemote: source => (start,sink) => {
+    //     if (start == 0) sink(0, function talkbackToRemote(t,d) {
+    //         if (t == 1 && d == null)
+    //             remote.postMessage(JSON.stringify({id, t: 1}))
+    //     })
+    // },
     prepareForClone: (obj,depth) => {
         depth = depth || 0
         if (obj == null || depth > 5) return
