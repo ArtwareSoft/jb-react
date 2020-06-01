@@ -10805,7 +10805,7 @@ jb.remote = {
 
         pipe(
             fromEvent('message', self), 
-            map(m=> jb.remote.evalFunctions(JSON.parse(m))),
+            map(m=> jb.remote.evalFunctions(JSON.parse(m.data))),
             filter(m=> !m.id),
             subscribe(m=> pipe(
                     m.$ == 'innerCB' && jb.remote.remoteSource(self, m.sourceId),
