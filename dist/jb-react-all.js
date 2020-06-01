@@ -10786,7 +10786,7 @@ jb.remote = {
             return {$: '__func', code: obj.toString() }
         if (typeof obj == 'object') {
             if (obj.constructor.name == 'jbCtx')
-                return { vars: jb.remote.prepareForClone(obj.vars,depth+1), data: jb.remote.prepareForClone(obj.data,depth+1), path: obj.path }
+                return { vars: jb.remote.prepareForClone(obj.vars,depth+1), data: jb.remote.prepareForClone(obj.data,depth+1), forcePath: obj.path }
             else if (!(obj.constructor.name||'').match(/^Object|Array$/))
                 return obj.constructor.name
             else
