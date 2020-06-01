@@ -10779,6 +10779,7 @@ jb.remote = {
         jb.callbag.fromEvent('message',remote),
         jb.callbag.map(m=> jb.remote.evalFunctions(JSON.parse(m.data))), 
         jb.callbag.filter(m=> m.id == id),
+        jb.callbag.takeUntil(m=> m.finished),
         jb.callbag.map(m=> new jb.jbCtx().ctx({data: m.data.data, vars: m.data.vars, profile: '', forcePath: ''}))
     ),
     remoteSink: (remote, id) => source => jb.callbag.pipe(
@@ -10821,7 +10822,7 @@ jb.remote = {
                     m.$ == 'innerCB' && jb.remote.remoteSource(self, m.sourceId),
                     new jb.jbCtx().ctx(m.ctx).runInner(m.profile, {type: 'rx'} ,m.propName),
                     jb.remote.remoteSink(self, m.sinkId),
-                    subscribe(()=>{})
+                    subscribe({complete: () => postMessage(JSON.stringify({id: sinkId, finished: true}))})
             ))
         )
     }
