@@ -10853,11 +10853,11 @@ jb.component('remote.innerRx', {
     impl: (ctx,rx,remote) => {
         const sourceId = jb.remote.counter++
         const sinkId = jb.remote.counter++
-        jb.delay(1).then(()=> remote.postObj({ $: 'innerCB', sourceId, sinkId, propName: 'rx', profile: ctx.profile.rx, ctx }))
-        const remoteSource = jb.remote.remoteSource(remote,sinkId)
+        remote.postObj({ $: 'innerCB', sourceId, sinkId, propName: 'rx', profile: ctx.profile.rx, ctx })
         return source => (start,sink) => {
             if (start!=0) return
-            jb.callbag.subscribe(()=>{})(jb.remote.remoteSink(remote,sourceId)(source))
+            jb.delay(10).then(()=> jb.callbag.subscribe(()=>{})(jb.remote.remoteSink(remote,sourceId)(source)))
+            const remoteSource = jb.remote.remoteSource(remote,sinkId)
             remoteSource(0, (t,d) => sink(t,d))
         }
 //        pipe(source,jb.remote.remoteSink(remote,sourceId), block, () => jb.remote.remoteSource(remote,sinkId))
