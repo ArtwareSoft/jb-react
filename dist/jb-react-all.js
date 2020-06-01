@@ -10786,7 +10786,7 @@ jb.remote = {
             return {$: '__func', code: obj.toString() }
         if (typeof obj == 'object') {
             if (obj.constructor.name == 'jbCtx')
-                return { vars: jb.remote.prepareForClone(ctx.vars,depth+1), data: jb.remote.prepareForClone(ctx.data,depth+1), path: ctx.path }
+                return { vars: jb.remote.prepareForClone(obj.vars,depth+1), data: jb.remote.prepareForClone(obj.data,depth+1), path: obj.path }
             else if (!(obj.constructor.name||'').match(/^Object|Array$/))
                 return obj.constructor.name
             else
@@ -10819,7 +10819,7 @@ jb.remote = {
 jb.component('worker.remoteCallbag', {
     type: 'remote',
     params: [
-        {id: 'libs', as: 'array', defaultValue: ['common'] },
+        {id: 'libs', as: 'array', defaultValue: ['common','remote'] },
     ],    
     impl: (ctx,libs) => {
         const workerCode = [
