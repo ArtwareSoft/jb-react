@@ -49,7 +49,7 @@ jb.remote = {
                     m.$ == 'innerCB' && jb.remote.remoteSource(self, m.sourceId),
                     new jb.jbCtx().ctx(m.ctx).runInner(m.profile, {type: 'rx'} ,m.propName),
                     jb.remote.remoteSink(self, m.sinkId),
-                    Do(e=> postMessage(JSON.stringify({$: 'cbLogByPathDiffs', id: m.sinkId, diffs: jb.remote.cbLogByPathDiffs(m.ctx.path)}))),
+                    Do(e=> postMessage(JSON.stringify({$: 'cbLogByPathDiffs', id: m.sinkId, diffs: jb.remote.cbLogByPathDiffs(m.ctx.forcePath)}))),
                     subscribe({complete: () => postMessage(JSON.stringify({id: m.sinkId, finished: true}))})
                 )
             })
