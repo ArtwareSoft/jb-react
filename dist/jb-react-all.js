@@ -2063,7 +2063,15 @@ jb.component('formatDate', {
         const cbs = _cbs.filter(x=>x)
         if (!cbs[0]) return
         let res = cbs[0]
-        for (let i = 1, n = cbs.length; i < n; i++) res = cbs[i](res)
+        for (let i = 1, n = cbs.length; i < n; i++) {
+          const newRes = cbs[i](res)
+          if (!newRes) {
+            debugger
+            cbs[i](res)
+          }
+          else
+            res = newRes
+        }
         return res
       },
       Do: f => source => (start, sink) => {
@@ -10843,12 +10851,16 @@ jb.component('remote.innerRx', {
       {id: 'remote', type: 'remote', defaultValue: worker.remoteCallbag()}
     ],
     impl: (ctx,rx,remote) => {
-        const {pipe} = jb.callbag
-        const block = source => (start,sink) => {}
         const sourceId = jb.remote.counter++
         const sinkId = jb.remote.counter++
         jb.delay(1).then(()=> remote.postObj({ $: 'innerCB', sourceId, sinkId, propName: 'rx', profile: ctx.profile.rx, ctx }))
-        return source => pipe(source,jb.remote.remoteSink(remote,sourceId), block, jb.remote.remoteSource(remote,sinkId))
+        const remoteSource = jb.remote.remoteSource(remote,sinkId)
+        return source => (start,sink) => {
+            if (start!=0) return
+            jb.callbag.subscribe(()=>{})(jb.remote.remoteSink(remote,sourceId)(source))
+            remoteSource(0, (t,d) => sink(t,d))
+        }
+//        pipe(source,jb.remote.remoteSink(remote,sourceId), block, () => jb.remote.remoteSource(remote,sinkId))
     }
 })
 

@@ -36,7 +36,15 @@
         const cbs = _cbs.filter(x=>x)
         if (!cbs[0]) return
         let res = cbs[0]
-        for (let i = 1, n = cbs.length; i < n; i++) res = cbs[i](res)
+        for (let i = 1, n = cbs.length; i < n; i++) {
+          const newRes = cbs[i](res)
+          if (!newRes) {
+            debugger
+            cbs[i](res)
+          }
+          else
+            res = newRes
+        }
         return res
       },
       Do: f => source => (start, sink) => {
