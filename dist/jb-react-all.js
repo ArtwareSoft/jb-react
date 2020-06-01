@@ -10767,35 +10767,37 @@ class Json {
 
 jb.remote = {
     counter: 1,
-    remoteSource: (remote, id) => jb.callbag.pipe(jb.callbag.fromEvent('message',remote), 
+    remoteSource: (remote, id) => jb.callbag.pipe(
+        jb.callbag.fromEvent('message',remote), 
         jb.callbag.map(m=> jb.remote.evalFunctions(JSON.parse(m))), 
         jb.callbag.filter(m=> m.id == id)
     ),
-    remoteSink: (remote, id) => source => jb.callbag.pipe(source, 
-            jb.callbag.map(m => ({ data: jb.remote.prepareForClone(m), id } )), 
-            jb.callbag.Do(m => remote.postMessage(JSON.stringify(m)))
+    remoteSink: (remote, id) => source => jb.callbag.pipe(
+        source, 
+        jb.callbag.map(m => ({ data: jb.remote.prepareForClone(m), id } )), 
+        jb.callbag.Do(m => remote.postMessage(JSON.stringify(m)))
     ),
     prepareForClone: (obj,depth) => {
         depth = depth || 0
         if (obj == null || depth > 5) return
         if (['string','boolean','number'].indexOf(typeof obj) != -1) return obj
-        if (Array.isArray(obj)) return obj.map(val => this.prepareForClone(val, depth+1))
+        if (Array.isArray(obj)) return obj.map(val => jb.remote.prepareForClone(val, depth+1))
         if (typeof obj == 'function')
             return {$: '__func', code: obj.toString() }
         if (typeof obj == 'object') {
             if (obj.constructor.name == 'jbCtx')
-                return { vars: this.prepareForClone(ctx.vars,depth+1), data: this.prepareForClone(ctx.data,depth+1), path: ctx.path }
+                return { vars: jb.remote.prepareForClone(ctx.vars,depth+1), data: jb.remote.prepareForClone(ctx.data,depth+1), path: ctx.path }
             else if (!(obj.constructor.name||'').match(/^Object|Array$/))
                 return obj.constructor.name
             else
-                return jb.objFromEntries( jb.entries(obj).map(([id,val])=>[id,this.prepareForClone(val, depth+1)]))
+                return jb.objFromEntries( jb.entries(obj).map(([id,val])=>[id,jb.remote.prepareForClone(val, depth+1)]))
         }
     },
     evalFunctions: obj => {
         if (obj && typeof obj == 'object' && obj.$ == '__func')
             return jb.eval(obj.code)
         if (obj && typeof obj == 'object')
-            return jb.objFromEntries( jb.entries(obj).map(([id,val])=>[id,this.evalFunctions(val)]))
+            return jb.objFromEntries( jb.entries(obj).map(([id,val])=>[id, jb.remote.evalFunctions(val)]))
         return obj
     },
     startCommandListener() {
@@ -10803,21 +10805,13 @@ jb.remote = {
 
         pipe(
             fromEvent('message', self), 
-            map(m=> jb.remote.evalFunctions(JSON.parse(m))), 
-            subscribe(m=> {
-                if (m.$ == 'inner') {
-                    pipe(
-                        jb.remote.remoteSource(self, m.sourceId),
-                        new jb.jbCtx(ctx).runInner(m.profile, m.propName),
-                        jb.remote.remoteSink(self, m.sinkId),
-                    )
-                } else if (m.$ == 'source') {
-                    pipe(
-                        new jb.jbCtx(ctx).runInner(m.profile, m.propName),
-                        jb.remote.remoteSink(self, m.sinkId),
-                    )
-                }
-            })
+            map(m=> jb.remote.evalFunctions(JSON.parse(m))),
+            filter(m=> !m.id),
+            subscribe(m=> pipe(
+                    m.$ == 'innerCB' && jb.remote.remoteSource(self, m.sourceId),
+                    new jb.jbCtx(ctx).runInner(m.profile, m.propName),
+                    jb.remote.remoteSink(self, m.sinkId),
+            ))
         )
     }
 }
@@ -10829,11 +10823,13 @@ jb.component('worker.remoteCallbag', {
     ],    
     impl: (ctx,libs) => {
         const workerCode = [
-            ...libs.map(lib=>`importScripts('http://${location.host}/dist/${lib}.js')`),
-            'self.workerId = () => 1',
-            function post(m) { postMessage(jb.remote.prepareForClone(m)) }
+            ...libs.map(lib=>`importScripts('http://${location.host}/dist/${lib}.js')`),`
+                self.workerId = () => 1
+                jb.remote.startCommandListener()`
         ].join('\n')
-        return new Worker(URL.createObjectURL(new Blob([workerCode], {type: 'application/javascript'})));
+        const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: 'application/javascript'})));
+        worker.postObj = m => worker.postMessage(JSON.stringify(jb.remote.prepareForClone(m)))
+        return worker
     }
 })
 
@@ -10848,7 +10844,7 @@ jb.component('remote.innerRx', {
         const block = source => (start,sink) => {}
         const sourceId = jb.remote.counter++
         const sinkId = jb.remote.counter++
-        jb.delay(1).then(()=> remote.postMessage({ $: 'innerRx', sourceId, sinkId, propName: 'rx', profile: ctx.profile, ctx }))
+        jb.delay(1).then(()=> remote.postObj({ $: 'innerCB', sourceId, sinkId, propName: 'rx', profile: ctx.profile, ctx }))
         return innerPipe(jb.remote.remoteSink(remote,sourceId), block, jb.remote.remoteSource(remote,sinkId))
     }
 })
@@ -10861,7 +10857,7 @@ jb.component('remote.sourceRx', {
     ],
     impl: (ctx,rx,remote) => {
         const sinkId = jb.remote.counter++
-        jb.delay(1).then(()=> remote.postMessage({ $: 'sourceRx', sinkId, propName: 'rx', profile: ctx.profile, ctx }))
+        jb.delay(1).then(()=> remote.postObj({ $: 'sourceCB', sinkId, propName: 'rx', profile: ctx.profile, ctx }))
         return jb.remote.remoteSource(remote,sinkId)
     }
 })
