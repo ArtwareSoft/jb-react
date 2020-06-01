@@ -9,8 +9,8 @@ function jb_run(ctx,parentParam,settings) {
   let res = do_jb_run(...arguments)
   if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
       res = ctx.probe.record(ctx,res) || res
-  if (jb.cbLogByPath && jb.studio.wrapWithCallbagSniffer)
-      res = jb.studio.wrapWithCallbagSniffer(ctx,res)
+  if (jb.cbLogByPath && jb.callbag.wrapWithCallbagSniffer)
+      res = jb.callbag.wrapWithCallbagSniffer(ctx,res)
   log('res', [ctx,res,parentParam,settings])
   if (typeof res == 'function') res.ctx = ctx
   return res;
@@ -2779,7 +2779,21 @@ jb.component('formatDate', {
               return jb.callbag.fromIter([source])
       },
       isCallbag: source => typeof source == 'function' && source.toString().split('=>')[0].split('{')[0].replace(/\s/g,'').match(/start,sink|t,d/),
-      isCallbagFunc: source => typeof source == 'function' && source.toString().split('\n')[0].replace(/\s/g,'').match(/source|start,sink|t,d/)
+      isCallbagFunc: source => typeof source == 'function' && source.toString().split('\n')[0].replace(/\s/g,'').match(/source|start,sink|t,d/),
+      wrapWithCallbagSniffer(ctx,res) {
+        const _jb = ctx.frame().jb
+        if (_jb.cbLogByPath && typeof res == 'function' && jb.callbag.isCallbagFunc(res)) {
+          const {sniffer,isCallbag,sourceSniffer} = _jb.callbag
+          // wrap cb with sniffer
+          const log = _jb.cbLogByPath[ctx.path] = { callbagLog: true, result: [] }
+          const listener = {
+            next(r) { log.result.push(r) },
+            complete() { log.complete = true }
+          }
+          res = isCallbag(res) ? sourceSniffer(res, listener) : sniffer(res, listener)
+        }
+        return res
+      },  
   }
   
   })();
@@ -38268,21 +38282,6 @@ Object.assign(st,{
 			
 		if ((jb.path(res,'profile.$') ||'').indexOf('rx.') != 0) // ignore rx ctxs
 			return res
-	},
-
-	wrapWithCallbagSniffer(ctx,res) {
-		const _jb = ctx.frame().jb
-        if (_jb.cbLogByPath && typeof res == 'function' && jb.callbag.isCallbagFunc(res)) {
-            const {sniffer,isCallbag,sourceSniffer} = _jb.callbag
-			// wrap cb with sniffer
-			const log = _jb.cbLogByPath[ctx.path] = { callbagLog: true, result: [] }
-			const listener = {
-				next(r) { log.result.push(r) },
-				complete() { log.complete = true }
-			}
-            res = isCallbag(res) ? sourceSniffer(res, listener) : sniffer(res, listener)
-		}
-		return res
 	},
 
 	cbLogAsCallbag(ctx,log) {

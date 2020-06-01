@@ -752,7 +752,21 @@
               return jb.callbag.fromIter([source])
       },
       isCallbag: source => typeof source == 'function' && source.toString().split('=>')[0].split('{')[0].replace(/\s/g,'').match(/start,sink|t,d/),
-      isCallbagFunc: source => typeof source == 'function' && source.toString().split('\n')[0].replace(/\s/g,'').match(/source|start,sink|t,d/)
+      isCallbagFunc: source => typeof source == 'function' && source.toString().split('\n')[0].replace(/\s/g,'').match(/source|start,sink|t,d/),
+      wrapWithCallbagSniffer(ctx,res) {
+        const _jb = ctx.frame().jb
+        if (_jb.cbLogByPath && typeof res == 'function' && jb.callbag.isCallbagFunc(res)) {
+          const {sniffer,isCallbag,sourceSniffer} = _jb.callbag
+          // wrap cb with sniffer
+          const log = _jb.cbLogByPath[ctx.path] = { callbagLog: true, result: [] }
+          const listener = {
+            next(r) { log.result.push(r) },
+            complete() { log.complete = true }
+          }
+          res = isCallbag(res) ? sourceSniffer(res, listener) : sniffer(res, listener)
+        }
+        return res
+      },  
   }
   
   })()
