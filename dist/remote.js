@@ -39,7 +39,7 @@ jb.remote = {
         return obj
     },
     startCommandListener() {
-        const {pipe,interval,filter,fromEvent,map,subscribe} = jb.callbag
+        const {pipe,Do,filter,fromEvent,map,subscribe} = jb.callbag
         pipe(
             fromEvent('message', self), 
             map(m=> jb.remote.evalFunctions(JSON.parse(m.data))),
