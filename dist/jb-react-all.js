@@ -10819,7 +10819,7 @@ jb.remote = {
 jb.component('worker.remoteCallbag', {
     type: 'remote',
     params: [
-        {id: 'libs', as: 'array', defaultValue: ['common','remote'] },
+        {id: 'libs', as: 'array', defaultValue: ['common','remote','rx'] },
     ],    
     impl: (ctx,libs) => {
         const workerCode = [
@@ -10844,7 +10844,7 @@ jb.component('remote.innerRx', {
         const block = source => (start,sink) => {}
         const sourceId = jb.remote.counter++
         const sinkId = jb.remote.counter++
-        jb.delay(1).then(()=> remote.postObj({ $: 'innerCB', sourceId, sinkId, propName: 'rx', profile: ctx.profile, ctx }))
+        jb.delay(1).then(()=> remote.postObj({ $: 'innerCB', sourceId, sinkId, propName: 'rx', profile: ctx.profile.rx, ctx }))
         return innerPipe(jb.remote.remoteSink(remote,sourceId), block, jb.remote.remoteSource(remote,sinkId))
     }
 })
@@ -10857,7 +10857,7 @@ jb.component('remote.sourceRx', {
     ],
     impl: (ctx,rx,remote) => {
         const sinkId = jb.remote.counter++
-        jb.delay(1).then(()=> remote.postObj({ $: 'sourceCB', sinkId, propName: 'rx', profile: ctx.profile, ctx }))
+        jb.delay(1).then(()=> remote.postObj({ $: 'sourceCB', sinkId, propName: 'rx', profile: ctx.profile.rx, ctx }))
         return jb.remote.remoteSource(remote,sinkId)
     }
 })
