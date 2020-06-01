@@ -10809,7 +10809,7 @@ jb.remote = {
             filter(m=> !m.id),
             subscribe(m=> pipe(
                     m.$ == 'innerCB' && jb.remote.remoteSource(self, m.sourceId),
-                    new jb.jbCtx(ctx).runInner(m.profile, m.propName),
+                    new jb.jbCtx(m.ctx).runInner(m.profile, m.propName),
                     jb.remote.remoteSink(self, m.sinkId),
             ))
         )
