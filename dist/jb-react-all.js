@@ -10769,22 +10769,15 @@ jb.remote = {
     counter: 1,
     remoteSource: (remote, id) => jb.callbag.pipe(
         jb.callbag.fromEvent('message',remote),
-//        jb.remote.talkbackToRemote(remote, id),
         jb.callbag.map(m=> jb.remote.evalFunctions(JSON.parse(m.data))), 
         jb.callbag.filter(m=> m.id == id),
-        jb.callbag.map(m=> new jb.jbCtx().ctx({data: m.data, profile: '', forcePath: ''}))
+        jb.callbag.map(m=> new jb.jbCtx().ctx({data: m.data.data, vars: m.data.vars, profile: '', forcePath: ''}))
     ),
     remoteSink: (remote, id) => source => jb.callbag.pipe(
         source, 
         jb.callbag.map(m => ({ data: jb.remote.prepareForClone(m), id } )), 
         jb.callbag.Do(m => remote.postMessage(JSON.stringify(m)))
     ),
-    // talkbackToRemote: source => (start,sink) => {
-    //     if (start == 0) sink(0, function talkbackToRemote(t,d) {
-    //         if (t == 1 && d == null)
-    //             remote.postMessage(JSON.stringify({id, t: 1}))
-    //     })
-    // },
     prepareForClone: (obj,depth) => {
         depth = depth || 0
         if (obj == null || depth > 5) return
@@ -10850,12 +10843,12 @@ jb.component('remote.innerRx', {
       {id: 'remote', type: 'remote', defaultValue: worker.remoteCallbag()}
     ],
     impl: (ctx,rx,remote) => {
-        const {innerPipe} = jb.callbag
+        const {pipe} = jb.callbag
         const block = source => (start,sink) => {}
         const sourceId = jb.remote.counter++
         const sinkId = jb.remote.counter++
         jb.delay(1).then(()=> remote.postObj({ $: 'innerCB', sourceId, sinkId, propName: 'rx', profile: ctx.profile.rx, ctx }))
-        return innerPipe(jb.remote.remoteSink(remote,sourceId), block, jb.remote.remoteSource(remote,sinkId))
+        return source => pipe(source,jb.remote.remoteSink(remote,sourceId), block, jb.remote.remoteSource(remote,sinkId))
     }
 })
 
