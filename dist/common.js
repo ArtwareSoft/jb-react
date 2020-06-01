@@ -2714,14 +2714,19 @@ jb.component('formatDate', {
           })
       },
       // sniffer to be used on source E.g. interval
-      sourceSniffer: (cb, snifferSubject) => (start, sink) => {
+      sourceSniffer: (source, snifferSubject) => (start, sink) => {
         if (start !== 0) return
         jb.log('snifferStarted',[])
-        cb(0, function sniffer(t,d) {
+        let talkback
+        source(0, function sniffer(t,d) {
           snif('out',t,d)
+          if (t == 0) {
+            talkback = d
+            sink(0,(t,d) => { snif('talkback',t,d); talkback(t,d) })
+            return
+          }
           sink(t,d)
         })
-        sink(0,(t,d) => snif('talkback',t,d))
   
         function snif(dir,t,d) {
           const now = new Date()
@@ -2744,7 +2749,6 @@ jb.component('formatDate', {
             sink(t,d)
           })
         }
-  
         // cbSink
         cb(cbSource)(0, (t,d) => {
           snif('out',t,d)

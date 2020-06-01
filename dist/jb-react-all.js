@@ -2714,14 +2714,19 @@ jb.component('formatDate', {
           })
       },
       // sniffer to be used on source E.g. interval
-      sourceSniffer: (cb, snifferSubject) => (start, sink) => {
+      sourceSniffer: (source, snifferSubject) => (start, sink) => {
         if (start !== 0) return
         jb.log('snifferStarted',[])
-        cb(0, function sniffer(t,d) {
+        let talkback
+        source(0, function sniffer(t,d) {
           snif('out',t,d)
+          if (t == 0) {
+            talkback = d
+            sink(0,(t,d) => { snif('talkback',t,d); talkback(t,d) })
+            return
+          }
           sink(t,d)
         })
-        sink(0,(t,d) => snif('talkback',t,d))
   
         function snif(dir,t,d) {
           const now = new Date()
@@ -2744,7 +2749,6 @@ jb.component('formatDate', {
             sink(t,d)
           })
         }
-  
         // cbSink
         cb(cbSource)(0, (t,d) => {
           snif('out',t,d)
@@ -10845,8 +10849,10 @@ jb.component('worker.remoteCallbag', {
         {id: 'libs', as: 'array', defaultValue: ['common','remote','rx'] },
     ],    
     impl: (ctx,libs) => {
+        const host = jb.path(jb.studio,'studiojb.studio.host')
+        const distPath = host && host.pathOfDistFolder() || `http://${location.host}/dist`
         const workerCode = [
-            ...libs.map(lib=>`importScripts('http://${location.host}/dist/${lib}.js')`),`
+            ...libs.map(lib=>`importScripts('${distPath}/${lib}.js')`),`
                 self.workerId = () => 1
                 jb.remote.startCommandListener()`
         ].join('\n')

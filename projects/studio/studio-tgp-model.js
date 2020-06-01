@@ -397,8 +397,7 @@ Object.assign(st,{
 
 	cbLogAsCallbag(ctx,log) {
 		const {fromIter} = ctx.frame().jb.callbag
-		if (!log) return fromIter([])
-		return fromIter(log.result.concat(log.complete ? [] : [{ dir: '', d: 'not completed...'} ]))
+		return fromIter(log ? log.result : [])
 	},
 
 	closestTestCtx: pathToTrace => {

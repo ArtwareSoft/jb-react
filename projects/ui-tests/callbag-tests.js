@@ -53,6 +53,8 @@ jb.component('dataTest.callbag.rawPipeInsidePipe', {
   })
 })
 
+jb.cbLogByPath = {}
+
 jb.component('dataTest.callbagTakeWhile', {
   impl: dataTest({
     calculate: pipe(rx.pipe(rx.interval(1), rx.takeWhile('%%<2')), join(',')),
@@ -361,8 +363,8 @@ jb.component('dataTest.callbagFlatMapTiming', {
   impl: dataTest({
     calculate: pipe(
       rx.pipe(
-          rx.interval('20'),
-          rx.take('3'),
+          rx.interval(20),
+          rx.take(3),
           rx.var('inp'),
           rx.flatMap(rx.pipe(rx.interval(200), rx.take(3), rx.map('%$inp%-%%')))
         ),
@@ -489,7 +491,7 @@ jb.component('dataTest.rx.retrySrc', {
   impl: dataTest({
     vars: [
       Var('counters', () => ({ counter: 0, retries: 0})),
-      Var('interval', 300),
+      Var('interval', 3),
       Var('times', 10)
     ],
     calculate: rx.pipe(
