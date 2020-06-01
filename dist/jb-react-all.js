@@ -10822,7 +10822,7 @@ jb.remote = {
                     m.$ == 'innerCB' && jb.remote.remoteSource(self, m.sourceId),
                     new jb.jbCtx().ctx(m.ctx).runInner(m.profile, {type: 'rx'} ,m.propName),
                     jb.remote.remoteSink(self, m.sinkId),
-                    subscribe({complete: () => postMessage(JSON.stringify({id: sinkId, finished: true}))})
+                    subscribe({complete: () => postMessage(JSON.stringify({id: m.sinkId, finished: true}))})
             ))
         )
     }
