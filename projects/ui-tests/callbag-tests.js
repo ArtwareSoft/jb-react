@@ -53,6 +53,27 @@ jb.component('dataTest.callbag.rawPipeInsidePipe', {
   })
 })
 
+jb.component('dataTest.callbagTakeWhile', {
+  impl: dataTest({
+    calculate: pipe(rx.pipe(rx.interval(1), rx.takeWhile('%%<2')), join(',')),
+    expectedResult: equals('0,1')
+  })
+})
+
+jb.component('dataTest.callbagTakeWhileIter', {
+  impl: dataTest({
+    calculate: pipe(
+      rx.pipe(
+          rx.fromIter([0,1,2,3]),
+          rx.takeWhile('%%<2')
+        ),
+      join(',')
+    ),
+    expectedResult: equals('0,1')
+  })
+})
+
+
 jb.component('dataTest.callbag.innerPipe', {
   impl: dataTest({
     calculate: pipe(

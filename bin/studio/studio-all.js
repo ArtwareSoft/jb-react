@@ -2554,6 +2554,19 @@ jb.component('formatDate', {
             }
           })
       },
+      takeWhile: predicate => source => (start, sink) => {
+          if (start !== 0) return
+          let talkback
+          source(0, function takeWhile(t,d) {
+            if (t === 0) talkback = d
+            if (t === 1 && !predicate(d)) {
+              talkback(2)
+              sink(2)
+            } else {
+              sink(t, d)
+            }
+          })
+      },
       last: () => source => (start, sink) => {
           if (start !== 0) return
           let talkback
@@ -2627,12 +2640,16 @@ jb.component('formatDate', {
       },
       interval: period => (start, sink) => {
         if (start !== 0) return
-        let i = 0;
+        let i = 0, finished;
         const id = setInterval(function set_interval() {
-          sink(1, i++)
+          console.log('set_interval',finished, new Date())
+          if (!finished) sink(1, i++)
         }, period)
         sink(0, t => {
-          if (t === 2) clearInterval(id)
+          if (t === 2) { 
+            console.log('done', new Date())
+            finished = true; clearInterval(id) 
+          }
         })
       },
       startWith: (...xs) => source => (start, sink) => {

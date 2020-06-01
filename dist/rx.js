@@ -367,6 +367,16 @@ jb.component('rx.take', {
   impl: (ctx,count) => jb.callbag.take(count())
 })
 
+jb.component('rx.takeWhile', {
+  type: 'rx',
+  description: 'closes the stream on condition',
+  category: 'terminate',
+  params: [
+    {id: 'whileCondition', as: 'boolean', dynamic: true, mandatory: true}
+  ],
+  impl: (ctx,whileCondition) => jb.callbag.takeWhile(ctx => whileCondition(ctx))
+})
+
 jb.component('rx.last', {
     type: 'rx',
     category: 'filter',
