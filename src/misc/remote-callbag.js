@@ -81,6 +81,7 @@ jb.component('worker.remoteCallbag', {
         const workerCode = [
             ...libs.map(lib=>`importScripts('${distPath}/${lib}.js')`),`
                 self.workerId = () => 1
+                jb.cbLogByPath = {}
                 jb.remote.startCommandListener()`
         ].join('\n')
         const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: 'application/javascript'})));
