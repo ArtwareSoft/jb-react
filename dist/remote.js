@@ -57,8 +57,8 @@ jb.remote = {
     },
     cbLogByPathDiffs(path) {
         const entries = jb.entries(jb.cbLogByPath||{}).filter(e=>e[0].indexOf(path) == 0)
-        const res = jb.objFromEntries(entries.map(e=>[e[0],e[1].slice(e[1].lastDiff||0)]))
-        entries.forEach(e=>e[1].lastDiff = e[1].length)
+        const res = jb.objFromEntries(entries.map(e=>[e[0],e[1].result.slice(e[1].lastDiff||0)]))
+        entries.forEach(e=>e[1].lastDiff = e[1].result.length)
         return res
     },
     updateCbLogs(diffs) {
