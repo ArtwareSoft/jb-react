@@ -10780,6 +10780,7 @@ jb.remote = {
         jb.callbag.map(m=> jb.remote.evalFunctions(JSON.parse(m.data))), 
         jb.callbag.filter(m=> m.id == id),
         jb.callbag.takeUntil(m=> m.finished),
+        jb.callbag.filter(m=> m.data.data),
         jb.callbag.map(m=> new jb.jbCtx().ctx({data: m.data.data, vars: m.data.vars, profile: '', forcePath: ''}))
     ),
     remoteSink: (remote, id) => source => jb.callbag.pipe(
