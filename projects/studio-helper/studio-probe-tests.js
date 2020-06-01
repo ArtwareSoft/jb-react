@@ -179,7 +179,7 @@ jb.component('probeTest.callbag.sniffer', {
     circuit: pipe(rx.pipe(rx.fromIter(list('1', '2', '3', '4')), rx.map('-%%-')), join(',')),
     probePath: 'items~0~elems~1',
     expectedOutResult: equals(
-      pipeline(filter('%dir%==out'), join({separator: ',', itemText: '%d/data%'})),
+      pipeline(filter('%dir%==out'), '%d/data%', join(',')),
       '-1-,-2-,-3-,-4-'
     )
   })

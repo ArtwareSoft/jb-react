@@ -6,9 +6,11 @@ function jb_run(ctx,parentParam,settings) {
   if (ctx.probe && ctx.probe.outOfTime)
     return
   if (jb.ctxByPath) jb.ctxByPath[ctx.path] = ctx
-  let res = do_jb_run(...arguments);
+  let res = do_jb_run(...arguments)
   if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
       res = ctx.probe.record(ctx,res) || res
+  if (jb.cbLogByPath && jb.studio.wrapWithCallbagSniffer)
+      res = jb.studio.wrapWithCallbagSniffer(ctx,res)
   log('res', [ctx,res,parentParam,settings])
   if (typeof res == 'function') res.ctx = ctx
   return res;
@@ -807,7 +809,9 @@ Object.assign(jb,{
   sessionStorage: (id,val) => val == undefined ? jb.frame.sessionStorage.getItem(id) : jb.frame.sessionStorage.setItem(id,val),
   exec: (...args) => new jb.jbCtx().run(...args),
   exp: (...args) => new jb.jbCtx().exp(...args),
-  execInStudio: (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.jbCtx().run(...args)
+  execInStudio: (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.jbCtx().run(...args),
+  eval: (str,frame) => { try { return (frame || jb.frame).eval('('+str+')') } catch (e) { return Symbol.for('parseError') } }
+
 })
 
 if (typeof self != 'undefined')
@@ -2335,7 +2339,7 @@ jb.component('formatDate', {
             }
             disposed = true
             if (elem.removeEventListener) elem.removeEventListener(event, handler, options)
-            else if (elem.removeListener) elem.removeListener(event, handler)
+            else if (elem.removeListener) elem.removeListener(event, handler, options)
             else throw new Error('cannot remove listener from elem. No method found.')
           })
         
@@ -2344,7 +2348,7 @@ jb.component('formatDate', {
           }
         
           if (elem.addEventListener) elem.addEventListener(event, handler, options)
-          else if (elem.addListener) elem.addListener(event, handler)
+          else if (elem.addListener) elem.addListener(event, handler, options)
           else throw new Error('cannot add listener to elem. No method found.')
       },
       fromPromise: promise => (start, sink) => {
@@ -2703,7 +2707,7 @@ jb.component('formatDate', {
         function snif(dir,t,d) {
           const now = new Date()
           const time = `${now.getSeconds()}:${now.getMilliseconds()}`
-          if (t == 1) snifferSubject.next({dir, d, time})
+          snifferSubject.next({dir, t, d, time})
           if (t == 2) {
             jb.log('snifferCompleted',[])
             snifferSubject.complete()
@@ -2731,7 +2735,7 @@ jb.component('formatDate', {
         function snif(dir,t,d) {
           const now = new Date()
           const time = `${now.getSeconds()}:${now.getMilliseconds()}`
-          if (t == 1) snifferSubject.next({dir, d, time})
+          snifferSubject.next({dir, t, d, time})
           if (t == 2) {
             jb.log('snifferCompleted',[])
             snifferSubject.complete()
@@ -34997,7 +35001,7 @@ function getSinglePathChange(diff, currentVal) {
 
 function setStrValue(value, ref, ctx) {
     const notPrimitive = value.match(/^\s*[a-zA-Z0-9\._]*\(/) || value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
-    const newVal = notPrimitive ? jb.evalStr(value,ref.handler.frame()) : value;
+    const newVal = notPrimitive ? jb.eval(value,ref.handler.frame()) : value;
     if (newVal === Symbol.for('parseError'))
         return
     // I had i guess that ',' at the end of line means editing, YET, THIS GUESS DID NOT WORK ...
@@ -35064,15 +35068,6 @@ jb.component('watchableAsText', {
         }
     })
 })
-
-jb.evalStr = function(str,frame) {
-    try {
-      return (frame || jb.frame).eval('('+str+')')
-    } catch (e) {
-        return Symbol.for('parseError')
-        //jb.logException(e,'eval: '+str);
-    }
-}
 
 jb.component('textEditor.withCursorPath', {
   type: 'action',
@@ -35230,7 +35225,7 @@ function getSuggestions(fileContent, pos, jbToUse = jb) {
       return jb.logError(['can not find end of component', compId, linesFromComp])
     const linesOfComp = linesFromComp.slice(0,compLastLine+1)
     const compSrc = linesOfComp.join('\n')
-    if (jb.evalStr(compSrc,jbToUse.frame) === Symbol.for('parseError'))
+    if (jb.eval(compSrc,jbToUse.frame) === Symbol.for('parseError'))
         return []
     const {text, map} = jb.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
     const locationMap = enrichMapWithOffsets(text, map)
@@ -35274,7 +35269,7 @@ function closestComp(fileContent, pos) {
 function formatComponent(fileContent, pos, jbToUse = jb) {
     const {compId, compSrc, componentHeaderIndex, compLastLine} = closestComp(fileContent, pos)
     if (!compId) return {}
-    if (jb.evalStr(compSrc,jbToUse.frame) === Symbol.for('parseError'))
+    if (jb.eval(compSrc,jbToUse.frame) === Symbol.for('parseError'))
         return []
     return {text: jb.prettyPrintComp(compId,jbToUse.comps[compId],{comps: jbToUse.comps}) + '\n',
         from: {line: componentHeaderIndex, col: 0}, to: {line: componentHeaderIndex+compLastLine+1, col: 0} }
@@ -36541,6 +36536,7 @@ st.initPreview = function(preview_window,allowedTypes) {
 
       st.previewjb.http_get_cache = {}
       st.previewjb.ctxByPath = {}
+      st.previewjb.cbLogByPath = {}
 
       jb.exp('%$studio/settings/activateWatchRefViewer%','boolean') && st.activateWatchRefViewer();
       jb.exec(writeValue('%$studio/projectSettings%',() => JSON.parse(JSON.stringify(preview_window.jbProjectSettings)) ))
@@ -38249,6 +38245,27 @@ Object.assign(st,{
 			
 		if ((jb.path(res,'profile.$') ||'').indexOf('rx.') != 0) // ignore rx ctxs
 			return res
+	},
+
+	wrapWithCallbagSniffer(ctx,res) {
+		const _jb = ctx.frame().jb
+        if (_jb.cbLogByPath && typeof res == 'function' && jb.callbag.isCallbagFunc(res)) {
+            const {sniffer,isCallbag,sourceSniffer} = _jb.callbag
+			// wrap cb with sniffer
+			const log = _jb.cbLogByPath[ctx.path] = { callbagLog: true, result: [] }
+			const listener = {
+				next(r) { log.result.push(r) },
+				complete() { log.complete = true }
+			}
+            res = isCallbag(res) ? sourceSniffer(res, listener) : sniffer(res, listener)
+		}
+		return res
+	},
+
+	cbLogAsCallbag(ctx,log) {
+		const {fromIter} = ctx.frame().jb.callbag
+		if (!log) return fromIter([])
+		return fromIter(log.result.concat(log.complete ? [] : [{ dir: '', d: 'not completed...'} ]))
 	},
 
 	closestTestCtx: pathToTrace => {
@@ -40210,11 +40227,12 @@ jb.component('studio.dataBrowse', {
       group({
         controls: [
           controlWithCondition(isOfType('string,boolean,number', '%$obj%'), text('%$obj%')),
-          controlWithCondition('%$obj.snifferResult%', studio.showRxSniffer('%$obj%')),
-          controlWithCondition(
-            (ctx,{obj}) => jb.callbag.isCallbag(obj),
-            studio.browseRx('%$obj%')
-          ),
+          controlWithCondition(isOfType('function', '%$obj%'), text( ({data}) => data.name || 'func' )),
+          // controlWithCondition('%$obj.snifferResult%', studio.showRxSniffer('%$obj%')),
+          // controlWithCondition(
+          //   (ctx,{obj}) => jb.callbag.isCallbag(obj),
+          //   studio.browseRx('%$obj%')
+          // ),
           controlWithCondition(
             isOfType('array', '%$obj%'),
             itemlist({
@@ -40315,10 +40333,10 @@ jb.component('studio.browseRx', {
 jb.component('studio.showRxSniffer', {
   type: 'control',
   params: [
-    {id: 'snifferRx'}
+    {id: 'snifferLog'}
   ],
   impl: itemlist({
-        items: '%$snifferRx%',
+        items: (ctx,{},{snifferLog}) => jb.studio.cbLogAsCallbag(ctx,snifferLog),
         controls: group({
           layout: layout.flex({spacing: '0'}),
           controls: [
@@ -40345,6 +40363,12 @@ jb.component('studio.showRxSniffer', {
               features: [css.margin({left: '10'}), feature.hoverTitle('show variables')]
             }),
             text({
+              text: '%t%',
+              title: 't',
+              style: text.span(),
+              features: [css.opacity('0.5'), css.margin({left: '10'})]
+            }),
+            text({
               text: '%time%',
               title: 'time',
               style: text.span(),
@@ -40369,8 +40393,8 @@ jb.component('studio.probeDataView', {
       controls: group({
         controls: [
           controlWithCondition(
-            ({},{probeResult}) => jb.path(probeResult,'0.out.snifferResult'),
-            studio.showRxSniffer('%$probeResult/out%')
+            '%$probeResult/0/callbagLog%',
+            studio.showRxSniffer('%$probeResult/0%')
           ),
           itemlist({
             items: '%$probeResult%',
@@ -44006,15 +44030,15 @@ st.Probe = class {
             this.probe[path].visits = 0
         }
         let cbSnifferSrc
-        if (typeof out == 'function' && jb.callbag.isCallbagFunc(out)) {
-            const {sniffer,subject,replay,isCallbag,sourceSniffer} = ctx.frame().jb.callbag
-            // wrap cb with sniffer
-            const snifferRcvr = subject()
-            cbSnifferSrc = replay()(snifferRcvr)
-            cbSnifferSrc.snifferResult = true
-            setTimeout(()=>snifferRcvr.complete(), 2000) // do not listen for more that 2 sec !!!
-            out = isCallbag(out) ? sourceSniffer(out, snifferRcvr) : sniffer(out, snifferRcvr)
-        }
+        // if (typeof out == 'function' && jb.callbag.isCallbagFunc(out)) {
+        //     const {sniffer,subject,replay,isCallbag,sourceSniffer} = ctx.frame().jb.callbag
+        //     // wrap cb with sniffer
+        //     const snifferRcvr = subject()
+        //     cbSnifferSrc = replay()(snifferRcvr)
+        //     cbSnifferSrc.snifferResult = true
+        //     setTimeout(()=>snifferRcvr.complete(), 2000) // do not listen for more that 2 sec !!!
+        //     out = isCallbag(out) ? sourceSniffer(out, snifferRcvr) : sniffer(out, snifferRcvr)
+        // }
         this.probe[path].visits++
         const found = this.probe[path].find(x=>jb.compareArrays(x.in.data,ctx.data))
         if (found)
@@ -44034,6 +44058,8 @@ jb.component('studio.probe', {
   impl: (ctx,pathF) => {
         const _jb = st.previewjb, path = pathF()
         if (!path) return
+        if (_jb.cbLogByPath[path])
+            return { result: _jb.cbLogByPath[path] }
         let circuitCtx = null
         if (jb.path(_jb.comps,[path.split('~')[0],'testData']))
             circuitCtx = st.closestTestCtx(path)

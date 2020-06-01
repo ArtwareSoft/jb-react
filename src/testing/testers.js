@@ -1,7 +1,7 @@
 jb.test = {
 	runInner(propName, ctx) {
 		const profile = ctx.profile
-		return profile[propName] && ctx.runInner(profile[propName],{type: 'data'}, 'propName')
+		return profile[propName] && ctx.runInner(profile[propName],{type: 'data'}, propName)
 	},
 	dataTestResult(ctx) {
 		return Promise.resolve(jb.test.runInner('runBefore',ctx))

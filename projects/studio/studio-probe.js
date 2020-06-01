@@ -127,15 +127,15 @@ st.Probe = class {
             this.probe[path].visits = 0
         }
         let cbSnifferSrc
-        if (typeof out == 'function' && jb.callbag.isCallbagFunc(out)) {
-            const {sniffer,subject,replay,isCallbag,sourceSniffer} = ctx.frame().jb.callbag
-            // wrap cb with sniffer
-            const snifferRcvr = subject()
-            cbSnifferSrc = replay()(snifferRcvr)
-            cbSnifferSrc.snifferResult = true
-            setTimeout(()=>snifferRcvr.complete(), 2000) // do not listen for more that 2 sec !!!
-            out = isCallbag(out) ? sourceSniffer(out, snifferRcvr) : sniffer(out, snifferRcvr)
-        }
+        // if (typeof out == 'function' && jb.callbag.isCallbagFunc(out)) {
+        //     const {sniffer,subject,replay,isCallbag,sourceSniffer} = ctx.frame().jb.callbag
+        //     // wrap cb with sniffer
+        //     const snifferRcvr = subject()
+        //     cbSnifferSrc = replay()(snifferRcvr)
+        //     cbSnifferSrc.snifferResult = true
+        //     setTimeout(()=>snifferRcvr.complete(), 2000) // do not listen for more that 2 sec !!!
+        //     out = isCallbag(out) ? sourceSniffer(out, snifferRcvr) : sniffer(out, snifferRcvr)
+        // }
         this.probe[path].visits++
         const found = this.probe[path].find(x=>jb.compareArrays(x.in.data,ctx.data))
         if (found)
@@ -155,6 +155,8 @@ jb.component('studio.probe', {
   impl: (ctx,pathF) => {
         const _jb = st.previewjb, path = pathF()
         if (!path) return
+        if (_jb.cbLogByPath[path])
+            return { result: _jb.cbLogByPath[path] }
         let circuitCtx = null
         if (jb.path(_jb.comps,[path.split('~')[0],'testData']))
             circuitCtx = st.closestTestCtx(path)

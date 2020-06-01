@@ -380,6 +380,27 @@ Object.assign(st,{
 			return res
 	},
 
+	wrapWithCallbagSniffer(ctx,res) {
+		const _jb = ctx.frame().jb
+        if (_jb.cbLogByPath && typeof res == 'function' && jb.callbag.isCallbagFunc(res)) {
+            const {sniffer,isCallbag,sourceSniffer} = _jb.callbag
+			// wrap cb with sniffer
+			const log = _jb.cbLogByPath[ctx.path] = { callbagLog: true, result: [] }
+			const listener = {
+				next(r) { log.result.push(r) },
+				complete() { log.complete = true }
+			}
+            res = isCallbag(res) ? sourceSniffer(res, listener) : sniffer(res, listener)
+		}
+		return res
+	},
+
+	cbLogAsCallbag(ctx,log) {
+		const {fromIter} = ctx.frame().jb.callbag
+		if (!log) return fromIter([])
+		return fromIter(log.result.concat(log.complete ? [] : [{ dir: '', d: 'not completed...'} ]))
+	},
+
 	closestTestCtx: pathToTrace => {
 		const _ctx = new st.previewjb.jbCtx()
 		const compId = pathToTrace.split('~')[0]

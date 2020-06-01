@@ -6,9 +6,11 @@ function jb_run(ctx,parentParam,settings) {
   if (ctx.probe && ctx.probe.outOfTime)
     return
   if (jb.ctxByPath) jb.ctxByPath[ctx.path] = ctx
-  let res = do_jb_run(...arguments);
+  let res = do_jb_run(...arguments)
   if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
       res = ctx.probe.record(ctx,res) || res
+  if (jb.cbLogByPath && jb.studio.wrapWithCallbagSniffer)
+      res = jb.studio.wrapWithCallbagSniffer(ctx,res)
   log('res', [ctx,res,parentParam,settings])
   if (typeof res == 'function') res.ctx = ctx
   return res;
@@ -807,7 +809,9 @@ Object.assign(jb,{
   sessionStorage: (id,val) => val == undefined ? jb.frame.sessionStorage.getItem(id) : jb.frame.sessionStorage.setItem(id,val),
   exec: (...args) => new jb.jbCtx().run(...args),
   exp: (...args) => new jb.jbCtx().exp(...args),
-  execInStudio: (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.jbCtx().run(...args)
+  execInStudio: (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.jbCtx().run(...args),
+  eval: (str,frame) => { try { return (frame || jb.frame).eval('('+str+')') } catch (e) { return Symbol.for('parseError') } }
+
 })
 
 if (typeof self != 'undefined')
@@ -2335,7 +2339,7 @@ jb.component('formatDate', {
             }
             disposed = true
             if (elem.removeEventListener) elem.removeEventListener(event, handler, options)
-            else if (elem.removeListener) elem.removeListener(event, handler)
+            else if (elem.removeListener) elem.removeListener(event, handler, options)
             else throw new Error('cannot remove listener from elem. No method found.')
           })
         
@@ -2344,7 +2348,7 @@ jb.component('formatDate', {
           }
         
           if (elem.addEventListener) elem.addEventListener(event, handler, options)
-          else if (elem.addListener) elem.addListener(event, handler)
+          else if (elem.addListener) elem.addListener(event, handler, options)
           else throw new Error('cannot add listener to elem. No method found.')
       },
       fromPromise: promise => (start, sink) => {
@@ -2703,7 +2707,7 @@ jb.component('formatDate', {
         function snif(dir,t,d) {
           const now = new Date()
           const time = `${now.getSeconds()}:${now.getMilliseconds()}`
-          if (t == 1) snifferSubject.next({dir, d, time})
+          snifferSubject.next({dir, t, d, time})
           if (t == 2) {
             jb.log('snifferCompleted',[])
             snifferSubject.complete()
@@ -2731,7 +2735,7 @@ jb.component('formatDate', {
         function snif(dir,t,d) {
           const now = new Date()
           const time = `${now.getSeconds()}:${now.getMilliseconds()}`
-          if (t == 1) snifferSubject.next({dir, d, time})
+          snifferSubject.next({dir, t, d, time})
           if (t == 2) {
             jb.log('snifferCompleted',[])
             snifferSubject.complete()

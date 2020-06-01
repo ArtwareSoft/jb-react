@@ -75,14 +75,12 @@ jb.component('studioProbeTest', {
     const success = _ => ({ id: testId, title: testId, success: true });
 
     const full_path = testId + '~impl~circuit~' + probePath;
+    jb.cbLogByPath = {}
     const probeRes = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: circuit.profile, forcePath: testId+ '~impl~circuit', path: '' } ))
       .runCircuit(full_path);
-    return probeRes.then(res=> jb.path(res,'result.0.out') && jb.callbag.isCallbag(res.result[0].out) &&
-        jb.toSynchArray(res.result[0].out, true).then(out => {
-          res.result[0].out = out
-          return res
-        }) || res)
+    return probeRes.then(res=> jb.cbLogByPath[res.pathToTrace] || res)
     .then(res=> {
+      jb.cbLogByPath = null
       try {
         if (expectedVisits == 0 && res.closestPath)
           return success();
@@ -92,8 +90,9 @@ jb.component('studioProbeTest', {
           return failure(`expected visits error actual/expected: ${res.result.visits}/${expectedVisits}`);
         if (!res.result[0])
             return failure('no probe results at path ' + probePath)
-        if (!expectedOutResult(ctx.setData(res.result[0].out)))
-            return failure('wrong out result ' + JSON.stringify(res.result[0].out.data))
+        const resData = res.callbagLog && res.result || res.result[0].out
+        if (!expectedOutResult(ctx.setData(resData)))
+            return failure('wrong out result ' + JSON.stringify(resData))
       } catch(e) {
         jb.logException(e,'jb-path-test',ctx);
         return failure('exception');

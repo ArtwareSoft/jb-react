@@ -64,6 +64,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/tree/json-tree-model.js',
       ],
       remote: [
+        'src/misc/remote-callbag.js',
         'src/ui/watchable/remote.js',
       ],
       'inner-html': [ // unsafe

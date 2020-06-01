@@ -67,6 +67,7 @@ st.initPreview = function(preview_window,allowedTypes) {
 
       st.previewjb.http_get_cache = {}
       st.previewjb.ctxByPath = {}
+      st.previewjb.cbLogByPath = {}
 
       jb.exp('%$studio/settings/activateWatchRefViewer%','boolean') && st.activateWatchRefViewer();
       jb.exec(writeValue('%$studio/projectSettings%',() => JSON.parse(JSON.stringify(preview_window.jbProjectSettings)) ))

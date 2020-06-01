@@ -127,12 +127,11 @@ jb.component('dataTest.callbag.sniffer', {
   impl: dataTest({
     calculate: pipe(
       ctx => {
-          const {subject, pipe, sniffer, fromIter, map, subscribe, toPromiseArray } = jb.callbag
+          const {subject, pipe, sniffer, fromIter, map, subscribe, filter, toPromiseArray } = jb.callbag
           const mySniffer = subject()
-          const ret = toPromiseArray(mySniffer)
+          const ret = toPromiseArray(pipe(mySniffer,filter(x=>x.t ==1)))
           pipe(fromIter([1,2]), sniffer(map(x=>x*10), mySniffer), subscribe(() => {}))
           return ret
-
       },
       '%dir% %d%',
       join({separator: ',', itemText: trim()})

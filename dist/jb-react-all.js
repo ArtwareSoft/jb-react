@@ -6,9 +6,11 @@ function jb_run(ctx,parentParam,settings) {
   if (ctx.probe && ctx.probe.outOfTime)
     return
   if (jb.ctxByPath) jb.ctxByPath[ctx.path] = ctx
-  let res = do_jb_run(...arguments);
+  let res = do_jb_run(...arguments)
   if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
       res = ctx.probe.record(ctx,res) || res
+  if (jb.cbLogByPath && jb.studio.wrapWithCallbagSniffer)
+      res = jb.studio.wrapWithCallbagSniffer(ctx,res)
   log('res', [ctx,res,parentParam,settings])
   if (typeof res == 'function') res.ctx = ctx
   return res;
@@ -807,7 +809,9 @@ Object.assign(jb,{
   sessionStorage: (id,val) => val == undefined ? jb.frame.sessionStorage.getItem(id) : jb.frame.sessionStorage.setItem(id,val),
   exec: (...args) => new jb.jbCtx().run(...args),
   exp: (...args) => new jb.jbCtx().exp(...args),
-  execInStudio: (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.jbCtx().run(...args)
+  execInStudio: (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.jbCtx().run(...args),
+  eval: (str,frame) => { try { return (frame || jb.frame).eval('('+str+')') } catch (e) { return Symbol.for('parseError') } }
+
 })
 
 if (typeof self != 'undefined')
@@ -2335,7 +2339,7 @@ jb.component('formatDate', {
             }
             disposed = true
             if (elem.removeEventListener) elem.removeEventListener(event, handler, options)
-            else if (elem.removeListener) elem.removeListener(event, handler)
+            else if (elem.removeListener) elem.removeListener(event, handler, options)
             else throw new Error('cannot remove listener from elem. No method found.')
           })
         
@@ -2344,7 +2348,7 @@ jb.component('formatDate', {
           }
         
           if (elem.addEventListener) elem.addEventListener(event, handler, options)
-          else if (elem.addListener) elem.addListener(event, handler)
+          else if (elem.addListener) elem.addListener(event, handler, options)
           else throw new Error('cannot add listener to elem. No method found.')
       },
       fromPromise: promise => (start, sink) => {
@@ -2703,7 +2707,7 @@ jb.component('formatDate', {
         function snif(dir,t,d) {
           const now = new Date()
           const time = `${now.getSeconds()}:${now.getMilliseconds()}`
-          if (t == 1) snifferSubject.next({dir, d, time})
+          snifferSubject.next({dir, t, d, time})
           if (t == 2) {
             jb.log('snifferCompleted',[])
             snifferSubject.complete()
@@ -2731,7 +2735,7 @@ jb.component('formatDate', {
         function snif(dir,t,d) {
           const now = new Date()
           const time = `${now.getSeconds()}:${now.getMilliseconds()}`
-          if (t == 1) snifferSubject.next({dir, d, time})
+          snifferSubject.next({dir, t, d, time})
           if (t == 2) {
             jb.log('snifferCompleted',[])
             snifferSubject.complete()
@@ -10760,6 +10764,108 @@ class Json {
 }
 
 })();
+
+jb.remote = {
+    counter: 1,
+    remoteSource: (remote, id) => jb.callbag.pipe(jb.callbag.fromEvent('message',remote), 
+        jb.callbag.map(m=> jb.remote.evalFunctions(JSON.parse(m))), 
+        jb.callbag.filter(m=> m.id == id)
+    ),
+    remoteSink: (remote, id) => source => jb.callbag.pipe(source, 
+            jb.callbag.map(m => ({ data: jb.remote.prepareForClone(m), id } )), 
+            jb.callbag.Do(m => remote.postMessage(JSON.stringify(m)))
+    ),
+    prepareForClone: (obj,depth) => {
+        depth = depth || 0
+        if (obj == null || depth > 5) return
+        if (['string','boolean','number'].indexOf(typeof obj) != -1) return obj
+        if (Array.isArray(obj)) return obj.map(val => this.prepareForClone(val, depth+1))
+        if (typeof obj == 'function')
+            return {$: '__func', code: obj.toString() }
+        if (typeof obj == 'object') {
+            if (obj.constructor.name == 'jbCtx')
+                return { vars: this.prepareForClone(ctx.vars,depth+1), data: this.prepareForClone(ctx.data,depth+1), path: ctx.path }
+            else if (!(obj.constructor.name||'').match(/^Object|Array$/))
+                return obj.constructor.name
+            else
+                return jb.objFromEntries( jb.entries(obj).map(([id,val])=>[id,this.prepareForClone(val, depth+1)]))
+        }
+    },
+    evalFunctions: obj => {
+        if (obj && typeof obj == 'object' && obj.$ == '__func')
+            return jb.eval(obj.code)
+        if (obj && typeof obj == 'object')
+            return jb.objFromEntries( jb.entries(obj).map(([id,val])=>[id,this.evalFunctions(val)]))
+        return obj
+    },
+    startCommandListener() {
+        const {pipe,fromEvent,map,subscribe} = jb.callbag
+
+        pipe(
+            fromEvent('message', self), 
+            map(m=> jb.remote.evalFunctions(JSON.parse(m))), 
+            subscribe(m=> {
+                if (m.$ == 'inner') {
+                    pipe(
+                        jb.remote.remoteSource(self, m.sourceId),
+                        new jb.jbCtx(ctx).runInner(m.profile, m.propName),
+                        jb.remote.remoteSink(self, m.sinkId),
+                    )
+                } else if (m.$ == 'source') {
+                    pipe(
+                        new jb.jbCtx(ctx).runInner(m.profile, m.propName),
+                        jb.remote.remoteSink(self, m.sinkId),
+                    )
+                }
+            })
+        )
+    }
+}
+
+jb.component('worker.remoteCallbag', {
+    type: 'remote',
+    params: [
+        {id: 'libs', as: 'array', defaultValue: ['common'] },
+    ],    
+    impl: (ctx,libs) => {
+        const workerCode = [
+            ...libs.map(lib=>`importScripts('http://${location.host}/dist/${lib}.js')`),
+            'self.workerId = () => 1',
+            function post(m) { postMessage(jb.remote.prepareForClone(m)) }
+        ].join('\n')
+        return new Worker(URL.createObjectURL(new Blob([workerCode], {type: 'application/javascript'})));
+    }
+})
+
+jb.component('remote.innerRx', {
+    type: 'rx',
+    params: [
+      {id: 'rx', type: 'rx' },
+      {id: 'remote', type: 'remote', defaultValue: worker.remoteCallbag()}
+    ],
+    impl: (ctx,rx,remote) => {
+        const {innerPipe} = jb.callbag
+        const block = source => (start,sink) => {}
+        const sourceId = jb.remote.counter++
+        const sinkId = jb.remote.counter++
+        jb.delay(1).then(()=> remote.postMessage({ $: 'innerRx', sourceId, sinkId, propName: 'rx', profile: ctx.profile, ctx }))
+        return innerPipe(jb.remote.remoteSink(remote,sourceId), block, jb.remote.remoteSource(remote,sinkId))
+    }
+})
+
+jb.component('remote.sourceRx', {
+    type: 'rx',
+    params: [
+      {id: 'rx', type: 'rx' },
+      {id: 'remote', type: 'remote', defaultValue: worker.remoteCallbag()}
+    ],
+    impl: (ctx,rx,remote) => {
+        const sinkId = jb.remote.counter++
+        jb.delay(1).then(()=> remote.postMessage({ $: 'sourceRx', sinkId, propName: 'rx', profile: ctx.profile, ctx }))
+        return jb.remote.remoteSource(remote,sinkId)
+    }
+})
+;
 
 (function(){
 

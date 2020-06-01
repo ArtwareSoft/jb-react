@@ -312,7 +312,7 @@
             }
             disposed = true
             if (elem.removeEventListener) elem.removeEventListener(event, handler, options)
-            else if (elem.removeListener) elem.removeListener(event, handler)
+            else if (elem.removeListener) elem.removeListener(event, handler, options)
             else throw new Error('cannot remove listener from elem. No method found.')
           })
         
@@ -321,7 +321,7 @@
           }
         
           if (elem.addEventListener) elem.addEventListener(event, handler, options)
-          else if (elem.addListener) elem.addListener(event, handler)
+          else if (elem.addListener) elem.addListener(event, handler, options)
           else throw new Error('cannot add listener to elem. No method found.')
       },
       fromPromise: promise => (start, sink) => {
@@ -680,7 +680,7 @@
         function snif(dir,t,d) {
           const now = new Date()
           const time = `${now.getSeconds()}:${now.getMilliseconds()}`
-          if (t == 1) snifferSubject.next({dir, d, time})
+          snifferSubject.next({dir, t, d, time})
           if (t == 2) {
             jb.log('snifferCompleted',[])
             snifferSubject.complete()
@@ -708,7 +708,7 @@
         function snif(dir,t,d) {
           const now = new Date()
           const time = `${now.getSeconds()}:${now.getMilliseconds()}`
-          if (t == 1) snifferSubject.next({dir, d, time})
+          snifferSubject.next({dir, t, d, time})
           if (t == 2) {
             jb.log('snifferCompleted',[])
             snifferSubject.complete()

@@ -15,7 +15,7 @@ function getSinglePathChange(diff, currentVal) {
 
 function setStrValue(value, ref, ctx) {
     const notPrimitive = value.match(/^\s*[a-zA-Z0-9\._]*\(/) || value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
-    const newVal = notPrimitive ? jb.evalStr(value,ref.handler.frame()) : value;
+    const newVal = notPrimitive ? jb.eval(value,ref.handler.frame()) : value;
     if (newVal === Symbol.for('parseError'))
         return
     // I had i guess that ',' at the end of line means editing, YET, THIS GUESS DID NOT WORK ...
@@ -82,15 +82,6 @@ jb.component('watchableAsText', {
         }
     })
 })
-
-jb.evalStr = function(str,frame) {
-    try {
-      return (frame || jb.frame).eval('('+str+')')
-    } catch (e) {
-        return Symbol.for('parseError')
-        //jb.logException(e,'eval: '+str);
-    }
-}
 
 jb.component('textEditor.withCursorPath', {
   type: 'action',
@@ -248,7 +239,7 @@ function getSuggestions(fileContent, pos, jbToUse = jb) {
       return jb.logError(['can not find end of component', compId, linesFromComp])
     const linesOfComp = linesFromComp.slice(0,compLastLine+1)
     const compSrc = linesOfComp.join('\n')
-    if (jb.evalStr(compSrc,jbToUse.frame) === Symbol.for('parseError'))
+    if (jb.eval(compSrc,jbToUse.frame) === Symbol.for('parseError'))
         return []
     const {text, map} = jb.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
     const locationMap = enrichMapWithOffsets(text, map)
@@ -292,7 +283,7 @@ function closestComp(fileContent, pos) {
 function formatComponent(fileContent, pos, jbToUse = jb) {
     const {compId, compSrc, componentHeaderIndex, compLastLine} = closestComp(fileContent, pos)
     if (!compId) return {}
-    if (jb.evalStr(compSrc,jbToUse.frame) === Symbol.for('parseError'))
+    if (jb.eval(compSrc,jbToUse.frame) === Symbol.for('parseError'))
         return []
     return {text: jb.prettyPrintComp(compId,jbToUse.comps[compId],{comps: jbToUse.comps}) + '\n',
         from: {line: componentHeaderIndex, col: 0}, to: {line: componentHeaderIndex+compLastLine+1, col: 0} }

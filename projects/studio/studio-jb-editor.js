@@ -84,11 +84,12 @@ jb.component('studio.dataBrowse', {
       group({
         controls: [
           controlWithCondition(isOfType('string,boolean,number', '%$obj%'), text('%$obj%')),
-          controlWithCondition('%$obj.snifferResult%', studio.showRxSniffer('%$obj%')),
-          controlWithCondition(
-            (ctx,{obj}) => jb.callbag.isCallbag(obj),
-            studio.browseRx('%$obj%')
-          ),
+          controlWithCondition(isOfType('function', '%$obj%'), text( ({data}) => data.name || 'func' )),
+          // controlWithCondition('%$obj.snifferResult%', studio.showRxSniffer('%$obj%')),
+          // controlWithCondition(
+          //   (ctx,{obj}) => jb.callbag.isCallbag(obj),
+          //   studio.browseRx('%$obj%')
+          // ),
           controlWithCondition(
             isOfType('array', '%$obj%'),
             itemlist({
@@ -189,10 +190,10 @@ jb.component('studio.browseRx', {
 jb.component('studio.showRxSniffer', {
   type: 'control',
   params: [
-    {id: 'snifferRx'}
+    {id: 'snifferLog'}
   ],
   impl: itemlist({
-        items: '%$snifferRx%',
+        items: (ctx,{},{snifferLog}) => jb.studio.cbLogAsCallbag(ctx,snifferLog),
         controls: group({
           layout: layout.flex({spacing: '0'}),
           controls: [
@@ -219,6 +220,12 @@ jb.component('studio.showRxSniffer', {
               features: [css.margin({left: '10'}), feature.hoverTitle('show variables')]
             }),
             text({
+              text: '%t%',
+              title: 't',
+              style: text.span(),
+              features: [css.opacity('0.5'), css.margin({left: '10'})]
+            }),
+            text({
               text: '%time%',
               title: 'time',
               style: text.span(),
@@ -243,8 +250,8 @@ jb.component('studio.probeDataView', {
       controls: group({
         controls: [
           controlWithCondition(
-            ({},{probeResult}) => jb.path(probeResult,'0.out.snifferResult'),
-            studio.showRxSniffer('%$probeResult/out%')
+            '%$probeResult/0/callbagLog%',
+            studio.showRxSniffer('%$probeResult/0%')
           ),
           itemlist({
             items: '%$probeResult%',
