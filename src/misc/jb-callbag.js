@@ -613,17 +613,11 @@
       },
       interval: period => (start, sink) => {
         if (start !== 0) return
-        let i = 0, finished;
+        let i = 0
         const id = setInterval(function set_interval() {
-          console.log('set_interval',finished, new Date())
-          if (!finished) sink(1, i++)
+          sink(1, i++)
         }, period)
-        sink(0, t => {
-          if (t === 2) { 
-            console.log('done', new Date())
-            finished = true; clearInterval(id) 
-          }
-        })
+        sink(0, t => t === 2 && clearInterval(id))
       },
       startWith: (...xs) => source => (start, sink) => {
           if (start !== 0) return
