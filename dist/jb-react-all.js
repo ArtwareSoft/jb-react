@@ -10794,6 +10794,7 @@ jb.remote = {
         }
     },
     evalFunctions: obj => {
+        if (Array.isArray(obj)) return obj.map(val => jb.remote.evalFunctions(val))
         if (obj && typeof obj == 'object' && obj.$ == '__func')
             return jb.eval(obj.code)
         if (obj && typeof obj == 'object')
