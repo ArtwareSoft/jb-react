@@ -10883,6 +10883,11 @@ jb.component('worker.remoteCallbag', {
             ...libs.map(lib=>`importScripts('${distPath}/${lib}.js')`),`
                 self.workerId = () => 1
                 jb.cbLogByPath = {}
+                const {pipe,Do,fromEvent,map,subscribe} = jb.callbag
+                self.messageSource = pipe(
+                    fromEvent('message',self),
+                    map(m=> jb.remote.evalFunctions(JSON.parse(m.data)))
+                )                
                 jb.remote.startCommandListener()`
         ].join('\n')
         const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: 'application/javascript'})));
@@ -10890,7 +10895,7 @@ jb.component('worker.remoteCallbag', {
 
         const {pipe,Do,fromEvent,map,subscribe} = jb.callbag
         worker.messageSource = pipe(
-            fromEvent('message',remote),
+            fromEvent('message',worker),
             map(m=> jb.remote.evalFunctions(JSON.parse(m.data)))
         )
 
