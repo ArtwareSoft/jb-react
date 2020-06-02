@@ -10805,11 +10805,9 @@ class Json {
 jb.remote = {
     counter: 1,
     remoteSource: (remote, id) => jb.callbag.pipe(
-        jb.callbag.fromEvent('message',remote),
-        jb.callbag.map(m=> jb.remote.evalFunctions(JSON.parse(m.data))), 
+        remote.messageSource, 
         jb.callbag.filter(m=> m.id == id),
         jb.callbag.takeWhile(m=> !m.finished),
-        jb.callbag.Do(m => m.$ == 'cbLogByPathDiffs' && jb.remote.updateCbLogs(m.diffs) ),
         jb.callbag.filter(m=> m.data),
         jb.callbag.map(m=> new jb.jbCtx().ctx({data: m.data.data, vars: m.data.vars, profile: '', forcePath: ''}))
     ),
@@ -10845,14 +10843,13 @@ jb.remote = {
     startCommandListener() {
         const {pipe,Do,filter,fromEvent,map,subscribe} = jb.callbag
         pipe(
-            fromEvent('message', self), 
-            map(m=> jb.remote.evalFunctions(JSON.parse(m.data))),
+            self.messageSource,
             filter(m=> !m.id),
             subscribe(m=> {
                 pipe(
                     m.$ == 'innerCB' && jb.remote.remoteSource(self, m.sourceId),
                     new jb.jbCtx().ctx(m.ctx).runInner(m.profile, {type: 'rx'} ,m.propName),
-                    jb.remote.remoteSink(self, m.sinkId),
+                    jb.remote.remoteSink(self, m.sinkId),                    
                     Do(e=> postMessage(JSON.stringify({$: 'cbLogByPathDiffs', id: m.sinkId, diffs: jb.remote.cbLogByPathDiffs(m.ctx.forcePath)}))),
                     subscribe({complete: () => postMessage(JSON.stringify({id: m.sinkId, finished: true}))})
                 )
@@ -10890,6 +10887,18 @@ jb.component('worker.remoteCallbag', {
         ].join('\n')
         const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: 'application/javascript'})));
         worker.postObj = m => worker.postMessage(JSON.stringify(jb.remote.prepareForClone(m)))
+
+        const {pipe,Do,fromEvent,map,subscribe} = jb.callbag
+        worker.messageSource = pipe(
+            fromEvent('message',remote),
+            map(m=> jb.remote.evalFunctions(JSON.parse(m.data)))
+        )
+
+        pipe(
+            worker.messageSource,
+            Do(m => m.$ == 'cbLogByPathDiffs' && jb.remote.updateCbLogs(m.diffs) ),
+            subscribe(()=>{})
+        )
         return worker
     }
 })
