@@ -511,6 +511,7 @@ jb.component('dataTest.rx.retrySrc', {
           counters.counter++
           counters.retries++
           return null // failed - will retry
+
         }
               ),
             rx.filter('%%'),

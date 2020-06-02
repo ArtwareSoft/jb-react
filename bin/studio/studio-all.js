@@ -3737,7 +3737,7 @@ function compareCtxAtt(att,atts1,atts2) {
 
 // dom related functions
 
-function applyVdomDiff(elem,vdomAfter,{strongRefresh, ctx} = {}) {
+function applyNewVdom(elem,vdomAfter,{strongRefresh, ctx} = {}) {
     jb.log('applyDeltaTop',['start',...arguments])
     const vdomBefore = elem instanceof ui.VNode ? elem : elemToVdom(elem)
     const delta = compareVdom(vdomBefore,vdomAfter)
@@ -3747,7 +3747,7 @@ function applyVdomDiff(elem,vdomAfter,{strongRefresh, ctx} = {}) {
             Object.keys(elem).forEach(k=>delete elem[k])
             Object.assign(elem,vdomAfter)
         }
-        return jb.ui.updateRenderer(delta,elemId,cmpId,ctx && ctx.vars.widgetId) // deligate to the main thread 
+        return jb.ui.updateRenderer({delta,elemId,cmpId,widgetId: ctx && ctx.vars.widgetId}) // deligate to the main thread 
     }
     const active = jb.ui.activeElement() === elem
     jb.log('applyDeltaTop',['apply',vdomBefore,vdomAfter,delta,active,...arguments],
@@ -3782,8 +3782,8 @@ function elemToVdom(elem) {
 function appendItems(elem, vdomToAppend,{ctx,prepend} = {}) { // used in infinite scroll
     if (elem instanceof ui.VNode) { // runs on worker
         const cmpId = elem.getAttribute('cmp-id'), elemId = elem.getAttribute('id')
-        // TODO: update the elem
-        return jb.ui.updateRenderer(vdomToAppend,elemId,cmpId,ctx && ctx.vars.widgetId) // deligate to the main thread 
+        (vdomToAppend.children ||[]).forEach(vnode => prepend ? elem.children.unshift(vnode) : elem.children.push(vnode) )
+        return jb.ui.updateRenderer({ delta: vdomToAppend,elemId,cmpId, widgetId: ctx && ctx.vars.widgetId}) // deligate to the main thread 
     }
     (vdomToAppend.children ||[]).forEach(vdom => render(vdom,elem,prepend))
 }
@@ -3894,7 +3894,7 @@ function createElement(parent,tag) {
 }
 
 Object.assign(jb.ui, {
-    h, render, unmount, applyVdomDiff, applyDeltaToDom, elemToVdom, mountInteractive, compareVdom, appendItems,
+    h, render, unmount, applyNewVdom, applyDeltaToDom, elemToVdom, mountInteractive, compareVdom, appendItems,
     handleCmpEvent(specificHandler, ev) {
         ev = typeof event != 'undefined' ? event : ev
         const el = jb.ui.parents(ev.currentTarget,{includeSelf: true}).find(el=> el.getAttribute && el.getAttribute('jb-ctx') != null)
@@ -3998,7 +3998,7 @@ Object.assign(jb.ui, {
         const hash = cmp.init()
         if (hash != null && hash == elem.getAttribute('cmpHash'))
             return jb.log('refreshElem',['stopped by hash', hash, ...arguments]);
-        cmp && applyVdomDiff(elem, h(cmp), {strongRefresh, ctx})
+        cmp && applyNewVdom(elem, h(cmp), {strongRefresh, ctx})
         //jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
     },
 
@@ -40949,7 +40949,7 @@ Object.assign(st, {
     if (!ctx) return
     ctx.profile = jb.path(jb.comps,ctx.path.split('~'))
     const cmp = ctx.profile.$ == 'openDialog' ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself()
-    cmp && jb.ui.applyVdomDiff(elem, jb.ui.h(cmp), {strongRefresh: true, ctx})
+    cmp && jb.ui.applyNewVdom(elem, jb.ui.h(cmp), {strongRefresh: true, ctx})
     jb.exec({ $: 'animate.refreshElem', elem: () => elem })
   },
   findElemsByCtxCondition(condition) {

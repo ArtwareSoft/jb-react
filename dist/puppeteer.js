@@ -13,6 +13,7 @@ jb.pptr = {
             args: ['--disable-features=site-per-process','--enable-devtools-experiments'],
             }).then(browser => this._browser = browser)
     },
+
     createServerSession(ctx,{showBrowser}) {
         const {subject, subscribe, pipe, Do } = jb.callbag
         const pptrSession = {
@@ -31,7 +32,6 @@ jb.pptr = {
                     pptrSession.events.next({$: 'Emit', ctx }) 
                 }),
         ] : [])
-
 
         ctx.run(
             rx.pipe(

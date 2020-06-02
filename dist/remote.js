@@ -258,7 +258,7 @@ if (jb.frame.workerId && jb.frame.workerId())
         widgets: {},
         activeElement() {},
         focus() {},
-        updateRenderer(delta,elemId,cmpId,widgetId) {
+        updateRenderer({delta,elemId,cmpId,widgetId}) {
             const css = this._stylesToAdd.join('\n')
             this._stylesToAdd = []
             const store = jb.ui.serializeCtxOfVdom(delta)
@@ -341,10 +341,10 @@ jb.component('worker.main', {
   type: 'remote',
   impl: ctx => ({
     getWorker() {
-            if (jb.ui.mainWorker)
-                return Promise.resolve(jb.ui.mainWorker)
-            jb.ui.workers[1] = jb.ui.mainWorker = createWorker(1)
-            return jb.ui.mainWorker.exec('"init"').then(()=>jb.ui.mainWorker) // wait for first dummy run with empty input
+        if (jb.ui.mainWorker)
+            return Promise.resolve(jb.ui.mainWorker)
+        jb.ui.workers[1] = jb.ui.mainWorker = createWorker(1)
+        return jb.ui.mainWorker.exec('"init"').then(()=>jb.ui.mainWorker) // wait for first dummy run with empty input
     },
     createWidget(ctx,main,widgetId) { // widget receives events and updates back with vdom deltas
             const widgetProf = pipeline({$asIs: {widgetId,main}}, // runs on worker
@@ -354,7 +354,7 @@ jb.component('worker.main', {
                     const top = jb.ui.h(cmp)
                     top.attributes = Object.assign(top.attributes || {},{ worker: 1, id: widgetId })
                     jb.ui.widgets[widgetId] = { top }
-                    jb.ui.updateRenderer(jb.ui.compareVdom({},top),widgetId,null,widgetId)
+                    jb.ui.updateRenderer({delta: jb.ui.compareVdom({},top),elemId: widgetId,widgetId})
             })
 
             return this.getWorker().then( worker => {

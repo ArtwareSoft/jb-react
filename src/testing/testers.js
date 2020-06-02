@@ -239,7 +239,7 @@ jb.component('uiTest.applyVdomDiff', {
 		const elem = document.createElement('div');
 		const ctxForTst = ctx.setVars({elemToTest : elem })
 		jb.ui.render(jb.ui.h(controlBefore(ctxForTst)),elem)
-		jb.ui.applyVdomDiff(elem.firstElementChild,jb.ui.h(control(ctxForTst)))
+		jb.ui.applyNewVdom(elem.firstElementChild,jb.ui.h(control(ctxForTst)))
 		const actualHtml = elem.innerHTML
 		const actualVdom = jb.ui.elemToVdom(elem)
 		const success = !!(expectedHtml.replace(/[0-9]/g,'') == actualHtml.replace(/[0-9]/g,''));

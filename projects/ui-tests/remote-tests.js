@@ -66,11 +66,10 @@ jb.component('dataTest.remote.sourceNoTalkback', {
 
 jb.component('dataTest.remote.sourceRx', {
   impl: dataTest({
-      calculate: pipe(rx.pipe(
-          remote.sourceRx(rx.fromIter([1,2,3])),
-          rx.take(2),
-          rx.map('-%%-')
-    ), join(',')),
+    calculate: pipe(
+      rx.pipe(remote.sourceRx(rx.fromIter([1, 2, 3])), rx.take(2), rx.map('-%%-')),
+      join(',')
+    ),
     expectedResult: equals('-1-,-2-')
   })
 })

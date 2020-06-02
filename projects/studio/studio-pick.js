@@ -228,7 +228,7 @@ Object.assign(st, {
     if (!ctx) return
     ctx.profile = jb.path(jb.comps,ctx.path.split('~'))
     const cmp = ctx.profile.$ == 'openDialog' ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself()
-    cmp && jb.ui.applyVdomDiff(elem, jb.ui.h(cmp), {strongRefresh: true, ctx})
+    cmp && jb.ui.applyNewVdom(elem, jb.ui.h(cmp), {strongRefresh: true, ctx})
     jb.exec({ $: 'animate.refreshElem', elem: () => elem })
   },
   findElemsByCtxCondition(condition) {

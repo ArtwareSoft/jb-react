@@ -65,7 +65,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       ],
       remote: [
         'src/misc/remote-callbag.js',
-        'src/ui/watchable/remote.js',
+        'src/ui/watchable/remote-widget.js',
       ],
       'inner-html': [ // unsafe
         'src/ui/inner-html.js',
