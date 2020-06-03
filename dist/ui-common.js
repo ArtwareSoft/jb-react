@@ -826,7 +826,7 @@ function appendItems(elem, vdomToAppend,{ctx,prepend} = {}) { // used in infinit
     if (elem instanceof ui.VNode) { // runs on worker
         const cmpId = elem.getAttribute('cmp-id')
         const elemId = elem.getAttribute('id')
-        //(vdomToAppend.children ||[]).forEach(vnode => prepend ? elem.children.unshift(vnode) : elem.children.push(vnode) )
+        (vdomToAppend.children ||[]).forEach(vnode => prepend ? elem.children.unshift(vnode) : elem.children.push(vnode) )
         return jb.ui.updateRenderer({ delta: vdomToAppend,elemId,cmpId, widgetId: ctx && ctx.vars.widgetId}) // deligate to the main thread 
     }
     (vdomToAppend.children ||[]).forEach(vdom => render(vdom,elem,prepend))
