@@ -24,9 +24,9 @@ jb.component('pptr.newPage', {
   ],
   impl: rx.innerPipe(
     rx.var('url', '%$url()%'),
-    rx.mapPromise(({},{browser}) => browser.newPage()),
+    pptr.mapPromise(({},{browser}) => browser.newPage()),
     rx.var('page', '%%'),
-    rx.doPromise(
+    pptr.doPromise(
         (ctx,{url},{waitUntil,timeout}) => jb.pptr.runMethod(ctx,'goto',url,{waitUntil, timeout})
       )
   )

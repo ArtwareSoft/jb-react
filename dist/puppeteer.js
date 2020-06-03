@@ -165,9 +165,70 @@ jb.component('pptr.runMethodOnPptr', {
       {id: 'method', as: 'string', mandatory: true},
       {id: 'args', as: 'array'},
     ],
-    impl: rx.mapPromise((ctx,{},{method,args}) => jb.pptr.runMethod(ctx,method,args)),
+    impl: pptr.mapPromise((ctx,{},{method,args}) => jb.pptr.runMethod(ctx,method,args)),
 })
-;
+
+jb.component('pptr.server', {
+    type: 'remote',
+    params: [
+        {id: 'showBrowser', as: 'boolean', defaultValue: true},
+        {id: 'libs', as: 'array', defaultValue: ['common','remote','rx','puppeteer'] },
+    ],
+    impl: (ctx,showBrowser, libs) => {
+        if (jb.pptr.pptrServer) return jb.pptr.pptrServer
+        const socket = jb.pptr.pptrServer = jb.pptr.createProxySocket()
+        socket.postObj = m => socket.send(JSON.stringify(jb.remote.prepareForClone(m)))
+        socket.showBrowser = showBrowser
+
+        const {pipe,Do,fromEvent,map,filter,subscribe} = jb.callbag
+        socket.messageSource = pipe(
+            fromEvent('message',socket),
+            map(m=> jb.remote.evalFunctions(JSON.parse(m.data)))
+        )
+        pipe(socket.messageSource, filter(m => m.res == 'loadCodeReq'), subscribe(() => socket.sendCodeToServer()))
+
+        pipe(
+            socket.messageSource,
+            Do(m => m.$ == 'cbLogByPathDiffs' && jb.remote.updateCbLogs(m.diffs) ),
+            subscribe(()=>{})
+        )
+        socket.sendCodeToServer = () => {
+            const host = jb.path(jb.studio,'studiojb.studio.host')
+            if (!host) return Promise.resolve()
+            return libs.reduce((pr,module) => pr.then(() => {
+                const moduleFileName = host.locationToPath(`${host.pathOfDistFolder()}/${module}.js`)
+                return host.getFile(moduleFileName).then(loadCode => socket.postObj({ loadCode, moduleFileName }))
+            }), Promise.resolve())
+        }
+        return socket
+    }
+})
+
+jb.component('pptr.refreshServerCode', {
+    type: 'action',
+    params: [
+        {id: 'remote', type: 'remote', defaultValue: pptr.server()}
+    ],
+    impl: '%$remote.sendCodeToServer()%'
+})
+
+jb.component('pptr.mapPromise', {
+    type: 'rx',
+    params: [
+      {id: 'func', dynamic: true },
+    ],
+    impl: If(pptr.onServer(), rx.mapPromise('%$func%'), remote.innerRx(rx.mapPromise('%$func%'),pptr.server()))
+})
+
+jb.component('pptr.doPromise', {
+    type: 'rx',
+    params: [
+      {id: 'func', dynamic: true },
+    ],
+    impl: If(pptr.onServer(), rx.doPromise('%$func%'), remote.innerRx(rx.doPromise('%$func%'),pptr.server()))
+})
+
+  ;
 
 jb.ns('pptr,rx')
 
@@ -195,9 +256,9 @@ jb.component('pptr.newPage', {
   ],
   impl: rx.innerPipe(
     rx.var('url', '%$url()%'),
-    rx.mapPromise(({},{browser}) => browser.newPage()),
+    pptr.mapPromise(({},{browser}) => browser.newPage()),
     rx.var('page', '%%'),
-    rx.doPromise(
+    pptr.doPromise(
         (ctx,{url},{waitUntil,timeout}) => jb.pptr.runMethod(ctx,'goto',url,{waitUntil, timeout})
       )
   )

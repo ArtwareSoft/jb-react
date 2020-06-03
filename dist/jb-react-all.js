@@ -10868,6 +10868,13 @@ jb.remote = {
             jb.cbLogByPath[e[0]] = jb.cbLogByPath[e[0]] || { callbagLog: true, result: [] }
             jb.cbLogByPath[e[0]].result = jb.cbLogByPath[e[0]].result.concat(e[1])
         })
+    },
+    createSampleObject(val) { // used by tests
+        class tst {
+            constructor(d) { this.d = val}
+            m1() { return this.d}
+        }
+        return new tst(val)
     }
 }
 
