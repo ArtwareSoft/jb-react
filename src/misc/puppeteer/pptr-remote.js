@@ -198,7 +198,7 @@ jb.component('pptr.server', {
             return libs.reduce((pr,module) => pr.then(() => {
                 const moduleFileName = host.locationToPath(`${host.pathOfDistFolder()}/${module}.js`)
                 return host.getFile(moduleFileName).then(loadCode => socket.postObj({ loadCode, moduleFileName }))
-            }), Promise.resolve())
+            }), Promise.resolve()).then(() => socket.postObj({ loadCode: 'pptr.remote.onServer = true', moduleFileName: '' }))
         }
         return socket
     }
@@ -217,7 +217,7 @@ jb.component('pptr.mapPromise', {
     params: [
       {id: 'func', dynamic: true },
     ],
-    impl: If(pptr.onServer(), rx.mapPromise('%$func%'), remote.innerRx(rx.mapPromise('%$func%'),pptr.server()))
+    impl: If(remote.onServer(), rx.mapPromise('%$func%'), remote.innerRx(rx.mapPromise('%$func%'),pptr.server()))
 })
 
 jb.component('pptr.doPromise', {
@@ -225,7 +225,7 @@ jb.component('pptr.doPromise', {
     params: [
       {id: 'func', dynamic: true },
     ],
-    impl: If(pptr.onServer(), rx.doPromise('%$func%'), remote.innerRx(rx.doPromise('%$func%'),pptr.server()))
+    impl: If(remote.onServer(), rx.doPromise('%$func%'), remote.innerRx(rx.doPromise('%$func%'),pptr.server()))
 })
 
   

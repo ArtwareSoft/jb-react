@@ -1,5 +1,7 @@
 jb.remote = {
     counter: 1,
+    remoteId: Symbol.for("remoteId"),
+    remoteHash: {},
     remoteSource: (remote, id) => jb.callbag.pipe(
         remote.messageSource, 
         jb.callbag.filter(m=> m.id == id),
@@ -20,6 +22,10 @@ jb.remote = {
         if (typeof obj == 'function')
             return {$: '__func', code: obj.toString() }
         if (typeof obj == 'object') {
+            if (obj[jb.remote.remoteId]) {
+                jb.remote.remoteHash[__id] = obj
+                return {$: '__remoteObj', __id: obj[jb.remote.remoteId], ...jb.objFromEntries( jb.entries(obj).map(([id,val])=>[id,jb.remote.prepareForClone(val, depth+1)])) }
+            }
             if (obj.constructor.name == 'jbCtx')
                 return { vars: jb.remote.prepareForClone(obj.vars,depth+1), data: jb.remote.prepareForClone(obj.data,depth+1), forcePath: obj.path }
             else if (!(obj.constructor.name||'').match(/^Object|Array$/))
@@ -32,12 +38,14 @@ jb.remote = {
         if (Array.isArray(obj)) return obj.map(val => jb.remote.evalFunctions(val))
         if (obj && typeof obj == 'object' && obj.$ == '__func')
             return jb.eval(obj.code)
+        if (obj && typeof obj == 'object' && obj.$ == '__remoteObj' && jb.remote.onServer )
+            return jb.remote.remoteHash[__id]
         if (obj && typeof obj == 'object')
             return jb.objFromEntries( jb.entries(obj).map(([id,val])=>[id, jb.remote.evalFunctions(val)]))
         return obj
     },
     startCommandListener() {
-        const {pipe,Do,filter,fromEvent,map,subscribe} = jb.callbag
+        const {pipe,Do,filter,subscribe} = jb.callbag
         pipe(
             self.messageSource,
             filter(m=> !m.id),
@@ -85,6 +93,7 @@ jb.component('worker.remoteCallbag', {
         const workerCode = [
             ...libs.map(lib=>`importScripts('${distPath}/${lib}.js')`),`
                 self.workerId = () => 1
+                jb.remote.onServer = true
                 jb.cbLogByPath = {}
                 const {pipe,Do,fromEvent,map,subscribe} = jb.callbag
                 self.messageSource = pipe(
@@ -144,7 +153,10 @@ jb.component('remote.sourceRx', {
         return jb.remote.remoteSource(remote,sinkId)
     }
 })
-;
+
+jb.component('remote.onServer', {
+    impl: ctx => jb.remote.onServer
+});
 
 (function(){
 
