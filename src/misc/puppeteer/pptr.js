@@ -1,20 +1,5 @@
 jb.ns('pptr,rx')
 
-// jb.component('pptr.gotoPage', {
-//   type: 'rx,pptr',
-//   params: [
-//     {id: 'url', as: 'string', mandatory: true},
-//     {id: 'waitUntil', as: 'string', defaultValue: 'load', options: 'load:load event is fired,domcontentloaded:DOMContentLoaded event is fired,networkidle0:no more than 0 network connections for at least 500 ms,networkidle2:no more than 2 network connections for at least 500 ms'},
-//     {id: 'timeout', as: 'number', defaultValue: 20000, description: 'maximum time to wait for in milliseconds'}
-//   ],
-//   impl: rx.innerPipe(
-//     rx.var('url', '%$url%'),
-//     rx.doPromise(
-//         (ctx,{},{url,waitUntil,timeout}) => jb.pptr.runMethod(ctx,'goto',url,{waitUntil, timeout})
-//       )
-//   )
-// })
-
 jb.component('pptr.newPage', {
   type: 'rx,pptr',
   params: [
@@ -57,7 +42,7 @@ jb.component('pptr.querySelector', {
     {id: 'selector', as: 'string'},
     {id: 'multiple', as: 'boolean', description: 'querySelectorAll'}
   ],
-  impl: rx.mapPromise(
+  impl: pptr.mapPromise(
     (ctx,{},{selector,multiple}) => jb.pptr.runMethod(ctx, multiple ? '$$' : '$',selector)
   )
 })
@@ -67,7 +52,7 @@ jb.component('pptr.xpath', {
     params: [
         {id: 'xpath', as: 'string', mandatory: true, description: "e.g, //*[contains(text(), 'Hello')]" },
     ],
-    impl: rx.mapPromise((ctx,{},{xpath}) => jb.pptr.runMethod(ctx,'$x',xpath)),
+    impl: pptr.mapPromise((ctx,{},{xpath}) => jb.pptr.runMethod(ctx,'$x',xpath)),
 })
 
 jb.component('pptr.jsFunction', {
@@ -75,7 +60,7 @@ jb.component('pptr.jsFunction', {
   params: [
     {id: 'expression', as: 'string', mandatory: true}
   ],
-  impl: rx.mapPromise(
+  impl: pptr.mapPromise(
     (ctx,{frame,page},{expression}) => (frame || page).waitForFunction(expression,{},ctx.data)
   )
 })
@@ -85,7 +70,7 @@ jb.component('pptr.jsProperty', {
     params: [
         {id: 'propName', as: 'string',  options: 'value,innerHTML,outerHTML,href,textContent', mandatory: true}
     ],
-    impl: rx.mapPromise((ctx,{},{propName}) => jb.pptr.runMethod(ctx,'evaluate',eval(`x => x && x.${propName} `),ctx.data))
+    impl: pptr.mapPromise((ctx,{},{propName}) => jb.pptr.runMethod(ctx,'evaluate',eval(`x => x && x.${propName} `),ctx.data))
 })
 
 jb.component('pptr.elementWithText', {
@@ -95,7 +80,7 @@ jb.component('pptr.elementWithText', {
         {id: 'text', as: 'string', mandatory: true },
     ],
     impl: rx.innerPipe(
-        rx.mapPromise((ctx,{},{text}) => jb.pptr.runMethod(ctx,'$x',`//*[contains(text(),'${text}')]`,ctx.data)),
+        pptr.mapPromise((ctx,{},{text}) => jb.pptr.runMethod(ctx,'$x',`//*[contains(text(),'${text}')]`,ctx.data)),
         rx.flatMapArrays()
     )
 })
@@ -109,7 +94,7 @@ jb.component('pptr.elementWithText', {
 //         {id: 'timeout', as: 'number', defaultValue: 5000, description: 'maximum time to wait in milliseconds' },
 //     ],
 //     impl: rx.innerPipe(
-//         rx.mapPromise((ctx,{},{selector,multiple}) => jb.pptr.runMethod(ctx,multiple ? '$$' : '$',selector)),
+//         pptr.mapPromise((ctx,{},{selector,multiple}) => jb.pptr.runMethod(ctx,multiple ? '$$' : '$',selector)),
 //         pptr.getProperty('%$propName%'),
 //         pptr.logData()
 //     )
@@ -123,7 +108,7 @@ jb.component('pptr.elementWithText', {
 //         {id: 'hidden ', as: 'boolean', description: 'wait for element to not be found in the DOM or to be hidden' },
 //         {id: 'timeout', as: 'number', defaultValue: 5000, description: 'maximum time to wait for in milliseconds' },
 //     ],
-//     impl: rx.doPromise((ctx,{},{selector,visible,hidden, timeout}) => jb.pptr.runMethod(ctx,'waitForSelector',selector,{visible,hidden, timeout}))
+//     impl: pptr.doPromise((ctx,{},{selector,visible,hidden, timeout}) => jb.pptr.runMethod(ctx,'waitForSelector',selector,{visible,hidden, timeout}))
 // })
 
 // jb.component('pptr.extractWithEval', {
@@ -133,7 +118,7 @@ jb.component('pptr.elementWithText', {
 //     {id: 'expression', as: 'string', mandatory: true}
 //   ],
 //   impl: rx.innerPipe(
-//     rx.mapPromise((ctx,{},{expression}) => jb.pptr.runMethod(ctx,'evaluate',expression)),
+//     pptr.mapPromise((ctx,{},{expression}) => jb.pptr.runMethod(ctx,'evaluate',expression)),
 //     pptr.logData()
 //   )
 // })
@@ -144,7 +129,7 @@ jb.component('pptr.elementWithText', {
 //     params: [
 //       {id: 'propName', as: 'string',  options: 'value,innerHTML,outerHTML,href,textContent', mandatory: true}
 //     ],
-//     impl: rx.mapPromise((ctx,{},{propName}) => jb.pptr.runMethod(ctx,'evaluate',eval(`x => x && x.${propName} `))),
+//     impl: pptr.mapPromise((ctx,{},{propName}) => jb.pptr.runMethod(ctx,'evaluate',eval(`x => x && x.${propName} `))),
 // })
 
 // jb.component('pptr.waitForFunction', {
@@ -156,8 +141,8 @@ jb.component('pptr.elementWithText', {
 //         {id: 'timeout', as: 'number', defaultValue: 5000, description: '0 to disable, maximum time to wait for in milliseconds' },
 //     ],
 //     impl: If('%$noReturnValue%', 
-//         rx.doPromise((ctx,{},{condition,polling,timeout}) => jb.pptr.runMethod(ctx,'waitForFunction',condition,{polling, timeout})),
-//         rx.mapPromise((ctx,{},{condition,polling,timeout}) => jb.pptr.runMethod(ctx,'waitForFunction',condition,{polling, timeout})))
+//         pptr.doPromise((ctx,{},{condition,polling,timeout}) => jb.pptr.runMethod(ctx,'waitForFunction',condition,{polling, timeout})),
+//         pptr.mapPromise((ctx,{},{condition,polling,timeout}) => jb.pptr.runMethod(ctx,'waitForFunction',condition,{polling, timeout})))
 // })
 
 // jb.component('pptr.evaluate', {
@@ -168,8 +153,8 @@ jb.component('pptr.elementWithText', {
 //     {id: 'noReturnValue', as: 'boolean' },
 //   ],
 //   impl: If('%$noReturnValue%', 
-//     rx.doPromise((ctx,{},{condition,polling,timeout}) => jb.pptr.runMethod(ctx,'evaluate',condition,{polling, timeout})),
-//     rx.mapPromise((ctx,{},{condition,polling,timeout}) => jb.pptr.runMethod(ctx,'evaluate',condition,{polling, timeout})))
+//     pptr.doPromise((ctx,{},{condition,polling,timeout}) => jb.pptr.runMethod(ctx,'evaluate',condition,{polling, timeout})),
+//     pptr.mapPromise((ctx,{},{condition,polling,timeout}) => jb.pptr.runMethod(ctx,'evaluate',condition,{polling, timeout})))
 // })
 
 
@@ -181,7 +166,7 @@ jb.component('pptr.mouseClick', {
         {id: 'clickCount', as: 'number', description: 'default is 1' },
         {id: 'delay', as: 'number', description: 'Time to wait between mousedown and mouseup in milliseconds. Defaults to 0' },
     ],
-    impl: rx.doPromise(({data},{},args) => data && data.constructor.name == 'ElementHandle' && data.click(args))
+    impl: pptr.doPromise(({data},{},args) => data && data.constructor.name == 'ElementHandle' && data.click(args))
 })
 
 jb.component('pptr.type', {
@@ -192,7 +177,7 @@ jb.component('pptr.type', {
         {id: 'enterAtEnd', as: 'boolean', defaultValue: true },
         {id: 'delay', as: 'number', defaultValue: 100, description: 'time between clicks' },
     ],
-    impl: rx.doPromise((ctx,{},{text, enterAtEnd, delay}) => jb.pptr.runMethod(ctx,'type', text + (enterAtEnd ? String.fromCharCode(13): ''), {delay}))
+    impl: pptr.doPromise((ctx,{},{text, enterAtEnd, delay}) => jb.pptr.runMethod(ctx,'type', text + (enterAtEnd ? String.fromCharCode(13): ''), {delay}))
 })
 
 jb.component('pptr.closeBrowser', {
@@ -229,13 +214,13 @@ jb.component('pptr.javascriptOnPptr', {
     params: [
         {id: 'func', dynamic: true, mandatory: true}
     ],
-    impl: rx.mapPromise((ctx,{},{func}) => func(ctx))
+    impl: pptr.mapPromise((ctx,{},{func}) => func(ctx))
 })
 
 jb.component('pptr.contentFrame', {
     type: 'rx,pptr',
     description: 'retruns a frame object of the current element',
-    impl: rx.mapPromise(({data}) => data.contentFrame && data.contentFrame())
+    impl: pptr.mapPromise(({data}) => data.contentFrame && data.contentFrame())
 })
 
 // page.mouse.move(100, 100);

@@ -26,6 +26,16 @@ jb.component('pptr.runMethodOnPptr', {
     impl: pptr.mapPromise((ctx,{},{method,args}) => jb.pptr.runMethod(ctx,method,args)),
 })
 
+jb.component('pptr.getOrCreateBrowser', {
+    type: 'rx,pptr',
+    description: 'run method on the current object on pptr server using pptr api',
+    params: [
+      {id: 'method', as: 'string', mandatory: true},
+      {id: 'args', as: 'array'},
+    ],
+    impl: pptr.mapPromise((ctx,{},{method,args}) => jb.pptr.runMethod(ctx,method,args)),
+})
+
 jb.component('pptr.server', {
     type: 'remote',
     params: [
