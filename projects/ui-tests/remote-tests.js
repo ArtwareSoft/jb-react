@@ -113,28 +113,28 @@ jb.component('dataTest.remote.remoteParam', {
   })
 })
 
-jb.component('dataTest.remote.remoteDynamicProfileFunc', {
+jb.component('dataTest.remoteDynamicProfileFunc', {
   params: [
     { id: 'func', dynamic: true, defaultValue: '-%%-'},
   ],
   impl: dataTest({
       calculate: rx.pipe(
           rx.fromIter([1]),
-          remote.innerRx(rx.map('%$func%')),
+          remote.innerRx(rx.map('%$func()%')),
           rx.take(1)
     ),
     expectedResult: equals('-1-')
   })
 })
 
-jb.component('dataTest.remote.remoteDynamicJsFunc', {
+jb.component('dataTest.remoteDynamicJsFunc', {
   params: [
     { id: 'func', dynamic: true, defaultValue: ({data}) => `-${data}-`},
   ],
   impl: dataTest({
       calculate: rx.pipe(
           rx.fromIter([1]),
-          remote.innerRx(rx.map('%$func%')),
+          remote.innerRx(rx.map('%$func()%')),
           rx.take(1)
     ),
     expectedResult: equals('-1-')
