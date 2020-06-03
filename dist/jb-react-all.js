@@ -10826,6 +10826,8 @@ jb.remote = {
         if (typeof obj == 'function')
             return {$: '__func', code: obj.toString() }
         if (typeof obj == 'object') {
+            if (jb.remote.remoteClassList.indexOf(obj.constructor.name) != -1 && !obj[jb.remote.remoteId])
+                obj[jb.remote.remoteId] = jb.remote.counter++
             if (obj[jb.remote.remoteId]) {
                 jb.remote.remoteHash[__id] = obj
                 return {$: '__remoteObj', __id: obj[jb.remote.remoteId], ...jb.objFromEntries( jb.entries(obj).map(([id,val])=>[id,jb.remote.prepareForClone(val, depth+1)])) }
@@ -10883,7 +10885,8 @@ jb.remote = {
             m1() { return this.d}
         }
         return new tst(val)
-    }
+    },
+    remoteClassList: ['tst']
 }
 
 jb.component('worker.remoteCallbag', {
