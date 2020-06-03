@@ -91,8 +91,8 @@ jb.component('dataTest.remote.remoteObject', {
     calculate: rx.pipe(
       rx.fromIter([1]),
       remote.innerRx(rx.map(ctx => jb.remote.createSampleObject(5))),
-      remote.innerRx(rx.map(({data}) => { debugger; return data.m1() })),
-  rx.take(1)
+      remote.innerRx(rx.map(({data}) => data.m1() )),
+      rx.take(1)
     ),
     expectedResult: equals(5)
   })
@@ -105,7 +105,7 @@ jb.component('dataTest.remote.remoteParam', {
   impl: dataTest({
       calculate: rx.pipe(
           rx.fromIter([1]),
-          remote.innerRx(rx.map( (ctx,{},{retVal}) => jb.remote.createSampleObject(retVal))),
+          remote.innerRx(rx.map( (ctx,{},{retVal}) => { debugger ; return jb.remote.createSampleObject(retVal) })),
           remote.innerRx(rx.map( ({data}) => data.m1() )),
           rx.take(1)
     ),
