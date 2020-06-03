@@ -10893,7 +10893,7 @@ jb.remote = {
 jb.component('worker.remoteCallbag', {
     type: 'remote',
     params: [
-        {id: 'id', as: 'string', defaultValue: 'main' },
+        {id: 'id', as: 'string', defaultValue: 'mainWorker' },
         {id: 'libs', as: 'array', defaultValue: ['common','remote','rx'] },
     ],    
     impl: (ctx,id,libs) => {
