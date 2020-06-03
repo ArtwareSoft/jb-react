@@ -112,3 +112,31 @@ jb.component('dataTest.remote.remoteParam', {
     expectedResult: equals(5)
   })
 })
+
+jb.component('dataTest.remote.remoteDynamicProfileFunc', {
+  params: [
+    { id: 'func', dynamic: true, defaultValue: '-%%-'},
+  ],
+  impl: dataTest({
+      calculate: rx.pipe(
+          rx.fromIter([1]),
+          remote.innerRx(rx.map('%$func%')),
+          rx.take(1)
+    ),
+    expectedResult: equals('-1-')
+  })
+})
+
+jb.component('dataTest.remote.remoteDynamicJsFunc', {
+  params: [
+    { id: 'func', dynamic: true, defaultValue: ({data}) => `-${data}-`},
+  ],
+  impl: dataTest({
+      calculate: rx.pipe(
+          rx.fromIter([1]),
+          remote.innerRx(rx.map('%$func%')),
+          rx.take(1)
+    ),
+    expectedResult: equals('-1-')
+  })
+})

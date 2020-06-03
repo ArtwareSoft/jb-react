@@ -10825,7 +10825,7 @@ jb.remote = {
         if (['string','boolean','number'].indexOf(typeof obj) != -1) return obj
         if (Array.isArray(obj)) return obj.map(val => jb.remote.prepareForClone(val, depth+1))
         if (typeof obj == 'function')
-            return {$: '__func', code: obj.toString() }
+            return {$: '__func', profile: obj.profile, code: !obj.profile && obj.toString() }
         if (typeof obj == 'object') {
             if (jb.remote.remoteClassList.indexOf(obj.constructor.name) != -1 && !obj[jb.remote.remoteId])
                 obj[jb.remote.remoteId] = jb.remote.counter++
@@ -10835,7 +10835,7 @@ jb.remote = {
             }
             if (obj.constructor.name == 'jbCtx')
                 return { 
-                    vars: jb.remote.prepareForClone(obj.vars,depth+1), 
+                    vars: jb.remote.prepareForClone(obj.vars,depth+1),
                     data: jb.remote.prepareForClone(obj.data,depth+1),
                     componentContext: {params: jb.remote.prepareForClone(jb.path(obj.componentContext,'params'),depth+1) },
                     forcePath: obj.path
@@ -10849,7 +10849,7 @@ jb.remote = {
     evalFunctions: obj => {
         if (Array.isArray(obj)) return obj.map(val => jb.remote.evalFunctions(val))
         if (obj && typeof obj == 'object' && obj.$ == '__func')
-            return jb.eval(obj.code)
+            return obj.profile ? ctx => ctx.run(obj.profile) : jb.eval(obj.code)
         if (obj && typeof obj == 'object' && obj.$ == '__remoteObj' && jb.remote.onServer )
             return jb.remote.remoteHash[obj.__id]
         if (obj && typeof obj == 'object')
