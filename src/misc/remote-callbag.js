@@ -21,8 +21,8 @@ jb.remote = {
         if (['string','boolean','number'].indexOf(typeof obj) != -1) return obj
         if (Array.isArray(obj)) return obj.map(val => jb.remote.prepareForClone(val, depth+1))
         if (typeof obj == 'function') {
-            const profile = typeof obj.profile == 'function' ? obj.profile.toString() : obj.profile
-            const code = profile ? null : obj.toString() 
+            const profile = typeof obj.profile != 'function' ? obj.profile : null
+            const code = profile ? null : typeof obj.profile == 'function' ? obj.profile.toString() : obj.toString() 
             return {$: '__func', profile, code }
         }
         if (typeof obj == 'object') {
