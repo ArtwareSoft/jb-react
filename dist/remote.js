@@ -1,4 +1,5 @@
 jb.remote = {
+    workers: {},
     counter: 1,
     remoteId: Symbol.for("remoteId"),
     remoteHash: {},
@@ -88,9 +89,12 @@ jb.remote = {
 jb.component('worker.remoteCallbag', {
     type: 'remote',
     params: [
+        {id: 'id', as: 'string', defaultValue: 'main' },
         {id: 'libs', as: 'array', defaultValue: ['common','remote','rx'] },
     ],    
-    impl: (ctx,libs) => {
+    impl: (ctx,id,libs) => {
+        if (jb.remote.workers[id]) 
+            return jb.remote.workers[id]
         const host = jb.path(jb.studio,'studiojb.studio.host')
         const distPath = host && host.pathOfDistFolder() || `http://${location.host}/dist`
         const workerCode = [
@@ -105,7 +109,7 @@ jb.component('worker.remoteCallbag', {
                 )                
                 jb.remote.startCommandListener()`
         ].join('\n')
-        const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: 'application/javascript'})));
+        const worker = jb.remote.workers[id] = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})));
         worker.postObj = m => worker.postMessage(JSON.stringify(jb.remote.prepareForClone(m)))
 
         const {pipe,Do,fromEvent,map,subscribe} = jb.callbag
