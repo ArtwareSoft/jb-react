@@ -41,7 +41,7 @@ jb.remote = {
         if (obj && typeof obj == 'object' && obj.$ == '__func')
             return jb.eval(obj.code)
         if (obj && typeof obj == 'object' && obj.$ == '__remoteObj' && jb.remote.onServer )
-            return jb.remote.remoteHash[__id]
+            return jb.remote.remoteHash[obj.__id]
         if (obj && typeof obj == 'object')
             return jb.objFromEntries( jb.entries(obj).map(([id,val])=>[id, jb.remote.evalFunctions(val)]))
         return obj
