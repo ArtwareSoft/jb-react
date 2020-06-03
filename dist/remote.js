@@ -25,7 +25,7 @@ jb.remote = {
             if (jb.remote.remoteClassList.indexOf(obj.constructor.name) != -1 && !obj[jb.remote.remoteId])
                 obj[jb.remote.remoteId] = jb.remote.counter++
             if (obj[jb.remote.remoteId]) {
-                jb.remote.remoteHash[__id] = obj
+                jb.remote.remoteHash[obj[jb.remote.remoteId]] = obj
                 return {$: '__remoteObj', __id: obj[jb.remote.remoteId], ...jb.objFromEntries( jb.entries(obj).map(([id,val])=>[id,jb.remote.prepareForClone(val, depth+1)])) }
             }
             if (obj.constructor.name == 'jbCtx')
