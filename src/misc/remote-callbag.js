@@ -43,12 +43,17 @@ jb.remote = {
         }
     },
     evalFunctions: obj => {
-        if (Array.isArray(obj)) return obj.map(val => jb.remote.evalFunctions(val))
-        if (obj && typeof obj == 'object' && obj.$ == '__func')
-            return obj.profile ? ctx => ctx.run(obj.profile) : jb.eval(obj.code)
-        if (obj && typeof obj == 'object' && obj.$ == '__remoteObj' && jb.remote.onServer )
+        if (Array.isArray(obj)) 
+            return obj.map(val => jb.remote.evalFunctions(val))
+        else if (obj && typeof obj == 'object' && obj.$ == '__func' && obj.profile) {
+            const ret = ctx => ctx.run(obj.profile)
+            ret.profile = profile
+            return ret
+        } else if (obj && typeof obj == 'object' && obj.$ == '__func')
+            return jb.eval(obj.code)
+        else if (obj && typeof obj == 'object' && obj.$ == '__remoteObj' && jb.remote.onServer )
             return jb.remote.remoteHash[obj.__id]
-        if (obj && typeof obj == 'object')
+        else if (obj && typeof obj == 'object')
             return jb.objFromEntries( jb.entries(obj).map(([id,val])=>[id, jb.remote.evalFunctions(val)]))
         return obj
     },
