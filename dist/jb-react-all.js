@@ -10953,7 +10953,7 @@ jb.component('remote.innerRx', {
     impl: (ctx,rx,remote) => {
         const sourceId = jb.remote.counter++
         const sinkId = jb.remote.counter++
-        remote.postObj({ $: 'innerCB', sourceId, sinkId, propName: 'rx', profile: ctx.profile.rx, ctx })
+        jb.delay(1).then(()=>remote).then(remote => remote.postObj({ $: 'innerCB', sourceId, sinkId, propName: 'rx', profile: ctx.profile.rx, ctx }))
         jb.entries(jb.cbLogByPath||{}).filter(e=>e[0].indexOf(ctx.path) == 0).forEach(e=>e[1].result = [])
         return source => (start,sink) => {
             if (start!=0) return
@@ -10973,7 +10973,7 @@ jb.component('remote.sourceRx', {
     impl: (ctx,rx,remote) => {
         const sinkId = jb.remote.counter++
         jb.entries(jb.cbLogByPath||{}).filter(e=>e[0].indexOf(ctx.path) == 0).forEach(e=>e[1].result = [])
-        jb.delay(1).then(()=> remote.postObj({ $: 'sourceCB', sinkId, propName: 'rx', profile: ctx.profile.rx, ctx }))
+        jb.delay(1).then(()=>remote).then(remote => remote.postObj({ $: 'sourceCB', sinkId, propName: 'rx', profile: ctx.profile.rx, ctx }))
         return jb.remote.remoteSource(remote,sinkId)
     }
 })

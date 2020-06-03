@@ -1,6 +1,18 @@
 jb.ns('pptr')
 
 jb.pptr = {
+    connect: () => new Promise((resolve, reject) => {
+        const socket = new WebSocket(`ws:${(jb.studio.studioWindow || jb.frame).location.hostname || 'localhost'}:8090`)
+        socket.onopen = () => resolve(socket)
+        socket.onerror = err => reject(err)
+        socket.onclose = e => {
+            const host = jb.path(jb.studio,'studiojb.studio.host')
+            if (host && e.code == 1006)
+                host.showError('puppeteer server is down. please activate or install from https://github.com/ArtwareSoft/jb-puppeteer-server.git')
+            else if (host && e.code != 1000)
+                host.showError('puppeteer server error: ' + e.code)
+        }
+    }),
     getOrCreateBrowser(showBrowser) {
         if (this._browser) return Promise.resolve(this._browser)
         return this.puppeteer().launch({headless: !showBrowser, 
@@ -33,7 +45,7 @@ jb.component('pptr.getOrCreateBrowser', {
       {id: 'method', as: 'string', mandatory: true},
       {id: 'args', as: 'array'},
     ],
-    impl: pptr.mapPromise((ctx,{},{method,args}) => jb.pptr.runMethod(ctx,method,args)),
+    impl: pptr.mapPromise((ctx,{},{method,args}) => jb.pptr.getOrCreateBrowser(ctx,method,args)),
 })
 
 jb.component('pptr.server', {
@@ -44,43 +56,33 @@ jb.component('pptr.server', {
     ],
     impl: (ctx,showBrowser, libs) => {
         if (jb.pptr.pptrServer) return jb.pptr.pptrServer
-        const {pipe,Do,fromEvent,map,filter,subscribe} = jb.callbag
-        const socket = jb.pptr.pptrServer = jb.pptr.createProxySocket()
-        socket.postObj = m => socket.send(JSON.stringify(jb.remote.prepareForClone(m)))
-        socket.showBrowser = showBrowser
-        pipe(
-            fromEvent('close',socket),
-            Do(e => {
+        return jb.pptr.connect().then(socket=> {
+            jb.pptr.pptrServer = socket
+            const {pipe,Do,fromEvent,map,filter,takeUntil,subscribe} = jb.callbag
+            socket.postObj = m => socket.send(JSON.stringify(jb.remote.prepareForClone(m)))
+            socket.showBrowser = showBrowser
+            socket.messageSource = pipe(
+                fromEvent('message',socket),
+                takeUntil(fromEvent('close',socket)),
+                map(m=> jb.remote.evalFunctions(JSON.parse(m.data)))
+            )
+            pipe(socket.messageSource, filter(m => m.res == 'loadCodeReq'), subscribe(() => socket.sendCodeToServer()))
+    
+            pipe(
+                socket.messageSource,
+                Do(m => m.$ == 'cbLogByPathDiffs' && jb.remote.updateCbLogs(m.diffs) ),
+                subscribe(()=>{})
+            )
+            socket.sendCodeToServer = () => {
                 const host = jb.path(jb.studio,'studiojb.studio.host')
-                if (host && e.code == 1006)
-                    host.showError('puppeteer server is down. please activate or install from https://github.com/ArtwareSoft/jb-puppeteer-server.git')
-                else if (host && e.code != 1000)
-                    host.showError('puppeteer server error: ' + e.code)
-            }),
-            subscribe(()=>{})
-        )
-
-        socket.messageSource = pipe(
-            fromEvent('message',socket),
-            takeUntil(fromEvent('close',socket)),
-            map(m=> jb.remote.evalFunctions(JSON.parse(m.data)))
-        )
-        pipe(socket.messageSource, filter(m => m.res == 'loadCodeReq'), subscribe(() => socket.sendCodeToServer()))
-
-        pipe(
-            socket.messageSource,
-            Do(m => m.$ == 'cbLogByPathDiffs' && jb.remote.updateCbLogs(m.diffs) ),
-            subscribe(()=>{})
-        )
-        socket.sendCodeToServer = () => {
-            const host = jb.path(jb.studio,'studiojb.studio.host')
-            if (!host) return Promise.resolve()
-            return libs.reduce((pr,module) => pr.then(() => {
-                const moduleFileName = host.locationToPath(`${host.pathOfDistFolder()}/${module}.js`)
-                return host.getFile(moduleFileName).then(loadCode => socket.postObj({ loadCode, moduleFileName }))
-            }), Promise.resolve()).then(() => socket.postObj({ loadCode: 'pptr.remote.onServer = true', moduleFileName: '' }))
-        }
-        return socket
+                if (!host) return Promise.resolve()
+                return libs.reduce((pr,module) => pr.then(() => {
+                    const moduleFileName = host.locationToPath(`${host.pathOfDistFolder()}/${module}.js`)
+                    return host.getFile(moduleFileName).then(loadCode => socket.postObj({ loadCode, moduleFileName }))
+                }), Promise.resolve()).then(() => socket.postObj({ loadCode: 'pptr.remote.onServer = true', moduleFileName: '' }))
+            }
+            return socket
+        })
     }
 })
 
