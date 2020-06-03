@@ -10851,7 +10851,7 @@ jb.remote = {
             return obj.map(val => jb.remote.evalFunctions(val))
         else if (obj && typeof obj == 'object' && obj.$ == '__func' && obj.profile) {
             const ret = ctx => ctx.run(obj.profile)
-            ret.profile = profile
+            ret.profile = obj.profile
             return ret
         } else if (obj && typeof obj == 'object' && obj.$ == '__func')
             return jb.eval(obj.code)
