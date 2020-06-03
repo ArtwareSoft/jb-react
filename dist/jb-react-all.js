@@ -10825,7 +10825,10 @@ jb.remote = {
         if (['string','boolean','number'].indexOf(typeof obj) != -1) return obj
         if (Array.isArray(obj)) return obj.map(val => jb.remote.prepareForClone(val, depth+1))
         if (typeof obj == 'function')
-            return {$: '__func', profile: obj.profile, code: obj.profile ? null : obj.toString() }
+            return {$: '__func', 
+            profile: typeof obj.profile != 'function' ? obj.profile : null, 
+            code: obj.profile == 'function' ? obj.toString() : null
+        }
         if (typeof obj == 'object') {
             if (jb.remote.remoteClassList.indexOf(obj.constructor.name) != -1 && !obj[jb.remote.remoteId])
                 obj[jb.remote.remoteId] = jb.remote.counter++
