@@ -7,6 +7,7 @@ jb.pptr = {
             fromEvent('message',ws),
             map(m=> jb.remote.evalFunctions(JSON.parse(m)))
         )
+        jb.remote.startCommandListener()
     },
     connect() { // cliet side
         return new Promise((resolve, reject) => {
