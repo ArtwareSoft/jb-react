@@ -56,12 +56,13 @@ jb.remote = {
     evalFunctions: obj => {
         if (Array.isArray(obj)) 
             return obj.map(val => jb.remote.evalFunctions(val))
-        else if (obj && typeof obj == 'object' && obj.$ == '__func') { 
+        else if (obj && typeof obj == 'object' && obj.$ == '__func') {
+            const resolvedParams = jb.remote.evalFunctions(obj.funcParams)
             if (obj.funcParams && obj.funcParams.path != null)
                 return (({profile,runCtx,path,forcePath,param}) => (ctx2,data2) => {
                     const newCtx = new jb.jbCtx({},runCtx).extendVars(ctx2,data2).ctx({ profile, forcePath, path })
                     return jb.run(newCtx,param)
-                }) (obj.funcParams)
+                }) (resolvedParams)
             else
                 return jb.eval(obj.code)
         } else if (obj && typeof obj == 'object' && obj.$ == '__remoteObj' && jb.remote.onServer )
