@@ -52,14 +52,15 @@ jb.remote = {
     evalFunctions: obj => {
         if (Array.isArray(obj)) 
             return obj.map(val => jb.remote.evalFunctions(val))
-        else if (obj && typeof obj == 'object' && obj.$ == '__func' && obj.funcParams && obj.funcParams.path != null)
-            return (({profile,runCtx,path,forcePath,param}) => (ctx2,data2) => {
-                const newCtx = new jb.jbCtx({},runCtx).extendVars(ctx2,data2).ctx({ profile, forcePath, path })
-                return jb.run(newCtx,param)
-            }) (obj.funcParams)
-        else if (obj && typeof obj == 'object' && obj.$ == '__func')
-            return jb.eval(obj.code)
-        else if (obj && typeof obj == 'object' && obj.$ == '__remoteObj' && jb.remote.onServer )
+        else if (obj && typeof obj == 'object' && obj.$ == '__func') { 
+            if (obj.funcParams && obj.funcParams.path != null)
+                return (({profile,runCtx,path,forcePath,param}) => (ctx2,data2) => {
+                    const newCtx = new jb.jbCtx({},runCtx).extendVars(ctx2,data2).ctx({ profile, forcePath, path })
+                    return jb.run(newCtx,param)
+                }) (obj.funcParams)
+            else
+                return jb.eval(obj.code)
+        } else if (obj && typeof obj == 'object' && obj.$ == '__remoteObj' && jb.remote.onServer )
             return jb.remote.remoteHash[obj.__id]
         else if (obj && typeof obj == 'object')
             return jb.objFromEntries( jb.entries(obj).map(([id,val])=>[id, jb.remote.evalFunctions(val)]))
