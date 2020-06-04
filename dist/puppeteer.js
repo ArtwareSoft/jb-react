@@ -28,7 +28,7 @@ jb.pptr = {
     },
     getOrCreateBrowser(showBrowser) {
         if (this._browser) return Promise.resolve(this._browser)
-        return this.puppeteer().launch({headless: !showBrowser, 
+        return global.puppeteer.launch({headless: !showBrowser, 
             args: ['--disable-features=site-per-process','--enable-devtools-experiments'],
             }).then(browser => this._browser = browser)
     },
