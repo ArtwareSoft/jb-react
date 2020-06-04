@@ -2,13 +2,21 @@ jb.ns('pptr,remote')
 
 jb.pptr = {
     initCallbagServer(ws) { // server side
+        global._handlers = {}
+        global.addEventListener = (event,handler) => {
+          _handlers[event] = _handlers[event] || []
+          _handlers[event].push(handler)
+        }        
+        global.postMessage = m => ws.send(m)
+
         const {pipe,fromEvent,filter,map} = jb.callbag
         global.messageSource = pipe(
-            fromEvent('message',ws),
+            fromEvent('message',global),
             map(m=>JSON.parse(m)),
             filter(m=>!m.loadCode && !m.require),
             map(m=> jb.remote.evalFunctions(m))
         )
+
         jb.remote.startCommandListener()
     },
     connect() { // cliet side
