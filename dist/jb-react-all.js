@@ -10844,12 +10844,12 @@ jb.remote = {
             }
             if (obj.constructor.name == 'jbCtx')
                 return { 
+                    profile: jb.remote.prepareForClone(obj.profile,depth+1),
                     vars: jb.remote.prepareForClone(obj.vars,depth+1),
                     data: jb.remote.prepareForClone(obj.data,depth+1),
                     componentContext: {params: jb.remote.prepareForClone(jb.path(obj.componentContext,'params'),depth+1) },
                     path: obj.path,
                     forcePath: obj.forcePath,
-                    profile: obj.profile
                 }
             else if (!(obj.constructor.name||'').match(/^Object|Array$/))
                 return obj.constructor.name
