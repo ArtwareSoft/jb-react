@@ -59,7 +59,7 @@ jb.component('pptr.start', {
     ],
     impl: If(remote.onServer(), 
         rx.pipe(rx.fromPromise( (ctx, {}, {showBrowser}) => jb.pptr.getOrCreateBrowser(showBrowser)), rx.var('browser') ),
-        remote.sourceRx(pptr.getOrCreateBrowser('%$showBrowser%'), pptr.server()))
+        remote.sourceRx(pptr.start('%$showBrowser%'), pptr.server()))
 })
 
 jb.component('pptr.server', {
@@ -88,7 +88,7 @@ jb.component('pptr.server', {
             const {toPromiseArray,pipe,take,doPromise,fromEvent,map} = jb.callbag
             socket.sendCodeToServer = () => 
                     libs.reduce((pr,lib) => pr.then(() => loadLibFile(lib)), Promise.resolve())
-                    .then(() => socket.postObj({ loadCode: 'pptr.remote.onServer = true', moduleFileName: '' }));
+                    .then(() => socket.postObj({ loadCode: 'jb.remote.onServer = true', moduleFileName: '' }));
     
             return toPromiseArray(pipe(
                 fromEvent('message',socket),

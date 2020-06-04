@@ -154,7 +154,7 @@ jb.component('worker.remoteCallbag', {
 jb.component('remote.innerRx', {
     type: 'rx',
     params: [
-      {id: 'rx', type: 'rx' },
+      {id: 'rx', type: 'rx', dynamic: true },
       {id: 'remote', type: 'remote', defaultValue: worker.remoteCallbag()}
     ],
     impl: (ctx,rx,remote) => {
@@ -174,7 +174,7 @@ jb.component('remote.innerRx', {
 jb.component('remote.sourceRx', {
     type: 'rx',
     params: [
-      {id: 'rx', type: 'rx' },
+      {id: 'rx', type: 'rx', dynamic: true },
       {id: 'remote', type: 'remote', defaultValue: worker.remoteCallbag()}
     ],
     impl: (ctx,rx,remote) => {
