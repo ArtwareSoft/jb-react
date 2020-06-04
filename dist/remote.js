@@ -75,7 +75,7 @@ jb.remote = {
         const {pipe,Do,filter,subscribe} = jb.callbag
         pipe(
             jb.frame.messageSource,
-            filter(m=> !m.id),
+            filter(m=> m.$ == 'innerCB' || m.$ == 'sourceCB'),
             jb.callbag.Do(x=>console.log('command',x)),
             subscribe(m=> {
                 pipe(
