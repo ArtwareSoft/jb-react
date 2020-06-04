@@ -26,7 +26,7 @@ jb.remote = {
         if (Array.isArray(obj)) return obj.map(val => jb.remote.prepareForClone(val, depth+1))
         if (typeof obj == 'function') {
             const funcParams = jb.objFromEntries('profile,runCtx,path,forcePath,param'.split(',')
-                .map(k=>[k,jb.remote.prepareForClone(obj[k],depth+1)]))
+                .filter(k=>obj[k] != null).map(k=>[k,jb.remote.prepareForClone(obj[k],depth+1)]))
             return {$: '__func', funcParams, code: obj.toString() }
         }
         if (typeof obj == 'object') {
