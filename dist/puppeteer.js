@@ -49,13 +49,15 @@ jb.component('pptr.runMethodOnPptr', {
     impl: pptr.mapPromise((ctx,{},{method,args}) => jb.pptr.runMethod(ctx,method,args)),
 })
 
-jb.component('pptr.getOrCreateBrowser', {
+jb.component('pptr.start', {
     type: 'rx,pptr',
     description: 'run method on the current object on pptr server using pptr api',
     params: [
       {id: 'showBrowser', as: 'boolean', defaultValue: true},
     ],
-    impl: pptr.mapPromise((ctx,{},{showBrowser}) => jb.pptr.getOrCreateBrowser(showBrowser)),
+    impl: If(remote.onServer(), 
+        rx.pipe(rx.fromPromise( (ctx, {}, {showBrowser}) => jb.pptr.getOrCreateBrowser(showBrowser)), rx.var('browser') ),
+        remote.sourceRx(pptr.getOrCreateBrowser('%$showBrowser%'), pptr.server()))
 })
 
 jb.component('pptr.server', {
@@ -145,8 +147,7 @@ jb.component('pptr.newPage', {
   ],
   impl: rx.innerPipe(
     rx.var('url', '%$url()%'),
-    pptr.getOrCreateBrowser(),
-    pptr.mapPromise('%%.newPage()'),
+    pptr.mapPromise('%$browser.newPage()%'),
     rx.var('page', '%%'),
     pptr.doPromise(
         (ctx,{url},{waitUntil,timeout}) => jb.pptr.runMethod(ctx,'goto',url,{waitUntil, timeout})
