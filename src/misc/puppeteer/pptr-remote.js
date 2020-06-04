@@ -1,4 +1,4 @@
-jb.ns('pptr')
+jb.ns('pptr,remote')
 
 jb.pptr = {
     initCallbagServer(ws) { // server side
@@ -115,7 +115,7 @@ jb.component('pptr.refreshServerCode', {
     params: [
         {id: 'remote', type: 'remote', defaultValue: pptr.server()}
     ],
-    impl: '%$remote.sendCodeToServer()%'
+    impl: (ctx,remote) => Promise.resolve(remote).then(r=>r.sendCodeToServer())
 })
 
 jb.component('pptr.mapPromise', {

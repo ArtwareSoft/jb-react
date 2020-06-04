@@ -176,7 +176,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'probe','model','tree','suggestion','patterns','inplace-edit'
       ],
       $dependencies: {
-        puppeteer: ['pretty-print','rx']
+        puppeteer: ['pretty-print','rx','remote','parsing']
       }
 })
 

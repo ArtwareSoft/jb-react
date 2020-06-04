@@ -17,12 +17,13 @@ jb.component('puppeteerDemo.main', {
           editableText({title: 'query', databind: '%$query%'}),
           button({
             title: 'refresh server code',
-            action: pptr.sendCodeToServer(),
+            action: pptr.refreshServerCode(),
             raised: 'true'
           }),
           button({
             title: 'search',
-            action: pptr.session({
+            action: {
+              '$': 'pptr.session',
               showBrowser: true,
               databindEvents: '%$events%',
               actions: [
@@ -33,12 +34,13 @@ jb.component('puppeteerDemo.main', {
                 rx.flatMapArrays(),
                 pptr.selectElement({select: pptr.jsProperty('textContent')})
               ]
-            }),
+            },
             raised: true
           }),
           button({
             title: 'search with js code',
-            action: pptr.session({
+            action: {
+              '$': 'pptr.session',
               showBrowser: true,
               databindEvents: '%$events%',
               actions: pptr.javascriptOnPptr(
@@ -55,13 +57,13 @@ await frame.type('input[name=q]', 'puppeteer'+String.fromCharCode(13), { delay: 
 
 }
               )
-            }),
+            },
             raised: 'true'
           })
         ],
         features: variable({
           name: 'pptrSession',
-          value: pptr.session({showBrowser: true, databindEvents: []})
+          value: {'$': 'pptr.session', showBrowser: true, databindEvents: []}
         })
       }),
       itemlist({
