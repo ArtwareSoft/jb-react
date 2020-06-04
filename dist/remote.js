@@ -75,6 +75,7 @@ jb.remote = {
         pipe(
             self.messageSource,
             filter(m=> !m.id),
+            jb.callbag.Do(x=>console.log('command',x)),
             subscribe(m=> {
                 pipe(
                     m.$ == 'innerCB' && jb.remote.remoteSource(self, m.sourceId),
