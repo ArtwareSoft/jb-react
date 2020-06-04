@@ -74,14 +74,14 @@ jb.remote = {
     startCommandListener() {
         const {pipe,Do,filter,subscribe} = jb.callbag
         pipe(
-            self.messageSource,
+            jb.frame.messageSource,
             filter(m=> !m.id),
             jb.callbag.Do(x=>console.log('command',x)),
             subscribe(m=> {
                 pipe(
-                    m.$ == 'innerCB' && jb.remote.remoteSource(self, m.sourceId),
+                    m.$ == 'innerCB' && jb.remote.remoteSource(jb.frame, m.sourceId),
                     new jb.jbCtx().ctx(m.ctx).runInner(m.ctx.profile[m.propName], {type: 'rx'} ,m.propName),
-                    jb.remote.remoteSink(self, m.sinkId),                    
+                    jb.remote.remoteSink(jb.frame, m.sinkId),                    
                     Do(e=> postMessage(JSON.stringify({$: 'cbLogByPathDiffs', id: m.sinkId, diffs: jb.remote.cbLogByPathDiffs(m.ctx.forcePath)}))),
                     subscribe({complete: () => postMessage(JSON.stringify({id: m.sinkId, finished: true}))})
                 )
