@@ -1,18 +1,27 @@
 jb.ns('pptr')
 
 jb.pptr = {
-    connect: () => new Promise((resolve, reject) => {
-        const socket = new WebSocket(`ws:${(jb.studio.studioWindow || jb.frame).location.hostname || 'localhost'}:8090`)
-        socket.onopen = () => resolve(socket)
-        socket.onerror = err => reject(err)
-        socket.onclose = e => {
-            const host = jb.path(jb.studio,'studiojb.studio.host')
-            if (host && e.code == 1006)
-                host.showError('puppeteer server is down. please activate or install from https://github.com/ArtwareSoft/jb-puppeteer-server.git')
-            else if (host && e.code != 1000)
-                host.showError('puppeteer server error: ' + e.code)
-        }
-    }),
+    initCallbagServer(ws) { // server side
+        const {pipe,fromEvent,map} = jb.callbag
+        global.messageSource = pipe(
+            fromEvent('message',ws),
+            map(m=> jb.remote.evalFunctions(JSON.parse(m.data)))
+        )
+    },
+    connect() { // cliet side
+        return new Promise((resolve, reject) => {
+            const socket = new WebSocket(`ws:${(jb.studio.studioWindow || jb.frame).location.hostname || 'localhost'}:8090`)
+            socket.onopen = () => resolve(socket)
+            socket.onerror = err => reject(err)
+            socket.onclose = e => {
+                const host = jb.path(jb.studio,'studiojb.studio.host')
+                if (host && e.code == 1006)
+                    host.showError('puppeteer server is down. please activate or install from https://github.com/ArtwareSoft/jb-puppeteer-server.git')
+                else if (host && e.code != 1000)
+                    host.showError('puppeteer server error: ' + e.code)
+            }
+        })
+    },
     getOrCreateBrowser(showBrowser) {
         if (this._browser) return Promise.resolve(this._browser)
         return this.puppeteer().launch({headless: !showBrowser, 
@@ -123,7 +132,8 @@ jb.component('pptr.newPage', {
   ],
   impl: rx.innerPipe(
     rx.var('url', '%$url()%'),
-    pptr.mapPromise(({},{browser}) => browser.newPage()),
+    pptr.getOrCreateBrowser(),
+    pptr.mapPromise('%%.newPage()'),
     rx.var('page', '%%'),
     pptr.doPromise(
         (ctx,{url},{waitUntil,timeout}) => jb.pptr.runMethod(ctx,'goto',url,{waitUntil, timeout})
