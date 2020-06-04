@@ -12,7 +12,7 @@ jb.remote = {
         jb.callbag.filter(m=> m.id == id),
         jb.callbag.takeWhile(m=> !m.finished),
         jb.callbag.filter(m=> m.data),
-        jb.callbag.map( ({data})=> new jb.jbCtx().ctx({data: data.data, vars: data.vars, profile: '', componentContext: data.componentContext, forcePath: data.forcePath})),
+        jb.callbag.map( ({data})=> new jb.jbCtx().ctx({data: data.data, vars: data.vars, profile: data.profile, componentContext: data.componentContext, forcePath: data.forcePath})),
         jb.callbag.Do(x=>console.log('remote source',x))
     ),
     remoteSink: (remote, id) => source => jb.callbag.pipe(
@@ -43,7 +43,8 @@ jb.remote = {
                     vars: jb.remote.prepareForClone(obj.vars,depth+1),
                     data: jb.remote.prepareForClone(obj.data,depth+1),
                     componentContext: {params: jb.remote.prepareForClone(jb.path(obj.componentContext,'params'),depth+1) },
-                    forcePath: obj.path
+                    forcePath: obj.path,
+                    profile: obj.profile
                 }
             else if (!(obj.constructor.name||'').match(/^Object|Array$/))
                 return obj.constructor.name
@@ -76,7 +77,7 @@ jb.remote = {
             subscribe(m=> {
                 pipe(
                     m.$ == 'innerCB' && jb.remote.remoteSource(self, m.sourceId),
-                    new jb.jbCtx().ctx(m.ctx).runInner(m.profile, {type: 'rx'} ,m.propName),
+                    new jb.jbCtx().ctx(m.ctx).runInner(m.ctx.profile, {type: 'rx'} ,m.propName),
                     jb.remote.remoteSink(self, m.sinkId),                    
                     Do(e=> postMessage(JSON.stringify({$: 'cbLogByPathDiffs', id: m.sinkId, diffs: jb.remote.cbLogByPathDiffs(m.ctx.forcePath)}))),
                     subscribe({complete: () => postMessage(JSON.stringify({id: m.sinkId, finished: true}))})
@@ -156,7 +157,7 @@ jb.component('remote.innerRx', {
     impl: (ctx,rx,remote) => {
         const sourceId = jb.remote.counter++
         const sinkId = jb.remote.counter++
-        jb.delay(1).then(()=>remote).then(remote => remote.postObj({ $: 'innerCB', sourceId, sinkId, propName: 'rx', profile: ctx.profile.rx, ctx }))
+        jb.delay(1).then(()=>remote).then(remote => remote.postObj({ $: 'innerCB', sourceId, sinkId, propName: 'rx', ctx }))
         jb.entries(jb.cbLogByPath||{}).filter(e=>e[0].indexOf(ctx.path) == 0).forEach(e=>e[1].result = [])
         return source => (start,sink) => {
             if (start!=0) return
@@ -176,7 +177,7 @@ jb.component('remote.sourceRx', {
     impl: (ctx,rx,remote) => {
         const sinkId = jb.remote.counter++
         jb.entries(jb.cbLogByPath||{}).filter(e=>e[0].indexOf(ctx.path) == 0).forEach(e=>e[1].result = [])
-        jb.delay(1).then(()=>remote).then(remote => remote.postObj({ $: 'sourceCB', sinkId, propName: 'rx', profile: ctx.profile.rx, ctx }))
+        jb.delay(1).then(()=>remote).then(remote => remote.postObj({ $: 'sourceCB', sinkId, propName: 'rx', ctx }))
         return jb.remote.remoteSource(remote,sinkId)
     }
 })
