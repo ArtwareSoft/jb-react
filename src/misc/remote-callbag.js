@@ -3,6 +3,10 @@ jb.remote = {
     counter: 1,
     remoteId: Symbol.for("remoteId"),
     remoteHash: {},
+    pathOfDistFolder() {
+        const host = jb.path(jb.studio,'studiojb.studio.host')
+        return host && host.pathOfDistFolder() || typeof location != 'undefined' && location.href.match(/^[^:]*/)[0] + `://${location.host}/dist`
+    },
     remoteSource: (remote, id) => jb.callbag.pipe(
         remote.messageSource, 
         jb.callbag.filter(m=> m.id == id),
@@ -21,9 +25,10 @@ jb.remote = {
         if (['string','boolean','number'].indexOf(typeof obj) != -1) return obj
         if (Array.isArray(obj)) return obj.map(val => jb.remote.prepareForClone(val, depth+1))
         if (typeof obj == 'function') {
-            const profile = typeof obj.profile != 'function' ? obj.profile : null
-            const code = profile ? null : typeof obj.profile == 'function' ? obj.profile.toString() : obj.toString() 
-            return {$: '__func', profile, code }
+            const funcParams = jb.objFromEntries('profile,runCtx,path,srcPath,forcePath,param'.split(',')
+                .map(k=>[k,jb.remote.prepareForClone(obj[k],depth+1)]))
+            funcParams.valOrDefault = funcParams.profile
+            return {$: '__func', funcParams, code: obj.toString() }
         }
         if (typeof obj == 'object') {
             if (jb.remote.remoteClassList.indexOf(obj.constructor.name) != -1 && !obj[jb.remote.remoteId])
@@ -48,11 +53,9 @@ jb.remote = {
     evalFunctions: obj => {
         if (Array.isArray(obj)) 
             return obj.map(val => jb.remote.evalFunctions(val))
-        else if (obj && typeof obj == 'object' && obj.$ == '__func' && obj.profile) {
-            const ret = ctx => ctx.run(obj.profile)
-            ret.profile = obj.profile
-            return ret
-        } else if (obj && typeof obj == 'object' && obj.$ == '__func')
+        else if (obj && typeof obj == 'object' && obj.$ == '__func' && obj.funcParams && obj.funcParams.path)
+            return (jb.eval`( ({valOrDefault,runCtx,path,srcPath,forcePath,param}) => ${obj.code}`)(obj.funcParams)
+        else if (obj && typeof obj == 'object' && obj.$ == '__func')
             return jb.eval(obj.code)
         else if (obj && typeof obj == 'object' && obj.$ == '__remoteObj' && jb.remote.onServer )
             return jb.remote.remoteHash[obj.__id]
@@ -108,8 +111,7 @@ jb.component('worker.remoteCallbag', {
     impl: (ctx,id,libs) => {
         if (jb.remote.workers[id]) 
             return jb.remote.workers[id]
-        const host = jb.path(jb.studio,'studiojb.studio.host')
-        const distPath = host && host.pathOfDistFolder() || `http://${location.host}/dist`
+        const distPath = jb.remote.pathOfDistFolder()
         const workerCode = [
             ...libs.map(lib=>`importScripts('${distPath}/${lib}.js')`),`
                 self.workerId = () => 1

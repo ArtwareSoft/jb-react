@@ -20,6 +20,7 @@ jb.pptr = {
                 else if (host && e.code != 1000)
                     host.showError('puppeteer server error: ' + e.code)
             }
+            socket.postObj = m => socket.send(JSON.stringify(jb.remote.prepareForClone(m)))
         })
     },
     getOrCreateBrowser(showBrowser) {
@@ -66,7 +67,6 @@ jb.component('pptr.server', {
         return jb.pptr.connect().then(socket=>sendCode(socket)).then(([socket]) => {
             jb.pptr.pptrServer = socket
             const {pipe,Do,fromEvent,map,takeUntil,subscribe} = jb.callbag
-            socket.postObj = m => socket.send(JSON.stringify(jb.remote.prepareForClone(m)))
             socket.messageSource = pipe(
                 fromEvent('message',socket),
                 takeUntil(fromEvent('close',socket)),
@@ -81,20 +81,28 @@ jb.component('pptr.server', {
         })
         function sendCode(socket) {
             const {toPromiseArray,pipe,take,doPromise,fromEvent,map} = jb.callbag
-            socket.sendCodeToServer = () => {
-                const host = jb.path(jb.studio,'studiojb.studio.host')
-                if (!host) return Promise.resolve()
-                return libs.reduce((pr,module) => pr.then(() => {
-                    const moduleFileName = host.locationToPath(`${host.pathOfDistFolder()}/${module}.js`)
-                    return host.getFile(moduleFileName).then(loadCode => socket.postObj({ loadCode, moduleFileName }))
-                }), Promise.resolve()).then(() => socket.postObj({ loadCode: 'pptr.remote.onServer = true', moduleFileName: '' }))
-            }
+            socket.sendCodeToServer = () => 
+                    libs.reduce((pr,lib) => pr.then(() => loadLibFile(lib)), Promise.resolve())
+                    .then(() => socket.postObj({ loadCode: 'pptr.remote.onServer = true', moduleFileName: '' }));
+    
             return toPromiseArray(pipe(
                 fromEvent('message',socket),
+                map(m=> JSON.parse(m.data)),
                 take(1), 
                 doPromise( m => m.res == 'loadCodeReq' && socket.sendCodeToServer()), 
                 map(()=>socket)
             ))
+
+            function loadLibFile(lib) {
+                const host = jb.path(jb.studio,'studiojb.studio.host')
+                if (host) {
+                    const moduleFileName = host.locationToPath(`${host.pathOfDistFolder()}/${lib}.js`)
+                    return host.getFile(moduleFileName).then(loadCode => socket.postObj({ loadCode, moduleFileName }))
+                } else if (typeof fetch != 'undefined' && typeof location != 'undefined' ) {
+                    const moduleFileName = location.href.match(/^[^:]*/)[0] + `://${location.host}/dist/${lib}.js`
+                    return fetch(moduleFileName).then(x=>x.text()).then(loadCode => socket.postObj({ loadCode, moduleFileName }))
+                }
+            }
         }
     }
 })

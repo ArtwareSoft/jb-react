@@ -128,8 +128,8 @@ function prepareParams(comp_name,comp,profile,ctx) {
             func = (ctx2,data2) => jb_run(new jb.jbCtx(runCtx.extendVars(ctx2,data2),{ profile: valOrDefault, forcePath, path } ),param)
 
           Object.defineProperty(func, "name", { value: p }); // for debug
-          func.profile = val !== undefined ? val : (param.defaultValue !== undefined ? param.defaultValue : null)
-          func.srcPath = ctx.path;
+          //func.profile = val !== undefined ? val : (param.defaultValue !== undefined ? param.defaultValue : null)
+          Object.assign(func,{profile: valOrDefault,runCtx,path,srcPath: ctx.path,forcePath,param})
           return func;
         }
         return { name: p, type: 'function', outerFunc, path, param, forcePath };
