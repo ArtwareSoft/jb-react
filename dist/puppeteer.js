@@ -2,7 +2,7 @@ jb.ns('pptr,remote')
 
 jb.pptr = {
     initCallbagServer(ws) { // server side
-        const {pipe,fromEvent,map} = jb.callbag
+        const {pipe,fromEvent,filter,map} = jb.callbag
         global.messageSource = pipe(
             fromEvent('message',ws),
             map(m=>JSON.parse(m)),
