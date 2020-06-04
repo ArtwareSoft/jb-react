@@ -43,7 +43,8 @@ jb.remote = {
                     vars: jb.remote.prepareForClone(obj.vars,depth+1),
                     data: jb.remote.prepareForClone(obj.data,depth+1),
                     componentContext: {params: jb.remote.prepareForClone(jb.path(obj.componentContext,'params'),depth+1) },
-                    forcePath: obj.path,
+                    path: obj.path,
+                    forcePath: obj.forcePath,
                     profile: obj.profile
                 }
             else if (!(obj.constructor.name||'').match(/^Object|Array$/))
