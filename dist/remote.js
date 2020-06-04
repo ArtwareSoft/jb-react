@@ -54,7 +54,7 @@ jb.remote = {
         if (Array.isArray(obj)) 
             return obj.map(val => jb.remote.evalFunctions(val))
         else if (obj && typeof obj == 'object' && obj.$ == '__func' && obj.funcParams && obj.funcParams.path)
-            return (jb.eval`( ({valOrDefault,runCtx,path,srcPath,forcePath,param}) => ${obj.code}`)(obj.funcParams)
+            return (jb.eval`( ({valOrDefault,runCtx,path,srcPath,forcePath,param}) => ${obj.code.replace(/jb_run/g,'jb.run')}`)(obj.funcParams)
         else if (obj && typeof obj == 'object' && obj.$ == '__func')
             return jb.eval(obj.code)
         else if (obj && typeof obj == 'object' && obj.$ == '__remoteObj' && jb.remote.onServer )
