@@ -5,7 +5,9 @@ jb.pptr = {
         const {pipe,fromEvent,map} = jb.callbag
         global.messageSource = pipe(
             fromEvent('message',ws),
-            map(m=> jb.remote.evalFunctions(JSON.parse(m)))
+            map(m=>JSON.parse(m)),
+            filter(m=>!m.loadCode && !m.require),
+            map(m=> jb.remote.evalFunctions(m))
         )
         jb.remote.startCommandListener()
     },
