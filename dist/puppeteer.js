@@ -5,7 +5,7 @@ jb.pptr = {
         const {pipe,fromEvent,map} = jb.callbag
         global.messageSource = pipe(
             fromEvent('message',ws),
-            map(m=> jb.remote.evalFunctions(JSON.parse(m.data)))
+            map(m=> jb.remote.evalFunctions(JSON.parse(m)))
         )
     },
     connect() { // cliet side
@@ -51,37 +51,36 @@ jb.component('pptr.getOrCreateBrowser', {
     type: 'rx,pptr',
     description: 'run method on the current object on pptr server using pptr api',
     params: [
-      {id: 'method', as: 'string', mandatory: true},
-      {id: 'args', as: 'array'},
+      {id: 'showBrowser', as: 'boolean', defaultValue: true},
     ],
-    impl: pptr.mapPromise((ctx,{},{method,args}) => jb.pptr.getOrCreateBrowser(ctx,method,args)),
+    impl: pptr.mapPromise((ctx,{},{showBrowser}) => jb.pptr.getOrCreateBrowser(showBrowser)),
 })
 
 jb.component('pptr.server', {
     type: 'remote',
     params: [
-        {id: 'showBrowser', as: 'boolean', defaultValue: true},
         {id: 'libs', as: 'array', defaultValue: ['common','remote','rx','puppeteer'] },
     ],
-    impl: (ctx,showBrowser, libs) => {
+    impl: (ctx,libs) => {
         if (jb.pptr.pptrServer) return jb.pptr.pptrServer
-        return jb.pptr.connect().then(socket=> {
+        return jb.pptr.connect().then(socket=>sendCode(socket)).then(([socket]) => {
             jb.pptr.pptrServer = socket
-            const {pipe,Do,fromEvent,map,filter,takeUntil,subscribe} = jb.callbag
+            const {pipe,Do,fromEvent,map,takeUntil,subscribe} = jb.callbag
             socket.postObj = m => socket.send(JSON.stringify(jb.remote.prepareForClone(m)))
-            socket.showBrowser = showBrowser
             socket.messageSource = pipe(
                 fromEvent('message',socket),
                 takeUntil(fromEvent('close',socket)),
                 map(m=> jb.remote.evalFunctions(JSON.parse(m.data)))
             )
-            pipe(socket.messageSource, filter(m => m.res == 'loadCodeReq'), subscribe(() => socket.sendCodeToServer()))
-    
             pipe(
                 socket.messageSource,
                 Do(m => m.$ == 'cbLogByPathDiffs' && jb.remote.updateCbLogs(m.diffs) ),
                 subscribe(()=>{})
             )
+            return socket
+        })
+        function sendCode(socket) {
+            const {toPromiseArray,pipe,take,doPromise,fromEvent,map} = jb.callbag
             socket.sendCodeToServer = () => {
                 const host = jb.path(jb.studio,'studiojb.studio.host')
                 if (!host) return Promise.resolve()
@@ -90,8 +89,13 @@ jb.component('pptr.server', {
                     return host.getFile(moduleFileName).then(loadCode => socket.postObj({ loadCode, moduleFileName }))
                 }), Promise.resolve()).then(() => socket.postObj({ loadCode: 'pptr.remote.onServer = true', moduleFileName: '' }))
             }
-            return socket
-        })
+            return toPromiseArray(pipe(
+                fromEvent('message',socket),
+                take(1), 
+                doPromise( m => m.res == 'loadCodeReq' && socket.sendCodeToServer()), 
+                map(()=>socket)
+            ))
+        }
     }
 })
 
