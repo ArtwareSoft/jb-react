@@ -25,9 +25,8 @@ jb.remote = {
         if (['string','boolean','number'].indexOf(typeof obj) != -1) return obj
         if (Array.isArray(obj)) return obj.map(val => jb.remote.prepareForClone(val, depth+1))
         if (typeof obj == 'function') {
-            const funcParams = jb.objFromEntries('profile,runCtx,path,srcPath,forcePath,param'.split(',')
+            const funcParams = jb.objFromEntries('profile,runCtx,path,forcePath,param'.split(',')
                 .map(k=>[k,jb.remote.prepareForClone(obj[k],depth+1)]))
-            funcParams.valOrDefault = funcParams.profile
             return {$: '__func', funcParams, code: obj.toString() }
         }
         if (typeof obj == 'object') {
@@ -54,7 +53,8 @@ jb.remote = {
         if (Array.isArray(obj)) 
             return obj.map(val => jb.remote.evalFunctions(val))
         else if (obj && typeof obj == 'object' && obj.$ == '__func' && obj.funcParams && obj.funcParams.path != null)
-            return jb.eval(`({valOrDefault,runCtx,path,srcPath,forcePath,param}) => ${obj.code.replace(/jb_run/g,'jb.run')}`)(obj.funcParams)
+            return (({profile,runCtx,path,forcePath,param}) => (ctx2,data2) => 
+            new jb.jbCtx(runCtx).extendVars(ctx2,data2).run({ profile, forcePath, path },param)) (obj.funcParams)
         else if (obj && typeof obj == 'object' && obj.$ == '__func')
             return jb.eval(obj.code)
         else if (obj && typeof obj == 'object' && obj.$ == '__remoteObj' && jb.remote.onServer )
