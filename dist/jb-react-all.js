@@ -10816,7 +10816,7 @@ jb.remote = {
         jb.callbag.filter(m=> m.id == id),
         jb.callbag.takeWhile(m=> !m.finished),
         jb.callbag.filter(m=> m.data),
-        jb.callbag.map( ({data})=> new jb.jbCtx().ctx({data: data.data, vars: data.vars, profile: data.profile, componentContext: data.componentContext, forcePath: data.forcePath})),
+        jb.callbag.map( ({data})=> new jb.jbCtx().ctx({data: data.data, vars: data.vars})) , //profile: data.profile, componentContext: data.componentContext, forcePath: data.forcePath})),
         jb.callbag.Do(x=>console.log('remote source',x))
     ),
     remoteSink: (remote, id) => source => jb.callbag.pipe(
