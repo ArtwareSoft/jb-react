@@ -12,12 +12,14 @@ jb.remote = {
         jb.callbag.filter(m=> m.id == id),
         jb.callbag.takeWhile(m=> !m.finished),
         jb.callbag.filter(m=> m.data),
-        jb.callbag.map(m=> new jb.jbCtx().ctx({data: m.data.data, vars: m.data.vars, profile: '', forcePath: ''}))
+        jb.callbag.map( ({data})=> new jb.jbCtx().ctx({data: data.data, vars: data.vars, profile: '', componentContext: data.componentContext, forcePath: data.forcePath})),
+        jb.callbag.Do(x=>console.log('remote source',x))
     ),
     remoteSink: (remote, id) => source => jb.callbag.pipe(
         source, 
         jb.callbag.map(m => ({ data: jb.remote.prepareForClone(m), id } )), 
-        jb.callbag.Do(m => remote.postMessage(JSON.stringify(m)))
+        jb.callbag.Do(m => remote.postMessage(JSON.stringify(m))),
+        jb.callbag.Do(x=>console.log('remote sink',x))
     ),
     prepareForClone: (obj,depth) => {
         depth = depth || 0
