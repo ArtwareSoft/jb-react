@@ -177,7 +177,7 @@ jb.component('remote.innerRx', {
                 //jb.delay(10).then(() => 
                 jb.remote.remoteSink(remote,sourceId)(source)
                 const remoteSource = jb.remote.remoteSource(remote,sinkId)
-                remoteSource(0, (t,d) => sink(t,d))
+                jb.delay(10).then(() => remoteSource(0, (t,d) => sink(t,d)))
             })
         }
     }
