@@ -604,3 +604,18 @@ jb.component('dataTest.rx.talkbackNotifier', {
     expectedResult: '%%==1,1,2'
   })
 })
+
+jb.component('dataTest.rx.talkbackSrc', {
+  impl: dataTest({
+    calculate: pipe(rx.pipe(
+      rx.fromIter([1, 2, 3]),
+      () => {
+            const {talkbackSrc, pipe, interval, map, take} = jb.callbag
+            return talkbackSrc(pipe(interval(1),take(3),map(()=>({t:1}))))
+          },
+    ),
+    join(',')),
+    expectedResult: '%%==1,2,3'
+  })
+})
+

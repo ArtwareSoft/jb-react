@@ -20,10 +20,10 @@ jb.remote = {
         )
     },
     remoteSink: (remote, id) => source => {
-        const {pipe,Do,merge,filter} = jb.callbag
+        const {pipe,Do,talkbackSrc,filter} = jb.callbag
         return pipe(
             source,
-            merge(pipe(remote.messageSource, filter(m=> m.id == id && m.$ == 'talkback'))),
+            talkbackSrc(pipe(remote.messageSource, filter(m=> m.id == id && m.$ == 'talkback'))),
             Do(m=> remote.postObj({id, data: m})),
             Do(x=>console.log('remote sink',x))
         )

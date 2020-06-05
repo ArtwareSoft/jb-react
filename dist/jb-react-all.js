@@ -2727,7 +2727,20 @@ jb.component('formatDate', {
           })
           sink(t, d)
         })
-      },      
+      },
+      talkbackSrc: tbSrc => source => (start, sink) => { // generates talkback events in a pipe
+        if (start !== 0) return
+        let talkback
+        source(0, function talkbackSrc(t, d) {
+          if (t == 0)
+            talkback = d
+          tbSrc(0, function talkbackSrc(t, d) { // d contains talkback type and data
+            if (t == 1 && d && d.t && talkback)
+              talkback(d.t,d.d)
+          })
+          sink(t, d)
+        })
+      },       
       // sniffer to be used on source E.g. interval
       sourceSniffer: (source, snifferSubject) => (start, sink) => {
         if (start !== 0) return
@@ -10839,10 +10852,10 @@ jb.remote = {
         )
     },
     remoteSink: (remote, id) => source => {
-        const {pipe,Do,merge,filter} = jb.callbag
+        const {pipe,Do,talkbackSrc,filter} = jb.callbag
         return pipe(
             source,
-            merge(pipe(remote.messageSource, filter(m=> m.id == id && m.$ == 'talkback'))),
+            talkbackSrc(pipe(remote.messageSource, filter(m=> m.id == id && m.$ == 'talkback'))),
             Do(m=> remote.postObj({id, data: m})),
             Do(x=>console.log('remote sink',x))
         )
