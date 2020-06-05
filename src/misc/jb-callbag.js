@@ -434,7 +434,7 @@
           }
           let end = false
           let clean
-          sink(0, (t) => {
+          sink(0, (t,d) => {
             if (!end) {
               end = t === 2
               if (end && typeof clean === 'function') clean()
@@ -686,6 +686,21 @@
             sink(t, d)
           })
       },
+      talkbackNotifier: notify => source => (start, sink) => {
+        if (start !== 0) return
+        let talkback
+        source(0, function talkbackNotifier(t, d) {
+          if (t == 0)
+            talkback = d
+          sink(0, function talkbackNotifier(t, d) {
+            if (t == 1 && !d || t == 2) {
+              notify(t,d)
+              talkback && talkback(t,d)
+            }
+          })
+          sink(t, d)
+        })
+      },      
       // sniffer to be used on source E.g. interval
       sourceSniffer: (source, snifferSubject) => (start, sink) => {
         if (start !== 0) return

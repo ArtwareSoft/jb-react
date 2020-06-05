@@ -2461,7 +2461,7 @@ jb.component('formatDate', {
           }
           let end = false
           let clean
-          sink(0, (t) => {
+          sink(0, (t,d) => {
             if (!end) {
               end = t === 2
               if (end && typeof clean === 'function') clean()
@@ -2713,6 +2713,21 @@ jb.component('formatDate', {
             sink(t, d)
           })
       },
+      talkbackNotifier: notify => source => (start, sink) => {
+        if (start !== 0) return
+        let talkback
+        source(0, function talkbackNotifier(t, d) {
+          if (t == 0)
+            talkback = d
+          sink(0, function talkbackNotifier(t, d) {
+            if (t == 1 && !d || t == 2) {
+              notify(t,d)
+              talkback && talkback(t,d)
+            }
+          })
+          sink(t, d)
+        })
+      },      
       // sniffer to be used on source E.g. interval
       sourceSniffer: (source, snifferSubject) => (start, sink) => {
         if (start !== 0) return
@@ -10811,20 +10826,29 @@ jb.remote = {
         const host = jb.path(jb.studio,'studiojb.studio.host')
         return host && host.pathOfDistFolder() || typeof location != 'undefined' && location.href.match(/^[^:]*/)[0] + `://${location.host}/dist`
     },
-    remoteSource: (remote, id) => jb.callbag.pipe(
-        remote.messageSource, 
-        jb.callbag.filter(m=> m.id == id),
-        jb.callbag.takeWhile(m=> !m.finished),
-        jb.callbag.filter(m=> m.data),
-        jb.callbag.map( ({data})=> new jb.jbCtx().ctx({data: data.data, vars: data.vars})) , //profile: data.profile, componentContext: data.componentContext, forcePath: data.forcePath})),
-        jb.callbag.Do(x=>console.log('remote source',x))
-    ),
-    remoteSink: (remote, id) => source => jb.callbag.pipe(
-        source, 
-        jb.callbag.map(m => ({ data: jb.remote.prepareForClone(m), id } )), 
-        jb.callbag.Do(m => remote.postMessage(JSON.stringify(m))),
-        jb.callbag.Do(x=>console.log('remote sink',x))
-    ),
+    remoteSource: (remote, id) => {
+        const {pipe,Do,takeWhile,map,filter,talkbackNotifier} = jb.callbag
+        return pipe(
+            remote.messageSource, 
+            filter(m=> m.id == id),
+            talkbackNotifier( t => t == 2 && remote.postObj({$: 'stopRequest', id})),
+            takeWhile(m=> !m.finished),
+            filter(m=> m.data),
+            map( ({data})=> new jb.jbCtx().ctx({data: data.data, vars: data.vars})) , //profile: data.profile, componentContext: data.componentContext, forcePath: data.forcePath})),
+            Do(x=>console.log('remote source',x))
+        )
+    },
+    remoteSink: (remote, id) => source => {
+        const {pipe,Do,takeUntil,filter} = jb.callbag
+        return pipe(
+            source,
+            takeUntil(pipe(remote.messageSource, filter(m=> m.id == id && m.$ == 'stopRequest'))),
+            Do(m=> remote.postObj({id, data: m})),
+            // map(m => ({ data: jb.remote.prepareForClone(m), id } )), 
+            // Do(m => remote.postMessage(JSON.stringify(m))),
+            Do(x=>console.log('remote sink',x))
+        )
+    },
     prepareForClone: (obj,depth) => {
         depth = depth || 0
         if (obj == null || depth > 5) return
@@ -10970,9 +10994,8 @@ jb.component('remote.innerRx', {
         return source => (start,sink) => {
             if (start!=0) return
             Promise.resolve(remote).then(remote => {
-                //jb.delay(10).then(() => 
                 const {pipe,subscribe} = jb.callbag
-                pipe(source, jb.remote.remoteSink(remote,sourceId), subscribe(()=>{}))
+                jb.delay(10).then(() => pipe(source, jb.remote.remoteSink(remote,sourceId), subscribe(()=>{})))
                 const remoteSource = jb.remote.remoteSource(remote,sinkId)
                 remoteSource(0, (t,d) => sink(t,d))
             })
@@ -10987,16 +11010,16 @@ jb.component('remote.sourceRx', {
       {id: 'remote', type: 'remote', defaultValue: worker.remoteCallbag()}
     ],
     impl: (ctx,rx,remote) => {
-        const {pipe,flatMap,fromPromise} = jb.callbag
-        return pipe(
-            fromPromise(remote),
-            flatMap(remote=> {
+        // const {pipe,flatMap,fromPromise} = jb.callbag
+        // return pipe(
+        //     fromPromise(remote),
+        //     flatMap(remote=> {
                 const sinkId = jb.remote.counter++
                 jb.entries(jb.cbLogByPath||{}).filter(e=>e[0].indexOf(ctx.path) == 0).forEach(e=>e[1].result = [])
                 jb.delay(1).then(() => remote.postObj({ $: 'sourceCB', sinkId, propName: 'rx', ctx }))
                 return jb.remote.remoteSource(remote,sinkId)
-            })
-        )
+        //     })
+        // )
     }
 })
 

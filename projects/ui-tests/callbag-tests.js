@@ -589,3 +589,18 @@ jb.component('dataTest.rx.dynamicParam', {
     expectedResult: '%%==a1'
   })
 })
+
+jb.component('dataTest.rx.talkbackNotifier', {
+  impl: dataTest({
+    calculate: pipe(
+      Var('log', () => ({ items: []})),
+      rx.pipe(
+          rx.fromIter([1, 2, 3]),
+          (ctx,{log}) => jb.callbag.talkbackNotifier((t,d)=> log.items.push({t,d})),
+          rx.take(1)
+        ),
+      pipeline('%$log/items/t%', join(','))
+    ),
+    expectedResult: '%%==1,1,2'
+  })
+})
