@@ -10995,8 +10995,7 @@ jb.component('remote.innerRx', {
         return source => (start,sink) => {
             if (start!=0) return
             Promise.resolve(remote).then(remote => {
-                const {pipe,subscribe} = jb.callbag
-                jb.delay(10).then(() => pipe(source, jb.remote.remoteSink(remote,sourceId), subscribe(()=>{})))
+                jb.delay(10).then(() => jb.remote.remoteSink(remote,sourceId)(source))
                 const remoteSource = jb.remote.remoteSource(remote,sinkId)
                 remoteSource(0, (t,d) => sink(t,d))
             })
