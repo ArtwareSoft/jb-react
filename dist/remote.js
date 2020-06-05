@@ -32,7 +32,7 @@ jb.remote = {
             return {$: '__func', funcParams, code: obj.toString() }
         }
         if (typeof obj == 'object') {
-            if (jb.remote.remoteClassList.indexOf(obj.constructor.name) != -1 && !obj[jb.remote.remoteId])
+            if (jb.remote.remoteClassNames[obj.constructor.name] && !obj[jb.remote.remoteId])
                 obj[jb.remote.remoteId] = jb.remote.counter++
             if (obj[jb.remote.remoteId]) {
                 jb.remote.remoteHash[obj[jb.remote.remoteId]] = obj
@@ -108,7 +108,7 @@ jb.remote = {
         }
         return new tst(val)
     },
-    remoteClassList: ['tst']
+    remoteClassNames: {tst: true}
 }
 
 jb.component('worker.remoteCallbag', {

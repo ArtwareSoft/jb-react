@@ -16,7 +16,7 @@ jb.pptr = {
             filter(m=>!m.loadCode && !m.require),
             map(m=> jb.remote.evalFunctions(m))
         )
-
+        Object.assign(jb.remote.remoteClassNames,{Browser: true, Page: true})
         jb.remote.startCommandListener()
     },
     connect() { // cliet side
