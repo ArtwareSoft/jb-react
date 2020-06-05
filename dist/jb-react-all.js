@@ -10840,7 +10840,7 @@ jb.remote = {
                 obj[jb.remote.remoteId] = jb.remote.counter++
             if (obj[jb.remote.remoteId]) {
                 jb.remote.remoteHash[obj[jb.remote.remoteId]] = obj
-                const debugProps = jb.objFromEntries([['description',obj.constructor.name], ...jb.entries(obj).filter(e=>(typeof e).match(/string|number|boolean/)).map(([id,val])=>[id,jb.remote.prepareForClone(val, depth+1)])])
+                const debugProps = jb.objFromEntries([['name',obj.constructor.name], ...jb.entries(obj).filter(e=>(typeof e).match(/string|number|boolean/)).map(([id,val])=>[id,jb.remote.prepareForClone(val, depth+1)])])
                 return {$: '__remoteObj', __id: obj[jb.remote.remoteId], ...debugProps }
             }
             if (obj.constructor.name == 'jbCtx')
@@ -10969,9 +10969,13 @@ jb.component('remote.innerRx', {
         jb.entries(jb.cbLogByPath||{}).filter(e=>e[0].indexOf(ctx.path) == 0).forEach(e=>e[1].result = [])
         return source => (start,sink) => {
             if (start!=0) return
-            jb.delay(10).then(()=> jb.callbag.subscribe(()=>{})(jb.remote.remoteSink(remote,sourceId)(source)))
-            const remoteSource = jb.remote.remoteSource(remote,sinkId)
-            remoteSource(0, (t,d) => sink(t,d))
+            Promise.resolve(remote).then(remote => {
+                //jb.delay(10).then(() => 
+                const {pipe,subscribe} = jb.callbag
+                pipe(source, jb.remote.remoteSink(remote,sourceId), subscribe(()=>{}))
+                const remoteSource = jb.remote.remoteSource(remote,sinkId)
+                remoteSource(0, (t,d) => sink(t,d))
+            })
         }
     }
 })
@@ -10983,10 +10987,16 @@ jb.component('remote.sourceRx', {
       {id: 'remote', type: 'remote', defaultValue: worker.remoteCallbag()}
     ],
     impl: (ctx,rx,remote) => {
-        const sinkId = jb.remote.counter++
-        jb.entries(jb.cbLogByPath||{}).filter(e=>e[0].indexOf(ctx.path) == 0).forEach(e=>e[1].result = [])
-        jb.delay(1).then(()=>remote).then(remote => remote.postObj({ $: 'sourceCB', sinkId, propName: 'rx', ctx }))
-        return jb.remote.remoteSource(remote,sinkId)
+        const {pipe,flatMap,fromPromise} = jb.callbag
+        return pipe(
+            fromPromise(remote),
+            flatMap(remote=> {
+                const sinkId = jb.remote.counter++
+                jb.entries(jb.cbLogByPath||{}).filter(e=>e[0].indexOf(ctx.path) == 0).forEach(e=>e[1].result = [])
+                jb.delay(1).then(() => remote.postObj({ $: 'sourceCB', sinkId, propName: 'rx', ctx }))
+                return jb.remote.remoteSource(remote,sinkId)
+            })
+        )
     }
 })
 
