@@ -12,7 +12,7 @@ jb.remote = {
         return pipe(
             remote.messageSource, 
             filter(m=> m.id == id),
-            talkbackNotifier( t => t == 2 && remote.postObj({$: 'stopRequest', id})),
+            talkbackNotifier( (t,d) => remote.postObj({$: 'talkback', id, t, d})),
             takeWhile(m=> !m.finished),
             filter(m=> m.data),
             map( ({data})=> new jb.jbCtx().ctx({data: data.data, vars: data.vars})),
@@ -20,13 +20,11 @@ jb.remote = {
         )
     },
     remoteSink: (remote, id) => source => {
-        const {pipe,Do,takeUntil,filter} = jb.callbag
+        const {pipe,Do,merge,filter} = jb.callbag
         return pipe(
             source,
-            takeUntil(pipe(remote.messageSource, filter(m=> m.id == id && m.$ == 'stopRequest'))),
+            merge(pipe(remote.messageSource, filter(m=> m.id == id && m.$ == 'talkback'))),
             Do(m=> remote.postObj({id, data: m})),
-            // map(m => ({ data: jb.remote.prepareForClone(m), id } )), 
-            // Do(m => remote.postMessage(JSON.stringify(m))),
             Do(x=>console.log('remote sink',x))
         )
     },
@@ -191,16 +189,10 @@ jb.component('remote.sourceRx', {
       {id: 'remote', type: 'remote', defaultValue: worker.remoteCallbag()}
     ],
     impl: (ctx,rx,remote) => {
-        // const {pipe,flatMap,fromPromise} = jb.callbag
-        // return pipe(
-        //     fromPromise(remote),
-        //     flatMap(remote=> {
-                const sinkId = jb.remote.counter++
-                jb.entries(jb.cbLogByPath||{}).filter(e=>e[0].indexOf(ctx.path) == 0).forEach(e=>e[1].result = [])
-                jb.delay(1).then(() => remote.postObj({ $: 'sourceCB', sinkId, propName: 'rx', ctx }))
-                return jb.remote.remoteSource(remote,sinkId)
-        //     })
-        // )
+        const sinkId = jb.remote.counter++
+        jb.entries(jb.cbLogByPath||{}).filter(e=>e[0].indexOf(ctx.path) == 0).forEach(e=>e[1].result = [])
+        jb.delay(1).then(() => remote.postObj({ $: 'sourceCB', sinkId, propName: 'rx', ctx }))
+        return jb.remote.remoteSource(remote,sinkId)
     }
 })
 
