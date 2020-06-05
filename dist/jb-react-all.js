@@ -10840,7 +10840,7 @@ jb.remote = {
                 obj[jb.remote.remoteId] = jb.remote.counter++
             if (obj[jb.remote.remoteId]) {
                 jb.remote.remoteHash[obj[jb.remote.remoteId]] = obj
-                const debugProps = jb.objFromEntries( jb.entries(obj).filter(e=>typeof e.match(/string|number|boolean/)).map(([id,val])=>[id,jb.remote.prepareForClone(val, depth+1)]))
+                const debugProps = jb.objFromEntries( jb.entries(obj).filter(e=>(typeof e).match(/string|number|boolean/)).map(([id,val])=>[id,jb.remote.prepareForClone(val, depth+1)]))
                 return {$: '__remoteObj', __id: obj[jb.remote.remoteId], ...debugProps }
             }
             if (obj.constructor.name == 'jbCtx')
