@@ -15,7 +15,7 @@ jb.remote = {
             talkbackNotifier( t => t == 2 && remote.postObj({$: 'stopRequest', id})),
             takeWhile(m=> !m.finished),
             filter(m=> m.data),
-            map( ({data})=> new jb.jbCtx().ctx({data: data.data, vars: data.vars})) , //profile: data.profile, componentContext: data.componentContext, forcePath: data.forcePath})),
+            map( ({data})=> new jb.jbCtx().ctx({data: data.data, vars: data.vars})),
             Do(x=>console.log('remote source',x))
         )
     },
@@ -140,7 +140,8 @@ jb.component('worker.remoteCallbag', {
                 self.messageSource = pipe(
                     fromEvent('message',self),
                     map(m=> jb.remote.evalFunctions(JSON.parse(m.data)))
-                )                
+                )
+                self.postObj = m => worker.postMessage(JSON.stringify(jb.remote.prepareForClone(m)))
                 jb.remote.startCommandListener()`
         ].join('\n')
         const worker = jb.remote.workers[id] = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})));
