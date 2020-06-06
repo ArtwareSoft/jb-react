@@ -143,7 +143,7 @@ jb.component('worker.remoteCallbag', {
                     fromEvent('message',self),
                     map(m=> jb.remote.evalFunctions(JSON.parse(m.data)))
                 )
-                self.postObj = m => worker.postMessage(JSON.stringify(jb.remote.prepareForClone(m)))
+                self.postObj = m => postMessage(JSON.stringify(jb.remote.prepareForClone(m)))
                 jb.remote.startCommandListener()`
         ].join('\n')
         const worker = jb.remote.workers[id] = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})));
