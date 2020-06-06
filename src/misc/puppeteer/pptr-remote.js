@@ -3,14 +3,14 @@ jb.ns('pptr,remote')
 Object.assign(jb.remote.remoteClassNames,{Browser: true, Page: true})
 
 jb.pptr = {
-    initCallbagServer(ws) { // server side
+    initCallbagServer() { // server side
         global._handlers = {}
         global.addEventListener = (event,handler) => {
           _handlers[event] = _handlers[event] || []
           _handlers[event].push(handler)
         }        
-        global.postMessage = m => ws.send(m)
-        global.postObj = m => ws.send(JSON.stringify(jb.remote.prepareForClone(m)))
+        global.postMessage = m => global.global.wsWithjBart.send(m)
+        global.postObj = m => global.global.wsWithjBart.send(JSON.stringify(jb.remote.prepareForClone(m)))
 
         const {pipe,fromEvent,filter,map} = jb.callbag
         global.messageSource = pipe(
