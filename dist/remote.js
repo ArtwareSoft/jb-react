@@ -1,5 +1,6 @@
 jb.remote = {
     workers: {},
+    cbCounter: 1,
     counter: 1,
     remoteId: Symbol.for("remoteId"),
     remoteHash: {},
@@ -171,8 +172,8 @@ jb.component('remote.innerRx', {
       {id: 'remote', type: 'remote', defaultValue: worker.remoteCallbag()}
     ],
     impl: (ctx,rx,remote) => {
-        const sourceId = jb.remote.counter++
-        const sinkId = jb.remote.counter++
+        const sourceId = jb.remote.cbCounter++
+        const sinkId = jb.remote.cbCounter++
         jb.entries(jb.cbLogByPath||{}).filter(e=>e[0].indexOf(ctx.path) == 0).forEach(e=>e[1].result = []) // clean probe logs
 
         const {pipe,take,filter,replay,subscribe} = jb.callbag
@@ -209,7 +210,7 @@ jb.component('remote.sourceRx', {
       {id: 'remote', type: 'remote', defaultValue: worker.remoteCallbag()}
     ],
     impl: (ctx,rx,remote) => {
-        const sinkId = jb.remote.counter++
+        const sinkId = jb.remote.cbCounter++
         jb.entries(jb.cbLogByPath||{}).filter(e=>e[0].indexOf(ctx.path) == 0).forEach(e=>e[1].result = [])
         jb.delay(1).then(()=> remote).then(remote => remote.postObj({ $: 'sourceCB', sinkId, propName: 'rx', ctx }))
         return jb.remote.remoteSource(remote,sinkId)
