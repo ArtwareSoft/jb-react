@@ -9,8 +9,8 @@ jb.pptr = {
           _handlers[event] = _handlers[event] || []
           _handlers[event].push(handler)
         }        
-        global.postMessage = m => global.global.wsWithjBart.send(m)
-        global.postObj = m => global.global.wsWithjBart.send(JSON.stringify(jb.remote.prepareForClone(m)))
+        global.postMessage = m => global.wsWithjBart.send(m)
+        global.postObj = m => global.wsWithjBart.send(JSON.stringify(jb.remote.prepareForClone(m)))
 
         const {pipe,fromEvent,filter,map} = jb.callbag
         global.messageSource = pipe(
