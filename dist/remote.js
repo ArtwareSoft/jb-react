@@ -185,12 +185,21 @@ jb.component('remote.innerRx', {
                     subscribe(() => {
                         const remoteSource = jb.remote.remoteSource(remote,sinkId)
                         remoteSource(0, (t,d) => sink(t,d))
-                        jb.remote.remoteSink(remote,sourceId)(source)
+                        const cb = jb.remote.remoteSink(remote,sourceId)(source)
+                        cb(0,(t,d) => (t == 0)  && d(1) ) // send talkback
                 }))
                 remote.postObj({ $: 'innerCB', sourceId, sinkId, propName: 'rx', ctx })
             })
+            let talkback
+            source(0, function innerRxTB(t, d) {
+                if (t === 0) talkback = d
+            })
+    
+            sink(0, function innerRxTB(t, d) {
+                if (t ==2 || t == 1 && !d) talkback && talkback(t,d)
+            })
         }
-        return source => pipe(source, replay, resCB)
+        return resCB // source => pipe(source, replay(), resCB)
     }
 })
 

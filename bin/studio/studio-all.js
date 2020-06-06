@@ -9,7 +9,7 @@ function jb_run(ctx,parentParam,settings) {
   let res = do_jb_run(...arguments)
   if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
       res = ctx.probe.record(ctx,res) || res
-  if (false && jb.cbLogByPath && jb.callbag.wrapWithCallbagSniffer)
+  if (jb.cbLogByPath && jb.callbag.wrapWithCallbagSniffer)
       res = jb.callbag.wrapWithCallbagSniffer(ctx,res)
   log('res', [ctx,res,parentParam,settings])
   if (typeof res == 'function') res.ctx = ctx
