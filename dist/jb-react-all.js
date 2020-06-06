@@ -10844,8 +10844,8 @@ jb.remote = {
         return pipe(
             remote.messageSource, 
             filter(m=> m.id == id),
-            talkbackNotifier( (t,d) => remote.postObj({$: 'talkback', id, t, d})),
-            takeWhile(m=> !m.finished),
+            talkbackNotifier( (t,d) => t == 2 && remote.postObj({$: 'talkback', id, t, d})),
+            takeWhile(m=> m.$ != 'CBFinished'),
             filter(m=> m.data),
             map( ({data})=> new jb.jbCtx().ctx({data: data.data, vars: data.vars})),
             Do(x=>console.log('remote source',x))
@@ -10921,10 +10921,14 @@ jb.remote = {
                 pipe(
                     m.$ == 'innerCB' && jb.remote.remoteSource(jb.frame, m.sourceId),
                     new jb.jbCtx().ctx(m.ctx).runInner(m.ctx.profile[m.propName], {type: 'rx'} ,m.propName),
-                    jb.remote.remoteSink(jb.frame, m.sinkId),                    
+                    jb.remote.remoteSink(jb.frame, m.sinkId),                   
                     Do(e=> postMessage(JSON.stringify({$: 'cbLogByPathDiffs', id: m.sinkId, diffs: jb.remote.cbLogByPathDiffs(m.ctx.forcePath)}))),
-                    subscribe({complete: () => postMessage(JSON.stringify({id: m.sinkId, finished: true}))})
+                    subscribe({
+                        complete: () => jb.frame.postObj({id: m.sinkId, $: 'CBFinished' }),
+                        error: e => jb.frame.postObj({id: m.sinkId, $: 'CBFinished', e })
+                    })
                 )
+                m.$ == 'innerCB' && jb.frame.postObj({ sinkId: m.sinkId, $: 'innerCBCBReady' })
             })
         )
     },
@@ -11001,17 +11005,24 @@ jb.component('remote.innerRx', {
     impl: (ctx,rx,remote) => {
         const sourceId = jb.remote.counter++
         const sinkId = jb.remote.counter++
-        jb.delay(1).then(()=>remote).then(remote => remote.postObj({ $: 'innerCB', sourceId, sinkId, propName: 'rx', ctx }))
-        jb.entries(jb.cbLogByPath||{}).filter(e=>e[0].indexOf(ctx.path) == 0).forEach(e=>e[1].result = [])
-        return source => (start,sink) => {
+        jb.entries(jb.cbLogByPath||{}).filter(e=>e[0].indexOf(ctx.path) == 0).forEach(e=>e[1].result = []) // clean probe logs
+        
+        const {pipe,take,filter,replay,subscribe} = jb.callbag
+        const resCB = source => (start, sink) => {
             if (start!=0) return
             Promise.resolve(remote).then(remote => {
-                //jb.delay(10).then(() => 
-                jb.remote.remoteSink(remote,sourceId)(source)
-                const remoteSource = jb.remote.remoteSource(remote,sinkId)
-                jb.delay(10).then(() => remoteSource(0, (t,d) => sink(t,d)))
+                pipe(remote.messageSource, 
+                    filter(m=> m.sinkId == sinkId && m.$ == 'innerCBCBReady'), 
+                    take(1), 
+                    subscribe(() => {
+                        const remoteSource = jb.remote.remoteSource(remote,sinkId)
+                        remoteSource(0, (t,d) => sink(t,d))
+                        jb.remote.remoteSink(remote,sourceId)(source)
+                }))
+                remote.postObj({ $: 'innerCB', sourceId, sinkId, propName: 'rx', ctx })
             })
         }
+        return source => pipe(source, replay, resCB)
     }
 })
 
