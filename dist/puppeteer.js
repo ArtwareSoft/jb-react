@@ -10,6 +10,7 @@ jb.pptr = {
           _handlers[event].push(handler)
         }        
         global.postMessage = m => ws.send(m)
+        global.postObj = m => ws.send(JSON.stringify(jb.remote.prepareForClone(m)))
 
         const {pipe,fromEvent,filter,map} = jb.callbag
         global.messageSource = pipe(
@@ -97,7 +98,7 @@ jb.component('pptr.server', {
             const {toPromiseArray,pipe,take,doPromise,fromEvent,map} = jb.callbag
             socket.sendCodeToServer = () => 
                     libs.reduce((pr,lib) => pr.then(() => loadLibFile(lib)), Promise.resolve())
-                    .then(() => socket.postObj({ loadCode: 'jb.remote.onServer = true', moduleFileName: '' }));
+                    .then(() => socket.postObj({ loadCode: 'jb.remote.onServer = true;', moduleFileName: '' }));
     
             return toPromiseArray(pipe(
                 fromEvent('message',socket),

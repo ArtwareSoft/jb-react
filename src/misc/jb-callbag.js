@@ -705,12 +705,13 @@
         if (start !== 0) return
         let talkback
         source(0, function talkbackSrc(t, d) {
-          if (t == 0)
+          if (t == 0) {
             talkback = d
-          tbSrc(0, function talkbackSrc(t, d) { // d contains talkback type and data
-            if (t == 1 && d && d.t && talkback)
-              talkback(d.t,d.d)
-          })
+            tbSrc(0, function talkbackSrc(t, d) { // d contains talkback type and data
+              if (t == 1 && d && d.t && talkback)
+                talkback(d.t,d.d)
+            })
+          }
           sink(t, d)
         })
       },       
