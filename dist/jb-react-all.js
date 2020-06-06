@@ -10928,7 +10928,7 @@ jb.remote = {
                         error: e => jb.frame.postObj({id: m.sinkId, $: 'CBFinished', e })
                     })
                 )
-                m.$ == 'innerCB' && jb.frame.postObj({ sinkId: m.sinkId, $: 'innerCBCBReady' })
+                m.$ == 'innerCB' && jb.frame.postObj({ sinkId: m.sinkId, $: 'innerCBReady' })
             })
         )
     },
@@ -11006,13 +11006,13 @@ jb.component('remote.innerRx', {
         const sourceId = jb.remote.counter++
         const sinkId = jb.remote.counter++
         jb.entries(jb.cbLogByPath||{}).filter(e=>e[0].indexOf(ctx.path) == 0).forEach(e=>e[1].result = []) // clean probe logs
-        
+
         const {pipe,take,filter,replay,subscribe} = jb.callbag
         const resCB = source => (start, sink) => {
             if (start!=0) return
             Promise.resolve(remote).then(remote => {
                 pipe(remote.messageSource, 
-                    filter(m=> m.sinkId == sinkId && m.$ == 'innerCBCBReady'), 
+                    filter(m=> m.sinkId == sinkId && m.$ == 'innerCBReady'), 
                     take(1), 
                     subscribe(() => {
                         const remoteSource = jb.remote.remoteSource(remote,sinkId)
