@@ -135,7 +135,7 @@ jb.component('pptr.mapPromise', {
     params: [
       {id: 'func', dynamic: true },
     ],
-    impl: If(remote.onServer(), rx.mapPromise('%$func%'), remote.innerRx(rx.mapPromise('%$func%'),pptr.server()))
+    impl: If(remote.onServer(), rx.mapPromise(ctx => ctx.componentContext.run('%$func%')), remote.innerRx(rx.mapPromise('%$func%'),pptr.server()))
 })
 
 jb.component('pptr.doPromise', {

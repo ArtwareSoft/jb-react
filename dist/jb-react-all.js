@@ -10864,7 +10864,7 @@ jb.remote = {
     },
     prepareForClone: (obj,depth) => {
         depth = depth || 0
-        if (obj == null || depth > 5) return
+        if (obj == null || depth > 10) return
         if (['string','boolean','number'].indexOf(typeof obj) != -1) return obj
         if (Array.isArray(obj)) return obj.map(val => jb.remote.prepareForClone(val, depth+1))
         if (typeof obj == 'function') {
