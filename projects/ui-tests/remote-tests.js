@@ -91,7 +91,7 @@ jb.component('dataTest.remote.remoteObject', {
     calculate: rx.pipe(
       rx.fromIter([1]),
       remote.innerRx(rx.map(ctx => jb.remote.createSampleObject(5))),
-      remote.innerRx(rx.map(({data}) => data.m1() )),
+      remote.innerRx(rx.map(({data}) => { return data.m1() })),
       rx.take(1)
     ),
     expectedResult: equals(5)

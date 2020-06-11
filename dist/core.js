@@ -9,8 +9,8 @@ function jb_run(ctx,parentParam,settings) {
   let res = do_jb_run(...arguments)
   if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
       res = ctx.probe.record(ctx,res) || res
-  if (jb.cbLogByPath && jb.callbag.wrapWithCallbagSniffer)
-      res = jb.callbag.wrapWithCallbagSniffer(ctx,res)
+  if (jb.cbLogByPath && jb.callbag.wrapWithSnifferForLogByPath)
+      res = jb.callbag.wrapWithSnifferForLogByPath(ctx,res)
   log('res', [ctx,res,parentParam,settings])
   if (typeof res == 'function') res.ctx = ctx
   return res;
@@ -915,7 +915,8 @@ const spySettings = {
 		puppeteer: 'pptrStarted,pptrEmit,pptrActivity,pptrResultData,pptrInfo,pptrError',
 		watchable: 'doOp,writeValue,removeCmpObservable,registerCmpObservable,notifyCmpObservable,notifyObservableElems,notifyObservableElem,scriptChange',
 		react: 'applyDeltaTop,applyDelta,unmount,render,initCmp,refreshReq,refreshElem,childDiffRes,htmlChange,appendChild,removeChild,replaceTop,calcRenderProp',
-		dialog: 'addDialog,closeDialog,refreshDialogs'
+		dialog: 'addDialog,closeDialog,refreshDialogs',
+		remoteCallbag: 'innerCBReady,innerCBCodeSent,innerCBDataSent,innerCBMsgReceived,remoteCmdReceived,remoteSource,remoteSink,outputToRemote,inputFromRemote,inputInRemote,outputInRemote',
 	},
 	includeLogs: 'exception,error',
 	stackFilter: /spy|jb_spy|Object.log|node_modules/i,

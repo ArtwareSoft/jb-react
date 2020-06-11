@@ -9,8 +9,8 @@ function jb_run(ctx,parentParam,settings) {
   let res = do_jb_run(...arguments)
   if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
       res = ctx.probe.record(ctx,res) || res
-  if (jb.cbLogByPath && jb.callbag.wrapWithCallbagSniffer)
-      res = jb.callbag.wrapWithCallbagSniffer(ctx,res)
+  if (jb.cbLogByPath && jb.callbag.wrapWithSnifferForLogByPath)
+      res = jb.callbag.wrapWithSnifferForLogByPath(ctx,res)
   log('res', [ctx,res,parentParam,settings])
   if (typeof res == 'function') res.ctx = ctx
   return res;
@@ -2025,14 +2025,7 @@ jb.component('formatDate', {
 })
 ;
 
-(function() {
-  // inspired (and also many lines of code taken) from André Staltz, https://staltz.com/why-we-need-callbags.html
-  const is = (previous, current) => previous === current
-  const UNIQUE = {}
-  const kTrue = () => true
-  const identity = a => a
-  
-  jb.callbag = {
+jb.callbag = {
       fromIter: iter => (start, sink) => {
           if (start !== 0) return
           const iterator =
@@ -2115,7 +2108,7 @@ jb.component('formatDate', {
         })
       },
       distinctUntilChanged: compare => source => (start, sink) => {
-          compare = compare || is
+          compare = compare || ((prev, cur) => prev === cur)
           if (start !== 0) return
           let inited = false, prev, talkback
           source(0, function distinctUntilChanged(type, data) {
@@ -2136,6 +2129,7 @@ jb.component('formatDate', {
       takeUntil(notifier) {
           if (jb.isPromise(notifier))
               notifier = jb.callbag.fromPromise(notifier)
+          const UNIQUE = {}
           return source => (start, sink) => {
               if (start !== 0) return
               let sourceTalkback, notifierTalkback, inited = false, done = UNIQUE
@@ -2747,51 +2741,47 @@ jb.component('formatDate', {
         if (start !== 0) return
         jb.log('snifferStarted',[])
         let talkback
-        source(0, function sniffer(t,d) {
+        const talkbackWrapper = (t,d) => { snif('talkback',t,d); talkback(t,d) }
+        const sniffer = (t,d) => {
           snif('out',t,d)
           if (t == 0) {
             talkback = d
-            sink(0,(t,d) => { snif('talkback',t,d); talkback(t,d) })
+            Object.defineProperty(talkbackWrapper, 'name', { value: talkback.name + '-sniffer' })
+            sink(0, talkbackWrapper)
             return
           }
           sink(t,d)
-        })
-  
+        }        
+        Object.defineProperty(sniffer, 'name', { value: source.name + '-sniffer' })
+
+        source(0,sniffer)
+        
         function snif(dir,t,d) {
           const now = new Date()
           const time = `${now.getSeconds()}:${now.getMilliseconds()}`
           snifferSubject.next({dir, t, d, time})
-          if (t == 2) {
-            jb.log('snifferCompleted',[])
-            snifferSubject.complete()
-          }
+          if (t == 2)
+            snifferSubject.complete && snifferSubject.complete(d)
         }
       },
       // sniffer to be used in a middle pipe element. E.g., map
       sniffer: (cb, snifferSubject) => source => (start, sink) => {
         if (start !== 0) return
         jb.log('snifferStarted',[])
-        const cbSource = (start, sink) => {
-          if (start != 0) return
-          source(0, (t,d) => {
-            snif('in',t,d)
-            sink(t,d)
-          })
-        }
-        // cbSink
-        cb(cbSource)(0, (t,d) => {
-          snif('out',t,d)
-          sink(t,d)
-        })
-  
-        function snif(dir,t,d) {
-          const now = new Date()
-          const time = `${now.getSeconds()}:${now.getMilliseconds()}`
-          snifferSubject.next({dir, t, d, time})
-          if (t == 2) {
-            jb.log('snifferCompleted',[])
-            snifferSubject.complete()
+        const cbSource = (start, sink) => start === 0 && source(0, wrapper(sink,'in'))
+        cb(cbSource)(0, wrapper(sink,'out'))
+
+        function wrapper(sink, dir) {
+          const ret = (t,d) => {
+            const now = new Date()
+            const time = `${now.getSeconds()}:${now.getMilliseconds()}`
+            snifferSubject.next({dir, t, d, time})
+            if (t == 2)
+              snifferSubject.complete && snifferSubject.complete(d)
+              sink(t,d)
           }
+          Object.defineProperty(ret, 'name', { value: cb.name + '-' + dir })
+          return ret
         }
       },
       fromCallBag: source => source,
@@ -2809,7 +2799,8 @@ jb.component('formatDate', {
       },
       isCallbag: source => typeof source == 'function' && source.toString().split('=>')[0].split('{')[0].replace(/\s/g,'').match(/start,sink|t,d/),
       isCallbagFunc: source => typeof source == 'function' && source.toString().split('\n')[0].replace(/\s/g,'').match(/source|start,sink|t,d/),
-      wrapWithCallbagSniffer(ctx,res) {
+
+      wrapWithSnifferForLogByPath(ctx,res) {
         const _jb = ctx.frame().jb
         if (_jb.cbLogByPath && typeof res == 'function' && jb.callbag.isCallbagFunc(res)) {
           const {sniffer,isCallbag,sourceSniffer} = _jb.callbag
@@ -2817,15 +2808,24 @@ jb.component('formatDate', {
           const log = _jb.cbLogByPath[ctx.path] = { callbagLog: true, result: [] }
           const listener = {
             next(r) { log.result.push(r) },
-            complete() { log.complete = true }
+            complete(e) { log.complete = true; }
           }
           res = isCallbag(res) ? sourceSniffer(res, listener) : sniffer(res, listener)
         }
         return res
       },  
-  }
-  
-  })();
+      wrapWithSnifferWithLog(cb,logName,...params) {
+        const {sniffer,isCallbag,sourceSniffer,isCallbagFunc} = jb.callbag
+        if (typeof cb == 'function' && isCallbagFunc(cb)) {
+          const listener = {
+            next(r) { jb.log(logName,[r,...params]) },
+          }
+          return isCallbag(cb) ? sourceSniffer(cb, listener) : sniffer(cb, listener)
+        }
+        return cb
+      },  
+}
+;
 
 (function() {
 const spySettings = { 
@@ -2835,7 +2835,8 @@ const spySettings = {
 		puppeteer: 'pptrStarted,pptrEmit,pptrActivity,pptrResultData,pptrInfo,pptrError',
 		watchable: 'doOp,writeValue,removeCmpObservable,registerCmpObservable,notifyCmpObservable,notifyObservableElems,notifyObservableElem,scriptChange',
 		react: 'applyDeltaTop,applyDelta,unmount,render,initCmp,refreshReq,refreshElem,childDiffRes,htmlChange,appendChild,removeChild,replaceTop,calcRenderProp',
-		dialog: 'addDialog,closeDialog,refreshDialogs'
+		dialog: 'addDialog,closeDialog,refreshDialogs',
+		remoteCallbag: 'innerCBReady,innerCBCodeSent,innerCBDataSent,innerCBMsgReceived,remoteCmdReceived,remoteSource,remoteSink,outputToRemote,inputFromRemote,inputInRemote,outputInRemote',
 	},
 	includeLogs: 'exception,error',
 	stackFilter: /spy|jb_spy|Object.log|node_modules/i,
@@ -10841,26 +10842,25 @@ jb.remote = {
         const host = jb.path(jb.studio,'studiojb.studio.host')
         return host && host.pathOfDistFolder() || typeof location != 'undefined' && location.href.match(/^[^:]*/)[0] + `://${location.host}/dist`
     },
-    remoteSource: (remote, id) => {
-        const {pipe,Do,takeWhile,map,filter,talkbackNotifier} = jb.callbag
-        return pipe(
+    remoteSource: (remote, id,logName) => {
+        const {pipe,takeWhile,map,filter,talkbackNotifier,wrapWithSnifferWithLog} = jb.callbag
+        return wrapWithSnifferWithLog(pipe(
             remote.messageSource, 
             filter(m=> m.id == id),
             talkbackNotifier( (t,d) => t == 2 && remote.postObj({$: 'talkback', id, t, d})),
             takeWhile(m=> m.$ != 'CBFinished'),
             filter(m=> m.data),
             map( ({data})=> new jb.jbCtx().ctx({data: data.data, vars: data.vars})),
-            Do(x=>console.log('remote source',x))
-        )
+        ),logName|| 'remoteSource',{ channel: id} )
     },
-    remoteSink: (remote, id) => source => {
-        const {pipe,Do,talkbackSrc,filter} = jb.callbag
-        return pipe(
+    remoteSink: (remote, id,logName) => source => {
+        const {pipe,Do,talkbackSrc,filter,wrapWithSnifferWithLog} = jb.callbag
+        return wrapWithSnifferWithLog(pipe(
             source,
             talkbackSrc(pipe(remote.messageSource, filter(m=> m.id == id && m.$ == 'talkback'))),
             Do(m=> remote.postObj({id, data: m})),
             Do(x=>console.log('remote sink',x))
-        )
+        ),logName || 'remoteSink',{ channel: id})
     },
     prepareForClone: (obj,depth) => {
         depth = depth || 0
@@ -10918,16 +10918,17 @@ jb.remote = {
         pipe(
             jb.frame.messageSource,
             filter(m=> m.$ == 'innerCB' || m.$ == 'sourceCB'),
-            jb.callbag.Do(x=>console.log('command',x)),
+            Do(m=> jb.log('remoteCmdReceived',[m])),
             subscribe(m=> {
                 pipe(
-                    m.$ == 'innerCB' && jb.remote.remoteSource(jb.frame, m.sourceId),
+                    m.$ == 'innerCB' && jb.remote.remoteSource(jb.frame, m.sourceId,'inputInRemote'),
                     new jb.jbCtx().ctx(m.ctx).runInner(m.ctx.profile[m.propName], {type: 'rx'} ,m.propName),
-                    jb.remote.remoteSink(jb.frame, m.sinkId),                   
-                    Do(e=> postMessage(JSON.stringify({$: 'cbLogByPathDiffs', id: m.sinkId, diffs: jb.remote.cbLogByPathDiffs(m.ctx.forcePath)}))),
+                    jb.remote.remoteSink(jb.frame, m.sinkId,'outputInRemote'),                   
+                    Do(m => m.debug && jb.frame.postObj({
+                        $: 'cbLogByPathDiffs', id: m.sinkId, diffs: jb.remote.cbLogByPathDiffs(m.ctx.forcePath)})),
                     subscribe({
-                        complete: () => jb.frame.postObj({id: m.sinkId, $: 'CBFinished' }),
-                        error: e => jb.frame.postObj({id: m.sinkId, $: 'CBFinished', e })
+                        complete: () => jb.frame.postObj({$: 'CBFinished', id: m.sinkId }),
+                        error: e => jb.frame.postObj({$: 'CBFinished', id: m.sinkId, e })
                     })
                 )
                 m.$ == 'innerCB' && jb.frame.postObj({ sinkId: m.sinkId, $: 'innerCBReady' })
@@ -10972,6 +10973,7 @@ jb.component('worker.remoteCallbag', {
                 self.workerId = () => 1
                 jb.remote.onServer = true
                 jb.cbLogByPath = {}
+                jb.initSpy({spyParam: 'remoteCallbag'})
                 const {pipe,Do,fromEvent,map,subscribe} = jb.callbag
                 self.messageSource = pipe(
                     fromEvent('message',self),
@@ -11009,19 +11011,23 @@ jb.component('remote.innerRx', {
         const sinkId = jb.remote.cbCounter++
         jb.entries(jb.cbLogByPath||{}).filter(e=>e[0].indexOf(ctx.path) == 0).forEach(e=>e[1].result = []) // clean probe logs
 
-        const {pipe,take,filter,replay,subscribe} = jb.callbag
+        const {pipe,take,filter,replay,Do,subscribe} = jb.callbag
         const resCB = source => (start, sink) => {
-            if (start!=0) return
+            if (start != 0) return
             Promise.resolve(remote).then(remote => {
                 pipe(remote.messageSource, 
-                    filter(m=> m.sinkId == sinkId && m.$ == 'innerCBReady'), 
+                    filter(m=> m.sinkId == sinkId && m.$ == 'innerCBReady'),
+                    Do(()=> jb.log('innerCBReady',[{sourceId, sinkId},ctx])),
                     take(1), 
                     subscribe(() => {
-                        const remoteSource = jb.remote.remoteSource(remote,sinkId)
+                        const remoteSource = jb.remote.remoteSource(remote,sinkId,'inputFromRemote')
                         remoteSource(0, (t,d) => sink(t,d))
-                        pipe(source,jb.remote.remoteSink(remote,sourceId),subscribe(() => {}))
+                        pipe(source,
+//                            Do( e => jb.log('innerCBDataSent',[e,{sourceId, sinkId},ctx],{modifier:x=>x}) )), 
+                            jb.remote.remoteSink(remote,sourceId,'outputToRemote'),subscribe(() => {}))
                 }))
                 remote.postObj({ $: 'innerCB', sourceId, sinkId, propName: 'rx', ctx })
+                jb.log('innerCBCodeSent',[{sourceId, sinkId},ctx])
             })
             // let talkback
             // source(0, function innerRxTB(t, d) {
@@ -11046,7 +11052,7 @@ jb.component('remote.sourceRx', {
         const sinkId = jb.remote.cbCounter++
         jb.entries(jb.cbLogByPath||{}).filter(e=>e[0].indexOf(ctx.path) == 0).forEach(e=>e[1].result = [])
         jb.delay(1).then(()=> remote).then(remote => remote.postObj({ $: 'sourceCB', sinkId, propName: 'rx', ctx }))
-        return jb.remote.remoteSource(remote,sinkId)
+        return jb.remote.remoteSource(remote,sinkId,'inputFromRemote')
     }
 })
 

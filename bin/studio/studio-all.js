@@ -9,8 +9,8 @@ function jb_run(ctx,parentParam,settings) {
   let res = do_jb_run(...arguments)
   if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
       res = ctx.probe.record(ctx,res) || res
-  if (jb.cbLogByPath && jb.callbag.wrapWithCallbagSniffer)
-      res = jb.callbag.wrapWithCallbagSniffer(ctx,res)
+  if (jb.cbLogByPath && jb.callbag.wrapWithSnifferForLogByPath)
+      res = jb.callbag.wrapWithSnifferForLogByPath(ctx,res)
   log('res', [ctx,res,parentParam,settings])
   if (typeof res == 'function') res.ctx = ctx
   return res;
@@ -2025,14 +2025,7 @@ jb.component('formatDate', {
 })
 ;
 
-(function() {
-  // inspired (and also many lines of code taken) from André Staltz, https://staltz.com/why-we-need-callbags.html
-  const is = (previous, current) => previous === current
-  const UNIQUE = {}
-  const kTrue = () => true
-  const identity = a => a
-  
-  jb.callbag = {
+jb.callbag = {
       fromIter: iter => (start, sink) => {
           if (start !== 0) return
           const iterator =
@@ -2115,7 +2108,7 @@ jb.component('formatDate', {
         })
       },
       distinctUntilChanged: compare => source => (start, sink) => {
-          compare = compare || is
+          compare = compare || ((prev, cur) => prev === cur)
           if (start !== 0) return
           let inited = false, prev, talkback
           source(0, function distinctUntilChanged(type, data) {
@@ -2136,6 +2129,7 @@ jb.component('formatDate', {
       takeUntil(notifier) {
           if (jb.isPromise(notifier))
               notifier = jb.callbag.fromPromise(notifier)
+          const UNIQUE = {}
           return source => (start, sink) => {
               if (start !== 0) return
               let sourceTalkback, notifierTalkback, inited = false, done = UNIQUE
@@ -2747,51 +2741,47 @@ jb.component('formatDate', {
         if (start !== 0) return
         jb.log('snifferStarted',[])
         let talkback
-        source(0, function sniffer(t,d) {
+        const talkbackWrapper = (t,d) => { snif('talkback',t,d); talkback(t,d) }
+        const sniffer = (t,d) => {
           snif('out',t,d)
           if (t == 0) {
             talkback = d
-            sink(0,(t,d) => { snif('talkback',t,d); talkback(t,d) })
+            Object.defineProperty(talkbackWrapper, 'name', { value: talkback.name + '-sniffer' })
+            sink(0, talkbackWrapper)
             return
           }
           sink(t,d)
-        })
-  
+        }        
+        Object.defineProperty(sniffer, 'name', { value: source.name + '-sniffer' })
+
+        source(0,sniffer)
+        
         function snif(dir,t,d) {
           const now = new Date()
           const time = `${now.getSeconds()}:${now.getMilliseconds()}`
           snifferSubject.next({dir, t, d, time})
-          if (t == 2) {
-            jb.log('snifferCompleted',[])
-            snifferSubject.complete()
-          }
+          if (t == 2)
+            snifferSubject.complete && snifferSubject.complete(d)
         }
       },
       // sniffer to be used in a middle pipe element. E.g., map
       sniffer: (cb, snifferSubject) => source => (start, sink) => {
         if (start !== 0) return
         jb.log('snifferStarted',[])
-        const cbSource = (start, sink) => {
-          if (start != 0) return
-          source(0, (t,d) => {
-            snif('in',t,d)
-            sink(t,d)
-          })
-        }
-        // cbSink
-        cb(cbSource)(0, (t,d) => {
-          snif('out',t,d)
-          sink(t,d)
-        })
-  
-        function snif(dir,t,d) {
-          const now = new Date()
-          const time = `${now.getSeconds()}:${now.getMilliseconds()}`
-          snifferSubject.next({dir, t, d, time})
-          if (t == 2) {
-            jb.log('snifferCompleted',[])
-            snifferSubject.complete()
+        const cbSource = (start, sink) => start === 0 && source(0, wrapper(sink,'in'))
+        cb(cbSource)(0, wrapper(sink,'out'))
+
+        function wrapper(sink, dir) {
+          const ret = (t,d) => {
+            const now = new Date()
+            const time = `${now.getSeconds()}:${now.getMilliseconds()}`
+            snifferSubject.next({dir, t, d, time})
+            if (t == 2)
+              snifferSubject.complete && snifferSubject.complete(d)
+              sink(t,d)
           }
+          Object.defineProperty(ret, 'name', { value: cb.name + '-' + dir })
+          return ret
         }
       },
       fromCallBag: source => source,
@@ -2809,7 +2799,8 @@ jb.component('formatDate', {
       },
       isCallbag: source => typeof source == 'function' && source.toString().split('=>')[0].split('{')[0].replace(/\s/g,'').match(/start,sink|t,d/),
       isCallbagFunc: source => typeof source == 'function' && source.toString().split('\n')[0].replace(/\s/g,'').match(/source|start,sink|t,d/),
-      wrapWithCallbagSniffer(ctx,res) {
+
+      wrapWithSnifferForLogByPath(ctx,res) {
         const _jb = ctx.frame().jb
         if (_jb.cbLogByPath && typeof res == 'function' && jb.callbag.isCallbagFunc(res)) {
           const {sniffer,isCallbag,sourceSniffer} = _jb.callbag
@@ -2817,15 +2808,24 @@ jb.component('formatDate', {
           const log = _jb.cbLogByPath[ctx.path] = { callbagLog: true, result: [] }
           const listener = {
             next(r) { log.result.push(r) },
-            complete() { log.complete = true }
+            complete(e) { log.complete = true; }
           }
           res = isCallbag(res) ? sourceSniffer(res, listener) : sniffer(res, listener)
         }
         return res
       },  
-  }
-  
-  })();
+      wrapWithSnifferWithLog(cb,logName,...params) {
+        const {sniffer,isCallbag,sourceSniffer,isCallbagFunc} = jb.callbag
+        if (typeof cb == 'function' && isCallbagFunc(cb)) {
+          const listener = {
+            next(r) { jb.log(logName,[r,...params]) },
+          }
+          return isCallbag(cb) ? sourceSniffer(cb, listener) : sniffer(cb, listener)
+        }
+        return cb
+      },  
+}
+;
 
 (function() {
 const spySettings = { 
@@ -2835,7 +2835,8 @@ const spySettings = {
 		puppeteer: 'pptrStarted,pptrEmit,pptrActivity,pptrResultData,pptrInfo,pptrError',
 		watchable: 'doOp,writeValue,removeCmpObservable,registerCmpObservable,notifyCmpObservable,notifyObservableElems,notifyObservableElem,scriptChange',
 		react: 'applyDeltaTop,applyDelta,unmount,render,initCmp,refreshReq,refreshElem,childDiffRes,htmlChange,appendChild,removeChild,replaceTop,calcRenderProp',
-		dialog: 'addDialog,closeDialog,refreshDialogs'
+		dialog: 'addDialog,closeDialog,refreshDialogs',
+		remoteCallbag: 'innerCBReady,innerCBCodeSent,innerCBDataSent,innerCBMsgReceived,remoteCmdReceived,remoteSource,remoteSink,outputToRemote,inputFromRemote,inputInRemote,outputInRemote',
 	},
 	includeLogs: 'exception,error',
 	stackFilter: /spy|jb_spy|Object.log|node_modules/i,
@@ -42873,7 +42874,7 @@ jb.component('studio.showLowFootprintObj', {
   impl: controlWithCondition('%$obj%', group({
     controls: [
       controlWithCondition(
-        or(isOfType('object', '%$obj%'),isOfType('array', '%$obj%')),
+        isOfType('object,array', '%$obj%'),
         button({
           vars: Var('count', pipeline('%$obj%',keys(),count())),
           title: If(isOfType('array', '%$obj%'), '%$title%[%$obj/length%]','%$title% (%$count%)'),
@@ -42888,9 +42889,13 @@ jb.component('studio.showLowFootprintObj', {
         })
       ),
       controlWithCondition(
-        isOfType('string', '%$obj%'),
+        isOfType('string,number,boolean', '%$obj%'),
         text({text: pipeline('%$obj%', slice(0, 20))})
       ),
+      controlWithCondition(
+        isOfType('function', '%$obj%'),
+        text(({},{},{obj}) => obj.name)
+      ),      
     ]
   }))
 })
@@ -42924,8 +42929,8 @@ jb.component('studio.eventItems', {
         ev.error = event[2].err
       }
       ev.title = typeof event[2] == 'string' && event[2]
-      ev.ctx = (event || []).filter(x=>x && x.componentContext)[0]
-      ev.ctx = ev.ctx || (event || []).filter(x=>x && x.path)[0]
+      ev.ctx = (event || []).filter(x=>x && x.componentContext && x.profile)[0]
+      ev.ctx = ev.ctx || (event || []).filter(x=>x && x.path && x.profile)[0]
       ev.jbComp = (event || []).filter(x=> jb.path(x,'constructor.name') == 'JbComponent')[0]
       ev.ctx = ev.ctx || ev.jbComp && ev.jbComp.ctx
 
@@ -42952,6 +42957,8 @@ jb.component('studio.eventItems', {
       ev.description = ev.description || event[1] == 'htmlChange' && [event[4],event[5]].join(' <- ')
       ev.description = ev.description || event[1] == 'pptrError' && event[2].message
       ev.description = ev.description || event[1] == 'pptrError' && typeof event[2].err == 'string' && event[2].err
+      ev.description = ev.description || event[1].match(/ToRemote|FromRemote/) && `${event[2].dir}:${event[2].t} channel:${event[3].channel}`
+      ev.description = ev.description || event[1] == 'innerCBDataSent' && `channel:${event[3].sinkId}`
 
       ev.elem = event[1] == 'applyDelta' && event[2]
       ev.delta = event[1] == 'applyDelta' && event[3]
@@ -42961,7 +42968,9 @@ jb.component('studio.eventItems', {
       ev.vdom = ev.vdom || event[1] == 'applyDeltaTop' && event[2] == 'start' && event[4]
 
       ev.val = event[1] == 'calcRenderProp' && event[3]
-
+      ev.val = ev.val || event[1].match(/ToRemote|FromRemote/) && event[2].d
+      ev.val = ev.val || event[1] == 'innerCBDataSent' && event[2].data
+      
       return ev
     }
   }

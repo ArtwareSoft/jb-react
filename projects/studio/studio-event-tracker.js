@@ -288,7 +288,7 @@ jb.component('studio.showLowFootprintObj', {
   impl: controlWithCondition('%$obj%', group({
     controls: [
       controlWithCondition(
-        or(isOfType('object', '%$obj%'),isOfType('array', '%$obj%')),
+        isOfType('object,array', '%$obj%'),
         button({
           vars: Var('count', pipeline('%$obj%',keys(),count())),
           title: If(isOfType('array', '%$obj%'), '%$title%[%$obj/length%]','%$title% (%$count%)'),
@@ -303,9 +303,13 @@ jb.component('studio.showLowFootprintObj', {
         })
       ),
       controlWithCondition(
-        isOfType('string', '%$obj%'),
+        isOfType('string,number,boolean', '%$obj%'),
         text({text: pipeline('%$obj%', slice(0, 20))})
       ),
+      controlWithCondition(
+        isOfType('function', '%$obj%'),
+        text(({},{},{obj}) => obj.name)
+      ),      
     ]
   }))
 })
@@ -339,8 +343,8 @@ jb.component('studio.eventItems', {
         ev.error = event[2].err
       }
       ev.title = typeof event[2] == 'string' && event[2]
-      ev.ctx = (event || []).filter(x=>x && x.componentContext)[0]
-      ev.ctx = ev.ctx || (event || []).filter(x=>x && x.path)[0]
+      ev.ctx = (event || []).filter(x=>x && x.componentContext && x.profile)[0]
+      ev.ctx = ev.ctx || (event || []).filter(x=>x && x.path && x.profile)[0]
       ev.jbComp = (event || []).filter(x=> jb.path(x,'constructor.name') == 'JbComponent')[0]
       ev.ctx = ev.ctx || ev.jbComp && ev.jbComp.ctx
 
@@ -367,6 +371,8 @@ jb.component('studio.eventItems', {
       ev.description = ev.description || event[1] == 'htmlChange' && [event[4],event[5]].join(' <- ')
       ev.description = ev.description || event[1] == 'pptrError' && event[2].message
       ev.description = ev.description || event[1] == 'pptrError' && typeof event[2].err == 'string' && event[2].err
+      ev.description = ev.description || event[1].match(/ToRemote|FromRemote/) && `${event[2].dir}:${event[2].t} channel:${event[3].channel}`
+      ev.description = ev.description || event[1] == 'innerCBDataSent' && `channel:${event[3].sinkId}`
 
       ev.elem = event[1] == 'applyDelta' && event[2]
       ev.delta = event[1] == 'applyDelta' && event[3]
@@ -376,7 +382,9 @@ jb.component('studio.eventItems', {
       ev.vdom = ev.vdom || event[1] == 'applyDeltaTop' && event[2] == 'start' && event[4]
 
       ev.val = event[1] == 'calcRenderProp' && event[3]
-
+      ev.val = ev.val || event[1].match(/ToRemote|FromRemote/) && event[2].d
+      ev.val = ev.val || event[1] == 'innerCBDataSent' && event[2].data
+      
       return ev
     }
   }
