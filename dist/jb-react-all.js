@@ -10839,8 +10839,9 @@ jb.remote = {
     remoteId: Symbol.for("remoteId"),
     remoteHash: {},
     pathOfDistFolder() {
-        const host = jb.path(jb.studio,'studiojb.studio.host')
-        return host && host.pathOfDistFolder() || typeof location != 'undefined' && location.href.match(/^[^:]*/)[0] + `://${location.host}/dist`
+        const pathOfDistFolder = jb.path(jb.studio,'studiojb.studio.host.pathOfDistFolder')
+        const location = jb.path(jb.studio,'studioWindow.location') || jb.path(jb.frame,'location')
+        return pathOfDistFolder && pathOfDistFolder() || location && location.href.match(/^[^:]*/)[0] + `://${location.host}/dist`
     },
     remoteSource: (remote, id,logName) => {
         const {pipe,takeWhile,map,filter,talkbackNotifier,wrapWithSnifferWithLog} = jb.callbag
