@@ -52,28 +52,28 @@ const vscodeUserHost = Object.assign({},vscodeDevHost,{
 
 const chromeExtensionHost = {
     baseUrl: 'http:/localhost:8082',
-    settings: () => fetch(`${this.baseUrl}/?op=settings`).then(res=>res.text()),
+    settings() { return fetch(`${this.baseUrl}/?op=settings`).then(res=>res.text()) },
     //used in save
-    getFile: path => fetch(`${this.baseUrl}/?op=getFile&path=${path}`).then(res=>res.text()),
+    getFile(path) { return fetch(`${this.baseUrl}/?op=getFile&path=${path}`).then(res=>res.text())},
     locationToPath: path => path.replace(/^[0-9]*\//,''),
-    saveFile: (path, contents) => {
+    saveFile(path, contents) {
         return fetch(`${this.baseUrl}/?op=saveFile`,
         {method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' } , body: JSON.stringify({ Path: path, Contents: contents }) })
         .then(res=>res.json())
     },
-    pathOfJsFile: (project,fn) => `${this.baseUrl}/projects/${project}/${fn}`,
+    pathOfJsFile(project,fn) { return `${this.baseUrl}/projects/${project}/${fn}` },
     showError: text => jb.studio.showMultiMessages([{text, error: true}]),
     showInformationMessage: text => jb.studio.showMultiMessages([{text}]),
     reOpenStudio: () => {},
-    projectsDir: () => `${this.baseUrl}/projects`,
+    projectsDir() { return `${this.baseUrl}/projects`},
 
     // new project
-    createDirectoryWithFiles: request => fetch(`${this.baseUrl}/?op=createDirectoryWithFiles`,{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, 
-        body: JSON.stringify({...request,baseDir: `projects/${request.project}` }) }),
+    createDirectoryWithFiles(request) { return fetch(`${this.baseUrl}/?op=createDirectoryWithFiles`,{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, 
+        body: JSON.stringify({...request,baseDir: `projects/${request.project}` }) }) },
     // goto project
-    projectUrlInStudio: project => `${this.baseUrl}/project/studio/${project}`,
+    projectUrlInStudio(project) { return `${this.baseUrl}/project/studio/${project}` },
     // preview
-    jbLoader: `${this.baseUrl}/src/loader/jb-loader.js`,
+    jbLoader() { return `${this.baseUrl}/src/loader/jb-loader.js` },
 }
 
 const userLocalHost = Object.assign({},devHost,{
