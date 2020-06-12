@@ -2,6 +2,7 @@
 const st = jb.studio;
 
 const devHost = {
+    baseUrl: jb.frame.jbBaseProjUrl || jb.frame.location.origin,
     settings: () => fetch(`/?op=settings`).then(res=>res.text()),
     //used in save
     getFile: path => fetch(`/?op=getFile&path=${path}`).then(res=>res.text()),
@@ -27,6 +28,7 @@ const devHost = {
 }
 
 const vscodeDevHost = {
+    baseUrl: jb.frame.jbBaseProjUrl,
     settings: () => Promise.resolve('{}'),
     getFile: path => jb.studio.vscodeService({$: 'getFile', path}).then( res=>res.content ),
     locationToPath: loc => decodeURIComponent(loc.split('//file//').pop()).replace(/\\/g,'/'),

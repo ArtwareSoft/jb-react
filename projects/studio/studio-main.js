@@ -6,7 +6,6 @@ jb.component('dataResource.studio', {
     pickSelectionCtxId: '',
     preview: {width: 1280, height: 520, zoom: jb.frame.jbInvscode ? 8 : 10},
     settings: {contentEditable: true, activateWatchRefViewer: true},
-    baseStudioUrl: (jb.frame.jbBaseProjUrl || jb.frame.location.origin) + '/bin/studio/',
     vscode: jb.frame.jbInvscode
   }
 })
@@ -234,6 +233,10 @@ jb.component('studio.mainMenu', {
   })
 })
 
+jb.component('studio.baseStudioUrl', {
+  impl: () => jb.studio.host.baseUrl + '/bin/studio/'
+})
+
 jb.component('studio.topBar', {
   type: 'control',
   impl: group({
@@ -241,7 +244,7 @@ jb.component('studio.topBar', {
     layout: layout.flex({alignItems: 'start', spacing: ''}),
     controls: [
       image({
-        url: ctx => ctx.exp('%$studio/baseStudioUrl%css/jbartlogo.png'),
+        url: pipeline(studio.baseStudioUrl(),'%%css/jbartlogo.png'),
         width: '',
         features: [
           css.margin({top: '5', left: '5'}),
