@@ -682,7 +682,9 @@ html, body {
   font-size: var(--vscode-font-size);
   font-weight: var(--vscode-font-weight);
   line-height1: 20px; 
-}@font-face {
+}
+
+@font-face {
   font-family: 'Material Icons';
   font-style: normal;
   font-weight: 400;
