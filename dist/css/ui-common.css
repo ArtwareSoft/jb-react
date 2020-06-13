@@ -31,7 +31,8 @@
 .material-icons.md-dark { color: rgba(0, 0, 0, 0.54)}
 .material-icons.md-dark.md-inactive { color: rgba(0, 0, 0, 0.26)}
 .material-icons.md-light { color: white}
-.material-icons.md-light.md-inactive { color: rgba(255, 255, 255, 0.3)}.justACopy { /* DO NOT EDIT - the real source is in ui-utils */
+.material-icons.md-light.md-inactive { color: rgba(255, 255, 255, 0.3)}
+.justACopy { /* DO NOT EDIT - the real source is in ui-utils */
       /* vscode compatible with light theme */
       --jb-font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif;
       --jb-font-size: 13px;

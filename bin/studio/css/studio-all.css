@@ -1,3 +1,4 @@
+
 .justACopy { /* DO NOT EDIT - the real source is in ui-utils */
       /* vscode compatible with light theme */
       --jb-font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif;
@@ -191,7 +192,40 @@
 }
 
 .jb-chip>* { padding-top: 3px; white-space: nowrap }
-:root {
+
+@font-face {
+  font-family: 'Material Icons';
+  font-style: normal;
+  font-weight: 400;
+  src: url("./MaterialIcons-Regular.woff2") format("woff2"), 
+  url("./MaterialIcons-Regular.woff") format("woff"), 
+  url("./MaterialIcons-Regular.ttf") format("truetype"); 
+}
+
+.material-icons { font-family: 'Material Icons';
+  font-weight: nom;
+  font-style: normal;
+  font-size: 24px;
+  /* Preferred icon size */
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  line-height: 1;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  white-space: nowrap;
+  direction: ltr;
+ }
+
+.material-icons.md-18 { font-size: 18px}
+.material-icons.md-24 { font-size: 24px}
+.material-icons.md-36 { font-size: 36px}
+.material-icons.md-48 { font-size: 48px}
+.material-icons.md-dark { color: rgba(0, 0, 0, 0.54)}
+.material-icons.md-dark.md-inactive { color: rgba(0, 0, 0, 0.26)}
+.material-icons.md-light { color: white}
+.material-icons.md-light.md-inactive { color: rgba(255, 255, 255, 0.3)}:root {
   --jb-editor-background: #fff;
   --jb-preview-background:#fff;
 }
@@ -723,233 +757,7 @@ html, body {
   font-size1: var(--vscode-font-size);
   font-weight1: var(--vscode-font-weight);
   line-height1: 20px; 
-}
-@font-face {
-  font-family: 'Material Icons';
-  font-style: normal;
-  font-weight: 400;
-  src: url("./MaterialIcons-Regular.woff2") format("woff2"), 
-  url("./MaterialIcons-Regular.woff") format("woff"), 
-  url("./MaterialIcons-Regular.ttf") format("truetype"); 
-}
-
-.material-icons { font-family: 'Material Icons';
-  font-weight: nom;
-  font-style: normal;
-  font-size: 24px;
-  /* Preferred icon size */
-  display: inline-block;
-  width: 1em;
-  height: 1em;
-  line-height: 1;
-  text-transform: none;
-  letter-spacing: normal;
-  word-wrap: normal;
-  white-space: nowrap;
-  direction: ltr;
- }
-
-.material-icons.md-18 { font-size: 18px}
-.material-icons.md-24 { font-size: 24px}
-.material-icons.md-36 { font-size: 36px}
-.material-icons.md-48 { font-size: 48px}
-.material-icons.md-dark { color: rgba(0, 0, 0, 0.54)}
-.material-icons.md-dark.md-inactive { color: rgba(0, 0, 0, 0.26)}
-.material-icons.md-light { color: white}
-.material-icons.md-light.md-inactive { color: rgba(255, 255, 255, 0.3)}.justACopy { /* DO NOT EDIT - the real source is in ui-utils */
-      /* vscode compatible with light theme */
-      --jb-font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif;
-      --jb-font-size: 13px;
-      --jb-font-weight: normal;
-      --jb-foreground: #616161;
-    
-      --jb-menu-background: #ffffff;
-      --jb-menu-foreground: #616161;
-      --jb-menu-selectionBackground: #0074e8;
-      --jb-menu-selectionForeground: #ffffff;
-      --jb-menu-separatorBackground: #888888;
-      --jb-menubar-selectionBackground: rgba(0, 0, 0, 0.1);
-      --jb-menubar-selectionForeground: #333333;
-      --jb-titleBar-activeBackground: #dddddd;
-      --jb-titleBar-activeForeground: #333333;
-      --jb-titleBar-inactiveBackground: rgba(221, 221, 221, 0.6);
-      --jb-titleBar-inactiveForeground: rgba(51, 51, 51, 0.6);
-      --jb-dropdown-background: #ffffff;
-      --jb-dropdown-border: #cecece;
-      --jb-errorForeground: #a1260d;
-    
-      --jb-input-background: #ffffff;
-      --jb-input-foreground: #616161;  
-      --jb-textLink-activeForeground: #034775;
-      --jb-textLink-foreground: #006ab1;
-
-      --jb-on-primary: #ffffff;
-      --jb-on-secondary: #ffffff;
-      
-      --jb-icon-foreground: #424242;
-    
-      --jb-list-activeSelectionBackground: #0074e8;
-      --jb-list-activeSelectionForeground: #ffffff;
-    
-    
-    /* mdc mappaing */
-      --mdc-theme-primary: #616161; /* The theme primary color*/
-      --mdc-theme-secondary: var(--jb-titleBar-activeBackground);
-      --mdc-theme-background: var(--jb-input-background);
-      --mdc-theme-surface: var(--jb-input-background);
-      --mdc-theme-error: var(--jb-errorForeground);
-    
-      --mdc-theme-on-primary: var(--jb-on-primary); /* Primary text on top of a theme primary color background */
-      --mdc-theme-on-secondary: var(--jb-on-secondary);
-      --mdc-theme-on-surface: var(--jb-input-foreground);
-      --mdc-theme-on-error: var(--jb-input-background);
-    
-      --mdc-theme-text-primary-on-background: var(--jb-input-foreground); /* Primary text on top of the theme background color. */
-      --mdc-theme-text-secondary-on-background: var(--jb-input-foreground);
-      --mdc-theme-text-hint-on-background: var(--jb-input-foreground);
-      --mdc-theme-text-disabled-on-background: var(--jb-input-foreground);
-      --mdc-theme-text-icon-on-background: var(--jb-input-foreground);
-      
-      --mdc-theme-text-primary-on-light: var(--jb-input-foreground); /* Primary text on top of a light-colored background */
-      --mdc-theme-text-secondary-on-light: var(--jb-input-foreground);
-      --mdc-theme-text-hint-on-light: var(--jb-input-foreground);
-      --mdc-theme-text-disabled-on-light: var(--jb-input-foreground);
-      --mdc-theme-text-icon-on-light: var(--jb-input-foreground);
-                                
-      --mdc-theme-text-primary-on-dark: var(--jb-menu-selectionForeground);
-      --mdc-theme-text-secondary-on-dark: var(--jb-menu-selectionForeground);
-      --mdc-theme-text-hint-on-dark: var(--jb-menu-selectionForeground);
-      --mdc-theme-text-disabled-on-dark: var(--jb-menu-selectionForeground);
-      --mdc-theme-text-icon-on-dark: var(--jb-menu-selectionForeground);
-    /* jBart only */
-      --jb-dropdown-shadow: #a8a8a8;
-      --jb-tree-value: red;
-      --jb-expandbox-background: green;
-}
-
-:root {
-  font-size: var(--jb-font-size); font-family: var(--jb-font-family); font-weight: var(--jb-font-weight);
-}
-
-*:focus { outline: none }
-.noselect { user-select: none }
-
-@media only screen and (max-width: 479px) {
-  .not-for-phone { visibility: hidden; display: none }
-}
-
-@media only screen and (min-width: 480px) {
-  .only-for-phone {
-    visibility: hidden; display: none }
-}
-
-.clearfix:after { content: "."; visibility: hidden; display: block; height: 0; clear: both }
-
-.jb-item:hover .jb-shown-on-item-hover { opacity: inherit !important}
-.jb-item .jb-shown-on-item-hover { opacity: 0  !important}
-
-/* dialog: jb-default-dialog */
-.jb-default-dialog { 
-  position: absolute; top: 40px; left: 40px; background: var(--jb-menu-background); color: var(--jb-menu-foreground);
-  border: 1px solid var(--jb-dropdown-border); box-shadow: 0 0px 9px var(--jb-dropdown-shadow); 
-  min-width: 300px; min-height: 50px; overflow: auto;
-}
-
-.jb-default-dialog>.dialog-title { 
-  text-align: left; background: var(--jb-titleBar-activeBackground) no-repeat 5px 10px; 
-  font-size: var(--jb-font-size); font-weight: bold; padding: 10px 10px 10px 27px; 
-  color: var(--jb-titleBar-activeForeground); min-height: 12px; border-bottom: 1px solid var(--jb-dropdown-border); 
-  text-transform: capitalize 
-}
-
-.jb-default-dialog>.dialog-close { 
-  position: absolute; cursor: pointer; right: 4px; top: 4px; font: 21px sans-serif; 
-  border: none; background: transparent; color: var(--jb-menu-foreground); 
-  text-shadow: 0 1px 0 var(--jb-menu-background); font-weight: 700; opacity: .2;
-}
-.jb-default-dialog>.dialog-close:hover { opacity: .5; }
-
-.highlight { font-weight: bold; }
-
-/********* pulldown menu ********* */
-
-.pulldown-top-menu { 
-  color: var(--jb-menu-foreground); background: var(--jb-menu-background); position: absolute; top:0; height: 60px; left: 40px;right:0; 
-  border-bottom: 1px solid var(--jb-dropdown-border)
-}
-.pulldown-main-menu { position: absolute; top: 31px; left: 8px; display: -webkit-box1; -webkit-box-orient1: horizontal; }
-.pulldown-top-menu-item {
-  cursor: pointer; font-size: var(--jb-font-size); padding: 5px 7px; color: var(--jb-menu-foreground);  background: var(--jb-menu-background); -webkit-user-select: none;
-  display: block;  border: none; text-align: left;
-}
-.pulldown-top-menu-item:hover { color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) }
-.pulldown-top-menu-item.dialog-open { 
-  border: 1px solid var(--jb-dropdown-border); border-bottom: none; 
-  color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) 
-}
-.pulldown-top-menu-item { border: 1px solid transparent; }
-
-.pulldown-menu-separator { margin: 6px 0; border-bottom: 1px solid var(--jb-menu-separatorBackground);}
-
-.pulldown-mainmenu-popup { 
-  background: var(--jb-menu-background); position: absolute; /*top: 50px; left: 52px;*/ min-width: 280px;
-  min-height: 30px; box-shadow: 2px 2px 3px var(--jb-dropdown-shadow); padding: 3px 0;  border: 1px solid var(--jb-dropdown-border)
-}
-
-.toolbar-popup { position: absolute; }
-
-.pulldown-mainmenu-popup .pulldown-menu-remove-top-border { background: var(--jb-menu-background); height: 3px; position: absolute; top: -2px; left: 0; }
-/* .pulldown-menu-item */
-.pulldown-menu-item { -webkit-user-select: none;  padding: 6px 10px 6px 29px; font-size: var(--jb-font-size); display: block; 
-  background: var(--jb-menu-background);  border: none; width: 100%; text-align: left; cursor: pointer; position: relative;}
-.pulldown-menu-item:hover { color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) }
-.pulldown-menu-item1:focus { outline: none; }
-.pulldown-menu-item span { background: url('icons1.png?v=16_02') no-repeat; width: 16px; height: 16px; display: block; position: absolute; top: 5px; left: 6px;}
-
-.modal-overlay { position: fixed; width: 100%; height: 100%; z-index: 40; opacity: 0.8; background: gray; top: 0; left: 0 }
-
-@keyframes jb-highlight-comp-changed {
-    0% { opacity: 1 }
-    50% { opacity: 0.5; box-shadow: 2px 2px 6px 1px var(--jb-dropdown-shadow) }
-    100% { opacity: 1 }
-}
-
-@keyframes jb-fade {
-    0% { opacity: 0.5; }
-    100% { opacity: 0; }
-}
-
-.jb-fade-3s-transition {
-  visibility: hidden;
-  opacity: 0;
-  transition: visibility 0s ease-in-out 3s, opacity 3s;
-}
-
-.jb-fade-3s { animation: jb-fade 3s }
-.jb-highlight-comp-changed { animation: jb-highlight-comp-changed 1s }
-.jb-disabled { opacity: 0.3 }
-.jb-resizer { content:url("resizer.gif") }
-.jb-cover { position: absolute; width: 100%; height: 100%; background: white; opacity: 0; top: 0; left: 0; }
-.jb-textarea-alternative-for-codemirror { width: 100%; padding-right: 0; resize: none; height: 100% }
-.stretchedToMargin { display: block; position:absolute; height:auto; bottom:0; top:0; left:0; right:0 }
-.jb-dialogs { position: absolute; top: 0; left: 0 }
-
-.jb-chip {
-  border-radius: 16px;
-  background-color: #e0e0e0;
-  padding: 0 12px;
-  color: rgba(0, 0, 0, 0.87);
-  font-family: Roboto, sans-serif;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-font-smoothing: antialiased;
-  font-size: 0.875rem;
-  line-height: 1.25rem;
-  font-weight: 400;
-  display: inline-flex;
-}
-
-.jb-chip>* { padding-top: 3px; white-space: nowrap }
-.CodeMirror-dialog {
+}.CodeMirror-dialog {
   position: absolute;
   left: 0; right: 0;
   background: inherit;

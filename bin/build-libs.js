@@ -24,8 +24,8 @@ const filesOfModules = modules => modules.split(',').map(m=>jb_modules[m]).flat(
 const jbReactFiles = filesOfModules('common,ui-common,pretty-print,ui-tree,remote').filter(x=>!x.match(/.css$/));
 const studioFiles = filesOfModules('common,ui-common,ui-tree,dragula,codemirror,pretty-print,history,animate,fuse,md-icons').filter(x=>!x.match(/.css$/))
     .concat(jb_modules.studio.map(file => file.match(/\//) ? file : 'projects/studio/studio-' + file + '.js'));
-const studioCssFiles = ['/css/styles.css', '/projects/studio/css/studio.css']
-  .concat(filesOfModules('ui-common-css,codemirror-css,material-css')).filter(x=>x.match(/.css$/));
+const studioCssFiles = ['/css/styles.css','css/font.css','/projects/studio/css/studio.css']
+  .concat(filesOfModules('codemirror-css,material-css')).filter(x=>x.match(/.css$/));
 const nodeFiles = filesOfModules('common,node,pretty-print,xml,jison,parsing').filter(x=>!x.match(/.css$/));
 
 'core,common,ui-common,animate,d3,cards,cards-sample-data,pretty-print,parsing,xml,puppeteer,rx,md-icons,remote'
