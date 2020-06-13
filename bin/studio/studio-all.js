@@ -810,8 +810,8 @@ Object.assign(jb,{
   exec: (...args) => new jb.jbCtx().run(...args),
   exp: (...args) => new jb.jbCtx().exp(...args),
   execInStudio: (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.jbCtx().run(...args),
-  eval: (str,frame) => { try { return (frame || jb.frame).eval('('+str+')') } catch (e) { return Symbol.for('parseError') } }
-
+  eval: (str,frame) => { try { return (frame || jb.frame).eval('('+str+')') } catch (e) { return Symbol.for('parseError') } },
+  iframeAccessible(iframe) { try { return Boolean(iframe.contentDocument) } catch(e) { return false } }
 })
 
 if (typeof self != 'undefined')
@@ -2919,7 +2919,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			while (frames[0].parent && frames[0] !== frames[0].parent) {
 				frames.unshift(frames[0].parent)
 			}
-			let stackTrace = frames.reverse().map(frame => new frame.Error().stack).join('\n').split(/\r|\n/).map(x => x.trim()).slice(4).
+			let stackTrace = frames.reverse().filter(f=>jb.iframeAccessible(f)).map(frame => new frame.Error().stack).join('\n').split(/\r|\n/).map(x => x.trim()).slice(4).
 				filter(line => line !== 'Error').
 				filter(line => !settings.stackFilter.test(line))
 			if (takeFrom) {
@@ -4564,18 +4564,8 @@ Object.assign(jb.ui, {
 })
 
 ui.renderWidget = function(profile,top) {
-	let blockedParentWin = false // catch security execption from the browser if parent is not accessible
-	try {
-		const x = typeof window != 'undefined' && window.parent.jb
-	} catch (e) {
-		blockedParentWin = true
-	}
-	try {
-		if (!blockedParentWin && typeof window != 'undefined' && window.parent != window && window.parent.jb)
-			window.parent.jb.studio.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
-	} catch(e) {
-		return jb.logException(e)
-    }
+    if (jb.frame.parent && jb.iframeAccessible(jb.frame.parent) && jb.frame.parent != jb.frame && jb.frame.parent.jb)
+      jb.frame.parent.jb.studio.initPreview(jb.frame,[Object.getPrototypeOf({}),Object.getPrototypeOf([])])
 
     let currentProfile = profile
     let lastRenderTime = 0, fixedDebounce = 500

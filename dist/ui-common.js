@@ -1577,18 +1577,8 @@ Object.assign(jb.ui, {
 })
 
 ui.renderWidget = function(profile,top) {
-	let blockedParentWin = false // catch security execption from the browser if parent is not accessible
-	try {
-		const x = typeof window != 'undefined' && window.parent.jb
-	} catch (e) {
-		blockedParentWin = true
-	}
-	try {
-		if (!blockedParentWin && typeof window != 'undefined' && window.parent != window && window.parent.jb)
-			window.parent.jb.studio.initPreview(window,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
-	} catch(e) {
-		return jb.logException(e)
-    }
+    if (jb.frame.parent && jb.iframeAccessible(jb.frame.parent) && jb.frame.parent != jb.frame && jb.frame.parent.jb)
+      jb.frame.parent.jb.studio.initPreview(jb.frame,[Object.getPrototypeOf({}),Object.getPrototypeOf([])])
 
     let currentProfile = profile
     let lastRenderTime = 0, fixedDebounce = 500
