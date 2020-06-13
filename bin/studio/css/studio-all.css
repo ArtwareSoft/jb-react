@@ -678,9 +678,9 @@ border: 1px solid var(--jb-dropdown-border)}
 .studio-pages-items>*.selected { background: #fff;  border: 1px solid #ccc;  border-top: 1px solid transparent; color: inherit;  }
 
 html, body {
-  font-family: var(--vscode-font-family);
-  font-size: var(--vscode-font-size);
-  font-weight: var(--vscode-font-weight);
+  font-family1: var(--vscode-font-family);
+  font-size1: var(--vscode-font-size);
+  font-weight1: var(--vscode-font-weight);
   line-height1: 20px; 
 }
 @font-face {
