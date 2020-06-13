@@ -3580,7 +3580,8 @@ jb.component('runTransaction', {
 
 class VNode {
     constructor(cmpOrTag, _attributes, _children) {
-        const attributes = jb.objFromEntries(jb.entries(_attributes).map(e=>[e[0].toLowerCase(),e[1]]))
+        const attributes = jb.objFromEntries(jb.entries(_attributes).map(e=>[e[0].toLowerCase(),e[1]])
+            .map(([id,val])=>[id.match(/^on[^-]/) ? `${id.slice(0,2)}-${id.slice(2)}` : id,val]))
         let children = (_children === '') ? null : _children
         if (['string','boolean','number'].indexOf(typeof children) !== -1) {
             attributes.$text = ''+children
@@ -3870,6 +3871,10 @@ function setAtt(elem,att,val) {
     if (att[0] !== '$' && val == null) {
         elem.removeAttribute(att)
         jb.log('htmlChange',['remove',...arguments])
+    } else if (att.indexOf('on-') == 0 && val != null) {
+        elem.addEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(val,ev))
+    } else if (att.indexOf('on-') == 0 && val == null) {
+        elem.removeEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(val,ev))
     } else if (att === 'checked' && elem.tagName.toLowerCase() === 'input') {
         elem.checked = !!val
         jb.log('htmlChange',['checked',...arguments])
@@ -3929,14 +3934,14 @@ Object.assign(jb.ui, {
         ev = typeof event != 'undefined' ? event : ev
         const el = jb.ui.parents(ev.currentTarget,{includeSelf: true}).find(el=> el.getAttribute && el.getAttribute('jb-ctx') != null)
         if (!el) return
-        if (ev.type == 'scroll') // needs to be here to support the worker scenario
+        if (ev.type == 'scroll') // supports the worker scenario
             ev.scrollPercentFromTop = ev.scrollPercentFromTop || (el.scrollTop + jb.ui.offset(el).height)/ el.scrollHeight;
 
         if (el.getAttribute('worker')) { // forward the event to the worker
             return jb.ui.workers[el.getAttribute('worker')].handleBrowserEvent(el,ev,specificHandler)
         }
         const cmp = el._component
-        const action = specificHandler ? specificHandler : `on${ev.type}Handler`
+        const action = specificHandler && typeof specificHandler == 'string' ? specificHandler : `on${ev.type}Handler`
         return (cmp && cmp[action]) ? cmp[action](ev) : ui.runActionOfElem(el,action,ev)
     },
     runActionOfElem(elem,action,ev) {
@@ -4084,6 +4089,7 @@ Object.assign(jb.ui, {
 
 ui.subscribeToRefChange(jb.mainWatchableHandler)
 
+// interactive handlers like onmousemove and onkeyXX are handled locally with and not passed to the remote widgets owner
 function mountInteractive(elem, keepState) {
     const ctx = jb.ui.ctxOfElem(elem,'mount-ctx')
     if (!ctx)
@@ -4289,15 +4295,8 @@ class JbComponent {
                 this.renderProps.cmpHash != null && {cmpHash: this.renderProps.cmpHash}
             )
         }
-        fixHandlers(vdom)
         jb.log('renRes',[this.ctx, vdom, this]);
         return vdom
-
-        function fixHandlers(vdom) {
-            jb.entries(vdom.attributes).forEach(([att,val]) => att.indexOf('on') == 0 && (''+val).indexOf('jb.ui') != 0 &&
-                (vdom.attributes[att] = `jb.ui.handleCmpEvent(${typeof val == 'string' && val ? "'" + val + "'" : '' })`))
-            ;(vdom.children || []).forEach(vd => fixHandlers(vd))
-        }
     }
 
     jbCssClass() {
