@@ -1,4 +1,4 @@
-.justACopy { /* DOBOT EDIT HERE real source is in ui-utils*
+.justACopy { /* DO NOT EDIT - the real source is in ui-utils */
       /* vscode compatible with light theme */
       --jb-font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif;
       --jb-font-size: 13px;
@@ -85,80 +85,75 @@
     visibility: hidden; display: none }
 }
 
-/*clearfix*/
-.clearfix:after {
-   content: ".";
-   visibility: hidden;
-   display: block;
-   height: 0;
-   clear: both;
-}
+.clearfix:after { content: "."; visibility: hidden; display: block; height: 0; clear: both }
 
 .jb-item:hover .jb-shown-on-item-hover { opacity: inherit !important}
 .jb-item .jb-shown-on-item-hover { opacity: 0  !important}
 
 /* dialog: jb-default-dialog */
-.jb-default-dialog { position: absolute; top: 40px; left: 40px; background: var(--jb-menu-background); color: var(--jb-menu-foreground);
+.jb-default-dialog { 
+  position: absolute; top: 40px; left: 40px; background: var(--jb-menu-background); color: var(--jb-menu-foreground);
   border: 1px solid var(--jb-dropdown-border); box-shadow: 0 0px 9px var(--jb-dropdown-shadow); 
   min-width: 300px; min-height: 50px; overflow: auto;
 }
-.jb-default-dialog>.dialog-title { text-align: left; background: var(--jb-titleBar-activeBackground) no-repeat 5px 10px; 
+
+.jb-default-dialog>.dialog-title { 
+  text-align: left; background: var(--jb-titleBar-activeBackground) no-repeat 5px 10px; 
   font-size: var(--jb-font-size); font-weight: bold; padding: 10px 10px 10px 27px; 
-  color: var(--jb-titleBar-activeForeground); min-height: 12px; border-bottom: 1px solid var(--jb-dropdown-border); text-transform: capitalize;}
-.jb-default-dialog>.dialog-close { position: absolute; cursor: pointer; right: 4px; top: 4px; font: 21px sans-serif; border: none; background: transparent; 
-  color: var(--jb-menu-foreground); text-shadow: 0 1px 0 var(--jb-menu-background); font-weight: 700; opacity: .2;}
+  color: var(--jb-titleBar-activeForeground); min-height: 12px; border-bottom: 1px solid var(--jb-dropdown-border); 
+  text-transform: capitalize 
+}
+
+.jb-default-dialog>.dialog-close { 
+  position: absolute; cursor: pointer; right: 4px; top: 4px; font: 21px sans-serif; 
+  border: none; background: transparent; color: var(--jb-menu-foreground); 
+  text-shadow: 0 1px 0 var(--jb-menu-background); font-weight: 700; opacity: .2;
+}
 .jb-default-dialog>.dialog-close:hover { opacity: .5; }
 
 .highlight { font-weight: bold; }
 
 /********* pulldown menu ********* */
 
-.pulldown-top-menu { color: var(--jb-menu-foreground); background: var(--jb-menu-background); position: absolute; top:0; height: 60px; left: 40px;right:0; 
-  border-bottom: 1px solid var(--jb-dropdown-border);}
+.pulldown-top-menu { 
+  color: var(--jb-menu-foreground); background: var(--jb-menu-background); position: absolute; top:0; height: 60px; left: 40px;right:0; 
+  border-bottom: 1px solid var(--jb-dropdown-border)
+}
 .pulldown-main-menu { position: absolute; top: 31px; left: 8px; display: -webkit-box1; -webkit-box-orient1: horizontal; }
 .pulldown-top-menu-item {
   cursor: pointer; font-size: var(--jb-font-size); padding: 5px 7px; color: var(--jb-menu-foreground);  background: var(--jb-menu-background); -webkit-user-select: none;
-    display: block;  border: none; text-align: left;
+  display: block;  border: none; text-align: left;
 }
 .pulldown-top-menu-item:hover { color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) }
-.pulldown-top-menu-item.dialog-open { border: 1px solid var(--jb-dropdown-border); border-bottom: none; 
-  color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) }
+.pulldown-top-menu-item.dialog-open { 
+  border: 1px solid var(--jb-dropdown-border); border-bottom: none; 
+  color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) 
+}
 .pulldown-top-menu-item { border: 1px solid transparent; }
 
 .pulldown-menu-separator { margin: 6px 0; border-bottom: 1px solid var(--jb-menu-separatorBackground);}
 
-.pulldown-mainmenu-popup { background: var(--jb-menu-background); position: absolute; /*top: 50px; left: 52px;*/
-min-width: 280px;
-min-height: 30px;
-box-shadow: 2px 2px 3px var(--jb-dropdown-shadow);
-padding: 3px 0;
-border: 1px solid var(--jb-dropdown-border)}
+.pulldown-mainmenu-popup { 
+  background: var(--jb-menu-background); position: absolute; /*top: 50px; left: 52px;*/ min-width: 280px;
+  min-height: 30px; box-shadow: 2px 2px 3px var(--jb-dropdown-shadow); padding: 3px 0;  border: 1px solid var(--jb-dropdown-border)
+}
 
 .toolbar-popup { position: absolute; }
 
 .pulldown-mainmenu-popup .pulldown-menu-remove-top-border { background: var(--jb-menu-background); height: 3px; position: absolute; top: -2px; left: 0; }
 /* .pulldown-menu-item */
 .pulldown-menu-item { -webkit-user-select: none;  padding: 6px 10px 6px 29px; font-size: var(--jb-font-size); display: block; 
-  background: var(--jb-menu-background);  border: none; width: 100%; text-align: left; cursor: pointer;   position: relative;}
+  background: var(--jb-menu-background);  border: none; width: 100%; text-align: left; cursor: pointer; position: relative;}
 .pulldown-menu-item:hover { color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) }
 .pulldown-menu-item1:focus { outline: none; }
 .pulldown-menu-item span { background: url('icons1.png?v=16_02') no-repeat; width: 16px; height: 16px; display: block; position: absolute; top: 5px; left: 6px;}
 
-.modal-overlay {
-   position: fixed;
-   width: 100%;
-   height: 100%;
-   z-index: 40;
-   opacity: 0.8;
-   background: gray;
-   top: 0;
-   left: 0;
-}
+.modal-overlay { position: fixed; width: 100%; height: 100%; z-index: 40; opacity: 0.8; background: gray; top: 0; left: 0 }
 
 @keyframes jb-highlight-comp-changed {
-    0% { opacity: 1; }
-    50% { opacity: 0.5; box-shadow:  2px 2px 6px 1px var(--jb-dropdown-shadow);}
-    100% { opacity: 1; }
+    0% { opacity: 1 }
+    50% { opacity: 0.5; box-shadow: 2px 2px 6px 1px var(--jb-dropdown-shadow) }
+    100% { opacity: 1 }
 }
 
 @keyframes jb-fade {
@@ -172,37 +167,14 @@ border: 1px solid var(--jb-dropdown-border)}
   transition: visibility 0s ease-in-out 3s, opacity 3s;
 }
 
-.jb-fade-3s {
-   animation: jb-fade 3s;
-}
-
-.jb-highlight-comp-changed {
-   animation: jb-highlight-comp-changed 1s;
-}
-
+.jb-fade-3s { animation: jb-fade 3s }
+.jb-highlight-comp-changed { animation: jb-highlight-comp-changed 1s }
 .jb-disabled { opacity: 0.3 }
-
-.jb-resizer {
-  content:url("resizer.gif")
-}
-
+.jb-resizer { content:url("resizer.gif") }
 .jb-cover { position: absolute; width: 100%; height: 100%; background: white; opacity: 0; top: 0; left: 0; }
-
 .jb-textarea-alternative-for-codemirror { width: 100%; padding-right: 0; resize: none; height: 100% }
-
-.stretchedToMargin {
-  display: block;
-  position:absolute;
-  height:auto;
-  bottom:0;
-  top:0;
-  left:0;
-  right:0;
-}
-
-.jb-dialogs {
-  position: absolute; top: 0; left: 0
-}
+.stretchedToMargin { display: block; position:absolute; height:auto; bottom:0; top:0; left:0; right:0 }
+.jb-dialogs { position: absolute; top: 0; left: 0 }
 
 .jb-chip {
   border-radius: 16px;
@@ -218,9 +190,8 @@ border: 1px solid var(--jb-dropdown-border)}
   display: inline-flex;
 }
 
-.jb-chip>* {
-  padding-top: 3px; white-space: nowrap;
-}:root {
+.jb-chip>* { padding-top: 3px; white-space: nowrap }
+:root {
   --jb-editor-background: #fff;
   --jb-preview-background:#fff;
 }
@@ -785,7 +756,7 @@ html, body {
 .material-icons.md-dark { color: rgba(0, 0, 0, 0.54)}
 .material-icons.md-dark.md-inactive { color: rgba(0, 0, 0, 0.26)}
 .material-icons.md-light { color: white}
-.material-icons.md-light.md-inactive { color: rgba(255, 255, 255, 0.3)}.justACopy { /* DOBOT EDIT HERE real source is in ui-utils*
+.material-icons.md-light.md-inactive { color: rgba(255, 255, 255, 0.3)}.justACopy { /* DO NOT EDIT - the real source is in ui-utils */
       /* vscode compatible with light theme */
       --jb-font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif;
       --jb-font-size: 13px;
@@ -872,80 +843,75 @@ html, body {
     visibility: hidden; display: none }
 }
 
-/*clearfix*/
-.clearfix:after {
-   content: ".";
-   visibility: hidden;
-   display: block;
-   height: 0;
-   clear: both;
-}
+.clearfix:after { content: "."; visibility: hidden; display: block; height: 0; clear: both }
 
 .jb-item:hover .jb-shown-on-item-hover { opacity: inherit !important}
 .jb-item .jb-shown-on-item-hover { opacity: 0  !important}
 
 /* dialog: jb-default-dialog */
-.jb-default-dialog { position: absolute; top: 40px; left: 40px; background: var(--jb-menu-background); color: var(--jb-menu-foreground);
+.jb-default-dialog { 
+  position: absolute; top: 40px; left: 40px; background: var(--jb-menu-background); color: var(--jb-menu-foreground);
   border: 1px solid var(--jb-dropdown-border); box-shadow: 0 0px 9px var(--jb-dropdown-shadow); 
   min-width: 300px; min-height: 50px; overflow: auto;
 }
-.jb-default-dialog>.dialog-title { text-align: left; background: var(--jb-titleBar-activeBackground) no-repeat 5px 10px; 
+
+.jb-default-dialog>.dialog-title { 
+  text-align: left; background: var(--jb-titleBar-activeBackground) no-repeat 5px 10px; 
   font-size: var(--jb-font-size); font-weight: bold; padding: 10px 10px 10px 27px; 
-  color: var(--jb-titleBar-activeForeground); min-height: 12px; border-bottom: 1px solid var(--jb-dropdown-border); text-transform: capitalize;}
-.jb-default-dialog>.dialog-close { position: absolute; cursor: pointer; right: 4px; top: 4px; font: 21px sans-serif; border: none; background: transparent; 
-  color: var(--jb-menu-foreground); text-shadow: 0 1px 0 var(--jb-menu-background); font-weight: 700; opacity: .2;}
+  color: var(--jb-titleBar-activeForeground); min-height: 12px; border-bottom: 1px solid var(--jb-dropdown-border); 
+  text-transform: capitalize 
+}
+
+.jb-default-dialog>.dialog-close { 
+  position: absolute; cursor: pointer; right: 4px; top: 4px; font: 21px sans-serif; 
+  border: none; background: transparent; color: var(--jb-menu-foreground); 
+  text-shadow: 0 1px 0 var(--jb-menu-background); font-weight: 700; opacity: .2;
+}
 .jb-default-dialog>.dialog-close:hover { opacity: .5; }
 
 .highlight { font-weight: bold; }
 
 /********* pulldown menu ********* */
 
-.pulldown-top-menu { color: var(--jb-menu-foreground); background: var(--jb-menu-background); position: absolute; top:0; height: 60px; left: 40px;right:0; 
-  border-bottom: 1px solid var(--jb-dropdown-border);}
+.pulldown-top-menu { 
+  color: var(--jb-menu-foreground); background: var(--jb-menu-background); position: absolute; top:0; height: 60px; left: 40px;right:0; 
+  border-bottom: 1px solid var(--jb-dropdown-border)
+}
 .pulldown-main-menu { position: absolute; top: 31px; left: 8px; display: -webkit-box1; -webkit-box-orient1: horizontal; }
 .pulldown-top-menu-item {
   cursor: pointer; font-size: var(--jb-font-size); padding: 5px 7px; color: var(--jb-menu-foreground);  background: var(--jb-menu-background); -webkit-user-select: none;
-    display: block;  border: none; text-align: left;
+  display: block;  border: none; text-align: left;
 }
 .pulldown-top-menu-item:hover { color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) }
-.pulldown-top-menu-item.dialog-open { border: 1px solid var(--jb-dropdown-border); border-bottom: none; 
-  color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) }
+.pulldown-top-menu-item.dialog-open { 
+  border: 1px solid var(--jb-dropdown-border); border-bottom: none; 
+  color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) 
+}
 .pulldown-top-menu-item { border: 1px solid transparent; }
 
 .pulldown-menu-separator { margin: 6px 0; border-bottom: 1px solid var(--jb-menu-separatorBackground);}
 
-.pulldown-mainmenu-popup { background: var(--jb-menu-background); position: absolute; /*top: 50px; left: 52px;*/
-min-width: 280px;
-min-height: 30px;
-box-shadow: 2px 2px 3px var(--jb-dropdown-shadow);
-padding: 3px 0;
-border: 1px solid var(--jb-dropdown-border)}
+.pulldown-mainmenu-popup { 
+  background: var(--jb-menu-background); position: absolute; /*top: 50px; left: 52px;*/ min-width: 280px;
+  min-height: 30px; box-shadow: 2px 2px 3px var(--jb-dropdown-shadow); padding: 3px 0;  border: 1px solid var(--jb-dropdown-border)
+}
 
 .toolbar-popup { position: absolute; }
 
 .pulldown-mainmenu-popup .pulldown-menu-remove-top-border { background: var(--jb-menu-background); height: 3px; position: absolute; top: -2px; left: 0; }
 /* .pulldown-menu-item */
 .pulldown-menu-item { -webkit-user-select: none;  padding: 6px 10px 6px 29px; font-size: var(--jb-font-size); display: block; 
-  background: var(--jb-menu-background);  border: none; width: 100%; text-align: left; cursor: pointer;   position: relative;}
+  background: var(--jb-menu-background);  border: none; width: 100%; text-align: left; cursor: pointer; position: relative;}
 .pulldown-menu-item:hover { color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) }
 .pulldown-menu-item1:focus { outline: none; }
 .pulldown-menu-item span { background: url('icons1.png?v=16_02') no-repeat; width: 16px; height: 16px; display: block; position: absolute; top: 5px; left: 6px;}
 
-.modal-overlay {
-   position: fixed;
-   width: 100%;
-   height: 100%;
-   z-index: 40;
-   opacity: 0.8;
-   background: gray;
-   top: 0;
-   left: 0;
-}
+.modal-overlay { position: fixed; width: 100%; height: 100%; z-index: 40; opacity: 0.8; background: gray; top: 0; left: 0 }
 
 @keyframes jb-highlight-comp-changed {
-    0% { opacity: 1; }
-    50% { opacity: 0.5; box-shadow:  2px 2px 6px 1px var(--jb-dropdown-shadow);}
-    100% { opacity: 1; }
+    0% { opacity: 1 }
+    50% { opacity: 0.5; box-shadow: 2px 2px 6px 1px var(--jb-dropdown-shadow) }
+    100% { opacity: 1 }
 }
 
 @keyframes jb-fade {
@@ -959,37 +925,14 @@ border: 1px solid var(--jb-dropdown-border)}
   transition: visibility 0s ease-in-out 3s, opacity 3s;
 }
 
-.jb-fade-3s {
-   animation: jb-fade 3s;
-}
-
-.jb-highlight-comp-changed {
-   animation: jb-highlight-comp-changed 1s;
-}
-
+.jb-fade-3s { animation: jb-fade 3s }
+.jb-highlight-comp-changed { animation: jb-highlight-comp-changed 1s }
 .jb-disabled { opacity: 0.3 }
-
-.jb-resizer {
-  content:url("resizer.gif")
-}
-
+.jb-resizer { content:url("resizer.gif") }
 .jb-cover { position: absolute; width: 100%; height: 100%; background: white; opacity: 0; top: 0; left: 0; }
-
 .jb-textarea-alternative-for-codemirror { width: 100%; padding-right: 0; resize: none; height: 100% }
-
-.stretchedToMargin {
-  display: block;
-  position:absolute;
-  height:auto;
-  bottom:0;
-  top:0;
-  left:0;
-  right:0;
-}
-
-.jb-dialogs {
-  position: absolute; top: 0; left: 0
-}
+.stretchedToMargin { display: block; position:absolute; height:auto; bottom:0; top:0; left:0; right:0 }
+.jb-dialogs { position: absolute; top: 0; left: 0 }
 
 .jb-chip {
   border-radius: 16px;
@@ -1005,9 +948,8 @@ border: 1px solid var(--jb-dropdown-border)}
   display: inline-flex;
 }
 
-.jb-chip>* {
-  padding-top: 3px; white-space: nowrap;
-}.CodeMirror-dialog {
+.jb-chip>* { padding-top: 3px; white-space: nowrap }
+.CodeMirror-dialog {
   position: absolute;
   left: 0; right: 0;
   background: inherit;
