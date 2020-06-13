@@ -156,15 +156,8 @@ class JbComponent {
                 this.renderProps.cmpHash != null && {cmpHash: this.renderProps.cmpHash}
             )
         }
-        fixHandlers(vdom)
         jb.log('renRes',[this.ctx, vdom, this]);
         return vdom
-
-        function fixHandlers(vdom) {
-            jb.entries(vdom.attributes).forEach(([att,val]) => att.indexOf('on') == 0 && (''+val).indexOf('jb.ui') != 0 &&
-                (vdom.attributes[att] = `jb.ui.handleCmpEvent(${typeof val == 'string' && val ? "'" + val + "'" : '' })`))
-            ;(vdom.children || []).forEach(vd => fixHandlers(vd))
-        }
     }
 
     jbCssClass() {

@@ -1,6 +1,7 @@
 class VNode {
     constructor(cmpOrTag, _attributes, _children) {
-        const attributes = jb.objFromEntries(jb.entries(_attributes).map(e=>[e[0].toLowerCase(),e[1]]))
+        const attributes = jb.objFromEntries(jb.entries(_attributes).map(e=>[e[0].toLowerCase(),e[1]])
+            .map(([id,val])=>[id.match(/^on[^-]/) ? `${id.slice(0,2)}-${id.slice(2)}` : id,val]))
         let children = (_children === '') ? null : _children
         if (['string','boolean','number'].indexOf(typeof children) !== -1) {
             attributes.$text = ''+children
