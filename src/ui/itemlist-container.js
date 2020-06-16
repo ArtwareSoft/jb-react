@@ -96,9 +96,8 @@ jb.component('itemlistContainer.search', {
     {id: 'style', type: 'editable-text.style', defaultValue: editableText.mdcSearch(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: (ctx,title,searchIn,databind) =>
-		jb.ui.ctrl(ctx,{
-			afterViewInit: cmp => {
+  impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.componentContext), features(
+		calcProp('init', (ctx,{},{searchIn,databind}) => {
 				if (!ctx.vars.itemlistCntr) return;
 				ctx.vars.itemlistCntr.filters.push( items => {
 					const toSearch = jb.val(databind()) || '';
@@ -108,10 +107,10 @@ jb.component('itemlistContainer.search', {
 						return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
 
 					return items.filter(item=>toSearch == '' || searchIn(ctx.setData(item)).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
-				});
-				ctx.vars.itemlistCntr.keydown = jb.ui.upDownEnterEscObs(cmp)
-			}
-		})
+				})
+		}),
+		interactive((ctx,{cmp}) => ctx.vars.itemlistCntr.keydown = jb.ui.upDownEnterEscObs(cmp))
+  	))
 })
 
 jb.component('itemlistContainer.moreItemsButton', {
@@ -124,9 +123,7 @@ jb.component('itemlistContainer.moreItemsButton', {
     {id: 'style', type: 'button.style', defaultValue: button.href(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: controlWithFeatures(
-    ctx=>jb.ui.ctrl(ctx),
-    [
+  impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.componentContext), features(
       watchRef('%$itemlistCntrData/maxItems%'),
       defHandler(
         'onclickHandler',
@@ -145,8 +142,7 @@ jb.component('itemlistContainer.moreItemsButton', {
 				return '';
 			return vdom;
 		}
-	  })
-    ]
+	  }))
   )
 })
 

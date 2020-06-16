@@ -30,7 +30,7 @@ jb.component('table.mdc', {
     {id: 'classForTable', as: 'string', defaultValue: 'mdc-data-table__table mdc-data-table--selectable'}
   ],
   impl: customStyle({
-    template: (cmp,{items,fields,classForTable,classForTd,sortOptions,hideHeaders},h) => 
+    template: (cmp,{items,fields,classForTable,classForTd,sortOptions,hideHeaders, selected},h) => 
       h('div#jb-itemlist mdc-data-table',{}, h('table',{ class: classForTable },[
       ...(hideHeaders ? [] : [h('thead',{},h('tr#mdc-data-table__header-row',{},
         fields.map((f,i) =>h('th#mdc-data-table__header-cell',{
@@ -45,12 +45,13 @@ jb.component('table.mdc', {
           }
           ,jb.ui.fieldTitle(cmp,f,h))) ))]),
         h('tbody#jb-drag-parent mdc-data-table__content',{},
-            items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item mdc-data-table__row', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},fields.map(f=>
-              h('td', jb.filterEmpty({ 
-                'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), 
-                class: (f.class + ' ' + classForTd + ' mdc-data-table__cell').trim(), 
-                title: f.hoverTitle &&  f.hoverTitle(item) 
-              }) , f.control ? h(f.control(item,index)) : f.fieldData(item,index))))
+            items.map((item,index)=> jb.ui.item(cmp,h('tr#jb-item mdc-data-table__row', { class: selected && selected === jb.val(ctrl[0].ctx.data) ? 'selected' : '',
+               'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},fields.map(f=>
+                  h('td', jb.filterEmpty({ 
+                    'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), 
+                    class: (f.class + ' ' + classForTd + ' mdc-data-table__cell').trim(), 
+                    title: f.hoverTitle &&  f.hoverTitle(item) 
+                  }) , f.control ? h(f.control(item,index)) : f.fieldData(item,index))))
               ,item))
         ),
         items.length == 0 ? 'no items' : ''

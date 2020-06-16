@@ -3959,7 +3959,7 @@ Object.assign(jb.ui, {
     },
     runActionOfElem(elem,action,ev) {
         if (elem.getAttribute('contenteditable')) return
-        ev = typeof event != 'undefined' ? event : ev
+        ev = ev || typeof event != 'undefined' && event
         const ctxToRun = (elem.getAttribute('handlers') || '').split(',').filter(x=>x.indexOf(action+'-') == 0)
             .map(str=>jb.ui.ctxDictOfElem(elem)[str.split('-')[1]])
             .filter(x=>x)
@@ -4576,80 +4576,6 @@ Object.assign(jb.ui, {
     }
 })
 
-// widget utils 
-Object.assign(jb.ui, {
-  isHeadlessWidget: ctx => ctx && ctx.vars.headlessWidget,
-})
-
-ui.renderWidget = function(profile,top) {
-    if (jb.frame.parent && jb.iframeAccessible(jb.frame.parent) && jb.frame.parent != jb.frame && jb.frame.parent.jb)
-      jb.frame.parent.jb.studio.initPreview(jb.frame,[Object.getPrototypeOf({}),Object.getPrototypeOf([])])
-
-    let currentProfile = profile
-    let lastRenderTime = 0, fixedDebounce = 500
-
-    if (jb.studio.studioWindow) {
-        const studioWin = jb.studio.studioWindow
-        const st = studioWin.jb.studio;
-        const project = studioWin.jb.resources.studio.project
-        const page = studioWin.jb.resources.studio.page
-        if (project && page)
-            currentProfile = {$: page}
-
-        const {pipe,debounceTime,filter,subscribe} = jb.callbag
-        pipe(st.pageChange, filter(({page})=>page != currentProfile.$), subscribe(({page})=> doRender(page)))
-        
-        pipe(st.scriptChange, filter(e=>isCssChange(st,e.path)),
-          subscribe(({path}) => {
-            let featureIndex = path.lastIndexOf('features')
-            if (featureIndex == -1) featureIndex = path.lastIndexOf('layout')
-            const ctrlPath = path.slice(0,featureIndex).join('~')
-            const elems = Array.from(document.querySelectorAll('[jb-ctx]'))
-              .map(elem=>({elem, ctx: jb.ctxDictionary[elem.getAttribute('jb-ctx')] }))
-              .filter(e => e.ctx && e.ctx.path == ctrlPath)
-            elems.forEach(e=>jb.ui.refreshElem(e.elem,null,{cssOnly: true}))
-        }))
-
-        pipe(st.scriptChange, filter(e=>!isCssChange(st,e.path)),
-            filter(e=>(jb.path(e,'path.0') || '').indexOf('dataResource.') != 0), // do not update on data change
-            debounceTime(() => Math.min(2000,lastRenderTime*3 + fixedDebounce)),
-            subscribe(() =>{
-                doRender()
-                jb.ui.dialogs.reRenderAll()
-        }))
-    }
-    const elem = top.ownerDocument.createElement('div')
-    top.appendChild(elem)
-
-    doRender()
-
-  function isCssChange(st,path) {
-    const compPath = pathOfCssFeature(st,path)
-    return compPath && (st.compNameOfPath(compPath) || '').match(/^(css|layout)/)
-  }
-
-  function pathOfCssFeature(st,path) {
-    const featureIndex = path.lastIndexOf('features')
-    if (featureIndex == -1) {
-      const layoutIndex = path.lastIndexOf('layout')
-      return layoutIndex != -1 && path.slice(0,layoutIndex+1).join('~')
-    }
-    const array = Array.isArray(st.valOfPath(path.slice(0,featureIndex+1).join('~')))
-    return path.slice(0,featureIndex+(array?2:1)).join('~')
-  }
-
-	function doRender(page) {
-        if (page) currentProfile = {$: page}
-        const profileToRun = ['dataTest','uiTest'].indexOf(jb.path(jb.comps[currentProfile.$],'impl.$')) != -1 ? { $: 'test.showTestInStudio', testId: currentProfile.$} : currentProfile
-        const cmp = new jb.jbCtx().run(profileToRun)
-        const start = new Date().getTime()
-        jb.ui.unmount(top)
-        top.innerHTML = ''
-        jb.ui.render(ui.h(cmp),top)
-        lastRenderTime = new Date().getTime() - start
-  }
-}
-
 jb.objectDiff = function(newObj, orig) {
     if (orig === newObj) return {}
     if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
@@ -4720,6 +4646,127 @@ jb.component('controlWithFeatures', {
 })
 
 })()
+;
+
+Object.assign(jb.ui, {
+    widgetRenderingUpdates: jb.callbag.subject(),
+    headlessWidgets: {},
+    frontEndWidgets: {},
+    parentWidget: elem => jb.ui.parents(elem,{includeSelf: true}).filter(el=>el.getAttribute && el.getAttribute('widgetTop')),
+    inHeadlessWidget: elem => jb.ui.parentWidget(elem).map(el=>el.getAttribute('headless'))[0],
+    inFrontEndWidget: elem => jb.ui.parentWidget(elem).map(el=>el.getAttribute('frontend'))[0],
+    createHeadlessWidget: (ctx, widgetId, ctrl) => {
+        const {headlessWidgets, activateHandler, widgetRenderingUpdates, compareVdom } = jb.ui
+        headlessWidgets[widgetId] = {
+            widgetId,
+            userEventsIn: subscribe(userEvent => activateHandler(userEvent)),
+            deltaOut: pipe(widgetRenderingUpdates, filter(e=>e.widgetId == widgetId)),
+        }
+        const cmp = ctrl(ctx.setVar('widgetId',widgetId))
+        const top = jb.ui.h(cmp)
+        top.attributes = Object.assign(top.attributes || {}, { widgetTop: 'true', headless: true, id: widgetId })
+        widgetRenderingUpdates({widgetId, delta: compareVdom({},top), elemId: widgetId})
+    },
+    createFrontEndWidget: headlessWidget => {
+        const {document, applyDeltaToDom, addStyleElem, h, refreshInteractive, frontEndWidgets, widgetUserEvents} = jb.ui
+        frontEndWidgets[headlessWidget.widgetId] = {
+            widgetId: headlessWidget.widgetId,
+            deltaIn: subscribe( ({delta,elemId,cmpId,css}) => {
+                const elem = document(ctx).querySelector('#'+elemId) || document(ctx).querySelector(`[cmp-id="${cmpId}"]`)
+                if (elem) {
+                    applyDeltaToDom(elem, delta)
+                    refreshInteractive(elem)
+                }
+                css && addStyleElem(css)
+            }),
+            userEventsOut: pipe(widgetUserEvents, filter(e=>e.widgetId == widgetId)),
+            vdom: () => h('div',{id: _widgetId, widgetTop: 'true', frontend: true})
+        }
+    }
+})
+
+jb.component('widget.2tierLocal', {
+    type: 'control',
+    params: [
+      {id: 'id', as: 'string'},
+      {id: 'ctrl', type: 'control', dynamic: true },
+    ],
+    impl: (ctx,id, ctrl) => {
+          const _widgetId = id || 'widget' + ctx.id
+          const {createHeadlessWidget, createFrontEndWidget} = jb.ui
+          return createFrontEndWidget(createHeadlessWidget(ctx,_widgetId,ctrl)).vdom()
+    }
+})
+
+// dynamicCodeWidget
+jb.ui.renderWidget = function(profile,top) {
+      if (jb.frame.parent && jb.iframeAccessible(jb.frame.parent) && jb.frame.parent != jb.frame && jb.frame.parent.jb)
+        jb.frame.parent.jb.studio.initPreview(jb.frame,[Object.getPrototypeOf({}),Object.getPrototypeOf([])])
+  
+      let currentProfile = profile
+      let lastRenderTime = 0, fixedDebounce = 500
+  
+      if (jb.studio.studioWindow) {
+          const studioWin = jb.studio.studioWindow
+          const st = studioWin.jb.studio;
+          const project = studioWin.jb.resources.studio.project
+          const page = studioWin.jb.resources.studio.page
+          if (project && page)
+              currentProfile = {$: page}
+  
+          const {pipe,debounceTime,filter,subscribe} = jb.callbag
+          pipe(st.pageChange, filter(({page})=>page != currentProfile.$), subscribe(({page})=> doRender(page)))
+          
+          pipe(st.scriptChange, filter(e=>isCssChange(st,e.path)),
+            subscribe(({path}) => {
+              let featureIndex = path.lastIndexOf('features')
+              if (featureIndex == -1) featureIndex = path.lastIndexOf('layout')
+              const ctrlPath = path.slice(0,featureIndex).join('~')
+              const elems = Array.from(document.querySelectorAll('[jb-ctx]'))
+                .map(elem=>({elem, ctx: jb.ctxDictionary[elem.getAttribute('jb-ctx')] }))
+                .filter(e => e.ctx && e.ctx.path == ctrlPath)
+              elems.forEach(e=>jb.ui.refreshElem(e.elem,null,{cssOnly: true}))
+          }))
+  
+          pipe(st.scriptChange, filter(e=>!isCssChange(st,e.path)),
+              filter(e=>(jb.path(e,'path.0') || '').indexOf('dataResource.') != 0), // do not update on data change
+              debounceTime(() => Math.min(2000,lastRenderTime*3 + fixedDebounce)),
+              subscribe(() =>{
+                  doRender()
+                  jb.ui.dialogs.reRenderAll()
+          }))
+      }
+      const elem = top.ownerDocument.createElement('div')
+      top.appendChild(elem)
+  
+      doRender()
+  
+    function isCssChange(st,path) {
+      const compPath = pathOfCssFeature(st,path)
+      return compPath && (st.compNameOfPath(compPath) || '').match(/^(css|layout)/)
+    }
+  
+    function pathOfCssFeature(st,path) {
+      const featureIndex = path.lastIndexOf('features')
+      if (featureIndex == -1) {
+        const layoutIndex = path.lastIndexOf('layout')
+        return layoutIndex != -1 && path.slice(0,layoutIndex+1).join('~')
+      }
+      const array = Array.isArray(st.valOfPath(path.slice(0,featureIndex+1).join('~')))
+      return path.slice(0,featureIndex+(array?2:1)).join('~')
+    }
+  
+    function doRender(page) {
+          if (page) currentProfile = {$: page}
+          const profileToRun = ['dataTest','uiTest'].indexOf(jb.path(jb.comps[currentProfile.$],'impl.$')) != -1 ? { $: 'test.showTestInStudio', testId: currentProfile.$} : currentProfile
+          const cmp = new jb.jbCtx().run(profileToRun)
+          const start = new Date().getTime()
+          jb.ui.unmount(top)
+          top.innerHTML = ''
+          jb.ui.render(jb.ui.h(cmp),top)
+          lastRenderTime = new Date().getTime() - start
+    }
+}
 ;
 
 jb.component('defHandler', {
@@ -6918,8 +6965,8 @@ jb.component('itemlist.fastFilter', {
 jb.component('itemlist.ulLi', {
   type: 'itemlist.style',
   impl: customStyle({
-    template: (cmp,{ctrls},h) => h('ul#jb-itemlist',{},
-        ctrls.map(ctrl=> h('li#jb-item', {'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
+    template: (cmp,{ctrls, selected},h) => h('ul#jb-itemlist',{},
+        ctrls.map(ctrl=> h('li#jb-item', {'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx), class: selected && selected === jb.val(ctrl[0].ctx.data) ? 'selected' : '' } ,
           ctrl.map(singleCtrl=>h(singleCtrl))))),
     css: `{ list-style: none; padding: 0; margin: 0;}
     >li { list-style: none; padding: 0; margin: 0;}`,
@@ -6933,8 +6980,8 @@ jb.component('itemlist.div', {
     {id: 'spacing', as: 'number', defaultValue: 0}
   ],
   impl: customStyle({
-    template: (cmp,{ctrls},h) => h('div#jb-itemlist jb-drag-parent',{},
-        ctrls.map(ctrl=> h('div#jb-item', {'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
+    template: (cmp,{ctrls,selected},h) => h('div#jb-itemlist jb-drag-parent',{},
+        ctrls.map(ctrl=> h('div#jb-item', {'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx), class: selected && selected === jb.val(ctrl[0].ctx.data) ? 'selected' : ''} ,
           ctrl.map(singleCtrl=>h(singleCtrl))))),
     features: itemlist.init()
   })
@@ -6946,8 +6993,8 @@ jb.component('itemlist.horizontal', {
     {id: 'spacing', as: 'number', defaultValue: 0}
   ],
   impl: customStyle({
-    template: (cmp,{ctrls},h) => h('div#jb-itemlist jb-drag-parent',{},
-        ctrls.map(ctrl=> h('div#jb-item', {'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx)} ,
+    template: (cmp,{ctrls,selected},h) => h('div#jb-itemlist jb-drag-parent',{},
+        ctrls.map(ctrl=> h('div#jb-item', {'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx), class: selected && selected === jb.val(ctrl[0].ctx.data) ? 'selected' : ''} ,
           ctrl.map(singleCtrl=>h(singleCtrl))))),
     css: `{display: flex}
         >* { margin-right: %$spacing%px }
@@ -6955,9 +7002,6 @@ jb.component('itemlist.horizontal', {
     features: itemlist.init()
   })
 })
-
-jb.ui.itemlistInitCalcItems = cmp => cmp.calcItems = cmp.calcItems || (() => Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
-    .map(el=>(jb.ctxDictionary[el.getAttribute('jb-ctx')] || {}).data).filter(x=>x).map(x=>jb.val(x)))
 
 jb.ui.itemlistCalcItems = function(ctx,cmp) {
   const items = ctx.vars.$model.items()
@@ -6990,25 +7034,33 @@ jb.component('itemlist.selection', {
     {id: 'autoSelectFirst', type: 'boolean'},
     {id: 'cssForSelected', as: 'string', defaultValue: 'color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground)'}
   ],
-  impl: (ctx,databind) => ({
-    onclick: true,
-    ondblclick: true,
-    afterViewInit: cmp => {
-        const {pipe,map,filter,subscribe,merge,subject,distinctUntilChanged,catchError} = jb.callbag
+  impl: features(
+    () => ({
+      onclick: true,
+      ondblclick: true,
+      componentDidUpdate: cmp => {
+        
+      },
+    }),
+    css(({},{},{cssForSelected}) => ['>.selected','>*>.selected','>*>*>.selected'].map(sel=>sel+ ' ' + jb.ui.fixCssLine(cssForSelected)).join('\n')),
+    defHandler('onSelection', (ctx,{ev},{databind,onSelection,selectedToDatabind}) => {
+      const selectedData = jb.val(((ev.ctxId && jb.ctxDictionary[ev.ctxId]) || {}).data)
+      jb.writeValue(databind(), selectedToDatabind(ctx.setData(selectedData)), ctx)
+      onSelection(ctx.setData(selectedData))
+    }),
+    defHandler('onDoubleClick', (ctx,{ev},{databind,onDoubleClick,selectedToDatabind}) => {
+      const selectedData = jb.val(((ev.ctxId && jb.ctxDictionary[ev.ctxId]) || {}).data)
+      jb.writeValue(databind(), selectedToDatabind(ctx.setData(selectedData)), ctx)
+      onDoubleClick(ctx.setData(selectedData))
+    }),
+    calcProp({
+      id: 'selected',
+      phase: 20, // after 'items'
+      value: (ctx,{$props},{databind, autoSelectFirst}) => jb.val(databind()) || (autoSelectFirst && $props.items[0])
+    }),
+    interactive( ({},{cmp}) => {
+        const {pipe,map,filter,subscribe,merge,subject,distinctUntilChanged} = jb.callbag
         cmp.selectionEmitter = subject();
-        cmp.clickEmitter = pipe(
-          merge(cmp.onclick,cmp.ondblclick),
-          map(e=>dataOfElem(e.target)),
-          filter(x=>x)
-        )
-        pipe(cmp.ondblclick,
-          map(e=> dataOfElem(e.target)),
-          filter(x=>x),
-          subscribe(data => ctx.params.onDoubleClick(cmp.ctx.setData(data)))
-        )
-
-        jb.ui.itemlistInitCalcItems(cmp)
-        cmp.items = cmp.calcItems()
 
         cmp.setSelected = selected => {
           cmp.state.selected = selected
@@ -7016,53 +7068,34 @@ jb.component('itemlist.selection', {
           Array.from(cmp.base.querySelectorAll('.jb-item.selected,*>.jb-item.selected,*>*>.jb-item.selected'))
             .forEach(elem=>elem.classList.remove('selected'))
           Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
-            .filter(elem=> jb.val((jb.ctxDictionary[elem.getAttribute('jb-ctx')] || {}).data) === jb.val(selected))
+            .filter(elem=> elem.getAttribute('jb-ctx') == selected)
             .forEach(elem=> {elem.classList.add('selected'); elem.scrollIntoViewIfNeeded()})
         }
-        cmp.doRefresh = () => cmp.setSelected(cmp.state.selected)
 
-        pipe(merge(cmp.selectionEmitter,cmp.clickEmitter),
-          distinctUntilChanged(),
-          filter(x=>x),
-          subscribe( selected => {
-              writeSelectedToDatabind(selected);
-              cmp.setSelected(selected)
-              ctx.params.onSelection(cmp.ctx.setData(selected));
-        }))
-
-        const selectedRef = databind()
-
-        jb.isWatchable(selectedRef) && pipe(
-          jb.ui.refObservable(selectedRef,cmp,{throw: true, srcCtx: ctx}),
-          catchError(() => cmp.setSelected(null) || []),
-          subscribe(() => cmp.setSelected(selectedOfDatabind()))
+        const clickEmitter = pipe(
+          merge(cmp.onclick,cmp.ondblclick),
+          map(e=>ctxIdOfElem(e.target)),
         )
+        pipe(merge(cmp.selectionEmitter, clickEmitter),
+          filter(x=>x),
+          distinctUntilChanged(),
+          subscribe( ctxId => {
+            cmp.setSelected(ctxId)
+            jb.ui.runActionOfElem(cmp.base,'onSelection',{ctxId}) 
+          }))
 
-        if (cmp.state.selected && cmp.items.indexOf(cmp.state.selected) == -1) // clean irrelevant selection
-          cmp.state.selected = null;
-        if (selectedOfDatabind()) //selectedRef && jb.val(selectedRef))
-          cmp.setSelected(selectedOfDatabind())
-        if (!cmp.state.selected)
-          autoSelectFirstWhenEnabled()
+        pipe(cmp.ondblclick, map(e=> ctxIdOfElem(e.target)), filter(x=>x),
+          subscribe(ctxId => jb.ui.runActionOfElem(cmp.base,'onDoubleClick',{ctxId}))
+        )
+        const selected = ctxIdOfElem(cmp.base.querySelector('.jb-item.selected,*>.jb-item.selected,*>*>.jb-item.selected'))
+        selected && cmp.selectionEmitter.next(selected)
 
-        function autoSelectFirstWhenEnabled() {
-          if (ctx.params.autoSelectFirst && cmp.items[0] && !jb.val(selectedRef))
-              jb.delay(1).then(()=> cmp.selectionEmitter.next(cmp.items[0]))
-        }
-        function writeSelectedToDatabind(selected) {
-          return selectedRef && jb.writeValue(selectedRef,ctx.params.selectedToDatabind(ctx.setData(selected)), ctx)
-        }
-        function selectedOfDatabind() {
-          return selectedRef && jb.val(ctx.params.databindToSelected(ctx.setVars({items: cmp.calcItems()}).setData(jb.val(selectedRef))))
-        }
-        function dataOfElem(el) {
+        function ctxIdOfElem(el) {
           const itemElem = jb.ui.closest(el,'.jb-item')
-          const ctxId = itemElem && itemElem.getAttribute('jb-ctx')
-          return jb.val(((ctxId && jb.ctxDictionary[ctxId]) || {}).data)
+          return itemElem && itemElem.getAttribute('jb-ctx')
         }
-    },
-    css: ['>.selected','>*>.selected','>*>*>.selected'].map(sel=>sel+ ' ' + jb.ui.fixCssLine(ctx.params.cssForSelected)).join('\n')
-  })
+    })
+  )
 })
 
 jb.component('itemlist.keyboardSelection', {
@@ -7072,76 +7105,75 @@ jb.component('itemlist.keyboardSelection', {
     {id: 'autoFocus', type: 'boolean'},
     {id: 'onEnter', type: 'action', dynamic: true}
   ],
-  impl: ctx => ({
-    templateModifier: vdom => {
-      vdom.attributes = vdom.attributes || {};
-      vdom.attributes.tabIndex = 0
-    },
-    afterViewInit: cmp => {
+  impl: features(
+    templateModifier(({},{vdom}) => vdom && vdom.setAttribute('tabIndex',0)),
+    defHandler('onEnter', (ctx,{ev},{onEnter}) => onEnter(ctx.setData(jb.val(((ev.ctxId && jb.ctxDictionary[ev.ctxId]) || {}).data)))),    
+    interactive( (ctx,{cmp},{autoFocus}) => {
         const {pipe,map,filter,subscribe,merge} = jb.callbag
         const selectionKeySourceCmp = jb.ui.parentCmps(cmp.base).find(_cmp=>_cmp.selectionKeySource)
         let onkeydown = jb.path(cmp.ctx.vars,'itemlistCntr.keydown') || jb.path(selectionKeySourceCmp,'onkeydown');
         if (!onkeydown) {
           onkeydown = jb.ui.fromEvent(cmp, 'keydown')
-          if (ctx.params.autoFocus)
+          if (autoFocus)
             jb.ui.focus(cmp.base,'itemlist.keyboard-selection init autoFocus',ctx)
         } else {
           onkeydown = merge(onkeydown,jb.ui.fromEvent(cmp, 'keydown'))
         }
         cmp.onkeydown = onkeydown
-        jb.ui.itemlistInitCalcItems(cmp)
 
         pipe(cmp.onkeydown,
           filter(e=> e.keyCode == 13 && cmp.state.selected),
-          subscribe(() => ctx.params.onEnter(cmp.ctx.setData(cmp.state.selected))))
+          subscribe(() => jb.ui.runActionOfElem(cmp.base,'onEnter',{ctxId: cmp.state.selected})))
 
         pipe(cmp.onkeydown,
           filter(ev => !ev.ctrlKey && (ev.keyCode == 38 || ev.keyCode == 40)),
           map(ev => {
               ev.stopPropagation();
               const diff = ev.keyCode == 40 ? 1 : -1;
-              cmp.items = cmp.calcItems()
-              const selectedIndex = cmp.items.indexOf(cmp.state.selected) + diff
-              return cmp.items[Math.min(cmp.items.length-1,Math.max(0,selectedIndex))];
+              const ctxs = Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).map(el=>el.getAttribute('jb-ctx'))
+              const selectedIndex = ctxs.indexOf(cmp.state.selected) + diff
+              return ctxs[Math.min(ctxs.length-1,Math.max(0,selectedIndex))];
           }),
           subscribe(selected => cmp.selectionEmitter && cmp.selectionEmitter.next(selected) ))
-      },
     })
+    ),
 })
 
 jb.component('itemlist.dragAndDrop', {
   type: 'feature',
-  impl: ctx => ({
-      afterViewInit: function(cmp) {
-        if (!jb.frame.dragula)
-          return jb.logError('itemlist.dragAndDrop - the dragula lib is not loaded')
-        jb.ui.itemlistInitCalcItems(cmp)
-
-        cmp.itemsAsRef = () => jb.asRef(jb.path(jb.ctxDictionary,`${cmp.base.getAttribute('jb-ctx')}.params.items`)())
+  impl: features(
+    defHandler('moveItem', (ctx,{ev}) => {
+      const {from,to} = ev
+      const fromRef = jb.asRef(((from && jb.ctxDictionary[from]) || {}).data)
+      const toRef = jb.asRef(((to && jb.ctxDictionary[to]) || {}).data)
+      jb.move(fromRef,toRef,ctx)
+    }),    
+    interactive(({},{cmp}) => {
+        if (!jb.frame.dragula) return jb.logError('itemlist.dragAndDrop - the dragula lib is not loaded')
 
         const drake = dragula([cmp.base.querySelector('.jb-drag-parent') || cmp.base] , {
           moves: (el,source,handle) => jb.ui.parents(handle,{includeSelf: true}).some(x=>jb.ui.hasClass(x,'drag-handle'))
         })
 
         drake.on('drag', function(el, source) {
-          cmp.items = cmp.calcItems()
-          let item = jb.val(el.getAttribute('jb-ctx') && jb.ctxDictionary[el.getAttribute('jb-ctx')].data);
+          cmp.ctxs = Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).map(el=>el.getAttribute('jb-ctx'))
+          let item = el.getAttribute('jb-ctx')
           if (!item) {
             const item_comp = el._component || (el.firstElementChild && el.firstElementChild._component);
-            item = item_comp && item_comp.ctx.data;
+            item = item_comp && item_comp.ctx.id;
           }
           el.dragged = {
             item,
-            remove: item => cmp.items.splice(cmp.items.indexOf(item), 1)
+            remove: item => cmp.ctxs.splice(ctxs.indexOf(item), 1)
           }
           cmp.selectionEmitter && cmp.selectionEmitter.next(el.dragged.item);
         });
         drake.on('drop', (dropElm, target, source,sibling) => {
-            const draggedIndex = cmp.items.indexOf(dropElm.dragged.item)
-            const targetIndex = sibling ? jb.ui.index(sibling) : cmp.items.length
-            jb.move(jb.asRef(cmp.items[draggedIndex]),jb.asRef(cmp.items[targetIndex-1]),ctx)
+            const draggedIndex = cmp.ctxs.indexOf(dropElm.dragged.item)
+            const targetIndex = sibling ? jb.ui.index(sibling) : cmp.ctxs.length
+            jb.ui.runActionOfElem(cmp.base,'moveItem',{from: cmp.ctxs[draggedIndex], to: cmp.ctxs[targetIndex-1]})
             dropElm.dragged = null;
-            cmp.doRefresh && cmp.doRefresh()
+            cmp.refresh && cmp.refresh()
         })
         cmp.dragAndDropActive = true
 
@@ -7150,18 +7182,16 @@ jb.component('itemlist.dragAndDrop', {
         if (!cmp.onkeydown) return;
         jb.subscribe(cmp.onkeydown, e => {
             if (e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40)) {
-              cmp.items = cmp.calcItems()
+              const ctxs = Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).map(el=>el.getAttribute('jb-ctx'))
               const diff = e.keyCode == 40 ? 1 : -1;
-              const selectedIndex = cmp.items.indexOf(jb.val(cmp.state.selected))
+              const selectedIndex = ctxs.indexOf(cmp.state.selected)
               if (selectedIndex == -1) return;
-              const targetIndex = (selectedIndex + diff+ cmp.items.length) % cmp.items.length;
-              jb.move(jb.asRef(cmp.state.selected),jb.asRef(cmp.items[targetIndex]),ctx)
-              cmp.items = cmp.calcItems()
-              cmp.selectionEmitter && cmp.selectionEmitter.next(cmp.items[targetIndex])
-        }})
+              const targetIndex = (selectedIndex + diff+ ctxs.length) % ctxs.length;
+              jb.ui.runActionOfElem(cmp.base,'moveItem',{from: cmp.state.selected, to: ctxs[targetIndex]})
+              cmp.refresh && cmp.refresh()
+            }})
         })
-      }
-    })
+    }))
 })
 
 jb.component('itemlist.dragHandle', {
@@ -7290,9 +7320,8 @@ jb.component('itemlistContainer.search', {
     {id: 'style', type: 'editable-text.style', defaultValue: editableText.mdcSearch(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: (ctx,title,searchIn,databind) =>
-		jb.ui.ctrl(ctx,{
-			afterViewInit: cmp => {
+  impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.componentContext), features(
+		calcProp('init', (ctx,{},{searchIn,databind}) => {
 				if (!ctx.vars.itemlistCntr) return;
 				ctx.vars.itemlistCntr.filters.push( items => {
 					const toSearch = jb.val(databind()) || '';
@@ -7302,10 +7331,10 @@ jb.component('itemlistContainer.search', {
 						return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
 
 					return items.filter(item=>toSearch == '' || searchIn(ctx.setData(item)).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
-				});
-				ctx.vars.itemlistCntr.keydown = jb.ui.upDownEnterEscObs(cmp)
-			}
-		})
+				})
+		}),
+		interactive((ctx,{cmp}) => ctx.vars.itemlistCntr.keydown = jb.ui.upDownEnterEscObs(cmp))
+  	))
 })
 
 jb.component('itemlistContainer.moreItemsButton', {
@@ -7318,9 +7347,7 @@ jb.component('itemlistContainer.moreItemsButton', {
     {id: 'style', type: 'button.style', defaultValue: button.href(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: controlWithFeatures(
-    ctx=>jb.ui.ctrl(ctx),
-    [
+  impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.componentContext), features(
       watchRef('%$itemlistCntrData/maxItems%'),
       defHandler(
         'onclickHandler',
@@ -7339,8 +7366,7 @@ jb.component('itemlistContainer.moreItemsButton', {
 				return '';
 			return vdom;
 		}
-	  })
-    ]
+	  }))
   )
 })
 
@@ -9452,7 +9478,7 @@ jb.component('table.mdc', {
     {id: 'classForTable', as: 'string', defaultValue: 'mdc-data-table__table mdc-data-table--selectable'}
   ],
   impl: customStyle({
-    template: (cmp,{items,fields,classForTable,classForTd,sortOptions,hideHeaders},h) => 
+    template: (cmp,{items,fields,classForTable,classForTd,sortOptions,hideHeaders, selected},h) => 
       h('div#jb-itemlist mdc-data-table',{}, h('table',{ class: classForTable },[
       ...(hideHeaders ? [] : [h('thead',{},h('tr#mdc-data-table__header-row',{},
         fields.map((f,i) =>h('th#mdc-data-table__header-cell',{
@@ -9467,12 +9493,13 @@ jb.component('table.mdc', {
           }
           ,jb.ui.fieldTitle(cmp,f,h))) ))]),
         h('tbody#jb-drag-parent mdc-data-table__content',{},
-            items.map((item,index)=> jb.ui.item(cmp,h('tr',{ class: 'jb-item mdc-data-table__row', 'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},fields.map(f=>
-              h('td', jb.filterEmpty({ 
-                'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), 
-                class: (f.class + ' ' + classForTd + ' mdc-data-table__cell').trim(), 
-                title: f.hoverTitle &&  f.hoverTitle(item) 
-              }) , f.control ? h(f.control(item,index)) : f.fieldData(item,index))))
+            items.map((item,index)=> jb.ui.item(cmp,h('tr#jb-item mdc-data-table__row', { class: selected && selected === jb.val(ctrl[0].ctx.data) ? 'selected' : '',
+               'jb-ctx': jb.ui.preserveCtx(cmp.ctx.setData(item))},fields.map(f=>
+                  h('td', jb.filterEmpty({ 
+                    'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), 
+                    class: (f.class + ' ' + classForTd + ' mdc-data-table__cell').trim(), 
+                    title: f.hoverTitle &&  f.hoverTitle(item) 
+                  }) , f.control ? h(f.control(item,index)) : f.fieldData(item,index))))
               ,item))
         ),
         items.length == 0 ? 'no items' : ''
@@ -10252,8 +10279,6 @@ jb.component('tree.selection', {
 					.forEach(elem=> {elem.classList.add('selected'); elem.scrollIntoViewIfNeeded()})
 			}
 			cmp.getSelected = () => cmp.state.selected = cmp.elemToPath(jb.ui.findIncludeSelf(cmp.base,'.treenode.selected')[0])
-
-
 			pipe(
 				merge(
 					cmp.selectionEmitter, databindObs, pipe(cmp.onclick, map(event => cmp.elemToPath(event.target)))),
@@ -10343,7 +10368,7 @@ jb.component('tree.keyboardSelection', {
 						context.setData(cmp.getSelected()), jb.ui.findIncludeSelf(cmp.base,'.treenode.selected>.treenode-line')[0])()
 				}
 				// menu shortcuts - delay in order not to block registration of other features
-		    jb.delay(1).then(_=> cmp.base && (cmp.base.onkeydown = e => {
+		    	jb.delay(1).then(_=> cmp.base && (cmp.base.onkeydown = e => {
 					if ((e.ctrlKey || e.altKey || e.keyCode == 46) // also Delete
 					 && (e.keyCode != 17 && e.keyCode != 18)) { // ctrl or alt alone
 						var menu = context.params.applyMenuShortcuts(context.setData(cmp.getSelected()));

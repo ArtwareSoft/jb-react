@@ -286,7 +286,7 @@ Object.assign(jb.ui, {
     },
     runActionOfElem(elem,action,ev) {
         if (elem.getAttribute('contenteditable')) return
-        ev = typeof event != 'undefined' ? event : ev
+        ev = ev || typeof event != 'undefined' && event
         const ctxToRun = (elem.getAttribute('handlers') || '').split(',').filter(x=>x.indexOf(action+'-') == 0)
             .map(str=>jb.ui.ctxDictOfElem(elem)[str.split('-')[1]])
             .filter(x=>x)

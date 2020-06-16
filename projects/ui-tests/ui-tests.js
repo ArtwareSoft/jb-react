@@ -597,9 +597,9 @@ jb.component('uiTest.itemlist.shownOnlyOnItemHover', {
 jb.component('uiTest.itemlistWithSelect', {
   impl: uiTest({
     control: itemlist({
-      items: list('%$people%', '%$people%', '%$people%'),
+      items: '%$people%',
       controls: text('%$item.name% - %name%'),
-      features: itemlist.selection({})
+      features: itemlist.selection({ autoSelectFirst: true})
     }),
     expectedResult: contains(['Homer Simpson - Homer Simpson', 'Bart Simpson - Bart Simpson'])
   })
