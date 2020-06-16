@@ -381,7 +381,7 @@ function createWorker(workerId) {
     self.onmessage= ${workerReceive.toString()}`
     const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: 'application/javascript'})));
 
-    Object.assign(worker,{
+    Object.assign(worker, {
         response: jb.callbag.subject(),
         onmessage(e) {
             const data = e.data
@@ -457,10 +457,11 @@ jb.component('worker.main', {
                         Object.assign(jb.ui.mainWorker.ctxDictionary,jb.ui.deserializeCtxStore(store).ctx)
                         const elem = jb.ui.document(ctx).querySelector('#'+elemId)
                             || jb.ui.document(ctx).querySelector(`[cmp-id="${cmpId}"]`)
-                        elem && jb.ui.applyDeltaToDom(elem, delta)
+                        if (elem) {
+                            jb.ui.applyDeltaToDom(elem, delta)
+                            jb.ui.refreshInteractive(elem)
+                        }
                         css && jb.ui.addStyleElem(css)
-                        jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=>
-                            el._component ? el._component.recalcPropsFromElem() : jb.ui.mountInteractive(el))
                 }))
                 return worker.exec(widgetProf)
             })
@@ -469,7 +470,7 @@ jb.component('worker.main', {
 })
 
 jb.component('remote.initMainWorker', {
-  type: 'control',
+  type: 'action',
   params: [
     {id: 'sourceUrl', as: 'string'},
     {id: 'remote', type: 'remote', mandatory: true, defaultValue: worker.main()}

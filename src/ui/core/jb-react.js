@@ -64,7 +64,7 @@ function compareVdom(b,a) {
     }
 }
 
-function filterDelta(delta) {
+function filterDelta(delta) { // for logging
     const doFilter = dlt => ({
         attributes: jb.objFromEntries(jb.entries(dlt.attributes)
             .filter(e=> ['jb-ctx','cmp-id','originators','__afterIndex','mount-ctx','interactive'].indexOf(e[0]) == -1)),
@@ -119,10 +119,13 @@ function applyNewVdom(elem,vdomAfter,{strongRefresh, ctx} = {}) {
     } else {
         applyDeltaToDom(elem,delta)
     }
-    ui.findIncludeSelf(elem,'[interactive]').forEach(el=> 
-        el._component ? el._component.recalcPropsFromElem() : mountInteractive(el))
+    ui.refreshInteractive(elem)
     if (active) jb.ui.focus(elem,'apply Vdom diff',ctx)
     ui.garbageCollectCtxDictionary(elem)
+}
+
+function refreshInteractive(elem) {
+    ui.findIncludeSelf(elem,'[interactive]').forEach(el=> el._component ? el._component.recalcPropsFromElem() : mountInteractive(el))
 }
 
 function elemToVdom(elem) {
@@ -256,10 +259,16 @@ function createElement(parent,tag) {
 }
 
 Object.assign(jb.ui, {
-    h, render, unmount, applyNewVdom, applyDeltaToDom, elemToVdom, mountInteractive, compareVdom, appendItems,
+    h, render, unmount, applyNewVdom, applyDeltaToDom, elemToVdom, mountInteractive, compareVdom, appendItems, refreshInteractive,
     handleCmpEvent(specificHandler, ev) {
         ev = typeof event != 'undefined' ? event : ev
-        const el = jb.ui.parents(ev.currentTarget,{includeSelf: true}).find(el=> el.getAttribute && el.getAttribute('jb-ctx') != null)
+        const userEvent = {ev,specificHandler}
+        const parents = jb.ui.parents(ev.currentTarget,{includeSelf: true})
+        // const widgetId = parents.filter(el=>el.getAttribute && el.getAttribute('widgetTop')).map(el=>el.getAttribute('id'))[0]
+        // if (widgetId)
+        //     return jb.ui.widgets[widgetId].userEventsSink.next(userEvent)
+
+        const el = parents.find(el=> el.getAttribute && el.getAttribute('jb-ctx') != null)
         if (!el) return
         if (ev.type == 'scroll') // supports the worker scenario
             ev.scrollPercentFromTop = ev.scrollPercentFromTop || (el.scrollTop + jb.ui.offset(el).height)/ el.scrollHeight;
@@ -267,9 +276,13 @@ Object.assign(jb.ui, {
         if (el.getAttribute('worker')) { // forward the event to the worker
             return jb.ui.workers[el.getAttribute('worker')].handleBrowserEvent(el,ev,specificHandler)
         }
-        const cmp = el._component
+        return jb.ui.activateHandler(userEvent)
+    },
+    activateHandler({specificHandler, ev}) {
+        const elem = jb.ui.parents(ev.currentTarget,{includeSelf: true}).find(el=> el.getAttribute && el.getAttribute('jb-ctx') != null)
+        const cmp = elem._component
         const action = specificHandler && typeof specificHandler == 'string' ? specificHandler : `on${ev.type}Handler`
-        return (cmp && cmp[action]) ? cmp[action](ev) : ui.runActionOfElem(el,action,ev)
+        return (cmp && cmp[action]) ? cmp[action](ev) : ui.runActionOfElem(elem,action,ev)
     },
     runActionOfElem(elem,action,ev) {
         if (elem.getAttribute('contenteditable')) return
@@ -416,7 +429,7 @@ Object.assign(jb.ui, {
 
 ui.subscribeToRefChange(jb.mainWatchableHandler)
 
-// interactive handlers like onmousemove and onkeyXX are handled locally with and not passed to the remote widgets owner
+// interactive handlers like onmousemove and onkeyXX are handled in the frontEnd with and not passed to the backend headless widgets
 function mountInteractive(elem, keepState) {
     const ctx = jb.ui.ctxOfElem(elem,'mount-ctx')
     if (!ctx)
