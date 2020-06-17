@@ -340,18 +340,12 @@ jb.ui.deserializeCtxStore = function(storeAsJson) {
 
 let messageCounter = 1;
 
-if (jb.frame.workerId && jb.frame.workerId())
+if (jb.frame.workerId && jb.frame.workerId()) {
     Object.assign(jb.ui, {
         _stylesToAdd: [],
         widgets: {},
         activeElement() {},
         focus() {},
-        updateRenderer({delta,elemId,cmpId,widgetId}) {
-            const css = this._stylesToAdd.join('\n')
-            this._stylesToAdd = []
-            const store = jb.ui.serializeCtxOfVdom(delta)
-            postMessage(`delta-${widgetId}>`+JSON.stringify({delta,elemId, cmpId, css, store}))
-        },
         addStyleElem(innerHtml) {
             this._stylesToAdd.push(innerHtml)
         },
@@ -367,6 +361,13 @@ if (jb.frame.workerId && jb.frame.workerId())
             })
         },
     })
+    pipe(jb.ui.widgetRenderingUpdates, subscribe(({delta,elemId,cmpId,widgetId}) => {
+        const css = this._stylesToAdd.join('\n')
+        this._stylesToAdd = []
+        const store = jb.ui.serializeCtxOfVdom(delta)
+        postMessage(`delta-${widgetId}>`+JSON.stringify({delta,elemId, cmpId, css, store}))
+    }))
+}
 
 function createWorker(workerId) {
     const workerReceive = ({data}) => { // this function is serialized and run on the worker
@@ -442,7 +443,7 @@ jb.component('worker.main', {
                     const top = jb.ui.h(cmp)
                     top.attributes = Object.assign(top.attributes || {},{ worker: 1, id: widgetId })
                     jb.ui.widgets[widgetId] = { top }
-                    jb.ui.updateRenderer({delta: jb.ui.compareVdom({},top),elemId: widgetId,widgetId})
+                    jb.ui.widgetRenderingUpdates.next({delta: jb.ui.compareVdom({},top),elemId: widgetId,widgetId})
             })
 
             return this.getWorker().then( worker => {

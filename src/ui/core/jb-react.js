@@ -105,7 +105,8 @@ function applyNewVdom(elem,vdomAfter,{strongRefresh, ctx} = {}) {
             Object.keys(elem).forEach(k=>delete elem[k])
             Object.assign(elem,vdomAfter)
         }
-        return jb.ui.updateRenderer({delta,elemId,cmpId,widgetId: ctx && ctx.vars.widgetId}) // deligate to the main thread 
+        jb.ui.widgetRenderingUpdates.next({delta,elemId,cmpId,widgetId: ctx && ctx.vars.widgetId})
+        return
     }
     const active = jb.ui.activeElement() === elem
     jb.log('applyDeltaTop',['apply',vdomBefore,vdomAfter,delta,active,...arguments],
@@ -144,7 +145,7 @@ function appendItems(elem, vdomToAppend,{ctx,prepend} = {}) { // used in infinit
     if (elem instanceof ui.VNode) { // runs on worker
         const cmpId = elem.getAttribute('cmp-id'), elemId = elem.getAttribute('id');
         (vdomToAppend.children ||[]).forEach(vnode => prepend ? elem.children.unshift(vnode) : elem.children.push(vnode))
-        return jb.ui.updateRenderer({ delta: vdomToAppend,elemId,cmpId, widgetId: ctx && ctx.vars.widgetId}) // deligate to the main thread 
+        return jb.ui.widgetRenderingUpdates.next({ delta: vdomToAppend,elemId,cmpId, widgetId: ctx && ctx.vars.widgetId}) // deligate to the main thread 
     }
     (vdomToAppend.children ||[]).forEach(vdom => render(vdom,elem,prepend))
 }

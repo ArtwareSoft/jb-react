@@ -1,3 +1,28 @@
+jb.ns('widget2tier')
+
+jb.component('uiTest.widget2tier.button', {
+  impl: uiTest({
+    control: widget2tier.local(button('hello world')),
+    expectedResult: contains('hello world')
+  })
+})
+
+jb.component('uiTest.widget2tier.infiniteScroll', {
+  impl: uiTest({
+    control: widget2tier.local(itemlist({
+      items: range(0,10),
+      controls: text('%%'),
+      visualSizeLimit: '7',
+      features: [
+        css.height({height: '100', overflow: 'scroll'}),
+        itemlist.infiniteScroll(),
+        css.width('600')
+      ]
+    })),
+    expectedResult: contains('hello world')
+  })
+})
+
 jb.component('uiTest.remoteWidget', {
   impl: uiTest({
     control: remote.widget('uiTest.helloFromWorker'),

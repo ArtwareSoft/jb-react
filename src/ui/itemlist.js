@@ -300,8 +300,7 @@ jb.component('itemlist.keyboardSelection', {
               return ctxs[Math.min(ctxs.length-1,Math.max(0,selectedIndex))];
           }),
           subscribe(selected => cmp.selectionEmitter && cmp.selectionEmitter.next(selected) ))
-    })
-    ),
+    }))
 })
 
 jb.component('itemlist.dragAndDrop', {
@@ -320,7 +319,7 @@ jb.component('itemlist.dragAndDrop', {
           moves: (el,source,handle) => jb.ui.parents(handle,{includeSelf: true}).some(x=>jb.ui.hasClass(x,'drag-handle'))
         })
 
-        drake.on('drag', function(el, source) {
+        drake.on('drag', el => {
           cmp.ctxs = Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).map(el=>el.getAttribute('jb-ctx'))
           let item = el.getAttribute('jb-ctx')
           if (!item) {
@@ -332,7 +331,7 @@ jb.component('itemlist.dragAndDrop', {
             remove: item => cmp.ctxs.splice(ctxs.indexOf(item), 1)
           }
           cmp.selectionEmitter && cmp.selectionEmitter.next(el.dragged.item);
-        });
+        })
         drake.on('drop', (dropElm, target, source,sibling) => {
             const draggedIndex = cmp.ctxs.indexOf(dropElm.dragged.item)
             const targetIndex = sibling ? jb.ui.index(sibling) : cmp.ctxs.length
@@ -362,7 +361,7 @@ jb.component('itemlist.dragAndDrop', {
 jb.component('itemlist.dragHandle', {
   description: 'put on the control inside the item which is used to drag the whole line',
   type: 'feature',
-  impl: list(
+  impl: features(
     css.class('drag-handle'),
     css('{cursor: pointer}')
   )
@@ -372,9 +371,7 @@ jb.component('itemlist.shownOnlyOnItemHover', {
   type: 'feature',
   category: 'itemlist:75',
   description: 'put on the control inside the item which is shown when the mouse enters the line',
-  impl: (ctx,cssClass,cond) => ({
-    class: 'jb-shown-on-item-hover',
-  })
+  impl: css.class('jb-shown-on-item-hover')
 })
 
 jb.component('itemlist.divider', {
@@ -382,6 +379,5 @@ jb.component('itemlist.divider', {
   params: [
     {id: 'space', as: 'number', defaultValue: 5}
   ],
-  impl: (ctx,space) =>
-    ({css: `>.jb-item:not(:first-of-type) { border-top: 1px solid rgba(0,0,0,0.12); padding-top: ${space}px }`})
+  impl: css('>.jb-item:not(:first-of-type) { border-top: 1px solid rgba(0,0,0,0.12); padding-top: %$space%px }')
 })

@@ -2396,6 +2396,46 @@ jb.callbag = {
           subj.error = err => subj(2,err)
           return subj
       },
+      replayFirst: (dataToPortNum, timeOut) => source => { // replay the first message of each port, used not to loose first message that was sent by ser
+        timeOut = timeOut || 30000
+        let store = {}, sinks = [], talkback, done = false
+      
+        source(0, function replayFirst(t, d) {
+          if (t == 0) {
+            talkback = d
+            return
+          }
+          if (t == 1) {
+            var portNum = dataToPortNum(d)
+            store[portNum] = store[portNum] || { time: new Date().getTime(), d }
+            sinks.forEach(sink => sink(1, d))
+          }
+          if (t == 2) {
+            done = true
+            sinks.forEach(sink => sink(2))
+            sinks = []
+          }
+        })
+      
+        return function replayFirst(start, sink) {
+          if (start !== 0) return
+          sinks.push(sink)
+          sink(0, function replayFirst(t, d) {
+            if (t == 0) return
+            if (t == 1) {
+              talkback(1)
+              return
+            }
+            if (t == 2)
+              sinks = sinks.filter(s => s !== sink)
+          })
+          const now = new Date().getTime()
+          Object.keys(store).forEach(k => (now > store[k].time + timeOut) && store[k] == 'done')
+          Object.keys(store).forEach(k => store[k] != 'done' && sink(1, store[k].d))
+      
+          if (done) sink(2)
+        }
+      },      
       replay: keep => source => {
         keep = keep || 0
         let store = [], sinks = [], talkback, done = false

@@ -23,7 +23,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/core/jb-react.js',
         'src/ui/core/ui-comp.js',
         'src/ui/core/ui-utils.js',
-        'src/ui/core/widget.js',        
+        'src/ui/core/two-tier-widget.js',        
 
         'src/ui/common-features.js',
         'src/ui/css-features.js',

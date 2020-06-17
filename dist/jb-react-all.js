@@ -2396,6 +2396,46 @@ jb.callbag = {
           subj.error = err => subj(2,err)
           return subj
       },
+      replayFirst: (dataToPortNum, timeOut) => source => { // replay the first message of each port, used not to loose first message that was sent by ser
+        timeOut = timeOut || 30000
+        let store = {}, sinks = [], talkback, done = false
+      
+        source(0, function replayFirst(t, d) {
+          if (t == 0) {
+            talkback = d
+            return
+          }
+          if (t == 1) {
+            var portNum = dataToPortNum(d)
+            store[portNum] = store[portNum] || { time: new Date().getTime(), d }
+            sinks.forEach(sink => sink(1, d))
+          }
+          if (t == 2) {
+            done = true
+            sinks.forEach(sink => sink(2))
+            sinks = []
+          }
+        })
+      
+        return function replayFirst(start, sink) {
+          if (start !== 0) return
+          sinks.push(sink)
+          sink(0, function replayFirst(t, d) {
+            if (t == 0) return
+            if (t == 1) {
+              talkback(1)
+              return
+            }
+            if (t == 2)
+              sinks = sinks.filter(s => s !== sink)
+          })
+          const now = new Date().getTime()
+          Object.keys(store).forEach(k => (now > store[k].time + timeOut) && store[k] == 'done')
+          Object.keys(store).forEach(k => store[k] != 'done' && sink(1, store[k].d))
+      
+          if (done) sink(2)
+        }
+      },      
       replay: keep => source => {
         keep = keep || 0
         let store = [], sinks = [], talkback, done = false
@@ -3778,7 +3818,8 @@ function applyNewVdom(elem,vdomAfter,{strongRefresh, ctx} = {}) {
             Object.keys(elem).forEach(k=>delete elem[k])
             Object.assign(elem,vdomAfter)
         }
-        return jb.ui.updateRenderer({delta,elemId,cmpId,widgetId: ctx && ctx.vars.widgetId}) // deligate to the main thread 
+        jb.ui.widgetRenderingUpdates.next({delta,elemId,cmpId,widgetId: ctx && ctx.vars.widgetId})
+        return
     }
     const active = jb.ui.activeElement() === elem
     jb.log('applyDeltaTop',['apply',vdomBefore,vdomAfter,delta,active,...arguments],
@@ -3817,7 +3858,7 @@ function appendItems(elem, vdomToAppend,{ctx,prepend} = {}) { // used in infinit
     if (elem instanceof ui.VNode) { // runs on worker
         const cmpId = elem.getAttribute('cmp-id'), elemId = elem.getAttribute('id');
         (vdomToAppend.children ||[]).forEach(vnode => prepend ? elem.children.unshift(vnode) : elem.children.push(vnode))
-        return jb.ui.updateRenderer({ delta: vdomToAppend,elemId,cmpId, widgetId: ctx && ctx.vars.widgetId}) // deligate to the main thread 
+        return jb.ui.widgetRenderingUpdates.next({ delta: vdomToAppend,elemId,cmpId, widgetId: ctx && ctx.vars.widgetId}) // deligate to the main thread 
     }
     (vdomToAppend.children ||[]).forEach(vdom => render(vdom,elem,prepend))
 }
@@ -4591,6 +4632,77 @@ jb.objectDiff = function(newObj, orig) {
     }, deletedValues)
 }
 
+// *** dynamic widget
+
+jb.ui.renderWidget = function(profile,top) {
+  if (jb.frame.parent && jb.iframeAccessible(jb.frame.parent) && jb.frame.parent != jb.frame && jb.frame.parent.jb)
+    jb.frame.parent.jb.studio.initPreview(jb.frame,[Object.getPrototypeOf({}),Object.getPrototypeOf([])])
+
+  let currentProfile = profile
+  let lastRenderTime = 0, fixedDebounce = 500
+
+  if (jb.studio.studioWindow) {
+      const studioWin = jb.studio.studioWindow
+      const st = studioWin.jb.studio;
+      const project = studioWin.jb.resources.studio.project
+      const page = studioWin.jb.resources.studio.page
+      if (project && page)
+          currentProfile = {$: page}
+
+      const {pipe,debounceTime,filter,subscribe} = jb.callbag
+      pipe(st.pageChange, filter(({page})=>page != currentProfile.$), subscribe(({page})=> doRender(page)))
+      
+      pipe(st.scriptChange, filter(e=>isCssChange(st,e.path)),
+        subscribe(({path}) => {
+          let featureIndex = path.lastIndexOf('features')
+          if (featureIndex == -1) featureIndex = path.lastIndexOf('layout')
+          const ctrlPath = path.slice(0,featureIndex).join('~')
+          const elems = Array.from(document.querySelectorAll('[jb-ctx]'))
+            .map(elem=>({elem, ctx: jb.ctxDictionary[elem.getAttribute('jb-ctx')] }))
+            .filter(e => e.ctx && e.ctx.path == ctrlPath)
+          elems.forEach(e=>jb.ui.refreshElem(e.elem,null,{cssOnly: true}))
+      }))
+
+      pipe(st.scriptChange, filter(e=>!isCssChange(st,e.path)),
+          filter(e=>(jb.path(e,'path.0') || '').indexOf('dataResource.') != 0), // do not update on data change
+          debounceTime(() => Math.min(2000,lastRenderTime*3 + fixedDebounce)),
+          subscribe(() =>{
+              doRender()
+              jb.ui.dialogs.reRenderAll()
+      }))
+  }
+  const elem = top.ownerDocument.createElement('div')
+  top.appendChild(elem)
+
+  doRender()
+
+  function isCssChange(st,path) {
+    const compPath = pathOfCssFeature(st,path)
+    return compPath && (st.compNameOfPath(compPath) || '').match(/^(css|layout)/)
+  }
+
+  function pathOfCssFeature(st,path) {
+    const featureIndex = path.lastIndexOf('features')
+    if (featureIndex == -1) {
+      const layoutIndex = path.lastIndexOf('layout')
+      return layoutIndex != -1 && path.slice(0,layoutIndex+1).join('~')
+    }
+    const array = Array.isArray(st.valOfPath(path.slice(0,featureIndex+1).join('~')))
+    return path.slice(0,featureIndex+(array?2:1)).join('~')
+  }
+
+  function doRender(page) {
+        if (page) currentProfile = {$: page}
+        const profileToRun = ['dataTest','uiTest'].indexOf(jb.path(jb.comps[currentProfile.$],'impl.$')) != -1 ? { $: 'test.showTestInStudio', testId: currentProfile.$} : currentProfile
+        const cmp = new jb.jbCtx().run(profileToRun)
+        const start = new Date().getTime()
+        jb.ui.unmount(top)
+        top.innerHTML = ''
+        jb.ui.render(jb.ui.h(cmp),top)
+        lastRenderTime = new Date().getTime() - start
+  }
+}
+
 // ****************** components ****************
 
 jb.component('customStyle', {
@@ -4648,29 +4760,34 @@ jb.component('controlWithFeatures', {
 })()
 ;
 
+
+jb.ui.widgetRenderingUpdates = jb.callbag.subject()
 Object.assign(jb.ui, {
-    widgetRenderingUpdates: jb.callbag.subject(),
+    widgetRenderingSrc: jb.callbag.replayFirst(m=>m.widgetId)(jb.ui.widgetRenderingUpdates),
     headlessWidgets: {},
     frontEndWidgets: {},
     parentWidget: elem => jb.ui.parents(elem,{includeSelf: true}).filter(el=>el.getAttribute && el.getAttribute('widgetTop')),
     inHeadlessWidget: elem => jb.ui.parentWidget(elem).map(el=>el.getAttribute('headless'))[0],
     inFrontEndWidget: elem => jb.ui.parentWidget(elem).map(el=>el.getAttribute('frontend'))[0],
     createHeadlessWidget: (ctx, widgetId, ctrl) => {
-        const {headlessWidgets, activateHandler, widgetRenderingUpdates, compareVdom } = jb.ui
-        headlessWidgets[widgetId] = {
-            widgetId,
-            userEventsIn: subscribe(userEvent => activateHandler(userEvent)),
-            deltaOut: pipe(widgetRenderingUpdates, filter(e=>e.widgetId == widgetId)),
-        }
+        const {headlessWidgets, activateHandler, widgetRenderingUpdates, widgetRenderingSrc, compareVdom } = jb.ui
+        const {pipe, subscribe, filter} = jb.callbag
         const cmp = ctrl(ctx.setVar('widgetId',widgetId))
         const top = jb.ui.h(cmp)
         top.attributes = Object.assign(top.attributes || {}, { widgetTop: 'true', headless: true, id: widgetId })
-        widgetRenderingUpdates({widgetId, delta: compareVdom({},top), elemId: widgetId})
+        widgetRenderingUpdates.next({widgetId, delta: compareVdom({},top), elemId: widgetId})
+
+        return headlessWidgets[widgetId] = {
+            widgetId,
+            userEventsIn: subscribe(userEvent => activateHandler(userEvent)),
+            deltaOut: pipe(widgetRenderingSrc, filter(e=>e.widgetId == widgetId)),    
+        }
     },
-    createFrontEndWidget: headlessWidget => {
+    createFrontEndWidget: (ctx, widgetId) => {
         const {document, applyDeltaToDom, addStyleElem, h, refreshInteractive, frontEndWidgets, widgetUserEvents} = jb.ui
-        frontEndWidgets[headlessWidget.widgetId] = {
-            widgetId: headlessWidget.widgetId,
+        const {pipe, subscribe, filter, delay} = jb.callbag
+        return frontEndWidgets[widgetId] = {
+            widgetId,
             deltaIn: subscribe( ({delta,elemId,cmpId,css}) => {
                 const elem = document(ctx).querySelector('#'+elemId) || document(ctx).querySelector(`[cmp-id="${cmpId}"]`)
                 if (elem) {
@@ -4680,93 +4797,27 @@ Object.assign(jb.ui, {
                 css && addStyleElem(css)
             }),
             userEventsOut: pipe(widgetUserEvents, filter(e=>e.widgetId == widgetId)),
-            vdom: () => h('div',{id: _widgetId, widgetTop: 'true', frontend: true})
+            vdom: () => h('div',{id: widgetId, widgetTop: 'true', frontend: true})
         }
     }
 })
 
-jb.component('widget.2tierLocal', {
+jb.component('widget2tier.local', {
     type: 'control',
     params: [
-      {id: 'id', as: 'string'},
       {id: 'ctrl', type: 'control', dynamic: true },
+      {id: 'id', as: 'string'},
     ],
-    impl: (ctx,id, ctrl) => {
-          const _widgetId = id || 'widget' + ctx.id
-          const {createHeadlessWidget, createFrontEndWidget} = jb.ui
-          return createFrontEndWidget(createHeadlessWidget(ctx,_widgetId,ctrl)).vdom()
+    impl: (ctx,ctrl,id) => {
+        const widgetId = id || 'widget' + ctx.id
+        const headless = jb.ui.createHeadlessWidget(ctx,widgetId,ctrl)
+        const frontEnd = jb.ui.createFrontEndWidget(ctx,widgetId)
+        jb.callbag.pipe(headless.deltaOut, jb.callbag.delay(1), frontEnd.deltaIn)
+        jb.callbag.pipe(frontEnd.userEventsOut, headless.userEventsIn)
+        return frontEnd.vdom()
     }
 })
 
-// dynamicCodeWidget
-jb.ui.renderWidget = function(profile,top) {
-      if (jb.frame.parent && jb.iframeAccessible(jb.frame.parent) && jb.frame.parent != jb.frame && jb.frame.parent.jb)
-        jb.frame.parent.jb.studio.initPreview(jb.frame,[Object.getPrototypeOf({}),Object.getPrototypeOf([])])
-  
-      let currentProfile = profile
-      let lastRenderTime = 0, fixedDebounce = 500
-  
-      if (jb.studio.studioWindow) {
-          const studioWin = jb.studio.studioWindow
-          const st = studioWin.jb.studio;
-          const project = studioWin.jb.resources.studio.project
-          const page = studioWin.jb.resources.studio.page
-          if (project && page)
-              currentProfile = {$: page}
-  
-          const {pipe,debounceTime,filter,subscribe} = jb.callbag
-          pipe(st.pageChange, filter(({page})=>page != currentProfile.$), subscribe(({page})=> doRender(page)))
-          
-          pipe(st.scriptChange, filter(e=>isCssChange(st,e.path)),
-            subscribe(({path}) => {
-              let featureIndex = path.lastIndexOf('features')
-              if (featureIndex == -1) featureIndex = path.lastIndexOf('layout')
-              const ctrlPath = path.slice(0,featureIndex).join('~')
-              const elems = Array.from(document.querySelectorAll('[jb-ctx]'))
-                .map(elem=>({elem, ctx: jb.ctxDictionary[elem.getAttribute('jb-ctx')] }))
-                .filter(e => e.ctx && e.ctx.path == ctrlPath)
-              elems.forEach(e=>jb.ui.refreshElem(e.elem,null,{cssOnly: true}))
-          }))
-  
-          pipe(st.scriptChange, filter(e=>!isCssChange(st,e.path)),
-              filter(e=>(jb.path(e,'path.0') || '').indexOf('dataResource.') != 0), // do not update on data change
-              debounceTime(() => Math.min(2000,lastRenderTime*3 + fixedDebounce)),
-              subscribe(() =>{
-                  doRender()
-                  jb.ui.dialogs.reRenderAll()
-          }))
-      }
-      const elem = top.ownerDocument.createElement('div')
-      top.appendChild(elem)
-  
-      doRender()
-  
-    function isCssChange(st,path) {
-      const compPath = pathOfCssFeature(st,path)
-      return compPath && (st.compNameOfPath(compPath) || '').match(/^(css|layout)/)
-    }
-  
-    function pathOfCssFeature(st,path) {
-      const featureIndex = path.lastIndexOf('features')
-      if (featureIndex == -1) {
-        const layoutIndex = path.lastIndexOf('layout')
-        return layoutIndex != -1 && path.slice(0,layoutIndex+1).join('~')
-      }
-      const array = Array.isArray(st.valOfPath(path.slice(0,featureIndex+1).join('~')))
-      return path.slice(0,featureIndex+(array?2:1)).join('~')
-    }
-  
-    function doRender(page) {
-          if (page) currentProfile = {$: page}
-          const profileToRun = ['dataTest','uiTest'].indexOf(jb.path(jb.comps[currentProfile.$],'impl.$')) != -1 ? { $: 'test.showTestInStudio', testId: currentProfile.$} : currentProfile
-          const cmp = new jb.jbCtx().run(profileToRun)
-          const start = new Date().getTime()
-          jb.ui.unmount(top)
-          top.innerHTML = ''
-          jb.ui.render(jb.ui.h(cmp),top)
-          lastRenderTime = new Date().getTime() - start
-    }
-}
 ;
 
 jb.component('defHandler', {
@@ -7135,8 +7186,7 @@ jb.component('itemlist.keyboardSelection', {
               return ctxs[Math.min(ctxs.length-1,Math.max(0,selectedIndex))];
           }),
           subscribe(selected => cmp.selectionEmitter && cmp.selectionEmitter.next(selected) ))
-    })
-    ),
+    }))
 })
 
 jb.component('itemlist.dragAndDrop', {
@@ -7155,7 +7205,7 @@ jb.component('itemlist.dragAndDrop', {
           moves: (el,source,handle) => jb.ui.parents(handle,{includeSelf: true}).some(x=>jb.ui.hasClass(x,'drag-handle'))
         })
 
-        drake.on('drag', function(el, source) {
+        drake.on('drag', el => {
           cmp.ctxs = Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).map(el=>el.getAttribute('jb-ctx'))
           let item = el.getAttribute('jb-ctx')
           if (!item) {
@@ -7167,7 +7217,7 @@ jb.component('itemlist.dragAndDrop', {
             remove: item => cmp.ctxs.splice(ctxs.indexOf(item), 1)
           }
           cmp.selectionEmitter && cmp.selectionEmitter.next(el.dragged.item);
-        });
+        })
         drake.on('drop', (dropElm, target, source,sibling) => {
             const draggedIndex = cmp.ctxs.indexOf(dropElm.dragged.item)
             const targetIndex = sibling ? jb.ui.index(sibling) : cmp.ctxs.length
@@ -7197,7 +7247,7 @@ jb.component('itemlist.dragAndDrop', {
 jb.component('itemlist.dragHandle', {
   description: 'put on the control inside the item which is used to drag the whole line',
   type: 'feature',
-  impl: list(
+  impl: features(
     css.class('drag-handle'),
     css('{cursor: pointer}')
   )
@@ -7207,9 +7257,7 @@ jb.component('itemlist.shownOnlyOnItemHover', {
   type: 'feature',
   category: 'itemlist:75',
   description: 'put on the control inside the item which is shown when the mouse enters the line',
-  impl: (ctx,cssClass,cond) => ({
-    class: 'jb-shown-on-item-hover',
-  })
+  impl: css.class('jb-shown-on-item-hover')
 })
 
 jb.component('itemlist.divider', {
@@ -7217,8 +7265,7 @@ jb.component('itemlist.divider', {
   params: [
     {id: 'space', as: 'number', defaultValue: 5}
   ],
-  impl: (ctx,space) =>
-    ({css: `>.jb-item:not(:first-of-type) { border-top: 1px solid rgba(0,0,0,0.12); padding-top: ${space}px }`})
+  impl: css('>.jb-item:not(:first-of-type) { border-top: 1px solid rgba(0,0,0,0.12); padding-top: %$space%px }')
 })
 ;
 
@@ -11206,18 +11253,12 @@ jb.ui.deserializeCtxStore = function(storeAsJson) {
 
 let messageCounter = 1;
 
-if (jb.frame.workerId && jb.frame.workerId())
+if (jb.frame.workerId && jb.frame.workerId()) {
     Object.assign(jb.ui, {
         _stylesToAdd: [],
         widgets: {},
         activeElement() {},
         focus() {},
-        updateRenderer({delta,elemId,cmpId,widgetId}) {
-            const css = this._stylesToAdd.join('\n')
-            this._stylesToAdd = []
-            const store = jb.ui.serializeCtxOfVdom(delta)
-            postMessage(`delta-${widgetId}>`+JSON.stringify({delta,elemId, cmpId, css, store}))
-        },
         addStyleElem(innerHtml) {
             this._stylesToAdd.push(innerHtml)
         },
@@ -11233,6 +11274,13 @@ if (jb.frame.workerId && jb.frame.workerId())
             })
         },
     })
+    pipe(jb.ui.widgetRenderingUpdates, subscribe(({delta,elemId,cmpId,widgetId}) => {
+        const css = this._stylesToAdd.join('\n')
+        this._stylesToAdd = []
+        const store = jb.ui.serializeCtxOfVdom(delta)
+        postMessage(`delta-${widgetId}>`+JSON.stringify({delta,elemId, cmpId, css, store}))
+    }))
+}
 
 function createWorker(workerId) {
     const workerReceive = ({data}) => { // this function is serialized and run on the worker
@@ -11308,7 +11356,7 @@ jb.component('worker.main', {
                     const top = jb.ui.h(cmp)
                     top.attributes = Object.assign(top.attributes || {},{ worker: 1, id: widgetId })
                     jb.ui.widgets[widgetId] = { top }
-                    jb.ui.updateRenderer({delta: jb.ui.compareVdom({},top),elemId: widgetId,widgetId})
+                    jb.ui.widgetRenderingUpdates.next({delta: jb.ui.compareVdom({},top),elemId: widgetId,widgetId})
             })
 
             return this.getWorker().then( worker => {
