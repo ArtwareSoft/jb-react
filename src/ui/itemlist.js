@@ -83,7 +83,7 @@ jb.component('itemlist.infiniteScroll', {
       }
     }
       ),
-    templateModifier(({},{vdom}) => vdom.setAttribute('onscroll',true))
+    templateModifier(({},{vdom}) => vdom.setAttribute('on-scroll',true))
   )
 })
 
@@ -97,7 +97,7 @@ jb.component('itemlist.incrementalFromRx', {
       (ctx,{cmp, $state}) => $state.rxItems && jb.callbag.pipe(
           ctx.vars.$model.items()[0],
           jb.callbag.takeUntil( cmp.destroyed ),
-          jb.callbag.subscribe(item => jb.ui.runActionOfElem(cmp.base,'nextItem',{item, elem: cmp.base}))
+          jb.callbag.subscribe(item => jb.ui.runActionOfElem(cmp.base,'nextItem',{item: item.data, elem: cmp.base}))
     )),
     defHandler('nextItem', (ctx,{ev},{prepend}) => {
       const {elem} = ev
@@ -203,9 +203,6 @@ jb.component('itemlist.selection', {
     () => ({
       onclick: true,
       ondblclick: true,
-      componentDidUpdate: cmp => {
-        
-      },
     }),
     css(({},{},{cssForSelected}) => ['>.selected','>*>.selected','>*>*>.selected'].map(sel=>sel+ ' ' + jb.ui.fixCssLine(cssForSelected)).join('\n')),
     defHandler('onSelection', (ctx,{ev},{databind,onSelection,selectedToDatabind}) => {
@@ -238,7 +235,7 @@ jb.component('itemlist.selection', {
         }
 
         const clickEmitter = pipe(
-          merge(cmp.onclick,cmp.ondblclick),
+          merge(cmp.onclick, cmp.ondblclick),
           map(e=>ctxIdOfElem(e.target)),
         )
         pipe(merge(cmp.selectionEmitter, clickEmitter),

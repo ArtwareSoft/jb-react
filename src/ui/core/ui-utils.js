@@ -174,7 +174,11 @@ jb.objectDiff = function(newObj, orig) {
 // *** dynamic widget
 
 jb.ui.renderWidget = function(profile,top) {
-  if (jb.frame.parent && jb.iframeAccessible(jb.frame.parent) && jb.frame.parent != jb.frame && jb.frame.parent.jb)
+  let parentAccessible = true
+  try {
+    jb.frame.parent.jb
+  } catch(e) { parentAccessible = false }
+  if (parentAccessible && jb.frame.parent != jb.frame)
     jb.frame.parent.jb.studio.initPreview(jb.frame,[Object.getPrototypeOf({}),Object.getPrototypeOf([])])
 
   let currentProfile = profile
@@ -293,7 +297,11 @@ jb.component('controlWithFeatures', {
     {id: 'control', type: 'control', mandatory: true},
     {id: 'features', type: 'feature[]', templateValue: [], mandatory: true}
   ],
-  impl: (ctx,control,features) => control.jbExtend(features,ctx).orig(ctx)
+  impl: (ctx,control,features) => {
+    const ctrl = control.jbExtend(features,ctx).orig(ctx)
+    //ctrl.ctx = ctx
+    return ctrl
+  }
 })
 
 })()

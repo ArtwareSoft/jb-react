@@ -44,7 +44,7 @@ jb.component('uiTest.watchableVar', {
       controls: text('%$var1%'),
       features: [
         variable({name: 'var1', value: 'hello', watchable: true}),
-        feature.afterLoad(writeValue('%$var1%', 'foo'))
+        interactive(writeValue('%$var1%', 'foo'))
       ]
     }),
     expectedResult: contains('foo')
@@ -57,7 +57,7 @@ jb.component('uiTest.watchableVarAsObject', {
       controls: text('%$obj1/txt%'),
       features: [
         variable({name: 'obj1', value: {'$': 'object', txt: 'hello'}, watchable: true}),
-        feature.afterLoad(writeValue('%$obj1/txt%', 'foo'))
+        interactive(writeValue('%$obj1/txt%', 'foo'))
       ]
     }),
     expectedResult: contains('foo')
@@ -95,7 +95,7 @@ jb.component('uiTest.watchableVarAsObjectNotInitialized', {
       controls: text('%$obj1/txt%'),
       features: [
         variable({name: 'obj1', value: {'$': 'object'}, watchable: true}),
-        feature.afterLoad(writeValue('%$obj1/txt%', 'foo'))
+        interactive(writeValue('%$obj1/txt%', 'foo'))
       ]
     }),
     expectedResult: contains('foo')
@@ -199,7 +199,7 @@ jb.component('uiTest.labelNotWatchingUiVar', {
       text: '%$text1/text%',
       features: [
         variable({name: 'text1', value: obj(prop('text', 'OK'))}),
-        feature.afterLoad(writeValue('%$text1/text%', 'not good'))
+        interactive(writeValue('%$text1/text%', 'not good'))
       ]
     }),
     expectedResult: contains('OK'),
@@ -212,7 +212,7 @@ jb.component('uiTest.labelNotWatchingBasicVar', {
     control: text({
       vars: [Var('text1', obj(prop('text', 'OK')))],
       text: '%$text1/text%',
-      features: [feature.afterLoad(writeValue('%$text1/text%', 'not good'))]
+      features: [interactive(writeValue('%$text1/text%', 'not good'))]
     }),
     expectedResult: contains('OK'),
     expectedCounters: {refreshElem: 0}
@@ -277,7 +277,7 @@ jb.component('uiTest.groupWatchingWithoutIncludeChildren', {
       features: [
         variable({name: 'text1', value: obj(prop('text', 'OK'))}),
         watchRef('%$text1%'),
-        feature.afterLoad(writeValue('%$text1/text%', 'not good'))
+        interactive(writeValue('%$text1/text%', 'not good'))
       ]
     }),
     expectedResult: contains('OK'),
@@ -292,7 +292,7 @@ jb.component('uiTest.groupWatchingWithIncludeChildren', {
       features: [
         variable({name: 'text1', value: obj(prop('text', 'OK')), watchable: true}),
         watchRef({ref: '%$text1%', includeChildren: 'yes'}),
-        feature.afterLoad(writeValue('%$text1/text%', 'changed'))
+        interactive(writeValue('%$text1/text%', 'changed'))
       ]
     }),
     expectedResult: contains('changed'),
@@ -307,7 +307,7 @@ jb.component('uiTest.groupWatchingStructure', {
       features: [
         variable({name: 'text1', value: obj(prop('text', 'OK')), watchable: true}),
         watchRef({ref: '%$text1%', includeChildren: 'structure'}),
-        feature.afterLoad(writeValue('%$text1/text%', 'changed'))
+        interactive(writeValue('%$text1/text%', 'changed'))
       ]
     }),
     expectedResult: contains('changed'),
@@ -323,7 +323,7 @@ jb.component('uiTest.watchRefArrayDeleteWithRunActionOnItems', {
         features: watchRef({ref: '%$watchablePeople%', includeChildren: 'yes'})
       }),
       features: [
-        feature.afterLoad(
+        interactive(
           runActionOnItems(
               '%$watchablePeople%',
               splice({

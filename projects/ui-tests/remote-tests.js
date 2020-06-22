@@ -1,15 +1,31 @@
-jb.ns('widget2tier')
+jb.ns('widget')
 
-jb.component('uiTest.widget2tier.button', {
+jb.component('uiTest.twoTierWidget.button.local', {
   impl: uiTest({
-    control: widget2tier.local(button('hello world')),
+    control: widget.twoTierWidget(button('hello world')),
     expectedResult: contains('hello world')
   })
 })
 
-jb.component('uiTest.widget2tier.infiniteScroll', {
+jb.component('uiTest.twoTierWidget.changeText.local', {
   impl: uiTest({
-    control: widget2tier.local(itemlist({
+    control: widget.twoTierWidget(
+      group({
+        controls: [
+          text({text: '%$fName%'}),
+          editableText({databind: '%$fName%'})
+        ],
+        features: variable({name: 'fName', value: 'Dan', watchable: true})
+      })
+    ),
+    action: uiAction.setText('danny'),
+    expectedResult: contains(['danny','danny'])
+  })
+})
+
+jb.component('uiTest.twoTierWidget.infiniteScroll.local', {
+  impl: uiTest({
+    control: widget.twoTierWidget(itemlist({
       items: range(0,10),
       controls: text('%%'),
       visualSizeLimit: '7',
@@ -19,7 +35,8 @@ jb.component('uiTest.widget2tier.infiniteScroll', {
         css.width('600')
       ]
     })),
-    expectedResult: contains('hello world')
+    action: uiAction.scrollDown('.jb-itemlist'),
+    expectedResult: contains('>8<')
   })
 })
 

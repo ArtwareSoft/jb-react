@@ -493,6 +493,6 @@ function getProcessArgument(argName) {
 http.createServer(serve).listen(settings.port);
 
 if (process.cwd().indexOf('jb-react') != -1)
-  console.log(`hello-world url: http://localhost:${settings.port}/project/studio/hello-world`)
+  console.log(`hello-world url: http://localhost:${settings.port}/project/studio/helloWorld`)
 else
   console.log(`studio url: http://localhost:${settings.port}/studio-bin`)

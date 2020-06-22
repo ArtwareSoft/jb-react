@@ -32,7 +32,7 @@
     "studio": "npm run studio-server & npm run helloWorld",
     "studio-server": "node bin/studio/studio-server.js",
     "puppeteer-server": "node src/misc/puppeteer/pptr-server.js",
-    "helloWorld": "start http://localhost:8082/project/studio/hello-world",
+    "helloWorld": "start http://localhost:8082/project/studio/helloWorld",
     "test": "start http://localhost:8082/projects/ui-tests/tests.html",
     "pub": "yarn build-libs && git commit -am build-lib",
     "vscode-package": "vsce package",

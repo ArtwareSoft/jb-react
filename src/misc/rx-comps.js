@@ -5,9 +5,9 @@ jb.component('rx.pipe', {
   category: 'combine',
   description: 'pipeline of reactive observables',
   params: [
-    {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, templateValue: []},
+    {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, templateValue: []}
   ],
-  impl: (ctx,elems) => jb.callbag.pipe(...elems) //, jb.callbag.map(x=>x.data))
+  impl: (ctx,elems) => jb.callbag.pipe(...elems)
 })
 
 jb.component('rx.innerPipe', {
@@ -23,11 +23,21 @@ jb.component('rx.innerPipe', {
 jb.component('rx.merge', {
     type: 'rx',
     category: 'combine',
-    description: 'merge more callbags sources (or any)',
+    description: 'merge callbags sources (or any)',
     params: [
       {id: 'sources', type: 'rx[]', as: 'array' },
     ],
     impl: (ctx,sources) => jb.callbag.merge(...sources)
+})
+
+jb.component('rx.race', {
+  type: 'rx',
+  category: 'combine',
+  description: 'return the first result of all sources',
+  params: [
+    {id: 'sources', type: 'rx[]', as: 'array' },
+  ],
+  impl: (ctx,sources) => jb.callbag.merge(...sources)
 })
 
 jb.component('rx.startWith', {
@@ -50,7 +60,7 @@ jb.component('rx.var', {
   impl: If('%$name%', (ctx,{},{name,value}) => source => (start, sink) => {
     if (start != 0) return 
     return source(0, function Var(t, d) {
-      sink(t, t === 1 ? d && d.setVar && d.setVar(name(),value(d)) : d)
+      sink(t, t === 1 ? d && {data: d.data, vars: {...d.vars, [name()]: value(d)}} : d)
     })
   }, null)
 })
@@ -73,11 +83,11 @@ jb.component('rx.reduce', {
           acc = initialValue(d)
           first = false
           if (!avoidFirst)
-            acc = value(d.setVar(varName,acc))
+            acc = value({data: d.data, vars: {...d.vars, [varName]: acc}})
         } else {
-          acc = value(d.setVar(varName,acc))
+          acc = value({data: d.data, vars: {...d.vars, [varName]: acc}})
         }
-        sink(t, acc == null ? d : d.setVar(varName, acc))
+        sink(t, acc == null ? d : {data: d.data, vars: {...d.vars, [varName]: acc}})
       } else {
         sink(t, d)
       }
@@ -121,6 +131,14 @@ jb.component('rx.max', {
 
 
 // ************ sources
+jb.component('rx.fromCallbagSource', {
+  type: 'rx',
+  category: 'source',
+  params: [
+    {id: 'callbag', mandatory: true, description: 'callbag source function'},
+  ],
+  impl: (ctx,callbag) => jb.callbag.map(x=>ctx.dataObj(x))(callbag)
+})
   
 jb.component('rx.fromEvent', {
   type: 'rx',
@@ -130,7 +148,7 @@ jb.component('rx.fromEvent', {
     {id: 'elem', description: 'html element', defaultValue: () => jb.frame.document },
     {id: 'options', description: 'addEventListener options, https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener' },
   ],
-  impl: (ctx,event,elem,options) => jb.callbag.map(x=>ctx.ctx({data:x, profile: '', forcePath: ''}))(jb.callbag.fromEvent(event,elem,options))
+  impl: (ctx,event,elem,options) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromEvent(event,elem,options))
 })
 
 jb.component('rx.fromIter', {
@@ -139,7 +157,7 @@ jb.component('rx.fromIter', {
   params: [
     {id: 'iter', mandatory: true, as: 'array', description: 'array or js Iterators or Generators. https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_Generators '},
   ],
-  impl: (ctx,iter) => jb.callbag.map(x=>ctx.ctx({data:x, profile: '', forcePath: ''}))(jb.callbag.fromIter(iter))
+  impl: (ctx,iter) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromIter(iter))
 })
 
 jb.component('rx.fromAny', {
@@ -148,7 +166,7 @@ jb.component('rx.fromAny', {
   params: [
     {id: 'source', mandatory: true, description: 'the source is detected by its type: promise, iterable, single, callbag element, etc..'},
   ],
-  impl: (ctx,source) => jb.callbag.map(x=>ctx.ctx({data:x, profile: '', forcePath: ''}))(jb.callbag.fromAny(source || []))
+  impl: (ctx,source) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromAny(source || []))
 })
 
 jb.component('rx.fromPromise', {
@@ -157,7 +175,7 @@ jb.component('rx.fromPromise', {
   params: [
     {id: 'promise', mandatory: true},
   ],
-  impl: (ctx,promise) => jb.callbag.map(x=>ctx.ctx({data:x, profile: '', forcePath: ''}))(jb.callbag.fromPromise(promise))
+  impl: (ctx,promise) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromPromise(promise))
 })
 
 jb.component('rx.interval', {
@@ -166,7 +184,7 @@ jb.component('rx.interval', {
   params: [
     {id: 'interval', as: 'number', templateValue: '1000', description: 'time in mSec'}
   ],
-  impl: (ctx,interval) => jb.callbag.map(x=>ctx.ctx({data:x, profile: '', forcePath: ''}))(jb.callbag.interval(interval))
+  impl: (ctx,interval) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.interval(interval))
 })
 
 // ******** operators *****
@@ -195,7 +213,7 @@ jb.component('rx.map', {
   params: [
     {id: 'func', dynamic: true, mandatory: true}
   ],
-  impl: (ctx,func) => jb.callbag.map(ctx2 => ctx2.setData(func(ctx2)))
+  impl: (ctx,func) => jb.callbag.map(ctx2 => ({data: func(ctx2), vars: ctx2.vars}))
 })
 
 jb.component('rx.mapPromise', {
@@ -204,7 +222,7 @@ jb.component('rx.mapPromise', {
   params: [
     {id: 'func', dynamic: true, mandatory: true}
   ],
-  impl: (ctx,func) => jb.callbag.mapPromise(ctx2 => Promise.resolve(func(ctx2)).then(res => ctx2.setData(res)))
+  impl: (ctx,func) => jb.callbag.mapPromise(ctx2 => Promise.resolve(func(ctx2)).then(data => ({vars: ctx2.vars, data})))
 })
 
 jb.component('rx.retry', {
@@ -264,7 +282,7 @@ jb.component('rx.flatMapArrays', {
   params: [
     {id: 'func', dynamic: true, defaultValue: '%%', description: 'should return array, items will be passes one by one'},
   ],
-  impl: (ctx,func) => jb.callbag.flatMap(ctx2 => jb.asArray(func(ctx2)), (_ctx,res) => _ctx.setData(res) )
+  impl: (ctx,func) => jb.callbag.flatMap(ctx2 => jb.asArray(func(ctx2)), (_ctx,data) => ({ vars: _ctx.vars, data }) )
 })
 
 jb.component('rx.concatMap', {
@@ -274,7 +292,7 @@ jb.component('rx.concatMap', {
     {id: 'func', dynamic: true, mandatory: true, description: 'keeps the order of the results, can return array, promise or callbag'},
     {id: 'combineResultWithInput', dynamic: true, description: 'combines %$input% with the inner result %%'}
   ],
-  impl: (ctx,func,combine) => combine.profile ? jb.callbag.concatMap(ctx2 => func(ctx2), (input,inner) => combine(inner.setVar('input',input.data)))  
+  impl: (ctx,func,combine) => combine.profile ? jb.callbag.concatMap(ctx2 => func(ctx2), (input,{data}) => combine({data,vars: {...input.vars, input: input.data} }))
     : jb.callbag.concatMap(ctx2 => func(ctx2))
 })
 

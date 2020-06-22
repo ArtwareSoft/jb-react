@@ -288,12 +288,10 @@ jb.callbag = {
               sources[i](0, (t, d) => {
                 if (t === 0) {
                   sourceTalkbacks[i] = d
-                  if (++startCount === 1) sink(0, talkback)
+                  sink(0, talkback) // if (++startCount === 1) 
                 } else if (t === 2 && d) {
                   ended = true
-                  for (let j = 0; j < n; j++) {
-                    if (j !== i) sourceTalkbacks[j] && sourceTalkbacks[j](2)
-                  }
+                  for (let j = 0; j < n; j++) if (j !== i && sourceTalkbacks[j]) sourceTalkbacks[j](2)
                   sink(2, d)
                 } else if (t === 2) {
                   sourceTalkbacks[i] = void 0
@@ -302,7 +300,35 @@ jb.callbag = {
               })
             }
           }
-      }, // elem,event,options
+      },
+      race(..._sources) { // take only the first result including errors and complete
+        const sources = _sources.filter(x=>x).filter(x=>jb.callbag.fromAny(x))
+        return function race(start, sink) {
+          if (start !== 0) return
+          const n = sources.length
+          const sourceTalkbacks = new Array(n)
+          let endCount = 0
+          let ended = false
+          const talkback = (t, d) => {
+            if (t === 2) ended = true
+            for (let i = 0; i < n; i++) sourceTalkbacks[i] && sourceTalkbacks[i](t, d)
+          }
+          for (let i = 0; i < n; i++) {
+            if (ended) return
+            sources[i](0, function race(t, d) {
+              if (t === 0) {
+                sourceTalkbacks[i] = d
+                sink(0, talkback)
+              } else {
+                ended = true
+                for (let j = 0; j < n; j++) 
+                  if (j !== i && sourceTalkbacks[j]) sourceTalkbacks[j](2)
+                sink(1,d)
+                sink(2)
+              }
+            })
+          }
+      }},
       fromEvent: (event, elem, options) => (start, sink) => {
           if (start !== 0) return
           let disposed = false
@@ -815,7 +841,7 @@ jb.callbag = {
 
       wrapWithSnifferForLogByPath(ctx,res) {
         const _jb = ctx.frame().jb
-        if (_jb.cbLogByPath && typeof res == 'function' && jb.callbag.isCallbagFunc(res)) {
+        if (_jb.cbLogByPath && typeof res == 'function' && jb.callbag.isCallbagFunc(res) && jb.path(ctx,'profile.$') != 'rx.subscribe') {
           const {sniffer,isCallbag,sourceSniffer} = _jb.callbag
           // wrap cb with sniffer
           const log = _jb.cbLogByPath[ctx.path] = { callbagLog: true, result: [] }

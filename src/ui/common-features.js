@@ -81,16 +81,15 @@ jb.component('feature.beforeInit', {
   impl: feature.init('%$action%',5)
 })
 
-jb.component('feature.afterLoad', {
+jb.component('interactive', {
   type: 'feature',
   description: 'init, onload, defines the interactive part of the component',
   category: 'lifecycle',
   params: [
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
-  impl: ctx => ({ afterViewInit: cmp => ctx.params.action(cmp.ctx) })
+  impl: ctx => ({ interactive: cmp => ctx.params.action(cmp.ctx) })
 })
-jb.component('interactive', jb.comps['feature.afterLoad'])
 
 jb.component('templateModifier', {
   type: 'feature',

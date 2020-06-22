@@ -167,6 +167,11 @@ jb.component('worker.remoteCallbag', {
     }
 })
 
+jb.component('remote.local', {
+    type: 'remote',
+    impl: () => ({isLocal: () => true})
+})
+
 jb.component('remote.innerRx', {
     type: 'rx',
     params: [
@@ -174,6 +179,7 @@ jb.component('remote.innerRx', {
       {id: 'remote', type: 'remote', defaultValue: worker.remoteCallbag()}
     ],
     impl: (ctx,rx,remote) => {
+        if (remote.isLocal()) return rx()
         const sourceId = jb.remote.cbCounter++
         const sinkId = jb.remote.cbCounter++
         jb.entries(jb.cbLogByPath||{}).filter(e=>e[0].indexOf(ctx.path) == 0).forEach(e=>e[1].result = []) // clean probe logs
@@ -216,6 +222,7 @@ jb.component('remote.sourceRx', {
       {id: 'remote', type: 'remote', defaultValue: worker.remoteCallbag()}
     ],
     impl: (ctx,rx,remote) => {
+        if (remote.isLocal()) return rx()
         const sinkId = jb.remote.cbCounter++
         jb.entries(jb.cbLogByPath||{}).filter(e=>e[0].indexOf(ctx.path) == 0).forEach(e=>e[1].result = [])
         jb.delay(1).then(()=> remote).then(remote => remote.postObj({ $: 'sourceCB', sinkId, propName: 'rx', ctx }))

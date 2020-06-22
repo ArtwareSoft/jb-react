@@ -265,14 +265,14 @@ Object.assign(jb.ui, {
         ev = typeof event != 'undefined' ? event : ev
         const userEvent = {ev,specificHandler}
         const parents = jb.ui.parents(ev.currentTarget,{includeSelf: true})
-        // const widgetId = parents.filter(el=>el.getAttribute && el.getAttribute('widgetTop')).map(el=>el.getAttribute('id'))[0]
-        // if (widgetId)
-        //     return jb.ui.widgets[widgetId].userEventsSink.next(userEvent)
+        const widgetId = parents.filter(el=>el.getAttribute && el.getAttribute('widgetTop')).map(el=>el.getAttribute('id'))[0]
 
         const el = parents.find(el=> el.getAttribute && el.getAttribute('jb-ctx') != null)
         if (!el) return
-        if (ev.type == 'scroll') // supports the worker scenario
+        if (ev.type == 'scroll')
             ev.scrollPercentFromTop = ev.scrollPercentFromTop || (el.scrollTop + jb.ui.offset(el).height)/ el.scrollHeight;
+        if (widgetId)
+            return jb.ui.widgetUserEvents.next({...{ev,specificHandler}, widgetId})
 
         if (el.getAttribute('worker')) { // forward the event to the worker
             return jb.ui.workers[el.getAttribute('worker')].handleBrowserEvent(el,ev,specificHandler)
@@ -472,7 +472,7 @@ function mountInteractive(elem, keepState) {
     jb.unique(cmp.eventObservables||[])
         .forEach(op => mountedCmp[op] = jb.ui.fromEvent(mountedCmp,op.slice(2),elem))
 
-    ;(cmp.componentDidMountFuncs||[]).forEach(f=> tryWrapper(() => f(mountedCmp), 'componentDidMount'))
+    ;(cmp.interactiveFuncs||[]).forEach(f=> tryWrapper(() => f(mountedCmp), 'interactive'))
     mountedCmp.status = 'ready'
 }
 

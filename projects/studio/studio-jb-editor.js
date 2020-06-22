@@ -1,7 +1,7 @@
 (function() {
 const st = jb.studio
 jb.studio.probeResultCustomizers = []
-jb.ns('tree')
+jb.ns('tree,rx')
 
 jb.component('studio.jbEditorPathForEdit', {
   type: 'data',
@@ -101,7 +101,7 @@ jb.component('studio.dataBrowse', {
             })
           ),
           controlWithCondition(
-            '%$obj/_parent%',
+            '%$obj/vars%',
             group({
               layout: layout.flex({spacing: '10'}),
               controls: [
@@ -193,7 +193,7 @@ jb.component('studio.showRxSniffer', {
     {id: 'snifferLog'}
   ],
   impl: itemlist({
-        items: (ctx,{},{snifferLog}) => jb.studio.cbLogAsCallbag(ctx,snifferLog),
+        items: rx.fromIter('%$snifferLog/result%'),
         controls: group({
           layout: layout.flex({spacing: '0'}),
           controls: [

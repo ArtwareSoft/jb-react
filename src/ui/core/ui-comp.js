@@ -3,7 +3,7 @@ const ui = jb.ui
 let cmpId = 0;
 ui.propCounter = 0
 const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,this.ctx) }}
-const lifeCycle = new Set('init,componentDidMount,componentWillUpdate,componentDidUpdate,destroy,extendCtx,templateModifier,extendItem'.split(','))
+const lifeCycle = new Set('init,interactive,componentWillUpdate,componentDidUpdate,destroy,extendCtx,templateModifier,extendItem'.split(','))
 const arrayProps = new Set('enrichField,icon,watchAndCalcModelProp,cssLines,defHandler,interactiveProp,calcProp'.split(','))
 const singular = new Set('template,calcRenderProps,toolbar,styleParams,calcHash,ctxForPick'.split(','))
 
@@ -136,7 +136,7 @@ class JbComponent {
             handlers && {handlers}, 
             originators && {originators},
             this.ctxForPick && { 'pick-ctx': ui.preserveCtx(this.ctxForPick) },
-            (this.componentDidMountFuncs || interactive) && {interactive}, 
+            (this.interactiveFuncs || interactive) && {interactive}, 
             this.renderProps.cmpHash != null && {cmpHash: this.renderProps.cmpHash}
         )        
         if (vdom instanceof jb.ui.VNode) {
@@ -152,7 +152,7 @@ class JbComponent {
                 originators && {originators},
                 this.ctxForPick && { 'pick-ctx': ui.preserveCtx(this.ctxForPick) },
                 workerId && { 'worker': workerId },
-                (this.componentDidMountFuncs || interactive) && {interactive}, 
+                (this.interactiveFuncs || interactive) && {interactive}, 
                 this.renderProps.cmpHash != null && {cmpHash: this.renderProps.cmpHash}
             )
         }
@@ -217,7 +217,7 @@ class JbComponent {
         }
 
         if (options.afterViewInit) 
-            options.componentDidMount = options.afterViewInit
+            options.interactive = options.afterViewInit
         if (typeof options.class == 'string') 
             options.templateModifier = vdom => vdom.addClass(options.class)
 

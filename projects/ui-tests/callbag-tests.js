@@ -621,3 +621,24 @@ jb.component('dataTest.rx.talkbackSrc', {
   })
 })
 
+jb.component('dataTest.rx.snifferBug', {
+  impl: dataTest({
+    vars: [Var('a', () => ({ val: 1})) ],
+    runBefore: rx.pipe(rx.fromIter([1]), rx.map('%%'), rx.subscribe({next: writeValue('%$a/val%', 2)})),
+    calculate: '%$a/val%',
+    expectedResult: '%%==2'
+  })
+})
+
+jb.component('dataTest.rx.race', {
+  impl: dataTest({
+    calculate: rx.pipe(
+      rx.merge(
+          rx.pipe(rx.fromIter([1]), rx.delay(400), rx.map('a')),
+          rx.pipe(rx.fromIter([1]), rx.delay(200), rx.map('b'))
+        ),
+      rx.take(1)
+    ),
+    expectedResult: '%%==b'
+  })
+})

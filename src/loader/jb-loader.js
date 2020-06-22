@@ -1,3 +1,4 @@
+debugger
 var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : {}), {
       'core': [
         'src/core/jb-core.js',
@@ -23,7 +24,6 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/core/jb-react.js',
         'src/ui/core/ui-comp.js',
         'src/ui/core/ui-utils.js',
-        'src/ui/core/two-tier-widget.js',        
 
         'src/ui/common-features.js',
         'src/ui/css-features.js',
@@ -84,6 +84,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       'rx': [
         'src/misc/rx-comps.js',
       ],
+      'two-tier-widget': ['src/ui/two-tier-widget.js'],        
       'puppeteer': [
         'src/misc/puppeteer/pptr-remote.js',
         'src/misc/puppeteer/pptr.js',
@@ -165,7 +166,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       'parsing': [ 'src/misc/parsing.js' ],
       studio: [
         'dist/material.js', 'src/ui/watchable/text-editor.js',
-        'src/misc/parsing.js', 'src/ui/styles/codemirror-styles.js',
+        'src/misc/parsing.js', 'src/ui/styles/codemirror-styles.js', 'src/misc/rx-comps.js',
         'styles', 'path','utils', 'preview','popups','url','model-components', 'completion', 'undo','tgp-model', 'new-profile',
         'suggestions', 'properties','jb-editor-styles','edit-source','jb-editor','pick','h-to-jsx','style-editor',
         'references','properties-menu','save','open-project','tree',
@@ -185,6 +186,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
 Object.keys(jb_modules.$dependencies).forEach(m => jb_modules[m].dependencies = jb_modules.$dependencies[m])
 
 function jb_dynamicLoad(modules,prefix,suffix) {
+  debugger
   modules = modules || '';
   const isDist = typeof window != 'undefined' && document.currentScript.getAttribute('src').indexOf('/dist/') != -1
   if (isDist) {
@@ -236,6 +238,7 @@ if (typeof global != 'undefined') global.jb_modules = jb_modules;
 loadProject()
 
 function loadProject() {
+  debugger
   if (typeof jbProjectSettings == 'undefined') return
   jbProjectSettings.baseUrl = jbProjectSettings.baseUrl || ''
 
@@ -246,6 +249,7 @@ function loadProject() {
 }
 
 function jb_initWidget() {
+  debugger
   if (!document.getElementById('main')) {
     const mainElem = document.createElement('div')
     mainElem.setAttribute('id','main')

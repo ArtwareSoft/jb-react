@@ -106,8 +106,6 @@ jb.component('dialogFeature.studioPick', {
           subscribe(() => {})
       )
     }
-
-
   })
 })
 

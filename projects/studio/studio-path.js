@@ -328,22 +328,18 @@ jb.component('studio.watchPath', {
 
 jb.component('studio.watchScriptChanges', {
   type: 'feature',
-  impl: ctx => ({
-	  afterViewInit: cmp => pipe(st.scriptChange,
-		takeUntil( cmp.destroyed ),
-		subscribe(() => cmp.refresh(null,{srcCtx: ctx}))
-	  )
-   })
+  impl: interactive(({},{cmp}, _ctx) => 
+  		pipe(st.scriptChange,
+			takeUntil( cmp.destroyed ),
+			subscribe(() => cmp.refresh(null,{srcCtx: _ctx}))))
 })
 
 jb.component('studio.watchComponents', {
   type: 'feature',
-  impl: ctx => ({
-	  afterViewInit: cmp => pipe(st.scriptChange,
-			takeUntil( cmp.destroyed ),
-			filter(e=>e.path.length == 1),
-        	subscribe(() => cmp.refresh(null,{srcCtx: ctx})))
-   })
+  impl: interactive(({},{cmp}, _ctx) => pipe(st.scriptChange,
+		takeUntil( cmp.destroyed ),
+		filter(e=>e.path.length == 1),
+		subscribe(() => cmp.refresh(null,{srcCtx: _ctx}))))
 })
 
 jb.component('studio.boolRef', {

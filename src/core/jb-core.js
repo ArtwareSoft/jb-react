@@ -531,6 +531,7 @@ class jbCtx {
     })
   }
   runItself(parentParam,settings) { return jb_run(this,parentParam,settings) }
+  dataObj(data) { return {data, vars: this.vars} }
   callStack() {
     const ctxStack=[]; 
     for(let innerCtx=this; innerCtx; innerCtx = innerCtx.componentContext) 
@@ -732,8 +733,8 @@ Object.assign(jb,{
   toSynchArray: (item, synchCallbag) => {
     if (! jb.asArray(item).find(v=> jb.callbag.isCallbag(v) || jb.isPromise(v))) return item;
     const {pipe, fromIter, toPromiseArray, mapPromise,flatMap, map, isCallbag} = jb.callbag
-    if (isCallbag(item)) return synchCallbag ? toPromiseArray(pipe(item,map(x=> x && x._parent ? x.data : x ))) : item
-    if (Array.isArray(item) && isCallbag(item[0])) return synchCallbag ? toPromiseArray(pipe(item[0], map(x=> x && x._parent ? x.data : x ))) : item
+    if (isCallbag(item)) return synchCallbag ? toPromiseArray(pipe(item,map(x=> x && x.vars ? x.data : x ))) : item
+    if (Array.isArray(item) && isCallbag(item[0])) return synchCallbag ? toPromiseArray(pipe(item[0], map(x=> x && x.vars ? x.data : x ))) : item
 
     return pipe( // array of promises
           fromIter(jb.asArray(item)),

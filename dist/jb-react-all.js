@@ -531,6 +531,7 @@ class jbCtx {
     })
   }
   runItself(parentParam,settings) { return jb_run(this,parentParam,settings) }
+  dataObj(data) { return {data, vars: this.vars} }
   callStack() {
     const ctxStack=[]; 
     for(let innerCtx=this; innerCtx; innerCtx = innerCtx.componentContext) 
@@ -732,8 +733,8 @@ Object.assign(jb,{
   toSynchArray: (item, synchCallbag) => {
     if (! jb.asArray(item).find(v=> jb.callbag.isCallbag(v) || jb.isPromise(v))) return item;
     const {pipe, fromIter, toPromiseArray, mapPromise,flatMap, map, isCallbag} = jb.callbag
-    if (isCallbag(item)) return synchCallbag ? toPromiseArray(pipe(item,map(x=> x && x._parent ? x.data : x ))) : item
-    if (Array.isArray(item) && isCallbag(item[0])) return synchCallbag ? toPromiseArray(pipe(item[0], map(x=> x && x._parent ? x.data : x ))) : item
+    if (isCallbag(item)) return synchCallbag ? toPromiseArray(pipe(item,map(x=> x && x.vars ? x.data : x ))) : item
+    if (Array.isArray(item) && isCallbag(item[0])) return synchCallbag ? toPromiseArray(pipe(item[0], map(x=> x && x.vars ? x.data : x ))) : item
 
     return pipe( // array of promises
           fromIter(jb.asArray(item)),
@@ -2315,12 +2316,10 @@ jb.callbag = {
               sources[i](0, (t, d) => {
                 if (t === 0) {
                   sourceTalkbacks[i] = d
-                  if (++startCount === 1) sink(0, talkback)
+                  sink(0, talkback) // if (++startCount === 1) 
                 } else if (t === 2 && d) {
                   ended = true
-                  for (let j = 0; j < n; j++) {
-                    if (j !== i) sourceTalkbacks[j] && sourceTalkbacks[j](2)
-                  }
+                  for (let j = 0; j < n; j++) if (j !== i && sourceTalkbacks[j]) sourceTalkbacks[j](2)
                   sink(2, d)
                 } else if (t === 2) {
                   sourceTalkbacks[i] = void 0
@@ -2329,7 +2328,35 @@ jb.callbag = {
               })
             }
           }
-      }, // elem,event,options
+      },
+      race(..._sources) { // take only the first result including errors and complete
+        const sources = _sources.filter(x=>x).filter(x=>jb.callbag.fromAny(x))
+        return function race(start, sink) {
+          if (start !== 0) return
+          const n = sources.length
+          const sourceTalkbacks = new Array(n)
+          let endCount = 0
+          let ended = false
+          const talkback = (t, d) => {
+            if (t === 2) ended = true
+            for (let i = 0; i < n; i++) sourceTalkbacks[i] && sourceTalkbacks[i](t, d)
+          }
+          for (let i = 0; i < n; i++) {
+            if (ended) return
+            sources[i](0, function race(t, d) {
+              if (t === 0) {
+                sourceTalkbacks[i] = d
+                sink(0, talkback)
+              } else {
+                ended = true
+                for (let j = 0; j < n; j++) 
+                  if (j !== i && sourceTalkbacks[j]) sourceTalkbacks[j](2)
+                sink(1,d)
+                sink(2)
+              }
+            })
+          }
+      }},
       fromEvent: (event, elem, options) => (start, sink) => {
           if (start !== 0) return
           let disposed = false
@@ -2842,7 +2869,7 @@ jb.callbag = {
 
       wrapWithSnifferForLogByPath(ctx,res) {
         const _jb = ctx.frame().jb
-        if (_jb.cbLogByPath && typeof res == 'function' && jb.callbag.isCallbagFunc(res)) {
+        if (_jb.cbLogByPath && typeof res == 'function' && jb.callbag.isCallbagFunc(res) && jb.path(ctx,'profile.$') != 'rx.subscribe') {
           const {sniffer,isCallbag,sourceSniffer} = _jb.callbag
           // wrap cb with sniffer
           const log = _jb.cbLogByPath[ctx.path] = { callbagLog: true, result: [] }
@@ -3978,14 +4005,14 @@ Object.assign(jb.ui, {
         ev = typeof event != 'undefined' ? event : ev
         const userEvent = {ev,specificHandler}
         const parents = jb.ui.parents(ev.currentTarget,{includeSelf: true})
-        // const widgetId = parents.filter(el=>el.getAttribute && el.getAttribute('widgetTop')).map(el=>el.getAttribute('id'))[0]
-        // if (widgetId)
-        //     return jb.ui.widgets[widgetId].userEventsSink.next(userEvent)
+        const widgetId = parents.filter(el=>el.getAttribute && el.getAttribute('widgetTop')).map(el=>el.getAttribute('id'))[0]
 
         const el = parents.find(el=> el.getAttribute && el.getAttribute('jb-ctx') != null)
         if (!el) return
-        if (ev.type == 'scroll') // supports the worker scenario
+        if (ev.type == 'scroll')
             ev.scrollPercentFromTop = ev.scrollPercentFromTop || (el.scrollTop + jb.ui.offset(el).height)/ el.scrollHeight;
+        if (widgetId)
+            return jb.ui.widgetUserEvents.next({...{ev,specificHandler}, widgetId})
 
         if (el.getAttribute('worker')) { // forward the event to the worker
             return jb.ui.workers[el.getAttribute('worker')].handleBrowserEvent(el,ev,specificHandler)
@@ -4185,7 +4212,7 @@ function mountInteractive(elem, keepState) {
     jb.unique(cmp.eventObservables||[])
         .forEach(op => mountedCmp[op] = jb.ui.fromEvent(mountedCmp,op.slice(2),elem))
 
-    ;(cmp.componentDidMountFuncs||[]).forEach(f=> tryWrapper(() => f(mountedCmp), 'componentDidMount'))
+    ;(cmp.interactiveFuncs||[]).forEach(f=> tryWrapper(() => f(mountedCmp), 'interactive'))
     mountedCmp.status = 'ready'
 }
 
@@ -4196,7 +4223,7 @@ const ui = jb.ui
 let cmpId = 0;
 ui.propCounter = 0
 const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,this.ctx) }}
-const lifeCycle = new Set('init,componentDidMount,componentWillUpdate,componentDidUpdate,destroy,extendCtx,templateModifier,extendItem'.split(','))
+const lifeCycle = new Set('init,interactive,componentWillUpdate,componentDidUpdate,destroy,extendCtx,templateModifier,extendItem'.split(','))
 const arrayProps = new Set('enrichField,icon,watchAndCalcModelProp,cssLines,defHandler,interactiveProp,calcProp'.split(','))
 const singular = new Set('template,calcRenderProps,toolbar,styleParams,calcHash,ctxForPick'.split(','))
 
@@ -4329,7 +4356,7 @@ class JbComponent {
             handlers && {handlers}, 
             originators && {originators},
             this.ctxForPick && { 'pick-ctx': ui.preserveCtx(this.ctxForPick) },
-            (this.componentDidMountFuncs || interactive) && {interactive}, 
+            (this.interactiveFuncs || interactive) && {interactive}, 
             this.renderProps.cmpHash != null && {cmpHash: this.renderProps.cmpHash}
         )        
         if (vdom instanceof jb.ui.VNode) {
@@ -4345,7 +4372,7 @@ class JbComponent {
                 originators && {originators},
                 this.ctxForPick && { 'pick-ctx': ui.preserveCtx(this.ctxForPick) },
                 workerId && { 'worker': workerId },
-                (this.componentDidMountFuncs || interactive) && {interactive}, 
+                (this.interactiveFuncs || interactive) && {interactive}, 
                 this.renderProps.cmpHash != null && {cmpHash: this.renderProps.cmpHash}
             )
         }
@@ -4410,7 +4437,7 @@ class JbComponent {
         }
 
         if (options.afterViewInit) 
-            options.componentDidMount = options.afterViewInit
+            options.interactive = options.afterViewInit
         if (typeof options.class == 'string') 
             options.templateModifier = vdom => vdom.addClass(options.class)
 
@@ -4635,7 +4662,11 @@ jb.objectDiff = function(newObj, orig) {
 // *** dynamic widget
 
 jb.ui.renderWidget = function(profile,top) {
-  if (jb.frame.parent && jb.iframeAccessible(jb.frame.parent) && jb.frame.parent != jb.frame && jb.frame.parent.jb)
+  let parentAccessible = true
+  try {
+    jb.frame.parent.jb
+  } catch(e) { parentAccessible = false }
+  if (parentAccessible && jb.frame.parent != jb.frame)
     jb.frame.parent.jb.studio.initPreview(jb.frame,[Object.getPrototypeOf({}),Object.getPrototypeOf([])])
 
   let currentProfile = profile
@@ -4754,70 +4785,14 @@ jb.component('controlWithFeatures', {
     {id: 'control', type: 'control', mandatory: true},
     {id: 'features', type: 'feature[]', templateValue: [], mandatory: true}
   ],
-  impl: (ctx,control,features) => control.jbExtend(features,ctx).orig(ctx)
+  impl: (ctx,control,features) => {
+    const ctrl = control.jbExtend(features,ctx).orig(ctx)
+    //ctrl.ctx = ctx
+    return ctrl
+  }
 })
 
 })()
-;
-
-
-jb.ui.widgetRenderingUpdates = jb.callbag.subject()
-Object.assign(jb.ui, {
-    widgetRenderingSrc: jb.callbag.replayFirst(m=>m.widgetId)(jb.ui.widgetRenderingUpdates),
-    headlessWidgets: {},
-    frontEndWidgets: {},
-    parentWidget: elem => jb.ui.parents(elem,{includeSelf: true}).filter(el=>el.getAttribute && el.getAttribute('widgetTop')),
-    inHeadlessWidget: elem => jb.ui.parentWidget(elem).map(el=>el.getAttribute('headless'))[0],
-    inFrontEndWidget: elem => jb.ui.parentWidget(elem).map(el=>el.getAttribute('frontend'))[0],
-    createHeadlessWidget: (ctx, widgetId, ctrl) => {
-        const {headlessWidgets, activateHandler, widgetRenderingUpdates, widgetRenderingSrc, compareVdom } = jb.ui
-        const {pipe, subscribe, filter} = jb.callbag
-        const cmp = ctrl(ctx.setVar('widgetId',widgetId))
-        const top = jb.ui.h(cmp)
-        top.attributes = Object.assign(top.attributes || {}, { widgetTop: 'true', headless: true, id: widgetId })
-        widgetRenderingUpdates.next({widgetId, delta: compareVdom({},top), elemId: widgetId})
-
-        return headlessWidgets[widgetId] = {
-            widgetId,
-            userEventsIn: subscribe(userEvent => activateHandler(userEvent)),
-            deltaOut: pipe(widgetRenderingSrc, filter(e=>e.widgetId == widgetId)),    
-        }
-    },
-    createFrontEndWidget: (ctx, widgetId) => {
-        const {document, applyDeltaToDom, addStyleElem, h, refreshInteractive, frontEndWidgets, widgetUserEvents} = jb.ui
-        const {pipe, subscribe, filter, delay} = jb.callbag
-        return frontEndWidgets[widgetId] = {
-            widgetId,
-            deltaIn: subscribe( ({delta,elemId,cmpId,css}) => {
-                const elem = document(ctx).querySelector('#'+elemId) || document(ctx).querySelector(`[cmp-id="${cmpId}"]`)
-                if (elem) {
-                    applyDeltaToDom(elem, delta)
-                    refreshInteractive(elem)
-                }
-                css && addStyleElem(css)
-            }),
-            userEventsOut: pipe(widgetUserEvents, filter(e=>e.widgetId == widgetId)),
-            vdom: () => h('div',{id: widgetId, widgetTop: 'true', frontend: true})
-        }
-    }
-})
-
-jb.component('widget2tier.local', {
-    type: 'control',
-    params: [
-      {id: 'ctrl', type: 'control', dynamic: true },
-      {id: 'id', as: 'string'},
-    ],
-    impl: (ctx,ctrl,id) => {
-        const widgetId = id || 'widget' + ctx.id
-        const headless = jb.ui.createHeadlessWidget(ctx,widgetId,ctrl)
-        const frontEnd = jb.ui.createFrontEndWidget(ctx,widgetId)
-        jb.callbag.pipe(headless.deltaOut, jb.callbag.delay(1), frontEnd.deltaIn)
-        jb.callbag.pipe(frontEnd.userEventsOut, headless.userEventsIn)
-        return frontEnd.vdom()
-    }
-})
-
 ;
 
 jb.component('defHandler', {
@@ -4903,16 +4878,15 @@ jb.component('feature.beforeInit', {
   impl: feature.init('%$action%',5)
 })
 
-jb.component('feature.afterLoad', {
+jb.component('interactive', {
   type: 'feature',
   description: 'init, onload, defines the interactive part of the component',
   category: 'lifecycle',
   params: [
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
-  impl: ctx => ({ afterViewInit: cmp => ctx.params.action(cmp.ctx) })
+  impl: ctx => ({ interactive: cmp => ctx.params.action(cmp.ctx) })
 })
-jb.component('interactive', jb.comps['feature.afterLoad'])
 
 jb.component('templateModifier', {
   type: 'feature',
@@ -6969,7 +6943,7 @@ jb.component('itemlist.infiniteScroll', {
       }
     }
       ),
-    templateModifier(({},{vdom}) => vdom.setAttribute('onscroll',true))
+    templateModifier(({},{vdom}) => vdom.setAttribute('on-scroll',true))
   )
 })
 
@@ -6983,7 +6957,7 @@ jb.component('itemlist.incrementalFromRx', {
       (ctx,{cmp, $state}) => $state.rxItems && jb.callbag.pipe(
           ctx.vars.$model.items()[0],
           jb.callbag.takeUntil( cmp.destroyed ),
-          jb.callbag.subscribe(item => jb.ui.runActionOfElem(cmp.base,'nextItem',{item, elem: cmp.base}))
+          jb.callbag.subscribe(item => jb.ui.runActionOfElem(cmp.base,'nextItem',{item: item.data, elem: cmp.base}))
     )),
     defHandler('nextItem', (ctx,{ev},{prepend}) => {
       const {elem} = ev
@@ -7089,9 +7063,6 @@ jb.component('itemlist.selection', {
     () => ({
       onclick: true,
       ondblclick: true,
-      componentDidUpdate: cmp => {
-        
-      },
     }),
     css(({},{},{cssForSelected}) => ['>.selected','>*>.selected','>*>*>.selected'].map(sel=>sel+ ' ' + jb.ui.fixCssLine(cssForSelected)).join('\n')),
     defHandler('onSelection', (ctx,{ev},{databind,onSelection,selectedToDatabind}) => {
@@ -7124,7 +7095,7 @@ jb.component('itemlist.selection', {
         }
 
         const clickEmitter = pipe(
-          merge(cmp.onclick,cmp.ondblclick),
+          merge(cmp.onclick, cmp.ondblclick),
           map(e=>ctxIdOfElem(e.target)),
         )
         pipe(merge(cmp.selectionEmitter, clickEmitter),
@@ -11080,6 +11051,11 @@ jb.component('worker.remoteCallbag', {
     }
 })
 
+jb.component('remote.local', {
+    type: 'remote',
+    impl: () => ({isLocal: () => true})
+})
+
 jb.component('remote.innerRx', {
     type: 'rx',
     params: [
@@ -11087,6 +11063,7 @@ jb.component('remote.innerRx', {
       {id: 'remote', type: 'remote', defaultValue: worker.remoteCallbag()}
     ],
     impl: (ctx,rx,remote) => {
+        if (remote.isLocal()) return rx()
         const sourceId = jb.remote.cbCounter++
         const sinkId = jb.remote.cbCounter++
         jb.entries(jb.cbLogByPath||{}).filter(e=>e[0].indexOf(ctx.path) == 0).forEach(e=>e[1].result = []) // clean probe logs
@@ -11129,6 +11106,7 @@ jb.component('remote.sourceRx', {
       {id: 'remote', type: 'remote', defaultValue: worker.remoteCallbag()}
     ],
     impl: (ctx,rx,remote) => {
+        if (remote.isLocal()) return rx()
         const sinkId = jb.remote.cbCounter++
         jb.entries(jb.cbLogByPath||{}).filter(e=>e[0].indexOf(ctx.path) == 0).forEach(e=>e[1].result = [])
         jb.delay(1).then(()=> remote).then(remote => remote.postObj({ $: 'sourceCB', sinkId, propName: 'rx', ctx }))
