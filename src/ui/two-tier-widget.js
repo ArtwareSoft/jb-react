@@ -64,7 +64,7 @@ jb.component('widget.headless', {
             userReqIn(0, function headless(t, d) {
               if (t == 0) talkback.push(d)
               if (t === 2) sink(t,d)
-              if (t === 1 && d) handleUserReq(d.data)
+              if (t === 1 && d && d.data.widgetId == widgetId) handleUserReq(d.data)
 //              if (t === 1 && d && d.data.destroyWidget) sink(2)
             })
         }

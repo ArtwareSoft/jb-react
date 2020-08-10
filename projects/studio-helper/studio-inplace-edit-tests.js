@@ -169,7 +169,7 @@ jb.component('inPlaceEditTest.sizesEditor.inStudio', {
   impl: uiTest({
     control: text({
       text: 'hello world',
-      features: [css('padding: 132px;margin-left: 3px'), {'$': 'css.'}]
+      features: css('padding: 132px;margin-left: 3px')
     }),
     expectedResult: true,
     runInStudio: studio.openSizesEditor('inPlaceEditTest.sizesEditor.inStudio~impl~control')

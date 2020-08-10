@@ -2211,9 +2211,12 @@ Object.assign(jb.ui,{
           jb.callbag.takeUntil(cmp.destroyed)
     ),
     renderWidget(profile,topElem) {
-      if (jb.studio.studioWindow && jb.ui.renderWidgetInStudio)
+      if (!jb.ui.renderWidgetInStudio && jb.path(jb.frame,'parent.jb.ui.renderWidgetInStudio'))
+        eval('jb.ui.renderWidgetInStudio= ' + jb.frame.parent.jb.ui.renderWidgetInStudio.toString())
+      if (jb.ui.renderWidgetInStudio)
         return jb.ui.renderWidgetInStudio(profile,topElem)
-      jb.ui.render(jb.ui.h(new jb.jbCtx().run(profile)),topElem)    
+      else
+        jb.ui.render(jb.ui.h(new jb.jbCtx().run(profile)),topElem)    
     },
 })
 
