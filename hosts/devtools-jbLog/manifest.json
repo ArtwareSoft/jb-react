@@ -1,0 +1,19 @@
+{
+  "name": "jBart logger",
+  "version": "0.2",
+  "manifest_version": 2,
+  "description": "browse jBart logs inside chrome debugger",
+  "homepage_url": "http://www.artwaresoft.com",
+  "devtools_page": "devtools.html",
+  "content_security_policy": "script-src 'self' 'unsafe-eval' http://localhost:8082; object-src 'self'",
+  "web_accessible_resources": [
+    "logger/logger.html",
+    "http://localhost:8082/bin/studio/studio-all.js",
+    "http://localhost:8082/bin/studio/css/studio-all.css"
+  ],
+  "permissions": [
+    "file:///*",
+    "http://*/*",
+    "https://*/*"
+  ]
+}
