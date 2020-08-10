@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script>
 jbProjectSettings = {
-	libs: 'common,ui-common,material,rx,ui-tree,dragula,codemirror,testers,pretty-print,studio,studio-tests,object-encoder,remote,md-icons,fuse,puppeteer,animation,cards,two-tier-widget',
+	libs: 'common,ui-common,material,two-tier-widget,ui-tree,dragula,codemirror,testers,pretty-print,studio,studio-tests,object-encoder,remote,md-icons,fuse,puppeteer,animation,cards',
 	jsFiles: [
 	'/projects/ui-tests/remote-widgets.js',
 	'/projects/ui-tests/phones-3.js',
@@ -32,6 +32,7 @@ jbProjectSettings = {
 <body>
 	<div id="mem"> </div>
 	<div id="test"> </div>
+	<div id="show"> </div>
  <script>
 	window.jb_initWidget && jb_initWidget()
 	const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]

@@ -1,7 +1,3 @@
-(function(){
-const ui = jb.ui;
-
-// ****************** jbart ui utils ***************
 Object.assign(jb.ui,{
     focus(elem,logTxt,srcCtx) {
         if (!elem) debugger;
@@ -16,22 +12,9 @@ Object.assign(jb.ui,{
             elem.focus()
           })
     },
-    wrapWithLauchingElement: (f,ctx,elem,options={}) => ctx2 => {
-        if (!elem) debugger;
-        return f(ctx.extendVars(ctx2).setVars({ $launchingElement: { el : elem, ...options }}));
-    },
     withUnits: v => (v === '' || v === undefined) ? '' : (''+v||'').match(/[^0-9]$/) ? v : `${v}px`,
     propWithUnits: (prop,v) => (v === '' || v === undefined) ? '' : `${prop}: ` + ((''+v||'').match(/[^0-9]$/) ? v : `${v}px`) + ';',
     fixCssLine: css => css.indexOf('\n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css,
-    ctxDictOfElem: elem => {
-      const runningWorkerId = jb.frame.workerId && jb.frame.workerId()
-      const workerIdAtElem = elem.getAttribute('worker')
-      const _jb = workerIdAtElem == 'preview' ? jb.studio.previewjb
-        : !runningWorkerId && workerIdAtElem ? jb.ui.workers[elem.getAttribute('worker')]
-        : jb
-      return _jb.ctxDictionary
-    },
-    ctxOfElem: (elem,att) => elem && elem.getAttribute && jb.ui.ctxDictOfElem(elem)[elem.getAttribute(att || 'jb-ctx')],
     preserveCtx(ctx) {
         jb.ctxDictionary[ctx.id] = ctx
         return ctx.id
@@ -39,82 +22,87 @@ Object.assign(jb.ui,{
     inStudio() { return jb.studio && jb.studio.studioWindow },
     inPreview() {
         try {
-            return !ui.inStudio() && jb.frame.parent && jb.frame.parent.jb.studio.initPreview
+            return !jb.ui.inStudio() && jb.frame.parent && jb.frame.parent.jb.studio.initPreview
         } catch(e) {}
     },
-    parentCmps(el) {
-        if (!el) return []
-        const parents = jb.ui.parents(el)
-        const dialogElem = parents[parents.length-5]
-        return (jb.ui.hasClass(dialogElem,'jb-dialog')
-                ? parents.slice(0,-4).concat(jb.ui.ctxOfElem(dialogElem).exp('%$$launchingElement.el._component.base%') || [])
-                : parents)
-            .map(el=>el._component).filter(x=>x)
+    widgetBody(ctx) {
+      if (ctx.vars.headlessWidget)
+        return jb.path(jb.ui.widgets[ctx.vars.widgetId],'body')
+      const top = ctx.vars.elemToTest || jb.path(ctx.frame().document,'body')
+      const widgetId = ctx.vars.widgetId
+      return widgetId ? jb.ui.findIncludeSelf(top,`[widgetId="${widgetId}"]`)[0] : top
     },
-    closestCmp(el) {
-        return el._component || this.parentCmps(el)[0]
+    ctxOfElem: (elem,att) => elem && elem.getAttribute && jb.ctxDictionary[elem.getAttribute(att || 'jb-ctx')],
+    parentCmps: el => jb.ui.parents(el).map(el=>el._component).filter(x=>x),
+    closestCmpElem: elem => jb.ui.parents(elem,{includeSelf: true}).find(el=> el.getAttribute && el.getAttribute('cmp-id') != null),
+    widgetOfElem(elem) {
+      const el = jb.ui.parents(elem,{includeSelf: true}).filter(el=>el.getAttribute && el.getAttribute('widgettop'))[0]
+      return el ? jb.objFromEntries(['widgetid','frontend','headless'].map(p=>[p,el.getAttribute(p)]).filter(e=>e[1]))
+         : { widgetId: 'default'}
     },
-    document(ctx) {
-        if (jb.frame.workerId && jb.frame.workerId(ctx))
-            return jb.ui.widgets[ctx.vars.widgetId].top
-        return ctx.vars.elemToTest || ctx.frame().document
-    },
-    item(cmp,vdom,data) {
-        cmp.extendItemFuncs && cmp.extendItemFuncs.forEach(f=>f(cmp,vdom,data));
-        return vdom;
-    },
+    elemOfCmp: (ctx,cmpId) => jb.ui.findIncludeSelf(jb.ui.widgetBody(ctx),`[cmp-id="${cmpId}"]`)[0],
     fromEvent: (cmp,event,elem,options) => jb.callbag.pipe(
           jb.callbag.fromEvent(event, elem || cmp.base, options),
           jb.callbag.takeUntil(cmp.destroyed)
     ),
-    upDownEnterEscObs(cmp) { // and stop propagation !!!
-      const {pipe, takeUntil,subject} = jb.callbag
-      const keydown_src = subject();
-      cmp.base.onkeydown = e => {
-        if ([38,40,13,27].indexOf(e.keyCode) != -1) {
-          keydown_src.next(e);
-          return false;
-        }
-        return true;
-      }
-      return pipe(keydown_src, takeUntil(cmp.destroyed))
-    }
+    renderWidget(profile,topElem) {
+      if (jb.studio.studioWindow && jb.ui.renderWidgetInStudio)
+        return jb.ui.renderWidgetInStudio(profile,topElem)
+      jb.ui.render(jb.ui.h(new jb.jbCtx().run(profile)),topElem)    
+    },
 })
+
+// ***************** inter-cmp services
+
+jb.component('feature.serviceRegistey', {
+  type: 'feature',
+  impl: () => ({extendCtx: ctx => ctx.setVar('serviceRegistry',{parentRegistry: ctx.vars.serviceRegistry, services: {}}) })
+})
+
+jb.component('service.registerBackEndService', {
+  type: 'data',
+  params: [
+    {id: 'id', as: 'string', mandatory: true, dynamic: true },
+    {id: 'service', mandatory: true, dynamic: true },
+  ],
+  impl: feature.init((ctx,{serviceRegistry},{id,service}) => serviceRegistry.services[id(ctx)] = service(ctx))
+})
+
 
 // ****************** html utils ***************
 Object.assign(jb.ui, {
     outerWidth(el) {
-        const style = getComputedStyle(el);
-        return el.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight);
+        const style = getComputedStyle(el)
+        return el.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight)
     },
     outerHeight(el) {
-        const style = getComputedStyle(el);
-        return el.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom);
+        const style = getComputedStyle(el)
+        return el.offsetHeight + parseInt(style.marginTop) + parseInt(style.marginBottom)
     },
-    offset(el) { return el.getBoundingClientRect() },
+    offset: el => el.getBoundingClientRect(),
     parents(el,{includeSelf} = {}) {
         const res = []
-        el = includeSelf ? el : el && el.parentNode;
+        el = includeSelf ? el : el && el.parentNode
         while(el) {
-          res.push(el);
-          el = el.parentNode;
+          res.push(el)
+          el = el.parentNode
         }
         return res
     },
     closest(el,query) {
         while(el) {
-          if (ui.matches(el,query)) return el;
-          el = el.parentNode;
+          if (jb.ui.matches(el,query)) return el
+          el = el.parentNode
         }
     },
     activeElement() { return document.activeElement },
     find(el,selector,options) {
       if (!el) return []
       if (jb.path(el,'constructor.name') == 'jbCtx')
-          el = this.document(el) // el is ctx
+          el = jb.ui.widgetBody(el) // el is ctx
       if (!el) return []
       return el instanceof jb.ui.VNode ? el.querySelectorAll(selector,options) :
-          [... (options && options.includeSelf && ui.matches(el,selector) ? [el] : []),
+          [... (options && options.includeSelf && jb.ui.matches(el,selector) ? [el] : []),
             ...Array.from(el.querySelectorAll(selector))]
     },
     findIncludeSelf: (el,selector) => jb.ui.find(el,selector,{includeSelf: true}),
@@ -171,82 +159,39 @@ jb.objectDiff = function(newObj, orig) {
     }, deletedValues)
 }
 
-// *** dynamic widget
-
-jb.ui.renderWidget = function(profile,top) {
-  let parentAccessible = true
-  try {
-    jb.frame.parent.jb
-  } catch(e) { parentAccessible = false }
-  if (parentAccessible && jb.frame.parent != jb.frame)
-    jb.frame.parent.jb.studio.initPreview(jb.frame,[Object.getPrototypeOf({}),Object.getPrototypeOf([])])
-
-  let currentProfile = profile
-  let lastRenderTime = 0, fixedDebounce = 500
-
-  if (jb.studio.studioWindow) {
-      const studioWin = jb.studio.studioWindow
-      const st = studioWin.jb.studio;
-      const project = studioWin.jb.resources.studio.project
-      const page = studioWin.jb.resources.studio.page
-      if (project && page)
-          currentProfile = {$: page}
-
-      const {pipe,debounceTime,filter,subscribe} = jb.callbag
-      pipe(st.pageChange, filter(({page})=>page != currentProfile.$), subscribe(({page})=> doRender(page)))
-      
-      pipe(st.scriptChange, filter(e=>isCssChange(st,e.path)),
-        subscribe(({path}) => {
-          let featureIndex = path.lastIndexOf('features')
-          if (featureIndex == -1) featureIndex = path.lastIndexOf('layout')
-          const ctrlPath = path.slice(0,featureIndex).join('~')
-          const elems = Array.from(document.querySelectorAll('[jb-ctx]'))
-            .map(elem=>({elem, ctx: jb.ctxDictionary[elem.getAttribute('jb-ctx')] }))
-            .filter(e => e.ctx && e.ctx.path == ctrlPath)
-          elems.forEach(e=>jb.ui.refreshElem(e.elem,null,{cssOnly: true}))
-      }))
-
-      pipe(st.scriptChange, filter(e=>!isCssChange(st,e.path)),
-          filter(e=>(jb.path(e,'path.0') || '').indexOf('dataResource.') != 0), // do not update on data change
-          debounceTime(() => Math.min(2000,lastRenderTime*3 + fixedDebounce)),
-          subscribe(() =>{
-              doRender()
-              jb.ui.dialogs.reRenderAll()
-      }))
-  }
-  const elem = top.ownerDocument.createElement('div')
-  top.appendChild(elem)
-
-  doRender()
-
-  function isCssChange(st,path) {
-    const compPath = pathOfCssFeature(st,path)
-    return compPath && (st.compNameOfPath(compPath) || '').match(/^(css|layout)/)
-  }
-
-  function pathOfCssFeature(st,path) {
-    const featureIndex = path.lastIndexOf('features')
-    if (featureIndex == -1) {
-      const layoutIndex = path.lastIndexOf('layout')
-      return layoutIndex != -1 && path.slice(0,layoutIndex+1).join('~')
-    }
-    const array = Array.isArray(st.valOfPath(path.slice(0,featureIndex+1).join('~')))
-    return path.slice(0,featureIndex+(array?2:1)).join('~')
-  }
-
-  function doRender(page) {
-        if (page) currentProfile = {$: page}
-        const profileToRun = ['dataTest','uiTest'].indexOf(jb.path(jb.comps[currentProfile.$],'impl.$')) != -1 ? { $: 'test.showTestInStudio', testId: currentProfile.$} : currentProfile
-        const cmp = new jb.jbCtx().run(profileToRun)
-        const start = new Date().getTime()
-        jb.ui.unmount(top)
-        top.innerHTML = ''
-        jb.ui.render(jb.ui.h(cmp),top)
-        lastRenderTime = new Date().getTime() - start
-  }
-}
-
 // ****************** components ****************
+
+jb.component('action.applyDeltaToCmp', {
+  type: 'action',
+  params: [
+    {id: 'delta', mandatory: true },
+    {id: 'cmpId', as: 'string', mandatory: true },
+  ],
+  impl: (ctx,delta,cmpId) => jb.ui.applyDeltaToCmp(delta,ctx,cmpId)
+})
+
+jb.component('sink.applyDeltaToCmp', {
+  type: 'rx',
+  params: [
+    {id: 'delta', dynamic: true, mandatory: true},
+    {id: 'cmpId', as: 'string', mandatory: true },
+  ],
+  impl: sink.action(action.applyDeltaToCmp('%$delta()%','%$cmpId%'))
+})
+
+jb.component('action.focusOnCmp', {
+  description: 'runs both in FE and BE',
+  type: 'action',
+  params: [
+    {id: 'description', as: 'string'},
+    {id: 'cmpId', as: 'string' },
+  ],
+  impl: (ctx,desc,cmpId) => {
+    const delta = {attributes: {$focus: true, $__desc: `"${desc}"`}}
+    jb.ui.applyDeltaToCmp(delta,ctx,cmpId)
+    //ctx.vars.cmp.base ? jb.ui.focus(ctx.vars.cmp.base,desc,ctx)
+  }
+})
 
 jb.component('customStyle', {
   typePattern: t => /\.style$/.test(t),
@@ -297,11 +242,5 @@ jb.component('controlWithFeatures', {
     {id: 'control', type: 'control', mandatory: true},
     {id: 'features', type: 'feature[]', templateValue: [], mandatory: true}
   ],
-  impl: (ctx,control,features) => {
-    const ctrl = control.jbExtend(features,ctx).orig(ctx)
-    //ctrl.ctx = ctx
-    return ctrl
-  }
+  impl: (ctx,control,features) => control.jbExtend(features,ctx).orig(ctx)
 })
-
-})()

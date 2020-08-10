@@ -147,7 +147,7 @@ jb.component('studio.controlTree', {
           }),
           tree.dragAndDrop(),
           studio.watchScriptChanges(),
-          defHandler(
+          method(
             'newControl',
             studio.openNewProfileDialog({
               path: tree.pathOfInteractiveItem(),

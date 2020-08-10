@@ -18,11 +18,11 @@ jb.component('studio.componentStatistics', {
         refs[k] = {
           refs: calcRefs(comps[k].impl).filter((x,index,self)=>self.indexOf(x) === index) ,
           by: []
-      });
+      })
       Object.keys(comps).filter(k=>comps[k]).forEach(k=>
         refs[k].refs.forEach(cross=>
           refs[cross] && refs[cross].by.push(k))
-      );
+      )
 
       _jb.statistics = refs;
     }

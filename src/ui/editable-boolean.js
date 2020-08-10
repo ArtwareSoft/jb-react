@@ -4,7 +4,7 @@ jb.component('editableBoolean', {
   type: 'control',
   category: 'input:20',
   params: [
-    {id: 'databind', as: 'ref', type: 'boolean', mandaroy: true, dynamic: true, aa: 5},
+    {id: 'databind', as: 'ref', type: 'boolean', mandaroy: true, dynamic: true },
     {id: 'style', type: 'editable-boolean.style', defaultValue: editableBoolean.checkbox(), dynamic: true},
     {id: 'title', as: 'string', dynamic: true},
     {id: 'textForTrue', as: 'string', defaultValue: 'yes', dynamic: true},
@@ -12,13 +12,14 @@ jb.component('editableBoolean', {
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx, features(
-    calcProp('text',data.if('%$$model/databind%','%$$model/textForTrue%','%$$model/textForFalse%' )),
-    watchRef({ref: '%$$model/databind%', allowSelfRefresh: true}),
-    defHandler('toggle', runActions(
-        writeValue('%$$model/databind%',not('%$$model/databind%')),
-        refreshIfNotWatchable('%$$model/databind%')
+    calcProp('text',If('%$$model/databind()%','%$$model/textForTrue()%','%$$model/textForFalse()%' )),
+    watchRef({ref: '%$$model/databind()%', allowSelfRefresh: true}),
+    method('toggle', runActions(
+        writeValue('%$$model/databind()%',not('%$$model/databind()%')),
+        refreshIfNotWatchable('%$$model/databind()%')
     )),
-    defHandler('toggleByKey', (ctx,{cmp, ev}) => 
-      ev.keyCode != 27 && jb.ui.runActionOfElem(cmp.base,'toggle',ev))
-		))
+    method('toggleByKey', (ctx,{cmp, ev}) => 
+      ev.keyCode != 27 && cmp.runBEMethod('toggle')
+    ))
+  )
 })

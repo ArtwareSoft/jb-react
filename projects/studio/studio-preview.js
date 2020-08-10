@@ -39,6 +39,79 @@ jb.ui.waitFor = function(check,times,interval) {
   })
 }
 
+jb.ui.renderWidgetInStudio = function(profile,top) {
+  let parentAccessible = true
+  try {
+    jb.frame.parent.jb
+  } catch(e) { parentAccessible = false }
+  if (parentAccessible && jb.frame.parent != jb.frame)
+    jb.frame.parent.jb.studio.initPreview(jb.frame,[Object.getPrototypeOf({}),Object.getPrototypeOf([])])
+
+  let currentProfile = profile
+  let lastRenderTime = 0, fixedDebounce = 500
+
+  if (jb.studio.studioWindow) {
+      const studioWin = jb.studio.studioWindow
+      const st = studioWin.jb.studio;
+      const project = studioWin.jb.resources.studio.project
+      const page = studioWin.jb.resources.studio.page
+      if (project && page)
+          currentProfile = {$: page}
+
+      const {pipe,debounceTime,filter,subscribe} = jb.callbag
+      pipe(st.pageChange, filter(({page})=>page != currentProfile.$), subscribe(({page})=> doRender(page)))
+      
+      pipe(st.scriptChange, filter(e=>isCssChange(st,e.path)),
+        subscribe(({path}) => {
+          let featureIndex = path.lastIndexOf('features')
+          if (featureIndex == -1) featureIndex = path.lastIndexOf('layout')
+          const ctrlPath = path.slice(0,featureIndex).join('~')
+          const elems = Array.from(document.querySelectorAll('[jb-ctx]'))
+            .map(elem=>({elem, ctx: jb.ctxDictionary[elem.getAttribute('jb-ctx')] }))
+            .filter(e => e.ctx && e.ctx.path == ctrlPath)
+          elems.forEach(e=>jb.ui.refreshElem(e.elem,null,{cssOnly: true}))
+      }))
+
+      pipe(st.scriptChange, filter(e=>!isCssChange(st,e.path)),
+          filter(e=>(jb.path(e,'path.0') || '').indexOf('dataResource.') != 0), // do not update on data change
+          debounceTime(() => Math.min(2000,lastRenderTime*3 + fixedDebounce)),
+          subscribe(() =>{
+              doRender()
+//              jb.ui.dialogs.reRenderAll()
+      }))
+  }
+  const elem = top.ownerDocument.createElement('div')
+  top.appendChild(elem)
+
+  doRender()
+
+  function isCssChange(st,path) {
+    const compPath = pathOfCssFeature(st,path)
+    return compPath && (st.compNameOfPath(compPath) || '').match(/^(css|layout)/)
+  }
+
+  function pathOfCssFeature(st,path) {
+    const featureIndex = path.lastIndexOf('features')
+    if (featureIndex == -1) {
+      const layoutIndex = path.lastIndexOf('layout')
+      return layoutIndex != -1 && path.slice(0,layoutIndex+1).join('~')
+    }
+    const array = Array.isArray(st.valOfPath(path.slice(0,featureIndex+1).join('~')))
+    return path.slice(0,featureIndex+(array?2:1)).join('~')
+  }
+
+  function doRender(page) {
+        if (page) currentProfile = {$: page}
+        const profileToRun = ['dataTest','uiTest'].indexOf(jb.path(jb.comps[currentProfile.$],'impl.$')) != -1 ? { $: 'test.showTestInStudio', testId: currentProfile.$} : currentProfile
+        const cmp = new jb.jbCtx().run(profileToRun)
+        const start = new Date().getTime()
+        jb.ui.unmount(top)
+        top.innerHTML = ''
+        jb.ui.render(jb.ui.h(cmp),top)
+        lastRenderTime = new Date().getTime() - start
+  }
+}
+
 st.initPreview = function(preview_window,allowedTypes) {
       const changedComps = st.changedComps()
 
@@ -92,8 +165,8 @@ jb.component('studio.refreshPreview', {
   impl: ctx => {
     if (jb.frame.jbInvscode)
       return ctx.run(studio.reOpenStudio())
-    jb.ui.garbageCollectCtxDictionary(jb.frame.document.body,true);
-    jb.studio.previewjb.ui.garbageCollectCtxDictionary(jb.studio.previewjb.frame.document.body, true);
+    jb.ui.garbageCollectCtxDictionary(true);
+    jb.studio.previewjb.ui.garbageCollectCtxDictionary(true);
     jb.studio.resourcesFromPrevRun = st.previewWindow.JSON.stringify(jb.studio.previewjb.resources)
     //jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
     jb.ui.dialogs.reRenderAll(ctx)
@@ -150,7 +223,7 @@ jb.component('studio.previewWidget', {
       calcProp('height','%$studio/preview/height%'),
       calcProp('host', firstSucceeding('%$queryParams/host%','studio')),
       calcProp('loadingMessage', '{? loading project from %$$props/host%::%$queryParams/hostProjectId% ?}'),
-      interactive( (ctx,{cmp}) => {
+      followUp.action((ctx,{cmp}) => {
           const host = ctx.run(firstSucceeding('%$queryParams/host%','studio'))
           if (!ctx.vars.$state.projectLoaded && host && st.projectHosts[host]) {
             const project = ctx.exp('%$studio/project%')
@@ -166,7 +239,6 @@ jb.component('studio.previewWidget', {
             })
           }
         })
-
   ))
 })
 

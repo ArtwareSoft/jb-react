@@ -85,7 +85,7 @@ jb.component('studio.selectProfile', {
             }),
             databind: '%$itemlistCntrData/search_pattern%',
             style: editableText.mdcInput('200'),
-            features: feature.onEsc(dialog.closeContainingPopup(false))
+            features: feature.onEsc(dialog.closeDialog(false))
           }),
           control.icon({
             icon: 'search',
@@ -124,7 +124,7 @@ jb.component('studio.selectProfile', {
                 onDoubleClick: runActions(
                   studio.cleanSelectionPreview(),
                   call('onSelect'),
-                  dialog.closeContainingPopup()
+                  dialog.closeDialog()
                 ),
                 autoSelectFirst: true
               }),
@@ -132,7 +132,7 @@ jb.component('studio.selectProfile', {
                 onEnter: runActions(
                   studio.cleanSelectionPreview(),
                   call('onSelect'),
-                  dialog.closeContainingPopup()
+                  dialog.closeDialog()
                 )
               }),
               watchRef('%$SelectedCategory%'),
@@ -239,7 +239,7 @@ jb.component('studio.openNewProfileDialog', {
       css.width({width: '450', overflow: 'hidden'}),
       dialogFeature.closeWhenClickingOutside(),
       css('~ .mdc-text-field { background-color: inherit }'),
-      dialogFeature.dragTitle('new %$type%'),
+      dialogFeature.dragTitle({id: 'new %$type%', useSessionStorage: true}),
       studio.nearLauncherPosition(),
       dialogFeature.autoFocusOnFirstInput(),
       dialogFeature.onClose(call('onClose'))
@@ -357,7 +357,7 @@ jb.component('studio.openNewProfile', {
           style: editableText.mdcInput({}),
           features: [
             feature.init(writeValue('%$dialogData/name%', '%$studio/project%.myComp')),
-            feature.onEnter(dialog.closeContainingPopup()),
+            feature.onEnter(dialog.closeDialog()),
             validation(matchRegex('^[a-zA-Z_0-9.]+$'), 'invalid name')
           ]
         }),
@@ -419,7 +419,7 @@ jb.component('studio.insertControlMenu', {
                 features: [
                   css.height('80'),
                   studio.dropHtml(
-                    runActions(studio.insertControl('%$newCtrl%'), dialog.closeContainingPopup())
+                    runActions(studio.insertControl('%$newCtrl%'), dialog.closeDialog())
                   )
                 ]
               }),

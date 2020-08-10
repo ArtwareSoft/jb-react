@@ -1,11 +1,13 @@
-jb.component('defHandler', {
+jb.ns('followUp,backEnd')
+
+jb.component('method', {
   type: 'feature',
-  description: 'define custom event handler',
+  description: 'define backend event handler',
   params: [
-    {id: 'id', as: 'string', mandatory: true, description: 'to be used in html, e.g. onclick=\"clicked\" '},
+    {id: 'id', as: 'string', mandatory: true, description: 'to be used in html, e.g. onclick=\"myMethod\" '},
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
-  impl: (ctx,id) => ({defHandler: {id, ctx}})
+  impl: (ctx,id) => ({method: {id, ctx}})
 })
 
 jb.component('watchAndCalcModelProp', {
@@ -31,14 +33,16 @@ jb.component('calcProp', {
   impl: ctx => ({calcProp: {... ctx.params, index: jb.ui.propCounter++}})
 })
 
-jb.component('interactiveProp', {
+jb.component('userStateProp', {
   type: 'feature',
-  description: 'define a variable for the interactive comp',
+  description: 'define a user state (e.g., selection) that is passed to the FE and back to the BE via refresh calls. The first calculation is done at the BE and then the FE can change it',
   params: [
     {id: 'id', as: 'string', mandatory: true},
-    {id: 'value', mandatory: true, dynamic: true}
+    {id: 'value', mandatory: true, dynamic: true, description: 'when empty value is taken from model'},
+    {id: 'priority', as: 'number', defaultValue: 1, description: 'if same prop was defined elsewhere decides who will override. range 1-1000'},
+    {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'}
   ],
-  impl: (ctx,id) => ({interactiveProp: {id: id.replace(/-/g,'_'), ctx }})
+  impl: ctx => ({calcProp: {... ctx.params, userStateProp: true, index: jb.ui.propCounter++}})
 })
 
 jb.component('calcProps', {
@@ -56,39 +60,21 @@ jb.component('calcProps', {
 jb.component('feature.init', {
   type: 'feature',
   category: 'lifecycle',
+  description: 'activated before calc properties',
   params: [
-    {id: 'action', type: 'action[]', mandatory: true, dynamic: true},
+    {id: 'action', type: 'action', mandatory: true, dynamic: true},
     {id: 'phase', as: 'number', defaultValue: 10, description: 'init funcs from different features can use each other, phase defines the calculation order'}
   ],
   impl: (ctx,action,phase) => ({ init: { action, phase }})
 })
 
-jb.component('feature.destroy', {
+jb.component('backEnd.onDestroy', {
   type: 'feature',
   category: 'lifecycle',
   params: [
-    {id: 'action', type: 'action[]', mandatory: true, dynamic: true},
+    {id: 'action', type: 'action', mandatory: true, dynamic: true},
   ],
-  impl: ctx => ({ destroy: cmp => ctx.params.action(cmp.ctx) })
-})
-
-jb.component('feature.beforeInit', {
-  type: 'feature',
-  category: 'lifecycle',
-  params: [
-    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
-  ],
-  impl: feature.init('%$action%',5)
-})
-
-jb.component('interactive', {
-  type: 'feature',
-  description: 'init, onload, defines the interactive part of the component',
-  category: 'lifecycle',
-  params: [
-    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
-  ],
-  impl: ctx => ({ interactive: cmp => ctx.params.action(cmp.ctx) })
+  impl: method('destroy','%$action%')
 })
 
 jb.component('templateModifier', {
@@ -97,7 +83,7 @@ jb.component('templateModifier', {
   params: [
     {id: 'value', mandatory: true, dynamic: true}
   ],
-  impl: (ctx,value) => ({ templateModifier: (vdom,cmp) => value(ctx.setVars({cmp,vdom, ...cmp.renderProps})) })
+  impl: (ctx,value) => ({ templateModifier: (vdom,cmp) => value(cmp.calcCtx.setVars({vdom, ...cmp.renderProps })) })
 })
 
 jb.component('features', {
@@ -107,6 +93,32 @@ jb.component('features', {
     {id: 'features', type: 'feature[]', as: 'array', composite: true}
   ],
   impl: (ctx,features) => features.flatMap(x=> Array.isArray(x) ? x: [x])
+})
+
+jb.component('followUp.action', {
+  type: 'feature',
+  description: 'runs at the backend a tick after the vdom was returned',
+  category: 'lifecycle',
+  params: [
+    {id: 'action', type: 'action', mandatory: true, dynamic: true}
+  ],
+  impl: ctx => ({ followUp: ctx2 => ctx.params.action(ctx2) })
+})
+
+jb.component('followUp.flow', {
+  type: 'feature',
+  category: 'front-end',
+  description: 'rx flow at the backend after the vdom was sent',
+  params: [
+      {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
+  ],
+  impl: followUp.action(rx.pipe(ctx => {
+    jb.log('followUp',[ctx.componentContext.callerPath,ctx])
+    const fuCtx = ctx.setVar('followUpCmp',ctx.vars.cmp)
+    const elems = fuCtx.run('%$elems()%') 
+    elems.splice(1,0,fuCtx.run(followUp.takeUntilCmpDestroyed()))
+    return elems
+  }))
 })
 
 jb.component('watchRef', {
@@ -124,7 +136,7 @@ jb.component('watchRef', {
   impl: ctx => ({ watchRef: {refF: ctx.params.ref, ...ctx.params}})
 })
 
-jb.component('watchObservable', {
+jb.component('followUp.watchObservable', {
   type: 'feature',
   category: 'watch',
   description: 'subscribes to a custom observable to refresh component',
@@ -132,16 +144,15 @@ jb.component('watchObservable', {
     {id: 'toWatch', mandatory: true},
     {id: 'debounceTime', as: 'number', description: 'in mSec'}
   ],
-  impl: interactive(
-    (ctx,{cmp},{toWatch, debounceTime}) => jb.callbag.pipe(toWatch,
-      jb.callbag.takeUntil(cmp.destroyed),
-      debounceTime && jb.callbag.debounceTime(debounceTime),
-      jb.callbag.subscribe(()=>cmp.refresh(null, {srcCtx: ctx}))
+  impl: followUp.flow(
+      '%$toWatch%',
+//      followUp.takeUntilCmpDestroyed(),
+      rx.debounceTime('%$debounceTime%'),
+      sink.refreshCmp()
     )
-  )
 })
 
-jb.component('feature.onDataChange', {
+jb.component('followUp.onDataChange', {
   type: 'feature',
   category: 'watch',
   description: 'watch observable data reference, subscribe and run action',
@@ -150,8 +161,16 @@ jb.component('feature.onDataChange', {
     {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
     {id: 'action', type: 'action', dynamic: true, description: 'run on change'}
   ],
-  impl: interactive((ctx,{cmp},{ref,includeChildren,action}) => 
-      jb.subscribe(jb.ui.refObservable(ref(),cmp,{includeChildren, srcCtx: ctx}), () => action(ctx.setVar('cmp',cmp))))
+  impl: followUp.flow(
+    source.watchableData('%$ref()%','%$includeChildren%'), 
+//    followUp.takeUntilCmpDestroyed(), 
+    sink.action(call('action')))
+})
+
+jb.component('followUp.takeUntilCmpDestroyed', {
+    type: 'rx',
+    category: 'operator',
+    impl: ctx => jb.ui.takeUntilCmpDestroyed(ctx.vars.cmp)
 })
 
 jb.component('group.data', {
@@ -180,11 +199,21 @@ jb.component('htmlAttribute', {
     {id: 'value', mandatory: true, as: 'string', dynamic: true}
   ],
   impl: (ctx,attribute,value) => ({
-    templateModifier: (vdom,cmp) => {
-        vdom.attributes = vdom.attributes || {};
-        vdom.attributes[attribute] = value(cmp.ctx)
-        return vdom;
-      }
+    templateModifier: (vdom,cmp) => vdom.setAttribute(attribute, value(cmp.ctx))
+  })
+})
+
+jb.component('passPropToFrontEnd', {
+  type: 'feature',
+  description: 'assign the value of a property in the cmp element to be used in the frontEnd',
+  params: [
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'value', mandatory: true, dynamic: true},
+  ],
+  impl: templateModifier((ctx,{vdom},{id,value}) => {
+    const val = value(ctx)
+    if (val != null)
+      vdom.setAttribute('$pass__'+id, JSON.stringify(val))
   })
 })
 
@@ -194,10 +223,7 @@ jb.component('id', {
   params: [
     {id: 'id', mandatory: true, as: 'string', dynamic: true}
   ],
-  impl: htmlAttribute(
-    'id',
-    (ctx,{},{id}) => id(ctx)
-  )
+  impl: htmlAttribute('id', '%$id()%')
 })
 
 jb.component('feature.hoverTitle', {
@@ -206,10 +232,7 @@ jb.component('feature.hoverTitle', {
   params: [
     {id: 'title', as: 'string', mandatory: true}
   ],
-  impl: htmlAttribute(
-    'title',
-    '%$title%'
-  )
+  impl: htmlAttribute('title','%$title%')
 })
 
 jb.component('variable', {
@@ -224,14 +247,14 @@ jb.component('variable', {
   impl: ({}, name, value, watchable) => ({
     destroy: cmp => {
       if (!watchable) return
-      const fullName = name + ':' + cmp.cmpId;
+      const fullName = name + ':' + cmp.ctx.id;
       cmp.ctx.run(writeValue(`%$${fullName}%`,null))
     },
     extendCtx: (ctx,cmp) => {
       if (!watchable)
         return ctx.setVar(name,jb.val(value(ctx)))
 
-      const fullName = name + ':' + cmp.cmpId;
+      const fullName = name + ':' + cmp.ctx.id;
       if (fullName == 'items') debugger
       jb.log('var',['new-watchable',ctx,fullName])
       const refToResource = jb.mainWatchableHandler.refOfPath([fullName]);
@@ -250,27 +273,25 @@ jb.component('calculatedVar', {
     {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
     {id: 'watchRefs', as: 'array', dynamic: true, mandatory: true, defaultValue: [], description: 'variable to watch. needs to be in array'}
   ],
-  impl: (ctx, name, value, watchRefs) => ({
-      destroy: cmp => {
-        const fullName = name + ':' + cmp.cmpId;
-        cmp.ctx.run(writeValue(`%$${fullName}%`,null))
-      },
+  impl: features(
+    backEnd.onDestroy(writeValue('%${%$name%}:{%$cmp/cmpId%}%', null)),
+    followUp.flow(
+      rx.merge(pipeline('%$watchRefs()%', source.watchableData('%%'))),
+//      rx.log('calculatedVar'),
+      rx.map('%$value()%'),
+      sink.data('%${%$name%}:{%$cmp/cmpId%}%')
+    ),
+    ctx => ({
       extendCtx: (_ctx,cmp) => {
+        const {name,value} = ctx.componentContext.params
         const fullName = name + ':' + cmp.cmpId;
         jb.log('calculated var',['new-resource',ctx,fullName])
         jb.resource(fullName, jb.val(value(_ctx)));
         const ref = _ctx.exp(`%$${fullName}%`,'ref')
         return _ctx.setVar(name, ref);
-      },
-      afterViewInit: cmp => {
-        const fullName = name + ':' + cmp.cmpId;
-        const refToResource = cmp.ctx.exp(`%$${fullName}%`,'ref');
-        (watchRefs(cmp.ctx)||[]).map(x=>jb.asRef(x)).filter(x=>x).forEach(ref=>
-          jb.subscribe(jb.ui.refObservable(ref,cmp,{srcCtx: ctx}),
-            e=> jb.writeValue(refToResource,value(cmp.ctx),ctx))
-        )
       }
-  })
+    })
+  )
 })
 
 jb.component('feature.if', {
@@ -317,149 +338,6 @@ jb.component('conditionalClass', {
   })
 })
 
-jb.component('feature.keyboardShortcut', {
-  type: 'feature',
-  category: 'events',
-  description: 'listen to events at the document level even when the component is not active',
-  params: [
-    {id: 'key', as: 'string', description: 'e.g. Alt+C'},
-    {id: 'action', type: 'action', dynamic: true}
-  ],
-  impl: (ctx,key,action) => ({
-      afterViewInit: cmp => {
-        jb.subscribe(jb.ui.fromEvent(cmp,'keydown',cmp.base.ownerDocument), event=>{
-              const keyStr = key.split('+').slice(1).join('+');
-              const keyCode = keyStr.charCodeAt(0);
-              if (key == 'Delete') keyCode = 46;
-
-              const helper = (key.match('([A-Za-z]*)+') || ['',''])[1];
-              if (helper == 'Ctrl' && !event.ctrlKey) return
-              if (helper == 'Alt' && !event.altKey) return
-              if (event.keyCode == keyCode || (event.key && event.key == keyStr))
-                action();
-        })
-    }})
-})
-
-jb.component('feature.onEvent', {
-  type: 'feature',
-  category: 'events',
-  params: [
-    {id: 'event', as: 'string', mandatory: true, options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll'},
-    {id: 'action', type: 'action[]', mandatory: true, dynamic: true},
-    {id: 'debounceTime', as: 'number', defaultValue: 0, description: 'used for mouse events such as mousemove'}
-  ],
-  impl: (ctx,event,action,debounceTime) => ({
-      [`on${event}`]: true,
-      afterViewInit: cmp => {
-        if (event == 'load') {
-          jb.delay(1).then(() => jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)())
-        } else {
-          jb.subscribe(debounceTime ? cmp[`on${event}`].debounceTime(debounceTime) : cmp[`on${event}`],
-            event=> jb.ui.wrapWithLauchingElement(action, cmp.ctx.setVars({event}), cmp.base)())
-        }
-      }
-  })
-})
-
-jb.component('feature.onHover', {
-  type: 'feature',
-  description: 'on mouse enter',
-  category: 'events',
-  params: [
-    {id: 'action', type: 'action[]', mandatory: true, dynamic: true},
-    {id: 'onLeave', type: 'action[]', mandatory: true, dynamic: true},
-    {id: 'debounceTime', as: 'number', defaultValue: 0}
-  ],
-  impl: (ctx,action,onLeave,_debounceTime) => ({
-      onmouseenter: true, onmouseleave: true,
-      afterViewInit: cmp => {
-        const {pipe,debounceTime,subscribe} = jb.callbag
-
-        pipe(cmp.onmouseenter, debounceTime(_debounceTime), subscribe(()=>
-              jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)()))
-        pipe(cmp.onmouseleave,debounceTime(_debounceTime),subscribe(()=>
-              jb.ui.wrapWithLauchingElement(onLeave, cmp.ctx, cmp.base)()))
-      }
-  })
-})
-
-jb.component('feature.classOnHover', {
-  type: 'feature',
-  description: 'set css class on mouse enter',
-  category: 'events',
-  params: [
-    {id: 'class', type: 'string', defaultValue: 'item-hover', description: 'css class to add/remove on hover'}
-  ],
-  impl: (ctx,clz) => ({
-    onmouseenter: true, onmouseleave: true,
-    afterViewInit: cmp => {
-      jb.subscribe(cmp.onmouseenter, ()=> jb.ui.addClass(cmp.base,clz))
-      jb.subscribe(cmp.onmouseleave, ()=> jb.ui.removeClass(cmp.base,clz))
-    }
-  })
-})
-
-jb.ui.checkKey = function(e, key) {
-	if (!key) return;
-  const dict = { tab: 9, delete: 46, tab: 9, esc: 27, enter: 13, right: 39, left: 37, up: 38, down: 40}
-
-  key = key.replace(/-/,'+');
-  const keyWithoutPrefix = key.split('+').pop()
-  let keyCode = dict[keyWithoutPrefix.toLowerCase()]
-  if (+keyWithoutPrefix)
-    keyCode = +keyWithoutPrefix
-  if (keyWithoutPrefix.length == 1)
-    keyCode = keyWithoutPrefix.charCodeAt(0);
-
-	if (key.match(/^[Cc]trl/) && !e.ctrlKey) return;
-	if (key.match(/^[Aa]lt/) && !e.altKey) return;
-	return e.keyCode == keyCode
-}
-
-jb.component('feature.onKey', {
-  type: 'feature',
-  category: 'events',
-  macroByValue: true,
-  params: [
-    {id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V'},
-    {id: 'action', type: 'action', mandatory: true, dynamic: true},
-    {id: 'doNotWrapWithLauchingElement', as: 'boolean', type: 'boolean'}
-  ],
-  impl: (ctx,key,action) => ({
-      onkeydown: true,
-      afterViewInit: cmp => jb.subscribe(cmp.onkeydown, e=> {
-          if (!jb.ui.checkKey(e,key)) return
-          ctx.params.doNotWrapWithLauchingElement ? action(cmp.ctx) :
-            jb.ui.wrapWithLauchingElement(action, cmp.ctx, cmp.base)()
-      })
-  })
-})
-
-jb.component('feature.onEnter', {
-  type: 'feature',
-  category: 'events',
-  params: [
-    {id: 'action', type: 'action', mandatory: true, dynamic: true}
-  ],
-  impl: feature.onKey(
-    'Enter',
-    call('action')
-  )
-})
-
-jb.component('feature.onEsc', {
-  type: 'feature',
-  category: 'events',
-  params: [
-    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
-  ],
-  impl: feature.onKey(
-    'Esc',
-    call('action')
-  )
-})
-
 jb.component('refreshControlById', {
   type: 'action',
   params: [
@@ -468,7 +346,7 @@ jb.component('refreshControlById', {
     {id: 'cssOnly', as: 'boolean', description: 'refresh only css features'},
   ],
   impl: (ctx,id) => {
-    const elem = jb.ui.document(ctx).querySelector('#'+id)
+    const elem = jb.ui.widgetBody(ctx).querySelector('#'+id)
     if (!elem)
       return jb.logError('refreshControlById can not find elem for #'+id, ctx)
     return jb.ui.refreshElem(elem,null,{srcCtx: ctx, ...ctx.params})
@@ -484,18 +362,6 @@ jb.component('group.autoFocusOnFirstInput', {
           elem && jb.ui.focus(elem,'group.auto-focus-on-first-input',ctx);
         }
   })
-})
-
-jb.component('focusOnFirstElement', {
-  type: 'action',
-  params: [
-    {id: 'selector', as: 'string', defaultValue: 'input'}
-  ],
-  impl: (ctx, selector) =>
-      jb.delay(50).then(() => {
-        const elem = document.querySelector(selector)
-        elem && jb.ui.focus(elem,'focus-on-first-element',ctx)
-    })
 })
 
 jb.component('refreshIfNotWatchable', {
@@ -517,3 +383,13 @@ jb.component('feature.byCondition', {
   ],
   impl: (ctx,cond,_then,_else) =>	cond ? _then() : _else()
 })
+
+jb.component('feature.userEventProps', {
+  type: 'feature',
+  description: 'add data to the event sent from the front end',
+  params: [
+    {id: 'props', as: 'string', description: 'comma separated props to take from the original event e.g., altKey,ctrlKey' },
+  ],
+  impl: (ctx, prop) => ({userEventProps: prop })
+})
+

@@ -11,42 +11,46 @@ jb.component('field.databind', {
   impl: features(
     If(
         '%$oneWay%',
-        calcProp('databind','%$$model/databind%'),
+        calcProp('databind','%$$model/databind()%'),
         watchAndCalcModelProp({prop: 'databind', allowSelfRefresh: true})
       ),
     calcProp('title'),
     calcProp({id: 'fieldId', value: () => jb.ui.field_id_counter++}),
-    defHandler(
+    method(
+      'writeFieldValue',
+      (ctx,{cmp,value},{oneWay}) => writeFieldData(ctx,cmp,value,oneWay)
+    ),
+    method(
         'onblurHandler',
-        (ctx,{cmp, ev},{oneWay}) => writeFieldData(ctx,cmp,ev.target.value,oneWay)
+        (ctx,{cmp, ev},{oneWay}) => writeFieldData(ctx,cmp,ev.value,oneWay)
       ),
-    defHandler(
+    method(
         'onchangeHandler',
-        (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && writeFieldData(ctx,cmp,ev.target.value,oneWay)
+        (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && writeFieldData(ctx,cmp,ev.value,oneWay)
       ),
-    defHandler(
+    method(
         'onkeyupHandler',
-        (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && writeFieldData(ctx,cmp,ev.target.value,oneWay)
+        (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && writeFieldData(ctx,cmp,ev.value,oneWay)
       ),
-    defHandler(
+    method(
         'onkeydownHandler',
-        (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && writeFieldData(ctx,cmp,ev.target.value,oneWay)
+        (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && writeFieldData(ctx,cmp,ev.value,oneWay)
       ),
-    interactiveProp(
-        'jbModel',
-        (ctx,{cmp}) => value =>
-          value == null ? ctx.exp('%$$model/databind%','number') : writeFieldData(ctx,cmp,value,true)
-      ),
-    interactive((ctx,{$dialog})=> $dialog && ($dialog.hasFields = true))
+    // frontEndProp(
+    //     'jbModel',
+    //     (ctx,{cmp}) => value =>
+    //       value == null ? ctx.exp('%$$model/databind%','number') : writeFieldData(ctx,cmp,value,true)
+    //   ),
+    feature.init((ctx,{$dialog})=> $dialog && ($dialog.hasFields = true))
   )
 })
 
 function writeFieldData(ctx,cmp,value,oneWay) {
   if (jb.val(ctx.vars.$model.databind(cmp.ctx)) == value) return
-  jb.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx);
-  jb.ui.checkValidationError(cmp,value,ctx);
-  cmp.onValueChange && cmp.onValueChange(value)
-  !oneWay && jb.ui.refreshElem(cmp.base,null,{srcCtx: ctx.componentContext});
+  jb.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx)
+  jb.ui.checkValidationError(cmp,value,ctx)
+  cmp.hasBEMethod('onValueChange') && cmp.runBEMethod('onValueChange',value,ctx.vars)
+  !oneWay && cmp.refresh({},{srcCtx: ctx.componentContext})
 }
 
 jb.ui.checkValidationError = (cmp,val,ctx) => {
@@ -89,13 +93,13 @@ jb.ui.preserveFieldCtxWithItem = (field,item) => {
 	return ctx && jb.ui.preserveCtx(ctx.setData(item))
 }
 jb.component('field.onChange', {
+  type: 'feature',
   category: 'field:100',
   description: 'on picklist selection, text or boolean value change',
-  type: 'feature',
   params: [
     {id: 'action', type: 'action', dynamic: true}
   ],
-  impl: feature.onDataChange({ref: '%$$model/databind%', action: call('action') })
+  impl: followUp.onDataChange({ref: '%$$model/databind%', action: call('action') })
 })
 
 jb.component('field.databindText', {
@@ -111,32 +115,31 @@ jb.component('field.databindText', {
   )
 })
 
-jb.component('field.keyboardShortcut', {
-  type: 'feature',
-  category: 'events',
-  description: 'listen to events at the document level even when the component is not active',
-  params: [
-    {id: 'key', as: 'string', description: 'e.g. Alt+C'},
-    {id: 'action', type: 'action', dynamic: true}
-  ],
-  impl: interactive(
-    (ctx,{cmp},{key,action}) => {
-        const elem = cmp.base.querySelector('input') || cmp.base
-        if (elem.tabIndex === undefined) elem.tabIndex = -1
-        jb.subscribe(jb.ui.fromEvent(cmp,'keydown',elem),event=>{
-              const keyStr = key.split('+').slice(1).join('+');
-              const keyCode = keyStr.charCodeAt(0);
-              if (key == 'Delete') keyCode = 46;
+// jb.component('field.keyboardShortcut', {
+//   type: 'feature',
+//   category: 'events',
+//   description: 'listen to events at the document level even when the component is not active',
+//   params: [
+//     {id: 'key', as: 'string', description: 'e.g. Alt+C'},
+//     {id: 'action', type: 'action', dynamic: true}
+//   ],
+//   frontEnd.init((ctx,{cmp},{key,action}) => {
+//         const elem = cmp.base.querySelector('input') || cmp.base
+//         if (elem.tabIndex === undefined) elem.tabIndex = -1
+//         jb.subscribe(jb.ui.fromEvent(cmp,'keydown',elem),event=>{
+//               const keyStr = key.split('+').slice(1).join('+');
+//               const keyCode = keyStr.charCodeAt(0);
+//               if (key == 'Delete') keyCode = 46;
 
-              const helper = (key.match('([A-Za-z]*)+') || ['',''])[1];
-              if (helper == 'Ctrl' && !event.ctrlKey) return
-              if (helper == 'Alt' && !event.altKey) return
-              if (event.keyCode == keyCode || (event.key && event.key == keyStr))
-                action();
-        })
-    }
-  )
-})
+//               const helper = (key.match('([A-Za-z]*)+') || ['',''])[1];
+//               if (helper == 'Ctrl' && !event.ctrlKey) return
+//               if (helper == 'Alt' && !event.altKey) return
+//               if (event.keyCode == keyCode || (event.key && event.key == keyStr))
+//                 action();
+//         })
+//     }
+//   )
+// })
 
 // ***** validation
 
@@ -147,16 +150,7 @@ jb.component('validation', {
     {id: 'validCondition', mandatory: true, as: 'boolean', dynamic: true, type: 'boolean'},
     {id: 'errorMessage', mandatory: true, as: 'string', dynamic: true}
   ],
-  impl: interactive(
-    (ctx,{cmp},{validCondition,errorMessage}) => {
-          cmp.validations = (cmp.validations || []).concat([{validCondition,errorMessage}]);
-          if (jb.ui.inPreview()) {
-            const _ctx = ctx.setData(cmp.state.model);
-            validCondition(_ctx)
-            errorMessage(_ctx)
-          }
-      }
-  )
+  impl: (ctx,validCondition,errorMessage) => ({validations: {validCondition, errorMessage }})
 })
 
 jb.component('field.title', {

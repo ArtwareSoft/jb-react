@@ -97,36 +97,27 @@ jb.component('studio.scriptHistory', {
   type: 'control',
   impl: group({
     controls: [
-      table({
+      itemlist({
         items: studio.scriptHistoryItems(),
-        fields: [
-          field.control({
-            title: 'changed',
-            control: button({
+        controls: [
+          button({
               title: studio.nameOfRef('%opEvent/ref%'),
               action: studio.gotoPath(studio.pathOfRef('%opEvent/ref%')),
               style: button.href(),
               features: feature.hoverTitle(studio.pathOfRef('%opEvent/ref%'))
-            }),
-            width: '100'
           }),
-          field({title: 'from', data: prettyPrint('%opEvent/oldVal%'), width: '200'}),
-          field({title: 'to', data: prettyPrint('%opEvent/newVal%'), width: '200'}),
-          field.control({
-            title: 'undo/redo',
-            control: button({
+          text(prettyPrint('%opEvent/oldVal%')),
+          text(prettyPrint('%opEvent/newVal%')),
+          button({
               title: 'revert to here',
               action: studio.revert('%undoIndex%'),
               style: button.href()
-            }),
-            width: '100'
           })
         ],
-        style: table.plain()
       })
     ],
     features: [
-      watchObservable(ctx => st.compsRefHandler.resourceChange, 500),
+      followUp.watchObservable(ctx => st.compsRefHandler.resourceChange, 500),
       css.height({height: '400', overflow: 'auto', minMax: 'max'})
     ]
   })

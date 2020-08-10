@@ -95,7 +95,13 @@ st.Probe = class {
         // check if parent ctx returns object with method name of breakprop as in dialog.onOK
         const parentCtx = this.probe[_path][0].in, breakingPath = _path+'~'+breakingProp
         const obj = this.probe[_path][0].out
-        const hasSideEffect = st.previewjb.comps[st.compNameOfPath(breakingPath)] && (st.previewjb.comps[st.compNameOfPath(breakingPath)].type ||'').indexOf('has-side-effects') != -1
+        const compName = st.compNameOfPath(breakingPath)
+        if (st.previewjb.comps[`${compName}.probe`])
+            return resolve(parentCtx.runInner({...parentCtx.profile[breakingProp], $: `${compName}.probe`},
+                st.paramDef(breakingPath),breakingProp))
+                    .then(_=>this.handleGaps(_path))
+
+        const hasSideEffect = st.previewjb.comps[compName] && (st.previewjb.comps[st.compNameOfPath(breakingPath)].type ||'').indexOf('has-side-effects') != -1
         if (obj && !hasSideEffect && obj[breakingProp] && typeof obj[breakingProp] == 'function')
             return resolve(obj[breakingProp]())
                 .then(_=>this.handleGaps(_path))
@@ -126,22 +132,12 @@ st.Probe = class {
             this.probe[path] = []
             this.probe[path].visits = 0
         }
-        let cbSnifferSrc
-        // if (typeof out == 'function' && jb.callbag.isCallbagFunc(out)) {
-        //     const {sniffer,subject,replay,isCallbag,sourceSniffer} = ctx.frame().jb.callbag
-        //     // wrap cb with sniffer
-        //     const snifferRcvr = subject()
-        //     cbSnifferSrc = replay()(snifferRcvr)
-        //     cbSnifferSrc.snifferResult = true
-        //     setTimeout(()=>snifferRcvr.complete(), 2000) // do not listen for more that 2 sec !!!
-        //     out = isCallbag(out) ? sourceSniffer(out, snifferRcvr) : sniffer(out, snifferRcvr)
-        // }
         this.probe[path].visits++
         const found = this.probe[path].find(x=>jb.compareArrays(x.in.data,ctx.data))
         if (found)
             found.counter++
         else
-            this.probe[path].push({in: ctx, out: cbSnifferSrc || out, counter: 0})
+            this.probe[path].push({in: ctx, out, counter: 0})
 
         return out
     }

@@ -5,7 +5,7 @@ jb.component('studio.gotoProject', {
   ],
   impl: runActions(
     gotoUrl(ctx => jb.studio.host.projectUrlInStudio(ctx.exp('%$name%')), 'new tab'),
-    dialog.closeContainingPopup()
+    dialog.closeDialog()
   )
 })
 

@@ -121,7 +121,7 @@ jb.component('animationDemo.particle', {
                     direction: 'alternate',
                     duration: '1000'
                   }),
-                dialog.closeContainingPopup()
+                dialog.closeDialog()
               )
             })
           }),

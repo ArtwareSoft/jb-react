@@ -37,8 +37,8 @@ jb.component('html.inIframe', {
         src: 'javascript: document.write(parent.contentForIframe)'
     }),
     features: [
-      interactiveProp('html', '%$$model/html%'),
-      interactive(({},{cmp}) => window.contentForIframe = cmp.html)
+      passPropToFrontEnd('html','%$$model/html()%'),
+      frontEnd.init(({},{html}) => window.contentForIframe = html)
     ]
   })
 })

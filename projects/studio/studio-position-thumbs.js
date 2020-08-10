@@ -218,8 +218,7 @@ jb.component('contentEditable.dragableThumb', {
   params: [
     {id: 'axis', as: 'string', options: 'x,y'}
   ],
-  impl: interactive(
-    (ctx,{cmp},{axis})=> {
+  impl: frontEnd.init( (ctx,{cmp},{axis})=> {
     const el = jb.ui.contentEditable.current
     const prop = () => ctx.run(contentEditable.effectiveProp(axis))
     const {pipe,takeUntil,merge,Do, flatMap, map, last, forEach} = jb.callbag
@@ -233,22 +232,21 @@ jb.component('contentEditable.dragableThumb', {
     const dialog = ctx.vars.$dialog;
     const dialogStyle = dialog.cmp.base.style
     pipe(cmp.mousedownEm,
-      Do(e => e.preventDefault()),
-      Do(() => ctx.run(writeValue('%$studio/dragPos/{%$axis%}-active%', true))),
+      Do(writeValue('%$studio/dragPos/{%$axis%}-active%', true)),
       flatMap(() => pipe(
         mouseMoveEm,
         takeUntil(mouseUpEm),
         map(e => moveHandlerAndCalcNewPos(e)),
         Do(requested => moveElem(requested)),
-        Do(val => ctx.run(writeValue('%$studio/dragPos/pos%', val))),
+        Do(writeValue('%$studio/dragPos/pos%', '%%')),
         last(),
-        Do(() => ctx.run(runActions(
+        Do(runActions(
             writeValue('%$studio/dragPos/{%$axis%}-active%', false),
             contentEditable.writePosToScript(),
-            jb.ui.dialogs.closePopups())
+            dialog.closeAllPopups()
         ))
       )),
-     forEach(() => {}) // TODO: try to take it out
+     forEach(() => {})
     )
 
     function getVal() { return jb.ui.computeStyle(el,prop()) }

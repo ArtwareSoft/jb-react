@@ -3,7 +3,7 @@ jb.ns('contentEditable')
 jb.ui.contentEditable = {
   setScriptData(ev,cmp,prop,isHtml) {
       const vdomCmp = jb.studio.previewjb.ctxDictionary[cmp.base.getAttribute('jb-ctx')].runItself()
-      vdomCmp.renderVdom()
+      vdomCmp.renderVdomAndFollowUp()
       const resourceRef = vdomCmp.toObserve.filter(e=>e.id == prop).map(e=>e.ref)[0]
       const scriptRef = this.scriptRef(vdomCmp,prop)
       const val = isHtml ? ev.target.innerHTML : ev.target.innerText
@@ -15,11 +15,12 @@ jb.ui.contentEditable = {
   isEnabled() {
     return new jb.jbCtx().exp('%$studio/settings/contentEditable%')
   },
-  activate(el) {
+  activate(cmp) {
     if (!this.isEnabled()) return
-    const ctx = new jb.jbCtx().setVar('$launchingElement',{ el })
+    const ctx = new jb.jbCtx() //.setVar('$launchingElement',{ el })
     const jbUi = jb.studio.previewjb.ui
-    ctx.run(inplaceEdit.activate(jbUi.ctxOfElem(el).path,el))
+    const el = elemOfCmp(ctx,cmp.cmpId)
+    ctx.run(inplaceEdit.activate(cmp.ctx.path,el))
     if (this.current == el) return
     if (this.current)
         jbUi.refreshElem(this.current,{contentEditableActive: false})
@@ -53,8 +54,8 @@ jb.component('feature.contentEditableDropHtml', {
   impl: features(
     htmlAttribute('ondragover', 'over'),
     htmlAttribute('ondrop', 'dropHtml'),
-    defHandler('over', (ctx,{ev}) => ev.preventDefault()),
-    defHandler('dropHtml',(ctx,{ev}) => { 
+    method('over', (ctx,{ev}) => ev.preventDefault()),
+    method('dropHtml',(ctx,{ev}) => { 
       ev.preventDefault();
       return Array.from(ev.dataTransfer.items).filter(x=>x.type.match(/html/))[0].getAsString(html => {
           const targetCtx = jb.studio.previewjb.ctxDictionary[ev.target.getAttribute('jb-ctx')]
@@ -71,21 +72,29 @@ jb.component('feature.contentEditable', {
   params: [
     {id: 'param', as: 'string', description: 'name of param mapped to the content editable element'}
   ],
-  impl: features(
-    feature.keyboardShortcut('Alt+N', () => jb.frame.parent.jb.exec({$:'studio.pickAndOpen', from: 'studio'})),
-    feature.keyboardShortcut('Ctrl+Z', () => jb.frame.parent.jb.exec({$:'studio.undo', from: 'studio'})),
-    feature.keyboardShortcut('Ctrl+Y', () => jb.frame.parent.jb.exec({$:'studio.redo', from: 'studio'})),
-
-    interactive(({},{cmp},{param}) => {
-      const isHtml = param == 'html'
-      const contentEditable = jb.ui.contentEditable
-      if (contentEditable && contentEditable.isEnabled()) {
-        cmp.onblurHandler = ev => contentEditable.setScriptData(ev,cmp,param,isHtml)
-        if (!isHtml)
-          cmp.onkeydownHandler = cmp.onkeypressHandler = ev => contentEditable.handleKeyEvent(ev,cmp,param)
-        cmp.onmousedownHandler = () => jb.ui.contentEditable.activate(cmp.base)
-      }
+  impl: If(()=> jb.ui.contentEditable.isEnabled(), features(
+    method('execProfile',({data}) => jb.frame.parent.jb.exec({$: data, from: 'studio'})),
+    method('setScriptData',({},{ev,cmp},{param}) => jb.ui.contentEditable.setScriptData(ev,cmp,param,param == 'html') ),
+    method('onKeyDown',({},{ev,cmp},{param}) => {
+      if (param != 'html')
+        jb.ui.contentEditable.handleKeyEvent(ev,cmp,param)
+      jb.ui.contentEditable.activate(cmp)
     }),
+    feature.keyboardShortcut('Alt+N', action.runBEMethod('execProfile','studio.pickAndOpen'),
+    feature.keyboardShortcut('Ctrl+Z', action.runBEMethod('execProfile','studio.undo')),
+    feature.keyboardShortcut('Ctrl+Y', action.runBEMethod('execProfile','studio.redo')),
+    frontEnd.flow(source.frontEndEvent('blur'),sink.BEMethod('setScriptData')),
+    frontEnd.flow(source.frontEndEvent('keydown'), sink.BEMethod('onKeyDown')),
+    // frontEnd.init(({},{cmp},{param}) => {
+    //   const isHtml = param == 'html'
+    //   const contentEditable = jb.ui.contentEditable
+    //   if (contentEditable && contentEditable.isEnabled()) {
+    //     cmp.onblurHandler = ev => contentEditable.setScriptData(ev,cmp,param,isHtml)
+    //     if (!isHtml)
+    //       cmp.onkeydownHandler = cmp.onkeypressHandler = ev => contentEditable.handleKeyEvent(ev,cmp,param)
+    //     cmp.onmousedownHandler = () => jb.ui.contentEditable.activate(cmp.base)
+    //   }
+    // }),
     templateModifier(({},{cmp,vdom},{param}) => {
       const contentEditable = jb.ui.contentEditable
       if (!contentEditable || cmp.ctx.vars.$runAsWorker || !contentEditable.isEnabled() || param && !contentEditable.refOfProp(cmp,param)) return vdom
@@ -103,13 +112,10 @@ jb.component('feature.contentEditable', {
       Object.assign(vdom.attributes,attsToInject)
       return vdom;
     }),
-    css(
-        If(
-          '%$cmp.state.contentEditableActive%',
+    css(If('%$cmp.state.contentEditableActive%',
           '{ border: 1px dashed grey; background-image: linear-gradient(90deg,rgba(243,248,255,.03) 63.45%,rgba(207,214,229,.27) 98%); border-radius: 3px;}'
-        )
-      )
-  )
+    ))
+  )))
 })
 
 jb.component('contentEditable.deactivate', {

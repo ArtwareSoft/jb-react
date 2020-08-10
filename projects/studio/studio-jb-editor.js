@@ -159,7 +159,7 @@ jb.component('studio.dataBrowse', {
     ],
     features: [
       group.wait({
-        for: ctx => ctx.exp('%$objToShow%'),
+        for: '%$objToShow%',
         loadingControl: text('...'),
         varName: 'obj',
         passRx: true
@@ -316,9 +316,9 @@ jb.component('studio.openJbEditProperty', {
               studio.jbFloatingInputRich('%$actualPath%')
             ],
             features: [
-              feature.onEsc(dialog.closeContainingPopup(true)),
+              feature.onEsc(dialog.closeDialog(true)),
               feature.onEnter(
-                dialog.closeContainingPopup(true),
+                dialog.closeDialog(true),
                 tree.regainFocus(),
                 toggleBooleanValue('%$studio/refreshProbe%')
               )
@@ -532,7 +532,7 @@ jb.component('studio.addVariable', {
             features: [
               feature.onEnter(
                 writeValue(studio.ref('%$path%~%$dialogData/name%'), ''),
-                dialog.closeContainingPopup(true),
+                dialog.closeDialog(true),
                 writeValue('%$jbEditorCntrData/selected%', '%$path%~%$dialogData/name%'),
                 tree.redraw(true),
                 tree.regainFocus()

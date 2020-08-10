@@ -1,10 +1,10 @@
-jb.component('watchablePeople', {
-    watchableData: [
-        {name: 'Homer Simpson - watchable', age: 42, male: true},
-        {name: 'Marge Simpson - watchable', age: 38, male: false},
-        {name: 'Bart Simpson - watchable', age: 12, male: true}
-    ]
-})
+// jb.component('watchablePeople', {
+//     watchableData: [
+//         {name: 'Homer Simpson - watchable', age: 42, male: true},
+//         {name: 'Marge Simpson - watchable', age: 38, male: false},
+//         {name: 'Bart Simpson - watchable', age: 12, male: true}
+//     ]
+// })
 
 jb.component('people', {
     passiveData: [
@@ -30,13 +30,13 @@ jb.component('personWithAddress', {
     }
 })
 
-jb.component('personWithChildren', {
-    watchableData: {
-        name: 'Homer Simpson',
-        children: [{name: 'Bart'}, {name: 'Lisa'}, {name: 'Maggie'}],
-        friends: [{name: 'Barnie'}]
-    }
-})
+// jb.component('personWithChildren', {
+//     watchableData: {
+//         name: 'Homer Simpson',
+//         children: [{name: 'Bart'}, {name: 'Lisa'}, {name: 'Maggie'}],
+//         friends: [{name: 'Barnie'}]
+//     }
+// })
 
 jb.component('uiTest.remoteEditableCtrl', {
     type: 'control',

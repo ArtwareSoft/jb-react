@@ -1,10 +1,10 @@
 (function(){
 const ui = jb.ui
-let cmpId = 0;
+let cmpId = 1;
 ui.propCounter = 0
 const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,this.ctx) }}
-const lifeCycle = new Set('init,interactive,componentWillUpdate,componentDidUpdate,destroy,extendCtx,templateModifier,extendItem'.split(','))
-const arrayProps = new Set('enrichField,icon,watchAndCalcModelProp,cssLines,defHandler,interactiveProp,calcProp'.split(','))
+const lifeCycle = new Set('init,extendCtx,templateModifier,followUp,destroy'.split(','))
+const arrayProps = new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod'.split(','))
 const singular = new Set('template,calcRenderProps,toolbar,styleParams,calcHash,ctxForPick'.split(','))
 
 Object.assign(jb.ui,{
@@ -50,16 +50,17 @@ Object.assign(jb.ui,{
 })
 
 class JbComponent {
-    constructor(ctx) {
+    constructor(ctx,id,ver) {
         this.ctx = ctx // used to calc features
-        this.cmpId = cmpId++
+        this.cmpId = id || cmpId++
+        this.ver = ver || 1
         this.eventObservables = []
         this.cssLines = []
         this.contexts = []
         this.originators = [ctx]
     }
     init() {
-        jb.log('initCmp',[this]);
+        jb.log('initCmp',[this])
         this.ctx = (this.extendCtxFuncs||[])
             .reduce((acc,extendCtx) => tryWrapper(() => extendCtx(acc,this),'extendCtx'), this.ctx.setVar('cmpId',this.cmpId))
         this.renderProps = {}
@@ -72,7 +73,7 @@ class JbComponent {
     }
  
     calcRenderProps() {
-        jb.log('renderVdom',[this]);
+        jb.log('renderVdom',[this])
         if (!this.initialized)
             this.init();
         (this.initFuncs||[]).sort((p1,p2) => p1.phase - p2.phase)
@@ -89,9 +90,10 @@ class JbComponent {
                 this.toObserve.push({id: e.prop, cmp: this, ref,...e})
             const val = jb.val(ref)
             this.renderProps[e.prop] = e.transformValue(this.ctx.setData(val == null ? '' : val))
-            jb.log('calcRenderProp',[e.prop,this.renderProps[e.prop],this])                
+            jb.log('calcRenderProp',[e.prop,this.renderProps[e.prop],this])    
         })
 
+        ;[...(this.calcProp || []),...(this.method || [])].forEach(p=>typeof p.value == 'function' && Object.defineProperty(p.value, 'name', { value: p.id }))
         const filteredPropsByPriority = (this.calcProp || []).filter(toFilter=> 
                 this.calcProp.filter(p=>p.id == toFilter.id && p.priority > toFilter.priority).length == 0)
         filteredPropsByPriority.sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
@@ -101,7 +103,8 @@ class JbComponent {
                 `renderProp:${prop.id}`))
                 Object.assign(this.renderProps, { ...(prop.id == '$props' ? value : { [prop.id]: value })})
             })
-        Object.assign(this.renderProps,this.styleParams, this.state);
+        ;(this.calcProp || []).filter(p => p.userStateProp).forEach(p => this.state[p.id] = this.renderProps[p.id])
+        Object.assign(this.renderProps,this.styleParams, this.state)
         jb.log('renderProps',[this.renderProps, this])
         return this.renderProps
     }
@@ -120,48 +123,60 @@ class JbComponent {
             x.includeChildren && `includeChildren=${x.includeChildren}`,
             x.strongRefresh && `strongRefresh`,  x.cssOnly && `cssOnly`, x.allowSelfRefresh && `allowSelfRefresh`,  
             x.phase && `phase=${x.phase}`].filter(x=>x).join(';')).join(',')
-        const handlers = (this.defHandler||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx)}`).join(',')
-        const interactive = (this.interactiveProp||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx)}`).join(',')
+        const methods = (this.method||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx.setVars({cmp: this, $props: this.renderProps}))}`).join(',')
         const originators = this.originators.map(ctx=>ui.preserveCtx(ctx)).join(',')
-
-        const workerId = jb.frame.workerId && jb.frame.workerId(this.ctx)
-        const atts =  workerId ? { worker: workerId, 'cmp-id': this.cmpId, ...(handlers && {handlers}) } : 
-            Object.assign(vdom.attributes || {}, {
-                'jb-ctx': ui.preserveCtx(this.originatingCtx()),
-                'cmp-id': this.cmpId, 
-                'mount-ctx': ui.preserveCtx(this.ctx),
-                // 'props-ctx': ui.preserveCtx(this.calcCtx),
-            },
-            observe && {observe}, 
-            handlers && {handlers}, 
-            originators && {originators},
-            this.ctxForPick && { 'pick-ctx': ui.preserveCtx(this.ctxForPick) },
-            (this.interactiveFuncs || interactive) && {interactive}, 
-            this.renderProps.cmpHash != null && {cmpHash: this.renderProps.cmpHash}
-        )        
+        const userEventProps = (this.userEventProps||[]).join(',')
+        const frontEndMethods = (this.frontEndMethod || []).map(h=>({method: h.method, path: h.path}))
         if (vdom instanceof jb.ui.VNode) {
             vdom.addClass(this.jbCssClass())
             vdom.attributes = Object.assign(vdom.attributes || {}, {
                     'jb-ctx': ui.preserveCtx(this.originatingCtx()),
                     'cmp-id': this.cmpId, 
-                    'mount-ctx': ui.preserveCtx(this.ctx),
-                    // 'props-ctx': ui.preserveCtx(this.calcCtx),
+                    'cmp-ver': this.ver,
+                    'full-cmp-ctx': ui.preserveCtx(this.calcCtx),
                 },
                 observe && {observe}, 
-                handlers && {handlers}, 
+                methods && {methods}, 
                 originators && {originators},
+                userEventProps && {userEventProps},
+                frontEndMethods.length && {$__frontEndMethods : JSON.stringify(frontEndMethods) },
+                frontEndMethods.length && {interactive : true}, 
+                this.state && { $__state : JSON.stringify(this.state)},
                 this.ctxForPick && { 'pick-ctx': ui.preserveCtx(this.ctxForPick) },
-                workerId && { 'worker': workerId },
-                (this.interactiveFuncs || interactive) && {interactive}, 
                 this.renderProps.cmpHash != null && {cmpHash: this.renderProps.cmpHash}
             )
         }
         jb.log('renRes',[this.ctx, vdom, this]);
+        this.afterFirstRendering = true
         return vdom
     }
-
+    renderVdomAndFollowUp() {
+        const vdom = this.renderVdom()
+        jb.delay(1).then(() => (this.followUpFuncs||[]).forEach(f=> tryWrapper(() => f(this.calcCtx), 'followUp')))
+        return vdom
+    }
+    hasBEMethod(method) {
+        (this.method||[]).filter(h=> h.id == method)[0]
+    }
+    runBEMethod(method, data, vars) {
+        const methodImpls = (this.method||[]).filter(h=> h.id == method)
+        methodImpls.forEach(h=> jb.ui.runCtxAction(h.ctx,data,{cmp: this,$state: this.state, $props: this.renderProps, ...vars}))
+        if (methodImpls.length == 0)
+            jb.logError(`no method in cmp: ${method}`, this, data, vars)
+    }
+    refresh(state,options) {
+        const elem = jb.ui.elemOfCmp(this.ctx,this.cmpId)
+        elem && jb.ui.refreshElem(elem,state,options) // cmpId may be deleted
+    }
+    calcCssLines() {
+        return jb.unique(this.css.map(l=> typeof l == 'function' ? l(this.calcCtx): l)
+        .flatMap(css=>css.split(/}\s*/m)
+            .map(x=>x.trim()).filter(x=>x)
+            .map(x=>x+'}')
+            .map(x=>x.replace(/^!/,' '))))
+    }
     jbCssClass() {
-        return ui.hashCss(this.cssLines,this.ctx)
+        return jb.ui.hashCss(this.calcCssLines() ,this.ctx)
     }
     originatingCtx() {
         return this.originators[this.originators.length-1]
@@ -217,11 +232,14 @@ class JbComponent {
         }
 
         if (options.afterViewInit) 
-            options.interactive = options.afterViewInit
+            options.frontEnd = options.afterViewInit
         if (typeof options.class == 'string') 
             options.templateModifier = vdom => vdom.addClass(options.class)
 
         Object.keys(options).forEach(key=>{
+            if (typeof options[key] == 'function')
+                Object.defineProperty(options[key], 'name', { value: key })
+
             if (lifeCycle.has(key)) {
                 this[key+'Funcs'] = this[key+'Funcs'] || []
                 this[key+'Funcs'].push(options[key])
@@ -235,17 +253,11 @@ class JbComponent {
         })
         if (options.watchRef) {
             this.watchRef = this.watchRef || []
-            this.watchRef.push(Object.assign({cmp: this},options.watchRef));
+            this.watchRef.push({cmp: this,...options.watchRef});
         }
 
         // eventObservables
         this.eventObservables = this.eventObservables.concat(Object.keys(options).filter(op=>op.indexOf('on') == 0))
-
-        if (options.css)
-            this.cssLines = (this.cssLines || []).concat(options.css.split(/}\s*/m)
-                .map(x=>x.trim()).filter(x=>x)
-                .map(x=>x+'}')
-                .map(x=>x.replace(/^!/,' ')));
 
         jb.asArray(options.featuresOptions || []).filter(x=>x).forEach(f => this.jbExtend(f.$ ? ctx.run(f) : f , ctx))
         jb.asArray(ui.inStudio() && options.studioFeatures).filter(x=>x).forEach(f => this.jbExtend(ctx.run(f), ctx))

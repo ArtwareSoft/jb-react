@@ -109,10 +109,12 @@ jb.component('picklist.mdcSelect', {
       picklist.init(),
       mdcStyle.initDynamic(),
       css(({},{},{width}) => `>* { ${jb.ui.propWithUnits('width', width)} }`),
-      interactive(
-        (ctx,{cmp}) =>
-          cmp.mdc_comps.forEach(mdcCmp => mdcCmp.listen('MDCSelect:change', () => cmp.jbModel(mdcCmp.value)))
-      ),
+      frontEnd.flow(
+        source.callbag(({},{cmp}) => jb.callbag.create(obs=> 
+          cmp.mdc_comps.forEach(mdcCmp => mdcCmp.listen('MDCSelect:change', () => obs(mdcCmp.value))))),
+        rx.takeUntil('%$cmp/destroyed%'),
+        sink.BEMethod('writeFieldValue')
+      ),  
       css(
         `~.mdc-select:not(.mdc-select--disabled) .mdc-select__selected-text { color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-titleBar-inactiveBackground); }
         ~.mdc-select:not(.mdc-select--disabled) .mdc-floating-label { color: var(--mdc-theme-primary) }`

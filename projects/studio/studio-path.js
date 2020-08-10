@@ -202,8 +202,6 @@ Object.assign(st, {
 			const comp = compToInsert && st.getComp(compToInsert);
 			if (!compToInsert || !comp) return;
 			newCtrl = st.newProfile(comp,compToInsert)
-			if (st.controlParams(path)[0] == 'fields' && newCtrl.$ != 'field')
-				newCtrl = { $: 'field.control', control : newCtrl};
 		}
 
 		// find group parent that can insert the control
@@ -326,20 +324,19 @@ jb.component('studio.watchPath', {
   })
 })
 
+jb.component('studio.scriptChange', {
+	type: 'rx',
+	impl: st.scriptChange
+})
+
 jb.component('studio.watchScriptChanges', {
   type: 'feature',
-  impl: interactive(({},{cmp}, _ctx) => 
-  		pipe(st.scriptChange,
-			takeUntil( cmp.destroyed ),
-			subscribe(() => cmp.refresh(null,{srcCtx: _ctx}))))
+  impl: frontEnd.flow(studio.scriptChange(), rx.takeUntil( '%$cmp.destroyed%' ), sink.refreshCmp())
 })
 
 jb.component('studio.watchComponents', {
   type: 'feature',
-  impl: interactive(({},{cmp}, _ctx) => pipe(st.scriptChange,
-		takeUntil( cmp.destroyed ),
-		filter(e=>e.path.length == 1),
-		subscribe(() => cmp.refresh(null,{srcCtx: _ctx}))))
+  impl: frontEnd.flow(studio.scriptChange(), rx.takeUntil( '%$cmp.destroyed%' ), rx.filter('%path/length%==1'), sink.refreshCmp())
 })
 
 jb.component('studio.boolRef', {

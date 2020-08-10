@@ -80,7 +80,7 @@ jb.component('group.tabs', {
           controls: dynamicControls({
             controlItems: '%$tabsModel/controls%',
             genericControl: button({
-              title: '%$tab/field/title%',
+              title: '%$tab/field()/title%',
               action: writeValue('%$selectedTab%', '%$tabIndex%'),
               style: call('tabStyle'),
               raised: '%$tabIndex% == %$selectedTab%',
@@ -133,7 +133,7 @@ jb.component('group.accordion', {
           style: call('sectionStyle'),
           controls: [
             button({
-              title: '%$section/field/title%',
+              title: '%$section/field()/title%',
               action: writeValue('%$selectedTab%', '%$sectionIndex%'),
               style: call('titleStyle'),
               raised: '%$sectionIndex% == %$selectedTab%',
@@ -174,7 +174,7 @@ jb.component('group.sections', {
         genericControl: group({
           style: call('sectionStyle'),
           controls: [
-            text({text: '%$section/field/title%', 
+            text({text: '%$section/field()/title%', 
               style: call('titleStyle'),
               features: ctx => ctx.run(features((ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x)))
             }),

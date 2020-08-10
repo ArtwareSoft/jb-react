@@ -67,8 +67,10 @@ jb.component('studio.lastEdit', {
   impl: (ctx,justNow) => {
 		const now = new Date().getTime();
 		const lastEvent = st.compsHistory.slice(-1).map(x=>x.opEvent).filter(x=>x)
-			.filter(r=>	!justNow || now - r.timeStamp < 1000)[0];
-		const res = lastEvent && (lastEvent.insertedPath || lastEvent.path);
+      .filter(r=>	!justNow || now - r.timeStamp < 1000)[0]
+    if (!lastEvent) return
+    const insertedIndex = jb.path(lastEvent.op.$splice,'0.2') && jb.path(lastEvent.op.$splice,'0.0')
+		const res = [...lastEvent.path, insertedIndex].filter(x=>x != null)
 		if (res)
 			return res.join('~')
 	}

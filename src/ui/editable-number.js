@@ -42,6 +42,9 @@ jb.component('editableNumber', {
           if (isNaN(number)) return '';
           return this.dataString(ctx.setVars({ Value: ''+number, Symbol: this.symbol }));
         }
+        keepInDomain(val) {
+          return Math.min(this.max, Math.max(this.min,val))
+        }
       }
       return jb.ui.ctrl(ctx.setVars({ editableNumber: new editableNumber(ctx.params) }))
   }

@@ -6,8 +6,8 @@ jb.component('studio.dropHtml', {
   impl: features(
     htmlAttribute('ondragover', 'over'),
     htmlAttribute('ondrop', 'dropHtml'),
-    defHandler('over', (ctx,{ev}) => ev.preventDefault()),
-    defHandler(
+    method('over', (ctx,{ev}) => ev.preventDefault()),
+    method(
         'dropHtml',
         (ctx,{cmp, ev},{onDrop}) => {
         ev.preventDefault();
@@ -115,7 +115,9 @@ function cssToFeatures(cssProps) {
 jb.ui.cleanRedundentCssFeatures = function(cssFeatures,{remove} = {}) {
     const removeMap = jb.objFromEntries((remove||[]).map(x=>[x,true]))
     const _features = cssFeatures.map(f=>({f, o: jb.exec(f)}))
-    const props = _features.filter(x=>x.o.css).flatMap(x=>x.o.css.split(';').flatMap(x=>x.split(';')))
+    const props = _features.map(x=>x.o.css).filter(x=>x)
+            .map(x=>typeof x == 'string' ?x : x())
+            .flatMap(x=>x.split(';'))
             .map(x=>x.replace('{','').replace('}','').replace(/\s*:\s*/g,':').trim() )
             .filter(x=>x)
             .filter(x=>!removeMap[x])

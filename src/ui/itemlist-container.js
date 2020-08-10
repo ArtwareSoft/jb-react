@@ -1,70 +1,38 @@
-(function() {
 jb.ns('search')
-
-const createItemlistCntr = (ctx,params) => ({
-	id: params.id,
-	defaultItem: params.defaultItem,
-	filter_data: {},
-	filters: [],
-	selectedRef: ctx.exp('%$itemlistCntrData/selected%','ref'),
-	selected: function(selected) {
-		if (!jb.isValid(this.selectedRef)) return;
-		return (typeof selected != 'undefined') ?
-			jb.writeValue(this.selectedRef,selected,ctx) : jb.val(this.selectedRef)
-	},
-	reSelectAfterFilter: function(filteredItems) {
-		if (filteredItems.indexOf(this.selected()) == -1)
-			this.selected(filteredItems[0])
-	},
-	changeSelectionBeforeDelete: function() {
-		if (this.items && this.selected) {
-			const curIndex = this.items.indexOf(this.selected);
-			if (curIndex == -1)
-				this.selected = null;
-			else if (curIndex == 0 && this.items.length > 0)
-				this.selected = this.items[1];
-			else if (this.items.length > 0)
-				this.selected = this.items[curIndex -1];
-			else
-				this.selected = null;
-		}
-	}
-})
 
 jb.component('group.itemlistContainer', {
   description: 'itemlist writable container to support addition, deletion and selection',
   type: 'feature',
   category: 'itemlist:80,group:70',
   params: [
-    {id: 'id', as: 'string', mandatory: true},
-    {id: 'defaultItem', as: 'single'},
     {id: 'initialSelection', as: 'single'}
   ],
   impl: features(
+	feature.serviceRegistey(),
     variable({
         name: 'itemlistCntrData',
         value: {'$': 'object', search_pattern: '', selected: '%$initialSelection%'},
         watchable: true
-      }),
-    variable({
-        name: 'itemlistCntr',
-        value: ctx => createItemlistCntr(ctx,ctx.componentContext.params)
-      })
+    }),
+    variable({ // not watchable
+		name: 'itemlistCntr',
+		value: {'$': 'object', filters: () => []},
+    })
   )
 })
 
 jb.component('itemlistContainer.filter', {
   type: 'aggregator',
   category: 'itemlist-filter:100',
-  requires: ctx => ctx.vars.itemlistCntr,
+  requireService: 'dataFilters',
   params: [
     {id: 'updateCounters', as: 'boolean'},
   ],
   impl: (ctx,updateCounters) => {
 			if (!ctx.vars.itemlistCntr) return;
 			const res = ctx.vars.itemlistCntr.filters.reduce((items,filter) => filter(items), ctx.data || []);
-			if (ctx.vars.itemlistCntrData.countAfterFilter != res.length)
-				jb.delay(1).then(_=>ctx.vars.itemlistCntr.reSelectAfterFilter(res));
+			// if (ctx.vars.itemlistCntrData.countAfterFilter != res.length)
+			// 	jb.delay(1).then(_=>ctx.vars.itemlistCntr.reSelectAfterFilter(res));
 			if (updateCounters) { // use merge
 					jb.delay(1).then(_=>{
 					jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeFilter%','ref'),(ctx.data || []).length, ctx);
@@ -97,9 +65,9 @@ jb.component('itemlistContainer.search', {
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.componentContext), features(
-		calcProp('init', (ctx,{},{searchIn,databind}) => {
-				if (!ctx.vars.itemlistCntr) return;
-				ctx.vars.itemlistCntr.filters.push( items => {
+		calcProp('init', (ctx,{itemlistCntr},{searchIn,databind}) => {
+				if (!itemlistCntr) return;
+				itemlistCntr.filters.push( items => {
 					const toSearch = jb.val(databind()) || '';
 					if (jb.frame.Fuse && jb.path(searchIn,'profile.$') == 'search.fuse')
 						return toSearch ? new jb.frame.Fuse(items, searchIn()).search(toSearch).map(x=>x.item) : items
@@ -109,7 +77,7 @@ jb.component('itemlistContainer.search', {
 					return items.filter(item=>toSearch == '' || searchIn(ctx.setData(item)).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
 				})
 		}),
-		interactive((ctx,{cmp}) => ctx.vars.itemlistCntr.keydown = jb.ui.upDownEnterEscObs(cmp))
+		frontEnd.selectionKeySourceService(),
   	))
 })
 
@@ -125,7 +93,7 @@ jb.component('itemlistContainer.moreItemsButton', {
   ],
   impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.componentContext), features(
       watchRef('%$itemlistCntrData/maxItems%'),
-      defHandler(
+      method(
         'onclickHandler',
         writeValue(
           '%$itemlistCntrData/maxItems%',
@@ -246,6 +214,3 @@ jb.component('search.fuse', {
 	],
 	impl: ctx => ({ fuseOptions: true, ...ctx.params})
 })
-  
-
-})()

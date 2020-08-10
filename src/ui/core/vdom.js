@@ -20,14 +20,17 @@ class VNode {
             this.addClass(cmpOrTag.split('#').pop().trim())
             cmpOrTag = cmpOrTag.split('#')[0]
         }
+        if (children != null)
+            children.forEach(ch=>ch.parentNode = this)
         Object.assign(this,{...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,children})
     }
     getAttribute(att) {
-        return (this.attributes || {})[att]
+        const res = (this.attributes || {})[att]
+        return res == null ? res : ''+res
     }
     setAttribute(att,val) {
         this.attributes = this.attributes || {}
-        this.attributes[att] = val
+        this.attributes[att] = ''+val
         return this
     }
     addClass(clz) {
@@ -45,22 +48,34 @@ class VNode {
     hasClass(clz) {
         return (jb.path(this,'attributes.class') || '').split(' ').indexOf(clz) != -1
     }
+    querySelector(...args) {
+        return this.querySelectorAll(...args)[0]
+    }
     querySelectorAll(selector,{includeSelf}={}) {
-        const hasAtt = selector.match(/^\[([a-zA-Z0-9_\-]+)\]$/)
-        const attEquals = selector.match(/^\[([a-zA-Z0-9_\-]+)="([a-zA-Z0-9_\-]+)"\]$/)
-        const hasClass = selector.match(/^\.([a-zA-Z0-9_\-]+)$/)
+        let maxDepth = 50
+        if (selector.match(/^:scope>/)) {
+            maxDepth = 1
+            selector = selector.slice(7)
+        }
+        if (selector.indexOf(',') != -1)
+            return selector.split(',').map(x=>x.trim()).reduce((res,sel) => [...res, jb.ui.querySelectorAll(sel,{includeSelf})], [])
+        const hasAtt = selector.match(/^\[([a-zA-Z0-9_$\-]+)\]$/)
+        const attEquals = selector.match(/^\[([a-zA-Z0-9_$\-]+)="([a-zA-Z0-9_\-]+)"\]$/)
+        const hasClass = selector.match(/^\.([a-zA-Z0-9_$\-]+)$/)
         const hasTag = selector.match(/^[a-zA-Z0-9_\-]+$/)
+        const idEquals = selector.match(/^#([a-zA-Z0-9_$\-]+)$/)
         const selectorMatcher = hasAtt ? el => el.attributes && el.attributes[hasAtt[1]]
             : hasClass ? el => el.hasClass(hasClass[1])
             : hasTag ? el => el.tag === hasTag[0]
             : attEquals ? el => el.attributes && el.attributes[attEquals[1]] == attEquals[2]
+            : idEquals ? el => el.attributes && el.attributes.id == idEquals[1]
             : null
 
-        return selectorMatcher && doFind(this,selectorMatcher,!includeSelf)
+        return selectorMatcher && doFind(this,selectorMatcher,!includeSelf,0)
 
-        function doFind(vdom,selectorMatcher,excludeSelf) {
-            return [ ...(!excludeSelf && selectorMatcher(vdom) ? [vdom] : []), 
-                ...(vdom.children||[]).flatMap(ch=> doFind(ch,selectorMatcher))
+        function doFind(vdom,selectorMatcher,excludeSelf,depth) {
+            return depth >= maxDepth ? [] : [ ...(!excludeSelf && selectorMatcher(vdom) ? [vdom] : []), 
+                ...(vdom.children||[]).flatMap(ch=> doFind(ch,selectorMatcher,false,depth+1))
             ]
         }
     }
@@ -80,11 +95,21 @@ function toVdomOrStr(val) {
     return res
 }
 
+function stringifyVNode(vdom) {
+    return JSON.stringify(removeParentNode(vdom))
+    function removeParentNode(node) {
+        return { ...node, parentNode: null, children: node.children && node.children.map(x=>removeParentNode(x)) }
+    }
+}
+
 function cloneVNode(vdom) {
-    return setClass(JSON.parse(JSON.stringify(vdom)))
-    function setClass(vdomObj) {
+    return setProto(JSON.parse(stringifyVNode(vdom)))
+    function setProto(vdomObj) {
         Object.setPrototypeOf(vdomObj, VNode.prototype);
-        (vdomObj.children || []).forEach(ch=>setClass(ch))
+        (vdomObj.children || []).forEach(ch=>{
+            setProto(ch)
+            ch.parentNode = vdomObj
+        })
         return vdomObj
     }
 }

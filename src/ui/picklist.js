@@ -18,7 +18,7 @@ jb.component('picklist', {
 jb.component('picklist.init', {
   type: 'feature',
   impl: features(
-    calcProp('options', '%$$model/options%'),
+    calcProp('options', '%$$model/options()%'),
     calcProp('hasEmptyOption', (ctx,{$props}) => $props.options.filter(x=>!x.text)[0]),
   )
 })
@@ -50,30 +50,14 @@ jb.component('picklist.initGroups', {
   }}),
 })
 
-jb.component('picklist.dynamicOptions', {
-  type: 'feature',
-  params: [
-    {id: 'recalcEm', as: 'single'}
-  ],
-  impl: interactive(
-    (ctx,{cmp},{recalcEm}) => {
-      const {pipe,takeUntil,subscribe} = jb.callbag
-      recalcEm && pipe(recalcEm, takeUntil( cmp.destroyed ), subscribe(() => cmp.refresh(null,{srcCtx: ctx.componentContext})))
-    }
-  )
-})
-
 jb.component('picklist.onChange', {
   category: 'picklist:100',
-  description: 'on picklist selection',
   type: 'feature',
   description: 'action on picklist selection',
   params: [
     {id: 'action', type: 'action', dynamic: true}
   ],
-  impl: interactive(
-    (ctx,{cmp},{action}) => cmp.onValueChange = (data => action(ctx.setData(data)))
-  )
+  impl: method('onValueChange', call('action'))
 })
 
 // ********* options

@@ -67,7 +67,7 @@ jb.component('sizesEditor.widthHeight', {
               true,
               studio.getOrCreateCompInArray('%$path%~features', 'css.%$prop%')
             ),
-          dialog.closeContainingPopup()
+          dialog.closeDialog()
         ),
         features: css(`{position: absolute; top: %$top%; left: 65px; font-size: 9px; width: 100px;} 
         ~:hover { font-size: 16px; background: var(--vscode-editor-background); z-index: 10000}`),
@@ -89,7 +89,7 @@ jb.component('sizesEditor.prop', {
               true,
               studio.getOrCreateCompInArray('%$path%~features', 'css.%$prop%')
             ),
-          dialog.closeContainingPopup()
+          dialog.closeDialog()
         ),
         features: css(`{position: absolute; %$css%; font-size: 9px; }`),
         style: button.href()
@@ -119,7 +119,7 @@ jb.component('sizesEditor.editor', {
                     true,
                     studio.getOrCreateCompInArray('%$path%~features', 'css.%level%')
                   ),
-                dialog.closeContainingPopup()
+                dialog.closeDialog()
               ),
               style: button.href()
             })

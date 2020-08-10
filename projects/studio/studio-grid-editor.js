@@ -57,10 +57,10 @@ jb.component('gridEditor.addRemoveTabPopup', {
   ],
   impl: features(
     htmlAttribute('onclick', true),
-    defHandler(
+    method(
       'onclickHandler',
       runActions(
-        dialog.closeDialog('add-remove-tab'),
+        dialog.closeDialogById('add-remove-tab'),
         If('%$ev/ctrlKey%', menu.openContextMenu({
           id: 'add-remove-tab',
           menu: menu.menu({
@@ -69,8 +69,8 @@ jb.component('gridEditor.addRemoveTabPopup', {
                 title: 'remove tab',
                 action: runActions(
                   (ctx,{gridIndex,gridPath},{axis}) => jb.ui.removeGridTab(gridPath,gridIndex,axis,ctx),
-                  dialog.closeContainingPopup(),
-                  dialog.closeDialog('gridLineThumb'),
+                  dialog.closeDialog(),
+                  dialog.closeDialogById('gridLineThumb'),
                   delay(100),
                   inplaceEdit.openGridEditor('%$gridPath%')
                 ),
@@ -81,8 +81,8 @@ jb.component('gridEditor.addRemoveTabPopup', {
                 title: 'new tab',
                 action: runActions(
                   (ctx,{gridIndex,gridPath},{axis}) => jb.ui.addGridTab(gridPath,gridIndex,axis,ctx),
-                  dialog.closeContainingPopup(),
-                  dialog.closeDialog('gridLineThumb'),
+                  dialog.closeDialog(),
+                  dialog.closeDialogById('gridLineThumb'),
                   delay(100),
                   inplaceEdit.openGridEditor('%$gridPath%')
                 ),
@@ -157,56 +157,101 @@ jb.component('gridEditor.dragableGridLineThumb', {
   params: [
     {id: 'axis', as: 'string', options: 'Columns,Rows'},
   ],
-  impl: interactive( (ctx,{cmp,gridIndex,inplaceElem,gridPath},{axis})=> {
-    const {pipe,takeUntil,merge,Do, flatMap, map, subscribe,last} = jb.callbag
-    cmp.mousedownEm = jb.ui.fromEvent(cmp, 'mousedown')
-    let mouseUpEm = jb.ui.fromEvent(cmp, 'mouseup', document)
-    let mouseMoveEm = jb.ui.fromEvent(cmp, 'mousemove', document)
-    if (jb.studio.previewWindow) {
-      mouseUpEm = merge(mouseUpEm, jb.ui.fromEvent(cmp, 'mouseup', jb.studio.previewWindow.document))
-      mouseMoveEm = merge(mouseMoveEm, jb.ui.fromEvent(cmp, 'mousemove', jb.studio.previewWindow.document))
-    }
-    let startPos = 0, base = 0, accVals
-    pipe(cmp.mousedownEm,
-//      Do(e => e.preventDefault()),
-      Do(e => {
-          startPos = HandlerPos(e)
-          base = gridIndex ? jb.ui.getGridVals(inplaceElem, axis)[gridIndex-1] : 0
-          accVals = jb.ui.getGridVals(inplaceElem, axis).slice(gridIndex).reduce((sums,x) => [...sums,x + sums.slice(-1)[0]],[0])
-      }),
-      flatMap(() => pipe(
-        mouseMoveEm,
-        Do(() => cmp.base.querySelector('span').style.display = 'block'),
-        takeUntil(mouseUpEm),
-        map(e => base + moveHandlersAndCalcDiff(e)),
-        Do(val => setGridPosScript(val, axis, gridIndex-1, ctx)),
-        last()
-      )),
-      Do(() => cmp.base.querySelector('span').style.display = 'none'),
-      subscribe(() => {})
-    )
-    function HandlerPos(e) {
-        return axis == 'Rows' ? e.clientY - jb.ui.studioFixYPos() : e.clientX
-    }
-    function moveHandlersAndCalcDiff(e) {
-        const newPos = HandlerPos(e)
-        const overflow = base + newPos - startPos
-        const fixBack = (overflow < 0) ? -overflow : 0
-        jb.ui.dialogs.dialogs.filter(dlg => dlg.axis == axis &&  dlg.gridIndex >= gridIndex -1)
-            .forEach(dlg=>{
-                if (axis == 'Rows')
-                    dlg.el.style.top = e.clientY + fixBack + accVals[dlg.gridIndex-gridIndex] + 'px'
-                else
-                    dlg.el.style.left = e.clientX + fixBack + accVals[dlg.gridIndex-gridIndex] + 'px'
-            })
-        return newPos + fixBack - startPos
-    }
-    function setGridPosScript(val, axis, i, ctx) {
-        const ref = jb.studio.refOfPath(`${gridPath}~layout~${axis.toLowerCase().slice(0,-1)}Sizes~items~${i}`)
-        jb.writeValue(ref,val,ctx)
-    }
-  })
+  impl: features(
+    method('setNewPos',writeValue(
+      ({},{gridIndex},{axis}) => `%$gridPath%~layout~${axis.toLowerCase().slice(0,-1)}Sizes~items~${gridIndex-1}`,
+      '%%')
+    ),
+    passPropToFrontEnd('inplaceElemPath',(ctx,{inplaceElem})=> jb.ui.ctxOfElem(inplaceElem).path),
+    passPropToFrontEnd('axis','%$axis%'),
+    passPropToFrontEnd('gridIndex','%$gridIndex%'),
+    frontEnd.prop('inplaceElem',({},{inplaceElemPath}) => (jb.studio.findElemsByCtxCondition(ctx => ctx.path == inplaceElemPath)[0] || {}).elem),
+    frontEnd.prop('gridRect', ({},{cmp}) => cmp.inplaceElem.getBoundingClientRect()),
+    frontEnd.prop('handlerPos', ({},{axis}) => ev => axis == 'Rows' ? ev.clientY - jb.ui.studioFixYPos() : ev.clientX),
+
+		frontEnd.flow(
+      source.frontEndEvent('mousedown'),
+			rx.var('startPos',({data},{cmp}) => cmp.handlerPos(data)),
+			rx.var('base',({},{cmp,axis,gridIndex}) => gridIndex ? jb.ui.getGridVals(cmp.inplaceElem, axis)[gridIndex-1] : 0),
+			rx.var('accVals',({},{cmp,axis,gridIndex}) => jb.ui.getGridVals(cmp.inplaceElem, axis).slice(gridIndex).reduce((sums,x) => [...sums,x + sums.slice(-1)[0]],[0])),
+			rx.flatMap(rx.pipe(
+				source.event('mousemove', () => document), 
+        rx.takeWhile('%buttons%!=0'),
+        rx.do(({},{el}) => el.querySelector('span').style.display = 'block'),
+        rx.var('newPos',({data},{cmp}) => cmp.handlerPos(data)),
+        rx.var('overflow',({},{base,newPos,startPos}) => base + newPos - startPos),
+        rx.var('fixBack',({},{overflow}) => overflow < 0 ? -overflow : 0),
+        rx.var('ev','%%'),
+        rx.do(runActionOnItems(
+          (ctx,{gridIndex}) => jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog')
+            .filter(el => el.axis == axis)
+            .filter(el => el.gridIndex >= gridIndex -1),
+          ({data},{fixBack,accVals,ev,gridIndex,axis}) => {
+            const dlg = data
+            if (axis == 'Rows')
+                dlg.style.top = ev.clientY + fixBack + accVals[dlg.gridIndex-gridIndex] + 'px'
+            else
+                dlg.style.left = ev.clientX + fixBack + accVals[dlg.gridIndex-gridIndex] + 'px'
+          }
+        )),
+        rx.var('posToSet', ({},{base ,newPos ,fixBack, startPos}) => base + newPos + fixBack - startPos),
+        rx.map('%$posToSet%'),
+        sink.BEMethod('setNewPos')
+			)),
+			sink.action()
+		))
 })
+  
+//   frontEnd.init((ctx,{cmp,gridIndex,inplaceElem,gridPath},{axis})=> {
+//     const {pipe,takeUntil,merge,Do, flatMap, map, subscribe,last} = jb.callbag
+//     cmp.mousedownEm = jb.ui.fromEvent(cmp, 'mousedown')
+//     let mouseUpEm = jb.ui.fromEvent(cmp, 'mouseup', document)
+//     let mouseMoveEm = jb.ui.fromEvent(cmp, 'mousemove', document)
+//     if (jb.studio.previewWindow) {
+//       mouseUpEm = merge(mouseUpEm, jb.ui.fromEvent(cmp, 'mouseup', jb.studio.previewWindow.document))
+//       mouseMoveEm = merge(mouseMoveEm, jb.ui.fromEvent(cmp, 'mousemove', jb.studio.previewWindow.document))
+//     }
+//     let startPos = 0, base = 0, accVals
+//     pipe(cmp.mousedownEm,
+// //      Do(e => e.preventDefault()),
+//       Do(e => {
+//           startPos = HandlerPos(e)
+//           base = gridIndex ? jb.ui.getGridVals(inplaceElem, axis)[gridIndex-1] : 0
+//           accVals = jb.ui.getGridVals(inplaceElem, axis).slice(gridIndex).reduce((sums,x) => [...sums,x + sums.slice(-1)[0]],[0])
+//       }),
+//       flatMap(() => pipe(
+//         mouseMoveEm,
+//         Do(() => cmp.base.querySelector('span').style.display = 'block'),
+//         takeUntil(mouseUpEm),
+//         map(e => base + moveHandlersAndCalcDiff(e)),
+//         Do(val => setGridPosScript(val, axis, gridIndex-1, ctx)),
+//         last()
+//       )),
+//       Do(() => cmp.base.querySelector('span').style.display = 'none'),
+//       subscribe(() => {})
+//     )
+//     function HandlerPos(e) {
+//         return axis == 'Rows' ? e.clientY - jb.ui.studioFixYPos() : e.clientX
+//     }
+//     function moveHandlersAndCalcDiff(e) {
+//         const newPos = HandlerPos(e)
+//         const overflow = base + newPos - startPos
+//         const fixBack = (overflow < 0) ? -overflow : 0
+//         ctx.exp('%$shownDialogs/_%').filter(dlg => dlg.axis == axis &&  dlg.gridIndex >= gridIndex -1)
+//             .forEach(dlg=>{
+//                 if (axis == 'Rows')
+//                     dlg.el.style.top = e.clientY + fixBack + accVals[dlg.gridIndex-gridIndex] + 'px'
+//                 else
+//                     dlg.el.style.left = e.clientX + fixBack + accVals[dlg.gridIndex-gridIndex] + 'px'
+//             })
+//         return newPos + fixBack - startPos
+//     }
+//     function setGridPosScript(val, axis, i, ctx) {
+//         const ref = jb.studio.refOfPath(`${gridPath}~layout~${axis.toLowerCase().slice(0,-1)}Sizes~items~${i}`)
+//         jb.writeValue(ref,val,ctx)
+//     }
+//   })
+// })
 
 jb.component('gridEditor.openGridItemThumbs', {
   type: 'action',
@@ -239,9 +284,10 @@ jb.component('gridEditor.openGridItemThumbs', {
           return `>span { display: none; position: absolute; white-space: nowrap; padding: 7px; color: var(--jb-statusBar-foreground); background: var(--jb-statusBar-background); opacity: 1; top: ${elemRect.height- 7 }px}`
         }),
         css('{cursor: grab; box-shadow: 3px 3px; var(--jb-statusBar-background); opacity: 0.2; display: flex; flex-flow: row-reverse} ~:hover {opacity: 0.7}' ),
-        feature.onDataChange({ ref: studio.ref('%$gridPath%'), includeChildren: 'yes',
-          action: (ctx,{cmp}) => jb.delay(1).then(()=> cmp.refresh(null,{srcCtx: ctx.componentContext}))
-        })
+        followUp.flow(source.watchableData({ ref: studio.ref('%$gridPath%'), includeChildren: 'yes' }), sink.refreshCmp() )
+        // followUp.onDataChange(,
+        //   action: (ctx,{cmp}) => jb.delay(1).then(()=> cmp.refresh(null,{srcCtx: ctx.componentContext}))
+        // })
       ]
     })
   )
@@ -249,58 +295,106 @@ jb.component('gridEditor.openGridItemThumbs', {
 
 jb.component('gridEditor.dragableGridItemThumb', {
   type: 'feature',
-  impl: interactive( (ctx,{cmp,inplaceElem})=> {
-    const {pipe,takeUntil,merge,Do, flatMap, subscribe, map, last, distinctUntilChanged} = jb.callbag
-    cmp.mousedownEm = jb.ui.fromEvent(cmp, 'mousedown')
-    let mouseUpEm = jb.ui.fromEvent(cmp, 'mouseup', document)
-    let mouseMoveEm = jb.ui.fromEvent(cmp, 'mousemove', document)
-    if (jb.studio.previewWindow) {
-      mouseUpEm = merge(mouseUpEm, jb.ui.fromEvent(cmp, 'mouseup', jb.studio.previewWindow.document))
-      mouseMoveEm = merge(mouseMoveEm, jb.ui.fromEvent(cmp, 'mousemove', jb.studio.previewWindow.document))
-    }
-    let spanBase,screenToClient
-    const gridRect = inplaceElem.getBoundingClientRect()
-    pipe(cmp.mousedownEm,
-      Do(e => e.preventDefault()),
-      flatMap(() => pipe(
-        mouseMoveEm,
-        takeUntil(mouseUpEm),
-        Do(() => cmp.base.querySelector('span').style.display = 'block'),
-        // strange bug in chrome mouse position of clientY. Using screenY with offset of first click that works fine
-        Do(e=> { screenToClient = screenToClient || { x: e.screenX - e.clientX, y: e.screenY - e.clientY} }),
-        map(e=> ({ ctrlKey: e.ctrlKey, gridPos: posToGridPos([e.screenY - screenToClient.y - gridRect.top - jb.ui.studioFixYPos(),
-            e.screenX - screenToClient.x - gridRect.left])})),
-        distinctUntilChanged((x,y) => x.gridPos.join(',') == y.gridPos.join(',')),
-        Do(e=> {
-          if (spanBase && !e.ctrlKey) spanBase = null
-          if (!spanBase && e.ctrlKey) spanBase = e.ctrlKey && !spanBase && posToGridPos([e.screenY - screenToClient.y - gridRect.top - jb.ui.studioFixYPos(),
-            e.screenX - screenToClient.x - gridRect.left])
-        }),
-        Do(e=>jb.log('dragableGridItemThumb',['changed to ' + e.gridPos.join(','), e])),
-        Do(e => setGridAreaValsInScript(e.gridPos)),
-        last(),
-      )),
-      Do(() => cmp.base.querySelector('span').style.display = 'none'),
-      subscribe(() => {})
-    )
-
-    function setGridAreaValsInScript(vals) {
-      const gridAreaRef = ctx.run(pipeline(
+  impl: features(
+    method('setGridArea', writeValue(
+      pipeline(
         studio.getOrCreateCompInArray('%$gridItemElem/_component/ctx/path%~features','css.gridArea'), 
-        '%css%', 
-        studio.ref('%%')))     //{as: 'ref'})
-      spanBase && [0,1].forEach(i=>{
-          spanBase[i] = Math.min(spanBase[i],vals[i])
-          vals[i] = Math.max(spanBase[i],vals[i])
-        })
-      const spans = spanBase && [0,1].map(i => `span ${Math.max(1,vals[i] -spanBase[i] + 1)}`)
-      const newScriptValues = spanBase ? [...spanBase, ...spans] : vals
-      jb.writeValue(gridAreaRef,`grid-area: ${newScriptValues.join(' / ')}`,ctx)
-    }
-    function posToGridPos(pos) {
+        '%css%', studio.ref('%%')
+      ), '%%' 
+    )),
+    passPropToFrontEnd('inplaceElemPath',({},{inplaceElem})=> jb.ui.ctxOfElem(inplaceElem).path),
+    frontEnd.prop('inplaceElem',({},{inplaceElemPath}) => (jb.studio.findElemsByCtxCondition(ctx => ctx.path == inplaceElemPath)[0] || {}).elem),
+    frontEnd.prop('gridRect', ({},{cmp}) => cmp.inplaceElem.getBoundingClientRect()),
+    frontEnd.prop('posToGridPos', ({},{inplaceElem}) => pos => {
       const gridAccVals = jb.ui.calcGridAccVals(inplaceElem)
       return pos.map((val,i) => gridAccVals[i ? 'Columns' : 'Rows'].findIndex(x=> x > val))
         .map((val,i) => val == -1 ? gridAccVals[i ? 'Columns' : 'Rows'].length : val)
-    }
-  })
+    }),
+		frontEnd.flow(
+      source.frontEndEvent('mousedown'),
+			rx.var('screenToClient',({data}) => ({
+        x: data.screenX - data.clientX, 
+        y: data.screenY - data.clientY
+			})),      
+			rx.flatMap(rx.pipe(
+				source.event('mousemove', () => document), 
+				rx.takeWhile('%buttons%!=0'),
+        rx.do(({},{el}) => el.querySelector('span').style.display = 'block'),
+        rx.var('ctrlKey','%ctrlKey%'),
+        rx.var('gridPos',({data},{cmp,screenToClient}) => cmp.posToGridPos(
+          [data.screenY - screenToClient.y - cmp.gridRect.top - jb.ui.studioFixYPos(),
+            data.screenX - screenToClient.x - cmp.gridRect.left])),
+        rx.var('spanBase',({data},{cmp,screenToClient}) => data.ctrlKey && cmp.posToGridPos(
+          [data.screenY - screenToClient.y - cmp.gridRect.top - jb.ui.studioFixYPos(),
+              data.screenX - screenToClient.x - cmp.gridRect.left])),
+        rx.var('newScriptValues', ({},{spanBase,gridPos}) => {
+          spanBase && [0,1].forEach(i=>{
+            spanBase[i] = Math.min(spanBase[i],gridPos[i])
+            gridPos[i] = Math.max(spanBase[i],gridPos[i])
+          })
+          const spans = spanBase && [0,1].map(i => `span ${Math.max(1,gridPos[i] -spanBase[i] + 1)}`)
+          return (spanBase ? [...spanBase, ...spans] : gridPos).join(' / ')
+        }),
+        rx.map('grid-area: %$newScriptValues%'),
+				sink.BEMethod('setGridArea')
+			)),
+			sink.action()
+		)
+  )
 })
+  
+//   frontEnd.init((ctx,{cmp,inplaceElem})=> {
+//     const {pipe,takeUntil,merge,Do, flatMap, subscribe, map, last, distinctUntilChanged} = jb.callbag
+//     cmp.mousedownEm = jb.ui.fromEvent(cmp, 'mousedown')
+//     let mouseUpEm = jb.ui.fromEvent(cmp, 'mouseup', document)
+//     let mouseMoveEm = jb.ui.fromEvent(cmp, 'mousemove', document)
+//     if (jb.studio.previewWindow) {
+//       mouseUpEm = merge(mouseUpEm, jb.ui.fromEvent(cmp, 'mouseup', jb.studio.previewWindow.document))
+//       mouseMoveEm = merge(mouseMoveEm, jb.ui.fromEvent(cmp, 'mousemove', jb.studio.previewWindow.document))
+//     }
+//     let spanBase,screenToClient
+//     const gridRect = inplaceElem.getBoundingClientRect()
+//     pipe(cmp.mousedownEm,
+//       Do(e => e.preventDefault()),
+//       flatMap(() => pipe(
+//         mouseMoveEm,
+//         takeUntil(mouseUpEm),
+//         Do(() => cmp.base.querySelector('span').style.display = 'block'),
+//         // strange bug in chrome mouse position of clientY. Using screenY with offset of first click that works fine
+//         Do(e=> { screenToClient = screenToClient || { x: e.screenX - e.clientX, y: e.screenY - e.clientY} }),
+//         map(e=> ({ ctrlKey: e.ctrlKey, gridPos: posToGridPos([e.screenY - screenToClient.y - gridRect.top - jb.ui.studioFixYPos(),
+//             e.screenX - screenToClient.x - gridRect.left])})),
+//         distinctUntilChanged((x,y) => x.gridPos.join(',') == y.gridPos.join(',')),
+//         Do(e=> {
+//           if (spanBase && !e.ctrlKey) spanBase = null
+//           if (!spanBase && e.ctrlKey) spanBase = e.ctrlKey && !spanBase && posToGridPos([e.screenY - screenToClient.y - gridRect.top - jb.ui.studioFixYPos(),
+//             e.screenX - screenToClient.x - gridRect.left])
+//         }),
+//         Do(e=>jb.log('dragableGridItemThumb',['changed to ' + e.gridPos.join(','), e])),
+//         Do(e => setGridAreaValsInScript(e.gridPos)),
+//         last(),
+//       )),
+//       Do(() => cmp.base.querySelector('span').style.display = 'none'),
+//       subscribe(() => {})
+//     )
+
+//     function setGridAreaValsInScript(vals) {
+//       const gridAreaRef = ctx.run(pipeline(
+//         studio.getOrCreateCompInArray('%$gridItemElem/_component/ctx/path%~features','css.gridArea'), 
+//         '%css%', 
+//         studio.ref('%%')))     //{as: 'ref'})
+//       spanBase && [0,1].forEach(i=>{
+//           spanBase[i] = Math.min(spanBase[i],vals[i])
+//           vals[i] = Math.max(spanBase[i],vals[i])
+//         })
+//       const spans = spanBase && [0,1].map(i => `span ${Math.max(1,vals[i] -spanBase[i] + 1)}`)
+//       const newScriptValues = spanBase ? [...spanBase, ...spans] : vals
+//       jb.writeValue(gridAreaRef,`grid-area: ${newScriptValues.join(' / ')}`,ctx)
+//     }
+//     function posToGridPos(pos) {
+//       const gridAccVals = jb.ui.calcGridAccVals(inplaceElem)
+//       return pos.map((val,i) => gridAccVals[i ? 'Columns' : 'Rows'].findIndex(x=> x > val))
+//         .map((val,i) => val == -1 ? gridAccVals[i ? 'Columns' : 'Rows'].length : val)
+//     }
+//   })
+// })

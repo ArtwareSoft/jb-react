@@ -219,13 +219,13 @@ Object.assign(st, {
     jb.delay(1).then(()=> jb.ui.addClass(box,'jb-fade-3s-transition'));
     jb.delay(1000).then(()=>st.getOrCreateHighlightBox(elems[0]).innerHTML = ''); // clean after the fade animation
   },
-  refreshStudioComponent(path) {
+  refreshStudioComponent(path) { // editing the studio...
     jb.comps[path[0]] = st.previewjb.comps[path[0]]
     const pathStr = Array.isArray(path) ? path.join('~') : path;
     const {elem, ctx} = st.findElemsByCtxCondition(ctx => pathStr.indexOf(ctx.path) == 0)[0] || {}
     if (!ctx) return
     ctx.profile = jb.path(jb.comps,ctx.path.split('~'))
-    const cmp = ctx.profile.$ == 'openDialog' ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself()
+    const cmp = ctx.profile.$ == 'openDialog' ? ctx.run({$: 'dialog.buildComp'}) : ctx.runItself()
     cmp && jb.ui.applyNewVdom(elem, jb.ui.h(cmp), {strongRefresh: true, ctx})
     jb.exec({ $: 'animate.refreshElem', elem: () => elem })
   },

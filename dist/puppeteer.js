@@ -22,8 +22,13 @@ jb.pptr = {
         jb.remote.startCommandListener()
     },
     connect() { // cliet side
+        const uri = `ws:${(jb.studio.studioWindow || jb.frame).location.hostname || 'localhost'}:8090`
+        if (jb.remote.servers[uri]) 
+            return jb.remote.servers[uri]
+
         return new Promise((resolve, reject) => {
-            const socket = new WebSocket(`ws:${(jb.studio.studioWindow || jb.frame).location.hostname || 'localhost'}:8090`)
+            const socket = jb.remote.servers[uri] = new WebSocket(uri)
+            socket.uri = uri
             socket.onopen = () => resolve(socket)
             socket.onerror = err => reject(err)
             socket.onclose = e => {
@@ -68,8 +73,8 @@ jb.component('pptr.start', {
       {id: 'showBrowser', as: 'boolean', defaultValue: true},
     ],
     impl: If(remote.onServer(), 
-        rx.pipe(rx.fromPromise( (ctx, {}, {showBrowser}) => jb.pptr.getOrCreateBrowser(showBrowser)), rx.var('browser') ),
-        remote.sourceRx(pptr.start('%$showBrowser%'), pptr.server()))
+        rx.pipe(source.promise( (ctx, {}, {showBrowser}) => jb.pptr.getOrCreateBrowser(showBrowser)), rx.var('browser') ),
+        source.remote(pptr.start('%$showBrowser%'), pptr.server()))
 })
 
 jb.component('pptr.server', {

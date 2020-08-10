@@ -18,7 +18,7 @@ jb.component('group.initGroup', {
   category: 'group:0',
   impl: calcProp({
     id: 'ctrls',
-    value: '%$$model.controls%'
+    value: '%$$model.controls()%'
   })
 })
 
@@ -103,8 +103,7 @@ jb.component('group.wait', {
       },
         priority: ctx => jb.path(ctx.vars.$state,'dataArrived') ? 0: 10
       }),
-    interactive(
-        (ctx,{cmp},{varName,passRx}) => !cmp.state.dataArrived && !cmp.state.error &&
+    followUp.action((ctx,{cmp},{varName,passRx}) => !cmp.state.dataArrived && !cmp.state.error &&
         Promise.resolve(jb.toSynchArray(ctx.componentContext.params.for(),!passRx))
         .then(data => cmp.refresh({ dataArrived: true }, {
             srcCtx: ctx.componentContext,

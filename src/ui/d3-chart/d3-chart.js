@@ -104,7 +104,7 @@ jb.component('d3Scatter.init', {
       res.colorPivot.scale = d3.scaleOrdinal(d3.schemeAccent); //.domain(cmp.colorPivot.domain);
       return res
     }),
-    interactive((ctx,{cmp}) => {
+    frontEnd(ctx,{cmp}) => {
       cmp.base.innerHTML = cmp.base.innerHTML +'' // ???
       const renderProps = cmp.ctx.runItself().calcRenderProps()
       d3.select(cmp.base.querySelector('.x.axis')).call(d3.axisBottom().scale(renderProps.xPivot.scale));

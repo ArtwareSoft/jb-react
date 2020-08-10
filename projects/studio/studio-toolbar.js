@@ -13,7 +13,7 @@ jb.component('studio.toolbar', {
           buttonStyle: button.mdcFloatingAction('40', true)
         }),
         title: 'Inline content editing',
-        features: [feature.onEvent({event: 'click', action: contentEditable.deactivate()})]
+        features: feature.onEvent('click', contentEditable.deactivate())
       }),
       editableBoolean({
         databind: '%$studio/settings/activateWatchRefViewer%',

@@ -1,4 +1,4 @@
-jb.ns('menuStyle,menuSeparator,mdc,icon')
+jb.ns('menuStyle,menuSeparator,mdc,icon,key')
 
 jb.component('menu.menu', {
   type: 'menu.option',
@@ -8,6 +8,15 @@ jb.component('menu.menu', {
     {id: 'icon', type: 'icon' },
     {id: 'optionsFilter', type: 'data', dynamic: true, defaultValue: '%%'}
   ],
+  // impl: obj(
+  //   dynamicProp('options', pipeline('%$options()%', call('optionsFilter'))),
+  //   prop('title','%$title()%'),
+  //   prop('icon','%$icon%'),
+  //   objMethod('applyShortcut', runActionOnItems(
+  //     pipeline('%$options()%', filter(key.eventMatchKey('%$ev%','%shortcut%'))), 
+  //     '%action%'
+  //   )),
+  // )
   impl: ctx => ({
 		options: ctx2 => ctx.params.optionsFilter(ctx.setData(ctx.params.options(ctx2))),
     title: ctx.params.title(),
@@ -24,7 +33,7 @@ jb.component('menu.optionsGroup', {
   params: [
     {id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true}
   ],
-  impl: (ctx,options) => options()
+  impl: '%$options()%'
 })
 
 jb.component('menu.dynamicOptions', {
@@ -33,28 +42,25 @@ jb.component('menu.dynamicOptions', {
     {id: 'items', type: 'data', as: 'array', mandatory: true, dynamic: true},
     {id: 'genericOption', type: 'menu.option', mandatory: true, dynamic: true}
   ],
-  impl: (ctx,items,generic) => items().map(item => generic(ctx.setData(item)))
+  impl: pipeline('%$items()%', call('genericOption'))
 })
 
 jb.component('menu.endWithSeparator', {
   type: 'menu.option',
   params: [
     {id: 'options', type: 'menu.option[]', dynamic: true, flattenArray: true, mandatory: true},
-    {id: 'separator', type: 'menu.option', as: 'array', defaultValue: menu.separator()},
+    {id: 'separator', type: 'menu.option', defaultValue: menu.separator()},
     {id: 'title', as: 'string'}
   ],
-  impl: (ctx) => {
-		const options = ctx.params.options();
-		if (options.length > 0)
-			return options.concat(ctx.params.separator)
-		return []
-	}
+  impl: pipeline(
+      Var('opts','%$options()%'), 
+      If('%$opts/length%', list('%$opts%','%$separator%'))
+  )
 })
-
 
 jb.component('menu.separator', {
   type: 'menu.option',
-  impl: ctx => ({ separator: true })
+  impl: obj(prop('separator',true))
 })
 
 jb.component('menu.action', {
@@ -69,14 +75,15 @@ jb.component('menu.action', {
   impl: ctx => ctx.params.showCondition && ({
 			leaf : ctx.params,
 			action: _ => ctx.params.action(ctx.setVars({topMenu:null})), // clean topMenu from context after the action
-			title: ctx.params.title(ctx),
-			applyShortcut: e=> {
-				if (jb.ui.checkKey(e,ctx.params.shortcut)) {
-					e.stopPropagation();
-					ctx.params.action();
-					return true;
-				}
-			},
+      title: ctx.params.title(ctx),
+      shortcut: ctx.params.shortcut,
+			// applyShortcut: e=> {
+			// 	if (ctx.run(eventMatchKey(() => e, () => ctx.params.shortcut))) {
+			// 		e.stopPropagation();
+			// 		ctx.params.action();
+			// 		return true;
+			// 	}
+			// },
 			ctx
 		})
 })
@@ -91,8 +98,12 @@ jb.component('menu.control', {
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => {
-		const menuModel = ctx.params.menu() || { options: [], ctx, title: ''};
-    return jb.ui.ctrl(ctx.setVars({	topMenu: ctx.vars.topMenu || { popups: []},	menuModel	}), features(
+    const _model = ctx.params.menu()
+    if (!_model) debugger
+    const menuModel =  _model || { options: [], ctx, title: ''}
+    const topMenu = ctx.vars.topMenu || { popups: []}
+//    console.log('menu.control',ctx.profile,menuModel,ctx)
+    return jb.ui.ctrl(ctx.setVars({	topMenu, menuModel }), features(
       () => ({ctxForPick: menuModel.ctx }),
       calcProp('title','%$menuModel.title%'),
     ))
@@ -127,15 +138,10 @@ jb.component('menuStyle.pulldown', {
   ],
   impl: styleByControl(
     Var('optionsParentId', ctx => ctx.id),
-    Var('innerMenuStyle', ctx => ctx.componentContext.params.innerMenuStyle),
-    Var('leafOptionStyle', ctx => ctx.componentContext.params.leafOptionStyle),
+    Var('innerMenuStyle', '%$innerMenuStyle%'),
+    Var('leafOptionStyle', '%$leafOptionStyle%'),
     itemlist({
-      vars: [
-        Var('optionsParentId', ctx => ctx.id),
-        Var('innerMenuStyle', ctx => ctx.componentContext.params.innerMenuStyle),
-        Var('leafOptionStyle', ctx => ctx.componentContext.params.leafOptionStyle)
-      ],
-      items: ctx => ctx.vars.menuModel.options && ctx.vars.menuModel.options().filter(x=>x) || [],
+      items: '%$menuModel.options()%',
       controls: menu.control({menu: '%$item%', style: menuStyle.popupThumb()}),
       style: call('layout'),
       features: menu.selection()
@@ -150,13 +156,13 @@ jb.component('menuStyle.contextMenu', {
   ],
   impl: styleByControl(
     Var('optionsParentId', ctx => ctx.id),
-    Var('leafOptionStyle', ctx => ctx.componentContext.params.leafOptionStyle),
+    Var('leafOptionStyle', '%$leafOptionStyle%'),
     itemlist({
-      vars: [
-        Var('optionsParentId', ctx => ctx.id),
-        Var('leafOptionStyle', ctx => ctx.componentContext.params.leafOptionStyle)
-      ],
-      items: ctx => ctx.vars.menuModel.options && ctx.vars.menuModel.options().filter(x=>x) || [],
+      // vars: [
+      //   Var('optionsParentId', ctx => ctx.id),
+      //   Var('leafOptionStyle', ctx => ctx.componentContext.params.leafOptionStyle)
+      // ],
+      items: '%$menuModel.options()%',
       controls: menu.control({menu: '%$item%', style: menuStyle.applyMultiLevel({})}),
       features: menu.selection(true)
     })
@@ -169,44 +175,71 @@ jb.component('menu.initPopupMenu', {
     {id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue: dialog.contextMenuPopup()}
   ],
   impl: features(
-    () => ({destroy: cmp => cmp.closePopup()}),
-    calcProp({id: 'title', value: '%$menuModel.title%'}),
-    interactive(
-        (ctx,{cmp}) => {
-				cmp.mouseEnter = _ => {
-					if (jb.ui.find(ctx,'.context-menu-popup')[0]) // first open with click...
-  					cmp.openPopup()
-				};
-				cmp.openPopup = jb.ui.wrapWithLauchingElement( ctx2 => {
-					cmp.ctx.vars.topMenu.popups.push(ctx.vars.menuModel);
-					ctx2.run( menu.openContextMenu({
-							popupStyle: _ctx => ctx.componentContext.params.popupStyle(_ctx),
-							menu: _ctx =>	_ctx.vars.innerMenu ? ctx.vars.innerMenu.menu() : ctx.vars.$model.menu()
-						}))
-					}, cmp.ctx, cmp.base );
+    calcProp('title', '%$menuModel.title%'),
+    method('openPopup', runActions(
+      ({},{topMenu,menuModel}) => topMenu.popups.push(menuModel),
+      ctx => ctx.run(menu.openContextMenu({
+        popupStyle: call('popupStyle'),
+        menu: _ => ctx.run(If('%$innerMenu%','%$innerMenu.menu()%', '%$$model.menu()%'))
+      }))
+    )),
+    method('closePopup', runActions(
+      ({},{topMenu}) => topMenu.popups.pop(),
+      dialog.closeDialogById('%$optionsParentId%')
+    )),
+    method('rightArrow',action.if(equals('%$topMenu.selected%','%$menuModel%')), action.runBEMethod('openPopup')),
+    method('leftArrow', action.if(equals(last('%$topMenu.popups%'),'%$menuModel%')), 
+      runActions(
+        writeValue('%$topMenu.selected%','%$menuModel%'),
+        action.runBEMethod('closePopup')
+    )),
 
-				cmp.closePopup = () => jb.ui.dialogs.closeDialogs(jb.ui.dialogs.dialogs
-              .filter(d=>d.id == ctx.vars.optionsParentId))
-              .then(()=> cmp.ctx.vars.topMenu.popups.pop()),
-
-				jb.delay(1).then(_=>{ // wait for topMenu keydown initalization
-					if (ctx.vars.topMenu && ctx.vars.topMenu.keydown) {
-            const {pipe, takeUntil } = jb.callbag
-						const keydown = pipe(ctx.vars.topMenu.keydown, takeUntil( cmp.destroyed ))
-
-					  jb.subscribe(keydown, e=> e.keyCode == 39 && // right arrow
-						  ctx.vars.topMenu.selected == ctx.vars.menuModel && cmp.openPopup && cmp.openPopup())
-            jb.subscribe(keydown, e=> { // left arrow
-              if (e.keyCode == 37 && cmp.ctx.vars.topMenu.popups.slice(-1)[0] == ctx.vars.menuModel) {
-                ctx.vars.topMenu.selected = ctx.vars.menuModel;
-                cmp.closePopup();
-              }
-          })
-				}
-			})
-		})
+    frontEnd.onDestroy(action.runBEMethod('closePopup')),
+    frontEnd.flow(source.frontEndEvent('mouseenter', 
+      rx.filter(() => jb.ui.find(ctx,'.context-menu-popup')[0]), // first open must use mouse click...
+      sink.BEMethod('openPopup')
+    )),
+    //frontEnd.prop('onkeydown', ctx => ctx.run(menu.getSelectionSource())),
+    frontEnd.flow(menu.getSelectionSource(), rx.log('initPopupMenu'), rx.filter('%keyCode==39%'), sink.BEMethod('rightArrow')),
+    frontEnd.flow(menu.getSelectionSource(), rx.filter('%keyCode==37%'), sink.BEMethod('leftArrow')),
   )
 })
+    // frontEnd(
+    //     (ctx,{cmp}) => {
+		// 		cmp.mouseEnter = _ => {
+		// 			if (jb.ui.find(ctx,'.context-menu-popup')[0]) // first open with click...
+  	// 				cmp.openPopup()
+		// 		};
+		// 		cmp.openPopup = jb.ui.wrapWithLauchingElement( ctx2 => {
+		// 			cmp.ctx.vars.topMenu.popups.push(ctx.vars.menuModel);
+		// 			ctx2.run( menu.openContextMenu({
+		// 					popupStyle: _ctx => ctx.componentContext.params.popupStyle(_ctx),
+		// 					menu: _ctx =>	_ctx.vars.innerMenu ? ctx.vars.innerMenu.menu() : ctx.vars.$model.menu()
+		// 				}))
+		// 			}, cmp.ctx, cmp.base );
+
+		// 		cmp.closePopup = () => jb.ui.dialogs.closeDialogs(jb.ui.dialogs.dialogs
+    //           .filter(d=>d.id == ctx.vars.optionsParentId))
+    //           .then(()=> cmp.ctx.vars.topMenu.popups.pop()),
+
+		// 		jb.delay(1).then(_=>{ // wait for topMenu keydown initalization
+		// 			if (ctx.vars.topMenu && ctx.vars.topMenu.keydown) {
+    //         const {pipe, takeUntil } = jb.callbag
+		// 				const keydown = pipe(ctx.vars.topMenu.keydown, takeUntil( cmp.destroyed ))
+
+		// 			  jb.subscribe(keydown, e=> e.keyCode == 39 && // right arrow
+		// 				  ctx.vars.topMenu.selected == ctx.vars.menuModel && cmp.openPopup && cmp.openPopup())
+    //         jb.subscribe(keydown, e=> { // left arrow
+    //           if (e.keyCode == 37 && cmp.ctx.vars.topMenu.popups.slice(-1)[0] == ctx.vars.menuModel) {
+    //             ctx.vars.topMenu.selected = ctx.vars.menuModel;
+    //             cmp.closePopup();
+    //           }
+    //       })
+		// 		}
+		// 	})
+		// })
+//   )
+// })
 
 jb.component('menu.initMenuOption', {
   type: 'feature',
@@ -214,24 +247,12 @@ jb.component('menu.initMenuOption', {
     calcProp({id: 'title', value: '%$menuModel.leaf.title%'}),
     calcProp({id: 'icon', value: '%$menuModel.leaf.icon%'}),
     calcProp({id: 'shortcut', value: '%$menuModel.leaf.shortcut%'}),
-    interactive(
-        (ctx,{cmp}) => {
-          const {pipe,filter,subscribe,takeUntil} = jb.callbag
-
-          cmp.action = jb.ui.wrapWithLauchingElement( () =>
-                jb.ui.dialogs.closePopups().then(() =>	ctx.vars.menuModel.action())
-              , ctx, cmp.base);
-
-          jb.delay(1).then(_=>{ // wait for topMenu keydown initalization
-          if (ctx.vars.topMenu && ctx.vars.topMenu.keydown) {
-            pipe(ctx.vars.topMenu.keydown,
-              takeUntil( cmp.destroyed ),
-              filter(e=>e.keyCode == 13 && ctx.vars.topMenu.selected == ctx.vars.menuModel), // Enter
-              subscribe(_=> cmp.action()))
-          }
-			})
-	}
-      )
+    method('closeAndActivate', action.if(equals('%$topMenu.selected%','%$menuModel%'),
+      runActions(
+        dialog.closeAllPopups(),
+        '%$menuModel.action()%'
+    ))),
+    frontEnd.flow( menu.getSelectionSource(), rx.filter('%keyCode%==13'), sink.BEMethod('closeAndActivate'))
   )
 })
 
@@ -270,76 +291,136 @@ jb.component('menuStyle.applyMultiLevel', {
 //     })
 // })
 
+jb.component('menu.getSelectionSource', {
+  type: 'data:0',
+  impl: ctx => {
+    const cmps = [ctx.vars.cmp.base._component, ...jb.ui.parentCmps(ctx.vars.cmp.base)].filter(x=>x)
+    const res = cmps.map(cmp=>cmp.selectionKeySource).filter(x=>x)[0]
+    console.log(res)
+    return res
+    // const cmpId = ctx.vars.cmp.base.topMenuCmpId
+    // return jb.ui.find(jb.ui.widgetBody(ctx),`[cmp-id="${cmpId}"]`).map(el=>el._component && el._component.selectionKeySource)[0]
+  }
+})
+
 jb.component('menu.selection', {
   type: 'feature',
   params: [
     {id: 'autoSelectFirst', type: 'boolean'}
   ],
-  impl: ctx => ({
-    onkeydown: true,
-    onmousemove: true,
-		templateModifier: vdom => {
-				vdom.attributes = vdom.attributes || {};
-				vdom.attributes.tabIndex = 0
-    },
-		afterViewInit: cmp => {
-				// putting the emitter at the top-menu only and listen at all sub menus
-				if (!ctx.vars.topMenu.keydown) {
-					ctx.vars.topMenu.keydown = cmp.onkeydown;
-						jb.ui.focus(cmp.base,'menu.keyboard init autoFocus',ctx);
-			  }
-      cmp.items = Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
-        .map(el=>(jb.ctxDictionary[el.getAttribute('jb-ctx')] || {}).data)
+  impl: features(
+    htmlAttribute('tabIndex',0),
+    css('>.selected { color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) }'),
 
-      const {pipe,map,filter,subscribe,takeUntil} = jb.callbag
-
-			const keydown = pipe(ctx.vars.topMenu.keydown, takeUntil( cmp.destroyed ))
-      pipe(cmp.onmousemove, map(e=> dataOfElems(e.target.ownerDocument.elementsFromPoint(e.pageX, e.pageY))),
-        filter(data => data && data != ctx.vars.topMenu.selected),
-        subscribe(data => cmp.select(data)))
-			pipe(keydown, filter(e=> e.keyCode == 38 || e.keyCode == 40 ),
-					map(event => {
-						event.stopPropagation();
-						const diff = event.keyCode == 40 ? 1 : -1;
-						const items = cmp.items.filter(item=>!item.separator);
-						const selectedIndex = ctx.vars.topMenu.selected.separator ? 0 : items.indexOf(ctx.vars.topMenu.selected);
-						if (selectedIndex != -1)
-							return items[(selectedIndex + diff + items.length) % items.length];
-				}), filter(x=>x), subscribe(data => cmp.select(data)))
-
-			pipe(keydown,filter(e=>e.keyCode == 27), // close all popups
-					subscribe(_=> jb.ui.dialogs.closePopups().then(()=> {
-              cmp.ctx.vars.topMenu.popups = [];
-              cmp.ctx.run({$:'tree.regain-focus'}) // very ugly
-      })))
-
-      cmp.select = selected => {
-				ctx.vars.topMenu.selected = selected
-        if (!cmp.base) return
-        Array.from(cmp.base.querySelectorAll('.jb-item.selected, *>.jb-item.selected'))
-          .forEach(elem=>elem.classList.remove('selected'))
-        Array.from(cmp.base.querySelectorAll('.jb-item, *>.jb-item'))
-          .filter(elem=> (jb.ctxDictionary[elem.getAttribute('jb-ctx')] || {}).data === selected)
-          .forEach(elem=> elem.classList.add('selected'))
-      }
-			cmp.state.selected = ctx.vars.topMenu.selected;
-			if (ctx.params.autoSelectFirst && cmp.items[0])
-            cmp.select(cmp.items[0])
-
-      function dataOfElems(elems) {
-        const itemElem = elems.find(el=>el.classList && el.classList.contains('jb-item'))
-        const ctxId = itemElem && itemElem.getAttribute('jb-ctx')
-        return ((ctxId && jb.ctxDictionary[ctxId]) || {}).data
-      }
-		},
-		css: '>.selected { color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) }',
-		})
+    method('onSelection', writeValue('%$topMenu.selected%',itemlist.ctxIdToData())),
+    calcProp({
+      id: 'selected',
+      phase: 20, // after 'items'
+      value: If('%$autoSelectFirst%','%$$props.items.0%','')
+    }),
+    templateModifier((ctx,{vdom,$props}) => vdom.querySelectorAll('.jb-item')
+        .filter(el => ctx.setData(el.getAttribute('jb-ctx')).run(itemlist.ctxIdToData()) == $props.selected )
+        .forEach(el => el.addClass('selected'))
+    ),
+    calcProp('topMenuCmpId',firstSucceeding('%$topMenu/topCmpId%','%$cmp/cmpId%')),
+    calcProp('dummy',writeValue('%$topMenu/topCmpId%', '%$topMenuCmpId%')),
+    passPropToFrontEnd('topMenuCmpId','%$$props/topMenuCmpId%'),
+    If('%$cmp/topMenuCmpId%==%$cmp/cmpId%', frontEnd.prop('selectionKeySource', source.frontEndEvent('keydown'))),
+    frontEnd.method('applyState', ({},{cmp}) => {
+      Array.from(cmp.base.querySelectorAll('.jb-item.selected,*>.jb-item.selected,*>*>.jb-item.selected'))
+        .forEach(elem=>elem.classList.remove('selected'))
+      Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
+        .filter(elem=> elem.getAttribute('jb-ctx') == cmp.state.selected)
+        .forEach(elem=> {elem.classList.add('selected'); elem.scrollIntoViewIfNeeded()})
+    }),
+    frontEnd.method('setSelected', ({data},{cmp}) => {
+        cmp.state.selected = data
+        cmp.runFEMethod('applyState')
+    }),
+    //frontEnd.prop('onkeydown', ctx => ctx.run(menu.getSelectionSource() )),
+    frontEnd.flow(menu.getSelectionSource(), 
+      // '%$cmp.onkeydown%', 
+      rx.filter(not('%ctrlKey%')),
+      rx.filter(inGroup(list(38,40),'%keyCode%')),
+      rx.map(itemlist.nextSelected(If('%keyCode%==40',1,-1), not('%separator%'))), 
+      sink.action(runActions(action.runFEMethod('setSelected'), action.runBEMethod('onSelection')))
+    ),
+    frontEnd.flow(source.frontEndEvent('mousemove'),
+      rx.filter(not('%target/separator%')),
+      rx.var('elem',({data}) => data.target.ownerDocument.elementsFromPoint(data.pageX, data.pageY)[0]),
+      rx.var('ctxId',itemlist.ctxIdOfElem('%$elem%')),
+      rx.map('%$ctxId%'),
+      rx.distinctUntilChanged(),
+      sink.action(runActions(action.runFEMethod('setSelected'), action.runBEMethod('onSelection')))
+    ),
+  )
 })
+  
+//   ctx => ({
+//     onkeydown: true,
+//     onmousemove: true,
+// 		templateModifier: vdom => {
+// 				vdom.attributes = vdom.attributes || {};
+// 				vdom.attributes.tabIndex = 0
+//     },
+// 		afterViewInit: cmp => {
+// 				// putting the emitter at the top-menu only and listen at all sub menus
+// 				if (!ctx.vars.topMenu.keydown) {
+// 					ctx.vars.topMenu.keydown = cmp.onkeydown;
+// 						jb.ui.focus(cmp.base,'menu.keyboard init autoFocus',ctx);
+// 			  }
+//       cmp.items = Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
+//         .map(el=>(jb.ctxDictionary[el.getAttribute('jb-ctx')] || {}).data)
+
+//       const {pipe,map,filter,subscribe,takeUntil} = jb.callbag
+
+// 			const keydown = pipe(ctx.vars.topMenu.keydown, takeUntil( cmp.destroyed ))
+//       pipe(cmp.onmousemove, map(e=> dataOfElems(e.target.ownerDocument.elementsFromPoint(e.pageX, e.pageY))),
+//         filter(data => data && data != ctx.vars.topMenu.selected),
+//         subscribe(data => cmp.select(data)))
+// 			pipe(keydown, filter(e=> e.keyCode == 38 || e.keyCode == 40 ),
+// 					map(event => {
+// 						event.stopPropagation();
+// 						const diff = event.keyCode == 40 ? 1 : -1;
+// 						const items = cmp.items.filter(item=>!item.separator);
+// 						const selectedIndex = ctx.vars.topMenu.selected.separator ? 0 : items.indexOf(ctx.vars.topMenu.selected);
+// 						if (selectedIndex != -1)
+// 							return items[(selectedIndex + diff + items.length) % items.length];
+// 				}), filter(x=>x), subscribe(data => cmp.select(data)))
+
+// 			pipe(keydown,filter(e=>e.keyCode == 27), // close all popups
+// 					subscribe(_=> jb.ui.dialogs.closePopups().then(()=> {
+//               cmp.ctx.vars.topMenu.popups = [];
+//               cmp.ctx.run({$:'tree.regain-focus'}) // very ugly
+//       })))
+
+//       cmp.select = selected => {
+// 				ctx.vars.topMenu.selected = selected
+//         if (!cmp.base) return
+//         Array.from(cmp.base.querySelectorAll('.jb-item.selected, *>.jb-item.selected'))
+//           .forEach(elem=>elem.classList.remove('selected'))
+//         Array.from(cmp.base.querySelectorAll('.jb-item, *>.jb-item'))
+//           .filter(elem=> (jb.ctxDictionary[elem.getAttribute('jb-ctx')] || {}).data === selected)
+//           .forEach(elem=> elem.classList.add('selected'))
+//       }
+// 			cmp.state.selected = ctx.vars.topMenu.selected;
+// 			if (ctx.params.autoSelectFirst && cmp.items[0])
+//             cmp.select(cmp.items[0])
+
+//       function dataOfElems(elems) {
+//         const itemElem = elems.find(el=>el.classList && el.classList.contains('jb-item'))
+//         const ctxId = itemElem && itemElem.getAttribute('jb-ctx')
+//         return ((ctxId && jb.ctxDictionary[ctxId]) || {}).data
+//       }
+// 		},
+// 		css: '>.selected { color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) }',
+// 		})
+// })
 
 jb.component('menuStyle.optionLine', {
   type: 'menu-option.style',
   impl: customStyle({
-    template: (cmp,{icon,title,shortcut},h) => h('div#line noselect', { onmousedown: 'action' },[
+    template: (cmp,{icon,title,shortcut},h) => h('div#line noselect', { onmousedown: 'closeAndActivate' },[
         h(cmp.ctx.run({$: 'control.icon', ...icon, size: 20})),
 				h('span#title',{},title),
 				h('span#shortcut',{},shortcut),
@@ -358,8 +439,8 @@ jb.component('menuStyle.optionLine', {
 jb.component('menuStyle.popupAsOption', {
   type: 'menu.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div#line noselect', { onmousedown: 'action' },[
-				h('span#title',{},state.title),
+    template: (cmp,{title},h) => h('div#line noselect', { onmousedown: 'closeAndActivate' },[
+				h('span#title',{},title),
 				h('i#material-icons', { onmouseenter: 'openPopup' },'play_arrow'),
 		]),
     css: `{ display: flex; cursor: pointer; font1: 13px Arial; height: 24px}
@@ -374,11 +455,7 @@ jb.component('menuStyle.popupThumb', {
   type: 'menu.style',
   description: 'used for pulldown',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{
-				class: 'pulldown-top-menu-item',
-				onmouseenter: 'mouseEnter',
-				onclick: 'openPopup'
-		},state.title),
+    template: ({},{title},h) => h('div#pulldown-top-menu-item',{ onmouseenter: 'mouseEnter', onclick: 'openPopup'}, title),
     features: [menu.initPopupMenu(), mdc.rippleEffect()]
   })
 })
@@ -409,8 +486,9 @@ jb.component('dialog.contextMenuPopup', {
 jb.component('menuSeparator.line', {
   type: 'menu-separator.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div'),
-    css: '{ margin: 6px 0; border-bottom: 1px solid #EBEBEB;}'
+    template: ({},{},h) => h('div'),
+    css: '{ margin: 6px 0; border-bottom: 1px solid #EBEBEB;}',
+    features: frontEnd.prop('separator',true)
   })
 })
 
@@ -424,14 +502,10 @@ jb.component('menuStyle.toolbar', {
   ],
   impl: styleByControl(
     Var('optionsParentId', ctx => ctx.id),
-    Var('leafOptionStyle', ctx => ctx.componentContext.params.leafOptionStyle),
+    Var('leafOptionStyle', '%$leafOptionStyle%'),
     itemlist({
-      vars: [
-        Var('optionsParentId', ctx => ctx.id),
-        Var('leafOptionStyle', ctx => ctx.componentContext.params.leafOptionStyle)
-      ],
       style: call('itemlistStyle'),
-      items: ctx => ctx.vars.menuModel.options && ctx.vars.menuModel.options().filter(x=>x) || [],
+      items: '%$menuModel/options()%',
       controls: menu.control({menu: '%$item%', style: menuStyle.applyMultiLevel({
         menuStyle: menuStyle.iconMenu(), leafStyle: menuStyle.icon()
       })}),
@@ -446,10 +520,7 @@ jb.component('menuStyle.icon', {
   ],
   impl: styleWithFeatures(
       button.mdcIcon('%$menuModel/leaf/icon%','%$buttonSize%'),
-      [
-        htmlAttribute('onclick',true),
-        defHandler('onclickHandler', ctx => ctx.vars.menuModel.action())
-      ]
+      feature.onEvent('click', '%$menuModel.action()%')
   )
 })
 
@@ -458,7 +529,7 @@ jb.component('menuStyle.iconMenu', {
   impl: styleByControl(
       button({
         title: '%title%',
-        action: (ctx,{cmp}) => cmp.openPopup(),
+        action: action.runBEMethod('openPopup'),
         style: button.mdcIcon(
           icon({
             icon: '%icon/icon%',

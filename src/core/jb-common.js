@@ -85,7 +85,7 @@ jb.component('data.if', {
     {id: 'then', mandatory: true, dynamic: true, composite: true},
     {id: 'else', dynamic: true, defaultValue: '%%'}
   ],
-  impl: (ctx,cond,_then,_else) =>	cond() ? _then() : _else()
+  impl: ({},cond,_then,_else) =>	cond() ? _then() : _else()
 })
 
 jb.component('action.if', {
@@ -97,7 +97,7 @@ jb.component('action.if', {
     {id: 'then', type: 'action', mandatory: true, dynamic: true, composite: true},
     {id: 'else', type: 'action', dynamic: true}
   ],
-  impl: (ctx,cond,_then,_else) =>	cond ? _then() : _else()
+  impl: ({},cond,_then,_else) =>	cond ? _then() : _else()
 })
 
 jb.component('jbRun', {
@@ -115,7 +115,7 @@ jb.component('list', {
   params: [
     {id: 'items', type: 'data[]', as: 'array', composite: true}
   ],
-  impl: (ctx,items) => items.flatMap(item=>Array.isArray(item) ? item : [item])
+  impl: ({},items) => items.flatMap(item=>Array.isArray(item) ? item : [item])
 })
 
 jb.component('firstSucceeding', {
@@ -123,7 +123,7 @@ jb.component('firstSucceeding', {
   params: [
     {id: 'items', type: 'data[]', as: 'array', composite: true}
   ],
-  impl: (ctx,items) => {
+  impl: ({},items) => {
     for(let i=0;i<items.length;i++) {
       const val = jb.val(items[i])
       const isNumber = typeof val === 'number'
@@ -140,7 +140,7 @@ jb.component('keys', {
   params: [
     {id: 'obj', defaultValue: '%%', as: 'single'}
   ],
-  impl: (ctx,obj) => Object.keys(obj && typeof obj === 'object' ? obj : {})
+  impl: ({},obj) => Object.keys(obj && typeof obj === 'object' ? obj : {})
 })
 
 jb.component('properties', {
@@ -149,7 +149,7 @@ jb.component('properties', {
   params: [
     {id: 'obj', defaultValue: '%%', as: 'single'}
   ],
-  impl: (ctx,obj) => Object.keys(obj).filter(p=>p.indexOf('$jb_') != 0).map((id,index) =>
+  impl: ({},obj) => Object.keys(obj).filter(p=>p.indexOf('$jb_') != 0).map((id,index) =>
 			({id: id, val: obj[id], index: index}))
 })
 
@@ -159,7 +159,7 @@ jb.component('entries', {
   params: [
     {id: 'obj', defaultValue: '%%', as: 'single'}
   ],
-  impl: (ctx,obj) => jb.entries(obj)
+  impl: ({},obj) => jb.entries(obj)
 })
 
 jb.component('aggregate', {
@@ -168,7 +168,7 @@ jb.component('aggregate', {
   params: [
     {id: 'aggregator', type: 'aggregator', mandatory: true, dynamic: true}
   ],
-  impl: (ctx,aggregator) => aggregator()
+  impl: ({},aggregator) => aggregator()
 })
 
 jb.ns('math')
@@ -188,6 +188,22 @@ jb.component('math.sum', {
   impl: ctx => ctx.data.reduce((acc,item) => +item+acc, 0)
 })
 
+jb.component('math.plus', {
+  params: [
+    {id: 'x', as: 'number'},
+    {id: 'y', as: 'number'},
+  ],
+  impl: ({},x,y) => x + y
+})
+
+jb.component('math.minus', {
+  params: [
+    {id: 'x', as: 'number'},
+    {id: 'y', as: 'number'},
+  ],
+  impl: ({},x,y) => x - y
+})
+
 'abs,acos,acosh,asin,asinh,atan,atan2,atanh,cbrt,ceil,clz32,cos,cosh,exp,expm1,floor,fround,hypot,log2,random,round,sign,sin,sinh,sqrt,tan,tanh,trunc'
   .split(',').forEach(f=>jb.component(`math.${f}`, {
     impl: ctx => Math[f](ctx.data)
@@ -200,7 +216,7 @@ jb.component('objFromEntries', {
   params: [
     {id: 'entries', defaultValue: '%%', as: 'array'}
   ],
-  impl: (ctx,entries) => jb.objFromEntries(entries)
+  impl: ({},entries) => jb.objFromEntries(entries)
 })
 
 jb.component('evalExpression', {
@@ -209,7 +225,7 @@ jb.component('evalExpression', {
   params: [
     {id: 'expression', as: 'string', defaultValue: '%%', expression: 'e.g. 1+2'}
   ],
-  impl: (ctx,expression) => {
+  impl: ({},expression) => {
     try {
       return eval('('+expression+')')
     } catch(e) {}
@@ -222,8 +238,7 @@ jb.component('prefix', {
     {id: 'separator', as: 'string', mandatory: true},
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (ctx,separator,text) =>
-		(text||'').substring(0,text.indexOf(separator))
+  impl: ({},separator,text) => (text||'').substring(0,text.indexOf(separator))
 })
 
 jb.component('suffix', {
@@ -232,8 +247,7 @@ jb.component('suffix', {
     {id: 'separator', as: 'string', mandatory: true},
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (context,separator,text) =>
-		(text||'').substring(text.lastIndexOf(separator)+separator.length)
+  impl: ({},separator,text) => (text||'').substring(text.lastIndexOf(separator)+separator.length)
 })
 
 jb.component('removePrefix', {
@@ -242,7 +256,7 @@ jb.component('removePrefix', {
     {id: 'separator', as: 'string', mandatory: true},
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (context,separator,text) =>
+  impl: ({},separator,text) =>
 		text.indexOf(separator) == -1 ? text : text.substring(text.indexOf(separator)+separator.length)
 })
 
@@ -252,8 +266,7 @@ jb.component('removeSuffix', {
     {id: 'separator', as: 'string', mandatory: true},
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (context,separator,text) =>
-		text.lastIndexOf(separator) == -1 ? text : text.substring(0,text.lastIndexOf(separator))
+  impl: ({},separator,text) => text.lastIndexOf(separator) == -1 ? text : text.substring(0,text.lastIndexOf(separator))
 })
 
 jb.component('removeSuffixRegex', {
@@ -262,9 +275,9 @@ jb.component('removeSuffixRegex', {
     {id: 'suffix', as: 'string', mandatory: true, description: 'regular expression. e.g [0-9]*'},
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: function(context,suffix,text) {
-		context.profile.prefixRegexp = context.profile.prefixRegexp || new RegExp(suffix+'$');
-		const m = (text||'').match(context.profile.prefixRegexp);
+  impl: (ctx,suffix,text) => {
+		ctx.profile.prefixRegexp = ctx.profile.prefixRegexp || new RegExp(suffix+'$');
+		const m = (text||'').match(ctx.profile.prefixRegexp);
 		return (m && (text||'').substring(m.index+1)) || text;
 	}
 })
@@ -276,6 +289,10 @@ jb.component('writeValue', {
     {id: 'value', mandatory: true}
   ],
   impl: (ctx,to,value) => {
+    if (!jb.isRef(to)) {
+      ctx.run(ctx.profile.to,{as: 'ref'}) // for debug
+      return jb.logError(`can not write to: ${ctx.profile.to}`, ctx)
+    }
     const val = jb.val(value)
     if (jb.isDelayed(val))
       return Promise.resolve().then(val=>jb.writeValue(to,val,ctx))
@@ -298,7 +315,7 @@ jb.component('indexOf', {
     {id: 'array', as: 'array', mandatory: true},
     {id: 'item', as: 'single', mandatory: true}
   ],
-  impl: (ctx,array,item) => array.indexOf(item)
+  impl: ({},array,item) => array.indexOf(item)
 })
 
 jb.component('addToArray', {
@@ -308,6 +325,16 @@ jb.component('addToArray', {
     {id: 'toAdd', as: 'array', mandatory: true}
   ],
   impl: (ctx,array,toAdd) => jb.push(array, JSON.parse(JSON.stringify(toAdd)),ctx)
+})
+
+jb.component('move', {
+  type: 'action',
+  description: 'move item in tree, activated from D&D',
+  params: [
+    {id: 'from', as: 'ref', mandatory: true},
+    {id: 'to', as: 'ref', mandatory: true}
+  ],
+  impl: (ctx,from,_to) => jb.move(from,_to,ctx)
 })
 
 jb.component('splice', {
@@ -350,9 +377,9 @@ jb.component('slice', {
     {id: 'start', as: 'number', defaultValue: 0, description: '0-based index', mandatory: true},
     {id: 'end', as: 'number', mandatory: true, description: '0-based index of where to end the selection (not including itself)'}
   ],
-  impl: function({data},start,end) {
-		if (!data || !data.slice) return null;
-		return end ? data.slice(start,end) : data.slice(start);
+  impl: ({data},start,end) => {
+		if (!data || !data.slice) return null
+		return end ? data.slice(start,end) : data.slice(start)
 	}
 })
 
@@ -382,7 +409,7 @@ jb.component('first', {
   params: [
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
-  impl: (ctx,items) => items[0]
+  impl: ({},items) => items[0]
 })
 
 jb.component('last', {
@@ -390,7 +417,7 @@ jb.component('last', {
   params: [
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
-  impl: (ctx,items) => items.slice(-1)[0]
+  impl: ({},items) => items.slice(-1)[0]
 })
 
 jb.component('count', {
@@ -399,7 +426,7 @@ jb.component('count', {
   params: [
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
-  impl: (ctx,items) => items.length
+  impl: ({},items) => items.length
 })
 
 jb.component('reverse', {
@@ -407,7 +434,7 @@ jb.component('reverse', {
   params: [
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
-  impl: (ctx,items) => items.reverse()
+  impl: ({},items) => items.reverse()
 })
 
 jb.component('sample', {
@@ -416,7 +443,7 @@ jb.component('sample', {
     {id: 'size', as: 'number', defaultValue: 300},
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
-  impl: (ctx,size,items) =>	items.filter((x,i)=>i % (Math.floor(items.length/size) ||1) == 0)
+  impl: ({},size,items) =>	items.filter((x,i)=>i % (Math.floor(items.length/size) ||1) == 0)
 })
 
 jb.component('obj', {
@@ -424,8 +451,7 @@ jb.component('obj', {
   params: [
     {id: 'props', type: 'prop[]', mandatory: true, sugar: true}
   ],
-  impl: (ctx,properties) =>
-		jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)]))
+  impl: (ctx,properties) => jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)]))
 })
 
 jb.component('extend', {
@@ -444,8 +470,7 @@ jb.component('extendWithIndex', {
   params: [
     {id: 'props', type: 'prop[]', mandatory: true, defaultValue: []}
   ],
-  impl: (ctx,properties) =>
-		jb.toarray(ctx.data).map((item,i)=>
+  impl: (ctx,properties) => jb.toarray(ctx.data).map((item,i) =>
 			Object.assign({}, item, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx.setData(item).setVars({index:i})),p.type)]))))
 })
 
@@ -459,6 +484,17 @@ jb.component('prop', {
   ],
   impl: ctx => ctx.params
 })
+
+// jb.component('objMethod', {
+//   type: 'prop',
+//   macroByValue: true,
+//   params: [
+//     {id: 'title', as: 'string', mandatory: true},
+//     {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: ''},
+//     {id: 'type', as: 'string', options: 'string,number,boolean,object,array,asIs', defaultValue: 'asIs'}
+//   ],
+//   impl: ({},title,val,type) => ({title,val: () => () => ctx2 => val(ctx2) ,type})
+// })
 
 jb.component('refProp', {
   type: 'prop',
@@ -488,8 +524,7 @@ jb.component('Var', {
     {id: 'name', as: 'string', mandatory: true},
     {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: '%%'}
   ],
-  macro: (result, self) =>
-		Object.assign(result,{ $vars: Object.assign(result.$vars || {}, { [self.name]: self.val }) })
+  macro: (result, self) => Object.assign(result,{ $vars: Object.assign(result.$vars || {}, { [self.name]: self.val }) })
 })
 
 jb.component('remark', {
@@ -498,8 +533,7 @@ jb.component('remark', {
   params: [
     {id: 'remark', as: 'string', mandatory: true}
   ],
-  macro: (result, self) =>
-		Object.assign(result,{ remark: self.remark })
+  macro: (result, self) => Object.assign(result,{ remark: self.remark })
 })
 
 jb.component('If', {
@@ -509,7 +543,7 @@ jb.component('If', {
     {id: 'then', dynamic: true},
     {id: 'Else', dynamic: true}
   ],
-  impl: (ctx,cond,_then,_else) =>	cond() ? _then() : _else()
+  impl: ({},cond,_then,_else) => cond() ? _then() : _else()
 })
 
 jb.component('not', {
@@ -517,7 +551,7 @@ jb.component('not', {
   params: [
     {id: 'of', type: 'boolean', as: 'boolean', mandatory: true, composite: true}
   ],
-  impl: (context, of) => !of
+  impl: ({}, of) => !of
 })
 
 jb.component('and', {
@@ -562,7 +596,7 @@ jb.component('between', {
     {id: 'to', as: 'number', mandatory: true},
     {id: 'val', as: 'number', defaultValue: '%%'}
   ],
-  impl: (ctx,from,to,val) => val >= from && val <= to
+  impl: ({},from,to,val) => val >= from && val <= to
 })
 
 jb.component('contains', {
@@ -572,14 +606,14 @@ jb.component('contains', {
     {id: 'allText', defaultValue: '%%', as: 'string'},
     {id: 'inOrder', defaultValue: true, as: 'boolean', type: 'boolean'}
   ],
-  impl: function(context,text,allText,inOrder) {
-      let prevIndex = -1;
+  impl: ({},text,allText,inOrder) => {
+      let prevIndex = -1
       for(let i=0;i<text.length;i++) {
-      	const newIndex = allText.indexOf(jb.tostring(text[i]),prevIndex+1);
-      	if (newIndex == -1) return false;
-      	prevIndex = inOrder ? newIndex : -1;
+      	const newIndex = allText.indexOf(jb.tostring(text[i]),prevIndex+1)
+      	if (newIndex == -1) return false
+      	prevIndex = inOrder ? newIndex : -1
       }
-      return true;
+      return true
 	}
 })
 
@@ -601,7 +635,7 @@ jb.component('startsWith', {
     {id: 'startsWith', as: 'string', mandatory: true},
     {id: 'text', defaultValue: '%%', as: 'string'}
   ],
-  impl: (context,startsWith,text) => text.indexOf(startsWith) == 0
+  impl: ({},startsWith,text) => text.indexOf(startsWith) == 0
 })
 
 jb.component('endsWith', {
@@ -611,7 +645,7 @@ jb.component('endsWith', {
     {id: 'endsWith', as: 'string', mandatory: true},
     {id: 'text', defaultValue: '%%', as: 'string'}
   ],
-  impl: (context,endsWith,text) => text.indexOf(endsWith,text.length-endsWith.length) !== -1
+  impl: ({},endsWith,text) => text.indexOf(endsWith,text.length-endsWith.length) !== -1
 })
 
 
@@ -620,7 +654,7 @@ jb.component('filter', {
   params: [
     {id: 'filter', type: 'boolean', as: 'boolean', dynamic: true, mandatory: true}
   ],
-  impl: (context,filter) =>	jb.toarray(context.data).filter(item =>	filter(context,item))
+  impl: (ctx,filter) =>	jb.toarray(ctx.data).filter(item =>	filter(ctx,item))
 })
 
 jb.component('matchRegex', {
@@ -630,28 +664,28 @@ jb.component('matchRegex', {
     {id: 'regex', as: 'string', mandatory: true, description: 'e.g: [a-zA-Z]*'},
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (ctx,regex,text) => text.match(new RegExp(regex))
+  impl: ({},regex,text) => text.match(new RegExp(regex))
 })
 
 jb.component('toUpperCase', {
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (ctx,text) =>	text.toUpperCase()
+  impl: ({},text) =>	text.toUpperCase()
 })
 
 jb.component('toLowerCase', {
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (ctx,text) =>	text.toLowerCase()
+  impl: ({},text) => text.toLowerCase()
 })
 
 jb.component('capitalize', {
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (ctx,text) =>	text.charAt(0).toUpperCase() + text.slice(1)
+  impl: ({},text) => text.charAt(0).toUpperCase() + text.slice(1)
 })
 
 jb.component('join', {
@@ -683,17 +717,17 @@ jb.component('unique', {
 
 jb.component('log', {
   params: [
-    {id: 'log', as: 'string', mandatory: 'true' },
-    {id: 'toLog', as: 'array', defaultValue: '%%'}
+    {id: 'logName', as: 'string', mandatory: 'true' },
+    {id: 'dataArray', as: 'array', defaultValue: '%%'}
   ],
-  impl: (ctx,log,array) => jb.log(log,array)
+  impl: (ctx,log,array) => jb.log(log,[ctx,...array])
 })
 
 jb.component('asIs', {
   params: [
     {id: '$asIs', ignore: true}
   ],
-  impl: ctx => context.profile.$asIs
+  impl: () => context.profile.$asIs
 })
 
 jb.component('object', {
@@ -715,7 +749,7 @@ jb.component('json.stringify', {
     {id: 'value', defaultValue: '%%'},
     {id: 'space', as: 'string', description: 'use space or tab to make pretty output'}
   ],
-  impl: (context,value,space) => JSON.stringify(jb.val(value),null,space)
+  impl: ({},value,space) => JSON.stringify(jb.val(value),null,space)
 })
 
 jb.component('json.parse', {
@@ -739,7 +773,7 @@ jb.component('split', {
     {id: 'text', as: 'string', defaultValue: '%%'},
     {id: 'part', options: ',first,second,last,but first,but last'}
   ],
-  impl: function(ctx,separator,text,part) {
+  impl: ({},separator,text,part) => {
 		const out = text.split(separator.replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n'));
 		switch (part) {
 			case 'first': return out[0];
@@ -761,25 +795,21 @@ jb.component('replace', {
     {id: 'useRegex', type: 'boolean', as: 'boolean', defaultValue: true},
     {id: 'regexFlags', as: 'string', defaultValue: 'g', description: 'g,i,m'}
   ],
-  impl: function(context,find,replace,text,useRegex,regexFlags) {
-		if (useRegex) {
-			return text.replace(new RegExp(find,regexFlags) ,replace);
-		} else
-			return text.replace(find,replace);
-	}
+  impl: ({},find,replace,text,useRegex,regexFlags) => 
+    useRegex ? text.replace(new RegExp(find,regexFlags) ,replace) : text.replace(find,replace)
 })
 
-jb.component('touch', {
-  description: 'change the value of a watchable variable to acticate its watchers',
-  type: 'action',
-  params: [
-    {id: 'data', as: 'ref'}
-  ],
-  impl: function(context,data_ref) {
-		const val = Number(jb.val(data_ref));
-		jb.writeValue(data_ref,val ? val + 1 : 1,ctx);
-	}
-})
+// jb.component('touch', {
+//   description: 'change the value of a watchable variable to acticate its watchers',
+//   type: 'action',
+//   params: [
+//     {id: 'data', as: 'ref'}
+//   ],
+//   impl: ({},data_ref) => {
+// 		const val = Number(jb.val(data_ref))
+// 		jb.writeValue(data_ref,val ? val + 1 : 1,ctx)
+// 	}
+// })
 
 jb.component('isNull', {
   description: 'is null or undefined',
@@ -787,7 +817,16 @@ jb.component('isNull', {
   params: [
     {id: 'obj', defaultValue: '%%'}
   ],
-  impl: (ctx, obj) => jb.val(obj) == null
+  impl: ({}, obj) => jb.val(obj) == null
+})
+
+jb.component('notNull', {
+  description: 'not null or undefined',
+  type: 'boolean',
+  params: [
+    {id: 'obj', defaultValue: '%%'}
+  ],
+  impl: ({}, obj) => jb.val(obj) != null
 })
 
 jb.component('isEmpty', {
@@ -795,7 +834,7 @@ jb.component('isEmpty', {
   params: [
     {id: 'item', as: 'single', defaultValue: '%%'}
   ],
-  impl: (ctx, item) => !item || (Array.isArray(item) && item.length == 0)
+  impl: ({}, item) => !item || (Array.isArray(item) && item.length == 0)
 })
 
 jb.component('notEmpty', {
@@ -803,7 +842,7 @@ jb.component('notEmpty', {
   params: [
     {id: 'item', as: 'single', defaultValue: '%%'}
   ],
-  impl: (ctx, item) => item && !(Array.isArray(item) && item.length == 0)
+  impl: ({}, item) => item && !(Array.isArray(item) && item.length == 0)
 })
 
 jb.component('equals', {
@@ -812,7 +851,7 @@ jb.component('equals', {
     {id: 'item1', as: 'single', mandatory: true},
     {id: 'item2', defaultValue: '%%', as: 'single'}
   ],
-  impl: (ctx, item1, item2) => item1 == item2
+  impl: ({}, item1, item2) => item1 == item2
 })
 
 jb.component('notEquals', {
@@ -821,7 +860,7 @@ jb.component('notEquals', {
     {id: 'item1', as: 'single', mandatory: true},
     {id: 'item2', defaultValue: '%%', as: 'single'}
   ],
-  impl: (ctx, item1, item2) => item1 != item2
+  impl: ({}, item1, item2) => item1 != item2
 })
 
 jb.component('runActions', {
@@ -831,13 +870,22 @@ jb.component('runActions', {
   ],
   impl: ctx => {
 		if (!ctx.profile) debugger;
-		const actions = jb.asArray(ctx.profile.actions || ctx.profile['$runActions']).filter(x=>x);
+		const actions = jb.asArray(ctx.profile.actions || ctx.profile['$runActions']).filter(x=>x)
 		const innerPath =  (ctx.profile.actions && ctx.profile.actions.sugar) ? ''
 			: (ctx.profile['$runActions'] ? '$runActions~' : 'items~');
 		return actions.reduce((def,action,index) =>
-				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index ))
+				def.then(function runActions() {return ctx.runInner(action, { as: 'single'}, innerPath + index ) })
 			,Promise.resolve())
 	}
+})
+
+jb.component('runActionOnItem', {
+  type: 'action',
+  params: [
+    {id: 'item', mandatory: true},
+    {id: 'action', type: 'action', dynamic: true, mandatory: true},
+  ],
+  impl: (ctx,item,action) => item != null && action(ctx.setData(item))
 })
 
 jb.component('runActionOnItems', {
@@ -851,7 +899,7 @@ jb.component('runActionOnItems', {
   ],
   impl: (ctx,items,action,notifications,indexVariable) => {
 		if (notifications && jb.mainWatchableHandler) jb.mainWatchableHandler.startTransaction()
-		return jb.val(items).reduce((def,item,i) => def.then(_ => action(ctx.setVar(indexVariable,i).setData(item))) ,Promise.resolve())
+		return (jb.val(items)||[]).reduce((def,item,i) => def.then(_ => action(ctx.setVar(indexVariable,i).setData(item))) ,Promise.resolve())
 			.catch((e) => jb.logException(e,ctx))
 			.then(() => notifications && jb.mainWatchableHandler && jb.mainWatchableHandler.endTransaction(notifications === 'no notifications'));
 	}
@@ -872,9 +920,7 @@ jb.component('onNextTimer', {
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
     {id: 'delay', type: 'number', defaultValue: 1}
   ],
-  impl: (ctx,action,delay) =>
-		jb.delay(delay,ctx).then(()=>
-			action())
+  impl: (ctx,action,delay) => jb.delay(delay,ctx).then(()=>	action())
 })
 
 jb.component('extractPrefix', {
@@ -885,13 +931,13 @@ jb.component('extractPrefix', {
     {id: 'regex', type: 'boolean', as: 'boolean', description: 'separator is regex'},
     {id: 'keepSeparator', type: 'boolean', as: 'boolean'}
   ],
-  impl: function(context,separator,text,regex,keepSeparator) {
+  impl: ({},separator,text,regex,keepSeparator) => {
 		if (!regex) {
-			return text.substring(0,text.indexOf(separator)) + (keepSeparator ? separator : '');
+			return text.substring(0,text.indexOf(separator)) + (keepSeparator ? separator : '')
 		} else { // regex
-			const match = text.match(separator);
+			const match = text.match(separator)
 			if (match)
-				return text.substring(0,match.index) + (keepSeparator ? match[0] : '');
+				return text.substring(0,match.index) + (keepSeparator ? match[0] : '')
 		}
 	}
 })
@@ -904,7 +950,7 @@ jb.component('extractSuffix', {
     {id: 'regex', type: 'boolean', as: 'boolean', description: 'separator is regex'},
     {id: 'keepSeparator', type: 'boolean', as: 'boolean'}
   ],
-  impl: function(context,separator,text,regex,keepSeparator) {
+  impl: ({},separator,text,regex,keepSeparator) => {
 		if (!regex) {
 			return text.substring(text.lastIndexOf(separator) + (keepSeparator ? 0 : separator.length));
 		} else { // regex
@@ -922,7 +968,7 @@ jb.component('range', {
     {id: 'from', as: 'number', defaultValue: 1},
     {id: 'to', as: 'number', defaultValue: 10}
   ],
-  impl: (ctx,from,to) => Array.from(Array(to-from+1).keys()).map(x=>x+from)
+  impl: ({},from,to) => Array.from(Array(to-from+1).keys()).map(x=>x+from)
 })
 
 jb.component('typeOf', {
@@ -930,7 +976,7 @@ jb.component('typeOf', {
   params: [
     {id: 'obj', defaultValue: '%%'}
   ],
-  impl: (ctx,_obj) => {
+  impl: ({},_obj) => {
 	  const obj = jb.val(_obj)
 		return Array.isArray(obj) ? 'array' : typeof obj
 	}
@@ -941,7 +987,7 @@ jb.component('className', {
   params: [
     {id: 'obj', defaultValue: '%%'}
   ],
-  impl: (ctx,_obj) => {
+  impl: ({},_obj) => {
 	  const obj = jb.val(_obj);
 		return obj && obj.constructor && obj.constructor.name
 	}
@@ -953,10 +999,10 @@ jb.component('isOfType', {
     {id: 'type', as: 'string', mandatory: true, description: 'e.g., string,boolean,array'},
     {id: 'obj', defaultValue: '%%'}
   ],
-  impl: (ctx,_type,_obj) => {
-  	const obj = jb.val(_obj);
-  	const objType = Array.isArray(obj) ? 'array' : typeof obj;
-  	return _type.split(',').indexOf(objType) != -1;
+  impl: ({},_type,_obj) => {
+  	const obj = jb.val(_obj)
+  	const objType = Array.isArray(obj) ? 'array' : typeof obj
+  	return _type.split(',').indexOf(objType) != -1
   }
 })
 
@@ -967,7 +1013,7 @@ jb.component('inGroup', {
     {id: 'group', as: 'array', mandatory: true},
     {id: 'item', as: 'single', defaultValue: '%%'}
   ],
-  impl: (ctx,group,item) =>	group.indexOf(item) != -1
+  impl: ({},group,item) =>	group.indexOf(item) != -1
 })
 
 jb.urlProxy = (typeof window !== 'undefined' && location.href.match(/^[^:]*/)[0] || 'http') + '://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
@@ -1039,14 +1085,14 @@ jb.component('isRef', {
   params: [
     {id: 'obj', mandatory: true}
   ],
-  impl: (ctx,obj) => jb.isRef(obj)
+  impl: ({},obj) => jb.isRef(obj)
 })
 
 jb.component('asRef', {
   params: [
     {id: 'obj', mandatory: true}
   ],
-  impl: (ctx,obj) => jb.asRef(obj)
+  impl: ({},obj) => jb.asRef(obj)
 })
 
 jb.component('data.switch', {
@@ -1113,4 +1159,19 @@ jb.component('formatDate', {
     {id: 'timeZoneName', as: 'string', options: 'long,short'}
   ],
   impl: (ctx,date) => new Date(date).toLocaleDateString(undefined, jb.objFromEntries(jb.entries(ctx.params).filter(e=>e[1])))
+})
+
+jb.component('getSessionStorage', {
+  params: [
+    { id: 'id', as: 'string' }
+  ],
+  impl: ({},id) => jb.sessionStorage(id)
+})
+
+jb.component('action.setSessionStorage', {
+  params: [
+    { id: 'id', as: 'string' },
+    { id: 'value', dynamic: true },
+  ],
+  impl: ({},id,value) => jb.sessionStorage(id,value())
 })

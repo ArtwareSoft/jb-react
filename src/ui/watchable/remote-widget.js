@@ -132,7 +132,7 @@ if (jb.frame.workerId && jb.frame.workerId()) {
             })
         },
     })
-    pipe(jb.ui.widgetRenderingUpdates, subscribe(({delta,elemId,cmpId,widgetId}) => {
+    pipe(jb.ui.renderingUpdates, subscribe(({delta,elemId,cmpId,widgetId}) => {
         const css = this._stylesToAdd.join('\n')
         this._stylesToAdd = []
         const store = jb.ui.serializeCtxOfVdom(delta)
@@ -214,7 +214,7 @@ jb.component('worker.main', {
                     const top = jb.ui.h(cmp)
                     top.attributes = Object.assign(top.attributes || {},{ worker: 1, id: widgetId })
                     jb.ui.widgets[widgetId] = { top }
-                    jb.ui.widgetRenderingUpdates.next({delta: jb.ui.compareVdom({},top),elemId: widgetId,widgetId})
+                    jb.ui.renderingUpdates.next({delta: jb.ui.compareVdom({},top),elemId: widgetId,widgetId})
             })
 
             return this.getWorker().then( worker => {
@@ -227,11 +227,11 @@ jb.component('worker.main', {
                         const {delta,elemId,cmpId,css,store} = _data
                         jb.ui.mainWorker.ctxDictionary = jb.ui.mainWorker.ctxDictionary || {}
                         Object.assign(jb.ui.mainWorker.ctxDictionary,jb.ui.deserializeCtxStore(store).ctx)
-                        const elem = jb.ui.document(ctx).querySelector('#'+elemId)
-                            || jb.ui.document(ctx).querySelector(`[cmp-id="${cmpId}"]`)
+                        const elem = jb.ui.widgetBody(ctx).querySelector('#'+elemId)
+                            || jb.ui.widgetBody(ctx).querySelector(`[cmp-id="${cmpId}"]`)
                         if (elem) {
                             jb.ui.applyDeltaToDom(elem, delta)
-                            jb.ui.refreshInteractive(elem)
+                            jb.ui.refreshfrontEnd(elem)
                         }
                         css && jb.ui.addStyleElem(css)
                 }))

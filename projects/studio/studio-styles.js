@@ -51,19 +51,16 @@ jb.component('editableText.studioCodemirrorTgp', {
   })
 })
 
-
 jb.component('button.selectProfileStyle', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title},h) => h('input', { class: 'mdc-text-field__input', type: 'text', readonly: true, title,
-            value: title, onmouseup: 'onclickHandler', onkeydown: 'clickedEnter',
+            value: title, onmouseup: 'onclickHandler',
         }),
     css: `{ cursor: pointer; padding-left: 2px; padding-top: 5px; padding-bottom: 0;
     color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-titleBar-inactiveBackground); }
     :focus { border-color: var(--jb-titleBar-activeBackground); border-width: 2px}`,
-    features: interactive(
-      (ctx,{cmp}) => cmp.clickedEnter = () => event.keyCode == 13 && cmp.onclickHandler()
-    )
+    features: frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode% == 13'), sink.BEMethod('onclickHandler'))
   })
 })
 
@@ -80,18 +77,13 @@ jb.component('studio.propertyToolbarStyle', {
 jb.component('button.studioScript', {
   type: 'button.style',
   impl: customStyle({
-    template: (cmp,state,h) =>
-        h('input', { class: 'mdc-text-field__input', type: 'text', readonly: true, title: state.title,
-            value: state.title,
-            onmouseup: 'onclickHandler',
-            onkeydown: 'clickedEnter',
-        }),
+    template: (cmp,{title},h) =>
+        h('input#mdc-text-field__input', { type: 'text', readonly: true, title, value: title, onmouseup: 'onclickHandler' }),
     css: `{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; 
       color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-titleBar-inactiveBackground);
       cursor: pointer; opacity: 0.8; font-style: italic; }`,
-    features: interactive(
-      (ctx,{cmp}) => cmp.clickedEnter = ev => event.keyCode == 13 && cmp.onclickHandler()
-    )
+    features: frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode% == 13'), sink.BEMethod('onclickHandler')) 
+    //frontEnd( (ctx,{cmp}) => cmp.clickedEnter = ev => event.keyCode == 13 && cmp.onclickHandler() )
   })
 })
 

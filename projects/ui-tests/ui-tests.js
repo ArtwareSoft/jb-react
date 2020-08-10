@@ -40,18 +40,9 @@ jb.component('personWithPrimitiveChildren', {
   }
 })
 
-jb.component('personWithChildren', {
-  watchableData: {
-    name: 'Homer Simpson',
-    children: [{name: 'Bart'}, {name: 'Lisa'}, {name: 'Maggie'}],
-    friends: [{name: 'Barnie'}]
-  }
-})
-
 jb.component('emptyArray', {
   watchableData: []
 })
-
 
 jb.component('uiTest.label', {
   impl: uiTest({
@@ -97,9 +88,8 @@ jb.component('uiTest.waitForWithPipe', {
   impl: uiTest({
     control: group({
       controls: text('%%'),
-      features: group.wait({for: pipe(delay(10), 'hello')})
+      features: group.wait({for: pipe(delay(1), 'hello')})
     }),
-    action: delay(40),
     expectedResult: and(contains('hello'), not(contains('loading'))),
     expectedCounters: {initCmp: 4}
   })
@@ -111,7 +101,6 @@ jb.component('uiTest.waitForRx', {
       controls: text('%%'),
       features: group.wait({for: rx.pipe(rx.interval(10), rx.take(1), rx.map('hello'))})
     }),
-    action: delay(40),
     expectedResult: and(contains('hello'), not(contains('loading'))),
     expectedCounters: {initCmp: 4}
   })
@@ -152,8 +141,7 @@ jb.component('uiTest.waitForRx', {
 
 jb.component('uiTest.asynchLabel', {
   impl: uiTest({
-    control: text({text: pipe(delay(10), 'hello'), features: text.allowAsynchValue()}),
-    action: delay(40),
+    control: text({text: pipe(delay(1), 'hello'), features: text.allowAsynchValue()}),
     expectedResult: contains('hello'),
     expectedCounters: {renderVdom: 2, calcRenderProp: 1},
   })
@@ -165,23 +153,21 @@ jb.component('uiTest.waitForWithVar', {
       controls: text('%$txt%'),
       features: group.wait({for: pipe(delay(1), 'hello'), varName: 'txt'})
     }),
-    action: delay(40),
     expectedResult: contains('hello')
   })
 })
 
-jb.component('uiTest.watchObservable', {
-  impl: uiTest({
-    vars: Var('promise', ctx => jb.delay(1)),
-    control: text({
-      text: '%$person/name%',
-      features: watchObservable({ toWatch: (ctx,{promise}) => jb.callbag.fromPromise(promise) })
-    }),
-    expectedCounters: {renderVdom: 2},
-    action: delay(40),
-    expectedResult: contains('Homer Simpson')
-  })
-})
+// jb.component('uiTest.watchObservable', {
+//   impl: uiTest({
+//     vars: Var('promise', ctx => jb.delay(1)),
+//     control: text({
+//       text: '%$person/name%',
+//       features: watchObservable({ toWatch: (ctx,{promise}) => jb.callbag.fromPromise(promise) })
+//     }),
+//     expectedCounters: {renderVdom: 2},
+//     expectedResult: contains('Homer Simpson')
+//   })
+// })
 
 jb.component('uiTest.button', {
   impl: uiTest({
@@ -248,7 +234,7 @@ jb.component('uiTest.editableText.xButton', {
     control: editableText({
       title: 'name',
       databind: '%$person/name%',
-      features: [editableText.xButton()]
+      features: editableText.xButton()
     }),
     expectedResult: contains({text: ['×', 'input', 'Homer Simpson'], inOrder: false})
   })
@@ -292,7 +278,7 @@ jb.component('uiTest.twoWayBinding', {
         text('%$person/name%')
       ]
     }),
-    action: ctx => ctx.run(uiAction.setText('hello', '#inp')),
+    userInput: userInput.setText('hello', '#inp'),
     expectedResult: contains(['<span', 'hello', '</span'])
   })
 })
@@ -331,16 +317,11 @@ jb.component('uiTest.openDialog', {
         id: 'hello',
         content: text('jbart'),
         title: 'hello',
-        features: [
-          dialogFeature.nearLauncherPosition({
-            offsetTop: ctx => Math.floor(Math.random() * 20 + 2) * 10
-          }),
-          dialogFeature.resizer()
-        ]
+        features: dialogFeature.nearLauncherPosition()
       })
     }),
-    action: uiAction.click('button'),
-    expectedResult: contains({text: ['hello', 'jbart'], allText: test.dialogContent('hello')})
+    userInput: userInput.click('button'),
+    expectedResult: contains(['hello', 'jbart'])
   })
 })
 
@@ -385,8 +366,8 @@ jb.component('uiTest.renderable', {
       title: 'click me',
       action: openDialog({id: 'hello', content: text('jbart'), title: text('hello as label')})
     }),
-    action: uiAction.click('button'),
-    expectedResult: contains({text: 'hello as label', allText: test.dialogContent('hello')})
+    userInput: userInput.click('button'),
+    expectedResult: contains('hello as label')
   })
 })
 
@@ -395,86 +376,71 @@ jb.component('uiTest.refreshDialog', {
     control: button({
       title: 'click me',
       action: openDialog({
-        id: 'hello',
         content: text('%$person/name%'),
-        features: interactive(
-          action.if(
-              '%$person/name% == \"mukki\"',
-              '',
-              runActions(writeValue('%$person/name%', 'mukki'), (ctx,{cmp}) => cmp.refresh())
-            )
-        )
+        features: followUp.action(writeValue('%$person/name%', 'mukki'))
       })
     }),
-    action: uiAction.click('button'),
-    expectedResult: contains({text: 'mukki', allText: test.dialogContent('hello')})
+    userInput: userInput.click('button'),
+    expectedResult: contains('mukki')
   })
 })
 
-jb.component('uiTest.dialogCleanup', {
-  impl: uiTest({
-    vars: [Var('cleanup', obj(prop('destroy'), prop('tickAfterDestroy')))],
-    control: button({
-      title: 'click me',
-      action: openDialog({
-        id: 'hello',
-        content: text('world'),
-        title: 'hello',
-        features: ctx => ({
-          destroy: cmp => {
-            ctx.run(writeValue('%$cleanup/destroy%',
-              cmp.base && cmp.base.parentNode && cmp.base.parentNode.parentNode ? 'attached' : 'detached' ))
-            jb.delay(1).then(()=> ctx.run(writeValue('%$cleanup/tickAfterDestroy%',
-              cmp.base && cmp.base.parentNode && cmp.base.parentNode.parentNode ? 'attached' : 'detached' )))
-          }
-        })
-      })
-    }),
-    action: [uiAction.click('button'), dialog.closeAll(), delay(20)],
-    expectedResult: and(
-      equals('%$cleanup/destroy%', 'attached'),
-      equals('%$cleanup/tickAfterDestroy%', 'detached')
-    )
-  })
-})
+// jb.component('uiTest.dialogCleanup', {
+//   impl: uiFrontEndTest({
+//     vars: [Var('cleanup', obj(prop('destroy'), prop('tickAfterDestroy')))],
+//     control: button({
+//       title: 'click me',
+//       action: openDialog({
+//         id: 'hello',
+//         content: text('world'),
+//         title: 'hello',
+//         features: ctx => ({
+//           destroy: cmp => {
+//             ctx.run(writeValue('%$cleanup/destroy%',
+//               cmp.base && cmp.base.parentNode && cmp.base.parentNode.parentNode ? 'attached' : 'detached' ))
+//             jb.delay(1).then(()=> ctx.run(writeValue('%$cleanup/tickAfterDestroy%',
+//               cmp.base && cmp.base.parentNode && cmp.base.parentNode.parentNode ? 'attached' : 'detached' )))
+//           }
+//         })
+//       })
+//     }),
+//     action: [uiAction.click('button'), dialog.closeAll(), delay(20)],
+//     expectedResult: and(
+//       equals('%$cleanup/destroy%', 'attached'),
+//       equals('%$cleanup/tickAfterDestroy%', 'detached')
+//     )
+//   })
+// })
 
 jb.component('uiTest.dialogCleanupBug', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
     control: button({
       title: 'click me',
       action: openDialog({id: 'hello', content: text('world'), title: 'hello'})
     }),
-    action: [uiAction.click('button'), dialog.closeAll()],
-    expectedResult: ctx =>
-      !jb.resources['jb_dialog_hello']
+    action: runActions(uiAction.click('button'), delay(1), dialog.closeAll(), delay(1)),
+    expectedResult: isEmpty(dialogs.shownDialogs())
   })
 })
 
-// ensure the right order between the unmount that causes elem._component = null and the blur event which is automatically generated when detaching the dialog
-jb.component('uiTest.updateOnBlurWhenDialogClosed', {
-  impl: uiTest({
-    control: group({
-      controls: [
-        button({
-          title: 'click me',
-          action: ctx => ctx.setVars({elemToTest:null}).run(openDialog({content:
-            editableText({title: 'name', updateOnBlur: true, databind: '%$person/name%' })
-          }))
-        }),
-        text('%$person/name%')
-      ]
-    }),
-    action: runActions(
-      uiAction.click('button'),
-      ctx => {
-        // document.querySelector('input').value = 'hello'
-        // document.querySelector('input').focus()
-        // document.querySelector('.dialog-close').click()
-      }
-    ),
-    expectedResult: true
-  })
-})
+// // ensure the right order between the unmount that causes elem._component = null and the blur event which is automatically generated when detaching the dialog
+// jb.component('uiTest.updateOnBlurWhenDialogClosed', {
+//   impl: uiFrontEndTest({
+//     control: group({
+//       controls: [
+//         button({
+//           title: 'click me',
+//           action: ctx => ctx.setVars({elemToTest:null}).run(openDialog({content:
+//             editableText({title: 'name', updateOnBlur: true, databind: '%$person/name%' })
+//           }))
+//         }),
+//         text('%$person/name%')
+//       ]
+//     }),
+//     action: uiAction.click('button'),
+//     expectedResult: true
+//   })
+// })
 
 jb.component('uiTest.groupFlex', {
   impl: uiTest({
@@ -492,7 +458,8 @@ jb.component('uiTest.groupFlex', {
 jb.component('uiTest.buttonClick', {
   impl: uiTest({
     control: button({title: 'Click Me', action: writeValue('%$person/name%', 'mukki')}),
-    action: uiAction.click('button'),
+    userInput: userInput.click('button'),
+    extraSource: source.watchableData('%$person/name%'),
     expectedResult: equals('%$person/name%', 'mukki')
   })
 })
@@ -512,10 +479,10 @@ jb.component('uiTest.resource', {
 })
 
 jb.component('uiTest.featuresCss', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
     control: text({text: 'Hello World', features: css('color: red')}),
     expectedResult: ctx => {
-      const elem = ctx.vars.elemToTest
+      const elem = jb.ui.widgetBody(ctx)
       document.body.appendChild(elem)
       const ret = getComputedStyle(elem.firstElementChild).color == 'rgb(255, 0, 0)'
       document.body.removeChild(elem)
@@ -540,6 +507,7 @@ jb.component('uiTest.itemlistPrimitiveArray', {
 
 jb.component('uiTest.itemlistPrimitiveArrayItemShouldBeRef', {
   impl: uiTest({
+    timeout: 20,
     vars: Var('isResultRef', obj(prop('answer',false))),
     control: itemlist({items: '%$personWithPrimitiveChildren/childrenNames%', 
       controls: ctx => { 
@@ -590,7 +558,7 @@ jb.component('uiTest.itemlist.shownOnlyOnItemHover', {
       ],
       style: table.plain()
     }),
-    expectedResult: contains(['Homer Simpson'])
+    expectedResult: contains('Homer Simpson')
   })
 })
 
@@ -605,8 +573,20 @@ jb.component('uiTest.itemlistWithSelect', {
   })
 })
 
+jb.component('uiTest.itemlistWithSelect.click', {
+  impl: uiFrontEndTest({
+    control: itemlist({
+      items: '%$people%',
+      controls: text('%$item.name% - %name%'),
+      features: itemlist.selection({ autoSelectFirst: true})
+    }),
+    action: uiAction.click('ul>li:nth-child(2)'),
+    expectedResult: contains(['Homer Simpson - Homer Simpson','selected','Bart Simpson - Bart Simpson'])
+  })
+})
+
 jb.component('uiTest.itemlistDD', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
     control: group({
       controls: [
         itemlist({
@@ -619,10 +599,11 @@ jb.component('uiTest.itemlistDD', {
             }),
             itemlist.keyboardSelection(true),
             itemlist.dragAndDrop(),
-            watchRef('%$watchablePeople%'),
+            //watchRef('%$watchablePeople%'),
             id('itemlist')
           ]
         }),
+        text('----'),
         itemlist({
           items: '%$watchablePeople%',
           controls: text('%name%'),
@@ -630,15 +611,7 @@ jb.component('uiTest.itemlistDD', {
         })
       ]
     }),
-    action: [
-      delay(10),
-      uiAction.keyboardEvent({
-        selector: '#itemlist',
-        type: 'keydown',
-        keyCode: 40,
-        ctrl: 'ctrl'
-      })
-    ],
+    action: uiAction.keyboardEvent({ selector: '#itemlist', type: 'keydown', keyCode: 40, ctrl: 'ctrl' }),
     expectedResult: contains(['Bart', 'Marge', 'Homer'])
   })
 })
@@ -662,22 +635,6 @@ jb.component('uiTest.itemlistAddButton', {
       ]
     }),
     expectedResult: contains(['Homer Simpson - Homer Simpson', 'Bart Simpson - Bart Simpson'])
-  })
-})
-
-jb.component('uiTest.itemlistSelection', {
-  impl: uiTest({
-    control: itemlist({
-      items: '%$people%',
-      controls: text('%$item.name%'),
-      features: [
-        itemlist.selection({
-          databind: '%$globals/selectedPerson%',
-          autoSelectFirst: true
-        })
-      ]
-    }),
-    expectedResult: contains(['Homer Simpson'])
   })
 })
 
@@ -706,8 +663,24 @@ jb.component('uiTest.itemlistMDAutoSelectFirst', {
   })
 })
 
-jb.component('uiTest.itemlistMDOfRefs', {
+jb.component('uiTest.itemlistSelection', {
   impl: uiTest({
+    control: itemlist({
+      items: '%$people%',
+      controls: text('%$item.name%'),
+      features: [
+        itemlist.selection({
+          databind: '%$globals/selectedPerson%',
+          autoSelectFirst: true
+        })
+      ]
+    }),
+    expectedResult: contains(['Homer Simpson'])
+  })
+})
+
+jb.component('uiTest.itemlistMD.downArrow', {
+  impl: uiFrontEndTest({
     control: group({
       controls: [
         itemlist({
@@ -728,13 +701,13 @@ jb.component('uiTest.itemlistMDOfRefs', {
         })
       ]
     }),
-    action: uiAction.keyboardEvent({ selector: '#itemlist',type: 'keydown', keyCode: 40 }),
+    action: runActions(delay(1), uiAction.keyboardEvent({ selector: '#itemlist',type: 'keydown', keyCode: 40 }) , delay(1)),
     expectedResult: contains(['Marge Simpson', 'Marge Simpson - watchable selected'])
   })
 })
 
 jb.component('uiTest.itemlistMDOfRefs.refChangeBug', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
     control: group({
       controls: [
         itemlist({
@@ -755,9 +728,12 @@ jb.component('uiTest.itemlistMDOfRefs.refChangeBug', {
         })
       ]
     }),
-    action: runActions(uiAction.click('#itemlist>li:nth-Child(3)'),
-    uiAction.click('#itemlist>li:nth-Child(2)')
-    ),
+    action: runActions(
+      delay(1),
+      uiAction.click('#itemlist>li:nth-Child(3)'),
+      uiAction.click('#itemlist>li:nth-Child(2)'),
+      delay(1)
+      ),
     expectedResult: contains(['Marge Simpson', 'Marge Simpson - watchable selected'])
   })
 })
@@ -766,15 +742,12 @@ jb.component('uiTest.itemlistContainerSearchCtrl', {
   type: 'control',
   impl: group({
     controls: [
-      itemlistContainer.search({}),
+      itemlistContainer.search({features: id('search')}),
       itemlist({
-        items: '%$people%',
-        controls: text({
-          text: text.highlight('%name%', '%$itemlistCntrData/search_pattern%'),
-          features: [css.class('label1'), watchRef('%$itemlistCntrData/search_pattern%')]
-        }),
+        items: pipeline('%$people%',itemlistContainer.filter()),
+        controls: text(text.highlight('%name%', '%$itemlistCntrData/search_pattern%')),
         features: [
-          itemlist.fastFilter(),
+          watchRef({ref: '%$itemlistCntrData/search_pattern%', strongRefresh1: 'true'}),
           itemlist.selection({autoSelectFirst: true}),
           itemlist.keyboardSelection({
             autoFocus: true,
@@ -790,16 +763,16 @@ jb.component('uiTest.itemlistContainerSearchCtrl', {
 jb.component('uiTest.itemlistContainerSearch', {
   impl: uiTest({
     control: uiTest.itemlistContainerSearchCtrl(),
-    action: uiAction.setText('ho', '.mdc-text-field'),
-    expectedResult: contains(['Ho', 'mer', 'display: none;', 'display: none;'])
+    userInput: userInput.setText('ho', '#search'),
+    expectedResult: contains(['Ho<', '>mer'])
   })
 })
 
 jb.component('uiTest.itemlistContainerSearchEnterOnLi', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
     control: uiTest.itemlistContainerSearchCtrl(),
     action: uiAction.keyboardEvent({selector: '.jb-itemlist', type: 'keydown', keyCode: 13}),
-    expectedResult: equals('%$person/selected%', 'Homer Simpson')
+    expectedResult: ctx => ctx.run(equals('%$person/selected%', 'Homer Simpson'))
   })
 })
 
@@ -814,28 +787,6 @@ jb.component('uiTest.secondaryLinkSetBug', {
       writeValue('%$globals/selected%', '%$people[1]%'),
       writeValue('%$globals/data1%', '5')
     ),
-    expectedResult: ctx => true
-  })
-})
-
-jb.component('uiTest.searchDoesnotCreateReactClass', {
-  impl: uiTest({
-    control: group({
-      controls: [
-        itemlistContainer.search({}),
-        itemlist({
-          items: pipeline('%$people%', itemlistContainer.filter()),
-          controls: text({text: text.highlight('%name%', '%$itemlistCntrData/search_pattern%')}),
-          features: [
-            itemlist.selection({autoSelectFirst: true}),
-            itemlist.keyboardSelection(true),
-            watchRef('%$itemlistCntrData/search_pattern%')
-          ]
-        })
-      ],
-      features: [group.itemlistContainer({})]
-    }),
-    action: uiAction.setText('ho', '.mdc-text-field'),
     expectedResult: ctx => true
   })
 })
@@ -857,26 +808,25 @@ jb.component('uiTest.itemlistWithTableStyle', {
         })
       ]
     }),
-    action: delay(20),
     expectedResult: contains(['300', 'age', 'Homer Simpson', '38', '>3<', 'Bart'])
   })
 })
 
-jb.component('uiTest.table', {
-  impl: uiTest({
-    control: table({
-      items: '%$people%',
-      fields: [field({title: 'name', data: '%name%'}), field({title: 'age', data: '%age%'})],
-      features: [
-        itemlist.selection({
-          databind: '%$globals/selectedPerson%',
-          autoSelectFirst: true
-        })
-      ]
-    }),
-    expectedResult: contains(['age', 'Homer Simpson', '12'])
-  })
-})
+// jb.component('uiTest.table', {
+//   impl: uiTest({
+//     control: table({
+//       items: '%$people%',
+//       fields: [field({title: 'name', data: '%name%'}), field({title: 'age', data: '%age%'})],
+//       features: [
+//         itemlist.selection({
+//           databind: '%$globals/selectedPerson%',
+//           autoSelectFirst: true
+//         })
+//       ]
+//     }),
+//     expectedResult: contains(['age', 'Homer Simpson', '12'])
+//   })
+// })
 
 jb.component('uiTest.editableTextInGroup', {
   impl: uiTest({
@@ -887,7 +837,19 @@ jb.component('uiTest.editableTextInGroup', {
         text('%$person/name%')
       ]
     }),
-    expectedResult: contains(['Homer'])
+    expectedResult: contains('Homer')
+  })
+})
+
+jb.component('uiTest.editableTextHelper', {
+  impl: uiTest({
+    control: editableText({title: 'name', databind: '%$person/name%',
+      features: editableText.helperPopup({
+        control: text('--%value%--'),
+        autoOpen: true
+      })
+    }),
+    expectedResult: contains('--Homer')
   })
 })
 
@@ -1084,7 +1046,7 @@ jb.component('uiTest.editableBoolean.expandCollapse', {
       ],
       features: variable({name: 'expanded', value: false, watchable: true})
     }),
-    action: uiAction.click('#toggle', 'toggle'),
+    userInput: userInput.click('#toggle', 'toggle'),
     expectedResult: contains('inner text')
   })
 })
@@ -1124,7 +1086,7 @@ jb.component('uiTest.expandCollapseWithDefaultCollapse', {
 jb.component('uiTest.editableBoolean.expandCollapseWithDefaultVal', {
   impl: uiTest({
     control: uiTest.expandCollapseWithDefaultCollapse(),
-    action: uiAction.click('#default', 'toggle'),
+    userInput: userInput.click('#default', 'toggle'),
     expectedResult: contains('inner text')
   })
 })
@@ -1203,7 +1165,7 @@ jb.component('uiTest.prettyPrintComp', {
         }),
         text({
           text: ctx => jb_prettyPrintComp('editableText.codemirror', jb.comps['editableText.codemirror']),
-          style: text.codemirror({})
+          style: text.codemirror()
         })
       ]
     }),
@@ -1373,7 +1335,7 @@ jb.component('uiTest.styleByControl', {
   impl: uiTest({
     control: text({
       text: 'Hello World',
-      style: styleByControl(button('%$labelModel/text%2'), 'labelModel')
+      style: styleByControl(button('%$labelModel/text()%2'), 'labelModel')
     }),
     expectedResult: contains('Hello World2')
   })
@@ -1402,7 +1364,7 @@ jb.component('menuTest.menu1', {
       menu.menu({
         title: 'File',
         options: [
-          menu.action('New'),
+          menu.action('New', () => alert(1)),
           menu.action('Open'),
           menu.menu({
             title: 'Bookmarks',
@@ -1420,7 +1382,14 @@ jb.component('menuTest.menu1', {
 jb.component('menuTest.pulldown', {
   impl: uiTest({
     control: menu.control({menu: menuTest.menu1(), style: menuStyle.pulldown({})}),
-    action: ctx => jb.delay(1),
+    expectedResult: contains(['File', 'Edit', 'dynamic-1', 'dynamic-3'])
+  })
+})
+
+jb.component('menuTest.pulldown.inner', {
+  impl: uiTest({
+    control: menu.control({menu: menuTest.menu1(), style: menuStyle.pulldown({})}),
+    userInput: userInput.click('[$text="File"]','openPopup'),
     expectedResult: contains(['File', 'Edit', 'dynamic-1', 'dynamic-3'])
   })
 })
@@ -1441,14 +1410,14 @@ jb.component('menuTest.openContextMenu', {
 })
 
 jb.component('uiTest.refreshControlById.text', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
     vars: Var('person1', () => ({name: 'Homer'})), // non watchable var
     control: text({ text: '%$person1/name%', features: id('t1') }),
     action: runActions(
       writeValue('%$person1/name%','Dan'),
       refreshControlById('t1'),
     ),
-    expectedResult: ctx => ctx.run(contains('Dan'))
+    expectedResult: contains('Dan')
   })
 })
 
@@ -1553,7 +1522,7 @@ jb.component('uiTest.firstSucceedingWatchableSample', {
 jb.component('uiTest.firstSucceeding.watchRefreshOnCtrlChange', {
   impl: uiTest({
     control: uiTest.firstSucceedingWatchableSample(),
-    action: uiAction.click('#female'),
+    userInput: userInput.click('#female'),
     expectedResult: contains('not male'),
     expectedCounters: {renderVdom: 9}
   })
@@ -1562,23 +1531,23 @@ jb.component('uiTest.firstSucceeding.watchRefreshOnCtrlChange', {
 jb.component('uiTest.firstSucceeding.sameDoesNotRecreate', {
   impl: uiTest({
     control: uiTest.firstSucceedingWatchableSample(),
-    action: [uiAction.click('#female'), uiAction.click('#zee')],
+    userInput: [userInput.click('#female'), userInput.click('#zee')],
     expectedResult: contains('not male'),
     expectedCounters: {renderVdom: 9}
   })
 })
 
-jb.component('uiTest.firstSucceeding.watchRefreshOnCtrlChangeAndBack', {
-  impl: uiTest({
-    control: uiTest.firstSucceedingWatchableSample(),
-    action: runActions(uiAction.click('#female'), uiAction.click('#male')),
-    expectedResult: contains('a male'),
-    expectedCounters: {renderVdom: 11}
-  })
-})
+// jb.component('uiTest.firstSucceeding.watchRefreshOnCtrlChangeAndBack', {
+//   impl: uiTest({
+//     control: uiTest.firstSucceedingWatchableSample(),
+//     userInput: [userInput.click('#female'), userInput.click('#male')],
+//     expectedResult: contains('a male'),
+//     expectedCounters: {renderVdom: 11}
+//   })
+// })
 
 jb.component('uiTest.watchRef.recalcVars', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
     control: text({
       text: '%$changed%',
       features: [
@@ -1588,19 +1557,6 @@ jb.component('uiTest.watchRef.recalcVars', {
     }),
     action: writeValue('%$person/name%', 'hello'),
     expectedResult: contains('--hello--')
-  })
-})
-
-jb.component('uiTest.focusOnFirstElement', {
-  impl: uiTest({
-    control: group({
-      controls: [
-        editableBoolean('%$person/gender%'),
-        editableText({databind: '%$person/name%', style: editableText.textarea({})})
-      ]
-    }),
-    action: focusOnFirstElement('textarea'),
-    expectedResult: true
   })
 })
 
@@ -1632,7 +1588,7 @@ jb.component('uiTest.hiddenRefBug', {
 })
 
 // jb.component('uiTest.cssDynamic', {
-//   impl: uiTest({
+//   impl: uiFrontEndTest({
 //     control: group({
 //       controls: [
 //         text({
@@ -1665,7 +1621,7 @@ jb.component('uiTest.validator', {
       ],
 //      features: variable({name: 'formContainer', value: obj(prop('err', ''))})
     }),
-    action: uiAction.setText('a b', '#fld'),
+    userInput: userInput.setText('a b', '#fld'),
     expectedResult: contains('invalid project name')
   })
 })
@@ -1679,7 +1635,7 @@ jb.component('uiTest.watchableVariableAsProxy', {
 
 
 jb.component('uiTest.watchableLinkWriteOriginalWatchLink', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
     control: group({
       controls: [
         text('%$person/name%'),
@@ -1706,7 +1662,7 @@ jb.component('uiTest.watchableWriteViaLink', {
       ],
       features: variable({name: 'link', value: '%$person%', watchable: true})
     }),
-    action: uiAction.click('#set'),
+    userInput: userInput.click('#set'),
     expectedResult: contains(['hello', 'hello'])
   })
 })
@@ -1721,13 +1677,13 @@ jb.component('uiTest.watchableWriteViaLink', {
 //       ],
 //       features: variable({name: 'link', value: '%$person%', watchable: true})
 //     }),
-//     action: uiAction.click('#set'),
+//     userInput: userInput.click('#set'),
 //     expectedResult: contains(['Homer','hello'])
 //   })
 // })
 
 jb.component('uiTest.watchableParentRefreshMaskChildren', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
     control: group({controls: text('%$person/name%'), features: watchRef('%$person/name%')}),
     action: writeValue('%$person/name%', 'hello'),
     expectedResult: contains('hello'),
@@ -1749,7 +1705,6 @@ jb.component('uiTest.itemlistWithGroupWait', {
       controls: text('%name%'),
       features: group.wait({for: pipe(delay(1), ()=>[{name: 'homer'}]), varName: 'items'})
     }),
-    action: delay(20),
     expectedResult: contains('homer')
   })
 })
@@ -1765,15 +1720,16 @@ jb.component('uiTest.watchableRefToInnerElementsWhenValueIsEmpty', {
           features: id('set')
         })
       ],
-      features: variable({name: 'selected', watchable: true})
+      features: variable({name: 'selected', watchable: true, value: obj()})
     }),
-    action: uiAction.click('#set'),
-    expectedResult: true
+    userInput: userInput.click('#set'),
+    expectedResult: contains('hello')
   })
 })
 
 jb.component('uiTest.infiniteScroll', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
+    renderDOM: true,
     control: itemlist({
       items: range(0, 10),
       controls: text('%%'),
@@ -1781,11 +1737,11 @@ jb.component('uiTest.infiniteScroll', {
       features: [
         css.height({height: '100', overflow: 'scroll'}),
         itemlist.infiniteScroll(),
-        css.width('600')
+        css.width('100')
       ]
     }),
-    action: uiAction.scrollDown('.jb-itemlist'),
-    expectedResult: contains('>8<')
+    action: runActions(uiAction.scrollBy('.jb-itemlist',80), delay(30),uiAction.scrollBy('.jb-itemlist',100), delay(30)),
+    expectedResult: contains('>10<')
   })
 })
 

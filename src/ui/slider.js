@@ -2,16 +2,10 @@ jb.ns('slider,mdcStyle')
 
 jb.component('editableNumber.sliderNoText', {
   type: 'editable-number.style',
-  impl: features(
-    ctx => ({
-      template: (cmp,{min,max,step,databind},h) => h('input',{ type: 'range',
-        min, max, step, value: cmp.ctx.vars.editableNumber.numericPart(databind), mouseup: 'onblurHandler', tabindex: -1})
-    }),
-    field.databind(),
-    slider.checkAutoScale(),
-    slider.initJbModelWithUnits(),
-    slider.init(),
-  )
+  impl: customStyle({
+      template: (cmp,{numbericVal},h) => h('input', { type: 'range', value: numbericVal, mouseup: 'onblurHandler', tabindex: -1}),
+      features: [ field.databind(0,true), slider.init(), slider.drag()]
+  })
 })
 
 jb.component('editableNumber.slider', {
@@ -23,10 +17,10 @@ jb.component('editableNumber.slider', {
         layout: layout.horizontal(20),
         controls: [
           editableText({
-            databind: '%$editableNumberModel/databind%',
+            databind: '%$editableNumberModel/databind()%',
             style: editableText.input(),
             features: [
-              slider.handleArrowKeys(),
+              slider.init(),
               css(
                 'width: 30px; padding-left: 3px; border: 0; border-bottom: 1px solid var(--jb-titleBar-inactiveBackground);'
               ),
@@ -35,7 +29,7 @@ jb.component('editableNumber.slider', {
             ]
           }),
           editableNumber({
-            databind: '%$editableNumberModel/databind%',
+            databind: '%$editableNumberModel/databind()%',
             style: editableNumber.sliderNoText(),
             max: '%$editableNumberModel/max%',
             min: '%$editableNumberModel/min%',
@@ -43,10 +37,7 @@ jb.component('editableNumber.slider', {
             features: [css.width(80), css.class('slider-input')]
           })
         ],
-        features: [
-          variable({name: 'sliderCtx', value: {'$': 'object'}}),
-          watchRef('%$editableNumberModel/databind%')
-        ]
+        features: watchRef('%$editableNumberModel/databind()%')
       })
     }),
     'editableNumberModel'
@@ -62,10 +53,10 @@ jb.component('editableNumber.mdcSlider', {
         layout: layout.horizontal(20),
         controls: [
           editableText({
-            databind: '%$editableNumberModel/databind%',
+            databind: '%$editableNumberModel/databind()%',
             style: editableText.input(),
             features: [
-              slider.handleArrowKeys(),
+              slider.init(),
               css(
                 'width: 40px; height: 20px; padding-top: 14px; padding-left: 3px; border: 0; border-bottom: 1px solid black; background: transparent;'
               ),
@@ -73,17 +64,14 @@ jb.component('editableNumber.mdcSlider', {
             ]
           }),
           editableNumber({
-            databind: '%$editableNumberModel/databind%',
+            databind: '%$editableNumberModel/databind()%',
             max: '%$editableNumberModel/max%',
             min: '%$editableNumberModel/min%',
             step: '%$editableNumberModel/step%',
             style: editableNumber.mdcSliderNoText({}),
           })
         ],
-        features: [
-          variable({name: 'sliderCtx', value: {'$': 'object'}}),
-          watchRef('%$editableNumberModel/databind%')
-        ]
+        features: watchRef('%$editableNumberModel/databind()%')
       })
     }),
     'editableNumberModel'
@@ -99,9 +87,9 @@ jb.component('editableNumber.mdcSliderNoText', {
     { id: 'r', as: 'number', defaultValue: 7.875 },
   ],
   impl: customStyle({
-    template: (cmp,{title,min,max,step,databind,thumbSize,cx,cy,r},h) =>
+    template: (cmp,{title,min,max,step,numbericVal,thumbSize,cx,cy,r},h) =>
       h('div#mdc-slider mdc-slider--discrete',{tabIndex: -1, role: 'slider', max, step,
-        'aria-valuemin': min, 'aria-valuemax': max, 'aria-valuenow': cmp.ctx.vars.editableNumber.numericPart(databind), 'aria-label': title()}, [
+        'aria-valuemin': min, 'aria-valuemax': max, 'aria-valuenow': numbericVal, 'aria-label': title()}, [
         h('div#mdc-slider__track-container',{}, h('div#mdc-slider__track')),
         h('div#mdc-slider__thumb-container',{},[
           h('div#mdc-slider__pin',{},h('span#mdc-slider__pin-value-marker')),
@@ -111,115 +99,67 @@ jb.component('editableNumber.mdcSliderNoText', {
       ]),
     features: [
       field.databind(),
-      slider.initJbModelWithUnits(),
-      //slider.init(),
-      slider.checkAutoScale(),
-      interactiveProp('rebuild mdc on external refresh',(ctx,{cmp}) => {
+      slider.init(),
+      frontEnd.init((ctx,{cmp}) => {
         cmp.mdcSlider && cmp.mdcSlider.destroy()
         cmp.mdcSlider = new jb.ui.material.MDCSlider(cmp.base)
         //cmp.mdcSlider.listen('MDCSlider:input', ({detail}) =>  !cmp.checkAutoScale(detail.value) && cmp.jbModelWithUnits(detail.value))
-        cmp.mdcSlider.listen('MDCSlider:change', () =>
-          !cmp.checkAutoScale(cmp.mdcSlider.value) && cmp.jbModelWithUnits(cmp.mdcSlider.value))
+        cmp.mdcSlider.listen('MDCSlider:change', () => ctx.run(action.runBEMethod('assignIgnoringUnits', ()=> cmp.mdcSlider.value)))
       }),
-      feature.destroy((ctx,{cmp}) => cmp.mdcSlider && cmp.mdcSlider.destroy()),
+      frontEnd.onDestroy((ctx,{cmp}) => cmp.mdcSlider && cmp.mdcSlider.destroy()),
     ]
-  })
-})
-
-jb.component('slider.initJbModelWithUnits', {
-  type: 'feature',
-  impl: interactive((ctx,{cmp}) => {
-        cmp.jbModelWithUnits = val => {
-          const numericVal = ctx.vars.editableNumber.numericPart(jb.val(cmp.jbModel()))
-          if (val === undefined)
-            return numericVal
-          else
-            cmp.jbModel(ctx.vars.editableNumber.calcDataString(+val,ctx))
-        }
   })
 })
 
 jb.component('slider.init', {
   type: 'feature',
-  impl: ctx => ({
-      onkeydown: true,
-      onmouseup: true,
-      onmousedown: true,
-      onmousemove: true,
-      afterViewInit: cmp => {
-        const step = (+cmp.base.step) || 1
-        cmp.handleArrowKey = e => {
-            const val = jb.tonumber(cmp.jbModelWithUnits())
-            if (val == null) return
-            if (e.keyCode == 46) // delete
-              jb.writeValue(ctx.vars.$model.databind(),null, ctx);
-            if ([37,39].indexOf(e.keyCode) != -1) {
-              var inc = e.shiftKey ? step*9 : step;
-              if (val !=null && e.keyCode == 39)
-                cmp.jbModelWithUnits(Math.min(+cmp.base.max,val+inc));
-              if (val !=null && e.keyCode == 37)
-                cmp.jbModelWithUnits(Math.max(+cmp.base.min,val-inc));
-              cmp.checkAutoScale(cmp.base.value)
-            }
-        }
-
-        const {pipe,subscribe,flatMap,takeUntil} = jb.callbag
-        pipe(cmp.onkeydown,subscribe(e=> cmp.handleArrowKey(e)))
-
-        // drag
-        pipe(cmp.onmousedown,
-          flatMap(e=> pipe(cmp.onmousemove, takeUntil(cmp.onmouseup))),
-          subscribe(e=> !cmp.checkAutoScale(cmp.base.value) && cmp.jbModelWithUnits(cmp.base.value)
-          ))
-
-        if (ctx.vars.sliderCtx) // supporting left/right arrow keys in the text field as well
-          ctx.vars.sliderCtx.handleArrowKey = e => cmp.handleArrowKey(e);
-      }
-    })
-})
-
-jb.component('slider.checkAutoScale', {
-  type: 'feature',
   impl: features(
+    calcProp('numbericVal',({},{editableNumber,$model}) => editableNumber.numericPart(jb.val( $model.databind()))),
     calcProp('min'),
     calcProp('step'),      
-    calcProp({
-        id: 'max',
-        value: ctx => {
-          const val = ctx.vars.editableNumber.numericPart(jb.val(ctx.vars.$model.databind()))
-          if (val > +ctx.vars.$model.max && ctx.vars.$model.autoScale)
-            return val + 100
-          return +ctx.vars.$model.max
-    }}),
-    interactive((ctx,{cmp}) => {
-      cmp.checkAutoScale = val => {
-        if (!ctx.vars.$model.autoScale) return
-        const max = +(cmp.base.max || cmp.base.getAttribute('max'))
-        const step = +(cmp.base.step || cmp.base.getAttribute('step'))
-        if (val == max) { // scale up
-          cmp.jbModelWithUnits((+val) + step)
-          cmp.refresh(null, {strongRefresh: true},{srcCtx: ctx.componentContext})
-          return true
-        }
-        if (max > ctx.vars.$model.max && val < ctx.vars.$model.max) { // scale down
-          cmp.jbModelWithUnits(+val)
-          cmp.refresh(null, {strongRefresh: true},{srcCtx: ctx.componentContext})
-          return true
-        }
+    calcProp('max', (ctx,{$model,$props}) => {
+        const val = $props.numbericVal
+        if (val >= +$model.max && $model.autoScale)
+          return val + 100
+        return +$model.max
+    }),
+    method('delete',writeValue('%$$model/databind()%',() => null)),
+    method('assignIgnoringUnits', (ctx,{editableNumber,$model}) => {
+      const curVal = editableNumber.numericPart(jb.val($model.databind()))
+      if (curVal === undefined) return
+      jb.writeValue($model.databind(),editableNumber.calcDataString(ctx.data,ctx),ctx)
+    }),
+    method('incIgnoringUnits', (ctx,{editableNumber,$model,$props}) => {
+      const curVal = editableNumber.numericPart(jb.val($model.databind()))
+      const newVal = editableNumber.keepInDomain(curVal + ctx.data*$props.step)
+      if (curVal === undefined) return
+      jb.writeValue($model.databind(), editableNumber.calcDataString(newVal, ctx),ctx)
+    }),
+    method('checkAutoScale', (ctx,{cmp,$props,$model,editableNumber}) => {
+      const val = editableNumber.numericPart(jb.val($model.databind()))
+      if (!$model.autoScale) return
+      if (val >= $props.max) { // scale up
+        //jb.writeValue($model.databind(), editableNumber.calcDataString(val+ (+$props.step),ctx),ctx)
+        cmp.refresh(null, {strongRefresh: true},{srcCtx: ctx.componentContext})
+      } else if ($props.max > $model.max && val < $model.max) { // scale down
+        //jb.writeValue($model.databind(), editableNumber.calcDataString(val,ctx),ctx)
+        jb.delay(10).then(()=>
+          cmp.refresh(null, {strongRefresh: true},{srcCtx: ctx.componentContext}))
       }
-    }))
-})
-
-jb.component('slider.handleArrowKeys', {
-  type: 'feature',
-  impl: features(
-    htmlAttribute('onkeydown', true),
-    defHandler(
-        'onkeydownHandler',
-        (ctx,{ev}) =>
-        ctx.vars.sliderCtx && sliderCtx.handleArrowKey(ev)
-      )
+    }),
+    //followUp.flow(source.watchableData('%$$model/databind()%'), sink.BEMethod('checkAutoScale')),
+    frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode%==46'), sink.BEMethod('delete')),
+    frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode%==46'), sink.BEMethod('delete')),
+    frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode%==39'), rx.map(If('%shiftKey%',9,1)), sink.BEMethod('incIgnoringUnits')),
+    frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode%==37'), rx.map(If('%shiftKey%',-9,-1)), sink.BEMethod('incIgnoringUnits')),
   )
 })
 
+jb.component('slider.drag', {
+  type: 'feature',
+  impl: features(
+    frontEnd.flow(source.frontEndEvent('mousemove'), rx.filter('%buttons%!=0'), sink.BEMethod('assignIgnoringUnits','%$cmp.base.value%')),
+    frontEnd.flow(source.frontEndEvent('click'), sink.BEMethod('assignIgnoringUnits','%$cmp.base.value%'))
+  )
+})
 

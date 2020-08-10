@@ -23,12 +23,12 @@ jb.component('jbEditorTest.cmp5JsonFormat', {
   })
 })
 
-jb.component('jbEditorTest.actionsSugarExample1', {
-  impl: button({
-    title: 'hello',
-    action: [gotoUrl('google')]
-  })
-})
+// jb.component('jbEditorTest.actionsSugarExample1', {
+//   impl: button({
+//     title: 'hello',
+//     action: [gotoUrl('google')]
+//   })
+// })
 
 jb.component('jbEditorTest.actionsSugarExample2JsonFormat', {
   impl: button({
@@ -69,13 +69,13 @@ jb.component('jbEditorTest.emptyPipelineBug', {
 //   })
 // })
 
-jb.component('jbEditorTest.actionsSugar1', {
-  impl: jbEditorChildrenTest({
-    path: 'jbEditorTest.actionsSugarExample1~impl~action',
-    childrenType: 'jb-editor',
-    expectedResult: and(contains(['action[0]', 'action[1]']), not(contains('actions')))
-  })
-})
+// jb.component('jbEditorTest.actionsSugar1', {
+//   impl: jbEditorChildrenTest({
+//     path: 'jbEditorTest.actionsSugarExample1~impl~action',
+//     childrenType: 'jb-editor',
+//     expectedResult: and(contains(['action[0]', 'action[1]']), not(contains('actions')))
+//   })
+// })
 
 // jb.component('jbEditorTest.actionsSugar2a', {
 //   impl: jbEditorChildrenTest({

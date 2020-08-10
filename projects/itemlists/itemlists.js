@@ -89,7 +89,7 @@ jb.component('itemlists.largeTableWithSearch', {
             onEnter: openDialog({
               content: group({}),
               title: '%id%',
-              features: [dialogFeature.uniqueDialog('unique')]
+              features: dialogFeature.uniqueDialog('unique')
             })
           })
         ]

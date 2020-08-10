@@ -5,8 +5,8 @@ jb.component('mdcStyle.initDynamic', {
   params: [
     {id: 'query', as: 'string'}
   ],
-  impl: ctx => ({
-    afterViewInit: cmp => {
+  impl: features(
+    frontEnd.init(({},{cmp}) => {
       if (!jb.ui.material) return jb.logError('please load mdc library')
       cmp.mdc_comps = cmp.mdc_comps || []
       const txtElm = jb.ui.findIncludeSelf(cmp.base,'.mdc-text-field')[0]
@@ -25,34 +25,27 @@ jb.component('mdcStyle.initDynamic', {
         cmp.mdc_comps.push(new jb.ui.material.MDCSlider(cmp.base))
       else if (cmp.base.classList.contains('mdc-select'))
         cmp.mdc_comps.push(new jb.ui.material.MDCSelect(cmp.base))
-    },
-    destroy: cmp => (cmp.mdc_comps || []).forEach(mdc_cmp=>mdc_cmp.destroy())
-  })
+    }),
+    frontEnd.onDestroy(({},{cmp}) => (cmp.mdc_comps || []).forEach(mdc_cmp=>mdc_cmp.destroy()))
+  )
 })
 
 jb.component('mdc.rippleEffect', {
   type: 'feature',
   description: 'add ripple effect',
   impl: ctx => ({
-      templateModifier: vdom => {
-        'mdc-ripple-surface mdc-ripple-radius-bounded mdc-states mdc-states-base-color(red)'.split(' ')
-          .forEach(cl=>vdom.addClass(cl))
-        return vdom;
-      }
+      templateModifier: vdom => vdom.addClass('mdc-ripple-surface mdc-ripple-radius-bounded mdc-states mdc-states-base-color(red)')
    })
 })
 
 jb.component('label.mdcRippleEffect', {
   type: 'text.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('button',{class: 'mdc-button'},[
-      h('div',{class:'mdc-button__ripple'}),
-      h('span',{class:'mdc-button__label'},state.text),
+    template: ({},{text},h) => h('button#mdc-button',{},[
+      h('div#mdc-button__ripple'),
+      h('span#mdc-button__label',{}, text),
     ]),
     css: '>span { text-transform: none; }',
     features: [text.bindText(), mdcStyle.initDynamic()]
   })
 })
-
-
-

@@ -77,9 +77,9 @@ jb.component('studio.editableSource', {
       }
     }),
     features: [
-      interactive(
-        (ctx,{cmp}) => ctx.vars.$dialog.refresh = () => cmp.refresh && cmp.refresh(null,{srcCtx: ctx.componentContext})
-      ),
+      // frontEnd(
+      //   (ctx,{cmp}) => ctx.vars.$dialog.refresh = () => cmp.refresh && cmp.refresh(null,{srcCtx: ctx.componentContext})
+      // ),
       feature.onKey('Ctrl-I', studio.openJbEditor('%$path%'))
     ]
   })
@@ -213,8 +213,8 @@ jb.component('studio.openEditProperty', {
               studio.jbFloatingInputRich('%$actualPath%')
             ],
             features: [
-              feature.onEsc(dialog.closeContainingPopup(true)),
-              feature.onEnter(dialog.closeContainingPopup(true), sourceEditor.refreshEditor())
+              feature.onEsc(dialog.closeDialog(true)),
+              feature.onEnter(dialog.closeDialog(true), sourceEditor.refreshEditor())
             ]
           }),
           features: [
@@ -363,7 +363,7 @@ jb.component('sourceEditor.addProp', {
           feature.onKey(
             'Enter',
             runActions(
-              dialog.closeDialog('studio-jb-editor-popup'),
+              dialog.closeDialogById('studio-jb-editor-popup'),
               studio.openEditProperty('%$path%~%$suggestionData/selected/id%'),
               true
             )
@@ -374,7 +374,7 @@ jb.component('sourceEditor.addProp', {
             popupStyle: dialog.popup(),
             showHelper: true,
             autoOpen: true,
-            onEsc: [dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus()]
+            onEsc: [dialog.closeDialogById('studio-jb-editor-popup'), tree.regainFocus()]
           })
         ]
       }),

@@ -1,18 +1,107 @@
-jb.ns('rx')
+jb.ns('rx,sink,source')
+
+// ************ sources
+
+jb.component('source.data', {
+  type: 'rx',
+  category: 'source',
+  params: [
+    {id: 'data', dynamic: true },
+  ],
+  impl: rx.fromIter(pipeline('%$data%'))
+})
+
+jb.component('source.watchableData', {
+  type: 'rx',
+  category: 'source',
+  params: [
+    {id: 'ref', as: 'ref' },
+    {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
+  ],
+  impl: (ctx,ref,includeChildren) => jb.ui.refObservable(ref,null,{includeChildren, srcCtx: ctx})
+})
+
+jb.component('source.callbag', {
+  type: 'rx',
+  category: 'source',
+  params: [
+    {id: 'callbag', mandatory: true, description: 'callbag source function'},
+  ],
+  impl: (ctx,callbag) => jb.callbag.map(x=>ctx.dataObj(x))(callbag)
+})
+  
+jb.component('source.event', {
+  type: 'rx',
+  category: 'source',
+  params: [
+    {id: 'event', as: 'string', mandatory: true, options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll'},
+    {id: 'elem', description: 'html element', defaultValue: () => jb.frame.document },
+    {id: 'options', description: 'addEventListener options, https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener' },
+  ],
+  impl: (ctx,event,elem,options) => elem && jb.callbag.map(ev=>ctx.setVar('sourceEvent',ev).dataObj(ev))(jb.callbag.fromEvent(event,elem,options))
+})
+
+jb.component('rx.fromIter', {
+  type: 'rx',
+  category: 'source',
+  params: [
+    {id: 'iter', mandatory: true, as: 'array', description: 'array or js Iterators or Generators. https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_Generators '},
+  ],
+  impl: (ctx,iter) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromIter(iter))
+})
+
+jb.component('source.any', {
+  type: 'rx',
+  category: 'source',
+  params: [
+    {id: 'source', mandatory: true, description: 'the source is detected by its type: promise, iterable, single, callbag element, etc..'},
+  ],
+  impl: (ctx,source) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromAny(source || []))
+})
+
+jb.component('source.promise', {
+  type: 'rx',
+  category: 'source',
+  params: [
+    {id: 'promise', mandatory: true},
+  ],
+  impl: (ctx,promise) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromPromise(promise))
+})
+
+jb.component('rx.interval', {
+  type: 'rx',
+  category: 'source',
+  params: [
+    {id: 'interval', as: 'number', templateValue: '1000', description: 'time in mSec'}
+  ],
+  impl: (ctx,interval) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.interval(interval))
+})
 
 jb.component('rx.pipe', {
   type: 'rx,data,action',
-  category: 'combine',
+  category: 'source',
   description: 'pipeline of reactive observables',
   params: [
-    {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, templateValue: []}
+    {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
   ],
-  impl: (ctx,elems) => jb.callbag.pipe(...elems)
+  impl: (ctx,elems) => jb.callbag.pipe(...jb.callbag.injectSniffers(elems(ctx),ctx))
 })
+
+jb.component('rx.merge', {
+    type: 'rx',
+    category: 'source',
+    description: 'merge callbags sources (or any)',
+    params: [
+      {id: 'sources', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: [] },
+    ],
+    impl: (ctx,sources) => jb.callbag.merge(...sources(ctx))
+})
+
+// ******** operators *****
 
 jb.component('rx.innerPipe', {
   type: 'rx',
-  category: 'combine',
+  category: 'operator',
   description: 'inner reactive pipeline',
   params: [
     {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, templateValue: []},
@@ -20,29 +109,9 @@ jb.component('rx.innerPipe', {
   impl: (ctx,elems) => source => jb.callbag.pipe(source, ...elems)
 })
 
-jb.component('rx.merge', {
-    type: 'rx',
-    category: 'combine',
-    description: 'merge callbags sources (or any)',
-    params: [
-      {id: 'sources', type: 'rx[]', as: 'array' },
-    ],
-    impl: (ctx,sources) => jb.callbag.merge(...sources)
-})
-
-jb.component('rx.race', {
-  type: 'rx',
-  category: 'combine',
-  description: 'return the first result of all sources',
-  params: [
-    {id: 'sources', type: 'rx[]', as: 'array' },
-  ],
-  impl: (ctx,sources) => jb.callbag.merge(...sources)
-})
-
 jb.component('rx.startWith', {
     type: 'rx',
-    category: 'combine',
+    category: 'operator',
     description: 'startWith callbags sources (or any)',
     params: [
       {id: 'sources', type: 'rx[]', as: 'array' },
@@ -52,6 +121,7 @@ jb.component('rx.startWith', {
 
 jb.component('rx.var', {
   type: 'rx',
+  category: 'operator',
   description: 'define a variable that can be used later in the pipe',
   params: [
     {id: 'name', as: 'string', dynamic: true, mandatory: true, description: 'if empty, does nothing'},
@@ -67,6 +137,7 @@ jb.component('rx.var', {
 
 jb.component('rx.reduce', {
   type: 'rx',
+  category: 'operator',
   description: 'incrementally aggregates/accumulates data in a variable, e.g. count, concat, max, etc',
   params: [
     {id: 'varName', as: 'string', mandatory: true, description: 'the result is accumulated in this var', templateValue: 'acc'},
@@ -129,66 +200,6 @@ jb.component('rx.max', {
   })
 })
 
-
-// ************ sources
-jb.component('rx.fromCallbagSource', {
-  type: 'rx',
-  category: 'source',
-  params: [
-    {id: 'callbag', mandatory: true, description: 'callbag source function'},
-  ],
-  impl: (ctx,callbag) => jb.callbag.map(x=>ctx.dataObj(x))(callbag)
-})
-  
-jb.component('rx.fromEvent', {
-  type: 'rx',
-  category: 'source',
-  params: [
-    {id: 'event', as: 'string', mandatory: true, options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll'},
-    {id: 'elem', description: 'html element', defaultValue: () => jb.frame.document },
-    {id: 'options', description: 'addEventListener options, https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener' },
-  ],
-  impl: (ctx,event,elem,options) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromEvent(event,elem,options))
-})
-
-jb.component('rx.fromIter', {
-  type: 'rx',
-  category: 'source',
-  params: [
-    {id: 'iter', mandatory: true, as: 'array', description: 'array or js Iterators or Generators. https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_Generators '},
-  ],
-  impl: (ctx,iter) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromIter(iter))
-})
-
-jb.component('rx.fromAny', {
-  type: 'rx',
-  category: 'source',
-  params: [
-    {id: 'source', mandatory: true, description: 'the source is detected by its type: promise, iterable, single, callbag element, etc..'},
-  ],
-  impl: (ctx,source) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromAny(source || []))
-})
-
-jb.component('rx.fromPromise', {
-  type: 'rx',
-  category: 'source',
-  params: [
-    {id: 'promise', mandatory: true},
-  ],
-  impl: (ctx,promise) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromPromise(promise))
-})
-
-jb.component('rx.interval', {
-  type: 'rx',
-  category: 'source',
-  params: [
-    {id: 'interval', as: 'number', templateValue: '1000', description: 'time in mSec'}
-  ],
-  impl: (ctx,interval) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.interval(interval))
-})
-
-// ******** operators *****
-
 jb.component('rx.do', {
   type: 'rx',
   category: 'operator',
@@ -213,7 +224,7 @@ jb.component('rx.map', {
   params: [
     {id: 'func', dynamic: true, mandatory: true}
   ],
-  impl: (ctx,func) => jb.callbag.map(ctx2 => ({data: func(ctx2), vars: ctx2.vars}))
+  impl: (ctx,func) => jb.callbag.map(jb.addDebugInfo(ctx2 => ({data: func(ctx2), vars: ctx2.vars}),ctx))
 })
 
 jb.component('rx.mapPromise', {
@@ -262,7 +273,7 @@ jb.component('rx.filter', {
   params: [
     {id: 'filter', type: 'boolean', dynamic: true, mandatory: true},
   ],
-  impl: (ctx,filter) => jb.callbag.filter(ctx2 => filter(ctx2))
+  impl: (ctx,filter) => jb.callbag.filter(jb.addDebugInfo(ctx2 => filter(ctx2),ctx))
 })
 
 jb.component('rx.flatMap', {
@@ -300,19 +311,23 @@ jb.component('rx.distinctUntilChanged', {
   type: 'rx',
   description: 'filters adjacent items in stream', 
   category: 'filter',
-  params: [
-    {id: 'compareFunc', dynamic: true, description: 'default is identical, compare %prev% to %data%'},
-  ],
-  impl: (ctx,compareFunc) => jb.callbag.distinctUntilChanged(compareFunc && ((prev, data) => compareFunc(ctx.setData({prev: prev.data, data: data.data}))))
+  impl: () => jb.callbag.distinctUntilChanged((prev,cur) => prev && cur && prev.data == cur.data)
 })
 
 jb.component('rx.catchError', {
     type: 'rx',
     category: 'error',
-    params: [
-      {id: 'handler', type: 'action', dynamic: true, mandatory: true },
-    ],
-    impl: (ctx,handler) => jb.callbag.catchError(err => handler(ctx.ctx({data: err, profile: '', forcePath: ''})))
+    impl: ctx => jb.callbag.catchError(err => ctx.dataObj(err))
+})
+
+jb.component('rx.timeoutLimit', {
+  type: 'rx',
+  category: 'error',
+  params: [
+    {id: 'timeout', dynamic: true, defaultValue: '3000', description: 'can be dynamic' },
+    {id: 'error', dynamic: true, defaultValue: 'timeout'},
+  ],
+  impl: (ctx,timeout,error) => jb.callbag.timeoutLimit(timeout,error)
 })
 
 jb.component('rx.throwError', {
@@ -422,6 +437,42 @@ jb.component('rx.subscribe', {
     impl: (ctx,next, error, complete) => jb.callbag.subscribe(ctx2 => next(ctx2), ctx2 => error(ctx2), () => complete())
 })
 
+jb.component('sink.action', {
+  type: 'rx',
+  description: 'subscribe',
+  category: 'sink',
+  params: [
+    {id: 'action', type: 'action', dynamic: true, mandatory: true},
+  ],
+  impl: (ctx,action) => jb.callbag.subscribe(ctx2 => action(ctx2))
+})
+
+jb.component('sink.data', {
+  type: 'rx',
+  description: 'subscribe',
+  category: 'sink',
+  params: [
+    {id: 'data', as: 'ref', dynamic: true, mandatory: true},
+  ],
+  impl: sink.action(writeValue('%$data()%','%%'))
+})
+
+jb.component('rx.log', {
+  description: 'console.log flow data, used for debug',
+  params: [
+    {id: 'name', as: 'string'},
+  ],
+  impl: rx.do((ctx,{},{name}) => console.log(name,ctx.data,ctx.vars))
+})
+
+jb.component('rx.sniffer', {
+  description: 'console.log data & control',
+  params: [
+    {id: 'name', as: 'string'},
+  ],
+  impl: (ctx,name) => source => jb.callbag.sniffer(source, {next: x => console.log(name,x)})
+})
+
 // ********** subject 
 jb.component('rx.subject', {
     type: 'data',
@@ -432,12 +483,21 @@ jb.component('rx.subject', {
       {id: 'itemsToKeep', as: 'number', description: 'relevant for replay, empty for unlimited'},
     ],
     impl: (ctx,replay,itemsToKeep) => {
-      const rcvr = jb.callbag.subject()
-      return { rcvr, source: replay ? jb.callbag.replay(itemsToKeep)(rcvr): rcvr } 
+      const trigger = jb.callbag.subject()
+      return { trigger, source: replay ? jb.callbag.replay(itemsToKeep)(trigger): trigger } 
     }
 })
-  
-jb.component('rx.fromSubject', {
+
+jb.component('sink.subjectNext', {
+  type: 'rx',
+  category: 'sink',
+  params: [
+      {id: 'subject', mandatory: true },
+  ],
+  impl: (ctx,subject) => jb.callbag.subscribe(e => subject.trigger.next(e))
+})
+
+jb.component('source.subject', {
     type: 'rx',
     category: 'source',
     params: [
@@ -446,28 +506,28 @@ jb.component('rx.fromSubject', {
     impl: (ctx,subj) => subj.source
 })
 
-jb.component('rx.subjectNext', {
+jb.component('action.subjectNext', {
     type: 'action',
     params: [
         {id: 'subject', mandatory: true },
-        {id: 'data', dynamic: true, mandatory: true },
+        {id: 'data', dynamic: true, defaultValue: '%%' },
     ],
-    impl: (ctx,subject,data) => subject.rcvr.next(ctx.ctx({data: data(), profile: '', forcePath: ''}))
+    impl: (ctx,subject,data) => subject.trigger.next(ctx.dataObj(data(ctx)))
 })
 
-jb.component('rx.subjectComplete', {
+jb.component('action.subjectComplete', {
     type: 'action',
     params: [
         {id: 'subject', mandatory: true },
     ],
-    impl: (ctx,subject) => subject.rcvr.complete()
+    impl: (ctx,subject) => subject.trigger.complete()
 })
 
-jb.component('rx.subjectError', {
+jb.component('action.subjectError', {
     type: 'action',
     params: [
         {id: 'subject', mandatory: true },
         {id: 'error', dynamic: true, mandatory: true },
     ],
-    impl: (ctx,subject,error) => subject.rcvr.error(error())
+    impl: (ctx,subject,error) => subject.trigger.error(error())
 })

@@ -1,4 +1,3 @@
-debugger
 var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : {}), {
       'core': [
         'src/core/jb-core.js',
@@ -12,11 +11,15 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/misc/jb-callbag.js',
         'src/misc/spy.js',
       ],
+      'rx': [
+        'src/misc/rx-comps.js',
+      ],
       'ui-common-css': [
         'css/font.css',
         'css/styles.css',
       ],
       'ui-common': [
+        'src/misc/rx-comps.js',
         'dist/jb-immutable.js', // the immutable-helper lib
 
         'src/ui/watchable/watchable-ref.js',
@@ -26,6 +29,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/core/ui-utils.js',
 
         'src/ui/common-features.js',
+        'src/ui/front-end-features.js',
         'src/ui/css-features.js',
 
         'src/ui/text.js',
@@ -48,6 +52,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/slider.js',
         'src/ui/table.js',
         'src/ui/window.js',
+        'src/ui/editable-text-helper-popup.js',
 
         'src/ui/styles/mdc-styles.js',
         'src/ui/styles/text-styles.js',
@@ -74,15 +79,14 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       ],
       'testers': [
         'src/testing/testers.js',
+        'src/testing/testers-ui.js',
+        'src/testing/user-input.js',
       ],
       'codemirror': [
           'dist/codemirror.js',
       ],
       'fuse': [
         'dist/fuse.js',
-      ],
-      'rx': [
-        'src/misc/rx-comps.js',
       ],
       'two-tier-widget': ['src/ui/two-tier-widget.js'],        
       'puppeteer': [
@@ -166,7 +170,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       'parsing': [ 'src/misc/parsing.js' ],
       studio: [
         'dist/material.js', 'src/ui/watchable/text-editor.js',
-        'src/misc/parsing.js', 'src/ui/styles/codemirror-styles.js', 'src/misc/rx-comps.js',
+        'src/misc/parsing.js', 'src/ui/styles/codemirror-styles.js',
         'styles', 'path','utils', 'preview','popups','url','model-components', 'completion', 'undo','tgp-model', 'new-profile',
         'suggestions', 'properties','jb-editor-styles','edit-source','jb-editor','pick','h-to-jsx','style-editor',
         'references','properties-menu','save','open-project','tree',
@@ -179,14 +183,13 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'probe','model','tree','suggestion','patterns','inplace-edit'
       ],
       $dependencies: {
-        puppeteer: ['pretty-print','rx','remote']
+        puppeteer: ['pretty-print','remote']
       }
 })
 
 Object.keys(jb_modules.$dependencies).forEach(m => jb_modules[m].dependencies = jb_modules.$dependencies[m])
 
 function jb_dynamicLoad(modules,prefix,suffix) {
-  debugger
   modules = modules || '';
   const isDist = typeof window != 'undefined' && document.currentScript.getAttribute('src').indexOf('/dist/') != -1
   if (isDist) {
@@ -238,7 +241,6 @@ if (typeof global != 'undefined') global.jb_modules = jb_modules;
 loadProject()
 
 function loadProject() {
-  debugger
   if (typeof jbProjectSettings == 'undefined') return
   jbProjectSettings.baseUrl = jbProjectSettings.baseUrl || ''
 
@@ -249,7 +251,6 @@ function loadProject() {
 }
 
 function jb_initWidget() {
-  debugger
   if (!document.getElementById('main')) {
     const mainElem = document.createElement('div')
     mainElem.setAttribute('id','main')

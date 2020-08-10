@@ -49,10 +49,11 @@ jb.component('jbEditorChildrenTest', {
   ],
   impl: dataTest({
     calculate: ctx => {
-      const params = ctx.componentContext.params;
-      const mdl = new jb.studio.jbEditorTree('');
-      const titles = mdl.children(params.path).map(path=>mdl.title(path,true));
-      return JSON.stringify(titles);
+      const params = ctx.componentContext.params
+      const mdl = new jb.studio.jbEditorTree('')
+      const titles = mdl.children(params.path).map(path=>mdl.title(path,true))
+      const texts = titles.flatMap(x=> typeof x == 'string' ? x : x.querySelectorAll('[$text]').map(el=>el.$text))
+      return JSON.stringify(texts)
     },
     expectedResult: call('expectedResult')
   })
@@ -68,7 +69,7 @@ jb.component('studioProbeTest', {
     {id: 'expectedOutResult', type: 'boolean', dynamic: true, defaultValue: true}
   ],
   impl: (ctx,circuit,probePath,allowClosestPath,expectedVisits,expectedOutResult)=> {
-    st.initTests();
+    st.initTests()
 
     const testId = ctx.vars.testID;
     const failure = reason => ({ id: testId, title: testId, success:false, reason: reason });
@@ -77,7 +78,7 @@ jb.component('studioProbeTest', {
     const full_path = testId + '~impl~circuit~' + probePath;
     jb.cbLogByPath = {}
     const probeRes = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: circuit.profile, forcePath: testId+ '~impl~circuit', path: '' } ))
-      .runCircuit(full_path);
+      .runCircuit(full_path)
     return probeRes.then(res=> jb.cbLogByPath[res.pathToTrace] || res)
     .then(res=> {
       jb.cbLogByPath = null

@@ -380,10 +380,10 @@ Object.assign(st,{
 			return res
 	},
 
-	cbLogAsCallbag(ctx,log) {
-		const {fromIter} = ctx.frame().jb.callbag
-		return fromIter(log ? log.result : [])
-	},
+	// cbLogAsCallbag(ctx,log) {
+	// 	const {fromIter} = ctx.frame().jb.callbag
+	// 	return fromIter(log ? log.result : [])
+	// },
 
 	closestTestCtx: pathToTrace => {
 		const _ctx = new st.previewjb.jbCtx()

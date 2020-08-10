@@ -2,17 +2,15 @@ if (typeof frame == 'undefined')
   frame = typeof self === 'object' ? self : typeof global === 'object' ? global : {};
 var jb = (function() {
 function jb_run(ctx,parentParam,settings) {
-  log('req', [ctx,parentParam,settings])
+  ctx.profile && log('req', [...arguments])
   if (ctx.probe && ctx.probe.outOfTime)
     return
   if (jb.ctxByPath) jb.ctxByPath[ctx.path] = ctx
   let res = do_jb_run(...arguments)
   if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
       res = ctx.probe.record(ctx,res) || res
-  if (jb.cbLogByPath && jb.callbag.wrapWithSnifferForLogByPath)
-      res = jb.callbag.wrapWithSnifferForLogByPath(ctx,res)
-  log('res', [ctx,res,parentParam,settings])
-  if (typeof res == 'function') res.ctx = ctx
+  ctx.profile && log('res', [ctx,res,parentParam,settings])
+  if (typeof res == 'function') assignDebugInfoToFunc(res,ctx)
   return res;
 }
 
@@ -41,13 +39,13 @@ function do_jb_run(ctx,parentParam,settings) {
       case 'ignore': return ctx.data;
       case 'list': return profile.map((inner,i) => ctxWithVars.runInner(inner,null,i));
       case 'runActions': return jb.comps.runActions.impl(new jbCtx(ctxWithVars,{profile: { actions : profile },path:''}));
-      case 'if': {
-          const cond = jb_run(run.ifContext, run.IfParentParam);
-          if (cond && cond.then)
-            return cond.then(res=>
-              res ? jb_run(run.thenContext, run.thenParentParam) : jb_run(run.elseContext, run.elseParentParam))
-          return cond ? jb_run(run.thenContext, run.thenParentParam) : jb_run(run.elseContext, run.elseParentParam);
-      }
+      // case 'if': {
+      //     const cond = jb_run(run.ifContext, run.IfParentParam);
+      //     if (cond && cond.then)
+      //       return cond.then(res=>
+      //         res ? jb_run(run.thenContext, run.thenParentParam) : jb_run(run.elseContext, run.elseParentParam))
+      //     return cond ? jb_run(run.thenContext, run.thenParentParam) : jb_run(run.elseContext, run.elseParentParam);
+      // }
       case 'profile':
         if (!run.impl)
           run.ctx.callerPath = ctx.path;
@@ -62,8 +60,8 @@ function do_jb_run(ctx,parentParam,settings) {
             default: run.ctx.params[paramObj.name] =
               jb_run(new jbCtx(run.ctx,{profile: paramObj.prof, forcePath: paramObj.forcePath || ctx.path + '~' + paramObj.path, path: ''}), paramObj.param);
           }
-        });
-        let out;
+        })
+        let out
         if (profile.$debugger) debugger;
         if (run.impl) {
           const args = [run.ctx, ...run.preparedParams.map(param=>run.ctx.params[param.name])] // TODO : [run.ctx,run.ctx.vars,run.ctx.params]
@@ -84,6 +82,12 @@ function do_jb_run(ctx,parentParam,settings) {
     if (ctx.vars.$throw) throw e;
     logException(e,'exception while running run',ctx,parentParam,settings);
   }
+}
+
+function assignDebugInfoToFunc(func, ctx) {
+  func.ctx = ctx
+  const debugFuncName = ctx.profile && ctx.profile.$ || typeof ctx.profile == 'string' && ctx.profile.slice(0,10) || ''
+  Object.defineProperty(func, 'name', { value: (ctx.path ||'').split('~').pop() + ': ' + debugFuncName })
 }
 
 function extendWithVars(ctx,vars) {
@@ -122,15 +126,15 @@ function prepareParams(comp_name,comp,profile,ctx) {
         const outerFunc = runCtx => {
           let func;
           if (arrayParam)
-            func = (ctx2,data2) =>
-              jb.flattenArray(valOrDefaultArray.map((prof,i)=> runCtx.extendVars(ctx2,data2).runInner(prof,param,path+'~'+i)))
+            func = (ctx2,data2) => jb.flattenArray(valOrDefaultArray.map((prof,i)=> runCtx.extendVars(ctx2,data2).runInner(prof, {...param, as: 'asIs'}, path+'~'+i)))
           else
             func = (ctx2,data2) => jb_run(new jb.jbCtx(runCtx.extendVars(ctx2,data2),{ profile: valOrDefault, forcePath, path } ),param)
 
-          Object.defineProperty(func, "name", { value: p }); // for debug
+          const debugFuncName = valOrDefault && valOrDefault.$ || typeof valOrDefault == 'string' && valOrDefault.slice(0,10) || ''
+          Object.defineProperty(func, 'name', { value: p + ': ' + debugFuncName })
           //func.profile = val !== undefined ? val : (param.defaultValue !== undefined ? param.defaultValue : null)
           Object.assign(func,{profile: valOrDefault,runCtx,path,srcPath: ctx.path,forcePath,param})
-          return func;
+          return func
         }
         return { name: p, type: 'function', outerFunc, path, param, forcePath };
       }
@@ -197,7 +201,7 @@ function prepare(ctx,parentParam) {
   const resCtx = Object.assign(new jbCtx(ctx,{}), {parentParam, params: {}})
   const preparedParams = prepareParams(comp_name,comp,profile,resCtx);
   if (typeof comp.impl === 'function') {
-    Object.defineProperty(comp.impl, 'name', { value: comp_name }); // comp_name.replace(/[^a-zA-Z0-9]/g,'_')
+    Object.defineProperty(comp.impl, 'name', { value: comp_name }) // comp_name.replace(/[^a-zA-Z0-9]/g,'_')
     return { type: 'profile', impl: comp.impl, ctx: resCtx, preparedParams: preparedParams }
   } else
     return { type:'profile', ctx: new jbCtx(resCtx,{profile: comp.impl, comp: comp_name, path: ''}), preparedParams: preparedParams };
@@ -276,10 +280,10 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
   const jstype = parentParam && (parentParam.ref ? 'ref' : parentParam.as);
   // example: %$person.name%.
 
-  const parts = expressionPart.split(/[./[]/);
+  const parts = expressionPart.split(/[./[]/)
   return parts.reduce((input,subExp,index)=>pipe(input,subExp,index == parts.length-1,index == 0),ctx.data)
 
-  function pipe(input,subExp,last,first) {
+  function pipe(input,subExp,last,first,invokeFunc) {
     if (subExp == '')
        return input;
     if (subExp.match(/]$/))
@@ -289,24 +293,28 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
     const functionCallMatch = subExp.match(/=([a-zA-Z]*)\(?([^)]*)\)?/);
     if (functionCallMatch && jb.functions[functionCallMatch[1]])
         return tojstype(jb.functions[functionCallMatch[1]](ctx,functionCallMatch[2]),jstype,ctx);
-
-    if (subExp.match(/\(\)$/)) {
-      const func = pipe(input,subExp.slice(0,-2),last,first)
-      return typeof func == 'function' ? func(ctx) : func
+    if (subExp.match(/\(\)$/))
+      return pipe(input,subExp.slice(0,-2),last,first,true)
+    if (first && subExp.charAt(0) == '$' && subExp.length > 1) {
+      const ret = calcVar(ctx,subExp.substr(1),last ? jstype : null)
+      return typeof ret === 'function' && invokeFunc ? ret(ctx) : ret
     }
-
-    if (first && subExp.charAt(0) == '$' && subExp.length > 1)
-      return calcVar(ctx,subExp.substr(1),last ? jstype : null)
-    const obj = val(input);
+    const obj = val(input)
     if (subExp == 'length' && obj && typeof obj.length != 'undefined')
-      return obj.length;
+      return obj.length
     if (Array.isArray(obj) && isNaN(Number(subExp)))
-      return [].concat.apply([],obj.map(item=>pipe(item,subExp,last,false,refHandler)).filter(x=>x!=null));
+      return [].concat.apply([],obj.map(item=>pipe(item,subExp,last,false,refHandler)).filter(x=>x!=null))
 
     if (input != null && typeof input == 'object') {
-      if (obj === null || obj === undefined) return;
-      if (typeof obj[subExp] === 'function' && (parentParam && parentParam.dynamic || obj[subExp].profile))
-          return obj[subExp](ctx);
+      if (obj == null) return
+      if (typeof obj[subExp] === 'function' && (invokeFunc || obj[subExp].profile && parentParam && parentParam.dynamic)) {
+        //console.log('func',obj[subExp],ctx.profile)
+        return obj[subExp](ctx)
+      }
+      if (subExp.match(/\(\)$/)) {
+        const method = subExp.slice(0,-2)
+        return typeof obj[method] == 'function' && obj[method]()
+      }
       if (isRefType(jstype)) {
         if (last)
           return refHandler.objectProperty(obj,subExp,ctx);
@@ -473,10 +481,10 @@ function compName(profile,parentParam) {
 }
 
 // give a name to the impl function. Used for tgp debugging
-function assignNameToFunc(name, fn) {
-  Object.defineProperty(fn, "name", { value: name });
-  return fn;
-}
+// function assignNameToFunc(name, fn) {
+//   Object.defineProperty(fn, "name", { value: name });
+//   return fn;
+// }
 
 let ctxCounter = 0;
 
@@ -621,7 +629,8 @@ const simpleValueByRefHandler = {
         return obj[prop];
       else
         return { $jb_parent: obj, $jb_property: prop };
-  }
+  },
+  pathOfRef: () => []
 }
 
 let types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
@@ -674,8 +683,8 @@ Object.assign(jb,{
   resource: (id,val) => { 
     if (typeof val !== 'undefined')
       jb.resources[id] = val
-    jb.mainWatchableHandler && jb.mainWatchableHandler.resourceReferred(id);
-    return jb.resources[id];
+    jb.mainWatchableHandler && jb.mainWatchableHandler.resourceReferred(id)
+    return jb.resources[id]
   },
   const: (id,val) => typeof val == 'undefined' ? jb.consts[id] : (jb.consts[id] = val || {}),
   functionDef: (id,val) => jb.functions[id] = val,
@@ -759,7 +768,7 @@ Object.assign(jb,{
   asArray: v => v == null ? [] : (Array.isArray(v) ? v : [v]),
   filterEmpty: obj => Object.entries(obj).reduce((a,[k,v]) => (v == null ? a : {...a, [k]:v}), {}),
   equals: (x,y) => x == y || jb.val(x) == jb.val(y),
-  delay: mSec => new Promise(r=>{setTimeout(r,mSec)}),
+  delay: (mSec,res) => new Promise(r=>setTimeout(()=>r(res),mSec)),
 
   // valueByRef API
   extraWatchableHandlers: [],
@@ -807,12 +816,13 @@ Object.assign(jb,{
   isWatchable: () => false, // overriden by the watchable-ref.js (if loaded)
   isValid: ref => jb.safeRefCall(ref, h=>h.isValid(ref)),
   refreshRef: ref => jb.safeRefCall(ref, h=>h.refresh(ref)),
-  sessionStorage: (id,val) => val == undefined ? jb.frame.sessionStorage.getItem(id) : jb.frame.sessionStorage.setItem(id,val),
+  sessionStorage: (id,val) => val == undefined ? JSON.parse(jb.frame.sessionStorage.getItem(id)) : jb.frame.sessionStorage.setItem(id,JSON.stringify(val)),
   exec: (...args) => new jb.jbCtx().run(...args),
   exp: (...args) => new jb.jbCtx().exp(...args),
   execInStudio: (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.jbCtx().run(...args),
   eval: (str,frame) => { try { return (frame || jb.frame).eval('('+str+')') } catch (e) { return Symbol.for('parseError') } },
-  iframeAccessible(iframe) { try { return Boolean(iframe.contentDocument) } catch(e) { return false } }
+  iframeAccessible(iframe) { try { return Boolean(iframe.contentDocument) } catch(e) { return false } },
+  addDebugInfo(f,ctx) { f.ctx = ctx; return f}
 })
 
 if (typeof self != 'undefined')
@@ -995,7 +1005,7 @@ jb.component('data.if', {
     {id: 'then', mandatory: true, dynamic: true, composite: true},
     {id: 'else', dynamic: true, defaultValue: '%%'}
   ],
-  impl: (ctx,cond,_then,_else) =>	cond() ? _then() : _else()
+  impl: ({},cond,_then,_else) =>	cond() ? _then() : _else()
 })
 
 jb.component('action.if', {
@@ -1007,7 +1017,7 @@ jb.component('action.if', {
     {id: 'then', type: 'action', mandatory: true, dynamic: true, composite: true},
     {id: 'else', type: 'action', dynamic: true}
   ],
-  impl: (ctx,cond,_then,_else) =>	cond ? _then() : _else()
+  impl: ({},cond,_then,_else) =>	cond ? _then() : _else()
 })
 
 jb.component('jbRun', {
@@ -1025,7 +1035,7 @@ jb.component('list', {
   params: [
     {id: 'items', type: 'data[]', as: 'array', composite: true}
   ],
-  impl: (ctx,items) => items.flatMap(item=>Array.isArray(item) ? item : [item])
+  impl: ({},items) => items.flatMap(item=>Array.isArray(item) ? item : [item])
 })
 
 jb.component('firstSucceeding', {
@@ -1033,7 +1043,7 @@ jb.component('firstSucceeding', {
   params: [
     {id: 'items', type: 'data[]', as: 'array', composite: true}
   ],
-  impl: (ctx,items) => {
+  impl: ({},items) => {
     for(let i=0;i<items.length;i++) {
       const val = jb.val(items[i])
       const isNumber = typeof val === 'number'
@@ -1050,7 +1060,7 @@ jb.component('keys', {
   params: [
     {id: 'obj', defaultValue: '%%', as: 'single'}
   ],
-  impl: (ctx,obj) => Object.keys(obj && typeof obj === 'object' ? obj : {})
+  impl: ({},obj) => Object.keys(obj && typeof obj === 'object' ? obj : {})
 })
 
 jb.component('properties', {
@@ -1059,7 +1069,7 @@ jb.component('properties', {
   params: [
     {id: 'obj', defaultValue: '%%', as: 'single'}
   ],
-  impl: (ctx,obj) => Object.keys(obj).filter(p=>p.indexOf('$jb_') != 0).map((id,index) =>
+  impl: ({},obj) => Object.keys(obj).filter(p=>p.indexOf('$jb_') != 0).map((id,index) =>
 			({id: id, val: obj[id], index: index}))
 })
 
@@ -1069,7 +1079,7 @@ jb.component('entries', {
   params: [
     {id: 'obj', defaultValue: '%%', as: 'single'}
   ],
-  impl: (ctx,obj) => jb.entries(obj)
+  impl: ({},obj) => jb.entries(obj)
 })
 
 jb.component('aggregate', {
@@ -1078,7 +1088,7 @@ jb.component('aggregate', {
   params: [
     {id: 'aggregator', type: 'aggregator', mandatory: true, dynamic: true}
   ],
-  impl: (ctx,aggregator) => aggregator()
+  impl: ({},aggregator) => aggregator()
 })
 
 jb.ns('math')
@@ -1098,6 +1108,22 @@ jb.component('math.sum', {
   impl: ctx => ctx.data.reduce((acc,item) => +item+acc, 0)
 })
 
+jb.component('math.plus', {
+  params: [
+    {id: 'x', as: 'number'},
+    {id: 'y', as: 'number'},
+  ],
+  impl: ({},x,y) => x + y
+})
+
+jb.component('math.minus', {
+  params: [
+    {id: 'x', as: 'number'},
+    {id: 'y', as: 'number'},
+  ],
+  impl: ({},x,y) => x - y
+})
+
 'abs,acos,acosh,asin,asinh,atan,atan2,atanh,cbrt,ceil,clz32,cos,cosh,exp,expm1,floor,fround,hypot,log2,random,round,sign,sin,sinh,sqrt,tan,tanh,trunc'
   .split(',').forEach(f=>jb.component(`math.${f}`, {
     impl: ctx => Math[f](ctx.data)
@@ -1110,7 +1136,7 @@ jb.component('objFromEntries', {
   params: [
     {id: 'entries', defaultValue: '%%', as: 'array'}
   ],
-  impl: (ctx,entries) => jb.objFromEntries(entries)
+  impl: ({},entries) => jb.objFromEntries(entries)
 })
 
 jb.component('evalExpression', {
@@ -1119,7 +1145,7 @@ jb.component('evalExpression', {
   params: [
     {id: 'expression', as: 'string', defaultValue: '%%', expression: 'e.g. 1+2'}
   ],
-  impl: (ctx,expression) => {
+  impl: ({},expression) => {
     try {
       return eval('('+expression+')')
     } catch(e) {}
@@ -1132,8 +1158,7 @@ jb.component('prefix', {
     {id: 'separator', as: 'string', mandatory: true},
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (ctx,separator,text) =>
-		(text||'').substring(0,text.indexOf(separator))
+  impl: ({},separator,text) => (text||'').substring(0,text.indexOf(separator))
 })
 
 jb.component('suffix', {
@@ -1142,8 +1167,7 @@ jb.component('suffix', {
     {id: 'separator', as: 'string', mandatory: true},
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (context,separator,text) =>
-		(text||'').substring(text.lastIndexOf(separator)+separator.length)
+  impl: ({},separator,text) => (text||'').substring(text.lastIndexOf(separator)+separator.length)
 })
 
 jb.component('removePrefix', {
@@ -1152,7 +1176,7 @@ jb.component('removePrefix', {
     {id: 'separator', as: 'string', mandatory: true},
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (context,separator,text) =>
+  impl: ({},separator,text) =>
 		text.indexOf(separator) == -1 ? text : text.substring(text.indexOf(separator)+separator.length)
 })
 
@@ -1162,8 +1186,7 @@ jb.component('removeSuffix', {
     {id: 'separator', as: 'string', mandatory: true},
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (context,separator,text) =>
-		text.lastIndexOf(separator) == -1 ? text : text.substring(0,text.lastIndexOf(separator))
+  impl: ({},separator,text) => text.lastIndexOf(separator) == -1 ? text : text.substring(0,text.lastIndexOf(separator))
 })
 
 jb.component('removeSuffixRegex', {
@@ -1172,9 +1195,9 @@ jb.component('removeSuffixRegex', {
     {id: 'suffix', as: 'string', mandatory: true, description: 'regular expression. e.g [0-9]*'},
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: function(context,suffix,text) {
-		context.profile.prefixRegexp = context.profile.prefixRegexp || new RegExp(suffix+'$');
-		const m = (text||'').match(context.profile.prefixRegexp);
+  impl: (ctx,suffix,text) => {
+		ctx.profile.prefixRegexp = ctx.profile.prefixRegexp || new RegExp(suffix+'$');
+		const m = (text||'').match(ctx.profile.prefixRegexp);
 		return (m && (text||'').substring(m.index+1)) || text;
 	}
 })
@@ -1186,6 +1209,10 @@ jb.component('writeValue', {
     {id: 'value', mandatory: true}
   ],
   impl: (ctx,to,value) => {
+    if (!jb.isRef(to)) {
+      ctx.run(ctx.profile.to,{as: 'ref'}) // for debug
+      return jb.logError(`can not write to: ${ctx.profile.to}`, ctx)
+    }
     const val = jb.val(value)
     if (jb.isDelayed(val))
       return Promise.resolve().then(val=>jb.writeValue(to,val,ctx))
@@ -1208,7 +1235,7 @@ jb.component('indexOf', {
     {id: 'array', as: 'array', mandatory: true},
     {id: 'item', as: 'single', mandatory: true}
   ],
-  impl: (ctx,array,item) => array.indexOf(item)
+  impl: ({},array,item) => array.indexOf(item)
 })
 
 jb.component('addToArray', {
@@ -1218,6 +1245,16 @@ jb.component('addToArray', {
     {id: 'toAdd', as: 'array', mandatory: true}
   ],
   impl: (ctx,array,toAdd) => jb.push(array, JSON.parse(JSON.stringify(toAdd)),ctx)
+})
+
+jb.component('move', {
+  type: 'action',
+  description: 'move item in tree, activated from D&D',
+  params: [
+    {id: 'from', as: 'ref', mandatory: true},
+    {id: 'to', as: 'ref', mandatory: true}
+  ],
+  impl: (ctx,from,_to) => jb.move(from,_to,ctx)
 })
 
 jb.component('splice', {
@@ -1260,9 +1297,9 @@ jb.component('slice', {
     {id: 'start', as: 'number', defaultValue: 0, description: '0-based index', mandatory: true},
     {id: 'end', as: 'number', mandatory: true, description: '0-based index of where to end the selection (not including itself)'}
   ],
-  impl: function({data},start,end) {
-		if (!data || !data.slice) return null;
-		return end ? data.slice(start,end) : data.slice(start);
+  impl: ({data},start,end) => {
+		if (!data || !data.slice) return null
+		return end ? data.slice(start,end) : data.slice(start)
 	}
 })
 
@@ -1292,7 +1329,7 @@ jb.component('first', {
   params: [
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
-  impl: (ctx,items) => items[0]
+  impl: ({},items) => items[0]
 })
 
 jb.component('last', {
@@ -1300,7 +1337,7 @@ jb.component('last', {
   params: [
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
-  impl: (ctx,items) => items.slice(-1)[0]
+  impl: ({},items) => items.slice(-1)[0]
 })
 
 jb.component('count', {
@@ -1309,7 +1346,7 @@ jb.component('count', {
   params: [
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
-  impl: (ctx,items) => items.length
+  impl: ({},items) => items.length
 })
 
 jb.component('reverse', {
@@ -1317,7 +1354,7 @@ jb.component('reverse', {
   params: [
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
-  impl: (ctx,items) => items.reverse()
+  impl: ({},items) => items.reverse()
 })
 
 jb.component('sample', {
@@ -1326,7 +1363,7 @@ jb.component('sample', {
     {id: 'size', as: 'number', defaultValue: 300},
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
-  impl: (ctx,size,items) =>	items.filter((x,i)=>i % (Math.floor(items.length/size) ||1) == 0)
+  impl: ({},size,items) =>	items.filter((x,i)=>i % (Math.floor(items.length/size) ||1) == 0)
 })
 
 jb.component('obj', {
@@ -1334,8 +1371,7 @@ jb.component('obj', {
   params: [
     {id: 'props', type: 'prop[]', mandatory: true, sugar: true}
   ],
-  impl: (ctx,properties) =>
-		jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)]))
+  impl: (ctx,properties) => jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)]))
 })
 
 jb.component('extend', {
@@ -1354,8 +1390,7 @@ jb.component('extendWithIndex', {
   params: [
     {id: 'props', type: 'prop[]', mandatory: true, defaultValue: []}
   ],
-  impl: (ctx,properties) =>
-		jb.toarray(ctx.data).map((item,i)=>
+  impl: (ctx,properties) => jb.toarray(ctx.data).map((item,i) =>
 			Object.assign({}, item, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx.setData(item).setVars({index:i})),p.type)]))))
 })
 
@@ -1369,6 +1404,17 @@ jb.component('prop', {
   ],
   impl: ctx => ctx.params
 })
+
+// jb.component('objMethod', {
+//   type: 'prop',
+//   macroByValue: true,
+//   params: [
+//     {id: 'title', as: 'string', mandatory: true},
+//     {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: ''},
+//     {id: 'type', as: 'string', options: 'string,number,boolean,object,array,asIs', defaultValue: 'asIs'}
+//   ],
+//   impl: ({},title,val,type) => ({title,val: () => () => ctx2 => val(ctx2) ,type})
+// })
 
 jb.component('refProp', {
   type: 'prop',
@@ -1398,8 +1444,7 @@ jb.component('Var', {
     {id: 'name', as: 'string', mandatory: true},
     {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: '%%'}
   ],
-  macro: (result, self) =>
-		Object.assign(result,{ $vars: Object.assign(result.$vars || {}, { [self.name]: self.val }) })
+  macro: (result, self) => Object.assign(result,{ $vars: Object.assign(result.$vars || {}, { [self.name]: self.val }) })
 })
 
 jb.component('remark', {
@@ -1408,8 +1453,7 @@ jb.component('remark', {
   params: [
     {id: 'remark', as: 'string', mandatory: true}
   ],
-  macro: (result, self) =>
-		Object.assign(result,{ remark: self.remark })
+  macro: (result, self) => Object.assign(result,{ remark: self.remark })
 })
 
 jb.component('If', {
@@ -1419,7 +1463,7 @@ jb.component('If', {
     {id: 'then', dynamic: true},
     {id: 'Else', dynamic: true}
   ],
-  impl: (ctx,cond,_then,_else) =>	cond() ? _then() : _else()
+  impl: ({},cond,_then,_else) => cond() ? _then() : _else()
 })
 
 jb.component('not', {
@@ -1427,7 +1471,7 @@ jb.component('not', {
   params: [
     {id: 'of', type: 'boolean', as: 'boolean', mandatory: true, composite: true}
   ],
-  impl: (context, of) => !of
+  impl: ({}, of) => !of
 })
 
 jb.component('and', {
@@ -1472,7 +1516,7 @@ jb.component('between', {
     {id: 'to', as: 'number', mandatory: true},
     {id: 'val', as: 'number', defaultValue: '%%'}
   ],
-  impl: (ctx,from,to,val) => val >= from && val <= to
+  impl: ({},from,to,val) => val >= from && val <= to
 })
 
 jb.component('contains', {
@@ -1482,14 +1526,14 @@ jb.component('contains', {
     {id: 'allText', defaultValue: '%%', as: 'string'},
     {id: 'inOrder', defaultValue: true, as: 'boolean', type: 'boolean'}
   ],
-  impl: function(context,text,allText,inOrder) {
-      let prevIndex = -1;
+  impl: ({},text,allText,inOrder) => {
+      let prevIndex = -1
       for(let i=0;i<text.length;i++) {
-      	const newIndex = allText.indexOf(jb.tostring(text[i]),prevIndex+1);
-      	if (newIndex == -1) return false;
-      	prevIndex = inOrder ? newIndex : -1;
+      	const newIndex = allText.indexOf(jb.tostring(text[i]),prevIndex+1)
+      	if (newIndex == -1) return false
+      	prevIndex = inOrder ? newIndex : -1
       }
-      return true;
+      return true
 	}
 })
 
@@ -1511,7 +1555,7 @@ jb.component('startsWith', {
     {id: 'startsWith', as: 'string', mandatory: true},
     {id: 'text', defaultValue: '%%', as: 'string'}
   ],
-  impl: (context,startsWith,text) => text.indexOf(startsWith) == 0
+  impl: ({},startsWith,text) => text.indexOf(startsWith) == 0
 })
 
 jb.component('endsWith', {
@@ -1521,7 +1565,7 @@ jb.component('endsWith', {
     {id: 'endsWith', as: 'string', mandatory: true},
     {id: 'text', defaultValue: '%%', as: 'string'}
   ],
-  impl: (context,endsWith,text) => text.indexOf(endsWith,text.length-endsWith.length) !== -1
+  impl: ({},endsWith,text) => text.indexOf(endsWith,text.length-endsWith.length) !== -1
 })
 
 
@@ -1530,7 +1574,7 @@ jb.component('filter', {
   params: [
     {id: 'filter', type: 'boolean', as: 'boolean', dynamic: true, mandatory: true}
   ],
-  impl: (context,filter) =>	jb.toarray(context.data).filter(item =>	filter(context,item))
+  impl: (ctx,filter) =>	jb.toarray(ctx.data).filter(item =>	filter(ctx,item))
 })
 
 jb.component('matchRegex', {
@@ -1540,28 +1584,28 @@ jb.component('matchRegex', {
     {id: 'regex', as: 'string', mandatory: true, description: 'e.g: [a-zA-Z]*'},
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (ctx,regex,text) => text.match(new RegExp(regex))
+  impl: ({},regex,text) => text.match(new RegExp(regex))
 })
 
 jb.component('toUpperCase', {
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (ctx,text) =>	text.toUpperCase()
+  impl: ({},text) =>	text.toUpperCase()
 })
 
 jb.component('toLowerCase', {
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (ctx,text) =>	text.toLowerCase()
+  impl: ({},text) => text.toLowerCase()
 })
 
 jb.component('capitalize', {
   params: [
     {id: 'text', as: 'string', defaultValue: '%%'}
   ],
-  impl: (ctx,text) =>	text.charAt(0).toUpperCase() + text.slice(1)
+  impl: ({},text) => text.charAt(0).toUpperCase() + text.slice(1)
 })
 
 jb.component('join', {
@@ -1593,17 +1637,17 @@ jb.component('unique', {
 
 jb.component('log', {
   params: [
-    {id: 'log', as: 'string', mandatory: 'true' },
-    {id: 'toLog', as: 'array', defaultValue: '%%'}
+    {id: 'logName', as: 'string', mandatory: 'true' },
+    {id: 'dataArray', as: 'array', defaultValue: '%%'}
   ],
-  impl: (ctx,log,array) => jb.log(log,array)
+  impl: (ctx,log,array) => jb.log(log,[ctx,...array])
 })
 
 jb.component('asIs', {
   params: [
     {id: '$asIs', ignore: true}
   ],
-  impl: ctx => context.profile.$asIs
+  impl: () => context.profile.$asIs
 })
 
 jb.component('object', {
@@ -1625,7 +1669,7 @@ jb.component('json.stringify', {
     {id: 'value', defaultValue: '%%'},
     {id: 'space', as: 'string', description: 'use space or tab to make pretty output'}
   ],
-  impl: (context,value,space) => JSON.stringify(jb.val(value),null,space)
+  impl: ({},value,space) => JSON.stringify(jb.val(value),null,space)
 })
 
 jb.component('json.parse', {
@@ -1649,7 +1693,7 @@ jb.component('split', {
     {id: 'text', as: 'string', defaultValue: '%%'},
     {id: 'part', options: ',first,second,last,but first,but last'}
   ],
-  impl: function(ctx,separator,text,part) {
+  impl: ({},separator,text,part) => {
 		const out = text.split(separator.replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n'));
 		switch (part) {
 			case 'first': return out[0];
@@ -1671,25 +1715,21 @@ jb.component('replace', {
     {id: 'useRegex', type: 'boolean', as: 'boolean', defaultValue: true},
     {id: 'regexFlags', as: 'string', defaultValue: 'g', description: 'g,i,m'}
   ],
-  impl: function(context,find,replace,text,useRegex,regexFlags) {
-		if (useRegex) {
-			return text.replace(new RegExp(find,regexFlags) ,replace);
-		} else
-			return text.replace(find,replace);
-	}
+  impl: ({},find,replace,text,useRegex,regexFlags) => 
+    useRegex ? text.replace(new RegExp(find,regexFlags) ,replace) : text.replace(find,replace)
 })
 
-jb.component('touch', {
-  description: 'change the value of a watchable variable to acticate its watchers',
-  type: 'action',
-  params: [
-    {id: 'data', as: 'ref'}
-  ],
-  impl: function(context,data_ref) {
-		const val = Number(jb.val(data_ref));
-		jb.writeValue(data_ref,val ? val + 1 : 1,ctx);
-	}
-})
+// jb.component('touch', {
+//   description: 'change the value of a watchable variable to acticate its watchers',
+//   type: 'action',
+//   params: [
+//     {id: 'data', as: 'ref'}
+//   ],
+//   impl: ({},data_ref) => {
+// 		const val = Number(jb.val(data_ref))
+// 		jb.writeValue(data_ref,val ? val + 1 : 1,ctx)
+// 	}
+// })
 
 jb.component('isNull', {
   description: 'is null or undefined',
@@ -1697,7 +1737,16 @@ jb.component('isNull', {
   params: [
     {id: 'obj', defaultValue: '%%'}
   ],
-  impl: (ctx, obj) => jb.val(obj) == null
+  impl: ({}, obj) => jb.val(obj) == null
+})
+
+jb.component('notNull', {
+  description: 'not null or undefined',
+  type: 'boolean',
+  params: [
+    {id: 'obj', defaultValue: '%%'}
+  ],
+  impl: ({}, obj) => jb.val(obj) != null
 })
 
 jb.component('isEmpty', {
@@ -1705,7 +1754,7 @@ jb.component('isEmpty', {
   params: [
     {id: 'item', as: 'single', defaultValue: '%%'}
   ],
-  impl: (ctx, item) => !item || (Array.isArray(item) && item.length == 0)
+  impl: ({}, item) => !item || (Array.isArray(item) && item.length == 0)
 })
 
 jb.component('notEmpty', {
@@ -1713,7 +1762,7 @@ jb.component('notEmpty', {
   params: [
     {id: 'item', as: 'single', defaultValue: '%%'}
   ],
-  impl: (ctx, item) => item && !(Array.isArray(item) && item.length == 0)
+  impl: ({}, item) => item && !(Array.isArray(item) && item.length == 0)
 })
 
 jb.component('equals', {
@@ -1722,7 +1771,7 @@ jb.component('equals', {
     {id: 'item1', as: 'single', mandatory: true},
     {id: 'item2', defaultValue: '%%', as: 'single'}
   ],
-  impl: (ctx, item1, item2) => item1 == item2
+  impl: ({}, item1, item2) => item1 == item2
 })
 
 jb.component('notEquals', {
@@ -1731,7 +1780,7 @@ jb.component('notEquals', {
     {id: 'item1', as: 'single', mandatory: true},
     {id: 'item2', defaultValue: '%%', as: 'single'}
   ],
-  impl: (ctx, item1, item2) => item1 != item2
+  impl: ({}, item1, item2) => item1 != item2
 })
 
 jb.component('runActions', {
@@ -1741,13 +1790,22 @@ jb.component('runActions', {
   ],
   impl: ctx => {
 		if (!ctx.profile) debugger;
-		const actions = jb.asArray(ctx.profile.actions || ctx.profile['$runActions']).filter(x=>x);
+		const actions = jb.asArray(ctx.profile.actions || ctx.profile['$runActions']).filter(x=>x)
 		const innerPath =  (ctx.profile.actions && ctx.profile.actions.sugar) ? ''
 			: (ctx.profile['$runActions'] ? '$runActions~' : 'items~');
 		return actions.reduce((def,action,index) =>
-				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index ))
+				def.then(function runActions() {return ctx.runInner(action, { as: 'single'}, innerPath + index ) })
 			,Promise.resolve())
 	}
+})
+
+jb.component('runActionOnItem', {
+  type: 'action',
+  params: [
+    {id: 'item', mandatory: true},
+    {id: 'action', type: 'action', dynamic: true, mandatory: true},
+  ],
+  impl: (ctx,item,action) => item != null && action(ctx.setData(item))
 })
 
 jb.component('runActionOnItems', {
@@ -1761,7 +1819,7 @@ jb.component('runActionOnItems', {
   ],
   impl: (ctx,items,action,notifications,indexVariable) => {
 		if (notifications && jb.mainWatchableHandler) jb.mainWatchableHandler.startTransaction()
-		return jb.val(items).reduce((def,item,i) => def.then(_ => action(ctx.setVar(indexVariable,i).setData(item))) ,Promise.resolve())
+		return (jb.val(items)||[]).reduce((def,item,i) => def.then(_ => action(ctx.setVar(indexVariable,i).setData(item))) ,Promise.resolve())
 			.catch((e) => jb.logException(e,ctx))
 			.then(() => notifications && jb.mainWatchableHandler && jb.mainWatchableHandler.endTransaction(notifications === 'no notifications'));
 	}
@@ -1782,9 +1840,7 @@ jb.component('onNextTimer', {
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
     {id: 'delay', type: 'number', defaultValue: 1}
   ],
-  impl: (ctx,action,delay) =>
-		jb.delay(delay,ctx).then(()=>
-			action())
+  impl: (ctx,action,delay) => jb.delay(delay,ctx).then(()=>	action())
 })
 
 jb.component('extractPrefix', {
@@ -1795,13 +1851,13 @@ jb.component('extractPrefix', {
     {id: 'regex', type: 'boolean', as: 'boolean', description: 'separator is regex'},
     {id: 'keepSeparator', type: 'boolean', as: 'boolean'}
   ],
-  impl: function(context,separator,text,regex,keepSeparator) {
+  impl: ({},separator,text,regex,keepSeparator) => {
 		if (!regex) {
-			return text.substring(0,text.indexOf(separator)) + (keepSeparator ? separator : '');
+			return text.substring(0,text.indexOf(separator)) + (keepSeparator ? separator : '')
 		} else { // regex
-			const match = text.match(separator);
+			const match = text.match(separator)
 			if (match)
-				return text.substring(0,match.index) + (keepSeparator ? match[0] : '');
+				return text.substring(0,match.index) + (keepSeparator ? match[0] : '')
 		}
 	}
 })
@@ -1814,7 +1870,7 @@ jb.component('extractSuffix', {
     {id: 'regex', type: 'boolean', as: 'boolean', description: 'separator is regex'},
     {id: 'keepSeparator', type: 'boolean', as: 'boolean'}
   ],
-  impl: function(context,separator,text,regex,keepSeparator) {
+  impl: ({},separator,text,regex,keepSeparator) => {
 		if (!regex) {
 			return text.substring(text.lastIndexOf(separator) + (keepSeparator ? 0 : separator.length));
 		} else { // regex
@@ -1832,7 +1888,7 @@ jb.component('range', {
     {id: 'from', as: 'number', defaultValue: 1},
     {id: 'to', as: 'number', defaultValue: 10}
   ],
-  impl: (ctx,from,to) => Array.from(Array(to-from+1).keys()).map(x=>x+from)
+  impl: ({},from,to) => Array.from(Array(to-from+1).keys()).map(x=>x+from)
 })
 
 jb.component('typeOf', {
@@ -1840,7 +1896,7 @@ jb.component('typeOf', {
   params: [
     {id: 'obj', defaultValue: '%%'}
   ],
-  impl: (ctx,_obj) => {
+  impl: ({},_obj) => {
 	  const obj = jb.val(_obj)
 		return Array.isArray(obj) ? 'array' : typeof obj
 	}
@@ -1851,7 +1907,7 @@ jb.component('className', {
   params: [
     {id: 'obj', defaultValue: '%%'}
   ],
-  impl: (ctx,_obj) => {
+  impl: ({},_obj) => {
 	  const obj = jb.val(_obj);
 		return obj && obj.constructor && obj.constructor.name
 	}
@@ -1863,10 +1919,10 @@ jb.component('isOfType', {
     {id: 'type', as: 'string', mandatory: true, description: 'e.g., string,boolean,array'},
     {id: 'obj', defaultValue: '%%'}
   ],
-  impl: (ctx,_type,_obj) => {
-  	const obj = jb.val(_obj);
-  	const objType = Array.isArray(obj) ? 'array' : typeof obj;
-  	return _type.split(',').indexOf(objType) != -1;
+  impl: ({},_type,_obj) => {
+  	const obj = jb.val(_obj)
+  	const objType = Array.isArray(obj) ? 'array' : typeof obj
+  	return _type.split(',').indexOf(objType) != -1
   }
 })
 
@@ -1877,7 +1933,7 @@ jb.component('inGroup', {
     {id: 'group', as: 'array', mandatory: true},
     {id: 'item', as: 'single', defaultValue: '%%'}
   ],
-  impl: (ctx,group,item) =>	group.indexOf(item) != -1
+  impl: ({},group,item) =>	group.indexOf(item) != -1
 })
 
 jb.urlProxy = (typeof window !== 'undefined' && location.href.match(/^[^:]*/)[0] || 'http') + '://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
@@ -1949,14 +2005,14 @@ jb.component('isRef', {
   params: [
     {id: 'obj', mandatory: true}
   ],
-  impl: (ctx,obj) => jb.isRef(obj)
+  impl: ({},obj) => jb.isRef(obj)
 })
 
 jb.component('asRef', {
   params: [
     {id: 'obj', mandatory: true}
   ],
-  impl: (ctx,obj) => jb.asRef(obj)
+  impl: ({},obj) => jb.asRef(obj)
 })
 
 jb.component('data.switch', {
@@ -2024,6 +2080,21 @@ jb.component('formatDate', {
   ],
   impl: (ctx,date) => new Date(date).toLocaleDateString(undefined, jb.objFromEntries(jb.entries(ctx.params).filter(e=>e[1])))
 })
+
+jb.component('getSessionStorage', {
+  params: [
+    { id: 'id', as: 'string' }
+  ],
+  impl: ({},id) => jb.sessionStorage(id)
+})
+
+jb.component('action.setSessionStorage', {
+  params: [
+    { id: 'id', as: 'string' },
+    { id: 'value', dynamic: true },
+  ],
+  impl: ({},id,value) => jb.sessionStorage(id,value())
+})
 ;
 
 jb.callbag = {
@@ -2059,12 +2130,11 @@ jb.callbag = {
         let res = cbs[0]
         for (let i = 1, n = cbs.length; i < n; i++) {
           const newRes = cbs[i](res)
-          if (!newRes) {
-            debugger
-            cbs[i](res)
-          }
-          else
-            res = newRes
+          if (!newRes) debugger
+          newRes.ctx = cbs[i].ctx
+          Object.defineProperty(newRes, 'name',{value: 'register ' + cbs[i].name})
+
+          res = newRes
         }
         return res
       },
@@ -2153,7 +2223,7 @@ jb.callbag = {
                               return
                           }
                           if (t === 2) {
-                              notifierTalkback = null
+                              //notifierTalkback = null
                               done = d
                               if (d != null) {
                                   sourceTalkback(2)
@@ -2358,6 +2428,7 @@ jb.callbag = {
           }
       }},
       fromEvent: (event, elem, options) => (start, sink) => {
+          if (!elem) return
           if (start !== 0) return
           let disposed = false
           const handler = ev => sink(1, ev)
@@ -2372,9 +2443,7 @@ jb.callbag = {
             else throw new Error('cannot remove listener from elem. No method found.')
           })
         
-          if (disposed) {
-            return
-          }
+          if (disposed) return
         
           if (elem.addEventListener) elem.addEventListener(event, handler, options)
           else if (elem.addListener) elem.addListener(event, handler, options)
@@ -2424,7 +2493,7 @@ jb.callbag = {
           return subj
       },
       replayFirst: (dataToPortNum, timeOut) => source => { // replay the first message of each port, used not to loose first message that was sent by ser
-        timeOut = timeOut || 30000
+        timeOut = timeOut || 30
         let store = {}, sinks = [], talkback, done = false
       
         source(0, function replayFirst(t, d) {
@@ -2457,8 +2526,8 @@ jb.callbag = {
               sinks = sinks.filter(s => s !== sink)
           })
           const now = new Date().getTime()
-          Object.keys(store).forEach(k => (now > store[k].time + timeOut) && store[k] == 'done')
-          Object.keys(store).forEach(k => store[k] != 'done' && sink(1, store[k].d))
+          Object.keys(store).filter(k => now > store[k].time + timeOut).forEach(k => delete store[k])
+          Object.keys(store).forEach(k => sink(1, store[k].d))
       
           if (done) sink(2)
         }
@@ -2543,14 +2612,19 @@ jb.callbag = {
               }
           })
       },
-      debounceTime: (duration,immediate)  => source => (start, sink) => {
+      // swallow events. When new event arrives wait for a duration to spit it, if another event arrived when waiting, the original event is 'deleted'
+      // 'immediate' means that the first event is spitted immediately
+      debounceTime: (duration,immediate = true) => source => (start, sink) => {
           if (start !== 0) return
           let timeout
           source(0, function debounceTime(t, d) {
-            // every event clears the existing timeout, if any
-            if (!timeout && (immediate === undefined || immediate)) sink(t,d)
+            let immediateEventSent = false
+            if (!timeout && immediate) { sink(t,d); immediateEventSent = true }
             if (timeout) clearTimeout(timeout)
-            if (t === 1) timeout = setTimeout(() => {sink(1, d); timeout = null}, typeof duration == 'function' ? duration() : duration)
+            if (t === 1) timeout = setTimeout(() => { 
+              timeout = null; 
+              if (!immediateEventSent) sink(1, d)
+            }, typeof duration == 'function' ? duration() : duration)
             else sink(t, d)
           })
       },
@@ -2649,19 +2723,19 @@ jb.callbag = {
             }
           })
       },
-      forEach: operation => source => {
+      forEach: operation => sinkSrc => {
         let talkback
-        source(0, function forEach(t, d) {
+        sinkSrc(0, function forEach(t, d) {
             if (t === 0) talkback = d
             if (t === 1) operation(d)
             if (t === 1 || t === 0) talkback(1)
         })
       },
-      subscribe: (listener = {}) => source => {
+      subscribe: (listener = {}) => sinkSrc => {
           if (typeof listener === "function") listener = { next: listener }
           let { next, error, complete } = listener
           let talkback
-          source(0, function subscribe(t, d) {
+          sinkSrc(0, function subscribe(t, d) {
             if (t === 0) talkback = d
             if (t === 1 && next) next(d)
             if (t === 1 || t === 0) talkback(1)  // Pull
@@ -2671,9 +2745,7 @@ jb.callbag = {
           })
           return () => talkback && talkback(2) // dispose
       },
-      mapPromise: promiseF => source => jb.callbag.concatMap(d => jb.callbag.fromPromise(Promise.resolve().then(()=>promiseF(d))))(source),
-      doPromise: promiseF => source =>  jb.callbag.concatMap(d => jb.callbag.fromPromise(Promise.resolve().then(()=>promiseF(d)).then(()=>d)))(source),
-      toPromise: source => {
+      toPromise: sinkSrc => {
           return new Promise((resolve, reject) => {
             jb.callbag.subscribe({
               next: resolve,
@@ -2683,14 +2755,14 @@ jb.callbag = {
                 err.code = 'NO_ELEMENTS'
                 reject(err)
               },
-            })(jb.callbag.last(source))
+            })(jb.callbag.last(sinkSrc))
           })
       },
-      toPromiseArray: source => {
+      toPromiseArray: sinkSrc => {
           const res = []
           let talkback
           return new Promise((resolve, reject) => {
-                  source(0, function toPromiseArray(t, d) {
+                  sinkSrc(0, function toPromiseArray(t, d) {
                       if (t === 0) talkback = d
                       if (t === 1) res.push(d)
                       if (t === 1 || t === 0) talkback(1)  // Pull
@@ -2699,6 +2771,8 @@ jb.callbag = {
               })
           })
       },
+      mapPromise: promiseF => source => jb.callbag.concatMap(d => jb.callbag.fromPromise(Promise.resolve().then(()=>promiseF(d))))(source),
+      doPromise: promiseF => source =>  jb.callbag.concatMap(d => jb.callbag.fromPromise(Promise.resolve().then(()=>promiseF(d)).then(()=>d)))(source),
       interval: period => (start, sink) => {
         if (start !== 0) return
         let i = 0
@@ -2803,14 +2877,13 @@ jb.callbag = {
           sink(t, d)
         })
       },       
-      // sniffer to be used on source E.g. interval
-      sourceSniffer: (source, snifferSubject) => (start, sink) => {
+      sniffer: (source, snifferSubject) => (start, sink) => {
         if (start !== 0) return
-        jb.log('snifferStarted',[])
+        jb.log('snifferStarted',[source])
         let talkback
-        const talkbackWrapper = (t,d) => { snif('talkback',t,d); talkback(t,d) }
+        const talkbackWrapper = (t,d) => { report('talkback',t,d); talkback(t,d) }
         const sniffer = (t,d) => {
-          snif('out',t,d)
+          report('out',t,d)
           if (t == 0) {
             talkback = d
             Object.defineProperty(talkbackWrapper, 'name', { value: talkback.name + '-sniffer' })
@@ -2823,7 +2896,7 @@ jb.callbag = {
 
         source(0,sniffer)
         
-        function snif(dir,t,d) {
+        function report(dir,t,d) {
           const now = new Date()
           const time = `${now.getSeconds()}:${now.getMilliseconds()}`
           snifferSubject.next({dir, t, d, time})
@@ -2831,25 +2904,19 @@ jb.callbag = {
             snifferSubject.complete && snifferSubject.complete(d)
         }
       },
-      // sniffer to be used in a middle pipe element. E.g., map
-      sniffer: (cb, snifferSubject) => source => (start, sink) => {
+      timeoutLimit: (timeout,err) => source => (start, sink) => {
         if (start !== 0) return
-        jb.log('snifferStarted',[])
-        const cbSource = (start, sink) => start === 0 && source(0, wrapper(sink,'in'))
-        cb(cbSource)(0, wrapper(sink,'out'))
+        let talkback
+        let timeoutId = setTimeout(()=> {
+          talkback && talkback(2)
+          sink(2, typeof err == 'function' ? err() : err || 'timeout')
+        }, typeof timeout == 'function' ? timeout() : timeout)
 
-        function wrapper(sink, dir) {
-          const ret = (t,d) => {
-            const now = new Date()
-            const time = `${now.getSeconds()}:${now.getMilliseconds()}`
-            snifferSubject.next({dir, t, d, time})
-            if (t == 2)
-              snifferSubject.complete && snifferSubject.complete(d)
-              sink(t,d)
-          }
-          Object.defineProperty(ret, 'name', { value: cb.name + '-' + dir })
-          return ret
-        }
+        source(0, function timeoutLimit(t, d) {
+          if (t === 2) clearTimeout(timeoutId)
+          if (t === 0) talkback = d
+          sink(t, d)
+        })        
       },
       fromCallBag: source => source,
       fromAny: (source, name, options) => {
@@ -2864,33 +2931,31 @@ jb.callbag = {
           else
               return jb.callbag.fromIter([source])
       },
-      isCallbag: source => typeof source == 'function' && source.toString().split('=>')[0].split('{')[0].replace(/\s/g,'').match(/start,sink|t,d/),
-      isCallbagFunc: source => typeof source == 'function' && source.toString().split('\n')[0].replace(/\s/g,'').match(/source|start,sink|t,d/),
+      isSink: cb => typeof cb == 'function' && cb.toString().match(/sinkSrc/),
+      isCallbag: cb => typeof cb == 'function' && cb.toString().split('=>')[0].split('{')[0].replace(/\s/g,'').match(/start,sink|t,d/),
 
-      wrapWithSnifferForLogByPath(ctx,res) {
+      injectSniffers(cbs,ctx) {
         const _jb = ctx.frame().jb
-        if (_jb.cbLogByPath && typeof res == 'function' && jb.callbag.isCallbagFunc(res) && jb.path(ctx,'profile.$') != 'rx.subscribe') {
-          const {sniffer,isCallbag,sourceSniffer} = _jb.callbag
-          // wrap cb with sniffer
-          const log = _jb.cbLogByPath[ctx.path] = { callbagLog: true, result: [] }
+        if (!_jb) return cbs
+        return cbs.reduce((acc,cb) => [...acc,cb, ...injectSniffer(cb) ] ,[])
+
+        function injectSniffer(cb) {
+          if (!cb.ctx || cb.sniffer || jb.callbag.isSink(cb)) return []
+          _jb.cbLogByPath =  _jb.cbLogByPath || {}
+          const log = _jb.cbLogByPath[cb.ctx.path] = { callbagLog: true, result: [] }
           const listener = {
             next(r) { log.result.push(r) },
-            complete(e) { log.complete = true; }
+            complete() { log.complete = true }
           }
-          res = isCallbag(res) ? sourceSniffer(res, listener) : sniffer(res, listener)
+          const res = source => _jb.callbag.sniffer(source, listener)
+          res.sniffer = true
+          res.ctx = cb.ctx
+          Object.defineProperty(res, 'name', { value: 'sniffer' })
+          return [res]
         }
-        return res
       },  
-      wrapWithSnifferWithLog(cb,logName,...params) {
-        const {sniffer,isCallbag,sourceSniffer,isCallbagFunc} = jb.callbag
-        if (typeof cb == 'function' && isCallbagFunc(cb)) {
-          const listener = {
-            next(r) { jb.log(logName,[r,...params]) },
-          }
-          return isCallbag(cb) ? sourceSniffer(cb, listener) : sniffer(cb, listener)
-        }
-        return cb
-      },  
+      log: name => jb.callbag.Do(x=>console.log(name,x)),
+      jbLog: (name,...params) => jb.callbag.Do(x=>jb.log(name,[x,...params])),
 }
 ;
 
@@ -2898,10 +2963,11 @@ jb.callbag = {
 const spySettings = { 
 	moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable,scriptChange,resLog,setGridAreaVals,dragableGridItemThumb,pptrStarted,pptrEmit,pptrActivity,pptrResultData', 
 	groups: {
+		none: '',
 		refresh: 'doOp,refreshElem,notifyCmpObservable',
 		puppeteer: 'pptrStarted,pptrEmit,pptrActivity,pptrResultData,pptrInfo,pptrError',
 		watchable: 'doOp,writeValue,removeCmpObservable,registerCmpObservable,notifyCmpObservable,notifyObservableElems,notifyObservableElem,scriptChange',
-		react: 'applyDeltaTop,applyDelta,unmount,render,initCmp,refreshReq,refreshElem,childDiffRes,htmlChange,appendChild,removeChild,replaceTop,calcRenderProp',
+		react: 'applyNewVdom,applyDeltaTop,applyDelta,unmount,render,initCmp,refreshReq,refreshElem,childDiffRes,htmlChange,appendChild,removeChild,replaceTop,calcRenderProp,followUp',
 		dialog: 'addDialog,closeDialog,refreshDialogs',
 		remoteCallbag: 'innerCBReady,innerCBCodeSent,innerCBDataSent,innerCBMsgReceived,remoteCmdReceived,remoteSource,remoteSink,outputToRemote,inputFromRemote,inputInRemote,outputInRemote',
 	},

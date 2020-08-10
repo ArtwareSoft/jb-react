@@ -42,7 +42,7 @@ jb.component('studio.itemlistRefreshSuggestionsOptions', {
 
 jb.component('studio.showSuggestions', {
   impl: ctx =>
-    new st.suggestions(ctx.data,ctx.exp('%$suggestionData/expressionOnly%')).suggestionsRelevant()
+    new st.suggestions(ctx.data, ctx.exp('%$suggestionData/expressionOnly%')).suggestionsRelevant()
 })
 
 jb.component('studio.pasteSuggestion', {
@@ -187,8 +187,8 @@ jb.component('studio.jbFloatingInput', {
                 popupId: 'suggestions',
                 popupStyle: dialog.popup(),
                 showHelper: studio.showSuggestions(),
-                onEnter: runActions(dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus()),
-                onEsc: runActions(dialog.closeDialog('studio-jb-editor-popup'), tree.regainFocus())
+                onEnter: runActions(dialog.closeDialogById('studio-jb-editor-popup'), tree.regainFocus()),
+                onEsc: runActions(dialog.closeDialogById('studio-jb-editor-popup'), tree.regainFocus())
               }),
               css.width('100%'),
               css('~ input { padding-top: 30px !important}')
@@ -219,7 +219,7 @@ function rev(str) {
 }
 
 st.suggestions = class {
-  constructor(input,expressionOnly) {
+  constructor(input, expressionOnly) {
     this.input = input;
     this.expressionOnly = expressionOnly;
     this.pos = input.selectionStart;
@@ -335,7 +335,7 @@ class CompOption {
     }
     writeValue(ctx) {
       st.setComp(ctx.exp('%$suggestionData/path%','string'),this.toPaste,ctx);
-      return ctx.run(runActions(dialog.closeDialog('studio-jb-editor-popup'),
+      return ctx.run(runActions(dialog.closeDialogById('studio-jb-editor-popup'),
         studio.expandAndSelectFirstChildInJbEditor()))
     }
 }

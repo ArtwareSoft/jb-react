@@ -18,7 +18,7 @@ function setStrValue(value, ref, ctx) {
     const newVal = notPrimitive ? jb.eval(value,ref.handler.frame()) : value;
     if (newVal === Symbol.for('parseError'))
         return
-    // I had i guess that ',' at the end of line means editing, YET, THIS GUESS DID NOT WORK ...
+    // I had a guess that ',' at the end of line means editing, YET, THIS GUESS DID NOT WORK WELL ...
     // if (typeof newVal === 'object' && value.match(/,\s*}/m))
     //     return
     const currentVal = jb.val(ref)
@@ -31,7 +31,7 @@ function setStrValue(value, ref, ctx) {
             return jb.writeValue(ref.handler.refOfPath(fullInnerPath),innerValue,ctx)
         }
     }
-    if (newVal !== undefined) { // many diffs {
+    if (newVal !== undefined) { // many diffs
         currentVal && currentVal[jb.location] && typeof newVal == 'object' && (newVal[jb.location] = currentVal[jb.location])
         jb.writeValue(ref,newVal,ctx)
     }
@@ -48,9 +48,7 @@ jb.component('watchableAsText', {
         getRef() {
             return this.ref || (this.ref = refF())
         },
-        getHandler() {
-            return jb.getHandler(this.getRef())
-        },
+        handler: jb.simpleValueByRefHandler,
         getVal() {
             return jb.val(this.getRef())
         },
@@ -83,25 +81,25 @@ jb.component('watchableAsText', {
     })
 })
 
-jb.component('textEditor.withCursorPath', {
-  type: 'action',
-  params: [
-    {id: 'action', type: 'action', dynamic: true, mandatory: true},
-    {id: 'selector', as: 'string', defaultValue: '#editor'}
-  ],
-  impl: (ctx,action,selector) => {
-        let editor = ctx.vars.editor
-        if (!editor) {
-            const elem = selector ? ctx.vars.elemToTest.querySelector(selector) : ctx.vars.elemToTest;
-            editor = jb.path(elem,'_component.editor')
-        }
-        if (editor && editor.getCursorPos)
-            action(editor.ctx().setVars({
-                cursorPath: pathOfPosition(editor.data_ref, editor.getCursorPos()).path,
-                cursorCoord: editor.cursorCoords()
-            }))
-    }
-})
+// jb.component('textEditor.withCursorPath', {
+//   type: 'action',
+//   params: [
+//     {id: 'action', type: 'action', dynamic: true, mandatory: true},
+//     {id: 'selector', as: 'string', defaultValue: '#editor'}
+//   ],
+//   impl: (ctx,action,selector) => {
+//         let editor = ctx.vars.editor
+//         if (!editor) {
+//             const elem = selector ? jb.ui.widgetBody(ctx).querySelector(selector) : jb.ui.widgetBody(ctx);
+//             editor = jb.path(elem,'_component.editor')
+//         }
+//         if (editor && editor.getCursorPos)
+//             action(editor.ctx().setVars({
+//                 cursorPath: pathOfPosition(editor.data_ref, editor.getCursorPos()).path,
+//                 cursorCoord: editor.cursorCoords()
+//             }))
+//     }
+// })
 
 jb.component('textEditor.isDirty', {
   impl: ctx => {
@@ -137,34 +135,89 @@ jb.component('textEditor.isDirty', {
 //     }})
 // })
 
+jb.component('textEditor.cursorPath', {
+    params: [
+        {id: 'watchableAsText', as: 'ref', mandatory: true, description: 'the same that was used for databind'},
+        {id: 'cursorPos', dynamic: true, defaultValue: '%$ev/selectionStart%'},
+    ],  
+    impl: (ctx,ref,pos) => jb.path(pathOfPosition(ref, pos()),'path') || ''
+})
+
 jb.component('textarea.initTextareaEditor', {
   type: 'feature',
-  impl: interactive(
-    (ctx,{cmp}) => {
-        const data_ref = ctx.vars.$model.databind()
-        jb.val(data_ref) // calc text
-        cmp.editor = {
-            ctx: () => cmp.ctx,
-            data_ref,
-            getCursorPos: () => offsetToLineCol(cmp.base.value,cmp.base.selectionStart),
-            cursorCoords: () => {},
-            markText: () => {},
-            replaceRange: (text, from, to) => {
-                const _from = lineColToOffset(cmp.base.value,from)
-                const _to = lineColToOffset(cmp.base.value,to)
-                cmp.base.value = cmp.base.value.slice(0,_from) + text + cmp.base.value.slice(_to)
-            },
-            setSelectionRange: (from, to) => {
-                const _from = lineColToOffset(cmp.base.value,from)
-                const _to = to && lineColToOffset(cmp.base.value,to) || _from
-                cmp.base.setSelectionRange(_from,_to)
-            },
-        }
-        if (cmp.ctx.vars.editorContainer)
-            cmp.ctx.vars.editorContainer.editorCmp = cmp
-    }
-  )
+  impl: features(
+      textEditor.enrichUserEvent(),
+      frontEnd.method('replaceRange',({data},{cmp}) => {
+          const {text, from, to} = data
+          const _from = lineColToOffset(cmp.base.value,from)
+          const _to = lineColToOffset(cmp.base.value,to)
+          cmp.base.value = cmp.base.value.slice(0,_from) + text + cmp.base.value.slice(_to)
+      }),
+      frontEnd.method('setSelectionRange',({data},{cmp}) => {
+        const from = data.from || data
+        const to = data.to || from
+        const _from = lineColToOffset(cmp.base.value,from)
+        const _to = to && lineColToOffset(cmp.base.value,to) || _from
+        cmp.base.setSelectionRange(_from,_to)
+      })
+    )
 })
+
+jb.component('textEditor.enrichUserEvent', {
+    type: 'feature',
+    params: [
+      {id: 'textEditorSelector', as: 'string', description: 'used for external buttons'}
+    ],
+    impl: features(
+		passPropToFrontEnd('textEditorSelector','%$textEditorSelector%'),
+        frontEnd.enrichUserEvent((ctx,{cmp,textEditorSelector}) => {
+            const elem = textEditorSelector ? jb.ui.widgetBody(ctx).querySelector(textEditorSelector) : cmp.base
+            return elem && {
+                outerHeight: jb.ui.outerHeight(elem), 
+                outerWidth: jb.ui.outerWidth(elem), 
+                clientRect: elem.getBoundingClientRect(),
+                text: elem.value,
+                selectionStart: offsetToLineCol(elem.value,elem.selectionStart)
+            }
+        })
+    )
+})
+  
+
+//   frontEnd.init((ctx,{cmp}) => {
+//         const data_ref = ctx.vars.$model.databind()
+//         jb.val(data_ref) // calc text
+//         cmp.editor = {
+//             ctx: () => cmp.ctx,
+//             data_ref,
+//             getCursorPos: () => offsetToLineCol(cmp.base.value,cmp.base.selectionStart),
+//             cursorCoords: () => {},
+//             markText: () => {},
+//             replaceRange: (text, from, to) => {
+//                 const _from = lineColToOffset(cmp.base.value,from)
+//                 const _to = lineColToOffset(cmp.base.value,to)
+//                 cmp.base.value = cmp.base.value.slice(0,_from) + text + cmp.base.value.slice(_to)
+//             },
+//             setSelectionRange: (from, to) => {
+//                 const _from = lineColToOffset(cmp.base.value,from)
+//                 const _to = to && lineColToOffset(cmp.base.value,to) || _from
+//                 cmp.base.setSelectionRange(_from,_to)
+//             },
+//         }
+//         if (cmp.ctx.vars.editorContainer)
+//             cmp.ctx.vars.editorContainer.editorCmp = cmp
+//     }
+//   )
+// })
+
+function lineColToOffset(text,{line,col}) {
+    return text.split('\n').slice(0,line).reduce((sum,line)=> sum+line.length+1,0) + col
+}
+
+function offsetToLineCol(text,offset) {
+    return { line: (text.slice(0,offset).match(/\n/g) || []).length || 0,
+        col: offset - text.slice(0,offset).lastIndexOf('\n') }
+}
 
 jb.textEditor = {
     setStrValue,
@@ -180,15 +233,9 @@ jb.textEditor = {
 
 function pathOfPosition(ref,_pos) {
     const offset = !Number(_pos) ? lineColToOffset(ref.text, _pos) : _pos
-    const found = jb.entries(ref.locationMap)
-        .find(e=> e[1].offset_from <= offset && offset < e[1].offset_to)
-    console.log('found',found && found[0],_pos)
+    const found = jb.entries(ref.locationMap).find(e=> e[1].offset_from <= offset && offset < e[1].offset_to)
     if (found)
         return {path: found[0], offset: offset - found[1].offset_from}
-}
-
-function lineColToOffset(text,{line,col}) {
-    return text.split('\n').slice(0,line).reduce((sum,line)=> sum+line.length+1,0) + col
 }
 
 function enrichMapWithOffsets(text,locationMap) {
@@ -203,11 +250,6 @@ function enrichMapWithOffsets(text,locationMap) {
         offset_from: accLines[locationMap[k][0]] + locationMap[k][1],
         offset_to: accLines[locationMap[k][2]] + locationMap[k][3]
     }}), {})
-}
-
-function offsetToLineCol(text,offset) {
-    return { line: (text.slice(0,offset).match(/\n/g) || []).length || 0,
-        col: offset - text.slice(0,offset).lastIndexOf('\n') }
 }
 
 function refreshEditor(cmp,_path) {

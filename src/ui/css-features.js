@@ -6,9 +6,9 @@ jb.component('css', {
   description: 'e.g. {color: red; width: 20px} or div>.myClas {color: red} ',
   type: 'feature,dialog-feature',
   params: [
-    {id: 'css', mandatory: true, as: 'string'}
+    {id: 'css', mandatory: true, dynamic: true, as: 'string'}
   ],
-  impl: (ctx,css) => ({css: fixCssLine(css)})
+  impl: (ctx,css) => ({css: _ctx => fixCssLine(css(_ctx))})
 })
 
 jb.component('css.class', {
@@ -121,14 +121,14 @@ jb.component('css.transformRotate', {
 jb.component('css.color', {
   type: 'feature',
   params: [
-    {id: 'color', as: 'string'},
-    {id: 'background', as: 'string', editAs: 'color'},
+    {id: 'color', as: 'string', dynamic: true},
+    {id: 'background', as: 'string', editAs: 'color', dynamic: true},
     {id: 'selector', as: 'string'}
   ],
-  impl: (ctx,color) => {
+  impl: ctx => {
 		const css = ['color','background']
-      .filter(x=>ctx.params[x])
-      .map(x=> `${x}: ${ctx.params[x]}`)
+      .filter(x=>ctx.params[x](ctx))
+      .map(x=> `${x}: ${ctx.params[x](ctx)}`)
       .join('; ');
     return css && ({css: `${ctx.params.selector} {${css}}`});
   }
@@ -176,7 +176,7 @@ jb.component('css.boxShadow', {
     {id: 'vertical', as: 'string', templateValue: '10'},
     {id: 'selector', as: 'string'}
   ],
-  impl: (context,blurRadius,spreadRadius,shadowColor,opacity,horizontal,vertical,selector) => {
+  impl: (ctx,blurRadius,spreadRadius,shadowColor,opacity,horizontal,vertical,selector) => {
     const color = [parseInt(shadowColor.slice(1,3),16) || 0, parseInt(shadowColor.slice(3,5),16) || 0, parseInt(shadowColor.slice(5,7),16) || 0]
       .join(',');
     return ({css: `${selector} { box-shadow: ${withUnits(horizontal)} ${withUnits(vertical)} ${withUnits(blurRadius)} ${withUnits(spreadRadius)} rgba(${color},${opacity}) }`})
@@ -192,7 +192,7 @@ jb.component('css.border', {
     {id: 'color', as: 'string', defaultValue: 'black'},
     {id: 'selector', as: 'string'}
   ],
-  impl: (context,width,side,style,color,selector) =>
+  impl: (ctx,width,side,style,color,selector) =>
     ({css: `${selector} { border${side?'-'+side:''}: ${withUnits(width)} ${style} ${color} }`})
 })
 

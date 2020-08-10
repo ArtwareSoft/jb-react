@@ -129,11 +129,11 @@ jb.component('editableBoolean.mdcCheckBox', {
     css: ctx => jb.ui.propWithUnits('width',ctx.params.width),
     features: [
       field.databind(), 
-      interactiveProp('dummy',(ctx,{cmp}) => {
-        // svg refresh bug (maybe a jb-react bug)
-        const bck = cmp.base.querySelector('.mdc-checkbox__background')
-        bck.outerHTML = ''+ bck.outerHTML
-      })
+      // frontEnd((ctx,{cmp}) => {
+      //   // svg refresh bug (maybe a jb-react bug)
+      //   const bck = cmp.base.querySelector('.mdc-checkbox__background')
+      //   bck.outerHTML = ''+ bck.outerHTML
+      // })
     ]
   })
 })

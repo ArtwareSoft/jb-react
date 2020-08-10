@@ -6,7 +6,7 @@ jb.component('studio.gotoPath', {
   impl: action.if(
     '%$path%',
     runActions(
-      dialog.closeContainingPopup(),
+      dialog.closeDialog(),
       writeValue('%$studio/profile_path%', '%$path%')
     )
   )
@@ -84,7 +84,7 @@ jb.component('studio.jbEditorMenu', {
                 features: [
                   feature.onEnter(
                     writeValue(studio.ref('%$path%~%$name%'), ''),
-                    dialog.closeContainingPopup(true),
+                    dialog.closeDialog(true),
                     tree.redraw(),
                     tree.regainFocus()
                   )
@@ -116,7 +116,7 @@ jb.component('studio.jbEditorMenu', {
             action: runActions(
               studio.addProperty('%%'),
               tree.redraw(),
-              dialog.closeContainingPopup(),
+              dialog.closeDialog(),
               writeValue('%$jbEditorCntrData/selected%', '%%'),
               studio.openJbEditProperty('%%')
             )
@@ -225,7 +225,7 @@ jb.component('studio.jbEditorMenu', {
                     features: [
                       feature.onEnter(
                         writeValue(studio.ref('%$path%~remark'), '%$remark%'),
-                        dialog.closeContainingPopup(true),
+                        dialog.closeDialog(true),
                         tree.redraw(),
                         tree.regainFocus()
                       )

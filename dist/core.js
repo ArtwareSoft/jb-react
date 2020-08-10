@@ -2,17 +2,15 @@ if (typeof frame == 'undefined')
   frame = typeof self === 'object' ? self : typeof global === 'object' ? global : {};
 var jb = (function() {
 function jb_run(ctx,parentParam,settings) {
-  log('req', [ctx,parentParam,settings])
+  ctx.profile && log('req', [...arguments])
   if (ctx.probe && ctx.probe.outOfTime)
     return
   if (jb.ctxByPath) jb.ctxByPath[ctx.path] = ctx
   let res = do_jb_run(...arguments)
   if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
       res = ctx.probe.record(ctx,res) || res
-  if (jb.cbLogByPath && jb.callbag.wrapWithSnifferForLogByPath)
-      res = jb.callbag.wrapWithSnifferForLogByPath(ctx,res)
-  log('res', [ctx,res,parentParam,settings])
-  if (typeof res == 'function') res.ctx = ctx
+  ctx.profile && log('res', [ctx,res,parentParam,settings])
+  if (typeof res == 'function') assignDebugInfoToFunc(res,ctx)
   return res;
 }
 
@@ -41,13 +39,13 @@ function do_jb_run(ctx,parentParam,settings) {
       case 'ignore': return ctx.data;
       case 'list': return profile.map((inner,i) => ctxWithVars.runInner(inner,null,i));
       case 'runActions': return jb.comps.runActions.impl(new jbCtx(ctxWithVars,{profile: { actions : profile },path:''}));
-      case 'if': {
-          const cond = jb_run(run.ifContext, run.IfParentParam);
-          if (cond && cond.then)
-            return cond.then(res=>
-              res ? jb_run(run.thenContext, run.thenParentParam) : jb_run(run.elseContext, run.elseParentParam))
-          return cond ? jb_run(run.thenContext, run.thenParentParam) : jb_run(run.elseContext, run.elseParentParam);
-      }
+      // case 'if': {
+      //     const cond = jb_run(run.ifContext, run.IfParentParam);
+      //     if (cond && cond.then)
+      //       return cond.then(res=>
+      //         res ? jb_run(run.thenContext, run.thenParentParam) : jb_run(run.elseContext, run.elseParentParam))
+      //     return cond ? jb_run(run.thenContext, run.thenParentParam) : jb_run(run.elseContext, run.elseParentParam);
+      // }
       case 'profile':
         if (!run.impl)
           run.ctx.callerPath = ctx.path;
@@ -62,8 +60,8 @@ function do_jb_run(ctx,parentParam,settings) {
             default: run.ctx.params[paramObj.name] =
               jb_run(new jbCtx(run.ctx,{profile: paramObj.prof, forcePath: paramObj.forcePath || ctx.path + '~' + paramObj.path, path: ''}), paramObj.param);
           }
-        });
-        let out;
+        })
+        let out
         if (profile.$debugger) debugger;
         if (run.impl) {
           const args = [run.ctx, ...run.preparedParams.map(param=>run.ctx.params[param.name])] // TODO : [run.ctx,run.ctx.vars,run.ctx.params]
@@ -84,6 +82,12 @@ function do_jb_run(ctx,parentParam,settings) {
     if (ctx.vars.$throw) throw e;
     logException(e,'exception while running run',ctx,parentParam,settings);
   }
+}
+
+function assignDebugInfoToFunc(func, ctx) {
+  func.ctx = ctx
+  const debugFuncName = ctx.profile && ctx.profile.$ || typeof ctx.profile == 'string' && ctx.profile.slice(0,10) || ''
+  Object.defineProperty(func, 'name', { value: (ctx.path ||'').split('~').pop() + ': ' + debugFuncName })
 }
 
 function extendWithVars(ctx,vars) {
@@ -122,15 +126,15 @@ function prepareParams(comp_name,comp,profile,ctx) {
         const outerFunc = runCtx => {
           let func;
           if (arrayParam)
-            func = (ctx2,data2) =>
-              jb.flattenArray(valOrDefaultArray.map((prof,i)=> runCtx.extendVars(ctx2,data2).runInner(prof,param,path+'~'+i)))
+            func = (ctx2,data2) => jb.flattenArray(valOrDefaultArray.map((prof,i)=> runCtx.extendVars(ctx2,data2).runInner(prof, {...param, as: 'asIs'}, path+'~'+i)))
           else
             func = (ctx2,data2) => jb_run(new jb.jbCtx(runCtx.extendVars(ctx2,data2),{ profile: valOrDefault, forcePath, path } ),param)
 
-          Object.defineProperty(func, "name", { value: p }); // for debug
+          const debugFuncName = valOrDefault && valOrDefault.$ || typeof valOrDefault == 'string' && valOrDefault.slice(0,10) || ''
+          Object.defineProperty(func, 'name', { value: p + ': ' + debugFuncName })
           //func.profile = val !== undefined ? val : (param.defaultValue !== undefined ? param.defaultValue : null)
           Object.assign(func,{profile: valOrDefault,runCtx,path,srcPath: ctx.path,forcePath,param})
-          return func;
+          return func
         }
         return { name: p, type: 'function', outerFunc, path, param, forcePath };
       }
@@ -197,7 +201,7 @@ function prepare(ctx,parentParam) {
   const resCtx = Object.assign(new jbCtx(ctx,{}), {parentParam, params: {}})
   const preparedParams = prepareParams(comp_name,comp,profile,resCtx);
   if (typeof comp.impl === 'function') {
-    Object.defineProperty(comp.impl, 'name', { value: comp_name }); // comp_name.replace(/[^a-zA-Z0-9]/g,'_')
+    Object.defineProperty(comp.impl, 'name', { value: comp_name }) // comp_name.replace(/[^a-zA-Z0-9]/g,'_')
     return { type: 'profile', impl: comp.impl, ctx: resCtx, preparedParams: preparedParams }
   } else
     return { type:'profile', ctx: new jbCtx(resCtx,{profile: comp.impl, comp: comp_name, path: ''}), preparedParams: preparedParams };
@@ -276,10 +280,10 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
   const jstype = parentParam && (parentParam.ref ? 'ref' : parentParam.as);
   // example: %$person.name%.
 
-  const parts = expressionPart.split(/[./[]/);
+  const parts = expressionPart.split(/[./[]/)
   return parts.reduce((input,subExp,index)=>pipe(input,subExp,index == parts.length-1,index == 0),ctx.data)
 
-  function pipe(input,subExp,last,first) {
+  function pipe(input,subExp,last,first,invokeFunc) {
     if (subExp == '')
        return input;
     if (subExp.match(/]$/))
@@ -289,24 +293,28 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
     const functionCallMatch = subExp.match(/=([a-zA-Z]*)\(?([^)]*)\)?/);
     if (functionCallMatch && jb.functions[functionCallMatch[1]])
         return tojstype(jb.functions[functionCallMatch[1]](ctx,functionCallMatch[2]),jstype,ctx);
-
-    if (subExp.match(/\(\)$/)) {
-      const func = pipe(input,subExp.slice(0,-2),last,first)
-      return typeof func == 'function' ? func(ctx) : func
+    if (subExp.match(/\(\)$/))
+      return pipe(input,subExp.slice(0,-2),last,first,true)
+    if (first && subExp.charAt(0) == '$' && subExp.length > 1) {
+      const ret = calcVar(ctx,subExp.substr(1),last ? jstype : null)
+      return typeof ret === 'function' && invokeFunc ? ret(ctx) : ret
     }
-
-    if (first && subExp.charAt(0) == '$' && subExp.length > 1)
-      return calcVar(ctx,subExp.substr(1),last ? jstype : null)
-    const obj = val(input);
+    const obj = val(input)
     if (subExp == 'length' && obj && typeof obj.length != 'undefined')
-      return obj.length;
+      return obj.length
     if (Array.isArray(obj) && isNaN(Number(subExp)))
-      return [].concat.apply([],obj.map(item=>pipe(item,subExp,last,false,refHandler)).filter(x=>x!=null));
+      return [].concat.apply([],obj.map(item=>pipe(item,subExp,last,false,refHandler)).filter(x=>x!=null))
 
     if (input != null && typeof input == 'object') {
-      if (obj === null || obj === undefined) return;
-      if (typeof obj[subExp] === 'function' && (parentParam && parentParam.dynamic || obj[subExp].profile))
-          return obj[subExp](ctx);
+      if (obj == null) return
+      if (typeof obj[subExp] === 'function' && (invokeFunc || obj[subExp].profile && parentParam && parentParam.dynamic)) {
+        //console.log('func',obj[subExp],ctx.profile)
+        return obj[subExp](ctx)
+      }
+      if (subExp.match(/\(\)$/)) {
+        const method = subExp.slice(0,-2)
+        return typeof obj[method] == 'function' && obj[method]()
+      }
       if (isRefType(jstype)) {
         if (last)
           return refHandler.objectProperty(obj,subExp,ctx);
@@ -473,10 +481,10 @@ function compName(profile,parentParam) {
 }
 
 // give a name to the impl function. Used for tgp debugging
-function assignNameToFunc(name, fn) {
-  Object.defineProperty(fn, "name", { value: name });
-  return fn;
-}
+// function assignNameToFunc(name, fn) {
+//   Object.defineProperty(fn, "name", { value: name });
+//   return fn;
+// }
 
 let ctxCounter = 0;
 
@@ -621,7 +629,8 @@ const simpleValueByRefHandler = {
         return obj[prop];
       else
         return { $jb_parent: obj, $jb_property: prop };
-  }
+  },
+  pathOfRef: () => []
 }
 
 let types = {}, ui = {}, rx = {}, ctxDictionary = {}, testers = {};
@@ -674,8 +683,8 @@ Object.assign(jb,{
   resource: (id,val) => { 
     if (typeof val !== 'undefined')
       jb.resources[id] = val
-    jb.mainWatchableHandler && jb.mainWatchableHandler.resourceReferred(id);
-    return jb.resources[id];
+    jb.mainWatchableHandler && jb.mainWatchableHandler.resourceReferred(id)
+    return jb.resources[id]
   },
   const: (id,val) => typeof val == 'undefined' ? jb.consts[id] : (jb.consts[id] = val || {}),
   functionDef: (id,val) => jb.functions[id] = val,
@@ -759,7 +768,7 @@ Object.assign(jb,{
   asArray: v => v == null ? [] : (Array.isArray(v) ? v : [v]),
   filterEmpty: obj => Object.entries(obj).reduce((a,[k,v]) => (v == null ? a : {...a, [k]:v}), {}),
   equals: (x,y) => x == y || jb.val(x) == jb.val(y),
-  delay: mSec => new Promise(r=>{setTimeout(r,mSec)}),
+  delay: (mSec,res) => new Promise(r=>setTimeout(()=>r(res),mSec)),
 
   // valueByRef API
   extraWatchableHandlers: [],
@@ -807,12 +816,13 @@ Object.assign(jb,{
   isWatchable: () => false, // overriden by the watchable-ref.js (if loaded)
   isValid: ref => jb.safeRefCall(ref, h=>h.isValid(ref)),
   refreshRef: ref => jb.safeRefCall(ref, h=>h.refresh(ref)),
-  sessionStorage: (id,val) => val == undefined ? jb.frame.sessionStorage.getItem(id) : jb.frame.sessionStorage.setItem(id,val),
+  sessionStorage: (id,val) => val == undefined ? JSON.parse(jb.frame.sessionStorage.getItem(id)) : jb.frame.sessionStorage.setItem(id,JSON.stringify(val)),
   exec: (...args) => new jb.jbCtx().run(...args),
   exp: (...args) => new jb.jbCtx().exp(...args),
   execInStudio: (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.jbCtx().run(...args),
   eval: (str,frame) => { try { return (frame || jb.frame).eval('('+str+')') } catch (e) { return Symbol.for('parseError') } },
-  iframeAccessible(iframe) { try { return Boolean(iframe.contentDocument) } catch(e) { return false } }
+  iframeAccessible(iframe) { try { return Boolean(iframe.contentDocument) } catch(e) { return false } },
+  addDebugInfo(f,ctx) { f.ctx = ctx; return f}
 })
 
 if (typeof self != 'undefined')
@@ -912,10 +922,11 @@ Object.assign(jb, {
 const spySettings = { 
 	moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable,scriptChange,resLog,setGridAreaVals,dragableGridItemThumb,pptrStarted,pptrEmit,pptrActivity,pptrResultData', 
 	groups: {
+		none: '',
 		refresh: 'doOp,refreshElem,notifyCmpObservable',
 		puppeteer: 'pptrStarted,pptrEmit,pptrActivity,pptrResultData,pptrInfo,pptrError',
 		watchable: 'doOp,writeValue,removeCmpObservable,registerCmpObservable,notifyCmpObservable,notifyObservableElems,notifyObservableElem,scriptChange',
-		react: 'applyDeltaTop,applyDelta,unmount,render,initCmp,refreshReq,refreshElem,childDiffRes,htmlChange,appendChild,removeChild,replaceTop,calcRenderProp',
+		react: 'applyNewVdom,applyDeltaTop,applyDelta,unmount,render,initCmp,refreshReq,refreshElem,childDiffRes,htmlChange,appendChild,removeChild,replaceTop,calcRenderProp,followUp',
 		dialog: 'addDialog,closeDialog,refreshDialogs',
 		remoteCallbag: 'innerCBReady,innerCBCodeSent,innerCBDataSent,innerCBMsgReceived,remoteCmdReceived,remoteSource,remoteSink,outputToRemote,inputFromRemote,inputInRemote,outputInRemote',
 	},

@@ -175,7 +175,7 @@ jb.component('studio.eventTracker', {
             title: 'event',
             features: feature.onHover({
               action: studio.highlightLogItem(),
-              onLeave: dialog.closeDialog('elem-marker')
+              onLeave: dialog.closeDialogById('elem-marker')
             })
           }),
           studio.eventView()
@@ -188,7 +188,7 @@ jb.component('studio.eventTracker', {
           css.height({height: '400', overflow: 'scroll'}),
           itemlist.selection({onSelection: ({data}) => jb.frame.console.log(data)}),
           itemlist.keyboardSelection({}),
-          watchObservable(
+          followUp.watchObservable(
             ctx => !ctx.exp('%$studio/manualRefresh%') &&
              jb.callbag.filter(x => !(jb.path(x,'record.2.ctx.path') ||'').match(/eventTracker/))(jb.ui.getSpy(ctx).observable())
           )
@@ -441,7 +441,7 @@ jb.component('studio.showStack', {
       },
       controls: button({
         title: studio.compName('%path%'),
-        action: runActions(call('onSelect'),dialog.closeDialog('show-stack')),
+        action: runActions(call('onSelect'),dialog.closeDialogById('show-stack')),
         style: button.href(),
         features: feature.hoverTitle('%path%')
       }),

@@ -65,14 +65,14 @@ jb.component('studio.openPickIcon', {
               onDoubleClick: runActions(
                 writeValue(studio.ref('%$path%'), '%%'),
                 delay(),
-                dialog.closeContainingPopup()
+                dialog.closeDialog()
               )
             }),
             itemlist.keyboardSelection({
               onEnter: runActions(
                 writeValue(studio.ref('%$path%'), '%%'),
                 delay(),
-                dialog.closeContainingPopup()
+                dialog.closeDialog()
               )
             })
           ]

@@ -126,22 +126,26 @@ jb.component('test.wixIslandGridCtrl', {
 })
 
 jb.component('inPlaceEditTest.text', {
-  impl: uiTest({
-    runBefore: ctx => jb.studio.studioWindow = window,
+  impl: uiFrontEndTest({
+    runBefore: ctx => jb.studio.previewWindow = window,
+    cleanUp: ctx => jb.studio.previewWindow = null,
     renderDOM: true,
     control: text({ text: 'hello world'}),
-    action: runActions(inplaceEdit.activate('inPlaceEditTest.text~impl~control'),delay(10)),
-    expectedResult: contains({text: 'view_quilt', allText: test.dialogContent('inplace-edit-toolbar')})
+    action: runActions(inplaceEdit.activate('uiFrontEndTest~impl~control'),delay(10)),
+    expectedResult: contains('view_quilt'),
+    //contains({text: 'view_quilt', allText: test.dialogContent('inplace-edit-toolbar')})
   })
 })
 
 jb.component('inPlaceEditTest.grid', {
-  impl: uiTest({
-    runBefore: ctx => jb.studio.previewWindow = jb.studio.studioWindow = window,
-    renderDOM: true, // needed for position thumbs
+  impl: uiFrontEndTest({
+    runBefore: ctx => jb.studio.previewWindow = window,
+    cleanUp: ctx => jb.studio.previewWindow = null,
+    renderDOM: true,
     control: test.wixIslandGridCtrl(),
     action: runActions(inplaceEdit.activate('test.wixIslandGridCtrl~impl'),delay(10)),
-    expectedResult: contains({text: 'div', allText: test.dialogContent('gridLineThumb')})
+    expectedResult: contains('div')
+//    expectedResult: contains({text: 'div', allText: test.dialogContent('gridLineThumb')})
   })
 })
 

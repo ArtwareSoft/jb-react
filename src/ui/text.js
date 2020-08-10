@@ -24,19 +24,26 @@ jb.component('text.bindText', {
 })
 
 jb.component('text.allowAsynchValue', {
+  type: 'feature',
+  description: 'allows a text value to be reactive or promise',
   params: [
     { id: 'propId', defaultValue: 'text'}
   ],
-  type: 'feature',
   impl: features(
-    calcProp({id: '%$propId%', value: (ctx,{cmp},{propId}) => cmp[propId] || ctx.vars.$props[propId]}),
-    interactive((ctx,{cmp},{propId}) => {
-      if (cmp[propId]) return
-      let val = jb.ui.toVdomOrStr(ctx.vars.$model[propId])
-      if (typeof val == 'function') val = val(cmp.ctx)
-      if (jb.isPromise(val))
-        val.then(res=>cmp.refresh({[propId]: jb.ui.toVdomOrStr(res)},{srcCtx: ctx.componentContext}))
-    })
+    calcProp('%$propId%', firstSucceeding('%$$state/{%$propId%}%','%$$props/{%$propId%}%' )),
+    followUp.flow(
+      source.any(If('%$$state/{%$propId%}%','','%$$props/{%$propId%}%')),
+//      followUp.takeUntilCmpDestroyed(),
+      rx.map(({data}) => jb.ui.toVdomOrStr(data)),
+      sink.refreshCmp( ctx => ctx.run(obj(prop('%$propId%','%%'))))
+    ),
+    // followUp.action((ctx,{cmp,$state,$props},{propId}) => {
+    //   if ($state[propId]) return
+    //   const val = typeof $props[propId] == 'function' ? $props[propId]() : $props[propId]
+
+    //   if (jb.isPromise(val))
+    //     val.then(res => cmp.refresh({[propId]: jb.ui.toVdomOrStr(res)},{srcCtx: ctx.componentContext}))
+    // })
   )
 })
 

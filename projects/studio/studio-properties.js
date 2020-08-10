@@ -196,7 +196,7 @@ jb.component('studio.propField', {
       ]
     }),
     features: [
-      field.keyboardShortcut('Ctrl+I', studio.openJbEditor('%$path%')),
+      feature.keyboardShortcut('Ctrl+I', studio.openJbEditor('%$path%')),
       If(
         not(isOfType('string,number,boolean,undefined', studio.val('%$path%'))),
         studio.watchPath({

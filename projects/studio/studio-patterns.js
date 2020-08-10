@@ -66,7 +66,7 @@ jb.component('studio.selectStyle', {
                   action: runActions(
                     Var('styleSuffix', If(equals('%$__option/style/$%', 'group'), '', '~style')),
                     writeValue(studio.ref('%$targetPath%%$styleSuffix%'), '%$__option/style%'),
-                    dialog.closeContainingPopup()
+                    dialog.closeDialog()
                   ),
                   features: css('position: absolute; top: 0; left: 30px;')
                 })

@@ -1,3 +1,5 @@
+jb.ns('uiTest,userInput,uiAction')
+
 jb.test = {
 	runInner(propName, ctx) {
 		const profile = ctx.profile
@@ -14,92 +16,19 @@ jb.test = {
 	},
 	runInStudio(profile) {
 		return profile && jb.frame.parent.jb.exec(profile)
+	},
+	cleanBeforeRun(ctx) {
+		jb.rebuildRefHandler && jb.rebuildRefHandler();
+		jb.entries(JSON.parse(ctx.vars.initial_resources || '{}')).forEach(e=>jb.resource(e[0],e[1]))
+		jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(ctx.vars.initial_comps)
+		jb.ui.subscribeToRefChange(jb.mainWatchableHandler)
+		if (!jb.spy) jb.initSpy({spyParam: 'none'})
+		jb.spy.clear()
 	}
 }
 
 jb.component('tests.main', { // needed for loading the 'virtual' tests project
 	type: 'control',
-	impl: text('')
-})
-
-jb.component('test.showTestInStudio', {
-	type: 'control',
-	params: [
-	  {id: 'testId', as: 'string', defaultValue: 'uiTest.label'}
-	],
-	impl: (ctx,testId) => {
-		  const profile = jb.path(jb.comps[testId],'impl')
-		  const ctxWithVars = ctx.setVars(jb.objFromEntries((profile.vars||[]).map(v=>[v.name,ctx.run(v.val)])))
-		  const ctxToRun = new jb.jbCtx(ctxWithVars,{ profile, forcePath: testId+ '~impl', path: '' } )
-		  if (profile.$ == 'dataTest')
-			  return ctxToRun.run(test.dataTestView(testId, () => jb.test.dataTestResult(ctxToRun)))
-		  if (profile.$ == 'uiTest')
-			  return ctxToRun.run(test.uiTestRunner(testId,() => ctxToRun))
-	  }
-})
-
-jb.component('test.dataTestView', {
-  type: 'control',
-  params: [
-    {id: 'testId', as: 'string', defaultValue: 'ui-test.label'},
-    {id: 'testResult'}
-  ],
-  impl: group({
-    controls: group({
-      layout: layout.vertical('12'),
-      controls: [
-        button({
-          title: '%$testId%',
-          action: (ctx,{},{testId}) => jb.test.runInStudio({$: 'studio.openComponentInJbEditor', path: `${testId}~impl~calculate` }),
-          style: button.href(),
-          features: [
-            css(pipeline(If('%success%', 'green', 'red'), 'color: %%')),
-            ctrlAction(gotoUrl('http://www.google.com'))
-          ]
-        }),
-        group({
-          style: propertySheet.titlesLeft({}),
-          controls: [
-            text({
-              text: '%value%',
-              title: 'calculate',
-              style: text.span(),
-              features: css.width('300')
-            }),
-            editableText({databind: '%value%', style: editableText.textarea({})})
-          ],
-          features: css.width({width: '127', selector: ''})
-        })
-      ]
-    }),
-    features: group.wait('%$testResult%')
-  })
-})
-
-jb.component('test.uiTestRunner', {
-	type: 'control',
-	params: [
-	  {id: 'testId', as: 'string', defaultValue: 'ui-test.label'},
-	  {id: 'ctxToRun'}
-	],
-	impl: group({
-		controls: [
-			button({
-				title: '%$testId%',
-				action: (ctx,{},{testId}) => jb.test.runInStudio({$: 'studio.openComponentInJbEditor', path: `${testId}~impl~control` }),
-				style: button.href(),
-			}),
-			group({controls: (ctx,{},{ctxToRun}) => ctxToRun.runInner(ctxToRun.profile.control,{type: 'control'}, 'control') })
-		],
-		features: [
-			group.wait({for: (ctx,{},{ctxToRun}) => jb.test.runInner('runBefore',ctxToRun) }),
-			interactive((ctx,{},{ctxToRun}) => {
-				return jb.test.runInStudio(studio.waitForPreviewIframe())
-					.then(() => jb.test.runInner('runInPreview',ctxToRun))
-					.then(() => jb.test.runInStudio(ctxToRun.profile.runInStudio))
-			})
-		]
-	})
 })
 
 jb.component('dataTest', {
@@ -108,24 +37,22 @@ jb.component('dataTest', {
 	  {id: 'calculate', dynamic: true},
 	  {id: 'runBefore', type: 'action', dynamic: true},
 	  {id: 'expectedResult', type: 'boolean', dynamic: true},
+	  {id: 'timeout', as: 'number', defaultValue: 200},
+	  {id: 'allowError', as: 'boolean', dynamic: true},
 	  {id: 'cleanUp', type: 'action', dynamic: true},
-	  {id: 'expectedCounters', as: 'single'}
+	  {id: 'expectedCounters', as: 'single'},
+	  {id: 'show', type: 'control', dynamic: true },
 	],
-	impl: function(ctx,calculate,runBefore,expectedResult,cleanUp,expectedCounters) {
-		  console.log('starting ' + ctx.path )
-		  var initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
-		  if (expectedCounters) {
-			  if (!jb.spy)
-				  jb.initSpy({spyParam: 'data-test'})
-			  jb.spy.clear()
-		  }
-		  return Promise.resolve(runBefore())
+	impl: function(ctx,calculate,runBefore,expectedResult,timeout,allowError,cleanUp,expectedCounters) {
+		const _timeout = ctx.vars.singleTest ? 1000 : timeout
+		return Promise.race([jb.delay(_timeout).then(()=>[{runErr: 'timeout'}]), Promise.resolve(runBefore())
 			  .then(_ => calculate())
-			  .then(v => jb.toSynchArray(v,true))
+			  .then(v => jb.toSynchArray(v,true))])
 			  .then(value => {
-				  const countersErr = countersErrors(expectedCounters);
-				  const success = !! (expectedResult(new jb.jbCtx(ctx,{ data: value })) && !countersErr);
-				  const result = { id: ctx.vars.testID, success, reason: countersErr}
+				  const runErr = jb.path(value,'0.runErr')
+				  const countersErr = countersErrors(expectedCounters,allowError)
+				  const success = !! (expectedResult(new jb.jbCtx(ctx,{ data: value })) && !countersErr && !runErr);
+				  const result = { id: ctx.vars.testID, success, reason: countersErr || runErr }
 				  return result
 			  })
 			  .catch(e=> {
@@ -133,11 +60,9 @@ jb.component('dataTest', {
 				  return { id: ctx.vars.testID, success: false, reason: 'Exception ' + e}
 			  })
 			  .then(result => { // default cleanup
-				  if (ctx.probe) return
-				  if (expectedCounters)
-					  jb.initSpy({resetSpyToNull: true})
-				  jb.resources = JSON.parse(ctx.vars.initial_resources || '{}'); jb.rebuildRefHandler && jb.rebuildRefHandler();
-				  jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
+				  if (ctx.probe || ctx.vars.singleTest) return result
+				  if (ctx.vars.uiTest)
+					result.elem && jb.ui.unmount(result.elem)
 				  return result;
 			  })
 			  .catch(e=> {
@@ -146,76 +71,121 @@ jb.component('dataTest', {
 			  })
 			  .then(result =>
 					  Promise.resolve(cleanUp())
-					  .then(_=> console.log('end      ' + ctx.path ))
 					  .then(_=>result) )
 	  }
 })
 
 jb.component('uiTest', {
-  type: 'test',
-  params: [
-    {id: 'control', type: 'control', dynamic: true},
-    {id: 'runBefore', type: 'action', dynamic: true},
-    {id: 'action', type: 'action', dynamic: true},
-    {id: 'expectedResult', type: 'boolean', dynamic: true},
-	{id: 'cleanUp', type: 'action', dynamic: true},
-    {id: 'expectedCounters', as: 'single'},
-	{id: 'renderDOM', type: 'boolean', descrition: 'actially render the vdom, because the test checks calculated sizes' },
-	{id: 'runInPreview', type: 'action', dynamic: true, descrition: 'not for test mode'},
-	{id: 'runInStudio', type: 'action', dynamic: true, descrition: 'not for test mode'},
-  ],
-  impl: function(ctx,control,runBefore,action,expectedResult,cleanUp,expectedCounters,renderDOM) {
-		console.log('starting ' + ctx.path )
-		const show = new URL(location.href).searchParams.get('show') !== null
-		const initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
-		return Promise.resolve(runBefore())
-			.then(_ => {
-				try {
-					if (!jb.spy)
-						jb.initSpy({spyParam: 'ui-test'})
-					jb.spy.clear()
-					const elem = document.createElement('div');
-					elem.setAttribute('id','jb-testResult')
-					const ctxForTst = ctx.setVars({elemToTest : elem })
-					const vdom = jb.ui.h(control(ctxForTst));
-					const cmp = jb.ui.render(vdom, elem)._component;
-					if (renderDOM) document.body.appendChild(elem)
-					return Promise.resolve(cmp && cmp.delayed)
-						.then(_ => jb.delay(1))
-						.then(_=> elem)
-				} catch (e) {
-					jb.logException(e,'error in test',ctx);
-					return document.createElement('div');
-				}
+	type: 'test',
+	params: [
+	  {id: 'control', type: 'control', dynamic: true},
+	  {id: 'runBefore', type: 'action', dynamic: true},
+	  {id: 'userInput', type: 'user-input[]', as: 'array' },
+	  {id: 'extraSource', type: 'rx' },
+	  {id: 'expectedResult', type: 'boolean', dynamic: true},
+	  {id: 'allowError', as: 'boolean', dynamic: true},
+	  {id: 'delayedInput', as: 'boolean'},
+	  {id: 'timeout', as: 'number', defaultValue: 200},
+	  {id: 'cleanUp', type: 'action', dynamic: true},
+	  {id: 'expectedCounters', as: 'single'},
+	],
+	impl: dataTest({
+		vars: [
+			Var('uiTest',true),
+			Var('tstWidgetId',replace({text: '%$testID%', find: '[.]', replace: '_'})),
+		],
+		timeout: '%$timeout%',
+		allowError: '%$allowError%',
+		runBefore: call('runBefore'),
+		calculate: rx.pipe(
+			rx.merge(
+				rx.pipe(
+					rx.merge(
+						rx.pipe(source.data('%$userInput%'),userInput.eventToRequest(),If('%$delayedInput%',rx.delay(1))),
+						source.callbag(()=>jb.ui.widgetUserRequests),
+//						rx.pipe('%$extraSource%',rx.map(()=>({$:'dummpOp'})))
+					),
+					widget.headless('%$control()%', '%$tstWidgetId%'),
+					rx.delay(1)
+				),
+				'%$extraSource%'
+			),
+			rx.var('html',uiTest.vdomResultAsHtml()),
+			rx.var('success', pipeline('%$html%', call('expectedResult'), last())),
+			rx.log('check test result'),
+			rx.filter('%$success%'), // if failure wait for the next delta
+			rx.map('%$success%'),
+			rx.do( ({},{tstWidgetId})=>jb.ui.unmount(jb.ui.widgets[tstWidgetId].body)),
+			rx.take(1),
+		),
+		expectedResult: '%%',
+		cleanUp: call('cleanUp'),
+		expectedCounters: '%$expectedCounters%',
+		show: call('control')
+	})
+})  
+
+jb.component('uiFrontEndTest', {
+	type: 'test',
+	params: [
+	  {id: 'control', type: 'control', dynamic: true},
+	  {id: 'runBefore', type: 'action', dynamic: true},
+	  {id: 'action', type: 'action', dynamic: true},
+	  {id: 'expectedResult', as: 'boolean', dynamic: true},
+	  {id: 'allowError', as: 'boolean', dynamic: true},
+	  {id: 'cleanUp', type: 'action', dynamic: true},
+	  {id: 'expectedCounters', as: 'single'},
+	  {id: 'renderDOM', type: 'boolean', descrition: 'actially render the vdom, because the test checks calculated sizes' },
+	  {id: 'runInPreview', type: 'action', dynamic: true, descrition: 'not for test mode'},
+	  {id: 'runInStudio', type: 'action', dynamic: true, descrition: 'not for test mode'},
+	],
+	impl: pipe(
+		Var('elemToTest',() => document.createElement('div')),
+		(ctx,{elemToTest, testID, singleTest,initial_resources,initial_comps},{control,runBefore,action,expectedResult,cleanUp,expectedCounters,renderDOM,allowError}) => {
+		  elemToTest.ctxForFE = ctx
+		  elemToTest.setAttribute('id','jb-testResult')
+		  const show = new URL(location.href).searchParams.get('show') !== null
+		  return Promise.resolve(runBefore())
+			  .then(() => {
+				  try {
+					  jb.ui.render(jb.ui.h(control(ctx)), elemToTest)
+					  if (renderDOM) document.body.appendChild(elemToTest)
+				  } catch (e) {
+					  jb.logException(e,'error in test',ctx)
+					  return e
+				  }
+			  })
+			  .then(error => jb.delay(1,error))
+			  .then(error => !error && action(ctx))
+			  .then(() => jb.delay(1))
+			  .then(() => {
+				  // put input values as text
+				  Array.from(elemToTest.querySelectorAll('input,textarea')).forEach(e=>
+					  e.parentNode && jb.ui.addHTML(e.parentNode,`<input-val style="display:none">${e.value}</input-val>`))
+				  const countersErr = countersErrors(expectedCounters,allowError)
+				  const success = !! (expectedResult(ctx.setData(elemToTest.outerHTML)) && !countersErr)
+				  if (renderDOM && !show) document.body.removeChild(elemToTest)
+				  const result = { id: testID, success, reason: countersErr, renderDOM}
+			  	  // default cleanup
+				  if (!show && !singleTest)
+					  jb.ui.unmount(elemToTest)
+				  return Promise.resolve(cleanUp()).then(_=>result)
 			})
-			.then(elem =>
-				Promise.resolve(action(ctx.setVars({elemToTest : elem }))).then(_=>elem))
-			.then(elem=> {
-				// put input values as text
-				Array.from(elem.querySelectorAll('input,textarea')).forEach(e=>{
-					if (e.parentNode)
-						jb.ui.addHTML(e.parentNode,`<input-val style="display:none">${e.value}</input-val>`)
-				})
-				const countersErr = countersErrors(expectedCounters);
-				const success = !! (expectedResult(new jb.jbCtx(ctx,{ data: elem.outerHTML }).setVars({elemToTest: elem})) && !countersErr);
-				if (renderDOM && !show) document.body.removeChild(elem)
-				return { id: ctx.vars.testID, success, elem, reason: countersErr, renderDOM}
-			}).then(result=> { // default cleanup
-				if (!show) {
-					jb.ui.dialogs.dialogs.forEach(d=>d.close())
-					jb.ui.unmount(result.elem)
-					jb.rebuildRefHandler && jb.rebuildRefHandler();
-					jb.entries(JSON.parse(ctx.vars.initial_resources || '{}')).forEach(e=>jb.resource(e[0],e[1]))
-					jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
-					jb.ui.subscribeToRefChange(jb.mainWatchableHandler)
-					//if (expectedCounters)
-					jb.initSpy({resetSpyToNull: true})
-				}
-				return result;
-			}).then(result =>
-				Promise.resolve(cleanUp())
-				.then(_=> console.log('end      ' + ctx.path ))
-				.then(_=>result) )
+	  }, last())
+})
+
+jb.component('uiTest.vdomResultAsHtml', {
+	params: [
+	],
+	impl: ctx => {
+		const widget = jb.ui.widgets[ctx.vars.tstWidgetId]
+		if (!widget) debugger
+		const elemToTest = document.createElement('div')
+		elemToTest.ctxForFE = ctx.setVars({elemToTest})
+		jb.ui.render(widget.body, elemToTest)
+		Array.from(elemToTest.querySelectorAll('input,textarea')).forEach(e=> e.parentNode && 
+			jb.ui.addHTML(e.parentNode,`<input-val style="display:none">${e.value}</input-val>`))		
+		return elemToTest.outerHTML
 	}
 })
 
@@ -225,46 +195,35 @@ jb.component('uiTest.applyVdomDiff', {
     {id: 'controlBefore', type: 'control', dynamic: true},
     {id: 'control', type: 'control', dynamic: true}
   ],
-  impl: function(ctx,controlBefore,control,expectedCounters) {
-		console.log('starting ' + ctx.path)
+  impl: function(ctx,controlBefore,control) {
+		console.log('starting ' + ctx.vars.testID)
 		const show = new URL(location.href).searchParams.get('show') !== null
 
-		const initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
-
 		const elem1 = document.createElement('div');
-		jb.ui.render(jb.ui.h(control(ctx.setVars({elemToTest : elem1 }))),elem1)
+		jb.ui.render(jb.ui.h(control(ctx)),elem1)
 		const expectedHtml = elem1.innerHTML
 		const expectedVdom = jb.ui.elemToVdom(elem1)
 
 		const elem = document.createElement('div');
-		const ctxForTst = ctx.setVars({elemToTest : elem })
-		jb.ui.render(jb.ui.h(controlBefore(ctxForTst)),elem)
-		jb.ui.applyNewVdom(elem.firstElementChild,jb.ui.h(control(ctxForTst)))
+		jb.ui.render(jb.ui.h(controlBefore(ctx)),elem)
+		jb.ui.applyNewVdom(elem.firstElementChild,jb.ui.h(control(ctx)))
 		const actualHtml = elem.innerHTML
 		const actualVdom = jb.ui.elemToVdom(elem)
 		const success = !!(expectedHtml.replace(/[0-9]/g,'') == actualHtml.replace(/[0-9]/g,''));
 		const reason = !success ? ('html is different ' + jb.prettyPrint(jb.objectDiff(expectedVdom,actualVdom),{noMacros: true})) : ''
 		const result = { id: ctx.vars.testID, success, elem, reason }
-		if (!show) {
-			jb.ui.dialogs.dialogs.forEach(d=>d.close())
+		if (!show)
 			jb.ui.unmount(elem)
-			jb.rebuildRefHandler && jb.rebuildRefHandler();
-			jb.entries(JSON.parse(ctx.vars.initial_resources || '{}')).forEach(e=>jb.resource(e[0],e[1]))
-			jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(initial_comps);
-			jb.ui.subscribeToRefChange(jb.mainWatchableHandler)
-			if (expectedCounters)
-				jb.initSpy({resetSpyToNull: true})
-		}
 		return result
 	  }
 })
 
-function countersErrors(expectedCounters) {
+function countersErrors(expectedCounters,allowError) {
 	if (!jb.spy) return ''
 	if ((jb.spy.logs.exception || [])[0])
-		return (jb.spy.logs.exception || [])[0][0]
-	if (jb.spy.$counters && jb.spy.$counters.exception)
-		return 'exception occured'
+		return jb.spy.logs.exception[0][0]
+	if (!allowError() && (jb.spy.logs.error || [])[0])
+		return jb.spy.logs.error[0][0]
 
 	return Object.keys(expectedCounters || {}).map(
 		counter => expectedCounters[counter] !== (jb.spy.logs.$counters[counter] || 0)
@@ -273,85 +232,14 @@ function countersErrors(expectedCounters) {
 		.join(', ')
 }
 
-jb.ui.elemOfSelector = (selector,ctx) => ctx.vars.elemToTest.querySelector(selector) || document.querySelector('.jb-dialogs '+ selector)
+jb.ui.elemOfSelector = (selector,ctx) => jb.ui.widgetBody(ctx).querySelector(selector) 
+	|| document.querySelector('.jb-dialogs '+ selector)
 jb.ui.cmpOfSelector = (selector,ctx) => jb.path(jb.ui.elemOfSelector(selector,ctx),['_component'])
 
 jb.ui.cssOfSelector = (selector,ctx) => {
 	const jbClass = (jb.ui.elemOfSelector(selector,ctx).classList.value || '').split('-').pop()
 	return jb.entries(jb.ui.cssSelectors_hash).filter(e=>e[1] == jbClass)[0] || ''
 }
-
-jb.component('uiAction.click', {
-  type: 'ui-action',
-  params: [
-    {id: 'selector', as: 'string'},
-    {id: 'methodToActivate', as: 'string', defaultValue: 'onclickHandler'}
-  ],
-  impl: (ctx,selector,methodToActivate) => {
-		const elems = selector ? Array.from(ctx.vars.elemToTest.querySelectorAll(selector)) : [ctx.vars.elemToTest];
-		elems.forEach(e=> {
-			e.click()
-			// const ev = { type: 'click', currentTarget: e, target: e}
-			// jb.ui.handleCmpEvent(methodToActivate,ev)
-		})
-	}
-})
-
-jb.component('uiAction.keyboardEvent', {
-  type: 'ui-action',
-  params: [
-    {id: 'selector', as: 'string'},
-    {id: 'type', as: 'string', options: ['keypress', 'keyup', 'keydown']},
-    {id: 'keyCode', as: 'number'},
-    {id: 'ctrl', as: 'string', options: ['ctrl', 'alt']}
-  ],
-  impl: (ctx,selector,type,keyCode,ctrl) => {
-		const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : ctx.vars.elemToTest;
-		if (!elem) return
-		const e = new KeyboardEvent(type,{ ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt' });
-		Object.defineProperty(e, 'keyCode', { get : _ => keyCode });
-		elem.dispatchEvent(e);
-		return jb.delay(1);
-	}
-})
-
-jb.component('uiAction.setText', {
-  type: 'ui-action',
-  macroByValue: true,
-  params: [
-    {id: 'value', as: 'string', mandatory: true},
-    {id: 'selector', as: 'string', defaultValue: 'input,textarea'}
-  ],
-  impl: (ctx,value,selector,delay) => {
-		const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : ctx.vars.elemToTest;
-		jb.ui.findIncludeSelf(elem,'input,textarea').forEach(e=>e.value= value)
-		const ev = { type: 'blur', currentTarget: elem, target: {value}}
-		jb.ui.handleCmpEvent('',ev)
-		return jb.delay(1);
-	}
-})
-
-jb.component('uiAction.scrollDown', {
-	type: 'ui-action',
-	macroByValue: true,
-	params: [
-	  {id: 'selector', as: 'string' },
-	],
-	impl: (ctx,selector,delay) => {
-		  const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : ctx.vars.elemToTest;
-		  const ev = { type: 'scroll', currentTarget: elem, target: elem, scrollPercentFromTop : 0.9}
-		  jb.ui.handleCmpEvent('',ev)
-	  }
-  })
-
-jb.component('test.dialogContent', {
-  type: 'data',
-  params: [
-    {id: 'id', as: 'string'}
-  ],
-  impl: (ctx,id) =>
-		jb.ui.dialogs.dialogs.filter(d=>d.id == id).map(d=>d.el).filter(x=>x).slice(0,1).map(x=>x.outerHTML).join('') || ''
-})
 
 var jb_success_counter = 0;
 var jb_fail_counter = 0;
@@ -374,6 +262,11 @@ function isCompNameOfType(name,type) {
 		return (jb.comps[name] && jb.comps[name].type || '').indexOf(type) == 0;
 	}
 }
+
+function profileSingleTest(testID) {
+	new jb.jbCtx().setVars({testID}).run({$: testID})
+}
+
 jb.ui = jb.ui || {}
 jb.ui.addHTML = jb.ui.addHTML || ((el,html) => {
 	var elem = document.createElement('div');
@@ -387,9 +280,12 @@ startTime = startTime || new Date().getTime();
 
 jb.testers.runTests = function({testType,specificTest,show,pattern,includeHeavy}) {
 	const {pipe, fromIter, subscribe,concatMap, flatMap, fromPromise } = jb.callbag
+	let index = 1
 
 	jb.studio.initTests() && jb.studio.initTests()
-	const initial_resources = JSON.stringify(jb.resources); //.replace(/\"\$jb_id":[0-9]*,/g,'')
+	const initial_resources = JSON.stringify(jb.resources) //.replace(/\"\$jb_id":[0-9]*,/g,'')
+	const initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
+
 	const tests = jb.entries(jb.comps)
 		.filter(e=>typeof e[1].impl == 'object')
 		.filter(e=>e[1].type != 'test') // exclude the testers
@@ -397,36 +293,58 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,includeHeavy}
 		.filter(e=>!testType || e[1].impl.$ == testType)
 		.filter(e=>!specificTest || e[0] == specificTest)
 		.filter(e=>!pattern || e[0].match(pattern))
-		.filter(e=>includeHeavy || specificTest || !e[1].impl.heavy)
+//		.filter(e=>!e[0].match(/^remoteTest|inPlaceEditTest|patternsTest/) && ['uiTest','dataTest'].indexOf(e[1].impl.$) != -1) // || includeHeavy || specificTest || !e[1].impl.heavy )
+//		.sort((a,b) => (a[0] > b[0]) ? 1 : ((b[0] > a[0]) ? -1 : 0))
 
-	document.write(`<div style="font-size: 20px"><span id="fail-counter" onclick="hide_success_lines()"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span><span id="memory-usage"></span></div>`);
+	document.write(`<div style="font-size: 20px"><div id="progress"></div><span id="fail-counter" onclick="hide_success_lines()"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span><span id="memory-usage"></span></div>`);
 
+	const times = {}
 	return pipe(
 			fromIter(tests),
 			concatMap(e => {
-			//	return Promise.resolve({ id: e[0], success: false, reason: 'empty result'})
-			  jb.logs.error = [];
-			  return fromPromise(Promise.resolve(new jb.jbCtx().setVars({testID: e[0], initial_resources }).run({$:e[0]}))
+			  jb.logs.error = []
+			  const testID = e[0]
+			  const tstCtx = new jb.jbCtx().setVars({testID, initial_resources, initial_comps, singleTest: tests.length == 1 })
+			  document.getElementById('progress').innerHTML = `<div id=${testID}>${index++}: ${testID} started</div>`
+			  times[testID] = { start: new Date().getTime() }
+			  jb.test.cleanBeforeRun(tstCtx)
+			  console.log('starting ' + testID )
+			  return fromPromise(Promise.resolve(tstCtx.run({$:testID}))
 				.then(res => {
+					console.log('end      ' + testID )
+					document.getElementById('progress').innerHTML = `<div id=${testID}>${testID} finished</div>`
+					res.duration = new Date().getTime() - times[testID].start
 					if (!res)
-						return { id: e[0], success: false, reason: 'empty result'}
+						return { id: testID, success: false, reason: 'empty result'}
 					if (res && res.success && jb.logs.error.length > 0) {
 						res.success = false;
 						res.reason = 'log errors: ' + JSON.stringify(jb.logs.error)
+					}
+					res.show = () => {
+						const profile = e[1].impl.control
+						const elem = document.createElement('div')
+						document.body.appendChild(elem)
+						if (profile) {
+							//jb.ui.subscribeToRefChange(jb.mainWatchableHandler)
+							jb.ui.renderWidget(profile,elem)
+						}
 					}
 					return res
 			 }))
 		}),
 		subscribe(res=> {
-			if (res.renderDOM && show) return
 			if (res.success)
 				jb_success_counter++;
 			else
 				jb_fail_counter++;
 			const baseUrl = window.location.href.split('/tests.html')[0]
 			const studioUrl = `http://localhost:8082/project/studio/${res.id}?host=test`
-			var elem = `<div class="${res.success ? 'success' : 'failure'}""><a href="${baseUrl}/tests.html?test=${res.id}&show&spy=res" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
-				<button class="editor" onclick="goto_editor('${res.id}')">src</button><button class="editor" onclick="goto_studio('${res.id}')">studio</button>
+			const testResultHtml = `<div class="${res.success ? 'success' : 'failure'}"">
+				<a href="${baseUrl}/tests.html?test=${res.id}&show&spy=res" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
+				<span> ${res.duration}mSec</span> 
+				<button class="editor" onclick="goto_editor('${res.id}')">src</button>
+				<a class="editor" href="${studioUrl}">studio</a>
+				<button class="editor" onclick="profileSingleTest('${res.id}')">profile</button>
 				<span>${res.reason||''}</span>
 				</div>`;
 
@@ -437,11 +355,9 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,includeHeavy}
 			document.getElementById('memory-usage').innerHTML = ', ' + (jb.path(jb.frame,'performance.memory.usedJSHeapSize' || 0) / 1000000)  + 'M memory used';
 
 			document.getElementById('time').innerHTML = ', ' + (new Date().getTime() - startTime) +' mSec';
-			jb.ui.addHTML(document.body,elem);
-			if (show && res.elem)
-				document.body.appendChild(res.elem);
-			jb.ui && jb.ui.garbageCollectCtxDictionary && jb.ui.garbageCollectCtxDictionary(document.body,true)
+			jb.ui.addHTML(document.body,testResultHtml);
+			if (!res.renderDOM && show) res.show()
+			jb.ui && tests.length >1 && jb.ui.garbageCollectCtxDictionary && jb.ui.garbageCollectCtxDictionary(true)
 	}))
-}
-;
+};
 

@@ -52,7 +52,7 @@ jb.component('dialog.editSourceStyle', {
 				>.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }
 				>.dialog-close:hover { opacity: .5 }`,
     features: [
-      dialogFeature.dragTitle('%$id%'),
+      dialogFeature.dragTitle({id: '%$id%', useSessionStorage: true}),
       dialogFeature.uniqueDialog('%$id%', true),
       dialogFeature.maxZIndexOnClick(5000),
       studioDialogFeature.refreshTitle(),
@@ -106,7 +106,7 @@ jb.component('dialog.showSourceStyle', {
 				  }
 				  >.dialog-close:hover { opacity: .5 }`,
     features: [
-      dialogFeature.dragTitle('%$id%'),
+      dialogFeature.dragTitle({id: '%$id%', useSessionStorage: true}),
       dialogFeature.uniqueDialog('%$id%', true),
       dialogFeature.maxZIndexOnClick(5000),
       studioDialogFeature.studioPopupLocation(),
@@ -117,13 +117,11 @@ jb.component('dialog.showSourceStyle', {
 
 jb.component('studioDialogFeature.studioPopupLocation', {
   type: 'dialog-feature',
-  impl: interactive(
-    (ctx,{cmp}) => {
-			const dialog = cmp.dialog;
-			const id = (dialog.id||'').replace(/\s/g,'_');
+  impl: frontEnd.init((ctx,{cmp}) => {
+			const id = (cmp.base.getAttribute('id')||'').replace(/\s/g,'_')
 			if (id && !jb.sessionStorage(id)) {
-				dialog.el.classList.add(id);
-				dialog.el.classList.add('default-location')
+				cmp.base.classList.add(id)
+				cmp.base.classList.add('default-location')
 			}
 		}
   )
@@ -131,12 +129,7 @@ jb.component('studioDialogFeature.studioPopupLocation', {
 
 jb.component('studioDialogFeature.refreshTitle', {
   type: 'dialog-feature',
-  impl: interactive(
-    (ctx,{cmp}) => jb.callbag.pipe(
-        jb.studio.scriptChange,
-        jb.callbag.takeUntil( cmp.destroyed ),
-  		  jb.callbag.subscribe(e=> cmp.recalcTitle && cmp.recalcTitle(e,ctx)))
-  )
+  impl: frontEnd.flow(studio.scriptChange(), rx.takeUntil( '%$cmp.destroyed%' ), sink.FEMethod('recalcTitle'))
 })
 
 jb.component('studio.codeMirrorMode', {
@@ -212,7 +205,7 @@ jb.component('dialog.studioFloating', {
 				}
 				>.dialog-close:hover { opacity: .5 }`,
     features: [
-      dialogFeature.dragTitle('%$id%'),
+      dialogFeature.dragTitle({id: '%$id%', useSessionStorage: true}),
       dialogFeature.uniqueDialog('%$id%', true),
       dialogFeature.maxZIndexOnClick(5000),
       studioDialogFeature.refreshTitle(),
@@ -293,7 +286,7 @@ jb.component('studio.openResponsivePhonePopup', {
           features: css.margin({left: '10', bottom: '10'})
         })
       ],
-      features: feature.onDataChange({
+      features: followUp.onDataChange({
         ref: '%$studio/preview%',
         includeChildren: 'yes',
         action: studio.setPreviewSize({ width: '%$studio/preview/width%', height: '%$studio/preview/height%', zoom: '%$studio/preview/zoom%'})

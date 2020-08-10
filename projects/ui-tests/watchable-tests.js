@@ -1,7 +1,7 @@
 jb.ns('remote')
 
 jb.component('uiTest.checkBoxWithCalculatedAndWatchRef', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
     control: editableBoolean({
       databind: '%$person/name% == \"Homer Simpson\"',
       style: editableBoolean.checkboxWithTitle(),
@@ -16,7 +16,7 @@ jb.component('uiTest.checkBoxWithCalculatedAndWatchRef', {
 })
 
 jb.component('uiTest.booleanWatchableVarAsBooleanTrueToFalse', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
     control: text({
       text: data.if('%$person/male%', 'Error', 'OK'),
       features: watchRef('%$person/male%')
@@ -27,7 +27,7 @@ jb.component('uiTest.booleanWatchableVarAsBooleanTrueToFalse', {
 })
 
 jb.component('uiTest.booleanWatchableVarAsBooleanFalseToTrue', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
     control: text({
       text: data.if('%$person/male%', 'OK', 'Error'),
       features: watchRef('%$person/male%')
@@ -44,7 +44,7 @@ jb.component('uiTest.watchableVar', {
       controls: text('%$var1%'),
       features: [
         variable({name: 'var1', value: 'hello', watchable: true}),
-        interactive(writeValue('%$var1%', 'foo'))
+        followUp.action(writeValue('%$var1%', 'foo'))
       ]
     }),
     expectedResult: contains('foo')
@@ -57,7 +57,7 @@ jb.component('uiTest.watchableVarAsObject', {
       controls: text('%$obj1/txt%'),
       features: [
         variable({name: 'obj1', value: {'$': 'object', txt: 'hello'}, watchable: true}),
-        interactive(writeValue('%$obj1/txt%', 'foo'))
+        followUp.action(writeValue('%$obj1/txt%', 'foo'))
       ]
     }),
     expectedResult: contains('foo')
@@ -95,7 +95,7 @@ jb.component('uiTest.watchableVarAsObjectNotInitialized', {
       controls: text('%$obj1/txt%'),
       features: [
         variable({name: 'obj1', value: {'$': 'object'}, watchable: true}),
-        interactive(writeValue('%$obj1/txt%', 'foo'))
+        followUp.action(writeValue('%$obj1/txt%', 'foo'))
       ]
     }),
     expectedResult: contains('foo')
@@ -120,13 +120,15 @@ jb.component('uiTest.calculatedVar', {
         })
       ]
     }),
-    action: uiAction.setText('hi', '#var1'),
+    delayedInput: true,
+    userInput: userInput.setText('hi', '#var1'),
     expectedResult: contains('hi world')
   })
 })
 
 jb.component('uiTest.calculatedVarCyclic', {
   impl: uiTest({
+    allowError: true,
     control: group({
       controls: [
         editableText({databind: '%$var1%', features: id('var1')}),
@@ -143,7 +145,8 @@ jb.component('uiTest.calculatedVarCyclic', {
         })
       ]
     }),
-    action: uiAction.setText('hi', '#var1'),
+    delayedInput: true,
+    userInput: userInput.setText('hi', '#var1'),
     expectedResult: contains('hi world')
   })
 })
@@ -164,11 +167,13 @@ jb.component('uiTest.booleanNotReffableFalse', {
 
 jb.component('uiTest.labelWithWatchRefInSplicedArray', {
   impl: uiTest({
-    control: text('%$personWithChildren/children[1]/name%'),
-    action: splice({
-      array: '%$personWithChildren/children%',
-      fromIndex: 0,
-      noOfItemsToRemove: 1
+    control: group({
+      controls: text('%$personWithChildren/children[1]/name%'),
+      features: followUp.action(splice({
+        array: '%$personWithChildren/children%',
+        fromIndex: 0,
+        noOfItemsToRemove: 1
+      }))
     }),
     expectedResult: contains('Maggie'),
     expectedCounters: {refreshElem: 1}
@@ -176,7 +181,7 @@ jb.component('uiTest.labelWithWatchRefInSplicedArray', {
 })
 
 jb.component('uiTest.spliceAndSet', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
     control: text({
       text: '%$personWithChildren/children[1]/name%',
       features: watchRef('%$personWithChildren/children%')
@@ -199,7 +204,7 @@ jb.component('uiTest.labelNotWatchingUiVar', {
       text: '%$text1/text%',
       features: [
         variable({name: 'text1', value: obj(prop('text', 'OK'))}),
-        interactive(writeValue('%$text1/text%', 'not good'))
+        followUp.action(writeValue('%$text1/text%', 'not good'))
       ]
     }),
     expectedResult: contains('OK'),
@@ -212,7 +217,7 @@ jb.component('uiTest.labelNotWatchingBasicVar', {
     control: text({
       vars: [Var('text1', obj(prop('text', 'OK')))],
       text: '%$text1/text%',
-      features: [interactive(writeValue('%$text1/text%', 'not good'))]
+      features: [followUp.action(writeValue('%$text1/text%', 'not good'))]
     }),
     expectedResult: contains('OK'),
     expectedCounters: {refreshElem: 0}
@@ -220,7 +225,7 @@ jb.component('uiTest.labelNotWatchingBasicVar', {
 })
 
 jb.component('uiTest.watchRefCssOnly', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
     control: text({
       text: 'hey',
       features: [
@@ -234,7 +239,7 @@ jb.component('uiTest.watchRefCssOnly', {
 })
 
 jb.component('uiTest.CssOnly.SetAndBack', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
     control: text({
       text: 'hey',
       features: [
@@ -277,7 +282,7 @@ jb.component('uiTest.groupWatchingWithoutIncludeChildren', {
       features: [
         variable({name: 'text1', value: obj(prop('text', 'OK'))}),
         watchRef('%$text1%'),
-        interactive(writeValue('%$text1/text%', 'not good'))
+        followUp.action(writeValue('%$text1/text%', 'not good'))
       ]
     }),
     expectedResult: contains('OK'),
@@ -285,20 +290,20 @@ jb.component('uiTest.groupWatchingWithoutIncludeChildren', {
   })
 })
 
-jb.component('uiTest.groupWatchingWithIncludeChildren', {
-  impl: uiTest({
-    control: group({
-      controls: text('%$text1/text%'),
-      features: [
-        variable({name: 'text1', value: obj(prop('text', 'OK')), watchable: true}),
-        watchRef({ref: '%$text1%', includeChildren: 'yes'}),
-        interactive(writeValue('%$text1/text%', 'changed'))
-      ]
-    }),
-    expectedResult: contains('changed'),
-    expectedCounters: {refreshElem: 1}
-  })
-})
+// jb.component('uiTest.groupWatchingWithIncludeChildren', {
+//   impl: uiFrontEndTest({
+//     control: group({
+//       controls: text('%$text1/text%'),
+//       features: [
+//         variable({name: 'text1', value: obj(prop('text', 'OK')), watchable: true}),
+//         watchRef({ref: '%$text1%', includeChildren: 'yes'}),
+//         followUp.action(writeValue('%$text1/text%', 'changed'))
+//       ]
+//     }),
+//     expectedResult: contains('changed'),
+//     expectedCounters: {refreshElem: 1}
+//   })
+// })
 
 jb.component('uiTest.groupWatchingStructure', {
   impl: uiTest({
@@ -307,7 +312,7 @@ jb.component('uiTest.groupWatchingStructure', {
       features: [
         variable({name: 'text1', value: obj(prop('text', 'OK')), watchable: true}),
         watchRef({ref: '%$text1%', includeChildren: 'structure'}),
-        interactive(writeValue('%$text1/text%', 'changed'))
+        followUp.action(writeValue('%$text1/text%', 'changed'))
       ]
     }),
     expectedResult: contains('changed'),
@@ -322,8 +327,7 @@ jb.component('uiTest.watchRefArrayDeleteWithRunActionOnItems', {
         text: json.stringify('%$watchablePeople%'),
         features: watchRef({ref: '%$watchablePeople%', includeChildren: 'yes'})
       }),
-      features: [
-        interactive(
+      features: followUp.action(
           runActionOnItems(
               '%$watchablePeople%',
               splice({
@@ -334,7 +338,6 @@ jb.component('uiTest.watchRefArrayDeleteWithRunActionOnItems', {
               })
             )
         )
-      ]
     }),
     expectedResult: contains('[]'),
     expectedCounters: {refreshElem: 3}
@@ -342,25 +345,30 @@ jb.component('uiTest.watchRefArrayDeleteWithRunActionOnItems', {
 })
 
 jb.component('uiTest.watchableAsText', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
     control: group({
+      vars: Var('watchedText', watchableAsText('%$watchablePeople%')),
       controls: [
         editableText({
-          databind: watchableAsText('%$watchablePeople%'),
+          databind: '%$watchedText%',
           style: editableText.textarea({rows: 30, cols: 80}),
           features: [
             id('editor'),
             feature.onKey(
               'Alt-P',
-              textEditor.withCursorPath(writeValue('%$path%', '%$cursorPath%'))
+              writeValue('%$path%', textEditor.cursorPath('%$watchedText%'))
             ),
-            textarea.initTextareaEditor()
+            textarea.initTextareaEditor(),
+            watchRef({ ref: '%$watchablePeople%', includeChildren: 'yes'})
           ]
         }),
         button({
           title: 'show path of cursor',
-          action: textEditor.withCursorPath(writeValue('%$path%', '%$cursorPath%'), '#editor'),
-          features: id('show-path')
+          action: writeValue('%$path%', textEditor.cursorPath('%$watchedText%')),
+          features: [
+            id('show-path'),
+            textEditor.enrichUserEvent('#editor'),
+          ]
         }),
         button({
           title: 'change name',
@@ -369,10 +377,13 @@ jb.component('uiTest.watchableAsText', {
         }),
         text('%$path%')
       ],
-      features: [id('group'), variable({name: 'path', value: '', watchable: true})]
+      features: [
+        id('group'),
+        variable({name: 'path', value: '', watchable: true})
+      ]
     }),
     action: runActions(
-      ctx => jb.ui.cmpOfSelector('#editor',ctx).editor.setSelectionRange({line: 2, col: 20}),
+      ctx => jb.ui.cmpOfSelector('#editor',ctx).runFEMethod('setSelectionRange',{line: 2, col: 20}),
       uiAction.click('#show-path')
     ),
     expectedResult: contains('watchablePeople~0~name~!value')
@@ -384,9 +395,9 @@ jb.component('uiTest.watchableAsTextWrite', {
     control: editableText({
       databind: watchableAsText('%$watchablePeople%'),
       style: editableText.textarea({rows: 30, cols: 80}),
-      features: id('editor')
+      features: [id('editor'), watchRef('%$watchablePeople%')],
     }),
-    action: uiAction.setText('hello', '#editor'),
+    userInput: userInput.setText('hello', '#editor'),
     expectedResult: equals('%$watchablePeople%', 'hello')
   })
 })
@@ -396,9 +407,9 @@ jb.component('uiTest.watchableAsTextWriteObjectInArray', {
     control: editableText({
       databind: watchableAsText('%$watchablePeople%'),
       style: editableText.textarea({rows: 30, cols: 80}),
-      features: id('editor')
+      features: [id('editor'), watchRef('%$watchablePeople%')],
     }),
-    action: uiAction.setText('[{a:3}]', '#editor'),
+    userInput: userInput.setText('[{a:3}]', '#editor'),
     expectedResult: equals('%$watchablePeople/0/a%', '3')
   })
 })
@@ -408,16 +419,16 @@ jb.component('uiTest.watchableAsTextWriteSetObjectToArray', {
     control: editableText({
       databind: watchableAsText('%$emptyArray%'),
       style: editableText.textarea({rows: 30, cols: 80}),
-      features: id('editor')
+      features: [id('editor'), watchRef('%$watchablePeople%')],
     }),
-    action: uiAction.setText('[{a:3}]', '#editor'),
+    userInput: userInput.setText('[{a:3}]', '#editor'),
+    extraSource: rx.pipe(source.data(0),rx.delay(1)),
     expectedResult: equals('%$emptyArray/0/a%', '3')
   })
 })
 
-
-jb.component('dataTest.watchableObjectToPrimitiveBug', {
-  impl: uiTest({
+jb.component('uiTest.watchableObjectToPrimitiveBug', {
+  impl: uiFrontEndTest({
     control: text('%$person%'),
     action: runActions(writeValue('%$person%', 'world'), writeValue('%$person%', 'hello')),
     expectedResult: contains('hello')
@@ -425,7 +436,7 @@ jb.component('dataTest.watchableObjectToPrimitiveBug', {
 })
 
 jb.component('uiTest.spliceShouldNotFireFullContainerChange', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
     control: itemlist({items: '%$watchablePeople%', controls: text('%name%')}),
     action: addToArray('%$watchablePeople%', obj(prop('name', 'mukki'))),
     expectedResult: not(contains('mukki')),
@@ -434,7 +445,7 @@ jb.component('uiTest.spliceShouldNotFireFullContainerChange', {
 })
 
 jb.component('uiTest.spliceAndWatchRefStrcture', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
     control: itemlist({
       items: '%$watchablePeople%',
       controls: text('%name%'),
@@ -447,7 +458,7 @@ jb.component('uiTest.spliceAndWatchRefStrcture', {
 })
 
 jb.component('uiTest.spliceAndWatchRefWithoutIncludeChildren', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
     control: itemlist({
       items: '%$watchablePeople%',
       controls: text('%name%'),
@@ -460,7 +471,7 @@ jb.component('uiTest.spliceAndWatchRefWithoutIncludeChildren', {
 })
 
 jb.component('uiTest.spliceAndWatchRefAddTwice', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
     control: itemlist({
       items: '%$watchablePeople%',
       controls: text('%name%'),
@@ -468,7 +479,7 @@ jb.component('uiTest.spliceAndWatchRefAddTwice', {
     }),
     action: runActions(
       addToArray('%$watchablePeople%', obj(prop('name', 'mukki'))),
-      ctx => ctx.run(addToArray('%$watchablePeople%', obj(prop('name','kukki'))))
+      addToArray('%$watchablePeople%', obj(prop('name','kukki')))
     ),
     expectedResult: contains('kukki'),
     expectedCounters: {refreshElem: 2}

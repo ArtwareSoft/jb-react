@@ -54,7 +54,7 @@ jb.component('studio.pages', {
         controls: text({
           text: pipeline(suffix('.'), extractSuffix('.')),
           style: text.alignToBottom(),
-          features: [feature.onEvent({event: 'click', action: studio.openJbEditor('%%')})]
+          features: feature.onEvent('click', studio.openJbEditor('%%'))
         }),
         style: itemlist.horizontal(),
         features: [id('functions'), css.class('studio-pages-items'), studio.watchComponents()]
@@ -73,7 +73,7 @@ jb.component('studio.ctxCounters', {
     text: ctx => (jb.frame.performance && performance.memory && performance.memory.usedJSHeapSize / 1000000)  + 'M',
     features: [
       css('{ position: absolute; bottom: 0; right: 0; }'),
-      watchObservable(ctx => jb.studio.scriptChange, 500)
+      followUp.watchObservable(studio.scriptChange(), 500)
     ]
   })
 })

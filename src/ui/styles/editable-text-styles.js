@@ -95,21 +95,10 @@ jb.component('editableText.expandable', {
           features: [
             watchRef({ref: '%$editable%', allowSelfRefresh: true}),
             hidden('%$editable%'),
-            interactive(
-              (ctx,{cmp, expandableContext}) => {
-                const elem = cmp.base.matches('input,textarea') ? cmp.base : cmp.base.querySelector('input,textarea')
-                if (elem) {
-                  elem.onblur = () => expandableContext.exitEditable()
-                  elem.onkeyup = ev => (ev.keyCode == 13 || ev.keyCode == 27) && elem.blur()
-                }
-                expandableContext.exitEditable = () => cmp.ctx.run(runActions(
-                  writeValue('%$editable%',false),
-                  (ctx,{},{onToggle}) => onToggle(ctx)
-                ))
-                expandableContext.regainFocus = () =>
-                  jb.delay(1).then(() => jb.ui.focus(elem, 'editable-text.expandable', ctx))
-            }
-            ),
+            method('exitEditable',runActions(writeValue('%$editable%',false), call('onToggle'))),
+            method('regainFocus', action.focusOnCmp()),
+            frontEnd.flow(source.frontEndEvent('blur'),sink.BEMethod('exitEditable')),
+            frontEnd.flow(source.frontEndEvent('keyup'),rx.filter(or('%keyCode%==13','%keyCode%==27')), sink.BEMethod('exitEditable')),
             (ctx,{},{editableFeatures}) => editableFeatures(ctx)
           ]
         }),

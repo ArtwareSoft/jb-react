@@ -1,33 +1,38 @@
 jb.remote = {
-    workers: {},
     cbCounter: 1,
     counter: 1,
     remoteId: Symbol.for("remoteId"),
     remoteHash: {},
+    servers: {
+        local: {
+            runCtx(ctxIdToRun,vars) { return jb.ctxDictionary[ctxIdToRun].setVars(vars).runItself() }
+        }
+    },
     pathOfDistFolder() {
         const pathOfDistFolder = jb.path(jb.studio,'studiojb.studio.host.pathOfDistFolder')
         const location = jb.path(jb.studio,'studioWindow.location') || jb.path(jb.frame,'location')
         return pathOfDistFolder && pathOfDistFolder() || location && location.href.match(/^[^:]*/)[0] + `://${location.host}/dist`
     },
     remoteSource: (remote, id,logName) => {
-        const {pipe,takeWhile,map,filter,talkbackNotifier,wrapWithSnifferWithLog} = jb.callbag
-        return wrapWithSnifferWithLog(pipe(
+        const {pipe,takeWhile,map,filter,talkbackNotifier,jbLog} = jb.callbag
+        return pipe(
             remote.messageSource, 
             filter(m=> m.id == id),
             talkbackNotifier( (t,d) => t == 2 && remote.postObj({$: 'talkback', id, t, d})),
             takeWhile(m=> m.$ != 'CBFinished'),
             filter(m=> m.data),
             map( ({data})=> new jb.jbCtx().ctx({data: data.data, vars: data.vars})),
-        ),logName|| 'remoteSource',{ channel: id} )
+            jbLog(logName || 'remote source')
+        )
     },
     remoteSink: (remote, id,logName) => source => {
-        const {pipe,Do,talkbackSrc,filter,wrapWithSnifferWithLog} = jb.callbag
-        return wrapWithSnifferWithLog(pipe(
+        const {pipe,Do,talkbackSrc,filter,jbLog} = jb.callbag
+        return pipe(
             source,
             talkbackSrc(pipe(remote.messageSource, filter(m=> m.id == id && m.$ == 'talkback'))),
             Do(m=> remote.postObj({id, data: m})),
-            Do(x=>console.log('remote sink',x))
-        ),logName || 'remoteSink',{ channel: id})
+            jbLog(logName || 'remote source')
+        )
     },
     prepareForClone: (obj,depth) => {
         depth = depth || 0
@@ -125,15 +130,16 @@ jb.remote = {
     remoteClassNames: {tst: true}
 }
 
-jb.component('worker.remoteCallbag', {
+jb.component('remote.worker', {
     type: 'remote',
     params: [
         {id: 'id', as: 'string', defaultValue: 'mainWorker' },
         {id: 'libs', as: 'array', defaultValue: ['common','remote','rx'] },
     ],    
     impl: (ctx,id,libs) => {
-        if (jb.remote.workers[id]) 
-            return jb.remote.workers[id]
+        const uri = `worker:${id}`
+        if (jb.remote.servers[uri]) 
+            return jb.remote.servers[uri]
         const distPath = jb.remote.pathOfDistFolder()
         const workerCode = [
             ...libs.map(lib=>`importScripts('${distPath}/${lib}.js')`),`
@@ -149,7 +155,8 @@ jb.component('worker.remoteCallbag', {
                 self.postObj = m => postMessage(JSON.stringify(jb.remote.prepareForClone(m)))
                 jb.remote.startCommandListener()`
         ].join('\n')
-        const worker = jb.remote.workers[id] = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})));
+        const worker = jb.remote.servers[uri] = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
+        worker.uri = uri
         worker.postObj = m => worker.postMessage(JSON.stringify(jb.remote.prepareForClone(m)))
 
         const {pipe,Do,fromEvent,map,subscribe} = jb.callbag
@@ -169,22 +176,22 @@ jb.component('worker.remoteCallbag', {
 
 jb.component('remote.local', {
     type: 'remote',
-    impl: () => ({isLocal: () => true})
+    impl: () => ({ uri: 'local'})
 })
 
 jb.component('remote.innerRx', {
     type: 'rx',
     params: [
       {id: 'rx', type: 'rx', dynamic: true },
-      {id: 'remote', type: 'remote', defaultValue: worker.remoteCallbag()}
+      {id: 'remote', type: 'remote', defaultValue: remote.local()}
     ],
     impl: (ctx,rx,remote) => {
-        if (remote.isLocal()) return rx()
+        if (remote.uri == 'local') return rx(ctx.setVar('remoteUri',remote.uri))
         const sourceId = jb.remote.cbCounter++
         const sinkId = jb.remote.cbCounter++
         jb.entries(jb.cbLogByPath||{}).filter(e=>e[0].indexOf(ctx.path) == 0).forEach(e=>e[1].result = []) // clean probe logs
 
-        const {pipe,take,filter,replay,Do,subscribe} = jb.callbag
+        const {pipe,take,filter,Do,subscribe} = jb.callbag
         const resCB = source => (start, sink) => {
             if (start != 0) return
             Promise.resolve(remote).then(remote => {
@@ -199,7 +206,7 @@ jb.component('remote.innerRx', {
 //                            Do( e => jb.log('innerCBDataSent',[e,{sourceId, sinkId},ctx],{modifier:x=>x}) )), 
                             jb.remote.remoteSink(remote,sourceId,'outputToRemote'),subscribe(() => {}))
                 }))
-                remote.postObj({ $: 'innerCB', sourceId, sinkId, propName: 'rx', ctx })
+                remote.postObj({ $: 'innerCB', sourceId, sinkId, propName: 'rx', ctx: ctx.setVar('remoteUri',remote.uri) })
                 jb.log('innerCBCodeSent',[{sourceId, sinkId},ctx])
             })
             // let talkback
@@ -215,14 +222,14 @@ jb.component('remote.innerRx', {
     }
 })
 
-jb.component('remote.sourceRx', {
+jb.component('source.remote', {
     type: 'rx',
     params: [
       {id: 'rx', type: 'rx', dynamic: true },
-      {id: 'remote', type: 'remote', defaultValue: worker.remoteCallbag()}
+      {id: 'remote', type: 'remote', defaultValue: remote.local() }
     ],
     impl: (ctx,rx,remote) => {
-        if (remote.isLocal()) return rx()
+        if (remote.uri == 'local') return rx()
         const sinkId = jb.remote.cbCounter++
         jb.entries(jb.cbLogByPath||{}).filter(e=>e[0].indexOf(ctx.path) == 0).forEach(e=>e[1].result = [])
         jb.delay(1).then(()=> remote).then(remote => remote.postObj({ $: 'sourceCB', sinkId, propName: 'rx', ctx }))

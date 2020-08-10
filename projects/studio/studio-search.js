@@ -25,7 +25,7 @@ jb.component('studio.searchList', {
               'var(--vscode-editor-findMatchHighlightBackground)'
             )
         ),
-        action: runActions(writeValue('%$studio/page%', '%id%'), dialog.closeContainingPopup()),
+        action: runActions(writeValue('%$studio/page%', '%id%'), dialog.closeDialog()),
         style: button.href(),
         features: [field.columnWidth(200), field.title('id')]
       }),

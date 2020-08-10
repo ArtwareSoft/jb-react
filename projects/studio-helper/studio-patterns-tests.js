@@ -341,27 +341,28 @@ jb.component('patternsTest.selectStyle.text', {
       Var('extractedCtrl', () => extractedCtrlSimpleText),
       Var('targetPath', 'studioTest.dragTargetText~impl')
     ],
-    control: ctx => ctx.run(studio.selectStyle('%$extractedCtrl%','%$targetPath%')),
+    control: studio.selectStyle('%$extractedCtrl%','%$targetPath%'),
     expectedResult: contains({text: 'hello', allText: 'hello'})
   })
 })
 
 jb.component('patternsTest.selectStyle.card1', {
   impl: uiTest({
+    timeout: 1000,
     vars: [
       Var('extractedCtrl', () => extractedCtrlCard1),
       Var('targetPath', 'studioTest.dragTargetCard~impl'),
-      Var('top')
+      Var('top',obj())
     ],
-    control: ctx => ctx.run(studio.selectStyle('%$extractedCtrl%','%$targetPath%')),
+    control: studio.selectStyle('%$extractedCtrl%','%$targetPath%'),
     runBefore: ctx => {
       const top = document.createElement('div')
       jb.ui.renderWidget({$: 'studioTest.dragTargetCard'},top)
       document.body.appendChild(top)
-      ctx.vars.top = top
+      ctx.vars.top.res = top
     },
     expectedResult: contains('alcatel 3C'),
-    cleanUp: ctx => document.body.removeChild(ctx.vars.top)
+    cleanUp: ctx => document.body.removeChild(ctx.vars.top.res)
   })
 })
 
@@ -370,20 +371,20 @@ jb.component('patternsTest.selectStyleDeleteUnmapped.card1', {
     vars: [
       Var('extractedCtrl', () => extractedCtrlCard1),
       Var('targetPath', 'studioTest.dragTargetCard~impl'),
-      Var('top')
+      Var('top',obj())
     ],
-    control: ctx => ctx.run(studio.selectStyle('%$extractedCtrl%','%$targetPath%')),
+    control: studio.selectStyle('%$extractedCtrl%','%$targetPath%'),
     runBefore: runActions(
       writeValue('%$studio/patterns/deleteUnmapped%', true),
       ctx => {
         const top = document.createElement('div')
         jb.ui.renderWidget({$: 'studioTest.dragTargetCard'},top)
         document.body.appendChild(top)
-        ctx.vars.top = top
+        ctx.vars.top.res = top
     }
     ),
     expectedResult: contains('alcatel 3C'),
-    cleanUp: ctx => document.body.removeChild(ctx.vars.top)
+    cleanUp: ctx => document.body.removeChild(ctx.vars.top.res)
   })
 })
 
@@ -392,7 +393,7 @@ jb.component('patternsTest.selectStyleDeleteUnmapped.card2', {
     vars: [
       Var('extractedCtrl', () => extractedCtrlCard2),
       Var('targetPath', 'studioTest.dragTargetCard~impl'),
-      Var('top')
+      Var('top',obj())
     ],
     control: ctx => ctx.run(studio.selectStyle('%$extractedCtrl%','%$targetPath%')),
     runBefore: runActions(
@@ -401,11 +402,11 @@ jb.component('patternsTest.selectStyleDeleteUnmapped.card2', {
         const top = document.createElement('div')
         jb.ui.renderWidget({$: 'studioTest.dragTargetCard'},top)
         document.body.appendChild(top)
-        ctx.vars.top = top
+        ctx.vars.top.res = top
     }
     ),
     expectedResult: contains('alcatel 3C'),
-    cleanUp: ctx => document.body.removeChild(ctx.vars.top)
+    cleanUp: ctx => document.body.removeChild(ctx.vars.top.res)
   })
 })
 

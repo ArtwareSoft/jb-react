@@ -2,7 +2,7 @@ jb.component('uiTest.tree', {
   impl: uiTest({
     control: tree({
       nodeModel: tree.jsonReadOnly('%$personWithAddress%', 'personWithAddress'),
-      features: [tree.selection({}), tree.keyboardSelection({})]
+      features: [tree.selection(), tree.keyboardSelection()]
     }),
     expectedResult: contains(['address'])
   })
@@ -23,43 +23,56 @@ jb.component('uiTest.treeRightClick', {
   })
 })
 
-jb.component('uiTest.treeDD', {
-  impl: uiTest({
+jb.component('uiTest.treeDD.betweenBranches', {
+  impl: uiFrontEndTest({
     control: tree({
       nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
-      features: [tree.selection({}), tree.dragAndDrop(), tree.keyboardSelection({})]
+      features: [tree.selection(), tree.dragAndDrop(), tree.keyboardSelection()]
     }),
-    action: ctx => jb.move(ctx.exp('%$personWithChildren/children[1]%', 'ref'),
-            ctx.exp('%$personWithChildren/friends[0]%', 'ref'),ctx),
+    action: move('%$personWithChildren/children[1]%','%$personWithChildren/friends[0]%'),
     expectedResult: equals(
       pipeline(
         list('%$personWithChildren/children%', '%$personWithChildren/friends%'),
         '%name%',
-        join({})
+        join(',')
       ),
       'Bart,Maggie,Lisa,Barnie'
     )
   })
 })
 
-jb.component('uiTest.treeDDAndBack', {
-  impl: uiTest({
+jb.component('uiTest.treeDD.sameArray', {
+  impl: uiFrontEndTest({
     control: tree({
       nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
-      features: [tree.selection({}), tree.dragAndDrop(), tree.keyboardSelection({})]
+      features: [
+        tree.selection(), tree.dragAndDrop(), tree.keyboardSelection(),
+        tree.expandPath('personWithChildren~children')
+      ]
     }),
     action: runActions(
-      ctx => jb.move(ctx.exp('%$personWithChildren/children[1]%', 'ref'),
-          ctx.exp('%$personWithChildren/friends[1]%', 'ref'),ctx),
-      delay(1),
-      ctx => jb.move(ctx.exp('%$personWithChildren/friends[1]%', 'ref'),
-          ctx.exp('%$personWithChildren/children[1]%', 'ref'),ctx)
+      uiAction.click('[title="Bart"]'),
+      uiAction.keyboardEvent({ selector: '[interactive]', type: 'keydown', keyCode: 40, ctrl: 'ctrl' }),
+    ),
+    expectedResult: contains(['Lisa','Bart','Maggie'])
+  })
+})
+
+jb.component('uiTest.treeDDAndBack', {
+  impl: uiFrontEndTest({
+    control: tree({
+      nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
+      features: [tree.selection(), tree.dragAndDrop(), tree.keyboardSelection()]
+    }),
+    action: runActions(
+      move('%$personWithChildren/children[1]%','%$personWithChildren/friends[1]%'),
+      move('%$personWithChildren/friends[1]%','%$personWithChildren/children[1]%'),
     ),
     expectedResult: equals(
       pipeline(
         list('%$personWithChildren/children%', '%$personWithChildren/friends%'),
         '%name%',
-        join({})
+        join(',')
       ),
       'Bart,Lisa,Maggie,Barnie'
     )
@@ -67,25 +80,40 @@ jb.component('uiTest.treeDDAndBack', {
 })
 
 jb.component('uiTest.treeDDTwice', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
     control: tree({
       nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
-      features: [tree.selection({}), tree.dragAndDrop(), tree.keyboardSelection({})]
+      features: [tree.selection(), tree.dragAndDrop(), tree.keyboardSelection()]
     }),
     action: runActions(
-      ctx => jb.move(ctx.exp('%$personWithChildren/children[1]%', 'ref'),
-          ctx.exp('%$personWithChildren/friends[1]%', 'ref'),ctx),
-      delay(1),
-      ctx => jb.move(ctx.exp('%$personWithChildren/children[1]%', 'ref'),
-          ctx.exp('%$personWithChildren/friends[1]%', 'ref'),ctx)
+      move('%$personWithChildren/children[1]%','%$personWithChildren/friends[1]%'),
+      move('%$personWithChildren/children[1]%','%$personWithChildren/friends[1]%'),
     ),
+    expectedResult: equals(
+      pipeline(
+        list('%$personWithChildren/children%', '%$personWithChildren/friends%'),
+        '%name%',
+        join(',')
+      ),
+      'Bart,Barnie,Maggie,Lisa'
+    )
+  })
+})
+
+jb.component('uiTest.treeDDAfterLast', {
+  impl: uiFrontEndTest({
+    control: tree({
+      nodeModel: tree.json('%$personWithChildren%', 'Homer'),
+      features: [tree.selection(), tree.dragAndDrop(), tree.keyboardSelection()]
+    }),
+    action: move('%$personWithChildren/children[1]%','%$personWithChildren/friends[1]%'),
     expectedResult: equals(
       pipeline(
         list('%$personWithChildren/children%', '%$personWithChildren/friends%'),
         '%name%',
         join({})
       ),
-      'Bart,Barnie,Maggie,Lisa'
+      'Bart,Maggie,Barnie,Lisa'
     )
   })
 })
@@ -95,12 +123,10 @@ jb.component('uiTest.treeVisualDD', {
     control: tree({
       nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
       features: [
-        tree.selection({}),
+        tree.selection(),
         tree.dragAndDrop(),
-        tree.keyboardSelection({}),
-        feature.init(
-          tree.expandPath(['personWithChildren~children', 'personWithChildren~friends'])
-        )
+        tree.keyboardSelection(),
+        tree.expandPath(['personWithChildren~children', 'personWithChildren~friends'])
       ]
     }),
     expectedResult: true
@@ -119,9 +145,7 @@ jb.component('uiTest.treeStyles', {
             tree.selection({}),
             tree.dragAndDrop(),
             tree.keyboardSelection({}),
-            feature.init(
-              tree.expandPath(['personWithChildren~children', 'personWithChildren~friends'])
-            )
+            tree.expandPath(['personWithChildren~children', 'personWithChildren~friends'])
           ]
         }),
         tree({
@@ -131,9 +155,7 @@ jb.component('uiTest.treeStyles', {
             tree.selection({}),
             tree.dragAndDrop(),
             tree.keyboardSelection({}),
-            feature.init(
-              tree.expandPath(['personWithChildren~children', 'personWithChildren~friends'])
-            )
+            tree.expandPath(['personWithChildren~children', 'personWithChildren~friends'])
           ]
         }),
         tree({
@@ -143,9 +165,7 @@ jb.component('uiTest.treeStyles', {
             tree.selection({}),
             tree.dragAndDrop(),
             tree.keyboardSelection({}),
-            feature.init(
-              tree.expandPath(['personWithChildren~children', 'personWithChildren~friends'])
-            )
+            tree.expandPath(['personWithChildren~children', 'personWithChildren~friends'])
           ]
         }),
         tree({
@@ -155,34 +175,12 @@ jb.component('uiTest.treeStyles', {
             tree.selection({}),
             tree.dragAndDrop(),
             tree.keyboardSelection({}),
-            feature.init(
-              tree.expandPath(['personWithChildren~children', 'personWithChildren~friends'])
-            )
+            tree.expandPath(['personWithChildren~children', 'personWithChildren~friends'])
           ]
         })
       ]
     }),
     expectedResult: true
-  })
-})
-
-jb.component('uiTest.treeDDAfterLast', {
-  impl: uiTest({
-    control: tree({
-      nodeModel: tree.json('%$personWithChildren%', 'Homer'),
-      features: [tree.selection({}), tree.dragAndDrop(), tree.keyboardSelection({})]
-    }),
-    action: ctx =>
-        jb.move(ctx.exp('%$personWithChildren/children[1]%', 'ref'),
-            ctx.exp('%$personWithChildren/friends[1]%', 'ref'),ctx),
-    expectedResult: equals(
-      pipeline(
-        list('%$personWithChildren/children%', '%$personWithChildren/friends%'),
-        '%name%',
-        join({})
-      ),
-      'Bart,Maggie,Barnie,Lisa'
-    )
   })
 })
 
@@ -193,15 +191,15 @@ jb.component('uiTest.tableTree.expandPath', {
       leafFields: text({text: '%val%', title: 'name'}),
       commonFields: text({text: '%path%', title: 'path'}),
       chapterHeadline: text({text: suffix('~', '%path%')}),
-      style: tableTree.plain({}),
-      features: [id('tableTree'), tableTree.expandPath('~friends~0')]
+      style: tableTree.plain(),
+      features: [id('tableTree'), tableTree.expandPath('~friends~0'), tableTree.resizer()]
     }),
     expectedResult: contains(['name', 'path', 'Homer', 'friends', 'Barnie', '~friends~0~name'])
   })
 })
 
 jb.component('uiTest.tableTree.DD', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
     control: tableTree({
       treeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
       chapterHeadline: text({
@@ -216,7 +214,7 @@ jb.component('uiTest.tableTree.DD', {
         id('tableTree'),
         tableTree.expandPath('personWithChildren~children'),
         tableTree.dragAndDrop(),
-        watchRef({ref: '%$personWithChildren/children%', strongRefresh: true})
+        watchRef({ref: '%$personWithChildren/children%', strongRefresh1: true})
       ]
     }),
     action: runActions(
@@ -228,13 +226,13 @@ jb.component('uiTest.tableTree.DD', {
 })
 
 jb.component('uiTest.tableTreeRefresh1', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
     control: tableTree({
       treeModel: tree.jsonReadOnly('%$personWithChildren%', ''),
       leafFields: text({text: '%val%', title: 'name'}),
       commonFields: text({text: '%path%', title: 'path'}),
       chapterHeadline: text({text: suffix('~', '%path%')}),
-      style: tableTree.plain({}),
+      style: tableTree.plain(),
       features: [
         tableTree.expandPath('%$globals/expanded%'),
         watchRef({ref: '%$globals/expanded%', strongRefresh: true})
@@ -246,7 +244,7 @@ jb.component('uiTest.tableTreeRefresh1', {
 })
 
 jb.component('uiTest.tableTreeUnexpandRefresh', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
     control: tableTree({
       treeModel: tree.jsonReadOnly(()=>({
           a: { a1: 'val' },
@@ -276,12 +274,11 @@ jb.component('uiTest.tableTreeExpandMulitplePaths', {
         }), ''),
       commonFields: text({text: '%path%', title: 'path'}),
       chapterHeadline: text({text: suffix('~', '%path%')}),
-      features: tableTree.expandPath('~a,~b')
+      features: tableTree.expandPath(['~a','~b'])
     }),
     expectedResult: contains(['~a~a1', '~b~b1'])
   })
 })
-
 
 jb.component('uiTest.tableTreeWithTitleCtrl', {
   impl: uiTest({
@@ -290,25 +287,11 @@ jb.component('uiTest.tableTreeWithTitleCtrl', {
       leafFields: text({
         text: '%val%',
         title: 'name',
-        features: field.titleCtrl(button({title: 'my %title%', style: button.href()}))
+        features: field.titleCtrl(button({title: 'my %title()%', style: button.href()}))
       }),
       chapterHeadline: text({text: suffix('~', '%path%')})
     }),
     expectedResult: contains(['my name', 'path', 'Homer'])
-  })
-})
-
-jb.component('uiTest.tableTreeRefreshBug', {
-  impl: uiTest({
-    control: tableTree({
-      treeModel: tree.jsonReadOnly('%$personWithChildren%', ''),
-      chapterHeadline: text({text: suffix('~', '%path%')})
-    }),
-    action: ctx => {
-      const el = ctx.vars.elemToTest.querySelector('[path="~children"]')
-      jb.ui.closestCmp(el).flip({target: el})
-    },
-    expectedResult: contains(['children', '>2<', 'friends'])
   })
 })
 

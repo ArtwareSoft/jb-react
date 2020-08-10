@@ -294,6 +294,20 @@ jb.component('dataTest.refOfStringTreeMove', {
   })
 })
 
+jb.component('dataTest.moveDown.checkPaths', {
+  impl: dataTest({
+    vars: Var('res', obj()),
+    calculate: '',
+    runBefore: ctx => {
+      const bart = ctx.exp('%$personWithChildren/children[0]%')
+      const lisa = ctx.exp('%$personWithChildren/children[1]%')
+      ctx.run(move('%$personWithChildren/children[0]%','%$personWithChildren/children[1]%'))
+      ctx.vars.res.paths = jb.asRef(bart).path()[2] + ',' + jb.asRef(lisa).path()[2]
+    },
+    expectedResult: equals('%$res/paths%', '1,0')
+  })
+})
+
 jb.component('dataTest.expWithArray', {
   impl: dataTest({
     calculate: '%$personWithChildren/children[0]/name%',
@@ -362,7 +376,7 @@ jb.component('dataTest.emptyParamAsString', {
 
 jb.component('dataTest.waitForPromise', {
   impl: dataTest({
-    calculate: ctx => jb.delay(100).then(()=>5),
+    calculate: ctx => jb.delay(1).then(()=>5),
     expectedResult: equals('5')
   })
 })
@@ -518,10 +532,10 @@ jb.component('dataTest.prettyPrintMacro', {
   })
 })
 
-jb.component('dataTest.activateFunction', {
+jb.component('dataTest.activateMethod', {
   impl: dataTest({
-    vars: [Var('f1', ctx => (() => ({ a: 5 })))],
-    calculate: '%$f1()/a%',
+    vars: Var('o1', () => ({ f1: () => ({a:5}) })),
+    calculate: '%$o1/f1()/a%',
     expectedResult: equals(5)
   })
 })
@@ -589,6 +603,7 @@ jb.component('dataTest.nonWatchableRef', {
 
 jb.component('dataTest.innerOfUndefinedVar', {
   impl: dataTest({
+    allowError: true,
     calculate: '%$unknown/a%',
     runBefore: writeValue('%$unknown/a%', '7'),
     expectedResult: ({data}) => data === undefined

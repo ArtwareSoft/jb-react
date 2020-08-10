@@ -1,108 +1,216 @@
+jb.ns('dialog,dialogs')
+
 jb.component('openDialog', {
-  type: 'action',
+  type: 'action,has-side-effects',
   params: [
-    {id: 'id', as: 'string'},
-    {id: 'style', type: 'dialog.style', dynamic: true, defaultValue: dialog.default()},
-    {id: 'content', type: 'control', dynamic: true, templateValue: group({})},
-    {id: 'menu', type: 'control', dynamic: true},
     {id: 'title', as: 'renderable', dynamic: true},
+    {id: 'content', type: 'control', dynamic: true, templateValue: group()},
+    {id: 'style', type: 'dialog.style', dynamic: true, defaultValue: dialog.default()},
+    {id: 'singletonId', as: 'string', description: 'force one instance of the dialog'},
+    {id: 'menu', type: 'control', dynamic: true},
     {id: 'onOK', type: 'action', dynamic: true},
-    {id: 'modal', type: 'boolean', as: 'boolean'},
     {id: 'features', type: 'dialog-feature[]', dynamic: true}
   ],
-  impl: function(context,id) {
-		const dialog = { id, modal: context.params.modal, em: jb.callbag.subject() }
-		const ctx = context.setVars({
+  impl: runActions(
+	  Var('$dlg',(ctx,{},{singletonId}) => {
+		const dialog = { 
+			id: singletonId || `dlg-${ctx.id}`,
+		}
+		const ctxWithDialog = ctx.componentContext._parent.setVars({
 			$dialog: dialog,
 			dialogData: {},
 			formContainer: { err: ''}
 		})
-		dialog.content = () => jb.ui.dialogs.buildComp(ctx).renderVdom() // used by probe as breaking prop
-		if (!context.probe)	jb.ui.dialogs.addDialog(dialog,ctx);
+		dialog.ctx = ctxWithDialog
 		return dialog
+	  }),
+	  dialog.createDialogTopIfNeeded(),
+	  action.subjectNext(dialogs.changeEmitter(), obj(prop('open',true), prop('dialog','%$$dlg%')))
+  )
+})
+
+jb.component('openDialog.probe', {
+	params: jb.comps.openDialog.params,
+	impl: ctx => jb.ui.ctrl(ctx.setVar('$dialog',{}), dialog.init()).renderVdom()
+})
+
+jb.component('dialog.init', {
+	type: 'feature',
+	impl: features(
+		calcProp('dummy',ctx => console.log('dialog.init', ctx)),
+		calcProp('title', '%$$model/title%'),//(ctx,{$model}) => $model.title(ctx)),
+		calcProp('contentComp', '%$$model/content%'),
+		calcProp('hasMenu', '%$$model/menu/profile%'),
+		calcProp('menuComp', '%$$model/menu%'),
+		//passPropToFrontEnd('launchingCmp','%$cmp/cmpId%'),
+		feature.init(writeValue('%$$dialog/cmpId%','%$cmp/cmpId%')),
+		htmlAttribute('id','%$$dialog/id%'),
+
+		method('dialogCloseOK', dialog.closeDialog(true)),
+		method('dialogClose', dialog.closeDialog(false)),
+		css('{z-index: 100; top: %$$state/dialogPos/top%px; left: %$$state/dialogPos/left%px }'),
+	)
+})
+
+jb.component('dialog.buildComp', {
+	params: [
+		{id: 'dialog' },
+	],
+	impl: (ctx,dlg) => jb.ui.ctrl(dlg.ctx, dialog.init())
+})
+
+jb.component('dialog.createDialogTopIfNeeded', {
+	type: 'action',
+	impl: ctx => {
+		const widgetBody = jb.ui.widgetBody(ctx)
+		if (widgetBody.querySelector(':scope>.jb-dialogs')) return
+		const vdom = ctx.run(dialog.dialogTop()).renderVdomAndFollowUp()
+		if (ctx.vars.headlessWidget) {
+			widgetBody.children.push(vdom)
+			vdom.parentNode = widgetBody
+		} else {
+			jb.ui.render(vdom,widgetBody)
+		}
 	}
 })
 
-jb.component('dialog.closeContainingPopup', {
-  description: 'close parent dialog',
-  type: 'action',
-  params: [
-    {id: 'OK', type: 'boolean', as: 'boolean', defaultValue: true}
-  ],
-  impl: (context,OK) => context.vars.$dialog && context.vars.$dialog.close({OK:OK})
+jb.component('dialog.closeDialog', {
+	type: 'action',
+	description: 'close parent dialog',
+	params: [
+		{id: 'OK', type: 'boolean', as: 'boolean', defaultValue: true},
+	],
+	impl: runActions(
+		action.if(and('%$OK%','%$dialog.hasFields%', (ctx,{$dialog}) => 
+			jb.ui.checkFormValidation && jb.ui.checkFormValidation(jb.ui.elemOfCmp(ctx, $dialog.cmpId)))),
+		action.if(not('%$formContainer.err%'),
+			runActions(
+				({},{$dialog},{OK}) => OK && $dialog.ctx.params.onOK(),
+				action.subjectNext(dialogs.changeEmitter(), obj(prop('close',true), prop('dialogId','%$$dialog/id%')))
+			)
+		)
+	)
+})
+
+jb.component('dialog.closeDialogById', {
+	type: 'action',
+	description: 'close dialog fast without checking validations and running onOK',
+	params: [
+	  {id: 'id', as: 'string'},
+	],
+	impl: action.subjectNext(dialogs.changeEmitter(), obj(prop('close',true), prop('dialogId','%$id%')))
+})
+  
+jb.component('dialog.closeAll', {
+	type: 'action',
+	impl: runActionOnItems(dialogs.shownDialogs(), dialog.closeDialogById('%%'))
+})
+
+jb.component('dialog.closeAllPopups', {
+	type: 'action',
+	impl: runActionOnItems(dialogs.shownPopups(), dialog.closeDialogById('%%'))
+})
+
+jb.component('dialogs.shownDialogs', {
+	impl: ctx => jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog').map(el=> el.getAttribute('id'))
+})
+
+jb.component('dialogs.cmpIdOfDialog', {
+	params: [
+		{id: 'id', as: 'string'},
+  	],
+	impl: (ctx,id) => jb.ui.find(jb.ui.widgetBody(ctx),`[id="${id}"]`).map(el=> el.getAttribute('cmp-id'))[0]
+})
+
+jb.component('dialogs.shownPopups', {
+	impl: ctx => jb.ui.find(jb.ui.widgetBody(ctx),'.jb-popup').map(el=>el.getAttribute('id'))
+})
+
+jb.component('dialogFeature.modal', {
+	description: 'blocks all other screen elements',
+	type: 'dialog-feature',
+	impl: features(
+		frontEnd.init(() =>	jb.ui.addHTML(document.body,'<div class="modal-overlay"></div>')),
+		frontEnd.onDestroy(() => Array.from(document.body.querySelectorAll('>.modal-overlay'))
+			.forEach(el=>document.body.removeChild(el)))
+	)
 })
 
 jb.component('dialogFeature.uniqueDialog', {
-  description: 'automatic close dialogs of the same id',
-  type: 'dialog-feature',
-  params: [
-    {id: 'id', as: 'string'},
-    {id: 'remeberLastLocation', type: 'boolean', as: 'boolean'}
-  ],
-  impl: function(context,id,remeberLastLocation) {
-		if (!id) return;
-		const dialog = context.vars.$dialog;
-		dialog.id = id;
-		jb.subscribe(dialog.em, e =>
-			e.type == 'new-dialog' && e.dialog != dialog && e.dialog.id == id && dialog.close())
-	}
+	type: 'dialog-feature',
+	params: [
+	  {id: 'id', as: 'string'},
+	],
+	impl: features(
+		passPropToFrontEnd('uniqueId','%$id%'),
+		followUp.flow(
+			source.data(ctx => jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog')
+				.filter(el=>el.getAttribute('cmp-id') != ctx.vars.cmp.cmpId)),
+			rx.filter('%pass.uniqueId%==%$id%'),
+			rx.map(({data}) => data.getAttribute('id')),
+			sink.action(dialog.closeDialogById('%%'))
+		)
+	)
+})
+
+jb.component('source.mouseMoveIncludingPreview', {
+	type: 'rx',
+	impl: rx.merge(
+		source.event('mousemove', () => document),
+		source.event('mousemove', () => jb.path(jb.studio, 'previewWindow.document'))
+	)
 })
 
 jb.component('dialogFeature.dragTitle', {
 	type: 'dialog-feature',
 	params: [
 	  {id: 'id', as: 'string'},
+	  {id: 'useSessionStorage', as: 'boolean'},
 	  {id: 'selector', as: 'string', defaultValue: '.dialog-title'},
 	],
-	impl: function(context, id,selector) {
-		  const dialog = context.vars.$dialog;
-		  const {pipe,takeUntil,merge, map,flatMap, subscribe} = jb.callbag
-		  return {
-				 css: `${selector} { cursor: pointer }`,
-				 afterViewInit: function(cmp) {
-					if (id && jb.sessionStorage(id)) {
-						const pos = JSON.parse(jb.sessionStorage(id))
-						dialog.el.style.top  = pos.top  + 'px';
-						dialog.el.style.left = pos.left + 'px';
-					}
-					const titleElem = cmp.base.querySelector(selector);
-					cmp.mousedownEm = jb.ui.fromEvent(cmp, 'mousedown',titleElem,{capture: true})
-					let mouseUpEm = jb.ui.fromEvent(cmp, 'mouseup', document)
-					let mouseMoveEm = jb.ui.fromEvent(cmp, 'mousemove', document)
-					if (jb.studio.previewWindow) {
-					  mouseUpEm = merge(mouseUpEm, jb.ui.fromEvent(cmp, 'mouseup', jb.studio.previewWindow.document))
-					  mouseMoveEm = merge(mouseMoveEm, jb.ui.fromEvent(cmp, 'mousemove', jb.studio.previewWindow.document))
-					}
-					pipe(
-							cmp.mousedownEm,
-							map(e =>  ({
-								left: e.clientX - dialog.el.getBoundingClientRect().left,
-								top:  e.clientY - dialog.el.getBoundingClientRect().top
-						  	})),
-							flatMap(imageOffset =>
-								 pipe(mouseMoveEm, takeUntil(mouseUpEm),
-									map(pos => ({
-									top:  Math.max(0,pos.clientY - imageOffset.top),
-									left: Math.max(0,pos.clientX - imageOffset.left)
-									}))
-								 )
-							),
-							//distinctUntilChanged(),
-							subscribe(pos => {
-								dialog.el.style.top  = pos.top  + 'px';
-								dialog.el.style.left = pos.left + 'px';
-								if (id) jb.sessionStorage(id, JSON.stringify(pos))
-							})
-					)
-				}
-			 }
-	  }
+	impl: features(
+		calcProp('sessionStorageId','dialogPos-%$id%'),
+		calcProp('posFromSessionStorage', If('%$useSessionStorage%', getSessionStorage('%$$props/sessionStorageId%'))),
+		css(If('%$$props/posFromSessionStorage%','{top: %$$props/posFromSessionStorage/top%px; left: %$$props/posFromSessionStorage/left%px }','')),
+		css('%$selector% { cursor: pointer; user-select: none }'),
+		frontEnd.method('setPos',({data},{el}) => { 
+			el.style.top = data.top + 'px'
+			el.style.left = data.left +'px' 
+		}),
+		passPropToFrontEnd('selector','%$selector%'),
+		passPropToFrontEnd('useSessionStorage','%$$props/sessionStorageId%'),
+		passPropToFrontEnd('sessionStorageId','%$$props/sessionStorageId%'),
+		frontEnd.prop('titleElem',({},{el,selector}) => el.querySelector(selector)),
+		frontEnd.flow(
+			source.event('mousedown','%$cmp/titleElem%'), 
+			rx.takeUntil('%$cmp/destroyed%'),
+			rx.var('offset',({data},{el}) => ({
+				left: data.clientX - el.getBoundingClientRect().left,
+				top:  data.clientY - el.getBoundingClientRect().top
+			})),
+			rx.flatMap(rx.pipe(
+				source.mouseMoveIncludingPreview(),
+				rx.takeWhile('%buttons%!=0'),
+				rx.var('ev'),
+				rx.map(({data},{offset}) => ({
+					left: Math.max(0, data.clientX - offset.left),
+					top: Math.max(0, data.clientY - offset.top),
+				})),
+//				rx.log('drag'),
+				sink.action(runActions(
+					action.runFEMethod('setPos'),
+					If('%$useSessionStorage%', action.setSessionStorage('%$sessionStorageId%','%%'))
+				))
+			)),
+			sink.action()
+		)
+	)
 })
 
 jb.component('dialog.default', { /* dialog.default */
 	type: 'dialog.style',
 	impl: customStyle({
-	  template: (cmp,{title,contentComp},h) => h('div#jb-dialog jb-default-dialog',{},[
+	  template: ({},{title,contentComp},h) => h('div#jb-dialog jb-default-dialog',{},[
 			  h('div#dialog-title',{},title),
 			  h('button#dialog-close', {onclick: 'dialogClose' },'×'),
 			  h(contentComp),
@@ -118,51 +226,76 @@ jb.component('dialogFeature.nearLauncherPosition', {
     {id: 'offsetTop', as: 'number', dynamic: true, defaultValue: 0},
     {id: 'rightSide', as: 'boolean', type: 'boolean'}
   ],
-  impl: function(context,offsetLeftF,offsetTopF,rightSide) {
+  impl: features(
+	  calcProp('launcherRectangle','%$ev/elem/clientRect%'),
+	  passPropToFrontEnd('launcherRectangle','%$$props/launcherRectangle%'),
+	  userStateProp('dialogPos', ({},{ev,$props},{offsetLeft,offsetTop,rightSide}) => {
+		if (!ev) return { left: 0, top: 0}
+		const _offsetLeft = offsetLeft() || 0, _offsetTop = offsetTop() || 0
+		if (!$props.launcherRectangle)
+			return { left: _offsetLeft + ev.clientX || 0, top: _offsetTop + ev.clientY || 0}
 		return {
-			afterViewInit: function(cmp) {
-				let offsetLeft = offsetLeftF() || 0, offsetTop = offsetTopF() || 0;
-				const jbDialog = jb.ui.findIncludeSelf(cmp.base,'.jb-dialog')[0];
-				if (!context.vars.$launchingElement) {
-					if (typeof event == 'undefined')
-						return console.log('no launcher for dialog');
-					jbDialog.style.left = offsetLeft + event.clientX + 'px'
-					jbDialog.style.top = offsetTop + event.clientY + 'px'
-					return
-				}
-				const control = context.vars.$launchingElement.el;
-				const launcherHeightFix = context.vars.$launchingElement.launcherHeightFix || jb.ui.outerHeight(control)
-				const pos = jb.ui.offset(control);
-				offsetLeft += rightSide ? jb.ui.outerWidth(control) : 0;
-				const fixedPosition = fixDialogOverflow(control,jbDialog,offsetLeft,offsetTop);
-				jbDialog.style.display = 'block';
-				jbDialog.style.left = (fixedPosition ? fixedPosition.left : pos.left + offsetLeft) + 'px';
-				jbDialog.style.top = (fixedPosition ? fixedPosition.top : pos.top + launcherHeightFix + offsetTop) + 'px';
-			}
+			left: $props.launcherRectangle.left + _offsetLeft  + (rightSide ? ev.elem.outerWidth : 0), 
+			top:  $props.launcherRectangle.top  + _offsetTop   + ev.elem.outerHeight
 		}
-
-		function fixDialogOverflow(control,dialog,offsetLeft,offsetTop) {
-			let top,left
-			const padding = 2,control_offset = jb.ui.offset(control), dialog_height = jb.ui.outerHeight(dialog), dialog_width = jb.ui.outerWidth(dialog);
-			if (control_offset.top > dialog_height && control_offset.top + dialog_height + padding + (offsetTop||0) > window.innerHeight + window.pageYOffset)
-				top = control_offset.top - dialog_height;
-			if (control_offset.left > dialog_width && control_offset.left + dialog_width + padding + (offsetLeft||0) > window.innerWidth + window.pageXOffset)
-				left = control_offset.left - dialog_width;
-			if (top || left)
-				return { top: top || control_offset.top , left: left || control_offset.left}
-		}
-	}
+	  }),
+	  frontEnd.init(({},{cmp,$state}) => { // fixDialogPositionAtScreenEdges
+		const dialog = jb.ui.findIncludeSelf(cmp.base,'.jb-dialog')[0]
+		const dialogPos = $state.dialogPos
+		let top,left
+		const padding = 2, dialog_height = jb.ui.outerHeight(dialog), dialog_width = jb.ui.outerWidth(dialog);
+		if (dialogPos.top > dialog_height && dialogPos.top + dialog_height + padding > window.innerHeight + window.pageYOffset)
+			top = dialogPos.top - dialog_height
+		if (dialogPos.left > dialog_width && dialogPos.left + dialog_width + padding > window.innerWidth + window.pageXOffset)
+			left = dialogPos.left - dialog_width
+		if (left || top)
+			cmp.refresh({ dialogPos: { top: top || dialogPos.top , left: left || dialogPos.left} })
+	  }),
+  )
 })
+  
+//   function(context,offsetLeftF,offsetTopF,rightSide) {
+// 		return {
+// 			afterViewInit: function(cmp) {
+// 				let offsetLeft = offsetLeftF() || 0, offsetTop = offsetTopF() || 0;
+// 				const jbDialog = jb.ui.findIncludeSelf(cmp.base,'.jb-dialog')[0];
+// 				if (!context.vars.$launchingElement) {
+// 					if (typeof event == 'undefined')
+// 						return console.log('no launcher for dialog');
+// 					jbDialog.style.left = offsetLeft + event.clientX + 'px'
+// 					jbDialog.style.top = offsetTop + event.clientY + 'px'
+// 					return
+// 				}
+// 				const control = context.vars.$launchingElement.el;
+// 				const launcherHeightFix = context.vars.$launchingElement.launcherHeightFix || jb.ui.outerHeight(control)
+// 				const pos = jb.ui.offset(control);
+// 				offsetLeft += rightSide ? jb.ui.outerWidth(control) : 0;
+// 				const fixedPosition = fixDialogOverflow(control,jbDialog,offsetLeft,offsetTop);
+// 				jbDialog.style.display = 'block';
+// 				jbDialog.style.left = (fixedPosition ? fixedPosition.left : pos.left + offsetLeft) + 'px';
+// 				jbDialog.style.top = (fixedPosition ? fixedPosition.top : pos.top + launcherHeightFix + offsetTop) + 'px';
+// 			}
+// 		}
+
+// 		function fixDialogOverflow(control,dialog,offsetLeft,offsetTop) {
+// 			let top,left
+// 			const padding = 2,control_offset = jb.ui.offset(control), dialog_height = jb.ui.outerHeight(dialog), dialog_width = jb.ui.outerWidth(dialog);
+// 			if (control_offset.top > dialog_height && control_offset.top + dialog_height + padding + (offsetTop||0) > window.innerHeight + window.pageYOffset)
+// 				top = control_offset.top - dialog_height;
+// 			if (control_offset.left > dialog_width && control_offset.left + dialog_width + padding + (offsetLeft||0) > window.innerWidth + window.pageXOffset)
+// 				left = control_offset.left - dialog_width;
+// 			if (top || left)
+// 				return { top: top || control_offset.top , left: left || control_offset.left}
+// 		}
+// 	}
+// })
 
 jb.component('dialogFeature.onClose', {
   type: 'dialog-feature',
   params: [
     {id: 'action', type: 'action', dynamic: true}
   ],
-  impl: interactive( (ctx,{$dialog},{action}) => {
-		const {pipe,filter,subscribe,take} = jb.callbag
-		pipe($dialog.em, filter(e => e.type == 'close'), take(1), subscribe(e=> action(ctx.setData(e.OK)))
-	)})
+  impl: backEnd.onDestroy(call('action'))
 })
 
 jb.component('dialogFeature.closeWhenClickingOutside', {
@@ -170,38 +303,19 @@ jb.component('dialogFeature.closeWhenClickingOutside', {
   params: [
     {id: 'delay', as: 'number', defaultValue: 100}
   ],
-  impl: function(context,_delay) {
-		const dialog = context.vars.$dialog;
-		dialog.isPopup = true;
-		jb.delay(10).then(() =>  { // delay - close older before
-			const {pipe, fromEvent, takeUntil,subscribe, merge,filter,take,delay} = jb.callbag
-			let clickoutEm = fromEvent('mousedown',document);
-			if (jb.studio.previewWindow)
-				clickoutEm = merge(clickoutEm, fromEvent('mousedown',(jb.studio.previewWindow || {}).document))
-
-			pipe(clickoutEm,
-				filter(e => jb.ui.closest(e.target,'.jb-dialog') == null),
-   				takeUntil( pipe(dialog.em, filter(e => e.type == 'close'))),
-				take(1),
-				delay(_delay),
-				subscribe(()=> dialog.close())
-			)
-  		})
-	}
-})
-
-jb.component('dialog.closeDialog', {
-  type: 'action',
-  params: [
-    {id: 'id', as: 'string'},
-    {id: 'delay', as: 'number', defaultValue: 200}
-  ],
-  impl: (ctx,id,delay) => jb.ui.dialogs.closeDialogs(jb.ui.dialogs.dialogs.filter(d=>d.id == id))
-})
-
-jb.component('dialog.closeAll', {
-  type: 'action',
-  impl: ctx => jb.ui.dialogs.closeAll()
+  impl: features(
+	  feature.init(writeValue('%$$dialog.isPopup%',true)),
+	  frontEnd.flow(
+	  	rx.merge(
+			source.event('mousedown','%$cmp.base.ownerDocument%'),
+			source.event('mousedown', () => jb.path(jb.studio,'previewWindow.document')),
+		),
+		rx.takeUntil('%$cmp.destroyed%'),
+		rx.filter(({data}) => jb.ui.closest(data.target,'.jb-dialog') == null),
+		rx.delay('%$delay%'),
+		rx.var('dialogId', ({},{cmp}) => cmp.base.getAttribute('id')),
+		sink.action(dialog.closeDialogById('%$dialogId%'))
+	))
 })
 
 jb.component('dialogFeature.autoFocusOnFirstInput', {
@@ -209,55 +323,52 @@ jb.component('dialogFeature.autoFocusOnFirstInput', {
   params: [
     {id: 'selectText', as: 'boolean', type: 'boolean'}
   ],
-  impl: (ctx,selectText) => ({
-		afterViewInit: cmp => {
-			jb.delay(1).then(_=> {
-				const elem = ctx.vars.$dialog.el.querySelector('input,textarea,select');
-				if (elem)
-					jb.ui.focus(elem, 'dialog-feature.auto-focus-on-first-input',ctx);
-				if (selectText)
-					elem.select();
-			})
-		}
+  impl: frontEnd.init( (ctx,{cmp},{selectText}) => {
+		const elem = cmp.base.querySelector('input,textarea,select');
+		if (elem)
+			jb.ui.focus(elem, 'dialog-feature.auto-focus-on-first-input',ctx);
+		if (selectText)
+			elem.select();
 	})
 })
 
 jb.component('dialogFeature.cssClassOnLaunchingElement', {
   type: 'dialog-feature',
-  impl: context => ({
-		afterViewInit: cmp => {
-			if (!context.vars.$launchingElement) return
-			const {pipe,filter,subscribe,take} = jb.callbag
-			const dialog = context.vars.$dialog;
-			const control = context.vars.$launchingElement.el;
-			jb.ui.addClass(control,'dialog-open');
-			pipe(dialog.em, filter(e=> e.type == 'close'), take(1), subscribe(()=> jb.ui.removeClass(control,'dialog-open')))
-		}
-	})
+  description: 'launching element toggles class "dialog-open" if the dialog is open',
+  impl: features(
+	  frontEnd.prop('launchingElement', (ctx,{cmp}) => cmp.launchingCmp && jb.ui.elemOfCmp(ctx,cmp.launchingCmp)),
+	  frontEnd.init( ({},{cmp}) => cmp.launchingElement && jb.ui.addClass(cmp.launchingElement,'dialog-open')),
+	  frontEnd.onDestroy( ({},{cmp}) => cmp.launchingElement && jb.ui.removeClass(cmp.launchingElement,'dialog-open'))
+  )
 })
+//     context => ({
+// 		afterViewInit: cmp => {
+// 			if (!context.vars.$launchingElement) return
+// 			const {pipe,filter,subscribe,take} = jb.callbag
+// 			const dialog = context.vars.$dialog;
+// 			const control = context.vars.$launchingElement.el;
+// 			jb.ui.addClass(control,'dialog-open');
+// 			pipe(dialog.em, filter(e=> e.type == 'close'), take(1), subscribe(()=> jb.ui.removeClass(control,'dialog-open')))
+// 		}
+// 	})
+// })
 
 jb.component('dialogFeature.maxZIndexOnClick', {
   type: 'dialog-feature',
   params: [
     {id: 'minZIndex', as: 'number'}
   ],
-  impl: function(context,minZIndex) {
-		const dialog = context.vars.$dialog;
-
-		return ({
-			afterViewInit: cmp => {
-				setAsMaxZIndex();
-				dialog.el.onmousedown = setAsMaxZIndex;
-			}
-		})
-
-		function setAsMaxZIndex() {
-			const maxIndex = jb.ui.dialogs.dialogs.reduce((max,d) =>
-				Math.max(max,(d.el && parseInt(d.el.style.zIndex || 100)+1) || 100)
-			, minZIndex || 100)
-			dialog.el.style.zIndex = maxIndex;
-		}
-	}
+  impl: features(
+	  passPropToFrontEnd('minZIndex','%$minZIndex%'),
+	  frontEnd.method('setAsMaxZIndex', ({},{el,minZIndex}) => {
+		  	const dialogs = Array.from(document.querySelectorAll('.jb-dialog'))
+			const calcMaxIndex = dialogs.reduce((max, _el) => 
+				Math.max(max,(_el && parseInt(_el.style.zIndex || 100)+1) || 100), minZIndex || 100)
+			el.style.zIndex = calcMaxIndex
+	  }),
+	  frontEnd.init(({},{cmp}) => { cmp.state.frontEndStatus = 'ready'; cmp.runFEMethod('setAsMaxZIndex') }),
+	  frontEnd.flow(source.frontEndEvent('mousedown'), sink.FEMethod('setAsMaxZIndex'))
+  )
 })
 
 jb.component('dialog.dialogOkCancel', {
@@ -267,11 +378,11 @@ jb.component('dialog.dialogOkCancel', {
     {id: 'cancelLabel', as: 'string', defaultValue: 'Cancel'}
   ],
   impl: customStyle({
-    template: (cmp,{title,contentComp,cancelLabel,okLabel},h) => h('div',{ class: 'jb-dialog jb-default-dialog'},[
-			h('div',{class: 'dialog-title'},title),
-			h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
+    template: (cmp,{title,contentComp,cancelLabel,okLabel},h) => h('div#jb-dialog jb-default-dialog',{},[
+			h('div#dialog-title',{},title),
+			h('button#dialog-close', { onclick: 'dialogClose' },'×'),
 			h(contentComp),
-			h('div',{class: 'dialog-buttons'},[
+			h('div#dialog-buttons',{},[
 				h('button#mdc-button', {onclick: 'dialogClose' }, [h('div#mdc-button__ripple'), h('span#mdc-button__label',{},cancelLabel)]),
 				h('button#mdc-button', {onclick: 'dialogCloseOK' },[h('div#mdc-button__ripple'), h('span#mdc-button__label',{},okLabel)]),
 			]),
@@ -285,61 +396,46 @@ jb.component('dialogFeature.resizer', {
   params: [
     {id: 'resizeInnerCodemirror', as: 'boolean', description: 'effective only for dialog with a single codemirror element', type: 'boolean'}
   ],
-  impl: (ctx,codeMirror) => ({
-	templateModifier: (vdom,cmp,state) => {
-            if (vdom && vdom.tag != 'div') return vdom;
-				vdom.children.push(jb.ui.h('img', {class: 'jb-resizer'}));
-			return vdom;
-	},
-	css: '>.jb-resizer { cursor: pointer; position: absolute; right: 1px; bottom: 1px }',
-
-	afterViewInit: function(cmp) {
-		const resizerElem = cmp.base.querySelector('.jb-resizer');
-		const {pipe, map, flatMap,takeUntil, merge,subscribe,Do} = jb.callbag
-
-		cmp.mousedownEm = jb.ui.fromEvent(cmp,'mousedown',resizerElem)
-		let mouseUpEm = jb.ui.fromEvent(cmp,'mouseup',document)
-		let mouseMoveEm = jb.ui.fromEvent(cmp,'mousemove',document)
-
-		if (jb.studio.previewWindow) {
-			mouseUpEm = merge(mouseUpEm,jb.ui.fromEvent(cmp,'mouseup',jb.studio.previewWindow.document))
-			mouseMoveEm = merge(mouseMoveEm,jb.ui.fromEvent(cmp,'mousemove',jb.studio.previewWindow.document))
-		}
-
-		let codeMirrorElem,codeMirrorSizeDiff;
-		pipe(cmp.mousedownEm,
-			Do(e=>{
-				if (codeMirror) {
-					codeMirrorElem = cmp.base.querySelector('.CodeMirror,.jb-textarea-alternative-for-codemirror');
-					if (codeMirrorElem)
-					codeMirrorSizeDiff = codeMirrorElem.getBoundingClientRect().top - cmp.base.getBoundingClientRect().top
-						+ (cmp.base.getBoundingClientRect().bottom - codeMirrorElem.getBoundingClientRect().bottom);
-				}
-			}),
-			map(e =>  ({
-				left: cmp.base.getBoundingClientRect().left,
-				top:  cmp.base.getBoundingClientRect().top
+  impl: features(
+	  templateModifier( ({},{vdom}) => { vdom && vdom.tag == 'div' && vdom.children.push(jb.ui.h('img#jb-resizer',{})) }),
+	  css('>.jb-resizer { cursor: pointer; position: absolute; right: 1px; bottom: 1px }'),
+	  frontEnd.method('setSize',({data},{cmp}) => { 
+		cmp.base.style.height = data.top + 'px'
+		cmp.base.style.width = data.left +'px'
+		if (cmp.base.resizeInnerCodemirror)
+			cmp.codeMirrorElem.style.height = (data.top - cmp.codeMirrorElemDiff) + 'px'
+	  }),
+	  frontEnd.prop('resizerElem',({},{cmp}) => cmp.base.querySelector('.jb-resizer')),
+	  passPropToFrontEnd('resizeInnerCodemirror','%$resizeInnerCodemirror%'),
+	  frontEnd.prop('codeMirrorElemDiff',({},{el,resizeInnerCodemirror}) => {
+		  const codeMirrorElem = resizeInnerCodemirror && el.querySelector('.CodeMirror,.jb-textarea-alternative-for-codemirror')
+		  return codeMirrorElem ? codeMirrorElem.getBoundingClientRect().top - el.getBoundingClientRect().top
+				+ (el.getBoundingClientRect().bottom - codeMirrorElem.getBoundingClientRect().bottom) : 0
+	  }),
+	  frontEnd.flow(rx.pipe(
+		source.event('mousedown','%$cmp.resizerElem%'), 
+		rx.takeUntil('%$cmp.destroyed%'),
+		rx.var('offset',({},{el}) => ({
+			left: el.getBoundingClientRect().left,
+			top:  el.getBoundingClientRect().top
+		})),
+		rx.flatMap(rx.pipe(
+			source.mouseMoveIncludingPreview(), 
+			rx.takeWhile('%buttons%!=0'),
+			rx.map(({data},{offset}) => ({
+				left: Math.max(0, data.clientX - offset.left),
+				top: Math.max(0, data.clientY - offset.top),
 			})),
-			flatMap(imageOffset =>
-				pipe(mouseMoveEm,
-					takeUntil(mouseUpEm),
-					map(pos => ({ top:  pos.clientY - imageOffset.top, left: pos.clientX - imageOffset.left }))
-				)
-			),
-			subscribe(pos => {
-				cmp.base.style.height  = pos.top  + 'px';
-				cmp.base.style.width = pos.left + 'px';
-				if (codeMirrorElem)
-					codeMirrorElem.style.height  = (pos.top - codeMirrorSizeDiff) + 'px';
-			})
-		  )
-	}})
+			sink.FEMethod('setSize')
+		)),
+		sink.action()
+	)))
 })
 
 jb.component('dialog.popup', {
   type: 'dialog.style',
   impl: customStyle({
-	template: (cmp,state,h) => h('div#jb-dialog jb-popup',{},h(state.contentComp)),
+	template: ({},{contentComp},h) => h('div#jb-dialog jb-popup',{},h(contentComp)),
     css: '{ position: absolute; background: var(--jb-dropdown-background); box-shadow: 2px 2px 3px var(--jb-dropdown-shadow); padding: 3px 0; border: 1px solid var(--jb-dropdown-border) }',
     features: [
       dialogFeature.maxZIndexOnClick(),
@@ -353,7 +449,7 @@ jb.component('dialog.popup', {
 jb.component('dialog.transparent-popup', {
 	type: 'dialog.style',
 	impl: customStyle({
-	  template: (cmp,state,h) => h('div#jb-dialog jb-popup',{},h(state.contentComp)),
+	  template: ({},{contentComp},h) => h('div#jb-dialog jb-popup',{},h(contentComp)),
 	  css: '{ position: absolute; padding: 3px 0; }',
 	  features: [
 		dialogFeature.maxZIndexOnClick(),
@@ -362,92 +458,59 @@ jb.component('dialog.transparent-popup', {
 		dialogFeature.nearLauncherPosition({})
 	  ]
 	})
-  })
+})
   
 jb.component('dialog.div', {
   type: 'dialog.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},h(state.contentComp)),
+    template: ({},{contentComp},h) => h('div#jb-dialog jb-popup',{},h(contentComp)),
     css: '{ position: absolute }'
   })
 })
 
-jb.ui.dialogs = {
-	dialogs: [],
-	buildComp(ctx) { // used with addDialog profile
-		const dialog = ctx.vars.$dialog
-		return jb.ui.ctrl(ctx, features(
-			calcProp('title', _ctx=> _ctx.vars.$model.title(_ctx)),
-			calcProp('contentComp', '%$$model.content%'),
-			calcProp('hasMenu', '%$$model/menu/profile%'),
-			calcProp('menuComp', '%$$model/menu%'),
-			feature.init( ({},{cmp}) => cmp.dialog = dialog),
-			interactive( ({},{cmp}) => {
-				dialog.cmp = cmp
-				cmp.dialog = dialog
-				dialog.onOK = ctx2 => ctx.params.onOK(cmp.ctx.extendVars(ctx2));
-				cmp.dialogCloseOK = () => dialog.close({OK: true});
-				cmp.dialogClose = args => dialog.close(args);
-				dialog.el = cmp.base;
-				if (!cmp.base.style.zIndex) cmp.base.style.zIndex = 100;
-		})))
-	},
-
-	addDialog(dialog,ctx) {
-		const self = this;
-		jb.log('addDialog',[dialog])
-		this.dialogs.push(dialog);
-		if (dialog.modal && !document.querySelector('.modal-overlay'))
-			jb.ui.addHTML(document.body,'<div class="modal-overlay"></div>');
-		jb.ui.render(jb.ui.h(this.buildComp(ctx)), this.dialogsTopElem(ctx))
-		this.dialogs.forEach(d=> d.em.next({ type: 'new-dialog', dialog }));
-
-		dialog.close = function(args) {
-			jb.log('closeDialog',[dialog])
-			if (this.hasFields && jb.ui.checkFormValidation) {
-				jb.ui.checkFormValidation(dialog.el)
-				if (ctx.vars.formContainer.err && args && args.OK) // not closing dialog with errors
-					return;
-			}
-			return Promise.resolve().then(_=>{
-				if (dialog.closing) return;
-				dialog.closing = true;
-				if (dialog.onOK && args && args.OK)
-					return dialog.onOK(ctx)
-			}).then( _ => {
-				dialog.em.next({type: 'close', OK: args && args.OK})
-				dialog.em.complete();
-
-				const index = self.dialogs.indexOf(dialog);
-				if (index != -1)
-					self.dialogs.splice(index, 1);
-				if (dialog.modal && document.querySelector('.modal-overlay'))
-					document.body.removeChild(document.querySelector('.modal-overlay'));
-				jb.ui.unmount(dialog.el)
-				if (dialog.el.parentElement === self.dialogsTopElem(ctx))
-					self.dialogsTopElem(ctx).removeChild(dialog.el)
-			})
-		},
-		dialog.closed = () => self.dialogs.indexOf(dialog) == -1;
-	},
-	closeDialogs(dialogs) {
-		return dialogs.slice(0).reduce((pr,dialog) => pr.then(()=>dialog.close()), Promise.resolve())
-	},
-	closeAll() {
-		return this.closeDialogs(this.dialogs)
-	},
-	closePopups() {
-		return jb.ui.dialogs.closeDialogs(jb.ui.dialogs.dialogs.filter(d=>d.isPopup))
-	},
-	dialogsTopElem(ctx) {
-		if (!this._dialogsTopElem) {
-			this._dialogsTopElem = (ctx.vars.elemToTest || document.body).ownerDocument.createElement('div')
-			this._dialogsTopElem.className = 'jb-dialogs'
-			;(ctx.vars.elemToTest || document.body).appendChild(this._dialogsTopElem)
-		}
-		return this._dialogsTopElem
-	},
-	reRenderAll(ctx) {
-		this._dialogsTopElem && Array.from(this._dialogsTopElem.children).filter(x=>x).forEach(el=> jb.ui.refreshElem(el,null,{srcCtx: ctx}))
+jb.component('dialogs.changeEmitter', {
+	type: 'rx',
+	params: [
+		{id: 'widgetId', defaultValue: '%$widgetId%'},
+	],
+	category: 'source',
+	impl: (ctx,widgetId) => {
+		widgetId = widgetId || 'default'
+		jb.ui.dlgEmitters = jb.ui.dlgEmitters || {}
+		jb.ui.dlgEmitters[widgetId] = jb.ui.dlgEmitters[widgetId] || ctx.run(rx.subject({replay: true}))
+		return jb.ui.dlgEmitters[widgetId]
 	}
-}
+})
+
+jb.component('dialog.dialogTop', {
+	type: 'control',
+	params: [
+		{id: 'widgetId', defaultValue: '%$widgetId%'},
+		{id: 'style', type: 'dialogs.style', defaultValue: dialogs.defaultStyle(), dynamic: true},
+	],
+	impl: ctx => jb.ui.ctrl(ctx)
+})
+
+jb.component('dialogs.defaultStyle', {
+	type: 'dialogs.style',
+	impl: customStyle({
+		template: ({},{},h) => h('div#jb-dialogs',{},[]),
+		features: [
+			followUp.flow(
+				source.subject(dialogs.changeEmitter()),
+				rx.filter('%open%'),
+				rx.var('dialogVdom', pipeline(dialog.buildComp('%dialog%'),'%renderVdomAndFollowUp()%')),
+				rx.var('delta', obj(prop('children', obj(prop('toAppend','%$dialogVdom%'))))),
+				rx.log('open dialog'),
+				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
+			),
+			followUp.flow(source.subject(dialogs.changeEmitter()), 
+				rx.filter('%close%'),
+				rx.var('dlgCmpId', dialogs.cmpIdOfDialog('%dialogId%')),
+				rx.var('delta', obj(prop('children', obj(prop('deleteCmp','%$dlgCmpId%'))))),
+				rx.log('close dialog'),
+				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
+			)
+		]
+	})
+})

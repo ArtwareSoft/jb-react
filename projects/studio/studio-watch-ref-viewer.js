@@ -98,7 +98,7 @@ jb.component('studio.animateWatchRefParticle', {
                 },
                 duration: '1000'
               },
-            dialog.closeContainingPopup()
+            dialog.closeDialog()
           )
         })
       ]
@@ -140,7 +140,7 @@ jb.component('studio.animateCmpDestroy', {
                 direction: 'reverse',
                 duration: '1000'
               },
-            dialog.closeContainingPopup()
+            dialog.closeDialog()
           )
         })
       ]
@@ -170,7 +170,7 @@ jb.component('studio.animateCmpRefresh', {
               animation: {'$': 'animation.rotate', '$byValue': ['5turn']},
               duration: '1000'
             },
-          dialog.closeContainingPopup()
+          dialog.closeDialog()
         )
       })
     })

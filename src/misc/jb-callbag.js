@@ -31,12 +31,11 @@ jb.callbag = {
         let res = cbs[0]
         for (let i = 1, n = cbs.length; i < n; i++) {
           const newRes = cbs[i](res)
-          if (!newRes) {
-            debugger
-            cbs[i](res)
-          }
-          else
-            res = newRes
+          if (!newRes) debugger
+          newRes.ctx = cbs[i].ctx
+          Object.defineProperty(newRes, 'name',{value: 'register ' + cbs[i].name})
+
+          res = newRes
         }
         return res
       },
@@ -125,7 +124,7 @@ jb.callbag = {
                               return
                           }
                           if (t === 2) {
-                              notifierTalkback = null
+                              //notifierTalkback = null
                               done = d
                               if (d != null) {
                                   sourceTalkback(2)
@@ -330,6 +329,7 @@ jb.callbag = {
           }
       }},
       fromEvent: (event, elem, options) => (start, sink) => {
+          if (!elem) return
           if (start !== 0) return
           let disposed = false
           const handler = ev => sink(1, ev)
@@ -344,9 +344,7 @@ jb.callbag = {
             else throw new Error('cannot remove listener from elem. No method found.')
           })
         
-          if (disposed) {
-            return
-          }
+          if (disposed) return
         
           if (elem.addEventListener) elem.addEventListener(event, handler, options)
           else if (elem.addListener) elem.addListener(event, handler, options)
@@ -396,7 +394,7 @@ jb.callbag = {
           return subj
       },
       replayFirst: (dataToPortNum, timeOut) => source => { // replay the first message of each port, used not to loose first message that was sent by ser
-        timeOut = timeOut || 30000
+        timeOut = timeOut || 30
         let store = {}, sinks = [], talkback, done = false
       
         source(0, function replayFirst(t, d) {
@@ -429,8 +427,8 @@ jb.callbag = {
               sinks = sinks.filter(s => s !== sink)
           })
           const now = new Date().getTime()
-          Object.keys(store).forEach(k => (now > store[k].time + timeOut) && store[k] == 'done')
-          Object.keys(store).forEach(k => store[k] != 'done' && sink(1, store[k].d))
+          Object.keys(store).filter(k => now > store[k].time + timeOut).forEach(k => delete store[k])
+          Object.keys(store).forEach(k => sink(1, store[k].d))
       
           if (done) sink(2)
         }
@@ -515,14 +513,19 @@ jb.callbag = {
               }
           })
       },
-      debounceTime: (duration,immediate)  => source => (start, sink) => {
+      // swallow events. When new event arrives wait for a duration to spit it, if another event arrived when waiting, the original event is 'deleted'
+      // 'immediate' means that the first event is spitted immediately
+      debounceTime: (duration,immediate = true) => source => (start, sink) => {
           if (start !== 0) return
           let timeout
           source(0, function debounceTime(t, d) {
-            // every event clears the existing timeout, if any
-            if (!timeout && (immediate === undefined || immediate)) sink(t,d)
+            let immediateEventSent = false
+            if (!timeout && immediate) { sink(t,d); immediateEventSent = true }
             if (timeout) clearTimeout(timeout)
-            if (t === 1) timeout = setTimeout(() => {sink(1, d); timeout = null}, typeof duration == 'function' ? duration() : duration)
+            if (t === 1) timeout = setTimeout(() => { 
+              timeout = null; 
+              if (!immediateEventSent) sink(1, d)
+            }, typeof duration == 'function' ? duration() : duration)
             else sink(t, d)
           })
       },
@@ -621,19 +624,19 @@ jb.callbag = {
             }
           })
       },
-      forEach: operation => source => {
+      forEach: operation => sinkSrc => {
         let talkback
-        source(0, function forEach(t, d) {
+        sinkSrc(0, function forEach(t, d) {
             if (t === 0) talkback = d
             if (t === 1) operation(d)
             if (t === 1 || t === 0) talkback(1)
         })
       },
-      subscribe: (listener = {}) => source => {
+      subscribe: (listener = {}) => sinkSrc => {
           if (typeof listener === "function") listener = { next: listener }
           let { next, error, complete } = listener
           let talkback
-          source(0, function subscribe(t, d) {
+          sinkSrc(0, function subscribe(t, d) {
             if (t === 0) talkback = d
             if (t === 1 && next) next(d)
             if (t === 1 || t === 0) talkback(1)  // Pull
@@ -643,9 +646,7 @@ jb.callbag = {
           })
           return () => talkback && talkback(2) // dispose
       },
-      mapPromise: promiseF => source => jb.callbag.concatMap(d => jb.callbag.fromPromise(Promise.resolve().then(()=>promiseF(d))))(source),
-      doPromise: promiseF => source =>  jb.callbag.concatMap(d => jb.callbag.fromPromise(Promise.resolve().then(()=>promiseF(d)).then(()=>d)))(source),
-      toPromise: source => {
+      toPromise: sinkSrc => {
           return new Promise((resolve, reject) => {
             jb.callbag.subscribe({
               next: resolve,
@@ -655,14 +656,14 @@ jb.callbag = {
                 err.code = 'NO_ELEMENTS'
                 reject(err)
               },
-            })(jb.callbag.last(source))
+            })(jb.callbag.last(sinkSrc))
           })
       },
-      toPromiseArray: source => {
+      toPromiseArray: sinkSrc => {
           const res = []
           let talkback
           return new Promise((resolve, reject) => {
-                  source(0, function toPromiseArray(t, d) {
+                  sinkSrc(0, function toPromiseArray(t, d) {
                       if (t === 0) talkback = d
                       if (t === 1) res.push(d)
                       if (t === 1 || t === 0) talkback(1)  // Pull
@@ -671,6 +672,8 @@ jb.callbag = {
               })
           })
       },
+      mapPromise: promiseF => source => jb.callbag.concatMap(d => jb.callbag.fromPromise(Promise.resolve().then(()=>promiseF(d))))(source),
+      doPromise: promiseF => source =>  jb.callbag.concatMap(d => jb.callbag.fromPromise(Promise.resolve().then(()=>promiseF(d)).then(()=>d)))(source),
       interval: period => (start, sink) => {
         if (start !== 0) return
         let i = 0
@@ -775,14 +778,13 @@ jb.callbag = {
           sink(t, d)
         })
       },       
-      // sniffer to be used on source E.g. interval
-      sourceSniffer: (source, snifferSubject) => (start, sink) => {
+      sniffer: (source, snifferSubject) => (start, sink) => {
         if (start !== 0) return
-        jb.log('snifferStarted',[])
+        jb.log('snifferStarted',[source])
         let talkback
-        const talkbackWrapper = (t,d) => { snif('talkback',t,d); talkback(t,d) }
+        const talkbackWrapper = (t,d) => { report('talkback',t,d); talkback(t,d) }
         const sniffer = (t,d) => {
-          snif('out',t,d)
+          report('out',t,d)
           if (t == 0) {
             talkback = d
             Object.defineProperty(talkbackWrapper, 'name', { value: talkback.name + '-sniffer' })
@@ -795,7 +797,7 @@ jb.callbag = {
 
         source(0,sniffer)
         
-        function snif(dir,t,d) {
+        function report(dir,t,d) {
           const now = new Date()
           const time = `${now.getSeconds()}:${now.getMilliseconds()}`
           snifferSubject.next({dir, t, d, time})
@@ -803,25 +805,19 @@ jb.callbag = {
             snifferSubject.complete && snifferSubject.complete(d)
         }
       },
-      // sniffer to be used in a middle pipe element. E.g., map
-      sniffer: (cb, snifferSubject) => source => (start, sink) => {
+      timeoutLimit: (timeout,err) => source => (start, sink) => {
         if (start !== 0) return
-        jb.log('snifferStarted',[])
-        const cbSource = (start, sink) => start === 0 && source(0, wrapper(sink,'in'))
-        cb(cbSource)(0, wrapper(sink,'out'))
+        let talkback
+        let timeoutId = setTimeout(()=> {
+          talkback && talkback(2)
+          sink(2, typeof err == 'function' ? err() : err || 'timeout')
+        }, typeof timeout == 'function' ? timeout() : timeout)
 
-        function wrapper(sink, dir) {
-          const ret = (t,d) => {
-            const now = new Date()
-            const time = `${now.getSeconds()}:${now.getMilliseconds()}`
-            snifferSubject.next({dir, t, d, time})
-            if (t == 2)
-              snifferSubject.complete && snifferSubject.complete(d)
-              sink(t,d)
-          }
-          Object.defineProperty(ret, 'name', { value: cb.name + '-' + dir })
-          return ret
-        }
+        source(0, function timeoutLimit(t, d) {
+          if (t === 2) clearTimeout(timeoutId)
+          if (t === 0) talkback = d
+          sink(t, d)
+        })        
       },
       fromCallBag: source => source,
       fromAny: (source, name, options) => {
@@ -836,31 +832,29 @@ jb.callbag = {
           else
               return jb.callbag.fromIter([source])
       },
-      isCallbag: source => typeof source == 'function' && source.toString().split('=>')[0].split('{')[0].replace(/\s/g,'').match(/start,sink|t,d/),
-      isCallbagFunc: source => typeof source == 'function' && source.toString().split('\n')[0].replace(/\s/g,'').match(/source|start,sink|t,d/),
+      isSink: cb => typeof cb == 'function' && cb.toString().match(/sinkSrc/),
+      isCallbag: cb => typeof cb == 'function' && cb.toString().split('=>')[0].split('{')[0].replace(/\s/g,'').match(/start,sink|t,d/),
 
-      wrapWithSnifferForLogByPath(ctx,res) {
+      injectSniffers(cbs,ctx) {
         const _jb = ctx.frame().jb
-        if (_jb.cbLogByPath && typeof res == 'function' && jb.callbag.isCallbagFunc(res) && jb.path(ctx,'profile.$') != 'rx.subscribe') {
-          const {sniffer,isCallbag,sourceSniffer} = _jb.callbag
-          // wrap cb with sniffer
-          const log = _jb.cbLogByPath[ctx.path] = { callbagLog: true, result: [] }
+        if (!_jb) return cbs
+        return cbs.reduce((acc,cb) => [...acc,cb, ...injectSniffer(cb) ] ,[])
+
+        function injectSniffer(cb) {
+          if (!cb.ctx || cb.sniffer || jb.callbag.isSink(cb)) return []
+          _jb.cbLogByPath =  _jb.cbLogByPath || {}
+          const log = _jb.cbLogByPath[cb.ctx.path] = { callbagLog: true, result: [] }
           const listener = {
             next(r) { log.result.push(r) },
-            complete(e) { log.complete = true; }
+            complete() { log.complete = true }
           }
-          res = isCallbag(res) ? sourceSniffer(res, listener) : sniffer(res, listener)
+          const res = source => _jb.callbag.sniffer(source, listener)
+          res.sniffer = true
+          res.ctx = cb.ctx
+          Object.defineProperty(res, 'name', { value: 'sniffer' })
+          return [res]
         }
-        return res
       },  
-      wrapWithSnifferWithLog(cb,logName,...params) {
-        const {sniffer,isCallbag,sourceSniffer,isCallbagFunc} = jb.callbag
-        if (typeof cb == 'function' && isCallbagFunc(cb)) {
-          const listener = {
-            next(r) { jb.log(logName,[r,...params]) },
-          }
-          return isCallbag(cb) ? sourceSniffer(cb, listener) : sniffer(cb, listener)
-        }
-        return cb
-      },  
+      log: name => jb.callbag.Do(x=>console.log(name,x)),
+      jbLog: (name,...params) => jb.callbag.Do(x=>jb.log(name,[x,...params])),
 }

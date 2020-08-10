@@ -13,16 +13,15 @@ jb.component('button', {
   impl: ctx => jb.ui.ctrl(ctx, features(
       watchAndCalcModelProp('title'),
       watchAndCalcModelProp('raised'),
-      defHandler('onclickHandler', (ctx,{cmp, ev}) => {
-        //const ev = event
-        if (ev && ev.ctrlKey && cmp.ctrlAction)
-          cmp.ctrlAction(cmp.ctx.setVar('event',ev))
-        else if (ev && ev.altKey && cmp.altAction)
-          cmp.altAction(cmp.ctx.setVar('event',ev))
+      method('onclickHandler', (_ctx,{cmp, ev}) => {
+        if (ev && ev.ctrlKey)
+          cmp.runBEMethod('ctrlAction',_ctx.data,_ctx.vars)
+        else if (ev && ev.altKey)
+          cmp.runBEMethod('altAction',_ctx.data,_ctx.vars)
         else
-          cmp.action && cmp.action(cmp.ctx.setVar('event',ev))
+          ctx.params.action(_ctx)
       }),
-      interactive( ({},{cmp}) => cmp.action = jb.ui.wrapWithLauchingElement(ctx.params.action, cmp.ctx, cmp.base)),
+      feature.userEventProps('ctrlKey,altKey'),
       ctx => ({studioFeatures :{$: 'feature.contentEditable', param: 'title' }}),
     ))
 })
@@ -34,9 +33,7 @@ jb.component('ctrlAction', {
   params: [
     {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
-  impl: interactive(
-    (ctx,{cmp},{action}) => cmp.ctrlAction = jb.ui.wrapWithLauchingElement(action, ctx, cmp.base)
-  )
+  impl: method('ctrlAction', (ctx,{},{action}) => action(ctx))
 })
 
 jb.component('altAction', {
@@ -46,19 +43,6 @@ jb.component('altAction', {
   params: [
     {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
-  impl: interactive(
-    (ctx,{cmp},{action}) => cmp.altAction = jb.ui.wrapWithLauchingElement(action, ctx, cmp.base)
-  )
+  impl: method('altAction', (ctx,{},{action}) => action(ctx))
 })
 
-jb.component('buttonDisabled', {
-  type: 'feature',
-  category: 'button:70',
-  description: 'define condition when button is enabled',
-  params: [
-    {id: 'enabledCondition', type: 'boolean', mandatory: true, dynamic: true}
-  ],
-  impl: interactive(
-    (ctx,{cmp},{enabledCondition}) => cmp.isEnabled = ctx2 => enabledCondition(ctx.extendVars(ctx2))
-  )
-})

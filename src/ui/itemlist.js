@@ -20,7 +20,7 @@ jb.component('itemlist', {
 jb.component('itemlist.noContainer', {
   type: 'feature',
   category: 'group:20',
-  impl: ctx => ({ extendCtx: (ctx,cmp) => ctx.setVars({itemlistCntr: null}) })
+  impl: () => ({ extendCtx: ctx => ctx.setVars({itemlistCntr: null}) })
 })
 
 jb.component('itemlist.initContainerWithItems', {
@@ -36,24 +36,29 @@ jb.component('itemlist.initContainerWithItems', {
 jb.component('itemlist.init', {
   type: 'feature',
   impl: features(
-    calcProp('items', (ctx,{cmp}) => jb.ui.itemlistCalcItems(ctx,cmp)),
+    calcProp('allItems', '%$$model/items%'),
+    calcProp('items', itemlist.calcSlicedItems()),
     calcProp({
         id: 'ctrls',
-        value: ctx => {
-          const controlsOfItem = item =>
-            ctx.vars.$model.controls(ctx.setVar(ctx.vars.$model.itemVariable,item).setData(item)).filter(x=>x)
-          return ctx.vars.$props.items.map(item=> Object.assign(controlsOfItem(item),{item})).filter(x=>x.length > 0)
+        value: (ctx,{$model,$props}) => {
+          const controlsOfItem = item => {
+            const itemCtx = ctx.setVar($model.itemVariable,item).setData(item)
+            return $model.controls(itemCtx).filter(x=>x).map(ctrl => Object.assign(ctrl,{ctxId : jb.ui.preserveCtx(itemCtx)}))
+          }
+          return $props.items.map(item=> controlsOfItem(item)).filter(x=>x.length > 0)
         }
       }),
-    itemlist.initContainerWithItems(),
+    itemlist.initContainerWithItems()
   )
 })
 
 jb.component('itemlist.initTable', {
   type: 'feature',
   impl: features(
-    calcProp('items', (ctx,{cmp}) => jb.ui.itemlistCalcItems(ctx,cmp)),
-    calcProp({id: 'fields', value: '%$$model/controls/field%'}),
+    calcProp('allItems', '%$$model/items%'),
+    calcProp('items', itemlist.calcSlicedItems()),
+    calcProp('itemsCtxs', pipeline('%$$props/items%', ctx => jb.ui.preserveCtx(ctx.setData()))),
+    calcProp('fields', '%$$model/controls/field()%'),
     itemlist.initContainerWithItems()
   )
 })
@@ -64,27 +69,37 @@ jb.component('itemlist.infiniteScroll', {
     {id: 'pageSize', as: 'number', defaultValue: 2}
   ],
   impl: features(
-    defHandler('onscrollHandler', (ctx,{ev, $state},{pageSize}) => {
-      const elem = ev.target
-      if (!$state.visualLimit || !ev.scrollPercentFromTop || ev.scrollPercentFromTop < 0.9) return
-      const allItems = ctx.vars.$model.items()
-      const needsToLoadMoreItems = $state.visualLimit.shownItems && $state.visualLimit.shownItems < allItems.length
-      if (!needsToLoadMoreItems) return
-      const cmpCtx = jb.ui.ctxOfElem(elem)
-      if (!cmpCtx) return
-      const itemsToAppend = allItems.slice($state.visualLimit.shownItems, $state.visualLimit.shownItems + pageSize)
-      const ctxToRun = cmpCtx.ctx({profile: Object.assign({},cmpCtx.profile,{ items: () => itemsToAppend}), path: ''}) // change the profile to return itemsToAppend
-      const vdom = ctxToRun.runItself().renderVdom()
-      const itemlistVdom = jb.ui.findIncludeSelf(vdom,'tbody')[0] || jb.ui.findIncludeSelf(vdom,'.jb-itemlist')[0]
-      const elemToExpand = jb.ui.findIncludeSelf(elem,'tbody')[0] || jb.ui.findIncludeSelf(elem,'.jb-itemlist')[0]
-      if (itemlistVdom) {
-        jb.ui.appendItems(elemToExpand,itemlistVdom,{ctx})
-        $state.visualLimit.shownItems += itemsToAppend.length
-      }
-    }
-      ),
-    templateModifier(({},{vdom}) => vdom.setAttribute('on-scroll',true))
+    method('appendToShownItems', runActions(
+      Var('shown','%$$state/visualLimit/shownItems%'),
+      Var('itemsToAppend', pipeline('%$$props/allItems%',slice('%$shown%',math.plus('%$shown%','%$pageSize%')))),
+      Var('delta', itemlist.deltaOfItems('%$itemsToAppend%')),
+      //Var('cmpId','%$cmp/cmpId%'),
+      writeValue('%$$state/visualLimit/shownItems%', math.plus('%$shown%','%$itemsToAppend/length%')),
+      action.applyDeltaToCmp('%$delta%','%$cmp/cmpId%')
+    )),
+    feature.userEventProps('elem.scrollTop,elem.scrollHeight'),
+    frontEnd.flow(
+      source.frontEndEvent('scroll'),
+      rx.var('scrollPercentFromTop',({data}) => 
+        (data.currentTarget.scrollTop + data.currentTarget.getBoundingClientRect().height) / data.currentTarget.scrollHeight),
+      rx.filter('%$scrollPercentFromTop%>0.9'),
+      sink.BEMethod('appendToShownItems')
+    )
   )
+})
+
+jb.component('itemlist.deltaOfItems', {
+  params: [
+    {id: 'items', defaultValue: '%%', as: 'array' }
+  ],
+  impl: (ctx,items) => {
+    const deltaCalcCtx = ctx.vars.cmp.ctx
+    const vdomWithDeltaItems = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => items}), path: ''}).runItself().renderVdom() // change the profile to return itemsToAppend
+    const emptyItemlistVdom = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => []}), path: ''}).runItself().renderVdom()
+    const delta = jb.ui.compareVdom(emptyItemlistVdom,vdomWithDeltaItems)
+    delta.attributes = {} // keep the original cmpId
+    return delta
+  }
 })
 
 jb.component('itemlist.incrementalFromRx', {
@@ -92,99 +107,35 @@ jb.component('itemlist.incrementalFromRx', {
   params: [
     {id: 'prepend', as: 'boolean', boolean: 'last at top' }
   ],
-  impl: features(
-    interactive(
-      (ctx,{cmp, $state}) => $state.rxItems && jb.callbag.pipe(
-          ctx.vars.$model.items()[0],
-          jb.callbag.takeUntil( cmp.destroyed ),
-          jb.callbag.subscribe(item => jb.ui.runActionOfElem(cmp.base,'nextItem',{item: item.data, elem: cmp.base}))
-    )),
-    defHandler('nextItem', (ctx,{ev},{prepend}) => {
-      const {elem} = ev
-      const item = ev.item && ev.item._parent ? ev.item.data : ev.item
-      const cmpCtx = jb.ui.ctxOfElem(elem)
-      if (!cmpCtx) return
-      const ctxToRun = cmpCtx.ctx({profile: Object.assign({},cmpCtx.profile,{ items: () => [item]}), path: ''}) // change the profile to return itemsToAppend
-      const vdom = ctxToRun.runItself().renderVdom()
-      const itemlistVdom = jb.ui.findIncludeSelf(vdom,'tbody')[0] || jb.ui.findIncludeSelf(vdom,'.jb-itemlist')[0]
-      const elemToExpand = jb.ui.findIncludeSelf(elem,'tbody')[0] || jb.ui.findIncludeSelf(elem,'.jb-itemlist')[0]
-      itemlistVdom && jb.ui.appendItems(elemToExpand,itemlistVdom,{ctx, prepend })
-    }))
+  impl: followUp.flow(
+      source.callbag(ctx => ctx.exp('%$$props.items%').callbag || jb.callbag.fromIter([])),
+      rx.map(If('%vars%','%data%','%%')), // rx/cb compatible ...
+      rx.var('delta', itemlist.deltaOfItems('%%')),
+      sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
+    )
 })
 
-jb.component('itemlist.fastFilter', {
-  type: 'feature',
-  description: 'use display:hide to filter itemlist elements',
-  params: [
-    {id: 'showCondition', mandatory: true, dynamic: true, defaultValue: itemlistContainer.conditionFilter()},
-    {id: 'filtersRef', mandatory: true, as: 'ref', dynamic: true, defaultValue: '%$itemlistCntrData/search_pattern%'}
-  ],
-  impl: interactive(
-    (ctx,{cmp},{showCondition,filtersRef}) =>
-      jb.subscribe(jb.ui.refObservable(filtersRef(cmp.ctx),cmp,{srcCtx: ctx}),
-          () => Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).forEach(elem=>
-                elem.style.display = showCondition(jb.ctxDictionary[elem.getAttribute('jb-ctx')]) ? 'block' : 'none'))
-  )
-})
+jb.component('itemlist.calcSlicedItems', {
+  impl: ctx => {
+    const {$props, $model, cmp} = ctx.vars
+    const firstItem = $props.allItems[0]
+    if (jb.callbag.isCallbag(firstItem)) {
+      const res = []
+      res.callbag = firstItem
+      return res
+    }
+    const slicedItems = addSlicedState(cmp, $props.allItems, $model.visualSizeLimit)
+    const itemsRefs = jb.isRef(jb.asRef(slicedItems)) ? 
+        Object.keys(slicedItems).map(i=> jb.objectProperty(slicedItems,i)) : slicedItems
+    return itemsRefs
 
-jb.component('itemlist.ulLi', {
-  type: 'itemlist.style',
-  impl: customStyle({
-    template: (cmp,{ctrls, selected},h) => h('ul#jb-itemlist',{},
-        ctrls.map(ctrl=> h('li#jb-item', {'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx), class: selected && selected === jb.val(ctrl[0].ctx.data) ? 'selected' : '' } ,
-          ctrl.map(singleCtrl=>h(singleCtrl))))),
-    css: `{ list-style: none; padding: 0; margin: 0;}
-    >li { list-style: none; padding: 0; margin: 0;}`,
-    features: itemlist.init()
-  })
-})
-
-jb.component('itemlist.div', {
-  type: 'itemlist.style',
-  params: [
-    {id: 'spacing', as: 'number', defaultValue: 0}
-  ],
-  impl: customStyle({
-    template: (cmp,{ctrls,selected},h) => h('div#jb-itemlist jb-drag-parent',{},
-        ctrls.map(ctrl=> h('div#jb-item', {'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx), class: selected && selected === jb.val(ctrl[0].ctx.data) ? 'selected' : ''} ,
-          ctrl.map(singleCtrl=>h(singleCtrl))))),
-    features: itemlist.init()
-  })
-})
-
-jb.component('itemlist.horizontal', {
-  type: 'itemlist.style',
-  params: [
-    {id: 'spacing', as: 'number', defaultValue: 0}
-  ],
-  impl: customStyle({
-    template: (cmp,{ctrls,selected},h) => h('div#jb-itemlist jb-drag-parent',{},
-        ctrls.map(ctrl=> h('div#jb-item', {'jb-ctx': jb.ui.preserveCtx(ctrl[0] && ctrl[0].ctx), class: selected && selected === jb.val(ctrl[0].ctx.data) ? 'selected' : ''} ,
-          ctrl.map(singleCtrl=>h(singleCtrl))))),
-    css: `{display: flex}
-        >* { margin-right: %$spacing%px }
-        >*:last-child { margin-right:0 }`,
-    features: itemlist.init()
-  })
-})
-
-jb.ui.itemlistCalcItems = function(ctx,cmp) {
-  const items = ctx.vars.$model.items()
-  if (jb.callbag.isCallbag(items[0])) {
-    cmp.state.rxItems = true
-    return []
+    function addSlicedState(cmp,items,visualLimit) {
+      if (items.length > visualLimit)
+        cmp.state.visualLimit = { totalItems: items.length, shownItems: visualLimit }
+        return visualLimit < items.length ? items.slice(0,visualLimit) : items
+    }
   }
-  const slicedItems = addSlicedState(cmp, items, ctx.vars.$model.visualSizeLimit)
-  const itemsRefs = jb.isRef(jb.asRef(slicedItems)) ? 
-      Object.keys(slicedItems).map(i=>jb.objectProperty(slicedItems,i)) : slicedItems
-  return itemsRefs
-
-  function addSlicedState(cmp,items,visualLimit) {
-    if (items.length > visualLimit)
-      cmp.state.visualLimit = { totalItems: items.length, shownItems: visualLimit }
-      return visualLimit < items.length ? items.slice(0,visualLimit) : items
-  }
-}
+})
 
 // ****************** Selection ******************
 
@@ -200,63 +151,61 @@ jb.component('itemlist.selection', {
     {id: 'cssForSelected', as: 'string', defaultValue: 'color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground)'}
   ],
   impl: features(
-    () => ({
-      onclick: true,
-      ondblclick: true,
-    }),
     css(({},{},{cssForSelected}) => ['>.selected','>*>.selected','>*>*>.selected'].map(sel=>sel+ ' ' + jb.ui.fixCssLine(cssForSelected)).join('\n')),
-    defHandler('onSelection', (ctx,{ev},{databind,onSelection,selectedToDatabind}) => {
-      const selectedData = jb.val(((ev.ctxId && jb.ctxDictionary[ev.ctxId]) || {}).data)
-      jb.writeValue(databind(), selectedToDatabind(ctx.setData(selectedData)), ctx)
-      onSelection(ctx.setData(selectedData))
+    userStateProp({
+      id: 'selected', // selected represented as ctxId of selected data
+      phase: 20, // after 'ctrls'
+      value: (ctx,{$props,$state},{databind, autoSelectFirst}) => {
+        const currentVal = $state.selected && jb.path(jb.ctxDictionary[$state.selected],'data')
+        const val = jb.val(jb.val(databind()) || currentVal || (autoSelectFirst && $props.items[0]))
+        const itemsCtxs = $props.itemsCtxs || $props.ctrls.map(ctrl=> ctrl[0].ctxId)
+        return itemsCtxs.filter(ctxId => jb.val(ctx.run(itemlist.ctxIdToData(() => ctxId))) == val)[0]
+      }
     }),
-    defHandler('onDoubleClick', (ctx,{ev},{databind,onDoubleClick,selectedToDatabind}) => {
-      const selectedData = jb.val(((ev.ctxId && jb.ctxDictionary[ev.ctxId]) || {}).data)
-      jb.writeValue(databind(), selectedToDatabind(ctx.setData(selectedData)), ctx)
-      onDoubleClick(ctx.setData(selectedData))
+    templateModifier(({},{vdom, selected}) => vdom.querySelectorAll('.jb-item')
+        .filter(el => selected == el.getAttribute('jb-ctx'))
+        .forEach(el => el.addClass('selected'))
+    ),
+    method('onSelection', runActionOnItem(itemlist.ctxIdToData(),
+      runActions(
+        If(isRef('%$databind()%'),writeValue('%$databind()%','%$selectedToDatabind()%')),
+        call('onSelection'))
+    )),
+    method('onDoubleClick', runActionOnItem(itemlist.ctxIdToData(),
+      runActions(
+        If(isRef('%$databind()%'),writeValue('%$databind()%','%$selectedToDatabind()%')),
+        call('onDoubleClick'))
+    )),
+    followUp.flow(source.data('%$$props/selected%'),
+		  rx.filter(and('%$autoSelectFirst%',not('%$$state/refresh%'))),
+      sink.BEMethod('onSelection')
+    ),
+    frontEnd.method('applyState', ({},{cmp}) => {
+      Array.from(cmp.base.querySelectorAll('.jb-item.selected,*>.jb-item.selected,*>*>.jb-item.selected'))
+        .forEach(elem=>elem.classList.remove('selected'))
+      Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
+        .filter(elem=> elem.getAttribute('jb-ctx') == cmp.state.selected)
+        .forEach(elem=> {elem.classList.add('selected'); elem.scrollIntoViewIfNeeded()})
     }),
-    calcProp({
-      id: 'selected',
-      phase: 20, // after 'items'
-      value: (ctx,{$props},{databind, autoSelectFirst}) => jb.val(databind()) || (autoSelectFirst && $props.items[0])
+    frontEnd.method('setSelected', ({data},{cmp}) => {
+        cmp.state.selected = data
+        cmp.runFEMethod('applyState')
     }),
-    interactive( ({},{cmp}) => {
-        const {pipe,map,filter,subscribe,merge,subject,distinctUntilChanged} = jb.callbag
-        cmp.selectionEmitter = subject();
 
-        cmp.setSelected = selected => {
-          cmp.state.selected = selected
-          if (!cmp.base) return
-          Array.from(cmp.base.querySelectorAll('.jb-item.selected,*>.jb-item.selected,*>*>.jb-item.selected'))
-            .forEach(elem=>elem.classList.remove('selected'))
-          Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
-            .filter(elem=> elem.getAttribute('jb-ctx') == selected)
-            .forEach(elem=> {elem.classList.add('selected'); elem.scrollIntoViewIfNeeded()})
-        }
-
-        const clickEmitter = pipe(
-          merge(cmp.onclick, cmp.ondblclick),
-          map(e=>ctxIdOfElem(e.target)),
-        )
-        pipe(merge(cmp.selectionEmitter, clickEmitter),
-          filter(x=>x),
-          distinctUntilChanged(),
-          subscribe( ctxId => {
-            cmp.setSelected(ctxId)
-            jb.ui.runActionOfElem(cmp.base,'onSelection',{ctxId}) 
-          }))
-
-        pipe(cmp.ondblclick, map(e=> ctxIdOfElem(e.target)), filter(x=>x),
-          subscribe(ctxId => jb.ui.runActionOfElem(cmp.base,'onDoubleClick',{ctxId}))
-        )
-        const selected = ctxIdOfElem(cmp.base.querySelector('.jb-item.selected,*>.jb-item.selected,*>*>.jb-item.selected'))
-        selected && cmp.selectionEmitter.next(selected)
-
-        function ctxIdOfElem(el) {
-          const itemElem = jb.ui.closest(el,'.jb-item')
-          return itemElem && itemElem.getAttribute('jb-ctx')
-        }
-    })
+    frontEnd.prop('selectionEmitter', rx.subject()),
+    frontEnd.flow(
+      source.frontEndEvent('dblclick'), 
+      rx.map(itemlist.ctxIdOfElem('%target%')), rx.filter('%%'), 
+      sink.action(runActions(action.runFEMethod('setSelected'), action.runBEMethod('onDoubleClick')))
+    ),
+    frontEnd.flow(
+        rx.merge( 
+          rx.pipe(source.frontEndEvent('click'), rx.map(itemlist.ctxIdOfElem('%target%')), rx.filter('%%')),
+          source.subject('%$cmp/selectionEmitter%')
+        ),
+        rx.distinctUntilChanged(),
+        sink.action(runActions(action.runFEMethod('setSelected'), action.runBEMethod('onSelection')))
+    )
   )
 })
 
@@ -268,91 +217,89 @@ jb.component('itemlist.keyboardSelection', {
     {id: 'onEnter', type: 'action', dynamic: true}
   ],
   impl: features(
-    templateModifier(({},{vdom}) => vdom && vdom.setAttribute('tabIndex',0)),
-    defHandler('onEnter', (ctx,{ev},{onEnter}) => onEnter(ctx.setData(jb.val(((ev.ctxId && jb.ctxDictionary[ev.ctxId]) || {}).data)))),    
-    interactive( (ctx,{cmp},{autoFocus}) => {
-        const {pipe,map,filter,subscribe,merge} = jb.callbag
-        const selectionKeySourceCmp = jb.ui.parentCmps(cmp.base).find(_cmp=>_cmp.selectionKeySource)
-        let onkeydown = jb.path(cmp.ctx.vars,'itemlistCntr.keydown') || jb.path(selectionKeySourceCmp,'onkeydown');
-        if (!onkeydown) {
-          onkeydown = jb.ui.fromEvent(cmp, 'keydown')
-          if (autoFocus)
-            jb.ui.focus(cmp.base,'itemlist.keyboard-selection init autoFocus',ctx)
-        } else {
-          onkeydown = merge(onkeydown,jb.ui.fromEvent(cmp, 'keydown'))
-        }
-        cmp.onkeydown = onkeydown
-
-        pipe(cmp.onkeydown,
-          filter(e=> e.keyCode == 13 && cmp.state.selected),
-          subscribe(() => jb.ui.runActionOfElem(cmp.base,'onEnter',{ctxId: cmp.state.selected})))
-
-        pipe(cmp.onkeydown,
-          filter(ev => !ev.ctrlKey && (ev.keyCode == 38 || ev.keyCode == 40)),
-          map(ev => {
-              ev.stopPropagation();
-              const diff = ev.keyCode == 40 ? 1 : -1;
-              const ctxs = Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).map(el=>el.getAttribute('jb-ctx'))
-              const selectedIndex = ctxs.indexOf(cmp.state.selected) + diff
-              return ctxs[Math.min(ctxs.length-1,Math.max(0,selectedIndex))];
-          }),
-          subscribe(selected => cmp.selectionEmitter && cmp.selectionEmitter.next(selected) ))
-    }))
+    htmlAttribute('tabIndex',0),
+    method('onEnter', runActionOnItem(itemlist.ctxIdToData(),call('onEnter'))),
+    frontEnd.passSelectionKeySource(),
+    frontEnd.prop('onkeydown', rx.merge(source.frontEndEvent('keydown'), source.findSelectionKeySource() )),
+    frontEnd.flow('%$cmp.onkeydown%', rx.filter('%keyCode%==13'), rx.filter('%$cmp.state.selected%'), sink.BEMethod('onEnter','%$cmp.state.selected%') ),
+    frontEnd.flow(
+      '%$cmp.onkeydown%',
+      rx.filter(not('%ctrlKey%')),
+      rx.filter(inGroup(list(38,40),'%keyCode%')),
+      rx.map(itemlist.nextSelected(If('%keyCode%==40',1,-1))), 
+      sink.subjectNext('%$cmp/selectionEmitter%')
+    ),
+    passPropToFrontEnd('autoFocus','%$autoFocus%'),
+    frontEnd.init(If(and('%$autoFocus%',not('%$selectionKeySourceCmpId%')), action.focusOnCmp('itemlist autofocus') ))
+  )
 })
 
 jb.component('itemlist.dragAndDrop', {
   type: 'feature',
   impl: features(
-    defHandler('moveItem', (ctx,{ev}) => {
-      const {from,to} = ev
-      const fromRef = jb.asRef(((from && jb.ctxDictionary[from]) || {}).data)
-      const toRef = jb.asRef(((to && jb.ctxDictionary[to]) || {}).data)
-      jb.move(fromRef,toRef,ctx)
-    }),    
-    interactive(({},{cmp}) => {
+    method('moveItem', runActions(
+      move(itemlist.ctxIdToData('%from%'),itemlist.ctxIdToData('%to%') ),
+      action.refreshCmp()
+    )),
+    frontEnd.prop('drake', ({},{cmp}) => {
         if (!jb.frame.dragula) return jb.logError('itemlist.dragAndDrop - the dragula lib is not loaded')
-
-        const drake = dragula([cmp.base.querySelector('.jb-drag-parent') || cmp.base] , {
+        return dragula([cmp.base.querySelector('.jb-drag-parent') || cmp.base] , {
           moves: (el,source,handle) => jb.ui.parents(handle,{includeSelf: true}).some(x=>jb.ui.hasClass(x,'drag-handle'))
         })
+    }),
+    frontEnd.flow(source.dragulaEvent('drag',list('el')), 
+      rx.map(itemlist.ctxIdOfElem('%el%')),
+      rx.do(({},{cmp}) => cmp.ctxsOnDrag = Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).map(el=>el.getAttribute('jb-ctx'))),
+      sink.subjectNext('%$cmp/selectionEmitter%')
+    ),
+    frontEnd.flow(source.dragulaEvent('drop',list('dropElm','target','source','sibling')), 
+      rx.map(obj(
+        prop('from', itemlist.ctxIdOfElem('%dropElm%')),
+        prop('to', itemlist.ctxIdFromSibling('%sibling%'))
+      )),
+      sink.BEMethod('moveItem')
+    ),
+    frontEnd.flow(
+      source.frontEndEvent('keydown'),
+      rx.filter('%ctrlKey%'),
+      rx.filter(inGroup(list(38,40),'%keyCode%')),
+      rx.map(obj(
+        prop('from', itemlist.nextSelected(0)),
+        prop('to', itemlist.nextSelected(If('%keyCode%==40',1,-1)))
+      )),          
+      sink.BEMethod('moveItem')
+    )
+  )
+})
 
-        drake.on('drag', el => {
-          cmp.ctxs = Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).map(el=>el.getAttribute('jb-ctx'))
-          let item = el.getAttribute('jb-ctx')
-          if (!item) {
-            const item_comp = el._component || (el.firstElementChild && el.firstElementChild._component);
-            item = item_comp && item_comp.ctx.id;
-          }
-          el.dragged = {
-            item,
-            remove: item => cmp.ctxs.splice(ctxs.indexOf(item), 1)
-          }
-          cmp.selectionEmitter && cmp.selectionEmitter.next(el.dragged.item);
-        })
-        drake.on('drop', (dropElm, target, source,sibling) => {
-            const draggedIndex = cmp.ctxs.indexOf(dropElm.dragged.item)
-            const targetIndex = sibling ? jb.ui.index(sibling) : cmp.ctxs.length
-            jb.ui.runActionOfElem(cmp.base,'moveItem',{from: cmp.ctxs[draggedIndex], to: cmp.ctxs[targetIndex-1]})
-            dropElm.dragged = null;
-            cmp.refresh && cmp.refresh()
-        })
-        cmp.dragAndDropActive = true
+jb.component('source.dragulaEvent',{
+  type: 'rx:0',
+  params: [
+    {id: 'event', as: 'string'},
+    {id: 'argNames', as: 'array', description: "e.g., ['dropElm', 'target', 'source']" }
+  ],
+  impl: source.callbag(({},{cmp},{event,argNames}) => 
+    jb.callbag.create(obs=> cmp.drake.on(event, (...args) => obs(jb.objFromEntries(args.map((v,i) => [argNames[i],v]))))))
+  
+  // (ctx,event,argNames) => (start, sink) => {
+  //   if (start !== 0) return
+  //   const drake = jb.path(ctx.vars,'cmp.drake')
+  //   if (!drake) return
+  //   drake.on(event, function dragula(...args) { sink(1, ctx.dataObj(jb.objFromEntries(args.map((v,i) => [argNames[i],v])))) } )
+  //   sink(0, (t,d) => {})
+  // }
+})
 
-        // ctrl + Up/Down
-        jb.delay(1).then(_=>{ // wait for the keyboard selection to register keydown
-        if (!cmp.onkeydown) return;
-        jb.subscribe(cmp.onkeydown, e => {
-            if (e.ctrlKey && (e.keyCode == 38 || e.keyCode == 40)) {
-              const ctxs = Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).map(el=>el.getAttribute('jb-ctx'))
-              const diff = e.keyCode == 40 ? 1 : -1;
-              const selectedIndex = ctxs.indexOf(cmp.state.selected)
-              if (selectedIndex == -1) return;
-              const targetIndex = (selectedIndex + diff+ ctxs.length) % ctxs.length;
-              jb.ui.runActionOfElem(cmp.base,'moveItem',{from: cmp.state.selected, to: ctxs[targetIndex]})
-              cmp.refresh && cmp.refresh()
-            }})
-        })
-    }))
+jb.component('itemlist.ctxIdFromSibling', {
+  type: 'data:0',
+  params: [
+    {id: 'sibling', defaultValue: '%%'}
+  ],
+  impl: (ctx,sibling) => {
+    const ctxs = ctx.vars.cmp.ctxsOnDrag
+    const targetIndex = sibling ? jb.ui.index(sibling) : ctxs.length
+    return ctxs[targetIndex-1];
+  }
 })
 
 jb.component('itemlist.dragHandle', {
@@ -377,4 +324,60 @@ jb.component('itemlist.divider', {
     {id: 'space', as: 'number', defaultValue: 5}
   ],
   impl: css('>.jb-item:not(:first-of-type) { border-top: 1px solid rgba(0,0,0,0.12); padding-top: %$space%px }')
+})
+
+jb.component('itemlist.ctxIdOfElem', {
+  type: 'data:0',
+  description: 'also supports multiple elements',
+  params: [
+    {id: 'elem', defaultValue: '%%'}
+  ],
+  impl: (ctx,el) => {
+      const itemElem = jb.ui.closest(el,'.jb-item')
+      return itemElem && itemElem.getAttribute('jb-ctx')
+  }
+})
+
+jb.component('itemlist.ctxIdsOfElems', {
+  type: 'data:0',
+  params: [
+    {id: 'elem', defaultValue: '%%'}
+  ],
+  impl: (ctx,elem) => jb.asArray(elem).find(el=> {
+      const itemElem = jb.ui.closest(el,'.jb-item')
+      return itemElem && itemElem.getAttribute('jb-ctx')
+  })
+})
+
+jb.component('itemlist.ctxIdToData', {
+  type: 'data:0',
+  params: [
+    {id: 'ctxId', as: 'string', defaultValue: '%%'}
+  ],
+  impl: (ctx,ctxId) => jb.path(jb.ctxDictionary[ctxId],'data')
+})
+
+jb.component('itemlist.findSelectionSource', {
+  type: 'data:0',
+  impl: ctx => {
+    const {cmp,itemlistCntr} = ctx.vars
+    const srcCtxId = itemlistCntr && itemlistCntr.selectionKeySourceCmp
+    return [jb.ui.parentCmps(cmp.base).find(_cmp=>_cmp.selectionKeySource), document.querySelector(`[ctxId="${srcCtxId}"]`)]
+      .map(el => el && el._component && el._component.selectionKeySource).filter(x=>x)[0]
+  }
+})
+
+jb.component('itemlist.nextSelected', {
+  type: 'data:0',
+  params: [
+    {id: 'diff', as: 'number'},
+    {id: 'elementFilter', dynamic: 'true', defaultValue: true }
+  ],
+  impl: (ctx,diff,elementFilter) => {
+    const {cmp} = ctx.vars
+    const ctxs = Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).filter(el=>elementFilter(el))
+      .map(el=>+el.getAttribute('jb-ctx'))
+    const selectedIndex = ctxs.indexOf(+cmp.state.selected) + diff
+    return ctxs[Math.min(ctxs.length-1,Math.max(0,selectedIndex))]
+  }
 })
