@@ -3153,6 +3153,7 @@ jb.component('source.callbag', {
 jb.component('source.event', {
   type: 'rx',
   category: 'source',
+  macroByValue: true,
   params: [
     {id: 'event', as: 'string', mandatory: true, options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll'},
     {id: 'elem', description: 'html element', defaultValue: () => jb.frame.document },
@@ -3204,7 +3205,7 @@ jb.component('rx.pipe', {
   params: [
     {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
   ],
-  impl: (ctx,elems) => jb.callbag.pipe(...jb.callbag.injectSniffers(elems(ctx),ctx))
+  impl: (ctx,elems) => jb.callbag.pipe(...jb.callbag.injectSniffers(elems(ctx).filter(x=>x),ctx))
 })
 
 jb.component('rx.merge', {
@@ -4010,7 +4011,7 @@ class WatchableValueByRef {
     return this.valOfPath(path)
   }
   watchable(val) {
-    return this.resources() === val || this.objToPath.get(val) || (val && this.objToPath.get(val[jbId]))
+    return this.resources() === val || typeof val != 'number' && (this.objToPath.get(val) || (val && this.objToPath.get(val[jbId])))
   }
   isRef(ref) {
     return ref && ref.$jb_obj && this.watchable(ref.$jb_obj);
@@ -4614,13 +4615,15 @@ function setAtt(elem,att,val) {
             elem[id] = JSON.parse(val) || ''
         } catch (e) {}
         jb.log('htmlChange',[`data ${id}`,...arguments])
-    } else if (att.indexOf('$pass__') === 0) {
+    } else if (att.indexOf('$vars__') === 0) {
         const id = att.slice(7)
         try {
-            elem.pass = elem.pass || {}
-            elem.pass[id] = JSON.parse(val) || ''
+            elem.vars = elem.vars || {}
+            elem.vars[id] = JSON.parse(val) || ''
         } catch (e) {}
-        jb.log('htmlChange',[`pass__ ${id}`,...arguments])
+        jb.log('htmlChange',[`vars__ ${id}`,...arguments])
+    } else if (att === '$focus' && val) {
+        jb.ui.focus(elem,'render vdom')
     } else if (att === '$text') {
         elem.innerText = val || ''
         jb.log('htmlChange',['text',...arguments])
@@ -4668,14 +4671,13 @@ function render(vdom,parentElem,prepend) {
     function doRender(vdom,parentElem) {
         jb.log('htmlChange',['createElement',...arguments])
         const elem = createElement(parentElem.ownerDocument, vdom.tag)
-        jb.entries(vdom.attributes).forEach(e=>setAtt(elem,e[0],e[1])) // filter(e=>e[0].indexOf('on') != 0 && !isAttUndefined(e[0],vdom.attributes)).
+        jb.entries(vdom.attributes).forEach(e=>setAtt(elem,e[0],e[1]))
         jb.asArray(vdom.children).map(child=> doRender(child,elem)).forEach(el=>elem.appendChild(el))
         prepend ? parentElem.prepend(elem) : parentElem.appendChild(elem)
         return elem
     }
     const res = doRender(vdom,parentElem)
     ui.findIncludeSelf(res,'[interactive]').forEach(el=> mountFrontEnd(el))
-    //ui.garbageCollectCtxDictionary()
     return res
 }
 
@@ -4768,10 +4770,10 @@ Object.assign(jb.ui, {
     takeUntilCmpDestroyed(cmp) {
         const {pipe,take,filter,log,takeUntil} = jb.callbag
         return takeUntil(pipe(jb.ui.BECmpsDestroyNotification,
+            log(`takeUntilCmpDestroyed ${cmp.cmpId}`),
+            filter(x=>x.cmps.indexOf(''+cmp.cmpId) != -1),
+            log(`Activated takeUntilCmpDestroyed ${cmp.cmpId}`),
             take(1),
-            log('takeUntilCmpDestroyed'),
-            filter(x=>x.cmps.indexOf(cmp.cmpId) != -1),
-            log('takeUntilCmpDestroyed activated'),
         ))
     },
     ctrl(context,options) {
@@ -4800,12 +4802,7 @@ Object.assign(jb.ui, {
     garbageCollectCtxDictionary(forceNow) {
         if (!forceNow)
             return jb.delay(1000).then(()=>ui.garbageCollectCtxDictionary(true))
-        // const now = new Date().getTime()
-        // ui.ctxDictionaryLastCleanUp = ui.ctxDictionaryLastCleanUp || now
-        // const timeSinceLastCleanUp = now - ui.ctxDictionaryLastCleanUp
-        // if (!forceNow && timeSinceLastCleanUp < 1000) return
-        // ui.ctxDictionaryLastCleanUp = now
-    
+   
         const used = 'jb-ctx,mount-ctx,pick-ctx,props-ctx,methods,frontEnd,originators'.split(',')
             .flatMap(att=>querySelectAllWithWidgets(`[${att}]`).flatMap(el => el.getAttribute(att).split(',').map(x=>Number(x.split('-').pop()))))
                     .sort((x,y)=>x-y)
@@ -4863,7 +4860,7 @@ Object.assign(jb.ui, {
         ctx = ctx.setVar('$refreshElemCall',true).setVar('$cmpId', cmpId).setVar('$cmpVer', cmpVer+1) // special vars for refresh
         if (jb.ui.inStudio()) // updating to latest version of profile
             ctx.profile = jb.execInStudio({$: 'studio.val', path: ctx.path})
-        const cmp = ctx.profile.$ == 'openDialog' ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself()
+        const cmp = ctx.profile.$ == 'openDialog' ? ctx.run(dialog.buildComp()) : ctx.runItself()
         jb.log('refreshElem',[ctx,cmp, ...arguments]);
 
         if (jb.path(options,'cssOnly')) {
@@ -4935,6 +4932,7 @@ class frontEndCmp {
         //this.ctx = new jb.jbCtx()
         this.state = { ...elem.state, ...(keepState && jb.path(elem._component,'state')), frontEndStatus: 'initializing' }
         this.base = elem
+        this.cmpId = elem.getAttribute('cmp-id')
         this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve)
         elem._component = this
         this.runFEMethod('calcProps')
@@ -4947,7 +4945,7 @@ class frontEndCmp {
         ;(this.base.frontEndMethods || []).filter(x=>x.method == method).forEach(({path}) => tryWrapper(() => {
             const profile = path.split('~').reduce((o,p)=>o[p],jb.comps)
             const feMEthod = jb.run( new jb.jbCtx(this.ctx, { profile, path }))
-            const vars = {cmp: this, $state: this.state, el: this.base, ...this.base.pass, ..._vars }
+            const vars = {cmp: this, $state: this.state, el: this.base, ...this.base.vars, ..._vars }
             this.ctx.setData(data).setVars(vars).run(feMEthod.frontEndMethod.action)
         }, `frontEnd-${method}`))
     }
@@ -4955,7 +4953,7 @@ class frontEndCmp {
         (this.base.frontEndMethods || []).filter(x=>x.method == 'enrichUserEvent').map(({path}) => tryWrapper(() => {
             const actionPath = path+'~action'
             const profile = actionPath.split('~').reduce((o,p)=>o[p],jb.comps)
-            const vars = {cmp: this, $state: this.state, el: this.base, ...this.base.pass, ev, userEvent }
+            const vars = {cmp: this, $state: this.state, el: this.base, ...this.base.vars, ev, userEvent }
             Object.assign(userEvent, jb.run( new jb.jbCtx(this.ctx, { vars, profile, path: actionPath })))
         }, 'enrichUserEvent'))
     }
@@ -4976,7 +4974,7 @@ class frontEndCmp {
     }
 }
 
-// interactive handlers like onmousemove and onkeyXX are handled in the frontEnd with and not passed to the backend headless widgets
+// interactive handlers like onmousemove and onkeyXX are handled in the frontEnd with and not varsed to the backend headless widgets
 function mountFrontEnd(elem, keepState) {
     new frontEndCmp(elem, keepState)
 }
@@ -5288,14 +5286,14 @@ Object.assign(jb.ui,{
         if (!elem) debugger;
         // block the preview from stealing the studio focus
         const now = new Date().getTime();
-        const lastStudioActivity = jb.studio.lastStudioActivity || jb.path(jb,['studio','studioWindow','jb','studio','lastStudioActivity']);
-        jb.log('focus',['request',srcCtx, logTxt, now - lastStudioActivity, elem,srcCtx]);
-          if (jb.studio.previewjb == jb && lastStudioActivity && now - lastStudioActivity < 1000)
-            return;
-          jb.delay(1).then(_=> {
-               jb.log('focus',['apply',srcCtx,logTxt,elem,srcCtx]);
-            elem.focus()
-          })
+        const lastStudioActivity = jb.studio.lastStudioActivity || jb.path(jb,['studio','studioWindow','jb','studio','lastStudioActivity'])
+        jb.log('focus',['request',srcCtx, logTxt, now - lastStudioActivity, elem,srcCtx])
+        if (jb.studio.previewjb == jb && lastStudioActivity && now - lastStudioActivity < 1000)
+            return
+        jb.delay(1).then(_=> {
+          jb.log('focus',['apply',srcCtx,logTxt,elem,srcCtx])
+          elem.focus()
+        })
     },
     withUnits: v => (v === '' || v === undefined) ? '' : (''+v||'').match(/[^0-9]$/) ? v : `${v}px`,
     propWithUnits: (prop,v) => (v === '' || v === undefined) ? '' : `${prop}: ` + ((''+v||'').match(/[^0-9]$/) ? v : `${v}px`) + ';',
@@ -5472,7 +5470,7 @@ jb.component('action.focusOnCmp', {
   type: 'action',
   params: [
     {id: 'description', as: 'string'},
-    {id: 'cmpId', as: 'string' },
+    {id: 'cmpId', as: 'string', defaultValue: '%$cmp/cmpId%' },
   ],
   impl: (ctx,desc,cmpId) => {
     const delta = {attributes: {$focus: true, $__desc: `"${desc}"`}}
@@ -5682,7 +5680,6 @@ jb.component('followUp.watchObservable', {
   ],
   impl: followUp.flow(
       '%$toWatch%',
-//      followUp.takeUntilCmpDestroyed(),
       rx.debounceTime('%$debounceTime%'),
       sink.refreshCmp()
     )
@@ -5699,7 +5696,6 @@ jb.component('followUp.onDataChange', {
   ],
   impl: followUp.flow(
     source.watchableData('%$ref()%','%$includeChildren%'), 
-//    followUp.takeUntilCmpDestroyed(), 
     sink.action(call('action')))
 })
 
@@ -5718,7 +5714,7 @@ jb.component('group.data', {
     {id: 'watch', as: 'boolean', type: 'boolean'},
     {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'}
   ],
-  impl: (ctx, refF, itemVariable,watch,includeChildren) => ({
+  impl: ({}, refF, itemVariable,watch,includeChildren) => ({
       ...(watch ? {watchRef: { refF, includeChildren }} : {}),
       extendCtx: ctx => {
           const ref = refF()
@@ -5749,7 +5745,7 @@ jb.component('passPropToFrontEnd', {
   impl: templateModifier((ctx,{vdom},{id,value}) => {
     const val = value(ctx)
     if (val != null)
-      vdom.setAttribute('$pass__'+id, JSON.stringify(val))
+      vdom.setAttribute('$vars__'+id, JSON.stringify(val))
   })
 })
 
@@ -7310,7 +7306,7 @@ jb.component('dialog.init', {
 	type: 'feature',
 	impl: features(
 		calcProp('dummy',ctx => console.log('dialog.init', ctx)),
-		calcProp('title', '%$$model/title%'),//(ctx,{$model}) => $model.title(ctx)),
+		calcProp('title', '%$$model/title%'),
 		calcProp('contentComp', '%$$model/content%'),
 		calcProp('hasMenu', '%$$model/menu/profile%'),
 		calcProp('menuComp', '%$$model/menu%'),
@@ -7326,7 +7322,7 @@ jb.component('dialog.init', {
 
 jb.component('dialog.buildComp', {
 	params: [
-		{id: 'dialog' },
+		{id: 'dialog', defaultValue: '%$$dialog%' },
 	],
 	impl: (ctx,dlg) => jb.ui.ctrl(dlg.ctx, dialog.init())
 })
@@ -7418,7 +7414,7 @@ jb.component('dialogFeature.uniqueDialog', {
 		followUp.flow(
 			source.data(ctx => jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog')
 				.filter(el=>el.getAttribute('cmp-id') != ctx.vars.cmp.cmpId)),
-			rx.filter('%pass.uniqueId%==%$id%'),
+			rx.filter('%vars.uniqueId%==%$id%'),
 			rx.map(({data}) => data.getAttribute('id')),
 			sink.action(dialog.closeDialogById('%%'))
 		)
@@ -7595,13 +7591,16 @@ jb.component('dialogFeature.autoFocusOnFirstInput', {
   params: [
     {id: 'selectText', as: 'boolean', type: 'boolean'}
   ],
-  impl: frontEnd.init( (ctx,{cmp},{selectText}) => {
+  impl: features(
+	  passPropToFrontEnd('selectText','%$selectText%'),
+	  frontEnd.init( (ctx,{cmp,selectText}) => {
 		const elem = cmp.base.querySelector('input,textarea,select');
 		if (elem)
 			jb.ui.focus(elem, 'dialog-feature.auto-focus-on-first-input',ctx);
 		if (selectText)
-			elem.select();
-	})
+			elem.select()
+	  })
+  )
 })
 
 jb.component('dialogFeature.cssClassOnLaunchingElement', {
@@ -8688,7 +8687,7 @@ jb.component('menu.getSelectionSource', {
   impl: ctx => {
     const cmps = [ctx.vars.cmp.base._component, ...jb.ui.parentCmps(ctx.vars.cmp.base)].filter(x=>x)
     const res = cmps.map(cmp=>cmp.selectionKeySource).filter(x=>x)[0]
-    console.log(res)
+//    console.log(res)
     return res
     // const cmpId = ctx.vars.cmp.base.topMenuCmpId
     // return jb.ui.find(jb.ui.widgetBody(ctx),`[cmp-id="${cmpId}"]`).map(el=>el._component && el._component.selectionKeySource)[0]
@@ -11431,7 +11430,7 @@ jb.component('tree.sameParent', {
 
 jb.component('tree.regainFocus', {
 	type: 'action',
-	impl: action.focusOnCmp('%$tree%')
+	impl: action.focusOnCmp('regain focus','%$treeCmp/cmpId%')
 })
   
 jb.component('tree.redraw', {

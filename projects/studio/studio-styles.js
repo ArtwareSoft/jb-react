@@ -111,7 +111,7 @@ jb.component('picklist.studioEnum', {
 jb.component('text.studioMessage', {
   type: 'text.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('span',{class: 'studio-message'}, state.text),
+    template: (cmp,{text},h) => h('span#studio-message',{}, text),
     css: `{ position: absolute;
       z-index: 10000,
       color: white;  padding: 10px;  background: #327DC8;
@@ -125,9 +125,9 @@ jb.component('text.studioMessage', {
 jb.component('dialog.studioMultilineEdit', {
   type: 'dialog.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div',{ class: 'jb-dialog jb-popup'},[
-      h('button',{class: 'dialog-close', onclick: 'dialogClose' },'×'),
-      h(state.contentComp),
+    template: (cmp,{contentComp},h) => h('div#jb-dialog jb-popup',{}, [
+      h('button#dialog-close', {onclick: 'dialogClose' },'×'),
+      h(contentComp),
     ]),
     css: `{ background: #fff; position: absolute; min-width: 280px; min-height: 200px;
 					box-shadow: 2px 2px 3px #d5d5d5; padding: 3px; border: 1px solid rgb(213, 213, 213)

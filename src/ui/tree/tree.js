@@ -366,7 +366,7 @@ jb.component('tree.sameParent', {
 
 jb.component('tree.regainFocus', {
 	type: 'action',
-	impl: action.focusOnCmp('%$tree%')
+	impl: action.focusOnCmp('regain focus','%$treeCmp/cmpId%')
 })
   
 jb.component('tree.redraw', {

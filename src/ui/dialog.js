@@ -38,7 +38,7 @@ jb.component('dialog.init', {
 	type: 'feature',
 	impl: features(
 		calcProp('dummy',ctx => console.log('dialog.init', ctx)),
-		calcProp('title', '%$$model/title%'),//(ctx,{$model}) => $model.title(ctx)),
+		calcProp('title', '%$$model/title%'),
 		calcProp('contentComp', '%$$model/content%'),
 		calcProp('hasMenu', '%$$model/menu/profile%'),
 		calcProp('menuComp', '%$$model/menu%'),
@@ -54,7 +54,7 @@ jb.component('dialog.init', {
 
 jb.component('dialog.buildComp', {
 	params: [
-		{id: 'dialog' },
+		{id: 'dialog', defaultValue: '%$$dialog%' },
 	],
 	impl: (ctx,dlg) => jb.ui.ctrl(dlg.ctx, dialog.init())
 })
@@ -146,7 +146,7 @@ jb.component('dialogFeature.uniqueDialog', {
 		followUp.flow(
 			source.data(ctx => jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog')
 				.filter(el=>el.getAttribute('cmp-id') != ctx.vars.cmp.cmpId)),
-			rx.filter('%pass.uniqueId%==%$id%'),
+			rx.filter('%vars.uniqueId%==%$id%'),
 			rx.map(({data}) => data.getAttribute('id')),
 			sink.action(dialog.closeDialogById('%%'))
 		)
@@ -323,13 +323,16 @@ jb.component('dialogFeature.autoFocusOnFirstInput', {
   params: [
     {id: 'selectText', as: 'boolean', type: 'boolean'}
   ],
-  impl: frontEnd.init( (ctx,{cmp},{selectText}) => {
+  impl: features(
+	  passPropToFrontEnd('selectText','%$selectText%'),
+	  frontEnd.init( (ctx,{cmp,selectText}) => {
 		const elem = cmp.base.querySelector('input,textarea,select');
 		if (elem)
 			jb.ui.focus(elem, 'dialog-feature.auto-focus-on-first-input',ctx);
 		if (selectText)
-			elem.select();
-	})
+			elem.select()
+	  })
+  )
 })
 
 jb.component('dialogFeature.cssClassOnLaunchingElement', {

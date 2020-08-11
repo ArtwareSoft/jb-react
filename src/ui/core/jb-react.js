@@ -244,13 +244,15 @@ function setAtt(elem,att,val) {
             elem[id] = JSON.parse(val) || ''
         } catch (e) {}
         jb.log('htmlChange',[`data ${id}`,...arguments])
-    } else if (att.indexOf('$pass__') === 0) {
+    } else if (att.indexOf('$vars__') === 0) {
         const id = att.slice(7)
         try {
-            elem.pass = elem.pass || {}
-            elem.pass[id] = JSON.parse(val) || ''
+            elem.vars = elem.vars || {}
+            elem.vars[id] = JSON.parse(val) || ''
         } catch (e) {}
-        jb.log('htmlChange',[`pass__ ${id}`,...arguments])
+        jb.log('htmlChange',[`vars__ ${id}`,...arguments])
+    } else if (att === '$focus' && val) {
+        jb.ui.focus(elem,'render vdom')
     } else if (att === '$text') {
         elem.innerText = val || ''
         jb.log('htmlChange',['text',...arguments])
@@ -298,14 +300,13 @@ function render(vdom,parentElem,prepend) {
     function doRender(vdom,parentElem) {
         jb.log('htmlChange',['createElement',...arguments])
         const elem = createElement(parentElem.ownerDocument, vdom.tag)
-        jb.entries(vdom.attributes).forEach(e=>setAtt(elem,e[0],e[1])) // filter(e=>e[0].indexOf('on') != 0 && !isAttUndefined(e[0],vdom.attributes)).
+        jb.entries(vdom.attributes).forEach(e=>setAtt(elem,e[0],e[1]))
         jb.asArray(vdom.children).map(child=> doRender(child,elem)).forEach(el=>elem.appendChild(el))
         prepend ? parentElem.prepend(elem) : parentElem.appendChild(elem)
         return elem
     }
     const res = doRender(vdom,parentElem)
     ui.findIncludeSelf(res,'[interactive]').forEach(el=> mountFrontEnd(el))
-    //ui.garbageCollectCtxDictionary()
     return res
 }
 
@@ -398,10 +399,10 @@ Object.assign(jb.ui, {
     takeUntilCmpDestroyed(cmp) {
         const {pipe,take,filter,log,takeUntil} = jb.callbag
         return takeUntil(pipe(jb.ui.BECmpsDestroyNotification,
+            log(`takeUntilCmpDestroyed ${cmp.cmpId}`),
+            filter(x=>x.cmps.indexOf(''+cmp.cmpId) != -1),
+            log(`Activated takeUntilCmpDestroyed ${cmp.cmpId}`),
             take(1),
-            log('takeUntilCmpDestroyed'),
-            filter(x=>x.cmps.indexOf(cmp.cmpId) != -1),
-            log('takeUntilCmpDestroyed activated'),
         ))
     },
     ctrl(context,options) {
@@ -430,12 +431,7 @@ Object.assign(jb.ui, {
     garbageCollectCtxDictionary(forceNow) {
         if (!forceNow)
             return jb.delay(1000).then(()=>ui.garbageCollectCtxDictionary(true))
-        // const now = new Date().getTime()
-        // ui.ctxDictionaryLastCleanUp = ui.ctxDictionaryLastCleanUp || now
-        // const timeSinceLastCleanUp = now - ui.ctxDictionaryLastCleanUp
-        // if (!forceNow && timeSinceLastCleanUp < 1000) return
-        // ui.ctxDictionaryLastCleanUp = now
-    
+   
         const used = 'jb-ctx,mount-ctx,pick-ctx,props-ctx,methods,frontEnd,originators'.split(',')
             .flatMap(att=>querySelectAllWithWidgets(`[${att}]`).flatMap(el => el.getAttribute(att).split(',').map(x=>Number(x.split('-').pop()))))
                     .sort((x,y)=>x-y)
@@ -493,7 +489,7 @@ Object.assign(jb.ui, {
         ctx = ctx.setVar('$refreshElemCall',true).setVar('$cmpId', cmpId).setVar('$cmpVer', cmpVer+1) // special vars for refresh
         if (jb.ui.inStudio()) // updating to latest version of profile
             ctx.profile = jb.execInStudio({$: 'studio.val', path: ctx.path})
-        const cmp = ctx.profile.$ == 'openDialog' ? jb.ui.dialogs.buildComp(ctx) : ctx.runItself()
+        const cmp = ctx.profile.$ == 'openDialog' ? ctx.run(dialog.buildComp()) : ctx.runItself()
         jb.log('refreshElem',[ctx,cmp, ...arguments]);
 
         if (jb.path(options,'cssOnly')) {
@@ -565,6 +561,7 @@ class frontEndCmp {
         //this.ctx = new jb.jbCtx()
         this.state = { ...elem.state, ...(keepState && jb.path(elem._component,'state')), frontEndStatus: 'initializing' }
         this.base = elem
+        this.cmpId = elem.getAttribute('cmp-id')
         this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve)
         elem._component = this
         this.runFEMethod('calcProps')
@@ -577,7 +574,7 @@ class frontEndCmp {
         ;(this.base.frontEndMethods || []).filter(x=>x.method == method).forEach(({path}) => tryWrapper(() => {
             const profile = path.split('~').reduce((o,p)=>o[p],jb.comps)
             const feMEthod = jb.run( new jb.jbCtx(this.ctx, { profile, path }))
-            const vars = {cmp: this, $state: this.state, el: this.base, ...this.base.pass, ..._vars }
+            const vars = {cmp: this, $state: this.state, el: this.base, ...this.base.vars, ..._vars }
             this.ctx.setData(data).setVars(vars).run(feMEthod.frontEndMethod.action)
         }, `frontEnd-${method}`))
     }
@@ -585,7 +582,7 @@ class frontEndCmp {
         (this.base.frontEndMethods || []).filter(x=>x.method == 'enrichUserEvent').map(({path}) => tryWrapper(() => {
             const actionPath = path+'~action'
             const profile = actionPath.split('~').reduce((o,p)=>o[p],jb.comps)
-            const vars = {cmp: this, $state: this.state, el: this.base, ...this.base.pass, ev, userEvent }
+            const vars = {cmp: this, $state: this.state, el: this.base, ...this.base.vars, ev, userEvent }
             Object.assign(userEvent, jb.run( new jb.jbCtx(this.ctx, { vars, profile, path: actionPath })))
         }, 'enrichUserEvent'))
     }
@@ -606,7 +603,7 @@ class frontEndCmp {
     }
 }
 
-// interactive handlers like onmousemove and onkeyXX are handled in the frontEnd with and not passed to the backend headless widgets
+// interactive handlers like onmousemove and onkeyXX are handled in the frontEnd with and not varsed to the backend headless widgets
 function mountFrontEnd(elem, keepState) {
     new frontEndCmp(elem, keepState)
 }

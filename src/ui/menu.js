@@ -296,7 +296,7 @@ jb.component('menu.getSelectionSource', {
   impl: ctx => {
     const cmps = [ctx.vars.cmp.base._component, ...jb.ui.parentCmps(ctx.vars.cmp.base)].filter(x=>x)
     const res = cmps.map(cmp=>cmp.selectionKeySource).filter(x=>x)[0]
-    console.log(res)
+//    console.log(res)
     return res
     // const cmpId = ctx.vars.cmp.base.topMenuCmpId
     // return jb.ui.find(jb.ui.widgetBody(ctx),`[cmp-id="${cmpId}"]`).map(el=>el._component && el._component.selectionKeySource)[0]

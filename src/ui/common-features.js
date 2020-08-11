@@ -146,7 +146,6 @@ jb.component('followUp.watchObservable', {
   ],
   impl: followUp.flow(
       '%$toWatch%',
-//      followUp.takeUntilCmpDestroyed(),
       rx.debounceTime('%$debounceTime%'),
       sink.refreshCmp()
     )
@@ -163,7 +162,6 @@ jb.component('followUp.onDataChange', {
   ],
   impl: followUp.flow(
     source.watchableData('%$ref()%','%$includeChildren%'), 
-//    followUp.takeUntilCmpDestroyed(), 
     sink.action(call('action')))
 })
 
@@ -182,7 +180,7 @@ jb.component('group.data', {
     {id: 'watch', as: 'boolean', type: 'boolean'},
     {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'}
   ],
-  impl: (ctx, refF, itemVariable,watch,includeChildren) => ({
+  impl: ({}, refF, itemVariable,watch,includeChildren) => ({
       ...(watch ? {watchRef: { refF, includeChildren }} : {}),
       extendCtx: ctx => {
           const ref = refF()
@@ -213,7 +211,7 @@ jb.component('passPropToFrontEnd', {
   impl: templateModifier((ctx,{vdom},{id,value}) => {
     const val = value(ctx)
     if (val != null)
-      vdom.setAttribute('$pass__'+id, JSON.stringify(val))
+      vdom.setAttribute('$vars__'+id, JSON.stringify(val))
   })
 })
 

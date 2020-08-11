@@ -230,7 +230,7 @@ class WatchableValueByRef {
     return this.valOfPath(path)
   }
   watchable(val) {
-    return this.resources() === val || this.objToPath.get(val) || (val && this.objToPath.get(val[jbId]))
+    return this.resources() === val || typeof val != 'number' && (this.objToPath.get(val) || (val && this.objToPath.get(val[jbId])))
   }
   isRef(ref) {
     return ref && ref.$jb_obj && this.watchable(ref.$jb_obj);

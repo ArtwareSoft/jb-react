@@ -3,14 +3,14 @@ Object.assign(jb.ui,{
         if (!elem) debugger;
         // block the preview from stealing the studio focus
         const now = new Date().getTime();
-        const lastStudioActivity = jb.studio.lastStudioActivity || jb.path(jb,['studio','studioWindow','jb','studio','lastStudioActivity']);
-        jb.log('focus',['request',srcCtx, logTxt, now - lastStudioActivity, elem,srcCtx]);
-          if (jb.studio.previewjb == jb && lastStudioActivity && now - lastStudioActivity < 1000)
-            return;
-          jb.delay(1).then(_=> {
-               jb.log('focus',['apply',srcCtx,logTxt,elem,srcCtx]);
-            elem.focus()
-          })
+        const lastStudioActivity = jb.studio.lastStudioActivity || jb.path(jb,['studio','studioWindow','jb','studio','lastStudioActivity'])
+        jb.log('focus',['request',srcCtx, logTxt, now - lastStudioActivity, elem,srcCtx])
+        if (jb.studio.previewjb == jb && lastStudioActivity && now - lastStudioActivity < 1000)
+            return
+        jb.delay(1).then(_=> {
+          jb.log('focus',['apply',srcCtx,logTxt,elem,srcCtx])
+          elem.focus()
+        })
     },
     withUnits: v => (v === '' || v === undefined) ? '' : (''+v||'').match(/[^0-9]$/) ? v : `${v}px`,
     propWithUnits: (prop,v) => (v === '' || v === undefined) ? '' : `${prop}: ` + ((''+v||'').match(/[^0-9]$/) ? v : `${v}px`) + ';',
@@ -187,7 +187,7 @@ jb.component('action.focusOnCmp', {
   type: 'action',
   params: [
     {id: 'description', as: 'string'},
-    {id: 'cmpId', as: 'string' },
+    {id: 'cmpId', as: 'string', defaultValue: '%$cmp/cmpId%' },
   ],
   impl: (ctx,desc,cmpId) => {
     const delta = {attributes: {$focus: true, $__desc: `"${desc}"`}}

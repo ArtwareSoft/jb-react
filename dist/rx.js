@@ -33,6 +33,7 @@ jb.component('source.callbag', {
 jb.component('source.event', {
   type: 'rx',
   category: 'source',
+  macroByValue: true,
   params: [
     {id: 'event', as: 'string', mandatory: true, options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll'},
     {id: 'elem', description: 'html element', defaultValue: () => jb.frame.document },
@@ -84,7 +85,7 @@ jb.component('rx.pipe', {
   params: [
     {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
   ],
-  impl: (ctx,elems) => jb.callbag.pipe(...jb.callbag.injectSniffers(elems(ctx),ctx))
+  impl: (ctx,elems) => jb.callbag.pipe(...jb.callbag.injectSniffers(elems(ctx).filter(x=>x),ctx))
 })
 
 jb.component('rx.merge', {
