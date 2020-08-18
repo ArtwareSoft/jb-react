@@ -44,12 +44,7 @@ jb.component('dialog.init', {
 
 		method('dialogCloseOK', dialog.closeDialog(true)),
 		method('dialogClose', dialog.closeDialog(false)),
-		css('{z-index: 100; top: %$$state/dialogPos/top%px; left: %$$state/dialogPos/left%px }'),
-		frontEnd.onRefresh( ({},{$state,el}) => { 
-			const {top,left} = $state.dialogPos || { top: 0, left: 0}
-			el.style.top = `${top}px`
-			el.style.left = `${left}px`
-		}),
+		css('z-index: 100'),
 	)
 })
 
@@ -121,7 +116,6 @@ jb.component('dialog.isOpen', {
 		{id: 'id', as: 'string'},
   	],
 	impl: dialogs.cmpIdOfDialog('%$id%')
-	//(ctx,id) => jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog').filter(el=> jb.path(el,'vars.uniqueId') == id)[0]
 })
 
 jb.component('dialogs.cmpIdOfDialog', {
@@ -152,13 +146,12 @@ jb.component('dialogFeature.uniqueDialog', {
 	],
 	impl: features(
 		feature.init(writeValue('%$$dialog/id%','%$id%')),
-		//passPropToFrontEnd('uniqueId','%$id%'),
 		followUp.flow(
-			source.data(ctx => jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog')
-				.filter(el=>el.getAttribute('cmp-id') != ctx.vars.cmp.cmpId)),
-			rx.filter('%id%==%$id%'),
+			source.data(ctx => jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog')),
+			rx.filter(({data},{cmp},{id}) => data.getAttribute('id') == id && data.getAttribute('cmp-id') != cmp.cmpId ),
 			rx.map(({data}) => data.getAttribute('cmp-id')),
-			sink.subjectNext(dialogs.changeEmitter(), obj(prop('closeByCmpId',true), prop('cmpId','%%')))
+			rx.map(obj(prop('closeByCmpId',true), prop('cmpId','%%'))),
+			sink.subjectNext(dialogs.changeEmitter())
 		)
 	)
 })
@@ -188,7 +181,7 @@ jb.component('dialogFeature.dragTitle', {
 			el.style.left = data.left +'px' 
 		}),
 		passPropToFrontEnd('selector','%$selector%'),
-		passPropToFrontEnd('useSessionStorage','%$$props/sessionStorageId%'),
+		passPropToFrontEnd('useSessionStorage','%$useSessionStorage%'),
 		passPropToFrontEnd('sessionStorageId','%$$props/sessionStorageId%'),
 		frontEnd.prop('titleElem',({},{el,selector}) => el.querySelector(selector)),
 		frontEnd.flow(
@@ -237,6 +230,7 @@ jb.component('dialogFeature.nearLauncherPosition', {
     {id: 'rightSide', as: 'boolean' }
   ],
   impl: features(
+//	  css('{top: %$$state/dialogPos/top%px; left: %$$state/dialogPos/left%px }'),
 	  calcProp('launcherRectangle','%$ev/elem/clientRect%'),
 	  passPropToFrontEnd('launcherRectangle','%$$props/launcherRectangle%'),
 	  passPropToFrontEnd('launcherCmpId','%$$dialog/launcherCmpId%'),
@@ -250,6 +244,11 @@ jb.component('dialogFeature.nearLauncherPosition', {
 			left: $props.launcherRectangle.left + _offsetLeft  + (rightSide ? ev.elem.outerWidth : 0), 
 			top:  $props.launcherRectangle.top  + _offsetTop   + ev.elem.outerHeight
 		}
+	  }),
+	  frontEnd.onRefresh( ({},{$state,el}) => { 
+		const {top,left} = $state.dialogPos || { top: 0, left: 0}
+		el.style.top = `${top}px`
+		el.style.left = `${left}px`
 	  }),
 	  frontEnd.init((ctx,{cmp,pos,launcherCmpId,elemToTest}) => { // handle launcherCmpId
 		  if (!elemToTest && launcherCmpId && cmp.state.dialogPos.left == 0 && cmp.state.dialogPos.top == 0) {
@@ -494,6 +493,7 @@ jb.component('dialogs.defaultStyle', {
 				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
 			),
 			followUp.flow(source.subject(dialogs.changeEmitter()), 
+				rx.log(1),
 				rx.filter('%closeByCmpId%'),
 				rx.var('delta', obj(prop('children', obj(prop('deleteCmp','%cmpId%'))))),
 				rx.log('close dialog'),
