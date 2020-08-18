@@ -244,7 +244,8 @@ jb.component('tree.keyboardSelection', {
 			cmp.refresh($state)
 		}
 	  }),
-	  frontEnd.prop('onkeydown', rx.pipe(source.frontEndEvent('keydown'), rx.filter(not('%ctrlKey%')), rx.filter(not('%altKey%')))),
+	  frontEnd.prop('onkeydown', rx.pipe(
+		  source.frontEndEvent('keydown'), rx.filter(not('%ctrlKey%')), rx.filter(not('%altKey%')), frontEnd.addUserEvent() )),
 	  frontEnd.flow('%$cmp.onkeydown%', rx.filter('%keyCode%==13'), rx.filter('%$cmp.state.selected%'), sink.BEMethod('onEnter','%$cmp.state.selected%') ),
 	  frontEnd.flow('%$cmp.onkeydown%', rx.filter(inGroup(list(38,40),'%keyCode%')),
 		rx.map(tree.nextSelected(If('%keyCode%==40',1,-1))), 

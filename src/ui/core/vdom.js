@@ -58,7 +58,7 @@ class VNode {
             selector = selector.slice(7)
         }
         if (selector.indexOf(',') != -1)
-            return selector.split(',').map(x=>x.trim()).reduce((res,sel) => [...res, jb.ui.querySelectorAll(sel,{includeSelf})], [])
+            return selector.split(',').map(x=>x.trim()).reduce((res,sel) => [...res, this.querySelectorAll(sel,{includeSelf})], [])
         const hasAtt = selector.match(/^\[([a-zA-Z0-9_$\-]+)\]$/)
         const attEquals = selector.match(/^\[([a-zA-Z0-9_$\-]+)="([a-zA-Z0-9_\-]+)"\]$/)
         const hasClass = selector.match(/^\.([a-zA-Z0-9_$\-]+)$/)

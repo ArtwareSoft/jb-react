@@ -9,7 +9,10 @@ jb.component('editableText.studioPrimitiveText', {
         color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-titleBar-inactiveBackground);
     } 
     :focus { border-color: var(--jb-titleBar-activeBackground); border-width: 2px}`,
-    features: field.databindText(0, false)
+    features: [
+      field.databindText(),
+      watchRef('%$$model/databind()%')
+    ]
   })
 })
 

@@ -141,7 +141,7 @@ jb.component('uiFrontEndTest', {
 	],
 	impl: pipe(
 		Var('elemToTest',() => document.createElement('div')),
-		(ctx,{elemToTest, testID, singleTest,initial_resources,initial_comps},{control,runBefore,action,expectedResult,cleanUp,expectedCounters,renderDOM,allowError}) => {
+		(ctx,{elemToTest, testID, singleTest},{control,runBefore,action,expectedResult,cleanUp,expectedCounters,renderDOM,allowError}) => {
 		  elemToTest.ctxForFE = ctx
 		  elemToTest.setAttribute('id','jb-testResult')
 		  const show = new URL(location.href).searchParams.get('show') !== null

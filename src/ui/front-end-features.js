@@ -159,21 +159,6 @@ jb.component('frontEnd.flow', {
     }})
 })
 
-jb.component('feature.keyboardShortcut', {
-    type: 'feature',
-    category: 'events',
-    description: 'listen to events at the document level even when the component is not active',
-    params: [
-      {id: 'key', as: 'string', description: 'e.g. Alt+C'},
-      {id: 'action', type: 'action', dynamic: true}
-    ],
-    impl: frontEnd.flow(
-        source.event('%$event%','%$cmp.base.ownerDocument%'), 
-        rx.takeUntil('%$cmp.destroyed%'),
-        rx.filter(key.eventMatchKey('%%','%$key%')), 
-        sink.BEMethod('Shortcut-%$key%'))
-})
-  
 jb.component('feature.onEvent', {
     type: 'feature',
     category: 'events',
@@ -184,7 +169,6 @@ jb.component('feature.onEvent', {
     impl: features(
         method('%$event%Handler', call('action')),
         htmlAttribute('on%$event%','%$event%Handler'),
-//        frontEnd.flow(source.frontEndEvent('%$event%'), sink.BEMethod('%$event%Handler'))
     )
 })
   
@@ -217,28 +201,60 @@ jb.component('feature.classOnHover', {
     )
 })
 
-jb.component('key.eventMatchKey', {
-    type: 'boolean',
-    params: [
-        {id: 'event'},
-        {id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V' },
-    ],
-    impl: (ctx, e, key) => {
-        if (!key) return;
+// jb.component('key.eventMatchKey', {
+//     type: 'boolean',
+//     params: [
+//         {id: 'event'},
+//         {id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V' },
+//     ],
+//     impl: (ctx, e, key) => {
+//         if (!key) return;
+//       const dict = { tab: 9, delete: 46, tab: 9, esc: 27, enter: 13, right: 39, left: 37, up: 38, down: 40}
+    
+//       key = key.replace(/-/,'+');
+//       const keyWithoutPrefix = key.split('+').pop()
+//       let keyCode = dict[keyWithoutPrefix.toLowerCase()]
+//       if (+keyWithoutPrefix)
+//         keyCode = +keyWithoutPrefix
+//       if (keyWithoutPrefix.length == 1)
+//         keyCode = keyWithoutPrefix.charCodeAt(0);
+    
+//         if (key.match(/^[Cc]trl/) && !e.ctrlKey) return;
+//         if (key.match(/^[Aa]lt/) && !e.altKey) return;
+//         return e.keyCode == keyCode
+//   }
+// })
+
+jb.component('key.eventToMethod', {
+  type: 'boolean',
+  params: [
+      {id: 'event'},
+      {id: 'elem' },
+  ],
+  impl: (ctx, event, elem) => {
+    elem.keysHash = elem.keysHash || calcKeysHash()
+        
+    const res = elem.keysHash.find(key=>key.keyCode == event.keyCode && event.ctrlKey == key.ctrl && event.altKey == key.alt)
+    console.log(event,res)
+    return res && res.methodName
+
+    function calcKeysHash() {
+      const keys = elem.getAttribute('methods').split(',').map(x=>x.split('-')[0])
+      .filter(x=>x.indexOf('onKey') == 0).map(x=>x.slice(5).slice(0,-7))
       const dict = { tab: 9, delete: 46, tab: 9, esc: 27, enter: 13, right: 39, left: 37, up: 38, down: 40}
-    
-      key = key.replace(/-/,'+');
-      const keyWithoutPrefix = key.split('+').pop()
-      let keyCode = dict[keyWithoutPrefix.toLowerCase()]
-      if (+keyWithoutPrefix)
-        keyCode = +keyWithoutPrefix
-      if (keyWithoutPrefix.length == 1)
-        keyCode = keyWithoutPrefix.charCodeAt(0);
-    
-        if (key.match(/^[Cc]trl/) && !e.ctrlKey) return;
-        if (key.match(/^[Aa]lt/) && !e.altKey) return;
-        return e.keyCode == keyCode
-  }
+  
+      return keys.map(_key=>{
+        const key = _key.replace(/-/,'+');
+        const keyWithoutPrefix = key.split('+').pop()
+        let keyCode = dict[keyWithoutPrefix.toLowerCase()]
+        if (+keyWithoutPrefix)
+          keyCode = +keyWithoutPrefix
+        if (keyWithoutPrefix.length == 1)
+          keyCode = keyWithoutPrefix.charCodeAt(0)
+        return { keyCode, ctrl: !!key.match(/^[Cc]trl/), alt: !!key.match(/^[Aa]lt/), methodName: `onKey${_key}Handler` }
+      })
+    }
+}
 })
 
 jb.component('feature.onKey', {
@@ -249,11 +265,39 @@ jb.component('feature.onKey', {
       {id: 'action', type: 'action', mandatory: true, dynamic: true},
     ],
     impl: features(
-        method('on%$Key%Handler','%$action%'),
-        frontEnd.flow(source.frontEndEvent('keydown'), rx.filter(key.eventMatchKey('%%','%$key%')), sink.BEMethod('on%$Key%Handler'))
+        method(replace({find: '-', replace: '+', text: 'onKey%$key%Handler',useRegex: true}), call('action')),
+        frontEnd.init((ctx,{cmp,el}) => {
+          if (! cmp.hasOnKeyHanlder) {
+            cmp.hasOnKeyHanlder = true
+            ctx.run(rx.pipe(source.frontEndEvent('keydown'), frontEnd.addUserEvent(), 
+              rx.map(key.eventToMethod('%%',el)), rx.filter('%%'), rx.log(11), sink.BEMethod('%%')))
+          }
+      })
     )
 })
-  
+
+jb.component('feature.keyboardShortcut', {
+  type: 'feature',
+  category: 'events',
+  description: 'listen to events at the document level even when the component is not active',
+  params: [
+    {id: 'key', as: 'string', description: 'e.g. Alt+C'},
+    {id: 'action', type: 'action', dynamic: true}
+  ],
+  impl: features(
+    method('onKey%$Key%Handler','%$action%'),
+    frontEnd.init((ctx,{cmp,el}) => {
+      if (! cmp.hasDocOnKeyHanlder) {
+        cmp.hasDocOnKeyHanlder = true
+        ctx.run(
+          source.event('keydown','%$cmp.base.ownerDocument%'), 
+          rx.takeUntil('%$cmp.destroyed%'),
+          rx.map(key.eventToMethod('%%',el)), rx.filter('%%'), sink.BEMethod('%%'))
+      }
+    })
+  )
+})
+
 jb.component('feature.onEnter', {
     type: 'feature',
     category: 'events',
@@ -290,13 +334,14 @@ jb.component('frontEnd.selectionKeySourceService', {
     {id: 'autoFocs', as: 'boolean' },
   ],
   impl: features(
-    service.registerBackEndService('selectionKeySource', obj(prop('cmpId', ctx => ctx.exp('%$cmp/cmpId%')))),
+    service.registerBackEndService('selectionKeySource', obj(prop('cmpId', '%$cmp/cmpId%'))),
     passPropToFrontEnd('autoFocs','%$autoFocs%'),
     frontEnd.prop('selectionKeySource', (ctx,{cmp,el,autoFocs}) => {
       const {pipe, takeUntil,subject} = jb.callbag
       const keydown_src = subject()
       el.onkeydown = e => {
         if ([38,40,13,27].indexOf(e.keyCode) != -1) {
+          console.log('key source',e)
           keydown_src.next(ctx.dataObj(e))
           return false // stop propagation
         }
@@ -311,22 +356,21 @@ jb.component('frontEnd.selectionKeySourceService', {
 
 jb.component('frontEnd.passSelectionKeySource', {
   type: 'feature',
-  impl: passPropToFrontEnd('selectionKeySourceCmpId', ctx => ctx.exp('%$serviceRegistry/services/selectionKeySource/cmpId%'))
+  impl: passPropToFrontEnd('selectionKeySourceCmpId', '%$serviceRegistry/services/selectionKeySource/cmpId%')
 })
 
 jb.component('source.findSelectionKeySource', {
   type: 'rx',
   category: 'source',
   description: 'used in front end, works with "selectionKeySourceService" and "passSelectionKeySource"',
-  impl: ctx => {
-    const cmpId = ctx.vars.selectionKeySourceCmpId
-    if (cmpId) {
-      const el = jb.ui.elemOfCmp(ctx,cmpId)
-      if (!el)
-        jb.logError(`can not find selection source elem of cmpId ${cmpId}`,ctx)
-      if (el && el._component.selectionKeySource)
-        return el._component.selectionKeySource
-    }
-    //return jb.callbag.fromIter([])
-  }
+  impl: rx.pipe(
+    Var('clientCmp','%$cmp%'),
+    rx.merge( 
+      source.data([]),
+      (ctx,{selectionKeySourceCmpId}) => jb.path(jb.ui.elemOfCmp(ctx,selectionKeySourceCmpId), '_component.selectionKeySource')
+    ),
+    rx.takeUntil('%$clientCmp.destroyed%'),
+    rx.log(1),
+    rx.var('cmp','%$clientCmp%')
+  )
 })

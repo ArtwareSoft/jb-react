@@ -33,7 +33,7 @@ jb.component('button.x', {
             text-shadow: 0 1px 0 var(--jb-dropdown-shadow);
             font-weight: 700;
         }
-        :hover { color: var(--jb-titleBar-activeForeground) }`
+        :hover { color: var(--jb-titleBar-activeForeground) }`,
   })
 })
 

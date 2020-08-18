@@ -190,9 +190,11 @@ jb.component('action.focusOnCmp', {
     {id: 'cmpId', as: 'string', defaultValue: '%$cmp/cmpId%' },
   ],
   impl: (ctx,desc,cmpId) => {
-    const delta = {attributes: {$focus: true, $__desc: `"${desc}"`}}
+    const elem = jb.path(ctx.vars.cmp,'base')
+    if (elem)
+      return jb.ui.focus(elem,desc,ctx)
+    const delta = {attributes: {$focus: desc}}
     jb.ui.applyDeltaToCmp(delta,ctx,cmpId)
-    //ctx.vars.cmp.base ? jb.ui.focus(ctx.vars.cmp.base,desc,ctx)
   }
 })
 

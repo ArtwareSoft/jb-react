@@ -799,17 +799,14 @@ jb.component('replace', {
     useRegex ? text.replace(new RegExp(find,regexFlags) ,replace) : text.replace(find,replace)
 })
 
-// jb.component('touch', {
-//   description: 'change the value of a watchable variable to acticate its watchers',
-//   type: 'action',
-//   params: [
-//     {id: 'data', as: 'ref'}
-//   ],
-//   impl: ({},data_ref) => {
-// 		const val = Number(jb.val(data_ref))
-// 		jb.writeValue(data_ref,val ? val + 1 : 1,ctx)
-// 	}
-// })
+jb.component('touch', {
+  description: 'change the value of a watchable variable to acticate its watchers',
+  type: 'action',
+  params: [
+    {id: 'dataRef', as: 'ref'}
+  ],
+  impl: writeValue('%$dataRef%',not('%$dataRef%'))
+})
 
 jb.component('isNull', {
   description: 'is null or undefined',

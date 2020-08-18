@@ -31,9 +31,9 @@ jb.component('suggestionsTest', {
         .runCircuit(params.path);
       return probeRes.then(res=>{
         const probeCtx = res.result[0] && res.result[0].in;
-        const obj = new jb.studio.suggestions({ value: params.expression, selectionStart: selectionStart })
-          .extendWithOptions(probeCtx.setVar('people-array',ctx.exp('%$people-array%')),probeCtx.path);
-        return JSON.stringify(JSON.stringify(obj.options.map(x=>x.text)));
+        const {options} = new jb.studio.suggestions({ value: params.expression, selectionStart: selectionStart })
+          .calcOptions(probeCtx.setVar('people-array',ctx.exp('%$people-array%')),probeCtx.path);
+        return JSON.stringify(JSON.stringify(options.map(x=>x.text)));
       })
     },
     expectedResult: call('expectedResult')

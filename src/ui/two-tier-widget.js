@@ -86,7 +86,7 @@ jb.component('widget.headless', {
                 jb.ui.BECmpsDestroyNotification.next({cmps: userReq.cmps, fromHeadless: true})
                 if (userReq.destroyWidget) jb.delay(1).then(()=> {
                     console.log(`delete widget ${userReq.widgetId}`)
-                    delete jb.ui.widgets[userReq.widgetId]
+                    jb.delay(100).then(()=>delete jb.ui.widgets[userReq.widgetId])
                 })
             }
         }

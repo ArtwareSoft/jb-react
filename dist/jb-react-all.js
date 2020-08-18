@@ -1719,17 +1719,14 @@ jb.component('replace', {
     useRegex ? text.replace(new RegExp(find,regexFlags) ,replace) : text.replace(find,replace)
 })
 
-// jb.component('touch', {
-//   description: 'change the value of a watchable variable to acticate its watchers',
-//   type: 'action',
-//   params: [
-//     {id: 'data', as: 'ref'}
-//   ],
-//   impl: ({},data_ref) => {
-// 		const val = Number(jb.val(data_ref))
-// 		jb.writeValue(data_ref,val ? val + 1 : 1,ctx)
-// 	}
-// })
+jb.component('touch', {
+  description: 'change the value of a watchable variable to acticate its watchers',
+  type: 'action',
+  params: [
+    {id: 'dataRef', as: 'ref'}
+  ],
+  impl: writeValue('%$dataRef%',not('%$dataRef%'))
+})
 
 jb.component('isNull', {
   description: 'is null or undefined',
@@ -2965,6 +2962,7 @@ const spySettings = {
 	groups: {
 		none: '',
 		refresh: 'doOp,refreshElem,notifyCmpObservable',
+		method: 'BEMethod',
 		puppeteer: 'pptrStarted,pptrEmit,pptrActivity,pptrResultData,pptrInfo,pptrError',
 		watchable: 'doOp,writeValue,removeCmpObservable,registerCmpObservable,notifyCmpObservable,notifyObservableElems,notifyObservableElem,scriptChange',
 		react: 'applyNewVdom,applyDeltaTop,applyDelta,unmount,render,initCmp,refreshReq,refreshElem,childDiffRes,htmlChange,appendChild,removeChild,replaceTop,calcRenderProp,followUp',
@@ -4311,7 +4309,7 @@ class VNode {
             selector = selector.slice(7)
         }
         if (selector.indexOf(',') != -1)
-            return selector.split(',').map(x=>x.trim()).reduce((res,sel) => [...res, jb.ui.querySelectorAll(sel,{includeSelf})], [])
+            return selector.split(',').map(x=>x.trim()).reduce((res,sel) => [...res, this.querySelectorAll(sel,{includeSelf})], [])
         const hasAtt = selector.match(/^\[([a-zA-Z0-9_$\-]+)\]$/)
         const attEquals = selector.match(/^\[([a-zA-Z0-9_$\-]+)="([a-zA-Z0-9_\-]+)"\]$/)
         const hasClass = selector.match(/^\.([a-zA-Z0-9_$\-]+)$/)
@@ -4542,13 +4540,6 @@ function applyDeltaToDom(elem,delta) {
                 !sameOrder && (childElems[i].setAttribute('__afterIndex',e.__afterIndex))
             }
         })
-        // toAppend.forEach(e=>{
-        //     const newChild = createElement(elem.ownerDocument,e.tag)
-        //     elem.appendChild(newChild)
-        //     applyDeltaToDom(newChild,e)
-        //     jb.log('appendChild',[newChild,e,elem,delta])
-        //     !sameOrder && (newChild.setAttribute('__afterIndex',e.__afterIndex))
-        // })
         toAppend.forEach(e=>{
             const newElem = render(e,elem)
             jb.log('appendChild',[newElem,e,elem,delta])
@@ -4609,6 +4600,10 @@ function setAtt(elem,att,val) {
     } else if (att === 'checked' && elem.tagName.toLowerCase() === 'input') {
         elem.checked = !!val
         jb.log('htmlChange',['checked',...arguments])
+    } else if (att.indexOf('$__input') === 0) {
+        try {
+            setInput(JSON.parse(val))
+        } catch(e) {}
     } else if (att.indexOf('$__') === 0) {
         const id = att.slice(3)
         try {
@@ -4623,7 +4618,7 @@ function setAtt(elem,att,val) {
         } catch (e) {}
         jb.log('htmlChange',[`vars__ ${id}`,...arguments])
     } else if (att === '$focus' && val) {
-        jb.ui.focus(elem,'render vdom')
+        jb.ui.focus(elem,val)
     } else if (att === '$text') {
         elem.innerText = val || ''
         jb.log('htmlChange',['text',...arguments])
@@ -4643,6 +4638,17 @@ function setAtt(elem,att,val) {
     } else {
         elem.setAttribute(att,val)
         jb.log('htmlChange',['setAtt',...arguments])
+    }
+
+    function setInput({assumedVal,newVal,selectionStart}) {
+        const el = jb.ui.findIncludeSelf(elem,'input,textarea')[0]
+        if (!el) 
+            return jb.logError('setInput: can not find input elem')
+        if (assumedVal != el.value) 
+            return jb.logError('setInput: assumed val is not as expected',assumedVal, el.value)
+        el.value = newVal
+        if (typeof selectionStart == 'number') 
+            el.selectionStart = selectionStart
     }
 }
 
@@ -4755,6 +4761,7 @@ Object.assign(jb.ui, {
         else {
             if (!jb.ctxDictionary[ctxIdToRun])
                 return jb.logError(`no ctx found for method: ${method} ${ctxIdToRun}`, elem, data, vars)
+            jb.log('BEMethod',[method,data,vars])
             jb.ui.runCtxAction(jb.ctxDictionary[ctxIdToRun],data,vars)
         }
     },
@@ -4889,7 +4896,7 @@ Object.assign(jb.ui, {
             if (elemsToCheckCtxBefore[i] != elem.getAttribute('jb-ctx')) return // the elem was already refreshed during this process, probably by its parent
             let refresh = false, strongRefresh = false, cssOnly = true
             elem.getAttribute('observe').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{
-                if (!obs.allowSelfRefresh && elem == jb.path(e.srcCtx, 'vars.cmp.base')) 
+                if (!obs.allowSelfRefresh && jb.ui.findIncludeSelf(elem,`[cmp-id="${jb.path(e.srcCtx, 'vars.cmp.cmpId')}"]`)[0]) 
                     return jb.log('notifyObservableElems',['blocking self refresh', elem, obs,e])
                 const obsPath = watchHandler.removeLinksFromPath(watchHandler.pathOfRef(obs.ref))
                 if (!obsPath)
@@ -4961,8 +4968,15 @@ class frontEndCmp {
         jb.log('refreshReq',[...arguments])
         if (this._deleted) return
         Object.assign(this.state, state)
-        ui.refreshElem(this.base,{...this.state, ...state},options)
+        this.base.state = this.state
+        ui.refreshElem(this.base,this.state,options)
     }
+    refreshFE(state) {
+        if (this._deleted) return
+        Object.assign(this.state, state)
+        this.base.state = this.state
+        this.runFEMethod('onRefresh')
+    }    
     newVDomApplied() {
         Object.assign(this.state,{...this.base.state}) // update state from BE
         this.runFEMethod('onRefresh')
@@ -5064,8 +5078,10 @@ class JbComponent {
     }
     init() {
         jb.log('initCmp',[this])
+        const baseVars = Object.keys(this.ctx.vars)
         this.ctx = (this.extendCtxFuncs||[])
-            .reduce((acc,extendCtx) => tryWrapper(() => extendCtx(acc,this),'extendCtx'), this.ctx.setVar('cmpId',this.cmpId))
+            .reduce((acc,extendCtx) => tryWrapper(() => extendCtx(acc,this),'extendCtx'), this.ctx.setVar('cmp',this))
+        this.newVars = jb.objFromEntries(Object.keys(this.ctx.vars).filter(k=>baseVars.indexOf(k) == -1).map(k=>[k,this.ctx.vars[k]]))
         this.renderProps = {}
         this.state = this.ctx.vars.$state
         this.calcCtx = this.ctx.setVar('$props',this.renderProps).setVar('cmp',this)
@@ -5126,7 +5142,7 @@ class JbComponent {
             x.includeChildren && `includeChildren=${x.includeChildren}`,
             x.strongRefresh && `strongRefresh`,  x.cssOnly && `cssOnly`, x.allowSelfRefresh && `allowSelfRefresh`,  
             x.phase && `phase=${x.phase}`].filter(x=>x).join(';')).join(',')
-        const methods = (this.method||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx.setVars({cmp: this, $props: this.renderProps}))}`).join(',')
+        const methods = (this.method||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx.setVars({cmp: this, $props: this.renderProps, ...this.newVars}))}`).join(',')
         const originators = this.originators.map(ctx=>ui.preserveCtx(ctx)).join(',')
         const userEventProps = (this.userEventProps||[]).join(',')
         const frontEndMethods = (this.frontEndMethod || []).map(h=>({method: h.method, path: h.path}))
@@ -5162,6 +5178,9 @@ class JbComponent {
         (this.method||[]).filter(h=> h.id == method)[0]
     }
     runBEMethod(method, data, vars) {
+        jb.log('BEMethod',[method,data,vars])
+        if (jb.path(vars,'$state'))
+            Object.assign(this.state,vars.$state)
         const methodImpls = (this.method||[]).filter(h=> h.id == method)
         methodImpls.forEach(h=> jb.ui.runCtxAction(h.ctx,data,{cmp: this,$state: this.state, $props: this.renderProps, ...vars}))
         if (methodImpls.length == 0)
@@ -5473,9 +5492,11 @@ jb.component('action.focusOnCmp', {
     {id: 'cmpId', as: 'string', defaultValue: '%$cmp/cmpId%' },
   ],
   impl: (ctx,desc,cmpId) => {
-    const delta = {attributes: {$focus: true, $__desc: `"${desc}"`}}
+    const elem = jb.path(ctx.vars.cmp,'base')
+    if (elem)
+      return jb.ui.focus(elem,desc,ctx)
+    const delta = {attributes: {$focus: desc}}
     jb.ui.applyDeltaToCmp(delta,ctx,cmpId)
-    //ctx.vars.cmp.base ? jb.ui.focus(ctx.vars.cmp.base,desc,ctx)
   }
 })
 
@@ -5730,8 +5751,8 @@ jb.component('htmlAttribute', {
     {id: 'attribute', mandatory: true, as: 'string'},
     {id: 'value', mandatory: true, as: 'string', dynamic: true}
   ],
-  impl: (ctx,attribute,value) => ({
-    templateModifier: (vdom,cmp) => vdom.setAttribute(attribute, value(cmp.ctx))
+  impl: (ctx,id,value) => ({
+    templateModifier: (vdom,cmp) => vdom.setAttribute(id.match(/^on[^-]/) ? `${id.slice(0,2)}-${id.slice(2)}` : id, value(cmp.ctx))
   })
 })
 
@@ -6088,21 +6109,6 @@ jb.component('frontEnd.flow', {
     }})
 })
 
-jb.component('feature.keyboardShortcut', {
-    type: 'feature',
-    category: 'events',
-    description: 'listen to events at the document level even when the component is not active',
-    params: [
-      {id: 'key', as: 'string', description: 'e.g. Alt+C'},
-      {id: 'action', type: 'action', dynamic: true}
-    ],
-    impl: frontEnd.flow(
-        source.event('%$event%','%$cmp.base.ownerDocument%'), 
-        rx.takeUntil('%$cmp.destroyed%'),
-        rx.filter(key.eventMatchKey('%%','%$key%')), 
-        sink.BEMethod('Shortcut-%$key%'))
-})
-  
 jb.component('feature.onEvent', {
     type: 'feature',
     category: 'events',
@@ -6113,7 +6119,6 @@ jb.component('feature.onEvent', {
     impl: features(
         method('%$event%Handler', call('action')),
         htmlAttribute('on%$event%','%$event%Handler'),
-//        frontEnd.flow(source.frontEndEvent('%$event%'), sink.BEMethod('%$event%Handler'))
     )
 })
   
@@ -6146,28 +6151,60 @@ jb.component('feature.classOnHover', {
     )
 })
 
-jb.component('key.eventMatchKey', {
-    type: 'boolean',
-    params: [
-        {id: 'event'},
-        {id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V' },
-    ],
-    impl: (ctx, e, key) => {
-        if (!key) return;
+// jb.component('key.eventMatchKey', {
+//     type: 'boolean',
+//     params: [
+//         {id: 'event'},
+//         {id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V' },
+//     ],
+//     impl: (ctx, e, key) => {
+//         if (!key) return;
+//       const dict = { tab: 9, delete: 46, tab: 9, esc: 27, enter: 13, right: 39, left: 37, up: 38, down: 40}
+    
+//       key = key.replace(/-/,'+');
+//       const keyWithoutPrefix = key.split('+').pop()
+//       let keyCode = dict[keyWithoutPrefix.toLowerCase()]
+//       if (+keyWithoutPrefix)
+//         keyCode = +keyWithoutPrefix
+//       if (keyWithoutPrefix.length == 1)
+//         keyCode = keyWithoutPrefix.charCodeAt(0);
+    
+//         if (key.match(/^[Cc]trl/) && !e.ctrlKey) return;
+//         if (key.match(/^[Aa]lt/) && !e.altKey) return;
+//         return e.keyCode == keyCode
+//   }
+// })
+
+jb.component('key.eventToMethod', {
+  type: 'boolean',
+  params: [
+      {id: 'event'},
+      {id: 'elem' },
+  ],
+  impl: (ctx, event, elem) => {
+    elem.keysHash = elem.keysHash || calcKeysHash()
+        
+    const res = elem.keysHash.find(key=>key.keyCode == event.keyCode && event.ctrlKey == key.ctrl && event.altKey == key.alt)
+    console.log(event,res)
+    return res && res.methodName
+
+    function calcKeysHash() {
+      const keys = elem.getAttribute('methods').split(',').map(x=>x.split('-')[0])
+      .filter(x=>x.indexOf('onKey') == 0).map(x=>x.slice(5).slice(0,-7))
       const dict = { tab: 9, delete: 46, tab: 9, esc: 27, enter: 13, right: 39, left: 37, up: 38, down: 40}
-    
-      key = key.replace(/-/,'+');
-      const keyWithoutPrefix = key.split('+').pop()
-      let keyCode = dict[keyWithoutPrefix.toLowerCase()]
-      if (+keyWithoutPrefix)
-        keyCode = +keyWithoutPrefix
-      if (keyWithoutPrefix.length == 1)
-        keyCode = keyWithoutPrefix.charCodeAt(0);
-    
-        if (key.match(/^[Cc]trl/) && !e.ctrlKey) return;
-        if (key.match(/^[Aa]lt/) && !e.altKey) return;
-        return e.keyCode == keyCode
-  }
+  
+      return keys.map(_key=>{
+        const key = _key.replace(/-/,'+');
+        const keyWithoutPrefix = key.split('+').pop()
+        let keyCode = dict[keyWithoutPrefix.toLowerCase()]
+        if (+keyWithoutPrefix)
+          keyCode = +keyWithoutPrefix
+        if (keyWithoutPrefix.length == 1)
+          keyCode = keyWithoutPrefix.charCodeAt(0)
+        return { keyCode, ctrl: !!key.match(/^[Cc]trl/), alt: !!key.match(/^[Aa]lt/), methodName: `onKey${_key}Handler` }
+      })
+    }
+}
 })
 
 jb.component('feature.onKey', {
@@ -6178,11 +6215,39 @@ jb.component('feature.onKey', {
       {id: 'action', type: 'action', mandatory: true, dynamic: true},
     ],
     impl: features(
-        method('on%$Key%Handler','%$action%'),
-        frontEnd.flow(source.frontEndEvent('keydown'), rx.filter(key.eventMatchKey('%%','%$key%')), sink.BEMethod('on%$Key%Handler'))
+        method(replace({find: '-', replace: '+', text: 'onKey%$key%Handler',useRegex: true}), call('action')),
+        frontEnd.init((ctx,{cmp,el}) => {
+          if (! cmp.hasOnKeyHanlder) {
+            cmp.hasOnKeyHanlder = true
+            ctx.run(rx.pipe(source.frontEndEvent('keydown'), frontEnd.addUserEvent(), 
+              rx.map(key.eventToMethod('%%',el)), rx.filter('%%'), rx.log(11), sink.BEMethod('%%')))
+          }
+      })
     )
 })
-  
+
+jb.component('feature.keyboardShortcut', {
+  type: 'feature',
+  category: 'events',
+  description: 'listen to events at the document level even when the component is not active',
+  params: [
+    {id: 'key', as: 'string', description: 'e.g. Alt+C'},
+    {id: 'action', type: 'action', dynamic: true}
+  ],
+  impl: features(
+    method('onKey%$Key%Handler','%$action%'),
+    frontEnd.init((ctx,{cmp,el}) => {
+      if (! cmp.hasDocOnKeyHanlder) {
+        cmp.hasDocOnKeyHanlder = true
+        ctx.run(
+          source.event('keydown','%$cmp.base.ownerDocument%'), 
+          rx.takeUntil('%$cmp.destroyed%'),
+          rx.map(key.eventToMethod('%%',el)), rx.filter('%%'), sink.BEMethod('%%'))
+      }
+    })
+  )
+})
+
 jb.component('feature.onEnter', {
     type: 'feature',
     category: 'events',
@@ -6219,13 +6284,14 @@ jb.component('frontEnd.selectionKeySourceService', {
     {id: 'autoFocs', as: 'boolean' },
   ],
   impl: features(
-    service.registerBackEndService('selectionKeySource', obj(prop('cmpId', ctx => ctx.exp('%$cmp/cmpId%')))),
+    service.registerBackEndService('selectionKeySource', obj(prop('cmpId', '%$cmp/cmpId%'))),
     passPropToFrontEnd('autoFocs','%$autoFocs%'),
     frontEnd.prop('selectionKeySource', (ctx,{cmp,el,autoFocs}) => {
       const {pipe, takeUntil,subject} = jb.callbag
       const keydown_src = subject()
       el.onkeydown = e => {
         if ([38,40,13,27].indexOf(e.keyCode) != -1) {
+          console.log('key source',e)
           keydown_src.next(ctx.dataObj(e))
           return false // stop propagation
         }
@@ -6240,24 +6306,23 @@ jb.component('frontEnd.selectionKeySourceService', {
 
 jb.component('frontEnd.passSelectionKeySource', {
   type: 'feature',
-  impl: passPropToFrontEnd('selectionKeySourceCmpId', ctx => ctx.exp('%$serviceRegistry/services/selectionKeySource/cmpId%'))
+  impl: passPropToFrontEnd('selectionKeySourceCmpId', '%$serviceRegistry/services/selectionKeySource/cmpId%')
 })
 
 jb.component('source.findSelectionKeySource', {
   type: 'rx',
   category: 'source',
   description: 'used in front end, works with "selectionKeySourceService" and "passSelectionKeySource"',
-  impl: ctx => {
-    const cmpId = ctx.vars.selectionKeySourceCmpId
-    if (cmpId) {
-      const el = jb.ui.elemOfCmp(ctx,cmpId)
-      if (!el)
-        jb.logError(`can not find selection source elem of cmpId ${cmpId}`,ctx)
-      if (el && el._component.selectionKeySource)
-        return el._component.selectionKeySource
-    }
-    //return jb.callbag.fromIter([])
-  }
+  impl: rx.pipe(
+    Var('clientCmp','%$cmp%'),
+    rx.merge( 
+      source.data([]),
+      (ctx,{selectionKeySourceCmpId}) => jb.path(jb.ui.elemOfCmp(ctx,selectionKeySourceCmpId), '_component.selectionKeySource')
+    ),
+    rx.takeUntil('%$clientCmp.destroyed%'),
+    rx.log(1),
+    rx.var('cmp','%$clientCmp%')
+  )
 });
 
 (function() {
@@ -7274,16 +7339,13 @@ jb.component('openDialog', {
     {id: 'title', as: 'renderable', dynamic: true},
     {id: 'content', type: 'control', dynamic: true, templateValue: group()},
     {id: 'style', type: 'dialog.style', dynamic: true, defaultValue: dialog.default()},
-    {id: 'singletonId', as: 'string', description: 'force one instance of the dialog'},
     {id: 'menu', type: 'control', dynamic: true},
     {id: 'onOK', type: 'action', dynamic: true},
     {id: 'features', type: 'dialog-feature[]', dynamic: true}
   ],
   impl: runActions(
-	  Var('$dlg',(ctx,{},{singletonId}) => {
-		const dialog = { 
-			id: singletonId || `dlg-${ctx.id}`,
-		}
+	  Var('$dlg',(ctx,{}) => {
+		const dialog = { id: `dlg-${ctx.id}`, launcherCmpId: ctx.exp('%$cmp/cmpId%') }
 		const ctxWithDialog = ctx.componentContext._parent.setVars({
 			$dialog: dialog,
 			dialogData: {},
@@ -7310,13 +7372,17 @@ jb.component('dialog.init', {
 		calcProp('contentComp', '%$$model/content%'),
 		calcProp('hasMenu', '%$$model/menu/profile%'),
 		calcProp('menuComp', '%$$model/menu%'),
-		//passPropToFrontEnd('launchingCmp','%$cmp/cmpId%'),
 		feature.init(writeValue('%$$dialog/cmpId%','%$cmp/cmpId%')),
 		htmlAttribute('id','%$$dialog/id%'),
 
 		method('dialogCloseOK', dialog.closeDialog(true)),
 		method('dialogClose', dialog.closeDialog(false)),
 		css('{z-index: 100; top: %$$state/dialogPos/top%px; left: %$$state/dialogPos/left%px }'),
+		frontEnd.onRefresh( ({},{$state,el}) => { 
+			const {top,left} = $state.dialogPos || { top: 0, left: 0}
+			el.style.top = `${top}px`
+			el.style.left = `${left}px`
+		}),
 	)
 })
 
@@ -7353,7 +7419,7 @@ jb.component('dialog.closeDialog', {
 			jb.ui.checkFormValidation && jb.ui.checkFormValidation(jb.ui.elemOfCmp(ctx, $dialog.cmpId)))),
 		action.if(not('%$formContainer.err%'),
 			runActions(
-				({},{$dialog},{OK}) => OK && $dialog.ctx.params.onOK(),
+				(ctx,{$dialog},{OK}) => OK && $dialog.ctx.params.onOK(ctx),
 				action.subjectNext(dialogs.changeEmitter(), obj(prop('close',true), prop('dialogId','%$$dialog/id%')))
 			)
 		)
@@ -7371,7 +7437,7 @@ jb.component('dialog.closeDialogById', {
   
 jb.component('dialog.closeAll', {
 	type: 'action',
-	impl: runActionOnItems(dialogs.shownDialogs(), dialog.closeDialogById('%%'))
+	impl: runActionOnItems(dialog.shownDialogs(), dialog.closeDialogById('%%'))
 })
 
 jb.component('dialog.closeAllPopups', {
@@ -7379,8 +7445,16 @@ jb.component('dialog.closeAllPopups', {
 	impl: runActionOnItems(dialogs.shownPopups(), dialog.closeDialogById('%%'))
 })
 
-jb.component('dialogs.shownDialogs', {
+jb.component('dialog.shownDialogs', {
 	impl: ctx => jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog').map(el=> el.getAttribute('id'))
+})
+
+jb.component('dialog.isOpen', {
+	params: [
+		{id: 'id', as: 'string'},
+  	],
+	impl: dialogs.cmpIdOfDialog('%$id%')
+	//(ctx,id) => jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog').filter(el=> jb.path(el,'vars.uniqueId') == id)[0]
 })
 
 jb.component('dialogs.cmpIdOfDialog', {
@@ -7410,13 +7484,14 @@ jb.component('dialogFeature.uniqueDialog', {
 	  {id: 'id', as: 'string'},
 	],
 	impl: features(
-		passPropToFrontEnd('uniqueId','%$id%'),
+		feature.init(writeValue('%$$dialog/id%','%$id%')),
+		//passPropToFrontEnd('uniqueId','%$id%'),
 		followUp.flow(
 			source.data(ctx => jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog')
 				.filter(el=>el.getAttribute('cmp-id') != ctx.vars.cmp.cmpId)),
-			rx.filter('%vars.uniqueId%==%$id%'),
-			rx.map(({data}) => data.getAttribute('id')),
-			sink.action(dialog.closeDialogById('%%'))
+			rx.filter('%id%==%$id%'),
+			rx.map(({data}) => data.getAttribute('cmp-id')),
+			sink.subjectNext(dialogs.changeEmitter(), obj(prop('closeByCmpId',true), prop('cmpId','%%')))
 		)
 	)
 })
@@ -7475,7 +7550,7 @@ jb.component('dialogFeature.dragTitle', {
 	)
 })
 
-jb.component('dialog.default', { /* dialog.default */
+jb.component('dialog.default', {
 	type: 'dialog.style',
 	impl: customStyle({
 	  template: ({},{title,contentComp},h) => h('div#jb-dialog jb-default-dialog',{},[
@@ -7492,11 +7567,13 @@ jb.component('dialogFeature.nearLauncherPosition', {
   params: [
     {id: 'offsetLeft', as: 'number', dynamic: true, defaultValue: 0},
     {id: 'offsetTop', as: 'number', dynamic: true, defaultValue: 0},
-    {id: 'rightSide', as: 'boolean', type: 'boolean'}
+    {id: 'rightSide', as: 'boolean' }
   ],
   impl: features(
 	  calcProp('launcherRectangle','%$ev/elem/clientRect%'),
 	  passPropToFrontEnd('launcherRectangle','%$$props/launcherRectangle%'),
+	  passPropToFrontEnd('launcherCmpId','%$$dialog/launcherCmpId%'),
+	  passPropToFrontEnd('pos',({},{},{offsetLeft,offsetTop,rightSide}) => ({offsetLeft: offsetLeft() || 0, offsetTop: offsetTop() || 0,rightSide})),
 	  userStateProp('dialogPos', ({},{ev,$props},{offsetLeft,offsetTop,rightSide}) => {
 		if (!ev) return { left: 0, top: 0}
 		const _offsetLeft = offsetLeft() || 0, _offsetTop = offsetTop() || 0
@@ -7507,9 +7584,23 @@ jb.component('dialogFeature.nearLauncherPosition', {
 			top:  $props.launcherRectangle.top  + _offsetTop   + ev.elem.outerHeight
 		}
 	  }),
-	  frontEnd.init(({},{cmp,$state}) => { // fixDialogPositionAtScreenEdges
+	  frontEnd.init((ctx,{cmp,pos,launcherCmpId,elemToTest}) => { // handle launcherCmpId
+		  if (!elemToTest && launcherCmpId && cmp.state.dialogPos.left == 0 && cmp.state.dialogPos.top == 0) {
+			  const el = jb.ui.elemOfCmp(ctx,launcherCmpId)
+			  if (!el) return
+			  const launcherRectangle = el.getBoundingClientRect()
+			  const dialogPos = {
+				left: launcherRectangle.left + pos.offsetLeft + (pos.rightSide ? jb.ui.outerWidth(el) : 0), 
+				top:  launcherRectangle.top  + pos.offsetTop  + jb.ui.outerHeight(el)
+			  }
+			  if (dialogPos.left != 0 || dialogPos.top != 0)
+			  	cmp.refreshFE({ dialogPos })
+		  }
+	  }),
+	  frontEnd.init(({},{cmp,elemToTest}) => { // fixDialogPositionAtScreenEdges
+		if (elemToTest || cmp.state.dialogPos.left == 0 && cmp.state.dialogPos.top == 0) return
 		const dialog = jb.ui.findIncludeSelf(cmp.base,'.jb-dialog')[0]
-		const dialogPos = $state.dialogPos
+		const dialogPos = cmp.state.dialogPos
 		let top,left
 		const padding = 2, dialog_height = jb.ui.outerHeight(dialog), dialog_width = jb.ui.outerWidth(dialog);
 		if (dialogPos.top > dialog_height && dialogPos.top + dialog_height + padding > window.innerHeight + window.pageYOffset)
@@ -7517,46 +7608,10 @@ jb.component('dialogFeature.nearLauncherPosition', {
 		if (dialogPos.left > dialog_width && dialogPos.left + dialog_width + padding > window.innerWidth + window.pageXOffset)
 			left = dialogPos.left - dialog_width
 		if (left || top)
-			cmp.refresh({ dialogPos: { top: top || dialogPos.top , left: left || dialogPos.left} })
+			cmp.refreshFE({ dialogPos: { top: top || dialogPos.top , left: left || dialogPos.left} })
 	  }),
   )
 })
-  
-//   function(context,offsetLeftF,offsetTopF,rightSide) {
-// 		return {
-// 			afterViewInit: function(cmp) {
-// 				let offsetLeft = offsetLeftF() || 0, offsetTop = offsetTopF() || 0;
-// 				const jbDialog = jb.ui.findIncludeSelf(cmp.base,'.jb-dialog')[0];
-// 				if (!context.vars.$launchingElement) {
-// 					if (typeof event == 'undefined')
-// 						return console.log('no launcher for dialog');
-// 					jbDialog.style.left = offsetLeft + event.clientX + 'px'
-// 					jbDialog.style.top = offsetTop + event.clientY + 'px'
-// 					return
-// 				}
-// 				const control = context.vars.$launchingElement.el;
-// 				const launcherHeightFix = context.vars.$launchingElement.launcherHeightFix || jb.ui.outerHeight(control)
-// 				const pos = jb.ui.offset(control);
-// 				offsetLeft += rightSide ? jb.ui.outerWidth(control) : 0;
-// 				const fixedPosition = fixDialogOverflow(control,jbDialog,offsetLeft,offsetTop);
-// 				jbDialog.style.display = 'block';
-// 				jbDialog.style.left = (fixedPosition ? fixedPosition.left : pos.left + offsetLeft) + 'px';
-// 				jbDialog.style.top = (fixedPosition ? fixedPosition.top : pos.top + launcherHeightFix + offsetTop) + 'px';
-// 			}
-// 		}
-
-// 		function fixDialogOverflow(control,dialog,offsetLeft,offsetTop) {
-// 			let top,left
-// 			const padding = 2,control_offset = jb.ui.offset(control), dialog_height = jb.ui.outerHeight(dialog), dialog_width = jb.ui.outerWidth(dialog);
-// 			if (control_offset.top > dialog_height && control_offset.top + dialog_height + padding + (offsetTop||0) > window.innerHeight + window.pageYOffset)
-// 				top = control_offset.top - dialog_height;
-// 			if (control_offset.left > dialog_width && control_offset.left + dialog_width + padding + (offsetLeft||0) > window.innerWidth + window.pageXOffset)
-// 				left = control_offset.left - dialog_width;
-// 			if (top || left)
-// 				return { top: top || control_offset.top , left: left || control_offset.left}
-// 		}
-// 	}
-// })
 
 jb.component('dialogFeature.onClose', {
   type: 'dialog-feature',
@@ -7612,17 +7667,6 @@ jb.component('dialogFeature.cssClassOnLaunchingElement', {
 	  frontEnd.onDestroy( ({},{cmp}) => cmp.launchingElement && jb.ui.removeClass(cmp.launchingElement,'dialog-open'))
   )
 })
-//     context => ({
-// 		afterViewInit: cmp => {
-// 			if (!context.vars.$launchingElement) return
-// 			const {pipe,filter,subscribe,take} = jb.callbag
-// 			const dialog = context.vars.$dialog;
-// 			const control = context.vars.$launchingElement.el;
-// 			jb.ui.addClass(control,'dialog-open');
-// 			pipe(dialog.em, filter(e=> e.type == 'close'), take(1), subscribe(()=> jb.ui.removeClass(control,'dialog-open')))
-// 		}
-// 	})
-// })
 
 jb.component('dialogFeature.maxZIndexOnClick', {
   type: 'dialog-feature',
@@ -7712,7 +7756,7 @@ jb.component('dialog.popup', {
       dialogFeature.maxZIndexOnClick(),
       dialogFeature.closeWhenClickingOutside(),
       dialogFeature.cssClassOnLaunchingElement(),
-      dialogFeature.nearLauncherPosition({})
+      dialogFeature.nearLauncherPosition()
     ]
   })
 })
@@ -7726,7 +7770,7 @@ jb.component('dialog.transparent-popup', {
 		dialogFeature.maxZIndexOnClick(),
 		dialogFeature.closeWhenClickingOutside(),
 		dialogFeature.cssClassOnLaunchingElement(),
-		dialogFeature.nearLauncherPosition({})
+		dialogFeature.nearLauncherPosition()
 	  ]
 	})
 })
@@ -7781,7 +7825,13 @@ jb.component('dialogs.defaultStyle', {
 				rx.var('delta', obj(prop('children', obj(prop('deleteCmp','%$dlgCmpId%'))))),
 				rx.log('close dialog'),
 				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
-			)
+			),
+			followUp.flow(source.subject(dialogs.changeEmitter()), 
+				rx.filter('%closeByCmpId%'),
+				rx.var('delta', obj(prop('children', obj(prop('deleteCmp','%cmpId%'))))),
+				rx.log('close dialog'),
+				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
+			)			
 		]
 	})
 })
@@ -7992,7 +8042,9 @@ jb.component('itemlist.selection', {
           rx.pipe(source.frontEndEvent('click'), rx.map(itemlist.ctxIdOfElem('%target%')), rx.filter('%%')),
           source.subject('%$cmp/selectionEmitter%')
         ),
+        rx.log('itemlist2'),
         rx.distinctUntilChanged(),
+        rx.log('itemlist3'),
         sink.action(runActions(action.runFEMethod('setSelected'), action.runBEMethod('onSelection')))
     )
   )
@@ -8009,13 +8061,18 @@ jb.component('itemlist.keyboardSelection', {
     htmlAttribute('tabIndex',0),
     method('onEnter', runActionOnItem(itemlist.ctxIdToData(),call('onEnter'))),
     frontEnd.passSelectionKeySource(),
-    frontEnd.prop('onkeydown', rx.merge(source.frontEndEvent('keydown'), source.findSelectionKeySource() )),
+    frontEnd.prop('onkeydown', rx.merge(
+      source.frontEndEvent('keydown'), 
+      source.findSelectionKeySource()
+      ), frontEnd.addUserEvent() ),
     frontEnd.flow('%$cmp.onkeydown%', rx.filter('%keyCode%==13'), rx.filter('%$cmp.state.selected%'), sink.BEMethod('onEnter','%$cmp.state.selected%') ),
     frontEnd.flow(
       '%$cmp.onkeydown%',
       rx.filter(not('%ctrlKey%')),
+      rx.log('itemlist0'),
       rx.filter(inGroup(list(38,40),'%keyCode%')),
       rx.map(itemlist.nextSelected(If('%keyCode%==40',1,-1))), 
+      rx.log('itemlist1'),
       sink.subjectNext('%$cmp/selectionEmitter%')
     ),
     passPropToFrontEnd('autoFocus','%$autoFocus%'),
@@ -9541,112 +9598,119 @@ jb.component('gotoUrl', {
 
 ;
 
+jb.component('editableText.picklistHelper', {
+  type: 'feature',
+  params: [
+    {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true},
+    {id: 'picklistStyle', type: 'picklist.style', dynamic: true, defaultValue: picklist.labelList()},
+    {id: 'showHelper', as: 'boolean', dynamic: true, defaultValue: notEmpty('%value%'), description: 'show/hide helper according to input content', type: 'boolean'},
+    {id: 'autoOpen', as: 'boolean', type: 'boolean'},
+    {id: 'onEnter', type: 'action', dynamic: true, defaultValue: writeValue('%$$model/databind%','%$selectedOption%')},
+    {id: 'onEsc', type: 'action', dynamic: true},
+    {id: 'popupId', as: 'string', defaultValue: 'editableTextHelper'}
+  ],
+  impl: features(
+    variable({name: 'selectedOption', watchable: true}),
+    variable({name: 'watchableInput', watchable: true, value: obj(prop('value','')) }),
+    variable('helperCmp', '%$cmp%'),
+    method('openPopup', openDialog({
+        style: dialog.popup(), content: picklist({
+          options: pipeline('%$watchableInput%',call('options')),
+          databind: '%$selectedOption%',
+          features: watchRef('%$watchableInput%'),
+          style: call('picklistStyle')
+        }),
+        features: [
+          dialogFeature.maxZIndexOnClick(),
+          dialogFeature.uniqueDialog('%$popupId%'),
+        ]
+    })),
+    method('closePopup', dialog.closeDialogById('%$popupId%')),
+    method('refresh', If(call('showHelper'),
+      If(dialog.isOpen('%$popupId%'), writeValue('%$watchableInput%','%%'), action.runBEMethod('openPopup')),
+      action.runBEMethod('closePopup')
+    )),
+    frontEnd.enrichUserEvent(({},{cmp}) => {
+        const input = jb.ui.findIncludeSelf(cmp.base,'input,textarea')[0];
+        return { input: { value: input.value, selectionStart: input.selectionStart}}
+    }),
+    method('onEnter', action.if(dialog.isOpen('%$popupId%'), runActions(call('onEnter'),dialog.closeDialogById('%$popupId%')))),
+    method('onEsc', action.if(dialog.isOpen('%$popupId%'), runActions(call('onEsc'),dialog.closeDialogById('%$popupId%')))),
+    frontEnd.selectionKeySourceService(),
+    frontEnd.prop('keyUp', rx.pipe(source.frontEndEvent('keyup'), rx.delay(1))),
+    frontEnd.flow('%$cmp/keyUp%', rx.log('keyup'), rx.filter('%keyCode% == 13'), editableText.addUserEvent(), rx.log('enter'), sink.BEMethod('onEnter')),
+    frontEnd.flow('%$cmp/keyUp%', rx.filter(not(inGroup(list(13,27,38,40),'%keyCode%'))), editableText.addUserEvent(),
+      rx.log('refresh'), sink.BEMethod('refresh')),
+    frontEnd.flow('%$cmp/keyUp%', rx.filter('%keyCode% == 27'), editableText.addUserEvent(), sink.BEMethod('onEsc')),
+
+    backEnd.onDestroy(action.runBEMethod('closePopup')),
+    followUp.action(action.if('%$autoOpen%', runActions(
+      writeValue('%$watchableInput%',obj(prop('value','%$helperCmp/renderProps/databind%'))), action.runBEMethod('openPopup'))))
+  )
+})
+
+jb.component('editableText.setInputState', {
+  type: 'action',
+  params: [
+    {id: 'newVal', as: 'string' },
+    {id: 'assumedVal', description: 'contains value and selectionStart, the action is not performed if the not in this state'},
+    {id: 'selectionStart', as: 'number'},
+    {id: 'cmp', defaultValue: '%$cmp%'},
+  ],
+  impl: action.applyDeltaToCmp((ctx,{},{newVal,selectionStart,assumedVal}) => {
+    console.log('setInput',ctx)
+    return {attributes: { $__input: JSON.stringify({ assumedVal: assumedVal, newVal,selectionStart })}}
+  } ,'%$cmp/cmpId%')
+})
+
+jb.component('editableText.addUserEvent', {
+  type: 'rx',
+  impl: rx.innerPipe(frontEnd.addUserEvent(), rx.map('%$ev/input%'))
+})
+
 jb.component('editableText.helperPopup', {
   type: 'feature',
   params: [
     {id: 'control', type: 'control', dynamic: true, mandatory: true},
-    {id: 'popupId', as: 'string', defaultValue: 'helper' },
     {id: 'popupStyle', type: 'dialog.style', dynamic: true, defaultValue: dialog.popup()},
     {id: 'showHelper', as: 'boolean', dynamic: true, defaultValue: notEmpty('%value%'), description: 'show/hide helper according to input content', type: 'boolean'},
     {id: 'autoOpen', as: 'boolean', type: 'boolean'},
     {id: 'onEnter', type: 'action', dynamic: true},
-    {id: 'onEsc', type: 'action', dynamic: true}
+    {id: 'onEsc', type: 'action', dynamic: true},
+    {id: 'popupId', as: 'string', defaultValue: 'editableTextHelper' },
   ],
   impl: features(
-    userStateProp({
-      id: 'input',
-      phase: 20, // after 'databind'
-      value: ({},{$state,$props}) => $state.input || { value: $props.databind , selectionStart: 0}
-    }),
     method('openPopup', openDialog({
-        vars: Var('input', ctx => ctx.exp('%$$state/input%')),
-        style: call('popupStyle'), content: call('control'),
-        features: [
-          dialogFeature.maxZIndexOnClick(),
-          dialogFeature.uniqueDialog('%$popupId%'),
-          group.data(ctx => ctx.exp('%$input%'))
-        ]
+      style: call('popupStyle'), content: call('control'),
+      features: [
+        dialogFeature.maxZIndexOnClick(),
+        dialogFeature.uniqueDialog('%$popupId%'),
+        group.data(firstSucceeding('%$ev/input%', obj(prop('value','%$helperCmp/renderProps/databind%')))),
+      ]
     })),
+    variable('helperCmp', '%$cmp%'),
     method('closePopup', dialog.closeDialogById('%$popupId%')),
-    method('refresh', action.runBEMethod(If(runActionOnItem('%$$state/input%', call('showHelper')), 'openPopup','closePopup'))),
+    method('refresh', If(call('showHelper'),
+      If(dialog.isOpen('%$popupId%'), touch('%$watchableInput%'), action.runBEMethod('openPopup')),
+      action.runBEMethod('closePopup')
+    )),
     frontEnd.enrichUserEvent(({},{cmp}) => {
-        const input = jb.ui.findIncludeSelf(cmp.base,'input')[0];
+        const input = jb.ui.findIncludeSelf(cmp.base,'input,textarea')[0];
         return { input: { value: input.value, selectionStart: input.selectionStart}}
     }),
-    method('onEnter', runActions(dialog.closeDialogById('%$popupId%'), call('onEnter'))),
-    method('onEsc', runActions(dialog.closeDialogById('%$popupId%'), call('onEsc'))),
+    method('onEnter', action.if(dialog.isOpen('%$popupId%'), runActions(call('onEnter'),dialog.closeDialogById('%$popupId%')))),
+    method('onEsc', action.if(dialog.isOpen('%$popupId%'), runActions(call('onEsc'),dialog.closeDialogById('%$popupId%')))),
     frontEnd.selectionKeySourceService(),
-    frontEnd.flow('%$cmp/selectionKeySource%', rx.filter('%keyCode% == 13'), editableText.updateState(), 
-        rx.filter('%$showHelper()%'), sink.BEMethod('onEnter')),
     frontEnd.prop('keyUp', rx.pipe(source.frontEndEvent('keyup'), rx.delay(1))),
-    frontEnd.flow('%$cmp/keyUp%', rx.filter(not(inGroup(list(13,27,37,38,40),'%keyCode%'))), editableText.updateState(),
-      sink.BEMethod('refresh')),
-    frontEnd.flow('%$cmp/keyUp%', rx.filter('%keyCode% == 27'), editableText.updateState(), sink.BEMethod('onEsc')),
+    frontEnd.flow('%$cmp/keyUp%', rx.log('keyup'), rx.filter('%keyCode% == 13'), editableText.addUserEvent(), rx.log('enter'), sink.BEMethod('onEnter')),
+    frontEnd.flow('%$cmp/keyUp%', rx.filter(not(inGroup(list(13,27,38,40),'%keyCode%'))), editableText.addUserEvent(),
+      rx.log('refresh'), sink.BEMethod('refresh')),
+    frontEnd.flow('%$cmp/keyUp%', rx.filter('%keyCode% == 27'), editableText.addUserEvent(), sink.BEMethod('onEsc')),
 
     backEnd.onDestroy(action.runBEMethod('closePopup')),
     followUp.action(action.if('%$autoOpen%', action.runBEMethod('openPopup')))
-  )
-})
-
-jb.component('editableText.updateState', {
-  type: 'rx',
-  impl: rx.innerPipe(frontEnd.addUserEvent(), rx.map('%$ev/input%'), frontEnd.updateState('input','%%'))
-})
-
-//   ctx =>({
-//     onkeyup: true,
-//     afterViewInit: cmp => {
-//       const input = jb.ui.findIncludeSelf(cmp.base,'input')[0];
-//       if (!input) return;
-//       const {pipe,filter,subscribe,delay} = jb.callbag
-
-//       cmp.openPopup = jb.ui.wrapWithLauchingElement( ctx2 =>
-//             ctx2.run( openDialog({
-//               id: ctx.params.popupId,
-//               style: _ctx => ctx.params.popupStyle(_ctx),
-//               content: _ctx => ctx.params.control(_ctx),
-//               features: [
-//                 dialogFeature.maxZIndexOnClick(),
-//                 dialogFeature.uniqueDialog(ctx.params.popupId),
-//               ]
-//             }))
-//           ,cmp.ctx, cmp.base);
-
-//       cmp.popup = _ => jb.ui.dialogs.dialogs.filter(d=>d.id == ctx.params.popupId)[0];
-//       cmp.closePopup = _ => cmp.popup() && cmp.popup().close();
-//       cmp.refreshSuggestionPopupOpenClose = _ => {
-//           const showHelper = ctx.params.showHelper(cmp.ctx.setData(input))
-//           jb.log('helper-popup', ['refreshSuggestionPopupOpenClose', showHelper,input.value,cmp.ctx,cmp,ctx] );
-//           if (!showHelper) {
-//             jb.log('helper-popup', ['close popup', showHelper,input.value,cmp.ctx,cmp,ctx])
-//             cmp.closePopup();
-//           } else if (!cmp.popup()) {
-//             jb.log('helper-popup', ['open popup', showHelper,input.value,cmp.ctx,cmp,ctx])
-//             cmp.openPopup(cmp.ctx)
-//           }
-//       }
-
-//       cmp.input = input;
-//       const keyup = cmp.keyup = pipe(cmp.onkeyup,delay(1)) // delay to have input updated
-
-//       cmp.selectionKeySource = jb.ui.upDownEnterEscObs(cmp)
-//       pipe(cmp.selectionKeySource,filter(e=> e.keyCode == 13),subscribe(_=>{
-//         const showHelper = ctx.params.showHelper(cmp.ctx.setData(input))
-//         jb.log('helper-popup', ['onEnter', showHelper, input.value,cmp.ctx,cmp,ctx])
-//         if (!showHelper)
-//           ctx.params.onEnter(cmp.ctx)
-//       }))
-//       jb.subscribe(keyup,e=>e.keyCode == 27 && ctx.params.onEsc(cmp.ctx))
-//       jb.subscribe(keyup,e=> [13,27,37,38,40].indexOf(e.keyCode) == -1 && cmp.refreshSuggestionPopupOpenClose())
-//       jb.subscribe(keyup,e=>e.keyCode == 27 && cmp.closePopup())
-
-//       if (ctx.params.autoOpen)
-//         cmp.refreshSuggestionPopupOpenClose()
-//     },
-//     destroy: cmp => cmp.closePopup(),
-//   })
-// })
-;
+ )
+});
 
 jb.ns('mdc,mdc-style')
 
@@ -9833,7 +9897,7 @@ jb.component('button.x', {
             text-shadow: 0 1px 0 var(--jb-dropdown-shadow);
             font-weight: 700;
         }
-        :hover { color: var(--jb-titleBar-activeForeground) }`
+        :hover { color: var(--jb-titleBar-activeForeground) }`,
   })
 })
 
@@ -10634,12 +10698,15 @@ jb.component('picklist.labelList', {
       items: '%$picklistModel/options%',
       controls: text({text: '%text%', style: call('labelStyle')}),
       style: call('itemlistStyle'),
-      features: itemlist.selection({
-        databind: '%$picklistModel/databind%',
-        selectedToDatabind: '%code%',
-        databindToSelected: ctx => ctx.vars.items.filter(o=>o.code == ctx.data)[0],
-        cssForSelected: '%$cssForSelected%'
-      })
+      features: [
+        itemlist.selection({
+          databind: '%$picklistModel/databind%',
+          selectedToDatabind: '%code%',
+          databindToSelected: ctx => ctx.vars.items.filter(o=>o.code == ctx.data)[0],
+          cssForSelected: '%$cssForSelected%'
+        }),
+        itemlist.keyboardSelection()
+      ]
     }),
     'picklistModel'
   )
@@ -11308,7 +11375,8 @@ jb.component('tree.keyboardSelection', {
 			cmp.refresh($state)
 		}
 	  }),
-	  frontEnd.prop('onkeydown', rx.pipe(source.frontEndEvent('keydown'), rx.filter(not('%ctrlKey%')), rx.filter(not('%altKey%')))),
+	  frontEnd.prop('onkeydown', rx.pipe(
+		  source.frontEndEvent('keydown'), rx.filter(not('%ctrlKey%')), rx.filter(not('%altKey%')), frontEnd.addUserEvent() )),
 	  frontEnd.flow('%$cmp.onkeydown%', rx.filter('%keyCode%==13'), rx.filter('%$cmp.state.selected%'), sink.BEMethod('onEnter','%$cmp.state.selected%') ),
 	  frontEnd.flow('%$cmp.onkeydown%', rx.filter(inGroup(list(38,40),'%keyCode%')),
 		rx.map(tree.nextSelected(If('%keyCode%==40',1,-1))), 

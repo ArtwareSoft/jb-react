@@ -1,98 +1,34 @@
 (function() {
 const st = jb.studio
 
-jb.component('studio.itemlistRefreshSuggestionsOptions', {
-  type: 'feature',
+jb.component('studio.suggestions', {
   params: [
     {id: 'path', as: 'string'},
-    {id: 'source', as: 'string'}
+    {id: 'expressionOnly', as: 'boolean'}
   ],
-  impl: ctx => ({
-      afterViewInit: cmp => {
-        const {pipe,map,subscribe,distinctUntilChanged,catchError,startWith,debounceTime,takeUntil,delay} = jb.callbag
-
-        const selectionKeySourceCmp = jb.ui.parentCmps(cmp.base).find(_cmp=>_cmp.selectionKeySource)
-        const pathToTrace = ctx.params.path
-        const keyup = pipe(selectionKeySourceCmp.keyup, takeUntil( cmp.destroyed ))
-        const input = selectionKeySourceCmp.input
-
-        pipe(keyup,
-          debounceTime(20), // solves timing of closing the floating input
-          startWith(1), // compensation for loosing the first event from selectionKeySource
-          map(e=> input.value.slice(0,100)),
-          distinctUntilChanged(), // compare input value - if input was not changed - leave it. Alt-Space can be used here
-          map(e => st.closestCtxOfLastRun(pathToTrace)),
-          map(probeCtx=>
-            new st.suggestions(input, ctx.exp('%$suggestionData/expressionOnly%')).extendWithOptions(probeCtx,pathToTrace)),
-          catchError(e=> jb.logException(e,'suggestions',cmp.ctx) || []),
-          distinctUntilChanged((e1,e2)=> e1.key == e2.key), // compare options - if options are the same - leave it.
-          takeUntil( cmp.destroyed ),
-          delay(1), // let the itemlist to be built at the first time
-          subscribe(e=> {
-              cmp.ctx.run((ctx,{suggestionData}) => {
-                suggestionData && Object.assign(suggestionData,e)
-                if (suggestionData.options.indexOf(suggestionData.selected) == -1)
-                  suggestionData.selected = null
-              })
-              cmp.ctx.run(refreshControlById('suggestions-itemlist'))
-          }))
-      }
-  })
-})
-
-jb.component('studio.showSuggestions', {
-  impl: ctx =>
-    new st.suggestions(ctx.data, ctx.exp('%$suggestionData/expressionOnly%')).suggestionsRelevant()
-})
-
-jb.component('studio.pasteSuggestion', {
-  type: 'action',
-  params: [
-    {id: 'option', as: 'single', defaultValue: '%%'},
-    {id: 'toAdd', as: 'string', description: '% or /', defaultValue: '%'}
-  ],
-  impl: (ctx,option,toAdd) => {
-    if (option && ctx.exp('%$suggestionData/options%','array').length)
-    Promise.resolve(option.paste(ctx,toAdd)).then(_=> {
-      jb.ui.closestCmp(ctx.vars.suggestionData.input).closePopup()
-    })
+  impl: (ctx,path,expressionOnly) => {
+    const res = new st.suggestions(jb.val(ctx.data), expressionOnly)
+      .calcOptions(st.closestCtxOfLastRun(path),path).options
+    console.log('calcsuggestions',res,ctx,jb.val(ctx.data))
+    return res
   }
 })
 
-jb.component('studio.suggestionsItemlist', {
+jb.component('studio.shouldShowSuggestions', {
   params: [
-    {id: 'path', as: 'string'},
-    {id: 'source', as: 'string'}
+    {id: 'expressionOnly', as: 'boolean'}
   ],
-  impl: itemlist({
-    items: '%$suggestionData/options%',
-    controls: text({
-      text: pipeline('%text%', studio.unMacro()),
-      features: [
-        css.padding({left: '3', right: '2'}),
-        feature.hoverTitle(
-          pipeline(ctx => jb.studio.previewjb.comps[ctx.data.toPaste], '%description%')
-        )
-      ]
-    }),
-    features: [
-      id('suggestions-itemlist'),
-      itemlist.noContainer(),
-      studio.itemlistRefreshSuggestionsOptions('%$path%', '%$source%'),
-      itemlist.selection({
-        databind: '%$suggestionData/selected%',
-        onDoubleClick: studio.pasteSuggestion()
-      }),
-      itemlist.keyboardSelection(false),
-      css.height({height: '500', overflow: 'auto', minMax: 'max'}),
-      css.width({width: '300', overflow: 'auto', minMax: 'min'}),
-      css('{ position: absolute; z-index:1000; background: var(--jb-dropdown-background) }'),
-      css.border({width: '1', color: 'var(--jb-dropdown-border)' }),
-      css.padding({top: '2', left: '3', selector: 'li'})
-    ]
-  })
+  impl: (ctx,expressionOnly) => new st.suggestions(jb.val(ctx.data), expressionOnly).suggestionsRelevant()
 })
 
+jb.component('studio.applyOption', {
+  type: 'action',
+  params: [
+    {id: 'toAdd', as: 'string', description: '% or /', defaultValue: '%'}
+  ],
+  impl: (ctx,toAdd) => jb.val(ctx.vars.selectedOption).apply(ctx,toAdd)  
+})
+  
 jb.component('studio.propertyPrimitive', {
   type: 'control',
   params: [
@@ -104,21 +40,16 @@ jb.component('studio.propertyPrimitive', {
         databind: studio.ref('%$path%'),
         style: editableText.studioPrimitiveText(),
         features: [
-          feature.onKey('Right', studio.pasteSuggestion('%$suggestionData/selected%', '/')),
-          feature.onKey('Enter', studio.pasteSuggestion('%$suggestionData/selected%')),
-          editableText.helperPopup({
-            control: studio.suggestionsItemlist('%$path%'),
-            popupId: 'suggestions',
-            popupStyle: dialog.popup(),
-            showHelper: studio.showSuggestions()
+          feature.onKey('Right', studio.applyOption('/')),
+          editableText.picklistHelper({
+            showHelper: studio.shouldShowSuggestions(true),
+            options: studio.suggestions('%$path%',true),
+            onEnter: studio.applyOption(),
+            picklistStyle: studio.suggestionList()
           })
         ]
       })
     ],
-    features: variable({
-      name: 'suggestionData',
-      value: {'$': 'object', selected: '', options: [], path: '%$path%', expressionOnly: true}
-    })
   })
 })
 
@@ -180,15 +111,13 @@ jb.component('studio.jbFloatingInput', {
             style: editableText.floatingInput(),
             features: [
               watchRef({ref: studio.ref('%$path%'), strongRefresh: true}),
-              feature.onKey('Right', studio.pasteSuggestion('%$suggestionData/selected%', '/')),
-              feature.onKey('Enter', studio.pasteSuggestion('%$suggestionData/selected%')),
-              editableText.helperPopup({
-                control: studio.suggestionsItemlist('%$path%', 'floating-input'),
-                popupId: 'suggestions',
-                popupStyle: dialog.popup(),
-                showHelper: studio.showSuggestions(),
-                onEnter: runActions(dialog.closeDialogById('studio-jb-editor-popup'), tree.regainFocus()),
-                onEsc: runActions(dialog.closeDialogById('studio-jb-editor-popup'), tree.regainFocus())
+              feature.onKey('Right', studio.applyOption('/')),
+              editableText.picklistHelper({
+                showHelper: studio.shouldShowSuggestions(),
+                options: studio.suggestions('%$path%'),
+                onEnter: runActions(studio.applyOption(),dialog.closeDialogById('studio-jb-editor-popup'), tree.regainFocus()),
+                onEsc: runActions(dialog.closeDialogById('studio-jb-editor-popup'), tree.regainFocus()),
+                picklistStyle: studio.suggestionList()
               }),
               css.width('100%'),
               css('~ input { padding-top: 30px !important}')
@@ -203,24 +132,15 @@ jb.component('studio.jbFloatingInput', {
       })
     ],
     features: [
-      variable({
-        name: 'suggestionData',
-        value: {'$': 'object', selected: '', options: [], path: '%$path%'}
-      }),
       css.padding({left: '4', right: '4'}),
       css.width('500')
     ]
   })
 })
 
-
-function rev(str) {
-  return str.split('').reverse().join('');
-}
-
 st.suggestions = class {
   constructor(input, expressionOnly) {
-    this.input = input;
+    this.input = input
     this.expressionOnly = expressionOnly;
     this.pos = input.selectionStart;
     this.text = input.value.substr(0,this.pos).trim().slice(0,100);
@@ -234,7 +154,11 @@ st.suggestions = class {
       this.tailSymbol = '%$';
     this.base = this.exp.slice(0,-1-this.tail.length) + '%';
     this.inputVal = input.value.slice(0,100);
-    this.inputPos = input.selectionStart;
+    this.inputPos = input.selectionStart
+
+    function rev(str) {
+      return str.split('').reverse().join('');
+    }    
   }
 
   suggestionsRelevant() {
@@ -242,7 +166,7 @@ st.suggestions = class {
       || ['%','%$','/','.'].indexOf(this.tailSymbol) != -1
   }
 
-  extendWithOptions(probeCtx,path) {
+  calcOptions(probeCtx,path) {
     var options = [];
     probeCtx = probeCtx || new st.previewjb.jbCtx();
     const resources = jb.entries(jb.studio.previewjb.comps)
@@ -252,7 +176,7 @@ st.suggestions = class {
     const vars = jb.entries(Object.assign({},(probeCtx.componentContext||{}).params,probeCtx.vars))
         .concat(resources)
         .filter(x=>['cmp'].indexOf(x[0]) == -1)
-        .map(x=>new ValueOption('$'+x[0],jb.studio.previewjb.val(x[1]),this.pos,this.tail))
+        .map(x=>new ValueOption('$'+x[0],jb.studio.previewjb.val(x[1]),this.pos,this.tail,this.input))
         .filter(x=> x.toPaste.indexOf('$$') != 0)
         // .filter(x=> x.toPaste.indexOf(':') == -1)
 
@@ -260,38 +184,38 @@ st.suggestions = class {
       options = st.PTsOfPath(path).map(compName=> {
             var name = compName.substring(compName.indexOf('.')+1);
             var ns = compName.substring(0,compName.indexOf('.'));
-            return new CompOption(compName, compName, ns ? `${name} (${ns})` : name, st.getComp(compName).description || '')
+            return new CompOption(path, compName, compName, ns ? `${name} (${ns})` : name, st.getComp(compName).description || '')
         })
     else if (this.tailSymbol == '%')
       options = [].concat.apply([],jb.toarray(probeCtx.exp('%%'))
         .map(x=>
-          jb.entries(x).map(x=> new ValueOption(x[0],x[1],this.pos,this.tail))))
+          jb.entries(x).map(x=> new ValueOption(x[0],x[1],this.pos,this.tail,this.input))))
         .concat(vars)
     else if (this.tailSymbol == '%$')
       options = vars
     else if (this.tailSymbol == '/' || this.tailSymbol == '.')
       options = [].concat.apply([],
         jb.toarray(probeCtx.exp(this.base))
-          .map(x=>jb.entries(x).map(x=>new ValueOption(x[0],x[1],this.pos,this.tail))) )
+          .map(x=>jb.entries(x).map(x=>new ValueOption(x[0],x[1],this.pos,this.tail,this.input))) )
 
     options = jb.unique(options,x=>x.toPaste).filter(x=> x.toPaste.indexOf('$jb_') != 0)
-    if (this.tail == '')// || typeof x.toPaste != 'string')
-      this.options = options
-    else
-      this.options = new jb.frame.Fuse(options,{keys: ['toPaste','description']}).search(this.tail || '').map(x=>x.item)
+    if (this.tail != '' && jb.frame.Fuse)
+      options = new jb.frame.Fuse(options,{keys: ['toPaste','description']}).search(this.tail || '').map(x=>x.item)
 
-    this.key = this.options.map(o=>o.toPaste).join(','); // build hash for the options to detect options change
-    return this;
+    const optionsHash = options.map(o=>o.toPaste).join(',')
+    return {optionsHash, options}
   }
 }
 
 class ValueOption {
-    constructor(toPaste,value,pos,tail) {
-      this.toPaste = toPaste;
-      this.value = value;
-      this.pos = pos;
-      this.tail = tail;
-      this.text = toPaste + this.valAsText();
+    constructor(toPaste,value,pos,tail,input) {
+      this.toPaste = toPaste
+      this.value = value
+      this.pos = pos
+      this.tail = tail
+      this.input = input
+      this.text = toPaste + this.valAsText()
+      this.code = { apply: (ctx,_toAdd) => this.apply(ctx,_toAdd) }
     }
     valAsText() {
       var val = this.value;
@@ -303,42 +227,69 @@ class ValueOption {
         return ` (${val.length} items)`
       return ``;
     }
-    paste(ctx,_toAdd) {
-      const input = ctx.vars.suggestionData.input;
+    apply(ctx,_toAdd) {
+      const input = this.input
       const primiteVal = typeof this.value != 'object'
-      const toPaste = this.toPaste + (primiteVal ? '%' : _toAdd);
-      const pos = this.pos + 1;
-      input.value = input.value.substr(0,this.pos-this.tail.length) + toPaste + input.value.substr(pos);
-      try {
-//        input._component && input._component.jbModel(input.value,'keyup') // sometimes the onupdate event is not activated...
-      } catch (e) {}
-      ctx.exp('%$suggestionData%').options = [] // disable more pastes...
-
-      return jb.delay(1,ctx).then (() => {
-        input.selectionStart = pos + toPaste.length;
-        input.selectionEnd = input.selectionStart;
-      })
+      const toPaste = this.toPaste + (primiteVal ? '%' : _toAdd)
+      const pos = this.pos + 1
+      ctx.run(editableText.setInputState({
+        assumedVal: () => input.value,
+        newVal: () => input.value.substr(0,this.pos-this.tail.length) + toPaste + input.value.substr(pos),
+        selectionStart: pos + toPaste.length,
+      }))
     }
 }
 
 class CompOption {
-    constructor(toPaste,value,text,description) {
-       this.toPaste = toPaste;
-       this.value = value;
-       this.text = text;
-       this.description = description;
+    constructor(path, toPaste,value,text,description) {
+      this.path = path
+      this.toPaste = toPaste
+      this.value = value
+      this.text = text
+      this.description = description
+      this.code = { apply: ctx => this.apply(ctx) }
     }
-    paste(ctx) {
-      // const input = ctx.vars.suggestionData.inputCmp.input;
-      // input.value = '=' + this.toPaste;
-      this.writeValue(ctx);
-    }
-    writeValue(ctx) {
-      st.setComp(ctx.exp('%$suggestionData/path%','string'),this.toPaste,ctx);
+    apply(ctx) {
+      st.setComp(this.path,this.toPaste,ctx);
       return ctx.run(runActions(dialog.closeDialogById('studio-jb-editor-popup'),
         studio.expandAndSelectFirstChildInJbEditor()))
     }
 }
 
+jb.component('studio.suggestionList', {
+  type: 'picklist.style',
+  impl: styleByControl(
+    itemlist({
+      items: '%$picklistModel/options%',
+      controls: text({
+        text: pipeline('%text%', studio.unMacro()),
+        features: [
+          css.padding({left: '3', right: '2'}),
+          feature.hoverTitle(
+            pipeline(ctx => jb.studio.previewjb.comps[ctx.data.toPaste], '%description%')
+          )
+        ]
+      }),      
+      features: [
+        itemlist.selection({
+          databind: '%$picklistModel/databind%',
+          selectedToDatabind: '%code%',
+          databindToSelected: ctx => ctx.vars.items.filter(o=>o.code == ctx.data)[0],
+          onDoubleClick: runActions(
+            Var('cmp','%$helperCmp%'),
+            action.runBEMethod('onEnter')
+          )
+        }),
+        itemlist.keyboardSelection(false),
+        css.height({height: '500', overflow: 'auto', minMax: 'max'}),
+        css.width({width: '300', overflow: 'auto', minMax: 'min'}),
+        css('{ position: absolute; z-index:1000; background: var(--jb-dropdown-background) }'),
+        css.border({width: '1', color: 'var(--jb-dropdown-border)' }),
+        css.padding({top: '2', left: '3', selector: 'li'})
+      ]
+    }),
+    'picklistModel'
+  )
+})
 
 })()

@@ -61,8 +61,10 @@ class JbComponent {
     }
     init() {
         jb.log('initCmp',[this])
+        const baseVars = Object.keys(this.ctx.vars)
         this.ctx = (this.extendCtxFuncs||[])
-            .reduce((acc,extendCtx) => tryWrapper(() => extendCtx(acc,this),'extendCtx'), this.ctx.setVar('cmpId',this.cmpId))
+            .reduce((acc,extendCtx) => tryWrapper(() => extendCtx(acc,this),'extendCtx'), this.ctx.setVar('cmp',this))
+        this.newVars = jb.objFromEntries(Object.keys(this.ctx.vars).filter(k=>baseVars.indexOf(k) == -1).map(k=>[k,this.ctx.vars[k]]))
         this.renderProps = {}
         this.state = this.ctx.vars.$state
         this.calcCtx = this.ctx.setVar('$props',this.renderProps).setVar('cmp',this)
@@ -123,7 +125,7 @@ class JbComponent {
             x.includeChildren && `includeChildren=${x.includeChildren}`,
             x.strongRefresh && `strongRefresh`,  x.cssOnly && `cssOnly`, x.allowSelfRefresh && `allowSelfRefresh`,  
             x.phase && `phase=${x.phase}`].filter(x=>x).join(';')).join(',')
-        const methods = (this.method||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx.setVars({cmp: this, $props: this.renderProps}))}`).join(',')
+        const methods = (this.method||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx.setVars({cmp: this, $props: this.renderProps, ...this.newVars}))}`).join(',')
         const originators = this.originators.map(ctx=>ui.preserveCtx(ctx)).join(',')
         const userEventProps = (this.userEventProps||[]).join(',')
         const frontEndMethods = (this.frontEndMethod || []).map(h=>({method: h.method, path: h.path}))
@@ -159,6 +161,9 @@ class JbComponent {
         (this.method||[]).filter(h=> h.id == method)[0]
     }
     runBEMethod(method, data, vars) {
+        jb.log('BEMethod',[method,data,vars])
+        if (jb.path(vars,'$state'))
+            Object.assign(this.state,vars.$state)
         const methodImpls = (this.method||[]).filter(h=> h.id == method)
         methodImpls.forEach(h=> jb.ui.runCtxAction(h.ctx,data,{cmp: this,$state: this.state, $props: this.renderProps, ...vars}))
         if (methodImpls.length == 0)

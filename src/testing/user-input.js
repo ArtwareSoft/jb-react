@@ -90,6 +90,7 @@ jb.component('uiAction.keyboardEvent', {
         if (!elem) return
         const e = new KeyboardEvent(type,{ ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt' })
         Object.defineProperty(e, 'keyCode', { get : _ => keyCode })
+        Object.defineProperty(e, 'target', { get : _ => elem })
         elem.dispatchEvent(e)
         //return jb.delay(1);
       }

@@ -1719,17 +1719,14 @@ jb.component('replace', {
     useRegex ? text.replace(new RegExp(find,regexFlags) ,replace) : text.replace(find,replace)
 })
 
-// jb.component('touch', {
-//   description: 'change the value of a watchable variable to acticate its watchers',
-//   type: 'action',
-//   params: [
-//     {id: 'data', as: 'ref'}
-//   ],
-//   impl: ({},data_ref) => {
-// 		const val = Number(jb.val(data_ref))
-// 		jb.writeValue(data_ref,val ? val + 1 : 1,ctx)
-// 	}
-// })
+jb.component('touch', {
+  description: 'change the value of a watchable variable to acticate its watchers',
+  type: 'action',
+  params: [
+    {id: 'dataRef', as: 'ref'}
+  ],
+  impl: writeValue('%$dataRef%',not('%$dataRef%'))
+})
 
 jb.component('isNull', {
   description: 'is null or undefined',
@@ -2965,6 +2962,7 @@ const spySettings = {
 	groups: {
 		none: '',
 		refresh: 'doOp,refreshElem,notifyCmpObservable',
+		method: 'BEMethod',
 		puppeteer: 'pptrStarted,pptrEmit,pptrActivity,pptrResultData,pptrInfo,pptrError',
 		watchable: 'doOp,writeValue,removeCmpObservable,registerCmpObservable,notifyCmpObservable,notifyObservableElems,notifyObservableElem,scriptChange',
 		react: 'applyNewVdom,applyDeltaTop,applyDelta,unmount,render,initCmp,refreshReq,refreshElem,childDiffRes,htmlChange,appendChild,removeChild,replaceTop,calcRenderProp,followUp',

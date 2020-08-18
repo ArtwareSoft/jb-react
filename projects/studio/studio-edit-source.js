@@ -368,14 +368,14 @@ jb.component('sourceEditor.addProp', {
               true
             )
           ),
-          editableText.helperPopup({
-            control: sourceEditor.suggestionsItemlist('%$path%'),
-            popupId: 'suggestions',
-            popupStyle: dialog.popup(),
-            showHelper: true,
-            autoOpen: true,
-            onEsc: [dialog.closeDialogById('studio-jb-editor-popup'), tree.regainFocus()]
-          })
+          // editableText.helperPopup({
+          //   control: sourceEditor.suggestionsItemlist('%$path%'),
+          //   popupId: 'suggestions',
+          //   popupStyle: dialog.popup(),
+          //   showHelper: true,
+          //   autoOpen: true,
+          //   onEsc: [dialog.closeDialogById('studio-jb-editor-popup'), tree.regainFocus()]
+          // })
         ]
       }),
       text({text: '', features: css('{border: 1px solid white;}')})

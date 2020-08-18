@@ -419,7 +419,7 @@ jb.component('uiTest.dialogCleanupBug', {
       action: openDialog({id: 'hello', content: text('world'), title: 'hello'})
     }),
     action: runActions(uiAction.click('button'), delay(1), dialog.closeAll(), delay(1)),
-    expectedResult: isEmpty(dialogs.shownDialogs())
+    expectedResult: isEmpty(dialog.shownDialogs())
   })
 })
 
@@ -841,6 +841,40 @@ jb.component('uiTest.editableTextInGroup', {
   })
 })
 
+jb.component('uiTest.onKey', {
+  impl: uiFrontEndTest({
+    control: editableText({title: 'name', databind: '%$person/name%',
+      features: [id('inp'), feature.onKey('ctrl-Enter', openDialog({title: 'hello'}))]
+    }),
+    action: uiAction.keyboardEvent({selector: '#inp', type: 'keydown', keyCode: 13, ctrl: 'ctrl'}),
+    expectedResult: contains('hello')
+  })
+})
+
+jb.component('uiTest.editableText.blockSelfRefresh', {
+  impl: uiTest({
+    control: group({ 
+      controls: editableText({title: 'name', databind: '%$person/name%', features: id('inp')}),
+      features: watchRef('%$person/name%') 
+    }),
+    userInput: userInput.setText('hello','#inp'),
+    expectedResult: true,
+    expectedCounters: {renderVdom: 2}
+  })
+})
+
+jb.component('uiTest.editableText.allowSelfRefresh', {
+  impl: uiTest({
+    control: group({ 
+      controls: editableText({title: 'name', databind: '%$person/name%', features: id('inp')}),
+      features: watchRef({ref: '%$person/name%', allowSelfRefresh: true}) 
+    }),
+    userInput: userInput.setText('hello','#inp'),
+    expectedResult: contains('hello'),
+    expectedCounters: {renderVdom: 4}
+  })
+})
+
 jb.component('uiTest.editableTextHelper', {
   impl: uiTest({
     control: editableText({title: 'name', databind: '%$person/name%',
@@ -852,6 +886,80 @@ jb.component('uiTest.editableTextHelper', {
     expectedResult: contains('--Homer')
   })
 })
+
+jb.component('uiTest.editableText.picklistHelper', {
+  impl: uiTest({
+    control: editableText({title: 'name', databind: '%$person/name%',
+      features: editableText.picklistHelper({
+        options: picklist.optionsByComma('1,2,333'),
+        autoOpen: true
+      })
+    }),
+    expectedResult: contains('333')
+  })
+})
+
+jb.component('uiTest.editableText.picklistHelperWithChangingOptions', {
+  impl: uiTest({
+    control: editableText({title: 'name', databind: '%$person/name%',
+      features: editableText.picklistHelper({
+        options: picklist.optionsByComma(If(test.getSelectionChar(),'1,2,3,4','a,b,c,ddd')),
+        showHelper: notEquals(test.getSelectionChar(),'b'),
+        autoOpen: true,
+      })
+    }),
+    expectedResult: contains('ddd')
+  })
+})
+
+jb.component('uiTest.editableText.richPicklistHelperWithWatchingGroup', {
+  impl: uiTest({
+    control: 
+    group({ controls: 
+      editableText({title: 'name', databind: '%$person/name%',
+        features: editableText.picklistHelper({
+          options: picklist.optionsByComma(If(test.getSelectionChar(),'1,2,3,4','a,b,c,ddd')),
+          showHelper: notEquals(test.getSelectionChar(),'b'),
+          autoOpen: true,
+        })
+      }),
+    features: watchRef('%$person/name%') 
+  }),
+    expectedResult: contains('ddd')
+  })
+})
+
+jb.component('uiTest.editableText.richPicklistHelper.setInput', {
+  impl: uiFrontEndTest({
+    allowError: true,
+    control: editableText({title: 'name', databind: '%$person/name%',
+      features: [
+        id('inp'),
+        editableText.picklistHelper({
+          options: picklist.optionsByComma('1111,2,3,4'),
+          onEnter: editableText.setInputState({newVal: '%$selectedOption%', assumedVal: '%value%'})
+        })
+      ]
+    }),
+    action: runActions(
+      uiAction.keyboardEvent({selector: '#inp', type: 'keyup', keyCode: 37}),
+      delay(30), // opens the popup
+      uiAction.keyboardEvent({selector: '#inp', type: 'keydown', keyCode: 40}),
+//      delay(20),
+      uiAction.keyboardEvent({selector: '#inp', type: 'keyup', keyCode: 13})
+    ),
+    expectedResult: contains('1111</input-val>')
+  })
+})
+
+jb.component('test.getSelectionChar', {
+  impl: ctx => {
+    const input = ctx.vars.$state.input || jb.path(ctx.vars.ev,'input') || {value:'', selectionStart:0}
+    const selectionStart = input.selectionStart || 0
+    return input.value.slice(selectionStart, selectionStart+1)
+  }
+})
+
 
 jb.component('uiTest.editableTextWithJbVal', {
   impl: {

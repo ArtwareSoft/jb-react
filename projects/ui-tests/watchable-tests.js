@@ -395,7 +395,7 @@ jb.component('uiTest.watchableAsTextWrite', {
     control: editableText({
       databind: watchableAsText('%$watchablePeople%'),
       style: editableText.textarea({rows: 30, cols: 80}),
-      features: [id('editor'), watchRef('%$watchablePeople%')],
+      features: [id('editor'), watchRef({ ref: '%$watchablePeople%', allowSelfRefresh: true})],
     }),
     userInput: userInput.setText('hello', '#editor'),
     expectedResult: equals('%$watchablePeople%', 'hello')
@@ -407,7 +407,7 @@ jb.component('uiTest.watchableAsTextWriteObjectInArray', {
     control: editableText({
       databind: watchableAsText('%$watchablePeople%'),
       style: editableText.textarea({rows: 30, cols: 80}),
-      features: [id('editor'), watchRef('%$watchablePeople%')],
+      features: [id('editor'), watchRef({ ref: '%$watchablePeople%', allowSelfRefresh: true})],
     }),
     userInput: userInput.setText('[{a:3}]', '#editor'),
     expectedResult: equals('%$watchablePeople/0/a%', '3')
@@ -419,7 +419,7 @@ jb.component('uiTest.watchableAsTextWriteSetObjectToArray', {
     control: editableText({
       databind: watchableAsText('%$emptyArray%'),
       style: editableText.textarea({rows: 30, cols: 80}),
-      features: [id('editor'), watchRef('%$watchablePeople%')],
+      features: [id('editor'), watchRef({ ref: '%$watchablePeople%', allowSelfRefresh: true})],
     }),
     userInput: userInput.setText('[{a:3}]', '#editor'),
     extraSource: rx.pipe(source.data(0),rx.delay(1)),

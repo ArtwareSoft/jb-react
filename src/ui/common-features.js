@@ -196,8 +196,8 @@ jb.component('htmlAttribute', {
     {id: 'attribute', mandatory: true, as: 'string'},
     {id: 'value', mandatory: true, as: 'string', dynamic: true}
   ],
-  impl: (ctx,attribute,value) => ({
-    templateModifier: (vdom,cmp) => vdom.setAttribute(attribute, value(cmp.ctx))
+  impl: (ctx,id,value) => ({
+    templateModifier: (vdom,cmp) => vdom.setAttribute(id.match(/^on[^-]/) ? `${id.slice(0,2)}-${id.slice(2)}` : id, value(cmp.ctx))
   })
 })
 

@@ -924,6 +924,7 @@ const spySettings = {
 	groups: {
 		none: '',
 		refresh: 'doOp,refreshElem,notifyCmpObservable',
+		method: 'BEMethod',
 		puppeteer: 'pptrStarted,pptrEmit,pptrActivity,pptrResultData,pptrInfo,pptrError',
 		watchable: 'doOp,writeValue,removeCmpObservable,registerCmpObservable,notifyCmpObservable,notifyObservableElems,notifyObservableElem,scriptChange',
 		react: 'applyNewVdom,applyDeltaTop,applyDelta,unmount,render,initCmp,refreshReq,refreshElem,childDiffRes,htmlChange,appendChild,removeChild,replaceTop,calcRenderProp,followUp',

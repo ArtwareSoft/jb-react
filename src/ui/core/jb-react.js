@@ -171,13 +171,6 @@ function applyDeltaToDom(elem,delta) {
                 !sameOrder && (childElems[i].setAttribute('__afterIndex',e.__afterIndex))
             }
         })
-        // toAppend.forEach(e=>{
-        //     const newChild = createElement(elem.ownerDocument,e.tag)
-        //     elem.appendChild(newChild)
-        //     applyDeltaToDom(newChild,e)
-        //     jb.log('appendChild',[newChild,e,elem,delta])
-        //     !sameOrder && (newChild.setAttribute('__afterIndex',e.__afterIndex))
-        // })
         toAppend.forEach(e=>{
             const newElem = render(e,elem)
             jb.log('appendChild',[newElem,e,elem,delta])
@@ -238,6 +231,10 @@ function setAtt(elem,att,val) {
     } else if (att === 'checked' && elem.tagName.toLowerCase() === 'input') {
         elem.checked = !!val
         jb.log('htmlChange',['checked',...arguments])
+    } else if (att.indexOf('$__input') === 0) {
+        try {
+            setInput(JSON.parse(val))
+        } catch(e) {}
     } else if (att.indexOf('$__') === 0) {
         const id = att.slice(3)
         try {
@@ -252,7 +249,7 @@ function setAtt(elem,att,val) {
         } catch (e) {}
         jb.log('htmlChange',[`vars__ ${id}`,...arguments])
     } else if (att === '$focus' && val) {
-        jb.ui.focus(elem,'render vdom')
+        jb.ui.focus(elem,val)
     } else if (att === '$text') {
         elem.innerText = val || ''
         jb.log('htmlChange',['text',...arguments])
@@ -272,6 +269,17 @@ function setAtt(elem,att,val) {
     } else {
         elem.setAttribute(att,val)
         jb.log('htmlChange',['setAtt',...arguments])
+    }
+
+    function setInput({assumedVal,newVal,selectionStart}) {
+        const el = jb.ui.findIncludeSelf(elem,'input,textarea')[0]
+        if (!el) 
+            return jb.logError('setInput: can not find input elem')
+        if (assumedVal != el.value) 
+            return jb.logError('setInput: assumed val is not as expected',assumedVal, el.value)
+        el.value = newVal
+        if (typeof selectionStart == 'number') 
+            el.selectionStart = selectionStart
     }
 }
 
@@ -384,6 +392,7 @@ Object.assign(jb.ui, {
         else {
             if (!jb.ctxDictionary[ctxIdToRun])
                 return jb.logError(`no ctx found for method: ${method} ${ctxIdToRun}`, elem, data, vars)
+            jb.log('BEMethod',[method,data,vars])
             jb.ui.runCtxAction(jb.ctxDictionary[ctxIdToRun],data,vars)
         }
     },
@@ -518,7 +527,7 @@ Object.assign(jb.ui, {
             if (elemsToCheckCtxBefore[i] != elem.getAttribute('jb-ctx')) return // the elem was already refreshed during this process, probably by its parent
             let refresh = false, strongRefresh = false, cssOnly = true
             elem.getAttribute('observe').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{
-                if (!obs.allowSelfRefresh && elem == jb.path(e.srcCtx, 'vars.cmp.base')) 
+                if (!obs.allowSelfRefresh && jb.ui.findIncludeSelf(elem,`[cmp-id="${jb.path(e.srcCtx, 'vars.cmp.cmpId')}"]`)[0]) 
                     return jb.log('notifyObservableElems',['blocking self refresh', elem, obs,e])
                 const obsPath = watchHandler.removeLinksFromPath(watchHandler.pathOfRef(obs.ref))
                 if (!obsPath)
@@ -590,8 +599,15 @@ class frontEndCmp {
         jb.log('refreshReq',[...arguments])
         if (this._deleted) return
         Object.assign(this.state, state)
-        ui.refreshElem(this.base,{...this.state, ...state},options)
+        this.base.state = this.state
+        ui.refreshElem(this.base,this.state,options)
     }
+    refreshFE(state) {
+        if (this._deleted) return
+        Object.assign(this.state, state)
+        this.base.state = this.state
+        this.runFEMethod('onRefresh')
+    }    
     newVDomApplied() {
         Object.assign(this.state,{...this.base.state}) // update state from BE
         this.runFEMethod('onRefresh')

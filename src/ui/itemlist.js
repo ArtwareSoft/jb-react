@@ -203,7 +203,9 @@ jb.component('itemlist.selection', {
           rx.pipe(source.frontEndEvent('click'), rx.map(itemlist.ctxIdOfElem('%target%')), rx.filter('%%')),
           source.subject('%$cmp/selectionEmitter%')
         ),
+        rx.log('itemlist2'),
         rx.distinctUntilChanged(),
+        rx.log('itemlist3'),
         sink.action(runActions(action.runFEMethod('setSelected'), action.runBEMethod('onSelection')))
     )
   )
@@ -220,13 +222,18 @@ jb.component('itemlist.keyboardSelection', {
     htmlAttribute('tabIndex',0),
     method('onEnter', runActionOnItem(itemlist.ctxIdToData(),call('onEnter'))),
     frontEnd.passSelectionKeySource(),
-    frontEnd.prop('onkeydown', rx.merge(source.frontEndEvent('keydown'), source.findSelectionKeySource() )),
+    frontEnd.prop('onkeydown', rx.merge(
+      source.frontEndEvent('keydown'), 
+      source.findSelectionKeySource()
+      ), frontEnd.addUserEvent() ),
     frontEnd.flow('%$cmp.onkeydown%', rx.filter('%keyCode%==13'), rx.filter('%$cmp.state.selected%'), sink.BEMethod('onEnter','%$cmp.state.selected%') ),
     frontEnd.flow(
       '%$cmp.onkeydown%',
       rx.filter(not('%ctrlKey%')),
+      rx.log('itemlist0'),
       rx.filter(inGroup(list(38,40),'%keyCode%')),
       rx.map(itemlist.nextSelected(If('%keyCode%==40',1,-1))), 
+      rx.log('itemlist1'),
       sink.subjectNext('%$cmp/selectionEmitter%')
     ),
     passPropToFrontEnd('autoFocus','%$autoFocus%'),

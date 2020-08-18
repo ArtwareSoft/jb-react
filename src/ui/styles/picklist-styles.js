@@ -135,12 +135,15 @@ jb.component('picklist.labelList', {
       items: '%$picklistModel/options%',
       controls: text({text: '%text%', style: call('labelStyle')}),
       style: call('itemlistStyle'),
-      features: itemlist.selection({
-        databind: '%$picklistModel/databind%',
-        selectedToDatabind: '%code%',
-        databindToSelected: ctx => ctx.vars.items.filter(o=>o.code == ctx.data)[0],
-        cssForSelected: '%$cssForSelected%'
-      })
+      features: [
+        itemlist.selection({
+          databind: '%$picklistModel/databind%',
+          selectedToDatabind: '%code%',
+          databindToSelected: ctx => ctx.vars.items.filter(o=>o.code == ctx.data)[0],
+          cssForSelected: '%$cssForSelected%'
+        }),
+        itemlist.keyboardSelection()
+      ]
     }),
     'picklistModel'
   )

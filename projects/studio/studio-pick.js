@@ -20,35 +20,19 @@ jb.component('studio.pickAndOpen', {
     style: dialog.studioPickDialog('%$from%'),
     content: text(''),
     onOK: runActions(
-      writeValue('%$studio/profile_path%', '%$dialogData/path%'),
+      writeValue('%$studio/profile_path%', ctx => ctx.exp('%$dialogData/path%')),
       studio.openControlTree(),
       studio.openProperties(true)
     )
   })
 })
 
-jb.component('studio.pickToolbar', {
-  type: 'control',
-  impl: group({
-    features: css.class('pick-toolbar'),
-    layout: layout.horizontal(),
-    controls: [
-      button({
-        title: studio.compName('%$dialogData/path%'),
-        action: '%$$dialog/endPick%',
-        style: button.href(),
-        features: feature.hoverTitle('%$dialogData/path%')
-      }),
-      button({
-        title: '...',
-        style: button.href(),
-        action: studio.showStack({ 
-          ctx: '%$dialogData/ctx%', 
-          onSelect: ctx => ctx.componentContext.vars.$dialog.endPick(ctx.data.ctx) 
-        })
-      })
-    ]
-  })
+jb.component('studio.pickTitle', {
+   type: 'control',
+   impl: text({
+        text: studio.compName('%$dialogData/path%'),
+        features: css('display: block; margin-top: -20px')
+   })
 })
 
 jb.component('dialogFeature.studioPick', {
@@ -58,14 +42,11 @@ jb.component('dialogFeature.studioPick', {
   ],
   impl: features(
     feature.init( ctx => {
-      ctx.vars.$dialog.counter = 0
-      ctx.vars.$dialog.endPick = function(pickedCtx) {
-        if (pickedCtx)
-          Object.assign(ctx.vars.dialogData,{ ctx: pickedCtx, path: pickedCtx.path })
+      ctx.vars.$dialog.endPick = function() {
         ctx.run(runActions(
-          writeValue('%$studio/pickSelectionCtxId%', () => (pickedCtx || ctx.vars.dialogData.ctx || {}).id)),
+          writeValue('%$studio/pickSelectionCtxId%', '%$dialogData.ctx.id%'),
           dialog.closeDialog(true)
-        )
+        ))
       }
     }),
     frontEnd.onDestroy(({},{cmp,_window})=> {
@@ -120,6 +101,7 @@ jb.component('dialogFeature.studioPick', {
           ),
           rx.filter('%keyCode% == 27')
       )),
+      rx.takeUntil('%$cmp.destroyed%'),
       sink.BEMethod('endPick')
     )
   )
@@ -177,7 +159,7 @@ jb.component('dialog.studioPickDialog', {
   ],
   impl: customStyle({
     template: (cmp,{},h) => h('div#jb-dialog jb-pick',{},[
-      h('div#edge top'), h('div#edge left'), h('div#edge right'), h('div#edge bottom'), h(cmp.ctx.run(studio.pickToolbar()))
+      h('div#edge top'), h('div#edge left'), h('div#edge right'), h('div#edge bottom'), h(cmp.ctx.run(studio.pickTitle()))
     ]),
     css: `{ display: block; position: absolute; width: 0; height:0; z-index: 10000 !important; }
     >.edge { position: absolute; box-shadow: 0 0 1px 1px gray; width: 1px; height: 1px; cursor: pointer; }`,    
