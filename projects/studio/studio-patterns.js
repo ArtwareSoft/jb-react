@@ -52,7 +52,7 @@ jb.component('studio.selectStyle', {
                 ctx => {
               const previewCtx = jb.studio.closestCtxInPreview(ctx.exp('%$targetPath%'))
               jb.path(jb,'studio.previewjb.ui.workerStyleElems.preview',[])
-              const cmp = (new jb.studio.previewjb.jbCtx()).ctx(previewCtx)
+              const cmp = jb.ui.extendWithServiceRegistry(new jb.studio.previewjb.jbCtx()).ctx(previewCtx)
                 .setVar('$runAsWorker','preview')
                 .setVar('widgetId',ctx.id)
                 .run(ctx.exp('%$__option%'))

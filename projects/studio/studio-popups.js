@@ -8,7 +8,7 @@ jb.component('dialog.editSourceStyle', {
     {id: 'height', as: 'number', defaultValue: 100}
   ],
   impl: customStyle({
-    template: (cmp,{title,contentComp,id},h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: id},[
+    template: (cmp,{title,contentComp,id},h) => h('div',{ class: 'jb-dialog jb-default-dialog', id},[
 				h('div',{class: 'dialog-title noselect'},title),
 				cmp.hasMenu ? h('div',{class: 'dialog-menu'},h(cmp.menuComp)): '',
 				h('button#dialog-close', {onclick: 'dialogClose' },'×'),
@@ -79,7 +79,7 @@ jb.component('dialog.showSourceStyle', {
     {id: 'height', as: 'number', defaultValue: 600}
   ],
   impl: customStyle({
-    template: (cmp,{title,contentComp,id},h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: id},[
+    template: (cmp,{title,contentComp,id},h) => h('div',{ class: 'jb-dialog jb-default-dialog', id},[
 				  h('div',{class: 'dialog-title noselect'},title),
 				  h('button#dialog-close', {onclick: 'dialogClose' },'×'),
 				  h('div',{class: 'jb-dialog-content-parent stretchedToMargin'},h(contentComp)),
@@ -167,7 +167,7 @@ jb.component('dialog.studioFloating', {
     {id: 'height', as: 'number', defaultValue: 100}
   ],
   impl: customStyle({
-    template: (cmp,{title,contentComp,id},h) => h('div',{ class: 'jb-dialog jb-default-dialog', dialogId: id},[
+    template: (cmp,{title,contentComp,id},h) => h('div',{ class: 'jb-dialog jb-default-dialog', id},[
 				h('div',{class: 'dialog-title noselect'},title),
 				cmp.hasMenu ? h('div',{class: 'dialog-menu'}, h(cmp.menuComp)): '',
 				h('button#dialog-close', {onclick: 'dialogClose' },'×'),

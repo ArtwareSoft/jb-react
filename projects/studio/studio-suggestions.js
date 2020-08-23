@@ -26,7 +26,10 @@ jb.component('studio.applyOption', {
   params: [
     {id: 'toAdd', as: 'string', description: '% or /', defaultValue: '%'}
   ],
-  impl: (ctx,toAdd) => jb.val(ctx.vars.selectedOption).apply(ctx,toAdd)  
+  impl: (ctx,toAdd) => {
+    const option = jb.val(ctx.vars.selectedOption)
+    option && option.apply(ctx,toAdd)
+  }
 })
   
 jb.component('studio.propertyPrimitive', {
@@ -112,10 +115,10 @@ jb.component('studio.jbFloatingInput', {
             features: [
               watchRef({ref: studio.ref('%$path%'), strongRefresh: true}),
               feature.onKey('Right', studio.applyOption('/')),
+              feature.onKey('Enter', runActions(studio.applyOption(), dialog.closeDialogById('studio-jb-editor-popup'), tree.regainFocus())),
               editableText.picklistHelper({
                 showHelper: studio.shouldShowSuggestions(),
                 options: studio.suggestions('%$path%'),
-                onEnter: runActions(studio.applyOption(),dialog.closeDialogById('studio-jb-editor-popup'), tree.regainFocus()),
                 onEsc: runActions(dialog.closeDialogById('studio-jb-editor-popup'), tree.regainFocus()),
                 picklistStyle: studio.suggestionList()
               }),
@@ -232,11 +235,14 @@ class ValueOption {
       const primiteVal = typeof this.value != 'object'
       const toPaste = this.toPaste + (primiteVal ? '%' : _toAdd)
       const pos = this.pos + 1
+      const newVal = () => input.value.substr(0,this.pos-this.tail.length) + toPaste + input.value.substr(pos)
       ctx.run(editableText.setInputState({
-        assumedVal: () => input.value,
-        newVal: () => input.value.substr(0,this.pos-this.tail.length) + toPaste + input.value.substr(pos),
-        selectionStart: pos + toPaste.length,
+          assumedVal: () => input.value,
+          newVal,
+          selectionStart: pos + toPaste.length,
       }))
+      if (toPaste.match(/%$/))
+        ctx.run(writeValue('%$$model/databind()%', newVal))
     }
 }
 

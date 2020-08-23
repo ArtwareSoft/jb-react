@@ -188,7 +188,7 @@ jb.component('itemlist.selection', {
         .forEach(elem=> {elem.classList.add('selected'); elem.scrollIntoViewIfNeeded()})
     }),
     frontEnd.method('setSelected', ({data},{cmp}) => {
-        cmp.state.selected = data
+        cmp.base.state.selected = cmp.state.selected = data
         cmp.runFEMethod('applyState')
     }),
 
@@ -223,9 +223,12 @@ jb.component('itemlist.keyboardSelection', {
     method('onEnter', runActionOnItem(itemlist.ctxIdToData(),call('onEnter'))),
     frontEnd.passSelectionKeySource(),
     frontEnd.prop('onkeydown', rx.merge(
-      source.frontEndEvent('keydown'), 
-      source.findSelectionKeySource()
-      ), frontEnd.addUserEvent() ),
+        source.frontEndEvent('keydown'), 
+        source.findSelectionKeySource()
+      ), 
+      frontEnd.addUserEvent(),
+      rx.log('itemlistOnkeydown')
+    ),
     frontEnd.flow('%$cmp.onkeydown%', rx.filter('%keyCode%==13'), rx.filter('%$cmp.state.selected%'), sink.BEMethod('onEnter','%$cmp.state.selected%') ),
     frontEnd.flow(
       '%$cmp.onkeydown%',
@@ -233,11 +236,11 @@ jb.component('itemlist.keyboardSelection', {
       rx.log('itemlist0'),
       rx.filter(inGroup(list(38,40),'%keyCode%')),
       rx.map(itemlist.nextSelected(If('%keyCode%==40',1,-1))), 
-      rx.log('itemlist1'),
+      rx.log('itemlistOnkeydownNextSelected'),
       sink.subjectNext('%$cmp/selectionEmitter%')
     ),
     passPropToFrontEnd('autoFocus','%$autoFocus%'),
-    frontEnd.init(If(and('%$autoFocus%',not('%$selectionKeySourceCmpId%')), action.focusOnCmp('itemlist autofocus') ))
+    frontEnd.init(If(and('%$autoFocus%','%$selectionKeySourceCmpId%'), action.focusOnCmp('itemlist autofocus') ))
   )
 })
 

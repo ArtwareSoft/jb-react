@@ -55,7 +55,10 @@ jb.component('action.refreshCmp', {
     {id: 'state', dynamic: true },
     {id: 'options', dynamic: true },
   ],
-  impl: (ctx,state,options) => ctx.vars.cmp && ctx.vars.cmp.refresh(state(ctx),{srcCtx: ctx, ...options(ctx)})
+  impl: (ctx,state,options) => {
+    jb.log('refreshCmp',[ctx,state,options])
+    ctx.vars.cmp && ctx.vars.cmp.refresh(state(ctx),{srcCtx: ctx, ...options(ctx)})
+  }
 })
 
 jb.component('sink.refreshCmp', {
@@ -117,7 +120,7 @@ jb.component('frontEnd.prop', {
       {id: 'id', as: 'string', mandatory: true },
       {id: 'value', mandatory: true, dynamic: true}
     ],
-    impl: (ctx,id,value) => ({ frontEndMethod: { method: 'calcProps', path: ctx.path, 
+    impl: (ctx,id,value) => ({ frontEndMethod: { method: 'calcProps', path: ctx.path, _prop: id,
       action: (_ctx,{cmp}) => cmp[id] = value(_ctx) } })
 })
 
@@ -154,7 +157,7 @@ jb.component('frontEnd.flow', {
         {id: 'elems', type: 'rx[]', as: 'array', dynamic: true, mandatory: true, templateValue: []}
     ],
     impl: (ctx, elems) => ({ frontEndMethod: { 
-      method: 'init', path: ctx.path, 
+      method: 'init', path: ctx.path, _flow: elems.profile,
       action: rx.pipe(_ctx => elems(_ctx))
     }})
 })
@@ -337,26 +340,29 @@ jb.component('frontEnd.selectionKeySourceService', {
     service.registerBackEndService('selectionKeySource', obj(prop('cmpId', '%$cmp/cmpId%'))),
     passPropToFrontEnd('autoFocs','%$autoFocs%'),
     frontEnd.prop('selectionKeySource', (ctx,{cmp,el,autoFocs}) => {
+      if (el.keydown_src) return
       const {pipe, takeUntil,subject} = jb.callbag
-      const keydown_src = subject()
+      el.keydown_src = subject()
       el.onkeydown = e => {
         if ([38,40,13,27].indexOf(e.keyCode) != -1) {
           console.log('key source',e)
-          keydown_src.next(ctx.dataObj(e))
+          el.keydown_src.next(ctx.dataObj(e))
           return false // stop propagation
         }
         return true
       }
       if (autoFocs)
         jb.ui.focus(el,'selectionKeySource')
-      return pipe(keydown_src, takeUntil(cmp.destroyed))
+      jb.log('selectionKeySource',['registered',cmp,el,ctx])
+      //el.addEventListener('blur', e => jb.log('focus',['blur',e]))
+      return pipe(el.keydown_src, takeUntil(cmp.destroyed))
     })
   )
 })
 
 jb.component('frontEnd.passSelectionKeySource', {
   type: 'feature',
-  impl: passPropToFrontEnd('selectionKeySourceCmpId', '%$serviceRegistry/services/selectionKeySource/cmpId%')
+  impl: passPropToFrontEnd('selectionKeySourceCmpId', '%$$serviceRegistry/services/selectionKeySource/cmpId%')
 })
 
 jb.component('source.findSelectionKeySource', {
@@ -367,10 +373,18 @@ jb.component('source.findSelectionKeySource', {
     Var('clientCmp','%$cmp%'),
     rx.merge( 
       source.data([]),
-      (ctx,{selectionKeySourceCmpId}) => jb.path(jb.ui.elemOfCmp(ctx,selectionKeySourceCmpId), '_component.selectionKeySource')
+      (ctx,{selectionKeySourceCmpId}) => {
+        const el = jb.ui.elemOfCmp(ctx,selectionKeySourceCmpId)
+        const ret = jb.path(el, '_component.selectionKeySource')
+        if (!ret)
+          jb.log('selectionKeySourceNotFound',[selectionKeySourceCmpId,el,ctx])
+        else
+          jb.log('foundSelectionKeySource',[el,selectionKeySourceCmpId,ctx])
+        return ret
+      }
     ),
     rx.takeUntil('%$clientCmp.destroyed%'),
-    rx.log(1),
-    rx.var('cmp','%$clientCmp%')
+    rx.var('cmp','%$clientCmp%'),
+    rx.log('fromSelectionKeySource')
   )
 })

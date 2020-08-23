@@ -26,9 +26,12 @@ jb.component('editableText.picklistHelper', {
         ]
     })),
     method('closePopup', dialog.closeDialogById('%$popupId%')),
-    method('refresh', If(call('showHelper'),
-      If(dialog.isOpen('%$popupId%'), writeValue('%$watchableInput%','%%'), action.runBEMethod('openPopup')),
-      action.runBEMethod('closePopup')
+    method('refresh', runActions(
+      writeValue('%$watchableInput%','%%'),
+      If(call('showHelper'),
+        If(not(dialog.isOpen('%$popupId%')), action.runBEMethod('openPopup')),
+        action.runBEMethod('closePopup')
+      )
     )),
     frontEnd.enrichUserEvent(({},{cmp}) => {
         const input = jb.ui.findIncludeSelf(cmp.base,'input,textarea')[0];
@@ -36,6 +39,7 @@ jb.component('editableText.picklistHelper', {
     }),
     method('onEnter', action.if(dialog.isOpen('%$popupId%'), runActions(call('onEnter'),dialog.closeDialogById('%$popupId%')))),
     method('onEsc', action.if(dialog.isOpen('%$popupId%'), runActions(call('onEsc'),dialog.closeDialogById('%$popupId%')))),
+    feature.serviceRegistey(),
     frontEnd.selectionKeySourceService(),
     frontEnd.prop('keyUp', rx.pipe(source.frontEndEvent('keyup'), rx.delay(1))),
     frontEnd.flow('%$cmp/keyUp%', rx.log('keyup'), rx.filter('%keyCode% == 13'), editableText.addUserEvent(), rx.log('enter'), sink.BEMethod('onEnter')),

@@ -74,7 +74,7 @@ jb.component('backEnd.onDestroy', {
   params: [
     {id: 'action', type: 'action', mandatory: true, dynamic: true},
   ],
-  impl: method('destroy','%$action%')
+  impl: method('destroy','%$action()%')
 })
 
 jb.component('templateModifier', {
@@ -210,6 +210,7 @@ jb.component('passPropToFrontEnd', {
   ],
   impl: templateModifier((ctx,{vdom},{id,value}) => {
     const val = value(ctx)
+    //if (val == null) jb.logError('passPropToFrontEnd - null value',id,ctx)
     if (val != null)
       vdom.setAttribute('$vars__'+id, JSON.stringify(val))
   })

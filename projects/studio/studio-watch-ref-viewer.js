@@ -25,7 +25,7 @@ jb.component('studio.positionOfData', {
 
 function editorOfPath(path) {
     const resource = path.split('~')[0]
-    const dialog_elem = Array.from(document.querySelectorAll('[dialogId=edit-data-resource]'))
+    const dialog_elem = Array.from(document.querySelectorAll('[id=edit-data-resource]'))
         .filter(el=>el._component.ctx.data.path.split('dataResource.').pop() == resource + '~watchableData')[0]
     return dialog_elem && dialog_elem.querySelector('.CodeMirror').parentElement._component.editor
 }

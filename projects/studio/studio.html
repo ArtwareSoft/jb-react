@@ -13,7 +13,8 @@
 <div id="studio" style="background-color: var(--jb-editor-background);width:1280px; margin-left: 2px"> </div>
 <script>
   jb.exec({$: 'defaultTheme'})
-  jb.ui.render(jb.ui.h(new jb.jbCtx().run({$:'studio.all'})),document.getElementById('studio'))
+  jb.ui.renderWidget({$:'studio.all'},document.getElementById('studio'))
+  //jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry().run({$:'studio.all'})),document.getElementById('studio'))
 </script>
 </body>
 </html>

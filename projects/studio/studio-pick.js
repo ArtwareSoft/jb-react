@@ -77,7 +77,7 @@ jb.component('dialogFeature.studioPick', {
       const elemCtx = _window.jb.ctxDictionary[profElem.getAttribute('pick-ctx') || profElem.getAttribute('jb-ctx')]
       if (!elemCtx) return
       Object.assign(ctx.vars.dialogData,{ elem: profElem, ctx: elemCtx, path: elemCtx.path })
-      ctx.run(writeValue('%$studio/refreshPick%', not('%$studio/refreshPick%'))) // trigger for refreshing the dialog
+      ctx.run(touch('%$studio/refreshPick%')) // trigger for refreshing the dialog
     }),
     method('endPick', '%$$dialog/endPick()%'),
     frontEnd.flow(
@@ -107,50 +107,6 @@ jb.component('dialogFeature.studioPick', {
   )
 })
 
-//     afterViewInit: cmp=> {
-//       const {pipe,filter, Do, map,debounceTime, subscribe,distinctUntilChanged,merge} = jb.callbag
-//       if (from === 'studio') st.initStudioEditing()
-//       const _window = from == 'preview' ? st.previewWindow : window;
-//       const projectPrefix = ctx.run(studio.currentPagePath())
-//       const testHost = ['tests','studio-helper'].indexOf(ctx.exp('%$studio/project%')) != -1
-//       const eventToElemPredicate = from == 'preview' ?
-//         (path => testHost || path.indexOf(projectPrefix) == 0) : (path => st.isStudioCmp(path.split('~')[0]))
-
-
-//       ctx.vars.$dialog.endPick = function(pickedCtx) {
-//         if (pickedCtx)
-//           Object.assign(ctx.vars.dialogData,{ ctx: pickedCtx, path: pickedCtx.path })
-//         ctx.run(writeValue('%$studio/pickSelectionCtxId%',(pickedCtx || ctx.vars.dialogData.ctx || {}).id))
-//         ctx.vars.$dialog.close({OK: true})
-//       }
-//       cmp.counter = 0
-
-//       let userPick = jb.ui.fromEvent(cmp, 'mousedown', document,{capture: true})
-//       let keyUpEm = jb.ui.fromEvent(cmp, 'keyup', document,{capture: true})
-//       if (jb.studio.previewWindow) {
-//         userPick = merge(userPick, jb.ui.fromEvent(cmp, 'mousedown', jb.studio.previewWindow.document,{capture: true}))
-//         keyUpEm = merge(keyUpEm, jb.ui.fromEvent(cmp, 'keyup', jb.studio.previewWindow.document,{capture: true}))
-//       }
-//       pipe(merge(pipe(keyUpEm,filter(e=>e.keyCode == 27)), userPick), subscribe(() => ctx.vars.$dialog.endPick()))
-
-//       const mouseMoveEm = jb.ui.fromEvent(cmp,'mousemove',_window.document,{capture: true});
-//       pipe(mouseMoveEm,
-//           debounceTime(50),
-//           map(e=> eventToElem(e,_window,eventToElemPredicate)),
-//           filter(x=>x && x.getAttribute),
-//           distinctUntilChanged(),
-//           Do(profElem=> {
-//             const elemCtx = _window.jb.ctxDictionary[profElem.getAttribute('pick-ctx') || profElem.getAttribute('jb-ctx')]
-//             if (!elemCtx) return
-//             Object.assign(ctx.vars.dialogData,{ elem: profElem, ctx: elemCtx, path: elemCtx.path })
-//             ctx.run(writeValue('%$studio/refreshPick%',() => cmp.counter++))
-//           }),
-//           subscribe(() => {})
-//       )
-//     }
-//   })
-// })
-
 jb.component('dialog.studioPickDialog', {
   hidden: true,
   type: 'dialog.style',
@@ -178,7 +134,7 @@ jb.component('dialog.studioPickDialog', {
         `{ %top%; %left% } ~ .pick-toolbar { margin-top: -20px }
         >.top{ %width% } >.left{ %height% } >.right{ left: %widthVal%;  %height% } >.bottom{ top: %heightVal%; %width% }`
       )),
-      watchRef('%$studio/refreshPick%'),
+      watchRef({ref: '%$studio/refreshPick%', allowSelfRefresh: true}),
       dialogFeature.studioPick('%$from%'),
       dialogFeature.closeWhenClickingOutside(),
     ]

@@ -828,6 +828,22 @@ jb.component('uiTest.itemlistWithTableStyle', {
 //   })
 // })
 
+jb.component('uiTest.BEOnDestroy', {
+  impl: uiFrontEndTest({
+    control: text('%$person/name%'),
+    action: runActions(
+      openDialog({
+        id:'dlg', 
+        content: text({text: 'in dialog',
+          features: backEnd.onDestroy(writeValue('%$person/name%','dialog closed'))
+        })
+      }),
+      dialog.closeDialogById('dlg')
+    ),
+    expectedResult: contains('dialog closed')
+  })
+})
+
 jb.component('uiTest.editableTextInGroup', {
   impl: uiTest({
     control: group({
@@ -943,7 +959,7 @@ jb.component('uiTest.editableText.richPicklistHelper.setInput', {
     }),
     action: runActions(
       uiAction.keyboardEvent({selector: '#inp', type: 'keyup', keyCode: 37}),
-      delay(30), // opens the popup
+      delay(40), // opens the popup
       uiAction.keyboardEvent({selector: '#inp', type: 'keydown', keyCode: 40}),
 //      delay(20),
       uiAction.keyboardEvent({selector: '#inp', type: 'keyup', keyCode: 13})

@@ -61,10 +61,10 @@ class JbComponent {
     }
     init() {
         jb.log('initCmp',[this])
-        const baseVars = Object.keys(this.ctx.vars)
+        const baseVars = this.ctx.vars
         this.ctx = (this.extendCtxFuncs||[])
             .reduce((acc,extendCtx) => tryWrapper(() => extendCtx(acc,this),'extendCtx'), this.ctx.setVar('cmp',this))
-        this.newVars = jb.objFromEntries(Object.keys(this.ctx.vars).filter(k=>baseVars.indexOf(k) == -1).map(k=>[k,this.ctx.vars[k]]))
+        this.newVars = jb.objFromEntries(jb.entries(this.ctx.vars).filter(([k,v]) => baseVars[k] != v))
         this.renderProps = {}
         this.state = this.ctx.vars.$state
         this.calcCtx = this.ctx.setVar('$props',this.renderProps).setVar('cmp',this)
@@ -154,7 +154,10 @@ class JbComponent {
     }
     renderVdomAndFollowUp() {
         const vdom = this.renderVdom()
-        jb.delay(1).then(() => (this.followUpFuncs||[]).forEach(f=> tryWrapper(() => f(this.calcCtx), 'followUp')))
+        jb.delay(1).then(() => (this.followUpFuncs||[]).forEach(f=> tryWrapper(() => { 
+            jb.log('followUp',[f,this])
+            f(this.calcCtx) 
+        }, 'followUp') ) )
         return vdom
     }
     hasBEMethod(method) {

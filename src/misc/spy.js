@@ -3,13 +3,15 @@ const spySettings = {
 	moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable,scriptChange,resLog,setGridAreaVals,dragableGridItemThumb,pptrStarted,pptrEmit,pptrActivity,pptrResultData', 
 	groups: {
 		none: '',
-		refresh: 'doOp,refreshElem,notifyCmpObservable',
-		method: 'BEMethod',
+		methods: 'BEMethod,FEMethod',
+		refresh: 'doOp,refreshElem,notifyCmpObservable,refreshCmp',
+		keyboard: 'registerService,overridingService,fromSelectionKeySource,foundSelectionKeySource,selectionKeySourceNotFound,itemlistOnkeydown,selectionKeySource,itemlistOnkeydownNextSelected,BEMethod,FEMethod,FEFlow,FEProp,followUp,focus',
 		puppeteer: 'pptrStarted,pptrEmit,pptrActivity,pptrResultData,pptrInfo,pptrError',
 		watchable: 'doOp,writeValue,removeCmpObservable,registerCmpObservable,notifyCmpObservable,notifyObservableElems,notifyObservableElem,scriptChange',
-		react: 'applyNewVdom,applyDeltaTop,applyDelta,unmount,render,initCmp,refreshReq,refreshElem,childDiffRes,htmlChange,appendChild,removeChild,replaceTop,calcRenderProp,followUp',
+		react: 'BEMethod,applyNewVdom,applyDeltaTop,applyDelta,unmount,render,initCmp,refreshReq,refreshElem,childDiffRes,htmlChange,appendChild,removeChild,replaceTop,calcRenderProp,followUp',
 		dialog: 'addDialog,closeDialog,refreshDialogs',
 		remoteCallbag: 'innerCBReady,innerCBCodeSent,innerCBDataSent,innerCBMsgReceived,remoteCmdReceived,remoteSource,remoteSink,outputToRemote,inputFromRemote,inputInRemote,outputInRemote',
+		menu: 'fromMenuKeySource,menuControl,initPopupMenu,isRelevantMenu,menuKeySourceNotFound,foundMenuKeySource,menuMouseEnter',
 	},
 	includeLogs: 'exception,error',
 	stackFilter: /spy|jb_spy|Object.log|node_modules/i,
@@ -23,7 +25,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 	memoryUsage = memoryUsage || (() => frame.performance && performance.memory && performance.memory.usedJSHeapSize)
 	settings = Object.assign(settings||{}, spySettings)
 
-	const systemProps = ['index', 'time', '_time', 'mem', 'source']
+	const systemProps = ['index', 'time', '_time', 'mem', 'source','activeElem']
 
     const isRegex = x => Object.prototype.toString.call(x) === '[object RegExp]'
 	const isString = x => typeof x === 'string' || x instanceof String
@@ -40,28 +42,26 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			return this._obs
 		},
 		enabled: () => true,
+		init() {
+			const includeLogsFromParam = (this.spyParam || '').split(',').filter(x => x[0] !== '-').filter(x => x)
+				.flatMap(x=>Object.keys(settings.groups).indexOf(x) == -1 ? [x] : settings.groups[x].split(','))
+			const excludeLogsFromParam = (this.spyParam || '').split(',').filter(x => x[0] === '-').map(x => x.slice(1))
+			this.includeLogs = settings.includeLogs.split(',').concat(includeLogsFromParam).filter(log => excludeLogsFromParam.indexOf(log) === -1).reduce((acc, log) => {
+				acc[log] = true
+				return acc
+			}, {})
+			this.initialized = true
+		},
+		shouldLog(logName, record) {
+			return this.spyParam === 'all' || Array.isArray(record) && this.includeLogs[logName] && !settings.extraIgnoredEvents.includes(record[0])
+		},
 		log(logName, record, {takeFrom, funcTitle, modifier} = {}) {
-			const init = () => {
-				if (!this.initialized) {
-					const includeLogsFromParam = (this.spyParam || '').split(',').filter(x => x[0] !== '-').filter(x => x)
-						.flatMap(x=>Object.keys(settings.groups).indexOf(x) == -1 ? [x] : settings.groups[x].split(','))
-					const excludeLogsFromParam = (this.spyParam || '').split(',').filter(x => x[0] === '-').map(x => x.slice(1))
-					this.includeLogs = settings.includeLogs.split(',').concat(includeLogsFromParam).filter(log => excludeLogsFromParam.indexOf(log) === -1).reduce((acc, log) => {
-						acc[log] = true
-						return acc
-					}, {})
-				}
-				this.initialized = true
-			}
-			const shouldLog = (logName, record) =>
-				this.spyParam === 'all' || Array.isArray(record) && this.includeLogs[logName] && !settings.extraIgnoredEvents.includes(record[0])
-
-			init()
+			if (!this.initialized) this.init()
 			this.logs[logName] = this.logs[logName] || []
 			this.logs.$counters = this.logs.$counters || {}
 			this.logs.$counters[logName] = this.logs.$counters[logName] || 0
 			this.logs.$counters[logName]++
-			if (!shouldLog(logName, record)) {
+			if (!this.shouldLog(logName, record)) {
 				return
 			}
 			this.logs.$index = this.logs.$index || 0
@@ -71,6 +71,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			record._time = `${now.getSeconds()}:${now.getMilliseconds()}`
 			record.time = now.getTime()
 			record.mem = memoryUsage() / 1000000
+			record.activeElem = typeof jb != 'undefined' && jb.path && jb.path(jb.frame.document,'activeElement')
 			if (this.logs[logName].length > settings.MAX_LOG_SIZE) {
 				this.logs[logName] = this.logs[logName].slice(-1 * Math.floor(settings.MAX_LOG_SIZE / 2))
 			}

@@ -459,11 +459,19 @@ jb.component('sink.data', {
 })
 
 jb.component('rx.log', {
+  description: 'jb.log flow data, used for debug',
+  params: [
+    {id: 'name', as: 'string'},
+  ],
+  impl: (ctx,name) => ctx.run(rx.do(_ctx => jb.log(name,[_ctx.data,_ctx.vars,ctx])))
+})
+
+jb.component('rx.clog', {
   description: 'console.log flow data, used for debug',
   params: [
     {id: 'name', as: 'string'},
   ],
-  impl: rx.do((ctx,{},{name}) => console.log(name,ctx.data,ctx.vars))
+  impl: rx.do((x,{},{name}) => console.log(name,x))
 })
 
 jb.component('rx.sniffer', {

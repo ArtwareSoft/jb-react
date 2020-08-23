@@ -103,7 +103,7 @@ jb.ui.renderWidgetInStudio = function(profile,top) {
   function doRender(page) {
         if (page) currentProfile = {$: page}
         const profileToRun = ['dataTest','uiTest'].indexOf(jb.path(jb.comps[currentProfile.$],'impl.$')) != -1 ? { $: 'test.showTestInStudio', testId: currentProfile.$} : currentProfile
-        const cmp = new jb.jbCtx().run(profileToRun)
+        const cmp = jb.ui.extendWithServiceRegistry(new jb.jbCtx()).run(profileToRun)
         const start = new Date().getTime()
         jb.ui.unmount(top)
         top.innerHTML = ''

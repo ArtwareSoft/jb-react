@@ -331,12 +331,12 @@ jb.component('studio.scriptChange', {
 
 jb.component('studio.watchScriptChanges', {
   type: 'feature',
-  impl: frontEnd.flow(studio.scriptChange(), rx.takeUntil( '%$cmp.destroyed%' ), sink.refreshCmp())
+  impl: followUp.flow(studio.scriptChange(), sink.refreshCmp())
 })
 
 jb.component('studio.watchComponents', {
   type: 'feature',
-  impl: frontEnd.flow(studio.scriptChange(), rx.takeUntil( '%$cmp.destroyed%' ), rx.filter('%path/length%==1'), sink.refreshCmp())
+  impl: followUp.flow(studio.scriptChange(), rx.filter('%path/length%==1'), sink.refreshCmp())
 })
 
 jb.component('studio.boolRef', {

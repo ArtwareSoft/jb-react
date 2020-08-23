@@ -304,7 +304,7 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,includeHeavy}
 			concatMap(e => {
 			  jb.logs.error = []
 			  const testID = e[0]
-			  const tstCtx = new jb.jbCtx().setVars({testID, initial_resources, initial_comps, singleTest: tests.length == 1 })
+			  const tstCtx = jb.ui.extendWithServiceRegistry().setVars({testID, initial_resources, initial_comps, singleTest: tests.length == 1 })
 			  document.getElementById('progress').innerHTML = `<div id=${testID}>${index++}: ${testID} started</div>`
 			  times[testID] = { start: new Date().getTime() }
 			  jb.test.cleanBeforeRun(tstCtx)

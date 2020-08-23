@@ -48,18 +48,22 @@ Object.assign(jb.ui,{
     renderWidget(profile,topElem) {
       if (!jb.ui.renderWidgetInStudio && jb.path(jb.frame,'parent.jb.ui.renderWidgetInStudio'))
         eval('jb.ui.renderWidgetInStudio= ' + jb.frame.parent.jb.ui.renderWidgetInStudio.toString())
-      if (jb.ui.renderWidgetInStudio)
+      if (jb.frame.parent != jb.frame && jb.ui.renderWidgetInStudio)
         return jb.ui.renderWidgetInStudio(profile,topElem)
       else
-        jb.ui.render(jb.ui.h(new jb.jbCtx().run(profile)),topElem)    
+        return jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry().run(profile)),topElem)    
     },
+    extendWithServiceRegistry(_ctx) {
+      const ctx = _ctx || new jb.jbCtx()
+      return ctx.setVar('$serviceRegistry',{baseCtx: ctx, parentRegistry: ctx.vars.$serviceRegistry, services: {}})
+    }
 })
 
 // ***************** inter-cmp services
 
 jb.component('feature.serviceRegistey', {
   type: 'feature',
-  impl: () => ({extendCtx: ctx => ctx.setVar('serviceRegistry',{parentRegistry: ctx.vars.serviceRegistry, services: {}}) })
+  impl: () => ({extendCtx: ctx => jb.ui.extendWithServiceRegistry(ctx) })
 })
 
 jb.component('service.registerBackEndService', {
@@ -68,7 +72,13 @@ jb.component('service.registerBackEndService', {
     {id: 'id', as: 'string', mandatory: true, dynamic: true },
     {id: 'service', mandatory: true, dynamic: true },
   ],
-  impl: feature.init((ctx,{serviceRegistry},{id,service}) => serviceRegistry.services[id(ctx)] = service(ctx))
+  impl: feature.init((ctx,{$serviceRegistry},{id,service}) => {
+    const _id = id(ctx), _service = service(ctx)
+    jb.log('registerService',[_id,_service,ctx.componentContext])
+    if ($serviceRegistry.services[_id])
+      jb.logError('overridingService',[_id,$serviceRegistry.services[_id],_service,ctx])
+    $serviceRegistry.services[_id] = _service
+  })
 })
 
 

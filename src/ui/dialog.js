@@ -7,12 +7,13 @@ jb.component('openDialog', {
     {id: 'content', type: 'control', dynamic: true, templateValue: group()},
     {id: 'style', type: 'dialog.style', dynamic: true, defaultValue: dialog.default()},
     {id: 'menu', type: 'control', dynamic: true},
-    {id: 'onOK', type: 'action', dynamic: true},
+	{id: 'onOK', type: 'action', dynamic: true},
+	{id: 'id', as: 'string'},
     {id: 'features', type: 'dialog-feature[]', dynamic: true}
   ],
   impl: runActions(
-	  Var('$dlg',(ctx,{}) => {
-		const dialog = { id: `dlg-${ctx.id}`, launcherCmpId: ctx.exp('%$cmp/cmpId%') }
+	  Var('$dlg',(ctx,{},{id}) => {
+		const dialog = { id: id || `dlg-${ctx.id}`, launcherCmpId: ctx.exp('%$cmp/cmpId%') }
 		const ctxWithDialog = ctx.componentContext._parent.setVars({
 			$dialog: dialog,
 			dialogData: {},
@@ -174,7 +175,6 @@ jb.component('dialogFeature.dragTitle', {
 	impl: features(
 		calcProp('sessionStorageId','dialogPos-%$id%'),
 		calcProp('posFromSessionStorage', If('%$useSessionStorage%', getSessionStorage('%$$props/sessionStorageId%'))),
-		css(If('%$$props/posFromSessionStorage%','{top: %$$props/posFromSessionStorage/top%px; left: %$$props/posFromSessionStorage/left%px }','')),
 		css('%$selector% { cursor: pointer; user-select: none }'),
 		frontEnd.method('setPos',({data},{el}) => { 
 			el.style.top = data.top + 'px'
@@ -183,6 +183,13 @@ jb.component('dialogFeature.dragTitle', {
 		passPropToFrontEnd('selector','%$selector%'),
 		passPropToFrontEnd('useSessionStorage','%$useSessionStorage%'),
 		passPropToFrontEnd('sessionStorageId','%$$props/sessionStorageId%'),
+		passPropToFrontEnd('posFromSessionStorage','%$$props/posFromSessionStorage%'),
+		frontEnd.init(({},{el,posFromSessionStorage}) => {
+			if (posFromSessionStorage) {
+				el.style.top = posFromSessionStorage.top + 'px'
+				el.style.left = posFromSessionStorage.left +'px'
+			}
+		}),
 		frontEnd.prop('titleElem',({},{el,selector}) => el.querySelector(selector)),
 		frontEnd.flow(
 			source.event('mousedown','%$cmp/titleElem%'), 
@@ -337,12 +344,12 @@ jb.component('dialogFeature.cssClassOnLaunchingElement', {
 jb.component('dialogFeature.maxZIndexOnClick', {
   type: 'dialog-feature',
   params: [
-    {id: 'minZIndex', as: 'number'}
+    {id: 'minZIndex', as: 'number', defaultValue: 100}
   ],
   impl: features(
 	  passPropToFrontEnd('minZIndex','%$minZIndex%'),
 	  frontEnd.method('setAsMaxZIndex', ({},{el,minZIndex}) => {
-		  	const dialogs = Array.from(document.querySelectorAll('.jb-dialog'))
+		  	const dialogs = Array.from(document.querySelectorAll('.jb-dialog')).filter(dl=>!jb.ui.hasClass(dl, 'jb-popup'))
 			const calcMaxIndex = dialogs.reduce((max, _el) => 
 				Math.max(max,(_el && parseInt(_el.style.zIndex || 100)+1) || 100), minZIndex || 100)
 			el.style.zIndex = calcMaxIndex
@@ -482,21 +489,20 @@ jb.component('dialogs.defaultStyle', {
 				rx.filter('%open%'),
 				rx.var('dialogVdom', pipeline(dialog.buildComp('%dialog%'),'%renderVdomAndFollowUp()%')),
 				rx.var('delta', obj(prop('children', obj(prop('toAppend','%$dialogVdom%'))))),
-				rx.log('open dialog'),
+				rx.log('addDialog'),
 				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
 			),
 			followUp.flow(source.subject(dialogs.changeEmitter()), 
 				rx.filter('%close%'),
 				rx.var('dlgCmpId', dialogs.cmpIdOfDialog('%dialogId%')),
 				rx.var('delta', obj(prop('children', obj(prop('deleteCmp','%$dlgCmpId%'))))),
-				rx.log('close dialog'),
+				rx.log('closeDialog'),
 				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
 			),
 			followUp.flow(source.subject(dialogs.changeEmitter()), 
-				rx.log(1),
 				rx.filter('%closeByCmpId%'),
 				rx.var('delta', obj(prop('children', obj(prop('deleteCmp','%cmpId%'))))),
-				rx.log('close dialog'),
+				rx.log('closeDialog'),
 				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
 			)			
 		]

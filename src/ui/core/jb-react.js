@@ -152,7 +152,7 @@ function applyDeltaToDom(elem,delta) {
         const toAppend = delta.children.toAppend || []
         const deleteCmp = delta.children.deleteCmp
         const sameOrder = childrenArr.reduce((acc,e,i) => acc && e.__afterIndex ==i, true) && !toAppend.length
-            || !childrenArr.length && toAppend.reduce((acc,e,i) => acc && e.__afterIndex ==i, true)
+            || !childrenArr.length && toAppend.reduce((acc,e,i) => acc && (e.__afterIndex == null || e.__afterIndex ==i), true)
         if (deleteCmp) {
             const toDelete = Array.from(elem.children).find(ch=>ch.getAttribute('cmp-id') == deleteCmp)
             if (toDelete) {
@@ -263,8 +263,7 @@ function setAtt(elem,att,val) {
         const active = document.activeElement === elem
         if (elem.value == val) return
         elem.value = val
-        if (active)
-            elem.focus()
+        if (active && document.activeElement !== elem) { debugger; elem.focus() }
         jb.log('htmlChange',['setAtt',...arguments])
     } else {
         elem.setAttribute(att,val)
@@ -273,13 +272,15 @@ function setAtt(elem,att,val) {
 
     function setInput({assumedVal,newVal,selectionStart}) {
         const el = jb.ui.findIncludeSelf(elem,'input,textarea')[0]
-        if (!el) 
+        if (!el)
             return jb.logError('setInput: can not find input elem')
         if (assumedVal != el.value) 
             return jb.logError('setInput: assumed val is not as expected',assumedVal, el.value)
+        const active = document.activeElement === el
         el.value = newVal
         if (typeof selectionStart == 'number') 
             el.selectionStart = selectionStart
+        if (active && document.activeElement !== el) { debugger; el.focus() }
     }
 }
 
@@ -293,7 +294,9 @@ function unmount(elem) {
         const widget = jb.ui.widgetOfElem(el) 
         if (widget.frontEnd) return
         groupByWidgets[widget.widgetid] = groupByWidgets[widget.widgetid] || { cmps: []}
-        groupByWidgets[widget.widgetid].cmps.push(el.getAttribute('cmp-id'))
+        const destroyCtxs = (el.getAttribute('methods')||'').split(',').filter(x=>x.indexOf('destroy-') == 0).map(x=>x.split('destroy-').pop())
+        const cmpId = el.getAttribute('cmp-id')
+        groupByWidgets[widget.widgetid].cmps.push({cmpId,destroyCtxs})
     })
     jb.entries(groupByWidgets).forEach(([widgetId,val])=>
         jb.ui.BECmpsDestroyNotification.next({
@@ -409,7 +412,7 @@ Object.assign(jb.ui, {
         const {pipe,take,filter,log,takeUntil} = jb.callbag
         return takeUntil(pipe(jb.ui.BECmpsDestroyNotification,
             log(`takeUntilCmpDestroyed ${cmp.cmpId}`),
-            filter(x=>x.cmps.indexOf(''+cmp.cmpId) != -1),
+            filter(x=>x.cmps.find(_cmp => _cmp.cmpId == cmp.cmpId)),
             log(`Activated takeUntilCmpDestroyed ${cmp.cmpId}`),
             take(1),
         ))
@@ -417,10 +420,12 @@ Object.assign(jb.ui, {
     ctrl(context,options) {
         const $state = context.vars.$refreshElemCall ? context.vars.$state : {}
         const cmpId = context.vars.$cmpId, cmpVer = context.vars.$cmpVer
+        if (!context.vars.$serviceRegistry)
+            jb.logError('no serviceRegistry',context)
         const ctx = context.setVars({
             $model: { ctx: context, ...context.params},
             $state,
-            serviceRegistry: context.vars.serviceRegistry || {services: {}},
+            $serviceRegistry: context.vars.$serviceRegistry,
             $refreshElemCall : undefined, $props : undefined, cmp: undefined, $cmpId: undefined, $cmpVer: undefined 
         })
         const styleOptions = defaultStyle(ctx) || {}
@@ -573,18 +578,28 @@ class frontEndCmp {
         this.cmpId = elem.getAttribute('cmp-id')
         this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve)
         elem._component = this
-        this.runFEMethod('calcProps')
-        this.runFEMethod('init')
+        this.runFEMethod('calcProps',null,null,true)
+        this.runFEMethod('init',null,null,true)
         this.state.frontEndStatus = 'ready'
     }
-    runFEMethod(method,data,_vars) {
+    runFEMethod(method,data,_vars,silent) {
         if (this.state.frontEndStatus != 'ready' && ['init','calcProps'].indexOf(method) == -1)
             return jb.logError('frontEnd - running method before init', [this, ...arguments])
-        ;(this.base.frontEndMethods || []).filter(x=>x.method == method).forEach(({path}) => tryWrapper(() => {
+        const toRun = (this.base.frontEndMethods || []).filter(x=>x.method == method)
+        if (toRun.length == 0 && !silent)
+            return jb.logError(`frontEnd - no method ${method}`,this)
+        toRun.forEach(({path}) => tryWrapper(() => {
             const profile = path.split('~').reduce((o,p)=>o[p],jb.comps)
             const feMEthod = jb.run( new jb.jbCtx(this.ctx, { profile, path }))
             const vars = {cmp: this, $state: this.state, el: this.base, ...this.base.vars, ..._vars }
-            this.ctx.setData(data).setVars(vars).run(feMEthod.frontEndMethod.action)
+            const ctxToUse = this.ctx.setData(data).setVars(vars)
+            if (feMEthod.frontEndMethod._prop)
+                jb.log('FEProp',[feMEthod.frontEndMethod._prop,feMEthod.frontEndMethod,ctxToUse])
+            else if (feMEthod.frontEndMethod._flow)
+                jb.log('FEFlow',[...feMEthod.frontEndMethod._flow,feMEthod.frontEndMethod,ctxToUse])
+            else 
+                jb.log('FEMethod',[method,feMEthod.frontEndMethod,ctxToUse])
+            ctxToUse.run(feMEthod.frontEndMethod.action)
         }, `frontEnd-${method}`))
     }
     enrichUserEvent(ev, userEvent) {
@@ -606,15 +621,15 @@ class frontEndCmp {
         if (this._deleted) return
         Object.assign(this.state, state)
         this.base.state = this.state
-        this.runFEMethod('onRefresh')
+        this.runFEMethod('onRefresh',null,null,true)
     }    
     newVDomApplied() {
         Object.assign(this.state,{...this.base.state}) // update state from BE
-        this.runFEMethod('onRefresh')
+        this.runFEMethod('onRefresh',null,null,true)
     }
     destroyFE() {
         this._deleted = true
-        this.runFEMethod('destroy')
+        this.runFEMethod('destroy',null,null,true)
         this.resolveDestroyed() // notifications to takeUntil(this.destroyed) observers
     }
 }
@@ -639,9 +654,14 @@ jb.callbag.subscribe(e=> {
 })(jb.ui.renderingUpdates)
 
 jb.callbag.subscribe(e=> {
-    const {widgetId,fromHeadless} = e
+    const {widgetId,fromHeadless,cmps} = e
     if (widgetId && widgetId != 'undefined' && widgetId != '_' && !fromHeadless)
         jb.ui.widgetUserRequests.next({$:'destroy', ...e })
+    else 
+        cmps.forEach(cmp=>cmp.destroyCtxs.forEach(ctxIdToRun => {
+            jb.log('BEMethod',['destroy'])
+            jb.ui.runCtxAction(jb.ctxDictionary[ctxIdToRun])
+        } ))
 })(jb.ui.BECmpsDestroyNotification)
 
 })()
