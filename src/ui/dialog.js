@@ -77,16 +77,13 @@ jb.component('dialog.closeDialog', {
 	params: [
 		{id: 'OK', type: 'boolean', as: 'boolean', defaultValue: true},
 	],
-	impl: runActions(
-		action.if(and('%$OK%','%$dialog.hasFields%', (ctx,{$dialog}) => 
+	impl: action.if('%$$dialog%' , runActions(
+		action.if(and('%$OK%','%$$dialog.hasFields%', (ctx,{$dialog}) => 
 			jb.ui.checkFormValidation && jb.ui.checkFormValidation(jb.ui.elemOfCmp(ctx, $dialog.cmpId)))),
-		action.if(not('%$formContainer.err%'),
-			runActions(
-				(ctx,{$dialog},{OK}) => OK && $dialog.ctx.params.onOK(ctx),
-				action.subjectNext(dialogs.changeEmitter(), obj(prop('close',true), prop('dialogId','%$$dialog/id%')))
-			)
-		)
-	)
+		action.if(and('%$OK%', not('%$formContainer.err%')), (ctx,{$dialog}) => $dialog.ctx.params.onOK(ctx)),
+		action.if(or(not('%$OK%'), not('%$formContainer.err%')),
+			action.subjectNext(dialogs.changeEmitter(), obj(prop('close',true), prop('dialogId','%$$dialog/id%'))))
+	))
 })
 
 jb.component('dialog.closeDialogById', {
@@ -145,16 +142,16 @@ jb.component('dialogFeature.uniqueDialog', {
 	params: [
 	  {id: 'id', as: 'string'},
 	],
-	impl: features(
+	impl: If('%$id%', features(
 		feature.init(writeValue('%$$dialog/id%','%$id%')),
 		followUp.flow(
 			source.data(ctx => jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog')),
 			rx.filter(({data},{cmp},{id}) => data.getAttribute('id') == id && data.getAttribute('cmp-id') != cmp.cmpId ),
 			rx.map(({data}) => data.getAttribute('cmp-id')),
-			rx.map(obj(prop('closeByCmpId',true), prop('cmpId','%%'))),
+			rx.map(obj(prop('closeByCmpId',true), prop('cmpId','%%'), prop('dialogId','%$id%'))),
 			sink.subjectNext(dialogs.changeEmitter())
 		)
-	)
+	))
 })
 
 jb.component('source.mouseMoveIncludingPreview', {
@@ -375,7 +372,8 @@ jb.component('dialog.dialogOkCancel', {
 				h('button#mdc-button', {onclick: 'dialogCloseOK' },[h('div#mdc-button__ripple'), h('span#mdc-button__label',{},okLabel)]),
 			]),
 		]),
-    css: '>.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }'
+	css: '>.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }',
+	features: dialogFeature.maxZIndexOnClick()
   })
 })
 
@@ -489,20 +487,20 @@ jb.component('dialogs.defaultStyle', {
 				rx.filter('%open%'),
 				rx.var('dialogVdom', pipeline(dialog.buildComp('%dialog%'),'%renderVdomAndFollowUp()%')),
 				rx.var('delta', obj(prop('children', obj(prop('toAppend','%$dialogVdom%'))))),
-				rx.log('addDialog'),
+				rx.log('addDialog','%dialog/id%'),
 				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
 			),
 			followUp.flow(source.subject(dialogs.changeEmitter()), 
 				rx.filter('%close%'),
 				rx.var('dlgCmpId', dialogs.cmpIdOfDialog('%dialogId%')),
 				rx.var('delta', obj(prop('children', obj(prop('deleteCmp','%$dlgCmpId%'))))),
-				rx.log('closeDialog'),
+				rx.log('closeDialog','%dialogId%'),
 				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
 			),
 			followUp.flow(source.subject(dialogs.changeEmitter()), 
 				rx.filter('%closeByCmpId%'),
 				rx.var('delta', obj(prop('children', obj(prop('deleteCmp','%cmpId%'))))),
-				rx.log('closeDialog'),
+				rx.log('closeDialog','%dialogId%'),
 				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
 			)			
 		]

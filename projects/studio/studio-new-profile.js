@@ -192,7 +192,7 @@ jb.component('studio.selectProfile', {
       }),
       variable({
         name: 'SelectedCategory',
-        value: {'$if': studio.val('%$path%'), then: 'all', else: '%$Categories[0]/code%'},
+        value: If(studio.val('%$path%'), 'all', '%$Categories[0]/code%'),
         watchable: true
       }),
       group.itemlistContainer({initialSelection: studio.compName('%$path%')}),

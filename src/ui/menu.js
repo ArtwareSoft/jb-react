@@ -10,13 +10,13 @@ jb.component('menu.menu', {
   ],
   impl: ctx => ({
 		options: function(ctx2) {
-      const ctxWithDepth = ctx2.setVar('menuDepth',this.ctx.vars.menuDepth)
+      const ctxWithDepth = (ctx2 || ctx).setVar('menuDepth',this.ctx.vars.menuDepth)
       return ctx.params.optionsFilter(ctx.setData(ctx.params.options(ctxWithDepth)))
     },
     title: ctx.params.title(),
     icon: ctx.params.icon,
-		applyShortcut: function(e) {
-			return this.options().reduce((res,o)=> res || (o.applyShortcut && o.applyShortcut(e)),false)
+		runShortcut: function(event) {
+			return this.options().reduce((res,o)=> res || (o.runShortcut && o.runShortcut(event)),false)
 		},
 		ctx: ctx.setVar('menuDepth', (ctx.vars.menuDepth || 0)+1)
 	})
@@ -63,13 +63,10 @@ jb.component('menu.action', {
 			action: _ => ctx.params.action(ctx.setVars({topMenu:null})), // clean topMenu from context after the action
       title: ctx.params.title(ctx),
       shortcut: ctx.params.shortcut,
-			// applyShortcut: e=> {
-			// 	if (ctx.run(eventMatchKey(() => e, () => ctx.params.shortcut))) {
-			// 		e.stopPropagation();
-			// 		ctx.params.action();
-			// 		return true;
-			// 	}
-			// },
+			runShortcut: event => {
+				if (ctx.run(key.eventMatchKey(() => event.ev, () => ctx.params.shortcut)))
+					ctx.params.action()
+			},
 			ctx: ctx.setVar('menuDepth', (ctx.vars.menuDepth || 0)+1)
 		})
 })
@@ -167,6 +164,7 @@ jb.component('menu.initPopupMenu', {
       }))
     )),
     method('closePopup', dialog.closeDialogById('%$optionsParentId%')),
+    method('openNewPopup', runActions(action.runBEMethod('closePopup'), action.runBEMethod('openPopup'))),
     frontEnd.onDestroy(action.runBEMethod('closePopup')),
     menu.passMenuKeySource(),
     frontEnd.flow(source.findMenuKeySource(), rx.filter('%keyCode%==39'), sink.BEMethod('openPopup')),
@@ -220,7 +218,7 @@ jb.component('menuStyle.applyMultiLevel', {
 //             jb.ui.focus(cmp.base,'menu.keyboard init autoFocus',ctx);
 //       	};
 //         const keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
-//         keydown.subscribe(e=>cmp.ctx.vars.topMenu.applyShortcut(e))
+//         keydown.subscribe(e=>cmp.ctx.vars.topMenu.runShortcut(e))
 //       }
 //     })
 // })
@@ -245,6 +243,7 @@ jb.component('menu.selection', {
         .filter(el => $props.selected == el.getAttribute('jb-ctx'))
         .forEach(el => el.addClass('selected'))
     ),
+    method('closeMenu',dialog.closeDialog()),
     frontEnd.init(({},{cmp,el}) => cmp.state.selected = jb.ui.find(el,'.jb-item,*>.jb-item,*>*>.jb-item')
       .filter(el=>jb.ui.hasClass(el,'selected')).map(el=>+el.getAttribute('jb-ctx'))[0]
     ),
@@ -264,11 +263,12 @@ jb.component('menu.selection', {
     frontEnd.flow(source.findMenuKeySource(), 
       rx.filter(not('%ctrlKey%')),
       rx.filter(inGroup(list(38,40),'%keyCode%')),
-      rx.map(itemlist.nextSelected(If('%keyCode%==40',1,-1), not('%separator%'))),
+      rx.map(itemlist.nextSelected(If('%keyCode%==40',1,-1), menu.notSeparator('%%') )),
       sink.FEMethod('setSelected')
     ),
+    frontEnd.flow(source.findMenuKeySource(), rx.filter('%keyCode%==27'), sink.BEMethod('closeMenu')),
     frontEnd.flow(source.frontEndEvent('mousemove'),
-      rx.filter(not('%target/separator%')),
+      rx.filter(menu.notSeparator('%target%')),
       rx.var('elem',({data}) => data.target.ownerDocument.elementsFromPoint(data.pageX, data.pageY)[0]),
       rx.var('ctxId',itemlist.ctxIdOfElem('%$elem%')),
       rx.map('%$ctxId%'),
@@ -294,6 +294,7 @@ jb.component('menu.selectionKeySourceService', {
         }
         return true
       }
+      jb.ui.focus(el,'menu.selectionKeySourceService',ctx.componentContext)
       jb.log('menuKeySource',['registered',cmp,el,ctx])
       return pipe(el.keydown_src, takeUntil(cmp.destroyed))
     })
@@ -340,7 +341,7 @@ jb.component('menu.isRelevantMenu', {
     const depth = +el.getAttribute('menudepth') || 0
     const isSelected = jb.ui.parents(el,{includeSelf: true}).find(el=>jb.ui.hasClass(el,'selected'))
     const isMenu = jb.ui.hasClass(el,'jb-itemlist')
-    const upDownInMenu = isMenu && (key == 40 || key == 38) && depth == maxDepth
+    const upDownInMenu = isMenu && (key == 40 || key == 38 || key == 27) && depth == maxDepth
     const leftArrowEntryBefore = isSelected && (key == 37 || key == 27) && depth == maxDepth 
     const rightArrowCurrentEntry = isSelected && (key == 39 || key == 13) && depth == maxDepth + 1
     const res = upDownInMenu || leftArrowEntryBefore || rightArrowCurrentEntry
@@ -388,8 +389,15 @@ jb.component('menuStyle.popupThumb', {
   type: 'menu.style',
   description: 'used for pulldown',
   impl: customStyle({
-    template: ({},{title},h) => h('div#pulldown-top-menu-item',{ onmouseenter: 'mouseEnter', onclick: 'openPopup'}, title),
-    features: [menu.initPopupMenu(), mdc.rippleEffect()]
+    template: ({},{title},h) => h('div#pulldown-top-menu-item',{ onclick: 'openPopup'}, title),
+    features: [
+      menu.initPopupMenu(), 
+      mdc.rippleEffect(),
+      frontEnd.flow(source.frontEndEvent('mouseenter'), 
+        rx.filter(ctx => jb.ui.find(ctx,'.pulldown-mainmenu-popup')[0]), // the first 'open popup' needs a click
+        sink.BEMethod('openNewPopup')
+      )
+    ]
   })
 })
 
@@ -419,10 +427,17 @@ jb.component('dialog.contextMenuPopup', {
 jb.component('menuSeparator.line', {
   type: 'menu-separator.style',
   impl: customStyle({
-    template: ({},{},h) => h('div'),
+    template: ({},{},h) => h('div', {separator: true}),
     css: '{ margin: 6px 0; border-bottom: 1px solid #EBEBEB;}',
-    features: frontEnd.prop('separator',true)
   })
+})
+
+jb.component('menu.notSeparator',{
+  type: 'boolean',
+  params: [
+    { id: 'elem' }
+  ],
+  impl: (ctx,elem) => elem.firstElementChild && !elem.firstElementChild.getAttribute('separator')
 })
 
 /***** icon menus */

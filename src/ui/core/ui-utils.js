@@ -5,7 +5,7 @@ Object.assign(jb.ui,{
         const now = new Date().getTime();
         const lastStudioActivity = jb.studio.lastStudioActivity || jb.path(jb,['studio','studioWindow','jb','studio','lastStudioActivity'])
         jb.log('focus',['request',srcCtx, logTxt, now - lastStudioActivity, elem,srcCtx])
-        if (jb.studio.previewjb == jb && lastStudioActivity && now - lastStudioActivity < 1000)
+        if (jb.studio.previewjb == jb && jb.path(jb.frame.parent,'jb.resources.studio.project') != 'studio-helper' && lastStudioActivity && now - lastStudioActivity < 1000)
             return
         jb.delay(1).then(_=> {
           jb.log('focus',['apply',srcCtx,logTxt,elem,srcCtx])

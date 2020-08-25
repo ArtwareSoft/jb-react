@@ -2973,7 +2973,7 @@ const spySettings = {
 	},
 	includeLogs: 'exception,error',
 	stackFilter: /spy|jb_spy|Object.log|node_modules/i,
-    extraIgnoredEvents: [], MAX_LOG_SIZE: 10000
+    MAX_LOG_SIZE: 10000
 }
 const frame = jb.frame
 jb.spySettings = spySettings
@@ -3000,9 +3000,13 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			return this._obs
 		},
 		enabled: () => true,
+		parseLogsList(list, depth = 0) {
+			if (depth > 3) return []
+			return (list || '').split(',').filter(x => x[0] !== '-').filter(x => x)
+				.flatMap(x=> settings.groups[x] ? this.parseLogsList(settings.groups[x],depth+1) : [x])
+		},
 		init() {
-			const includeLogsFromParam = (this.spyParam || '').split(',').filter(x => x[0] !== '-').filter(x => x)
-				.flatMap(x=>Object.keys(settings.groups).indexOf(x) == -1 ? [x] : settings.groups[x].split(','))
+			const includeLogsFromParam = this.parseLogsList(this.spyParam)
 			const excludeLogsFromParam = (this.spyParam || '').split(',').filter(x => x[0] === '-').map(x => x.slice(1))
 			this.includeLogs = settings.includeLogs.split(',').concat(includeLogsFromParam).filter(log => excludeLogsFromParam.indexOf(log) === -1).reduce((acc, log) => {
 				acc[log] = true
@@ -3011,7 +3015,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			this.initialized = true
 		},
 		shouldLog(logName, record) {
-			return this.spyParam === 'all' || Array.isArray(record) && this.includeLogs[logName] && !settings.extraIgnoredEvents.includes(record[0])
+			return this.spyParam === 'all' || Array.isArray(record) && this.includeLogs[logName]
 		},
 		log(logName, record, {takeFrom, funcTitle, modifier} = {}) {
 			if (!this.initialized) this.init()
@@ -3581,8 +3585,9 @@ jb.component('rx.log', {
   description: 'jb.log flow data, used for debug',
   params: [
     {id: 'name', as: 'string'},
+    {id: 'extra', as: 'array', dynamic: true, defaultValue: []},
   ],
-  impl: (ctx,name) => ctx.run(rx.do(_ctx => jb.log(name,[_ctx.data,_ctx.vars,ctx])))
+  impl: (ctx,name,extra) => ctx.run(rx.do(_ctx => jb.log(name,[...extra(_ctx),_ctx.data,_ctx.vars,ctx])))
 })
 
 jb.component('rx.clog', {
@@ -4627,6 +4632,7 @@ function setAtt(elem,att,val) {
         } catch (e) {}
         jb.log('htmlChange',[`vars__ ${id}`,...arguments])
     } else if (att === '$focus' && val) {
+        elem.setAttribute('_focus',val)
         jb.ui.focus(elem,val)
     } else if (att === '$text') {
         elem.innerText = val || ''
@@ -4673,8 +4679,8 @@ function unmount(elem) {
         if (widget.frontEnd) return
         groupByWidgets[widget.widgetid] = groupByWidgets[widget.widgetid] || { cmps: []}
         const destroyCtxs = (el.getAttribute('methods')||'').split(',').filter(x=>x.indexOf('destroy-') == 0).map(x=>x.split('destroy-').pop())
-        const cmpId = el.getAttribute('cmp-id')
-        groupByWidgets[widget.widgetid].cmps.push({cmpId,destroyCtxs})
+        const cmpId = el.getAttribute('cmp-id'), ver = el.getAttribute('cmp-ver')
+        groupByWidgets[widget.widgetid].cmps.push({cmpId,ver,el,destroyCtxs})
     })
     jb.entries(groupByWidgets).forEach(([widgetId,val])=>
         jb.ui.BECmpsDestroyNotification.next({
@@ -4730,21 +4736,25 @@ Object.assign(jb.ui, {
         const widgetId = ev.widgetId || jb.ui.getWidgetId(elem)
         return ctxIdToRun && {$:'runCtxAction', widgetId, ctxIdToRun, vars: {ev: jb.ui.buildUserEvent(ev, elem)} }
     },
+    calcElemProps(elem) {
+        return elem instanceof VNode ? {} : { 
+            outerHeight: jb.ui.outerHeight(elem), outerWidth: jb.ui.outerWidth(elem), 
+            clientRect: elem.getBoundingClientRect() 
+        }
+    },
     buildUserEvent(ev, elem) {
         if (!ev) return null
         const userEvent = {
             value: (ev.target || {}).value, 
-            elem: elem instanceof VNode ? {} : { 
-                outerHeight: jb.ui.outerHeight(elem), outerWidth: jb.ui.outerWidth(elem), 
-                clientRect: elem.getBoundingClientRect() 
-            },
+            elem: jb.ui.calcElemProps(elem),
             ev: {},
         }
         const evProps = (elem.getAttribute('userEventProps') || '').split(',').filter(x=>x).filter(x=>x.split('.')[0] != 'elem')
         const elemProps = (elem.getAttribute('userEventProps') || '').split(',').filter(x=>x).filter(x=>x.split('.')[0] == 'elem').map(x=>x.split('.')[1])
-        ;['type','keycode','clientX','clientY', ...evProps].forEach(prop=>userEvent.ev[prop] = ev[prop])
+        ;['type','keyCode','ctrlKey','alyKey','clientX','clientY', ...evProps].forEach(prop=> ev[prop] != null && (userEvent.ev[prop] = ev[prop]))
         ;['id', 'class', ...elemProps].forEach(prop=>userEvent.elem[prop] = elem.getAttribute(prop))
         elem._component && elem._component.enrichUserEvent(ev,userEvent)
+        if (ev.fixedTarget) userEvent.elem = jb.ui.calcElemProps(ev.fixedTarget) // enrich UserEvent can 'fix' the target, e.g. picking the selected node in tree
         return userEvent
     },
     ctxIdOfMethod(elem,action) {
@@ -4773,7 +4783,7 @@ Object.assign(jb.ui, {
         else {
             if (!jb.ctxDictionary[ctxIdToRun])
                 return jb.logError(`no ctx found for method: ${method} ${ctxIdToRun}`, elem, data, vars)
-            jb.log('BEMethod',[method,data,vars])
+            jb.log('BEMethod',[method,elem,data,vars])
             jb.ui.runCtxAction(jb.ctxDictionary[ctxIdToRun],data,vars)
         }
     },
@@ -4790,7 +4800,7 @@ Object.assign(jb.ui, {
         const {pipe,take,filter,log,takeUntil} = jb.callbag
         return takeUntil(pipe(jb.ui.BECmpsDestroyNotification,
             log(`takeUntilCmpDestroyed ${cmp.cmpId}`),
-            filter(x=>x.cmps.find(_cmp => _cmp.cmpId == cmp.cmpId)),
+            filter(x=>x.cmps.find(_cmp => _cmp.cmpId == cmp.cmpId && _cmp.ver == cmp.ver)),
             log(`Activated takeUntilCmpDestroyed ${cmp.cmpId}`),
             take(1),
         ))
@@ -4972,11 +4982,11 @@ class frontEndCmp {
             const vars = {cmp: this, $state: this.state, el: this.base, ...this.base.vars, ..._vars }
             const ctxToUse = this.ctx.setData(data).setVars(vars)
             if (feMEthod.frontEndMethod._prop)
-                jb.log('FEProp',[feMEthod.frontEndMethod._prop,feMEthod.frontEndMethod,ctxToUse])
+                jb.log('FEProp',[feMEthod.frontEndMethod._prop,this.base,feMEthod.frontEndMethod,ctxToUse])
             else if (feMEthod.frontEndMethod._flow)
-                jb.log('FEFlow',[...feMEthod.frontEndMethod._flow,feMEthod.frontEndMethod,ctxToUse])
+                jb.log('FEFlow',[this.base,...feMEthod.frontEndMethod._flow,feMEthod.frontEndMethod,ctxToUse])
             else 
-                jb.log('FEMethod',[method,feMEthod.frontEndMethod,ctxToUse])
+                jb.log('FEMethod',[method,this.base,feMEthod.frontEndMethod,ctxToUse])
             ctxToUse.run(feMEthod.frontEndMethod.action)
         }, `frontEnd-${method}`))
     }
@@ -5037,7 +5047,7 @@ jb.callbag.subscribe(e=> {
         jb.ui.widgetUserRequests.next({$:'destroy', ...e })
     else 
         cmps.forEach(cmp=>cmp.destroyCtxs.forEach(ctxIdToRun => {
-            jb.log('BEMethod',['destroy'])
+            jb.log('BEMethod',['destroy',cmp.el])
             jb.ui.runCtxAction(jb.ctxDictionary[ctxIdToRun])
         } ))
 })(jb.ui.BECmpsDestroyNotification)
@@ -5210,7 +5220,7 @@ class JbComponent {
         (this.method||[]).filter(h=> h.id == method)[0]
     }
     runBEMethod(method, data, vars) {
-        jb.log('BEMethod',[method,data,vars])
+        jb.log('BEMethod',[method,this,data,vars])
         if (jb.path(vars,'$state'))
             Object.assign(this.state,vars.$state)
         const methodImpls = (this.method||[]).filter(h=> h.id == method)
@@ -5220,6 +5230,7 @@ class JbComponent {
     }
     refresh(state,options) {
         const elem = jb.ui.elemOfCmp(this.ctx,this.cmpId)
+        jb.ui.BECmpsDestroyNotification.next({ cmps: [{cmpId: this.cmpId, ver: this.ver, destroyCtxs: [] }] })
         elem && jb.ui.refreshElem(elem,state,options) // cmpId may be deleted
     }
     calcCssLines() {
@@ -5339,7 +5350,7 @@ Object.assign(jb.ui,{
         const now = new Date().getTime();
         const lastStudioActivity = jb.studio.lastStudioActivity || jb.path(jb,['studio','studioWindow','jb','studio','lastStudioActivity'])
         jb.log('focus',['request',srcCtx, logTxt, now - lastStudioActivity, elem,srcCtx])
-        if (jb.studio.previewjb == jb && lastStudioActivity && now - lastStudioActivity < 1000)
+        if (jb.studio.previewjb == jb && jb.path(jb.frame.parent,'jb.resources.studio.project') != 'studio-helper' && lastStudioActivity && now - lastStudioActivity < 1000)
             return
         jb.delay(1).then(_=> {
           jb.log('focus',['apply',srcCtx,logTxt,elem,srcCtx])
@@ -5951,12 +5962,11 @@ jb.component('refreshControlById', {
 
 jb.component('group.autoFocusOnFirstInput', {
   type: 'feature',
-  impl: ctx => ({
-      afterViewInit: cmp => {
-          const elem = Array.from(cmp.base.querySelectorAll('input,textarea,select'))
-            .filter(e => e.getAttribute('type') != 'checkbox')[0];
-          elem && jb.ui.focus(elem,'group.auto-focus-on-first-input',ctx);
-        }
+  impl: templateModifier(({},{vdom}) => {
+    const elem = vdom.querySelector('input,textarea,select').filter(e => e.getAttribute('type') != 'checkbox')[0]
+    if (elem)
+      elem.setAttribute('$focus','autoFocusOnFirstInput')
+    return vdom
   })
 })
 
@@ -6197,29 +6207,31 @@ jb.component('feature.classOnHover', {
     )
 })
 
-// jb.component('key.eventMatchKey', {
-//     type: 'boolean',
-//     params: [
-//         {id: 'event'},
-//         {id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V' },
-//     ],
-//     impl: (ctx, e, key) => {
-//         if (!key) return;
-//       const dict = { tab: 9, delete: 46, tab: 9, esc: 27, enter: 13, right: 39, left: 37, up: 38, down: 40}
+jb.component('key.eventMatchKey', {
+    type: 'boolean',
+    params: [
+        {id: 'event'},
+        {id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V' },
+    ],
+    impl: (ctx, e, key) => {
+      jb.log('eventMatchKey',[e,key])
+      if (!key) return;
+      const dict = { tab: 9, delete: 46, tab: 9, esc: 27, enter: 13, right: 39, left: 37, up: 38, down: 40}
     
-//       key = key.replace(/-/,'+');
-//       const keyWithoutPrefix = key.split('+').pop()
-//       let keyCode = dict[keyWithoutPrefix.toLowerCase()]
-//       if (+keyWithoutPrefix)
-//         keyCode = +keyWithoutPrefix
-//       if (keyWithoutPrefix.length == 1)
-//         keyCode = keyWithoutPrefix.charCodeAt(0);
+      key = key.replace(/-/,'+');
+      const keyWithoutPrefix = key.split('+').pop()
+      let keyCode = dict[keyWithoutPrefix.toLowerCase()]
+      if (+keyWithoutPrefix)
+        keyCode = +keyWithoutPrefix
+      if (keyWithoutPrefix.length == 1)
+        keyCode = keyWithoutPrefix.charCodeAt(0)
     
-//         if (key.match(/^[Cc]trl/) && !e.ctrlKey) return;
-//         if (key.match(/^[Aa]lt/) && !e.altKey) return;
-//         return e.keyCode == keyCode
-//   }
-// })
+      if (key.match(/^[Cc]trl/) && !e.ctrlKey) return
+      if (key.match(/^[Aa]lt/) && !e.altKey) return
+      jb.log('eventMatchKey',['result',e.keyCode == keyCode,e,key,e.keyCode,keyCode])
+      return e.keyCode == keyCode
+  }
+})
 
 jb.component('key.eventToMethod', {
   type: 'boolean',
@@ -6312,16 +6324,16 @@ jb.component('feature.onEsc', {
     impl: feature.onKey('Esc',call('action'))
 })
 
-jb.component('frontEnd.updateState', {
-  type: 'rx',
-  category: 'operator',
-  description: 'set state for FE',
-  params: [
-    {id: 'prop', as: 'string', dynamic: true},
-    {id: 'value', dynamic: true},
-  ],
-  impl: rx.do((ctx,{cmp},{prop,value}) => cmp.state[prop(ctx)] = value(ctx))
-})
+// jb.component('frontEnd.updateState', {
+//   type: 'rx',
+//   category: 'operator',
+//   description: 'set state for FE',
+//   params: [
+//     {id: 'prop', as: 'string', dynamic: true},
+//     {id: 'value', dynamic: true},
+//   ],
+//   impl: rx.do((ctx,{cmp},{prop,value}) => cmp.state[prop(ctx)] = value(ctx))
+// })
 
 jb.component('frontEnd.selectionKeySourceService', {
   type: 'feature',
@@ -6796,7 +6808,7 @@ jb.component('group.wait', {
         return cmp.ctx.profile.$ == 'itemlist' ? [[ctrl]] : [ctrl]
       },
         priority: ctx => jb.path(ctx.vars.$state,'dataArrived') ? 0: 10
-      }),
+    }),
     followUp.action((ctx,{cmp},{varName,passRx}) => !cmp.state.dataArrived && !cmp.state.error &&
         Promise.resolve(jb.toSynchArray(ctx.componentContext.params.for(),!passRx))
         .then(data => cmp.refresh({ dataArrived: true }, {
@@ -7468,16 +7480,13 @@ jb.component('dialog.closeDialog', {
 	params: [
 		{id: 'OK', type: 'boolean', as: 'boolean', defaultValue: true},
 	],
-	impl: runActions(
-		action.if(and('%$OK%','%$dialog.hasFields%', (ctx,{$dialog}) => 
+	impl: action.if('%$$dialog%' , runActions(
+		action.if(and('%$OK%','%$$dialog.hasFields%', (ctx,{$dialog}) => 
 			jb.ui.checkFormValidation && jb.ui.checkFormValidation(jb.ui.elemOfCmp(ctx, $dialog.cmpId)))),
-		action.if(not('%$formContainer.err%'),
-			runActions(
-				(ctx,{$dialog},{OK}) => OK && $dialog.ctx.params.onOK(ctx),
-				action.subjectNext(dialogs.changeEmitter(), obj(prop('close',true), prop('dialogId','%$$dialog/id%')))
-			)
-		)
-	)
+		action.if(and('%$OK%', not('%$formContainer.err%')), (ctx,{$dialog}) => $dialog.ctx.params.onOK(ctx)),
+		action.if(or(not('%$OK%'), not('%$formContainer.err%')),
+			action.subjectNext(dialogs.changeEmitter(), obj(prop('close',true), prop('dialogId','%$$dialog/id%'))))
+	))
 })
 
 jb.component('dialog.closeDialogById', {
@@ -7536,16 +7545,16 @@ jb.component('dialogFeature.uniqueDialog', {
 	params: [
 	  {id: 'id', as: 'string'},
 	],
-	impl: features(
+	impl: If('%$id%', features(
 		feature.init(writeValue('%$$dialog/id%','%$id%')),
 		followUp.flow(
 			source.data(ctx => jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog')),
 			rx.filter(({data},{cmp},{id}) => data.getAttribute('id') == id && data.getAttribute('cmp-id') != cmp.cmpId ),
 			rx.map(({data}) => data.getAttribute('cmp-id')),
-			rx.map(obj(prop('closeByCmpId',true), prop('cmpId','%%'))),
+			rx.map(obj(prop('closeByCmpId',true), prop('cmpId','%%'), prop('dialogId','%$id%'))),
 			sink.subjectNext(dialogs.changeEmitter())
 		)
-	)
+	))
 })
 
 jb.component('source.mouseMoveIncludingPreview', {
@@ -7766,7 +7775,8 @@ jb.component('dialog.dialogOkCancel', {
 				h('button#mdc-button', {onclick: 'dialogCloseOK' },[h('div#mdc-button__ripple'), h('span#mdc-button__label',{},okLabel)]),
 			]),
 		]),
-    css: '>.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }'
+	css: '>.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }',
+	features: dialogFeature.maxZIndexOnClick()
   })
 })
 
@@ -7880,20 +7890,20 @@ jb.component('dialogs.defaultStyle', {
 				rx.filter('%open%'),
 				rx.var('dialogVdom', pipeline(dialog.buildComp('%dialog%'),'%renderVdomAndFollowUp()%')),
 				rx.var('delta', obj(prop('children', obj(prop('toAppend','%$dialogVdom%'))))),
-				rx.log('addDialog'),
+				rx.log('addDialog','%dialog/id%'),
 				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
 			),
 			followUp.flow(source.subject(dialogs.changeEmitter()), 
 				rx.filter('%close%'),
 				rx.var('dlgCmpId', dialogs.cmpIdOfDialog('%dialogId%')),
 				rx.var('delta', obj(prop('children', obj(prop('deleteCmp','%$dlgCmpId%'))))),
-				rx.log('closeDialog'),
+				rx.log('closeDialog','%dialogId%'),
 				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
 			),
 			followUp.flow(source.subject(dialogs.changeEmitter()), 
 				rx.filter('%closeByCmpId%'),
 				rx.var('delta', obj(prop('children', obj(prop('deleteCmp','%cmpId%'))))),
-				rx.log('closeDialog'),
+				rx.log('closeDialog','%dialogId%'),
 				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
 			)			
 		]
@@ -8106,9 +8116,7 @@ jb.component('itemlist.selection', {
           rx.pipe(source.frontEndEvent('click'), rx.map(itemlist.ctxIdOfElem('%target%')), rx.filter('%%')),
           source.subject('%$cmp/selectionEmitter%')
         ),
-        rx.log('itemlist2'),
         rx.distinctUntilChanged(),
-        rx.log('itemlist3'),
         sink.action(runActions(action.runFEMethod('setSelected'), action.runBEMethod('onSelection')))
     )
   )
@@ -8288,7 +8296,7 @@ jb.component('itemlist.nextSelected', {
   ],
   impl: (ctx,diff,elementFilter) => {
     const {cmp} = ctx.vars
-    const ctxs = Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).filter(el=>elementFilter(el))
+    const ctxs = Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).filter(el=>elementFilter(ctx.setData(el)))
       .map(el=>+el.getAttribute('jb-ctx'))
     const selectedIndex = ctxs.indexOf(+cmp.state.selected) + diff
     return ctxs[Math.min(ctxs.length-1,Math.max(0,selectedIndex))]
@@ -8525,13 +8533,13 @@ jb.component('menu.menu', {
   ],
   impl: ctx => ({
 		options: function(ctx2) {
-      const ctxWithDepth = ctx2.setVar('menuDepth',this.ctx.vars.menuDepth)
+      const ctxWithDepth = (ctx2 || ctx).setVar('menuDepth',this.ctx.vars.menuDepth)
       return ctx.params.optionsFilter(ctx.setData(ctx.params.options(ctxWithDepth)))
     },
     title: ctx.params.title(),
     icon: ctx.params.icon,
-		applyShortcut: function(e) {
-			return this.options().reduce((res,o)=> res || (o.applyShortcut && o.applyShortcut(e)),false)
+		runShortcut: function(event) {
+			return this.options().reduce((res,o)=> res || (o.runShortcut && o.runShortcut(event)),false)
 		},
 		ctx: ctx.setVar('menuDepth', (ctx.vars.menuDepth || 0)+1)
 	})
@@ -8578,13 +8586,10 @@ jb.component('menu.action', {
 			action: _ => ctx.params.action(ctx.setVars({topMenu:null})), // clean topMenu from context after the action
       title: ctx.params.title(ctx),
       shortcut: ctx.params.shortcut,
-			// applyShortcut: e=> {
-			// 	if (ctx.run(eventMatchKey(() => e, () => ctx.params.shortcut))) {
-			// 		e.stopPropagation();
-			// 		ctx.params.action();
-			// 		return true;
-			// 	}
-			// },
+			runShortcut: event => {
+				if (ctx.run(key.eventMatchKey(() => event.ev, () => ctx.params.shortcut)))
+					ctx.params.action()
+			},
 			ctx: ctx.setVar('menuDepth', (ctx.vars.menuDepth || 0)+1)
 		})
 })
@@ -8682,6 +8687,7 @@ jb.component('menu.initPopupMenu', {
       }))
     )),
     method('closePopup', dialog.closeDialogById('%$optionsParentId%')),
+    method('openNewPopup', runActions(action.runBEMethod('closePopup'), action.runBEMethod('openPopup'))),
     frontEnd.onDestroy(action.runBEMethod('closePopup')),
     menu.passMenuKeySource(),
     frontEnd.flow(source.findMenuKeySource(), rx.filter('%keyCode%==39'), sink.BEMethod('openPopup')),
@@ -8735,7 +8741,7 @@ jb.component('menuStyle.applyMultiLevel', {
 //             jb.ui.focus(cmp.base,'menu.keyboard init autoFocus',ctx);
 //       	};
 //         const keydown = ctx.vars.topMenu.keydown.takeUntil( cmp.destroyed );
-//         keydown.subscribe(e=>cmp.ctx.vars.topMenu.applyShortcut(e))
+//         keydown.subscribe(e=>cmp.ctx.vars.topMenu.runShortcut(e))
 //       }
 //     })
 // })
@@ -8760,6 +8766,7 @@ jb.component('menu.selection', {
         .filter(el => $props.selected == el.getAttribute('jb-ctx'))
         .forEach(el => el.addClass('selected'))
     ),
+    method('closeMenu',dialog.closeDialog()),
     frontEnd.init(({},{cmp,el}) => cmp.state.selected = jb.ui.find(el,'.jb-item,*>.jb-item,*>*>.jb-item')
       .filter(el=>jb.ui.hasClass(el,'selected')).map(el=>+el.getAttribute('jb-ctx'))[0]
     ),
@@ -8779,11 +8786,12 @@ jb.component('menu.selection', {
     frontEnd.flow(source.findMenuKeySource(), 
       rx.filter(not('%ctrlKey%')),
       rx.filter(inGroup(list(38,40),'%keyCode%')),
-      rx.map(itemlist.nextSelected(If('%keyCode%==40',1,-1), not('%separator%'))),
+      rx.map(itemlist.nextSelected(If('%keyCode%==40',1,-1), menu.notSeparator('%%') )),
       sink.FEMethod('setSelected')
     ),
+    frontEnd.flow(source.findMenuKeySource(), rx.filter('%keyCode%==27'), sink.BEMethod('closeMenu')),
     frontEnd.flow(source.frontEndEvent('mousemove'),
-      rx.filter(not('%target/separator%')),
+      rx.filter(menu.notSeparator('%target%')),
       rx.var('elem',({data}) => data.target.ownerDocument.elementsFromPoint(data.pageX, data.pageY)[0]),
       rx.var('ctxId',itemlist.ctxIdOfElem('%$elem%')),
       rx.map('%$ctxId%'),
@@ -8809,6 +8817,7 @@ jb.component('menu.selectionKeySourceService', {
         }
         return true
       }
+      jb.ui.focus(el,'menu.selectionKeySourceService',ctx.componentContext)
       jb.log('menuKeySource',['registered',cmp,el,ctx])
       return pipe(el.keydown_src, takeUntil(cmp.destroyed))
     })
@@ -8855,7 +8864,7 @@ jb.component('menu.isRelevantMenu', {
     const depth = +el.getAttribute('menudepth') || 0
     const isSelected = jb.ui.parents(el,{includeSelf: true}).find(el=>jb.ui.hasClass(el,'selected'))
     const isMenu = jb.ui.hasClass(el,'jb-itemlist')
-    const upDownInMenu = isMenu && (key == 40 || key == 38) && depth == maxDepth
+    const upDownInMenu = isMenu && (key == 40 || key == 38 || key == 27) && depth == maxDepth
     const leftArrowEntryBefore = isSelected && (key == 37 || key == 27) && depth == maxDepth 
     const rightArrowCurrentEntry = isSelected && (key == 39 || key == 13) && depth == maxDepth + 1
     const res = upDownInMenu || leftArrowEntryBefore || rightArrowCurrentEntry
@@ -8903,8 +8912,15 @@ jb.component('menuStyle.popupThumb', {
   type: 'menu.style',
   description: 'used for pulldown',
   impl: customStyle({
-    template: ({},{title},h) => h('div#pulldown-top-menu-item',{ onmouseenter: 'mouseEnter', onclick: 'openPopup'}, title),
-    features: [menu.initPopupMenu(), mdc.rippleEffect()]
+    template: ({},{title},h) => h('div#pulldown-top-menu-item',{ onclick: 'openPopup'}, title),
+    features: [
+      menu.initPopupMenu(), 
+      mdc.rippleEffect(),
+      frontEnd.flow(source.frontEndEvent('mouseenter'), 
+        rx.filter(ctx => jb.ui.find(ctx,'.pulldown-mainmenu-popup')[0]), // the first 'open popup' needs a click
+        sink.BEMethod('openNewPopup')
+      )
+    ]
   })
 })
 
@@ -8934,10 +8950,17 @@ jb.component('dialog.contextMenuPopup', {
 jb.component('menuSeparator.line', {
   type: 'menu-separator.style',
   impl: customStyle({
-    template: ({},{},h) => h('div'),
+    template: ({},{},h) => h('div', {separator: true}),
     css: '{ margin: 6px 0; border-bottom: 1px solid #EBEBEB;}',
-    features: frontEnd.prop('separator',true)
   })
+})
+
+jb.component('menu.notSeparator',{
+  type: 'boolean',
+  params: [
+    { id: 'elem' }
+  ],
+  impl: (ctx,elem) => elem.firstElementChild && !elem.firstElementChild.getAttribute('separator')
 })
 
 /***** icon menus */
@@ -10060,7 +10083,7 @@ jb.component('editableText.mdcInput', {
         ].filter(x=>x).join(' ') },[
           ...(cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'pre').map(h).map(vdom=>vdom.addClass('mdc-text-field__icon mdc-text-field__icon--leading')),
           h('input#mdc-text-field__input', { type: 'text', id: 'input_' + fieldId,
-              value: databind, onchange: true, onkeyup: true, onblur: true,
+              value: databind, onchange: true, onkeyup: true, onblur: true, autocomplete: 'chrome-off'
           }),
           ...(cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-text-field__icon mdc-text-field__icon--trailing')),
           ...[!noLabel && h('label#mdc-floating-label', { class: databind ? 'mdc-floating-label--float-above' : '', for: 'input_' + fieldId},title() )].filter(x=>x),
@@ -11158,11 +11181,15 @@ jb.component('tree.initTree', {
 		calcProp('model','%$$model/nodeModel()%'),
 		method('flipExpandCollapse', runActions(
 			({},{$state,ev}) => $state.expanded[ev.path] = !$state.expanded[ev.path],
-			//writeValue('%$$state/expanded/{%$ev/path%}%', not('%$$state/expanded/{%$ev/path%}%')),
 			action.refreshCmp('%$$state%')
 		)),
 		userStateProp('expanded', ({},{$state,$props}) => ({...$state.expanded, [$props.model.rootPath]: true})),
-		frontEnd.enrichUserEvent(({},{cmp,ev}) => ({ path: cmp.elemToPath(ev.target)})),
+		frontEnd.enrichUserEvent(({},{cmp,ev}) => {
+			const el = jb.ui.find(ev.target,'.selected')[0] || ev.target
+			const labelEl = jb.ui.find(el,'.treenode-label')[0] || el
+			ev.fixedTarget = labelEl
+			return { path: cmp.elemToPath(el) }
+		}),
 		frontEnd.prop('elemToPath',() => el => el && (el.getAttribute('path') || jb.ui.closest(el,'.treenode') && jb.ui.closest(el,'.treenode').getAttribute('path'))),
 		css('{user-select: none}')
 	)
@@ -11315,8 +11342,8 @@ jb.component('tree.selection', {
 			(autoSelectFirst && $props.noHead ? $props.model.children($props.model.rootPath)[0] : $props.model.rootPath )
 	  }),
 	  followUp.flow(source.data('%$$props/selected%'),
-		  rx.filter(and('%$autoSelectFirst%','%$$state/refresh%')),
-		  sink.BEMethod('onSelection')
+	  	rx.filter(and('%$autoSelectFirst%',not('%$$state/refresh%'))),
+		sink.BEMethod('onSelection')
 	  ),
 	  frontEnd.method('applyState', ({},{cmp}) => {
 		Array.from(jb.ui.findIncludeSelf(cmp.base,'.treenode.selected'))
@@ -11326,8 +11353,8 @@ jb.component('tree.selection', {
 		  .forEach(elem=> {elem.classList.add('selected'); elem.scrollIntoViewIfNeeded()})
 	  }),
 	  frontEnd.method('setSelected', ({data},{cmp}) => {
-		  cmp.state.selected = data
-		  cmp.runFEMethod('applyState')
+		cmp.base.state.selected = cmp.state.selected = data
+		cmp.runFEMethod('applyState')
 	  }),
   
 	  frontEnd.prop('selectionEmitter', rx.subject()),
@@ -11341,7 +11368,9 @@ jb.component('tree.selection', {
 			rx.pipe(source.frontEndEvent('click'), rx.map(tree.pathOfElem('%target%')), rx.filter('%%')),
 			source.subject('%$cmp.selectionEmitter%')
 		  ),
-		  rx.filter('%%'),rx.distinctUntilChanged(),
+		  rx.filter('%%'),
+		  rx.filter(({data},{cmp}) => cmp.state.selected != data),
+		  rx.distinctUntilChanged(),
 		  sink.action(runActions(action.runFEMethod('setSelected'), action.runBEMethod('onSelection')))
 	  )
 	)
@@ -11360,7 +11389,7 @@ jb.component('tree.keyboardSelection', {
 	impl: features(
 	  htmlAttribute('tabIndex',0),
 	  method('onEnter', call('onEnter')),
-	  method('applyMenuShortcuts', call('applyMenuShortcuts')),
+	  method('runShortcut', (ctx,{},{applyMenuShortcuts}) => applyMenuShortcuts(ctx.setData(ctx.vars.path)).runShortcut(ctx.data) ),
 	  method('expand', (ctx,{cmp,$props,$state},{onRightClickOfExpanded}) => {
 		const {expanded} = $state, selected = ctx.data
 		$state.selected = selected
@@ -11388,23 +11417,20 @@ jb.component('tree.keyboardSelection', {
 	  ),
 	  frontEnd.flow('%$cmp.onkeydown%', rx.filter('%keyCode%==39'), sink.BEMethod('expand','%$cmp.state.selected%')),
 	  frontEnd.flow('%$cmp.onkeydown%', rx.filter('%keyCode%==37'), sink.BEMethod('collapse','%$cmp.state.selected%')),
+	  frontEnd.flow(
+		source.callbag(({},{cmp}) => 
+		  	jb.callbag.create(obs=> cmp.base.onkeydown = ev => { obs(ev); return false } // stop propagation
+		)),
+		rx.filter(({data}) => (data.ctrlKey || data.altKey || data.keyCode == 46) // Delete
+			  && (data.keyCode != 17 && data.keyCode != 18)), // ctrl or alt alone
+		frontEnd.addUserEvent(),
+		sink.BEMethod('runShortcut','%$ev%',obj(prop('path','%$cmp.state.selected%')))
+	  ),
 	  frontEnd.flow(source.frontEndEvent('click'), sink.FEMethod('regainFocus')),
 
 	  frontEnd.method('regainFocus', action.focusOnCmp('tree regain focus')),
+	  passPropToFrontEnd('autoFocus','%$autoFocus%'),
 	  frontEnd.init(If('%$autoFocus%', action.focusOnCmp('tree autofocus') )),
-	  frontEnd.init((ctx,{cmp})=>{
-			// menu shortcuts - delay in order not to block registration of other features
-			jb.delay(1).then(_=> cmp.base && (cmp.base.onkeydown = e => {
-				if ((e.ctrlKey || e.altKey || e.keyCode == 46) // also Delete
-						&& (e.keyCode != 17 && e.keyCode != 18)) { // ctrl or alt alone
-					ctx.run(action.runBEMethod('applyMenuShortcuts',() => cmp.state.selected))
-					// const menu = applyMenuShortcuts(ctx.setData(cmp.state.selected));
-					// if (menu && menu.applyShortcut && menu.applyShortcut(e))
-					// 	return false  // stop propagation
-				}
-				return false  // stop propagation
-			}))
-	  })
 	)
 })
 

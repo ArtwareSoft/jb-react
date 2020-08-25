@@ -102,7 +102,7 @@ jb.component('group.wait', {
         return cmp.ctx.profile.$ == 'itemlist' ? [[ctrl]] : [ctrl]
       },
         priority: ctx => jb.path(ctx.vars.$state,'dataArrived') ? 0: 10
-      }),
+    }),
     followUp.action((ctx,{cmp},{varName,passRx}) => !cmp.state.dataArrived && !cmp.state.error &&
         Promise.resolve(jb.toSynchArray(ctx.componentContext.params.for(),!passRx))
         .then(data => cmp.refresh({ dataArrived: true }, {

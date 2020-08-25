@@ -49,11 +49,11 @@ jb.component('studio.properties', {
             controls: studio.propertyToolbar('%path%'),
             features: [field.columnWidth('20')]
           }),
-          group({
-            title: 'pptr actions',
-            controls: studio.pptrToolbar('%path%'),
-            features: [field.columnWidth('20')]
-          })
+          // group({
+          //   title: 'pptr actions',
+          //   controls: studio.pptrToolbar('%path%'),
+          //   features: [field.columnWidth('20')]
+          // })
         ],
         chapterHeadline: text({
           text: ({data}) => {
@@ -80,7 +80,8 @@ jb.component('studio.properties', {
           }),
           tableTree.expandPath(studio.lastEdit()),
           tableTree.expandPath('%$innerPath%'),
-          tableTree.dragAndDrop()
+          tableTree.dragAndDrop(),
+          tableTree.resizer()
         ]
       }),
       group({

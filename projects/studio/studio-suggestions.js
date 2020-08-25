@@ -116,10 +116,10 @@ jb.component('studio.jbFloatingInput', {
               watchRef({ref: studio.ref('%$path%'), strongRefresh: true}),
               feature.onKey('Right', studio.applyOption('/')),
               feature.onKey('Enter', runActions(studio.applyOption(), dialog.closeDialogById('studio-jb-editor-popup'), tree.regainFocus())),
+              feature.onKey('Esc', runActions(dialog.closeDialogById('studio-jb-editor-popup'), tree.regainFocus())),
               editableText.picklistHelper({
                 showHelper: studio.shouldShowSuggestions(),
                 options: studio.suggestions('%$path%'),
-                onEsc: runActions(dialog.closeDialogById('studio-jb-editor-popup'), tree.regainFocus()),
                 picklistStyle: studio.suggestionList()
               }),
               css.width('100%'),

@@ -203,9 +203,7 @@ jb.component('itemlist.selection', {
           rx.pipe(source.frontEndEvent('click'), rx.map(itemlist.ctxIdOfElem('%target%')), rx.filter('%%')),
           source.subject('%$cmp/selectionEmitter%')
         ),
-        rx.log('itemlist2'),
         rx.distinctUntilChanged(),
-        rx.log('itemlist3'),
         sink.action(runActions(action.runFEMethod('setSelected'), action.runBEMethod('onSelection')))
     )
   )
@@ -385,7 +383,7 @@ jb.component('itemlist.nextSelected', {
   ],
   impl: (ctx,diff,elementFilter) => {
     const {cmp} = ctx.vars
-    const ctxs = Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).filter(el=>elementFilter(el))
+    const ctxs = Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).filter(el=>elementFilter(ctx.setData(el)))
       .map(el=>+el.getAttribute('jb-ctx'))
     const selectedIndex = ctxs.indexOf(+cmp.state.selected) + diff
     return ctxs[Math.min(ctxs.length-1,Math.max(0,selectedIndex))]

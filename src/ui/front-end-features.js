@@ -204,29 +204,31 @@ jb.component('feature.classOnHover', {
     )
 })
 
-// jb.component('key.eventMatchKey', {
-//     type: 'boolean',
-//     params: [
-//         {id: 'event'},
-//         {id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V' },
-//     ],
-//     impl: (ctx, e, key) => {
-//         if (!key) return;
-//       const dict = { tab: 9, delete: 46, tab: 9, esc: 27, enter: 13, right: 39, left: 37, up: 38, down: 40}
+jb.component('key.eventMatchKey', {
+    type: 'boolean',
+    params: [
+        {id: 'event'},
+        {id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V' },
+    ],
+    impl: (ctx, e, key) => {
+      jb.log('eventMatchKey',[e,key])
+      if (!key) return;
+      const dict = { tab: 9, delete: 46, tab: 9, esc: 27, enter: 13, right: 39, left: 37, up: 38, down: 40}
     
-//       key = key.replace(/-/,'+');
-//       const keyWithoutPrefix = key.split('+').pop()
-//       let keyCode = dict[keyWithoutPrefix.toLowerCase()]
-//       if (+keyWithoutPrefix)
-//         keyCode = +keyWithoutPrefix
-//       if (keyWithoutPrefix.length == 1)
-//         keyCode = keyWithoutPrefix.charCodeAt(0);
+      key = key.replace(/-/,'+');
+      const keyWithoutPrefix = key.split('+').pop()
+      let keyCode = dict[keyWithoutPrefix.toLowerCase()]
+      if (+keyWithoutPrefix)
+        keyCode = +keyWithoutPrefix
+      if (keyWithoutPrefix.length == 1)
+        keyCode = keyWithoutPrefix.charCodeAt(0)
     
-//         if (key.match(/^[Cc]trl/) && !e.ctrlKey) return;
-//         if (key.match(/^[Aa]lt/) && !e.altKey) return;
-//         return e.keyCode == keyCode
-//   }
-// })
+      if (key.match(/^[Cc]trl/) && !e.ctrlKey) return
+      if (key.match(/^[Aa]lt/) && !e.altKey) return
+      jb.log('eventMatchKey',['result',e.keyCode == keyCode,e,key,e.keyCode,keyCode])
+      return e.keyCode == keyCode
+  }
+})
 
 jb.component('key.eventToMethod', {
   type: 'boolean',
@@ -319,16 +321,16 @@ jb.component('feature.onEsc', {
     impl: feature.onKey('Esc',call('action'))
 })
 
-jb.component('frontEnd.updateState', {
-  type: 'rx',
-  category: 'operator',
-  description: 'set state for FE',
-  params: [
-    {id: 'prop', as: 'string', dynamic: true},
-    {id: 'value', dynamic: true},
-  ],
-  impl: rx.do((ctx,{cmp},{prop,value}) => cmp.state[prop(ctx)] = value(ctx))
-})
+// jb.component('frontEnd.updateState', {
+//   type: 'rx',
+//   category: 'operator',
+//   description: 'set state for FE',
+//   params: [
+//     {id: 'prop', as: 'string', dynamic: true},
+//     {id: 'value', dynamic: true},
+//   ],
+//   impl: rx.do((ctx,{cmp},{prop,value}) => cmp.state[prop(ctx)] = value(ctx))
+// })
 
 jb.component('frontEnd.selectionKeySourceService', {
   type: 'feature',

@@ -354,12 +354,11 @@ jb.component('refreshControlById', {
 
 jb.component('group.autoFocusOnFirstInput', {
   type: 'feature',
-  impl: ctx => ({
-      afterViewInit: cmp => {
-          const elem = Array.from(cmp.base.querySelectorAll('input,textarea,select'))
-            .filter(e => e.getAttribute('type') != 'checkbox')[0];
-          elem && jb.ui.focus(elem,'group.auto-focus-on-first-input',ctx);
-        }
+  impl: templateModifier(({},{vdom}) => {
+    const elem = vdom.querySelector('input,textarea,select').filter(e => e.getAttribute('type') != 'checkbox')[0]
+    if (elem)
+      elem.setAttribute('$focus','autoFocusOnFirstInput')
+    return vdom
   })
 })
 

@@ -23,11 +23,15 @@ jb.component('tree.initTree', {
 		calcProp('model','%$$model/nodeModel()%'),
 		method('flipExpandCollapse', runActions(
 			({},{$state,ev}) => $state.expanded[ev.path] = !$state.expanded[ev.path],
-			//writeValue('%$$state/expanded/{%$ev/path%}%', not('%$$state/expanded/{%$ev/path%}%')),
 			action.refreshCmp('%$$state%')
 		)),
 		userStateProp('expanded', ({},{$state,$props}) => ({...$state.expanded, [$props.model.rootPath]: true})),
-		frontEnd.enrichUserEvent(({},{cmp,ev}) => ({ path: cmp.elemToPath(ev.target)})),
+		frontEnd.enrichUserEvent(({},{cmp,ev}) => {
+			const el = jb.ui.find(ev.target,'.selected')[0] || ev.target
+			const labelEl = jb.ui.find(el,'.treenode-label')[0] || el
+			ev.fixedTarget = labelEl
+			return { path: cmp.elemToPath(el) }
+		}),
 		frontEnd.prop('elemToPath',() => el => el && (el.getAttribute('path') || jb.ui.closest(el,'.treenode') && jb.ui.closest(el,'.treenode').getAttribute('path'))),
 		css('{user-select: none}')
 	)
@@ -180,8 +184,8 @@ jb.component('tree.selection', {
 			(autoSelectFirst && $props.noHead ? $props.model.children($props.model.rootPath)[0] : $props.model.rootPath )
 	  }),
 	  followUp.flow(source.data('%$$props/selected%'),
-		  rx.filter(and('%$autoSelectFirst%','%$$state/refresh%')),
-		  sink.BEMethod('onSelection')
+	  	rx.filter(and('%$autoSelectFirst%',not('%$$state/refresh%'))),
+		sink.BEMethod('onSelection')
 	  ),
 	  frontEnd.method('applyState', ({},{cmp}) => {
 		Array.from(jb.ui.findIncludeSelf(cmp.base,'.treenode.selected'))
@@ -191,8 +195,8 @@ jb.component('tree.selection', {
 		  .forEach(elem=> {elem.classList.add('selected'); elem.scrollIntoViewIfNeeded()})
 	  }),
 	  frontEnd.method('setSelected', ({data},{cmp}) => {
-		  cmp.state.selected = data
-		  cmp.runFEMethod('applyState')
+		cmp.base.state.selected = cmp.state.selected = data
+		cmp.runFEMethod('applyState')
 	  }),
   
 	  frontEnd.prop('selectionEmitter', rx.subject()),
@@ -206,7 +210,9 @@ jb.component('tree.selection', {
 			rx.pipe(source.frontEndEvent('click'), rx.map(tree.pathOfElem('%target%')), rx.filter('%%')),
 			source.subject('%$cmp.selectionEmitter%')
 		  ),
-		  rx.filter('%%'),rx.distinctUntilChanged(),
+		  rx.filter('%%'),
+		  rx.filter(({data},{cmp}) => cmp.state.selected != data),
+		  rx.distinctUntilChanged(),
 		  sink.action(runActions(action.runFEMethod('setSelected'), action.runBEMethod('onSelection')))
 	  )
 	)
@@ -225,7 +231,7 @@ jb.component('tree.keyboardSelection', {
 	impl: features(
 	  htmlAttribute('tabIndex',0),
 	  method('onEnter', call('onEnter')),
-	  method('applyMenuShortcuts', call('applyMenuShortcuts')),
+	  method('runShortcut', (ctx,{},{applyMenuShortcuts}) => applyMenuShortcuts(ctx.setData(ctx.vars.path)).runShortcut(ctx.data) ),
 	  method('expand', (ctx,{cmp,$props,$state},{onRightClickOfExpanded}) => {
 		const {expanded} = $state, selected = ctx.data
 		$state.selected = selected
@@ -253,23 +259,20 @@ jb.component('tree.keyboardSelection', {
 	  ),
 	  frontEnd.flow('%$cmp.onkeydown%', rx.filter('%keyCode%==39'), sink.BEMethod('expand','%$cmp.state.selected%')),
 	  frontEnd.flow('%$cmp.onkeydown%', rx.filter('%keyCode%==37'), sink.BEMethod('collapse','%$cmp.state.selected%')),
+	  frontEnd.flow(
+		source.callbag(({},{cmp}) => 
+		  	jb.callbag.create(obs=> cmp.base.onkeydown = ev => { obs(ev); return false } // stop propagation
+		)),
+		rx.filter(({data}) => (data.ctrlKey || data.altKey || data.keyCode == 46) // Delete
+			  && (data.keyCode != 17 && data.keyCode != 18)), // ctrl or alt alone
+		frontEnd.addUserEvent(),
+		sink.BEMethod('runShortcut','%$ev%',obj(prop('path','%$cmp.state.selected%')))
+	  ),
 	  frontEnd.flow(source.frontEndEvent('click'), sink.FEMethod('regainFocus')),
 
 	  frontEnd.method('regainFocus', action.focusOnCmp('tree regain focus')),
+	  passPropToFrontEnd('autoFocus','%$autoFocus%'),
 	  frontEnd.init(If('%$autoFocus%', action.focusOnCmp('tree autofocus') )),
-	  frontEnd.init((ctx,{cmp})=>{
-			// menu shortcuts - delay in order not to block registration of other features
-			jb.delay(1).then(_=> cmp.base && (cmp.base.onkeydown = e => {
-				if ((e.ctrlKey || e.altKey || e.keyCode == 46) // also Delete
-						&& (e.keyCode != 17 && e.keyCode != 18)) { // ctrl or alt alone
-					ctx.run(action.runBEMethod('applyMenuShortcuts',() => cmp.state.selected))
-					// const menu = applyMenuShortcuts(ctx.setData(cmp.state.selected));
-					// if (menu && menu.applyShortcut && menu.applyShortcut(e))
-					// 	return false  // stop propagation
-				}
-				return false  // stop propagation
-			}))
-	  })
 	)
 })
 

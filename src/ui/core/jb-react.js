@@ -249,6 +249,7 @@ function setAtt(elem,att,val) {
         } catch (e) {}
         jb.log('htmlChange',[`vars__ ${id}`,...arguments])
     } else if (att === '$focus' && val) {
+        elem.setAttribute('_focus',val)
         jb.ui.focus(elem,val)
     } else if (att === '$text') {
         elem.innerText = val || ''
@@ -295,8 +296,8 @@ function unmount(elem) {
         if (widget.frontEnd) return
         groupByWidgets[widget.widgetid] = groupByWidgets[widget.widgetid] || { cmps: []}
         const destroyCtxs = (el.getAttribute('methods')||'').split(',').filter(x=>x.indexOf('destroy-') == 0).map(x=>x.split('destroy-').pop())
-        const cmpId = el.getAttribute('cmp-id')
-        groupByWidgets[widget.widgetid].cmps.push({cmpId,destroyCtxs})
+        const cmpId = el.getAttribute('cmp-id'), ver = el.getAttribute('cmp-ver')
+        groupByWidgets[widget.widgetid].cmps.push({cmpId,ver,el,destroyCtxs})
     })
     jb.entries(groupByWidgets).forEach(([widgetId,val])=>
         jb.ui.BECmpsDestroyNotification.next({
@@ -352,21 +353,25 @@ Object.assign(jb.ui, {
         const widgetId = ev.widgetId || jb.ui.getWidgetId(elem)
         return ctxIdToRun && {$:'runCtxAction', widgetId, ctxIdToRun, vars: {ev: jb.ui.buildUserEvent(ev, elem)} }
     },
+    calcElemProps(elem) {
+        return elem instanceof VNode ? {} : { 
+            outerHeight: jb.ui.outerHeight(elem), outerWidth: jb.ui.outerWidth(elem), 
+            clientRect: elem.getBoundingClientRect() 
+        }
+    },
     buildUserEvent(ev, elem) {
         if (!ev) return null
         const userEvent = {
             value: (ev.target || {}).value, 
-            elem: elem instanceof VNode ? {} : { 
-                outerHeight: jb.ui.outerHeight(elem), outerWidth: jb.ui.outerWidth(elem), 
-                clientRect: elem.getBoundingClientRect() 
-            },
+            elem: jb.ui.calcElemProps(elem),
             ev: {},
         }
         const evProps = (elem.getAttribute('userEventProps') || '').split(',').filter(x=>x).filter(x=>x.split('.')[0] != 'elem')
         const elemProps = (elem.getAttribute('userEventProps') || '').split(',').filter(x=>x).filter(x=>x.split('.')[0] == 'elem').map(x=>x.split('.')[1])
-        ;['type','keycode','clientX','clientY', ...evProps].forEach(prop=>userEvent.ev[prop] = ev[prop])
+        ;['type','keyCode','ctrlKey','alyKey','clientX','clientY', ...evProps].forEach(prop=> ev[prop] != null && (userEvent.ev[prop] = ev[prop]))
         ;['id', 'class', ...elemProps].forEach(prop=>userEvent.elem[prop] = elem.getAttribute(prop))
         elem._component && elem._component.enrichUserEvent(ev,userEvent)
+        if (ev.fixedTarget) userEvent.elem = jb.ui.calcElemProps(ev.fixedTarget) // enrich UserEvent can 'fix' the target, e.g. picking the selected node in tree
         return userEvent
     },
     ctxIdOfMethod(elem,action) {
@@ -395,7 +400,7 @@ Object.assign(jb.ui, {
         else {
             if (!jb.ctxDictionary[ctxIdToRun])
                 return jb.logError(`no ctx found for method: ${method} ${ctxIdToRun}`, elem, data, vars)
-            jb.log('BEMethod',[method,data,vars])
+            jb.log('BEMethod',[method,elem,data,vars])
             jb.ui.runCtxAction(jb.ctxDictionary[ctxIdToRun],data,vars)
         }
     },
@@ -412,7 +417,7 @@ Object.assign(jb.ui, {
         const {pipe,take,filter,log,takeUntil} = jb.callbag
         return takeUntil(pipe(jb.ui.BECmpsDestroyNotification,
             log(`takeUntilCmpDestroyed ${cmp.cmpId}`),
-            filter(x=>x.cmps.find(_cmp => _cmp.cmpId == cmp.cmpId)),
+            filter(x=>x.cmps.find(_cmp => _cmp.cmpId == cmp.cmpId && _cmp.ver == cmp.ver)),
             log(`Activated takeUntilCmpDestroyed ${cmp.cmpId}`),
             take(1),
         ))
@@ -594,11 +599,11 @@ class frontEndCmp {
             const vars = {cmp: this, $state: this.state, el: this.base, ...this.base.vars, ..._vars }
             const ctxToUse = this.ctx.setData(data).setVars(vars)
             if (feMEthod.frontEndMethod._prop)
-                jb.log('FEProp',[feMEthod.frontEndMethod._prop,feMEthod.frontEndMethod,ctxToUse])
+                jb.log('FEProp',[feMEthod.frontEndMethod._prop,this.base,feMEthod.frontEndMethod,ctxToUse])
             else if (feMEthod.frontEndMethod._flow)
-                jb.log('FEFlow',[...feMEthod.frontEndMethod._flow,feMEthod.frontEndMethod,ctxToUse])
+                jb.log('FEFlow',[this.base,...feMEthod.frontEndMethod._flow,feMEthod.frontEndMethod,ctxToUse])
             else 
-                jb.log('FEMethod',[method,feMEthod.frontEndMethod,ctxToUse])
+                jb.log('FEMethod',[method,this.base,feMEthod.frontEndMethod,ctxToUse])
             ctxToUse.run(feMEthod.frontEndMethod.action)
         }, `frontEnd-${method}`))
     }
@@ -659,7 +664,7 @@ jb.callbag.subscribe(e=> {
         jb.ui.widgetUserRequests.next({$:'destroy', ...e })
     else 
         cmps.forEach(cmp=>cmp.destroyCtxs.forEach(ctxIdToRun => {
-            jb.log('BEMethod',['destroy'])
+            jb.log('BEMethod',['destroy',cmp.el])
             jb.ui.runCtxAction(jb.ctxDictionary[ctxIdToRun])
         } ))
 })(jb.ui.BECmpsDestroyNotification)

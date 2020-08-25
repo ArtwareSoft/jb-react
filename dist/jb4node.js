@@ -2973,7 +2973,7 @@ const spySettings = {
 	},
 	includeLogs: 'exception,error',
 	stackFilter: /spy|jb_spy|Object.log|node_modules/i,
-    extraIgnoredEvents: [], MAX_LOG_SIZE: 10000
+    MAX_LOG_SIZE: 10000
 }
 const frame = jb.frame
 jb.spySettings = spySettings
@@ -3000,9 +3000,13 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			return this._obs
 		},
 		enabled: () => true,
+		parseLogsList(list, depth = 0) {
+			if (depth > 3) return []
+			return (list || '').split(',').filter(x => x[0] !== '-').filter(x => x)
+				.flatMap(x=> settings.groups[x] ? this.parseLogsList(settings.groups[x],depth+1) : [x])
+		},
 		init() {
-			const includeLogsFromParam = (this.spyParam || '').split(',').filter(x => x[0] !== '-').filter(x => x)
-				.flatMap(x=>Object.keys(settings.groups).indexOf(x) == -1 ? [x] : settings.groups[x].split(','))
+			const includeLogsFromParam = this.parseLogsList(this.spyParam)
 			const excludeLogsFromParam = (this.spyParam || '').split(',').filter(x => x[0] === '-').map(x => x.slice(1))
 			this.includeLogs = settings.includeLogs.split(',').concat(includeLogsFromParam).filter(log => excludeLogsFromParam.indexOf(log) === -1).reduce((acc, log) => {
 				acc[log] = true
@@ -3011,7 +3015,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			this.initialized = true
 		},
 		shouldLog(logName, record) {
-			return this.spyParam === 'all' || Array.isArray(record) && this.includeLogs[logName] && !settings.extraIgnoredEvents.includes(record[0])
+			return this.spyParam === 'all' || Array.isArray(record) && this.includeLogs[logName]
 		},
 		log(logName, record, {takeFrom, funcTitle, modifier} = {}) {
 			if (!this.initialized) this.init()

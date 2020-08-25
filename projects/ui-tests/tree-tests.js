@@ -125,7 +125,7 @@ jb.component('uiTest.treeVisualDD', {
       features: [
         tree.selection(),
         tree.dragAndDrop(),
-        tree.keyboardSelection(),
+        tree.keyboardSelection({autoFocus: true}),
         tree.expandPath(['personWithChildren~children', 'personWithChildren~friends'])
       ]
     }),

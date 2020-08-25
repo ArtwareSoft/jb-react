@@ -112,7 +112,7 @@ jb.component('uiTest', {
 			),
 			rx.var('html',uiTest.vdomResultAsHtml()),
 			rx.var('success', pipeline('%$html%', call('expectedResult'), last())),
-			rx.log('check test result'),
+			rx.log('checkTestResult'),
 			rx.filter('%$success%'), // if failure wait for the next delta
 			rx.map('%$success%'),
 			rx.do( ({},{tstWidgetId})=>jb.ui.unmount(jb.ui.widgets[tstWidgetId].body)),

@@ -326,12 +326,12 @@ jb.component('studio.watchPath', {
 
 jb.component('studio.scriptChange', {
 	type: 'rx',
-	impl: st.scriptChange
+	impl: source.callbag(() => st.scriptChange)
 })
 
 jb.component('studio.watchScriptChanges', {
   type: 'feature',
-  impl: followUp.flow(studio.scriptChange(), sink.refreshCmp())
+  impl: followUp.flow(studio.scriptChange(), rx.log('watchScriptChanges'), sink.refreshCmp())
 })
 
 jb.component('studio.watchComponents', {

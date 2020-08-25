@@ -251,25 +251,6 @@ jb.component('uiTest.editableTextExpandable', {
   })
 })
 
-jb.component('uiTest.editableTextByControl', {
-  impl: uiTest({
-    control: editableText({
-      title: 'name',
-      databind: '%$person/name%',
-      style: styleByControl(
-        group({
-          controls: [
-
-          ],
-          features: [variable({name: 'expandableContext', value: obj()})]
-        }),
-        'editableTextModel'
-      )
-    }),
-    expectedResult: true
-  })
-})
-
 jb.component('uiTest.twoWayBinding', {
   impl: uiTest({
     control: group({
@@ -280,6 +261,19 @@ jb.component('uiTest.twoWayBinding', {
     }),
     userInput: userInput.setText('hello', '#inp'),
     expectedResult: contains(['<span', 'hello', '</span'])
+  })
+})
+
+jb.component('uiTest.autoFocusOnFirstInput', {
+  impl: uiTest({
+    control: group({
+      controls: [
+        editableText({title: 'name', databind: '%$person/name%'}),
+        editableText({title: 'age', databind: '%$person/age%'}),
+      ],
+      features: group.autoFocusOnFirstInput()
+    }),
+    expectedResult: contains('_focus="autoFocusOnFirstInput"')
   })
 })
 

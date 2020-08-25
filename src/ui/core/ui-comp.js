@@ -164,7 +164,7 @@ class JbComponent {
         (this.method||[]).filter(h=> h.id == method)[0]
     }
     runBEMethod(method, data, vars) {
-        jb.log('BEMethod',[method,data,vars])
+        jb.log('BEMethod',[method,this,data,vars])
         if (jb.path(vars,'$state'))
             Object.assign(this.state,vars.$state)
         const methodImpls = (this.method||[]).filter(h=> h.id == method)
@@ -174,6 +174,7 @@ class JbComponent {
     }
     refresh(state,options) {
         const elem = jb.ui.elemOfCmp(this.ctx,this.cmpId)
+        jb.ui.BECmpsDestroyNotification.next({ cmps: [{cmpId: this.cmpId, ver: this.ver, destroyCtxs: [] }] })
         elem && jb.ui.refreshElem(elem,state,options) // cmpId may be deleted
     }
     calcCssLines() {
