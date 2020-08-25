@@ -4,7 +4,7 @@ let cmpId = 1;
 ui.propCounter = 0
 const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,this.ctx) }}
 const lifeCycle = new Set('init,extendCtx,templateModifier,followUp,destroy'.split(','))
-const arrayProps = new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod'.split(','))
+const arrayProps = new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,eventHandler'.split(','))
 const singular = new Set('template,calcRenderProps,toolbar,styleParams,calcHash,ctxForPick'.split(','))
 
 Object.assign(jb.ui,{
@@ -126,6 +126,7 @@ class JbComponent {
             x.strongRefresh && `strongRefresh`,  x.cssOnly && `cssOnly`, x.allowSelfRefresh && `allowSelfRefresh`,  
             x.phase && `phase=${x.phase}`].filter(x=>x).join(';')).join(',')
         const methods = (this.method||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx.setVars({cmp: this, $props: this.renderProps, ...this.newVars}))}`).join(',')
+        const eventHandlers = (this.eventHandler||[]).map(h=>`${h.event}-${ui.preserveCtx(h.ctx.setVars({cmp: this}))}`).join(',')
         const originators = this.originators.map(ctx=>ui.preserveCtx(ctx)).join(',')
         const userEventProps = (this.userEventProps||[]).join(',')
         const frontEndMethods = (this.frontEndMethod || []).map(h=>({method: h.method, path: h.path}))
@@ -139,6 +140,7 @@ class JbComponent {
                 },
                 observe && {observe}, 
                 methods && {methods}, 
+                eventHandlers && {eventHandlers},
                 originators && {originators},
                 userEventProps && {userEventProps},
                 frontEndMethods.length && {$__frontEndMethods : JSON.stringify(frontEndMethods) },

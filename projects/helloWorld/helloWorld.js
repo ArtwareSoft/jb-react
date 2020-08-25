@@ -28,10 +28,7 @@ jb.component('helloWorld.main', {
     title: '',
     layout: layout.flex({}),
     controls: [
-      button({
-        title: 'click me',
-        action: openDialog({style: dialog.dialogOkCancel(), content: group({})})
-      })
+      text('hello world')
     ],
     features: css.color({})
   })

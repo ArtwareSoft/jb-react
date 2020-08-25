@@ -1093,6 +1093,20 @@ jb.component('uiTest.editableNumberSliderEmpty', {
   })
 })
 
+jb.component('uiTest.editableBoolean.buttonXV', {
+  impl: uiTest({
+    control: editableBoolean({
+      databind: '%$person/male%',
+      style: editableBoolean.buttonXV({
+        yesIcon: icon({icon: 'location_searching', type: 'mdc'}),
+        noIcon: icon({icon: 'location_disabled', type: 'mdc'}),
+        buttonStyle: button.mdcFloatingAction('40', true)
+      }),
+    }),
+    expectedResult: true
+  })
+})
+
 jb.component('uiTest.editableBoolean.allStyles', {
   impl: uiTest({
     control: group({

@@ -4758,6 +4758,7 @@ Object.assign(jb.ui, {
         return userEvent
     },
     ctxIdOfMethod(elem,action) {
+        if (action.match(/^[0-9]+$/)) return action
         return (elem.getAttribute('methods') || '').split(',').filter(x=>x.indexOf(action+'-') == 0)
             .map(str=>str.split('-')[1])
             .filter(x=>x)[0]
@@ -4968,6 +4969,10 @@ class frontEndCmp {
         elem._component = this
         this.runFEMethod('calcProps',null,null,true)
         this.runFEMethod('init',null,null,true)
+        ;(elem.getAttribute('eventHandlers') || '').split(',').forEach(h=>{
+            const [event,ctxId] = h.split('-')
+            elem.addEventListener(event, ev => jb.ui.handleCmpEvent(ev,ctxId))
+        })
         this.state.frontEndStatus = 'ready'
     }
     runFEMethod(method,data,_vars,silent) {
@@ -5060,7 +5065,7 @@ let cmpId = 1;
 ui.propCounter = 0
 const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,this.ctx) }}
 const lifeCycle = new Set('init,extendCtx,templateModifier,followUp,destroy'.split(','))
-const arrayProps = new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod'.split(','))
+const arrayProps = new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,eventHandler'.split(','))
 const singular = new Set('template,calcRenderProps,toolbar,styleParams,calcHash,ctxForPick'.split(','))
 
 Object.assign(jb.ui,{
@@ -5182,6 +5187,7 @@ class JbComponent {
             x.strongRefresh && `strongRefresh`,  x.cssOnly && `cssOnly`, x.allowSelfRefresh && `allowSelfRefresh`,  
             x.phase && `phase=${x.phase}`].filter(x=>x).join(';')).join(',')
         const methods = (this.method||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx.setVars({cmp: this, $props: this.renderProps, ...this.newVars}))}`).join(',')
+        const eventHandlers = (this.eventHandler||[]).map(h=>`${h.event}-${ui.preserveCtx(h.ctx.setVars({cmp: this}))}`).join(',')
         const originators = this.originators.map(ctx=>ui.preserveCtx(ctx)).join(',')
         const userEventProps = (this.userEventProps||[]).join(',')
         const frontEndMethods = (this.frontEndMethod || []).map(h=>({method: h.method, path: h.path}))
@@ -5195,6 +5201,7 @@ class JbComponent {
                 },
                 observe && {observe}, 
                 methods && {methods}, 
+                eventHandlers && {eventHandlers},
                 originators && {originators},
                 userEventProps && {userEventProps},
                 frontEndMethods.length && {$__frontEndMethods : JSON.stringify(frontEndMethods) },
@@ -5616,6 +5623,16 @@ jb.component('method', {
     {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
   impl: (ctx,id) => ({method: {id, ctx}})
+})
+
+jb.component('feature.onEvent', {
+  type: 'feature',
+  category: 'events',
+  params: [
+    {id: 'event', as: 'string', mandatory: true, options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll'},
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true},
+  ],
+  impl: (ctx,event) => ({eventHandler: {event, ctx}})
 })
 
 jb.component('watchAndCalcModelProp', {
@@ -6165,19 +6182,6 @@ jb.component('frontEnd.flow', {
     }})
 })
 
-jb.component('feature.onEvent', {
-    type: 'feature',
-    category: 'events',
-    params: [
-      {id: 'event', as: 'string', mandatory: true, options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll'},
-      {id: 'action', type: 'action[]', mandatory: true, dynamic: true},
-    ],
-    impl: features(
-        method('%$event%Handler', call('action')),
-        htmlAttribute('on%$event%','%$event%Handler'),
-    )
-})
-  
 jb.component('feature.onHover', {
     type: 'feature',
     description: 'on mouse enter',
@@ -6187,8 +6191,8 @@ jb.component('feature.onHover', {
       {id: 'onLeave', type: 'action', mandatory: true, dynamic: true},
     ],
     impl: features(
-        method('onHover','%$action%'),
-        method('onLeave','%$onLeave%'),
+        method('onHover','%$action()%'),
+        method('onLeave','%$onLeave()%'),
         frontEnd.flow(source.frontEndEvent('mouseenter'), sink.BEMethod('onHover')),
         frontEnd.flow(source.frontEndEvent('mouseleave'), sink.BEMethod('onLeave'))
     )
@@ -6243,7 +6247,7 @@ jb.component('key.eventToMethod', {
     elem.keysHash = elem.keysHash || calcKeysHash()
         
     const res = elem.keysHash.find(key=>key.keyCode == event.keyCode && event.ctrlKey == key.ctrl && event.altKey == key.alt)
-    console.log(event,res)
+    console.log(event,res,elem.keysHash)
     return res && res.methodName
 
     function calcKeysHash() {
@@ -6293,14 +6297,18 @@ jb.component('feature.keyboardShortcut', {
     {id: 'action', type: 'action', dynamic: true}
   ],
   impl: features(
-    method('onKey%$Key%Handler','%$action%'),
+    method(replace({find: '-', replace: '+', text: 'onKey%$key%Handler',useRegex: true}), call('action')),
     frontEnd.init((ctx,{cmp,el}) => {
       if (! cmp.hasDocOnKeyHanlder) {
         cmp.hasDocOnKeyHanlder = true
-        ctx.run(
+        ctx.run(rx.pipe(
           source.event('keydown','%$cmp.base.ownerDocument%'), 
+          rx.log('keyboardShortcut'),
           rx.takeUntil('%$cmp.destroyed%'),
-          rx.map(key.eventToMethod('%%',el)), rx.filter('%%'), sink.BEMethod('%%'))
+          rx.map(key.eventToMethod('%%',el)), 
+          rx.filter('%%'), 
+          sink.BEMethod('%%')
+        ))
       }
     })
   )

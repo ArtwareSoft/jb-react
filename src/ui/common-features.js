@@ -10,6 +10,16 @@ jb.component('method', {
   impl: (ctx,id) => ({method: {id, ctx}})
 })
 
+jb.component('feature.onEvent', {
+  type: 'feature',
+  category: 'events',
+  params: [
+    {id: 'event', as: 'string', mandatory: true, options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll'},
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true},
+  ],
+  impl: (ctx,event) => ({eventHandler: {event, ctx}})
+})
+
 jb.component('watchAndCalcModelProp', {
   type: 'feature',
   description: 'Use a model property in the rendering and watch its changes (refresh on change)',

@@ -162,19 +162,6 @@ jb.component('frontEnd.flow', {
     }})
 })
 
-jb.component('feature.onEvent', {
-    type: 'feature',
-    category: 'events',
-    params: [
-      {id: 'event', as: 'string', mandatory: true, options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll'},
-      {id: 'action', type: 'action[]', mandatory: true, dynamic: true},
-    ],
-    impl: features(
-        method('%$event%Handler', call('action')),
-        htmlAttribute('on%$event%','%$event%Handler'),
-    )
-})
-  
 jb.component('feature.onHover', {
     type: 'feature',
     description: 'on mouse enter',
@@ -184,8 +171,8 @@ jb.component('feature.onHover', {
       {id: 'onLeave', type: 'action', mandatory: true, dynamic: true},
     ],
     impl: features(
-        method('onHover','%$action%'),
-        method('onLeave','%$onLeave%'),
+        method('onHover','%$action()%'),
+        method('onLeave','%$onLeave()%'),
         frontEnd.flow(source.frontEndEvent('mouseenter'), sink.BEMethod('onHover')),
         frontEnd.flow(source.frontEndEvent('mouseleave'), sink.BEMethod('onLeave'))
     )
@@ -240,7 +227,7 @@ jb.component('key.eventToMethod', {
     elem.keysHash = elem.keysHash || calcKeysHash()
         
     const res = elem.keysHash.find(key=>key.keyCode == event.keyCode && event.ctrlKey == key.ctrl && event.altKey == key.alt)
-    console.log(event,res)
+    console.log(event,res,elem.keysHash)
     return res && res.methodName
 
     function calcKeysHash() {
@@ -290,14 +277,18 @@ jb.component('feature.keyboardShortcut', {
     {id: 'action', type: 'action', dynamic: true}
   ],
   impl: features(
-    method('onKey%$Key%Handler','%$action%'),
+    method(replace({find: '-', replace: '+', text: 'onKey%$key%Handler',useRegex: true}), call('action')),
     frontEnd.init((ctx,{cmp,el}) => {
       if (! cmp.hasDocOnKeyHanlder) {
         cmp.hasDocOnKeyHanlder = true
-        ctx.run(
+        ctx.run(rx.pipe(
           source.event('keydown','%$cmp.base.ownerDocument%'), 
+          rx.log('keyboardShortcut'),
           rx.takeUntil('%$cmp.destroyed%'),
-          rx.map(key.eventToMethod('%%',el)), rx.filter('%%'), sink.BEMethod('%%'))
+          rx.map(key.eventToMethod('%%',el)), 
+          rx.filter('%%'), 
+          sink.BEMethod('%%')
+        ))
       }
     })
   )

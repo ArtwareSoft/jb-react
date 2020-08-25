@@ -375,6 +375,7 @@ Object.assign(jb.ui, {
         return userEvent
     },
     ctxIdOfMethod(elem,action) {
+        if (action.match(/^[0-9]+$/)) return action
         return (elem.getAttribute('methods') || '').split(',').filter(x=>x.indexOf(action+'-') == 0)
             .map(str=>str.split('-')[1])
             .filter(x=>x)[0]
@@ -585,6 +586,10 @@ class frontEndCmp {
         elem._component = this
         this.runFEMethod('calcProps',null,null,true)
         this.runFEMethod('init',null,null,true)
+        ;(elem.getAttribute('eventHandlers') || '').split(',').forEach(h=>{
+            const [event,ctxId] = h.split('-')
+            elem.addEventListener(event, ev => jb.ui.handleCmpEvent(ev,ctxId))
+        })
         this.state.frontEndStatus = 'ready'
     }
     runFEMethod(method,data,_vars,silent) {
