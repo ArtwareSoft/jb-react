@@ -33,35 +33,36 @@ jb.component('editableText.codemirror', {
 	passPropToFrontEnd('_enableFullScreen', '%$enableFullScreen%'),
 	method('onCtrlEnter', call('onCtrlEnter')),
 	textEditor.cmEnrichUserEvent(),
-    frontEnd.init( (ctx,{cmp,cm_settings,_enableFullScreen}) =>{
-		if (jb.ui.hasClass(cmp.base, 'jb-textarea-alternative-for-codemirror')) return
+    frontEnd.init( (ctx,{cmp,el,cm_settings,_enableFullScreen}) =>{
+		if (jb.ui.hasClass(el, 'jb-textarea-alternative-for-codemirror')) return
 		// cmp.data_ref = cmp.ctx.vars.$model.databind()
 		// if (cmp.data_ref instanceof Promise)
 		// 	jb.delay(1).then(() => cmp.refresh(null,{srcCtx: ctx.componentContext}))
 		const adjustedExtraKeys = jb.objFromEntries(jb.entries(cm_settings.extraKeys).map(e=>[
-			e[0], _ => ctx.setVar('ev',jb.ui.buildUserEvent({},cmp.base)).run(action.runBEMethod(e[1]))
-			// jb.ui.wrapWithLauchingElement(ctx2 => ctx2.run(e[1]), cmp.ctx, cmp.base, {launcherHeightFix: 1})(cmp.ctx)
+			e[0], _ => ctx.setVar('ev',jb.ui.buildUserEvent({},el)).run(action.runBEMethod(e[1]))
+			// jb.ui.wrapWithLauchingElement(ctx2 => ctx2.run(e[1]), cmp.ctx, el, {launcherHeightFix: 1})(cmp.ctx)
 		]))
 		const effective_settings = Object.assign({}, cm_settings, {
 			theme: 'solarized light',
 			autofocus: false,
 			extraKeys: Object.assign({
 				'Ctrl-Space': 'autocomplete',
-				'Ctrl-Enter': editor => onCtrlEnter(ctx.setVars({editor}))
+				'Ctrl-Enter': () => jb.ui.runBEMethod(el,'onCtrlEnter')
 			}, adjustedExtraKeys),
 		})
-		cmp.editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings)
+		cmp.editor = CodeMirror.fromTextArea(el.firstChild, effective_settings)
 		_enableFullScreen && jb.delay(1).then(() => {
 			const wrapper = cmp.editor.getWrapperElement()
 			enableFullScreen(cmp.editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper)) 
 		})
 	}),
+	method('writeText',writeValue('%$$model/databind()%','%%')),
 	frontEnd.flow(
 			source.callbag(({},{cmp}) => jb.callbag.create(obs=> cmp.editor.on('change', () => obs(cmp.editor.getValue()))) ),
 			rx.takeUntil('%$cmp/destroyed%'),
 			rx.debounceTime('%$debounceTime%'),
 			rx.distinctUntilChanged(),
-			sink.data('%$$model/databound()%')
+			sink.BEMethod('writeText','%%')
 	),
     css(({},{},{height}) => `{width: 100%; ${jb.ui.propWithUnits('height',height)}}
 		>div { box-shadow: none !important}`)
