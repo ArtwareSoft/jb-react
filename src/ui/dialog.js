@@ -154,11 +154,13 @@ jb.component('dialogFeature.uniqueDialog', {
 	))
 })
 
-jb.component('source.mouseMoveIncludingPreview', {
+jb.component('source.eventIncludingPreview', {
 	type: 'rx',
+	params: [
+		{ id: 'event', as: 'string'}],
 	impl: rx.merge(
-		source.event('mousemove', () => document),
-		source.event('mousemove', () => jb.path(jb.studio, 'previewWindow.document'))
+		source.event('%$event%', () => document),
+		source.event('%$event%', () => jb.path(jb.studio, 'previewWindow.document'))
 	)
 })
 
@@ -196,20 +198,18 @@ jb.component('dialogFeature.dragTitle', {
 				top:  data.clientY - el.getBoundingClientRect().top
 			})),
 			rx.flatMap(rx.pipe(
-				source.mouseMoveIncludingPreview(),
+				source.eventIncludingPreview('mousemove'),
 				rx.takeWhile('%buttons%!=0'),
 				rx.var('ev'),
 				rx.map(({data},{offset}) => ({
 					left: Math.max(0, data.clientX - offset.left),
 					top: Math.max(0, data.clientY - offset.top),
 				})),
-//				rx.log('drag'),
-				sink.action(runActions(
-					action.runFEMethod('setPos'),
-					If('%$useSessionStorage%', action.setSessionStorage('%$sessionStorageId%','%%'))
-				))
 			)),
-			sink.action()
+			sink.action(runActions(
+				action.runFEMethod('setPos'),
+				If('%$useSessionStorage%', action.setSessionStorage('%$sessionStorageId%','%%'))
+			))
 		)
 	)
 })
@@ -234,7 +234,6 @@ jb.component('dialogFeature.nearLauncherPosition', {
     {id: 'rightSide', as: 'boolean' }
   ],
   impl: features(
-//	  css('{top: %$$state/dialogPos/top%px; left: %$$state/dialogPos/left%px }'),
 	  calcProp('launcherRectangle','%$ev/elem/clientRect%'),
 	  passPropToFrontEnd('launcherRectangle','%$$props/launcherRectangle%'),
 	  passPropToFrontEnd('launcherCmpId','%$$dialog/launcherCmpId%'),
@@ -288,24 +287,22 @@ jb.component('dialogFeature.onClose', {
   params: [
     {id: 'action', type: 'action', dynamic: true}
   ],
-  impl: backEnd.onDestroy(call('action'))
+  impl: onDestroy(call('action'))
 })
 
 jb.component('dialogFeature.closeWhenClickingOutside', {
   type: 'dialog-feature',
-  params: [
-    {id: 'delay', as: 'number', defaultValue: 100}
-  ],
   impl: features(
 	  feature.init(writeValue('%$$dialog.isPopup%',true)),
 	  frontEnd.flow(
-	  	rx.merge(
-			source.event('mousedown','%$cmp.base.ownerDocument%'),
-			source.event('mousedown', () => jb.path(jb.studio,'previewWindow.document')),
-		),
+		source.data(0), rx.delay(100), // wait before start listening
+		rx.flatMap(source.eventIncludingPreview('mousedown')),
+		// 	rx.merge(
+		// 	source.event('mousedown','%$cmp.base.ownerDocument%'),
+		// 	source.event('mousedown', () => jb.path(jb.studio,'previewWindow.document')),
+		// )),
 		rx.takeUntil('%$cmp.destroyed%'),
 		rx.filter(({data}) => jb.ui.closest(data.target,'.jb-dialog') == null),
-		rx.delay('%$delay%'),
 		rx.var('dialogId', ({},{cmp}) => cmp.base.getAttribute('id')),
 		sink.action(dialog.closeDialogById('%$dialogId%'))
 	))
@@ -406,15 +403,14 @@ jb.component('dialogFeature.resizer', {
 			top:  el.getBoundingClientRect().top
 		})),
 		rx.flatMap(rx.pipe(
-			source.mouseMoveIncludingPreview(), 
+			source.eventIncludingPreview('mousemove'),
 			rx.takeWhile('%buttons%!=0'),
 			rx.map(({data},{offset}) => ({
 				left: Math.max(0, data.clientX - offset.left),
 				top: Math.max(0, data.clientY - offset.top),
 			})),
-			sink.FEMethod('setSize')
 		)),
-		sink.action()
+		sink.BEMethod('setSize')
 	)))
 })
 

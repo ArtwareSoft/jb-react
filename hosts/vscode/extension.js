@@ -95,7 +95,7 @@ class jBartStudio {
         <link rel="stylesheet" type="text/css" href="${jbModuleUrl}/bin/studio/css/studio-all.css"/>`
 
         const studioDev = `<script type="text/javascript" src="${jbBaseProjUrl}/src/loader/jb-loader.js"
-        modules="common,ui-common,rx,material,ui-tree,dragula,codemirror,pretty-print,studio,history,animate,md-icons,fuse" suffix="?studio"></script>
+        modules="common,ui-common,material,ui-tree,dragula,codemirror,pretty-print,studio,history,animate,md-icons,fuse" suffix="?studio"></script>
     <link rel="stylesheet" type="text/css" href="${jbBaseProjUrl}/projects/studio/css/studio.css"/>`
         const jbStartCommand = this.startCommand ? JSON.stringify({...this.startCommand, activeEditorPosition: this.calcActiveEditorPosition()}) : "''"
         const jbWorkspaceState = JSON.stringify(this.context.workspaceState.get('jbartStudio') || {})
@@ -118,7 +118,7 @@ class jBartStudio {
 		<script>
           jb.studio.vsCodeApi = acquireVsCodeApi()
           jb.exec({$: 'defaultTheme'})
-		  jb.ui.render(jb.ui.h(jb.exec({$:'studio.all'})), document.getElementById('studio'))
+          jb.ui.renderWidget({$:'studio.all'},document.getElementById('studio'))
 		</script>
 	</body>
 </html>`;

@@ -47,7 +47,7 @@ jb.component('editableText.picklistHelper', {
       rx.log('refresh'), sink.BEMethod('refresh')),
     frontEnd.flow('%$cmp/keyUp%', rx.filter('%keyCode% == 27'), editableText.addUserEvent(), sink.BEMethod('onEsc')),
 
-    backEnd.onDestroy(action.runBEMethod('closePopup')),
+    onDestroy(action.runBEMethod('closePopup')),
     followUp.action(action.if('%$autoOpen%', runActions(
       writeValue('%$watchableInput%',obj(prop('value','%$helperCmp/renderProps/databind%'))), action.runBEMethod('openPopup'))))
   )
@@ -111,7 +111,7 @@ jb.component('editableText.helperPopup', {
       rx.log('refresh'), sink.BEMethod('refresh')),
     frontEnd.flow('%$cmp/keyUp%', rx.filter('%keyCode% == 27'), editableText.addUserEvent(), sink.BEMethod('onEsc')),
 
-    backEnd.onDestroy(action.runBEMethod('closePopup')),
+    onDestroy(action.runBEMethod('closePopup')),
     followUp.action(action.if('%$autoOpen%', action.runBEMethod('openPopup')))
  )
 })

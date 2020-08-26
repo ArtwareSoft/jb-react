@@ -225,7 +225,7 @@ jb.component('rx.map', {
   params: [
     {id: 'func', dynamic: true, mandatory: true}
   ],
-  impl: (ctx,func) => jb.callbag.map(jb.addDebugInfo(ctx2 => ({data: func(ctx2), vars: ctx2.vars}),ctx))
+  impl: (ctx,func) => jb.callbag.map(jb.addDebugInfo(ctx2 => ({data: func(ctx2), vars: ctx2.vars || {}}),ctx))
 })
 
 jb.component('rx.mapPromise', {
@@ -234,7 +234,7 @@ jb.component('rx.mapPromise', {
   params: [
     {id: 'func', dynamic: true, mandatory: true}
   ],
-  impl: (ctx,func) => jb.callbag.mapPromise(ctx2 => Promise.resolve(func(ctx2)).then(data => ({vars: ctx2.vars, data})))
+  impl: (ctx,func) => jb.callbag.mapPromise(ctx2 => Promise.resolve(func(ctx2)).then(data => ({vars: ctx2.vars || {}, data})))
 })
 
 jb.component('rx.retry', {
@@ -445,7 +445,7 @@ jb.component('sink.action', {
   params: [
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
   ],
-  impl: (ctx,action) => jb.callbag.subscribe(ctx2 => action(ctx2))
+  impl: (ctx,action) => jb.callbag.subscribe(ctx2 => { Object.assign(ctx2.vars,{sinkCtx:ctx}); return action(ctx2) })
 })
 
 jb.component('sink.data', {
@@ -2570,7 +2570,7 @@ jb.component('feature.init', {
   impl: (ctx,action,phase) => ({ init: { action, phase }})
 })
 
-jb.component('backEnd.onDestroy', {
+jb.component('onDestroy', {
   type: 'feature',
   category: 'lifecycle',
   params: [
@@ -2775,7 +2775,7 @@ jb.component('calculatedVar', {
     {id: 'watchRefs', as: 'array', dynamic: true, mandatory: true, defaultValue: [], description: 'variable to watch. needs to be in array'}
   ],
   impl: features(
-    backEnd.onDestroy(writeValue('%${%$name%}:{%$cmp/cmpId%}%', null)),
+    onDestroy(writeValue('%${%$name%}:{%$cmp/cmpId%}%', null)),
     followUp.flow(
       rx.merge(pipeline('%$watchRefs()%', source.watchableData('%%'))),
 //      rx.log('calculatedVar'),
@@ -3555,17 +3555,9 @@ jb.component('text.allowAsynchValue', {
     calcProp('%$propId%', firstSucceeding('%$$state/{%$propId%}%','%$$props/{%$propId%}%' )),
     followUp.flow(
       source.any(If('%$$state/{%$propId%}%','','%$$props/{%$propId%}%')),
-//      followUp.takeUntilCmpDestroyed(),
       rx.map(({data}) => jb.ui.toVdomOrStr(data)),
       sink.refreshCmp( ctx => ctx.run(obj(prop('%$propId%','%%'))))
     ),
-    // followUp.action((ctx,{cmp,$state,$props},{propId}) => {
-    //   if ($state[propId]) return
-    //   const val = typeof $props[propId] == 'function' ? $props[propId]() : $props[propId]
-
-    //   if (jb.isPromise(val))
-    //     val.then(res => cmp.refresh({[propId]: jb.ui.toVdomOrStr(res)},{srcCtx: ctx.componentContext}))
-    // })
   )
 })
 
@@ -4442,11 +4434,13 @@ jb.component('dialogFeature.uniqueDialog', {
 	))
 })
 
-jb.component('source.mouseMoveIncludingPreview', {
+jb.component('source.eventIncludingPreview', {
 	type: 'rx',
+	params: [
+		{ id: 'event', as: 'string'}],
 	impl: rx.merge(
-		source.event('mousemove', () => document),
-		source.event('mousemove', () => jb.path(jb.studio, 'previewWindow.document'))
+		source.event('%$event%', () => document),
+		source.event('%$event%', () => jb.path(jb.studio, 'previewWindow.document'))
 	)
 })
 
@@ -4484,20 +4478,18 @@ jb.component('dialogFeature.dragTitle', {
 				top:  data.clientY - el.getBoundingClientRect().top
 			})),
 			rx.flatMap(rx.pipe(
-				source.mouseMoveIncludingPreview(),
+				source.eventIncludingPreview('mousemove'),
 				rx.takeWhile('%buttons%!=0'),
 				rx.var('ev'),
 				rx.map(({data},{offset}) => ({
 					left: Math.max(0, data.clientX - offset.left),
 					top: Math.max(0, data.clientY - offset.top),
 				})),
-//				rx.log('drag'),
-				sink.action(runActions(
-					action.runFEMethod('setPos'),
-					If('%$useSessionStorage%', action.setSessionStorage('%$sessionStorageId%','%%'))
-				))
 			)),
-			sink.action()
+			sink.action(runActions(
+				action.runFEMethod('setPos'),
+				If('%$useSessionStorage%', action.setSessionStorage('%$sessionStorageId%','%%'))
+			))
 		)
 	)
 })
@@ -4522,7 +4514,6 @@ jb.component('dialogFeature.nearLauncherPosition', {
     {id: 'rightSide', as: 'boolean' }
   ],
   impl: features(
-//	  css('{top: %$$state/dialogPos/top%px; left: %$$state/dialogPos/left%px }'),
 	  calcProp('launcherRectangle','%$ev/elem/clientRect%'),
 	  passPropToFrontEnd('launcherRectangle','%$$props/launcherRectangle%'),
 	  passPropToFrontEnd('launcherCmpId','%$$dialog/launcherCmpId%'),
@@ -4576,24 +4567,22 @@ jb.component('dialogFeature.onClose', {
   params: [
     {id: 'action', type: 'action', dynamic: true}
   ],
-  impl: backEnd.onDestroy(call('action'))
+  impl: onDestroy(call('action'))
 })
 
 jb.component('dialogFeature.closeWhenClickingOutside', {
   type: 'dialog-feature',
-  params: [
-    {id: 'delay', as: 'number', defaultValue: 100}
-  ],
   impl: features(
 	  feature.init(writeValue('%$$dialog.isPopup%',true)),
 	  frontEnd.flow(
-	  	rx.merge(
-			source.event('mousedown','%$cmp.base.ownerDocument%'),
-			source.event('mousedown', () => jb.path(jb.studio,'previewWindow.document')),
-		),
+		source.data(0), rx.delay(100), // wait before start listening
+		rx.flatMap(source.eventIncludingPreview('mousedown')),
+		// 	rx.merge(
+		// 	source.event('mousedown','%$cmp.base.ownerDocument%'),
+		// 	source.event('mousedown', () => jb.path(jb.studio,'previewWindow.document')),
+		// )),
 		rx.takeUntil('%$cmp.destroyed%'),
 		rx.filter(({data}) => jb.ui.closest(data.target,'.jb-dialog') == null),
-		rx.delay('%$delay%'),
 		rx.var('dialogId', ({},{cmp}) => cmp.base.getAttribute('id')),
 		sink.action(dialog.closeDialogById('%$dialogId%'))
 	))
@@ -4694,15 +4683,14 @@ jb.component('dialogFeature.resizer', {
 			top:  el.getBoundingClientRect().top
 		})),
 		rx.flatMap(rx.pipe(
-			source.mouseMoveIncludingPreview(), 
+			source.eventIncludingPreview('mousemove'),
 			rx.takeWhile('%buttons%!=0'),
 			rx.map(({data},{offset}) => ({
 				left: Math.max(0, data.clientX - offset.left),
 				top: Math.max(0, data.clientY - offset.top),
 			})),
-			sink.FEMethod('setSize')
 		)),
-		sink.action()
+		sink.BEMethod('setSize')
 	)))
 })
 
@@ -6555,7 +6543,7 @@ jb.component('editableText.picklistHelper', {
       rx.log('refresh'), sink.BEMethod('refresh')),
     frontEnd.flow('%$cmp/keyUp%', rx.filter('%keyCode% == 27'), editableText.addUserEvent(), sink.BEMethod('onEsc')),
 
-    backEnd.onDestroy(action.runBEMethod('closePopup')),
+    onDestroy(action.runBEMethod('closePopup')),
     followUp.action(action.if('%$autoOpen%', runActions(
       writeValue('%$watchableInput%',obj(prop('value','%$helperCmp/renderProps/databind%'))), action.runBEMethod('openPopup'))))
   )
@@ -6619,7 +6607,7 @@ jb.component('editableText.helperPopup', {
       rx.log('refresh'), sink.BEMethod('refresh')),
     frontEnd.flow('%$cmp/keyUp%', rx.filter('%keyCode% == 27'), editableText.addUserEvent(), sink.BEMethod('onEsc')),
 
-    backEnd.onDestroy(action.runBEMethod('closePopup')),
+    onDestroy(action.runBEMethod('closePopup')),
     followUp.action(action.if('%$autoOpen%', action.runBEMethod('openPopup')))
  )
 });

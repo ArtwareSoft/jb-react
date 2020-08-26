@@ -1,5 +1,4 @@
 jb.ns('table-tree,tree')
-jb.ns('json')
 
 jb.component('tableTree', {
   type: 'control',
@@ -32,7 +31,6 @@ jb.component('tableTree.init', {
 		calcProp('model','%$$model/treeModel()%'),
 		method('flip', runActions(
       ({},{$state,ev}) => $state.expanded[ev.path] = !$state.expanded[ev.path],
-			//writeValue('%$$state/expanded/{%$ev/path%}%', not('%$$state/expanded/{%$ev/path%}%')),
 			action.refreshCmp('%$$state%')
 		)),
     calcProp('expanded', ({},{$state,$props}) => ({...$state.expanded, ...$props.expanded, [$props.model.rootPath]: true})),
@@ -55,11 +53,11 @@ jb.component('tableTree.init', {
                 return item
             }
         }
-      }),
+    }),
     calcProp('maxDepth',firstSucceeding('%$$model/maxDepth%',5)),
     calcProp('leafFields','%$$model/leafFields()/field()%'),
     calcProp('commonFields','%$$model/commonFields()/field()%'),
-    calcProp('init cmp methods', (ctx,{cmp,$props,$model}) => {
+    calcProp('init cmp utilities', (ctx,{cmp,$props,$model}) => {
             cmp.fieldsForPath = path => [...($props.model.isArray(path) ? [] : $props.leafFields), ...$props.commonFields]
             cmp.headline = item => headlineCmp(item)
 
@@ -90,7 +88,7 @@ jb.component('tableTree.init', {
             function headlineCmp(item) {
                 return $model.chapterHeadline(
                         ctx.setData({path: item.path, val: $props.model.val(item.path)})
-                            .setVars({item,collapsed: ctx2 => !cmp.state.expanded[item.path]}))
+                            .setVars({item,collapsed: () => !cmp.state.expanded[item.path]}))
             }
         }
       )
@@ -99,7 +97,7 @@ jb.component('tableTree.init', {
 
 jb.component('tableTree.expandFirstLevel', {
 	type: 'feature',
-	impl: calcProp({phase: 5, id: 'init cmp methods', value: ({},{$state,$props}) => {
+	impl: calcProp({phase: 5, id: 'before calcProps', value: ({},{$state,$props}) => {
       if ($state.refresh) return
       const pathsAsObj = jb.objFromEntries($props.model.children($props.model.rootPath) || []).map(path=>[path,true])
       $props.expanded = Object.assign($props.expanded || {}, pathsAsObj)
@@ -160,18 +158,17 @@ jb.component('tableTree.resizer', {
   type: 'feature',
   impl: features(
     css('>tbody>tr>td.tt-resizer { cursor: col-resize}'),
-	  frontEnd.method('setSize', ({data},{cmp}) => cmp.base.querySelector('.gapCol').width = data + 'px'),
+	  frontEnd.method('setSize', ({data},{el}) => el.querySelector('.gapCol').width = data + 'px'),
     frontEnd.flow(
       source.frontEndEvent('mousedown'),
       rx.filter(ctx => jb.ui.hasClass(ctx.data.target,'tt-resizer')),
-      rx.var('offset',({data},{cmp}) => data.clientX - (+cmp.base.querySelector('.gapCol').width.slice(0,-2))),
+      rx.var('offset',({data},{el}) => data.clientX - (+el.querySelector('.gapCol').width.slice(0,-2))),
       rx.flatMap(rx.pipe(
-        source.event('mousemove', () => document), 
+        source.frontEndEvent('mousemove'), 
         rx.takeWhile('%buttons%!=0'),
         rx.map(({data},{offset}) => Math.max(0, data.clientX - offset)),
-        sink.FEMethod('setSize')
       )),
-      sink.action()
+      sink.FEMethod('setSize')
     )
   )
 })

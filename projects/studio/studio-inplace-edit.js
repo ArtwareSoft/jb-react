@@ -19,7 +19,10 @@ jb.component('inplaceEdit.activate', {
     openDialog({
         style: inplaceEdit.popupStyle(),
         content: inplaceEdit.toolbar('%$path%'),
-        features: [css('background: transparent; box-shadow: 0 0; border: 0')]
+        features: [
+          css('background: transparent; box-shadow: 0 0; border: 0'),
+          dialogFeature.onClose(contentEditable.deactivate())
+        ]
     })
   )
 })
@@ -175,23 +178,6 @@ Object.assign(jb.ui, {
       ctx.run(runActions(dialog.closeAll(), studio.refreshPreview()))
     }
   },
-})
-
-jb.component('feature.inplaceEditDropHtml', {
-  type: 'feature',
-  impl: features(
-    htmlAttribute('ondragover', 'over'),
-    htmlAttribute('ondrop', 'dropHtml'),
-    method('over', (ctx,{ev}) => ev.preventDefault()),
-    method('dropHtml',(ctx,{ev}) => {
-      ev.preventDefault();
-      return Array.from(ev.dataTransfer.items).filter(x=>x.type.match(/html/))[0].getAsString(html => {
-          const targetCtx = jb.studio.previewjb.ctxDictionary[ev.target.getAttribute('jb-ctx')]
-          new jb.jbCtx().setVar('newCtrl',jb.ui.htmlToControl(html)).run(
-                studio.extractStyle('%$newCtrl%', () => targetCtx && targetCtx.path ))
-          })
-    })
-  )
 })
 
 jb.component('inplaceEdit.thumbStyle', {

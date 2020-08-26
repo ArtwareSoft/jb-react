@@ -2,24 +2,24 @@ jb.ns('contentEditable')
 
 jb.ui.contentEditable = {
   setScriptData(ev,cmp,prop,isHtml) {
-      const vdomCmp = jb.studio.previewjb.ctxDictionary[cmp.base.getAttribute('jb-ctx')].runItself()
-      vdomCmp.renderVdomAndFollowUp()
-      const resourceRef = vdomCmp.toObserve.filter(e=>e.id == prop).map(e=>e.ref)[0]
-      const scriptRef = this.scriptRef(vdomCmp,prop)
-      const val = isHtml ? ev.target.innerHTML : ev.target.innerText
-      if (resourceRef)
-          jb.studio.previewjb.writeValue(resourceRef,val,vdomCmp.ctx)
-      else if (scriptRef)
-          jb.writeValue(scriptRef,val,vdomCmp.ctx)
+    const val = isHtml ? ev.innerHTML : ev.innerText
+    const resourceRef = cmp.toObserve.filter(e=>e.id == prop).map(e=>e.ref)[0]
+    if (resourceRef) {
+      jb.studio.previewjb.writeValue(resourceRef,val,cmp.ctx)
+    } else {
+      const scriptRef = this.scriptRef(cmp,prop)
+      scriptRef && jb.writeValue(scriptRef,val,cmp.ctx)
+    }
   },
   isEnabled() {
     return new jb.jbCtx().exp('%$studio/settings/contentEditable%')
   },
-  activate(cmp) {
+  activate(cmp,ev) {
     if (!this.isEnabled()) return
-    const ctx = new jb.jbCtx() //.setVar('$launchingElement',{ el })
+    const ctx = new jb.jbCtx().setVars({ev})
+    const previewCtx = new jb.studio.previewjb.jbCtx()
     const jbUi = jb.studio.previewjb.ui
-    const el = elemOfCmp(ctx,cmp.cmpId)
+    const el = jb.ui.elemOfCmp(previewCtx,cmp.cmpId)
     ctx.run(inplaceEdit.activate(cmp.ctx.path,el))
     if (this.current == el) return
     if (this.current)
@@ -28,16 +28,6 @@ jb.ui.contentEditable = {
     jbUi.refreshElem(el,{contentEditableActive: true})
     this.current = el
     jb.ui.focus(el,'contentEditable activate',ctx)
-  },
-  handleKeyEvent(ev,cmp,prop) {
-    if (ev.keyCode == 13) {
-        this.setScriptData(ev,cmp,prop)
-        new jb.jbCtx().run(runActions(
-          delay(1), // can not wait for script change delay
-          contentEditable.deactivate()
-        ))
-        return false // stop propagation. sometimes does not work..
-    }
   },
   scriptRef(cmp,prop) {
     const ref = jb.studio.refOfPath(cmp.originatingCtx().path + '~' + prop)
@@ -49,23 +39,6 @@ jb.ui.contentEditable = {
   },
 }
 
-jb.component('feature.contentEditableDropHtml', {
-  type: 'feature',
-  impl: features(
-    htmlAttribute('ondragover', 'over'),
-    htmlAttribute('ondrop', 'dropHtml'),
-    method('over', (ctx,{ev}) => ev.preventDefault()),
-    method('dropHtml',(ctx,{ev}) => { 
-      ev.preventDefault();
-      return Array.from(ev.dataTransfer.items).filter(x=>x.type.match(/html/))[0].getAsString(html => {
-          const targetCtx = jb.studio.previewjb.ctxDictionary[ev.target.getAttribute('jb-ctx')]
-          new jb.jbCtx().setVar('newCtrl',jb.ui.htmlToControl(html)).run(
-                studio.extractStyle('%$newCtrl%', () => targetCtx && targetCtx.path ))
-          })
-    })
-  )
-})
-
 jb.component('feature.contentEditable', {
   type: 'feature',
   description: 'studio editing behavior',
@@ -75,30 +48,34 @@ jb.component('feature.contentEditable', {
   impl: If(()=> jb.ui.contentEditable.isEnabled(), features(
     method('execProfile',({data}) => jb.frame.parent.jb.exec({$: data, from: 'studio'})),
     method('setScriptData',({},{ev,cmp},{param}) => jb.ui.contentEditable.setScriptData(ev,cmp,param,param == 'html') ),
-    method('onKeyDown',({},{ev,cmp},{param}) => {
-      if (param != 'html')
-        jb.ui.contentEditable.handleKeyEvent(ev,cmp,param)
-      jb.ui.contentEditable.activate(cmp)
+    method('onEnter', ({},{ev,cmp},{param}) => {
+      jb.ui.contentEditable.setScriptData(ev,cmp,param)
+      new jb.jbCtx().run(runActions(
+        delay(1), // can not wait for script change delay
+        contentEditable.deactivate()
+      ))
     }),
-    feature.keyboardShortcut('Alt+N', action.runBEMethod('execProfile','studio.pickAndOpen'),
+    method('activate',({},{cmp,ev}) => jb.ui.contentEditable.activate(cmp,ev)),
     feature.keyboardShortcut('Ctrl+Z', action.runBEMethod('execProfile','studio.undo')),
     feature.keyboardShortcut('Ctrl+Y', action.runBEMethod('execProfile','studio.redo')),
-    frontEnd.flow(source.frontEndEvent('blur'),sink.BEMethod('setScriptData')),
-    frontEnd.flow(source.frontEndEvent('keydown'), sink.BEMethod('onKeyDown')),
-    // frontEnd.init(({},{cmp},{param}) => {
-    //   const isHtml = param == 'html'
-    //   const contentEditable = jb.ui.contentEditable
-    //   if (contentEditable && contentEditable.isEnabled()) {
-    //     cmp.onblurHandler = ev => contentEditable.setScriptData(ev,cmp,param,isHtml)
-    //     if (!isHtml)
-    //       cmp.onkeydownHandler = cmp.onkeypressHandler = ev => contentEditable.handleKeyEvent(ev,cmp,param)
-    //     cmp.onmousedownHandler = () => jb.ui.contentEditable.activate(cmp.base)
-    //   }
-    // }),
+    frontEnd.enrichUserEvent(({},{ev}) => ({ innerText: ev.target.innerText, innerHTML: ev.target.innerText})),
+    frontEnd.flow(source.frontEndEvent('blur'), rx.filter('%$cmp.state.contentEditableActive%'), frontEnd.addUserEvent(), 
+      sink.BEMethod('setScriptData')),
+    frontEnd.flow(source.frontEndEvent('mousedown'), rx.filter(not('%$cmp.state.contentEditableActive%')),frontEnd.addUserEvent(), 
+      sink.BEMethod('activate')),
+    frontEnd.onRefresh(({},{$state,el}) => el.onkeydown = $state.contentEditableActive ? 
+        ev => {
+          if (ev.keyCode == 13) {
+            jb.studio.previewjb.ui.runBEMethod(el,'onEnter',null,{ev: jb.ui.buildUserEvent(ev, el)})
+            return false
+          }
+          return true
+        } : null
+    ),
     templateModifier(({},{cmp,vdom},{param}) => {
       const contentEditable = jb.ui.contentEditable
       if (!contentEditable || cmp.ctx.vars.$runAsWorker || !contentEditable.isEnabled() || param && !contentEditable.refOfProp(cmp,param)) return vdom
-      const attsToInject = cmp.state.contentEditableActive ? {contenteditable: 'true', onblur: true, onmousedown: true, onkeypress: true, onkeydown: true} : {onmousedown: true};
+      const attsToInject = cmp.state.contentEditableActive ? {contenteditable: 'true'} : {} // onkeypress: true
       // fix spacebar bug in button
       if (vdom.tag && vdom.tag.toLowerCase() == 'button' && vdom.children && vdom.children.length == 1 && typeof vdom.children[0] == 'string') {
         vdom.children[0] = jb.ui.h('span',attsToInject,vdom.children[0])
@@ -115,7 +92,7 @@ jb.component('feature.contentEditable', {
     css(If('%$cmp.state.contentEditableActive%',
           '{ border: 1px dashed grey; background-image: linear-gradient(90deg,rgba(243,248,255,.03) 63.45%,rgba(207,214,229,.27) 98%); border-radius: 3px;}'
     ))
-  )))
+  ))
 })
 
 jb.component('contentEditable.deactivate', {

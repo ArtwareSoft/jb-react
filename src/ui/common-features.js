@@ -78,7 +78,7 @@ jb.component('feature.init', {
   impl: (ctx,action,phase) => ({ init: { action, phase }})
 })
 
-jb.component('backEnd.onDestroy', {
+jb.component('onDestroy', {
   type: 'feature',
   category: 'lifecycle',
   params: [
@@ -283,7 +283,7 @@ jb.component('calculatedVar', {
     {id: 'watchRefs', as: 'array', dynamic: true, mandatory: true, defaultValue: [], description: 'variable to watch. needs to be in array'}
   ],
   impl: features(
-    backEnd.onDestroy(writeValue('%${%$name%}:{%$cmp/cmpId%}%', null)),
+    onDestroy(writeValue('%${%$name%}:{%$cmp/cmpId%}%', null)),
     followUp.flow(
       rx.merge(pipeline('%$watchRefs()%', source.watchableData('%%'))),
 //      rx.log('calculatedVar'),

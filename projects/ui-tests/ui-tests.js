@@ -829,7 +829,7 @@ jb.component('uiTest.BEOnDestroy', {
       openDialog({
         id:'dlg', 
         content: text({text: 'in dialog',
-          features: backEnd.onDestroy(writeValue('%$person/name%','dialog closed'))
+          features: onDestroy(writeValue('%$person/name%','dialog closed'))
         })
       }),
       dialog.closeDialogById('dlg')

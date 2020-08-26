@@ -196,9 +196,8 @@ jb.component('gridEditor.dragableGridLineThumb', {
         )),
         rx.var('posToSet', ({},{base ,newPos ,fixBack, startPos}) => base + newPos + fixBack - startPos),
         rx.map('%$posToSet%'),
-        sink.BEMethod('setNewPos')
 			)),
-			sink.action()
+			sink.BEMethod('setNewPos')
 		))
 })
   
@@ -336,9 +335,8 @@ jb.component('gridEditor.dragableGridItemThumb', {
           return (spanBase ? [...spanBase, ...spans] : gridPos).join(' / ')
         }),
         rx.map('grid-area: %$newScriptValues%'),
-				sink.BEMethod('setGridArea')
 			)),
-			sink.action()
+			sink.BEMethod('setGridArea')
 		)
   )
 })

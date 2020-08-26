@@ -225,7 +225,7 @@ jb.component('rx.map', {
   params: [
     {id: 'func', dynamic: true, mandatory: true}
   ],
-  impl: (ctx,func) => jb.callbag.map(jb.addDebugInfo(ctx2 => ({data: func(ctx2), vars: ctx2.vars}),ctx))
+  impl: (ctx,func) => jb.callbag.map(jb.addDebugInfo(ctx2 => ({data: func(ctx2), vars: ctx2.vars || {}}),ctx))
 })
 
 jb.component('rx.mapPromise', {
@@ -234,7 +234,7 @@ jb.component('rx.mapPromise', {
   params: [
     {id: 'func', dynamic: true, mandatory: true}
   ],
-  impl: (ctx,func) => jb.callbag.mapPromise(ctx2 => Promise.resolve(func(ctx2)).then(data => ({vars: ctx2.vars, data})))
+  impl: (ctx,func) => jb.callbag.mapPromise(ctx2 => Promise.resolve(func(ctx2)).then(data => ({vars: ctx2.vars || {}, data})))
 })
 
 jb.component('rx.retry', {
@@ -445,7 +445,7 @@ jb.component('sink.action', {
   params: [
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
   ],
-  impl: (ctx,action) => jb.callbag.subscribe(ctx2 => action(ctx2))
+  impl: (ctx,action) => jb.callbag.subscribe(ctx2 => { Object.assign(ctx2.vars,{sinkCtx:ctx}); return action(ctx2) })
 })
 
 jb.component('sink.data', {

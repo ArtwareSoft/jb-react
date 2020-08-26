@@ -69,31 +69,31 @@ jb.component('sizesEditor.widthHeight', {
             ),
           dialog.closeDialog()
         ),
-        features: css(`{position: absolute; top: %$top%; left: 65px; font-size: 9px; width: 100px;} 
+        features: css(`{position: absolute; top: %$top%; left: 65px; font-size: 9px; width: 100px;}
         ~:hover { font-size: 16px; background: var(--vscode-editor-background); z-index: 10000}`),
         style: button.href()
       })
 })
 
 jb.component('sizesEditor.prop', {
-    type: 'control',
-    params: [
-        {id:'prop', as: 'string'},
-        {id:'css', as: 'string'},
-    ],
-    impl: button({
-        title: '%$prop%',
-        action: runActions(
-          writeValue('%$studio/profile_path%', '%$path%'),
-          studio.openProperties(
-              true,
-              studio.getOrCreateCompInArray('%$path%~features', 'css.%$prop%')
-            ),
-          dialog.closeDialog()
+  type: 'control',
+  params: [
+    {id: 'prop', as: 'string'},
+    {id: 'css', as: 'string'}
+  ],
+  impl: button({
+    title: '%$prop%',
+    action: runActions(
+      writeValue('%$studio/profile_path%', '%$path%'),
+      studio.openProperties(
+          true,
+          studio.getOrCreateCompInArray('%$path%~features', 'css.%$prop%')
         ),
-        features: css(`{position: absolute; %$css%; font-size: 9px; }`),
-        style: button.href()
-      })
+      dialog.closeDialog()
+    ),
+    style: button.href(),
+    features: css('{padding-top:7px; position: absolute; %$css%; font-size: 9px; }')
+  })
 })
 
 jb.component('sizesEditor.editor', {
