@@ -72,7 +72,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       ],
       remote: [
         'src/misc/remote-callbag.js',
-        'src/ui/watchable/remote-widget.js',
+//        'src/ui/watchable/remote-widget.js',
       ],
       'inner-html': [ // unsafe
         'src/ui/inner-html.js',
@@ -90,7 +90,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       ],
       'two-tier-widget': ['src/ui/two-tier-widget.js'],        
       'puppeteer': [
-        'src/misc/puppeteer/pptr-remote.js',
+//        'src/misc/puppeteer/pptr-remote.js',
         'src/misc/puppeteer/pptr.js',
         'src/misc/puppeteer/crawler.js',
       ],            
@@ -176,7 +176,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'references','properties-menu','save','open-project','tree',
         'data-browse', 'new-project','event-tracker', 'toolbar','search', 'main', 'component-header', 'hosts', 'probe',
         'watch-ref-viewer', 'content-editable', 'position-thumbs', 'html-to-ctrl', 'patterns', 'pick-icon', 
-        'inplace-edit', 'grid-editor', 'sizes-editor', 'refactor', 'vscode', 'pptr'
+        'inplace-edit', 'grid-editor', 'sizes-editor', 'refactor', 'vscode', 'pptr', 'chrome-debugger'
       ],
       'studio-tests': [
         'projects/studio/studio-testers.js',
