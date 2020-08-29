@@ -11,7 +11,7 @@ jb.remote = {
 jb.remoteCBHandler = remote => ({
     counter: 0,
     cbLookUp: {},
-    newId() { return remote.uri + (this.counter++) },
+    newId() { return remote.uri + ':' + (this.counter++) },
     addToLookup(cb) { 
         const id = this.newId()
         this.cbLookUp[id] = cb
@@ -32,6 +32,15 @@ jb.remoteCBHandler = remote => ({
             remote.postObj({$:'CB.createOperator', ...remoteCtx, sourceId })
         }
     },
+    init() {
+        remote.addEventListener('message', msg => {
+            if ((msg.data.$ || '').indexOf('CB.') == 0)
+                this.handleCBCommnad(msg.data)
+            else if (msg.data.$ == 'CB')
+                this.inboundMsg(msg.data)
+        })
+        return this
+    },
     handleCBCommnad({$,profile,vars,path,sourceId,cbId}) {
         const ctx = new self.jb.jbCtx().ctx({profile,vars,path})
         if ($ == 'CB.createSource')
@@ -44,7 +53,7 @@ jb.remoteCBHandler = remote => ({
 jb.component('remote.worker', {
     type: 'remote',
     params: [
-        {id: 'id', as: 'string', defaultValue: 'mainWorker' },
+        {id: 'id', as: 'string', defaultValue: '0' },
         {id: 'libs', as: 'array', defaultValue: ['common','remote','rx'] },
     ],    
     impl: (ctx,id,libs) => {
@@ -58,17 +67,14 @@ jb.component('remote.worker', {
                 jb.remote.onServer = true
                 jb.cbLogByPath = {}
                 jb.initSpy({spyParam: 'remote'})
-                self.postObj = m => { jb.log('remote',['sent from ${uri}',m]); self.postMessage(m) }
-                self.CBHandler = jb.remoteCBHandler(self)
-                self.addEventListener('message', msg => jb.log('remote',['reveiced at ${uri}',msg]))
-                self.addEventListener('message', msg => (msg.data.$ || '').indexOf('CB.') == 0 && self.CBHandler.handleCBCommnad(msg.data))
-                self.addEventListener('message', msg => (msg.data.$ == 'CB') && self.CBHandler.inboundMsg(msg.data))
+                self.postObj = m => { jb.log('remote',['sent from ${uri}',m]); self.postMessage(m.data) }
+                self.CBHandler = jb.remoteCBHandler(self).init()
             `
         ].join('\n')
         const worker = jb.remote.servers[uri] = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
         worker.uri = uri
         worker.CBHandler = jb.remoteCBHandler(worker)
-        worker.postObj = m => worker.postMessage(m)
+        worker.postObj = m => { jb.log('remote',[`sent to ${uri}`,m.data]); worker.postMessage(m) }
         return worker
     }
 })
