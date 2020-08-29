@@ -58,11 +58,13 @@ jb.component('remote.worker', {
                 self.workerId = () => 1
                 jb.remote.onServer = true
                 jb.cbLogByPath = {}
-                jb.initSpy({spyParam: 'remoteCallbag'})
-                self.postObj = m => self.postMessage(m)
+                debugger
+                jb.initSpy({spyParam: 'remote'})
+                self.postObj = m => { jb.log('remote',['sent from ${uri}',m]); self.postMessage(m) }
                 self.CBHandler = jb.remoteCBHandler(self)
-                self.addListener('message', msg => (msg.$ || '').indexOf('CB.') == 0 && self.CBHandler.handleCBCommnad(msg))
-                self.addListener('message', msg => (msg.$ == 'CB') && self.CBHandler.inboundMsg(msg))
+                self.addEventListener('message', msg => jb.log('remote',['reveiced at ${uri}',msg]))
+                self.addEventListener('message', msg => (msg.$ || '').indexOf('CB.') == 0 && self.CBHandler.handleCBCommnad(msg))
+                self.addEventListener('message', msg => (msg.$ == 'CB') && self.CBHandler.inboundMsg(msg))
             `
         ].join('\n')
         const worker = jb.remote.servers[uri] = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
