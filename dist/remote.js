@@ -11,6 +11,18 @@ jb.remote = {
         map: {},
         newId() { return (jb.frame.uri || 'main') + ':' + (this.counter++) },
         get(id) { return this.map[id] },
+        waitFor(check,interval,times) {
+            let count = 0
+            return new Promise((resolve,reject) => {
+                const toRelease = setInterval(() => {
+                    count++
+                    const v = check()
+                    if (v || count >= times) clearInterval(toRelease)
+                    if (v) resolve(v)
+                    if (count >= times) reject('timeout')
+                }, interval)
+            })
+        },
         getAsPromise(id) { 
             return jb.ui.waitFor(()=> this.map[id],5,10).then(cb => {
                 if (!cb)
