@@ -4,7 +4,7 @@ jb.component('remoteTest.sourceNoTalkback', {
     impl: dataTest({
       timeout: 5000,
       calculate: pipe(rx.pipe(
-            source.remote(rx.interval(1), remote.worker()),
+            source.remote(rx.interval(500), remote.worker()),
             rx.take(2),
             rx.map('-%%-'),
       ), join(',')),
