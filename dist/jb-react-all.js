@@ -11941,6 +11941,7 @@ jb.remoteCBHandler = remote => ({
     },
     filterCtx(remoteCtx) { return { profile: remoteCtx.profile, path: remoteCtx.path }},
     handleCBCommnad({$,profile,vars,path,sourceId,cbId}) {
+        debugger
         const ctx = new self.jb.jbCtx().ctx({profile,vars,path})
         if ($ == 'CB.createSource')
             self.CBHanlder.cbLookUp[cbId] = ctx.runItself()
@@ -11965,7 +11966,6 @@ jb.component('remote.worker', {
                 self.workerId = () => 1
                 jb.remote.onServer = true
                 jb.cbLogByPath = {}
-                debugger
                 jb.initSpy({spyParam: 'remote'})
                 self.postObj = m => { jb.log('remote',['sent from ${uri}',m]); self.postMessage(m) }
                 self.CBHandler = jb.remoteCBHandler(self)
