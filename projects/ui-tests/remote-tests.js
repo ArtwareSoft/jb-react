@@ -4,9 +4,10 @@ jb.component('remoteTest.sourceNoTalkback', {
     impl: dataTest({
       timeout: 5000,
       calculate: pipe(rx.pipe(
-            source.remote(rx.interval(500), remote.worker()),
+            source.remote(rx.interval(1), remote.worker()),
             rx.take(2),
             rx.map('-%%-'),
+            rx.log('tst'),
       ), join(',')),
       expectedResult: equals('-0-,-1-')
     })
@@ -34,26 +35,39 @@ jb.component('remoteTest.remoteWorker', {
   })
 })
 
-jb.component('remoteTest.innerRx', {
+jb.component('remoteTest.operator', {
     impl: dataTest({
       timeout: 5000,
       calculate: pipe(
          rx.pipe(
             rx.fromIter([1,2,3]),
-            remote.innerRx(rx.take(2)),
+            remote.operator(rx.take(2), remote.worker()),
             rx.map('-%%-')
       ), join(',')),
       expectedResult: equals('-1-,-2-')
     })
 })
 
-jb.component('remoteTest.remoteObject', {
+jb.component('remoteTest.sampleObject',{
+  params: [
+    {id: 'val', as: 'number' }
+  ],
+  impl: (ctx,val) => {
+      class tst {
+          constructor(d) { this.d = val}
+          m1() { return this.d}
+      }
+      return new tst(val)
+  },
+})
+
+jb.component('remoteTest.remoteObjectWithMethods', {
   impl: dataTest({
     timeout: 5000,
     calculate: rx.pipe(
       rx.fromIter([1]),
-      remote.innerRx(rx.map(ctx => jb.remote.createSampleObject(5))),
-      remote.innerRx(rx.map('%m1()%')),
+      remote.operator(rx.map(remoteTest.sampleObject(5)), remote.worker()),
+      remote.operator(rx.map('%m1()%'), remote.worker()),
       rx.take(1)
     ),
     expectedResult: equals(5)
@@ -68,8 +82,8 @@ jb.component('remoteTest.remoteParam', {
     timeout: 5000,
       calculate: rx.pipe(
           rx.fromIter([1]),
-          remote.innerRx(rx.map( (ctx,{},{retVal}) => { debugger ; return jb.remote.createSampleObject(retVal) })),
-          remote.innerRx(rx.map('%m1()%')),
+          remote.operator(rx.map(remoteTest.sampleObject('%$retval%')), remote.worker()),
+          remote.operator(rx.map('%m1()%'), remote.worker()),
           rx.take(1)
     ),
     expectedResult: equals(5)
@@ -84,7 +98,7 @@ jb.component('remoteTest.dynamicProfileFunc', {
     timeout: 5000,
       calculate: rx.pipe(
           rx.fromIter([1]),
-          remote.innerRx(rx.map('%$func()%')),
+          remote.operator(rx.map('%$func()%'), remote.worker()),
           rx.take(1)
     ),
     expectedResult: equals('-1-')
@@ -99,7 +113,7 @@ jb.component('remoteTest.dynamicJsFunc', {
     timeout: 5000,
       calculate: rx.pipe(
           rx.fromIter([1]),
-          remote.innerRx(rx.map('%$func()%')),
+          remote.operator(rx.map('%$func()%'), remote.worker()),
           rx.take(1)
     ),
     expectedResult: equals('-1-')

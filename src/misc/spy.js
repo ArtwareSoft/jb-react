@@ -79,10 +79,10 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			if (this.logs[logName].length > settings.MAX_LOG_SIZE) {
 				this.logs[logName] = this.logs[logName].slice(-1 * Math.floor(settings.MAX_LOG_SIZE / 2))
 			}
-			if (!record[0] && typeof funcTitle === 'function') {
+			if (record[0] == null && typeof funcTitle === 'function') {
 				record[0] = funcTitle()
 			}
-			if (!record[0] && record.source) {
+			if (record[0] == null && record.source) {
 				record[0] = record.source[0]
 			}
 			if (typeof modifier === 'function') {
