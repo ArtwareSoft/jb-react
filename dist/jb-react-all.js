@@ -11950,7 +11950,7 @@ jb.remoteCBHandler = remote => ({
     addToLookup(cb) { return this.cbLookUp.addToLookup(cb) },
     inboundMsg({cbId,t,d}) { return this.cbLookUp.getAsPromise(cbId).then(cb=> cb(t, t == 0 ? this.remoteCB(d) : d)) },
     outboundMsg({cbId,t,d}) { remote.postObj({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : d }) },
-    remoteCB(cbId) { return (t,d) => remote.postObj({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : d }) },
+    remoteCB(cbId) { return (t,d) => remote.postObj({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : this.stripeCtx(d) }) },
     remoteSource(remoteCtx) {
         const cbId = this.cbLookUp.newId()
         remote.postObj({$:'CB.createSource', ...remoteCtx, cbId })
@@ -11981,6 +11981,9 @@ jb.remoteCBHandler = remote => ({
             this.cbLookUp.map[cbId] = ctx.runItself()
         else if ($ == 'CB.createOperator')
             this.cbLookUp.map[cbId] = ctx.runItself()(this.remoteCB(sourceId) )
+    },
+    stripeCtx(ctx) {
+        return (ctx && ctx.vars) ? { ...ctx, vars: {}} : ctx
     }
 })
 
