@@ -11915,10 +11915,10 @@ jb.remote = {
     },
 }
 
-jb.remoteCBHandler = remote => ({
+jb.remoteCBHandler = (remote,localId) => ({
     counter: 0,
     cbLookUp: {},
-    newId() { return remote.uri + ':' + (this.counter++) },
+    newId() { return (localId || remote.uri) + ':' + (this.counter++) },
     addToLookup(cb) { 
         const id = this.newId()
         this.cbLookUp[id] = cb
@@ -11981,7 +11981,7 @@ jb.component('remote.worker', {
         ].join('\n')
         const worker = jb.remote.servers[uri] = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
         worker.uri = uri
-        worker.CBHandler = jb.remoteCBHandler(worker).init()
+        worker.CBHandler = jb.remoteCBHandler(worker,'main').init()
         worker.postObj = m => { jb.log('remote',[`sent to ${uri}`,m]); worker.postMessage(m) }
         return worker
     }
