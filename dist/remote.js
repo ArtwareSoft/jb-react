@@ -20,7 +20,7 @@ jb.remoteCBHandler = remote => ({
     inboundMsg({cbId,t,d}) { return this.getCB(cbId).then(cb=> cb(t, t == 0 ? this.remoteCB(d) : d)) },
     outboundMsg({cbId,t,d}) { remote.postObj({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : d }) },
     getCB(cbId) { return jb.delay(this.cbLookUp[cbId] ? 0 : 10).then(()=>this.cbLookUp[cbId]) },
-    remoteCB: cbId => (t,d) => remote.postObj({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : d }),
+    remoteCB(cbId) { return (t,d) => remote.postObj({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : d }) },
     remoteSource(remoteCtx) {
         const cbId = this.newId()
         remote.postObj({$:'CB.createSource', ...remoteCtx, cbId })
