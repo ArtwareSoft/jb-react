@@ -12,7 +12,11 @@ jb.remote = {
         newId() { return (jb.frame.uri || 'main') + ':' + (this.counter++) },
         get(id) { return this.map[id] },
         getAsPromise(id) { 
-            return jb.ui.waitFor(()=> this.map[id],5,10).then(()=>this.map[id] || (()=>{}))
+            return jb.ui.waitFor(()=> this.map[id],5,10).then(cb => {
+                if (!cb)
+                    jb.logError('cbLookUp - can not find cb',id)
+                return cb
+            })
         },
         addToLookup(cb) { 
             const id = this.newId()
@@ -25,7 +29,7 @@ jb.remote = {
 jb.remoteCBHandler = remote => ({
     cbLookUp: jb.remote.cbLookUp,
     addToLookup(cb) { return this.cbLookUp.addToLookup(cb) },
-    inboundMsg({cbId,t,d}) { return this.getAsPromise(cbId).then(cb=> cb(t, t == 0 ? this.remoteCB(d) : d)) },
+    inboundMsg({cbId,t,d}) { return this.cbLookUp.getAsPromise(cbId).then(cb=> cb(t, t == 0 ? this.remoteCB(d) : d)) },
     outboundMsg({cbId,t,d}) { remote.postObj({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : d }) },
     remoteCB(cbId) { return (t,d) => remote.postObj({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : d }) },
     remoteSource(remoteCtx) {
