@@ -11,6 +11,9 @@ jb.remote = {
         map: {},
         newId() { return (jb.frame.uri || 'main') + ':' + (this.counter++) },
         get(id) { return this.map[id] },
+        getAsPromise(id) { 
+            return jb.ui.waitFor(()=> this.map[id],5,10).then(()=>this.map[id] || (()=>{}))
+        },
         addToLookup(cb) { 
             const id = this.newId()
             this.map[id] = cb
@@ -22,9 +25,8 @@ jb.remote = {
 jb.remoteCBHandler = remote => ({
     cbLookUp: jb.remote.cbLookUp,
     addToLookup(cb) { return this.cbLookUp.addToLookup(cb) },
-    inboundMsg({cbId,t,d}) { return this.getCB(cbId).then(cb=> cb(t, t == 0 ? this.remoteCB(d) : d)) },
+    inboundMsg({cbId,t,d}) { return this.getAsPromise(cbId).then(cb=> cb(t, t == 0 ? this.remoteCB(d) : d)) },
     outboundMsg({cbId,t,d}) { remote.postObj({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : d }) },
-    getCB(cbId) { return jb.delay(this.cbLookUp.get(cbId) ? 0 : 10).then(()=>this.cbLookUp.get(cbId)) },
     remoteCB(cbId) { return (t,d) => remote.postObj({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : d }) },
     remoteSource(remoteCtx) {
         const cbId = this.cbLookUp.newId()
@@ -34,7 +36,9 @@ jb.remoteCBHandler = remote => ({
     remoteOperator(remoteCtx) {
         return source => {
             const sourceId = this.cbLookUp.addToLookup(source)
-            remote.postObj({$:'CB.createOperator', ...remoteCtx, sourceId })
+            const cbId = this.cbLookUp.newId()
+            remote.postObj({$:'CB.createOperator', ...remoteCtx, sourceId, cbId })
+            return (t,d) => this.outboundMsg({cbId,t,d})
         }
     },
     init() {
@@ -53,7 +57,7 @@ jb.remoteCBHandler = remote => ({
         if ($ == 'CB.createSource')
             this.cbLookUp.map[cbId] = ctx.runItself()
         else if ($ == 'CB.createOperator')
-            ctx.runItself()(this.remoteCB(sourceId) )
+            this.cbLookUp.map[cbId] = ctx.runItself()(this.remoteCB(sourceId) )
     }
 })
 
