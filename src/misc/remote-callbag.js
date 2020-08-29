@@ -24,7 +24,7 @@ jb.remote = {
             })
         },
         getAsPromise(id) { 
-            return jb.ui.waitFor(()=> this.map[id],5,10).then(cb => {
+            return this.waitFor(()=> this.map[id],5,10).then(cb => {
                 if (!cb)
                     jb.logError('cbLookUp - can not find cb',id)
                 return cb
