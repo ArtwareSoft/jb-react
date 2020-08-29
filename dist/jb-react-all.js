@@ -11958,7 +11958,7 @@ jb.remoteCBHandler = remote => ({
     handleCBCommnad({$,profile,vars,path,sourceId,cbId}) {
         const ctx = new self.jb.jbCtx().ctx({profile,vars,path})
         if ($ == 'CB.createSource')
-            this.cbLookUp.get(cbId) = ctx.runItself()
+            this.cbLookUp.map[cbId] = ctx.runItself()
         else if ($ == 'CB.createOperator')
             ctx.runItself()(this.remoteCB(sourceId) )
     }
