@@ -11913,7 +11913,7 @@ jb.remote = {
         const location = jb.path(jb.studio,'studioWindow.location') || jb.path(jb.frame,'location')
         return pathOfDistFolder && pathOfDistFolder() || location && location.href.match(/^[^:]*/)[0] + `://${location.host}/dist`
     },
-    cbLookup: {
+    cbLookUp: {
         counter: 0,
         map: {},
         newId() { return (jb.frame.uri || 'main') + ':' + (this.counter++) },
@@ -11928,6 +11928,7 @@ jb.remote = {
 
 jb.remoteCBHandler = remote => ({
     cbLookUp: jb.remote.cbLookUp,
+    addToLookup(cb) { return this.cbLookUp.addToLookup(cb) },
     inboundMsg({cbId,t,d}) { return this.getCB(cbId).then(cb=> cb(t, t == 0 ? this.remoteCB(d) : d)) },
     outboundMsg({cbId,t,d}) { remote.postObj({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : d }) },
     getCB(cbId) { return jb.delay(this.cbLookUp.get(cbId) ? 0 : 10).then(()=>this.cbLookUp.get(cbId)) },
