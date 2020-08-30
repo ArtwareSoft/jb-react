@@ -11964,7 +11964,7 @@ jb.remoteCBHandler = remote => ({
     remoteCB(cbId) { return (t,d) => remote.postObj({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : this.stripeCtx(d) }) },
     remoteSource(remoteCtx,ctxDepth) {
         const cbId = this.cbLookUp.newId()
-        remote.postObj({$:'CB.createSource', ...this.serializeCtx(remoteCtx,ctxDepth), cbId })
+        remote.postObj({$:'CB.createSource', ...this.stripeCtx(remoteCtx,ctxDepth), cbId })
         return (t,d) => this.outboundMsg({cbId,t,d})
     },
     remoteOperator(remoteCtx) {
@@ -11987,20 +11987,16 @@ jb.remoteCBHandler = remote => ({
         return this
     },
     handleCBCommnad({$,profile,vars,path,sourceId,cbId}) {
-        const ctx = this.deSerializeCtx({profile,vars,path})
+        const ctx = this.buildCtx({profile,vars,path})
         if ($ == 'CB.createSource')
             this.cbLookUp.map[cbId] = ctx.runItself()
         else if ($ == 'CB.createOperator')
             this.cbLookUp.map[cbId] = ctx.runItself()(this.remoteCB(sourceId) )
     },
-    stripeCtx(ctx) {
-        return (ctx && ctx.vars) ? { ...ctx, vars: {}} : ctx
+    stripeCtx(ctx,depth) {
+        return (ctx && ctx.vars) ? { ...ctx, vars: jb.objFromEntries(jb.entries(ctx.vars).filter(e=>['string','boolean','number'].indexOf(typeof e[1]) != -1)) } : ctx
     },
-    serializeCtx(ctx,depth) {
-        // TBD
-        return ctx
-    },
-    deSerializeCtx(profile,vars,path) {
+    buildCtx(profile,vars,path) {
         // TBD
         return new self.jb.jbCtx().ctx({profile,vars,path})
     }
@@ -12049,7 +12045,7 @@ jb.component('source.remote', {
       {id: 'ctxDepthToPass', as: 'number', defaultValue: 0}
     ],
     impl: (ctx,rx,remote, ctxDepth) => remote.uri == 'local' ? rx() : 
-        remote.CBHandler.remoteSource({profile: ctx.profile.rx, path: `${ctx.path}~rx`}, ctxDepth)
+        remote.CBHandler.remoteSource({profile: ctx.profile.rx, path: `${ctx.path}~rx`, vars: ctx.vars }, ctxDepth)
 })
 
 jb.component('remote.operator', {

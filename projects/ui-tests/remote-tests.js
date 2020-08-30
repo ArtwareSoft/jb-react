@@ -122,7 +122,7 @@ jb.component('remoteTest.sampleObject', {
 
 jb.component('remoteTest.twoTierWidget.button.local', {
   impl: uiFrontEndTest({
-    control: widget.twoTierWidget(button('hello world'), remote.worker()),
+    control: widget.twoTierWidget(button('hello world'), remote.worker({libs: ['common','ui-common','remote','rx','two-tier-widget'] })),
     expectedResult: contains('hello world')
   })
 })
