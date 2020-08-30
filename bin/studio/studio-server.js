@@ -88,7 +88,7 @@ function calcFullPath(path) {
 
 function serveFile(req,res,path) {
 //  console.log(path,full_path);
-  const full_path = calcFullPath(path).replace(/!st!/,'')
+  const full_path = calcFullPath(path).replace(/![^!]+!/,'')
   const extension = path.split('.').pop();
   if (settings.verbose) console.log('reading file ',full_path)
 

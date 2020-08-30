@@ -40,10 +40,6 @@ jb.remote = {
             jb.delay(100).then(()=> delete this.map[id])
         }
     },
-    ctxLookUp: {
-        map: {},
-        
-    }
 }
 
 jb.remoteCBHandler = remote => ({
@@ -64,7 +60,7 @@ jb.remoteCBHandler = remote => ({
         return source => {
             const sourceId = this.cbLookUp.addToLookup(source)
             const cbId = this.cbLookUp.newId()
-            remote.postObj({$:'CB.createOperator', ...remoteCtx, sourceId, cbId })
+            remote.postObj({$:'CB.createOperator', ...this.stripeCtx(remoteCtx), sourceId, cbId })
             return (t,d) => this.outboundMsg({cbId,t,d})
         }
     },
@@ -87,8 +83,18 @@ jb.remoteCBHandler = remote => ({
             this.cbLookUp.map[cbId] = ctx.runItself()(this.remoteCB(sourceId) )
     },
     stripeCtx(ctx,depth) {
-        return (ctx && ctx.vars) ? { ...ctx, vars: jb.objFromEntries(jb.entries(ctx.vars).filter(e=>['string','boolean','number'].indexOf(typeof e[1]) != -1)) } : ctx
+        return this.stripeObj(ctx,depth || 2)
     },
+    stripeObj(obj,depth) {
+        if (depth == 0) return {}
+        return jb.objFromEntries(jb.entries(obj).map(e=>{
+            if (e[0].match(/^\$/)) return
+            if (['string','boolean','number'].indexOf(typeof e[1]) != -1)
+                return e
+            if (typeof e[1] == 'object')
+                return [e[0],this.stripeObj(e[1],depth-1)]
+        }).filter(x=>x))
+    },    
     buildCtx(profile,vars,path) {
         // TBD
         return new self.jb.jbCtx().ctx({profile,vars,path})
@@ -106,7 +112,7 @@ jb.component('remote.worker', {
         if (jb.remote.servers[uri]) return jb.remote.servers[uri]
         const distPath = jb.remote.pathOfDistFolder()
         const workerCode = [
-            ...libs.map(lib=>`importScripts('${distPath}/${lib}.js')`),`
+            ...libs.map(lib=>`importScripts('${distPath}/!${uri}!${lib}.js')`),`
                 self.uri = "${uri}"
                 self.workerId = () => 1
                 jb.remote.onServer = true
@@ -147,6 +153,7 @@ jb.component('remote.operator', {
       {id: 'rx', type: 'rx', dynamic: true },
       {id: 'remote', type: 'remote', defaultValue: remote.local()}
     ],
-    impl: (ctx,rx,remote) => remote.uri == 'local' ? rx() : remote.CBHandler.remoteOperator({profile: ctx.profile.rx, path: `${ctx.path}~rx`})
+    impl: (ctx,rx,remote) => remote.uri == 'local' ? rx() : 
+        remote.CBHandler.remoteOperator({profile: ctx.profile.rx, path: `${ctx.path}~rx`, vars: ctx.vars, params: ctx.compenentContext.params })
 });
 
