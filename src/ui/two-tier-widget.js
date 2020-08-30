@@ -97,11 +97,11 @@ jb.component('widget.twoTierWidget', {
     type: 'control',
     params: [
       {id: 'control', type: 'control', dynamic: true },
-      {id: 'id', as: 'string'},
       {id: 'remote', type: 'remote', defaultValue: remote.local()},
+//      {id: 'id', as: 'string'},
     ],
     impl: controlWithFeatures({
-        vars: Var('widgetId', (ctx,{},{id}) => id || 'widget' + ctx.id),
+        vars: Var('widgetId', ctx => 'widget' + ctx.id),
         control: widget.frontEndCtrl('%$widgetId%'),
         features: followUp.flow(
             source.callbag(() => jb.ui.widgetUserRequests),
@@ -110,7 +110,7 @@ jb.component('widget.twoTierWidget', {
             rx.takeWhile('%ev.type% != destroy'),
             //source.frontEndUserEvent('%$widgetId%'),
             rx.log('send to headless'),
-            remote.innerRx(widget.headless(call('control'),'%$widgetId%'), '%$remote%'),
+            remote.operator(widget.headless(call('control'),'%$widgetId%'), '%$remote%'),
             rx.log('arrives from headless'),
             sink.frontEndDelta('%$widgetId%'),
         )

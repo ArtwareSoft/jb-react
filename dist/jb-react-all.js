@@ -11906,32 +11906,33 @@ class Json {
 })();
 
 jb.remote = {
-    servers: {
-    },
+    servers: {},
     pathOfDistFolder() {
         const pathOfDistFolder = jb.path(jb.studio,'studiojb.studio.host.pathOfDistFolder')
         const location = jb.path(jb.studio,'studioWindow.location') || jb.path(jb.frame,'location')
         return pathOfDistFolder && pathOfDistFolder() || location && location.href.match(/^[^:]*/)[0] + `://${location.host}/dist`
+    },
+    waitFor(check,interval,times) {
+        let count = 0
+        return new Promise((resolve,reject) => {
+            const toRelease = setInterval(() => {
+                count++
+                const v = check()
+                if (v || count >= times) clearInterval(toRelease)
+                if (v) resolve(v)
+                if (count >= times) reject('timeout')
+            }, interval)
+        })
     },
     cbLookUp: {
         counter: 0,
         map: {},
         newId() { return (jb.frame.uri || 'main') + ':' + (this.counter++) },
         get(id) { return this.map[id] },
-        waitFor(check,interval,times) {
-            let count = 0
-            return new Promise((resolve,reject) => {
-                const toRelease = setInterval(() => {
-                    count++
-                    const v = check()
-                    if (v || count >= times) clearInterval(toRelease)
-                    if (v) resolve(v)
-                    if (count >= times) reject('timeout')
-                }, interval)
-            })
-        },
-        getAsPromise(id) { 
-            return this.waitFor(()=> this.map[id],5,10).then(cb => {
+        getAsPromise(id,t) { 
+            if (t == 2) this.removeEntry(id)
+                
+            return jb.remote.waitFor(()=> this.map[id],5,10).then(cb => {
                 if (!cb)
                     jb.logError('cbLookUp - can not find cb',id)
                 return cb
@@ -11941,19 +11942,29 @@ jb.remote = {
             const id = this.newId()
             this.map[id] = cb
             return id 
+        },
+        removeEntry(id) {
+            jb.delay(100).then(()=> delete this.map[id])
         }
+    },
+    ctxLookUp: {
+        map: {},
+        
     }
 }
 
 jb.remoteCBHandler = remote => ({
     cbLookUp: jb.remote.cbLookUp,
     addToLookup(cb) { return this.cbLookUp.addToLookup(cb) },
-    inboundMsg({cbId,t,d}) { return this.cbLookUp.getAsPromise(cbId).then(cb=> cb(t, t == 0 ? this.remoteCB(d) : d)) },
-    outboundMsg({cbId,t,d}) { remote.postObj({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : d }) },
+    inboundMsg({cbId,t,d}) { return this.cbLookUp.getAsPromise(cbId,t).then(cb=> cb(t, t == 0 ? this.remoteCB(d) : d)) },
+    outboundMsg({cbId,t,d}) { 
+        remote.postObj({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : d })
+        if (t == 2) this.cbLookUp.removeEntry(cbId)
+    },
     remoteCB(cbId) { return (t,d) => remote.postObj({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : this.stripeCtx(d) }) },
-    remoteSource(remoteCtx) {
+    remoteSource(remoteCtx,ctxDepth) {
         const cbId = this.cbLookUp.newId()
-        remote.postObj({$:'CB.createSource', ...remoteCtx, cbId })
+        remote.postObj({$:'CB.createSource', ...this.serializeCtx(remoteCtx,ctxDepth), cbId })
         return (t,d) => this.outboundMsg({cbId,t,d})
     },
     remoteOperator(remoteCtx) {
@@ -11976,7 +11987,7 @@ jb.remoteCBHandler = remote => ({
         return this
     },
     handleCBCommnad({$,profile,vars,path,sourceId,cbId}) {
-        const ctx = new self.jb.jbCtx().ctx({profile,vars,path})
+        const ctx = this.deSerializeCtx({profile,vars,path})
         if ($ == 'CB.createSource')
             this.cbLookUp.map[cbId] = ctx.runItself()
         else if ($ == 'CB.createOperator')
@@ -11984,6 +11995,14 @@ jb.remoteCBHandler = remote => ({
     },
     stripeCtx(ctx) {
         return (ctx && ctx.vars) ? { ...ctx, vars: {}} : ctx
+    },
+    serializeCtx(ctx,depth) {
+        // TBD
+        return ctx
+    },
+    deSerializeCtx(profile,vars,path) {
+        // TBD
+        return new self.jb.jbCtx().ctx({profile,vars,path})
     }
 })
 
@@ -12023,11 +12042,14 @@ jb.component('remote.local', {
 
 jb.component('source.remote', {
     type: 'rx',
+    macroByValue: true,
     params: [
       {id: 'rx', type: 'rx', dynamic: true },
-      {id: 'remote', type: 'remote', defaultValue: remote.local() }
+      {id: 'remote', type: 'remote', defaultValue: remote.local() },
+      {id: 'ctxDepthToPass', as: 'number', defaultValue: 0}
     ],
-    impl: (ctx,rx,remote) => remote.uri == 'local' ? rx() : remote.CBHandler.remoteSource({profile: ctx.profile.rx, path: `${ctx.path}~rx`})
+    impl: (ctx,rx,remote, ctxDepth) => remote.uri == 'local' ? rx() : 
+        remote.CBHandler.remoteSource({profile: ctx.profile.rx, path: `${ctx.path}~rx`}, ctxDepth)
 })
 
 jb.component('remote.operator', {

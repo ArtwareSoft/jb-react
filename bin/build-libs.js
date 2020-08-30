@@ -28,7 +28,7 @@ const studioCssFiles = ['/css/styles.css','css/font.css','/projects/studio/css/s
   .concat(filesOfModules('codemirror-css,material-css')).filter(x=>x.match(/.css$/));
 const nodeFiles = filesOfModules('common,node,pretty-print,xml,jison,parsing').filter(x=>!x.match(/.css$/));
 
-'core,common,ui-common,animate,d3,cards,cards-sample-data,pretty-print,parsing,xml,puppeteer,rx,md-icons,remote'
+'core,common,ui-common,animate,d3,cards,cards-sample-data,pretty-print,parsing,xml,puppeteer,rx,md-icons,remote,two-tier-widget'
   .split(',').forEach(m=>concatFiles(jb_modules[m],`${m}.js`))
 
 concatFiles(filesOfModules('ui-common-css'),'css/ui-common.css')
