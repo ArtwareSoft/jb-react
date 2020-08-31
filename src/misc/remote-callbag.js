@@ -51,16 +51,16 @@ jb.remoteCBHandler = remote => ({
         if (t == 2) this.cbLookUp.removeEntry(cbId)
     },
     remoteCB(cbId) { return (t,d) => remote.postObj({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : this.stripeCtx(d) }) },
-    remoteSource(remoteCtx,ctxDepth) {
+    remoteSource(remoteCtx) {
         const cbId = this.cbLookUp.newId()
-        remote.postObj({$:'CB.createSource', ...this.stripeCtx(remoteCtx,ctxDepth), cbId })
+        remote.postObj({$:'CB.createSource', remoteCtx, cbId })
         return (t,d) => this.outboundMsg({cbId,t,d})
     },
     remoteOperator(remoteCtx) {
         return source => {
             const sourceId = this.cbLookUp.addToLookup(source)
             const cbId = this.cbLookUp.newId()
-            remote.postObj({$:'CB.createOperator', ...this.stripeCtx(remoteCtx), sourceId, cbId })
+            remote.postObj({$:'CB.createOperator', remoteCtx, sourceId, cbId })
             return (t,d) => this.outboundMsg({cbId,t,d})
         }
     },
@@ -75,30 +75,14 @@ jb.remoteCBHandler = remote => ({
         })
         return this
     },
-    handleCBCommnad({$,profile,vars,path,sourceId,cbId}) {
-        const ctx = this.buildCtx({profile,vars,path})
+    handleCBCommnad(_ctx) {
+        const {sourceId,cbId} = _ctx
+        const ctx = jb.remoteCtx.buildCtx(_ctx)
         if ($ == 'CB.createSource')
             this.cbLookUp.map[cbId] = ctx.runItself()
         else if ($ == 'CB.createOperator')
             this.cbLookUp.map[cbId] = ctx.runItself()(this.remoteCB(sourceId) )
     },
-    stripeCtx(ctx,depth) {
-        return this.stripeObj(ctx,depth || 2)
-    },
-    stripeObj(obj,depth) {
-        if (depth == 0) return {}
-        return jb.objFromEntries(jb.entries(obj).map(e=>{
-            if (e[0].match(/^\$/)) return
-            if (['string','boolean','number'].indexOf(typeof e[1]) != -1)
-                return e
-            if (typeof e[1] == 'object')
-                return [e[0],this.stripeObj(e[1],depth-1)]
-        }).filter(x=>x))
-    },    
-    buildCtx({profile,vars,path}) {
-        // TBD
-        return new self.jb.jbCtx().ctx({profile,vars,path})
-    }
 })
 
 jb.component('remote.worker', {
@@ -141,18 +125,17 @@ jb.component('source.remote', {
     params: [
       {id: 'rx', type: 'rx', dynamic: true },
       {id: 'remote', type: 'remote', defaultValue: remote.local() },
-      {id: 'ctxDepthToPass', as: 'number', defaultValue: 0}
     ],
-    impl: (ctx,rx,remote, ctxDepth) => remote.uri == 'local' ? rx() : 
-        remote.CBHandler.remoteSource({profile: ctx.profile.rx, path: `${ctx.path}~rx`, vars: ctx.vars }, ctxDepth)
+    impl: (ctx,rx,remote) => remote.uri == 'local' ? rx() : 
+        remote.CBHandler.remoteSource(jb.remoteCtx.stripFunction(rx))
 })
 
 jb.component('remote.operator', {
     type: 'rx',
     params: [
       {id: 'rx', type: 'rx', dynamic: true },
-      {id: 'remote', type: 'remote', defaultValue: remote.local()}
+      {id: 'remote', type: 'remote', defaultValue: remote.local()},
     ],
     impl: (ctx,rx,remote) => remote.uri == 'local' ? rx() : 
-        remote.CBHandler.remoteOperator({profile: ctx.profile.rx, path: `${ctx.path}~rx`, vars: ctx.vars, params: ctx.componentContext.params })
+        remote.CBHandler.remoteOperator(jb.remoteCtx.stripFunction(rx))
 })

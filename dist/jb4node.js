@@ -39,13 +39,6 @@ function do_jb_run(ctx,parentParam,settings) {
       case 'ignore': return ctx.data;
       case 'list': return profile.map((inner,i) => ctxWithVars.runInner(inner,null,i));
       case 'runActions': return jb.comps.runActions.impl(new jbCtx(ctxWithVars,{profile: { actions : profile },path:''}));
-      // case 'if': {
-      //     const cond = jb_run(run.ifContext, run.IfParentParam);
-      //     if (cond && cond.then)
-      //       return cond.then(res=>
-      //         res ? jb_run(run.thenContext, run.thenParentParam) : jb_run(run.elseContext, run.elseParentParam))
-      //     return cond ? jb_run(run.thenContext, run.thenParentParam) : jb_run(run.elseContext, run.elseParentParam);
-      // }
       case 'profile':
         if (!run.impl)
           run.ctx.callerPath = ctx.path;
