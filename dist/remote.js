@@ -123,11 +123,11 @@ jb.remoteCBHandler = remote => ({
     },
     handleCBCommnad(_ctx) {
         const {$,sourceId,cbId} = _ctx
-        const ctx = jb.remoteCtx.deStrip(_ctx)
+        const cbElem = jb.remoteCtx.deStrip(_ctx.remoteCtx)()
         if ($ == 'CB.createSource')
-            this.cbLookUp.map[cbId] = ctx.runItself()
+            this.cbLookUp.map[cbId] = cbElem
         else if ($ == 'CB.createOperator')
-            this.cbLookUp.map[cbId] = ctx.runItself()(this.remoteCB(sourceId) )
+            this.cbLookUp.map[cbId] = cbElem(this.remoteCB(sourceId) )
     },
 })
 
