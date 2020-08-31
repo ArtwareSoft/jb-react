@@ -50,7 +50,7 @@ jb.remoteCBHandler = remote => ({
         remote.postObj({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : d })
         if (t == 2) this.cbLookUp.removeEntry(cbId)
     },
-    remoteCB(cbId) { return (t,d) => remote.postObj({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : this.cleanVars(d) }) },
+    remoteCB(cbId) { return (t,d) => remote.postObj({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : this.stripVars(d) }) },
     remoteSource(remoteCtx) {
         const cbId = this.cbLookUp.newId()
         remote.postObj({$:'CB.createSource', remoteCtx, cbId })
@@ -83,7 +83,7 @@ jb.remoteCBHandler = remote => ({
         else if ($ == 'CB.createOperator')
             this.cbLookUp.map[cbId] = cbElem(this.remoteCB(sourceId) )
     },
-    cleanVars(cbData) {
+    stripVars(cbData) {
         if (cbData && cbData.vars)
             return { ...cbData, vars: jb.objFromEntry(jb.entries(cbData.vars)
                     .filter(e=>e[0].indexOf('$')!=0)
