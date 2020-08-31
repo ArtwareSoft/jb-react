@@ -11936,7 +11936,9 @@ jb.remoteCtx = {
     deStrip(data) {
         const stripedObj = typeof data == 'object' && jb.objFromEntries(jb.entries(data).map(e=>[e[0],this.deStrip(e[1])]))
         if (stripedObj && data.$ == 'runCtx')
-            return (ctx2,data2) => (new jb.jbCtx().ctx({...stripedObj})).extendVars(ctx2,data2).runItself() // TODO: check if params was passed
+            return (ctx2,data2) => (new jb.jbCtx().ctx({...stripedObj})).extendVars(ctx2,data2).runItself()
+        if (Array.isArray(data))
+            return data.flatMap(x=>this.deStrip(x))
         return stripedObj || data
     }
 }
