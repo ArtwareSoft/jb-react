@@ -85,7 +85,7 @@ jb.remoteCBHandler = remote => ({
     },
     stripVars(cbData) {
         if (cbData && cbData.vars)
-            return { ...cbData, vars: jb.objFromEntry(jb.entries(cbData.vars)
+            return { ...cbData, vars: jb.objFromEntries(jb.entries(cbData.vars)
                     .filter(e=>e[0].indexOf('$')!=0)
                     .map(e=>[e[0], jb.remoteCtx.stripData(e[1])]))
                 }
