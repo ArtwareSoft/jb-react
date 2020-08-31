@@ -34,11 +34,10 @@ jb.remoteCtx = {
     },
     serailizeCtx(ctx) { return JSON.stringify(this.stripCtx(ctx)) },
     deStrip(data) {
-        if (typeof data == 'object' && data.$ == 'runCtx')
-            return (ctx2,data2) => (new jb.jbCtx().ctx({...data})).extendVars(ctx2,data2).runItself() // TODO: check if params was passed
-        if (typeof data == 'object')
-            return jb.objFromEntries(jb.entries(data).map(e=>[e[0],this.deStrip(e[1])]))
-        return data
+        const stripedObj = typeof data == 'object' && jb.objFromEntries(jb.entries(data).map(e=>[e[0],this.deStrip(e[1])]))
+        if (stripedObj && data.$ == 'runCtx')
+            return (ctx2,data2) => (new jb.jbCtx().ctx({...stripedObj})).extendVars(ctx2,data2).runItself() // TODO: check if params was passed
+        return stripedObj || data
     }
 }
 
