@@ -12022,7 +12022,7 @@ jb.remoteCBHandler = remote => ({
         return this
     },
     handleCBCommnad(_ctx) {
-        const {sourceId,cbId} = _ctx
+        const {$,sourceId,cbId} = _ctx
         const ctx = jb.remoteCtx.deStrip(_ctx)
         if ($ == 'CB.createSource')
             this.cbLookUp.map[cbId] = ctx.runItself()
