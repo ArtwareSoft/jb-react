@@ -61,64 +61,64 @@ jb.component('remoteTest.sampleObject', {
   }
 })
 
-// jb.component('remoteTest.remoteObjectWithMethods', {
-//   impl: dataTest({
-//     timeout: 5000,
-//     calculate: rx.pipe(
-//       rx.fromIter([1]),
-//       remote.operator(rx.map(remoteTest.sampleObject(5)), remote.worker()),
-//       remote.operator(rx.map('%m1()%'), remote.worker()),
-//       rx.take(1)
-//     ),
-//     expectedResult: equals(5)
-//   })
-// })
+jb.component('remoteTest.remoteObjectWithMethods', {
+  impl: dataTest({
+    timeout: 5000,
+    calculate: rx.pipe(
+      rx.fromIter([1]),
+      remote.operator(rx.map(remoteTest.sampleObject(5)), remote.worker()),
+      remote.operator(rx.map('%m1()%'), remote.worker()),
+      rx.take(1)
+    ),
+    expectedResult: equals(5)
+  })
+})
 
-// jb.component('remoteTest.remoteParam', {
-//   params: [
-//     { id: 'retVal', defaultValue: 5},
-//   ],
-//   impl: dataTest({
-//     timeout: 5000,
-//       calculate: rx.pipe(
-//           rx.fromIter([1]),
-//           remote.operator(rx.map(remoteTest.sampleObject('%$retval%')), remote.worker()),
-//           remote.operator(rx.map('%m1()%'), remote.worker()),
-//           rx.take(1)
-//     ),
-//     expectedResult: equals(5)
-//   })
-// })
+jb.component('remoteTest.remoteParam', {
+  params: [
+    { id: 'retVal', defaultValue: 5},
+  ],
+  impl: dataTest({
+    timeout: 5000,
+      calculate: rx.pipe(
+          rx.fromIter([1]),
+          remote.operator(rx.map(remoteTest.sampleObject('%$retval%')), remote.worker()),
+          remote.operator(rx.map('%m1()%'), remote.worker()),
+          rx.take(1)
+    ),
+    expectedResult: equals(5)
+  })
+})
 
-// jb.component('remoteTest.dynamicProfileFunc', {
-//   params: [
-//     { id: 'func', dynamic: true, defaultValue: '-%%-'},
-//   ],
-//   impl: dataTest({
-//     timeout: 5000,
-//       calculate: rx.pipe(
-//           rx.fromIter([1]),
-//           remote.operator(rx.map('%$func()%'), remote.worker()),
-//           rx.take(1)
-//     ),
-//     expectedResult: equals('-1-')
-//   })
-// })
+jb.component('remoteTest.dynamicProfileFunc', {
+  params: [
+    { id: 'func', dynamic: true, defaultValue: '-%%-'},
+  ],
+  impl: dataTest({
+    timeout: 5000,
+      calculate: rx.pipe(
+          rx.fromIter([1]),
+          remote.operator(rx.map('%$func()%'), remote.worker()),
+          rx.take(1)
+    ),
+    expectedResult: equals('-1-')
+  })
+})
 
-// jb.component('remoteTest.dynamicJsFunc', {
-//   params: [
-//     { id: 'func', dynamic: true, defaultValue: ({data}) => `-${data}-`},
-//   ],
-//   impl: dataTest({
-//     timeout: 5000,
-//       calculate: rx.pipe(
-//           rx.fromIter([1]),
-//           remote.operator(rx.map('%$func()%'), remote.worker()),
-//           rx.take(1)
-//     ),
-//     expectedResult: equals('-1-')
-//   })
-// })
+jb.component('remoteTest.dynamicJsFunc', {
+  params: [
+    { id: 'func', dynamic: true, defaultValue: ({data}) => `-${data}-`},
+  ],
+  impl: dataTest({
+    timeout: 5000,
+      calculate: rx.pipe(
+          rx.fromIter([1]),
+          remote.operator(rx.map('%$func()%'), remote.worker()),
+          rx.take(1)
+    ),
+    expectedResult: equals('-1-')
+  })
+})
 
 jb.component('remoteTest.twoTierWidget.button.local', {
   impl: uiFrontEndTest({
