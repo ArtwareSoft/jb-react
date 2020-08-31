@@ -43,7 +43,7 @@ jb.component('widget.headless', {
     ],
     impl: (ctx,ctrl,widgetId) => {
         const {renderingUpdates, widgetRenderingSrc, compareVdom, h } = jb.ui
-        const cmp = ctrl(ctx.setVars({headlessWidget: true,widgetId}))
+        const cmp = ctrl(jb.ui.extendWithServiceRegistry(ctx.setVars({headlessWidget: true,widgetId})))
         const top = h(cmp)
         const body = h('div',{ widgetTop: true, headless: true, widgetId, remoteUri: ctx.vars.remoteUri },top)
         jb.ui.widgets[widgetId] = { body }
@@ -97,7 +97,7 @@ jb.component('widget.twoTierWidget', {
     type: 'control',
     params: [
       {id: 'control', type: 'control', dynamic: true },
-      {id: 'remote', type: 'remote', defaultValue: remote.local()},
+      {id: 'remote', type: 'remote', defaultValue: remote.worker({libs: ['common','ui-common','remote','two-tier-widget']},
 //      {id: 'id', as: 'string'},
     ],
     impl: controlWithFeatures({
