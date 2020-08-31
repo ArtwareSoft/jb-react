@@ -5,7 +5,8 @@ jb.remoteCtx = {
         const profText = jb.prettyPrint(ctx.profile)
         const vars = jb.objFromEntries(jb.entries(ctx.vars).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
-        const params = jb.objFromEntries(jb.entries(isJS ? ctx.params: ctx.componentContext.params).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
+        const params = jb.objFromEntries(jb.entries(isJS ? ctx.params: jb.entries(jb.path(ctx.componentContext,'params')))
+            .filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
         const res = Object.assign({id: ctx.id, path: ctx.path, profile: ctx.profile, vars }, 
             isJS ? {params,vars} : Object.keys(params).length ? {componentContext: {params} } : {} )
@@ -26,15 +27,12 @@ jb.remoteCtx = {
         const profText = jb.prettyPrint(profile)
         const vars = jb.objFromEntries(jb.entries(runCtx.vars).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
-        const params = jb.objFromEntries(jb.entries(runCtx.componentContext.params).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
+        const params = jb.objFromEntries(jb.entries(jb.path(runCtx.componentContext,'params')).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
         return Object.assign({$: 'runCtx', id: runCtx.id, path, forcePath, param, profile, vars}, 
             Object.keys(params).length ? {componentContext: {params} } : {})
     },
     serailizeCtx(ctx) { return JSON.stringify(this.stripCtx(ctx)) },
-    deSerailizeCtx(txt) { 
-        return deStrip(JSON.parse(txt),0)
-    },
     deStrip(data) {
         if (typeof data == 'object' && data.$ == 'runCtx')
             return () => (new jb.jbCtx().ctx({...data})).runItself() // TODO: check if params was passed
@@ -125,7 +123,7 @@ jb.remoteCBHandler = remote => ({
     },
     handleCBCommnad(_ctx) {
         const {sourceId,cbId} = _ctx
-        const ctx = jb.remoteCtx.buildCtx(_ctx)
+        const ctx = jb.remoteCtx.deStrip(_ctx)
         if ($ == 'CB.createSource')
             this.cbLookUp.map[cbId] = ctx.runItself()
         else if ($ == 'CB.createOperator')
