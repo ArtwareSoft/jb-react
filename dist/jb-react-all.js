@@ -11996,7 +11996,7 @@ jb.remoteCBHandler = remote => ({
         remote.postObj({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : d })
         if (t == 2) this.cbLookUp.removeEntry(cbId)
     },
-    remoteCB(cbId) { return (t,d) => remote.postObj({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : this.stripeCtx(d) }) },
+    remoteCB(cbId) { return (t,d) => remote.postObj({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : d }) },
     remoteSource(remoteCtx) {
         const cbId = this.cbLookUp.newId()
         remote.postObj({$:'CB.createSource', remoteCtx, cbId })
