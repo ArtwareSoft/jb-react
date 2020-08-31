@@ -82,7 +82,7 @@ jb.component('remoteTest.remoteParam', {
     timeout: 5000,
       calculate: rx.pipe(
           rx.fromIter([1]),
-          remote.operator(rx.map('%$retval%'), remote.worker()),
+          remote.operator(rx.map('%$retVal%'), remote.worker()),
           rx.take(1)
     ),
     expectedResult: equals(5)

@@ -35,7 +35,7 @@ jb.remoteCtx = {
     serailizeCtx(ctx) { return JSON.stringify(this.stripCtx(ctx)) },
     deStrip(data) {
         if (typeof data == 'object' && data.$ == 'runCtx')
-            return () => (new jb.jbCtx().ctx({...data})).runItself() // TODO: check if params was passed
+            return (ctx2,data2) => (new jb.jbCtx().ctx({...data})).extendVars(ctx2,data2).runItself() // TODO: check if params was passed
         if (typeof data == 'object')
             return jb.objFromEntries(jb.entries(data).map(e=>[e[0],this.deStrip(e[1])]))
         return data
