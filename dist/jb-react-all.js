@@ -11919,6 +11919,8 @@ jb.remoteCtx = {
              return this.stripFunction(data)
         if (data instanceof jb.jbCtx)
              return this.stripCtx(data)
+        if (Array.isArray(data))
+             return data.map(x=>this.stripData(x))             
         if (typeof data == 'object')
              return jb.objFromEntries(jb.entries(data).map(e=>[e[0],this.stripData(e[1])]))
     },
@@ -11938,7 +11940,7 @@ jb.remoteCtx = {
         if (stripedObj && data.$ == 'runCtx')
             return (ctx2,data2) => (new jb.jbCtx().ctx({...stripedObj})).extendVars(ctx2,data2).runItself()
         if (Array.isArray(data))
-            return data.flatMap(x=>this.deStrip(x))
+            return data.map(x=>this.deStrip(x))
         return stripedObj || data
     }
 }
