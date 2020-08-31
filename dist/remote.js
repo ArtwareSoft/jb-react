@@ -97,16 +97,16 @@ jb.remoteCBHandler = remote => ({
         if (t == 2) this.cbLookUp.removeEntry(cbId)
     },
     remoteCB(cbId) { return (t,d) => remote.postObj({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : this.stripVars(d) }) },
-    remoteSource(remoteCtx) {
+    remoteSource(remoteRun) {
         const cbId = this.cbLookUp.newId()
-        remote.postObj({$:'CB.createSource', remoteCtx, cbId })
+        remote.postObj({$:'CB.createSource', remoteRun, cbId })
         return (t,d) => this.outboundMsg({cbId,t,d})
     },
-    remoteOperator(remoteCtx) {
+    remoteOperator(remoteRun) {
         return source => {
             const sourceId = this.cbLookUp.addToLookup(source)
             const cbId = this.cbLookUp.newId()
-            remote.postObj({$:'CB.createOperator', remoteCtx, sourceId, cbId })
+            remote.postObj({$:'CB.createOperator', remoteRun, sourceId, cbId })
             return (t,d) => this.outboundMsg({cbId,t,d})
         }
     },
@@ -121,9 +121,9 @@ jb.remoteCBHandler = remote => ({
         })
         return this
     },
-    handleCBCommnad(_ctx) {
-        const {$,sourceId,cbId} = _ctx
-        const cbElem = jb.remoteCtx.deStrip(_ctx.remoteCtx)()
+    handleCBCommnad(cmd) {
+        const {$,sourceId,cbId} = cmd
+        const cbElem = jb.remoteCtx.deStrip(cmd.remoteRun)()
         if ($ == 'CB.createSource')
             this.cbLookUp.map[cbId] = cbElem
         else if ($ == 'CB.createOperator')
