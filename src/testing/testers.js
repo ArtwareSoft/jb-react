@@ -19,8 +19,8 @@ jb.test = {
 	},
 	cleanBeforeRun(ctx) {
 		jb.rebuildRefHandler && jb.rebuildRefHandler();
-		jb.entries(JSON.parse(ctx.vars.initial_resources || '{}')).forEach(e=>jb.resource(e[0],e[1]))
-		jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(ctx.vars.initial_comps)
+		jb.entries(JSON.parse(ctx.vars.$initial_resources || '{}')).forEach(e=>jb.resource(e[0],e[1]))
+		jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(ctx.vars.$initial_comps)
 		jb.ui.subscribeToRefChange(jb.mainWatchableHandler)
 		if (!jb.spy) jb.initSpy({spyParam: 'none'})
 		jb.spy.clear()
@@ -283,8 +283,8 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,includeHeavy}
 	let index = 1
 
 	jb.studio.initTests() && jb.studio.initTests()
-	const initial_resources = JSON.stringify(jb.resources) //.replace(/\"\$jb_id":[0-9]*,/g,'')
-	const initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
+	const $initial_resources = JSON.stringify(jb.resources) //.replace(/\"\$jb_id":[0-9]*,/g,'')
+	const $initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
 
 	const tests = jb.entries(jb.comps)
 		.filter(e=>typeof e[1].impl == 'object')
@@ -304,7 +304,7 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,includeHeavy}
 			concatMap(e => {
 			  jb.logs.error = []
 			  const testID = e[0]
-			  const tstCtx = jb.ui.extendWithServiceRegistry().setVars({testID, initial_resources, initial_comps, singleTest: tests.length == 1 })
+			  const tstCtx = jb.ui.extendWithServiceRegistry().setVars({testID, $initial_resources, $initial_comps, singleTest: tests.length == 1 })
 			  document.getElementById('progress').innerHTML = `<div id=${testID}>${index++}: ${testID} started</div>`
 			  times[testID] = { start: new Date().getTime() }
 			  jb.test.cleanBeforeRun(tstCtx)

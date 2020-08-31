@@ -95,7 +95,7 @@ jb.remoteCBHandler = remote => ({
                 return [e[0],this.stripeObj(e[1],depth-1)]
         }).filter(x=>x))
     },    
-    buildCtx(profile,vars,path) {
+    buildCtx({profile,vars,path}) {
         // TBD
         return new self.jb.jbCtx().ctx({profile,vars,path})
     }
@@ -154,5 +154,5 @@ jb.component('remote.operator', {
       {id: 'remote', type: 'remote', defaultValue: remote.local()}
     ],
     impl: (ctx,rx,remote) => remote.uri == 'local' ? rx() : 
-        remote.CBHandler.remoteOperator({profile: ctx.profile.rx, path: `${ctx.path}~rx`, vars: ctx.vars, params: ctx.compenentContext.params })
+        remote.CBHandler.remoteOperator({profile: ctx.profile.rx, path: `${ctx.path}~rx`, vars: ctx.vars, params: ctx.componentContext.params })
 })
