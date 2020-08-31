@@ -97,7 +97,7 @@ jb.component('widget.twoTierWidget', {
     type: 'control',
     params: [
       {id: 'control', type: 'control', dynamic: true },
-      {id: 'remote', type: 'remote', defaultValue: remote.worker({libs: ['common','ui-common','remote','two-tier-widget']},
+      {id: 'remote', type: 'remote', defaultValue: remote.worker({libs: ['common','ui-common','remote','two-tier-widget']}) },
 //      {id: 'id', as: 'string'},
     ],
     impl: controlWithFeatures({
