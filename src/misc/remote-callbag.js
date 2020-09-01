@@ -95,7 +95,7 @@ jb.remoteCBHandler = remote => ({
         if (data && data.$$ == 'VNode')
             Object.setPrototypeOf(data, VNode.prototype)
         if (data && typeof data == 'object')
-            jb.objFromEntries(jb.entries(data).map(e=>[e[0],this.stripData(e[1])]))
+            jb.objFromEntries(jb.entries(data).map(e=>[e[0],this.injectClasses(e[1])]))
     }
 })
 
