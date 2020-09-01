@@ -25,7 +25,7 @@ jb.component('sink.frontEndDelta', {
     type: 'rx',
     impl: sink.action( ctx => {
         const {delta,css} = ctx.data
-        const {widgetBody, VNode, applyDeltaToDom, addStyleElem, refreshFrontEnd, getWidgetId} = jb.ui
+        const {widgetBody, VNode, applyDeltaToDom, applyDeltaToVDom, addStyleElem, refreshFrontEnd, getWidgetId} = jb.ui
         const elem = widgetBody(ctx.setVar('headlessWidget',false))
         if (elem instanceof VNode) {
             applyDeltaToVDom(elem, delta)
