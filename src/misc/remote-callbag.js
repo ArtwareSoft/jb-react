@@ -45,7 +45,7 @@ jb.remote = {
 jb.remoteCBHandler = remote => ({
     cbLookUp: jb.remote.cbLookUp,
     addToLookup(cb) { return this.cbLookUp.addToLookup(cb) },
-    inboundMsg({cbId,t,d}) { return this.cbLookUp.getAsPromise(cbId,t).then(cb=> cb(t, t == 0 ? this.remoteCB(d) : d)) },
+    inboundMsg({cbId,t,d}) { return this.cbLookUp.getAsPromise(cbId,t).then(cb=> cb(t, t == 0 ? this.remoteCB(d) : this.injectClasses(d))) },
     outboundMsg({cbId,t,d}) { 
         remote.postObj({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : d })
         if (t == 2) this.cbLookUp.removeEntry(cbId)
@@ -91,6 +91,12 @@ jb.remoteCBHandler = remote => ({
                 }
         return cbData
     },
+    injectClasses(data) {
+        if (data && data.$$ == 'VNode')
+            Object.setPrototypeOf(data, VNode.prototype)
+        if (data && typeof data == 'object')
+            jb.objFromEntries(jb.entries(data).map(e=>[e[0],this.stripData(e[1])]))
+    }
 })
 
 jb.component('remote.worker', {
