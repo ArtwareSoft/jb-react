@@ -44,14 +44,17 @@ jb.component('dataTest', {
 	  {id: 'show', type: 'control', dynamic: true },
 	],
 	impl: function(ctx,calculate,runBefore,expectedResult,timeout,allowError,cleanUp,expectedCounters) {
-		const _timeout = ctx.vars.singleTest ? 1000 : timeout
+		const _timeout = ctx.vars.singleTest ? Math.max(1000,timeout) : timeout
 		return Promise.race([jb.delay(_timeout).then(()=>[{runErr: 'timeout'}]), Promise.resolve(runBefore())
 			  .then(_ => calculate())
 			  .then(v => jb.toSynchArray(v,true))])
 			  .then(value => {
 				  const runErr = jb.path(value,'0.runErr')
 				  const countersErr = countersErrors(expectedCounters,allowError)
-				  const success = !! (expectedResult(new jb.jbCtx(ctx,{ data: value })) && !countersErr && !runErr);
+				  const expectedResultCtx = new jb.jbCtx(ctx,{ data: value })
+				  const expectedResultRes = expectedResult(expectedResultCtx)
+				  jb.log('expectedResult',[expectedResultRes, expectedResultCtx])
+				  const success = !! (expectedResultRes && !countersErr && !runErr);
 				  const result = { id: ctx.vars.testID, success, reason: countersErr || runErr }
 				  return result
 			  })
@@ -81,6 +84,7 @@ jb.component('uiTest', {
 	  {id: 'control', type: 'control', dynamic: true},
 	  {id: 'runBefore', type: 'action', dynamic: true},
 	  {id: 'userInput', type: 'user-input[]', as: 'array' },
+	  {id: 'userInputWithTiming', type: 'rx', dynamic: true },
 	  {id: 'extraSource', type: 'rx' },
 	  {id: 'expectedResult', type: 'boolean', dynamic: true},
 	  {id: 'allowError', as: 'boolean', dynamic: true},
@@ -103,6 +107,7 @@ jb.component('uiTest', {
 					rx.merge(
 						rx.pipe(source.data('%$userInput%'),userInput.eventToRequest(),If('%$delayedInput%',rx.delay(1))),
 						source.callbag(()=>jb.ui.widgetUserRequests),
+						call('userInputWithTiming'),
 //						rx.pipe('%$extraSource%',rx.map(()=>({$:'dummpOp'})))
 					),
 					widget.headless('%$control()%', '%$tstWidgetId%'),
@@ -135,7 +140,7 @@ jb.component('uiFrontEndTest', {
 	  {id: 'allowError', as: 'boolean', dynamic: true},
 	  {id: 'cleanUp', type: 'action', dynamic: true},
 	  {id: 'expectedCounters', as: 'single'},
-	  {id: 'renderDOM', type: 'boolean', descrition: 'actially render the vdom, because the test checks calculated sizes' },
+	  {id: 'renderDOM', type: 'boolean', descrition: 'render the vdom under the document dom' },
 	  {id: 'runInPreview', type: 'action', dynamic: true, descrition: 'not for test mode'},
 	  {id: 'runInStudio', type: 'action', dynamic: true, descrition: 'not for test mode'},
 	],

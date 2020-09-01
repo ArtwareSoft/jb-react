@@ -2330,10 +2330,8 @@ jb.callbag = {
           function makeSink(i, input) { 
             return (t, d) => {
               if (t === 0) {talkbacks[i] = d; talkbacks[i](1)}
-              if (t === 1) {
-                const data = combineResults(input, d)
-                sink(1, data)
-              }
+              if (t === 1)
+                sink(1, d == null ? null : combineResults(input, d))
               if (t === 2) {
                   delete talkbacks[i]
                   stopOrContinue(d)
@@ -2651,14 +2649,10 @@ jb.callbag = {
       },      
       take: max => source => (start, sink) => {
           if (start !== 0) return
-          let taken = 0
-          let sourceTalkback
-          let end
+          let taken = 0, sourceTalkback, end
           function talkback(t, d) {
-            if (t === 2) {
-              end = true
-              sourceTalkback(t, d)
-            } else if (taken < max) sourceTalkback(t, d)
+            if (t === 2) end = true
+            sourceTalkback(t, d)
           }
           source(0, function take(t, d) {
             if (t === 0) {
@@ -2838,35 +2832,35 @@ jb.callbag = {
             sink(t, d)
           })
       },
-      talkbackNotifier: notify => source => (start, sink) => {
-        if (start !== 0) return
-        let talkback
-        source(0, function talkbackNotifier(t, d) {
-          if (t == 0)
-            talkback = d
-          sink(0, function talkbackNotifier(t, d) {
-            if (t == 1 && !d || t == 2) {
-              notify(t,d)
-              talkback && talkback(t,d)
-            }
-          })
-          sink(t, d)
-        })
-      },
-      talkbackSrc: tbSrc => source => (start, sink) => { // generates talkback events in a pipe
-        if (start !== 0) return
-        let talkback
-        source(0, function talkbackSrc(t, d) {
-          if (t == 0) {
-            talkback = d
-            tbSrc(0, function talkbackSrc(t, d) { // d contains talkback type and data
-              if (t == 1 && d && d.t && talkback)
-                talkback(d.t,d.d)
-            })
-          }
-          sink(t, d)
-        })
-      },       
+      // talkbackNotifier: notify => source => (start, sink) => {
+      //   if (start !== 0) return
+      //   let talkback
+      //   source(0, function talkbackNotifier(t, d) {
+      //     if (t == 0)
+      //       talkback = d
+      //     sink(0, function talkbackNotifier(t, d) {
+      //       if (t == 1 && !d || t == 2) {
+      //         notify(t,d)
+      //         talkback && talkback(t,d)
+      //       }
+      //     })
+      //     sink(t, d)
+      //   })
+      // },
+      // talkbackSrc: tbSrc => source => (start, sink) => { // generates talkback events in a pipe
+      //   if (start !== 0) return
+      //   let talkback
+      //   source(0, function talkbackSrc(t, d) {
+      //     if (t == 0) {
+      //       talkback = d
+      //       tbSrc(0, function talkbackSrc(t, d) { // d contains talkback type and data
+      //         if (t == 1 && d && d.t && talkback)
+      //           talkback(d.t,d.d)
+      //       })
+      //     }
+      //     sink(t, d)
+      //   })
+      // },       
       sniffer: (source, snifferSubject) => (start, sink) => {
         if (start !== 0) return
         jb.log('snifferStarted',[source])
@@ -3395,12 +3389,52 @@ jb.component('rx.filter', {
 
 jb.component('rx.flatMap', {
   type: 'rx',
-  category: 'operator,combine',
+  category: 'operator',
   description: 'match inputs the callbags or promises',
   params: [
-    {id: 'func', dynamic: true, mandatory: true, description: 'map each input to promise or callbag'},
+    {id: 'source', type: 'rx', category: 'source', dynamic: true, mandatory: true, description: 'map each input to source callbag'},
   ],
-  impl: (ctx,func) => jb.callbag.flatMap(ctx2 => func(ctx2))
+  impl: (ctx,sourceGenerator) => source => (start, sink) => {
+    if (start !== 0) return
+    let sourceTalkback, innerSources = [], sourceEnded
+
+    source(0, function flatMap(t, d) {
+      if (t === 0) 
+        sourceTalkback = d
+      if (t === 1 && d != null)
+        createInnerSrc(d)
+      if (t === 2) {
+          sourceEnded = true
+          stopOrContinue(d)
+      }
+    })
+
+    sink(0, function flatMap(t,d) {
+      if (t == 1 && d == null || t == 2) {
+        sourceTalkback(t,d)
+        innerSources.forEach(src=>src.talkback && src.talkback(t,d))
+      }
+    })
+
+    function createInnerSrc(d) {
+      const newSrc = sourceGenerator(ctx.setData(d.data).setVars(d.vars))
+      innerSources.push(newSrc)
+      newSrc(0, function flatMap(t,d) {
+        if (t == 0) newSrc.talkback = d
+        if (t == 1) sink(t,d)
+        if (t != 2 && newSrc.talkback) newSrc.talkback(1)
+        if (t == 2) {
+          innerSources.splice(innerSources.indexOf(newSrc),1)
+          stopOrContinue(d)
+        }
+      })
+    }
+
+    function stopOrContinue(d) {
+      if (sourceEnded && innerSources.length == 0)
+        sink(2,d)
+    }
+  }
 })
 
 jb.component('rx.flatMapArrays', {
@@ -3408,9 +3442,9 @@ jb.component('rx.flatMapArrays', {
   category: 'operator',
   description: 'match inputs to data arrays',
   params: [
-    {id: 'func', dynamic: true, defaultValue: '%%', description: 'should return array, items will be passes one by one'},
+    {id: 'func', dynamic: true, defaultValue: '%%', description: 'should return array, items will be passed one by one'},
   ],
-  impl: (ctx,func) => jb.callbag.flatMap(ctx2 => jb.asArray(func(ctx2)), (_ctx,data) => ({ vars: _ctx.vars, data }) )
+  impl: rx.flatMap(source.data(call('func')))
 })
 
 jb.component('rx.concatMap', {
@@ -4284,7 +4318,7 @@ class VNode {
     }
     getAttribute(att) {
         const res = (this.attributes || {})[att]
-        return res == null ? res : ''+res
+        return res == null ? res : (''+res)
     }
     setAttribute(att,val) {
         this.attributes = this.attributes || {}
@@ -4316,7 +4350,7 @@ class VNode {
             selector = selector.slice(7)
         }
         if (selector.indexOf(',') != -1)
-            return selector.split(',').map(x=>x.trim()).reduce((res,sel) => [...res, this.querySelectorAll(sel,{includeSelf})], [])
+            return selector.split(',').map(x=>x.trim()).reduce((res,sel) => [...res, ...this.querySelectorAll(sel,{includeSelf})], [])
         const hasAtt = selector.match(/^\[([a-zA-Z0-9_$\-]+)\]$/)
         const attEquals = selector.match(/^\[([a-zA-Z0-9_$\-]+)="([a-zA-Z0-9_\-]+)"\]$/)
         const hasClass = selector.match(/^\.([a-zA-Z0-9_$\-]+)$/)
@@ -5371,6 +5405,8 @@ Object.assign(jb.ui,{
         } catch(e) {}
     },
     widgetBody(ctx) {
+      if (ctx.vars.tstWidgetId)
+        return jb.path(jb.ui.widgets[ctx.vars.tstWidgetId],'body')
       if (ctx.vars.headlessWidget)
         return jb.path(jb.ui.widgets[ctx.vars.widgetId],'body')
       const top = ctx.vars.elemToTest || jb.path(ctx.frame().document,'body')
@@ -11920,7 +11956,9 @@ jb.remoteCtx = {
         if (data instanceof jb.jbCtx)
              return this.stripCtx(data)
         if (Array.isArray(data))
-             return data.map(x=>this.stripData(x))             
+             return data.map(x=>this.stripData(x))
+        if (typeof data == 'object' && constructor.name == 'VNode')
+            data.$$ = 'VNode'
         if (typeof data == 'object')
              return jb.objFromEntries(jb.entries(data).map(e=>[e[0],this.stripData(e[1])]))
     },

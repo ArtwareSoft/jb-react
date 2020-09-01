@@ -119,15 +119,16 @@ jb.component('remoteTest.dynamicProfileFunc', {
 //   })
 // })
 
-jb.component('remoteTest.twoTierWidget.button.local', {
-  impl: uiFrontEndTest({
-    control: widget.twoTierWidget(button('hello world'), remote.worker({libs: ['common','ui-common','remote','two-tier-widget'] })),
+jb.component('remoteTest.twoTierWidget.button', {
+  impl: uiTest({
+    extraSource: () => jb.ui.renderingUpdates,
+    control: widget.twoTierWidget(button('hello world'), remote.worker({id: 'ui', libs: ['common','ui-common','remote','two-tier-widget'] })),
     expectedResult: contains('hello world')
   })
 })
 
-jb.component('remoteTest.twoTierWidget.changeText.local', {
-  impl: uiFrontEndTest({
+jb.component('remoteTest.twoTierWidget.changeText', {
+  impl: uiTest({
     control: widget.twoTierWidget(
       group({
         controls: [
@@ -135,14 +136,22 @@ jb.component('remoteTest.twoTierWidget.changeText.local', {
           editableText({databind:'%$fName%'})
         ],
         features: variable({name: 'fName', value: 'Dan', watchable: true})
-      })
+      }),
+      remote.worker({id: 'ui', libs: ['common','ui-common','remote','two-tier-widget'] })
     ),
-    action: uiAction.setText('danny'),
+    userInputWithTiming: rx.pipe(
+      source.callbag(()=>jb.ui.renderingUpdates),
+      rx.log('renderingUpdates'),
+      rx.map(userInput.setText('danny')),
+      rx.delay(10),
+      userInput.eventToRequest()
+    ),
+    extraSource: () => jb.ui.renderingUpdates,
     expectedResult: contains('danny')
   })
 })
 
-jb.component('remoteTest.twoTierWidget.infiniteScroll.local', {
+jb.component('remoteTest.twoTierWidget.infiniteScroll', {
   impl: uiFrontEndTest({
     renderDOM: true,
     control: widget.twoTierWidget(itemlist({
@@ -154,7 +163,8 @@ jb.component('remoteTest.twoTierWidget.infiniteScroll.local', {
         itemlist.infiniteScroll(),
         css.width('600')
       ]
-    })),
+    }),
+    remote.worker({id: 'ui', libs: ['common','ui-common','remote','two-tier-widget'] })),
     action: uiAction.scrollBy('.jb-itemlist',100),
     expectedResult: contains('>8<')
   })

@@ -26,6 +26,8 @@ Object.assign(jb.ui,{
         } catch(e) {}
     },
     widgetBody(ctx) {
+      if (ctx.vars.tstWidgetId)
+        return jb.path(jb.ui.widgets[ctx.vars.tstWidgetId],'body')
       if (ctx.vars.headlessWidget)
         return jb.path(jb.ui.widgets[ctx.vars.widgetId],'body')
       const top = ctx.vars.elemToTest || jb.path(ctx.frame().document,'body')

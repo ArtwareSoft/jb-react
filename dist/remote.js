@@ -20,7 +20,9 @@ jb.remoteCtx = {
         if (data instanceof jb.jbCtx)
              return this.stripCtx(data)
         if (Array.isArray(data))
-             return data.map(x=>this.stripData(x))             
+             return data.map(x=>this.stripData(x))
+        if (typeof data == 'object' && constructor.name == 'VNode')
+            data.$$ = 'VNode'
         if (typeof data == 'object')
              return jb.objFromEntries(jb.entries(data).map(e=>[e[0],this.stripData(e[1])]))
     },

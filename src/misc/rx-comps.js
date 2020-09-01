@@ -279,12 +279,52 @@ jb.component('rx.filter', {
 
 jb.component('rx.flatMap', {
   type: 'rx',
-  category: 'operator,combine',
+  category: 'operator',
   description: 'match inputs the callbags or promises',
   params: [
-    {id: 'func', dynamic: true, mandatory: true, description: 'map each input to promise or callbag'},
+    {id: 'source', type: 'rx', category: 'source', dynamic: true, mandatory: true, description: 'map each input to source callbag'},
   ],
-  impl: (ctx,func) => jb.callbag.flatMap(ctx2 => func(ctx2))
+  impl: (ctx,sourceGenerator) => source => (start, sink) => {
+    if (start !== 0) return
+    let sourceTalkback, innerSources = [], sourceEnded
+
+    source(0, function flatMap(t, d) {
+      if (t === 0) 
+        sourceTalkback = d
+      if (t === 1 && d != null)
+        createInnerSrc(d)
+      if (t === 2) {
+          sourceEnded = true
+          stopOrContinue(d)
+      }
+    })
+
+    sink(0, function flatMap(t,d) {
+      if (t == 1 && d == null || t == 2) {
+        sourceTalkback(t,d)
+        innerSources.forEach(src=>src.talkback && src.talkback(t,d))
+      }
+    })
+
+    function createInnerSrc(d) {
+      const newSrc = sourceGenerator(ctx.setData(d.data).setVars(d.vars))
+      innerSources.push(newSrc)
+      newSrc(0, function flatMap(t,d) {
+        if (t == 0) newSrc.talkback = d
+        if (t == 1) sink(t,d)
+        if (t != 2 && newSrc.talkback) newSrc.talkback(1)
+        if (t == 2) {
+          innerSources.splice(innerSources.indexOf(newSrc),1)
+          stopOrContinue(d)
+        }
+      })
+    }
+
+    function stopOrContinue(d) {
+      if (sourceEnded && innerSources.length == 0)
+        sink(2,d)
+    }
+  }
 })
 
 jb.component('rx.flatMapArrays', {
@@ -292,9 +332,9 @@ jb.component('rx.flatMapArrays', {
   category: 'operator',
   description: 'match inputs to data arrays',
   params: [
-    {id: 'func', dynamic: true, defaultValue: '%%', description: 'should return array, items will be passes one by one'},
+    {id: 'func', dynamic: true, defaultValue: '%%', description: 'should return array, items will be passed one by one'},
   ],
-  impl: (ctx,func) => jb.callbag.flatMap(ctx2 => jb.asArray(func(ctx2)), (_ctx,data) => ({ vars: _ctx.vars, data }) )
+  impl: rx.flatMap(source.data(call('func')))
 })
 
 jb.component('rx.concatMap', {

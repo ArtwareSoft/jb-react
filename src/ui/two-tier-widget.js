@@ -26,11 +26,16 @@ jb.component('sink.frontEndDelta', {
     impl: sink.action( ctx => {
         const {delta,css} = ctx.data
         const {widgetBody, applyDeltaToDom, addStyleElem, refreshFrontEnd} = jb.ui
-        const elem = widgetBody(ctx)
-        if (elem) {
-            applyDeltaToDom(elem, delta)
-            refreshFrontEnd(elem)
-        }
+        const elem = widgetBody(ctx.setVar('headlessWidget',false))
+        if (elem instanceof VNode) {
+            jb.ui.applyDeltaToVDom(elem, delta)
+            const widgetId = jb.ui.getWidgetId(elem)
+            const cmpId = elem.getAttribute('cmp-id')
+            jb.ui.renderingUpdates.next({delta,cmpId,widgetId})
+        } else if (elem) {
+            jb.ui.applyDeltaToDom(elem, delta)
+            jb.ui.refreshFrontEnd(elem)
+        }        
         css && addStyleElem(css)
     })
 })
