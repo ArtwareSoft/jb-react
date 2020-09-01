@@ -365,7 +365,7 @@ jb.component('refreshControlById', {
 jb.component('group.autoFocusOnFirstInput', {
   type: 'feature',
   impl: templateModifier(({},{vdom}) => {
-    const elem = vdom.querySelector('input,textarea,select').filter(e => e.getAttribute('type') != 'checkbox')[0]
+    const elem = vdom.querySelectorAll('input,textarea,select').filter(e => e.getAttribute('type') != 'checkbox')[0]
     if (elem)
       elem.setAttribute('$focus','autoFocusOnFirstInput')
     return vdom

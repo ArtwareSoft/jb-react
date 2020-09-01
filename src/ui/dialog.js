@@ -316,7 +316,7 @@ jb.component('dialogFeature.autoFocusOnFirstInput', {
   impl: features(
 	  passPropToFrontEnd('selectText','%$selectText%'),
 	  frontEnd.init( (ctx,{cmp,selectText}) => {
-		const elem = cmp.base.querySelector('input,textarea,select');
+	    const elem = cmp.base.querySelectorAll('input,textarea,select').filter(e => e.getAttribute('type') != 'checkbox')[0]
 		if (elem)
 			jb.ui.focus(elem, 'dialog-feature.auto-focus-on-first-input',ctx);
 		if (selectText)
@@ -482,7 +482,7 @@ jb.component('dialogs.defaultStyle', {
 				source.subject(dialogs.changeEmitter()),
 				rx.filter('%open%'),
 				rx.var('dialogVdom', pipeline(dialog.buildComp('%dialog%'),'%renderVdomAndFollowUp()%')),
-				rx.var('delta', obj(prop('children', obj(prop('toAppend','%$dialogVdom%'))))),
+				rx.var('delta', obj(prop('children', obj(prop('toAppend', pipeline('%$dialogVdom%',({data}) => jb.ui.stripVdom(data))))))),
 				rx.log('addDialog','%dialog/id%'),
 				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
 			),

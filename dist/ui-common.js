@@ -1180,6 +1180,8 @@ jb.component('runTransaction', {
 })()
 ;
 
+(function () {
+
 class VNode {
     constructor(cmpOrTag, _attributes, _children) {
         const attributes = jb.objFromEntries(jb.entries(_attributes).map(e=>[e[0].toLowerCase(),e[1]])
@@ -1204,7 +1206,7 @@ class VNode {
         }
         if (children != null)
             children.forEach(ch=>ch.parentNode = this)
-        Object.assign(this,{...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,children, $$ : 'VNode'})
+        Object.assign(this,{...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,children})
     }
     getAttribute(att) {
         const res = (this.attributes || {})[att]
@@ -1277,26 +1279,27 @@ function toVdomOrStr(val) {
     return res
 }
 
-function stringifyVNode(vdom) {
-    return JSON.stringify(removeParentNode(vdom))
-    function removeParentNode(node) {
-        return { ...node, parentNode: null, children: node.children && node.children.map(x=>removeParentNode(x)) }
-    }
+function stripVdom(vdom) {
+    if (!vdom instanceof VNode) return
+    return { ...vdom, parentNode: null, children: vdom.children && vdom.children.map(x=>stripVdom(x)) }
 }
+
+function unStripVdom(vdom,parent) {
+    if (!vdom || typeof vdom.parentNode == 'undefined') return
+    vdom.parentNode = parent
+    Object.setPrototypeOf(vdom, VNode.prototype);
+    ;(vdom.children || []).forEach(ch=>unStripVdom(ch,vdom))
+    return vdom
+}
+
 
 function cloneVNode(vdom) {
-    return setProto(JSON.parse(stringifyVNode(vdom)))
-    function setProto(vdomObj) {
-        Object.setPrototypeOf(vdomObj, VNode.prototype);
-        (vdomObj.children || []).forEach(ch=>{
-            setProto(ch)
-            ch.parentNode = vdomObj
-        })
-        return vdomObj
-    }
+    return unStripVdom(JSON.parse(JSON.stringify(stripVdom(vdom))))
 }
 
-Object.assign(jb.ui, {VNode, cloneVNode, toVdomOrStr});
+Object.assign(jb.ui, {VNode, cloneVNode, toVdomOrStr, stripVdom, unStripVdom})
+
+})();
 
 (function(){
 const ui = jb.ui;
@@ -1341,8 +1344,7 @@ function compareVdom(b,a) {
                 res [i] = { __afterIndex, ...compareVdom(e, a[__afterIndex]), ...(e.$remount ? {remount: true}: {}) }
             }
         })
-        res.toAppend = a.flatMap((e,i) => reused[i] ? [] : [ Object.assign(e, {__afterIndex: i})])
-//        res.toAppend = a.flatMap((e,i) => reused[i] ? [] : [{...compareVdom({},e), __afterIndex: i}])
+        res.toAppend = a.flatMap((e,i) => reused[i] ? [] : [ jb.ui.stripVdom(Object.assign( e, {__afterIndex: i})) ])
         jb.log('childDiffRes',[res,...arguments])
         if (!res.length && !res.toAppend.length) return null
         return res
@@ -1503,10 +1505,7 @@ function applyDeltaToVDom(elem,delta) {
     jb.log('applyDelta',[...arguments])
     if (delta.children) {
         const toAppend = delta.children.toAppend || []
-        toAppend.forEach(ch => {
-            elem.children.push(ch);
-            ch.parentNode = elem
-        })
+        toAppend.forEach(ch => elem.children.push(jb.ui.unStripVdom(ch,elem)))
         const deleteCmp = delta.children.deleteCmp
         if (deleteCmp) {
             const index = elem.children.findIndex(ch=>ch.getAttribute('cmp-id') == deleteCmp)
@@ -1654,7 +1653,7 @@ Object.assign(jb.ui, {
         return ctxIdToRun && {$:'runCtxAction', widgetId, ctxIdToRun, vars: {ev: jb.ui.buildUserEvent(ev, elem)} }
     },
     calcElemProps(elem) {
-        return elem instanceof VNode ? {} : { 
+        return elem instanceof jb.ui.VNode ? {} : { 
             outerHeight: jb.ui.outerHeight(elem), outerWidth: jb.ui.outerWidth(elem), 
             clientRect: elem.getBoundingClientRect() 
         }
@@ -1785,7 +1784,7 @@ Object.assign(jb.ui, {
     },
     applyDeltaToCmp(delta, ctx, cmpId) {
         const elem = jb.ui.elemOfCmp(ctx,cmpId)
-        if (elem instanceof VNode) {
+        if (elem instanceof jb.ui.VNode) {
             jb.ui.applyDeltaToVDom(elem, delta)
             const widgetId = jb.ui.getWidgetId(elem)
             jb.ui.renderingUpdates.next({delta,cmpId,widgetId})
@@ -2899,7 +2898,7 @@ jb.component('refreshControlById', {
 jb.component('group.autoFocusOnFirstInput', {
   type: 'feature',
   impl: templateModifier(({},{vdom}) => {
-    const elem = vdom.querySelector('input,textarea,select').filter(e => e.getAttribute('type') != 'checkbox')[0]
+    const elem = vdom.querySelectorAll('input,textarea,select').filter(e => e.getAttribute('type') != 'checkbox')[0]
     if (elem)
       elem.setAttribute('$focus','autoFocusOnFirstInput')
     return vdom
@@ -4638,7 +4637,7 @@ jb.component('dialogFeature.autoFocusOnFirstInput', {
   impl: features(
 	  passPropToFrontEnd('selectText','%$selectText%'),
 	  frontEnd.init( (ctx,{cmp,selectText}) => {
-		const elem = cmp.base.querySelector('input,textarea,select');
+	    const elem = cmp.base.querySelectorAll('input,textarea,select').filter(e => e.getAttribute('type') != 'checkbox')[0]
 		if (elem)
 			jb.ui.focus(elem, 'dialog-feature.auto-focus-on-first-input',ctx);
 		if (selectText)
@@ -4804,7 +4803,7 @@ jb.component('dialogs.defaultStyle', {
 				source.subject(dialogs.changeEmitter()),
 				rx.filter('%open%'),
 				rx.var('dialogVdom', pipeline(dialog.buildComp('%dialog%'),'%renderVdomAndFollowUp()%')),
-				rx.var('delta', obj(prop('children', obj(prop('toAppend','%$dialogVdom%'))))),
+				rx.var('delta', obj(prop('children', obj(prop('toAppend', pipeline('%$dialogVdom%',({data}) => jb.ui.stripVdom(data))))))),
 				rx.log('addDialog','%dialog/id%'),
 				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
 			),

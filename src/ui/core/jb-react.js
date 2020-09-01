@@ -41,8 +41,7 @@ function compareVdom(b,a) {
                 res [i] = { __afterIndex, ...compareVdom(e, a[__afterIndex]), ...(e.$remount ? {remount: true}: {}) }
             }
         })
-        res.toAppend = a.flatMap((e,i) => reused[i] ? [] : [ Object.assign(e, {__afterIndex: i})])
-//        res.toAppend = a.flatMap((e,i) => reused[i] ? [] : [{...compareVdom({},e), __afterIndex: i}])
+        res.toAppend = a.flatMap((e,i) => reused[i] ? [] : [ jb.ui.stripVdom(Object.assign( e, {__afterIndex: i})) ])
         jb.log('childDiffRes',[res,...arguments])
         if (!res.length && !res.toAppend.length) return null
         return res
@@ -203,10 +202,7 @@ function applyDeltaToVDom(elem,delta) {
     jb.log('applyDelta',[...arguments])
     if (delta.children) {
         const toAppend = delta.children.toAppend || []
-        toAppend.forEach(ch => {
-            elem.children.push(ch);
-            ch.parentNode = elem
-        })
+        toAppend.forEach(ch => elem.children.push(jb.ui.unStripVdom(ch,elem)))
         const deleteCmp = delta.children.deleteCmp
         if (deleteCmp) {
             const index = elem.children.findIndex(ch=>ch.getAttribute('cmp-id') == deleteCmp)
@@ -354,7 +350,7 @@ Object.assign(jb.ui, {
         return ctxIdToRun && {$:'runCtxAction', widgetId, ctxIdToRun, vars: {ev: jb.ui.buildUserEvent(ev, elem)} }
     },
     calcElemProps(elem) {
-        return elem instanceof VNode ? {} : { 
+        return elem instanceof jb.ui.VNode ? {} : { 
             outerHeight: jb.ui.outerHeight(elem), outerWidth: jb.ui.outerWidth(elem), 
             clientRect: elem.getBoundingClientRect() 
         }
@@ -485,7 +481,7 @@ Object.assign(jb.ui, {
     },
     applyDeltaToCmp(delta, ctx, cmpId) {
         const elem = jb.ui.elemOfCmp(ctx,cmpId)
-        if (elem instanceof VNode) {
+        if (elem instanceof jb.ui.VNode) {
             jb.ui.applyDeltaToVDom(elem, delta)
             const widgetId = jb.ui.getWidgetId(elem)
             jb.ui.renderingUpdates.next({delta,cmpId,widgetId})

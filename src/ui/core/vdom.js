@@ -1,3 +1,5 @@
+(function () {
+
 class VNode {
     constructor(cmpOrTag, _attributes, _children) {
         const attributes = jb.objFromEntries(jb.entries(_attributes).map(e=>[e[0].toLowerCase(),e[1]])
@@ -22,7 +24,7 @@ class VNode {
         }
         if (children != null)
             children.forEach(ch=>ch.parentNode = this)
-        Object.assign(this,{...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,children, $$ : 'VNode'})
+        Object.assign(this,{...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,children})
     }
     getAttribute(att) {
         const res = (this.attributes || {})[att]
@@ -95,23 +97,24 @@ function toVdomOrStr(val) {
     return res
 }
 
-function stringifyVNode(vdom) {
-    return JSON.stringify(removeParentNode(vdom))
-    function removeParentNode(node) {
-        return { ...node, parentNode: null, children: node.children && node.children.map(x=>removeParentNode(x)) }
-    }
+function stripVdom(vdom) {
+    if (!vdom instanceof VNode) return
+    return { ...vdom, parentNode: null, children: vdom.children && vdom.children.map(x=>stripVdom(x)) }
 }
+
+function unStripVdom(vdom,parent) {
+    if (!vdom || typeof vdom.parentNode == 'undefined') return
+    vdom.parentNode = parent
+    Object.setPrototypeOf(vdom, VNode.prototype);
+    ;(vdom.children || []).forEach(ch=>unStripVdom(ch,vdom))
+    return vdom
+}
+
 
 function cloneVNode(vdom) {
-    return setProto(JSON.parse(stringifyVNode(vdom)))
-    function setProto(vdomObj) {
-        Object.setPrototypeOf(vdomObj, VNode.prototype);
-        (vdomObj.children || []).forEach(ch=>{
-            setProto(ch)
-            ch.parentNode = vdomObj
-        })
-        return vdomObj
-    }
+    return unStripVdom(JSON.parse(JSON.stringify(stripVdom(vdom))))
 }
 
-Object.assign(jb.ui, {VNode, cloneVNode, toVdomOrStr})
+Object.assign(jb.ui, {VNode, cloneVNode, toVdomOrStr, stripVdom, unStripVdom})
+
+})()
