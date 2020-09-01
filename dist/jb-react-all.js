@@ -4892,12 +4892,13 @@ Object.assign(jb.ui, {
             return jb.ui.widgets ? [...Object.values(jb.ui.widgets).flatMap(w=>w.body.querySelectorAll(query,{includeSelf:true})), ...Array.from(document.querySelectorAll(query))] : []
         }
     },
-    applyDeltaToCmp(delta, ctx, cmpId) {
-        const elem = jb.ui.elemOfCmp(ctx,cmpId)
+    applyDeltaToCmp(delta, ctx, cmpId, elem) {
+        elem = elem || jb.ui.elemOfCmp(ctx,cmpId)
         if (elem instanceof jb.ui.VNode) {
             jb.ui.applyDeltaToVDom(elem, delta)
-            const widgetId = jb.ui.getWidgetId(elem)
-            jb.ui.renderingUpdates.next({delta,cmpId,widgetId})
+            //const widgetId = jb.ui.getWidgetId(elem)
+            if (ctx.vars.headlessWidget)
+                jb.ui.renderingUpdates.next({delta,cmpId,widgetId: ctx.vars.widgetid})
         } else if (elem) {
             jb.ui.applyDeltaToDom(elem, delta)
             jb.ui.refreshFrontEnd(elem)
@@ -5404,12 +5405,15 @@ Object.assign(jb.ui,{
         } catch(e) {}
     },
     widgetBody(ctx) {
-      if (ctx.vars.tstWidgetId)
-        return jb.path(jb.ui.widgets[ctx.vars.tstWidgetId],'body')
-      if (ctx.vars.headlessWidget)
-        return jb.path(jb.ui.widgets[ctx.vars.widgetId],'body')
-      const top = ctx.vars.elemToTest || jb.path(ctx.frame().document,'body')
+      // if (ctx.vars.tstWidgetId)
+      //   return jb.path(jb.ui.widgets[ctx.vars.tstWidgetId],'body')
+      // if (ctx.vars.headlessWidget)
+      //   return jb.path(jb.ui.widgets[ctx.vars.widgetId],'body')
       const widgetId = ctx.vars.widgetId
+      const top = ctx.vars.elemToTest || 
+        ctx.vars.tstWidgetId && jb.path(jb.ui.widgets[ctx.vars.tstWidgetId],'body') ||
+        ctx.vars.headlessWidget && jb.path(jb.ui.widgets[widgetId],'body') ||
+        jb.path(ctx.frame().document,'body')
       return widgetId ? jb.ui.findIncludeSelf(top,`[widgetId="${widgetId}"]`)[0] : top
     },
     ctxOfElem: (elem,att) => elem && elem.getAttribute && jb.ctxDictionary[elem.getAttribute(att || 'jb-ctx')],

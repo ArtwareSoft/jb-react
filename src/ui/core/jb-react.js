@@ -479,12 +479,13 @@ Object.assign(jb.ui, {
             return jb.ui.widgets ? [...Object.values(jb.ui.widgets).flatMap(w=>w.body.querySelectorAll(query,{includeSelf:true})), ...Array.from(document.querySelectorAll(query))] : []
         }
     },
-    applyDeltaToCmp(delta, ctx, cmpId) {
-        const elem = jb.ui.elemOfCmp(ctx,cmpId)
+    applyDeltaToCmp(delta, ctx, cmpId, elem) {
+        elem = elem || jb.ui.elemOfCmp(ctx,cmpId)
         if (elem instanceof jb.ui.VNode) {
             jb.ui.applyDeltaToVDom(elem, delta)
-            const widgetId = jb.ui.getWidgetId(elem)
-            jb.ui.renderingUpdates.next({delta,cmpId,widgetId})
+            //const widgetId = jb.ui.getWidgetId(elem)
+            if (ctx.vars.headlessWidget)
+                jb.ui.renderingUpdates.next({delta,cmpId,widgetId: ctx.vars.widgetid})
         } else if (elem) {
             jb.ui.applyDeltaToDom(elem, delta)
             jb.ui.refreshFrontEnd(elem)
