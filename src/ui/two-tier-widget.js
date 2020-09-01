@@ -24,19 +24,11 @@ jb.component('widget.frontEndCtrl', {
 jb.component('sink.frontEndDelta', {
     type: 'rx',
     impl: sink.action( ctx => {
-        const {delta,css} = ctx.data
-        const {widgetBody, VNode, applyDeltaToDom, applyDeltaToVDom, addStyleElem, refreshFrontEnd, getWidgetId} = jb.ui
-        const elem = widgetBody(ctx.setVar('headlessWidget',false))
-        if (elem instanceof VNode) {
-            applyDeltaToVDom(elem, delta)
-            const widgetId = getWidgetId(elem)
-            const cmpId = elem.getAttribute('cmp-id')
-            renderingUpdates.next({delta,cmpId,widgetId})
-        } else if (elem) {
-            applyDeltaToDom(elem, delta)
-            refreshFrontEnd(elem)
-        }        
-        css && addStyleElem(css)
+        const {delta,css,widgetId,cmpId} = ctx.data
+        const ctxToUse = ctx.setVars({headlessWidget: false, widgetId})
+        cmpId = cmpId || widgetBody(ctxToUse).getAttribute('cmp-id')
+        jb.ui.applyDeltaToCmp(delta,ctxToUse,cmpId)
+        css && jb.ui.addStyleElem(css)
     })
 })
 
@@ -52,7 +44,7 @@ jb.component('widget.headless', {
         const top = h(cmp)
         const body = h('div',{ widgetTop: true, headless: true, widgetId, remoteUri: ctx.vars.remoteUri },top)
         jb.ui.widgets[widgetId] = { body }
-        renderingUpdates.next({widgetId, delta: compareVdom({},top), cmpId: cmp.cmpId})
+        renderingUpdates.next({widgetId, delta: compareVdom({},top)}) //, cmpId: cmp.cmpId})
         return userReqIn => (start, sink) => {
             if (start !== 0) return
             const talkback = []
@@ -73,16 +65,6 @@ jb.component('widget.headless', {
 //              if (t === 1 && d && d.data.destroyWidget) sink(2)
             })
         }
-        // return userReqIn => ctx.run(rx.pipe(
-        //     rx.merge(
-        //         rx.pipe(()=>userReqIn, rx.log('headless user req'),
-        //             rx.do(userReq => handleUserReq(userReq.data)) ),
-        //         rx.pipe(source.callbag(()=>widgetRenderingSrc), rx.filter(`%widgetId% == ${widgetId}`),
-        //             rx.log('headless rendering delta'), rx.var('rendering',true)),
-        //     ),
-        //     rx.takeWhile(not('%destroyWidget%')),
-        //     rx.filter('%$rendering%'),
-        // ))
 
         function handleUserReq(userReq) {
             if (userReq.$ == 'runCtxAction')

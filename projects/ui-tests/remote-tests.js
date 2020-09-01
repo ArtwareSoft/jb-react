@@ -139,14 +139,14 @@ jb.component('remoteTest.twoTierWidget.changeText', {
       }),
       remote.worker({id: 'ui', libs: ['common','ui-common','remote','two-tier-widget'] })
     ),
-    userInputWithTiming: rx.pipe(
+    userInputWithTiming1: rx.pipe(
       source.callbag(()=>jb.ui.renderingUpdates),
       rx.log('renderingUpdates'),
       rx.map(userInput.setText('danny')),
       rx.delay(10),
       userInput.eventToRequest()
     ),
-    extraSource: () => jb.ui.renderingUpdates,
+    extraSource1: () => jb.ui.renderingUpdates,
     expectedResult: contains('danny')
   })
 })
