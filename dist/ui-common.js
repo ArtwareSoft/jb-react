@@ -1204,7 +1204,7 @@ class VNode {
         }
         if (children != null)
             children.forEach(ch=>ch.parentNode = this)
-        Object.assign(this,{...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,children})
+        Object.assign(this,{...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,children, $$ : 'VNode'})
     }
     getAttribute(att) {
         const res = (this.attributes || {})[att]

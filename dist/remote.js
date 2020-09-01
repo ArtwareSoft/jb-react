@@ -141,7 +141,7 @@ jb.remoteCBHandler = remote => ({
                     .map(e=>[e[0], jb.remoteCtx.stripData(e[1])]))
                 }
         return cbData
-    }
+    },
 })
 
 jb.component('remote.worker', {
