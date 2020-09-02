@@ -30,7 +30,7 @@ jb.component('sink.BEMethod', {
     macroByValue: true,
     params: [
         {id: 'method', as: 'string', dynamic: true },
-        {id: 'data', defaultValue: '%%', dynamic: true },
+        {id: 'data', defaultValue: ({data}) => data instanceof Event ? null : data, dynamic: true },
         {id: 'vars', dynamic: true },
     ],
     impl: sink.action((ctx,{},{method,data,vars}) => jb.ui.runBEMethodInAnyContext(ctx,method(ctx),data(ctx),vars(ctx)))
