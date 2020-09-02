@@ -73,7 +73,7 @@ jb.component('itemlist.infiniteScroll', {
       Var('shown','%$$state/visualLimit/shownItems%'),
       Var('itemsToAppend', pipeline('%$$props/allItems%',slice('%$shown%',math.plus('%$shown%','%$pageSize%')))),
       Var('delta', itemlist.deltaOfItems('%$itemsToAppend%', 
-        ({},{$$state, shown, itemsToAppend}) => ({visualLimit: { ...$$state.visualLimit, shownItems: shown + itemsToAppend} }))),
+        ({},{$state, shown, itemsToAppend}) => ({visualLimit: { ...$state.visualLimit, shownItems: shown + itemsToAppend} }))),
       //Var('cmpId','%$cmp/cmpId%'),
       action.applyDeltaToCmp('%$delta%','%$cmp/cmpId%')
     )),
