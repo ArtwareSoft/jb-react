@@ -2395,7 +2395,7 @@ Object.assign(jb.ui, {
     },
     addStyleElem(innerHtml,workerId) {
       if (workerId) {
-        jb.ui.renderingUpdates.next({$:'addStyleElem', css: innerHTML})
+        jb.ui.renderingUpdates.next({$:'addStyleElem', css: innerHtml})
       } else {
         const style_elem = document.createElement('style')
         style_elem.innerHTML = innerHtml
