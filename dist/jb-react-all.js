@@ -4374,14 +4374,17 @@ function stripVdom(vdom) {
     return { ...vdom, parentNode: null, children: vdom.children && vdom.children.map(x=>stripVdom(x)) }
 }
 
-function unStripVdom(vdom,parent) {
+function _unStripVdom(vdom,parent) {
     if (!vdom || typeof vdom.parentNode == 'undefined') return
     vdom.parentNode = parent
     Object.setPrototypeOf(vdom, VNode.prototype);
-    ;(vdom.children || []).forEach(ch=>unStripVdom(ch,vdom))
+    ;(vdom.children || []).forEach(ch=>_unStripVdom(ch,vdom))
     return vdom
 }
 
+function unStripVdom(vdom,parent) {
+    _unStripVdom(JSON.parse(JSON.stringify(vdom)),parent)
+}
 
 function cloneVNode(vdom) {
     return unStripVdom(JSON.parse(JSON.stringify(stripVdom(vdom))))
