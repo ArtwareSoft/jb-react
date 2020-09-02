@@ -3595,7 +3595,7 @@ jb.component('sink.action', {
   params: [
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
   ],
-  impl: (ctx,action) => jb.callbag.subscribe(ctx2 => { Object.assign(ctx2.vars,{sinkCtx:ctx}); return action(ctx2) })
+  impl: (ctx,action) => jb.callbag.subscribe(ctx2 => { Object.assign(ctx2.vars,{$sinkCtx:ctx}); return action(ctx2) })
 })
 
 jb.component('sink.data', {
