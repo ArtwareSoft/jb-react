@@ -40,6 +40,7 @@ jb.component('widget.headless', {
     ],
     impl: (ctx,ctrl,widgetId) => {
         const {renderingUpdates, widgetRenderingSrc, compareVdom, h } = jb.ui
+        const filteredSrc = jb.callbag.filter(m=>m.widgetId == widgetId)(widgetRenderingSrc)
         const cmp = ctrl(jb.ui.extendWithServiceRegistry(ctx.setVars({headlessWidget: true,headlessWidgetId: widgetId})))
         const top = h(cmp)
         const body = h('div',{ widgetTop: true, headless: true, widgetId, remoteUri: ctx.vars.remoteUri },top)
@@ -52,7 +53,7 @@ jb.component('widget.headless', {
                 if (t == 1 && d == null)
                     talkback.forEach(tb=>tb(1))
             }) 
-            widgetRenderingSrc(0, function headless(t, d) {
+            filteredSrc(0, function headless(t, d) {
                 if (t == 0) talkback.push(d)
                 if (t === 2) sink(t,d)
                 if (t === 1 && d && d.widgetId == widgetId) sink(t,ctx.dataObj(d))

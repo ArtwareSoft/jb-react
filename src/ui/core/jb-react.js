@@ -476,7 +476,7 @@ Object.assign(jb.ui, {
         elem = elem || jb.ui.elemOfCmp(ctx,cmpId)
         if (elem instanceof jb.ui.VNode) {
             jb.ui.applyDeltaToVDom(elem, delta)
-            jb.ui.renderingUpdates.next({delta,cmpId,widgetId: jb.ui.headlessWidgetId(elem)})
+            jb.ui.renderingUpdates.next({delta,cmpId,widgetId: ctx.vars.widgetId})
         } else if (elem) {
             jb.ui.applyDeltaToDom(elem, delta)
             jb.ui.refreshFrontEnd(elem)

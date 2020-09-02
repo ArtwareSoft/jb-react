@@ -1,11 +1,10 @@
 jb.component('userInput.eventToRequest', {
     type: 'rx',
-    impl: rx.map( (ctx,{tstWidgetId}) => jb.ui.rawEventToUserRequest({ 
-            ...ctx.data,
-            currentTarget: jb.ui.findIncludeSelf(jb.ui.widgetBody(ctx.setVars({headlessWidget: true,headlessWidgetId: tstWidgetId})),ctx.data.selector)[0],
-            frontendWidgetId: tstWidgetId
-        }, ctx.data.specificMethod),
-    )
+    impl: rx.map( (ctx,{tstWidgetId}) => {
+      const currentTarget = jb.ui.findIncludeSelf(jb.ui.widgetBody(ctx.setVars({headlessWidget: true,headlessWidgetId: tstWidgetId})),ctx.data.selector)[0]
+      return jb.ui.rawEventToUserRequest({ ...ctx.data, currentTarget, frontendWidgetId: jb.ui.frontendWidgetId(currentTarget) }, 
+        ctx.data.specificMethod)
+    })
 })
 
 jb.component('userInput.click', {

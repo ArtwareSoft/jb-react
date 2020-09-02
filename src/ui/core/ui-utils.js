@@ -36,7 +36,7 @@ Object.assign(jb.ui,{
     ctxOfElem: (elem,att) => elem && elem.getAttribute && jb.ctxDictionary[elem.getAttribute(att || 'jb-ctx')],
     parentCmps: el => jb.ui.parents(el).map(el=>el._component).filter(x=>x),
     closestCmpElem: elem => jb.ui.parents(elem,{includeSelf: true}).find(el=> el.getAttribute && el.getAttribute('cmp-id') != null),
-    headlessWidgetOfElem: elem => jb.ui.parents(elem,{includeSelf: true})
+    headlessWidgetId: elem => jb.ui.parents(elem,{includeSelf: true})
         .filter(el=>el.getAttribute && el.getAttribute('widgettop') && el.getAttribute('headless'))
         .map(el=>el.getAttribute('widgetid'))[0],
     frontendWidgetId: elem => jb.ui.parents(elem,{includeSelf: true})
