@@ -120,7 +120,7 @@ jb.component('uiTest', {
 			rx.log('checkTestResult'),
 			rx.filter('%$success%'), // if failure wait for the next delta
 			rx.map('%$success%'),
-			rx.do( ({},{tstWidgetId})=>jb.ui.unmount(jb.ui.widgets[tstWidgetId].body)),
+			rx.do( ({},{tstWidgetId})=>jb.ui.unmount(jb.ui.headless[tstWidgetId].body)),
 			rx.take(1),
 		),
 		expectedResult: '%%',
@@ -183,7 +183,7 @@ jb.component('uiTest.vdomResultAsHtml', {
 	params: [
 	],
 	impl: ctx => {
-		const widget = jb.ui.widgets[ctx.vars.tstWidgetId]
+		const widget = jb.ui.headless[ctx.vars.tstWidgetId]
 		if (!widget) debugger
 		const elemToTest = document.createElement('div')
 		elemToTest.ctxForFE = ctx.setVars({elemToTest})

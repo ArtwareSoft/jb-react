@@ -96,7 +96,7 @@ jb.remoteCBHandler = remote => ({
 jb.component('remote.worker', {
     type: 'remote',
     params: [
-        {id: 'id', as: 'string', defaultValue: '0' },
+        {id: 'id', as: 'string', defaultValue: '1' },
         {id: 'libs', as: 'array', defaultValue: ['common','remote','rx'] },
     ],    
     impl: (ctx,id,libs) => {
@@ -105,11 +105,11 @@ jb.component('remote.worker', {
         const distPath = jb.remote.pathOfDistFolder()
         const workerCode = [
             ...libs.map(lib=>`importScripts('${distPath}/!${uri}!${lib}.js')`),`
-                self.uri = "${uri}"
-                self.workerId = () => 1
-                jb.remote.onServer = true
+                self.uri = '${uri}'
+                self.workerId = () => '${id}'
                 jb.cbLogByPath = {}
                 jb.initSpy({spyParam: 'remote'})
+                self.spy = jb.spy
                 self.postObj = m => { jb.log('remote',['sent from ${uri}',m]); self.postMessage({from: '${uri}',...m}) }
                 self.CBHandler = jb.remoteCBHandler(self).init()
             `

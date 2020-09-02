@@ -26,25 +26,22 @@ Object.assign(jb.ui,{
         } catch(e) {}
     },
     widgetBody(ctx) {
-      // if (ctx.vars.tstWidgetId)
-      //   return jb.path(jb.ui.widgets[ctx.vars.tstWidgetId],'body')
-      // if (ctx.vars.headlessWidget)
-      //   return jb.path(jb.ui.widgets[ctx.vars.widgetId],'body')
-      const widgetId = ctx.vars.widgetId
+      const FEwidgetId = ctx.vars.FEwidgetId, headlessWidgetId = ctx.vars.headlessWidgetId
       const top = ctx.vars.elemToTest || 
-        ctx.vars.tstWidgetId && jb.path(jb.ui.widgets[ctx.vars.tstWidgetId],'body') ||
-        ctx.vars.headlessWidget && jb.path(jb.ui.widgets[widgetId],'body') ||
+        ctx.vars.tstWidgetId && jb.path(jb.ui.headless[ctx.vars.tstWidgetId],'body') ||
+        ctx.vars.headlessWidget && jb.path(jb.ui.headless[headlessWidgetId],'body') ||
         jb.path(ctx.frame().document,'body')
-      return widgetId ? jb.ui.findIncludeSelf(top,`[widgetId="${widgetId}"]`)[0] : top
+      return FEwidgetId ? jb.ui.findIncludeSelf(top,`[widgetid="${FEwidgetId}"]`)[0] : top
     },
     ctxOfElem: (elem,att) => elem && elem.getAttribute && jb.ctxDictionary[elem.getAttribute(att || 'jb-ctx')],
     parentCmps: el => jb.ui.parents(el).map(el=>el._component).filter(x=>x),
     closestCmpElem: elem => jb.ui.parents(elem,{includeSelf: true}).find(el=> el.getAttribute && el.getAttribute('cmp-id') != null),
-    widgetOfElem(elem) {
-      const el = jb.ui.parents(elem,{includeSelf: true}).filter(el=>el.getAttribute && el.getAttribute('widgettop'))[0]
-      return el ? jb.objFromEntries(['widgetid','frontend','headless'].map(p=>[p,el.getAttribute(p)]).filter(e=>e[1]))
-         : { widgetId: 'default'}
-    },
+    headlessWidgetOfElem: elem => jb.ui.parents(elem,{includeSelf: true})
+        .filter(el=>el.getAttribute && el.getAttribute('widgettop') && el.getAttribute('headless'))
+        .map(el=>el.getAttribute('widgetid'))[0],
+    frontendWidgetId: elem => jb.ui.parents(elem,{includeSelf: true})
+        .filter(el=>el.getAttribute && el.getAttribute('widgettop') && el.getAttribute('frontend'))
+        .map(el=>el.getAttribute('widgetid'))[0],
     elemOfCmp: (ctx,cmpId) => jb.ui.findIncludeSelf(jb.ui.widgetBody(ctx),`[cmp-id="${cmpId}"]`)[0],
     fromEvent: (cmp,event,elem,options) => jb.callbag.pipe(
           jb.callbag.fromEvent(event, elem || cmp.base, options),

@@ -121,6 +121,7 @@ jb.component('remoteTest.dynamicProfileFunc', {
 
 jb.component('remoteTest.twoTierWidget.button', {
   impl: uiTest({
+    timeout: 500,
     extraSource: () => jb.ui.renderingUpdates,
     control: widget.twoTierWidget(button('hello world'), remote.worker({id: 'ui', libs: ['common','ui-common','remote','two-tier-widget'] })),
     expectedResult: contains('hello world')
@@ -139,14 +140,14 @@ jb.component('remoteTest.twoTierWidget.changeText', {
       }),
       remote.worker({id: 'ui', libs: ['common','ui-common','remote','two-tier-widget'] })
     ),
-    userInputWithTiming1: rx.pipe(
+    userInputWithTiming: rx.pipe(
       source.callbag(()=>jb.ui.renderingUpdates),
       rx.log('renderingUpdates'),
       rx.map(userInput.setText('danny')),
       rx.delay(10),
       userInput.eventToRequest()
     ),
-    extraSource1: () => jb.ui.renderingUpdates,
+    extraSource: () => jb.ui.renderingUpdates,
     expectedResult: contains('danny')
   })
 })

@@ -3,7 +3,7 @@ jb.ns('remote,rx')
 Object.assign(jb.ui, {
     widgetUserRequests: jb.callbag.subject(),
     widgetRenderingSrc: jb.callbag.replayFirst(m=>m.widgetId)(jb.ui.renderingUpdates),
-    widgets: {},
+    headless: {},
 })
 
 jb.component('widget.frontEndCtrl', {
@@ -25,7 +25,7 @@ jb.component('sink.frontEndDelta', {
     type: 'rx',
     impl: sink.action( ctx => {
         const {delta,css,widgetId,cmpId} = ctx.data
-        const ctxToUse = ctx.setVars({headlessWidget: false, widgetId})
+        const ctxToUse = ctx.setVars({headlessWidget: false, FEwidgetId: widgetId})
         const elem = cmpId ? null : jb.ui.widgetBody(ctxToUse)
         jb.ui.applyDeltaToCmp(delta,ctxToUse,cmpId,elem)
         css && jb.ui.addStyleElem(css)
@@ -40,10 +40,10 @@ jb.component('widget.headless', {
     ],
     impl: (ctx,ctrl,widgetId) => {
         const {renderingUpdates, widgetRenderingSrc, compareVdom, h } = jb.ui
-        const cmp = ctrl(jb.ui.extendWithServiceRegistry(ctx.setVars({headlessWidget: true,widgetId})))
+        const cmp = ctrl(jb.ui.extendWithServiceRegistry(ctx.setVars({headlessWidget: true,headlessWidgetId: widgetId})))
         const top = h(cmp)
         const body = h('div',{ widgetTop: true, headless: true, widgetId, remoteUri: ctx.vars.remoteUri },top)
-        jb.ui.widgets[widgetId] = { body }
+        jb.ui.headless[widgetId] = { body }
         renderingUpdates.next({widgetId, delta: compareVdom({},top)}) //, cmpId: cmp.cmpId})
         return userReqIn => (start, sink) => {
             if (start !== 0) return
@@ -70,10 +70,10 @@ jb.component('widget.headless', {
             if (userReq.$ == 'runCtxAction')
                 jb.ui.runCtxAction(jb.ctxDictionary[userReq.ctxIdToRun],userReq.data,userReq.vars)
             if (userReq.$ == 'destroy') {
-                jb.ui.BECmpsDestroyNotification.next({cmps: userReq.cmps, fromHeadless: true})
+                jb.ui.BECmpsDestroyNotification.next({cmps: userReq.cmps, destroyLocally: true})
                 if (userReq.destroyWidget) jb.delay(1).then(()=> {
                     console.log(`delete widget ${userReq.widgetId}`)
-                    jb.delay(100).then(()=>delete jb.ui.widgets[userReq.widgetId]) // delay needed for tests
+                    jb.delay(100).then(()=>delete jb.ui.headless[userReq.widgetId]) // delay needed for tests
                 })
             }
         }
@@ -96,7 +96,7 @@ jb.component('widget.twoTierWidget', {
             rx.filter('%widgetId% == %$widgetId%'),
             rx.takeWhile('%ev.type% != destroy'),
             //source.frontEndUserEvent('%$widgetId%'),
-            rx.log('send to headless'),
+            rx.log('sentToHeadless'),
             remote.operator(widget.headless(call('control'),'%$widgetId%'), '%$remote%'),
             rx.log('arrives from headless'),
             sink.frontEndDelta('%$widgetId%'),

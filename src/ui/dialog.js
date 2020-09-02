@@ -453,7 +453,7 @@ jb.component('dialog.div', {
 jb.component('dialogs.changeEmitter', {
 	type: 'rx',
 	params: [
-		{id: 'widgetId', defaultValue: '%$widgetId%'},
+		{id: 'widgetId', defaultValue: '%$headlessWidgetId%'},
 	],
 	category: 'source',
 	impl: (ctx,widgetId) => {
@@ -467,7 +467,7 @@ jb.component('dialogs.changeEmitter', {
 jb.component('dialog.dialogTop', {
 	type: 'control',
 	params: [
-		{id: 'widgetId', defaultValue: '%$widgetId%'},
+//		{id: 'widgetId', defaultValue: '%$widgetId%'},
 		{id: 'style', type: 'dialogs.style', defaultValue: dialogs.defaultStyle(), dynamic: true},
 	],
 	impl: ctx => jb.ui.ctrl(ctx)
