@@ -2,7 +2,7 @@ jb.ns('remote,rx')
 
 Object.assign(jb.ui, {
     widgetUserRequests: jb.callbag.subject(),
-    widgetRenderingSrc: jb.callbag.replayFirst(m=>m.widgetId)(jb.ui.renderingUpdates),
+    widgetRenderingSrc: jb.callbag.replayWithTimeout(30)(jb.ui.renderingUpdates),
     headless: {},
 })
 
@@ -57,7 +57,7 @@ jb.component('widget.headless', {
             filteredSrc(0, function headless(t, d) {
                 if (t == 0) talkback.push(d)
                 if (t === 2) sink(t,d)
-                if (t === 1 && d && d.widgetId == widgetId) sink(t,ctx.dataObj(d))
+                if (t === 1 && d) sink(t,ctx.dataObj(d))
             })
     
             userReqIn(0, function headless(t, d) {
