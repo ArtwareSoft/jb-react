@@ -106,7 +106,7 @@ jb.component('remote.worker', {
         const workerCode = [
             ...libs.map(lib=>`importScripts('${distPath}/!${uri}!${lib}.js')`),`
                 self.uri = '${uri}'
-                self.workerId = () => '${id}'
+                self.isWorker = true
                 jb.cbLogByPath = {}
                 jb.initSpy({spyParam: 'remote'})
                 self.spy = jb.spy

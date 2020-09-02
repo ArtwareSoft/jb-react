@@ -145,8 +145,6 @@ st.initPreview = function(preview_window,allowedTypes) {
       jb.exp('%$studio/settings/activateWatchRefViewer%','boolean') && st.activateWatchRefViewer();
       jb.exec(writeValue('%$studio/projectSettings%',() => JSON.parse(JSON.stringify(preview_window.jbProjectSettings)) ))
 
-      st.previewWindow.workerId = ctx => ctx && ctx.vars.$runAsWorker
-
       fixInvalidUrl()
       jb.frame.jbStartCommand && jb.exec(jb.frame.jbStartCommand) // used by vscode to open jbEditor
 

@@ -74,7 +74,7 @@ jb.component('feature.contentEditable', {
     ),
     templateModifier(({},{cmp,vdom},{param}) => {
       const contentEditable = jb.ui.contentEditable
-      if (!contentEditable || cmp.ctx.vars.$runAsWorker || !contentEditable.isEnabled() || param && !contentEditable.refOfProp(cmp,param)) return vdom
+      if (!contentEditable || jb.frame.isWorker || !contentEditable.isEnabled() || param && !contentEditable.refOfProp(cmp,param)) return vdom
       const attsToInject = cmp.state.contentEditableActive ? {contenteditable: 'true'} : {} // onkeypress: true
       // fix spacebar bug in button
       if (vdom.tag && vdom.tag.toLowerCase() == 'button' && vdom.children && vdom.children.length == 1 && typeof vdom.children[0] == 'string') {

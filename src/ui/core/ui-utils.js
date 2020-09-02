@@ -133,9 +133,9 @@ Object.assign(jb.ui, {
         elem.innerHTML = html
         el.appendChild(elem.firstChild)
     },
-    addStyleElem(innerHtml,workerId) {
-      if (workerId) {
-        jb.ui.renderingUpdates.next({$:'addStyleElem', css: innerHtml})
+    addStyleElem(innerHtml,widgetId) {
+      if (widgetId) {
+        jb.ui.renderingUpdates.next({widgetId, css: innerHtml})
       } else {
         const style_elem = document.createElement('style')
         style_elem.innerHTML = innerHtml
@@ -158,7 +158,7 @@ jb.objectDiff = function(newObj, orig) {
     if (orig === newObj) return {}
     if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
     const deletedValues = Object.keys(orig).reduce((acc, key) =>
-        newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: jb.frame.workerId && jb.frame.workerId() ? '__undefined' : undefined}
+        newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: jb.frame.isWorker ? '__undefined' : undefined}
     , {})
 
     return Object.keys(newObj).reduce((acc, key) => {

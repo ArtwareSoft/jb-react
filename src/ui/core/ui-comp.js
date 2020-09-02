@@ -15,8 +15,8 @@ Object.assign(jb.ui,{
         const cssKey = cssLines.join('\n')
         if (!cssKey) return ''
 
-        const workerId = jb.frame.workerId && jb.frame.workerId(ctx)
-        const classPrefix = workerId ? 'w'+ workerId : 'jb-'
+        const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId
+        const classPrefix = widgetId ? 'w'+ widgetId : 'jb-'
 
         if (!this.cssHashMap[cssKey]) {
             if (existingClass) {
@@ -31,7 +31,7 @@ Object.assign(jb.ui,{
             if (cssStyleElem)
                 cssStyleElem.innerText = cssContent
             else
-                ui.addStyleElem(cssContent,workerId)
+                ui.addStyleElem(cssContent,widgetId)
         }
         Object.assign(this.cssHashMap[cssKey].paths, {[ctx.path] : true})
         return this.cssHashMap[cssKey].classId

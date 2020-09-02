@@ -1984,8 +1984,8 @@ Object.assign(jb.ui,{
         const cssKey = cssLines.join('\n')
         if (!cssKey) return ''
 
-        const workerId = jb.frame.workerId && jb.frame.workerId(ctx)
-        const classPrefix = workerId ? 'w'+ workerId : 'jb-'
+        const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId
+        const classPrefix = widgetId ? 'w'+ widgetId : 'jb-'
 
         if (!this.cssHashMap[cssKey]) {
             if (existingClass) {
@@ -2000,7 +2000,7 @@ Object.assign(jb.ui,{
             if (cssStyleElem)
                 cssStyleElem.innerText = cssContent
             else
-                ui.addStyleElem(cssContent,workerId)
+                ui.addStyleElem(cssContent,widgetId)
         }
         Object.assign(this.cssHashMap[cssKey].paths, {[ctx.path] : true})
         return this.cssHashMap[cssKey].classId
@@ -2393,9 +2393,9 @@ Object.assign(jb.ui, {
         elem.innerHTML = html
         el.appendChild(elem.firstChild)
     },
-    addStyleElem(innerHtml,workerId) {
-      if (workerId) {
-        jb.ui.renderingUpdates.next({$:'addStyleElem', css: innerHtml})
+    addStyleElem(innerHtml,widgetId) {
+      if (widgetId) {
+        jb.ui.renderingUpdates.next({widgetId, css: innerHtml})
       } else {
         const style_elem = document.createElement('style')
         style_elem.innerHTML = innerHtml
@@ -2418,7 +2418,7 @@ jb.objectDiff = function(newObj, orig) {
     if (orig === newObj) return {}
     if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
     const deletedValues = Object.keys(orig).reduce((acc, key) =>
-        newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: jb.frame.workerId && jb.frame.workerId() ? '__undefined' : undefined}
+        newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: jb.frame.isWorker ? '__undefined' : undefined}
     , {})
 
     return Object.keys(newObj).reduce((acc, key) => {
