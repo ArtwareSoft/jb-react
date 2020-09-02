@@ -155,6 +155,7 @@ jb.component('remoteTest.twoTierWidget.changeText', {
 
 jb.component('remoteTest.twoTierWidget.infiniteScroll', {
   impl: uiFrontEndTest({
+    timeout: 1000,
     renderDOM: true,
     control: widget.twoTierWidget(itemlist({
       items: range(0,10),

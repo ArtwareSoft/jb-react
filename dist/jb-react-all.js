@@ -5095,7 +5095,7 @@ Object.assign(jb.ui,{
         if (!cssKey) return ''
 
         const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId
-        const classPrefix = widgetId ? 'w'+ widgetId : 'jb-'
+        const classPrefix = widgetId || 'jb-'
 
         if (!this.cssHashMap[cssKey]) {
             if (existingClass) {
