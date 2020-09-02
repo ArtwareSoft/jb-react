@@ -1292,7 +1292,7 @@ function _unStripVdom(vdom,parent) {
 }
 
 function unStripVdom(vdom,parent) {
-    _unStripVdom(JSON.parse(JSON.stringify(vdom)),parent)
+    return _unStripVdom(JSON.parse(JSON.stringify(vdom)),parent)
 }
 
 function cloneVNode(vdom) {
