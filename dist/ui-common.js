@@ -1645,7 +1645,7 @@ Object.assign(jb.ui, {
             return jb.logError('can not find closest elem with jb-ctx',elem)
         const method = specificMethod && typeof specificMethod == 'string' ? specificMethod : `on${ev.type}Handler`
         const ctxIdToRun = jb.ui.ctxIdOfMethod(elem,method)
-        const widgetId = ev.frontendWidgetId || jb.ui.frontendWidgetId(elem)
+        const widgetId = ev.overrideWidgetId || jb.ui.frontendWidgetId(elem)
         return ctxIdToRun && {$:'runCtxAction', widgetId, ctxIdToRun, vars: {ev: jb.ui.buildUserEvent(ev, elem)} }
     },
     calcElemProps(elem) {
@@ -2370,11 +2370,11 @@ Object.assign(jb.ui, {
           el = el.parentNode
         }
     },
-    activeElement() { return document.activeElement },
+    activeElement: () => document.activeElement,
     find(el,selector,options) {
       if (!el) return []
       if (jb.path(el,'constructor.name') == 'jbCtx')
-          el = jb.ui.widgetBody(el) // el is ctx
+          el = jb.ui.widgetBody(el)
       if (!el) return []
       return el instanceof jb.ui.VNode ? el.querySelectorAll(selector,options) :
           [... (options && options.includeSelf && jb.ui.matches(el,selector) ? [el] : []),
@@ -2386,25 +2386,20 @@ Object.assign(jb.ui, {
     hasClass: (el,clz) => el && el.classList && el.classList.contains(clz),
     matches: (el,query) => el && el.matches && el.matches(query),
     index: el => Array.from(el.parentNode.children).indexOf(el),
-    limitStringLength(str,maxLength) {
-        if (typeof str == 'string' && str.length > maxLength-3)
-          return str.substring(0,maxLength) + '...';
-        return str;
-    },
+    limitStringLength: (str,maxLength) => 
+      (typeof str == 'string' && str.length > maxLength-3) ? str.substring(0,maxLength) + '...' : str,
     addHTML(el,html) {
-        const elem = document.createElement('div');
-        elem.innerHTML = html;
+        const elem = document.createElement('div')
+        elem.innerHTML = html
         el.appendChild(elem.firstChild)
     },
     addStyleElem(innerHtml,workerId) {
       if (workerId) {
-        jb.ui.workerStyleElems = jb.ui.workerStyleElems || {}
-        jb.ui.workerStyleElems[workerId] = jb.ui.workerStyleElems[workerId] || []
-        jb.ui.workerStyleElems[workerId].push(innerHtml)
+        jb.ui.renderingUpdates.next({$:'addStyleElem', css: innerHTML})
       } else {
-        const style_elem = document.createElement('style');
-        style_elem.innerHTML = innerHtml;
-        document.head.appendChild(style_elem);
+        const style_elem = document.createElement('style')
+        style_elem.innerHTML = innerHtml
+        document.head.appendChild(style_elem)
       }
     },
     valueOfCssVar(varName,parent) {

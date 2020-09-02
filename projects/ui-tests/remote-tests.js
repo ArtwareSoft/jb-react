@@ -130,6 +130,7 @@ jb.component('remoteTest.twoTierWidget.button', {
 
 jb.component('remoteTest.twoTierWidget.changeText', {
   impl: uiTest({
+    timeout: 1000,
     control: widget.twoTierWidget(
       group({
         controls: [
@@ -142,9 +143,9 @@ jb.component('remoteTest.twoTierWidget.changeText', {
     ),
     userInputWithTiming: rx.pipe(
       source.callbag(()=>jb.ui.renderingUpdates),
-      rx.log('renderingUpdates'),
       rx.map(userInput.setText('danny')),
       rx.delay(10),
+      rx.log('renderingUpdates'),
       userInput.eventToRequest()
     ),
     extraSource: () => jb.ui.renderingUpdates,

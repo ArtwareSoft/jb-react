@@ -342,7 +342,7 @@ Object.assign(jb.ui, {
             return jb.logError('can not find closest elem with jb-ctx',elem)
         const method = specificMethod && typeof specificMethod == 'string' ? specificMethod : `on${ev.type}Handler`
         const ctxIdToRun = jb.ui.ctxIdOfMethod(elem,method)
-        const widgetId = ev.frontendWidgetId || jb.ui.frontendWidgetId(elem)
+        const widgetId = ev.overrideWidgetId || jb.ui.frontendWidgetId(elem)
         return ctxIdToRun && {$:'runCtxAction', widgetId, ctxIdToRun, vars: {ev: jb.ui.buildUserEvent(ev, elem)} }
     },
     calcElemProps(elem) {

@@ -2,7 +2,7 @@ jb.component('userInput.eventToRequest', {
     type: 'rx',
     impl: rx.map( (ctx,{tstWidgetId}) => {
       const currentTarget = jb.ui.findIncludeSelf(jb.ui.widgetBody(ctx.setVars({headlessWidget: true,headlessWidgetId: tstWidgetId})),ctx.data.selector)[0]
-      return jb.ui.rawEventToUserRequest({ ...ctx.data, currentTarget, frontendWidgetId: jb.ui.frontendWidgetId(currentTarget) }, 
+      return jb.ui.rawEventToUserRequest({ ...ctx.data, currentTarget }, 
         ctx.data.specificMethod)
     })
 })
