@@ -2,7 +2,7 @@ jb.ns('remote,rx')
 
 Object.assign(jb.ui, {
     widgetUserRequests: jb.callbag.subject(),
-    widgetRenderingSrc: jb.callbag.replayWithTimeout(30)(jb.ui.renderingUpdates),
+    widgetRenderingSrc: jb.callbag.replayWithTimeout(1000)(jb.ui.renderingUpdates),
     headless: {},
 })
 

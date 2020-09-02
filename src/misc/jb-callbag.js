@@ -392,13 +392,13 @@ jb.callbag = {
           return subj
       },
       replayWithTimeout: timeOut => source => { // replay the messages arrived before timeout
-        timeOut = timeOut || 30
+        timeOut = timeOut || 1000
         let store = [], done = false
       
         source(0, function replayWithTimeout(t, d) {
           if (t == 1 && d) {
             const now = new Date().getTime()
-            store = store.filter(e => now > e.time + timeOut)
+            store = store.filter(e => now < e.time + timeOut)
             store.push({ time: now, d })
           }
         })
@@ -408,7 +408,7 @@ jb.callbag = {
           if (done) return sink(2)
           source(0, function replayWithTimeout(t, d) { sink(t,d) })
           const now = new Date().getTime()
-          store = store.filter(e => now > e.time + timeOut)
+          store = store.filter(e => now < e.time + timeOut)
           store.forEach(e => sink(1, e.d))
         }
       },      
