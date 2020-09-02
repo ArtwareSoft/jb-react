@@ -98,7 +98,6 @@ function toVdomOrStr(val) {
 }
 
 function stripVdom(vdom) {
-    if (!vdom instanceof VNode) return
     return { ...vdom, parentNode: null, children: vdom.children && vdom.children.map(x=>stripVdom(x)) }
 }
 
