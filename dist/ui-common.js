@@ -4915,12 +4915,12 @@ jb.component('itemlist.deltaOfItems', {
     {id: 'items', defaultValue: '%%', as: 'array' },
     {id: 'newState' }
   ],
-  impl: (ctx,items,$__state) => {
+  impl: (ctx,items,state) => {
     const deltaCalcCtx = ctx.vars.cmp.ctx
     const vdomWithDeltaItems = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => items}), path: ''}).runItself().renderVdom() // change the profile to return itemsToAppend
     const emptyItemlistVdom = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => []}), path: ''}).runItself().renderVdom()
     const delta = jb.ui.compareVdom(emptyItemlistVdom,vdomWithDeltaItems)
-    delta.attributes = $__state ? {$__state} : {} // also keeps the original cmpId
+    delta.attributes = state ? {$__state : JSON.stringify(state)} : {} // also keeps the original cmpId by overriding atts
     return delta
   }
 })
