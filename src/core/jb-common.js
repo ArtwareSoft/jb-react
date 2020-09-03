@@ -722,9 +722,9 @@ jb.component('unique', {
 jb.component('log', {
   params: [
     {id: 'logName', as: 'string', mandatory: 'true' },
-    {id: 'dataArray', as: 'array', defaultValue: '%%'}
+    {id: 'dataArray', as: 'array', defaultValue: []}
   ],
-  impl: (ctx,log,array) => jb.log(log,[ctx,...array])
+  impl: (ctx,log,array) => jb.log(log,[...array,ctx])
 })
 
 jb.component('asIs', {

@@ -75,6 +75,7 @@ jb.component('itemlist.infiniteScroll', {
       Var('updateState1', writeValue('%$$state/visualLimit/shownItems%', math.plus('%$$state/visualLimit/shownItems%','%noOfItems%'))),
       Var('updateState2', writeValue('%$$state/visualLimit/waitingForServer%', false)),
       Var('delta', itemlist.deltaOfItems('%$itemsToAppend%', '%$$state%')),
+      jb.log('BE.infiniteScroll'),
       action.applyDeltaToCmp('%$delta%','%$cmp/cmpId%')
     )),
     feature.userEventProps('elem.scrollTop,elem.scrollHeight'),
