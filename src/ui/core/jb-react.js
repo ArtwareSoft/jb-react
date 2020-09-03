@@ -247,6 +247,9 @@ function setAtt(elem,att,val) {
     } else if (att === '$focus' && val) {
         elem.setAttribute('_focus',val)
         jb.ui.focus(elem,val)
+    } else if (att === '$scrollDown' && val) {
+        elem.__appScroll = true
+        elem.scrollTop = elem.scrollHeight
     } else if (att === '$text') {
         elem.innerText = val || ''
         jb.log('htmlChange',['text',...arguments])

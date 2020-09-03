@@ -1552,6 +1552,9 @@ function setAtt(elem,att,val) {
     } else if (att === '$focus' && val) {
         elem.setAttribute('_focus',val)
         jb.ui.focus(elem,val)
+    } else if (att === '$scrollDown' && val) {
+        elem.__appScroll = true
+        elem.scrollTop = elem.scrollHeight
     } else if (att === '$text') {
         elem.innerText = val || ''
         jb.log('htmlChange',['text',...arguments])
@@ -4887,27 +4890,26 @@ jb.component('itemlist.infiniteScroll', {
   impl: features(
     passPropToFrontEnd('pageSize','%$pageSize%'),
     method('fetchMoreItems', runActions(
-      Var('fetchMoreItems', log('infiniteScroll.BE.before')),
       Var('itemsToAppend', ({data},{$props}) => $props.allItems.slice(data.from,data.from+data.noOfItems)),
       Var('updateState1', writeValue('%$$state/visualLimit/shownItems%', math.plus('%$$state/visualLimit/shownItems%','%noOfItems%'))),
       Var('updateState2', writeValue('%$$state/visualLimit/waitingForServer%', false)),
       Var('delta', itemlist.deltaOfItems('%$itemsToAppend%', '%$$state%')),
-      log('infiniteScroll.BE'),
       action.applyDeltaToCmp('%$delta%','%$cmp/cmpId%')
     )),
     feature.userEventProps('elem.scrollTop,elem.scrollHeight'),
     frontEnd.flow(
       source.frontEndEvent('scroll'),
+      rx.var('applicative','%target/__appScroll%'),
+      rx.do(({data}) => data.target.__appScroll = null),
+      rx.filter(not('%$applicative%')),
       rx.var('scrollPercentFromTop',({data}) => 
         (data.currentTarget.scrollTop + data.currentTarget.getBoundingClientRect().height) / data.currentTarget.scrollHeight),
       rx.var('fetchItems', ({},{$state,pagesize}) => ({ 
         from: $state.visualLimit.shownItems,
-        noOfItems: Math.max($state.visualLimit.totalItems,$state.visualLimit.shownItems + pagesize) - $state.visualLimit.shownItems
+        noOfItems: Math.min($state.visualLimit.totalItems,$state.visualLimit.shownItems + pagesize) - $state.visualLimit.shownItems
       })),
-      rx.log('infiniteScroll.FE.before'),
       rx.filter(and('%$scrollPercentFromTop%>0.9','%$fetchItems/noOfItems%!=0',not('%$$state/visualLimit/waitingForServer%'))),
       rx.do(writeValue('%$$state/visualLimit/waitingForServer%','true')),
-      rx.log('infiniteScroll.FE'),
       sink.BEMethod('fetchMoreItems','%$fetchItems%')
     )
   )
@@ -4923,7 +4925,7 @@ jb.component('itemlist.deltaOfItems', {
     const vdomWithDeltaItems = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => items}), path: ''}).runItself().renderVdom() // change the profile to return itemsToAppend
     const emptyItemlistVdom = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => []}), path: ''}).runItself().renderVdom()
     const delta = jb.ui.compareVdom(emptyItemlistVdom,vdomWithDeltaItems)
-    delta.attributes = state ? {$__state : JSON.stringify(state)} : {} // also keeps the original cmpId by overriding atts
+    delta.attributes = state ? {$__state : JSON.stringify(state), $scrollDown: true} : {} // also keeps the original cmpId by overriding atts
     return delta
   }
 })
