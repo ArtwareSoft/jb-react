@@ -7976,12 +7976,11 @@ jb.component('itemlist.infiniteScroll', {
     {id: 'pageSize', as: 'number', defaultValue: 2}
   ],
   impl: features(
-    method('appendToShownItems', runActions(
-      Var('shown','%$$state/visualLimit/shownItems%'),
-      Var('itemsToAppend', pipeline('%$$props/allItems%',slice('%$shown%',math.plus('%$shown%','%$pageSize%')))),
-      Var('delta', itemlist.deltaOfItems('%$itemsToAppend%', 
-        ({},{$state, shown, itemsToAppend}) => ({visualLimit: { ...$state.visualLimit, shownItems: shown + itemsToAppend.length} }))),
-      //Var('cmpId','%$cmp/cmpId%'),
+    passPropToFrontEnd('pageSize','%$pageSize%'),
+    method('fetchMoreItems', runActions(
+      Var('itemsToAppend', pipeline('%$$props/allItems%',slice('%from%','%noOfItems%'))),
+      Var('delta', itemlist.deltaOfItems('%$itemsToAppend%')),
+      writeValue('%$$state/visualLimit/shownItems%', math.plus('%$$state/visualLimit/shownItems%','%noOfItems%')),
       action.applyDeltaToCmp('%$delta%','%$cmp/cmpId%')
     )),
     feature.userEventProps('elem.scrollTop,elem.scrollHeight'),
@@ -7989,8 +7988,14 @@ jb.component('itemlist.infiniteScroll', {
       source.frontEndEvent('scroll'),
       rx.var('scrollPercentFromTop',({data}) => 
         (data.currentTarget.scrollTop + data.currentTarget.getBoundingClientRect().height) / data.currentTarget.scrollHeight),
-      rx.filter('%$scrollPercentFromTop%>0.9'),
-      sink.BEMethod('appendToShownItems')
+      rx.var('fetchItems', ({},{$state,pageSize}) => ({ 
+        from: $state.visualLimit.shownItems,
+        noOfItems: Math.max($state.visualLimit.totalItems,$state.visualLimit.shownItems + pageSize) - $state.visualLimit.shownItems
+      })),
+      rx.log('infiniteScroll'),
+      rx.filter(and('%$scrollPercentFromTop%>0.9','%$fetchItems/noOfItems%!=0',not('%$$state/visualLimit/waitingForServer%'))),
+      rx.do(writeValue('%$$state/visualLimit/waitingForServer%','true')),
+      sink.BEMethod('fetchMoreItems','%$fetchItems%')
     )
   )
 })
@@ -8000,12 +8005,12 @@ jb.component('itemlist.deltaOfItems', {
     {id: 'items', defaultValue: '%%', as: 'array' },
     {id: 'newState' }
   ],
-  impl: (ctx,items, $__state) => {
+  impl: (ctx,items,__state) => {
     const deltaCalcCtx = ctx.vars.cmp.ctx
     const vdomWithDeltaItems = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => items}), path: ''}).runItself().renderVdom() // change the profile to return itemsToAppend
     const emptyItemlistVdom = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => []}), path: ''}).runItself().renderVdom()
     const delta = jb.ui.compareVdom(emptyItemlistVdom,vdomWithDeltaItems)
-    delta.attributes = $__state ? { $__state } : {} // also keeps the original cmpId
+    delta.attributes = $__state ? {__state} : {} // also keeps the original cmpId
     return delta
   }
 })
