@@ -7985,7 +7985,7 @@ jb.component('itemlist.infiniteScroll', {
     passPropToFrontEnd('pageSize','%$pageSize%'),
     method('fetchMoreItems', runActions(
       Var('fetchMoreItems', log('infiniteScroll.BE.before')),
-      Var('itemsToAppend', ({data},{$props}) => $props.allItems.slice(data.from,data.from+data.noOfItems),
+      Var('itemsToAppend', ({data},{$props}) => $props.allItems.slice(data.from,data.from+data.noOfItems)),
       Var('updateState1', writeValue('%$$state/visualLimit/shownItems%', math.plus('%$$state/visualLimit/shownItems%','%noOfItems%'))),
       Var('updateState2', writeValue('%$$state/visualLimit/waitingForServer%', false)),
       Var('delta', itemlist.deltaOfItems('%$itemsToAppend%', '%$$state%')),
