@@ -4890,7 +4890,8 @@ jb.component('itemlist.infiniteScroll', {
       Var('itemsToAppend', pipeline('%$$props/allItems%',slice('%from%','%noOfItems%'))),
       Var('updateState1', writeValue('%$$state/visualLimit/shownItems%', math.plus('%$$state/visualLimit/shownItems%','%noOfItems%'))),
       Var('updateState2', writeValue('%$$state/visualLimit/waitingForServer%', false)),
-      action.applyDeltaToCmp(itemlist.deltaOfItems('%$itemsToAppend%', '%$$state%'),'%$cmp/cmpId%')
+      Var('delta', itemlist.deltaOfItems('%$itemsToAppend%', '%$$state%')),
+      action.applyDeltaToCmp('%$delta%','%$cmp/cmpId%')
     )),
     feature.userEventProps('elem.scrollTop,elem.scrollHeight'),
     frontEnd.flow(

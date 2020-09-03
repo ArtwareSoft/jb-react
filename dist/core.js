@@ -85,6 +85,8 @@ function assignDebugInfoToFunc(func, ctx) {
 
 function extendWithVars(ctx,vars) {
   if (!vars) return ctx;
+  if (Array.isArray(vars))
+    return vars.reduce((_ctx,{name,val}) => _ctx.setVar(name,_ctx.runInner(val || '%%', null,`$vars~${name}`)), ctx )
   let res = ctx;
   for(let varname in vars || {})
     res = new jbCtx(res,{ vars: {[varname]: res.runInner(vars[varname] || '%%', null,'$vars~'+varname)} });

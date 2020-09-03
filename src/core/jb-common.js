@@ -524,7 +524,11 @@ jb.component('Var', {
     {id: 'name', as: 'string', mandatory: true},
     {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: '%%'}
   ],
-  macro: (result, self) => Object.assign(result,{ $vars: Object.assign(result.$vars || {}, { [self.name]: self.val }) })
+  macro: (result, self) => {
+    result.$vars = result.$vars || []
+    result.$vars.push(self)
+  }
+//  Object.assign(result,{ $vars: Object.assign(result.$vars || {}, { [self.name]: self.val }) })
 })
 
 jb.component('remark', {

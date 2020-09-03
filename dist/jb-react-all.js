@@ -85,6 +85,8 @@ function assignDebugInfoToFunc(func, ctx) {
 
 function extendWithVars(ctx,vars) {
   if (!vars) return ctx;
+  if (Array.isArray(vars))
+    return vars.reduce((_ctx,{name,val}) => _ctx.setVar(name,_ctx.runInner(val || '%%', null,`$vars~${name}`)), ctx )
   let res = ctx;
   for(let varname in vars || {})
     res = new jbCtx(res,{ vars: {[varname]: res.runInner(vars[varname] || '%%', null,'$vars~'+varname)} });
@@ -1437,7 +1439,11 @@ jb.component('Var', {
     {id: 'name', as: 'string', mandatory: true},
     {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: '%%'}
   ],
-  macro: (result, self) => Object.assign(result,{ $vars: Object.assign(result.$vars || {}, { [self.name]: self.val }) })
+  macro: (result, self) => {
+    result.$vars = result.$vars || []
+    result.$vars.push(self)
+  }
+//  Object.assign(result,{ $vars: Object.assign(result.$vars || {}, { [self.name]: self.val }) })
 })
 
 jb.component('remark', {
@@ -7981,7 +7987,8 @@ jb.component('itemlist.infiniteScroll', {
       Var('itemsToAppend', pipeline('%$$props/allItems%',slice('%from%','%noOfItems%'))),
       Var('updateState1', writeValue('%$$state/visualLimit/shownItems%', math.plus('%$$state/visualLimit/shownItems%','%noOfItems%'))),
       Var('updateState2', writeValue('%$$state/visualLimit/waitingForServer%', false)),
-      action.applyDeltaToCmp(itemlist.deltaOfItems('%$itemsToAppend%', '%$$state%'),'%$cmp/cmpId%')
+      Var('delta', itemlist.deltaOfItems('%$itemsToAppend%', '%$$state%')),
+      action.applyDeltaToCmp('%$delta%','%$cmp/cmpId%')
     )),
     feature.userEventProps('elem.scrollTop,elem.scrollHeight'),
     frontEnd.flow(
