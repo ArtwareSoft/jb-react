@@ -4889,6 +4889,7 @@ jb.component('itemlist.infiniteScroll', {
     method('fetchMoreItems', runActions(
       Var('itemsToAppend', pipeline('%$$props/allItems%',slice('%from%','%noOfItems%'))),
       Var('updateState', writeValue('%$$state/visualLimit/shownItems%', math.plus('%$$state/visualLimit/shownItems%','%noOfItems%'))),
+      Var('updateState', writeValue('%$$state/visualLimit/waitingForServer%', false)),
       Var('delta', itemlist.deltaOfItems('%$itemsToAppend%', '%$$state%')),
       action.applyDeltaToCmp('%$delta%','%$cmp/cmpId%')
     )),
@@ -4919,7 +4920,7 @@ jb.component('itemlist.deltaOfItems', {
     const vdomWithDeltaItems = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => items}), path: ''}).runItself().renderVdom() // change the profile to return itemsToAppend
     const emptyItemlistVdom = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => []}), path: ''}).runItself().renderVdom()
     const delta = jb.ui.compareVdom(emptyItemlistVdom,vdomWithDeltaItems)
-    delta.attributes = $__state ? {__state} : {} // also keeps the original cmpId
+    delta.attributes = $__state ? {$__state} : {} // also keeps the original cmpId
     return delta
   }
 })
