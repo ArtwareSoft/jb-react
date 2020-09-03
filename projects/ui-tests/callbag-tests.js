@@ -586,8 +586,8 @@ jb.component('dataTest.rx.dynamicParam', {
 
 jb.component('dataTest.rx.snifferBug', {
   impl: dataTest({
-    vars: [Var('a', () => ({ val: 1})) ],
-    runBefore: rx.pipe(source.data(1), rx.map('%%'), rx.subscribe({next: writeValue('%$a/val%', 2)})),
+    vars: Var('a', () => ({ val: 1})),
+    runBefore: rx.pipe(source.data(1), rx.map('2'), sink.data('%$a/val%', 2)),
     calculate: '%$a/val%',
     expectedResult: '%%==2'
   })

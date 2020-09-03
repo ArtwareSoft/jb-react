@@ -453,7 +453,7 @@ jb.component('uiTest.buttonClick', {
   impl: uiTest({
     control: button({title: 'Click Me', action: writeValue('%$person/name%', 'mukki')}),
     userInput: userInput.click('button'),
-    extraSource: source.watchableData('%$person/name%'),
+    checkResultRx: source.watchableData('%$person/name%'),
     expectedResult: equals('%$person/name%', 'mukki')
   })
 })

@@ -120,8 +120,7 @@ jb.component('uiTest.calculatedVar', {
         })
       ]
     }),
-    delayedInput: true,
-    userInput: userInput.setText('hi', '#var1'),
+    userInputRx: source.data(userInput.setText('hi', '#var1'),rx.delay(1)),
     expectedResult: contains('hi world')
   })
 })
@@ -145,8 +144,7 @@ jb.component('uiTest.calculatedVarCyclic', {
         })
       ]
     }),
-    delayedInput: true,
-    userInput: userInput.setText('hi', '#var1'),
+    userInputRx: source.data(userInput.setText('hi', '#var1'),rx.delay(1)),
     expectedResult: contains('hi world')
   })
 })
@@ -422,7 +420,7 @@ jb.component('uiTest.watchableAsTextWriteSetObjectToArray', {
       features: [id('editor'), watchRef({ ref: '%$watchablePeople%', allowSelfRefresh: true})],
     }),
     userInput: userInput.setText('[{a:3}]', '#editor'),
-    extraSource: rx.pipe(source.data(0),rx.delay(1)),
+    checkResultRx: rx.pipe(source.data(0),rx.delay(1)),
     expectedResult: equals('%$emptyArray/0/a%', '3')
   })
 })

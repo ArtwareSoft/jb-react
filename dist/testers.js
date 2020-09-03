@@ -85,10 +85,9 @@ jb.component('uiTest', {
 	  {id: 'runBefore', type: 'action', dynamic: true},
 	  {id: 'userInput', type: 'user-input[]', as: 'array' },
 	  {id: 'userInputRx', type: 'rx', dynamic: true },
-	  {id: 'extraSource', type: 'rx' },
+	  {id: 'checkResultRx', type: 'rx' },
 	  {id: 'expectedResult', type: 'boolean', dynamic: true},
 	  {id: 'allowError', as: 'boolean', dynamic: true},
-	  {id: 'delayedInput', as: 'boolean'},
 	  {id: 'timeout', as: 'number', defaultValue: 200},
 	  {id: 'cleanUp', type: 'action', dynamic: true},
 	  {id: 'expectedCounters', as: 'single'},
@@ -100,20 +99,26 @@ jb.component('uiTest', {
 		],
 		timeout: '%$timeout%',
 		allowError: '%$allowError%',
-		runBefore: call('runBefore'),
+		runBefore: runActions(
+			call('runBefore'),
+			ctx => {
+				ctx.run(rx.pipe(rx.merge('%$userInputRx%', source.data('%$userInput%')),
+					rx.log('userInput'),
+					rx.takeUntil('%$$testFinished%'),
+					userInput.eventToRequest(),
+					rx.log('userRequest'),
+					sink.action(({data}) => jb.ui.widgetUserRequests.next(data))
+				))
+			}
+		),
 		calculate: rx.pipe(
 			rx.merge(
 				rx.pipe(
-					rx.merge(
-						rx.pipe(source.data('%$userInput%'),userInput.eventToRequest(),If('%$delayedInput%',rx.delay(1))),
-						source.callbag(()=>jb.ui.widgetUserRequests),
-						call('userInputRx'),
-//						rx.pipe('%$extraSource%',rx.map(()=>({$:'dummpOp'})))
-					),
+					source.callbag(()=>jb.ui.widgetUserRequests),
 					widget.headless('%$control()%', '%$tstWidgetId%'),
 					rx.delay(1)
 				),
-				'%$extraSource%'
+				'%$checkResultRx%'
 			),
 			rx.var('html',uiTest.vdomResultAsHtml()),
 			rx.var('success', pipeline('%$html%', call('expectedResult'), last())),
@@ -309,13 +314,16 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,includeHeavy}
 			concatMap(e => {
 			  jb.logs.error = []
 			  const testID = e[0]
-			  const tstCtx = jb.ui.extendWithServiceRegistry().setVars({testID, $initial_resources, $initial_comps, singleTest: tests.length == 1 })
+			  const $testFinished = jb.callbag.subject()
+			  const tstCtx = jb.ui.extendWithServiceRegistry()
+			  	.setVars({  testID, $initial_resources, $initial_comps, singleTest: tests.length == 1, $testFinished })
 			  document.getElementById('progress').innerHTML = `<div id=${testID}>${index++}: ${testID} started</div>`
 			  times[testID] = { start: new Date().getTime() }
 			  jb.test.cleanBeforeRun(tstCtx)
 			  console.log('starting ' + testID )
 			  return fromPromise(Promise.resolve(tstCtx.run({$:testID}))
 				.then(res => {
+					$testFinished.next(1)
 					console.log('end      ' + testID )
 					document.getElementById('progress').innerHTML = `<div id=${testID}>${testID} finished</div>`
 					res.duration = new Date().getTime() - times[testID].start
