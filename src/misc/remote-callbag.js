@@ -103,12 +103,13 @@ jb.component('remote.worker', {
         const uri = `worker:${id}`
         if (jb.remote.servers[uri]) return jb.remote.servers[uri]
         const distPath = jb.remote.pathOfDistFolder()
+        const spyParam = ((jb.path(jb.frame,'location.href')||'').match('[?&]spy=([^&]+)') || ['', ''])[1]
         const workerCode = [
             ...libs.map(lib=>`importScripts('${distPath}/!${uri}!${lib}.js')`),`
                 self.uri = '${uri}'
                 self.isWorker = true
                 jb.cbLogByPath = {}
-                jb.initSpy({spyParam: 'remote'})
+                jb.initSpy({spyParam: '${spyParam}'})
                 self.spy = jb.spy
                 self.postObj = m => { jb.log('remote',['sent from ${uri}',m]); self.postMessage({from: '${uri}',...m}) }
                 self.CBHandler = jb.remoteCBHandler(self).init()
