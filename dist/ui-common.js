@@ -4891,7 +4891,7 @@ jb.component('itemlist.infiniteScroll', {
       Var('updateState1', writeValue('%$$state/visualLimit/shownItems%', math.plus('%$$state/visualLimit/shownItems%','%noOfItems%'))),
       Var('updateState2', writeValue('%$$state/visualLimit/waitingForServer%', false)),
       Var('delta', itemlist.deltaOfItems('%$itemsToAppend%', '%$$state%')),
-      jb.log('BE.infiniteScroll'),
+      jb.log('infiniteScroll.BE'),
       action.applyDeltaToCmp('%$delta%','%$cmp/cmpId%')
     )),
     feature.userEventProps('elem.scrollTop,elem.scrollHeight'),
@@ -4903,9 +4903,10 @@ jb.component('itemlist.infiniteScroll', {
         from: $state.visualLimit.shownItems,
         noOfItems: Math.max($state.visualLimit.totalItems,$state.visualLimit.shownItems + pagesize) - $state.visualLimit.shownItems
       })),
-      rx.log('infiniteScroll'),
+      rx.log('infiniteScroll.FE.before'),
       rx.filter(and('%$scrollPercentFromTop%>0.9','%$fetchItems/noOfItems%!=0',not('%$$state/visualLimit/waitingForServer%'))),
       rx.do(writeValue('%$$state/visualLimit/waitingForServer%','true')),
+      rx.log('infiniteScroll.FE'),
       sink.BEMethod('fetchMoreItems','%$fetchItems%')
     )
   )
