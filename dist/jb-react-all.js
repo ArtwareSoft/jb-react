@@ -7979,8 +7979,8 @@ jb.component('itemlist.infiniteScroll', {
     passPropToFrontEnd('pageSize','%$pageSize%'),
     method('fetchMoreItems', runActions(
       Var('itemsToAppend', pipeline('%$$props/allItems%',slice('%from%','%noOfItems%'))),
-      Var('delta', itemlist.deltaOfItems('%$itemsToAppend%')),
-      writeValue('%$$state/visualLimit/shownItems%', math.plus('%$$state/visualLimit/shownItems%','%noOfItems%')),
+      Var('updateState', writeValue('%$$state/visualLimit/shownItems%', math.plus('%$$state/visualLimit/shownItems%','%noOfItems%'))),
+      Var('delta', itemlist.deltaOfItems('%$itemsToAppend%', '%$$state%')),
       action.applyDeltaToCmp('%$delta%','%$cmp/cmpId%')
     )),
     feature.userEventProps('elem.scrollTop,elem.scrollHeight'),
@@ -8005,7 +8005,7 @@ jb.component('itemlist.deltaOfItems', {
     {id: 'items', defaultValue: '%%', as: 'array' },
     {id: 'newState' }
   ],
-  impl: (ctx,items,__state) => {
+  impl: (ctx,items,$__state) => {
     const deltaCalcCtx = ctx.vars.cmp.ctx
     const vdomWithDeltaItems = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => items}), path: ''}).runItself().renderVdom() // change the profile to return itemsToAppend
     const emptyItemlistVdom = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => []}), path: ''}).runItself().renderVdom()
