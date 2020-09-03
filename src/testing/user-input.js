@@ -38,6 +38,20 @@ jb.component('userInput.keyboardEvent', {
 
 // ****** uiActions
 
+jb.component('source.waitForSelector', {
+  type: 'rx',
+  params: [
+    {id: 'selector', as: 'string' },
+    {id: 'interval', as: 'number', defaultValue: 50 },
+    {id: 'times', as: 'number', defaultValue: 30 },
+  ],
+  impl: rx.pipe(
+    source.interval('%$interval%'),
+    rx.filter((ctx,{},{selector}) => jb.ui.elemOfSelector(selector,ctx)),
+    rx.take(1)
+  )
+})
+
 jb.component('uiAction.scrollBy', {
       type: 'user-input',
       params: [

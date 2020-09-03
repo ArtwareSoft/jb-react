@@ -8,7 +8,7 @@ jb.component('dataTest.pipeWithObservable', {
 jb.component('cbTest.mapPromise', {
   impl: dataTest({
     calculate: rx.pipe(
-          rx.fromIter(list(0)),
+          source.data(0),
           rx.mapPromise(({data}) =>jb.delay(1,data+2))
     ),
     expectedResult: equals('2')
@@ -18,17 +18,17 @@ jb.component('cbTest.mapPromise', {
 jb.component('cbTest.doPromise', {
   impl: dataTest({
     calculate: rx.pipe(
-          rx.fromIter(list(1)),
-          rx.doPromise( ({data}) =>jb.delay(1,data *10)),
-          rx.mapPromise(({data}) =>jb.delay(1,data+2)),
-        ),
+      source.data(1),
+      rx.doPromise( ({data}) =>jb.delay(1,data *10)),
+      rx.mapPromise(({data}) =>jb.delay(1,data+2)),
+    ),
     expectedResult: equals('3')
   })
 })
 
 jb.component('cbTest.pipe', {
   impl: dataTest({
-    calculate: pipe(rx.pipe( rx.fromIter(list('1','2','3','4')),rx.map('-%%-')),join(',')),    
+    calculate: pipe(rx.pipe( source.data(list('1','2','3','4')),rx.map('-%%-')),join(',')),    
     expectedResult: equals('-1-,-2-,-3-,-4-')
   })
 })
@@ -57,7 +57,7 @@ jb.cbLogByPath = {}
 
 jb.component('cbTest.TakeWhile', {
   impl: dataTest({
-    calculate: pipe(rx.pipe(rx.interval(1), rx.takeWhile('%%<2')), join(',')),
+    calculate: pipe(rx.pipe(source.interval(1), rx.takeWhile('%%<2')), join(',')),
     expectedResult: equals('0,1')
   })
 })
@@ -75,9 +75,9 @@ jb.component('cbTest.TakeWhileIter', {
   impl: dataTest({
     calculate: pipe(
       rx.pipe(
-          rx.fromIter([0,1,2,3]),
-          rx.takeWhile('%%<2')
-        ),
+        source.data([0,1,2,3]),
+        rx.takeWhile('%%<2')
+      ),
       join(',')
     ),
     expectedResult: equals('0,1')
@@ -89,7 +89,7 @@ jb.component('cbTest.innerPipe', {
   impl: dataTest({
     calculate: pipe(
       rx.pipe(
-          rx.interval(1),
+          source.interval(1),
           rx.take(2),
           rx.innerPipe(
               rx.mapPromise(pipe(delay(1), '-%%-')),
@@ -105,7 +105,7 @@ jb.component('cbTest.innerPipe', {
 
 jb.component('cbTest.interval', {
   impl: dataTest({
-    calculate: pipe(rx.pipe(rx.interval(1), rx.take('4'), rx.map('-%%-')), join(',')),
+    calculate: pipe(rx.pipe(source.interval(1), rx.take('4'), rx.map('-%%-')), join(',')),
     expectedResult: equals('-0-,-1-,-2-,-3-')
   })
 })
@@ -115,7 +115,7 @@ jb.component('cbTest.var', {
     vars: [Var('a', 'hello')],
     calculate: pipe(
       rx.pipe(
-          rx.interval(1),
+          source.interval(1),
           rx.take('4'),
           rx.var('origin'),
           rx.map('-%%-'),
@@ -130,14 +130,14 @@ jb.component('cbTest.var', {
 
 jb.component('cbTest.reduceCount', {
   impl: dataTest({
-    calculate: rx.pipe(rx.interval(1),rx.take('4'),rx.count(),rx.map('%$count%'),rx.last() ),
+    calculate: rx.pipe(source.interval(1),rx.take('4'),rx.count(),rx.map('%$count%'),rx.last() ),
     expectedResult: equals(4)
   })
 })
 
 jb.component('cbTest.reduceMax', {
   impl: dataTest({
-    calculate: rx.pipe(rx.interval(1),rx.take('4'),rx.max(),rx.map('%$max%'),rx.last()),
+    calculate: rx.pipe(source.interval(1),rx.take('4'),rx.max(),rx.map('%$max%'),rx.last()),
     expectedResult: equals(3)
   })
 })
@@ -145,7 +145,7 @@ jb.component('cbTest.reduceMax', {
 jb.component('cbTest.reduceJoin', {
   impl: dataTest({
     calculate: rx.pipe(
-      rx.interval(1),
+      source.interval(1),
       rx.take('4'),
       rx.join('res', ';'),
       rx.map('%$res%'),
@@ -207,8 +207,8 @@ jb.component('cbTest.rawflatMapActiveActive', {
 jb.component('cbTest.flatMapPassivePassive', {
   impl: dataTest({
     calculate: rx.pipe(
-          rx.fromIter(list(0)),
-          rx.flatMap(rx.pipe(rx.fromIter(list(0)), rx.map('-%%-'))),
+          source.data(0),
+          rx.flatMap(rx.pipe(source.data(0), rx.map('-%%-'))),
     ),
     expectedResult: equals('-0-')
   })
@@ -217,8 +217,8 @@ jb.component('cbTest.flatMapPassivePassive', {
 jb.component('cbTest.flatMapActivePassive', {
   impl: dataTest({
     calculate: rx.pipe(
-        rx.interval(1), rx.take(1),
-        rx.flatMap(rx.pipe(rx.fromIter(list(0)), rx.map('-%%-'))),
+        source.interval(1), rx.take(1),
+        rx.flatMap(rx.pipe(source.data(0), rx.map('-%%-'))),
     ),
     expectedResult: equals('-0-')
   })
@@ -227,8 +227,8 @@ jb.component('cbTest.flatMapActivePassive', {
 jb.component('cbTest.flatMapPassiveActive', {
   impl: dataTest({
     calculate: rx.pipe(
-        rx.fromIter(list(0)),
-        rx.flatMap(rx.pipe(rx.interval(1), rx.take(1), rx.map('-%%-'))),
+        source.data(0),
+        rx.flatMap(rx.pipe(source.interval(1), rx.take(1), rx.map('-%%-'))),
     ),
     expectedResult: equals('-0-')
   })
@@ -237,8 +237,8 @@ jb.component('cbTest.flatMapPassiveActive', {
 jb.component('cbTest.flatMapActiveActive', {
   impl: dataTest({
     calculate: rx.pipe(
-          rx.interval(1), rx.take(1),
-          rx.flatMap(rx.pipe(rx.interval(1), rx.take(1), rx.map('-%%-'))),
+          source.interval(1), rx.take(1),
+          rx.flatMap(rx.pipe(source.interval(1), rx.take(1), rx.map('-%%-'))),
     ),
     expectedResult: equals('-0-')
   })
@@ -247,7 +247,7 @@ jb.component('cbTest.flatMapActiveActive', {
 jb.component('cbTest.mapPromiseActiveSource', {
   impl: dataTest({
     calculate: rx.pipe(
-          rx.interval(1),
+          source.interval(1),
           rx.take(1),
           rx.mapPromise(({data}) =>jb.delay(1,data+2)),
         ),
@@ -267,7 +267,7 @@ jb.component('cbTest.rawMapPromiseTwice', {
 jb.component('cbTest.mapPromiseTwice', {
   impl: dataTest({
     calculate: rx.pipe(
-          rx.fromIter(list(0)),
+          source.data(0),
           rx.mapPromise(({data}) =>jb.delay(1,data+2)),
           rx.mapPromise(({data}) =>jb.delay(1,data+2)),
         ),
@@ -278,7 +278,7 @@ jb.component('cbTest.mapPromiseTwice', {
 jb.component('cbTestConcatMapBug1', {
   impl: dataTest({
     calculate: rx.pipe(
-      rx.interval(1),
+      source.interval(1),
       rx.take(10),
       rx.concatMap(source.promise(({data}) => jb.delay(1,data+2))),
       rx.take('1')
@@ -292,10 +292,10 @@ jb.component('cbTestConcatMapOrderTiming', {
     timeout: 500,
     calculate: pipe(
       rx.pipe(
-          rx.fromIter(list(1, 2, 3)),
+          source.data(list(1, 2, 3)),
           rx.var('inp'),
           rx.concatMap(
-              rx.pipe(rx.interval(({data}) => data *10), rx.take(3), rx.map('%$inp%-%%'))
+              rx.pipe(source.interval(({data}) => data *10), rx.take(3), rx.map('%$inp%-%%'))
             )
         ),
       join(',')
@@ -307,8 +307,8 @@ jb.component('cbTestConcatMapOrderTiming', {
 jb.component('cbTestConcatMapWithInterval', {
   impl: dataTest({
     calculate: rx.pipe(
-      rx.fromIter(list(1)),
-      rx.concatMap(rx.pipe(rx.interval(20), rx.take(1))),
+      source.data(1),
+      rx.concatMap(rx.pipe(source.interval(20), rx.take(1))),
     ),
     expectedResult: equals(0)
   })
@@ -317,7 +317,7 @@ jb.component('cbTestConcatMapWithInterval', {
 jb.component('dataTest.concatMapCombine', {
   impl: dataTest({
     calculate: pipe(
-      rx.pipe(rx.fromIter([1, 2]), rx.concatMap(rx.fromIter([30]), '%$input%-%%')),
+      rx.pipe(source.data([1, 2]), rx.concatMap(source.data(30), '%$input%-%%')),
       join(',')
     ),
     expectedResult: equals('1-30,2-30')
@@ -347,7 +347,7 @@ jb.component('cbTest.flatMapReturnArray', {
 
 jb.component('cbTest.flatMapArrays', {
   impl: dataTest({
-    calculate: pipe(rx.pipe(rx.fromIter(list('1,2,3')), rx.flatMapArrays(split())), join(',')),
+    calculate: pipe(rx.pipe(source.data(list('1,2,3')), rx.flatMapArrays(split())), join(',')),
     expectedResult: equals('1,2,3')
   })
 })
@@ -356,10 +356,10 @@ jb.component('cbTestFlatMapTiming', {
   impl: dataTest({
     calculate: pipe(
       rx.pipe(
-          rx.interval(1),
+          source.interval(1),
           rx.take(2),
           rx.var('inp'),
-          rx.flatMap(rx.pipe(rx.interval(10), rx.take(2), rx.map('%$inp%-%%')))
+          rx.flatMap(rx.pipe(source.interval(10), rx.take(2), rx.map('%$inp%-%%')))
         ),
       join(',')
     ),
@@ -392,7 +392,7 @@ jb.component('cbTestRawFlatMapBug1', {
 jb.component('cbTest.doPromiseActiveSource', {
   impl: dataTest({
     calculate: rx.pipe(
-      rx.interval(1),
+      source.interval(1),
       rx.take(1),
       rx.doPromise(({data})=>jb.delay(1,data *10)),
       rx.mapPromise(({data}) =>jb.delay(1,data+2))
@@ -420,7 +420,7 @@ jb.component('cbTest.promiseRejection', {
 jb.component('cbTest.promiseRejectionInDoPromise', {
   impl: dataTest({
     calculate: rx.pipe(
-      rx.fromIter([1]),
+      source.data(1),
       rx.doPromise(() => new Promise((res,rej) => jb.delay(1,rej('err')))), 
       rx.catchError(), rx.map('%%1')
     ),
@@ -431,7 +431,7 @@ jb.component('cbTest.promiseRejectionInDoPromise', {
 jb.component('cbTest.throwInMapPromise', {
   impl: dataTest({
     calculate: rx.pipe(
-      rx.fromIter([2]),
+      source.data(2),
       rx.mapPromise(() => jb.delay(1).then(() => { throw 'err' })), 
       rx.catchError(), rx.map('%%1')
     ),
@@ -443,7 +443,7 @@ jb.component('cbTest.throwInMapPromise2', {
   impl: dataTest({
     vars: Var('$throw',true),
     calculate: rx.pipe(
-      rx.fromIter([2]),
+      source.data(2),
       rx.mapPromise(() => { throw 'err'}),
       rx.catchError(), rx.map('%%1')
     ),
@@ -455,7 +455,7 @@ jb.component('dataTest.rx.throwError', {
   impl: dataTest({
     calculate: pipe(
       rx.pipe(
-          rx.fromIter([1, 2, 3, 4]),
+          source.data([1, 2, 3, 4]),
           rx.throwError('%%==3', 'error'),
           rx.catchError()
         ),
@@ -469,7 +469,7 @@ jb.component('dataTest.rx.throwErrorInterval', {
   impl: dataTest({
     calculate: pipe(
       rx.pipe(
-          rx.interval(1),
+          source.interval(1),
           rx.take(10),
           rx.throwError('%%==3', 'error'),
           rx.catchError()
@@ -488,11 +488,11 @@ jb.component('dataTest.rx.retrySrc', {
       Var('times', 10)
     ],
     calculate: rx.pipe(
-      rx.fromIter([1, 2]),
+      source.data([1, 2]),
       rx.var('inp'),
       rx.concatMap(
           rx.pipe(
-            rx.interval('%$interval%'),
+            source.interval('%$interval%'),
             rx.throwError('%%>%$times%', 'retry failed after %$times% times'),
             rx.map('%$inp%'),
             rx.map(
@@ -520,7 +520,7 @@ jb.component('dataTest.rx.retry', {
   impl: dataTest({
     vars: [Var('counters', () => ({ counter: 0, retries: 0}))],
     calculate: rx.pipe(
-      rx.fromIter([1, 2]),
+      source.data([1, 2]),
       rx.retry({
           interval: 10,
           operator: rx.map(
@@ -544,7 +544,7 @@ jb.component('dataTest.rx.retry', {
 jb.component('dataTest.rx.retryFailure', {
   impl: dataTest({
     calculate: rx.pipe(
-      rx.fromIter([1]),
+      source.data(1),
       rx.retry({operator: rx.map(()=>null), interval: 10, times: 3}),
       rx.catchError()
     ),
@@ -555,7 +555,7 @@ jb.component('dataTest.rx.retryFailure', {
 jb.component('dataTest.rx.emptyVar', {
   impl: dataTest({
     calculate: rx.pipe(
-      rx.fromIter([1]),
+      source.data(1),
       rx.var(''),
     ),
     expectedResult: '%%==1'
@@ -577,48 +577,17 @@ jb.component('test.paramedRxPipe', {
 jb.component('dataTest.rx.dynamicParam', {
   impl: dataTest({
     calculate: test.paramedRxPipe(
-      rx.fromIter([1]),
+      source.data(1),
       rx.map('a%%'),
     ),
     expectedResult: '%%==a1'
   })
 })
 
-// jb.component('dataTest.rx.talkbackNotifier', {
-//   impl: dataTest({
-//     calculate: pipe(
-//       Var('log', () => ({ items: []})),
-//       rx.pipe(
-//           rx.fromIter([1, 2, 3]),
-//           (ctx,{log}) => jb.callbag.talkbackNotifier((t,d)=> log.items.push({t,d})),
-//           rx.take(1)
-//         ),
-//       pipeline('%$log/items/t%', join(','))
-//     ),
-//     expectedResult: '%%==1,1,2'
-//   })
-// })
-
-// jb.component('dataTest.rx.talkbackSrc', {
-//   impl: dataTest({
-//     calculate: pipe(
-//       rx.pipe(
-//           rx.fromIter([1, 2, 3]),
-//           () => {
-//             const {talkbackSrc, pipe, interval, map, take} = jb.callbag
-//             return talkbackSrc(pipe(interval(1),take(3),map(()=>({t:1}))))
-//           }
-//         ),
-//       join(',')
-//     ),
-//     expectedResult: '%%==1,2,3'
-//   })
-// })
-
 jb.component('dataTest.rx.snifferBug', {
   impl: dataTest({
     vars: [Var('a', () => ({ val: 1})) ],
-    runBefore: rx.pipe(rx.fromIter([1]), rx.map('%%'), rx.subscribe({next: writeValue('%$a/val%', 2)})),
+    runBefore: rx.pipe(source.data(1), rx.map('%%'), rx.subscribe({next: writeValue('%$a/val%', 2)})),
     calculate: '%$a/val%',
     expectedResult: '%%==2'
   })
@@ -640,7 +609,7 @@ jb.component('dataTest.rx.race', {
 jb.component('dataTest.rx.timeoutLimit', {
   impl: dataTest({
     calculate: rx.pipe(
-          rx.fromIter([1]),
+          source.data(1),
           rx.delay(40),
           rx.timeoutLimit(10, 'timeout error'),
           rx.catchError(),
@@ -652,7 +621,7 @@ jb.component('dataTest.rx.timeoutLimit', {
 jb.component('dataTest.rx.timeoutLimit.notActivated', {
   impl: dataTest({
     calculate: rx.pipe(
-          rx.fromIter([1]),
+          source.data(1),
           rx.delay(20),
           rx.timeoutLimit(100, 'timeout error'),
           rx.catchError(),

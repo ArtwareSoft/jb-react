@@ -193,7 +193,7 @@ jb.component('studio.showRxSniffer', {
     {id: 'snifferLog'}
   ],
   impl: itemlist({
-        items: rx.fromIter('%$snifferLog/result%'),
+        items: source.data('%$snifferLog/result%'),
         controls: group({
           layout: layout.flex({spacing: '0'}),
           controls: [

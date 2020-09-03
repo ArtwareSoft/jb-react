@@ -46,7 +46,7 @@ jb.component('widget.headless', {
         const top = h(cmp)
         const body = h('div',{ widgetTop: true, headless: true, widgetId, remoteUri: ctx.vars.remoteUri },top)
         jb.ui.headless[widgetId] = { body }
-        renderingUpdates.next({widgetId, delta: compareVdom({},top)}) //, cmpId: cmp.cmpId})
+        renderingUpdates.next({widgetId, delta: compareVdom({},top)})
         return userReqIn => (start, sink) => {
             if (start !== 0) return
             const talkback = []

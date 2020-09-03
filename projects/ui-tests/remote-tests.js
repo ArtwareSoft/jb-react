@@ -4,7 +4,7 @@ jb.component('remoteTest.sourceNoTalkback', {
     impl: dataTest({
       timeout: 5000,
       calculate: pipe(rx.pipe(
-            source.remote(rx.interval(1), remote.worker()),
+            source.remote(source.interval(1), remote.worker()),
             rx.take(2),
             rx.map('-%%-'),
             rx.log('tst'),
@@ -28,7 +28,7 @@ jb.component('remoteTest.remoteWorker', {
   impl: dataTest({
     timeout: 5000,
     calculate: pipe(
-      rx.pipe(source.remote(rx.fromIter([1, 2, 3]), remote.worker()), rx.take(2), rx.map('-%%-')),
+      rx.pipe(source.remote(source.data([1, 2, 3]), remote.worker()), rx.take(2), rx.map('-%%-')),
       join(',')
     ),
     expectedResult: equals('-1-,-2-')
@@ -40,7 +40,7 @@ jb.component('remoteTest.operator', {
       timeout: 5000,
       calculate: pipe(
          rx.pipe(
-            rx.fromIter([1,2,3]),
+            source.data([1,2,3]),
             remote.operator(rx.take(2), remote.worker()),
             rx.map('-%%-')
       ), join(',')),
@@ -65,7 +65,7 @@ jb.component('remoteTest.operator', {
 //   impl: dataTest({
 //     timeout: 5000,
 //     calculate: rx.pipe(
-//       rx.fromIter([1]),
+//       source.data(1),
 //       remote.operator(rx.map(remoteTest.sampleObject(5)), remote.worker()),
 //       remote.operator(rx.map('%m1()%'), remote.worker()),
 //       rx.take(1)
@@ -81,7 +81,7 @@ jb.component('remoteTest.remoteParam', {
   impl: dataTest({
     timeout: 5000,
       calculate: rx.pipe(
-          rx.fromIter([1]),
+          source.data(1),
           remote.operator(rx.map('%$retVal%'), remote.worker()),
           rx.take(1)
     ),
@@ -96,7 +96,7 @@ jb.component('remoteTest.dynamicProfileFunc', {
   impl: dataTest({
     timeout: 5000,
       calculate: rx.pipe(
-          rx.fromIter([1]),
+          source.data(1),
           remote.operator(rx.map('%$func()%'), remote.worker()),
           rx.take(1)
     ),
@@ -111,7 +111,7 @@ jb.component('remoteTest.dynamicProfileFunc', {
 //   impl: dataTest({
 //     timeout: 5000,
 //       calculate: rx.pipe(
-//           rx.fromIter([1]),
+//           source.data(1),
 //           remote.operator(rx.map('%$func()%'), remote.worker()),
 //           rx.take(1)
 //     ),
@@ -130,7 +130,7 @@ jb.component('remoteTest.twoTierWidget.button', {
 
 jb.component('remoteTest.twoTierWidget.changeText', {
   impl: uiTest({
-    timeout: 1000,
+    timeout: 2000,
     control: widget.twoTierWidget(
       group({
         controls: [
@@ -141,12 +141,11 @@ jb.component('remoteTest.twoTierWidget.changeText', {
       }),
       remote.worker({id: 'ui', libs: ['common','ui-common','remote','two-tier-widget'] })
     ),
-    userInputWithTiming: rx.pipe(
-      source.callbag(()=>jb.ui.renderingUpdates),
+    userInputRx: rx.pipe(
+      source.waitForSelector('input'),
       rx.map(userInput.setText('danny')),
-      rx.delay(10),
-      rx.log('renderingUpdates'),
-      userInput.eventToRequest()
+      userInput.eventToRequest(),
+      rx.log('userInput'),
     ),
     extraSource: () => jb.ui.renderingUpdates,
     expectedResult: contains('danny')
@@ -168,7 +167,7 @@ jb.component('remoteTest.twoTierWidget.infiniteScroll', {
       ]
     }),
     remote.worker({id: 'ui', libs: ['common','ui-common','remote','two-tier-widget'] })),
-    action: uiAction.scrollBy('.jb-itemlist',100),
+    action: rx.pipe( source.waitForSelector('.jb-itemlist'), sink.action(uiAction.scrollBy('.jb-itemlist',100))),
     expectedResult: contains('>8<')
   })
 })

@@ -79,17 +79,20 @@ jb.component('itemlist.infiniteScroll', {
     )),
     feature.userEventProps('elem.scrollTop,elem.scrollHeight'),
     frontEnd.flow(
-      source.frontEndEvent('scroll'),
+      rx.merge(
+        source.frontEndEvent('scroll'),
+        source.frontEndEvent('wheel')
+      ),
       rx.var('applicative','%target/__appScroll%'),
       rx.do(({data}) => data.target.__appScroll = null),
-      rx.filter(not('%$applicative%')),
       rx.var('scrollPercentFromTop',({data}) => 
         (data.currentTarget.scrollTop + data.currentTarget.getBoundingClientRect().height) / data.currentTarget.scrollHeight),
       rx.var('fetchItems', ({},{$state,pagesize}) => ({ 
         from: $state.visualLimit.shownItems,
         noOfItems: Math.min($state.visualLimit.totalItems,$state.visualLimit.shownItems + pagesize) - $state.visualLimit.shownItems
       })),
-      rx.filter(and('%$scrollPercentFromTop%>0.9','%$fetchItems/noOfItems%!=0',not('%$$state/visualLimit/waitingForServer%'))),
+      rx.log('infiniteScroll.FE'),
+      rx.filter(and('%$scrollPercentFromTop%>0.9','%$fetchItems/noOfItems%!=0',not('%$applicative%'),not('%$$state/visualLimit/waitingForServer%'))),
       rx.do(writeValue('%$$state/visualLimit/waitingForServer%','true')),
       sink.BEMethod('fetchMoreItems','%$fetchItems%')
     )

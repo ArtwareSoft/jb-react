@@ -99,7 +99,7 @@ jb.component('uiTest.waitForRx', {
   impl: uiTest({
     control: group({
       controls: text('%%'),
-      features: group.wait({for: rx.pipe(rx.interval(10), rx.take(1), rx.map('hello'))})
+      features: group.wait({for: rx.pipe(source.interval(10), rx.take(1), rx.map('hello'))})
     }),
     expectedResult: and(contains('hello'), not(contains('loading'))),
     expectedCounters: {initCmp: 4}
@@ -530,7 +530,7 @@ jb.component('uiTest.itemlistPrimitiveArrayItemShouldBeRef.tableStyle', {
 jb.component('uiTest.itemlistRxSource', {
   impl: uiTest({
     control: itemlist({
-      items: rx.fromIter('%$people%'),
+      items: source.data('%$people%'),
       controls: text('%$item.name% - %name%'),
       features: itemlist.incrementalFromRx()
     }),

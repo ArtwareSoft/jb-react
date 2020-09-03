@@ -84,7 +84,7 @@ jb.component('uiTest', {
 	  {id: 'control', type: 'control', dynamic: true},
 	  {id: 'runBefore', type: 'action', dynamic: true},
 	  {id: 'userInput', type: 'user-input[]', as: 'array' },
-	  {id: 'userInputWithTiming', type: 'rx', dynamic: true },
+	  {id: 'userInputRx', type: 'rx', dynamic: true },
 	  {id: 'extraSource', type: 'rx' },
 	  {id: 'expectedResult', type: 'boolean', dynamic: true},
 	  {id: 'allowError', as: 'boolean', dynamic: true},
@@ -107,7 +107,7 @@ jb.component('uiTest', {
 					rx.merge(
 						rx.pipe(source.data('%$userInput%'),userInput.eventToRequest(),If('%$delayedInput%',rx.delay(1))),
 						source.callbag(()=>jb.ui.widgetUserRequests),
-						call('userInputWithTiming'),
+						call('userInputRx'),
 //						rx.pipe('%$extraSource%',rx.map(()=>({$:'dummpOp'})))
 					),
 					widget.headless('%$control()%', '%$tstWidgetId%'),

@@ -4,16 +4,14 @@ jb.ns('rx,sink,source')
 
 jb.component('source.data', {
   type: 'rx',
-  category: 'source',
   params: [
-    {id: 'data', dynamic: true },
+    {id: 'data', mandatory: true },
   ],
-  impl: rx.fromIter(pipeline('%$data%'))
+  impl: (ctx,data) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromIter(jb.toarray(data)))
 })
 
 jb.component('source.watchableData', {
   type: 'rx',
-  category: 'source',
   params: [
     {id: 'ref', as: 'ref' },
     {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
@@ -23,7 +21,6 @@ jb.component('source.watchableData', {
 
 jb.component('source.callbag', {
   type: 'rx',
-  category: 'source',
   params: [
     {id: 'callbag', mandatory: true, description: 'callbag source function'},
   ],
@@ -32,7 +29,6 @@ jb.component('source.callbag', {
   
 jb.component('source.event', {
   type: 'rx',
-  category: 'source',
   macroByValue: true,
   params: [
     {id: 'event', as: 'string', mandatory: true, options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll'},
@@ -42,18 +38,8 @@ jb.component('source.event', {
   impl: (ctx,event,elem,options) => elem && jb.callbag.map(ev=>ctx.setVar('sourceEvent',ev).dataObj(ev))(jb.callbag.fromEvent(event,elem,options))
 })
 
-jb.component('rx.fromIter', {
-  type: 'rx',
-  category: 'source',
-  params: [
-    {id: 'iter', mandatory: true, as: 'array', description: 'array or js Iterators or Generators. https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_Generators '},
-  ],
-  impl: (ctx,iter) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromIter(iter))
-})
-
 jb.component('source.any', {
   type: 'rx',
-  category: 'source',
   params: [
     {id: 'source', mandatory: true, description: 'the source is detected by its type: promise, iterable, single, callbag element, etc..'},
   ],
@@ -62,16 +48,14 @@ jb.component('source.any', {
 
 jb.component('source.promise', {
   type: 'rx',
-  category: 'source',
   params: [
     {id: 'promise', mandatory: true},
   ],
   impl: (ctx,promise) => jb.callbag.map(x=>ctx.dataObj(x))(jb.callbag.fromPromise(promise))
 })
 
-jb.component('rx.interval', {
+jb.component('source.interval', {
   type: 'rx',
-  category: 'source',
   params: [
     {id: 'interval', as: 'number', templateValue: '1000', description: 'time in mSec'}
   ],
@@ -251,7 +235,7 @@ jb.component('rx.retry', {
       rx.var('inp'),
       rx.concatMap(
           rx.pipe(
-            rx.interval('%$interval%'),
+            source.interval('%$interval%'),
             rx.do((ctx,{},{onRetry}) => ctx.data && onRetry(ctx)),
             rx.throwError(
                 '%%>%$times%',
@@ -490,8 +474,6 @@ jb.component('sink.action', {
 
 jb.component('sink.data', {
   type: 'rx',
-  description: 'subscribe',
-  category: 'sink',
   params: [
     {id: 'data', as: 'ref', dynamic: true, mandatory: true},
   ],
@@ -540,7 +522,6 @@ jb.component('rx.subject', {
 
 jb.component('sink.subjectNext', {
   type: 'rx',
-  category: 'sink',
   params: [
       {id: 'subject', mandatory: true },
   ],
@@ -549,7 +530,6 @@ jb.component('sink.subjectNext', {
 
 jb.component('source.subject', {
     type: 'rx',
-    category: 'source',
     params: [
         {id: 'subject', mandatory: true },
       ],
@@ -4898,17 +4878,20 @@ jb.component('itemlist.infiniteScroll', {
     )),
     feature.userEventProps('elem.scrollTop,elem.scrollHeight'),
     frontEnd.flow(
-      source.frontEndEvent('scroll'),
+      rx.merge(
+        source.frontEndEvent('scroll'),
+        source.frontEndEvent('wheel')
+      ),
       rx.var('applicative','%target/__appScroll%'),
       rx.do(({data}) => data.target.__appScroll = null),
-      rx.filter(not('%$applicative%')),
       rx.var('scrollPercentFromTop',({data}) => 
         (data.currentTarget.scrollTop + data.currentTarget.getBoundingClientRect().height) / data.currentTarget.scrollHeight),
       rx.var('fetchItems', ({},{$state,pagesize}) => ({ 
         from: $state.visualLimit.shownItems,
         noOfItems: Math.min($state.visualLimit.totalItems,$state.visualLimit.shownItems + pagesize) - $state.visualLimit.shownItems
       })),
-      rx.filter(and('%$scrollPercentFromTop%>0.9','%$fetchItems/noOfItems%!=0',not('%$$state/visualLimit/waitingForServer%'))),
+      rx.log('infiniteScroll.FE'),
+      rx.filter(and('%$scrollPercentFromTop%>0.9','%$fetchItems/noOfItems%!=0',not('%$applicative%'),not('%$$state/visualLimit/waitingForServer%'))),
       rx.do(writeValue('%$$state/visualLimit/waitingForServer%','true')),
       sink.BEMethod('fetchMoreItems','%$fetchItems%')
     )
