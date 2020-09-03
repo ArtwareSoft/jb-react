@@ -82,9 +82,9 @@ jb.component('itemlist.infiniteScroll', {
       source.frontEndEvent('scroll'),
       rx.var('scrollPercentFromTop',({data}) => 
         (data.currentTarget.scrollTop + data.currentTarget.getBoundingClientRect().height) / data.currentTarget.scrollHeight),
-      rx.var('fetchItems', ({},{$state,pageSize}) => ({ 
+      rx.var('fetchItems', ({},{$state,pagesize}) => ({ 
         from: $state.visualLimit.shownItems,
-        noOfItems: Math.max($state.visualLimit.totalItems,$state.visualLimit.shownItems + pageSize) - $state.visualLimit.shownItems
+        noOfItems: Math.max($state.visualLimit.totalItems,$state.visualLimit.shownItems + pagesize) - $state.visualLimit.shownItems
       })),
       rx.log('infiniteScroll'),
       rx.filter(and('%$scrollPercentFromTop%>0.9','%$fetchItems/noOfItems%!=0',not('%$$state/visualLimit/waitingForServer%'))),
