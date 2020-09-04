@@ -303,7 +303,7 @@ jb.component('menu.selectionKeySourceService', {
 
 jb.component('menu.passMenuKeySource', {
   type: 'feature',
-  impl: passPropToFrontEnd('menuKeySourceCmpId', ctx => ctx.exp('%$$serviceRegistry/services/menuKeySource%')),
+  impl: frontEnd.var('menuKeySourceCmpId', ctx => ctx.exp('%$$serviceRegistry/services/menuKeySource%')),
 })
 
 jb.component('source.findMenuKeySource', {

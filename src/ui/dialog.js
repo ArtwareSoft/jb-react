@@ -179,10 +179,10 @@ jb.component('dialogFeature.dragTitle', {
 			el.style.top = data.top + 'px'
 			el.style.left = data.left +'px' 
 		}),
-		passPropToFrontEnd('selector','%$selector%'),
-		passPropToFrontEnd('useSessionStorage','%$useSessionStorage%'),
-		passPropToFrontEnd('sessionStorageId','%$$props/sessionStorageId%'),
-		passPropToFrontEnd('posFromSessionStorage','%$$props/posFromSessionStorage%'),
+		frontEnd.var('selector','%$selector%'),
+		frontEnd.var('useSessionStorage','%$useSessionStorage%'),
+		frontEnd.var('sessionStorageId','%$$props/sessionStorageId%'),
+		frontEnd.var('posFromSessionStorage','%$$props/posFromSessionStorage%'),
 		frontEnd.init(({},{el,posFromSessionStorage}) => {
 			if (posFromSessionStorage) {
 				el.style.top = posFromSessionStorage.top + 'px'
@@ -235,9 +235,9 @@ jb.component('dialogFeature.nearLauncherPosition', {
   ],
   impl: features(
 	  calcProp('launcherRectangle','%$ev/elem/clientRect%'),
-	  passPropToFrontEnd('launcherRectangle','%$$props/launcherRectangle%'),
-	  passPropToFrontEnd('launcherCmpId','%$$dialog/launcherCmpId%'),
-	  passPropToFrontEnd('pos',({},{},{offsetLeft,offsetTop,rightSide}) => ({offsetLeft: offsetLeft() || 0, offsetTop: offsetTop() || 0,rightSide})),
+	  frontEnd.var('launcherRectangle','%$$props/launcherRectangle%'),
+	  frontEnd.var('launcherCmpId','%$$dialog/launcherCmpId%'),
+	  frontEnd.var('pos',({},{},{offsetLeft,offsetTop,rightSide}) => ({offsetLeft: offsetLeft() || 0, offsetTop: offsetTop() || 0,rightSide})),
 	  userStateProp('dialogPos', ({},{ev,$props},{offsetLeft,offsetTop,rightSide}) => {
 		if (!ev) return { left: 0, top: 0}
 		const _offsetLeft = offsetLeft() || 0, _offsetTop = offsetTop() || 0
@@ -314,7 +314,7 @@ jb.component('dialogFeature.autoFocusOnFirstInput', {
     {id: 'selectText', as: 'boolean', type: 'boolean'}
   ],
   impl: features(
-	  passPropToFrontEnd('selectText','%$selectText%'),
+	  frontEnd.var('selectText','%$selectText%'),
 	  frontEnd.init( (ctx,{cmp,selectText}) => {
 	    const elem = cmp.base.querySelectorAll('input,textarea,select').filter(e => e.getAttribute('type') != 'checkbox')[0]
 		if (elem)
@@ -341,7 +341,7 @@ jb.component('dialogFeature.maxZIndexOnClick', {
     {id: 'minZIndex', as: 'number', defaultValue: 100}
   ],
   impl: features(
-	  passPropToFrontEnd('minZIndex','%$minZIndex%'),
+	  frontEnd.var('minZIndex','%$minZIndex%'),
 	  frontEnd.method('setAsMaxZIndex', ({},{el,minZIndex}) => {
 		  	const dialogs = Array.from(document.querySelectorAll('.jb-dialog')).filter(dl=>!jb.ui.hasClass(dl, 'jb-popup'))
 			const calcMaxIndex = dialogs.reduce((max, _el) => 
@@ -389,7 +389,7 @@ jb.component('dialogFeature.resizer', {
 			cmp.codeMirrorElem.style.height = (data.top - cmp.codeMirrorElemDiff) + 'px'
 	  }),
 	  frontEnd.prop('resizerElem',({},{cmp}) => cmp.base.querySelector('.jb-resizer')),
-	  passPropToFrontEnd('resizeInnerCodemirror','%$resizeInnerCodemirror%'),
+	  frontEnd.var('resizeInnerCodemirror','%$resizeInnerCodemirror%'),
 	  frontEnd.prop('codeMirrorElemDiff',({},{el,resizeInnerCodemirror}) => {
 		  const codeMirrorElem = resizeInnerCodemirror && el.querySelector('.CodeMirror,.jb-textarea-alternative-for-codemirror')
 		  return codeMirrorElem ? codeMirrorElem.getBoundingClientRect().top - el.getBoundingClientRect().top

@@ -69,7 +69,7 @@ jb.component('itemlist.infiniteScroll', {
     {id: 'pageSize', as: 'number', defaultValue: 2}
   ],
   impl: features(
-    passPropToFrontEnd('pageSize','%$pageSize%'),
+    frontEnd.var('pageSize','%$pageSize%'),
     method('fetchMoreItems', runActions(
       Var('itemsToAppend', ({data},{$props}) => $props.allItems.slice(data.from,data.from+data.noOfItems)),
       Var('updateState1', writeValue('%$$state/visualLimit/shownItems%', math.plus('%$$state/visualLimit/shownItems%','%noOfItems%'))),
@@ -87,9 +87,9 @@ jb.component('itemlist.infiniteScroll', {
       rx.do(({data}) => data.target.__appScroll = null),
       rx.var('scrollPercentFromTop',({data}) => 
         (data.currentTarget.scrollTop + data.currentTarget.getBoundingClientRect().height) / data.currentTarget.scrollHeight),
-      rx.var('fetchItems', ({},{$state,pagesize}) => ({ 
+      rx.var('fetchItems', ({},{$state,pageSize}) => ({ 
         from: $state.visualLimit.shownItems,
-        noOfItems: Math.min($state.visualLimit.totalItems,$state.visualLimit.shownItems + pagesize) - $state.visualLimit.shownItems
+        noOfItems: Math.min($state.visualLimit.totalItems,$state.visualLimit.shownItems + pageSize) - $state.visualLimit.shownItems
       })),
       rx.log('infiniteScroll.FE'),
       rx.filter(and('%$scrollPercentFromTop%>0.9','%$fetchItems/noOfItems%!=0',not('%$applicative%'),not('%$$state/visualLimit/waitingForServer%'))),
@@ -249,7 +249,7 @@ jb.component('itemlist.keyboardSelection', {
       rx.log('itemlistOnkeydownNextSelected'),
       sink.subjectNext('%$cmp/selectionEmitter%')
     ),
-    passPropToFrontEnd('autoFocus','%$autoFocus%'),
+    frontEnd.var('autoFocus','%$autoFocus%'),
     frontEnd.init(If(and('%$autoFocus%','%$selectionKeySourceCmpId%'), action.focusOnCmp('itemlist autofocus') ))
   )
 })

@@ -49,7 +49,16 @@ jb.component('studio.selectStyle', {
             ),
             genericControl: group({
               controls: [
-                widget.twoTierWidget('%$__option%'),
+                ctx => {
+                  const previewCtx = jb.studio.closestCtxInPreview(ctx.exp('%$targetPath%'))
+                  jb.path(jb,'studio.previewjb.ui.workerStyleElems.preview',[])
+                  const cmp = jb.ui.extendWithServiceRegistry(new jb.studio.previewjb.jbCtx()).ctx(previewCtx)
+                    .run(ctx.exp('%$__option%'))
+                  const vdom = jb.ui.cloneVNode(cmp.renderVdom())
+                  jb.ui.addStyleElem(jb.studio.previewjb.ui.workerStyleElems.preview.join('\n'))
+                  jb.path(jb,'studio.previewjb.ui.workerStyleElems.preview',[])
+                  return vdom
+              },
                 button({
                   title: 'select (%$__option/length%)',
                   action: runActions(

@@ -52,9 +52,9 @@ jb.component('dialogFeature.studioPick', {
     frontEnd.onDestroy(({},{cmp,_window})=> {
       cmp.cover.parentElement == _window.document.body && _window.document.body.removeChild(cmp.cover)
     }),
-    passPropToFrontEnd('from','%$from%'),
-    passPropToFrontEnd('projectPrefix', studio.currentPagePath()),
-    passPropToFrontEnd('testHost', ctx => ['tests','studio-helper'].indexOf(ctx.exp('%$studio/project%')) != -1),
+    frontEnd.var('from','%$from%'),
+    frontEnd.var('projectPrefix', studio.currentPagePath()),
+    frontEnd.var('testHost', ctx => ['tests','studio-helper'].indexOf(ctx.exp('%$studio/project%')) != -1),
     frontEnd.prop('_window', ({},{from, el}) => {
       if (from === 'studio') st.initStudioEditing()
       const _window = from == 'preview' ? st.previewWindow : window

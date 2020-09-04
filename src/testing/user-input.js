@@ -47,7 +47,9 @@ jb.component('source.waitForSelector', {
   ],
   impl: rx.pipe(
     source.interval('%$interval%'),
+    rx.log('waitForSelectorCheck'),
     rx.filter((ctx,{},{selector}) => jb.ui.elemOfSelector(selector,ctx)),
+    rx.log('waitForSelector'),
     rx.take(1)
   )
 })
@@ -61,6 +63,7 @@ jb.component('uiAction.scrollBy', {
       impl: (ctx,selector,scrollBy) => {
         const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : ctx.vars.elemToTest
         elem && elem.scrollBy(scrollBy,scrollBy)
+        jb.log('scrollBy',[elem,ctx])
       }
 })
 
@@ -75,7 +78,6 @@ jb.component('uiAction.setText', {
           jb.ui.findIncludeSelf(elem,'input,textarea').forEach(e=>e.value= value)
           const ev = { type: 'blur', currentTarget: elem, target: {value}}
           jb.ui.handleCmpEvent(ev)
-          //return jb.delay(1);
       }
 })
 

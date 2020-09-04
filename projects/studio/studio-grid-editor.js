@@ -162,9 +162,9 @@ jb.component('gridEditor.dragableGridLineThumb', {
       ({},{gridIndex},{axis}) => `%$gridPath%~layout~${axis.toLowerCase().slice(0,-1)}Sizes~items~${gridIndex-1}`,
       '%%')
     ),
-    passPropToFrontEnd('inplaceElemPath',(ctx,{inplaceElem})=> jb.ui.ctxOfElem(inplaceElem).path),
-    passPropToFrontEnd('axis','%$axis%'),
-    passPropToFrontEnd('gridIndex','%$gridIndex%'),
+    frontEnd.var('inplaceElemPath',(ctx,{inplaceElem})=> jb.ui.ctxOfElem(inplaceElem).path),
+    frontEnd.var('axis','%$axis%'),
+    frontEnd.var('gridIndex','%$gridIndex%'),
     frontEnd.prop('inplaceElem',({},{inplaceElemPath}) => (jb.studio.findElemsByCtxCondition(ctx => ctx.path == inplaceElemPath)[0] || {}).elem),
     frontEnd.prop('gridRect', ({},{cmp}) => cmp.inplaceElem.getBoundingClientRect()),
     frontEnd.prop('handlerPos', ({},{axis}) => ev => axis == 'Rows' ? ev.clientY - jb.ui.studioFixYPos() : ev.clientX),
@@ -301,7 +301,7 @@ jb.component('gridEditor.dragableGridItemThumb', {
         '%css%', studio.ref('%%')
       ), '%%' 
     )),
-    passPropToFrontEnd('inplaceElemPath',({},{inplaceElem})=> jb.ui.ctxOfElem(inplaceElem).path),
+    frontEnd.var('inplaceElemPath',({},{inplaceElem})=> jb.ui.ctxOfElem(inplaceElem).path),
     frontEnd.prop('inplaceElem',({},{inplaceElemPath}) => (jb.studio.findElemsByCtxCondition(ctx => ctx.path == inplaceElemPath)[0] || {}).elem),
     frontEnd.prop('gridRect', ({},{cmp}) => cmp.inplaceElem.getBoundingClientRect()),
     frontEnd.prop('posToGridPos', ({},{inplaceElem}) => pos => {

@@ -1512,23 +1512,16 @@ function setAtt(elem,att,val) {
     } else if (att === 'checked' && elem.tagName.toLowerCase() === 'input') {
         elem.checked = !!val
         jb.log('htmlChange',['checked',...arguments])
-    } else if (att.indexOf('$__input') === 0) {
-        try {
-            setInput(JSON.parse(val))
-        } catch(e) {}
     } else if (att.indexOf('$__') === 0) {
         const id = att.slice(3)
         try {
             elem[id] = JSON.parse(val) || ''
         } catch (e) {}
         jb.log('htmlChange',[`data ${id}`,...arguments])
-    } else if (att.indexOf('$vars__') === 0) {
-        const id = att.slice(7)
+    } else if (att.indexOf('$__input') === 0) {
         try {
-            elem.vars = elem.vars || {}
-            elem.vars[id] = JSON.parse(val) || ''
-        } catch (e) {}
-        jb.log('htmlChange',[`vars__ ${id}`,...arguments])
+            setInput(JSON.parse(val))
+        } catch(e) {}
     } else if (att === '$focus' && val) {
         elem.setAttribute('_focus',val)
         jb.ui.focus(elem,val)
@@ -1958,7 +1951,7 @@ let cmpId = 1;
 ui.propCounter = 0
 const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,this.ctx) }}
 const lifeCycle = new Set('init,extendCtx,templateModifier,followUp,destroy'.split(','))
-const arrayProps = new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,eventHandler'.split(','))
+const arrayProps = new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,frontEndVar,eventHandler'.split(','))
 const singular = new Set('template,calcRenderProps,toolbar,styleParams,calcHash,ctxForPick'.split(','))
 
 Object.assign(jb.ui,{
@@ -2084,6 +2077,7 @@ class JbComponent {
         const originators = this.originators.map(ctx=>ui.preserveCtx(ctx)).join(',')
         const userEventProps = (this.userEventProps||[]).join(',')
         const frontEndMethods = (this.frontEndMethod || []).map(h=>({method: h.method, path: h.path}))
+        const frontEndVars = this.frontEndVar && jb.objFromEntries(this.frontEndVar.map(h=>[h.id, h.value(this.calcCtx)]))
         if (vdom instanceof jb.ui.VNode) {
             vdom.addClass(this.jbCssClass())
             vdom.attributes = Object.assign(vdom.attributes || {}, {
@@ -2099,6 +2093,7 @@ class JbComponent {
                 userEventProps && {userEventProps},
                 frontEndMethods.length && {$__frontEndMethods : JSON.stringify(frontEndMethods) },
                 frontEndMethods.length && {interactive : true}, 
+                frontEndVars && { $__vars : JSON.stringify(frontEndVars)},
                 this.state && { $__state : JSON.stringify(this.state)},
                 this.ctxForPick && { 'pick-ctx': ui.preserveCtx(this.ctxForPick) },
                 this.renderProps.cmpHash != null && {cmpHash: this.renderProps.cmpHash}
@@ -2601,6 +2596,23 @@ jb.component('templateModifier', {
   impl: (ctx,value) => ({ templateModifier: (vdom,cmp) => value(cmp.calcCtx.setVars({vdom, ...cmp.renderProps })) })
 })
 
+jb.component('frontEnd.var', {
+  type: 'feature',
+  description: 'calculate in the BE and pass to frontEnd',
+  params: [
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'value', mandatory: true, dynamic: true},
+  ],
+  impl: ctx => ({ frontEndVar: ctx.params })
+  
+  // templateModifier((ctx,{vdom},{id,value}) => {
+  //   const val = value(ctx)
+  //   //if (val == null) jb.logError('frontEnd.var - null value',id,ctx)
+  //   if (val != null)
+  //     vdom.setAttribute('$vars__'+id, JSON.stringify(val))
+  // })
+})
+
 jb.component('features', {
   type: 'feature',
   description: 'list of features, auto flattens',
@@ -2713,21 +2725,6 @@ jb.component('htmlAttribute', {
   ],
   impl: (ctx,id,value) => ({
     templateModifier: (vdom,cmp) => vdom.setAttribute(id.match(/^on[^-]/) ? `${id.slice(0,2)}-${id.slice(2)}` : id, value(cmp.ctx))
-  })
-})
-
-jb.component('passPropToFrontEnd', {
-  type: 'feature',
-  description: 'assign the value of a property in the cmp element to be used in the frontEnd',
-  params: [
-    {id: 'id', as: 'string', mandatory: true},
-    {id: 'value', mandatory: true, dynamic: true},
-  ],
-  impl: templateModifier((ctx,{vdom},{id,value}) => {
-    const val = value(ctx)
-    //if (val == null) jb.logError('passPropToFrontEnd - null value',id,ctx)
-    if (val != null)
-      vdom.setAttribute('$vars__'+id, JSON.stringify(val))
   })
 })
 
@@ -3241,7 +3238,7 @@ jb.component('frontEnd.selectionKeySourceService', {
   ],
   impl: features(
     service.registerBackEndService('selectionKeySource', obj(prop('cmpId', '%$cmp/cmpId%'))),
-    passPropToFrontEnd('autoFocs','%$autoFocs%'),
+    frontEnd.var('autoFocs','%$autoFocs%'),
     frontEnd.prop('selectionKeySource', (ctx,{cmp,el,autoFocs}) => {
       if (el.keydown_src) return
       const {pipe, takeUntil,subject} = jb.callbag
@@ -3265,7 +3262,7 @@ jb.component('frontEnd.selectionKeySourceService', {
 
 jb.component('frontEnd.passSelectionKeySource', {
   type: 'feature',
-  impl: passPropToFrontEnd('selectionKeySourceCmpId', '%$$serviceRegistry/services/selectionKeySource/cmpId%')
+  impl: frontEnd.var('selectionKeySourceCmpId', '%$$serviceRegistry/services/selectionKeySource/cmpId%')
 })
 
 jb.component('source.findSelectionKeySource', {
@@ -3764,7 +3761,7 @@ jb.component('html.inIframe', {
         src: 'javascript: document.write(parent.contentForIframe)'
     }),
     features: [
-      passPropToFrontEnd('html','%$$model/html()%'),
+      frontEnd.var('html','%$$model/html()%'),
       frontEnd.init(({},{html}) => window.contentForIframe = html)
     ]
   })
@@ -4472,10 +4469,10 @@ jb.component('dialogFeature.dragTitle', {
 			el.style.top = data.top + 'px'
 			el.style.left = data.left +'px' 
 		}),
-		passPropToFrontEnd('selector','%$selector%'),
-		passPropToFrontEnd('useSessionStorage','%$useSessionStorage%'),
-		passPropToFrontEnd('sessionStorageId','%$$props/sessionStorageId%'),
-		passPropToFrontEnd('posFromSessionStorage','%$$props/posFromSessionStorage%'),
+		frontEnd.var('selector','%$selector%'),
+		frontEnd.var('useSessionStorage','%$useSessionStorage%'),
+		frontEnd.var('sessionStorageId','%$$props/sessionStorageId%'),
+		frontEnd.var('posFromSessionStorage','%$$props/posFromSessionStorage%'),
 		frontEnd.init(({},{el,posFromSessionStorage}) => {
 			if (posFromSessionStorage) {
 				el.style.top = posFromSessionStorage.top + 'px'
@@ -4528,9 +4525,9 @@ jb.component('dialogFeature.nearLauncherPosition', {
   ],
   impl: features(
 	  calcProp('launcherRectangle','%$ev/elem/clientRect%'),
-	  passPropToFrontEnd('launcherRectangle','%$$props/launcherRectangle%'),
-	  passPropToFrontEnd('launcherCmpId','%$$dialog/launcherCmpId%'),
-	  passPropToFrontEnd('pos',({},{},{offsetLeft,offsetTop,rightSide}) => ({offsetLeft: offsetLeft() || 0, offsetTop: offsetTop() || 0,rightSide})),
+	  frontEnd.var('launcherRectangle','%$$props/launcherRectangle%'),
+	  frontEnd.var('launcherCmpId','%$$dialog/launcherCmpId%'),
+	  frontEnd.var('pos',({},{},{offsetLeft,offsetTop,rightSide}) => ({offsetLeft: offsetLeft() || 0, offsetTop: offsetTop() || 0,rightSide})),
 	  userStateProp('dialogPos', ({},{ev,$props},{offsetLeft,offsetTop,rightSide}) => {
 		if (!ev) return { left: 0, top: 0}
 		const _offsetLeft = offsetLeft() || 0, _offsetTop = offsetTop() || 0
@@ -4607,7 +4604,7 @@ jb.component('dialogFeature.autoFocusOnFirstInput', {
     {id: 'selectText', as: 'boolean', type: 'boolean'}
   ],
   impl: features(
-	  passPropToFrontEnd('selectText','%$selectText%'),
+	  frontEnd.var('selectText','%$selectText%'),
 	  frontEnd.init( (ctx,{cmp,selectText}) => {
 	    const elem = cmp.base.querySelectorAll('input,textarea,select').filter(e => e.getAttribute('type') != 'checkbox')[0]
 		if (elem)
@@ -4634,7 +4631,7 @@ jb.component('dialogFeature.maxZIndexOnClick', {
     {id: 'minZIndex', as: 'number', defaultValue: 100}
   ],
   impl: features(
-	  passPropToFrontEnd('minZIndex','%$minZIndex%'),
+	  frontEnd.var('minZIndex','%$minZIndex%'),
 	  frontEnd.method('setAsMaxZIndex', ({},{el,minZIndex}) => {
 		  	const dialogs = Array.from(document.querySelectorAll('.jb-dialog')).filter(dl=>!jb.ui.hasClass(dl, 'jb-popup'))
 			const calcMaxIndex = dialogs.reduce((max, _el) => 
@@ -4682,7 +4679,7 @@ jb.component('dialogFeature.resizer', {
 			cmp.codeMirrorElem.style.height = (data.top - cmp.codeMirrorElemDiff) + 'px'
 	  }),
 	  frontEnd.prop('resizerElem',({},{cmp}) => cmp.base.querySelector('.jb-resizer')),
-	  passPropToFrontEnd('resizeInnerCodemirror','%$resizeInnerCodemirror%'),
+	  frontEnd.var('resizeInnerCodemirror','%$resizeInnerCodemirror%'),
 	  frontEnd.prop('codeMirrorElemDiff',({},{el,resizeInnerCodemirror}) => {
 		  const codeMirrorElem = resizeInnerCodemirror && el.querySelector('.CodeMirror,.jb-textarea-alternative-for-codemirror')
 		  return codeMirrorElem ? codeMirrorElem.getBoundingClientRect().top - el.getBoundingClientRect().top
@@ -4868,7 +4865,7 @@ jb.component('itemlist.infiniteScroll', {
     {id: 'pageSize', as: 'number', defaultValue: 2}
   ],
   impl: features(
-    passPropToFrontEnd('pageSize','%$pageSize%'),
+    frontEnd.var('pageSize','%$pageSize%'),
     method('fetchMoreItems', runActions(
       Var('itemsToAppend', ({data},{$props}) => $props.allItems.slice(data.from,data.from+data.noOfItems)),
       Var('updateState1', writeValue('%$$state/visualLimit/shownItems%', math.plus('%$$state/visualLimit/shownItems%','%noOfItems%'))),
@@ -4886,9 +4883,9 @@ jb.component('itemlist.infiniteScroll', {
       rx.do(({data}) => data.target.__appScroll = null),
       rx.var('scrollPercentFromTop',({data}) => 
         (data.currentTarget.scrollTop + data.currentTarget.getBoundingClientRect().height) / data.currentTarget.scrollHeight),
-      rx.var('fetchItems', ({},{$state,pagesize}) => ({ 
+      rx.var('fetchItems', ({},{$state,pageSize}) => ({ 
         from: $state.visualLimit.shownItems,
-        noOfItems: Math.min($state.visualLimit.totalItems,$state.visualLimit.shownItems + pagesize) - $state.visualLimit.shownItems
+        noOfItems: Math.min($state.visualLimit.totalItems,$state.visualLimit.shownItems + pageSize) - $state.visualLimit.shownItems
       })),
       rx.log('infiniteScroll.FE'),
       rx.filter(and('%$scrollPercentFromTop%>0.9','%$fetchItems/noOfItems%!=0',not('%$applicative%'),not('%$$state/visualLimit/waitingForServer%'))),
@@ -5048,7 +5045,7 @@ jb.component('itemlist.keyboardSelection', {
       rx.log('itemlistOnkeydownNextSelected'),
       sink.subjectNext('%$cmp/selectionEmitter%')
     ),
-    passPropToFrontEnd('autoFocus','%$autoFocus%'),
+    frontEnd.var('autoFocus','%$autoFocus%'),
     frontEnd.init(If(and('%$autoFocus%','%$selectionKeySourceCmpId%'), action.focusOnCmp('itemlist autofocus') ))
   )
 })
@@ -5724,7 +5721,7 @@ jb.component('menu.selectionKeySourceService', {
 
 jb.component('menu.passMenuKeySource', {
   type: 'feature',
-  impl: passPropToFrontEnd('menuKeySourceCmpId', ctx => ctx.exp('%$$serviceRegistry/services/menuKeySource%')),
+  impl: frontEnd.var('menuKeySourceCmpId', ctx => ctx.exp('%$$serviceRegistry/services/menuKeySource%')),
 })
 
 jb.component('source.findMenuKeySource', {

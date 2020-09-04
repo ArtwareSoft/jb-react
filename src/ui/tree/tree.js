@@ -271,7 +271,7 @@ jb.component('tree.keyboardSelection', {
 	  frontEnd.flow(source.frontEndEvent('click'), sink.FEMethod('regainFocus')),
 
 	  frontEnd.method('regainFocus', action.focusOnCmp('tree regain focus')),
-	  passPropToFrontEnd('autoFocus','%$autoFocus%'),
+	  frontEnd.var('autoFocus','%$autoFocus%'),
 	  frontEnd.init(If('%$autoFocus%', action.focusOnCmp('tree autofocus') )),
 	)
 })

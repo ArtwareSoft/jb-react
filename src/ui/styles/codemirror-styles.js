@@ -27,10 +27,10 @@ jb.component('editableText.codemirror', {
 		  		h('textarea#jb-textarea-alternative-for-codemirror', {value: text }) :
 				h('div',{}, h('textarea#jb-codemirror', {value: text })),
 	}),
-	passPropToFrontEnd('cm_settings', ({},{},{cm_settings,lineWrapping, mode, lineNumbers, readOnly}) => ({
+	frontEnd.var('cm_settings', ({},{},{cm_settings,lineWrapping, mode, lineNumbers, readOnly}) => ({
 		...cm_settings, lineWrapping, lineNumbers, readOnly, mode: mode || 'javascript',
 	})),
-	passPropToFrontEnd('_enableFullScreen', '%$enableFullScreen%'),
+	frontEnd.var('_enableFullScreen', '%$enableFullScreen%'),
 	method('onCtrlEnter', call('onCtrlEnter')),
 	textEditor.cmEnrichUserEvent(),
     frontEnd.init( (ctx,{cmp,el,cm_settings,_enableFullScreen}) =>{
@@ -75,7 +75,7 @@ jb.component('textEditor.cmEnrichUserEvent', {
       {id: 'cmSelector', as: 'string', description: 'used for external buttons'}
     ],
     impl: features(
-		passPropToFrontEnd('cmSelector','%$cmSelector%'),
+		frontEnd.var('cmSelector','%$cmSelector%'),
         frontEnd.enrichUserEvent((ctx,{cmp,cmSelector}) => {
 			const elem = cmSelector ? jb.ui.widgetBody(ctx).querySelector(cmSelector) : cmp.base
 			const editor = elem && elem.editor
@@ -170,10 +170,10 @@ jb.component('text.codemirror', {
     ctx => ({
 		  template: (cmp,{text},h) => h('div',{}, h('textarea#jb-codemirror', {value: text })),
 	}),
-	passPropToFrontEnd('cm_settings', (ctx,{},{cm_settings,lineWrapping, mode, lineNumbers}) => ({
+	frontEnd.var('cm_settings', (ctx,{},{cm_settings,lineWrapping, mode, lineNumbers}) => ({
 		...cm_settings, lineWrapping, lineNumbers, readOnly: true, mode: mode || 'javascript',
 	})),
-	passPropToFrontEnd('_enableFullScreen', '%$enableFullScreen%'),
+	frontEnd.var('_enableFullScreen', '%$enableFullScreen%'),
     frontEnd.init( (ctx,{cmp}) => {
 		const cm_settings = cmp.base.cm_settings
 		const effective_settings = Object.assign({}, cm_settings, {

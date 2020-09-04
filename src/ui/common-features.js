@@ -96,6 +96,23 @@ jb.component('templateModifier', {
   impl: (ctx,value) => ({ templateModifier: (vdom,cmp) => value(cmp.calcCtx.setVars({vdom, ...cmp.renderProps })) })
 })
 
+jb.component('frontEnd.var', {
+  type: 'feature',
+  description: 'calculate in the BE and pass to frontEnd',
+  params: [
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'value', mandatory: true, dynamic: true},
+  ],
+  impl: ctx => ({ frontEndVar: ctx.params })
+  
+  // templateModifier((ctx,{vdom},{id,value}) => {
+  //   const val = value(ctx)
+  //   //if (val == null) jb.logError('frontEnd.var - null value',id,ctx)
+  //   if (val != null)
+  //     vdom.setAttribute('$vars__'+id, JSON.stringify(val))
+  // })
+})
+
 jb.component('features', {
   type: 'feature',
   description: 'list of features, auto flattens',
@@ -208,21 +225,6 @@ jb.component('htmlAttribute', {
   ],
   impl: (ctx,id,value) => ({
     templateModifier: (vdom,cmp) => vdom.setAttribute(id.match(/^on[^-]/) ? `${id.slice(0,2)}-${id.slice(2)}` : id, value(cmp.ctx))
-  })
-})
-
-jb.component('passPropToFrontEnd', {
-  type: 'feature',
-  description: 'assign the value of a property in the cmp element to be used in the frontEnd',
-  params: [
-    {id: 'id', as: 'string', mandatory: true},
-    {id: 'value', mandatory: true, dynamic: true},
-  ],
-  impl: templateModifier((ctx,{vdom},{id,value}) => {
-    const val = value(ctx)
-    //if (val == null) jb.logError('passPropToFrontEnd - null value',id,ctx)
-    if (val != null)
-      vdom.setAttribute('$vars__'+id, JSON.stringify(val))
   })
 })
 

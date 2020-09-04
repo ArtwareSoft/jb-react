@@ -331,7 +331,7 @@ jb.component('frontEnd.selectionKeySourceService', {
   ],
   impl: features(
     service.registerBackEndService('selectionKeySource', obj(prop('cmpId', '%$cmp/cmpId%'))),
-    passPropToFrontEnd('autoFocs','%$autoFocs%'),
+    frontEnd.var('autoFocs','%$autoFocs%'),
     frontEnd.prop('selectionKeySource', (ctx,{cmp,el,autoFocs}) => {
       if (el.keydown_src) return
       const {pipe, takeUntil,subject} = jb.callbag
@@ -355,7 +355,7 @@ jb.component('frontEnd.selectionKeySourceService', {
 
 jb.component('frontEnd.passSelectionKeySource', {
   type: 'feature',
-  impl: passPropToFrontEnd('selectionKeySourceCmpId', '%$$serviceRegistry/services/selectionKeySource/cmpId%')
+  impl: frontEnd.var('selectionKeySourceCmpId', '%$$serviceRegistry/services/selectionKeySource/cmpId%')
 })
 
 jb.component('source.findSelectionKeySource', {

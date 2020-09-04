@@ -703,12 +703,26 @@ jb.callbag = {
       },
       delay: duration => source => (start, sink) => {
           if (start !== 0) return
+          let waiting = 0, end, endD, endSent
           source(0, function delay(t,d) {
-              if (t !== 1) return sink(t,d)
-              let id = setTimeout(()=> {
+              if (t == 1 && d && !end) {
+                let id = setTimeout(()=> {
+                  waiting--
                   clearTimeout(id)
                   sink(1,d)
-              }, typeof duration == 'function' ? duration() : duration)
+                  if (end && !endSent) {
+                    endSent = true
+                    sink(2,endD)
+                  }
+                }, typeof duration == 'function' ? duration() : duration)
+                waiting++
+              } else if (t == 2) {
+                end = true
+                endD = d
+                if (!waiting) sink (t,d)
+              } else {
+                sink(t,d)
+              }
           })
       },
       skip: max => source => (start, sink) => {

@@ -43,7 +43,7 @@ jb.component('dataTest', {
 	  {id: 'expectedCounters', as: 'single'},
 	  {id: 'show', type: 'control', dynamic: true },
 	],
-	impl: function(ctx,calculate,runBefore,expectedResult,timeout,allowError,cleanUp,expectedCounters) {
+	impl: function(ctx,calculate,runBefore,expectedResult,timeout,allowError,cleanUp,expectedCounters,showCtrl) {
 		const _timeout = ctx.vars.singleTest ? Math.max(1000,timeout) : timeout
 		return Promise.race([jb.delay(_timeout).then(()=>[{runErr: 'timeout'}]), Promise.resolve(runBefore())
 			  .then(_ => calculate())
@@ -53,9 +53,9 @@ jb.component('dataTest', {
 				  const countersErr = countersErrors(expectedCounters,allowError)
 				  const expectedResultCtx = new jb.jbCtx(ctx,{ data: value })
 				  const expectedResultRes = expectedResult(expectedResultCtx)
-				  jb.log('expectedResult',[expectedResultRes, expectedResultCtx])
 				  const success = !! (expectedResultRes && !countersErr && !runErr);
-				  const result = { id: ctx.vars.testID, success, reason: countersErr || runErr }
+				  jb.log('dataTestResult',[success,expectedResultRes, runErr, countersErr, expectedResultCtx])
+				  const result = { id: ctx.vars.testID, success, reason: countersErr || runErr, showCtrl }
 				  return result
 			  })
 			  .catch(e=> {
@@ -101,15 +101,13 @@ jb.component('uiTest', {
 		allowError: '%$allowError%',
 		runBefore: runActions(
 			call('runBefore'),
-			ctx => {
-				ctx.run(rx.pipe(rx.merge('%$userInputRx%', source.data('%$userInput%')),
+			pipeline(rx.pipe(rx.merge('%$userInputRx()%', source.data('%$userInput%')),
 					rx.log('userInput'),
 					rx.takeUntil('%$$testFinished%'),
 					userInput.eventToRequest(),
 					rx.log('userRequest'),
 					sink.action(({data}) => jb.ui.widgetUserRequests.next(data))
-				))
-			}
+			),'avoid the promise')
 		),
 		calculate: rx.pipe(
 			rx.merge(
@@ -166,14 +164,17 @@ jb.component('uiFrontEndTest', {
 				  }
 			  })
 			  .then(error => jb.delay(1,error))
-			  .then(error => !error && action(ctx))
+			  .then(error => !error && jb.toSynchArray(action(ctx),true))
 			  .then(() => jb.delay(1))
 			  .then(() => {
 				  // put input values as text
 				  Array.from(elemToTest.querySelectorAll('input,textarea')).forEach(e=>
 					  e.parentNode && jb.ui.addHTML(e.parentNode,`<input-val style="display:none">${e.value}</input-val>`))
 				  const countersErr = countersErrors(expectedCounters,allowError)
-				  const success = !! (expectedResult(ctx.setData(elemToTest.outerHTML)) && !countersErr)
+				  const expectedResultCtx = ctx.setData(elemToTest.outerHTML)
+				  const expectedResultRes = expectedResult(expectedResultCtx)
+				  jb.log('checkTestResult',[expectedResultRes, expectedResultCtx])
+				  const success = !! (expectedResultRes && !countersErr)
 				  if (renderDOM && !show) document.body.removeChild(elemToTest)
 				  const result = { id: testID, success, reason: countersErr, renderDOM}
 			  	  // default cleanup
@@ -336,8 +337,11 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,includeHeavy}
 					res.show = () => {
 						const profile = e[1].impl.control
 						const elem = document.createElement('div')
+						elem.className = 'show'
 						document.body.appendChild(elem)
-						if (profile) {
+						if (res.showCtrl)
+							jb.ui.render(jb.ui.h(res.showCtrl()),elem)
+						else if (profile) {
 							//jb.ui.subscribeToRefChange(jb.mainWatchableHandler)
 							jb.ui.renderWidget(profile,elem)
 						}

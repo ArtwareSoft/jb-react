@@ -169,7 +169,7 @@ jb.component('textEditor.enrichUserEvent', {
       {id: 'textEditorSelector', as: 'string', description: 'used for external buttons'}
     ],
     impl: features(
-		passPropToFrontEnd('textEditorSelector','%$textEditorSelector%'),
+		frontEnd.var('textEditorSelector','%$textEditorSelector%'),
         frontEnd.enrichUserEvent((ctx,{cmp,textEditorSelector}) => {
             const elem = textEditorSelector ? jb.ui.widgetBody(ctx).querySelector(textEditorSelector) : cmp.base
             return elem && {

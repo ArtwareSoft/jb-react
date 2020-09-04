@@ -130,7 +130,6 @@ jb.component('remoteTest.twoTierWidget.button', {
 
 jb.component('remoteTest.twoTierWidget.changeText', {
   impl: uiTest({
-    timeout: 2000,
     control: widget.twoTierWidget(
       group({
         controls: [
@@ -155,18 +154,24 @@ jb.component('remoteTest.twoTierWidget.infiniteScroll', {
   impl: uiFrontEndTest({
     timeout: 1000,
     renderDOM: true,
-    control: widget.twoTierWidget(itemlist({
-      items: range(0,10),
-      controls: text('%%'),
-      visualSizeLimit: '7',
-      features: [
-        css.height({height: '100', overflow: 'scroll'}),
-        itemlist.infiniteScroll(),
-        css.width('600')
-      ]
-    }),
-    remote.worker({id: 'ui', libs: ['common','ui-common','remote','two-tier-widget'] })),
-    action: rx.pipe( source.waitForSelector('.jb-itemlist'), sink.action(uiAction.scrollBy('.jb-itemlist',100))),
+    control: widget.twoTierWidget(
+      itemlist({
+        items: range(0,10),
+        controls: text('%%'),
+        visualSizeLimit: '7',
+        features: [
+          css.height({height: '100', overflow: 'scroll'}),
+          itemlist.infiniteScroll(),
+          css.width('600')
+        ]
+      }),
+      remote.worker({id: 'ui', libs: ['common','ui-common','remote','two-tier-widget'] })
+    ),
+    action: rx.pipe( 
+      source.waitForSelector('.jb-itemlist'),
+      rx.do(uiAction.scrollBy('.jb-itemlist',100)),
+      rx.delay(200),
+    ),
     expectedResult: contains('>8<')
   })
 })

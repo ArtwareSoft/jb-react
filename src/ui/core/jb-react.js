@@ -227,23 +227,16 @@ function setAtt(elem,att,val) {
     } else if (att === 'checked' && elem.tagName.toLowerCase() === 'input') {
         elem.checked = !!val
         jb.log('htmlChange',['checked',...arguments])
-    } else if (att.indexOf('$__input') === 0) {
-        try {
-            setInput(JSON.parse(val))
-        } catch(e) {}
     } else if (att.indexOf('$__') === 0) {
         const id = att.slice(3)
         try {
             elem[id] = JSON.parse(val) || ''
         } catch (e) {}
         jb.log('htmlChange',[`data ${id}`,...arguments])
-    } else if (att.indexOf('$vars__') === 0) {
-        const id = att.slice(7)
+    } else if (att.indexOf('$__input') === 0) {
         try {
-            elem.vars = elem.vars || {}
-            elem.vars[id] = JSON.parse(val) || ''
-        } catch (e) {}
-        jb.log('htmlChange',[`vars__ ${id}`,...arguments])
+            setInput(JSON.parse(val))
+        } catch(e) {}
     } else if (att === '$focus' && val) {
         elem.setAttribute('_focus',val)
         jb.ui.focus(elem,val)
