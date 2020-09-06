@@ -54,7 +54,7 @@ jb.component('dataTest', {
 				  const expectedResultCtx = new jb.jbCtx(ctx,{ data: value })
 				  const expectedResultRes = expectedResult(expectedResultCtx)
 				  const success = !! (expectedResultRes && !countersErr && !runErr);
-				  jb.log('dataTestResult',[success,expectedResultRes, runErr, countersErr, expectedResultCtx])
+				  jb.log('dataTest testResult',[success,expectedResultRes, runErr, countersErr, expectedResultCtx])
 				  const result = { id: ctx.vars.testID, success, reason: countersErr || runErr, showCtrl }
 				  return result
 			  })
@@ -73,7 +73,7 @@ jb.component('dataTest', {
 				  return { id: ctx.vars.testID, success: false, reason: 'Exception ' + e}
 			  })
 			  .then(result =>
-					  Promise.resolve(cleanUp())
+					  Promise.resolve(!ctx.vars.singleTest && cleanUp())
 					  .then(_=>result) )
 	  }
 })
@@ -100,27 +100,33 @@ jb.component('uiTest', {
 		timeout: '%$timeout%',
 		allowError: '%$allowError%',
 		runBefore: runActions(
-			call('runBefore'),
-			pipeline(rx.pipe(rx.merge('%$userInputRx()%', source.data('%$userInput%')),
-					rx.log('userInput'),
-					rx.takeUntil('%$$testFinished%'),
-					userInput.eventToRequest(),
-					rx.log('userRequest'),
-					sink.action(({data}) => jb.ui.widgetUserRequests.next(data))
-			),'avoid the promise')
+			call('runBefore'), rx.pipe(
+						rx.merge(
+							'%$userInputRx()%',
+							rx.pipe(source.data('%$userInput%'),rx.delay(1))
+						),
+						rx.log('userInput'),
+						rx.takeUntil('%$$testFinished%'),
+						userInput.eventToRequest(),
+						rx.log('userRequest'),
+						sink.action(({data}) => jb.ui.widgetUserRequests.next(data))
+			)
 		),
 		calculate: rx.pipe(
 			rx.merge(
 				rx.pipe(
 					source.callbag(()=>jb.ui.widgetUserRequests),
+					rx.takeUntil('%$$testFinished%'),
+					rx.log('userRequest from widgetUserRequests'),
 					widget.headless('%$control()%', '%$tstWidgetId%'),
+					rx.log('uiDelta from headless'),
 					rx.delay(1)
 				),
 				'%$checkResultRx%'
 			),
 			rx.var('html',uiTest.vdomResultAsHtml()),
 			rx.var('success', pipeline('%$html%', call('expectedResult'), last())),
-			rx.log('checkTestResult'),
+			rx.log('check testResult'),
 			rx.filter('%$success%'), // if failure wait for the next delta
 			rx.map('%$success%'),
 			rx.do( ({},{tstWidgetId})=>jb.ui.unmount(jb.ui.headless[tstWidgetId].body)),
@@ -173,9 +179,9 @@ jb.component('uiFrontEndTest', {
 				  const countersErr = countersErrors(expectedCounters,allowError)
 				  const expectedResultCtx = ctx.setData(elemToTest.outerHTML)
 				  const expectedResultRes = expectedResult(expectedResultCtx)
-				  jb.log('checkTestResult',[expectedResultRes, expectedResultCtx])
+				  jb.log('check testResult',[expectedResultRes, expectedResultCtx])
 				  const success = !! (expectedResultRes && !countersErr)
-				  if (renderDOM && !show) document.body.removeChild(elemToTest)
+				  if (renderDOM && !show && !singleTest) document.body.removeChild(elemToTest)
 				  const result = { id: testID, success, reason: countersErr, renderDOM}
 			  	  // default cleanup
 				  if (!show && !singleTest)
@@ -237,8 +243,8 @@ function countersErrors(expectedCounters,allowError) {
 		return jb.spy.logs.error[0][0]
 
 	return Object.keys(expectedCounters || {}).map(
-		counter => expectedCounters[counter] !== (jb.spy.logs.$counters[counter] || 0)
-			? `${counter}: ${jb.spy.logs.$counters[counter]} instead of ${expectedCounters[counter]}` : '')
+		exp => expectedCounters[exp] != jb.spy.count(exp)
+			? `${exp}: ${jb.spy.count(exp)} instead of ${expectedCounters[exp]}` : '')
 		.filter(x=>x)
 		.join(', ')
 }
@@ -321,19 +327,19 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,includeHeavy}
 			  document.getElementById('progress').innerHTML = `<div id=${testID}>${index++}: ${testID} started</div>`
 			  times[testID] = { start: new Date().getTime() }
 			  jb.test.cleanBeforeRun(tstCtx)
+			  jb.log('start test',[testID])
 			  console.log('starting ' + testID )
 			  return fromPromise(Promise.resolve(tstCtx.run({$:testID}))
 				.then(res => {
 					$testFinished.next(1)
-					console.log('end      ' + testID )
 					document.getElementById('progress').innerHTML = `<div id=${testID}>${testID} finished</div>`
 					res.duration = new Date().getTime() - times[testID].start
-					if (!res)
-						return { id: testID, success: false, reason: 'empty result'}
 					if (res && res.success && jb.logs.error.length > 0) {
 						res.success = false;
 						res.reason = 'log errors: ' + JSON.stringify(jb.logs.error)
 					}
+					console.log('end      ' + testID, res)
+					jb.log('end test',[testID,res])
 					res.show = () => {
 						const profile = e[1].impl.control
 						const elem = document.createElement('div')

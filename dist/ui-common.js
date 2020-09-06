@@ -469,7 +469,7 @@ jb.component('sink.action', {
   params: [
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
   ],
-  impl: (ctx,action) => jb.callbag.subscribe(ctx2 => { Object.assign(ctx2.vars,{$sinkCtx:ctx}); return action(ctx2) })
+  impl: (ctx,action) => jb.callbag.subscribe(ctx2 => { ctx; return action(ctx2) })
 })
 
 jb.component('sink.data', {
@@ -761,7 +761,7 @@ class WatchableValueByRef {
         this.primitiveArraysDeltas[ref.$jb_obj[jbId]].push(opOnRef.$splice)
       }
       opEvent.newVal = newVal;
-      jb.log('doOp',[opEvent,...arguments]);
+      jb.log('watchable set',[opEvent,...arguments]);
       // TODO: split splice event to delete, push, and insert
       if (this.transactionEventsLog)
         this.transactionEventsLog.push(opEvent)
@@ -926,7 +926,7 @@ class WatchableValueByRef {
     return ref && ref.$jb_obj && this.watchable(ref.$jb_obj);
   }
   objectProperty(obj,prop,ctx) {
-    jb.log('objectProperty',[...arguments]);
+    jb.log('watchable objectProperty',[...arguments]);
     if (!obj)
       return jb.logError('objectProperty: null obj',ctx)
     if (obj && obj[prop] && this.watchable(obj[prop]) && !obj[prop][isProxy])
@@ -947,7 +947,7 @@ class WatchableValueByRef {
     if (!ref || !this.isRef(ref) || !this.pathOfRef(ref))
       return jb.logError('writeValue: err in ref', srcCtx, ref, value);
 
-    jb.log('writeValue',['watchable',this.asStr(ref),value,ref,srcCtx]);
+    jb.log('watchable writeValue',[ref,value,ref,srcCtx]);
     if (ref.$jb_val)
       return ref.$jb_val(value);
     if (this.val(ref) === value) return;
@@ -1041,9 +1041,10 @@ class WatchableValueByRef {
       const recycleCounter = req.cmpOrElem && req.cmpOrElem.getAttribute && +(req.cmpOrElem.getAttribute('recycleCounter') || 0)
       const obs = { ...req, subject, key, recycleCounter, ctx }
 
-      this.observables.push(obs);
+      this.observables.push(obs)
       this.observables.sort((e1,e2) => jb.ui.comparePaths(e1.ctx.path, e2.ctx.path))
-      jb.log('registerCmpObservable',[obs])
+      const cmp = req.cmpOrElem && (req.cmpOrElem.ver ? req.cmpOrElem : req.cmpOrElem._component)
+      jb.log('register uiComp observable',[jb.ui.cmpV(cmp), key,obs])
       return subject
   }
   frame() {
@@ -1057,7 +1058,7 @@ class WatchableValueByRef {
         const isOld = jb.path(obs.cmpOrElem,'getAttribute') && (+obs.cmpOrElem.getAttribute('recycleCounter')) > obs.recycleCounter
         if (jb.path(obs.cmpOrElem,'_destroyed') || isOld) {
           if (this.observables.indexOf(obs) != -1) {
-            jb.log('removeCmpObservable',[obs])
+            jb.log('remove cmpObservable',[obs])
             this.observables.splice(this.observables.indexOf(obs), 1);
           }
         } else {
@@ -1077,7 +1078,7 @@ class WatchableValueByRef {
       const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
       const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
       if (diff == -1 || diff == 0 || includeChildrenYes || includeChildrenStructure) {
-          jb.log('notifyCmpObservable',['notify change',e.srcCtx,obs,e])
+          jb.log('notify cmpObservable',[e.srcCtx,obs,e])
           obs.subject.next(e)
       }
   }
@@ -1260,6 +1261,10 @@ function toVdomOrStr(val) {
 }
 
 function stripVdom(vdom) {
+    if (jb.path(vdom,'constructor.name') != 'VNode') {
+        jb.logError('stripVdom - not vnode', vdom)
+        return jb.ui.h('span')
+    }
     return { ...vdom, parentNode: null, children: vdom.children && vdom.children.map(x=>stripVdom(x)) }
 }
 
@@ -1351,7 +1356,7 @@ function compareVdom(b,a) {
 function filterDelta(delta) { // for logging
     const doFilter = dlt => ({
         attributes: jb.objFromEntries(jb.entries(dlt.attributes)
-            .filter(e=> ['jb-ctx','cmp-id','originators','__afterIndex','mount-ctx','frontEnd'].indexOf(e[0]) == -1)),
+            .filter(e=> ['jb-ctx','cmp-id','originators','__afterIndex','full-cmp-ctx','frontEnd'].indexOf(e[0]) == -1)),
         children: dlt.children
     })
     return doFilter(delta)
@@ -1381,7 +1386,7 @@ function compareCtxAtt(att,atts1,atts2) {
 
 function applyNewVdom(elem,vdomAfter,{strongRefresh, ctx} = {}) {
     const widgetId = jb.ui.headlessWidgetId(elem)
-    jb.log('applyNewVdom',[widget,...arguments])
+    jb.log('applyNew vdom',[widget,...arguments])
     if (widgetId) {
         const cmpId = elem.getAttribute('cmp-id')
         const delta = compareVdom(elem,vdomAfter)
@@ -1398,12 +1403,12 @@ function applyNewVdom(elem,vdomAfter,{strongRefresh, ctx} = {}) {
         unmount(elem)
         const newElem = render(vdomAfter,elem.parentElement)
         elem.parentElement.replaceChild(newElem,elem)
-        jb.log('replaceTop',[newElem,elem])
+        jb.log('replaceTop vdom',[newElem,elem])
         elem = newElem
     } else {
         const vdomBefore = elem instanceof ui.VNode ? elem : elemToVdom(elem)
         const delta = compareVdom(vdomBefore,vdomAfter)
-        jb.log('applyDeltaTop',['apply',vdomBefore,vdomAfter,active,...arguments], {modifier: record => record.push(filterDelta(delta)) })
+        jb.log('applyDeltaTop vdom',['apply',vdomBefore,vdomAfter,active,...arguments], {modifier: record => record.push(filterDelta(delta)) })
         applyDeltaToDom(elem,delta)
     }
     ui.refreshFrontEnd(elem)
@@ -1428,7 +1433,7 @@ function elemToVdom(elem) {
 }
 
 function applyDeltaToDom(elem,delta) {
-    jb.log('applyDelta',[...arguments])
+    jb.log('applyDelta dom',[...arguments])
     const children = delta.children
     if (delta.children) {
         const childrenArr = delta.children.length ? Array.from(Array(delta.children.length).keys()).map(i=>children[i]) : []
@@ -1442,14 +1447,14 @@ function applyDeltaToDom(elem,delta) {
             if (toDelete) {
                 unmount(toDelete)
                 elem.removeChild(toDelete)
-                jb.log('removeChild',[toDelete,elem,delta])
+                jb.log('removeChild dom',[toDelete,elem,delta])
             }
         }
         childrenArr.forEach((e,i) => {
             if (e.$ == 'delete') {
                 unmount(childElems[i])
                 elem.removeChild(childElems[i])
-                jb.log('removeChild',[childElems[i],e,elem,delta])
+                jb.log('removeChild dom',[childElems[i],e,elem,delta])
             } else {
                 applyDeltaToDom(childElems[i],e)
                 !sameOrder && (childElems[i].setAttribute('__afterIndex',e.__afterIndex))
@@ -1457,7 +1462,7 @@ function applyDeltaToDom(elem,delta) {
         })
         toAppend.forEach(e=>{
             const newElem = render(e,elem)
-            jb.log('appendChild',[newElem,e,elem,delta])
+            jb.log('appendChild dom',[newElem,e,elem,delta])
             !sameOrder && (newElem.setAttribute('__afterIndex',e.__afterIndex))
         })
         if (!sameOrder) {
@@ -1475,7 +1480,7 @@ function applyDeltaToDom(elem,delta) {
             Array.from(elem.childNodes).filter(ch=>ch.nodeName == '#text')
                 .forEach(ch=>{
                     elem.removeChild(ch)
-                    jb.log('removeChild',['remove leftover',ch,elem,delta])
+                    jb.log('removeChild dom leftover',[ch,elem,delta])
                 })
     }
     jb.entries(delta.attributes)
@@ -1484,7 +1489,7 @@ function applyDeltaToDom(elem,delta) {
 }
 
 function applyDeltaToVDom(elem,delta) {
-    jb.log('applyDelta',[...arguments])
+    jb.log('applyDelta vdom',[...arguments])
     if (delta.children) {
         const toAppend = delta.children.toAppend || []
         toAppend.forEach(ch => elem.children.push(jb.ui.unStripVdom(ch,elem)))
@@ -1502,7 +1507,7 @@ function applyDeltaToVDom(elem,delta) {
 function setAtt(elem,att,val) {
     if (att[0] !== '$' && val == null) {
         elem.removeAttribute(att)
-        jb.log('htmlChange',['remove',...arguments])
+        jb.log('dom change remove',[...arguments])
     } else if (att.indexOf('on-') == 0 && val != null && !elem[`registeredTo-${att}`]) {
         elem.addEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev,val))
         elem[`registeredTo-${att}`] = true
@@ -1511,17 +1516,17 @@ function setAtt(elem,att,val) {
         elem[`registeredTo-${att}`] = false
     } else if (att === 'checked' && elem.tagName.toLowerCase() === 'input') {
         elem.checked = !!val
-        jb.log('htmlChange',['checked',...arguments])
+        jb.log('dom set checked',[...arguments])
+    } else if (att.indexOf('$__input') === 0) {
+        try {
+            setInput(JSON.parse(val))
+        } catch(e) {}
     } else if (att.indexOf('$__') === 0) {
         const id = att.slice(3)
         try {
             elem[id] = JSON.parse(val) || ''
         } catch (e) {}
-        jb.log('htmlChange',[`data ${id}`,...arguments])
-    } else if (att.indexOf('$__input') === 0) {
-        try {
-            setInput(JSON.parse(val))
-        } catch(e) {}
+        jb.log('dom set data',[`data ${id}`,...arguments])
     } else if (att === '$focus' && val) {
         elem.setAttribute('_focus',val)
         jb.ui.focus(elem,val)
@@ -1530,31 +1535,33 @@ function setAtt(elem,att,val) {
         elem.scrollTop = elem.scrollHeight
     } else if (att === '$text') {
         elem.innerText = val || ''
-        jb.log('htmlChange',['text',...arguments])
+        jb.log('dom set text',[...arguments])
     } else if (att === '$html') {
         elem.innerHTML = val || ''
-        jb.log('htmlChange',['html',...arguments])
+        jb.log('dom set html',[...arguments])
     } else if (att === 'style' && typeof val === 'object') {
         elem.setAttribute(att,jb.entries(val).map(e=>`${e[0]}:${e[1]}`).join(';'))
-        jb.log('htmlChange',['setAtt',...arguments])
+        jb.log('dom set style',[...arguments])
     } else if (att == 'value' && elem.tagName.match(/select|input|textarea/i) ) {
         const active = document.activeElement === elem
         if (elem.value == val) return
         elem.value = val
         if (active && document.activeElement !== elem) { debugger; elem.focus() }
-        jb.log('htmlChange',['setAtt',...arguments])
+        jb.log('dom set elem value',[...arguments])
     } else {
         elem.setAttribute(att,val)
-        jb.log('htmlChange',['setAtt',...arguments])
+        jb.log('dom set att',[...arguments])
     }
 
     function setInput({assumedVal,newVal,selectionStart}) {
         const el = jb.ui.findIncludeSelf(elem,'input,textarea')[0]
+        jb.log('dom set input check',[el, assumedVal,newVal,selectionStart])
         if (!el)
             return jb.logError('setInput: can not find input elem')
         if (assumedVal != el.value) 
             return jb.logError('setInput: assumed val is not as expected',assumedVal, el.value)
         const active = document.activeElement === el
+        jb.log('dom set input',[el, assumedVal,newVal,selectionStart])
         el.value = newVal
         if (typeof selectionStart == 'number') 
             el.selectionStart = selectionStart
@@ -1587,7 +1594,7 @@ function unmount(elem) {
 function render(vdom,parentElem,prepend) {
     jb.log('render',[...arguments])
     function doRender(vdom,parentElem) {
-        jb.log('htmlChange',['createElement',...arguments])
+        jb.log('dom createElement',[...arguments])
         const elem = createElement(parentElem.ownerDocument, vdom.tag)
         jb.entries(vdom.attributes).forEach(e=>setAtt(elem,e[0],e[1]))
         jb.asArray(vdom.children).map(child=> doRender(child,elem)).forEach(el=>elem.appendChild(el))
@@ -1623,7 +1630,7 @@ Object.assign(jb.ui, {
             return jb.logError('can not find closest elem with jb-ctx',elem)
         const method = specificMethod && typeof specificMethod == 'string' ? specificMethod : `on${ev.type}Handler`
         const ctxIdToRun = jb.ui.ctxIdOfMethod(elem,method)
-        const widgetId = ev.overrideWidgetId || jb.ui.frontendWidgetId(elem)
+        const widgetId = jb.ui.frontendWidgetId(elem) || ev.tstWidgetId
         return ctxIdToRun && {$:'runCtxAction', widgetId, ctxIdToRun, vars: {ev: jb.ui.buildUserEvent(ev, elem)} }
     },
     calcElemProps(elem) {
@@ -1674,7 +1681,7 @@ Object.assign(jb.ui, {
         else {
             if (!jb.ctxDictionary[ctxIdToRun])
                 return jb.logError(`no ctx found for method: ${method} ${ctxIdToRun}`, elem, data, vars)
-            jb.log('BEMethod',[method,elem,data,vars])
+            jb.log('backend method',[method,elem,data,vars])
             jb.ui.runCtxAction(jb.ctxDictionary[ctxIdToRun],data,vars)
         }
     },
@@ -1685,11 +1692,10 @@ Object.assign(jb.ui, {
     BECmpsDestroyNotification: jb.callbag.subject(),
     renderingUpdates: jb.callbag.subject(),
     takeUntilCmpDestroyed(cmp) {
-        const {pipe,take,filter,log,takeUntil} = jb.callbag
+        const {pipe,take,Do,filter,takeUntil} = jb.callbag
         return takeUntil(pipe(jb.ui.BECmpsDestroyNotification,
-            log(`takeUntilCmpDestroyed ${cmp.cmpId}`),
             filter(x=>x.cmps.find(_cmp => _cmp.cmpId == cmp.cmpId && _cmp.ver == cmp.ver)),
-            log(`Activated takeUntilCmpDestroyed ${cmp.cmpId}`),
+            Do(() => jb.log('uiComp backend takeUntilCmpDestroyed',[cmp.cmpId,cmp])),
             take(1),
         ))
     },
@@ -1722,7 +1728,7 @@ Object.assign(jb.ui, {
         if (!forceNow)
             return jb.delay(1000).then(()=>ui.garbageCollectCtxDictionary(true))
    
-        const used = 'jb-ctx,mount-ctx,pick-ctx,props-ctx,methods,frontEnd,originators'.split(',')
+        const used = 'jb-ctx,full-cmp-ctx,pick-ctx,props-ctx,methods,frontEnd,originators'.split(',')
             .flatMap(att=>querySelectAllWithWidgets(`[${att}]`).flatMap(el => el.getAttribute(att).split(',').map(x=>Number(x.split('-').pop()))))
                     .sort((x,y)=>x-y)
 
@@ -1755,9 +1761,10 @@ Object.assign(jb.ui, {
     },
     applyDeltaToCmp(delta, ctx, cmpId, elem) {
         elem = elem || jb.ui.elemOfCmp(ctx,cmpId)
+        jb.log('applyDelta uiComp',[delta, ctx, cmpId, elem])
         if (elem instanceof jb.ui.VNode) {
             jb.ui.applyDeltaToVDom(elem, delta)
-            jb.ui.renderingUpdates.next({delta,cmpId,widgetId: ctx.vars.widgetId})
+            jb.ui.renderingUpdates.next({delta,cmpId,widgetId: ctx.vars.headlessWidgetId})
         } else if (elem) {
             jb.ui.applyDeltaToDom(elem, delta)
             jb.ui.refreshFrontEnd(elem)
@@ -1779,17 +1786,18 @@ Object.assign(jb.ui, {
         if (jb.ui.inStudio()) // updating to latest version of profile
             ctx.profile = jb.execInStudio({$: 'studio.val', path: ctx.path})
         const cmp = ctx.profile.$ == 'openDialog' ? ctx.run(dialog.buildComp()) : ctx.runItself()
-        jb.log('refreshElem',[ctx,cmp, ...arguments]);
+        jb.log('dom refresh check',[jb.ui.cmpV(cmp),ctx,cmp, ...arguments]);
 
         if (jb.path(options,'cssOnly')) {
             const existingClass = (elem.className.match(/(w|jb-)[0-9]+/)||[''])[0]
             const cssStyleElem = Array.from(document.querySelectorAll('style')).map(el=>({el,txt: el.innerText})).filter(x=>x.txt.indexOf(existingClass + ' ') != -1)[0].el
-            jb.log('refreshElem',['hashCss',cmp.cssLines,ctx,cmp, ...arguments])
+            jb.log('dom refresh css',[cmp.cssLines,ctx,cmp, ...arguments])
             return jb.ui.hashCss(cmp.calcCssLines(),cmp.ctx,{existingClass, cssStyleElem})
         }
         const hash = cmp.init()
         if (hash != null && hash == elem.getAttribute('cmpHash'))
-            return jb.log('refreshElem',['stopped by hash', hash, ...arguments]);
+            return jb.log('refresh dom stopped by hash',[hash, ...arguments])
+        jb.log('dom refresh',[jb.ui.cmpV(cmp),ctx,cmp, ...arguments])
         cmp && applyNewVdom(elem, h(cmp), {strongRefresh, ctx})
         //jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
     },
@@ -1801,14 +1809,14 @@ Object.assign(jb.ui, {
         const findIn = jb.path(e,'srcCtx.vars.headlessWidgetId') || jb.path(e,'srcCtx.vars.testID') ? e.srcCtx : jb.frame.document
         const elemsToCheck = jb.ui.find(findIn,'[observe]')
         const elemsToCheckCtxBefore = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
-        jb.log('notifyObservableElems',['elemsToCheck',elemsToCheck,e])
+        jb.log('check observableElems',[elemsToCheck,e])
         elemsToCheck.forEach((elem,i) => {
             //.map((elem,i) => ({elem,i, phase: phaseOfElem(elem,i) })).sort((x1,x2)=>x1.phase-x2.phase).forEach(({elem,i}) => {
             if (elemsToCheckCtxBefore[i] != elem.getAttribute('jb-ctx')) return // the elem was already refreshed during this process, probably by its parent
             let refresh = false, strongRefresh = false, cssOnly = true
             elem.getAttribute('observe').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{
                 if (!obs.allowSelfRefresh && jb.ui.findIncludeSelf(elem,`[cmp-id="${jb.path(e.srcCtx, 'vars.cmp.cmpId')}"]`)[0]) 
-                    return jb.log('notifyObservableElems',['blocking self refresh', elem, obs,e])
+                    return jb.log('blocking self refresh observableElems',[elem, obs,e])
                 const obsPath = watchHandler.removeLinksFromPath(watchHandler.pathOfRef(obs.ref))
                 if (!obsPath)
                     return jb.logError('observer ref path is empty',obs,e)
@@ -1819,7 +1827,7 @@ Object.assign(jb.ui, {
                 const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
                 const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
                 if (diff == -1 || diff == 0 || includeChildrenYes || includeChildrenStructure) {
-                    jb.log('notifyObservableElem',['notify refresh',elem,e.srcCtx,obs,e])
+                    jb.log('refresh observableElems',[elem,e.srcCtx,obs,e])
                     refresh = true
                 }
             })
@@ -1847,10 +1855,10 @@ Object.assign(jb.ui, {
 class frontEndCmp {
     constructor(elem, keepState) {
         this.ctx = jb.ui.parents(elem,{includeSelf: true}).map(elem=>elem.ctxForFE).filter(x=>x)[0] || new jb.jbCtx()
-        //this.ctx = new jb.jbCtx()
         this.state = { ...elem.state, ...(keepState && jb.path(elem._component,'state')), frontEndStatus: 'initializing' }
         this.base = elem
         this.cmpId = elem.getAttribute('cmp-id')
+        this.ver= elem.getAttribute('cmp-ver')
         this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve)
         elem._component = this
         this.runFEMethod('calcProps',null,null,true)
@@ -1863,7 +1871,7 @@ class frontEndCmp {
     }
     runFEMethod(method,data,_vars,silent) {
         if (this.state.frontEndStatus != 'ready' && ['init','calcProps'].indexOf(method) == -1)
-            return jb.logError('frontEnd - running method before init', [this, ...arguments])
+            return jb.logError('frontEnd - running method before init', [jb.ui.cmpV(this),this, ...arguments])
         const toRun = (this.base.frontEndMethods || []).filter(x=>x.method == method)
         if (toRun.length == 0 && !silent)
             return jb.logError(`frontEnd - no method ${method}`,this)
@@ -1873,11 +1881,11 @@ class frontEndCmp {
             const vars = {cmp: this, $state: this.state, el: this.base, ...this.base.vars, ..._vars }
             const ctxToUse = this.ctx.setData(data).setVars(vars)
             if (feMEthod.frontEndMethod._prop)
-                jb.log('FEProp',[feMEthod.frontEndMethod._prop,this.base,feMEthod.frontEndMethod,ctxToUse])
+                jb.log('frontend uiComp prop',[jb.ui.cmpV(this),feMEthod.frontEndMethod._prop,this.base,feMEthod.frontEndMethod,ctxToUse])
             else if (feMEthod.frontEndMethod._flow)
-                jb.log('FEFlow',[this.base,...feMEthod.frontEndMethod._flow,feMEthod.frontEndMethod,ctxToUse])
+                jb.log('frontend uiComp flow',[jb.ui.cmpV(this),this.base,...feMEthod.frontEndMethod._flow,feMEthod.frontEndMethod,ctxToUse])
             else 
-                jb.log('FEMethod',[method,this.base,feMEthod.frontEndMethod,ctxToUse])
+                jb.log('frontend uiComp method',[jb.ui.cmpV(this),method,this.base,feMEthod.frontEndMethod,ctxToUse])
             ctxToUse.run(feMEthod.frontEndMethod.action)
         }, `frontEnd-${method}`))
     }
@@ -1890,7 +1898,7 @@ class frontEndCmp {
         }, 'enrichUserEvent'))
     }
     refresh(state, options) {
-        jb.log('refreshReq',[...arguments])
+        jb.log('frontend uiComp refresh request',[jb.ui.cmpV(this),...arguments])
         if (this._deleted) return
         Object.assign(this.state, state)
         this.base.state = this.state
@@ -1938,7 +1946,7 @@ jb.callbag.subscribe(e=> {
         jb.ui.widgetUserRequests.next({$:'destroy', ...e })
     else 
         cmps.forEach(cmp=>cmp.destroyCtxs.forEach(ctxIdToRun => {
-            jb.log('BEMethod',['destroy',cmp.el])
+            jb.log('backend method destroy uiComp',[cmp.cmpId, cmp.el])
             jb.ui.runCtxAction(jb.ctxDictionary[ctxIdToRun])
         } ))
 })(jb.ui.BECmpsDestroyNotification)
@@ -2007,7 +2015,7 @@ class JbComponent {
         this.originators = [ctx]
     }
     init() {
-        jb.log('initCmp',[this])
+        jb.log('init uiComp',[jb.ui.cmpV(this),this])
         const baseVars = this.ctx.vars
         this.ctx = (this.extendCtxFuncs||[])
             .reduce((acc,extendCtx) => tryWrapper(() => extendCtx(acc,this),'extendCtx'), this.ctx.setVar('cmp',this))
@@ -2022,7 +2030,6 @@ class JbComponent {
     }
  
     calcRenderProps() {
-        jb.log('renderVdom',[this])
         if (!this.initialized)
             this.init();
         (this.initFuncs||[]).sort((p1,p2) => p1.phase - p2.phase)
@@ -2039,7 +2046,6 @@ class JbComponent {
                 this.toObserve.push({id: e.prop, cmp: this, ref,...e})
             const val = jb.val(ref)
             this.renderProps[e.prop] = e.transformValue(this.ctx.setData(val == null ? '' : val))
-            jb.log('calcRenderProp',[e.prop,this.renderProps[e.prop],this])    
         })
 
         ;[...(this.calcProp || []),...(this.method || [])].forEach(p=>typeof p.value == 'function' && Object.defineProperty(p.value, 'name', { value: p.id }))
@@ -2054,11 +2060,11 @@ class JbComponent {
             })
         ;(this.calcProp || []).filter(p => p.userStateProp).forEach(p => this.state[p.id] = this.renderProps[p.id])
         Object.assign(this.renderProps,this.styleParams, this.state)
-        jb.log('renderProps',[this.renderProps, this])
         return this.renderProps
     }
 
     renderVdom() {
+        jb.log('uiComp start renderVdom',[jb.ui.cmpV(this), this])
         this.calcRenderProps()
         if (this.ctx.probe && this.ctx.probe.outOfTime) return
         this.template = this.template || (() => '')
@@ -2099,23 +2105,24 @@ class JbComponent {
                 this.renderProps.cmpHash != null && {cmpHash: this.renderProps.cmpHash}
             )
         }
-        jb.log('renRes',[this.ctx, vdom, this]);
+        jb.log('uiComp end renderVdom',[jb.ui.cmpV(this), vdom, this])
         this.afterFirstRendering = true
         return vdom
     }
     renderVdomAndFollowUp() {
         const vdom = this.renderVdom()
         jb.delay(1).then(() => (this.followUpFuncs||[]).forEach(f=> tryWrapper(() => { 
-            jb.log('followUp',[f,this])
-            f(this.calcCtx) 
-        }, 'followUp') ) )
+            jb.log('uiComp followUp',[jb.ui.cmpV(this),f,this])
+            f(this.calcCtx)
+        }, 'followUp') ) ).then(()=> this.ready = true)
+        this.ready = false
         return vdom
     }
     hasBEMethod(method) {
         (this.method||[]).filter(h=> h.id == method)[0]
     }
     runBEMethod(method, data, vars) {
-        jb.log('BEMethod',[method,this,data,vars])
+        jb.log('uiComp backend method',[jb.ui.cmpV(this),method,this,data,vars])
         if (jb.path(vars,'$state'))
             Object.assign(this.state,vars.$state)
         const methodImpls = (this.method||[]).filter(h=> h.id == method)
@@ -2125,6 +2132,7 @@ class JbComponent {
     }
     refresh(state,options) {
         const elem = jb.ui.elemOfCmp(this.ctx,this.cmpId)
+        jb.log('backend uiComp refresh request',[jb.ui.cmpV(this),elem,state,options])
         jb.ui.BECmpsDestroyNotification.next({ cmps: [{cmpId: this.cmpId, ver: this.ver, destroyCtxs: [] }] })
         elem && jb.ui.refreshElem(elem,state,options) // cmpId may be deleted
     }
@@ -2244,11 +2252,11 @@ Object.assign(jb.ui,{
         // block the preview from stealing the studio focus
         const now = new Date().getTime();
         const lastStudioActivity = jb.studio.lastStudioActivity || jb.path(jb,['studio','studioWindow','jb','studio','lastStudioActivity'])
-        jb.log('focus',['request',srcCtx, logTxt, now - lastStudioActivity, elem,srcCtx])
+        jb.log('focus request',[srcCtx, logTxt, now - lastStudioActivity, elem,srcCtx])
         if (jb.studio.previewjb == jb && jb.path(jb.frame.parent,'jb.resources.studio.project') != 'studio-helper' && lastStudioActivity && now - lastStudioActivity < 1000)
             return
         jb.delay(1).then(_=> {
-          jb.log('focus',['apply',srcCtx,logTxt,elem,srcCtx])
+          jb.log('focus dom',[srcCtx,logTxt,elem,srcCtx])
           elem.focus()
         })
     },
@@ -2298,7 +2306,8 @@ Object.assign(jb.ui,{
     extendWithServiceRegistry(_ctx) {
       const ctx = _ctx || new jb.jbCtx()
       return ctx.setVar('$serviceRegistry',{baseCtx: ctx, parentRegistry: ctx.vars.$serviceRegistry, services: {}})
-    }
+    },
+    cmpV: cmp => cmp ? `${cmp.cmpId};${cmp.ver}` : ''
 })
 
 // ***************** inter-cmp services
@@ -2316,7 +2325,7 @@ jb.component('service.registerBackEndService', {
   ],
   impl: feature.init((ctx,{$serviceRegistry},{id,service}) => {
     const _id = id(ctx), _service = service(ctx)
-    jb.log('registerService',[_id,_service,ctx.componentContext])
+    jb.log('register service',[_id,_service,ctx.componentContext])
     if ($serviceRegistry.services[_id])
       jb.logError('overridingService',[_id,$serviceRegistry.services[_id],_service,ctx])
     $serviceRegistry.services[_id] = _service
@@ -2640,7 +2649,7 @@ jb.component('followUp.flow', {
       {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
   ],
   impl: followUp.action(rx.pipe(ctx => {
-    jb.log('followUp',[ctx.componentContext.callerPath,ctx])
+    jb.log('register followUp',[jb.ui.cmpV(ctx.vars.cmp),ctx.componentContext.callerPath,ctx])
     const fuCtx = ctx.setVar('followUpCmp',ctx.vars.cmp)
     const elems = fuCtx.run('%$elems()%') 
     elems.splice(1,0,fuCtx.run(followUp.takeUntilCmpDestroyed()))
@@ -2767,7 +2776,7 @@ jb.component('variable', {
 
       const fullName = name + ':' + cmp.ctx.id;
       if (fullName == 'items') debugger
-      jb.log('var',['new-watchable',ctx,fullName])
+      jb.log('create watchable var',[ctx,fullName])
       const refToResource = jb.mainWatchableHandler.refOfPath([fullName]);
       jb.writeValue(refToResource,value(ctx),ctx)
       return ctx.setVar(name, refToResource);
@@ -2786,17 +2795,24 @@ jb.component('calculatedVar', {
   ],
   impl: features(
     onDestroy(writeValue('%${%$name%}:{%$cmp/cmpId%}%', null)),
-    followUp.flow(
-      rx.merge(pipeline('%$watchRefs()%', source.watchableData('%%'))),
-//      rx.log('calculatedVar'),
+    followUp.flow(rx.pipe(
+      rx.merge(
+        (ctx,{},{watchRefs}) => watchRefs(ctx).map(ref=>ctx.setData(ref).run(source.watchableData('%%')) )
+        // pipeline(
+        //   '%$watchRefs()%', 
+        //   ctx => { jb.log('register watchableData calculatedVar',[ctx.data,ctx]); return ctx.data },
+        //   source.watchableData('%%')
+        // )
+      ),
+      rx.log('check calculatedVar'),
       rx.map('%$value()%'),
       sink.data('%${%$name%}:{%$cmp/cmpId%}%')
-    ),
+    )),
     ctx => ({
       extendCtx: (_ctx,cmp) => {
         const {name,value} = ctx.componentContext.params
         const fullName = name + ':' + cmp.cmpId;
-        jb.log('calculated var',['new-resource',ctx,fullName])
+        jb.log('create watchable calculatedVar',[ctx,fullName])
         jb.resource(fullName, jb.val(value(_ctx)));
         const ref = _ctx.exp(`%$${fullName}%`,'ref')
         return _ctx.setVar(name, ref);
@@ -2963,7 +2979,7 @@ jb.component('action.refreshCmp', {
     {id: 'options', dynamic: true },
   ],
   impl: (ctx,state,options) => {
-    jb.log('refreshCmp',[ctx,state,options])
+    jb.log('refresh uiComp',[jb.path(ctx.vars.cmp,'cmpId'),ctx,state,options])
     ctx.vars.cmp && ctx.vars.cmp.refresh(state(ctx),{srcCtx: ctx, ...options(ctx)})
   }
 })
@@ -3105,7 +3121,7 @@ jb.component('key.eventMatchKey', {
         {id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V' },
     ],
     impl: (ctx, e, key) => {
-      jb.log('eventMatchKey',[e,key])
+      jb.log('search eventMatchKey',[e,key])
       if (!key) return;
       const dict = { tab: 9, delete: 46, tab: 9, esc: 27, enter: 13, right: 39, left: 37, up: 38, down: 40}
     
@@ -3119,7 +3135,7 @@ jb.component('key.eventMatchKey', {
     
       if (key.match(/^[Cc]trl/) && !e.ctrlKey) return
       if (key.match(/^[Aa]lt/) && !e.altKey) return
-      jb.log('eventMatchKey',['result',e.keyCode == keyCode,e,key,e.keyCode,keyCode])
+      jb.log(`${e.keyCode == keyCode ? 'found': 'notFound'} eventMatchKey`,[e,key,e.keyCode,keyCode])
       return e.keyCode == keyCode
   }
 })
@@ -3169,7 +3185,7 @@ jb.component('feature.onKey', {
           if (! cmp.hasOnKeyHanlder) {
             cmp.hasOnKeyHanlder = true
             ctx.run(rx.pipe(source.frontEndEvent('keydown'), frontEnd.addUserEvent(), 
-              rx.map(key.eventToMethod('%%',el)), rx.filter('%%'), rx.log(11), sink.BEMethod('%%')))
+              rx.map(key.eventToMethod('%%',el)), rx.filter('%%'), rx.log('uiComp onKey %$key%'), sink.BEMethod('%%')))
           }
       })
     )
@@ -3253,8 +3269,7 @@ jb.component('frontEnd.selectionKeySourceService', {
       }
       if (autoFocs)
         jb.ui.focus(el,'selectionKeySource')
-      jb.log('selectionKeySource',['registered',cmp,el,ctx])
-      //el.addEventListener('blur', e => jb.log('focus',['blur',e]))
+      jb.log('register selectionKeySource',[cmp.cmpId,cmp,el,ctx])
       return pipe(el.keydown_src, takeUntil(cmp.destroyed))
     })
   )
@@ -3274,18 +3289,19 @@ jb.component('source.findSelectionKeySource', {
     rx.merge( 
       source.data([]),
       (ctx,{selectionKeySourceCmpId}) => {
+        jb.log('search selectionKeySource',[selectionKeySourceCmpId,ctx])
         const el = jb.ui.elemOfCmp(ctx,selectionKeySourceCmpId)
         const ret = jb.path(el, '_component.selectionKeySource')
         if (!ret)
-          jb.log('selectionKeySourceNotFound',[selectionKeySourceCmpId,el,ctx])
+          jb.log('selectionKeySource notFound',[selectionKeySourceCmpId,el,ctx])
         else
-          jb.log('foundSelectionKeySource',[el,selectionKeySourceCmpId,ctx])
+          jb.log('found selectionKeySource',[el,selectionKeySourceCmpId,ctx])
         return ret
       }
     ),
     rx.takeUntil('%$clientCmp.destroyed%'),
     rx.var('cmp','%$clientCmp%'),
-    rx.log('fromSelectionKeySource')
+    rx.log('from selectionKeySource')
   )
 })
 ;
@@ -3565,6 +3581,7 @@ jb.component('text.allowAsynchValue', {
     calcProp('%$propId%', firstSucceeding('%$$state/{%$propId%}%','%$$props/{%$propId%}%' )),
     followUp.flow(
       source.any(If('%$$state/{%$propId%}%','','%$$props/{%$propId%}%')),
+      rx.log('followUp allowAsynchValue'),
       rx.map(({data}) => jb.ui.toVdomOrStr(data)),
       sink.refreshCmp( ctx => ctx.run(obj(prop('%$propId%','%%'))))
     ),
@@ -4032,7 +4049,7 @@ function writeFieldData(ctx,cmp,value,oneWay) {
 jb.ui.checkValidationError = (cmp,val,ctx) => {
   const err = validationError();
   if (cmp.state.error != err) {
-    jb.log('field',['setErrState',cmp,err])
+    jb.log('field set error state',[cmp,err])
     cmp.refresh({valid: !err, error:err}, {srcCtx: ctx.componentContext});
   }
 
@@ -4326,7 +4343,7 @@ jb.component('dialog.init', {
 	type: 'feature',
 	impl: features(
 		calcProp('dummy',ctx => console.log('dialog.init', ctx)),
-		calcProp('title', '%$$model/title%'),
+		calcProp('title', '%$$model/title()%'),
 		calcProp('contentComp', '%$$model/content%'),
 		calcProp('hasMenu', '%$$model/menu/profile%'),
 		calcProp('menuComp', '%$$model/menu%'),
@@ -4772,21 +4789,21 @@ jb.component('dialogs.defaultStyle', {
 				source.subject(dialogs.changeEmitter()),
 				rx.filter('%open%'),
 				rx.var('dialogVdom', pipeline(dialog.buildComp('%dialog%'),'%renderVdomAndFollowUp()%')),
-				rx.var('delta', obj(prop('children', obj(prop('toAppend', pipeline('%$dialogVdom%',({data}) => jb.ui.stripVdom(data))))))),
-				rx.log('addDialog','%dialog/id%'),
+				rx.var('delta', obj(prop('children', obj(prop('toAppend', pipeline('%$dialogVdom%', ({data}) => jb.ui.stripVdom(data))))))),
+				rx.log('open dialog','%dialog/id%'),
 				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
 			),
 			followUp.flow(source.subject(dialogs.changeEmitter()), 
 				rx.filter('%close%'),
 				rx.var('dlgCmpId', dialogs.cmpIdOfDialog('%dialogId%')),
 				rx.var('delta', obj(prop('children', obj(prop('deleteCmp','%$dlgCmpId%'))))),
-				rx.log('closeDialog','%dialogId%'),
+				rx.log('close dialog','%dialogId%'),
 				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
 			),
 			followUp.flow(source.subject(dialogs.changeEmitter()), 
 				rx.filter('%closeByCmpId%'),
 				rx.var('delta', obj(prop('children', obj(prop('deleteCmp','%cmpId%'))))),
-				rx.log('closeDialog','%dialogId%'),
+				rx.log('close dialog','%dialogId%'),
 				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
 			)			
 		]
@@ -4887,7 +4904,7 @@ jb.component('itemlist.infiniteScroll', {
         from: $state.visualLimit.shownItems,
         noOfItems: Math.min($state.visualLimit.totalItems,$state.visualLimit.shownItems + pageSize) - $state.visualLimit.shownItems
       })),
-      rx.log('infiniteScroll.FE'),
+      rx.log('itemlist frontend infiniteScroll'),
       rx.filter(and('%$scrollPercentFromTop%>0.9','%$fetchItems/noOfItems%!=0',not('%$applicative%'),not('%$$state/visualLimit/waitingForServer%'))),
       rx.do(writeValue('%$$state/visualLimit/waitingForServer%','true')),
       sink.BEMethod('fetchMoreItems','%$fetchItems%')
@@ -5033,16 +5050,15 @@ jb.component('itemlist.keyboardSelection', {
         source.findSelectionKeySource()
       ), 
       frontEnd.addUserEvent(),
-      rx.log('itemlistOnkeydown')
+      rx.log('itemlist frontend onkeydown')
     ),
     frontEnd.flow('%$cmp.onkeydown%', rx.filter('%keyCode%==13'), rx.filter('%$cmp.state.selected%'), sink.BEMethod('onEnter','%$cmp.state.selected%') ),
     frontEnd.flow(
       '%$cmp.onkeydown%',
       rx.filter(not('%ctrlKey%')),
-      rx.log('itemlist0'),
       rx.filter(inGroup(list(38,40),'%keyCode%')),
       rx.map(itemlist.nextSelected(If('%keyCode%==40',1,-1))), 
-      rx.log('itemlistOnkeydownNextSelected'),
+      rx.log('itemlist frontend nextSelected'),
       sink.subjectNext('%$cmp/selectionEmitter%')
     ),
     frontEnd.var('autoFocus','%$autoFocus%'),
@@ -5504,7 +5520,7 @@ jb.component('menu.control', {
     const menuModel = _model || { options: [], ctx, title: ''}
     const ctxWithModel = ctx.setVars({menuModel})
     const ctxToUse = ctx.vars.topMenu ? ctxWithModel : jb.ui.extendWithServiceRegistry(ctxWithModel.setVar('topMenu',{}))
-    jb.log('menuControl',[menuModel.depth,ctx.vars.topMenu,ctx.vars.menuModel,ctx])
+    jb.log('menu uiComp',[menuModel.depth,ctx.vars.topMenu,ctx.vars.menuModel,ctx])
     return jb.ui.ctrl(ctxToUse, features(
       () => ({ctxForPick: menuModel.ctx }),
       calcProp('title','%$menuModel.title%'),
@@ -5713,7 +5729,7 @@ jb.component('menu.selectionKeySourceService', {
         return true
       }
       jb.ui.focus(el,'menu.selectionKeySourceService',ctx.componentContext)
-      jb.log('menuKeySource',['registered',cmp,el,ctx])
+      jb.log('menuKeySource register',[cmp.cmpId,cmp,el,ctx])
       return pipe(el.keydown_src, takeUntil(cmp.destroyed))
     })
   ))
@@ -5721,7 +5737,7 @@ jb.component('menu.selectionKeySourceService', {
 
 jb.component('menu.passMenuKeySource', {
   type: 'feature',
-  impl: frontEnd.var('menuKeySourceCmpId', ctx => ctx.exp('%$$serviceRegistry/services/menuKeySource%')),
+  impl: frontEnd.var('menuKeySourceCmpId', '%$$serviceRegistry/services/menuKeySource%'),
 })
 
 jb.component('source.findMenuKeySource', {
@@ -5734,19 +5750,20 @@ jb.component('source.findMenuKeySource', {
     rx.merge( 
       source.data([]),
       (ctx,{menuKeySourceCmpId},{clientCmp}) => {
+        jb.log('search menuKeySource',[menuKeySourceCmpId,clientCmp,ctx])
         const el = jb.ui.elemOfCmp(ctx,menuKeySourceCmpId)
         const ret = jb.path(el, '_component.menuKeySource')
         if (!ret)
-          jb.log('menuKeySourceNotFound',[clientCmp,menuKeySourceCmpId,el,ctx])
+          jb.log('menuKeySource notFound',[menuKeySourceCmpId,clientCmp,el,ctx])
         else
-          jb.log('foundMenuKeySource',[clientCmp,el,menuKeySourceCmpId,ctx])
+          jb.log('found menuKeySource',[menuKeySourceCmpId,clientCmp,el,ctx])
         return ret
       }
     ),
     rx.var('cmp','%$clientCmp%'),
     rx.takeUntil('%$cmp.destroyed%'),
     rx.filter(menu.isRelevantMenu()),
-    rx.do(ctx => jb.log('fromMenuKeySource',[ctx.vars.cmp.base,ctx.data.keyCode,ctx]))
+    rx.log('from menuKeySource')
   )
 })
 
@@ -5763,7 +5780,7 @@ jb.component('menu.isRelevantMenu', {
     const leftArrowEntryBefore = isSelected && (key == 37 || key == 27) && depth == maxDepth 
     const rightArrowCurrentEntry = isSelected && (key == 39 || key == 13) && depth == maxDepth + 1
     const res = upDownInMenu || leftArrowEntryBefore || rightArrowCurrentEntry
-    jb.log('isRelevantMenu',[key,res,el,{isMenu,isSelected,depth,maxDepth,upDownInMenu,leftArrowEntryBefore,rightArrowCurrentEntry,menus}])
+    jb.log('check isRelevantMenu',[res,key,el,{isMenu,isSelected,depth,maxDepth,upDownInMenu,leftArrowEntryBefore,rightArrowCurrentEntry,menus}])
     return res
   }
 })
@@ -6555,14 +6572,15 @@ jb.component('editableText.picklistHelper', {
         const input = jb.ui.findIncludeSelf(cmp.base,'input,textarea')[0];
         return { input: { value: input.value, selectionStart: input.selectionStart}}
     }),
-    method('onEnter', action.if(dialog.isOpen('%$popupId%'), runActions(call('onEnter'),dialog.closeDialogById('%$popupId%')))),
+    method('onEnter', action.if(ctx => ctx.run(dialog.isOpen('%$popupId%')), runActions(call('onEnter'),dialog.closeDialogById('%$popupId%')))),
     method('onEsc', action.if(dialog.isOpen('%$popupId%'), runActions(call('onEsc'),dialog.closeDialogById('%$popupId%')))),
     feature.serviceRegistey(),
     frontEnd.selectionKeySourceService(),
     frontEnd.prop('keyUp', rx.pipe(source.frontEndEvent('keyup'), rx.delay(1))),
-    frontEnd.flow('%$cmp/keyUp%', rx.log('keyup'), rx.filter('%keyCode% == 13'), editableText.addUserEvent(), rx.log('enter'), sink.BEMethod('onEnter')),
+    frontEnd.flow('%$cmp/keyUp%', rx.log('editableTextHelper keyup'), rx.filter('%keyCode% == 13'), editableText.addUserEvent(), 
+      sink.BEMethod('onEnter')),
     frontEnd.flow('%$cmp/keyUp%', rx.filter(not(inGroup(list(13,27,38,40),'%keyCode%'))), editableText.addUserEvent(),
-      rx.log('refresh'), sink.BEMethod('refresh')),
+      sink.BEMethod('refresh')),
     frontEnd.flow('%$cmp/keyUp%', rx.filter('%keyCode% == 27'), editableText.addUserEvent(), sink.BEMethod('onEsc')),
 
     onDestroy(action.runBEMethod('closePopup')),
@@ -6580,7 +6598,7 @@ jb.component('editableText.setInputState', {
     {id: 'cmp', defaultValue: '%$cmp%'},
   ],
   impl: action.applyDeltaToCmp((ctx,{},{newVal,selectionStart,assumedVal}) => {
-    console.log('setInput',ctx)
+    jb.log('create userRequest',[newVal,ctx])
     return {attributes: { $__input: JSON.stringify({ assumedVal: assumedVal, newVal,selectionStart })}}
   } ,'%$cmp/cmpId%')
 })
@@ -6624,9 +6642,10 @@ jb.component('editableText.helperPopup', {
     method('onEsc', action.if(dialog.isOpen('%$popupId%'), runActions(call('onEsc'),dialog.closeDialogById('%$popupId%')))),
     frontEnd.selectionKeySourceService(),
     frontEnd.prop('keyUp', rx.pipe(source.frontEndEvent('keyup'), rx.delay(1))),
-    frontEnd.flow('%$cmp/keyUp%', rx.log('keyup'), rx.filter('%keyCode% == 13'), editableText.addUserEvent(), rx.log('enter'), sink.BEMethod('onEnter')),
+    frontEnd.flow('%$cmp/keyUp%', rx.log('editableTextHelper keyup'), rx.filter('%keyCode% == 13'), 
+      editableText.addUserEvent(), sink.BEMethod('onEnter')),
     frontEnd.flow('%$cmp/keyUp%', rx.filter(not(inGroup(list(13,27,38,40),'%keyCode%'))), editableText.addUserEvent(),
-      rx.log('refresh'), sink.BEMethod('refresh')),
+      sink.BEMethod('refresh')),
     frontEnd.flow('%$cmp/keyUp%', rx.filter('%keyCode% == 27'), editableText.addUserEvent(), sink.BEMethod('onEsc')),
 
     onDestroy(action.runBEMethod('closePopup')),

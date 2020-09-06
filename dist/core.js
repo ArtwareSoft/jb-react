@@ -2,16 +2,16 @@ if (typeof frame == 'undefined')
   frame = typeof self === 'object' ? self : typeof global === 'object' ? global : {};
 var jb = (function() {
 function jb_run(ctx,parentParam,settings) {
-  ctx.profile && log('req', [...arguments])
+  ctx.profile && log('core request', [ctx.id,...arguments])
   if (ctx.probe && ctx.probe.outOfTime)
     return
   if (jb.ctxByPath) jb.ctxByPath[ctx.path] = ctx
   let res = do_jb_run(...arguments)
   if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
       res = ctx.probe.record(ctx,res) || res
-  ctx.profile && log('res', [ctx,res,parentParam,settings])
+  ctx.profile && log('core result', [ctx.id,res,ctx,parentParam,settings])
   if (typeof res == 'function') assignDebugInfoToFunc(res,ctx)
-  return res;
+  return res
 }
 
 function do_jb_run(ctx,parentParam,settings) {
@@ -322,7 +322,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
     }
   }
   function implicitlyCreateInnerObject(parent,prop,refHandler) {
-    jb.log('implicitlyCreateInnerObject',[...arguments]);
+    jb.log('core innerObject created',[...arguments]);
     parent[prop] = {};
     refHandler.refreshMapDown && refHandler.refreshMapDown(parent)
     return parent[prop]
@@ -601,7 +601,7 @@ const simpleValueByRefHandler = {
     return v && v.$jb_parent ? v.$jb_parent[v.$jb_property] : v;
   },
   writeValue(to,value,srcCtx) {
-    jb.log('writeValue',['valueByRefWithjbParent',value,to,srcCtx]);
+    jb.log('writeValue jbParent',[value,to,srcCtx]);
     if (!to) return;
     if (to.$jb_val)
       to.$jb_val(this.val(value))
@@ -915,6 +915,49 @@ Object.assign(jb, {
 
 (function() {
 const spySettings = { 
+	mutableVerbs: [
+		'set','refresh','writeValue','splice',
+		'focus','state','method','applyDelta','render','scrollBy'
+	],
+	verbOntology: [
+		['startEnd','start','end'],
+		['startEnd','started','completed'],
+		['startEnd',['search','select'],['found','notFound']],
+		['startEnd','request','result'],
+		['startEnd',['create','build'], ['built','created']],
+		['startEnd','set','changed'],
+		['startEnd','open','close'],
+		['startEnd','waitFor','arrived']
+	],
+	verbs: [
+		'sent','received','check', 'register', 'timeout', 'objectProperty',
+	],
+	lifecycleVerbs: ['init', 'changed','destroyed'],
+	flowLifeCycle: ['define','register','next','completed','error'],
+	ontology: [
+		['kindOf','uiComp', ['dialog','itemlist','tree','tabletree','editableBoolean','helperPopup']],
+		['partsOf','uiComp',['frontend','backend']],
+		['partsOf','widget',['headlessWidget','widgetFrontend']],
+		['aspects','ui', ['watchable','keyboard','service']],
+		['objects','ui', ['uiComp','field','uiDelta','vdom','var', 'calculatedVar', 'selectionKeySource']],
+		['processIn','ui', ['renderVdom']],
+
+		['subSystem','studio', ['probe','preview','picker','codeMirrorHint']],
+		['objects','studio', ['script']],
+		['objects','tests', ['testResult','userInput','userRequest','dataTest','uiTest','waitForCompReady','waitForSelector']],
+		['processIn','tests', ['test']],
+		['processIn','preview',['loadPreview']],
+		['processIn','probe',['runCircuit']],
+		['kindOf', 'store',['watchable','jbParent']],
+		['kindOf', 'var',['calculatedVar']],
+		['kindOf', 'service',['selectionKeySource']],
+
+		['subSystem','ui', ['menu']],
+
+		['objects','menu', ['']],
+		['kindOf', 'service',['menuKeySource']],
+
+	],
 	moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable,scriptChange,resLog,setGridAreaVals,dragableGridItemThumb,pptrStarted,pptrEmit,pptrActivity,pptrResultData', 
 	groups: {
 		none: '',
@@ -961,7 +1004,8 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 		parseLogsList(list, depth = 0) {
 			if (depth > 3) return []
 			return (list || '').split(',').filter(x => x[0] !== '-').filter(x => x)
-				.flatMap(x=> settings.groups[x] ? this.parseLogsList(settings.groups[x],depth+1) : [x])
+				// .flatMap(x=> settings.groups[x] ? this.parseLogsList(settings.groups[x],depth+1) : [x])
+				//.flatMap(x=> settings.groups[x] ? this.parseLogsList(settings.groups[x],depth+1) : [x])
 		},
 		init() {
 			const includeLogsFromParam = this.parseLogsList(this.spyParam)
@@ -972,29 +1016,22 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			}, {})
 			this.initialized = true
 		},
-		shouldLog(logName, record) {
-			return this.spyParam === 'all' || Array.isArray(record) && this.includeLogs[logName]
+		shouldLog(logNames, record) {
+			return this.spyParam === 'all' || Array.isArray(record) && 
+				logNames.split(' ').reduce( (acc,logName)=>acc || this.includeLogs[logName],false)
 		},
-		log(logName, record, {takeFrom, funcTitle, modifier} = {}) {
+		log(logNames, _record, {takeFrom, funcTitle, modifier} = {}) {
 			if (!this.initialized) this.init()
-			this.logs[logName] = this.logs[logName] || []
-			this.logs.$counters = this.logs.$counters || {}
-			this.logs.$counters[logName] = this.logs.$counters[logName] || 0
-			this.logs.$counters[logName]++
-			if (!this.shouldLog(logName, record)) {
-				return
-			}
-			this.logs.$index = this.logs.$index || 0
-			record.index = this.logs.$index++
+			this.updateCounters(logNames)
+			if (!this.shouldLog(logNames, _record)) return
+			const record = [logNames,..._record]
+			record.index = this.logs.length
 			record.source = this.source(takeFrom)
 			const now = new Date()
 			record._time = `${now.getSeconds()}:${now.getMilliseconds()}`
 			record.time = now.getTime()
 			record.mem = memoryUsage() / 1000000
 			record.activeElem = typeof jb != 'undefined' && jb.path && jb.path(jb.frame.document,'activeElement')
-			if (this.logs[logName].length > settings.MAX_LOG_SIZE) {
-				this.logs[logName] = this.logs[logName].slice(-1 * Math.floor(settings.MAX_LOG_SIZE / 2))
-			}
 			if (record[0] == null && typeof funcTitle === 'function') {
 				record[0] = funcTitle()
 			}
@@ -1004,8 +1041,8 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			if (typeof modifier === 'function') {
 				modifier(record)
 			}
-			this.logs[logName].push(record)
-			this._obs && this._obs.next({logName,record})
+			this.logs.push(record)
+			this._obs && this._obs.next({logNames,record})
 		},
 		source(takeFrom) {
 			Error.stackTraceLimit = 50
@@ -1039,29 +1076,46 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			this.includeLogs = (logs||'').split(',').reduce((acc,log) => {acc[log] = true; return acc },{})
 		},
 		clear() {
-			Object.keys(this.logs).forEach(log => delete this.logs[log])
+			this.logs = []
+			this.counters = {}
 		},
-        search(pattern) {
-			if (isRegex(pattern)) {
-				return this.all(x => pattern.test(x.join(' ')))
-			} else if (isString(pattern)) {
-				return this.all(x => x.join(' ').indexOf(pattern) !== -1)
-			} else if (Number.isInteger(pattern)) {
-				return this.all().slice(-1 * pattern)
+		updateCounters(logNames) {
+			this.counters = this.counters || {}
+			this.counters[logNames] = this.counters[logNames] || 0
+			this.counters[logNames]++
+		},
+		count(query) { // dialog core | menu !keyboard  
+			const _or = query.split(/,|\|/)
+			return _or.reduce((acc,exp) => 
+				unify(acc,	exp.split(' ').reduce((acc,logNameExp) => filter(acc,logNameExp), jb.entries(this.counters))) 
+			,[]).reduce((acc,e) => acc+e[1], 0)
+
+			function filter(set,exp) {
+				return (exp[0] == '!') 
+					? set.filter(rec=>!rec[0].match(new RegExp(`\\b${exp.slice(1)}\\b`)))
+					: set.filter(rec=>rec[0].match(new RegExp(`\\b${exp}\\b`)))
+			}
+			function unify(set1,set2) {
+				return [...set1,...set2]
 			}
 		},
-		all(filter) {
-			return [].concat.apply([], Object.keys(this.logs).filter(log => Array.isArray(this.logs[log])).map(module =>
-				this.logs[module].map(arr => {
-					const res = [arr.index, module, ...arr]
-					systemProps.forEach(p => {
-						res[p] = arr[p]
-					})
-					return res
-				}))).
-				filter((e, i, src) => !filter || filter(e, i, src)).
-				sort((x, y) => x.index - y.index)
-		}
+		search(query) { // dialog core | menu !keyboard  
+			const _or = query.split(/,|\|/)
+			return _or.reduce((acc,exp) => 
+				unify(acc,	exp.split(' ').reduce((acc,logNameExp) => filter(acc,logNameExp), this.logs)) 
+			,[])
+
+			function filter(set,exp) {
+				return (exp[0] == '!') 
+					? set.filter(rec=>!rec[0].match(new RegExp(`\\b${exp.slice(1)}\\b`)))
+					: set.filter(rec=>rec[0].match(new RegExp(`\\b${exp}\\b`)))
+			}
+			function unify(set1,set2) {
+				let res = [...set1,...set2].sort((x,y) => x.index < y.index)
+				return res.filter((r,i) => i == 0 || res[i-1].index != r.index) // unique
+			}
+	
+		},
 	}
 } 
 
