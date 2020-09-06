@@ -71,7 +71,7 @@ class WatchableValueByRef {
         this.primitiveArraysDeltas[ref.$jb_obj[jbId]].push(opOnRef.$splice)
       }
       opEvent.newVal = newVal;
-      jb.log('doOp',[opEvent,...arguments]);
+      jb.log('watchable set',[opEvent,...arguments]);
       // TODO: split splice event to delete, push, and insert
       if (this.transactionEventsLog)
         this.transactionEventsLog.push(opEvent)
@@ -236,7 +236,7 @@ class WatchableValueByRef {
     return ref && ref.$jb_obj && this.watchable(ref.$jb_obj);
   }
   objectProperty(obj,prop,ctx) {
-    jb.log('objectProperty',[...arguments]);
+    jb.log('watchable objectProperty',[...arguments]);
     if (!obj)
       return jb.logError('objectProperty: null obj',ctx)
     if (obj && obj[prop] && this.watchable(obj[prop]) && !obj[prop][isProxy])
@@ -257,7 +257,7 @@ class WatchableValueByRef {
     if (!ref || !this.isRef(ref) || !this.pathOfRef(ref))
       return jb.logError('writeValue: err in ref', srcCtx, ref, value);
 
-    jb.log('writeValue',['watchable',this.asStr(ref),value,ref,srcCtx]);
+    jb.log('watchable writeValue',[ref,value,ref,srcCtx]);
     if (ref.$jb_val)
       return ref.$jb_val(value);
     if (this.val(ref) === value) return;
@@ -351,9 +351,10 @@ class WatchableValueByRef {
       const recycleCounter = req.cmpOrElem && req.cmpOrElem.getAttribute && +(req.cmpOrElem.getAttribute('recycleCounter') || 0)
       const obs = { ...req, subject, key, recycleCounter, ctx }
 
-      this.observables.push(obs);
+      this.observables.push(obs)
       this.observables.sort((e1,e2) => jb.ui.comparePaths(e1.ctx.path, e2.ctx.path))
-      jb.log('registerCmpObservable',[obs])
+      const cmp = req.cmpOrElem && (req.cmpOrElem.ver ? req.cmpOrElem : req.cmpOrElem._component)
+      jb.log('register uiComp observable',[jb.ui.cmpV(cmp), key,obs])
       return subject
   }
   frame() {
@@ -367,7 +368,7 @@ class WatchableValueByRef {
         const isOld = jb.path(obs.cmpOrElem,'getAttribute') && (+obs.cmpOrElem.getAttribute('recycleCounter')) > obs.recycleCounter
         if (jb.path(obs.cmpOrElem,'_destroyed') || isOld) {
           if (this.observables.indexOf(obs) != -1) {
-            jb.log('removeCmpObservable',[obs])
+            jb.log('remove cmpObservable',[obs])
             this.observables.splice(this.observables.indexOf(obs), 1);
           }
         } else {
@@ -387,7 +388,7 @@ class WatchableValueByRef {
       const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
       const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
       if (diff == -1 || diff == 0 || includeChildrenYes || includeChildrenStructure) {
-          jb.log('notifyCmpObservable',['notify change',e.srcCtx,obs,e])
+          jb.log('notify cmpObservable',[e.srcCtx,obs,e])
           obs.subject.next(e)
       }
   }

@@ -55,6 +55,7 @@ jb.component('widget.headless', {
                     talkback.forEach(tb=>tb(1))
             }) 
             filteredSrc(0, function headless(t, d) {
+                console.log('widgetOut',t,d)
                 if (t == 0) talkback.push(d)
                 if (t === 2) sink(t,d)
                 if (t === 1 && d) sink(t,ctx.dataObj(d))
@@ -94,13 +95,13 @@ jb.component('widget.twoTierWidget', {
         control: widget.frontEndCtrl('%$widgetId%'),
         features: followUp.flow(
             source.callbag(() => jb.ui.widgetUserRequests),
-            rx.log('userReq'),
+            rx.log('twoTierWidget userReq'),
             rx.filter('%widgetId% == %$widgetId%'),
             rx.takeWhile('%ev.type% != destroy'),
             //source.frontEndUserEvent('%$widgetId%'),
-            rx.log('sentToHeadless'),
+            rx.log('twoTierWidget sent to headless'),
             remote.operator(widget.headless(call('control'),'%$widgetId%'), '%$remote%'),
-            rx.log('arrives from headless'),
+            rx.log('twoTierWidget arrives from headless'),
             sink.frontEndDelta('%$widgetId%'),
         )
     })

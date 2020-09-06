@@ -91,7 +91,7 @@ jb.component('uiTest.waitForWithPipe', {
       features: group.wait({for: pipe(delay(1), 'hello')})
     }),
     expectedResult: and(contains('hello'), not(contains('loading'))),
-    expectedCounters: {initCmp: 4}
+    expectedCounters: {'init uiComp': 4}
   })
 })
 
@@ -102,7 +102,7 @@ jb.component('uiTest.waitForRx', {
       features: group.wait({for: rx.pipe(source.interval(10), rx.take(1), rx.map('hello'))})
     }),
     expectedResult: and(contains('hello'), not(contains('loading'))),
-    expectedCounters: {initCmp: 4}
+    expectedCounters:  {'init uiComp': 4}
   })
 })
 
@@ -143,7 +143,7 @@ jb.component('uiTest.asynchLabel', {
   impl: uiTest({
     control: text({text: pipe(delay(1), 'hello'), features: text.allowAsynchValue()}),
     expectedResult: contains('hello'),
-    expectedCounters: {renderVdom: 2, calcRenderProp: 1},
+    expectedCounters: {'start renderVdom': 2, 'refresh uiComp !request': 1},
   })
 })
 
@@ -164,7 +164,7 @@ jb.component('uiTest.waitForWithVar', {
 //       text: '%$person/name%',
 //       features: watchObservable({ toWatch: (ctx,{promise}) => jb.callbag.fromPromise(promise) })
 //     }),
-//     expectedCounters: {renderVdom: 2},
+//     expectedCounters: {'start renderVdom': 2},
 //     expectedResult: contains('Homer Simpson')
 //   })
 // })
@@ -255,11 +255,11 @@ jb.component('uiTest.twoWayBinding', {
   impl: uiTest({
     control: group({
       controls: [
-        editableText({title: 'name', databind: '%$person/name%', features: id('inp')}),
+        editableText({title: 'name', databind: '%$person/name%'}),
         text('%$person/name%')
       ]
     }),
-    userInput: userInput.setText('hello', '#inp'),
+    userInput: userInput.setText('hello', 'input'),
     expectedResult: contains(['<span', 'hello', '</span'])
   })
 })
@@ -358,7 +358,7 @@ jb.component('uiTest.renderable', {
   impl: uiTest({
     control: button({
       title: 'click me',
-      action: openDialog({id: 'hello', content: text('jbart'), title: text('hello as label')})
+      action: openDialog({content: text('jbart'), title: text('hello as label')})
     }),
     userInput: userInput.click('button'),
     expectedResult: contains('hello as label')
@@ -695,7 +695,7 @@ jb.component('uiTest.itemlistMD.downArrow', {
         })
       ]
     }),
-    action: runActions(delay(1), uiAction.keyboardEvent({ selector: '#itemlist',type: 'keydown', keyCode: 40 }) , delay(1)),
+    action: runActions(delay(1), uiAction.keyboardEvent({ selector: '#itemlist',type: 'keydown', keyCode: 40 }) , delay(30)),
     expectedResult: contains(['Marge Simpson', 'Marge Simpson - watchable selected'])
   })
 })
@@ -869,7 +869,7 @@ jb.component('uiTest.editableText.blockSelfRefresh', {
     }),
     userInput: userInput.setText('hello','#inp'),
     expectedResult: true,
-    expectedCounters: {renderVdom: 2}
+    expectedCounters: {'start renderVdom': 2}
   })
 })
 
@@ -881,7 +881,7 @@ jb.component('uiTest.editableText.allowSelfRefresh', {
     }),
     userInput: userInput.setText('hello','#inp'),
     expectedResult: contains('hello'),
-    expectedCounters: {renderVdom: 4}
+    expectedCounters: {'start renderVdom': 4}
   })
 })
 
@@ -941,7 +941,9 @@ jb.component('uiTest.editableText.richPicklistHelperWithWatchingGroup', {
 
 jb.component('uiTest.editableText.richPicklistHelper.setInput', {
   impl: uiFrontEndTest({
+    timeout: 1000,
     allowError: true,
+    renderDOM: true,
     control: editableText({title: 'name', databind: '%$person/name%',
       features: [
         id('inp'),
@@ -951,13 +953,13 @@ jb.component('uiTest.editableText.richPicklistHelper.setInput', {
         })
       ]
     }),
-    action: runActions(
-      uiAction.keyboardEvent({selector: '#inp', type: 'keyup', keyCode: 37}),
-      delay(40), // opens the popup
-      uiAction.keyboardEvent({selector: '#inp', type: 'keydown', keyCode: 40}),
-//      delay(20),
-      uiAction.keyboardEvent({selector: '#inp', type: 'keyup', keyCode: 13})
-    ),
+    action: rx.pipe( 
+      source.data(0),
+      rx.do(uiAction.keyboardEvent({selector: '#inp', type: 'keyup', keyCode: 37})),
+      rx.flatMap(source.waitForSelector('.jb-popup')),
+      rx.do(uiAction.keyboardEvent({selector: '#inp', type: 'keydown', keyCode: 40})),
+      rx.do(uiAction.keyboardEvent({selector: '#inp', type: 'keyup', keyCode: 13})),
+    ),    
     expectedResult: contains('1111</input-val>')
   })
 })
@@ -1656,7 +1658,7 @@ jb.component('uiTest.firstSucceeding.watchRefreshOnCtrlChange', {
     control: uiTest.firstSucceedingWatchableSample(),
     userInput: userInput.click('#female'),
     expectedResult: contains('not male'),
-    expectedCounters: {renderVdom: 9}
+    expectedCounters: {'start renderVdom': 9}
   })
 })
 
@@ -1665,7 +1667,7 @@ jb.component('uiTest.firstSucceeding.sameDoesNotRecreate', {
     control: uiTest.firstSucceedingWatchableSample(),
     userInput: [userInput.click('#female'), userInput.click('#zee')],
     expectedResult: contains('not male'),
-    expectedCounters: {renderVdom: 9}
+    expectedCounters: {'start renderVdom': 9}
   })
 })
 
@@ -1674,7 +1676,7 @@ jb.component('uiTest.firstSucceeding.sameDoesNotRecreate', {
 //     control: uiTest.firstSucceedingWatchableSample(),
 //     userInput: [userInput.click('#female'), userInput.click('#male')],
 //     expectedResult: contains('a male'),
-//     expectedCounters: {renderVdom: 11}
+//     expectedCounters: {'start renderVdom': 11}
 //   })
 // })
 
@@ -1819,7 +1821,7 @@ jb.component('uiTest.watchableParentRefreshMaskChildren', {
     control: group({controls: text('%$person/name%'), features: watchRef('%$person/name%')}),
     action: writeValue('%$person/name%', 'hello'),
     expectedResult: contains('hello'),
-    expectedCounters: {notifyObservableElem: 1}
+    expectedCounters: {'refresh observableElems': 1}
   })
 })
 
@@ -1868,7 +1870,7 @@ jb.component('uiTest.infiniteScroll', {
       visualSizeLimit: '7',
       features: [
         css.height({height: '100', overflow: 'scroll'}),
-        itemlist.infiniteScroll(),
+        itemlist.infiniteScroll(4),
         css.width('100')
       ]
     }),

@@ -56,7 +56,7 @@ jb.component('action.refreshCmp', {
     {id: 'options', dynamic: true },
   ],
   impl: (ctx,state,options) => {
-    jb.log('refreshCmp',[ctx,state,options])
+    jb.log('refresh uiComp',[jb.path(ctx.vars.cmp,'cmpId'),ctx,state,options])
     ctx.vars.cmp && ctx.vars.cmp.refresh(state(ctx),{srcCtx: ctx, ...options(ctx)})
   }
 })
@@ -198,7 +198,7 @@ jb.component('key.eventMatchKey', {
         {id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V' },
     ],
     impl: (ctx, e, key) => {
-      jb.log('eventMatchKey',[e,key])
+      jb.log('search eventMatchKey',[e,key])
       if (!key) return;
       const dict = { tab: 9, delete: 46, tab: 9, esc: 27, enter: 13, right: 39, left: 37, up: 38, down: 40}
     
@@ -212,7 +212,7 @@ jb.component('key.eventMatchKey', {
     
       if (key.match(/^[Cc]trl/) && !e.ctrlKey) return
       if (key.match(/^[Aa]lt/) && !e.altKey) return
-      jb.log('eventMatchKey',['result',e.keyCode == keyCode,e,key,e.keyCode,keyCode])
+      jb.log(`${e.keyCode == keyCode ? 'found': 'notFound'} eventMatchKey`,[e,key,e.keyCode,keyCode])
       return e.keyCode == keyCode
   }
 })
@@ -262,7 +262,7 @@ jb.component('feature.onKey', {
           if (! cmp.hasOnKeyHanlder) {
             cmp.hasOnKeyHanlder = true
             ctx.run(rx.pipe(source.frontEndEvent('keydown'), frontEnd.addUserEvent(), 
-              rx.map(key.eventToMethod('%%',el)), rx.filter('%%'), rx.log(11), sink.BEMethod('%%')))
+              rx.map(key.eventToMethod('%%',el)), rx.filter('%%'), rx.log('uiComp onKey %$key%'), sink.BEMethod('%%')))
           }
       })
     )
@@ -346,8 +346,7 @@ jb.component('frontEnd.selectionKeySourceService', {
       }
       if (autoFocs)
         jb.ui.focus(el,'selectionKeySource')
-      jb.log('selectionKeySource',['registered',cmp,el,ctx])
-      //el.addEventListener('blur', e => jb.log('focus',['blur',e]))
+      jb.log('register selectionKeySource',[cmp.cmpId,cmp,el,ctx])
       return pipe(el.keydown_src, takeUntil(cmp.destroyed))
     })
   )
@@ -367,17 +366,18 @@ jb.component('source.findSelectionKeySource', {
     rx.merge( 
       source.data([]),
       (ctx,{selectionKeySourceCmpId}) => {
+        jb.log('search selectionKeySource',[selectionKeySourceCmpId,ctx])
         const el = jb.ui.elemOfCmp(ctx,selectionKeySourceCmpId)
         const ret = jb.path(el, '_component.selectionKeySource')
         if (!ret)
-          jb.log('selectionKeySourceNotFound',[selectionKeySourceCmpId,el,ctx])
+          jb.log('selectionKeySource notFound',[selectionKeySourceCmpId,el,ctx])
         else
-          jb.log('foundSelectionKeySource',[el,selectionKeySourceCmpId,ctx])
+          jb.log('found selectionKeySource',[el,selectionKeySourceCmpId,ctx])
         return ret
       }
     ),
     rx.takeUntil('%$clientCmp.destroyed%'),
     rx.var('cmp','%$clientCmp%'),
-    rx.log('fromSelectionKeySource')
+    rx.log('from selectionKeySource')
   )
 })

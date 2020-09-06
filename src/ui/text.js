@@ -33,6 +33,7 @@ jb.component('text.allowAsynchValue', {
     calcProp('%$propId%', firstSucceeding('%$$state/{%$propId%}%','%$$props/{%$propId%}%' )),
     followUp.flow(
       source.any(If('%$$state/{%$propId%}%','','%$$props/{%$propId%}%')),
+      rx.log('followUp allowAsynchValue'),
       rx.map(({data}) => jb.ui.toVdomOrStr(data)),
       sink.refreshCmp( ctx => ctx.run(obj(prop('%$propId%','%%'))))
     ),

@@ -22,7 +22,7 @@ st.Probe = class {
         const st = jb.studio
         this.maxTime = maxTime || 50
         this.startTime = new Date().getTime()
-        jb.log('probe',['runCircuit',pathToTrace, this])
+        jb.log('probe',['run circuit',pathToTrace, this])
         this.result = []
         this.result.visits = 0
         this.probe[pathToTrace] = this.result
@@ -48,7 +48,7 @@ st.Probe = class {
             .then(() =>{
                 this.completed = true
                 this.totalTime = new Date().getTime()-this.startTime
-                jb.log('probe',['completed',pathToTrace, this.result, this.totalTime, this])
+                jb.log('probe completed',[pathToTrace, this.result, this.totalTime, this])
                 // make values out of ref
                 this.result.forEach(obj=> { obj.out = jb.val(obj.out) ; obj.in.data = jb.val(obj.in.data)})
                 if (jb.resources.studio.project) { // studio and probe development
@@ -123,7 +123,7 @@ st.Probe = class {
         }
         const now = new Date().getTime()
         if (!this.outOfTime && now - this.startTime > this.maxTime && !ctx.vars.testID) {
-            jb.log('probe',['out of time',ctx.path, ctx,this,now])
+            jb.log('probe timeout',[ctx.path, ctx,this,now])
             this.outOfTime = true
             //throw 'out of time';
         }

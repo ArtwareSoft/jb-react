@@ -769,7 +769,6 @@ jb.callbag = {
       // },       
       sniffer: (source, snifferSubject) => (start, sink) => {
         if (start !== 0) return
-        jb.log('snifferStarted',[source])
         let talkback
         const talkbackWrapper = (t,d) => { report('talkback',t,d); talkback(t,d) }
         const sniffer = (t,d) => {

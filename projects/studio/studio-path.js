@@ -35,7 +35,7 @@ st.initCompsRefHandler = function(previewjb,allowedTypes) {
 	pipe(st.compsRefHandler.resourceChange,
 		takeUntil(st.compsRefHandler.stopListening),
 		subscribe(e=>{
-			jb.log('scriptChange',[e.srcCtx,e]);
+			jb.log('script changed',[e.srcCtx,e]);
 			st.scriptChange.next(e)
 			st.highlightByScriptPath(e.path)
 			writeValueToDataResource(e.path,e.newVal)
@@ -331,7 +331,7 @@ jb.component('studio.scriptChange', {
 
 jb.component('studio.watchScriptChanges', {
   type: 'feature',
-  impl: followUp.flow(studio.scriptChange(), rx.log('watchScriptChanges'), sink.refreshCmp())
+  impl: followUp.flow(studio.scriptChange(), rx.log('watch script refresh'), sink.refreshCmp())
 })
 
 jb.component('studio.watchComponents', {

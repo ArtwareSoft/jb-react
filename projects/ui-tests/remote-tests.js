@@ -7,7 +7,6 @@ jb.component('remoteTest.sourceNoTalkback', {
             source.remote(source.interval(1), remote.worker()),
             rx.take(2),
             rx.map('-%%-'),
-            rx.log('tst'),
       ), join(',')),
       expectedResult: equals('-0-,-1-')
     })
@@ -143,7 +142,6 @@ jb.component('remoteTest.twoTierWidget.changeText', {
     userInputRx: rx.pipe(
       source.waitForSelector('input'),
       rx.map(userInput.setText('danny')),
-      rx.log('userInputRx'),
     ),
     checkResultRx: () => jb.ui.renderingUpdates,
     expectedResult: contains('danny')

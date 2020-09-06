@@ -2,7 +2,7 @@ jb.component('userInput.eventToRequest', {
     type: 'rx',
     impl: rx.map( (ctx,{tstWidgetId}) => {
       const currentTarget = jb.ui.findIncludeSelf(jb.ui.widgetBody(ctx.setVars({headlessWidget: true,headlessWidgetId: tstWidgetId})),ctx.data.selector)[0]
-      return jb.ui.rawEventToUserRequest({ ...ctx.data, currentTarget }, 
+      return jb.ui.rawEventToUserRequest({ ...ctx.data, currentTarget, tstWidgetId }, 
         ctx.data.specificMethod)
     })
 })
@@ -47,9 +47,29 @@ jb.component('source.waitForSelector', {
   ],
   impl: rx.pipe(
     source.interval('%$interval%'),
-    rx.log('waitForSelectorCheck'),
+    rx.log('check waitForSelector'),
     rx.filter((ctx,{},{selector}) => jb.ui.elemOfSelector(selector,ctx)),
-    rx.log('waitForSelector'),
+    rx.log('arrived waitForSelector'),
+    rx.take(1)
+  )
+})
+
+jb.component('source.waitForCompReady', {
+  type: 'rx',
+  params: [
+    {id: 'selector', as: 'string' },
+    {id: 'interval', as: 'number', defaultValue: 50 },
+    {id: 'times', as: 'number', defaultValue: 30 },
+  ],
+  impl: rx.pipe(
+    source.interval('%$interval%'),
+    rx.log('check waitForCompReady'),
+    rx.filter((ctx,{},{selector}) => {
+      const el = jb.ui.elemOfSelector(selector,ctx)
+      const ctxId = el && el.getAttribute && el.getAttribute('full-cmp-ctx')
+      return jb.path(jb.ctxDictionary[ctxId],'vars.cmp.ready') === true
+    }),
+    rx.log('arrived waitForCompReady'),
     rx.take(1)
   )
 })
@@ -63,7 +83,7 @@ jb.component('uiAction.scrollBy', {
       impl: (ctx,selector,scrollBy) => {
         const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : ctx.vars.elemToTest
         elem && elem.scrollBy(scrollBy,scrollBy)
-        jb.log('scrollBy',[elem,ctx])
+        jb.log('scrollBy on dom',[elem,ctx])
       }
 })
 

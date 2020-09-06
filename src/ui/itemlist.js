@@ -91,7 +91,7 @@ jb.component('itemlist.infiniteScroll', {
         from: $state.visualLimit.shownItems,
         noOfItems: Math.min($state.visualLimit.totalItems,$state.visualLimit.shownItems + pageSize) - $state.visualLimit.shownItems
       })),
-      rx.log('infiniteScroll.FE'),
+      rx.log('itemlist frontend infiniteScroll'),
       rx.filter(and('%$scrollPercentFromTop%>0.9','%$fetchItems/noOfItems%!=0',not('%$applicative%'),not('%$$state/visualLimit/waitingForServer%'))),
       rx.do(writeValue('%$$state/visualLimit/waitingForServer%','true')),
       sink.BEMethod('fetchMoreItems','%$fetchItems%')
@@ -237,16 +237,15 @@ jb.component('itemlist.keyboardSelection', {
         source.findSelectionKeySource()
       ), 
       frontEnd.addUserEvent(),
-      rx.log('itemlistOnkeydown')
+      rx.log('itemlist frontend onkeydown')
     ),
     frontEnd.flow('%$cmp.onkeydown%', rx.filter('%keyCode%==13'), rx.filter('%$cmp.state.selected%'), sink.BEMethod('onEnter','%$cmp.state.selected%') ),
     frontEnd.flow(
       '%$cmp.onkeydown%',
       rx.filter(not('%ctrlKey%')),
-      rx.log('itemlist0'),
       rx.filter(inGroup(list(38,40),'%keyCode%')),
       rx.map(itemlist.nextSelected(If('%keyCode%==40',1,-1))), 
-      rx.log('itemlistOnkeydownNextSelected'),
+      rx.log('itemlist frontend nextSelected'),
       sink.subjectNext('%$cmp/selectionEmitter%')
     ),
     frontEnd.var('autoFocus','%$autoFocus%'),

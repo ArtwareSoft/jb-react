@@ -60,7 +60,7 @@ class JbComponent {
         this.originators = [ctx]
     }
     init() {
-        jb.log('initCmp',[this])
+        jb.log('init uiComp',[jb.ui.cmpV(this),this])
         const baseVars = this.ctx.vars
         this.ctx = (this.extendCtxFuncs||[])
             .reduce((acc,extendCtx) => tryWrapper(() => extendCtx(acc,this),'extendCtx'), this.ctx.setVar('cmp',this))
@@ -75,7 +75,6 @@ class JbComponent {
     }
  
     calcRenderProps() {
-        jb.log('renderVdom',[this])
         if (!this.initialized)
             this.init();
         (this.initFuncs||[]).sort((p1,p2) => p1.phase - p2.phase)
@@ -92,7 +91,6 @@ class JbComponent {
                 this.toObserve.push({id: e.prop, cmp: this, ref,...e})
             const val = jb.val(ref)
             this.renderProps[e.prop] = e.transformValue(this.ctx.setData(val == null ? '' : val))
-            jb.log('calcRenderProp',[e.prop,this.renderProps[e.prop],this])    
         })
 
         ;[...(this.calcProp || []),...(this.method || [])].forEach(p=>typeof p.value == 'function' && Object.defineProperty(p.value, 'name', { value: p.id }))
@@ -107,11 +105,11 @@ class JbComponent {
             })
         ;(this.calcProp || []).filter(p => p.userStateProp).forEach(p => this.state[p.id] = this.renderProps[p.id])
         Object.assign(this.renderProps,this.styleParams, this.state)
-        jb.log('renderProps',[this.renderProps, this])
         return this.renderProps
     }
 
     renderVdom() {
+        jb.log('uiComp start renderVdom',[jb.ui.cmpV(this), this])
         this.calcRenderProps()
         if (this.ctx.probe && this.ctx.probe.outOfTime) return
         this.template = this.template || (() => '')
@@ -152,23 +150,24 @@ class JbComponent {
                 this.renderProps.cmpHash != null && {cmpHash: this.renderProps.cmpHash}
             )
         }
-        jb.log('renRes',[this.ctx, vdom, this]);
+        jb.log('uiComp end renderVdom',[jb.ui.cmpV(this), vdom, this])
         this.afterFirstRendering = true
         return vdom
     }
     renderVdomAndFollowUp() {
         const vdom = this.renderVdom()
         jb.delay(1).then(() => (this.followUpFuncs||[]).forEach(f=> tryWrapper(() => { 
-            jb.log('followUp',[f,this])
-            f(this.calcCtx) 
-        }, 'followUp') ) )
+            jb.log('uiComp followUp',[jb.ui.cmpV(this),f,this])
+            f(this.calcCtx)
+        }, 'followUp') ) ).then(()=> this.ready = true)
+        this.ready = false
         return vdom
     }
     hasBEMethod(method) {
         (this.method||[]).filter(h=> h.id == method)[0]
     }
     runBEMethod(method, data, vars) {
-        jb.log('BEMethod',[method,this,data,vars])
+        jb.log('uiComp backend method',[jb.ui.cmpV(this),method,this,data,vars])
         if (jb.path(vars,'$state'))
             Object.assign(this.state,vars.$state)
         const methodImpls = (this.method||[]).filter(h=> h.id == method)
@@ -178,6 +177,7 @@ class JbComponent {
     }
     refresh(state,options) {
         const elem = jb.ui.elemOfCmp(this.ctx,this.cmpId)
+        jb.log('backend uiComp refresh request',[jb.ui.cmpV(this),elem,state,options])
         jb.ui.BECmpsDestroyNotification.next({ cmps: [{cmpId: this.cmpId, ver: this.ver, destroyCtxs: [] }] })
         elem && jb.ui.refreshElem(elem,state,options) // cmpId may be deleted
     }

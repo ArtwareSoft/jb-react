@@ -56,7 +56,7 @@ function writeFieldData(ctx,cmp,value,oneWay) {
 jb.ui.checkValidationError = (cmp,val,ctx) => {
   const err = validationError();
   if (cmp.state.error != err) {
-    jb.log('field',['setErrState',cmp,err])
+    jb.log('field set error state',[cmp,err])
     cmp.refresh({valid: !err, error:err}, {srcCtx: ctx.componentContext});
   }
 

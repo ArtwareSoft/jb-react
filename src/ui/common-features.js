@@ -140,7 +140,7 @@ jb.component('followUp.flow', {
       {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
   ],
   impl: followUp.action(rx.pipe(ctx => {
-    jb.log('followUp',[ctx.componentContext.callerPath,ctx])
+    jb.log('register followUp',[jb.ui.cmpV(ctx.vars.cmp),ctx.componentContext.callerPath,ctx])
     const fuCtx = ctx.setVar('followUpCmp',ctx.vars.cmp)
     const elems = fuCtx.run('%$elems()%') 
     elems.splice(1,0,fuCtx.run(followUp.takeUntilCmpDestroyed()))
@@ -267,7 +267,7 @@ jb.component('variable', {
 
       const fullName = name + ':' + cmp.ctx.id;
       if (fullName == 'items') debugger
-      jb.log('var',['new-watchable',ctx,fullName])
+      jb.log('create watchable var',[ctx,fullName])
       const refToResource = jb.mainWatchableHandler.refOfPath([fullName]);
       jb.writeValue(refToResource,value(ctx),ctx)
       return ctx.setVar(name, refToResource);
@@ -286,17 +286,24 @@ jb.component('calculatedVar', {
   ],
   impl: features(
     onDestroy(writeValue('%${%$name%}:{%$cmp/cmpId%}%', null)),
-    followUp.flow(
-      rx.merge(pipeline('%$watchRefs()%', source.watchableData('%%'))),
-//      rx.log('calculatedVar'),
+    followUp.flow(rx.pipe(
+      rx.merge(
+        (ctx,{},{watchRefs}) => watchRefs(ctx).map(ref=>ctx.setData(ref).run(source.watchableData('%%')) )
+        // pipeline(
+        //   '%$watchRefs()%', 
+        //   ctx => { jb.log('register watchableData calculatedVar',[ctx.data,ctx]); return ctx.data },
+        //   source.watchableData('%%')
+        // )
+      ),
+      rx.log('check calculatedVar'),
       rx.map('%$value()%'),
       sink.data('%${%$name%}:{%$cmp/cmpId%}%')
-    ),
+    )),
     ctx => ({
       extendCtx: (_ctx,cmp) => {
         const {name,value} = ctx.componentContext.params
         const fullName = name + ':' + cmp.cmpId;
-        jb.log('calculated var',['new-resource',ctx,fullName])
+        jb.log('create watchable calculatedVar',[ctx,fullName])
         jb.resource(fullName, jb.val(value(_ctx)));
         const ref = _ctx.exp(`%$${fullName}%`,'ref')
         return _ctx.setVar(name, ref);

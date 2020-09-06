@@ -2,16 +2,16 @@ if (typeof frame == 'undefined')
   frame = typeof self === 'object' ? self : typeof global === 'object' ? global : {};
 var jb = (function() {
 function jb_run(ctx,parentParam,settings) {
-  ctx.profile && log('req', [...arguments])
+  ctx.profile && log('core request', [ctx.id,...arguments])
   if (ctx.probe && ctx.probe.outOfTime)
     return
   if (jb.ctxByPath) jb.ctxByPath[ctx.path] = ctx
   let res = do_jb_run(...arguments)
   if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
       res = ctx.probe.record(ctx,res) || res
-  ctx.profile && log('res', [ctx,res,parentParam,settings])
+  ctx.profile && log('core result', [ctx.id,res,ctx,parentParam,settings])
   if (typeof res == 'function') assignDebugInfoToFunc(res,ctx)
-  return res;
+  return res
 }
 
 function do_jb_run(ctx,parentParam,settings) {
@@ -322,7 +322,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
     }
   }
   function implicitlyCreateInnerObject(parent,prop,refHandler) {
-    jb.log('implicitlyCreateInnerObject',[...arguments]);
+    jb.log('core innerObject created',[...arguments]);
     parent[prop] = {};
     refHandler.refreshMapDown && refHandler.refreshMapDown(parent)
     return parent[prop]
@@ -601,7 +601,7 @@ const simpleValueByRefHandler = {
     return v && v.$jb_parent ? v.$jb_parent[v.$jb_property] : v;
   },
   writeValue(to,value,srcCtx) {
-    jb.log('writeValue',['valueByRefWithjbParent',value,to,srcCtx]);
+    jb.log('writeValue jbParent',[value,to,srcCtx]);
     if (!to) return;
     if (to.$jb_val)
       to.$jb_val(this.val(value))

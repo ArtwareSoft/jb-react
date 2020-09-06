@@ -37,14 +37,15 @@ jb.component('editableText.picklistHelper', {
         const input = jb.ui.findIncludeSelf(cmp.base,'input,textarea')[0];
         return { input: { value: input.value, selectionStart: input.selectionStart}}
     }),
-    method('onEnter', action.if(dialog.isOpen('%$popupId%'), runActions(call('onEnter'),dialog.closeDialogById('%$popupId%')))),
+    method('onEnter', action.if(ctx => ctx.run(dialog.isOpen('%$popupId%')), runActions(call('onEnter'),dialog.closeDialogById('%$popupId%')))),
     method('onEsc', action.if(dialog.isOpen('%$popupId%'), runActions(call('onEsc'),dialog.closeDialogById('%$popupId%')))),
     feature.serviceRegistey(),
     frontEnd.selectionKeySourceService(),
     frontEnd.prop('keyUp', rx.pipe(source.frontEndEvent('keyup'), rx.delay(1))),
-    frontEnd.flow('%$cmp/keyUp%', rx.log('keyup'), rx.filter('%keyCode% == 13'), editableText.addUserEvent(), rx.log('enter'), sink.BEMethod('onEnter')),
+    frontEnd.flow('%$cmp/keyUp%', rx.log('editableTextHelper keyup'), rx.filter('%keyCode% == 13'), editableText.addUserEvent(), 
+      sink.BEMethod('onEnter')),
     frontEnd.flow('%$cmp/keyUp%', rx.filter(not(inGroup(list(13,27,38,40),'%keyCode%'))), editableText.addUserEvent(),
-      rx.log('refresh'), sink.BEMethod('refresh')),
+      sink.BEMethod('refresh')),
     frontEnd.flow('%$cmp/keyUp%', rx.filter('%keyCode% == 27'), editableText.addUserEvent(), sink.BEMethod('onEsc')),
 
     onDestroy(action.runBEMethod('closePopup')),
@@ -62,7 +63,7 @@ jb.component('editableText.setInputState', {
     {id: 'cmp', defaultValue: '%$cmp%'},
   ],
   impl: action.applyDeltaToCmp((ctx,{},{newVal,selectionStart,assumedVal}) => {
-    console.log('setInput',ctx)
+    jb.log('create userRequest',[newVal,ctx])
     return {attributes: { $__input: JSON.stringify({ assumedVal: assumedVal, newVal,selectionStart })}}
   } ,'%$cmp/cmpId%')
 })
@@ -106,9 +107,10 @@ jb.component('editableText.helperPopup', {
     method('onEsc', action.if(dialog.isOpen('%$popupId%'), runActions(call('onEsc'),dialog.closeDialogById('%$popupId%')))),
     frontEnd.selectionKeySourceService(),
     frontEnd.prop('keyUp', rx.pipe(source.frontEndEvent('keyup'), rx.delay(1))),
-    frontEnd.flow('%$cmp/keyUp%', rx.log('keyup'), rx.filter('%keyCode% == 13'), editableText.addUserEvent(), rx.log('enter'), sink.BEMethod('onEnter')),
+    frontEnd.flow('%$cmp/keyUp%', rx.log('editableTextHelper keyup'), rx.filter('%keyCode% == 13'), 
+      editableText.addUserEvent(), sink.BEMethod('onEnter')),
     frontEnd.flow('%$cmp/keyUp%', rx.filter(not(inGroup(list(13,27,38,40),'%keyCode%'))), editableText.addUserEvent(),
-      rx.log('refresh'), sink.BEMethod('refresh')),
+      sink.BEMethod('refresh')),
     frontEnd.flow('%$cmp/keyUp%', rx.filter('%keyCode% == 27'), editableText.addUserEvent(), sink.BEMethod('onEsc')),
 
     onDestroy(action.runBEMethod('closePopup')),

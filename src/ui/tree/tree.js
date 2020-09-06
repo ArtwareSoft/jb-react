@@ -379,7 +379,7 @@ jb.component('tree.redraw', {
 	  {id: 'strong', type: 'boolean', as: 'boolean'}
 	],
 	impl: (ctx,strong) => {
-		  jb.log('tree',['redraw',ctx.path, ...arguments]);
+		  jb.log('tree redraw',[jb.path(ctx.vars,'$tree.cmpId'), ...arguments])
 		  return ctx.vars.$tree && ctx.vars.$tree.redraw && ctx.vars.$tree.redraw(strong)
 	  }
 })

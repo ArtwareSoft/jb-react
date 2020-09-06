@@ -36,7 +36,7 @@ jb.component('dialog.init', {
 	type: 'feature',
 	impl: features(
 		calcProp('dummy',ctx => console.log('dialog.init', ctx)),
-		calcProp('title', '%$$model/title%'),
+		calcProp('title', '%$$model/title()%'),
 		calcProp('contentComp', '%$$model/content%'),
 		calcProp('hasMenu', '%$$model/menu/profile%'),
 		calcProp('menuComp', '%$$model/menu%'),
@@ -482,21 +482,21 @@ jb.component('dialogs.defaultStyle', {
 				source.subject(dialogs.changeEmitter()),
 				rx.filter('%open%'),
 				rx.var('dialogVdom', pipeline(dialog.buildComp('%dialog%'),'%renderVdomAndFollowUp()%')),
-				rx.var('delta', obj(prop('children', obj(prop('toAppend', pipeline('%$dialogVdom%',({data}) => jb.ui.stripVdom(data))))))),
-				rx.log('addDialog','%dialog/id%'),
+				rx.var('delta', obj(prop('children', obj(prop('toAppend', pipeline('%$dialogVdom%', ({data}) => jb.ui.stripVdom(data))))))),
+				rx.log('open dialog','%dialog/id%'),
 				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
 			),
 			followUp.flow(source.subject(dialogs.changeEmitter()), 
 				rx.filter('%close%'),
 				rx.var('dlgCmpId', dialogs.cmpIdOfDialog('%dialogId%')),
 				rx.var('delta', obj(prop('children', obj(prop('deleteCmp','%$dlgCmpId%'))))),
-				rx.log('closeDialog','%dialogId%'),
+				rx.log('close dialog','%dialogId%'),
 				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
 			),
 			followUp.flow(source.subject(dialogs.changeEmitter()), 
 				rx.filter('%closeByCmpId%'),
 				rx.var('delta', obj(prop('children', obj(prop('deleteCmp','%cmpId%'))))),
-				rx.log('closeDialog','%dialogId%'),
+				rx.log('close dialog','%dialogId%'),
 				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
 			)			
 		]

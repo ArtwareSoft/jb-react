@@ -86,7 +86,7 @@ jb.component('menu.control', {
     const menuModel = _model || { options: [], ctx, title: ''}
     const ctxWithModel = ctx.setVars({menuModel})
     const ctxToUse = ctx.vars.topMenu ? ctxWithModel : jb.ui.extendWithServiceRegistry(ctxWithModel.setVar('topMenu',{}))
-    jb.log('menuControl',[menuModel.depth,ctx.vars.topMenu,ctx.vars.menuModel,ctx])
+    jb.log('menu uiComp',[menuModel.depth,ctx.vars.topMenu,ctx.vars.menuModel,ctx])
     return jb.ui.ctrl(ctxToUse, features(
       () => ({ctxForPick: menuModel.ctx }),
       calcProp('title','%$menuModel.title%'),
@@ -295,7 +295,7 @@ jb.component('menu.selectionKeySourceService', {
         return true
       }
       jb.ui.focus(el,'menu.selectionKeySourceService',ctx.componentContext)
-      jb.log('menuKeySource',['registered',cmp,el,ctx])
+      jb.log('menuKeySource register',[cmp.cmpId,cmp,el,ctx])
       return pipe(el.keydown_src, takeUntil(cmp.destroyed))
     })
   ))
@@ -303,7 +303,7 @@ jb.component('menu.selectionKeySourceService', {
 
 jb.component('menu.passMenuKeySource', {
   type: 'feature',
-  impl: frontEnd.var('menuKeySourceCmpId', ctx => ctx.exp('%$$serviceRegistry/services/menuKeySource%')),
+  impl: frontEnd.var('menuKeySourceCmpId', '%$$serviceRegistry/services/menuKeySource%'),
 })
 
 jb.component('source.findMenuKeySource', {
@@ -316,19 +316,20 @@ jb.component('source.findMenuKeySource', {
     rx.merge( 
       source.data([]),
       (ctx,{menuKeySourceCmpId},{clientCmp}) => {
+        jb.log('search menuKeySource',[menuKeySourceCmpId,clientCmp,ctx])
         const el = jb.ui.elemOfCmp(ctx,menuKeySourceCmpId)
         const ret = jb.path(el, '_component.menuKeySource')
         if (!ret)
-          jb.log('menuKeySourceNotFound',[clientCmp,menuKeySourceCmpId,el,ctx])
+          jb.log('menuKeySource notFound',[menuKeySourceCmpId,clientCmp,el,ctx])
         else
-          jb.log('foundMenuKeySource',[clientCmp,el,menuKeySourceCmpId,ctx])
+          jb.log('found menuKeySource',[menuKeySourceCmpId,clientCmp,el,ctx])
         return ret
       }
     ),
     rx.var('cmp','%$clientCmp%'),
     rx.takeUntil('%$cmp.destroyed%'),
     rx.filter(menu.isRelevantMenu()),
-    rx.do(ctx => jb.log('fromMenuKeySource',[ctx.vars.cmp.base,ctx.data.keyCode,ctx]))
+    rx.log('from menuKeySource')
   )
 })
 
@@ -345,7 +346,7 @@ jb.component('menu.isRelevantMenu', {
     const leftArrowEntryBefore = isSelected && (key == 37 || key == 27) && depth == maxDepth 
     const rightArrowCurrentEntry = isSelected && (key == 39 || key == 13) && depth == maxDepth + 1
     const res = upDownInMenu || leftArrowEntryBefore || rightArrowCurrentEntry
-    jb.log('isRelevantMenu',[key,res,el,{isMenu,isSelected,depth,maxDepth,upDownInMenu,leftArrowEntryBefore,rightArrowCurrentEntry,menus}])
+    jb.log('check isRelevantMenu',[res,key,el,{isMenu,isSelected,depth,maxDepth,upDownInMenu,leftArrowEntryBefore,rightArrowCurrentEntry,menus}])
     return res
   }
 })

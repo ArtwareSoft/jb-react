@@ -11,7 +11,7 @@ jb.component('uiTest.checkBoxWithCalculatedAndWatchRef', {
     }),
     action: writeValue('%$person/name%', 'Mukki'),
     expectedResult: contains('nonono'),
-    expectedCounters: {refreshElem: 1}
+    expectedCounters: {'dom refresh !check': 1}
   })
 })
 
@@ -111,6 +111,7 @@ jb.component('uiTest.calculatedVar', {
         text('%$var3%')
       ],
       features: [
+        id('group'),
         variable({name: 'var1', value: 'hello', watchable: true}),
         variable({name: 'var2', value: 'world', watchable: true}),
         calculatedVar({
@@ -120,7 +121,7 @@ jb.component('uiTest.calculatedVar', {
         })
       ]
     }),
-    userInputRx: source.data(userInput.setText('hi', '#var1'),rx.delay(1)),
+    userInputRx: rx.pipe(source.waitForCompReady('#group'), rx.map(userInput.setText('hi', '#var1'))),
     expectedResult: contains('hi world')
   })
 })
@@ -135,6 +136,7 @@ jb.component('uiTest.calculatedVarCyclic', {
         text('%$var3%')
       ],
       features: [
+        id('group'),
         calculatedVar({name: 'var1', value: 'xx%$var3%', watchRefs: '%$var3%'}),
         variable({name: 'var2', value: 'world', watchable: true}),
         calculatedVar({
@@ -144,7 +146,7 @@ jb.component('uiTest.calculatedVarCyclic', {
         })
       ]
     }),
-    userInputRx: source.data(userInput.setText('hi', '#var1'),rx.delay(1)),
+    userInputRx: rx.pipe(source.waitForCompReady('#group'), rx.map(userInput.setText('hi', '#var1'))),
     expectedResult: contains('hi world')
   })
 })
@@ -174,7 +176,7 @@ jb.component('uiTest.labelWithWatchRefInSplicedArray', {
       }))
     }),
     expectedResult: contains('Maggie'),
-    expectedCounters: {refreshElem: 1}
+    expectedCounters: {'dom refresh !check': 1}
   })
 })
 
@@ -206,7 +208,7 @@ jb.component('uiTest.labelNotWatchingUiVar', {
       ]
     }),
     expectedResult: contains('OK'),
-    expectedCounters: {refreshElem: 0}
+    expectedCounters: {'dom refresh !check': 0}
   })
 })
 
@@ -218,7 +220,7 @@ jb.component('uiTest.labelNotWatchingBasicVar', {
       features: [followUp.action(writeValue('%$text1/text%', 'not good'))]
     }),
     expectedResult: contains('OK'),
-    expectedCounters: {refreshElem: 0}
+    expectedCounters: {'dom refresh !check': 0}
   })
 })
 
@@ -284,7 +286,7 @@ jb.component('uiTest.groupWatchingWithoutIncludeChildren', {
       ]
     }),
     expectedResult: contains('OK'),
-    expectedCounters: {refreshElem: 0}
+    expectedCounters: {'dom refresh !check': 0}
   })
 })
 
@@ -299,7 +301,7 @@ jb.component('uiTest.groupWatchingWithoutIncludeChildren', {
 //       ]
 //     }),
 //     expectedResult: contains('changed'),
-//     expectedCounters: {refreshElem: 1}
+//     expectedCounters: {'dom refresh !check': 1}
 //   })
 // })
 
@@ -314,7 +316,7 @@ jb.component('uiTest.groupWatchingStructure', {
       ]
     }),
     expectedResult: contains('changed'),
-    expectedCounters: {refreshElem: 1}
+    expectedCounters: {'dom refresh !check': 1}
   })
 })
 
@@ -338,7 +340,7 @@ jb.component('uiTest.watchRefArrayDeleteWithRunActionOnItems', {
         )
     }),
     expectedResult: contains('[]'),
-    expectedCounters: {refreshElem: 3}
+    expectedCounters: {'dom refresh !check': 3}
   })
 })
 
@@ -438,7 +440,7 @@ jb.component('uiTest.spliceShouldNotFireFullContainerChange', {
     control: itemlist({items: '%$watchablePeople%', controls: text('%name%')}),
     action: addToArray('%$watchablePeople%', obj(prop('name', 'mukki'))),
     expectedResult: not(contains('mukki')),
-    expectedCounters: {refreshElem: 0}
+    expectedCounters: {'dom refresh !check': 0}
   })
 })
 
@@ -451,7 +453,7 @@ jb.component('uiTest.spliceAndWatchRefStrcture', {
     }),
     action: addToArray('%$watchablePeople%', obj(prop('name', 'mukki'))),
     expectedResult: contains('mukki'),
-    expectedCounters: {refreshElem: 1}
+    expectedCounters: {'dom refresh !check': 1}
   })
 })
 
@@ -464,7 +466,7 @@ jb.component('uiTest.spliceAndWatchRefWithoutIncludeChildren', {
     }),
     action: writeValue('%$watchablePeople[0]/name%', 'mukki'),
     expectedResult: contains('mukki'),
-    expectedCounters: {refreshElem: 1}
+    expectedCounters: {'dom refresh !check': 1}
   })
 })
 
@@ -480,7 +482,7 @@ jb.component('uiTest.spliceAndWatchRefAddTwice', {
       addToArray('%$watchablePeople%', obj(prop('name','kukki')))
     ),
     expectedResult: contains('kukki'),
-    expectedCounters: {refreshElem: 2}
+    expectedCounters: {'dom refresh !check': 2}
   })
 })
 
