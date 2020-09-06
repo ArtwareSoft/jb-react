@@ -96,7 +96,7 @@ function compareCtxAtt(att,atts1,atts2) {
 
 function applyNewVdom(elem,vdomAfter,{strongRefresh, ctx} = {}) {
     const widgetId = jb.ui.headlessWidgetId(elem)
-    jb.log('applyNew vdom',[widget,...arguments])
+    jb.log('applyNew vdom',[widgetId,...arguments])
     if (widgetId) {
         const cmpId = elem.getAttribute('cmp-id')
         const delta = compareVdom(elem,vdomAfter)
