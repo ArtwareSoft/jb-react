@@ -115,7 +115,7 @@ jb.remoteCBHandler = remote => ({
             return (t,d) => this.outboundMsg({cbId,t,d})
         }
     },
-    init() {
+    initCommandListener() {
         remote.addEventListener('message', m => {
             const msg = m.data
             jb.log('remote',[`received from ${msg.from}`,msg])
@@ -163,12 +163,12 @@ jb.component('remote.worker', {
                 jb.initSpy({spyParam: '${spyParam}'})
                 self.spy = jb.spy
                 self.postObj = m => { jb.log('remote',['sent from ${uri}',m]); self.postMessage({from: '${uri}',...m}) }
-                self.CBHandler = jb.remoteCBHandler(self).init()
+                self.CBHandler = jb.remoteCBHandler(self).initCommandListener()
             `
         ].join('\n')
         const worker = jb.remote.servers[uri] = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
         worker.uri = uri
-        worker.CBHandler = jb.remoteCBHandler(worker).init()
+        worker.CBHandler = jb.remoteCBHandler(worker).initCommandListener()
         worker.postObj = m => { jb.log('remote',[`sent to ${uri}`,m]); worker.postMessage({from: 'main', ...m}) }
         return worker
     }
