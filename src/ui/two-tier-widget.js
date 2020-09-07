@@ -55,7 +55,7 @@ jb.component('widget.headless', {
                     talkback.forEach(tb=>tb(1))
             }) 
             filteredSrc(0, function headless(t, d) {
-                console.log('widgetOut',t,d)
+                jb.log('headless widget delta out',[t,d])
                 if (t == 0) talkback.push(d)
                 if (t === 2) sink(t,d)
                 if (t === 1 && d) sink(t,ctx.dataObj(d))
