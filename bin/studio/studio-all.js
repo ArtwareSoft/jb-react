@@ -48021,7 +48021,7 @@ jb.chromeDebugger = {
             }
             jb.remoteCBHandler(panelAsRemote).initCommandListener()
         })
-//        chrome.tabs.executeScript({file: 'pass-through-content-script.js'})
+        chrome.tabs.executeScript({file: 'pass-through-content-script.js'})
         return
 
         this.runPofileOnInspectWindow({$: 'inspectedWindow.logsCtrl', panel: panelFrame.uri})
