@@ -77,7 +77,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 		return jb.spy = null
     
     return jb.spy = {
-		logs: {},
+		logs: [],
 		spyParam,
 		otherSpies: [],
 		observable() { 
