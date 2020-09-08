@@ -371,7 +371,7 @@ jb.component('studio.eventItems', {
       ev.description = ev.description || event[1] == 'htmlChange' && [event[4],event[5]].join(' <- ')
       ev.description = ev.description || event[1] == 'pptrError' && event[2].message
       ev.description = ev.description || event[1] == 'pptrError' && typeof event[2].err == 'string' && event[2].err
-      ev.description = ev.description || event[1].match(/ToRemote|FromRemote/) && `${event[2].dir}:${event[2].t} channel:${event[3].channel}`
+//      ev.description = ev.description || event[1].match(/ToRemote|FromRemote/) && `${event[2].dir}:${event[2].t} channel:${event[3].channel}`
       ev.description = ev.description || event[1] == 'innerCBDataSent' && `channel:${event[3].sinkId}`
 
       ev.elem = event[1] == 'applyDelta' && event[2]
@@ -382,7 +382,7 @@ jb.component('studio.eventItems', {
       ev.vdom = ev.vdom || event[1] == 'applyDeltaTop' && event[2] == 'start' && event[4]
 
       ev.val = event[1] == 'calcRenderProp' && event[3]
-      ev.val = ev.val || event[1].match(/ToRemote|FromRemote/) && event[2].d
+//      ev.val = ev.val || event[1].match(/ToRemote|FromRemote/) && event[2].d
       ev.val = ev.val || event[1] == 'innerCBDataSent' && event[2].data
       
       return ev
