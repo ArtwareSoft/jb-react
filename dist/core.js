@@ -816,7 +816,6 @@ Object.assign(jb,{
   exp: (...args) => new jb.jbCtx().exp(...args),
   execInStudio: (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.jbCtx().run(...args),
   eval: (str,frame) => { try { return (frame || jb.frame).eval('('+str+')') } catch (e) { return Symbol.for('parseError') } },
-  iframeAccessible(iframe) { try { return Boolean(iframe.contentDocument) } catch(e) { return false } },
   addDebugInfo(f,ctx) { f.ctx = ctx; return f}
 })
 
@@ -1044,13 +1043,14 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			this.logs.push(record)
 			this._obs && this._obs.next({logNames,record})
 		},
+		iframeAccessible(iframe) { try { return Boolean(iframe.contentDocument) } catch(e) { return false } },
 		source(takeFrom) {
 			Error.stackTraceLimit = 50
 			const frames = [frame]
-			while (frames[0].parent && frames[0] !== frames[0].parent) {
-				frames.unshift(frames[0].parent)
-			}
-			let stackTrace = frames.reverse().filter(f=>jb.iframeAccessible(f)).map(frame => new frame.Error().stack).join('\n').split(/\r|\n/).map(x => x.trim()).slice(4).
+			// while (frames[0].parent && frames[0] !== frames[0].parent) {
+			// 	frames.unshift(frames[0].parent)
+			// }
+			let stackTrace = frames.reverse().filter(f=>this.iframeAccessible(f)).map(frame => new frame.Error().stack).join('\n').split(/\r|\n/).map(x => x.trim()).slice(4).
 				filter(line => line !== 'Error').
 				filter(line => !settings.stackFilter.test(line))
 			if (takeFrom) {

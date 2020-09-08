@@ -816,7 +816,6 @@ Object.assign(jb,{
   exp: (...args) => new jb.jbCtx().exp(...args),
   execInStudio: (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.jbCtx().run(...args),
   eval: (str,frame) => { try { return (frame || jb.frame).eval('('+str+')') } catch (e) { return Symbol.for('parseError') } },
-  iframeAccessible(iframe) { try { return Boolean(iframe.contentDocument) } catch(e) { return false } },
   addDebugInfo(f,ctx) { f.ctx = ctx; return f}
 })
 
