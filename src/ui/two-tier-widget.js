@@ -46,6 +46,7 @@ jb.component('widget.headless', {
         const top = h(cmp)
         const body = h('div',{ widgetTop: true, headless: true, widgetId, remoteUri: ctx.vars.remoteUri },top)
         jb.ui.headless[widgetId] = { body }
+        jb.log('headless widget created',[widgetId,body])
         renderingUpdates.next({widgetId, delta: compareVdom({},top)})
         return userReqIn => (start, sink) => {
             if (start !== 0) return
@@ -53,15 +54,16 @@ jb.component('widget.headless', {
             sink(0, function headless(t, d) {
                 if (t == 1 && d == null)
                     talkback.forEach(tb=>tb(1))
-            }) 
+            })
             filteredSrc(0, function headless(t, d) {
-                jb.log('headless widget delta out',[t,d])
+                jb.log('headless widget delta out',[widgetId,t,d])
                 if (t == 0) talkback.push(d)
                 if (t === 2) sink(t,d)
                 if (t === 1 && d) sink(t,ctx.dataObj(d))
             })
     
             userReqIn(0, function headless(t, d) {
+              jb.log('headless widget userRequset in',[widgetId,t,d])
               if (t == 0) talkback.push(d)
               if (t === 2) sink(t,d)
               if (t === 1 && d && d.data.widgetId == widgetId) handleUserReq(d.data)
@@ -70,13 +72,17 @@ jb.component('widget.headless', {
         }
 
         function handleUserReq(userReq) {
+            jb.log('headless widget handle userRequset',[userReq.widgetId,userReq])
             if (userReq.$ == 'runCtxAction')
                 jb.ui.runCtxAction(jb.ctxDictionary[userReq.ctxIdToRun],userReq.data,userReq.vars)
             if (userReq.$ == 'destroy') {
                 jb.ui.BECmpsDestroyNotification.next({cmps: userReq.cmps, destroyLocally: true})
                 if (userReq.destroyWidget) jb.delay(1).then(()=> {
-                    console.log(`delete widget ${userReq.widgetId}`)
-                    jb.delay(100).then(()=>delete jb.ui.headless[userReq.widgetId]) // delay needed for tests
+                    jb.log('destroy headless widget request',[userReq.widgetId,userReq])
+                    jb.delay(100).then(()=>{ 
+                        jb.log('destroy headless widget',[userReq.widgetId,userReq])
+                        delete jb.ui.headless[userReq.widgetId]
+                    }) // delay needed for tests
                 })
             }
         }
