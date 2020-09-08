@@ -2393,6 +2393,10 @@ Object.assign(jb.ui, {
     },
     valueOfCssVar(varName,parent) {
       parent = parent || document.body
+      if (!parent) {
+        jb.logError('valueOfCssVar: no parent')
+        return 'red'
+      }
       el = parent.ownerDocument.createElement('div')
       el.style.display = 'none'
       el.style.color = `var(--${varName})`
