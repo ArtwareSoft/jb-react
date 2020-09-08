@@ -67,7 +67,7 @@ jb.remoteCBHandler = remote => ({
     initCommandListener() {
         remote.addEventListener('message', m => {
             const msg = m.data
-            jb.log('remote',[`received from ${msg.from}`,msg])
+            jb.log(`remote command from ${msg.from}`,[msg])
             if ((msg.$ || '').indexOf('CB.') == 0)
                 this.handleCBCommnad(msg)
             else if (msg.$ == 'CB')
