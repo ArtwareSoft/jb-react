@@ -38,10 +38,10 @@ jb.component('studio.refreshSpy', {
     {id: 'clear', as: 'boolean'}
   ],
   impl: (ctx,clear) => {
-    const spy = jb.ui.getSpy(ctx)
-    clear && spy.clear();
-    spy._all = null;
-    spy.setLogs([...ctx.exp('%$studio/spyLogs%'),'error'].join(','))
+//    const spy = jb.ui.getSpy(ctx)
+    // clear && spy.clear();
+    // spy._all = null;
+    // spy.setLogs([...ctx.exp('%$studio/spyLogs%'),'error'].join(','))
     ctx.run(refreshControlById({id: 'event-logs', strongRefresh: true}))
   }
 })
@@ -331,9 +331,9 @@ jb.component('studio.eventItems', {
   impl: ctx => {
     const st = jb.studio
     const spy = jb.ui.getSpy(ctx)
-    const events = spy._all = ctx.vars.eventTracker.lastIndex == spy.logs.$index ? spy._all :
-        spy.all().map(x=>enrich(x)).filter(x=>!(x.path || '').match(/studio.eventTracker/))
-    ctx.vars.eventTracker.lastIndex = spy.logs.$index
+    const events = spy._all = ctx.vars.eventTracker.lastIndex == spy.logs.length ? spy._all :
+        spy.logs.map(x=>enrich(x)).filter(x=>!(x.path || '').match(/studio.eventTracker/))
+    ctx.vars.eventTracker.lastIndex = spy.logs.length
     return events
 
     function enrich(event) {
