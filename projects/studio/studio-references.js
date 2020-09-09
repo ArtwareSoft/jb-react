@@ -85,9 +85,8 @@ jb.component('studio.gotoReferencesOptions', {
   ],
   impl: menu.dynamicOptions(
     '%$refs%',
-    {
-      '$if': '%refs/length% > 1',
-      then: menu.menu({
+      If('%refs/length% > 1',
+      menu.menu({
         title: '%id% (%refs/length%)',
         options: menu.dynamicOptions(
           '%$menuData/refs%',
@@ -97,12 +96,11 @@ jb.component('studio.gotoReferencesOptions', {
           })
         )
       }),
-      else: menu.action({
+      menu.action({
         vars: [Var('compName', split({separator: '~', text: '%refs[0]%', part: 'first'}))],
         title: '%$compName%',
         action: studio.openComponentInJbEditor('%refs[0]%', '%$path%')
-      })
-    }
+      }))
   )
 })
 
@@ -132,18 +130,18 @@ jb.component('studio.gotoReferencesMenu', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: {
-    '$if': '%$noOfReferences% > 0',
-    '$vars': {
-      refs: studio.references('%$path%'),
-      noOfReferences: ctx => ctx.vars.refs.reduce((total,refsInObj)=>total+refsInObj.refs.length,0)
-    },
+  impl: If({
+    condition: '%$noOfReferences% > 0',
+    vars: [
+      Var('refs', studio.references('%$path%')),
+      Var('noOfReferences', ctx => ctx.vars.refs.reduce((total,refsInObj)=>total+refsInObj.refs.length,0))
+    ],
     then: menu.menu({
       title: '%$noOfReferences% references for %$path%',
       options: studio.gotoReferencesOptions('%$path%', '%$refs%')
     }),
-    else: menu.action('no references for %$path%')
-  }
+    Else: menu.action('no references for %$path%')
+  })
 })
 
 jb.component('studio.componentsList', {

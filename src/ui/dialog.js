@@ -35,7 +35,7 @@ jb.component('openDialog.probe', {
 jb.component('dialog.init', {
 	type: 'feature',
 	impl: features(
-		calcProp('dummy',ctx => console.log('dialog.init', ctx)),
+		calcProp('dummy',ctx => jb.log('dialog init uiComp', [ctx.vars.$dialog.id, ctx.vars.cmp.cmpId,ctx])),
 		calcProp('title', '%$$model/title()%'),
 		calcProp('contentComp', '%$$model/content%'),
 		calcProp('hasMenu', '%$$model/menu/profile%'),
@@ -65,8 +65,10 @@ jb.component('dialog.createDialogTopIfNeeded', {
 		if (ctx.vars.headlessWidget) {
 			widgetBody.children.push(vdom)
 			vdom.parentNode = widgetBody
+			jb.log('dialog headless createTop',[vdom,widgetBody])
 		} else {
 			jb.ui.render(vdom,widgetBody)
+			jb.log('dialog dom createTop',[vdom,widgetBody])
 		}
 	}
 })
@@ -80,7 +82,10 @@ jb.component('dialog.closeDialog', {
 	impl: action.if('%$$dialog%' , runActions(
 		action.if(and('%$OK%','%$$dialog.hasFields%', (ctx,{$dialog}) => 
 			jb.ui.checkFormValidation && jb.ui.checkFormValidation(jb.ui.elemOfCmp(ctx, $dialog.cmpId)))),
-		action.if(and('%$OK%', not('%$formContainer.err%')), (ctx,{$dialog}) => $dialog.ctx.params.onOK(ctx)),
+		action.if(and('%$OK%', not('%$formContainer.err%')), (ctx,{$dialog}) => {
+			jb.log('dialog onOK',[$dialog])
+			$dialog.ctx.params.onOK(ctx)
+		}),
 		action.if(or(not('%$OK%'), not('%$formContainer.err%')),
 			action.subjectNext(dialogs.changeEmitter(), obj(prop('close',true), prop('dialogId','%$$dialog/id%'))))
 	))
@@ -149,6 +154,7 @@ jb.component('dialogFeature.uniqueDialog', {
 			rx.filter(({data},{cmp},{id}) => data.getAttribute('id') == id && data.getAttribute('cmp-id') != cmp.cmpId ),
 			rx.map(({data}) => data.getAttribute('cmp-id')),
 			rx.map(obj(prop('closeByCmpId',true), prop('cmpId','%%'), prop('dialogId','%$id%'))),
+			rx.log('dialog close uniqueDialog'),
 			sink.subjectNext(dialogs.changeEmitter())
 		)
 	))
@@ -315,8 +321,8 @@ jb.component('dialogFeature.autoFocusOnFirstInput', {
   ],
   impl: features(
 	  frontEnd.var('selectText','%$selectText%'),
-	  frontEnd.init( (ctx,{cmp,selectText}) => {
-	    const elem = cmp.base.querySelectorAll('input,textarea,select').filter(e => e.getAttribute('type') != 'checkbox')[0]
+	  frontEnd.init( (ctx,{el,selectText}) => {
+	    const elem = jb.ui.find(el,'input,textarea,select').filter(e => e.getAttribute('type') != 'checkbox')[0]
 		if (elem)
 			jb.ui.focus(elem, 'dialog-feature.auto-focus-on-first-input',ctx);
 		if (selectText)

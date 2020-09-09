@@ -10,7 +10,7 @@ jb.component('menu.menu', {
   ],
   impl: ctx => ({
 		options: function(ctx2) {
-      const ctxWithDepth = (ctx2 || ctx).setVar('menuDepth',this.ctx.vars.menuDepth)
+      const ctxWithDepth = ctx.setVars({...ctx.vars, ...(ctx2 && ctx2.vars), menuDepth: this.ctx.vars.menuDepth })
       return ctx.params.optionsFilter(ctx.setData(ctx.params.options(ctxWithDepth)))
     },
     title: ctx.params.title(),

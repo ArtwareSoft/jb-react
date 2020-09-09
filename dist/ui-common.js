@@ -3125,7 +3125,7 @@ jb.component('key.eventMatchKey', {
         {id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V' },
     ],
     impl: (ctx, e, key) => {
-      jb.log('search eventMatchKey',[e,key])
+      jb.log('keyboard search eventMatchKey',[e,key])
       if (!key) return;
       const dict = { tab: 9, delete: 46, tab: 9, esc: 27, enter: 13, right: 39, left: 37, up: 38, down: 40}
     
@@ -3139,7 +3139,7 @@ jb.component('key.eventMatchKey', {
     
       if (key.match(/^[Cc]trl/) && !e.ctrlKey) return
       if (key.match(/^[Aa]lt/) && !e.altKey) return
-      jb.log(`${e.keyCode == keyCode ? 'found': 'notFound'} eventMatchKey`,[e,key,e.keyCode,keyCode])
+      jb.log(`keyboard ${e.keyCode == keyCode ? 'found': 'notFound'} eventMatchKey`,[e,key,e.keyCode,keyCode])
       return e.keyCode == keyCode
   }
 })
@@ -3153,8 +3153,9 @@ jb.component('key.eventToMethod', {
   impl: (ctx, event, elem) => {
     elem.keysHash = elem.keysHash || calcKeysHash()
         
+    jb.log('keyboard search eventToMethod',[elem,event])
     const res = elem.keysHash.find(key=>key.keyCode == event.keyCode && event.ctrlKey == key.ctrl && event.altKey == key.alt)
-    console.log(event,res,elem.keysHash)
+    jb.log(`keyboard ${res ? 'found': 'notFound'} eventToMethod`,[res && res.methodName,elem,event])
     return res && res.methodName
 
     function calcKeysHash() {
@@ -3189,7 +3190,7 @@ jb.component('feature.onKey', {
           if (! cmp.hasOnKeyHanlder) {
             cmp.hasOnKeyHanlder = true
             ctx.run(rx.pipe(source.frontEndEvent('keydown'), frontEnd.addUserEvent(), 
-              rx.map(key.eventToMethod('%%',el)), rx.filter('%%'), rx.log('uiComp onKey %$key%'), sink.BEMethod('%%')))
+              rx.map(key.eventToMethod('%%',el)), rx.filter('%%'), rx.log('keyboard uiComp onKey %$key%'), sink.BEMethod('%%')))
           }
       })
     )
@@ -3209,11 +3210,12 @@ jb.component('feature.keyboardShortcut', {
       if (! cmp.hasDocOnKeyHanlder) {
         cmp.hasDocOnKeyHanlder = true
         ctx.run(rx.pipe(
-          source.event('keydown','%$cmp.base.ownerDocument%'), 
-          rx.log('keyboardShortcut'),
-          rx.takeUntil('%$cmp.destroyed%'),
+          source.frontEndEvent('keydown'),
+          // source.event('keydown','%$cmp.base.ownerDocument%'), 
+          // rx.takeUntil('%$cmp.destroyed%'),
           rx.map(key.eventToMethod('%%',el)), 
           rx.filter('%%'), 
+          rx.log('keyboardShortcut keyboard uiComp run handler'),
           sink.BEMethod('%%')
         ))
       }
@@ -3293,19 +3295,19 @@ jb.component('source.findSelectionKeySource', {
     rx.merge( 
       source.data([]),
       (ctx,{selectionKeySourceCmpId}) => {
-        jb.log('search selectionKeySource',[selectionKeySourceCmpId,ctx])
+        jb.log('keyboard search selectionKeySource',[selectionKeySourceCmpId,ctx])
         const el = jb.ui.elemOfCmp(ctx,selectionKeySourceCmpId)
         const ret = jb.path(el, '_component.selectionKeySource')
         if (!ret)
-          jb.log('selectionKeySource notFound',[selectionKeySourceCmpId,el,ctx])
+          jb.log('keyboard selectionKeySource notFound',[selectionKeySourceCmpId,el,ctx])
         else
-          jb.log('found selectionKeySource',[el,selectionKeySourceCmpId,ctx])
+          jb.log('keyboard found selectionKeySource',[el,selectionKeySourceCmpId,ctx])
         return ret
       }
     ),
     rx.takeUntil('%$clientCmp.destroyed%'),
     rx.var('cmp','%$clientCmp%'),
-    rx.log('from selectionKeySource')
+    rx.log('keyboard from selectionKeySource')
   )
 })
 ;
@@ -4346,7 +4348,7 @@ jb.component('openDialog.probe', {
 jb.component('dialog.init', {
 	type: 'feature',
 	impl: features(
-		calcProp('dummy',ctx => console.log('dialog.init', ctx)),
+		calcProp('dummy',ctx => jb.log('dialog init uiComp', [ctx.vars.$dialog.id, ctx.vars.cmp.cmpId,ctx])),
 		calcProp('title', '%$$model/title()%'),
 		calcProp('contentComp', '%$$model/content%'),
 		calcProp('hasMenu', '%$$model/menu/profile%'),
@@ -4376,8 +4378,10 @@ jb.component('dialog.createDialogTopIfNeeded', {
 		if (ctx.vars.headlessWidget) {
 			widgetBody.children.push(vdom)
 			vdom.parentNode = widgetBody
+			jb.log('dialog headless createTop',[vdom,widgetBody])
 		} else {
 			jb.ui.render(vdom,widgetBody)
+			jb.log('dialog dom createTop',[vdom,widgetBody])
 		}
 	}
 })
@@ -4391,7 +4395,10 @@ jb.component('dialog.closeDialog', {
 	impl: action.if('%$$dialog%' , runActions(
 		action.if(and('%$OK%','%$$dialog.hasFields%', (ctx,{$dialog}) => 
 			jb.ui.checkFormValidation && jb.ui.checkFormValidation(jb.ui.elemOfCmp(ctx, $dialog.cmpId)))),
-		action.if(and('%$OK%', not('%$formContainer.err%')), (ctx,{$dialog}) => $dialog.ctx.params.onOK(ctx)),
+		action.if(and('%$OK%', not('%$formContainer.err%')), (ctx,{$dialog}) => {
+			jb.log('dialog onOK',[$dialog])
+			$dialog.ctx.params.onOK(ctx)
+		}),
 		action.if(or(not('%$OK%'), not('%$formContainer.err%')),
 			action.subjectNext(dialogs.changeEmitter(), obj(prop('close',true), prop('dialogId','%$$dialog/id%'))))
 	))
@@ -4460,6 +4467,7 @@ jb.component('dialogFeature.uniqueDialog', {
 			rx.filter(({data},{cmp},{id}) => data.getAttribute('id') == id && data.getAttribute('cmp-id') != cmp.cmpId ),
 			rx.map(({data}) => data.getAttribute('cmp-id')),
 			rx.map(obj(prop('closeByCmpId',true), prop('cmpId','%%'), prop('dialogId','%$id%'))),
+			rx.log('dialog close uniqueDialog'),
 			sink.subjectNext(dialogs.changeEmitter())
 		)
 	))
@@ -4626,8 +4634,8 @@ jb.component('dialogFeature.autoFocusOnFirstInput', {
   ],
   impl: features(
 	  frontEnd.var('selectText','%$selectText%'),
-	  frontEnd.init( (ctx,{cmp,selectText}) => {
-	    const elem = cmp.base.querySelectorAll('input,textarea,select').filter(e => e.getAttribute('type') != 'checkbox')[0]
+	  frontEnd.init( (ctx,{el,selectText}) => {
+	    const elem = jb.ui.find(el,'input,textarea,select').filter(e => e.getAttribute('type') != 'checkbox')[0]
 		if (elem)
 			jb.ui.focus(elem, 'dialog-feature.auto-focus-on-first-input',ctx);
 		if (selectText)
@@ -5448,7 +5456,7 @@ jb.component('menu.menu', {
   ],
   impl: ctx => ({
 		options: function(ctx2) {
-      const ctxWithDepth = (ctx2 || ctx).setVar('menuDepth',this.ctx.vars.menuDepth)
+      const ctxWithDepth = ctx.setVars({...ctx.vars, ...(ctx2 && ctx2.vars), menuDepth: this.ctx.vars.menuDepth })
       return ctx.params.optionsFilter(ctx.setData(ctx.params.options(ctxWithDepth)))
     },
     title: ctx.params.title(),

@@ -418,7 +418,7 @@ jb.component('studio.openJbEditor', {
   ],
   impl: openDialog({
     vars: [
-      Var('dialogId', {'$if': '%$newWindow%', then: '', else: 'jb-editor'}),
+      Var('dialogId', If('%$newWindow%','','jb-editor')),
       Var('fromPath', '%$fromPath%')
     ],
     style: dialog.studioFloating({id: '%$dialogId%', width: '860', height: '100%'}),
@@ -481,11 +481,7 @@ jb.component('menu.studioWrapWith', {
     {id: 'components', as: 'array'}
   ],
   impl: menu.dynamicOptions(
-    {
-      '$if': studio.isOfType('%$path%', '%$type%'),
-      then: '%$components%',
-      else: list()
-    },
+    If(studio.isOfType('%$path%', '%$type%'),'%$components%',list()),
     menu.action({
       title: 'Wrap with %%',
       action: runActions(
@@ -501,17 +497,14 @@ jb.component('menu.studioWrapWithArray', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: {
-    '$if': studio.canWrapWithArray('%$path%'),
-    then: menu.action({
+  impl: If(studio.canWrapWithArray('%$path%'),
+    menu.action({
       title: 'Wrap with array',
       action: runActions(
         studio.wrapWithArray('%$path%'),
         studio.expandAndSelectFirstChildInJbEditor()
       )
-    }),
-    else: []
-  }
+    }),[])
 })
 
 jb.component('studio.addVariable', {

@@ -32,6 +32,10 @@ jb.component('studio.highlightLogItem', {
   )
 })
 
+jb.component('studio.getSpy', {
+  impl: ctx => jb.ui.getSpy(ctx)
+})
+
 jb.component('studio.refreshSpy', {
   type: 'action',
   params: [
@@ -51,8 +55,10 @@ jb.component('studio.eventTracker', {
   impl: group({
     controls: [
       group({
+        title: '',
         layout: layout.horizontal('14'),
         controls: [
+          text({text: pipeline(studio.getSpy(), '%logs/length% items'), title: 'count'}),
           menu.control({
             menu: menu.menu({
               options: [
@@ -127,7 +133,8 @@ jb.component('studio.eventTracker', {
             options: picklist.options(() => jb.studio.previewjb.spySettings.moreLogs.split(',')),
             style: multiSelect.chips(),
             features: css.margin('15')
-          })
+          }),
+          text({text: 'my text', title: 'my title'})
         ]
       }),
       html({title: 'hr', html: '<hr/>'}),
@@ -167,16 +174,13 @@ jb.component('studio.eventTracker', {
                 }),
                 type: data.switch({cases: [data.case('%log% == error', 'mdc')], default: 'mdi'}),
                 size: '16'
-              }),
+              })
             ]
           }),
           text({
             text: '%log%',
             title: 'event',
-            features: feature.onHover({
-              action: studio.highlightLogItem(),
-              onLeave: dialog.closeDialogById('elem-marker')
-            })
+            features: feature.onHover(studio.highlightLogItem(), dialog.closeDialogById('elem-marker'))
           }),
           studio.eventView()
         ],
@@ -200,13 +204,18 @@ jb.component('studio.eventTracker', {
       feature.init(
         runActions(
           action.if(
-            not('%$studio/spyGroup%'),
-            writeValue('%$studio/spyGroup%', If( contains({text: 'puppeteer', allText: '%$studio/projectSettings/libs%'}),
-            'puppeteer',
-            'refresh'
-          ))),
+              not('%$studio/spyGroup%'),
+              writeValue(
+                '%$studio/spyGroup%',
+                If(
+                  contains({text: 'puppeteer', allText: '%$studio/projectSettings/libs%'}),
+                  'puppeteer',
+                  'refresh'
+                )
+              )
+            ),
           action.if(
-              Var('group','%$studio/spyGroup%'),
+              Var('0', Var(Var('0', Var('group', '%$studio/spyGroup%')), '0')),
               not('%$studio/spyLogs%'),
               writeValue(
                 '%$studio/spyLogs%',
@@ -309,7 +318,7 @@ jb.component('studio.showLowFootprintObj', {
       controlWithCondition(
         isOfType('function', '%$obj%'),
         text(({},{},{obj}) => obj.name)
-      ),      
+      ),
     ]
   }))
 })
@@ -332,7 +341,7 @@ jb.component('studio.eventItems', {
     const st = jb.studio
     const spy = jb.ui.getSpy(ctx)
     const events = spy._all = ctx.vars.eventTracker.lastIndex == spy.logs.length ? spy._all :
-        spy.logs.map(x=>enrich(x)).filter(x=>!(x.path || '').match(/studio.eventTracker/))
+        spy.logs.slice(0,100).map(x=>enrich(x)).filter(x=>!(x.path || '').match(/studio.eventTracker/))
     ctx.vars.eventTracker.lastIndex = spy.logs.length
     return events
 
@@ -384,7 +393,7 @@ jb.component('studio.eventItems', {
       ev.val = event[1] == 'calcRenderProp' && event[3]
 //      ev.val = ev.val || event[1].match(/ToRemote|FromRemote/) && event[2].d
       ev.val = ev.val || event[1] == 'innerCBDataSent' && event[2].data
-      
+
       return ev
     }
   }

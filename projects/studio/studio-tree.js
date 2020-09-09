@@ -74,7 +74,7 @@ jb.component('studio.treeMenu', {
         shortcut: 'Delete'
       }),
       menu.action({
-        title: {'$if': studio.disabled('%$path%'), then: 'Enable', else: 'Disable'},
+        title: If(studio.disabled('%$path%'),'Enable','Disable'),
         action: studio.toggleDisabled('%$path%'),
         icon: icon('do_not_disturb'),
         shortcut: 'Ctrl+X'

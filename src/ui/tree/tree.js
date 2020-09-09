@@ -175,6 +175,7 @@ jb.component('tree.selection', {
 	  {id: 'autoSelectFirst', type: 'boolean'},
 	],
 	impl: features(
+	  tree.expandPath('%$databind()%'),
 	  method('onSelection', runActions( If(isRef('%$databind()%'),writeValue('%$databind()%','%%')), call('onSelection'))),
 	  method('onRightClick', runActions( If(isRef('%$databind()%'),writeValue('%$databind()%','%%')), call('onRightClick'))),
 	  userStateProp({

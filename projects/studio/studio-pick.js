@@ -20,9 +20,9 @@ jb.component('studio.pickAndOpen', {
     style: dialog.studioPickDialog('%$from%'),
     content: text(''),
     onOK: runActions(
-      writeValue('%$studio/profile_path%', ctx => ctx.exp('%$dialogData/path%')),
+      writeValue('%$studio/profile_path%', '%$dialogData/path%'),
       studio.openControlTree(),
-      studio.openProperties(true)
+      //studio.openProperties(true)
     )
   })
 })
@@ -49,7 +49,8 @@ jb.component('dialogFeature.studioPick', {
         ))
       }
     }),
-    frontEnd.onDestroy(({},{cmp,_window})=> {
+    frontEnd.onDestroy(({},{cmp,from})=> {
+      const _window = from == 'preview' ? st.previewWindow : window
       cmp.cover.parentElement == _window.document.body && _window.document.body.removeChild(cmp.cover)
     }),
     frontEnd.var('from','%$from%'),
@@ -162,7 +163,7 @@ function eventToElem(e,_window, predicate) {
   let rnd = Math.floor(Math.random()*orderedResults.length *2) // use random to let the user flip between choices
   if (rnd >= orderedResults.length) rnd = 0 // first result get twice weight
 
-  console.log(orderedResults)
+  jb.log('studio pick eventToElem result',[orderedResults,rnd])
   return orderedResults[rnd].el;
 
   function checkCtxId(ctxId) {

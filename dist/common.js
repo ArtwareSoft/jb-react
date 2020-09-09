@@ -173,16 +173,17 @@ function prepare(ctx,parentParam) {
       profile.sugar = true;
       return { type: 'runActions' };
     }
-  } else if (profile.$if)
-  return {
-      type: 'if',
-      ifContext: new jbCtx(ctx,{profile: profile.$if || profile.condition, path: '$if'}),
-      IfParentParam: { type: 'boolean', as:'boolean' },
-      thenContext: new jbCtx(ctx,{profile: profile.then || 0 , path: '~then'}),
-      thenParentParam: { type: parentParam_type, as:jstype },
-      elseContext: new jbCtx(ctx,{profile: profile['else'] || 0 , path: '~else'}),
-      elseParentParam: { type: parentParam_type, as:jstype }
-    }
+  } 
+  // else if (profile.$if)
+  // return {
+  //     type: 'if',
+  //     ifContext: new jbCtx(ctx,{profile: profile.$if || profile.condition, path: '$if'}),
+  //     IfParentParam: { type: 'boolean', as:'boolean' },
+  //     thenContext: new jbCtx(ctx,{profile: profile.then || 0 , path: '~then'}),
+  //     thenParentParam: { type: parentParam_type, as:jstype },
+  //     elseContext: new jbCtx(ctx,{profile: profile['else'] || 0 , path: '~else'}),
+  //     elseParentParam: { type: parentParam_type, as:jstype }
+  //   }
   const comp_name = compName(profile,parentParam);
   if (!comp_name)
     return { type: 'asIs' }
