@@ -74,6 +74,30 @@ jb.component('picklist.radio', {
   })
 })
 
+jb.component('picklist.mdcRadio', {
+  type: 'picklist.style',
+  params: [
+    {id: 'text', defaultValue: '%text%', dynamic: true}
+  ],
+  impl: customStyle({
+    template: (cmp,{databind, options, fieldId, text},h) => h('div#mdc-form-field', {},
+          options.flatMap((option,i)=> [
+              h('div#mdc-radio',{},[
+                h('input#mdc-radio__native-control', {
+                  type: 'radio', name: fieldId, id: i, checked: databind === option.code, value: option.code, onchange: true
+                }),
+                h('div#mdc-radio__background',{},[
+                  h('div#mdc-radio__outer-circle'),
+                  h('div#mdc-radio__inner-circle'),
+                ]),
+                h('div#mdc-radio__ripple')
+              ]),
+              h('label',{for: i}, text(cmp.ctx.setData(option))),
+    ])),
+    features: [field.databind(), picklist.init()]
+  })
+})
+
 jb.component('picklist.radioVertical', {
   type: 'picklist.style',
   impl: styleWithFeatures(

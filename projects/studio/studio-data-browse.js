@@ -52,7 +52,7 @@ jb.component('studio.newDataSource', {
   type: 'control',
   impl: group({
     title: '',
-    layout: layout.vertical('11'),
+    layout: layout.vertical('23'),
     style: group.div(),
     controls: [
       editableText({
@@ -68,7 +68,7 @@ jb.component('studio.newDataSource', {
         title: 'type',
         databind: '%$dialogData/type%',
         options: picklist.optionsByComma('text,array,card,collection'),
-        style: picklist.radio(),
+        style: picklist.mdcRadio(),
         features: [
           feature.init(
             action.if(
@@ -85,18 +85,13 @@ jb.component('studio.newDataSource', {
         controls: [
           editableBoolean({
             databind: '%$dialogData/watchable%',
-            style: editableBoolean.mdcSlideToggle(),
+            style: editableBoolean.mdcCheckBox(),
             title: 'watchable',
-            textForTrue: 'watchable',
-            textForFalse: 'passive'
           }),
           editableBoolean({
-            databind: '%$existingFile%',
-            style: editableBoolean.mdcSlideToggle(),
+            databind: '%$newFile%',
+            style: editableBoolean.mdcCheckBox(),
             title: 'new file',
-            textForTrue: 'existing file',
-            textForFalse: 'new  file',
-            features: css.margin({left: '14'})
           })
         ],
         features: css.margin({top: '8', left: '14'})
@@ -106,13 +101,13 @@ jb.component('studio.newDataSource', {
         databind: '%$dialogData/file%',
         options: picklist.options({options: sourceEditor.filesOfProject()}),
         style: picklist.mdcSelect('250'),
-        features: [hidden(ctx => ctx.exp('%$existingFile%')), watchRef('%$existingFile%')]
+        features: [hidden(not('%$newFile%')), watchRef('%$newFile%')]
       })
     ],
     features: [
       css.padding({top: '14', left: '11'}),
-      css.width('273'),
-      css.height('247'),
+      css.width('451'),
+      css.height('300'),
       variable({
         name: 'dialogData',
         value: firstSucceeding(
@@ -120,7 +115,7 @@ jb.component('studio.newDataSource', {
           obj(prop('file', pipeline(sourceEditor.filesOfProject(), first())))
         )
       }),
-      variable({name: 'existingFile', value: true, watchable: true})
+      variable({name: 'newFile', watchable: true})
     ]
   })
 })

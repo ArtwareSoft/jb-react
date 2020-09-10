@@ -232,7 +232,7 @@ function setAtt(elem,att,val) {
         elem.removeEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev,val))
         elem[`registeredTo-${att}`] = false
     } else if (att === 'checked' && elem.tagName.toLowerCase() === 'input') {
-        elem.checked = !!val
+        jb.delay(1).then(()=> elem.checked = !!val)
         jb.log('dom set checked',[...arguments])
     } else if (att.indexOf('$__input') === 0) {
         try {

@@ -5,12 +5,11 @@ jb.component('uiTest.checkBoxWithCalculatedAndWatchRef', {
     control: editableBoolean({
       databind: '%$person/name% == \"Homer Simpson\"',
       style: editableBoolean.checkboxWithTitle(),
-      textForTrue: 'yes',
-      textForFalse: 'nonono',
+      title: '%$person/name%',
       features: watchRef('%$person/name%')
     }),
     action: writeValue('%$person/name%', 'Mukki'),
-    expectedResult: contains('nonono'),
+    expectedResult: contains('Mukki'),
     expectedCounters: {'dom refresh !check': 1}
   })
 })
