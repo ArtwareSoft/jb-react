@@ -4466,7 +4466,9 @@ function h(cmpOrTag,attributes,children) {
     return new jb.ui.VNode(cmpOrTag,attributes,children)
 }
 
-function compareVdom(b,a) {
+function compareVdom(b,after) {
+    const a = after instanceof ui.VNode ? ui.stripVdom(after) : after
+    jb.log('vdom diff compare',[...arguments])
     const attributes = jb.objectDiff(a.attributes || {}, b.attributes || {})
     const children = childDiff(b.children || [],a.children || [])
     return { 
@@ -4479,7 +4481,7 @@ function compareVdom(b,a) {
         if (b.length == 0 && a.length ==0) return
         if (a.length == 1 && b.length == 1 && a[0].tag == b[0].tag)
             return { 0: {...compareVdom(b[0],a[0]),__afterIndex: 0}, length: 1 }
-        jb.log('childDiff',[...arguments])
+        jb.log('vdom child diff start',[...arguments])
         const beforeWithIndex = b.map((e,i)=> ({i, ...e}))
         let remainingBefore = beforeWithIndex.slice(0)
         // locating before-objects in after-array. done in two stages. also calcualing the remaining before objects that were not found
@@ -4487,18 +4489,24 @@ function compareVdom(b,a) {
         a.forEach((toLocate,i) => afterToBeforeMap[i] = afterToBeforeMap[i] || sameIndexSameTag(toLocate,i,remainingBefore))
 
         const reused = []
-        const res = { length: beforeWithIndex.length }
+        const res = { length: 0, sameOrder: true }
         beforeWithIndex.forEach( (e,i) => {
-            const __afterIndex = afterToBeforeMap.indexOf(e);
+            const __afterIndex = afterToBeforeMap.indexOf(e)
+            if (__afterIndex != i) res.sameOrder = false
             if (__afterIndex == -1) {
-                res [i] =  {$: 'delete', __afterIndex }
+                res.length = i+1
+                res[i] =  {$: 'delete', before: e } //, __afterIndex: i }
             } else {
                 reused[__afterIndex] = true
-                res [i] = { __afterIndex, ...compareVdom(e, a[__afterIndex]), ...(e.$remount ? {remount: true}: {}) }
+                const innerDiff = { __afterIndex, ...compareVdom(e, a[__afterIndex]), ...(e.$remount ? {remount: true}: {}) }
+                if (Object.keys(innerDiff).length > 1) {
+                    res[i] = innerDiff
+                    res.length = i+1
+                }
             }
         })
-        res.toAppend = a.flatMap((e,i) => reused[i] ? [] : [ jb.ui.stripVdom(Object.assign( e, {__afterIndex: i})) ])
-        jb.log('childDiffRes',[res,...arguments])
+        res.toAppend = a.flatMap((e,i) => reused[i] ? [] : [ Object.assign( e, {__afterIndex: i}) ])
+        jb.log('vdom child diff result',[res,...arguments])
         if (!res.length && !res.toAppend.length) return null
         return res
 
@@ -4574,7 +4582,7 @@ function applyNewVdom(elem,vdomAfter,{strongRefresh, ctx} = {}) {
     } else {
         const vdomBefore = elem instanceof ui.VNode ? elem : elemToVdom(elem)
         const delta = compareVdom(vdomBefore,vdomAfter)
-        jb.log('applyDeltaTop vdom',['apply',vdomBefore,vdomAfter,active,...arguments], {modifier: record => record.push(filterDelta(delta)) })
+        jb.log('applyDeltaTop vdom',[vdomBefore,vdomAfter,active,...arguments], {modifier: record => record.push(filterDelta(delta)) })
         applyDeltaToDom(elem,delta)
     }
     ui.refreshFrontEnd(elem)
@@ -4601,13 +4609,10 @@ function elemToVdom(elem) {
 function applyDeltaToDom(elem,delta) {
     jb.log('applyDelta dom',[...arguments])
     const children = delta.children
-    if (delta.children) {
-        const childrenArr = delta.children.length ? Array.from(Array(delta.children.length).keys()).map(i=>children[i]) : []
+    if (children) {
+        const childrenArr = children.length ? Array.from(Array(children.length).keys()).map(i=>children[i]) : []
         const childElems = Array.from(elem.children)
-        const toAppend = delta.children.toAppend || []
-        const deleteCmp = delta.children.deleteCmp
-        const sameOrder = childrenArr.reduce((acc,e,i) => acc && e.__afterIndex ==i, true) && !toAppend.length
-            || !childrenArr.length && toAppend.reduce((acc,e,i) => acc && (e.__afterIndex == null || e.__afterIndex ==i), true)
+        const {toAppend,deleteCmp,sameOrder} = children
         if (deleteCmp) {
             const toDelete = Array.from(elem.children).find(ch=>ch.getAttribute('cmp-id') == deleteCmp)
             if (toDelete) {
@@ -4617,6 +4622,7 @@ function applyDeltaToDom(elem,delta) {
             }
         }
         childrenArr.forEach((e,i) => {
+            if (!e) return
             if (e.$ == 'delete') {
                 unmount(childElems[i])
                 elem.removeChild(childElems[i])
@@ -4626,7 +4632,7 @@ function applyDeltaToDom(elem,delta) {
                 !sameOrder && (childElems[i].setAttribute('__afterIndex',e.__afterIndex))
             }
         })
-        toAppend.forEach(e=>{
+        ;(toAppend||[]).forEach(e=>{
             const newElem = render(e,elem)
             jb.log('appendChild dom',[newElem,e,elem,delta])
             !sameOrder && (newElem.setAttribute('__afterIndex',e.__afterIndex))
@@ -4656,6 +4662,7 @@ function applyDeltaToDom(elem,delta) {
 
 function applyDeltaToVDom(elem,delta) {
     jb.log('applyDelta vdom',[...arguments])
+    // supports only append/delete
     if (delta.children) {
         const toAppend = delta.children.toAppend || []
         toAppend.forEach(ch => elem.children.push(jb.ui.unStripVdom(ch,elem)))
@@ -4681,7 +4688,7 @@ function setAtt(elem,att,val) {
         elem.removeEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev,val))
         elem[`registeredTo-${att}`] = false
     } else if (att === 'checked' && elem.tagName.toLowerCase() === 'input') {
-        elem.checked = !!val
+        jb.delay(1).then(()=> elem.checked = !!val)
         jb.log('dom set checked',[...arguments])
     } else if (att.indexOf('$__input') === 0) {
         try {
@@ -4926,7 +4933,12 @@ Object.assign(jb.ui, {
         }
     },
     applyDeltaToCmp(delta, ctx, cmpId, elem) {
+        if (!delta) return
         elem = elem || jb.ui.elemOfCmp(ctx,cmpId)
+        if (delta.$prevVersion && delta.$prevVersion != elem.getAttribute('cmp-ver')) {
+            jb.logError('trying to apply delta to unexpeced verson',[delta, ctx, cmpId, elem])
+            return
+        }
         jb.log('applyDelta uiComp',[delta, ctx, cmpId, elem])
         if (elem instanceof jb.ui.VNode) {
             jb.ui.applyDeltaToVDom(elem, delta)
@@ -6365,10 +6377,9 @@ jb.component('feature.onKey', {
 jb.component('feature.keyboardShortcut', {
   type: 'feature',
   category: 'events',
-  description: 'listen to events at the document level even when the component is not active',
   params: [
     {id: 'key', as: 'string', description: 'e.g. Alt+C'},
-    {id: 'action', type: 'action', dynamic: true}
+    {id: 'action', type: 'action', dynamic: true},
   ],
   impl: features(
     method(replace({find: '-', replace: '+', text: 'onKey%$key%Handler',useRegex: true}), call('action')),
@@ -6377,8 +6388,32 @@ jb.component('feature.keyboardShortcut', {
         cmp.hasDocOnKeyHanlder = true
         ctx.run(rx.pipe(
           source.frontEndEvent('keydown'),
-          // source.event('keydown','%$cmp.base.ownerDocument%'), 
-          // rx.takeUntil('%$cmp.destroyed%'),
+          rx.map(key.eventToMethod('%%',el)), 
+          rx.filter('%%'), 
+          rx.log('keyboardShortcut keyboard uiComp run handler'),
+          sink.BEMethod('%%')
+        ))
+      }
+    })
+  )
+})
+
+jb.component('feature.globalKeyboardShortcut', {
+  type: 'feature',
+  category: 'events',
+  description: 'listen to events at the document level even when the component is not active',
+  params: [
+    {id: 'key', as: 'string', description: 'e.g. Alt+C'},
+    {id: 'action', type: 'action', dynamic: true},
+  ],
+  impl: features(
+    method(replace({find: '-', replace: '+', text: 'onKey%$key%Handler',useRegex: true}), call('action')),
+    frontEnd.init((ctx,{cmp,el}) => {
+      if (! cmp.hasDocOnKeyHanlder) {
+        cmp.hasDocOnKeyHanlder = true
+        ctx.run(rx.pipe(
+          source.event('keydown','%$cmp.base.ownerDocument%'), 
+          rx.takeUntil('%$cmp.destroyed%'),
           rx.map(key.eventToMethod('%%',el)), 
           rx.filter('%%'), 
           rx.log('keyboardShortcut keyboard uiComp run handler'),
@@ -8096,11 +8131,13 @@ jb.component('itemlist.deltaOfItems', {
     {id: 'newState' }
   ],
   impl: (ctx,items,state) => {
+    if (items.length == 0) return null
     const deltaCalcCtx = ctx.vars.cmp.ctx
-    const vdomWithDeltaItems = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => items}), path: ''}).runItself().renderVdom() // change the profile to return itemsToAppend
-    const emptyItemlistVdom = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => []}), path: ''}).runItself().renderVdom()
+    const vdomWithDeltaItems = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => [items[0], ...items]}), path: ''}).runItself().renderVdom() // change the profile to return itemsToAppend
+    const emptyItemlistVdom = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => [items[0]]}), path: ''}).runItself().renderVdom()
     const delta = jb.ui.compareVdom(emptyItemlistVdom,vdomWithDeltaItems)
-    delta.attributes = state ? {$__state : JSON.stringify(state), $scrollDown: true} : {} // also keeps the original cmpId by overriding atts
+    delta.attributes = state ? {$__state : JSON.stringify(state), $scrollDown: true } : {} // also keeps the original cmpId by overriding atts
+    delta.$prevVersion = ctx.vars.cmp.ver // used to block concurrent changes from multiple sources
     return delta
   }
 })
@@ -8133,9 +8170,8 @@ jb.component('itemlist.calcSlicedItems', {
     return itemsRefs
 
     function addSlicedState(cmp,items,visualLimit) {
-      if (items.length > visualLimit)
-        cmp.state.visualLimit = { totalItems: items.length, shownItems: visualLimit }
-        return visualLimit < items.length ? items.slice(0,visualLimit) : items
+      cmp.state.visualLimit = { totalItems: items.length, shownItems: visualLimit }
+      return visualLimit < items.length ? items.slice(0,visualLimit) : items
     }
   }
 })
@@ -8424,9 +8460,7 @@ jb.component('itemlistContainer.filter', {
   ],
   impl: (ctx,updateCounters) => {
 			if (!ctx.vars.itemlistCntr) return;
-			const res = ctx.vars.itemlistCntr.filters.reduce((items,filter) => filter(items), ctx.data || []);
-			// if (ctx.vars.itemlistCntrData.countAfterFilter != res.length)
-			// 	jb.delay(1).then(_=>ctx.vars.itemlistCntr.reSelectAfterFilter(res));
+			const res = ctx.vars.itemlistCntr.filters.reduce((items,f) => f.filter(items), ctx.data || []);
 			if (updateCounters) { // use merge
 					jb.delay(1).then(_=>{
 					jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeFilter%','ref'),(ctx.data || []).length, ctx);
@@ -8437,14 +8471,6 @@ jb.component('itemlistContainer.filter', {
 			}
 			return res;
 	}
-})
-
-jb.component('itemlistContainer.conditionFilter', {
-  type: 'boolean',
-  category: 'itemlist-filter:100',
-  requires: ctx => ctx.vars.itemlistCntr,
-  impl: ctx => ctx.vars.itemlistCntr &&
-		ctx.vars.itemlistCntr.filters.reduce((res,filter) => res && filter([ctx.data]).length, true)
 })
 
 jb.component('itemlistContainer.search', {
@@ -8459,17 +8485,18 @@ jb.component('itemlistContainer.search', {
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.componentContext), features(
-		calcProp('init', (ctx,{itemlistCntr},{searchIn,databind}) => {
-				if (!itemlistCntr) return;
-				itemlistCntr.filters.push( items => {
-					const toSearch = jb.val(databind()) || '';
-					if (jb.frame.Fuse && jb.path(searchIn,'profile.$') == 'search.fuse')
-						return toSearch ? new jb.frame.Fuse(items, searchIn()).search(toSearch).map(x=>x.item) : items
-					if (typeof searchIn.profile == 'function') // improved performance
-						return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
+		calcProp('init', (ctx,{cmp, itemlistCntr},{searchIn,databind}) => {
+				if (!itemlistCntr) return
+				itemlistCntr.filters.push( {
+					filter: items => {
+						const toSearch = jb.val(databind()) || '';
+						if (jb.frame.Fuse && jb.path(searchIn,'profile.$') == 'search.fuse')
+							return toSearch ? new jb.frame.Fuse(items, searchIn()).search(toSearch).map(x=>x.item) : items
+						if (typeof searchIn.profile == 'function') // improved performance
+							return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
 
-					return items.filter(item=>toSearch == '' || searchIn(ctx.setData(item)).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
-				})
+						return items.filter(item=>toSearch == '' || searchIn(ctx.setData(item)).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
+				}})
 		}),
 		frontEnd.selectionKeySourceService(),
   	))
@@ -8522,23 +8549,20 @@ jb.component('itemlistContainer.filterField', {
     {id: 'fieldData', dynamic: true, mandatory: true},
     {id: 'filterType', type: 'filter-type'}
   ],
-  impl: (ctx,fieldData,filterType) => ({
-			afterViewInit: cmp => {
-				const propToFilter = jb.ui.extractPropFromExpression(ctx.params.fieldData.profile);
-				if (propToFilter)
-					cmp.itemToFilterData = item => item[propToFilter];
-				else
-					cmp.itemToFilterData = item => fieldData(ctx.setData(item));
-
-				ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.filters.push(items=>{
-						const filterValue = jb.val(ctx.vars.$model.databind());
-						if (!filterValue) return items;
-						const res = items.filter(item=>filterType.filter(filterValue,cmp.itemToFilterData(item)) );
-						if (filterType.sort && (!cmp.state.sortOptions || cmp.state.sortOptions.length == 0) )
-							filterType.sort(res,cmp.itemToFilterData,filterValue);
-						return res;
-				})
-		}
+  impl: feature.init((ctx,{cmp,itemlistCntr},{fieldData,filterType}) => {
+	  if (!itemlistCntr) return
+	  if (!itemlistCntr.filters.find(f=>f.cmpId == cmp.cmpId)) 
+			itemlistCntr.filters.push({
+				cmpId: cmp.cmpId,
+				filter: items=> {
+					const filterValue = jb.val(ctx.vars.$model.databind())
+					if (!filterValue) return items
+					const res = items.filter(item=>filterType.filter(filterValue, fieldData(ctx.setData(item))))
+					if (filterType.sort && (!cmp.state.sortOptions || cmp.state.sortOptions.length == 0) )
+						filterType.sort(res,item => fieldData(ctx.setData(item)),filterValue)
+					return res
+					}
+			})
 	})
 })
 
@@ -9433,7 +9457,9 @@ jb.ns('slider,mdcStyle')
 jb.component('editableNumber.sliderNoText', {
   type: 'editable-number.style',
   impl: customStyle({
-      template: (cmp,{numbericVal},h) => h('input', { type: 'range', value: numbericVal, mouseup: 'onblurHandler', tabindex: -1}),
+      template: (cmp,{min,max,step,numbericVal},h) => h('input', { 
+        type: 'range', value: numbericVal, mouseup: 'onblurHandler', tabindex: -1, min,max,step
+      }),
       features: [ field.databind(0,true), slider.init(), slider.drag()]
   })
 })
@@ -9467,7 +9493,7 @@ jb.component('editableNumber.slider', {
             features: [css.width(80), css.class('slider-input')]
           })
         ],
-        features: watchRef('%$editableNumberModel/databind()%')
+        features: watchRef({ref: '%$editableNumberModel/databind()%', allowSelfRefresh: true})
       })
     }),
     'editableNumberModel'
@@ -9501,7 +9527,7 @@ jb.component('editableNumber.mdcSlider', {
             style: editableNumber.mdcSliderNoText({}),
           })
         ],
-        features: watchRef('%$editableNumberModel/databind()%')
+        features: watchRef({ref: '%$editableNumberModel/databind()%', allowSelfRefresh: true})
       })
     }),
     'editableNumberModel'
@@ -9518,7 +9544,7 @@ jb.component('editableNumber.mdcSliderNoText', {
   ],
   impl: customStyle({
     template: (cmp,{title,min,max,step,numbericVal,thumbSize,cx,cy,r},h) =>
-      h('div#mdc-slider mdc-slider--discrete',{tabIndex: -1, role: 'slider', max, step,
+      h('div#mdc-slider mdc-slider--discrete',{tabIndex: -1, role: 'slider', 'data-step': step,
         'aria-valuemin': min, 'aria-valuemax': max, 'aria-valuenow': numbericVal, 'aria-label': title()}, [
         h('div#mdc-slider__track-container',{}, h('div#mdc-slider__track')),
         h('div#mdc-slider__thumb-container',{},[
@@ -9531,10 +9557,15 @@ jb.component('editableNumber.mdcSliderNoText', {
       field.databind(),
       slider.init(),
       frontEnd.init((ctx,{cmp}) => {
-        cmp.mdcSlider && cmp.mdcSlider.destroy()
         cmp.mdcSlider = new jb.ui.material.MDCSlider(cmp.base)
-        //cmp.mdcSlider.listen('MDCSlider:input', ({detail}) =>  !cmp.checkAutoScale(detail.value) && cmp.jbModelWithUnits(detail.value))
         cmp.mdcSlider.listen('MDCSlider:change', () => ctx.run(action.runBEMethod('assignIgnoringUnits', ()=> cmp.mdcSlider.value)))
+      }),
+      frontEnd.onRefresh((ctx,{cmp,el}) => {
+        if (!cmp.mdcSlider) return 
+        cmp.mdcSlider.value = +el.getAttribute('aria-valuenow')
+        cmp.mdcSlider.min = +el.getAttribute('aria-valuemin')
+        cmp.mdcSlider.max = +el.getAttribute('aria-valuemax')
+        cmp.mdcSlider.step = +el.getAttribute('data-step')
       }),
       frontEnd.onDestroy((ctx,{cmp}) => cmp.mdcSlider && cmp.mdcSlider.destroy()),
     ]
@@ -9550,7 +9581,7 @@ jb.component('slider.init', {
     calcProp('max', (ctx,{$model,$props}) => {
         const val = $props.numbericVal
         if (val >= +$model.max && $model.autoScale)
-          return val + 100
+          return val * 1.2
         return +$model.max
     }),
     method('delete',writeValue('%$$model/databind()%',() => null)),
@@ -9561,24 +9592,11 @@ jb.component('slider.init', {
     }),
     method('incIgnoringUnits', (ctx,{editableNumber,$model,$props}) => {
       const curVal = editableNumber.numericPart(jb.val($model.databind()))
-      const newVal = editableNumber.keepInDomain(curVal + ctx.data*$props.step)
       if (curVal === undefined) return
+      const nVal = curVal + ctx.data*$props.step
+      const newVal = editableNumber.autoScale ? nVal : editableNumber.keepInDomain(nVal)
       jb.writeValue($model.databind(), editableNumber.calcDataString(newVal, ctx),ctx)
     }),
-    method('checkAutoScale', (ctx,{cmp,$props,$model,editableNumber}) => {
-      const val = editableNumber.numericPart(jb.val($model.databind()))
-      if (!$model.autoScale) return
-      if (val >= $props.max) { // scale up
-        //jb.writeValue($model.databind(), editableNumber.calcDataString(val+ (+$props.step),ctx),ctx)
-        cmp.refresh(null, {strongRefresh: true},{srcCtx: ctx.componentContext})
-      } else if ($props.max > $model.max && val < $model.max) { // scale down
-        //jb.writeValue($model.databind(), editableNumber.calcDataString(val,ctx),ctx)
-        jb.delay(10).then(()=>
-          cmp.refresh(null, {strongRefresh: true},{srcCtx: ctx.componentContext}))
-      }
-    }),
-    //followUp.flow(source.watchableData('%$$model/databind()%'), sink.BEMethod('checkAutoScale')),
-    frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode%==46'), sink.BEMethod('delete')),
     frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode%==46'), sink.BEMethod('delete')),
     frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode%==39'), rx.map(If('%shiftKey%',9,1)), sink.BEMethod('incIgnoringUnits')),
     frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode%==37'), rx.map(If('%shiftKey%',-9,-1)), sink.BEMethod('incIgnoringUnits')),
@@ -10174,8 +10192,8 @@ jb.component('editableText.mdcInput', {
           (cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'post')[0] && 'mdc-text-field--with-trailing-icon'
         ].filter(x=>x).join(' ') },[
           ...(cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'pre').map(h).map(vdom=>vdom.addClass('mdc-text-field__icon mdc-text-field__icon--leading')),
-          h('input#mdc-text-field__input', { type: 'text', id: 'input_' + fieldId,
-              value: databind, onchange: true, onkeyup: true, onblur: true, autocomplete: 'chrome-off'
+          h('input#mdc-text-field__input', { type: 'text', id: 'input_' + fieldId, name: 'input_' + fieldId,
+              value: databind, onchange: true, onkeyup: true, onblur: true, autocomplete: 'off'
           }),
           ...(cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-text-field__icon mdc-text-field__icon--trailing')),
           ...[!noLabel && h('label#mdc-floating-label', { class: databind ? 'mdc-floating-label--float-above' : '', for: 'input_' + fieldId},title() )].filter(x=>x),
@@ -10756,6 +10774,30 @@ jb.component('picklist.radio', {
   })
 })
 
+jb.component('picklist.mdcRadio', {
+  type: 'picklist.style',
+  params: [
+    {id: 'text', defaultValue: '%text%', dynamic: true}
+  ],
+  impl: customStyle({
+    template: (cmp,{databind, options, fieldId, text},h) => h('div#mdc-form-field', {},
+          options.flatMap((option,i)=> [
+              h('div#mdc-radio',{},[
+                h('input#mdc-radio__native-control', {
+                  type: 'radio', name: fieldId, id: i, checked: databind === option.code, value: option.code, onchange: true
+                }),
+                h('div#mdc-radio__background',{},[
+                  h('div#mdc-radio__outer-circle'),
+                  h('div#mdc-radio__inner-circle'),
+                ]),
+                h('div#mdc-radio__ripple')
+              ]),
+              h('label',{for: i}, text(cmp.ctx.setData(option))),
+    ])),
+    features: [field.databind(), picklist.init()]
+  })
+})
+
 jb.component('picklist.radioVertical', {
   type: 'picklist.style',
   impl: styleWithFeatures(
@@ -10929,8 +10971,8 @@ jb.component('editableBoolean.checkbox', {
 jb.component('editableBoolean.checkboxWithTitle', {
   type: 'editable-boolean.style',
   impl: customStyle({
-    template: (cmp,{text,databind},h) => h('div',{}, [h('input', { type: 'checkbox',
-        checked: databind, onchange: 'toggle', onkeyup: 'toggleByKey'  }), text]),
+    template: (cmp,{title,databind},h) => h('div',{}, [h('input', { type: 'checkbox',
+        checked: databind, onchange: 'toggle', onkeyup: 'toggleByKey'  }), title()]),
     features: field.databind()
   })
 })
@@ -10938,12 +10980,12 @@ jb.component('editableBoolean.checkboxWithTitle', {
 jb.component('editableBoolean.checkboxWithLabel', {
   type: 'editable-boolean.style',
   impl: customStyle({
-    template: (cmp,{text,databind,fieldId},h) => h('div',{},[
+    template: (cmp,{title,databind,fieldId},h) => h('div',{},[
         h('input', { type: 'checkbox', id: "switch_"+fieldId,
           checked: databind,
           onchange: 'toggle',
           onkeyup: 'toggleByKey'  },),
-        h('label',{for: "switch_"+fieldId },text)
+        h('label',{for: "switch_"+fieldId },title())
     ]),
     features: field.databind()
   })
@@ -10969,7 +11011,7 @@ jb.component('editableBoolean.mdcXV', {
   impl: customStyle({
     template: (cmp,{title,databind,yesIcon,noIcon},h) => h('button',{
           class: ['mdc-icon-button material-icons',databind && 'raised mdc-icon-button--on'].filter(x=>x).join(' '),
-          title, tabIndex: -1, onclick: 'toggle', onkeyup: 'toggleByKey'},[
+          title: title(), tabIndex: -1, onclick: 'toggle', onkeyup: 'toggleByKey'},[
             h('i',{class:'material-icons mdc-icon-button__icon mdc-icon-button__icon--on'}, yesIcon),
             h('i',{class:'material-icons mdc-icon-button__icon '}, noIcon),
         ]),
@@ -11012,14 +11054,14 @@ jb.component('editableBoolean.mdcSlideToggle', {
     {id: 'width', as: 'string', defaultValue: 80}
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('div#mdc-switch',{class: state.databind ? 'mdc-switch--checked': '' },[
+    template: (cmp,{databind,fieldId,title},h) => h('div#mdc-switch',{class: databind ? 'mdc-switch--checked': '' },[
       h('div#mdc-switch__track'),
       h('div#mdc-switch__thumb-underlay',{},
         h('div#mdc-switch__thumb',{},
-          h('input#mdc-switch__native-control', { type: 'checkbox', role: 'switch', id: 'switch_' + state.fieldId,
-            checked: state.databind, onchange: 'toggle', onkeyup: 'toggleByKey' }
+          h('input#mdc-switch__native-control', { type: 'checkbox', role: 'switch', id: 'switch_' + fieldId,
+            checked: databind, onchange: 'toggle', onkeyup: 'toggleByKey' }
       ))),
-      h('label',{for: 'switch_' + state.fieldId},state.text)
+      h('label',{for: 'switch_' + fieldId},title())
     ]),
     css: ctx => jb.ui.propWithUnits('width',ctx.params.width),
     features: [field.databind(), mdcStyle.initDynamic()]
@@ -11032,10 +11074,10 @@ jb.component('editableBoolean.mdcCheckBox', {
     {id: 'width', as: 'string', defaultValue: 80}
   ],
   impl: customStyle({
-    template: (cmp,state,h) => h('div#mdc-form-field', {},[
+    template: (cmp,{databind,fieldId,title},h) => h('div#mdc-form-field', {},[
         h('div#mdc-checkbox',{}, [
-          h('input#mdc-checkbox__native-control', { type: 'checkbox', id: 'checkbox_' + state.fieldId,
-            checked: state.databind, onchange: 'toggle', onkeyup: 'toggleByKey' }),
+          h('input#mdc-checkbox__native-control', { type: 'checkbox', id: 'checkbox_' + fieldId,
+            checked: databind, onchange: 'toggle', onkeyup: 'toggleByKey' }),
           h('div#mdc-checkbox__background',{}, [
             h('svg#mdc-checkbox__checkmark',{viewBox: '0 0 24 24'},
               h('path#mdc-checkbox__checkmark-path', { fill: 'none', d: 'M1.73,12.91 8.1,19.28 22.79,4.59' }
@@ -11044,11 +11086,12 @@ jb.component('editableBoolean.mdcCheckBox', {
           ]),
           h('div#mdc-checkbox__ripple')
         ]),
-        h('label',{for: 'checkbox_' + state.fieldId},state.text)
+        h('label',{for: 'checkbox_' + fieldId},title())
     ]),
     css: ctx => jb.ui.propWithUnits('width',ctx.params.width),
     features: [
       field.databind(), 
+      css('~ .mdc-checkbox__checkmark { top: -9px}')
       // frontEnd((ctx,{cmp}) => {
       //   // svg refresh bug (maybe a jb-react bug)
       //   const bck = cmp.base.querySelector('.mdc-checkbox__background')
@@ -11057,7 +11100,23 @@ jb.component('editableBoolean.mdcCheckBox', {
     ]
   })
 })
-;
+
+jb.component('editableBoolean.picklist', {
+  type: 'editable-boolean.style',
+  params: [
+    {id: 'picklistStyle', type: 'picklist.style', dynamic: true },
+  ],
+  impl: styleByControl(
+    picklist({
+      databind: '%$editableBooleanModel/databind%',
+      options: list(
+        obj(prop('text','%$editableBooleanModel/textForTrue()%'),prop('code',true)),
+        obj(prop('text','%$editableBooleanModel/textForFalse()%'),prop('code',false))),
+      style: call('picklistStyle'),
+    }),
+    'editableBooleanModel'
+  )
+});
 
 jb.component('prettyPrint', {
   params: [
@@ -11407,7 +11466,7 @@ class TreeRenderer {
 		const disabled = model.disabled && model.disabled(path) ? 'jb-disabled' : ''
 		const selected = path == this.selected ? 'selected' : ''
 		const clz = ['treenode', model.isArray(path) ? 'jb-array-node': '',disabled, selected].filter(x=>x).join(' ')
-		const children = expanded[path] ? [h('div#treenode-children', {} ,
+		const children = expanded[path] && model.children(path).length ? [h('div#treenode-children', {} ,
 			model.children(path).map(childPath=>this.renderNode(childPath)))] : []
 
 		return h('div',{class: clz, path, ...expanded[path] ? {expanded: true} :{} }, [ this.renderLine(path), ...children ] )
