@@ -36,7 +36,7 @@ const variations = { button: { prop: 'raised', values: [true,false] }}
       genericControl: group({
         title: pipeline('%$__style%', suffix('.')),
         controls: [{$: ctrl,
-          ... (ctrl == 'editableNumber' ? { databind: '%$person/age%' }
+          ... (ctrl == 'editableNumber' ? { databind: '%$person/age%', autoScale: true, max: 100 }
             : ctrl == 'multiSelect' ? { databind: '%$galleryMultiChoice/result%' }
             : ctrl == 'editableBoolean' ? { databind: '%$person/male%' }
             : { databind: '%$person/name%' } ),
