@@ -70,8 +70,8 @@ jb.chromeDebugger = {
                             m.source == parent && m.data.to == 'inspectedWindow' && handler(m)  
                         })
                     };
+                    jb.studio.initPreview(parent,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
                     jb.remoteCBHandler(remoteInterface).initCommandListener();
-                    jb.studio.initPreview(parent,[Object.getPrototypeOf({}),Object.getPrototypeOf([])])
                 </script>
             </head>`
             const iframe = self.jbStudioIframe = document.createElement('iframe')
