@@ -1,8 +1,15 @@
-jb.component('people', { watchableData: [
-  { "name": "Homer Simpson" ,age: 42 , male: true, children: [{ name: 'Bart' }, { name: 'Lisa' }, { name: 'Maggie' } ]},
-  { "name": "Marge Simpson" ,age: 38 , male: false, children: [{ name: 'Bart' }, { name: 'Lisa' }, { name: 'Maggie' } ]},
-  { "name": "Bart Simpson"  ,age: 12 , male: true, children: []}
-]
+jb.component('dataResource.sortBy', {
+  watchableData: 'age'
+})
+
+jb.component('dataResource.selectedItem', {
+  watchableData: {
+
+  }
+})
+
+jb.component('dataResource.noOfItems', {
+  watchableData: '1000'
 })
 
 jb.component('itemlists.main', {
@@ -62,36 +69,47 @@ jb.component('itemlists.largeTableWithSearch', {
   type: 'control',
   impl: group({
     title: 'large-table',
+    layout: layout.vertical('20'),
     controls: [
-      itemlistContainer.search({searchIn: search.fuse({})}),
-      table({
+      group({
+        layout: layout.horizontal('15'),
+        controls: [
+          itemlistContainer.search({
+            searchIn: search.fuse({shouldSort: true, threshold: '0', distance: ''})
+          }),
+          editableText({title: '#items', databind: '%$noOfItems%'})
+        ]
+      }),
+      itemlist({
         items: pipeline(
-          range(1, '1000'),
+          range(1, '%$noOfItems%'),
           {'$': 'object', id: '%%', name: '%%-%%'},
           itemlistContainer.filter()
         ),
-        fields: [
-          field({title: 'id', data: '%id%', hoverTitle: '--%id%--', numeric: true}),
-          field({title: 'group', data: ctx => Math.floor(Number(ctx.data.id) /10)})
+        controls: [
+          text({text: '%id%', title: 'id'}),
+          text({text: ctx => Math.floor(Number(ctx.data.id) /10), title: 'group'})
         ],
         style: table.mdc(),
-        visualSizeLimit: '1000',
+        visualSizeLimit: '10',
         features: [
           watchRef('%$itemlistCntrData/search_pattern%'),
           itemlist.selection({
             onDoubleClick: openDialog({
-              content: group({}),
               title: '%id%',
+              content: group({}),
               features: dialogFeature.uniqueDialog('unique')
             })
           }),
           itemlist.keyboardSelection({
             onEnter: openDialog({
-              content: group({}),
               title: '%id%',
+              content: group({}),
               features: dialogFeature.uniqueDialog('unique')
             })
-          })
+          }),
+          itemlist.infiniteScroll(),
+          watchRef('%$')
         ]
       })
     ],
@@ -162,14 +180,17 @@ jb.component('itemlists.tableWithSearch', {
             databind: '%$itemlistCntrData/search_pattern%',
             style: editableText.mdcSearch('300')
           }),
-          table({
+          itemlist({
             items: pipeline('%$people%', itemlistContainer.filter()),
-            fields: [field({title: 'name', data: '%name%'}), field({title: 'age', data: '%age%'})],
+            controls: [
+              text({text: '%name%', title: 'name'}),
+              text({text: '%age%', title: 'age'})
+            ],
             style: table.mdc(),
             features: [
               watchRef('%$itemlistCntrData/search_pattern%'),
               itemlist.selection({
-                onDoubleClick: openDialog({content: group({}), title: 'double click'}),
+                onDoubleClick: openDialog({title: 'double click', content: group({})}),
                 autoSelectFirst: 'true'
               }),
               itemlist.keyboardSelection({}),
@@ -192,7 +213,7 @@ jb.component('itemlists.tableWithFilters', {
         controls: [
           group({
             title: 'filters',
-            layout: layout.horizontal(45),
+            layout: layout.horizontal('100'),
             controls: [
               editableText({
                 title: 'name',
@@ -208,16 +229,18 @@ jb.component('itemlists.tableWithFilters', {
               })
             ]
           }),
-          table({
+          itemlist({
+            title: '',
             items: pipeline('%$people%', itemlistContainer.filter()),
-            fields: [
-              field({title: 'name', data: '%name%', width: '200'}),
-              field({title: 'age', data: '%age%'})
+            controls: [
+              text({text: '%name%', title: 'name'}),
+              text({text: '%age%', title: 'age'})
             ],
-            features: watchRef({ref: '%$itemlistCntrData%', includeChildren: 'yes'})
+            style: table.plain(),
+            features: [watchRef({ref: '%$itemlistCntrData%', includeChildren: 'yes'})]
           })
         ],
-        features: group.itemlistContainer({})
+        features: [group.itemlistContainer({}), css.width('300')]
       })
     ]
   })
@@ -317,16 +340,6 @@ jb.component('itemlists.withSort', {
       })
     ]
   })
-})
-
-jb.component('dataResource.sortBy', {
-  watchableData: 'age'
-})
-
-jb.component('dataResource.selectedItem', {
-  watchableData: {
-
-  }
 })
 
 jb.component('dataResource.people', {

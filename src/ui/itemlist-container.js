@@ -30,9 +30,7 @@ jb.component('itemlistContainer.filter', {
   ],
   impl: (ctx,updateCounters) => {
 			if (!ctx.vars.itemlistCntr) return;
-			const res = ctx.vars.itemlistCntr.filters.reduce((items,filter) => filter(items), ctx.data || []);
-			// if (ctx.vars.itemlistCntrData.countAfterFilter != res.length)
-			// 	jb.delay(1).then(_=>ctx.vars.itemlistCntr.reSelectAfterFilter(res));
+			const res = ctx.vars.itemlistCntr.filters.reduce((items,f) => f.filter(items), ctx.data || []);
 			if (updateCounters) { // use merge
 					jb.delay(1).then(_=>{
 					jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeFilter%','ref'),(ctx.data || []).length, ctx);
@@ -43,14 +41,6 @@ jb.component('itemlistContainer.filter', {
 			}
 			return res;
 	}
-})
-
-jb.component('itemlistContainer.conditionFilter', {
-  type: 'boolean',
-  category: 'itemlist-filter:100',
-  requires: ctx => ctx.vars.itemlistCntr,
-  impl: ctx => ctx.vars.itemlistCntr &&
-		ctx.vars.itemlistCntr.filters.reduce((res,filter) => res && filter([ctx.data]).length, true)
 })
 
 jb.component('itemlistContainer.search', {
@@ -65,17 +55,18 @@ jb.component('itemlistContainer.search', {
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.componentContext), features(
-		calcProp('init', (ctx,{itemlistCntr},{searchIn,databind}) => {
-				if (!itemlistCntr) return;
-				itemlistCntr.filters.push( items => {
-					const toSearch = jb.val(databind()) || '';
-					if (jb.frame.Fuse && jb.path(searchIn,'profile.$') == 'search.fuse')
-						return toSearch ? new jb.frame.Fuse(items, searchIn()).search(toSearch).map(x=>x.item) : items
-					if (typeof searchIn.profile == 'function') // improved performance
-						return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
+		calcProp('init', (ctx,{cmp, itemlistCntr},{searchIn,databind}) => {
+				if (!itemlistCntr) return
+				itemlistCntr.filters.push( {
+					filter: items => {
+						const toSearch = jb.val(databind()) || '';
+						if (jb.frame.Fuse && jb.path(searchIn,'profile.$') == 'search.fuse')
+							return toSearch ? new jb.frame.Fuse(items, searchIn()).search(toSearch).map(x=>x.item) : items
+						if (typeof searchIn.profile == 'function') // improved performance
+							return items.filter(item=>toSearch == '' || searchIn.profile(item).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
 
-					return items.filter(item=>toSearch == '' || searchIn(ctx.setData(item)).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
-				})
+						return items.filter(item=>toSearch == '' || searchIn(ctx.setData(item)).toLowerCase().indexOf(toSearch.toLowerCase()) != -1)
+				}})
 		}),
 		frontEnd.selectionKeySourceService(),
   	))
@@ -128,23 +119,20 @@ jb.component('itemlistContainer.filterField', {
     {id: 'fieldData', dynamic: true, mandatory: true},
     {id: 'filterType', type: 'filter-type'}
   ],
-  impl: (ctx,fieldData,filterType) => ({
-			afterViewInit: cmp => {
-				const propToFilter = jb.ui.extractPropFromExpression(ctx.params.fieldData.profile);
-				if (propToFilter)
-					cmp.itemToFilterData = item => item[propToFilter];
-				else
-					cmp.itemToFilterData = item => fieldData(ctx.setData(item));
-
-				ctx.vars.itemlistCntr && ctx.vars.itemlistCntr.filters.push(items=>{
-						const filterValue = jb.val(ctx.vars.$model.databind());
-						if (!filterValue) return items;
-						const res = items.filter(item=>filterType.filter(filterValue,cmp.itemToFilterData(item)) );
-						if (filterType.sort && (!cmp.state.sortOptions || cmp.state.sortOptions.length == 0) )
-							filterType.sort(res,cmp.itemToFilterData,filterValue);
-						return res;
-				})
-		}
+  impl: feature.init((ctx,{cmp,itemlistCntr},{fieldData,filterType}) => {
+	  if (!itemlistCntr) return
+	  if (!itemlistCntr.filters.find(f=>f.cmpId == cmp.cmpId)) 
+			itemlistCntr.filters.push({
+				cmpId: cmp.cmpId,
+				filter: items=> {
+					const filterValue = jb.val(ctx.vars.$model.databind())
+					if (!filterValue) return items
+					const res = items.filter(item=>filterType.filter(filterValue, fieldData(ctx.setData(item))))
+					if (filterType.sort && (!cmp.state.sortOptions || cmp.state.sortOptions.length == 0) )
+						filterType.sort(res,item => fieldData(ctx.setData(item)),filterValue)
+					return res
+					}
+			})
 	})
 })
 

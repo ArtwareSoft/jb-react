@@ -10,7 +10,9 @@ function h(cmpOrTag,attributes,children) {
     return new jb.ui.VNode(cmpOrTag,attributes,children)
 }
 
-function compareVdom(b,a) {
+function compareVdom(b,after) {
+    const a = after instanceof ui.VNode ? ui.stripVdom(after) : after
+    jb.log('vdom diff compare',[...arguments])
     const attributes = jb.objectDiff(a.attributes || {}, b.attributes || {})
     const children = childDiff(b.children || [],a.children || [])
     return { 
@@ -23,7 +25,7 @@ function compareVdom(b,a) {
         if (b.length == 0 && a.length ==0) return
         if (a.length == 1 && b.length == 1 && a[0].tag == b[0].tag)
             return { 0: {...compareVdom(b[0],a[0]),__afterIndex: 0}, length: 1 }
-        jb.log('childDiff',[...arguments])
+        jb.log('vdom child diff start',[...arguments])
         const beforeWithIndex = b.map((e,i)=> ({i, ...e}))
         let remainingBefore = beforeWithIndex.slice(0)
         // locating before-objects in after-array. done in two stages. also calcualing the remaining before objects that were not found
@@ -31,18 +33,24 @@ function compareVdom(b,a) {
         a.forEach((toLocate,i) => afterToBeforeMap[i] = afterToBeforeMap[i] || sameIndexSameTag(toLocate,i,remainingBefore))
 
         const reused = []
-        const res = { length: beforeWithIndex.length }
+        const res = { length: 0, sameOrder: true }
         beforeWithIndex.forEach( (e,i) => {
-            const __afterIndex = afterToBeforeMap.indexOf(e);
+            const __afterIndex = afterToBeforeMap.indexOf(e)
+            if (__afterIndex != i) res.sameOrder = false
             if (__afterIndex == -1) {
-                res [i] =  {$: 'delete', __afterIndex }
+                res.length = i+1
+                res[i] =  {$: 'delete', before: e } //, __afterIndex: i }
             } else {
                 reused[__afterIndex] = true
-                res [i] = { __afterIndex, ...compareVdom(e, a[__afterIndex]), ...(e.$remount ? {remount: true}: {}) }
+                const innerDiff = { __afterIndex, ...compareVdom(e, a[__afterIndex]), ...(e.$remount ? {remount: true}: {}) }
+                if (Object.keys(innerDiff).length > 1) {
+                    res[i] = innerDiff
+                    res.length = i+1
+                }
             }
         })
-        res.toAppend = a.flatMap((e,i) => reused[i] ? [] : [ jb.ui.stripVdom(Object.assign( e, {__afterIndex: i})) ])
-        jb.log('childDiffRes',[res,...arguments])
+        res.toAppend = a.flatMap((e,i) => reused[i] ? [] : [ Object.assign( e, {__afterIndex: i}) ])
+        jb.log('vdom child diff result',[res,...arguments])
         if (!res.length && !res.toAppend.length) return null
         return res
 
@@ -118,7 +126,7 @@ function applyNewVdom(elem,vdomAfter,{strongRefresh, ctx} = {}) {
     } else {
         const vdomBefore = elem instanceof ui.VNode ? elem : elemToVdom(elem)
         const delta = compareVdom(vdomBefore,vdomAfter)
-        jb.log('applyDeltaTop vdom',['apply',vdomBefore,vdomAfter,active,...arguments], {modifier: record => record.push(filterDelta(delta)) })
+        jb.log('applyDeltaTop vdom',[vdomBefore,vdomAfter,active,...arguments], {modifier: record => record.push(filterDelta(delta)) })
         applyDeltaToDom(elem,delta)
     }
     ui.refreshFrontEnd(elem)
@@ -145,13 +153,10 @@ function elemToVdom(elem) {
 function applyDeltaToDom(elem,delta) {
     jb.log('applyDelta dom',[...arguments])
     const children = delta.children
-    if (delta.children) {
-        const childrenArr = delta.children.length ? Array.from(Array(delta.children.length).keys()).map(i=>children[i]) : []
+    if (children) {
+        const childrenArr = children.length ? Array.from(Array(children.length).keys()).map(i=>children[i]) : []
         const childElems = Array.from(elem.children)
-        const toAppend = delta.children.toAppend || []
-        const deleteCmp = delta.children.deleteCmp
-        const sameOrder = childrenArr.reduce((acc,e,i) => acc && e.__afterIndex ==i, true) && !toAppend.length
-            || !childrenArr.length && toAppend.reduce((acc,e,i) => acc && (e.__afterIndex == null || e.__afterIndex ==i), true)
+        const {toAppend,deleteCmp,sameOrder} = children
         if (deleteCmp) {
             const toDelete = Array.from(elem.children).find(ch=>ch.getAttribute('cmp-id') == deleteCmp)
             if (toDelete) {
@@ -161,6 +166,7 @@ function applyDeltaToDom(elem,delta) {
             }
         }
         childrenArr.forEach((e,i) => {
+            if (!e) return
             if (e.$ == 'delete') {
                 unmount(childElems[i])
                 elem.removeChild(childElems[i])
@@ -170,7 +176,7 @@ function applyDeltaToDom(elem,delta) {
                 !sameOrder && (childElems[i].setAttribute('__afterIndex',e.__afterIndex))
             }
         })
-        toAppend.forEach(e=>{
+        ;(toAppend||[]).forEach(e=>{
             const newElem = render(e,elem)
             jb.log('appendChild dom',[newElem,e,elem,delta])
             !sameOrder && (newElem.setAttribute('__afterIndex',e.__afterIndex))
@@ -200,6 +206,7 @@ function applyDeltaToDom(elem,delta) {
 
 function applyDeltaToVDom(elem,delta) {
     jb.log('applyDelta vdom',[...arguments])
+    // supports only append/delete
     if (delta.children) {
         const toAppend = delta.children.toAppend || []
         toAppend.forEach(ch => elem.children.push(jb.ui.unStripVdom(ch,elem)))
@@ -470,7 +477,12 @@ Object.assign(jb.ui, {
         }
     },
     applyDeltaToCmp(delta, ctx, cmpId, elem) {
+        if (!delta) return
         elem = elem || jb.ui.elemOfCmp(ctx,cmpId)
+        if (delta.$prevVersion && delta.$prevVersion != elem.getAttribute('cmp-ver')) {
+            jb.logError('trying to apply delta to unexpeced verson',[delta, ctx, cmpId, elem])
+            return
+        }
         jb.log('applyDelta uiComp',[delta, ctx, cmpId, elem])
         if (elem instanceof jb.ui.VNode) {
             jb.ui.applyDeltaToVDom(elem, delta)

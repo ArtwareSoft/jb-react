@@ -272,10 +272,9 @@ jb.component('feature.onKey', {
 jb.component('feature.keyboardShortcut', {
   type: 'feature',
   category: 'events',
-  description: 'listen to events at the document level even when the component is not active',
   params: [
     {id: 'key', as: 'string', description: 'e.g. Alt+C'},
-    {id: 'action', type: 'action', dynamic: true}
+    {id: 'action', type: 'action', dynamic: true},
   ],
   impl: features(
     method(replace({find: '-', replace: '+', text: 'onKey%$key%Handler',useRegex: true}), call('action')),
@@ -284,8 +283,32 @@ jb.component('feature.keyboardShortcut', {
         cmp.hasDocOnKeyHanlder = true
         ctx.run(rx.pipe(
           source.frontEndEvent('keydown'),
-          // source.event('keydown','%$cmp.base.ownerDocument%'), 
-          // rx.takeUntil('%$cmp.destroyed%'),
+          rx.map(key.eventToMethod('%%',el)), 
+          rx.filter('%%'), 
+          rx.log('keyboardShortcut keyboard uiComp run handler'),
+          sink.BEMethod('%%')
+        ))
+      }
+    })
+  )
+})
+
+jb.component('feature.globalKeyboardShortcut', {
+  type: 'feature',
+  category: 'events',
+  description: 'listen to events at the document level even when the component is not active',
+  params: [
+    {id: 'key', as: 'string', description: 'e.g. Alt+C'},
+    {id: 'action', type: 'action', dynamic: true},
+  ],
+  impl: features(
+    method(replace({find: '-', replace: '+', text: 'onKey%$key%Handler',useRegex: true}), call('action')),
+    frontEnd.init((ctx,{cmp,el}) => {
+      if (! cmp.hasDocOnKeyHanlder) {
+        cmp.hasDocOnKeyHanlder = true
+        ctx.run(rx.pipe(
+          source.event('keydown','%$cmp.base.ownerDocument%'), 
+          rx.takeUntil('%$cmp.destroyed%'),
           rx.map(key.eventToMethod('%%',el)), 
           rx.filter('%%'), 
           rx.log('keyboardShortcut keyboard uiComp run handler'),

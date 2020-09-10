@@ -79,16 +79,17 @@ jb.component('studio.newDataSource', {
           css.margin({left: '10'})
         ]
       }),
-      editableBoolean({
-        databind: '%$dialogData/watchable%',
-        style: editableBoolean.mdcCheckBox(),
-        title: 'watchable',
-        textForTrue: 'watchable',
-        textForFalse: 'passive'
-      }),
       group({
-        layout: layout.horizontal('11'),
+        title: '',
+        layout: layout.horizontal('65'),
         controls: [
+          editableBoolean({
+            databind: '%$dialogData/watchable%',
+            style: editableBoolean.mdcSlideToggle(),
+            title: 'watchable',
+            textForTrue: 'watchable',
+            textForFalse: 'passive'
+          }),
           editableBoolean({
             databind: '%$existingFile%',
             style: editableBoolean.mdcSlideToggle(),
@@ -96,23 +97,30 @@ jb.component('studio.newDataSource', {
             textForTrue: 'existing file',
             textForFalse: 'new  file',
             features: css.margin({left: '14'})
-          }),
-          picklist({
-            title: 'file',
-            databind: '%$dialogData/file%',
-            options: picklist.options({options: sourceEditor.filesOfProject()}),
-            style: picklist.mdcSelect('150'),
-            features: [hidden(ctx => ctx.exp('%$existingFile%')), watchRef('%$existingFile%')]
           })
-        ]
+        ],
+        features: css.margin({top: '8', left: '14'})
+      }),
+      picklist({
+        title: 'file',
+        databind: '%$dialogData/file%',
+        options: picklist.options({options: sourceEditor.filesOfProject()}),
+        style: picklist.mdcSelect('250'),
+        features: [hidden(ctx => ctx.exp('%$existingFile%')), watchRef('%$existingFile%')]
       })
     ],
     features: [
       css.padding({top: '14', left: '11'}),
       css.width('273'),
       css.height('247'),
-      variable({name: 'dialogData', value: firstSucceeding('%$dialogData%', obj())}),
-      variable({name: 'existingFile', watchable: true})
+      variable({
+        name: 'dialogData',
+        value: firstSucceeding(
+          '%$dialogData%',
+          obj(prop('file', pipeline(sourceEditor.filesOfProject(), first())))
+        )
+      }),
+      variable({name: 'existingFile', value: true, watchable: true})
     ]
   })
 })

@@ -105,11 +105,13 @@ jb.component('itemlist.deltaOfItems', {
     {id: 'newState' }
   ],
   impl: (ctx,items,state) => {
+    if (items.length == 0) return null
     const deltaCalcCtx = ctx.vars.cmp.ctx
-    const vdomWithDeltaItems = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => items}), path: ''}).runItself().renderVdom() // change the profile to return itemsToAppend
-    const emptyItemlistVdom = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => []}), path: ''}).runItself().renderVdom()
+    const vdomWithDeltaItems = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => [items[0], ...items]}), path: ''}).runItself().renderVdom() // change the profile to return itemsToAppend
+    const emptyItemlistVdom = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => [items[0]]}), path: ''}).runItself().renderVdom()
     const delta = jb.ui.compareVdom(emptyItemlistVdom,vdomWithDeltaItems)
-    delta.attributes = state ? {$__state : JSON.stringify(state), $scrollDown: true} : {} // also keeps the original cmpId by overriding atts
+    delta.attributes = state ? {$__state : JSON.stringify(state), $scrollDown: true } : {} // also keeps the original cmpId by overriding atts
+    delta.$prevVersion = ctx.vars.cmp.ver // used to block concurrent changes from multiple sources
     return delta
   }
 })
@@ -142,9 +144,8 @@ jb.component('itemlist.calcSlicedItems', {
     return itemsRefs
 
     function addSlicedState(cmp,items,visualLimit) {
-      if (items.length > visualLimit)
-        cmp.state.visualLimit = { totalItems: items.length, shownItems: visualLimit }
-        return visualLimit < items.length ? items.slice(0,visualLimit) : items
+      cmp.state.visualLimit = { totalItems: items.length, shownItems: visualLimit }
+      return visualLimit < items.length ? items.slice(0,visualLimit) : items
     }
   }
 })

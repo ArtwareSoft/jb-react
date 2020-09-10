@@ -157,7 +157,7 @@ class TreeRenderer {
 		const disabled = model.disabled && model.disabled(path) ? 'jb-disabled' : ''
 		const selected = path == this.selected ? 'selected' : ''
 		const clz = ['treenode', model.isArray(path) ? 'jb-array-node': '',disabled, selected].filter(x=>x).join(' ')
-		const children = expanded[path] ? [h('div#treenode-children', {} ,
+		const children = expanded[path] && model.children(path).length ? [h('div#treenode-children', {} ,
 			model.children(path).map(childPath=>this.renderNode(childPath)))] : []
 
 		return h('div',{class: clz, path, ...expanded[path] ? {expanded: true} :{} }, [ this.renderLine(path), ...children ] )

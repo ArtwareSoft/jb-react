@@ -98,15 +98,15 @@ jb.component('studio.toolbar', {
       })
     ],
     features: [
-      feature.keyboardShortcut('Alt+C', studio.pickAndOpen()),
-      feature.keyboardShortcut(
+      feature.globalKeyboardShortcut('Alt+C', studio.pickAndOpen()),
+      feature.globalKeyboardShortcut(
         'Alt++',
         studio.openNewProfileDialog({type: 'control', mode: 'insert-control'})
       ),
-      feature.keyboardShortcut('Alt+N', studio.pickAndOpen('studio')),
-      feature.keyboardShortcut('Ctrl+Z', studio.undo()),
-      feature.keyboardShortcut('Ctrl+Y', studio.redo()),
-      feature.keyboardShortcut(
+      feature.globalKeyboardShortcut('Alt+N', studio.pickAndOpen('studio')),
+      feature.globalKeyboardShortcut('Ctrl+Z', studio.undo()),
+      feature.globalKeyboardShortcut('Ctrl+Y', studio.redo()),
+      feature.globalKeyboardShortcut(
         'Alt+X',
         studio.openJbEditor({
           path: firstSucceeding('%$studio/profile_path%', studio.currentPagePath())

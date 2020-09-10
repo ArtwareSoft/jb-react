@@ -42,6 +42,8 @@ jb.component('studio.refreshSpy', {
     {id: 'clear', as: 'boolean'}
   ],
   impl: (ctx,clear) => {
+    if (clear)
+      jb.ui.getSpy(ctx).clear()
 //    const spy = jb.ui.getSpy(ctx)
     // clear && spy.clear();
     // spy._all = null;
@@ -192,10 +194,10 @@ jb.component('studio.eventTracker', {
           css.height({height: '400', overflow: 'scroll'}),
           itemlist.selection({onSelection: ({data}) => jb.frame.console.log(data)}),
           itemlist.keyboardSelection({}),
-          followUp.watchObservable(
-            ctx => !ctx.exp('%$studio/manualRefresh%') &&
-             jb.callbag.filter(x => !(jb.path(x,'record.2.ctx.path') ||'').match(/eventTracker/))(jb.ui.getSpy(ctx).observable())
-          )
+          // followUp.watchObservable(
+          //   ctx => !ctx.exp('%$studio/manualRefresh%') &&
+          //    jb.callbag.filter(x => !(jb.path(x,'record.2.ctx.path') ||'').match(/eventTracker/))(jb.ui.getSpy(ctx).observable())
+          // )
         ]
       })
     ],
@@ -346,12 +348,12 @@ jb.component('studio.eventItems', {
     return events
 
     function enrich(event) {
-      const ev = { event, log: event[1], index: event[0] }
+      const ev = { event, log: event[0] }
       if (ev.log == 'pptrError') {
         ev.log = 'error'
-        ev.error = event[2].err
+        ev.error = event[1].err
       }
-      ev.title = typeof event[2] == 'string' && event[2]
+      ev.title = typeof event[1] == 'string' && event[1]
       ev.ctx = (event || []).filter(x=>x && x.componentContext && x.profile)[0]
       ev.ctx = ev.ctx || (event || []).filter(x=>x && x.path && x.profile)[0]
       ev.jbComp = (event || []).filter(x=> jb.path(x,'constructor.name') == 'JbComponent')[0]
@@ -373,26 +375,26 @@ jb.component('studio.eventItems', {
       ev.srcElem = jb.path(ev.srcCtx, 'vars.cmp.base')
       ev.srcPath = jb.path(ev.srcCtx, 'vars.cmp.ctx.path')
       ev.srcCompName = ev.srcPath && st.compNameOfPath(ev.srcPath)
-      const isPptr = typeof event[1] == 'string' && event[1].indexOf('pptr') == 0
-      ev.description = ev.description || event[1] == 'pptrActivity' && [event[2].activity, event[2].description].join(': ')
-      ev.description = ev.description || isPptr && jb.path(event[2],'data.description')
-      ev.description = ev.description || event[1] == 'setGridAreaVals' && jb.asArray(event[4]).join('/')
-      ev.description = ev.description || event[1] == 'htmlChange' && [event[4],event[5]].join(' <- ')
-      ev.description = ev.description || event[1] == 'pptrError' && event[2].message
-      ev.description = ev.description || event[1] == 'pptrError' && typeof event[2].err == 'string' && event[2].err
-//      ev.description = ev.description || event[1].match(/ToRemote|FromRemote/) && `${event[2].dir}:${event[2].t} channel:${event[3].channel}`
-      ev.description = ev.description || event[1] == 'innerCBDataSent' && `channel:${event[3].sinkId}`
+//       const isPptr = typeof event[1] == 'string' && event[1].indexOf('pptr') == 0
+//       ev.description = ev.description || event[1] == 'pptrActivity' && [event[1].activity, event[1].description].join(': ')
+//       ev.description = ev.description || isPptr && jb.path(event[1],'data.description')
+//       ev.description = ev.description || event[1] == 'setGridAreaVals' && jb.asArray(event[4]).join('/')
+//       ev.description = ev.description || event[1] == 'htmlChange' && [event[4],event[5]].join(' <- ')
+//       ev.description = ev.description || event[1] == 'pptrError' && event[1].message
+//       ev.description = ev.description || event[1] == 'pptrError' && typeof event[1].err == 'string' && event[1].err
+// //      ev.description = ev.description || event[1].match(/ToRemote|FromRemote/) && `${event[1].dir}:${event[1].t} channel:${event[3].channel}`
+//       ev.description = ev.description || event[1] == 'innerCBDataSent' && `channel:${event[3].sinkId}`
 
-      ev.elem = event[1] == 'applyDelta' && event[2]
-      ev.delta = event[1] == 'applyDelta' && event[3]
+//       ev.elem = event[1] == 'applyDelta' && event[1]
+//       ev.delta = event[1] == 'applyDelta' && event[3]
 
-      ev.delta = ev.delta || event[1] == 'applyDeltaTop' && event[2] == 'apply' && event[5]
-      ev.elem = ev.elem || event[1] == 'applyDeltaTop' && event[2] == 'start' && event[3]
-      ev.vdom = ev.vdom || event[1] == 'applyDeltaTop' && event[2] == 'start' && event[4]
+//       ev.delta = ev.delta || event[1] == 'applyDeltaTop' && event[1] == 'apply' && event[5]
+//       ev.elem = ev.elem || event[1] == 'applyDeltaTop' && event[1] == 'start' && event[3]
+//       ev.vdom = ev.vdom || event[1] == 'applyDeltaTop' && event[1] == 'start' && event[4]
 
-      ev.val = event[1] == 'calcRenderProp' && event[3]
-//      ev.val = ev.val || event[1].match(/ToRemote|FromRemote/) && event[2].d
-      ev.val = ev.val || event[1] == 'innerCBDataSent' && event[2].data
+//       ev.val = event[1] == 'calcRenderProp' && event[3]
+// //      ev.val = ev.val || event[1].match(/ToRemote|FromRemote/) && event[1].d
+//       ev.val = ev.val || event[1] == 'innerCBDataSent' && event[1].data
 
       return ev
     }
