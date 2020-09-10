@@ -79,6 +79,7 @@ jb.chromeDebugger = {
             iframe.src = 'javascript: this.document.write(`' + html +'`)'
             document.body.appendChild(iframe)
         }
+        jb.log('chromeDebugger init iframe',[createIframe.toString()])
         return this.evalAsPromise(`(${createIframe.toString()})()`)
     },
     waitFor(checkPromise ,interval,times) {
