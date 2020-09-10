@@ -338,7 +338,6 @@ jb.component('studio.slicedString', {
 
 
 jb.component('studio.eventItems', {
-  type: 'action',
   impl: ctx => {
     const st = jb.studio
     const spy = jb.ui.getSpy(ctx)
