@@ -9,7 +9,7 @@ if (!self.jbDebuggerPort) {
     self.addEventListener('message', m => {
         if (m.source.parent == self && m.data.from == 'inspectedWindow') {
             m.data.to = ((m.data.cbId||'').match(/(.*):[0-9]+$/)||['',''])[1]
-            //console.log('chromeDebugger pass from inspectedWindow',m.data)
+            console.log('chromeDebugger pass from inspectedWindow',m.data)
             jbDebuggerPort.postMessage(m.data)
         }
     })

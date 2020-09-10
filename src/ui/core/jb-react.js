@@ -39,7 +39,7 @@ function compareVdom(b,after) {
             if (__afterIndex != i) res.sameOrder = false
             if (__afterIndex == -1) {
                 res.length = i+1
-                res[i] =  {$: 'delete', before: e } //, __afterIndex: i }
+                res[i] =  {$: 'delete' } //, __afterIndex: i }
             } else {
                 reused[__afterIndex] = true
                 const innerDiff = { __afterIndex, ...compareVdom(e, a[__afterIndex]), ...(e.$remount ? {remount: true}: {}) }
