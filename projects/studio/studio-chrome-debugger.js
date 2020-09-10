@@ -76,7 +76,7 @@ jb.chromeDebugger = {
             const iframe = self.jbStudioIframe = document.createElement('iframe')
             iframe.id = 'jBartHelper'
             iframe.style.display = 'none'
-            iframe.src = 'javascript: alert(1);debugger;this.document.write(`' + html +'`)'
+            iframe.src = 'javascript: this.document.write(`' + html +'`)'
             document.body.appendChild(iframe)
         }
         jb.log('chromeDebugger init iframe',[createIframe.toString()])
