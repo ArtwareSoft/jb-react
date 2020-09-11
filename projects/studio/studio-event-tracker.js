@@ -265,7 +265,11 @@ jb.component('studio.eventItems', {
   ],
   impl: (ctx,query,pattern) => {
     const st = jb.studio
-    const spy = jb.ui.getSpy(ctx)
+    const spy = jb.path(jb.studio,'previewjb.spy')
+    if (!spy) {
+      jb.logError('studio.eventItems - can not locate spy')
+      return []
+    }
     const ret = spy.search(query).map(x=>enrich(x)).filter(x=>!(x.path || '').match(/studio.eventTracker/))
     const regexp = new RegExp(pattern)
     return pattern ? ret.filter(x=>regexp.test(Array.from(x.values()).filter(x=> typeof x == 'string').join(','))) : ret
