@@ -1466,6 +1466,7 @@ function applyDeltaToDom(elem,delta) {
 }
 
 function applyDeltaToVDom(elem,delta) {
+    if (!elem) return
     jb.log('applyDelta vdom',[...arguments])
     // supports only append/delete
     if (delta.children) {

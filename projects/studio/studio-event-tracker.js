@@ -65,7 +65,7 @@ jb.component('studio.eventTracker', {
           }),
           button({
             title: 'clear',
-            action: studio.clearSpyLog(),
+            action: runActions(studio.clearSpyLog(),refreshControlById('event-tracker')),
             style: button.mdcIcon(icon('clear'), '20')
           }),
           button({
