@@ -72,13 +72,13 @@ jb.component('studio.eventTracker', {
           }),
           editableText({
             title: 'query',
-            databind: '%$eventTracker/query%',
+            databind: '%$studio/eventTrackerQuery%',
             style: editableText.input(),
             features: htmlAttribute('placeholder', 'query')
           }),
           editableText({
             title: 'pattern',
-            databind: '%$eventTracker/pattern%',
+            databind: '%$studio/eventTrackerPattern%',
             style: editableText.input(),
             features: htmlAttribute('placeholder', 'pattern')
           }),
@@ -93,7 +93,7 @@ jb.component('studio.eventTracker', {
       }),
       html({title: 'hr', html: '<hr/>'}),
       itemlist({
-        items: studio.eventItems('%$eventTracker/pattern%','%$eventTracker/pattern%'),
+        items: studio.eventItems('%$studio/eventTrackerQuery%','%$studio/eventTrackerPattern%'),
         controls: [
           button({
             title: '%index%: %log%',
