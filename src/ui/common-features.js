@@ -143,7 +143,8 @@ jb.component('followUp.flow', {
     jb.log('register followUp',[jb.ui.cmpV(ctx.vars.cmp),ctx.cmpCtx.callerPath,ctx])
     const fuCtx = ctx.setVar('followUpCmp',ctx.vars.cmp)
     const elems = fuCtx.run('%$elems()%') 
-    elems.splice(1,0,fuCtx.run(followUp.takeUntilCmpDestroyed()))
+    // special: injecting a "takeUntil" line into the flow after the source
+    elems.splice(1,0,fuCtx.run(followUp.takeUntilCmpDestroyed('%$cmp%')))
     return elems
   }))
 })
@@ -195,7 +196,15 @@ jb.component('followUp.onDataChange', {
 jb.component('followUp.takeUntilCmpDestroyed', {
     type: 'rx',
     category: 'operator',
-    impl: ctx => jb.ui.takeUntilCmpDestroyed(ctx.vars.cmp)
+    params: [
+      {id: 'cmp' }
+    ],
+    impl: rx.takeUntil(rx.pipe(
+          source.callbag(() => jb.ui.BECmpsDestroyNotification),
+          rx.filter( ({data},{},{cmp}) => data.cmps.find(_cmp => _cmp.cmpId == cmp.cmpId && _cmp.ver == cmp.ver)),
+          rx.log('uiComp backend takeUntil destroy',list('%$cmp/cmpId%','%$cmp%')),
+          rx.take(1),
+    ))
 })
 
 jb.component('group.data', {

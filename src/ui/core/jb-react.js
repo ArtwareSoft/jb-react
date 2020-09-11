@@ -287,7 +287,6 @@ function setAtt(elem,att,val) {
 }
 
 function unmount(elem) {
-    jb.log('unmount',[...arguments]);
     if (!elem || !elem.setAttribute) return
 
     const groupByWidgets = {}
@@ -300,6 +299,7 @@ function unmount(elem) {
         const cmpId = el.getAttribute('cmp-id'), ver = el.getAttribute('cmp-ver')
         groupByWidgets[widgetId].cmps.push({cmpId,ver,el,destroyCtxs})
     })
+    jb.log('unmount',[groupByWidgets])
     jb.entries(groupByWidgets).forEach(([widgetId,val])=>
         jb.ui.BECmpsDestroyNotification.next({
             widgetId, cmps: val.cmps,
@@ -408,14 +408,6 @@ Object.assign(jb.ui, {
     h, render, unmount, applyNewVdom, applyDeltaToDom, applyDeltaToVDom, elemToVdom, mountFrontEnd, compareVdom, refreshFrontEnd,
     BECmpsDestroyNotification: jb.callbag.subject(),
     renderingUpdates: jb.callbag.subject(),
-    takeUntilCmpDestroyed(cmp) {
-        const {pipe,take,Do,filter,takeUntil} = jb.callbag
-        return takeUntil(pipe(jb.ui.BECmpsDestroyNotification,
-            filter(x=>x.cmps.find(_cmp => _cmp.cmpId == cmp.cmpId && _cmp.ver == cmp.ver)),
-            Do(() => jb.log('uiComp backend takeUntilCmpDestroyed',[cmp.cmpId,cmp])),
-            take(1),
-        ))
-    },
     ctrl(context,options) {
         const $state = context.vars.$refreshElemCall ? context.vars.$state : {}
         const cmpId = context.vars.$cmpId, cmpVer = context.vars.$cmpVer

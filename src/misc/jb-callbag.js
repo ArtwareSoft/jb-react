@@ -433,8 +433,11 @@ jb.callbag = {
             sinks = []
           }
         })
+
+        replay.sinks = sinks
+        return replay
       
-        return function replay(start, sink) {
+        function replay(start, sink) {
           if (start !== 0) return
           sinks.push(sink)
           sink(0, function replay(t, d) {
@@ -751,7 +754,8 @@ jb.callbag = {
             return
           }
           sink(t,d)
-        }        
+        }
+        sniffer.ctx = source.ctx    
         Object.defineProperty(sniffer, 'name', { value: source.name + '-sniffer' })
 
         source(0,sniffer)

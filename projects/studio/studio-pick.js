@@ -221,15 +221,16 @@ Object.assign(st, {
   refreshStudioComponent(path) { // editing the studio...
     jb.comps[path[0]] = st.previewjb.comps[path[0]]
     const pathStr = Array.isArray(path) ? path.join('~') : path;
-    const {elem, ctx} = st.findElemsByCtxCondition(ctx => pathStr.indexOf(ctx.path) == 0)[0] || {}
+    const {elem, ctx} = st.findElemsByCtxCondition(ctx => pathStr.indexOf(ctx.path) == 0, window)[0] || {}
     if (!ctx) return
     ctx.profile = jb.path(jb.comps,ctx.path.split('~'))
     const cmp = ctx.profile.$ == 'openDialog' ? ctx.run({$: 'dialog.buildComp'}) : ctx.runItself()
     cmp && jb.ui.applyNewVdom(elem, jb.ui.h(cmp), {strongRefresh: true, ctx})
     jb.exec({ $: 'animate.refreshElem', elem: () => elem })
   },
-  findElemsByCtxCondition(condition) {
-    return [st.previewWindow,window].filter(x=>x).flatMap(win =>
+  findElemsByCtxCondition(condition,win) {
+    const winToUse = win || st.previewWindow
+    return [winToUse].filter(x=>x).flatMap(win =>
       Array.from(win.document.querySelectorAll('[jb-ctx]'))
         .map(elem=>({elem, ctx: win.jb.ctxDictionary[elem.getAttribute('jb-ctx')]}))
         .filter(e => e.ctx && condition(e.ctx))

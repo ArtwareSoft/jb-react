@@ -486,7 +486,7 @@ jb.component('rx.subject', {
     impl: (ctx,replay,itemsToKeep) => {
       const trigger = jb.callbag.subject()
       const source = replay ? jb.callbag.replay(itemsToKeep)(trigger): trigger
-      source.ctx = trigger.ctx = ctx.cmpCtx
+      source.ctx = trigger.ctx = ctx
       return { trigger, source } 
     }
 })
@@ -1548,7 +1548,6 @@ function setAtt(elem,att,val) {
 }
 
 function unmount(elem) {
-    jb.log('unmount',[...arguments]);
     if (!elem || !elem.setAttribute) return
 
     const groupByWidgets = {}
@@ -1561,6 +1560,7 @@ function unmount(elem) {
         const cmpId = el.getAttribute('cmp-id'), ver = el.getAttribute('cmp-ver')
         groupByWidgets[widgetId].cmps.push({cmpId,ver,el,destroyCtxs})
     })
+    jb.log('unmount',[groupByWidgets])
     jb.entries(groupByWidgets).forEach(([widgetId,val])=>
         jb.ui.BECmpsDestroyNotification.next({
             widgetId, cmps: val.cmps,
@@ -1669,14 +1669,6 @@ Object.assign(jb.ui, {
     h, render, unmount, applyNewVdom, applyDeltaToDom, applyDeltaToVDom, elemToVdom, mountFrontEnd, compareVdom, refreshFrontEnd,
     BECmpsDestroyNotification: jb.callbag.subject(),
     renderingUpdates: jb.callbag.subject(),
-    takeUntilCmpDestroyed(cmp) {
-        const {pipe,take,Do,filter,takeUntil} = jb.callbag
-        return takeUntil(pipe(jb.ui.BECmpsDestroyNotification,
-            filter(x=>x.cmps.find(_cmp => _cmp.cmpId == cmp.cmpId && _cmp.ver == cmp.ver)),
-            Do(() => jb.log('uiComp backend takeUntilCmpDestroyed',[cmp.cmpId,cmp])),
-            take(1),
-        ))
-    },
     ctrl(context,options) {
         const $state = context.vars.$refreshElemCall ? context.vars.$state : {}
         const cmpId = context.vars.$cmpId, cmpVer = context.vars.$cmpVer
@@ -2639,7 +2631,8 @@ jb.component('followUp.flow', {
     jb.log('register followUp',[jb.ui.cmpV(ctx.vars.cmp),ctx.cmpCtx.callerPath,ctx])
     const fuCtx = ctx.setVar('followUpCmp',ctx.vars.cmp)
     const elems = fuCtx.run('%$elems()%') 
-    elems.splice(1,0,fuCtx.run(followUp.takeUntilCmpDestroyed()))
+    // special: injecting a "takeUntil" line into the flow after the source
+    elems.splice(1,0,fuCtx.run(followUp.takeUntilCmpDestroyed('%$cmp%')))
     return elems
   }))
 })
@@ -2691,7 +2684,15 @@ jb.component('followUp.onDataChange', {
 jb.component('followUp.takeUntilCmpDestroyed', {
     type: 'rx',
     category: 'operator',
-    impl: ctx => jb.ui.takeUntilCmpDestroyed(ctx.vars.cmp)
+    params: [
+      {id: 'cmp' }
+    ],
+    impl: rx.takeUntil(rx.pipe(
+          source.callbag(() => jb.ui.BECmpsDestroyNotification),
+          rx.filter( ({data},{},{cmp}) => data.cmps.find(_cmp => _cmp.cmpId == cmp.cmpId && _cmp.ver == cmp.ver)),
+          rx.log('uiComp backend takeUntil destroy',list('%$cmp/cmpId%','%$cmp%')),
+          rx.take(1),
+    ))
 })
 
 jb.component('group.data', {
@@ -4814,6 +4815,7 @@ jb.component('dialogs.defaultStyle', {
 			followUp.flow(source.subject(dialogs.changeEmitter()), 
 				rx.filter('%close%'),
 				rx.var('dlgCmpId', dialogs.cmpIdOfDialog('%dialogId%')),
+				rx.filter('%$dlgCmpId%'),
 				rx.var('delta', obj(prop('children', obj(prop('deleteCmp','%$dlgCmpId%'))))),
 				rx.log('close dialog','%dialogId%'),
 				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')

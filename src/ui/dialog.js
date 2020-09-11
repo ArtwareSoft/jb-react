@@ -495,6 +495,7 @@ jb.component('dialogs.defaultStyle', {
 			followUp.flow(source.subject(dialogs.changeEmitter()), 
 				rx.filter('%close%'),
 				rx.var('dlgCmpId', dialogs.cmpIdOfDialog('%dialogId%')),
+				rx.filter('%$dlgCmpId%'),
 				rx.var('delta', obj(prop('children', obj(prop('deleteCmp','%$dlgCmpId%'))))),
 				rx.log('close dialog','%dialogId%'),
 				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
