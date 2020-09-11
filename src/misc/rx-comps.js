@@ -221,37 +221,6 @@ jb.component('rx.mapPromise', {
   impl: (ctx,func) => jb.callbag.mapPromise(ctx2 => Promise.resolve(func(ctx2)).then(data => ({vars: ctx2.vars || {}, data})))
 })
 
-jb.component('rx.retry', {
-  type: 'rx',
-  category: 'operator',
-  params: [
-    {id: 'operator', type: 'rx', mandatory: true},
-    {id: 'interval', as: 'number', defaultValue: 300, description: '0 means no retry'},
-    {id: 'times', as: 'number', defaultValue: 50},
-    {id: 'onRetry', dynamic: true, mandatory: true}
-  ],
-  impl: If('%$interval%',
-    rx.innerPipe(
-      rx.var('inp'),
-      rx.concatMap(
-          rx.pipe(
-            source.interval('%$interval%'),
-            rx.do((ctx,{},{onRetry}) => ctx.data && onRetry(ctx)),
-            rx.throwError(
-                '%%>%$times%',
-                (ctx,{},{interval,times}) => `retry failed after ${interval*times} mSec`
-              ),
-            rx.map('%$inp%'),
-            '%$operator%',
-            rx.filter('%%'),
-            rx.take(1)
-          )
-        )
-    ),
-    '%$operator%'
-  )
-})
-
 jb.component('rx.filter', {
   type: 'rx',
   category: 'filter',
@@ -516,7 +485,9 @@ jb.component('rx.subject', {
     ],
     impl: (ctx,replay,itemsToKeep) => {
       const trigger = jb.callbag.subject()
-      return { trigger, source: replay ? jb.callbag.replay(itemsToKeep)(trigger): trigger } 
+      const source = replay ? jb.callbag.replay(itemsToKeep)(trigger): trigger
+      source.ctx = trigger.ctx = ctx.componentContext
+      return { trigger, source } 
     }
 })
 

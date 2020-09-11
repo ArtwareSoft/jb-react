@@ -2833,35 +2833,6 @@ jb.callbag = {
             sink(t, d)
           })
       },
-      // talkbackNotifier: notify => source => (start, sink) => {
-      //   if (start !== 0) return
-      //   let talkback
-      //   source(0, function talkbackNotifier(t, d) {
-      //     if (t == 0)
-      //       talkback = d
-      //     sink(0, function talkbackNotifier(t, d) {
-      //       if (t == 1 && !d || t == 2) {
-      //         notify(t,d)
-      //         talkback && talkback(t,d)
-      //       }
-      //     })
-      //     sink(t, d)
-      //   })
-      // },
-      // talkbackSrc: tbSrc => source => (start, sink) => { // generates talkback events in a pipe
-      //   if (start !== 0) return
-      //   let talkback
-      //   source(0, function talkbackSrc(t, d) {
-      //     if (t == 0) {
-      //       talkback = d
-      //       tbSrc(0, function talkbackSrc(t, d) { // d contains talkback type and data
-      //         if (t == 1 && d && d.t && talkback)
-      //           talkback(d.t,d.d)
-      //       })
-      //     }
-      //     sink(t, d)
-      //   })
-      // },       
       sniffer: (source, snifferSubject) => (start, sink) => {
         if (start !== 0) return
         let talkback

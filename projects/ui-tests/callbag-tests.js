@@ -516,42 +516,6 @@ jb.component('dataTest.rx.retrySrc', {
   })
 })
 
-jb.component('dataTest.rx.retry', {
-  impl: dataTest({
-    vars: [Var('counters', () => ({ counter: 0, retries: 0}))],
-    calculate: rx.pipe(
-      source.data([1, 2]),
-      rx.retry({
-          interval: 10,
-          operator: rx.map(
-            ({data},{counters}) => {
-              if (counters.counter > data) {
-                counters.counter = 0
-                return 'done'
-              }
-              counters.counter++
-              counters.retries++
-              return null // failed - will retry
-            }
-          ),
-          onRetry: ({data},{inp}) => console.log(`retry ${inp}-${data}`)
-        })
-    ),
-    expectedResult: '%$counters/retries%==5'
-  })
-})
-
-jb.component('dataTest.rx.retryFailure', {
-  impl: dataTest({
-    calculate: rx.pipe(
-      source.data(1),
-      rx.retry({operator: rx.map(()=>null), interval: 10, times: 3}),
-      rx.catchError()
-    ),
-    expectedResult: '%%==retry failed after 30 mSec'
-  })
-})
-
 jb.component('dataTest.rx.emptyVar', {
   impl: dataTest({
     calculate: rx.pipe(

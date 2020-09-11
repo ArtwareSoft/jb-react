@@ -92,14 +92,14 @@ jb.component('editableBoolean.mdcSlideToggle', {
     {id: 'width', as: 'string', defaultValue: 80}
   ],
   impl: customStyle({
-    template: (cmp,{databind,fieldId,title},h) => h('div#mdc-switch',{class: databind ? 'mdc-switch--checked': '' },[
+    template: (cmp,{databind,fieldId,toggleText},h) => h('div#mdc-switch',{class: databind ? 'mdc-switch--checked': '' },[
       h('div#mdc-switch__track'),
       h('div#mdc-switch__thumb-underlay',{},
         h('div#mdc-switch__thumb',{},
           h('input#mdc-switch__native-control', { type: 'checkbox', role: 'switch', id: 'switch_' + fieldId,
             checked: databind, onchange: 'toggle', onkeyup: 'toggleByKey' }
       ))),
-      h('label',{for: 'switch_' + fieldId},title())
+      h('label',{for: 'switch_' + fieldId},toggleText)
     ]),
     css: ctx => jb.ui.propWithUnits('width',ctx.params.width),
     features: [field.databind(), mdcStyle.initDynamic()]

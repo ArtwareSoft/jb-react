@@ -48,7 +48,7 @@ jb.component('studio.refreshSpy', {
     // clear && spy.clear();
     // spy._all = null;
     // spy.setLogs([...ctx.exp('%$studio/spyLogs%'),'error'].join(','))
-    ctx.run(refreshControlById({id: 'event-logs', strongRefresh: true}))
+    ctx.run(refreshControlById({id: 'event-tracker', strongRefresh: true}))
   }
 })
 
@@ -60,83 +60,31 @@ jb.component('studio.eventTracker', {
         title: '',
         layout: layout.horizontal('14'),
         controls: [
+          button({
+            title: 'refresh',
+            action: studio.refreshSpy(true),
+            style: button.mdcIcon(icon({icon: 'refresh', style: icon.material()}), '20')
+          }),
           text({text: pipeline(studio.getSpy(), '%logs/length% items'), title: 'count'}),
-          menu.control({
-            menu: menu.menu({
-              options: [
-                menu.action({
-                  title: 'reset',
-                  action: studio.refreshSpy(true),
-                  icon: icon({icon: 'block', type: 'mdc'})
-                }),
-                menu.action({
-                  title: 'refresh',
-                  action: studio.refreshSpy(),
-                  icon: icon('refresh')
-                })
-              ]
-            }),
-            style: menuStyle.toolbar(menuStyle.icon('30')),
-            features: [css.margin('9')]
+          editableText({
+            title: 'pattern',
+            databind: '%$eventTracker/pattern%',
+            style: editableText.input(),
+            features: htmlAttribute('placeholder', 'pattern')
           }),
-          group({
-            title: 'toolbar2',
-            layout: layout.horizontal('15'),
-            controls: [
-              editableBoolean({
-                databind: '%$studio/spyStudio%',
-                style: editableBoolean.iconWithSlash('30'),
-                title: 'spy studio',
-                textForTrue: 'spy studio',
-                textForFalse: 'spy preview',
-                features: [
-                  feature.icon({icon: 'AndroidStudio', type: 'mdi', size: '20'}),
-                  css.margin({top: '9', left: '-10'})
-                ]
-              }),
-              editableBoolean({
-                databind: '%$studio/manualRefresh%',
-                style: editableBoolean.iconWithSlash('30'),
-                title: 'manual refresh',
-                textForTrue: 'on',
-                textForFalse: 'off',
-                features: [
-                  feature.icon({icon: 'Autorenew', type: 'mdi', size: '20'}),
-                  css.margin({top: '9', left: '-10', right: ''}),
-                  field.onChange(studio.refreshSpy())
-                ]
-              })
-            ]
-          }),
-          picklist({
-            title: 'pick group',
-            databind: '%$studio/spyGroup%',
-            options: picklist.options({
-              options: pipeline(() => jb.frame.jb.spySettings.groups, keys())
-            }),
-            style: picklist.native(),
-            features: [
-              css.width('151'),
-              css.margin('9'),
-              picklist.onChange(
-                runActions(
-                  writeValue(
-                      '%$studio/spyLogs%',
-                      pipeline(ctx => jb.frame.jb.spySettings.groups[ctx.data], split({}))
-                    ),
-                  studio.refreshSpy()
-                )
-              )
-            ]
+          editableText({
+            title: 'query',
+            databind: '%$eventTracker/query%',
+            style: editableText.input(),
+            features: htmlAttribute('placeholder', 'query')
           }),
           multiSelect({
             title: 'logs',
             databind: '%$studio/spyLogs%',
             options: picklist.options(() => jb.studio.previewjb.spySettings.moreLogs.split(',')),
             style: multiSelect.chips(),
-            features: css.margin('15')
-          }),
-          text({text: 'my text', title: 'my title'})
+            features: [css.margin('15'), hidden()]
+          })
         ]
       }),
       html({title: 'hr', html: '<hr/>'}),
@@ -193,15 +141,12 @@ jb.component('studio.eventTracker', {
           itemlist.infiniteScroll('5'),
           css.height({height: '400', overflow: 'scroll'}),
           itemlist.selection({onSelection: ({data}) => jb.frame.console.log(data)}),
-          itemlist.keyboardSelection({}),
-          // followUp.watchObservable(
-          //   ctx => !ctx.exp('%$studio/manualRefresh%') &&
-          //    jb.callbag.filter(x => !(jb.path(x,'record.2.ctx.path') ||'').match(/eventTracker/))(jb.ui.getSpy(ctx).observable())
-          // )
+          itemlist.keyboardSelection({})
         ]
       })
     ],
     features: [
+      id('event-tracker'),
       variable({name: 'eventTracker', value: obj()}),
       feature.init(
         runActions(
@@ -217,14 +162,382 @@ jb.component('studio.eventTracker', {
               )
             ),
           action.if(
-              Var('0', Var(Var('0', Var('group', '%$studio/spyGroup%')), '0')),
+              Var(
+                  '0',
+                  Var(
+                    Var(
+                        '0',
+                        Var(
+                          Var(
+                              '0',
+                              Var(
+                                Var(
+                                    '0',
+                                    Var(
+                                      Var(
+                                          '0',
+                                          Var(
+                                            Var(
+                                                '0',
+                                                Var(
+                                                  Var(
+                                                      '0',
+                                                      Var(
+                                                        Var(
+                                                            '0',
+                                                            Var(
+                                                              Var(
+                                                                  '0',
+                                                                  Var(
+                                                                    Var(
+                                                                        '0',
+                                                                        Var(
+                                                                          Var(
+                                                                              '0',
+                                                                              Var(
+                                                                                Var(
+                                                                                    '0',
+                                                                                    Var(
+                                                                                      Var(
+                                                                                          '0',
+                                                                                          Var(
+                                                                                            Var(
+                                                                                                '0',
+                                                                                                Var(
+                                                                                                  Var(
+                                                                                                      '0',
+                                                                                                      Var(
+                                                                                                        Var(
+                                                                                                            '0',
+                                                                                                            Var(
+                                                                                                              Var(
+                                                                                                                  '0',
+                                                                                                                  Var(
+                                                                                                                    Var(
+                                                                                                                        '0',
+                                                                                                                        Var(
+                                                                                                                          Var(
+                                                                                                                              '0',
+                                                                                                                              Var(
+                                                                                                                                Var(
+                                                                                                                                    '0',
+                                                                                                                                    Var(
+                                                                                                                                      Var(
+                                                                                                                                          '0',
+                                                                                                                                          Var(
+                                                                                                                                            Var(
+                                                                                                                                                '0',
+                                                                                                                                                Var(
+                                                                                                                                                  Var(
+                                                                                                                                                      '0',
+                                                                                                                                                      Var(
+                                                                                                                                                        Var(
+                                                                                                                                                            '0',
+                                                                                                                                                            Var(
+                                                                                                                                                              Var(
+                                                                                                                                                                  '0',
+                                                                                                                                                                  Var(
+                                                                                                                                                                    Var(
+                                                                                                                                                                        '0',
+                                                                                                                                                                        Var(
+                                                                                                                                                                          Var(
+                                                                                                                                                                              '0',
+                                                                                                                                                                              Var(
+                                                                                                                                                                                Var(
+                                                                                                                                                                                    '0',
+                                                                                                                                                                                    Var(
+                                                                                                                                                                                      Var(
+                                                                                                                                                                                          '0',
+                                                                                                                                                                                          Var(
+                                                                                                                                                                                            Var(
+                                                                                                                                                                                                '0',
+                                                                                                                                                                                                Var(
+                                                                                                                                                                                                  Var(
+                                                                                                                                                                                                      '0',
+                                                                                                                                                                                                      Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        Var(
+                                                                                                                                                                                                        '0',
+                                                                                                                                                                                                        Var(Var('0', Var(Var('0', Var('group', '%$studio/spyGroup%')), '0')), '0')
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                        )
+                                                                                                                                                                                                        ),
+                                                                                                                                                                                                        '0'
+                                                                                                                                                                                                      )
+                                                                                                                                                                                                    ),
+                                                                                                                                                                                                  '0'
+                                                                                                                                                                                                )
+                                                                                                                                                                                              ),
+                                                                                                                                                                                            '0'
+                                                                                                                                                                                          )
+                                                                                                                                                                                        ),
+                                                                                                                                                                                      '0'
+                                                                                                                                                                                    )
+                                                                                                                                                                                  ),
+                                                                                                                                                                                '0'
+                                                                                                                                                                              )
+                                                                                                                                                                            ),
+                                                                                                                                                                          '0'
+                                                                                                                                                                        )
+                                                                                                                                                                      ),
+                                                                                                                                                                    '0'
+                                                                                                                                                                  )
+                                                                                                                                                                ),
+                                                                                                                                                              '0'
+                                                                                                                                                            )
+                                                                                                                                                          ),
+                                                                                                                                                        '0'
+                                                                                                                                                      )
+                                                                                                                                                    ),
+                                                                                                                                                  '0'
+                                                                                                                                                )
+                                                                                                                                              ),
+                                                                                                                                            '0'
+                                                                                                                                          )
+                                                                                                                                        ),
+                                                                                                                                      '0'
+                                                                                                                                    )
+                                                                                                                                  ),
+                                                                                                                                '0'
+                                                                                                                              )
+                                                                                                                            ),
+                                                                                                                          '0'
+                                                                                                                        )
+                                                                                                                      ),
+                                                                                                                    '0'
+                                                                                                                  )
+                                                                                                                ),
+                                                                                                              '0'
+                                                                                                            )
+                                                                                                          ),
+                                                                                                        '0'
+                                                                                                      )
+                                                                                                    ),
+                                                                                                  '0'
+                                                                                                )
+                                                                                              ),
+                                                                                            '0'
+                                                                                          )
+                                                                                        ),
+                                                                                      '0'
+                                                                                    )
+                                                                                  ),
+                                                                                '0'
+                                                                              )
+                                                                            ),
+                                                                          '0'
+                                                                        )
+                                                                      ),
+                                                                    '0'
+                                                                  )
+                                                                ),
+                                                              '0'
+                                                            )
+                                                          ),
+                                                        '0'
+                                                      )
+                                                    ),
+                                                  '0'
+                                                )
+                                              ),
+                                            '0'
+                                          )
+                                        ),
+                                      '0'
+                                    )
+                                  ),
+                                '0'
+                              )
+                            ),
+                          '0'
+                        )
+                      ),
+                    '0'
+                  )
+                ),
               not('%$studio/spyLogs%'),
               writeValue(
                 '%$studio/spyLogs%',
                 pipeline((ctx,{group}) => jb.frame.jb.spySettings.groups[group], split({}))
               )
-            ),
-          studio.refreshSpy(true)
+            )
         )
       )
     ]
@@ -341,10 +654,7 @@ jb.component('studio.eventItems', {
   impl: ctx => {
     const st = jb.studio
     const spy = jb.ui.getSpy(ctx)
-    const events = spy._all = ctx.vars.eventTracker.lastIndex == spy.logs.length ? spy._all :
-        spy.logs.slice(0,100).map(x=>enrich(x)).filter(x=>!(x.path || '').match(/studio.eventTracker/))
-    ctx.vars.eventTracker.lastIndex = spy.logs.length
-    return events
+    return spy.logs.slice(0,100).map(x=>enrich(x)).filter(x=>!(x.path || '').match(/studio.eventTracker/))
 
     function enrich(event) {
       const ev = { event, log: event[0] }
