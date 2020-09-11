@@ -71,16 +71,16 @@ jb.component('studio.eventTracker', {
             style: button.mdcIcon(icon({icon: 'refresh'}), '20')
           }),
           editableText({
-            title: 'pattern',
-            databind: '%$eventTracker/pattern%',
-            style: editableText.input(),
-            features: htmlAttribute('placeholder', 'pattern')
-          }),
-          editableText({
             title: 'query',
             databind: '%$eventTracker/query%',
             style: editableText.input(),
             features: htmlAttribute('placeholder', 'query')
+          }),
+          editableText({
+            title: 'pattern',
+            databind: '%$eventTracker/pattern%',
+            style: editableText.input(),
+            features: htmlAttribute('placeholder', 'pattern')
           }),
           multiSelect({
             title: 'logs',
@@ -93,7 +93,7 @@ jb.component('studio.eventTracker', {
       }),
       html({title: 'hr', html: '<hr/>'}),
       itemlist({
-        items: studio.eventItems(),
+        items: studio.eventItems('%$eventTracker/pattern%','%$eventTracker/pattern%'),
         controls: [
           button({
             title: '%index%: %log%',
@@ -132,7 +132,7 @@ jb.component('studio.eventTracker', {
             ]
           }),
           text({
-            text: '%log%',
+            text: '%index% %log%',
             title: 'event',
             features: feature.onHover(studio.highlightLogItem(), dialog.closeDialogById('elem-marker'))
           }),
@@ -279,7 +279,7 @@ jb.component('studio.eventItems', {
     return pattern ? ret.filter(x=>regexp.test(Array.from(x.values()).filter(x=> typeof x == 'string').join(','))) : ret
 
     function enrich(event) {
-      const ev = { event, log: event[0] }
+      const ev = { event, log: event[0], index: event.index }
       if (ev.log == 'pptrError') {
         ev.log = 'error'
         ev.error = event[1].err
