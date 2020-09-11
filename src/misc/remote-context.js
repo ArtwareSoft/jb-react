@@ -5,11 +5,11 @@ jb.remoteCtx = {
         const profText = jb.prettyPrint(ctx.profile)
         const vars = jb.objFromEntries(jb.entries(ctx.vars).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
-        const params = jb.objFromEntries(jb.entries(isJS ? ctx.params: jb.entries(jb.path(ctx.componentContext,'params')))
+        const params = jb.objFromEntries(jb.entries(isJS ? ctx.params: jb.entries(jb.path(ctx.cmpCtx,'params')))
             .filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
         const res = Object.assign({id: ctx.id, path: ctx.path, profile: ctx.profile, vars }, 
-            isJS ? {params,vars} : Object.keys(params).length ? {componentContext: {params} } : {} )
+            isJS ? {params,vars} : Object.keys(params).length ? {cmpCtx: {params} } : {} )
         return res
     },
     stripData(data) {
@@ -31,10 +31,10 @@ jb.remoteCtx = {
         const profText = jb.prettyPrint(profile)
         const vars = jb.objFromEntries(jb.entries(runCtx.vars).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
-        const params = jb.objFromEntries(jb.entries(jb.path(runCtx.componentContext,'params')).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
+        const params = jb.objFromEntries(jb.entries(jb.path(runCtx.cmpCtx,'params')).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
         return Object.assign({$: 'runCtx', id: runCtx.id, path, forcePath, param, profile, vars}, 
-            Object.keys(params).length ? {componentContext: {params} } : {})
+            Object.keys(params).length ? {cmpCtx: {params} } : {})
     },
     serailizeCtx(ctx) { return JSON.stringify(this.stripCtx(ctx)) },
     deStrip(data) {

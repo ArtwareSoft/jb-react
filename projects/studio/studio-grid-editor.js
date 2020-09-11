@@ -285,7 +285,7 @@ jb.component('gridEditor.openGridItemThumbs', {
         css('{cursor: grab; box-shadow: 3px 3px; var(--jb-statusBar-background); opacity: 0.2; display: flex; flex-flow: row-reverse} ~:hover {opacity: 0.7}' ),
         followUp.flow(source.watchableData({ ref: studio.ref('%$gridPath%'), includeChildren: 'yes' }), sink.refreshCmp() )
         // followUp.onDataChange(,
-        //   action: (ctx,{cmp}) => jb.delay(1).then(()=> cmp.refresh(null,{srcCtx: ctx.componentContext}))
+        //   action: (ctx,{cmp}) => jb.delay(1).then(()=> cmp.refresh(null,{srcCtx: ctx.cmpCtx}))
         // })
       ]
     })

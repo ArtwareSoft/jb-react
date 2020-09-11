@@ -78,7 +78,7 @@ jb.component('studio.editableSource', {
     }),
     features: [
       // frontEnd(
-      //   (ctx,{cmp}) => ctx.vars.$dialog.refresh = () => cmp.refresh && cmp.refresh(null,{srcCtx: ctx.componentContext})
+      //   (ctx,{cmp}) => ctx.vars.$dialog.refresh = () => cmp.refresh && cmp.refresh(null,{srcCtx: ctx.cmpCtx})
       // ),
       feature.onKey('Ctrl-I', studio.openJbEditor('%$path%'))
     ]

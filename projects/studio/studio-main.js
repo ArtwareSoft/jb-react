@@ -388,7 +388,7 @@ jb.component('studio.pathHyperlink', {
       text('%$prefix%'),
       button({
         title: ctx => {
-	  		const path = ctx.componentContext.params.path;
+	  		const path = ctx.cmpCtx.params.path;
 	  		const title = jb.studio.shortTitle(path) || '',compName = jb.studio.compNameOfPath(path) || '';
 	  		return title == compName ? title : compName + ' ' + title;
 	  	},

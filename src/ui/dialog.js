@@ -14,7 +14,7 @@ jb.component('openDialog', {
   impl: runActions(
 	  Var('$dlg',(ctx,{},{id}) => {
 		const dialog = { id: id || `dlg-${ctx.id}`, launcherCmpId: ctx.exp('%$cmp/cmpId%') }
-		const ctxWithDialog = ctx.componentContext._parent.setVars({
+		const ctxWithDialog = ctx.cmpCtx._parent.setVars({
 			$dialog: dialog,
 			dialogData: {},
 			formContainer: { err: ''}

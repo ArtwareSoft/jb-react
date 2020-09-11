@@ -249,7 +249,7 @@ jb.component('studio.highlightByPath', {
   ],
   impl: (ctx,path) => {
     const elems = st.findElemsByCtxCondition(_ctx => {
-      const callerPath = _ctx && _ctx.componentContext && _ctx.componentContext.callerPath;
+      const callerPath = _ctx && _ctx.cmpCtx && _ctx.cmpCtx.callerPath;
       return callerPath == path || (_ctx && _ctx.path == path);
     }).map(e=>e.elem)
 

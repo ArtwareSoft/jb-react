@@ -77,7 +77,7 @@ jb.component('service.registerBackEndService', {
   ],
   impl: feature.init((ctx,{$serviceRegistry},{id,service}) => {
     const _id = id(ctx), _service = service(ctx)
-    jb.log('register service',[_id,_service,ctx.componentContext])
+    jb.log('register service',[_id,_service,ctx.cmpCtx])
     if ($serviceRegistry.services[_id])
       jb.logError('overridingService',[_id,$serviceRegistry.services[_id],_service,ctx])
     $serviceRegistry.services[_id] = _service
@@ -222,7 +222,7 @@ jb.component('customStyle', {
           template: ctx.profile.template,
           css: css,
           featuresOptions: features(),
-          styleParams: ctx.componentContext.params
+          styleParams: ctx.cmpCtx.params
     })
 })
 

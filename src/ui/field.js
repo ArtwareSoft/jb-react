@@ -50,14 +50,14 @@ function writeFieldData(ctx,cmp,value,oneWay) {
   jb.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx)
   jb.ui.checkValidationError(cmp,value,ctx)
   cmp.hasBEMethod('onValueChange') && cmp.runBEMethod('onValueChange',value,ctx.vars)
-  !oneWay && cmp.refresh({},{srcCtx: ctx.componentContext})
+  !oneWay && cmp.refresh({},{srcCtx: ctx.cmpCtx})
 }
 
 jb.ui.checkValidationError = (cmp,val,ctx) => {
   const err = validationError();
   if (cmp.state.error != err) {
     jb.log('field set error state',[cmp,err])
-    cmp.refresh({valid: !err, error:err}, {srcCtx: ctx.componentContext});
+    cmp.refresh({valid: !err, error:err}, {srcCtx: ctx.cmpCtx});
   }
 
   function validationError() {

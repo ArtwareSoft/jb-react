@@ -486,7 +486,7 @@ jb.component('rx.subject', {
     impl: (ctx,replay,itemsToKeep) => {
       const trigger = jb.callbag.subject()
       const source = replay ? jb.callbag.replay(itemsToKeep)(trigger): trigger
-      source.ctx = trigger.ctx = ctx.componentContext
+      source.ctx = trigger.ctx = ctx.cmpCtx
       return { trigger, source } 
     }
 })
@@ -2308,7 +2308,7 @@ jb.component('service.registerBackEndService', {
   ],
   impl: feature.init((ctx,{$serviceRegistry},{id,service}) => {
     const _id = id(ctx), _service = service(ctx)
-    jb.log('register service',[_id,_service,ctx.componentContext])
+    jb.log('register service',[_id,_service,ctx.cmpCtx])
     if ($serviceRegistry.services[_id])
       jb.logError('overridingService',[_id,$serviceRegistry.services[_id],_service,ctx])
     $serviceRegistry.services[_id] = _service
@@ -2453,7 +2453,7 @@ jb.component('customStyle', {
           template: ctx.profile.template,
           css: css,
           featuresOptions: features(),
-          styleParams: ctx.componentContext.params
+          styleParams: ctx.cmpCtx.params
     })
 })
 
@@ -2636,7 +2636,7 @@ jb.component('followUp.flow', {
       {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
   ],
   impl: followUp.action(rx.pipe(ctx => {
-    jb.log('register followUp',[jb.ui.cmpV(ctx.vars.cmp),ctx.componentContext.callerPath,ctx])
+    jb.log('register followUp',[jb.ui.cmpV(ctx.vars.cmp),ctx.cmpCtx.callerPath,ctx])
     const fuCtx = ctx.setVar('followUpCmp',ctx.vars.cmp)
     const elems = fuCtx.run('%$elems()%') 
     elems.splice(1,0,fuCtx.run(followUp.takeUntilCmpDestroyed()))
@@ -2797,7 +2797,7 @@ jb.component('calculatedVar', {
     )),
     ctx => ({
       extendCtx: (_ctx,cmp) => {
-        const {name,value} = ctx.componentContext.params
+        const {name,value} = ctx.cmpCtx.params
         const fullName = name + ':' + cmp.cmpId;
         jb.log('create watchable calculatedVar',[ctx,fullName])
         jb.resource(fullName, jb.val(value(_ctx)));
@@ -3726,9 +3726,9 @@ jb.component('group.wait', {
         priority: ctx => jb.path(ctx.vars.$state,'dataArrived') ? 0: 10
     }),
     followUp.action((ctx,{cmp},{varName,passRx}) => !cmp.state.dataArrived && !cmp.state.error &&
-        Promise.resolve(jb.toSynchArray(ctx.componentContext.params.for(),!passRx))
+        Promise.resolve(jb.toSynchArray(ctx.cmpCtx.params.for(),!passRx))
         .then(data => cmp.refresh({ dataArrived: true }, {
-            srcCtx: ctx.componentContext,
+            srcCtx: ctx.cmpCtx,
             extendCtx: ctx => ctx.setVar(varName,data).setData(data)
           }))
           .catch(e=> cmp.refresh({error: JSON.stringify(e)}))
@@ -3743,7 +3743,7 @@ jb.component('group.eliminateRecursion', {
     { id: 'maxDepth', as: 'number' }
   ],
   impl: (ctx,maxDepth) => {
-    const protectedComp = ctx.componentContext.componentContext.path
+    const protectedComp = ctx.cmpCtx.cmpCtx.path
     const timesInStack = ctx.callStack().filter(x=>x && x.indexOf(protectedComp) != -1).length
     if (timesInStack > maxDepth)
       return ctx.run( calcProp({id: 'ctrls', value: () => [], phase: 1, priority: 100 }))
@@ -4055,14 +4055,14 @@ function writeFieldData(ctx,cmp,value,oneWay) {
   jb.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx)
   jb.ui.checkValidationError(cmp,value,ctx)
   cmp.hasBEMethod('onValueChange') && cmp.runBEMethod('onValueChange',value,ctx.vars)
-  !oneWay && cmp.refresh({},{srcCtx: ctx.componentContext})
+  !oneWay && cmp.refresh({},{srcCtx: ctx.cmpCtx})
 }
 
 jb.ui.checkValidationError = (cmp,val,ctx) => {
   const err = validationError();
   if (cmp.state.error != err) {
     jb.log('field set error state',[cmp,err])
-    cmp.refresh({valid: !err, error:err}, {srcCtx: ctx.componentContext});
+    cmp.refresh({valid: !err, error:err}, {srcCtx: ctx.cmpCtx});
   }
 
   function validationError() {
@@ -4333,7 +4333,7 @@ jb.component('openDialog', {
   impl: runActions(
 	  Var('$dlg',(ctx,{},{id}) => {
 		const dialog = { id: id || `dlg-${ctx.id}`, launcherCmpId: ctx.exp('%$cmp/cmpId%') }
-		const ctxWithDialog = ctx.componentContext._parent.setVars({
+		const ctxWithDialog = ctx.cmpCtx._parent.setVars({
 			$dialog: dialog,
 			dialogData: {},
 			formContainer: { err: ''}
@@ -5289,7 +5289,7 @@ jb.component('itemlistContainer.search', {
     {id: 'style', type: 'editable-text.style', defaultValue: editableText.mdcSearch(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.componentContext), features(
+  impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.cmpCtx), features(
 		calcProp('init', (ctx,{cmp, itemlistCntr},{searchIn,databind}) => {
 				if (!itemlistCntr) return
 				itemlistCntr.filters.push( {
@@ -5317,7 +5317,7 @@ jb.component('itemlistContainer.moreItemsButton', {
     {id: 'style', type: 'button.style', defaultValue: button.href(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.componentContext), features(
+  impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.cmpCtx), features(
       watchRef('%$itemlistCntrData/maxItems%'),
       method(
         'onclickHandler',
@@ -5735,7 +5735,7 @@ jb.component('menu.selectionKeySourceService', {
         }
         return true
       }
-      jb.ui.focus(el,'menu.selectionKeySourceService',ctx.componentContext)
+      jb.ui.focus(el,'menu.selectionKeySourceService',ctx.cmpCtx)
       jb.log('menuKeySource register',[cmp.cmpId,cmp,el,ctx])
       return pipe(el.keydown_src, takeUntil(cmp.destroyed))
     })
@@ -7296,7 +7296,7 @@ jb.component('group.tabs', {
               raised: '%$tabIndex% == %$selectedTab%',
               // watchRef breaks mdcTabBar animation
               features: [
-                ctx => ctx.componentContext.params.barStyle.profile.$ !== 'group.mdcTabBar' && watchRef('%$selectedTab%'),
+                ctx => ctx.cmpCtx.params.barStyle.profile.$ !== 'group.mdcTabBar' && watchRef('%$selectedTab%'),
                 ctx => ctx.run(features((ctx.vars.tab.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x)))
               ]
             }),
@@ -7835,7 +7835,7 @@ jb.component('editableBoolean.buttonXV', {
   ],
   impl: styleWithFeatures(call('buttonStyle'), features(
       htmlAttribute('onclick','toggle'),
-      ctx => ctx.run({...ctx.componentContext.params[jb.toboolean(ctx.vars.$model.databind()) ? 'yesIcon' : 'noIcon' ], 
+      ctx => ctx.run({...ctx.cmpCtx.params[jb.toboolean(ctx.vars.$model.databind()) ? 'yesIcon' : 'noIcon' ], 
         title: ctx.exp('%$$model/title%'), $: 'feature.icon'}),
     ))
 })

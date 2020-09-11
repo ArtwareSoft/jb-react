@@ -23,7 +23,7 @@ jb.component('suggestionsTest', {
   ],
   impl: dataTest({
     calculate: ctx => {
-      const params = ctx.componentContext.params;
+      const params = ctx.cmpCtx.params;
       const selectionStart = params.selectionStart == -1 ? params.expression.length : params.selectionStart;
 
       const circuit = params.path.split('~')[0];
@@ -49,7 +49,7 @@ jb.component('jbEditorChildrenTest', {
   ],
   impl: dataTest({
     calculate: ctx => {
-      const params = ctx.componentContext.params
+      const params = ctx.cmpCtx.params
       const mdl = new jb.studio.jbEditorTree('')
       const titles = mdl.children(params.path).map(path=>mdl.title(path,true))
       const texts = titles.flatMap(x=> typeof x == 'string' ? x : x.querySelectorAll('[$text]').map(el=>el.$text))

@@ -37,7 +37,7 @@ jb.component('editableText.codemirror', {
 		if (jb.ui.hasClass(el, 'jb-textarea-alternative-for-codemirror')) return
 		// cmp.data_ref = cmp.ctx.vars.$model.databind()
 		// if (cmp.data_ref instanceof Promise)
-		// 	jb.delay(1).then(() => cmp.refresh(null,{srcCtx: ctx.componentContext}))
+		// 	jb.delay(1).then(() => cmp.refresh(null,{srcCtx: ctx.cmpCtx}))
 		const adjustedExtraKeys = jb.objFromEntries(jb.entries(cm_settings.extraKeys).map(e=>[
 			e[0], _ => ctx.setVar('ev',jb.ui.buildUserEvent({},el)).run(action.runBEMethod(e[1]))
 			// jb.ui.wrapWithLauchingElement(ctx2 => ctx2.run(e[1]), cmp.ctx, el, {launcherHeightFix: 1})(cmp.ctx)

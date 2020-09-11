@@ -34,7 +34,7 @@ function do_jb_run(ctx,parentParam,settings) {
       case 'booleanExp': return castToParam(bool_expression(profile, ctx,parentParam), parentParam);
       case 'expression': return castToParam(expression(profile, ctx,parentParam), parentParam);
       case 'asIs': return profile;
-      case 'function': return castToParam(profile(ctx,ctx.vars,ctx.componentContext && ctx.componentContext.params),parentParam);
+      case 'function': return castToParam(profile(ctx,ctx.vars,ctx.cmpCtx && ctx.cmpCtx.params),parentParam);
       case 'null': return castToParam(null,parentParam);
       case 'ignore': return ctx.data;
       case 'list': return profile.map((inner,i) => ctxWithVars.runInner(inner,null,i));
@@ -60,7 +60,7 @@ function do_jb_run(ctx,parentParam,settings) {
           const args = [run.ctx, ...run.preparedParams.map(param=>run.ctx.params[param.name])] // TODO : [run.ctx,run.ctx.vars,run.ctx.params]
           out = run.impl.apply(null,args);
         } else {
-          out = jb_run(new jbCtx(run.ctx, { componentContext: run.ctx }),parentParam);
+          out = jb_run(new jbCtx(run.ctx, { cmpCtx: run.ctx }),parentParam);
         }
 
         if (profile.$log)
@@ -214,8 +214,8 @@ function isRefType(jstype) {
 }
 function calcVar(ctx,varname,jstype) {
   let res;
-  if (ctx.componentContext && ctx.componentContext.params[varname] !== undefined)
-    res = ctx.componentContext.params[varname];
+  if (ctx.cmpCtx && ctx.cmpCtx.params[varname] !== undefined)
+    res = ctx.cmpCtx.params[varname];
   else if (ctx.vars[varname] !== undefined)
     res = ctx.vars[varname]
   else if (ctx.vars.scope && ctx.vars.scope[varname] !== undefined)
@@ -507,7 +507,7 @@ class jbCtx {
       this.data= (typeof ctx2.data != 'undefined') ? ctx2.data : ctx.data;     // allow setting of data:null
       this.vars= ctx2.vars ? Object.assign({},ctx.vars,ctx2.vars) : ctx.vars;
       this.params= ctx2.params || ctx.params;
-      this.componentContext= (typeof ctx2.componentContext != 'undefined') ? ctx2.componentContext : ctx.componentContext;
+      this.cmpCtx= (typeof ctx2.cmpCtx != 'undefined') ? ctx2.cmpCtx : ctx.cmpCtx;
       this.probe= ctx.probe;
     }
   }
@@ -538,7 +538,7 @@ class jbCtx {
   dataObj(data) { return {data, vars: this.vars} }
   callStack() {
     const ctxStack=[]; 
-    for(let innerCtx=this; innerCtx; innerCtx = innerCtx.componentContext) 
+    for(let innerCtx=this; innerCtx; innerCtx = innerCtx.cmpCtx) 
       ctxStack.push(innerCtx)
     return ctxStack.map(ctx=>ctx.callerPath)
   }
@@ -919,12 +919,12 @@ jb.component('call', {
     {id: 'param', as: 'string'}
   ],
   impl: function(context,param) {
- 	  const paramObj = context.componentContext && context.componentContext.params[param];
+ 	  const paramObj = context.cmpCtx && context.cmpCtx.params[param];
       if (typeof paramObj == 'function')
  		return paramObj(new jb.jbCtx(context, {
  			data: context.data,
  			vars: context.vars,
- 			componentContext: context.componentContext.componentContext,
+ 			cmpCtx: context.cmpCtx.cmpCtx,
  			forcePath: paramObj.srcPath // overrides path - use the former path
  		}));
       else

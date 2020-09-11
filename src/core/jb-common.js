@@ -4,12 +4,12 @@ jb.component('call', {
     {id: 'param', as: 'string'}
   ],
   impl: function(context,param) {
- 	  const paramObj = context.componentContext && context.componentContext.params[param];
+ 	  const paramObj = context.cmpCtx && context.cmpCtx.params[param];
       if (typeof paramObj == 'function')
  		return paramObj(new jb.jbCtx(context, {
  			data: context.data,
  			vars: context.vars,
- 			componentContext: context.componentContext.componentContext,
+ 			cmpCtx: context.cmpCtx.cmpCtx,
  			forcePath: paramObj.srcPath // overrides path - use the former path
  		}));
       else

@@ -663,7 +663,7 @@ jb.component('studio.eventItems', {
         ev.error = event[1].err
       }
       ev.title = typeof event[1] == 'string' && event[1]
-      ev.ctx = (event || []).filter(x=>x && x.componentContext && x.profile)[0]
+      ev.ctx = (event || []).filter(x=>x && x.cmpCtx && x.profile)[0]
       ev.ctx = ev.ctx || (event || []).filter(x=>x && x.path && x.profile)[0]
       ev.jbComp = (event || []).filter(x=> jb.path(x,'constructor.name') == 'JbComponent')[0]
       ev.ctx = ev.ctx || ev.jbComp && ev.jbComp.ctx
@@ -754,7 +754,7 @@ jb.component('studio.showStack', {
     content: itemlist({
       items: ({},{},{ctx}) => {
           const ctxStack=[];
-          for(let innerCtx= ctx; innerCtx; innerCtx = innerCtx.componentContext)
+          for(let innerCtx= ctx; innerCtx; innerCtx = innerCtx.cmpCtx)
             ctxStack.push(innerCtx)
           return jb.unique([...ctxStack.slice(1).map(ctx=> ({ctx, path: ctx.callerPath})),
             ...ctxStack.filter(ctx => ctx.vars.cmp).map(ctx=>({ctx, path: ctx.vars.cmp.ctx.path}))])

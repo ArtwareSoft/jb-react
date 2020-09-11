@@ -34,7 +34,7 @@ function do_jb_run(ctx,parentParam,settings) {
       case 'booleanExp': return castToParam(bool_expression(profile, ctx,parentParam), parentParam);
       case 'expression': return castToParam(expression(profile, ctx,parentParam), parentParam);
       case 'asIs': return profile;
-      case 'function': return castToParam(profile(ctx,ctx.vars,ctx.componentContext && ctx.componentContext.params),parentParam);
+      case 'function': return castToParam(profile(ctx,ctx.vars,ctx.cmpCtx && ctx.cmpCtx.params),parentParam);
       case 'null': return castToParam(null,parentParam);
       case 'ignore': return ctx.data;
       case 'list': return profile.map((inner,i) => ctxWithVars.runInner(inner,null,i));
@@ -60,7 +60,7 @@ function do_jb_run(ctx,parentParam,settings) {
           const args = [run.ctx, ...run.preparedParams.map(param=>run.ctx.params[param.name])] // TODO : [run.ctx,run.ctx.vars,run.ctx.params]
           out = run.impl.apply(null,args);
         } else {
-          out = jb_run(new jbCtx(run.ctx, { componentContext: run.ctx }),parentParam);
+          out = jb_run(new jbCtx(run.ctx, { cmpCtx: run.ctx }),parentParam);
         }
 
         if (profile.$log)
@@ -214,8 +214,8 @@ function isRefType(jstype) {
 }
 function calcVar(ctx,varname,jstype) {
   let res;
-  if (ctx.componentContext && ctx.componentContext.params[varname] !== undefined)
-    res = ctx.componentContext.params[varname];
+  if (ctx.cmpCtx && ctx.cmpCtx.params[varname] !== undefined)
+    res = ctx.cmpCtx.params[varname];
   else if (ctx.vars[varname] !== undefined)
     res = ctx.vars[varname]
   else if (ctx.vars.scope && ctx.vars.scope[varname] !== undefined)
@@ -507,7 +507,7 @@ class jbCtx {
       this.data= (typeof ctx2.data != 'undefined') ? ctx2.data : ctx.data;     // allow setting of data:null
       this.vars= ctx2.vars ? Object.assign({},ctx.vars,ctx2.vars) : ctx.vars;
       this.params= ctx2.params || ctx.params;
-      this.componentContext= (typeof ctx2.componentContext != 'undefined') ? ctx2.componentContext : ctx.componentContext;
+      this.cmpCtx= (typeof ctx2.cmpCtx != 'undefined') ? ctx2.cmpCtx : ctx.cmpCtx;
       this.probe= ctx.probe;
     }
   }
@@ -538,7 +538,7 @@ class jbCtx {
   dataObj(data) { return {data, vars: this.vars} }
   callStack() {
     const ctxStack=[]; 
-    for(let innerCtx=this; innerCtx; innerCtx = innerCtx.componentContext) 
+    for(let innerCtx=this; innerCtx; innerCtx = innerCtx.cmpCtx) 
       ctxStack.push(innerCtx)
     return ctxStack.map(ctx=>ctx.callerPath)
   }
@@ -919,12 +919,12 @@ jb.component('call', {
     {id: 'param', as: 'string'}
   ],
   impl: function(context,param) {
- 	  const paramObj = context.componentContext && context.componentContext.params[param];
+ 	  const paramObj = context.cmpCtx && context.cmpCtx.params[param];
       if (typeof paramObj == 'function')
  		return paramObj(new jb.jbCtx(context, {
  			data: context.data,
  			vars: context.vars,
- 			componentContext: context.componentContext.componentContext,
+ 			cmpCtx: context.cmpCtx.cmpCtx,
  			forcePath: paramObj.srcPath // overrides path - use the former path
  		}));
       else
@@ -3623,7 +3623,7 @@ jb.component('rx.subject', {
     impl: (ctx,replay,itemsToKeep) => {
       const trigger = jb.callbag.subject()
       const source = replay ? jb.callbag.replay(itemsToKeep)(trigger): trigger
-      source.ctx = trigger.ctx = ctx.componentContext
+      source.ctx = trigger.ctx = ctx.cmpCtx
       return { trigger, source } 
     }
 })
@@ -5445,7 +5445,7 @@ jb.component('service.registerBackEndService', {
   ],
   impl: feature.init((ctx,{$serviceRegistry},{id,service}) => {
     const _id = id(ctx), _service = service(ctx)
-    jb.log('register service',[_id,_service,ctx.componentContext])
+    jb.log('register service',[_id,_service,ctx.cmpCtx])
     if ($serviceRegistry.services[_id])
       jb.logError('overridingService',[_id,$serviceRegistry.services[_id],_service,ctx])
     $serviceRegistry.services[_id] = _service
@@ -5590,7 +5590,7 @@ jb.component('customStyle', {
           template: ctx.profile.template,
           css: css,
           featuresOptions: features(),
-          styleParams: ctx.componentContext.params
+          styleParams: ctx.cmpCtx.params
     })
 })
 
@@ -5773,7 +5773,7 @@ jb.component('followUp.flow', {
       {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
   ],
   impl: followUp.action(rx.pipe(ctx => {
-    jb.log('register followUp',[jb.ui.cmpV(ctx.vars.cmp),ctx.componentContext.callerPath,ctx])
+    jb.log('register followUp',[jb.ui.cmpV(ctx.vars.cmp),ctx.cmpCtx.callerPath,ctx])
     const fuCtx = ctx.setVar('followUpCmp',ctx.vars.cmp)
     const elems = fuCtx.run('%$elems()%') 
     elems.splice(1,0,fuCtx.run(followUp.takeUntilCmpDestroyed()))
@@ -5934,7 +5934,7 @@ jb.component('calculatedVar', {
     )),
     ctx => ({
       extendCtx: (_ctx,cmp) => {
-        const {name,value} = ctx.componentContext.params
+        const {name,value} = ctx.cmpCtx.params
         const fullName = name + ':' + cmp.cmpId;
         jb.log('create watchable calculatedVar',[ctx,fullName])
         jb.resource(fullName, jb.val(value(_ctx)));
@@ -6863,9 +6863,9 @@ jb.component('group.wait', {
         priority: ctx => jb.path(ctx.vars.$state,'dataArrived') ? 0: 10
     }),
     followUp.action((ctx,{cmp},{varName,passRx}) => !cmp.state.dataArrived && !cmp.state.error &&
-        Promise.resolve(jb.toSynchArray(ctx.componentContext.params.for(),!passRx))
+        Promise.resolve(jb.toSynchArray(ctx.cmpCtx.params.for(),!passRx))
         .then(data => cmp.refresh({ dataArrived: true }, {
-            srcCtx: ctx.componentContext,
+            srcCtx: ctx.cmpCtx,
             extendCtx: ctx => ctx.setVar(varName,data).setData(data)
           }))
           .catch(e=> cmp.refresh({error: JSON.stringify(e)}))
@@ -6880,7 +6880,7 @@ jb.component('group.eliminateRecursion', {
     { id: 'maxDepth', as: 'number' }
   ],
   impl: (ctx,maxDepth) => {
-    const protectedComp = ctx.componentContext.componentContext.path
+    const protectedComp = ctx.cmpCtx.cmpCtx.path
     const timesInStack = ctx.callStack().filter(x=>x && x.indexOf(protectedComp) != -1).length
     if (timesInStack > maxDepth)
       return ctx.run( calcProp({id: 'ctrls', value: () => [], phase: 1, priority: 100 }))
@@ -7192,14 +7192,14 @@ function writeFieldData(ctx,cmp,value,oneWay) {
   jb.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx)
   jb.ui.checkValidationError(cmp,value,ctx)
   cmp.hasBEMethod('onValueChange') && cmp.runBEMethod('onValueChange',value,ctx.vars)
-  !oneWay && cmp.refresh({},{srcCtx: ctx.componentContext})
+  !oneWay && cmp.refresh({},{srcCtx: ctx.cmpCtx})
 }
 
 jb.ui.checkValidationError = (cmp,val,ctx) => {
   const err = validationError();
   if (cmp.state.error != err) {
     jb.log('field set error state',[cmp,err])
-    cmp.refresh({valid: !err, error:err}, {srcCtx: ctx.componentContext});
+    cmp.refresh({valid: !err, error:err}, {srcCtx: ctx.cmpCtx});
   }
 
   function validationError() {
@@ -7470,7 +7470,7 @@ jb.component('openDialog', {
   impl: runActions(
 	  Var('$dlg',(ctx,{},{id}) => {
 		const dialog = { id: id || `dlg-${ctx.id}`, launcherCmpId: ctx.exp('%$cmp/cmpId%') }
-		const ctxWithDialog = ctx.componentContext._parent.setVars({
+		const ctxWithDialog = ctx.cmpCtx._parent.setVars({
 			$dialog: dialog,
 			dialogData: {},
 			formContainer: { err: ''}
@@ -8426,7 +8426,7 @@ jb.component('itemlistContainer.search', {
     {id: 'style', type: 'editable-text.style', defaultValue: editableText.mdcSearch(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.componentContext), features(
+  impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.cmpCtx), features(
 		calcProp('init', (ctx,{cmp, itemlistCntr},{searchIn,databind}) => {
 				if (!itemlistCntr) return
 				itemlistCntr.filters.push( {
@@ -8454,7 +8454,7 @@ jb.component('itemlistContainer.moreItemsButton', {
     {id: 'style', type: 'button.style', defaultValue: button.href(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.componentContext), features(
+  impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.cmpCtx), features(
       watchRef('%$itemlistCntrData/maxItems%'),
       method(
         'onclickHandler',
@@ -8872,7 +8872,7 @@ jb.component('menu.selectionKeySourceService', {
         }
         return true
       }
-      jb.ui.focus(el,'menu.selectionKeySourceService',ctx.componentContext)
+      jb.ui.focus(el,'menu.selectionKeySourceService',ctx.cmpCtx)
       jb.log('menuKeySource register',[cmp.cmpId,cmp,el,ctx])
       return pipe(el.keydown_src, takeUntil(cmp.destroyed))
     })
@@ -10433,7 +10433,7 @@ jb.component('group.tabs', {
               raised: '%$tabIndex% == %$selectedTab%',
               // watchRef breaks mdcTabBar animation
               features: [
-                ctx => ctx.componentContext.params.barStyle.profile.$ !== 'group.mdcTabBar' && watchRef('%$selectedTab%'),
+                ctx => ctx.cmpCtx.params.barStyle.profile.$ !== 'group.mdcTabBar' && watchRef('%$selectedTab%'),
                 ctx => ctx.run(features((ctx.vars.tab.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x)))
               ]
             }),
@@ -10972,7 +10972,7 @@ jb.component('editableBoolean.buttonXV', {
   ],
   impl: styleWithFeatures(call('buttonStyle'), features(
       htmlAttribute('onclick','toggle'),
-      ctx => ctx.run({...ctx.componentContext.params[jb.toboolean(ctx.vars.$model.databind()) ? 'yesIcon' : 'noIcon' ], 
+      ctx => ctx.run({...ctx.cmpCtx.params[jb.toboolean(ctx.vars.$model.databind()) ? 'yesIcon' : 'noIcon' ], 
         title: ctx.exp('%$$model/title%'), $: 'feature.icon'}),
     ))
 })
@@ -12010,11 +12010,11 @@ jb.remoteCtx = {
         const profText = jb.prettyPrint(ctx.profile)
         const vars = jb.objFromEntries(jb.entries(ctx.vars).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
-        const params = jb.objFromEntries(jb.entries(isJS ? ctx.params: jb.entries(jb.path(ctx.componentContext,'params')))
+        const params = jb.objFromEntries(jb.entries(isJS ? ctx.params: jb.entries(jb.path(ctx.cmpCtx,'params')))
             .filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
         const res = Object.assign({id: ctx.id, path: ctx.path, profile: ctx.profile, vars }, 
-            isJS ? {params,vars} : Object.keys(params).length ? {componentContext: {params} } : {} )
+            isJS ? {params,vars} : Object.keys(params).length ? {cmpCtx: {params} } : {} )
         return res
     },
     stripData(data) {
@@ -12036,10 +12036,10 @@ jb.remoteCtx = {
         const profText = jb.prettyPrint(profile)
         const vars = jb.objFromEntries(jb.entries(runCtx.vars).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
-        const params = jb.objFromEntries(jb.entries(jb.path(runCtx.componentContext,'params')).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
+        const params = jb.objFromEntries(jb.entries(jb.path(runCtx.cmpCtx,'params')).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
         return Object.assign({$: 'runCtx', id: runCtx.id, path, forcePath, param, profile, vars}, 
-            Object.keys(params).length ? {componentContext: {params} } : {})
+            Object.keys(params).length ? {cmpCtx: {params} } : {})
     },
     serailizeCtx(ctx) { return JSON.stringify(this.stripCtx(ctx)) },
     deStrip(data) {

@@ -176,7 +176,7 @@ st.suggestions = class {
           .filter(e=>! jb.comps[e[0]])
           .filter(e=>e[1].watchableData  !== undefined || e[1].passiveData  !== undefined)
           .map(e=>[jb.removeDataResourcePrefix(e[0]),e[1]])
-    const vars = jb.entries(Object.assign({},(probeCtx.componentContext||{}).params,probeCtx.vars))
+    const vars = jb.entries(Object.assign({},(probeCtx.cmpCtx||{}).params,probeCtx.vars))
         .concat(resources)
         .filter(x=>['cmp'].indexOf(x[0]) == -1)
         .map(x=>new ValueOption('$'+x[0],jb.studio.previewjb.val(x[1]),this.pos,this.tail,this.input))

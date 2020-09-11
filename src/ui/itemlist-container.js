@@ -54,7 +54,7 @@ jb.component('itemlistContainer.search', {
     {id: 'style', type: 'editable-text.style', defaultValue: editableText.mdcSearch(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.componentContext), features(
+  impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.cmpCtx), features(
 		calcProp('init', (ctx,{cmp, itemlistCntr},{searchIn,databind}) => {
 				if (!itemlistCntr) return
 				itemlistCntr.filters.push( {
@@ -82,7 +82,7 @@ jb.component('itemlistContainer.moreItemsButton', {
     {id: 'style', type: 'button.style', defaultValue: button.href(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.componentContext), features(
+  impl: controlWithFeatures(ctx => jb.ui.ctrl(ctx.cmpCtx), features(
       watchRef('%$itemlistCntrData/maxItems%'),
       method(
         'onclickHandler',

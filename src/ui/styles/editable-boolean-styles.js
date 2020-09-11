@@ -68,7 +68,7 @@ jb.component('editableBoolean.buttonXV', {
   ],
   impl: styleWithFeatures(call('buttonStyle'), features(
       htmlAttribute('onclick','toggle'),
-      ctx => ctx.run({...ctx.componentContext.params[jb.toboolean(ctx.vars.$model.databind()) ? 'yesIcon' : 'noIcon' ], 
+      ctx => ctx.run({...ctx.cmpCtx.params[jb.toboolean(ctx.vars.$model.databind()) ? 'yesIcon' : 'noIcon' ], 
         title: ctx.exp('%$$model/title%'), $: 'feature.icon'}),
     ))
 })

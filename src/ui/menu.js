@@ -294,7 +294,7 @@ jb.component('menu.selectionKeySourceService', {
         }
         return true
       }
-      jb.ui.focus(el,'menu.selectionKeySourceService',ctx.componentContext)
+      jb.ui.focus(el,'menu.selectionKeySourceService',ctx.cmpCtx)
       jb.log('menuKeySource register',[cmp.cmpId,cmp,el,ctx])
       return pipe(el.keydown_src, takeUntil(cmp.destroyed))
     })

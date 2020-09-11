@@ -462,7 +462,7 @@ jb.component('studio.expandAndSelectFirstChildInJbEditor', {
     const ctxOfTree = ctx.vars.$tree ? ctx : jb.ctxDictionary[jbEditorElem.getAttribute('jb-ctx')];
     const cmp = ctxOfTree.vars.$tree && ctxOfTree.vars.$tree.cmp;
     if (!cmp) return;
-    const path = cmp.getSelected() || ctx.componentContext.params.path
+    const path = cmp.getSelected() || ctx.cmpCtx.params.path
     if (!path) return
     const firstChildPath = cmp.model.children(path)[0];
     if (firstChildPath) {

@@ -140,7 +140,7 @@ jb.component('followUp.flow', {
       {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
   ],
   impl: followUp.action(rx.pipe(ctx => {
-    jb.log('register followUp',[jb.ui.cmpV(ctx.vars.cmp),ctx.componentContext.callerPath,ctx])
+    jb.log('register followUp',[jb.ui.cmpV(ctx.vars.cmp),ctx.cmpCtx.callerPath,ctx])
     const fuCtx = ctx.setVar('followUpCmp',ctx.vars.cmp)
     const elems = fuCtx.run('%$elems()%') 
     elems.splice(1,0,fuCtx.run(followUp.takeUntilCmpDestroyed()))
@@ -301,7 +301,7 @@ jb.component('calculatedVar', {
     )),
     ctx => ({
       extendCtx: (_ctx,cmp) => {
-        const {name,value} = ctx.componentContext.params
+        const {name,value} = ctx.cmpCtx.params
         const fullName = name + ':' + cmp.cmpId;
         jb.log('create watchable calculatedVar',[ctx,fullName])
         jb.resource(fullName, jb.val(value(_ctx)));

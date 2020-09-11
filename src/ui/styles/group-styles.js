@@ -86,7 +86,7 @@ jb.component('group.tabs', {
               raised: '%$tabIndex% == %$selectedTab%',
               // watchRef breaks mdcTabBar animation
               features: [
-                ctx => ctx.componentContext.params.barStyle.profile.$ !== 'group.mdcTabBar' && watchRef('%$selectedTab%'),
+                ctx => ctx.cmpCtx.params.barStyle.profile.$ !== 'group.mdcTabBar' && watchRef('%$selectedTab%'),
                 ctx => ctx.run(features((ctx.vars.tab.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x)))
               ]
             }),

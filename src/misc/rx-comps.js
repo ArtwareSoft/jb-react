@@ -486,7 +486,7 @@ jb.component('rx.subject', {
     impl: (ctx,replay,itemsToKeep) => {
       const trigger = jb.callbag.subject()
       const source = replay ? jb.callbag.replay(itemsToKeep)(trigger): trigger
-      source.ctx = trigger.ctx = ctx.componentContext
+      source.ctx = trigger.ctx = ctx.cmpCtx
       return { trigger, source } 
     }
 })

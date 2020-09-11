@@ -104,9 +104,9 @@ jb.component('group.wait', {
         priority: ctx => jb.path(ctx.vars.$state,'dataArrived') ? 0: 10
     }),
     followUp.action((ctx,{cmp},{varName,passRx}) => !cmp.state.dataArrived && !cmp.state.error &&
-        Promise.resolve(jb.toSynchArray(ctx.componentContext.params.for(),!passRx))
+        Promise.resolve(jb.toSynchArray(ctx.cmpCtx.params.for(),!passRx))
         .then(data => cmp.refresh({ dataArrived: true }, {
-            srcCtx: ctx.componentContext,
+            srcCtx: ctx.cmpCtx,
             extendCtx: ctx => ctx.setVar(varName,data).setData(data)
           }))
           .catch(e=> cmp.refresh({error: JSON.stringify(e)}))
@@ -121,7 +121,7 @@ jb.component('group.eliminateRecursion', {
     { id: 'maxDepth', as: 'number' }
   ],
   impl: (ctx,maxDepth) => {
-    const protectedComp = ctx.componentContext.componentContext.path
+    const protectedComp = ctx.cmpCtx.cmpCtx.path
     const timesInStack = ctx.callStack().filter(x=>x && x.indexOf(protectedComp) != -1).length
     if (timesInStack > maxDepth)
       return ctx.run( calcProp({id: 'ctrls', value: () => [], phase: 1, priority: 100 }))
