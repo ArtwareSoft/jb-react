@@ -1477,6 +1477,7 @@ function applyDeltaToVDom(elem,delta) {
             if (index != -1)
                 elem.children.splice(index,1)
         }
+        Object.keys(delta.children).filter(x=>!isNaN(x)).forEach(index=>applyDeltaToVDom(elem.children[+index],elem.children[index]))
     }
 
     Object.assign(elem.attributes,delta.attributes)
@@ -1733,7 +1734,7 @@ Object.assign(jb.ui, {
         if (!delta) return
         elem = elem || jb.ui.elemOfCmp(ctx,cmpId)
         if (delta.$prevVersion && delta.$prevVersion != elem.getAttribute('cmp-ver')) {
-            jb.logError('trying to apply delta to unexpeced verson',[delta, ctx, cmpId, elem])
+            jb.logError('trying to apply delta to unexpected verson',[delta, ctx, cmpId, elem])
             return
         }
         jb.log('applyDelta uiComp',[delta, ctx, cmpId, elem])
