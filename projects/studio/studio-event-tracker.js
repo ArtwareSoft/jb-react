@@ -59,7 +59,7 @@ jb.component('studio.eventTracker', {
         title: '',
         layout: layout.horizontal('14'),
         controls: [
-          text({text: pipeline(studio.getSpy(), '%logs/length%'), title: 'count'}),
+          text({text: pipeline(studio.getSpy(), '%$events/length%/%logs/length%'), title: 'counts'}),
           button({
             title: 'clear',
             action: studio.clearSpyLog(),
@@ -93,7 +93,7 @@ jb.component('studio.eventTracker', {
       }),
       html({title: 'hr', html: '<hr/>'}),
       itemlist({
-        items: studio.eventItems('%$studio/eventTrackerQuery%','%$studio/eventTrackerPattern%'),
+        items: '%$events%',
         controls: [
           button({
             title: '%index%: %log%',
@@ -151,7 +151,7 @@ jb.component('studio.eventTracker', {
     ],
     features: [
       id('event-tracker'),
-      variable({name: 'eventTracker', value: obj()}),
+      variable({name: 'events', value: studio.eventItems('%$studio/eventTrackerQuery%','%$studio/eventTrackerPattern%')}),
     ]
   })
 })
