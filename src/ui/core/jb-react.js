@@ -216,7 +216,8 @@ function applyDeltaToVDom(elem,delta) {
             if (index != -1)
                 elem.children.splice(index,1)
         }
-        Object.keys(delta.children).filter(x=>!isNaN(x)).forEach(index=>applyDeltaToVDom(elem.children[+index],elem.children[index]))
+        Object.keys(delta.children).filter(x=>!isNaN(x)).forEach(index=>
+                applyDeltaToVDom(elem.children[+index],delta.children[index]))
     }
 
     Object.assign(elem.attributes,delta.attributes)
