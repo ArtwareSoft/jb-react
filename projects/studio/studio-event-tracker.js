@@ -1,6 +1,8 @@
 jb.ui.getSpy = ctx => {
-  const _jb = ctx.exp('%$studio/spyStudio%') ? jb : jb.studio.previewjb
-  return _jb.spy || _jb.initSpy({spyParam: (ctx.exp('%$studio/spyLogs%') || []).join(',')})
+  const spy = jb.path(jb.studio,'previewjb.spy')
+  if (!spy)
+    jb.logError('studio.eventItems - can not locate spy')
+  return spy
 }
 
 jb.component('studio.openEventTracker', {
@@ -36,20 +38,17 @@ jb.component('studio.getSpy', {
   impl: ctx => jb.ui.getSpy(ctx)
 })
 
+jb.component('studio.clearSpyLog', {
+  type: 'action',
+  impl: ctx => jb.ui.getSpy(ctx).clear()
+})
+
 jb.component('studio.refreshSpy', {
   type: 'action',
   params: [
     {id: 'clear', as: 'boolean'}
   ],
-  impl: (ctx,clear) => {
-    if (clear)
-      jb.ui.getSpy(ctx).clear()
-//    const spy = jb.ui.getSpy(ctx)
-    // clear && spy.clear();
-    // spy._all = null;
-    // spy.setLogs([...ctx.exp('%$studio/spyLogs%'),'error'].join(','))
-    ctx.run(refreshControlById({id: 'event-tracker', strongRefresh: true}))
-  }
+  impl: refreshControlById('event-tracker')
 })
 
 jb.component('studio.eventTracker', {
@@ -60,12 +59,17 @@ jb.component('studio.eventTracker', {
         title: '',
         layout: layout.horizontal('14'),
         controls: [
+          text({text: pipeline(studio.getSpy(), '%logs/length%'), title: 'count'}),
+          button({
+            title: 'clear',
+            action: studio.clearSpyLog(),
+            style: button.mdcIcon(icon({icon: 'clear'}), '20')
+          }),
           button({
             title: 'refresh',
-            action: studio.refreshSpy(true),
-            style: button.mdcIcon(icon({icon: 'refresh', style: icon.material()}), '20')
+            action: refreshControlById('event-tracker'),
+            style: button.mdcIcon(icon({icon: 'refresh'}), '20')
           }),
-          text({text: pipeline(studio.getSpy(), '%logs/length% items'), title: 'count'}),
           editableText({
             title: 'pattern',
             databind: '%$eventTracker/pattern%',
