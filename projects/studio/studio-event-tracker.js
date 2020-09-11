@@ -59,22 +59,29 @@ jb.component('studio.eventTracker', {
         title: '',
         layout: layout.horizontal('14'),
         controls: [
-          text({text: pipeline(studio.getSpy(), '%$events/length%/%logs/length%'), title: 'counts'}),
+          text({
+            text: pipeline(studio.getSpy(), '%$events/length%/%logs/length%'),
+            title: 'counts'
+          }),
           button({
             title: 'clear',
             action: studio.clearSpyLog(),
-            style: button.mdcIcon(icon({icon: 'clear'}), '20')
+            style: button.mdcIcon(icon('clear'), '20')
           }),
           button({
             title: 'refresh',
             action: refreshControlById('event-tracker'),
-            style: button.mdcIcon(icon({icon: 'refresh'}), '20')
+            style: button.mdcIcon(icon('refresh'), '20')
           }),
           editableText({
             title: 'query',
             databind: '%$studio/eventTrackerQuery%',
             style: editableText.input(),
-            features: htmlAttribute('placeholder', 'query')
+            features: [
+              htmlAttribute('placeholder', 'query'),
+              feature.onEnter(refreshControlById('event-tracker')),
+              css.width('400')
+            ]
           }),
           editableText({
             title: 'pattern',
@@ -151,7 +158,10 @@ jb.component('studio.eventTracker', {
     ],
     features: [
       id('event-tracker'),
-      variable({name: 'events', value: studio.eventItems('%$studio/eventTrackerQuery%','%$studio/eventTrackerPattern%')}),
+      variable({
+        name: 'events',
+        value: studio.eventItems('%$studio/eventTrackerQuery%', '%$studio/eventTrackerPattern%')
+      })
     ]
   })
 })
