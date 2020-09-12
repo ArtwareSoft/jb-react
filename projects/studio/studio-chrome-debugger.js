@@ -118,10 +118,10 @@ jb.component('inspectedWindow.logsCtrl', {
 jb.component('chromeDebugger.icon', {
     type: 'button.style',
     params: [
-        {id: 'position', as: 'string', defaultValue: '0px 144px'}
+        {id: 'position', as: 'string', defaultValue: 'top 144px left 0px'}
     ],
     impl: customStyle({
-      template: (cmp,{title},h) => h('div',{onclick: true }, title),
-      css: `{ -webkit-mask-image: url(largeIcons.svg); --spritesheet-position: %$position%; width: 28px;  height: 24px;}`
+      template: (cmp,{title},h) => h('div',{onclick: true, title}),
+      css: `{ background-image: url(largeIcons.svg); background-position: %$position%; width: 28px;  height: 24px; background-color: var(--jb-menu-fg);}`
     })
 })
