@@ -115,7 +115,7 @@ jb.component('inspectedWindow.logsCtrl', {
     impl: widget.twoTierWidget(studio.eventTracker(), remote.inspectedWindowFromPanel('%$panel%'))
 })
 
-jb.component('chrome.icon', {
+jb.component('chromeDebugger.icon', {
     type: 'button.style',
     params: [
         {id: 'position', as: 'string', defaultValue: '0px 144px'}

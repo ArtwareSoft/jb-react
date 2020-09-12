@@ -1,4 +1,4 @@
-jb.ns('chrome')
+jb.ns('chromeDebugger')
 
 jb.ui.getSpy = ctx => {
   const spy = jb.path(jb.studio,'previewjb.spy')
@@ -85,7 +85,7 @@ jb.component('studio.eventTracker', {
           button({
             title: 'block',
             action: runActions(studio.clearSpyLog(), refreshControlById('event-tracker')),
-            style: chrome.icon(),
+            style: chromeDebugger.icon(),
             features: [
               feature.icon({
                 icon: 'BlockHelper',
