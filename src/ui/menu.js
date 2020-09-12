@@ -193,17 +193,18 @@ jb.component('menuStyle.applyMultiLevel', {
   params: [
     {id: 'menuStyle', type: 'menu.style', dynamic: true, defaultValue: menuStyle.popupAsOption()},
     {id: 'leafStyle', type: 'menu.style', dynamic: true, defaultValue: menuStyle.optionLine()},
-    {id: 'separatorStyle', type: 'menu.style', dynamic: true, defaultValue: menuSeparator.line()}
+    {id: 'separatorStyle', type: 'menu-separator.style', defaultValue: menuSeparator.line()}
   ],
-  impl: ctx => {
-			if (ctx.vars.menuModel.leaf)
-				return ctx.vars.leafOptionStyle ? ctx.vars.leafOptionStyle(ctx) : ctx.params.leafStyle();
-			else if (ctx.vars.menuModel.separator)
-				return ctx.params.separatorStyle()
-			else if (ctx.vars.innerMenuStyle)
-				return ctx.vars.innerMenuStyle(ctx)
+  impl: (ctx,menuStyle,leafStyle,separatorStyle) => {
+    const {menuModel,leafOptionStyle, innerMenuStyle } = ctx.vars
+			if (menuModel.leaf)
+				return leafOptionStyle ? leafOptionStyle(ctx) : leafStyle();
+			else if (menuModel.separator)
+				return separatorStyle
+			else if (innerMenuStyle)
+				return innerMenuStyle(ctx)
 			else
-				return ctx.params.menuStyle();
+				return menuStyle()
 		}
 })
 
@@ -230,7 +231,7 @@ jb.component('menu.selection', {
   ],
   impl: features(
     htmlAttribute('tabIndex',0),
-    css('>.selected { color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) }'),
+    css('>.selected { color: var(--jb-menubar-selection-fg); background: var(--jb-menubar-selection-bg) }'),
     calcProp({
       id: 'selected', // selected represented as ctxId of selected data
       phase: 20, // after 'ctrls'
@@ -362,7 +363,7 @@ jb.component('menuStyle.optionLine', {
         h('div#mdc-line-ripple'),
 		]),
     css: `{ display: flex; cursor: pointer; font1: 13px Arial; height: 24px}
-				.selected { color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) }
+				.selected { color: var(--jb-menubar-selection-fg); background: var(--jb-menubar-selection-bg) }
 				>i { padding: 3px 8px 0 3px }
 				>span { padding-top: 3px }
 				>.title { display: block; text-align: left; white-space: nowrap; }
@@ -429,7 +430,7 @@ jb.component('menuSeparator.line', {
   type: 'menu-separator.style',
   impl: customStyle({
     template: ({},{},h) => h('div', {separator: true}),
-    css: '{ margin: 6px 0; border-bottom: 1px solid #EBEBEB;}',
+    css: '{ margin: 6px 0; border-bottom: 1px solid var(--jb-menu-separator-fg);}',
   })
 })
 

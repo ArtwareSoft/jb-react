@@ -35,7 +35,7 @@ jb.component('dialog.editSourceStyle', {
 						right: 4px; top: 4px;
 						font: 21px sans-serif;
 						border: none;
-						color: var(--jb-menu-foreground); text-shadow: 0 1px 0 var(--jb-menu-background); 
+						color: var(--jb-menu-fg); text-shadow: 0 1px 0 var(--jb-menu-bg); 
 						font-weight: 700;
 						opacity: .2;
 				}
@@ -45,7 +45,7 @@ jb.component('dialog.editSourceStyle', {
 						right: 24px; top: 0;
 						font: 21px sans-serif;
 						border: none;
-						color: var(--jb-menu-foreground); text-shadow: 0 1px 0 var(--jb-menu-background); 
+						color: var(--jb-menu-fg); text-shadow: 0 1px 0 var(--jb-menu-bg); 
 						font-weight: 700;
 						opacity: .2;
 				}
@@ -100,7 +100,7 @@ jb.component('dialog.showSourceStyle', {
 						  right: 4px; top: 4px;
 						  font: 21px sans-serif;
 						  border: none;
-						  color: var(--jb-menu-foreground); text-shadow: 0 1px 0 var(--jb-menu-background); 
+						  color: var(--jb-menu-fg); text-shadow: 0 1px 0 var(--jb-menu-bg); 
 						  font-weight: 700;
 						  opacity: .2;
 				  }
@@ -189,7 +189,7 @@ jb.component('dialog.studioFloating', {
 						right: 4px; top: 4px;
 						font: 21px sans-serif;
 						border: none;
-						color: var(--jb-menu-foreground); text-shadow: 0 1px 0 var(--jb-menu-background); 
+						color: var(--jb-menu-fg); text-shadow: 0 1px 0 var(--jb-menu-bg); 
 						font-weight: 700;
 						opacity: .2;
 				}
@@ -199,7 +199,7 @@ jb.component('dialog.studioFloating', {
 						right: 24px; top: 4px;
 						font: 21px sans-serif;
 						border: none;
-						color: var(--jb-menu-foreground); text-shadow: 0 1px 0 var(--jb-menu-background); 
+						color: var(--jb-menu-fg); text-shadow: 0 1px 0 var(--jb-menu-bg); 
 						font-weight: 700;
 						opacity: .2;
 				}

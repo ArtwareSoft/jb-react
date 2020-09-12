@@ -12,7 +12,7 @@ jb.component('button.href', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
-    css: '{color: var(--jb-textLink-foreground)} .raised { color: var(--jb-textLink-activeForeground) }'
+    css: '{color: var(--jb-textLink-fg)} .raised { color: var(--jb-textLink-active-fg) }'
   })
 })
 
@@ -33,7 +33,7 @@ jb.component('button.x', {
             text-shadow: 0 1px 0 var(--jb-dropdown-shadow);
             font-weight: 700;
         }
-        :hover { color: var(--jb-titleBar-activeForeground) }`,
+        :hover { color: var(--jb-menubar-active-fg) }`,
   })
 })
 

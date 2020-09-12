@@ -368,7 +368,7 @@ Object.assign(jb.ui, {
         }
         const evProps = (elem.getAttribute('userEventProps') || '').split(',').filter(x=>x).filter(x=>x.split('.')[0] != 'elem')
         const elemProps = (elem.getAttribute('userEventProps') || '').split(',').filter(x=>x).filter(x=>x.split('.')[0] == 'elem').map(x=>x.split('.')[1])
-        ;['type','keyCode','ctrlKey','alyKey','clientX','clientY', ...evProps].forEach(prop=> ev[prop] != null && (userEvent.ev[prop] = ev[prop]))
+        ;['type','keyCode','ctrlKey','altKey','clientX','clientY', ...evProps].forEach(prop=> ev[prop] != null && (userEvent.ev[prop] = ev[prop]))
         ;['id', 'class', ...elemProps].forEach(prop=>userEvent.elem[prop] = elem.getAttribute(prop))
         elem._component && elem._component.enrichUserEvent(ev,userEvent)
         if (ev.fixedTarget) userEvent.elem = jb.ui.calcElemProps(ev.fixedTarget) // enrich UserEvent can 'fix' the target, e.g. picking the selected node in tree

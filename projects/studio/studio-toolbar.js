@@ -114,7 +114,7 @@ jb.component('studio.toolbar', {
       ),
       css.transformScale({x: '0.7', y: '0.7'}),
       css.color({
-        background: 'var(--jb-menubar-selectionBackground)',
+        background: 'var(--jb-menubar-selection-bg)',
         selector: '~ button'
       })
     ]

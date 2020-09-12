@@ -232,7 +232,7 @@ jb.component('studio.showRxSniffer', {
               features: [css.opacity('0.5'), css.margin({left: '10'})]
             })
           ],
-          features: feature.byCondition('%dir%==out', css.color({background: 'var(--jb-titleBar-inactiveBackground)'}))
+          features: feature.byCondition('%dir%==out', css.color({background: 'var(--jb-menubar-inactive-bg)'}))
         }),
         style: itemlist.ulLi(),
         visualSizeLimit: 7,

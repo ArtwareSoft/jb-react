@@ -52,6 +52,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/slider.js',
         'src/ui/table.js',
         'src/ui/window.js',
+        'src/ui/divider.js',
         'src/ui/editable-text-helper-popup.js',
 
         'src/ui/styles/mdc-styles.js',

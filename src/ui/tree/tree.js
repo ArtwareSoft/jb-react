@@ -83,7 +83,7 @@ jb.component('tree.plain', {
 	|>.treenode-icon { font-size: 16px; margin-right: 2px; }
 
 	|>.treenode.selected>*>.treenode-label,.treenode.selected>*>.treenode-label  { 
-		color: var(--jb-menu-selectionForeground); background: var(--jb-menu-selectionBackground)}
+		color: var(--jb-menu-selection-fg); background: var(--jb-menu-selection-bg)}
 	`,
 	features: tree.initTree()
   })
@@ -122,16 +122,16 @@ jb.component('tree.expandBox', {
 
 	|>.treenode { display: block }
 	|>.treenode.selected>*>.treenode-label,.treenode.selected>*>.treenode-label  
-		{ color: var(--jb-menu-selectionForeground); background: var(--jb-menu-selectionBackground)}
+		{ color: var(--jb-menu-selection-fg); background: var(--jb-menu-selection-bg)}
 
 	|>.treenode-icon { font-size: 16px; margin-right: 2px; }
 	|>.treenode-expandbox { border: none; background: none; position: relative; width:9px; height:9px; padding: 0; vertical-align: top;
 		margin-top: 5px;  margin-right: 5px;  cursor: pointer;}
 	|>.treenode-expandbox.showIcon { margin-top: 3px }
 	|>.treenode-expandbox div { position: absolute; }
-	|>.treenode-expandbox .frame { background: var(--jb-menu-background); border-radius: 3px; border: 1px solid var(--jb-expandbox-background); top: 0; left: 0; right: 0; bottom: 0; }
-	|>.treenode-expandbox .line-lr { background: var(--jb-expandbox-background); top: 4px; left: 2px; width: 5px; height: 1px; }
-	|>.treenode-expandbox .line-tb { background: var(--jb-expandbox-background); left: 4px; top: 2px; height: 5px; width: 1px; display: none;}
+	|>.treenode-expandbox .frame { background: var(--jb-menu-bg); border-radius: 3px; border: 1px solid var(--jb-expandbox-bg); top: 0; left: 0; right: 0; bottom: 0; }
+	|>.treenode-expandbox .line-lr { background: var(--jb-expandbox-bg); top: 4px; left: 2px; width: 5px; height: 1px; }
+	|>.treenode-expandbox .line-tb { background: var(--jb-expandbox-bg); left: 4px; top: 2px; height: 5px; width: 1px; display: none;}
 	|>.treenode-line.collapsed .line-tb { display: block; }
 	|>.treenode.collapsed .line-tb { display: block; }
 	|>.treenode-expandbox.nochildren .frame { display: none; }

@@ -4770,7 +4770,7 @@ Object.assign(jb.ui, {
         }
         const evProps = (elem.getAttribute('userEventProps') || '').split(',').filter(x=>x).filter(x=>x.split('.')[0] != 'elem')
         const elemProps = (elem.getAttribute('userEventProps') || '').split(',').filter(x=>x).filter(x=>x.split('.')[0] == 'elem').map(x=>x.split('.')[1])
-        ;['type','keyCode','ctrlKey','alyKey','clientX','clientY', ...evProps].forEach(prop=> ev[prop] != null && (userEvent.ev[prop] = ev[prop]))
+        ;['type','keyCode','ctrlKey','altKey','clientX','clientY', ...evProps].forEach(prop=> ev[prop] != null && (userEvent.ev[prop] = ev[prop]))
         ;['id', 'class', ...elemProps].forEach(prop=>userEvent.elem[prop] = elem.getAttribute(prop))
         elem._component && elem._component.enrichUserEvent(ev,userEvent)
         if (ev.fixedTarget) userEvent.elem = jb.ui.calcElemProps(ev.fixedTarget) // enrich UserEvent can 'fix' the target, e.g. picking the selected node in tree
@@ -7888,7 +7888,7 @@ jb.component('dialog.popup', {
   type: 'dialog.style',
   impl: customStyle({
 	template: ({},{contentComp},h) => h('div#jb-dialog jb-popup',{},h(contentComp)),
-    css: '{ position: absolute; background: var(--jb-dropdown-background); box-shadow: 2px 2px 3px var(--jb-dropdown-shadow); padding: 3px 0; border: 1px solid var(--jb-dropdown-border) }',
+    css: '{ position: absolute; background: var(--jb-dropdown-bg); box-shadow: 2px 2px 3px var(--jb-dropdown-shadow); padding: 3px 0; border: 1px solid var(--jb-dropdown-border) }',
     features: [
       dialogFeature.maxZIndexOnClick(),
       dialogFeature.closeWhenClickingOutside(),
@@ -8138,7 +8138,7 @@ jb.component('itemlist.selection', {
     {id: 'onSelection', type: 'action', dynamic: true},
     {id: 'onDoubleClick', type: 'action', dynamic: true},
     {id: 'autoSelectFirst', type: 'boolean'},
-    {id: 'cssForSelected', as: 'string', defaultValue: 'color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground)'}
+    {id: 'cssForSelected', as: 'string', defaultValue: 'color: var(--jb-menubar-selection-fg); background: var(--jb-menubar-selection-bg)'}
   ],
   impl: features(
     css(({},{},{cssForSelected}) => ['>.selected','>*>.selected','>*>*>.selected'].map(sel=>sel+ ' ' + jb.ui.fixCssLine(cssForSelected)).join('\n')),
@@ -8780,17 +8780,18 @@ jb.component('menuStyle.applyMultiLevel', {
   params: [
     {id: 'menuStyle', type: 'menu.style', dynamic: true, defaultValue: menuStyle.popupAsOption()},
     {id: 'leafStyle', type: 'menu.style', dynamic: true, defaultValue: menuStyle.optionLine()},
-    {id: 'separatorStyle', type: 'menu.style', dynamic: true, defaultValue: menuSeparator.line()}
+    {id: 'separatorStyle', type: 'menu-separator.style', defaultValue: menuSeparator.line()}
   ],
-  impl: ctx => {
-			if (ctx.vars.menuModel.leaf)
-				return ctx.vars.leafOptionStyle ? ctx.vars.leafOptionStyle(ctx) : ctx.params.leafStyle();
-			else if (ctx.vars.menuModel.separator)
-				return ctx.params.separatorStyle()
-			else if (ctx.vars.innerMenuStyle)
-				return ctx.vars.innerMenuStyle(ctx)
+  impl: (ctx,menuStyle,leafStyle,separatorStyle) => {
+    const {menuModel,leafOptionStyle, innerMenuStyle } = ctx.vars
+			if (menuModel.leaf)
+				return leafOptionStyle ? leafOptionStyle(ctx) : leafStyle();
+			else if (menuModel.separator)
+				return separatorStyle
+			else if (innerMenuStyle)
+				return innerMenuStyle(ctx)
 			else
-				return ctx.params.menuStyle();
+				return menuStyle()
 		}
 })
 
@@ -8817,7 +8818,7 @@ jb.component('menu.selection', {
   ],
   impl: features(
     htmlAttribute('tabIndex',0),
-    css('>.selected { color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) }'),
+    css('>.selected { color: var(--jb-menubar-selection-fg); background: var(--jb-menubar-selection-bg) }'),
     calcProp({
       id: 'selected', // selected represented as ctxId of selected data
       phase: 20, // after 'ctrls'
@@ -8949,7 +8950,7 @@ jb.component('menuStyle.optionLine', {
         h('div#mdc-line-ripple'),
 		]),
     css: `{ display: flex; cursor: pointer; font1: 13px Arial; height: 24px}
-				.selected { color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground) }
+				.selected { color: var(--jb-menubar-selection-fg); background: var(--jb-menubar-selection-bg) }
 				>i { padding: 3px 8px 0 3px }
 				>span { padding-top: 3px }
 				>.title { display: block; text-align: left; white-space: nowrap; }
@@ -9016,7 +9017,7 @@ jb.component('menuSeparator.line', {
   type: 'menu-separator.style',
   impl: customStyle({
     template: ({},{},h) => h('div', {separator: true}),
-    css: '{ margin: 6px 0; border-bottom: 1px solid #EBEBEB;}',
+    css: '{ margin: 6px 0; border-bottom: 1px solid var(--jb-menu-separator-fg);}',
   })
 })
 
@@ -9312,76 +9313,76 @@ jb.component('multiSelect.chips', {
 jb.type('theme');
 
 jb.component('defaultTheme', {
-  impl: ctx => jb.ui.addStyleElem(`
+  impl: () => jb.ui.addStyleElem(`
     body {
       /* vscode compatible with light theme */
       --jb-font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif;
       --jb-font-size: 13px;
       --jb-font-weight: normal;
-      --jb-foreground: #616161;
+      --jb-fg: #616161;
     
-      --jb-menu-background: #ffffff;
-      --jb-menu-foreground: #616161;
-      --jb-menu-selectionBackground: #eee;
-      --jb-menu-selectionForeground: #111;
-      --jb-menu-separatorBackground: #888888;
-      --jb-menubar-selectionBackground: rgba(0, 0, 0, 0.1);
-      --jb-menubar-selectionForeground: #333333;
-      --jb-titleBar-activeBackground: #dddddd;
-      --jb-titleBar-activeForeground: #333333;
-      --jb-titleBar-inactiveBackground: rgba(221, 221, 221, 0.6);
-      --jb-titleBar-inactiveForeground: rgba(51, 51, 51, 0.6);
-      --jb-dropdown-background: #ffffff;
+      --jb-menu-bg: #ffffff;
+      --jb-menu-fg: #616161;
+      --jb-menu-selection-bg: #eee;
+      --jb-menu-selection-fg: #111;
+      --jb-menu-separator-fg: #888888;
+      --jb-menubar-selection-bg: rgba(0, 0, 0, 0.1);
+      --jb-menubar-selection-fg: #333333;
+      --jb-menubar-active-bg: #dddddd;
+      --jb-menubar-active-fg: #333333;
+      --jb-menubar-inactive-bg: rgba(221, 221, 221, 0.6);
+      --jb-dropdown-bg: #ffffff;
       --jb-dropdown-border: #cecece;
-      --jb-errorForeground: #a1260d;
+      --jb-error-fg: #a1260d;
     
-      --jb-input-background: #ffffff;
-      --jb-input-foreground: #616161;  
-      --jb-textLink-activeForeground: #034775;
-      --jb-textLink-foreground: #006ab1;
+      --jb-input-bg: #ffffff;
+      --jb-input-fg: #616161;
+      --jb-textLink-active-fg: #034775;
+      --jb-textLink-fg: #006ab1;
 
       --jb-on-primary: #ffffff;
       --jb-on-secondary: #616161;
       
-      --jb-icon-foreground: #424242;
+      --jb-icon-fg: #424242;
     
-      --jb-list-activeSelectionBackground: #0074e8;
-      --jb-list-activeSelectionForeground: #ffffff;
+      --jb-list-active-selection-bg: #0074e8;
+      --jb-list-active-selection-fg: #ffffff;
     
     
     /* mdc mappaing */
       --mdc-theme-primary: #616161; /* The theme primary color*/
-      --mdc-theme-secondary: var(--jb-titleBar-activeBackground);
-      --mdc-theme-background: var(--jb-input-background);
-      --mdc-theme-surface: var(--jb-input-background);
-      --mdc-theme-error: var(--jb-errorForeground);
+      --mdc-theme-secondary: var(--jb-menubar-active-bg);
+      --mdc-theme-background: var(--jb-input-bg);
+      --mdc-theme-surface: var(--jb-input-bg);
+      --mdc-theme-error: var(--jb-error-fg);
     
       --mdc-theme-on-primary: var(--jb-on-primary); /* Primary text on top of a theme primary color background */
       --mdc-theme-on-secondary: var(--jb-on-secondary);
-      --mdc-theme-on-surface: var(--jb-input-foreground);
-      --mdc-theme-on-error: var(--jb-input-background);
+      --mdc-theme-on-surface: var(--jb-input-fg);
+      --mdc-theme-on-error: var(--jb-input-bg);
     
-      --mdc-theme-text-primary-on-background: var(--jb-input-foreground); /* Primary text on top of the theme background color. */
-      --mdc-theme-text-secondary-on-background: var(--jb-input-foreground);
-      --mdc-theme-text-hint-on-background: var(--jb-input-foreground);
-      --mdc-theme-text-disabled-on-background: var(--jb-input-foreground);
-      --mdc-theme-text-icon-on-background: var(--jb-input-foreground);
+      --mdc-theme-text-primary-on-background: var(--jb-input-fg); /* Primary text on top of the theme background color. */
+      --mdc-theme-text-secondary-on-background: var(--jb-input-fg);
+      --mdc-theme-text-hint-on-background: var(--jb-input-fg);
+      --mdc-theme-text-disabled-on-background: var(--jb-input-fg);
+      --mdc-theme-text-icon-on-background: var(--jb-input-fg);
       
-      --mdc-theme-text-primary-on-light: var(--jb-input-foreground); /* Primary text on top of a light-colored background */
-      --mdc-theme-text-secondary-on-light: var(--jb-input-foreground);
-      --mdc-theme-text-hint-on-light: var(--jb-input-foreground);
-      --mdc-theme-text-disabled-on-light: var(--jb-input-foreground);
-      --mdc-theme-text-icon-on-light: var(--jb-input-foreground);
+      --mdc-theme-text-primary-on-light: var(--jb-input-fg); /* Primary text on top of a light-colored background */
+      --mdc-theme-text-secondary-on-light: var(--jb-input-fg);
+      --mdc-theme-text-hint-on-light: var(--jb-input-fg);
+      --mdc-theme-text-disabled-on-light: var(--jb-input-fg);
+      --mdc-theme-text-icon-on-light: var(--jb-input-fg);
                                 
-      --mdc-theme-text-primary-on-dark: var(--jb-menu-selectionForeground);
-      --mdc-theme-text-secondary-on-dark: var(--jb-menu-selectionForeground);
-      --mdc-theme-text-hint-on-dark: var(--jb-menu-selectionForeground);
-      --mdc-theme-text-disabled-on-dark: var(--jb-menu-selectionForeground);
-      --mdc-theme-text-icon-on-dark: var(--jb-menu-selectionForeground);
+      --mdc-theme-text-primary-on-dark: var(--jb-menu-selection-fg);
+      --mdc-theme-text-secondary-on-dark: var(--jb-menu-selection-fg);
+      --mdc-theme-text-hint-on-dark: var(--jb-menu-selection-fg);
+      --mdc-theme-text-disabled-on-dark: var(--jb-menu-selection-fg);
+      --mdc-theme-text-icon-on-dark: var(--jb-menu-selection-fg);
+
     /* jBart only */
       --jb-dropdown-shadow: #a8a8a8;
       --jb-tree-value: red;
-      --jb-expandbox-background: green;
+      --jb-expandbox-bg: green;
  `)
 })
 
@@ -9429,7 +9430,7 @@ jb.component('editableNumber.slider', {
             features: [
               slider.init(),
               css(
-                'width: 30px; padding-left: 3px; border: 0; border-bottom: 1px solid var(--jb-titleBar-inactiveBackground);'
+                'width: 30px; padding-left: 3px; border: 0; border-bottom: 1px solid var(--jb-menubar-inactive-bg);'
               ),
               css('color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background)'),
               css.class('text-input')
@@ -9678,6 +9679,43 @@ jb.component('gotoUrl', {
 	}
 })
 
+;
+
+jb.ns('divider');
+
+jb.component('divider', {
+    type: 'control',
+    params: [
+        { id: 'style', type: 'divider.style', defaultValue: divider.br() , dynamic: true },
+        { id: 'title', as: 'string', defaultValue: 'divider' },
+        { id: 'features', type: 'feature[]', dynamic: true },
+    ],
+    impl: ctx => jb.ui.ctrl(ctx)
+})
+
+jb.component('divider.br', {
+    type: 'divider.style',
+    impl: customStyle({
+        template: (cmp,state,h) => h('div'),
+        css: `{ border-top-color: var(--jb-menu-separator-fg); display: block; border-top-width: 1px; border-top-style: solid;margin-top: 10px; margin-bottom: 10px;} `
+    })
+})
+
+jb.component('divider.vertical', {
+    type: 'divider.style',
+    impl: customStyle({
+        template: (cmp,state,h) => h('div'),
+        css: `{ border-top-left: var(--jb-menu-separator-fg); display: block; border-left-width: 1px; border-left-style: solid;margin-left: 10px; margin-right: 10px;} `
+    })
+})
+
+jb.component('divider.flexAutoGrow', {
+    type: 'divider.style',
+    impl: customStyle({
+        template: (cmp,state,h) => h('div'),
+        css: '{ flex-grow: 10 }'
+    })
+})
 ;
 
 jb.component('editableText.picklistHelper', {
@@ -9964,7 +10002,7 @@ jb.component('button.href', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
-    css: '{color: var(--jb-textLink-foreground)} .raised { color: var(--jb-textLink-activeForeground) }'
+    css: '{color: var(--jb-textLink-fg)} .raised { color: var(--jb-textLink-active-fg) }'
   })
 })
 
@@ -9985,7 +10023,7 @@ jb.component('button.x', {
             text-shadow: 0 1px 0 var(--jb-dropdown-shadow);
             font-weight: 700;
         }
-        :hover { color: var(--jb-titleBar-activeForeground) }`,
+        :hover { color: var(--jb-menubar-active-fg) }`,
   })
 })
 
@@ -10152,8 +10190,8 @@ jb.component('editableText.mdcInput', {
         ]),
         h('div#mdc-text-field-helper-line', {}, error || '')
       ]),
-    css: `~ .mdc-text-field-helper-line { color: var(--jb-errorForeground) }
-    ~ .mdc-text-field:not(.mdc-text-field--disabled) .mdc-text-field__input { color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-titleBar-inactiveBackground); }
+    css: `~ .mdc-text-field-helper-line { color: var(--jb-error-fg) }
+    ~ .mdc-text-field:not(.mdc-text-field--disabled) .mdc-text-field__input { color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-menubar-inactive-bg); }
     ~ .mdc-text-field--focused:not(.mdc-text-field--disabled) .mdc-floating-label { color: var(--mdc-theme-primary) }
     `,
     features: [
@@ -10643,7 +10681,7 @@ jb.component('table.mdc', {
       items.length == 0 ? 'no items' : ''
     ])),
     css: `{width: 100%}  
-    ~ .mdc-data-table__header-cell, ~ .mdc-data-table__cell {color: var(--jb-foreground)}`,
+    ~ .mdc-data-table__header-cell, ~ .mdc-data-table__cell {color: var(--jb-fg)}`,
     features: [itemlist.initTable(), mdcStyle.initDynamic()]
   })
 })
@@ -10656,11 +10694,11 @@ jb.component('picklist.native', {
       h('select', { value: databind, onchange: true }, options.map(option=>h('option',{value: option.code},option.text))),
     css: `
 { display: block; width: 100%; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857; 
-  color: var(--jb-menu-foreground); background: var(--jb-menu-background); 
-  background-image: none; border: 1px solid var(--jb-titleBar-inactiveBackground); border-radius: 4px; box-shadow: inset 0 1px 1px var(--jb-dropdown-shadow);
+  color: var(--jb-menu-fg); background: var(--jb-menu-bg); 
+  background-image: none; border: 1px solid var(--jb-menubar-inactive-bg); border-radius: 4px; box-shadow: inset 0 1px 1px var(--jb-dropdown-shadow);
 }
-:focus { border-color: border-color: var(--jb-titleBar-activeBackground); outline: 0; box-shadow: inset 0 1px 1px var(--jb-dropdown-shadow); }
-::input-placeholder { color: var(--jb-menu-foreground) }`,
+:focus { border-color: border-color: var(--jb-menubar-active-bg); outline: 0; box-shadow: inset 0 1px 1px var(--jb-dropdown-shadow); }
+::input-placeholder { color: var(--jb-menu-fg) }`,
     features: [field.databind(), picklist.init()]
   })
 })
@@ -10677,11 +10715,11 @@ jb.component('picklist.nativeMdLookOpen', {
   width: 100%;
   color: rgba(0,0,0, 0.82);
   border: none;
-  border-bottom: 1px solid var(--jb-titleBar-inactiveBackground);
+  border-bottom: 1px solid var(--jb-menubar-inactive-bg);
   color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background);
 }
   { position: relative;}
-  >input:focus { border-color: var(--jb-titleBar-activeBackground); border-width: 2px}
+  >input:focus { border-color: var(--jb-menubar-active-bg); border-width: 2px}
 
   :after { position: absolute;
         top: 0.75em;
@@ -10791,7 +10829,7 @@ jb.component('picklist.mdcSelect', {
         sink.BEMethod('writeFieldValue')
       ),  
       css(
-        `~.mdc-select:not(.mdc-select--disabled) .mdc-select__selected-text { color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-titleBar-inactiveBackground); }
+        `~.mdc-select:not(.mdc-select--disabled) .mdc-select__selected-text { color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-menubar-inactive-bg); }
         ~.mdc-select:not(.mdc-select--disabled) .mdc-floating-label { color: var(--mdc-theme-primary) }`
       )
     ]
@@ -11343,7 +11381,7 @@ jb.component('tree.plain', {
 	|>.treenode-icon { font-size: 16px; margin-right: 2px; }
 
 	|>.treenode.selected>*>.treenode-label,.treenode.selected>*>.treenode-label  { 
-		color: var(--jb-menu-selectionForeground); background: var(--jb-menu-selectionBackground)}
+		color: var(--jb-menu-selection-fg); background: var(--jb-menu-selection-bg)}
 	`,
 	features: tree.initTree()
   })
@@ -11382,16 +11420,16 @@ jb.component('tree.expandBox', {
 
 	|>.treenode { display: block }
 	|>.treenode.selected>*>.treenode-label,.treenode.selected>*>.treenode-label  
-		{ color: var(--jb-menu-selectionForeground); background: var(--jb-menu-selectionBackground)}
+		{ color: var(--jb-menu-selection-fg); background: var(--jb-menu-selection-bg)}
 
 	|>.treenode-icon { font-size: 16px; margin-right: 2px; }
 	|>.treenode-expandbox { border: none; background: none; position: relative; width:9px; height:9px; padding: 0; vertical-align: top;
 		margin-top: 5px;  margin-right: 5px;  cursor: pointer;}
 	|>.treenode-expandbox.showIcon { margin-top: 3px }
 	|>.treenode-expandbox div { position: absolute; }
-	|>.treenode-expandbox .frame { background: var(--jb-menu-background); border-radius: 3px; border: 1px solid var(--jb-expandbox-background); top: 0; left: 0; right: 0; bottom: 0; }
-	|>.treenode-expandbox .line-lr { background: var(--jb-expandbox-background); top: 4px; left: 2px; width: 5px; height: 1px; }
-	|>.treenode-expandbox .line-tb { background: var(--jb-expandbox-background); left: 4px; top: 2px; height: 5px; width: 1px; display: none;}
+	|>.treenode-expandbox .frame { background: var(--jb-menu-bg); border-radius: 3px; border: 1px solid var(--jb-expandbox-bg); top: 0; left: 0; right: 0; bottom: 0; }
+	|>.treenode-expandbox .line-lr { background: var(--jb-expandbox-bg); top: 4px; left: 2px; width: 5px; height: 1px; }
+	|>.treenode-expandbox .line-tb { background: var(--jb-expandbox-bg); left: 4px; top: 2px; height: 5px; width: 1px; display: none;}
 	|>.treenode-line.collapsed .line-tb { display: block; }
 	|>.treenode.collapsed .line-tb { display: block; }
 	|>.treenode-expandbox.nochildren .frame { display: none; }

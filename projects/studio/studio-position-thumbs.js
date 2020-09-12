@@ -275,7 +275,7 @@ jb.component('contentEditable.positionThumbsStyle', {
   type: 'dialog.style',
   impl: customStyle({
     template: (cmp,state,h) => h('div#jb-dialog jb-popup',{},h(state.contentComp)),
-    css: '{ display: block; position: absolute; background: var(--jb-dropdown-background); }',
+    css: '{ display: block; position: absolute; background: var(--jb-dropdown-bg); }',
     features: [dialogFeature.maxZIndexOnClick(), dialogFeature.closeWhenClickingOutside()]
   })
 })

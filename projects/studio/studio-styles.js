@@ -6,9 +6,9 @@ jb.component('editableText.studioPrimitiveText', {
           value: databind, onchange: true, onkeyup: true, onblur: true
     }),
     css: `{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; margin-bottom1: 7px;
-        color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-titleBar-inactiveBackground);
+        color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-menubar-inactive-bg);
     } 
-    :focus { border-color: var(--jb-titleBar-activeBackground); border-width: 2px}`,
+    :focus { border-color: var(--jb-menubar-active-bg); border-width: 2px}`,
     features: [
       field.databindText(),
       watchRef('%$$model/databind()%')
@@ -61,8 +61,8 @@ jb.component('button.selectProfileStyle', {
             value: title, onmouseup: 'onclickHandler',
         }),
     css: `{ cursor: pointer; padding-left: 2px; padding-top: 5px; padding-bottom: 0;
-    color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-titleBar-inactiveBackground); }
-    :focus { border-color: var(--jb-titleBar-activeBackground); border-width: 2px}`,
+    color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-menubar-inactive-bg); }
+    :focus { border-color: var(--jb-menubar-active-bg); border-width: 2px}`,
     features: frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode% == 13'), sink.BEMethod('onclickHandler'))
   })
 })
@@ -83,7 +83,7 @@ jb.component('button.studioScript', {
     template: (cmp,{title},h) =>
         h('input#mdc-text-field__input', { type: 'text', readonly: true, title, value: title, onmouseup: 'onclickHandler' }),
     css: `{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; 
-      color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-titleBar-inactiveBackground);
+      color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-menubar-inactive-bg);
       cursor: pointer; opacity: 0.8; font-style: italic; }`,
     features: frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode% == 13'), sink.BEMethod('onclickHandler')) 
     //frontEnd( (ctx,{cmp}) => cmp.clickedEnter = ev => event.keyCode == 13 && cmp.onclickHandler() )

@@ -63,10 +63,21 @@ jb.component('studio.eventTracker', {
             text: pipeline(studio.getSpy(), '%$events/length%/%logs/length%'),
             title: 'counts'
           }),
+          divider({style: divider.vertical()}),
           button({
-            title: 'clear',
-            action: runActions(studio.clearSpyLog(),refreshControlById('event-tracker')),
-            style: button.mdcIcon(icon('clear'), '20')
+            title: 'block',
+            action: runActions(studio.clearSpyLog(), refreshControlById('event-tracker')),
+            style: button.plainIcon(),
+            features: [
+              feature.icon({
+                icon: 'BlockHelper',
+                type: 'mdi',
+                size: '16',
+                features: css.transformRotate('180')
+              }),
+              css.color('var(--jb-menu-fg)'),
+              feature.hoverTitle('clear console')
+            ]
           }),
           button({
             title: 'refresh',
@@ -96,7 +107,8 @@ jb.component('studio.eventTracker', {
             style: multiSelect.chips(),
             features: [css.margin('15'), hidden()]
           })
-        ]
+        ],
+        features: css.color({background: 'var(--jb-menubar-inactive-bg)'})
       }),
       html({title: 'hr', html: '<hr/>'}),
       itemlist({
@@ -123,7 +135,7 @@ jb.component('studio.eventTracker', {
             features: [
               field.title('log'),
               field.columnWidth('20'),
-              feature.byCondition('%log% == error', css.color('var(--jb-errorForeground)')),
+              feature.byCondition('%log% == error', css.color('var(--jb-error-fg)')),
               feature.icon({
                 icon: data.switch({
                   cases: [

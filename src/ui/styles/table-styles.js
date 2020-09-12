@@ -96,7 +96,7 @@ jb.component('table.mdc', {
       items.length == 0 ? 'no items' : ''
     ])),
     css: `{width: 100%}  
-    ~ .mdc-data-table__header-cell, ~ .mdc-data-table__cell {color: var(--jb-foreground)}`,
+    ~ .mdc-data-table__header-cell, ~ .mdc-data-table__cell {color: var(--jb-fg)}`,
     features: [itemlist.initTable(), mdcStyle.initDynamic()]
   })
 })

@@ -5,11 +5,11 @@ jb.component('picklist.native', {
       h('select', { value: databind, onchange: true }, options.map(option=>h('option',{value: option.code},option.text))),
     css: `
 { display: block; width: 100%; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857; 
-  color: var(--jb-menu-foreground); background: var(--jb-menu-background); 
-  background-image: none; border: 1px solid var(--jb-titleBar-inactiveBackground); border-radius: 4px; box-shadow: inset 0 1px 1px var(--jb-dropdown-shadow);
+  color: var(--jb-menu-fg); background: var(--jb-menu-bg); 
+  background-image: none; border: 1px solid var(--jb-menubar-inactive-bg); border-radius: 4px; box-shadow: inset 0 1px 1px var(--jb-dropdown-shadow);
 }
-:focus { border-color: border-color: var(--jb-titleBar-activeBackground); outline: 0; box-shadow: inset 0 1px 1px var(--jb-dropdown-shadow); }
-::input-placeholder { color: var(--jb-menu-foreground) }`,
+:focus { border-color: border-color: var(--jb-menubar-active-bg); outline: 0; box-shadow: inset 0 1px 1px var(--jb-dropdown-shadow); }
+::input-placeholder { color: var(--jb-menu-fg) }`,
     features: [field.databind(), picklist.init()]
   })
 })
@@ -26,11 +26,11 @@ jb.component('picklist.nativeMdLookOpen', {
   width: 100%;
   color: rgba(0,0,0, 0.82);
   border: none;
-  border-bottom: 1px solid var(--jb-titleBar-inactiveBackground);
+  border-bottom: 1px solid var(--jb-menubar-inactive-bg);
   color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background);
 }
   { position: relative;}
-  >input:focus { border-color: var(--jb-titleBar-activeBackground); border-width: 2px}
+  >input:focus { border-color: var(--jb-menubar-active-bg); border-width: 2px}
 
   :after { position: absolute;
         top: 0.75em;
@@ -140,7 +140,7 @@ jb.component('picklist.mdcSelect', {
         sink.BEMethod('writeFieldValue')
       ),  
       css(
-        `~.mdc-select:not(.mdc-select--disabled) .mdc-select__selected-text { color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-titleBar-inactiveBackground); }
+        `~.mdc-select:not(.mdc-select--disabled) .mdc-select__selected-text { color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-menubar-inactive-bg); }
         ~.mdc-select:not(.mdc-select--disabled) .mdc-floating-label { color: var(--mdc-theme-primary) }`
       )
     ]

@@ -161,7 +161,7 @@ jb.component('itemlist.selection', {
     {id: 'onSelection', type: 'action', dynamic: true},
     {id: 'onDoubleClick', type: 'action', dynamic: true},
     {id: 'autoSelectFirst', type: 'boolean'},
-    {id: 'cssForSelected', as: 'string', defaultValue: 'color: var(--jb-menubar-selectionForeground); background: var(--jb-menubar-selectionBackground)'}
+    {id: 'cssForSelected', as: 'string', defaultValue: 'color: var(--jb-menubar-selection-fg); background: var(--jb-menubar-selection-bg)'}
   ],
   impl: features(
     css(({},{},{cssForSelected}) => ['>.selected','>*>.selected','>*>*>.selected'].map(sel=>sel+ ' ' + jb.ui.fixCssLine(cssForSelected)).join('\n')),

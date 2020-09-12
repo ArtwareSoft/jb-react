@@ -1,76 +1,76 @@
 jb.type('theme');
 
 jb.component('defaultTheme', {
-  impl: ctx => jb.ui.addStyleElem(`
+  impl: () => jb.ui.addStyleElem(`
     body {
       /* vscode compatible with light theme */
       --jb-font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif;
       --jb-font-size: 13px;
       --jb-font-weight: normal;
-      --jb-foreground: #616161;
+      --jb-fg: #616161;
     
-      --jb-menu-background: #ffffff;
-      --jb-menu-foreground: #616161;
-      --jb-menu-selectionBackground: #eee;
-      --jb-menu-selectionForeground: #111;
-      --jb-menu-separatorBackground: #888888;
-      --jb-menubar-selectionBackground: rgba(0, 0, 0, 0.1);
-      --jb-menubar-selectionForeground: #333333;
-      --jb-titleBar-activeBackground: #dddddd;
-      --jb-titleBar-activeForeground: #333333;
-      --jb-titleBar-inactiveBackground: rgba(221, 221, 221, 0.6);
-      --jb-titleBar-inactiveForeground: rgba(51, 51, 51, 0.6);
-      --jb-dropdown-background: #ffffff;
+      --jb-menu-bg: #ffffff;
+      --jb-menu-fg: #616161;
+      --jb-menu-selection-bg: #eee;
+      --jb-menu-selection-fg: #111;
+      --jb-menu-separator-fg: #888888;
+      --jb-menubar-selection-bg: rgba(0, 0, 0, 0.1);
+      --jb-menubar-selection-fg: #333333;
+      --jb-menubar-active-bg: #dddddd;
+      --jb-menubar-active-fg: #333333;
+      --jb-menubar-inactive-bg: rgba(221, 221, 221, 0.6);
+      --jb-dropdown-bg: #ffffff;
       --jb-dropdown-border: #cecece;
-      --jb-errorForeground: #a1260d;
+      --jb-error-fg: #a1260d;
     
-      --jb-input-background: #ffffff;
-      --jb-input-foreground: #616161;  
-      --jb-textLink-activeForeground: #034775;
-      --jb-textLink-foreground: #006ab1;
+      --jb-input-bg: #ffffff;
+      --jb-input-fg: #616161;
+      --jb-textLink-active-fg: #034775;
+      --jb-textLink-fg: #006ab1;
 
       --jb-on-primary: #ffffff;
       --jb-on-secondary: #616161;
       
-      --jb-icon-foreground: #424242;
+      --jb-icon-fg: #424242;
     
-      --jb-list-activeSelectionBackground: #0074e8;
-      --jb-list-activeSelectionForeground: #ffffff;
+      --jb-list-active-selection-bg: #0074e8;
+      --jb-list-active-selection-fg: #ffffff;
     
     
     /* mdc mappaing */
       --mdc-theme-primary: #616161; /* The theme primary color*/
-      --mdc-theme-secondary: var(--jb-titleBar-activeBackground);
-      --mdc-theme-background: var(--jb-input-background);
-      --mdc-theme-surface: var(--jb-input-background);
-      --mdc-theme-error: var(--jb-errorForeground);
+      --mdc-theme-secondary: var(--jb-menubar-active-bg);
+      --mdc-theme-background: var(--jb-input-bg);
+      --mdc-theme-surface: var(--jb-input-bg);
+      --mdc-theme-error: var(--jb-error-fg);
     
       --mdc-theme-on-primary: var(--jb-on-primary); /* Primary text on top of a theme primary color background */
       --mdc-theme-on-secondary: var(--jb-on-secondary);
-      --mdc-theme-on-surface: var(--jb-input-foreground);
-      --mdc-theme-on-error: var(--jb-input-background);
+      --mdc-theme-on-surface: var(--jb-input-fg);
+      --mdc-theme-on-error: var(--jb-input-bg);
     
-      --mdc-theme-text-primary-on-background: var(--jb-input-foreground); /* Primary text on top of the theme background color. */
-      --mdc-theme-text-secondary-on-background: var(--jb-input-foreground);
-      --mdc-theme-text-hint-on-background: var(--jb-input-foreground);
-      --mdc-theme-text-disabled-on-background: var(--jb-input-foreground);
-      --mdc-theme-text-icon-on-background: var(--jb-input-foreground);
+      --mdc-theme-text-primary-on-background: var(--jb-input-fg); /* Primary text on top of the theme background color. */
+      --mdc-theme-text-secondary-on-background: var(--jb-input-fg);
+      --mdc-theme-text-hint-on-background: var(--jb-input-fg);
+      --mdc-theme-text-disabled-on-background: var(--jb-input-fg);
+      --mdc-theme-text-icon-on-background: var(--jb-input-fg);
       
-      --mdc-theme-text-primary-on-light: var(--jb-input-foreground); /* Primary text on top of a light-colored background */
-      --mdc-theme-text-secondary-on-light: var(--jb-input-foreground);
-      --mdc-theme-text-hint-on-light: var(--jb-input-foreground);
-      --mdc-theme-text-disabled-on-light: var(--jb-input-foreground);
-      --mdc-theme-text-icon-on-light: var(--jb-input-foreground);
+      --mdc-theme-text-primary-on-light: var(--jb-input-fg); /* Primary text on top of a light-colored background */
+      --mdc-theme-text-secondary-on-light: var(--jb-input-fg);
+      --mdc-theme-text-hint-on-light: var(--jb-input-fg);
+      --mdc-theme-text-disabled-on-light: var(--jb-input-fg);
+      --mdc-theme-text-icon-on-light: var(--jb-input-fg);
                                 
-      --mdc-theme-text-primary-on-dark: var(--jb-menu-selectionForeground);
-      --mdc-theme-text-secondary-on-dark: var(--jb-menu-selectionForeground);
-      --mdc-theme-text-hint-on-dark: var(--jb-menu-selectionForeground);
-      --mdc-theme-text-disabled-on-dark: var(--jb-menu-selectionForeground);
-      --mdc-theme-text-icon-on-dark: var(--jb-menu-selectionForeground);
+      --mdc-theme-text-primary-on-dark: var(--jb-menu-selection-fg);
+      --mdc-theme-text-secondary-on-dark: var(--jb-menu-selection-fg);
+      --mdc-theme-text-hint-on-dark: var(--jb-menu-selection-fg);
+      --mdc-theme-text-disabled-on-dark: var(--jb-menu-selection-fg);
+      --mdc-theme-text-icon-on-dark: var(--jb-menu-selection-fg);
+
     /* jBart only */
       --jb-dropdown-shadow: #a8a8a8;
       --jb-tree-value: red;
-      --jb-expandbox-background: green;
+      --jb-expandbox-bg: green;
  `)
 })
 

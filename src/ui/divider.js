@@ -1,30 +1,35 @@
-jb.type('divider.style');
+jb.ns('divider');
 
 jb.component('divider', {
     type: 'control',
     params: [
-        { id: 'style', type: 'divider.style', defaultValue: { $: 'divider.br' }, dynamic: true },
+        { id: 'style', type: 'divider.style', defaultValue: divider.br() , dynamic: true },
         { id: 'title', as: 'string', defaultValue: 'divider' },
         { id: 'features', type: 'feature[]', dynamic: true },
     ],
-    impl: ctx => 
-        jb_ui.ctrl(ctx)
+    impl: ctx => jb.ui.ctrl(ctx)
 })
 
 jb.component('divider.br', {
     type: 'divider.style',
-    params: [
-    ],
-    impl :{$: 'customStyle', 
-        template: '<div></div>',
-        css: `{ border-top-color: var(--jb-menu-separatorBackground); display: block; border-top-width: 1px; border-top-style: solid;margin-top: 10px; margin-bottom: 10px;} `
-    }
+    impl: customStyle({
+        template: (cmp,state,h) => h('div'),
+        css: `{ border-top-color: var(--jb-menu-separator-fg); display: block; border-top-width: 1px; border-top-style: solid;margin-top: 10px; margin-bottom: 10px;} `
+    })
+})
+
+jb.component('divider.vertical', {
+    type: 'divider.style',
+    impl: customStyle({
+        template: (cmp,state,h) => h('div'),
+        css: `{ border-top-left: var(--jb-menu-separator-fg); display: block; border-left-width: 1px; border-left-style: solid;margin-left: 10px; margin-right: 10px;} `
+    })
 })
 
 jb.component('divider.flexAutoGrow', {
     type: 'divider.style',
-    impl :{$: 'customStyle', 
-        template: '<div></div>',
-        css: `{ flex-grow: 10 } `
-    }
+    impl: customStyle({
+        template: (cmp,state,h) => h('div'),
+        css: '{ flex-grow: 10 }'
+    })
 })

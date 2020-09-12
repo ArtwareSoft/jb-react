@@ -45,8 +45,8 @@ jb.component('editableText.mdcInput', {
         ]),
         h('div#mdc-text-field-helper-line', {}, error || '')
       ]),
-    css: `~ .mdc-text-field-helper-line { color: var(--jb-errorForeground) }
-    ~ .mdc-text-field:not(.mdc-text-field--disabled) .mdc-text-field__input { color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-titleBar-inactiveBackground); }
+    css: `~ .mdc-text-field-helper-line { color: var(--jb-error-fg) }
+    ~ .mdc-text-field:not(.mdc-text-field--disabled) .mdc-text-field__input { color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-menubar-inactive-bg); }
     ~ .mdc-text-field--focused:not(.mdc-text-field--disabled) .mdc-floating-label { color: var(--mdc-theme-primary) }
     `,
     features: [

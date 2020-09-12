@@ -24,7 +24,7 @@ jb.component('editableNumber.slider', {
             features: [
               slider.init(),
               css(
-                'width: 30px; padding-left: 3px; border: 0; border-bottom: 1px solid var(--jb-titleBar-inactiveBackground);'
+                'width: 30px; padding-left: 3px; border: 0; border-bottom: 1px solid var(--jb-menubar-inactive-bg);'
               ),
               css('color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background)'),
               css.class('text-input')
