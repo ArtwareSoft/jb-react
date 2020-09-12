@@ -50,7 +50,7 @@ jb.component('studio.selectStyle', {
             genericControl: group({
               controls: [
                 ctx => {
-                  const previewCtx = jb.studio.closestCtxInPreview(ctx.exp('%$targetPath%'))
+                  const previewCtx = closestCtxInPreview(ctx,ctx.exp('%$targetPath%'))
                   jb.path(jb,'studio.previewjb.ui.workerStyleElems.preview',[])
                   const cmp = jb.ui.extendWithServiceRegistry(new jb.studio.previewjb.jbCtx()).ctx(previewCtx)
                     .run(ctx.exp('%$__option%'))
@@ -116,7 +116,7 @@ jb.component('studio.suggestedStyles', {
   impl: (ctx,extractedCtrl,targetPath) => {
         const options = ctx.exp('%$studio/pattern/options%') || { flattenToGrid: false }
         const target = jb.studio.valOfPath(targetPath)
-        const previewCtx = jb.studio.closestCtxInPreview(ctx.exp('%$targetPath%'))
+        const previewCtx = closestCtxInPreview(ctx,ctx.exp('%$targetPath%'))
         return jb.ui.stylePatterns[target.$] && jb.ui.stylePatterns[target.$](ctx,extractedCtrl,target,previewCtx,options) || {}
     }
 })
@@ -130,6 +130,11 @@ function flatContent(ctrl ,path) {
         .flatMap((ch,i) => flatContent(ch,
             [path,'controls',Array.isArray(ctrl.controls) ? i : ''].filter(x=>x!=='').join('~')))
     return [{ctrl,path}, ...children]
+}
+
+function closestCtxInPreview(ctx,path) {
+  return ctx.vars.testID ? jb.studio.findElemsByCtxCondition(ctx => path.indexOf(ctx.path) == 0,window)[0]
+    : jb.studio.closestCtxInPreview(path)
 }
 
 function cleanUnmappedParams(ctx,ctrl,matches) {

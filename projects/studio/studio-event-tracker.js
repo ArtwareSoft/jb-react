@@ -70,21 +70,6 @@ jb.component('studio.eventTracker', {
           button({
             title: 'block',
             action: runActions(studio.clearSpyLog(), refreshControlById('event-tracker')),
-            style: button.plainIcon(),
-            features: [
-              feature.icon({
-                icon: 'BlockHelper',
-                type: 'mdi',
-                size: '12',
-                features: css.transformRotate('-90')
-              }),
-              css.color('var(--jb-menu-fg)'),
-              feature.hoverTitle('clear console')
-            ]
-          }),
-          button({
-            title: 'block',
-            action: runActions(studio.clearSpyLog(), refreshControlById('event-tracker')),
             style: chromeDebugger.icon(),
             features: [
               feature.icon({
