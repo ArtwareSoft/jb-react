@@ -80,6 +80,21 @@ jb.component('studio.eventTracker', {
               feature.hoverTitle('clear console')
             ]
           }),
+          button({
+            title: 'block',
+            action: runActions(studio.clearSpyLog(), refreshControlById('event-tracker')),
+            style: chrome.icon(),
+            features: [
+              feature.icon({
+                icon: 'BlockHelper',
+                type: 'mdi',
+                size: '12',
+                features: css.transformRotate('-90')
+              }),
+              css.color('var(--jb-menu-fg)'),
+              feature.hoverTitle('clear console')
+            ]
+          }),
           divider({style: divider.vertical()}),
           editableText({
             title: 'query',
@@ -88,7 +103,10 @@ jb.component('studio.eventTracker', {
             features: [
               htmlAttribute('placeholder', 'query'),
               feature.onEnter(refreshControlById('event-tracker')),
-              css.class('toolbar-input')
+              css.class('toolbar-input'),
+              css.height('10'),
+              css.margin('4'),
+              css.width('300')
             ]
           }),
           multiSelect({

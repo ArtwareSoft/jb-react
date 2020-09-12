@@ -115,3 +115,13 @@ jb.component('inspectedWindow.logsCtrl', {
     impl: widget.twoTierWidget(studio.eventTracker(), remote.inspectedWindowFromPanel('%$panel%'))
 })
 
+jb.component('chrome.icon', {
+    type: 'button.style',
+    params: [
+        {id: 'position', as: 'string', defaultValue: '0px 144px'}
+    ],
+    impl: customStyle({
+      template: (cmp,{title},h) => h('div',{onclick: true }, title),
+      css: `{ -webkit-mask-image: url(largeIcons.svg); --spritesheet-position: %$position%; width: 28px;  height: 24px;}`
+    })
+})
