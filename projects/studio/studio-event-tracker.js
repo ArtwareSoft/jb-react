@@ -57,7 +57,7 @@ jb.component('studio.eventTracker', {
     controls: [
       group({
         title: '',
-        layout: layout.horizontal('14'),
+        layout: layout.horizontal('2'),
         controls: [
           text({
             text: pipeline(studio.getSpy(), '%$events/length%/%logs/length%'),
@@ -80,6 +80,7 @@ jb.component('studio.eventTracker', {
               feature.hoverTitle('clear console')
             ]
           }),
+          divider({style: divider.vertical()}),
           editableText({
             title: 'query',
             databind: '%$studio/eventTrackerQuery%',
@@ -87,7 +88,7 @@ jb.component('studio.eventTracker', {
             features: [
               htmlAttribute('placeholder', 'query'),
               feature.onEnter(refreshControlById('event-tracker')),
-              css.width('400')
+              css.class('toolbar-input')
             ]
           }),
           multiSelect({
