@@ -73,7 +73,9 @@ jb.component('studio.eventTracker', {
                 icon: 'BlockHelper',
                 type: 'mdi',
                 size: '16',
-                features: css.transformRotate('180')
+                strokeWidth: '5',
+                strokeLinecap: 'round',
+                features: css.transformRotate('-90')
               }),
               css.color('var(--jb-menu-fg)'),
               feature.hoverTitle('clear console')
