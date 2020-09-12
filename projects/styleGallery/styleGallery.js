@@ -63,8 +63,8 @@ const variations = { button: { prop: 'raised', values: [true,false] }}
           url: 'https://freesvg.org/img/UN-CONSTRUCTION-2.png',
           width: 100,
           height: 100,
-          // textForTrue: 'male',
-          // textForFalse: 'female',
+          textForTrue: 'male',
+          textForFalse: 'female',
           features: [
             feature.icon({icon: 'Account', position: 'pre', type: 'mdi'}),
             feature.icon({icon: 'delete', position: 'post', type: 'mdc'}),

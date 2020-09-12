@@ -1,3 +1,5 @@
+jb.ns('chrome')
+
 jb.ui.getSpy = ctx => {
   const spy = jb.path(jb.studio,'previewjb.spy')
   if (!spy)
