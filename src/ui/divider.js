@@ -22,7 +22,7 @@ jb.component('divider.vertical', {
     type: 'divider.style',
     impl: customStyle({
         template: (cmp,state,h) => h('div'),
-        css: `{ border-top-left: var(--jb-menu-separator-fg); display: block; border-left-width: 1px; border-left-style: solid;margin-left: 10px; margin-right: 10px;} `
+        css: `{ border-left-color: var(--jb-menu-separator-fg); display: block; border-left-width: 1px; border-left-style: solid;margin-left: 10px; margin: 5px 5px;} `
     })
 })
 

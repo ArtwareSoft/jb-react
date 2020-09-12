@@ -61,7 +61,8 @@ jb.component('studio.eventTracker', {
         controls: [
           text({
             text: pipeline(studio.getSpy(), '%$events/length%/%logs/length%'),
-            title: 'counts'
+            title: 'counts',
+            features: css.padding({top: '5', left: '5'})
           }),
           divider({style: divider.vertical()}),
           button({
@@ -72,19 +73,12 @@ jb.component('studio.eventTracker', {
               feature.icon({
                 icon: 'BlockHelper',
                 type: 'mdi',
-                size: '16',
-                strokeWidth: '5',
-                strokeLinecap: 'round',
+                size: '12',
                 features: css.transformRotate('-90')
               }),
               css.color('var(--jb-menu-fg)'),
               feature.hoverTitle('clear console')
             ]
-          }),
-          button({
-            title: 'refresh',
-            action: refreshControlById('event-tracker'),
-            style: button.mdcIcon(icon('refresh'), '20')
           }),
           editableText({
             title: 'query',
@@ -96,12 +90,6 @@ jb.component('studio.eventTracker', {
               css.width('400')
             ]
           }),
-          editableText({
-            title: 'pattern',
-            databind: '%$studio/eventTrackerPattern%',
-            style: editableText.input(),
-            features: htmlAttribute('placeholder', 'pattern')
-          }),
           multiSelect({
             title: 'logs',
             databind: '%$studio/spyLogs%',
@@ -112,7 +100,6 @@ jb.component('studio.eventTracker', {
         ],
         features: css.color({background: 'var(--jb-menubar-inactive-bg)'})
       }),
-      html({title: 'hr', html: '<hr/>'}),
       itemlist({
         items: '%$events%',
         controls: [
@@ -159,7 +146,7 @@ jb.component('studio.eventTracker', {
           }),
           studio.eventView()
         ],
-        style: table.plain(),
+        style: table.plain(true),
         visualSizeLimit: '30',
         features: [
           id('event-logs'),

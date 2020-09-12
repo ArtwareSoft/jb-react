@@ -231,12 +231,15 @@
 
   /* inspector */
   --divider-color: #d0d0d0;
+  --focus-ring-inactive-shadow-color: #e0e0e0;  
   --focus-ring-inactive-shadow: 0 0 0 1px var(--focus-ring-inactive-shadow-color);
   --item-selection-bg-color: #cfe8fc;
   --item-selection-inactive-bg-color: #e0e0e0;
 }
 
 .devtools-studio {
+  margin: 0;
+
   --jb-font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif;
   --jb-font-size: 13px;
   --jb-font-weight: normal;
@@ -770,6 +773,17 @@ html, body {
   font-size1: var(--vscode-font-size);
   font-weight1: var(--vscode-font-weight);
   line-height1: 20px; 
+}
+
+.toolbar-input {
+  width: 120px;
+  height: 19px;
+  padding: 4px 3px 3px 3px;
+  margin: 1px 3px;
+  background-color: white;
+  border: 1px solid transparent;
+  min-width: 35px;
+  box-shadow: var(--focus-ring-inactive-shadow);
 }.CodeMirror-dialog {
   position: absolute;
   left: 0; right: 0;
