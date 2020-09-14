@@ -1,7 +1,8 @@
 jb.ns('chromeDebugger')
 
 jb.ui.getSpy = ctx => {
-  const spy = jb.path(jb.studio,'previewjb.spy')
+  const st = jb.studio
+  const spy = (st.studiojb && st.studiojb.exec('%$studio/project%') == 'studio-helper') ? st.studiojb.spy : jb.path(st,'previewjb.spy')
   if (!spy)
     jb.logError('studio.eventItems - can not locate spy',{ctx})
   return spy
@@ -58,7 +59,7 @@ jb.component('studio.eventTracker', {
   impl: group({
     controls: [
       group({
-        title: '',
+        title: 'toolbar',
         layout: layout.horizontal('2'),
         controls: [
           text({
@@ -97,11 +98,10 @@ jb.component('studio.eventTracker', {
             ]
           }),
           multiSelect({
-            title: 'logs',
+            title: 'counters',
             databind: '%$studio/spyLogs%',
-            options: picklist.options(() => jb.studio.previewjb.spySettings.moreLogs.split(',')),
-            style: multiSelect.chips(),
-            features: [css.margin('15'), hidden()]
+            options: picklist.options(ctx => jb.entries(jb.ui.getSpy(ctx).counters).map(([id,val]) => `${id} (${val})`) ),
+            features: css.margin('15'),
           })
         ],
         features: css.color({background: 'var(--jb-menubar-inactive-bg)'})
@@ -110,7 +110,7 @@ jb.component('studio.eventTracker', {
         items: '%$events%',
         controls: [
           button({
-            title: '%index%: %log%',
+            title: '%index%: %logNames%',
             action: menu.openContextMenu({
               menu: menu.menu({
                 options: [
@@ -118,9 +118,9 @@ jb.component('studio.eventTracker', {
                     title: 'show in console',
                     action: ({data}) => jb.frame.console.log(data)
                   }),
-                  menu.action('group by %log%'),
-                  menu.action('filter only %log%'),
-                  menu.action('filter out %log%'),
+                  menu.action('group by %logNames%'),
+                  menu.action('filter only %logNames%'),
+                  menu.action('filter out %logNames%'),
                   menu.action('remove items before'),
                   menu.action('remove items after')
                 ]
@@ -130,23 +130,23 @@ jb.component('studio.eventTracker', {
             features: [
               field.title('log'),
               field.columnWidth('20'),
-              feature.byCondition('%log% == error', css.color('var(--jb-error-fg)')),
+              feature.byCondition('%logNames% == error', css.color('var(--jb-error-fg)')),
               feature.icon({
                 icon: data.switch({
                   cases: [
-                    data.case('%log% == error', 'error'),
-                    data.case('%log% == refreshElem', 'CircleOutline'),
-                    data.case('%log% == doOp', 'Database')
+                    data.case('%logNames% == error', 'error'),
+                    data.case('%logNames% == refreshElem', 'CircleOutline'),
+                    data.case('%logNames% == doOp', 'Database')
                   ],
                   default: 'RectangleOutline'
                 }),
-                type: data.switch({cases: [data.case('%log% == error', 'mdc')], default: 'mdi'}),
+                type: data.switch({cases: [data.case('%logNames% == error', 'mdc')], default: 'mdi'}),
                 size: '16'
               })
             ]
           }),
           text({
-            text: '%index% %log%',
+            text: '%index% %logNames%',
             title: 'event',
             features: feature.onHover(studio.highlightLogItem(), dialog.closeDialogById('elem-marker'))
           }),
@@ -178,56 +178,62 @@ jb.component('studio.eventView', {
   impl: group({
     layout: layout.horizontal('4'),
     controls: [
-      studio.slicedString('%title%',20),
-      studio.showLowFootprintObj('%val%','val'),
-      controlWithCondition(
-        '%opPath%',
-        button({
-          title: last('%opPath%'),
-          style: button.href(),
-          features: feature.hoverTitle(join({separator: '/', items: '%opPath%'}))
-        })
-      ),
-      controlWithCondition(({data}) => data.opValue != null, text('<- %opValue%')),
-      controlWithCondition(
-        '%path%',
-        button({
-          title: '%compName%',
-          action: studio.showStack('%ctx%'),
-          style: button.href(),
-          features: [
-            feature.hoverTitle('%path%'),
-            feature.onHover({action: studio.highlightByPath('%path%')}),
-            ctrlAction(studio.openComponentInJbEditor('%path%'))
-          ]
-        })
-      ),
-      controlWithCondition(
-        '%srcCompName%',
-        group({
-          layout: layout.horizontal(),
-          controls: [
-            text('activated by:'),
-            button({
-              title: '%srcCompName%',
-              action: studio.showStack('%srcCtx%'),
-              style: button.href(),
-              features: [
-                feature.hoverTitle('%srcPath%'),
-                feature.onHover({action: studio.highlightByPath('%srcPath%')})
-              ]
-            })
-          ]
-        })
-      ),
-      studio.showLowFootprintObj('%ctx/data%','data'),
-      studio.showLowFootprintObj('%ctx/vars%','vars'),
-      studio.showLowFootprintObj('%data%','data'),
-      studio.showLowFootprintObj('%jbComp%','jbComp'),
+      studio.showLowFootprintObj('%cmp%','cmp'),
+      studio.showLowFootprintObj('%ctx%','ctx'),
       studio.showLowFootprintObj('%delta%','delta'),
       studio.showLowFootprintObj('%vdom%','vdom'),
-      studio.slicedString('%description%'),
-      studio.slicedString('%error/message%'),
+      studio.showLowFootprintObj('%err%','err'),
+      studio.showLowFootprintObj('%ref%','ref'),
+      studio.showLowFootprintObj('%value%','value'),
+
+      // controlWithCondition(
+      //   '%opPath%',
+      //   button({
+      //     title: last('%opPath%'),
+      //     style: button.href(),
+      //     features: feature.hoverTitle(join({separator: '/', items: '%opPath%'}))
+      //   })
+      // ),
+      // controlWithCondition(({data}) => data.opValue != null, text('<- %opValue%')),
+      // controlWithCondition(
+      //   '%path%',
+      //   button({
+      //     title: '%compName%',
+      //     action: studio.showStack('%ctx%'),
+      //     style: button.href(),
+      //     features: [
+      //       feature.hoverTitle('%path%'),
+      //       feature.onHover({action: studio.highlightByPath('%path%')}),
+      //       ctrlAction(studio.openComponentInJbEditor('%path%'))
+      //     ]
+      //   })
+      // ),
+      // controlWithCondition(
+      //   '%srcCompName%',
+      //   group({
+      //     layout: layout.horizontal(),
+      //     controls: [
+      //       text('activated by:'),
+      //       button({
+      //         title: '%srcCompName%',
+      //         action: studio.showStack('%srcCtx%'),
+      //         style: button.href(),
+      //         features: [
+      //           feature.hoverTitle('%srcPath%'),
+      //           feature.onHover({action: studio.highlightByPath('%srcPath%')})
+      //         ]
+      //       })
+      //     ]
+      //   })
+      // ),
+      // studio.showLowFootprintObj('%ctx/data%','data'),
+      // studio.showLowFootprintObj('%ctx/vars%','vars'),
+      // studio.showLowFootprintObj('%data%','data'),
+      // studio.showLowFootprintObj('%jbComp%','jbComp'),
+      // studio.showLowFootprintObj('%delta%','delta'),
+      // studio.showLowFootprintObj('%vdom%','vdom'),
+      // studio.slicedString('%description%'),
+      // studio.slicedString('%error/message%'),
     ]
   })
 })
@@ -239,7 +245,24 @@ jb.component('studio.showLowFootprintObj', {
     {id: 'length', as: 'number', defaultValue: 20 },
   ],
   impl: controlWithCondition('%$obj%', group({
+    layout: layout.horizontal(4),
     controls: [
+      controlWithCondition(
+        '%$obj/cmpId%',
+        studio.slicedString('%$obj/ctx/profile/$% - %$obj/cmpId%;%$obj/ver%')
+      ),
+      controlWithCondition(
+        '%$obj/_parent%',
+        studio.slicedString('%$obj/profile/$%: %$obj/path%')
+      ),
+      controlWithCondition(
+        ({},{},{obj}) => jb.isRef(obj),
+        studio.slicedString(({},{},{obj}) => obj.handler.pathOfRef(obj).join('/'))
+      ),      
+      controlWithCondition(
+        '%$obj/opEvent/newVal%',
+        studio.slicedString('%$obj/opEvent/newVal%')
+      ),      
       controlWithCondition(
         isOfType('object,array', '%$obj%'),
         button({
@@ -286,12 +309,9 @@ jb.component('studio.eventItems', {
   ],
   impl: (ctx,query,pattern) => {
     const st = jb.studio
-    const spy = jb.path(jb.studio,'previewjb.spy')
-    if (!spy) {
-      jb.logError('studio.eventItems - can not locate spy',{ctx})
-      return []
-    }
-    const ret = spy.search(query).map(x=>enrich(x)).filter(x=>!(x.path || '').match(/studio.eventTracker/))
+    const spy = jb.ui.getSpy(ctx)
+    if (!spy) return []
+    const ret = spy.search(query); //.map(x=>enrich(x)).filter(x=>!(x.path || '').match(/studio.eventTracker/))
     const regexp = new RegExp(pattern)
     return pattern ? ret.filter(x=>regexp.test(Array.from(x.values()).filter(x=> typeof x == 'string').join(','))) : ret
 

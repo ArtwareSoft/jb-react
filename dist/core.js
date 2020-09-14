@@ -190,8 +190,8 @@ function prepare(ctx,parentParam) {
   // if (!comp_name)
   //   return { type: 'ignore' }
   const comp = jb.comps[comp_name];
-  if (!comp && comp_name) { logError('component ' + comp_name + ' is not defined', ctx); return { type:'null' } }
-  if (!comp.impl) { logError('component ' + comp_name + ' has no implementation', ctx); return { type:'null' } }
+  if (!comp && comp_name) { logError('component ' + comp_name + ' is not defined', {ctx}); return { type:'null' } }
+  if (!comp.impl) { logError('component ' + comp_name + ' has no implementation', {ctx}); return { type:'null' } }
 
   fixByValue(profile,comp)
   const resCtx = Object.assign(new jbCtx(ctx,{}), {parentParam, params: {}})
@@ -313,18 +313,18 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
       }
       if (isRefType(jstype)) {
         if (last)
-          return refHandler.objectProperty(obj,subExp,ctx);
+          return refHandler.objectProperty(obj,subExp,ctx)
         if (obj[subExp] === undefined)
-          obj[subExp] = implicitlyCreateInnerObject(obj,subExp,refHandler);
+          obj[subExp] = implicitlyCreateInnerObject(obj,subExp,refHandler)
       }
       if (last && jstype)
-          return jstypes[jstype](obj[subExp]);
-      return obj[subExp];
+          return jstypes[jstype](obj[subExp])
+      return obj[subExp]
     }
   }
   function implicitlyCreateInnerObject(parent,prop,refHandler) {
-    jb.log('core innerObject created',[...arguments]);
-    parent[prop] = {};
+    jb.log('core innerObject created',{parent,prop,refHandler})
+    parent[prop] = {}
     refHandler.refreshMapDown && refHandler.refreshMapDown(parent)
     return parent[prop]
   }
@@ -355,7 +355,7 @@ function bool_expression(exp, ctx, parentParam) {
     return !!asString && asString != 'false';
   }
   if (parts.length != 4)
-    return logError('invalid boolean expression: ' + exp, ctx);
+    return logError('invalid boolean expression: ' + exp, {ctx});
   const op = parts[2].trim();
 
   if (op == '==' || op == '!=' || op == '$=' || op == '^=') {
@@ -564,14 +564,14 @@ function pathSummary(path) {
 	return jb.compName(profileOfPath(_path)) + ': ' + path;
 }
 
-function logError() {
-  frame.console && frame.console.log('%c Error: ','color: red', ...arguments)
-  log('error',[...arguments])
+function logError(err,logObj) {
+  frame.console && frame.console.log('%c Error: ','color: red', err, logObj && Object.values(logObj))
+  log('error',{err , ...logObj})
 }
 
-function logException(e,errorStr,ctx, ...rest) {
-  frame.console && frame.console.log('%c Exception: ','color: red', ...arguments)
-  log('exception',[e.stack||'',ctx,errorStr && pathSummary(ctx && ctx.path),e, ...rest])
+function logException(e,err,logObj) {
+  frame.console && frame.console.log('%c Exception: ','color: red', err, e, logObj && Object.values(logObj))
+  log('exception',{ err, stack: e.stack||'', ...logObj})
 }
 
 function val(ref) {
@@ -592,23 +592,23 @@ function entries(obj) {
 }
 function objFromEntries(entries) {
   const res = {}
-  entries.forEach(e => res[e[0]] = e[1]);
+  entries.forEach(e => res[e[0]] = e[1])
   return res;
 }
 
 const simpleValueByRefHandler = {
   val(v) {
-    if (v && v.$jb_val) return v.$jb_val();
-    return v && v.$jb_parent ? v.$jb_parent[v.$jb_property] : v;
+    if (v && v.$jb_val) return v.$jb_val()
+    return v && v.$jb_parent ? v.$jb_parent[v.$jb_property] : v
   },
   writeValue(to,value,srcCtx) {
-    jb.log('writeValue jbParent',[value,to,srcCtx]);
-    if (!to) return;
+    jb.log('writeValue jbParent',{value,to,srcCtx})
+    if (!to) return
     if (to.$jb_val)
       to.$jb_val(this.val(value))
     else if (to.$jb_parent)
-      to.$jb_parent[to.$jb_property] = this.val(value);
-    return to;
+      to.$jb_parent[to.$jb_property] = this.val(value)
+    return to
   },
   push(ref,toAdd) {
     const arr = jb.asArray(jb.val(ref))
@@ -784,7 +784,7 @@ Object.assign(jb,{
   safeRefCall: (ref,f) => {
     const handler = jb.refHandler(ref)
     if (!handler || !handler.isRef(ref))
-      return jb.logError('invalid ref', ref)
+      return jb.logError('invalid ref', {ref})
     return f(handler)
   },
  
@@ -875,7 +875,7 @@ Object.assign(jb, {
             }
             if (jb.frame[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$dummyComp$/))
                 jb.logError(macroId.replace(/_/g,'.') + ' is defined more than once, using last definition ' + id)
-            return true;
+            return true
         }
 
         function processMacro(args) {
@@ -1007,42 +1007,47 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 				// .flatMap(x=> settings.groups[x] ? this.parseLogsList(settings.groups[x],depth+1) : [x])
 				//.flatMap(x=> settings.groups[x] ? this.parseLogsList(settings.groups[x],depth+1) : [x])
 		},
-		init() {
-			const includeLogsFromParam = this.parseLogsList(this.spyParam)
-			const excludeLogsFromParam = (this.spyParam || '').split(',').filter(x => x[0] === '-').map(x => x.slice(1))
+		calcIncludeLogsFromSpyParam(spyParam) {
+			const includeLogsFromParam = this.parseLogsList(spyParam)
+			const excludeLogsFromParam = (spyParam || '').split(',').filter(x => x[0] === '-').map(x => x.slice(1))
 			this.includeLogs = settings.includeLogs.split(',').concat(includeLogsFromParam).filter(log => excludeLogsFromParam.indexOf(log) === -1).reduce((acc, log) => {
 				acc[log] = true
 				return acc
 			}, {})
-			this.initialized = true
+			this.includeLogsInitialized = true
 		},
 		shouldLog(logNames, record) {
-			return this.spyParam === 'all' || Array.isArray(record) && 
+			if (!logNames) debugger
+			return this.spyParam === 'all' || typeof record == 'object' && 
 				logNames.split(' ').reduce( (acc,logName)=>acc || this.includeLogs[logName],false)
 		},
 		log(logNames, _record, {takeFrom, funcTitle, modifier} = {}) {
-			if (!this.initialized) this.init()
+			if (!this.includeLogsInitialized) this.calcIncludeLogsFromSpyParam(this.spyParam)
 			this.updateCounters(logNames)
 			if (!this.shouldLog(logNames, _record)) return
-			const record = [logNames,..._record]
-			record.index = this.logs.length
-			record.source = this.source(takeFrom)
 			const now = new Date()
-			record._time = `${now.getSeconds()}:${now.getMilliseconds()}`
-			record.time = now.getTime()
-			record.mem = memoryUsage() / 1000000
-			record.activeElem = typeof jb != 'undefined' && jb.path && jb.path(jb.frame.document,'activeElement')
-			if (record[0] == null && typeof funcTitle === 'function') {
-				record[0] = funcTitle()
+			const record = {
+				logNames,
+				..._record,
+				index: this.logs.length,
+				source: this.source(takeFrom),
+				_time: `${now.getSeconds()}:${now.getMilliseconds()}`,
+				time: now.getTime(),
+				mem: memoryUsage() / 1000000,
+				activeElem: typeof jb != 'undefined' && jb.path && jb.path(jb.frame.document,'activeElement'),
+				$attsOrder: Object.keys(_record)
 			}
-			if (record[0] == null && record.source) {
-				record[0] = record.source[0]
-			}
-			if (typeof modifier === 'function') {
-				modifier(record)
-			}
+			// if (record[0] == null && typeof funcTitle === 'function') {
+			// 	record[0] = funcTitle()
+			// }
+			// if (record[0] == null && record.source) {
+			// 	record[0] = record.source[0]
+			// }
+			// if (typeof modifier === 'function') {
+			// 	modifier(record)
+			// }
 			this.logs.push(record)
-			this._obs && this._obs.next({logNames,record})
+			this._obs && this._obs.next(record)
 		},
 		iframeAccessible(iframe) { try { return Boolean(iframe.contentDocument) } catch(e) { return false } },
 		source(takeFrom) {
@@ -1071,10 +1076,9 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			this.spyParam = spyParam;
 			this.includeLogs = null;
 		},
-		setLogs(logs) {
-			if (logs === 'all')
-				this.spyParam = 'all'
-			this.includeLogs = (logs||'').split(',').reduce((acc,log) => {acc[log] = true; return acc },{})
+		setLogs(spyParam) {
+			if (spyParam === 'all')	this.spyParam = 'all'
+			this.calcIncludeLogsFromSpyParam(spyParam)
 		},
 		clear() {
 			this.logs = []
@@ -1088,7 +1092,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 		count(query) { // dialog core | menu !keyboard  
 			const _or = query.split(/,|\|/)
 			return _or.reduce((acc,exp) => 
-				unify(acc,	exp.split(' ').reduce((acc,logNameExp) => filter(acc,logNameExp), jb.entries(this.counters))) 
+				unify(acc, exp.split(' ').reduce((acc,logNameExp) => filter(acc,logNameExp), jb.entries(this.counters))) 
 			,[]).reduce((acc,e) => acc+e[1], 0)
 
 			function filter(set,exp) {
@@ -1103,20 +1107,19 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 		search(query) { // dialog core | menu !keyboard  
 			const _or = query.split(/,|\|/)
 			return _or.reduce((acc,exp) => 
-				unify(acc,	exp.split(' ').reduce((acc,logNameExp) => filter(acc,logNameExp), this.logs)) 
+				unify(acc, exp.split(' ').reduce((acc,logNameExp) => filter(acc,logNameExp), this.logs)) 
 			,[])
 
 			function filter(set,exp) {
 				return (exp[0] == '!') 
-					? set.filter(rec=>!rec[0].match(new RegExp(`\\b${exp.slice(1)}\\b`)))
-					: set.filter(rec=>rec[0].match(new RegExp(`\\b${exp}\\b`)))
+					? set.filter(rec=>!rec.logNames.match(new RegExp(`\\b${exp.slice(1)}\\b`)))
+					: set.filter(rec=>rec.logNames.match(new RegExp(`\\b${exp}\\b`)))
 			}
 			function unify(set1,set2) {
 				let res = [...set1,...set2].sort((x,y) => x.index < y.index)
 				return res.filter((r,i) => i == 0 || res[i-1].index != r.index) // unique
 			}
-	
-		},
+		}
 	}
 } 
 

@@ -453,9 +453,9 @@ jb.component('rx.log', {
   description: 'jb.log flow data, used for debug',
   params: [
     {id: 'name', as: 'string'},
-    {id: 'extra', as: 'array', dynamic: true, defaultValue: []},
+    {id: 'extra', as: 'single', dynamic: true},
   ],
-  impl: (ctx,name,extra) => ctx.run(rx.do(_ctx => jb.log(name,[...extra(_ctx),_ctx.data,_ctx.vars,ctx])))
+  impl: (ctx,name,extra) => ctx.run(rx.do(_ctx => jb.log(name,{data: _ctx.data,vars: _ctx.vars,ctx, ...extra(_ctx)})))
 })
 
 jb.component('rx.clog', {

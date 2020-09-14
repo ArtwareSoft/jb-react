@@ -45,6 +45,7 @@ jb.component('dataTest', {
 	],
 	impl: function(ctx,calculate,runBefore,expectedResult,timeout,allowError,cleanUp,expectedCounters,showCtrl) {
 		const _timeout = ctx.vars.singleTest ? Math.max(1000,timeout) : timeout
+		const id = ctx.vars.testID
 		return Promise.race([jb.delay(_timeout).then(()=>[{runErr: 'timeout'}]), Promise.resolve(runBefore())
 			  .then(_ => calculate())
 			  .then(v => jb.toSynchArray(v,true))])
@@ -53,24 +54,20 @@ jb.component('dataTest', {
 				  const countersErr = countersErrors(expectedCounters,allowError)
 				  const expectedResultCtx = new jb.jbCtx(ctx,{ data: value })
 				  const expectedResultRes = expectedResult(expectedResultCtx)
-				  const success = !! (expectedResultRes && !countersErr && !runErr);
-				  jb.log('dataTest testResult',[success,expectedResultRes, runErr, countersErr, expectedResultCtx])
-				  const result = { id: ctx.vars.testID, success, reason: countersErr || runErr, showCtrl }
+				  const success = !! (expectedResultRes && !countersErr && !runErr)
+				  jb.log('dataTest testResult',{success,expectedResultRes, runErr, countersErr, expectedResultCtx})
+				  const result = { id, success, reason: countersErr || runErr, showCtrl }
 				  return result
 			  })
 			  .catch(e=> {
-				  jb.logException(e,ctx)
-				  return { id: ctx.vars.testID, success: false, reason: 'Exception ' + e}
+				  jb.logException(e,'error in test',{ctx})
+				  return { id, success: false, reason: 'Exception ' + e}
 			  })
 			  .then(result => { // default cleanup
 				  if (ctx.probe || ctx.vars.singleTest) return result
 				  if (ctx.vars.uiTest)
 					result.elem && jb.ui.unmount(result.elem)
 				  return result;
-			  })
-			  .catch(e=> {
-				  jb.logException(e,ctx)
-				  return { id: ctx.vars.testID, success: false, reason: 'Exception ' + e}
 			  })
 			  .then(result =>
 					  Promise.resolve(!ctx.vars.singleTest && cleanUp())
@@ -129,8 +126,8 @@ jb.component('uiTest', {
 			rx.log('check testResult'),
 			rx.filter('%$success%'), // if failure wait for the next delta
 			rx.map('%$success%'),
-			rx.do( ({},{tstWidgetId})=>jb.ui.unmount(jb.ui.headless[tstWidgetId].body)),
 			rx.take(1),
+			rx.do( ({},{tstWidgetId})=>jb.ui.unmount(jb.ui.headless[tstWidgetId].body)),
 		),
 		expectedResult: '%%',
 		cleanUp: call('cleanUp'),
@@ -165,7 +162,7 @@ jb.component('uiFrontEndTest', {
 					  jb.ui.render(jb.ui.h(control(ctx)), elemToTest)
 					  if (renderDOM) document.body.appendChild(elemToTest)
 				  } catch (e) {
-					  jb.logException(e,'error in test',ctx)
+					  jb.logException(e,'error in test',{ctx})
 					  return e
 				  }
 			  })
@@ -179,13 +176,13 @@ jb.component('uiFrontEndTest', {
 				  const countersErr = countersErrors(expectedCounters,allowError)
 				  const expectedResultCtx = ctx.setData(elemToTest.outerHTML)
 				  const expectedResultRes = expectedResult(expectedResultCtx)
-				  jb.log('check testResult',[expectedResultRes, expectedResultCtx])
+				  jb.log('check testResult',{testID, expectedResultRes, expectedResultCtx})
 				  const success = !! (expectedResultRes && !countersErr)
-				  if (renderDOM && !show && !singleTest) document.body.removeChild(elemToTest)
 				  const result = { id: testID, success, reason: countersErr, renderDOM}
 			  	  // default cleanup
 				  if (!show && !singleTest)
 					  jb.ui.unmount(elemToTest)
+				  if (renderDOM && !show && !singleTest) document.body.removeChild(elemToTest)
 				  return Promise.resolve(cleanUp()).then(_=>result)
 			})
 	  }, last())
@@ -327,7 +324,7 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,includeHeavy}
 			  document.getElementById('progress').innerHTML = `<div id=${testID}>${index++}: ${testID} started</div>`
 			  times[testID] = { start: new Date().getTime() }
 			  jb.test.cleanBeforeRun(tstCtx)
-			  jb.log('start test',[testID])
+			  jb.log('start test',{testID})
 			  console.log('starting ' + testID )
 			  return fromPromise(Promise.resolve(tstCtx.run({$:testID}))
 				.then(res => {
@@ -339,7 +336,7 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,includeHeavy}
 						res.reason = 'log errors: ' + JSON.stringify(jb.logs.error)
 					}
 					console.log('end      ' + testID, res)
-					jb.log('end test',[testID,res])
+					jb.log('end test',{testID,res})
 					res.show = () => {
 						const profile = e[1].impl.control
 						const elem = document.createElement('div')
