@@ -9,7 +9,8 @@ jb.chromeDebugger = {
         panelFrame.spy = jb.spy
         jb.log('chromeDebugger init panel',{id, panelFrame})
 
-        this.isIframeInitialized().then(res => !res && this.initIframeOnInspectedWindow())
+        //this.isIframeInitialized().then(res => !res && 
+        this.initIframeOnInspectedWindow()
 
         panelFrame.chrome.runtime.onConnect.addListener(port => {
             jb.log('chromeDebugger on connect',{port})
