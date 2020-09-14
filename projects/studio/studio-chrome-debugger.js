@@ -66,7 +66,7 @@ jb.chromeDebugger = {
                             parent.postMessage({from: 'inspectedWindow',...m}) 
                         },
                         addEventListener: (ev,handler) => parent.addEventListener('message', m => {
-                            jb.log('chromeDebugger remote to inspectedWindow',{m,parent,self,m.source});
+                            jb.log('chromeDebugger remote to inspectedWindow',{m,parent,self,source: m.source});
                             m.source == parent && m.data.to == 'inspectedWindow' && handler(m)  
                         })
                     };
