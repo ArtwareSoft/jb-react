@@ -109,47 +109,8 @@ jb.component('studio.eventTracker', {
       itemlist({
         items: '%$events%',
         controls: [
-          button({
-            title: '%index%: %logNames%',
-            action: menu.openContextMenu({
-              menu: menu.menu({
-                options: [
-                  menu.action({
-                    title: 'show in console',
-                    action: ({data}) => jb.frame.console.log(data)
-                  }),
-                  menu.action('group by %logNames%'),
-                  menu.action('filter only %logNames%'),
-                  menu.action('filter out %logNames%'),
-                  menu.action('remove items before'),
-                  menu.action('remove items after')
-                ]
-              })
-            }),
-            style: button.plainIcon(),
-            features: [
-              field.title('log'),
-              field.columnWidth('20'),
-              feature.byCondition('%logNames% == error', css.color('var(--jb-error-fg)')),
-              feature.icon({
-                icon: data.switch({
-                  cases: [
-                    data.case('%logNames% == error', 'error'),
-                    data.case('%logNames% == refreshElem', 'CircleOutline'),
-                    data.case('%logNames% == doOp', 'Database')
-                  ],
-                  default: 'RectangleOutline'
-                }),
-                type: data.switch({cases: [data.case('%logNames% == error', 'mdc')], default: 'mdi'}),
-                size: '16'
-              })
-            ]
-          }),
-          text({
-            text: '%index% %logNames%',
-            title: 'event',
-            features: feature.onHover(studio.highlightLogItem(), dialog.closeDialogById('elem-marker'))
-          }),
+          text('%index%'),
+          text('%logNames%'),
           studio.eventView()
         ],
         style: table.plain(true),
@@ -159,7 +120,8 @@ jb.component('studio.eventTracker', {
           itemlist.infiniteScroll('5'),
           css.height({height: '400', overflow: 'scroll'}),
           itemlist.selection({onSelection: ({data}) => jb.frame.console.log(data)}),
-          itemlist.keyboardSelection({})
+          itemlist.keyboardSelection({}),
+          feature.byCondition('%logNames% == error', css.color('var(--jb-error-fg)'))
         ]
       })
     ],
