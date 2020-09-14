@@ -368,6 +368,7 @@ jb.component('patternsTest.selectStyle.card1', {
 
 jb.component('patternsTest.selectStyleDeleteUnmapped.card1', {
   impl: uiTest({
+    timeout: 400,
     vars: [
       Var('extractedCtrl', () => extractedCtrlCard1),
       Var('targetPath', 'studioTest.dragTargetCard~impl'),
@@ -390,6 +391,7 @@ jb.component('patternsTest.selectStyleDeleteUnmapped.card1', {
 
 jb.component('patternsTest.selectStyleDeleteUnmapped.card2', {
   impl: uiTest({
+    timeout: 400,
     vars: [
       Var('extractedCtrl', () => extractedCtrlCard2),
       Var('targetPath', 'studioTest.dragTargetCard~impl'),

@@ -147,7 +147,7 @@ st.initPreview = function(preview_window,allowedTypes) {
 
       fixInvalidUrl()
       jb.frame.jbStartCommand && jb.exec(jb.frame.jbStartCommand) // used by vscode to open jbEditor
-      jb.log('end loadPreview',[jb.exp('%$studio/projectSettings/project%')])
+      jb.log('end loadPreview',{project: jb.exp('%$studio/projectSettings/project%')})
 
 			function fixInvalidUrl() {
         if (location.pathname.indexOf('/project/studio/') != 0) return;
@@ -230,7 +230,7 @@ jb.component('studio.previewWidget', {
             return st.projectHosts[host].fetchProject(ctx.exp('%$queryParams/hostProjectId%'),project)
 //              .then(x=>jb.delay(2000).then(()=>{debugger; return x}))
               .then(projectSettings => {
-                jb.log('start loadPreview',[projectSettings.project,projectSettings])
+                jb.log('start loadPreview',{project: projectSettings.project,projectSettings})
                 jb.exec(writeValue('%$studio/project%', projectSettings.project))
 //                if (projectSettings.project != 'test')
 //                  jb.exec(writeValue('%$studio/projectFolder%', projectSettings.project))

@@ -72,7 +72,7 @@ jb.component('watchableAsText', {
                 this.prettyPrintWithPositions() // refreshing location map
             }
         } catch(e) {
-            jb.logException(e,'watchable-obj-as-text-ref',ctx)
+            jb.logException(e,'watchable-obj-as-text-ref',{ctx})
         }},
 
         $jb_observable(cmp) {
@@ -278,7 +278,7 @@ function getSuggestions(fileContent, pos, jbToUse = jb) {
     const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
     const nextjbComponent = lines.slice(componentHeaderIndex+1).findIndex(line => line.match(/^jb.component/))
     if (nextjbComponent != -1 && nextjbComponent < compLastLine)
-      return jb.logError(['can not find end of component', compId, linesFromComp])
+      return jb.logError('textEditor - can not find end of component', {compId, linesFromComp})
     const linesOfComp = linesFromComp.slice(0,compLastLine+1)
     const compSrc = linesOfComp.join('\n')
     if (jb.eval(compSrc,jbToUse.frame) === Symbol.for('parseError'))
@@ -315,7 +315,7 @@ function closestComp(fileContent, pos) {
     const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
     const nextjbComponent = lines.slice(componentHeaderIndex+1).findIndex(line => line.match(/^jb.component/))
     if (nextjbComponent != -1 && nextjbComponent < compLastLine) {
-      jb.logError(['can not find end of component', compId, linesFromComp])
+      jb.logError('textEditor - can not find end of component', { compId, linesFromComp })
       return {}
     }
     const compSrc = linesFromComp.slice(0,compLastLine+1).join('\n')

@@ -41,7 +41,7 @@ jb.component('studio.initVscodeAdapter', {
                 const req = promises[message.messageID].req
                 clearTimeout(promises[message.messageID].timer)
                 if (message.type == 'error') {
-                    jb.logError('vscode ', message, req)
+                    jb.logError('vscode ', {message, req})
                     promises[message.messageID].reject(message)
                 } else {
                     promises[message.messageID].resolve(message)
@@ -57,7 +57,7 @@ jb.component('studio.initVscodeAdapter', {
             messageID++
             const timer = setTimeout(() => {
                 promises[messageID] && reject({ type: 'error', desc: 'timeout' })
-                jb.logError('vscodeService timeout',promises[messageID])
+                jb.logError('vscodeService timeout', {promise: promises[messageID]})
             }, timeout);
             promises[messageID] = {resolve,reject,req, timer}
             console.log('send req ',messageID,req)

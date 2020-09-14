@@ -62,8 +62,8 @@ jb.component('editableText.setInputState', {
     {id: 'selectionStart', as: 'number'},
     {id: 'cmp', defaultValue: '%$cmp%'},
   ],
-  impl: action.applyDeltaToCmp((ctx,{},{newVal,selectionStart,assumedVal}) => {
-    jb.log('create userRequest',[newVal,ctx])
+  impl: action.applyDeltaToCmp((ctx,{cmp},{newVal,selectionStart,assumedVal}) => {
+    jb.log('dome set input create userRequest',{cmp,newVal,ctx})
     return {attributes: { $__input: JSON.stringify({ assumedVal: assumedVal, newVal,selectionStart })}}
   } ,'%$cmp/cmpId%')
 })

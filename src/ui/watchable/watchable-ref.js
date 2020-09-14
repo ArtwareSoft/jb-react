@@ -60,9 +60,7 @@ class WatchableValueByRef {
           oldVal.slice(ar[0],ar[0]+ar[1]).forEach(toRemove=>this.removeObjFromMap(toRemove))
           jb.asArray(ar[2]).forEach(toAdd=>this.addObjToMap(toAdd,path.concat(newVal.indexOf(toAdd))))
         })
-//        this.fixSplicedPaths(path,opOnRef.$splice)
       } else {
-          // TODO: make it more effecient in case of $merge
           this.removeObjFromMap(oldVal)
           this.addObjToMap(newVal,path)
       }
@@ -71,15 +69,14 @@ class WatchableValueByRef {
         this.primitiveArraysDeltas[ref.$jb_obj[jbId]].push(opOnRef.$splice)
       }
       opEvent.newVal = newVal;
-      jb.log('watchable set',[opEvent,...arguments]);
-      // TODO: split splice event to delete, push, and insert
+      jb.log('watchable set',{opEvent,ref,opOnRef,srcCtx})
       if (this.transactionEventsLog)
         this.transactionEventsLog.push(opEvent)
       else
         this.resourceChange.next(opEvent);
       return opEvent;
     } catch(e) {
-      jb.logException(e,'doOp',srcCtx,...arguments)
+      jb.logException(e,'doOp',{srcCtx,ref,opOnRef,srcCtx})
     }
   }
   resourceReferred(resName) {
@@ -168,7 +165,7 @@ class WatchableValueByRef {
     if (path)
         return { $jb_obj: this.valOfPath(path), handler: this, path: function() { return this.handler.pathOfRef(this)} }
     if (!silent)
-      jb.logError('asRef can not make a watchable ref of obj',obj)
+      jb.logError('asRef can not make a watchable ref of obj',{obj})
     return null;
   }
   valOfPath(path) {
@@ -236,9 +233,9 @@ class WatchableValueByRef {
     return ref && ref.$jb_obj && this.watchable(ref.$jb_obj);
   }
   objectProperty(obj,prop,ctx) {
-    jb.log('watchable objectProperty',[...arguments]);
+    jb.log('watchable objectProperty',{obj,prop,ctx})
     if (!obj)
-      return jb.logError('objectProperty: null obj',ctx)
+      return jb.logError('objectProperty: null obj',{obj,prop,ctx})
     if (obj && obj[prop] && this.watchable(obj[prop]) && !obj[prop][isProxy])
       return this.asRef(obj[prop])
     const ref = this.asRef(obj)
@@ -255,9 +252,9 @@ class WatchableValueByRef {
   }
   writeValue(ref,value,srcCtx) {
     if (!ref || !this.isRef(ref) || !this.pathOfRef(ref))
-      return jb.logError('writeValue: err in ref', srcCtx, ref, value);
+      return jb.logError('writeValue: err in ref', {srcCtx, ref, value})
 
-    jb.log('watchable writeValue',[ref,value,ref,srcCtx]);
+    jb.log('watchable writeValue',{ref,value,ref,srcCtx})
     if (ref.$jb_val)
       return ref.$jb_val(value);
     if (this.val(ref) === value) return;
@@ -284,7 +281,7 @@ class WatchableValueByRef {
     let toIndex = Number(toPath.slice(-1));
     const fromArray = this.refOfPath(fromPath.slice(0,-1)),toArray = this.refOfPath(toPath.slice(0,-1));
     if (isNaN(fromIndex) || isNaN(toIndex))
-        return jb.logError('move: not array element',srcCtx,fromRef,toRef);
+        return jb.logError('move: not array element',{srcCtx,fromRef,toRef})
 
     var valToMove = jb.val(fromRef);
     if (sameArray) {
@@ -354,7 +351,7 @@ class WatchableValueByRef {
       this.observables.push(obs)
       this.observables.sort((e1,e2) => jb.ui.comparePaths(e1.ctx.path, e2.ctx.path))
       const cmp = req.cmpOrElem && (req.cmpOrElem.ver ? req.cmpOrElem : req.cmpOrElem._component)
-      jb.log('register uiComp observable',[jb.ui.cmpV(cmp), key,obs])
+      jb.log('register uiComp observable',{cmp, key,obs})
       return subject
   }
   frame() {
@@ -368,7 +365,7 @@ class WatchableValueByRef {
         const isOld = jb.path(obs.cmpOrElem,'getAttribute') && (+obs.cmpOrElem.getAttribute('recycleCounter')) > obs.recycleCounter
         if (jb.path(obs.cmpOrElem,'_destroyed') || isOld) {
           if (this.observables.indexOf(obs) != -1) {
-            jb.log('remove cmpObservable',[obs])
+            jb.log('remove cmpObservable',{obs})
             this.observables.splice(this.observables.indexOf(obs), 1);
           }
         } else {
@@ -382,13 +379,13 @@ class WatchableValueByRef {
       let obsPath = jb.refHandler(obs.ref).pathOfRef(obs.ref)
       obsPath = obsPath && this.removeLinksFromPath(obsPath)
       if (!obsPath)
-        return jb.logError('observer ref path is empty',obs,e)
+        return jb.logError('observer ref path is empty',{obs,e})
       const diff = jb.ui.comparePaths(changed_path, obsPath)
       const isChildOfChange = diff == 1
       const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
       const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
       if (diff == -1 || diff == 0 || includeChildrenYes || includeChildrenStructure) {
-          jb.log('notify cmpObservable',[e.srcCtx,obs,e])
+          jb.log('notify cmpObservable',{srcCtx: e.srcCtx,obs,e})
           obs.subject.next(e)
       }
   }
@@ -429,7 +426,7 @@ jb.ui.refObservable = (ref,cmpOrElem,settings={}) => {
   if (ref && ref.$jb_observable)
     return ref.$jb_observable(cmpOrElem);
   if (!jb.isWatchable(ref)) {
-    jb.logError('ref is not watchable: ', ref)
+    jb.logError('ref is not watchable: ', {ref, cmpOrElem})
     return jb.callbag.fromIter([])
   }
   return jb.refHandler(ref).getOrCreateObservable({ref,cmpOrElem,...settings})
@@ -457,14 +454,8 @@ jb.component('runTransaction', {
     jb.mainWatchableHandler.startTransaction()
     return actions.reduce((def,action,index) =>
 				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index )) ,Promise.resolve())
-			.catch((e) => jb.logException(e,ctx))
+			.catch((e) => jb.logException(e,'runTransaction',{ctx}))
       .then(() => jb.mainWatchableHandler.endTransaction(ctx.params.disableNotifications))
-
-		// jb.mainWatchableHandler.startTransaction()
-		// return ctx.profile.actions.reduce((def,action,index) =>
-		// 		def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index )) ,Promise.resolve())
-		// 	.catch(e => jb.logException(e,ctx))
-		// 	.then(() => jb.mainWatchableHandler.endTransaction(disableNotifications))
 	}
 })
 

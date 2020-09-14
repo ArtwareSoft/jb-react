@@ -95,8 +95,8 @@ jb.component('studioProbeTest', {
         if (!expectedOutResult(ctx.setData(resData)))
             return failure('wrong out result ' + JSON.stringify(resData))
       } catch(e) {
-        jb.logException(e,'jb-path-test',ctx);
-        return failure('exception');
+        jb.logException(e,'jb-path-test',{ctx})
+        return failure('exception')
       }
       return success();
     })

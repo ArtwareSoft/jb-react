@@ -19,7 +19,7 @@ jb.component('studio.saveComponents', {
       }),
 			catchError(e=> {
         st.host.showError('error saving: ' + (typeof e == 'string' ? e : e.message || e.e))
-				jb.logException(e,'error while saving ' + e.id,ctx) || []
+				jb.logException(e,'error while saving ' + e.id,{ctx}) || []
       }),
       toPromiseArray
     )
@@ -43,7 +43,7 @@ jb.component('studio.initAutoSave', {
           await st.host.saveDelta(fn,edits)
         } catch (e) {
           st.host.showError('error saving: ' + (typeof e == 'string' ? e : e.message || e.e))
-          jb.logException(e,'error while saving ' + e.id,ctx) || []
+          jb.logException(e,'error while saving ' + e.id,{ctx}) || []
         }
       })
     )
@@ -88,7 +88,7 @@ function newFileContent(fileContent, comps) {
     const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
     const nextjbComponent = lines.slice(lineOfComp+1).findIndex(line => line.match(/^jb.component/))
     if (nextjbComponent != -1 && nextjbComponent < compLastLine)
-      return jb.logError(['can not find end of component', fn,id, linesFromComp])
+      return jb.logError('can not find end of component', {fn,id, linesFromComp})
     const newComp = comp ? jb.prettyPrintComp(id,comp,{initialPath: id, comps: st.previewjb.comps}).split('\n') : []
     if (JSON.stringify(linesFromComp.slice(0,compLastLine+1)) === JSON.stringify(newComp))
         return
@@ -114,7 +114,7 @@ function deltaFileContent(fileContent, {compId,comp}) {
   const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
   const nextjbComponent = lines.slice(lineOfComp+1).findIndex(line => line.match(/^jb.component/))
   if (nextjbComponent != -1 && nextjbComponent < compLastLine)
-    return jb.logError(['can not find end of component', compId, linesFromComp])
+    return jb.logError('can not find end of component', {compId, linesFromComp})
   const oldlines = linesFromComp.slice(0,compLastLine+1)
   const {common, oldText, newText} = calcDiff(oldlines.join('\n'), newCompLines.join('\n'))
   const commonStartSplit = common.split('\n')

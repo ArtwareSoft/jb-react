@@ -83,7 +83,7 @@ jb.component('uiAction.scrollBy', {
       impl: (ctx,selector,scrollBy) => {
         const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : ctx.vars.elemToTest
         elem && elem.scrollBy(scrollBy,scrollBy)
-        jb.log('scrollBy on dom',[elem,ctx])
+        jb.log('scrollBy on dom',{elem,ctx})
       }
 })
 

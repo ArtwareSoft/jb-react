@@ -48,7 +48,7 @@ Object.assign(jb, {
             }
             if (jb.frame[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$dummyComp$/))
                 jb.logError(macroId.replace(/_/g,'.') + ' is defined more than once, using last definition ' + id)
-            return true;
+            return true
         }
 
         function processMacro(args) {

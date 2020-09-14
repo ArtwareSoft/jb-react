@@ -99,7 +99,7 @@ function toVdomOrStr(val) {
 
 function stripVdom(vdom) {
     if (jb.path(vdom,'constructor.name') != 'VNode') {
-        jb.logError('stripVdom - not vnode', vdom)
+        jb.logError('stripVdom - not vnode', {vdom})
         return jb.ui.h('span')
     }
     return { ...vdom, parentNode: null, children: vdom.children && vdom.children.map(x=>stripVdom(x)) }

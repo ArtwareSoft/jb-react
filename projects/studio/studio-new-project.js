@@ -127,7 +127,7 @@ jb.component('studio.saveNewProject', {
         .then(r => r.json ? r.json() : r)
         .catch(e => {
           st.host.showError(`error saving project ${project}: ` + (e && e.desc))
-          jb.logException(e,'',ctx)
+          jb.logException(e,'',{ctx})
         })
         .then(res => {
           res && res.type == 'error' && st.host.showError(`error saving project ${project}: ` + (res && jb.prettyPrint(res.desc,{noMacros: true})))

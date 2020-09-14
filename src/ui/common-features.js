@@ -104,13 +104,6 @@ jb.component('frontEnd.var', {
     {id: 'value', mandatory: true, dynamic: true},
   ],
   impl: ctx => ({ frontEndVar: ctx.params })
-  
-  // templateModifier((ctx,{vdom},{id,value}) => {
-  //   const val = value(ctx)
-  //   //if (val == null) jb.logError('frontEnd.var - null value',id,ctx)
-  //   if (val != null)
-  //     vdom.setAttribute('$vars__'+id, JSON.stringify(val))
-  // })
 })
 
 jb.component('features', {
@@ -140,7 +133,7 @@ jb.component('followUp.flow', {
       {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
   ],
   impl: followUp.action(rx.pipe(ctx => {
-    jb.log('register followUp',[jb.ui.cmpV(ctx.vars.cmp),ctx.cmpCtx.callerPath,ctx])
+    jb.log('register followUp',{cmp: ctx.vars.cmp,ctx})
     const fuCtx = ctx.setVar('followUpCmp',ctx.vars.cmp)
     const elems = fuCtx.run('%$elems()%') 
     // special: injecting a "takeUntil" line into the flow after the source
@@ -276,7 +269,7 @@ jb.component('variable', {
 
       const fullName = name + ':' + cmp.ctx.id;
       if (fullName == 'items') debugger
-      jb.log('create watchable var',[ctx,fullName])
+      jb.log('create watchable var',{cmp,ctx,fullName})
       const refToResource = jb.mainWatchableHandler.refOfPath([fullName]);
       jb.writeValue(refToResource,value(ctx),ctx)
       return ctx.setVar(name, refToResource);
@@ -298,11 +291,6 @@ jb.component('calculatedVar', {
     followUp.flow(rx.pipe(
       rx.merge(
         (ctx,{},{watchRefs}) => watchRefs(ctx).map(ref=>ctx.setData(ref).run(source.watchableData('%%')) )
-        // pipeline(
-        //   '%$watchRefs()%', 
-        //   ctx => { jb.log('register watchableData calculatedVar',[ctx.data,ctx]); return ctx.data },
-        //   source.watchableData('%%')
-        // )
       ),
       rx.log('check calculatedVar'),
       rx.map('%$value()%'),
@@ -312,7 +300,7 @@ jb.component('calculatedVar', {
       extendCtx: (_ctx,cmp) => {
         const {name,value} = ctx.cmpCtx.params
         const fullName = name + ':' + cmp.cmpId;
-        jb.log('create watchable calculatedVar',[ctx,fullName])
+        jb.log('create watchable calculatedVar',{ctx,cmp,fullName})
         jb.resource(fullName, jb.val(value(_ctx)));
         const ref = _ctx.exp(`%$${fullName}%`,'ref')
         return _ctx.setVar(name, ref);
@@ -375,7 +363,7 @@ jb.component('refreshControlById', {
   impl: (ctx,id) => {
     const elem = jb.ui.widgetBody(ctx).querySelector('#'+id)
     if (!elem)
-      return jb.logError('refreshControlById can not find elem for #'+id, ctx)
+      return jb.logError('refreshControlById can not find elem for #'+id, {ctx})
     return jb.ui.refreshElem(elem,null,{srcCtx: ctx, ...ctx.params})
   }
 })

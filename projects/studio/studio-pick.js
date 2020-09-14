@@ -163,7 +163,7 @@ function eventToElem(e,_window, predicate) {
   let rnd = Math.floor(Math.random()*orderedResults.length *2) // use random to let the user flip between choices
   if (rnd >= orderedResults.length) rnd = 0 // first result get twice weight
 
-  jb.log('studio pick eventToElem result',[orderedResults,rnd])
+  jb.log('studio pick eventToElem result',{orderedResults,rnd})
   return orderedResults[rnd].el;
 
   function checkCtxId(ctxId) {

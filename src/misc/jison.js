@@ -23,7 +23,7 @@ jb.component('jison.parse', {
       return  { result: jb['jison-parser-'+ctx.path].parse(text) }
     } catch (e) {
       return { error: e, message: e.message, console: jb.jison.buffer }
-//      jb.logException('jison',e,ctx)
+//      jb.logException('jison',e,{ctx})
     }
   }
 })

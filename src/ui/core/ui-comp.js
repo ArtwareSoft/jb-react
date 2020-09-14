@@ -2,7 +2,7 @@
 const ui = jb.ui
 let cmpId = 1;
 ui.propCounter = 0
-const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,this.ctx) }}
+const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,{ctx: this.ctx}) }}
 const lifeCycle = new Set('init,extendCtx,templateModifier,followUp,destroy'.split(','))
 const arrayProps = new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,frontEndVar,eventHandler'.split(','))
 const singular = new Set('template,calcRenderProps,toolbar,styleParams,calcHash,ctxForPick'.split(','))
@@ -60,7 +60,7 @@ class JbComponent {
         this.originators = [ctx]
     }
     init() {
-        jb.log('init uiComp',[jb.ui.cmpV(this),this])
+        jb.log('init uiComp',{cmp: this})
         const baseVars = this.ctx.vars
         this.ctx = (this.extendCtxFuncs||[])
             .reduce((acc,extendCtx) => tryWrapper(() => extendCtx(acc,this),'extendCtx'), this.ctx.setVar('cmp',this))
@@ -85,7 +85,7 @@ class JbComponent {
             if (this.state[e.prop] != undefined) return // we have the value in the state, probably asynch value so do not calc again
             const modelProp = this.ctx.vars.$model[e.prop]
             if (!modelProp)
-                return jb.logError('calcRenderProps',`missing model prop "${e.prop}"`,this.ctx.vars.$model,this.ctx)
+                return jb.logError('calcRenderProps',`missing model prop "${e.prop}"`, {cmp: this, model: this.ctx.vars.$model, ctx: this.ctx})
             const ref = modelProp(this.ctx)
             if (jb.isWatchable(ref))
                 this.toObserve.push({id: e.prop, cmp: this, ref,...e})
@@ -109,7 +109,7 @@ class JbComponent {
     }
 
     renderVdom() {
-        jb.log('uiComp start renderVdom',[jb.ui.cmpV(this), this])
+        jb.log('uiComp start renderVdom', {cmp: this})
         this.calcRenderProps()
         if (this.ctx.probe && this.ctx.probe.outOfTime) return
         this.template = this.template || (() => '')
@@ -150,14 +150,14 @@ class JbComponent {
                 this.renderProps.cmpHash != null && {cmpHash: this.renderProps.cmpHash}
             )
         }
-        jb.log('uiComp end renderVdom',[jb.ui.cmpV(this), vdom, this])
+        jb.log('uiComp end renderVdom',{cmp: this, vdom})
         this.afterFirstRendering = true
         return vdom
     }
     renderVdomAndFollowUp() {
         const vdom = this.renderVdom()
         jb.delay(1).then(() => (this.followUpFuncs||[]).forEach(f=> tryWrapper(() => { 
-            jb.log('uiComp followUp',[jb.ui.cmpV(this),f,this])
+            jb.log(`uiComp followUp ${jb.ui.rxPipeName(f)}`, {cmp: this, f})
             f(this.calcCtx)
         }, 'followUp') ) ).then(()=> this.ready = true)
         this.ready = false
@@ -167,17 +167,17 @@ class JbComponent {
         (this.method||[]).filter(h=> h.id == method)[0]
     }
     runBEMethod(method, data, vars) {
-        jb.log('uiComp backend method',[jb.ui.cmpV(this),method,this,data,vars])
+        jb.log(`uiComp backend method ${method}`, {cmp: this,data,vars})
         if (jb.path(vars,'$state'))
             Object.assign(this.state,vars.$state)
         const methodImpls = (this.method||[]).filter(h=> h.id == method)
         methodImpls.forEach(h=> jb.ui.runCtxAction(h.ctx,data,{cmp: this,$state: this.state, $props: this.renderProps, ...vars}))
         if (methodImpls.length == 0)
-            jb.logError(`no method in cmp: ${method}`, this, data, vars)
+            jb.logError(`no method ${method} in cmp`, {cmp: this, data, vars})
     }
     refresh(state,options) {
         const elem = jb.ui.elemOfCmp(this.ctx,this.cmpId)
-        jb.log('backend uiComp refresh request',[jb.ui.cmpV(this),elem,state,options])
+        jb.log('backend uiComp refresh request',{cmp: this,elem,state,options})
         jb.ui.BECmpsDestroyNotification.next({ cmps: [{cmpId: this.cmpId, ver: this.ver, destroyCtxs: [] }] })
         elem && jb.ui.refreshElem(elem,state,options) // cmpId may be deleted
     }

@@ -55,9 +55,10 @@ jb.component('action.refreshCmp', {
     {id: 'state', dynamic: true },
     {id: 'options', dynamic: true },
   ],
-  impl: (ctx,state,options) => {
-    jb.log('refresh uiComp',[jb.path(ctx.vars.cmp,'cmpId'),ctx,state,options])
-    ctx.vars.cmp && ctx.vars.cmp.refresh(state(ctx),{srcCtx: ctx, ...options(ctx)})
+  impl: (ctx,stateF,optionsF) => {
+    const cmp = ctx.vars.cmp, options = optionsF(ctx), state = stateF(ctx)
+    jb.log('refresh uiComp',{cmp,ctx,state,options})
+    cmp && cmp.refresh(state,{srcCtx: ctx, ...options})
   }
 })
 
@@ -198,7 +199,7 @@ jb.component('key.eventMatchKey', {
         {id: 'key', as: 'string', description: 'E.g., a,27,Enter,Esc,Ctrl+C or Alt+V' },
     ],
     impl: (ctx, e, key) => {
-      jb.log('keyboard search eventMatchKey',[e,key])
+      jb.log('keyboard search eventMatchKey',{e,key})
       if (!key) return;
       const dict = { tab: 9, delete: 46, tab: 9, esc: 27, enter: 13, right: 39, left: 37, up: 38, down: 40}
     
@@ -212,7 +213,7 @@ jb.component('key.eventMatchKey', {
     
       if (key.match(/^[Cc]trl/) && !e.ctrlKey) return
       if (key.match(/^[Aa]lt/) && !e.altKey) return
-      jb.log(`keyboard ${e.keyCode == keyCode ? 'found': 'notFound'} eventMatchKey`,[e,key,e.keyCode,keyCode])
+      jb.log(`keyboard ${e.keyCode == keyCode ? 'found': 'notFound'} eventMatchKey`,{e,key,eventKey: e.keyCode,keyCode})
       return e.keyCode == keyCode
   }
 })
@@ -226,10 +227,11 @@ jb.component('key.eventToMethod', {
   impl: (ctx, event, elem) => {
     elem.keysHash = elem.keysHash || calcKeysHash()
         
-    jb.log('keyboard search eventToMethod',[elem,event])
+    jb.log('keyboard search eventToMethod',{elem,event})
     const res = elem.keysHash.find(key=>key.keyCode == event.keyCode && event.ctrlKey == key.ctrl && event.altKey == key.alt)
-    jb.log(`keyboard ${res ? 'found': 'notFound'} eventToMethod`,[res && res.methodName,elem,event])
-    return res && res.methodName
+    const resMethod = res && res.methodName
+    jb.log(`keyboard ${res ? 'found': 'notFound'} eventToMethod`,{resMethod,elem,event})
+    return resMethod
 
     function calcKeysHash() {
       const keys = elem.getAttribute('methods').split(',').map(x=>x.split('-')[0])
@@ -371,7 +373,7 @@ jb.component('frontEnd.selectionKeySourceService', {
       }
       if (autoFocs)
         jb.ui.focus(el,'selectionKeySource')
-      jb.log('register selectionKeySource',[cmp.cmpId,cmp,el,ctx])
+      jb.log('register selectionKeySource',{cmp,cmp,el,ctx})
       return pipe(el.keydown_src, takeUntil(cmp.destroyed))
     })
   )
@@ -390,14 +392,14 @@ jb.component('source.findSelectionKeySource', {
     Var('clientCmp','%$cmp%'),
     rx.merge( 
       source.data([]),
-      (ctx,{selectionKeySourceCmpId}) => {
-        jb.log('keyboard search selectionKeySource',[selectionKeySourceCmpId,ctx])
+      (ctx,{cmp,selectionKeySourceCmpId}) => {
+        jb.log('keyboard search selectionKeySource',{cmp,selectionKeySourceCmpId,ctx})
         const el = jb.ui.elemOfCmp(ctx,selectionKeySourceCmpId)
         const ret = jb.path(el, '_component.selectionKeySource')
         if (!ret)
-          jb.log('keyboard selectionKeySource notFound',[selectionKeySourceCmpId,el,ctx])
+          jb.log('keyboard selectionKeySource notFound',{cmp,selectionKeySourceCmpId,el,ctx})
         else
-          jb.log('keyboard found selectionKeySource',[el,selectionKeySourceCmpId,ctx])
+          jb.log('keyboard found selectionKeySource',{cmp,el,selectionKeySourceCmpId,ctx})
         return ret
       }
     ),

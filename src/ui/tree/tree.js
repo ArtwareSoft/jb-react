@@ -380,9 +380,9 @@ jb.component('tree.redraw', {
 	  {id: 'strong', type: 'boolean', as: 'boolean'}
 	],
 	impl: (ctx,strong) => {
-		  jb.log('tree redraw',[jb.path(ctx.vars,'$tree.cmpId'), ...arguments])
-		  return ctx.vars.$tree && ctx.vars.$tree.redraw && ctx.vars.$tree.redraw(strong)
-	  }
+		jb.log('tree redraw',{ cmpId: jb.path(ctx.vars,'$tree.cmpId'), ctx, strong})
+		return ctx.vars.$tree && ctx.vars.$tree.redraw && ctx.vars.$tree.redraw(strong)
+	}
 })
   
 jb.component('tree.moveItem', {

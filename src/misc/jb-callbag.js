@@ -819,5 +819,5 @@ jb.callbag = {
         }
       },  
       log: name => jb.callbag.Do(x=>console.log(name,x)),
-      jbLog: (name,...params) => jb.callbag.Do(x=>jb.log(name,[x,...params])),
+      jbLog: (name,...params) => jb.callbag.Do(data => jb.log(name,{data,...params})),
 }

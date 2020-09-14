@@ -35,7 +35,7 @@ jb.component('openDialog.probe', {
 jb.component('dialog.init', {
 	type: 'feature',
 	impl: features(
-		calcProp('dummy',ctx => jb.log('dialog init uiComp', [ctx.vars.$dialog.id, ctx.vars.cmp.cmpId,ctx])),
+		calcProp('dummy',ctx => jb.log('dialog init uiComp', {dialog: ctx.vars.$dialog, cmp: ctx.vars.cmp,ctx})),
 		calcProp('title', '%$$model/title()%'),
 		calcProp('contentComp', '%$$model/content%'),
 		calcProp('hasMenu', '%$$model/menu/profile%'),
@@ -65,10 +65,10 @@ jb.component('dialog.createDialogTopIfNeeded', {
 		if (ctx.vars.headlessWidget) {
 			widgetBody.children.push(vdom)
 			vdom.parentNode = widgetBody
-			jb.log('dialog headless createTop',[vdom,widgetBody])
+			jb.log('dialog headless createTop',{vdom,widgetBody})
 		} else {
 			jb.ui.render(vdom,widgetBody)
-			jb.log('dialog dom createTop',[vdom,widgetBody])
+			jb.log('dialog dom createTop',{vdom,widgetBody})
 		}
 	}
 })
@@ -83,7 +83,7 @@ jb.component('dialog.closeDialog', {
 		action.if(and('%$OK%','%$$dialog.hasFields%', (ctx,{$dialog}) => 
 			jb.ui.checkFormValidation && jb.ui.checkFormValidation(jb.ui.elemOfCmp(ctx, $dialog.cmpId)))),
 		action.if(and('%$OK%', not('%$formContainer.err%')), (ctx,{$dialog}) => {
-			jb.log('dialog onOK',[$dialog])
+			jb.log('dialog onOK',{$dialog,ctx})
 			$dialog.ctx.params.onOK(ctx)
 		}),
 		action.if(or(not('%$OK%'), not('%$formContainer.err%')),

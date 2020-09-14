@@ -35,7 +35,7 @@ st.initCompsRefHandler = function(previewjb,allowedTypes) {
 	pipe(st.compsRefHandler.resourceChange,
 		takeUntil(st.compsRefHandler.stopListening),
 		subscribe(e=>{
-			jb.log('script changed',[e.srcCtx,e]);
+			jb.log('script changed',{ctx: e.srcCtx,e});
 			st.scriptChange.next(e)
 			st.highlightByScriptPath(e.path)
 			writeValueToDataResource(e.path,e.newVal)
@@ -255,7 +255,7 @@ Object.assign(st, {
 		const val = st.valOfPath(path);
 		const prop = st.controlParams(path)[0];
 		if (!prop)
-			return jb.logError('getOrCreateControlArrayRef: no control param',[path,srcCtx]);
+			return jb.logError('getOrCreateControlArrayRef: no control param',{path,srcCtx})
 		let ref = st.refOfPath(path+'~'+prop);
 		if (val[prop] === undefined)
 			jb.writeValue(ref,[],srcCtx);
@@ -269,7 +269,7 @@ Object.assign(st, {
 		try {
 			return (st.previewWindow || window).eval('('+prof_str+')')
 		} catch (e) {
-			jb.logException(e,'eval profile:'+prof_str);
+			jb.logException(e,'eval profile',{prof_str})
 		}
 	},
 

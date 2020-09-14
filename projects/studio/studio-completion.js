@@ -97,7 +97,7 @@ if (typeof CodeMirror != 'undefined') {
         const codeMirrorOptions = options.map(e=>asCodeMirrorOption(e))
             .filter(e=>!optionsFilter || e.displayText.indexOf(optionsFilter) != -1)
         const result = { list: codeMirrorOptions }
-        jb.log('codeMirrorHint result',[{ result, cur, token, textToToken, options, codeMirrorOptions}])
+        jb.log('codeMirrorHint result',{ result, cur, token, textToToken, options, codeMirrorOptions})
         return result;
 
         function asCodeMirrorOption(option) {

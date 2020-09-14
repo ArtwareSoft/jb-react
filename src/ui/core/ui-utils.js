@@ -4,11 +4,11 @@ Object.assign(jb.ui,{
         // block the preview from stealing the studio focus
         const now = new Date().getTime();
         const lastStudioActivity = jb.studio.lastStudioActivity || jb.path(jb,['studio','studioWindow','jb','studio','lastStudioActivity'])
-        jb.log('focus request',[srcCtx, logTxt, now - lastStudioActivity, elem,srcCtx])
+        jb.log('focus request',{srcCtx, logTxt, timeDiff: now - lastStudioActivity, elem,srcCtx})
         if (jb.studio.previewjb == jb && jb.path(jb.frame.parent,'jb.resources.studio.project') != 'studio-helper' && lastStudioActivity && now - lastStudioActivity < 1000)
             return
         jb.delay(1).then(_=> {
-          jb.log('focus dom',[srcCtx,logTxt,elem,srcCtx])
+          jb.log('focus dom',{elem,srcCtx,logTxt})
           elem.focus()
         })
     },
@@ -59,7 +59,8 @@ Object.assign(jb.ui,{
       const ctx = _ctx || new jb.jbCtx()
       return ctx.setVar('$serviceRegistry',{baseCtx: ctx, parentRegistry: ctx.vars.$serviceRegistry, services: {}})
     },
-    cmpV: cmp => cmp ? `${cmp.cmpId};${cmp.ver}` : ''
+    cmpV: cmp => cmp ? `${cmp.cmpId};${cmp.ver}` : '',
+    rxPipeName: profile => ''
 })
 
 // ***************** inter-cmp services
@@ -77,9 +78,9 @@ jb.component('service.registerBackEndService', {
   ],
   impl: feature.init((ctx,{$serviceRegistry},{id,service}) => {
     const _id = id(ctx), _service = service(ctx)
-    jb.log('register service',[_id,_service,ctx.cmpCtx])
+    jb.log('register service',{id: _id, service: _service, ctx: ctx.cmpCtx})
     if ($serviceRegistry.services[_id])
-      jb.logError('overridingService',[_id,$serviceRegistry.services[_id],_service,ctx])
+      jb.logError('overridingService',{id: _id, service: $serviceRegistry.services[_id], service: _service,ctx})
     $serviceRegistry.services[_id] = _service
   })
 })

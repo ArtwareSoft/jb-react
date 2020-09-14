@@ -71,7 +71,7 @@ jb.component('studio.copy', {
       const val = st.valOfPath(path)
       st.clipboard = typeof val == 'string' ? val : eval('(' + jb.prettyPrint(val,{noMacros: true}) + ')')
     } catch(e) {
-      jb.logExecption(e,'copy')
+      jb.logExecption(e,'copy',{ctx})
     }
   }
 })

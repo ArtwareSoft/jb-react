@@ -3,7 +3,7 @@ jb.ns('chromeDebugger')
 jb.ui.getSpy = ctx => {
   const spy = jb.path(jb.studio,'previewjb.spy')
   if (!spy)
-    jb.logError('studio.eventItems - can not locate spy')
+    jb.logError('studio.eventItems - can not locate spy',{ctx})
   return spy
 }
 
@@ -288,7 +288,7 @@ jb.component('studio.eventItems', {
     const st = jb.studio
     const spy = jb.path(jb.studio,'previewjb.spy')
     if (!spy) {
-      jb.logError('studio.eventItems - can not locate spy')
+      jb.logError('studio.eventItems - can not locate spy',{ctx})
       return []
     }
     const ret = spy.search(query).map(x=>enrich(x)).filter(x=>!(x.path || '').match(/studio.eventTracker/))

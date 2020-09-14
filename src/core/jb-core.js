@@ -190,8 +190,8 @@ function prepare(ctx,parentParam) {
   // if (!comp_name)
   //   return { type: 'ignore' }
   const comp = jb.comps[comp_name];
-  if (!comp && comp_name) { logError('component ' + comp_name + ' is not defined', ctx); return { type:'null' } }
-  if (!comp.impl) { logError('component ' + comp_name + ' has no implementation', ctx); return { type:'null' } }
+  if (!comp && comp_name) { logError('component ' + comp_name + ' is not defined', {ctx}); return { type:'null' } }
+  if (!comp.impl) { logError('component ' + comp_name + ' has no implementation', {ctx}); return { type:'null' } }
 
   fixByValue(profile,comp)
   const resCtx = Object.assign(new jbCtx(ctx,{}), {parentParam, params: {}})
@@ -313,18 +313,18 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
       }
       if (isRefType(jstype)) {
         if (last)
-          return refHandler.objectProperty(obj,subExp,ctx);
+          return refHandler.objectProperty(obj,subExp,ctx)
         if (obj[subExp] === undefined)
-          obj[subExp] = implicitlyCreateInnerObject(obj,subExp,refHandler);
+          obj[subExp] = implicitlyCreateInnerObject(obj,subExp,refHandler)
       }
       if (last && jstype)
-          return jstypes[jstype](obj[subExp]);
-      return obj[subExp];
+          return jstypes[jstype](obj[subExp])
+      return obj[subExp]
     }
   }
   function implicitlyCreateInnerObject(parent,prop,refHandler) {
-    jb.log('core innerObject created',[...arguments]);
-    parent[prop] = {};
+    jb.log('core innerObject created',{parent,prop,refHandler})
+    parent[prop] = {}
     refHandler.refreshMapDown && refHandler.refreshMapDown(parent)
     return parent[prop]
   }
@@ -355,7 +355,7 @@ function bool_expression(exp, ctx, parentParam) {
     return !!asString && asString != 'false';
   }
   if (parts.length != 4)
-    return logError('invalid boolean expression: ' + exp, ctx);
+    return logError('invalid boolean expression: ' + exp, {ctx});
   const op = parts[2].trim();
 
   if (op == '==' || op == '!=' || op == '$=' || op == '^=') {
@@ -564,14 +564,14 @@ function pathSummary(path) {
 	return jb.compName(profileOfPath(_path)) + ': ' + path;
 }
 
-function logError() {
-  frame.console && frame.console.log('%c Error: ','color: red', ...arguments)
-  log('error',[...arguments])
+function logError(err,logObj) {
+  frame.console && frame.console.log('%c Error: ','color: red', err, logObj && Object.values(logObj))
+  log('error',{err , ...logObj})
 }
 
-function logException(e,errorStr,ctx, ...rest) {
-  frame.console && frame.console.log('%c Exception: ','color: red', ...arguments)
-  log('exception',[e.stack||'',ctx,errorStr && pathSummary(ctx && ctx.path),e, ...rest])
+function logException(e,err,logObj) {
+  frame.console && frame.console.log('%c Exception: ','color: red', err, e, logObj && Object.values(logObj))
+  log('exception',{ err, stack: e.stack||'', ...logObj})
 }
 
 function val(ref) {
@@ -592,23 +592,23 @@ function entries(obj) {
 }
 function objFromEntries(entries) {
   const res = {}
-  entries.forEach(e => res[e[0]] = e[1]);
+  entries.forEach(e => res[e[0]] = e[1])
   return res;
 }
 
 const simpleValueByRefHandler = {
   val(v) {
-    if (v && v.$jb_val) return v.$jb_val();
-    return v && v.$jb_parent ? v.$jb_parent[v.$jb_property] : v;
+    if (v && v.$jb_val) return v.$jb_val()
+    return v && v.$jb_parent ? v.$jb_parent[v.$jb_property] : v
   },
   writeValue(to,value,srcCtx) {
-    jb.log('writeValue jbParent',[value,to,srcCtx]);
-    if (!to) return;
+    jb.log('writeValue jbParent',{value,to,srcCtx})
+    if (!to) return
     if (to.$jb_val)
       to.$jb_val(this.val(value))
     else if (to.$jb_parent)
-      to.$jb_parent[to.$jb_property] = this.val(value);
-    return to;
+      to.$jb_parent[to.$jb_property] = this.val(value)
+    return to
   },
   push(ref,toAdd) {
     const arr = jb.asArray(jb.val(ref))
@@ -784,7 +784,7 @@ Object.assign(jb,{
   safeRefCall: (ref,f) => {
     const handler = jb.refHandler(ref)
     if (!handler || !handler.isRef(ref))
-      return jb.logError('invalid ref', ref)
+      return jb.logError('invalid ref', {ref})
     return f(handler)
   },
  

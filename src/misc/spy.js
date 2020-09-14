@@ -92,42 +92,47 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 				// .flatMap(x=> settings.groups[x] ? this.parseLogsList(settings.groups[x],depth+1) : [x])
 				//.flatMap(x=> settings.groups[x] ? this.parseLogsList(settings.groups[x],depth+1) : [x])
 		},
-		init() {
-			const includeLogsFromParam = this.parseLogsList(this.spyParam)
-			const excludeLogsFromParam = (this.spyParam || '').split(',').filter(x => x[0] === '-').map(x => x.slice(1))
+		calcIncludeLogsFromSpyParam(spyParam) {
+			const includeLogsFromParam = this.parseLogsList(spyParam)
+			const excludeLogsFromParam = (spyParam || '').split(',').filter(x => x[0] === '-').map(x => x.slice(1))
 			this.includeLogs = settings.includeLogs.split(',').concat(includeLogsFromParam).filter(log => excludeLogsFromParam.indexOf(log) === -1).reduce((acc, log) => {
 				acc[log] = true
 				return acc
 			}, {})
-			this.initialized = true
+			this.includeLogsInitialized = true
 		},
 		shouldLog(logNames, record) {
-			return this.spyParam === 'all' || Array.isArray(record) && 
+			if (!logNames) debugger
+			return this.spyParam === 'all' || typeof record == 'object' && 
 				logNames.split(' ').reduce( (acc,logName)=>acc || this.includeLogs[logName],false)
 		},
 		log(logNames, _record, {takeFrom, funcTitle, modifier} = {}) {
-			if (!this.initialized) this.init()
+			if (!this.includeLogsInitialized) this.calcIncludeLogsFromSpyParam(this.spyParam)
 			this.updateCounters(logNames)
 			if (!this.shouldLog(logNames, _record)) return
-			const record = [logNames,..._record]
-			record.index = this.logs.length
-			record.source = this.source(takeFrom)
 			const now = new Date()
-			record._time = `${now.getSeconds()}:${now.getMilliseconds()}`
-			record.time = now.getTime()
-			record.mem = memoryUsage() / 1000000
-			record.activeElem = typeof jb != 'undefined' && jb.path && jb.path(jb.frame.document,'activeElement')
-			if (record[0] == null && typeof funcTitle === 'function') {
-				record[0] = funcTitle()
+			const record = {
+				logNames,
+				..._record,
+				index: this.logs.length,
+				source: this.source(takeFrom),
+				_time: `${now.getSeconds()}:${now.getMilliseconds()}`,
+				time: now.getTime(),
+				mem: memoryUsage() / 1000000,
+				activeElem: typeof jb != 'undefined' && jb.path && jb.path(jb.frame.document,'activeElement'),
+				$attsOrder: Object.keys(_record)
 			}
-			if (record[0] == null && record.source) {
-				record[0] = record.source[0]
-			}
-			if (typeof modifier === 'function') {
-				modifier(record)
-			}
+			// if (record[0] == null && typeof funcTitle === 'function') {
+			// 	record[0] = funcTitle()
+			// }
+			// if (record[0] == null && record.source) {
+			// 	record[0] = record.source[0]
+			// }
+			// if (typeof modifier === 'function') {
+			// 	modifier(record)
+			// }
 			this.logs.push(record)
-			this._obs && this._obs.next({logNames,record})
+			this._obs && this._obs.next(record)
 		},
 		iframeAccessible(iframe) { try { return Boolean(iframe.contentDocument) } catch(e) { return false } },
 		source(takeFrom) {
@@ -156,10 +161,9 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			this.spyParam = spyParam;
 			this.includeLogs = null;
 		},
-		setLogs(logs) {
-			if (logs === 'all')
-				this.spyParam = 'all'
-			this.includeLogs = (logs||'').split(',').reduce((acc,log) => {acc[log] = true; return acc },{})
+		setLogs(spyParam) {
+			if (spyParam === 'all')	this.spyParam = 'all'
+			this.calcIncludeLogsFromSpyParam(spyParam)
 		},
 		clear() {
 			this.logs = []
@@ -173,7 +177,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 		count(query) { // dialog core | menu !keyboard  
 			const _or = query.split(/,|\|/)
 			return _or.reduce((acc,exp) => 
-				unify(acc,	exp.split(' ').reduce((acc,logNameExp) => filter(acc,logNameExp), jb.entries(this.counters))) 
+				unify(acc, exp.split(' ').reduce((acc,logNameExp) => filter(acc,logNameExp), jb.entries(this.counters))) 
 			,[]).reduce((acc,e) => acc+e[1], 0)
 
 			function filter(set,exp) {
@@ -188,20 +192,19 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 		search(query) { // dialog core | menu !keyboard  
 			const _or = query.split(/,|\|/)
 			return _or.reduce((acc,exp) => 
-				unify(acc,	exp.split(' ').reduce((acc,logNameExp) => filter(acc,logNameExp), this.logs)) 
+				unify(acc, exp.split(' ').reduce((acc,logNameExp) => filter(acc,logNameExp), this.logs)) 
 			,[])
 
 			function filter(set,exp) {
 				return (exp[0] == '!') 
-					? set.filter(rec=>!rec[0].match(new RegExp(`\\b${exp.slice(1)}\\b`)))
-					: set.filter(rec=>rec[0].match(new RegExp(`\\b${exp}\\b`)))
+					? set.filter(rec=>!rec.logNames.match(new RegExp(`\\b${exp.slice(1)}\\b`)))
+					: set.filter(rec=>rec.logNames.match(new RegExp(`\\b${exp}\\b`)))
 			}
 			function unify(set1,set2) {
 				let res = [...set1,...set2].sort((x,y) => x.index < y.index)
 				return res.filter((r,i) => i == 0 || res[i-1].index != r.index) // unique
 			}
-	
-		},
+		}
 	}
 } 
 

@@ -291,7 +291,7 @@ jb.component('writeValue', {
   impl: (ctx,to,value) => {
     if (!jb.isRef(to)) {
       ctx.run(ctx.profile.to,{as: 'ref'}) // for debug
-      return jb.logError(`can not write to: ${ctx.profile.to}`, ctx)
+      return jb.logError(`can not write to: ${ctx.profile.to}`, {ctx})
     }
     const val = jb.val(value)
     if (jb.isDelayed(val))
@@ -722,9 +722,9 @@ jb.component('unique', {
 jb.component('log', {
   params: [
     {id: 'logName', as: 'string', mandatory: 'true' },
-    {id: 'dataArray', as: 'array', defaultValue: []}
+    {id: 'logObj', as: 'single' }
   ],
-  impl: (ctx,log,array) => jb.log(log,[...array,ctx])
+  impl: (ctx,log,logObj) => jb.log(log,{...logObj,ctx})
 })
 
 jb.component('asIs', {
@@ -764,7 +764,7 @@ jb.component('json.parse', {
 		try {
 			return JSON.parse(text)
 		} catch (e) {
-			jb.logException(e,'json parse',ctx);
+			jb.logException(e,'json parse',{text, ctx})
 		}
 	}
 })
@@ -901,7 +901,7 @@ jb.component('runActionOnItems', {
   impl: (ctx,items,action,notifications,indexVariable) => {
 		if (notifications && jb.mainWatchableHandler) jb.mainWatchableHandler.startTransaction()
 		return (jb.val(items)||[]).reduce((def,item,i) => def.then(_ => action(ctx.setVar(indexVariable,i).setData(item))) ,Promise.resolve())
-			.catch((e) => jb.logException(e,ctx))
+			.catch((e) => jb.logException(e,'runActionOnItems',{item, action, ctx}))
 			.then(() => notifications && jb.mainWatchableHandler && jb.mainWatchableHandler.endTransaction(notifications === 'no notifications'));
 	}
 })
@@ -1040,7 +1040,7 @@ jb.component('http.get', {
 		return fetch(url, {mode: 'cors'})
 			  .then(r => json ? r.json() : r.text())
 				.then(res=> jb.http_get_cache ? (jb.http_get_cache[url] = res) : res)
-			  .catch(e => jb.logException(e,'http.get',ctx) || [])
+			  .catch(e => jb.logException(e,'http.get',{ctx}) || [])
 	}
 })
 
@@ -1078,7 +1078,7 @@ jb.component('http.fetch', {
     return fetch(reqObj.url, proxy ? {mode: 'cors'} : reqObj)
 			  .then(r => json ? r.json() : r.text())
 				.then(res=> jb.http_get_cache ? (jb.http_get_cache[reqStr] = res) : res)
-			  .catch(e => jb.logException(e,'http.fetch',ctx) || [])
+			  .catch(e => jb.logException(e,'http.fetch',{ctx}) || [])
 	}
 })
 
