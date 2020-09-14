@@ -9,37 +9,46 @@ jb.chromeDebugger = {
         panelFrame.spy = jb.spy
         jb.log('chromeDebugger init panel',{id, panelFrame})
 
-        //this.isIframeInitialized().then(res => !res && 
-        this.initIframeOnInspectedWindow()
+        this.isIframeInitialized().then(res => {
+            if (res)
+                return jb.log(`chromeDebugger panel ${self.uri} inspectedWindow iframe is already initialized`)
 
-        panelFrame.chrome.runtime.onConnect.addListener(port => {
-            jb.log('chromeDebugger on connect',{port})
-            if (port.name != 'jbDebugger') return
-            self.remoteInspectedWindow = {}
-            const remote = self.remoteInspectedWindow[panelFrame.uri] = {
-                postObj: m => { 
-                    jb.log(`chromeDebugger sent from ${self.uri} to inspectedWindow`,{m,self}); 
-                    port.postMessage({from: self.uri,...m}) 
-                },
-                addEventListener: (ev,handler) => { 
-                    jb.log('chromeDebugger addEventListener',{port,handler})
-                    port.onMessage.addListener(m => {
-                        jb.log(`chromeDebugger received from ${m.from} to ${m.to} at ${self.uri}`,{m,self})
-                        m.to == self.uri && handler({data: m})
-                    })
-                },            
-            }
-            remote.CBHandler = jb.remoteCBHandler(remote).initCommandListener()
-        })
-        return this.waitFor(() => this.isIframeInitialized(),50,50).then(()=> {
-            jb.log('chromeDebugger start passThrough',{id})
-            chrome.tabs.executeScript({file: 'pass-through-content-script.js'})
-            return this.waitFor(() => self.remoteInspectedWindow[panelFrame.uri],50,50)
-                .then(() => this.renderOnPanel(panelFrame))
-        })
+            this.initIframeOnInspectedWindow()
+
+            panelFrame.chrome.runtime.onConnect.addListener(port => {
+                jb.log('chromeDebugger panel on connect',{port})
+                if (port.name != 'jbDebugger') return
+                self.remoteInspectedWindow = {}
+                const remote = self.remoteInspectedWindow[panelFrame.uri] = {
+                    postObj: m => { 
+                        jb.log(`chromeDebugger sent from ${self.uri} to inspectedWindow`,{m,self})
+                        port.postMessage({from: self.uri,...m}) 
+                    },
+                    addEventListener: (ev,handler) => { 
+                        jb.log('chromeDebugger addEventListener',{port,handler})
+                        port.onMessage.addListener(m => {
+                            jb.log(`chromeDebugger received from ${m.from} to ${m.to} at ${self.uri}`,{m,self})
+                            m.to == self.uri && handler({data: m})
+                        })
+                    },            
+                }
+                remote.CBHandler = jb.remoteCBHandler(remote).initCommandListener()
+                port.onDisconnect(() => {
+                    jb.log(`inspectedWindow port disconnected from panel at ${self.uri}`,{self})
+                    port.disconnected = true 
+                })
+            })
+            return this.waitFor(() => this.isIframeInitialized(),50,50).then(()=> {
+                jb.log('chromeDebugger start passThrough',{id})
+                chrome.tabs.executeScript({file: 'pass-through-content-script.js'})
+                return this.waitFor(() => self.remoteInspectedWindow[panelFrame.uri],50,50)
+                    .catch(e => jb.logException(e,`chromeDebugger panel ${self.uri} wait for frame failed`))
+                    .then(() => this.renderOnPanel(panelFrame))
+            })
+       })
     },
     renderOnPanel(panelFrame) {
-        jb.log('chromeDebugger start logsCtrl',{id})
+        jb.log('chromeDebugger panel start logsCtrl',{id})
         const profile = {$: 'inspectedWindow.logsCtrl', panel: panelFrame.uri}
         jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry().run(profile)),panelFrame.document.body)
     },
