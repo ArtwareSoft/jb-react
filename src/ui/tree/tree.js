@@ -232,7 +232,10 @@ jb.component('tree.keyboardSelection', {
 	impl: features(
 	  htmlAttribute('tabIndex',0),
 	  method('onEnter', call('onEnter')),
-	  method('runShortcut', (ctx,{},{applyMenuShortcuts}) => applyMenuShortcuts(ctx.setData(ctx.vars.path)).runShortcut(ctx.data) ),
+	  method('runShortcut', (ctx,{path},{applyMenuShortcuts}) => {
+		  const shortCut = applyMenuShortcuts(ctx.setData(path))
+		  shortCut && shortCut.runShortcut(ctx.data) 
+	  }),
 	  method('expand', (ctx,{cmp,$props,$state},{onRightClickOfExpanded}) => {
 		const {expanded} = $state, selected = ctx.data
 		$state.selected = selected

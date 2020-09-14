@@ -126,8 +126,8 @@ jb.component('uiTest', {
 			rx.log('check testResult'),
 			rx.filter('%$success%'), // if failure wait for the next delta
 			rx.map('%$success%'),
-			rx.do( ({},{tstWidgetId})=>jb.ui.unmount(jb.ui.headless[tstWidgetId].body)),
 			rx.take(1),
+			rx.do( ({},{tstWidgetId})=>jb.ui.unmount(jb.ui.headless[tstWidgetId].body)),
 		),
 		expectedResult: '%%',
 		cleanUp: call('cleanUp'),
@@ -178,11 +178,11 @@ jb.component('uiFrontEndTest', {
 				  const expectedResultRes = expectedResult(expectedResultCtx)
 				  jb.log('check testResult',{testID, expectedResultRes, expectedResultCtx})
 				  const success = !! (expectedResultRes && !countersErr)
-				  if (renderDOM && !show && !singleTest) document.body.removeChild(elemToTest)
 				  const result = { id: testID, success, reason: countersErr, renderDOM}
 			  	  // default cleanup
 				  if (!show && !singleTest)
 					  jb.ui.unmount(elemToTest)
+				  if (renderDOM && !show && !singleTest) document.body.removeChild(elemToTest)
 				  return Promise.resolve(cleanUp()).then(_=>result)
 			})
 	  }, last())

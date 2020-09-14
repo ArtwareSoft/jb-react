@@ -339,10 +339,17 @@ jb.component('patternsTest.selectStyle.text', {
   impl: uiTest({
     vars: [
       Var('extractedCtrl', () => extractedCtrlSimpleText),
-      Var('targetPath', 'studioTest.dragTargetText~impl')
+      Var('targetPath', 'studioTest.dragTargetText~impl'),
+      Var('top',obj())
     ],
     control: studio.selectStyle('%$extractedCtrl%','%$targetPath%'),
-    expectedResult: contains({text: 'hello', allText: 'hello'})
+    runBefore: ctx => {
+      const top = document.createElement('div')
+      jb.ui.renderWidget({$: 'studioTest.dragTargetText'},top)
+      document.body.appendChild(top)
+      ctx.vars.top.res = top
+    },    
+    expectedResult: contains('paste here')
   })
 })
 

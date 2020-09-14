@@ -133,8 +133,13 @@ function flatContent(ctrl ,path) {
 }
 
 function closestCtxInPreview(ctx,path) {
-  return ctx.vars.testID ? jb.studio.findElemsByCtxCondition(ctx => path.indexOf(ctx.path) == 0,window)[0]
+  const res = ctx.vars.testID ? jb.studio.findElemsByCtxCondition(ctx => path.indexOf(ctx.path) == 0,window)[0]
     : jb.studio.closestCtxInPreview(path)
+  if (!res) {
+    jb.logError('studio-pattern no closest preview ctx',{ctx,path})
+    return ctx.vars.testID ? new jb.jbCtx() : new jb.studio.previewjb.jbCtx()
+  }
+  return res
 }
 
 function cleanUnmappedParams(ctx,ctrl,matches) {

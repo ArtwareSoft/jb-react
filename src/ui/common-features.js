@@ -133,11 +133,12 @@ jb.component('followUp.flow', {
       {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
   ],
   impl: followUp.action(rx.pipe(ctx => {
-    jb.log('register followUp',{cmp: ctx.vars.cmp,ctx})
-    const fuCtx = ctx.setVar('followUpCmp',ctx.vars.cmp)
+    const cmp = ctx.vars.cmp
+    const fuCtx = ctx.setVar('followUpCmp',cmp)
     const elems = fuCtx.run('%$elems()%') 
     // special: injecting a "takeUntil" line into the flow after the source
     elems.splice(1,0,fuCtx.run(followUp.takeUntilCmpDestroyed('%$cmp%')))
+    jb.log('backend register followUp',{cmp,ctx,fuCtx,elems})
     return elems
   }))
 })
@@ -195,8 +196,8 @@ jb.component('followUp.takeUntilCmpDestroyed', {
     impl: rx.takeUntil(rx.pipe(
           source.callbag(() => jb.ui.BECmpsDestroyNotification),
           rx.filter( ({data},{},{cmp}) => data.cmps.find(_cmp => _cmp.cmpId == cmp.cmpId && _cmp.ver == cmp.ver)),
-          rx.log('uiComp backend takeUntil destroy',list('%$cmp/cmpId%','%$cmp%')),
           rx.take(1),
+          rx.log('uiComp backend takeUntil destroy', obj(prop('cmp','%$cmp%'))),
     ))
 })
 

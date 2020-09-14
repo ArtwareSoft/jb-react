@@ -75,7 +75,7 @@ jb.component('widget.headless', {
             jb.log('headless widget handle userRequset',{widgetId: userReq.widgetId,userReq})
             if (userReq.$ == 'runCtxAction')
                 jb.ui.runCtxAction(jb.ctxDictionary[userReq.ctxIdToRun],userReq.data,userReq.vars)
-            if (userReq.$ == 'destroy') {
+            if (userReq.$ == 'destroy') { //&& userReq.widgetId.indexOf('uiTest_') != 0) {
                 jb.ui.BECmpsDestroyNotification.next({cmps: userReq.cmps, destroyLocally: true})
                 if (userReq.destroyWidget) jb.delay(1).then(()=> {
                     jb.log('destroy headless widget request',{widgetId: userReq.widgetId,userReq})
