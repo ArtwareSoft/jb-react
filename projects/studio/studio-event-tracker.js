@@ -102,11 +102,12 @@ jb.component('studio.eventTracker', {
           picklist({
             title: 'counters',
             databind: '%$studio/spyLogs%',
-            options: picklist.options(ctx => jb.entries(jb.ui.getSpy(ctx).counters).map(([id,val]) => `${id} (${val})`) ),
+            options: picklist.options(ctx => jb.entries(jb.ui.getSpy(ctx).counters).map(
+                ([id,val]) => ({code: id, text: `${id} (${val})`}) ) ),
             features: [
               picklist.onChange(ctx=> {
                 debugger
-                const loc = jb.ui.getSpy(ctx).locations[ctx.data.code].split(':')
+                const loc = jb.ui.getSpy(ctx).locations[ctx.data].split(':')
                 loc && chrome.devtools.panels.openResource(loc[0], loc[1])
               })
             ]
