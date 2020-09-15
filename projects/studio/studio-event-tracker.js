@@ -102,8 +102,7 @@ jb.component('studio.eventTracker', {
           picklist({
             title: 'counters',
             databind: '%$studio/spyLogs%',
-            options: picklist.options(ctx => jb.entries(jb.ui.getSpy(ctx).counters).map(
-                ([id,val]) => ({code: id, text: `${id} (${val})`}) ) ),
+            options: picklist.options({ options: ctx => jb.entries(jb.ui.getSpy(ctx).counters), code: '%0%', text: '%0% (%1%)'}),
             features: [
               picklist.onChange(ctx=> {
                 debugger
