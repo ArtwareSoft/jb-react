@@ -5,6 +5,7 @@ jb.chromeDebugger = {
         console.log('init panel',id,panelFrame)
         panelFrame.uri = `debugPanel:${id}`
         const jb = panelFrame.jb
+        self.remoteInspectedWindow = self.remoteInspectedWindow || {}
         jb.cbLogByPath = {}
         jb.initSpy({spyParam: 'all'})
         panelFrame.spy = jb.spy
@@ -20,7 +21,6 @@ jb.chromeDebugger = {
             panelFrame.chrome.runtime.onConnect.addListener(port => {
                 jb.log('chromeDebugger panel on connect',{port})
                 if (port.name != 'jbDebugger') return
-                self.remoteInspectedWindow = {}
                 const remote = self.remoteInspectedWindow[panelFrame.uri] = {
                     postObj: m => { 
                         jb.log(`chromeDebugger sent from ${self.uri} to inspectedWindow`,{m,self})
@@ -36,10 +36,10 @@ jb.chromeDebugger = {
                 }
                 remote.CBHandler = jb.remoteCBHandler(remote).initCommandListener()
                 console.log('port',port,port.onDisconnect)
-                // port.onDisconnect(() => {
-                //     jb.log(`inspectedWindow port disconnected from panel at ${self.uri}`,{self})
-                //     port.disconnected = true 
-                // })
+                port.onDisconnect.addListener(() => {
+                    jb.log(`inspectedWindow port disconnected from panel at ${self.uri}`,{self})
+                    port.disconnected = true 
+                })
             })
             return this.waitFor(() => this.isIframeInitialized(),50,50).then(()=> {
                 jb.log('chromeDebugger start passThrough',{id})
