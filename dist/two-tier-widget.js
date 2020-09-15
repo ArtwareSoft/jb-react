@@ -45,6 +45,8 @@ jb.component('widget.headless', {
         const cmp = ctrl(jb.ui.extendWithServiceRegistry(ctx.setVars({headlessWidget: true,headlessWidgetId: widgetId})))
         const top = h(cmp)
         const body = h('div',{ widgetTop: true, headless: true, widgetId, remoteUri: ctx.vars.remoteUri },top)
+        if (jb.ui.headless[widgetId])
+            jb.logError('headless widgetId already exists',{widgetId,ctx})
         jb.ui.headless[widgetId] = { body }
         jb.log('headless widget created',{widgetId,body})
         renderingUpdates.next({widgetId, delta: compareVdom({},top)})
