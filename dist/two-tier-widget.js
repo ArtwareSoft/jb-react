@@ -40,13 +40,15 @@ jb.component('widget.headless', {
       {id: 'widgetId', as: 'string'},
     ],
     impl: (ctx,ctrl,widgetId) => {
-        const {renderingUpdates, widgetRenderingSrc, compareVdom, h } = jb.ui
+        const {renderingUpdates, widgetRenderingSrc, compareVdom, h,unmount } = jb.ui
         const filteredSrc = jb.callbag.filter(m=>m.widgetId == widgetId)(widgetRenderingSrc)
         const cmp = ctrl(jb.ui.extendWithServiceRegistry(ctx.setVars({headlessWidget: true,headlessWidgetId: widgetId})))
         const top = h(cmp)
         const body = h('div',{ widgetTop: true, headless: true, widgetId, remoteUri: ctx.vars.remoteUri },top)
-        if (jb.ui.headless[widgetId])
+        if (jb.ui.headless[widgetId]) {
             jb.logError('headless widgetId already exists',{widgetId,ctx})
+            unmount(jb.ui.headless[widgetId])
+        }
         jb.ui.headless[widgetId] = { body }
         jb.log('headless widget created',{widgetId,body})
         renderingUpdates.next({widgetId, delta: compareVdom({},top)})
