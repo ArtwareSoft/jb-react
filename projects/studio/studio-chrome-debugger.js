@@ -28,6 +28,7 @@ jb.chromeDebugger = {
                 if (panelFrame.remoteInspectedWindow[panelFrame.uri]) return
 
                 const remote = panelFrame.remoteInspectedWindow[panelFrame.uri] = {
+                    uri: panelFrame.uri,
                     postObj: m => { 
                         jb.log(`chromeDebugger sent from ${panelFrame.uri} to inspectedWindow`,{m,panelFrame})
                         panelFrame.remoteInspectedWindow[panelFrame.uri] && port.postMessage({from: panelFrame.uri,...m}) 
