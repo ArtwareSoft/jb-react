@@ -44,7 +44,7 @@ jb.chromeDebugger = {
                     }            
                 }
                 remote.CBHandler = jb.remoteCBHandler(remote).initCommandListener()
-                port.onMessage.addListener(m => m.data.runProfile && jb.exec(m.data.runProfile))
+                port.onMessage.addListener(m => m.runProfile && jb.exec(m.runProfile))
 
                 port.onDisconnect.addListener(() => {
                     jb.log(`inspectedWindow port disconnected from panel at ${panelFrame.uri}`,{panelFrame})
