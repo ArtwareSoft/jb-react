@@ -41,9 +41,8 @@ jb.component('dataTest', {
 	  {id: 'allowError', as: 'boolean', dynamic: true},
 	  {id: 'cleanUp', type: 'action', dynamic: true},
 	  {id: 'expectedCounters', as: 'single'},
-	  {id: 'show', type: 'control', dynamic: true },
 	],
-	impl: function(ctx,calculate,runBefore,expectedResult,timeout,allowError,cleanUp,expectedCounters,showCtrl) {
+	impl: function(ctx,calculate,runBefore,expectedResult,timeout,allowError,cleanUp,expectedCounters) {
 		const _timeout = ctx.vars.singleTest ? Math.max(1000,timeout) : timeout
 		const id = ctx.vars.testID
 		return Promise.race([jb.delay(_timeout).then(()=>[{runErr: 'timeout'}]), Promise.resolve(runBefore())
@@ -56,7 +55,7 @@ jb.component('dataTest', {
 				  const expectedResultRes = expectedResult(expectedResultCtx)
 				  const success = !! (expectedResultRes && !countersErr && !runErr)
 				  jb.log('dataTest testResult',{success,expectedResultRes, runErr, countersErr, expectedResultCtx})
-				  const result = { id, success, reason: countersErr || runErr, showCtrl }
+				  const result = { id, success, reason: countersErr || runErr }
 				  return result
 			  })
 			  .catch(e=> {
@@ -132,7 +131,6 @@ jb.component('uiTest', {
 		expectedResult: '%%',
 		cleanUp: call('cleanUp'),
 		expectedCounters: '%$expectedCounters%',
-		show: call('control')
 	})
 })  
 
@@ -342,12 +340,8 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,includeHeavy}
 						const elem = document.createElement('div')
 						elem.className = 'show'
 						document.body.appendChild(elem)
-						if (res.showCtrl)
-							jb.ui.render(jb.ui.h(res.showCtrl()),elem)
-						else if (profile) {
-							//jb.ui.subscribeToRefChange(jb.mainWatchableHandler)
+						if (profile)
 							jb.ui.renderWidget(profile,elem)
-						}
 					}
 					return res
 			 }))

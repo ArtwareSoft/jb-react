@@ -12191,7 +12191,7 @@ jb.component('remote.worker', {
         {id: 'libs', as: 'array', defaultValue: ['common','remote','rx'] },
     ],    
     impl: (ctx,id,libs) => {
-        const uri = `worker:${id}`
+        const uri = `worker-${id}`
         if (jb.remote.servers[uri]) return jb.remote.servers[uri]
         const distPath = jb.remote.pathOfDistFolder()
         const spyParam = ((jb.path(jb.frame,'location.href')||'').match('[?&]spy=([^&]+)') || ['', ''])[1]

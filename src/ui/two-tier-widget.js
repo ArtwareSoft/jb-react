@@ -101,7 +101,7 @@ jb.component('widget.twoTierWidget', {
 //      {id: 'id', as: 'string'},
     ],
     impl: controlWithFeatures({
-        vars: Var('widgetId', ctx => 'widget' + ctx.id),
+        vars: Var('widgetId', (ctx,{},{remote}) => remote.uri + '-' + ctx.id),
         control: widget.frontEndCtrl('%$widgetId%'),
         features: followUp.flow(
             source.callbag(() => jb.ui.widgetUserRequests),

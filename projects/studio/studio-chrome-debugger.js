@@ -2,8 +2,13 @@ jb.ns('widget,studio')
 
 jb.chromeDebugger = {
     initPanel(id, panelFrame) {
+        evalAsPromise('self.jbPanelCounter = (self.jbPanelCounter || 1) +1').then(counter=>{
+            this.doInitPanel(`${id}-${counter}`, panelFrame)
+        })
+    },
+    doInitPanel(id, panelFrame) {
         console.log('init panel',id,panelFrame)
-        panelFrame.uri = `debugPanel:${id}`
+        panelFrame.uri = `debugPanel-${id}`
         const jb = panelFrame.jb
         panelFrame.remoteInspectedWindow = panelFrame.remoteInspectedWindow || {}
         jb.cbLogByPath = {}

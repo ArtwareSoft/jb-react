@@ -621,14 +621,18 @@ jb.component('uiTest.itemlistAddButton', {
   impl: uiTest({
     control: group({
       controls: [
-        itemlist({items: '%$people%', controls: text('%$item.name% - %name%')}),
+        itemlist({
+          items: '%$watchablePeople%',
+          controls: text('%name%'),
+          features: watchRef('%$watchablePeople%')
+        }),
         button({
           title: 'add',
-          action: (ctx) => ctx.exp('%$people%').push({ name: "Magi" })
+          action: addToArray('%$watchablePeople%',obj(prop('name','maggie')))
         })
       ]
     }),
-    expectedResult: contains(['Homer Simpson - Homer Simpson', 'Bart Simpson - Bart Simpson'])
+    expectedResult: contains(['Homer Simpson', 'Bart Simpson'])
   })
 })
 
