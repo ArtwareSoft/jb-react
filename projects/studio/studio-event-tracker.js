@@ -99,7 +99,7 @@ jb.component('studio.eventTracker', {
               css.width('300')
             ]
           }),
-          multiSelect({
+          picklist({
             title: 'counters',
             databind: '%$studio/spyLogs%',
             options: picklist.options(ctx => jb.entries(jb.ui.getSpy(ctx).counters).map(([id,val]) => `${id} (${val})`) ),
