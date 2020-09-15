@@ -12,8 +12,10 @@ jb.chromeDebugger = {
         jb.log('chromeDebugger init panel',{id, panelFrame})
 
         this.isIframeInitialized().then(res => {
-            if (res)
-                return jb.log(`chromeDebugger panel ${self.uri} inspectedWindow iframe is already initialized`)
+            if (res) {
+                jb.log(`chromeDebugger panel ${self.uri} inspectedWindow iframe is already initialized`)
+                return renderOnPanel(panelFrame)
+            }
 
             this.initIframeOnInspectedWindow()
             chrome.runtime.onMessage.addListener((request, sender) => console.log('on message',request, sender))
