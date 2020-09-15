@@ -1,5 +1,5 @@
 
-if (!self.jbDebuggerPort) {
+//if (!self.jbDebuggerPort) {
     console.log('chromeDebugger inspectedWindow content-script')
 //    self.jbDebuggerPort = chrome.runtime.connect('olhkmcfheacikjmicbdmlminigmochih',{name: 'jbDebugger'})
     self.jbDebuggerPort = chrome.runtime.connect({name: 'jbDebugger'})
@@ -14,4 +14,4 @@ if (!self.jbDebuggerPort) {
             jbDebuggerPort.postMessage(m.data)
         }
     })
-}
+//}
