@@ -10,5 +10,11 @@
     "http://localhost:8082/bin/studio/studio-all.js",
     "http://localhost:8082/bin/studio/css/studio-all.css"
   ],
+  "content_scripts": [
+    {
+      "matches": ["http://localhost:8082/*"],
+      "js": ["pass-through-content-script.js"]
+    }
+  ],  
   "permissions": ["tabs", "file:///*", "http://*/*", "https://*/*" ]
 }
