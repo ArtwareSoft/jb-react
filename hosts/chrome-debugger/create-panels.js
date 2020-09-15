@@ -4,7 +4,8 @@ chrome.devtools.panels.create("jb logs",
     function(panel) {
       console.log('create panel',panel,self)
       panel.onShown.addListener(() => {
-        console.log('init panel',panel,self,self.jb)
+        chrome.runtime.sendMessage({shown: "shown"})
+        console.log('shown',panel,self,self.jb)
       })
       // code invoked on panel creation
     }

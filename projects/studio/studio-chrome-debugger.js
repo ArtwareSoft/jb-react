@@ -2,6 +2,7 @@ jb.ns('widget,studio')
 
 jb.chromeDebugger = {
     initPanel(id, panelFrame) {
+        console.log('init panel',id,panelFrame)
         panelFrame.uri = `debugPanel:${id}`
         const jb = panelFrame.jb
         jb.cbLogByPath = {}
@@ -14,6 +15,7 @@ jb.chromeDebugger = {
                 return jb.log(`chromeDebugger panel ${self.uri} inspectedWindow iframe is already initialized`)
 
             this.initIframeOnInspectedWindow()
+            chrome.runtime.onMessage.addListener((request, sender) => console.log('on message',request, sender))
 
             panelFrame.chrome.runtime.onConnect.addListener(port => {
                 jb.log('chromeDebugger panel on connect',{port})
@@ -33,7 +35,7 @@ jb.chromeDebugger = {
                     },            
                 }
                 remote.CBHandler = jb.remoteCBHandler(remote).initCommandListener()
-                console.log('port',port)
+                console.log('port',port,port.onDisconnect)
                 // port.onDisconnect(() => {
                 //     jb.log(`inspectedWindow port disconnected from panel at ${self.uri}`,{self})
                 //     port.disconnected = true 

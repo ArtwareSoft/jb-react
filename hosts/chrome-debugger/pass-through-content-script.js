@@ -1,7 +1,8 @@
 
 if (!self.jbDebuggerPort) {
     console.log('chromeDebugger inspectedWindow content-script')
-    self.jbDebuggerPort = chrome.runtime.connect('olhkmcfheacikjmicbdmlminigmochih',{name: 'jbDebugger'})
+//    self.jbDebuggerPort = chrome.runtime.connect('olhkmcfheacikjmicbdmlminigmochih',{name: 'jbDebugger'})
+    self.jbDebuggerPort = chrome.runtime.connect({name: 'jbDebugger'})
     jbDebuggerPort.onMessage.addListener(m => {
         console.log('chromeDebugger message received from panel at content-script',m)
         self.postMessage({...m, to: 'inspectedWindow'} , '*')
