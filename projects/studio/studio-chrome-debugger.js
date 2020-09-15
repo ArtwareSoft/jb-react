@@ -49,7 +49,7 @@ jb.chromeDebugger = {
                 .then(()=> this.inspectedWindowRequestToConnectToPanel(panelFrame))
                 .then(() => this.waitFor(() => self.remoteInspectedWindow[panelFrame.uri],50,50))
                 .catch(e => jb.logException(e,`chromeDebugger panel ${self.uri} wait for remote port failed`))
-                .then(()=> firstTime && this.renderOnPanel(panelFrame))
+                .then(()=> this.renderOnPanel(panelFrame))
        })
     },
     renderOnPanel(panelFrame) {
