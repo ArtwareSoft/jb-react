@@ -14,7 +14,7 @@ jb.chromeDebugger = {
         this.isIframeInitialized().then(res => {
             if (res) {
                 jb.log(`chromeDebugger panel ${self.uri} inspectedWindow iframe is already initialized`)
-                return renderOnPanel(panelFrame)
+                return this.renderOnPanel(panelFrame)
             }
 
             this.initIframeOnInspectedWindow()
