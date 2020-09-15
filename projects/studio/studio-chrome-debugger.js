@@ -149,7 +149,10 @@ jb.component('chromeDebugger.openResource', {
     params: [
         {id: 'location', as: 'array', description: 'file,line,col'}
     ],
-    impl: (ctx,loc) => chrome.devtools.panels.openResource(...loc)
+    impl: (ctx,loc) => {
+        console.log('loc',loc)
+        chrome.devtools.panels.openResource(...loc)
+    }
 })
 
 jb.component('chromeDebugger.icon', {

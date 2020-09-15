@@ -1086,7 +1086,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 		},
 		updateLocations(logNames) {
 			this.locations = this.locations || {}
-			this.locations[logNames] = this.locations[logNames] || this.source()[1]
+			this.locations[logNames] = this.locations[logNames] || this.source()[0]
 		},
 		count(query) { // dialog core | menu !keyboard  
 			const _or = query.split(/,|\|/)

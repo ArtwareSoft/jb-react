@@ -105,7 +105,6 @@ jb.component('studio.eventTracker', {
             options: picklist.options({ options: ctx => jb.entries(jb.ui.getSpy(ctx).counters), code: '%0%', text: '%0% (%1%)'}),
             features: [
               picklist.onChange(ctx=> {
-                debugger
                 const loc = jb.ui.getSpy(ctx).locations[ctx.data].split(':')
                 loc && parent.postMessage({ runProfile: {$: 'chromeDebugger.openResource', location: loc}} , '*')
               })
