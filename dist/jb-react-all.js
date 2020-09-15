@@ -5230,7 +5230,7 @@ class JbComponent {
         return vdom
     }
     hasBEMethod(method) {
-        (this.method||[]).filter(h=> h.id == method)[0]
+        return (this.method||[]).filter(h=> h.id == method)[0]
     }
     runBEMethod(method, data, vars) {
         jb.log(`backend uiComp method ${method}`, {cmp: this,data,vars})
