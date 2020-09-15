@@ -108,7 +108,7 @@ jb.component('studio.eventTracker', {
                 const loc = jb.ui.getSpy(ctx).locations[ctx.data].split(':')
                 const col = loc.pop()
                 const line = loc.pop()
-                const location = [loc.join(':'),line,col]
+                const location = [loc.join(':'),line]
                 loc && parent.postMessage({ runProfile: {$: 'chromeDebugger.openResource', location }} , '*')
               })
             ]

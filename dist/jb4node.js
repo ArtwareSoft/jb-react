@@ -2972,7 +2972,7 @@ const spySettings = {
 		menu: 'fromMenuKeySource,menuControl,initPopupMenu,isRelevantMenu,menuKeySourceNotFound,foundMenuKeySource,menuMouseEnter',
 	},
 	includeLogs: 'exception,error',
-	stackFilter: /spy|jb_spy|Object.log|rx-comps|node_modules/i,
+	stackFilter: /spy|jb_spy|Object.log|rx-comps|jb-core|node_modules/i,
     MAX_LOG_SIZE: 10000
 }
 const frame = jb.frame
