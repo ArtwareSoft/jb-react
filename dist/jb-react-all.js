@@ -5763,7 +5763,7 @@ jb.component('followUp.flow', {
     const fuCtx = ctx.setVar('followUpCmp',cmp)
     const elems = fuCtx.run('%$elems()%') 
     // special: injecting a "takeUntil" line into the flow after the source
-    elems.splice(1,0,fuCtx.run(followUp.takeUntilCmpDestroyed('%$cmp%')))
+    elems.splice(1,0,fuCtx.run(followUp.takeUntilCmpDestroyed('%$followUpCmp%')))
     jb.log('backend register followUp',{cmp,ctx,fuCtx,elems})
     return elems
   }))
@@ -5793,7 +5793,9 @@ jb.component('followUp.watchObservable', {
     {id: 'debounceTime', as: 'number', description: 'in mSec'}
   ],
   impl: followUp.flow(
-      '%$toWatch%',
+      source.data(0),
+      rx.var('cmp','%$cmp%'),
+      rx.flatMap('%$toWatch%'),
       rx.debounceTime('%$debounceTime%'),
       sink.refreshCmp()
     )
