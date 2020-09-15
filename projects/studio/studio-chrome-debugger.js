@@ -44,6 +44,8 @@ jb.chromeDebugger = {
                     }            
                 }
                 remote.CBHandler = jb.remoteCBHandler(remote).initCommandListener()
+                port.onMessage.addListener(m => m.data.runProfile && jb.exec(m.data.runProfile))
+
                 port.onDisconnect.addListener(() => {
                     jb.log(`inspectedWindow port disconnected from panel at ${panelFrame.uri}`,{panelFrame})
                     delete panelFrame.remoteInspectedWindow[panelFrame.uri]
@@ -140,6 +142,14 @@ jb.component('inspectedWindow.logsCtrl', {
     ],
     type: 'control',
     impl: widget.twoTierWidget(studio.eventTracker(), remote.inspectedWindowFromPanel('%$panel%'))
+})
+
+jb.component('chromeDebugger.openResource', {
+    type: 'action',
+    params: [
+        {id: 'location', as: 'array', description: 'file,line,col'}
+    ],
+    impl: (ctx,loc) => chrome.devtools.panels.openResource(...loc)
 })
 
 jb.component('chromeDebugger.icon', {
