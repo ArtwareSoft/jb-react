@@ -107,7 +107,7 @@ jb.component('studio.eventTracker', {
               picklist.onChange(ctx=> {
                 debugger
                 const loc = jb.ui.getSpy(ctx).locations[ctx.data].split(':')
-                loc && self.postMessage({devtoolsPanelsCmd: 'openResource', args : loc} , '*')
+                loc && parent.postMessage({devtoolsPanelsCmd: 'openResource', args : loc} , '*')
               })
             ]
           })
