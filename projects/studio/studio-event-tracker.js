@@ -67,7 +67,6 @@ jb.component('studio.eventTracker', {
             title: 'counts',
             features: [
               css.padding({top: '5', left: '5'}),
-              followUp.watchObservable(source.callbag(ctx => jb.ui.getSpy(ctx).observable()), 500)
             ]
           }),
           divider({style: divider.vertical()}),
@@ -133,7 +132,8 @@ jb.component('studio.eventTracker', {
       variable({
         name: 'events',
         value: studio.eventItems('%$studio/eventTrackerQuery%', '%$studio/eventTrackerPattern%')
-      })
+      }),
+      followUp.watchObservable(source.callbag(ctx => jb.ui.getSpy(ctx).observable()), 1000)
     ]
   })
 })
