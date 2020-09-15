@@ -33,10 +33,11 @@ jb.chromeDebugger = {
                     },            
                 }
                 remote.CBHandler = jb.remoteCBHandler(remote).initCommandListener()
-                port.onDisconnect(() => {
-                    jb.log(`inspectedWindow port disconnected from panel at ${self.uri}`,{self})
-                    port.disconnected = true 
-                })
+                console.log('port',port)
+                // port.onDisconnect(() => {
+                //     jb.log(`inspectedWindow port disconnected from panel at ${self.uri}`,{self})
+                //     port.disconnected = true 
+                // })
             })
             return this.waitFor(() => this.isIframeInitialized(),50,50).then(()=> {
                 jb.log('chromeDebugger start passThrough',{id})
