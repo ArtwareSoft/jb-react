@@ -30,7 +30,7 @@ jb.component('studio.elemOfCmp', {
   params: [
     {id: 'cmp' }
   ],
-  impl: (ctx,cmp) => cmp.base || jb.ui.find(jb.ui.widgetBody(ctx),`[cmp-id="${cmp.cmpId}"]`)[0]
+  impl: (ctx,cmp) => cmp.base || jb.ui.find(self.parent.document,`[cmp-id="${cmp.cmpId}"]`)[0]
 })
 
 jb.component('studio.highlightLogItem', {
