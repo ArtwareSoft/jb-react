@@ -3,11 +3,13 @@ jb.ns('widget,studio')
 jb.chromeDebugger = {
     initPanel(id, panelFrame) {
         return this.evalAsPromise('(self.jbPanelCounter = (self.jbPanelCounter || 1) +1)')
-            .then(counter=> this.doInitPanel(`${id}-${counter}`, panelFrame))
+            .then(counter=> {
+                const fullId = `${id}-${counter}`
+                chrome.runtime.onMessage.addListener(req => req == 'inspectedCreated' && this.doInitPanel(fullId,panelFrame))
+                return this.doInitPanel(fullId, panelFrame)
+            })
     },
     doInitPanel(id, panelFrame) {
-        chrome.runtime.onMessage.addListener((request, sender) => console.log('on message',request, sender))
-
         console.log('init panel',id,panelFrame)
         panelFrame.uri = `debugPanel-${id}`
         const jb = panelFrame.jb
@@ -17,7 +19,7 @@ jb.chromeDebugger = {
         panelFrame.spy = jb.spy
         jb.log('chromeDebugger init panel',{id, panelFrame})
 
-        this.isIframeInitialized().then(res => {
+        return this.isIframeInitialized().then(res => {
             const firstTime = !res
             if (res)
                 jb.log(`chromeDebugger panel ${panelFrame.uri} inspectedWindow iframe is already initialized`)
