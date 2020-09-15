@@ -2,7 +2,7 @@ jb.ns('widget,studio')
 
 jb.chromeDebugger = {
     initPanel(id, panelFrame) {
-        evalAsPromise('self.jbPanelCounter = (self.jbPanelCounter || 1) +1').then(counter=>{
+        return this.evalAsPromise('self.jbPanelCounter = (self.jbPanelCounter || 1) +1').then(counter=>{
             this.doInitPanel(`${id}-${counter}`, panelFrame)
         })
     },
