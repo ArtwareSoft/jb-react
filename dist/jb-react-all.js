@@ -2972,7 +2972,7 @@ const spySettings = {
 		menu: 'fromMenuKeySource,menuControl,initPopupMenu,isRelevantMenu,menuKeySourceNotFound,foundMenuKeySource,menuMouseEnter',
 	},
 	includeLogs: 'exception,error',
-	stackFilter: /spy|jb_spy|Object.log|node_modules/i,
+	stackFilter: /spy|jb_spy|Object.log|rx-comps|node_modules/i,
     MAX_LOG_SIZE: 10000
 }
 const frame = jb.frame
@@ -3064,11 +3064,13 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 				stackTrace = stackTrace.slice(firstIndex + 1)
 			}
 			const line = stackTrace[0] || ''
-			return [
+			const res = [
 				line.split(/at |as /).pop().split(/ |]/)[0],
 				line.split('/').pop().slice(0, -1).trim(),
 				...stackTrace
 			]
+			res.location = stackTrace[0].split(' ').slice(-1)[0].split('(').pop().split(')')[0]
+			return res
 		},
         
         // browsing methods
@@ -3091,7 +3093,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 		},
 		updateLocations(logNames) {
 			this.locations = this.locations || {}
-			this.locations[logNames] = this.locations[logNames] || this.source()[0]
+			this.locations[logNames] = this.locations[logNames] || this.source().location
 		},
 		count(query) { // dialog core | menu !keyboard  
 			const _or = query.split(/,|\|/)
