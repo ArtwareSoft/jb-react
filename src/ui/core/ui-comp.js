@@ -157,7 +157,7 @@ class JbComponent {
     renderVdomAndFollowUp() {
         const vdom = this.renderVdom()
         jb.delay(1).then(() => (this.followUpFuncs||[]).forEach(f=> tryWrapper(() => { 
-            jb.log(`uiComp followUp ${jb.ui.rxPipeName(f)}`, {cmp: this, f})
+            jb.log(`backend uiComp followUp ${jb.ui.rxPipeName(f)}`, {cmp: this, f})
             f(this.calcCtx)
         }, 'followUp') ) ).then(()=> this.ready = true)
         this.ready = false
@@ -167,7 +167,7 @@ class JbComponent {
         (this.method||[]).filter(h=> h.id == method)[0]
     }
     runBEMethod(method, data, vars) {
-        jb.log(`uiComp backend method ${method}`, {cmp: this,data,vars})
+        jb.log(`backend uiComp method ${method}`, {cmp: this,data,vars})
         if (jb.path(vars,'$state'))
             Object.assign(this.state,vars.$state)
         const methodImpls = (this.method||[]).filter(h=> h.id == method)

@@ -109,6 +109,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 		log(logNames, _record, {takeFrom, funcTitle, modifier} = {}) {
 			if (!this.includeLogsInitialized) this.calcIncludeLogsFromSpyParam(this.spyParam)
 			this.updateCounters(logNames)
+			this.updateLocations(logNames,takeFrom)
 			if (!this.shouldLog(logNames, _record)) return
 			const now = new Date()
 			const record = {
@@ -134,14 +135,14 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			this.logs.push(record)
 			this._obs && this._obs.next(record)
 		},
-		iframeAccessible(iframe) { try { return Boolean(iframe.contentDocument) } catch(e) { return false } },
+		frameAccessible(frame) { try { return Boolean(frame.document || frame.contentDocument) } catch(e) { return false } },
 		source(takeFrom) {
 			Error.stackTraceLimit = 50
 			const frames = [frame]
 			// while (frames[0].parent && frames[0] !== frames[0].parent) {
 			// 	frames.unshift(frames[0].parent)
 			// }
-			let stackTrace = frames.reverse().filter(f=>this.iframeAccessible(f)).map(frame => new frame.Error().stack).join('\n').split(/\r|\n/).map(x => x.trim()).slice(4).
+			let stackTrace = frames.reverse().filter(f=>this.frameAccessible(f)).map(frame => new frame.Error().stack).join('\n').split(/\r|\n/).map(x => x.trim()).slice(4).
 				filter(line => line !== 'Error').
 				filter(line => !settings.stackFilter.test(line))
 			if (takeFrom) {
@@ -173,6 +174,10 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			this.counters = this.counters || {}
 			this.counters[logNames] = this.counters[logNames] || 0
 			this.counters[logNames]++
+		},
+		updateLocations(logNames) {
+			this.locations = this.locations || {}
+			this.locations[logNames] = this.locations[logNames] || this.source()[1]
 		},
 		count(query) { // dialog core | menu !keyboard  
 			const _or = query.split(/,|\|/)

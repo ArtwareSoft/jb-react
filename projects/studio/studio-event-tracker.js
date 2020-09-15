@@ -103,7 +103,13 @@ jb.component('studio.eventTracker', {
             title: 'counters',
             databind: '%$studio/spyLogs%',
             options: picklist.options(ctx => jb.entries(jb.ui.getSpy(ctx).counters).map(([id,val]) => `${id} (${val})`) ),
-            features: css.margin('15'),
+            features: [
+              picklist.onChange(ctx=> {
+                debugger
+                const loc = jb.ui.getSpy(ctx).locations[ctx.data.code].split(':')
+                loc && chrome.devtools.panels.openResource(loc[0], loc[1])
+              })
+            ]
           })
         ],
         features: css.color({background: 'var(--jb-menubar-inactive-bg)'})

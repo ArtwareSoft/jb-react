@@ -548,13 +548,7 @@ const logs = {};
 
 const profileOfPath = path => path.reduce((o,p)=>o && o[p], jb.comps) || {}
 
-const log = (logName, record, options) => jb.spy && jb.spy.log(logName, record, { 
-  modifier: record => {
-    if (record[1] instanceof jbCtx)
-      record.splice(1,0,pathSummary(record[1].path))
-    if (record[0] instanceof jbCtx)
-      record.splice(0,0,pathSummary(record[0].path))
-} , ...options });
+const log = (logName, record, options) => jb.spy && jb.spy.log(logName, record, options)
 
 function pathSummary(path) {
   if (!path) return ''
@@ -3029,6 +3023,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 		log(logNames, _record, {takeFrom, funcTitle, modifier} = {}) {
 			if (!this.includeLogsInitialized) this.calcIncludeLogsFromSpyParam(this.spyParam)
 			this.updateCounters(logNames)
+			this.updateLocations(logNames,takeFrom)
 			if (!this.shouldLog(logNames, _record)) return
 			const now = new Date()
 			const record = {
@@ -3054,14 +3049,14 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			this.logs.push(record)
 			this._obs && this._obs.next(record)
 		},
-		iframeAccessible(iframe) { try { return Boolean(iframe.contentDocument) } catch(e) { return false } },
+		frameAccessible(frame) { try { return Boolean(frame.document || frame.contentDocument) } catch(e) { return false } },
 		source(takeFrom) {
 			Error.stackTraceLimit = 50
 			const frames = [frame]
 			// while (frames[0].parent && frames[0] !== frames[0].parent) {
 			// 	frames.unshift(frames[0].parent)
 			// }
-			let stackTrace = frames.reverse().filter(f=>this.iframeAccessible(f)).map(frame => new frame.Error().stack).join('\n').split(/\r|\n/).map(x => x.trim()).slice(4).
+			let stackTrace = frames.reverse().filter(f=>this.frameAccessible(f)).map(frame => new frame.Error().stack).join('\n').split(/\r|\n/).map(x => x.trim()).slice(4).
 				filter(line => line !== 'Error').
 				filter(line => !settings.stackFilter.test(line))
 			if (takeFrom) {
@@ -3093,6 +3088,10 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			this.counters = this.counters || {}
 			this.counters[logNames] = this.counters[logNames] || 0
 			this.counters[logNames]++
+		},
+		updateLocations(logNames) {
+			this.locations = this.locations || {}
+			this.locations[logNames] = this.locations[logNames] || this.source()[1]
 		},
 		count(query) { // dialog core | menu !keyboard  
 			const _or = query.split(/,|\|/)
@@ -5224,7 +5223,7 @@ class JbComponent {
     renderVdomAndFollowUp() {
         const vdom = this.renderVdom()
         jb.delay(1).then(() => (this.followUpFuncs||[]).forEach(f=> tryWrapper(() => { 
-            jb.log(`uiComp followUp ${jb.ui.rxPipeName(f)}`, {cmp: this, f})
+            jb.log(`backend uiComp followUp ${jb.ui.rxPipeName(f)}`, {cmp: this, f})
             f(this.calcCtx)
         }, 'followUp') ) ).then(()=> this.ready = true)
         this.ready = false
@@ -5234,7 +5233,7 @@ class JbComponent {
         (this.method||[]).filter(h=> h.id == method)[0]
     }
     runBEMethod(method, data, vars) {
-        jb.log(`uiComp backend method ${method}`, {cmp: this,data,vars})
+        jb.log(`backend uiComp method ${method}`, {cmp: this,data,vars})
         if (jb.path(vars,'$state'))
             Object.assign(this.state,vars.$state)
         const methodImpls = (this.method||[]).filter(h=> h.id == method)
