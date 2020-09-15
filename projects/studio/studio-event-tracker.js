@@ -106,9 +106,9 @@ jb.component('studio.eventTracker', {
             features: [
               picklist.onChange(ctx=> {
                 const loc = jb.ui.getSpy(ctx).locations[ctx.data].split(':')
-                const col = loc.pop()
-                const line = loc.pop()
-                const location = [loc.join(':'),line]
+                const col = +loc.pop()
+                const line = (+loc.pop())-1
+                const location = [loc.join(':'),line,col]
                 loc && parent.postMessage({ runProfile: {$: 'chromeDebugger.openResource', location }} , '*')
               })
             ]
