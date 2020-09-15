@@ -65,7 +65,10 @@ jb.component('studio.eventTracker', {
           text({
             text: pipeline(studio.getSpy(), '%$events/length%/%logs/length%'),
             title: 'counts',
-            features: css.padding({top: '5', left: '5'})
+            features: [
+              css.padding({top: '5', left: '5'}),
+              followUp.watchObservable(source.callbag(ctx => jb.ui.getSpy(ctx).observable()), 500)
+            ]
           }),
           divider({style: divider.vertical()}),
           button({

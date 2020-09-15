@@ -117,7 +117,7 @@ jb.component('studio.scriptHistory', {
       })
     ],
     features: [
-      followUp.watchObservable(ctx => st.compsRefHandler.resourceChange, 500),
+      followUp.watchObservable(studio.scriptChange(), 500),
       css.height({height: '400', overflow: 'auto', minMax: 'max'})
     ]
   })

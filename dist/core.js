@@ -1035,7 +1035,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 				time: now.getTime(),
 				mem: memoryUsage() / 1000000,
 				activeElem: typeof jb != 'undefined' && jb.path && jb.path(jb.frame.document,'activeElement'),
-				//$attsOrder: Object.keys(_record)
+				$attsOrder: _record && Object.keys(_record)
 			}
 			// if (record[0] == null && typeof funcTitle === 'function') {
 			// 	record[0] = funcTitle()
