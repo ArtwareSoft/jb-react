@@ -43,7 +43,7 @@ jb.chromeDebugger = {
                 })
             })
             return Promise.resolve()
-                .then(()=> firstTime && initIframeOnInspectedWindow())
+                .then(()=> firstTime && this.initIframeOnInspectedWindow())
                 .then(() => this.waitFor(() => this.isIframeInitialized(),50,50))
                 .catch(e => jb.logException(e,`chromeDebugger panel ${self.uri} wait for frame failed`))
                 .then(()=> this.inspectedWindowRequestToConnectToPanel(panelFrame))
