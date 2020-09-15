@@ -26,13 +26,20 @@ jb.component('studio.highlightEvent', {
   impl: studio.highlightByPath('%$path%')
 })
 
+jb.component('studio.elemOfCmp', {
+  params: [
+    {id: 'cmp' }
+  ],
+  impl: (ctx,cmp) => cmp.base || jb.ui.find(jb.ui.widgetBody(ctx),`[cmp-id="${cmp.cmpId}"]`)[0]
+})
+
 jb.component('studio.highlightLogItem', {
   type: 'action',
   params: [
     {id: 'item', defaultValue: '%%'}
   ],
   impl: runActions(
-    If('%$item/srcElem%',studio.openElemMarker('%$item/srcElem%','border: 1px solid green')),
+    If('%$item/cmp%', studio.openElemMarker(studio.elemOfCmp('%$item/cmp%'),'border: 1px solid green')),
     If('%$item/elem%',studio.openElemMarker('%$item/elem%','border: 1px solid blue'))
   )
 })
@@ -129,7 +136,10 @@ jb.component('studio.eventTracker', {
           id('event-logs'),
           itemlist.infiniteScroll('5'),
           css.height({height: '400', overflow: 'scroll'}),
-          itemlist.selection({onSelection: ({data}) => jb.frame.console.log(data)}),
+          itemlist.selection({onSelection: runActions(
+            ({data}) => jb.frame.console.log(data),
+            studio.highlightLogItem('%%')
+          )}),
           itemlist.keyboardSelection({}),
           feature.byCondition('%logNames% == error', css.color('var(--jb-error-fg)'))
         ]
@@ -274,7 +284,6 @@ jb.component('studio.slicedString', {
     )
 })
 
-
 jb.component('studio.eventItems', {
   params: [
     {id: 'query', as: 'string' },
@@ -287,58 +296,6 @@ jb.component('studio.eventItems', {
     const ret = spy.search(query); //.map(x=>enrich(x)).filter(x=>!(x.path || '').match(/studio.eventTracker/))
     const regexp = new RegExp(pattern)
     return pattern ? ret.filter(x=>regexp.test(Array.from(x.values()).filter(x=> typeof x == 'string').join(','))) : ret
-
-    function enrich(event) {
-      const ev = { event, log: event[0], index: event.index }
-      if (ev.log == 'pptrError') {
-        ev.log = 'error'
-        ev.error = event[1].err
-      }
-      ev.title = typeof event[1] == 'string' && event[1]
-      ev.ctx = (event || []).filter(x=>x && x.cmpCtx && x.profile)[0]
-      ev.ctx = ev.ctx || (event || []).filter(x=>x && x.path && x.profile)[0]
-      ev.jbComp = (event || []).filter(x=> jb.path(x,'constructor.name') == 'JbComponent')[0]
-      ev.ctx = ev.ctx || ev.jbComp && ev.jbComp.ctx
-
-      ev.path = ev.ctx && ev.ctx.path
-      if (Array.isArray(ev.path)) ev.path = ev.path.join('~')
-      if (typeof ev.path != 'string') ev.path = null
-      ev.compName = ev.path && st.compNameOfPath(ev.path)
-      ev.cmp = (event || []).filter(x=>x && x.base && x.refresh)[0]
-      ev.elem = ev.cmp && ev.cmp.base || (event || []).filter(x=>x && x.nodeType)[0]
-      ev.opEvent = (event || []).filter(x=>x && x.opVal != null)[0]
-      ev.opPath = ev.opEvent && ev.opEvent.path
-      const op = ev.opEvent && ev.opEvent.op
-      ev.opValue = op && op.$set != null && op.$set
-      if (ev.opValue == null && op)
-        ev.opValue = jb.prettyPrint(op,{forceFlat: true}).replace(/{|}|\$/g,'').replace("'set': ",'')
-      ev.srcCtx = (event || []).filter(x=>x && x.srcCtx).map(x=>x.srcCtx)[0]
-      ev.srcElem = jb.path(ev.srcCtx, 'vars.cmp.base')
-      ev.srcPath = jb.path(ev.srcCtx, 'vars.cmp.ctx.path')
-      ev.srcCompName = ev.srcPath && st.compNameOfPath(ev.srcPath)
-//       const isPptr = typeof event[1] == 'string' && event[1].indexOf('pptr') == 0
-//       ev.description = ev.description || event[1] == 'pptrActivity' && [event[1].activity, event[1].description].join(': ')
-//       ev.description = ev.description || isPptr && jb.path(event[1],'data.description')
-//       ev.description = ev.description || event[1] == 'setGridAreaVals' && jb.asArray(event[4]).join('/')
-//       ev.description = ev.description || event[1] == 'htmlChange' && [event[4],event[5]].join(' <- ')
-//       ev.description = ev.description || event[1] == 'pptrError' && event[1].message
-//       ev.description = ev.description || event[1] == 'pptrError' && typeof event[1].err == 'string' && event[1].err
-// //      ev.description = ev.description || event[1].match(/ToRemote|FromRemote/) && `${event[1].dir}:${event[1].t} channel:${event[3].channel}`
-//       ev.description = ev.description || event[1] == 'innerCBDataSent' && `channel:${event[3].sinkId}`
-
-//       ev.elem = event[1] == 'applyDelta' && event[1]
-//       ev.delta = event[1] == 'applyDelta' && event[3]
-
-//       ev.delta = ev.delta || event[1] == 'applyDeltaTop' && event[1] == 'apply' && event[5]
-//       ev.elem = ev.elem || event[1] == 'applyDeltaTop' && event[1] == 'start' && event[3]
-//       ev.vdom = ev.vdom || event[1] == 'applyDeltaTop' && event[1] == 'start' && event[4]
-
-//       ev.val = event[1] == 'calcRenderProp' && event[3]
-// //      ev.val = ev.val || event[1].match(/ToRemote|FromRemote/) && event[1].d
-//       ev.val = ev.val || event[1] == 'innerCBDataSent' && event[1].data
-
-      return ev
-    }
   }
 })
 
