@@ -1,4 +1,7 @@
 self.panelPorts = {}
+console.log('chromeDebugger pass through init')
+chrome.runtime.sendMessage('inspectedCreated')
+
 self.addEventListener('message', m => {
     if (m.source.parent == self && m.data.from == 'inspectedWindow' && m.data.$ == 'connectToPanel') {
         console.log('chromeDebugger connectToPanel request',{m})

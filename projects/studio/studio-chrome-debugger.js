@@ -6,6 +6,8 @@ jb.chromeDebugger = {
             .then(counter=> this.doInitPanel(`${id}-${counter}`, panelFrame))
     },
     doInitPanel(id, panelFrame) {
+        chrome.runtime.onMessage.addListener((request, sender) => console.log('on message',request, sender))
+
         console.log('init panel',id,panelFrame)
         panelFrame.uri = `debugPanel-${id}`
         const jb = panelFrame.jb
@@ -19,8 +21,6 @@ jb.chromeDebugger = {
             const firstTime = !res
             if (res)
                 jb.log(`chromeDebugger panel ${panelFrame.uri} inspectedWindow iframe is already initialized`)
-
-            chrome.runtime.onMessage.addListener((request, sender) => console.log('on message',request, sender))
 
             panelFrame.chrome.runtime.onConnect.addListener(port => {
                 jb.log('chromeDebugger panel on connect',{port})
