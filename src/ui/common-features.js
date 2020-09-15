@@ -163,13 +163,13 @@ jb.component('followUp.watchObservable', {
   category: 'watch',
   description: 'subscribes to a custom observable to refresh component',
   params: [
-    {id: 'toWatch', mandatory: true},
+    {id: 'toWatch', mandatory: true, dynamic: true},
     {id: 'debounceTime', as: 'number', description: 'in mSec'}
   ],
   impl: followUp.flow(
       source.data(0),
       rx.var('cmp','%$cmp%'),
-      rx.flatMap('%$toWatch%'),
+      rx.flatMap('%$toWatch()%'),
       rx.debounceTime('%$debounceTime%'),
       sink.refreshCmp()
     )

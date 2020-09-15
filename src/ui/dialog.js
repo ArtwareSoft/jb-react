@@ -489,7 +489,7 @@ jb.component('dialogs.defaultStyle', {
 				rx.filter('%open%'),
 				rx.var('dialogVdom', pipeline(dialog.buildComp('%dialog%'),'%renderVdomAndFollowUp()%')),
 				rx.var('delta', obj(prop('children', obj(prop('toAppend', pipeline('%$dialogVdom%', ({data}) => jb.ui.stripVdom(data))))))),
-				rx.log('open dialog','%dialog/id%'),
+				rx.log('open dialog',obj(prop('dialogId','%dialog/id%'))),
 				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
 			),
 			followUp.flow(source.subject(dialogs.changeEmitter()), 
@@ -497,13 +497,13 @@ jb.component('dialogs.defaultStyle', {
 				rx.var('dlgCmpId', dialogs.cmpIdOfDialog('%dialogId%')),
 				rx.filter('%$dlgCmpId%'),
 				rx.var('delta', obj(prop('children', obj(prop('deleteCmp','%$dlgCmpId%'))))),
-				rx.log('close dialog','%dialogId%'),
+				rx.log('close dialog',obj(prop('dialogId','%dialogId%'))),
 				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
 			),
 			followUp.flow(source.subject(dialogs.changeEmitter()), 
 				rx.filter('%closeByCmpId%'),
 				rx.var('delta', obj(prop('children', obj(prop('deleteCmp','%cmpId%'))))),
-				rx.log('close dialog','%dialogId%'),
+				rx.log('close dialog', obj(prop('dialogId','%dialogId%'))),
 				sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
 			)			
 		]
