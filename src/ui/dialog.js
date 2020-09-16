@@ -23,7 +23,8 @@ jb.component('openDialog', {
 		dialog.ctx = ctxWithDialog
 		return dialog
 	  }),
-	  dialog.createDialogTopIfNeeded('%$studioOverlay%'),
+	  Var('studioOverlay','%$studioOverlay%'),
+	  dialog.createDialogTopIfNeeded(),
 	  action.subjectNext(dialogs.changeEmitter(), obj(prop('open',true), prop('dialog','%$$dlg%')))
   )
 })
@@ -59,11 +60,8 @@ jb.component('dialog.buildComp', {
 
 jb.component('dialog.createDialogTopIfNeeded', {
 	type: 'action',
-	params: [
-		{id: 'studioOverlay', as: 'boolean'},
-	],
 	impl: (ctx,studioOverlay) => {
-		const widgetBody = jb.ui.widgetBody(ctx.setVars({studioOverlay}))
+		const widgetBody = jb.ui.widgetBody(ctx)
 		if (widgetBody.querySelector(':scope>.jb-dialogs')) return
 		const vdom = ctx.run(dialog.dialogTop()).renderVdomAndFollowUp()
 		if (ctx.vars.headlessWidget && widgetBody instanceof jb.ui.VNode) {
