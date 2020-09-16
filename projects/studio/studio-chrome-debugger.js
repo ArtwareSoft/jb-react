@@ -85,7 +85,7 @@ jb.chromeDebugger = {
                 <script type="text/javascript" src="/bin/studio/studio-all.js"></script>
                     <script>
                     jb.cbLogByPath = {};
-                    jb.initSpy({spyParam: 'remote,chromeDebugger,headless'});
+                    jb.initSpy({spyParam: 'remote,chromeDebugger,headless,dialog'});
                     spy = jb.spy;
                     const remoteInterface = {
                         postObj: m => { 
