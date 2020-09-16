@@ -22,7 +22,7 @@ jb.chromeDebugger = {
         return this.hasStudioInInspected().then(res => {
             const firstTime = !res
             if (res)
-                jb.log(`chromeDebugger panel ${panelFrame.uri} inspectedWindow iframe is already initialized`)
+                jb.log(`chromeDebugger panel ${panelFrame.uri} inspectedWindow studio already exists`)
 
             panelFrame.chrome.runtime.onConnect.addListener(port => {
                 jb.log('chromeDebugger panel on connect',{port})
@@ -71,7 +71,7 @@ jb.chromeDebugger = {
             chrome.devtools.inspectedWindow.eval(code,(res,err) => err ? rej(err) : resolve(res)))
     },
     hasStudioInInspected() {
-        return this.evalAsPromise('jb.studio.previewjb != jb || self.jbStudioIframe')
+        return this.evalAsPromise('self.jbStudio || self.jbStudioIframe')
     },
     inspectedWindowRequestToConnectToPanel(panelFrame) {
         return this.evalAsPromise(`postMessage({$: 'connectToPanel', from: 'inspectedWindow', panelUri: '${panelFrame.uri}' }) `)
