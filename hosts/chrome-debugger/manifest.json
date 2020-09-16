@@ -16,5 +16,5 @@
       "js": ["pass-through-content-script.js"]
     }
   ],  
-  "permissions": ["tabs", "file:///*", "http://*/*", "https://*/*" ]
+  "permissions": ["tabs", "file:///*", "http://*/*", "https://*/*", "debugger" ]
 }

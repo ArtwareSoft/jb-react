@@ -155,7 +155,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 				line.split('/').pop().slice(0, -1).trim(),
 				...stackTrace
 			]
-			res.location = stackTrace[0].split(' ').slice(-1)[0].split('(').pop().split(')')[0]
+			res.location = line.split(' ').slice(-1)[0].split('(').pop().split(')')[0]
 			return res
 		},
         

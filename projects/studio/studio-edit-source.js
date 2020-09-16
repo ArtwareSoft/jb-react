@@ -37,7 +37,7 @@ jb.component('sourceEditor.firstParamAsArrayPath', {
   }
 })
 
-jb.component('studio.openEditor', {
+jb.component('studio.gotoSource', {
   type: 'action',
   params: [
     {id: 'path', as: 'string'}
@@ -90,7 +90,7 @@ jb.component('studio.editSource', {
   params: [
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
-  impl: If('%$studio/vscode%', studio.openEditor('%$path%'), openDialog({
+  impl: If('%$studio/vscode%', studio.gotoSource('%$path%'), openDialog({
     style: dialog.editSourceStyle({id: 'editor', width: 600}),
     content: studio.editableSource('%$path%'),
     title: studio.shortTitle('%$path%'),
@@ -146,7 +146,7 @@ jb.component('studio.gotoEditorSecondary', {
   impl: menu.action({
     vars: [Var('baseComp', split({separator: '~', text: '%$path%', part: 'first'}))],
     title: 'Goto editor: %$baseComp%',
-    action: studio.openEditor('%$baseComp%'),
+    action: studio.gotoSource('%$baseComp%'),
     showCondition: notEquals(studio.compName('%$path%'), '%$baseComp%')
   })
 })
@@ -158,7 +158,7 @@ jb.component('studio.gotoEditorFirst', {
   ],
   impl: menu.action({
     title: pipeline(studio.compName('%$path%'), 'Goto editor: %%'),
-    action: studio.openEditor(studio.compName('%$path%')),
+    action: studio.gotoSource(studio.compName('%$path%')),
     shortcut: 'Alt+E',
     showCondition: notEmpty(studio.compName('%$path%'))
   })
