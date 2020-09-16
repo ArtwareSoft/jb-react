@@ -305,7 +305,7 @@ jb.component('studio.openElemMarker', {
     {id: 'elem'},
     {id: 'css', as: 'string'}
   ],
-  impl: openDialog({
+  impl: If('%elem%', openDialog({
       studioOverlay: true,
       id: 'elem-marker',
       style: studio.elemMarkerDialog(),
@@ -321,7 +321,7 @@ jb.component('studio.openElemMarker', {
         css('%$css%')
         //css((ctx,{},{css}) => css)
       ]
-    })
+    }))
 })
 
 jb.component('studio.elemMarkerDialog', {
