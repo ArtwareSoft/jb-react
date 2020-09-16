@@ -1954,7 +1954,7 @@ Object.assign(jb.ui,{
             if (cssStyleElem)
                 cssStyleElem.innerText = cssContent
             else
-                ui.addStyleElem(cssContent,widgetId)
+                ui.addStyleElem(ctx,cssContent,widgetId)
         }
         Object.assign(this.cssHashMap[cssKey].paths, {[ctx.path] : true})
         return this.cssHashMap[cssKey].classId
@@ -2241,11 +2241,12 @@ Object.assign(jb.ui,{
             return !jb.ui.inStudio() && jb.frame.parent && jb.frame.parent.jb.studio.initPreview
         } catch(e) {}
     },
+    studioOverlayDocument: ctx => jb.path(ctx.frame(),'document') || jb.path(ctx.frame(),'parent.document'),
     widgetBody(ctx) {
       const FEwidgetId = ctx.vars.FEwidgetId, headlessWidgetId = ctx.vars.headlessWidgetId
       const {elemToTest,studioOverlay,tstWidgetId,headlessWidget} = ctx.vars
       const top = elemToTest ||
-        studioOverlay && (jb.path(ctx.frame(),'document.body') || jb.path(ctx.frame(),'parent.document.body') ) ||
+        studioOverlay && jb.path(this.studioOverlayDocument(ctx),'body') ||
         tstWidgetId && jb.path(jb.ui.headless[tstWidgetId],'body') ||
         headlessWidget && jb.path(jb.ui.headless[headlessWidgetId],'body') ||
         jb.path(ctx.frame().document,'body')
@@ -2353,13 +2354,13 @@ Object.assign(jb.ui, {
         elem.innerHTML = html
         el.appendChild(elem.firstChild)
     },
-    addStyleElem(innerHtml,widgetId) {
-      if (widgetId) {
+    addStyleElem(ctx,innerHtml,widgetId) {
+      if (widgetId && !ctx.vars.studioOverlay) {
         jb.ui.renderingUpdates.next({widgetId, css: innerHtml})
       } else {
         const style_elem = document.createElement('style')
         style_elem.innerHTML = innerHtml
-        document.head.appendChild(style_elem)
+        this.studioOverlayDocument(ctx).head.appendChild(style_elem)
       }
     },
     valueOfCssVar(varName,parent) {
@@ -6160,7 +6161,7 @@ jb.component('multiSelect.chips', {
 jb.type('theme');
 
 jb.component('defaultTheme', {
-  impl: () => jb.ui.addStyleElem(`
+  impl: ctx => jb.ui.addStyleElem(ctx,`
     body {
       /* vscode compatible with light theme */
       --jb-font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif;

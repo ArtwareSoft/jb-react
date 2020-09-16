@@ -55,7 +55,7 @@ jb.component('studio.selectStyle', {
                   const cmp = jb.ui.extendWithServiceRegistry(new jb.studio.previewjb.jbCtx()).ctx(previewCtx)
                     .run(ctx.exp('%$__option%'))
                   const vdom = jb.ui.cloneVNode(cmp.renderVdom())
-                  jb.ui.addStyleElem(jb.studio.previewjb.ui.workerStyleElems.preview.join('\n'))
+                  jb.ui.addStyleElem(ctx,jb.studio.previewjb.ui.workerStyleElems.preview.join('\n'))
                   jb.path(jb,'studio.previewjb.ui.workerStyleElems.preview',[])
                   return vdom
               },

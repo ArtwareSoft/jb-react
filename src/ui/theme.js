@@ -1,7 +1,7 @@
 jb.type('theme');
 
 jb.component('defaultTheme', {
-  impl: () => jb.ui.addStyleElem(`
+  impl: ctx => jb.ui.addStyleElem(ctx,`
     body {
       /* vscode compatible with light theme */
       --jb-font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif;

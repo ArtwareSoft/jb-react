@@ -26,7 +26,7 @@ jb.component('sink.frontEndDelta', {
     impl: sink.action( ctx => {
         const {delta,css,widgetId,cmpId} = ctx.data
         if (css) 
-            return !ctx.vars.headlessWidget && jb.ui.addStyleElem(css)
+            return !ctx.vars.headlessWidget && jb.ui.addStyleElem(ctx,css)
         const ctxToUse = ctx.setVars({headlessWidget: false, FEwidgetId: widgetId})
         const elem = cmpId ? null : jb.ui.widgetBody(ctxToUse)
         jb.ui.applyDeltaToCmp(delta,ctxToUse,cmpId,elem)

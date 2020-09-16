@@ -31,7 +31,7 @@ Object.assign(jb.ui,{
             if (cssStyleElem)
                 cssStyleElem.innerText = cssContent
             else
-                ui.addStyleElem(cssContent,widgetId)
+                ui.addStyleElem(ctx,cssContent,widgetId)
         }
         Object.assign(this.cssHashMap[cssKey].paths, {[ctx.path] : true})
         return this.cssHashMap[cssKey].classId
