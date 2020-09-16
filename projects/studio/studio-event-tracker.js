@@ -306,6 +306,7 @@ jb.component('studio.openElemMarker', {
     {id: 'css', as: 'string'}
   ],
   impl: openDialog({
+      studioOverlay: true,
       id: 'elem-marker',
       style: studio.elemMarkerDialog(),
       content: text(''),
