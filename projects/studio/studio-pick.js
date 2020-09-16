@@ -124,8 +124,9 @@ jb.component('dialog.studioPickDialog', {
       css(pipeline( (ctx,{dialogData},{from}) => {
         if (!dialogData.elem) return {}
         const _window = from == 'preview' ? st.previewWindow : window;
+        const _body = _window.document.body
         const elemRect = dialogData.elem.getBoundingClientRect()
-        const zoom = +_window.document.body.style.zoom || 1
+        const zoom = +_body.style.zoom || 1
         const top = (from == 'preview' ? jb.ui.studioFixYPos() : 0) + elemRect.top*zoom
         const left = (from == 'preview' ? jb.ui.studioFixXPos() : 0) + elemRect.left*zoom
         return { top: `top: ${top}px`, left: `left: ${left}px`, width: `width: ${elemRect.width*zoom}px`, 

@@ -20,14 +20,14 @@ Object.assign(jb.ui,{
   },
   studioFixYPos(elem) {
     if (elem && elem.ownerDocument == jb.frame.document) return 0
-    const doc = elem.ownerDocument
+    const doc = elem ? elem.ownerDocument : document
     const zoom = +doc.body.style.zoom || 1
     this._studioFixYPos = ((doc.querySelector('#jb-preview') && doc.querySelector('#jb-preview').getBoundingClientRect().top) || 0)/zoom
     return this._studioFixYPos
   },
   studioFixXPos(elem) {
     if (elem && elem.ownerDocument == jb.frame.document) return 0
-    const doc = elem.ownerDocument
+    const doc = elem ? elem.ownerDocument : document
     this._studioFixXPos = (doc.querySelector('#jb-preview') && doc.querySelector('#jb-preview').getBoundingClientRect().left) || 0
     return this._studioFixXPos
   }

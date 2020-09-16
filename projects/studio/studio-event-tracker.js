@@ -305,23 +305,27 @@ jb.component('studio.openElemMarker', {
     {id: 'elem'},
     {id: 'css', as: 'string'}
   ],
-  impl: If('%$elem%', openDialog({
-      studioOverlay: true,
-      id: 'elem-marker',
-      style: studio.elemMarkerDialog(),
-      content: text(''),
-      features: [
-        css((ctx,{},{elem}) => {
-              const elemRect = elem.getBoundingClientRect()
-              const left = jb.ui.studioFixXPos(elem) + elemRect.left + 'px'
-              const top = jb.ui.studioFixYPos(elem) + elemRect.top + 'px'
-              const width = Math.max(10,elemRect.width), height = Math.max(10,elemRect.height)
-              return `left: ${left}; top: ${top}; width: ${width}px; height: ${height}px;`
-        }),
-        css('%$css%')
-        //css((ctx,{},{css}) => css)
-      ]
-    }))
+  impl: If('%$elem%', runActions(
+    openDialog({
+        studioOverlay: true,
+        id: 'elem-marker',
+        style: studio.elemMarkerDialog(),
+        content: text(''),
+        features: [
+          css((ctx,{},{elem}) => {
+                const elemRect = elem.getBoundingClientRect()
+                const left = jb.ui.studioFixXPos(elem) + elemRect.left + 'px'
+                const top = jb.ui.studioFixYPos(elem) + elemRect.top + 'px'
+                const width = Math.max(10,elemRect.width), height = Math.max(10,elemRect.height)
+                return `left: ${left}; top: ${top}; width: ${width}px; height: ${height}px;`
+          }),
+          css('%$css%')
+          //css((ctx,{},{css}) => css)
+        ]
+    }),
+    delay(500),
+    dialog.closeDialogById('elem-marker')
+  ))
 })
 
 jb.component('studio.elemMarkerDialog', {
