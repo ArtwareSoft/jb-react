@@ -13,12 +13,13 @@ jb.component('openDialog', {
     {id: 'features', type: 'dialog-feature[]', dynamic: true}
   ],
   impl: runActions(
-	  Var('$dlg',(ctx,{},{id}) => {
+	  Var('$dlg',(ctx,{},{id,studioOverlay}) => {
 		const dialog = { id: id || `dlg-${ctx.id}`, launcherCmpId: ctx.exp('%$cmp/cmpId%') }
 		const ctxWithDialog = ctx.cmpCtx._parent.setVars({
 			$dialog: dialog,
 			dialogData: {},
-			formContainer: { err: ''}
+			formContainer: { err: ''},
+			studioOverlay
 		})
 		dialog.ctx = ctxWithDialog
 		return dialog
