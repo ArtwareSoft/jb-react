@@ -628,6 +628,7 @@ class frontEndCmp {
     }    
     newVDomApplied() {
         Object.assign(this.state,{...this.base.state}) // update state from BE
+        this.ver= this.base.getAttribute('cmp-ver')
         this.runFEMethod('onRefresh',null,null,true)
     }
     destroyFE() {
