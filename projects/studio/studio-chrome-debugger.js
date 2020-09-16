@@ -82,7 +82,7 @@ jb.chromeDebugger = {
     initIframeOnInspectedWindow() {
         function initStudioForChromeDebugger() {
             if (self.jbStudio) {
-                if (!CBCommandListener) {
+                if (!self.CBCommandListener) {
                     self.postObj = m => { 
                         jb.log('remote chromeDebugger from inspectedWindow',{m});
                         parent.postMessage({from: 'inspectedWindow',...m}) 
