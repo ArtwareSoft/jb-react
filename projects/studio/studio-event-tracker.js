@@ -294,8 +294,8 @@ jb.component('studio.highlightLogItem', {
     {id: 'item', defaultValue: '%%'}
   ],
   impl: runActions(
-    If('%$item/cmp%', studio.openElemMarker(studio.elemOfCmp('%$item/cmp%'),'border: 1px solid green')),
-    If('%$item/elem%',studio.openElemMarker('%$item/elem%','border: 1px solid blue'))
+    If('%$item/cmp%', studio.openElemMarker(studio.elemOfCmp('%$item/cmp%'),'border: 1px dashed grey')),
+    If('%$item/elem%',studio.openElemMarker('%$item/elem%','border: 1px dashed grey'))
   )
 })
 
@@ -312,7 +312,7 @@ jb.component('studio.openElemMarker', {
         style: studio.elemMarkerDialog(),
         content: text(''),
         features: [
-          css((ctx,{},{elem}) => {
+          css(({},{},{elem}) => {
                 const elemRect = elem.getBoundingClientRect()
                 const left = jb.ui.studioFixXPos(elem) + elemRect.left + 'px'
                 const top = jb.ui.studioFixYPos(elem) + elemRect.top + 'px'
@@ -320,7 +320,6 @@ jb.component('studio.openElemMarker', {
                 return `left: ${left}; top: ${top}; width: ${width}px; height: ${height}px;`
           }),
           css('%$css%')
-          //css((ctx,{},{css}) => css)
         ]
     }),
     delay(500),
