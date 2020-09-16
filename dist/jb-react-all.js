@@ -4898,7 +4898,7 @@ Object.assign(jb.ui, {
             ctx = options.extendCtx(ctx)
         ctx = ctx.setVar('$refreshElemCall',true).setVar('$cmpId', cmpId).setVar('$cmpVer', cmpVer+1) // special vars for refresh
         if (jb.ui.inStudio()) // updating to latest version of profile
-            ctx.profile = jb.execInStudio({$: 'studio.val', path: ctx.path})
+            ctx.profile = jb.execInStudio({$: 'studio.val', path: ctx.path}) || ctx.profile
         const cmp = ctx.profile.$ == 'openDialog' ? ctx.run(dialog.buildComp()) : ctx.runItself()
         jb.log('dom refresh check',{cmp,ctx,elem, state, options})
 
