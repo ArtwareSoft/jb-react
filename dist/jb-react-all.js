@@ -4982,10 +4982,10 @@ class frontEndCmp {
     }
     runFEMethod(method,data,_vars,silent) {
         if (this.state.frontEndStatus != 'ready' && ['init','calcProps'].indexOf(method) == -1)
-            return jb.logError('frontEnd - running method before init', {cmp: this, method,data,_vars})
+            return jb.logError('frontEnd - running method before init', {cmp: {...this}, method,data,_vars})
         const toRun = (this.base.frontEndMethods || []).filter(x=>x.method == method)
         if (toRun.length == 0 && !silent)
-            return jb.logError(`frontEnd - no method ${method}`,{cmp: this})
+            return jb.logError(`frontEnd - no method ${method}`,{cmp: {...this}})
         toRun.forEach(({path}) => tryWrapper(() => {
             const profile = path.split('~').reduce((o,p)=>o[p],jb.comps)
             const feMEthod = jb.run( new jb.jbCtx(this.ctx, { profile, path }))
@@ -4994,11 +4994,11 @@ class frontEndCmp {
             const ctxToUse = this.ctx.setData(data).setVars(vars)
             const {_prop, _flow } = feMEthod.frontEndMethod
             if (_prop)
-                jb.log(`frontend uiComp calc prop ${_prop}`,{cmp: this, ...feMEthod.frontEndMethod, el,ctxToUse})
+                jb.log(`frontend uiComp calc prop ${_prop}`,{cmp: {...this}, ...feMEthod.frontEndMethod, el,ctxToUse})
             else if (_flow)
-                jb.log(`frontend uiComp start flow ${jb.ui.rxPipeName(_flow)}`,{cmp: this, ...feMEthod.frontEndMethod, el, ctxToUse})
+                jb.log(`frontend uiComp start flow ${jb.ui.rxPipeName(_flow)}`,{cmp: {...this}, ...feMEthod.frontEndMethod, el, ctxToUse})
             else 
-                jb.log(`frontend uiComp run method ${method}`,{cmp: this , ...feMEthod.frontEndMethod,el,ctxToUse})
+                jb.log(`frontend uiComp run method ${method}`,{cmp: {...this} , ...feMEthod.frontEndMethod,el,ctxToUse})
             ctxToUse.run(feMEthod.frontEndMethod.action)
         }, `frontEnd-${method}`))
     }
@@ -5011,7 +5011,7 @@ class frontEndCmp {
         }, 'enrichUserEvent'))
     }
     refresh(state, options) {
-        jb.log('frontend uiComp refresh request',{cmp: this , state, options})
+        jb.log('frontend uiComp refresh request',{cmp: {...this} , state, options})
         if (this._deleted) return
         Object.assign(this.state, state)
         this.base.state = this.state
