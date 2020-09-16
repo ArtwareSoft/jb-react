@@ -71,7 +71,7 @@ jb.chromeDebugger = {
             chrome.devtools.inspectedWindow.eval(code,(res,err) => err ? rej(err) : resolve(res)))
     },
     isStudioInitialized() {
-        return this.evalAsPromise('self.jbStudioIframe')
+        return this.evalAsPromise('self.CBCommandListener || self.jbStudioIframe')
     },
     inspectedWindowRequestToConnectToPanel(panelFrame) {
         return this.evalAsPromise(`postMessage({$: 'connectToPanel', from: 'inspectedWindow', panelUri: '${panelFrame.uri}' }) `)
@@ -122,7 +122,7 @@ jb.chromeDebugger = {
             iframe.src = 'javascript: this.document.write(`' + html +'`)'
             document.body.appendChild(iframe)
         }
-        jb.log('chromeDebugger init iframe',{code: initStudioForChromeDebugger.toString()})
+        jb.log('chromeDebugger initStudioForChromeDebugger',{code: initStudioForChromeDebugger.toString()})
         return this.evalAsPromise(`(${initStudioForChromeDebugger.toString()})()`)
     },
     waitFor(checkPromise ,interval,times) {
