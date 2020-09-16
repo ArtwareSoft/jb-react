@@ -19,7 +19,7 @@ jb.chromeDebugger = {
         panelFrame.spy = jb.spy
         jb.log('chromeDebugger init panel',{id, panelFrame})
 
-        return this.isIframeInitialized().then(res => {
+        return this.hasStudioInInspected().then(res => {
             const firstTime = !res
             if (res)
                 jb.log(`chromeDebugger panel ${panelFrame.uri} inspectedWindow iframe is already initialized`)
@@ -53,7 +53,7 @@ jb.chromeDebugger = {
             })
             return Promise.resolve()
                 .then(()=> firstTime && this.initIframeOnInspectedWindow())
-                .then(() => this.waitFor(() => this.isIframeInitialized(),50,50))
+                .then(() => this.waitFor(() => this.hasStudioInInspected(),50,50))
                 .catch(e => jb.logException(e,`chromeDebugger panel ${self.uri} wait for frame failed`))
                 .then(()=> this.inspectedWindowRequestToConnectToPanel(panelFrame))
                 .then(() => this.waitFor(() => self.remoteInspectedWindow[panelFrame.uri],50,50))
@@ -70,8 +70,8 @@ jb.chromeDebugger = {
         return new Promise( (resolve,rej) => 
             chrome.devtools.inspectedWindow.eval(code,(res,err) => err ? rej(err) : resolve(res)))
     },
-    isIframeInitialized() {
-        return this.evalAsPromise('self.jbStudioIframe')
+    hasStudioInInspected() {
+        return this.evalAsPromise('jb.studio.previewjb != jb || self.jbStudioIframe')
     },
     inspectedWindowRequestToConnectToPanel(panelFrame) {
         return this.evalAsPromise(`postMessage({$: 'connectToPanel', from: 'inspectedWindow', panelUri: '${panelFrame.uri}' }) `)
