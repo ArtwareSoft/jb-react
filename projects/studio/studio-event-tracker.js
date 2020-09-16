@@ -317,7 +317,8 @@ jb.component('studio.openElemMarker', {
               const width = Math.max(10,elemRect.width), height = Math.max(10,elemRect.height)
               return `left: ${left}; top: ${top}; width: ${width}px; height: ${height}px;`
         }),
-        css((ctx,{},{css}) => css)
+        css('%$css%')
+        //css((ctx,{},{css}) => css)
       ]
     })
 })

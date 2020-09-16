@@ -9,6 +9,7 @@ jb.component('openDialog', {
     {id: 'menu', type: 'control', dynamic: true},
 	{id: 'onOK', type: 'action', dynamic: true},
 	{id: 'id', as: 'string'},
+	{id: 'studioOverlay', as: 'boolean'},
     {id: 'features', type: 'dialog-feature[]', dynamic: true}
   ],
   impl: runActions(
@@ -22,7 +23,7 @@ jb.component('openDialog', {
 		dialog.ctx = ctxWithDialog
 		return dialog
 	  }),
-	  dialog.createDialogTopIfNeeded(),
+	  dialog.createDialogTopIfNeeded('%$studioOverlay%'),
 	  action.subjectNext(dialogs.changeEmitter(), obj(prop('open',true), prop('dialog','%$$dlg%')))
   )
 })
@@ -58,11 +59,14 @@ jb.component('dialog.buildComp', {
 
 jb.component('dialog.createDialogTopIfNeeded', {
 	type: 'action',
-	impl: ctx => {
-		const widgetBody = jb.ui.widgetBody(ctx)
+	params: [
+		{id: 'studioOverlay', as: 'boolean'},
+	],
+	impl: (ctx,studioOverlay) => {
+		const widgetBody = jb.ui.widgetBody(ctx.setVars({studioOverlay}))
 		if (widgetBody.querySelector(':scope>.jb-dialogs')) return
 		const vdom = ctx.run(dialog.dialogTop()).renderVdomAndFollowUp()
-		if (ctx.vars.headlessWidget) {
+		if (ctx.vars.headlessWidget && widgetBody instanceof jb.ui.VNode) {
 			widgetBody.children.push(vdom)
 			vdom.parentNode = widgetBody
 			jb.log('dialog headless createTop',{vdom,widgetBody})

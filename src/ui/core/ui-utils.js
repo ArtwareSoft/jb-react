@@ -27,9 +27,11 @@ Object.assign(jb.ui,{
     },
     widgetBody(ctx) {
       const FEwidgetId = ctx.vars.FEwidgetId, headlessWidgetId = ctx.vars.headlessWidgetId
-      const top = ctx.vars.elemToTest || 
-        ctx.vars.tstWidgetId && jb.path(jb.ui.headless[ctx.vars.tstWidgetId],'body') ||
-        ctx.vars.headlessWidget && jb.path(jb.ui.headless[headlessWidgetId],'body') ||
+      const {elemToTest,studioOverlay,tstWidgetId,headlessWidget} = ctx.vars
+      const top = elemToTest ||
+        studioOverlay && (jb.path(ctx.frame(),'document.body') || jb.path(ctx.frame(),'parent.document.body') ) ||
+        tstWidgetId && jb.path(jb.ui.headless[tstWidgetId],'body') ||
+        headlessWidget && jb.path(jb.ui.headless[headlessWidgetId],'body') ||
         jb.path(ctx.frame().document,'body')
       return FEwidgetId ? jb.ui.findIncludeSelf(top,`[widgetid="${FEwidgetId}"]`)[0] : top
     },
