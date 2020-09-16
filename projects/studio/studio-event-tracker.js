@@ -18,32 +18,6 @@ jb.component('studio.openEventTracker', {
   })
 })
 
-jb.component('studio.highlightEvent', {
-  type: 'action',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: studio.highlightByPath('%$path%')
-})
-
-jb.component('studio.elemOfCmp', {
-  params: [
-    {id: 'cmp' }
-  ],
-  impl: (ctx,cmp) => cmp.base || jb.ui.find(self.parent.document,`[cmp-id="${cmp.cmpId}"]`)[0]
-})
-
-jb.component('studio.highlightLogItem', {
-  type: 'action',
-  params: [
-    {id: 'item', defaultValue: '%%'}
-  ],
-  impl: runActions(
-    If('%$item/cmp%', studio.openElemMarker(studio.elemOfCmp('%$item/cmp%'),'border: 1px solid green')),
-    If('%$item/elem%',studio.openElemMarker('%$item/elem%','border: 1px solid blue'))
-  )
-})
-
 jb.component('studio.getSpy', {
   impl: ctx => jb.ui.getSpy(ctx)
 })
@@ -297,6 +271,32 @@ jb.component('studio.eventItems', {
     const regexp = new RegExp(pattern)
     return pattern ? ret.filter(x=>regexp.test(Array.from(x.values()).filter(x=> typeof x == 'string').join(','))) : ret
   }
+})
+
+jb.component('studio.highlightEvent', {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: studio.highlightByPath('%$path%')
+})
+
+jb.component('studio.elemOfCmp', {
+  params: [
+    {id: 'cmp' }
+  ],
+  impl: (ctx,cmp) => cmp.base || jb.ui.find(self.parent.document,`[cmp-id="${cmp.cmpId}"]`)[0]
+})
+
+jb.component('studio.highlightLogItem', {
+  type: 'action',
+  params: [
+    {id: 'item', defaultValue: '%%'}
+  ],
+  impl: runActions(
+    If('%$item/cmp%', studio.openElemMarker(studio.elemOfCmp('%$item/cmp%'),'border: 1px solid green')),
+    If('%$item/elem%',studio.openElemMarker('%$item/elem%','border: 1px solid blue'))
+  )
 })
 
 jb.component('studio.openElemMarker', {
