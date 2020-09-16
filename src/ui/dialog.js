@@ -60,7 +60,7 @@ jb.component('dialog.buildComp', {
 
 jb.component('dialog.createDialogTopIfNeeded', {
 	type: 'action',
-	impl: (ctx,studioOverlay) => {
+	impl: (ctx) => {
 		const widgetBody = jb.ui.widgetBody(ctx)
 		if (widgetBody.querySelector(':scope>.jb-dialogs')) return
 		const vdom = ctx.run(dialog.dialogTop()).renderVdomAndFollowUp()

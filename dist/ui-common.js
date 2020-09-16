@@ -2241,7 +2241,7 @@ Object.assign(jb.ui,{
             return !jb.ui.inStudio() && jb.frame.parent && jb.frame.parent.jb.studio.initPreview
         } catch(e) {}
     },
-    studioOverlayDocument: ctx => jb.path(ctx.frame(),'document') || jb.path(ctx.frame(),'parent.document'),
+    studioOverlayDocument: ctx => (jb.path(ctx.frame(),'document.body') || jb.path(ctx.frame(),'parent.document.body')).ownerDocument,
     widgetBody(ctx) {
       const FEwidgetId = ctx.vars.FEwidgetId, headlessWidgetId = ctx.vars.headlessWidgetId
       const {elemToTest,studioOverlay,tstWidgetId,headlessWidget} = ctx.vars
@@ -4370,7 +4370,7 @@ jb.component('dialog.buildComp', {
 
 jb.component('dialog.createDialogTopIfNeeded', {
 	type: 'action',
-	impl: (ctx,studioOverlay) => {
+	impl: (ctx) => {
 		const widgetBody = jb.ui.widgetBody(ctx)
 		if (widgetBody.querySelector(':scope>.jb-dialogs')) return
 		const vdom = ctx.run(dialog.dialogTop()).renderVdomAndFollowUp()
