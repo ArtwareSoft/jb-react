@@ -84,7 +84,7 @@ jb.chromeDebugger = {
     },
     initIframeOnInspectedWindow(panelFrame) {
         function initFrameForChromeDebugger() {
-            console.log('start')
+            debugger
             if (self.jbStudio) return
             const html = `<!DOCTYPE html>
             <html>
