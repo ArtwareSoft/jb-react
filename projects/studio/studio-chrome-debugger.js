@@ -90,10 +90,10 @@ jb.chromeDebugger = {
             <head>
                 <script type="text/javascript" src="/bin/studio/studio-all.js"></script>
                 <script>
-                    console.log('iframe');
                     jb.cbLogByPath = {};
                     jb.initSpy({spyParam: jb.path(parent,'jb.spy.spyParam') || 'remote,chromeDebugger,headless,dialog'});
                     spy = jb.spy;
+                    jb.studio.initPreview(parent,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
                     parent.studioDebugPort = jb.remote.cbPortFromFrame(self.parent,'inspectedStudio','${uri}');
                 </script>
             </head>`
