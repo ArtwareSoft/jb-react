@@ -106,15 +106,15 @@ jb.chromeDebugger = {
         jb.log('chromeDebugger initFrameForChromeDebugger',{code: initFrameForChromeDebugger.toString()})
         return this.evalAsPromise(`(${initFrameForChromeDebugger.toString()})()`)
     },
-    waitFor(message, checkPromise ,interval,times) {
+    waitFor(description, checkPromise ,interval,times) {
         let count = 0
         return new Promise((resolve,reject) => {
             const toRelease = setInterval(() => {
                 count++
-                jb.log('chromeDebugger waitFor',{count,checkPromise})
+                jb.log(`chromeDebugger waitFor ${description}`,{count,checkPromise})
                 if (count >= times) {
                     clearInterval(toRelease)
-                    reject(message + ' timeout')
+                    reject(description + ' timeout')
                 }
                 Promise.resolve(checkPromise()).then(v => { if (v) { clearInterval(toRelease); resolve(v) } })
             }, interval)
