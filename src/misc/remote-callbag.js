@@ -17,81 +17,85 @@ jb.remote = {
             }, interval)
         })
     },
-    cbLookUp: {
-        counter: 0,
-        map: {},
-        newId() { return (jb.frame.uri || 'main') + ':' + (this.counter++) },
-        get(id) { return this.map[id] },
-        getAsPromise(id,t) { 
-            if (t == 2) this.removeEntry(id)
-                
-            return jb.remote.waitFor(()=> this.map[id],5,10).then(cb => {
-                if (!cb)
-                    jb.logError('cbLookUp - can not find cb',{id})
-                return cb
+    cbPortFromFrame(frame,from,to) {
+        return this.extendPortWithCbHandler(this.portFromFrame(frame,from,to)).initCommandListener()
+    },
+    portFromFrame(frame,from,to) {
+        return {
+            from,to,
+            postMessage: m => { 
+                jb.log(`remote sent from ${from} to ${to}`,{m})
+                frame.postMessage({from: from, to: to,...m}) 
+            },
+            onMessage: { addListener: handler => frame.addEventListener('message', m => {
+                jb.log(`remote recevied from ${m.from} to ${m.to}`,{m})
+                handler(m)
+            })},
+            onDisconnect: { addListener: handler => {} }
+        }
+    },
+    extendPortWithCbHandler: port => Object.assign(port, {
+        cbHandler: {
+            counter: 0,
+            map: {},
+            newId() { return port.from + ':' + (this.counter++) },
+            get(id) { return this.map[id] },
+            getAsPromise(id,t) { 
+                if (t == 2) this.removeEntry(id)
+                    
+                return jb.remote.waitFor(()=> this.map[id],5,10).then(cb => {
+                    if (!cb)
+                        jb.logError('cbLookUp - can not find cb',{id})
+                    return cb
+                })
+            },
+            addToLookup(cb) { 
+                const id = this.newId()
+                this.map[id] = cb
+                return id 
+            },
+            removeEntry(id) {
+                jb.delay(100).then(()=> delete this.map[id])
+            },
+            inboundMsg({cbId,t,d}) { return this.getAsPromise(cbId,t).then(cb=> cb(t, t == 0 ? this.remoteCB(d) : d)) },
+            outboundMsg({cbId,t,d}) { 
+                port.postMessage({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : d })
+                if (t == 2) this.removeEntry(cbId)
+            },
+            remoteCB(cbId) { return (t,d) => port.postMessage({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : jb.remoteCtx.stripCBVars(d) }) },
+            handleCBCommnad(cmd) {
+                const {$,sourceId,cbId} = cmd
+                const cbElem = jb.remoteCtx.deStrip(cmd.remoteRun)()
+                if ($ == 'CB.createSource')
+                    this.map[cbId] = cbElem
+                else if ($ == 'CB.createOperator')
+                    this.map[cbId] = cbElem(this.remoteCB(sourceId) )
+            },
+        },        
+        initCommandListener() {
+            this.onMessage.addListener(m => {
+                if ((m.$ || '').indexOf('CB.') == 0)
+                    this.cbHandler.handleCBCommnad(m)
+                else if (msg.$ == 'CB')
+                    this.cbHandler.inboundMsg(m)
             })
+            return this
         },
-        addToLookup(cb) { 
-            const id = this.newId()
-            this.map[id] = cb
-            return id 
+        createRemoteSource(remoteRun) {
+            const cbId = this.cbHandler.newId()
+            this.postMessage({$:'CB.createSource', remoteRun, cbId })
+            return (t,d) => this.cbHandler.outboundMsg({cbId,t,d})
         },
-        removeEntry(id) {
-            jb.delay(100).then(()=> delete this.map[id])
-        }
-    },
+        createRemoteOperator(remoteRun) {
+            return source => {
+                const sourceId = this.cbHandler.addToLookup(source)
+                const cbId = this.cbHandler.newId()
+                this.postMessage({$:'CB.createOperator', remoteRun, sourceId, cbId })
+                return (t,d) => this.cbHandler.outboundMsg({cbId,t,d})
+            }
+        },
+    })
 }
-
-jb.remoteCBHandler = remote => ({
-    cbLookUp: jb.remote.cbLookUp,
-    addToLookup(cb) { return this.cbLookUp.addToLookup(cb) },
-    inboundMsg({cbId,t,d}) { return this.cbLookUp.getAsPromise(cbId,t).then(cb=> cb(t, t == 0 ? this.remoteCB(d) : d)) },
-    outboundMsg({cbId,t,d}) { 
-        remote.postObj({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : d })
-        if (t == 2) this.cbLookUp.removeEntry(cbId)
-    },
-    remoteCB(cbId) { return (t,d) => remote.postObj({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : this.stripVars(d) }) },
-    remoteSource(remoteRun) {
-        const cbId = this.cbLookUp.newId()
-        remote.postObj({$:'CB.createSource', remoteRun, cbId })
-        return (t,d) => this.outboundMsg({cbId,t,d})
-    },
-    remoteOperator(remoteRun) {
-        return source => {
-            const sourceId = this.cbLookUp.addToLookup(source)
-            const cbId = this.cbLookUp.newId()
-            remote.postObj({$:'CB.createOperator', remoteRun, sourceId, cbId })
-            return (t,d) => this.outboundMsg({cbId,t,d})
-        }
-    },
-    initCommandListener() {
-        remote.addEventListener('message', m => {
-            const msg = m.data
-            jb.log(`remote command from ${msg.from}`,{cmd: msg.$, msg})
-            if ((msg.$ || '').indexOf('CB.') == 0)
-                this.handleCBCommnad(msg)
-            else if (msg.$ == 'CB')
-                this.inboundMsg(msg)
-        })
-        return this
-    },
-    handleCBCommnad(cmd) {
-        const {$,sourceId,cbId} = cmd
-        const cbElem = jb.remoteCtx.deStrip(cmd.remoteRun)()
-        if ($ == 'CB.createSource')
-            this.cbLookUp.map[cbId] = cbElem
-        else if ($ == 'CB.createOperator')
-            this.cbLookUp.map[cbId] = cbElem(this.remoteCB(sourceId) )
-    },
-    stripVars(cbData) {
-        if (cbData && cbData.vars)
-            return { ...cbData, vars: jb.objFromEntries(jb.entries(cbData.vars)
-                    .filter(e=>e[0].indexOf('$')!=0)
-                    .map(e=>[e[0], jb.remoteCtx.stripData(e[1])]))
-                }
-        return cbData
-    },
-})
 
 jb.component('remote.worker', {
     type: 'remote',
@@ -106,19 +110,17 @@ jb.component('remote.worker', {
         const spyParam = ((jb.path(jb.frame,'location.href')||'').match('[?&]spy=([^&]+)') || ['', ''])[1]
         const workerCode = [
             ...libs.map(lib=>`importScripts('${distPath}/!${uri}!${lib}.js')`),`
-                self.uri = '${uri}'
-                self.isWorker = true
+                //self.uri = '${uri}'
+                //self.isWorker = true
                 jb.cbLogByPath = {}
                 jb.initSpy({spyParam: '${spyParam}'})
                 self.spy = jb.spy
-                self.postObj = m => { jb.log('remote sent from ${uri}',{m}); self.postMessage({from: '${uri}',...m}) }
-                self.CBHandler = jb.remoteCBHandler(self).initCommandListener()
+                self.portToMaster = jb.remote.cbPortFromFrame(self,'${uri}','master')
             `
         ].join('\n')
         const worker = jb.remote.servers[uri] = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
-        worker.uri = uri
-        worker.CBHandler = jb.remoteCBHandler(worker).initCommandListener()
-        worker.postObj = m => { jb.log(`remote sent to ${uri}`,{m}); worker.postMessage({from: 'main', ...m}) }
+        worker.port = jb.remote.cbPortFromFrame(worker,'master',uri)
+        //worker.uri = uri
         return worker
     }
 })
@@ -135,8 +137,7 @@ jb.component('source.remote', {
       {id: 'rx', type: 'rx', dynamic: true },
       {id: 'remote', type: 'remote', defaultValue: remote.local() },
     ],
-    impl: (ctx,rx,remote) => remote.uri == 'local' ? rx() : 
-        remote.CBHandler.remoteSource(jb.remoteCtx.stripFunction(rx))
+    impl: (ctx,rx,remote) => remote.port ? remote.port.createRemoteSource(jb.remoteCtx.stripFunction(rx)) : rx()
 })
 
 jb.component('remote.operator', {
@@ -145,6 +146,5 @@ jb.component('remote.operator', {
       {id: 'rx', type: 'rx', dynamic: true },
       {id: 'remote', type: 'remote', defaultValue: remote.local()},
     ],
-    impl: (ctx,rx,remote) => remote.uri == 'local' ? rx() : 
-        remote.CBHandler.remoteOperator(jb.remoteCtx.stripFunction(rx))
+    impl: (ctx,rx,remote) => remote.port ? remote.port.createRemoteOperator(jb.remoteCtx.stripFunction(rx)) : rx()
 })

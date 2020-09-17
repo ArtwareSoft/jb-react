@@ -44,6 +44,14 @@ jb.remoteCtx = {
         if (Array.isArray(data))
             return data.map(x=>this.deStrip(x))
         return stripedObj || data
-    }
+    },
+    stripCBVars(cbData) {
+        if (cbData && cbData.vars)
+            return { ...cbData, vars: jb.objFromEntries(jb.entries(cbData.vars)
+                    .filter(e=>e[0].indexOf('$')!=0)
+                    .map(e=>[e[0], jb.remoteCtx.stripData(e[1])]))
+                }
+        return cbData
+    },
 }
 
