@@ -77,7 +77,7 @@ jb.chromeDebugger = {
             from: 'inspectedWindow', to: '${panelFrame.uri}' , panelUri: '${panelFrame.uri}' }) `)
     },
     initStudioDebugPort(panelFrame) {
-        return this.evalAsPromise(`jb.remote.cbPortFromFrame(self.jbStudio,'studio','${panelFrame.uri}')`)
+        return this.evalAsPromise(`debugger;self.jbStudio.jb.remote.cbPortFromFrame(self.jbStudio,'studio','${panelFrame.uri}')`)
     },
     hasStudioOnInspected() {
         return this.evalAsPromise('self.jbStudio != null')
