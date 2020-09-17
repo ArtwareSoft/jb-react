@@ -93,7 +93,7 @@ jb.chromeDebugger = {
                     jb.cbLogByPath = {};
                     jb.initSpy({spyParam: jb.path(parent,'jb.spy.spyParam') || 'remote,chromeDebugger,headless,dialog'});
                     spy = jb.spy;
-                    parent.jbStudio = self
+                    parent.jbStudio = self.parent
                 </script>
             </head>`
             const iframe = document.createElement('iframe')
