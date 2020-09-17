@@ -105,7 +105,7 @@ jb.chromeDebugger = {
             document.body.appendChild(iframe)
         }
         jb.log('chromeDebugger initFrameForChromeDebugger',{code: initFrameForChromeDebugger.toString()})
-        return this.evalAsPromise(`(${initFrameForChromeDebugger.toString()})(${panelFrame.uri})`)
+        return this.evalAsPromise(`(${initFrameForChromeDebugger.toString()})('${panelFrame.uri}')`)
     },
     waitFor(description, checkPromise ,interval,times) {
         let count = 0
