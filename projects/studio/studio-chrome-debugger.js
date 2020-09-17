@@ -31,7 +31,7 @@ jb.chromeDebugger = {
                 this.inspectedWindowRequestToConnectToPanel(panelFrame)
                 return this.waitFor('port to inspectedWin',() => self.inspectedPorts[panelFrame.uri],50,50)
             })
-            .then(()=> { panelFrame.document.body.innerHTML=''; this.renderOnPanel(panelFrame) })
+            //.then(()=> { panelFrame.document.body.innerHTML=''; this.renderOnPanel(panelFrame) })
             .catch(e => jb.logException(e,`chromeDebugger panel ${panelFrame.uri} wait for ${e}`))
     },
     initPanelPortListenser(panelFrame) {
@@ -116,7 +116,11 @@ jb.chromeDebugger = {
                     clearInterval(toRelease)
                     reject(description + ' timeout')
                 }
-                Promise.resolve(checkPromise()).then(v => { if (v) { clearInterval(toRelease); resolve(v) } })
+                Promise.resolve(checkPromise()).then(v => { if (v) { 
+                    clearInterval(toRelease)
+                    jb.log(`chromeDebugger waitFor ${description} resolved`,{count,checkPromise})
+                    resolve(v) 
+                } })
             }, interval)
         })
     },
