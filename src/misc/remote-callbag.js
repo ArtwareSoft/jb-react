@@ -120,7 +120,7 @@ jb.component('remote.worker', {
         ].join('\n')
         const worker = jb.remote.servers[uri] = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
         worker.port = jb.remote.cbPortFromFrame(worker,'master',uri)
-        //worker.uri = uri
+        worker.uri = uri
         return worker
     }
 })

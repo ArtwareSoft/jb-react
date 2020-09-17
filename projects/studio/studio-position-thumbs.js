@@ -19,16 +19,16 @@ Object.assign(jb.ui,{
     return basePos
   },
   studioFixYPos(elem) {
-    if (elem && elem.ownerDocument == jb.frame.document) return 0
-    const doc = elem ? elem.ownerDocument : document
-    const zoom = +doc.body.style.zoom || 1
-    this._studioFixYPos = ((doc.querySelector('#jb-preview') && doc.querySelector('#jb-preview').getBoundingClientRect().top) || 0)/zoom
+    const studioDoc = jb.path(jb,'studio.previewjb.studio.studioWindow.document')
+    if (elem && elem.ownerDocument == studioDoc) return 0
+    const zoom = +studioDoc.body.style.zoom || 1
+    this._studioFixYPos = ((studioDoc.querySelector('#jb-preview') && studioDoc.querySelector('#jb-preview').getBoundingClientRect().top) || 0)/zoom
     return this._studioFixYPos
   },
   studioFixXPos(elem) {
-    if (elem && elem.ownerDocument == jb.frame.document) return 0
-    const doc = elem ? elem.ownerDocument : document
-    this._studioFixXPos = (doc.querySelector('#jb-preview') && doc.querySelector('#jb-preview').getBoundingClientRect().left) || 0
+    const studioDoc = jb.path(jb,'studio.previewjb.studio.studioWindow.document')
+    if (elem && elem.ownerDocument == studioDoc) return 0
+    this._studioFixXPos = (studioDoc.querySelector('#jb-preview') && studioDoc.querySelector('#jb-preview').getBoundingClientRect().left) || 0
     return this._studioFixXPos
   }
 })

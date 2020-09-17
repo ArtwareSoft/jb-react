@@ -65,7 +65,7 @@ jb.chromeDebugger = {
     },
     renderOnPanel(panelFrame) {
         jb.log(`chromeDebugger panel start logsCtrl ${panelFrame.uri}`)
-        const profile = {$: 'inspectedWindow.logsCtrl', panel: panelFrame.uri}
+        const profile = {$: 'inspectedWindow.logsCtrl', uri: panelFrame.uri}
         jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry().run(profile)),panelFrame.document.body)
     },
     evalAsPromise(code) {
@@ -129,17 +129,17 @@ jb.chromeDebugger = {
 jb.component('remote.inspectedWindowFromPanel', {
     type: 'remote',
     params: [
-        {id: 'panel', as: 'string'}
+        {id: 'uri', as: 'string'}
     ],    
-    impl: (ctx,panel) => ({port: self.inspectedPorts[panel]})
+    impl: (ctx,uri) => ({uri: uri, port: self.inspectedPorts[uri]})
 })
 
 jb.component('inspectedWindow.logsCtrl', {
     params: [
-        {id: 'panel', as: 'string'}
+        {id: 'uri', as: 'string'}
     ],
     type: 'control',
-    impl: widget.twoTierWidget(studio.eventTracker(), remote.inspectedWindowFromPanel('%$panel%'))
+    impl: widget.twoTierWidget(studio.eventTracker(), remote.inspectedWindowFromPanel('%$uri%'))
 })
 
 jb.component('chromeDebugger.openResource', {

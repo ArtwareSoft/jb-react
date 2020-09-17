@@ -5529,7 +5529,7 @@ jb.objectDiff = function(newObj, orig) {
     if (orig === newObj) return {}
     if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
     const deletedValues = Object.keys(orig).reduce((acc, key) =>
-        newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: jb.frame.isWorker1 ? '__undefined' : undefined}
+        newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: '__undefined'}
     , {})
 
     return Object.keys(newObj).reduce((acc, key) => {
@@ -12229,7 +12229,7 @@ jb.component('remote.worker', {
         ].join('\n')
         const worker = jb.remote.servers[uri] = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
         worker.port = jb.remote.cbPortFromFrame(worker,'master',uri)
-        //worker.uri = uri
+        worker.uri = uri
         return worker
     }
 })

@@ -1,12 +1,15 @@
 jb.ns('chromeDebugger')
 
-jb.ui.getSpy = ctx => {
-  const st = jb.studio
-  const spy = (st.studiojb && st.studiojb.exec('%$studio/project%') == 'studio-helper') ? st.studiojb.spy : jb.path(st,'previewjb.spy')
-  if (!spy)
-    jb.logError('studio.eventItems - can not locate spy',{ctx})
-  return spy
-}
+Object.assign(jb.ui, {
+  getInspectedJb: ctx => {
+    const st = jb.studio
+    const ret = (st.studiojb && st.studiojb.exec('%$studio/project%') == 'studio-helper') ? st.studiojb : jb.path(st,'previewjb')
+    if (!ret)
+      jb.logError('studio.eventItems - can not locate inpsected',{ctx})
+    return ret
+  },
+  getSpy: ctx => jb.ui.getInspectedJb(ctx).spy
+})
 
 jb.component('studio.openEventTracker', {
   type: 'action',
@@ -285,7 +288,7 @@ jb.component('studio.elemOfCmp', {
   params: [
     {id: 'cmp' }
   ],
-  impl: (ctx,cmp) => cmp.base || jb.ui.find(self.parent.document,`[cmp-id="${cmp.cmpId}"]`)[0]
+  impl: (ctx,cmp) => cmp.base || jb.ui.find(jb.ui.getInspectedJb(ctx).frame.document,`[cmp-id="${cmp.cmpId}"]`)[0]
 })
 
 jb.component('studio.highlightLogItem', {
