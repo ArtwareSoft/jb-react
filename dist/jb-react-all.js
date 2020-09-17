@@ -12185,7 +12185,7 @@ jb.remote = {
             this.onMessage.addListener(m => {
                 if ((m.$ || '').indexOf('CB.') == 0)
                     this.cbHandler.handleCBCommnad(m)
-                else if (msg.$ == 'CB')
+                else if (m.$ == 'CB')
                     this.cbHandler.inboundMsg(m)
             })
             return this
