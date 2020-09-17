@@ -130,7 +130,7 @@ jb.component('remote.inspectedWindowFromPanel', {
     params: [
         {id: 'panel', as: 'string'}
     ],    
-    impl: (ctx,panel) => self.inspectedPorts[panel]
+    impl: (ctx,panel) => ({port: self.inspectedPorts[panel]})
 })
 
 jb.component('inspectedWindow.logsCtrl', {
