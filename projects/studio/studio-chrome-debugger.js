@@ -24,15 +24,15 @@ jb.chromeDebugger = {
             .then(res => {
                 if (!res)
                     this.initIframeOnInspectedWindow()
-                return this.waitFor(() => this.hasStudioOnInspected(),300,20)
+                return this.waitFor('studio on inspectedWin',() => this.hasStudioOnInspected(),300,20)
             }).then(()=> {
                 this.initStudioDebugPort(panelFrame)
                 this.initPanelPortListenser(panelFrame)
                 this.inspectedWindowRequestToConnectToPanel(panelFrame)
-                return this.waitFor(() => self.inspectedPorts[panelFrame.uri],50,50)
-                    .catch(e => jb.logException(e,`chromeDebugger panel ${panelFrame.uri} wait for remote port failed`))
+                return this.waitFor('port to inspectedWin',() => self.inspectedPorts[panelFrame.uri],50,50)
             })
             .then(()=> { panelFrame.document.body.innerHTML=''; this.renderOnPanel(panelFrame) })
+            .catch(e => jb.logException(e,`chromeDebugger panel ${panelFrame.uri}`))
     },
     initPanelPortListenser(panelFrame) {
         panelFrame.chrome.runtime.onConnect.addListener(port => {
@@ -106,7 +106,7 @@ jb.chromeDebugger = {
         jb.log('chromeDebugger initFrameForChromeDebugger',{code: initFrameForChromeDebugger.toString()})
         return this.evalAsPromise(`(${initFrameForChromeDebugger.toString()})()`)
     },
-    waitFor(checkPromise ,interval,times) {
+    waitFor(message, checkPromise ,interval,times) {
         let count = 0
         return new Promise((resolve,reject) => {
             const toRelease = setInterval(() => {
@@ -114,7 +114,7 @@ jb.chromeDebugger = {
                 jb.log('chromeDebugger waitFor',{count,checkPromise})
                 if (count >= times) {
                     clearInterval(toRelease)
-                    reject('timeout')
+                    reject(message + ' timeout')
                 }
                 Promise.resolve(checkPromise()).then(v => { if (v) { clearInterval(toRelease); resolve(v) } })
             }, interval)
