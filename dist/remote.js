@@ -88,7 +88,7 @@ jb.remote = {
             },
             onMessage: { addListener: handler => frame.addEventListener('message', m => {
                 jb.log(`remote recevied from ${m.from} to ${m.to}`,{m})
-                handler(m)
+                handler(m.data)
             })},
             onDisconnect: { addListener: handler => {} }
         }
