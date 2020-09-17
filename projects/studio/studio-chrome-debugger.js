@@ -31,7 +31,7 @@ jb.chromeDebugger = {
                 this.inspectedWindowRequestToConnectToPanel(panelFrame)
                 return this.waitFor('port to inspectedWin',() => self.inspectedPorts[panelFrame.uri],50,50)
             })
-            .then(()=> { panelFrame.document.body.innerHTML=''; this.renderOnPanel(panelFrame) })
+            //.then(()=> { panelFrame.document.body.innerHTML=''; this.renderOnPanel(panelFrame) })
             .catch(e => jb.logException(e,`chromeDebugger panel ${panelFrame.uri} wait for ${e}`))
     },
     initPanelPortListenser(panelFrame) {
