@@ -83,7 +83,7 @@ jb.chromeDebugger = {
         return this.evalAsPromise('self.jbStudio != null || self.initStudioDebugPort != null')
     },
     initIframeOnInspectedWindow(panelFrame) {
-        function initFrameForChromeDebugger() {
+        function initFrameForChromeDebugger(uri) {
             debugger
             if (self.jbStudio) return
             const html = `<!DOCTYPE html>
@@ -95,7 +95,7 @@ jb.chromeDebugger = {
                     jb.cbLogByPath = {};
                     jb.initSpy({spyParam: jb.path(parent,'jb.spy.spyParam') || 'remote,chromeDebugger,headless,dialog'});
                     spy = jb.spy;
-                    parent.studioDebugPort = jb.remote.cbPortFromFrame(self.parent,'inspectedStudio','${panelFrame.uri}');
+                    parent.studioDebugPort = jb.remote.cbPortFromFrame(self.parent,'inspectedStudio','${uri}');
                 </script>
             </head>`
             const iframe = document.createElement('iframe')
@@ -105,7 +105,7 @@ jb.chromeDebugger = {
             document.body.appendChild(iframe)
         }
         jb.log('chromeDebugger initFrameForChromeDebugger',{code: initFrameForChromeDebugger.toString()})
-        return this.evalAsPromise(`(${initFrameForChromeDebugger.toString()})()`)
+        return this.evalAsPromise(`(${initFrameForChromeDebugger.toString()})(${panelFrame.uri})`)
     },
     waitFor(description, checkPromise ,interval,times) {
         let count = 0
