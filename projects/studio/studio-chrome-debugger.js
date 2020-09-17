@@ -84,12 +84,14 @@ jb.chromeDebugger = {
     },
     initIframeOnInspectedWindow(panelFrame) {
         function initFrameForChromeDebugger() {
+            console.log('start')
             if (self.jbStudio) return
             const html = `<!DOCTYPE html>
             <html>
             <head>
                 <script type="text/javascript" src="/bin/studio/studio-all.js"></script>
                 <script>
+                    console.log('iframe');
                     jb.cbLogByPath = {};
                     jb.initSpy({spyParam: jb.path(parent,'jb.spy.spyParam') || 'remote,chromeDebugger,headless,dialog'});
                     spy = jb.spy;
