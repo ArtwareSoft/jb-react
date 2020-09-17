@@ -23,7 +23,7 @@ jb.chromeDebugger = {
         return this.hasStudioOnInspected()
             .then(res => {
                 if (!res)
-                    this.initIframeOnInspectedWindow()
+                    this.initIframeOnInspectedWindow(panelFrame)
                 return this.waitFor('studio on inspectedWin',() => this.hasStudioOnInspected(),300,20)
             }).then(()=> {
                 this.initStudioDebugPort(panelFrame)
@@ -42,10 +42,10 @@ jb.chromeDebugger = {
 
             const panelToInspectWindowPort = panelFrame.inspectedPorts[panelFrame.uri] = {
                 from: panelFrame.uri,
-                to: 'inspectedWindow',
-                postMessage: m => { 
-                    jb.log(`chromeDebugger sent from ${panelFrame.uri} to inspectedWindow`,{m,panelFrame})
-                    panelFrame.inspectedPorts[panelFrame.uri] && port.postMessage({from: panelFrame.uri, to: 'inspectedWindow', ...m}) 
+                to: 'inspectedStudio',
+                postMessage(m) { 
+                    jb.log(`chromeDebugger sent from ${panelFrame.uri} to ${this.to}`,{m,panelFrame})
+                    panelFrame.inspectedPorts[panelFrame.uri] && port.postMessage({from: panelFrame.uri, to: this.to, ...m}) 
                 },
                 onMessage: { addListener : handler => { 
                     port.onMessage.addListener(m => {
@@ -74,26 +74,26 @@ jb.chromeDebugger = {
     },
     inspectedWindowRequestToConnectToPanel(panelFrame) {
         return this.evalAsPromise(`postMessage({$: 'connectToPanel', 
-            from: 'inspectedWindow', to: '${panelFrame.uri}' , panelUri: '${panelFrame.uri}' }) `)
+            from: 'inspectedStudio', to: '${panelFrame.uri}' , panelUri: '${panelFrame.uri}' }) `)
     },
     initStudioDebugPort(panelFrame) {
-        return this.evalAsPromise(`self.jbStudio.jb.remote.cbPortFromFrame(self.jbStudio,'studio','${panelFrame.uri}')`)
+        return this.evalAsPromise(`self.studioDebugPort = self.studioDebugPort || jb.remote.cbPortFromFrame(self,'inspectedStudio','${panelFrame.uri}')`)
     },
     hasStudioOnInspected() {
-        return this.evalAsPromise('self.jbStudio != null')
+        return this.evalAsPromise('self.jbStudio != null || self.initStudioDebugPort != null')
     },
-    initIframeOnInspectedWindow() {
+    initIframeOnInspectedWindow(panelFrame) {
         function initFrameForChromeDebugger() {
             if (self.jbStudio) return
             const html = `<!DOCTYPE html>
             <html>
             <head>
                 <script type="text/javascript" src="/bin/studio/studio-all.js"></script>
-                    <script>
+                <script>
                     jb.cbLogByPath = {};
                     jb.initSpy({spyParam: jb.path(parent,'jb.spy.spyParam') || 'remote,chromeDebugger,headless,dialog'});
                     spy = jb.spy;
-                    parent.jbStudio = self.parent
+                    parent.studioDebugPort = jb.remote.cbPortFromFrame(self.parent,'inspectedStudio','${panelFrame.uri}');
                 </script>
             </head>`
             const iframe = document.createElement('iframe')
