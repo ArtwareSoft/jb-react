@@ -24,7 +24,7 @@ jb.chromeDebugger = {
             .then(res => {
                 if (!res)
                     this.initIframeOnInspectedWindow()
-                return this.waitFor(() => this.hasStudioOnInspected(),50,50)
+                return this.waitFor(() => this.hasStudioOnInspected(),300,20)
             }).then(()=> {
                 this.initStudioDebugPort(panelFrame)
                 this.initPanelPortListenser(panelFrame)
