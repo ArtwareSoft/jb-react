@@ -32,7 +32,7 @@ jb.chromeDebugger = {
                 return this.waitFor('port to inspectedWin',() => self.inspectedPorts[panelFrame.uri],50,50)
             })
             .then(()=> { panelFrame.document.body.innerHTML=''; this.renderOnPanel(panelFrame) })
-            .catch(e => jb.logException(e,`chromeDebugger panel ${panelFrame.uri}`))
+            .catch(e => jb.logException(e,`chromeDebugger panel ${panelFrame.uri} wait for ${e}`))
     },
     initPanelPortListenser(panelFrame) {
         panelFrame.chrome.runtime.onConnect.addListener(port => {
@@ -81,7 +81,7 @@ jb.chromeDebugger = {
         return this.evalAsPromise(`jb.remote.cbPortFromFrame(self.jbStudio,'studio','${panelFrame.uri}')`)
     },
     hasStudioOnInspected() {
-        return this.evalAsPromise('self.jbStudio')
+        return this.evalAsPromise('self.jbStudio != null')
     },
     initIframeOnInspectedWindow() {
         function initFrameForChromeDebugger() {
