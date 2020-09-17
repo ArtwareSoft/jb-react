@@ -9,24 +9,21 @@ jb.component('openDialog', {
     {id: 'menu', type: 'control', dynamic: true},
 	{id: 'onOK', type: 'action', dynamic: true},
 	{id: 'id', as: 'string'},
-	{id: 'studioOverlay', as: 'boolean'},
     {id: 'features', type: 'dialog-feature[]', dynamic: true}
   ],
   impl: runActions(
-	  Var('$dlg',(ctx,{},{id,studioOverlay}) => {
+	Var('$dlg',(ctx,{},{id}) => {
 		const dialog = { id: id || `dlg-${ctx.id}`, launcherCmpId: ctx.exp('%$cmp/cmpId%') }
 		const ctxWithDialog = ctx.cmpCtx._parent.setVars({
 			$dialog: dialog,
 			dialogData: {},
 			formContainer: { err: ''},
-			studioOverlay
 		})
 		dialog.ctx = ctxWithDialog
 		return dialog
-	  }),
-	  Var('studioOverlay','%$studioOverlay%'),
-	  dialog.createDialogTopIfNeeded(),
-	  action.subjectNext(dialogs.changeEmitter(), obj(prop('open',true), prop('dialog','%$$dlg%')))
+	}),
+	dialog.createDialogTopIfNeeded(),
+	action.subjectNext(dialogs.changeEmitter(), obj(prop('open',true), prop('dialog','%$$dlg%')))
   )
 })
 

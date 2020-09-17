@@ -66,7 +66,7 @@ jb.chromeDebugger = {
     renderOnPanel(panelFrame) {
         jb.log(`chromeDebugger panel start logsCtrl ${panelFrame.uri}`)
         const profile = {$: 'inspectedWindow.logsCtrl', uri: panelFrame.uri}
-        jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry().run(profile)),panelFrame.document.body)
+        jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry().setVar('$studio',true).run(profile)),panelFrame.document.body)
     },
     evalAsPromise(code) {
         return new Promise( (resolve,rej) => 

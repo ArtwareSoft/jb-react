@@ -128,7 +128,8 @@ jb.component('studio.eventTracker', {
         name: 'events',
         value: studio.eventItems('%$studio/eventTrackerQuery%', '%$studio/eventTrackerPattern%')
       }),
-      followUp.watchObservable(source.callbag(ctx => jb.ui.getSpy(ctx).observable()), 1000)
+      If( ctx => jb.ui.getInspectedJb() != ctx.frame().jb ,
+        followUp.watchObservable(source.callbag(ctx => jb.ui.getSpy(ctx).observable()), 1000))
     ]
   })
 })
@@ -267,7 +268,6 @@ jb.component('studio.eventItems', {
     {id: 'pattern', as: 'string' },
   ],
   impl: (ctx,query,pattern) => {
-    const st = jb.studio
     const spy = jb.ui.getSpy(ctx)
     if (!spy) return []
     const ret = spy.search(query); //.map(x=>enrich(x)).filter(x=>!(x.path || '').match(/studio.eventTracker/))
@@ -309,8 +309,8 @@ jb.component('studio.openElemMarker', {
     {id: 'css', as: 'string'}
   ],
   impl: If('%$elem%', runActions(
+    Var('previewOverlay',true),
     openDialog({
-        studioOverlay: true,
         id: 'elem-marker',
         style: studio.elemMarkerDialog(),
         content: text(''),

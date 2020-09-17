@@ -5387,12 +5387,11 @@ Object.assign(jb.ui,{
             return !jb.ui.inStudio() && jb.frame.parent && jb.frame.parent.jb.studio.initPreview
         } catch(e) {}
     },
-    studioOverlayDocument: ctx => (jb.path(ctx.frame(),'document.body') || jb.path(ctx.frame(),'parent.document.body')).ownerDocument,
+    previewOverlayDocument: ctx => (jb.path(ctx.frame(),'document.body') || jb.path(ctx.frame(),'parent.document.body')).ownerDocument,
     widgetBody(ctx) {
-      const FEwidgetId = ctx.vars.FEwidgetId, headlessWidgetId = ctx.vars.headlessWidgetId
-      const {elemToTest,studioOverlay,tstWidgetId,headlessWidget} = ctx.vars
+      const {elemToTest,previewOverlay,tstWidgetId,headlessWidget,FEwidgetId, headlessWidgetId} = ctx.vars
       const top = elemToTest ||
-        studioOverlay && jb.path(this.studioOverlayDocument(ctx),'body') ||
+        previewOverlay && this.previewOverlayDocument(ctx) ||
         tstWidgetId && jb.path(jb.ui.headless[tstWidgetId],'body') ||
         headlessWidget && jb.path(jb.ui.headless[headlessWidgetId],'body') ||
         jb.path(ctx.frame().document,'body')
@@ -5501,12 +5500,12 @@ Object.assign(jb.ui, {
         el.appendChild(elem.firstChild)
     },
     addStyleElem(ctx,innerHtml,widgetId) {
-      if (widgetId && !ctx.vars.studioOverlay) {
+      if (widgetId && !ctx.vars.previewOverlay) {
         jb.ui.renderingUpdates.next({widgetId, css: innerHtml})
       } else {
         const style_elem = document.createElement('style')
         style_elem.innerHTML = innerHtml
-        this.studioOverlayDocument(ctx).head.appendChild(style_elem)
+        this.previewOverlayDocument(ctx).head.appendChild(style_elem)
       }
     },
     valueOfCssVar(varName,parent) {
@@ -7465,24 +7464,21 @@ jb.component('openDialog', {
     {id: 'menu', type: 'control', dynamic: true},
 	{id: 'onOK', type: 'action', dynamic: true},
 	{id: 'id', as: 'string'},
-	{id: 'studioOverlay', as: 'boolean'},
     {id: 'features', type: 'dialog-feature[]', dynamic: true}
   ],
   impl: runActions(
-	  Var('$dlg',(ctx,{},{id,studioOverlay}) => {
+	Var('$dlg',(ctx,{},{id}) => {
 		const dialog = { id: id || `dlg-${ctx.id}`, launcherCmpId: ctx.exp('%$cmp/cmpId%') }
 		const ctxWithDialog = ctx.cmpCtx._parent.setVars({
 			$dialog: dialog,
 			dialogData: {},
 			formContainer: { err: ''},
-			studioOverlay
 		})
 		dialog.ctx = ctxWithDialog
 		return dialog
-	  }),
-	  Var('studioOverlay','%$studioOverlay%'),
-	  dialog.createDialogTopIfNeeded(),
-	  action.subjectNext(dialogs.changeEmitter(), obj(prop('open',true), prop('dialog','%$$dlg%')))
+	}),
+	dialog.createDialogTopIfNeeded(),
+	action.subjectNext(dialogs.changeEmitter(), obj(prop('open',true), prop('dialog','%$$dlg%')))
   )
 })
 
