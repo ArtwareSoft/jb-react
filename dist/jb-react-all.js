@@ -5391,7 +5391,7 @@ Object.assign(jb.ui,{
     widgetBody(ctx) {
       const {elemToTest,previewOverlay,tstWidgetId,headlessWidget,FEwidgetId, headlessWidgetId} = ctx.vars
       const top = elemToTest ||
-        previewOverlay && this.previewOverlayDocument(ctx) ||
+        previewOverlay && jb.path(this.previewOverlayDocument(ctx),'body') ||
         tstWidgetId && jb.path(jb.ui.headless[tstWidgetId],'body') ||
         headlessWidget && jb.path(jb.ui.headless[headlessWidgetId],'body') ||
         jb.path(ctx.frame().document,'body')
