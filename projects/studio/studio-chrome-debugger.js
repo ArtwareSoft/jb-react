@@ -80,7 +80,7 @@ jb.chromeDebugger = {
         return this.evalAsPromise(`self.studioDebugPort = self.studioDebugPort || jb.remote.cbPortFromFrame(self,'inspectedStudio','${panelFrame.uri}')`)
     },
     hasStudioOnInspected() {
-        return this.evalAsPromise('self.jbStudio != null || self.initStudioDebugPort != null')
+        return this.evalAsPromise('self.jbStudio != null || self.studioDebugPort != null')
     },
     initIframeOnInspectedWindow(panelFrame) {
         function initFrameForChromeDebugger(uri) {
