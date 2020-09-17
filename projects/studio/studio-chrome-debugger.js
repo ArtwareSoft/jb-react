@@ -23,14 +23,14 @@ jb.chromeDebugger = {
         return this.hasStudioOnInspected()
             .then(res => {
                 if (!res)
-                    initIframeOnInspectedWindow()
+                    this.initIframeOnInspectedWindow()
                 return this.waitFor(() => this.hasStudioOnInspected(),50,50)
             }).then(()=> {
                 this.initStudioDebugPort(panelFrame)
                 this.initPanelPortListenser(panelFrame)
                 this.inspectedWindowRequestToConnectToPanel(panelFrame)
                 return this.waitFor(() => self.inspectedPorts[panelFrame.uri],50,50)
-                    .catch(e => jb.logException(e,`chromeDebugger panel ${self.uri} wait for remote port failed`))
+                    .catch(e => jb.logException(e,`chromeDebugger panel ${panelFrame.uri} wait for remote port failed`))
             })
             .then(()=> { panelFrame.document.body.innerHTML=''; this.renderOnPanel(panelFrame) })
     },
