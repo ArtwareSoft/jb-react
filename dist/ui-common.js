@@ -2220,10 +2220,11 @@ jb.jstypes.renderable = value => {
 
 Object.assign(jb.ui,{
     focus(elem,logTxt,srcCtx) {
-        if (!elem) debugger;
+        if (!elem) debugger
         // block the preview from stealing the studio focus
-        const now = new Date().getTime();
-        const lastStudioActivity = jb.studio.lastStudioActivity || jb.path(jb,['studio','studioWindow','jb','studio','lastStudioActivity'])
+        const now = new Date().getTime()
+        const lastStudioActivity = jb.studio.lastStudioActivity 
+          || jb.path(jb,['studio','studioWindow','jb','studio','lastStudioActivity'])
         jb.log('focus request',{srcCtx, logTxt, timeDiff: now - lastStudioActivity, elem,srcCtx})
         if (jb.studio.previewjb == jb && jb.path(jb.frame.parent,'jb.resources.studio.project') != 'studio-helper' && lastStudioActivity && now - lastStudioActivity < 1000)
             return
@@ -4781,6 +4782,14 @@ jb.component('dialogs.changeEmitter', {
 		jb.ui.dlgEmitters[widgetId] = jb.ui.dlgEmitters[widgetId] || ctx.run(rx.subject({replay: true}))
 		return jb.ui.dlgEmitters[widgetId]
 	}
+})
+
+jb.component('dialogs.destroyAllEmitters', {
+	type: 'action',
+	impl: () => Object.keys(jb.ui.dlgEmitters).forEach(k=>{
+		jb.ui.dlgEmitters[k].trigger.complete()
+		delete jb.ui.dlgEmitters[k]
+	})
 })
 
 jb.component('dialog.dialogTop', {

@@ -410,14 +410,14 @@ jb.component('cbTest.subjectReplay', {
   })
 })
 
-jb.component('cbTest.promiseRejection', {
+jb.component('cbTest.throwPromiseRejection', {
   impl: dataTest({
     calculate: rx.pipe(source.promise( () => new Promise((res,rej) => jb.delay(1,rej('err'))) ), rx.catchError(), rx.map('%%1') ),
     expectedResult: equals('err1')
   })
 })
 
-jb.component('cbTest.promiseRejectionInDoPromise', {
+jb.component('cbTest.throwPromiseRejectionInDoPromise', {
   impl: dataTest({
     calculate: rx.pipe(
       source.data(1),

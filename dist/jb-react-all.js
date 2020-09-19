@@ -1,5 +1,5 @@
-if (typeof frame == 'undefined')
-  frame = typeof self === 'object' ? self : typeof global === 'object' ? global : {};
+if (typeof frame == 'undefined') frame = typeof self === 'object' ? self : typeof global === 'object' ? global : {}
+
 var jb = (function() {
 function jb_run(ctx,parentParam,settings) {
   ctx.profile && jb.log('core request', [ctx.id,...arguments])
@@ -279,19 +279,16 @@ class jbCtx {
 }
 
 return { frame, comps: {}, ctxDictionary: {}, run: jb_run, jbCtx, jstypes, tojstype }
-}
-)();
+})()
 
-if (typeof self != 'undefined')
-  self.jb = jb
-if (typeof module != 'undefined')
-  module.exports = jb;
+if (typeof self != 'undefined') self.jb = jb
+if (typeof module != 'undefined') module.exports = jb;
 
 Object.assign(jb, {
     compParams(comp) {
         if (!comp || !comp.params)
-          return [];
-        return Array.isArray(comp.params) ? comp.params : entries(comp.params).map(x=>Object.assign(x[1],{id: x[0]}));
+          return []
+        return Array.isArray(comp.params) ? comp.params : entries(comp.params).map(x=>Object.assign(x[1],{id: x[0]}))
     },
     profileType(profile) {
         if (!profile) return ''
@@ -2681,6 +2678,7 @@ jb.callbag = {
             return
           }
           if (t == 1) {
+            console.log('in',t,d)
             store.push(d)
             sinks.forEach(sink => sink(1, d))
           }
@@ -2708,6 +2706,8 @@ jb.callbag = {
           })
       
           store.slice(sliceNum).forEach(entry => sink(1, entry))
+          console.log('replay',[...store], sliceNum)
+          //store = []
       
           if (done) sink(2)
         }
@@ -5302,10 +5302,11 @@ jb.jstypes.renderable = value => {
 
 Object.assign(jb.ui,{
     focus(elem,logTxt,srcCtx) {
-        if (!elem) debugger;
+        if (!elem) debugger
         // block the preview from stealing the studio focus
-        const now = new Date().getTime();
-        const lastStudioActivity = jb.studio.lastStudioActivity || jb.path(jb,['studio','studioWindow','jb','studio','lastStudioActivity'])
+        const now = new Date().getTime()
+        const lastStudioActivity = jb.studio.lastStudioActivity 
+          || jb.path(jb,['studio','studioWindow','jb','studio','lastStudioActivity'])
         jb.log('focus request',{srcCtx, logTxt, timeDiff: now - lastStudioActivity, elem,srcCtx})
         if (jb.studio.previewjb == jb && jb.path(jb.frame.parent,'jb.resources.studio.project') != 'studio-helper' && lastStudioActivity && now - lastStudioActivity < 1000)
             return
@@ -7863,6 +7864,14 @@ jb.component('dialogs.changeEmitter', {
 		jb.ui.dlgEmitters[widgetId] = jb.ui.dlgEmitters[widgetId] || ctx.run(rx.subject({replay: true}))
 		return jb.ui.dlgEmitters[widgetId]
 	}
+})
+
+jb.component('dialogs.destroyAllEmitters', {
+	type: 'action',
+	impl: () => Object.keys(jb.ui.dlgEmitters).forEach(k=>{
+		jb.ui.dlgEmitters[k].trigger.complete()
+		delete jb.ui.dlgEmitters[k]
+	})
 })
 
 jb.component('dialog.dialogTop', {

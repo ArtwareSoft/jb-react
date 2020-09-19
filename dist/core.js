@@ -1,5 +1,5 @@
-if (typeof frame == 'undefined')
-  frame = typeof self === 'object' ? self : typeof global === 'object' ? global : {};
+if (typeof frame == 'undefined') frame = typeof self === 'object' ? self : typeof global === 'object' ? global : {}
+
 var jb = (function() {
 function jb_run(ctx,parentParam,settings) {
   ctx.profile && jb.log('core request', [ctx.id,...arguments])
@@ -279,19 +279,16 @@ class jbCtx {
 }
 
 return { frame, comps: {}, ctxDictionary: {}, run: jb_run, jbCtx, jstypes, tojstype }
-}
-)();
+})()
 
-if (typeof self != 'undefined')
-  self.jb = jb
-if (typeof module != 'undefined')
-  module.exports = jb;
+if (typeof self != 'undefined') self.jb = jb
+if (typeof module != 'undefined') module.exports = jb;
 
 Object.assign(jb, {
     compParams(comp) {
         if (!comp || !comp.params)
-          return [];
-        return Array.isArray(comp.params) ? comp.params : entries(comp.params).map(x=>Object.assign(x[1],{id: x[0]}));
+          return []
+        return Array.isArray(comp.params) ? comp.params : entries(comp.params).map(x=>Object.assign(x[1],{id: x[0]}))
     },
     profileType(profile) {
         if (!profile) return ''
