@@ -1112,7 +1112,7 @@ jb.component('data.switch', {
 
 jb.component('data.case', {
   type: 'data.switch-case',
-  singleInType: true,
+//  singleInType: true,
   params: [
     {id: 'condition', type: 'boolean', mandatory: true, dynamic: true},
     {id: 'value', mandatory: true, dynamic: true}
@@ -1136,7 +1136,7 @@ jb.component('action.switch', {
 
 jb.component('action.switchCase', {
   type: 'action.switch-case',
-  singleInType: true,
+//  singleInType: true,
   params: [
     {id: 'condition', type: 'boolean', as: 'boolean', mandatory: true, dynamic: true},
     {id: 'action', type: 'action', mandatory: true, dynamic: true}

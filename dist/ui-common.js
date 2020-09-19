@@ -653,7 +653,7 @@ eval("/**\n * Copyright (c) 2013-present, Facebook, Inc.\n *\n * This source cod
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var immutability_helper__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! immutability-helper */ \"./node_modules/immutability-helper/index.js\");\n/* harmony import */ var immutability_helper__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(immutability_helper__WEBPACK_IMPORTED_MODULE_0__);\n\r\n\r\njb.ui.update = immutability_helper__WEBPACK_IMPORTED_MODULE_0___default.a;\r\n\n\n//# sourceURL=webpack:///./src/ui/pack-immutable.js?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var immutability_helper__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! immutability-helper */ \"./node_modules/immutability-helper/index.js\");\n/* harmony import */ var immutability_helper__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(immutability_helper__WEBPACK_IMPORTED_MODULE_0__);\n\r\njb.ui = jb.ui || {}\r\njb.ui.update = immutability_helper__WEBPACK_IMPORTED_MODULE_0___default.a;\r\n\n\n//# sourceURL=webpack:///./src/ui/pack-immutable.js?");
 
 /***/ })
 
@@ -1250,7 +1250,8 @@ Object.assign(jb.ui, {VNode, cloneVNode, toVdomOrStr, stripVdom, unStripVdom})
 })();
 
 (function(){
-const ui = jb.ui;
+jb.ui = jb.ui || {}
+const ui = jb.ui
 const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,{ f, ctx: this && this.ctx }) }}
 
 function h(cmpOrTag,attributes,children) {
@@ -1849,11 +1850,11 @@ class frontEndCmp {
             const ctxToUse = this.ctx.setData(data).setVars(vars)
             const {_prop, _flow } = feMEthod.frontEndMethod
             if (_prop)
-                jb.log(`frontend uiComp calc prop ${_prop}`,{cmp: {...this}, ...feMEthod.frontEndMethod, el,ctxToUse})
+                jb.log(`frontend uiComp calc prop ${_prop}`,{cmp: {...this}, scriptPath: path, ...feMEthod.frontEndMethod, el,ctxToUse})
             else if (_flow)
-                jb.log(`frontend uiComp start flow ${jb.ui.rxPipeName(_flow)}`,{cmp: {...this}, ...feMEthod.frontEndMethod, el, ctxToUse})
+                jb.log(`frontend uiComp start flow ${jb.ui.rxPipeName(_flow)}`,{cmp: {...this}, scriptPath: path, ...feMEthod.frontEndMethod, el, ctxToUse})
             else 
-                jb.log(`frontend uiComp run method ${method}`,{cmp: {...this} , ...feMEthod.frontEndMethod,el,ctxToUse})
+                jb.log(`frontend uiComp run method ${method}`,{cmp: {...this}, scriptPath: path , ...feMEthod.frontEndMethod,el,ctxToUse})
             ctxToUse.run(feMEthod.frontEndMethod.action)
         }, `frontEnd-${method}`))
     }
@@ -6156,8 +6157,6 @@ jb.component('multiSelect.chips', {
     }), 'multiSelectModel')
 })
 ;
-
-jb.type('theme');
 
 jb.component('defaultTheme', {
   impl: ctx => jb.ui.addStyleElem(ctx,`

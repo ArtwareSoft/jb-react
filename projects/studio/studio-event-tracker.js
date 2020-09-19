@@ -116,11 +116,8 @@ jb.component('studio.eventTracker', {
         items: '%$events%',
         controls: [
           text('%index%'),
-          button({
-            title: '%logNames%',
-            action: studio.gotoEventSource('%%'),
-            style: button.hrefText()
-          }),
+          text('%logNames%'),
+          studio.eventSourceScriptLink(),
           studio.eventView()
         ],
         style: table.plain(true),
@@ -156,6 +153,20 @@ jb.component('studio.eventTracker', {
       )
     ]
   })
+})
+
+jb.component('studio.eventSourceScriptLink', {
+  type: 'control',
+  params: [
+    {id: 'event', defaultValue: '%%'}
+  ],
+  impl: controlWithCondition('%$event/scriptPath%',
+        button({
+          title: '%logNames%',
+          action: studio.gotoEventSource('%$event/scriptPath%'),
+          style: button.hrefText()
+        })
+    ),
 })
 
 jb.component('studio.eventView', {

@@ -1,5 +1,3 @@
-jb.type('theme');
-
 jb.component('defaultTheme', {
   impl: ctx => jb.ui.addStyleElem(ctx,`
     body {

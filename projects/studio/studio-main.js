@@ -244,7 +244,7 @@ jb.component('studio.topBar', {
     layout: layout.flex({alignItems: 'start', spacing: ''}),
     controls: [
       image({
-        url: pipeline(studio.baseStudioUrl(),'%%css/jbartlogo.png'),
+        url: pipeline(studio.baseStudioUrl(), '%%css/jbartlogo.png'),
         width: '',
         features: [
           css.margin({top: '5', left: '5'}),

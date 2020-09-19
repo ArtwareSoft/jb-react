@@ -279,18 +279,19 @@ function profileSingleTest(testID) {
 	new jb.jbCtx().setVars({testID}).run({$: testID})
 }
 
-jb.ui = jb.ui || {}
-jb.ui.addHTML = jb.ui.addHTML || ((el,html) => {
-	var elem = document.createElement('div');
-	elem.innerHTML = html;
-	el.appendChild(elem.firstChild)
-})
+// jb.ui = jb.ui || {}
+// jb.ui.addHTML = jb.ui.addHTML || ((el,html) => {
+// 	var elem = document.createElement('div');
+// 	elem.innerHTML = html;
+// 	el.appendChild(elem.firstChild)
+// })
 
 if (typeof startTime === 'undefined')
 	startTime = new Date().getTime();
 startTime = startTime || new Date().getTime();
 
-jb.testers.runTests = function({testType,specificTest,show,pattern,includeHeavy}) {
+jb.testers = {
+  runTests: function({testType,specificTest,show,pattern,}) {
 	const {pipe, fromIter, subscribe,concatMap, flatMap, fromPromise } = jb.callbag
 	let index = 1
 
@@ -314,7 +315,6 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,includeHeavy}
 	return pipe(
 			fromIter(tests),
 			concatMap(e => {
-			  jb.logs.error = []
 			  const testID = e[0]
 			  const $testFinished = jb.callbag.subject()
 			  const tstCtx = jb.ui.extendWithServiceRegistry()
@@ -329,10 +329,6 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,includeHeavy}
 					$testFinished.next(1)
 					document.getElementById('progress').innerHTML = `<div id=${testID}>${testID} finished</div>`
 					res.duration = new Date().getTime() - times[testID].start
-					if (res && res.success && jb.logs.error.length > 0) {
-						res.success = false;
-						res.reason = 'log errors: ' + JSON.stringify(jb.logs.error)
-					}
 					console.log('end      ' + testID, res)
 					jb.log('end test',{testID,res})
 					res.show = () => {
@@ -373,5 +369,5 @@ jb.testers.runTests = function({testType,specificTest,show,pattern,includeHeavy}
 			if (!res.renderDOM && show) res.show()
 			jb.ui && tests.length >1 && jb.ui.garbageCollectCtxDictionary && jb.ui.garbageCollectCtxDictionary(true)
 	}))
-};
+}};
 

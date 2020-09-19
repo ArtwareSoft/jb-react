@@ -20,14 +20,14 @@ Object.assign(jb.ui,{
   },
   studioFixYPos(elem) {
     const studioDoc = jb.path(jb,'studio.previewjb.studio.studioWindow.document')
-    if (elem && elem.ownerDocument == studioDoc || !studioDoc.body) return 0
+    if (elem && elem.ownerDocument == studioDoc || !jb.path(studioDoc,'body')) return 0
     const zoom = +studioDoc.body.style.zoom || 1
     this._studioFixYPos = ((studioDoc.querySelector('#jb-preview') && studioDoc.querySelector('#jb-preview').getBoundingClientRect().top) || 0)/zoom
     return this._studioFixYPos
   },
   studioFixXPos(elem) {
     const studioDoc = jb.path(jb,'studio.previewjb.studio.studioWindow.document')
-    if (elem && elem.ownerDocument == studioDoc || !studioDoc.body) return 0
+    if (elem && elem.ownerDocument == studioDoc || !jb.path(studioDoc,'body')) return 0
     this._studioFixXPos = (studioDoc.querySelector('#jb-preview') && studioDoc.querySelector('#jb-preview').getBoundingClientRect().left) || 0
     return this._studioFixXPos
   }

@@ -92,12 +92,12 @@ jb.component('probeTest.pipelineNoSugar', {
   })
 })
 
-jb.component('probeTest.pipelineSugarJsonFormat', {
-  impl: studioProbeTest({
-    circuit: group({controls: text({text: {$pipeline: ['hello'] } })}) ,
-    probePath: 'controls~text~$pipeline~0'
-  })
-})
+// jb.component('probeTest.pipelineSugarJsonFormat', {
+//   impl: studioProbeTest({
+//     circuit: group({controls: text({text: {$pipeline: ['hello'] } })}) ,
+//     probePath: 'controls~text~$pipeline~0'
+//   })
+// })
 
 jb.component('probeTest.pipelineOneElemJsonFormat', {
   impl: studioProbeTest({

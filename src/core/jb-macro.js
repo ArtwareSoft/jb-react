@@ -1,7 +1,45 @@
 Object.assign(jb, {
+    location: Symbol.for('location'),
+    component: (_id,comp) => {
+      const id = jb.macroName(_id)
+      try {
+        const errStack = new Error().stack.split(/\r|\n/)
+        const line = errStack.filter(x=>x && x != 'Error' && !x.match(/at Object.component/)).shift()
+        comp[jb.location] = line ? (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
+        comp[jb.location][0] = comp[jb.location][0].split('?')[0]
+      
+        if (comp.watchableData !== undefined) {
+          jb.comps[jb.addDataResourcePrefix(id)] = comp
+          return jb.resource(jb.removeDataResourcePrefix(id),comp.watchableData)
+        }
+        if (comp.passiveData !== undefined) {
+          jb.comps[jb.addDataResourcePrefix(id)] = comp
+          return jb.const(jb.removeDataResourcePrefix(id),comp.passiveData)
+        }
+      } catch(e) {
+        console.log(e)
+      }
+  
+      jb.comps[id] = comp;
+  
+      // fix as boolean params to have type: 'boolean'
+      (comp.params || []).forEach(p=> {
+        if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
+          p.type = 'boolean'
+      })
+  
+      jb.registerMacro && jb.registerMacro(id, comp)
+    },    
     macroDef: Symbol('macroDef'), macroNs: {}, 
     macroName: id => id.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
     ns: nsIds => nsIds.split(',').forEach(nsId => jb.registerMacro(nsId + '.$dummyComp', {})),
+    fixMacroByValue: (profile,comp) => {
+        if (profile && profile.$byValue) {
+          const params = jb.compParams(comp)
+          profile.$byValue.forEach((v,i)=> Object.assign(profile,{[params[i].id]: v}))
+          delete profile.$byValue
+        }
+    },
     registerMacro: (id, profile) => {
         const macroId = jb.macroName(id).replace(/\./g, '_')
         const nameSpace = id.indexOf('.') != -1 && jb.macroName(id.split('.')[0])
@@ -82,5 +120,8 @@ Object.assign(jb, {
                 return Object.assign(out, system)
             }
         }
-    }
+    },
+    removeDataResourcePrefix: id => id.indexOf('dataResource.') == 0 ? id.slice('dataResource.'.length) : id,
+    addDataResourcePrefix: id => id.indexOf('dataResource.') == 0 ? id : 'dataResource.' + id,
+
 })

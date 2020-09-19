@@ -96,7 +96,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
     const id = [jb.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
     const comp = comps[id]
     if (comp)
-      jb.fixByValue(profile,comp)
+      jb.fixMacroByValue(profile,comp)
     if (noMacros || !id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
       const props = Object.keys(profile)
       if (props.indexOf('$') > 0) { // make the $ first

@@ -1,5 +1,3 @@
-jb.type('sidenav.style');
-
 jb.component('sidenav', {
   type: 'control', category: 'group:50',
   params: [

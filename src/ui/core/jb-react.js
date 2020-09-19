@@ -1,5 +1,6 @@
 (function(){
-const ui = jb.ui;
+jb.ui = jb.ui || {}
+const ui = jb.ui
 const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,{ f, ctx: this && this.ctx }) }}
 
 function h(cmpOrTag,attributes,children) {
@@ -598,11 +599,11 @@ class frontEndCmp {
             const ctxToUse = this.ctx.setData(data).setVars(vars)
             const {_prop, _flow } = feMEthod.frontEndMethod
             if (_prop)
-                jb.log(`frontend uiComp calc prop ${_prop}`,{cmp: {...this}, ...feMEthod.frontEndMethod, el,ctxToUse})
+                jb.log(`frontend uiComp calc prop ${_prop}`,{cmp: {...this}, scriptPath: path, ...feMEthod.frontEndMethod, el,ctxToUse})
             else if (_flow)
-                jb.log(`frontend uiComp start flow ${jb.ui.rxPipeName(_flow)}`,{cmp: {...this}, ...feMEthod.frontEndMethod, el, ctxToUse})
+                jb.log(`frontend uiComp start flow ${jb.ui.rxPipeName(_flow)}`,{cmp: {...this}, scriptPath: path, ...feMEthod.frontEndMethod, el, ctxToUse})
             else 
-                jb.log(`frontend uiComp run method ${method}`,{cmp: {...this} , ...feMEthod.frontEndMethod,el,ctxToUse})
+                jb.log(`frontend uiComp run method ${method}`,{cmp: {...this}, scriptPath: path , ...feMEthod.frontEndMethod,el,ctxToUse})
             ctxToUse.run(feMEthod.frontEndMethod.action)
         }, `frontEnd-${method}`))
     }
