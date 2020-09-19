@@ -3,7 +3,7 @@ jb.ui.chooseIconWithRaised = (icons,raised) => {
   const raisedIcon = icons.filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'raised')[0]
   const otherIcons = (raisedIcon && icons.filter(cmp=>cmp && cmp.ctx.vars.$model.position != 'raised') || icons)
     .filter(cmp=>cmp && cmp.ctx.vars.$model.position != 'post')
-  if (raised) 
+  if (raised)
     return raisedIcon ? [raisedIcon] : otherIcons
   return otherIcons
 }
@@ -13,6 +13,14 @@ jb.component('button.href', {
   impl: customStyle({
     template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
     css: '{color: var(--jb-textLink-fg)} .raised { color: var(--jb-textLink-active-fg) }'
+  })
+})
+
+jb.component('button.hrefText', {
+  type: 'button.style',
+  impl: customStyle({
+    template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
+    css: '{color: var(--jb-input-fg) ; text-decoration: none }     ~.hover, ~.active: { text-decoration: underline }'
   })
 })
 
@@ -81,7 +89,7 @@ jb.component('button.mdcChipAction', {
 jb.component('button.plainIcon', {
   type: 'button.style',
   impl: customStyle(
-    (cmp,{title,raised},h) => 
+    (cmp,{title,raised},h) =>
       jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=> vdom.setAttribute('title',vdom.getAttribute('title') || title))[0]
   )
 })
@@ -93,7 +101,7 @@ jb.component('button.mdcIcon', {
     {id: 'buttonSize', as: 'number', defaultValue: 40, description: 'button size is larger than the icon size, usually at the rate of 40/24' },
   ],
   impl: styleWithFeatures(button.mdcFloatingAction({withTitle: false, buttonSize: '%$buttonSize%'}), features(
-      ((ctx,{},{icon}) => icon && ctx.run({$: 'feature.icon', ...icon, title: '%$model.title%', 
+      ((ctx,{},{icon}) => icon && ctx.run({$: 'feature.icon', ...icon, title: '%$model.title%',
         size: ({},{},{buttonSize}) => buttonSize * 24/40 })),
     ))
 })
@@ -114,7 +122,7 @@ jb.component('button.mdcFloatingAction', {
                 vdom.addClass('mdc-fab__icon').setAttribute('title',vdom.getAttribute('title') || title)),
             ...[withTitle && h('span',{ class: 'mdc-fab__label'},title)].filter(x=>x)
       ]),
-    css: '{width: %$buttonSize%px; height: %$buttonSize%px;}',  
+    css: '{width: %$buttonSize%px; height: %$buttonSize%px;}',
     features: mdcStyle.initDynamic(),
   })
 })

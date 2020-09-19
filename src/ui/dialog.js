@@ -462,8 +462,8 @@ jb.component('dialogs.changeEmitter', {
 		{id: 'widgetId', defaultValue: '%$headlessWidgetId%'},
 	],
 	category: 'source',
-	impl: (ctx,widgetId) => {
-		widgetId = widgetId || 'default'
+	impl: (ctx,_widgetId) => {
+		const widgetId = !ctx.vars.previewOverlay && _widgetId || 'default'
 		jb.ui.dlgEmitters = jb.ui.dlgEmitters || {}
 		jb.ui.dlgEmitters[widgetId] = jb.ui.dlgEmitters[widgetId] || ctx.run(rx.subject({replay: true}))
 		return jb.ui.dlgEmitters[widgetId]
@@ -473,7 +473,6 @@ jb.component('dialogs.changeEmitter', {
 jb.component('dialog.dialogTop', {
 	type: 'control',
 	params: [
-//		{id: 'widgetId', defaultValue: '%$widgetId%'},
 		{id: 'style', type: 'dialogs.style', defaultValue: dialogs.defaultStyle(), dynamic: true},
 	],
 	impl: ctx => jb.ui.ctrl(ctx)

@@ -120,7 +120,8 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 				_time: `${now.getSeconds()}:${now.getMilliseconds()}`,
 				time: now.getTime(),
 				mem: memoryUsage() / 1000000,
-				activeElem: typeof jb != 'undefined' && jb.path && jb.path(jb.frame.document,'activeElement'),
+				activeElem: jb.path(jb.frame.document,'activeElement'),
+				focusChanged: this.logs.length > 0 && jb.path(jb.frame.document,'activeElement') != this.logs[this.logs.length-1].activeElem,
 				$attsOrder: _record && Object.keys(_record)
 			}
 			// if (record[0] == null && typeof funcTitle === 'function') {
@@ -219,7 +220,8 @@ function initSpyByUrl() {
 	const getUrl = () => { try { return frame.location && frame.location.href } catch(e) {} }
 	const getParentUrl = () => { try { return frame.parent && frame.parent.location.href } catch(e) {} }
 	const getSpyParam = url => (url.match('[?&]spy=([^&]+)') || ['', ''])[1]
-	const spyParam = getSpyParam(getParentUrl() || '') || getSpyParam(getUrl() || '')
+	const spyParam = self.jbStudio && (getUrl().match('[?&]sspy=([^&]+)') || ['', ''])[1] || 
+		getSpyParam(getParentUrl() || '') || getSpyParam(getUrl() || '')
 	if (spyParam)
 		jb.initSpy({spyParam})
 	if (jb.frame) jb.frame.spy = jb.spy // for console use

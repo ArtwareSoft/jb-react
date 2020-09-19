@@ -1,14 +1,15 @@
-jb.ns('chromeDebugger')
+jb.ns('chromeDebugger,editableBoolean')
 
 Object.assign(jb.ui, {
   getInspectedJb: ctx => {
     const st = jb.studio
-    const ret = (st.studiojb && st.studiojb.exec('%$studio/project%') == 'studio-helper') ? st.studiojb : jb.path(st,'previewjb')
-    if (!ret)
-      jb.logError('studio.eventItems - can not locate inpsected',{ctx})
-    return ret
+    return st.inspectedJb || st.previewjb
   },
-  getSpy: ctx => jb.ui.getInspectedJb(ctx).spy
+  getSpy: ctx => {
+    const ret = jb.ui.getInspectedJb(ctx).spy
+    if (!ret) debugger
+    return ret || {}
+  }
 })
 
 jb.component('studio.openEventTracker', {
@@ -49,25 +50,29 @@ jb.component('studio.eventTracker', {
           text({
             text: pipeline(studio.getSpy(), '%$events/length%/%logs/length%'),
             title: 'counts',
-            features: [
-              css.padding({top: '5', left: '5'}),
-            ]
+            features: [css.padding({top: '5', left: '5'})]
           }),
           divider({style: divider.vertical()}),
           button({
-            title: 'block',
+            title: 'clear',
             action: runActions(studio.clearSpyLog(), refreshControlById('event-tracker')),
             style: chromeDebugger.icon(),
-            features: [
-              feature.icon({
-                icon: 'BlockHelper',
-                type: 'mdi',
-                size: '12',
-                features: css.transformRotate('-90')
-              }),
-              css.color('var(--jb-menu-fg)'),
-              feature.hoverTitle('clear console')
-            ]
+            features: [css.color('var(--jb-menu-fg)'), feature.hoverTitle('clear')]
+          }),
+          editableBoolean({
+            databind: ctx => ({
+              $jb_val(val) {
+                  if (val === undefined)
+                      return jb.studio.inspectedJb != null
+                  else {
+                      jb.studio.inspectedJb = val ? (jb.studio.studiojb || jb) : jb.studio.previewjb
+                      ctx.run(refreshControlById('event-tracker'))
+                  }
+              }
+            }),
+            style: editableBoolean.checkboxWithLabel(),
+            title: 'studio',
+            features: [layout.horizontal(), css.margin('3')]
           }),
           divider({style: divider.vertical()}),
           editableText({
@@ -86,15 +91,22 @@ jb.component('studio.eventTracker', {
           picklist({
             title: 'counters',
             databind: '%$studio/spyLogs%',
-            options: picklist.options({ options: ctx => jb.entries(jb.ui.getSpy(ctx).counters), code: '%0%', text: '%0% (%1%)'}),
+            options: picklist.options({
+              options: ctx => jb.entries(jb.ui.getSpy(ctx).counters),
+              code: '%0%',
+              text: '%0% (%1%)'
+            }),
             features: [
-              picklist.onChange(ctx=> {
+              picklist.onChange(
+                ctx => {
                 const loc = jb.ui.getSpy(ctx).locations[ctx.data].split(':')
                 const col = +loc.pop()
                 const line = (+loc.pop())-1
                 const location = [loc.join(':'),line,col]
-                loc && parent.postMessage({ runProfile: {$: 'chromeDebugger.openResource', location }} , '*')
-              })
+                jb.log('eventTracker openResource',{ctx,loc: jb.ui.getSpy(ctx).locations[ctx.data], location})
+                loc && parent.postMessage({ runProfile: {$: 'chromeDebugger.openResource', location }})
+              }
+              )
             ]
           })
         ],
@@ -104,7 +116,11 @@ jb.component('studio.eventTracker', {
         items: '%$events%',
         controls: [
           text('%index%'),
-          text('%logNames%'),
+          button({
+            title: '%logNames%',
+            action: studio.gotoEventSource('%%'),
+            style: button.hrefText()
+          }),
           studio.eventView()
         ],
         style: table.plain(true),
@@ -113,12 +129,14 @@ jb.component('studio.eventTracker', {
           id('event-logs'),
           itemlist.infiniteScroll('5'),
           css.height({height: '400', overflow: 'scroll'}),
-          itemlist.selection({onSelection: runActions(
-            ({data}) => jb.frame.console.log(data),
-            studio.highlightLogItem('%%')
-          )}),
+          itemlist.selection({
+            onSelection: runActions(({data}) => jb.frame.console.log(data), studio.highlightEvent('%%'))
+          }),
           itemlist.keyboardSelection({}),
-          feature.byCondition('%logNames% == error', css.color('var(--jb-error-fg)'))
+          feature.byCondition(
+            inGroup(list('exception,error'), '%logNames%'),
+            css.color('var(--jb-error-fg)')
+          )
         ]
       })
     ],
@@ -128,8 +146,14 @@ jb.component('studio.eventTracker', {
         name: 'events',
         value: studio.eventItems('%$studio/eventTrackerQuery%', '%$studio/eventTrackerPattern%')
       }),
-      If( ctx => jb.ui.getInspectedJb() != ctx.frame().jb ,
-        followUp.watchObservable(source.callbag(ctx => jb.ui.getSpy(ctx).observable()), 1000))
+      If(
+        ctx => jb.ui.getInspectedJb() != ctx.frame().jb && 
+          (!jb.studio.studiojb || jb.studio.studiojb.exec('%$studio/project%') != 'studio-helper'),
+        followUp.watchObservable(
+          source.callbag(ctx => jb.ui.getSpy(ctx).observable()),
+          1000
+        )
+      )
     ]
   })
 })
@@ -146,6 +170,7 @@ jb.component('studio.eventView', {
       studio.showLowFootprintObj('%err%','err'),
       studio.showLowFootprintObj('%ref%','ref'),
       studio.showLowFootprintObj('%value%','value'),
+      studio.showLowFootprintObj('%focusChanged%','focusChanged'),
 
       // controlWithCondition(
       //   '%opPath%',
@@ -210,7 +235,7 @@ jb.component('studio.showLowFootprintObj', {
     controls: [
       controlWithCondition(
         '%$obj/cmpId%',
-        studio.slicedString('%$obj/ctx/profile/$% - %$obj/cmpId%;%$obj/ver%')
+        studio.slicedString('%$obj/ctx/profile/$%%$obj/pt% - %$obj/cmpId%;%$obj/ver%')
       ),
       controlWithCondition(
         '%$obj/_parent%',
@@ -219,11 +244,15 @@ jb.component('studio.showLowFootprintObj', {
       controlWithCondition(
         ({},{},{obj}) => jb.isRef(obj),
         studio.slicedString(({},{},{obj}) => obj.handler.pathOfRef(obj).join('/'))
-      ),      
+      ),
       controlWithCondition(
         '%$obj/opEvent/newVal%',
         studio.slicedString('%$obj/opEvent/newVal%')
-      ),      
+      ),
+      controlWithCondition(
+        isOfType('boolean', '%$obj%'),
+        studio.slicedString('%$title%')
+      ),
       controlWithCondition(
         isOfType('object,array', '%$obj%'),
         button({
@@ -245,7 +274,7 @@ jb.component('studio.showLowFootprintObj', {
       ),
       controlWithCondition(
         isOfType('function', '%$obj%'),
-        text(({},{},{obj}) => obj.name)
+        text(({},{},{obj}) => obj.name) // can not use '%$obj/name%'
       ),
     ]
   }))
@@ -270,49 +299,65 @@ jb.component('studio.eventItems', {
   impl: (ctx,query,pattern) => {
     const spy = jb.ui.getSpy(ctx)
     if (!spy) return []
-    const ret = spy.search(query); //.map(x=>enrich(x)).filter(x=>!(x.path || '').match(/studio.eventTracker/))
+    const ret = spy.search(query).filter(x=> !(jb.path(x.ctx,'path') || '').match(/studio.eventTracker/))
     const regexp = new RegExp(pattern)
-    return pattern ? ret.filter(x=>regexp.test(Array.from(x.values()).filter(x=> typeof x == 'string').join(','))) : ret
+    const items = pattern ? ret.filter(x=>regexp.test(Array.from(x.values()).filter(x=> typeof x == 'string').join(','))) : ret
+    jb.log('eventTracker items',{ctx,spy,query,items})
+    return items
   }
 })
 
-jb.component('studio.highlightEvent', {
+jb.component('studio.gotoEventSource', {
   type: 'action',
   params: [
-    {id: 'path', as: 'string'}
+    {id: 'event'}
   ],
-  impl: studio.highlightByPath('%$path%')
+  impl: If('%$event/path%',studio.gotoSource('%$event/path%',true))
 })
 
 jb.component('studio.elemOfCmp', {
   params: [
     {id: 'cmp' }
   ],
-  impl: (ctx,cmp) => cmp.base || jb.ui.find(jb.ui.getInspectedJb(ctx).frame.document,`[cmp-id="${cmp.cmpId}"]`)[0]
+  impl: studio.elemInInspectedJb('[cmp-id="%$cmp/cmpId%"]')
 })
 
-jb.component('studio.highlightLogItem', {
+jb.component('studio.elemInInspectedJb', {
+  params: [
+    {id: 'selector' }
+  ],
+  impl: (ctx,selector) => {
+    const elem = selector != '#' && jb.ui.find(jb.ui.getInspectedJb(ctx).frame.document,selector)[0]
+    jb.log('eventTracker elemInInspectedJb',{ctx,selector,elem})
+    return elem
+  }
+})
+
+jb.component('studio.highlightEvent', {
   type: 'action',
   params: [
-    {id: 'item', defaultValue: '%%'}
+    {id: 'event', defaultValue: '%%'}
   ],
   impl: runActions(
-    If('%$item/cmp%', studio.openElemMarker(studio.elemOfCmp('%$item/cmp%'),'border: 1px dashed grey')),
-    If('%$item/elem%',studio.openElemMarker('%$item/elem%','border: 1px dashed grey'))
+    Var('elem', firstSucceeding(studio.elemOfCmp('%$event/cmp%'), studio.elemInInspectedJb('#%$event/dialogId%'))),
+    If('%$elem%', studio.highlightElem('%$elem%')),
+    If('%$event/elem%',studio.highlightElem('%$event/elem%')),
+    If('%$event/parentElem%',studio.highlightElem('%$event/parentElem%'))
   )
 })
 
-jb.component('studio.openElemMarker', {
+jb.component('studio.highlightElem', {
   type: 'action',
   params: [
     {id: 'elem'},
-    {id: 'css', as: 'string'}
+    {id: 'css', as: 'string', defaultValue: 'border: 1px dashed grey'}
   ],
-  impl: If('%$elem%', runActions(
+  impl: runActions(
     Var('previewOverlay',true),
+    log('eventTracker highlightElem'),
     openDialog({
-        id: 'elem-marker',
-        style: studio.elemMarkerDialog(),
+        id: 'highlight-dialog',
+        style: studio.highlightDialogStyle(),
         content: text(''),
         features: [
           css(({},{},{elem}) => {
@@ -326,14 +371,14 @@ jb.component('studio.openElemMarker', {
         ]
     }),
     delay(500),
-    dialog.closeDialogById('elem-marker')
-  ))
+    dialog.closeDialogById('highlight-dialog')
+  )
 })
 
-jb.component('studio.elemMarkerDialog', {
+jb.component('studio.highlightDialogStyle', {
   type: 'dialog.style',
   impl: customStyle({
-    template: (cmp,state,h) => h('div#jb-dialog jb-popup',{},h(state.contentComp)),
+    template: ({},{contentComp},h) => h('div#jb-dialog jb-popup',{},h(contentComp)),
     css: '{ display: block; position: absolute; background: transparent}',
     features: [dialogFeature.maxZIndexOnClick(), dialogFeature.closeWhenClickingOutside()]
   })

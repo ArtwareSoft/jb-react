@@ -37,25 +37,38 @@ jb.component('sourceEditor.firstParamAsArrayPath', {
   }
 })
 
-jb.component('studio.gotoSource', {
-  type: 'action',
+jb.component('studio.filePosOfPath', {
   params: [
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => {
-    if (!path) return
-    if (jb.frame.jbInvscode) {
-        const comp = path.split('~')[0]
-        const loc = st.previewjb.comps[comp][jb.location]
-        const fn = st.host.locationToPath(loc[0])
-        const lineOfComp = (+loc[1]) || 0
-        const pos = jb.textEditor.getPosOfPath(path+'~!profile',st.previewjb) || [0,0,0,0]
-        pos[0] += lineOfComp; pos[2] += lineOfComp
-        jb.studio.vscodeService({$: 'openEditor', path,comp,loc,fn, pos })
-    } else {
-        fetch(`/?op=gotoSource&comp=${path.split('~')[0]}`)
-    }
+      const comp = path.split('~')[0]
+      const loc = st.previewjb.comps[comp][jb.location]
+      const fn = st.host.locationToPath(loc[0])
+      const lineOfComp = (+loc[1]) || 0
+      const pos = jb.textEditor.getPosOfPath(path+'~!profile',st.previewjb) || [0,0,0,0]
+      pos[0] += lineOfComp; pos[2] += lineOfComp
+      return {path,comp,loc,fn, pos}
   }
+})
+
+jb.component('studio.gotoSource', {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string' },
+    {id: 'chromeDebugger', as: 'boolean' },
+  ],
+  impl: runActions(
+    Var('filePos',studio.filePosOfPath('%$path%')),
+    ({},{filePos},{chromeDebugger}) => {
+      if (jb.frame.jbInvscode)
+        jb.studio.vscodeService({$: 'openEditor', ...filePos })
+      else if (chromeDebugger)
+        parent.postMessage({ runProfile: {$: 'chromeDebugger.openResource', 
+          location: [ location.origin + '/' + filePos.fn, filePos.pos[0], filePos.pos[1]] }})
+      else
+        fetch(`/?op=gotoSource&comp=${path.split('~')[0]}`)
+  })
 })
 
 jb.component('studio.editableSource', {

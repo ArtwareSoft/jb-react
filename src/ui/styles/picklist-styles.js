@@ -1,7 +1,16 @@
 jb.component('picklist.native', {
   type: 'picklist.style',
   impl: customStyle({
-    template: (cmp,{databind,options},h) => 
+    template: ({},{databind,options},h) => 
+      h('select', { value: databind, onchange: true }, options.map(option=>h('option',{value: option.code},option.text))),
+    features: [field.databind(), picklist.init()]
+  })
+})
+
+jb.component('picklist.nativePlus', {
+  type: 'picklist.style',
+  impl: customStyle({
+    template: ({},{databind,options},h) => 
       h('select', { value: databind, onchange: true }, options.map(option=>h('option',{value: option.code},option.text))),
     css: `
 { display: block; width: 100%; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857; 

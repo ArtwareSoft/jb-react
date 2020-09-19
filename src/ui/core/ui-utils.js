@@ -61,8 +61,8 @@ Object.assign(jb.ui,{
       const ctx = _ctx || new jb.jbCtx()
       return ctx.setVar('$serviceRegistry',{baseCtx: ctx, parentRegistry: ctx.vars.$serviceRegistry, services: {}})
     },
-    cmpV: cmp => cmp ? `${cmp.cmpId};${cmp.ver}` : '',
-    rxPipeName: profile => ''
+    //cmpV: cmp => cmp ? `${cmp.cmpId};${cmp.ver}` : '',
+    rxPipeName: profile => jb.path(profile,'0.event') + '...'+jb.path(profile,'length')
 })
 
 // ***************** inter-cmp services

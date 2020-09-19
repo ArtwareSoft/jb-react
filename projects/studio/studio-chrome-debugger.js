@@ -11,7 +11,6 @@ jb.chromeDebugger = {
             })
     },
     doInitPanel(id, panelFrame) {
-        console.log('init panel',id,panelFrame)
         panelFrame.uri = `debugPanel-${id}`
         const jb = panelFrame.jb
         panelFrame.inspectedPorts = panelFrame.inspectedPorts || {}
@@ -24,12 +23,12 @@ jb.chromeDebugger = {
             .then(res => {
                 if (!res)
                     this.initIframeOnInspectedWindow(panelFrame)
-                return this.waitFor('studio on inspectedWin',() => this.hasStudioOnInspected(),300,20)
+                return this.reCheckPromise('studio on inspectedWin',() => this.hasStudioOnInspected(),300,20)
             }).then(()=> {
                 this.initStudioDebugPort(panelFrame)
                 this.initPanelPortListenser(panelFrame)
                 this.inspectedWindowRequestToConnectToPanel(panelFrame)
-                return this.waitFor('port to inspectedWin',() => self.inspectedPorts[panelFrame.uri],50,50)
+                return this.reCheckPromise('port to inspectedWin',() => self.inspectedPorts[panelFrame.uri],50,50)
             })
             .then(()=> { panelFrame.document.body.innerHTML=''; this.renderOnPanel(panelFrame) })
             .catch(e => jb.logException(e,`chromeDebugger panel ${panelFrame.uri} wait for ${e}`))
@@ -58,7 +57,7 @@ jb.chromeDebugger = {
             port.onMessage.addListener(m => m.runProfile && jb.exec(m.runProfile))
 
             port.onDisconnect.addListener(() => {
-                jb.log(`inspectedWindow port disconnected from panel at ${panelFrame.uri}`,{panelFrame})
+                jb.log(`chromeDebugger inspectedWin port disconnected from panel at ${panelFrame.uri}`,{panelFrame})
                 delete panelFrame.inspectedPorts[panelFrame.uri]
             })
         })
@@ -103,10 +102,10 @@ jb.chromeDebugger = {
             iframe.src = 'javascript: this.document.write(`' + html +'`)'
             document.body.appendChild(iframe)
         }
-        jb.log('chromeDebugger initFrameForChromeDebugger',{code: initFrameForChromeDebugger.toString()})
+        jb.log('chromeDebugger init studioIframe',{code: initFrameForChromeDebugger.toString()})
         return this.evalAsPromise(`(${initFrameForChromeDebugger.toString()})('${panelFrame.uri}')`)
     },
-    waitFor(description, checkPromise ,interval,times) {
+    reCheckPromise(description, checkPromise ,interval,times) {
         let count = 0
         return new Promise((resolve,reject) => {
             const toRelease = setInterval(() => {
@@ -148,7 +147,7 @@ jb.component('chromeDebugger.openResource', {
         {id: 'location', as: 'array', description: 'file,line,col'}
     ],
     impl: (ctx,loc) => {
-        console.log('loc',loc)
+        console.log('chromeDebugger openResource',loc)
         chrome.devtools.panels.openResource(...loc)
     }
 })

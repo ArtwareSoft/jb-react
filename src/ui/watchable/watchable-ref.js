@@ -233,9 +233,8 @@ class WatchableValueByRef {
     return ref && ref.$jb_obj && this.watchable(ref.$jb_obj);
   }
   objectProperty(obj,prop,ctx) {
-    jb.log('watchable objectProperty',{obj,prop,ctx})
     if (!obj)
-      return jb.logError('objectProperty: null obj',{obj,prop,ctx})
+      return jb.logError('watchable objectProperty: null obj',{obj,prop,ctx})
     if (obj && obj[prop] && this.watchable(obj[prop]) && !obj[prop][isProxy])
       return this.asRef(obj[prop])
     const ref = this.asRef(obj)

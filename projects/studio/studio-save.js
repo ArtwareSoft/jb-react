@@ -5,8 +5,8 @@ jb.component('studio.saveComponents', {
   type: 'action,has-side-effects',
   impl: ctx => {
     const {pipe, fromIter, catchError,toPromiseArray,concatMap,fromPromise,Do} = jb.callbag
-    const filesToUpdate = jb.unique(st.changedComps().map(e=>locationOfComp(e)).filter(x=>x))
-      .map(fn=>({fn, path: st.host.locationToPath(fn), comps: st.changedComps().filter(e=>locationOfComp(e) == fn)}))
+    const filesToUpdate = jb.unique(st.changedComps().map(e=>fileNameOfComp(e)).filter(x=>x))
+      .map(fn=>({fn, path: st.host.locationToPath(fn), comps: st.changedComps().filter(e=>fileNameOfComp(e) == fn)}))
 
     return pipe(
       fromIter(filesToUpdate),
@@ -62,9 +62,9 @@ jb.component('studio.saveProjectSettings', {
   }
 })
 
-function locationOfComp(compE) {
+function fileNameOfComp(compE) {
   try {
-    return (compE[1] || st.compsHistory[0].before[compE[0]])[jb.location][0]
+    return (compE[1] || st.compsHistory[0].before[compE[0]])[jb.location][0].replace(/!st!/,'')
   } catch (e) {
     return ''
   }

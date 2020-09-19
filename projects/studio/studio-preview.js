@@ -12,32 +12,28 @@ st.changedComps = function() {
 
 st.initStudioEditing = function() {
   if (st.previewjb.comps['dialog.studioPickDialog']) return
-  jb.entries(jb.comps).filter(e=>st.isStudioCmp(e[0]) || !st.previewjb.comps[e[0]]).forEach(e=>
-    st.previewjb.comps[e[0]] = { ...e[1], [jb.location] : [e[1][jb.location][0].replace(/!st!/,''), e[1][jb.location][1]]})
+  jb.entries(jb.comps)
+    .filter(e=>st.isStudioCmp(e[0]) || !st.previewjb.comps[e[0]])
+    .forEach(e=>st.copyCompFromStudioToPreview(e))
+    //st.previewjb.comps[e[0]] = { ...e[1], [jb.location] : [e[1][jb.location][0].replace(/!st!/,''), e[1][jb.location][1]]})
 }
 
-jb.ui.waitFor = function(check,times,interval) {
-  if (check())
-    return Promise.resolve(1);
+st.copyCompFromStudioToPreview = function(e) {
+  st.previewjb.comps[e[0]] = { ...e[1], [jb.location] : [e[1][jb.location][0], e[1][jb.location][1]]}
+}
 
-  times = times || 300;
-  interval = interval || 50;
-
-  return new Promise((resolve,fail)=>{
-    function wait_and_check(counter) {
-      if (counter < 1)
-        return fail();
-      setTimeout(() => {
-      	const v = check();
-        if (v)
-          resolve(v);
-        else
-          wait_and_check(counter-1)
-      }, interval);
-    }
-    return wait_and_check(times);
+jb.waitFor = jb.waitFor || ((check,interval = 50 ,times = 300) => {
+  let count = 0
+  return new Promise((resolve,reject) => {
+      const toRelease = setInterval(() => {
+          count++
+          const v = check()
+          if (v || count >= times) clearInterval(toRelease)
+          if (v) resolve(v)
+          if (count >= times) reject('timeout')
+      }, interval)
   })
-}
+})
 
 jb.ui.renderWidgetInStudio = function(profile,top) {
   let parentAccessible = true
@@ -117,7 +113,7 @@ st.initPreview = function(preview_window,allowedTypes) {
 
       st.previewWindow = preview_window;
       st.previewjb = preview_window.jb;
-      ['jbComponent','jbParam','feature.contentEditable'].forEach(comp=>st.previewjb.component(comp,jb.comps[comp]));
+      ['jbComponent','jbParam','feature.contentEditable'].forEach(id=> st.copyCompFromStudioToPreview([id,jb.comps[id]]));
       st.serverComps = st.previewjb.comps;
       st.previewjb.studio.studioWindow = window;
       st.previewjb.studio.previewjb = st.previewjb;
@@ -201,7 +197,7 @@ jb.component('studio.setPreviewSize', {
 })
 
 jb.component('studio.waitForPreviewIframe', {
-  impl: () => jb.ui.waitFor(()=> jb.studio.previewWindow)
+  impl: () => jb.waitFor(()=> jb.studio.previewWindow)
 })
 
 const {pipe,startWith,filter,flatMap} = jb.callbag

@@ -573,6 +573,7 @@ class frontEndCmp {
         this.base = elem
         this.cmpId = elem.getAttribute('cmp-id')
         this.ver= elem.getAttribute('cmp-ver')
+        this.pt = elem.getAttribute('cmp-pt')
         this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve)
         elem._component = this
         this.runFEMethod('calcProps',null,null,true)
@@ -591,7 +592,7 @@ class frontEndCmp {
             return jb.logError(`frontEnd - no method ${method}`,{cmp: {...this}})
         toRun.forEach(({path}) => tryWrapper(() => {
             const profile = path.split('~').reduce((o,p)=>o[p],jb.comps)
-            const feMEthod = jb.run( new jb.jbCtx(this.ctx, { profile, path }))
+            const feMEthod = jb.run( new jb.jbCtx(this.ctx, { profile, path, forcePath: path }))
             const el = this.base
             const vars = {cmp: this, $state: this.state, el, ...this.base.vars, ..._vars }
             const ctxToUse = this.ctx.setData(data).setVars(vars)

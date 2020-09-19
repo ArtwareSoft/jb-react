@@ -57,24 +57,25 @@ jb.remoteCtx = {
 
 ;
 
+jb.waitFor = jb.waitFor || ((check,interval = 50 ,times = 300) => {
+    let count = 0
+    return new Promise((resolve,reject) => {
+        const toRelease = setInterval(() => {
+            count++
+            const v = check()
+            if (v || count >= times) clearInterval(toRelease)
+            if (v) resolve(v)
+            if (count >= times) reject('timeout')
+        }, interval)
+    })
+})
+
 jb.remote = {
     servers: {},
     pathOfDistFolder() {
         const pathOfDistFolder = jb.path(jb.studio,'studiojb.studio.host.pathOfDistFolder')
         const location = jb.path(jb.studio,'studioWindow.location') || jb.path(jb.frame,'location')
         return pathOfDistFolder && pathOfDistFolder() || location && location.href.match(/^[^:]*/)[0] + `://${location.host}/dist`
-    },
-    waitFor(check,interval,times) {
-        let count = 0
-        return new Promise((resolve,reject) => {
-            const toRelease = setInterval(() => {
-                count++
-                const v = check()
-                if (v || count >= times) clearInterval(toRelease)
-                if (v) resolve(v)
-                if (count >= times) reject('timeout')
-            }, interval)
-        })
     },
     cbPortFromFrame(frame,from,to) {
         return this.extendPortWithCbHandler(this.portFromFrame(frame,from,to)).initCommandListener()
@@ -102,7 +103,7 @@ jb.remote = {
             getAsPromise(id,t) { 
                 if (t == 2) this.removeEntry(id)
                     
-                return jb.remote.waitFor(()=> this.map[id],5,10).then(cb => {
+                return jb.waitFor(()=> this.map[id],5,10).then(cb => {
                     if (!cb)
                         jb.logError('cbLookUp - can not find cb',{id})
                     return cb

@@ -3034,7 +3034,8 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 				_time: `${now.getSeconds()}:${now.getMilliseconds()}`,
 				time: now.getTime(),
 				mem: memoryUsage() / 1000000,
-				activeElem: typeof jb != 'undefined' && jb.path && jb.path(jb.frame.document,'activeElement'),
+				activeElem: jb.path(jb.frame.document,'activeElement'),
+				focusChanged: this.logs.length > 0 && jb.path(jb.frame.document,'activeElement') != this.logs[this.logs.length-1].activeElem,
 				$attsOrder: _record && Object.keys(_record)
 			}
 			// if (record[0] == null && typeof funcTitle === 'function') {
@@ -3133,7 +3134,8 @@ function initSpyByUrl() {
 	const getUrl = () => { try { return frame.location && frame.location.href } catch(e) {} }
 	const getParentUrl = () => { try { return frame.parent && frame.parent.location.href } catch(e) {} }
 	const getSpyParam = url => (url.match('[?&]spy=([^&]+)') || ['', ''])[1]
-	const spyParam = getSpyParam(getParentUrl() || '') || getSpyParam(getUrl() || '')
+	const spyParam = self.jbStudio && (getUrl().match('[?&]sspy=([^&]+)') || ['', ''])[1] || 
+		getSpyParam(getParentUrl() || '') || getSpyParam(getUrl() || '')
 	if (spyParam)
 		jb.initSpy({spyParam})
 	if (jb.frame) jb.frame.spy = jb.spy // for console use
@@ -4039,9 +4041,8 @@ class WatchableValueByRef {
     return ref && ref.$jb_obj && this.watchable(ref.$jb_obj);
   }
   objectProperty(obj,prop,ctx) {
-    jb.log('watchable objectProperty',{obj,prop,ctx})
     if (!obj)
-      return jb.logError('objectProperty: null obj',{obj,prop,ctx})
+      return jb.logError('watchable objectProperty: null obj',{obj,prop,ctx})
     if (obj && obj[prop] && this.watchable(obj[prop]) && !obj[prop][isProxy])
       return this.asRef(obj[prop])
     const ref = this.asRef(obj)
@@ -4970,6 +4971,7 @@ class frontEndCmp {
         this.base = elem
         this.cmpId = elem.getAttribute('cmp-id')
         this.ver= elem.getAttribute('cmp-ver')
+        this.pt = elem.getAttribute('cmp-pt')
         this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve)
         elem._component = this
         this.runFEMethod('calcProps',null,null,true)
@@ -4988,7 +4990,7 @@ class frontEndCmp {
             return jb.logError(`frontEnd - no method ${method}`,{cmp: {...this}})
         toRun.forEach(({path}) => tryWrapper(() => {
             const profile = path.split('~').reduce((o,p)=>o[p],jb.comps)
-            const feMEthod = jb.run( new jb.jbCtx(this.ctx, { profile, path }))
+            const feMEthod = jb.run( new jb.jbCtx(this.ctx, { profile, path, forcePath: path }))
             const el = this.base
             const vars = {cmp: this, $state: this.state, el, ...this.base.vars, ..._vars }
             const ctxToUse = this.ctx.setData(data).setVars(vars)
@@ -5086,24 +5088,25 @@ Object.assign(jb.ui,{
 
         const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId
         const classPrefix = widgetId || 'jb-'
+        const cssMap = this.cssHashMap[classPrefix] = this.cssHashMap[classPrefix] || {}
 
-        if (!this.cssHashMap[cssKey]) {
+        if (!cssMap[cssKey]) {
             if (existingClass) {
-                const existingKey = Object.keys(this.cssHashMap).filter(k=>this.cssHashMap[k].classId == existingClass)[0]
-                existingKey && delete this.cssHashMap[existingKey]
+                const existingKey = Object.keys(cssMap).filter(k=>cssMap[k].classId == existingClass)[0]
+                existingKey && delete cssMap[existingKey]
             } else {
                 this.cssHashCounter++;
             }
             const classId = existingClass || `${classPrefix}${this.cssHashCounter}`
-            this.cssHashMap[cssKey] = {classId, paths : {[ctx.path]: true}}
+            cssMap[cssKey] = {classId, paths : {[ctx.path]: true}}
             const cssContent = linesToCssStyle(classId)
             if (cssStyleElem)
                 cssStyleElem.innerText = cssContent
             else
                 ui.addStyleElem(ctx,cssContent,widgetId)
         }
-        Object.assign(this.cssHashMap[cssKey].paths, {[ctx.path] : true})
-        return this.cssHashMap[cssKey].classId
+        Object.assign(cssMap[cssKey].paths, {[ctx.path] : true})
+        return cssMap[cssKey].classId
 
         function linesToCssStyle(classId) {
             const cssStyle = cssLines.map(selectorPlusExp=>{
@@ -5204,6 +5207,7 @@ class JbComponent {
                     'jb-ctx': ui.preserveCtx(this.originatingCtx()),
                     'cmp-id': this.cmpId, 
                     'cmp-ver': this.ver,
+                    'cmp-pt': this.ctx.profile.$,
                     'full-cmp-ctx': ui.preserveCtx(this.calcCtx),
                 },
                 observe && {observe}, 
@@ -5423,8 +5427,8 @@ Object.assign(jb.ui,{
       const ctx = _ctx || new jb.jbCtx()
       return ctx.setVar('$serviceRegistry',{baseCtx: ctx, parentRegistry: ctx.vars.$serviceRegistry, services: {}})
     },
-    cmpV: cmp => cmp ? `${cmp.cmpId};${cmp.ver}` : '',
-    rxPipeName: profile => ''
+    //cmpV: cmp => cmp ? `${cmp.cmpId};${cmp.ver}` : '',
+    rxPipeName: profile => jb.path(profile,'0.event') + '...'+jb.path(profile,'length')
 })
 
 // ***************** inter-cmp services
@@ -7917,8 +7921,8 @@ jb.component('dialogs.changeEmitter', {
 		{id: 'widgetId', defaultValue: '%$headlessWidgetId%'},
 	],
 	category: 'source',
-	impl: (ctx,widgetId) => {
-		widgetId = widgetId || 'default'
+	impl: (ctx,_widgetId) => {
+		const widgetId = !ctx.vars.previewOverlay && _widgetId || 'default'
 		jb.ui.dlgEmitters = jb.ui.dlgEmitters || {}
 		jb.ui.dlgEmitters[widgetId] = jb.ui.dlgEmitters[widgetId] || ctx.run(rx.subject({replay: true}))
 		return jb.ui.dlgEmitters[widgetId]
@@ -7928,7 +7932,6 @@ jb.component('dialogs.changeEmitter', {
 jb.component('dialog.dialogTop', {
 	type: 'control',
 	params: [
-//		{id: 'widgetId', defaultValue: '%$widgetId%'},
 		{id: 'style', type: 'dialogs.style', defaultValue: dialogs.defaultStyle(), dynamic: true},
 	],
 	impl: ctx => jb.ui.ctrl(ctx)
@@ -9984,7 +9987,7 @@ jb.ui.chooseIconWithRaised = (icons,raised) => {
   const raisedIcon = icons.filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'raised')[0]
   const otherIcons = (raisedIcon && icons.filter(cmp=>cmp && cmp.ctx.vars.$model.position != 'raised') || icons)
     .filter(cmp=>cmp && cmp.ctx.vars.$model.position != 'post')
-  if (raised) 
+  if (raised)
     return raisedIcon ? [raisedIcon] : otherIcons
   return otherIcons
 }
@@ -9994,6 +9997,14 @@ jb.component('button.href', {
   impl: customStyle({
     template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
     css: '{color: var(--jb-textLink-fg)} .raised { color: var(--jb-textLink-active-fg) }'
+  })
+})
+
+jb.component('button.hrefText', {
+  type: 'button.style',
+  impl: customStyle({
+    template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
+    css: '{color: var(--jb-input-fg) ; text-decoration: none }     ~.hover, ~.active: { text-decoration: underline }'
   })
 })
 
@@ -10062,7 +10073,7 @@ jb.component('button.mdcChipAction', {
 jb.component('button.plainIcon', {
   type: 'button.style',
   impl: customStyle(
-    (cmp,{title,raised},h) => 
+    (cmp,{title,raised},h) =>
       jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=> vdom.setAttribute('title',vdom.getAttribute('title') || title))[0]
   )
 })
@@ -10074,7 +10085,7 @@ jb.component('button.mdcIcon', {
     {id: 'buttonSize', as: 'number', defaultValue: 40, description: 'button size is larger than the icon size, usually at the rate of 40/24' },
   ],
   impl: styleWithFeatures(button.mdcFloatingAction({withTitle: false, buttonSize: '%$buttonSize%'}), features(
-      ((ctx,{},{icon}) => icon && ctx.run({$: 'feature.icon', ...icon, title: '%$model.title%', 
+      ((ctx,{},{icon}) => icon && ctx.run({$: 'feature.icon', ...icon, title: '%$model.title%',
         size: ({},{},{buttonSize}) => buttonSize * 24/40 })),
     ))
 })
@@ -10095,7 +10106,7 @@ jb.component('button.mdcFloatingAction', {
                 vdom.addClass('mdc-fab__icon').setAttribute('title',vdom.getAttribute('title') || title)),
             ...[withTitle && h('span',{ class: 'mdc-fab__label'},title)].filter(x=>x)
       ]),
-    css: '{width: %$buttonSize%px; height: %$buttonSize%px;}',  
+    css: '{width: %$buttonSize%px; height: %$buttonSize%px;}',
     features: mdcStyle.initDynamic(),
   })
 })
@@ -10681,7 +10692,16 @@ jb.component('table.mdc', {
 jb.component('picklist.native', {
   type: 'picklist.style',
   impl: customStyle({
-    template: (cmp,{databind,options},h) => 
+    template: ({},{databind,options},h) => 
+      h('select', { value: databind, onchange: true }, options.map(option=>h('option',{value: option.code},option.text))),
+    features: [field.databind(), picklist.init()]
+  })
+})
+
+jb.component('picklist.nativePlus', {
+  type: 'picklist.style',
+  impl: customStyle({
+    template: ({},{databind,options},h) => 
       h('select', { value: databind, onchange: true }, options.map(option=>h('option',{value: option.code},option.text))),
     css: `
 { display: block; width: 100%; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857; 
@@ -12103,24 +12123,25 @@ jb.remoteCtx = {
 
 ;
 
+jb.waitFor = jb.waitFor || ((check,interval = 50 ,times = 300) => {
+    let count = 0
+    return new Promise((resolve,reject) => {
+        const toRelease = setInterval(() => {
+            count++
+            const v = check()
+            if (v || count >= times) clearInterval(toRelease)
+            if (v) resolve(v)
+            if (count >= times) reject('timeout')
+        }, interval)
+    })
+})
+
 jb.remote = {
     servers: {},
     pathOfDistFolder() {
         const pathOfDistFolder = jb.path(jb.studio,'studiojb.studio.host.pathOfDistFolder')
         const location = jb.path(jb.studio,'studioWindow.location') || jb.path(jb.frame,'location')
         return pathOfDistFolder && pathOfDistFolder() || location && location.href.match(/^[^:]*/)[0] + `://${location.host}/dist`
-    },
-    waitFor(check,interval,times) {
-        let count = 0
-        return new Promise((resolve,reject) => {
-            const toRelease = setInterval(() => {
-                count++
-                const v = check()
-                if (v || count >= times) clearInterval(toRelease)
-                if (v) resolve(v)
-                if (count >= times) reject('timeout')
-            }, interval)
-        })
     },
     cbPortFromFrame(frame,from,to) {
         return this.extendPortWithCbHandler(this.portFromFrame(frame,from,to)).initCommandListener()
@@ -12148,7 +12169,7 @@ jb.remote = {
             getAsPromise(id,t) { 
                 if (t == 2) this.removeEntry(id)
                     
-                return jb.remote.waitFor(()=> this.map[id],5,10).then(cb => {
+                return jb.waitFor(()=> this.map[id],5,10).then(cb => {
                     if (!cb)
                         jb.logError('cbLookUp - can not find cb',{id})
                     return cb
