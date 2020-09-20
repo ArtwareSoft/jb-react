@@ -4805,7 +4805,7 @@ Object.assign(jb.ui, {
     applyDeltaToCmp(delta, ctx, cmpId, elem) {
         if (!delta) return
         elem = elem || jb.ui.elemOfCmp(ctx,cmpId)
-        if (delta.$prevVersion && delta.$prevVersion != elem.getAttribute('cmp-ver')) {
+        if (!elem || delta.$prevVersion && delta.$prevVersion != elem.getAttribute('cmp-ver')) {
             jb.logError('trying to apply delta to unexpected verson',{delta, ctx, cmpId, elem})
             return
         }
@@ -7044,15 +7044,15 @@ jb.component('button', {
       watchAndCalcModelProp('title'),
       watchAndCalcModelProp('raised'),
       method('onclickHandler', (_ctx,{cmp, ev}) => {
-        if (ev && ev.ctrlKey)
+        if (jb.path(ev,'ev.ctrlKey'))
           cmp.runBEMethod('ctrlAction',_ctx.data,_ctx.vars)
-        else if (ev && ev.altKey)
+        else if (jb.path(ev,'ev.alyKey'))
           cmp.runBEMethod('altAction',_ctx.data,_ctx.vars)
         else
           ctx.params.action(_ctx)
       }),
       feature.userEventProps('ctrlKey,altKey'),
-      ctx => ({studioFeatures :{$: 'feature.contentEditable', param: 'title' }}),
+      () => ({studioFeatures :{$: 'feature.contentEditable', param: 'title' }}),
     ))
 })
 
@@ -10512,6 +10512,36 @@ jb.component('group.sections', {
         }),
         itemVariable: 'section'
       })
+    }),
+    'sectionsModel'
+  )
+})
+
+jb.component('group.sectionExpandCollopase', {
+  type: 'group.style',
+  params: [
+    {id: 'titleCtrl', type: 'control', dynamic: true, defaultValue: text({text: '%$sectionsModel.title()%', style: header.h2() }) },
+    {id: 'toggleStyle', type: 'editable-boolean.style', defaultValue: editableBoolean.expandCollapse() },
+  ],
+  impl: styleByControl(
+    group({
+      controls: [
+        group({
+          controls: [
+            editableBoolean({databind: '%$sectionExpanded%', style: call('toggleStyle')}),
+            call('titleCtrl'),
+          ],
+          layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'})
+        }),
+        group({
+          controls: '%$sectionsModel/controls%',
+          features: [
+            watchRef('%$sectionExpanded%'),
+            feature.if('%$sectionExpanded%')
+          ]
+        })
+      ],
+      features: variable({name: 'sectionExpanded', watchable: true}),
     }),
     'sectionsModel'
   )
