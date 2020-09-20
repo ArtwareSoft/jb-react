@@ -56,7 +56,7 @@ jb.component('inplaceEdit.openToolbarOfLastEdit', {
         const el = Array.from(_window.document.querySelectorAll('[jb-ctx]'))
           .filter(e=> jb.path(_window.jb.ctxDictionary[e.getAttribute('jb-ctx')],'path') == path)[0]
         if (el)
-          new jb.jbCtx().setVar('$launchingElement',{ el }).run({$: 'inplaceEdit.openToolbar', path })
+          jb.ui.extendWithServiceRegistry().run({$: 'inplaceEdit.openToolbar', path })
       })
     }
 })

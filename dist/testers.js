@@ -307,7 +307,7 @@ jb.testers = {
 		.filter(e=>isCompNameOfType(e[0],'test'))
 		.filter(e=>!testType || e[1].impl.$ == testType)
 		.filter(e=>!specificTest || e[0] == specificTest)
-		.filter(e=> !e[0].match(/throw/))
+//		.filter(e=> !e[0].match(/throw/)) // tests that throw expetions and stop the debugger
 		.filter(e=>!pattern || e[0].match(pattern))
 //		.filter(e=>!e[0].match(/^remoteTest|inPlaceEditTest|patternsTest/) && ['uiTest','dataTest'].indexOf(e[1].impl.$) != -1) // || includeHeavy || specificTest || !e[1].impl.heavy )
 //		.sort((a,b) => (a[0] > b[0]) ? 1 : ((b[0] > a[0]) ? -1 : 0))

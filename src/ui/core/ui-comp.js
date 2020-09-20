@@ -158,9 +158,9 @@ class JbComponent {
     }
     renderVdomAndFollowUp() {
         const vdom = this.renderVdom()
-        jb.delay(1).then(() => (this.followUpFuncs||[]).forEach(f=> tryWrapper(() => { 
-            jb.log(`backend uiComp followUp ${jb.ui.rxPipeName(f)}`, {cmp: this, f})
-            f(this.calcCtx)
+        jb.delay(1).then(() => (this.followUpFuncs||[]).forEach(fu=> tryWrapper(() => { 
+            jb.log(`backend uiComp followUp`, {cmp: this, fu, srcCtx: fu.srcCtx})
+            fu.action(this.calcCtx)
         }, 'followUp') ) ).then(()=> this.ready = true)
         this.ready = false
         return vdom

@@ -122,7 +122,7 @@ jb.component('followUp.action', {
   params: [
     {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
-  impl: ctx => ({ followUp: ctx2 => ctx.params.action(ctx2) })
+  impl: ctx => ({ followUp: { action: ctx2 => ctx.params.action(ctx2), srcCtx: ctx } })
 })
 
 jb.component('followUp.flow', {

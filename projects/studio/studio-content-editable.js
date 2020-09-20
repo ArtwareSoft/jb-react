@@ -16,7 +16,7 @@ jb.ui.contentEditable = {
   },
   activate(cmp,ev) {
     if (!this.isEnabled()) return
-    const ctx = new jb.jbCtx().setVars({ev})
+    const ctx = jb.ui.extendWithServiceRegistry().setVars({ev})
     const previewCtx = new jb.studio.previewjb.jbCtx()
     const jbUi = jb.studio.previewjb.ui
     const el = jb.ui.elemOfCmp(previewCtx,cmp.cmpId)

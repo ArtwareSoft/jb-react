@@ -300,14 +300,6 @@ jb.component('source.dragulaEvent',{
   ],
   impl: source.callbag(({},{cmp},{event,argNames}) => 
     jb.callbag.create(obs=> cmp.drake.on(event, (...args) => obs(jb.objFromEntries(args.map((v,i) => [argNames[i],v]))))))
-  
-  // (ctx,event,argNames) => (start, sink) => {
-  //   if (start !== 0) return
-  //   const drake = jb.path(ctx.vars,'cmp.drake')
-  //   if (!drake) return
-  //   drake.on(event, function dragula(...args) { sink(1, ctx.dataObj(jb.objFromEntries(args.map((v,i) => [argNames[i],v])))) } )
-  //   sink(0, (t,d) => {})
-  // }
 })
 
 jb.component('itemlist.ctxIdFromSibling', {

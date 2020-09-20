@@ -220,7 +220,7 @@ jb.component('studioHelper.features', {
   })
 })
 
-jb.component('studioHelperSample.control', {
+jb.component('studioHelperSample.control2', {
   type: 'control',
   impl: group({
     title: 'main',
@@ -409,7 +409,7 @@ jb.component('studioHelperSample.componentHeader', {
 })
 
 
-jb.component('studioHelperSample.control', { /* studioHelperSample.control */
+jb.component('studioHelperSample.control3', { /* studioHelperSample.control */
   type: 'control',
   impl: group({
     title: pipeline('main'),

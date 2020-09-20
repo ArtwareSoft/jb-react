@@ -2678,7 +2678,6 @@ jb.callbag = {
             return
           }
           if (t == 1) {
-            console.log('in',t,d)
             store.push(d)
             sinks.forEach(sink => sink(1, d))
           }
@@ -2706,8 +2705,6 @@ jb.callbag = {
           })
       
           store.slice(sliceNum).forEach(entry => sink(1, entry))
-          console.log('replay',[...store], sliceNum)
-          //store = []
       
           if (done) sink(2)
         }

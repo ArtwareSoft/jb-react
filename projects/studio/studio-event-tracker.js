@@ -116,24 +116,22 @@ jb.component('studio.eventTracker', {
         items: '%$events%',
         controls: [
           text('%index%'),
-          text('%logNames%'),
-          studio.eventSourceScriptLink(),
+          text({ text: '%logNames%', features: feature.byCondition(
+            inGroup(list('exception','error'), '%logNames%'),
+            css.color('var(--jb-error-fg)')
+          )}),
           studio.eventView()
         ],
         style: table.plain(true),
         visualSizeLimit: '30',
         features: [
           id('event-logs'),
-          itemlist.infiniteScroll('5'),
-          css.height({height: '400', overflow: 'scroll'}),
+          itemlist.infiniteScroll(50),
+          //css.height({height: '400', overflow: 'scroll'}),
           itemlist.selection({
             onSelection: runActions(({data}) => jb.frame.console.log(data), studio.highlightEvent('%%'))
           }),
           itemlist.keyboardSelection({}),
-          feature.byCondition(
-            inGroup(list('exception,error'), '%logNames%'),
-            css.color('var(--jb-error-fg)')
-          )
         ]
       })
     ],
@@ -144,7 +142,7 @@ jb.component('studio.eventTracker', {
         value: studio.eventItems('%$studio/eventTrackerQuery%', '%$studio/eventTrackerPattern%')
       }),
       If(
-        ctx => jb.ui.getInspectedJb() != ctx.frame().jb && 
+        ctx => jb.ui.getInspectedJb() != ctx.frame().jb &&
           (!jb.studio.studiojb || jb.studio.studiojb.exec('%$studio/project%') != 'studio-helper'),
         followUp.watchObservable(
           source.callbag(ctx => jb.ui.getSpy(ctx).observable()),
@@ -155,83 +153,22 @@ jb.component('studio.eventTracker', {
   })
 })
 
-jb.component('studio.eventSourceScriptLink', {
-  type: 'control',
-  params: [
-    {id: 'event', defaultValue: '%%'}
-  ],
-  impl: controlWithCondition('%$event/scriptPath%',
-        button({
-          title: '%logNames%',
-          action: studio.gotoEventSource('%$event/scriptPath%'),
-          style: button.hrefText()
-        })
-    ),
-})
-
 jb.component('studio.eventView', {
   type: 'control',
   impl: group({
     layout: layout.horizontal('4'),
     controls: [
+      studio.sourceCtxView('%srcCtx%'),
+      studio.sourceCtxView('%cmp/ctx%'),
       studio.showLowFootprintObj('%cmp%','cmp'),
-      studio.showLowFootprintObj('%ctx%','ctx'),
+      studio.sourceCtxView('%ctx%'),
       studio.showLowFootprintObj('%delta%','delta'),
       studio.showLowFootprintObj('%vdom%','vdom'),
       studio.showLowFootprintObj('%err%','err'),
       studio.showLowFootprintObj('%ref%','ref'),
       studio.showLowFootprintObj('%value%','value'),
       studio.showLowFootprintObj('%focusChanged%','focusChanged'),
-
-      // controlWithCondition(
-      //   '%opPath%',
-      //   button({
-      //     title: last('%opPath%'),
-      //     style: button.href(),
-      //     features: feature.hoverTitle(join({separator: '/', items: '%opPath%'}))
-      //   })
-      // ),
-      // controlWithCondition(({data}) => data.opValue != null, text('<- %opValue%')),
-      // controlWithCondition(
-      //   '%path%',
-      //   button({
-      //     title: '%compName%',
-      //     action: studio.showStack('%ctx%'),
-      //     style: button.href(),
-      //     features: [
-      //       feature.hoverTitle('%path%'),
-      //       feature.onHover({action: studio.highlightByPath('%path%')}),
-      //       ctrlAction(studio.openComponentInJbEditor('%path%'))
-      //     ]
-      //   })
-      // ),
-      // controlWithCondition(
-      //   '%srcCompName%',
-      //   group({
-      //     layout: layout.horizontal(),
-      //     controls: [
-      //       text('activated by:'),
-      //       button({
-      //         title: '%srcCompName%',
-      //         action: studio.showStack('%srcCtx%'),
-      //         style: button.href(),
-      //         features: [
-      //           feature.hoverTitle('%srcPath%'),
-      //           feature.onHover({action: studio.highlightByPath('%srcPath%')})
-      //         ]
-      //       })
-      //     ]
-      //   })
-      // ),
-      // studio.showLowFootprintObj('%ctx/data%','data'),
-      // studio.showLowFootprintObj('%ctx/vars%','vars'),
-      // studio.showLowFootprintObj('%data%','data'),
-      // studio.showLowFootprintObj('%jbComp%','jbComp'),
-      // studio.showLowFootprintObj('%delta%','delta'),
-      // studio.showLowFootprintObj('%vdom%','vdom'),
-      // studio.slicedString('%description%'),
-      // studio.slicedString('%error/message%'),
-    ]
+    ],
   })
 })
 
@@ -246,7 +183,7 @@ jb.component('studio.showLowFootprintObj', {
     controls: [
       controlWithCondition(
         '%$obj/cmpId%',
-        studio.slicedString('%$obj/ctx/profile/$%%$obj/pt% - %$obj/cmpId%;%$obj/ver%')
+        studio.slicedString('%$obj/cmpId%;%$obj/ver%')
       ),
       controlWithCondition(
         '%$obj/_parent%',
@@ -264,29 +201,29 @@ jb.component('studio.showLowFootprintObj', {
         isOfType('boolean', '%$obj%'),
         studio.slicedString('%$title%')
       ),
-      controlWithCondition(
-        isOfType('object,array', '%$obj%'),
-        button({
-          vars: Var('count', pipeline('%$obj%',keys(),count())),
-          title: If(isOfType('array', '%$obj%'), '%$title%[%$obj/length%]','%$title% (%$count%)'),
-          action: openDialog({
-            style: dialog.popup(),
-            content: studio.dataBrowse('%$obj%'),
-            title: 'data',
-            features: dialogFeature.uniqueDialog('showObj')
-          }),
-          style: button.href(),
-          features: [css.margin({left: '10'}), feature.hoverTitle('open')]
-        })
-      ),
-      controlWithCondition(
-        isOfType('string,number,boolean', '%$obj%'),
-        text({text: pipeline('%$obj%', slice(0, 20))})
-      ),
-      controlWithCondition(
-        isOfType('function', '%$obj%'),
-        text(({},{},{obj}) => obj.name) // can not use '%$obj/name%'
-      ),
+      // controlWithCondition(
+      //   isOfType('object,array', '%$obj%'),
+      //   button({
+      //     vars: Var('count', pipeline('%$obj%',keys(),count())),
+      //     title: If(isOfType('array', '%$obj%'), '%$title%[%$obj/length%]','%$title% (%$count%)'),
+      //     action: openDialog({
+      //       style: dialog.popup(),
+      //       content: studio.dataBrowse('%$obj%'),
+      //       title: 'data',
+      //       features: dialogFeature.uniqueDialog('showObj')
+      //     }),
+      //     style: button.href(),
+      //     features: [css.margin({left: '10'}), feature.hoverTitle('open')]
+      //   })
+      // ),
+      // controlWithCondition(
+      //   isOfType('string,number,boolean', '%$obj%'),
+      //   text({text: pipeline('%$obj%', slice(0, 20))})
+      // ),
+      // controlWithCondition(
+      //   isOfType('function', '%$obj%'),
+      //   text(({},{},{obj}) => obj.name) // can not use '%$obj/name%'
+      // ),
     ]
   }))
 })
@@ -316,14 +253,6 @@ jb.component('studio.eventItems', {
     jb.log('eventTracker items',{ctx,spy,query,items})
     return items
   }
-})
-
-jb.component('studio.gotoEventSource', {
-  type: 'action',
-  params: [
-    {id: 'event'}
-  ],
-  impl: If('%$event/path%',studio.gotoSource('%$event/path%',true))
 })
 
 jb.component('studio.elemOfCmp', {
@@ -395,31 +324,61 @@ jb.component('studio.highlightDialogStyle', {
   })
 })
 
-jb.component('studio.showStack', {
+jb.component('studio.sourceCtxView', {
+  type: 'control',
+  params: [
+    {id: 'srcCtx'},
+    {id: 'noStack', as: 'boolean'},
+  ],
+  impl: controlWithCondition(
+    '%$srcCtx/_parent%',
+    group({
+      controls: [
+        button({
+          title: ({},{},{srcCtx}) => {
+            const path = srcCtx.path
+            const profile = jb.studio.valOfPath(path)
+            const pt = profile && profile.$ || ''
+            const ret = `${path.split('~')[0]}:${pt}`
+            return ret.replace(/feature\./g,'').replace(/front.nd\./g,'').replace(/\.action/g,'')
+          },
+          action: studio.gotoSource('%$srcCtx/path%', true),
+          style: button.hrefText(),
+          features: feature.hoverTitle('%$srcCtx/path%')
+        }),
+        If(not('%$noStack%'),studio.stackView('%$srcCtx%'))
+      ]
+    })
+  )
+})
+
+jb.component('studio.stackView', {
+  type: 'control',
+  params: [
+    {id: 'srcCtx' },
+  ],
+  impl: itemlist({
+      items: ({},{},{srcCtx}) => {
+          const stack=[];
+          for(let innerCtx= srcCtx; innerCtx; innerCtx = innerCtx.cmpCtx)
+            stack.push(innerCtx)
+          return stack.slice(2)
+          // jb.unique([...stack.slice(1).map(ctx=> ({ctx, path: ctx.callerPath})),
+          //   ...stack.filter(ctx => ctx.vars.cmp).map(ctx=>({ctx, path: ctx.vars.cmp.ctx.path}))])
+      },
+      controls: studio.sourceCtxView('%%',true),
+    })
+})
+
+jb.component('studio.openStackView', {
   type: 'action',
   params: [
-    {id: 'ctx'},
-    {id: 'onSelect', type: 'action', dynamic: true, defaultValue: studio.openJbEditor('%path%') }
+    {id: 'srcCtx'},
   ],
   impl: openDialog({
     id: 'show-stack',
     style: dialog.popup(),
-    content: itemlist({
-      items: ({},{},{ctx}) => {
-          const ctxStack=[];
-          for(let innerCtx= ctx; innerCtx; innerCtx = innerCtx.cmpCtx)
-            ctxStack.push(innerCtx)
-          return jb.unique([...ctxStack.slice(1).map(ctx=> ({ctx, path: ctx.callerPath})),
-            ...ctxStack.filter(ctx => ctx.vars.cmp).map(ctx=>({ctx, path: ctx.vars.cmp.ctx.path}))])
-      },
-      controls: button({
-        title: studio.compName('%path%'),
-        action: runActions(call('onSelect'),dialog.closeDialogById('show-stack')),
-        style: button.href(),
-        features: feature.hoverTitle('%path%')
-      }),
-      features: css.padding({left: '4', right: '4'})
-    }),
+    content: studio.stackView('%$srcCtx%')
   })
 })
 

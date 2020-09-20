@@ -593,17 +593,18 @@ class frontEndCmp {
             return jb.logError(`frontEnd - no method ${method}`,{cmp: {...this}})
         toRun.forEach(({path}) => tryWrapper(() => {
             const profile = path.split('~').reduce((o,p)=>o[p],jb.comps)
-            const feMEthod = jb.run( new jb.jbCtx(this.ctx, { profile, path, forcePath: path }))
+            const srcCtx = new jb.jbCtx(this.ctx, { profile, path, forcePath: path })
+            const feMEthod = jb.run(srcCtx)
             const el = this.base
             const vars = {cmp: this, $state: this.state, el, ...this.base.vars, ..._vars }
             const ctxToUse = this.ctx.setData(data).setVars(vars)
             const {_prop, _flow } = feMEthod.frontEndMethod
             if (_prop)
-                jb.log(`frontend uiComp calc prop ${_prop}`,{cmp: {...this}, scriptPath: path, ...feMEthod.frontEndMethod, el,ctxToUse})
+                jb.log(`frontend uiComp calc prop ${_prop}`,{cmp: {...this}, srcCtx, ...feMEthod.frontEndMethod, el,ctxToUse})
             else if (_flow)
-                jb.log(`frontend uiComp start flow ${jb.ui.rxPipeName(_flow)}`,{cmp: {...this}, scriptPath: path, ...feMEthod.frontEndMethod, el, ctxToUse})
+                jb.log(`frontend uiComp start flow ${jb.ui.rxPipeName(_flow)}`,{cmp: {...this}, srcCtx, ...feMEthod.frontEndMethod, el, ctxToUse})
             else 
-                jb.log(`frontend uiComp run method ${method}`,{cmp: {...this}, scriptPath: path , ...feMEthod.frontEndMethod,el,ctxToUse})
+                jb.log(`frontend uiComp run method ${method}`,{cmp: {...this}, srcCtx , ...feMEthod.frontEndMethod,el,ctxToUse})
             ctxToUse.run(feMEthod.frontEndMethod.action)
         }, `frontEnd-${method}`))
     }

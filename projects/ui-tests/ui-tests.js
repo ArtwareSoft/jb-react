@@ -963,6 +963,7 @@ jb.component('uiTest.editableText.richPicklistHelper.setInput', {
       rx.flatMap(source.waitForSelector('.jb-popup')),
       rx.do(uiAction.keyboardEvent({selector: '#inp', type: 'keydown', keyCode: 40})),
       rx.do(uiAction.keyboardEvent({selector: '#inp', type: 'keyup', keyCode: 13})),
+      rx.do(() => jb.delay(10).then(()=>self.scrollTo(0,0))) // scroll to top bug
     ),    
     expectedResult: contains('1111</input-val>')
   })

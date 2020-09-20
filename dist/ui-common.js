@@ -1844,17 +1844,18 @@ class frontEndCmp {
             return jb.logError(`frontEnd - no method ${method}`,{cmp: {...this}})
         toRun.forEach(({path}) => tryWrapper(() => {
             const profile = path.split('~').reduce((o,p)=>o[p],jb.comps)
-            const feMEthod = jb.run( new jb.jbCtx(this.ctx, { profile, path, forcePath: path }))
+            const srcCtx = new jb.jbCtx(this.ctx, { profile, path, forcePath: path })
+            const feMEthod = jb.run(srcCtx)
             const el = this.base
             const vars = {cmp: this, $state: this.state, el, ...this.base.vars, ..._vars }
             const ctxToUse = this.ctx.setData(data).setVars(vars)
             const {_prop, _flow } = feMEthod.frontEndMethod
             if (_prop)
-                jb.log(`frontend uiComp calc prop ${_prop}`,{cmp: {...this}, scriptPath: path, ...feMEthod.frontEndMethod, el,ctxToUse})
+                jb.log(`frontend uiComp calc prop ${_prop}`,{cmp: {...this}, srcCtx, ...feMEthod.frontEndMethod, el,ctxToUse})
             else if (_flow)
-                jb.log(`frontend uiComp start flow ${jb.ui.rxPipeName(_flow)}`,{cmp: {...this}, scriptPath: path, ...feMEthod.frontEndMethod, el, ctxToUse})
+                jb.log(`frontend uiComp start flow ${jb.ui.rxPipeName(_flow)}`,{cmp: {...this}, srcCtx, ...feMEthod.frontEndMethod, el, ctxToUse})
             else 
-                jb.log(`frontend uiComp run method ${method}`,{cmp: {...this}, scriptPath: path , ...feMEthod.frontEndMethod,el,ctxToUse})
+                jb.log(`frontend uiComp run method ${method}`,{cmp: {...this}, srcCtx , ...feMEthod.frontEndMethod,el,ctxToUse})
             ctxToUse.run(feMEthod.frontEndMethod.action)
         }, `frontEnd-${method}`))
     }
@@ -2083,9 +2084,9 @@ class JbComponent {
     }
     renderVdomAndFollowUp() {
         const vdom = this.renderVdom()
-        jb.delay(1).then(() => (this.followUpFuncs||[]).forEach(f=> tryWrapper(() => { 
-            jb.log(`backend uiComp followUp ${jb.ui.rxPipeName(f)}`, {cmp: this, f})
-            f(this.calcCtx)
+        jb.delay(1).then(() => (this.followUpFuncs||[]).forEach(fu=> tryWrapper(() => { 
+            jb.log(`backend uiComp followUp`, {cmp: this, fu, srcCtx: fu.srcCtx})
+            fu.action(this.calcCtx)
         }, 'followUp') ) ).then(()=> this.ready = true)
         this.ready = false
         return vdom
@@ -2611,7 +2612,7 @@ jb.component('followUp.action', {
   params: [
     {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
-  impl: ctx => ({ followUp: ctx2 => ctx.params.action(ctx2) })
+  impl: ctx => ({ followUp: { action: ctx2 => ctx.params.action(ctx2), srcCtx: ctx } })
 })
 
 jb.component('followUp.flow', {
@@ -5134,14 +5135,6 @@ jb.component('source.dragulaEvent',{
   ],
   impl: source.callbag(({},{cmp},{event,argNames}) => 
     jb.callbag.create(obs=> cmp.drake.on(event, (...args) => obs(jb.objFromEntries(args.map((v,i) => [argNames[i],v]))))))
-  
-  // (ctx,event,argNames) => (start, sink) => {
-  //   if (start !== 0) return
-  //   const drake = jb.path(ctx.vars,'cmp.drake')
-  //   if (!drake) return
-  //   drake.on(event, function dragula(...args) { sink(1, ctx.dataObj(jb.objFromEntries(args.map((v,i) => [argNames[i],v])))) } )
-  //   sink(0, (t,d) => {})
-  // }
 })
 
 jb.component('itemlist.ctxIdFromSibling', {
