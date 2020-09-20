@@ -46,51 +46,51 @@ jb.component('feature.contentEditable', {
     {id: 'param', as: 'string', description: 'name of param mapped to the content editable element'}
   ],
   impl: If(()=> jb.ui.contentEditable.isEnabled(), features(
-    method('execProfile',({data}) => jb.frame.parent.jb.exec({$: data, from: 'studio'})),
-    method('setScriptData',({},{ev,cmp},{param}) => jb.ui.contentEditable.setScriptData(ev,cmp,param,param == 'html') ),
-    method('onEnter', ({},{ev,cmp},{param}) => {
-      jb.ui.contentEditable.setScriptData(ev,cmp,param)
-      new jb.jbCtx().run(runActions(
-        delay(1), // can not wait for script change delay
-        contentEditable.deactivate()
-      ))
-    }),
     method('activate',({},{cmp,ev}) => jb.ui.contentEditable.activate(cmp,ev)),
-    feature.keyboardShortcut('Ctrl+Z', action.runBEMethod('execProfile','studio.undo')),
-    feature.keyboardShortcut('Ctrl+Y', action.runBEMethod('execProfile','studio.redo')),
-    frontEnd.enrichUserEvent(({},{ev}) => ({ innerText: ev.target.innerText, innerHTML: ev.target.innerText})),
-    frontEnd.flow(source.frontEndEvent('blur'), rx.filter('%$cmp.state.contentEditableActive%'), frontEnd.addUserEvent(), 
-      sink.BEMethod('setScriptData')),
     frontEnd.flow(source.frontEndEvent('mousedown'), rx.filter(not('%$cmp.state.contentEditableActive%')),frontEnd.addUserEvent(), 
       sink.BEMethod('activate')),
-    frontEnd.onRefresh(({},{$state,el}) => el.onkeydown = $state.contentEditableActive ? 
-        ev => {
-          if (ev.keyCode == 13) {
-            jb.studio.previewjb.ui.runBEMethod(el,'onEnter',null,{ev: jb.ui.buildUserEvent(ev, el)})
-            return false
-          }
-          return true
-        } : null
-    ),
-    templateModifier(({},{cmp,vdom},{param}) => {
-      const contentEditable = jb.ui.contentEditable
-      if (!contentEditable || !contentEditable.isEnabled() || param && !contentEditable.refOfProp(cmp,param)) return vdom // jb.frame.isWorker || 
-      const attsToInject = cmp.state.contentEditableActive ? {contenteditable: 'true'} : {} // onkeypress: true
-      // fix spacebar bug in button
-      if (vdom.tag && vdom.tag.toLowerCase() == 'button' && vdom.children && vdom.children.length == 1 && typeof vdom.children[0] == 'string') {
-        vdom.children[0] = jb.ui.h('span',attsToInject,vdom.children[0])
-        return vdom
-      } else if (vdom.tag && vdom.tag.toLowerCase() == 'button' && jb.ui.find(vdom,'.mdc-button__label')) {
-        const atts = jb.ui.find(vdom,'.mdc-button__label').attributes || {}
-        Object.assign(atts,attsToInject,{style: [(atts.style || ''),'z-index: 100'].filter(x=>x).join(';') })
-        return vdom
-      }
-      vdom.attributes = vdom.attributes || {};
-      Object.assign(vdom.attributes,attsToInject)
-      return vdom;
-    }),
-    css(If('%$cmp.state.contentEditableActive%',
-          '{ border: 1px dashed grey; background-image: linear-gradient(90deg,rgba(243,248,255,.03) 63.45%,rgba(207,214,229,.27) 98%); border-radius: 3px;}'
+    If('%$$state.contentEditableActive%', features(
+      method('execProfile',({data}) => jb.frame.parent.jb.exec({$: data, from: 'studio'})),
+      method('setScriptData',({},{ev,cmp},{param}) => jb.ui.contentEditable.setScriptData(ev,cmp,param,param == 'html') ),
+      method('onEnter', ({},{ev,cmp},{param}) => {
+        jb.ui.contentEditable.setScriptData(ev,cmp,param)
+        new jb.jbCtx().run(runActions(
+          delay(1), // can not wait for script change delay
+          contentEditable.deactivate()
+        ))
+      }),
+      feature.keyboardShortcut('Ctrl+Z', action.runBEMethod('execProfile','studio.undo')),
+      feature.keyboardShortcut('Ctrl+Y', action.runBEMethod('execProfile','studio.redo')),
+      frontEnd.enrichUserEvent(({},{ev}) => ({ innerText: ev.target.innerText, innerHTML: ev.target.innerText})),
+      frontEnd.flow(source.frontEndEvent('blur'), rx.filter('%$cmp.state.contentEditableActive%'), frontEnd.addUserEvent(), 
+        sink.BEMethod('setScriptData')),
+      frontEnd.onRefresh(({},{$state,el}) => el.onkeydown = $state.contentEditableActive ? 
+          ev => {
+            if (ev.keyCode == 13) {
+              jb.studio.previewjb.ui.runBEMethod(el,'onEnter',null,{ev: jb.ui.buildUserEvent(ev, el)})
+              return false
+            }
+            return true
+          } : null
+      ),
+      templateModifier(({},{cmp,vdom},{param}) => {
+        const contentEditable = jb.ui.contentEditable
+        if (!contentEditable || !contentEditable.isEnabled() || param && !contentEditable.refOfProp(cmp,param)) return vdom // jb.frame.isWorker || 
+        const attsToInject = cmp.state.contentEditableActive ? {contenteditable: 'true'} : {} // onkeypress: true
+        // fix spacebar bug in button
+        if (vdom.tag && vdom.tag.toLowerCase() == 'button' && vdom.children && vdom.children.length == 1 && typeof vdom.children[0] == 'string') {
+          vdom.children[0] = jb.ui.h('span',attsToInject,vdom.children[0])
+          return vdom
+        } else if (vdom.tag && vdom.tag.toLowerCase() == 'button' && jb.ui.find(vdom,'.mdc-button__label')) {
+          const atts = jb.ui.find(vdom,'.mdc-button__label').attributes || {}
+          Object.assign(atts,attsToInject,{style: [(atts.style || ''),'z-index: 100'].filter(x=>x).join(';') })
+          return vdom
+        }
+        vdom.attributes = vdom.attributes || {};
+        Object.assign(vdom.attributes,attsToInject)
+        return vdom;
+      }),
+      css('{ border: 1px dashed grey; background-image: linear-gradient(90deg,rgba(243,248,255,.03) 63.45%,rgba(207,214,229,.27) 98%); border-radius: 3px;}')
     ))
   ))
 })

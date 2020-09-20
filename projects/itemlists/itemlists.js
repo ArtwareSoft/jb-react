@@ -52,11 +52,11 @@ jb.component('itemlists.largeTable', {
   impl: group({
     title: 'large-table',
     controls: [
-      table({
-        items: pipeline(range(1, '1000'), {'$': 'object', id: '%%', name: '%%-%%'}),
-        fields: [
-          field({title: 'id', data: '%id%', numeric: true}),
-          field({title: 'group', data: ctx => Math.floor(Number(ctx.data.id) /10)})
+      itemlist({
+        items: pipeline(range(1, 1000), {'$': 'object', id: '%%', name: '%%-%%'}),
+        controls: [
+          text({text: '%id%', title: 'id'}),
+          text({text: ctx => Math.floor(Number(ctx.data.id) /10), title: 'group'})
         ],
         style: table.mdc(),
         visualSizeLimit: '1000'

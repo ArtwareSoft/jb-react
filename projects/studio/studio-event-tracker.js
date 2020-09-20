@@ -123,7 +123,7 @@ jb.component('studio.eventTracker', {
           studio.eventView()
         ],
         style: table.plain(true),
-        visualSizeLimit: '30',
+        visualSizeLimit: 100,
         features: [
           id('event-logs'),
           itemlist.infiniteScroll(50),
@@ -158,13 +158,13 @@ jb.component('studio.eventView', {
   impl: group({
     layout: layout.horizontal('4'),
     controls: [
-      studio.sourceCtxView('%srcCtx%'),
+      studio.sourceCtxView(ctx=>ctx.exp('%srcCtx%')),
       studio.sourceCtxView('%cmp/ctx%'),
       studio.showLowFootprintObj('%cmp%','cmp'),
       studio.sourceCtxView('%ctx%'),
       studio.showLowFootprintObj('%delta%','delta'),
       studio.showLowFootprintObj('%vdom%','vdom'),
-      studio.showLowFootprintObj('%err%','err'),
+      studio.showLowFootprintObj('%err%','err',50),
       studio.showLowFootprintObj('%ref%','ref'),
       studio.showLowFootprintObj('%value%','value'),
       studio.showLowFootprintObj('%focusChanged%','focusChanged'),
@@ -200,6 +200,10 @@ jb.component('studio.showLowFootprintObj', {
       controlWithCondition(
         isOfType('boolean', '%$obj%'),
         studio.slicedString('%$title%')
+      ),
+      controlWithCondition(
+        isOfType('string', '%$obj%'),
+        studio.slicedString('%$title%: %$obj%')
       ),
       // controlWithCondition(
       //   isOfType('object,array', '%$obj%'),
@@ -251,7 +255,10 @@ jb.component('studio.eventItems', {
     const regexp = new RegExp(pattern)
     const items = pattern ? ret.filter(x=>regexp.test(Array.from(x.values()).filter(x=> typeof x == 'string').join(','))) : ret
     jb.log('eventTracker items',{ctx,spy,query,items})
-    return items
+    const itemsWithTimeBreak = items.reduce((acc,item,i) => i && item.time - items[i-1].time > 100 ? 
+      [...acc,{index: '--------', logNames: `${item.time - items[i-1].time} mSec gap ------`},item] : 
+      [...acc,item] ,[])
+    return itemsWithTimeBreak
   }
 })
 
@@ -328,57 +335,51 @@ jb.component('studio.sourceCtxView', {
   type: 'control',
   params: [
     {id: 'srcCtx'},
-    {id: 'noStack', as: 'boolean'},
   ],
-  impl: controlWithCondition(
-    '%$srcCtx/_parent%',
-    group({
-      controls: [
-        button({
+  impl: controlWithCondition('%$srcCtx/_parent%', group({
+    controls: [
+      controlWithCondition('%$stackItems/length% == 0',studio.singleSourceCtxView('%$srcCtx%')),
+      controlWithCondition('%$stackItems/length% > 0', group({
+          style: group.sectionExpandCollopase(studio.singleSourceCtxView('%$srcCtx%')),
+          controls: itemlist({items: '%$stackItems%', controls: studio.singleSourceCtxView('%%')}),
+      }))
+    ],
+    features: variable('stackItems', studio.stackItems('%$srcCtx%'))
+  }))
+})
+
+jb.component('studio.singleSourceCtxView', {
+  type: 'control',
+  params: [
+    {id: 'srcCtx'},
+  ],
+  impl: button({
           title: ({},{},{srcCtx}) => {
+            if (!srcCtx) return ''
             const path = srcCtx.path
             const profile = jb.studio.valOfPath(path)
             const pt = profile && profile.$ || ''
             const ret = `${path.split('~')[0]}:${pt}`
             return ret.replace(/feature\./g,'').replace(/front.nd\./g,'').replace(/\.action/g,'')
           },
-          action: studio.gotoSource('%$srcCtx/path%', true),
+          action: studio.highlightEvent('%%'),
           style: button.hrefText(),
-          features: feature.hoverTitle('%$srcCtx/path%')
-        }),
-        If(not('%$noStack%'),studio.stackView('%$srcCtx%'))
-      ]
-    })
-  )
+          features: [
+            feature.hoverTitle('%$srcCtx/path%'),
+            ctrlAction(studio.gotoSource('%$srcCtx/path%', true))
+          ]
+    }),
 })
 
-jb.component('studio.stackView', {
-  type: 'control',
+jb.component('studio.stackItems', {
   params: [
     {id: 'srcCtx' },
   ],
-  impl: itemlist({
-      items: ({},{},{srcCtx}) => {
+  impl: (ctx,srcCtx) => {
           const stack=[];
           for(let innerCtx= srcCtx; innerCtx; innerCtx = innerCtx.cmpCtx)
             stack.push(innerCtx)
           return stack.slice(2)
-          // jb.unique([...stack.slice(1).map(ctx=> ({ctx, path: ctx.callerPath})),
-          //   ...stack.filter(ctx => ctx.vars.cmp).map(ctx=>({ctx, path: ctx.vars.cmp.ctx.path}))])
       },
-      controls: studio.sourceCtxView('%%',true),
-    })
-})
-
-jb.component('studio.openStackView', {
-  type: 'action',
-  params: [
-    {id: 'srcCtx'},
-  ],
-  impl: openDialog({
-    id: 'show-stack',
-    style: dialog.popup(),
-    content: studio.stackView('%$srcCtx%')
-  })
 })
 

@@ -14,15 +14,15 @@ jb.component('button', {
       watchAndCalcModelProp('title'),
       watchAndCalcModelProp('raised'),
       method('onclickHandler', (_ctx,{cmp, ev}) => {
-        if (ev && ev.ctrlKey)
+        if (jb.path(ev,'ev.ctrlKey'))
           cmp.runBEMethod('ctrlAction',_ctx.data,_ctx.vars)
-        else if (ev && ev.altKey)
+        else if (jb.path(ev,'ev.alyKey'))
           cmp.runBEMethod('altAction',_ctx.data,_ctx.vars)
         else
           ctx.params.action(_ctx)
       }),
       feature.userEventProps('ctrlKey,altKey'),
-      ctx => ({studioFeatures :{$: 'feature.contentEditable', param: 'title' }}),
+      () => ({studioFeatures :{$: 'feature.contentEditable', param: 'title' }}),
     ))
 })
 

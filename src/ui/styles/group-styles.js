@@ -187,3 +187,33 @@ jb.component('group.sections', {
     'sectionsModel'
   )
 })
+
+jb.component('group.sectionExpandCollopase', {
+  type: 'group.style',
+  params: [
+    {id: 'titleCtrl', type: 'control', dynamic: true, defaultValue: text({text: '%$sectionsModel.title()%', style: header.h2() }) },
+    {id: 'toggleStyle', type: 'editable-boolean.style', defaultValue: editableBoolean.expandCollapse() },
+  ],
+  impl: styleByControl(
+    group({
+      controls: [
+        group({
+          controls: [
+            editableBoolean({databind: '%$sectionExpanded%', style: call('toggleStyle')}),
+            call('titleCtrl'),
+          ],
+          layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'})
+        }),
+        group({
+          controls: '%$sectionsModel/controls%',
+          features: [
+            watchRef('%$sectionExpanded%'),
+            feature.if('%$sectionExpanded%')
+          ]
+        })
+      ],
+      features: variable({name: 'sectionExpanded', watchable: true}),
+    }),
+    'sectionsModel'
+  )
+})

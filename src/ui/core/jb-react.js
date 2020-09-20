@@ -475,7 +475,7 @@ Object.assign(jb.ui, {
     applyDeltaToCmp(delta, ctx, cmpId, elem) {
         if (!delta) return
         elem = elem || jb.ui.elemOfCmp(ctx,cmpId)
-        if (delta.$prevVersion && delta.$prevVersion != elem.getAttribute('cmp-ver')) {
+        if (!elem || delta.$prevVersion && delta.$prevVersion != elem.getAttribute('cmp-ver')) {
             jb.logError('trying to apply delta to unexpected verson',{delta, ctx, cmpId, elem})
             return
         }
