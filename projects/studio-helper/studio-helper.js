@@ -40,6 +40,21 @@ jb.component('studioHelper.eventTracker', {
   })
 })
 
+jb.component('studioHelper.compInspector', {
+  type: 'control',
+  impl: group({
+    title: '',
+    layout: layout.vertical(3),
+    controls: [
+      itemlist({items: list(1,2,3), controls: text('%%'), features: id('itemlist1') }),
+      group({
+        controls: studio.compInspector(() => document.querySelector('#itemlist1').getAttribute('cmp-id')),
+        features: group.wait(delay(10))
+      })
+    ]
+  })
+})
+
 jb.component('studioHelper.editableSource', {
   params: [
     {id: 'path', defaultValue: 'studioHelperSample.control'}
