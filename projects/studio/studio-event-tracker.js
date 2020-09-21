@@ -256,7 +256,7 @@ jb.component('studio.eventItems', {
     const items = pattern ? ret.filter(x=>regexp.test(Array.from(x.values()).filter(x=> typeof x == 'string').join(','))) : ret
     jb.log('eventTracker items',{ctx,spy,query,items})
     const itemsWithTimeBreak = items.reduce((acc,item,i) => i && item.time - items[i-1].time > 100 ? 
-      [...acc,{index: '--------', logNames: `${item.time - items[i-1].time} mSec gap ------`},item] : 
+      [...acc,{index: '---', logNames: `----- ${item.time - items[i-1].time} mSec gap ------`},item] : 
       [...acc,item] ,[])
     return itemsWithTimeBreak
   }

@@ -4872,6 +4872,7 @@ jb.component('itemlist.init', {
   type: 'feature',
   impl: features(
     calcProp('allItems', '%$$model/items%'),
+    calcProp('visualSizeLimit', ({},{$model,$state}) => Math.max($model.visualSizeLimit,$state.visualSizeLimit ||0)),
     calcProp('items', itemlist.calcSlicedItems()),
     calcProp({
         id: 'ctrls',
@@ -4891,6 +4892,7 @@ jb.component('itemlist.initTable', {
   type: 'feature',
   impl: features(
     calcProp('allItems', '%$$model/items%'),
+    calcProp('visualSizeLimit', ({},{$model,$state}) => Math.max($model.visualSizeLimit,$state.visualSizeLimit ||0)),
     calcProp('items', itemlist.calcSlicedItems()),
     calcProp('itemsCtxs', pipeline('%$$props/items%', ctx => jb.ui.preserveCtx(ctx.setData()))),
     calcProp('fields', '%$$model/controls/field()%'),
@@ -4904,14 +4906,12 @@ jb.component('itemlist.infiniteScroll', {
     {id: 'pageSize', as: 'number', defaultValue: 2}
   ],
   impl: features(
-    frontEnd.var('pageSize','%$pageSize%'),
-    method('fetchMoreItems', runActions(
-      Var('itemsToAppend', ({data},{$props}) => $props.allItems.slice(data.from,data.from+data.noOfItems)),
-      Var('updateState1', writeValue('%$$state/visualLimit/shownItems%', math.plus('%$$state/visualLimit/shownItems%','%noOfItems%'))),
-      Var('updateState2', writeValue('%$$state/visualLimit/waitingForServer%', false)),
-      Var('delta', itemlist.deltaOfItems('%$itemsToAppend%', '%$$state%')),
-      action.applyDeltaToCmp('%$delta%','%$cmp/cmpId%')
-    )),
+    method('fetchMoreItems', ({},{$state,$props,cmp},{pageSize}) => {
+      if ($props.allItems.length > $props.visualSizeLimit) {
+        $state.visualSizeLimit = ($state.visualSizeLimit || $props.visualSizeLimit) + pageSize
+        cmp.refresh($state)
+      }
+    }),
     feature.userEventProps('elem.scrollTop,elem.scrollHeight'),
     frontEnd.flow(
       rx.merge(
@@ -4922,14 +4922,10 @@ jb.component('itemlist.infiniteScroll', {
       rx.do(({data}) => data.target.__appScroll = null),
       rx.var('scrollPercentFromTop',({data}) => 
         (data.currentTarget.scrollTop + data.currentTarget.getBoundingClientRect().height) / data.currentTarget.scrollHeight),
-      rx.var('fetchItems', ({},{$state,pageSize}) => ({ 
-        from: $state.visualLimit.shownItems,
-        noOfItems: Math.min($state.visualLimit.totalItems,$state.visualLimit.shownItems + pageSize) - $state.visualLimit.shownItems
-      })),
       rx.log('itemlist frontend infiniteScroll'),
-      rx.filter(and('%$scrollPercentFromTop%>0.9','%$fetchItems/noOfItems%!=0',not('%$applicative%'),not('%$$state/visualLimit/waitingForServer%'))),
-      rx.do(writeValue('%$$state/visualLimit/waitingForServer%','true')),
-      sink.BEMethod('fetchMoreItems','%$fetchItems%')
+      rx.filter('%$scrollPercentFromTop%>0.9'),
+      rx.filter(not('%$applicative%')),
+      sink.BEMethod('fetchMoreItems')
     )
   )
 })
@@ -4966,22 +4962,21 @@ jb.component('itemlist.incrementalFromRx', {
 
 jb.component('itemlist.calcSlicedItems', {
   impl: ctx => {
-    const {$props, $model, cmp} = ctx.vars
-    const firstItem = $props.allItems[0]
+    const {allItems, visualSizeLimit} = ctx.vars.$props
+    const firstItem = allItems[0]
     if (jb.callbag.isCallbag(firstItem)) {
       const res = []
       res.callbag = firstItem
       return res
     }
-    const slicedItems = addSlicedState(cmp, $props.allItems, $model.visualSizeLimit)
-    const itemsRefs = jb.isRef(jb.asRef(slicedItems)) ? 
-        Object.keys(slicedItems).map(i=> jb.objectProperty(slicedItems,i)) : slicedItems
+    const slicedItems = allItems.length > visualSizeLimit ? allItems.slice(0, visualSizeLimit) : allItems
+    const itemsRefs = jb.isRef(jb.asRef(slicedItems)) ? Object.keys(slicedItems).map(i=> jb.objectProperty(slicedItems,i)) : slicedItems
     return itemsRefs
 
-    function addSlicedState(cmp,items,visualLimit) {
-      cmp.state.visualLimit = { totalItems: items.length, shownItems: visualLimit }
-      return visualLimit < items.length ? items.slice(0,visualLimit) : items
-    }
+    // function addSlicedState(cmp,items,visualLimit) {
+    //   cmp.state.visualLimit = { totalItems: items.length, shownItems: visualLimit }
+    //   return visualLimit < items.length ? items.slice(0,visualLimit) : items
+    // }
   }
 })
 
