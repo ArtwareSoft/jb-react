@@ -127,6 +127,7 @@ jb.component('studio.eventTracker', {
             inGroup(list('exception','error'), '%logNames%'),
             css.color('var(--jb-error-fg)')
           )}),
+          text('%cmp/ctx/profile/$%'),
           studio.eventView()
         ],
         style: table.plain(true),
