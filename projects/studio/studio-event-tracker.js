@@ -165,7 +165,7 @@ jb.component('studio.eventView', {
   impl: group({
     layout: layout.horizontal('4'),
     controls: [
-      studio.sourceCtxView(ctx=>ctx.exp('%srcCtx%')),
+      studio.sourceCtxView('%srcCtx%'),
       studio.sourceCtxView('%cmp/ctx%'),
       studio.showLowFootprintObj('%cmp%','cmp'),
       studio.sourceCtxView('%ctx%'),
