@@ -19,10 +19,9 @@ jb.chromeDebugger = {
         panelFrame.spy = jb.spy
         jb.log('chromeDebugger init panel',{fullId, panelFrame})
 
-        id == 'comp' && chrome.devtools.panels.elements.onSelectionChanged.addListener(function () {
+        id == 'comp' && chrome.devtools.panels.elements.onSelectionChanged.addListener(() => {
             debugger
             this.FECtrl
-            console.log(arguments)
         })
 
         return this.hasStudioOnInspected()
