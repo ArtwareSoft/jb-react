@@ -6,18 +6,18 @@ jb.chromeDebugger = {
             .then(counter=> {
                 const fullId = `${id}-${counter}`
                 // support inpsectedWin refresh - 'inspectedCreated' is re-sent on content-script initializtion
-                chrome.runtime.onMessage.addListener(req => req == 'inspectedCreated' && this.doInitPanel(fullId,panelFrame))
-                return this.doInitPanel(fullId, panelFrame)
+                chrome.runtime.onMessage.addListener(req => req == 'inspectedCreated' && this.doInitPanel(id,fullId,panelFrame))
+                return this.doInitPanel(id,fullId, panelFrame)
             })
     },
-    doInitPanel(id, panelFrame) {
-        panelFrame.uri = `debugPanel-${id}`
+    doInitPanel(id, fullId, panelFrame) {
+        panelFrame.uri = `debugPanel-${fullId}`
         const jb = panelFrame.jb
         panelFrame.inspectedPorts = panelFrame.inspectedPorts || {}
         jb.cbLogByPath = {}
         jb.initSpy({spyParam: 'all'})
         panelFrame.spy = jb.spy
-        jb.log('chromeDebugger init panel',{id, panelFrame})
+        jb.log('chromeDebugger init panel',{fullId, panelFrame})
 
         return this.hasStudioOnInspected()
             .then(res => {
