@@ -19,11 +19,6 @@ jb.chromeDebugger = {
         panelFrame.spy = jb.spy
         jb.log('chromeDebugger init panel',{fullId, panelFrame})
 
-        id == 'comp' && chrome.devtools.panels.elements.onSelectionChanged.addListener(() => 
-            chrome.devtools.inspectedWindow.eval('$0 && $0.getAttribute && $0.getAttribute("cmp-id")', 
-                cmpId => cmpId && jb.ui.runBEMethod(document.querySelector('[widgettop="true"]'),'refresh',cmpId)
-            ))
-
         return this.hasStudioOnInspected()
             .then(res => {
                 if (!res)
@@ -68,9 +63,16 @@ jb.chromeDebugger = {
         })
     },
     renderOnPanel(panelFrame,panelId) {
-        jb.log(`chromeDebugger panel start logsCtrl ${panelFrame.uri}`)
-        const profile = {$: `inspectedWindow.${panelId}Ctrl`, uri: panelFrame.uri}
-        jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry().setVar('$studio',true).run(profile)),panelFrame.document.body)
+        const uri = panelFrame.uri
+        jb.log(`chromeDebugger panel start logsCtrl ${uri}`)
+        if (panelId == 'comp') 
+            chrome.devtools.panels.elements.onSelectionChanged.addListener(() => this.selectedCmpId().then(cmpId => 
+                    cmpId && jb.ui.runBEMethod(document.querySelector('[widgettop="true"]'),'refresh',cmpId)))
+
+        return Promise.resolve(panelId == 'comp' && this.selectedCmpId()).then(cmpId=>{
+                const profile = {$: `inspectedWindow.${panelId}Ctrl`, cmpId, uri}
+                jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry().setVar('$studio',true).run(profile)),panelFrame.document.body)
+        })
     },
     evalAsPromise(code) {
         return new Promise( (resolve,rej) => 
@@ -79,6 +81,9 @@ jb.chromeDebugger = {
     inspectedWindowRequestToConnectToPanel(panelFrame) {
         return this.evalAsPromise(`postMessage({$: 'connectToPanel', 
             from: 'inspectedStudio', to: '${panelFrame.uri}' , panelUri: '${panelFrame.uri}' }) `)
+    },
+    selectedCmpId() {
+        return this.evalAsPromise('$0 && $0.getAttribute && $0.getAttribute("cmp-id")')
     },
     initStudioDebugPort(panelFrame) {
         return this.evalAsPromise(`self.studioDebugPort = self.studioDebugPort || jb.remote.cbPortFromFrame(self,'inspectedStudio','${panelFrame.uri}')`)
@@ -148,10 +153,11 @@ jb.component('inspectedWindow.logsCtrl', {
 
 jb.component('inspectedWindow.compCtrl', {
     params: [
-        {id: 'uri', as: 'string'}
+        {id: 'uri', as: 'string'},
+        {id: 'cmpId', as: 'string'},
     ],
     type: 'control',
-    impl: widget.twoTierWidget(studio.compInspector(), remote.inspectedWindowFromPanel('%$uri%'))
+    impl: widget.twoTierWidget(studio.compInspector('%$cmpId%'), remote.inspectedWindowFromPanel('%$uri%'))
 })
 
 jb.component('chromeDebugger.openResource', {
