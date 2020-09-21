@@ -34,7 +34,7 @@ jb.component('studio.clearSpyLog', {
     if (lastGroupIndex >= items.length)
       jb.ui.getSpy(ctx).clear()
     else
-      jb.ui.getSpy(ctx).logs.splice(0,lastGroupIndex)
+      jb.ui.getSpy(ctx).logs.splice(0,lastGroupIndex-1)
   }
 })
 
