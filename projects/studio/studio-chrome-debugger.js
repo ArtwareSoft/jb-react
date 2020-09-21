@@ -21,6 +21,7 @@ jb.chromeDebugger = {
 
         id == 'comp' && chrome.devtools.panels.elements.onSelectionChanged.addListener(function () {
             debugger
+            this.FECtrl
             console.log(arguments)
         })
 
@@ -35,7 +36,7 @@ jb.chromeDebugger = {
                 this.inspectedWindowRequestToConnectToPanel(panelFrame)
                 return this.reCheckPromise('port to inspectedWin',() => self.inspectedPorts[panelFrame.uri],50,50)
             })
-            .then(()=> { panelFrame.document.body.innerHTML=''; this.renderOnPanel(panelFrame,id) })
+            .then(()=> { panelFrame.document.body.innerHTML=''; this.FECtrl = this.renderOnPanel(panelFrame,id) })
             .catch(e => jb.logException(e,`chromeDebugger panel ${panelFrame.uri} wait for ${e}`))
     },
     initPanelPortListenser(panelFrame) {
