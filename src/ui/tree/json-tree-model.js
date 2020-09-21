@@ -54,7 +54,7 @@ jb.component('tree.json', {
     {id: 'object', as: 'ref'},
     {id: 'rootPath', as: 'string'}
   ],
-  impl: function(context, json, rootPath) {
+  impl: function(ctx, json, rootPath) {
 		return new Json(json,rootPath)
 	}
 })
