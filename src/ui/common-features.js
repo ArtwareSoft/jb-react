@@ -132,15 +132,20 @@ jb.component('followUp.flow', {
   params: [
       {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
   ],
-  impl: followUp.action(rx.pipe(ctx => {
-    const cmp = ctx.vars.cmp
-    const fuCtx = ctx.setVar('followUpCmp',cmp)
-    const elems = fuCtx.run('%$elems()%') 
-    // special: injecting a "takeUntil" line into the flow after the source
-    elems.splice(1,0,fuCtx.run(followUp.takeUntilCmpDestroyed('%$followUpCmp%')))
-    jb.log('backend register followUp',{cmp,ctx,fuCtx,elems})
-    return elems
-  }))
+  impl: followUp.action(runActions(
+      Var('followUpCmp','%$cmp%'),
+      Var('pipeToRun', rx.pipe('%$elems()%')),
+      Var('followUpStatus', (ctx,{cmp,pipeToRun}) => {
+        cmp.followUpStatus = cmp.followUpStatus || {}
+        cmp.followUpStatus[ctx.cmpCtx.path] = pipeToRun
+      }),
+      Var('closingPipe', rx.pipe(
+        source.callbag(() => jb.ui.BECmpsDestroyNotification),
+        rx.filter( ({data},{followUpCmp}) => data.cmps.find(_cmp => _cmp.cmpId == followUpCmp.cmpId && _cmp.ver == followUpCmp.ver)),
+        rx.take(1),
+        sink.action(({},{pipeToRun}) => pipeToRun.dispose())
+      ))
+  ))
 })
 
 jb.component('watchRef', {
@@ -189,19 +194,19 @@ jb.component('followUp.onDataChange', {
     sink.action(call('action')))
 })
 
-jb.component('followUp.takeUntilCmpDestroyed', {
-    type: 'rx',
-    category: 'operator',
-    params: [
-      {id: 'cmp' }
-    ],
-    impl: rx.takeUntil(rx.pipe(
-          source.callbag(() => jb.ui.BECmpsDestroyNotification),
-          rx.filter( ({data},{},{cmp}) => data.cmps.find(_cmp => _cmp.cmpId == cmp.cmpId && _cmp.ver == cmp.ver)),
-          rx.take(1),
-          rx.log('uiComp backend takeUntil destroy', obj(prop('cmp','%$cmp%'))),
-    ))
-})
+// jb.component('followUp.takeUntilCmpDestroyed', {
+//     type: 'rx',
+//     category: 'operator',
+//     params: [
+//       {id: 'cmp' }
+//     ],
+//     impl: rx.takeUntil(rx.pipe(
+//           source.callbag(() => jb.ui.BECmpsDestroyNotification),
+//           rx.filter( ({data},{},{cmp}) => data.cmps.find(_cmp => _cmp.cmpId == cmp.cmpId && _cmp.ver == cmp.ver)),
+//           rx.take(1),
+//           rx.log('uiComp backend takeUntil destroy', obj(prop('cmp','%$cmp%'))),
+//     ))
+// })
 
 jb.component('group.data', {
   type: 'feature',
@@ -409,4 +414,3 @@ jb.component('feature.userEventProps', {
   ],
   impl: (ctx, prop) => ({userEventProps: prop })
 })
-

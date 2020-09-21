@@ -28,7 +28,14 @@ jb.component('studio.getSpy', {
 
 jb.component('studio.clearSpyLog', {
   type: 'action',
-  impl: ctx => jb.ui.getSpy(ctx).clear()
+  impl: ctx => {
+    const items = ctx.run(studio.eventItems())
+    const lastGroupIndex = items.length - items.reverse().findIndex(x=>x.index == '---')
+    if (lastGroupIndex >= items.length)
+      jb.ui.getSpy(ctx).clear()
+    else
+      jb.ui.getSpy(ctx).logs.splice(0,lastGroupIndex)
+  }
 })
 
 jb.component('studio.refreshSpy', {

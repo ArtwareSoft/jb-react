@@ -613,16 +613,21 @@ jb.callbag = {
       subscribe: (listener = {}) => sinkSrc => {
           if (typeof listener === "function") listener = { next: listener }
           let { next, error, complete } = listener
-          let talkback
+          let talkback, done
           sinkSrc(0, function subscribe(t, d) {
             if (t === 0) talkback = d
             if (t === 1 && next) next(d)
             if (t === 1 || t === 0) talkback(1)  // Pull
+            if (t === 2) done = true
             if (t === 2 && !d && complete) complete()
             if (t === 2 && !!d && error) error( d )
             if (t === 2 && listener.finally) listener.finally( d )
           })
-          return () => talkback && talkback(2) // dispose
+          return {
+            dispose: () => talkback && !done && talkback(2),
+            isDone: () => done,
+            isActive: () => talkback && !done
+          }
       },
       toPromise: sinkSrc => {
           return new Promise((resolve, reject) => {

@@ -2867,16 +2867,21 @@ jb.callbag = {
       subscribe: (listener = {}) => sinkSrc => {
           if (typeof listener === "function") listener = { next: listener }
           let { next, error, complete } = listener
-          let talkback
+          let talkback, done
           sinkSrc(0, function subscribe(t, d) {
             if (t === 0) talkback = d
             if (t === 1 && next) next(d)
             if (t === 1 || t === 0) talkback(1)  // Pull
+            if (t === 2) done = true
             if (t === 2 && !d && complete) complete()
             if (t === 2 && !!d && error) error( d )
             if (t === 2 && listener.finally) listener.finally( d )
           })
-          return () => talkback && talkback(2) // dispose
+          return {
+            dispose: () => talkback && !done && talkback(2),
+            isDone: () => done,
+            isActive: () => talkback && !done
+          }
       },
       toPromise: sinkSrc => {
           return new Promise((resolve, reject) => {
@@ -5701,15 +5706,20 @@ jb.component('followUp.flow', {
   params: [
       {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
   ],
-  impl: followUp.action(rx.pipe(ctx => {
-    const cmp = ctx.vars.cmp
-    const fuCtx = ctx.setVar('followUpCmp',cmp)
-    const elems = fuCtx.run('%$elems()%') 
-    // special: injecting a "takeUntil" line into the flow after the source
-    elems.splice(1,0,fuCtx.run(followUp.takeUntilCmpDestroyed('%$followUpCmp%')))
-    jb.log('backend register followUp',{cmp,ctx,fuCtx,elems})
-    return elems
-  }))
+  impl: followUp.action(runActions(
+      Var('followUpCmp','%$cmp%'),
+      Var('pipeToRun', rx.pipe('%$elems()%')),
+      Var('followUpStatus', (ctx,{cmp,pipeToRun}) => {
+        cmp.followUpStatus = cmp.followUpStatus || {}
+        cmp.followUpStatus[ctx.cmpCtx.path] = pipeToRun
+      }),
+      Var('closingPipe', rx.pipe(
+        source.callbag(() => jb.ui.BECmpsDestroyNotification),
+        rx.filter( ({data},{followUpCmp}) => data.cmps.find(_cmp => _cmp.cmpId == followUpCmp.cmpId && _cmp.ver == followUpCmp.ver)),
+        rx.take(1),
+        sink.action(({},{pipeToRun}) => pipeToRun.dispose())
+      ))
+  ))
 })
 
 jb.component('watchRef', {
@@ -5758,19 +5768,19 @@ jb.component('followUp.onDataChange', {
     sink.action(call('action')))
 })
 
-jb.component('followUp.takeUntilCmpDestroyed', {
-    type: 'rx',
-    category: 'operator',
-    params: [
-      {id: 'cmp' }
-    ],
-    impl: rx.takeUntil(rx.pipe(
-          source.callbag(() => jb.ui.BECmpsDestroyNotification),
-          rx.filter( ({data},{},{cmp}) => data.cmps.find(_cmp => _cmp.cmpId == cmp.cmpId && _cmp.ver == cmp.ver)),
-          rx.take(1),
-          rx.log('uiComp backend takeUntil destroy', obj(prop('cmp','%$cmp%'))),
-    ))
-})
+// jb.component('followUp.takeUntilCmpDestroyed', {
+//     type: 'rx',
+//     category: 'operator',
+//     params: [
+//       {id: 'cmp' }
+//     ],
+//     impl: rx.takeUntil(rx.pipe(
+//           source.callbag(() => jb.ui.BECmpsDestroyNotification),
+//           rx.filter( ({data},{},{cmp}) => data.cmps.find(_cmp => _cmp.cmpId == cmp.cmpId && _cmp.ver == cmp.ver)),
+//           rx.take(1),
+//           rx.log('uiComp backend takeUntil destroy', obj(prop('cmp','%$cmp%'))),
+//     ))
+// })
 
 jb.component('group.data', {
   type: 'feature',
@@ -5978,7 +5988,6 @@ jb.component('feature.userEventProps', {
   ],
   impl: (ctx, prop) => ({userEventProps: prop })
 })
-
 ;
 
 jb.ns('rx,key,frontEnd,sink')
@@ -8010,18 +8019,12 @@ jb.component('itemlist.infiniteScroll', {
 })
 
 jb.component('itemlist.deltaOfItems', {
-  params: [
-    {id: 'items', defaultValue: '%%', as: 'array' },
-    {id: 'newState' }
-  ],
-  impl: (ctx,items,state) => {
-    if (items.length == 0) return null
-    const deltaCalcCtx = ctx.vars.cmp.ctx
-    const vdomWithDeltaItems = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => [items[0], ...items]}), path: ''}).runItself().renderVdom() // change the profile to return itemsToAppend
-    const emptyItemlistVdom = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => [items[0]]}), path: ''}).runItself().renderVdom()
-    const delta = jb.ui.compareVdom(emptyItemlistVdom,vdomWithDeltaItems)
-    delta.attributes = state ? {$__state : JSON.stringify(state), $scrollDown: true } : {} // also keeps the original cmpId by overriding atts
-    delta.$prevVersion = ctx.vars.cmp.ver // used to block concurrent changes from multiple sources
+  impl: ctx => {
+    const cmp = ctx.vars.cmp
+    const newVdom = cmp.renderVdom(), oldVdom = cmp.oldVdom || {}
+    const delta = jb.ui.compareVdom(oldVdom,newVdom)
+    cmp.oldVdom = newVdom
+    jb.log('uiComp itemlist delta incrementalFromRx', {cmp, newVdom, oldVdom, delta})
     return delta
   }
 })
@@ -8034,14 +8037,16 @@ jb.component('itemlist.incrementalFromRx', {
   impl: followUp.flow(
       source.callbag(ctx => ctx.exp('%$$props.items%').callbag || jb.callbag.fromIter([])),
       rx.map(If('%vars%','%data%','%%')), // rx/cb compatible ...
-      rx.var('delta', itemlist.deltaOfItems('%%')),
+      rx.do(({data},{$props}) => $props.items.push(data)),
+      rx.var('delta', itemlist.deltaOfItems()),
       sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
     )
 })
 
 jb.component('itemlist.calcSlicedItems', {
   impl: ctx => {
-    const {allItems, visualSizeLimit} = ctx.vars.$props
+    const {allItems, visualSizeLimit, items} = ctx.vars.$props
+    if (items) return items
     const firstItem = allItems[0]
     if (jb.callbag.isCallbag(firstItem)) {
       const res = []
@@ -8051,11 +8056,6 @@ jb.component('itemlist.calcSlicedItems', {
     const slicedItems = allItems.length > visualSizeLimit ? allItems.slice(0, visualSizeLimit) : allItems
     const itemsRefs = jb.isRef(jb.asRef(slicedItems)) ? Object.keys(slicedItems).map(i=> jb.objectProperty(slicedItems,i)) : slicedItems
     return itemsRefs
-
-    // function addSlicedState(cmp,items,visualLimit) {
-    //   cmp.state.visualLimit = { totalItems: items.length, shownItems: visualLimit }
-    //   return visualLimit < items.length ? items.slice(0,visualLimit) : items
-    // }
   }
 })
 

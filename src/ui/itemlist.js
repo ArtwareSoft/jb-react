@@ -96,18 +96,12 @@ jb.component('itemlist.infiniteScroll', {
 })
 
 jb.component('itemlist.deltaOfItems', {
-  params: [
-    {id: 'items', defaultValue: '%%', as: 'array' },
-    {id: 'newState' }
-  ],
-  impl: (ctx,items,state) => {
-    if (items.length == 0) return null
-    const deltaCalcCtx = ctx.vars.cmp.ctx
-    const vdomWithDeltaItems = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => [items[0], ...items]}), path: ''}).runItself().renderVdom() // change the profile to return itemsToAppend
-    const emptyItemlistVdom = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => [items[0]]}), path: ''}).runItself().renderVdom()
-    const delta = jb.ui.compareVdom(emptyItemlistVdom,vdomWithDeltaItems)
-    delta.attributes = state ? {$__state : JSON.stringify(state), $scrollDown: true } : {} // also keeps the original cmpId by overriding atts
-    delta.$prevVersion = ctx.vars.cmp.ver // used to block concurrent changes from multiple sources
+  impl: ctx => {
+    const cmp = ctx.vars.cmp
+    const newVdom = cmp.renderVdom(), oldVdom = cmp.oldVdom || {}
+    const delta = jb.ui.compareVdom(oldVdom,newVdom)
+    cmp.oldVdom = newVdom
+    jb.log('uiComp itemlist delta incrementalFromRx', {cmp, newVdom, oldVdom, delta})
     return delta
   }
 })
@@ -120,14 +114,16 @@ jb.component('itemlist.incrementalFromRx', {
   impl: followUp.flow(
       source.callbag(ctx => ctx.exp('%$$props.items%').callbag || jb.callbag.fromIter([])),
       rx.map(If('%vars%','%data%','%%')), // rx/cb compatible ...
-      rx.var('delta', itemlist.deltaOfItems('%%')),
+      rx.do(({data},{$props}) => $props.items.push(data)),
+      rx.var('delta', itemlist.deltaOfItems()),
       sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
     )
 })
 
 jb.component('itemlist.calcSlicedItems', {
   impl: ctx => {
-    const {allItems, visualSizeLimit} = ctx.vars.$props
+    const {allItems, visualSizeLimit, items} = ctx.vars.$props
+    if (items) return items
     const firstItem = allItems[0]
     if (jb.callbag.isCallbag(firstItem)) {
       const res = []
@@ -137,11 +133,6 @@ jb.component('itemlist.calcSlicedItems', {
     const slicedItems = allItems.length > visualSizeLimit ? allItems.slice(0, visualSizeLimit) : allItems
     const itemsRefs = jb.isRef(jb.asRef(slicedItems)) ? Object.keys(slicedItems).map(i=> jb.objectProperty(slicedItems,i)) : slicedItems
     return itemsRefs
-
-    // function addSlicedState(cmp,items,visualLimit) {
-    //   cmp.state.visualLimit = { totalItems: items.length, shownItems: visualLimit }
-    //   return visualLimit < items.length ? items.slice(0,visualLimit) : items
-    // }
   }
 })
 
