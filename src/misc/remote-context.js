@@ -47,7 +47,7 @@ jb.remoteCtx = {
     },
     stripCBVars(cbData) {
         const res = jb.remoteCtx.stripData(cbData)
-        if (res.vars)
+        if (res && res.vars)
             res.vars = jb.objFromEntries(jb.entries(res.vars).filter(e=>e[0].indexOf('$')!=0))
 
         return res
