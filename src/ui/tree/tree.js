@@ -21,7 +21,6 @@ jb.component('tree.initTree', {
 	impl: features(
 		variable('treeCmp','%$cmp%'),
 		calcProp('model','%$$model/nodeModel()%'),
-		method('refresh',action.refreshCmp()),
 		method('flipExpandCollapse', runActions(
 			({},{$state,ev}) => $state.expanded[ev.path] = !$state.expanded[ev.path],
 			action.refreshCmp('%$$state%')
