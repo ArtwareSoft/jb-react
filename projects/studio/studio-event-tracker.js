@@ -123,11 +123,18 @@ jb.component('studio.eventTracker', {
         items: '%$events%',
         controls: [
           text('%index%'),
+          group({
+            style: group.sectionExpandCollopase(text('%cmp/ctx/profile/$%')),
+            controls: editableText({
+              databind: studio.profileAsText('%cmp/ctx/path%'),
+              style: editableText.codemirror(),
+            })
+          }),
+//          text('%cmp/ctx/profile/$%'),
           text({ text: '%logNames%', features: feature.byCondition(
             inGroup(list('exception','error'), '%logNames%'),
             css.color('var(--jb-error-fg)')
           )}),
-          text('%cmp/ctx/profile/$%'),
           studio.eventView()
         ],
         style: table.plain(true),
@@ -135,7 +142,6 @@ jb.component('studio.eventTracker', {
         features: [
           id('event-logs'),
           itemlist.infiniteScroll(50),
-          //css.height({height: '400', overflow: 'scroll'}),
           itemlist.selection({
             onSelection: runActions(({data}) => jb.frame.console.log(data), studio.highlightEvent('%%'))
           }),
@@ -213,29 +219,6 @@ jb.component('studio.showLowFootprintObj', {
         isOfType('string', '%$obj%'),
         studio.slicedString('%$title%: %$obj%')
       ),
-      // controlWithCondition(
-      //   isOfType('object,array', '%$obj%'),
-      //   button({
-      //     vars: Var('count', pipeline('%$obj%',keys(),count())),
-      //     title: If(isOfType('array', '%$obj%'), '%$title%[%$obj/length%]','%$title% (%$count%)'),
-      //     action: openDialog({
-      //       style: dialog.popup(),
-      //       content: studio.dataBrowse('%$obj%'),
-      //       title: 'data',
-      //       features: dialogFeature.uniqueDialog('showObj')
-      //     }),
-      //     style: button.href(),
-      //     features: [css.margin({left: '10'}), feature.hoverTitle('open')]
-      //   })
-      // ),
-      // controlWithCondition(
-      //   isOfType('string,number,boolean', '%$obj%'),
-      //   text({text: pipeline('%$obj%', slice(0, 20))})
-      // ),
-      // controlWithCondition(
-      //   isOfType('function', '%$obj%'),
-      //   text(({},{},{obj}) => obj.name) // can not use '%$obj/name%'
-      // ),
     ]
   }))
 })
