@@ -363,8 +363,8 @@ jb.component('studio.singleSourceCtxView', {
   impl: button({
           title: ({},{},{srcCtx}) => {
             if (!srcCtx) return ''
-            const path = srcCtx.path
-            const profile = jb.studio.valOfPath(path)
+            const path = srcCtx.path || ''
+            const profile = path && jb.studio.valOfPath(path)
             const pt = profile && profile.$ || ''
             const ret = `${path.split('~')[0]}:${pt}`
             return ret.replace(/feature\./g,'').replace(/front.nd\./g,'').replace(/\.action/g,'')
