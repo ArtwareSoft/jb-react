@@ -3,11 +3,6 @@ chrome.devtools.panels.create("jb logs",
     "jb-logs.html",
     function(panel) {
       console.log('create panel')
-      // panel.onShown.addListener(() => {
-      //   chrome.runtime.sendMessage({shown: "shown"})
-      //   console.log('shown',panel,self,self.jb)
-      // })
-      // code invoked on panel creation
     }
 )
 
@@ -19,8 +14,8 @@ chrome.devtools.panels.create("jb logs",
 //     }
 // )
 
-// chrome.devtools.panels.elements.createSidebarPane("jb Properties",
-//     function(sidebar) {
-//       sidebar.setPage("jb-logs.html");
-//       sidebar.setHeight("8ex");
-// })
+chrome.devtools.panels.elements.createSidebarPane("jbComp",
+    function(sidebar) {
+      sidebar.setPage("jb-comp.html");
+      sidebar.setHeight("8ex");
+})

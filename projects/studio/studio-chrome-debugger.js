@@ -30,7 +30,7 @@ jb.chromeDebugger = {
                 this.inspectedWindowRequestToConnectToPanel(panelFrame)
                 return this.reCheckPromise('port to inspectedWin',() => self.inspectedPorts[panelFrame.uri],50,50)
             })
-            .then(()=> { panelFrame.document.body.innerHTML=''; this.renderOnPanel(panelFrame) })
+            .then(()=> { panelFrame.document.body.innerHTML=''; this.renderOnPanel(panelFrame,id) })
             .catch(e => jb.logException(e,`chromeDebugger panel ${panelFrame.uri} wait for ${e}`))
     },
     initPanelPortListenser(panelFrame) {
@@ -62,9 +62,9 @@ jb.chromeDebugger = {
             })
         })
     },
-    renderOnPanel(panelFrame) {
+    renderOnPanel(panelFrame,panelId) {
         jb.log(`chromeDebugger panel start logsCtrl ${panelFrame.uri}`)
-        const profile = {$: 'inspectedWindow.logsCtrl', uri: panelFrame.uri}
+        const profile = {$: `inspectedWindow.${panelId}Ctrl`, uri: panelFrame.uri}
         jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry().setVar('$studio',true).run(profile)),panelFrame.document.body)
     },
     evalAsPromise(code) {
@@ -139,6 +139,14 @@ jb.component('inspectedWindow.logsCtrl', {
     ],
     type: 'control',
     impl: widget.twoTierWidget(studio.eventTracker(), remote.inspectedWindowFromPanel('%$uri%'))
+})
+
+jb.component('inspectedWindow.compCtrl', {
+    params: [
+        {id: 'uri', as: 'string'}
+    ],
+    type: 'control',
+    impl: widget.twoTierWidget(studio.compInspector(), remote.inspectedWindowFromPanel('%$uri%'))
 })
 
 jb.component('chromeDebugger.openResource', {
