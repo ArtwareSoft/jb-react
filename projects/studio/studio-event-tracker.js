@@ -315,11 +315,12 @@ jb.component('studio.highlightElem', {
         content: text(''),
         features: [
           css(({},{},{elem}) => {
-                const elemRect = elem.getBoundingClientRect()
-                const left = jb.ui.studioFixXPos(elem) + elemRect.left + 'px'
-                const top = jb.ui.studioFixYPos(elem) + elemRect.top + 'px'
-                const width = Math.max(10,elemRect.width), height = Math.max(10,elemRect.height)
-                return `left: ${left}; top: ${top}; width: ${width}px; height: ${height}px;`
+            if (!elem || !elem.getBoundingClientRect) return ''
+            const elemRect = elem.getBoundingClientRect()
+            const left = jb.ui.studioFixXPos(elem) + elemRect.left + 'px'
+            const top = jb.ui.studioFixYPos(elem) + elemRect.top + 'px'
+            const width = Math.max(10,elemRect.width), height = Math.max(10,elemRect.height)
+            return `left: ${left}; top: ${top}; width: ${width}px; height: ${height}px;`
           }),
           css('%$css%')
         ]
