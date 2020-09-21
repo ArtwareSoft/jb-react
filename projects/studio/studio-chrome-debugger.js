@@ -19,10 +19,10 @@ jb.chromeDebugger = {
         panelFrame.spy = jb.spy
         jb.log('chromeDebugger init panel',{fullId, panelFrame})
 
-        id == 'comp' && chrome.devtools.panels.elements.onSelectionChanged.addListener(() => {
-            debugger
-            this.FECtrl
-        })
+        id == 'comp' && chrome.devtools.panels.elements.onSelectionChanged.addListener(() => 
+            chrome.devtools.inspectedWindow.eval('$0 && $0.getAttribute && $0.getAttribute("cmp-id")', 
+                cmpId => cmpId && jb.ui.runBEMethod(document.querySelector('[widgettop="true"]'),'refresh',cmpId)
+            ))
 
         return this.hasStudioOnInspected()
             .then(res => {
