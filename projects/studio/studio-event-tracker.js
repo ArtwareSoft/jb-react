@@ -135,14 +135,14 @@ jb.component('studio.eventTracker', {
             inGroup(list('exception','error'), '%logNames%'),
             css.color('var(--jb-error-fg)')
           )}),
-          group({controls: controlWithCondition('%m%',text('%m/data/$%: %m/data/t%, %m/data/cbId%'))}),
-          group({controls: controlWithCondition('%m/data/d%', group({
-            style: group.sectionExpandCollopase(studio.slicedString('%$dataAsText%')),
+          group({controls: controlWithCondition('%m%',text('%m/$%: %m/t%, %m/cbId%'))}),
+          group({controls: controlWithCondition('%m/d%', group({
+            title: 'data',
+            style: group.sectionExpandCollopase(),
             controls: text({
-              text: '%$dataAsText%',
+              text: prettyPrint('%m/d%'),
               style: text.codemirror({height: '60'}),
             }),
-            features: variable('dataAsText', ({data}) => jb.prettyPrint(jb.remoteCtx.stripData(data.m.data.d)))
           }))}),
           studio.eventView()
         ],
