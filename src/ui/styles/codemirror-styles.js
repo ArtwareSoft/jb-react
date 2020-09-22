@@ -20,12 +20,13 @@ jb.component('editableText.codemirror', {
     {id: 'maxLength', as: 'number', defaultValue: 5000}
   ],
   impl: features(
-    calcProp('text','%$$model/databind()%'),
+	calcProp('text','%$$model/databind()%'),
+	frontEnd.var('text', '%$$props/text%'),
     calcProp('textAreaAlternative',({},{$props},{maxLength}) => ($props.text || '').length > maxLength),
     ctx => ({
 		  template: (cmp,{text,textAreaAlternative},h) => textAreaAlternative ? 
 		  		h('textarea#jb-textarea-alternative-for-codemirror', {value: text }) :
-				h('div',{}, h('textarea#jb-codemirror', {value: text })),
+				h('div'),
 	}),
 	frontEnd.var('cm_settings', ({},{},{cm_settings,lineWrapping, mode, lineNumbers, readOnly}) => ({
 		...cm_settings, lineWrapping, lineNumbers, readOnly, mode: mode || 'javascript',
@@ -33,12 +34,13 @@ jb.component('editableText.codemirror', {
 	frontEnd.var('_enableFullScreen', '%$enableFullScreen%'),
 	method('onCtrlEnter', call('onCtrlEnter')),
 	textEditor.cmEnrichUserEvent(),
-    frontEnd.init( (ctx,{cmp,el,cm_settings,_enableFullScreen}) =>{
+    frontEnd.init( (ctx,{cmp,el,cm_settings,_enableFullScreen,text}) =>{
 		if (jb.ui.hasClass(el, 'jb-textarea-alternative-for-codemirror')) return
 		const adjustedExtraKeys = jb.objFromEntries(jb.entries(cm_settings.extraKeys).map(e=>[
 			e[0], _ => ctx.setVar('ev',jb.ui.buildUserEvent({},el)).run(action.runBEMethod(e[1]))
 		]))
 		const effective_settings = Object.assign({}, cm_settings, {
+			value: text,
 			theme: 'solarized light',
 			autofocus: false,
 			extraKeys: Object.assign({
@@ -46,13 +48,11 @@ jb.component('editableText.codemirror', {
 				'Ctrl-Enter': () => jb.ui.runBEMethod(el,'onCtrlEnter')
 			}, adjustedExtraKeys),
 		})
-		cmp.editor = CodeMirror.fromTextArea(el.firstChild, effective_settings)
-		_enableFullScreen && jb.delay(1).then(() => {
-			const wrapper = cmp.editor.getWrapperElement()
-			enableFullScreen(ctx,cmp.editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper)) 
-		})
+		cmp.editor = CodeMirror(el, effective_settings)
+		_enableFullScreen && jb.delay(1).then(() => 
+			enableFullScreen(ctx,cmp.editor,jb.ui.outerWidth(el), jb.ui.outerHeight(el)))
 	}),
-	frontEnd.onRefresh(({},{el,cmp}) => cmp.editor.setValue(el.firstChild.value)),
+	frontEnd.onRefresh(({},{text,cmp}) => cmp.editor.setValue(text)),
 	method('writeText',writeValue('%$$model/databind()%','%%')),
 	frontEnd.flow(
 			source.callbag(({},{cmp}) => jb.callbag.create(obs=> cmp.editor.on('change', () => obs(cmp.editor.getValue()))) ),
