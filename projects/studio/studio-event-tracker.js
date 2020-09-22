@@ -136,7 +136,7 @@ jb.component('studio.eventTracker', {
             css.color('var(--jb-error-fg)')
           )}),
           group({controls: controlWithCondition('%m%',text('%m/$%: %m/t%, %m/cbId%'))}),
-          group({controls: controlWithCondition('%m/data%', studio.showLowFootprintObj('%m/data%'))}),
+          group({controls: controlWithCondition('%m/d%', studio.objExpandedAsText('%m/d%'))}),
           studio.eventView()
         ],
         style: table.plain(true),
@@ -188,6 +188,26 @@ jb.component('studio.eventView', {
   })
 })
 
+jb.component('studio.objExpandedAsText', {
+  params: [
+    {id: 'obj', mandatory: true },
+  ],
+  impl: controlWithCondition('%$obj%', group({
+    controls: [
+      controlWithCondition('%$asText/length% < 20', text('%$asText%')),
+      controlWithCondition('%$asText/length% >= 20', group({
+        style: group.sectionExpandCollopase(studio.slicedString('%$asText%')),
+        controls: text({
+          text: '%$asText%',
+          style: text.codemirror({height: '60'}),
+        }),    
+      }))
+    ],
+    features: variable('asText',prettyPrint('%$obj%'))
+  })) 
+})
+
+
 jb.component('studio.showLowFootprintObj', {
   params: [
     {id: 'obj', mandatory: true },
@@ -221,19 +241,6 @@ jb.component('studio.showLowFootprintObj', {
         isOfType('string', '%$obj%'),
         studio.slicedString('%$title%: %$obj%')
       ),
-      controlWithCondition('%$obj%', group({
-        controls: [
-          controlWithCondition('%$asText/length% < 20', text('%$asText%')),
-          controlWithCondition('%$asText/length% >= 20', group({
-            style: group.sectionExpandCollopase(studio.slicedString('%$asText%')),
-            controls: text({
-              text: '%$asText%',
-              style: text.codemirror({height: '60'}),
-            }),    
-          }))
-        ],
-        features: variable('asText',prettyPrint('%$obj%'))
-      }))      
     ]
   }))
 })
