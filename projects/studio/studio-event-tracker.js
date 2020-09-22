@@ -137,10 +137,10 @@ jb.component('studio.eventTracker', {
           )}),
           group({controls: controlWithCondition('%m%',text('%m/data/$%: %m/data/t%, %m/data/cbId%'))}),
           group({controls: controlWithCondition('%m/data/d%', group({
-            style: group.sectionExpandCollopase(studio.slicedString(('%$dataAsText%'))),
-            controls: editableText({
-              databind: '%$dataAsText%',
-              style: editableText.codemirror({height: '60'}),
+            style: group.sectionExpandCollopase(studio.slicedString('%$dataAsText%')),
+            controls: text({
+              text: '%$dataAsText%',
+              style: text.codemirror({height: '60'}),
             }),
             features: variable('dataAsText', ({data}) => jb.prettyPrint(jb.remoteCtx.stripData(data.m.data.d)))
           }))}),
