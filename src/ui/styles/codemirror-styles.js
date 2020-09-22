@@ -160,25 +160,23 @@ jb.component('text.codemirror', {
   ],
   impl: features(
 	text.bindText(),
-    ctx => ({
-		  template: (cmp,{text},h) => h('div',{}, h('textarea#jb-codemirror', {value: text })),
-	}),
+	frontEnd.var('text', '%$$props/text%'),
+    ctx => ({ template: ({},{},h) => h('div') }),
 	frontEnd.var('cm_settings', (ctx,{},{cm_settings,lineWrapping, mode, lineNumbers}) => ({
 		...cm_settings, lineWrapping, lineNumbers, readOnly: true, mode: mode || 'javascript',
 	})),
 	frontEnd.var('_enableFullScreen', '%$enableFullScreen%'),
-    frontEnd.init( (ctx,{cmp}) => {
+    frontEnd.init( (ctx,{el}) => {
 		const cm_settings = cmp.base.cm_settings
 		const effective_settings = Object.assign({}, cm_settings, {
 			theme: 'solarized light',
 			autofocus: false,
 		})
-		cmp.editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings)
-		cmp.base._enableFullScreen && jb.delay(1).then(() => {
-			const wrapper = cmp.editor.getWrapperElement()
-			enableFullScreen(ctx,cmp.editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper)) 
-		})
+		cmp.editor = CodeMirror(el, effective_settings)
+		_enableFullScreen && jb.delay(1).then(() => 
+			enableFullScreen(ctx,cmp.editor,jb.ui.outerWidth(el), jb.ui.outerHeight(el)))
 	}),
+	frontEnd.onRefresh(({},{text,cmp}) => cmp.editor.setValue(text)),	
     css(({},{},{height}) => `{width: 100%}
 		>div { box-shadow: none !important; ${jb.ui.propWithUnits('height',height)} !important}`)
   )

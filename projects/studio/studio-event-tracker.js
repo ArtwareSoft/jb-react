@@ -192,9 +192,9 @@ jb.component('studio.objExpandedAsText', {
   params: [
     {id: 'obj', mandatory: true },
   ],
-  impl: controlWithCondition('%$obj%', group({
+  impl: group({
     controls: [
-      controlWithCondition('%$asText/length% < 20', text('%$asText%')),
+      controlWithCondition('%$asText/length% < 20', text('aaa%$asText%')),
       controlWithCondition('%$asText/length% >= 20', group({
         style: group.sectionExpandCollopase(studio.slicedString('%$asText%')),
         controls: text({
@@ -204,7 +204,7 @@ jb.component('studio.objExpandedAsText', {
       }))
     ],
     features: variable('asText',prettyPrint('%$obj%'))
-  })) 
+  })
 })
 
 
