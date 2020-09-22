@@ -136,10 +136,10 @@ jb.component('studio.eventTracker', {
             css.color('var(--jb-error-fg)')
           )}),
           group({controls: controlWithCondition('%err%', studio.showLowFootprintObj('%err%','err',50))}),
-          group({controls: controlWithCondition('%stack%', studio.objExpandedAsText('%stack%'))}),
+          group({controls: controlWithCondition('%stack%', studio.objExpandedAsText('stack','%stack%'))}),
 
           group({controls: controlWithCondition('%m%',text('%m/$%: %m/t%, %m/cbId%'))}),
-          group({controls: controlWithCondition('%m/d%', studio.objExpandedAsText('%m/d%'))}),
+          group({controls: controlWithCondition('%m/d%', studio.objExpandedAsText('payload','%m/d%'))}),
           studio.eventView()
         ],
         style: table.plain(true),
@@ -192,13 +192,14 @@ jb.component('studio.eventView', {
 
 jb.component('studio.objExpandedAsText', {
   params: [
+    {id: 'title', as: 'string', mandatory: true},
     {id: 'obj', mandatory: true },
   ],
   impl: group({
     controls: [
       controlWithCondition('%$asText/length% < 20', text('aaa%$asText%')),
       controlWithCondition('%$asText/length% > 19', group({
-        style: group.sectionExpandCollopase(text('payload')),
+        style: group.sectionExpandCollopase(text('%$title%')),
         controls: text({
           text: '%$asText%',
           style: text.codemirror({height: '200'}),
