@@ -52,6 +52,7 @@ jb.component('editableText.codemirror', {
 			enableFullScreen(ctx,cmp.editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper)) 
 		})
 	}),
+	frontEnd.onRefresh(({},{el,cmp}) => cmp.editor.setValue(el.firstChild.value)),
 	method('writeText',writeValue('%$$model/databind()%','%%')),
 	frontEnd.flow(
 			source.callbag(({},{cmp}) => jb.callbag.create(obs=> cmp.editor.on('change', () => obs(cmp.editor.getValue()))) ),
