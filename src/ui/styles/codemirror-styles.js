@@ -167,7 +167,7 @@ jb.component('text.codemirror', {
 		...cm_settings, lineWrapping, lineNumbers, readOnly: true, mode: mode || 'javascript',
 	})),
 	frontEnd.var('_enableFullScreen', '%$enableFullScreen%'),
-    frontEnd.init( (ctx,{cmp,el,cm_settings}) => {
+    frontEnd.init( (ctx,{cmp,el,cm_settings,_enableFullScreen}) => {
 		const effective_settings = Object.assign({}, cm_settings, {
 			theme: 'solarized light',
 			autofocus: false,
