@@ -29,7 +29,7 @@ jb.remote = {
                 frame.postMessage({from: from, to: to,...m}) 
             },
             onMessage: { addListener: handler => frame.addEventListener('message', m => {
-                jb.log(`remote received at ${from} from ${m.data.from} to ${m.data.to}`,{m.data})
+                jb.log(`remote received at ${from} from ${m.data.from} to ${m.data.to}`,{m: m.data})
                 m.data.to == from && handler(m.data)
             })},
             onDisconnect: { addListener: handler => {} }
