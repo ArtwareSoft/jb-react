@@ -49,6 +49,7 @@ jb.component('editableText.codemirror', {
 			}, adjustedExtraKeys),
 		})
 		cmp.editor = CodeMirror(el, effective_settings)
+		jb.delay(100).then(() => cmp.editor.refresh()) // ???
 		_enableFullScreen && jb.delay(1).then(() => 
 			enableFullScreen(ctx,cmp.editor,jb.ui.outerWidth(el), jb.ui.outerHeight(el)))
 	}),
@@ -173,6 +174,7 @@ jb.component('text.codemirror', {
 			autofocus: false,
 		})
 		cmp.editor = CodeMirror(el, effective_settings)
+		jb.delay(100).then(() => cmp.editor.refresh())
 		_enableFullScreen && jb.delay(1).then(() => 
 			enableFullScreen(ctx,cmp.editor,jb.ui.outerWidth(el), jb.ui.outerHeight(el)))
 	}),
