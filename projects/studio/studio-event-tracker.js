@@ -245,7 +245,7 @@ jb.component('studio.slicedString', {
   ],
   impl: controlWithCondition(
         isOfType('string', '%$data%'),
-        text(({data},{},{length}) => data.replace(/\n/g,'').slice(0,length))
+        text(({},{},{length,data}) => data.replace(/\n/g,'').slice(0,length))
     )
 })
 
