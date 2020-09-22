@@ -136,14 +136,7 @@ jb.component('studio.eventTracker', {
             css.color('var(--jb-error-fg)')
           )}),
           group({controls: controlWithCondition('%m%',text('%m/$%: %m/t%, %m/cbId%'))}),
-          group({controls: controlWithCondition('%m/d%', group({
-            title: 'data',
-            style: group.sectionExpandCollopase(),
-            controls: text({
-              text: prettyPrint('%m/d%'),
-              style: text.codemirror({height: '60'}),
-            }),
-          }))}),
+          group({controls: studio.showLowFootprintObj('%m/data%')}),
           studio.eventView()
         ],
         style: table.plain(true),
@@ -228,6 +221,19 @@ jb.component('studio.showLowFootprintObj', {
         isOfType('string', '%$obj%'),
         studio.slicedString('%$title%: %$obj%')
       ),
+      controlWithCondition('%$obj%', group({
+        controls: [
+          controlWithCondition(ctx => ctx.exp('%$asText/length% < 20'), text('%$asText%')),
+          controlWithCondition('%$asText/length% >= 20', group({
+            style: group.sectionExpandCollopase(studio.slicedString('%$asText/length%')),
+            controls: text({
+              text: '%$asText%',
+              style: text.codemirror({height: '60'}),
+            }),    
+          }))
+        ],
+        features: variable('asText',prettyPrint('%$obj%'))
+      }))      
     ]
   }))
 })
@@ -239,7 +245,7 @@ jb.component('studio.slicedString', {
   ],
   impl: controlWithCondition(
         isOfType('string', '%$data%'),
-        text({text: pipeline('%$data%', slice(0, '%$length%'))})
+        text(({data},{},{length}) => data.replace(/\n/g,'').slice(0,length))
     )
 })
 
