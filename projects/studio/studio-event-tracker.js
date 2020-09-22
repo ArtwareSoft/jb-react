@@ -135,6 +135,9 @@ jb.component('studio.eventTracker', {
             inGroup(list('exception','error'), '%logNames%'),
             css.color('var(--jb-error-fg)')
           )}),
+          group({controls: controlWithCondition('%err%', studio.showLowFootprintObj('%err%','err',50))}),
+          group({controls: controlWithCondition('%stack%', studio.objExpandedAsText('%stack%'))}),
+
           group({controls: controlWithCondition('%m%',text('%m/$%: %m/t%, %m/cbId%'))}),
           group({controls: controlWithCondition('%m/d%', studio.objExpandedAsText('%m/d%'))}),
           studio.eventView()
@@ -180,7 +183,6 @@ jb.component('studio.eventView', {
       studio.sourceCtxView('%ctx%'),
       studio.showLowFootprintObj('%delta%','delta'),
       studio.showLowFootprintObj('%vdom%','vdom'),
-      studio.showLowFootprintObj('%err%','err',50),
       studio.showLowFootprintObj('%ref%','ref'),
       studio.showLowFootprintObj('%value%','value'),
       studio.showLowFootprintObj('%focusChanged%','focusChanged'),

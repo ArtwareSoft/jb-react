@@ -60,7 +60,7 @@ function do_jb_run(ctx,parentParam,settings) {
     }
   } catch (e) {
     if (ctx.vars.$throw) throw e
-    jb.logException(e,'exception while running run',ctx,parentParam,settings)
+    jb.logException(e,'exception while running run',{ctx,parentParam,settings})
   }
 }
 
