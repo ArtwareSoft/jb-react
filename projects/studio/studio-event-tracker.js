@@ -127,7 +127,7 @@ jb.component('studio.eventTracker', {
             style: group.sectionExpandCollopase(text('%cmp/ctx/profile/$%')),
             controls: editableText({
               databind: studio.profileAsText('%cmp/ctx/path%'),
-              style: editableText.codemirror({height: '30'}),
+              style: editableText.codemirror({height: '60'}),
             })
           }),
 //          text('%cmp/ctx/profile/$%'),
