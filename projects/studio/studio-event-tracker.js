@@ -135,7 +135,9 @@ jb.component('studio.eventTracker', {
             inGroup(list('exception','error'), '%logNames%'),
             css.color('var(--jb-error-fg)')
           )}),
-          controlWithCondition('%m%',text('%m/data/$%')), //%m/data/t%, %m/data/cbId%')),
+          group({controls:
+            controlWithCondition('%m%',text('%m/data/$%')), //%m/data/t%, %m/data/cbId%')),
+          }),
           studio.eventView()
         ],
         style: table.plain(true),
