@@ -196,10 +196,10 @@ jb.component('studio.objExpandedAsText', {
     controls: [
       controlWithCondition('%$asText/length% < 20', text('aaa%$asText%')),
       controlWithCondition('%$asText/length% > 19', group({
-        style: group.sectionExpandCollopase(studio.slicedString('%$asText%')),
+        style: group.sectionExpandCollopase(text('payload')),
         controls: text({
           text: '%$asText%',
-          style: text.codemirror({height: '60'}),
+          style: text.codemirror({height: '200'}),
         }),    
       }))
     ],

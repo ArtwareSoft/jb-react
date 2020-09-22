@@ -160,8 +160,7 @@ jb.component('text.codemirror', {
     {id: 'mode', as: 'string', options: 'htmlmixed,javascript,css'},
   ],
   impl: features(
-	text.bindText(),
-	frontEnd.var('text', '%$$props/text%'),
+	frontEnd.var('text', '%$$model/text()%'),
     ctx => ({ template: ({},{},h) => h('div') }),
 	frontEnd.var('cm_settings', (ctx,{},{cm_settings,lineWrapping, mode, lineNumbers}) => ({
 		...cm_settings, lineWrapping, lineNumbers, readOnly: true, mode: mode || 'javascript',
@@ -173,7 +172,7 @@ jb.component('text.codemirror', {
 			autofocus: false,
 		})
 		cmp.editor = CodeMirror(el, effective_settings)
-		jb.delay(100).then(() => cmp.editor.refresh())
+		cmp.editor.refresh()
 		_enableFullScreen && jb.delay(1).then(() => 
 			enableFullScreen(ctx,cmp.editor,jb.ui.outerWidth(el), jb.ui.outerHeight(el)))
 	}),
