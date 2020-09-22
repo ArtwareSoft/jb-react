@@ -135,7 +135,7 @@ jb.component('studio.eventTracker', {
             inGroup(list('exception','error'), '%logNames%'),
             css.color('var(--jb-error-fg)')
           )}),
-          controlWithCondition(true,studio.slicedString( ctx => ctx.exp('%m/data/$%'))), //%m/data/t%, %m/data/cbId%')),
+          studio.slicedString( ctx => ctx.exp('%m/data/$%')), //%m/data/t%, %m/data/cbId%')),
           studio.eventView()
         ],
         style: table.plain(true),
