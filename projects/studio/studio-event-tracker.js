@@ -195,7 +195,7 @@ jb.component('studio.objExpandedAsText', {
   impl: group({
     controls: [
       controlWithCondition('%$asText/length% < 20', text('aaa%$asText%')),
-      controlWithCondition('%$asText/length% >= 20', group({
+      controlWithCondition('%$asText/length% > 19', group({
         style: group.sectionExpandCollopase(studio.slicedString('%$asText%')),
         controls: text({
           text: '%$asText%',
