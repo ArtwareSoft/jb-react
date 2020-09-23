@@ -4314,7 +4314,7 @@ function stripVdom(vdom) {
 }
 
 function _unStripVdom(vdom,parent) {
-    if (!vdom || typeof vdom.parentNode == 'undefined') return
+    if (!vdom) return // || typeof vdom.parentNode == 'undefined') return
     vdom.parentNode = parent
     Object.setPrototypeOf(vdom, VNode.prototype);
     ;(vdom.children || []).forEach(ch=>_unStripVdom(ch,vdom))
