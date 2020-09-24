@@ -123,8 +123,8 @@ jb.component('studio.eventTracker', {
         items: '%$events%',
         controls: [
           text('%index%'),
-          group({controls: controlWithCondition('%cmp/ctx%', group({
-            style: group.sectionExpandCollopase(text('%cmp/ctx/profile/$%')),
+          group({controls: controlWithCondition('%cmp/ctx/profile/$%', group({
+            style: group.sectionExpandCollopase(text(ctx=>{console.log('aa',ctx); return ctx.exp('%cmp/ctx/profile/$%')})),
             controls: editableText({
               databind: studio.profileAsText('%cmp/ctx/path%'),
               style: editableText.codemirror({height: '60'}),
