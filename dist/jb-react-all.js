@@ -10517,6 +10517,7 @@ jb.component('group.sectionExpandCollopase', {
   params: [
     {id: 'titleCtrl', type: 'control', dynamic: true, defaultValue: text({text: '%$sectionsModel.title()%', style: header.h2() }) },
     {id: 'toggleStyle', type: 'editable-boolean.style', defaultValue: editableBoolean.expandCollapse() },
+    {id: 'autoExpand', as: 'boolean' }
   ],
   impl: styleByControl(
     group({
@@ -10529,14 +10530,11 @@ jb.component('group.sectionExpandCollopase', {
           layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'})
         }),
         group({
-          controls: '%$sectionsModel/controls%',
-          features: [
-            watchRef('%$sectionExpanded%'),
-            feature.if('%$sectionExpanded%')
-          ]
+          controls: controlWithCondition('%$sectionExpanded%','%$sectionsModel/controls%'),
+          features: watchRef('%$sectionExpanded%')
         })
       ],
-      features: variable({name: 'sectionExpanded', watchable: true}),
+      features: variable({name: 'sectionExpanded', watchable: true, value: '%$autoExpand%'}),
     }),
     'sectionsModel'
   )
@@ -11722,7 +11720,10 @@ jb.component('tableTree.init', {
   impl: features(
 		calcProp('model','%$$model/treeModel()%'),
 		method('flip', runActions(
-      ({},{$state,ev}) => $state.expanded[ev.path] = !$state.expanded[ev.path],
+      ({},{$state,ev}) => {
+        $state.expanded = $state.expanded || {}
+        $state.expanded[ev.path] = !$state.expanded[ev.path]
+      },
 			action.refreshCmp('%$$state%')
 		)),
     calcProp('expanded', ({},{$state,$props}) => ({...$state.expanded, ...$props.expanded, [$props.model.rootPath]: true})),

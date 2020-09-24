@@ -30,7 +30,10 @@ jb.component('tableTree.init', {
   impl: features(
 		calcProp('model','%$$model/treeModel()%'),
 		method('flip', runActions(
-      ({},{$state,ev}) => $state.expanded[ev.path] = !$state.expanded[ev.path],
+      ({},{$state,ev}) => {
+        $state.expanded = $state.expanded || {}
+        $state.expanded[ev.path] = !$state.expanded[ev.path]
+      },
 			action.refreshCmp('%$$state%')
 		)),
     calcProp('expanded', ({},{$state,$props}) => ({...$state.expanded, ...$props.expanded, [$props.model.rootPath]: true})),

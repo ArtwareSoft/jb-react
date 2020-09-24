@@ -7433,6 +7433,7 @@ jb.component('group.sectionExpandCollopase', {
   params: [
     {id: 'titleCtrl', type: 'control', dynamic: true, defaultValue: text({text: '%$sectionsModel.title()%', style: header.h2() }) },
     {id: 'toggleStyle', type: 'editable-boolean.style', defaultValue: editableBoolean.expandCollapse() },
+    {id: 'autoExpand', as: 'boolean' }
   ],
   impl: styleByControl(
     group({
@@ -7445,14 +7446,11 @@ jb.component('group.sectionExpandCollopase', {
           layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'})
         }),
         group({
-          controls: '%$sectionsModel/controls%',
-          features: [
-            watchRef('%$sectionExpanded%'),
-            feature.if('%$sectionExpanded%')
-          ]
+          controls: controlWithCondition('%$sectionExpanded%','%$sectionsModel/controls%'),
+          features: watchRef('%$sectionExpanded%')
         })
       ],
-      features: variable({name: 'sectionExpanded', watchable: true}),
+      features: variable({name: 'sectionExpanded', watchable: true, value: '%$autoExpand%'}),
     }),
     'sectionsModel'
   )
