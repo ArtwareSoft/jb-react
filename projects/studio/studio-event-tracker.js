@@ -123,7 +123,7 @@ jb.component('studio.eventTracker', {
         items: '%$events%',
         controls: [
           text('%index%'),
-          controlWithCondition('%cmp/pt%',text('%cmp/pt%')),
+          group({controls: controlWithCondition('%cmp/pt%',text('%cmp/pt%'))}),
           group({controls: controlWithCondition('%cmp/ctx/profile/$%', group({
             style: group.sectionExpandCollopase(text(ctx=>ctx.exp('%cmp/ctx/profile/$%'))),
             controls: editableText({
