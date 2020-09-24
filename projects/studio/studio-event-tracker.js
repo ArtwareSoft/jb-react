@@ -1,4 +1,4 @@
-jb.ns('chromeDebugger,editableBoolean')
+jb.ns('chromeDebugger,editableBoolean,eventTracker')
 
 Object.assign(jb.ui, {
   getInspectedJb: ctx => {
@@ -22,14 +22,14 @@ jb.component('studio.openEventTracker', {
   })
 })
 
-jb.component('studio.getSpy', {
+jb.component('eventTracker.getSpy', {
   impl: ctx => jb.ui.getSpy(ctx)
 })
 
-jb.component('studio.clearSpyLog', {
+jb.component('eventTracker.clearSpyLog', {
   type: 'action',
   impl: ctx => {
-    const items = ctx.run(studio.eventItems())
+    const items = ctx.run(eventTracker.eventItems())
     const lastGroupIndex = items.length - items.reverse().findIndex(x=>x.index == '---')
     if (lastGroupIndex >= items.length)
       jb.ui.getSpy(ctx).clear()
@@ -55,14 +55,14 @@ jb.component('studio.eventTracker', {
         layout: layout.horizontal('2'),
         controls: [
           text({
-            text: pipeline(studio.getSpy(), '%$events/length%/%logs/length%'),
+            text: pipeline(eventTracker.getSpy(), '%$events/length%/%logs/length%'),
             title: 'counts',
             features: [css.padding({top: '5', left: '5'})]
           }),
           divider({style: divider.vertical()}),
           button({
             title: 'clear',
-            action: runActions(studio.clearSpyLog(), refreshControlById('event-tracker')),
+            action: runActions(eventTracker.clearSpyLog(), refreshControlById('event-tracker')),
             style: chromeDebugger.icon(),
             features: [css.color('var(--jb-menu-fg)'), feature.hoverTitle('clear')]
           }),
@@ -123,19 +123,7 @@ jb.component('studio.eventTracker', {
         items: '%$events%',
         controls: [
           text('%index%'),
-          group({
-            controls: [
-              controlWithCondition('%cmp/ctx/profile/$%', group({
-                style: group.sectionExpandCollopase(text(ctx=>ctx.exp('%cmp/ctx/profile/$%'))),
-                controls: editableText({
-                  databind: studio.profileAsText('%cmp/ctx/path%'),
-                  style: editableText.codemirror({height: '60'}),
-                })
-              })),
-              controlWithCondition('%cmp/pt%',text('%cmp/pt%'))
-            ]
-          }),
-//          text('%cmp/ctx/profile/$%'),
+          eventTracker.ptNameOfEvent(),
           text({ text: '%logNames%', features: feature.byCondition(
             inGroup(list('exception','error'), '%logNames%'),
             css.color('var(--jb-error-fg)')
@@ -145,7 +133,7 @@ jb.component('studio.eventTracker', {
 
           group({controls: controlWithCondition('%m%',text('%m/$%: %m/t%, %m/cbId%'))}),
           group({controls: controlWithCondition('%m/d%', studio.objExpandedAsText('payload','%m/d%'))}),
-          studio.eventView()
+          eventTracker.eventView()
         ],
         style: table.plain(true),
         visualSizeLimit: 100,
@@ -153,7 +141,7 @@ jb.component('studio.eventTracker', {
           id('event-logs'),
           itemlist.infiniteScroll(50),
           itemlist.selection({
-            onSelection: runActions(({data}) => jb.frame.console.log(data), studio.highlightEvent('%%'))
+            onSelection: runActions(({data}) => jb.frame.console.log(data), eventTracker.highlightEvent('%%'))
           }),
           itemlist.keyboardSelection({}),
         ]
@@ -163,7 +151,7 @@ jb.component('studio.eventTracker', {
       id('event-tracker'),
       variable({
         name: 'events',
-        value: studio.eventItems('%$studio/eventTrackerQuery%', '%$studio/eventTrackerPattern%')
+        value: eventTracker.eventItems('%$studio/eventTrackerQuery%', '%$studio/eventTrackerPattern%')
       }),
       If(
         ctx => jb.ui.getInspectedJb() != ctx.frame().jb &&
@@ -177,7 +165,23 @@ jb.component('studio.eventTracker', {
   })
 })
 
-jb.component('studio.eventView', {
+jb.component('eventTracker.ptNameOfEvent', {
+  type: 'control',
+  impl: group({
+    controls: [
+      controlWithCondition('%cmp/ctx/profile/$%', group({
+        style: group.sectionExpandCollopase(text(ctx=>ctx.exp('%cmp/ctx/profile/$%'))),
+        controls: editableText({
+          databind: studio.profileAsText('%cmp/ctx/path%'),
+          style: editableText.codemirror({height: '60'}),
+        })
+      })),
+      controlWithCondition('%cmp/pt%',text('%cmp/pt%'))
+    ]
+  })
+})
+
+jb.component('eventTracker.eventView', {
   type: 'control',
   impl: group({
     layout: layout.horizontal('4'),
@@ -264,7 +268,7 @@ jb.component('studio.slicedString', {
     )
 })
 
-jb.component('studio.eventItems', {
+jb.component('eventTracker.eventItems', {
   params: [
     {id: 'query', as: 'string' },
     {id: 'pattern', as: 'string' },
@@ -283,14 +287,14 @@ jb.component('studio.eventItems', {
   }
 })
 
-jb.component('studio.elemOfCmp', {
+jb.component('eventTracker.elemOfCmp', {
   params: [
     {id: 'cmp' }
   ],
-  impl: studio.elemInInspectedJb('[cmp-id="%$cmp/cmpId%"]')
+  impl: eventTracker.elemInInspectedJb('[cmp-id="%$cmp/cmpId%"]')
 })
 
-jb.component('studio.elemInInspectedJb', {
+jb.component('eventTracker.elemInInspectedJb', {
   params: [
     {id: 'selector' }
   ],
@@ -301,20 +305,20 @@ jb.component('studio.elemInInspectedJb', {
   }
 })
 
-jb.component('studio.highlightEvent', {
+jb.component('eventTracker.highlightEvent', {
   type: 'action',
   params: [
     {id: 'event', defaultValue: '%%'}
   ],
   impl: runActions(
-    Var('elem', firstSucceeding(studio.elemOfCmp('%$event/cmp%'), studio.elemInInspectedJb('#%$event/dialogId%'))),
-    If('%$elem%', studio.highlightElem('%$elem%')),
-    If('%$event/elem%',studio.highlightElem('%$event/elem%')),
-    If('%$event/parentElem%',studio.highlightElem('%$event/parentElem%'))
+    Var('elem', firstSucceeding(eventTracker.elemOfCmp('%$event/cmp%'), eventTracker.elemInInspectedJb('#%$event/dialogId%'))),
+    If('%$elem%', eventTracker.highlightElem('%$elem%')),
+    If('%$event/elem%',eventTracker.highlightElem('%$event/elem%')),
+    If('%$event/parentElem%',eventTracker.highlightElem('%$event/parentElem%'))
   )
 })
 
-jb.component('studio.highlightElem', {
+jb.component('eventTracker.highlightElem', {
   type: 'action',
   params: [
     {id: 'elem'},
@@ -325,7 +329,7 @@ jb.component('studio.highlightElem', {
     log('eventTracker highlightElem'),
     openDialog({
         id: 'highlight-dialog',
-        style: studio.highlightDialogStyle(),
+        style: eventTracker.highlightDialogStyle(),
         content: text(''),
         features: [
           css(({},{},{elem}) => {
@@ -344,7 +348,7 @@ jb.component('studio.highlightElem', {
   )
 })
 
-jb.component('studio.highlightDialogStyle', {
+jb.component('eventTracker.highlightDialogStyle', {
   type: 'dialog.style',
   impl: customStyle({
     template: ({},{contentComp},h) => h('div#jb-dialog jb-popup',{},h(contentComp)),
@@ -384,7 +388,7 @@ jb.component('studio.singleSourceCtxView', {
             const ret = `${path.split('~')[0]}:${pt}`
             return ret.replace(/feature\./g,'').replace(/front.nd\./g,'').replace(/\.action/g,'')
           },
-          action: studio.highlightEvent('%%'),
+          action: eventTracker.highlightEvent('%%'),
           style: button.hrefText(),
           features: [
             feature.hoverTitle('%$srcCtx/path%'),
