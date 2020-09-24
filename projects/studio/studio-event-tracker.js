@@ -123,7 +123,7 @@ jb.component('studio.eventTracker', {
         items: '%$events%',
         controls: [
           text('%index%'),
-          eventTracker.ptNameOfEvent(),
+          eventTracker.ptNameOfUiComp(),
           text({ text: '%logNames%', features: feature.byCondition(
             inGroup(list('exception','error'), '%logNames%'),
             css.color('var(--jb-error-fg)')
@@ -165,12 +165,12 @@ jb.component('studio.eventTracker', {
   })
 })
 
-jb.component('eventTracker.ptNameOfEvent', {
+jb.component('eventTracker.ptNameOfUiComp', {
   type: 'control',
   impl: group({
     controls: [
       controlWithCondition('%cmp/ctx/profile/$%', group({
-        style: group.sectionExpandCollopase(text(ctx=>ctx.exp('%cmp/ctx/profile/$%'))),
+        style: group.sectionExpandCollopase(text('%cmp/ctx/profile/$%')),
         controls: editableText({
           databind: studio.profileAsText('%cmp/ctx/path%'),
           style: editableText.codemirror({height: '60'}),
