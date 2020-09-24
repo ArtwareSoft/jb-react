@@ -123,14 +123,18 @@ jb.component('studio.eventTracker', {
         items: '%$events%',
         controls: [
           text('%index%'),
-          group({controls: controlWithCondition('%cmp/pt%',text('%cmp/pt%'))}),
-          group({controls: controlWithCondition('%cmp/ctx/profile/$%', group({
-            style: group.sectionExpandCollopase(text(ctx=>ctx.exp('%cmp/ctx/profile/$%'))),
-            controls: editableText({
-              databind: studio.profileAsText('%cmp/ctx/path%'),
-              style: editableText.codemirror({height: '60'}),
-            })
-          }))}),
+          group({
+            controls: [
+              controlWithCondition('%cmp/ctx/profile/$%', group({
+                style: group.sectionExpandCollopase(text(ctx=>ctx.exp('%cmp/ctx/profile/$%'))),
+                controls: editableText({
+                  databind: studio.profileAsText('%cmp/ctx/path%'),
+                  style: editableText.codemirror({height: '60'}),
+                })
+              })),
+              controlWithCondition('%cmp/pt%',text('%cmp/pt%'))
+            ]
+          }),
 //          text('%cmp/ctx/profile/$%'),
           text({ text: '%logNames%', features: feature.byCondition(
             inGroup(list('exception','error'), '%logNames%'),
