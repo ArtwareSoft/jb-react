@@ -128,17 +128,17 @@ jb.component('studio.eventTracker', {
             inGroup(list('exception','error'), '%logNames%'),
             css.color('var(--jb-error-fg)')
           )}),
-          studio.showLowFootprintObj('%err%','err',50),
+          studio.lowFootprintObj('%err%','err',50),
           studio.objExpandedAsText('%stack%','stack'),
 
           controlWithCondition('%m%',text('%m/$%: %m/t%, %m/cbId%')),
           studio.objExpandedAsText('%m/d%','payload'),
-          studio.showLowFootprintObj('%delta%','delta'),
-          studio.showLowFootprintObj('%vdom%','vdom'),
-          studio.showLowFootprintObj('%ref%','ref'),
-          studio.showLowFootprintObj('%value%','value'),
-          studio.showLowFootprintObj('%val%','val'),
-          studio.showLowFootprintObj('%focusChanged%','focusChanged'),
+          studio.lowFootprintObj('%delta%','delta'),
+          studio.lowFootprintObj('%vdom%','vdom'),
+          studio.lowFootprintObj('%ref%','ref'),
+          studio.lowFootprintObj('%value%','value'),
+          studio.lowFootprintObj('%val%','val'),
+          studio.lowFootprintObj('%focusChanged%','focusChanged'),
           studio.sourceCtxView('%srcCtx%'),
           studio.sourceCtxView('%cmp/ctx%'),
           studio.sourceCtxView('%ctx%'),
@@ -215,7 +215,8 @@ jb.component('studio.objExpandedAsText', {
 })
 
 
-jb.component('studio.showLowFootprintObj', {
+jb.component('studio.lowFootprintObj', {
+  type: 'control',
   params: [
     {id: 'obj', mandatory: true },
     {id: 'title', mandatory: true },
@@ -245,7 +246,7 @@ jb.component('studio.showLowFootprintObj', {
         studio.slicedString('%$title%')
       ),
       controlWithCondition(
-        isOfType('string', '%$obj%'),
+        isOfType('string,number', '%$obj%'),
         studio.slicedString('%$title%: %$obj%')
       ),
     ]

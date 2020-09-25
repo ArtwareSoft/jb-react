@@ -267,7 +267,7 @@ jb.component('studio.suggestionList', {
   impl: styleByControl(
     itemlist({
       items: '%$picklistModel/options%',
-      visualSizeLimit: 10,
+      visualSizeLimit: 30,
       controls: text({
         text: pipeline('%text%', studio.unMacro()),
         features: [

@@ -10586,9 +10586,9 @@ jb.component('table.plain', {
   ],
   type: 'itemlist.style',
   impl: customStyle({
-    template: (cmp,{itemsCtxs,ctrls,hideHeaders},h) => h('div.jb-itemlist',{},h('table',{},[
+    template: (cmp,{itemsCtxs,ctrls,hideHeaders,headerFields},h) => h('div.jb-itemlist',{},h('table',{},[
         ...(hideHeaders ? [] : [h('thead',{},h('tr',{},
-          ctrls[0] && ctrls[0].map(ctrl=>ctrl.field()).map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} }, jb.ui.fieldTitle(cmp,f,h))) ))]),
+        headerFields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} }, jb.ui.fieldTitle(cmp,f,h))) ))]),
         h('tbody.jb-drag-parent',{},
           ctrls.map((ctrl,index)=> h('tr.jb-item',{ 'jb-ctx': itemsCtxs[index]}, ctrl.map( singleCtrl => h('td',{}, h(singleCtrl)))))),
         itemsCtxs.length == 0 ? 'no items' : ''            
@@ -10596,7 +10596,10 @@ jb.component('table.plain', {
     css: `>table{border-spacing: 0; text-align: left; width: 100%}
     >table>tbody>tr>td { padding-right: 5px }
     `,
-    features: itemlist.init()
+    features: [
+      itemlist.init(), 
+      calcProp('headerFields', '%$$model/controls()/field()%')
+    ]
   })
 })
 
@@ -10607,10 +10610,10 @@ jb.component('table.mdc', {
     {id: 'classForTable', as: 'string', defaultValue: 'mdc-data-table__table mdc-data-table--selectable'}    
   ],
   impl: customStyle({
-    template: (cmp,{ctrls,itemsCtxs,sortOptions,hideHeaders,classForTable},h) => 
+    template: (cmp,{ctrls,itemsCtxs,sortOptions,hideHeaders,classForTable,headerFields},h) => 
       h('div.jb-itemlist mdc-data-table',{}, h('table',{class: classForTable}, [
         ...(hideHeaders ? [] : [h('thead',{},h('tr.mdc-data-table__header-row',{},
-            ctrls[0] && ctrls[0].map(ctrl=>ctrl.field()).map((f,i) =>h('th.mdc-data-table__header-cell',{
+            headerFields.map((f,i) =>h('th.mdc-data-table__header-cell',{
             'jb-ctx': f.ctxId, 
             class: [ 
                 (sortOptions && sortOptions.filter(o=>o.field == f)[0] || {}).dir == 'asc' ? 'mdc-data-table__header--sorted-ascending': '',
@@ -10628,7 +10631,10 @@ jb.component('table.mdc', {
     ])),
     css: `{width: 100%}  
     ~ .mdc-data-table__header-cell, ~ .mdc-data-table__cell {color: var(--jb-fg)}`,
-    features: [itemlist.init(), mdcStyle.initDynamic()]
+    features: [
+      itemlist.init(), mdcStyle.initDynamic(), 
+      calcProp('headerFields', '%$$model/controls()/field()%')
+    ]
   })
 })
 ;
@@ -11732,18 +11738,22 @@ jb.component('tableTree.init', {
         $state.expanded[ev.path] = !$state.expanded[ev.path]
       },
 			action.refreshCmp('%$$state%')
-		)),
-    calcProp('expanded', ({},{$state,$props}) => ({...$state.expanded, ...$props.expanded, [$props.model.rootPath]: true})),
+    )),
+    calcProp('expanded', ({},{$state,$props}) => ({ ...$state.expanded, ...$props.expanded, [$props.model.rootPath]: true })),
+    //     ...(!$state.refresh && {[$props.model.rootPath]: true})
+    // })),
     frontEnd.prop('elemToPath',() => el => el && (el.getAttribute('path') || jb.ui.closest(el,'.jb-item') && jb.ui.closest(el,'.jb-item').getAttribute('path'))),
 		frontEnd.enrichUserEvent(({},{cmp,ev}) => ({ path: cmp.elemToPath(ev.target)})),
     calcProp({
-        id: 'items',
+        id: 'itemsCtxs',
         value: (ctx,{$props,$model}) => {
+            const ctxOfItem = (item,index) => ctx.setData({path: item.path, val: $props.model.val(item.path)}).setVars({index, item})
+
             const rootPath = $props.model.rootPath, expanded = $props.expanded, model = $props.model
-            if ($model.includeRoot)
-                return calcItems(rootPath, 0)
-            else
-                return calcItems(rootPath, -1).filter(x=>x.depth > -1)
+            const items = $model.includeRoot ? calcItems(rootPath, 0) : calcItems(rootPath, -1).filter(x=>x.depth > -1)
+            const itemsCtxs = items.map((item,i) => ctxOfItem(item,i))
+            itemsCtxs.forEach(iCtx => jb.ui.preserveCtx(iCtx))
+            return itemsCtxs
 
             function calcItems(top, depth) {
                 const item = [{path: top, depth, val: model.val(top), expanded: expanded[top]}]
@@ -11755,23 +11765,19 @@ jb.component('tableTree.init', {
         }
     }),
     calcProp('maxDepth',firstSucceeding('%$$model/maxDepth%',5)),
-    calcProp('leafFields','%$$model/leafFields()/field()%'),
-    calcProp('commonFields','%$$model/commonFields()/field()%'),
-    calcProp('init cmp utilities', (ctx,{cmp,$props,$model}) => {
-            cmp.fieldsForPath = path => [...($props.model.isArray(path) ? [] : $props.leafFields), ...$props.commonFields]
-            cmp.headline = item => headlineCmp(item)
-
-            cmp.expandingFieldsOfItem = item => {
-              const model = $props.model, maxDepth = $props.maxDepth
-              const maxDepthAr = Array.from(new Array(maxDepth))
-              const depthOfItem = (item.path.match(/~/g) || []).length - (model.rootPath.match(/~/g) || []).length - 1
+    calcProp('headerFields',list('%$$model/leafFields()/field()%','%$$model/commonFields()/field()%')),
+    calcProp('ctrlsMatrix', (ctx,{$model,$props}) => {
+        const model = $props.model, maxDepth = $props.maxDepth
+        const maxDepthAr = Array.from(new Array(maxDepth))
+        const expandingFields = path => {
+              const depthOfItem = (path.match(/~/g) || []).length - (model.rootPath.match(/~/g) || []).length - 1
                 // return tds until depth and then the '>' sign, and then the headline
               return maxDepthAr.filter((e,i) => i < depthOfItem+3)
                     .map((e,i) => {
-                        if (i < depthOfItem || i == depthOfItem && !model.isArray(item.path))
+                        if (i < depthOfItem || i == depthOfItem && !model.isArray(path))
                             return { empty: true }
                         if (i == depthOfItem) return {
-                            expanded: $props.expanded[item.path],
+                            expanded: $props.expanded[path],
                             toggle: true
                         }
                         if (i == depthOfItem+1) return {
@@ -11783,15 +11789,17 @@ jb.component('tableTree.init', {
                         }                        
                         debugger
                     }
-                )
-            }
-            function headlineCmp(item) {
-                return $model.chapterHeadline(
-                        ctx.setData({path: item.path, val: $props.model.val(item.path)})
-                            .setVars({item,collapsed: () => !cmp.state.expanded[item.path]}))
-            }
+               )
         }
-      )
+        return $props.itemsCtxs.map(iCtx => ({
+            headlineCtrl: $model.chapterHeadline(iCtx),
+            expandingFields: expandingFields(iCtx.data.path),
+            ctrls: [
+              ...($props.model.isArray(iCtx.data.path) ? [] : $model.leafFields(iCtx) ), 
+              ...$model.commonFields(iCtx)
+            ]
+        }))
+    })
   )
 })
 
@@ -11813,29 +11821,30 @@ jb.component('tableTree.plain', {
     {id: 'noItemsCtrl', type: 'control', dynamic: true, defaultValue: text('no items')}
   ],
   impl: customStyle({
-    template: (cmp,{leafFields,commonFields, expanded, items, maxDepth, hideHeaders, gapWidth, expColWidth, noItemsCtrl},h) => h('table',{},[
-        ...Array.from(new Array(maxDepth)).map(f=>h('col',{width: expColWidth + 'px'})),
+    template: (cmp,{headerFields, ctrlsMatrix, itemsCtxs, expanded, maxDepth, hideHeaders, gapWidth, expColWidth, noItemsCtrl},h) => h('table',{},[
+        ...Array.from(new Array(maxDepth)).map(()=>h('col',{width: expColWidth + 'px'})),
         h('col.gapCol',{width: gapWidth + 'px'}),
         h('col.resizerCol',{width: '5px'}),
-        ...leafFields.concat(commonFields).map(f=>h('col',{width: f.width || '200px'})),
-        ...(hideHeaders ? [] : [h('thead',{},h('tr',{},
-          Array.from(new Array(maxDepth+2)).map(f=>h('th.th-expand-collapse',{})).concat(
-              [...leafFields, ...commonFields].map(f=>h('th',{'jb-ctx': f.ctxId}, jb.ui.fieldTitle(cmp,f,h))) )))]),
+        ...headerFields.map(f=>h('col',{width: f.width || '200px'})),
+        ...(hideHeaders ? [] : [ h('thead',{},h('tr',{},
+          [ ...Array.from(new Array(maxDepth+2)).map(f=>h('th.th-expand-collapse',{})),
+            ...headerFields.map(f=>h('th',{'jb-ctx': f.ctxId}, jb.ui.fieldTitle(cmp,f,h)))
+          ]
+        ))]),
         h('tbody.jb-drag-parent',{},
-          items.map((item,index)=> h('tr.jb-item', {path: item.path, expanded: expanded[item.path] },
-            [...cmp.expandingFieldsOfItem(item).map(f=>h('td.drag-handle',
-              f.empty ? { class: 'empty-expand-collapse'} :
+          itemsCtxs.map((iCtx,index)=> h('tr.jb-item', {path: iCtx.data.path, expanded: expanded[iCtx.data.path] },
+            [...ctrlsMatrix[index].expandingFields.map(f=>h('td.drag-handle',
+                f.empty ? { class: 'empty-expand-collapse'} :
                 f.resizer ? {class: 'tt-resizer' } : 
                 f.toggle ? {class: 'expandbox' } : {class: 'headline', colSpan: f.colSpan, onclick: 'flip' },
               (f.empty || f.resizer) ? '' :
               f.toggle ? h('span',{}, h('i',{class:'material-icons noselect', onclick: 'flip' },
-                f.expanded ? 'keyboard_arrow_down' : 'keyboard_arrow_right')) : h(cmp.headline(item))
+                f.expanded ? 'keyboard_arrow_down' : 'keyboard_arrow_right')) : h(ctrlsMatrix[index].headlineCtrl)
               )),
-              ...cmp.fieldsForPath(item.path).map(f=>h('td.tree-field', {'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item)},
-                h(f.control(item,index),{index})))
+              ...ctrlsMatrix[index].ctrls.map(ctrl=>h('td.tree-field', {'jb-ctx': iCtx.id}, h(ctrl,{index})))
             ]
         ))),
-        items.length == 0 ? h(noItemsCtrl()) : ''
+        itemsCtxs.length == 0 ? h(noItemsCtrl()) : ''
       ]),
     css: `{border-spacing: 0; text-align: left;width: 100%; table-layout:fixed;}
       >tbody>tr>td { vertical-align: bottom; height: 30px; }
@@ -11908,6 +11917,7 @@ jb.component('tableTree.dragAndDrop', {
         })
     }))
 })
+
 ;
 
 (function() {

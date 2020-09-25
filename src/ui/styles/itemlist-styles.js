@@ -44,9 +44,9 @@ jb.component('table.plain', {
   ],
   type: 'itemlist.style',
   impl: customStyle({
-    template: (cmp,{itemsCtxs,ctrls,hideHeaders},h) => h('div.jb-itemlist',{},h('table',{},[
+    template: (cmp,{itemsCtxs,ctrls,hideHeaders,headerFields},h) => h('div.jb-itemlist',{},h('table',{},[
         ...(hideHeaders ? [] : [h('thead',{},h('tr',{},
-          ctrls[0] && ctrls[0].map(ctrl=>ctrl.field()).map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} }, jb.ui.fieldTitle(cmp,f,h))) ))]),
+        headerFields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} }, jb.ui.fieldTitle(cmp,f,h))) ))]),
         h('tbody.jb-drag-parent',{},
           ctrls.map((ctrl,index)=> h('tr.jb-item',{ 'jb-ctx': itemsCtxs[index]}, ctrl.map( singleCtrl => h('td',{}, h(singleCtrl)))))),
         itemsCtxs.length == 0 ? 'no items' : ''            
@@ -54,7 +54,10 @@ jb.component('table.plain', {
     css: `>table{border-spacing: 0; text-align: left; width: 100%}
     >table>tbody>tr>td { padding-right: 5px }
     `,
-    features: itemlist.init()
+    features: [
+      itemlist.init(), 
+      calcProp('headerFields', '%$$model/controls()/field()%')
+    ]
   })
 })
 
@@ -65,10 +68,10 @@ jb.component('table.mdc', {
     {id: 'classForTable', as: 'string', defaultValue: 'mdc-data-table__table mdc-data-table--selectable'}    
   ],
   impl: customStyle({
-    template: (cmp,{ctrls,itemsCtxs,sortOptions,hideHeaders,classForTable},h) => 
+    template: (cmp,{ctrls,itemsCtxs,sortOptions,hideHeaders,classForTable,headerFields},h) => 
       h('div.jb-itemlist mdc-data-table',{}, h('table',{class: classForTable}, [
         ...(hideHeaders ? [] : [h('thead',{},h('tr.mdc-data-table__header-row',{},
-            ctrls[0] && ctrls[0].map(ctrl=>ctrl.field()).map((f,i) =>h('th.mdc-data-table__header-cell',{
+            headerFields.map((f,i) =>h('th.mdc-data-table__header-cell',{
             'jb-ctx': f.ctxId, 
             class: [ 
                 (sortOptions && sortOptions.filter(o=>o.field == f)[0] || {}).dir == 'asc' ? 'mdc-data-table__header--sorted-ascending': '',
@@ -86,6 +89,9 @@ jb.component('table.mdc', {
     ])),
     css: `{width: 100%}  
     ~ .mdc-data-table__header-cell, ~ .mdc-data-table__cell {color: var(--jb-fg)}`,
-    features: [itemlist.init(), mdcStyle.initDynamic()]
+    features: [
+      itemlist.init(), mdcStyle.initDynamic(), 
+      calcProp('headerFields', '%$$model/controls()/field()%')
+    ]
   })
 })
