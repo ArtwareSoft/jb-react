@@ -762,6 +762,7 @@ jb.callbag = {
         }
         sniffer.ctx = source.ctx    
         Object.defineProperty(sniffer, 'name', { value: source.name + '-sniffer' })
+        sniffer.dispose = () => { console.log('dispose', sink,talkback); debugger }
 
         source(0,sniffer)
         

@@ -67,7 +67,7 @@ jb.component('studio.gotoSource', {
         parent.postMessage({ runProfile: {$: 'chromeDebugger.openResource', 
           location: [ location.origin + '/' + filePos.fn, filePos.pos[0], filePos.pos[1]] }})
       else
-        fetch(`/?op=gotoSource&comp=${path.split('~')[0]}`)
+        fetch(`/?op=gotoSource&comp=${filePos.path.split('~')[0]}`)
   })
 })
 

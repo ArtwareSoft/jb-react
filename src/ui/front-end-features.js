@@ -141,8 +141,8 @@ jb.component('source.frontEndEvent', {
     params: [
         {id: 'event', as: 'string', options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll'},
     ],
-    impl: rx.pipe(source.event('%$event%','%$cmp.base%'), 
-    rx.takeUntil('%$cmp.destroyed%'))
+    impl: //source.event('%$event%','%$cmp.base%')
+    rx.pipe(source.event('%$event%','%$cmp.base%'), rx.takeUntil('%$cmp.destroyed%'))
 })
 
 jb.component('frontEnd.addUserEvent', {

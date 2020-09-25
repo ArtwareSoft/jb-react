@@ -143,7 +143,7 @@ jb.component('studio.jbEditorMenu', {
             title: 'Goto parent',
             action: studio.openJbEditor({
               path: studio.parentPath('%$path%'),
-              fromPath: {'$': 'studio.parent', '$byValue': ['%$fromPath%']}
+              fromPath: studio.parentPath('%$fromPath%')
             }),
             shortcut: 'Ctrl+P',
             showCondition: contains({text: '~', allText: '%$root%'})

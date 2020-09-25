@@ -4,14 +4,18 @@ const {pipe,subscribe,takeUntil} = jb.callbag
 
 function compsRefOfPreviewJb(previewjb) {
 	st.compsHistory = []
+	historyWin = 5
 	function compsRef(val,opEvent,{source}= {}) {
 		if (typeof val == 'undefined')
 			return previewjb.comps
 		else {
 			val.$jb_selectionPreview = opEvent && opEvent.srcCtx && opEvent.srcCtx.vars.selectionPreview
 			if (!val.$jb_selectionPreview)
-			if (source != 'probe')
+			if (source != 'probe') {
 				st.compsHistory.push({before: previewjb.comps, after: val, opEvent: opEvent, undoIndex: st.undoIndex})
+				if (st.compsHistory.length > historyWin)
+					 	st.compsHistory[st.compsHistory.length-historyWin] == null
+			}
 
 			previewjb.comps = val
 			if (opEvent)

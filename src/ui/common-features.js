@@ -127,7 +127,6 @@ jb.component('followUp.action', {
 
 jb.component('followUp.flow', {
   type: 'feature',
-  category: 'front-end',
   description: 'rx flow at the backend after the vdom was sent',
   params: [
       {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
@@ -296,14 +295,14 @@ jb.component('calculatedVar', {
   ],
   impl: features(
     onDestroy(writeValue('%${%$name%}:{%$cmp/cmpId%}%', null)),
-    followUp.flow(rx.pipe(
+    followUp.flow(
       rx.merge(
         (ctx,{},{watchRefs}) => watchRefs(ctx).map(ref=>ctx.setData(ref).run(source.watchableData('%%')) )
       ),
       rx.log('check calculatedVar'),
       rx.map('%$value()%'),
       sink.data('%${%$name%}:{%$cmp/cmpId%}%')
-    )),
+    ),
     ctx => ({
       extendCtx: (_ctx,cmp) => {
         const {name,value} = ctx.cmpCtx.params

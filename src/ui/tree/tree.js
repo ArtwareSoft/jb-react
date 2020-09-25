@@ -4,6 +4,7 @@ jb.ns('tree')
 jb.component('tree', {
   type: 'control',
   params: [
+    {id: 'title', as: 'string'},
     {id: 'nodeModel', type: 'tree.node-model', dynamic: true, mandatory: true},
     {id: 'style', type: 'tree.style', defaultValue: tree.expandBox(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true, as: 'array'}
@@ -25,7 +26,10 @@ jb.component('tree.initTree', {
 			({},{$state,ev}) => $state.expanded[ev.path] = !$state.expanded[ev.path],
 			action.refreshCmp('%$$state%')
 		)),
-		userStateProp('expanded', ({},{$state,$props}) => ({...$state.expanded, [$props.model.rootPath]: true})),
+		userStateProp('expanded', ({},{$state,$props}) => ({
+			 ...$state.expanded, 
+			 ...(!$state.refresh && {[$props.model.rootPath]: true}) 
+		})),
 		frontEnd.enrichUserEvent(({},{cmp,ev}) => {
 			const el = jb.ui.find(ev.target,'.selected')[0] || ev.target
 			const labelEl = jb.ui.find(el,'.treenode-label')[0] || el
@@ -45,7 +49,7 @@ jb.component('tree.expandPath', {
 	impl: feature.init(({},{$state},{paths}) => {
 //		if ($state.refresh) return
 		$state.expanded = $state.expanded || {}
-		paths.forEach( path=> path.split('~').reduce((base, x, i) => {
+		;(paths || []).forEach( path=> path.split('~').reduce((base, x, i) => {
 			const inner = i ? (base + '~' + x) : x
 			$state.expanded[inner] = true
 			return inner
@@ -175,7 +179,7 @@ jb.component('tree.selection', {
 	  {id: 'autoSelectFirst', type: 'boolean'},
 	],
 	impl: features(
-	  tree.expandPath('%$databind()%'),
+	  tree.expandPath(tree.parentPath('%$databind()%')),
 	  method('onSelection', runActions( If(isRef('%$databind()%'),writeValue('%$databind()%','%%')), call('onSelection'))),
 	  method('onRightClick', runActions( If(isRef('%$databind()%'),writeValue('%$databind()%','%%')), call('onRightClick'))),
 	  userStateProp({
@@ -360,6 +364,20 @@ jb.component('tree.pathOfElem', {
 		{id: 'elem'}
 	],
 	impl: (ctx,el) => ctx.vars.cmp && ctx.vars.cmp.elemToPath && ctx.vars.cmp.elemToPath(el)
+})
+
+jb.component('tree.parentPath', {
+	params: [
+		{id: 'path', as: 'string', defaultValue: '%%'}
+	],
+	impl: (ctx,path) => path.split('~').slice(0,-1).join('~'),
+})
+
+jb.component('tree.lastPathElement', {
+	params: [
+		{id: 'path', as: 'string', defaultValue: '%%'}
+	],
+	impl: (ctx,path) => path.split('~').pop(),
 })
 
 jb.component('tree.sameParent', { 

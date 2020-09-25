@@ -267,6 +267,7 @@ jb.component('studio.suggestionList', {
   impl: styleByControl(
     itemlist({
       items: '%$picklistModel/options%',
+      visualSizeLimit: 10,
       controls: text({
         text: pipeline('%text%', studio.unMacro()),
         features: [
@@ -287,11 +288,12 @@ jb.component('studio.suggestionList', {
           )
         }),
         itemlist.keyboardSelection(false),
-        css.height({height: '500', overflow: 'auto', minMax: 'max'}),
+        css.height({height: '500', overflow: 'scroll', minMax: 'max'}),
         css.width({width: '300', overflow: 'auto', minMax: 'min'}),
         css('{ position: absolute; z-index:1000; background: var(--jb-dropdown-bg) }'),
         css.border({width: '1', color: 'var(--jb-dropdown-border)' }),
-        css.padding({top: '2', left: '3', selector: 'li'})
+        css.padding({top: '2', left: '3', selector: 'li'}),
+        itemlist.infiniteScroll()
       ]
     }),
     'picklistModel'

@@ -145,6 +145,7 @@ Object.assign(jb.ui, {
         const style_elem = document.createElement('style')
         style_elem.innerHTML = innerHtml
         this.previewOverlayDocument(ctx).head.appendChild(style_elem)
+        return style_elem
       }
     },
     valueOfCssVar(varName,parent) {

@@ -39,28 +39,15 @@ jb.component('itemlist.init', {
     calcProp('allItems', '%$$model/items%'),
     calcProp('visualSizeLimit', ({},{$model,$state}) => Math.max($model.visualSizeLimit,$state.visualSizeLimit ||0)),
     calcProp('items', itemlist.calcSlicedItems()),
+    calcProp('itemsCtxs', (ctx,{$model,$props}) => $props.items.map((item,index) => 
+      jb.ui.preserveCtx(ctx.setVars({index}).setVar($model.itemVariable,item).setData(item)))),
     calcProp({
         id: 'ctrls',
         value: (ctx,{$model,$props}) => {
-          const controlsOfItem = item => {
-            const itemCtx = ctx.setVar($model.itemVariable,item).setData(item)
-            return $model.controls(itemCtx).filter(x=>x).map(ctrl => Object.assign(ctrl,{ctxId : jb.ui.preserveCtx(itemCtx)}))
-          }
-          return $props.items.map(item=> controlsOfItem(item)).filter(x=>x.length > 0)
+          const controlsOfItem = (item,index) => $model.controls(ctx.setVars({index}).setVar($model.itemVariable,item).setData(item)).filter(x=>x)
+          return $props.items.map((item,i)=> controlsOfItem(item,i+1)).filter(x=>x.length > 0)
         }
       }),
-    itemlist.initContainerWithItems()
-  )
-})
-
-jb.component('itemlist.initTable', {
-  type: 'feature',
-  impl: features(
-    calcProp('allItems', '%$$model/items%'),
-    calcProp('visualSizeLimit', ({},{$model,$state}) => Math.max($model.visualSizeLimit,$state.visualSizeLimit ||0)),
-    calcProp('items', itemlist.calcSlicedItems()),
-    calcProp('itemsCtxs', pipeline('%$$props/items%', ctx => jb.ui.preserveCtx(ctx.setData()))),
-    calcProp('fields', '%$$model/controls/field()%'),
     itemlist.initContainerWithItems()
   )
 })

@@ -35,18 +35,6 @@ jb.component('itemlists.main', {
   })
 })
 
-jb.component('itemlists.table', {
-  type: 'control',
-  impl: table({
-    items: '%$people%',
-    fields: [
-      field({title: 'name', data: '%name%', width: '200'}),
-      field({title: 'age', data: '%age%'})
-    ],
-    style: table.mdc()
-  })
-})
-
 jb.component('itemlists.largeTable', {
   type: 'control',
   impl: group({
@@ -59,7 +47,8 @@ jb.component('itemlists.largeTable', {
           text({text: ctx => Math.floor(Number(ctx.data.id) /10), title: 'group'})
         ],
         style: table.mdc(),
-        visualSizeLimit: '1000'
+        visualSizeLimit: '50',
+        features: itemlist.infiniteScroll()
       })
     ]
   })

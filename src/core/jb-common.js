@@ -775,7 +775,7 @@ jb.component('split', {
   params: [
     {id: 'separator', as: 'string', defaultValue: ',', description: 'E.g., \",\" or \"<a>\"'},
     {id: 'text', as: 'string', defaultValue: '%%'},
-    {id: 'part', options: ',first,second,last,but first,but last'}
+    {id: 'part', options: 'all,first,second,last,but first,but last', defaultValue: 'all'}
   ],
   impl: ({},separator,text,part) => {
 		const out = text.split(separator.replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n'));

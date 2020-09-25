@@ -2,7 +2,7 @@
 jb.component('tree.jsonReadOnly', {
   type: 'tree.node-model',
   params: [
-    {id: 'object', as: 'single'},
+    {id: 'object', as: 'single', mandatory: true},
     {id: 'rootPath', as: 'string'}
   ],
   impl: (ctx, json, rootPath) => new ROjson(json,rootPath)
@@ -51,7 +51,7 @@ class ROjson {
 jb.component('tree.json', {
   type: 'tree.node-model',
   params: [
-    {id: 'object', as: 'ref'},
+    {id: 'object', as: 'ref', mandatory: true},
     {id: 'rootPath', as: 'string'}
   ],
   impl: function(ctx, json, rootPath) {

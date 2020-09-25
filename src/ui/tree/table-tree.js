@@ -3,6 +3,7 @@ jb.ns('table-tree,tree')
 jb.component('tableTree', {
   type: 'control',
   params: [
+    {id: 'title', as: 'string'},
     {id: 'treeModel', type: 'tree.node-model', dynamic: true, mandatory: true},
     {id: 'leafFields', type: 'control[]', dynamic: true},
     {id: 'commonFields', type: 'control[]', dynamic: true, as: 'array'},
@@ -119,7 +120,7 @@ jb.component('tableTree.plain', {
     template: (cmp,{leafFields,commonFields, expanded, items, maxDepth, hideHeaders, gapWidth, expColWidth, noItemsCtrl},h) => h('table',{},[
         ...Array.from(new Array(maxDepth)).map(f=>h('col',{width: expColWidth + 'px'})),
         h('col#gapCol',{width: gapWidth + 'px'}),
-        h('col#resizerCol',{width: '2px'}),
+        h('col#resizerCol',{width: '5px'}),
         ...leafFields.concat(commonFields).map(f=>h('col',{width: f.width || '200px'})),
         ...(hideHeaders ? [] : [h('thead',{},h('tr',{},
           Array.from(new Array(maxDepth+2)).map(f=>h('th#th-expand-collapse',{})).concat(
@@ -160,7 +161,7 @@ jb.component('tableTree.expandPath', {
 jb.component('tableTree.resizer', {
   type: 'feature',
   impl: features(
-    css('>tbody>tr>td.tt-resizer { cursor: col-resize}'),
+    css('>tbody>tr>td.tt-resizer { cursor: col-resize }'),
 	  frontEnd.method('setSize', ({data},{el}) => el.querySelector('.gapCol').width = data + 'px'),
     frontEnd.flow(
       source.frontEndEvent('mousedown'),

@@ -12,10 +12,10 @@ st.changedComps = function() {
 
 st.initStudioEditing = function() {
   if (st.previewjb.comps['dialog.studioPickDialog']) return
+  st.previewWindow.eval(`jb.ns('${Object.keys(jb.macroNs).join(',')}')`)
   jb.entries(jb.comps)
     .filter(e=>st.isStudioCmp(e[0]) || !st.previewjb.comps[e[0]])
     .forEach(e=>st.copyCompFromStudioToPreview(e))
-    //st.previewjb.comps[e[0]] = { ...e[1], [jb.location] : [e[1][jb.location][0].replace(/!st!/,''), e[1][jb.location][1]]})
 }
 
 st.copyCompFromStudioToPreview = function(e) {

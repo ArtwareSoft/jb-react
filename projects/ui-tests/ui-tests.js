@@ -810,6 +810,25 @@ jb.component('uiTest.itemlistWithTableStyle', {
   })
 })
 
+jb.component('test.personName', {
+  type: 'control',
+  params: [
+    { id: 'person'}
+  ],
+  impl: text('%$person/name%')
+})
+
+jb.component('uiTest.itemlistWithTableStyleUsingDynamicParam', {
+  impl: uiTest({
+    control: itemlist({
+      items: '%$watchablePeople%',
+      controls: test.personName('%%'),
+      style: table.plain(),
+    }),
+    expectedResult: contains('Bart')
+  })
+})
+
 // jb.component('uiTest.table', {
 //   impl: uiTest({
 //     control: table({

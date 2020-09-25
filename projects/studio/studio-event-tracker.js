@@ -136,7 +136,7 @@ jb.component('studio.eventTracker', {
           eventTracker.eventView()
         ],
         style: table.plain(true),
-        visualSizeLimit: 100,
+        visualSizeLimit: 30,
         features: [
           id('event-logs'),
           itemlist.infiniteScroll(50),
@@ -276,7 +276,7 @@ jb.component('eventTracker.eventItems', {
   impl: (ctx,query,pattern) => {
     const spy = jb.ui.getSpy(ctx)
     if (!spy) return []
-    const ret = spy.search(query).filter(x=> !(jb.path(x.ctx,'path') || '').match(/studio.eventTracker/))
+    const ret = spy.search(query).filter(x=> !(jb.path(x.ctx,'path') || '').match(/eventTracker/))
     const regexp = new RegExp(pattern)
     const items = pattern ? ret.filter(x=>regexp.test(Array.from(x.values()).filter(x=> typeof x == 'string').join(','))) : ret
     jb.log('eventTracker items',{ctx,spy,query,items})

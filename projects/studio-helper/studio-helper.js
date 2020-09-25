@@ -46,10 +46,16 @@ jb.component('studioHelper.compInspector', {
     title: '',
     layout: layout.vertical(3),
     controls: [
-      itemlist({items: list(1,2,3), controls: text('%%'), features: id('itemlist1') }),
+      itemlist({
+        items: list(1, 2, 3),
+        controls: text('%%'),
+        features: [id('itemlist1'), itemlist.selection({})]
+      }),
       group({
-        controls: studio.compInspector(() => document.querySelector('#itemlist1').getAttribute('cmp-id')),
-        features: group.wait(delay(10))
+        controls: studio.compInspector(
+          () => document.querySelector('#itemlist1').getAttribute('cmp-id')
+        ),
+        features: group.wait({for: delay(10)})
       })
     ]
   })

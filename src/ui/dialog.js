@@ -401,7 +401,7 @@ jb.component('dialogFeature.resizer', {
 		  return codeMirrorElem ? codeMirrorElem.getBoundingClientRect().top - el.getBoundingClientRect().top
 				+ (el.getBoundingClientRect().bottom - codeMirrorElem.getBoundingClientRect().bottom) : 0
 	  }),
-	  frontEnd.flow(rx.pipe(
+	  frontEnd.flow(
 		source.event('mousedown','%$cmp.resizerElem%'), 
 		rx.takeUntil('%$cmp.destroyed%'),
 		rx.var('offset',({},{el}) => ({
@@ -416,8 +416,8 @@ jb.component('dialogFeature.resizer', {
 				top: Math.max(0, data.clientY - offset.top),
 			})),
 		)),
-		sink.BEMethod('setSize')
-	)))
+		sink.FEMethod('setSize')
+	))
 })
 
 jb.component('dialog.popup', {

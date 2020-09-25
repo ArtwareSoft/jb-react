@@ -182,13 +182,16 @@ function applyDeltaToDom(elem,delta) {
             jb.log('appendChild dom',{newElem,e,elem,delta})
             !sameOrder && (newElem.setAttribute('__afterIndex',e.__afterIndex))
         })
-        if (!sameOrder) {
+        if (sameOrder === false) {
             Array.from(elem.children)
                 .sort((x,y) => Number(x.getAttribute('__afterIndex')) - Number(y.getAttribute('__afterIndex')))
                 .forEach(el=> {
                     const index = Number(el.getAttribute('__afterIndex'))
-                    if (elem.children[index] != el)
+                    if (elem.children[index] != el) {
+//                        const active = elem.contains(document.activeElement)
                         elem.insertBefore(el, elem.children[index])
+//                        if (active) jb.ui.focus(active,'change order',ctx)
+                    }
                     el.removeAttribute('__afterIndex')
                 })
             }
@@ -226,6 +229,7 @@ function applyDeltaToVDom(elem,delta) {
 }
 
 function setAtt(elem,att,val) {
+    if (val == '__undefined') return
     if (att[0] !== '$' && val == null) {
         elem.removeAttribute(att)
         jb.log('dom change remove',{elem,att,val})
@@ -576,6 +580,7 @@ class frontEndCmp {
         this.ver= elem.getAttribute('cmp-ver')
         this.pt = elem.getAttribute('cmp-pt')
         this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve)
+        this.flows= []
         elem._component = this
         this.runFEMethod('calcProps',null,null,true)
         this.runFEMethod('init',null,null,true)
@@ -605,7 +610,8 @@ class frontEndCmp {
                 jb.log(`frontend uiComp start flow ${jb.ui.rxPipeName(_flow)}`,{cmp: {...this}, srcCtx, ...feMEthod.frontEndMethod, el, ctxToUse})
             else 
                 jb.log(`frontend uiComp run method ${method}`,{cmp: {...this}, srcCtx , ...feMEthod.frontEndMethod,el,ctxToUse})
-            ctxToUse.run(feMEthod.frontEndMethod.action)
+            const res = ctxToUse.run(feMEthod.frontEndMethod.action)
+            if (_flow) this.flows.push(res)
         }, `frontEnd-${method}`))
     }
     enrichUserEvent(ev, userEvent) {
@@ -636,6 +642,7 @@ class frontEndCmp {
     }
     destroyFE() {
         this._deleted = true
+        this.flows.forEach(flow=>flow.dispose())
         this.runFEMethod('destroy',null,null,true)
         this.resolveDestroyed() // notifications to takeUntil(this.destroyed) observers
     }

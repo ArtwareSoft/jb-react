@@ -137,11 +137,11 @@ jb.component('studio.mainMenu', {
             icon: icon('save'),
             showCondition: not(studio.inVscode())
           }),
-          menu.action({
-            title: 'Source ...',
-            action: studio.viewAllFiles(studio.currentProfilePath()),
-            showCondition: not(studio.inVscode())
-          }),
+          // menu.action({
+          //   title: 'Source ...',
+          //   action: studio.viewAllFiles(studio.currentProfilePath()),
+          //   showCondition: not(studio.inVscode())
+          // }),
           menu.action({
             title: 'Github helper...',
             action: studio.githubHelper(),
