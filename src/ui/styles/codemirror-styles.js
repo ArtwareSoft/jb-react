@@ -25,7 +25,7 @@ jb.component('editableText.codemirror', {
     calcProp('textAreaAlternative',({},{$props},{maxLength}) => ($props.text || '').length > maxLength),
     ctx => ({
 		  template: (cmp,{text,textAreaAlternative},h) => textAreaAlternative ? 
-		  		h('textarea#jb-textarea-alternative-for-codemirror', {value: text }) :
+		  		h('textarea.jb-textarea-alternative-for-codemirror', {value: text }) :
 				h('div'),
 	}),
 	frontEnd.var('cm_settings', ({},{},{cm_settings,lineWrapping, mode, lineNumbers, readOnly}) => ({

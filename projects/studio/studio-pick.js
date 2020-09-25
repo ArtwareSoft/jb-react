@@ -115,8 +115,8 @@ jb.component('dialog.studioPickDialog', {
     {id: 'from', as: 'string'}
   ],
   impl: customStyle({
-    template: (cmp,{},h) => h('div#jb-dialog jb-pick',{},[
-      h('div#edge top'), h('div#edge left'), h('div#edge right'), h('div#edge bottom'), h(cmp.ctx.run(studio.pickTitle()))
+    template: (cmp,{},h) => h('div.jb-dialog jb-pick',{},[
+      h('div.edge top'), h('div.edge left'), h('div.edge right'), h('div.edge bottom'), h(cmp.ctx.run(studio.pickTitle()))
     ]),
     css: `{ display: block; position: absolute; width: 0; height:0; z-index: 10000 !important; }
     >.edge { position: absolute; box-shadow: 0 0 1px 1px gray; width: 1px; height: 1px; cursor: pointer; }`,    

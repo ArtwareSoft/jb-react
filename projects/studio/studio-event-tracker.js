@@ -351,7 +351,7 @@ jb.component('eventTracker.highlightElem', {
 jb.component('eventTracker.highlightDialogStyle', {
   type: 'dialog.style',
   impl: customStyle({
-    template: ({},{contentComp},h) => h('div#jb-dialog jb-popup',{},h(contentComp)),
+    template: ({},{contentComp},h) => h('div.jb-dialog jb-popup',{},h(contentComp)),
     css: '{ display: block; position: absolute; background: transparent}',
     features: [dialogFeature.maxZIndexOnClick(), dialogFeature.closeWhenClickingOutside()]
   })

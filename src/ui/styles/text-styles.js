@@ -5,7 +5,7 @@ jb.component('text.htmlTag', {
       {id: 'cssClass', as: 'string'}
     ],
     impl: customStyle({
-      template: (cmp,{text,htmlTag,cssClass},h) => h(`${htmlTag}#${cssClass}`,{},text),
+      template: (cmp,{text,htmlTag,cssClass},h) => h(`${htmlTag}.${cssClass}`,{},text),
       features: text.bindText()
     })
 })
@@ -30,7 +30,7 @@ jb.component('text.span', {
 jb.component('text.chip', {
     type: 'text.style',
     impl: customStyle({
-      template: (cmp,{text},h) => h('div#jb-chip',{},h('span',{},text)),
+      template: (cmp,{text},h) => h('div.jb-chip',{},h('span',{},text)),
       features: text.bindText()
     })
 })

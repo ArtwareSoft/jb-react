@@ -119,15 +119,15 @@ jb.component('tableTree.plain', {
   impl: customStyle({
     template: (cmp,{leafFields,commonFields, expanded, items, maxDepth, hideHeaders, gapWidth, expColWidth, noItemsCtrl},h) => h('table',{},[
         ...Array.from(new Array(maxDepth)).map(f=>h('col',{width: expColWidth + 'px'})),
-        h('col#gapCol',{width: gapWidth + 'px'}),
-        h('col#resizerCol',{width: '5px'}),
+        h('col.gapCol',{width: gapWidth + 'px'}),
+        h('col.resizerCol',{width: '5px'}),
         ...leafFields.concat(commonFields).map(f=>h('col',{width: f.width || '200px'})),
         ...(hideHeaders ? [] : [h('thead',{},h('tr',{},
-          Array.from(new Array(maxDepth+2)).map(f=>h('th#th-expand-collapse',{})).concat(
+          Array.from(new Array(maxDepth+2)).map(f=>h('th.th-expand-collapse',{})).concat(
               [...leafFields, ...commonFields].map(f=>h('th',{'jb-ctx': f.ctxId}, jb.ui.fieldTitle(cmp,f,h))) )))]),
-        h('tbody#jb-drag-parent',{},
-          items.map((item,index)=> h('tr#jb-item', {path: item.path, expanded: expanded[item.path] },
-            [...cmp.expandingFieldsOfItem(item).map(f=>h('td#drag-handle',
+        h('tbody.jb-drag-parent',{},
+          items.map((item,index)=> h('tr.jb-item', {path: item.path, expanded: expanded[item.path] },
+            [...cmp.expandingFieldsOfItem(item).map(f=>h('td.drag-handle',
               f.empty ? { class: 'empty-expand-collapse'} :
                 f.resizer ? {class: 'tt-resizer' } : 
                 f.toggle ? {class: 'expandbox' } : {class: 'headline', colSpan: f.colSpan, onclick: 'flip' },
@@ -135,7 +135,7 @@ jb.component('tableTree.plain', {
               f.toggle ? h('span',{}, h('i',{class:'material-icons noselect', onclick: 'flip' },
                 f.expanded ? 'keyboard_arrow_down' : 'keyboard_arrow_right')) : h(cmp.headline(item))
               )),
-              ...cmp.fieldsForPath(item.path).map(f=>h('td#tree-field', {'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item)},
+              ...cmp.fieldsForPath(item.path).map(f=>h('td.tree-field', {'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item)},
                 h(f.control(item,index),{index})))
             ]
         ))),

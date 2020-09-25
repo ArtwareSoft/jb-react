@@ -89,17 +89,17 @@ jb.component('picklist.mdcRadio', {
     {id: 'text', defaultValue: '%text%', dynamic: true}
   ],
   impl: customStyle({
-    template: (cmp,{databind, options, fieldId, text},h) => h('div#mdc-form-field', {},
+    template: (cmp,{databind, options, fieldId, text},h) => h('div.mdc-form-field', {},
           options.flatMap((option,i)=> [
-              h('div#mdc-radio',{},[
-                h('input#mdc-radio__native-control', {
+              h('div.mdc-radio',{},[
+                h('input.mdc-radio__native-control', {
                   type: 'radio', name: fieldId, id: i, checked: databind === option.code, value: option.code, onchange: true
                 }),
-                h('div#mdc-radio__background',{},[
-                  h('div#mdc-radio__outer-circle'),
-                  h('div#mdc-radio__inner-circle'),
+                h('div.mdc-radio__background',{},[
+                  h('div.mdc-radio__outer-circle'),
+                  h('div.mdc-radio__inner-circle'),
                 ]),
-                h('div#mdc-radio__ripple')
+                h('div.mdc-radio__ripple')
               ]),
               h('label',{for: i}, text(cmp.ctx.setData(option))),
     ])),
@@ -123,18 +123,18 @@ jb.component('picklist.mdcSelect', {
     {id: 'noRipple', as: 'boolean', type: 'boolean'}
   ],
   impl: customStyle({
-    template: (cmp,{databind,options,title,noLabel,noRipple,hasEmptyOption},h) => h('div#mdc-select',{}, [
-      h('div#mdc-select__anchor',{onclick: true},[
+    template: (cmp,{databind,options,title,noLabel,noRipple,hasEmptyOption},h) => h('div.mdc-select',{}, [
+      h('div.mdc-select__anchor',{onclick: true},[
           ...(cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'pre').map(h).map(vdom=>vdom.addClass('mdc-text-field__icon mdc-text-field__icon--leading')),
-          h('i#mdc-select__dropdown-icon', {}),
-          h('div#mdc-select__selected-text',{'aria-required': !hasEmptyOption},databind),
-          ...[!noLabel && h('label#mdc-floating-label',{ class: databind ? 'mdc-floating-label--float-above' : ''},title() )].filter(x=>x),
-          ...[!noRipple && h('div#mdc-line-ripple')].filter(x=>x)
+          h('i.mdc-select__dropdown-icon', {}),
+          h('div.mdc-select__selected-text',{'aria-required': !hasEmptyOption},databind),
+          ...[!noLabel && h('label.mdc-floating-label',{ class: databind ? 'mdc-floating-label--float-above' : ''},title() )].filter(x=>x),
+          ...[!noRipple && h('div.mdc-line-ripple')].filter(x=>x)
       ]),
-      h('div#mdc-select__menu mdc-menu mdc-menu-surface demo-width-class',{},[
-        h('ul#mdc-list',{},options.map(option=>h('li#mdc-list-item',{'data-value': option.code, 
+      h('div.mdc-select__menu mdc-menu mdc-menu-surface demo-width-class',{},[
+        h('ul.mdc-list',{},options.map(option=>h('li.mdc-list-item',{'data-value': option.code, 
           class: option.code == databind ? 'mdc-list-item--selected': ''},    
-          h('span#mdc-list-item__text', {}, option.text))))
+          h('span.mdc-list-item__text', {}, option.text))))
       ])
     ]),
     features: [

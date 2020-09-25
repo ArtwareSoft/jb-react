@@ -68,7 +68,7 @@ jb.component('tree.plain', {
 		function renderLine(path) {
 			const _icon = model.icon(path) || 'radio_button_unchecked'
 			return h('div',{ class: `treenode-line`},[
-				model.isArray(path) ? h('i#material-icons noselect flip-icon', { onclick: 'flipExpandCollapse', path },
+				model.isArray(path) ? h('i.material-icons noselect flip-icon', { onclick: 'flipExpandCollapse', path },
 					expanded[path] ? 'keyboard_arrow_down' : 'keyboard_arrow_right') : h('span',{class: 'no-children-holder'}),
 				...(showIcon ? [h('i',{class: 'material-icons treenode-icon'}, _icon)] : []),
 				h('span',{class: 'treenode-label'}, model.title(path,!expanded[path])),
@@ -110,11 +110,11 @@ jb.component('tree.expandBox', {
 			return h('div',{ class: `treenode-line${collapsed}`},[
 				h('button',{class: `treenode-expandbox${nochildren}${showIconClass}`, onclick: 'flipExpandCollapse', path },
 					[ 
-						h('div#frame'),h('div#line-lr'),h('div#line-tb')
+						h('div.frame'),h('div.line-lr'),h('div.line-tb')
 					]
 				),
-				...(showIcon ? [h('i#material-icons treenode-icon',{}, _icon)] : []),
-				h('span#treenode-label',{}, model.title(path,!expanded[path])),
+				...(showIcon ? [h('i.material-icons treenode-icon',{}, _icon)] : []),
+				h('span.treenode-label',{}, model.title(path,!expanded[path])),
 			])
 		}
 		return new TreeRenderer({model,expanded,h,showIcon,noHead,renderLine,selected}).renderTree(cmp.renderProps.model.rootPath)
@@ -161,7 +161,7 @@ class TreeRenderer {
 		const disabled = model.disabled && model.disabled(path) ? 'jb-disabled' : ''
 		const selected = path == this.selected ? 'selected' : ''
 		const clz = ['treenode', model.isArray(path) ? 'jb-array-node': '',disabled, selected].filter(x=>x).join(' ')
-		const children = expanded[path] && model.children(path).length ? [h('div#treenode-children', {} ,
+		const children = expanded[path] && model.children(path).length ? [h('div.treenode-children', {} ,
 			model.children(path).map(childPath=>this.renderNode(childPath)))] : []
 
 		return h('div',{class: clz, path, ...expanded[path] ? {expanded: true} :{} }, [ this.renderLine(path), ...children ] )

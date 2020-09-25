@@ -18,9 +18,11 @@ class VNode {
             children = children.filter(x=>x).map(item=> typeof item == 'string' ? jb.ui.h('span',{$text: item}) : item)
         
         this.attributes = attributes
-        if (typeof cmpOrTag === 'string' && cmpOrTag.indexOf('#') != -1) {
-            this.addClass(cmpOrTag.split('#').pop().trim())
-            cmpOrTag = cmpOrTag.split('#')[0]
+        if (typeof cmpOrTag === 'string' && cmpOrTag.indexOf('#') != -1)
+            debugger
+        if (typeof cmpOrTag === 'string' && cmpOrTag.indexOf('.') != -1) {
+            this.addClass(cmpOrTag.split('.').pop().trim())
+            cmpOrTag = cmpOrTag.split('.')[0]
         }
         if (children != null)
             children.forEach(ch=>ch.parentNode = this)

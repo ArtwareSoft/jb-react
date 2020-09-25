@@ -90,13 +90,13 @@ jb.component('editableNumber.mdcSliderNoText', {
   ],
   impl: customStyle({
     template: (cmp,{title,min,max,step,numbericVal,thumbSize,cx,cy,r},h) =>
-      h('div#mdc-slider mdc-slider--discrete',{tabIndex: -1, role: 'slider', 'data-step': step,
+      h('div.mdc-slider mdc-slider--discrete',{tabIndex: -1, role: 'slider', 'data-step': step,
         'aria-valuemin': min, 'aria-valuemax': max, 'aria-valuenow': numbericVal, 'aria-label': title()}, [
-        h('div#mdc-slider__track-container',{}, h('div#mdc-slider__track')),
-        h('div#mdc-slider__thumb-container',{},[
-          h('div#mdc-slider__pin',{},h('span#mdc-slider__pin-value-marker')),
-          h('svg#mdc-slider__thumb',{ width: thumbSize, height: thumbSize}, h('circle',{cx,cy,r})),
-          h('div#mdc-slider__focus-ring')
+        h('div.mdc-slider__track-container',{}, h('div.mdc-slider__track')),
+        h('div.mdc-slider__thumb-container',{},[
+          h('div.mdc-slider__pin',{},h('span.mdc-slider__pin-value-marker')),
+          h('svg.mdc-slider__thumb',{ width: thumbSize, height: thumbSize}, h('circle',{cx,cy,r})),
+          h('div.mdc-slider__focus-ring')
         ])
       ]),
     features: [

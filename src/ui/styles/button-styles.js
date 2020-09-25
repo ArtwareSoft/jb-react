@@ -62,9 +62,9 @@ jb.component('button.mdc', {
   impl: customStyle({
     template: (cmp,{title,raised,noRipple,noTitle},h) => h('button',{
       class: ['mdc-button',raised && 'raised mdc-button--raised'].filter(x=>x).join(' '), onclick: true},[
-      ...[!noRipple && h('div#mdc-button__ripple')],
+      ...[!noRipple && h('div.mdc-button__ripple')],
       ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-button__icon')),
-      ...[!noTitle && h('span#mdc-button__label',{},title)],
+      ...[!noTitle && h('span.mdc-button__label',{},title)],
       ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-button__icon')),
     ]),
     features: mdcStyle.initDynamic()
@@ -75,9 +75,9 @@ jb.component('button.mdcChipAction', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) =>
-    h('div#mdc-chip-set mdc-chip-set--filter', {onclick: true},
-      h('div#mdc-chip',{ class: [raised && 'mdc-chip--selected raised'].filter(x=>x).join(' ') }, [
-        h('div#mdc-chip__ripple'),
+    h('div.mdc-chip-set mdc-chip-set--filter', {onclick: true},
+      h('div.mdc-chip',{ class: [raised && 'mdc-chip--selected raised'].filter(x=>x).join(' ') }, [
+        h('div.mdc-chip__ripple'),
         ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-chip__icon mdc-chip__icon--leading')),
         h('span',{ role: 'gridcell'}, h('span', {role: 'button', tabindex: -1, class: 'mdc-chip__text'}, title )),
         ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-chip__icon mdc-chip__icon--trailing')),
@@ -132,13 +132,13 @@ jb.component('button.mdcTab', {
   impl: customStyle({
     template: (cmp,{title,raised},h) =>
       h('button',{ class: ['mdc-tab', raised && 'mdc-tab--active'].filter(x=>x).join(' '),tabIndex: -1, role: 'tab', onclick:  true}, [
-        h('span#mdc-tab__content',{}, [
+        h('span.mdc-tab__content',{}, [
           ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-tab__icon')),
-          h('span#mdc-tab__text-label',{},title),
+          h('span.mdc-tab__text-label',{},title),
           ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-tab__icon'))
         ]),
         h('span',{ class: ['mdc-tab-indicator', raised && 'mdc-tab-indicator--active'].filter(x=>x).join(' ') }, h('span',{ class: 'mdc-tab-indicator__content mdc-tab-indicator__content--underline'})),
-        h('span#mdc-tab__ripple'),
+        h('span.mdc-tab__ripple'),
       ]),
     features: mdcStyle.initDynamic()
   })

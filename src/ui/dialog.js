@@ -223,9 +223,9 @@ jb.component('dialogFeature.dragTitle', {
 jb.component('dialog.default', {
 	type: 'dialog.style',
 	impl: customStyle({
-	  template: ({},{title,contentComp},h) => h('div#jb-dialog jb-default-dialog',{},[
-			  h('div#dialog-title',{},title),
-			  h('button#dialog-close', {onclick: 'dialogClose' },'×'),
+	  template: ({},{title,contentComp},h) => h('div.jb-dialog jb-default-dialog',{},[
+			  h('div.dialog-title',{},title),
+			  h('button.dialog-close', {onclick: 'dialogClose' },'×'),
 			  h(contentComp),
 		  ]),
 	  features: dialogFeature.dragTitle()
@@ -366,13 +366,13 @@ jb.component('dialog.dialogOkCancel', {
     {id: 'cancelLabel', as: 'string', defaultValue: 'Cancel'}
   ],
   impl: customStyle({
-    template: (cmp,{title,contentComp,cancelLabel,okLabel},h) => h('div#jb-dialog jb-default-dialog',{},[
-			h('div#dialog-title',{},title),
-			h('button#dialog-close', { onclick: 'dialogClose' },'×'),
+    template: (cmp,{title,contentComp,cancelLabel,okLabel},h) => h('div.jb-dialog jb-default-dialog',{},[
+			h('div.dialog-title',{},title),
+			h('button.dialog-close', { onclick: 'dialogClose' },'×'),
 			h(contentComp),
-			h('div#dialog-buttons',{},[
-				h('button#mdc-button', {onclick: 'dialogClose' }, [h('div#mdc-button__ripple'), h('span#mdc-button__label',{},cancelLabel)]),
-				h('button#mdc-button', {onclick: 'dialogCloseOK' },[h('div#mdc-button__ripple'), h('span#mdc-button__label',{},okLabel)]),
+			h('div.dialog-buttons',{},[
+				h('button.mdc-button', {onclick: 'dialogClose' }, [h('div.mdc-button__ripple'), h('span.mdc-button__label',{},cancelLabel)]),
+				h('button.mdc-button', {onclick: 'dialogCloseOK' },[h('div.mdc-button__ripple'), h('span.mdc-button__label',{},okLabel)]),
 			]),
 		]),
 	css: '>.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }',
@@ -386,7 +386,7 @@ jb.component('dialogFeature.resizer', {
     {id: 'resizeInnerCodemirror', as: 'boolean', description: 'effective only for dialog with a single codemirror element', type: 'boolean'}
   ],
   impl: features(
-	  templateModifier( ({},{vdom}) => { vdom && vdom.tag == 'div' && vdom.children.push(jb.ui.h('img#jb-resizer',{})) }),
+	  templateModifier( ({},{vdom}) => { vdom && vdom.tag == 'div' && vdom.children.push(jb.ui.h('img.jb-resizer',{})) }),
 	  css('>.jb-resizer { cursor: pointer; position: absolute; right: 1px; bottom: 1px }'),
 	  frontEnd.method('setSize',({data},{cmp}) => { 
 		cmp.base.style.height = data.top + 'px'
@@ -423,7 +423,7 @@ jb.component('dialogFeature.resizer', {
 jb.component('dialog.popup', {
   type: 'dialog.style',
   impl: customStyle({
-	template: ({},{contentComp},h) => h('div#jb-dialog jb-popup',{},h(contentComp)),
+	template: ({},{contentComp},h) => h('div.jb-dialog jb-popup',{},h(contentComp)),
     css: '{ position: absolute; background: var(--jb-dropdown-bg); box-shadow: 2px 2px 3px var(--jb-dropdown-shadow); padding: 3px 0; border: 1px solid var(--jb-dropdown-border) }',
     features: [
       dialogFeature.maxZIndexOnClick(),
@@ -437,7 +437,7 @@ jb.component('dialog.popup', {
 jb.component('dialog.transparent-popup', {
 	type: 'dialog.style',
 	impl: customStyle({
-	  template: ({},{contentComp},h) => h('div#jb-dialog jb-popup',{},h(contentComp)),
+	  template: ({},{contentComp},h) => h('div.jb-dialog jb-popup',{},h(contentComp)),
 	  css: '{ position: absolute; padding: 3px 0; }',
 	  features: [
 		dialogFeature.maxZIndexOnClick(),
@@ -451,7 +451,7 @@ jb.component('dialog.transparent-popup', {
 jb.component('dialog.div', {
   type: 'dialog.style',
   impl: customStyle({
-    template: ({},{contentComp},h) => h('div#jb-dialog jb-popup',{},h(contentComp)),
+    template: ({},{contentComp},h) => h('div.jb-dialog jb-popup',{},h(contentComp)),
     css: '{ position: absolute }'
   })
 })
@@ -489,7 +489,7 @@ jb.component('dialog.dialogTop', {
 jb.component('dialogs.defaultStyle', {
 	type: 'dialogs.style',
 	impl: customStyle({
-		template: ({},{},h) => h('div#jb-dialogs',{},[]),
+		template: ({},{},h) => h('div.jb-dialogs',{},[]),
 		features: [
 			followUp.flow(
 				source.subject(dialogs.changeEmitter()),

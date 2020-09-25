@@ -30,7 +30,7 @@ jb.component('inplaceEdit.activate', {
 jb.component('inplaceEdit.popupStyle', {
   type: 'dialog.style',
   impl: customStyle({
-    template: (cmp,{contentComp},h) => h('div#jb-dialog jb-popup',{}, h(contentComp)),
+    template: (cmp,{contentComp},h) => h('div.jb-dialog jb-popup',{}, h(contentComp)),
     css: `{ position: absolute; background: var(--jb-editor-background); padding: 6px;
               box-shadow: 2px 2px 3px #d5d5d5; border: 1px solid rgb(213, 213, 213); }`,
     features: [
@@ -183,7 +183,7 @@ Object.assign(jb.ui, {
 jb.component('inplaceEdit.thumbStyle', {
     type: 'dialog.style',
     impl: customStyle({
-      template: (cmp,state,h) => h('div#jb-dialog jb-popup',{},h(state.contentComp)),
+      template: (cmp,state,h) => h('div.jb-dialog jb-popup',{},h(state.contentComp)),
       css: '{ display: block; position: absolute; }',
       features: [dialogFeature.maxZIndexOnClick(), dialogFeature.closeWhenClickingOutside()]
     })

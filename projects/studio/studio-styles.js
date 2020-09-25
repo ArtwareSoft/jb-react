@@ -81,7 +81,7 @@ jb.component('button.studioScript', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title},h) =>
-        h('input#mdc-text-field__input', { type: 'text', readonly: true, title, value: title, onmouseup: 'onclickHandler' }),
+        h('input.mdc-text-field__input', { type: 'text', readonly: true, title, value: title, onmouseup: 'onclickHandler' }),
     css: `{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; 
       color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-menubar-inactive-bg);
       cursor: pointer; opacity: 0.8; font-style: italic; }`,
@@ -114,7 +114,7 @@ jb.component('picklist.studioEnum', {
 jb.component('text.studioMessage', {
   type: 'text.style',
   impl: customStyle({
-    template: (cmp,{text},h) => h('span#studio-message',{}, text),
+    template: (cmp,{text},h) => h('span.studio-message',{}, text),
     css: `{ position: absolute;
       z-index: 10000,
       color: white;  padding: 10px;  background: #327DC8;
@@ -128,8 +128,8 @@ jb.component('text.studioMessage', {
 jb.component('dialog.studioMultilineEdit', {
   type: 'dialog.style',
   impl: customStyle({
-    template: (cmp,{contentComp},h) => h('div#jb-dialog jb-popup',{}, [
-      h('button#dialog-close', {onclick: 'dialogClose' },'×'),
+    template: (cmp,{contentComp},h) => h('div.jb-dialog jb-popup',{}, [
+      h('button.dialog-close', {onclick: 'dialogClose' },'×'),
       h(contentComp),
     ]),
     css: `{ background: #fff; position: absolute; min-width: 280px; min-height: 200px;

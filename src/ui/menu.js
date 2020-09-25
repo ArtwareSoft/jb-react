@@ -356,11 +356,11 @@ jb.component('menu.isRelevantMenu', {
 jb.component('menuStyle.optionLine', {
   type: 'menu-option.style',
   impl: customStyle({
-    template: (cmp,{icon,title,shortcut},h) => h('div#line noselect', { onmousedown: 'closeAndActivate' },[
+    template: (cmp,{icon,title,shortcut},h) => h('div.line noselect', { onmousedown: 'closeAndActivate' },[
         h(cmp.ctx.run({$: 'control.icon', ...icon, size: 20})),
-				h('span#title',{},title),
-				h('span#shortcut',{},shortcut),
-        h('div#mdc-line-ripple'),
+				h('span.title',{},title),
+				h('span.shortcut',{},shortcut),
+        h('div.mdc-line-ripple'),
 		]),
     css: `{ display: flex; cursor: pointer; font1: 13px Arial; height: 24px}
 				.selected { color: var(--jb-menubar-selection-fg); background: var(--jb-menubar-selection-bg) }
@@ -375,9 +375,9 @@ jb.component('menuStyle.optionLine', {
 jb.component('menuStyle.popupAsOption', {
   type: 'menu.style',
   impl: customStyle({
-    template: (cmp,{title},h) => h('div#line noselect', { onmousedown: 'closeAndActivate' },[
-				h('span#title',{},title),
-				h('i#material-icons', { onmouseenter: 'openPopup' },'play_arrow'),
+    template: (cmp,{title},h) => h('div.line noselect', { onmousedown: 'closeAndActivate' },[
+				h('span.title',{},title),
+				h('i.material-icons', { onmouseenter: 'openPopup' },'play_arrow'),
 		]),
     css: `{ display: flex; cursor: pointer; font1: 13px Arial; height: 24px}
 				>i { width: 100%; text-align: right; font-size:16px; padding-right: 3px; padding-top: 3px; }
@@ -391,7 +391,7 @@ jb.component('menuStyle.popupThumb', {
   type: 'menu.style',
   description: 'used for pulldown',
   impl: customStyle({
-    template: ({},{title},h) => h('div#pulldown-top-menu-item',{ onclick: 'openPopup'}, title),
+    template: ({},{title},h) => h('div.pulldown-top-menu-item',{ onclick: 'openPopup'}, title),
     features: [
       menu.initPopupMenu(), 
       mdc.rippleEffect(),
@@ -411,7 +411,7 @@ jb.component('dialog.contextMenuPopup', {
     {id: 'toolbar', as: 'boolean', type: 'boolean'},
   ],
   impl: customStyle({
-    template: ({},{contentComp,toolbar},h) => h('div#jb-dialog jb-popup context-menu-popup', 
+    template: ({},{contentComp,toolbar},h) => h('div.jb-dialog jb-popup context-menu-popup', 
       { class: toolbar ? 'toolbar-popup' : 'pulldown-mainmenu-popup'}, h(contentComp)),
     features: [
       dialogFeature.uniqueDialog('%$optionsParentId%', false),

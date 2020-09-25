@@ -11,7 +11,7 @@ jb.component('dialog.editSourceStyle', {
     template: (cmp,{title,contentComp,id},h) => h('div',{ class: 'jb-dialog jb-default-dialog', id},[
 				h('div',{class: 'dialog-title noselect'},title),
 				cmp.hasMenu ? h('div',{class: 'dialog-menu'},h(cmp.menuComp)): '',
-				h('button#dialog-close', {onclick: 'dialogClose' },'×'),
+				h('button.dialog-close', {onclick: 'dialogClose' },'×'),
 				h('div',{class: 'jb-dialog-content-parent'},h(contentComp)),
 				h('div',{class: 'dialog-buttons'},[
 //					...(cmp.dialog.gotoEditor ? [h('button',{class: 'mdc-button', onclick: 'dialog.gotoEditor' },'goto editor')] : []),
@@ -81,7 +81,7 @@ jb.component('dialog.showSourceStyle', {
   impl: customStyle({
     template: (cmp,{title,contentComp,id},h) => h('div',{ class: 'jb-dialog jb-default-dialog', id},[
 				  h('div',{class: 'dialog-title noselect'},title),
-				  h('button#dialog-close', {onclick: 'dialogClose' },'×'),
+				  h('button.dialog-close', {onclick: 'dialogClose' },'×'),
 				  h('div',{class: 'jb-dialog-content-parent stretchedToMargin'},h(contentComp)),
 			  ]),
     css: `{ position: fixed;
@@ -170,7 +170,7 @@ jb.component('dialog.studioFloating', {
     template: (cmp,{title,contentComp,id},h) => h('div',{ class: 'jb-dialog jb-default-dialog', id},[
 				h('div',{class: 'dialog-title noselect'},title),
 				cmp.hasMenu ? h('div',{class: 'dialog-menu'}, h(cmp.menuComp)): '',
-				h('button#dialog-close', {onclick: 'dialogClose' },'×'),
+				h('button.dialog-close', {onclick: 'dialogClose' },'×'),
 				h('div',{class: 'jb-dialog-content-parent'},h(contentComp)),
 			]),
     css: `{ position: fixed;
