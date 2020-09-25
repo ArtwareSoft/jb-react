@@ -133,14 +133,15 @@ jb.component('studio.eventTracker', {
 
           controlWithCondition('%m%',text('%m/$%: %m/t%, %m/cbId%')),
           studio.objExpandedAsText('%m/d%','payload'),
-          studio.sourceCtxView('%srcCtx%'),
-          studio.sourceCtxView('%cmp/ctx%'),
-          studio.sourceCtxView('%ctx%'),
           studio.showLowFootprintObj('%delta%','delta'),
           studio.showLowFootprintObj('%vdom%','vdom'),
           studio.showLowFootprintObj('%ref%','ref'),
           studio.showLowFootprintObj('%value%','value'),
+          studio.showLowFootprintObj('%val%','val'),
           studio.showLowFootprintObj('%focusChanged%','focusChanged'),
+          studio.sourceCtxView('%srcCtx%'),
+          studio.sourceCtxView('%cmp/ctx%'),
+          studio.sourceCtxView('%ctx%'),
         ],
         style: table.plain(true),
         visualSizeLimit: 30,
@@ -177,13 +178,18 @@ jb.component('eventTracker.ptNameOfUiComp', {
   impl: group({
     controls: [
       controlWithCondition('%cmp/ctx/profile/$%', group({
-        style: group.sectionExpandCollopase(text('%cmp/ctx/profile/$% %$cmp/cmpId%;%$cmp/ver%')),
+        style: group.sectionExpandCollopase(text('%cmp/ctx/profile/$% %cmp/cmpId%;%cmp/ver%')),
         controls: editableText({
           databind: studio.profileAsText('%cmp/ctx/path%'),
           style: editableText.codemirror({height: '60'}),
         })
       })),
-      controlWithCondition('%cmp/pt%',text('%cmp/pt% %$cmp/cmpId%;%$cmp/ver%'))
+      controlWithCondition('%cmp/pt%',text('%cmp/pt% %$cmp/cmpId%;%$cmp/ver%')),
+      controlWithCondition('%$cmpElem%',text(ctx => ctx.exp('%$cmpElem/@cmp-pt% %$cmpElem/@cmp-id%;%$cmpElem/@cmp-ver%'))),
+    ],
+    features: [
+      group.firstSucceeding(),
+      variable('cmpElem', ({data}) => jb.ui.closestCmpElem(data.elem || data.parentElem))
     ]
   })
 })

@@ -108,6 +108,8 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
           const method = subExp.slice(0,-2)
           return typeof obj[method] == 'function' && obj[method]()
         }
+        if (subExp.match(/^@/) && obj.getAttribute)
+            return obj.getAttribute(subExp.slice(1))
         if (isRefType(jstype)) {
           if (last)
             return refHandler.objectProperty(obj,subExp,ctx)
