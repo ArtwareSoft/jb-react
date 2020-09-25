@@ -127,6 +127,7 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			if (this.logs.length > 0 && jb.path(jb.frame.document,'activeElement') != this.logs[index-1].activeElem) {
 				this.logs[index-1].logNames += ' focus'
 				this.logs[index-1].activeElemAfter = record.activeElem
+				this.logs[index-1].focusChanged = true
 			}
 			// if (record[0] == null && typeof funcTitle === 'function') {
 			// 	record[0] = funcTitle()

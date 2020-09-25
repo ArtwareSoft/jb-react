@@ -128,12 +128,19 @@ jb.component('studio.eventTracker', {
             inGroup(list('exception','error'), '%logNames%'),
             css.color('var(--jb-error-fg)')
           )}),
-          group({controls: controlWithCondition('%err%', studio.showLowFootprintObj('%err%','err',50))}),
-          group({controls: controlWithCondition('%stack%', studio.objExpandedAsText('stack','%stack%'))}),
+          studio.showLowFootprintObj('%err%','err',50),
+          studio.objExpandedAsText('%stack%','stack'),
 
-          group({controls: controlWithCondition('%m%',text('%m/$%: %m/t%, %m/cbId%'))}),
-          group({controls: controlWithCondition('%m/d%', studio.objExpandedAsText('payload','%m/d%'))}),
-          eventTracker.eventView()
+          controlWithCondition('%m%',text('%m/$%: %m/t%, %m/cbId%')),
+          studio.objExpandedAsText('%m/d%','payload'),
+          studio.sourceCtxView('%srcCtx%'),
+          studio.sourceCtxView('%cmp/ctx%'),
+          studio.sourceCtxView('%ctx%'),
+          studio.showLowFootprintObj('%delta%','delta'),
+          studio.showLowFootprintObj('%vdom%','vdom'),
+          studio.showLowFootprintObj('%ref%','ref'),
+          studio.showLowFootprintObj('%value%','value'),
+          studio.showLowFootprintObj('%focusChanged%','focusChanged'),
         ],
         style: table.plain(true),
         visualSizeLimit: 30,
@@ -170,41 +177,23 @@ jb.component('eventTracker.ptNameOfUiComp', {
   impl: group({
     controls: [
       controlWithCondition('%cmp/ctx/profile/$%', group({
-        style: group.sectionExpandCollopase(text('%cmp/ctx/profile/$%')),
+        style: group.sectionExpandCollopase(text('%cmp/ctx/profile/$% %$cmp/cmpId%;%$cmp/ver%')),
         controls: editableText({
           databind: studio.profileAsText('%cmp/ctx/path%'),
           style: editableText.codemirror({height: '60'}),
         })
       })),
-      controlWithCondition('%cmp/pt%',text('%cmp/pt%'))
+      controlWithCondition('%cmp/pt%',text('%cmp/pt% %$cmp/cmpId%;%$cmp/ver%'))
     ]
-  })
-})
-
-jb.component('eventTracker.eventView', {
-  type: 'control',
-  impl: group({
-    layout: layout.horizontal('4'),
-    controls: [
-      studio.sourceCtxView('%srcCtx%'),
-      studio.sourceCtxView('%cmp/ctx%'),
-      studio.showLowFootprintObj('%cmp%','cmp'),
-      studio.sourceCtxView('%ctx%'),
-      studio.showLowFootprintObj('%delta%','delta'),
-      studio.showLowFootprintObj('%vdom%','vdom'),
-      studio.showLowFootprintObj('%ref%','ref'),
-      studio.showLowFootprintObj('%value%','value'),
-      studio.showLowFootprintObj('%focusChanged%','focusChanged'),
-    ],
   })
 })
 
 jb.component('studio.objExpandedAsText', {
   params: [
-    {id: 'title', as: 'string', mandatory: true},
     {id: 'obj', mandatory: true },
+    {id: 'title', as: 'string', mandatory: true},
   ],
-  impl: group({
+  impl: controlWithCondition('%$obj%',group({
     controls: [
       controlWithCondition('%$asText/length% < 20', text('%$asText%')),
       controlWithCondition('%$asText/length% > 19', group({
@@ -216,7 +205,7 @@ jb.component('studio.objExpandedAsText', {
       }))
     ],
     features: variable('asText',prettyPrint('%$obj%'))
-  })
+  }))
 })
 
 
@@ -229,10 +218,10 @@ jb.component('studio.showLowFootprintObj', {
   impl: controlWithCondition('%$obj%', group({
     layout: layout.horizontal(4),
     controls: [
-      controlWithCondition(
-        '%$obj/cmpId%',
-        studio.slicedString('%$obj/cmpId%;%$obj/ver%')
-      ),
+      // controlWithCondition(
+      //   '%$obj/cmpId%',
+      //   studio.slicedString('%$obj/cmpId%;%$obj/ver%')
+      // ),
       controlWithCondition(
         '%$obj/_parent%',
         studio.slicedString('%$obj/profile/$%: %$obj/path%')

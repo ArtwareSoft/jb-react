@@ -1,0 +1,1 @@
+jb.chromeDebugger.initPanel('comp', self)
