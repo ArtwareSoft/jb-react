@@ -187,11 +187,8 @@ function applyDeltaToDom(elem,delta) {
                 .sort((x,y) => Number(x.getAttribute('__afterIndex')) - Number(y.getAttribute('__afterIndex')))
                 .forEach(el=> {
                     const index = Number(el.getAttribute('__afterIndex'))
-                    if (elem.children[index] != el) {
-//                        const active = elem.contains(document.activeElement)
+                    if (elem.children[index] != el)
                         elem.insertBefore(el, elem.children[index])
-//                        if (active) jb.ui.focus(active,'change order',ctx)
-                    }
                     el.removeAttribute('__afterIndex')
                 })
             }
@@ -484,13 +481,20 @@ Object.assign(jb.ui, {
             return
         }
         jb.log('applyDelta uiComp',{cmpId, delta, ctx, elem})
-        if (elem instanceof jb.ui.VNode) {
-            jb.ui.applyDeltaToVDom(elem, delta)
-            jb.ui.renderingUpdates.next({delta,cmpId,widgetId: ctx.vars.headlessWidgetId})
-        } else if (elem) {
-            jb.ui.applyDeltaToDom(elem, delta)
-            jb.ui.refreshFrontEnd(elem)
-        }        
+        if (delta.$bySelector)
+            jb.entries(delta.$bySelector).forEach(([selector,innerDelta]) => applyDeltaToElem(jb.ui.find(elem,selector)[0],innerDelta))
+        else
+            applyDeltaToElem(elem,delta)
+
+        function applyDeltaToElem(elem,delta) {
+            if (elem instanceof jb.ui.VNode) {
+                jb.ui.applyDeltaToVDom(elem, delta)
+                jb.ui.renderingUpdates.next({delta,cmpId,widgetId: ctx.vars.headlessWidgetId})
+            } else if (elem) {
+                jb.ui.applyDeltaToDom(elem, delta)
+                jb.ui.refreshFrontEnd(elem)
+            }
+        }
     },
     refreshElem(elem, state, options) {
         if (jb.path(elem,'_component.state.frontEndStatus') == 'initializing') 

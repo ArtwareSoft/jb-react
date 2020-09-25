@@ -3,7 +3,7 @@ jb.ns('mdcStyle,table')
 jb.component('itemlist.ulLi', {
   type: 'itemlist.style',
   impl: customStyle({
-    template: ({},{ctrls,itemsCtxs},h) => h('ul.jb-itemlist',{},
+    template: ({},{ctrls,itemsCtxs},h) => h('ul.jb-itemlist jb-drag-parent',{},
         ctrls.map((ctrl,index) => h('li.jb-item', {'jb-ctx': itemsCtxs[index] }, ctrl.map(singleCtrl=>h(singleCtrl))))),
     css: `{ list-style: none; padding: 0; margin: 0;}
     >li { list-style: none; padding: 0; margin: 0;}`,

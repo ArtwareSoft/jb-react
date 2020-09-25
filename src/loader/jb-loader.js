@@ -50,6 +50,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/editable-number.js',
         'src/ui/dialog.js',
         'src/ui/itemlist.js',
+        'src/ui/itemlist-scroll.js',
         'src/ui/itemlist-container.js',
         'src/ui/menu.js',
         'src/ui/picklist.js',

@@ -953,17 +953,22 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			this.updateLocations(logNames,takeFrom)
 			if (!this.shouldLog(logNames, _record)) return
 			const now = new Date()
+			const index = this.logs.length
 			const record = {
 				logNames,
 				..._record,
-				index: this.logs.length,
+				index,
 				source: this.source(takeFrom),
 				_time: `${now.getSeconds()}:${now.getMilliseconds()}`,
 				time: now.getTime(),
 				mem: memoryUsage() / 1000000,
 				activeElem: jb.path(jb.frame.document,'activeElement'),
-				focusChanged: this.logs.length > 0 && jb.path(jb.frame.document,'activeElement') != this.logs[this.logs.length-1].activeElem,
 				$attsOrder: _record && Object.keys(_record)
+			}
+			if (this.logs.length > 0 && jb.path(jb.frame.document,'activeElement') != this.logs[index-1].activeElem) {
+				this.logs[index-1].logNames += ' focus'
+				this.logs[index-1].activeElemAfter = record.activeElem
+				this.logs[index-1].focusChanged = true
 			}
 			// if (record[0] == null && typeof funcTitle === 'function') {
 			// 	record[0] = funcTitle()
@@ -1038,10 +1043,10 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 				return [...set1,...set2]
 			}
 		},
-		search(query) { // dialog core | menu !keyboard  
+		search(query,slice= -1000) { // dialog core | menu !keyboard  
 			const _or = query.split(/,|\|/)
 			return _or.reduce((acc,exp) => 
-				unify(acc, exp.split(' ').reduce((acc,logNameExp) => filter(acc,logNameExp), this.logs)) 
+				unify(acc, exp.split(' ').reduce((acc,logNameExp) => filter(acc,logNameExp), this.logs.slice(slice))) 
 			,[])
 
 			function filter(set,exp) {
@@ -1849,7 +1854,7 @@ jb.component('split', {
   params: [
     {id: 'separator', as: 'string', defaultValue: ',', description: 'E.g., \",\" or \"<a>\"'},
     {id: 'text', as: 'string', defaultValue: '%%'},
-    {id: 'part', options: ',first,second,last,but first,but last'}
+    {id: 'part', options: 'all,first,second,last,but first,but last', defaultValue: 'all'}
   ],
   impl: ({},separator,text,part) => {
 		const out = text.split(separator.replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n'));
@@ -3016,6 +3021,7 @@ jb.callbag = {
         }
         sniffer.ctx = source.ctx    
         Object.defineProperty(sniffer, 'name', { value: source.name + '-sniffer' })
+        sniffer.dispose = () => { console.log('dispose', sink,talkback); debugger }
 
         source(0,sniffer)
         

@@ -1142,9 +1142,11 @@ class VNode {
             children = children.filter(x=>x).map(item=> typeof item == 'string' ? jb.ui.h('span',{$text: item}) : item)
         
         this.attributes = attributes
-        if (typeof cmpOrTag === 'string' && cmpOrTag.indexOf('#') != -1) {
-            this.addClass(cmpOrTag.split('#').pop().trim())
-            cmpOrTag = cmpOrTag.split('#')[0]
+        if (typeof cmpOrTag === 'string' && cmpOrTag.indexOf('#') != -1)
+            debugger
+        if (typeof cmpOrTag === 'string' && cmpOrTag.indexOf('.') != -1) {
+            this.addClass(cmpOrTag.split('.').pop().trim())
+            cmpOrTag = cmpOrTag.split('.')[0]
         }
         if (children != null)
             children.forEach(ch=>ch.parentNode = this)
@@ -1183,6 +1185,7 @@ class VNode {
             maxDepth = 1
             selector = selector.slice(7)
         }
+        if (selector == '') return [this]
         if (selector.indexOf(',') != -1)
             return selector.split(',').map(x=>x.trim()).reduce((res,sel) => [...res, ...this.querySelectorAll(sel,{includeSelf})], [])
         const hasAtt = selector.match(/^\[([a-zA-Z0-9_$\-]+)\]$/)
@@ -1433,7 +1436,7 @@ function applyDeltaToDom(elem,delta) {
             jb.log('appendChild dom',{newElem,e,elem,delta})
             !sameOrder && (newElem.setAttribute('__afterIndex',e.__afterIndex))
         })
-        if (!sameOrder) {
+        if (sameOrder === false) {
             Array.from(elem.children)
                 .sort((x,y) => Number(x.getAttribute('__afterIndex')) - Number(y.getAttribute('__afterIndex')))
                 .forEach(el=> {
@@ -1477,6 +1480,7 @@ function applyDeltaToVDom(elem,delta) {
 }
 
 function setAtt(elem,att,val) {
+    if (val == '__undefined') return
     if (att[0] !== '$' && val == null) {
         elem.removeAttribute(att)
         jb.log('dom change remove',{elem,att,val})
@@ -1731,13 +1735,20 @@ Object.assign(jb.ui, {
             return
         }
         jb.log('applyDelta uiComp',{cmpId, delta, ctx, elem})
-        if (elem instanceof jb.ui.VNode) {
-            jb.ui.applyDeltaToVDom(elem, delta)
-            jb.ui.renderingUpdates.next({delta,cmpId,widgetId: ctx.vars.headlessWidgetId})
-        } else if (elem) {
-            jb.ui.applyDeltaToDom(elem, delta)
-            jb.ui.refreshFrontEnd(elem)
-        }        
+        if (delta.$bySelector)
+            jb.entries(delta.$bySelector).forEach(([selector,innerDelta]) => applyDeltaToElem(jb.ui.find(elem,selector)[0],innerDelta))
+        else
+            applyDeltaToElem(elem,delta)
+
+        function applyDeltaToElem(elem,delta) {
+            if (elem instanceof jb.ui.VNode) {
+                jb.ui.applyDeltaToVDom(elem, delta)
+                jb.ui.renderingUpdates.next({delta,cmpId,widgetId: ctx.vars.headlessWidgetId})
+            } else if (elem) {
+                jb.ui.applyDeltaToDom(elem, delta)
+                jb.ui.refreshFrontEnd(elem)
+            }
+        }
     },
     refreshElem(elem, state, options) {
         if (jb.path(elem,'_component.state.frontEndStatus') == 'initializing') 
@@ -1827,6 +1838,7 @@ class frontEndCmp {
         this.ver= elem.getAttribute('cmp-ver')
         this.pt = elem.getAttribute('cmp-pt')
         this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve)
+        this.flows= []
         elem._component = this
         this.runFEMethod('calcProps',null,null,true)
         this.runFEMethod('init',null,null,true)
@@ -1856,7 +1868,8 @@ class frontEndCmp {
                 jb.log(`frontend uiComp start flow ${jb.ui.rxPipeName(_flow)}`,{cmp: {...this}, srcCtx, ...feMEthod.frontEndMethod, el, ctxToUse})
             else 
                 jb.log(`frontend uiComp run method ${method}`,{cmp: {...this}, srcCtx , ...feMEthod.frontEndMethod,el,ctxToUse})
-            ctxToUse.run(feMEthod.frontEndMethod.action)
+            const res = ctxToUse.run(feMEthod.frontEndMethod.action)
+            if (_flow) this.flows.push(res)
         }, `frontEnd-${method}`))
     }
     enrichUserEvent(ev, userEvent) {
@@ -1887,6 +1900,7 @@ class frontEndCmp {
     }
     destroyFE() {
         this._deleted = true
+        this.flows.forEach(flow=>flow.dispose())
         this.runFEMethod('destroy',null,null,true)
         this.resolveDestroyed() // notifications to takeUntil(this.destroyed) observers
     }
@@ -2366,6 +2380,7 @@ Object.assign(jb.ui, {
         const style_elem = document.createElement('style')
         style_elem.innerHTML = innerHtml
         this.previewOverlayDocument(ctx).head.appendChild(style_elem)
+        return style_elem
       }
     },
     valueOfCssVar(varName,parent) {
@@ -2617,7 +2632,6 @@ jb.component('followUp.action', {
 
 jb.component('followUp.flow', {
   type: 'feature',
-  category: 'front-end',
   description: 'rx flow at the backend after the vdom was sent',
   params: [
       {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
@@ -2786,14 +2800,14 @@ jb.component('calculatedVar', {
   ],
   impl: features(
     onDestroy(writeValue('%${%$name%}:{%$cmp/cmpId%}%', null)),
-    followUp.flow(rx.pipe(
+    followUp.flow(
       rx.merge(
         (ctx,{},{watchRefs}) => watchRefs(ctx).map(ref=>ctx.setData(ref).run(source.watchableData('%%')) )
       ),
       rx.log('check calculatedVar'),
       rx.map('%$value()%'),
       sink.data('%${%$name%}:{%$cmp/cmpId%}%')
-    )),
+    ),
     ctx => ({
       extendCtx: (_ctx,cmp) => {
         const {name,value} = ctx.cmpCtx.params
@@ -3049,8 +3063,8 @@ jb.component('source.frontEndEvent', {
     params: [
         {id: 'event', as: 'string', options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll'},
     ],
-    impl: rx.pipe(source.event('%$event%','%$cmp.base%'), 
-    rx.takeUntil('%$cmp.destroyed%'))
+    impl: //source.event('%$event%','%$cmp.base%')
+    rx.pipe(source.event('%$event%','%$cmp.base%'), rx.takeUntil('%$cmp.destroyed%'))
 })
 
 jb.component('frontEnd.addUserEvent', {
@@ -4542,9 +4556,9 @@ jb.component('dialogFeature.dragTitle', {
 jb.component('dialog.default', {
 	type: 'dialog.style',
 	impl: customStyle({
-	  template: ({},{title,contentComp},h) => h('div#jb-dialog jb-default-dialog',{},[
-			  h('div#dialog-title',{},title),
-			  h('button#dialog-close', {onclick: 'dialogClose' },'×'),
+	  template: ({},{title,contentComp},h) => h('div.jb-dialog jb-default-dialog',{},[
+			  h('div.dialog-title',{},title),
+			  h('button.dialog-close', {onclick: 'dialogClose' },'×'),
 			  h(contentComp),
 		  ]),
 	  features: dialogFeature.dragTitle()
@@ -4685,13 +4699,13 @@ jb.component('dialog.dialogOkCancel', {
     {id: 'cancelLabel', as: 'string', defaultValue: 'Cancel'}
   ],
   impl: customStyle({
-    template: (cmp,{title,contentComp,cancelLabel,okLabel},h) => h('div#jb-dialog jb-default-dialog',{},[
-			h('div#dialog-title',{},title),
-			h('button#dialog-close', { onclick: 'dialogClose' },'×'),
+    template: (cmp,{title,contentComp,cancelLabel,okLabel},h) => h('div.jb-dialog jb-default-dialog',{},[
+			h('div.dialog-title',{},title),
+			h('button.dialog-close', { onclick: 'dialogClose' },'×'),
 			h(contentComp),
-			h('div#dialog-buttons',{},[
-				h('button#mdc-button', {onclick: 'dialogClose' }, [h('div#mdc-button__ripple'), h('span#mdc-button__label',{},cancelLabel)]),
-				h('button#mdc-button', {onclick: 'dialogCloseOK' },[h('div#mdc-button__ripple'), h('span#mdc-button__label',{},okLabel)]),
+			h('div.dialog-buttons',{},[
+				h('button.mdc-button', {onclick: 'dialogClose' }, [h('div.mdc-button__ripple'), h('span.mdc-button__label',{},cancelLabel)]),
+				h('button.mdc-button', {onclick: 'dialogCloseOK' },[h('div.mdc-button__ripple'), h('span.mdc-button__label',{},okLabel)]),
 			]),
 		]),
 	css: '>.dialog-buttons { display: flex; justify-content: flex-end; margin: 5px }',
@@ -4705,7 +4719,7 @@ jb.component('dialogFeature.resizer', {
     {id: 'resizeInnerCodemirror', as: 'boolean', description: 'effective only for dialog with a single codemirror element', type: 'boolean'}
   ],
   impl: features(
-	  templateModifier( ({},{vdom}) => { vdom && vdom.tag == 'div' && vdom.children.push(jb.ui.h('img#jb-resizer',{})) }),
+	  templateModifier( ({},{vdom}) => { vdom && vdom.tag == 'div' && vdom.children.push(jb.ui.h('img.jb-resizer',{})) }),
 	  css('>.jb-resizer { cursor: pointer; position: absolute; right: 1px; bottom: 1px }'),
 	  frontEnd.method('setSize',({data},{cmp}) => { 
 		cmp.base.style.height = data.top + 'px'
@@ -4720,7 +4734,7 @@ jb.component('dialogFeature.resizer', {
 		  return codeMirrorElem ? codeMirrorElem.getBoundingClientRect().top - el.getBoundingClientRect().top
 				+ (el.getBoundingClientRect().bottom - codeMirrorElem.getBoundingClientRect().bottom) : 0
 	  }),
-	  frontEnd.flow(rx.pipe(
+	  frontEnd.flow(
 		source.event('mousedown','%$cmp.resizerElem%'), 
 		rx.takeUntil('%$cmp.destroyed%'),
 		rx.var('offset',({},{el}) => ({
@@ -4735,14 +4749,14 @@ jb.component('dialogFeature.resizer', {
 				top: Math.max(0, data.clientY - offset.top),
 			})),
 		)),
-		sink.BEMethod('setSize')
-	)))
+		sink.FEMethod('setSize')
+	))
 })
 
 jb.component('dialog.popup', {
   type: 'dialog.style',
   impl: customStyle({
-	template: ({},{contentComp},h) => h('div#jb-dialog jb-popup',{},h(contentComp)),
+	template: ({},{contentComp},h) => h('div.jb-dialog jb-popup',{},h(contentComp)),
     css: '{ position: absolute; background: var(--jb-dropdown-bg); box-shadow: 2px 2px 3px var(--jb-dropdown-shadow); padding: 3px 0; border: 1px solid var(--jb-dropdown-border) }',
     features: [
       dialogFeature.maxZIndexOnClick(),
@@ -4756,7 +4770,7 @@ jb.component('dialog.popup', {
 jb.component('dialog.transparent-popup', {
 	type: 'dialog.style',
 	impl: customStyle({
-	  template: ({},{contentComp},h) => h('div#jb-dialog jb-popup',{},h(contentComp)),
+	  template: ({},{contentComp},h) => h('div.jb-dialog jb-popup',{},h(contentComp)),
 	  css: '{ position: absolute; padding: 3px 0; }',
 	  features: [
 		dialogFeature.maxZIndexOnClick(),
@@ -4770,7 +4784,7 @@ jb.component('dialog.transparent-popup', {
 jb.component('dialog.div', {
   type: 'dialog.style',
   impl: customStyle({
-    template: ({},{contentComp},h) => h('div#jb-dialog jb-popup',{},h(contentComp)),
+    template: ({},{contentComp},h) => h('div.jb-dialog jb-popup',{},h(contentComp)),
     css: '{ position: absolute }'
   })
 })
@@ -4808,7 +4822,7 @@ jb.component('dialog.dialogTop', {
 jb.component('dialogs.defaultStyle', {
 	type: 'dialogs.style',
 	impl: customStyle({
-		template: ({},{},h) => h('div#jb-dialogs',{},[]),
+		template: ({},{},h) => h('div.jb-dialogs',{},[]),
 		features: [
 			followUp.flow(
 				source.subject(dialogs.changeEmitter()),
@@ -4878,101 +4892,17 @@ jb.component('itemlist.init', {
     calcProp('allItems', '%$$model/items%'),
     calcProp('visualSizeLimit', ({},{$model,$state}) => Math.max($model.visualSizeLimit,$state.visualSizeLimit ||0)),
     calcProp('items', itemlist.calcSlicedItems()),
+    calcProp('itemsCtxs', (ctx,{$model,$props}) => $props.items.map((item,index) => 
+      jb.ui.preserveCtx(ctx.setVars({index}).setVar($model.itemVariable,item).setData(item)))),
     calcProp({
         id: 'ctrls',
         value: (ctx,{$model,$props}) => {
-          const controlsOfItem = item => {
-            const itemCtx = ctx.setVar($model.itemVariable,item).setData(item)
-            return $model.controls(itemCtx).filter(x=>x).map(ctrl => Object.assign(ctrl,{ctxId : jb.ui.preserveCtx(itemCtx)}))
-          }
-          return $props.items.map(item=> controlsOfItem(item)).filter(x=>x.length > 0)
+          const controlsOfItem = (item,index) => $model.controls(ctx.setVars({index}).setVar($model.itemVariable,item).setData(item)).filter(x=>x)
+          return $props.items.map((item,i)=> controlsOfItem(item,i+1)).filter(x=>x.length > 0)
         }
       }),
     itemlist.initContainerWithItems()
   )
-})
-
-jb.component('itemlist.initTable', {
-  type: 'feature',
-  impl: features(
-    calcProp('allItems', '%$$model/items%'),
-    calcProp('visualSizeLimit', ({},{$model,$state}) => Math.max($model.visualSizeLimit,$state.visualSizeLimit ||0)),
-    calcProp('items', itemlist.calcSlicedItems()),
-    calcProp('itemsCtxs', pipeline('%$$props/items%', ctx => jb.ui.preserveCtx(ctx.setData()))),
-    calcProp('fields', '%$$model/controls/field()%'),
-    itemlist.initContainerWithItems()
-  )
-})
-
-jb.component('itemlist.infiniteScroll', {
-  type: 'feature',
-  params: [
-    {id: 'pageSize', as: 'number', defaultValue: 2}
-  ],
-  impl: features(
-    method('fetchMoreItems', ({},{$state,$props,cmp},{pageSize}) => {
-      if ($props.allItems.length > $props.visualSizeLimit) {
-        $state.visualSizeLimit = ($state.visualSizeLimit || $props.visualSizeLimit) + pageSize
-        cmp.refresh($state)
-      }
-    }),
-    feature.userEventProps('elem.scrollTop,elem.scrollHeight'),
-    frontEnd.flow(
-      rx.merge(
-        source.frontEndEvent('scroll'),
-        source.frontEndEvent('wheel')
-      ),
-      rx.var('applicative','%target/__appScroll%'),
-      rx.do(({data}) => data.target.__appScroll = null),
-      rx.var('scrollPercentFromTop',({data}) => 
-        (data.currentTarget.scrollTop + data.currentTarget.getBoundingClientRect().height) / data.currentTarget.scrollHeight),
-      rx.log('itemlist frontend infiniteScroll'),
-      rx.filter('%$scrollPercentFromTop%>0.9'),
-      rx.filter(not('%$applicative%')),
-      sink.BEMethod('fetchMoreItems')
-    )
-  )
-})
-
-jb.component('itemlist.deltaOfItems', {
-  impl: ctx => {
-    const cmp = ctx.vars.cmp
-    const newVdom = cmp.renderVdom(), oldVdom = cmp.oldVdom || {}
-    const delta = jb.ui.compareVdom(oldVdom,newVdom)
-    cmp.oldVdom = newVdom
-    jb.log('uiComp itemlist delta incrementalFromRx', {cmp, newVdom, oldVdom, delta})
-    return delta
-  }
-})
-
-jb.component('itemlist.incrementalFromRx', {
-  type: 'feature',
-  params: [
-    {id: 'prepend', as: 'boolean', boolean: 'last at top' }
-  ],
-  impl: followUp.flow(
-      source.callbag(ctx => ctx.exp('%$$props.items%').callbag || jb.callbag.fromIter([])),
-      rx.map(If('%vars%','%data%','%%')), // rx/cb compatible ...
-      rx.do(({data},{$props}) => $props.items.push(data)),
-      rx.var('delta', itemlist.deltaOfItems()),
-      sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
-    )
-})
-
-jb.component('itemlist.calcSlicedItems', {
-  impl: ctx => {
-    const {allItems, visualSizeLimit, items} = ctx.vars.$props
-    if (items) return items
-    const firstItem = allItems[0]
-    if (jb.callbag.isCallbag(firstItem)) {
-      const res = []
-      res.callbag = firstItem
-      return res
-    }
-    const slicedItems = allItems.length > visualSizeLimit ? allItems.slice(0, visualSizeLimit) : allItems
-    const itemsRefs = jb.isRef(jb.asRef(slicedItems)) ? Object.keys(slicedItems).map(i=> jb.objectProperty(slicedItems,i)) : slicedItems
-    return itemsRefs
-  }
 })
 
 // ****************** Selection ******************
@@ -5218,6 +5148,167 @@ jb.component('itemlist.nextSelected', {
     return ctxs[Math.min(ctxs.length-1,Math.max(0,selectedIndex))]
   }
 });
+
+// jb.component('itemlist.infiniteScroll', {
+//   type: 'feature',
+//   params: [
+//     {id: 'pageSize', as: 'number', defaultValue: 2}
+//   ],
+//   impl: features(
+//     frontEnd.var('pageSize','%$pageSize%'),
+//     method('fetchMoreItems', runActions(
+//       Var('itemsToAppend', ({data},{$props}) => $props.allItems.slice(data.from,data.from+data.noOfItems)),
+//       Var('updateState1', writeValue('%$$state/visualLimit/shownItems%', math.plus('%$$state/visualLimit/shownItems%','%noOfItems%'))),
+//       Var('updateState2', writeValue('%$$state/visualLimit/waitingForServer%', false)),
+//       Var('delta', itemlist.deltaOfItems('%$itemsToAppend%', '%$$state%')),
+//       action.applyDeltaToCmp('%$delta%','%$cmp/cmpId%')
+//     )),
+//     feature.userEventProps('elem.scrollTop,elem.scrollHeight'),
+//     frontEnd.flow(
+//       rx.merge(
+//         source.frontEndEvent('scroll'),
+//         source.frontEndEvent('wheel')
+//       ),
+//       rx.var('applicative','%target/__appScroll%'),
+//       rx.do(({data}) => data.target.__appScroll = null),
+//       rx.var('scrollPercentFromTop',({data}) => 
+//         (data.currentTarget.scrollTop + data.currentTarget.getBoundingClientRect().height) / data.currentTarget.scrollHeight),
+//       rx.var('fetchItems', ({},{$state,pageSize}) => ({ 
+//         from: $state.visualLimit.shownItems,
+//         noOfItems: Math.min($state.visualLimit.totalItems,$state.visualLimit.shownItems + pageSize) - $state.visualLimit.shownItems
+//       })),
+//       rx.log('itemlist frontend infiniteScroll'),
+//       rx.filter(and('%$scrollPercentFromTop%>0.9','%$fetchItems/noOfItems%!=0',not('%$applicative%'),not('%$$state/visualLimit/waitingForServer%'))),
+//       rx.do(writeValue('%$$state/visualLimit/waitingForServer%','true')),
+//       sink.BEMethod('fetchMoreItems','%$fetchItems%')
+//     )
+//   )
+// })
+
+// jb.component('itemlist.deltaOfItems', {
+//   params: [
+//     {id: 'items', defaultValue: '%%', as: 'array' },
+//     {id: 'newState' }
+//   ],
+//   impl: (ctx,items,state) => {
+//     if (items.length == 0) return null
+//     const deltaCalcCtx = ctx.vars.cmp.ctx
+//     const vdomWithDeltaItems = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => items}), path: ''}).runItself().renderVdom() // change the profile to return itemsToAppend
+//     const delta = {
+//         $prevVersion = ctx.vars.cmp.ver,
+//         $bySelector: {
+//             '.jb-drag-parent': jb.ui.compareVdom({},jb.ui.findIncludeSelf(vdomWithDeltaItems,'.jb-drag-parent')[0]),
+//             '': {$__state : JSON.stringify(state), $scrollDown: true }
+//     }}
+//     return delta
+//   }
+// })
+
+// jb.component('itemlist.incrementalFromRx', {
+//   type: 'feature',
+//   params: [
+//     {id: 'prepend', as: 'boolean', boolean: 'last at top' }
+//   ],
+//   impl: followUp.flow(
+//       source.callbag(ctx => ctx.exp('%$$props.items%').callbag || jb.callbag.fromIter([])),
+//       rx.map(If('%vars%','%data%','%%')), // rx/cb compatible ...
+//       rx.var('delta', itemlist.deltaOfItems('%%')),
+//       sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
+//     )
+// })
+
+// jb.component('itemlist.calcSlicedItems', {
+//   impl: ctx => {
+//     const {$props, $model, cmp} = ctx.vars
+//     const firstItem = $props.allItems[0]
+//     if (jb.callbag.isCallbag(firstItem)) {
+//       const res = []
+//       res.callbag = firstItem
+//       return res
+//     }
+//     const slicedItems = addSlicedState(cmp, $props.allItems, $model.visualSizeLimit)
+//     const itemsRefs = jb.isRef(jb.asRef(slicedItems)) ? 
+//         Object.keys(slicedItems).map(i=> jb.objectProperty(slicedItems,i)) : slicedItems
+//     return itemsRefs
+
+//     function addSlicedState(cmp,items,visualLimit) {
+//       cmp.state.visualLimit = { totalItems: items.length, shownItems: visualLimit }
+//       return visualLimit < items.length ? items.slice(0,visualLimit) : items
+//     }
+//   }
+// })
+
+jb.component('itemlist.infiniteScroll', {
+  type: 'feature',
+  params: [
+    {id: 'pageSize', as: 'number', defaultValue: 2}
+  ],
+  impl: features(
+    method('fetchMoreItems', ({},{$state,$props,cmp},{pageSize}) => {
+      if ($props.allItems.length > $props.visualSizeLimit) {
+        $state.visualSizeLimit = ($state.visualSizeLimit || $props.visualSizeLimit) + pageSize
+        cmp.refresh($state)
+      }
+    }),
+    feature.userEventProps('elem.scrollTop,elem.scrollHeight'),
+    frontEnd.flow(
+      rx.merge(
+        source.frontEndEvent('scroll'),
+        source.frontEndEvent('wheel')
+      ),
+      rx.var('applicative','%target/__appScroll%'),
+      rx.do(({data}) => data.target.__appScroll = null),
+      rx.var('scrollPercentFromTop',({data}) => 
+        (data.currentTarget.scrollTop + data.currentTarget.getBoundingClientRect().height) / data.currentTarget.scrollHeight),
+      rx.log('itemlist frontend infiniteScroll'),
+      rx.filter('%$scrollPercentFromTop%>0.9'),
+      rx.filter(not('%$applicative%')),
+      sink.BEMethod('fetchMoreItems')
+    )
+  )
+})
+
+jb.component('itemlist.deltaOfItems', {
+  impl: ctx => {
+    const cmp = ctx.vars.cmp
+    const newVdom = cmp.renderVdom(), oldVdom = cmp.oldVdom || {}
+    const delta = jb.ui.compareVdom(oldVdom,newVdom)
+    cmp.oldVdom = newVdom
+    jb.log('uiComp itemlist delta incrementalFromRx', {cmp, newVdom, oldVdom, delta})
+    return delta
+  }
+})
+
+jb.component('itemlist.incrementalFromRx', {
+  type: 'feature',
+  params: [
+    {id: 'prepend', as: 'boolean', boolean: 'last at top' }
+  ],
+  impl: followUp.flow(
+      source.callbag(ctx => ctx.exp('%$$props.items%').callbag || jb.callbag.fromIter([])),
+      rx.map(If('%vars%','%data%','%%')), // rx/cb compatible ...
+      rx.do(({data},{$props}) => $props.items.push(data)),
+      rx.var('delta', itemlist.deltaOfItems()),
+      sink.applyDeltaToCmp('%$delta%','%$followUpCmp/cmpId%')
+    )
+})
+
+jb.component('itemlist.calcSlicedItems', {
+  impl: ctx => {
+    const {allItems, visualSizeLimit, items} = ctx.vars.$props
+    if (items) return items
+    const firstItem = allItems[0]
+    if (jb.callbag.isCallbag(firstItem)) {
+      const res = []
+      res.callbag = firstItem
+      return res
+    }
+    const slicedItems = allItems.length > visualSizeLimit ? allItems.slice(0, visualSizeLimit) : allItems
+    const itemsRefs = jb.isRef(jb.asRef(slicedItems)) ? Object.keys(slicedItems).map(i=> jb.objectProperty(slicedItems,i)) : slicedItems
+    return itemsRefs
+  }
+})
+;
 
 jb.ns('search')
 
@@ -5783,11 +5874,11 @@ jb.component('menu.isRelevantMenu', {
 jb.component('menuStyle.optionLine', {
   type: 'menu-option.style',
   impl: customStyle({
-    template: (cmp,{icon,title,shortcut},h) => h('div#line noselect', { onmousedown: 'closeAndActivate' },[
+    template: (cmp,{icon,title,shortcut},h) => h('div.line noselect', { onmousedown: 'closeAndActivate' },[
         h(cmp.ctx.run({$: 'control.icon', ...icon, size: 20})),
-				h('span#title',{},title),
-				h('span#shortcut',{},shortcut),
-        h('div#mdc-line-ripple'),
+				h('span.title',{},title),
+				h('span.shortcut',{},shortcut),
+        h('div.mdc-line-ripple'),
 		]),
     css: `{ display: flex; cursor: pointer; font1: 13px Arial; height: 24px}
 				.selected { color: var(--jb-menubar-selection-fg); background: var(--jb-menubar-selection-bg) }
@@ -5802,9 +5893,9 @@ jb.component('menuStyle.optionLine', {
 jb.component('menuStyle.popupAsOption', {
   type: 'menu.style',
   impl: customStyle({
-    template: (cmp,{title},h) => h('div#line noselect', { onmousedown: 'closeAndActivate' },[
-				h('span#title',{},title),
-				h('i#material-icons', { onmouseenter: 'openPopup' },'play_arrow'),
+    template: (cmp,{title},h) => h('div.line noselect', { onmousedown: 'closeAndActivate' },[
+				h('span.title',{},title),
+				h('i.material-icons', { onmouseenter: 'openPopup' },'play_arrow'),
 		]),
     css: `{ display: flex; cursor: pointer; font1: 13px Arial; height: 24px}
 				>i { width: 100%; text-align: right; font-size:16px; padding-right: 3px; padding-top: 3px; }
@@ -5818,7 +5909,7 @@ jb.component('menuStyle.popupThumb', {
   type: 'menu.style',
   description: 'used for pulldown',
   impl: customStyle({
-    template: ({},{title},h) => h('div#pulldown-top-menu-item',{ onclick: 'openPopup'}, title),
+    template: ({},{title},h) => h('div.pulldown-top-menu-item',{ onclick: 'openPopup'}, title),
     features: [
       menu.initPopupMenu(), 
       mdc.rippleEffect(),
@@ -5838,7 +5929,7 @@ jb.component('dialog.contextMenuPopup', {
     {id: 'toolbar', as: 'boolean', type: 'boolean'},
   ],
   impl: customStyle({
-    template: ({},{contentComp,toolbar},h) => h('div#jb-dialog jb-popup context-menu-popup', 
+    template: ({},{contentComp,toolbar},h) => h('div.jb-dialog jb-popup context-menu-popup', 
       { class: toolbar ? 'toolbar-popup' : 'pulldown-mainmenu-popup'}, h(contentComp)),
     features: [
       dialogFeature.uniqueDialog('%$optionsParentId%', false),
@@ -6334,13 +6425,13 @@ jb.component('editableNumber.mdcSliderNoText', {
   ],
   impl: customStyle({
     template: (cmp,{title,min,max,step,numbericVal,thumbSize,cx,cy,r},h) =>
-      h('div#mdc-slider mdc-slider--discrete',{tabIndex: -1, role: 'slider', 'data-step': step,
+      h('div.mdc-slider mdc-slider--discrete',{tabIndex: -1, role: 'slider', 'data-step': step,
         'aria-valuemin': min, 'aria-valuemax': max, 'aria-valuenow': numbericVal, 'aria-label': title()}, [
-        h('div#mdc-slider__track-container',{}, h('div#mdc-slider__track')),
-        h('div#mdc-slider__thumb-container',{},[
-          h('div#mdc-slider__pin',{},h('span#mdc-slider__pin-value-marker')),
-          h('svg#mdc-slider__thumb',{ width: thumbSize, height: thumbSize}, h('circle',{cx,cy,r})),
-          h('div#mdc-slider__focus-ring')
+        h('div.mdc-slider__track-container',{}, h('div.mdc-slider__track')),
+        h('div.mdc-slider__thumb-container',{},[
+          h('div.mdc-slider__pin',{},h('span.mdc-slider__pin-value-marker')),
+          h('svg.mdc-slider__thumb',{ width: thumbSize, height: thumbSize}, h('circle',{cx,cy,r})),
+          h('div.mdc-slider__focus-ring')
         ])
       ]),
     features: [
@@ -6401,106 +6492,6 @@ jb.component('slider.drag', {
   )
 })
 
-;
-
-jb.ns('table')
-
-jb.component('table', {
-  type: 'control,table',
-  category: 'group:80,common:70',
-  params: [
-    {id: 'title', as: 'string'},
-    {id: 'items', as: 'array', dynamic: true, mandatory: true},
-    {id: 'fields', type: 'table-field[]', mandatory: true, dynamic: true},
-    {id: 'style', type: 'table.style', dynamic: true, defaultValue: table.plain()},
-    {id: 'visualSizeLimit', as: 'number', defaultValue: 100, description: 'by default table is limmited to 100 shown items'},
-    {id: 'features', type: 'feature[]', dynamic: true, flattenArray: true}
-  ],
-  impl: ctx =>
-    jb.ui.ctrl(ctx)
-})
-
-jb.component('field', {
-  type: 'table-field',
-  params: [
-    {id: 'title', as: 'string', mandatory: true},
-    {id: 'data', as: 'string', mandatory: true, dynamic: true},
-    {id: 'hoverTitle', as: 'string', dynamic: true},
-    {id: 'width', as: 'number'},
-    {id: 'numeric', as: 'boolean', type: 'boolean'},
-    {id: 'extendItems', as: 'boolean', type: 'boolean', description: 'extend the items with the calculated field using the title as field name'},
-    {id: 'class', as: 'string'}
-  ],
-  impl: (ctx,title,data,hoverTitle,width,numeric,extendItems,_class) => ({
-    title: () => title,
-    fieldData: row => extendItems ? row[title] : data(ctx.setData(row)),
-    calcFieldData: row => data(ctx.setData(row)),
-    hoverTitle: hoverTitle.profile ? (row => hoverTitle(ctx.setData(row))) : null,
-    class: _class,
-    width, numeric, extendItems,
-    ctxId: jb.ui.preserveCtx(ctx)
-  })
-})
-
-jb.component('table.initTableOrItemlist', {
-  type: 'feature',
-  impl: ctx => ctx.run(ctx.vars.$model.fields ? table.init() : itemlist.initTable())
-})
-
-jb.component('table.init', {
-  type: 'feature',
-  category: 'table:10',
-  impl: features(
-    calcProp('fields', '%$$model.fields()%'),
-    calcProp('items', itemlist.calcSlicedItems()),
-    itemlist.initContainerWithItems()
-  )
-})
-
-jb.component('table.initSort', {
-  type: 'feature',
-  impl: features(
-      method('toggleSort', (ctx,{$props,ev}) => {
-          const field = $props.fields[ev.currentTarget.getAttribute('fieldIndex')]
-          const sortOptions = $props.sortOptions || [];
-          var option = sortOptions.filter(o=>o.field == field)[0];
-          if (!option)
-            sortOptions = [{field: field,dir: 'none'}].concat(sortOptions).slice(0,2);
-          option = sortOptions.filter(o=>o.field == field)[0];
-
-          const directions = ['none','asc','des'];
-          option.dir = directions[(directions.indexOf(option.dir)+1)%directions.length];
-          if (option.dir == 'none')
-            sortOptions.splice(sortOptions.indexOf(option),1);
-          //cmp.refresh({sortOptions: sortOptions},{srcCtx: ctx});
-      }),
-      method('sortItems', (ctx,{cmp}) => {
-          if (!cmp.items || !$props.sortOptions || $props.sortOptions.length == 0) return;
-          cmp.items.forEach((item,index)=>$props.sortOptions.forEach(o=> 
-              item['$jb_$sort_'+o.field.title] = o.field.fieldData(item,index)));
-          var major = $props.sortOptions[0], minor = $props.sortOptions[1];
-          if (!minor)
-            cmp.items.sort(sortFunc(major))
-          else {
-            var compareMajor = sortFunc(major), compareMinor = sortFunc(minor);
-            var majorProp = '$jb_$sort_'+ major.field.title;
-            cmp.items.sort((x,y)=> x[majorProp] == y[majorProp] ? compareMinor(x,y) : compareMajor(x,y) );
-          }
-
-          function sortFunc(option) {
-            var prop = '$jb_$sort_'+ option.field.title;
-            if (option.field.numeric)
-              var SortFunc = (x,y) => x[prop] - y[prop]
-            else
-              var SortFunc = (x,y) => 
-                x[prop] == y[prop] ? 0 : (x[prop] < y[prop] ? -1 : 1);
-            if (option.dir == 'asc') 
-              return SortFunc;
-            return (x,y) => SortFunc(y,x);
-          }
-
-      }))
-})
 ;
 
 jb.component('gotoUrl', {
@@ -6621,7 +6612,7 @@ jb.component('editableText.setInputState', {
     {id: 'cmp', defaultValue: '%$cmp%'},
   ],
   impl: action.applyDeltaToCmp((ctx,{cmp},{newVal,selectionStart,assumedVal}) => {
-    jb.log('dome set input create userRequest',{cmp,newVal,ctx})
+    jb.log('dom set input create userRequest',{cmp,newVal,ctx})
     return {attributes: { $__input: JSON.stringify({ assumedVal: assumedVal, newVal,selectionStart })}}
   } ,'%$cmp/cmpId%')
 })
@@ -6719,9 +6710,9 @@ jb.component('mdc.rippleEffect', {
 jb.component('label.mdcRippleEffect', {
   type: 'text.style',
   impl: customStyle({
-    template: ({},{text},h) => h('button#mdc-button',{},[
-      h('div#mdc-button__ripple'),
-      h('span#mdc-button__label',{}, text),
+    template: ({},{text},h) => h('button.mdc-button',{},[
+      h('div.mdc-button__ripple'),
+      h('span.mdc-button__label',{}, text),
     ]),
     css: '>span { text-transform: none; }',
     features: [text.bindText(), mdcStyle.initDynamic()]
@@ -6736,7 +6727,7 @@ jb.component('text.htmlTag', {
       {id: 'cssClass', as: 'string'}
     ],
     impl: customStyle({
-      template: (cmp,{text,htmlTag,cssClass},h) => h(`${htmlTag}#${cssClass}`,{},text),
+      template: (cmp,{text,htmlTag,cssClass},h) => h(`${htmlTag}.${cssClass}`,{},text),
       features: text.bindText()
     })
 })
@@ -6761,7 +6752,7 @@ jb.component('text.span', {
 jb.component('text.chip', {
     type: 'text.style',
     impl: customStyle({
-      template: (cmp,{text},h) => h('div#jb-chip',{},h('span',{},text)),
+      template: (cmp,{text},h) => h('div.jb-chip',{},h('span',{},text)),
       features: text.bindText()
     })
 })
@@ -6890,9 +6881,9 @@ jb.component('button.mdc', {
   impl: customStyle({
     template: (cmp,{title,raised,noRipple,noTitle},h) => h('button',{
       class: ['mdc-button',raised && 'raised mdc-button--raised'].filter(x=>x).join(' '), onclick: true},[
-      ...[!noRipple && h('div#mdc-button__ripple')],
+      ...[!noRipple && h('div.mdc-button__ripple')],
       ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-button__icon')),
-      ...[!noTitle && h('span#mdc-button__label',{},title)],
+      ...[!noTitle && h('span.mdc-button__label',{},title)],
       ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-button__icon')),
     ]),
     features: mdcStyle.initDynamic()
@@ -6903,9 +6894,9 @@ jb.component('button.mdcChipAction', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) =>
-    h('div#mdc-chip-set mdc-chip-set--filter', {onclick: true},
-      h('div#mdc-chip',{ class: [raised && 'mdc-chip--selected raised'].filter(x=>x).join(' ') }, [
-        h('div#mdc-chip__ripple'),
+    h('div.mdc-chip-set mdc-chip-set--filter', {onclick: true},
+      h('div.mdc-chip',{ class: [raised && 'mdc-chip--selected raised'].filter(x=>x).join(' ') }, [
+        h('div.mdc-chip__ripple'),
         ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-chip__icon mdc-chip__icon--leading')),
         h('span',{ role: 'gridcell'}, h('span', {role: 'button', tabindex: -1, class: 'mdc-chip__text'}, title )),
         ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-chip__icon mdc-chip__icon--trailing')),
@@ -6960,13 +6951,13 @@ jb.component('button.mdcTab', {
   impl: customStyle({
     template: (cmp,{title,raised},h) =>
       h('button',{ class: ['mdc-tab', raised && 'mdc-tab--active'].filter(x=>x).join(' '),tabIndex: -1, role: 'tab', onclick:  true}, [
-        h('span#mdc-tab__content',{}, [
+        h('span.mdc-tab__content',{}, [
           ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-tab__icon')),
-          h('span#mdc-tab__text-label',{},title),
+          h('span.mdc-tab__text-label',{},title),
           ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-tab__icon'))
         ]),
         h('span',{ class: ['mdc-tab-indicator', raised && 'mdc-tab-indicator--active'].filter(x=>x).join(' ') }, h('span',{ class: 'mdc-tab-indicator__content mdc-tab-indicator__content--underline'})),
-        h('span#mdc-tab__ripple'),
+        h('span.mdc-tab__ripple'),
       ]),
     features: mdcStyle.initDynamic()
   })
@@ -7022,19 +7013,19 @@ jb.component('editableText.mdcInput', {
   ],
   impl: customStyle({
     template: (cmp,{databind,fieldId,title,noLabel,noRipple,error},h) => h('div',{}, [
-      h('div#mdc-text-field',{class: [ 
+      h('div.mdc-text-field',{class: [ 
           (cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'pre')[0] && 'mdc-text-field--with-leading-icon',
           (cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'post')[0] && 'mdc-text-field--with-trailing-icon'
         ].filter(x=>x).join(' ') },[
           ...(cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'pre').map(h).map(vdom=>vdom.addClass('mdc-text-field__icon mdc-text-field__icon--leading')),
-          h('input#mdc-text-field__input', { type: 'text', id: 'input_' + fieldId, name: 'input_' + fieldId,
+          h('input.mdc-text-field__input', { type: 'text', id: 'input_' + fieldId, name: 'input_' + fieldId,
               value: databind, onchange: true, onkeyup: true, onblur: true, autocomplete: 'off'
           }),
           ...(cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-text-field__icon mdc-text-field__icon--trailing')),
-          ...[!noLabel && h('label#mdc-floating-label', { class: databind ? 'mdc-floating-label--float-above' : '', for: 'input_' + fieldId},title() )].filter(x=>x),
-          ...[!noRipple && h('div#mdc-line-ripple')].filter(x=>x)
+          ...[!noLabel && h('label.mdc-floating-label', { class: databind ? 'mdc-floating-label--float-above' : '', for: 'input_' + fieldId},title() )].filter(x=>x),
+          ...[!noRipple && h('div.mdc-line-ripple')].filter(x=>x)
         ]),
-        h('div#mdc-text-field-helper-line', {}, error || '')
+        h('div.mdc-text-field-helper-line', {}, error || '')
       ]),
     css: `~ .mdc-text-field-helper-line { color: var(--jb-error-fg) }
     ~ .mdc-text-field:not(.mdc-text-field--disabled) .mdc-text-field__input { color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-menubar-inactive-bg); }
@@ -7267,7 +7258,7 @@ jb.component('group.section', {
 jb.component('group.ulLi', {
   type: 'group.style',
   impl: customStyle({
-    template: (cmp,{ctrls},h) => h('ul#jb-itemlist',{},
+    template: (cmp,{ctrls},h) => h('ul.jb-itemlist',{},
         ctrls.map(ctrl=> h('li', {class: 'jb-item'} ,h(ctrl)))),
     css: `{ list-style: none; padding: 0; margin: 0;}
     >li { list-style: none; padding: 0; margin: 0;}`,
@@ -7462,8 +7453,8 @@ jb.ns('mdcStyle,table')
 jb.component('itemlist.ulLi', {
   type: 'itemlist.style',
   impl: customStyle({
-    template: (cmp,{ctrls},h) => h('ul#jb-itemlist',{},
-        ctrls.map(ctrl=> h('li#jb-item', {'jb-ctx': ctrl[0].ctxId }, ctrl.map(singleCtrl=>h(singleCtrl))))),
+    template: ({},{ctrls,itemsCtxs},h) => h('ul.jb-itemlist jb-drag-parent',{},
+        ctrls.map((ctrl,index) => h('li.jb-item', {'jb-ctx': itemsCtxs[index] }, ctrl.map(singleCtrl=>h(singleCtrl))))),
     css: `{ list-style: none; padding: 0; margin: 0;}
     >li { list-style: none; padding: 0; margin: 0;}`,
     features: itemlist.init()
@@ -7476,8 +7467,8 @@ jb.component('itemlist.div', {
     {id: 'spacing', as: 'number', defaultValue: 0}
   ],
   impl: customStyle({
-    template: (cmp,{ctrls},h) => h('div#jb-itemlist jb-drag-parent',{},
-        ctrls.map(ctrl=> h('div#jb-item', {'jb-ctx': ctrl[0].ctxId}, ctrl.map(singleCtrl=>h(singleCtrl))))),
+    template: ({},{ctrls,itemsCtxs},h) => h('div.jb-itemlist jb-drag-parent',{},
+        ctrls.map((ctrl,index) => h('div.jb-item', {'jb-ctx': itemsCtxs[index]}, ctrl.map(singleCtrl=>h(singleCtrl))))),
     features: itemlist.init()
   })
 })
@@ -7488,8 +7479,8 @@ jb.component('itemlist.horizontal', {
     {id: 'spacing', as: 'number', defaultValue: 0}
   ],
   impl: customStyle({
-    template: (cmp,{ctrls},h) => h('div#jb-itemlist jb-drag-parent',{},
-        ctrls.map(ctrl=> h('div#jb-item', {'jb-ctx': ctrl[0].ctxId}, ctrl.map(singleCtrl=>h(singleCtrl))))),
+    template: ({},{ctrls,itemsCtxs},h) => h('div.jb-itemlist jb-drag-parent',{},
+        ctrls.map((ctrl,index) => h('div.jb-item', {'jb-ctx': itemsCtxs[index]}, ctrl.map(singleCtrl=>h(singleCtrl))))),
     css: `{display: flex}
         >* { margin-right: %$spacing%px }
         >*:last-child { margin-right:0 }`,
@@ -7503,21 +7494,17 @@ jb.component('table.plain', {
   ],
   type: 'itemlist.style',
   impl: customStyle({
-    template: (cmp,{items,itemsCtxs,fields,hideHeaders},h) => h('div#jb-itemlist',{},h('table',{},[
+    template: (cmp,{itemsCtxs,ctrls,hideHeaders},h) => h('div.jb-itemlist',{},h('table',{},[
         ...(hideHeaders ? [] : [h('thead',{},h('tr',{},
-          fields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} }, jb.ui.fieldTitle(cmp,f,h))) ))]),
-        h('tbody#jb-drag-parent',{},
-            items.map((item,index)=> h('tr#jb-item',{ 'jb-ctx': itemsCtxs[index]},
-              fields.map(f=>
-                h('td', jb.filterEmpty({ 'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), class: f.class, title: f.hoverTitle && f.hoverTitle(item) }),
-                  f.control ? h(f.control(item,index),{index, row: item}) : f.fieldData(item,index)))))
-        ),
-        items.length == 0 ? 'no items' : ''
-        ])),
+          ctrls[0] && ctrls[0].map(ctrl=>ctrl.field()).map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} }, jb.ui.fieldTitle(cmp,f,h))) ))]),
+        h('tbody.jb-drag-parent',{},
+          ctrls.map((ctrl,index)=> h('tr.jb-item',{ 'jb-ctx': itemsCtxs[index]}, ctrl.map( singleCtrl => h('td',{}, h(singleCtrl)))))),
+        itemsCtxs.length == 0 ? 'no items' : ''            
+    ])),
     css: `>table{border-spacing: 0; text-align: left; width: 100%}
     >table>tbody>tr>td { padding-right: 5px }
     `,
-    features: itemlist.initTable()
+    features: itemlist.init()
   })
 })
 
@@ -7525,38 +7512,31 @@ jb.component('table.mdc', {
   type: 'itemlist.style',
   params: [
     {id: 'hideHeaders', as: 'boolean', type: 'boolean'},
-    {id: 'classForTable', as: 'string', defaultValue: 'mdc-data-table__table mdc-data-table--selectable'}
+    {id: 'classForTable', as: 'string', defaultValue: 'mdc-data-table__table mdc-data-table--selectable'}    
   ],
   impl: customStyle({
-    template: (cmp,{items,itemsCtxs,fields,classForTable,classForTd,sortOptions,hideHeaders},h) => 
-      h('div#jb-itemlist mdc-data-table',{}, h('table',{ class: classForTable },[
-      ...(hideHeaders ? [] : [h('thead',{},h('tr#mdc-data-table__header-row',{},
-        fields.map((f,i) =>h('th#mdc-data-table__header-cell',{
-          'jb-ctx': f.ctxId, 
-          class: [ 
-              (sortOptions && sortOptions.filter(o=>o.field == f)[0] || {}).dir == 'asc' ? 'mdc-data-table__header--sorted-ascending': '',
-              (sortOptions && sortOptions.filter(o=>o.field == f)[0] || {}).dir == 'des' ? 'mdc-data-table__header--sorted-descending': '',
-            ].filter(x=>x).join(' '), 
-          style: { width: f.width ? f.width + 'px' : ''},
-          onclick: 'toggleSort',
-          fieldIndex: i
-          }
-          ,jb.ui.fieldTitle(cmp,f,h))) ))]),
-      h('tbody#jb-drag-parent mdc-data-table__content',{},
-            items.map((item,index)=> h('tr#jb-item mdc-data-table__row', { 'jb-ctx': itemsCtxs[index] },
-              fields.map(f=>
-                  h('td', jb.filterEmpty({ 
-                    'jb-ctx': jb.ui.preserveFieldCtxWithItem(f,item), 
-                    class: (f.class + ' ' + classForTd + ' mdc-data-table__cell').trim(), 
-                    title: f.hoverTitle &&  f.hoverTitle(item) 
-                  }) , f.control ? h(f.control(item,index)) : f.fieldData(item,index)))))
-              
-      ),
-      items.length == 0 ? 'no items' : ''
+    template: (cmp,{ctrls,itemsCtxs,sortOptions,hideHeaders,classForTable},h) => 
+      h('div.jb-itemlist mdc-data-table',{}, h('table',{class: classForTable}, [
+        ...(hideHeaders ? [] : [h('thead',{},h('tr.mdc-data-table__header-row',{},
+            ctrls[0] && ctrls[0].map(ctrl=>ctrl.field()).map((f,i) =>h('th.mdc-data-table__header-cell',{
+            'jb-ctx': f.ctxId, 
+            class: [ 
+                (sortOptions && sortOptions.filter(o=>o.field == f)[0] || {}).dir == 'asc' ? 'mdc-data-table__header--sorted-ascending': '',
+                (sortOptions && sortOptions.filter(o=>o.field == f)[0] || {}).dir == 'des' ? 'mdc-data-table__header--sorted-descending': '',
+              ].filter(x=>x).join(' '), 
+            style: { width: f.width ? f.width + 'px' : ''},
+            onclick: 'toggleSort',
+            fieldIndex: i
+            }
+            ,jb.ui.fieldTitle(cmp,f,h))) ))]),
+        h('tbody.jb-drag-parent mdc-data-table__content',{},
+            ctrls.map((ctrl,index)=> h('tr.jb-item mdc-data-table__row',{ 'jb-ctx': itemsCtxs[index]}, ctrl.map( singleCtrl => 
+              h('td.mdc-data-table__cell', {}, h(singleCtrl)))))),
+        itemsCtxs.length == 0 ? 'no items' : ''            
     ])),
     css: `{width: 100%}  
     ~ .mdc-data-table__header-cell, ~ .mdc-data-table__cell {color: var(--jb-fg)}`,
-    features: [itemlist.initTable(), mdcStyle.initDynamic()]
+    features: [itemlist.init(), mdcStyle.initDynamic()]
   })
 })
 ;
@@ -7652,17 +7632,17 @@ jb.component('picklist.mdcRadio', {
     {id: 'text', defaultValue: '%text%', dynamic: true}
   ],
   impl: customStyle({
-    template: (cmp,{databind, options, fieldId, text},h) => h('div#mdc-form-field', {},
+    template: (cmp,{databind, options, fieldId, text},h) => h('div.mdc-form-field', {},
           options.flatMap((option,i)=> [
-              h('div#mdc-radio',{},[
-                h('input#mdc-radio__native-control', {
+              h('div.mdc-radio',{},[
+                h('input.mdc-radio__native-control', {
                   type: 'radio', name: fieldId, id: i, checked: databind === option.code, value: option.code, onchange: true
                 }),
-                h('div#mdc-radio__background',{},[
-                  h('div#mdc-radio__outer-circle'),
-                  h('div#mdc-radio__inner-circle'),
+                h('div.mdc-radio__background',{},[
+                  h('div.mdc-radio__outer-circle'),
+                  h('div.mdc-radio__inner-circle'),
                 ]),
-                h('div#mdc-radio__ripple')
+                h('div.mdc-radio__ripple')
               ]),
               h('label',{for: i}, text(cmp.ctx.setData(option))),
     ])),
@@ -7686,18 +7666,18 @@ jb.component('picklist.mdcSelect', {
     {id: 'noRipple', as: 'boolean', type: 'boolean'}
   ],
   impl: customStyle({
-    template: (cmp,{databind,options,title,noLabel,noRipple,hasEmptyOption},h) => h('div#mdc-select',{}, [
-      h('div#mdc-select__anchor',{onclick: true},[
+    template: (cmp,{databind,options,title,noLabel,noRipple,hasEmptyOption},h) => h('div.mdc-select',{}, [
+      h('div.mdc-select__anchor',{onclick: true},[
           ...(cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'pre').map(h).map(vdom=>vdom.addClass('mdc-text-field__icon mdc-text-field__icon--leading')),
-          h('i#mdc-select__dropdown-icon', {}),
-          h('div#mdc-select__selected-text',{'aria-required': !hasEmptyOption},databind),
-          ...[!noLabel && h('label#mdc-floating-label',{ class: databind ? 'mdc-floating-label--float-above' : ''},title() )].filter(x=>x),
-          ...[!noRipple && h('div#mdc-line-ripple')].filter(x=>x)
+          h('i.mdc-select__dropdown-icon', {}),
+          h('div.mdc-select__selected-text',{'aria-required': !hasEmptyOption},databind),
+          ...[!noLabel && h('label.mdc-floating-label',{ class: databind ? 'mdc-floating-label--float-above' : ''},title() )].filter(x=>x),
+          ...[!noRipple && h('div.mdc-line-ripple')].filter(x=>x)
       ]),
-      h('div#mdc-select__menu mdc-menu mdc-menu-surface demo-width-class',{},[
-        h('ul#mdc-list',{},options.map(option=>h('li#mdc-list-item',{'data-value': option.code, 
+      h('div.mdc-select__menu mdc-menu mdc-menu-surface demo-width-class',{},[
+        h('ul.mdc-list',{},options.map(option=>h('li.mdc-list-item',{'data-value': option.code, 
           class: option.code == databind ? 'mdc-list-item--selected': ''},    
-          h('span#mdc-list-item__text', {}, option.text))))
+          h('span.mdc-list-item__text', {}, option.text))))
       ])
     ]),
     features: [
@@ -7926,11 +7906,11 @@ jb.component('editableBoolean.mdcSlideToggle', {
     {id: 'width', as: 'string', defaultValue: 80}
   ],
   impl: customStyle({
-    template: (cmp,{databind,fieldId,toggleText},h) => h('div#mdc-switch',{class: databind ? 'mdc-switch--checked': '' },[
-      h('div#mdc-switch__track'),
-      h('div#mdc-switch__thumb-underlay',{},
-        h('div#mdc-switch__thumb',{},
-          h('input#mdc-switch__native-control', { type: 'checkbox', role: 'switch', id: 'switch_' + fieldId,
+    template: (cmp,{databind,fieldId,toggleText},h) => h('div.mdc-switch',{class: databind ? 'mdc-switch--checked': '' },[
+      h('div.mdc-switch__track'),
+      h('div.mdc-switch__thumb-underlay',{},
+        h('div.mdc-switch__thumb',{},
+          h('input.mdc-switch__native-control', { type: 'checkbox', role: 'switch', id: 'switch_' + fieldId,
             checked: databind, onchange: 'toggle', onkeyup: 'toggleByKey' }
       ))),
       h('label',{for: 'switch_' + fieldId},toggleText)
@@ -7946,17 +7926,17 @@ jb.component('editableBoolean.mdcCheckBox', {
     {id: 'width', as: 'string', defaultValue: 80}
   ],
   impl: customStyle({
-    template: (cmp,{databind,fieldId,title},h) => h('div#mdc-form-field', {},[
-        h('div#mdc-checkbox',{}, [
-          h('input#mdc-checkbox__native-control', { type: 'checkbox', id: 'checkbox_' + fieldId,
+    template: (cmp,{databind,fieldId,title},h) => h('div.mdc-form-field', {},[
+        h('div.mdc-checkbox',{}, [
+          h('input.mdc-checkbox__native-control', { type: 'checkbox', id: 'checkbox_' + fieldId,
             checked: databind, onchange: 'toggle', onkeyup: 'toggleByKey' }),
-          h('div#mdc-checkbox__background',{}, [
-            h('svg#mdc-checkbox__checkmark',{viewBox: '0 0 24 24'},
-              h('path#mdc-checkbox__checkmark-path', { fill: 'none', d: 'M1.73,12.91 8.1,19.28 22.79,4.59' }
+          h('div.mdc-checkbox__background',{}, [
+            h('svg.mdc-checkbox__checkmark',{viewBox: '0 0 24 24'},
+              h('path.mdc-checkbox__checkmark-path', { fill: 'none', d: 'M1.73,12.91 8.1,19.28 22.79,4.59' }
             )),
-            h('div#mdc-checkbox__mixedmark')
+            h('div.mdc-checkbox__mixedmark')
           ]),
-          h('div#mdc-checkbox__ripple')
+          h('div.mdc-checkbox__ripple')
         ]),
         h('label',{for: 'checkbox_' + fieldId},title())
     ]),

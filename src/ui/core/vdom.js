@@ -61,6 +61,7 @@ class VNode {
             maxDepth = 1
             selector = selector.slice(7)
         }
+        if (selector == '') return [this]
         if (selector.indexOf(',') != -1)
             return selector.split(',').map(x=>x.trim()).reduce((res,sel) => [...res, ...this.querySelectorAll(sel,{includeSelf})], [])
         const hasAtt = selector.match(/^\[([a-zA-Z0-9_$\-]+)\]$/)
