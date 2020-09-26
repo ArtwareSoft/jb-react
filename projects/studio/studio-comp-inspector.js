@@ -4,7 +4,7 @@ jb.component('studio.compInspector', {
   ],
   type: 'control',
   impl: group({
-    style: group.sections({titleStyle: header.mdcHeadline6()}),
+//    style: group.sections({titleStyle: header.mdcHeadline6()}),
     controls: [
       text({
         text: '%$inspectedCmp/cmpId%;%$inspectedCmp/ver% -- %$inspectedCtx/path%',
