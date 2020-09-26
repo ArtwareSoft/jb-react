@@ -4,7 +4,7 @@ jb.component('studio.compInspector', {
   ],
   type: 'control',
   impl: group({
-    //style: group.sections({titleStyle: header.mdcHeadline6()}),
+    style: group.sections({titleStyle: header.mdcHeadline6()}),
     controls: [
       text({
         text: '%$inspectedCmp/cmpId%;%$inspectedCmp/ver% -- %$inspectedCtx/path%',
@@ -70,7 +70,7 @@ jb.component('studio.compInspector', {
         value: ({},{elem})=>jb.path (elem && jb.studio.previewjb.ctxDictionary[elem.getAttribute('full-cmp-ctx')],'vars.cmp')
       }),
       variable({name: 'inspectedCtx', value: '%$inspectedCmp/ctx%'}),
-      method('refresh', ctx => ctx.run(action.refreshCmp({cmpId: ctx.data})))
+      method('refresh', action.refreshCmp({cmpId: ctx.data}))
     ]
   })
 })
