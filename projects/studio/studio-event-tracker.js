@@ -73,6 +73,7 @@ jb.component('studio.eventTracker', {
                       return jb.studio.inspectedJb != null
                   else {
                       jb.studio.inspectedJb = val ? (jb.studio.studiojb || jb) : jb.studio.previewjb
+                      jb.studio.initStudioEditing()
                       ctx.run(refreshControlById('event-tracker'))
                   }
               }
@@ -225,10 +226,6 @@ jb.component('studio.lowFootprintObj', {
   impl: controlWithCondition('%$obj%', group({
     layout: layout.horizontal(4),
     controls: [
-      // controlWithCondition(
-      //   '%$obj/cmpId%',
-      //   studio.slicedString('%$obj/cmpId%;%$obj/ver%')
-      // ),
       controlWithCondition(
         '%$obj/_parent%',
         studio.slicedString('%$obj/profile/$%: %$obj/path%')

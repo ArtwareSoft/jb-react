@@ -54,6 +54,8 @@ jb.component('watchableAsText', {
         },
         prettyPrintWithPositions() {
             const ref = this.getRef()
+            if (!ref)
+                return jb.logError('no ref at watchableAsText',{ctx})
             const initialPath = ref.handler.pathOfRef(ref).join('~')
             const res = jb.prettyPrintWithPositions(this.getVal() || '',{initialPath, comps: ref.jbToUse && ref.jbToUse.comps})
             this.locationMap = enrichMapWithOffsets(res.text, res.map)
