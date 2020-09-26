@@ -70,7 +70,7 @@ jb.component('studio.compInspector', {
         value: ({},{elem})=>jb.path (elem && jb.studio.previewjb.ctxDictionary[elem.getAttribute('full-cmp-ctx')],'vars.cmp')
       }),
       variable({name: 'inspectedCtx', value: '%$inspectedCmp/ctx%'}),
-      method('refresh', action.refreshCmp({cmpId: ctx.data}))
+      method('refresh', action.refreshCmp(obj(prop('cmpId','%%'))))
     ]
   })
 })
