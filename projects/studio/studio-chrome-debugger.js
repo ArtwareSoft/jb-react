@@ -83,7 +83,7 @@ jb.chromeDebugger = {
             from: 'inspectedStudio', to: '${panelFrame.uri}' , panelUri: '${panelFrame.uri}' }) `)
     },
     selectedCmpId() {
-        return this.evalAsPromise('$0 && $0.getAttribute && $0.getAttribute("cmp-id")')
+        return this.evalAsPromise('$0 && jb.ui.closestCmpElem($0) && jb.ui.closestCmpElem($0).getAttribute("cmp-id")')
     },
     initStudioDebugPort(panelFrame) {
         return this.evalAsPromise(`self.studioDebugPort = self.studioDebugPort || jb.remote.cbPortFromFrame(self,'inspectedStudio','${panelFrame.uri}')`)
