@@ -1935,7 +1935,7 @@ jb.component('uiTest.infiniteScroll', {
         css.width('100')
       ]
     }),
-    action: runActions(uiAction.scrollBy('.jb-itemlist',80), delay(30),uiAction.scrollBy('.jb-itemlist',100), delay(30)),
+    action: runActions(uiAction.scrollBy('.jb-itemlist',80), delay(30),uiAction.scrollBy('.jb-itemlist',100), delay(130)),
     expectedResult: contains('>10<')
   })
 })
