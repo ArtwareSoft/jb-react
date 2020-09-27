@@ -430,7 +430,7 @@ Object.assign(jb.ui, {
             return context.params.style ? context.params.style(ctx) : {}
         }
     },
-    garbageCollectCtxDictionary(forceNow) {
+    garbageCollectCtxDictionary(forceNow,clearAll) {
         if (!forceNow)
             return jb.delay(1000).then(()=>ui.garbageCollectCtxDictionary(true))
    
@@ -441,7 +441,7 @@ Object.assign(jb.ui, {
         // remove unused ctx from dictionary
         const dict = Object.keys(jb.ctxDictionary).map(x=>Number(x)).sort((x,y)=>x-y)
         let lastUsedIndex = 0;
-        const removedCtxs = [], removedResources = [], maxUsed = used.slice(-1)[0] || 0
+        const removedCtxs = [], removedResources = [], maxUsed = used.slice(-1)[0] || (clearAll ? Number.MAX_SAFE_INTEGER : 0)
         for(let i=0;i<dict.length && dict[i] < maxUsed;i++) {
             while (used[lastUsedIndex] < dict[i])
                 lastUsedIndex++;

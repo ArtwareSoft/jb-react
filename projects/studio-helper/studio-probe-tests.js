@@ -174,16 +174,16 @@ jb.component('probeTest.filterNoSugar', {
   })
 })
 
-jb.component('probeTest.callbag.sniffer', {
-  impl: studioProbeTest({
-    circuit: pipe(rx.pipe(source.data(list('1', '2', '3', '4')), rx.map('-%%-')), join(',')),
-    probePath: 'items~0~elems~1',
-    expectedOutResult: equals(
-      pipeline(filter('%dir%==out'), '%d/data%', join(',')),
-      '-1-,-2-,-3-,-4-'
-    )
-  })
-})
+// jb.component('probeTest.callbag.sniffer', {
+//   impl: studioProbeTest({
+//     circuit: pipe(rx.pipe(source.data(list('1', '2', '3', '4')), rx.map('-%%-')), join(',')),
+//     probePath: 'items~0~elems~1',
+//     expectedOutResult: equals(
+//       pipeline(filter('%dir%==out'), '%d/data%', join(',')),
+//       '-1-,-2-,-3-,-4-'
+//     )
+//   })
+// })
 
 jb.component('test.label1', {
   type: 'control',

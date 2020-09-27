@@ -3066,6 +3066,7 @@ jb.callbag = {
       isCallbag: cb => typeof cb == 'function' && cb.toString().split('=>')[0].split('{')[0].replace(/\s/g,'').match(/start,sink|t,d/),
 
       injectSniffers(cbs,ctx) {
+        return cbs
         const _jb = ctx.frame().jb
         if (!_jb) return cbs
         return cbs.reduce((acc,cb) => [...acc,cb, ...injectSniffer(cb) ] ,[])
@@ -3124,7 +3125,9 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
     return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
 
   const advanceLineCol = jb.prettyPrint.advanceLineCol
-  return valueToMacro({path: initialPath, line:0, col: 0}, val)
+  const res = valueToMacro({path: initialPath, line:0, col: 0}, val)
+  res.text = res.text.replace(/__fixedNL__/g,'\n')
+  return res
 
   function processList(ctx,items) {
     const res = items.reduce((acc,{prop, item}) => {
@@ -3160,22 +3163,23 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
     const unflat = shouldNotFlat(result)
     if ((forceFlat || !unflat) && !flat)
       return joinVals(ctx, innerVals, open, close, true, isArray)
-    return Object.assign(result,{unflat})
+    return {...result, unflat}
 
     function newLine(offset = 0) {
       return flat ? '' : '\n' + jb.prettyPrint.spaces.slice(0,((path.match(/~/g)||'').length+offset+1)*tabSize)
     }
 
     function shouldNotFlat(result) {
-      const long = result.text.replace(/\n\s*/g,'').length > colWidth
+      const long = result.text.replace(/\n\s*/g,'').split('__fixedNL__')[0].length > colWidth
       if (!jb.studio.valOfPath)
         return result.unflat || long
       const val = jb.studio.valOfPath(path)
       if (path.match(/~params~[0-9]+$/)) return false
       const ctrls = path.match(/~controls$/) && Array.isArray(val) // && innerVals.length > 1// jb.studio.isOfType(path,'control') && !arrayElem
       const customStyle = jb.studio.compNameOfPath && jb.studio.compNameOfPath(path) === 'customStyle'
+      const moreThanTwoVals = innerVals.length > 2 && !isArray
       const top = (path.match(/~/g)||'').length < 2
-      return result.unflat || customStyle || top || ctrls || long
+      return result.unflat || customStyle || moreThanTwoVals || top || ctrls || long
     }
     function fixPropName(prop) {
       return prop.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/) ? prop : `'${prop}'`
@@ -3250,7 +3254,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
       if (val === null) return 'null';
       if (val === undefined) return 'undefined';
       if (typeof val === 'object') return profileToMacro(ctx, val, flat);
-      if (typeof val === 'function') return val.toString();
+      if (typeof val === 'function') return val.toString().replace(/\n/g,'__fixedNL__')
       if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
         return processList(ctx,[
           {prop: '!value-text-start', item: "'"},

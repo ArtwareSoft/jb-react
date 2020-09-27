@@ -3066,6 +3066,7 @@ jb.callbag = {
       isCallbag: cb => typeof cb == 'function' && cb.toString().split('=>')[0].split('{')[0].replace(/\s/g,'').match(/start,sink|t,d/),
 
       injectSniffers(cbs,ctx) {
+        return cbs
         const _jb = ctx.frame().jb
         if (!_jb) return cbs
         return cbs.reduce((acc,cb) => [...acc,cb, ...injectSniffer(cb) ] ,[])

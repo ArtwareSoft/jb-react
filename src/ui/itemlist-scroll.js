@@ -112,7 +112,7 @@ jb.component('itemlist.infiniteScroll', {
       rx.log('itemlist frontend infiniteScroll'),
       rx.filter('%$scrollPercentFromTop%>0.9'),
       rx.filter(not('%$applicative%')),
-      rx.debounceTime(500),
+//      rx.debounceTime(500),
       sink.BEMethod('fetchMoreItems')
     )
   )

@@ -370,7 +370,10 @@ jb.testers = {
 			document.getElementById('time').innerHTML = ', ' + (new Date().getTime() - startTime) +' mSec';
 			jb.ui.addHTML(document.body,testResultHtml);
 			if (!res.renderDOM && show) res.show()
-			jb.ui && tests.length >1 && jb.ui.garbageCollectCtxDictionary && jb.ui.garbageCollectCtxDictionary(true)
+			if (jb.ui && tests.length >1) {
+				jb.ui.garbageCollectCtxDictionary && jb.ui.garbageCollectCtxDictionary(true,true)
+				jb.cbLogByPath = {}
+			}
 	}))
 }};
 

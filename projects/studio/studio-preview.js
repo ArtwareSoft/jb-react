@@ -161,8 +161,8 @@ jb.component('studio.refreshPreview', {
   impl: ctx => {
     if (jb.frame.jbInvscode)
       return ctx.run(studio.reOpenStudio())
-    jb.ui.garbageCollectCtxDictionary(true);
-    jb.studio.previewjb.ui.garbageCollectCtxDictionary(true);
+    jb.ui.garbageCollectCtxDictionary(true,true)
+    jb.studio.previewjb.ui.garbageCollectCtxDictionary(true,true)
     jb.studio.resourcesFromPrevRun = st.previewWindow.JSON.stringify(jb.studio.previewjb.resources)
     //jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
     //jb.ui.dialogs.reRenderAll(ctx)

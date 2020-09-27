@@ -99,11 +99,11 @@ jb.component('widget.headless', {
                 jb.ui.BECmpsDestroyNotification.next({cmps: userReq.cmps, destroyLocally: true})
                 if (userReq.destroyWidget) jb.delay(1).then(()=> {
                     jb.log('destroy headless widget request',{widgetId: userReq.widgetId,userReq})
-                    jb.delay(100).then(()=>{ 
+//                    jb.delay(1).then(()=>{ 
                         jb.log('destroy headless widget',{widgetId: userReq.widgetId,userReq})
                         delete jb.ui.headless[userReq.widgetId]
                     }) // the delay needed for tests
-                })
+//                })
             }
         }
     }

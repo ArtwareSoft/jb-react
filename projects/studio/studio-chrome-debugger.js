@@ -71,7 +71,7 @@ jb.chromeDebugger = {
                     jb.ui.runBEMethod(document.querySelector('[widgettop="true"]'),'refresh',inspectorProps)))
 
         return Promise.resolve(panelId == 'comp' && this.selectedProps()).then(inspectorProps =>{
-                const profile = {$: `inspectedWindow.{$panelId}Ctrl`, inspectorProps, uri}
+                const profile = {$: `inspectedWindow.${panelId}Ctrl`, inspectorProps, uri}
                 jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry().setVar('$studio',true).run(profile)),panelFrame.document.body)
         })
     },
