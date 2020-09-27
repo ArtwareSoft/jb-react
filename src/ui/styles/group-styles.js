@@ -109,7 +109,7 @@ jb.component('group.tabs', {
 jb.component('group.mdcTabBar', {
   type: 'group.style',
   impl: customStyle({
-    template: (cmp,{ctrls},h) => 
+    template: (cmp,{ctrls},h) =>
       h('div',{class: 'mdc-tab-bar', role: 'tablist'},
         h('div',{class: 'mdc-tab-scroller'},
           h('div',{class: 'mdc-tab-scroller__scroll-area mdc-tab-scroller__scroll-area--scroll'},
@@ -172,9 +172,11 @@ jb.component('group.sections', {
       controls: dynamicControls({
         controlItems: '%$sectionsModel/controls%',
         genericControl: group({
+          title: '',
           style: call('sectionStyle'),
           controls: [
-            text({text: '%$section/field()/title()%', 
+            text({
+              text: '%$section/field()/title()%',
               style: call('titleStyle'),
               features: ctx => ctx.run(features((ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x)))
             }),

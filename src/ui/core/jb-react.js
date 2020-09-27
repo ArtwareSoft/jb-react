@@ -72,15 +72,6 @@ function compareVdom(b,after) {
     }
 }
 
-function filterDelta(delta) { // for logging
-    const doFilter = dlt => ({
-        attributes: jb.objFromEntries(jb.entries(dlt.attributes)
-            .filter(e=> ['jb-ctx','cmp-id','originators','__afterIndex','full-cmp-ctx','frontEnd'].indexOf(e[0]) == -1)),
-        children: dlt.children
-    })
-    return doFilter(delta)
-}
-
 function sameSource(vdomBefore,vdomAfter) {
     if (vdomBefore.cmp && vdomBefore.cmp === vdomAfter.cmp) return true
     const atts1 = vdomBefore.attributes || {}, atts2 = vdomAfter.attributes || {}
@@ -414,7 +405,8 @@ Object.assign(jb.ui, {
     BECmpsDestroyNotification: jb.callbag.subject(),
     renderingUpdates: jb.callbag.subject(),
     ctrl(context,options) {
-        const $state = context.vars.$refreshElemCall ? context.vars.$state : {}
+        const styleByControl = jb.path(context,'cmpCtx.profile.$') == 'styleByControl'
+        const $state = (context.vars.$refreshElemCall || styleByControl) ? context.vars.$state : {}
         const cmpId = context.vars.$cmpId, cmpVer = context.vars.$cmpVer
         if (!context.vars.$serviceRegistry)
             jb.logError('no serviceRegistry',{ctx: context})
@@ -424,13 +416,13 @@ Object.assign(jb.ui, {
             $serviceRegistry: context.vars.$serviceRegistry,
             $refreshElemCall : undefined, $props : undefined, cmp: undefined, $cmpId: undefined, $cmpVer: undefined 
         })
-        const styleOptions = defaultStyle(ctx) || {}
+        const styleOptions = runEffectiveStyle(ctx) || {}
         if (styleOptions instanceof ui.JbComponent)  {// style by control
             return styleOptions.orig(ctx).jbExtend(options,ctx).applyParamFeatures(ctx)
         }
         return new ui.JbComponent(ctx,cmpId,cmpVer).jbExtend(options,ctx).jbExtend(styleOptions,ctx).applyParamFeatures(ctx)
     
-        function defaultStyle(ctx) {
+        function runEffectiveStyle(ctx) {
             const profile = context.profile
             const defaultVar = '$theme.' + (profile.$ || '')
             if (!profile.style && context.vars[defaultVar])
@@ -504,7 +496,8 @@ Object.assign(jb.ui, {
         if (!_ctx) 
             return jb.logError('refreshElem - no ctx for elem',{elem, cmpId, cmpVer})
         const strongRefresh = jb.path(options,'strongRefresh')
-        let ctx = _ctx.setVar('$state', strongRefresh ? {refresh: true } : {refresh: true, ...jb.path(elem._component,'state'), ...state}) // strongRefresh kills state
+        let ctx = _ctx.setVar('$state', strongRefresh ? {refresh: true } : 
+            {refresh: true, ...jb.path(elem._component,'state'), ...state}) // strongRefresh kills state
 
         if (options && options.extendCtx)
             ctx = options.extendCtx(ctx)

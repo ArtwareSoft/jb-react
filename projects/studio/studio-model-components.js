@@ -197,12 +197,9 @@ jb.component('studio.profileAsText', {
   type: 'data',
   params: [
     {id: 'path', as: 'string'},
-    {id: 'oneWay', as: 'boolean', defaultValue: true, type: 'boolean'}
+    {id: 'oneWay', as: 'boolean', defaultValue: true, type: 'boolean'},
   ],
-  impl: watchableAsText(
-    studio.ref('%$path%'),
-    '%$oneWay%'
-  )
+  impl: watchableAsText(studio.ref('%$path%'),'%$oneWay%')
 })
 
 jb.component('studio.profileAsStringByref', {

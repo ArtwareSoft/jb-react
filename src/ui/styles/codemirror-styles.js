@@ -23,9 +23,9 @@ jb.component('editableText.codemirror', {
 	calcProp('text','%$$model/databind()%'),
 	frontEnd.var('text', '%$$props/text%'),
     calcProp('textAreaAlternative',({},{$props},{maxLength}) => ($props.text || '').length > maxLength),
-    ctx => ({
-		  template: (cmp,{text,textAreaAlternative},h) => textAreaAlternative ? 
-		  		h('textarea.jb-textarea-alternative-for-codemirror', {value: text }) :
+    () => ({
+		  template: ({},{text,textAreaAlternative},h) => textAreaAlternative ? 
+		  		h('textarea.jb-textarea-alternative-for-codemirror autoResizeInDialog', {value: text }) :
 				h('div'),
 	}),
 	frontEnd.var('cm_settings', ({},{},{cm_settings,lineWrapping, mode, lineNumbers, readOnly}) => ({
@@ -39,19 +39,14 @@ jb.component('editableText.codemirror', {
 		const adjustedExtraKeys = jb.objFromEntries(jb.entries(cm_settings.extraKeys).map(e=>[
 			e[0], _ => ctx.setVar('ev',jb.ui.buildUserEvent({},el)).run(action.runBEMethod(e[1]))
 		]))
-		const effective_settings = Object.assign({}, cm_settings, {
-			value: text,
-			theme: 'solarized light',
-			autofocus: false,
-			extraKeys: Object.assign({
+		const settings = {...cm_settings, value: text, theme: 'solarized light', autofocus: false,
+			extraKeys: {
 				'Ctrl-Space': 'autocomplete',
-				'Ctrl-Enter': () => jb.ui.runBEMethod(el,'onCtrlEnter')
-			}, adjustedExtraKeys),
-		})
-		cmp.editor = CodeMirror(el, effective_settings)
-		jb.delay(100).then(() => cmp.editor.refresh()) // ???
-		_enableFullScreen && jb.delay(1).then(() => 
-			enableFullScreen(ctx,cmp.editor,jb.ui.outerWidth(el), jb.ui.outerHeight(el)))
+				'Ctrl-Enter': () => jb.ui.runBEMethod(el,'onCtrlEnter'),
+				...adjustedExtraKeys
+			}
+		}
+		injectCodeMirror(ctx,cmp,el,settings,_enableFullScreen)
 	}),
 	frontEnd.onRefresh(({},{text,cmp}) => cmp.editor.setValue(text)),
 	method('writeText',writeValue('%$$model/databind()%','%%')),
@@ -88,54 +83,65 @@ jb.component('textEditor.cmEnrichUserEvent', {
     )
 })
 
-function enableFullScreen(ctx,editor,width,height) {
-	const escText = '<span class="jb-codemirror-escCss">Press ESC or F11 to exit full screen</span>';
-	const fullScreenBtnHtml = '<div class="jb-codemirror-fullScreenBtnCss hidden"><img title="Full Screen (F11)" src="http://png-1.findicons.com/files/icons/1150/tango/22/view_fullscreen.png"/></div>';
-	const lineNumbers = true;
+function injectCodeMirror(ctx,cmp,el,settings,_enableFullScreen) {
+	cmp.editor = CodeMirror(el, settings)
+	cmp.editor.getWrapperElement().setAttribute('jb_external',true)
+	jb.ui.addClass(cmp.editor.getWrapperElement(),'autoResizeInDialog')
+	//cmp.editor.refresh()
+	_enableFullScreen && jb.delay(1).then(() => enableFullScreen(ctx,cmp,el))
+}
+
+function enableFullScreen(ctx,cmp,el) {
+	const width = jb.ui.outerWidth(el), height = jb.ui.outerHeight(el), editor = cmp.editor
+	const fullScreenBtnHtml = '<div class="jb-codemirror-fullScreenBtnCss hidden"><img title="Full Screen (F11)" src="http://png-1.findicons.com/files/icons/1150/tango/22/view_fullscreen.png"/></div>'
+	const escText = '<span class="jb-codemirror-escCss">Press ESC or F11 to exit full screen</span>'
+	const lineNumbers = true
 	const css = `
 		.jb-codemirror-escCss { cursor:default; text-align: center; width: 100%; position:absolute; top:0px; left:0px; font-family: arial; font-size: 11px; color: #a00; padding: 2px 5px 3px; }
 		.jb-codemirror-escCss:hover { text-decoration: underline; }
-		.jb-codemirror-fullScreenBtnCss { position:absolute; bottom:5px; right:5px; -webkit-transition: opacity 1s; z-index: 20; }
+		.jb-codemirror-fullScreenBtnCss { position:absolute; bottom:5px; right:15px; -webkit-transition: opacity 1s; z-index: 20; }
 		.jb-codemirror-fullScreenBtnCss.hidden { opacity:0; }
 		.jb-codemirror-editorCss { position:relative; }
 		.jb-codemirror-fullScreenEditorCss { padding-top: 20px, display: block; position: fixed !important; top: 0; left: 0; z-index: 99999999; }
 	`;
 	if (!jb.ui.find(document,'#jb_codemirror_fullscreen')[0])
-    	jb.ui.addHTML(document.head,`<style id="jb_codemirror_fullscreen" type="text/css">${css}</style>`);
+    	jb.ui.addHTML(document.head,`<style id="jb_codemirror_fullscreen" type="text/css">${css}</style>`)
 
-	const jEditorElem = editor.getWrapperElement();
-  	jb.ui.addClass(jEditorElem,'jb-codemirror-editorCss');
-	const prevLineNumbers = editor.getOption("lineNumbers");
-  	jb.ui.addHTML(jEditorElem,fullScreenBtnHtml);
-	const fullScreenButton =jb.ui.find(jEditorElem,'.jb-codemirror-fullScreenBtnCss')[0];
-	fullScreenButton.onclick = _ => switchMode();
-	fullScreenButton.onmouseenter = _ => jb.ui.removeClass(fullScreenButton,'hidden');
-	fullScreenButton.onmouseleave = _ => jb.ui.addClass(fullScreenButton,'hidden');
+	const jEditorElem = editor.getWrapperElement()
+  	jb.ui.addClass(jEditorElem,'jb-codemirror-editorCss')
+	const prevLineNumbers = editor.getOption('lineNumbers')
+  	jb.ui.addHTML(jEditorElem,fullScreenBtnHtml)
+	const fullScreenButton =jb.ui.find(jEditorElem,'.jb-codemirror-fullScreenBtnCss')[0]
+	fullScreenButton.onclick = _ => switchMode()
+	fullScreenButton.onmouseenter = _ => jb.ui.removeClass(fullScreenButton,'hidden')
+	fullScreenButton.onmouseleave = _ => jb.ui.addClass(fullScreenButton,'hidden')
 
-	const fullScreenClass = 'jb-codemirror-fullScreenEditorCss';
+	const fullScreenClass = 'jb-codemirror-fullScreenEditorCss'
 
 	function onresize() {
-		const wrapper = editor.getWrapperElement();
-		wrapper.style.width = window.innerWidth + 'px';
-		wrapper.style.height = window.innerHeight + 'px';
-		editor.setSize(window.innerWidth, window.innerHeight - 20);
-		jEditorElem.style.height = document.body.innerHeight + 'px'; //Math.max( document.body.innerHeight, $(window).height()) + 'px' );
+		const wrapper = editor.getWrapperElement()
+		wrapper.style.width = window.innerWidth + 'px'
+		wrapper.style.height = window.innerHeight + 'px'
+		editor.setSize(window.innerWidth, window.innerHeight - 20)
+		jEditorElem.style.height = document.body.innerHeight + 'px' //Math.max( document.body.innerHeight, $(window).height()) + 'px' );
 	}
 
 	function switchMode(onlyBackToNormal) {
+		cmp.innerElemOffset = null
 		if (jb.ui.hasClass(jEditorElem,fullScreenClass)) {
 			jb.ui.removeClass(jEditorElem,fullScreenClass)
 			window.removeEventListener('resize', onresize)
-			editor.setOption("lineNumbers", prevLineNumbers)
+			editor.setOption('lineNumbers', prevLineNumbers)
 			editor.setSize(width, height)
 			editor.refresh()
 			jEditorElem.removeChild(jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0])
+			jEditorElem.style.width = null
 		} else if (!onlyBackToNormal) {
 			jb.ui.addClass(jEditorElem,fullScreenClass)
 			window.addEventListener('resize', onresize)
 			onresize()
-			document.documentElement.style.overflow = "hidden"
-			if (lineNumbers) editor.setOption("lineNumbers", true)
+			document.documentElement.style.overflow = 'hidden'
+			if (lineNumbers) editor.setOption('lineNumbers', true)
 			editor.refresh()
 			jb.ui.addHTML(jEditorElem,escText)
       		jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0].onclick = _ => switchMode(true)
@@ -161,20 +167,14 @@ jb.component('text.codemirror', {
   ],
   impl: features(
 	frontEnd.var('text', '%$$model/text()%'),
-    ctx => ({ template: ({},{},h) => h('div') }),
-	frontEnd.var('cm_settings', (ctx,{},{cm_settings,lineWrapping, mode, lineNumbers}) => ({
+    () => ({ template: ({},{},h) => h('div') }),
+	frontEnd.var('cm_settings', ({},{},{cm_settings,lineWrapping, mode, lineNumbers}) => ({
 		...cm_settings, lineWrapping, lineNumbers, readOnly: true, mode: mode || 'javascript',
 	})),
 	frontEnd.var('_enableFullScreen', '%$enableFullScreen%'),
-    frontEnd.init( (ctx,{cmp,el,cm_settings,_enableFullScreen}) => {
-		const effective_settings = Object.assign({}, cm_settings, {
-			theme: 'solarized light',
-			autofocus: false,
-		})
-		cmp.editor = CodeMirror(el, effective_settings)
-		cmp.editor.refresh()
-		_enableFullScreen && jb.delay(1).then(() => 
-			enableFullScreen(ctx,cmp.editor,jb.ui.outerWidth(el), jb.ui.outerHeight(el)))
+    frontEnd.init( (ctx,{cmp,el,cm_settings,_enableFullScreen,text}) => {
+		const settings = {...cm_settings, value: text, theme: 'solarized light',	autofocus: false}
+		injectCodeMirror(ctx,cmp,el,settings,_enableFullScreen)
 	}),
 	frontEnd.onRefresh(({},{text,cmp}) => cmp.editor.setValue(text)),	
     css(({},{},{height}) => `{width: 100%}

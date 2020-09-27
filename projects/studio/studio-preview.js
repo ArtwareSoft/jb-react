@@ -111,13 +111,14 @@ jb.ui.renderWidgetInStudio = function(profile,top) {
 st.initPreview = function(preview_window,allowedTypes) {
       const changedComps = st.changedComps()
 
-      st.previewWindow = preview_window;
+      st.previewWindow = preview_window
+      st.previewWindow.jbUri = 'preview'
       st.previewjb = preview_window.jb;
-      ['jbComponent','jbParam','feature.contentEditable'].forEach(id=> st.copyCompFromStudioToPreview([id,jb.comps[id]]));
-      st.serverComps = st.previewjb.comps;
-      st.previewjb.studio.studioWindow = window;
-      st.previewjb.studio.previewjb = st.previewjb;
-      st.previewjb.studio.studiojb = jb;
+      ['jbComponent','jbParam','feature.contentEditable'].forEach(id=> st.copyCompFromStudioToPreview([id,jb.comps[id]]))
+      st.serverComps = st.previewjb.comps
+      st.previewjb.studio.studioWindow = window
+      st.previewjb.studio.previewjb = st.previewjb
+      st.previewjb.studio.studiojb = jb
       st.previewjb.lastRun = {}
 
       ;(jb.frame.jbDocsDiffFromFiles || []).forEach(doc=> {

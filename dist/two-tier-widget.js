@@ -29,7 +29,12 @@ jb.component('sink.frontEndDelta', {
             return !ctx.vars.headlessWidget && jb.ui.addStyleElem(ctx,css)
         const ctxToUse = ctx.setVars({headlessWidget: false, FEwidgetId: widgetId})
         const elem = cmpId ? null : jb.ui.widgetBody(ctxToUse)
-        jb.ui.applyDeltaToCmp(delta,ctxToUse,cmpId,elem)
+        try {
+            jb.ui.applyDeltaToCmp(delta,ctxToUse,cmpId,elem)
+        } catch(e) {
+            jb.logException(e,'headless frontend apply delta',{ctx,elem,cmpId})
+            jb.ui.widgetUserRequests.next({$: 'applyDeltaError', widgetId, cmpId})
+        }
     })
 })
 
@@ -77,16 +82,27 @@ jb.component('widget.headless', {
 
         function handleUserReq(userReq) {
             jb.log('headless widget handle userRequset',{widgetId: userReq.widgetId,userReq})
-            if (userReq.$ == 'runCtxAction')
-                jb.ui.runCtxAction(jb.ctxDictionary[userReq.ctxIdToRun],userReq.data,userReq.vars)
-            if (userReq.$ == 'destroy') { //&& userReq.widgetId.indexOf('uiTest_') != 0) {
+            if (userReq.$ == 'runCtxAction') {
+                const ctx = jb.ctxDictionary[userReq.ctxIdToRun]
+                if (!ctx)
+                    return jb.logError(`headless widget runCtxAction. no ctxId ${userReq.ctxIdToRun}`,{userReq})
+                jb.ui.runCtxAction(ctx,userReq.data,userReq.vars)
+            } else if (userReq.$ == 'applyDeltaError') {
+                debugger
+                const cmpElem = jb.ui.elemOfCmp(ctx.setVars({headlessWidget: true,headlessWidgetId: widgetId}),userReq.cmpId)
+                if (!cmpElem) 
+                    return jb.logError(`headless widget applyDeltaError. can not find cmpElem ${userReq.cmpId}`,{userReq})
+                cmpElem.children.forEach(child => unmount(child))
+                cmpElem.children = []
+                jb.ui.refreshElem(cmpElem)
+            } else if (userReq.$ == 'destroy') {
                 jb.ui.BECmpsDestroyNotification.next({cmps: userReq.cmps, destroyLocally: true})
                 if (userReq.destroyWidget) jb.delay(1).then(()=> {
                     jb.log('destroy headless widget request',{widgetId: userReq.widgetId,userReq})
                     jb.delay(100).then(()=>{ 
                         jb.log('destroy headless widget',{widgetId: userReq.widgetId,userReq})
                         delete jb.ui.headless[userReq.widgetId]
-                    }) // delay needed for tests
+                    }) // the delay needed for tests
                 })
             }
         }
@@ -98,7 +114,6 @@ jb.component('widget.twoTierWidget', {
     params: [
       {id: 'control', type: 'control', dynamic: true },
       {id: 'remote', type: 'remote', defaultValue: remote.worker({libs: ['common','ui-common','remote','two-tier-widget']}) },
-//      {id: 'id', as: 'string'},
     ],
     impl: controlWithFeatures({
         vars: Var('widgetId', (ctx,{},{remote}) => remote.uri + '-' + ctx.id),

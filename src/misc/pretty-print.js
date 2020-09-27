@@ -26,13 +26,15 @@ jb.prettyPrint.advanceLineCol = function({line,col},text) {
 }
 jb.prettyPrint.spaces = Array.from(new Array(200)).map(_=>' ').join('');
 
-jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath='',noMacros,comps,forceFlat} = {}) {
+jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='',noMacros,comps,forceFlat} = {}) {
   comps = comps || jb.comps
   if (!val || typeof val !== 'object')
     return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
 
   const advanceLineCol = jb.prettyPrint.advanceLineCol
-  return valueToMacro({path: initialPath, line:0, col: 0}, val)
+  const res = valueToMacro({path: initialPath, line:0, col: 0}, val)
+  res.text = res.text.replace(/__fixedNL__/g,'\n')
+  return res
 
   function processList(ctx,items) {
     const res = items.reduce((acc,{prop, item}) => {
@@ -68,22 +70,23 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
     const unflat = shouldNotFlat(result)
     if ((forceFlat || !unflat) && !flat)
       return joinVals(ctx, innerVals, open, close, true, isArray)
-    return Object.assign(result,{unflat})
+    return {...result, unflat}
 
     function newLine(offset = 0) {
       return flat ? '' : '\n' + jb.prettyPrint.spaces.slice(0,((path.match(/~/g)||'').length+offset+1)*tabSize)
     }
 
     function shouldNotFlat(result) {
-      const long = result.text.replace(/\n\s*/g,'').length > colWidth
+      const long = result.text.replace(/\n\s*/g,'').split('__fixedNL__')[0].length > colWidth
       if (!jb.studio.valOfPath)
         return result.unflat || long
       const val = jb.studio.valOfPath(path)
       if (path.match(/~params~[0-9]+$/)) return false
       const ctrls = path.match(/~controls$/) && Array.isArray(val) // && innerVals.length > 1// jb.studio.isOfType(path,'control') && !arrayElem
       const customStyle = jb.studio.compNameOfPath && jb.studio.compNameOfPath(path) === 'customStyle'
+      const moreThanTwoVals = innerVals.length > 2 && !isArray
       const top = (path.match(/~/g)||'').length < 2
-      return result.unflat || customStyle || top || ctrls || long
+      return result.unflat || customStyle || moreThanTwoVals || top || ctrls || long
     }
     function fixPropName(prop) {
       return prop.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/) ? prop : `'${prop}'`
@@ -125,9 +128,10 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
       return joinVals(ctx, args, openProfileSugarGroup, closeProfileSugarGroup, flat, true)
     }
     const keys = Object.keys(profile).filter(x=>x != '$')
-    const oneFirstParam = keys.length === 1 && params[0] && params[0].id == keys[0]
-        && (typeof propOfProfile(keys[0]) !== 'object' || Array.isArray(propOfProfile(keys[0])))
-    if ((params.length < 3 && comp.macroByValue !== false) || comp.macroByValue || oneFirstParam) {
+    const oneFirstArg = keys.length === 1 && params[0] && params[0].id == keys[0]
+        //&& (typeof propOfProfile(keys[0]) !== 'object' || Array.isArray(propOfProfile(keys[0])))
+    const twoFirstArgs = keys.length == 2 && params.length >= 2 && profile[params[0].id] && profile[params[1].id]
+    if ((params.length < 3 && comp.macroByValue !== false) || comp.macroByValue || oneFirstArg || twoFirstArgs) {
       const args = systemProps.concat(params.map(param=>({innerPath: param.id, val: propOfProfile(param.id)})))
       for(let i=0;i<5;i++)
         if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
@@ -157,7 +161,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=80,tabSize=2,initialPath=''
       if (val === null) return 'null';
       if (val === undefined) return 'undefined';
       if (typeof val === 'object') return profileToMacro(ctx, val, flat);
-      if (typeof val === 'function') return val.toString();
+      if (typeof val === 'function') return val.toString().replace(/\n/g,'__fixedNL__')
       if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
         return processList(ctx,[
           {prop: '!value-text-start', item: "'"},

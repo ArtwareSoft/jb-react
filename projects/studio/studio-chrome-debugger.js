@@ -66,11 +66,12 @@ jb.chromeDebugger = {
         const uri = panelFrame.uri
         jb.log(`chromeDebugger panel start logsCtrl ${uri}`)
         if (panelId == 'comp') 
-            chrome.devtools.panels.elements.onSelectionChanged.addListener(() => this.selectedCmpId().then(cmpId => 
-                    cmpId && jb.ui.runBEMethod(document.querySelector('[widgettop="true"]'),'refresh',cmpId)))
+            chrome.devtools.panels.elements.onSelectionChanged.addListener(() => 
+                this.selectedProps().then(inspectorProps => inspectorProps && inspectorProps.cmpId && 
+                    jb.ui.runBEMethod(document.querySelector('[widgettop="true"]'),'refresh',inspectorProps)))
 
-        return Promise.resolve(panelId == 'comp' && this.selectedCmpId()).then(cmpId=>{
-                const profile = {$: `inspectedWindow.${panelId}Ctrl`, cmpId, uri}
+        return Promise.resolve(panelId == 'comp' && this.selectedProps()).then(inspectorProps =>{
+                const profile = {$: 'inspectedWindow.compCtrl', inspectorProps, uri}
                 jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry().setVar('$studio',true).run(profile)),panelFrame.document.body)
         })
     },
@@ -82,18 +83,21 @@ jb.chromeDebugger = {
         return this.evalAsPromise(`postMessage({$: 'connectToPanel', 
             from: 'inspectedStudio', to: '${panelFrame.uri}' , panelUri: '${panelFrame.uri}' }) `)
     },
-    selectedCmpId() {
-        return this.evalAsPromise('$0 && jb.ui.closestCmpElem($0) && jb.ui.closestCmpElem($0).getAttribute("cmp-id")')
+    selectedProps() {
+        return this.evalAsPromise(`({
+            cmpId: $0 && jb.ui.closestCmpElem($0) && jb.ui.closestCmpElem($0).getAttribute("cmp-id"),
+            frameUri: $0 && [self,...Array.from(frames)].filter(x=>x.document == $0.ownerDocument).map(x=>x.jbUri)[0]
+        })`)
     },
     initStudioDebugPort(panelFrame) {
         return this.evalAsPromise(`self.studioDebugPort = self.studioDebugPort || jb.remote.cbPortFromFrame(self,'inspectedStudio','${panelFrame.uri}')`)
     },
     hasStudioOnInspected() {
-        return this.evalAsPromise('self.jbStudio != null || self.studioDebugPort != null')
+        return this.evalAsPromise('self.jbUri == "studio" || self.studioDebugPort != null')
     },
     initIframeOnInspectedWindow(panelFrame) {
         function initFrameForChromeDebugger(uri) {
-            if (self.jbStudio) return
+            if (self.jbUri == 'studio') return
             const html = `<!DOCTYPE html>
             <html>
             <head>
@@ -154,10 +158,10 @@ jb.component('inspectedWindow.logsCtrl', {
 jb.component('inspectedWindow.compCtrl', {
     params: [
         {id: 'uri', as: 'string'},
-        {id: 'cmpId', as: 'string'},
+        {id: 'inspectorProps'},
     ],
     type: 'control',
-    impl: widget.twoTierWidget(studio.compInspector('%$cmpId%'), remote.inspectedWindowFromPanel('%$uri%'))
+    impl: widget.twoTierWidget(studio.compInspector('%$inspectorProps%'), remote.inspectedWindowFromPanel('%$uri%'))
 })
 
 jb.component('chromeDebugger.openResource', {

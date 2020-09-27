@@ -229,7 +229,7 @@ class JbComponent {
     }
     applyParamFeatures(ctx) {
         (ctx.params.features && ctx.params.features(ctx) || []).forEach(f => this.jbExtend(f,ctx))
-        return this;
+        return this
     }
 
     jbExtend(_options,ctx) {

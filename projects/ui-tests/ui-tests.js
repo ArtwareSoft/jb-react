@@ -1569,12 +1569,49 @@ jb.component('menuTest.openContextMenu', {
 
 jb.component('uiTest.refreshControlById.text', {
   impl: uiFrontEndTest({
-    vars: Var('person1', () => ({name: 'Homer'})), // non watchable var
+    vars: Var('person1', () => ({name: 'Homer'})), // none watchable var
     control: text({ text: '%$person1/name%', features: id('t1') }),
     action: runActions(
       writeValue('%$person1/name%','Dan'),
       refreshControlById('t1'),
     ),
+    expectedResult: contains('Dan')
+  })
+})
+
+jb.component('uiTest.refreshByStateChange', {
+  impl: uiTest({
+    control: group({
+      controls: [
+        text('%$name%'),
+        button('click', ctx => jb.ui.runBEMethod(jb.ui.find(ctx,'#g1')[0],'refresh'))
+      ],
+      features: [
+        id('g1'),
+        variable('name','name: %$$state/name%'),
+        method('refresh', action.refreshCmp(obj(prop('name','Dan'))))
+      ]
+    }),
+    userInput: userInput.click('button'),
+    expectedResult: contains('Dan')
+  })
+})
+
+jb.component('uiTest.refreshWithStyleByCtrl', {
+  impl: uiTest({
+    control: group({
+      style: group.sections(),
+      controls: [
+        text('%$name%'),
+        button('click', ctx => jb.ui.runBEMethod(jb.ui.find(ctx,'#g1')[0],'refresh'))
+      ],
+      features: [
+        id('g1'),
+        variable('name', ctx => ctx.exp('name: %$$state/name%')),
+        method('refresh', action.refreshCmp(obj(prop('name','Dan'))))
+      ]
+    }),
+    userInput: userInput.click('button'),
     expectedResult: contains('Dan')
   })
 })

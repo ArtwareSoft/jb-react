@@ -24,7 +24,7 @@ jb.component('source.callbag', {
   params: [
     {id: 'callbag', mandatory: true, description: 'callbag source function'},
   ],
-  impl: (ctx,callbag) => jb.callbag.map(x=>ctx.dataObj(x))(callbag)
+  impl: (ctx,callbag) => jb.callbag.map(x=>ctx.dataObj(x))(callbag || jb.callbag.fromIter([]))
 })
   
 jb.component('source.event', {
@@ -1248,7 +1248,97 @@ function cloneVNode(vdom) {
     return unStripVdom(JSON.parse(JSON.stringify(stripVdom(vdom))))
 }
 
-Object.assign(jb.ui, {VNode, cloneVNode, toVdomOrStr, stripVdom, unStripVdom})
+
+function h(cmpOrTag,attributes,children) {
+    if (cmpOrTag instanceof ui.VNode) return cmpOrTag // Vdom
+    if (cmpOrTag && cmpOrTag.renderVdom)
+        return cmpOrTag.renderVdomAndFollowUp()
+   
+    return new jb.ui.VNode(cmpOrTag,attributes,children)
+}
+
+function compareVdom(b,after) {
+    const a = after instanceof ui.VNode ? ui.stripVdom(after) : after
+    jb.log('vdom diff compare',{before: b,after : a})
+    const attributes = jb.objectDiff(a.attributes || {}, b.attributes || {})
+    const children = childDiff(b.children || [],a.children || [])
+    return { 
+        ...(Object.keys(attributes).length ? {attributes} : {}), 
+        ...(children ? {children} : {}),
+        ...(a.tag != b.tag ? { tag: a.tag} : {})
+    }
+
+    function childDiff(b,a) {
+        if (b.length == 0 && a.length ==0) return
+        if (a.length == 1 && b.length == 1 && a[0].tag == b[0].tag)
+            return { 0: {...compareVdom(b[0],a[0]),__afterIndex: 0}, length: 1 }
+        jb.log('vdom child diff start',{before: b,after: a})
+        const beforeWithIndex = b.map((e,i)=> ({i, ...e}))
+        let remainingBefore = beforeWithIndex.slice(0)
+        // locating before-objects in after-array. done in two stages. also calcualing the remaining before objects that were not found
+        const afterToBeforeMap = a.map(toLocate => locateVdom(toLocate,remainingBefore))
+        a.forEach((toLocate,i) => afterToBeforeMap[i] = afterToBeforeMap[i] || sameIndexSameTag(toLocate,i,remainingBefore))
+
+        const reused = []
+        const res = { length: 0, sameOrder: true }
+        beforeWithIndex.forEach( (e,i) => {
+            const __afterIndex = afterToBeforeMap.indexOf(e)
+            if (__afterIndex != i) res.sameOrder = false
+            if (__afterIndex == -1) {
+                res.length = i+1
+                res[i] =  {$: 'delete' } //, __afterIndex: i }
+            } else {
+                reused[__afterIndex] = true
+                const innerDiff = { __afterIndex, ...compareVdom(e, a[__afterIndex]), ...(e.$remount ? {remount: true}: {}) }
+                if (Object.keys(innerDiff).length > 1) {
+                    res[i] = innerDiff
+                    res.length = i+1
+                }
+            }
+        })
+        res.toAppend = a.flatMap((e,i) => reused[i] ? [] : [ Object.assign( e, {__afterIndex: i}) ])
+        jb.log('vdom child diff result',{res,before: b,after: a})
+        if (!res.length && !res.toAppend.length) return null
+        return res
+
+        function locateVdom(toLocate,remainingBefore) {
+            const found = remainingBefore.findIndex(before=>sameSource(before,toLocate))
+            if (found != -1)                
+                return remainingBefore.splice(found,1)[0]
+        }
+        function sameIndexSameTag(toLocate,index,remainingBefore) {
+            const found = remainingBefore.findIndex(before=>before.tag && before.i == index && before.tag === toLocate.tag)
+            if (found != -1) {
+                const ret = remainingBefore.splice(found,1)[0]
+                if (ret.attributes.ctxId && !sameSource(ret,toLocate))
+                    ret.$remount = true
+                return ret
+            }
+        }
+    }
+}
+
+function sameSource(vdomBefore,vdomAfter) {
+    if (vdomBefore.cmp && vdomBefore.cmp === vdomAfter.cmp) return true
+    const atts1 = vdomBefore.attributes || {}, atts2 = vdomAfter.attributes || {}
+    if (atts1['cmp-id'] && atts1['cmp-id'] === atts2['cmp-id'] || atts1['jb-ctx'] && atts1['jb-ctx'] === atts2['jb-ctx']) return true
+    if (compareCtxAtt('path',atts1,atts2) && compareCtxAtt('data',atts1,atts2)) return true
+    if (compareAtts(['id','path','name'],atts1,atts2)) return true
+}
+
+function compareAtts(attsToCompare,atts1,atts2) {
+    for(let i=0;i<attsToCompare.length;i++)
+        if (atts1[attsToCompare[i]] && atts1[attsToCompare[i]] == atts2[attsToCompare[i]])
+            return true
+}
+
+function compareCtxAtt(att,atts1,atts2) {
+    const val1 = atts1.ctxId && jb.path(jb.ui.ctxDictionary[atts1.ctxId],att)
+    const val2 = atts2.ctxId && jb.path(jb.ui.ctxDictionary[atts2.ctxId],att)
+    return val1 && val2 && val1 == val2
+}
+
+Object.assign(jb.ui, {VNode, cloneVNode, toVdomOrStr, stripVdom, unStripVdom })
 
 })();
 
@@ -1324,15 +1414,6 @@ function compareVdom(b,after) {
             }
         }
     }
-}
-
-function filterDelta(delta) { // for logging
-    const doFilter = dlt => ({
-        attributes: jb.objFromEntries(jb.entries(dlt.attributes)
-            .filter(e=> ['jb-ctx','cmp-id','originators','__afterIndex','full-cmp-ctx','frontEnd'].indexOf(e[0]) == -1)),
-        children: dlt.children
-    })
-    return doFilter(delta)
 }
 
 function sameSource(vdomBefore,vdomAfter) {
@@ -1668,7 +1749,8 @@ Object.assign(jb.ui, {
     BECmpsDestroyNotification: jb.callbag.subject(),
     renderingUpdates: jb.callbag.subject(),
     ctrl(context,options) {
-        const $state = context.vars.$refreshElemCall ? context.vars.$state : {}
+        const styleByControl = jb.path(context,'cmpCtx.profile.$') == 'styleByControl'
+        const $state = (context.vars.$refreshElemCall || styleByControl) ? context.vars.$state : {}
         const cmpId = context.vars.$cmpId, cmpVer = context.vars.$cmpVer
         if (!context.vars.$serviceRegistry)
             jb.logError('no serviceRegistry',{ctx: context})
@@ -1678,13 +1760,13 @@ Object.assign(jb.ui, {
             $serviceRegistry: context.vars.$serviceRegistry,
             $refreshElemCall : undefined, $props : undefined, cmp: undefined, $cmpId: undefined, $cmpVer: undefined 
         })
-        const styleOptions = defaultStyle(ctx) || {}
+        const styleOptions = runEffectiveStyle(ctx) || {}
         if (styleOptions instanceof ui.JbComponent)  {// style by control
             return styleOptions.orig(ctx).jbExtend(options,ctx).applyParamFeatures(ctx)
         }
         return new ui.JbComponent(ctx,cmpId,cmpVer).jbExtend(options,ctx).jbExtend(styleOptions,ctx).applyParamFeatures(ctx)
     
-        function defaultStyle(ctx) {
+        function runEffectiveStyle(ctx) {
             const profile = context.profile
             const defaultVar = '$theme.' + (profile.$ || '')
             if (!profile.style && context.vars[defaultVar])
@@ -1758,7 +1840,8 @@ Object.assign(jb.ui, {
         if (!_ctx) 
             return jb.logError('refreshElem - no ctx for elem',{elem, cmpId, cmpVer})
         const strongRefresh = jb.path(options,'strongRefresh')
-        let ctx = _ctx.setVar('$state', strongRefresh ? {refresh: true } : {refresh: true, ...jb.path(elem._component,'state'), ...state}) // strongRefresh kills state
+        let ctx = _ctx.setVar('$state', strongRefresh ? {refresh: true } : 
+            {refresh: true, ...jb.path(elem._component,'state'), ...state}) // strongRefresh kills state
 
         if (options && options.extendCtx)
             ctx = options.extendCtx(ctx)
@@ -2169,7 +2252,7 @@ class JbComponent {
     }
     applyParamFeatures(ctx) {
         (ctx.params.features && ctx.params.features(ctx) || []).forEach(f => this.jbExtend(f,ctx))
-        return this;
+        return this
     }
 
     jbExtend(_options,ctx) {
@@ -4716,24 +4799,22 @@ jb.component('dialog.dialogOkCancel', {
 jb.component('dialogFeature.resizer', {
   type: 'dialog-feature',
   params: [
-    {id: 'resizeInnerCodemirror', as: 'boolean', description: 'effective only for dialog with a single codemirror element', type: 'boolean'}
+    {id: 'autoResizeInnerElement', as: 'boolean', description: 'effective element with "autoResizeInDialog" class', type: 'boolean'}
   ],
   impl: features(
 	  templateModifier( ({},{vdom}) => { vdom && vdom.tag == 'div' && vdom.children.push(jb.ui.h('img.jb-resizer',{})) }),
 	  css('>.jb-resizer { cursor: pointer; position: absolute; right: 1px; bottom: 1px }'),
-	  frontEnd.method('setSize',({data},{cmp}) => { 
-		cmp.base.style.height = data.top + 'px'
-		cmp.base.style.width = data.left +'px'
-		if (cmp.base.resizeInnerCodemirror)
-			cmp.codeMirrorElem.style.height = (data.top - cmp.codeMirrorElemDiff) + 'px'
+	  frontEnd.var('autoResizeInnerElement','%$autoResizeInnerElement%'),
+	  frontEnd.method('setSize',({data},{cmp,el,autoResizeInnerElement}) => { 
+		el.style.height = data.top + 'px'
+		el.style.width = data.left + 'px'
+		const innerElemToResize = el.querySelector('.autoResizeInDialog')
+		if (!autoResizeInnerElement || !innerElemToResize) return
+		cmp.innerElemOffset = cmp.innerElemOffset || innerElemToResize.getBoundingClientRect().top - el.getBoundingClientRect().top
+				  + (el.getBoundingClientRect().bottom - innerElemToResize.getBoundingClientRect().bottom)
+		innerElemToResize.style.height = (data.top - cmp.innerElemOffset) + 'px'
 	  }),
 	  frontEnd.prop('resizerElem',({},{cmp}) => cmp.base.querySelector('.jb-resizer')),
-	  frontEnd.var('resizeInnerCodemirror','%$resizeInnerCodemirror%'),
-	  frontEnd.prop('codeMirrorElemDiff',({},{el,resizeInnerCodemirror}) => {
-		  const codeMirrorElem = resizeInnerCodemirror && el.querySelector('.CodeMirror,.jb-textarea-alternative-for-codemirror')
-		  return codeMirrorElem ? codeMirrorElem.getBoundingClientRect().top - el.getBoundingClientRect().top
-				+ (el.getBoundingClientRect().bottom - codeMirrorElem.getBoundingClientRect().bottom) : 0
-	  }),
 	  frontEnd.flow(
 		source.event('mousedown','%$cmp.resizerElem%'), 
 		rx.takeUntil('%$cmp.destroyed%'),
@@ -5263,6 +5344,7 @@ jb.component('itemlist.infiniteScroll', {
       rx.log('itemlist frontend infiniteScroll'),
       rx.filter('%$scrollPercentFromTop%>0.9'),
       rx.filter(not('%$applicative%')),
+      rx.debounceTime(500),
       sink.BEMethod('fetchMoreItems')
     )
   )
@@ -7340,7 +7422,7 @@ jb.component('group.tabs', {
 jb.component('group.mdcTabBar', {
   type: 'group.style',
   impl: customStyle({
-    template: (cmp,{ctrls},h) => 
+    template: (cmp,{ctrls},h) =>
       h('div',{class: 'mdc-tab-bar', role: 'tablist'},
         h('div',{class: 'mdc-tab-scroller'},
           h('div',{class: 'mdc-tab-scroller__scroll-area mdc-tab-scroller__scroll-area--scroll'},
@@ -7403,9 +7485,11 @@ jb.component('group.sections', {
       controls: dynamicControls({
         controlItems: '%$sectionsModel/controls%',
         genericControl: group({
+          title: '',
           style: call('sectionStyle'),
           controls: [
-            text({text: '%$section/field()/title()%', 
+            text({
+              text: '%$section/field()/title()%',
               style: call('titleStyle'),
               features: ctx => ctx.run(features((ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x)))
             }),

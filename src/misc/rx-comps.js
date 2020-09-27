@@ -24,7 +24,7 @@ jb.component('source.callbag', {
   params: [
     {id: 'callbag', mandatory: true, description: 'callbag source function'},
   ],
-  impl: (ctx,callbag) => jb.callbag.map(x=>ctx.dataObj(x))(callbag)
+  impl: (ctx,callbag) => jb.callbag.map(x=>ctx.dataObj(x))(callbag || jb.callbag.fromIter([]))
 })
   
 jb.component('source.event', {

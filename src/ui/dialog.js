@@ -383,24 +383,22 @@ jb.component('dialog.dialogOkCancel', {
 jb.component('dialogFeature.resizer', {
   type: 'dialog-feature',
   params: [
-    {id: 'resizeInnerCodemirror', as: 'boolean', description: 'effective only for dialog with a single codemirror element', type: 'boolean'}
+    {id: 'autoResizeInnerElement', as: 'boolean', description: 'effective element with "autoResizeInDialog" class', type: 'boolean'}
   ],
   impl: features(
 	  templateModifier( ({},{vdom}) => { vdom && vdom.tag == 'div' && vdom.children.push(jb.ui.h('img.jb-resizer',{})) }),
 	  css('>.jb-resizer { cursor: pointer; position: absolute; right: 1px; bottom: 1px }'),
-	  frontEnd.method('setSize',({data},{cmp}) => { 
-		cmp.base.style.height = data.top + 'px'
-		cmp.base.style.width = data.left +'px'
-		if (cmp.base.resizeInnerCodemirror)
-			cmp.codeMirrorElem.style.height = (data.top - cmp.codeMirrorElemDiff) + 'px'
+	  frontEnd.var('autoResizeInnerElement','%$autoResizeInnerElement%'),
+	  frontEnd.method('setSize',({data},{cmp,el,autoResizeInnerElement}) => { 
+		el.style.height = data.top + 'px'
+		el.style.width = data.left + 'px'
+		const innerElemToResize = el.querySelector('.autoResizeInDialog')
+		if (!autoResizeInnerElement || !innerElemToResize) return
+		cmp.innerElemOffset = cmp.innerElemOffset || innerElemToResize.getBoundingClientRect().top - el.getBoundingClientRect().top
+				  + (el.getBoundingClientRect().bottom - innerElemToResize.getBoundingClientRect().bottom)
+		innerElemToResize.style.height = (data.top - cmp.innerElemOffset) + 'px'
 	  }),
 	  frontEnd.prop('resizerElem',({},{cmp}) => cmp.base.querySelector('.jb-resizer')),
-	  frontEnd.var('resizeInnerCodemirror','%$resizeInnerCodemirror%'),
-	  frontEnd.prop('codeMirrorElemDiff',({},{el,resizeInnerCodemirror}) => {
-		  const codeMirrorElem = resizeInnerCodemirror && el.querySelector('.CodeMirror,.jb-textarea-alternative-for-codemirror')
-		  return codeMirrorElem ? codeMirrorElem.getBoundingClientRect().top - el.getBoundingClientRect().top
-				+ (el.getBoundingClientRect().bottom - codeMirrorElem.getBoundingClientRect().bottom) : 0
-	  }),
 	  frontEnd.flow(
 		source.event('mousedown','%$cmp.resizerElem%'), 
 		rx.takeUntil('%$cmp.destroyed%'),
