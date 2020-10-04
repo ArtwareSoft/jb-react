@@ -124,7 +124,7 @@ jb.remote = {
             remoteCB(cbId) { return (t,d) => port.postMessage({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : jb.remoteCtx.stripCBVars(d) }) },
             handleCBCommnad(cmd) {
                 const {$,sourceId,cbId} = cmd
-                const cbElem = jb.remoteCtx.deStrip(cmd.remoteRun)()
+                const cbElem = jb.remoteCtx.deStrip(cmd.remoteRun)() // actually runs the ctx
                 if ($ == 'CB.createSource')
                     this.map[cbId] = cbElem
                 else if ($ == 'CB.createOperator')

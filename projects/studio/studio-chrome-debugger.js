@@ -11,6 +11,7 @@ jb.chromeDebugger = {
             })
     },
     doInitPanel(id, fullId, panelFrame) {
+        panelFrame.panelId = id
         panelFrame.uri = `debugPanel-${fullId}`
         const jb = panelFrame.jb
         panelFrame.inspectedPorts = panelFrame.inspectedPorts || {}
@@ -22,7 +23,7 @@ jb.chromeDebugger = {
         return this.hasStudioOnInspected()
             .then(res => {
                 if (!res)
-                    this.initIframeOnInspectedWindow(panelFrame)
+                    id == 'card' ? this.initIframeOnUnknownInspectedWindow(panelFrame) : this.initIframeOnjBartInspectedWindow(panelFrame)
                 return this.reCheckPromise('studio on inspectedWin',() => this.hasStudioOnInspected(),300,20)
             }).then(()=> {
                 this.initStudioDebugPort(panelFrame)
@@ -64,13 +65,18 @@ jb.chromeDebugger = {
     },
     renderOnPanel(panelFrame,panelId) {
         const uri = panelFrame.uri
-        jb.log(`chromeDebugger panel start logsCtrl ${uri}`)
+        jb.log(`chromeDebugger panel starting ${panelId}Ctrl ${uri}`)
         if (panelId == 'comp') 
-            chrome.devtools.panels.elements.onSelectionChanged.addListener(() => 
-                this.selectedProps().then(inspectorProps => inspectorProps && inspectorProps.cmpId && 
-                    jb.ui.runBEMethod(document.querySelector('[widgettop="true"]'),'refresh',inspectorProps)))
+        chrome.devtools.panels.elements.onSelectionChanged.addListener(() => this.markSelected().then(() => 
+            this.selectedProps().then(inspectorProps => inspectorProps && inspectorProps.cmpId && 
+                jb.ui.runBEMethod(document.querySelector('[widgettop="true"]'),'refreshAfterDebuggerSelection',inspectorProps))))
+        if (panelId == 'card') 
+            chrome.devtools.panels.elements.onSelectionChanged.addListener(() => this.markSelected().then(() => 
+                jb.ui.runBEMethod(document.querySelector('[widgettop="true"]'),'refreshAfterDebuggerSelection')))
 
-        return Promise.resolve(panelId == 'comp' && this.selectedProps()).then(inspectorProps =>{
+        return Promise.resolve(panelId == 'comp' && this.selectedProps())
+            .then(()=>this.markSelected())
+            .then(inspectorProps => {
                 const profile = {$: `inspectedWindow.${panelId}Ctrl`, inspectorProps, uri}
                 jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry().setVar('$studio',true).run(profile)),panelFrame.document.body)
         })
@@ -83,33 +89,66 @@ jb.chromeDebugger = {
         return this.evalAsPromise(`postMessage({$: 'connectToPanel', 
             from: 'inspectedStudio', to: '${panelFrame.uri}' , panelUri: '${panelFrame.uri}' }) `)
     },
+    markSelected() {
+        this.selectionCounter = this.selectionCounter || 1
+        return this.evalAsPromise(`$0 && $0.setAttribute && $0.setAttribute("jb-selected-by-debugger","${this.selectionCounter++}");`)
+    },
     selectedProps() {
         return this.evalAsPromise(`({
             cmpId: $0 && jb.ui.closestCmpElem($0) && jb.ui.closestCmpElem($0).getAttribute("cmp-id"),
             frameUri: $0 && [self,...Array.from(frames)].filter(x=>x.document == $0.ownerDocument).map(x=>x.jbUri)[0]
         })`)
-    },
+    },    
     initStudioDebugPort(panelFrame) {
-        return this.evalAsPromise(`self.studioDebugPort = self.studioDebugPort || jb.remote.cbPortFromFrame(self,'inspectedStudio','${panelFrame.uri}')`)
+        return this.evalAsPromise(`self.jbStudioDebugPort = self.jbStudioDebugPort || jb.remote.cbPortFromFrame(self,'inspectedStudio','${panelFrame.uri}')`)
     },
     hasStudioOnInspected() {
-        return this.evalAsPromise('self.jbUri == "studio" || self.studioDebugPort != null')
+        return this.evalAsPromise('console.log("checkStudio",self,self.jbUri,self.jbStudioDebugPort);self.jbUri == "studio" || self.jbStudioDebugPort != null')
     },
-    initIframeOnInspectedWindow(panelFrame) {
+    initIframeOnjBartInspectedWindow(panelFrame) {
         function initFrameForChromeDebugger(uri) {
             if (self.jbUri == 'studio') return
             const html = `<!DOCTYPE html>
             <html>
-            <head>
+            <body>
                 <script type="text/javascript" src="/bin/studio/studio-all.js"></script>
                 <script>
-                    jb.cbLogByPath = {};
-                    jb.initSpy({spyParam: jb.path(parent,'jb.spy.spyParam') || 'remote,chromeDebugger,headless,dialog'});
-                    spy = jb.spy;
-                    jb.studio.initPreview(parent,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
-                    parent.studioDebugPort = jb.remote.cbPortFromFrame(self.parent,'inspectedStudio','${uri}');
+                jb.cbLogByPath = {};
+                jb.initSpy({spyParam: jb.path(parent,'jb.spy.spyParam') || 'remote,chromeDebugger,headless,dialog'});
+                spy = jb.spy;
+                jb.studio.initPreview(parent,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
+                self.jbUri = 'injectedStudio';
+                parent.jbStudioDebugPort = jb.remote.cbPortFromFrame(self.parent,'inspectedStudio','${uri}');
                 </script>
-            </head>`
+            </body>`
+            const iframe = document.createElement('iframe')
+            iframe.id = 'jBartHelper'
+            iframe.style.display = 'none'
+            iframe.src = 'javascript: this.document.write(`' + html +'`)'
+            document.body.appendChild(iframe)
+        }
+        jb.log('chromeDebugger init studioIframe',{code: initFrameForChromeDebugger.toString()})
+        return this.evalAsPromise(`(${initFrameForChromeDebugger.toString()})('${panelFrame.uri}')`)
+    },
+    initIframeOnUnknownInspectedWindow(panelFrame) {
+        function initFrameForChromeDebugger(uri) {
+            const urlPrefix = 'http://localhost:8082' // TBD: use internet url
+            const html = `<!DOCTYPE html>
+            <html>
+            <body>
+            <script>
+            </script>
+            <script type="text/javascript" src="${urlPrefix}/bin/studio/studio-all.js"></script>
+            <script>
+                console.log('start init iframe',jb);
+                jb.cbLogByPath = {};
+                jb.initSpy({spyParam: jb.path(parent,'jb.spy.spyParam') || 'remote,chromeDebugger,headless,uiComp'});
+                spy = jb.spy;
+                parent.jbStudioDebugPort = jb.remote.cbPortFromFrame(parent,'inspectedStudio','${uri}');
+                console.log('end init iframe',parent.jbStudioDebugPort);
+                self.jbUri = 'injectedStudio';
+            </script>
+            </body>`
             const iframe = document.createElement('iframe')
             iframe.id = 'jBartHelper'
             iframe.style.display = 'none'
@@ -164,6 +203,14 @@ jb.component('inspectedWindow.compCtrl', {
     impl: widget.twoTierWidget(studio.compInspector('%$inspectorProps%'), remote.inspectedWindowFromPanel('%$uri%'))
 })
 
+jb.component('inspectedWindow.cardCtrl', {
+    params: [
+        {id: 'uri', as: 'string'},
+    ],
+    type: 'control',
+    impl: widget.twoTierWidget( studio.cardExtraction(),remote.inspectedWindowFromPanel('%$uri%'))
+})
+
 jb.component('chromeDebugger.openResource', {
     type: 'action',
     params: [
@@ -184,4 +231,16 @@ jb.component('chromeDebugger.icon', {
       template: (cmp,{title},h) => h('div',{onclick: true, title}),
       css: `{ -webkit-mask-image: url(largeIcons.svg); -webkit-mask-position: %$position%; width: 28px;  height: 24px; background-color: var(--jb-menu-fg);}`
     })
+})
+
+jb.component('chromeDebugger.refreshAfterSelection', {
+    type: 'feature',
+    impl: method('refreshAfterDebuggerSelection', runActions(
+        () => {
+            const sorted = Array.from(parent.document.querySelectorAll('[jb-selected-by-debugger]'))
+                .sort((x,y) => (+y.getAttribute('jb-selected-by-debugger')) - (+x.getAttribute('jb-selected-by-debugger')))
+            sorted.slice(1).forEach(el=>el.removeAttribute('jb-selected-by-debugger'))
+        },
+        action.refreshCmp('%%')
+    )),
 })

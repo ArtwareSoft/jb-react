@@ -47,8 +47,8 @@ function do_jb_run(ctx,parentParam,settings) {
           switch (paramObj.type) {
             case 'function': run.ctx.params[paramObj.name] = paramObj.outerFunc(run.ctx) ;  break;
             case 'array': run.ctx.params[paramObj.name] =
-                paramObj.array.map(function prepareParamItem(prof,i) {
-                  return jb_run(new jbCtx(run.ctx,{profile: prof, forcePath: paramObj.forcePath || ctx.path + '~' + paramObj.path+ '~' + i, path: ''}), paramObj.param)}) 
+                paramObj.array.map(function prepareParamItem(prof,i) { return prof != null && jb_run(new jbCtx(run.ctx,{
+                      profile: prof, forcePath: paramObj.forcePath || ctx.path + '~' + paramObj.path+ '~' + i, path: ''}), paramObj.param)})
               ; break;  // maybe we should [].concat and handle nulls
             default: run.ctx.params[paramObj.name] =
               jb_run(new jbCtx(run.ctx,{profile: paramObj.prof, forcePath: paramObj.forcePath || ctx.path + '~' + paramObj.path, path: ''}), paramObj.param);
@@ -4278,7 +4278,7 @@ class VNode {
             maxDepth = 1
             selector = selector.slice(7)
         }
-        if (selector == '') return [this]
+        if (selector == '' || selector == ':scope') return [this]
         if (selector.indexOf(',') != -1)
             return selector.split(',').map(x=>x.trim()).reduce((res,sel) => [...res, ...this.querySelectorAll(sel,{includeSelf})], [])
         const hasAtt = selector.match(/^\[([a-zA-Z0-9_$\-]+)\]$/)
@@ -4911,7 +4911,7 @@ Object.assign(jb.ui, {
         }
         jb.log('applyDelta uiComp',{cmpId, delta, ctx, elem})
         if (delta.$bySelector)
-            jb.entries(delta.$bySelector).forEach(([selector,innerDelta]) => applyDeltaToElem(jb.ui.find(elem,selector)[0],innerDelta))
+            jb.entries(delta.$bySelector).forEach(([selector,innerDelta]) => applyDeltaToElem(jb.ui.findIncludeSelf(elem,selector)[0],innerDelta))
         else
             applyDeltaToElem(elem,delta)
 
@@ -8418,12 +8418,10 @@ jb.component('itemlist.infiniteScroll', {
     {id: 'pageSize', as: 'number', defaultValue: 2}
   ],
   impl: features(
-    method('fetchMoreItems', ({},{$state,$props,cmp},{pageSize}) => {
-      if ($props.allItems.length > $props.visualSizeLimit) {
-        $state.visualSizeLimit = ($state.visualSizeLimit || $props.visualSizeLimit) + pageSize
-        cmp.refresh($state)
-      }
-    }),
+    method('fetchNextPage', runActions(
+      Var('delta', itemlist.deltaOfNextPage('%$pageSize%')),
+      action.applyDeltaToCmp('%$delta%','%$cmp/cmpId%')
+    )),    
     feature.userEventProps('elem.scrollTop,elem.scrollHeight'),
     frontEnd.flow(
       rx.merge(
@@ -8437,8 +8435,7 @@ jb.component('itemlist.infiniteScroll', {
       rx.log('itemlist frontend infiniteScroll'),
       rx.filter('%$scrollPercentFromTop%>0.9'),
       rx.filter(not('%$applicative%')),
-//      rx.debounceTime(500),
-      sink.BEMethod('fetchMoreItems')
+      sink.BEMethod('fetchNextPage')
     )
   )
 })
@@ -8450,6 +8447,28 @@ jb.component('itemlist.deltaOfItems', {
     const delta = jb.ui.compareVdom(oldVdom,newVdom)
     cmp.oldVdom = newVdom
     jb.log('uiComp itemlist delta incrementalFromRx', {cmp, newVdom, oldVdom, delta})
+    return delta
+  }
+})
+
+jb.component('itemlist.deltaOfNextPage', {
+  params: [
+    {id: 'pageSize', as: 'number', defaultValue: 2}
+  ],
+  impl: (ctx,pageSize) => {
+    const $props = ctx.vars.$props, cmp = ctx.vars.cmp, $state = cmp.state
+    $state.visualSizeLimit = $state.visualSizeLimit || $props.visualSizeLimit
+    const nextPageItems = $props.allItems.slice($state.visualSizeLimit, $state.visualSizeLimit + pageSize)
+    $state.visualSizeLimit = $state.visualSizeLimit + nextPageItems.length
+    if (nextPageItems.length == 0) return null
+    const deltaCalcCtx = cmp.ctx.setVar('$refreshElemCall',true).setVar('$cmpId', cmp.cmpId).setVar('$cmpVer', cmp.ver+1)
+    const vdomOfDeltaItems = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => nextPageItems}), path: ''}).runItself().renderVdom() // change the profile to return itemsToAppend
+    const delta = {
+        $prevVersion: cmp.ver,
+        $bySelector: {
+            '.jb-drag-parent': jb.ui.compareVdom({},jb.ui.findIncludeSelf(vdomOfDeltaItems,'.jb-drag-parent')[0]),
+            ':scope': { attributes: { $scrollDown: true }}
+    }}
     return delta
   }
 })
@@ -12255,7 +12274,7 @@ jb.remote = {
             remoteCB(cbId) { return (t,d) => port.postMessage({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : jb.remoteCtx.stripCBVars(d) }) },
             handleCBCommnad(cmd) {
                 const {$,sourceId,cbId} = cmd
-                const cbElem = jb.remoteCtx.deStrip(cmd.remoteRun)()
+                const cbElem = jb.remoteCtx.deStrip(cmd.remoteRun)() // actually runs the ctx
                 if ($ == 'CB.createSource')
                     this.map[cbId] = cbElem
                 else if ($ == 'CB.createOperator')

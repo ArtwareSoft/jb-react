@@ -474,7 +474,7 @@ Object.assign(jb.ui, {
         }
         jb.log('applyDelta uiComp',{cmpId, delta, ctx, elem})
         if (delta.$bySelector)
-            jb.entries(delta.$bySelector).forEach(([selector,innerDelta]) => applyDeltaToElem(jb.ui.find(elem,selector)[0],innerDelta))
+            jb.entries(delta.$bySelector).forEach(([selector,innerDelta]) => applyDeltaToElem(jb.ui.findIncludeSelf(elem,selector)[0],innerDelta))
         else
             applyDeltaToElem(elem,delta)
 

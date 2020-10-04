@@ -81,11 +81,10 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       remote: [
         'src/misc/remote-context.js',
         'src/misc/remote-callbag.js',
-//        'src/ui/watchable/remote-widget.js',
       ],
-      'inner-html': [ // unsafe
-        'src/ui/inner-html.js',
-      ],
+      // 'inner-html': [ // unsafe
+      //   'src/ui/inner-html.js',
+      // ],
       'testers': [
         'src/testing/testers.js',
         'src/testing/testers-ui.js',

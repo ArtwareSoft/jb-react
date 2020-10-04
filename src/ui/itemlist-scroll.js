@@ -93,12 +93,10 @@ jb.component('itemlist.infiniteScroll', {
     {id: 'pageSize', as: 'number', defaultValue: 2}
   ],
   impl: features(
-    method('fetchMoreItems', ({},{$state,$props,cmp},{pageSize}) => {
-      if ($props.allItems.length > $props.visualSizeLimit) {
-        $state.visualSizeLimit = ($state.visualSizeLimit || $props.visualSizeLimit) + pageSize
-        cmp.refresh($state)
-      }
-    }),
+    method('fetchNextPage', runActions(
+      Var('delta', itemlist.deltaOfNextPage('%$pageSize%')),
+      action.applyDeltaToCmp('%$delta%','%$cmp/cmpId%')
+    )),    
     feature.userEventProps('elem.scrollTop,elem.scrollHeight'),
     frontEnd.flow(
       rx.merge(
@@ -112,8 +110,7 @@ jb.component('itemlist.infiniteScroll', {
       rx.log('itemlist frontend infiniteScroll'),
       rx.filter('%$scrollPercentFromTop%>0.9'),
       rx.filter(not('%$applicative%')),
-//      rx.debounceTime(500),
-      sink.BEMethod('fetchMoreItems')
+      sink.BEMethod('fetchNextPage')
     )
   )
 })
@@ -125,6 +122,28 @@ jb.component('itemlist.deltaOfItems', {
     const delta = jb.ui.compareVdom(oldVdom,newVdom)
     cmp.oldVdom = newVdom
     jb.log('uiComp itemlist delta incrementalFromRx', {cmp, newVdom, oldVdom, delta})
+    return delta
+  }
+})
+
+jb.component('itemlist.deltaOfNextPage', {
+  params: [
+    {id: 'pageSize', as: 'number', defaultValue: 2}
+  ],
+  impl: (ctx,pageSize) => {
+    const $props = ctx.vars.$props, cmp = ctx.vars.cmp, $state = cmp.state
+    $state.visualSizeLimit = $state.visualSizeLimit || $props.visualSizeLimit
+    const nextPageItems = $props.allItems.slice($state.visualSizeLimit, $state.visualSizeLimit + pageSize)
+    $state.visualSizeLimit = $state.visualSizeLimit + nextPageItems.length
+    if (nextPageItems.length == 0) return null
+    const deltaCalcCtx = cmp.ctx.setVar('$refreshElemCall',true).setVar('$cmpId', cmp.cmpId).setVar('$cmpVer', cmp.ver+1)
+    const vdomOfDeltaItems = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => nextPageItems}), path: ''}).runItself().renderVdom() // change the profile to return itemsToAppend
+    const delta = {
+        $prevVersion: cmp.ver,
+        $bySelector: {
+            '.jb-drag-parent': jb.ui.compareVdom({},jb.ui.findIncludeSelf(vdomOfDeltaItems,'.jb-drag-parent')[0]),
+            ':scope': { attributes: { $scrollDown: true }}
+    }}
     return delta
   }
 })

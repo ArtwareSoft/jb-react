@@ -4,15 +4,16 @@ jb.component('studio.dropHtml', {
   ],
   type: 'feature',
   impl: features(
-    htmlAttribute('ondragover', 'over'),
+//    htmlAttribute('ondragover', 'over'),
     htmlAttribute('ondrop', 'dropHtml'),
-    method('over', (ctx,{ev}) => ev.preventDefault()),
+//    frontEnd.flow(source.frontEndEvent('drop'), sink.BEMethod('dropHtml')),    
+//    method('over', (ctx,{ev}) => ev.preventDefault()),
     method(
         'dropHtml',
         (ctx,{cmp, ev},{onDrop}) => {
-        ev.preventDefault();
+  //      ev.preventDefault();
         return Array.from(ev.dataTransfer.items).filter(x=>x.type.match(/html/))[0].getAsString(html =>
-                onDrop(ctx.setVar('newCtrl',jb.ui.htmlToControl(html))))
+                onDrop(ctx.setVar('newCtrl',jb.ui.htmlToControl(html,ctx))))
       }
       )
   )
@@ -20,9 +21,9 @@ jb.component('studio.dropHtml', {
 
 jb.component('studio.htmlToControl', {
   params: [
-    {id: 'html', as: 'string'}
+    {id: 'html' }
   ],
-  impl: (ctx,html) => jb.ui.htmlToControl(html)
+  impl: (ctx,html) => jb.ui.htmlToControl(html,ctx)
 })
 
 jb.ui.cssProcessors = {
@@ -124,60 +125,78 @@ jb.ui.cleanRedundentCssFeatures = function(cssFeatures,{remove} = {}) {
     return [...cssToFeatures(jb.unique(props)),..._features.filter(x=>!x.o.css).map(x=>x.f)]
 }
 
-jb.ui.htmlToControl = function(html) {
-    const elem = document.createElement('div')
-    elem.innerHTML = html
-    elem.style.position = 'relative'
-    document.body.appendChild(elem)
-    const height = Array.from(elem.querySelectorAll('*')).map(x=>x.getBoundingClientRect().bottom).sort((x,y)=>y-x)[0]
-    const width = Array.from(elem.querySelectorAll('*')).map(x=>x.getBoundingClientRect().right).sort((x,y)=>y-x)[0]
-    clean(elem)
-    document.body.removeChild(elem)
+jb.ui.htmlToControl = function(html,ctx) {
+    if (!html)
+        return jb.logError('htmlToControl - empty html' ,{ctx})
+    let elem,width,height
+    if (typeof html == 'string') {
+        elem = document.createElement('div')
+        elem.innerHTML = html
+        elem.style.position = 'relative'
+        document.body.appendChild(elem)
+        height = Array.from(elem.querySelectorAll('*')).map(x=>x.getBoundingClientRect().bottom).sort((x,y)=>y-x)[0]
+        width = Array.from(elem.querySelectorAll('*')).map(x=>x.getBoundingClientRect().right).sort((x,y)=>y-x)[0]
+        cleanStyles(elem)
+        document.body.removeChild(elem)
+    } else {
+        elem = html
+        height = Array.from(elem.querySelectorAll('*')).map(x=>x.getBoundingClientRect().bottom).sort((x,y)=>y-x)[0]
+        width = Array.from(elem.querySelectorAll('*')).map(x=>x.getBoundingClientRect().right).sort((x,y)=>y-x)[0]
+    }
 
-    const res = vdomToControl(elemToVdom(elem))
-    res.features = (res.features ||[]).concat(css.width(width), css.height(height))
+    const res = vdomToControl(elemToVdom(elem,document.body, elem.ownerDocument.contains(elem)))
+    res.features = [...(res.features ||[]), ...(width ? [css.width(width)] : []), ...(height ? [css.height(height)] : [])]
     return res
 
-    function elemToVdom(elem) {
+    function elemToVdom(elem,parentElem,isAttached) {
         if (elem.nodeType == Node.TEXT_NODE && elem.nodeValue.match(/^\s*$/)) return
         if (elem.nodeType == Node.TEXT_NODE) { // for mixed {
             return { elem, tag: 'span', attributes: { $text: elem.nodeValue.trim() } }
         }
         const singleTextChild = elem.childNodes.length == 1 && jb.path(elem,'firstChild.nodeName') == '#text' && elem.firstChild.nodeValue
+        const innerTags = elem.innerHTML && elem.innerHTML.match(/<([a-z]+)/g)
+        const richText = innerTags && innerTags.map(x=>x.slice(1)).filter(x=>['em','b'].indexOf(x) == -1).length ==0
         return {
             elem,
+            styleAtt: isAttached && jb.entries(jb.objectDiff(getComputedStyle(elem), getComputedStyle(parentElem)))
+                .map(([p,v])=> [p.replace(/([A-Z])/g, (g) => `-${g[0].toLowerCase()}`),v])
+                .filter(([p,v])=> !(v.indexOf('0px') == 0 && p.match(/border|column/) != -1))
+                .filter(([p])=> jb.ui.htmlToControl.ignoreProps.indexOf(p) == -1)
+                .map(([p,v])=>`${p}:${v}`).join(';'),
             tag: fixTag(elem.tagName.toLowerCase()),
             attributes: jb.objFromEntries([
                 ...Array.from(elem.attributes).map(e=>[e.name,e.value]),
-                ...( singleTextChild ? [['$text',singleTextChild]] : [])
+                ...( singleTextChild ? [['$text',singleTextChild]] : []),
+                ...( richText ? [['$html',elem.innerHTML]] : [])
             ]),
-            ...( (elem.childNodes[0] && !singleTextChild) && { children:
-                Array.from(elem.childNodes).map(el=> elemToVdom(el)).filter(x=>x) })
+            ...( (elem.childNodes[0] && !singleTextChild && !richText) && { children:
+                Array.from(elem.childNodes).map(el=> elemToVdom(el,elem,isAttached)).filter(x=>x) })
         }
     }
     function fixTag(tag) {
         return tag.match(/h/i) ? 'div' : tag
     }
 
-    function clean(elem) {
+    function cleanStyles(elem) {
         elem.setAttribute('class','')
         elem.setAttribute('style',(elem.getAttribute('style') ||'').split(';')
             .filter(x=>!x.match('inherit'))
             .filter(x=>!x.match(/^\s*border: 0px$/))
             .join(';'))
-        Array.from(elem.children).forEach(e => clean(e))
+        Array.from(elem.children).forEach(e => cleanStyles(e))
     }
 
     function vdomToControl(vdom) {
         const atts = vdom.attributes || {}
         const tag = vdom.tag
-        const styleCss = atts.style||''
+        const styleCss = vdom.styleAtt || atts.style||''
         const props = styleCss.trim().split(';').map(x=>x.trim()).map(x=>x,replace(/\s*:\s*/g,':')).filter(x=>x)
         const featureProps = props.filter(x=> !x.match(/background-image|background-size/))
 
         const pt = vdom.children ? 'group'
             : (tag == 'button' || tag == 'a') ? 'button'
             : atts.$text ? 'text'
+            : atts.$html ? 'html'
             : tag == 'img' ? 'image'
             : styleCss.indexOf('background-image') != -1 ? 'image'
             : 'group'
@@ -211,12 +230,14 @@ jb.ui.htmlToControl = function(html) {
             return vdom.children && vdom.children.map(ch=>vdomToControl(ch))
         }
         function extractPTProps() {
+            const resize = bgSize()
+            const title = pt == 'button' && tag == 'a' && atts.$text || pt == 'group' && tag
             return {
-                text: pt == 'text' && atts.$text,
-                url: pt == 'image' && atts.src || bgImage(),
-                resize: bgSize(),
-                title: pt == 'button' && tag == 'a' && atts.$text ||
-                       pt == 'group' && tag
+                ...(pt == 'text' && {text:  atts.$text}),
+                ...(pt == 'html' && {html:  atts.$html}),
+                ...(pt == 'image' && {url:  atts.src || bgImage()}),
+                ...(resize && {resize}),
+                ...(title && {title}),
             }
         }
         function bgImage() {
@@ -235,3 +256,15 @@ jb.ui.htmlToControl = function(html) {
         }
     }
 }
+
+Object.assign(jb.ui.htmlToControl,{
+ignoreProps: `block-size,border-block-end,border-block-end-color,border-block-start,border-block-start-color,
+border-inline-end,border-inline-end-color,border-inline-start,border-inline-start-color,caret-color,
+column-rule,column-rule-color,inline-size,line-height,margin-block-end,margin-block-start,
+margin-inline-end,margin-inline-start,perspective-origin,transform-origin,webkit-border-after,webkit-border-after-color,
+webkit-border-before,webkit-border-before-color,webkit-border-end,webkit-border-end-color,webkit-border-start,
+webkit-border-start-color,webkit-column-rule,webkit-column-rule-color,webkit-locale,
+webkit-logical-height,webkit-logical-width,webkit-margin-after,webkit-margin-before,
+webkit-margin-end,webkit-margin-start,webkit-perspective-origin,webkit-text-emphasis-color,
+webkit-text-fill-color,webkit-text-stroke-color,webkit-transform-origin`.split(',').map(x=>x.trim())
+})

@@ -1,3 +1,5 @@
+jb.ns('chromeDebugger')
+
 jb.component('studio.compInspector', {
   params: [
     {id: 'inspectorProps'}
@@ -46,7 +48,7 @@ jb.component('studio.compInspector', {
             jb.path(elem && frameOfElem && frameOfElem.jb.ctxDictionary[elem.getAttribute('full-cmp-ctx')],'vars.cmp')),
       variable('inspectedCtx', '%$inspectedCmp/ctx%'),
       feature.init(({},{frameUri}) => frameUri == 'studio' && jb.studio.initStudioEditing()),
-      method('refresh', action.refreshCmp('%%')),
+      chromeDebugger.refreshAfterSelection(),
       followUp.flow(
         source.callbag(({},{frameOfElem}) => frameOfElem && frameOfElem.jb.ui.BECmpsDestroyNotification),
         rx.filter(({data},{$props},{}) => data.cmps.find(_cmp => _cmp.cmpId == $props.cmpId)),

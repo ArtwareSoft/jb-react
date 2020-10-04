@@ -5,6 +5,11 @@ Object.assign(jb.ui, {
     const st = jb.studio
     return st.inspectedJb || st.previewjb
   },
+  getReachableJbs: (frame, direction) => {
+    const up = direction != 'down' && frame.parent != frame && frame.parent.jb && jb.ui.getReachableJbs(frame.parent,'up') || []
+    const down = direction != 'up' && Array.from(frame.frames).flatMap(fr=>jb.ui.getReachableJbs(fr,'down')) || []
+    return [frame.jb, ...up, ...down].filter(x=>x)
+  },
   getSpy: ctx => {
     const ret = jb.ui.getInspectedJb(ctx).spy
     if (!ret) debugger
@@ -66,22 +71,39 @@ jb.component('studio.eventTracker', {
             style: chromeDebugger.icon(),
             features: [css.color('var(--jb-menu-fg)'), feature.hoverTitle('clear')]
           }),
-          editableBoolean({
+          picklist({
+            title: 'frame',
             databind: ctx => ({
-              $jb_val(val) {
+                $jb_val: val => {
+                  jb.studio.inspectedJb = jb.studio.inspectedJb || jb.ui.getInspectedJb()
                   if (val === undefined)
-                      return jb.studio.inspectedJb != null
-                  else {
-                      jb.studio.inspectedJb = val ? (jb.studio.studiojb || jb) : jb.studio.previewjb
-                      jb.studio.initStudioEditing()
-                      ctx.run(refreshControlById('event-tracker'))
-                  }
-              }
+                      return jb.path(jb.studio.inspectedJb,'frame.jbUri')
+                  jb.studio.inspectedJb = jb.ui.getReachableJbs(ctx.frame()).filter(x=>x.frame.jbUri == val)[0]
+                }
+            }),           
+            options: picklist.options({
+              options: ctx => jb.ui.getReachableJbs(ctx.frame()),
+              code: '%frame/jbUri%',
+              text: '%frame/jbUri% (%spy/logs/length%)',
             }),
-            style: editableBoolean.checkboxWithLabel(),
-            title: 'studio',
-            features: [layout.horizontal(), css.margin('3')]
+            features: picklist.onChange(refreshControlById('event-tracker'))
           }),
+          // editableBoolean({
+          //   databind: ctx => ({
+          //     $jb_val(val) {
+          //         if (val === undefined)
+          //             return jb.studio.inspectedJb != null
+          //         else {
+          //             jb.studio.inspectedJb = val ? (jb.studio.studiojb || jb) : jb.studio.previewjb
+          //             jb.studio.initStudioEditing()
+          //             ctx.run(refreshControlById('event-tracker'))
+          //         }
+          //     }
+          //   }),
+          //   style: editableBoolean.checkboxWithLabel(),
+          //   title: 'studio',
+          //   features: [layout.horizontal(), css.margin('3')]
+          // }),
           divider({style: divider.vertical()}),
           editableText({
             title: 'query',
@@ -148,7 +170,7 @@ jb.component('studio.eventTracker', {
         visualSizeLimit: 30,
         features: [
           id('event-logs'),
-          itemlist.infiniteScroll(50),
+          itemlist.infiniteScroll(5),
           itemlist.selection({
             onSelection: runActions(({data}) => jb.frame.console.log(data), eventTracker.highlightEvent('%%'))
           }),
@@ -163,8 +185,8 @@ jb.component('studio.eventTracker', {
         value: eventTracker.eventItems('%$studio/eventTrackerQuery%', '%$studio/eventTrackerPattern%')
       }),
       If(
-        ctx => jb.ui.getInspectedJb() != ctx.frame().jb &&
-          (!jb.studio.studiojb || jb.studio.studiojb.exec('%$studio/project%') != 'studio-helper'),
+        ctx => jb.ui.getInspectedJb() != ctx.frame().jb,
+          // && (!jb.studio.studiojb || jb.studio.studiojb.exec('%$studio/project%') != 'studio-helper'),
         followUp.watchObservable(
           source.callbag(ctx => jb.ui.getSpy(ctx).observable()),
           1000

@@ -396,6 +396,29 @@ jb.component('patternsTest.selectStyleDeleteUnmapped.card1', {
   })
 })
 
+// jb.component('patternsTest.selectStyleDeleteUnmapped.card1.show', {
+//   impl: uiFrontEndTest({
+//     renderDOM: true,
+//     vars: [
+//       Var('extractedCtrl', () => extractedCtrlCard1),
+//       Var('targetPath', 'studioTest.dragTargetCard~impl'),
+//       Var('top',obj())
+//     ],
+//     control: studio.selectStyle('%$extractedCtrl%','%$targetPath%'),
+//     runBefore: runActions(
+//       writeValue('%$studio/patterns/deleteUnmapped%', true),
+//       ctx => {
+//         const top = document.createElement('div')
+//         jb.ui.renderWidget({$: 'studioTest.dragTargetCard'},top)
+//         document.body.appendChild(top)
+//         ctx.vars.top.res = top
+//     }
+//     ),
+//     expectedResult: contains('alcatel 3C'),
+//     cleanUp: ctx => document.body.removeChild(ctx.vars.top.res)
+//   })
+// })
+
 jb.component('patternsTest.selectStyleDeleteUnmapped.card2', {
   impl: uiTest({
     timeout: 1000,

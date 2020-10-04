@@ -88,6 +88,7 @@ jb.component('widget.headless', {
                     return jb.logError(`headless widget runCtxAction. no ctxId ${userReq.ctxIdToRun}`,{userReq})
                 jb.ui.runCtxAction(ctx,userReq.data,userReq.vars)
             } else if (userReq.$ == 'applyDeltaError') {
+                return
                 debugger
                 const cmpElem = jb.ui.elemOfCmp(ctx.setVars({headlessWidget: true,headlessWidgetId: widgetId}),userReq.cmpId)
                 if (!cmpElem) 

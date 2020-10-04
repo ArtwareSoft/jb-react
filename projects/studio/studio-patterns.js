@@ -1,6 +1,28 @@
 (function(){
 
-jb.ns('patterns')
+jb.ns('patterns,chromeDebugger')
+
+jb.component('studio.cardExtraction', {
+  params: [
+    {id: 'inspectorProps'}
+  ],
+  type: 'control',
+  impl: group({
+    controls: [
+      (ctx,{flattenedProfile}) => ctx.run(flattenedProfile),
+      text({
+        text: prettyPrint('%$flattenedProfile%'),
+        style: text.codemirror(),
+      }),
+    ],
+    features: [
+      variable('selectedInDebugger', () => parent.document.querySelector('[jb-selected-by-debugger]')),
+      variable('ctrlProfile', studio.htmlToControl('%$selectedInDebugger%')),
+      variable('flattenedProfile', ({},{ctrlProfile}) => flattenControlToGrid(ctrlProfile,parent.document.body)),
+      chromeDebugger.refreshAfterSelection()
+    ]
+  })
+})
 
 jb.component('studio.selectStyle', {
   type: 'control',
@@ -161,7 +183,7 @@ function cleanUnmappedParams(ctx,ctrl,matches) {
 }
 
 const paramProps = { text: 'text', button: 'title', image: 'url' }
-const types = ['text','button','image']
+const types = ['text','html','button','image']
 
 jb.ui.stylePatterns = {
     text(ctx, extractedCtrl) {
@@ -281,12 +303,14 @@ jb.ui.stylePatterns = {
     },
 }
 
-function flattenControlToGrid(ctrl) {
+function flattenControlToGrid(ctrl,parentElem) {
     // render the extracted ctrl to calculate sizes and sort options
+    parentElem = parentElem || document.body
     const top = document.createElement('div')
-    jb.ui.renderWidget(ctrl,top)
+    jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry().run(ctrl)),top)    
+    //jb.ui.renderWidget(ctrl,top)
     top.style.position = 'relative'
-    document.body.appendChild(top)
+    parentElem.appendChild(top)
     const topRect = top.getBoundingClientRect()
     const X = topRect.x, Y = topRect.y
     const content = flatContent(ctrl,'')
@@ -294,7 +318,7 @@ function flattenControlToGrid(ctrl) {
         { id: `${type}${i}`, ctrl: elem.ctrl, type, path: elem.path, pos: pos(elem.path) } )))
     const xKeepList = new Set(), yKeepList = new Set()
     calcPadding()
-    document.body.removeChild(top)
+    parentElem.removeChild(top)
 
     const largetsX = srcParams.map(p=>p.pos.x1).sort((x,y)=>y-x)[0]
     const largetsY = srcParams.map(p=>p.pos.y1).sort((x,y)=>y-x)[0]
