@@ -50,13 +50,13 @@ Object.assign(jb.ui,{
           jb.callbag.fromEvent(event, elem || cmp.base, options),
           jb.callbag.takeUntil(cmp.destroyed)
     ),
-    renderWidget(profile,topElem) {
+    renderWidget(profile,topElem,ctx) {
       if (!jb.ui.renderWidgetInStudio && jb.path(jb.frame,'parent.jb.ui.renderWidgetInStudio'))
         eval('jb.ui.renderWidgetInStudio= ' + jb.frame.parent.jb.ui.renderWidgetInStudio.toString())
       if (jb.frame.parent != jb.frame && jb.ui.renderWidgetInStudio)
         return jb.ui.renderWidgetInStudio(profile,topElem)
       else
-        return jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry().run(profile)),topElem)    
+        return jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry(ctx).run(profile)),topElem)    
     },
     extendWithServiceRegistry(_ctx) {
       const ctx = _ctx || new jb.jbCtx()

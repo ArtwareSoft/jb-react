@@ -5461,13 +5461,13 @@ Object.assign(jb.ui,{
           jb.callbag.fromEvent(event, elem || cmp.base, options),
           jb.callbag.takeUntil(cmp.destroyed)
     ),
-    renderWidget(profile,topElem) {
+    renderWidget(profile,topElem,ctx) {
       if (!jb.ui.renderWidgetInStudio && jb.path(jb.frame,'parent.jb.ui.renderWidgetInStudio'))
         eval('jb.ui.renderWidgetInStudio= ' + jb.frame.parent.jb.ui.renderWidgetInStudio.toString())
       if (jb.frame.parent != jb.frame && jb.ui.renderWidgetInStudio)
         return jb.ui.renderWidgetInStudio(profile,topElem)
       else
-        return jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry().run(profile)),topElem)    
+        return jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry(ctx).run(profile)),topElem)    
     },
     extendWithServiceRegistry(_ctx) {
       const ctx = _ctx || new jb.jbCtx()
@@ -10746,8 +10746,8 @@ jb.component('table.mdc', {
 jb.component('picklist.native', {
   type: 'picklist.style',
   impl: customStyle({
-    template: ({},{databind,options},h) => 
-      h('select', { value: databind, onchange: true }, options.map(option=>h('option',{value: option.code},option.text))),
+    template: ({},{databind,options},h) => h('select', { onchange: true }, 
+      options.map(option=>h('option', {value: option.code, selected: databind == option.code ? 'selected' : '' },option.text))),
     features: [field.databind(), picklist.init()]
   })
 })
@@ -10755,8 +10755,8 @@ jb.component('picklist.native', {
 jb.component('picklist.nativePlus', {
   type: 'picklist.style',
   impl: customStyle({
-    template: ({},{databind,options},h) => 
-      h('select', { value: databind, onchange: true }, options.map(option=>h('option',{value: option.code},option.text))),
+    template: ({},{databind,options},h) => h('select', { onchange: true }, 
+      options.map(option=>h('option', {value: option.code, selected: databind == option.code ? 'selected' : '' },option.text))),
     css: `
 { display: block; width: 100%; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857; 
   color: var(--jb-menu-fg); background: var(--jb-menu-bg); 
@@ -10962,11 +10962,11 @@ jb.component('picklist.hyperlinks', {
 jb.component('picklist.groups', {
   type: 'picklist.style',
   impl: customStyle({
-    template: (cmp,{databind,hasEmptyOption,groups},h) => h('select', { value: databind, onchange: true },
+    template: (cmp,{databind,hasEmptyOption,groups},h) => h('select', { onchange: true },
           (hasEmptyOption ? [h('option',{value:''},'')] : []).concat(
             groups.map(group=>h('optgroup',{label: group.text},
-              group.options.map(option=>h('option',{value: option.code},option.text))
-              ))
+              group.options.map(
+                option=>h('option',{value: option.code, selected: databind == option.code ? 'selected' : '' },option.text))))
       )),
     features: [field.databind(), picklist.init(),  picklist.initGroups()]
   })
@@ -12209,6 +12209,7 @@ jb.remoteCtx = {
 jb.waitFor = jb.waitFor || ((check,interval = 50 ,times = 300) => {
     let count = 0
     return new Promise((resolve,reject) => {
+        if (check()) return resolve(check())
         const toRelease = setInterval(() => {
             count++
             const v = check()
@@ -12230,18 +12231,19 @@ jb.remote = {
         return this.extendPortWithCbHandler(this.portFromFrame(frame,from,to)).initCommandListener()
     },
     portFromFrame(frame,from,to) {
-        return {
+        const port = {
             from,to,
             postMessage: m => { 
                 jb.log(`remote sent from ${from} to ${to}`,{m})
-                frame.postMessage({from: from, to: to,...m}) 
+                frame.postMessage({from, to,...m}) 
             },
             onMessage: { addListener: handler => frame.addEventListener('message', m => {
                 jb.log(`remote received at ${from} from ${m.data.from} to ${m.data.to}`,{m: m.data})
                 m.data.to == from && handler(m.data)
             })},
-            onDisconnect: { addListener: handler => {} }
+            onDisconnect: { addListener: handler => { port.disconnectHandler = handler} }
         }
+        return port
     },
     extendPortWithCbHandler: port => Object.assign(port, {
         cbHandler: {

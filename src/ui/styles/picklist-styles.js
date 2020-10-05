@@ -1,8 +1,8 @@
 jb.component('picklist.native', {
   type: 'picklist.style',
   impl: customStyle({
-    template: ({},{databind,options},h) => 
-      h('select', { value: databind, onchange: true }, options.map(option=>h('option',{value: option.code},option.text))),
+    template: ({},{databind,options},h) => h('select', { onchange: true }, 
+      options.map(option=>h('option', {value: option.code, selected: databind == option.code ? 'selected' : '' },option.text))),
     features: [field.databind(), picklist.init()]
   })
 })
@@ -10,8 +10,8 @@ jb.component('picklist.native', {
 jb.component('picklist.nativePlus', {
   type: 'picklist.style',
   impl: customStyle({
-    template: ({},{databind,options},h) => 
-      h('select', { value: databind, onchange: true }, options.map(option=>h('option',{value: option.code},option.text))),
+    template: ({},{databind,options},h) => h('select', { onchange: true }, 
+      options.map(option=>h('option', {value: option.code, selected: databind == option.code ? 'selected' : '' },option.text))),
     css: `
 { display: block; width: 100%; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857; 
   color: var(--jb-menu-fg); background: var(--jb-menu-bg); 
@@ -217,11 +217,11 @@ jb.component('picklist.hyperlinks', {
 jb.component('picklist.groups', {
   type: 'picklist.style',
   impl: customStyle({
-    template: (cmp,{databind,hasEmptyOption,groups},h) => h('select', { value: databind, onchange: true },
+    template: (cmp,{databind,hasEmptyOption,groups},h) => h('select', { onchange: true },
           (hasEmptyOption ? [h('option',{value:''},'')] : []).concat(
             groups.map(group=>h('optgroup',{label: group.text},
-              group.options.map(option=>h('option',{value: option.code},option.text))
-              ))
+              group.options.map(
+                option=>h('option',{value: option.code, selected: databind == option.code ? 'selected' : '' },option.text))))
       )),
     features: [field.databind(), picklist.init(),  picklist.initGroups()]
   })

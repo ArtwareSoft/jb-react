@@ -6,7 +6,12 @@ jb.chromeDebugger = {
             .then(counter=> {
                 const fullId = `${id}-${counter}`
                 // support inpsectedWin refresh - 'inspectedCreated' is re-sent on content-script initializtion
-                chrome.runtime.onMessage.addListener(req => req == 'inspectedCreated' && this.doInitPanel(id,fullId,panelFrame))
+                chrome.runtime.onMessage.addListener(req => {
+                    if (req == 'inspectedCreated') {
+                        jb.log(`chromeDebugger re-initializing panel ${id} after content script reloading`,{})
+                        this.doInitPanel(id,fullId,panelFrame)
+                    }
+                })
                 return this.doInitPanel(id,fullId, panelFrame)
             })
     },
@@ -14,11 +19,15 @@ jb.chromeDebugger = {
         panelFrame.panelId = id
         panelFrame.uri = `debugPanel-${fullId}`
         const jb = panelFrame.jb
-        panelFrame.inspectedPorts = panelFrame.inspectedPorts || {}
-        jb.cbLogByPath = {}
-        jb.initSpy({spyParam: 'all'})
-        panelFrame.spy = jb.spy
-        jb.log('chromeDebugger init panel',{fullId, panelFrame})
+        if (!panelFrame.inspectedPorts) {
+            panelFrame.inspectedPorts = {}
+            jb.cbLogByPath = {}
+            jb.initSpy({spyParam: 'all'})
+            panelFrame.spy = jb.spy
+            jb.log('chromeDebugger init panel',{fullId, panelFrame})
+        } else {
+            jb.log('chromeDebugger re-init panel',{fullId, panelFrame})
+        }
 
         return this.hasStudioOnInspected()
             .then(res => {
@@ -31,14 +40,22 @@ jb.chromeDebugger = {
                 this.inspectedWindowRequestToConnectToPanel(panelFrame)
                 return this.reCheckPromise('port to inspectedWin',() => self.inspectedPorts[panelFrame.uri],50,50)
             })
-            .then(()=> { panelFrame.document.body.innerHTML=''; this.FECtrl = this.renderOnPanel(panelFrame,id) })
+            .then(()=> { 
+                //panelFrame.document.body.innerHTML=''; 
+                this.FECtrl = this.renderOnPanel(panelFrame,id) 
+            })
             .catch(e => jb.logException(e,`chromeDebugger panel ${panelFrame.uri} wait for ${e}`))
     },
     initPanelPortListenser(panelFrame) {
         panelFrame.chrome.runtime.onConnect.addListener(port => {
             jb.log('chromeDebugger panel on connect',{port})
             if (port.name != 'jbDebugger') return
-            if (panelFrame.inspectedPorts[panelFrame.uri]) return
+            if (panelFrame.inspectedPorts[panelFrame.uri]) {
+                jb.ui.unmount(panelFrame.document.body)
+                panelFrame.document.body.innerHTML=''
+                jb.log(`chromeDebugger widget cleanup ${panelFrame.uri}`,{panelFrame})
+                delete panelFrame.inspectedPorts[panelFrame.uri]
+            }
 
             const panelToInspectWindowPort = panelFrame.inspectedPorts[panelFrame.uri] = {
                 from: panelFrame.uri,
@@ -57,29 +74,27 @@ jb.chromeDebugger = {
             jb.remote.extendPortWithCbHandler(panelToInspectWindowPort).initCommandListener()
             port.onMessage.addListener(m => m.runProfile && jb.exec(m.runProfile))
 
-            port.onDisconnect.addListener(() => {
-                jb.log(`chromeDebugger inspectedWin port disconnected from panel at ${panelFrame.uri}`,{panelFrame})
-                delete panelFrame.inspectedPorts[panelFrame.uri]
-            })
+            port.onDisconnect.addListener(() => {})
         })
     },
-    renderOnPanel(panelFrame,panelId) {
+    async renderOnPanel(panelFrame,panelId) {
         const uri = panelFrame.uri
         jb.log(`chromeDebugger panel starting ${panelId}Ctrl ${uri}`)
         if (panelId == 'comp') 
-        chrome.devtools.panels.elements.onSelectionChanged.addListener(() => this.markSelected().then(() => 
-            this.selectedProps().then(inspectorProps => inspectorProps && inspectorProps.cmpId && 
-                jb.ui.runBEMethod(document.querySelector('[widgettop="true"]'),'refreshAfterDebuggerSelection',inspectorProps))))
-        if (panelId == 'card') 
-            chrome.devtools.panels.elements.onSelectionChanged.addListener(() => this.markSelected().then(() => 
-                jb.ui.runBEMethod(document.querySelector('[widgettop="true"]'),'refreshAfterDebuggerSelection')))
-
-        return Promise.resolve(panelId == 'comp' && this.selectedProps())
-            .then(()=>this.markSelected())
-            .then(inspectorProps => {
-                const profile = {$: `inspectedWindow.${panelId}Ctrl`, inspectorProps, uri}
-                jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry().setVar('$studio',true).run(profile)),panelFrame.document.body)
+        chrome.devtools.panels.elements.onSelectionChanged.addListener( async () => {
+            const inspectedProps = await this.selectedProps()
+            inspectedProps && inspectedProps.cmpId && 
+                jb.ui.runBEMethod(document.querySelector('[widgettop="true"]'),'refreshAfterDebuggerSelection',inspectedProps)
         })
+        if (panelId == 'card') 
+            chrome.devtools.panels.elements.onSelectionChanged.addListener(async () => {
+                await this.markSelected()
+                jb.ui.runBEMethod(document.querySelector('[widgettop="true"]'),'refreshAfterDebuggerSelection')
+        })
+        const inspectedProps = await this.selectedProps()
+        const profile = {$: `inspectedWindow.${panelId}Ctrl`, inspectedProps, uri}
+        jb.log(`chromeDebugger renderOnPanel firstRun ${panelId}`,{profile,inspectedProps, uri,panelFrame})
+        jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry().setVar('$studio',true).run(profile)),panelFrame.document.body)
     },
     evalAsPromise(code) {
         return new Promise( (resolve,rej) => 
@@ -93,11 +108,17 @@ jb.chromeDebugger = {
         this.selectionCounter = this.selectionCounter || 1
         return this.evalAsPromise(`$0 && $0.setAttribute && $0.setAttribute("jb-selected-by-debugger","${this.selectionCounter++}");`)
     },
-    selectedProps() {
-        return this.evalAsPromise(`({
-            cmpId: $0 && jb.ui.closestCmpElem($0) && jb.ui.closestCmpElem($0).getAttribute("cmp-id"),
-            frameUri: $0 && [self,...Array.from(frames)].filter(x=>x.document == $0.ownerDocument).map(x=>x.jbUri)[0]
-        })`)
+    async selectedProps() {
+        function buildPropsObj() {
+            const cmpElem = $0 && jb.ui.closestCmpElem($0)
+            return cmpElem ? {
+                cmpId: cmpElem.getAttribute("cmp-id"),
+                frontEndState: cmpElem.state,
+                frameUri: [self,...Array.from(frames)].filter(x=>x.document == $0.ownerDocument).map(x=>x.jbUri)[0]
+            } : {}
+        }
+        await this.markSelected()
+        return this.evalAsPromise(`(${buildPropsObj.toString()})()`)
     },    
     initStudioDebugPort(panelFrame) {
         return this.evalAsPromise(`self.jbStudioDebugPort = self.jbStudioDebugPort || jb.remote.cbPortFromFrame(self,'inspectedStudio','${panelFrame.uri}')`)
@@ -116,7 +137,7 @@ jb.chromeDebugger = {
                 jb.cbLogByPath = {};
                 jb.initSpy({spyParam: jb.path(parent,'jb.spy.spyParam') || 'remote,chromeDebugger,headless,dialog'});
                 spy = jb.spy;
-                jb.studio.initPreview(parent,[Object.getPrototypeOf({}),Object.getPrototypeOf([])]);
+                jb.studio.initPreview(parent,[parent.Object.prototype,parent.Array.prototype]);
                 self.jbUri = 'injectedStudio';
                 parent.jbStudioDebugPort = jb.remote.cbPortFromFrame(self.parent,'inspectedStudio','${uri}');
                 </script>
@@ -191,16 +212,19 @@ jb.component('inspectedWindow.logsCtrl', {
         {id: 'uri', as: 'string'}
     ],
     type: 'control',
-    impl: widget.twoTierWidget(studio.eventTracker(), remote.inspectedWindowFromPanel('%$uri%'))
+    impl: group({
+        controls: widget.twoTierWidget(studio.eventTracker(), remote.inspectedWindowFromPanel('%$uri%')),
+        features: id('%$uri%')
+    })
 })
 
 jb.component('inspectedWindow.compCtrl', {
     params: [
         {id: 'uri', as: 'string'},
-        {id: 'inspectorProps'},
+        {id: 'inspectedProps'},
     ],
     type: 'control',
-    impl: widget.twoTierWidget(studio.compInspector('%$inspectorProps%'), remote.inspectedWindowFromPanel('%$uri%'))
+    impl: widget.twoTierWidget(studio.compInspector('%$inspectedProps%'), remote.inspectedWindowFromPanel('%$uri%'))
 })
 
 jb.component('inspectedWindow.cardCtrl', {

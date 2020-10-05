@@ -2,7 +2,7 @@ jb.ns('chromeDebugger')
 
 jb.component('studio.compInspector', {
   params: [
-    {id: 'inspectorProps'}
+    {id: 'inspectedProps'}
   ],
   type: 'control',
   impl: group({
@@ -10,6 +10,16 @@ jb.component('studio.compInspector', {
       style: group.sections(header.mdcHeadline6()),
       controls: [
         text('%$inspectedCmp/cmpId%;%$inspectedCmp/ver% -- %$inspectedCtx/path%', '%$inspectedCtx/profile/$%'),
+        itemlist({
+            title: 'state',
+            items: unique({items: list(keys('%$inspectedCmp/state%'),keys('%$FEState%'))}),
+            controls: [
+             text('%%', ''),
+             text('%$FEState/{%%}%', 'front end'),
+             text('%$inspectedCmp/state/{%%}%', 'back end'),
+            ],
+            style: table.plain()
+        }),
         itemlist({
           title: 'methods',
           items: '%$inspectedCmp/method%',
@@ -19,30 +29,25 @@ jb.component('studio.compInspector', {
           ],
           style: table.plain(true)
         }),
-        tableTree({
-          title: 'rendering props',
-          treeModel: tree.modelFilter(tree.json('%$inspectedCmp/renderProps%'), notContains('cmpHash')),
-          leafFields: text('%val%', 'value'),
-          chapterHeadline: text(tree.lastPathElement('%path%'))
-        }),
         editableText({
           title: 'source',
           databind: studio.profileAsText('%$inspectedCtx/path%'),
           style: editableText.codemirror({height: '100'})
         }),
         tableTree({
-          title: 'state props',
-          treeModel: tree.json('%$inspectedCmp/state%'),
-          leafFields: text('%val%', 'value'),
-          chapterHeadline: text(tree.lastPathElement('%path%'))
+            title: 'rendering props',
+            treeModel: tree.modelFilter(tree.json('%$inspectedCmp/renderProps%'), notContains('cmpHash')),
+            leafFields: text('%val%', 'value'),
+            chapterHeadline: text(tree.lastPathElement('%path%'))
         }),
         tree('raw', tree.json('%$inspectedCmp%'))
       ]
     }),
     features: [
-      variable('cmpId', firstSucceeding('%$$state.cmpId%', '%$inspectorProps.cmpId%')),
-      variable('frameUri', firstSucceeding('%$$state.frameUri%', '%$inspectorProps.frameUri%')),
-      variable('frameOfElem', ({},{frameUri}) => [self,...Array.from(frames)].filter(x=>x.jbUri == frameUri)[0]),
+      variable('cmpId', firstSucceeding('%$$state.cmpId%', '%$inspectedProps.cmpId%')),
+      variable('frameUri', firstSucceeding('%$$state.frameUri%', '%$inspectedProps.frameUri%')),
+      variable('FEState', firstSucceeding('%$$state.frontEndState%', '%$inspectedProps.frontEndState%')),
+      variable('frameOfElem', ({},{frameUri}) => [self,self.parent,...Array.from(frames)].filter(x=>x.jbUri == frameUri)[0]),
       variable('elem', ({},{cmpId,frameOfElem}) => frameOfElem && frameOfElem.document.querySelector(`[cmp-id="${cmpId}"]`)),
       variable('inspectedCmp', ({},{frameOfElem, elem}) => 
             jb.path(elem && frameOfElem && frameOfElem.jb.ctxDictionary[elem.getAttribute('full-cmp-ctx')],'vars.cmp')),

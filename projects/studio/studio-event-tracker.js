@@ -88,22 +88,6 @@ jb.component('studio.eventTracker', {
             }),
             features: picklist.onChange(refreshControlById('event-tracker'))
           }),
-          // editableBoolean({
-          //   databind: ctx => ({
-          //     $jb_val(val) {
-          //         if (val === undefined)
-          //             return jb.studio.inspectedJb != null
-          //         else {
-          //             jb.studio.inspectedJb = val ? (jb.studio.studiojb || jb) : jb.studio.previewjb
-          //             jb.studio.initStudioEditing()
-          //             ctx.run(refreshControlById('event-tracker'))
-          //         }
-          //     }
-          //   }),
-          //   style: editableBoolean.checkboxWithLabel(),
-          //   title: 'studio',
-          //   features: [layout.horizontal(), css.margin('3')]
-          // }),
           divider({style: divider.vertical()}),
           editableText({
             title: 'query',
@@ -185,8 +169,8 @@ jb.component('studio.eventTracker', {
         value: eventTracker.eventItems('%$studio/eventTrackerQuery%', '%$studio/eventTrackerPattern%')
       }),
       If(
-        ctx => jb.ui.getInspectedJb() != ctx.frame().jb,
-          // && (!jb.studio.studiojb || jb.studio.studiojb.exec('%$studio/project%') != 'studio-helper'),
+        ctx => jb.ui.getInspectedJb() != ctx.frame().jb
+           && (!jb.studio.studiojb || jb.studio.studiojb.exec('%$studio/project%') != 'studio-helper'),
         followUp.watchObservable(
           source.callbag(ctx => jb.ui.getSpy(ctx).observable()),
           1000

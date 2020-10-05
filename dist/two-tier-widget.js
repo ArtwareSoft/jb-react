@@ -88,14 +88,14 @@ jb.component('widget.headless', {
                     return jb.logError(`headless widget runCtxAction. no ctxId ${userReq.ctxIdToRun}`,{userReq})
                 jb.ui.runCtxAction(ctx,userReq.data,userReq.vars)
             } else if (userReq.$ == 'applyDeltaError') {
-                return
-                debugger
                 const cmpElem = jb.ui.elemOfCmp(ctx.setVars({headlessWidget: true,headlessWidgetId: widgetId}),userReq.cmpId)
-                if (!cmpElem) 
-                    return jb.logError(`headless widget applyDeltaError. can not find cmpElem ${userReq.cmpId}`,{userReq})
-                cmpElem.children.forEach(child => unmount(child))
-                cmpElem.children = []
-                jb.ui.refreshElem(cmpElem)
+                return jb.logError(`headless widget applyDeltaError ${userReq.cmpId}`,{cmpElem,userReq})
+                // if (!cmpElem) 
+                //     return jb.logError(`headless widget applyDeltaError. can not find cmpElem ${userReq.cmpId}`,{userReq})
+                // return
+                // cmpElem.children.forEach(child => unmount(child))
+                // cmpElem.children = []
+                // jb.ui.refreshElem(cmpElem)
             } else if (userReq.$ == 'destroy') {
                 jb.ui.BECmpsDestroyNotification.next({cmps: userReq.cmps, destroyLocally: true})
                 if (userReq.destroyWidget) jb.delay(1).then(()=> {

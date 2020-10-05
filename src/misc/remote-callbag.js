@@ -1,6 +1,7 @@
 jb.waitFor = jb.waitFor || ((check,interval = 50 ,times = 300) => {
     let count = 0
     return new Promise((resolve,reject) => {
+        if (check()) return resolve(check())
         const toRelease = setInterval(() => {
             count++
             const v = check()
@@ -22,18 +23,19 @@ jb.remote = {
         return this.extendPortWithCbHandler(this.portFromFrame(frame,from,to)).initCommandListener()
     },
     portFromFrame(frame,from,to) {
-        return {
+        const port = {
             from,to,
             postMessage: m => { 
                 jb.log(`remote sent from ${from} to ${to}`,{m})
-                frame.postMessage({from: from, to: to,...m}) 
+                frame.postMessage({from, to,...m}) 
             },
             onMessage: { addListener: handler => frame.addEventListener('message', m => {
                 jb.log(`remote received at ${from} from ${m.data.from} to ${m.data.to}`,{m: m.data})
                 m.data.to == from && handler(m.data)
             })},
-            onDisconnect: { addListener: handler => {} }
+            onDisconnect: { addListener: handler => { port.disconnectHandler = handler} }
         }
+        return port
     },
     extendPortWithCbHandler: port => Object.assign(port, {
         cbHandler: {
