@@ -1717,6 +1717,11 @@ Object.assign(jb.ui, {
             .map(str=>str.split('-')[1])
             .filter(x=>x)[0]
     },
+    runCtxActionAndUdateCmpState(ctx,data,vars) {
+        if (jb.path(vars,'$updateCmpState.cmpId') == jb.path(vars,'cmp.cmpId') && jb.path(vars,'$updateCmpState.state'))
+            Object.assign(vars.cmp.state,vars.$updateCmpState.state)
+        ctx.setData(data).setVars(vars).runInner(ctx.profile.action,'action','action')        
+    },    
     runCtxAction(ctx,data,vars) {
         ctx.setData(data).setVars(vars).runInner(ctx.profile.action,'action','action')        
     },
@@ -1725,7 +1730,8 @@ Object.assign(jb.ui, {
         if (cmp instanceof jb.ui.JbComponent)
             cmp.runBEMethod(method,data,vars ? {...ctx.vars, ...vars} : ctx.vars)
         else
-            jb.ui.runBEMethod(cmp.base,method,data,{$state: cmp.state, ev: ctx.vars.ev, ...vars})
+            jb.ui.runBEMethod(cmp.base,method,data,
+                    {$updateCmpState: {state: cmp.state, cmpId: cmp.cmpId}, $state: cmp.state, ev: ctx.vars.ev, ...vars})
     },
     runBEMethod(elem,method,data,vars) {
         const widgetId = jb.ui.frontendWidgetId(elem)
@@ -1736,10 +1742,12 @@ Object.assign(jb.ui, {
         if (widgetId)
             jb.ui.widgetUserRequests.next({$:'runCtxAction', widgetId, ctxIdToRun, data, vars })
         else {
-            if (!jb.ctxDictionary[ctxIdToRun])
+            const ctx = jb.ctxDictionary[ctxIdToRun]
+            if (!ctx)
                 return jb.logError(`no ctx found for method: ${method}`, {ctxIdToRun, elem, data, vars})
-            jb.log('backend method',{method,elem,data,vars})
-            jb.ui.runCtxAction(jb.ctxDictionary[ctxIdToRun],data,vars)
+    
+            jb.log('backend method request',{method,ctx,elem,data,vars})
+            jb.ui.runCtxActionAndUdateCmpState(ctx,data,vars)
         }
     },
 })
