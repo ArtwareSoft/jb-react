@@ -11246,7 +11246,6 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
     return {...result, unflat}
 
     function newLine(offset = 0) {
-      console.log(depth,path)
       return flat ? '' : '\n' + jb.prettyPrint.spaces.slice(0,(depth+offset)*tabSize)
     }
 
