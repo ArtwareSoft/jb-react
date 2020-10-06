@@ -3102,7 +3102,7 @@ jb.component('prettyPrint', {
 
 jb.prettyPrintComp = function(compId,comp,settings={}) {
   if (comp) {
-    return `jb.component('${compId}', ${jb.prettyPrint(comp,settings)})`
+    return `jb.component('${compId}', ${jb.prettyPrint(comp,{ initialPath: compId, ...settings })})`
   }
 }
 
@@ -3122,7 +3122,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
   if (!val || typeof val !== 'object')
     return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
 
-  const res = valueToMacro({path: initialPath, line:0, col: 0}, val)
+  const res = valueToMacro({path: initialPath, line:0, col: 0, depth :1}, val)
   res.text = res.text.replace(/__fixedNL__/g,'\n')
   return res
 
@@ -3138,7 +3138,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
   }
 
   function joinVals(ctx, innerVals, open, close, flat, isArray) {
-    const {path} = ctx
+    const {path, depth} = ctx
     const _open = typeof open === 'string' ? [{prop: '!open', item: open}] : open
     const openResult = processList(ctx,[..._open, {prop: '!open-newline', item: () => newLine()}])
     const arrayOrObj = isArray? 'array' : 'obj'
@@ -3147,7 +3147,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
       processList(acc,[
         {prop: `!${arrayOrObj}-prefix-${index}`, item: isArray ? '' : fixPropName(innerPath) + ': '},
         {prop: '!value', item: ctx => {
-            const ctxWithPath = { ...ctx, path: [path,innerPath].join('~') }
+            const ctxWithPath = { ...ctx, path: [path,innerPath].join('~'), depth: depth +1 }
             return {...ctxWithPath, ...valueToMacro(ctxWithPath, val, flat)}
           }
         },
@@ -3163,8 +3163,8 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
     return {...result, unflat}
 
     function newLine(offset = 0) {
-      const pathDepth = path.split('~').filter(x=>!x.match(/^[0-9]+$/)).length
-      return flat ? '' : '\n' + jb.prettyPrint.spaces.slice(0,(pathDepth+offset)*tabSize)
+      console.log(depth,path)
+      return flat ? '' : '\n' + jb.prettyPrint.spaces.slice(0,(depth+offset)*tabSize)
     }
 
     function shouldNotFlat(result) {
@@ -3209,7 +3209,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
     const openProfileByValueGroup = [{prop: '!profile', item: macro}, {prop:'!open-by-value', item:'('}]
     const closeProfileByValueGroup = [{prop:'!close-by-value', item:')'}]
     const openProfileSugarGroup = [{prop: '!profile', item: macro}, {prop:'!open-sugar', item:'('}]
-    const closeProfileSugarGroup = [{prop:'!close-sugar', item:')'}]
+    const closeProfileSugarGroup = [{prop:'!close-sugar', item: ')'}]
     const openProfileGroup = [{prop: '!profile', item: macro}, {prop:'!open-profile', item:'({'}]
     const closeProfileGroup = [{prop:'!close-profile', item:'})'}]
 
@@ -3240,8 +3240,8 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
     }
   }
 
-  function valueToMacro({path, line, col}, val, flat) {
-    const ctx = {path, line, col}
+  function valueToMacro({path, line, col, depth}, val, flat) {
+    const ctx = {path, line, col, depth}
     let result = doValueToMacro()
     if (typeof result === 'string')
       result = { text: result, map: {}}
