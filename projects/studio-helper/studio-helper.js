@@ -1,7 +1,7 @@
 jb.ns('studioHelper,d3g,dataTest,pptr')
 jb.studio.initCompsRefHandler(jb)
 jb.studio.previewWindow = jb.frame
-jb.studio.inspectedJb = parent.jb
+jb.studio.inspectedJb = jb.frame.parent && jb.frame.parent.jb
 // // fake current path
 // jb.delay(100).then(()=>new jb.jbCtx().run(runActions(writeValue('%$studio/project%','studio-helper')),
 //   writeValue('%$studio/page%','studio-helper.topBar') ))

@@ -1,5 +1,3 @@
-if (typeof frame == 'undefined') frame = typeof self === 'object' ? self : typeof global === 'object' ? global : {}
-
 var jb = (function() {
 function jb_run(ctx,parentParam,settings) {
   ctx.profile && jb.log('core request', [ctx.id,...arguments])
@@ -257,7 +255,7 @@ class jbCtx {
   // keeps the ctx vm and not the caller vm - needed in studio probe
   ctx(ctx2) { return new jbCtx(this,ctx2) }
   frame() { // used for multi windows apps. e.g., studio
-    return frame
+    return jb.frame
   }
   extendVars(ctx2,data2) {
     if (ctx2 == null && data2 == null)
@@ -278,7 +276,10 @@ class jbCtx {
   }
 }
 
-return { frame, comps: {}, ctxDictionary: {}, run: jb_run, jbCtx, jstypes, tojstype }
+return { 
+  frame: (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {}, 
+  comps: {}, ctxDictionary: {}, run: jb_run, jbCtx, jstypes, tojstype 
+}
 })()
 
 if (typeof self != 'undefined') self.jb = jb
@@ -342,11 +343,11 @@ Object.assign(jb, {
     subscribe: (source,listener) => jb.callbag.subscribe(listener)(source),
     log(logName, record, options) { jb.spy && jb.spy.log(logName, record, options) },
     logError(err,logObj) {
-      frame.console && frame.console.log('%c Error: ','color: red', err, logObj && Object.values(logObj))
+      jb.frame.console && jb.frame.console.log('%c Error: ','color: red', err, logObj && Object.values(logObj))
       jb.log('error',{err , ...logObj})
     },
     logException(e,err,logObj) {
-      frame.console && frame.console.log('%c Exception: ','color: red', err, e, logObj && Object.values(logObj))
+      jb.frame.console && jb.frame.console.log('%c Exception: ','color: red', err, e, logObj && Object.values(logObj))
       jb.log('exception',{ err, stack: e.stack||'', ...logObj})
     },
     val(ref) {
@@ -1068,7 +1069,7 @@ function initSpyByUrl() {
 	const getUrl = () => { try { return frame.location && frame.location.href } catch(e) {} }
 	const getParentUrl = () => { try { return frame.parent && frame.parent.location.href } catch(e) {} }
 	const getSpyParam = url => (url.match('[?&]spy=([^&]+)') || ['', ''])[1]
-	const spyParam = self.jbUri == 'studio' && (getUrl().match('[?&]sspy=([^&]+)') || ['', ''])[1] || 
+	const spyParam = jb.frame && jb.frame.jbUri == 'studio' && (getUrl().match('[?&]sspy=([^&]+)') || ['', ''])[1] || 
 		getSpyParam(getParentUrl() || '') || getSpyParam(getUrl() || '')
 	if (spyParam)
 		jb.initSpy({spyParam})
@@ -8076,13 +8077,10 @@ jb.component('itemlist.init', {
     calcProp('items', itemlist.calcSlicedItems()),
     calcProp('itemsCtxs', (ctx,{$model,$props}) => $props.items.map((item,index) => 
       jb.ui.preserveCtx(ctx.setVars({index}).setVar($model.itemVariable,item).setData(item)))),
-    calcProp({
-        id: 'ctrls',
-        value: (ctx,{$model,$props}) => {
+    calcProp('ctrls', (ctx,{$model,$props}) => {
           const controlsOfItem = (item,index) => $model.controls(ctx.setVars({index}).setVar($model.itemVariable,item).setData(item)).filter(x=>x)
           return $props.items.map((item,i)=> controlsOfItem(item,i+1)).filter(x=>x.length > 0)
-        }
-      }),
+    }),
     itemlist.initContainerWithItems()
   )
 })

@@ -225,7 +225,7 @@ function initSpyByUrl() {
 	const getUrl = () => { try { return frame.location && frame.location.href } catch(e) {} }
 	const getParentUrl = () => { try { return frame.parent && frame.parent.location.href } catch(e) {} }
 	const getSpyParam = url => (url.match('[?&]spy=([^&]+)') || ['', ''])[1]
-	const spyParam = self.jbUri == 'studio' && (getUrl().match('[?&]sspy=([^&]+)') || ['', ''])[1] || 
+	const spyParam = jb.frame && jb.frame.jbUri == 'studio' && (getUrl().match('[?&]sspy=([^&]+)') || ['', ''])[1] || 
 		getSpyParam(getParentUrl() || '') || getSpyParam(getUrl() || '')
 	if (spyParam)
 		jb.initSpy({spyParam})

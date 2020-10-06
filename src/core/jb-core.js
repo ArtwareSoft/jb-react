@@ -1,5 +1,3 @@
-if (typeof frame == 'undefined') frame = typeof self === 'object' ? self : typeof global === 'object' ? global : {}
-
 var jb = (function() {
 function jb_run(ctx,parentParam,settings) {
   ctx.profile && jb.log('core request', [ctx.id,...arguments])
@@ -257,7 +255,7 @@ class jbCtx {
   // keeps the ctx vm and not the caller vm - needed in studio probe
   ctx(ctx2) { return new jbCtx(this,ctx2) }
   frame() { // used for multi windows apps. e.g., studio
-    return frame
+    return jb.frame
   }
   extendVars(ctx2,data2) {
     if (ctx2 == null && data2 == null)
@@ -278,7 +276,10 @@ class jbCtx {
   }
 }
 
-return { frame, comps: {}, ctxDictionary: {}, run: jb_run, jbCtx, jstypes, tojstype }
+return { 
+  frame: (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {}, 
+  comps: {}, ctxDictionary: {}, run: jb_run, jbCtx, jstypes, tojstype 
+}
 })()
 
 if (typeof self != 'undefined') self.jb = jb

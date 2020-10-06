@@ -92,12 +92,12 @@ jb.component('dialogFeature.studioPick', {
     frontEnd.flow(
       rx.merge(
         rx.merge(
-          source.event('mousedown',document, obj(prop('capture',true))),
+          source.event('mousedown',jb.frame.document, obj(prop('capture',true))),
           source.event('mousedown','%$_window/document%', obj(prop('capture',true))),
         ),
         rx.pipe(
           rx.merge(
-            source.event('keyup',document, obj(prop('capture',true))),
+            source.event('keyup',jb.frame.document, obj(prop('capture',true))),
             source.event('keyup','%$_window/document%', obj(prop('capture',true))),
           ),
           rx.filter('%keyCode% == 27')

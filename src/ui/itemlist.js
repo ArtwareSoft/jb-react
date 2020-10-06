@@ -41,13 +41,10 @@ jb.component('itemlist.init', {
     calcProp('items', itemlist.calcSlicedItems()),
     calcProp('itemsCtxs', (ctx,{$model,$props}) => $props.items.map((item,index) => 
       jb.ui.preserveCtx(ctx.setVars({index}).setVar($model.itemVariable,item).setData(item)))),
-    calcProp({
-        id: 'ctrls',
-        value: (ctx,{$model,$props}) => {
+    calcProp('ctrls', (ctx,{$model,$props}) => {
           const controlsOfItem = (item,index) => $model.controls(ctx.setVars({index}).setVar($model.itemVariable,item).setData(item)).filter(x=>x)
           return $props.items.map((item,i)=> controlsOfItem(item,i+1)).filter(x=>x.length > 0)
-        }
-      }),
+    }),
     itemlist.initContainerWithItems()
   )
 })

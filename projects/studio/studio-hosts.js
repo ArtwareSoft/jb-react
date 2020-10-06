@@ -2,7 +2,7 @@
 const st = jb.studio;
 
 const devHost = {
-    baseUrl: jb.frame.jbBaseProjUrl || jb.frame.location.origin,
+    baseUrl: jb.frame.jbBaseProjUrl || jb.frame.location && jb.frame.location.origin,
     settings: () => fetch(`/?op=settings`).then(res=>res.text()),
     //used in save
     getFile: path => fetch(`/?op=getFile&path=${path}`).then(res=>res.text()),
