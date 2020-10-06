@@ -8,7 +8,7 @@
             "request": "launch",
             "name": "pretty",
             "program": "${workspaceFolder}/bin/tgp-pretty",
-            "args": ["-file:itemlist.js"],
+            "args": ["-file:common-features.js"],
         },
         {
             "name": "Run Extension",

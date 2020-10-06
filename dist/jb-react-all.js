@@ -5483,7 +5483,7 @@ Object.assign(jb.ui,{
       return ctx.setVar('$serviceRegistry',{baseCtx: ctx, parentRegistry: ctx.vars.$serviceRegistry, services: {}})
     },
     //cmpV: cmp => cmp ? `${cmp.cmpId};${cmp.ver}` : '',
-    rxPipeName: profile => jb.path(profile,'0.event') + '...'+jb.path(profile,'length')
+    rxPipeName: profile => (jb.path(profile,'0.event') || jb.path(profile,'0.$')) + '...'+jb.path(profile,'length')
 })
 
 // ***************** inter-cmp services
@@ -5705,7 +5705,7 @@ jb.component('feature.onEvent', {
   category: 'events',
   params: [
     {id: 'event', as: 'string', mandatory: true, options: 'load,blur,change,focus,keydown,keypress,keyup,click,dblclick,mousedown,mousemove,mouseup,mouseout,mouseover,scroll'},
-    {id: 'action', type: 'action[]', mandatory: true, dynamic: true},
+    {id: 'action', type: 'action[]', mandatory: true, dynamic: true}
   ],
   impl: (ctx,event) => ({eventHandler: {event, ctx}})
 })
@@ -5716,7 +5716,7 @@ jb.component('watchAndCalcModelProp', {
   params: [
     {id: 'prop', as: 'string', mandatory: true},
     {id: 'transformValue', dynamic: true, defaultValue: '%%'},
-    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children'},
+    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'}
   ],
   impl: ctx => ({watchAndCalcModelProp: ctx.params})
 })
@@ -5772,9 +5772,9 @@ jb.component('onDestroy', {
   type: 'feature',
   category: 'lifecycle',
   params: [
-    {id: 'action', type: 'action', mandatory: true, dynamic: true},
+    {id: 'action', type: 'action', mandatory: true, dynamic: true}
   ],
-  impl: method('destroy','%$action()%')
+  impl: method('destroy', '%$action()%')
 })
 
 jb.component('templateModifier', {
@@ -5791,7 +5791,7 @@ jb.component('frontEnd.var', {
   description: 'calculate in the BE and pass to frontEnd',
   params: [
     {id: 'id', as: 'string', mandatory: true},
-    {id: 'value', mandatory: true, dynamic: true},
+    {id: 'value', mandatory: true, dynamic: true}
   ],
   impl: ctx => ({ frontEndVar: ctx.params })
 })
@@ -5819,22 +5819,26 @@ jb.component('followUp.flow', {
   type: 'feature',
   description: 'rx flow at the backend after the vdom was sent',
   params: [
-      {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
+    {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
   ],
-  impl: followUp.action(runActions(
-      Var('followUpCmp','%$cmp%'),
+  impl: followUp.action(
+    runActions(
+      Var('followUpCmp', '%$cmp%'),
       Var('pipeToRun', rx.pipe('%$elems()%')),
-      Var('followUpStatus', (ctx,{cmp,pipeToRun}) => {
+      (ctx,{cmp,pipeToRun}) => {
         cmp.followUpStatus = cmp.followUpStatus || {}
         cmp.followUpStatus[ctx.cmpCtx.path] = pipeToRun
-      }),
-      Var('closingPipe', rx.pipe(
+      },
+      rx.pipe(
         source.callbag(() => jb.ui.BECmpsDestroyNotification),
-        rx.filter( ({data},{followUpCmp}) => data.cmps.find(_cmp => _cmp.cmpId == followUpCmp.cmpId && _cmp.ver == followUpCmp.ver)),
+        rx.filter(
+          ({data},{followUpCmp}) => data.cmps.find(_cmp => _cmp.cmpId == followUpCmp.cmpId && _cmp.ver == followUpCmp.ver)
+        ),
         rx.take(1),
         sink.action(({},{pipeToRun}) => pipeToRun.dispose())
-      ))
-  ))
+      )
+    )
+  )
 })
 
 jb.component('watchRef', {
@@ -5844,9 +5848,9 @@ jb.component('watchRef', {
   params: [
     {id: 'ref', mandatory: true, as: 'ref', dynamic: true, description: 'reference to data'},
     {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
-    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children'},
-    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and reinit wait for data'},
-    {id: 'cssOnly', as: 'boolean', description: 'refresh only css features'},
+    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
+    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and reinit wait for data', type: 'boolean'},
+    {id: 'cssOnly', as: 'boolean', description: 'refresh only css features', type: 'boolean'},
     {id: 'phase', as: 'number', description: 'controls the order of updates on the same event. default is 0'}
   ],
   impl: ctx => ({ watchRef: {refF: ctx.params.ref, ...ctx.params}})
@@ -5861,12 +5865,12 @@ jb.component('followUp.watchObservable', {
     {id: 'debounceTime', as: 'number', description: 'in mSec'}
   ],
   impl: followUp.flow(
-      source.data(0),
-      rx.var('cmp','%$cmp%'),
-      rx.flatMap('%$toWatch()%'),
-      rx.debounceTime('%$debounceTime%'),
-      sink.refreshCmp()
-    )
+    source.data(0),
+    rx.var('cmp', '%$cmp%'),
+    rx.flatMap('%$toWatch()%'),
+    rx.debounceTime('%$debounceTime%'),
+    sink.refreshCmp()
+  )
 })
 
 jb.component('followUp.onDataChange', {
@@ -5878,9 +5882,7 @@ jb.component('followUp.onDataChange', {
     {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
     {id: 'action', type: 'action', dynamic: true, description: 'run on change'}
   ],
-  impl: followUp.flow(
-    source.watchableData('%$ref()%','%$includeChildren%'), 
-    sink.action(call('action')))
+  impl: followUp.flow(source.watchableData('%$ref()%', '%$includeChildren%'), sink.action(call('action')))
 })
 
 // jb.component('followUp.takeUntilCmpDestroyed', {
@@ -5942,7 +5944,7 @@ jb.component('feature.hoverTitle', {
   params: [
     {id: 'title', as: 'string', mandatory: true}
   ],
-  impl: htmlAttribute('title','%$title%')
+  impl: htmlAttribute('title', '%$title%')
 })
 
 jb.component('variable', {
@@ -5986,9 +5988,7 @@ jb.component('calculatedVar', {
   impl: features(
     onDestroy(writeValue('%${%$name%}:{%$cmp/cmpId%}%', null)),
     followUp.flow(
-      rx.merge(
-        (ctx,{},{watchRefs}) => watchRefs(ctx).map(ref=>ctx.setData(ref).run(source.watchableData('%%')) )
-      ),
+      rx.merge((ctx,{},{watchRefs}) => watchRefs(ctx).map(ref=>ctx.setData(ref).run(source.watchableData('%%')) )),
       rx.log('check calculatedVar'),
       rx.map('%$value()%'),
       sink.data('%${%$name%}:{%$cmp/cmpId%}%')
@@ -6054,8 +6054,8 @@ jb.component('refreshControlById', {
   type: 'action',
   params: [
     {id: 'id', as: 'string', mandatory: true},
-    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and reinit wait for data'},
-    {id: 'cssOnly', as: 'boolean', description: 'refresh only css features'},
+    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and reinit wait for data', type: 'boolean'},
+    {id: 'cssOnly', as: 'boolean', description: 'refresh only css features', type: 'boolean'}
   ],
   impl: (ctx,id) => {
     const elem = jb.ui.widgetBody(ctx).querySelector('#'+id)
@@ -6078,7 +6078,7 @@ jb.component('group.autoFocusOnFirstInput', {
 jb.component('refreshIfNotWatchable', {
   type: 'action',
   params: [
-    {id: 'data' }
+    {id: 'data'}
   ],
   impl: (ctx, data) => !jb.isWatchable(data) && ctx.vars.cmp.refresh()
 })
@@ -6099,7 +6099,7 @@ jb.component('feature.userEventProps', {
   type: 'feature',
   description: 'add data to the event sent from the front end',
   params: [
-    {id: 'props', as: 'string', description: 'comma separated props to take from the original event e.g., altKey,ctrlKey' },
+    {id: 'props', as: 'string', description: 'comma separated props to take from the original event e.g., altKey,ctrlKey'}
   ],
   impl: (ctx, prop) => ({userEventProps: prop })
 })
@@ -11283,9 +11283,8 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
     const macro = jb.macroName(id)
 
     const params = comp.params || []
-    const firstParamIsArray = (params[0] && params[0].type||'').indexOf('[]') != -1
-    const vars = Object.keys(profile.$vars || {})
-      .map(name => ({innerPath: `$vars~${name}`, val: {$: 'Var', name, val: profile.$vars[name]}}))
+    const firstParamIsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
+    const vars = (profile.$vars || []).map(({name,val}) => ({innerPath: `$vars~${name}`, val: {$: 'Var', name, val }}))
     const remark = profile.remark ? [{innerPath: 'remark', val: {$remark: profile.remark}} ] : []
     const systemProps = vars.concat(remark)
     const openProfileByValueGroup = [{prop: '!profile', item: macro}, {prop:'!open-by-value', item:'('}]
@@ -11295,9 +11294,11 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
     const openProfileGroup = [{prop: '!profile', item: macro}, {prop:'!open-profile', item:'({'}]
     const closeProfileGroup = [{prop:'!close-profile', item:'})'}]
 
-    if (params.length == 1 && firstParamIsArray) { // pipeline, or, and, plus
-      const args = systemProps.concat(jb.asArray(profile['$'+id] || profile[params[0].id])
-        .map((val,i) => ({innerPath: params[0].id + '~' + i, val})))
+    if (firstParamIsArray) { // pipeline, or, and, plus
+      const vars = (profile.$vars || []).map(({name,val}) => 
+        ({$: 'Var', name, val }))
+      const args = vars.concat(jb.asArray(profile[params[0].id]))
+        .map((val,i) => ({innerPath: params[0].id + '~' + i, val}))
       return joinVals(ctx, args, openProfileSugarGroup, closeProfileSugarGroup, flat, true)
     }
     const keys = Object.keys(profile).filter(x=>x != '$')
