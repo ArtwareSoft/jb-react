@@ -102,27 +102,7 @@ jb.component('studio.eventTracker', {
               css.width('300')
             ]
           }),
-          picklist({
-            title: 'counters',
-            databind: '%$studio/spyLogs%',
-            options: picklist.options({
-              options: ctx => jb.entries(jb.ui.getSpy(ctx).counters),
-              code: '%0%',
-              text: '%0% (%1%)'
-            }),
-            features: [
-              picklist.onChange(
-                ctx => {
-                const loc = jb.ui.getSpy(ctx).locations[ctx.data].split(':')
-                const col = +loc.pop()
-                const line = (+loc.pop())-1
-                const location = [loc.join(':'),line,col]
-                jb.log('eventTracker openResource',{ctx,loc: jb.ui.getSpy(ctx).locations[ctx.data], location})
-                loc && parent.postMessage({ runProfile: {$: 'chromeDebugger.openResource', location }})
-              }
-              )
-            ]
-          })
+          eventTracker.eventTypes()
         ],
         features: css.color({background: 'var(--jb-menubar-inactive-bg)'})
       }),
@@ -135,7 +115,7 @@ jb.component('studio.eventTracker', {
             inGroup(list('exception','error'), '%logNames%'),
             css.color('var(--jb-error-fg)')
           )}),
-          studio.lowFootprintObj('%err%','err',50),
+          studio.lowFootprintObj('%err%','err'),
           studio.objExpandedAsText('%stack%','stack'),
 
           controlWithCondition('%m%',text('%m/$%: %m/t%, %m/cbId%')),
@@ -175,6 +155,30 @@ jb.component('studio.eventTracker', {
           source.callbag(ctx => jb.ui.getSpy(ctx).observable()),
           1000
         )
+      )
+    ]
+  })
+})
+
+jb.component('eventTracker.eventTypes', {
+  type: 'control',
+  impl: picklist({
+    databind: '%$studio/spyLogs%',
+    options: picklist.options({
+      options: ctx => jb.entries(jb.ui.getSpy(ctx).counters),
+      code: '%0%',
+      text: '%0% (%1%)'
+    }),
+    features: [
+      picklist.onChange(
+        ctx => {
+        const loc = jb.ui.getSpy(ctx).locations[ctx.data].split(':')
+        const col = +loc.pop()
+        const line = (+loc.pop())-1
+        const location = [loc.join(':'),line,col]
+        jb.log('eventTracker openResource',{ctx,loc: jb.ui.getSpy(ctx).locations[ctx.data], location})
+        loc && parent.postMessage({ runProfile: {$: 'chromeDebugger.openResource', location }})
+      }
       )
     ]
   })

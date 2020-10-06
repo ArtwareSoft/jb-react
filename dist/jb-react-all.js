@@ -4811,8 +4811,8 @@ Object.assign(jb.ui, {
             .filter(x=>x)[0]
     },
     runCtxActionAndUdateCmpState(ctx,data,vars) {
-        if (jb.path(vars,'$updateCmpState.cmpId') == jb.path(vars,'cmp.cmpId') && jb.path(vars,'$updateCmpState.state'))
-            Object.assign(vars.cmp.state,vars.$updateCmpState.state)
+        if (jb.path(vars,'$updateCmpState.cmpId') == jb.path(ctx.vars,'cmp.cmpId') && jb.path(vars,'$updateCmpState.state'))
+            Object.assign(ctx.vars.cmp.state,vars.$updateCmpState.state)
         ctx.setData(data).setVars(vars).runInner(ctx.profile.action,'action','action')        
     },    
     runCtxAction(ctx,data,vars) {
@@ -4839,7 +4839,7 @@ Object.assign(jb.ui, {
             if (!ctx)
                 return jb.logError(`no ctx found for method: ${method}`, {ctxIdToRun, elem, data, vars})
     
-            jb.log('backend method request',{method,ctx,elem,data,vars})
+            jb.log(`backend method request: ${method}`,{method,ctx,elem,data,vars})
             jb.ui.runCtxActionAndUdateCmpState(ctx,data,vars)
         }
     },
