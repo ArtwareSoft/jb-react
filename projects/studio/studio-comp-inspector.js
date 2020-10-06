@@ -59,7 +59,8 @@ jb.component('studio.compInspector', {
         source.callbag(({},{frameOfElem}) => frameOfElem && frameOfElem.jb.ui.BECmpsDestroyNotification),
         rx.filter(({data},{$props},{}) => data.cmps.find(_cmp => _cmp.cmpId == $props.cmpId)),
         sink.refreshCmp('%$$state%')
-      )
+      ),
+      followUp.watchObservable(source.callbag(ctx => frameOfElem.spy && frameOfElem.spy.observable()), 1000)
     ]
   })
 })
@@ -150,4 +151,4 @@ jb.component('studio.eventsOfComp', {
         followUp.watchObservable(source.callbag(ctx => jb.ui.getSpy(ctx).observable()), 1000)
       ]
     })
-  })
+})
