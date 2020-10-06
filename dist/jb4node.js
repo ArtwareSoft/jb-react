@@ -3102,10 +3102,7 @@ jb.component('prettyPrint', {
 
 jb.prettyPrintComp = function(compId,comp,settings={}) {
   if (comp) {
-    const macroRemark = ''; //` /* ${jb.macroName(compId)} */`
-    const res = "jb.component('" + compId + "', " + jb.prettyPrint(comp,settings) + ')'
-    const withMacroName = res.replace(/\n/, macroRemark + '\n')
-    return withMacroName
+    return `jb.component('${compId}', ${jb.prettyPrint(comp,settings)})`
   }
 }
 
@@ -3125,7 +3122,6 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
   if (!val || typeof val !== 'object')
     return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
 
-  const advanceLineCol = jb.prettyPrint.advanceLineCol
   const res = valueToMacro({path: initialPath, line:0, col: 0}, val)
   res.text = res.text.replace(/__fixedNL__/g,'\n')
   return res
@@ -3134,15 +3130,15 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
     const res = items.reduce((acc,{prop, item}) => {
       const toAdd = typeof item === 'function' ? item(acc) : item
       const toAddStr = toAdd.text || toAdd, toAddMap = toAdd.map || {}, toAddPath = toAdd.path || ctx.path
-      const startPos = advanceLineCol(acc,''), endPos = advanceLineCol(acc,toAddStr)
+      const startPos = jb.prettyPrint.advanceLineCol(acc,''), endPos = jb.prettyPrint.advanceLineCol(acc,toAddStr)
       const map = { ...acc.map, ...toAddMap, [[toAddPath,prop].join('~')]: [startPos.line, startPos.col, endPos.line, endPos.col] }
       return { text: acc.text + toAddStr, map, unflat: acc.unflat || toAdd.unflat, ...endPos}
     }, {text: '', map: {}, ...ctx})
     return {...ctx, ...res}
   }
 
-  function joinVals({path, line, col}, innerVals, open, close, flat, isArray) {
-    const ctx = {path, line, col}
+  function joinVals(ctx, innerVals, open, close, flat, isArray) {
+    const {path} = ctx
     const _open = typeof open === 'string' ? [{prop: '!open', item: open}] : open
     const openResult = processList(ctx,[..._open, {prop: '!open-newline', item: () => newLine()}])
     const arrayOrObj = isArray? 'array' : 'obj'
@@ -3167,7 +3163,8 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
     return {...result, unflat}
 
     function newLine(offset = 0) {
-      return flat ? '' : '\n' + jb.prettyPrint.spaces.slice(0,((path.match(/~/g)||'').length+offset+1)*tabSize)
+      const pathDepth = path.split('~').filter(x=>!x.match(/^[0-9]+$/)).length
+      return flat ? '' : '\n' + jb.prettyPrint.spaces.slice(0,(pathDepth+offset)*tabSize)
     }
 
     function shouldNotFlat(result) {
@@ -3175,21 +3172,20 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
       if (!jb.studio.valOfPath)
         return result.unflat || long
       const val = jb.studio.valOfPath(path)
-      if (path.match(/~params~[0-9]+$/)) return false
+      const paramProps = path.match(/~params~[0-9]+$/)
+      const paramsParent = path.match(/~params$/)
       const ctrls = path.match(/~controls$/) && Array.isArray(val) // && innerVals.length > 1// jb.studio.isOfType(path,'control') && !arrayElem
       const customStyle = jb.studio.compNameOfPath && jb.studio.compNameOfPath(path) === 'customStyle'
       const moreThanTwoVals = innerVals.length > 2 && !isArray
-      const top = (path.match(/~/g)||'').length < 2
-      return result.unflat || customStyle || moreThanTwoVals || top || ctrls || long
+      const top = !path.match(/~/g)
+      return !paramProps && (result.unflat || paramsParent || customStyle || moreThanTwoVals || top || ctrls || long)
     }
     function fixPropName(prop) {
       return prop.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/) ? prop : `'${prop}'`
     }
   }
 
-  function profileToMacro({path, line, col}, profile,flat) {
-    const ctx = {path, line, col}
-
+  function profileToMacro(ctx, profile,flat) {
     const id = [jb.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
     const comp = comps[id]
     if (comp)
@@ -3218,7 +3214,8 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
     const closeProfileGroup = [{prop:'!close-profile', item:'})'}]
 
     if (params.length == 1 && firstParamIsArray) { // pipeline, or, and, plus
-      const args = systemProps.concat(jb.asArray(profile['$'+id] || profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + '~' + i, val})))
+      const args = systemProps.concat(jb.asArray(profile['$'+id] || profile[params[0].id])
+        .map((val,i) => ({innerPath: params[0].id + '~' + i, val})))
       return joinVals(ctx, args, openProfileSugarGroup, closeProfileSugarGroup, flat, true)
     }
     const keys = Object.keys(profile).filter(x=>x != '$')
@@ -3273,8 +3270,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
     }
   }
 
-  function arrayToMacro({path, line, col}, array, flat) {
-    const ctx = {path, line, col}
+  function arrayToMacro(ctx, array, flat) {
     const vals = array.map((val,i) => ({innerPath: i, val}))
     const openArray = [{prop:'!open-array', item:'['}]
     const closeArray = [{prop:'!close-array', item:']'}]

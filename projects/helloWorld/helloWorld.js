@@ -18,18 +18,7 @@ jb.component('dataResource.people', {
   ]
 })
 
-jb.component('dataResource.room', {
-  passiveData: ''
-})
-
 jb.component('helloWorld.main', {
   type: 'control',
-  impl: group({
-    title: '',
-    layout: layout.flex({}),
-    controls: [
-      text('hello world')
-    ],
-    features: css.color({})
-  })
+  impl: text('hello world'),
 })

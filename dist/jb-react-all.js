@@ -8064,7 +8064,7 @@ jb.component('itemlist.initContainerWithItems', {
   category: 'itemlist:20',
   impl: calcProp({
     id: 'updateItemlistCntr',
-    value: action.if('%$itemlistCntr%',writeValue('%$itemlistCntr.items%', '%$$props.items%')),
+    value: action.if('%$itemlistCntr%', writeValue('%$itemlistCntr.items%', '%$$props.items%')),
     phase: 100
   })
 })
@@ -8075,11 +8075,11 @@ jb.component('itemlist.init', {
     calcProp('allItems', '%$$model/items%'),
     calcProp('visualSizeLimit', ({},{$model,$state}) => Math.max($model.visualSizeLimit,$state.visualSizeLimit ||0)),
     calcProp('items', itemlist.calcSlicedItems()),
-    calcProp('itemsCtxs', (ctx,{$model,$props}) => $props.items.map((item,index) => 
+    calcProp('itemsCtxs', (ctx,{$model,$props}) => $props.items.map((item,index) =>
       jb.ui.preserveCtx(ctx.setVars({index}).setVar($model.itemVariable,item).setData(item)))),
     calcProp('ctrls', (ctx,{$model,$props}) => {
-          const controlsOfItem = (item,index) => $model.controls(ctx.setVars({index}).setVar($model.itemVariable,item).setData(item)).filter(x=>x)
-          return $props.items.map((item,i)=> controlsOfItem(item,i+1)).filter(x=>x.length > 0)
+      const controlsOfItem = (item,index) => $model.controls(ctx.setVars({index}).setVar($model.itemVariable,item).setData(item)).filter(x=>x)
+      return $props.items.map((item,i)=> controlsOfItem(item,i+1)).filter(x=>x.length > 0)
     }),
     itemlist.initContainerWithItems()
   )
@@ -8099,33 +8099,39 @@ jb.component('itemlist.selection', {
     {id: 'cssForSelected', as: 'string', defaultValue: 'color: var(--jb-menubar-selection-fg); background: var(--jb-menubar-selection-bg)'}
   ],
   impl: features(
-    css(({},{},{cssForSelected}) => ['>.selected','>*>.selected','>*>*>.selected'].map(sel=>sel+ ' ' + jb.ui.fixCssLine(cssForSelected)).join('\n')),
+    css(
+      ({},{},{cssForSelected}) => ['>.selected','>*>.selected','>*>*>.selected'].map(sel=>sel+ ' ' + jb.ui.fixCssLine(cssForSelected)).join('\n')
+    ),
     userStateProp({
-      id: 'selected', // selected represented as ctxId of selected data
-      phase: 20, // after 'ctrls'
+      id: 'selected',
       value: (ctx,{$props,$state},{databind, autoSelectFirst}) => {
         const currentVal = $state.selected && jb.path(jb.ctxDictionary[$state.selected],'data')
         const val = jb.val(jb.val(databind()) || currentVal || (autoSelectFirst && $props.items[0]))
         const itemsCtxs = $props.itemsCtxs || $props.ctrls.map(ctrl=> ctrl[0].ctxId)
         return itemsCtxs.filter(ctxId => jb.val(ctx.run(itemlist.ctxIdToData(() => ctxId))) == val)[0]
-      }
+      },
+      phase: 20
     }),
     templateModifier(({},{vdom, selected}) => vdom.querySelectorAll('.jb-item')
         .filter(el => selected == el.getAttribute('jb-ctx'))
-        .forEach(el => el.addClass('selected'))
+        .forEach(el => el.addClass('selected'))),
+    method(
+      'onSelection',
+      runActionOnItem(
+        itemlist.ctxIdToData(),
+        runActions(If(isRef('%$databind()%'), writeValue('%$databind()%', '%$selectedToDatabind()%')), call('onSelection'))
+      )
     ),
-    method('onSelection', runActionOnItem(itemlist.ctxIdToData(),
-      runActions(
-        If(isRef('%$databind()%'),writeValue('%$databind()%','%$selectedToDatabind()%')),
-        call('onSelection'))
-    )),
-    method('onDoubleClick', runActionOnItem(itemlist.ctxIdToData(),
-      runActions(
-        If(isRef('%$databind()%'),writeValue('%$databind()%','%$selectedToDatabind()%')),
-        call('onDoubleClick'))
-    )),
-    followUp.flow(source.data('%$$props/selected%'),
-		  rx.filter(and('%$autoSelectFirst%',not('%$$state/refresh%'))),
+    method(
+      'onDoubleClick',
+      runActionOnItem(
+        itemlist.ctxIdToData(),
+        runActions(If(isRef('%$databind()%'), writeValue('%$databind()%', '%$selectedToDatabind()%')), call('onDoubleClick'))
+      )
+    ),
+    followUp.flow(
+      source.data('%$$props/selected%'),
+      rx.filter(and('%$autoSelectFirst%', not('%$$state/refresh%'))),
       sink.BEMethod('onSelection')
     ),
     frontEnd.method('applyState', ({},{cmp}) => {
@@ -8139,20 +8145,20 @@ jb.component('itemlist.selection', {
         cmp.base.state.selected = cmp.state.selected = data
         cmp.runFEMethod('applyState')
     }),
-
     frontEnd.prop('selectionEmitter', rx.subject()),
     frontEnd.flow(
-      source.frontEndEvent('dblclick'), 
-      rx.map(itemlist.ctxIdOfElem('%target%')), rx.filter('%%'), 
+      source.frontEndEvent('dblclick'),
+      rx.map(itemlist.ctxIdOfElem('%target%')),
+      rx.filter('%%'),
       sink.action(runActions(action.runFEMethod('setSelected'), action.runBEMethod('onDoubleClick')))
     ),
     frontEnd.flow(
-        rx.merge( 
-          rx.pipe(source.frontEndEvent('click'), rx.map(itemlist.ctxIdOfElem('%target%')), rx.filter('%%')),
-          source.subject('%$cmp/selectionEmitter%')
-        ),
-        rx.distinctUntilChanged(),
-        sink.action(runActions(action.runFEMethod('setSelected'), action.runBEMethod('onSelection')))
+      rx.merge(
+        rx.pipe(source.frontEndEvent('click'), rx.map(itemlist.ctxIdOfElem('%target%')), rx.filter('%%')),
+        source.subject('%$cmp/selectionEmitter%')
+      ),
+      rx.distinctUntilChanged(),
+      sink.action(runActions(action.runFEMethod('setSelected'), action.runBEMethod('onSelection')))
     )
   )
 })
@@ -8165,75 +8171,69 @@ jb.component('itemlist.keyboardSelection', {
     {id: 'onEnter', type: 'action', dynamic: true}
   ],
   impl: features(
-    htmlAttribute('tabIndex',0),
-    method('onEnter', runActionOnItem(itemlist.ctxIdToData(),call('onEnter'))),
+    htmlAttribute('tabIndex', 0),
+    method('onEnter', runActionOnItem(itemlist.ctxIdToData(), call('onEnter'))),
     frontEnd.passSelectionKeySource(),
-    frontEnd.prop('onkeydown', rx.merge(
-        source.frontEndEvent('keydown'), 
-        source.findSelectionKeySource()
-      ), 
-      frontEnd.addUserEvent(),
-      rx.log('itemlist frontend onkeydown')
+    frontEnd.prop('onkeydown', rx.merge(source.frontEndEvent('keydown'), source.findSelectionKeySource())),
+    frontEnd.flow(
+      '%$cmp.onkeydown%',
+      rx.filter('%keyCode%==13'),
+      rx.filter('%$cmp.state.selected%'),
+      sink.BEMethod('onEnter', '%$cmp.state.selected%')
     ),
-    frontEnd.flow('%$cmp.onkeydown%', rx.filter('%keyCode%==13'), rx.filter('%$cmp.state.selected%'), sink.BEMethod('onEnter','%$cmp.state.selected%') ),
     frontEnd.flow(
       '%$cmp.onkeydown%',
       rx.filter(not('%ctrlKey%')),
-      rx.filter(inGroup(list(38,40),'%keyCode%')),
-      rx.map(itemlist.nextSelected(If('%keyCode%==40',1,-1))), 
+      rx.filter(inGroup(list(38, 40), '%keyCode%')),
+      rx.map(itemlist.nextSelected(If('%keyCode%==40', 1, -1))),
       rx.log('itemlist frontend nextSelected'),
       sink.subjectNext('%$cmp/selectionEmitter%')
     ),
-    frontEnd.var('autoFocus','%$autoFocus%'),
-    frontEnd.init(If(and('%$autoFocus%','%$selectionKeySourceCmpId%'), action.focusOnCmp('itemlist autofocus') ))
+    frontEnd.var('autoFocus', '%$autoFocus%'),
+    frontEnd.init(If(and('%$autoFocus%', '%$selectionKeySourceCmpId%'), action.focusOnCmp('itemlist autofocus')))
   )
 })
 
 jb.component('itemlist.dragAndDrop', {
   type: 'feature',
   impl: features(
-    method('moveItem', runActions(
-      move(itemlist.ctxIdToData('%from%'),itemlist.ctxIdToData('%to%') ),
-      action.refreshCmp()
-    )),
+    method('moveItem', runActions(move(itemlist.ctxIdToData('%from%'), itemlist.ctxIdToData('%to%')), action.refreshCmp())),
     frontEnd.prop('drake', ({},{cmp}) => {
         if (!jb.frame.dragula) return jb.logError('itemlist.dragAndDrop - the dragula lib is not loaded')
         return dragula([cmp.base.querySelector('.jb-drag-parent') || cmp.base] , {
           moves: (el,source,handle) => jb.ui.parents(handle,{includeSelf: true}).some(x=>jb.ui.hasClass(x,'drag-handle'))
         })
     }),
-    frontEnd.flow(source.dragulaEvent('drag',list('el')), 
+    frontEnd.flow(
+      source.dragulaEvent('drag', list('el')),
       rx.map(itemlist.ctxIdOfElem('%el%')),
-      rx.do(({},{cmp}) => cmp.ctxsOnDrag = Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).map(el=>el.getAttribute('jb-ctx'))),
+      rx.do(
+        ({},{cmp}) => cmp.ctxsOnDrag = Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).map(el=>el.getAttribute('jb-ctx'))
+      ),
       sink.subjectNext('%$cmp/selectionEmitter%')
     ),
-    frontEnd.flow(source.dragulaEvent('drop',list('dropElm','target','source','sibling')), 
-      rx.map(obj(
-        prop('from', itemlist.ctxIdOfElem('%dropElm%')),
-        prop('to', itemlist.ctxIdFromSibling('%sibling%'))
-      )),
+    frontEnd.flow(
+      source.dragulaEvent('drop', list('dropElm', 'target', 'source', 'sibling')),
+      rx.map(obj(prop('from', itemlist.ctxIdOfElem('%dropElm%')), prop('to', itemlist.ctxIdFromSibling('%sibling%')))),
       sink.BEMethod('moveItem')
     ),
     frontEnd.flow(
       source.frontEndEvent('keydown'),
       rx.filter('%ctrlKey%'),
-      rx.filter(inGroup(list(38,40),'%keyCode%')),
-      rx.map(obj(
-        prop('from', itemlist.nextSelected(0)),
-        prop('to', itemlist.nextSelected(If('%keyCode%==40',1,-1)))
-      )),          
+      rx.filter(inGroup(list(38, 40), '%keyCode%')),
+      rx.map(obj(prop('from', itemlist.nextSelected(0)), prop('to', itemlist.nextSelected(If('%keyCode%==40', 1, -1))))),
       sink.BEMethod('moveItem')
     )
   )
 })
 
-jb.component('source.dragulaEvent',{
+jb.component('source.dragulaEvent', {
   type: 'rx:0',
   params: [
     {id: 'event', as: 'string'},
-    {id: 'argNames', as: 'array', description: "e.g., ['dropElm', 'target', 'source']" }
+    {id: 'argNames', as: 'array', description: "e.g., ['dropElm', 'target', 'source']"}
   ],
-  impl: source.callbag(({},{cmp},{event,argNames}) => 
+  impl: source.callbag(({},{cmp},{event,argNames}) =>
     jb.callbag.create(obs=> cmp.drake.on(event, (...args) => obs(jb.objFromEntries(args.map((v,i) => [argNames[i],v]))))))
 })
 
@@ -8252,10 +8252,7 @@ jb.component('itemlist.ctxIdFromSibling', {
 jb.component('itemlist.dragHandle', {
   description: 'put on the control inside the item which is used to drag the whole line',
   type: 'feature',
-  impl: features(
-    css.class('drag-handle'),
-    css('{cursor: pointer}')
-  )
+  impl: features(css.class('drag-handle'), css('{cursor: pointer}'))
 })
 
 jb.component('itemlist.shownOnlyOnItemHover', {
@@ -8318,7 +8315,7 @@ jb.component('itemlist.nextSelected', {
   type: 'data:0',
   params: [
     {id: 'diff', as: 'number'},
-    {id: 'elementFilter', dynamic: 'true', defaultValue: true }
+    {id: 'elementFilter', dynamic: 'true', defaultValue: true}
   ],
   impl: (ctx,diff,elementFilter) => {
     const {cmp} = ctx.vars
@@ -11188,10 +11185,7 @@ jb.component('prettyPrint', {
 
 jb.prettyPrintComp = function(compId,comp,settings={}) {
   if (comp) {
-    const macroRemark = ''; //` /* ${jb.macroName(compId)} */`
-    const res = "jb.component('" + compId + "', " + jb.prettyPrint(comp,settings) + ')'
-    const withMacroName = res.replace(/\n/, macroRemark + '\n')
-    return withMacroName
+    return `jb.component('${compId}', ${jb.prettyPrint(comp,settings)})`
   }
 }
 
@@ -11211,7 +11205,6 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
   if (!val || typeof val !== 'object')
     return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
 
-  const advanceLineCol = jb.prettyPrint.advanceLineCol
   const res = valueToMacro({path: initialPath, line:0, col: 0}, val)
   res.text = res.text.replace(/__fixedNL__/g,'\n')
   return res
@@ -11220,15 +11213,15 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
     const res = items.reduce((acc,{prop, item}) => {
       const toAdd = typeof item === 'function' ? item(acc) : item
       const toAddStr = toAdd.text || toAdd, toAddMap = toAdd.map || {}, toAddPath = toAdd.path || ctx.path
-      const startPos = advanceLineCol(acc,''), endPos = advanceLineCol(acc,toAddStr)
+      const startPos = jb.prettyPrint.advanceLineCol(acc,''), endPos = jb.prettyPrint.advanceLineCol(acc,toAddStr)
       const map = { ...acc.map, ...toAddMap, [[toAddPath,prop].join('~')]: [startPos.line, startPos.col, endPos.line, endPos.col] }
       return { text: acc.text + toAddStr, map, unflat: acc.unflat || toAdd.unflat, ...endPos}
     }, {text: '', map: {}, ...ctx})
     return {...ctx, ...res}
   }
 
-  function joinVals({path, line, col}, innerVals, open, close, flat, isArray) {
-    const ctx = {path, line, col}
+  function joinVals(ctx, innerVals, open, close, flat, isArray) {
+    const {path} = ctx
     const _open = typeof open === 'string' ? [{prop: '!open', item: open}] : open
     const openResult = processList(ctx,[..._open, {prop: '!open-newline', item: () => newLine()}])
     const arrayOrObj = isArray? 'array' : 'obj'
@@ -11253,7 +11246,8 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
     return {...result, unflat}
 
     function newLine(offset = 0) {
-      return flat ? '' : '\n' + jb.prettyPrint.spaces.slice(0,((path.match(/~/g)||'').length+offset+1)*tabSize)
+      const pathDepth = path.split('~').filter(x=>!x.match(/^[0-9]+$/)).length
+      return flat ? '' : '\n' + jb.prettyPrint.spaces.slice(0,(pathDepth+offset)*tabSize)
     }
 
     function shouldNotFlat(result) {
@@ -11261,21 +11255,20 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
       if (!jb.studio.valOfPath)
         return result.unflat || long
       const val = jb.studio.valOfPath(path)
-      if (path.match(/~params~[0-9]+$/)) return false
+      const paramProps = path.match(/~params~[0-9]+$/)
+      const paramsParent = path.match(/~params$/)
       const ctrls = path.match(/~controls$/) && Array.isArray(val) // && innerVals.length > 1// jb.studio.isOfType(path,'control') && !arrayElem
       const customStyle = jb.studio.compNameOfPath && jb.studio.compNameOfPath(path) === 'customStyle'
       const moreThanTwoVals = innerVals.length > 2 && !isArray
-      const top = (path.match(/~/g)||'').length < 2
-      return result.unflat || customStyle || moreThanTwoVals || top || ctrls || long
+      const top = !path.match(/~/g)
+      return !paramProps && (result.unflat || paramsParent || customStyle || moreThanTwoVals || top || ctrls || long)
     }
     function fixPropName(prop) {
       return prop.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/) ? prop : `'${prop}'`
     }
   }
 
-  function profileToMacro({path, line, col}, profile,flat) {
-    const ctx = {path, line, col}
-
+  function profileToMacro(ctx, profile,flat) {
     const id = [jb.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
     const comp = comps[id]
     if (comp)
@@ -11304,7 +11297,8 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
     const closeProfileGroup = [{prop:'!close-profile', item:'})'}]
 
     if (params.length == 1 && firstParamIsArray) { // pipeline, or, and, plus
-      const args = systemProps.concat(jb.asArray(profile['$'+id] || profile[params[0].id]).map((val,i) => ({innerPath: params[0].id + '~' + i, val})))
+      const args = systemProps.concat(jb.asArray(profile['$'+id] || profile[params[0].id])
+        .map((val,i) => ({innerPath: params[0].id + '~' + i, val})))
       return joinVals(ctx, args, openProfileSugarGroup, closeProfileSugarGroup, flat, true)
     }
     const keys = Object.keys(profile).filter(x=>x != '$')
@@ -11359,8 +11353,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
     }
   }
 
-  function arrayToMacro({path, line, col}, array, flat) {
-    const ctx = {path, line, col}
+  function arrayToMacro(ctx, array, flat) {
     const vals = array.map((val,i) => ({innerPath: i, val}))
     const openArray = [{prop:'!open-array', item:'['}]
     const closeArray = [{prop:'!close-array', item:']'}]

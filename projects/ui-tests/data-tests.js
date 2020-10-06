@@ -561,8 +561,8 @@ jb.component('dataTest.varsCases', {
 jb.component('dataTest.prettyPrintMacroVars', {
   impl: dataTest({
     calculate: ctx => { try {
-      const testToTest = 'data-test.vars-cases'
-      const compTxt = jb.prettyPrintComp(testToTest, jb.comps[testToTest], {initialPath: testToTest})
+      const testToTest = 'dataTest.varsCases'
+      const compTxt = jb.prettyPrintComp(testToTest, jb.comps[testToTest])
       eval(compTxt)
       return ctx.run(dataTest_asArrayBug())
         .then(({success}) => success)
@@ -666,7 +666,7 @@ jb.component('dataTest.prettyPrintPositions', {
       '%map/~controls~text~!value%',
       join({})
     ),
-    expectedResult: equals('3,4,3,14')
+    expectedResult: equals('2,17,2,27')
   })
 })
 
@@ -685,7 +685,7 @@ jb.component('dataTest.prettyPrintPositionsInnerFlat', {
       '%map/~controls~0~controls~text~!value%',
       join({})
     ),
-    expectedResult: equals('3,40,3,50')
+    expectedResult: equals('2,49,2,59')
   })
 })
 
