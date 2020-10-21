@@ -130,7 +130,8 @@ function cloneVNode(vdom) {
     return unStripVdom(JSON.parse(JSON.stringify(stripVdom(vdom))))
 }
 
-function vdomDiff(newObj,orig,{ignoreRegExp} = {}) {
+function vdomDiff(newObj,orig) {
+    const ignoreRegExp = /\$|checked|style|value|parentNode|frontend|__|widget|on-|remoteuri|width|height|top|left/
     return doDiff(newObj,orig)
     function doDiff(newObj,orig) {
         if (Array.isArray(orig) && orig.length == 0) orig = null
@@ -142,6 +143,7 @@ function vdomDiff(newObj,orig,{ignoreRegExp} = {}) {
             .reduce((acc, key) => newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: '__undefined'}, {})
 
         return Object.keys(newObj).filter(k=>!ignoreRegExp.test(k))
+            .filter(k => !(Array.isArray(newObj[k]) && newObj[k].length == 0))
             .reduce((acc, key) => {
                 if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key
                 const difference = doDiff(newObj[key], orig[key])

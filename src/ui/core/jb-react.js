@@ -133,14 +133,14 @@ function refreshFrontEnd(elem) {
 
 function elemToVdom(elem) {
     if (elem instanceof jb.ui.VNode) return elem
+    if (elem.getAttribute && elem.getAttribute('jb_external') ) return
     return {
         tag: elem.tagName.toLowerCase(),
         attributes: jb.objFromEntries([
             ...Array.from(elem.attributes).map(e=>[e.name,e.value]), 
             ...(jb.path(elem,'firstChild.nodeName') == '#text' ? [['$text',elem.firstChild.nodeValue]] : [])
         ]),
-        ...( elem.childElementCount && !elem.getAttribute('jb_external') 
-            ? { children: Array.from(elem.children).map(el=> elemToVdom(el)) } : {})
+        ...( elem.childElementCount && { children: Array.from(elem.children).map(el=> elemToVdom(el)).filter(x=>x) })
     }
 }
 
@@ -228,8 +228,7 @@ function applyDeltaToVDom(elem,delta) {
 }
 
 function setAtt(elem,att,val) {
-    if (val == '__undefined') return
-    if (att[0] !== '$' && val == null) {
+    if (att[0] !== '$' && val == null || val == '__undefined') {
         elem.removeAttribute(att)
         jb.log('dom change remove',{elem,att,val})
     } else if (att.indexOf('on-') == 0 && val != null && !elem[`registeredTo-${att}`]) {
@@ -239,8 +238,11 @@ function setAtt(elem,att,val) {
         elem.removeEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev,val))
         elem[`registeredTo-${att}`] = false
     } else if (att === 'checked' && elem.tagName.toLowerCase() === 'input') {
-        jb.delay(1).then(()=> elem.checked = !!val)
-        jb.log('dom set checked',{elem,att,val})
+        elem.setAttribute(att,val)
+        jb.delay(1).then(()=> { // browser bug?
+            elem.checked = true
+            jb.log('dom set checked',{elem,att,val})
+        })
     } else if (att.indexOf('$__input') === 0) {
         try {
             setInput(JSON.parse(val))
@@ -329,8 +331,7 @@ function render(vdom,parentElem,prepend) {
     ui.findIncludeSelf(res,'[interactive]').forEach(el=> mountFrontEnd(el))
     // check
     const checkResultingVdom = elemToVdom(res)
-    const diff = jb.ui.vdomDiff(checkResultingVdom,vdom,{
-        ignoreRegExp: /\$|checked|style|value|parentNode|frontend|__|widget|on-|remoteuri|width|height|top|left/})
+    const diff = jb.ui.vdomDiff(checkResultingVdom,vdom)
     if (Object.keys(diff).length)
         jb.logError('render diff',{diff,checkResultingVdom,vdom})
 
@@ -501,7 +502,7 @@ Object.assign(jb.ui, {
         }
         if (assumedVdom) {
             const actualVdom = elemToVdom(elem)
-            const diff = jb.ui.vdomDiff(assumedVdom,actualVdom,{ignoreRegExp: /\$|style|parentNode|frontend|__|widget|on-|remoteuri|width|height|top|left/})
+            const diff = jb.ui.vdomDiff(assumedVdom,actualVdom)
             if (Object.keys(diff).length) {
                 jb.logError('wrong assumed vdom',{actualVdom, assumedVdom, diff, delta, ctx, cmpId, elem})
                 return { recover: true, reason: { diff, description: 'wrong assumed vdom'} }

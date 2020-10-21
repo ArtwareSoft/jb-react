@@ -2,7 +2,7 @@ jb.component('picklist.native', {
   type: 'picklist.style',
   impl: customStyle({
     template: ({},{databind,options},h) => h('select', { onchange: true }, 
-      options.map(option=>h('option', {value: option.code, selected: databind == option.code ? 'selected' : '' },option.text))),
+      options.map(option=>h('option', {value: option.code, ...(databind == option.code && {selected:  '' }) },option.text))),
     features: [field.databind(), picklist.init()]
   })
 })
@@ -11,7 +11,7 @@ jb.component('picklist.nativePlus', {
   type: 'picklist.style',
   impl: customStyle({
     template: ({},{databind,options},h) => h('select', { onchange: true }, 
-      options.map(option=>h('option', {value: option.code, selected: databind == option.code ? 'selected' : '' },option.text))),
+      options.map(option=>h('option', {value: option.code, ...(databind == option.code && {selected:  '' }) } ,option.text))),
     css: `
 { display: block; width: 100%; height: 34px; padding: 6px 12px; font-size: 14px; line-height: 1.42857; 
   color: var(--jb-menu-fg); background: var(--jb-menu-bg); 
@@ -41,7 +41,7 @@ jb.component('picklist.nativeMdLookOpen', {
   { position: relative;}
   >input:focus { border-color: var(--jb-menubar-active-bg); border-width: 2px}
 
-  :after { position: absolute;
+  :after1 { position: absolute;
         top: 0.75em;
         right: 0.5em;
         /* Styling the down arrow */
@@ -76,7 +76,7 @@ jb.component('picklist.radio', {
   impl: customStyle({
     template: (cmp,{databind, options, fieldId, text},h) => h('div', {},
           options.flatMap((option,i)=> [h('input', {
-              type: 'radio', name: fieldId, id: i, checked: databind === option.code, value: option.code, onchange: true
+              type: 'radio', name: fieldId, id: i, ...(databind == option.code && {checked:  '' }), value: option.code, onchange: true
             }), h('label',{for: i}, text(cmp.ctx.setData(option))) ] )),
     css: '>input { %$radioCss% }',
     features: [field.databind(), picklist.init()]
@@ -93,7 +93,7 @@ jb.component('picklist.mdcRadio', {
           options.flatMap((option,i)=> [
               h('div.mdc-radio',{},[
                 h('input.mdc-radio__native-control', {
-                  type: 'radio', name: fieldId, id: i, checked: databind === option.code, value: option.code, onchange: true
+                  type: 'radio', name: fieldId, id: i, ...(databind == option.code && {checked:  '' }), value: option.code, onchange: true
                 }),
                 h('div.mdc-radio__background',{},[
                   h('div.mdc-radio__outer-circle'),
@@ -124,7 +124,7 @@ jb.component('picklist.mdcSelect', {
   ],
   impl: customStyle({
     template: (cmp,{databind,options,title,noLabel,noRipple,hasEmptyOption},h) => h('div.mdc-select',{}, [
-      h('div.mdc-select__anchor',{onclick: true},[
+      h('div.mdc-select__anchor',{},[
           ...(cmp.icon||[]).filter(_cmp=>_cmp && _cmp.ctx.vars.$model.position == 'pre').map(h).map(vdom=>vdom.addClass('mdc-text-field__icon mdc-text-field__icon--leading')),
           h('i.mdc-select__dropdown-icon', {}),
           h('div.mdc-select__selected-text',{'aria-required': !hasEmptyOption},databind),
@@ -144,9 +144,9 @@ jb.component('picklist.mdcSelect', {
       css(({},{},{width}) => `>* { ${jb.ui.propWithUnits('width', width)} }`),
       frontEnd.flow(
         source.callbag(({},{cmp}) => jb.callbag.create(obs=> 
-          cmp.mdc_comps.forEach(mdcCmp => mdcCmp.listen('MDCSelect:change', () => obs(mdcCmp.value))))),
+          cmp.mdc_comps.forEach(({mdc_cmp}) => mdc_cmp.listen('MDCSelect:change', () => obs(mdc_cmp.value))))),
         rx.takeUntil('%$cmp/destroyed%'),
-        sink.BEMethod('writeFieldValue')
+        sink.BEMethod('writeFieldValue','%%')
       ),  
       css(
         `~.mdc-select:not(.mdc-select--disabled) .mdc-select__selected-text { color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-menubar-inactive-bg); }
@@ -172,10 +172,11 @@ jb.component('picklist.labelList', {
         itemlist.selection({
           databind: '%$picklistModel/databind%',
           selectedToDatabind: '%code%',
-          databindToSelected: ctx => ctx.vars.items.filter(o=>o.code == ctx.data)[0],
+          databindToSelected: (ctx,{$props}) => $props.items.find(o=>o.code == ctx.data),
           cssForSelected: '%$cssForSelected%'
         }),
-        itemlist.keyboardSelection()
+        itemlist.keyboardSelection(),
+        watchRef('%$picklistModel/databind%')
       ]
     }),
     'picklistModel'
@@ -194,12 +195,15 @@ jb.component('picklist.buttonList', {
       items: '%$picklistModel/options%',
       controls: button({title: '%text%', style: call('buttonStyle')}),
       style: call('itemlistStyle'),
-      features: itemlist.selection({
-        databind: '%$picklistModel/databind%',
-        selectedToDatabind: '%code%',
-        databindToSelected: ctx => ctx.vars.items.filter(o=>o.code == ctx.data)[0],
-        cssForSelected: '%$cssForSelected%'
-      })
+      features: [
+          itemlist.selection({
+          databind: '%$picklistModel/databind%',
+          selectedToDatabind: '%code%',
+          databindToSelected: (ctx,{$props}) => $props.items.find(o=>o.code == ctx.data),
+          cssForSelected: '%$cssForSelected%'
+        }),
+        watchRef('%$picklistModel/databind%')
+      ]
     }),
     'picklistModel'
   )
@@ -221,7 +225,7 @@ jb.component('picklist.groups', {
           (hasEmptyOption ? [h('option',{value:''},'')] : []).concat(
             groups.map(group=>h('optgroup',{label: group.text},
               group.options.map(
-                option=>h('option',{value: option.code, selected: databind == option.code ? 'selected' : '' },option.text))))
+                option=>h('option',{value: option.code, ...(databind == option.code && {selected:  '' }) },option.text))))
       )),
     features: [field.databind(), picklist.init(),  picklist.initGroups()]
   })

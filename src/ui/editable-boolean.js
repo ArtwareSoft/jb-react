@@ -13,7 +13,7 @@ jb.component('editableBoolean', {
   ],
   impl: ctx => jb.ui.ctrl(ctx, features(
     calcProp('toggleText',If('%$$model/databind()%','%$$model/textForTrue()%','%$$model/textForFalse()%' )),
-    watchRef({ref: '%$$model/databind()%', allowSelfRefresh: true}),
+    watchRef({ref: '%$$model/databind()%', allowSelfRefresh: true, strongRefresh: true}),
     method('toggle', runActions(
         writeValue('%$$model/databind()%',not('%$$model/databind()%')),
         refreshIfNotWatchable('%$$model/databind()%')

@@ -68,11 +68,12 @@ jb.component('itemlist.selection', {
     ),
     userStateProp({
       id: 'selected',
-      value: (ctx,{$props,$state},{databind, autoSelectFirst}) => {
+      value: (ctx,{$props,$state},{databind, autoSelectFirst, databindToSelected}) => {
         const currentVal = $state.selected && jb.path(jb.ctxDictionary[$state.selected],'data')
-        const val = jb.val(jb.val(databind()) || currentVal || (autoSelectFirst && $props.items[0]))
+        const databindVal = jb.val(databind()) 
+        const val = jb.val( databindVal != null && databindToSelected(ctx.setData(databindVal)) || currentVal || (autoSelectFirst && $props.items[0]))
         const itemsCtxs = $props.itemsCtxs || $props.ctrls.map(ctrl=> ctrl[0].ctxId)
-        return itemsCtxs.filter(ctxId => jb.val(ctx.run(itemlist.ctxIdToData(() => ctxId))) == val)[0]
+        return itemsCtxs.find(ctxId => jb.val(jb.path(jb.ctxDictionary[ctxId],'data')) == val)
       },
       phase: 20
     }),

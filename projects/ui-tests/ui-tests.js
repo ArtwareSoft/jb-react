@@ -677,30 +677,29 @@ jb.component('uiTest.itemlistSelection', {
   })
 })
 
-jb.component('uiTest.itemlistMD.downArrow', {
-  impl: uiFrontEndTest({
+jb.component('uiTest.itemlistSelection.databind', {
+  impl: uiTest({
     control: group({
       controls: [
         itemlist({
-          items: '%$watchablePeople%',
-          controls: text('%$item.name%'),
+          items: '%$people/name%',
+          controls: text('%%'),
           features: [
-            id('itemlist'),
             itemlist.selection({
               databind: '%$globals/selectedPerson%',
               autoSelectFirst: true
             }),
-            itemlist.keyboardSelection(true)
+            watchRef('%$globals/selectedPerson%')
           ]
         }),
-        text({
-          text: '%$globals/selectedPerson/name% selected',
-          features: watchRef('%$globals/selectedPerson%')
+        button({
+          title: 'select Marge',
+          action: writeValue('%$globals/selectedPerson%','%$people/1/name%')
         })
       ]
     }),
-    action: runActions(delay(1), uiAction.keyboardEvent({ selector: '#itemlist',type: 'keydown', keyCode: 40 }) , delay(30)),
-    expectedResult: contains(['Marge Simpson', 'Marge Simpson - watchable selected'])
+    userInput: userInput.click('button'),
+    expectedResult: contains(['li','li','selected','Marge'])
   })
 })
 
@@ -1158,7 +1157,18 @@ jb.component('uiTest.editableBoolean.allStyles', {
         text('%$person/male%')
       ]
     }),
-    expectedResult: contains(['male'])
+    expectedResult: contains('male')
+  })
+})
+
+jb.component('uiTest.editableBoolean.mdcSlideToggle', {
+  impl: uiTest({
+    control: editableBoolean({
+          databind: '%$person/male%',
+          style: editableBoolean.mdcSlideToggle(),
+          title: 'male'
+    }),
+    expectedResult: contains('male')
   })
 })
 

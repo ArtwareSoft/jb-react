@@ -18,7 +18,7 @@ jb.component('field.databind', {
     calcProp({id: 'fieldId', value: () => jb.ui.field_id_counter++}),
     method(
       'writeFieldValue',
-      (ctx,{cmp,value},{oneWay}) => writeFieldData(ctx,cmp,value,oneWay)
+      (ctx,{cmp},{oneWay}) => writeFieldData(ctx,cmp,ctx.data,oneWay)
     ),
     method(
         'onblurHandler',

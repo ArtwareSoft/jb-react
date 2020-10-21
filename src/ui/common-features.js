@@ -390,7 +390,7 @@ jb.component('refreshIfNotWatchable', {
   params: [
     {id: 'data'}
   ],
-  impl: (ctx, data) => !jb.isWatchable(data) && ctx.vars.cmp.refresh()
+  impl: (ctx, data) => !jb.isWatchable(data) && ctx.vars.cmp.refresh(null,{strongRefresh: true})
 })
 
 jb.component('feature.byCondition', {

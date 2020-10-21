@@ -9,24 +9,24 @@ jb.component('mdcStyle.initDynamic', {
     frontEnd.init(({},{cmp}) => {
       if (!jb.ui.material) return jb.logError('please load mdc library')
       cmp.mdc_comps = cmp.mdc_comps || []
-      const txtElm = jb.ui.findIncludeSelf(cmp.base,'.mdc-text-field')[0]
-      if (txtElm) {
-        cmp.mdc_comps.push(new jb.ui.material.MDCTextField(txtElm))
-        //cmp.onValueChange = value => (cmp.mdc_comps||[]).forEach(x=> x.label_ && x.label_.float(!!value))
-      } else if (cmp.base.classList.contains('mdc-button') || cmp.base.classList.contains('mdc-fab'))
-        cmp.mdc_comps.push(new jb.ui.material.MDCRipple(cmp.base))
-      else if (cmp.base.classList.contains('mdc-switch'))
-        cmp.mdc_comps.push(new jb.ui.material.MDCSwitch(cmp.base))
-      else if (cmp.base.classList.contains('mdc-chip-set'))
-        cmp.mdc_comps.push(new jb.ui.material.MDCChipSet(cmp.base))
-      else if (cmp.base.classList.contains('mdc-tab-bar'))
-        cmp.mdc_comps.push(new jb.ui.material.MDCTabBar(cmp.base))
-      else if (cmp.base.classList.contains('mdc-slider'))
-        cmp.mdc_comps.push(new jb.ui.material.MDCSlider(cmp.base))
-      else if (cmp.base.classList.contains('mdc-select'))
-        cmp.mdc_comps.push(new jb.ui.material.MDCSelect(cmp.base))
+      ;['switch','chip-set','tab-bar','slider','select','text-field'].forEach(cmpName => {
+        const elm = jb.ui.findIncludeSelf(cmp.base,`.mdc-${cmpName}`)[0]
+        if (elm) {
+          const name1 = cmpName.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase())
+          const name = name1[0].toUpperCase() + name1.slice(1)
+          cmp.mdc_comps.push({mdc_cmp: new jb.ui.material[`MDC${name}`](elm), cmpName})
+          jb.log(`mdc frontend init ${cmpName}`,{cmp})
+        }
+      })
+      if (cmp.base.classList.contains('mdc-button') || cmp.base.classList.contains('mdc-fab')) {
+        cmp.mdc_comps.push({mdc_cmp: new jb.ui.material.MDCRipple(cmp.base), cmpName: 'ripple' })
+        jb.log('mdc frontend init ripple',{cmp})
+      }
     }),
-    frontEnd.onDestroy(({},{cmp}) => (cmp.mdc_comps || []).forEach(mdc_cmp=>mdc_cmp.destroy()))
+    frontEnd.onDestroy(({},{cmp}) => (cmp.mdc_comps || []).forEach(({mdc_cmp,cmpName}) => {
+      mdc_cmp.destroy()
+      jb.log(`mdc frontend destroy ${cmpName}`,{cmp})
+    }))
   )
 })
 
