@@ -84,12 +84,12 @@ jb.chromeDebugger = {
         chrome.devtools.panels.elements.onSelectionChanged.addListener( async () => {
             const inspectedProps = await this.selectedProps()
             inspectedProps && inspectedProps.cmpId && 
-                jb.ui.runBEMethod(document.querySelector('[widgettop="true"]'),'refreshAfterDebuggerSelection',inspectedProps)
+                jb.ui.runBEMethod(document.querySelector('[widgettop="true"]>*'),'refreshAfterDebuggerSelection',inspectedProps)
         })
         if (panelId == 'card') 
             chrome.devtools.panels.elements.onSelectionChanged.addListener(async () => {
                 await this.markSelected()
-                jb.ui.runBEMethod(document.querySelector('[widgettop="true"]'),'refreshAfterDebuggerSelection')
+                jb.ui.runBEMethod(document.querySelector('[widgettop="true"]>*'),'refreshAfterDebuggerSelection')
         })
         const inspectedProps = await this.selectedProps()
         const profile = {$: `inspectedWindow.${panelId}Ctrl`, inspectedProps, uri}
@@ -110,6 +110,7 @@ jb.chromeDebugger = {
     },
     async selectedProps() {
         function buildPropsObj() {
+            if (!self.jb) return
             const cmpElem = $0 && jb.ui.closestCmpElem($0)
             return cmpElem ? {
                 cmpId: cmpElem.getAttribute("cmp-id"),
@@ -166,11 +167,15 @@ jb.chromeDebugger = {
                 jb.initSpy({spyParam: jb.path(parent,'jb.spy.spyParam') || 'remote,chromeDebugger,headless,uiComp'});
                 spy = jb.spy;
                 parent.jbStudioDebugPort = jb.remote.cbPortFromFrame(parent,'inspectedStudio','${uri}');
-                console.log('end init iframe',parent.jbStudioDebugPort);
+                console.log('end init iframe','${uri}',parent.jbStudioDebugPort);
                 self.jbUri = 'injectedStudio';
             </script>
             </body>`
+            self.jbFrames = self.jbFrames || []
+            self.jbFrames.forEach(fr=>document.body.removeChild(fr))
+
             const iframe = document.createElement('iframe')
+            self.jbFrames.push(iframe)
             iframe.id = 'jBartHelper'
             iframe.style.display = 'none'
             iframe.src = 'javascript: this.document.write(`' + html +'`)'

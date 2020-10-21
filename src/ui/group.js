@@ -16,10 +16,7 @@ jb.component('group', {
 jb.component('group.initGroup', {
   type: 'feature',
   category: 'group:0',
-  impl: calcProp({
-    id: 'ctrls',
-    value: '%$$model.controls()%'
-  })
+  impl: calcProp('ctrls',(ctx,{$model}) => $model.controls(ctx).filter(x=>x))
 })
 
 jb.component('inlineControls', {
@@ -60,13 +57,13 @@ jb.component('group.firstSucceeding', {
     calcProp({
         id: 'ctrls',
         value: ctx => {
-      const index = ctx.vars.$props.cmpHash-1
-      if (isNaN(index)) return []
-      const prof = jb.asArray(ctx.vars.$model.controls.profile)[index]
-      return [ctx.vars.$model.ctx.setVars(ctx.vars).runInner(prof,{type: 'control'},`controls~${index}`)]
-     },
+          const index = ctx.vars.$props.cmpHash-1
+          if (isNaN(index)) return []
+          const prof = jb.asArray(ctx.vars.$model.controls.profile)[index]
+          return [ctx.vars.$model.ctx.setVars(ctx.vars).runInner(prof,{type: 'control'},`controls~${index}`)]
+        },
         priority: 5
-      })
+    })
   )
 })
 
@@ -80,7 +77,7 @@ jb.component('controlWithCondition', {
     {id: 'control', type: 'control', mandatory: true, dynamic: true},
     {id: 'title', as: 'string'}
   ],
-  impl: (ctx,condition,ctrl) => condition(ctx) && ctrl(ctx)
+  impl: (ctx,condition,ctrl) => condition(ctx) ? ctrl(ctx) : null
 })
 
 jb.component('group.wait', {
@@ -98,9 +95,9 @@ jb.component('group.wait', {
     calcProp({
         id: 'ctrls',
         value: (ctx,{cmp},{loadingControl,error}) => {
-        const ctrl = cmp.state.error ? error() : loadingControl(ctx)
-        return cmp.ctx.profile.$ == 'itemlist' ? [[ctrl]] : [ctrl]
-      },
+          const ctrl = cmp.state.error ? error() : loadingControl(ctx)
+          return cmp.ctx.profile.$ == 'itemlist' ? [[ctrl]] : [ctrl]
+        },
         priority: ctx => jb.path(ctx.vars.$state,'dataArrived') ? 0: 10
     }),
     followUp.action((ctx,{cmp},{varName,passRx}) => !cmp.state.dataArrived && !cmp.state.error &&

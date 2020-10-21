@@ -4,7 +4,7 @@ jb.component('openDialog', {
   type: 'action,has-side-effects',
   params: [
     {id: 'title', as: 'renderable', dynamic: true},
-    {id: 'content', type: 'control', dynamic: true, templateValue: group()},
+    {id: 'content', type: 'control', dynamic: true, templateValue: group(), defaultValue: text('')},
     {id: 'style', type: 'dialog.style', dynamic: true, defaultValue: dialog.default()},
     {id: 'menu', type: 'control', dynamic: true},
 	{id: 'onOK', type: 'action', dynamic: true},
@@ -487,7 +487,7 @@ jb.component('dialog.dialogTop', {
 jb.component('dialogs.defaultStyle', {
 	type: 'dialogs.style',
 	impl: customStyle({
-		template: ({},{},h) => h('div.jb-dialogs',{},[]),
+		template: ({},{},h) => h('div.jb-dialogs'),
 		features: [
 			followUp.flow(
 				source.subject(dialogs.changeEmitter()),

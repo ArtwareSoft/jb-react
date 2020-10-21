@@ -12,13 +12,14 @@ jb.component('studio.compInspector', {
         text('%$inspectedCmp/cmpId%;%$inspectedCmp/ver% -- %$inspectedCtx/path%', '%$inspectedCtx/profile/$%'),
         itemlist({
             title: 'state',
-            items: unique({items: list(keys('%$inspectedCmp/state%'),keys('%$FEState%'))}),
+            items: unique({items: list(keys('%$inspectedCmp/state%'),keys('%$elem/_component/state%'))}),
             controls: [
              text('%%', ''),
-             text('%$FEState/{%%}%', 'front end'),
+             text('%$elem/_component/state/{%%}%', 'front end'),
              text('%$inspectedCmp/state/{%%}%', 'back end'),
             ],
-            style: table.plain()
+            style: table.plain(),
+            features: followUp.watchObservable(source.callbag('%$frameOfElem.spy.observable()%', 100))
         }),
         studio.eventsOfComp('%$inspectedCmp/cmpId%'),
         editableText({
@@ -41,13 +42,12 @@ jb.component('studio.compInspector', {
             leafFields: text('%val%', 'value'),
             chapterHeadline: text(tree.lastPathElement('%path%'))
         }),
-        tree('raw', tree.json('%$inspectedCmp%'))
+        //tree('raw', tree.json('%$inspectedCmp%'))
       ]
     }),
     features: [
       variable('cmpId', firstSucceeding('%$$state.cmpId%', '%$inspectedProps.cmpId%')),
       variable('frameUri', firstSucceeding('%$$state.frameUri%', '%$inspectedProps.frameUri%')),
-      variable('FEState', firstSucceeding('%$$state.frontEndState%', '%$inspectedProps.frontEndState%')),
       variable('frameOfElem', ({},{frameUri}) => [self,self.parent,...Array.from(frames)].filter(x=>x.jbUri == frameUri)[0]),
       variable('elem', ({},{cmpId,frameOfElem}) => frameOfElem && frameOfElem.document.querySelector(`[cmp-id="${cmpId}"]`)),
       variable('inspectedCmp', ({},{frameOfElem, elem}) => 
@@ -60,7 +60,6 @@ jb.component('studio.compInspector', {
         rx.filter(({data},{$props},{}) => data.cmps.find(_cmp => _cmp.cmpId == $props.cmpId)),
         sink.refreshCmp('%$$state%')
       ),
-      followUp.watchObservable(source.callbag(ctx => frameOfElem.spy && frameOfElem.spy.observable()), 1000)
     ]
   })
 })

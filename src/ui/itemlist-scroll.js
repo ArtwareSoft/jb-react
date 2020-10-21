@@ -95,8 +95,12 @@ jb.component('itemlist.infiniteScroll', {
   impl: features(
     method('fetchNextPage', runActions(
       Var('delta', itemlist.deltaOfNextPage('%$pageSize%')),
-      action.applyDeltaToCmp('%$delta%','%$cmp/cmpId%')
-    )),    
+      action.applyDeltaToCmp({
+          delta: '%$delta%', 
+          cmpId: '%$cmp/cmpId%', 
+          assumedVdom: (ctx,{cmp}) => jb.ui.elemToVdom(jb.ui.elemOfCmp(ctx,cmp.cmpId))
+      })
+    )),
     feature.userEventProps('elem.scrollTop,elem.scrollHeight'),
     frontEnd.flow(
       rx.merge(
@@ -139,8 +143,8 @@ jb.component('itemlist.deltaOfNextPage', {
     const deltaCalcCtx = cmp.ctx.setVar('$refreshElemCall',true).setVar('$cmpId', cmp.cmpId).setVar('$cmpVer', cmp.ver+1)
     const vdomOfDeltaItems = deltaCalcCtx.ctx({profile: Object.assign({},deltaCalcCtx.profile,{ items: () => nextPageItems}), path: ''}).runItself().renderVdom() // change the profile to return itemsToAppend
     const delta = {
-        $prevVersion: cmp.ver,
-        $bySelector: {
+        _$prevVersion: cmp.ver,
+        _$bySelector: {
             '.jb-drag-parent': jb.ui.compareVdom({},jb.ui.findIncludeSelf(vdomOfDeltaItems,'.jb-drag-parent')[0]),
             ':scope': { attributes: { $scrollDown: true }}
     }}

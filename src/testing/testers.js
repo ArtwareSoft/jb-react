@@ -346,8 +346,12 @@ jb.testers = {
 				jb_fail_counter++;
 			const baseUrl = window.location.href.split('/tests.html')[0]
 			const studioUrl = `http://localhost:8082/project/studio/${res.id}?host=test`
+			const matchLogs = 'remote,itemlist,refresh'.split(',')
+			const matchLogsMap = jb.entries({ui: ['uiComp'], widget: ['uiComp','widget'] })
+			const spyLogs = ['test', ...(matchLogs.filter(x=>res.id.toLowerCase().indexOf(x) != -1)), 
+				...(matchLogsMap.flatMap( ([k,logs]) =>res.id.toLowerCase().indexOf(k) != -1 ? logs : []))]
 			const testResultHtml = `<div class="${res.success ? 'success' : 'failure'}"">
-				<a href="${baseUrl}/tests.html?test=${res.id}&show&spy=res" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
+				<a href="${baseUrl}/tests.html?test=${res.id}&show&spy=${spyLogs.join(',')}" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
 				<span> ${res.duration}mSec</span> 
 				<button class="editor" onclick="goto_editor('${res.id}')">src</button>
 				<a class="editor" href="${studioUrl}">studio</a>

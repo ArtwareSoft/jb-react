@@ -42,7 +42,7 @@ jb.component('source.waitForSelector', {
   type: 'rx',
   params: [
     {id: 'selector', as: 'string' },
-    {id: 'interval', as: 'number', defaultValue: 50 },
+    {id: 'interval', as: 'number', defaultValue: 100 },
     {id: 'times', as: 'number', defaultValue: 30 },
   ],
   impl: rx.pipe(

@@ -53,7 +53,7 @@ Object.assign(jb.ui,{
 class JbComponent {
     constructor(ctx,id,ver) {
         this.ctx = ctx // used to calc features
-        this.cmpId = id || cmpId++
+        this.cmpId = ''+(id || cmpId++)
         this.ver = ver || 1
         this.eventObservables = []
         this.cssLines = []
@@ -125,9 +125,9 @@ class JbComponent {
             x.strongRefresh && `strongRefresh`,  x.cssOnly && `cssOnly`, x.allowSelfRefresh && `allowSelfRefresh`,  
             x.phase && `phase=${x.phase}`].filter(x=>x).join(';')).join(',')
         const methods = (this.method||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx.setVars({cmp: this, $props: this.renderProps, ...this.newVars}))}`).join(',')
-        const eventHandlers = (this.eventHandler||[]).map(h=>`${h.event}-${ui.preserveCtx(h.ctx.setVars({cmp: this}))}`).join(',')
+        const eventhandlers = (this.eventHandler||[]).map(h=>`${h.event}-${ui.preserveCtx(h.ctx.setVars({cmp: this}))}`).join(',')
         const originators = this.originators.map(ctx=>ui.preserveCtx(ctx)).join(',')
-        const userEventProps = (this.userEventProps||[]).join(',')
+        const usereventprops = (this.userEventProps||[]).join(',')
         const frontEndMethods = (this.frontEndMethod || []).map(h=>({method: h.method, path: h.path}))
         const frontEndVars = this.frontEndVar && jb.objFromEntries(this.frontEndVar.map(h=>[h.id, h.value(this.calcCtx)]))
         if (vdom instanceof jb.ui.VNode) {
@@ -135,21 +135,21 @@ class JbComponent {
             vdom.attributes = Object.assign(vdom.attributes || {}, {
                     'jb-ctx': ui.preserveCtx(this.originatingCtx()),
                     'cmp-id': this.cmpId, 
-                    'cmp-ver': this.ver,
+                    'cmp-ver': ''+this.ver,
                     'cmp-pt': this.ctx.profile.$,
                     'full-cmp-ctx': ui.preserveCtx(this.calcCtx),
                 },
                 observe && {observe}, 
                 methods && {methods}, 
-                eventHandlers && {eventHandlers},
+                eventhandlers && {eventhandlers},
                 originators && {originators},
-                userEventProps && {userEventProps},
+                usereventprops && {usereventprops},
                 frontEndMethods.length && {$__frontEndMethods : JSON.stringify(frontEndMethods) },
-                frontEndMethods.length && {interactive : true}, 
+                frontEndMethods.length && {interactive : 'true'}, 
                 frontEndVars && { $__vars : JSON.stringify(frontEndVars)},
                 this.state && { $__state : JSON.stringify(this.state)},
                 this.ctxForPick && { 'pick-ctx': ui.preserveCtx(this.ctxForPick) },
-                this.renderProps.cmpHash != null && {cmpHash: this.renderProps.cmpHash}
+                this.renderProps.cmpHash != null && {cmphash: ''+this.renderProps.cmpHash}
             )
         }
         jb.log('uiComp end renderVdom',{cmp: this, vdom})

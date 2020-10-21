@@ -24,16 +24,19 @@ jb.component('widget.frontEndCtrl', {
 jb.component('sink.frontEndDelta', {
     type: 'rx',
     impl: sink.action( ctx => {
-        const {delta,css,widgetId,cmpId} = ctx.data
+        const {delta,css,widgetId,cmpId,assumedVdom} = ctx.data
         if (css) 
             return !ctx.vars.headlessWidget && jb.ui.addStyleElem(ctx,css)
         const ctxToUse = ctx.setVars({headlessWidget: false, FEwidgetId: widgetId})
         const elem = cmpId ? null : jb.ui.widgetBody(ctxToUse)
         try {
-            jb.ui.applyDeltaToCmp(delta,ctxToUse,cmpId,elem)
+            const res = jb.ui.applyDeltaToCmp({delta,ctx: ctxToUse,cmpId,elem,assumedVdom})
+            if (jb.path(res,'recover')) {
+                jb.log('headless frontend recover widget request',{widgetId,ctx,elem,cmpId, ...res})
+                jb.ui.widgetUserRequests.next({$: 'recoverWidget', widgetId, ...res })
+            }
         } catch(e) {
             jb.logException(e,'headless frontend apply delta',{ctx,elem,cmpId})
-            jb.ui.widgetUserRequests.next({$: 'applyDeltaError', widgetId, cmpId})
         }
     })
 })
@@ -47,16 +50,7 @@ jb.component('widget.headless', {
     impl: (ctx,ctrl,widgetId) => {
         const {renderingUpdates, widgetRenderingSrc, compareVdom, h,unmount } = jb.ui
         const filteredSrc = jb.callbag.filter(m=>m.widgetId == widgetId)(widgetRenderingSrc)
-        const cmp = ctrl(jb.ui.extendWithServiceRegistry(ctx.setVars({headlessWidget: true,headlessWidgetId: widgetId})))
-        const top = h(cmp)
-        const body = h('div',{ widgetTop: true, headless: true, widgetId, remoteUri: ctx.vars.remoteUri },top)
-        if (jb.ui.headless[widgetId]) {
-            jb.logError('headless widgetId already exists',{widgetId,ctx})
-            unmount(jb.ui.headless[widgetId])
-        }
-        jb.ui.headless[widgetId] = { body }
-        jb.log('headless widget created',{widgetId,body})
-        renderingUpdates.next({widgetId, delta: compareVdom({},top)})
+        createWidget()
         return userReqIn => (start, sink) => {
             if (start !== 0) return
             const talkback = []
@@ -76,8 +70,26 @@ jb.component('widget.headless', {
               if (t == 0) talkback.push(d)
               if (t === 2) sink(t,d)
               if (t === 1 && d && d.data.widgetId == widgetId) handleUserReq(d.data)
-//              if (t === 1 && d && d.data.destroyWidget) sink(2)
             })
+        }
+
+        function createWidget(recover) {
+            const ctxToUse = jb.ui.extendWithServiceRegistry(ctx.setVars(
+                {...(recover && { recover: true}), headlessWidget: true, headlessWidgetId: widgetId
+            }))
+            const cmp = ctrl(ctxToUse)
+            const top = h(cmp)
+            const body = h('div',{ widgetTop: true, headless: true, widgetId, remoteUri: ctx.vars.remoteUri },top)
+            if (jb.ui.headless[widgetId]) {
+                if (!recover) jb.logError('headless widgetId already exists',{widgetId,ctx})
+                unmount(jb.ui.headless[widgetId])
+            }
+            if (recover && !jb.ui.headless[widgetId])
+                jb.logError('headless recover no existing widget',{widgetId,ctx})
+            jb.ui.headless[widgetId] = { body }
+            jb.log('headless widget created',{widgetId,body})
+            const delta = { children: {resetAll : true, toAppend: [jb.ui.stripVdom(top)]} }
+            renderingUpdates.next({widgetId, delta })
         }
 
         function handleUserReq(userReq) {
@@ -87,24 +99,16 @@ jb.component('widget.headless', {
                 if (!ctx)
                     return jb.logError(`headless widget runCtxAction. no ctxId ${userReq.ctxIdToRun}`,{userReq})
                 jb.ui.runCtxActionAndUdateCmpState(ctx,userReq.data,userReq.vars)
-            } else if (userReq.$ == 'applyDeltaError') {
-                const cmpElem = jb.ui.elemOfCmp(ctx.setVars({headlessWidget: true,headlessWidgetId: widgetId}),userReq.cmpId)
-                return jb.logError(`headless widget applyDeltaError ${userReq.cmpId}`,{cmpElem,userReq})
-                // if (!cmpElem) 
-                //     return jb.logError(`headless widget applyDeltaError. can not find cmpElem ${userReq.cmpId}`,{userReq})
-                // return
-                // cmpElem.children.forEach(child => unmount(child))
-                // cmpElem.children = []
-                // jb.ui.refreshElem(cmpElem)
+            } else if (userReq.$ == 'recoverWidget') {
+                jb.log('recover headless widget',{userReq})
+                createWidget(true)
             } else if (userReq.$ == 'destroy') {
                 jb.ui.BECmpsDestroyNotification.next({cmps: userReq.cmps, destroyLocally: true})
                 if (userReq.destroyWidget) jb.delay(1).then(()=> {
                     jb.log('destroy headless widget request',{widgetId: userReq.widgetId,userReq})
-//                    jb.delay(1).then(()=>{ 
                         jb.log('destroy headless widget',{widgetId: userReq.widgetId,userReq})
                         delete jb.ui.headless[userReq.widgetId]
-                    }) // the delay needed for tests
-//                })
+                    }) // the delay is needed for tests
             }
         }
     }

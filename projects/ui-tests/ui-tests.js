@@ -273,7 +273,7 @@ jb.component('uiTest.autoFocusOnFirstInput', {
       ],
       features: group.autoFocusOnFirstInput()
     }),
-    expectedResult: contains('_focus="autoFocusOnFirstInput"')
+    expectedResult: contains('__focus="autoFocusOnFirstInput"')
   })
 })
 
@@ -1034,26 +1034,19 @@ jb.component('uiTest.editableTextWithJbVal', {
 jb.component('uiTest.propertySheet.titlesAbove', {
   impl: uiTest({
     control: group({
-      controls: [
-        group({
-          style: propertySheet.titlesAbove({}),
+          style: propertySheet.titlesAbove(),
           controls: [
             editableText({title: 'name', databind: '%$person/name%'}),
-            editableText({title: 'address', databind: '%$person/address%'})
+            editableText({title: 'address', databind: '%$person/age%'})
           ]
-        }),
-        text('%$person/name%')
-      ]
     }),
-    expectedResult: contains(['Homer'])
+    expectedResult: contains('Homer')
   })
 })
 
 jb.component('uiTest.propertySheet.titlesLeft', {
   impl: uiTest({
     control: group({
-      controls: [
-        group({
           style: propertySheet.titlesLeft({}),
           controls: [
             editableText({
@@ -1063,14 +1056,12 @@ jb.component('uiTest.propertySheet.titlesLeft', {
             }),
             editableText({
               title: 'address',
-              databind: '%$person/address%',
+              databind: '%$person/age%',
               style: editableText.input()
             })
           ]
-        })
-      ]
     }),
-    expectedResult: contains(['Homer'])
+    expectedResult: contains('Homer')
   })
 })
 

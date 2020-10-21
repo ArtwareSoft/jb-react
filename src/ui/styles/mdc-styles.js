@@ -12,7 +12,7 @@ jb.component('mdcStyle.initDynamic', {
       const txtElm = jb.ui.findIncludeSelf(cmp.base,'.mdc-text-field')[0]
       if (txtElm) {
         cmp.mdc_comps.push(new jb.ui.material.MDCTextField(txtElm))
-        cmp.onValueChange = value => (cmp.mdc_comps||[]).forEach(x=> x.label_ && x.label_.float(!!value))
+        //cmp.onValueChange = value => (cmp.mdc_comps||[]).forEach(x=> x.label_ && x.label_.float(!!value))
       } else if (cmp.base.classList.contains('mdc-button') || cmp.base.classList.contains('mdc-fab'))
         cmp.mdc_comps.push(new jb.ui.material.MDCRipple(cmp.base))
       else if (cmp.base.classList.contains('mdc-switch'))

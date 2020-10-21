@@ -51,63 +51,76 @@ jb.component('studio.refreshSpy', {
   impl: refreshControlById('event-tracker')
 })
 
+jb.component('studio.eventTrackerToolbar', {
+  type: 'control',
+  impl: group({
+    layout: layout.horizontal('2'),
+    controls: [
+      text({
+        text: pipeline(eventTracker.getSpy(), '%$events/length%/%logs/length%'),
+        title: 'counts',
+        features: [
+          variable('events', eventTracker.eventItems('%$studio/eventTrackerQuery%')),
+          css.padding({top: '5', left: '5'})
+        ]
+      }),
+      divider({style: divider.vertical()}),
+      button({
+        title: 'clear',
+        action: runActions(eventTracker.clearSpyLog(), refreshControlById('event-tracker')),
+        style: chromeDebugger.icon(),
+        features: [css.color('var(--jb-menu-fg)'), feature.hoverTitle('clear')]
+      }),
+      picklist({
+        title: 'frame',
+        databind: ctx => ({
+            $jb_val: val => {
+              jb.studio.inspectedJb = jb.studio.inspectedJb || jb.ui.getInspectedJb()
+              if (val === undefined)
+                  return jb.path(jb.studio.inspectedJb,'frame.jbUri')
+              jb.studio.inspectedJb = jb.ui.getReachableJbs(ctx.frame()).filter(x=>x.frame.jbUri == val)[0]
+            }
+        }),           
+        options: picklist.options({
+          options: ctx => jb.ui.getReachableJbs(ctx.frame()),
+          code: '%frame/jbUri%',
+          text: '%frame/jbUri% (%spy/logs/length%)',
+        }),
+        //features: picklist.onChange(refreshControlById('event-tracker'))
+      }),
+      divider({style: divider.vertical()}),
+      editableText({
+        title: 'query',
+        databind: '%$studio/eventTrackerQuery%',
+        style: editableText.input(),
+        features: [
+          htmlAttribute('placeholder', 'query'),
+          feature.onEnter(refreshControlById('event-tracker')),
+          css.class('toolbar-input'),
+          css.height('10'),
+          css.margin('4'),
+          css.width('300')
+        ]
+      }),
+      eventTracker.eventTypes()
+    ],
+    features: [
+      css.color({background: 'var(--jb-menubar-inactive-bg)'}),
+      followUp.watchObservable(
+        source.callbag(ctx => jb.ui.getSpy(ctx).observable()),
+        100
+      ),
+    ]
+  }),
+})
+
 jb.component('studio.eventTracker', {
   type: 'control',
   impl: group({
     controls: [
-      group({
-        title: 'toolbar',
-        layout: layout.horizontal('2'),
-        controls: [
-          text({
-            text: pipeline(eventTracker.getSpy(), '%$events/length%/%logs/length%'),
-            title: 'counts',
-            features: [css.padding({top: '5', left: '5'})]
-          }),
-          divider({style: divider.vertical()}),
-          button({
-            title: 'clear',
-            action: runActions(eventTracker.clearSpyLog(), refreshControlById('event-tracker')),
-            style: chromeDebugger.icon(),
-            features: [css.color('var(--jb-menu-fg)'), feature.hoverTitle('clear')]
-          }),
-          picklist({
-            title: 'frame',
-            databind: ctx => ({
-                $jb_val: val => {
-                  jb.studio.inspectedJb = jb.studio.inspectedJb || jb.ui.getInspectedJb()
-                  if (val === undefined)
-                      return jb.path(jb.studio.inspectedJb,'frame.jbUri')
-                  jb.studio.inspectedJb = jb.ui.getReachableJbs(ctx.frame()).filter(x=>x.frame.jbUri == val)[0]
-                }
-            }),           
-            options: picklist.options({
-              options: ctx => jb.ui.getReachableJbs(ctx.frame()),
-              code: '%frame/jbUri%',
-              text: '%frame/jbUri% (%spy/logs/length%)',
-            }),
-            features: picklist.onChange(refreshControlById('event-tracker'))
-          }),
-          divider({style: divider.vertical()}),
-          editableText({
-            title: 'query',
-            databind: '%$studio/eventTrackerQuery%',
-            style: editableText.input(),
-            features: [
-              htmlAttribute('placeholder', 'query'),
-              feature.onEnter(refreshControlById('event-tracker')),
-              css.class('toolbar-input'),
-              css.height('10'),
-              css.margin('4'),
-              css.width('300')
-            ]
-          }),
-          eventTracker.eventTypes()
-        ],
-        features: css.color({background: 'var(--jb-menubar-inactive-bg)'})
-      }),
+      studio.eventTrackerToolbar(),
       itemlist({
-        items: '%$events%',
+        items: eventTracker.eventItems('%$studio/eventTrackerQuery%'),
         controls: [
           text('%index%'),
           eventTracker.ptNameOfUiComp(),
@@ -133,7 +146,6 @@ jb.component('studio.eventTracker', {
         style: table.plain(true),
         visualSizeLimit: 30,
         features: [
-          id('event-logs'),
           itemlist.infiniteScroll(5),
           itemlist.selection({
             onSelection: runActions(({data}) => jb.frame.console.log(data), eventTracker.highlightEvent('%%'))
@@ -144,10 +156,6 @@ jb.component('studio.eventTracker', {
     ],
     features: [
       id('event-tracker'),
-      variable({
-        name: 'events',
-        value: eventTracker.eventItems('%$studio/eventTrackerQuery%', '%$studio/eventTrackerPattern%')
-      }),
       If(
         ctx => jb.ui.getInspectedJb() != ctx.frame().jb
            && (!jb.studio.studiojb || jb.studio.studiojb.exec('%$studio/project%') != 'studio-helper'),

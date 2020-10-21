@@ -47,19 +47,6 @@ jb.component('remoteTest.operator', {
     })
 })
 
-// jb.component('remoteTest.sampleObject', {
-//   params: [
-//     {id: 'val', as: 'number' }
-//   ],
-//   impl: (ctx,val) => {
-//       class tst {
-//           constructor(d) { this.d = val}
-//           m1() { return this.d}
-//       }
-//       return new tst(val)
-//   }
-// })
-
 // jb.component('remoteTest.remoteObjectWithMethods', {
 //   impl: dataTest({
 //     timeout: 5000,
@@ -174,58 +161,22 @@ jb.component('remoteTest.twoTierWidget.infiniteScroll', {
   })
 })
 
-// jb.component('uiTest.remoteWidget', {
-//   impl: uiTest({
-//     control: remote.widget('uiTest.helloFromWorker'),
-//     runBefore: remote.initMainWorker(
-//       ctx => `http://${location.host}/projects/ui-tests/remote-widgets.js`
-//     ),
-//     action: delay(20),
-//     expectedResult: contains('hello from worker')
-//   })
-// })
-  
-// jb.component('uiTest.remoteWidgetEditableText', {
-//     impl: uiTest({
-//         control: remote.widget('uiTest.remoteEditableCtrl'),
-//         runBefore: remote.initMainWorker(
-//         ctx => `http://${location.host}/projects/ui-tests/remote-widgets.js`
-//         ),
-//         action: [delay(40), ctx => ctx.run(userInput.setText('hello', '#inp')),delay(40)],
-//         expectedResult: contains(['<span', 'hello', '</span'])
-//     })
-// })
-  
-// jb.component('uiTest.remoteWidgetEmptyEditableText', {
-//     impl: uiTest({
-//       control: remote.widget('uiTest.remoteEditableCtrl'),
-//       runBefore: remote.initMainWorker(
-//         ctx => `http://${location.host}/projects/ui-tests/remote-widgets.js`
-//       ),
-//       action: [delay(40), ctx => ctx.run(userInput.setText('', '#inp')), delay(20)],
-//       expectedResult: and(not(contains('undefined')), not(contains('Homer')))
-//     })
-// })
-  
-// jb.component('uiTest.remoteWidgetInfiniteScroll', {
-//     impl: uiTest({
-//       control: remote.widget('uiTest.remoteInfiniteScroll'),
-//       runBefore: remote.initMainWorker(
-//         () => `http://${location.host}/projects/ui-tests/remote-widgets.js`
-//       ),
-//       action: [delay(40), userInput.scrollDown('.jb-itemlist'), delay(20)],
-//       expectedResult: contains('>8<')
-//     })
-// })
-
-// jb.component('uiTest.remoteRx', {
-//     impl: uiTest({
-//       control: remote.widget('uiTest.remoteInfiniteScroll'),
-//       runBefore: remote.initMainWorker(
-//         () => `http://${location.host}/projects/ui-tests/remote-widgets.js`
-//       ),
-//       action: [delay(40), userInput.scrollDown('.jb-itemlist'), delay(20)],
-//       expectedResult: contains('>8<')
-//     })
-// })
-
+jb.component('remoteTest.twoTierWidget.recoverAfterError', {
+  impl: uiTest({
+    timeout: 3000,
+    control: widget.twoTierWidget( 
+      button({ title: 'generate delta error %$recover%',
+        style: button.native(),
+        action: ({},{widgetId}) => 
+          jb.ui.renderingUpdates.next({widgetId, delta: { }, cmpId: 'wrongId'})
+      }), 
+      remote.worker({id: 'ui', libs: ['common','ui-common','remote','two-tier-widget'] })
+    ),
+    userInputRx: rx.pipe(
+      source.waitForSelector('button'),
+      rx.map(userInput.click('button')),
+    ),
+    checkResultRx: () => jb.ui.renderingUpdates,
+    expectedResult: contains('delta error true')
+  })
+})

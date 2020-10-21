@@ -253,7 +253,7 @@ jb.component('uiTest.tableTreeUnexpandRefresh', {
       leafFields: text({text: '%val%', title: 'name'}),
       commonFields: text({text: '%path%', title: 'path'}),
       chapterHeadline: text({text: suffix('~', '%path%')}),
-      style: tableTree.plain({}),
+      style: tableTree.plain(),
       features: [
         tableTree.expandPath('%$globals/expanded%'),
         watchRef({ref: '%$globals/expanded%', strongRefresh: true})
@@ -261,7 +261,7 @@ jb.component('uiTest.tableTreeUnexpandRefresh', {
     }),
     runBefore: writeValue('%$globals/expanded%', '~a'),
     action: writeValue('%$globals/expanded%', ''),
-    expectedResult: and(not(contains('undefined')), not(contains('~a~a1')))
+    expectedResult: not(contains('~a~a1'))
   })
 })
 

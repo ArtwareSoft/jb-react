@@ -29,15 +29,18 @@ jb.remoteCtx = {
     stripFunction({profile,runCtx,path, forcePath, param}) {
         if (!profile || !runCtx) return
         const profText = jb.prettyPrint(profile)
+        const profNoJS = this.stripJSFromProfile(profile)
         const vars = jb.objFromEntries(jb.entries(runCtx.vars).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
         const params = jb.objFromEntries(jb.entries(jb.path(runCtx.cmpCtx,'params')).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
-        return Object.assign({$: 'runCtx', id: runCtx.id, path, forcePath, param, profile, vars}, 
+        return Object.assign({$: 'runCtx', id: runCtx.id, path, forcePath, param, profile: profNoJS, vars}, 
             Object.keys(params).length ? {cmpCtx: {params} } : {})
     },
     serailizeCtx(ctx) { return JSON.stringify(this.stripCtx(ctx)) },
     deStrip(data) {
+        if (typeof data == 'string' && data.match(/^__JBART_FUNC:/))
+            return eval(data.slice(14))
         const stripedObj = typeof data == 'object' && jb.objFromEntries(jb.entries(data).map(e=>[e[0],this.deStrip(e[1])]))
         if (stripedObj && data.$ == 'runCtx')
             return (ctx2,data2) => (new jb.jbCtx().ctx({...stripedObj})).extendVars(ctx2,data2).runItself()
@@ -52,6 +55,12 @@ jb.remoteCtx = {
 
         return res
     },
+    stripJSFromProfile(profile) {
+        if (typeof profile == 'object')
+            return jb.objFromEntries(jb.entries(profile)
+                .map(([id,val]) => [id, typeof val == 'function' ? `__JBART_FUNC: ${val.toString()}` : this.stripData(val)]))
+        return profile
+    }
 }
 
 ;
@@ -102,13 +111,12 @@ jb.remote = {
             newId() { return port.from + ':' + (this.counter++) },
             get(id) { return this.map[id] },
             getAsPromise(id,t) { 
-                if (t == 2) this.removeEntry(id)
-                    
-                return jb.waitFor(()=> this.map[id],5,10).then(cb => {
-                    if (!cb)
-                        jb.logError('cbLookUp - can not find cb',{id})
-                    return cb
-                })
+                return jb.waitFor(()=> this.map[id],5,10)
+                    .catch(e => jb.logError('cbLookUp - can not find cb',{id}))
+                    .then(cb => {
+                        if (t == 2) this.removeEntry(id)
+                        return cb
+                    })
             },
             addToLookup(cb) { 
                 const id = this.newId()
@@ -118,7 +126,7 @@ jb.remote = {
             removeEntry(id) {
                 jb.delay(100).then(()=> delete this.map[id])
             },
-            inboundMsg({cbId,t,d}) { return this.getAsPromise(cbId,t).then(cb=> cb(t, t == 0 ? this.remoteCB(d) : d)) },
+            inboundMsg({cbId,t,d}) { return this.getAsPromise(cbId,t).then(cb=> cb && cb(t, t == 0 ? this.remoteCB(d) : d)) },
             outboundMsg({cbId,t,d}) { 
                 port.postMessage({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : d })
                 if (t == 2) this.removeEntry(cbId)

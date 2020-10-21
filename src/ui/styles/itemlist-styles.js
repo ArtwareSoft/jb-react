@@ -46,7 +46,7 @@ jb.component('table.plain', {
   impl: customStyle({
     template: (cmp,{itemsCtxs,ctrls,hideHeaders,headerFields},h) => h('div.jb-itemlist',{},h('table',{},[
         ...(hideHeaders ? [] : [h('thead',{},h('tr',{},
-        headerFields.map(f=>h('th',{'jb-ctx': f.ctxId, style: { width: f.width ? f.width + 'px' : ''} }, jb.ui.fieldTitle(cmp,f,h))) ))]),
+        headerFields.map(f=>h('th',{'jb-ctx': f.ctxId, ...(f.width &&  { style: `width: ${f.width}px` }) }, jb.ui.fieldTitle(cmp,f,h))) ))]),
         h('tbody.jb-drag-parent',{},
           ctrls.map((ctrl,index)=> h('tr.jb-item',{ 'jb-ctx': itemsCtxs[index]}, ctrl.map( singleCtrl => h('td',{}, h(singleCtrl)))))),
         itemsCtxs.length == 0 ? 'no items' : ''            

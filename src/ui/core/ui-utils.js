@@ -18,7 +18,7 @@ Object.assign(jb.ui,{
     fixCssLine: css => css.indexOf('\n') == -1 && ! css.match(/}\s*/) ? `{ ${css} }` : css,
     preserveCtx(ctx) {
         jb.ctxDictionary[ctx.id] = ctx
-        return ctx.id
+        return ''+ctx.id
     },
     inStudio() { return jb.studio && jb.studio.studioWindow },
     inPreview() {
@@ -186,8 +186,9 @@ jb.component('action.applyDeltaToCmp', {
   params: [
     {id: 'delta', mandatory: true },
     {id: 'cmpId', as: 'string', mandatory: true },
+    {id: 'assumedVdom' },
   ],
-  impl: (ctx,delta,cmpId) => jb.ui.applyDeltaToCmp(delta,ctx,cmpId)
+  impl: (ctx,delta,cmpId,assumedVdom) => jb.ui.applyDeltaToCmp({ctx,delta,cmpId,assumedVdom})
 })
 
 jb.component('sink.applyDeltaToCmp', {

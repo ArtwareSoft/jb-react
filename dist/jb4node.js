@@ -343,11 +343,11 @@ Object.assign(jb, {
     subscribe: (source,listener) => jb.callbag.subscribe(listener)(source),
     log(logName, record, options) { jb.spy && jb.spy.log(logName, record, options) },
     logError(err,logObj) {
-      jb.frame.console && jb.frame.console.log('%c Error: ','color: red', err, logObj && Object.values(logObj))
+      jb.frame.console && jb.frame.console.log('%c Error: ','color: red', err, logObj)
       jb.log('error',{err , ...logObj})
     },
     logException(e,err,logObj) {
-      jb.frame.console && jb.frame.console.log('%c Exception: ','color: red', err, e, logObj && Object.values(logObj))
+      jb.frame.console && jb.frame.console.log('%c Exception: ','color: red', err, e, logObj)
       jb.log('exception',{ err, stack: e.stack||'', ...logObj})
     },
     val(ref) {
@@ -912,11 +912,6 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 	Error = Error || frame.Error,
 	memoryUsage = memoryUsage || (() => frame.performance && performance.memory && performance.memory.usedJSHeapSize)
 	settings = Object.assign(settings||{}, spySettings)
-
-	const systemProps = ['index', 'time', '_time', 'mem', 'source','activeElem']
-
-    const isRegex = x => Object.prototype.toString.call(x) === '[object RegExp]'
-	const isString = x => typeof x === 'string' || x instanceof String
 	if (resetSpyToNull)
 		return jb.spy = null
     
@@ -973,16 +968,10 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 				this.logs[index-1].activeElemAfter = record.activeElem
 				this.logs[index-1].focusChanged = true
 			}
-			// if (record[0] == null && typeof funcTitle === 'function') {
-			// 	record[0] = funcTitle()
-			// }
-			// if (record[0] == null && record.source) {
-			// 	record[0] = record.source[0]
-			// }
-			// if (typeof modifier === 'function') {
-			// 	modifier(record)
-			// }
+
 			this.logs.push(record)
+			if (this.logs.length > settings.MAX_LOG_SIZE *1.1)
+				this.logs = this.logs.slice(-1* settings.MAX_LOG_SIZE)
 			this._obs && this._obs.next(record)
 		},
 		frameAccessible(frame) { try { return Boolean(frame.document || frame.contentDocument) } catch(e) { return false } },

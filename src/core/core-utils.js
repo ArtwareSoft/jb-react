@@ -56,11 +56,11 @@ Object.assign(jb, {
     subscribe: (source,listener) => jb.callbag.subscribe(listener)(source),
     log(logName, record, options) { jb.spy && jb.spy.log(logName, record, options) },
     logError(err,logObj) {
-      jb.frame.console && jb.frame.console.log('%c Error: ','color: red', err, logObj && Object.values(logObj))
+      jb.frame.console && jb.frame.console.log('%c Error: ','color: red', err, logObj)
       jb.log('error',{err , ...logObj})
     },
     logException(e,err,logObj) {
-      jb.frame.console && jb.frame.console.log('%c Exception: ','color: red', err, e, logObj && Object.values(logObj))
+      jb.frame.console && jb.frame.console.log('%c Exception: ','color: red', err, e, logObj)
       jb.log('exception',{ err, stack: e.stack||'', ...logObj})
     },
     val(ref) {

@@ -100,12 +100,13 @@ function applyNewVdom(elem,vdomAfter,{strongRefresh, ctx} = {}) {
     if (widgetId) {
         const cmpId = elem.getAttribute('cmp-id')
         const delta = compareVdom(elem,vdomAfter)
+        const assumedVdom = JSON.parse(JSON.stringify(jb.ui.stripVdom(elem)))
         if (elem != vdomAfter) { // update the elem
             Object.keys(elem).filter(x=>x !='parentNode').forEach(k=>delete elem[k])
             Object.assign(elem,vdomAfter)
             ;(vdomAfter.children ||[]).forEach(ch=>ch.parentNode = elem)
         }
-        jb.ui.renderingUpdates.next({delta,cmpId,widgetId})
+        jb.ui.renderingUpdates.next({assumedVdom, delta,cmpId,widgetId})
         return
     }
     const active = jb.ui.activeElement() === elem
@@ -131,6 +132,7 @@ function refreshFrontEnd(elem) {
 }
 
 function elemToVdom(elem) {
+    if (elem instanceof jb.ui.VNode) return elem
     return {
         tag: elem.tagName.toLowerCase(),
         attributes: jb.objFromEntries([
@@ -148,15 +150,14 @@ function applyDeltaToDom(elem,delta) {
     if (children) {
         const childrenArr = children.length ? Array.from(Array(children.length).keys()).map(i=>children[i]) : []
         const childElems = Array.from(elem.children)
-        const {toAppend,deleteCmp,sameOrder} = children
-        if (deleteCmp) {
-            const toDelete = Array.from(elem.children).find(ch=>ch.getAttribute('cmp-id') == deleteCmp)
-            if (toDelete) {
-                unmount(toDelete)
-                elem.removeChild(toDelete)
-                jb.log('removeChild dom',{toDelete,elem,delta})
-            }
-        }
+        const {toAppend,deleteCmp,sameOrder,resetAll} = children
+        if (resetAll) 
+            Array.from(elem.children).forEach(toDelete=>removeChild(toDelete))
+        if (deleteCmp) 
+            Array.from(elem.children)
+                .filter(ch=>ch.getAttribute('cmp-id') == deleteCmp)
+                .forEach(toDelete=>removeChild(toDelete))
+
         childrenArr.forEach((e,i) => {
             if (!e) return
             if (e.$ == 'delete') {
@@ -194,6 +195,12 @@ function applyDeltaToDom(elem,delta) {
     jb.entries(delta.attributes)
         .filter(e=> !(e[0] === '$text' && elem.firstElementChild) ) // elem with $text should not have children
         .forEach(e=> setAtt(elem,e[0],e[1]))
+    
+    function removeChild(toDelete) {
+        unmount(toDelete)
+        elem.removeChild(toDelete)
+        jb.log('removeChild dom',{toDelete,elem,delta})
+    }
 }
 
 function applyDeltaToVDom(elem,delta) {
@@ -202,13 +209,17 @@ function applyDeltaToVDom(elem,delta) {
     // supports only append/delete
     if (delta.children) {
         const toAppend = delta.children.toAppend || []
-        toAppend.forEach(ch => elem.children.push(jb.ui.unStripVdom(ch,elem)))
-        const deleteCmp = delta.children.deleteCmp
+        const {resetAll, deleteCmp} = delta.children
+        if (resetAll) elem.children = []
         if (deleteCmp) {
             const index = elem.children.findIndex(ch=>ch.getAttribute('cmp-id') == deleteCmp)
             if (index != -1)
                 elem.children.splice(index,1)
         }
+        toAppend.forEach(ch => { 
+            elem.children = elem.children || []
+            elem.children.push(jb.ui.unStripVdom(ch,elem))
+        })
         Object.keys(delta.children).filter(x=>!isNaN(x)).forEach(index=>
                 applyDeltaToVDom(elem.children[+index],delta.children[index]))
     }
@@ -241,7 +252,7 @@ function setAtt(elem,att,val) {
         } catch (e) {}
         jb.log(`dom set data ${id}`,{elem,att,val})
     } else if (att === '$focus' && val) {
-        elem.setAttribute('_focus',val)
+        elem.setAttribute('__focus',val)
         jb.ui.focus(elem,val)
     } else if (att === '$scrollDown' && val) {
         elem.__appScroll = true
@@ -316,6 +327,13 @@ function render(vdom,parentElem,prepend) {
     }
     const res = doRender(vdom,parentElem)
     ui.findIncludeSelf(res,'[interactive]').forEach(el=> mountFrontEnd(el))
+    // check
+    const checkResultingVdom = elemToVdom(res)
+    const diff = jb.ui.vdomDiff(checkResultingVdom,vdom,{
+        ignoreRegExp: /\$|checked|style|value|parentNode|frontend|__|widget|on-|remoteuri|width|height|top|left/})
+    if (Object.keys(diff).length)
+        jb.logError('render diff',{diff,checkResultingVdom,vdom})
+
     return res
 }
 
@@ -344,7 +362,7 @@ Object.assign(jb.ui, {
         const method = specificMethod && typeof specificMethod == 'string' ? specificMethod : `on${ev.type}Handler`
         const ctxIdToRun = jb.ui.ctxIdOfMethod(elem,method)
         const widgetId = jb.ui.frontendWidgetId(elem) || ev.tstWidgetId
-        return ctxIdToRun && {$:'runCtxAction', widgetId, ctxIdToRun, vars: {ev: jb.ui.buildUserEvent(ev, elem)} }
+        return ctxIdToRun && {$:'runCtxAction', method, widgetId, ctxIdToRun, vars: {ev: jb.ui.buildUserEvent(ev, elem)} }
     },
     calcElemProps(elem) {
         return elem instanceof jb.ui.VNode ? {} : { 
@@ -359,8 +377,8 @@ Object.assign(jb.ui, {
             elem: jb.ui.calcElemProps(elem),
             ev: {},
         }
-        const evProps = (elem.getAttribute('userEventProps') || '').split(',').filter(x=>x).filter(x=>x.split('.')[0] != 'elem')
-        const elemProps = (elem.getAttribute('userEventProps') || '').split(',').filter(x=>x).filter(x=>x.split('.')[0] == 'elem').map(x=>x.split('.')[1])
+        const evProps = (elem.getAttribute('usereventprops') || '').split(',').filter(x=>x).filter(x=>x.split('.')[0] != 'elem')
+        const elemProps = (elem.getAttribute('usereventprops') || '').split(',').filter(x=>x).filter(x=>x.split('.')[0] == 'elem').map(x=>x.split('.')[1])
         ;['type','keyCode','ctrlKey','altKey','clientX','clientY', ...evProps].forEach(prop=> ev[prop] != null && (userEvent.ev[prop] = ev[prop]))
         ;['id', 'class', ...elemProps].forEach(prop=>userEvent.elem[prop] = elem.getAttribute(prop))
         elem._component && elem._component.enrichUserEvent(ev,userEvent)
@@ -396,7 +414,7 @@ Object.assign(jb.ui, {
             return jb.logError(`no method in cmp: ${method}`, {elem, data, vars})
 
         if (widgetId)
-            jb.ui.widgetUserRequests.next({$:'runCtxAction', widgetId, ctxIdToRun, data, vars })
+            jb.ui.widgetUserRequests.next({$:'runCtxAction', method, widgetId, ctxIdToRun, data, vars })
         else {
             const ctx = jb.ctxDictionary[ctxIdToRun]
             if (!ctx)
@@ -473,16 +491,25 @@ Object.assign(jb.ui, {
             return jb.ui.headless ? [...Object.values(jb.ui.headless).flatMap(w=>w.body.querySelectorAll(query,{includeSelf:true})), ...Array.from(document.querySelectorAll(query))] : []
         }
     },
-    applyDeltaToCmp(delta, ctx, cmpId, elem) {
+    applyDeltaToCmp({delta, ctx, cmpId, elem, assumedVdom}) {
         if (!delta) return
         elem = elem || jb.ui.elemOfCmp(ctx,cmpId)
-        if (!elem || delta.$prevVersion && delta.$prevVersion != elem.getAttribute('cmp-ver')) {
-            jb.logError('trying to apply delta to unexpected verson',{delta, ctx, cmpId, elem})
-            return
+        if (!elem || delta._$prevVersion && delta._$prevVersion != elem.getAttribute('cmp-ver')) {
+            const reason = elem ? 'unexpected version' : 'elem not found'
+            jb.logError(`applyDeltaToCmp: ${reason}`,{reason, delta, ctx, cmpId, elem})
+            return { recover: true, reason }
+        }
+        if (assumedVdom) {
+            const actualVdom = elemToVdom(elem)
+            const diff = jb.ui.vdomDiff(assumedVdom,actualVdom,{ignoreRegExp: /\$|style|parentNode|frontend|__|widget|on-|remoteuri|width|height|top|left/})
+            if (Object.keys(diff).length) {
+                jb.logError('wrong assumed vdom',{actualVdom, assumedVdom, diff, delta, ctx, cmpId, elem})
+                return { recover: true, reason: { diff, description: 'wrong assumed vdom'} }
+            }
         }
         jb.log('applyDelta uiComp',{cmpId, delta, ctx, elem})
-        if (delta.$bySelector)
-            jb.entries(delta.$bySelector).forEach(([selector,innerDelta]) => applyDeltaToElem(jb.ui.findIncludeSelf(elem,selector)[0],innerDelta))
+        if (delta._$bySelector)
+            jb.entries(delta._$bySelector).forEach(([selector,innerDelta]) => applyDeltaToElem(jb.ui.findIncludeSelf(elem,selector)[0],innerDelta))
         else
             applyDeltaToElem(elem,delta)
 
@@ -589,7 +616,7 @@ class frontEndCmp {
         elem._component = this
         this.runFEMethod('calcProps',null,null,true)
         this.runFEMethod('init',null,null,true)
-        ;(elem.getAttribute('eventHandlers') || '').split(',').forEach(h=>{
+        ;(elem.getAttribute('eventhandlers') || '').split(',').forEach(h=>{
             const [event,ctxId] = h.split('-')
             elem.addEventListener(event, ev => jb.ui.handleCmpEvent(ev,ctxId))
         })
