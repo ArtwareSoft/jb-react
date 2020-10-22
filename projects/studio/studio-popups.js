@@ -117,14 +117,11 @@ jb.component('dialog.showSourceStyle', {
 
 jb.component('studioDialogFeature.studioPopupLocation', {
   type: 'dialog-feature',
-  impl: frontEnd.init((ctx,{cmp}) => {
-			const id = (cmp.base.getAttribute('id')||'').replace(/\s/g,'_')
-			if (id && !jb.sessionStorage(id)) {
-				cmp.base.classList.add(id)
-				cmp.base.classList.add('default-location')
-			}
-		}
-  )
+  impl: templateModifier( ({},{vdom}) => { 
+    const id = (vdom.getAttribute('id')||'').replace(/\s/g,'_')
+    if (id && !jb.sessionStorage(id))
+      vdom.addClass(`default-location ${id}`)
+  })
 })
 
 jb.component('studioDialogFeature.refreshTitle', {

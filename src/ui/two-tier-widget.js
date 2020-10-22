@@ -79,7 +79,7 @@ jb.component('widget.headless', {
             }))
             const cmp = ctrl(ctxToUse)
             const top = h(cmp)
-            const body = h('div',{ widgetTop: true, headless: true, widgetId, remoteUri: ctx.vars.remoteUri },top)
+            const body = h('div',{ widgetTop: true, headless: true, widgetId, ...(ctx.vars.remoteUri && { remoteUri: ctx.vars.remoteUri })},top)
             if (jb.ui.headless[widgetId]) {
                 if (!recover) jb.logError('headless widgetId already exists',{widgetId,ctx})
                 unmount(jb.ui.headless[widgetId])

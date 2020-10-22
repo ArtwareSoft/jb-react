@@ -35,6 +35,7 @@ class VNode {
         return res == null ? res : (''+res)
     }
     setAttribute(att,val) {
+        if (val == null) return
         this.attributes = this.attributes || {}
         this.attributes[att.toLowerCase()] = ''+val
         return this

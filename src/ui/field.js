@@ -11,8 +11,8 @@ jb.component('field.databind', {
   impl: features(
     If(
         '%$oneWay%',
-        calcProp('databind','%$$model/databind()%'),
-        watchAndCalcModelProp({prop: 'databind', allowSelfRefresh: true})
+        calcProp({id: 'databind', value: '%$$model/databind()%', defaultValue: ''}),
+        watchAndCalcModelProp({prop: 'databind', allowSelfRefresh: true, defaultValue: ''})
       ),
     calcProp('title'),
     calcProp({id: 'fieldId', value: () => jb.ui.field_id_counter++}),

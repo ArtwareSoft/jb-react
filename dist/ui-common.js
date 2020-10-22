@@ -1159,6 +1159,7 @@ class VNode {
         return res == null ? res : (''+res)
     }
     setAttribute(att,val) {
+        if (val == null) return
         this.attributes = this.attributes || {}
         this.attributes[att.toLowerCase()] = ''+val
         return this
@@ -2098,17 +2099,19 @@ class JbComponent {
             if (jb.isWatchable(ref))
                 this.toObserve.push({id: e.prop, cmp: this, ref,...e})
             const val = jb.val(ref)
-            this.renderProps[e.prop] = e.transformValue(this.ctx.setData(val == null ? '' : val))
+            this.renderProps[e.prop] = e.transformValue(this.ctx.setData(val == null ? e.defaultValue : val))
         })
 
-        ;[...(this.calcProp || []),...(this.method || [])].forEach(p=>typeof p.value == 'function' && Object.defineProperty(p.value, 'name', { value: p.id }))
+        ;[...(this.calcProp || []),...(this.method || [])].forEach(
+            p=>typeof p.value == 'function' && Object.defineProperty(p.value, 'name', { value: p.id }))
         const filteredPropsByPriority = (this.calcProp || []).filter(toFilter=> 
                 this.calcProp.filter(p=>p.id == toFilter.id && p.priority > toFilter.priority).length == 0)
         filteredPropsByPriority.sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
             .forEach(prop=> { 
-                const value = jb.val( tryWrapper(() => 
+                const val = jb.val( tryWrapper(() => 
                     prop.value.profile === null ? this.calcCtx.vars.$model[prop.id] : prop.value(this.calcCtx),
                 `renderProp:${prop.id}`))
+                const value = val == null ? prop.defaultValue : val
                 Object.assign(this.renderProps, { ...(prop.id == '$props' ? value : { [prop.id]: value })})
             })
         ;(this.calcProp || []).filter(p => p.userStateProp).forEach(p => this.state[p.id] = this.renderProps[p.id])
@@ -2599,7 +2602,8 @@ jb.component('watchAndCalcModelProp', {
   params: [
     {id: 'prop', as: 'string', mandatory: true},
     {id: 'transformValue', dynamic: true, defaultValue: '%%'},
-    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'}
+    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
+    {id: 'defaultValue' },
   ],
   impl: ctx => ({watchAndCalcModelProp: ctx.params})
 })
@@ -2611,7 +2615,8 @@ jb.component('calcProp', {
     {id: 'id', as: 'string', mandatory: true},
     {id: 'value', mandatory: true, dynamic: true, description: 'when empty value is taken from model'},
     {id: 'priority', as: 'number', defaultValue: 1, description: 'if same prop was defined elsewhere decides who will override. range 1-1000'},
-    {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'}
+    {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'},
+    {id: 'defaultValue' },
   ],
   impl: ctx => ({calcProp: {... ctx.params, index: jb.ui.propCounter++}})
 })
@@ -4095,8 +4100,8 @@ jb.component('field.databind', {
   impl: features(
     If(
         '%$oneWay%',
-        calcProp('databind','%$$model/databind()%'),
-        watchAndCalcModelProp({prop: 'databind', allowSelfRefresh: true})
+        calcProp({id: 'databind', value: '%$$model/databind()%', defaultValue: ''}),
+        watchAndCalcModelProp({prop: 'databind', allowSelfRefresh: true, defaultValue: ''})
       ),
     calcProp('title'),
     calcProp({id: 'fieldId', value: () => jb.ui.field_id_counter++}),

@@ -91,17 +91,19 @@ class JbComponent {
             if (jb.isWatchable(ref))
                 this.toObserve.push({id: e.prop, cmp: this, ref,...e})
             const val = jb.val(ref)
-            this.renderProps[e.prop] = e.transformValue(this.ctx.setData(val == null ? '' : val))
+            this.renderProps[e.prop] = e.transformValue(this.ctx.setData(val == null ? e.defaultValue : val))
         })
 
-        ;[...(this.calcProp || []),...(this.method || [])].forEach(p=>typeof p.value == 'function' && Object.defineProperty(p.value, 'name', { value: p.id }))
+        ;[...(this.calcProp || []),...(this.method || [])].forEach(
+            p=>typeof p.value == 'function' && Object.defineProperty(p.value, 'name', { value: p.id }))
         const filteredPropsByPriority = (this.calcProp || []).filter(toFilter=> 
                 this.calcProp.filter(p=>p.id == toFilter.id && p.priority > toFilter.priority).length == 0)
         filteredPropsByPriority.sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
             .forEach(prop=> { 
-                const value = jb.val( tryWrapper(() => 
+                const val = jb.val( tryWrapper(() => 
                     prop.value.profile === null ? this.calcCtx.vars.$model[prop.id] : prop.value(this.calcCtx),
                 `renderProp:${prop.id}`))
+                const value = val == null ? prop.defaultValue : val
                 Object.assign(this.renderProps, { ...(prop.id == '$props' ? value : { [prop.id]: value })})
             })
         ;(this.calcProp || []).filter(p => p.userStateProp).forEach(p => this.state[p.id] = this.renderProps[p.id])

@@ -26,7 +26,8 @@ jb.component('watchAndCalcModelProp', {
   params: [
     {id: 'prop', as: 'string', mandatory: true},
     {id: 'transformValue', dynamic: true, defaultValue: '%%'},
-    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'}
+    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
+    {id: 'defaultValue' },
   ],
   impl: ctx => ({watchAndCalcModelProp: ctx.params})
 })
@@ -38,7 +39,8 @@ jb.component('calcProp', {
     {id: 'id', as: 'string', mandatory: true},
     {id: 'value', mandatory: true, dynamic: true, description: 'when empty value is taken from model'},
     {id: 'priority', as: 'number', defaultValue: 1, description: 'if same prop was defined elsewhere decides who will override. range 1-1000'},
-    {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'}
+    {id: 'phase', as: 'number', defaultValue: 10, description: 'props from different features can use each other, phase defines the calculation order'},
+    {id: 'defaultValue' },
   ],
   impl: ctx => ({calcProp: {... ctx.params, index: jb.ui.propCounter++}})
 })
