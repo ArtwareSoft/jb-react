@@ -66,3 +66,32 @@ jb.component('uiTest.applyVdomDiffDDTree1', {
   )
 })
 
+jb.component('uiTest.applyVdomDiff.TableTree', {
+  impl: uiTest.applyVdomDiff(
+    tableTree({
+      treeModel: tree.json(() => ({ names: ["Homer Simpson", "Marge Simpson", "Bart Simpson"] })),
+      leafFields: text('%val%', 'value'),
+      chapterHeadline: text(tree.lastPathElement('%path%'))
+    }),
+    tableTree({
+      treeModel: tree.json(() => ({ name: 'mukki'})),
+      leafFields: text('%val%', 'value'),
+      chapterHeadline: text(tree.lastPathElement('%path%'))
+    })
+  )
+})
+
+jb.component('uiTest.applyVdomDiff.TableTree2', {
+  impl: uiTest.applyVdomDiff(
+    tableTree({
+      treeModel: tree.json(() => ({ name: 'mukki'})),
+      leafFields: text('%val%', 'value'),
+      chapterHeadline: text(tree.lastPathElement('%path%'))
+    }),
+    tableTree({
+      treeModel: tree.json(() => ({ names: ["Homer Simpson", "Marge Simpson", "Bart Simpson"] })),
+      leafFields: text('%val%', 'value'),
+      chapterHeadline: text(tree.lastPathElement('%path%'))
+    }),
+  )
+})

@@ -42,7 +42,7 @@ jb.component('studio.compInspector', {
             leafFields: text('%val%', 'value'),
             chapterHeadline: text(tree.lastPathElement('%path%'))
         }),
-        //tree('raw', tree.json('%$inspectedCmp%'))
+        tree('raw', tree.json('%$inspectedCmp%'))
       ]
     }),
     features: [

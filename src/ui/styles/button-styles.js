@@ -131,7 +131,7 @@ jb.component('button.mdcTab', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) =>
-      h('button',{ class: ['mdc-tab', raised && 'mdc-tab--active'].filter(x=>x).join(' '),tabIndex: -1, role: 'tab', onclick:  true}, [
+      h('button.mdc-tab',{ class: raised ? 'mdc-tab--active' : '',tabIndex: -1, role: 'tab', onclick: true}, [
         h('span.mdc-tab__content',{}, [
           ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-tab__icon')),
           h('span.mdc-tab__text-label',{},title),

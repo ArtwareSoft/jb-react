@@ -28,7 +28,7 @@ jb.component('sink.frontEndDelta', {
         if (css) 
             return !ctx.vars.headlessWidget && jb.ui.addStyleElem(ctx,css)
         const ctxToUse = ctx.setVars({headlessWidget: false, FEwidgetId: widgetId})
-        const elem = cmpId ? null : jb.ui.widgetBody(ctxToUse)
+        const elem = cmpId ? jb.ui.find(jb.ui.widgetBody(ctxToUse),`[cmp-id="${cmpId}"]`)[0] : jb.ui.widgetBody(ctxToUse)
         try {
             const res = jb.ui.applyDeltaToCmp({delta,ctx: ctxToUse,cmpId,elem,assumedVdom})
             if (jb.path(res,'recover')) {
@@ -48,7 +48,7 @@ jb.component('widget.headless', {
       {id: 'widgetId', as: 'string'},
     ],
     impl: (ctx,ctrl,widgetId) => {
-        const {renderingUpdates, widgetRenderingSrc, compareVdom, h,unmount } = jb.ui
+        const {renderingUpdates, widgetRenderingSrc, h,unmount } = jb.ui
         const filteredSrc = jb.callbag.filter(m=>m.widgetId == widgetId)(widgetRenderingSrc)
         createWidget()
         return userReqIn => (start, sink) => {
@@ -101,7 +101,7 @@ jb.component('widget.headless', {
                 jb.ui.runCtxActionAndUdateCmpState(ctx,userReq.data,userReq.vars)
             } else if (userReq.$ == 'recoverWidget') {
                 jb.log('recover headless widget',{userReq})
-                createWidget(true)
+                //createWidget(true)
             } else if (userReq.$ == 'destroy') {
                 jb.ui.BECmpsDestroyNotification.next({cmps: userReq.cmps, destroyLocally: true})
                 if (userReq.destroyWidget) jb.delay(1).then(()=> {

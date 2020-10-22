@@ -1256,17 +1256,23 @@ function cloneVNode(vdom) {
 
 function vdomDiff(newObj,orig) {
     const ignoreRegExp = /\$|checked|style|value|parentNode|frontend|__|widget|on-|remoteuri|width|height|top|left/
+    const ignoreValue = /mdc-tab-[0-9]+/
     return doDiff(newObj,orig)
     function doDiff(newObj,orig) {
         if (Array.isArray(orig) && orig.length == 0) orig = null
         if (Array.isArray(newObj) && newObj.length == 0) newObj = null
         if (orig === newObj) return {}
+        if (typeof orig == 'string' && ignoreValue.test(orig) || typeof newObj == 'string' && ignoreValue.test(newObj)) return {}
         if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
-        const deletedValues = Object.keys(orig).filter(k=>!ignoreRegExp.test(k))
+        const deletedValues = Object.keys(orig)
+            .filter(k=>!ignoreRegExp.test(k))
+            .filter(k=> !(typeof orig[k] == 'string' && ignoreValue.test(orig[k])))
             .filter(k => !(Array.isArray(orig[k]) && orig[k].length == 0))
             .reduce((acc, key) => newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: '__undefined'}, {})
 
-        return Object.keys(newObj).filter(k=>!ignoreRegExp.test(k))
+        return Object.keys(newObj)
+            .filter(k=>!ignoreRegExp.test(k))
+            .filter(k=> !(typeof newObj[k] == 'string' && ignoreValue.test(newObj[k])))
             .filter(k => !(Array.isArray(newObj[k]) && newObj[k].length == 0))
             .reduce((acc, key) => {
                 if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key
@@ -1442,8 +1448,9 @@ function applyDeltaToDom(elem,delta) {
                 .forEach(toDelete=>removeChild(toDelete))
 
         childrenArr.forEach((e,i) => {
-            if (!e) return
-            if (e.$ == 'delete') {
+            if (!e) {
+                !sameOrder && (childElems[i].setAttribute('__afterIndex',''+i))
+            } else if (e.$ == 'delete') {
                 unmount(childElems[i])
                 elem.removeChild(childElems[i])
                 jb.log('removeChild dom',{childElem: childElems[i],e,elem,delta})
@@ -1451,11 +1458,6 @@ function applyDeltaToDom(elem,delta) {
                 applyDeltaToDom(childElems[i],e)
                 !sameOrder && (childElems[i].setAttribute('__afterIndex',e.__afterIndex))
             }
-        })
-        ;(toAppend||[]).forEach(e=>{
-            const newElem = render(e,elem)
-            jb.log('appendChild dom',{newElem,e,elem,delta})
-            !sameOrder && (newElem.setAttribute('__afterIndex',e.__afterIndex))
         })
         if (sameOrder === false) {
             Array.from(elem.children)
@@ -1466,7 +1468,12 @@ function applyDeltaToDom(elem,delta) {
                         elem.insertBefore(el, elem.children[index])
                     el.removeAttribute('__afterIndex')
                 })
-            }
+        }
+        ;(toAppend||[]).forEach(e=>{
+            const newElem = render(e,elem)
+            jb.log('appendChild dom',{newElem,e,elem,delta})
+//            !sameOrder && (newElem.setAttribute('__afterIndex',e.__afterIndex))
+        })
         // remove leftover text nodes in mixed
         if (elem.childElementCount)
             Array.from(elem.childNodes).filter(ch=>ch.nodeName == '#text')
@@ -1692,6 +1699,8 @@ Object.assign(jb.ui, {
                     {$updateCmpState: {state: cmp.state, cmpId: cmp.cmpId}, $state: cmp.state, ev: ctx.vars.ev, ...vars})
     },
     runBEMethod(elem,method,data,vars) {
+        if (!elem)
+            return jb.logError(`runBEMethod, no elem provided: ${method}`, {elem, data, vars})
         const widgetId = jb.ui.frontendWidgetId(elem)
         const ctxIdToRun = jb.ui.ctxIdOfMethod(elem,method)
         if (!ctxIdToRun)
@@ -3997,7 +4006,7 @@ jb.component('icon.material', {
     { class: 'material-icons', title: title(), onclick: true, style: {'font-size': `${size}px`, width: `${size}px`, height: `${size}px` } }
       , icon) 
       : h('div',{title: title(), onclick: true,
-        $html: `<svg width="24" height="24" fill="currentColor" transform="scale(${size/24})"><path d="${jb.path(jb.frame,['MDIcons',icon])}"/></svg>`}),
+        $html: `<svg width="24" height="24" jb_external="true" fill="currentColor" transform="scale(${size/24})"><path d="${jb.path(jb.frame,['MDIcons',icon])}"/></svg>`}),
   })
 })
 
@@ -7023,7 +7032,7 @@ jb.component('button.mdcTab', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) =>
-      h('button',{ class: ['mdc-tab', raised && 'mdc-tab--active'].filter(x=>x).join(' '),tabIndex: -1, role: 'tab', onclick:  true}, [
+      h('button.mdc-tab',{ class: raised ? 'mdc-tab--active' : '',tabIndex: -1, role: 'tab', onclick: true}, [
         h('span.mdc-tab__content',{}, [
           ...jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=>vdom.addClass('mdc-tab__icon')),
           h('span.mdc-tab__text-label',{},title),

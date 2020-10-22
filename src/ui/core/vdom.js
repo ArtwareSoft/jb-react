@@ -132,17 +132,23 @@ function cloneVNode(vdom) {
 
 function vdomDiff(newObj,orig) {
     const ignoreRegExp = /\$|checked|style|value|parentNode|frontend|__|widget|on-|remoteuri|width|height|top|left/
+    const ignoreValue = /mdc-tab-[0-9]+/
     return doDiff(newObj,orig)
     function doDiff(newObj,orig) {
         if (Array.isArray(orig) && orig.length == 0) orig = null
         if (Array.isArray(newObj) && newObj.length == 0) newObj = null
         if (orig === newObj) return {}
+        if (typeof orig == 'string' && ignoreValue.test(orig) || typeof newObj == 'string' && ignoreValue.test(newObj)) return {}
         if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
-        const deletedValues = Object.keys(orig).filter(k=>!ignoreRegExp.test(k))
+        const deletedValues = Object.keys(orig)
+            .filter(k=>!ignoreRegExp.test(k))
+            .filter(k=> !(typeof orig[k] == 'string' && ignoreValue.test(orig[k])))
             .filter(k => !(Array.isArray(orig[k]) && orig[k].length == 0))
             .reduce((acc, key) => newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: '__undefined'}, {})
 
-        return Object.keys(newObj).filter(k=>!ignoreRegExp.test(k))
+        return Object.keys(newObj)
+            .filter(k=>!ignoreRegExp.test(k))
+            .filter(k=> !(typeof newObj[k] == 'string' && ignoreValue.test(newObj[k])))
             .filter(k => !(Array.isArray(newObj[k]) && newObj[k].length == 0))
             .reduce((acc, key) => {
                 if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key

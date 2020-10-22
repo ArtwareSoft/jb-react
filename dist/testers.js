@@ -122,7 +122,7 @@ jb.component('uiTest', {
 			),
 			rx.var('html',uiTest.vdomResultAsHtml()),
 			rx.var('success', pipeline('%$html%', call('expectedResult'), last())),
-			rx.log('check testResult'),
+			rx.log('check test result'),
 			rx.filter('%$success%'), // if failure wait for the next delta
 			rx.map('%$success%'),
 			rx.take(1),
@@ -214,19 +214,16 @@ jb.component('uiTest.applyVdomDiff', {
 		console.log('starting ' + ctx.vars.testID)
 		const show = new URL(location.href).searchParams.get('show') !== null
 
-		const elem1 = document.createElement('div');
-		jb.ui.render(jb.ui.h(control(ctx)),elem1)
-		const expectedHtml = elem1.innerHTML
-		const expectedVdom = jb.ui.elemToVdom(elem1)
-
 		const elem = document.createElement('div');
-		jb.ui.render(jb.ui.h(controlBefore(ctx)),elem)
-		jb.ui.applyNewVdom(elem.firstElementChild,jb.ui.h(control(ctx)))
-		const actualHtml = elem.innerHTML
-		const actualVdom = jb.ui.elemToVdom(elem)
-		const success = !!(expectedHtml.replace(/[0-9]/g,'') == actualHtml.replace(/[0-9]/g,''));
-		const reason = !success ? ('html is different ' + jb.prettyPrint(jb.objectDiff(expectedVdom,actualVdom),{noMacros: true})) : ''
-		const result = { id: ctx.vars.testID, success, elem, reason }
+		const vdomBefore = jb.ui.h(controlBefore(ctx))
+		const vdom = jb.ui.h(control(ctx))
+		jb.ui.render(vdomBefore,elem)
+		jb.ui.applyNewVdom(elem.firstElementChild,vdom)
+		const actualVdom = jb.ui.elemToVdom(elem.firstElementChild)
+		const diff = jb.ui.vdomDiff(vdom,actualVdom)
+
+		const success = Object.keys(diff).length == 0
+		const result = { id: ctx.vars.testID, success, vdom, actualVdom, diff }
 		if (!show)
 			jb.ui.unmount(elem)
 		return result

@@ -35,7 +35,7 @@ jb.component('icon.material', {
     { class: 'material-icons', title: title(), onclick: true, style: {'font-size': `${size}px`, width: `${size}px`, height: `${size}px` } }
       , icon) 
       : h('div',{title: title(), onclick: true,
-        $html: `<svg width="24" height="24" fill="currentColor" transform="scale(${size/24})"><path d="${jb.path(jb.frame,['MDIcons',icon])}"/></svg>`}),
+        $html: `<svg width="24" height="24" jb_external="true" fill="currentColor" transform="scale(${size/24})"><path d="${jb.path(jb.frame,['MDIcons',icon])}"/></svg>`}),
   })
 })
 

@@ -83,13 +83,14 @@ jb.chromeDebugger = {
         if (panelId == 'comp') 
         chrome.devtools.panels.elements.onSelectionChanged.addListener( async () => {
             const inspectedProps = await this.selectedProps()
-            inspectedProps && inspectedProps.cmpId && 
-                jb.ui.runBEMethod(document.querySelector('[widgettop="true"]>*'),'refreshAfterDebuggerSelection',inspectedProps)
+            const elem = document.querySelector('[widgettop="true"]>*')
+            inspectedProps && inspectedProps.cmpId && elem && jb.ui.runBEMethod(elem,'refreshAfterDebuggerSelection',inspectedProps)
         })
         if (panelId == 'card') 
             chrome.devtools.panels.elements.onSelectionChanged.addListener(async () => {
                 await this.markSelected()
-                jb.ui.runBEMethod(document.querySelector('[widgettop="true"]>*'),'refreshAfterDebuggerSelection')
+                const elem = document.querySelector('[widgettop="true"]>*')
+                elem && jb.ui.runBEMethod(elem,'refreshAfterDebuggerSelection')
         })
         const inspectedProps = await this.selectedProps()
         const profile = {$: `inspectedWindow.${panelId}Ctrl`, inspectedProps, uri}

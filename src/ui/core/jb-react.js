@@ -159,8 +159,9 @@ function applyDeltaToDom(elem,delta) {
                 .forEach(toDelete=>removeChild(toDelete))
 
         childrenArr.forEach((e,i) => {
-            if (!e) return
-            if (e.$ == 'delete') {
+            if (!e) {
+                !sameOrder && (childElems[i].setAttribute('__afterIndex',''+i))
+            } else if (e.$ == 'delete') {
                 unmount(childElems[i])
                 elem.removeChild(childElems[i])
                 jb.log('removeChild dom',{childElem: childElems[i],e,elem,delta})
@@ -168,11 +169,6 @@ function applyDeltaToDom(elem,delta) {
                 applyDeltaToDom(childElems[i],e)
                 !sameOrder && (childElems[i].setAttribute('__afterIndex',e.__afterIndex))
             }
-        })
-        ;(toAppend||[]).forEach(e=>{
-            const newElem = render(e,elem)
-            jb.log('appendChild dom',{newElem,e,elem,delta})
-            !sameOrder && (newElem.setAttribute('__afterIndex',e.__afterIndex))
         })
         if (sameOrder === false) {
             Array.from(elem.children)
@@ -183,7 +179,12 @@ function applyDeltaToDom(elem,delta) {
                         elem.insertBefore(el, elem.children[index])
                     el.removeAttribute('__afterIndex')
                 })
-            }
+        }
+        ;(toAppend||[]).forEach(e=>{
+            const newElem = render(e,elem)
+            jb.log('appendChild dom',{newElem,e,elem,delta})
+//            !sameOrder && (newElem.setAttribute('__afterIndex',e.__afterIndex))
+        })
         // remove leftover text nodes in mixed
         if (elem.childElementCount)
             Array.from(elem.childNodes).filter(ch=>ch.nodeName == '#text')
@@ -409,6 +410,8 @@ Object.assign(jb.ui, {
                     {$updateCmpState: {state: cmp.state, cmpId: cmp.cmpId}, $state: cmp.state, ev: ctx.vars.ev, ...vars})
     },
     runBEMethod(elem,method,data,vars) {
+        if (!elem)
+            return jb.logError(`runBEMethod, no elem provided: ${method}`, {elem, data, vars})
         const widgetId = jb.ui.frontendWidgetId(elem)
         const ctxIdToRun = jb.ui.ctxIdOfMethod(elem,method)
         if (!ctxIdToRun)

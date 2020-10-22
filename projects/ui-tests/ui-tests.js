@@ -183,6 +183,12 @@ jb.component('uiTest.button.mdcIcon', {
   })
 })
 
+jb.component('uiTest.icon.mdi', {
+  impl: uiTest({
+    control: control.icon({ type: 'mdi', icon: 'Yoga' }),
+    expectedResult: contains('svg')
+  })
+})
 
 jb.component('uiTest.group2', {
   impl: uiTest({

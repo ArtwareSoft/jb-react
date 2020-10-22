@@ -66,14 +66,19 @@ class Json {
 		this.refHandler = jb.refHandler(jsonRef)
 	}
 	children(path) {
-		var val = this.val(path);
+		const val = this.val(path)
 		const out = (typeof val == 'object') ? Object.keys(val || {}) : [];
 		return out.filter(p=>p.indexOf('$jb_') != 0).map(p=>path+'~'+p);
 	}
 	val(path) {
 		if (path.indexOf('~') == -1)
-			return jb.val(this.json);
-		return jb.val(path.split('~').slice(1).reduce((o,p) =>o[p], jb.val(this.json)))
+			return jb.val(this.json)
+		return jb.val(path.split('~').slice(1).reduce((o,p) => o[p], jb.val(this.json)))
+
+		function clean(v) {
+			const cls = jb.path(v,'constructor.name')
+			return ['Object','Array','Boolean','Number','String'].indexOf(cls) == -1 ? cls : v
+		}
 	}
 	isArray(path) {
 		var val = this.val(path);
