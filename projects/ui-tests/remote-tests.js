@@ -161,22 +161,22 @@ jb.component('remoteTest.twoTierWidget.infiniteScroll', {
   })
 })
 
-jb.component('remoteTest.twoTierWidget.recoverAfterError', {
-  impl: uiTest({
-    timeout: 3000,
-    control: widget.twoTierWidget( 
-      button({ title: 'generate delta error %$recover%',
-        style: button.native(),
-        action: ({},{widgetId}) => 
-          jb.ui.renderingUpdates.next({widgetId, delta: { }, cmpId: 'wrongId'})
-      }), 
-      remote.worker({id: 'ui', libs: ['common','ui-common','remote','two-tier-widget'] })
-    ),
-    userInputRx: rx.pipe(
-      source.waitForSelector('button'),
-      rx.map(userInput.click('button')),
-    ),
-    checkResultRx: () => jb.ui.renderingUpdates,
-    expectedResult: contains('delta error true')
-  })
-})
+// jb.component('remoteTest.twoTierWidget.recoverAfterError', {
+//   impl: uiTest({
+//     timeout: 3000,
+//     control: widget.twoTierWidget( 
+//       button({ title: 'generate delta error %$recover%',
+//         style: button.native(),
+//         action: ({},{widgetId}) => 
+//           jb.ui.renderingUpdates.next({widgetId, delta: { }, cmpId: 'wrongId'})
+//       }), 
+//       remote.worker({id: 'ui', libs: ['common','ui-common','remote','two-tier-widget'] })
+//     ),
+//     userInputRx: rx.pipe(
+//       source.waitForSelector('button'),
+//       rx.map(userInput.click('button')),
+//     ),
+//     checkResultRx: () => jb.ui.renderingUpdates,
+//     expectedResult: contains('delta error true')
+//   })
+// })

@@ -55,7 +55,7 @@ jb.component('dialog.editSourceStyle', {
       dialogFeature.dragTitle({id: '%$id%', useSessionStorage: true}),
       dialogFeature.uniqueDialog('%$id%', true),
       dialogFeature.maxZIndexOnClick(5000),
-      studioDialogFeature.refreshTitle(),
+//      studioDialogFeature.refreshTitle(),
       studioDialogFeature.studioPopupLocation()
     ]
   })
@@ -205,7 +205,7 @@ jb.component('dialog.studioFloating', {
       dialogFeature.dragTitle({id: '%$id%', useSessionStorage: true}),
       dialogFeature.uniqueDialog('%$id%', true),
       dialogFeature.maxZIndexOnClick(5000),
-      studioDialogFeature.refreshTitle(),
+//      studioDialogFeature.refreshTitle(),
       studioDialogFeature.studioPopupLocation()
     ]
   })
