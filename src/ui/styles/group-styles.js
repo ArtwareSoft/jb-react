@@ -217,3 +217,42 @@ jb.component('group.sectionExpandCollopase', {
     'sectionsModel'
   )
 })
+
+jb.component('group.sectionsExpandCollopase', {
+  type: 'group.style',
+  params: [
+    {id: 'autoExpand', as: 'boolean' },
+    {id: 'titleStyle', type: 'text.style', dynamic: true, defaultValue: header.h2() },
+    {id: 'toggleStyle', type: 'editable-boolean.style', defaultValue: editableBoolean.expandCollapse() },
+    {id: 'titleGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()},
+    {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
+  ],
+  impl: styleByControl(
+    group({
+      controls: dynamicControls({
+        controlItems: '%$sectionsModel/controls%',
+        genericControl: group({
+          controls: [
+            group({
+              style: call('titleGroupStyle'),
+              controls: [
+                editableBoolean({databind: '%$sectionExpanded%', style: call('toggleStyle')}),
+                text({text: '%$section/field()/title()%', style: call('titleStyle') }),
+              ],
+              layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'})
+            }),
+            group({
+              style: call('innerGroupStyle'),
+              controls: controlWithCondition('%$sectionExpanded%','%$sectionsModel/controls[{%$sectionIndex%}]%'),
+              features: watchRef('%$sectionExpanded%')
+            })
+          ],
+          features: variable({name: 'sectionExpanded', watchable: true, value: '%$autoExpand%'}),
+        }),
+        itemVariable: 'section',
+        indexVariable: 'sectionIndex'
+      }),
+    }),
+    'sectionsModel'
+  )
+})

@@ -14,7 +14,7 @@ Object.assign(jb, {
         }
         if (comp.passiveData !== undefined) {
           jb.comps[jb.addDataResourcePrefix(id)] = comp
-          return jb.const(jb.removeDataResourcePrefix(id),comp.passiveData)
+          return jb.passive(jb.removeDataResourcePrefix(id),comp.passiveData)
         }
       } catch(e) {
         console.log(e)

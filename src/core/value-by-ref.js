@@ -38,7 +38,15 @@ Object.assign(jb, {
         jb.mainWatchableHandler && jb.mainWatchableHandler.resourceReferred(id)
         return jb.resources[id]
     },
-    const: (id,val) => typeof val == 'undefined' ? jb.consts[id] : (jb.consts[id] = val || {}),
+    passiveSym: Symbol.for('passive'),
+    passive: (id,val) => typeof val == 'undefined' ? jb.consts[id] : (jb.consts[id] = jb.markAsPassive(val || {})),
+    markAsPassive: obj => {
+      if (obj && typeof obj == 'object') {
+        obj[jb.passiveSym] = true
+        Object.values(obj).forEach(v=>jb.markAsPassive(v))
+      }
+      return obj
+    },
     extraWatchableHandlers: [],
     extraWatchableHandler: (handler,oldHandler) => { 
       jb.extraWatchableHandlers.push(handler)

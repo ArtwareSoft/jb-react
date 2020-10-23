@@ -33,7 +33,7 @@ jb.component('userInput.keyboardEvent', {
       {id: 'keyCode', as: 'number'},
       {id: 'ctrl', as: 'string', options: ['ctrl', 'alt']}
     ],
-    impl: (ctx,selector,type,keyCode,ctrl) => ({ selector, type, keyCode , ...{ ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt' } })
+    impl: (ctx,selector,type,keyCode,ctrl) => ({ selector, type, keyCode , ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt'})
 })  
 
 // ****** uiActions

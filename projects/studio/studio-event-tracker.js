@@ -86,7 +86,7 @@ jb.component('studio.eventTrackerToolbar', {
           code: '%frame/jbUri%',
           text: '%frame/jbUri% (%spy/logs/length%)',
         }),
-        //features: picklist.onChange(refreshControlById('event-tracker'))
+        features: chromeDebugger.colors(),
       }),
       divider({style: divider.vertical()}),
       editableText({
@@ -105,7 +105,7 @@ jb.component('studio.eventTrackerToolbar', {
       eventTracker.eventTypes()
     ],
     features: [
-      css.color({background: 'var(--jb-menubar-inactive-bg)'}),
+      chromeDebugger.colors(),
       followUp.watchObservable(
         source.callbag(ctx => jb.ui.getSpy(ctx).observable()),
         100
@@ -178,6 +178,7 @@ jb.component('eventTracker.eventTypes', {
       text: '%0% (%1%)'
     }),
     features: [
+      chromeDebugger.colors(),
       picklist.onChange(
         ctx => {
         const loc = jb.ui.getSpy(ctx).locations[ctx.data].split(':')
@@ -203,8 +204,8 @@ jb.component('eventTracker.ptNameOfUiComp', {
           style: editableText.codemirror({height: '60'}),
         })
       })),
-      controlWithCondition('%cmp/pt%',text('%cmp/pt% %$cmp/cmpId%;%$cmp/ver%')),
-      controlWithCondition('%$cmpElem%',text(ctx => ctx.exp('%$cmpElem/@cmp-pt% %$cmpElem/@cmp-id%;%$cmpElem/@cmp-ver%'))),
+      controlWithCondition('%cmp/pt%',text('%cmp/pt% %cmp/cmpId%;%cmp/ver%')),
+      controlWithCondition('%$cmpElem%',text('%$cmpElem/@cmp-pt% %$cmpElem/@cmp-id%;%$cmpElem/@cmp-ver%')),
     ],
     features: [
       group.firstSucceeding(),
@@ -420,3 +421,11 @@ jb.component('studio.stackItems', {
       },
 })
 
+jb.component('chromeDebugger.colors',{
+  type: 'feature',
+  impl: features(
+    css.color({background: 'var(--jb-menubar-inactive-bg)', color: 'var(--jb-menu-fg)'}),
+    css('border: 0px;'),
+    css('~ option { background: white}')
+  )
+})

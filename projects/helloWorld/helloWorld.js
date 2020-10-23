@@ -21,10 +21,21 @@ jb.component('dataResource.people', {
 jb.component('helloWorld.main', {
   type: 'control',
   impl: group({
-    title: '',
-    style: group.tabs({}),
+    title: 'hello',
+    style: group.sections({sectionStyle: group.sectionExpandCollopase()}),
     controls: [
-      text('hello world', 'hey')
+      group({
+        title: 'section1',
+        controls: [
+          text('hello world', 'hey')
+        ]
+      }),
+      group({
+        title: 'section2',
+        controls: [
+          text('hello world', 'hey')
+        ]
+      })
     ]
   })
 })

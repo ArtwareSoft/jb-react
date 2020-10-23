@@ -246,7 +246,7 @@ function countersErrors(expectedCounters,allowError) {
 
 jb.ui.elemOfSelector = (selector,ctx) => jb.ui.widgetBody(ctx).querySelector(selector) 
 	|| document.querySelector('.jb-dialogs '+ selector)
-jb.ui.cmpOfSelector = (selector,ctx) => jb.path(jb.ui.elemOfSelector(selector,ctx),['_component'])
+jb.ui.cmpOfSelector = (selector,ctx) => jb.path(jb.ui.elemOfSelector(selector,ctx),'_component')
 
 jb.ui.cssOfSelector = (selector,ctx) => {
 	const jbClass = (jb.ui.elemOfSelector(selector,ctx).classList.value || '').split('-').pop()

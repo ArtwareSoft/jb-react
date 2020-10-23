@@ -15,7 +15,7 @@
       --jb-menubar-selection-fg: #333333;
       --jb-menubar-active-bg: #dddddd;
       --jb-menubar-active-fg: #333333;
-      --jb-menubar-inactive-bg: rgba(221, 221, 221, 0.6);
+      --jb-menubar-inactive-bg: #ddd0;
       --jb-dropdown-bg: #ffffff;
       --jb-dropdown-border: #cecece;
       --jb-error-fg: #a1260d;
@@ -259,7 +259,7 @@
   --jb-menubar-active-bg: #dddddd;
   --jb-menubar-active-fg: #333333;
 
-  --jb-menubar-inactive-bg: rgba(221, 221, 221, 0.6);
+  --jb-menubar-inactive-bg: #efefef;
   --jb-menubar-inactive-fg: rgba(51, 51, 51, 0.6);
 
   --jb-dropdown-bg: #ffffff;
@@ -314,6 +314,12 @@
   --jb-dropdown-shadow: #a8a8a8;
   --jb-tree-value: red;
   --jb-expandbox-bg: green;
+
+  /* chrome debugger specific */
+  --toolbar-bg-color: #f3f3f3;
+  --divider-color: #d0d0d0;
+  --divider-border: 1px solid var(--divider-color);
+  --focus-ring-inactive-shadow-color: #e0e0e0;
 }
 
 .vscode-studio {
@@ -784,6 +790,13 @@ html, body {
   border: 1px solid transparent;
   min-width: 35px;
   box-shadow: var(--focus-ring-inactive-shadow);
+}
+
+.expandable-view-title {
+  background-color: var(--toolbar-bg-color);
+  height: 22px;
+  border-top: var(--divider-border);
+  border-bottom: 1px solid transparent;
 }.CodeMirror-dialog {
   position: absolute;
   left: 0; right: 0;

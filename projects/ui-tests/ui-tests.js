@@ -677,6 +677,34 @@ jb.component('uiTest.itemlistMDAutoSelectFirst', {
   })
 })
 
+jb.component('uiTest.itemlistMDAutoSelectFirst.ProxyBug', {
+  impl: uiFrontEndTest({
+//    renderDOM: true,    
+    control: group({
+      controls: [
+        itemlist({
+          items: '%$people%',
+          controls: text('%$item.name%'),
+          features: [
+            itemlist.selection({
+              databind: '%$globals/selectedPerson%',
+              autoSelectFirst: true
+            }),
+            itemlist.keyboardSelection(true)
+          ]
+        }),
+        text({
+          text: '%$globals/selectedPerson/name% selected',
+          features: watchRef('%$globals/selectedPerson%')
+        })
+      ]
+    }),
+    action: 
+      uiAction.keyboardEvent({selector: 'ul', type: 'keydown', keyCode: 40}),
+    expectedResult: contains('Homer')
+  })
+})
+
 jb.component('uiTest.itemlistSelection', {
   impl: uiTest({
     control: itemlist({

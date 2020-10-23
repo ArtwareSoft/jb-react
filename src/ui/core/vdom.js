@@ -133,7 +133,7 @@ function cloneVNode(vdom) {
 
 function vdomDiff(newObj,orig) {
     const ignoreRegExp = /\$|checked|style|value|parentNode|frontend|__|widget|on-|remoteuri|width|height|top|left/
-    const ignoreValue = /mdc-tab-[0-9]+/
+    const ignoreValue = /mdc-tab-[0-9]+|__undefined/
     return doDiff(newObj,orig)
     function doDiff(newObj,orig) {
         if (Array.isArray(orig) && orig.length == 0) orig = null

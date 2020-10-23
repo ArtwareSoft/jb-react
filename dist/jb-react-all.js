@@ -4340,7 +4340,7 @@ function cloneVNode(vdom) {
 
 function vdomDiff(newObj,orig) {
     const ignoreRegExp = /\$|checked|style|value|parentNode|frontend|__|widget|on-|remoteuri|width|height|top|left/
-    const ignoreValue = /mdc-tab-[0-9]+/
+    const ignoreValue = /mdc-tab-[0-9]+|__undefined/
     return doDiff(newObj,orig)
     function doDiff(newObj,orig) {
         if (Array.isArray(orig) && orig.length == 0) orig = null
@@ -10618,6 +10618,45 @@ jb.component('group.sectionExpandCollopase', {
     'sectionsModel'
   )
 })
+
+jb.component('group.sectionsExpandCollopase', {
+  type: 'group.style',
+  params: [
+    {id: 'autoExpand', as: 'boolean' },
+    {id: 'titleStyle', type: 'text.style', dynamic: true, defaultValue: header.h2() },
+    {id: 'toggleStyle', type: 'editable-boolean.style', defaultValue: editableBoolean.expandCollapse() },
+    {id: 'titleGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()},
+    {id: 'innerGroupStyle', type: 'group.style', dynamic: true, defaultValue: group.div()}
+  ],
+  impl: styleByControl(
+    group({
+      controls: dynamicControls({
+        controlItems: '%$sectionsModel/controls%',
+        genericControl: group({
+          controls: [
+            group({
+              style: call('titleGroupStyle'),
+              controls: [
+                editableBoolean({databind: '%$sectionExpanded%', style: call('toggleStyle')}),
+                text({text: '%$section/field()/title()%', style: call('titleStyle') }),
+              ],
+              layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'})
+            }),
+            group({
+              style: call('innerGroupStyle'),
+              controls: controlWithCondition('%$sectionExpanded%','%$sectionsModel/controls[{%$sectionIndex%}]%'),
+              features: watchRef('%$sectionExpanded%')
+            })
+          ],
+          features: variable({name: 'sectionExpanded', watchable: true, value: '%$autoExpand%'}),
+        }),
+        itemVariable: 'section',
+        indexVariable: 'sectionIndex'
+      }),
+    }),
+    'sectionsModel'
+  )
+})
 ;
 
 jb.ns('mdcStyle,table')
@@ -11169,6 +11208,7 @@ jb.prettyPrintComp = function(compId,comp,settings={}) {
 }
 
 jb.prettyPrint = function(val,settings = {}) {
+  if (val == null) return ''
   return jb.prettyPrintWithPositions(val,settings).text;
 }
 
@@ -11282,7 +11322,6 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
     }
     const keys = Object.keys(profile).filter(x=>x != '$')
     const oneFirstArg = keys.length === 1 && params[0] && params[0].id == keys[0]
-        //&& (typeof propOfProfile(keys[0]) !== 'object' || Array.isArray(propOfProfile(keys[0])))
     const twoFirstArgs = keys.length == 2 && params.length >= 2 && profile[params[0].id] && profile[params[1].id]
     if ((params.length < 3 && comp.macroByValue !== false) || comp.macroByValue || oneFirstArg || twoFirstArgs) {
       const args = systemProps.concat(params.map(param=>({innerPath: param.id, val: propOfProfile(param.id)})))
@@ -11294,7 +11333,9 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
     const systemPropsInObj = remarkProp.concat(vars.length ? [{innerPath: 'vars', val: vars.map(x=>x.val)}] : [])
     const args = systemPropsInObj.concat(params.filter(param=>propOfProfile(param.id) !== undefined)
         .map(param=>({innerPath: param.id, val: propOfProfile(param.id)})))
-      return joinVals(ctx, args,openProfileGroup, closeProfileGroup, flat, false)
+    const open = args.length ? openProfileGroup : openProfileByValueGroup
+    const close = args.length ? closeProfileGroup : closeProfileByValueGroup
+    return joinVals(ctx, args, open, close, flat, false)
 
     function propOfProfile(paramId) {
       const isFirst = params[0] && params[0].id == paramId

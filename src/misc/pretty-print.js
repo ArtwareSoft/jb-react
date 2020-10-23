@@ -13,6 +13,7 @@ jb.prettyPrintComp = function(compId,comp,settings={}) {
 }
 
 jb.prettyPrint = function(val,settings = {}) {
+  if (val == null) return ''
   return jb.prettyPrintWithPositions(val,settings).text;
 }
 

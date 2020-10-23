@@ -95,7 +95,7 @@ class WatchableValueByRef {
     }
   }
   addObjToMap(top,path) {
-    if (!top || top[isProxy] || top.$jb_val || typeof top !== 'object' || this.allowedTypes.indexOf(Object.getPrototypeOf(top)) == -1) return
+    if (!top || top[isProxy] || top[jb.passiveSym] || top.$jb_val || typeof top !== 'object' || this.allowedTypes.indexOf(Object.getPrototypeOf(top)) == -1) return
     if (top[jbId]) {
         this.objToPath.set(top[jbId],path)
         this.objToPath.delete(top)
@@ -255,8 +255,8 @@ class WatchableValueByRef {
 
     jb.log('watchable writeValue',{ref,value,ref,srcCtx})
     if (ref.$jb_val)
-      return ref.$jb_val(value);
-    if (this.val(ref) === value) return;
+      return ref.$jb_val(value)
+    if (this.val(ref) === value) return
     return this.doOp(ref,{$set: this.createSecondaryLink(value)},srcCtx)
   }
   createSecondaryLink(val) {
@@ -268,7 +268,7 @@ class WatchableValueByRef {
           set: (o,p,v) => o[p] = v
         })
     }
-    return val;
+    return val
   }
   splice(ref,args,srcCtx) {
     return this.doOp(ref,{$splice: args },srcCtx)
