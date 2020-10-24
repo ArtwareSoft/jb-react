@@ -106,10 +106,7 @@ jb.component('studio.eventTrackerToolbar', {
     ],
     features: [
       chromeDebugger.colors(),
-      followUp.watchObservable(
-        source.callbag(ctx => jb.ui.getSpy(ctx).observable()),
-        100
-      ),
+      eventTracker.watchSpy(100)
     ]
   }),
 })
@@ -151,21 +148,29 @@ jb.component('studio.eventTracker', {
             onSelection: runActions(({data}) => jb.frame.console.log(data), eventTracker.highlightEvent('%%'))
           }),
           itemlist.keyboardSelection({}),
+          eventTracker.watchSpy(1000)
         ]
       })
     ],
     features: [
       id('event-tracker'),
-      If(
-        ctx => jb.ui.getInspectedJb() != ctx.frame().jb
-           && (!jb.studio.studiojb || jb.studio.studiojb.exec('%$studio/project%') != 'studio-helper'),
-        followUp.watchObservable(
-          source.callbag(ctx => jb.ui.getSpy(ctx).observable()),
-          1000
-        )
-      )
     ]
   })
+})
+
+jb.component('eventTracker.watchSpy',{
+  type: 'feature',
+  params: [
+    { id: 'delay', defaultValue: 100}
+  ],
+  impl: If(
+    ctx => jb.ui.getInspectedJb() != ctx.frame().jb
+       && (!jb.studio.studiojb || jb.studio.studiojb.exec('%$studio/project%') != 'studio-helper'),
+    followUp.watchObservable(
+      source.callbag(ctx => jb.ui.getSpy(ctx).observable()),
+      '%$delay%'
+    )
+  )
 })
 
 jb.component('eventTracker.eventTypes', {

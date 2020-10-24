@@ -59,6 +59,7 @@ jb.component('feature.contentEditable', {
           contentEditable.deactivate()
         ))
       }),
+      feature.keyboardShortcut('Alt+N', studio.pickAndOpen('studio')),
       feature.keyboardShortcut('Ctrl+Z', action.runBEMethod('execProfile','studio.undo')),
       feature.keyboardShortcut('Ctrl+Y', action.runBEMethod('execProfile','studio.redo')),
       frontEnd.enrichUserEvent(({},{ev}) => ({ innerText: ev.target.innerText, innerHTML: ev.target.innerText})),
