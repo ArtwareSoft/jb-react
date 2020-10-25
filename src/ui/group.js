@@ -46,25 +46,22 @@ jb.component('group.firstSucceeding', {
   type: 'feature',
   category: 'group:70',
   description: 'Used with controlWithCondition. Takes the fhe first succeeding control',
-  impl: features(
-    () => ({calcHash: ctx => jb.asArray(ctx.vars.$model.controls.profile).reduce((res,prof,i) => {
-        if (res) return res
-        const found = prof.condition == undefined || ctx.vars.$model.ctx.setVars(ctx.vars).runInner(prof.condition,{ as: 'boolean'},`controls~${i}~condition`)
-        if (found)
-          return i + 1 // avoid index 0
-      }, null),
-    }),
-    calcProp({
-        id: 'ctrls',
-        value: ctx => {
-          const index = ctx.vars.$props.cmpHash-1
-          if (isNaN(index)) return []
-          const prof = jb.asArray(ctx.vars.$model.controls.profile)[index]
-          return [ctx.vars.$model.ctx.setVars(ctx.vars).runInner(prof,{type: 'control'},`controls~${index}`)]
-        },
-        priority: 5
-    })
-  )
+  impl: calcProp({
+      id: 'ctrls',
+      value: (ctx,{$model}) => {
+        const controls = jb.asArray($model.controls.profile)
+        for(let i=0;i<controls.length;i++) {
+          const prof = controls[i]
+          const ctxToUse = $model.ctx.setVars(ctx.vars)
+          const active = prof.condition == undefined || 
+            ctxToUse.runInner(prof.condition,{ as: 'boolean'},`controls~${i}~condition`)
+          if (active)
+            return [ctxToUse.runInner(prof,{type: 'control'},`controls~${i}`)]
+        }
+        return []
+      },
+      priority: 5
+  })
 })
 
 jb.component('controlWithCondition', {

@@ -788,7 +788,7 @@ jb.component('uiTest.itemlistContainerSearchCtrl', {
         items: pipeline('%$people%',itemlistContainer.filter()),
         controls: text(text.highlight('%name%', '%$itemlistCntrData/search_pattern%')),
         features: [
-          watchRef({ref: '%$itemlistCntrData/search_pattern%', strongRefresh1: 'true'}),
+          watchRef('%$itemlistCntrData/search_pattern%'),
           itemlist.selection({autoSelectFirst: true}),
           itemlist.keyboardSelection({
             autoFocus: true,
@@ -797,7 +797,7 @@ jb.component('uiTest.itemlistContainerSearchCtrl', {
         ]
       })
     ],
-    features: group.itemlistContainer({})
+    features: group.itemlistContainer()
   })
 })
 

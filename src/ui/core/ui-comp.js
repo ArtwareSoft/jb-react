@@ -5,7 +5,7 @@ ui.propCounter = 0
 const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,{ctx: this.ctx}) }}
 const lifeCycle = new Set('init,extendCtx,templateModifier,followUp,destroy'.split(','))
 const arrayProps = new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,frontEndVar,eventHandler'.split(','))
-const singular = new Set('template,calcRenderProps,toolbar,styleParams,calcHash,ctxForPick'.split(','))
+const singular = new Set('template,calcRenderProps,toolbar,styleParams,ctxForPick'.split(','))
 
 Object.assign(jb.ui,{
     cssHashCounter: 0,
@@ -69,16 +69,13 @@ class JbComponent {
         this.renderProps = {}
         this.state = this.ctx.vars.$state
         this.calcCtx = this.ctx.setVar('$props',this.renderProps).setVar('cmp',this)
-
-        this.renderProps.cmpHash = this.calcHash && tryWrapper(() => this.calcHash(this.calcCtx))
         this.initialized = true
-        return this.renderProps.cmpHash
     }
  
     calcRenderProps() {
         if (!this.initialized)
-            this.init();
-        (this.initFuncs||[]).sort((p1,p2) => p1.phase - p2.phase)
+            this.init()
+        ;(this.initFuncs||[]).sort((p1,p2) => p1.phase - p2.phase)
             .forEach(f =>  tryWrapper(() => f.action(this.calcCtx), 'init'));
    
         this.toObserve = this.watchRef ? this.watchRef.map(obs=>({...obs,ref: obs.refF(this.ctx)})).filter(obs=>jb.isWatchable(obs.ref)) : []
@@ -151,7 +148,6 @@ class JbComponent {
                 frontEndVars && { $__vars : JSON.stringify(frontEndVars)},
                 this.state && { $__state : JSON.stringify(this.state)},
                 this.ctxForPick && { 'pick-ctx': ui.preserveCtx(this.ctxForPick) },
-                this.renderProps.cmpHash != null && {cmphash: ''+this.renderProps.cmpHash}
             )
         }
         jb.log('uiComp end renderVdom',{cmp: this, vdom})

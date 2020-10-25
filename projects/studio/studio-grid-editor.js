@@ -283,7 +283,8 @@ jb.component('gridEditor.openGridItemThumbs', {
           return `>span { display: none; position: absolute; white-space: nowrap; padding: 7px; color: var(--jb-statusBar-foreground); background: var(--jb-statusBar-background); opacity: 1; top: ${elemRect.height- 7 }px}`
         }),
         css('{cursor: grab; box-shadow: 3px 3px; var(--jb-statusBar-background); opacity: 0.2; display: flex; flex-flow: row-reverse} ~:hover {opacity: 0.7}' ),
-        followUp.flow(source.watchableData({ ref: studio.ref('%$gridPath%'), includeChildren: 'yes' }), sink.refreshCmp() )
+        watchRef({ ref: studio.ref('%$gridPath%'), includeChildren: 'yes' }),
+        //followUp.flow(source.watchableData({ ref: studio.ref('%$gridPath%'), includeChildren: 'yes' }), sink.refreshCmp() )
         // followUp.onDataChange(,
         //   action: (ctx,{cmp}) => jb.delay(1).then(()=> cmp.refresh(null,{srcCtx: ctx.cmpCtx}))
         // })

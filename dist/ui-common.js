@@ -756,7 +756,7 @@ class WatchableValueByRef {
     }
   }
   addObjToMap(top,path) {
-    if (!top || top[isProxy] || top.$jb_val || typeof top !== 'object' || this.allowedTypes.indexOf(Object.getPrototypeOf(top)) == -1) return
+    if (!top || top[isProxy] || top[jb.passiveSym] || top.$jb_val || typeof top !== 'object' || this.allowedTypes.indexOf(Object.getPrototypeOf(top)) == -1) return
     if (top[jbId]) {
         this.objToPath.set(top[jbId],path)
         this.objToPath.delete(top)
@@ -916,8 +916,8 @@ class WatchableValueByRef {
 
     jb.log('watchable writeValue',{ref,value,ref,srcCtx})
     if (ref.$jb_val)
-      return ref.$jb_val(value);
-    if (this.val(ref) === value) return;
+      return ref.$jb_val(value)
+    if (this.val(ref) === value) return
     return this.doOp(ref,{$set: this.createSecondaryLink(value)},srcCtx)
   }
   createSecondaryLink(val) {
@@ -929,7 +929,7 @@ class WatchableValueByRef {
           set: (o,p,v) => o[p] = v
         })
     }
-    return val;
+    return val
   }
   splice(ref,args,srcCtx) {
     return this.doOp(ref,{$splice: args },srcCtx)
@@ -1842,9 +1842,6 @@ Object.assign(jb.ui, {
             jb.log('dom refresh css',{cmp, lines: cmp.cssLines,ctx,elem, state, options})
             return jb.ui.hashCss(cmp.calcCssLines(),cmp.ctx,{existingClass, cssStyleElem})
         }
-        const hash = cmp.init()
-        if (hash != null && hash == elem.getAttribute('cmpHash'))
-            return jb.log('refresh dom stopped by hash',{hash, elem, state, options})
         jb.log('dom refresh',{cmp,ctx,elem, state, options})
         cmp && applyNewVdom(elem, h(cmp), {strongRefresh, ctx})
         //jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
@@ -1855,11 +1852,10 @@ Object.assign(jb.ui, {
         if (!changed_path) debugger
         //observe="resources://2~name;person~name
         const findIn = jb.path(e,'srcCtx.vars.headlessWidgetId') || jb.path(e,'srcCtx.vars.testID') ? e.srcCtx : jb.frame.document
-        const elemsToCheck = jb.ui.find(findIn,'[observe]')
+        const elemsToCheck = jb.ui.find(findIn,'[observe]') // top down order
         const elemsToCheckCtxBefore = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
         jb.log('check observableElems',{elemsToCheck,e})
         elemsToCheck.forEach((elem,i) => {
-            //.map((elem,i) => ({elem,i, phase: phaseOfElem(elem,i) })).sort((x1,x2)=>x1.phase-x2.phase).forEach(({elem,i}) => {
             if (elemsToCheckCtxBefore[i] != elem.getAttribute('jb-ctx')) return // the elem was already refreshed during this process, probably by its parent
             let refresh = false, strongRefresh = false, cssOnly = true
             elem.getAttribute('observe').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{
@@ -2013,7 +2009,7 @@ ui.propCounter = 0
 const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,{ctx: this.ctx}) }}
 const lifeCycle = new Set('init,extendCtx,templateModifier,followUp,destroy'.split(','))
 const arrayProps = new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,frontEndVar,eventHandler'.split(','))
-const singular = new Set('template,calcRenderProps,toolbar,styleParams,calcHash,ctxForPick'.split(','))
+const singular = new Set('template,calcRenderProps,toolbar,styleParams,ctxForPick'.split(','))
 
 Object.assign(jb.ui,{
     cssHashCounter: 0,
@@ -2077,16 +2073,13 @@ class JbComponent {
         this.renderProps = {}
         this.state = this.ctx.vars.$state
         this.calcCtx = this.ctx.setVar('$props',this.renderProps).setVar('cmp',this)
-
-        this.renderProps.cmpHash = this.calcHash && tryWrapper(() => this.calcHash(this.calcCtx))
         this.initialized = true
-        return this.renderProps.cmpHash
     }
  
     calcRenderProps() {
         if (!this.initialized)
-            this.init();
-        (this.initFuncs||[]).sort((p1,p2) => p1.phase - p2.phase)
+            this.init()
+        ;(this.initFuncs||[]).sort((p1,p2) => p1.phase - p2.phase)
             .forEach(f =>  tryWrapper(() => f.action(this.calcCtx), 'init'));
    
         this.toObserve = this.watchRef ? this.watchRef.map(obs=>({...obs,ref: obs.refF(this.ctx)})).filter(obs=>jb.isWatchable(obs.ref)) : []
@@ -2159,7 +2152,6 @@ class JbComponent {
                 frontEndVars && { $__vars : JSON.stringify(frontEndVars)},
                 this.state && { $__state : JSON.stringify(this.state)},
                 this.ctxForPick && { 'pick-ctx': ui.preserveCtx(this.ctxForPick) },
-                this.renderProps.cmpHash != null && {cmphash: ''+this.renderProps.cmpHash}
             )
         }
         jb.log('uiComp end renderVdom',{cmp: this, vdom})
@@ -2714,8 +2706,8 @@ jb.component('followUp.flow', {
       Var('followUpCmp', '%$cmp%'),
       Var('pipeToRun', rx.pipe('%$elems()%')),
       (ctx,{cmp,pipeToRun}) => {
-        cmp.followUpStatus = cmp.followUpStatus || {}
-        cmp.followUpStatus[ctx.cmpCtx.path] = pipeToRun
+        jb.ui.followUps = jb.ui.followUps || []
+        jb.ui.followUps.push({cmp, pipe: pipeToRun, srcPath: ctx.cmpCtx.callerPath})
       },
       rx.pipe(
         source.callbag(() => jb.ui.BECmpsDestroyNotification),
@@ -2723,7 +2715,13 @@ jb.component('followUp.flow', {
           ({data},{followUpCmp}) => data.cmps.find(_cmp => _cmp.cmpId == followUpCmp.cmpId && _cmp.ver == followUpCmp.ver)
         ),
         rx.take(1),
-        sink.action(({},{pipeToRun}) => pipeToRun.dispose())
+        sink.action(({},{pipeToRun}) => {
+          pipeToRun.dispose()
+          const index = jb.ui.followUps.findIndex(e=>e.pipe == pipeToRun)
+          if (index == -1)
+            jb.logError('followUp.flow destroy - can not find pipe')
+          jb.ui.followUps.splice(index,1)
+        })
       )
     )
   )
@@ -3755,25 +3753,22 @@ jb.component('group.firstSucceeding', {
   type: 'feature',
   category: 'group:70',
   description: 'Used with controlWithCondition. Takes the fhe first succeeding control',
-  impl: features(
-    () => ({calcHash: ctx => jb.asArray(ctx.vars.$model.controls.profile).reduce((res,prof,i) => {
-        if (res) return res
-        const found = prof.condition == undefined || ctx.vars.$model.ctx.setVars(ctx.vars).runInner(prof.condition,{ as: 'boolean'},`controls~${i}~condition`)
-        if (found)
-          return i + 1 // avoid index 0
-      }, null),
-    }),
-    calcProp({
-        id: 'ctrls',
-        value: ctx => {
-          const index = ctx.vars.$props.cmpHash-1
-          if (isNaN(index)) return []
-          const prof = jb.asArray(ctx.vars.$model.controls.profile)[index]
-          return [ctx.vars.$model.ctx.setVars(ctx.vars).runInner(prof,{type: 'control'},`controls~${index}`)]
-        },
-        priority: 5
-    })
-  )
+  impl: calcProp({
+      id: 'ctrls',
+      value: (ctx,{$model}) => {
+        const controls = jb.asArray($model.controls.profile)
+        for(let i=0;i<controls.length;i++) {
+          const prof = controls[i]
+          const ctxToUse = $model.ctx.setVars(ctx.vars)
+          const active = prof.condition == undefined || 
+            ctxToUse.runInner(prof.condition,{ as: 'boolean'},`controls~${i}~condition`)
+          if (active)
+            return [ctxToUse.runInner(prof,{type: 'control'},`controls~${i}`)]
+        }
+        return []
+      },
+      priority: 5
+  })
 })
 
 jb.component('controlWithCondition', {

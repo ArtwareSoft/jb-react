@@ -43,7 +43,7 @@ jb.component('eventTracker.clearSpyLog', {
   }
 })
 
-jb.component('studio.refreshSpy', {
+jb.component('eventTracker.refresh', {
   type: 'action',
   params: [
     {id: 'clear', as: 'boolean'}
@@ -71,6 +71,12 @@ jb.component('studio.eventTrackerToolbar', {
         style: chromeDebugger.icon(),
         features: [css.color('var(--jb-menu-fg)'), feature.hoverTitle('clear')]
       }),
+      button({
+        title: 'refresh',
+        action: refreshControlById('event-tracker'),
+        style: chromeDebugger.icon(),
+        features: [css.color('var(--jb-menu-fg)'), feature.hoverTitle('refresh'), feature.if(eventTracker.refreshBlocked())]
+      }),      
       picklist({
         title: 'frame',
         databind: ctx => ({
@@ -86,7 +92,10 @@ jb.component('studio.eventTrackerToolbar', {
           code: '%frame/jbUri%',
           text: '%frame/jbUri% (%spy/logs/length%)',
         }),
-        features: chromeDebugger.colors(),
+        features: [
+          chromeDebugger.colors(),
+          picklist.onChange(refreshControlById('event-tracker'))
+        ]
       }),
       divider({style: divider.vertical()}),
       editableText({
@@ -158,19 +167,22 @@ jb.component('studio.eventTracker', {
   })
 })
 
+jb.component('eventTracker.refreshBlocked',{
+  type: 'boolean',
+  impl: ctx => jb.ui.getInspectedJb() == ctx.frame().jb || 
+    (jb.studio.studiojb && jb.studio.studiojb.exec('%$studio/project%') == 'studio-helper')
+})
+
 jb.component('eventTracker.watchSpy',{
   type: 'feature',
   params: [
     { id: 'delay', defaultValue: 100}
   ],
-  impl: If(
-    ctx => jb.ui.getInspectedJb() != ctx.frame().jb
-       && (!jb.studio.studiojb || jb.studio.studiojb.exec('%$studio/project%') != 'studio-helper'),
+  impl: If(not(eventTracker.refreshBlocked()),
     followUp.watchObservable(
       source.callbag(ctx => jb.ui.getSpy(ctx).observable()),
       '%$delay%'
-    )
-  )
+  ))
 })
 
 jb.component('eventTracker.eventTypes', {
@@ -293,7 +305,7 @@ jb.component('eventTracker.eventItems', {
   impl: (ctx,query,pattern) => {
     const spy = jb.ui.getSpy(ctx)
     if (!spy) return []
-    const ret = spy.search(query).filter(x=> !(jb.path(x.ctx,'path') || '').match(/eventTracker/))
+    const ret = spy.search(query).filter(x=> !(jb.path(x,'cmp.ctx.path') || '').match(/eventTracker/))
     const regexp = new RegExp(pattern)
     const items = pattern ? ret.filter(x=>regexp.test(Array.from(x.values()).filter(x=> typeof x == 'string').join(','))) : ret
     jb.log('eventTracker items',{ctx,spy,query,items})

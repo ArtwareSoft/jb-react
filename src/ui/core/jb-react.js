@@ -552,9 +552,6 @@ Object.assign(jb.ui, {
             jb.log('dom refresh css',{cmp, lines: cmp.cssLines,ctx,elem, state, options})
             return jb.ui.hashCss(cmp.calcCssLines(),cmp.ctx,{existingClass, cssStyleElem})
         }
-        const hash = cmp.init()
-        if (hash != null && hash == elem.getAttribute('cmpHash'))
-            return jb.log('refresh dom stopped by hash',{hash, elem, state, options})
         jb.log('dom refresh',{cmp,ctx,elem, state, options})
         cmp && applyNewVdom(elem, h(cmp), {strongRefresh, ctx})
         //jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
@@ -565,11 +562,10 @@ Object.assign(jb.ui, {
         if (!changed_path) debugger
         //observe="resources://2~name;person~name
         const findIn = jb.path(e,'srcCtx.vars.headlessWidgetId') || jb.path(e,'srcCtx.vars.testID') ? e.srcCtx : jb.frame.document
-        const elemsToCheck = jb.ui.find(findIn,'[observe]')
+        const elemsToCheck = jb.ui.find(findIn,'[observe]') // top down order
         const elemsToCheckCtxBefore = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
         jb.log('check observableElems',{elemsToCheck,e})
         elemsToCheck.forEach((elem,i) => {
-            //.map((elem,i) => ({elem,i, phase: phaseOfElem(elem,i) })).sort((x1,x2)=>x1.phase-x2.phase).forEach(({elem,i}) => {
             if (elemsToCheckCtxBefore[i] != elem.getAttribute('jb-ctx')) return // the elem was already refreshed during this process, probably by its parent
             let refresh = false, strongRefresh = false, cssOnly = true
             elem.getAttribute('observe').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{

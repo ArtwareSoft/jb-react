@@ -661,7 +661,15 @@ Object.assign(jb, {
         jb.mainWatchableHandler && jb.mainWatchableHandler.resourceReferred(id)
         return jb.resources[id]
     },
-    const: (id,val) => typeof val == 'undefined' ? jb.consts[id] : (jb.consts[id] = val || {}),
+    passiveSym: Symbol.for('passive'),
+    passive: (id,val) => typeof val == 'undefined' ? jb.consts[id] : (jb.consts[id] = jb.markAsPassive(val || {})),
+    markAsPassive: obj => {
+      if (obj && typeof obj == 'object') {
+        obj[jb.passiveSym] = true
+        Object.values(obj).forEach(v=>jb.markAsPassive(v))
+      }
+      return obj
+    },
     extraWatchableHandlers: [],
     extraWatchableHandler: (handler,oldHandler) => { 
       jb.extraWatchableHandlers.push(handler)
@@ -729,7 +737,7 @@ Object.assign(jb, {
         }
         if (comp.passiveData !== undefined) {
           jb.comps[jb.addDataResourcePrefix(id)] = comp
-          return jb.const(jb.removeDataResourcePrefix(id),comp.passiveData)
+          return jb.passive(jb.removeDataResourcePrefix(id),comp.passiveData)
         }
       } catch(e) {
         console.log(e)

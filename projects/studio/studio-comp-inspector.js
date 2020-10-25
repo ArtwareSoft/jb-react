@@ -49,7 +49,7 @@ jb.component('studio.compInspector', {
         }),
         tableTree({
             title: 'rendering props',
-            treeModel: tree.modelFilter(tree.json('%$inspectedCmp/renderProps%'), notContains('cmpHash')),
+            treeModel: tree.json('%$inspectedCmp/renderProps%'),
             leafFields: text('%val%', 'value'),
             chapterHeadline: text(tree.lastPathElement('%path%'))
         }),
