@@ -70,12 +70,7 @@ jb.component('studio.newDataSource', {
         options: picklist.optionsByComma('text,array,card,collection'),
         style: picklist.mdcRadio(),
         features: [
-          feature.init(
-            action.if(
-              not('%$dialogData/type%'),
-              writeValue('%$dialogData/type%', 'collection')
-            )
-          ),
+          feature.initValue('%$dialogData/type%','collection'),
           css.margin({left: '10'})
         ]
       }),

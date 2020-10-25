@@ -86,6 +86,7 @@ jb.component('service.registerBackEndService', {
       jb.logError('overridingService',{id: _id, service: $serviceRegistry.services[_id], service: _service,ctx})
     $serviceRegistry.services[_id] = _service
   })
+  // feature.initValue({to: '%$$serviceRegistry/services/{%$id()%}%', value: '%$service()%', alsoWhenNotEmpty: true}),
 })
 
 

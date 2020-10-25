@@ -73,8 +73,8 @@ class WatchableValueByRef {
       if (this.transactionEventsLog)
         this.transactionEventsLog.push(opEvent)
       else
-        this.resourceChange.next(opEvent);
-      return opEvent;
+        this.resourceChange.next(opEvent)
+      return opEvent
     } catch(e) {
       jb.logException(e,'doOp',{srcCtx,ref,opOnRef,srcCtx})
     }
@@ -444,7 +444,7 @@ jb.component('runTransaction', {
   type: 'action',
   params: [
     {id: 'actions', type: 'action[]', ignore: true, composite: true, mandatory: true},
-    {id: 'disableNotifications', as: 'boolean', type: 'boolean'}
+    {id: 'noNotifications', as: 'boolean', type: 'boolean'}
   ],
   impl: ctx => {
 		const actions = jb.asArray(ctx.profile.actions || ctx.profile['$runActions'] || []).filter(x=>x);
@@ -454,7 +454,7 @@ jb.component('runTransaction', {
     return actions.reduce((def,action,index) =>
 				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index )) ,Promise.resolve())
 			.catch((e) => jb.logException(e,'runTransaction',{ctx}))
-      .then(() => jb.mainWatchableHandler.endTransaction(ctx.params.disableNotifications))
+      .then(() => jb.mainWatchableHandler.endTransaction(ctx.params.noNotifications))
 	}
 })
 

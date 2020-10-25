@@ -61,6 +61,7 @@ class JbComponent {
         this.originators = [ctx]
     }
     init() {
+        if (this.initialized) return
         jb.log('init uiComp',{cmp: this})
         const baseVars = this.ctx.vars
         this.ctx = (this.extendCtxFuncs||[])
@@ -73,10 +74,9 @@ class JbComponent {
     }
  
     calcRenderProps() {
-        if (!this.initialized)
-            this.init()
+        this.init()
         ;(this.initFuncs||[]).sort((p1,p2) => p1.phase - p2.phase)
-            .forEach(f =>  tryWrapper(() => f.action(this.calcCtx), 'init'));
+            .forEach(f =>  tryWrapper(() => f.action(this.calcCtx, this.calcCtx.vars), 'init'));
    
         this.toObserve = this.watchRef ? this.watchRef.map(obs=>({...obs,ref: obs.refF(this.ctx)})).filter(obs=>jb.isWatchable(obs.ref)) : []
         this.watchAndCalcModelProp && this.watchAndCalcModelProp.forEach(e=>{

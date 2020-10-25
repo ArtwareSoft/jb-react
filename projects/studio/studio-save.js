@@ -26,10 +26,11 @@ jb.component('studio.saveComponents', {
   }
 })
 
-jb.component('studio.initAutoSave', {
-  type: 'action,has-side-effects',
-  impl: ctx => {
+jb.component('studio.autoSaveService',{
+  type: 'service',
+  impl: ctx => ({ init: () => {
     if (!jb.frame.jbInvscode || jb.studio.autoSaveInitialized) return
+    jb.log('studio init autosave service',{})
     jb.studio.autoSaveInitialized = true
     const {pipe, subscribe} = jb.callbag
     pipe(st.scriptChange, subscribe(async e => {
@@ -48,6 +49,7 @@ jb.component('studio.initAutoSave', {
       })
     )
   }
+  })
 })
 
 jb.component('studio.saveProjectSettings', {

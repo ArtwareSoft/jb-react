@@ -368,10 +368,9 @@ jb.component('studio.all', {
         loadingControl: text('')
       }),
 //      group.data({data: '%$studio/project%', watch1: true}),
-      feature.init(runActions(urlHistory.mapStudioUrlToResource('studio'),
-        studio.initVscodeAdapter('studio'),
-        studio.initAutoSave()
-      )),
+      feature.requireService(studio.autoSaveService()),
+      feature.requireService(studio.vsCodeAdapterService()),
+      feature.requireService(urlHistory.mapStudioUrlToResource('studio'))
     ]
   })
 })
@@ -493,7 +492,7 @@ jb.component('studio.projectSettings', {
         includeChildren: 'structure'
       }),
       css.width('600'),
-      feature.init(writeValue('%$studio/libsAsArray%', split({text: '%libs%'})))
+      feature.initValue('%$studio/libsAsArray%', split({text: '%libs%'}))
     ]
   })
 })

@@ -1260,7 +1260,8 @@ jb.component('uiTest.expandCollapseWithDefaultCollapse', {
     controls: [
       editableBoolean({
         databind: '%$default%',
-        title: 'default',
+        title: 'default value for expanded',
+        style: editableBoolean.checkboxWithTitle(),
         features: id('default')
       }),
       group({
@@ -1276,7 +1277,7 @@ jb.component('uiTest.expandCollapseWithDefaultCollapse', {
             features: [feature.if('%$expanded%'), watchRef('%$expanded%')]
           })
         ],
-        features: [watchRef('%$default%'), feature.init(writeValue('%$expanded%', '%$default%'))]
+        features: [watchRef('%$default%'), feature.initValue({to: '%$expanded%', value: '%$default%', alsoWhenNotEmpty: true})]
       })
     ],
     features: [
@@ -1295,9 +1296,9 @@ jb.component('uiTest.editableBoolean.expandCollapseWithDefaultVal', {
 })
 
 jb.component('uiTest.editableBoolean.expandCollapseWithDefaultCollapse', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
+    renderDOM: true,
     control: uiTest.expandCollapseWithDefaultCollapse(),
-    action: runActions(),
     expectedResult: not(contains('inner text'))
   })
 })

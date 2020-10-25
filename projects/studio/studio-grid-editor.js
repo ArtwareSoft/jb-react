@@ -264,10 +264,12 @@ jb.component('gridEditor.openGridItemThumbs', {
       content: text('Ctrl to span'),
       features: [
         gridEditor.dragableGridItemThumb(),
-        feature.init((ctx,{$dialog,gridItemElem}) => {
-            $dialog.gridItem = true
-            $dialog.gridItemElem = gridItemElem
-        }),
+        feature.initValue('%$$dialog.gridItem%',true),
+        feature.initValue('%$$dialog.gridItemElem%','%$gridItemElem%'),
+        // feature.init((ctx,{$dialog,gridItemElem}) => {
+        //     $dialog.gridItem = true
+        //     $dialog.gridItemElem = gridItemElem
+        // }),
         css((ctx,{gridItemElem}) => {
             const elemRect = gridItemElem.getBoundingClientRect()
             const left = elemRect.left + 5 + 'px'

@@ -1,11 +1,11 @@
 jb.component('urlHistory.mapStudioUrlToResource', {
-  type: 'action',
+  type: 'service',
   params: [
     {id: 'resource', as: 'string', mandatory: true},
     {id: 'onUrlChange', type: 'action', dynamic: true}
   ],
-  impl: function(ctx,resource) {
-        if (jb.ui.location || typeof window == 'undefined' || jb.frame.jbInvscode || jb.studio.urlHistoryInitialized) return;
+  impl: (ctx,resource) => ({ init: ()=> {
+        if (jb.ui.location || typeof window == 'undefined' || jb.frame.jbInvscode || jb.studio.urlHistoryInitialized) return
         jb.studio.urlHistoryInitialized = true
         const base = location.pathname.indexOf('studio-bin') != -1 ? 'studio-bin' : 'studio'
 
@@ -68,17 +68,9 @@ jb.component('urlHistory.mapStudioUrlToResource', {
                 jb.ui.location.push(Object.assign({},jb.ui.location.location, loc));
                 ctx.params.onUrlChange(ctx.setData(loc));
         }))
-    }
+    }})
 })
 
 jb.component('dataResource.queryParams', {
-  passiveData: {
-    
-  }
-})
-
-jb.component('dataResource.queryParams', {
-  passiveData: {
-
-  }
+  passiveData: {}
 })

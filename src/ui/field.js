@@ -41,7 +41,9 @@ jb.component('field.databind', {
     //     (ctx,{cmp}) => value =>
     //       value == null ? ctx.exp('%$$model/databind%','number') : writeFieldData(ctx,cmp,value,true)
     //   ),
-    feature.init((ctx,{$dialog})=> $dialog && ($dialog.hasFields = true))
+    
+    feature.byCondition('%$$dialog%', feature.initValue('%$$dialog/hasFields%',true))
+    //feature.init((ctx,{$dialog})=> $dialog && ($dialog.hasFields = true))
   )
 })
 
@@ -61,14 +63,14 @@ jb.ui.checkValidationError = (cmp,val,ctx) => {
   }
 
   function validationError() {
-    if (!cmp.validations) return;
-    const ctx = cmp.ctx.setData(val);
+    if (!cmp.validations) return
+    const ctx = cmp.ctx.setData(val)
     const err = (cmp.validations || [])
       .filter(validator=>!validator.validCondition(ctx))
-      .map(validator=>validator.errorMessage(ctx))[0];
+      .map(validator=>validator.errorMessage(ctx))[0]
     if (ctx.exp('%$formContainer%'))
-      ctx.run(writeValue('%$formContainer/err%',err));
-    return err;
+      ctx.run(writeValue('%$formContainer/err%',err))
+    return err
   }
 }
 

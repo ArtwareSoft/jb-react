@@ -293,7 +293,7 @@ jb.component('studio.openPickProfile', {
       dialogFeature.closeWhenClickingOutside(),
       dialogFeature.autoFocusOnFirstInput(),
       css.padding({right: '20'}),
-      feature.init(writeValue('%$dialogData/originalVal%', studio.val('%$path%'))),
+      feature.initValue('%$dialogData/originalVal%', studio.val('%$path%')),
       dialogFeature.onClose(
         action.if(not('%%'), studio.setComp('%$path%', '%$dialogData/originalVal%'))
       )
@@ -356,7 +356,7 @@ jb.component('studio.openNewProfile', {
           databind: '%$dialogData/name%',
           style: editableText.mdcInput({}),
           features: [
-            feature.init(writeValue('%$dialogData/name%', '%$studio/project%.myComp')),
+            feature.initValue('%$dialogData/name%', '%$studio/project%.myComp'),
             feature.onEnter(dialog.closeDialog()),
             validation(matchRegex('^[a-zA-Z_0-9.]+$'), 'invalid name')
           ]
@@ -367,11 +367,9 @@ jb.component('studio.openNewProfile', {
           options: picklist.options({options: sourceEditor.filesOfProject()}),
           style: picklist.mdcSelect({}),
           features: [
-            feature.init(
-              writeValue(
+            feature.initValue(
                 '%$dialogData/file%',
                 pipeline(sourceEditor.filesOfProject(), first())
-              )
             ),
             validation(notEmpty('%%'), 'mandatory')
           ]

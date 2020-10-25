@@ -89,7 +89,7 @@ jb.component('studio.extractComponentDialog', {
               title: 'component name',
               databind: '%$studio/refactor/compName%',
               features: [
-                feature.init(If(not('%$studio/refactor/compName%'),writeValue('%$studio/refactor/compName%','%$studio/project%.cmp1'))),
+                feature.initValue('%$studio/refactor/compName%','%$studio/project%.cmp1'),
                 validation(matchRegex('^[A-Za-z_][\\.A-Za-z_0-9]*$', '%%'), 'invalid comp name'),
                 validation(
                   not(inGroup(() => Object.keys(jb.studio.previewjb.comps))),
@@ -199,18 +199,13 @@ jb.component('studio.extractParamDialog', {
             title: 'param name',
             databind: '%$studio/refactor/paramName%',
             features: [
-              feature.init(
-                If(
-                  not('%$studio/refactor/paramName%'),
-                  writeValue('%$studio/refactor/paramName%',
+              feature.initValue('%$studio/refactor/paramName%',
                     pipeline(
                       split({separator: '~', text: '%$path%'}),
                       filter(not(matchRegex('[0-9]+'))),
                       last(),
                       removeSuffix('s')
                     )
-                  )
-                )
               ),
               validation(matchRegex('^[A-Za-z_][\\.A-Za-z_0-9]*$', '%%'), 'invalid param name')
             ]

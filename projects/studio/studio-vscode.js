@@ -1,11 +1,11 @@
 jb.ns('vscode')
 
-jb.component('studio.initVscodeAdapter', {
-  type: 'action',
+jb.component('studio.vsCodeAdapterService', {
+  type: 'service',
   params: [
     {id: 'resource', as: 'string', mandatory: true, description: 'mapped to state' },
   ],
-  impl: function(ctx,resource) {
+  impl: (ctx,resource) => ({ init: () => {
         if (! jb.frame.jbInvscode || jb.VscodeAdapterInitialized) return
         jb.VscodeAdapterInitialized = true
         const vscode = jb.studio.vsCodeApi
@@ -63,7 +63,7 @@ jb.component('studio.initVscodeAdapter', {
             console.log('send req ',messageID,req)
             vscode.postMessage({...req, messageID})
         })
-    }
+    }})
 })
 
 jb.component('studio.profileChanged', {

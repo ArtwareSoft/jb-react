@@ -40,7 +40,7 @@ jb.component('dialog.init', {
 		calcProp('contentComp', '%$$model/content%'),
 		calcProp('hasMenu', '%$$model/menu/profile%'),
 		calcProp('menuComp', '%$$model/menu%'),
-		feature.init(writeValue('%$$dialog/cmpId%','%$cmp/cmpId%')),
+		feature.initValue('%$$dialog/cmpId%','%$cmp/cmpId%'),
 		htmlAttribute('id','%$$dialog/id%'),
 
 		method('dialogCloseOK', dialog.closeDialog(true)),
@@ -148,7 +148,7 @@ jb.component('dialogFeature.uniqueDialog', {
 	  {id: 'id', as: 'string'},
 	],
 	impl: If('%$id%', features(
-		feature.init(writeValue('%$$dialog/id%','%$id%')),
+		feature.initValue({to: '%$$dialog/id%',value: '%$id%', alsoWhenNotEmpty: true}),
 		followUp.flow(
 			source.data(ctx => jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog')),
 			rx.filter(({data},{cmp},{id}) => data.getAttribute('id') == id && data.getAttribute('cmp-id') != cmp.cmpId ),
@@ -299,7 +299,7 @@ jb.component('dialogFeature.onClose', {
 jb.component('dialogFeature.closeWhenClickingOutside', {
   type: 'dialog-feature',
   impl: features(
-	  feature.init(writeValue('%$$dialog.isPopup%',true)),
+	  feature.initValue('%$$dialog.isPopup%',true),
 	  frontEnd.flow(
 		source.data(0), rx.delay(100), // wait before start listening
 		rx.flatMap(source.eventIncludingPreview('mousedown')),

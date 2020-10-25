@@ -41,14 +41,12 @@ jb.component('dialogFeature.studioPick', {
     {id: 'from', as: 'string'}
   ],
   impl: features(
-    feature.init( ctx => {
-      ctx.vars.$dialog.endPick = function() {
+    feature.initValue('%$$dialog.endPick%', () => ctx =>
         ctx.run(runActions(
           writeValue('%$studio/pickSelectionCtxId%', '%$dialogData.ctx.id%'),
           dialog.closeDialog(true)
         ))
-      }
-    }),
+    ),
     frontEnd.onDestroy(({},{cmp,from})=> {
       const _window = from == 'preview' ? st.previewWindow : window
       cmp.cover.parentElement == _window.document.body && _window.document.body.removeChild(cmp.cover)

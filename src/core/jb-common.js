@@ -286,18 +286,19 @@ jb.component('writeValue', {
   type: 'action',
   params: [
     {id: 'to', as: 'ref', mandatory: true},
-    {id: 'value', mandatory: true}
+    {id: 'value', mandatory: true},
+    {id: 'noNotifications', as: 'boolean'}
   ],
-  impl: (ctx,to,value) => {
+  impl: (ctx,to,value,noNotifications) => {
     if (!jb.isRef(to)) {
       ctx.run(ctx.profile.to,{as: 'ref'}) // for debug
       return jb.logError(`can not write to: ${ctx.profile.to}`, {ctx})
     }
     const val = jb.val(value)
     if (jb.isDelayed(val))
-      return Promise.resolve().then(val=>jb.writeValue(to,val,ctx))
+      return Promise.resolve().then(val=>jb.writeValue(to,val,ctx,noNotifications))
     else
-      jb.writeValue(to,val,ctx)
+      jb.writeValue(to,val,ctx,noNotifications)
   }
 })
 

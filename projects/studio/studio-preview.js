@@ -12,11 +12,17 @@ st.changedComps = function() {
 
 st.initStudioEditing = function() {
   if (st.previewjb.comps['dialog.studioPickDialog']) return
+  jb.log('studio init editing service',{})
   st.previewWindow.eval(`jb.ns('${Object.keys(jb.macroNs).join(',')}')`)
   jb.entries(jb.comps)
     .filter(e=>st.isStudioCmp(e[0]) || !st.previewjb.comps[e[0]])
     .forEach(e=>st.copyCompFromStudioToPreview(e))
 }
+
+jb.component('studio.editingService',{
+  type: 'service',
+  impl: () => ({ init: () => st.initStudioEditing() })
+})
 
 st.copyCompFromStudioToPreview = function(e) {
   st.previewjb.comps[e[0]] = { ...e[1], [jb.location] : [e[1][jb.location][0], e[1][jb.location][1]]}

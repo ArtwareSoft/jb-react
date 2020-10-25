@@ -69,6 +69,41 @@ jb.component('calcProps', {
     })
 })
 
+jb.component('feature.initValue', {
+  type: 'feature',
+  category: 'lifecycle',
+  description: 'set value if the value is empty, activated before calc properties',
+  params: [
+    {id: 'to', as: 'ref', mandatory: true, dynamic: true},
+    {id: 'value', mandatory: true, dynamic: true},
+    {id: 'alsoWhenNotEmpty', as: 'boolean'}
+  ],
+  impl: (ctx,_to,_value,alsoWhenNotEmpty) => ({ init: { 
+    action: (_ctx,{cmp}) => {
+      const value = _value(_ctx), to = _to(_ctx)
+      const toAssign = jb.val(value), currentVal = jb.val(to)
+      if ((alsoWhenNotEmpty || currentVal == null) && toAssign !== currentVal) {
+        jb.log('init value',{cmp, ...ctx.params})
+        jb.writeValue(to,toAssign,ctx,true)
+      } else if (toAssign !== currentVal) {
+        jb.logError(`feature.initValue: init non empty value ${jb.prettyPrint(to.profile)}`,{toAssign,currentVal,cmp,ctx,to,value})
+      }
+    }, 
+    phase: 10 
+  }})
+})
+
+jb.component('feature.requireService',{
+  params: [
+    {id: 'service', type: 'service'},
+    {id: 'condition', dynamic: true, defaultValue: true},
+  ],
+  impl: (ctx,service,condition) => ({ init: { 
+    action: () => condition() && service.init(),
+    phase: 10 
+  }})
+})
+
 jb.component('feature.init', {
   type: 'feature',
   category: 'lifecycle',
@@ -77,7 +112,7 @@ jb.component('feature.init', {
     {id: 'action', type: 'action', mandatory: true, dynamic: true},
     {id: 'phase', as: 'number', defaultValue: 10, description: 'init funcs from different features can use each other, phase defines the calculation order'}
   ],
-  impl: (ctx,action,phase) => ({ init: { action, phase }})
+  impl: ({},action,phase) => ({ init: { action, phase }})
 })
 
 jb.component('onDestroy', {

@@ -229,7 +229,8 @@ function applyDeltaToVDom(elem,delta) {
 }
 
 function setAtt(elem,att,val) {
-    if (att[0] !== '$' && val == null || val == '__undefined') {
+    if (val == '__undefined') val = null
+    if (att[0] !== '$' && val == null) {
         elem.removeAttribute(att)
         jb.log('dom change remove',{elem,att,val})
     } else if (att.indexOf('on-') == 0 && val != null && !elem[`registeredTo-${att}`]) {
