@@ -119,7 +119,7 @@ function applyNewVdom(elem,vdomAfter,{strongRefresh, ctx} = {}) {
     } else {
         const vdomBefore = elem instanceof ui.VNode ? elem : elemToVdom(elem)
         const delta = compareVdom(vdomBefore,vdomAfter)
-        //jb.log('applyDeltaTop dom',{vdomBefore,vdomAfter,active,elem,vdomAfter,strongRefresh, delta, ctx})
+        jb.log('apply delta top dom',{vdomBefore,vdomAfter,active,elem,vdomAfter,strongRefresh, delta, ctx})
         applyDeltaToDom(elem,delta)
     }
     ui.refreshFrontEnd(elem)
@@ -170,6 +170,11 @@ function applyDeltaToDom(elem,delta) {
                 !sameOrder && (childElems[i].setAttribute('__afterIndex',e.__afterIndex))
             }
         })
+        ;(toAppend||[]).forEach(e=>{
+            const newElem = render(e,elem)
+            jb.log('appendChild dom',{newElem,e,elem,delta})
+            !sameOrder && (newElem.setAttribute('__afterIndex',e.__afterIndex))
+        })
         if (sameOrder === false) {
             Array.from(elem.children)
                 .sort((x,y) => Number(x.getAttribute('__afterIndex')) - Number(y.getAttribute('__afterIndex')))
@@ -180,11 +185,6 @@ function applyDeltaToDom(elem,delta) {
                     el.removeAttribute('__afterIndex')
                 })
         }
-        ;(toAppend||[]).forEach(e=>{
-            const newElem = render(e,elem)
-            jb.log('appendChild dom',{newElem,e,elem,delta})
-//            !sameOrder && (newElem.setAttribute('__afterIndex',e.__afterIndex))
-        })
         // remove leftover text nodes in mixed
         if (elem.childElementCount)
             Array.from(elem.childNodes).filter(ch=>ch.nodeName == '#text')

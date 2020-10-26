@@ -281,7 +281,7 @@ jb.component('studio.suggestionList', {
         itemlist.selection({
           databind: '%$picklistModel/databind%',
           selectedToDatabind: '%code%',
-          databindToSelected: ctx => ctx.vars.items.filter(o=>o.code == ctx.data)[0],
+//          databindToSelected: ctx => ctx.vars.picklistModel.options().find(o=>o.code == ctx.data),
           onDoubleClick: runActions(
             Var('cmp','%$helperCmp%'),
             action.runBEMethod('onEnter')

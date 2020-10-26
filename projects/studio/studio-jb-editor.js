@@ -514,8 +514,7 @@ jb.component('studio.addVariable', {
   ],
   impl: onNextTimer(
     openDialog({
-      id: 'add variable',
-      style: dialog.popup(),
+      title: 'New variable',
       content: group({
         controls: [
           editableText({
@@ -524,24 +523,24 @@ jb.component('studio.addVariable', {
             style: editableText.mdcInput(),
             features: [
               feature.onEnter(
-                writeValue(studio.ref('%$path%~%$dialogData/name%'), ''),
-                dialog.closeDialog(true),
-                writeValue('%$jbEditorCntrData/selected%', '%$path%~%$dialogData/name%'),
-                tree.redraw(true),
-                tree.regainFocus()
+                runActions(
+                  writeValue({to: studio.ref('%$path%~%$dialogData/name%'), value: ''}),
+                  dialog.closeDialog(),
+                  tree.regainFocus()
+                )
               )
             ]
           })
         ],
-        features: css.padding({top: '9', left: '20', right: '20'})
+        features: css.padding({
+          top: '9',
+          left: '20',
+          right: '20'
+        })
       }),
-      title: 'New variable',
-      modal: 'true',
-      features: [
-        css.width('300'),
-        dialogFeature.nearLauncherPosition({}),
-        dialogFeature.autoFocusOnFirstInput()
-      ]
+      style: dialog.popup(),
+      id: 'add variable',
+      features: [css.width('300'), dialogFeature.nearLauncherPosition(), dialogFeature.autoFocusOnFirstInput()]
     })
   )
 })

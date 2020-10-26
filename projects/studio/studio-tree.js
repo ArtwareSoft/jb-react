@@ -26,12 +26,11 @@ jb.component('studio.treeMenu', {
       }),
       menu.action({
         title: 'Wrap with group',
-        action: [
+        action: runActions(
           studio.wrapWithGroup('%$path%'),
-          onNextTimer(
-            [writeValue('%$studio/profile_path%', '%$path%~controls~0'), tree.regainFocus()]
-          )
-        ]
+          writeValue('%$studio/profile_path%', '%$path%~controls~0'), 
+          tree.regainFocus()
+        )
       }),
       menu.action({
         title: 'Duplicate',
@@ -113,7 +112,8 @@ jb.component('studio.openTreeMenu', {
     {id: 'path', as: 'string'}
   ],
   impl: menu.openContextMenu({
-    menu: studio.treeMenu('%$path%')
+    menu: studio.treeMenu('%$path%'),
+    features: dialogFeature.onClose(tree.regainFocus())
   })
 })
 

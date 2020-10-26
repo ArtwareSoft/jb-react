@@ -156,9 +156,9 @@ jb.component('tableTree.plain', {
 jb.component('tableTree.expandPath', {
   type: 'feature',
   params: [
-    {id: 'path', as: 'string'}
+	  {id: 'paths', as: 'array', descrition: 'array of paths to be expanded'}
   ],
-  impl: tree.expandPath('%$path%')
+  impl: tree.expandPath('%$paths%')
 })
 
 jb.component('tableTree.resizer', {

@@ -8,10 +8,8 @@ Object.assign(jb.ui,{
         jb.log('focus request',{srcCtx, logTxt, timeDiff: now - lastStudioActivity, elem,srcCtx})
         if (jb.studio.previewjb == jb && jb.path(jb.frame.parent,'jb.resources.studio.project') != 'studio-helper' && lastStudioActivity && now - lastStudioActivity < 1000)
             return
-        jb.delay(1).then(_=> {
-          jb.log('focus dom',{elem,srcCtx,logTxt})
-          elem.focus()
-        })
+        jb.log('focus dom',{elem,srcCtx,logTxt})
+        jb.delay(1).then(() => elem.focus())
     },
     withUnits: v => (v === '' || v === undefined) ? '' : (''+v||'').match(/[^0-9]$/) ? v : `${v}px`,
     propWithUnits: (prop,v) => (v === '' || v === undefined) ? '' : `${prop}: ` + ((''+v||'').match(/[^0-9]$/) ? v : `${v}px`) + ';',
@@ -209,11 +207,15 @@ jb.component('action.focusOnCmp', {
     {id: 'cmpId', as: 'string', defaultValue: '%$cmp/cmpId%' },
   ],
   impl: (ctx,desc,cmpId) => {
-    const elem = jb.path(ctx.vars.cmp,'base')
-    if (elem)
-      return jb.ui.focus(elem,desc,ctx)
-    const delta = {attributes: {$focus: desc}}
-    jb.ui.applyDeltaToCmp(delta,ctx,cmpId)
+    const frontEndElem = jb.path(ctx.vars.cmp,'base')
+    if (frontEndElem) {
+      jb.log('frontend focus on cmp',{frontEndElem,ctx,desc,cmpId})
+      return jb.ui.focus(frontEndElem,desc,ctx)
+    } else {
+      jb.log('backend focus on cmp',{frontEndElem,ctx,desc,cmpId})
+      const delta = {attributes: {$focus: desc}}
+      jb.ui.applyDeltaToCmp({delta,ctx,cmpId})
+    }
   }
 })
 

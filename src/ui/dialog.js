@@ -28,6 +28,7 @@ jb.component('openDialog', {
 })
 
 jb.component('openDialog.probe', {
+	type: 'control:0',
 	params: jb.comps.openDialog.params,
 	impl: ctx => jb.ui.ctrl(ctx.setVar('$dialog',{}), dialog.init()).renderVdom()
 })
@@ -50,6 +51,7 @@ jb.component('dialog.init', {
 })
 
 jb.component('dialog.buildComp', {
+	type: 'control:0',
 	params: [
 		{id: 'dialog', defaultValue: '%$$dialog%' },
 	],

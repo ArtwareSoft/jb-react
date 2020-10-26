@@ -95,3 +95,24 @@ jb.component('uiTest.applyVdomDiff.TableTree2', {
     }),
   )
 })
+
+jb.component('uiTest.applyVdomDiff.TableTo.toAppendInTheMiddle', {
+  impl: uiTest.applyVdomDiff(
+    tableTree({
+      treeModel: tree.jsonReadOnly('%$personWithChildren%', ''),
+      leafFields: text({text: '%val%', title: 'name'}),
+      commonFields: text({text: '%path%', title: 'path'}),
+      chapterHeadline: text({text: suffix('~', '%path%')}),
+      style: tableTree.plain(),
+      features: tableTree.expandPath('~friends~0')
+    }),
+    tableTree({
+      treeModel: tree.jsonReadOnly('%$personWithChildren%', ''),
+      leafFields: text({text: '%val%', title: 'name'}),
+      commonFields: text({text: '%path%', title: 'path'}),
+      chapterHeadline: text({text: suffix('~', '%path%')}),
+      style: tableTree.plain(),
+      features: tableTree.expandPath(list('~children~0','~friends~0'))
+    }),
+  )
+})

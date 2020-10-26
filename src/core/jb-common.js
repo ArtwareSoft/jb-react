@@ -82,7 +82,7 @@ jb.component('data.if', {
   macroByValue: true,
   params: [
     {id: 'condition', as: 'boolean', mandatory: true, dynamic: true, type: 'boolean'},
-    {id: 'then', mandatory: true, dynamic: true, composite: true},
+    {id: 'then', mandatory: true, dynamic: true },
     {id: 'else', dynamic: true, defaultValue: '%%'}
   ],
   impl: ({},cond,_then,_else) =>	cond() ? _then() : _else()
@@ -190,16 +190,16 @@ jb.component('math.sum', {
 
 jb.component('math.plus', {
   params: [
-    {id: 'x', as: 'number'},
-    {id: 'y', as: 'number'},
+    {id: 'x', as: 'number', mandatory: true },
+    {id: 'y', as: 'number', mandatory: true },
   ],
   impl: ({},x,y) => x + y
 })
 
 jb.component('math.minus', {
   params: [
-    {id: 'x', as: 'number'},
-    {id: 'y', as: 'number'},
+    {id: 'x', as: 'number', mandatory: true},
+    {id: 'y', as: 'number', mandatory: true},
   ],
   impl: ({},x,y) => x - y
 })
