@@ -708,7 +708,11 @@ Object.assign(jb, {
       return jb.simpleValueByRefHandler.asRef(obj)
     },
     // the !srcCtx.probe blocks data change in probe
-    writeValue: (ref,value,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.writeValue(ref,value,srcCtx)),
+    writeValue: (ref,value,srcCtx,noNotifications) => !srcCtx.probe && jb.safeRefCall(ref, h => {
+      noNotifications && h.startTransaction && h.startTransaction()
+      h.writeValue(ref,value,srcCtx)
+      noNotifications && h.endTransaction && h.endTransaction(true)
+    }),
     objectProperty: (obj,prop,srcCtx) => jb.objHandler(obj).objectProperty(obj,prop,srcCtx),
     splice: (ref,args,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.splice(ref,args,srcCtx)),
     move: (ref,toRef,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.move(ref,toRef,srcCtx)),
@@ -1161,7 +1165,7 @@ jb.component('data.if', {
   macroByValue: true,
   params: [
     {id: 'condition', as: 'boolean', mandatory: true, dynamic: true, type: 'boolean'},
-    {id: 'then', mandatory: true, dynamic: true, composite: true},
+    {id: 'then', mandatory: true, dynamic: true },
     {id: 'else', dynamic: true, defaultValue: '%%'}
   ],
   impl: ({},cond,_then,_else) =>	cond() ? _then() : _else()
@@ -1269,16 +1273,16 @@ jb.component('math.sum', {
 
 jb.component('math.plus', {
   params: [
-    {id: 'x', as: 'number'},
-    {id: 'y', as: 'number'},
+    {id: 'x', as: 'number', mandatory: true },
+    {id: 'y', as: 'number', mandatory: true },
   ],
   impl: ({},x,y) => x + y
 })
 
 jb.component('math.minus', {
   params: [
-    {id: 'x', as: 'number'},
-    {id: 'y', as: 'number'},
+    {id: 'x', as: 'number', mandatory: true},
+    {id: 'y', as: 'number', mandatory: true},
   ],
   impl: ({},x,y) => x - y
 })
@@ -1365,18 +1369,19 @@ jb.component('writeValue', {
   type: 'action',
   params: [
     {id: 'to', as: 'ref', mandatory: true},
-    {id: 'value', mandatory: true}
+    {id: 'value', mandatory: true},
+    {id: 'noNotifications', as: 'boolean'}
   ],
-  impl: (ctx,to,value) => {
+  impl: (ctx,to,value,noNotifications) => {
     if (!jb.isRef(to)) {
       ctx.run(ctx.profile.to,{as: 'ref'}) // for debug
       return jb.logError(`can not write to: ${ctx.profile.to}`, {ctx})
     }
     const val = jb.val(value)
     if (jb.isDelayed(val))
-      return Promise.resolve().then(val=>jb.writeValue(to,val,ctx))
+      return Promise.resolve().then(val=>jb.writeValue(to,val,ctx,noNotifications))
     else
-      jb.writeValue(to,val,ctx)
+      jb.writeValue(to,val,ctx,noNotifications)
   }
 })
 

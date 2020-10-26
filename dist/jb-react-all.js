@@ -708,7 +708,11 @@ Object.assign(jb, {
       return jb.simpleValueByRefHandler.asRef(obj)
     },
     // the !srcCtx.probe blocks data change in probe
-    writeValue: (ref,value,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.writeValue(ref,value,srcCtx)),
+    writeValue: (ref,value,srcCtx,noNotifications) => !srcCtx.probe && jb.safeRefCall(ref, h => {
+      noNotifications && h.startTransaction && h.startTransaction()
+      h.writeValue(ref,value,srcCtx)
+      noNotifications && h.endTransaction && h.endTransaction(true)
+    }),
     objectProperty: (obj,prop,srcCtx) => jb.objHandler(obj).objectProperty(obj,prop,srcCtx),
     splice: (ref,args,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.splice(ref,args,srcCtx)),
     move: (ref,toRef,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.move(ref,toRef,srcCtx)),
@@ -1161,7 +1165,7 @@ jb.component('data.if', {
   macroByValue: true,
   params: [
     {id: 'condition', as: 'boolean', mandatory: true, dynamic: true, type: 'boolean'},
-    {id: 'then', mandatory: true, dynamic: true, composite: true},
+    {id: 'then', mandatory: true, dynamic: true },
     {id: 'else', dynamic: true, defaultValue: '%%'}
   ],
   impl: ({},cond,_then,_else) =>	cond() ? _then() : _else()
@@ -1269,16 +1273,16 @@ jb.component('math.sum', {
 
 jb.component('math.plus', {
   params: [
-    {id: 'x', as: 'number'},
-    {id: 'y', as: 'number'},
+    {id: 'x', as: 'number', mandatory: true },
+    {id: 'y', as: 'number', mandatory: true },
   ],
   impl: ({},x,y) => x + y
 })
 
 jb.component('math.minus', {
   params: [
-    {id: 'x', as: 'number'},
-    {id: 'y', as: 'number'},
+    {id: 'x', as: 'number', mandatory: true},
+    {id: 'y', as: 'number', mandatory: true},
   ],
   impl: ({},x,y) => x - y
 })
@@ -1365,18 +1369,19 @@ jb.component('writeValue', {
   type: 'action',
   params: [
     {id: 'to', as: 'ref', mandatory: true},
-    {id: 'value', mandatory: true}
+    {id: 'value', mandatory: true},
+    {id: 'noNotifications', as: 'boolean'}
   ],
-  impl: (ctx,to,value) => {
+  impl: (ctx,to,value,noNotifications) => {
     if (!jb.isRef(to)) {
       ctx.run(ctx.profile.to,{as: 'ref'}) // for debug
       return jb.logError(`can not write to: ${ctx.profile.to}`, {ctx})
     }
     const val = jb.val(value)
     if (jb.isDelayed(val))
-      return Promise.resolve().then(val=>jb.writeValue(to,val,ctx))
+      return Promise.resolve().then(val=>jb.writeValue(to,val,ctx,noNotifications))
     else
-      jb.writeValue(to,val,ctx)
+      jb.writeValue(to,val,ctx,noNotifications)
   }
 })
 
@@ -3825,8 +3830,8 @@ class WatchableValueByRef {
       if (this.transactionEventsLog)
         this.transactionEventsLog.push(opEvent)
       else
-        this.resourceChange.next(opEvent);
-      return opEvent;
+        this.resourceChange.next(opEvent)
+      return opEvent
     } catch(e) {
       jb.logException(e,'doOp',{srcCtx,ref,opOnRef,srcCtx})
     }
@@ -4196,7 +4201,7 @@ jb.component('runTransaction', {
   type: 'action',
   params: [
     {id: 'actions', type: 'action[]', ignore: true, composite: true, mandatory: true},
-    {id: 'disableNotifications', as: 'boolean', type: 'boolean'}
+    {id: 'noNotifications', as: 'boolean', type: 'boolean'}
   ],
   impl: ctx => {
 		const actions = jb.asArray(ctx.profile.actions || ctx.profile['$runActions'] || []).filter(x=>x);
@@ -4206,7 +4211,7 @@ jb.component('runTransaction', {
     return actions.reduce((def,action,index) =>
 				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index )) ,Promise.resolve())
 			.catch((e) => jb.logException(e,'runTransaction',{ctx}))
-      .then(() => jb.mainWatchableHandler.endTransaction(ctx.params.disableNotifications))
+      .then(() => jb.mainWatchableHandler.endTransaction(ctx.params.noNotifications))
 	}
 })
 
@@ -4500,7 +4505,7 @@ function applyNewVdom(elem,vdomAfter,{strongRefresh, ctx} = {}) {
     } else {
         const vdomBefore = elem instanceof ui.VNode ? elem : elemToVdom(elem)
         const delta = compareVdom(vdomBefore,vdomAfter)
-        //jb.log('applyDeltaTop dom',{vdomBefore,vdomAfter,active,elem,vdomAfter,strongRefresh, delta, ctx})
+        jb.log('apply delta top dom',{vdomBefore,vdomAfter,active,elem,vdomAfter,strongRefresh, delta, ctx})
         applyDeltaToDom(elem,delta)
     }
     ui.refreshFrontEnd(elem)
@@ -4551,6 +4556,11 @@ function applyDeltaToDom(elem,delta) {
                 !sameOrder && (childElems[i].setAttribute('__afterIndex',e.__afterIndex))
             }
         })
+        ;(toAppend||[]).forEach(e=>{
+            const newElem = render(e,elem)
+            jb.log('appendChild dom',{newElem,e,elem,delta})
+            !sameOrder && (newElem.setAttribute('__afterIndex',e.__afterIndex))
+        })
         if (sameOrder === false) {
             Array.from(elem.children)
                 .sort((x,y) => Number(x.getAttribute('__afterIndex')) - Number(y.getAttribute('__afterIndex')))
@@ -4561,11 +4571,6 @@ function applyDeltaToDom(elem,delta) {
                     el.removeAttribute('__afterIndex')
                 })
         }
-        ;(toAppend||[]).forEach(e=>{
-            const newElem = render(e,elem)
-            jb.log('appendChild dom',{newElem,e,elem,delta})
-//            !sameOrder && (newElem.setAttribute('__afterIndex',e.__afterIndex))
-        })
         // remove leftover text nodes in mixed
         if (elem.childElementCount)
             Array.from(elem.childNodes).filter(ch=>ch.nodeName == '#text')
@@ -4610,7 +4615,8 @@ function applyDeltaToVDom(elem,delta) {
 }
 
 function setAtt(elem,att,val) {
-    if (att[0] !== '$' && val == null || val == '__undefined') {
+    if (val == '__undefined') val = null
+    if (att[0] !== '$' && val == null) {
         elem.removeAttribute(att)
         jb.log('dom change remove',{elem,att,val})
     } else if (att.indexOf('on-') == 0 && val != null && !elem[`registeredTo-${att}`]) {
@@ -5156,6 +5162,7 @@ class JbComponent {
         this.originators = [ctx]
     }
     init() {
+        if (this.initialized) return
         jb.log('init uiComp',{cmp: this})
         const baseVars = this.ctx.vars
         this.ctx = (this.extendCtxFuncs||[])
@@ -5168,10 +5175,9 @@ class JbComponent {
     }
  
     calcRenderProps() {
-        if (!this.initialized)
-            this.init()
+        this.init()
         ;(this.initFuncs||[]).sort((p1,p2) => p1.phase - p2.phase)
-            .forEach(f =>  tryWrapper(() => f.action(this.calcCtx), 'init'));
+            .forEach(f =>  tryWrapper(() => f.action(this.calcCtx, this.calcCtx.vars), 'init'));
    
         this.toObserve = this.watchRef ? this.watchRef.map(obs=>({...obs,ref: obs.refF(this.ctx)})).filter(obs=>jb.isWatchable(obs.ref)) : []
         this.watchAndCalcModelProp && this.watchAndCalcModelProp.forEach(e=>{
@@ -5396,10 +5402,8 @@ Object.assign(jb.ui,{
         jb.log('focus request',{srcCtx, logTxt, timeDiff: now - lastStudioActivity, elem,srcCtx})
         if (jb.studio.previewjb == jb && jb.path(jb.frame.parent,'jb.resources.studio.project') != 'studio-helper' && lastStudioActivity && now - lastStudioActivity < 1000)
             return
-        jb.delay(1).then(_=> {
-          jb.log('focus dom',{elem,srcCtx,logTxt})
-          elem.focus()
-        })
+        jb.log('focus dom',{elem,srcCtx,logTxt})
+        jb.delay(1).then(() => elem.focus())
     },
     withUnits: v => (v === '' || v === undefined) ? '' : (''+v||'').match(/[^0-9]$/) ? v : `${v}px`,
     propWithUnits: (prop,v) => (v === '' || v === undefined) ? '' : `${prop}: ` + ((''+v||'').match(/[^0-9]$/) ? v : `${v}px`) + ';',
@@ -5474,6 +5478,7 @@ jb.component('service.registerBackEndService', {
       jb.logError('overridingService',{id: _id, service: $serviceRegistry.services[_id], service: _service,ctx})
     $serviceRegistry.services[_id] = _service
   })
+  // feature.initValue({to: '%$$serviceRegistry/services/{%$id()%}%', value: '%$service()%', alsoWhenNotEmpty: true}),
 })
 
 
@@ -5596,11 +5601,15 @@ jb.component('action.focusOnCmp', {
     {id: 'cmpId', as: 'string', defaultValue: '%$cmp/cmpId%' },
   ],
   impl: (ctx,desc,cmpId) => {
-    const elem = jb.path(ctx.vars.cmp,'base')
-    if (elem)
-      return jb.ui.focus(elem,desc,ctx)
-    const delta = {attributes: {$focus: desc}}
-    jb.ui.applyDeltaToCmp(delta,ctx,cmpId)
+    const frontEndElem = jb.path(ctx.vars.cmp,'base')
+    if (frontEndElem) {
+      jb.log('frontend focus on cmp',{frontEndElem,ctx,desc,cmpId})
+      return jb.ui.focus(frontEndElem,desc,ctx)
+    } else {
+      jb.log('backend focus on cmp',{frontEndElem,ctx,desc,cmpId})
+      const delta = {attributes: {$focus: desc}}
+      jb.ui.applyDeltaToCmp({delta,ctx,cmpId})
+    }
   }
 })
 
@@ -5728,6 +5737,41 @@ jb.component('calcProps', {
     })
 })
 
+jb.component('feature.initValue', {
+  type: 'feature',
+  category: 'lifecycle',
+  description: 'set value if the value is empty, activated before calc properties',
+  params: [
+    {id: 'to', as: 'ref', mandatory: true, dynamic: true},
+    {id: 'value', mandatory: true, dynamic: true},
+    {id: 'alsoWhenNotEmpty', as: 'boolean'}
+  ],
+  impl: (ctx,_to,_value,alsoWhenNotEmpty) => ({ init: { 
+    action: (_ctx,{cmp}) => {
+      const value = _value(_ctx), to = _to(_ctx)
+      const toAssign = jb.val(value), currentVal = jb.val(to)
+      if ((alsoWhenNotEmpty || currentVal == null) && toAssign !== currentVal) {
+        jb.log('init value',{cmp, ...ctx.params})
+        jb.writeValue(to,toAssign,ctx,true)
+      } else if (toAssign !== currentVal) {
+        jb.logError(`feature.initValue: init non empty value ${jb.prettyPrint(to.profile)}`,{toAssign,currentVal,cmp,ctx,to,value})
+      }
+    }, 
+    phase: 10 
+  }})
+})
+
+jb.component('feature.requireService',{
+  params: [
+    {id: 'service', type: 'service'},
+    {id: 'condition', dynamic: true, defaultValue: true},
+  ],
+  impl: (ctx,service,condition) => ({ init: { 
+    action: () => condition() && service.init(),
+    phase: 10 
+  }})
+})
+
 jb.component('feature.init', {
   type: 'feature',
   category: 'lifecycle',
@@ -5736,7 +5780,7 @@ jb.component('feature.init', {
     {id: 'action', type: 'action', mandatory: true, dynamic: true},
     {id: 'phase', as: 'number', defaultValue: 10, description: 'init funcs from different features can use each other, phase defines the calculation order'}
   ],
-  impl: (ctx,action,phase) => ({ init: { action, phase }})
+  impl: ({},action,phase) => ({ init: { action, phase }})
 })
 
 jb.component('onDestroy', {
@@ -7216,7 +7260,9 @@ jb.component('field.databind', {
     //     (ctx,{cmp}) => value =>
     //       value == null ? ctx.exp('%$$model/databind%','number') : writeFieldData(ctx,cmp,value,true)
     //   ),
-    feature.init((ctx,{$dialog})=> $dialog && ($dialog.hasFields = true))
+    
+    feature.byCondition('%$$dialog%', feature.initValue('%$$dialog/hasFields%',true))
+    //feature.init((ctx,{$dialog})=> $dialog && ($dialog.hasFields = true))
   )
 })
 
@@ -7236,14 +7282,14 @@ jb.ui.checkValidationError = (cmp,val,ctx) => {
   }
 
   function validationError() {
-    if (!cmp.validations) return;
-    const ctx = cmp.ctx.setData(val);
+    if (!cmp.validations) return
+    const ctx = cmp.ctx.setData(val)
     const err = (cmp.validations || [])
       .filter(validator=>!validator.validCondition(ctx))
-      .map(validator=>validator.errorMessage(ctx))[0];
+      .map(validator=>validator.errorMessage(ctx))[0]
     if (ctx.exp('%$formContainer%'))
-      ctx.run(writeValue('%$formContainer/err%',err));
-    return err;
+      ctx.run(writeValue('%$formContainer/err%',err))
+    return err
   }
 }
 
@@ -7517,6 +7563,7 @@ jb.component('openDialog', {
 })
 
 jb.component('openDialog.probe', {
+	type: 'control:0',
 	params: jb.comps.openDialog.params,
 	impl: ctx => jb.ui.ctrl(ctx.setVar('$dialog',{}), dialog.init()).renderVdom()
 })
@@ -7529,7 +7576,7 @@ jb.component('dialog.init', {
 		calcProp('contentComp', '%$$model/content%'),
 		calcProp('hasMenu', '%$$model/menu/profile%'),
 		calcProp('menuComp', '%$$model/menu%'),
-		feature.init(writeValue('%$$dialog/cmpId%','%$cmp/cmpId%')),
+		feature.initValue('%$$dialog/cmpId%','%$cmp/cmpId%'),
 		htmlAttribute('id','%$$dialog/id%'),
 
 		method('dialogCloseOK', dialog.closeDialog(true)),
@@ -7539,6 +7586,7 @@ jb.component('dialog.init', {
 })
 
 jb.component('dialog.buildComp', {
+	type: 'control:0',
 	params: [
 		{id: 'dialog', defaultValue: '%$$dialog%' },
 	],
@@ -7637,7 +7685,7 @@ jb.component('dialogFeature.uniqueDialog', {
 	  {id: 'id', as: 'string'},
 	],
 	impl: If('%$id%', features(
-		feature.init(writeValue('%$$dialog/id%','%$id%')),
+		feature.initValue({to: '%$$dialog/id%',value: '%$id%', alsoWhenNotEmpty: true}),
 		followUp.flow(
 			source.data(ctx => jb.ui.find(jb.ui.widgetBody(ctx),'.jb-dialog')),
 			rx.filter(({data},{cmp},{id}) => data.getAttribute('id') == id && data.getAttribute('cmp-id') != cmp.cmpId ),
@@ -7788,7 +7836,7 @@ jb.component('dialogFeature.onClose', {
 jb.component('dialogFeature.closeWhenClickingOutside', {
   type: 'dialog-feature',
   impl: features(
-	  feature.init(writeValue('%$$dialog.isPopup%',true)),
+	  feature.initValue('%$$dialog.isPopup%',true),
 	  frontEnd.flow(
 		source.data(0), rx.delay(100), // wait before start listening
 		rx.flatMap(source.eventIncludingPreview('mousedown')),
@@ -8986,7 +9034,7 @@ jb.component('menu.selectionKeySourceService', {
         }
         return true
       }
-      jb.ui.focus(el,'menu.selectionKeySourceService',ctx.cmpCtx)
+      jb.ui.focus(el,'menu.selectionKeySourceService',ctx)
       jb.log('menuKeySource register',{cmp,el,ctx})
       return pipe(el.keydown_src, takeUntil(cmp.destroyed))
     })
@@ -11988,9 +12036,9 @@ jb.component('tableTree.plain', {
 jb.component('tableTree.expandPath', {
   type: 'feature',
   params: [
-    {id: 'path', as: 'string'}
+	  {id: 'paths', as: 'array', descrition: 'array of paths to be expanded'}
   ],
-  impl: tree.expandPath('%$path%')
+  impl: tree.expandPath('%$paths%')
 })
 
 jb.component('tableTree.resizer', {
