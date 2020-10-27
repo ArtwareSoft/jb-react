@@ -364,9 +364,6 @@ jb.component('studioHelperSample.propertiesParamsProf', {
     style: button.href(),
     features: [text.bindText(), mdcStyle.initDynamic()]
   }),
-  '$vars': {
-
-  }
 })
 
 jb.component('studioHelperSample.pptr', {

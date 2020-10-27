@@ -1,6 +1,3 @@
-(function() {
-const st = jb.studio
-jb.studio.probeResultCustomizers = []
 jb.ns('tree,rx')
 
 jb.component('studio.jbEditorPathForEdit', {
@@ -10,10 +7,8 @@ jb.component('studio.jbEditorPathForEdit', {
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => {
-    const ar = jb.studio.valOfPath(path);
-    if (Array.isArray(ar))
-      return path + '~' + ar.length;
-    return path;
+    const ar = jb.studio.valOfPath(path)
+    return Array.isArray(ar) ? path + '~' + ar.length : path
   }
 })
 
@@ -27,20 +22,6 @@ jb.component('studio.openJbEditorMenu', {
     menu: studio.jbEditorMenu('%$path%', '%$root%'),
     features: dialogFeature.onClose(tree.regainFocus())
   })
-})
-
-jb.component('studio.probResultCustomization', {
-  type: 'data',
-  params: [
-    {id: 'probeResult', mandatory: true}
-  ],
-  impl: (ctx, probeResult) => {
-    probeResult.result.forEach(res=> {
-      //res.out = res.out && res.out.probeResultCustomization ? res.out.probeResultCustomization(ctx, res.out) : res.out
-      (jb.studio.probeResultCustomizers||[]).forEach(customize => customize(ctx, res))
-    })
-    return probeResult;
-  }
 })
 
 jb.component('studio.jbEditorContainer', {
@@ -64,6 +45,7 @@ jb.component('studio.probeResults', {
   ],
   impl: (ctx, path) => jb.delay(300).then(_ => {
     if (ctx.exp('%$stduio/fastPreview%')) {
+      const st = jb.studio
       const inCtx = st.closestCtxOfLastRun(path) || new jb.jbCtx()
       return [{in: inCtx, out: st.isOfType(path,'action') ? null :
           st.previewjb.val(inCtx.runItself())}]
@@ -258,7 +240,7 @@ jb.component('studio.probeDataView', {
             controls: [
               group({
                 title: 'in (%$probeResult/length%)',
-                controls: studio.dataBrowse(({data}) => st.previewjb.val(data.in.data)),
+                controls: studio.dataBrowse(({data}) => jb.studio.previewjb.val(data.in.data)),
                 features: css.width({width: '300', minMax: 'max'})
               }),
               group({
@@ -306,7 +288,7 @@ jb.component('studio.openJbEditProperty', {
     Var('actualPath', studio.jbEditorPathForEdit('%$path%')),
     Var('paramDef', studio.paramDef('%$actualPath%')),
     [
-      action.switchCase(endsWith('$vars', '%$path%')),
+      action.switchCase(endsWith('$vars', '%$path%'), studio.addVariable('%$path%')),
       action.switchCase(
         '%$paramDef/options%',
         openDialog({
@@ -512,7 +494,7 @@ jb.component('studio.addVariable', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: onNextTimer(
+  impl: //onNextTimer(
     openDialog({
       title: 'New variable',
       content: group({
@@ -524,7 +506,7 @@ jb.component('studio.addVariable', {
             features: [
               feature.onEnter(
                 runActions(
-                  writeValue({to: studio.ref('%$path%~%$dialogData/name%'), value: ''}),
+                  addToArray(studio.ref('%$path%'), obj(prop('$','Var'),prop('name','%$dialogData/name%'),prop('value',''))),
                   dialog.closeDialog(),
                   tree.regainFocus()
                 )
@@ -542,7 +524,5 @@ jb.component('studio.addVariable', {
       id: 'add variable',
       features: [css.width('300'), dialogFeature.nearLauncherPosition(), dialogFeature.autoFocusOnFirstInput()]
     })
-  )
+//  )
 })
-
-})()

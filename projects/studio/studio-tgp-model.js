@@ -86,29 +86,35 @@ st.jbEditorTree = class {
     	this.includeCompHeader= includeCompHeader;
 	}
 	title(path, collapsed) {
-		let val = st.valOfPath(path);
-		let compName = st.compNameOfPath(path);
+		let val = st.valOfPath(path)
+		let compName = st.compNameOfPath(path)
 		if (path.indexOf('~') == -1)
 			compName = 'jbComponent'
 		if (path.match(/^[^~]+~params~[0-9]+$/))
 			compName = 'jbParam'
 		if (compName && compName.match(/case$/))
-      		compName = 'case';
-		let prop = path.split('~').pop();
+      		compName = 'case'
+		let prop = path.split('~').pop()
 		if (!isNaN(Number(prop))) // array value - title as a[i]
 			prop = path.split('~').slice(-2)
 				.map(x=>x.replace(/\$pipeline/,'').replace(/\$obj/,''))
-				.join('[') + ']';
-		let summary = '';
+				.join('[') + ']'
+		if (path.match(/\$vars~[0-9]+~val$/))
+			prop = st.valOfPath(st.parentPath(path)).name
+		let summary = ''
 		if (collapsed && typeof val == 'object')
-			summary = ': ' + st.summary(path).substr(0,20);
+			summary = ': ' + st.summary(path).substr(0,20)
+		// if (path.match(/\$vars~[0-9]+$/))
+		//  	summary = st.summary(path+'~val') || st.compNameOfPath(path+'~val')
 		if (typeof val == 'function')
-		val = val.toString();
+			val = val.toString()
 
+		// if (path.match(/\$vars~[0-9]+~val$/))
+		// 	return jb.ui.h('div',{},[val.name ,jb.ui.h('span',{class:'treenode-val', title: summary},jb.ui.limitStringLength(summary,50))]);
 		if (compName)
 			return jb.ui.h('div',{},[prop,jb.ui.h('span',{class:'treenode-val', title: compName+summary},jb.ui.limitStringLength(compName+summary,50))]);
 		else if (prop === '$vars')
-			return jb.ui.h('div',{},['vars= ',jb.ui.h('span',{class:'treenode-val', title: summary},jb.ui.limitStringLength(summary,50))]);
+			return jb.ui.h('div',{},['vars',jb.ui.h('span',{class:'treenode-val', title: summary},jb.ui.limitStringLength(summary,50))]);
 		else if (['string','boolean','number'].indexOf(typeof val) != -1)
 			return jb.ui.h('div',{},[prop,jb.ui.h('span',{class:'treenode-val', title: ''+val},jb.ui.limitStringLength(''+val,50))]);
 
@@ -118,14 +124,14 @@ st.jbEditorTree = class {
 		return this.children(path).length > 0;
 	}
 	children(path) {
-		const val = st.valOfPath(path);
-		if (!val) return [];
-		return (st.arrayChildren(path) || [])
+		const val = st.valOfPath(path)
+		if (!val) return []
+		return ( /\$vars$/.test(path) ? [] : st.arrayChildren(path) || [])
 //        .concat((this.includeCompHeader && this.compHeader(path,val)) || [])
 				.concat(this.vars(path,val) || [])
-				.concat(this.sugarChildren(path,val) || [])
+//				.concat(this.sugarChildren(path,val) || [])
 				.concat(this.specialCases(path,val) || [])
-				.concat(this.innerProfiles(path,val) || [])
+				.concat(this.innerProfiles(path) || [])
 	}
 	move(from,to,ctx) {
 		return jb.move(st.refOfPath(from),st.refOfPath(to),ctx)
@@ -138,18 +144,18 @@ st.jbEditorTree = class {
 	}
 
 	// private
-	sugarChildren(path,val) {
-		const compName = jb.compName(val);
-		if (!compName) return
-		const sugarPath = path + '~$' +compName;
-		const sugarVal = st.valOfPath(sugarPath);
-		if (Array.isArray(sugarVal)) // sugar array. e.g. $pipeline: [ .. ]
-			return st.arrayChildren(sugarPath);
-		else if (sugarVal)
-			return [sugarPath];
-	}
-	innerProfiles(path,val) {
-		if (this.sugarChildren(path,val)) return [];
+	// sugarChildren(path,val) {
+	// 	const compName = jb.compName(val)
+	// 	if (!compName) return
+	// 	const sugarPath = path + '~$' +compName
+	// 	const sugarVal = st.valOfPath(sugarPath)
+	// 	if (Array.isArray(sugarVal)) // sugar array. e.g. $pipeline: [ .. ]
+	// 		return st.arrayChildren(sugarPath)
+	// 	else if (sugarVal)
+	// 		return [sugarPath]
+	// }
+	innerProfiles(path) {
+//		if (this.sugarChildren(path,val)) return [];
 		if (!this.includeCompHeader && path.indexOf('~') == -1)
 			path = path + '~impl';
 		
@@ -158,11 +164,14 @@ st.jbEditorTree = class {
 				.flatMap(({path})=> Array.isArray(st.valOfPath(path)) ? st.arrayChildren(path) : [path])
 	}
 	vars(path,val) {
-		return val && typeof val == 'object' && typeof val.$vars == 'object' && [path+'~$vars']
+		if (path.match(/\$vars$/))
+		 	return st.arrayChildren(path,true).map(p=>p+'~val')
+		if (Array.isArray(jb.path(val,'$vars')))
+			return [path+'~$vars']
 	}
 
 	specialCases(path,val) {
-		if (jb.compName(val) == 'object' || path.match(/~\$vars$/))
+		if (jb.compName(val) == 'object')
 			return Object.getOwnPropertyNames(val)
 				.filter(p=>p!='$')
 				.filter(p=>p.indexOf('$jb_') != 0)
@@ -186,14 +195,13 @@ Object.assign(st,{
 			.map(p=>path + '~' + p.id),
 
 	arrayChildren: (path,noExtraElem) => {
-		const val = st.valOfPath(path);
-		if (Array.isArray(val))
-			return Object.getOwnPropertyNames(val)
+		const val = st.valOfPath(path)
+		if (!Array.isArray(val)) return []
+		return Object.getOwnPropertyNames(val)
 				.filter(x=> x.indexOf('$jb_') != 0)
 				.filter(x=> !(noExtraElem && x =='length'))
 				.map(x=>x=='length'? val.length : x) // extra elem
-				.map(k=> path +'~'+k);
-		return [];
+				.map(k=> path +'~'+k)
 	},
 	isExtraElem: path => {
 		const parentVal = st.valOfPath(st.parentPath(path));
@@ -201,7 +209,7 @@ Object.assign(st,{
 			return parentVal.length == (path.match(/~([0-9]+)$/) || ['',-1])[1]
 	},
 	asArrayChildren: path => { // support the case of single element - used by properties features
-		const val = st.valOfPath(path);
+		const val = st.valOfPath(path)
 		if (Array.isArray(val))
 			return st.arrayChildren(path,true)
 		else if (val)
@@ -215,11 +223,13 @@ Object.assign(st,{
 	summary: path => {
 		const val = st.valOfPath(path);
 		if (path.match(/~cases~[0-9]*$/))
-			return st.summary(path+'~condition');
+			return st.summary(path+'~condition')
+		if (typeof val == 'string')
+			return val
 		if (val == null || typeof val != 'object') 
 			return '';
 		if (path.match(/~\$vars$/))
-			return Object.keys(val).join(', ')
+			return jb.asArray(val).map(x=>x.name).join(', ')
 		return st.paramsOfPath(path).map(x=>x.id)
 				.filter(p=> p != '$')
 				.filter(p=> p.indexOf('$jb_') != 0)

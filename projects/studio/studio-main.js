@@ -397,7 +397,13 @@ jb.component('studio.pathHyperlink', {
       }),
       menu.control({
         menu: menu.menu({
-          options: menu.action({title: 'undo', action: studio.undo(), icon: icon('undo')}),
+          options: [
+            menu.action({
+              title: 'pick context',
+              action: studio.pick(),
+              icon: icon({icon: 'Selection', type: 'mdi'})
+            })
+          ],
           icon: icon('undo')
         }),
         style: menuStyle.toolbar(),
@@ -405,11 +411,15 @@ jb.component('studio.pathHyperlink', {
       }),
       editableBoolean({
         databind: '%$studio/hideProbe%',
-        style: editableBoolean.iconWithSlash('20'),
+        style: editableBoolean.buttonXV({
+          yesIcon: icon({icon: 'ArrowCollapseRight', type: 'mdi'}),
+          noIcon: icon({icon: 'ArrowCollapseLeft', type: 'mdi'}),
+          buttonStyle: button.mdcFloatingAction('40', true)
+        }),
         title: 'hide input-output',
         textForTrue: 'hide probe',
         textForFalse: 'show probe',
-        features: feature.icon({icon: 'power_input', type: 'mdc', size: '12'})
+        features: css('transform: translate(-10px,-10px) scale(0.5,0.5)')
       })
     ]
   })

@@ -40,7 +40,7 @@ jb.component('menu.endWithSeparator', {
   ],
   impl: pipeline(
       Var('opts','%$options()%'), 
-      If('%$opts/length%', list('%$opts%','%$separator%'))
+      If('%$opts/length%>0', list('%$opts%','%$separator%'))
   )
 })
 

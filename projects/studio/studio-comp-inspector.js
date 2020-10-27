@@ -64,7 +64,8 @@ jb.component('studio.compInspector', {
       variable('inspectedCmp', ({},{frameOfElem, elem}) => 
             jb.path(elem && frameOfElem && frameOfElem.jb.ctxDictionary[elem.getAttribute('full-cmp-ctx')],'vars.cmp')),
       variable('inspectedCtx', '%$inspectedCmp/ctx%'),
-      feature.init(({},{frameUri}) => frameUri == 'studio' && jb.studio.initStudioEditing()),
+      feature.requireSerice(studio.editingService(),'%$frameUri%==studio'),
+      init(({},{frameUri}) => frameUri == 'studio' && jb.studio.initStudioEditing()),
       chromeDebugger.refreshAfterSelection(),
       followUp.flow(
         source.callbag(({},{frameOfElem}) => frameOfElem && frameOfElem.jb.ui.BECmpsDestroyNotification),

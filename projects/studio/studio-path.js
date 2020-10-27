@@ -99,6 +99,8 @@ Object.assign(st,{
 
 Object.assign(st, {
 	_delete: (path,srcCtx) => {
+		if (path.match(/\$vars~[0-9]+~val$/) && !st.valOfPath(path)) // delete empty variable if deleting the value
+			path = st.parentPath(path)
 		const prop = path.split('~').pop()
 		const parent = st.valOfPath(st.parentPath(path))
 		if (Array.isArray(parent)) {

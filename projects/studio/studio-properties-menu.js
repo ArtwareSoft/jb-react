@@ -126,7 +126,7 @@ jb.component('studio.jbEditorMenu', {
       menu.action({
         title: 'Variables',
         action: [
-          writeValue(studio.ref('%$path%~$vars'), {'$': 'object'}),
+          writeValue(studio.ref('%$path%~$vars'), list()),
           writeValue('%$jbEditorCntrData/selected%', '%$path%~$vars'),
           tree.redraw(),
           studio.addVariable('%$path%~$vars')
@@ -252,7 +252,11 @@ jb.component('studio.jbEditorMenu', {
           }),
           menu.action({
             title: 'Delete',
-            action: studio.delete('%$path%'),
+            action: runActions(
+              action.if(and(matchRegex('vars~[0-9]+~val$','%$path%'), isEmpty(studio.val('%$path%'))), 
+                writeValue('%$jbEditorCntrData/selected%', studio.parentPath(studio.parentPath('%$path%')))),
+              studio.delete('%$path%'),
+            ),
             icon: icon('delete'),
             shortcut: 'Delete'
           }),

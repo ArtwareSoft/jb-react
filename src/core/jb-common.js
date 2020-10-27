@@ -528,7 +528,8 @@ jb.component('Var', {
   macro: (result, self) => {
     result.$vars = result.$vars || []
     result.$vars.push(self)
-  }
+  },
+  impl: '' // for inteliscript
 //  Object.assign(result,{ $vars: Object.assign(result.$vars || {}, { [self.name]: self.val }) })
 })
 

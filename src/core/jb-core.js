@@ -63,13 +63,15 @@ function do_jb_run(ctx,parentParam,settings) {
 }
 
 function extendWithVars(ctx,vars) {
-  if (!vars) return ctx
   if (Array.isArray(vars))
-    return vars.reduce((_ctx,{name,val}) => _ctx.setVar(name,_ctx.runInner(val || '%%', null,`$vars~${name}`)), ctx )
-  let res = ctx
-  for(let varname in vars || {})
-    res = new jbCtx(res,{ vars: {[varname]: res.runInner(vars[varname] || '%%', null,'$vars~'+varname)} })
-  return res
+    return vars.reduce((_ctx,{name,val},i) => _ctx.setVar(name,_ctx.runInner(val || '%%', null,`$vars~${i}~val`)), ctx )
+  if (vars)
+    jb.logError('$vars should be array',{ctx,vars})
+  return ctx
+  // let res = ctx
+  // for(let varname in vars || {})
+  //   res = new jbCtx(res,{ vars: {[varname]: res.runInner(vars[varname] || '%%', null,'$vars~'+varname)} })
+  // return res
 }
 
 function prepareParams(comp_name,comp,profile,ctx) {
@@ -138,7 +140,7 @@ function prepare(ctx,parentParam) {
     return { type: 'asIs' }
   const comp = jb.comps[comp_name];
   if (!comp && comp_name) { jb.logError('component ' + comp_name + ' is not defined', {ctx}); return { type:'null' } }
-  if (!comp.impl) { jb.logError('component ' + comp_name + ' has no implementation', {ctx}); return { type:'null' } }
+  if (comp.impl == null) { jb.logError('component ' + comp_name + ' has no implementation', {ctx}); return { type:'null' } }
 
   jb.fixMacroByValue && jb.fixMacroByValue(profile,comp)
   const resCtx = Object.assign(new jbCtx(ctx,{}), {parentParam, params: {}})

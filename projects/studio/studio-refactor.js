@@ -256,15 +256,15 @@ jb.component('studio.calcMakeLocal', {
     ],
     impl: (ctx,path,activate) => {
         const st = jb.studio
-        const comp = st.compOfPath(path);
+        const comp = st.compOfPath(path)
         const valToReplace = st.valOfPath(path)
-		const impl = st.clone(comp.impl)
+        const impl = st.clone(comp.impl)
         const params = (comp.params || []).map(p=> ({ ...p, 
             fRegExp: new RegExp(`\\b${p.id}\\b`), 
             sRegExp: new RegExp(`%\\$${p.id}`),
             simpleUsageRegExp: new RegExp(`%\\$${p.id}%`)
         }))
-        const varsToAdd = {}
+        const varsToAdd = []
         params.forEach(p=>{
             const _noOfUsages = noOfUsages(p,impl)
             if (!_noOfUsages) return
@@ -273,11 +273,11 @@ jb.component('studio.calcMakeLocal', {
             if (_noOfUsages == _noOfSimpleUsages)
                 replaceSimpleUsages(impl,p,val)
             else
-                varsToAdd[p.id] = val
+                varsToAdd.push({$: 'Var', name: p.id, val })
         })
         fixFunctionHeaders(impl)
 
-        const res = { ...(Object.keys(varsToAdd).length && {$vars: varsToAdd}), $basedOn: valToReplace.$, ...impl }
+        const res = { ...(varsToAdd.length && {$vars: varsToAdd}), $basedOn: valToReplace.$, ...impl }
 
         if (activate)
             st.writeValueOfPath(path,res,ctx)
@@ -303,38 +303,38 @@ jb.component('studio.calcMakeLocal', {
             if (typeof prof == 'object' && prof.$ == 'call' && prof.param == param.id)
 				return 1
 			if (typeof prof == 'object')
-                return Object.keys(prof).reduce((agg,k) => agg + noOfSimpleUsages(param,prof[k]), 0)
-            return 0
+        return Object.keys(prof).reduce((agg,k) => agg + noOfSimpleUsages(param,prof[k]), 0)
+      return 0
 		}        
 		function replaceSimpleUsages(prof,param, val) {
 			typeof prof == 'object' && jb.entries(prof).forEach(e =>{
-                if (typeof e[1] == 'string' && param.simpleUsageRegExp.test(e[1]))
-                    prof[e[0]] = val
-                else if (typeof e[1] == 'object' && e[1].$ == 'call' && e[1].param == param.id)
-                    prof[e[0]] = val
-                else
-                    replaceSimpleUsages(e[1],param, val)
-            })
-        }        
+          if (typeof e[1] == 'string' && param.simpleUsageRegExp.test(e[1]))
+              prof[e[0]] = val
+          else if (typeof e[1] == 'object' && e[1].$ == 'call' && e[1].param == param.id)
+              prof[e[0]] = val
+          else
+              replaceSimpleUsages(e[1],param, val)
+        })
+      }        
 
         // (ctx,{var1},{param1}) should become (ctx,{var1,param1})
 		function fixFunctionHeaders(prof) {
 			typeof prof == 'object' && jb.entries(prof).forEach(e =>{
-                if (typeof e[1] == 'function') {
-                    const f = e[1].toString()
-                    const header = f.split('=>')[0]
-                    if (header.match(/,\s*({[^}]*)(}\s*,{)([^}]*})\s*\)/)) {
-                        const fixedFunc = st.evalProfile( [
-                            header.replace(/,\s*({[^}]*)(}\s*,{)([^}]*})\s*\)/,',$1,$3)').replace(/{,/g,'{'),
-                            '=>',
-                            f.split('=>')[1]
-                        ].join(' '));
-                        prof[e[0]] = fixedFunc
-                    }
-                } else if (typeof e[1] == 'object')
-                    fixFunctionHeaders(e[1])
-            })
-        }
+              if (typeof e[1] == 'function') {
+                  const f = e[1].toString()
+                  const header = f.split('=>')[0]
+                  if (header.match(/,\s*({[^}]*)(}\s*,{)([^}]*})\s*\)/)) {
+                      const fixedFunc = st.evalProfile( [
+                          header.replace(/,\s*({[^}]*)(}\s*,{)([^}]*})\s*\)/,',$1,$3)').replace(/{,/g,'{'),
+                          '=>',
+                          f.split('=>')[1]
+                      ].join(' '));
+                      prof[e[0]] = fixedFunc
+                  }
+              } else if (typeof e[1] == 'object')
+                  fixFunctionHeaders(e[1])
+          })
+      }
     }
 })
 
@@ -357,8 +357,6 @@ jb.component('studio.openMakeLocal', {
         title: 'Make Local',
         onOK: studio.calcMakeLocal({ path: '%$path%', activate: true }),
         modal: true,
-        features: [dialogFeature.resizer(), 
-            css.width('500')
-        ]
+        features: [dialogFeature.resizer(), css.width('500') ]
     }))
 })
