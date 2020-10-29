@@ -45,7 +45,8 @@ st.initCompsRefHandler = function(previewjb,allowedTypes) {
 			writeValueToDataResource(e.path,e.newVal)
 			if (st.isStudioCmp(e.path[0]))
 				st.refreshStudioComponent(e.path)
-			st.lastStudioActivity= new Date().getTime()
+			st.lastStudioActivity = new Date().getTime()
+			jb.exec(writeValue('%$studio/lastStudioActivity%',() => st.lastStudioActivity))
 		}))
 }
 
@@ -317,7 +318,7 @@ jb.component('studio.scriptChange', {
 
 jb.component('studio.watchScriptChanges', {
   type: 'feature',
-  impl: followUp.flow(studio.scriptChange(), rx.log('watch script refresh'), sink.refreshCmp())
+  impl: watchRef('%$studio/lastStudioActivity%') //followUp.flow(studio.scriptChange(), rx.log('watch script refresh'), sink.refreshCmp())
 })
 
 jb.component('studio.watchComponents', {

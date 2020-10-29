@@ -20,5 +20,5 @@ jb.component('dataResource.people', {
 
 jb.component('helloWorld.main', {
   type: 'control',
-  impl: text(pipeline(Var('asa', 'dsfsd'), Var('dsfsd', 'sdfsd'), '%$rr%'))
+  impl: text('hello world')
 })

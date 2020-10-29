@@ -259,7 +259,8 @@ jb.component('chromeDebugger.icon', {
     ],
     impl: customStyle({
       template: (cmp,{title},h) => h('div',{onclick: true, title}),
-      css: `{ -webkit-mask-image: url(largeIcons.svg); -webkit-mask-position: %$position%; width: 28px;  height: 24px; background-color: var(--jb-menu-fg);}`
+      css: `{ -webkit-mask-image: url(largeIcons.svg); -webkit-mask-position: %$position%; width: 28px;  height: 24px; background-color: var(--jb-menu-fg); opacity: 0.7}
+        ~:hover { opacity: 1}`,
     })
 })
 

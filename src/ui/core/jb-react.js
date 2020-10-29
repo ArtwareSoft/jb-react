@@ -434,6 +434,7 @@ Object.assign(jb.ui, {
 Object.assign(jb.ui, {
     h, render, unmount, applyNewVdom, applyDeltaToDom, applyDeltaToVDom, elemToVdom, mountFrontEnd, compareVdom, refreshFrontEnd,
     BECmpsDestroyNotification: jb.callbag.subject(),
+    refreshNotification: jb.callbag.subject(),
     renderingUpdates: jb.callbag.subject(),
     ctrl(context,options) {
         const styleByControl = jb.path(context,'cmpCtx.profile.$') == 'styleByControl'
@@ -529,8 +530,9 @@ Object.assign(jb.ui, {
         }
     },
     refreshElem(elem, state, options) {
-        if (jb.path(elem,'_component.state.frontEndStatus') == 'initializing') 
+        if (jb.path(elem,'_component.state.frontEndStatus') == 'initializing' || jb.ui.findIncludeSelf(elem,'[__refreshing]')[0]) 
             return jb.logError('circular refresh',{elem, state, options})
+        elem.setAttribute('__refreshing','')
         const cmpId = elem.getAttribute('cmp-id'), cmpVer = +elem.getAttribute('cmp-ver')
         const _ctx = ui.ctxOfElem(elem)
         if (!_ctx) 
@@ -548,13 +550,14 @@ Object.assign(jb.ui, {
         jb.log('dom refresh check',{cmp,ctx,elem, state, options})
 
         if (jb.path(options,'cssOnly')) {
-            const existingClass = (elem.className.match(/(w|jb-)[0-9]+/)||[''])[0]
+            const existingClass = (elem.className.match(/(w|jb-)[0-9]?-[0-9]+/)||[''])[0]
             const cssStyleElem = Array.from(document.querySelectorAll('style')).map(el=>({el,txt: el.innerText})).filter(x=>x.txt.indexOf(existingClass + ' ') != -1)[0].el
             jb.log('dom refresh css',{cmp, lines: cmp.cssLines,ctx,elem, state, options})
             return jb.ui.hashCss(cmp.calcCssLines(),cmp.ctx,{existingClass, cssStyleElem})
         }
         jb.log('dom refresh',{cmp,ctx,elem, state, options})
         cmp && applyNewVdom(elem, h(cmp), {strongRefresh, ctx})
+        jb.ui.refreshNotification.next({cmp,ctx,elem, state, options})
         //jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
     },
 

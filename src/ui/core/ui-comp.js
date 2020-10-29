@@ -26,7 +26,7 @@ Object.assign(jb.ui,{
             } else {
                 this.cssHashCounter++;
             }
-            const classId = existingClass || `${classPrefix}${this.cssHashCounter}`
+            const classId = existingClass || `${classPrefix}-${this.cssHashCounter}`
             cssMap[cssKey] = {classId, paths : {[ctx.path]: true}}
             const cssContent = linesToCssStyle(classId)
             if (cssStyleElem)

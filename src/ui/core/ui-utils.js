@@ -5,6 +5,7 @@ Object.assign(jb.ui,{
         const now = new Date().getTime()
         const lastStudioActivity = jb.studio.lastStudioActivity 
           || jb.path(jb,['studio','studioWindow','jb','studio','lastStudioActivity'])
+
         jb.log('focus request',{srcCtx, logTxt, timeDiff: now - lastStudioActivity, elem,srcCtx})
         if (jb.studio.previewjb == jb && jb.path(jb.frame.parent,'jb.resources.studio.project') != 'studio-helper' && lastStudioActivity && now - lastStudioActivity < 1000)
             return
@@ -76,12 +77,13 @@ jb.component('service.registerBackEndService', {
   params: [
     {id: 'id', as: 'string', mandatory: true, dynamic: true },
     {id: 'service', mandatory: true, dynamic: true },
+    {id: 'allowOverride', as: 'boolean' },
   ],
-  impl: feature.init((ctx,{$serviceRegistry},{id,service}) => {
+  impl: feature.init((ctx,{$serviceRegistry},{id,service,allowOverride}) => {
     const _id = id(ctx), _service = service(ctx)
     jb.log('register service',{id: _id, service: _service, ctx: ctx.cmpCtx})
-    if ($serviceRegistry.services[_id])
-      jb.logError('overridingService',{id: _id, service: $serviceRegistry.services[_id], service: _service,ctx})
+    if ($serviceRegistry.services[_id] && !allowOverride)
+      jb.logError('overridingService ${_id}',{id: _id, service: $serviceRegistry.services[_id], service: _service,ctx})
     $serviceRegistry.services[_id] = _service
   })
   // feature.initValue({to: '%$$serviceRegistry/services/{%$id()%}%', value: '%$service()%', alsoWhenNotEmpty: true}),

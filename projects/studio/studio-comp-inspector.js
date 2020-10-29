@@ -49,11 +49,11 @@ jb.component('studio.compInspector', {
         }),
         tableTree({
             title: 'rendering props',
-            treeModel: tree.json('%$inspectedCmp/renderProps%'),
+            treeModel: tree.jsonReadOnly('%$inspectedCmp/renderProps%'),
             leafFields: text('%val%', 'value'),
             chapterHeadline: text(tree.lastPathElement('%path%'))
         }),
-        tree('raw', tree.json('%$inspectedCmp%'))
+        //tree('raw', tree.jsonReadOnly('%$inspectedCmp%'))
       ]
     }),
     features: [
@@ -64,12 +64,11 @@ jb.component('studio.compInspector', {
       variable('inspectedCmp', ({},{frameOfElem, elem}) => 
             jb.path(elem && frameOfElem && frameOfElem.jb.ctxDictionary[elem.getAttribute('full-cmp-ctx')],'vars.cmp')),
       variable('inspectedCtx', '%$inspectedCmp/ctx%'),
-      feature.requireSerice(studio.editingService(),'%$frameUri%==studio'),
-      init(({},{frameUri}) => frameUri == 'studio' && jb.studio.initStudioEditing()),
+      feature.requireService(studio.editingService(),'%$frameUri%==studio'),
       chromeDebugger.refreshAfterSelection(),
       followUp.flow(
-        source.callbag(({},{frameOfElem}) => frameOfElem && frameOfElem.jb.ui.BECmpsDestroyNotification),
-        rx.filter(({data},{$props},{}) => data.cmps.find(_cmp => _cmp.cmpId == $props.cmpId)),
+        source.callbag(({},{frameOfElem}) => frameOfElem && frameOfElem.jb.ui.refreshNotification),
+        rx.debounceTime(300),
         sink.refreshCmp('%$$state%')
       ),
     ]
@@ -95,18 +94,18 @@ jb.component('studio.eventsOfComp', {
             divider({style: divider.vertical()}),
             button({
               title: 'clear',
-              action: runActions(eventTracker.clearSpyLog(), refreshControlById('event-tracker')),
+              action: runActions(eventTracker.clearSpyLog(), refreshControlById('cmp-event-tracker')),
               style: chromeDebugger.icon(),
               features: [css.color('var(--jb-menu-fg)'), feature.hoverTitle('clear')]
             }),
             divider({style: divider.vertical()}),
             editableText({
               title: 'query',
-              databind: '%$studio/eventTrackerQuery%',
+              databind: '%$studio/eventTrackerCmpQuery%',
               style: editableText.input(),
               features: [
                 htmlAttribute('placeholder', 'query'),
-                feature.onEnter(refreshControlById('event-tracker')),
+                feature.onEnter(refreshControlById('cmp-event-tracker')),
                 css.class('toolbar-input'),
                 css.height('10'),
                 css.margin('4'),
@@ -149,15 +148,16 @@ jb.component('studio.eventsOfComp', {
             itemlist.selection({
               onSelection: runActions(({data}) => jb.frame.console.log(data), eventTracker.highlightEvent('%%'))
             }),
-            itemlist.keyboardSelection({}),
+            itemlist.keyboardSelection(),
+            css.height({height: '200', overflow: 'scroll'}),
           ]
         })
       ],
       features: [
-        id('event-tracker'),
+        id('cmp-event-tracker'),
         variable({
           name: 'events',
-          value: pipeline(eventTracker.eventItems('%$studio/eventTrackerQuery%'),filter('%cmp/cmpId%==%$cmpId%'))
+          value: pipeline(eventTracker.eventItems('%$studio/eventTrackerCmpQuery%'),filter('%cmp/cmpId%==%$cmpId%'))
         }),
         followUp.watchObservable(source.callbag(ctx => jb.ui.getSpy(ctx).observable()), 1000)
       ]

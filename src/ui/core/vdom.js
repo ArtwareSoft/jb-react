@@ -133,13 +133,16 @@ function cloneVNode(vdom) {
 
 function vdomDiff(newObj,orig) {
     const ignoreRegExp = /\$|checked|style|value|parentNode|frontend|__|widget|on-|remoteuri|width|height|top|left/
-    const ignoreValue = /mdc-tab-[0-9]+|__undefined/
+    const ignoreValue = /__undefined/
+    const ignoreClasses = /selected|mdc-tab-[0-9]+/
     return doDiff(newObj,orig)
-    function doDiff(newObj,orig) {
+    function doDiff(newObj,orig,attName) {
         if (Array.isArray(orig) && orig.length == 0) orig = null
         if (Array.isArray(newObj) && newObj.length == 0) newObj = null
         if (orig === newObj) return {}
         if (typeof orig == 'string' && ignoreValue.test(orig) || typeof newObj == 'string' && ignoreValue.test(newObj)) return {}
+        if (attName == 'class' && 
+            (typeof orig == 'string' && ignoreClasses.test(orig) || typeof newObj == 'string' && ignoreClasses.test(newObj))) return {}
         if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
         const deletedValues = Object.keys(orig)
             .filter(k=>!ignoreRegExp.test(k))
@@ -153,7 +156,7 @@ function vdomDiff(newObj,orig) {
             .filter(k => !(Array.isArray(newObj[k]) && newObj[k].length == 0))
             .reduce((acc, key) => {
                 if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key
-                const difference = doDiff(newObj[key], orig[key])
+                const difference = doDiff(newObj[key], orig[key],attName)
                 if (jb.isObject(difference) && jb.isEmpty(difference)) return acc // return no diff
                 return { ...acc, [key]: difference } // return updated key
         }, deletedValues)    

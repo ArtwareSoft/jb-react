@@ -472,7 +472,7 @@ jb.component('dialogs.changeEmitter', {
 
 jb.component('dialogs.destroyAllEmitters', {
 	type: 'action',
-	impl: () => Object.keys(jb.ui.dlgEmitters).forEach(k=>{
+	impl: () => Object.keys(jb.ui.dlgEmitters||{}).forEach(k=>{
 		jb.ui.dlgEmitters[k].trigger.complete()
 		delete jb.ui.dlgEmitters[k]
 	})

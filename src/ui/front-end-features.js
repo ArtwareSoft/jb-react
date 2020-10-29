@@ -1,4 +1,4 @@
-jb.ns('rx,key,frontEnd,sink')
+jb.ns('rx,key,frontEnd,sink,service')
 
 jb.component('action.runBEMethod', {
     type: 'action',
@@ -357,7 +357,11 @@ jb.component('frontEnd.selectionKeySourceService', {
     {id: 'autoFocs', as: 'boolean' },
   ],
   impl: features(
-    service.registerBackEndService('selectionKeySource', obj(prop('cmpId', '%$cmp/cmpId%'))),
+    service.registerBackEndService({
+      id: 'selectionKeySource',
+      service: obj(prop('cmpId', '%$cmp/cmpId%')), 
+      allowOverride: true 
+    }),
     frontEnd.var('autoFocs','%$autoFocs%'),
     frontEnd.prop('selectionKeySource', (ctx,{cmp,el,autoFocs}) => {
       if (el.keydown_src) return

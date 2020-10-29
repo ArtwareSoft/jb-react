@@ -69,13 +69,13 @@ jb.component('studio.eventTrackerToolbar', {
         title: 'clear',
         action: runActions(eventTracker.clearSpyLog(), refreshControlById('event-tracker')),
         style: chromeDebugger.icon(),
-        features: [css.color('var(--jb-menu-fg)'), feature.hoverTitle('clear')]
+        features: feature.hoverTitle('clear')
       }),
       button({
         title: 'refresh',
         action: refreshControlById('event-tracker'),
-        style: chromeDebugger.icon(),
-        features: [css.color('var(--jb-menu-fg)'), feature.hoverTitle('refresh'), feature.if(eventTracker.refreshBlocked())]
+        style: chromeDebugger.icon('165px 264px'),
+        features: [feature.hoverTitle('refresh'), feature.if(eventTracker.refreshBlocked())]
       }),      
       picklist({
         title: 'frame',

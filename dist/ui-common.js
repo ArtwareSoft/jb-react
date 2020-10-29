@@ -1257,13 +1257,16 @@ function cloneVNode(vdom) {
 
 function vdomDiff(newObj,orig) {
     const ignoreRegExp = /\$|checked|style|value|parentNode|frontend|__|widget|on-|remoteuri|width|height|top|left/
-    const ignoreValue = /mdc-tab-[0-9]+|__undefined/
+    const ignoreValue = /__undefined/
+    const ignoreClasses = /selected|mdc-tab-[0-9]+/
     return doDiff(newObj,orig)
-    function doDiff(newObj,orig) {
+    function doDiff(newObj,orig,attName) {
         if (Array.isArray(orig) && orig.length == 0) orig = null
         if (Array.isArray(newObj) && newObj.length == 0) newObj = null
         if (orig === newObj) return {}
         if (typeof orig == 'string' && ignoreValue.test(orig) || typeof newObj == 'string' && ignoreValue.test(newObj)) return {}
+        if (attName == 'class' && 
+            (typeof orig == 'string' && ignoreClasses.test(orig) || typeof newObj == 'string' && ignoreClasses.test(newObj))) return {}
         if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
         const deletedValues = Object.keys(orig)
             .filter(k=>!ignoreRegExp.test(k))
@@ -1277,7 +1280,7 @@ function vdomDiff(newObj,orig) {
             .filter(k => !(Array.isArray(newObj[k]) && newObj[k].length == 0))
             .reduce((acc, key) => {
                 if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key
-                const difference = doDiff(newObj[key], orig[key])
+                const difference = doDiff(newObj[key], orig[key],attName)
                 if (jb.isObject(difference) && jb.isEmpty(difference)) return acc // return no diff
                 return { ...acc, [key]: difference } // return updated key
         }, deletedValues)    
@@ -1724,6 +1727,7 @@ Object.assign(jb.ui, {
 Object.assign(jb.ui, {
     h, render, unmount, applyNewVdom, applyDeltaToDom, applyDeltaToVDom, elemToVdom, mountFrontEnd, compareVdom, refreshFrontEnd,
     BECmpsDestroyNotification: jb.callbag.subject(),
+    refreshNotification: jb.callbag.subject(),
     renderingUpdates: jb.callbag.subject(),
     ctrl(context,options) {
         const styleByControl = jb.path(context,'cmpCtx.profile.$') == 'styleByControl'
@@ -1819,8 +1823,9 @@ Object.assign(jb.ui, {
         }
     },
     refreshElem(elem, state, options) {
-        if (jb.path(elem,'_component.state.frontEndStatus') == 'initializing') 
+        if (jb.path(elem,'_component.state.frontEndStatus') == 'initializing' || jb.ui.findIncludeSelf(elem,'[__refreshing]')[0]) 
             return jb.logError('circular refresh',{elem, state, options})
+        elem.setAttribute('__refreshing','')
         const cmpId = elem.getAttribute('cmp-id'), cmpVer = +elem.getAttribute('cmp-ver')
         const _ctx = ui.ctxOfElem(elem)
         if (!_ctx) 
@@ -1845,6 +1850,7 @@ Object.assign(jb.ui, {
         }
         jb.log('dom refresh',{cmp,ctx,elem, state, options})
         cmp && applyNewVdom(elem, h(cmp), {strongRefresh, ctx})
+        jb.ui.refreshNotification.next({cmp,ctx,elem, state, options})
         //jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
     },
 
@@ -2031,7 +2037,7 @@ Object.assign(jb.ui,{
             } else {
                 this.cssHashCounter++;
             }
-            const classId = existingClass || `${classPrefix}${this.cssHashCounter}`
+            const classId = existingClass || `${classPrefix}-${this.cssHashCounter}`
             cssMap[cssKey] = {classId, paths : {[ctx.path]: true}}
             const cssContent = linesToCssStyle(classId)
             if (cssStyleElem)
@@ -2301,8 +2307,7 @@ Object.assign(jb.ui,{
         if (!elem) debugger
         // block the preview from stealing the studio focus
         const now = new Date().getTime()
-        const lastStudioActivity = jb.studio.lastStudioActivity 
-          || jb.path(jb,['studio','studioWindow','jb','studio','lastStudioActivity'])
+        const lastStudioActivity = +(jb.exec('%$studio/lastStudioActivity%') || now)
         jb.log('focus request',{srcCtx, logTxt, timeDiff: now - lastStudioActivity, elem,srcCtx})
         if (jb.studio.previewjb == jb && jb.path(jb.frame.parent,'jb.resources.studio.project') != 'studio-helper' && lastStudioActivity && now - lastStudioActivity < 1000)
             return
@@ -2677,9 +2682,9 @@ jb.component('feature.requireService',{
 })
 
 jb.component('feature.init', {
-  type: 'feature',
+  type: 'feature:0',
   category: 'lifecycle',
-  description: 'activated before calc properties',
+  description: 'activated before calc properties, use initValue or require instead',
   params: [
     {id: 'action', type: 'action', mandatory: true, dynamic: true},
     {id: 'phase', as: 'number', defaultValue: 10, description: 'init funcs from different features can use each other, phase defines the calculation order'}
@@ -2726,7 +2731,7 @@ jb.component('features', {
 
 jb.component('followUp.action', {
   type: 'feature',
-  description: 'runs at the backend a tick after the vdom was returned',
+  description: 'runs at the backend a tick after the vdom was returned. Try to avoid it, use initValue or require instead',
   category: 'lifecycle',
   params: [
     {id: 'action', type: 'action', mandatory: true, dynamic: true}
@@ -2736,7 +2741,7 @@ jb.component('followUp.action', {
 
 jb.component('followUp.flow', {
   type: 'feature',
-  description: 'rx flow at the backend after the vdom was sent',
+  description: 'rx flow at the backend after the vdom was sent. Try to avoid it, use watchRef instead',
   params: [
     {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
   ],
@@ -5683,7 +5688,7 @@ jb.component('menu.endWithSeparator', {
   ],
   impl: pipeline(
       Var('opts','%$options()%'), 
-      If('%$opts/length%', list('%$opts%','%$separator%'))
+      If('%$opts/length%>0', list('%$opts%','%$separator%'))
   )
 })
 

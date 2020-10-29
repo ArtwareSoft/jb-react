@@ -105,9 +105,9 @@ jb.component('feature.requireService',{
 })
 
 jb.component('feature.init', {
-  type: 'feature',
+  type: 'feature:0',
   category: 'lifecycle',
-  description: 'activated before calc properties',
+  description: 'activated before calc properties, use initValue or require instead',
   params: [
     {id: 'action', type: 'action', mandatory: true, dynamic: true},
     {id: 'phase', as: 'number', defaultValue: 10, description: 'init funcs from different features can use each other, phase defines the calculation order'}
@@ -154,7 +154,7 @@ jb.component('features', {
 
 jb.component('followUp.action', {
   type: 'feature',
-  description: 'runs at the backend a tick after the vdom was returned',
+  description: 'runs at the backend a tick after the vdom was returned. Try to avoid it, use initValue or require instead',
   category: 'lifecycle',
   params: [
     {id: 'action', type: 'action', mandatory: true, dynamic: true}
@@ -164,7 +164,7 @@ jb.component('followUp.action', {
 
 jb.component('followUp.flow', {
   type: 'feature',
-  description: 'rx flow at the backend after the vdom was sent',
+  description: 'rx flow at the backend after the vdom was sent. Try to avoid it, use watchRef instead',
   params: [
     {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
   ],
