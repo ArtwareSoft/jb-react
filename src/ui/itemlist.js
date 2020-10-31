@@ -39,8 +39,6 @@ jb.component('itemlist.init', {
     calcProp('allItems', '%$$model/items%'),
     calcProp('visualSizeLimit', ({},{$model,$state}) => Math.max($model.visualSizeLimit,$state.visualSizeLimit ||0)),
     calcProp('items', itemlist.calcSlicedItems()),
-    calcProp('itemsCtxs', (ctx,{$model,$props}) => $props.items.map((item,index) =>
-      jb.ui.preserveCtx(ctx.setVars({index}).setVar($model.itemVariable,item).setData(item)))),
     calcProp('ctrls', (ctx,{$model,$props}) => {
       const controlsOfItem = (item,index) => $model.controls(ctx.setVars({index}).setVar($model.itemVariable,item).setData(item)).filter(x=>x)
       return $props.items.map((item,i)=> controlsOfItem(item,i+1)).filter(x=>x.length > 0)
@@ -72,25 +70,26 @@ jb.component('itemlist.selection', {
         const currentVal = $state.selected && jb.path(jb.ctxDictionary[$state.selected],'data')
         const databindVal = jb.val(databind()) 
         const val = jb.val( databindVal != null && databindToSelected(ctx.setData(databindVal)) || currentVal || (autoSelectFirst && $props.items[0]))
-        const itemsCtxs = $props.itemsCtxs || $props.ctrls.map(ctrl=> ctrl[0].ctxId)
-        return itemsCtxs.find(ctxId => jb.val(jb.path(jb.ctxDictionary[ctxId],'data')) == val)
+        return $props.items.findIndex(item => jb.val(item) == val)
       },
       phase: 20
     }),
-    templateModifier(({},{vdom, selected}) => vdom.querySelectorAll('.jb-item')
-        .filter(el => selected == el.getAttribute('jb-ctx'))
-        .forEach(el => el.addClass('selected'))),
+    templateModifier(({},{vdom, selected}) => {
+      const parent = vdom.querySelector('.jb-items-parent') || vdom
+      const el = jb.path(parent,`children.${selected}`)
+      el && el.addClass('selected')
+    }),
     method(
       'onSelection',
       runActionOnItem(
-        itemlist.ctxIdToData(),
+        itemlist.indexToData(),
         runActions(If(isRef('%$databind()%'), writeValue('%$databind()%', '%$selectedToDatabind()%')), call('onSelection'))
       )
     ),
     method(
       'onDoubleClick',
       runActionOnItem(
-        itemlist.ctxIdToData(),
+        itemlist.indexToData(),
         runActions(If(isRef('%$databind()%'), writeValue('%$databind()%', '%$selectedToDatabind()%')), call('onDoubleClick'))
       )
     ),
@@ -102,9 +101,12 @@ jb.component('itemlist.selection', {
     frontEnd.method('applyState', ({},{cmp}) => {
       Array.from(cmp.base.querySelectorAll('.jb-item.selected,*>.jb-item.selected,*>*>.jb-item.selected'))
         .forEach(elem=>elem.classList.remove('selected'))
-      Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
-        .filter(elem=> elem.getAttribute('jb-ctx') == cmp.state.selected)
-        .forEach(elem=> {elem.classList.add('selected'); elem.scrollIntoViewIfNeeded()})
+      const parent = cmp.base.querySelector('.jb-items-parent') || cmp.base
+      const elem = parent.children[cmp.state.selected]
+      if (elem) {
+        elem.classList.add('selected')
+        elem.scrollIntoViewIfNeeded()
+      }
     }),
     frontEnd.method('setSelected', ({data},{cmp}) => {
         cmp.base.state.selected = cmp.state.selected = data
@@ -113,13 +115,13 @@ jb.component('itemlist.selection', {
     frontEnd.prop('selectionEmitter', rx.subject()),
     frontEnd.flow(
       source.frontEndEvent('dblclick'),
-      rx.map(itemlist.ctxIdOfElem('%target%')),
+      rx.map(itemlist.indexOfElem('%target%')),
       rx.filter('%%'),
       sink.action(runActions(action.runFEMethod('setSelected'), action.runBEMethod('onDoubleClick')))
     ),
     frontEnd.flow(
       rx.merge(
-        rx.pipe(source.frontEndEvent('click'), rx.map(itemlist.ctxIdOfElem('%target%')), rx.filter('%%')),
+        rx.pipe(source.frontEndEvent('click'), rx.map(itemlist.indexOfElem('%target%')), rx.filter('%%')),
         source.subject('%$cmp/selectionEmitter%')
       ),
       rx.distinctUntilChanged(),
@@ -137,7 +139,7 @@ jb.component('itemlist.keyboardSelection', {
   ],
   impl: features(
     htmlAttribute('tabIndex', 0),
-    method('onEnter', runActionOnItem(itemlist.ctxIdToData(), call('onEnter'))),
+    method('onEnter', runActionOnItem(itemlist.indexToData(), call('onEnter'))),
     frontEnd.passSelectionKeySource(),
     frontEnd.prop('onkeydown', rx.merge(source.frontEndEvent('keydown'), source.findSelectionKeySource())),
     frontEnd.flow(
@@ -162,24 +164,24 @@ jb.component('itemlist.keyboardSelection', {
 jb.component('itemlist.dragAndDrop', {
   type: 'feature',
   impl: features(
-    method('moveItem', runActions(move(itemlist.ctxIdToData('%from%'), itemlist.ctxIdToData('%to%')), action.refreshCmp())),
+    method('moveItem', runActions(move(itemlist.indexToData('%from%'), itemlist.indexToData('%to%')), action.refreshCmp())),
     frontEnd.prop('drake', ({},{cmp}) => {
         if (!jb.frame.dragula) return jb.logError('itemlist.dragAndDrop - the dragula lib is not loaded')
-        return dragula([cmp.base.querySelector('.jb-drag-parent') || cmp.base] , {
+        return dragula([cmp.base.querySelector('.jb-items-parent') || cmp.base] , {
           moves: (el,source,handle) => jb.ui.parents(handle,{includeSelf: true}).some(x=>jb.ui.hasClass(x,'drag-handle'))
         })
     }),
     frontEnd.flow(
       source.dragulaEvent('drag', list('el')),
-      rx.map(itemlist.ctxIdOfElem('%el%')),
-      rx.do(
-        ({},{cmp}) => cmp.ctxsOnDrag = Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).map(el=>el.getAttribute('jb-ctx'))
+      rx.map(itemlist.indexOfElem('%el%')),
+      rx.do(({},{cmp}) => 
+        Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).forEach(el=>el.setAttribute('jb-original-index',jb.ui.indexOfElement(el)))
       ),
       sink.subjectNext('%$cmp/selectionEmitter%')
     ),
     frontEnd.flow(
       source.dragulaEvent('drop', list('dropElm', 'target', 'source', 'sibling')),
-      rx.map(obj(prop('from', itemlist.ctxIdOfElem('%dropElm%')), prop('to', itemlist.ctxIdFromSibling('%sibling%')))),
+      rx.map(obj(prop('from', itemlist.indexOfElem('%dropElm%')), prop('to', itemlist.orignialIndexFromSibling('%sibling%')))),
       sink.BEMethod('moveItem')
     ),
     frontEnd.flow(
@@ -202,15 +204,19 @@ jb.component('source.dragulaEvent', {
     jb.callbag.create(obs=> cmp.drake.on(event, (...args) => obs(jb.objFromEntries(args.map((v,i) => [argNames[i],v]))))))
 })
 
-jb.component('itemlist.ctxIdFromSibling', {
+jb.component('itemlist.orignialIndexFromSibling', {
   type: 'data:0',
   params: [
     {id: 'sibling', defaultValue: '%%'}
   ],
   impl: (ctx,sibling) => {
-    const ctxs = ctx.vars.cmp.ctxsOnDrag
-    const targetIndex = sibling ? jb.ui.index(sibling) : ctxs.length
-    return ctxs[targetIndex-1];
+    const cmp = ctx.vars.cmp
+    const parent = cmp.base.querySelector('.jb-items-parent') || cmp.base
+    const indeces = Array.from(parent.children).map(el => +el.getAttribute('jb-original-index'))
+    const targetIndex = sibling ? jb.ui.indexOfElement(sibling) : indeces.length
+    const result = indeces[targetIndex-1]
+    jb.log('itemlist DD orignialIndexFromSibling',{sibling, indeces,targetIndex, result,ctx})
+    return result
   }
 })
 
@@ -235,35 +241,24 @@ jb.component('itemlist.divider', {
   impl: css('>.jb-item:not(:first-of-type) { border-top: 1px solid rgba(0,0,0,0.12); padding-top: %$space%px }')
 })
 
-jb.component('itemlist.ctxIdOfElem', {
+jb.component('itemlist.indexOfElem', {
   type: 'data:0',
   description: 'also supports multiple elements',
   params: [
     {id: 'elem', defaultValue: '%%'}
   ],
-  impl: (ctx,el) => {
-      const itemElem = jb.ui.closest(el,'.jb-item')
-      return itemElem && itemElem.getAttribute('jb-ctx')
+  impl: ({},el) => {
+      const elem = jb.ui.closest(el,'.jb-item')
+      return elem && jb.ui.indexOfElement(elem)
   }
 })
 
-jb.component('itemlist.ctxIdsOfElems', {
+jb.component('itemlist.indexToData', {
   type: 'data:0',
   params: [
-    {id: 'elem', defaultValue: '%%'}
+    {id: 'index', as: 'number', defaultValue: '%%'}
   ],
-  impl: (ctx,elem) => jb.asArray(elem).find(el=> {
-      const itemElem = jb.ui.closest(el,'.jb-item')
-      return itemElem && itemElem.getAttribute('jb-ctx')
-  })
-})
-
-jb.component('itemlist.ctxIdToData', {
-  type: 'data:0',
-  params: [
-    {id: 'ctxId', as: 'string', defaultValue: '%%'}
-  ],
-  impl: (ctx,ctxId) => jb.path(jb.ctxDictionary[ctxId],'data')
+  impl: (ctx,index) => jb.val(jb.path(ctx.vars.cmp,'renderProps.items') || [])[index]
 })
 
 jb.component('itemlist.findSelectionSource', {
@@ -284,9 +279,11 @@ jb.component('itemlist.nextSelected', {
   ],
   impl: (ctx,diff,elementFilter) => {
     const {cmp} = ctx.vars
-    const ctxs = Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item')).filter(el=>elementFilter(ctx.setData(el)))
-      .map(el=>+el.getAttribute('jb-ctx'))
-    const selectedIndex = ctxs.indexOf(+cmp.state.selected) + diff
-    return ctxs[Math.min(ctxs.length-1,Math.max(0,selectedIndex))]
+    const parent = cmp.base.querySelector('.jb-items-parent') || cmp.base
+    const indeces = Array.from(parent.children).map((el,i) => [el,i])
+      .filter(([el]) => elementFilter(ctx.setData(el))).map(([el,i]) => i)
+
+    const selectedIndex = indeces.indexOf(+cmp.state.selected) + diff
+    return indeces[Math.min(indeces.length-1,Math.max(0,selectedIndex))]
   }
 })

@@ -260,7 +260,9 @@ function setAtt(elem,att,val) {
         jb.ui.focus(elem,val)
     } else if (att === '$scrollDown' && val) {
         elem.__appScroll = true
-        elem.scrollTop = elem.scrollHeight
+        elem.scrollTop = elem.scrollTop = elem.scrollHeight - elem.clientHeight - 1
+    } else if (att === '$scrollDown' && val == null) {
+        delete elem.__appScroll
     } else if (att === '$text') {
         elem.innerText = val || ''
         jb.log('dom set text',{elem,att,val})

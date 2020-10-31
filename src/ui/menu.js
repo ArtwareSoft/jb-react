@@ -145,7 +145,7 @@ jb.component('menuStyle.contextMenu', {
     itemlist({
       items: '%$menuModel.options()%',
       controls: menu.control({menu: '%$item%', style: menuStyle.applyMultiLevel({})}),
-      features: menu.selection(true)
+      features: menu.selection()
     })
   )
 })
@@ -226,36 +226,27 @@ jb.component('menuStyle.applyMultiLevel', {
 
 jb.component('menu.selection', {
   type: 'feature',
-  params: [
-    {id: 'autoSelectFirst', type: 'boolean'}
-  ],
   impl: features(
     htmlAttribute('tabIndex',0),
     css('>.selected { color: var(--jb-menubar-selection-fg); background: var(--jb-menubar-selection-bg) }'),
-    calcProp({
-      id: 'selected', // selected represented as ctxId of selected data
-      phase: 20, // after 'ctrls'
-      value: ({},{$props},{autoSelectFirst}) => {
-        const itemsCtxs = $props.itemsCtxs || $props.ctrls.map(ctrl=> ctrl[0].ctxId)
-        return autoSelectFirst && itemsCtxs[0]
-      }
+    userStateProp('selected',0),
+    templateModifier(({},{vdom, selected}) => {
+      const parent = vdom.querySelector('.jb-items-parent') || vdom
+      const el = jb.path(parent,`children.${selected}`)
+      el && el.addClass('selected')
     }),
-    templateModifier(({},{vdom, $props}) => vdom.querySelectorAll('.jb-item')
-        .filter(el => $props.selected == el.getAttribute('jb-ctx'))
-        .forEach(el => el.addClass('selected'))
-    ),
     method('closeMenu',dialog.closeDialog()),
-    frontEnd.init(({},{cmp,el}) => cmp.state.selected = jb.ui.find(el,'.jb-item,*>.jb-item,*>*>.jb-item')
-      .filter(el=>jb.ui.hasClass(el,'selected')).map(el=>+el.getAttribute('jb-ctx'))[0]
-    ),
     menu.selectionKeySourceService(),
     menu.passMenuKeySource(),
     frontEnd.method('applyState', ({},{cmp}) => {
       Array.from(cmp.base.querySelectorAll('.jb-item.selected,*>.jb-item.selected,*>*>.jb-item.selected'))
         .forEach(elem=>elem.classList.remove('selected'))
-      Array.from(cmp.base.querySelectorAll('.jb-item,*>.jb-item,*>*>.jb-item'))
-        .filter(elem=> elem.getAttribute('jb-ctx') == cmp.state.selected)
-        .forEach(elem=> {elem.classList.add('selected'); elem.scrollIntoViewIfNeeded()})
+      const parent = cmp.base.querySelector('.jb-items-parent') || cmp.base
+      const elem = parent.children[cmp.state.selected]
+      if (elem) {
+        elem.classList.add('selected')
+        elem.scrollIntoViewIfNeeded()
+      }
     }),
     frontEnd.method('setSelected', ({data},{cmp}) => {
         cmp.base.state.selected = cmp.state.selected = data
@@ -271,7 +262,7 @@ jb.component('menu.selection', {
     frontEnd.flow(source.frontEndEvent('mousemove'),
       rx.filter(menu.notSeparator('%target%')),
       rx.var('elem',({data}) => data.target.ownerDocument.elementsFromPoint(data.pageX, data.pageY)[0]),
-      rx.var('ctxId',itemlist.ctxIdOfElem('%$elem%')),
+      rx.var('ctxId',itemlist.indexOfElem('%$elem%')),
       rx.map('%$ctxId%'),
       rx.distinctUntilChanged(),
       sink.FEMethod('setSelected')

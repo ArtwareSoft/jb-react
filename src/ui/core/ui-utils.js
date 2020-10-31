@@ -131,7 +131,7 @@ Object.assign(jb.ui, {
     removeClass: (el,clz) => el && el.classList && el.classList.remove(clz),
     hasClass: (el,clz) => el && el.classList && el.classList.contains(clz),
     matches: (el,query) => el && el.matches && el.matches(query),
-    index: el => Array.from(el.parentNode.children).indexOf(el),
+    indexOfElement: el => Array.from(el.parentNode.children).indexOf(el),
     limitStringLength: (str,maxLength) => 
       (typeof str == 'string' && str.length > maxLength-3) ? str.substring(0,maxLength) + '...' : str,
     addHTML(el,html) {

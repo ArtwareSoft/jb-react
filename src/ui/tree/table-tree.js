@@ -129,7 +129,7 @@ jb.component('tableTree.plain', {
             ...headerFields.map(f=>h('th',{'jb-ctx': f.ctxId}, jb.ui.fieldTitle(cmp,f,h)))
           ]
         ))]),
-        h('tbody.jb-drag-parent',{},
+        h('tbody.jb-items-parent',{},
           itemsCtxs.map((iCtx,index)=> h('tr.jb-item', {path: iCtx.data.path, expanded: expanded[iCtx.data.path] },
             [...ctrlsMatrix[index].expandingFields.map(f=>h('td.drag-handle',
                 f.empty ? { class: 'empty-expand-collapse'} :
@@ -183,13 +183,13 @@ jb.component('tableTree.resizer', {
 jb.component('tableTree.dragAndDrop', {
   type: 'feature',
   impl: features(
-    frontEnd.onRefresh( (ctx,{cmp}) => cmp.drake.containers = jb.ui.find(cmp.base,'.jb-drag-parent')),
+    frontEnd.onRefresh( (ctx,{cmp}) => cmp.drake.containers = jb.ui.find(cmp.base,'.jb-items-parent')),
     method('moveItem', (ctx,{$props}) => $props.model.move(ctx.data.from,ctx.data.to,ctx)),
 		frontEnd.init( (ctx,{cmp}) => {
         const drake = cmp.drake = dragula([], {
           moves: (el, source, handle) => jb.ui.parents(handle,{includeSelf: true}).some(x=>jb.ui.hasClass(x,'drag-handle')) && (el.getAttribute('path') || '').match(/[0-9]$/)
         })
-        drake.containers = jb.ui.find(cmp.base,'.jb-drag-parent')
+        drake.containers = jb.ui.find(cmp.base,'.jb-items-parent')
         drake.on('drag', function(el, source) {
           const path = cmp.elemToPath(el)
           el.dragged = { path, expanded: cmp.state.expanded[path]}

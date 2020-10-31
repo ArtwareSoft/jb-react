@@ -1981,7 +1981,25 @@ jb.component('uiTest.infiniteScroll', {
         css.width('100')
       ]
     }),
-    action: runActions(uiAction.scrollBy('.jb-itemlist',80), delay(30),uiAction.scrollBy('.jb-itemlist',100)),
+    action: runActions(uiAction.scrollBy('.jb-itemlist',80)),
+    expectedResult: contains('>10<')
+  })
+})
+
+jb.component('uiTest.infiniteScroll.twice', {
+  impl: uiFrontEndTest({
+    renderDOM: true,
+    control: itemlist({
+      items: range(0, 10),
+      controls: text('%%'),
+      visualSizeLimit: '7',
+      features: [
+        css.height({height: '100', overflow: 'scroll'}),
+        itemlist.infiniteScroll(2),
+        css.width('100')
+      ]
+    }),
+    action: runActions(uiAction.scrollBy('.jb-itemlist',80), delay(30), uiAction.scrollBy('.jb-itemlist',10), delay(30), uiAction.scrollBy('.jb-itemlist',100), delay(30)),
     expectedResult: contains('>10<')
   })
 })

@@ -350,9 +350,9 @@ jb.testers = {
 			const testResultHtml = `<div class="${res.success ? 'success' : 'failure'}"">
 				<a href="${baseUrl}/tests.html?test=${res.id}&show&spy=${spyLogs.join(',')}" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
 				<span> ${res.duration}mSec</span> 
-				<button class="editor" onclick="goto_editor('${res.id}')">src</button>
-				<a class="editor" href="${studioUrl}">studio</a>
-				<button class="editor" onclick="profileSingleTest('${res.id}')">profile</button>
+				<a class="test-button" href="javascript:goto_editor('${res.id}')">src</a>
+				<a class="test-button" href="${studioUrl}">studio</a>
+				<a class="test-button" href="javascript:profileSingleTest('${res.id}')">profile</a>
 				<span>${res.reason||''}</span>
 				</div>`;
 
