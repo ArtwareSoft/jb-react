@@ -23,33 +23,6 @@ jb.component('picklist.init', {
   )
 })
 
-jb.component('picklist.initGroups', {
-  type: 'feature',
-  impl: calcProp({id: 'groups', phase: 20, value: (ctx,{$model, $props}) => {
-    const options = $props.options;
-    const groupsHash = {};
-    const promotedGroups = ($model.promote() || {}).groups || [];
-    const groups = [];
-    options.filter(x=>x.text).forEach(o=>{
-      const groupId = groupOfOpt(o);
-      const group = groupsHash[groupId] || { options: [], text: groupId};
-      if (!groupsHash[groupId]) {
-        groups.push(group);
-        groupsHash[groupId] = group;
-      }
-      group.options.push({text: (o.text||'').split('.').pop(), code: o.code });
-    })
-    groups.sort((p1,p2)=>promotedGroups.indexOf(p2.text) - promotedGroups.indexOf(p1.text));
-    return groups
-
-    function groupOfOpt(opt) {
-      if (!opt.group && opt.text.indexOf('.') == -1)
-        return '---';
-      return opt.group || opt.text.split('.').shift();
-    }
-  }}),
-})
-
 jb.component('picklist.onChange', {
   category: 'picklist:100',
   type: 'feature',
@@ -115,4 +88,31 @@ jb.component('picklist.promote', {
     {id: 'options', as: 'array'}
   ],
   impl: ctx => ctx.params
+})
+
+jb.component('picklist.initGroups', {
+  type: 'feature',
+  impl: calcProp({id: 'groups', phase: 20, value: (ctx,{$model, $props}) => {
+    const options = $props.options;
+    const groupsHash = {};
+    const promotedGroups = ($model.promote() || {}).groups || [];
+    const groups = [];
+    options.filter(x=>x.text).forEach(o=>{
+      const groupId = groupOfOpt(o);
+      const group = groupsHash[groupId] || { options: [], text: groupId};
+      if (!groupsHash[groupId]) {
+        groups.push(group);
+        groupsHash[groupId] = group;
+      }
+      group.options.push({text: (o.text||'').split('.').pop(), code: o.code });
+    })
+    groups.sort((p1,p2)=>promotedGroups.indexOf(p2.text) - promotedGroups.indexOf(p1.text));
+    return groups
+
+    function groupOfOpt(opt) {
+      if (!opt.group && opt.text.indexOf('.') == -1)
+        return '---';
+      return opt.group || opt.text.split('.').shift();
+    }
+  }}),
 })

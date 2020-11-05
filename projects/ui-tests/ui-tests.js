@@ -1,49 +1,3 @@
-jb.component('globals', {
-  watchableData: {}
-})
-
-jb.component('watchablePeople', {
-  watchableData: [
-    {name: 'Homer Simpson - watchable', age: 42, male: true},
-    {name: 'Marge Simpson - watchable', age: 38, male: false},
-    {name: 'Bart Simpson - watchable', age: 12, male: true}
-  ]
-})
-
-jb.component('people', {
-  passiveData: [
-    {name: 'Homer Simpson', age: 42, male: true},
-    {name: 'Marge Simpson', age: 38, male: false},
-    {name: 'Bart Simpson', age: 12, male: true}
-  ]
-})
-
-jb.component('person', {
-  watchableData: {
-    name: 'Homer Simpson',
-    male: true,
-    isMale: 'yes',
-    age: 42
-  }
-})
-
-jb.component('personWithAddress', {
-  watchableData: {
-    name: 'Homer Simpson',
-    address: {city: 'Springfield', street: '742 Evergreen Terrace'}
-  }
-})
-
-jb.component('personWithPrimitiveChildren', {
-  watchableData: {
-    childrenNames: ['Bart','Lisa','Maggie'],
-  }
-})
-
-jb.component('emptyArray', {
-  watchableData: []
-})
-
 jb.component('uiTest.label', {
   impl: uiTest({
     control: text('hello world'),
@@ -649,6 +603,97 @@ jb.component('uiTest.itemlistAddButton', {
       ]
     }),
     expectedResult: contains(['Homer Simpson', 'Bart Simpson'])
+  })
+})
+
+jb.component('uiTest.itemlist.expandToEndOfRow', {
+  impl: uiTest({
+    control: itemlist({
+      items: '%$people%',
+      controls: [
+        text({ text: '%name%', features: feature.expandToEndOfRow('%name%==Homer Simpson')}),
+        text('%age%')
+      ],
+      style: table.plain(),
+      features: table.expandToEndOfRow()
+    }),
+    expectedResult: and(contains('colspan="'),not(contains('>42<')))
+  })
+})
+
+jb.component('uiTest.itemlist.table.MDInplace', {
+  impl: uiTest({
+    control: group({
+      controls: itemlist({
+        items: '%$people%',
+        controls: [
+          group({
+            controls: [
+              editableBoolean({databind: '%$sectionExpanded/{%$index%}%', style: editableBoolean.expandCollapse()}),
+              text('%name%'),
+            ],
+            layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'})
+          }),
+          controlWithCondition('%$sectionExpanded/{%$index%}%', group({ 
+            controls: text('inner text'), 
+            features: feature.expandToEndOfRow('%$sectionExpanded/{%$index%}%')
+          })),
+          text('%age%'),
+          text('%age%')
+        ],
+        style: table.plain(),
+        features: [
+          table.expandToEndOfRow(),
+          watchRef({ref: '%$sectionExpanded%', includeChildren: 'yes' , allowSelfRefresh: true })
+        ]
+      }),
+      features: variable({name: 'sectionExpanded', watchable: true, value: obj() }),
+    }),
+    userInput: userInput.click('i','toggle'),
+    expectedResult: and(contains(['colspan="','inner text']),not(contains('>42<')))
+  })
+})
+
+jb.component('uiTest.itemlist.table.MDInplace.withScroll', {
+  impl: uiFrontEndTest({
+    renderDOM: true,
+    control: group({
+      controls: itemlist({
+        items: '%$people%',
+        visualSizeLimit: 2,
+        controls: [
+          group({
+            controls: [
+              editableBoolean({databind: '%$sectionExpanded/{%$index%}%', style: editableBoolean.expandCollapse()}),
+              text('%name%'),
+            ],
+            layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'})
+          }),
+          controlWithCondition('%$sectionExpanded/{%$index%}%', group({ 
+            controls: text('inner text'), 
+            features: feature.expandToEndOfRow('%$sectionExpanded/{%$index%}%')
+          })),
+          text('%age%'),
+          text('%age%')
+        ],
+        style: table.plain(),
+        features: [
+          table.expandToEndOfRow(),
+          watchRef({ref: '%$sectionExpanded%', includeChildren: 'yes' , allowSelfRefresh: true }),
+          css.height({height: '40', overflow: 'scroll'}),
+          itemlist.infiniteScroll(2),  
+        ]
+      }),
+      features: variable({name: 'sectionExpanded', watchable: true, value: obj() }),
+    }),
+    action: rx.pipe( 
+      source.data(0),
+      rx.do(uiAction.scrollBy('.jb-itemlist',100)),
+      rx.flatMap(source.waitForSelector('.jb-items-parent:nth-child(2)')),
+      rx.do(uiAction.click('i','toggle')),
+      rx.delay(50),
+    ),
+    expectedResult: and(contains(['colspan="','inner text','Bart']),not(contains('>42<')), not(contains(['inner text','inner text'])))
   })
 })
 
@@ -1408,6 +1453,18 @@ jb.component('uiTest.picklistRadio', {
   })
 })
 
+jb.component('uiTest.picklist.mdcSelect', {
+  impl: uiFrontEndTest({
+    control: picklist({
+      title: 'city',
+      databind: '%$personWithAddress/address/city%',
+      options: picklist.optionsByComma('Springfield,New York,Tel Aviv,London'),
+      style: picklist.mdcSelect('200'),
+    }),
+    expectedResult: contains(['Springfield', 'New York'])
+  })
+})
+
 jb.component('uiTest.fieldTitleOfLabel', {
   impl: uiTest({
     control: group({
@@ -1981,7 +2038,7 @@ jb.component('uiTest.infiniteScroll', {
         css.width('100')
       ]
     }),
-    action: runActions(uiAction.scrollBy('.jb-itemlist',80)),
+    action: runActions(uiAction.scrollBy('.jb-itemlist',80), delay(30)),
     expectedResult: contains('>10<')
   })
 })

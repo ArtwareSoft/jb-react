@@ -131,7 +131,7 @@ jb.component('inPlaceEditTest.text', {
     cleanUp: ctx => jb.studio.previewWindow = null,
     renderDOM: true,
     control: text({ text: 'hello world'}),
-    action: runActions(inplaceEdit.activate('uiFrontEndTest~impl~control'),delay(10)),
+    action: runActions(inplaceEdit.activate('inPlaceEditTest.text~impl~control'),delay(10)),
     expectedResult: contains('view_quilt'),
     //contains({text: 'view_quilt', allText: test.dialogContent('inplace-edit-toolbar')})
   })

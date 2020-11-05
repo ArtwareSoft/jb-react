@@ -275,3 +275,19 @@ jb.component('chromeDebugger.refreshAfterSelection', {
         action.refreshCmp('%%')
     )),
 })
+
+jb.component('chromeDebugger.sectionsExpandCollapse',{
+    type: 'group.style',
+    impl: group.sectionsExpandCollapse({
+        autoExpand: true,
+        titleStyle: text.span(),
+        titleGroupStyle: styleWithFeatures(group.div(), features(
+          css.class('expandable-view-title'),
+          css('~ i { margin-top: 5px }'),
+          css('text-transform: capitalize')
+        )),
+        innerGroupStyle: styleWithFeatures(group.div(), features(
+          css.margin({bottom: 5}),
+        ))
+    })
+})

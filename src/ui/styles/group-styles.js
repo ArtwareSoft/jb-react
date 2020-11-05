@@ -190,7 +190,7 @@ jb.component('group.sections', {
   )
 })
 
-jb.component('group.sectionExpandCollopase', {
+jb.component('group.sectionExpandCollapse', {
   type: 'group.style',
   params: [
     {id: 'titleCtrl', type: 'control', dynamic: true, defaultValue: text({text: '%$sectionsModel.title()%', style: header.h2() }) },
@@ -218,7 +218,7 @@ jb.component('group.sectionExpandCollopase', {
   )
 })
 
-jb.component('group.sectionsExpandCollopase', {
+jb.component('group.sectionsExpandCollapse', {
   type: 'group.style',
   params: [
     {id: 'autoExpand', as: 'boolean' },

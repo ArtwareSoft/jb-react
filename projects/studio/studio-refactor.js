@@ -105,7 +105,7 @@ jb.component('studio.extractComponentDialog', {
             picklist({
               title: 'file',
               databind: '%$studio/refactor/file%',
-              options: picklist.options({options: sourceEditor.filesOfProject(), code: ''}),
+              options: picklist.options(sourceEditor.filesOfProject()),
               style: picklist.mdcSelect('200'),
               features: [css('~ .mdc-select__anchor { background-color: white !important }')]
             })

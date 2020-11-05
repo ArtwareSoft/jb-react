@@ -129,7 +129,12 @@ jb.component('studio.eventTracker', {
         items: eventTracker.eventItems('%$studio/eventTrackerQuery%'),
         controls: [
           text('%index%'),
-          eventTracker.ptNameOfUiComp(),
+          eventTracker.expandableComp(),
+          controlWithCondition('%$cmpExpanded/{%index%}%', group({ 
+            controls: eventTracker.compInspector('%cmp%'), 
+            features: feature.expandToEndOfRow('%$cmpExpanded/{%index%}%')
+          })),
+
           text({ text: '%logNames%', features: feature.byCondition(
             inGroup(list('exception','error'), '%logNames%'),
             css.color('var(--jb-error-fg)')
@@ -157,12 +162,15 @@ jb.component('studio.eventTracker', {
             onSelection: runActions(({data}) => jb.frame.console.log(data), eventTracker.highlightEvent('%%'))
           }),
           itemlist.keyboardSelection({}),
-          eventTracker.watchSpy(1000)
+          eventTracker.watchSpy(1000),
+          table.expandToEndOfRow(),
+          watchRef({ref: '%$cmpExpanded%', includeChildren: 'yes' , allowSelfRefresh: true })
         ]
       })
     ],
     features: [
       id('event-tracker'),
+      variable({name: 'cmpExpanded', watchable: true, value: obj() }),
     ]
   })
 })
@@ -210,17 +218,21 @@ jb.component('eventTracker.eventTypes', {
   })
 })
 
-jb.component('eventTracker.ptNameOfUiComp', {
+jb.component('eventTracker.expandableComp', {
   type: 'control',
   impl: group({
     controls: [
       controlWithCondition('%cmp/ctx/profile/$%', group({
-        style: group.sectionExpandCollopase(text('%cmp/ctx/profile/$% %cmp/cmpId%;%cmp/ver%')),
-        controls: editableText({
-          databind: studio.profileAsText('%cmp/ctx/path%'),
-          style: editableText.codemirror({height: '60'}),
-        })
+        controls: [
+          editableBoolean({databind: '%$cmpExpanded/{%index%}%', style: editableBoolean.expandCollapse()}),
+          text('%cmp/ctx/profile/$% %cmp/cmpId%;%cmp/ver%'),
+        ],
+        layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'})
       })),
+      // controlWithCondition('%cmp/ctx/profile/$%', group({
+      //   style: group.sectionExpandCollapse(text('%cmp/ctx/profile/$% %cmp/cmpId%;%cmp/ver%')),
+      //   controls: eventTracker.compInspector('%cmp%')
+      // })),
       controlWithCondition('%cmp/pt%',text('%cmp/pt% %cmp/cmpId%;%cmp/ver%')),
       controlWithCondition('%$cmpElem%',text('%$cmpElem/@cmp-pt% %$cmpElem/@cmp-id%;%$cmpElem/@cmp-ver%')),
     ],
@@ -240,7 +252,7 @@ jb.component('studio.objExpandedAsText', {
     controls: [
       controlWithCondition('%$asText/length% < 20', text('%$asText%')),
       controlWithCondition('%$asText/length% > 19', group({
-        style: group.sectionExpandCollopase(text('%$title%')),
+        style: group.sectionExpandCollapse(text('%$title%')),
         controls: text({
           text: '%$asText%',
           style: text.codemirror({height: '200'}),
@@ -395,7 +407,7 @@ jb.component('studio.sourceCtxView', {
     controls: [
       controlWithCondition('%$stackItems/length% == 0',studio.singleSourceCtxView('%$srcCtx%')),
       controlWithCondition('%$stackItems/length% > 0', group({
-          style: group.sectionExpandCollopase(studio.singleSourceCtxView('%$srcCtx%')),
+          style: group.sectionExpandCollapse(studio.singleSourceCtxView('%$srcCtx%')),
           controls: itemlist({items: '%$stackItems%', controls: studio.singleSourceCtxView('%%')}),
       }))
     ],
@@ -445,4 +457,54 @@ jb.component('chromeDebugger.colors',{
     css('border: 0px;'),
     css('~ option { background: white}')
   )
+})
+
+jb.component('eventTracker.compInspector', {
+  params: [
+    {id: 'cmp'}
+  ],
+  type: 'control',
+  impl: group({
+    controls: group({
+      style: chromeDebugger.sectionsExpandCollapse(),
+      controls: [
+        text('%$cmp/cmpId%;%$cmp/ver% -- %$cmp/ctx/path%', '%$cmp/ctx/profile/$%'),
+        itemlist({
+            title: 'state',
+            items: unique({items: list(keys('%$cmp/state%'),keys('%$elem/_component/state%'))}),
+            controls: [
+             text('%%', ''),
+             text('%$elem/_component/state/{%%}%', 'front end'),
+             text('%$cmp/state/{%%}%', 'back end'),
+            ],
+            style: table.plain(),
+        }),
+//        studio.eventsOfComp('%$cmp/cmpId%'),
+        editableText({
+            title: 'source',
+            databind: studio.profileAsText('%$cmp/ctx/path%'),
+            style: editableText.codemirror({height: '100'})
+        }),
+        itemlist({
+          title: 'methods',
+          items: '%$cmp/method%',
+          controls: [
+            text('%id%', 'method'),
+            studio.sourceCtxView('%ctx%')
+          ],
+          style: table.plain(true)
+        }),
+        tableTree({
+            title: 'rendering props',
+            treeModel: tree.jsonReadOnly('%$cmp/renderProps%'),
+            leafFields: text('%val%', 'value'),
+            chapterHeadline: text(tree.lastPathElement('%path%'))
+        }),
+        //tree('raw', tree.jsonReadOnly('%$cmp%'))
+      ]
+    }),
+    features: [
+      variable('elem', eventTracker.elemOfCmp('%$cmp%')),
+    ]
+  })
 })

@@ -40,6 +40,9 @@ class VNode {
         this.attributes[att.toLowerCase()] = ''+val
         return this
     }
+    removeAttribute(att) {
+        this.attributes && delete this.attributes[att.toLowerCase()]
+    }
     addClass(clz) {
         if (clz.indexOf(' ') != -1) {
             clz.split(' ').filter(x=>x).forEach(cl=>this.addClass(cl))
@@ -132,7 +135,7 @@ function cloneVNode(vdom) {
 }
 
 function vdomDiff(newObj,orig) {
-    const ignoreRegExp = /\$|checked|style|value|parentNode|frontend|__|widget|on-|remoteuri|width|height|top|left/
+    const ignoreRegExp = /\$|checked|style|value|parentNode|frontend|__|widget|on-|remoteuri|width|height|top|left|aria-|tabindex/
     const ignoreValue = /__undefined/
     const ignoreClasses = /selected|mdc-tab-[0-9]+/
     return doDiff(newObj,orig)
@@ -156,7 +159,7 @@ function vdomDiff(newObj,orig) {
             .filter(k => !(Array.isArray(newObj[k]) && newObj[k].length == 0))
             .reduce((acc, key) => {
                 if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key
-                const difference = doDiff(newObj[key], orig[key],attName)
+                const difference = doDiff(newObj[key], orig[key],key)
                 if (jb.isObject(difference) && jb.isEmpty(difference)) return acc // return no diff
                 return { ...acc, [key]: difference } // return updated key
         }, deletedValues)    

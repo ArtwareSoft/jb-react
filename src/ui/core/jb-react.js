@@ -211,11 +211,16 @@ function applyDeltaToVDom(elem,delta) {
     if (delta.children) {
         const toAppend = delta.children.toAppend || []
         const {resetAll, deleteCmp} = delta.children
-        if (resetAll) elem.children = []
+        if (resetAll) {
+            elem.children && elem.children.forEach(ch => ch.parentNode = null)
+            elem.children = []
+        }
         if (deleteCmp) {
             const index = elem.children.findIndex(ch=>ch.getAttribute('cmp-id') == deleteCmp)
-            if (index != -1)
+            if (index != -1) {
+                elem.children[index] && (elem.children[index].parentNode = null)
                 elem.children.splice(index,1)
+            }
         }
         toAppend.forEach(ch => { 
             elem.children = elem.children || []
@@ -353,6 +358,7 @@ Object.assign(jb.ui, {
     handleCmpEvent(ev, specificMethod) {
         specificMethod = specificMethod == 'true' ? true : specificMethod
         const userReq = jb.ui.rawEventToUserRequest(ev,specificMethod)
+        jb.log('handle cmp event',{ev,specificMethod,userReq})
         if (!userReq) return
         if (userReq.widgetId)
             jb.ui.widgetUserRequests.next(userReq)
@@ -427,7 +433,7 @@ Object.assign(jb.ui, {
             if (!ctx)
                 return jb.logError(`no ctx found for method: ${method}`, {ctxIdToRun, elem, data, vars})
     
-            jb.log(`backend method request: ${method}`,{method,ctx,elem,data,vars})
+            jb.log(`backend method request: ${method}`,{cmp: ctx.vars.cmp, method,ctx,elem,data,vars})
             jb.ui.runCtxActionAndUdateCmpState(ctx,data,vars)
         }
     },
@@ -505,7 +511,7 @@ Object.assign(jb.ui, {
         if (!elem || delta._$prevVersion && delta._$prevVersion != elem.getAttribute('cmp-ver')) {
             const reason = elem ? 'unexpected version' : 'elem not found'
             jb.logError(`applyDeltaToCmp: ${reason}`,{reason, delta, ctx, cmpId, elem})
-            return { recover: true, reason }
+            return // { recover: true, reason }
         }
         if (assumedVdom) {
             const actualVdom = elemToVdom(elem)
@@ -515,26 +521,21 @@ Object.assign(jb.ui, {
                 return { recover: true, reason: { diff, description: 'wrong assumed vdom'} }
             }
         }
-        jb.log('applyDelta uiComp',{cmpId, delta, ctx, elem})
-        if (delta._$bySelector)
-            jb.entries(delta._$bySelector).forEach(([selector,innerDelta]) => applyDeltaToElem(jb.ui.findIncludeSelf(elem,selector)[0],innerDelta))
-        else
-            applyDeltaToElem(elem,delta)
-
-        function applyDeltaToElem(elem,delta) {
-            if (elem instanceof jb.ui.VNode) {
-                jb.ui.applyDeltaToVDom(elem, delta)
-                jb.ui.renderingUpdates.next({delta,cmpId,widgetId: ctx.vars.headlessWidgetId})
-            } else if (elem) {
-                jb.ui.applyDeltaToDom(elem, delta)
-                jb.ui.refreshFrontEnd(elem)
-            }
+        const bySelector = delta._$bySelector && Object.keys(delta._$bySelector)[0]
+        const actualElem = bySelector ? jb.ui.find(elem,bySelector)[0] : elem
+        const actualdelta = bySelector ? delta._$bySelector[bySelector] : delta
+        jb.log('applyDelta uiComp',{cmpId, delta, ctx, elem, bySelector, actualElem})
+        if (actualElem instanceof jb.ui.VNode) {
+            jb.ui.applyDeltaToVDom(actualElem, actualdelta)
+            jb.ui.renderingUpdates.next({delta,cmpId,widgetId: ctx.vars.headlessWidgetId})
+        } else if (actualElem) {
+            jb.ui.applyDeltaToDom(actualElem, actualdelta)
+            jb.ui.refreshFrontEnd(actualElem)
         }
     },
     refreshElem(elem, state, options) {
         if (jb.path(elem,'_component.state.frontEndStatus') == 'initializing' || jb.ui.findIncludeSelf(elem,'[__refreshing]')[0]) 
             return jb.logError('circular refresh',{elem, state, options})
-        elem.setAttribute('__refreshing','')
         const cmpId = elem.getAttribute('cmp-id'), cmpVer = +elem.getAttribute('cmp-ver')
         const _ctx = ui.ctxOfElem(elem)
         if (!_ctx) 
@@ -548,8 +549,10 @@ Object.assign(jb.ui, {
         ctx = ctx.setVar('$refreshElemCall',true).setVar('$cmpId', cmpId).setVar('$cmpVer', cmpVer+1) // special vars for refresh
         if (jb.ui.inStudio()) // updating to latest version of profile
             ctx.profile = jb.execInStudio({$: 'studio.val', path: ctx.path}) || ctx.profile
+        elem.setAttribute('__refreshing','')
         const cmp = ctx.profile.$ == 'openDialog' ? ctx.run(dialog.buildComp()) : ctx.runItself()
         jb.log('dom refresh check',{cmp,ctx,elem, state, options})
+        elem.removeAttribute('__refreshing')
 
         if (jb.path(options,'cssOnly')) {
             const existingClass = (elem.className.match(/(w|jb-)[0-9]?-[0-9]+/)||[''])[0]
@@ -567,11 +570,12 @@ Object.assign(jb.ui, {
         const changed_path = watchHandler.removeLinksFromPath(e.insertedPath || watchHandler.pathOfRef(e.ref))
         if (!changed_path) debugger
         //observe="resources://2~name;person~name
-        const findIn = jb.path(e,'srcCtx.vars.headlessWidgetId') || jb.path(e,'srcCtx.vars.testID') ? e.srcCtx : jb.frame.document
-        const elemsToCheck = jb.ui.find(findIn,'[observe]') // top down order
+        const body = jb.path(e,'srcCtx.vars.headlessWidgetId') || jb.path(e,'srcCtx.vars.testID') ? jb.ui.widgetBody(e.srcCtx) : jb.frame.document.body
+        const elemsToCheck = jb.ui.find(body,'[observe]') // top down order
         const elemsToCheckCtxBefore = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
         jb.log('check observableElems',{elemsToCheck,e})
         elemsToCheck.forEach((elem,i) => {
+            if (!jb.ui.parents(elem).find(el=>el == body)) return // elem was detached
             if (elemsToCheckCtxBefore[i] != elem.getAttribute('jb-ctx')) return // the elem was already refreshed during this process, probably by its parent
             let refresh = false, strongRefresh = false, cssOnly = true
             elem.getAttribute('observe').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{

@@ -339,17 +339,6 @@ jb.component('feature.onEsc', {
     impl: feature.onKey('Esc',call('action'))
 })
 
-// jb.component('frontEnd.updateState', {
-//   type: 'rx',
-//   category: 'operator',
-//   description: 'set state for FE',
-//   params: [
-//     {id: 'prop', as: 'string', dynamic: true},
-//     {id: 'value', dynamic: true},
-//   ],
-//   impl: rx.do((ctx,{cmp},{prop,value}) => cmp.state[prop(ctx)] = value(ctx))
-// })
-
 jb.component('frontEnd.selectionKeySourceService', {
   type: 'feature',
   description: 'assign cmp.selectionKeySource with observable for meta-keys, also stops propagation !!!',

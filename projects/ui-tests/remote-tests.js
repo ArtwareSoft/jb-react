@@ -161,6 +161,50 @@ jb.component('remoteTest.twoTierWidget.infiniteScroll', {
   })
 })
 
+jb.component('remoteTest.twoTierWidget.infiniteScroll.MDInplace', {
+  impl: uiFrontEndTest({
+    renderDOM: true,
+    control: widget.twoTierWidget(group({
+      controls: itemlist({
+        items: '%$people%',
+        visualSizeLimit: 2,
+        controls: [
+          group({
+            controls: [
+              editableBoolean({databind: '%$sectionExpanded/{%$index%}%', style: editableBoolean.expandCollapse()}),
+              text('%name%'),
+            ],
+            layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'})
+          }),
+          controlWithCondition('%$sectionExpanded/{%$index%}%', group({ 
+            controls: text('inner text'), 
+            features: feature.expandToEndOfRow('%$sectionExpanded/{%$index%}%')
+          })),
+          text('%age%'),
+          text('%age%')
+        ],
+        style: table.plain(),
+        features: [
+          table.expandToEndOfRow(),
+          watchRef({ref: '%$sectionExpanded%', includeChildren: 'yes' , allowSelfRefresh: true }),
+          css.height({height: '40', overflow: 'scroll'}),
+          itemlist.infiniteScroll(2),  
+        ]
+      }),
+      features: variable({name: 'sectionExpanded', watchable: true, value: obj() }),
+    }),
+    remote.worker({id: 'ui-with-samples', libs: ['common','ui-common','remote','two-tier-widget','../projects/ui-tests/test-data-samples'] })
+    ),
+    action: rx.pipe( 
+      source.waitForSelector('.jb-itemlist'),
+      rx.do(uiAction.scrollBy('.jb-itemlist',100)),
+      rx.do(uiAction.click('i','toggle')),
+      rx.delay(200),
+    ),
+    expectedResult: and(contains(['colspan="','inner text','Bart']),not(contains('>42<')), not(contains(['inner text','inner text'])))
+  })
+})
+
 // jb.component('remoteTest.twoTierWidget.recoverAfterError', {
 //   impl: uiTest({
 //     timeout: 3000,

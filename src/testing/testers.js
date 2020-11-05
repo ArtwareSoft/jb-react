@@ -54,7 +54,7 @@ jb.component('dataTest', {
 				  const expectedResultCtx = new jb.jbCtx(ctx,{ data: value })
 				  const expectedResultRes = expectedResult(expectedResultCtx)
 				  const success = !! (expectedResultRes && !countersErr && !runErr)
-				  jb.log('dataTest testResult',{success,expectedResultRes, runErr, countersErr, expectedResultCtx})
+				  jb.log('data test result',{success,expectedResultRes, runErr, countersErr, expectedResultCtx})
 				  const result = { id, success, reason: countersErr || runErr }
 				  return result
 			  })
@@ -66,7 +66,7 @@ jb.component('dataTest', {
 				  if (ctx.probe || ctx.vars.singleTest) return result
 				  if (ctx.vars.uiTest)
 					result.elem && jb.ui.unmount(result.elem)
-				  return result;
+				  return result
 			  })
 			  .then(result =>
 					  Promise.resolve(!ctx.vars.singleTest && cleanUp())
@@ -232,10 +232,10 @@ jb.component('uiTest.applyVdomDiff', {
 
 function countersErrors(expectedCounters,allowError) {
 	if (!jb.spy) return ''
-	if ((jb.spy.logs.exception || [])[0])
-		return jb.spy.logs.exception[0][0]
-	if (!allowError() && (jb.spy.logs.error || [])[0])
-		return jb.spy.logs.error[0][0]
+	const exception = jb.spy.logs.find(r=>r.logNames.indexOf('exception') != -1)
+	const error = jb.spy.logs.find(r=>r.logNames.indexOf('error') != -1)
+	if (exception) return exception.err
+	if (!allowError() && error) return error.err
 
 	return Object.keys(expectedCounters || {}).map(
 		exp => expectedCounters[exp] != jb.spy.count(exp)

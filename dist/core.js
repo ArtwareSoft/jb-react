@@ -1057,8 +1057,8 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 
 			function filter(set,exp) {
 				return (exp[0] == '!') 
-					? set.filter(rec=>!rec.logNames.match(new RegExp(`\\b${exp.slice(1)}\\b`)))
-					: set.filter(rec=>rec.logNames.match(new RegExp(`\\b${exp}\\b`)))
+					? set.filter(rec=>rec.logNames.toLowerCase().indexOf(exp.slice(1)) == -1)
+					: set.filter(rec=>rec.logNames.toLowerCase().indexOf(exp) != -1)
 			}
 			function unify(set1,set2) {
 				let res = [...set1,...set2].sort((x,y) => x.index < y.index)

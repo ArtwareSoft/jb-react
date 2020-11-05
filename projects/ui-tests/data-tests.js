@@ -6,33 +6,6 @@ jb.component('delayedObj', {
     jb.delay(1).then(_=>obj)
 })
 
-jb.component('person', { watchableData: {
-  name: "Homer Simpson",
-  male: true,
-  isMale: 'yes',
-  age: 42
-}})
-
-jb.component('personWithChildren', { watchableData: {
-  name: "Homer Simpson",
-  children: [{ name: 'Bart' }, { name: 'Lisa' }, { name: 'Maggie' } ],
-  friends: [{ name: 'Barnie' } ],
-}})
-
-jb.component('peopleWithChildren', { watchableData: [
-  {
-    name: 'Homer',
-    children: [{name: 'Bart'}, {name: 'Lisa'}],
-  },
-  {
-    name: 'Marge',
-    children: [{name: 'Bart'}, {name: 'Lisa'}],
-  }
-]
-})
-
-jb.component('stringArray', { watchableData: ['a','b','c']})
-jb.component('stringTree', { watchableData: { node1: ['a','b','c'], node2: ['1','2','3']}})
 
 
 jb.component('test.getAsBool', {
@@ -544,7 +517,8 @@ jb.component('dataTest.asArrayBug', {
   impl: dataTest({
     remark: 'should return array',
     vars: [Var('items', [{id: 1}, {id: 2}])],
-    calculate: ctx => ctx.exp('%$items/id%','array'),
+    calculate: ctx => 
+      ctx.exp('%$items/id%','array'),
     expectedResult: ctx => ctx.data[0] == 1 && !Array.isArray(ctx.data[0])
   })
 })
@@ -562,9 +536,9 @@ jb.component('dataTest.prettyPrintMacroVars', {
   impl: dataTest({
     calculate: ctx => { try {
       const testToTest = 'dataTest.varsCases'
-      const compTxt = jb.prettyPrintComp(testToTest, jb.comps[testToTest])
+      const compTxt = jb.prettyPrintComp(testToTest.replace(/varsCases/,'varsCases2'), jb.comps[testToTest])
       eval(compTxt)
-      return ctx.run(dataTest_asArrayBug())
+      return ctx.run(dataTest_asArrayBug()) // checks for error
         .then(({success}) => success)
       } catch(e) {
         return false

@@ -97,6 +97,7 @@ jb.component('uiAction.setText', {
           const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : ctx.vars.elemToTest;
           jb.ui.findIncludeSelf(elem,'input,textarea').forEach(e=>e.value= value)
           const ev = { type: 'blur', currentTarget: elem, target: {value}}
+          jb.log('test setText',{ev,elem,selector,ctx})
           jb.ui.handleCmpEvent(ev)
       }
 })
@@ -108,6 +109,7 @@ jb.component('uiAction.click', {
     ],
     impl: (ctx,selector) => {
       const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : ctx.vars.elemToTest
+      jb.log('test click',{elem,selector,ctx})
       elem && elem.click()
     }
 })
@@ -126,6 +128,7 @@ jb.component('uiAction.keyboardEvent', {
         const e = new KeyboardEvent(type,{ ctrlKey: ctrl == 'ctrl', altKey: ctrl == 'alt' })
         Object.defineProperty(e, 'keyCode', { get : _ => keyCode })
         Object.defineProperty(e, 'target', { get : _ => elem })
+        jb.log('test keyboardEvent',{e,elem,selector,type,keyCode,ctx})
         elem.dispatchEvent(e)
         //return jb.delay(1);
       }

@@ -33,7 +33,7 @@ jb.component('editableBoolean.checkboxWithLabel', {
 jb.component('editableBoolean.expandCollapse', {
   type: 'editable-boolean.style',
   impl: customStyle({
-    template: (cmp,{databind},h) => h('i',{class:'material-icons noselect', onclick: 'toggle' },
+    template: ({},{databind},h) => h('i',{class:'material-icons noselect', onclick: 'toggle' },
       databind ? 'keyboard_arrow_down' : 'keyboard_arrow_right'),
     css: '{ font-size:16px; cursor: pointer; }',
     features: field.databind()

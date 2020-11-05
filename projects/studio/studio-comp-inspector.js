@@ -7,18 +7,7 @@ jb.component('studio.compInspector', {
   type: 'control',
   impl: group({
     controls: group({
-      style: group.sectionsExpandCollopase({
-        autoExpand: true,
-        titleStyle: text.span(),
-        titleGroupStyle: styleWithFeatures(group.div(), features(
-          css.class('expandable-view-title'),
-          css('~ i { margin-top: 5px }'),
-          css('text-transform: capitalize')
-        )),
-        innerGroupStyle: styleWithFeatures(group.div(), features(
-          css.margin({bottom: 5}),
-        ))
-      }),
+      style: chromeDebugger.sectionsExpandCollapse(),
       controls: [
         text('%$inspectedCmp/cmpId%;%$inspectedCmp/ver% -- %$inspectedCtx/path%', '%$inspectedCtx/profile/$%'),
         itemlist({

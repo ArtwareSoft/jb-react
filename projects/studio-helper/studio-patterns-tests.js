@@ -323,14 +323,21 @@ jb.component('patternsTest.suggestedStyles.text', {
   impl: dataTest({
     vars: [
       Var('extractedCtrl', () => extractedCtrlSimpleText),
-      Var('targetPath', 'studioTest.dragTargetText~impl')
+      Var('targetPath', 'studioTest.dragTargetText~impl'),
+      Var('top',obj())
     ],
     calculate: pipeline(
-      ctx => ctx.run(studio.suggestedStyles('%$extractedCtrl%', '%$targetPath%')),
-      '%control%',
-      property('$'),
+      studio.suggestedStyles('%$extractedCtrl%', '%$targetPath%'),
+      '%control/$%',
       join(',')
     ),
+    runBefore: ctx => {
+      const top = document.createElement('div')
+      jb.ui.renderWidget({$: 'studioTest.dragTargetText'},top)
+      document.body.appendChild(top)
+      ctx.vars.top.res = top
+    },
+    cleanUp: ctx => document.body.removeChild(ctx.vars.top.res),
     expectedResult: equals('text,group')
   })
 })
@@ -349,6 +356,7 @@ jb.component('patternsTest.selectStyle.text', {
       document.body.appendChild(top)
       ctx.vars.top.res = top
     },    
+    cleanUp: ctx => document.body.removeChild(ctx.vars.top.res),
     expectedResult: contains('paste here')
   })
 })

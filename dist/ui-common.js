@@ -1280,7 +1280,7 @@ function vdomDiff(newObj,orig) {
             .filter(k => !(Array.isArray(newObj[k]) && newObj[k].length == 0))
             .reduce((acc, key) => {
                 if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key
-                const difference = doDiff(newObj[key], orig[key],attName)
+                const difference = doDiff(newObj[key], orig[key],key)
                 if (jb.isObject(difference) && jb.isEmpty(difference)) return acc // return no diff
                 return { ...acc, [key]: difference } // return updated key
         }, deletedValues)    
@@ -1504,11 +1504,16 @@ function applyDeltaToVDom(elem,delta) {
     if (delta.children) {
         const toAppend = delta.children.toAppend || []
         const {resetAll, deleteCmp} = delta.children
-        if (resetAll) elem.children = []
+        if (resetAll) {
+            elem.children.forEach(ch => ch.parentNode = null)
+            elem.children = []
+        }
         if (deleteCmp) {
             const index = elem.children.findIndex(ch=>ch.getAttribute('cmp-id') == deleteCmp)
-            if (index != -1)
+            if (index != -1) {
+                elem.children[i] && (elem.children[i].parentNode = null)
                 elem.children.splice(index,1)
+            }
         }
         toAppend.forEach(ch => { 
             elem.children = elem.children || []
@@ -1646,6 +1651,7 @@ Object.assign(jb.ui, {
     handleCmpEvent(ev, specificMethod) {
         specificMethod = specificMethod == 'true' ? true : specificMethod
         const userReq = jb.ui.rawEventToUserRequest(ev,specificMethod)
+        jb.log('handle cmp event',{ev,specificMethod,userReq})
         if (!userReq) return
         if (userReq.widgetId)
             jb.ui.widgetUserRequests.next(userReq)
@@ -1720,7 +1726,7 @@ Object.assign(jb.ui, {
             if (!ctx)
                 return jb.logError(`no ctx found for method: ${method}`, {ctxIdToRun, elem, data, vars})
     
-            jb.log(`backend method request: ${method}`,{method,ctx,elem,data,vars})
+            jb.log(`backend method request: ${method}`,{cmp: ctx.vars.cmp, method,ctx,elem,data,vars})
             jb.ui.runCtxActionAndUdateCmpState(ctx,data,vars)
         }
     },
@@ -1798,7 +1804,7 @@ Object.assign(jb.ui, {
         if (!elem || delta._$prevVersion && delta._$prevVersion != elem.getAttribute('cmp-ver')) {
             const reason = elem ? 'unexpected version' : 'elem not found'
             jb.logError(`applyDeltaToCmp: ${reason}`,{reason, delta, ctx, cmpId, elem})
-            return { recover: true, reason }
+            return // { recover: true, reason }
         }
         if (assumedVdom) {
             const actualVdom = elemToVdom(elem)
@@ -1808,20 +1814,16 @@ Object.assign(jb.ui, {
                 return { recover: true, reason: { diff, description: 'wrong assumed vdom'} }
             }
         }
-        jb.log('applyDelta uiComp',{cmpId, delta, ctx, elem})
-        if (delta._$bySelector)
-            jb.entries(delta._$bySelector).forEach(([selector,innerDelta]) => applyDeltaToElem(jb.ui.findIncludeSelf(elem,selector)[0],innerDelta))
-        else
-            applyDeltaToElem(elem,delta)
-
-        function applyDeltaToElem(elem,delta) {
-            if (elem instanceof jb.ui.VNode) {
-                jb.ui.applyDeltaToVDom(elem, delta)
-                jb.ui.renderingUpdates.next({delta,cmpId,widgetId: ctx.vars.headlessWidgetId})
-            } else if (elem) {
-                jb.ui.applyDeltaToDom(elem, delta)
-                jb.ui.refreshFrontEnd(elem)
-            }
+        const bySelector = delta._$bySelector && Object.keys(delta._$bySelector)[0]
+        const actualElem = bySelector ? jb.ui.find(elem,bySelector)[0] : elem
+        const actualdelta = bySelector ? delta._$bySelector[bySelector] : delta
+        jb.log('applyDelta uiComp',{cmpId, delta, ctx, elem, bySelector, actualElem})
+        if (actualElem instanceof jb.ui.VNode) {
+            jb.ui.applyDeltaToVDom(actualElem, actualdelta)
+            jb.ui.renderingUpdates.next({delta,cmpId,widgetId: ctx.vars.headlessWidgetId})
+        } else if (actualElem) {
+            jb.ui.applyDeltaToDom(actualElem, actualdelta)
+            jb.ui.refreshFrontEnd(actualElem)
         }
     },
     refreshElem(elem, state, options) {
@@ -1860,11 +1862,12 @@ Object.assign(jb.ui, {
         const changed_path = watchHandler.removeLinksFromPath(e.insertedPath || watchHandler.pathOfRef(e.ref))
         if (!changed_path) debugger
         //observe="resources://2~name;person~name
-        const findIn = jb.path(e,'srcCtx.vars.headlessWidgetId') || jb.path(e,'srcCtx.vars.testID') ? e.srcCtx : jb.frame.document
-        const elemsToCheck = jb.ui.find(findIn,'[observe]') // top down order
+        const body = jb.path(e,'srcCtx.vars.headlessWidgetId') || jb.path(e,'srcCtx.vars.testID') ? jb.ui.widgetBody(e.srcCtx) : jb.frame.document.body
+        const elemsToCheck = jb.ui.find(body,'[observe]') // top down order
         const elemsToCheckCtxBefore = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
         jb.log('check observableElems',{elemsToCheck,e})
         elemsToCheck.forEach((elem,i) => {
+            if (!jb.ui.parents(elem).find(el=>el == body)) return // elem was detached
             if (elemsToCheckCtxBefore[i] != elem.getAttribute('jb-ctx')) return // the elem was already refreshed during this process, probably by its parent
             let refresh = false, strongRefresh = false, cssOnly = true
             elem.getAttribute('observe').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{
@@ -3380,17 +3383,6 @@ jb.component('feature.onEsc', {
     ],
     impl: feature.onKey('Esc',call('action'))
 })
-
-// jb.component('frontEnd.updateState', {
-//   type: 'rx',
-//   category: 'operator',
-//   description: 'set state for FE',
-//   params: [
-//     {id: 'prop', as: 'string', dynamic: true},
-//     {id: 'value', dynamic: true},
-//   ],
-//   impl: rx.do((ctx,{cmp},{prop,value}) => cmp.state[prop(ctx)] = value(ctx))
-// })
 
 jb.component('frontEnd.selectionKeySourceService', {
   type: 'feature',
@@ -4996,16 +4988,6 @@ jb.component('itemlist.noContainer', {
   impl: () => ({ extendCtx: ctx => ctx.setVars({itemlistCntr: null}) })
 })
 
-jb.component('itemlist.initContainerWithItems', {
-  type: 'feature',
-  category: 'itemlist:20',
-  impl: calcProp({
-    id: 'updateItemlistCntr',
-    value: action.if('%$itemlistCntr%', writeValue('%$itemlistCntr.items%', '%$$props.items%')),
-    phase: 100
-  })
-})
-
 jb.component('itemlist.init', {
   type: 'feature',
   impl: features(
@@ -5013,14 +4995,17 @@ jb.component('itemlist.init', {
     calcProp('visualSizeLimit', ({},{$model,$state}) => Math.max($model.visualSizeLimit,$state.visualSizeLimit ||0)),
     calcProp('items', itemlist.calcSlicedItems()),
     calcProp('ctrls', (ctx,{$model,$props}) => {
-      const controlsOfItem = (item,index) => $model.controls(ctx.setVars({index}).setVar($model.itemVariable,item).setData(item)).filter(x=>x)
+      const controlsOfItem = (item,index) => $model.controls(ctx.setVars({index: index + (ctx.vars.$baseIndex || 0)}).setVar($model.itemVariable,item).setData(item)).filter(x=>x)
       return $props.items.map((item,i)=> controlsOfItem(item,i+1)).filter(x=>x.length > 0)
     }),
-    itemlist.initContainerWithItems()
+    calcProp({
+      id: 'updateItemlistCntr',
+      value: action.if('%$itemlistCntr%', writeValue('%$itemlistCntr.items%', '%$$props.items%')),
+      phase: 100
+    })
   )
 })
-
-// ****************** Selection ******************
+;
 
 jb.component('itemlist.selection', {
   type: 'feature',
@@ -5134,6 +5119,53 @@ jb.component('itemlist.keyboardSelection', {
   )
 })
 
+jb.component('itemlist.indexOfElem', {
+  type: 'data:0',
+  description: 'also supports multiple elements',
+  params: [
+    {id: 'elem', defaultValue: '%%'}
+  ],
+  impl: ({},el) => {
+      const elem = jb.ui.closest(el,'.jb-item')
+      return elem && jb.ui.indexOfElement(elem)
+  }
+})
+
+jb.component('itemlist.indexToData', {
+  type: 'data:0',
+  params: [
+    {id: 'index', as: 'number', defaultValue: '%%'}
+  ],
+  impl: (ctx,index) => jb.val(jb.path(ctx.vars.cmp,'renderProps.items') || [])[index]
+})
+
+jb.component('itemlist.findSelectionSource', {
+  type: 'data:0',
+  impl: ctx => {
+    const {cmp,itemlistCntr} = ctx.vars
+    const srcCtxId = itemlistCntr && itemlistCntr.selectionKeySourceCmp
+    return [jb.ui.parentCmps(cmp.base).find(_cmp=>_cmp.selectionKeySource), document.querySelector(`[ctxId="${srcCtxId}"]`)]
+      .map(el => el && el._component && el._component.selectionKeySource).filter(x=>x)[0]
+  }
+})
+
+jb.component('itemlist.nextSelected', {
+  type: 'data:0',
+  params: [
+    {id: 'diff', as: 'number'},
+    {id: 'elementFilter', dynamic: 'true', defaultValue: true}
+  ],
+  impl: (ctx,diff,elementFilter) => {
+    const {cmp} = ctx.vars
+    const parent = cmp.base.querySelector('.jb-items-parent') || cmp.base
+    const indeces = Array.from(parent.children).map((el,i) => [el,i])
+      .filter(([el]) => elementFilter(ctx.setData(el))).map(([el,i]) => i)
+
+    const selectedIndex = indeces.indexOf(+cmp.state.selected) + diff
+    return indeces[Math.min(indeces.length-1,Math.max(0,selectedIndex))]
+  }
+});
+
 jb.component('itemlist.dragAndDrop', {
   type: 'feature',
   impl: features(
@@ -5198,68 +5230,7 @@ jb.component('itemlist.dragHandle', {
   type: 'feature',
   impl: features(css.class('drag-handle'), css('{cursor: pointer}'))
 })
-
-jb.component('itemlist.shownOnlyOnItemHover', {
-  type: 'feature',
-  category: 'itemlist:75',
-  description: 'put on the control inside the item which is shown when the mouse enters the line',
-  impl: css.class('jb-shown-on-item-hover')
-})
-
-jb.component('itemlist.divider', {
-  type: 'feature',
-  params: [
-    {id: 'space', as: 'number', defaultValue: 5}
-  ],
-  impl: css('>.jb-item:not(:first-of-type) { border-top: 1px solid rgba(0,0,0,0.12); padding-top: %$space%px }')
-})
-
-jb.component('itemlist.indexOfElem', {
-  type: 'data:0',
-  description: 'also supports multiple elements',
-  params: [
-    {id: 'elem', defaultValue: '%%'}
-  ],
-  impl: ({},el) => {
-      const elem = jb.ui.closest(el,'.jb-item')
-      return elem && jb.ui.indexOfElement(elem)
-  }
-})
-
-jb.component('itemlist.indexToData', {
-  type: 'data:0',
-  params: [
-    {id: 'index', as: 'number', defaultValue: '%%'}
-  ],
-  impl: (ctx,index) => jb.val(jb.path(ctx.vars.cmp,'renderProps.items') || [])[index]
-})
-
-jb.component('itemlist.findSelectionSource', {
-  type: 'data:0',
-  impl: ctx => {
-    const {cmp,itemlistCntr} = ctx.vars
-    const srcCtxId = itemlistCntr && itemlistCntr.selectionKeySourceCmp
-    return [jb.ui.parentCmps(cmp.base).find(_cmp=>_cmp.selectionKeySource), document.querySelector(`[ctxId="${srcCtxId}"]`)]
-      .map(el => el && el._component && el._component.selectionKeySource).filter(x=>x)[0]
-  }
-})
-
-jb.component('itemlist.nextSelected', {
-  type: 'data:0',
-  params: [
-    {id: 'diff', as: 'number'},
-    {id: 'elementFilter', dynamic: 'true', defaultValue: true}
-  ],
-  impl: (ctx,diff,elementFilter) => {
-    const {cmp} = ctx.vars
-    const parent = cmp.base.querySelector('.jb-items-parent') || cmp.base
-    const indeces = Array.from(parent.children).map((el,i) => [el,i])
-      .filter(([el]) => elementFilter(ctx.setData(el))).map(([el,i]) => i)
-
-    const selectedIndex = indeces.indexOf(+cmp.state.selected) + diff
-    return indeces[Math.min(indeces.length-1,Math.max(0,selectedIndex))]
-  }
-});
+;
 
 jb.component('itemlist.infiniteScroll', {
   type: 'feature',
@@ -5267,14 +5238,7 @@ jb.component('itemlist.infiniteScroll', {
     {id: 'pageSize', as: 'number', defaultValue: 2}
   ],
   impl: features(
-    method('fetchNextPage', runActions(
-      Var('delta', itemlist.deltaOfNextPage('%$pageSize%')),
-      action.applyDeltaToCmp({
-          delta: '%$delta%', 
-          cmpId: '%$cmp/cmpId%', 
-          assumedVdom: (ctx,{cmp}) => jb.ui.elemToVdom(jb.ui.elemOfCmp(ctx,cmp.cmpId))
-      })
-    )),
+    method('fetchNextPage', itemlist.applyDeltaOfNextPage('%$pageSize%')),
     feature.userEventProps('elem.scrollTop,elem.scrollHeight'),
     frontEnd.flow(
       rx.merge(
@@ -5296,6 +5260,34 @@ jb.component('itemlist.infiniteScroll', {
   )
 })
 
+jb.component('itemlist.applyDeltaOfNextPage', {
+  type: 'action',
+  params: [
+    {id: 'pageSize', as: 'number', defaultValue: 2}
+  ],
+  impl: (ctx,pageSize) => {
+    const $props = ctx.vars.$props, cmp = ctx.vars.cmp, $state = cmp.state, cmpId = cmp.cmpId
+    $state.visualSizeLimit = $state.visualSizeLimit || $props.visualSizeLimit
+    const nextPageItems = $props.allItems.slice($state.visualSizeLimit, $state.visualSizeLimit + pageSize)
+    $state.visualSizeLimit = $state.visualSizeLimit + nextPageItems.length
+    if (nextPageItems.length == 0) return null
+    const deltaCalcCtx = cmp.ctx.setVar('$refreshElemCall',true)
+      .setVars({$cmpId: cmpId, $cmpVer: cmp.ver+1, $baseIndex: $state.visualSizeLimit - nextPageItems.length})
+      .ctx({profile: {...cmp.ctx.profile, items: () => nextPageItems}, path: ''}) // change the profile to return itemsToAppend
+    const deltaCmp = deltaCalcCtx.runItself()
+    const vdomOfDeltaItems = deltaCmp.renderVdom()
+    cmp.renderProps.items = [...cmp.renderProps.items, ...deltaCmp.renderProps.items]
+    cmp.renderProps.ctrls = [...cmp.renderProps.ctrls, ...deltaCmp.renderProps.ctrls]
+    const itemsParent = jb.ui.find(vdomOfDeltaItems,'.jb-items-parent')[0] || vdomOfDeltaItems
+    const appendDelta = { children: {toAppend: jb.ui.stripVdom(itemsParent).children } }
+    const deltaOfItems = itemsParent == vdomOfDeltaItems ? appendDelta : { _$bySelector: {'.jb-items-parent': appendDelta} }
+    const deltaOfCmp = { attributes: { $scrollDown: true, $__state : JSON.stringify($state) } }
+
+    jb.ui.applyDeltaToCmp({ctx,delta: deltaOfItems,cmpId,assumedVdom: jb.ui.elemToVdom(jb.ui.elemOfCmp(ctx,cmpId))})
+    jb.ui.applyDeltaToCmp({ctx,delta: deltaOfCmp,cmpId})
+  }
+})
+
 jb.component('itemlist.deltaOfItems', {
   impl: ctx => {
     const cmp = ctx.vars.cmp
@@ -5303,35 +5295,6 @@ jb.component('itemlist.deltaOfItems', {
     const delta = jb.ui.compareVdom(oldVdom,newVdom)
     cmp.oldVdom = newVdom
     jb.log('uiComp itemlist delta incrementalFromRx', {cmp, newVdom, oldVdom, delta})
-    return delta
-  }
-})
-
-jb.component('itemlist.deltaOfNextPage', {
-  params: [
-    {id: 'pageSize', as: 'number', defaultValue: 2}
-  ],
-  impl: (ctx,pageSize) => {
-    const $props = ctx.vars.$props, cmp = ctx.vars.cmp, $state = cmp.state
-    $state.visualSizeLimit = $state.visualSizeLimit || $props.visualSizeLimit
-    const nextPageItems = $props.allItems.slice($state.visualSizeLimit, $state.visualSizeLimit + pageSize)
-    $state.visualSizeLimit = $state.visualSizeLimit + nextPageItems.length
-    if (nextPageItems.length == 0) return null
-    const deltaCalcCtx = cmp.ctx.setVar('$refreshElemCall',true)
-      .setVar('$cmpId', cmp.cmpId).setVar('$cmpVer', cmp.ver+1)
-      .ctx({profile: {...cmp.ctx.profile, items: () => nextPageItems}, path: ''}) // change the profile to return itemsToAppend
-    const vdomOfDeltaItems = deltaCalcCtx.runItself().renderVdom() 
-    const itemsParent = jb.ui.find(vdomOfDeltaItems,'.jb-items-parent')[0]
-    const delta = itemsParent ? {
-        _$prevVersion: cmp.ver,
-        _$bySelector: {
-            '.jb-items-parent': jb.ui.compareVdom({},itemsParent),
-            ':scope': { attributes: { $scrollDown: true }}
-    }} : {
-      children: {toAppend: jb.ui.stripVdom(vdomOfDeltaItems).children }, 
-      attributes: { $scrollDown: true },
-      _$prevVersion: cmp.ver,
-    }
     return delta
   }
 })
@@ -5572,6 +5535,28 @@ jb.component('search.fuse', {
 	impl: ctx => ({ fuseOptions: true, ...ctx.params})
 })
 ;
+
+jb.component('table.expandToEndOfRow', {
+  type: 'feature',
+  description: 'allows expandToEndOfRow in itemlist with table style',
+  impl: templateModifier( ({},{$props,vdom}) => ((vdom.querySelector('.jb-items-parent') || vdom).children || []).forEach((tr,i) =>{
+        const expandIndex = $props.ctrls[i] ? $props.ctrls[i].findIndex(ctrl=> ctrl.renderProps.expandToEndOfRow) : -1
+        if (expandIndex != -1) {
+            tr.children = tr.children.slice(0,expandIndex+1)
+            tr.children[expandIndex].setAttribute('colspan','10') //($props.ctrls[0] || []).length - expandIndex)
+        }
+    })),
+})
+
+jb.component('feature.expandToEndOfRow', {
+    type: 'feature',
+    description: 'put on a field to expandToEndOfRow by condition',
+    params: [
+        {id: 'condition', as: 'boolean', dynamic: true}
+    ],
+    impl: calcProp('expandToEndOfRow','%$condition()%')
+})
+  ;
 
 jb.ns('menuStyle,menuSeparator,mdc,icon,key')
 
@@ -7469,7 +7454,7 @@ jb.component('group.sections', {
   )
 })
 
-jb.component('group.sectionExpandCollopase', {
+jb.component('group.sectionExpandCollapse', {
   type: 'group.style',
   params: [
     {id: 'titleCtrl', type: 'control', dynamic: true, defaultValue: text({text: '%$sectionsModel.title()%', style: header.h2() }) },
@@ -7497,7 +7482,7 @@ jb.component('group.sectionExpandCollopase', {
   )
 })
 
-jb.component('group.sectionsExpandCollopase', {
+jb.component('group.sectionsExpandCollapse', {
   type: 'group.style',
   params: [
     {id: 'autoExpand', as: 'boolean' },
@@ -7538,6 +7523,21 @@ jb.component('group.sectionsExpandCollopase', {
 ;
 
 jb.ns('mdcStyle,table')
+
+jb.component('itemlist.shownOnlyOnItemHover', {
+  type: 'feature',
+  category: 'itemlist:75',
+  description: 'put on the control inside the item which is shown when the mouse enters the line',
+  impl: css.class('jb-shown-on-item-hover')
+})
+
+jb.component('itemlist.divider', {
+  type: 'feature',
+  params: [
+    {id: 'space', as: 'number', defaultValue: 5}
+  ],
+  impl: css('>.jb-item:not(:first-of-type) { border-top: 1px solid rgba(0,0,0,0.12); padding-top: %$space%px }')
+})
 
 jb.component('itemlist.ulLi', {
   type: 'itemlist.style',
@@ -7946,7 +7946,7 @@ jb.component('editableBoolean.checkboxWithLabel', {
 jb.component('editableBoolean.expandCollapse', {
   type: 'editable-boolean.style',
   impl: customStyle({
-    template: (cmp,{databind},h) => h('i',{class:'material-icons noselect', onclick: 'toggle' },
+    template: ({},{databind},h) => h('i',{class:'material-icons noselect', onclick: 'toggle' },
       databind ? 'keyboard_arrow_down' : 'keyboard_arrow_right'),
     css: '{ font-size:16px; cursor: pointer; }',
     features: field.databind()
