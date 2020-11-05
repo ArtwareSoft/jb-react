@@ -120,11 +120,17 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'node_modules/codemirror/addon/scroll/annotatescrollbar.js',
         'node_modules/codemirror/addon/search/matchesonscrollbar.js',
 
+        'node_modules/codemirror/addon/fold/foldcode.js',
         'node_modules/codemirror/addon/fold/foldgutter.js',
+        'node_modules/codemirror/addon/fold/brace-fold.js',
+        'node_modules/codemirror/addon/fold/xml-fold.js',
+        'node_modules/codemirror/addon/fold/indent-fold.js',
+
         'node_modules/codemirror/addon/selection/active-line.js',
       ],
       'codemirror-css': [
         'node_modules/codemirror/addon/dialog/dialog.css',
+        'node_modules/codemirror/addon/fold/foldgutter.css',
         'node_modules/codemirror/addon/search/matchesonscrollbar.css',
         'node_modules/codemirror/lib/codemirror.css',
         'node_modules/codemirror/theme/solarized.css',

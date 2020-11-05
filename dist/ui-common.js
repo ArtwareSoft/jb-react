@@ -1164,6 +1164,9 @@ class VNode {
         this.attributes[att.toLowerCase()] = ''+val
         return this
     }
+    removeAttribute(att) {
+        this.attributes && delete this.attributes[att.toLowerCase()]
+    }
     addClass(clz) {
         if (clz.indexOf(' ') != -1) {
             clz.split(' ').filter(x=>x).forEach(cl=>this.addClass(cl))
@@ -1256,7 +1259,7 @@ function cloneVNode(vdom) {
 }
 
 function vdomDiff(newObj,orig) {
-    const ignoreRegExp = /\$|checked|style|value|parentNode|frontend|__|widget|on-|remoteuri|width|height|top|left/
+    const ignoreRegExp = /\$|checked|style|value|parentNode|frontend|__|widget|on-|remoteuri|width|height|top|left|aria-|tabindex/
     const ignoreValue = /__undefined/
     const ignoreClasses = /selected|mdc-tab-[0-9]+/
     return doDiff(newObj,orig)
@@ -1505,13 +1508,13 @@ function applyDeltaToVDom(elem,delta) {
         const toAppend = delta.children.toAppend || []
         const {resetAll, deleteCmp} = delta.children
         if (resetAll) {
-            elem.children.forEach(ch => ch.parentNode = null)
+            elem.children && elem.children.forEach(ch => ch.parentNode = null)
             elem.children = []
         }
         if (deleteCmp) {
             const index = elem.children.findIndex(ch=>ch.getAttribute('cmp-id') == deleteCmp)
             if (index != -1) {
-                elem.children[i] && (elem.children[i].parentNode = null)
+                elem.children[index] && (elem.children[index].parentNode = null)
                 elem.children.splice(index,1)
             }
         }
@@ -1829,7 +1832,6 @@ Object.assign(jb.ui, {
     refreshElem(elem, state, options) {
         if (jb.path(elem,'_component.state.frontEndStatus') == 'initializing' || jb.ui.findIncludeSelf(elem,'[__refreshing]')[0]) 
             return jb.logError('circular refresh',{elem, state, options})
-        elem.setAttribute('__refreshing','')
         const cmpId = elem.getAttribute('cmp-id'), cmpVer = +elem.getAttribute('cmp-ver')
         const _ctx = ui.ctxOfElem(elem)
         if (!_ctx) 
@@ -1843,8 +1845,10 @@ Object.assign(jb.ui, {
         ctx = ctx.setVar('$refreshElemCall',true).setVar('$cmpId', cmpId).setVar('$cmpVer', cmpVer+1) // special vars for refresh
         if (jb.ui.inStudio()) // updating to latest version of profile
             ctx.profile = jb.execInStudio({$: 'studio.val', path: ctx.path}) || ctx.profile
+        elem.setAttribute('__refreshing','')
         const cmp = ctx.profile.$ == 'openDialog' ? ctx.run(dialog.buildComp()) : ctx.runItself()
         jb.log('dom refresh check',{cmp,ctx,elem, state, options})
+        elem.removeAttribute('__refreshing')
 
         if (jb.path(options,'cssOnly')) {
             const existingClass = (elem.className.match(/(w|jb-)[0-9]?-[0-9]+/)||[''])[0]
@@ -3151,7 +3155,7 @@ jb.component('frontEnd.onRefresh', {
 jb.component('frontEnd.init', {
     type: 'feature',
     category: 'front-end',
-    description: 'initializes the front end, mount, component did update',
+    description: 'initializes the front end, mount, component did update. runs after props',
     params: [
       {id: 'action', type: 'action', mandatory: true, dynamic: true}
     ],
@@ -3161,7 +3165,7 @@ jb.component('frontEnd.init', {
 jb.component('frontEnd.prop', {
     type: 'feature',
     category: 'front-end',
-    description: 'assign front end property (calculated using the limited FE context)',
+    description: 'assign front end property (calculated using the limited FE context). runs before init',
     params: [
       {id: 'id', as: 'string', mandatory: true },
       {id: 'value', mandatory: true, dynamic: true}
@@ -6074,33 +6078,6 @@ jb.component('picklist.init', {
   )
 })
 
-jb.component('picklist.initGroups', {
-  type: 'feature',
-  impl: calcProp({id: 'groups', phase: 20, value: (ctx,{$model, $props}) => {
-    const options = $props.options;
-    const groupsHash = {};
-    const promotedGroups = ($model.promote() || {}).groups || [];
-    const groups = [];
-    options.filter(x=>x.text).forEach(o=>{
-      const groupId = groupOfOpt(o);
-      const group = groupsHash[groupId] || { options: [], text: groupId};
-      if (!groupsHash[groupId]) {
-        groups.push(group);
-        groupsHash[groupId] = group;
-      }
-      group.options.push({text: (o.text||'').split('.').pop(), code: o.code });
-    })
-    groups.sort((p1,p2)=>promotedGroups.indexOf(p2.text) - promotedGroups.indexOf(p1.text));
-    return groups
-
-    function groupOfOpt(opt) {
-      if (!opt.group && opt.text.indexOf('.') == -1)
-        return '---';
-      return opt.group || opt.text.split('.').shift();
-    }
-  }}),
-})
-
 jb.component('picklist.onChange', {
   category: 'picklist:100',
   type: 'feature',
@@ -6166,6 +6143,33 @@ jb.component('picklist.promote', {
     {id: 'options', as: 'array'}
   ],
   impl: ctx => ctx.params
+})
+
+jb.component('picklist.initGroups', {
+  type: 'feature',
+  impl: calcProp({id: 'groups', phase: 20, value: (ctx,{$model, $props}) => {
+    const options = $props.options;
+    const groupsHash = {};
+    const promotedGroups = ($model.promote() || {}).groups || [];
+    const groups = [];
+    options.filter(x=>x.text).forEach(o=>{
+      const groupId = groupOfOpt(o);
+      const group = groupsHash[groupId] || { options: [], text: groupId};
+      if (!groupsHash[groupId]) {
+        groups.push(group);
+        groupsHash[groupId] = group;
+      }
+      group.options.push({text: (o.text||'').split('.').pop(), code: o.code });
+    })
+    groups.sort((p1,p2)=>promotedGroups.indexOf(p2.text) - promotedGroups.indexOf(p1.text));
+    return groups
+
+    function groupOfOpt(opt) {
+      if (!opt.group && opt.text.indexOf('.') == -1)
+        return '---';
+      return opt.group || opt.text.split('.').shift();
+    }
+  }}),
 })
 ;
 

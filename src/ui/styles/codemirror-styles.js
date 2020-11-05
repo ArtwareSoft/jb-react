@@ -34,20 +34,8 @@ jb.component('editableText.codemirror', {
 	frontEnd.var('_enableFullScreen', '%$enableFullScreen%'),
 	method('onCtrlEnter', call('onCtrlEnter')),
 	textEditor.cmEnrichUserEvent(),
-    frontEnd.init( (ctx,{cmp,el,cm_settings,_enableFullScreen,text}) =>{
-		if (jb.ui.hasClass(el, 'jb-textarea-alternative-for-codemirror')) return
-		const adjustedExtraKeys = jb.objFromEntries(jb.entries(cm_settings.extraKeys).map(e=>[
-			e[0], _ => ctx.setVar('ev',jb.ui.buildUserEvent({},el)).run(action.runBEMethod(e[1]))
-		]))
-		const settings = {...cm_settings, value: text, theme: 'solarized light', autofocus: false,
-			extraKeys: {
-				'Ctrl-Space': 'autocomplete',
-				'Ctrl-Enter': () => jb.ui.runBEMethod(el,'onCtrlEnter'),
-				...adjustedExtraKeys
-			}
-		}
-		injectCodeMirror(ctx,cmp,el,settings,_enableFullScreen)
-	}),
+    frontEnd.init( (ctx,vars) => ! jb.ui.hasClass(vars.el, 'jb-textarea-alternative-for-codemirror')
+		 && injectCodeMirror(ctx,vars)),
 	frontEnd.onRefresh(({},{text,cmp}) => cmp.editor.setValue(text)),
 	method('writeText',writeValue('%$$model/databind()%','%%')),
 	frontEnd.flow(
@@ -60,6 +48,36 @@ jb.component('editableText.codemirror', {
     css(({},{},{height}) => `{width: 100% }
 		>div { box-shadow: none !important; ${jb.ui.propWithUnits('height',height)} !important}`)
   )
+})
+
+jb.component('codemirror.textEditorKeys', {
+	type: 'feature',
+	impl: frontEnd.prop('extraCmSettings', ({},{cmp,el}) => ({...cmp.extraCmSettings, ...{
+		extraKeys: {
+			'Ctrl-Space': 'autocomplete',
+			'Ctrl-Enter': () => jb.ui.runBEMethod(el,'onCtrlEnter'),
+		},
+	}})),
+})
+
+jb.component('codemirror.fold', {
+	type: 'feature',
+	impl: frontEnd.prop('extraCmSettings', ({},{cmp}) => ({...cmp.extraCmSettings, ...{
+		extraKeys: {
+			'Ctrl-Q': () => cmp.editor.foldCode(cmp.editor.getCursor())
+		},
+		lineWrapping: true,
+		foldGutter: true,			
+		gutters: [ 'CodeMirror-foldgutter' ]
+	}})),
+})
+
+jb.component('codemirror.lineNumbers', {
+	type: 'feature',
+	impl: frontEnd.prop('extraCmSettings', ({},{cmp}) => ({...cmp.extraCmSettings, ...{
+		lineNumbers: true,
+		gutters: ['CodeMirror-linenumbers' ]
+	}})),
 })
 
 jb.component('textEditor.cmEnrichUserEvent', {
@@ -83,7 +101,14 @@ jb.component('textEditor.cmEnrichUserEvent', {
     )
 })
 
-function injectCodeMirror(ctx,cmp,el,settings,_enableFullScreen) {
+function injectCodeMirror(ctx,{text,cmp,el,cm_settings,_enableFullScreen}) {
+	const _extraKeys = { ...cm_settings.extraKeys, ...jb.path(cmp.extraCmSettings,'extraKeys')}
+	const extraKeys = jb.objFromEntries(jb.entries(_extraKeys).map(e=>[
+		e[0], (''+e[1]).replace(/\s/g,'').indexOf('()=>') == 0 ? e[1]
+			: _ => ctx.setVar('ev',jb.ui.buildUserEvent({},el)).run(action.runBEMethod(e[1]))
+	]))
+	const gutters = [ ...(cm_settings.gutters || []), ...(jb.path(cmp.extraCmSettings,'gutters') || []) ]
+	const settings = {...cm_settings, ...cmp.extraCmSettings, value: text, autofocus: false, extraKeys, gutters }
 	cmp.editor = CodeMirror(el, settings)
 	cmp.editor.getWrapperElement().setAttribute('jb_external',true)
 	jb.ui.addClass(cmp.editor.getWrapperElement(),'autoResizeInDialog')
@@ -172,10 +197,7 @@ jb.component('text.codemirror', {
 		...cm_settings, lineWrapping, lineNumbers, readOnly: true, mode: mode || 'javascript',
 	})),
 	frontEnd.var('_enableFullScreen', '%$enableFullScreen%'),
-    frontEnd.init( (ctx,{cmp,el,cm_settings,_enableFullScreen,text}) => {
-		const settings = {...cm_settings, value: text, theme: 'solarized light',	autofocus: false}
-		injectCodeMirror(ctx,cmp,el,settings,_enableFullScreen)
-	}),
+    frontEnd.init( (ctx,vars) => injectCodeMirror(ctx,vars)),
 	frontEnd.onRefresh(({},{text,cmp}) => cmp.editor.setValue(text)),	
     css(({},{},{height}) => `{width: 100%}
 		>div { box-shadow: none !important; ${jb.ui.propWithUnits('height',height)} !important}`)

@@ -1352,18 +1352,23 @@ jb.component('uiTest.codeMirror', {
   impl: uiTest({
     control: group({
       vars: [
-        Var('js', {'$': 'object', text: 'function f1() { return 15 }'}),
+        Var('js', {'$': 'object', text: 'function f1() { \nreturn 15 \n}'}),
         Var('css', {'$': 'object', text: '{ width: 15px; }'}),
         Var('html', {'$': 'object', text: '<div><span>hello</span></div>'})
       ],
       controls: [
         editableText({
           databind: '%$js/text%',
-          style: editableText.codemirror({mode: 'javascript'})
+          style: editableText.codemirror({mode: 'javascript'}),
+          features: codemirror.fold()
         }),
         editableText({
           databind: '%$css/text%',
-          style: editableText.codemirror({mode: 'css'})
+          style: editableText.codemirror({mode: 'css'}),
+          features: [
+            codemirror.fold(),
+            codemirror.lineNumbers()
+          ]
         }),
         editableText({
           databind: '%$html/text%',

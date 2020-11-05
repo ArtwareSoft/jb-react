@@ -256,6 +256,7 @@ jb.component('studio.objExpandedAsText', {
         controls: text({
           text: '%$asText%',
           style: text.codemirror({height: '200'}),
+          features: codemirror.fold()
         }),    
       }))
     ],
@@ -483,7 +484,8 @@ jb.component('eventTracker.compInspector', {
         editableText({
             title: 'source',
             databind: studio.profileAsText('%$cmp/ctx/path%'),
-            style: editableText.codemirror({height: '100'})
+            style: editableText.codemirror({height: '100'}),
+            features: codemirror.fold()            
         }),
         itemlist({
           title: 'methods',

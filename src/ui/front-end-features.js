@@ -106,7 +106,7 @@ jb.component('frontEnd.onRefresh', {
 jb.component('frontEnd.init', {
     type: 'feature',
     category: 'front-end',
-    description: 'initializes the front end, mount, component did update',
+    description: 'initializes the front end, mount, component did update. runs after props',
     params: [
       {id: 'action', type: 'action', mandatory: true, dynamic: true}
     ],
@@ -116,7 +116,7 @@ jb.component('frontEnd.init', {
 jb.component('frontEnd.prop', {
     type: 'feature',
     category: 'front-end',
-    description: 'assign front end property (calculated using the limited FE context)',
+    description: 'assign front end property (calculated using the limited FE context). runs before init',
     params: [
       {id: 'id', as: 'string', mandatory: true },
       {id: 'value', mandatory: true, dynamic: true}

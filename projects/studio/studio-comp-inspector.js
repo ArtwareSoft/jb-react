@@ -25,7 +25,8 @@ jb.component('studio.compInspector', {
         editableText({
             title: 'source',
             databind: studio.profileAsText('%$inspectedCtx/path%'),
-            style: editableText.codemirror({height: '100'})
+            style: editableText.codemirror({height: '100'}),
+            features: codemirror.fold()
         }),
         itemlist({
           title: 'methods',
@@ -109,7 +110,6 @@ jb.component('studio.eventsOfComp', {
           items: '%$events%',
           controls: [
             text('%index%'),
-            eventTracker.ptNameOfUiComp(),
             text({ text: '%logNames%', features: feature.byCondition(
               inGroup(list('exception','error'), '%logNames%'),
               css.color('var(--jb-error-fg)')
