@@ -36,7 +36,7 @@ jb.component('multiSelect.modelAsBooleanRef',{
 jb.component('multiSelect.choiceList', {
     type: 'multiSelect.style',
     params: [
-      {id: 'choiceStyle', type: 'editable-boolean.style', dynamic: true, defaultValue: editableBoolean.checkboxWithTitle()},
+      {id: 'choiceStyle', type: 'editable-boolean.style', dynamic: true, defaultValue: editableBoolean.checkboxWithLabel()},
       {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.ulLi()},
     ],
     impl: styleByControl(

@@ -1223,7 +1223,7 @@ jb.component('uiTest.editableBoolean.allStyles', {
         }),
         editableBoolean({
           databind: '%$person/male%',
-          style: editableBoolean.checkboxWithTitle(),
+          style: editableBoolean.checkboxWithLabel(),
           title: 'gender',
           textForTrue: 'male',
           textForFalse: 'female'
@@ -1267,7 +1267,7 @@ jb.component('uiTest.editableBooleanSettings', {
       controls: [
         editableBoolean({
           databind: '%$person/male%',
-          style: editableBoolean.checkboxWithTitle(),
+          style: editableBoolean.checkboxWithLabel(),
           title: 'male',
           textForTrue: 'male',
           textForFalse: 'female'
@@ -1306,7 +1306,7 @@ jb.component('uiTest.expandCollapseWithDefaultCollapse', {
       editableBoolean({
         databind: '%$default%',
         title: 'default value for expanded',
-        style: editableBoolean.checkboxWithTitle(),
+        style: editableBoolean.checkboxWithLabel(),
         features: id('default')
       }),
       group({
@@ -1349,7 +1349,8 @@ jb.component('uiTest.editableBoolean.expandCollapseWithDefaultCollapse', {
 })
 
 jb.component('uiTest.codeMirror', {
-  impl: uiTest({
+  impl: uiFrontEndTest({
+    renderDOM: true,
     control: group({
       vars: [
         Var('js', {'$': 'object', text: 'function f1() { \nreturn 15 \n}'}),
@@ -1869,7 +1870,7 @@ jb.component('uiTest.checkBoxWithText', {
       controls: [
         editableBoolean({
           databind: '%$person/male%',
-          style: editableBoolean.checkboxWithTitle(),
+          style: editableBoolean.checkboxWithLabel(),
           textForTrue: 'male',
           textForFalse: 'girl',
           features: id('male')
@@ -1990,7 +1991,7 @@ jb.component('uiTest.watchableParentRefreshMaskChildren', {
     control: group({controls: text('%$person/name%'), features: watchRef('%$person/name%')}),
     action: writeValue('%$person/name%', 'hello'),
     expectedResult: contains('hello'),
-    expectedCounters: {'refresh observableElems': 1}
+    expectedCounters: {'refresh from observable elements': 1}
   })
 })
 

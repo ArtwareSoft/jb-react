@@ -276,11 +276,12 @@ jb.component('chromeDebugger.refreshAfterSelection', {
     )),
 })
 
-jb.component('chromeDebugger.sectionsExpandCollapse',{
+jb.component('chromeDebugger.sectionsExpandCollapse', {
     type: 'group.style',
     impl: group.sectionsExpandCollapse({
         autoExpand: true,
         titleStyle: text.span(),
+        toggleStyle: editableBoolean.expandCollapseWithUnicodeChars(),
         titleGroupStyle: styleWithFeatures(group.div(), features(
           css.class('expandable-view-title'),
           css('~ i { margin-top: 5px }'),
@@ -290,4 +291,9 @@ jb.component('chromeDebugger.sectionsExpandCollapse',{
           css.margin({bottom: 5}),
         ))
     })
+})
+
+jb.component('chromeDebugger.toggleStyle', {
+  type: 'editable-boolean.style',
+  impl: editableBoolean.expandCollapseWithUnicodeChars()
 })

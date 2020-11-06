@@ -42,7 +42,7 @@ jb.component('picklist.optionsByComma', {
     {id: 'allowEmptyValue', type: 'boolean'}
   ],
   impl: (ctx,options,allowEmptyValue) => {
-    const emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
+    const emptyValue = allowEmptyValue ? [{code:'',text:''}] : [];
     return emptyValue.concat((options||'').split(',').map(code=> ({ code: code, text: code })));
   }
 })
@@ -57,7 +57,7 @@ jb.component('picklist.options', {
     {id: 'allowEmptyValue', type: 'boolean'}
   ],
   impl: (ctx,options,code,text,icon,allowEmptyValue) => {
-    const emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
+    const emptyValue = allowEmptyValue ? [{code:'',text:''}] : [];
     return emptyValue.concat(options().map(option => ({ code: code(ctx.setData(option)), text: text(ctx.setData(option)), icon: icon(ctx.setData(option)) })));
   }
 })

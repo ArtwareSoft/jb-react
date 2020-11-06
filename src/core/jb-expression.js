@@ -93,7 +93,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
         return typeof ret === 'function' && invokeFunc ? ret(ctx) : ret
       }
       const obj = jb.val(input)
-      if (subExp == 'length' && obj && typeof obj.length != 'undefined')
+      if (subExp == 'length' && obj && typeof obj.length == 'number')
         return obj.length
       if (Array.isArray(obj) && isNaN(Number(subExp)))
         return [].concat.apply([],obj.map(item=>pipe(item,subExp,last,false,refHandler)).filter(x=>x!=null))

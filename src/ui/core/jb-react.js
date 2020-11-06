@@ -102,6 +102,7 @@ function applyNewVdom(elem,vdomAfter,{strongRefresh, ctx} = {}) {
         const delta = compareVdom(elem,vdomAfter)
         const assumedVdom = JSON.parse(JSON.stringify(jb.ui.stripVdom(elem)))
         if (elem != vdomAfter) { // update the elem
+            ;(elem.children ||[]).forEach(ch=>ch.parentNode = null)
             Object.keys(elem).filter(x=>x !='parentNode').forEach(k=>delete elem[k])
             Object.assign(elem,vdomAfter)
             ;(vdomAfter.children ||[]).forEach(ch=>ch.parentNode = elem)
@@ -392,7 +393,7 @@ Object.assign(jb.ui, {
         const elemProps = (elem.getAttribute('usereventprops') || '').split(',').filter(x=>x).filter(x=>x.split('.')[0] == 'elem').map(x=>x.split('.')[1])
         ;['type','keyCode','ctrlKey','altKey','clientX','clientY', ...evProps].forEach(prop=> ev[prop] != null && (userEvent.ev[prop] = ev[prop]))
         ;['id', 'class', ...elemProps].forEach(prop=>userEvent.elem[prop] = elem.getAttribute(prop))
-        elem._component && elem._component.enrichUserEvent(ev,userEvent)
+        jb.path(elem,'_component.enrichUserEvent') && elem._component.enrichUserEvent(ev,userEvent)
         if (ev.fixedTarget) userEvent.elem = jb.ui.calcElemProps(ev.fixedTarget) // enrich UserEvent can 'fix' the target, e.g. picking the selected node in tree
         return userEvent
     },
@@ -551,17 +552,18 @@ Object.assign(jb.ui, {
             ctx.profile = jb.execInStudio({$: 'studio.val', path: ctx.path}) || ctx.profile
         elem.setAttribute('__refreshing','')
         const cmp = ctx.profile.$ == 'openDialog' ? ctx.run(dialog.buildComp()) : ctx.runItself()
-        jb.log('dom refresh check',{cmp,ctx,elem, state, options})
-        elem.removeAttribute('__refreshing')
+        jb.log('refresh elem start',{cmp,ctx,elem, state, options})
 
         if (jb.path(options,'cssOnly')) {
             const existingClass = (elem.className.match(/(w|jb-)[0-9]?-[0-9]+/)||[''])[0]
             const cssStyleElem = Array.from(document.querySelectorAll('style')).map(el=>({el,txt: el.innerText})).filter(x=>x.txt.indexOf(existingClass + ' ') != -1)[0].el
-            jb.log('dom refresh css',{cmp, lines: cmp.cssLines,ctx,elem, state, options})
-            return jb.ui.hashCss(cmp.calcCssLines(),cmp.ctx,{existingClass, cssStyleElem})
+            jb.log('refresh element css only',{cmp, lines: cmp.cssLines,ctx,elem, state, options})
+            jb.ui.hashCss(cmp.calcCssLines(),cmp.ctx,{existingClass, cssStyleElem})
+        } else {
+            jb.log('do refresh element',{cmp,ctx,elem, state, options})
+            cmp && applyNewVdom(elem, h(cmp), {strongRefresh, ctx})
         }
-        jb.log('dom refresh',{cmp,ctx,elem, state, options})
-        cmp && applyNewVdom(elem, h(cmp), {strongRefresh, ctx})
+        elem.removeAttribute('__refreshing')
         jb.ui.refreshNotification.next({cmp,ctx,elem, state, options})
         //jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
     },
@@ -573,30 +575,34 @@ Object.assign(jb.ui, {
         const body = jb.path(e,'srcCtx.vars.headlessWidgetId') || jb.path(e,'srcCtx.vars.testID') ? jb.ui.widgetBody(e.srcCtx) : jb.frame.document.body
         const elemsToCheck = jb.ui.find(body,'[observe]') // top down order
         const elemsToCheckCtxBefore = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
-        jb.log('check observableElems',{elemsToCheck,e})
+        const originatingCmpId = jb.path(e.srcCtx, 'vars.cmp.cmpId')
+        jb.log('refresh check observable elements',{originatingCmpId,elemsToCheck,e})
         elemsToCheck.forEach((elem,i) => {
-            if (!jb.ui.parents(elem).find(el=>el == body)) return // elem was detached
-            if (elemsToCheckCtxBefore[i] != elem.getAttribute('jb-ctx')) return // the elem was already refreshed during this process, probably by its parent
+            const cmpId = elem.getAttribute('cmp-id')
+            if (!jb.ui.parents(elem).find(el=>el == body))
+                return jb.log('observable elem was detached in refresh process',{originatingCmpId,cmpId,elem})
+            if (elemsToCheckCtxBefore[i] != elem.getAttribute('jb-ctx')) 
+                return jb.log('observable elem was refreshed from top in refresh process',{originatingCmpId,cmpId,elem})
             let refresh = false, strongRefresh = false, cssOnly = true
             elem.getAttribute('observe').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{
-                const cmpId = jb.path(e.srcCtx, 'vars.cmp.cmpId')
-                if (!obs.allowSelfRefresh && jb.ui.findIncludeSelf(elem,`[cmp-id="${cmpId}"]`)[0]) 
-                    return jb.log('blocking self refresh observableElems',{cmpId,elem, obs,e})
+                if (!obs.allowSelfRefresh && jb.ui.findIncludeSelf(elem,`[cmp-id="${originatingCmpId}"]`)[0]) 
+                    return jb.log('blocking self refresh observableElems',{cmpId,originatingCmpId,elem, obs,e})
                 const obsPath = watchHandler.removeLinksFromPath(watchHandler.pathOfRef(obs.ref))
                 if (!obsPath)
-                    return jb.logError('observer ref path is empty',cmpId,obs,e)
+                    return jb.logError('observer ref path is empty',{originatingCmpId,cmpId,obs,e})
                 strongRefresh = strongRefresh || obs.strongRefresh
                 cssOnly = cssOnly && obs.cssOnly
                 const diff = ui.comparePaths(changed_path, obsPath)
                 const isChildOfChange = diff == 1
                 const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
                 const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
-                if (diff == -1 || diff == 0 || includeChildrenYes || includeChildrenStructure) {
-                    jb.log('refresh from observableElems',{cmpId,elem,ctx: e.srcCtx,obs,e})
+                if (diff == -1 || diff == 0 || includeChildrenYes || includeChildrenStructure)
                     refresh = true
-                }
             })
-            refresh && ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly})
+            if (refresh) {
+                jb.log('refresh from observable elements',{cmpId,originatingCmpId,elem,ctx: e.srcCtx,e})
+                refresh && ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly})
+            }
         })
 
         function observerFromStr(obsStr) {

@@ -1,4 +1,4 @@
-jb.ns('chromeDebugger,editableBoolean,eventTracker')
+jb.ns('chromeDebugger,eventTracker')
 
 Object.assign(jb.ui, {
   getInspectedJb: ctx => {
@@ -134,6 +134,26 @@ jb.component('studio.eventTracker', {
             controls: eventTracker.compInspector('%cmp%'), 
             features: feature.expandToEndOfRow('%$cmpExpanded/{%index%}%')
           })),
+          controlWithCondition(and('%m/d%','%m/t%==1'), group({
+            controls: [
+              editableBoolean({databind: '%$payloadExpanded/{%index%}%', style: chromeDebugger.toggleStyle()}),
+              text('%$contentType% %$direction% %m/cbId% (%$payload/length%) %m/$%: %m/t%'),
+            ],
+            layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'}),
+            features: [
+              variable('direction', If(contains({allText: '%logNames%', text: 'received'}),'🡸','🡺')),
+              variable('contentType', If('%m/d/data/css%','css', If('%m/d/data/delta%','delta','%m/d/data/$%'))),
+              variable('payload', prettyPrint('%m/d%'))
+            ]
+          })),
+          controlWithCondition('%$payloadExpanded/{%index%}%', group({ 
+            controls: text({
+              text: prettyPrint('%m/d%'),
+              style: text.codemirror({height: '200'}),
+              features: [codemirror.fold(), css('min-width: 1200px; font-size: 130%')]
+            }), 
+            features: feature.expandToEndOfRow('%$payloadExpanded/{%index%}%')
+          })),
 
           text({ text: '%logNames%', features: feature.byCondition(
             inGroup(list('exception','error'), '%logNames%'),
@@ -143,7 +163,7 @@ jb.component('studio.eventTracker', {
           studio.objExpandedAsText('%stack%','stack'),
 
           controlWithCondition('%m%',text('%m/$%: %m/t%, %m/cbId%')),
-          studio.objExpandedAsText('%m/d%','payload'),
+//          studio.objExpandedAsText('%m/d%','payload'),
           studio.lowFootprintObj('%delta%','delta'),
           studio.lowFootprintObj('%vdom%','vdom'),
           studio.lowFootprintObj('%ref%','ref'),
@@ -164,13 +184,15 @@ jb.component('studio.eventTracker', {
           itemlist.keyboardSelection({}),
           eventTracker.watchSpy(1000),
           table.expandToEndOfRow(),
-          watchRef({ref: '%$cmpExpanded%', includeChildren: 'yes' , allowSelfRefresh: true })
+          watchRef({ref: '%$cmpExpanded%', includeChildren: 'yes' , allowSelfRefresh: true }),
+          watchRef({ref: '%$payloadExpanded%', includeChildren: 'yes' , allowSelfRefresh: true })
         ]
       })
     ],
     features: [
       id('event-tracker'),
       variable({name: 'cmpExpanded', watchable: true, value: obj() }),
+      variable({name: 'payloadExpanded', watchable: true, value: obj() }),
     ]
   })
 })
@@ -224,15 +246,11 @@ jb.component('eventTracker.expandableComp', {
     controls: [
       controlWithCondition('%cmp/ctx/profile/$%', group({
         controls: [
-          editableBoolean({databind: '%$cmpExpanded/{%index%}%', style: editableBoolean.expandCollapse()}),
+          editableBoolean({databind: '%$cmpExpanded/{%index%}%', style: chromeDebugger.toggleStyle()}),
           text('%cmp/ctx/profile/$% %cmp/cmpId%;%cmp/ver%'),
         ],
         layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'})
       })),
-      // controlWithCondition('%cmp/ctx/profile/$%', group({
-      //   style: group.sectionExpandCollapse(text('%cmp/ctx/profile/$% %cmp/cmpId%;%cmp/ver%')),
-      //   controls: eventTracker.compInspector('%cmp%')
-      // })),
       controlWithCondition('%cmp/pt%',text('%cmp/pt% %cmp/cmpId%;%cmp/ver%')),
       controlWithCondition('%$cmpElem%',text('%$cmpElem/@cmp-pt% %$cmpElem/@cmp-id%;%$cmpElem/@cmp-ver%')),
     ],
@@ -480,7 +498,6 @@ jb.component('eventTracker.compInspector', {
             ],
             style: table.plain(),
         }),
-//        studio.eventsOfComp('%$cmp/cmpId%'),
         editableText({
             title: 'source',
             databind: studio.profileAsText('%$cmp/ctx/path%'),

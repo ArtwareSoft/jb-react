@@ -7,25 +7,27 @@ jb.component('editableBoolean.checkbox', {
   })
 })
 
-jb.component('editableBoolean.checkboxWithTitle', {
+jb.component('editableBoolean.checkboxWithLabel', {
   type: 'editable-boolean.style',
   impl: customStyle({
-    template: ({},{title,databind},h) => h('div',{}, [h('input', { type: 'checkbox',
-        ...(databind && {checked: ''}), onchange: 'toggle', onkeyup: 'toggleByKey'  }), title()]),
+    template: ({},{title,databind,fieldId},h) => h('div',{},[ 
+      h('input', { type: 'checkbox', ...(databind && {checked: ''}), id: "switch_"+fieldId, onchange: 'toggle', onkeyup: 'toggleByKey' }),
+      h('label',{for: "switch_"+fieldId },title())
+     ]),
     features: field.databind()
   })
 })
 
-jb.component('editableBoolean.checkboxWithLabel', {
+jb.component('editableBoolean.expandCollapseWithUnicodeChars', {
   type: 'editable-boolean.style',
+  params: [
+    {id: 'toExpandSign', as: 'string', defaultValue: '⯈'},
+    {id: 'toCollapseSign', as: 'string', defaultValue: '▼'},
+  ],
   impl: customStyle({
-    template: ({},{title,databind,fieldId},h) => h('div',{},[
-        h('input', { type: 'checkbox', id: "switch_"+fieldId,
-          ...(databind && {checked: ''}),
-          onchange: 'toggle',
-          onkeyup: 'toggleByKey'  },),
-        h('label',{for: "switch_"+fieldId },title())
-    ]),
+    template: ({},{databind,toExpandSign,toCollapseSign},h) => 
+      h('span',{ onclick: 'toggle' }, databind ? toCollapseSign : toExpandSign),
+    css: '{cursor: pointer; opacity: 0.6; user-select: none}',
     features: field.databind()
   })
 })
@@ -35,7 +37,7 @@ jb.component('editableBoolean.expandCollapse', {
   impl: customStyle({
     template: ({},{databind},h) => h('i',{class:'material-icons noselect', onclick: 'toggle' },
       databind ? 'keyboard_arrow_down' : 'keyboard_arrow_right'),
-    css: '{ font-size:16px; cursor: pointer; }',
+    css: '{ font-size:16px; cursor: pointer }',
     features: field.databind()
   })
 })
@@ -48,7 +50,7 @@ jb.component('editableBoolean.mdcXV', {
     {id: 'noIcon', as: 'string', mandatory: true, defaultValue: 'close'}
   ],
   impl: customStyle({
-    template: (cmp,{title,databind,yesIcon,noIcon},h) => h('button',{
+    template: ({},{title,databind,yesIcon,noIcon},h) => h('button',{
           class: ['mdc-icon-button material-icons',databind && 'raised mdc-icon-button--on'].filter(x=>x).join(' '),
           title: title(), tabIndex: -1, onclick: 'toggle', onkeyup: 'toggleByKey'},[
             h('i',{class:'material-icons mdc-icon-button__icon mdc-icon-button__icon--on'}, yesIcon),
@@ -144,7 +146,7 @@ jb.component('editableBoolean.mdcCheckBox', {
 jb.component('editableBoolean.picklist', {
   type: 'editable-boolean.style',
   params: [
-    {id: 'picklistStyle', type: 'picklist.style', dynamic: true },
+    {id: 'picklistStyle', type: 'picklist.style', defaultValue: picklist.native(), dynamic: true },
   ],
   impl: styleByControl(
     picklist({
@@ -153,6 +155,7 @@ jb.component('editableBoolean.picklist', {
         obj(prop('text','%$editableBooleanModel/textForTrue()%'),prop('code',true)),
         obj(prop('text','%$editableBooleanModel/textForFalse()%'),prop('code',false))),
       style: call('picklistStyle'),
+      features: picklist.onChange(writeValue('%$editableBooleanModel/databind()%',If('%%==true',true,false))) // convert to boolean
     }),
     'editableBooleanModel'
   )

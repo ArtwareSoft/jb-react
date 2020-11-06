@@ -1398,6 +1398,7 @@ function applyNewVdom(elem,vdomAfter,{strongRefresh, ctx} = {}) {
         const delta = compareVdom(elem,vdomAfter)
         const assumedVdom = JSON.parse(JSON.stringify(jb.ui.stripVdom(elem)))
         if (elem != vdomAfter) { // update the elem
+            ;(elem.children ||[]).forEach(ch=>ch.parentNode = null)
             Object.keys(elem).filter(x=>x !='parentNode').forEach(k=>delete elem[k])
             Object.assign(elem,vdomAfter)
             ;(vdomAfter.children ||[]).forEach(ch=>ch.parentNode = elem)
@@ -1688,7 +1689,7 @@ Object.assign(jb.ui, {
         const elemProps = (elem.getAttribute('usereventprops') || '').split(',').filter(x=>x).filter(x=>x.split('.')[0] == 'elem').map(x=>x.split('.')[1])
         ;['type','keyCode','ctrlKey','altKey','clientX','clientY', ...evProps].forEach(prop=> ev[prop] != null && (userEvent.ev[prop] = ev[prop]))
         ;['id', 'class', ...elemProps].forEach(prop=>userEvent.elem[prop] = elem.getAttribute(prop))
-        elem._component && elem._component.enrichUserEvent(ev,userEvent)
+        jb.path(elem,'_component.enrichUserEvent') && elem._component.enrichUserEvent(ev,userEvent)
         if (ev.fixedTarget) userEvent.elem = jb.ui.calcElemProps(ev.fixedTarget) // enrich UserEvent can 'fix' the target, e.g. picking the selected node in tree
         return userEvent
     },
@@ -1847,17 +1848,18 @@ Object.assign(jb.ui, {
             ctx.profile = jb.execInStudio({$: 'studio.val', path: ctx.path}) || ctx.profile
         elem.setAttribute('__refreshing','')
         const cmp = ctx.profile.$ == 'openDialog' ? ctx.run(dialog.buildComp()) : ctx.runItself()
-        jb.log('dom refresh check',{cmp,ctx,elem, state, options})
-        elem.removeAttribute('__refreshing')
+        jb.log('refresh elem start',{cmp,ctx,elem, state, options})
 
         if (jb.path(options,'cssOnly')) {
             const existingClass = (elem.className.match(/(w|jb-)[0-9]?-[0-9]+/)||[''])[0]
             const cssStyleElem = Array.from(document.querySelectorAll('style')).map(el=>({el,txt: el.innerText})).filter(x=>x.txt.indexOf(existingClass + ' ') != -1)[0].el
-            jb.log('dom refresh css',{cmp, lines: cmp.cssLines,ctx,elem, state, options})
-            return jb.ui.hashCss(cmp.calcCssLines(),cmp.ctx,{existingClass, cssStyleElem})
+            jb.log('refresh element css only',{cmp, lines: cmp.cssLines,ctx,elem, state, options})
+            jb.ui.hashCss(cmp.calcCssLines(),cmp.ctx,{existingClass, cssStyleElem})
+        } else {
+            jb.log('do refresh element',{cmp,ctx,elem, state, options})
+            cmp && applyNewVdom(elem, h(cmp), {strongRefresh, ctx})
         }
-        jb.log('dom refresh',{cmp,ctx,elem, state, options})
-        cmp && applyNewVdom(elem, h(cmp), {strongRefresh, ctx})
+        elem.removeAttribute('__refreshing')
         jb.ui.refreshNotification.next({cmp,ctx,elem, state, options})
         //jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
     },
@@ -1869,30 +1871,34 @@ Object.assign(jb.ui, {
         const body = jb.path(e,'srcCtx.vars.headlessWidgetId') || jb.path(e,'srcCtx.vars.testID') ? jb.ui.widgetBody(e.srcCtx) : jb.frame.document.body
         const elemsToCheck = jb.ui.find(body,'[observe]') // top down order
         const elemsToCheckCtxBefore = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
-        jb.log('check observableElems',{elemsToCheck,e})
+        const originatingCmpId = jb.path(e.srcCtx, 'vars.cmp.cmpId')
+        jb.log('refresh check observable elements',{originatingCmpId,elemsToCheck,e})
         elemsToCheck.forEach((elem,i) => {
-            if (!jb.ui.parents(elem).find(el=>el == body)) return // elem was detached
-            if (elemsToCheckCtxBefore[i] != elem.getAttribute('jb-ctx')) return // the elem was already refreshed during this process, probably by its parent
+            const cmpId = elem.getAttribute('cmp-id')
+            if (!jb.ui.parents(elem).find(el=>el == body))
+                return jb.log('observable elem was detached in refresh process',{originatingCmpId,cmpId,elem})
+            if (elemsToCheckCtxBefore[i] != elem.getAttribute('jb-ctx')) 
+                return jb.log('observable elem was refreshed from top in refresh process',{originatingCmpId,cmpId,elem})
             let refresh = false, strongRefresh = false, cssOnly = true
             elem.getAttribute('observe').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{
-                const cmpId = jb.path(e.srcCtx, 'vars.cmp.cmpId')
-                if (!obs.allowSelfRefresh && jb.ui.findIncludeSelf(elem,`[cmp-id="${cmpId}"]`)[0]) 
-                    return jb.log('blocking self refresh observableElems',{cmpId,elem, obs,e})
+                if (!obs.allowSelfRefresh && jb.ui.findIncludeSelf(elem,`[cmp-id="${originatingCmpId}"]`)[0]) 
+                    return jb.log('blocking self refresh observableElems',{cmpId,originatingCmpId,elem, obs,e})
                 const obsPath = watchHandler.removeLinksFromPath(watchHandler.pathOfRef(obs.ref))
                 if (!obsPath)
-                    return jb.logError('observer ref path is empty',cmpId,obs,e)
+                    return jb.logError('observer ref path is empty',{originatingCmpId,cmpId,obs,e})
                 strongRefresh = strongRefresh || obs.strongRefresh
                 cssOnly = cssOnly && obs.cssOnly
                 const diff = ui.comparePaths(changed_path, obsPath)
                 const isChildOfChange = diff == 1
                 const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
                 const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
-                if (diff == -1 || diff == 0 || includeChildrenYes || includeChildrenStructure) {
-                    jb.log('refresh from observableElems',{cmpId,elem,ctx: e.srcCtx,obs,e})
+                if (diff == -1 || diff == 0 || includeChildrenYes || includeChildrenStructure)
                     refresh = true
-                }
             })
-            refresh && ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly})
+            if (refresh) {
+                jb.log('refresh from observable elements',{cmpId,originatingCmpId,elem,ctx: e.srcCtx,e})
+                refresh && ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly})
+            }
         })
 
         function observerFromStr(obsStr) {
@@ -6097,7 +6103,7 @@ jb.component('picklist.optionsByComma', {
     {id: 'allowEmptyValue', type: 'boolean'}
   ],
   impl: (ctx,options,allowEmptyValue) => {
-    const emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
+    const emptyValue = allowEmptyValue ? [{code:'',text:''}] : [];
     return emptyValue.concat((options||'').split(',').map(code=> ({ code: code, text: code })));
   }
 })
@@ -6112,7 +6118,7 @@ jb.component('picklist.options', {
     {id: 'allowEmptyValue', type: 'boolean'}
   ],
   impl: (ctx,options,code,text,icon,allowEmptyValue) => {
-    const emptyValue = allowEmptyValue ? [{code:'',value:''}] : [];
+    const emptyValue = allowEmptyValue ? [{code:'',text:''}] : [];
     return emptyValue.concat(options().map(option => ({ code: code(ctx.setData(option)), text: text(ctx.setData(option)), icon: icon(ctx.setData(option)) })));
   }
 })
@@ -6211,7 +6217,7 @@ jb.component('multiSelect.modelAsBooleanRef',{
 jb.component('multiSelect.choiceList', {
     type: 'multiSelect.style',
     params: [
-      {id: 'choiceStyle', type: 'editable-boolean.style', dynamic: true, defaultValue: editableBoolean.checkboxWithTitle()},
+      {id: 'choiceStyle', type: 'editable-boolean.style', dynamic: true, defaultValue: editableBoolean.checkboxWithLabel()},
       {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true, defaultValue: itemlist.ulLi()},
     ],
     impl: styleByControl(
@@ -7924,25 +7930,27 @@ jb.component('editableBoolean.checkbox', {
   })
 })
 
-jb.component('editableBoolean.checkboxWithTitle', {
+jb.component('editableBoolean.checkboxWithLabel', {
   type: 'editable-boolean.style',
   impl: customStyle({
-    template: ({},{title,databind},h) => h('div',{}, [h('input', { type: 'checkbox',
-        ...(databind && {checked: ''}), onchange: 'toggle', onkeyup: 'toggleByKey'  }), title()]),
+    template: ({},{title,databind,fieldId},h) => h('div',{},[ 
+      h('input', { type: 'checkbox', ...(databind && {checked: ''}), id: "switch_"+fieldId, onchange: 'toggle', onkeyup: 'toggleByKey' }),
+      h('label',{for: "switch_"+fieldId },title())
+     ]),
     features: field.databind()
   })
 })
 
-jb.component('editableBoolean.checkboxWithLabel', {
+jb.component('editableBoolean.expandCollapseWithUnicodeChars', {
   type: 'editable-boolean.style',
+  params: [
+    {id: 'toExpandSign', as: 'string', defaultValue: '⯈'},
+    {id: 'toCollapseSign', as: 'string', defaultValue: '▼'},
+  ],
   impl: customStyle({
-    template: ({},{title,databind,fieldId},h) => h('div',{},[
-        h('input', { type: 'checkbox', id: "switch_"+fieldId,
-          ...(databind && {checked: ''}),
-          onchange: 'toggle',
-          onkeyup: 'toggleByKey'  },),
-        h('label',{for: "switch_"+fieldId },title())
-    ]),
+    template: ({},{databind,toExpandSign,toCollapseSign},h) => 
+      h('span',{ onclick: 'toggle' }, databind ? toCollapseSign : toExpandSign),
+    css: '{cursor: pointer; opacity: 0.6; user-select: none}',
     features: field.databind()
   })
 })
@@ -7952,7 +7960,7 @@ jb.component('editableBoolean.expandCollapse', {
   impl: customStyle({
     template: ({},{databind},h) => h('i',{class:'material-icons noselect', onclick: 'toggle' },
       databind ? 'keyboard_arrow_down' : 'keyboard_arrow_right'),
-    css: '{ font-size:16px; cursor: pointer; }',
+    css: '{ font-size:16px; cursor: pointer }',
     features: field.databind()
   })
 })
@@ -7965,7 +7973,7 @@ jb.component('editableBoolean.mdcXV', {
     {id: 'noIcon', as: 'string', mandatory: true, defaultValue: 'close'}
   ],
   impl: customStyle({
-    template: (cmp,{title,databind,yesIcon,noIcon},h) => h('button',{
+    template: ({},{title,databind,yesIcon,noIcon},h) => h('button',{
           class: ['mdc-icon-button material-icons',databind && 'raised mdc-icon-button--on'].filter(x=>x).join(' '),
           title: title(), tabIndex: -1, onclick: 'toggle', onkeyup: 'toggleByKey'},[
             h('i',{class:'material-icons mdc-icon-button__icon mdc-icon-button__icon--on'}, yesIcon),
@@ -8061,7 +8069,7 @@ jb.component('editableBoolean.mdcCheckBox', {
 jb.component('editableBoolean.picklist', {
   type: 'editable-boolean.style',
   params: [
-    {id: 'picklistStyle', type: 'picklist.style', dynamic: true },
+    {id: 'picklistStyle', type: 'picklist.style', defaultValue: picklist.native(), dynamic: true },
   ],
   impl: styleByControl(
     picklist({
@@ -8070,6 +8078,7 @@ jb.component('editableBoolean.picklist', {
         obj(prop('text','%$editableBooleanModel/textForTrue()%'),prop('code',true)),
         obj(prop('text','%$editableBooleanModel/textForFalse()%'),prop('code',false))),
       style: call('picklistStyle'),
+      features: picklist.onChange(writeValue('%$editableBooleanModel/databind()%',If('%%==true',true,false))) // convert to boolean
     }),
     'editableBooleanModel'
   )

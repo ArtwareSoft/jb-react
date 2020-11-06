@@ -4,13 +4,13 @@ jb.component('uiTest.checkBoxWithCalculatedAndWatchRef', {
   impl: uiFrontEndTest({
     control: editableBoolean({
       databind: '%$person/name% == \"Homer Simpson\"',
-      style: editableBoolean.checkboxWithTitle(),
+      style: editableBoolean.checkboxWithLabel(),
       title: '%$person/name%',
       features: watchRef('%$person/name%')
     }),
     action: writeValue('%$person/name%', 'Mukki'),
     expectedResult: contains('Mukki'),
-    expectedCounters: {'dom refresh !check': 1}
+    expectedCounters: {'do refresh element !check': 1}
   })
 })
 
@@ -175,7 +175,7 @@ jb.component('uiTest.labelWithWatchRefInSplicedArray', {
       }))
     }),
     expectedResult: contains('Maggie'),
-    expectedCounters: {'dom refresh !check': 1}
+    expectedCounters: {'do refresh element !check': 1}
   })
 })
 
@@ -207,7 +207,7 @@ jb.component('uiTest.labelNotWatchingUiVar', {
       ]
     }),
     expectedResult: contains('OK'),
-    expectedCounters: {'dom refresh !check': 0}
+    expectedCounters: {'do refresh element !check': 0}
   })
 })
 
@@ -219,7 +219,7 @@ jb.component('uiTest.labelNotWatchingBasicVar', {
       features: [followUp.action(writeValue('%$text1/text%', 'not good'))]
     }),
     expectedResult: contains('OK'),
-    expectedCounters: {'dom refresh !check': 0}
+    expectedCounters: {'do refresh element !check': 0}
   })
 })
 
@@ -285,7 +285,7 @@ jb.component('uiTest.groupWatchingWithoutIncludeChildren', {
       ]
     }),
     expectedResult: contains('OK'),
-    expectedCounters: {'dom refresh !check': 0}
+    expectedCounters: {'do refresh element !check': 0}
   })
 })
 
@@ -300,7 +300,7 @@ jb.component('uiTest.groupWatchingWithoutIncludeChildren', {
 //       ]
 //     }),
 //     expectedResult: contains('changed'),
-//     expectedCounters: {'dom refresh !check': 1}
+//     expectedCounters: {'do refresh element !check': 1}
 //   })
 // })
 
@@ -315,7 +315,7 @@ jb.component('uiTest.groupWatchingStructure', {
       ]
     }),
     expectedResult: contains('changed'),
-    expectedCounters: {'dom refresh !check': 1}
+    expectedCounters: {'do refresh element !check': 1}
   })
 })
 
@@ -339,7 +339,7 @@ jb.component('uiTest.watchRefArrayDeleteWithRunActionOnItems', {
         )
     }),
     expectedResult: contains('[]'),
-    expectedCounters: {'dom refresh !check': 3}
+    expectedCounters: {'do refresh element !check': 3}
   })
 })
 
@@ -439,7 +439,7 @@ jb.component('uiTest.spliceShouldNotFireFullContainerChange', {
     control: itemlist({items: '%$watchablePeople%', controls: text('%name%')}),
     action: addToArray('%$watchablePeople%', obj(prop('name', 'mukki'))),
     expectedResult: not(contains('mukki')),
-    expectedCounters: {'dom refresh !check': 0}
+    expectedCounters: {'do refresh element !check': 0}
   })
 })
 
@@ -452,7 +452,7 @@ jb.component('uiTest.spliceAndWatchRefStrcture', {
     }),
     action: addToArray('%$watchablePeople%', obj(prop('name', 'mukki'))),
     expectedResult: contains('mukki'),
-    expectedCounters: {'dom refresh !check': 1}
+    expectedCounters: {'do refresh element !check': 1}
   })
 })
 
@@ -465,7 +465,7 @@ jb.component('uiTest.spliceAndWatchRefWithoutIncludeChildren', {
     }),
     action: writeValue('%$watchablePeople[0]/name%', 'mukki'),
     expectedResult: contains('mukki'),
-    expectedCounters: {'dom refresh !check': 1}
+    expectedCounters: {'do refresh element !check': 1}
   })
 })
 
@@ -481,7 +481,7 @@ jb.component('uiTest.spliceAndWatchRefAddTwice', {
       addToArray('%$watchablePeople%', obj(prop('name','kukki')))
     ),
     expectedResult: contains('kukki'),
-    expectedCounters: {'dom refresh !check': 2}
+    expectedCounters: {'do refresh element !check': 2}
   })
 })
 

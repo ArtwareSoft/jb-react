@@ -158,8 +158,8 @@ jb.component('uiFrontEndTest', {
 		return Promise.resolve(runBefore())
 			.then(() => {
 				try {
-					jb.ui.render(jb.ui.h(control(ctx)), elemToTest)
 					if (renderDOM) document.body.appendChild(elemToTest)
+					jb.ui.render(jb.ui.h(control(ctx)), elemToTest)
 				} catch (e) {
 					jb.logException(e,'error in test',{ctx})
 					return e
