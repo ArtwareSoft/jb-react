@@ -18,7 +18,7 @@ jb.component('studio.saveComponents', {
         e.comps.forEach(([id]) => st.serverComps[id] = st.previewjb.comps[id])
       }),
 			catchError(e=> {
-        st.host.showError('error saving: ' + (typeof e == 'string' ? e : e.message || e.e))
+        st.host.showError('error saving: ' + (typeof e == 'string' ? e : e.message || e.e || e.desc))
 				jb.logException(e,'error while saving ' + e.id,{ctx}) || []
       }),
       toPromiseArray
@@ -43,7 +43,7 @@ jb.component('studio.autoSaveService',{
           const edits = [deltaFileContent(fileContent, {compId,comp})].filter(x=>x)
           await st.host.saveDelta(fn,edits)
         } catch (e) {
-          st.host.showError('error saving: ' + (typeof e == 'string' ? e : e.message || e.e))
+          st.host.showError('error saving: ' + (typeof e == 'string' ? e : e.message || e.e || e.desc))
           jb.logException(e,'error while saving ' + e.id,{ctx}) || []
         }
       })

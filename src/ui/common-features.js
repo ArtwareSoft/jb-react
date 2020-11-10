@@ -98,8 +98,8 @@ jb.component('feature.requireService',{
     {id: 'service', type: 'service'},
     {id: 'condition', dynamic: true, defaultValue: true},
   ],
-  impl: (ctx,service,condition) => ({ init: { 
-    action: () => condition() && service.init(),
+  impl: (_ctx,service,condition) => ({ init: { 
+    action: ctx => condition(ctx) && service.init(ctx),
     phase: 10 
   }})
 })

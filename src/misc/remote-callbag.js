@@ -112,11 +112,8 @@ jb.component('remote.worker', {
         const spyParam = ((jb.path(jb.frame,'location.href')||'').match('[?&]spy=([^&]+)') || ['', ''])[1]
         const workerCode = [
             ...libs.map(lib=>`importScripts('${distPath}/!${uri}!${lib}.js')`),`
-                //self.uri = '${uri}'
-                //self.isWorker = true
                 jb.cbLogByPath = {}
-                jb.initSpy({spyParam: '${spyParam}'})
-                self.spy = jb.spy
+                self.spy = jb.initSpy({spyParam: '${spyParam}'})
                 self.portToMaster = jb.remote.cbPortFromFrame(self,'${uri}','master')
             `
         ].join('\n')

@@ -1,13 +1,13 @@
 var jb = (function() {
 function jb_run(ctx,parentParam,settings) {
-  ctx.profile && jb.log('core request', [ctx.id,...arguments])
+//  ctx.profile && jb.log('core request', [ctx.id,...arguments])
   if (ctx.probe && ctx.probe.outOfTime)
     return
   if (jb.ctxByPath) jb.ctxByPath[ctx.path] = ctx
   let res = do_jb_run(...arguments)
   if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
       res = ctx.probe.record(ctx,res) || res
-  ctx.profile && jb.log('core result', [ctx.id,res,ctx,parentParam,settings])
+//  ctx.profile && jb.log('core result', [ctx.id,res,ctx,parentParam,settings])
   if (typeof res == 'function') jb.assignDebugInfoToFunc(res,ctx)
   return res
 }
@@ -350,7 +350,7 @@ Object.assign(jb, {
     },
     logException(e,err,logObj) {
       jb.frame.console && jb.frame.console.log('%c Exception: ','color: red', err, e, logObj)
-      jb.log('exception',{ err, stack: e.stack||'', ...logObj})
+      jb.log('exception error',{ e, err, stack: e.stack||'', ...logObj})
     },
     val(ref) {
       if (ref == null || typeof ref != 'object') return ref

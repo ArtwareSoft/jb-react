@@ -46,17 +46,17 @@ jb.ui.renderWidgetInStudio = function(profile,top) {
   try {
     jb.frame.parent.jb
   } catch(e) { parentAccessible = false }
+  jb.log('render widget in studio',{profile,top,parentAccessible,frame: jb.prame})
   if (parentAccessible && jb.frame.parent != jb.frame)
     jb.frame.parent.jb.studio.initPreview(jb.frame,[Object.getPrototypeOf({}),Object.getPrototypeOf([])])
 
   let currentProfile = profile
   let lastRenderTime = 0, fixedDebounce = 500
 
-  if (jb.studio.studioWindow) {
-      const studioWin = jb.studio.studioWindow
-      const st = studioWin.jb.studio;
-      const project = studioWin.jb.resources.studio.project
-      const page = studioWin.jb.resources.studio.page
+  const studioWin = jb.studio.studioWindow
+  if (studioWin) { // listen to script updates
+      const st = studioWin.jb.studio
+      const {project,page} = studioWin.jb.resources.studio
       if (project && page)
           currentProfile = {$: page}
 
@@ -115,51 +115,52 @@ jb.ui.renderWidgetInStudio = function(profile,top) {
 }
 
 st.initPreview = function(preview_window,allowedTypes) {
-      const changedComps = st.changedComps()
+  jb.log('start load preview',{})
+  const changedComps = st.changedComps()
 
-      st.previewWindow = preview_window
-      st.previewWindow.jbUri = 'preview'
-      st.previewjb = preview_window.jb;
-      ['jbComponent','jbParam','feature.contentEditable'].forEach(id=> st.copyCompFromStudioToPreview([id,jb.comps[id]]))
-      st.serverComps = st.previewjb.comps
-      st.previewjb.studio.studioWindow = window
-      st.previewjb.studio.previewjb = st.previewjb
-      st.previewjb.studio.studiojb = jb
-      st.previewjb.lastRun = {}
+  st.previewWindow = preview_window
+  st.previewWindow.jbUri = 'preview'
+  st.previewjb = preview_window.jb;
+  ['jbComponent','jbParam','feature.contentEditable'].forEach(id=> st.copyCompFromStudioToPreview([id,jb.comps[id]]))
+  st.serverComps = st.previewjb.comps
+  st.previewjb.studio.studioWindow = window
+  st.previewjb.studio.previewjb = st.previewjb
+  st.previewjb.studio.studiojb = jb
+  st.previewjb.lastRun = {}
 
-      ;(jb.frame.jbDocsDiffFromFiles || []).forEach(doc=> {
-          try{ 
-            st.previewWindow.eval(doc) // used by vscode to reload the content of unsaved doc
-          } catch (e) {}
-      })
+  ;(jb.frame.jbDocsDiffFromFiles || []).forEach(doc=> {
+      try{ 
+        st.previewWindow.eval(doc) // used by vscode to reload the content of unsaved doc
+      } catch (e) {}
+  })
 
-      st.initCompsRefHandler(st.previewjb, allowedTypes)
-      changedComps.forEach(e=>{
-        st.compsRefHandler.resourceReferred(e[0])
-        st.writeValue(st.compsRefHandler.refOfPath([e[0]]), eval(`(${jb.prettyPrint(e[1],{noMacros: true})})`), new jb.jbCtx()) // update the history for future save
-        jb.val(st.compsRefHandler.refOfPath([e[0]]))[jb.location] = e[1][jb.location]
-      })
-      jb.entries(st.previewWindow.JSON.parse(st.resourcesFromPrevRun || '{}')).forEach(e=>st.previewjb.resource(e[0],e[1]))
+  st.initCompsRefHandler(st.previewjb, allowedTypes)
+  changedComps.forEach(e=>{
+    st.compsRefHandler.resourceReferred(e[0])
+    st.writeValue(st.compsRefHandler.refOfPath([e[0]]), eval(`(${jb.prettyPrint(e[1],{noMacros: true})})`), new jb.jbCtx()) // update the history for future save
+    jb.val(st.compsRefHandler.refOfPath([e[0]]))[jb.location] = e[1][jb.location]
+  })
+  jb.entries(st.previewWindow.JSON.parse(st.resourcesFromPrevRun || '{}')).forEach(e=>st.previewjb.resource(e[0],e[1]))
 
-      st.previewjb.http_get_cache = {}
-      st.previewjb.ctxByPath = {}
-      st.previewjb.cbLogByPath = {}
+  st.previewjb.http_get_cache = {}
+  st.previewjb.ctxByPath = {}
+  st.previewjb.cbLogByPath = {}
 
-      jb.exp('%$studio/settings/activateWatchRefViewer%','boolean') && st.activateWatchRefViewer();
-      jb.exec(writeValue('%$studio/projectSettings%',() => JSON.parse(JSON.stringify(preview_window.jbProjectSettings)) ))
+  jb.exp('%$studio/settings/activateWatchRefViewer%','boolean') && st.activateWatchRefViewer();
+  jb.exec(writeValue('%$studio/projectSettings%',() => JSON.parse(JSON.stringify(preview_window.jbProjectSettings)) ))
 
-      fixInvalidUrl()
-      jb.frame.jbStartCommand && jb.exec(jb.frame.jbStartCommand) // used by vscode to open jbEditor
-      jb.log('end loadPreview',{project: jb.exp('%$studio/projectSettings/project%')})
+  fixInvalidUrl()
+  jb.frame.jbStartCommand && jb.ui.extendWithServiceRegistry().run(jb.frame.jbStartCommand) // used by vscode to open jbEditor
+  jb.log('end load preview',{project: jb.exp('%$studio/projectSettings/project%')})
 
-			function fixInvalidUrl() {
-        if (location.pathname.indexOf('/project/studio/') != 0) return;
-				var profile_path = location.pathname.split('/project/studio/').pop().split('/')[2] || '';
-        if (!profile_path || jb.studio.valOfPath(profile_path,true) != null) return;
-				while (profile_path && jb.studio.valOfPath(profile_path,true) == null)
-					profile_path = jb.studio.parentPath(profile_path);
-				window.location.pathname = location.pathname.split('/').slice(0,-1).concat([profile_path]).join('/')
-      }
+  function fixInvalidUrl() {
+    if (location.pathname.indexOf('/project/studio/') != 0) return;
+    var profile_path = location.pathname.split('/project/studio/').pop().split('/')[2] || '';
+    if (!profile_path || jb.studio.valOfPath(profile_path,true) != null) return;
+    while (profile_path && jb.studio.valOfPath(profile_path,true) == null)
+      profile_path = jb.studio.parentPath(profile_path);
+    window.location.pathname = location.pathname.split('/').slice(0,-1).concat([profile_path]).join('/')
+  }
 }
 
 jb.component('studio.refreshPreview', {
@@ -229,11 +230,13 @@ jb.component('studio.previewWidget', {
           const host = ctx.run(firstSucceeding('%$queryParams/host%','studio'))
           if (!ctx.vars.$state.projectLoaded && host && st.projectHosts[host]) {
             const project = ctx.exp('%$studio/project%')
-            document.title = `${project} with jBart`;
-            return st.projectHosts[host].fetchProject(ctx.exp('%$queryParams/hostProjectId%'),project)
+            document.title = `${project} with jBart`
+            const hostProjectId = ctx.exp('%$queryParams/hostProjectId%')
+            jb.log('preview fetch project using projectHost',{host,hostProjectId,project})
+            return st.projectHosts[host].fetchProject(hostProjectId,project)
 //              .then(x=>jb.delay(2000).then(()=>{debugger; return x}))
               .then(projectSettings => {
-                jb.log('start loadPreview',{project: projectSettings.project,projectSettings})
+                jb.log('fetched project',{host,hostProjectId,projectSettings})
                 jb.exec(writeValue('%$studio/project%', projectSettings.project))
 //                if (projectSettings.project != 'test')
 //                  jb.exec(writeValue('%$studio/projectFolder%', projectSettings.project))
@@ -283,10 +286,12 @@ const html = `<!DOCTYPE html>
 </head>
 <body ${vscodeZoomFix}>
   <script>
+    self.spy = self.spy || jb.initSpy({spyParam: jbProjectSettings.spyParam || 'all'})
     window.jb_initWidget && jb_initWidget()
   </script>
 </body>
 </html>`
+  jb.log('inject project into preview',{html,projectSettings,baseProjUrl,moduleUrl,baseUrl})
   previewWin.document.write(html)
 }
 

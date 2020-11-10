@@ -264,7 +264,11 @@ function loadProject() {
   jb_dynamicLoad(jbProjectSettings.libs); // may load packaged libs from dist
 
   [...(jbProjectSettings.jsFiles || []), ...(jbProjectSettings.cssFiles || [])]
-    .forEach(fn=> loadFile(pathOfProjectFile(fn,jbProjectSettings)) )
+    .forEach(fn=> {
+      const path = pathOfProjectFile(fn,jbProjectSettings)
+//      console.log('loading file',fn,path)
+      loadFile(path) 
+    })
 }
 
 function jb_initWidget() {
@@ -277,8 +281,9 @@ function jb_initWidget() {
   const initTheme = jbProjectSettings.theme || jb.path(jb.comps,'defaultTheme.impl')
   const entryProf = jbProjectSettings.entry ? (jbProjectSettings.entry.$ ? jbProjectSettings.entry : {$: jbProjectSettings.entry})
     : jb.path(jb.comps[`${fixedProjName}.main`],'impl')
-  const el = document.getElementById('main');
-  (async () => {
+  const el = document.getElementById('main')
+  jb.log('jbLoader init widget',{entryProf,el,initTheme,fixedProjName})
+  ;(async () => {
     await initTheme && jb.exec(initTheme)
     await entryProf && jb.ui.renderWidget(entryProf, el)
   })()

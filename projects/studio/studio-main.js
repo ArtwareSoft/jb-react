@@ -5,7 +5,7 @@ jb.component('dataResource.studio', {
     profile_path: '',
     pickSelectionCtxId: '',
     preview: {width: 1280, height: 520, zoom: jb.frame.jbInvscode ? 8 : 10},
-    settings: {contentEditable: true, activateWatchRefViewer: true},
+    settings: {contentEditable: false, activateWatchRefViewer: true},
     vscode: jb.frame.jbInvscode
   }
 })
@@ -246,11 +246,7 @@ jb.component('studio.topBar', {
       image({
         url: pipeline(studio.baseStudioUrl(), '%%css/jbartlogo.png'),
         width: '',
-        features: [
-          css.margin({top: '5', left: '5'}),
-          css.width({width: '80', minMax: 'min'}),
-          css.height('100')
-        ]
+        features: [css.margin('5', '5'), css.width({width: '80', minMax: 'min'}), css.height('100')]
       }),
       group({
         title: 'title and menu',
@@ -258,12 +254,13 @@ jb.component('studio.topBar', {
         controls: [
           text({text: 'message', style: text.studioMessage()}),
           text({
-            text: replace({find: '_', replace: ' ', text: '%$studio/project%'}),
+            text: replace({
+              find: '_',
+              replace: ' ',
+              text: '%$studio/project%'
+            }),
             style: text.htmlTag('div'),
-            features: [
-              css('{ font: 20px Arial; margin-left: 6px; margin-top: 6px}'),
-              watchRef('%$studio/project%')
-            ]
+            features: [css('{ font: 20px Arial; margin-left: 6px; margin-top: 6px}'), watchRef('%$studio/project%')]
           }),
           group({
             title: 'menu and toolbar',
@@ -271,7 +268,7 @@ jb.component('studio.topBar', {
             controls: [
               menu.control({
                 menu: studio.mainMenu(),
-                style: menuStyle.pulldown({}),
+                style: menuStyle.pulldown(),
                 features: [id('mainMenu'), css.height('30')]
               }),
               group({
@@ -281,10 +278,7 @@ jb.component('studio.topBar', {
                 ],
                 features: css.margin('-10')
               }),
-              controlWithFeatures(
-                studio.searchComponent(),
-                [css.margin({top: '-10', left: '-100'})]
-              )
+              controlWithFeatures(studio.searchComponent(), [css.margin('-10', '-100')])
             ]
           })
         ],
@@ -299,13 +293,21 @@ jb.component('studio.vscodeTopBar', {
   type: 'control',
   impl: group({
     title: 'top bar',
-    layout: layout.flex({direction: 'column', alignItems: 'start', spacing: ''}),
+    layout: layout.flex({
+      direction: 'column',
+      alignItems: 'start',
+      spacing: ''
+    }),
     controls: [
       text({
         text: If(
           '%$studio/project%==tests',
           '%$studio/page%',
-          replace({find: '_', replace: ' ', text: '%$studio/project%'})
+          replace({
+            find: '_',
+            replace: ' ',
+            text: '%$studio/project%'
+          })
         ),
         style: header.h1(),
         features: [
@@ -325,19 +327,14 @@ jb.component('studio.vscodeTopBar', {
               alignItems: 'baseline',
               spacing: ''
             }),
-            style: group.htmlTag({}),
+            style: group.htmlTag(),
             controls: [
               menu.control({
                 menu: studio.mainMenu(),
-                style: menuStyle.pulldown({}),
-                features: [id('mainMenu')]
+                style: menuStyle.pulldown(),
+                features: id('mainMenu')
               }),
-              group({
-                title: 'toolbar',
-                controls: [
-                  studio.toolbar()
-                ]
-              }),
+              group({title: 'toolbar', controls: studio.toolbar()}),
               studio.searchComponent('')
             ]
           })
@@ -369,7 +366,7 @@ jb.component('studio.all', {
       }),
 //      group.data({data: '%$studio/project%', watch1: true}),
       feature.requireService(studio.autoSaveService()),
-      feature.requireService(studio.vsCodeAdapterService()),
+      feature.requireService(studio.vsCodeAdapterService('$studio')),
       feature.requireService(urlHistory.mapStudioUrlToResource('studio'))
     ]
   })

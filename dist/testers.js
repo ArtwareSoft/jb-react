@@ -29,6 +29,7 @@ jb.test = {
 
 jb.component('tests.main', { // needed for loading the 'virtual' tests project
 	type: 'control',
+	impl: text('') // dummy impl needed
 })
 
 jb.component('dataTest', {

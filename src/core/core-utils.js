@@ -61,7 +61,7 @@ Object.assign(jb, {
     },
     logException(e,err,logObj) {
       jb.frame.console && jb.frame.console.log('%c Exception: ','color: red', err, e, logObj)
-      jb.log('exception',{ err, stack: e.stack||'', ...logObj})
+      jb.log('exception error',{ e, err, stack: e.stack||'', ...logObj})
     },
     val(ref) {
       if (ref == null || typeof ref != 'object') return ref

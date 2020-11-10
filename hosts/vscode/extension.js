@@ -36,12 +36,12 @@ class jBartStudio {
                 fileContent: { $asIs: editor.document.getText() }
             })
         })
-        panel.webview.onDidReceiveMessage(message => {
-            Promise.resolve(this.processMessage(message)).then(result =>
+        panel.webview.onDidReceiveMessage(message => Promise.resolve(this.processMessage(message))
+            .then(result =>
                 message.messageID && this._panel.webview.postMessage({ ...result, messageID: message.messageID })
             , error => 
                 this._panel.webview.postMessage({ type: 'error', error, messageID: message && message.messageID }))
-        }, null, this._disposables)
+        , null, this._disposables)
     }
     runCommand(command) {
         this._panel.webview.postMessage(command)
@@ -64,15 +64,15 @@ class jBartStudio {
     }
 
     calcActiveEditorPosition() {
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) return {};
+        const editor = vscode.window.activeTextEditor
+        if (!editor) return {}
         const closestComp = _closestComp(editor.document.getText(),editor.selection.active.line)
         return { ...closestComp, line: editor.selection.active.line, col: editor.selection.active.character }
     }
 
     calcProjectSettings(jbModuleUrl) {
-        const editor = vscode.window.activeTextEditor;
-        if (!editor) return {};
+        const editor = vscode.window.activeTextEditor
+        if (!editor) return {}
         const splitedPath = editor.document.uri.path.split('/').slice(1, -1)
         const jbartFolder = splitedPath.slice(0,splitedPath.indexOf('jb-react')+1)
         const htmlFileCandidates = [
@@ -84,9 +84,7 @@ class jBartStudio {
             .map(htmlFile => {
                 const html = fs.readFileSync(htmlFile, 'utf8');
                 const res = eval('({' + _extractText(html, 'jbProjectSettings = {', '}', '') + '})');
-                return Object.assign(Object.assign({}, res), { 
-                    source: jbModuleUrl ? 'vscodeUserHost' : 'vscodeDevHost',
-                }) 
+                return { ...res, source: jbModuleUrl ? 'vscodeUserHost' : 'vscodeDevHost' } 
             })[0]
     }
 
@@ -116,6 +114,7 @@ class jBartStudio {
 	<body class="vscode-studio">
 		<div id="studio" style="width:1280px;"> </div>
 		<script>
+          self.spy = jb.initSpy({spyParam: 'all'})
           jb.studio.vsCodeApi = acquireVsCodeApi()
           jb.exec({$: 'defaultTheme'})
           jb.ui.renderWidget({$:'studio.all'},document.getElementById('studio'))
@@ -167,9 +166,8 @@ class jBartStudio {
         studio = undefined;
         this._panel.dispose();
         while (this._disposables.length) {
-            const x = this._disposables.pop();
-            if (x)
-                x.dispose();
+            const x = this._disposables.pop()
+            x && x.dispose()
         }
     }
     processMessage(message) {

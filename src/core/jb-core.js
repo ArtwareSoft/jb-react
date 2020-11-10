@@ -1,13 +1,13 @@
 var jb = (function() {
 function jb_run(ctx,parentParam,settings) {
-  ctx.profile && jb.log('core request', [ctx.id,...arguments])
+//  ctx.profile && jb.log('core request', [ctx.id,...arguments])
   if (ctx.probe && ctx.probe.outOfTime)
     return
   if (jb.ctxByPath) jb.ctxByPath[ctx.path] = ctx
   let res = do_jb_run(...arguments)
   if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
       res = ctx.probe.record(ctx,res) || res
-  ctx.profile && jb.log('core result', [ctx.id,res,ctx,parentParam,settings])
+//  ctx.profile && jb.log('core result', [ctx.id,res,ctx,parentParam,settings])
   if (typeof res == 'function') jb.assignDebugInfoToFunc(res,ctx)
   return res
 }

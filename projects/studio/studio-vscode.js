@@ -5,7 +5,7 @@ jb.component('studio.vsCodeAdapterService', {
   params: [
     {id: 'resource', as: 'string', mandatory: true, description: 'mapped to state' },
   ],
-  impl: (ctx,resource) => ({ init: () => {
+  impl: (_ctx,resource) => ({ init: ctx => {
         if (! jb.frame.jbInvscode || jb.VscodeAdapterInitialized) return
         jb.VscodeAdapterInitialized = true
         const vscode = jb.studio.vsCodeApi
@@ -36,20 +36,22 @@ jb.component('studio.vsCodeAdapterService', {
         const promises = {}
         jb.frame.addEventListener('message', event => {
             const message = event.data
-            console.log('get response', message.messageID, message)
             if (message && message.messageID) {
+                jb.log('vscode service response', { id: message.messageID, message })
                 const req = promises[message.messageID].req
                 clearTimeout(promises[message.messageID].timer)
                 if (message.type == 'error') {
-                    jb.logError('vscode ', {message, req})
+                    jb.logError('vscode', {message, req})
                     promises[message.messageID].reject(message)
                 } else {
                     promises[message.messageID].resolve(message)
                 }
                 delete promises[message.messageID]
             }
-            if (message.$)
+            if (message.$) {
+                jb.log('vscode command', { message, ctx })
                 ctx.run(message)
+            }
         })
 
         jb.studio.vscodeService = (req,timeout) => new Promise((resolve,reject) => {
@@ -57,10 +59,10 @@ jb.component('studio.vsCodeAdapterService', {
             messageID++
             const timer = setTimeout(() => {
                 promises[messageID] && reject({ type: 'error', desc: 'timeout' })
-                jb.logError('vscodeService timeout', {promise: promises[messageID]})
+                jb.logError('vscode service timeout', {promise: promises[messageID]})
             }, timeout);
             promises[messageID] = {resolve,reject,req, timer}
-            console.log('send req ',messageID,req)
+            jb.log(`vscode service ${req.$}`,{messageID,req})
             vscode.postMessage({...req, messageID})
         })
     }})
@@ -102,7 +104,9 @@ jb.component('vscode.pathByActiveEditor', {
     ],
     impl: (ctx,activeEditorPosition) => {
         const {compId, componentHeaderIndex, line, col } = activeEditorPosition
-        return jb.studio.previewjb.comps[compId] && jb.textEditor.getPathOfPos(compId, {line: line-componentHeaderIndex,col},jb.studio.previewjb) || ''
+        const path = jb.studio.previewjb.comps[compId] && jb.textEditor.getPathOfPos(compId, {line: line-componentHeaderIndex,col},jb.studio.previewjb) || ''
+        jb.log('vscode path of active editor',{path,compId, componentHeaderIndex, line, col})
+        return path
     }
 })
 

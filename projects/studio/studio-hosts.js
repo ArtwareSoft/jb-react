@@ -2,6 +2,7 @@
 const st = jb.studio;
 
 const devHost = {
+    name: 'devHost',
     baseUrl: jb.frame.jbBaseProjUrl || jb.frame.location && jb.frame.location.origin,
     settings: () => fetch(`/?op=settings`).then(res=>res.text()),
     //used in save
@@ -28,10 +29,11 @@ const devHost = {
 }
 
 const vscodeDevHost = {
+    name: 'vscodeDevHost',
     baseUrl: jb.frame.jbBaseProjUrl,
     settings: () => Promise.resolve('{}'),
     getFile: path => jb.studio.vscodeService({$: 'getFile', path}).then( res=>res.content ),
-    locationToPath: loc => decodeURIComponent(loc.split('//file//').pop()).replace(/\\/g,'/'),
+    locationToPath: loc => decodeURIComponent(loc.split('/file//').pop()).replace(/\\/g,'/'),
     saveDelta: (path, edits) => jb.studio.vscodeService({$: 'saveDelta', path, edits}),
     saveFile: (path, contents) => jb.studio.vscodeService({$: 'saveFile', path, contents}),
     createDirectoryWithFiles: request => jb.studio.vscodeService({$: 'createDirectoryWithFiles', ...request}),
@@ -42,17 +44,19 @@ const vscodeDevHost = {
     projectUrlInStudio: project => `/project/studio/${project}`,
     pathOfDistFolder: () => `${jb.frame.jbBaseProjUrl}/dist`,
     jbLoader: `${jb.frame.jbBaseProjUrl}/src/loader/jb-loader.js`,
-    projectsDir: () => `${decodeURIComponent(jb.frame.jbBaseProjUrl).split('//file///').pop()}/projects`
+    projectsDir: () => `${decodeURIComponent(jb.frame.jbBaseProjUrl).split('/file///').pop()}/projects`
 }
 
-const vscodeUserHost = Object.assign({},vscodeDevHost,{
+const vscodeUserHost = {...vscodeDevHost,
+    name: 'vscodeUserHost',
     pathOfJsFile: (project,fn) => `${project}/${fn}`,
     jbLoader: `${jb.frame.jbBaseProjUrl}/node_modules/jb-react/dist/jb-loader.js`,
     pathOfDistFolder: () => `${jb.frame.jbBaseProjUrl}/node_modules/jb-react/dist`,
-    projectsDir: () => decodeURIComponent(jb.frame.jbBaseProjUrl).split('//file///').pop()
-})
+    projectsDir: () => decodeURIComponent(jb.frame.jbBaseProjUrl).split('/file///').pop()
+}
 
 const chromeExtensionHost = {
+    name: 'chromeExtensionHost',
     baseUrl: 'http:/localhost:8082',
     settings() { return fetch(`${this.baseUrl}/?op=settings`).then(res=>res.text()) },
     //used in save
@@ -78,7 +82,8 @@ const chromeExtensionHost = {
     jbLoader() { return `${this.baseUrl}/src/loader/jb-loader.js` },
 }
 
-const userLocalHost = Object.assign({},devHost,{
+const userLocalHost = { ...devHost,
+    name: 'userLocalHost',
     createDirectoryWithFiles: request => fetch('/?op=createDirectoryWithFiles',{method: 'POST', headers: {'Content-Type': 'application/json; charset=UTF-8' }, body: JSON.stringify(
         Object.assign(request,{baseDir: request.project })) }),
     locationToPath: path => path.replace(/^[0-9]*\//,'').replace(/^projects\//,''),
@@ -86,9 +91,10 @@ const userLocalHost = Object.assign({},devHost,{
     projectUrlInStudio: project => `/studio-bin/${project}`,
     pathOfDistFolder: () => '/node_modules/jb-react/dist',
     jbLoader: '/dist/jb-loader.js',
-})
+}
 
 const cloudHost = {
+    name: 'cloudHost',
     settings: () => Promise.resolve(({})),
     getFile: path => fetch(`https://artwaresoft.github.io/jb-react/${path}`).then(res=>res.text()),
     locationToPath: path => path.replace(/^[0-9]*\//,''),
@@ -102,12 +108,13 @@ const cloudHost = {
 
 st.chooseHostByUrl = entryUrl => {
     entryUrl = entryUrl || ''
-    st.host = jb.frame.jbInvscode ? (jbModuleUrl ? vscodeUserHost : vscodeDevHost)
+    st.host = jb.frame.jbInvscode ? (jb.frame.jbModuleUrl ? vscodeUserHost : vscodeDevHost)
         : entryUrl.match(/chrome-extension:/) ? chromeExtensionHost
         : entryUrl.match(/localhost:[0-9]*\/project\/studio/) ? devHost
         : entryUrl.match(/studio-cloud/) ? cloudHost
         : entryUrl.match(/localhost:[0-9]*\/studio-bin/) ? userLocalHost
         : devHost
+    jb.log('studio host',{frame: jb.frame, entryUrl, host: st.host})
 }
 
 function getEntryUrl() {
@@ -163,11 +170,13 @@ st.projectHosts = {
         fetchProject(id,project) {
             if (jb.frame.jbPreviewProjectSettings) {
                 jb.exec(writeValue('%$studio/projectSettings%',jb.frame.jbPreviewProjectSettings))
+                jb.log('fetch studio project from jbPreviewProjectSettings',{jbPreviewProjectSettings})
                 return Promise.resolve(jb.frame.jbPreviewProjectSettings)
             }
             const baseUrl = `/project/${project}?cacheKiller=${Math.floor(Math.random()*100000)}`
             return fetch(baseUrl).then(r=>r.text()).then(html =>{
                 const settings = eval('({' + _extractText(html,'jbProjectSettings = {','}') + '})')
+                jb.log('fetch studio project from url',{baseUrl, html,settings})
                 return {...settings, project,source:'studio'}
             })
         }
