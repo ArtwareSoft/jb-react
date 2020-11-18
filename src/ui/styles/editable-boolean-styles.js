@@ -22,7 +22,7 @@ jb.component('editableBoolean.expandCollapseWithUnicodeChars', {
   type: 'editable-boolean.style',
   params: [
     {id: 'toExpandSign', as: 'string', defaultValue: '⯈'},
-    {id: 'toCollapseSign', as: 'string', defaultValue: '▼'},
+    {id: 'toCollapseSign', as: 'string', defaultValue: '⯆'},
   ],
   impl: customStyle({
     template: ({},{databind,toExpandSign,toCollapseSign},h) => 

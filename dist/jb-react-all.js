@@ -28,7 +28,7 @@ function do_jb_run(ctx,parentParam,settings) {
     const ctxWithVars = extendWithVars(ctx,profile.$vars)
     const run = prepare(ctxWithVars,parentParam)
     ctx.parentParam = parentParam
-    switch (run.type) {
+    switch (run.type) {      
       case 'booleanExp': return castToParam(jb.bool_expression(profile, ctx,parentParam), parentParam)
       case 'expression': return castToParam(jb.expression(profile, ctx,parentParam), parentParam)
       case 'asIs': return profile
@@ -4758,8 +4758,12 @@ Object.assign(jb.ui, {
         if (!userReq) return
         if (userReq.widgetId)
             jb.ui.widgetUserRequests.next(userReq)
-        else
-            jb.ui.runCtxAction(jb.ctxDictionary[userReq.ctxIdToRun],userReq.data,userReq.vars)
+        else {
+            const ctx = jb.ctxDictionary[userReq.ctxIdToRun]
+            if (!ctx)
+                jb.logError(`handleCmpEvent - no ctx in dictionary for id ${userReq.ctxIdToRun}`,{ev,specificMethod})
+            ctx && jb.ui.runCtxAction(ctx,userReq.data,userReq.vars)
+        }
     },
     rawEventToUserRequest(ev, specificMethod) {
         const elem = jb.ui.closestCmpElem(ev.currentTarget)
@@ -11044,7 +11048,7 @@ jb.component('editableBoolean.expandCollapseWithUnicodeChars', {
   type: 'editable-boolean.style',
   params: [
     {id: 'toExpandSign', as: 'string', defaultValue: '⯈'},
-    {id: 'toCollapseSign', as: 'string', defaultValue: '▼'},
+    {id: 'toCollapseSign', as: 'string', defaultValue: '⯆'},
   ],
   impl: customStyle({
     template: ({},{databind,toExpandSign,toCollapseSign},h) => 

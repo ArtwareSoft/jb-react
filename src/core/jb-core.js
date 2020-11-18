@@ -28,7 +28,7 @@ function do_jb_run(ctx,parentParam,settings) {
     const ctxWithVars = extendWithVars(ctx,profile.$vars)
     const run = prepare(ctxWithVars,parentParam)
     ctx.parentParam = parentParam
-    switch (run.type) {
+    switch (run.type) {      
       case 'booleanExp': return castToParam(jb.bool_expression(profile, ctx,parentParam), parentParam)
       case 'expression': return castToParam(jb.expression(profile, ctx,parentParam), parentParam)
       case 'asIs': return profile

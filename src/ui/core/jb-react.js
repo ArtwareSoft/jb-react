@@ -363,8 +363,12 @@ Object.assign(jb.ui, {
         if (!userReq) return
         if (userReq.widgetId)
             jb.ui.widgetUserRequests.next(userReq)
-        else
-            jb.ui.runCtxAction(jb.ctxDictionary[userReq.ctxIdToRun],userReq.data,userReq.vars)
+        else {
+            const ctx = jb.ctxDictionary[userReq.ctxIdToRun]
+            if (!ctx)
+                jb.logError(`handleCmpEvent - no ctx in dictionary for id ${userReq.ctxIdToRun}`,{ev,specificMethod})
+            ctx && jb.ui.runCtxAction(ctx,userReq.data,userReq.vars)
+        }
     },
     rawEventToUserRequest(ev, specificMethod) {
         const elem = jb.ui.closestCmpElem(ev.currentTarget)

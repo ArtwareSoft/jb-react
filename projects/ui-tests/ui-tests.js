@@ -1578,10 +1578,7 @@ jb.component('uiTest.group.accordion', {
 })
 
 jb.component('uiTest.innerLabel', {
-  impl: uiTest({
-    control: uiTest.innerLabel3Tst('Hello World2'),
-    expectedResult: contains('Hello World2')
-  })
+  impl: uiTest({control: uiTest.innerLabel3Tst('Hello World2'), expectedResult: contains('Hello World2')})
 })
 
 jb.component('uiTest.markdown', {
