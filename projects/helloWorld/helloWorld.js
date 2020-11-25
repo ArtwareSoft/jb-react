@@ -20,5 +20,9 @@ jb.component('dataResource.people', {
 
 jb.component('helloWorld.main', {
   type: 'control',
-  impl: text('hello world')
+  impl: group({
+    controls: [
+      text('hello world')
+    ]
+  })
 })
