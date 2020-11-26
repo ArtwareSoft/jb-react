@@ -30,8 +30,6 @@ jb.component('vega.interactiveChart', {
         features: [
           frontEnd.var('spec', '%$vegaSpec%'),
           frontEnd.init(({},{el,spec}) => vegaEmbed.vegaEmbed(el, eval(`(${spec})`))),
-          css.width('500'),
-          css.height('500')
         ]
       }),
       controlWithCondition('%$showSpec%', editableText({databind: '%$vegaSpec%', style: editableText.codemirror()})),
