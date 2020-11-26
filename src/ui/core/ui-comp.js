@@ -128,7 +128,7 @@ class JbComponent {
         const originators = this.originators.map(ctx=>ui.preserveCtx(ctx)).join(',')
         const usereventprops = (this.userEventProps||[]).join(',')
         const frontEndMethods = (this.frontEndMethod || []).map(h=>({method: h.method, path: h.path}))
-        const frontEndVars = this.frontEndVar && jb.objFromEntries(this.frontEndVar.map(h=>[h.id, h.value(this.calcCtx)]))
+        const frontEndVars = this.frontEndVar && jb.objFromEntries(this.frontEndVar.map(h=>[h.id, jb.val(h.value(this.calcCtx))]))
         if (vdom instanceof jb.ui.VNode) {
             vdom.addClass(this.jbCssClass())
             vdom.attributes = Object.assign(vdom.attributes || {}, {

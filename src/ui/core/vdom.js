@@ -151,12 +151,14 @@ function vdomDiff(newObj,orig) {
             .filter(k=>!ignoreRegExp.test(k))
             .filter(k=> !(typeof orig[k] == 'string' && ignoreValue.test(orig[k])))
             .filter(k => !(Array.isArray(orig[k]) && orig[k].length == 0))
+            .filter(k => !(typeof orig[k] == 'object' && jb.path(orig[k],'attributes.jb_external')))
             .reduce((acc, key) => newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: '__undefined'}, {})
 
         return Object.keys(newObj)
             .filter(k=>!ignoreRegExp.test(k))
             .filter(k=> !(typeof newObj[k] == 'string' && ignoreValue.test(newObj[k])))
             .filter(k => !(Array.isArray(newObj[k]) && newObj[k].length == 0))
+            .filter(k => !(typeof newObj[k] == 'object' && jb.path(newObj[k],'attributes.jb_external')))
             .reduce((acc, key) => {
                 if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key
                 const difference = doDiff(newObj[key], orig[key],key)
