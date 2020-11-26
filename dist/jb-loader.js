@@ -155,6 +155,10 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/d3-chart/d3-chart.js',
         'src/ui/d3-chart/d3-histogram.js',
       ],
+      'vega-lite': [
+        'dist/vega-lite.js', 
+        'src/ui/vega/jb-vega-lite.js'
+      ],    
       'dragula': [
           'dist/dragula.js',
           'dist/css/dragula.css',

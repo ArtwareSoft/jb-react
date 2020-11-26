@@ -16,12 +16,10 @@ jb.component('dataResource.items', {
 
 jb.component('vegaDemo.main', {
   type: 'control',
-  impl: vega.interactiveChart(vega.unit({
-    data: vega.jbData('%$items%'),
-    mark: vega.bar(),
-    encoding: vega.positionChannels({
-      x: vega.channel('a','nominal'),
-      y: vega.channel('b','quantitative'),
-    })
+  impl: vega.interactiveChart(
+    vega.spec({
+      data: vega.jbData('%$vegaItems%'),
+      mark: vega.bar(),
+      encoding: vega.positionChannels(vega.channel('a', 'nominal'), vega.channel('b', 'quantitative'))
   }))
 })
