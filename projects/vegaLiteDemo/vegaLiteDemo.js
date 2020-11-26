@@ -1,4 +1,4 @@
-jb.ns('vegaDemo,vega')
+jb.ns('vegaLiteDemo,vega')
 x = {
   "encoding": {
     "x": {"field": "a", "type": "nominal", "axis": {"labelAngle": 0}},
@@ -6,7 +6,7 @@ x = {
   }
 }
 
-jb.component('dataResource.items', {
+jb.component('dataResource.vegaItems', {
   passiveData: [
     {"a": "A", "b": 28}, {"a": "B", "b": 55}, {"a": "C", "b": 43},
     {"a": "D", "b": 91}, {"a": "E", "b": 81}, {"a": "F", "b": 53},
@@ -14,12 +14,19 @@ jb.component('dataResource.items', {
   ]
 })
 
-jb.component('vegaDemo.main', {
+jb.component('vegaLiteDemo.main', {
   type: 'control',
-  impl: vega.interactiveChart(
-    vega.spec({
-      data: vega.jbData('%$vegaItems%'),
-      mark: vega.bar(),
-      encoding: vega.positionChannels(vega.channel('a', 'nominal'), vega.channel('b', 'quantitative'))
-  }))
+  impl: group({
+    title: '',
+    controls: [
+      vega.interactiveChart(
+        vega.spec({
+          data: vega.jbData('%$vegaItems%'),
+          mark: vega.bar(),
+          encoding: vega.positionChannels(vega.channel('a', 'nominal'), vega.channel('b', 'quantitative'))
+        })
+      )
+    ],
+    features: css.width('500')
+  })
 })

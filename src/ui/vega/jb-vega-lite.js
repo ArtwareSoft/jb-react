@@ -20,11 +20,11 @@ jb.ns('vega')
 jb.component('vega.interactiveChart', {
   type: 'control',
   params: [
-    {id: 'spec', type: 'vega.spec'}
+    {id: 'spec', type: 'vega.spec'},
+    {id: 'showSpec', as: 'boolean', defaultValue: true}
   ],
   impl: group({
     controls: [
-      editableText({databind: '%$vegaSpec%', style: editableText.codemirror()}),
       html({
         html: '<div/>',
         features: [
@@ -33,7 +33,8 @@ jb.component('vega.interactiveChart', {
           css.width('500'),
           css.height('500')
         ]
-      })
+      }),
+      controlWithCondition('%$showSpec%', editableText({databind: '%$vegaSpec%', style: editableText.codemirror()})),
     ],
     features: [
       variable({
