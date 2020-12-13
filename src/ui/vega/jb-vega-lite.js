@@ -32,7 +32,7 @@ jb.component('vega.interactiveChart', {
   type: 'control',
   params: [
     {id: 'spec', type: 'vega.spec'},
-    {id: 'showSpec', as: 'boolean', defaultValue: true}
+    {id: 'showSpec', as: 'boolean', defaultValue: false}
   ],
   impl: group({
     controls: [
