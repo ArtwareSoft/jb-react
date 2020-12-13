@@ -9,7 +9,7 @@ jb.component('url-history.map-url-to-resource', {
 	impl: function(context,params,resource,base) {
 		if (jb.ui.location) return;
 
-		jb.ui.location = History.createBrowserHistory();
+		jb.ui.location = jb.frame.History.createBrowserHistory();
 		jb.ui.location.path = _ => location.pathname;
 		const {pipe,map,filter,subscribe,merge,distinctUntilChanged,create,fromIter} = jb.callbag
 
