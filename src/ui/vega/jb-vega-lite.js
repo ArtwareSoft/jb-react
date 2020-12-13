@@ -15,6 +15,17 @@ x = {
     }
 }
 
+jb.vega = {
+    jbData: Symbol.for('jb-vega-data'),
+    cleanEmptyValues: obj => {
+        if (typeof obj != 'object') return obj
+        if (Array.isArray(obj)) return obj.map(v=>jb.vega.cleanEmptyValues(v))
+        return jb.objFromEntries(jb.entries(obj).filter(e=>e[1] !== '' && e[1] != null).map(([k,v]) =>[k,jb.vega.cleanEmptyValues(v)]))
+    },
+    counter: 0,
+    namedData: spec => spec.data && spec.data[jb.vega.jbData] ? [spec.data].map(e=>[e.name, e[jb.vega.jbData]]) : []
+}
+
 jb.ns('vega')
 
 jb.component('vega.interactiveChart', {
@@ -28,28 +39,26 @@ jb.component('vega.interactiveChart', {
       html({
         html: '<div/>',
         features: [
-          frontEnd.var('spec', '%$vegaSpec%'),
-          frontEnd.init(({},{el,spec}) => vegaEmbed.vegaEmbed(el, eval(`(${spec})`))),
+          frontEnd.var('prettySpec', '%$prettySpec%'),
+          frontEnd.var('vegaData', (ctx,{},{spec}) => jb.vega.namedData(spec)),
+          frontEnd.init(({},{el,vegaData,prettySpec}) => {
+              const view = vegaEmbed.createView(el, eval(`(${prettySpec})`))
+              vegaData.forEach(e => view.insert(e[0],e[1] ))
+              view.run()
+          }),
         ]
       }),
-      controlWithCondition('%$showSpec%', editableText({databind: '%$vegaSpec%', style: editableText.codemirror()})),
+      controlWithCondition('%$showSpec%', editableText({databind: '%$prettySpec%', style: editableText.codemirror()})),
     ],
     features: [
       variable({
-        name: 'vegaSpec',
-        value: pipeline('%$spec%', ({data}) => jb.prettyPrint(jb.cleanEmptyValues(data)), first()),
+        name: 'prettySpec',
+        value: ({},{},{spec}) => jb.prettyPrint(jb.vega.cleanEmptyValues(spec)),
         watchable: true
       })
     ]
   })
 })
-
-jb.cleanEmptyValues = obj => {
-    if (typeof obj != 'object') return obj
-    if (Array.isArray(obj)) return obj.map(v=>jb.cleanEmptyValues(v))
-    return jb.objFromEntries(jb.entries(obj).filter(e=>e[1] !== '' && e[1] != null).map(([k,v]) =>[k,jb.cleanEmptyValues(v)]))
-}
-
 
 jb.component('vega.spec', {
   type: 'vega.spec',
@@ -78,15 +87,18 @@ jb.component('vega.dataFromUrl', {
 jb.component('vega.jbData', {
     type: 'vega.data',
     params: [
-        {id: 'items', as: 'array' },
+        {id: 'items', as: 'array', mandatory: true },
     ],
-    impl: (ctx,items) => ({values : items})
+    impl: (ctx,items) => {
+        const name = 'data-' + (jb.vega.counter++)
+        return {name, [jb.vega.jbData] : items}
+    }
 })
 
 jb.component('vega.namedData', {
     type: 'vega.data',
     params: [
-        {id: 'name', as: 'string'},
+        {id: 'name', as: 'string', mandatory: true},
     ],
     impl: ctx => ctx.params
 })

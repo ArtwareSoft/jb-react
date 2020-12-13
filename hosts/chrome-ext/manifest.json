@@ -1,9 +1,9 @@
 {
-  "name": "hello jBart1",
+  "name": "jBart helper",
   "version": "0.6",
   "manifest_version": 2,
-  "description": "hello world example for jBart project as chrome extension",
-  "homepage_url": "http://www.artwaresoft.com",
+  "description": "Low footprint helpers in any site",
+  "homepage_url": "http://jbart.rocks",
   "web_accessible_resources" : [],
   "background": {
     "scripts": [
@@ -11,14 +11,13 @@
     ],
     "persistent": true
   },
-  "page_action": {
-      "default_popup": "hello-world/hello-world.html"
-  }, 
   "content_security_policy": "script-src 'self' 'unsafe-eval' http://localhost:8082; object-src 'self'",
   "permissions": [
     "declarativeContent",
-    "https://*/*",
-    "http://*/*",
-    "tabs"
-  ]
+    "activeTab"
+  ],
+  "browser_action": {
+    "default_popup": "jb-helper/jb-helper-popup.html",
+    "default_title": "Make this page red"
+  }
 }

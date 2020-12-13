@@ -72901,8 +72901,17 @@ vegaEmbed = (function (exports) {
     });
   }
 
-  exports.vegaEmbed = exports.embedExample = embedExample;
 
-  return exports;
+  const createView = function ($target, spec) {
+    const {
+      spec: vgSpec
+    } = compile(spec);
+    const view = new View(parse$1$1(vgSpec), { loader: loader$1 }).renderer('svg').initialize($target);
+    return view;
+  }
+
+
+  return { createView, embedExample, compile, View, parse: parse$1$1, loader: loader$1 }
+
 
 }({}));

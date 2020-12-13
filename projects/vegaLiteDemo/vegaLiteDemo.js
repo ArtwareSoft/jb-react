@@ -21,12 +21,31 @@ jb.component('vegaLiteDemo.main', {
     controls: [
       vega.interactiveChart(
         vega.spec({
-          data: vega.jbData('%$vegaItems%'),
-          mark: vega.bar(),
-          encoding: vega.positionChannels(vega.channel('a', 'nominal'), vega.channel('b', 'quantitative'))
+          data: vega.jbData('%$phones%'),
+          mark: vega.circle(),
+          encoding: vega.positionChannels(vega.channel('year', 'nominal'), vega.channel('price', 'quantitative'))
         })
       )
     ],
     features: css.width('500')
+  })
+})
+
+jb.component('vegaLiteDemo.cars', {
+  type: 'control',
+  impl: group({
+    title: '',
+    controls: vega.interactiveChart(
+      vega.spec({
+        data: vega.dataFromUrl('/projects/vegaLiteDemo/cars.json'),
+        mark: vega.circle(),
+        encoding: vega.positionChannels({
+          x: vega.channel('Miles_per_Gallon', 'quantitative'),
+          y: vega.channel('Horsepower', 'quantitative'),
+          color: vega.channel('Cylinders')
+        })
+      })
+    ),
+    features: []
   })
 })

@@ -43,6 +43,7 @@ concatFiles(nodeFiles,'jb4node.js');
 concatFiles(studioCssFiles,'../bin/studio/css/studio-all.css');
 
 concatFiles(studioFiles,'../bin/studio/studio-all.js');
+concatFiles(studioFiles.filter(x=>x.indexOf('codemirror') == -1),'../bin/studio/studio-observable.js');
 concatFiles(['/src/loader/jb-loader.js'],'jb-loader.js');
 concatFiles(['/src/testing/testers.js'],'testers.js');
 concatFiles(filesOfModules('codemirror-css'),'css/codemirror.css')
