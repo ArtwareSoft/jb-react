@@ -5,7 +5,7 @@ jb.component('urlHistory.mapStudioUrlToResource', {
     {id: 'onUrlChange', type: 'action', dynamic: true}
   ],
   impl: (ctx,resource) => ({ init: ()=> {
-        if (jb.ui.location || typeof window == 'undefined' || jb.frame.jbInvscode || jb.studio.urlHistoryInitialized) return
+        if (jb.ui.location || !jb.frame.History || typeof window == 'undefined' || jb.frame.jbInvscode || jb.studio.urlHistoryInitialized) return
         jb.studio.urlHistoryInitialized = true
         const base = location.pathname.indexOf('studio-bin') != -1 ? 'studio-bin' : 'studio'
 

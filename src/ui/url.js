@@ -7,7 +7,7 @@ jb.component('url-history.map-url-to-resource', {
 		{ id: 'onUrlChange', type: 'action', dynamic: true }
 	],
 	impl: function(context,params,resource,base) {
-		if (jb.ui.location) return;
+		if (jb.ui.location || !jb.frame.History) return;
 
 		jb.ui.location = jb.frame.History.createBrowserHistory();
 		jb.ui.location.path = _ => location.pathname;
