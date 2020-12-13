@@ -373,7 +373,7 @@ jb.component('itemlists.infiniteScroll', {
       }),
       itemlist({
         title: '',
-        items: pipeline(ctx => jb.frame.MDIcons, keys(), itemlistContainer.filter()),
+        items: pipeline(ctx => jb.ui.MDIcons, keys(), itemlistContainer.filter()),
         controls: [
           group({
             layout: layout.horizontal(),

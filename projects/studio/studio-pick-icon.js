@@ -36,7 +36,7 @@ jb.component('studio.openPickIcon', {
           items: pipeline(
             If(
                 equals('mdi', '%$type%'),
-                pipeline(ctx => jb.frame.MDIcons, keys()),
+                pipeline(ctx => jb.ui.MDIcons, keys()),
                 ctx => jb.ui.mdcIconNames.split(',')
               ),
             itemlistContainer.filter()
