@@ -18,7 +18,7 @@ function removeExports(target) {
   const fn = JBART_DIR + 'dist/' + target;
   fs.writeFileSync(fn,('' +fs.readFileSync(fn)).replace(/module.exports = .*/,''))
 }
-function fixCodeMirror(target) {
+function fixExports(target) {
   const fn = JBART_DIR + 'dist/' + target;
   fs.writeFileSync(fn,('' +fs.readFileSync(fn)).replace(/}\(this,/,'}(this || self,'))
 }
@@ -37,11 +37,12 @@ const nodeFiles = filesOfModules('common,node,pretty-print,xml,jison,parsing').f
 
 concatFiles(filesOfModules('ui-common-css'),'css/ui-common.css')
 concatFiles(filesOfModules('codemirror-js-files'),'codemirror.js')
-fixCodeMirror('codemirror.js')
+fixExports('codemirror.js')
 removeExports('animate.js')
 
 concatFiles(['node_modules/dragula/dist/dragula.js'],'dragula.js')
 concatFiles(['node_modules/history/umd/history.js'],'history.js')
+fixExports('history.js')
 
 concatFiles(jbReactFiles,'jb-react-all.js');
 concatFiles(nodeFiles,'jb4node.js');
