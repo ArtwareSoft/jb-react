@@ -42,13 +42,13 @@ removeExports('animate.js')
 
 concatFiles(['node_modules/dragula/dist/dragula.js'],'dragula.js')
 concatFiles(['node_modules/history/umd/history.js'],'history.js')
-fixExports('history.js')
 
 concatFiles(jbReactFiles,'jb-react-all.js');
 concatFiles(nodeFiles,'jb4node.js');
 concatFiles(studioCssFiles,'../bin/studio/css/studio-all.css');
 
 concatFiles(studioFiles,'../bin/studio/studio-all.js');
+concatFiles(studioFiles.filter(x=>!x.match(/history/)),'../bin/studio/studio-embeddable.js');
 concatFiles(['/src/loader/jb-loader.js'],'jb-loader.js');
 concatFiles(['/src/testing/testers.js'],'testers.js');
 concatFiles(filesOfModules('codemirror-css'),'css/codemirror.css')

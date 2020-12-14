@@ -2,7 +2,7 @@
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
   typeof define === 'function' && define.amd ? define(['exports'], factory) :
   (factory((global.History = {})));
-}(this || self, (function (exports) { 'use strict';
+}(this, (function (exports) { 'use strict';
 
   function _extends() {
     _extends = Object.assign || function (target) {
