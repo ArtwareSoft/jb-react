@@ -18,6 +18,10 @@ function removeExports(target) {
   const fn = JBART_DIR + 'dist/' + target;
   fs.writeFileSync(fn,('' +fs.readFileSync(fn)).replace(/module.exports = .*/,''))
 }
+function fixCodeMirror(target) {
+  const fn = JBART_DIR + 'dist/' + target;
+  fs.writeFileSync(fn,('' +fs.readFileSync(fn)).replace(/}\(this,/,'}(this || self,'))
+}
 
 const filesOfModules = modules => modules.split(',').map(m=>jb_modules[m]).flat().filter(x=>typeof x == 'string')
 
@@ -33,6 +37,7 @@ const nodeFiles = filesOfModules('common,node,pretty-print,xml,jison,parsing').f
 
 concatFiles(filesOfModules('ui-common-css'),'css/ui-common.css')
 concatFiles(filesOfModules('codemirror-js-files'),'codemirror.js')
+fixCodeMirror('codemirror.js')
 removeExports('animate.js')
 
 concatFiles(['node_modules/dragula/dist/dragula.js'],'dragula.js')
@@ -43,7 +48,6 @@ concatFiles(nodeFiles,'jb4node.js');
 concatFiles(studioCssFiles,'../bin/studio/css/studio-all.css');
 
 concatFiles(studioFiles,'../bin/studio/studio-all.js');
-concatFiles(studioFiles.filter(x=>!x.match(/codemirror|history/)),'../bin/studio/studio-observable.js');
 concatFiles(['/src/loader/jb-loader.js'],'jb-loader.js');
 concatFiles(['/src/testing/testers.js'],'testers.js');
 concatFiles(filesOfModules('codemirror-css'),'css/codemirror.css')
