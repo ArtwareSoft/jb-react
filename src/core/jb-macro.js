@@ -30,7 +30,7 @@ Object.assign(jb, {
   
       jb.registerMacro && jb.registerMacro(id, comp)
     },    
-    macroDef: Symbol('macroDef'), macroNs: {}, 
+    macroDef: Symbol('macroDef'), macroNs: {}, macro: {},
     macroName: id => id.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
     ns: nsIds => nsIds.split(',').forEach(nsId => jb.registerMacro(nsId + '.$dummyComp', {})),
     fixMacroByValue: (profile,comp) => {
@@ -40,22 +40,23 @@ Object.assign(jb, {
           delete profile.$byValue
         }
     },
+    importAllMacros: (frame,macroNs) => jb.entires(macroNs ? jb.macro[macroNs] : jb.macro).forEach( ([id,val])=>frame[id] = val),
     registerMacro: (id, profile) => {
         const macroId = jb.macroName(id).replace(/\./g, '_')
         const nameSpace = id.indexOf('.') != -1 && jb.macroName(id.split('.')[0])
 
         if (checkId(macroId))
             registerProxy(macroId)
-        if (nameSpace && checkId(nameSpace, true) && !jb.frame[nameSpace]) {
+        if (nameSpace && checkId(nameSpace, true) && !jb.macro[nameSpace]) {
             registerProxy(nameSpace, true)
             jb.macroNs[nameSpace] = true
         }
 
         function registerProxy(proxyId) {
-            jb.frame[proxyId] = new Proxy(() => 0, {
+            jb.frame[proxyId] = jb.macro[proxyId] = new Proxy(() => 0, {
                 get: (o, p) => {
                     if (typeof p === 'symbol') return true
-                    return jb.frame[proxyId + '_' + p] || genericMacroProcessor(proxyId, p)
+                    return jb.macro[proxyId + '_' + p] || genericMacroProcessor(proxyId, p)
                 },
                 apply: function (target, thisArg, allArgs) {
                     const { args, system } = splitSystemArgs(allArgs)
@@ -84,7 +85,7 @@ Object.assign(jb, {
                 jb.logError(macroId + ' is reserved by system or libs. please use a different name')
                 return false
             }
-            if (jb.frame[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$dummyComp$/))
+            if (jb.macro[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$dummyComp$/))
                 jb.logError(macroId.replace(/_/g,'.') + ' is defined more than once, using last definition ' + id)
             return true
         }
