@@ -2,42 +2,57 @@ jb.component('studio.all', {
   type: 'control',
   impl: group({
     controls: [
-      controlWithCondition(not('%$studio/vscode%'), studio.topBar()),
-      controlWithCondition('%$studio/vscode%', studio.vscodeTopBar()),
+      controlWithCondition('%$studio/vscode%', studio.vscode()),
+      controlWithCondition('%$studio/projectSettings/notebook%', studio.notebook()),
+      studio.jbart(),
+    ],
+    features: [
+      group.wait(ctx => jb.studio.host.settings()
+        .then(settings => ctx.run(writeValue('%$studio/settings%',
+          Object.assign(ctx.exp('%$studio/settings%'), typeof settings == 'string' ? JSON.parse(settings) : {}))))
+      , text('')),
+      group.firstSucceeding(),
+    ]
+  })
+})
+
+jb.component('studio.jbart', {
+  type: 'control',
+  impl: group({
+    controls: [
+      studio.topBar(),
       group({
         controls: studio.previewWidget(),
-        features: id('preview-parent')
+        features: [
+          id('preview-parent'),
+          group.wait(ctx => jb.studio.fetchProjectSettings(ctx), text('loading project settings...'))
+        ]
       }),
       studio.pageDescription(),
       studio.pages(),
       studio.ctxCounters()
     ],
     features: [
-      group.wait(ctx => jb.studio.host.settings().then(settings => ctx.run(writeValue('%$studio/settings%',
-          Object.assign(ctx.exp('%$studio/settings%'), typeof settings == 'string' ? JSON.parse(settings) : {})))), text('')), 
         feature.requireService(studio.autoSaveService()), 
-        feature.requireService(studio.vsCodeAdapterService('studio')), 
         feature.requireService(urlHistory.mapStudioUrlToResource('studio'))
     ]
   })
 })
 
-jb.component('studio.pageDescription', {
+jb.component('studio.vscode', {
   type: 'control',
   impl: group({
-    title: 'description',
-    controls: {'$': 'markdown', markdown: pipeline(list('#%$studio/page%', '%$pageCmp/description%', '```%$code%```'), join(`
-`))},
+    controls: [
+      studio.vscodeTopBar(),
+      group({
+        controls: studio.previewWidget(),
+        features: id('preview-parent')
+      }),
+      studio.ctxCounters()
+    ],
     features: [
-      group.wait({'$': 'studio.waitForPreviewIframe'}),
-      watchRef('%$studio/page%'),
-      variable('pageCmp', () => jb.studio.previewjb.comps[jb.exec('%$studio.page%')]),
-      variable('code', {'$': 'prettyPrint', profile: '%$pageCmp/impl%'}),
-      css.height({
-        height: '250',
-        overflow: 'auto',
-        minMax: 'max'
-      })
+        feature.requireService(studio.autoSaveService()), 
+        feature.requireService(studio.vsCodeAdapterService('studio'))
     ]
   })
 })
@@ -517,6 +532,25 @@ jb.component('studio.projectSettings', {
       }),
       css.width('600'),
       feature.initValue('%$studio/libsAsArray%', split({text: '%libs%'}))
+    ]
+  })
+})
+
+jb.component('studio.pageDescription', {
+  type: 'control',
+  impl: group({
+    title: 'description',
+    controls: markdown(pipeline(list('#%$studio/page%', '%$pageCmp/description%', '```%$code%```'), join('\n'))),
+    features: [
+      group.wait(studio.waitForPreviewIframe()),
+      watchRef('%$studio/page%'),
+      variable('pageCmp', () => jb.studio.previewjb.comps[jb.exec('%$studio.page%')]),
+      variable('code', prettyPrint('%$pageCmp/impl%')),
+      css.height({
+        height: '250',
+        overflow: 'auto',
+        minMax: 'max'
+      })
     ]
   })
 })

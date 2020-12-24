@@ -143,7 +143,7 @@ function getUrlContent(url) {
 
 st.projectHosts = {
     jsFiddle: {
-        fetchProject(jsFiddleid,project) {
+        fetchProjectSettings(jsFiddleid,project) {
             return getUrlContent(`http://jsfiddle.net/${jsFiddleid}`)
             .then(content=>{
                 const json = _extractText(str,'values: {','fiddle: {')
@@ -156,7 +156,7 @@ st.projectHosts = {
     },
     // host=github&hostProjectId=https://artwaresoft.github.io/todomvc/
     github: {
-        fetchProject(gitHubUrl) {
+        fetchProjectSettings(gitHubUrl) {
             gitHubUrl = gitHubUrl.match(/\/$/) ? gitHubUrl : gitHubUrl + '/'
             const baseUrl = decodeURIComponent(gitHubUrl).replace(/^https?:/,'')
         const project = baseUrl.split('/').filter(x=>x).pop()
@@ -167,7 +167,7 @@ st.projectHosts = {
         }
     },
     studio: {
-        fetchProject(id,project) {
+        fetchProjectSettings(id,project) {
             if (jb.frame.jbPreviewProjectSettings) {
                 jb.exec(writeValue('%$studio/projectSettings%',jb.frame.jbPreviewProjectSettings))
                 jb.log('fetch studio project from jbPreviewProjectSettings',{jbPreviewProjectSettings})
@@ -182,7 +182,7 @@ st.projectHosts = {
         }
     },
     test: {
-        fetchProject(id,project) {
+        fetchProjectSettings(id,project) {
             return fetch('/projects/ui-tests/tests.html').then(r=>r.text()).then(html =>{
                 const settings = eval('({' + _extractText(html,'jbProjectSettings = {','}') + '})')
                 return {...settings, project, 

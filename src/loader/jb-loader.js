@@ -198,7 +198,9 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'references','properties-menu','save','open-project','tree',
         'data-browse', 'new-project','event-tracker', 'comp-inspector','toolbar','search', 'main', 'component-header', 
         'hosts', 'probe', 'watch-ref-viewer', 'content-editable', 'position-thumbs', 'html-to-ctrl', 'patterns', 'pick-icon', 
-        'inplace-edit', 'grid-editor', 'sizes-editor', 'refactor', 'vscode', 'pptr', 'chrome-debugger','notebook'
+        'inplace-edit', 'grid-editor', 'sizes-editor', 'refactor', 'vscode', 'pptr', 'chrome-debugger',
+        
+        'notebook','projects/studio/notebook-comps','projects/studio/notebook-editor'
       ],
       'studio-tests': [
         'projects/studio/studio-testers.js',

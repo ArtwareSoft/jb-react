@@ -2,7 +2,7 @@
 
 const st = jb.studio;
 
-st.changedComps = function() {
+st.changedComps = () => {
   if (!st.compsHistory || !st.compsHistory.length) return []
 
   const changedComps = jb.unique(st.compsHistory.map(e=>jb.path(e,'opEvent.path.0')))
@@ -10,13 +10,31 @@ st.changedComps = function() {
   return changedComps.map(id=>[id,st.previewjb.comps[id]])
 }
 
-st.initStudioEditing = function() {
+st.initStudioEditing = () => {
   if (st.previewjb.comps['dialog.studioPickDialog']) return
   jb.log('studio init editing service',{})
   st.previewWindow.eval(`jb.ns('${Object.keys(jb.macroNs).join(',')}')`)
   jb.entries(jb.comps)
     .filter(e=>st.isStudioCmp(e[0]) || !st.previewjb.comps[e[0]])
     .forEach(e=>st.copyCompFromStudioToPreview(e))
+}
+
+st.fetchProjectSettings = ctx => {
+  const host = ctx.run(firstSucceeding('%$queryParams/host%','studio'))
+  if (host && st.projectHosts[host]) {
+    const project = ctx.exp('%$studio/project%')
+    document.title = `${project} with jBart`
+    const hostProjectId = ctx.exp('%$queryParams/hostProjectId%')
+    jb.log('fetch project settings using projectHost',{host,hostProjectId,project})
+    return st.projectHosts[host].fetchProjectSettings(hostProjectId,project)
+//      .then(x=>jb.delay(2000).then(()=>{debugger; return x})) // debug point for vscode
+      .then(projectSettings => {
+        jb.log('project settings fetched',{host,hostProjectId,projectSettings})
+        ctx.run(writeValue('%$studio/project%', projectSettings.project))
+        ctx.run(writeValue('%$studio/projectSettings%', projectSettings))
+        return projectSettings
+      })
+  }
 }
 
 jb.component('studio.editingService',{
@@ -147,7 +165,6 @@ st.initPreview = function(preview_window,allowedTypes) {
   st.previewjb.cbLogByPath = {}
 
   jb.exp('%$studio/settings/activateWatchRefViewer%','boolean') && st.activateWatchRefViewer();
-  jb.exec(writeValue('%$studio/projectSettings%',() => JSON.parse(JSON.stringify(preview_window.jbProjectSettings)) ))
 
   fixInvalidUrl()
   jb.frame.jbStartCommand && jb.ui.extendWithServiceRegistry().run(jb.frame.jbStartCommand) // used by vscode to open jbEditor
@@ -221,59 +238,38 @@ jb.component('studio.previewWidget', {
   params: [
     {id: 'style', type: 'preview-style', dynamic: true, defaultValue: studio.previewWidgetImpl()}
   ],
-  impl: ctx => jb.ui.ctrl(ctx, features(
-      calcProp('width','%$studio/preview/width%'),
-      calcProp('height','%$studio/preview/height%'),
-      calcProp('host', firstSucceeding('%$queryParams/host%','studio')),
-      calcProp('loadingMessage', '{? loading project from %$$props/host%::%$queryParams/hostProjectId% ?}'),
-      followUp.action((ctx,{cmp}) => {
-          const host = ctx.run(firstSucceeding('%$queryParams/host%','studio'))
-          if (!ctx.vars.$state.projectLoaded && host && st.projectHosts[host]) {
-            const project = ctx.exp('%$studio/project%')
-            document.title = `${project} with jBart`
-            const hostProjectId = ctx.exp('%$queryParams/hostProjectId%')
-            jb.log('preview fetch project using projectHost',{host,hostProjectId,project})
-            return st.projectHosts[host].fetchProject(hostProjectId,project)
-//              .then(x=>jb.delay(2000).then(()=>{debugger; return x}))
-              .then(projectSettings => {
-                jb.log('fetched project',{host,hostProjectId,projectSettings})
-                jb.exec(writeValue('%$studio/project%', projectSettings.project))
-//                if (projectSettings.project != 'test')
-//                  jb.exec(writeValue('%$studio/projectFolder%', projectSettings.project))
-                cmp.refresh({ projectLoaded: true, projectSettings },{srcCtx: ctx})
-            })
-          }
-        })
-  ))
+  impl: ctx => jb.ui.ctrl(ctx)
 })
 
 jb.component('studio.previewWidgetImpl', {
   type: 'preview-style',
   impl: customStyle({
-    template: (cmp,{width,height, loadingMessage, src, host },h) => {
-      if (host && !cmp.state.projectLoaded)
-        return h('p',{class: 'loading-message'}, loadingMessage)
+    template: ({},{width,height,projSettingsStr },h) => {
       return h('iframe', {
           id:'jb-preview',
           sandbox: 'allow-same-origin allow-forms allow-scripts',
           frameborder: 0,
           class: 'preview-iframe',
           width, height,
-          src: cmp.state.projectLoaded ? 
-            `javascript: parent.jb.studio.injectProjectToPreview(this,${JSON.stringify(cmp.state.projectSettings)})` : 'javascript: '
+          src: `javascript: parent.jb.studio.injectProjectToPreview(this,${projSettingsStr})`
         })
     },
+    features: [
+      calcProp('width','%$studio/preview/width%'),
+      calcProp('height','%$studio/preview/height%'),
+      calcProp('projSettingsStr',prettyPrint('%$studio/projectSettings%'))
+    ],
     css: '{box-shadow:  2px 2px 6px 1px gray; margin-left: 2px; margin-top: 2px; background: var(--jb-preview-background) }'
   })
 })
 
 st.injectProjectToPreview = function(previewWin,projectSettings) {
-const baseProjUrl = jb.frame.jbBaseProjUrl ? `jbBaseProjUrl = '${jbBaseProjUrl}'` : ''
-const moduleUrl = jb.frame.jbModuleUrl ? `jbModuleUrl = '${jbModuleUrl}'` : ''
-const baseUrl = jb.frame.jbModuleUrl ? { baseUrl: jbBaseProjUrl } : {}
+  const baseProjUrl = jb.frame.jbBaseProjUrl ? `jbBaseProjUrl = '${jbBaseProjUrl}'` : ''
+  const moduleUrl = jb.frame.jbModuleUrl ? `jbModuleUrl = '${jbModuleUrl}'` : ''
+  const baseUrl = jb.frame.jbModuleUrl ? { baseUrl: jbBaseProjUrl } : {}
 
-const vscodeZoomFix = jb.frame.jbInvscode? 'style="zoom: 0.8"' : ''
-const html = `<!DOCTYPE html>
+  const vscodeZoomFix = jb.frame.jbInvscode? 'style="zoom: 0.8"' : ''
+  const html = `<!DOCTYPE html>
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -291,8 +287,8 @@ const html = `<!DOCTYPE html>
   </script>
 </body>
 </html>`
-  jb.log('inject project into preview',{html,projectSettings,baseProjUrl,moduleUrl,baseUrl})
-  previewWin.document.write(html)
+    jb.log('inject project into preview',{html,projectSettings,baseProjUrl,moduleUrl,baseUrl})
+    previewWin.document.write(html)
 }
 
 })()
