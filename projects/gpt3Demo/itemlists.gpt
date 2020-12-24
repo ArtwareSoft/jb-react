@@ -1,0 +1,26 @@
+Itemlist of people names.
+The data source, also called items, is taken from a variable named people.
+itemlist({
+  items: '%$people%',
+  controls: text('%name%'),
+})
+
+Itemlists have styles, table is an itemlist with a table style.
+In the example there is a table of tasks with description and priority columns.
+The field with title "description" is bounded to the path "%description%"
+itemlist({
+  items: '%$tasks%',
+  controls: [text('%description%', 'description'), text('%priority%', 'priority')],
+  style: table.mdc()
+})
+
+itemlist with selection.
+itemlist({
+  style: itemlist.ulLi(),
+  features: itemlist.selection()
+})
+
+>>>
+Table of friends with gender and street fields and selection.
+itemlist({>>>
+
