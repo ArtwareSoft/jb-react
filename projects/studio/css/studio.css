@@ -571,3 +571,8 @@ html, body {
   border-top: var(--divider-border);
   border-bottom: 1px solid transparent;
 }
+
+code {
+  display: block;
+  white-space: pre-wrap   
+}

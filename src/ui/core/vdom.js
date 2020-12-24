@@ -143,6 +143,7 @@ function vdomDiff(newObj,orig) {
         if (Array.isArray(orig) && orig.length == 0) orig = null
         if (Array.isArray(newObj) && newObj.length == 0) newObj = null
         if (orig === newObj) return {}
+//        if (jb.path(newObj,'attributes.jb_external') || jb.path(orig,'attributes.jb_external')) return {}
         if (typeof orig == 'string' && ignoreValue.test(orig) || typeof newObj == 'string' && ignoreValue.test(newObj)) return {}
         if (attName == 'class' && 
             (typeof orig == 'string' && ignoreClasses.test(orig) || typeof newObj == 'string' && ignoreClasses.test(newObj))) return {}
@@ -151,14 +152,14 @@ function vdomDiff(newObj,orig) {
             .filter(k=>!ignoreRegExp.test(k))
             .filter(k=> !(typeof orig[k] == 'string' && ignoreValue.test(orig[k])))
             .filter(k => !(Array.isArray(orig[k]) && orig[k].length == 0))
-            .filter(k => !(typeof orig[k] == 'object' && jb.path(orig[k],'attributes.jb_external')))
+//            .filter(k => !(typeof orig[k] == 'object' && jb.path(orig[k],'attributes.jb_external')))
             .reduce((acc, key) => newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: '__undefined'}, {})
 
         return Object.keys(newObj)
             .filter(k=>!ignoreRegExp.test(k))
             .filter(k=> !(typeof newObj[k] == 'string' && ignoreValue.test(newObj[k])))
             .filter(k => !(Array.isArray(newObj[k]) && newObj[k].length == 0))
-            .filter(k => !(typeof newObj[k] == 'object' && jb.path(newObj[k],'attributes.jb_external')))
+//            .filter(k => !(typeof newObj[k] == 'object' && jb.path(newObj[k],'attributes.jb_external')))
             .reduce((acc, key) => {
                 if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key
                 const difference = doDiff(newObj[key], orig[key],key)

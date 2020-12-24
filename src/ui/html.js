@@ -5,8 +5,8 @@ jb.component('html', {
   description: 'rich text',
   category: 'control:100,common:80',
   params: [
-    {id: 'title', as: 'string', mandatory: true, templateValue: 'html', dynamic: true},
     {id: 'html', as: 'ref', mandatory: true, templateValue: '<p>html here</p>', dynamic: true},
+    {id: 'title', as: 'string', mandatory: true, templateValue: 'html', dynamic: true},
     {id: 'style', type: 'html.style', defaultValue: html.plain(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
@@ -16,7 +16,7 @@ jb.component('html', {
 jb.component('html.plain', {
   type: 'html.style',
   impl: customStyle({
-    template: (cmp,{html},h) => h('div',{$html: html, jb_external: true } ),
+    template: (cmp,{html},h) => h('div',{$html: html} ),
     features: [
       watchAndCalcModelProp('html'),
       () => ({ studioFeatures :{$: 'feature.contentEditable', param: 'html' } })

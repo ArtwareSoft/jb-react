@@ -286,8 +286,8 @@ const html = `<!DOCTYPE html>
 </head>
 <body ${vscodeZoomFix}>
   <script>
-    self.spy = self.spy || jb.initSpy({spyParam: jbProjectSettings.spyParam || 'all'})
     window.jb_initWidget && jb_initWidget()
+    self.spy = self.spy || jb.initSpy({spyParam: jbProjectSettings.spyParam || 'all'})
   </script>
 </body>
 </html>`

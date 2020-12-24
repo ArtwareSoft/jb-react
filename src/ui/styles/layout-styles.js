@@ -58,10 +58,10 @@ jb.component('layout.flex', {
     {id: 'spacing', as: 'string'}
   ],
   impl: ctx => ({
-    css: ctx.setVars({spacingWithUnits: jb.ui.withUnits(ctx.params.spacing), ...ctx.params}).exp(
+    css: ctx.setVars({spacingWithUnits: jb.ui.withUnits(ctx.params.spacing), marginSpacing: ctx.params.direction.match(/col/) ? 'bottom' : 'right' , ...ctx.params}).exp(
       `{ display: flex; {?align-items:%$alignItems%;?} {?justify-content:%$justifyContent%;?} {?flex-direction:%$direction%;?} {?flex-wrap:%$wrap%;?} }
-      {?>* { margin-right: %$spacingWithUnits% }?}
-    ${ctx.params.spacing ? '>*:last-child { margin-right:0 }' : ''}`),
+      {?>* { margin-%$marginSpacing%: %$spacingWithUnits% }?}
+    ${ctx.params.spacing ? '>*:last-child { margin-%$marginSpacing%:0 }' : ''}`),
   })
 })
 

@@ -114,6 +114,15 @@ jb.component('remoteTest.twoTierWidget.button', {
   })
 })
 
+jb.component('remoteTest.twoTierWidget.html', {
+  impl: uiTest({
+    timeout: 500,
+    checkResultRx: () => jb.ui.renderingUpdates,
+    control: widget.twoTierWidget(html('<p>hello world<p>'), remote.worker({id: 'ui', libs: ['common','ui-common','remote','two-tier-widget'] })),
+    expectedResult: contains('<p>hello world')
+  })
+})
+
 jb.component('remoteTest.twoTierWidget.changeText', {
   impl: uiTest({
     control: widget.twoTierWidget(

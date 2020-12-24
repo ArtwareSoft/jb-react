@@ -134,7 +134,7 @@ function refreshFrontEnd(elem) {
 
 function elemToVdom(elem) {
     if (elem instanceof jb.ui.VNode) return elem
-    if (elem.getAttribute && elem.getAttribute('jb_external') ) return
+    if (elem.getAttribute('jb_external')) return
     return {
         tag: elem.tagName.toLowerCase(),
         attributes: jb.objFromEntries([

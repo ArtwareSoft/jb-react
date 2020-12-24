@@ -96,9 +96,8 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       'codemirror': [
           'dist/codemirror.js',
       ],
-      'fuse': [
-        'dist/fuse.js',
-      ],
+      'fuse': ['dist/fuse.js' ],
+      'markdown': ['dist/showdown.js', 'src/ui/markdown.js'],
       'two-tier-widget': ['src/ui/two-tier-widget.js'],        
       'puppeteer': [
 //        'src/misc/puppeteer/pptr-remote.js',
@@ -192,13 +191,14 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       'parsing': [ 'src/misc/parsing.js' ],
       studio: [
         'dist/material.js', 'src/ui/watchable/text-editor.js',
+        'dist/showdown.js', 'src/ui/markdown.js',
         'src/misc/parsing.js',
         'styles', 'path','utils', 'preview','popups','url','model-components', 'completion', 'undo','tgp-model', 'new-profile',
         'suggestions', 'properties','jb-editor-styles','edit-source','jb-editor','pick','h-to-jsx','style-editor',
         'references','properties-menu','save','open-project','tree',
         'data-browse', 'new-project','event-tracker', 'comp-inspector','toolbar','search', 'main', 'component-header', 
         'hosts', 'probe', 'watch-ref-viewer', 'content-editable', 'position-thumbs', 'html-to-ctrl', 'patterns', 'pick-icon', 
-        'inplace-edit', 'grid-editor', 'sizes-editor', 'refactor', 'vscode', 'pptr', 'chrome-debugger'
+        'inplace-edit', 'grid-editor', 'sizes-editor', 'refactor', 'vscode', 'pptr', 'chrome-debugger','notebook'
       ],
       'studio-tests': [
         'projects/studio/studio-testers.js',

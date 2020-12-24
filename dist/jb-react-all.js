@@ -769,7 +769,7 @@ Object.assign(jb, {
           delete profile.$byValue
         }
     },
-    importAllMacros: (frame,macroNs) => jb.entires(macroNs ? jb.macro[macroNs] : jb.macro).forEach( ([id,val])=>frame[id] = val),
+    importAllMacros: (frame,macroNs) => jb.entries(macroNs ? jb.macro[macroNs] : jb.macro).forEach( ([id,val])=>frame[id] = val),
     registerMacro: (id, profile) => {
         const macroId = jb.macroName(id).replace(/\./g, '_')
         const nameSpace = id.indexOf('.') != -1 && jb.macroName(id.split('.')[0])
@@ -1382,7 +1382,7 @@ jb.component('writeValue', {
     }
     const val = jb.val(value)
     if (jb.isDelayed(val))
-      return Promise.resolve().then(val=>jb.writeValue(to,val,ctx,noNotifications))
+      return Promise.resolve(val).then(_val=>jb.writeValue(to,_val,ctx,noNotifications))
     else
       jb.writeValue(to,val,ctx,noNotifications)
   }
@@ -4367,6 +4367,7 @@ function vdomDiff(newObj,orig) {
         if (Array.isArray(orig) && orig.length == 0) orig = null
         if (Array.isArray(newObj) && newObj.length == 0) newObj = null
         if (orig === newObj) return {}
+        if (jb.path(newObj,'attributes.jb_external') || jb.path(orig,'attributes.jb_external')) return {}
         if (typeof orig == 'string' && ignoreValue.test(orig) || typeof newObj == 'string' && ignoreValue.test(newObj)) return {}
         if (attName == 'class' && 
             (typeof orig == 'string' && ignoreClasses.test(orig) || typeof newObj == 'string' && ignoreClasses.test(newObj))) return {}
@@ -4532,7 +4533,7 @@ function refreshFrontEnd(elem) {
 
 function elemToVdom(elem) {
     if (elem instanceof jb.ui.VNode) return elem
-    if (elem.getAttribute && elem.getAttribute('jb_external') ) return
+    if (elem.getAttribute('jb_external')) return
     return {
         tag: elem.tagName.toLowerCase(),
         attributes: jb.objFromEntries([
@@ -6998,8 +6999,8 @@ jb.component('html', {
   description: 'rich text',
   category: 'control:100,common:80',
   params: [
-    {id: 'title', as: 'string', mandatory: true, templateValue: 'html', dynamic: true},
     {id: 'html', as: 'ref', mandatory: true, templateValue: '<p>html here</p>', dynamic: true},
+    {id: 'title', as: 'string', mandatory: true, templateValue: 'html', dynamic: true},
     {id: 'style', type: 'html.style', defaultValue: html.plain(), dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
@@ -7009,7 +7010,7 @@ jb.component('html', {
 jb.component('html.plain', {
   type: 'html.style',
   impl: customStyle({
-    template: (cmp,{html},h) => h('div',{$html: html, jb_external: true } ),
+    template: (cmp,{html},h) => h('div',{$html: html} ),
     features: [
       watchAndCalcModelProp('html'),
       () => ({ studioFeatures :{$: 'feature.contentEditable', param: 'html' } })
@@ -10317,10 +10318,10 @@ jb.component('layout.flex', {
     {id: 'spacing', as: 'string'}
   ],
   impl: ctx => ({
-    css: ctx.setVars({spacingWithUnits: jb.ui.withUnits(ctx.params.spacing), ...ctx.params}).exp(
+    css: ctx.setVars({spacingWithUnits: jb.ui.withUnits(ctx.params.spacing), marginSpacing: ctx.params.direction.match(/col/) ? 'bottom' : 'right' , ...ctx.params}).exp(
       `{ display: flex; {?align-items:%$alignItems%;?} {?justify-content:%$justifyContent%;?} {?flex-direction:%$direction%;?} {?flex-wrap:%$wrap%;?} }
-      {?>* { margin-right: %$spacingWithUnits% }?}
-    ${ctx.params.spacing ? '>*:last-child { margin-right:0 }' : ''}`),
+      {?>* { margin-%$marginSpacing%: %$spacingWithUnits% }?}
+    ${ctx.params.spacing ? '>*:last-child { margin-%$marginSpacing%:0 }' : ''}`),
   })
 })
 

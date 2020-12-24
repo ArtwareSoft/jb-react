@@ -16,12 +16,12 @@ jb.component('studio.vsCodeAdapterService', {
 
         vscode.setState({...vscode.getState(), ...jb.frame.jbWorkspaceState})
         const state = {...jb.frame.jbPreviewProjectSettings, ...vscode.getState(), vscode: true}
-        params.forEach(p => state[p] != null && ctx.run(writeValue(`%${resource}/${p}%`,state[p]) ))
+        params.forEach(p => state[p] != null && ctx.run(writeValue(`%$${resource}/${p}%`,state[p]) ))
 
         pipe(jb.ui.resourceChange(), 
             filter(e=> e.path[0] == resource && params.indexOf(e.path[1]) != -1),
             subscribe(e => {
-                vscode.setState({...vscode.getState(),...jb.objFromEntries(params.map(p=>[p,ctx.exp(`%${resource}/${p}%`)]))})
+                vscode.setState({...vscode.getState(),...jb.objFromEntries(params.map(p=>[p,ctx.exp(`%$${resource}/${p}%`)]))})
                 jb.studio.vscodeService({$: 'storeWorkspaceState', state})
             }
         ))

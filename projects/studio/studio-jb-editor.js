@@ -1,5 +1,49 @@
 jb.ns('tree,rx')
 
+jb.component('studio.jbEditor', {
+  type: 'control',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: group({
+    title: 'main',
+    layout: layout.horizontalFixedSplit({leftWidth: '350px', rightWidth: '100%'}),
+    controls: [
+      studio.jbEditorInteliTree('%$path%'),
+      group({
+        controls: [
+          studio.probeDataView()
+        ],
+        features: [feature.if(not('%$studio/hideProbe%')), watchRef('%$studio/hideProbe%')]
+      })
+    ],
+    features: [id('jbEditor'), css.padding('10'), css.height({height: '800', minMax: 'max'})]
+  })
+})
+
+jb.component('studio.openJbEditor', {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'},
+    {id: 'fromPath', as: 'string'},
+    {id: 'newWindow', type: 'boolean', as: 'boolean'}
+  ],
+  impl: openDialog({
+    vars: [
+      Var('dialogId', If('%$newWindow%','','jb-editor')),
+      Var('fromPath', '%$fromPath%')
+    ],
+    style: dialog.studioFloating({id: '%$dialogId%', width: '860', height: '100%'}),
+    content: studio.jbEditor('%$path%'),
+    menu: button({
+      action: studio.openJbEditorMenu('%$path%', '%$path%'),
+      style: button.mdcIcon('menu')
+    }),
+    title: studio.pathHyperlink('%$path%', 'Inteliscript'),
+    features: [studio.jbEditorContainer('jb-editor'), dialogFeature.resizer()]
+  })
+})
+
 jb.component('studio.jbEditorPathForEdit', {
   type: 'data',
   description: 'in case of array, use extra element path',
@@ -367,50 +411,6 @@ jb.component('studio.jbEditorInteliTree', {
       css.width({width: '500', selector: 'jb-editor'}),
       studio.watchScriptChanges()
     ]
-  })
-})
-
-jb.component('studio.jbEditor', {
-  type: 'control',
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: group({
-    title: 'main',
-    layout: layout.horizontalFixedSplit({leftWidth: '350px', rightWidth: '100%'}),
-    controls: [
-      studio.jbEditorInteliTree('%$path%'),
-      group({
-        controls: [
-          studio.probeDataView()
-        ],
-        features: [feature.if(not('%$studio/hideProbe%')), watchRef('%$studio/hideProbe%')]
-      })
-    ],
-    features: [id('jbEditor'), css.padding('10'), css.height({height: '800', minMax: 'max'})]
-  })
-})
-
-jb.component('studio.openJbEditor', {
-  type: 'action',
-  params: [
-    {id: 'path', as: 'string'},
-    {id: 'fromPath', as: 'string'},
-    {id: 'newWindow', type: 'boolean', as: 'boolean'}
-  ],
-  impl: openDialog({
-    vars: [
-      Var('dialogId', If('%$newWindow%','','jb-editor')),
-      Var('fromPath', '%$fromPath%')
-    ],
-    style: dialog.studioFloating({id: '%$dialogId%', width: '860', height: '100%'}),
-    content: studio.jbEditor('%$path%'),
-    menu: button({
-      action: studio.openJbEditorMenu('%$path%', '%$path%'),
-      style: button.mdcIcon('menu')
-    }),
-    title: studio.pathHyperlink('%$path%', 'Inteliscript'),
-    features: [studio.jbEditorContainer('jb-editor'), dialogFeature.resizer()]
   })
 })
 

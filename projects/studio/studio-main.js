@@ -1,3 +1,47 @@
+jb.component('studio.all', {
+  type: 'control',
+  impl: group({
+    controls: [
+      controlWithCondition(not('%$studio/vscode%'), studio.topBar()),
+      controlWithCondition('%$studio/vscode%', studio.vscodeTopBar()),
+      group({
+        controls: studio.previewWidget(),
+        features: id('preview-parent')
+      }),
+      studio.pageDescription(),
+      studio.pages(),
+      studio.ctxCounters()
+    ],
+    features: [
+      group.wait(ctx => jb.studio.host.settings().then(settings => ctx.run(writeValue('%$studio/settings%',
+          Object.assign(ctx.exp('%$studio/settings%'), typeof settings == 'string' ? JSON.parse(settings) : {})))), text('')), 
+        feature.requireService(studio.autoSaveService()), 
+        feature.requireService(studio.vsCodeAdapterService('studio')), 
+        feature.requireService(urlHistory.mapStudioUrlToResource('studio'))
+    ]
+  })
+})
+
+jb.component('studio.pageDescription', {
+  type: 'control',
+  impl: group({
+    title: 'description',
+    controls: {'$': 'markdown', markdown: pipeline(list('#%$studio/page%', '%$pageCmp/description%', '```%$code%```'), join(`
+`))},
+    features: [
+      group.wait({'$': 'studio.waitForPreviewIframe'}),
+      watchRef('%$studio/page%'),
+      variable('pageCmp', () => jb.studio.previewjb.comps[jb.exec('%$studio.page%')]),
+      variable('code', {'$': 'prettyPrint', profile: '%$pageCmp/impl%'}),
+      css.height({
+        height: '250',
+        overflow: 'auto',
+        minMax: 'max'
+      })
+    ]
+  })
+})
+
 jb.component('dataResource.studio', {
   watchableData: {
     project: '',
@@ -341,33 +385,6 @@ jb.component('studio.vscodeTopBar', {
         ],
         features: css('width: 100%; ')
       })
-    ]
-  })
-})
-
-jb.component('studio.all', {
-  type: 'control',
-  impl: group({
-    controls: [
-      controlWithCondition(not('%$studio/vscode%'), studio.topBar()),
-      controlWithCondition('%$studio/vscode%', studio.vscodeTopBar()),
-      group({
-        controls: studio.previewWidget(),
-        features: id('preview-parent')
-      }),
-      studio.pages(),
-      studio.ctxCounters()
-    ],
-    features: [
-      group.wait({
-        for: ctx => jb.studio.host.settings().then(settings => ctx.run(writeValue('%$studio/settings%',
-          Object.assign(ctx.exp('%$studio/settings%'), typeof settings == 'string' ? JSON.parse(settings) : {})))),
-        loadingControl: text('')
-      }),
-//      group.data({data: '%$studio/project%', watch1: true}),
-      feature.requireService(studio.autoSaveService()),
-      feature.requireService(studio.vsCodeAdapterService('$studio')),
-      feature.requireService(urlHistory.mapStudioUrlToResource('studio'))
     ]
   })
 })

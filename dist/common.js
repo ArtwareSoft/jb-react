@@ -769,7 +769,7 @@ Object.assign(jb, {
           delete profile.$byValue
         }
     },
-    importAllMacros: (frame,macroNs) => jb.entires(macroNs ? jb.macro[macroNs] : jb.macro).forEach( ([id,val])=>frame[id] = val),
+    importAllMacros: (frame,macroNs) => jb.entries(macroNs ? jb.macro[macroNs] : jb.macro).forEach( ([id,val])=>frame[id] = val),
     registerMacro: (id, profile) => {
         const macroId = jb.macroName(id).replace(/\./g, '_')
         const nameSpace = id.indexOf('.') != -1 && jb.macroName(id.split('.')[0])
@@ -1382,7 +1382,7 @@ jb.component('writeValue', {
     }
     const val = jb.val(value)
     if (jb.isDelayed(val))
-      return Promise.resolve().then(val=>jb.writeValue(to,val,ctx,noNotifications))
+      return Promise.resolve(val).then(_val=>jb.writeValue(to,_val,ctx,noNotifications))
     else
       jb.writeValue(to,val,ctx,noNotifications)
   }

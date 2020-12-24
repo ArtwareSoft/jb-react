@@ -42,6 +42,7 @@ jb.component('vega.interactiveChart', {
           frontEnd.var('prettySpec', '%$prettySpec%'),
           frontEnd.var('vegaData', (ctx,{},{spec}) => jb.vega.namedData(spec)),
           frontEnd.init(({},{el,vegaData,prettySpec}) => {
+              el.setAttribute('jb_external','true')
               const view = vegaEmbed.createView(el, eval(`(${prettySpec})`))
               vegaData.forEach(e => view.insert(e[0],e[1] ))
               view.run()

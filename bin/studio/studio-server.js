@@ -7,7 +7,11 @@ file_type_handlers = {};
 
 _iswin = /^win/.test(process.platform);
 
-let settings = { port: 8083, open_source_cmd_vsCode: 'code -r -g', http_dir: './', exclude: 'node_modules|\.git', verbose: getProcessArgument('verbose') }
+let settings = { 
+  port: 8083, open_source_cmd_vsCode: 'code -r -g', http_dir: './', exclude: 'node_modules|\.git', verbose: getProcessArgument('verbose'),
+  OPENAI_TEST_API_KEY: process.env.OPENAI_TEST_API_KEY
+}
+
 try {
   Object.assign(settings,JSON.parse(fs.readFileSync('./jbart.json')))
   if (settings.verbose) console.log('settings',settings)

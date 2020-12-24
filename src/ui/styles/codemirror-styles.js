@@ -110,7 +110,7 @@ function injectCodeMirror(ctx,{text,cmp,el,cm_settings,_enableFullScreen}) {
 	const gutters = [ ...(cm_settings.gutters || []), ...(jb.path(cmp.extraCmSettings,'gutters') || []) ]
 	const settings = {...cm_settings, ...cmp.extraCmSettings, value: text, autofocus: false, extraKeys, gutters }
 	cmp.editor = CodeMirror(el, settings)
-	cmp.editor.getWrapperElement().setAttribute('jb_external',true)
+	cmp.editor.getWrapperElement().setAttribute('jb_external','true')
 	jb.ui.addClass(cmp.editor.getWrapperElement(),'autoResizeInDialog')
 	//cmp.editor.refresh()
 	_enableFullScreen && jb.delay(1).then(() => enableFullScreen(ctx,cmp,el))

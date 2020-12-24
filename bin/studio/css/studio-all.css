@@ -797,6 +797,11 @@ html, body {
   height: 22px;
   border-top: var(--divider-border);
   border-bottom: 1px solid transparent;
+}
+
+code {
+  display: block;
+  white-space: pre-wrap   
 }.CodeMirror-dialog {
   position: absolute;
   left: 0; right: 0;

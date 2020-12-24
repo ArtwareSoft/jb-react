@@ -14,97 +14,90 @@ jb.component('dataResource.noOfItems', {
 
 jb.component('itemlists.main', {
   type: 'control',
-  impl: group({
-    layout: layout.vertical(),
+  description: `Table of people with name and age columns.
+The data source is taken from a variable named \"%$people%\".
+In the example, field in a table with title \"name\" is bounded to the path \"%name%\"
+  `,
+  impl: itemlist({
+    items: '%$people%',
     controls: [
-      button({title: 'click me', style: button.mdcIcon(icon({icon: 'Yoga', type: 'mdi'}))}),
-      itemlist({
-        title: '',
-        items: '%$people%',
-        controls: [
-          text({text: '%name%', title: 'name', features: field.columnWidth('250')}),
-          text({text: '%age%', title: 'age'})
-        ],
-        style: table.plain(),
-        features: [
-          itemlist.selection({databind: '%$selectedItem%', autoSelectFirst: 'true'}),
-          itemlist.keyboardSelection({})
-        ]
-      })
-    ]
+      text('%name%', 'name'),
+      text('%age%', 'age')
+    ],
+    style: table.mdc()
   })
+})
+
+jb.component('itemlists.selection', {
+  type: 'control',
+  description: `Table with single selection. The selection is bounded to a watchable reactive variable named %$selectedItem%`,
+  impl: itemlist({
+    items: '%$people%',
+    controls: [
+      text('%name%', 'name'),
+      text('%age%', 'age')
+    ],
+    style: table.mdc(),
+    features: [itemlist.selection({databind: '%$selectedItem%', autoSelectFirst: 'true'}), itemlist.keyboardSelection()]
+  })
+})
+
+jb.component('itemlists.manyItems', {
+  params: [
+    {id: 'howMany', as: 'number', defaultValue: 1000 }
+  ],
+  impl: pipeline(range(1, '%$howMany%'), obj(prop('id','%%'), prop('name','%%-%%'), prop('group', ({data}) => Math.floor(Number(data) /10))))
 })
 
 jb.component('itemlists.largeTable', {
   type: 'control',
-  impl: group({
-    title: 'large-table',
+  description: `Large tables with many items are defined with the infinite scroll feature`,
+  impl: itemlist({
+    items: itemlists.manyItems(),
     controls: [
-      itemlist({
-        items: pipeline(range(1, 1000), {'$': 'object', id: '%%', name: '%%-%%'}),
-        controls: [
-          text({text: '%id%', title: 'id'}),
-          text({text: ctx => Math.floor(Number(ctx.data.id) /10), title: 'group'})
-        ],
-        style: table.mdc(),
-        visualSizeLimit: '50',
-        features: itemlist.infiniteScroll()
-      })
-    ]
-  })
+      text('%id%','id'),
+      text('%group%','group'),
+    ],
+    style: table.mdc(),
+    features: itemlist.infiniteScroll()
+   })
 })
 
-jb.component('itemlists.largeTableWithSearch', {
+jb.component('itemlists.search', {
   type: 'control',
+  description: `Do the following to add a search capability to itemlist
+- wrap the itemlist with a group called itemlist container and set a group.itemlistContainer feature to it
+- add a itemlistContainer.search control to the container group
+- set to itemlist items as a pipeline with itemlistContainer.filter() at the end
+- add watchRef to the itemlist features bounded to '%$itemlistCntrData/search_pattern%' in order to auto refresh the itemlist when the search pattern is changed
+- set itemlist property visualSizeLimit to 5-10 items to make the resposonse faster after each user click
+- add infinite scroll to allow the user to scroll to more results
+`,
   impl: group({
-    title: 'large-table',
     layout: layout.vertical('20'),
     controls: [
-      group({
-        layout: layout.horizontal('15'),
-        controls: [
-          itemlistContainer.search({
-            searchIn: search.fuse({shouldSort: true, threshold: '0', distance: ''})
-          }),
-          editableText({title: '#items', databind: '%$noOfItems%'})
-        ]
-      }),
+      itemlistContainer.search(),
       itemlist({
         items: pipeline(
-          range(1, '%$noOfItems%'),
-          {'$': 'object', id: '%%', name: '%%-%%'},
+          itemlists.manyItems(),
           itemlistContainer.filter()
         ),
         controls: [
-          text({text: '%id%', title: 'id'}),
-          text({text: ctx => Math.floor(Number(ctx.data.id) /10), title: 'group'})
+          text('%id%','id'),
+          text('%group%','group'),
         ],
         style: table.mdc(),
-        visualSizeLimit: '10',
+        visualSizeLimit: 10,
         features: [
           watchRef('%$itemlistCntrData/search_pattern%'),
-          itemlist.selection({
-            onDoubleClick: openDialog({
-              title: '%id%',
-              content: group({}),
-              features: dialogFeature.uniqueDialog('unique')
-            })
-          }),
-          itemlist.keyboardSelection({
-            onEnter: openDialog({
-              title: '%id%',
-              content: group({}),
-              features: dialogFeature.uniqueDialog('unique')
-            })
-          }),
           itemlist.infiniteScroll(),
-          watchRef('%$')
         ]
       })
     ],
-    features: group.itemlistContainer({})
+    features: group.itemlistContainer()
   })
 })
+
 
 jb.component('itemlists.editableTable', {
   type: 'control',
@@ -156,7 +149,7 @@ jb.component('itemlists.editableTable', {
 })
 
 
-jb.component('itemlists.tableWithSearch', {
+jb.component('itemlists.searchPeople', {
   type: 'control',
   impl: group({
     controls: [
@@ -193,7 +186,7 @@ jb.component('itemlists.tableWithSearch', {
   })
 })
 
-jb.component('itemlists.tableWithFilters', {
+jb.component('itemlists.filters', {
   type: 'control',
   impl: group({
     controls: [
@@ -302,7 +295,7 @@ jb.component('itemlists.masterDetails', {
   })
 })
 
-jb.component('itemlists.withSort', {
+jb.component('itemlists.sort', {
   type: 'control',
   impl: group({
     controls: [
@@ -349,52 +342,3 @@ jb.component('dataResource.people', {
   ]
 })
 
-jb.component('itemlists.infiniteScroll', {
-  type: 'control',
-  impl: group({
-    controls: [
-      itemlist({
-        title: '',
-        items: range(),
-        controls: [
-          text({text: '%%', title: 'my title'})
-        ],
-        visualSizeLimit: '7',
-        features: [
-          css.height({height: '100', overflow: 'scroll'}),
-          itemlist.infiniteScroll(),
-          css.width('600')
-        ]
-      }),
-      itemlistContainer.search({
-        title: '',
-        searchIn: '%%',
-        databind: '%$itemlistCntrData/search_pattern%'
-      }),
-      itemlist({
-        title: '',
-        items: pipeline(ctx => jb.ui.MDIcons, keys(), itemlistContainer.filter()),
-        controls: [
-          group({
-            layout: layout.horizontal(),
-            controls: [
-              button({title: 'icon', style: button.mdcIcon(icon({icon: '%%', type: 'mdi'}))}),
-              text({
-                text: pipeline('%%', text.highlight('%%', '%$itemlistCntrData.search_pattern%')),
-                title: 'icon name'
-              })
-            ]
-          })
-        ],
-        visualSizeLimit: '50',
-        features: [
-          watchRef({ref: '%$itemlistCntrData/search_pattern%', strongRefresh: 'true'}),
-          css.height({height: '300', overflow: 'scroll'}),
-          css.width('600'),
-          itemlist.infiniteScroll()
-        ]
-      })
-    ],
-    features: group.itemlistContainer({})
-  })
-})
