@@ -30,7 +30,7 @@ jb.component('sink.frontEndDelta', {
         const ctxToUse = ctx.setVars({headlessWidget: false, FEwidgetId: widgetId})
         const elem = cmpId ? jb.ui.find(jb.ui.widgetBody(ctxToUse),`[cmp-id="${cmpId}"]`)[0] : jb.ui.widgetBody(ctxToUse)
         try {
-            const res = jb.ui.applyDeltaToCmp({delta,ctx: ctxToUse,cmpId,elem,assumedVdom})
+            const res = elem && jb.ui.applyDeltaToCmp({delta,ctx: ctxToUse,cmpId,elem,assumedVdom})
             if (jb.path(res,'recover')) {
                 jb.log('headless frontend recover widget request',{widgetId,ctx,elem,cmpId, ...res})
                 jb.ui.widgetUserRequests.next({$: 'recoverWidget', widgetId, ...res })
@@ -59,14 +59,14 @@ jb.component('widget.headless', {
                     talkback.forEach(tb=>tb(1))
             })
             filteredSrc(0, function headless(t, d) {
-                jb.log('headless widget delta out',{widgetId,t,d})
+                jb.log('headless widget delta out',{widgetId,t,d,ctx})
                 if (t == 0) talkback.push(d)
                 if (t === 2) sink(t,d)
                 if (t === 1 && d) sink(t,ctx.dataObj(d))
             })
     
             userReqIn(0, function headless(t, d) {
-              jb.log('headless widget userRequset in',{widgetId,t,d})
+              jb.log('headless widget userRequset in',{widgetId,t,d,ctx})
               if (t == 0) talkback.push(d)
               if (t === 2) sink(t,d)
               if (t === 1 && d && d.data.widgetId == widgetId) handleUserReq(d.data)

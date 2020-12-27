@@ -65,7 +65,7 @@ jb.component('source.interval', {
 jb.component('rx.pipe', {
   type: 'rx,data,action',
   category: 'source',
-  description: 'pipeline of reactive observables',
+  description: 'pipeline of reactive observables with source',
   params: [
     {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
   ],
@@ -87,7 +87,7 @@ jb.component('rx.merge', {
 jb.component('rx.innerPipe', {
   type: 'rx',
   category: 'operator',
-  description: 'inner reactive pipeline',
+  description: 'inner reactive pipeline without source',
   params: [
     {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, templateValue: []},
   ],
@@ -433,8 +433,8 @@ jb.component('rx.subscribe', {
 
 jb.component('sink.action', {
   type: 'rx',
-  description: 'subscribe',
   category: 'sink',
+  description: 'subscribe',
   params: [
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
   ],

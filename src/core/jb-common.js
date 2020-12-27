@@ -1178,3 +1178,23 @@ jb.component('action.setSessionStorage', {
   ],
   impl: ({},id,value) => jb.sessionStorage(id,value())
 })
+
+jb.component('waitFor',{
+  params: [
+    {id: 'check', dynamic: true},
+    {id: 'interval', as: 'number', defaultValue: 50},
+    {id: 'times', as: 'number', defaultValue: 300},
+  ],
+  impl: (ctx,check,interval,times) => {
+    let count = 0
+    return new Promise((resolve,reject) => {
+        const toRelease = setInterval(() => {
+            count++
+            const v = check()
+            if (v || count >= times) clearInterval(toRelease)
+            if (v) resolve(v)
+            if (count >= times) reject('timeout')
+        }, interval)
+    })
+  }
+})

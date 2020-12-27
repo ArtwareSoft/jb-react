@@ -25,7 +25,7 @@ const devHost = {
     // goto project
     projectUrlInStudio: project => `/project/studio/${project}`,
     // preview
-    jbLoader: '/src/loader/jb-loader.js',
+    jbLoader: location.origin + '/src/loader/jb-loader.js',
 }
 
 const vscodeDevHost = {

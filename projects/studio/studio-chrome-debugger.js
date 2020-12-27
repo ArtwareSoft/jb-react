@@ -252,18 +252,6 @@ jb.component('chromeDebugger.openResource', {
     }
 })
 
-jb.component('chromeDebugger.icon', {
-    type: 'button.style',
-    params: [
-        {id: 'position', as: 'string', defaultValue: '0px 144px'}
-    ],
-    impl: customStyle({
-      template: (cmp,{title},h) => h('div',{onclick: true, title}),
-      css: `{ -webkit-mask-image: url(largeIcons.svg); -webkit-mask-position: %$position%; width: 28px;  height: 24px; background-color: var(--jb-menu-fg); opacity: 0.7}
-        ~:hover { opacity: 1}`,
-    })
-})
-
 jb.component('chromeDebugger.refreshAfterSelection', {
     type: 'feature',
     impl: method('refreshAfterDebuggerSelection', runActions(
@@ -274,26 +262,4 @@ jb.component('chromeDebugger.refreshAfterSelection', {
         },
         action.refreshCmp('%%')
     )),
-})
-
-jb.component('chromeDebugger.sectionsExpandCollapse', {
-    type: 'group.style',
-    impl: group.sectionsExpandCollapse({
-        autoExpand: true,
-        titleStyle: text.span(),
-        toggleStyle: editableBoolean.expandCollapseWithUnicodeChars(),
-        titleGroupStyle: styleWithFeatures(group.div(), features(
-          css.class('expandable-view-title'),
-          css('~ i { margin-top: 5px }'),
-          css('text-transform: capitalize')
-        )),
-        innerGroupStyle: styleWithFeatures(group.div(), features(
-          css.margin({bottom: 5}),
-        ))
-    })
-})
-
-jb.component('chromeDebugger.toggleStyle', {
-  type: 'editable-boolean.style',
-  impl: editableBoolean.expandCollapseWithUnicodeChars()
 })

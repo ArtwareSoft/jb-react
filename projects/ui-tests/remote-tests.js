@@ -214,6 +214,22 @@ jb.component('remoteTest.twoTierWidget.infiniteScroll.MDInplace', {
   })
 })
 
+jb.component('remoteTest.twoTierWidget.refresh', {
+  impl: uiFrontEndTest({
+    renderDOM: true,
+    vars: Var('person1', () => ({name: 'Homer'})), // none watchable var
+    control: group({
+      controls: widget.twoTierWidget(text('%$person1/name%'), remote.worker({id: 'ui', libs: ['common','ui-common','remote','two-tier-widget'] })),
+      features: [
+        variable('person1','%$person%'),
+        watchRef('%$person/name%')
+      ]
+    }),
+    action: runActions( writeValue('%$person/name%', 'hello'), delay(500)),
+    expectedResult: contains('hello')
+  })
+})
+
 // jb.component('remoteTest.twoTierWidget.recoverAfterError', {
 //   impl: uiTest({
 //     timeout: 3000,

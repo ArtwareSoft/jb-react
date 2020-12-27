@@ -1,4 +1,6 @@
-var jb = (function() {
+if (typeof jb == 'undefined' && typeof self != 'undefined') self.jb = {};
+
+(function() {
 function jb_run(ctx,parentParam,settings) {
 //  ctx.profile && jb.log('core request', [ctx.id,...arguments])
   if (ctx.probe && ctx.probe.outOfTime)
@@ -220,29 +222,28 @@ let ctxCounter = 0;
 
 class jbCtx {
   constructor(ctx,ctx2) {
-    this.id = ctxCounter++;
-    this._parent = ctx;
+    this.id = ctxCounter++
+    this._parent = ctx
     if (typeof ctx == 'undefined') {
-      this.vars = {};
-      this.params = {};
-    }
-    else {
+      this.vars = {}
+      this.params = {}
+    } else {
       if (ctx2.profile && ctx2.path == null) {
-        debugger;
-      ctx2.path = '?';
-    }
-      this.profile = (typeof(ctx2.profile) != 'undefined') ?  ctx2.profile : ctx.profile;
+        debugger
+        ctx2.path = '?'
+      }
+      this.profile = (typeof(ctx2.profile) != 'undefined') ?  ctx2.profile : ctx.profile
 
-      this.path = (ctx.path || '') + (ctx2.path ? '~' + ctx2.path : '');
+      this.path = (ctx.path || '') + (ctx2.path ? '~' + ctx2.path : '')
       if (ctx2.forcePath)
-        this.path = this.forcePath = ctx2.forcePath;
+        this.path = this.forcePath = ctx2.forcePath
       if (ctx2.comp)
-        this.path = ctx2.comp + '~impl';
-      this.data= (typeof ctx2.data != 'undefined') ? ctx2.data : ctx.data;     // allow setting of data:null
-      this.vars= ctx2.vars ? Object.assign({},ctx.vars,ctx2.vars) : ctx.vars;
-      this.params= ctx2.params || ctx.params;
-      this.cmpCtx= (typeof ctx2.cmpCtx != 'undefined') ? ctx2.cmpCtx : ctx.cmpCtx;
-      this.probe= ctx.probe;
+        this.path = ctx2.comp + '~impl'
+      this.data= (typeof ctx2.data != 'undefined') ? ctx2.data : ctx.data     // allow setting of data:null
+      this.vars= ctx2.vars ? Object.assign({},ctx.vars,ctx2.vars) : ctx.vars
+      this.params= ctx2.params || ctx.params
+      this.cmpCtx= (typeof ctx2.cmpCtx != 'undefined') ? ctx2.cmpCtx : ctx.cmpCtx
+      this.probe= ctx.probe
     }
   }
   run(profile,parentParam) {
@@ -278,11 +279,10 @@ class jbCtx {
   }
 }
 
-return { 
+Object.assign(jb,{ 
   frame: (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {}, 
   comps: {}, ctxDictionary: {}, run: jb_run, jbCtx, jstypes, tojstype 
-}
+})
 })()
 
-if (typeof self != 'undefined') self.jb = jb
 if (typeof module != 'undefined') module.exports = jb

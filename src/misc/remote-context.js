@@ -3,7 +3,7 @@ jb.remoteCtx = {
         if (!ctx) return null
         const isJS = typeof ctx.profile == 'function'
         const profText = jb.prettyPrint(ctx.profile)
-        const vars = jb.objFromEntries(jb.entries(ctx.vars).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
+        const vars = jb.objFromEntries(jb.entries(ctx.vars).filter(e => e[0] == '$disableLog' || profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
         const params = jb.objFromEntries(jb.entries(isJS ? ctx.params: jb.entries(jb.path(ctx.cmpCtx,'params')))
             .filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))

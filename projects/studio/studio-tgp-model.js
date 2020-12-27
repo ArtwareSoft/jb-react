@@ -289,20 +289,6 @@ Object.assign(st,{
 		})
 	},
 	// queries
-	paramDef: path => {
-		if (!st.parentPath(path)) // no param def for root
-			return;
-		if (!isNaN(Number(path.split('~').pop()))) // array elements
-			path = st.parentPath(path);
-		// const parent_prof = st.valOfPath(st.parentPath(path),true);
-		// const comp = parent_prof && st.getComp(jb.compName(parent_prof));
-		const comp = st.compOfPath(st.parentPath(path),true);
-		const params = jb.compParams(comp);
-		const paramName = path.split('~').pop();
-		if (paramName.indexOf('$') == 0) // sugar
-			return params[0];
-		return params.filter(p=>p.id==paramName)[0];
-	},
 	isArrayType: path => ((st.paramDef(path)||{}).type||'').indexOf('[]') != -1,
 	isOfType: (path,type) => {
 		const types = type.split(',');

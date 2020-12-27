@@ -1,16 +1,3 @@
-jb.waitFor = jb.waitFor || ((check,interval = 50 ,times = 300) => {
-    let count = 0
-    return new Promise((resolve,reject) => {
-        if (check()) return resolve(check())
-        const toRelease = setInterval(() => {
-            count++
-            const v = check()
-            if (v || count >= times) clearInterval(toRelease)
-            if (v) resolve(v)
-            if (count >= times) reject('timeout')
-        }, interval)
-    })
-})
 
 jb.remote = {
     servers: {},
@@ -44,7 +31,7 @@ jb.remote = {
             newId() { return port.from + ':' + (this.counter++) },
             get(id) { return this.map[id] },
             getAsPromise(id,t) { 
-                return jb.waitFor(()=> this.map[id],5,10)
+                return jb.exec(waitFor({check: ()=> this.map[id], interval: 5, times: 10}))
                     .catch(e => jb.logError('cbLookUp - can not find cb',{id}))
                     .then(cb => {
                         if (t == 2) this.removeEntry(id)

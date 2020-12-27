@@ -4,16 +4,26 @@ jb.component('studio.notebook', {
   type: 'control',
   impl: group({
     controls: [
-      studio.notebookTopBar(),
-      studio.notebookEditor('%$studio/project%.notebook'),
-      studio.ctxCounters()
+      //studio.notebookTopBar(),
+      group({
+          controls: [
+            //   group({
+            //       controls: widget.twoTierWidget(studio.eventTracker(), remote.notebookWorker()),
+            //       features: variable('$disableLog',true),
+            //   }),
+              ctx => ctx.run({$: ctx.exp('%$studio/project%.notebook')}),
+          ],
+          features: group.wait(pipe(
+            studio.initProjectSandbox('%%'),
+            waitFor(ctx => jb.comps[ctx.exp('%$studio/project%.notebook')] )
+          ), text('loading notebook...') )
+      }),
+      //studio.ctxCounters()
     ],
     features: [
-      group.wait(ctx => jb.studio.host.settings().then(settings => ctx.run(writeValue('%$studio/settings%',
-          Object.assign(ctx.exp('%$studio/settings%'), typeof settings == 'string' ? JSON.parse(settings) : {})))), text('')), 
+        group.wait(studio.fetchProjectSettings(), text('')), 
         feature.requireService(studio.autoSaveService()), 
-        feature.requireService(studio.vsCodeAdapterService('studio')), 
-        feature.requireService(urlHistory.mapStudioUrlToResource('studio'))
+        feature.requireService(urlHistory.mapStudioUrlToResource('studio')),
     ]
   })
 })
@@ -198,3 +208,4 @@ jb.component('studio.notebookToolbar', {
     ]
   })
 })
+

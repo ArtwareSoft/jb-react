@@ -189,6 +189,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       'xml': [ 'src/misc/xml.js' ],
       'jison': [ 'dist/jb-jison.js', 'src/misc/jison.js' ],
       'parsing': [ 'src/misc/parsing.js' ],
+      'notebook': [ 'src/ui/notebook/notebook-common.js'],
       studio: [
         'dist/material.js', 'src/ui/watchable/text-editor.js',
         'dist/showdown.js', 'src/ui/markdown.js',
@@ -198,7 +199,9 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'references','properties-menu','save','open-project','tree',
         'data-browse', 'new-project','event-tracker', 'comp-inspector','toolbar','search', 'main', 'component-header', 
         'hosts', 'probe', 'watch-ref-viewer', 'content-editable', 'position-thumbs', 'html-to-ctrl', 'patterns', 'pick-icon', 
-        'inplace-edit', 'grid-editor', 'sizes-editor', 'refactor', 'vscode', 'pptr', 'chrome-debugger','notebook'
+        'inplace-edit', 'grid-editor', 'sizes-editor', 'refactor', 'vscode', 'pptr', 'chrome-debugger',
+
+        'src/ui/notebook/notebook-common.js', 'notebook','sandbox','notebook-editor'
       ],
       'studio-tests': [
         'projects/studio/studio-testers.js',
@@ -218,7 +221,7 @@ function jb_dynamicLoad(modules,prefix,suffix) {
     const scriptSrc = document.currentScript.getAttribute('src')
     const base = window.jbModuleUrl && (window.jbModuleUrl + '/dist') || scriptSrc.slice(0,scriptSrc.lastIndexOf('/'))
     calcDependencies(modules).flatMap(m=>[m+'.js', `css/${m}.css`])
-      .forEach(m=>loadFile([base,m].join('/')))
+      .forEach(m=>jb_loadFile([base,m].join('/')))
   } else {
     calcDependencies(modules).flatMap(m=>[m,...(jb_modules[`${m}-css`] ? [`${m}-css`]: [])]).forEach(m=>{
       (jb_modules[m] || []).forEach(file=>{
@@ -234,8 +237,8 @@ function jb_dynamicLoad(modules,prefix,suffix) {
         }
         if (suffix) file += suffix
 
-        const url = (window.jbLoaderRelativePath ? '' : '/') + file;
-        loadFile(url)
+        const url = (self.jbLoaderRelativePath ? '' : '/') + file;
+        jb_loadFile(url)
       })
     })
   }
@@ -260,21 +263,45 @@ if (typeof window != 'undefined')
 
 if (typeof global != 'undefined') global.jb_modules = jb_modules;
 
-loadProject()
-
-function loadProject() {
+function jb_loadProject() {
   if (typeof jbProjectSettings == 'undefined') return
   jbProjectSettings.baseUrl = jbProjectSettings.baseUrl || ''
-
-  jb_dynamicLoad(jbProjectSettings.libs); // may load packaged libs from dist
-
+  setLoadingPhase('libs')
+  jb_dynamicLoad(jbProjectSettings.libs,'',jbProjectSettings.suffix); // may load packaged libs from dist
+  setLoadingPhase('src');
   [...(jbProjectSettings.jsFiles || []), ...(jbProjectSettings.cssFiles || [])]
     .forEach(fn=> {
       const path = pathOfProjectFile(fn,jbProjectSettings)
 //      console.log('loading file',fn,path)
-      loadFile(path) 
+      jb_loadFile(path) 
     })
+
+  function pathOfProjectFile(fn,{project,baseUrl,source} = {}) {
+    const isVscode = (source||'').indexOf('vscode') == 0
+    if (isVscode && fn[0] == '/')
+      return fn  
+    else if (source == 'vscodeUserHost')
+      return `${baseUrl}/${project}/${fn}`
+    else if (source == 'vscodeDevHost')
+      return `/projects/${project}/${fn}`
+    else if (!isVscode && baseUrl.indexOf('//') != -1)
+      return baseUrl + fn  
+    else if (baseUrl)
+      return baseUrl == './' ? fn : `/${project}/${fn}`
+    else if (fn[0] == '/')
+      return fn
+    else if (source == 'studio')
+      return `/projects/${project}/${fn}`
+  }
+
+  function setLoadingPhase(phase) {
+    if (typeof document == 'undefined')
+      self.jbLoadingPhase = phase 
+    else 
+      document.write(`<script>jbLoadingPhase = '${phase}'</script>`)
+  }
 }
+jb_loadProject()
 
 function jb_initWidget() {
   if (!document.getElementById('main')) {
@@ -294,31 +321,18 @@ function jb_initWidget() {
   })()
 }
 
-function pathOfProjectFile(fn,{project,baseUrl,source} = {}) {
-  const isVscode = (source||'').indexOf('vscode') == 0
-  if (isVscode && fn[0] == '/')
-    return fn  
-  else if (source == 'vscodeUserHost')
-    return `${baseUrl}/${project}/${fn}`
-  else if (source == 'vscodeDevHost')
-    return `/projects/${project}/${fn}`
-  else if (!isVscode && baseUrl.indexOf('//') != -1)
-    return baseUrl + fn  
-  else if (baseUrl)
-    return baseUrl == './' ? fn : `/${project}/${fn}`
-  else if (fn[0] == '/')
-    return fn
-  else if (source == 'studio')
-    return `/projects/${project}/${fn}`
- }
- 
- function loadFile(url) {
-  if (window.jbBaseProjUrl && !url.match('//'))
-    url = [window.jbBaseProjUrl.replace(/\/$/,''),url.replace(/^\//,'')].join('/')
-  if (url.match(/\.js$|\.js\?/))
-     document.write(`<script src="${url}" charset="UTF-8"></script>`)
-   else
-     document.write(`<link rel="stylesheet" type="text/css" href="${url}" />`);
+function jb_loadFile(url) {
+  const isWorker = typeof window == 'undefined', isJs = url.match(/\.js$|\.js\?/)
+  if (self.jbBaseProjUrl && !url.match('//'))
+    url = [self.jbBaseProjUrl.replace(/\/$/,''),url.replace(/^\//,'')].join('/')
+  if (isWorker) {
+    isJs && importScripts(location.origin+url)
+  } else {
+    if (isJs)
+      document.write(`<script src="${url}" charset="UTF-8"></script>`)
+    else
+      document.write(`<link rel="stylesheet" type="text/css" href="${url}" />`);
+  }
  }
  
  if (typeof module != 'undefined')

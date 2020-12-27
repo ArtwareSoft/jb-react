@@ -6,8 +6,8 @@ Object.assign(jb.ui, {
     return st.inspectedJb || st.previewjb
   },
   getReachableJbs: (frame, direction) => {
-    const up = direction != 'down' && frame.parent != frame && frame.parent.jb && jb.ui.getReachableJbs(frame.parent,'up') || []
-    const down = direction != 'up' && Array.from(frame.frames).flatMap(fr=>jb.ui.getReachableJbs(fr,'down')) || []
+    const up = frame.parent && direction != 'down' && frame.parent != frame && frame.parent.jb && jb.ui.getReachableJbs(frame.parent,'up') || []
+    const down = frame.frames && direction != 'up' && Array.from(frame.frames).flatMap(fr=>jb.ui.getReachableJbs(fr,'down')) || []
     return [frame.jb, ...up, ...down].filter(x=>x)
   },
   getSpy: ctx => {
@@ -190,6 +190,7 @@ jb.component('studio.eventTracker', {
       })
     ],
     features: [
+      variable('$disableLog',true),
       id('event-tracker'),
       variable({name: 'cmpExpanded', watchable: true, value: obj() }),
       variable({name: 'payloadExpanded', watchable: true, value: obj() }),
@@ -526,4 +527,38 @@ jb.component('eventTracker.compInspector', {
       variable('elem', eventTracker.elemOfCmp('%$cmp%')),
     ]
   })
+})
+
+jb.component('chromeDebugger.icon', {
+  type: 'button.style',
+  params: [
+      {id: 'position', as: 'string', defaultValue: '0px 144px'}
+  ],
+  impl: customStyle({
+    template: (cmp,{title},h) => h('div',{onclick: true, title}),
+    css: `{ -webkit-mask-image: url(largeIcons.svg); -webkit-mask-position: %$position%; width: 28px;  height: 24px; background-color: var(--jb-menu-fg); opacity: 0.7}
+      ~:hover { opacity: 1}`,
+  })
+})
+
+jb.component('chromeDebugger.sectionsExpandCollapse', {
+  type: 'group.style',
+  impl: group.sectionsExpandCollapse({
+      autoExpand: true,
+      titleStyle: text.span(),
+      toggleStyle: editableBoolean.expandCollapseWithUnicodeChars(),
+      titleGroupStyle: styleWithFeatures(group.div(), features(
+        css.class('expandable-view-title'),
+        css('~ i { margin-top: 5px }'),
+        css('text-transform: capitalize')
+      )),
+      innerGroupStyle: styleWithFeatures(group.div(), features(
+        css.margin({bottom: 5}),
+      ))
+  })
+})
+
+jb.component('chromeDebugger.toggleStyle', {
+  type: 'editable-boolean.style',
+  impl: editableBoolean.expandCollapseWithUnicodeChars()
 })

@@ -1,4 +1,6 @@
-var jb = (function() {
+if (typeof jb == 'undefined' && typeof self != 'undefined') self.jb = {};
+
+(function() {
 function jb_run(ctx,parentParam,settings) {
 //  ctx.profile && jb.log('core request', [ctx.id,...arguments])
   if (ctx.probe && ctx.probe.outOfTime)
@@ -220,29 +222,28 @@ let ctxCounter = 0;
 
 class jbCtx {
   constructor(ctx,ctx2) {
-    this.id = ctxCounter++;
-    this._parent = ctx;
+    this.id = ctxCounter++
+    this._parent = ctx
     if (typeof ctx == 'undefined') {
-      this.vars = {};
-      this.params = {};
-    }
-    else {
+      this.vars = {}
+      this.params = {}
+    } else {
       if (ctx2.profile && ctx2.path == null) {
-        debugger;
-      ctx2.path = '?';
-    }
-      this.profile = (typeof(ctx2.profile) != 'undefined') ?  ctx2.profile : ctx.profile;
+        debugger
+        ctx2.path = '?'
+      }
+      this.profile = (typeof(ctx2.profile) != 'undefined') ?  ctx2.profile : ctx.profile
 
-      this.path = (ctx.path || '') + (ctx2.path ? '~' + ctx2.path : '');
+      this.path = (ctx.path || '') + (ctx2.path ? '~' + ctx2.path : '')
       if (ctx2.forcePath)
-        this.path = this.forcePath = ctx2.forcePath;
+        this.path = this.forcePath = ctx2.forcePath
       if (ctx2.comp)
-        this.path = ctx2.comp + '~impl';
-      this.data= (typeof ctx2.data != 'undefined') ? ctx2.data : ctx.data;     // allow setting of data:null
-      this.vars= ctx2.vars ? Object.assign({},ctx.vars,ctx2.vars) : ctx.vars;
-      this.params= ctx2.params || ctx.params;
-      this.cmpCtx= (typeof ctx2.cmpCtx != 'undefined') ? ctx2.cmpCtx : ctx.cmpCtx;
-      this.probe= ctx.probe;
+        this.path = ctx2.comp + '~impl'
+      this.data= (typeof ctx2.data != 'undefined') ? ctx2.data : ctx.data     // allow setting of data:null
+      this.vars= ctx2.vars ? Object.assign({},ctx.vars,ctx2.vars) : ctx.vars
+      this.params= ctx2.params || ctx.params
+      this.cmpCtx= (typeof ctx2.cmpCtx != 'undefined') ? ctx2.cmpCtx : ctx.cmpCtx
+      this.probe= ctx.probe
     }
   }
   run(profile,parentParam) {
@@ -278,13 +279,12 @@ class jbCtx {
   }
 }
 
-return { 
+Object.assign(jb,{ 
   frame: (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {}, 
   comps: {}, ctxDictionary: {}, run: jb_run, jbCtx, jstypes, tojstype 
-}
+})
 })()
 
-if (typeof self != 'undefined') self.jb = jb
 if (typeof module != 'undefined') module.exports = jb;
 
 Object.assign(jb, {
@@ -729,6 +729,7 @@ Object.assign(jb, {
 
 Object.assign(jb, {
     location: Symbol.for('location'),
+    loadingPhase: Symbol.for('loadingPhase'),
     component: (_id,comp) => {
       const id = jb.macroName(_id)
       try {
@@ -756,7 +757,7 @@ Object.assign(jb, {
         if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
           p.type = 'boolean'
       })
-  
+      comp[jb.loadingPhase] = jb.frame.jbLoadingPhase
       jb.registerMacro && jb.registerMacro(id, comp)
     },    
     macroDef: Symbol('macroDef'), macroNs: {}, macro: {},
@@ -859,63 +860,6 @@ Object.assign(jb, {
 
 (function() {
 const spySettings = { 
-	mutableVerbs: [
-		'set','refresh','writeValue','splice',
-		'focus','state','method','applyDelta','render','scrollBy'
-	],
-	verbOntology: [
-		['startEnd','start','end'],
-		['startEnd','started','completed'],
-		['startEnd',['search','select'],['found','notFound']],
-		['startEnd','request','result'],
-		['startEnd',['create','build'], ['built','created']],
-		['startEnd','set','changed'],
-		['startEnd','open','close'],
-		['startEnd','waitFor','arrived']
-	],
-	verbs: [
-		'sent','received','check', 'register', 'timeout', 'objectProperty',
-	],
-	lifecycleVerbs: ['init', 'changed','destroyed'],
-	flowLifeCycle: ['define','register','next','completed','error'],
-	ontology: [
-		['kindOf','uiComp', ['dialog','itemlist','tree','tabletree','editableBoolean','helperPopup']],
-		['partsOf','uiComp',['frontend','backend']],
-		['partsOf','widget',['headlessWidget','widgetFrontend']],
-		['aspects','ui', ['watchable','keyboard','service']],
-		['objects','ui', ['uiComp','field','uiDelta','vdom','var', 'calculatedVar', 'selectionKeySource']],
-		['processIn','ui', ['renderVdom']],
-
-		['subSystem','studio', ['probe','preview','picker','codeMirrorHint']],
-		['objects','studio', ['script']],
-		['objects','tests', ['testResult','userInput','userRequest','dataTest','uiTest','waitForCompReady','waitForSelector']],
-		['processIn','tests', ['test']],
-		['processIn','preview',['loadPreview']],
-		['processIn','probe',['runCircuit']],
-		['kindOf', 'store',['watchable','jbParent']],
-		['kindOf', 'var',['calculatedVar']],
-		['kindOf', 'service',['selectionKeySource']],
-
-		['subSystem','ui', ['menu']],
-
-		['objects','menu', ['']],
-		['kindOf', 'service',['menuKeySource']],
-
-	],
-	moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable,scriptChange,resLog,setGridAreaVals,dragableGridItemThumb,pptrStarted,pptrEmit,pptrActivity,pptrResultData', 
-	groups: {
-		none: '',
-		methods: 'BEMethod,FEMethod',
-		refresh: 'doOp,refreshElem,notifyCmpObservable,refreshCmp',
-		keyboard: 'registerService,overridingService,fromSelectionKeySource,foundSelectionKeySource,selectionKeySourceNotFound,itemlistOnkeydown,selectionKeySource,itemlistOnkeydownNextSelected,BEMethod,FEMethod,FEFlow,FEProp,followUp,focus',
-		puppeteer: 'pptrStarted,pptrEmit,pptrActivity,pptrResultData,pptrInfo,pptrError',
-		watchable: 'doOp,writeValue,removeCmpObservable,registerCmpObservable,notifyCmpObservable,notifyObservableElems,notifyObservableElem,scriptChange',
-		react: 'BEMethod,applyNewVdom,applyDeltaTop,applyDelta,unmount,render,initCmp,refreshReq,refreshElem,childDiffRes,htmlChange,appendChild,removeChild,replaceTop,calcRenderProp,followUp',
-		dialog: 'addDialog,closeDialog,refreshDialogs',
-		uiTest: 'userInput,remote,checkTestResult,userRequest,refresh,waitForSelector,waitForSelectorCheck,scrollBy,dataTestResult',
-		remoteCallbag: 'innerCBReady,innerCBCodeSent,innerCBDataSent,innerCBMsgReceived,remoteCmdReceived,remoteSource,remoteSink,outputToRemote,inputFromRemote,inputInRemote,outputInRemote',
-		menu: 'fromMenuKeySource,menuControl,initPopupMenu,isRelevantMenu,menuKeySourceNotFound,foundMenuKeySource,menuMouseEnter',
-	},
 	includeLogs: 'exception,error',
 	stackFilter: /spy|jb_spy|Object.log|rx-comps|jb-core|node_modules/i,
     MAX_LOG_SIZE: 10000
@@ -940,14 +884,8 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			return this._obs
 		},
 		enabled: () => true,
-		parseLogsList(list, depth = 0) {
-			if (depth > 3) return []
-			return (list || '').split(',').filter(x => x[0] !== '-').filter(x => x)
-				// .flatMap(x=> settings.groups[x] ? this.parseLogsList(settings.groups[x],depth+1) : [x])
-				//.flatMap(x=> settings.groups[x] ? this.parseLogsList(settings.groups[x],depth+1) : [x])
-		},
 		calcIncludeLogsFromSpyParam(spyParam) {
-			const includeLogsFromParam = this.parseLogsList(spyParam)
+			const includeLogsFromParam = (spyParam || '').split(',').filter(x => x[0] !== '-').filter(x => x)
 			const excludeLogsFromParam = (spyParam || '').split(',').filter(x => x[0] === '-').map(x => x.slice(1))
 			this.includeLogs = settings.includeLogs.split(',').concat(includeLogsFromParam).filter(log => excludeLogsFromParam.indexOf(log) === -1).reduce((acc, log) => {
 				acc[log] = true
@@ -956,6 +894,8 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			this.includeLogsInitialized = true
 		},
 		shouldLog(logNames, record) {
+			const ctx = record && (record.ctx || record.srcCtx || record.cmp && record.cmp.ctx)
+			if (ctx && ctx.vars.$disableLog) return false
 			if (!logNames) debugger
 			return this.spyParam === 'all' || typeof record == 'object' && 
 				logNames.split(' ').reduce( (acc,logName)=>acc || this.includeLogs[logName],false)
@@ -2264,7 +2204,26 @@ jb.component('action.setSessionStorage', {
   ],
   impl: ({},id,value) => jb.sessionStorage(id,value())
 })
-;
+
+jb.component('waitFor',{
+  params: [
+    {id: 'check', dynamic: true},
+    {id: 'interval', as: 'number', defaultValue: 50},
+    {id: 'times', as: 'number', defaultValue: 300},
+  ],
+  impl: (ctx,check,interval,times) => {
+    let count = 0
+    return new Promise((resolve,reject) => {
+        const toRelease = setInterval(() => {
+            count++
+            const v = check()
+            if (v || count >= times) clearInterval(toRelease)
+            if (v) resolve(v)
+            if (count >= times) reject('timeout')
+        }, interval)
+    })
+  }
+});
 
 jb.callbag = {
       fromIter: iter => (start, sink) => {
@@ -3165,7 +3124,7 @@ jb.component('source.interval', {
 jb.component('rx.pipe', {
   type: 'rx,data,action',
   category: 'source',
-  description: 'pipeline of reactive observables',
+  description: 'pipeline of reactive observables with source',
   params: [
     {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
   ],
@@ -3187,7 +3146,7 @@ jb.component('rx.merge', {
 jb.component('rx.innerPipe', {
   type: 'rx',
   category: 'operator',
-  description: 'inner reactive pipeline',
+  description: 'inner reactive pipeline without source',
   params: [
     {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, templateValue: []},
   ],
@@ -3533,8 +3492,8 @@ jb.component('rx.subscribe', {
 
 jb.component('sink.action', {
   type: 'rx',
-  description: 'subscribe',
   category: 'sink',
+  description: 'subscribe',
   params: [
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
   ],
@@ -3843,7 +3802,7 @@ class WatchableValueByRef {
   resourceReferred(resName) {
     const resource = this.resources()[resName]
     if (!this.objToPath.has(resource))
-    this.addObjToMap(resource,[resName])
+      this.addObjToMap(resource,[resName])
   }
   addJbId(path) {
     for(let i=0;i<path.length;i++) {
@@ -4367,7 +4326,7 @@ function vdomDiff(newObj,orig) {
         if (Array.isArray(orig) && orig.length == 0) orig = null
         if (Array.isArray(newObj) && newObj.length == 0) newObj = null
         if (orig === newObj) return {}
-        if (jb.path(newObj,'attributes.jb_external') || jb.path(orig,'attributes.jb_external')) return {}
+//        if (jb.path(newObj,'attributes.jb_external') || jb.path(orig,'attributes.jb_external')) return {}
         if (typeof orig == 'string' && ignoreValue.test(orig) || typeof newObj == 'string' && ignoreValue.test(newObj)) return {}
         if (attName == 'class' && 
             (typeof orig == 'string' && ignoreClasses.test(orig) || typeof newObj == 'string' && ignoreClasses.test(newObj))) return {}
@@ -4376,14 +4335,14 @@ function vdomDiff(newObj,orig) {
             .filter(k=>!ignoreRegExp.test(k))
             .filter(k=> !(typeof orig[k] == 'string' && ignoreValue.test(orig[k])))
             .filter(k => !(Array.isArray(orig[k]) && orig[k].length == 0))
-            .filter(k => !(typeof orig[k] == 'object' && jb.path(orig[k],'attributes.jb_external')))
+//            .filter(k => !(typeof orig[k] == 'object' && jb.path(orig[k],'attributes.jb_external')))
             .reduce((acc, key) => newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: '__undefined'}, {})
 
         return Object.keys(newObj)
             .filter(k=>!ignoreRegExp.test(k))
             .filter(k=> !(typeof newObj[k] == 'string' && ignoreValue.test(newObj[k])))
             .filter(k => !(Array.isArray(newObj[k]) && newObj[k].length == 0))
-            .filter(k => !(typeof newObj[k] == 'object' && jb.path(newObj[k],'attributes.jb_external')))
+//            .filter(k => !(typeof newObj[k] == 'object' && jb.path(newObj[k],'attributes.jb_external')))
             .reduce((acc, key) => {
                 if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key
                 const difference = doDiff(newObj[key], orig[key],key)
@@ -4410,9 +4369,9 @@ function h(cmpOrTag,attributes,children) {
     return new jb.ui.VNode(cmpOrTag,attributes,children)
 }
 
-function compareVdom(b,after) {
+function compareVdom(b,after,ctx) {
     const a = after instanceof ui.VNode ? ui.stripVdom(after) : after
-    jb.log('vdom diff compare',{before: b,after : a})
+    jb.log('vdom diff compare',{before: b,after : a,ctx})
     const attributes = jb.objectDiff(a.attributes || {}, b.attributes || {})
     const children = childDiff(b.children || [],a.children || [])
     return { 
@@ -4424,8 +4383,8 @@ function compareVdom(b,after) {
     function childDiff(b,a) {
         if (b.length == 0 && a.length ==0) return
         if (a.length == 1 && b.length == 1 && a[0].tag == b[0].tag)
-            return { 0: {...compareVdom(b[0],a[0]),__afterIndex: 0}, length: 1 }
-        jb.log('vdom child diff start',{before: b,after: a})
+            return { 0: {...compareVdom(b[0],a[0],ctx),__afterIndex: 0}, length: 1 }
+        jb.log('vdom child diff start',{before: b,after: a,ctx})
         const beforeWithIndex = b.map((e,i)=> ({i, ...e}))
         let remainingBefore = beforeWithIndex.slice(0)
         // locating before-objects in after-array. done in two stages. also calcualing the remaining before objects that were not found
@@ -4442,7 +4401,7 @@ function compareVdom(b,after) {
                 res[i] =  {$: 'delete' } //, __afterIndex: i }
             } else {
                 reused[__afterIndex] = true
-                const innerDiff = { __afterIndex, ...compareVdom(e, a[__afterIndex]), ...(e.$remount ? {remount: true}: {}) }
+                const innerDiff = { __afterIndex, ...compareVdom(e, a[__afterIndex],ctx), ...(e.$remount ? {remount: true}: {}) }
                 if (Object.keys(innerDiff).length > 1) {
                     res[i] = innerDiff
                     res.length = i+1
@@ -4450,7 +4409,7 @@ function compareVdom(b,after) {
             }
         })
         res.toAppend = a.flatMap((e,i) => reused[i] ? [] : [ Object.assign( e, {__afterIndex: i}) ])
-        jb.log('vdom child diff result',{res,before: b,after: a})
+        jb.log('vdom child diff result',{res,before: b,after: a,ctx})
         if (!res.length && !res.toAppend.length) return null
         return res
 
@@ -4498,7 +4457,7 @@ function applyNewVdom(elem,vdomAfter,{strongRefresh, ctx} = {}) {
     jb.log('applyNew vdom',{widgetId,elem,vdomAfter,strongRefresh, ctx})
     if (widgetId) {
         const cmpId = elem.getAttribute('cmp-id')
-        const delta = compareVdom(elem,vdomAfter)
+        const delta = compareVdom(elem,vdomAfter,ctx)
         const assumedVdom = JSON.parse(JSON.stringify(jb.ui.stripVdom(elem)))
         if (elem != vdomAfter) { // update the elem
             ;(elem.children ||[]).forEach(ch=>ch.parentNode = null)
@@ -4518,7 +4477,7 @@ function applyNewVdom(elem,vdomAfter,{strongRefresh, ctx} = {}) {
         elem = newElem
     } else {
         const vdomBefore = elem instanceof ui.VNode ? elem : elemToVdom(elem)
-        const delta = compareVdom(vdomBefore,vdomAfter)
+        const delta = compareVdom(vdomBefore,vdomAfter,ctx)
         jb.log('apply delta top dom',{vdomBefore,vdomAfter,active,elem,vdomAfter,strongRefresh, delta, ctx})
         applyDeltaToDom(elem,delta)
     }
@@ -4741,7 +4700,7 @@ function render(vdom,parentElem,prepend) {
     // check
     const checkResultingVdom = elemToVdom(res)
     const diff = jb.ui.vdomDiff(checkResultingVdom,vdom)
-    if (Object.keys(diff).length)
+    if (checkResultingVdom && Object.keys(diff).length)
         jb.logError('render diff',{diff,checkResultingVdom,vdom})
 
     return res
@@ -4979,7 +4938,7 @@ Object.assign(jb.ui, {
         const elemsToCheck = jb.ui.find(body,'[observe]') // top down order
         const elemsToCheckCtxBefore = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
         const originatingCmpId = jb.path(e.srcCtx, 'vars.cmp.cmpId')
-        jb.log('refresh check observable elements',{originatingCmpId,elemsToCheck,e})
+        jb.log('refresh check observable elements',{originatingCmpId,elemsToCheck,e,srcCtx:e.srcCtx})
         elemsToCheck.forEach((elem,i) => {
             const cmpId = elem.getAttribute('cmp-id')
             if (!jb.ui.parents(elem).find(el=>el == body))
@@ -7010,7 +6969,7 @@ jb.component('html', {
 jb.component('html.plain', {
   type: 'html.style',
   impl: customStyle({
-    template: (cmp,{html},h) => h('div',{$html: html} ),
+    template: (cmp,{html},h) => h('div',{$html: html, jb_external: 'true' } ),
     features: [
       watchAndCalcModelProp('html'),
       () => ({ studioFeatures :{$: 'feature.contentEditable', param: 'html' } })
@@ -8409,7 +8368,7 @@ jb.component('itemlist.deltaOfItems', {
   impl: ctx => {
     const cmp = ctx.vars.cmp
     const newVdom = cmp.renderVdom(), oldVdom = cmp.oldVdom || {}
-    const delta = jb.ui.compareVdom(oldVdom,newVdom)
+    const delta = jb.ui.compareVdom(oldVdom,newVdom,ctx)
     cmp.oldVdom = newVdom
     jb.log('uiComp itemlist delta incrementalFromRx', {cmp, newVdom, oldVdom, delta})
     return delta
@@ -12172,7 +12131,7 @@ jb.remoteCtx = {
         if (!ctx) return null
         const isJS = typeof ctx.profile == 'function'
         const profText = jb.prettyPrint(ctx.profile)
-        const vars = jb.objFromEntries(jb.entries(ctx.vars).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
+        const vars = jb.objFromEntries(jb.entries(ctx.vars).filter(e => e[0] == '$disableLog' || profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
         const params = jb.objFromEntries(jb.entries(isJS ? ctx.params: jb.entries(jb.path(ctx.cmpCtx,'params')))
             .filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
@@ -12234,19 +12193,6 @@ jb.remoteCtx = {
 
 ;
 
-jb.waitFor = jb.waitFor || ((check,interval = 50 ,times = 300) => {
-    let count = 0
-    return new Promise((resolve,reject) => {
-        if (check()) return resolve(check())
-        const toRelease = setInterval(() => {
-            count++
-            const v = check()
-            if (v || count >= times) clearInterval(toRelease)
-            if (v) resolve(v)
-            if (count >= times) reject('timeout')
-        }, interval)
-    })
-})
 
 jb.remote = {
     servers: {},
@@ -12280,7 +12226,7 @@ jb.remote = {
             newId() { return port.from + ':' + (this.counter++) },
             get(id) { return this.map[id] },
             getAsPromise(id,t) { 
-                return jb.waitFor(()=> this.map[id],5,10)
+                return jb.exec(waitFor({check: ()=> this.map[id], interval: 5, times: 10}))
                     .catch(e => jb.logError('cbLookUp - can not find cb',{id}))
                     .then(cb => {
                         if (t == 2) this.removeEntry(id)

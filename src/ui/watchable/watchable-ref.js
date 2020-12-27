@@ -82,7 +82,7 @@ class WatchableValueByRef {
   resourceReferred(resName) {
     const resource = this.resources()[resName]
     if (!this.objToPath.has(resource))
-    this.addObjToMap(resource,[resName])
+      this.addObjToMap(resource,[resName])
   }
   addJbId(path) {
     for(let i=0;i<path.length;i++) {

@@ -16,7 +16,7 @@ jb.component('html', {
 jb.component('html.plain', {
   type: 'html.style',
   impl: customStyle({
-    template: (cmp,{html},h) => h('div',{$html: html} ),
+    template: (cmp,{html},h) => h('div',{$html: html, jb_external: 'true' } ),
     features: [
       watchAndCalcModelProp('html'),
       () => ({ studioFeatures :{$: 'feature.contentEditable', param: 'html' } })

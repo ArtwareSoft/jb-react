@@ -1,4 +1,6 @@
-var jb = (function() {
+if (typeof jb == 'undefined' && typeof self != 'undefined') self.jb = {};
+
+(function() {
 function jb_run(ctx,parentParam,settings) {
 //  ctx.profile && jb.log('core request', [ctx.id,...arguments])
   if (ctx.probe && ctx.probe.outOfTime)
@@ -220,29 +222,28 @@ let ctxCounter = 0;
 
 class jbCtx {
   constructor(ctx,ctx2) {
-    this.id = ctxCounter++;
-    this._parent = ctx;
+    this.id = ctxCounter++
+    this._parent = ctx
     if (typeof ctx == 'undefined') {
-      this.vars = {};
-      this.params = {};
-    }
-    else {
+      this.vars = {}
+      this.params = {}
+    } else {
       if (ctx2.profile && ctx2.path == null) {
-        debugger;
-      ctx2.path = '?';
-    }
-      this.profile = (typeof(ctx2.profile) != 'undefined') ?  ctx2.profile : ctx.profile;
+        debugger
+        ctx2.path = '?'
+      }
+      this.profile = (typeof(ctx2.profile) != 'undefined') ?  ctx2.profile : ctx.profile
 
-      this.path = (ctx.path || '') + (ctx2.path ? '~' + ctx2.path : '');
+      this.path = (ctx.path || '') + (ctx2.path ? '~' + ctx2.path : '')
       if (ctx2.forcePath)
-        this.path = this.forcePath = ctx2.forcePath;
+        this.path = this.forcePath = ctx2.forcePath
       if (ctx2.comp)
-        this.path = ctx2.comp + '~impl';
-      this.data= (typeof ctx2.data != 'undefined') ? ctx2.data : ctx.data;     // allow setting of data:null
-      this.vars= ctx2.vars ? Object.assign({},ctx.vars,ctx2.vars) : ctx.vars;
-      this.params= ctx2.params || ctx.params;
-      this.cmpCtx= (typeof ctx2.cmpCtx != 'undefined') ? ctx2.cmpCtx : ctx.cmpCtx;
-      this.probe= ctx.probe;
+        this.path = ctx2.comp + '~impl'
+      this.data= (typeof ctx2.data != 'undefined') ? ctx2.data : ctx.data     // allow setting of data:null
+      this.vars= ctx2.vars ? Object.assign({},ctx.vars,ctx2.vars) : ctx.vars
+      this.params= ctx2.params || ctx.params
+      this.cmpCtx= (typeof ctx2.cmpCtx != 'undefined') ? ctx2.cmpCtx : ctx.cmpCtx
+      this.probe= ctx.probe
     }
   }
   run(profile,parentParam) {
@@ -278,13 +279,12 @@ class jbCtx {
   }
 }
 
-return { 
+Object.assign(jb,{ 
   frame: (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {}, 
   comps: {}, ctxDictionary: {}, run: jb_run, jbCtx, jstypes, tojstype 
-}
+})
 })()
 
-if (typeof self != 'undefined') self.jb = jb
 if (typeof module != 'undefined') module.exports = jb;
 
 Object.assign(jb, {
@@ -729,6 +729,7 @@ Object.assign(jb, {
 
 Object.assign(jb, {
     location: Symbol.for('location'),
+    loadingPhase: Symbol.for('loadingPhase'),
     component: (_id,comp) => {
       const id = jb.macroName(_id)
       try {
@@ -756,7 +757,7 @@ Object.assign(jb, {
         if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
           p.type = 'boolean'
       })
-  
+      comp[jb.loadingPhase] = jb.frame.jbLoadingPhase
       jb.registerMacro && jb.registerMacro(id, comp)
     },    
     macroDef: Symbol('macroDef'), macroNs: {}, macro: {},
@@ -859,63 +860,6 @@ Object.assign(jb, {
 
 (function() {
 const spySettings = { 
-	mutableVerbs: [
-		'set','refresh','writeValue','splice',
-		'focus','state','method','applyDelta','render','scrollBy'
-	],
-	verbOntology: [
-		['startEnd','start','end'],
-		['startEnd','started','completed'],
-		['startEnd',['search','select'],['found','notFound']],
-		['startEnd','request','result'],
-		['startEnd',['create','build'], ['built','created']],
-		['startEnd','set','changed'],
-		['startEnd','open','close'],
-		['startEnd','waitFor','arrived']
-	],
-	verbs: [
-		'sent','received','check', 'register', 'timeout', 'objectProperty',
-	],
-	lifecycleVerbs: ['init', 'changed','destroyed'],
-	flowLifeCycle: ['define','register','next','completed','error'],
-	ontology: [
-		['kindOf','uiComp', ['dialog','itemlist','tree','tabletree','editableBoolean','helperPopup']],
-		['partsOf','uiComp',['frontend','backend']],
-		['partsOf','widget',['headlessWidget','widgetFrontend']],
-		['aspects','ui', ['watchable','keyboard','service']],
-		['objects','ui', ['uiComp','field','uiDelta','vdom','var', 'calculatedVar', 'selectionKeySource']],
-		['processIn','ui', ['renderVdom']],
-
-		['subSystem','studio', ['probe','preview','picker','codeMirrorHint']],
-		['objects','studio', ['script']],
-		['objects','tests', ['testResult','userInput','userRequest','dataTest','uiTest','waitForCompReady','waitForSelector']],
-		['processIn','tests', ['test']],
-		['processIn','preview',['loadPreview']],
-		['processIn','probe',['runCircuit']],
-		['kindOf', 'store',['watchable','jbParent']],
-		['kindOf', 'var',['calculatedVar']],
-		['kindOf', 'service',['selectionKeySource']],
-
-		['subSystem','ui', ['menu']],
-
-		['objects','menu', ['']],
-		['kindOf', 'service',['menuKeySource']],
-
-	],
-	moreLogs: 'req,res,focus,apply,check,suggestions,writeValue,render,createReactClass,renderResult,probe,setState,immutable,pathOfObject,refObservable,scriptChange,resLog,setGridAreaVals,dragableGridItemThumb,pptrStarted,pptrEmit,pptrActivity,pptrResultData', 
-	groups: {
-		none: '',
-		methods: 'BEMethod,FEMethod',
-		refresh: 'doOp,refreshElem,notifyCmpObservable,refreshCmp',
-		keyboard: 'registerService,overridingService,fromSelectionKeySource,foundSelectionKeySource,selectionKeySourceNotFound,itemlistOnkeydown,selectionKeySource,itemlistOnkeydownNextSelected,BEMethod,FEMethod,FEFlow,FEProp,followUp,focus',
-		puppeteer: 'pptrStarted,pptrEmit,pptrActivity,pptrResultData,pptrInfo,pptrError',
-		watchable: 'doOp,writeValue,removeCmpObservable,registerCmpObservable,notifyCmpObservable,notifyObservableElems,notifyObservableElem,scriptChange',
-		react: 'BEMethod,applyNewVdom,applyDeltaTop,applyDelta,unmount,render,initCmp,refreshReq,refreshElem,childDiffRes,htmlChange,appendChild,removeChild,replaceTop,calcRenderProp,followUp',
-		dialog: 'addDialog,closeDialog,refreshDialogs',
-		uiTest: 'userInput,remote,checkTestResult,userRequest,refresh,waitForSelector,waitForSelectorCheck,scrollBy,dataTestResult',
-		remoteCallbag: 'innerCBReady,innerCBCodeSent,innerCBDataSent,innerCBMsgReceived,remoteCmdReceived,remoteSource,remoteSink,outputToRemote,inputFromRemote,inputInRemote,outputInRemote',
-		menu: 'fromMenuKeySource,menuControl,initPopupMenu,isRelevantMenu,menuKeySourceNotFound,foundMenuKeySource,menuMouseEnter',
-	},
 	includeLogs: 'exception,error',
 	stackFilter: /spy|jb_spy|Object.log|rx-comps|jb-core|node_modules/i,
     MAX_LOG_SIZE: 10000
@@ -940,14 +884,8 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			return this._obs
 		},
 		enabled: () => true,
-		parseLogsList(list, depth = 0) {
-			if (depth > 3) return []
-			return (list || '').split(',').filter(x => x[0] !== '-').filter(x => x)
-				// .flatMap(x=> settings.groups[x] ? this.parseLogsList(settings.groups[x],depth+1) : [x])
-				//.flatMap(x=> settings.groups[x] ? this.parseLogsList(settings.groups[x],depth+1) : [x])
-		},
 		calcIncludeLogsFromSpyParam(spyParam) {
-			const includeLogsFromParam = this.parseLogsList(spyParam)
+			const includeLogsFromParam = (spyParam || '').split(',').filter(x => x[0] !== '-').filter(x => x)
 			const excludeLogsFromParam = (spyParam || '').split(',').filter(x => x[0] === '-').map(x => x.slice(1))
 			this.includeLogs = settings.includeLogs.split(',').concat(includeLogsFromParam).filter(log => excludeLogsFromParam.indexOf(log) === -1).reduce((acc, log) => {
 				acc[log] = true
@@ -956,6 +894,8 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			this.includeLogsInitialized = true
 		},
 		shouldLog(logNames, record) {
+			const ctx = record && (record.ctx || record.srcCtx || record.cmp && record.cmp.ctx)
+			if (ctx && ctx.vars.$disableLog) return false
 			if (!logNames) debugger
 			return this.spyParam === 'all' || typeof record == 'object' && 
 				logNames.split(' ').reduce( (acc,logName)=>acc || this.includeLogs[logName],false)
@@ -2264,7 +2204,26 @@ jb.component('action.setSessionStorage', {
   ],
   impl: ({},id,value) => jb.sessionStorage(id,value())
 })
-;
+
+jb.component('waitFor',{
+  params: [
+    {id: 'check', dynamic: true},
+    {id: 'interval', as: 'number', defaultValue: 50},
+    {id: 'times', as: 'number', defaultValue: 300},
+  ],
+  impl: (ctx,check,interval,times) => {
+    let count = 0
+    return new Promise((resolve,reject) => {
+        const toRelease = setInterval(() => {
+            count++
+            const v = check()
+            if (v || count >= times) clearInterval(toRelease)
+            if (v) resolve(v)
+            if (count >= times) reject('timeout')
+        }, interval)
+    })
+  }
+});
 
 jb.callbag = {
       fromIter: iter => (start, sink) => {

@@ -22,13 +22,13 @@ function compsRefOfPreviewJb(previewjb) {
 				st.undoIndex = st.compsHistory.length
 		}
 	}
-	compsRef.frame = previewjb.frame
+	//compsRef.frame = previewjb.frame
 	compsRef.id = 'comps'
 	return compsRef
 }
 st.scriptChange = jb.callbag.subject()
 
-st.initCompsRefHandler = function(previewjb,allowedTypes) {
+st.initCompsRefHandler = function(previewjb, allowedTypes) {
 	const oldCompsRefHandler = st.compsRefHandler
 	oldCompsRefHandler && oldCompsRefHandler.stopListening.next(1)
 	const compsRef = compsRefOfPreviewJb(previewjb)
@@ -87,6 +87,20 @@ Object.assign(st,{
     if (path.match(/~\$vars$/)) return
     const prof = st.valOfPath(path,silent)
   	return jb.compName(prof) || jb.compName(prof,st.paramDef(path))
+  },
+  paramDef: path => {
+	if (!st.parentPath(path)) // no param def for root
+		return;
+	if (!isNaN(Number(path.split('~').pop()))) // array elements
+		path = st.parentPath(path);
+	// const parent_prof = st.valOfPath(st.parentPath(path),true);
+	// const comp = parent_prof && st.getComp(jb.compName(parent_prof));
+	const comp = st.compOfPath(st.parentPath(path),true);
+	const params = jb.compParams(comp);
+	const paramName = path.split('~').pop();
+	if (paramName.indexOf('$') == 0) // sugar
+		return params[0];
+	return params.filter(p=>p.id==paramName)[0];
   },
   compOfPath: (path,silent) => st.getComp(st.compNameOfPath(path,silent)),
   paramsOfPath: (path,silent) => jb.compParams(st.compOfPath(path,silent)),

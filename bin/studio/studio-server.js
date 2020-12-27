@@ -225,6 +225,8 @@ const op_post_handlers = {
 const base_get_handlers = {
   'studio-bin': (req,res) =>
     file_type_handlers.html(req,res,`${jbReactDir}bin/studio/studio-bin.html`),
+  notebook: (req,res) => 
+    file_type_handlers.html(req,res,`projects/studio/studio.html`),
   studio: (req,res) => 
     file_type_handlers.html(req,res,`projects/studio/studio.html`),
   project(req,res) {

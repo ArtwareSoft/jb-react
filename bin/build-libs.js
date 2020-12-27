@@ -5,14 +5,16 @@ require('../src/loader/jb-loader.js');
 
 const JBART_DIR = __dirname + '/../';
 
-function concatFiles(files,target) {
+function concatFiles(files,target,pre,post) {
   const fn = JBART_DIR + 'dist/' + target;
   const type = (target.match(/.css$/)) ? 'css' : 'js'
   try {
     fs.unlinkSync(fn);
   } catch (e) {}
+  if (pre) fs.appendFileSync(fn,pre)
   files.map(x=>JBART_DIR +x).forEach(f=>
     fs.appendFileSync(fn,('' +fs.readFileSync(f)) + (type === 'css' ? '' : ';\n\n') ) );
+  if (post) fs.appendFileSync(fn,post)
 }
 function removeExports(target) {
   const fn = JBART_DIR + 'dist/' + target;
@@ -31,6 +33,8 @@ const studioFiles = filesOfModules('common,ui-common,ui-tree,dragula,codemirror,
 const studioCssFiles = ['/css/styles.css','css/font.css','/projects/studio/css/studio.css']
   .concat(filesOfModules('codemirror-css,material-css')).filter(x=>x.match(/.css$/));
 const nodeFiles = filesOfModules('common,node,pretty-print,xml,jison,parsing').filter(x=>!x.match(/.css$/));
+const spyViewerFiles = [...filesOfModules('common,ui-common,remote,two-tier-widget'),
+'/src/ui/styles/codemirror-styles.js', '/src/ui/tree/table-tree.js', '/projects/studio/studio-path.js', '/projects/studio/studio-event-tracker.js']
 
 'core,common,ui-common,animate,d3,cards,cards-sample-data,pretty-print,parsing,xml,puppeteer,rx,md-icons,remote,two-tier-widget'
   .split(',').forEach(m=>concatFiles(jb_modules[m],`${m}.js`))
@@ -53,3 +57,4 @@ concatFiles(['/src/loader/jb-loader.js'],'jb-loader.js');
 concatFiles(['/src/testing/testers.js'],'testers.js');
 concatFiles(filesOfModules('codemirror-css'),'css/codemirror.css')
 concatFiles(['node_modules/dragula/dist/dragula.css'],'css/dragula.css')
+concatFiles(spyViewerFiles,'spy-viewer.js','(function (jb) {\n','\n})(self.spyViewerJb = {})');

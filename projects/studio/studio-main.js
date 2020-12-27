@@ -3,7 +3,7 @@ jb.component('studio.all', {
   impl: group({
     controls: [
       controlWithCondition('%$studio/vscode%', studio.vscode()),
-      controlWithCondition('%$studio/projectSettings/notebook%', studio.notebook()),
+      controlWithCondition(studio.isNotebook(), studio.notebook()),
       studio.jbart(),
     ],
     features: [
@@ -16,6 +16,11 @@ jb.component('studio.all', {
   })
 })
 
+jb.component('studio.isNotebook',{
+  type: 'boolean',
+  impl: () => jb.path(self,'location.pathname').indexOf('/notebook') == 0
+})
+
 jb.component('studio.jbart', {
   type: 'control',
   impl: group({
@@ -25,7 +30,7 @@ jb.component('studio.jbart', {
         controls: studio.previewWidget(),
         features: [
           id('preview-parent'),
-          group.wait(ctx => jb.studio.fetchProjectSettings(ctx), text('loading project settings...'))
+          group.wait(studio.fetchProjectSettings(), text('loading project settings...'))
         ]
       }),
       studio.pageDescription(),
@@ -33,7 +38,7 @@ jb.component('studio.jbart', {
       studio.ctxCounters()
     ],
     features: [
-        feature.requireService(studio.autoSaveService()), 
+        feature.requireService(studio.autoSaveService()),
         feature.requireService(urlHistory.mapStudioUrlToResource('studio'))
     ]
   })
@@ -51,7 +56,7 @@ jb.component('studio.vscode', {
       studio.ctxCounters()
     ],
     features: [
-        feature.requireService(studio.autoSaveService()), 
+        feature.requireService(studio.autoSaveService()),
         feature.requireService(studio.vsCodeAdapterService('studio'))
     ]
   })
@@ -539,8 +544,9 @@ jb.component('studio.projectSettings', {
 jb.component('studio.pageDescription', {
   type: 'control',
   impl: group({
-    title: 'description',
-    controls: markdown(pipeline(list('#%$studio/page%', '%$pageCmp/description%', '```%$code%```'), join('\n'))),
+    title: 'desc',
+    controls: markdown(pipeline(list('#%$studio/page%', '%$pageCmp/description%', '```%$code%```'), join(`
+`))),
     features: [
       group.wait(studio.waitForPreviewIframe()),
       watchRef('%$studio/page%'),

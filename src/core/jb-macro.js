@@ -1,5 +1,6 @@
 Object.assign(jb, {
     location: Symbol.for('location'),
+    loadingPhase: Symbol.for('loadingPhase'),
     component: (_id,comp) => {
       const id = jb.macroName(_id)
       try {
@@ -27,7 +28,7 @@ Object.assign(jb, {
         if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
           p.type = 'boolean'
       })
-  
+      comp[jb.loadingPhase] = jb.frame.jbLoadingPhase
       jb.registerMacro && jb.registerMacro(id, comp)
     },    
     macroDef: Symbol('macroDef'), macroNs: {}, macro: {},

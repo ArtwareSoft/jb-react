@@ -58,7 +58,7 @@ jb.component('itemlist.deltaOfItems', {
   impl: ctx => {
     const cmp = ctx.vars.cmp
     const newVdom = cmp.renderVdom(), oldVdom = cmp.oldVdom || {}
-    const delta = jb.ui.compareVdom(oldVdom,newVdom)
+    const delta = jb.ui.compareVdom(oldVdom,newVdom,ctx)
     cmp.oldVdom = newVdom
     jb.log('uiComp itemlist delta incrementalFromRx', {cmp, newVdom, oldVdom, delta})
     return delta

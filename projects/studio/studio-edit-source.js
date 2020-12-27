@@ -74,11 +74,13 @@ jb.component('studio.gotoSource', {
 jb.component('studio.editableSource', {
   type: 'control',
   params: [
-    {id: 'path', as: 'string'}
+    {id: 'path', as: 'string'},
+    {id: 'height', as: 'number'}
   ],
   impl: editableText({
     databind: studio.profileAsText('%$path%'),
     style: editableText.codemirror({
+      height: '%$height%',
       cm_settings: {
         extraKeys: {
           Enter: action.if(
@@ -90,9 +92,7 @@ jb.component('studio.editableSource', {
       }
     }),
     features: [
-      // frontEnd(
-      //   (ctx,{cmp}) => ctx.vars.$dialog.refresh = () => cmp.refresh && cmp.refresh(null,{srcCtx: ctx.cmpCtx})
-      // ),
+      css.height({height: '%$height%', minMax: 'max'}),
       feature.onKey('Ctrl-I', studio.openJbEditor('%$path%'))
     ]
   })

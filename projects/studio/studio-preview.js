@@ -19,23 +19,25 @@ st.initStudioEditing = () => {
     .forEach(e=>st.copyCompFromStudioToPreview(e))
 }
 
-st.fetchProjectSettings = ctx => {
-  const host = ctx.run(firstSucceeding('%$queryParams/host%','studio'))
-  if (host && st.projectHosts[host]) {
-    const project = ctx.exp('%$studio/project%')
-    document.title = `${project} with jBart`
-    const hostProjectId = ctx.exp('%$queryParams/hostProjectId%')
-    jb.log('fetch project settings using projectHost',{host,hostProjectId,project})
-    return st.projectHosts[host].fetchProjectSettings(hostProjectId,project)
-//      .then(x=>jb.delay(2000).then(()=>{debugger; return x})) // debug point for vscode
-      .then(projectSettings => {
-        jb.log('project settings fetched',{host,hostProjectId,projectSettings})
-        ctx.run(writeValue('%$studio/project%', projectSettings.project))
-        ctx.run(writeValue('%$studio/projectSettings%', projectSettings))
-        return projectSettings
-      })
+jb.component('studio.fetchProjectSettings', {
+  impl: ctx => {
+    const host = ctx.run(firstSucceeding('%$queryParams/host%','studio'))
+    if (host && st.projectHosts[host]) {
+      const project = ctx.exp('%$studio/project%')
+      document.title = `${project} with jBart`
+      const hostProjectId = ctx.exp('%$queryParams/hostProjectId%')
+      jb.log('fetch project settings using projectHost',{host,hostProjectId,project})
+      return st.projectHosts[host].fetchProjectSettings(hostProjectId,project)
+  //      .then(x=>jb.delay(2000).then(()=>{debugger; return x})) // debug point for vscode
+        .then(projectSettings => {
+          jb.log('project settings fetched',{host,hostProjectId,projectSettings})
+          ctx.run(writeValue('%$studio/project%', projectSettings.project))
+          ctx.run(writeValue('%$studio/projectSettings%', projectSettings))
+          return projectSettings
+        })
+    }
   }
-}
+})
 
 jb.component('studio.editingService',{
   type: 'service',
@@ -45,19 +47,6 @@ jb.component('studio.editingService',{
 st.copyCompFromStudioToPreview = function(e) {
   st.previewjb.comps[e[0]] = { ...e[1], [jb.location] : [e[1][jb.location][0], e[1][jb.location][1]]}
 }
-
-jb.waitFor = jb.waitFor || ((check,interval = 50 ,times = 300) => {
-  let count = 0
-  return new Promise((resolve,reject) => {
-      const toRelease = setInterval(() => {
-          count++
-          const v = check()
-          if (v || count >= times) clearInterval(toRelease)
-          if (v) resolve(v)
-          if (count >= times) reject('timeout')
-      }, interval)
-  })
-})
 
 jb.ui.renderWidgetInStudio = function(profile,top) {
   let parentAccessible = true
@@ -147,7 +136,7 @@ st.initPreview = function(preview_window,allowedTypes) {
   st.previewjb.lastRun = {}
 
   ;(jb.frame.jbDocsDiffFromFiles || []).forEach(doc=> {
-      try{ 
+      try {
         st.previewWindow.eval(doc) // used by vscode to reload the content of unsaved doc
       } catch (e) {}
   })
@@ -222,7 +211,7 @@ jb.component('studio.setPreviewSize', {
 })
 
 jb.component('studio.waitForPreviewIframe', {
-  impl: () => jb.waitFor(()=> jb.studio.previewWindow)
+  impl: waitFor(()=> jb.studio.previewWindow)
 })
 
 const {pipe,startWith,filter,flatMap} = jb.callbag

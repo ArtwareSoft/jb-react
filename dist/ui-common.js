@@ -65,7 +65,7 @@ jb.component('source.interval', {
 jb.component('rx.pipe', {
   type: 'rx,data,action',
   category: 'source',
-  description: 'pipeline of reactive observables',
+  description: 'pipeline of reactive observables with source',
   params: [
     {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
   ],
@@ -87,7 +87,7 @@ jb.component('rx.merge', {
 jb.component('rx.innerPipe', {
   type: 'rx',
   category: 'operator',
-  description: 'inner reactive pipeline',
+  description: 'inner reactive pipeline without source',
   params: [
     {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, templateValue: []},
   ],
@@ -433,8 +433,8 @@ jb.component('rx.subscribe', {
 
 jb.component('sink.action', {
   type: 'rx',
-  description: 'subscribe',
   category: 'sink',
+  description: 'subscribe',
   params: [
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
   ],
@@ -743,7 +743,7 @@ class WatchableValueByRef {
   resourceReferred(resName) {
     const resource = this.resources()[resName]
     if (!this.objToPath.has(resource))
-    this.addObjToMap(resource,[resName])
+      this.addObjToMap(resource,[resName])
   }
   addJbId(path) {
     for(let i=0;i<path.length;i++) {
@@ -1267,7 +1267,7 @@ function vdomDiff(newObj,orig) {
         if (Array.isArray(orig) && orig.length == 0) orig = null
         if (Array.isArray(newObj) && newObj.length == 0) newObj = null
         if (orig === newObj) return {}
-        if (jb.path(newObj,'attributes.jb_external') || jb.path(orig,'attributes.jb_external')) return {}
+//        if (jb.path(newObj,'attributes.jb_external') || jb.path(orig,'attributes.jb_external')) return {}
         if (typeof orig == 'string' && ignoreValue.test(orig) || typeof newObj == 'string' && ignoreValue.test(newObj)) return {}
         if (attName == 'class' && 
             (typeof orig == 'string' && ignoreClasses.test(orig) || typeof newObj == 'string' && ignoreClasses.test(newObj))) return {}
@@ -1276,14 +1276,14 @@ function vdomDiff(newObj,orig) {
             .filter(k=>!ignoreRegExp.test(k))
             .filter(k=> !(typeof orig[k] == 'string' && ignoreValue.test(orig[k])))
             .filter(k => !(Array.isArray(orig[k]) && orig[k].length == 0))
-            .filter(k => !(typeof orig[k] == 'object' && jb.path(orig[k],'attributes.jb_external')))
+//            .filter(k => !(typeof orig[k] == 'object' && jb.path(orig[k],'attributes.jb_external')))
             .reduce((acc, key) => newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: '__undefined'}, {})
 
         return Object.keys(newObj)
             .filter(k=>!ignoreRegExp.test(k))
             .filter(k=> !(typeof newObj[k] == 'string' && ignoreValue.test(newObj[k])))
             .filter(k => !(Array.isArray(newObj[k]) && newObj[k].length == 0))
-            .filter(k => !(typeof newObj[k] == 'object' && jb.path(newObj[k],'attributes.jb_external')))
+//            .filter(k => !(typeof newObj[k] == 'object' && jb.path(newObj[k],'attributes.jb_external')))
             .reduce((acc, key) => {
                 if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key
                 const difference = doDiff(newObj[key], orig[key],key)
@@ -1310,9 +1310,9 @@ function h(cmpOrTag,attributes,children) {
     return new jb.ui.VNode(cmpOrTag,attributes,children)
 }
 
-function compareVdom(b,after) {
+function compareVdom(b,after,ctx) {
     const a = after instanceof ui.VNode ? ui.stripVdom(after) : after
-    jb.log('vdom diff compare',{before: b,after : a})
+    jb.log('vdom diff compare',{before: b,after : a,ctx})
     const attributes = jb.objectDiff(a.attributes || {}, b.attributes || {})
     const children = childDiff(b.children || [],a.children || [])
     return { 
@@ -1324,8 +1324,8 @@ function compareVdom(b,after) {
     function childDiff(b,a) {
         if (b.length == 0 && a.length ==0) return
         if (a.length == 1 && b.length == 1 && a[0].tag == b[0].tag)
-            return { 0: {...compareVdom(b[0],a[0]),__afterIndex: 0}, length: 1 }
-        jb.log('vdom child diff start',{before: b,after: a})
+            return { 0: {...compareVdom(b[0],a[0],ctx),__afterIndex: 0}, length: 1 }
+        jb.log('vdom child diff start',{before: b,after: a,ctx})
         const beforeWithIndex = b.map((e,i)=> ({i, ...e}))
         let remainingBefore = beforeWithIndex.slice(0)
         // locating before-objects in after-array. done in two stages. also calcualing the remaining before objects that were not found
@@ -1342,7 +1342,7 @@ function compareVdom(b,after) {
                 res[i] =  {$: 'delete' } //, __afterIndex: i }
             } else {
                 reused[__afterIndex] = true
-                const innerDiff = { __afterIndex, ...compareVdom(e, a[__afterIndex]), ...(e.$remount ? {remount: true}: {}) }
+                const innerDiff = { __afterIndex, ...compareVdom(e, a[__afterIndex],ctx), ...(e.$remount ? {remount: true}: {}) }
                 if (Object.keys(innerDiff).length > 1) {
                     res[i] = innerDiff
                     res.length = i+1
@@ -1350,7 +1350,7 @@ function compareVdom(b,after) {
             }
         })
         res.toAppend = a.flatMap((e,i) => reused[i] ? [] : [ Object.assign( e, {__afterIndex: i}) ])
-        jb.log('vdom child diff result',{res,before: b,after: a})
+        jb.log('vdom child diff result',{res,before: b,after: a,ctx})
         if (!res.length && !res.toAppend.length) return null
         return res
 
@@ -1398,7 +1398,7 @@ function applyNewVdom(elem,vdomAfter,{strongRefresh, ctx} = {}) {
     jb.log('applyNew vdom',{widgetId,elem,vdomAfter,strongRefresh, ctx})
     if (widgetId) {
         const cmpId = elem.getAttribute('cmp-id')
-        const delta = compareVdom(elem,vdomAfter)
+        const delta = compareVdom(elem,vdomAfter,ctx)
         const assumedVdom = JSON.parse(JSON.stringify(jb.ui.stripVdom(elem)))
         if (elem != vdomAfter) { // update the elem
             ;(elem.children ||[]).forEach(ch=>ch.parentNode = null)
@@ -1418,7 +1418,7 @@ function applyNewVdom(elem,vdomAfter,{strongRefresh, ctx} = {}) {
         elem = newElem
     } else {
         const vdomBefore = elem instanceof ui.VNode ? elem : elemToVdom(elem)
-        const delta = compareVdom(vdomBefore,vdomAfter)
+        const delta = compareVdom(vdomBefore,vdomAfter,ctx)
         jb.log('apply delta top dom',{vdomBefore,vdomAfter,active,elem,vdomAfter,strongRefresh, delta, ctx})
         applyDeltaToDom(elem,delta)
     }
@@ -1641,7 +1641,7 @@ function render(vdom,parentElem,prepend) {
     // check
     const checkResultingVdom = elemToVdom(res)
     const diff = jb.ui.vdomDiff(checkResultingVdom,vdom)
-    if (Object.keys(diff).length)
+    if (checkResultingVdom && Object.keys(diff).length)
         jb.logError('render diff',{diff,checkResultingVdom,vdom})
 
     return res
@@ -1879,7 +1879,7 @@ Object.assign(jb.ui, {
         const elemsToCheck = jb.ui.find(body,'[observe]') // top down order
         const elemsToCheckCtxBefore = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
         const originatingCmpId = jb.path(e.srcCtx, 'vars.cmp.cmpId')
-        jb.log('refresh check observable elements',{originatingCmpId,elemsToCheck,e})
+        jb.log('refresh check observable elements',{originatingCmpId,elemsToCheck,e,srcCtx:e.srcCtx})
         elemsToCheck.forEach((elem,i) => {
             const cmpId = elem.getAttribute('cmp-id')
             if (!jb.ui.parents(elem).find(el=>el == body))
@@ -3910,7 +3910,7 @@ jb.component('html', {
 jb.component('html.plain', {
   type: 'html.style',
   impl: customStyle({
-    template: (cmp,{html},h) => h('div',{$html: html} ),
+    template: (cmp,{html},h) => h('div',{$html: html, jb_external: 'true' } ),
     features: [
       watchAndCalcModelProp('html'),
       () => ({ studioFeatures :{$: 'feature.contentEditable', param: 'html' } })
@@ -5309,7 +5309,7 @@ jb.component('itemlist.deltaOfItems', {
   impl: ctx => {
     const cmp = ctx.vars.cmp
     const newVdom = cmp.renderVdom(), oldVdom = cmp.oldVdom || {}
-    const delta = jb.ui.compareVdom(oldVdom,newVdom)
+    const delta = jb.ui.compareVdom(oldVdom,newVdom,ctx)
     cmp.oldVdom = newVdom
     jb.log('uiComp itemlist delta incrementalFromRx', {cmp, newVdom, oldVdom, delta})
     return delta
