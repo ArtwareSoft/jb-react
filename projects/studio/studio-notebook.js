@@ -7,10 +7,7 @@ jb.component('studio.notebook', {
       //studio.notebookTopBar(),
       group({
           controls: [
-            //   group({
-            //       controls: widget.twoTierWidget(studio.eventTracker(), remote.notebookWorker()),
-            //       features: variable('$disableLog',true),
-            //   }),
+//              widget.twoTierWidget(studio.eventTracker(), remote.notebookWorkerSpy()),
               ctx => ctx.run({$: ctx.exp('%$studio/project%.notebook')}),
           ],
           features: group.wait(pipe(
@@ -18,7 +15,7 @@ jb.component('studio.notebook', {
             waitFor(ctx => jb.comps[ctx.exp('%$studio/project%.notebook')] )
           ), text('loading notebook...') )
       }),
-      //studio.ctxCounters()
+      studio.ctxCounters()
     ],
     features: [
         group.wait(studio.fetchProjectSettings(), text('')), 

@@ -53,7 +53,8 @@ Object.assign(jb.ui,{
 class JbComponent {
     constructor(ctx,id,ver) {
         this.ctx = ctx // used to calc features
-        this.cmpId = ''+(id || cmpId++)
+        const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId || ''
+        this.cmpId = widgetId+(id || cmpId++)
         this.ver = ver || 1
         this.eventObservables = []
         this.cssLines = []
@@ -159,6 +160,8 @@ class JbComponent {
         jb.delay(1).then(() => (this.followUpFuncs||[]).forEach(fu=> tryWrapper(() => { 
             jb.log(`backend uiComp followUp`, {cmp: this, fu, srcCtx: fu.srcCtx})
             fu.action(this.calcCtx)
+            if (this.ver>1)
+                jb.ui.BECmpsDestroyNotification.next({ cmps: [{cmpId: this.cmpId, ver: this.ver-1}]})
         }, 'followUp') ) ).then(()=> this.ready = true)
         this.ready = false
         return vdom

@@ -173,23 +173,9 @@ jb.component('followUp.flow', {
       Var('followUpCmp', '%$cmp%'),
       Var('pipeToRun', rx.pipe('%$elems()%')),
       (ctx,{cmp,pipeToRun}) => {
-        jb.ui.followUps = jb.ui.followUps || []
-        jb.ui.followUps.push({cmp, pipe: pipeToRun, srcPath: ctx.cmpCtx.callerPath})
+        jb.ui.followUps[cmp.cmpId] = jb.ui.followUps[cmp.cmpId] || []
+        jb.ui.followUps[cmp.cmpId].push({cmp, pipe: pipeToRun, srcPath: ctx.cmpCtx.callerPath})
       },
-      rx.pipe(
-        source.callbag(() => jb.ui.BECmpsDestroyNotification),
-        rx.filter(
-          ({data},{followUpCmp}) => data.cmps.find(_cmp => _cmp.cmpId == followUpCmp.cmpId && _cmp.ver == followUpCmp.ver)
-        ),
-        rx.take(1),
-        sink.action(({},{pipeToRun}) => {
-          pipeToRun.dispose()
-          const index = jb.ui.followUps.findIndex(e=>e.pipe == pipeToRun)
-          if (index == -1)
-            jb.logError('followUp.flow destroy - can not find pipe')
-          jb.ui.followUps.splice(index,1)
-        })
-      )
     )
   )
 })

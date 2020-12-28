@@ -1,16 +1,15 @@
-(function() {
-const spySettings = { 
+Object.assign(jb, {
+spySettings: { 
 	includeLogs: 'exception,error',
 	stackFilter: /spy|jb_spy|Object.log|rx-comps|jb-core|node_modules/i,
     MAX_LOG_SIZE: 10000
-}
-const frame = jb.frame
-jb.spySettings = spySettings
+},
 
-jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) {
+initSpy({Error, settings, spyParam, memoryUsage, resetSpyToNull}) {
+	const frame = jb.frame
 	Error = Error || frame.Error,
 	memoryUsage = memoryUsage || (() => frame.performance && performance.memory && performance.memory.usedJSHeapSize)
-	settings = Object.assign(settings||{}, spySettings)
+	settings = Object.assign(settings||{}, jb.spySettings)
 	if (resetSpyToNull)
 		return jb.spy = null
     
@@ -147,18 +146,18 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			}
 		}
 	}
-} 
+},
 
-function initSpyByUrl() {
+initSpyByUrl() {
+	const frame = jb.frame
 	const getUrl = () => { try { return frame.location && frame.location.href } catch(e) {} }
 	const getParentUrl = () => { try { return frame.parent && frame.parent.location.href } catch(e) {} }
 	const getSpyParam = url => (url.match('[?&]spy=([^&]+)') || ['', ''])[1]
-	const spyParam = jb.frame && jb.frame.jbUri == 'studio' && (getUrl().match('[?&]sspy=([^&]+)') || ['', ''])[1] || 
+	const spyParam = frame && frame.jbUri == 'studio' && (getUrl().match('[?&]sspy=([^&]+)') || ['', ''])[1] || 
 		getSpyParam(getParentUrl() || '') || getSpyParam(getUrl() || '')
 	if (spyParam)
 		jb.initSpy({spyParam})
-	if (jb.frame) jb.frame.spy = jb.spy // for console use
+	if (frame) frame.spy = jb.spy // for console use
 }
-initSpyByUrl()
-
-})()
+})
+jb.initSpyByUrl()

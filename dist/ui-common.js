@@ -1740,7 +1740,7 @@ Object.assign(jb.ui, {
             jb.log(`backend method request: ${method}`,{cmp: ctx.vars.cmp, method,ctx,elem,data,vars})
             jb.ui.runCtxActionAndUdateCmpState(ctx,data,vars)
         }
-    },
+    }
 })
 
 Object.assign(jb.ui, {
@@ -1748,6 +1748,7 @@ Object.assign(jb.ui, {
     BECmpsDestroyNotification: jb.callbag.subject(),
     refreshNotification: jb.callbag.subject(),
     renderingUpdates: jb.callbag.subject(),
+    followUps: {},
     ctrl(context,options) {
         const styleByControl = jb.path(context,'cmpCtx.profile.$') == 'styleByControl'
         const $state = (context.vars.$refreshElemCall || styleByControl) ? context.vars.$state : {}
@@ -1779,7 +1780,8 @@ Object.assign(jb.ui, {
             return jb.delay(1000).then(()=>ui.garbageCollectCtxDictionary(true))
    
         const used = 'jb-ctx,full-cmp-ctx,pick-ctx,props-ctx,methods,frontEnd,originators'.split(',')
-            .flatMap(att=>querySelectAllWithWidgets(`[${att}]`).flatMap(el => el.getAttribute(att).split(',').map(x=>Number(x.split('-').pop()))))
+            .flatMap(att=>querySelectAllWithWidgets(`[${att}]`)
+                .flatMap(el => el.getAttribute(att).split(',').map(x=>Number(x.split('-').pop())).filter(x=>x)))
                     .sort((x,y)=>x-y)
 
         // remove unused ctx from dictionary
@@ -1803,7 +1805,23 @@ Object.assign(jb.ui, {
             .filter(id=>+id.split(':').pop < maxUsed)
             .forEach(id => { removedResources.push(id); delete jb.resources[id]})
 
-        jb.log('garbageCollect',{maxUsed,removedCtxs,removedResources})
+        const usedWidgets = jb.objFromEntries(
+            Array.from(querySelectAllWithWidgets(`[widgetid]`)).filter(el => el.getAttribute('frontend')).map(el => [el.getAttribute('widgetid'),1]))
+        const removeWidgets = Object.keys(jb.ui.frontendWidgets).filter(id=>!usedWidgets[id])
+
+        removeWidgets.forEach(widgetId => {
+            jb.ui.widgetUserRequests.next({$:'destroy', widgetId, destroyWidget: true, cmps: [] })
+            delete jb.ui.frontendWidgets[widgetId]
+        })
+        
+        const removeFollowUps = Object.keys(jb.ui.followUps).flatMap(cmpId=> {
+            const curVer = Array.from(querySelectAllWithWidgets(`[cmp-id="${cmpId}"]`)).map(el=>+el.getAttribute('cmp-ver'))[0]
+            return jb.ui.followUps[cmpId].flatMap(({cmp})=>cmp).filter(cmp => !curVer || cmp.ver > curVer)
+        })
+        if (removeFollowUps.length)
+            jb.ui.BECmpsDestroyNotification.next({ cmps: removeFollowUps})
+
+        jb.log('garbageCollect',{maxUsed,removedCtxs,removedResources,removeWidgets,removeFollowUps})
 
         function querySelectAllWithWidgets(query) {
             return jb.ui.headless ? [...Object.values(jb.ui.headless).flatMap(w=>w.body.querySelectorAll(query,{includeSelf:true})), ...Array.from(document.querySelectorAll(query))] : []
@@ -2020,10 +2038,23 @@ jb.callbag.subscribe(e=> {
 
 jb.callbag.subscribe(e=> {
     const {widgetId,destroyLocally,cmps} = e
+    
+    cmps.forEach(_cmp => {
+        const fus = jb.ui.followUps[_cmp.cmpId]
+        if (!fus) return
+        const index = fus.findIndex(({cmp}) => _cmp.cmpId == cmp.cmpId && _cmp.ver == cmp.ver)
+        if (index != -1) {
+            fus[index].pipe.dispose()
+            fus.splice(index,1)
+        }
+        if (!fus.length)
+            delete jb.ui.followUps[_cmp.cmpId]
+    })
+
     if (widgetId && !destroyLocally)
         jb.ui.widgetUserRequests.next({$:'destroy', ...e })
     else 
-        cmps.forEach(cmp=>cmp.destroyCtxs.forEach(ctxIdToRun => {
+        cmps.forEach(cmp=> (cmp.destroyCtxs || []).forEach(ctxIdToRun => {
             jb.log('backend method destroy uiComp',{cmp, el: cmp.el})
             jb.ui.runCtxAction(jb.ctxDictionary[ctxIdToRun])
         } ))
@@ -2086,7 +2117,8 @@ Object.assign(jb.ui,{
 class JbComponent {
     constructor(ctx,id,ver) {
         this.ctx = ctx // used to calc features
-        this.cmpId = ''+(id || cmpId++)
+        const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId || ''
+        this.cmpId = widgetId+(id || cmpId++)
         this.ver = ver || 1
         this.eventObservables = []
         this.cssLines = []
@@ -2192,6 +2224,8 @@ class JbComponent {
         jb.delay(1).then(() => (this.followUpFuncs||[]).forEach(fu=> tryWrapper(() => { 
             jb.log(`backend uiComp followUp`, {cmp: this, fu, srcCtx: fu.srcCtx})
             fu.action(this.calcCtx)
+            if (this.ver>1)
+                jb.ui.BECmpsDestroyNotification.next({ cmps: [{cmpId: this.cmpId, ver: this.ver-1}]})
         }, 'followUp') ) ).then(()=> this.ready = true)
         this.ready = false
         return vdom
@@ -2775,23 +2809,9 @@ jb.component('followUp.flow', {
       Var('followUpCmp', '%$cmp%'),
       Var('pipeToRun', rx.pipe('%$elems()%')),
       (ctx,{cmp,pipeToRun}) => {
-        jb.ui.followUps = jb.ui.followUps || []
-        jb.ui.followUps.push({cmp, pipe: pipeToRun, srcPath: ctx.cmpCtx.callerPath})
+        jb.ui.followUps[cmp.cmpId] = jb.ui.followUps[cmp.cmpId] || []
+        jb.ui.followUps[cmp.cmpId].push({cmp, pipe: pipeToRun, srcPath: ctx.cmpCtx.callerPath})
       },
-      rx.pipe(
-        source.callbag(() => jb.ui.BECmpsDestroyNotification),
-        rx.filter(
-          ({data},{followUpCmp}) => data.cmps.find(_cmp => _cmp.cmpId == followUpCmp.cmpId && _cmp.ver == followUpCmp.ver)
-        ),
-        rx.take(1),
-        sink.action(({},{pipeToRun}) => {
-          pipeToRun.dispose()
-          const index = jb.ui.followUps.findIndex(e=>e.pipe == pipeToRun)
-          if (index == -1)
-            jb.logError('followUp.flow destroy - can not find pipe')
-          jb.ui.followUps.splice(index,1)
-        })
-      )
     )
   )
 })

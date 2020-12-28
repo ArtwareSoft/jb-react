@@ -389,6 +389,7 @@ jb.callbag = {
           subj.next = data => subj(1,data)
           subj.complete = () => subj(2)
           subj.error = err => subj(2,err)
+          subj.sinks = sinks
           return subj
       },
       replayWithTimeout: timeOut => source => { // replay the messages arrived before timeout

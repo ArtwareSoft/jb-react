@@ -4,6 +4,12 @@ Object.assign(jb.ui, {
     widgetUserRequests: jb.callbag.subject(),
     widgetRenderingSrc: jb.callbag.replayWithTimeout(1000)(jb.ui.renderingUpdates),
     headless: {},
+    frontendWidgets: {},
+    newWidgetId(ctx, remote) {
+        const id = remote.uri + '-' + ctx.id
+        jb.ui.frontendWidgets[id] = remote
+        return id
+    }
 })
 
 jb.component('widget.frontEndCtrl', {
@@ -69,7 +75,7 @@ jb.component('widget.headless', {
               jb.log('headless widget userRequset in',{widgetId,t,d,ctx})
               if (t == 0) talkback.push(d)
               if (t === 2) sink(t,d)
-              if (t === 1 && d && d.data.widgetId == widgetId) handleUserReq(d.data)
+              if (t === 1 && d && d.data.widgetId == widgetId) handleUserReq(d.data,sink)
             })
         }
 
@@ -92,7 +98,7 @@ jb.component('widget.headless', {
             renderingUpdates.next({widgetId, delta })
         }
 
-        function handleUserReq(userReq) {
+        function handleUserReq(userReq, sink) {
             jb.log('headless widget handle userRequset',{widgetId: userReq.widgetId,userReq})
             if (userReq.$ == 'runCtxAction') {
                 const ctx = jb.ctxDictionary[userReq.ctxIdToRun]
@@ -103,12 +109,13 @@ jb.component('widget.headless', {
                 jb.log('recover headless widget',{userReq})
                 //createWidget(true)
             } else if (userReq.$ == 'destroy') {
+                jb.log('destroy headless widget request',{widgetId: userReq.widgetId,userReq})
                 jb.ui.BECmpsDestroyNotification.next({cmps: userReq.cmps, destroyLocally: true})
                 if (userReq.destroyWidget) jb.delay(1).then(()=> {
-                    jb.log('destroy headless widget request',{widgetId: userReq.widgetId,userReq})
                         jb.log('destroy headless widget',{widgetId: userReq.widgetId,userReq})
                         delete jb.ui.headless[userReq.widgetId]
                     }) // the delay is needed for tests
+                sink(2)
             }
         }
     }
@@ -121,7 +128,7 @@ jb.component('widget.twoTierWidget', {
       {id: 'remote', type: 'remote', defaultValue: remote.worker({libs: ['common','ui-common','remote','two-tier-widget']}) },
     ],
     impl: controlWithFeatures({
-        vars: Var('widgetId', (ctx,{},{remote}) => remote.uri + '-' + ctx.id),
+        vars: Var('widgetId', (ctx,{},{remote}) => jb.ui.newWidgetId(ctx,remote)),
         control: widget.frontEndCtrl('%$widgetId%'),
         features: followUp.flow(
             source.callbag(() => jb.ui.widgetUserRequests),
@@ -135,4 +142,8 @@ jb.component('widget.twoTierWidget', {
             sink.frontEndDelta('%$widgetId%'),
         )
     })
+})
+
+jb.component('widget.headlessWidgets', {
+    impl: () => Object.keys(jb.ui.headless)
 })

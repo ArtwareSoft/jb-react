@@ -84,8 +84,9 @@ jb.remote = {
                 frame.postMessage({from, to,...m}) 
             },
             onMessage: { addListener: handler => frame.addEventListener('message', m => {
+                if (m.data.to != from || m.data.from != to) return
                 jb.log(`remote received at ${from} from ${m.data.from} to ${m.data.to}`,{m: m.data})
-                m.data.to == from && handler(m.data)
+                handler(m.data)
             })},
             onDisconnect: { addListener: handler => { port.disconnectHandler = handler} }
         }
@@ -113,7 +114,10 @@ jb.remote = {
             removeEntry(id) {
                 jb.delay(100).then(()=> delete this.map[id])
             },
-            inboundMsg({cbId,t,d}) { return this.getAsPromise(cbId,t).then(cb=> cb && cb(t, t == 0 ? this.remoteCB(d) : d)) },
+            inboundMsg({cbId,t,d}) { 
+                if (t == 2) this.removeEntry(cbId)
+                return this.getAsPromise(cbId,t).then(cb=> cb && cb(t, t == 0 ? this.remoteCB(d) : d)) 
+            },
             outboundMsg({cbId,t,d}) { 
                 port.postMessage({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : d })
                 if (t == 2) this.removeEntry(cbId)

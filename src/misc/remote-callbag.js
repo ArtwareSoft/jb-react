@@ -17,8 +17,9 @@ jb.remote = {
                 frame.postMessage({from, to,...m}) 
             },
             onMessage: { addListener: handler => frame.addEventListener('message', m => {
+                if (m.data.to != from || m.data.from != to) return
                 jb.log(`remote received at ${from} from ${m.data.from} to ${m.data.to}`,{m: m.data})
-                m.data.to == from && handler(m.data)
+                handler(m.data)
             })},
             onDisconnect: { addListener: handler => { port.disconnectHandler = handler} }
         }
@@ -32,7 +33,7 @@ jb.remote = {
             get(id) { return this.map[id] },
             getAsPromise(id,t) { 
                 return jb.exec(waitFor({check: ()=> this.map[id], interval: 5, times: 10}))
-                    .catch(e => jb.logError('cbLookUp - can not find cb',{id}))
+                    .catch(err => jb.logError('cbLookUp - can not find cb',{id}))
                     .then(cb => {
                         if (t == 2) this.removeEntry(id)
                         return cb

@@ -858,19 +858,18 @@ Object.assign(jb, {
 })
 ;
 
-(function() {
-const spySettings = { 
+Object.assign(jb, {
+spySettings: { 
 	includeLogs: 'exception,error',
 	stackFilter: /spy|jb_spy|Object.log|rx-comps|jb-core|node_modules/i,
     MAX_LOG_SIZE: 10000
-}
-const frame = jb.frame
-jb.spySettings = spySettings
+},
 
-jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) {
+initSpy({Error, settings, spyParam, memoryUsage, resetSpyToNull}) {
+	const frame = jb.frame
 	Error = Error || frame.Error,
 	memoryUsage = memoryUsage || (() => frame.performance && performance.memory && performance.memory.usedJSHeapSize)
-	settings = Object.assign(settings||{}, spySettings)
+	settings = Object.assign(settings||{}, jb.spySettings)
 	if (resetSpyToNull)
 		return jb.spy = null
     
@@ -1007,21 +1006,21 @@ jb.initSpy = function({Error, settings, spyParam, memoryUsage, resetSpyToNull}) 
 			}
 		}
 	}
-} 
+},
 
-function initSpyByUrl() {
+initSpyByUrl() {
+	const frame = jb.frame
 	const getUrl = () => { try { return frame.location && frame.location.href } catch(e) {} }
 	const getParentUrl = () => { try { return frame.parent && frame.parent.location.href } catch(e) {} }
 	const getSpyParam = url => (url.match('[?&]spy=([^&]+)') || ['', ''])[1]
-	const spyParam = jb.frame && jb.frame.jbUri == 'studio' && (getUrl().match('[?&]sspy=([^&]+)') || ['', ''])[1] || 
+	const spyParam = frame && frame.jbUri == 'studio' && (getUrl().match('[?&]sspy=([^&]+)') || ['', ''])[1] || 
 		getSpyParam(getParentUrl() || '') || getSpyParam(getUrl() || '')
 	if (spyParam)
 		jb.initSpy({spyParam})
-	if (jb.frame) jb.frame.spy = jb.spy // for console use
+	if (frame) frame.spy = jb.spy // for console use
 }
-initSpyByUrl()
-
-})()
+})
+jb.initSpyByUrl()
 ;
 
 jb.component('call', {
@@ -2616,6 +2615,7 @@ jb.callbag = {
           subj.next = data => subj(1,data)
           subj.complete = () => subj(2)
           subj.error = err => subj(2,err)
+          subj.sinks = sinks
           return subj
       },
       replayWithTimeout: timeOut => source => { // replay the messages arrived before timeout
@@ -4799,7 +4799,7 @@ Object.assign(jb.ui, {
             jb.log(`backend method request: ${method}`,{cmp: ctx.vars.cmp, method,ctx,elem,data,vars})
             jb.ui.runCtxActionAndUdateCmpState(ctx,data,vars)
         }
-    },
+    }
 })
 
 Object.assign(jb.ui, {
@@ -4807,6 +4807,7 @@ Object.assign(jb.ui, {
     BECmpsDestroyNotification: jb.callbag.subject(),
     refreshNotification: jb.callbag.subject(),
     renderingUpdates: jb.callbag.subject(),
+    followUps: {},
     ctrl(context,options) {
         const styleByControl = jb.path(context,'cmpCtx.profile.$') == 'styleByControl'
         const $state = (context.vars.$refreshElemCall || styleByControl) ? context.vars.$state : {}
@@ -4838,7 +4839,8 @@ Object.assign(jb.ui, {
             return jb.delay(1000).then(()=>ui.garbageCollectCtxDictionary(true))
    
         const used = 'jb-ctx,full-cmp-ctx,pick-ctx,props-ctx,methods,frontEnd,originators'.split(',')
-            .flatMap(att=>querySelectAllWithWidgets(`[${att}]`).flatMap(el => el.getAttribute(att).split(',').map(x=>Number(x.split('-').pop()))))
+            .flatMap(att=>querySelectAllWithWidgets(`[${att}]`)
+                .flatMap(el => el.getAttribute(att).split(',').map(x=>Number(x.split('-').pop())).filter(x=>x)))
                     .sort((x,y)=>x-y)
 
         // remove unused ctx from dictionary
@@ -4862,7 +4864,23 @@ Object.assign(jb.ui, {
             .filter(id=>+id.split(':').pop < maxUsed)
             .forEach(id => { removedResources.push(id); delete jb.resources[id]})
 
-        jb.log('garbageCollect',{maxUsed,removedCtxs,removedResources})
+        const usedWidgets = jb.objFromEntries(
+            Array.from(querySelectAllWithWidgets(`[widgetid]`)).filter(el => el.getAttribute('frontend')).map(el => [el.getAttribute('widgetid'),1]))
+        const removeWidgets = Object.keys(jb.ui.frontendWidgets).filter(id=>!usedWidgets[id])
+
+        removeWidgets.forEach(widgetId => {
+            jb.ui.widgetUserRequests.next({$:'destroy', widgetId, destroyWidget: true, cmps: [] })
+            delete jb.ui.frontendWidgets[widgetId]
+        })
+        
+        const removeFollowUps = Object.keys(jb.ui.followUps).flatMap(cmpId=> {
+            const curVer = Array.from(querySelectAllWithWidgets(`[cmp-id="${cmpId}"]`)).map(el=>+el.getAttribute('cmp-ver'))[0]
+            return jb.ui.followUps[cmpId].flatMap(({cmp})=>cmp).filter(cmp => !curVer || cmp.ver > curVer)
+        })
+        if (removeFollowUps.length)
+            jb.ui.BECmpsDestroyNotification.next({ cmps: removeFollowUps})
+
+        jb.log('garbageCollect',{maxUsed,removedCtxs,removedResources,removeWidgets,removeFollowUps})
 
         function querySelectAllWithWidgets(query) {
             return jb.ui.headless ? [...Object.values(jb.ui.headless).flatMap(w=>w.body.querySelectorAll(query,{includeSelf:true})), ...Array.from(document.querySelectorAll(query))] : []
@@ -5079,10 +5097,23 @@ jb.callbag.subscribe(e=> {
 
 jb.callbag.subscribe(e=> {
     const {widgetId,destroyLocally,cmps} = e
+    
+    cmps.forEach(_cmp => {
+        const fus = jb.ui.followUps[_cmp.cmpId]
+        if (!fus) return
+        const index = fus.findIndex(({cmp}) => _cmp.cmpId == cmp.cmpId && _cmp.ver == cmp.ver)
+        if (index != -1) {
+            fus[index].pipe.dispose()
+            fus.splice(index,1)
+        }
+        if (!fus.length)
+            delete jb.ui.followUps[_cmp.cmpId]
+    })
+
     if (widgetId && !destroyLocally)
         jb.ui.widgetUserRequests.next({$:'destroy', ...e })
     else 
-        cmps.forEach(cmp=>cmp.destroyCtxs.forEach(ctxIdToRun => {
+        cmps.forEach(cmp=> (cmp.destroyCtxs || []).forEach(ctxIdToRun => {
             jb.log('backend method destroy uiComp',{cmp, el: cmp.el})
             jb.ui.runCtxAction(jb.ctxDictionary[ctxIdToRun])
         } ))
@@ -5145,7 +5176,8 @@ Object.assign(jb.ui,{
 class JbComponent {
     constructor(ctx,id,ver) {
         this.ctx = ctx // used to calc features
-        this.cmpId = ''+(id || cmpId++)
+        const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId || ''
+        this.cmpId = widgetId+(id || cmpId++)
         this.ver = ver || 1
         this.eventObservables = []
         this.cssLines = []
@@ -5251,6 +5283,8 @@ class JbComponent {
         jb.delay(1).then(() => (this.followUpFuncs||[]).forEach(fu=> tryWrapper(() => { 
             jb.log(`backend uiComp followUp`, {cmp: this, fu, srcCtx: fu.srcCtx})
             fu.action(this.calcCtx)
+            if (this.ver>1)
+                jb.ui.BECmpsDestroyNotification.next({ cmps: [{cmpId: this.cmpId, ver: this.ver-1}]})
         }, 'followUp') ) ).then(()=> this.ready = true)
         this.ready = false
         return vdom
@@ -5834,23 +5868,9 @@ jb.component('followUp.flow', {
       Var('followUpCmp', '%$cmp%'),
       Var('pipeToRun', rx.pipe('%$elems()%')),
       (ctx,{cmp,pipeToRun}) => {
-        jb.ui.followUps = jb.ui.followUps || []
-        jb.ui.followUps.push({cmp, pipe: pipeToRun, srcPath: ctx.cmpCtx.callerPath})
+        jb.ui.followUps[cmp.cmpId] = jb.ui.followUps[cmp.cmpId] || []
+        jb.ui.followUps[cmp.cmpId].push({cmp, pipe: pipeToRun, srcPath: ctx.cmpCtx.callerPath})
       },
-      rx.pipe(
-        source.callbag(() => jb.ui.BECmpsDestroyNotification),
-        rx.filter(
-          ({data},{followUpCmp}) => data.cmps.find(_cmp => _cmp.cmpId == followUpCmp.cmpId && _cmp.ver == followUpCmp.ver)
-        ),
-        rx.take(1),
-        sink.action(({},{pipeToRun}) => {
-          pipeToRun.dispose()
-          const index = jb.ui.followUps.findIndex(e=>e.pipe == pipeToRun)
-          if (index == -1)
-            jb.logError('followUp.flow destroy - can not find pipe')
-          jb.ui.followUps.splice(index,1)
-        })
-      )
     )
   )
 })
@@ -12212,8 +12232,9 @@ jb.remote = {
                 frame.postMessage({from, to,...m}) 
             },
             onMessage: { addListener: handler => frame.addEventListener('message', m => {
+                if (m.data.to != from || m.data.from != to) return
                 jb.log(`remote received at ${from} from ${m.data.from} to ${m.data.to}`,{m: m.data})
-                m.data.to == from && handler(m.data)
+                handler(m.data)
             })},
             onDisconnect: { addListener: handler => { port.disconnectHandler = handler} }
         }
@@ -12241,7 +12262,10 @@ jb.remote = {
             removeEntry(id) {
                 jb.delay(100).then(()=> delete this.map[id])
             },
-            inboundMsg({cbId,t,d}) { return this.getAsPromise(cbId,t).then(cb=> cb && cb(t, t == 0 ? this.remoteCB(d) : d)) },
+            inboundMsg({cbId,t,d}) { 
+                if (t == 2) this.removeEntry(cbId)
+                return this.getAsPromise(cbId,t).then(cb=> cb && cb(t, t == 0 ? this.remoteCB(d) : d)) 
+            },
             outboundMsg({cbId,t,d}) { 
                 port.postMessage({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : d })
                 if (t == 2) this.removeEntry(cbId)

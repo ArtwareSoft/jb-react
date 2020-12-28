@@ -105,11 +105,22 @@ jb.component('remoteTest.dynamicProfileFunc', {
 //   })
 // })
 
+jb.component('remoteTest.uiWorker', {
+  type: 'remote',
+  impl: remote.worker({id: 'ui', libs: ['common','ui-common','remote','two-tier-widget'] })
+})
+
+jb.component('remoteTest.uiWorkerWithSamples', {
+  type: 'remote',
+  impl: remote.worker({id: 'ui-with-samples', libs: ['common','ui-common','remote','two-tier-widget','../projects/ui-tests/test-data-samples'] })
+})
+
+
 jb.component('remoteTest.twoTierWidget.button', {
   impl: uiTest({
     timeout: 500,
     checkResultRx: () => jb.ui.renderingUpdates,
-    control: widget.twoTierWidget(button('hello world'), remote.worker({id: 'ui', libs: ['common','ui-common','remote','two-tier-widget'] })),
+    control: widget.twoTierWidget(button('hello world'), remoteTest.uiWorker()),
     expectedResult: contains('hello world')
   })
 })
@@ -118,7 +129,7 @@ jb.component('remoteTest.twoTierWidget.html', {
   impl: uiTest({
     timeout: 500,
     checkResultRx: () => jb.ui.renderingUpdates,
-    control: widget.twoTierWidget(html('<p>hello world<p>'), remote.worker({id: 'ui', libs: ['common','ui-common','remote','two-tier-widget'] })),
+    control: widget.twoTierWidget(html('<p>hello world<p>'), remoteTest.uiWorker()),
     expectedResult: contains('<p>hello world')
   })
 })
@@ -133,7 +144,7 @@ jb.component('remoteTest.twoTierWidget.changeText', {
         ],
         features: variable({name: 'fName', value: 'Dan', watchable: true})
       }),
-      remote.worker({id: 'ui', libs: ['common','ui-common','remote','two-tier-widget'] })
+      remoteTest.uiWorker()
     ),
     userInputRx: rx.pipe(
       source.waitForSelector('input'),
@@ -159,7 +170,7 @@ jb.component('remoteTest.twoTierWidget.infiniteScroll', {
           css.width('600')
         ]
       }),
-      remote.worker({id: 'ui', libs: ['common','ui-common','remote','two-tier-widget'] })
+      remoteTest.uiWorker()
     ),
     action: rx.pipe( 
       source.waitForSelector('.jb-itemlist'),
@@ -202,7 +213,7 @@ jb.component('remoteTest.twoTierWidget.infiniteScroll.MDInplace', {
       }),
       features: variable({name: 'sectionExpanded', watchable: true, value: obj() }),
     }),
-    remote.worker({id: 'ui-with-samples', libs: ['common','ui-common','remote','two-tier-widget','../projects/ui-tests/test-data-samples'] })
+    remoteTest.uiWorkerWithSamples()
     ),
     action: rx.pipe( 
       source.waitForSelector('.jb-itemlist'),
@@ -217,15 +228,41 @@ jb.component('remoteTest.twoTierWidget.infiniteScroll.MDInplace', {
 jb.component('remoteTest.twoTierWidget.refresh', {
   impl: uiFrontEndTest({
     renderDOM: true,
-    vars: Var('person1', () => ({name: 'Homer'})), // none watchable var
     control: group({
-      controls: widget.twoTierWidget(text('%$person1/name%'), remote.worker({id: 'ui', libs: ['common','ui-common','remote','two-tier-widget'] })),
+      controls: widget.twoTierWidget(text('%$person1/name%'), remoteTest.uiWorker()),
       features: [
-        variable('person1','%$person%'),
+        variable('person1','%$person%'), // only local vars are passed to remote
         watchRef('%$person/name%')
       ]
     }),
-    action: runActions( writeValue('%$person/name%', 'hello'), delay(500)),
+    action: rx.pipe( 
+      source.data(0),
+      rx.do(writeValue('%$person/name%', 'hello')),
+      rx.flatMap(source.remote(source.promise(waitFor(count(widget.headlessWidgets()))), remoteTest.uiWorker())),
+    ),    
+    expectedResult: contains('hello')
+  })
+})
+
+jb.component('remoteTest.twoTierWidget.refresh.cleanUp', {
+  impl: uiFrontEndTest({
+    renderDOM: true,
+    control: group({
+      controls: widget.twoTierWidget(text('%$person1/name%'), remoteTest.uiWorker()),
+      features: [
+        variable('person1','%$person%'), // only local vars are passed to remote
+        watchRef('%$person/name%')
+      ]
+    }),
+    action: rx.pipe( 
+      source.data(0),
+      rx.do(writeValue('%$person/name%', 'hello')),
+      rx.flatMap(source.remote(source.promise(waitFor(count(widget.headlessWidgets()))),remoteTest.uiWorker())),
+      rx.do(() => jb.ui.garbageCollectCtxDictionary(true,true)),
+      rx.flatMap(source.remote(source.promise(waitFor(equals(1, count(widget.headlessWidgets())))),remoteTest.uiWorker())),
+      rx.timeoutLimit(1000, () => jb.logError('worker did not cleanup')),
+      rx.catchError()
+    ),    
     expectedResult: contains('hello')
   })
 })
@@ -239,7 +276,7 @@ jb.component('remoteTest.twoTierWidget.refresh', {
 //         action: ({},{widgetId}) => 
 //           jb.ui.renderingUpdates.next({widgetId, delta: { }, cmpId: 'wrongId'})
 //       }), 
-//       remote.worker({id: 'ui', libs: ['common','ui-common','remote','two-tier-widget'] })
+//       remoteTest.uiWorker()
 //     ),
 //     userInputRx: rx.pipe(
 //       source.waitForSelector('button'),
