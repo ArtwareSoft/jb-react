@@ -506,6 +506,7 @@ Object.assign(jb.ui, {
             .filter(id=>+id.split(':').pop < maxUsed)
             .forEach(id => { removedResources.push(id); delete jb.resources[id]})
 
+        // remove front-end widgets
         const usedWidgets = jb.objFromEntries(
             Array.from(querySelectAllWithWidgets(`[widgetid]`)).filter(el => el.getAttribute('frontend')).map(el => [el.getAttribute('widgetid'),1]))
         const removeWidgets = Object.keys(jb.ui.frontendWidgets).filter(id=>!usedWidgets[id])
@@ -515,6 +516,7 @@ Object.assign(jb.ui, {
             delete jb.ui.frontendWidgets[widgetId]
         })
         
+        // remove component follow ups
         const removeFollowUps = Object.keys(jb.ui.followUps).flatMap(cmpId=> {
             const curVer = Array.from(querySelectAllWithWidgets(`[cmp-id="${cmpId}"]`)).map(el=>+el.getAttribute('cmp-ver'))[0]
             return jb.ui.followUps[cmpId].flatMap(({cmp})=>cmp).filter(cmp => !curVer || cmp.ver > curVer)

@@ -2795,12 +2795,13 @@ jb.callbag = {
             }
           })
       },
-      takeWhile: predicate => source => (start, sink) => {
+      takeWhile: (predicate,passtLastEvent) => source => (start, sink) => {
           if (start !== 0) return
           let talkback
           source(0, function takeWhile(t,d) {
             if (t === 0) talkback = d
             if (t === 1 && !predicate(d)) {
+              if (passtLastEvent) sink(t,d)
               talkback(2)
               sink(2)
             } else {

@@ -134,11 +134,11 @@ jb.component('widget.twoTierWidget', {
             source.callbag(() => jb.ui.widgetUserRequests),
             rx.log('twoTierWidget userReq'),
             rx.filter('%widgetId% == %$widgetId%'),
-            rx.takeWhile('%ev.type% != destroy'),
+            rx.takeWhile(({data}) => data.$ != 'destroy',true),
             //source.frontEndUserEvent('%$widgetId%'),
             rx.log('twoTierWidget sent to headless'),
             remote.operator(widget.headless(call('control'),'%$widgetId%'), '%$remote%'),
-            rx.log('twoTierWidget arrives from headless'),
+            rx.log('twoTierWidget arrived from headless'),
             sink.frontEndDelta('%$widgetId%'),
         )
     })

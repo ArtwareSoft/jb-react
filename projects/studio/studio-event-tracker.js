@@ -295,7 +295,7 @@ jb.component('studio.lowFootprintObj', {
     layout: layout.horizontal(4),
     controls: [
       controlWithCondition(
-        '%$obj/_parent%',
+        '%$obj/cmpCtx%',
         studio.slicedString('%$obj/profile/$%: %$obj/path%')
       ),
       controlWithCondition(
@@ -423,7 +423,7 @@ jb.component('studio.sourceCtxView', {
   params: [
     {id: 'srcCtx'},
   ],
-  impl: controlWithCondition('%$srcCtx/_parent%', group({
+  impl: controlWithCondition('%$srcCtx/cmpCtx%', group({
     controls: [
       controlWithCondition('%$stackItems/length% == 0',studio.singleSourceCtxView('%$srcCtx%')),
       controlWithCondition('%$stackItems/length% > 0', group({

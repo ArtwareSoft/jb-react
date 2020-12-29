@@ -100,7 +100,7 @@ jb.remote = {
             get(id) { return this.map[id] },
             getAsPromise(id,t) { 
                 return jb.exec(waitFor({check: ()=> this.map[id], interval: 5, times: 10}))
-                    .catch(e => jb.logError('cbLookUp - can not find cb',{id}))
+                    .catch(err => jb.logError('cbLookUp - can not find cb',{id}))
                     .then(cb => {
                         if (t == 2) this.removeEntry(id)
                         return cb
@@ -111,25 +111,31 @@ jb.remote = {
                 this.map[id] = cb
                 return id 
             },
-            removeEntry(id) {
-                jb.delay(100).then(()=> delete this.map[id])
+            removeEntry(ids) {
+                jb.delay(1000).then(()=>
+                    jb.asArray(ids).filter(x=>x).forEach(id => delete this.map[id]))
             },
             inboundMsg({cbId,t,d}) { 
                 if (t == 2) this.removeEntry(cbId)
-                return this.getAsPromise(cbId,t).then(cb=> cb && cb(t, t == 0 ? this.remoteCB(d) : d)) 
+                return this.getAsPromise(cbId,t).then(cb=> cb && cb(t, t == 0 ? this.remoteCB(d,cbId) : d)) 
             },
             outboundMsg({cbId,t,d}) { 
                 port.postMessage({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : d })
-                if (t == 2) this.removeEntry(cbId)
             },
-            remoteCB(cbId) { return (t,d) => port.postMessage({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : jb.remoteCtx.stripCBVars(d) }) },
+            remoteCB(cbId, localCbId) { 
+                let talkback
+                return (t,d) => {
+                    if (t==2) this.removeEntry([localCbId,talkback])
+                    port.postMessage({$:'CB', cbId,t, d: t == 0 ? (talkback = this.addToLookup(d)) : jb.remoteCtx.stripCBVars(d) }) 
+                }
+            },
             handleCBCommnad(cmd) {
                 const {$,sourceId,cbId} = cmd
                 const cbElem = jb.remoteCtx.deStrip(cmd.remoteRun)() // actually runs the ctx
                 if ($ == 'CB.createSource')
                     this.map[cbId] = cbElem
                 else if ($ == 'CB.createOperator')
-                    this.map[cbId] = cbElem(this.remoteCB(sourceId) )
+                    this.map[cbId] = cbElem(this.remoteCB(sourceId, cbId) )
             },
         },        
         initCommandListener() {
@@ -151,7 +157,10 @@ jb.remote = {
                 const sourceId = this.cbHandler.addToLookup(source)
                 const cbId = this.cbHandler.newId()
                 this.postMessage({$:'CB.createOperator', remoteRun, sourceId, cbId })
-                return (t,d) => this.cbHandler.outboundMsg({cbId,t,d})
+                return (t,d) => {
+                    if (t == 2) console.log('send 2',cbId,sourceId)
+                    this.cbHandler.outboundMsg({cbId,t,d})
+                }
             }
         },
     })

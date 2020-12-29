@@ -49,16 +49,9 @@ jb.component('group.firstSucceeding', {
   impl: calcProp({
       id: 'ctrls',
       value: (ctx,{$model}) => {
-        const controls = jb.asArray($model.controls.profile)
-        for(let i=0;i<controls.length;i++) {
-          const prof = controls[i]
-          const ctxToUse = $model.ctx.setVars(ctx.vars)
-          const active = prof.condition == undefined || 
-            ctxToUse.runInner(prof.condition,{ as: 'boolean'},`controls~${i}~condition`)
-          if (active)
-            return [ctxToUse.runInner(prof,{type: 'control'},`controls~${i}`)]
-        }
-        return []
+        const runCtx = $model.controls.runCtx.setVars(ctx.vars)
+        return [jb.asArray($model.controls.profile).reduce((res,prof,i) => 
+          res || runCtx.runInner(prof, {}, `controls~${i}`), null )]
       },
       priority: 5
   })

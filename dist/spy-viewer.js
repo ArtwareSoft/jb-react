@@ -2796,12 +2796,13 @@ jb.callbag = {
             }
           })
       },
-      takeWhile: predicate => source => (start, sink) => {
+      takeWhile: (predicate,passtLastEvent) => source => (start, sink) => {
           if (start !== 0) return
           let talkback
           source(0, function takeWhile(t,d) {
             if (t === 0) talkback = d
             if (t === 1 && !predicate(d)) {
+              if (passtLastEvent) sink(t,d)
               talkback(2)
               sink(2)
             } else {
@@ -3459,9 +3460,10 @@ jb.component('rx.takeWhile', {
   description: 'closes the stream on condition',
   category: 'terminate',
   params: [
-    {id: 'whileCondition', as: 'boolean', dynamic: true, mandatory: true}
+    {id: 'whileCondition', as: 'boolean', dynamic: true, mandatory: true},
+    {id: 'passtLastEvent', as: 'boolean'}
   ],
-  impl: (ctx,whileCondition) => jb.callbag.takeWhile(ctx => whileCondition(ctx))
+  impl: (ctx,whileCondition,passtLastEvent) => jb.callbag.takeWhile(ctx => whileCondition(ctx), passtLastEvent)
 })
 
 jb.component('rx.last', {
@@ -4865,6 +4867,7 @@ Object.assign(jb.ui, {
             .filter(id=>+id.split(':').pop < maxUsed)
             .forEach(id => { removedResources.push(id); delete jb.resources[id]})
 
+        // remove front-end widgets
         const usedWidgets = jb.objFromEntries(
             Array.from(querySelectAllWithWidgets(`[widgetid]`)).filter(el => el.getAttribute('frontend')).map(el => [el.getAttribute('widgetid'),1]))
         const removeWidgets = Object.keys(jb.ui.frontendWidgets).filter(id=>!usedWidgets[id])
@@ -4874,6 +4877,7 @@ Object.assign(jb.ui, {
             delete jb.ui.frontendWidgets[widgetId]
         })
         
+        // remove component follow ups
         const removeFollowUps = Object.keys(jb.ui.followUps).flatMap(cmpId=> {
             const curVer = Array.from(querySelectAllWithWidgets(`[cmp-id="${cmpId}"]`)).map(el=>+el.getAttribute('cmp-ver'))[0]
             return jb.ui.followUps[cmpId].flatMap(({cmp})=>cmp).filter(cmp => !curVer || cmp.ver > curVer)
@@ -5178,7 +5182,7 @@ class JbComponent {
     constructor(ctx,id,ver) {
         this.ctx = ctx // used to calc features
         const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId || ''
-        this.cmpId = widgetId+(id || cmpId++)
+        this.cmpId = id || (widgetId+'-'+(cmpId++))
         this.ver = ver || 1
         this.eventObservables = []
         this.cssLines = []
@@ -6898,16 +6902,9 @@ jb.component('group.firstSucceeding', {
   impl: calcProp({
       id: 'ctrls',
       value: (ctx,{$model}) => {
-        const controls = jb.asArray($model.controls.profile)
-        for(let i=0;i<controls.length;i++) {
-          const prof = controls[i]
-          const ctxToUse = $model.ctx.setVars(ctx.vars)
-          const active = prof.condition == undefined || 
-            ctxToUse.runInner(prof.condition,{ as: 'boolean'},`controls~${i}~condition`)
-          if (active)
-            return [ctxToUse.runInner(prof,{type: 'control'},`controls~${i}`)]
-        }
-        return []
+        const runCtx = $model.controls.runCtx.setVars(ctx.vars)
+        return [jb.asArray($model.controls.profile).reduce((res,prof,i) => 
+          res || runCtx.runInner(prof, {}, `controls~${i}`), null )]
       },
       priority: 5
   })
@@ -11273,7 +11270,7 @@ jb.remote = {
             get(id) { return this.map[id] },
             getAsPromise(id,t) { 
                 return jb.exec(waitFor({check: ()=> this.map[id], interval: 5, times: 10}))
-                    .catch(e => jb.logError('cbLookUp - can not find cb',{id}))
+                    .catch(err => jb.logError('cbLookUp - can not find cb',{id}))
                     .then(cb => {
                         if (t == 2) this.removeEntry(id)
                         return cb
@@ -11284,25 +11281,31 @@ jb.remote = {
                 this.map[id] = cb
                 return id 
             },
-            removeEntry(id) {
-                jb.delay(100).then(()=> delete this.map[id])
+            removeEntry(ids) {
+                jb.delay(1000).then(()=>
+                    jb.asArray(ids).filter(x=>x).forEach(id => delete this.map[id]))
             },
             inboundMsg({cbId,t,d}) { 
                 if (t == 2) this.removeEntry(cbId)
-                return this.getAsPromise(cbId,t).then(cb=> cb && cb(t, t == 0 ? this.remoteCB(d) : d)) 
+                return this.getAsPromise(cbId,t).then(cb=> cb && cb(t, t == 0 ? this.remoteCB(d,cbId) : d)) 
             },
             outboundMsg({cbId,t,d}) { 
                 port.postMessage({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : d })
-                if (t == 2) this.removeEntry(cbId)
             },
-            remoteCB(cbId) { return (t,d) => port.postMessage({$:'CB', cbId,t, d: t == 0 ? this.addToLookup(d) : jb.remoteCtx.stripCBVars(d) }) },
+            remoteCB(cbId, localCbId) { 
+                let talkback
+                return (t,d) => {
+                    if (t==2) this.removeEntry([localCbId,talkback])
+                    port.postMessage({$:'CB', cbId,t, d: t == 0 ? (talkback = this.addToLookup(d)) : jb.remoteCtx.stripCBVars(d) }) 
+                }
+            },
             handleCBCommnad(cmd) {
                 const {$,sourceId,cbId} = cmd
                 const cbElem = jb.remoteCtx.deStrip(cmd.remoteRun)() // actually runs the ctx
                 if ($ == 'CB.createSource')
                     this.map[cbId] = cbElem
                 else if ($ == 'CB.createOperator')
-                    this.map[cbId] = cbElem(this.remoteCB(sourceId) )
+                    this.map[cbId] = cbElem(this.remoteCB(sourceId, cbId) )
             },
         },        
         initCommandListener() {
@@ -11324,7 +11327,10 @@ jb.remote = {
                 const sourceId = this.cbHandler.addToLookup(source)
                 const cbId = this.cbHandler.newId()
                 this.postMessage({$:'CB.createOperator', remoteRun, sourceId, cbId })
-                return (t,d) => this.cbHandler.outboundMsg({cbId,t,d})
+                return (t,d) => {
+                    if (t == 2) console.log('send 2',cbId,sourceId)
+                    this.cbHandler.outboundMsg({cbId,t,d})
+                }
             }
         },
     })
@@ -11515,11 +11521,11 @@ jb.component('widget.twoTierWidget', {
             source.callbag(() => jb.ui.widgetUserRequests),
             rx.log('twoTierWidget userReq'),
             rx.filter('%widgetId% == %$widgetId%'),
-            rx.takeWhile('%ev.type% != destroy'),
+            rx.takeWhile(({data}) => data.$ != 'destroy',true),
             //source.frontEndUserEvent('%$widgetId%'),
             rx.log('twoTierWidget sent to headless'),
             remote.operator(widget.headless(call('control'),'%$widgetId%'), '%$remote%'),
-            rx.log('twoTierWidget arrives from headless'),
+            rx.log('twoTierWidget arrived from headless'),
             sink.frontEndDelta('%$widgetId%'),
         )
     })
@@ -12908,7 +12914,7 @@ jb.component('studio.lowFootprintObj', {
     layout: layout.horizontal(4),
     controls: [
       controlWithCondition(
-        '%$obj/_parent%',
+        '%$obj/cmpCtx%',
         studio.slicedString('%$obj/profile/$%: %$obj/path%')
       ),
       controlWithCondition(
@@ -13036,7 +13042,7 @@ jb.component('studio.sourceCtxView', {
   params: [
     {id: 'srcCtx'},
   ],
-  impl: controlWithCondition('%$srcCtx/_parent%', group({
+  impl: controlWithCondition('%$srcCtx/cmpCtx%', group({
     controls: [
       controlWithCondition('%$stackItems/length% == 0',studio.singleSourceCtxView('%$srcCtx%')),
       controlWithCondition('%$stackItems/length% > 0', group({

@@ -399,9 +399,10 @@ jb.component('rx.takeWhile', {
   description: 'closes the stream on condition',
   category: 'terminate',
   params: [
-    {id: 'whileCondition', as: 'boolean', dynamic: true, mandatory: true}
+    {id: 'whileCondition', as: 'boolean', dynamic: true, mandatory: true},
+    {id: 'passtLastEvent', as: 'boolean'}
   ],
-  impl: (ctx,whileCondition) => jb.callbag.takeWhile(ctx => whileCondition(ctx))
+  impl: (ctx,whileCondition,passtLastEvent) => jb.callbag.takeWhile(ctx => whileCondition(ctx), passtLastEvent)
 })
 
 jb.component('rx.last', {
@@ -1805,6 +1806,7 @@ Object.assign(jb.ui, {
             .filter(id=>+id.split(':').pop < maxUsed)
             .forEach(id => { removedResources.push(id); delete jb.resources[id]})
 
+        // remove front-end widgets
         const usedWidgets = jb.objFromEntries(
             Array.from(querySelectAllWithWidgets(`[widgetid]`)).filter(el => el.getAttribute('frontend')).map(el => [el.getAttribute('widgetid'),1]))
         const removeWidgets = Object.keys(jb.ui.frontendWidgets).filter(id=>!usedWidgets[id])
@@ -1814,6 +1816,7 @@ Object.assign(jb.ui, {
             delete jb.ui.frontendWidgets[widgetId]
         })
         
+        // remove component follow ups
         const removeFollowUps = Object.keys(jb.ui.followUps).flatMap(cmpId=> {
             const curVer = Array.from(querySelectAllWithWidgets(`[cmp-id="${cmpId}"]`)).map(el=>+el.getAttribute('cmp-ver'))[0]
             return jb.ui.followUps[cmpId].flatMap(({cmp})=>cmp).filter(cmp => !curVer || cmp.ver > curVer)
@@ -2118,7 +2121,7 @@ class JbComponent {
     constructor(ctx,id,ver) {
         this.ctx = ctx // used to calc features
         const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId || ''
-        this.cmpId = widgetId+(id || cmpId++)
+        this.cmpId = id || (widgetId+'-'+(cmpId++))
         this.ver = ver || 1
         this.eventObservables = []
         this.cssLines = []
@@ -3838,16 +3841,9 @@ jb.component('group.firstSucceeding', {
   impl: calcProp({
       id: 'ctrls',
       value: (ctx,{$model}) => {
-        const controls = jb.asArray($model.controls.profile)
-        for(let i=0;i<controls.length;i++) {
-          const prof = controls[i]
-          const ctxToUse = $model.ctx.setVars(ctx.vars)
-          const active = prof.condition == undefined || 
-            ctxToUse.runInner(prof.condition,{ as: 'boolean'},`controls~${i}~condition`)
-          if (active)
-            return [ctxToUse.runInner(prof,{type: 'control'},`controls~${i}`)]
-        }
-        return []
+        const runCtx = $model.controls.runCtx.setVars(ctx.vars)
+        return [jb.asArray($model.controls.profile).reduce((res,prof,i) => 
+          res || runCtx.runInner(prof, {}, `controls~${i}`), null )]
       },
       priority: 5
   })
