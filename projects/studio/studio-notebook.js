@@ -4,7 +4,7 @@ jb.component('studio.notebook', {
   type: 'control',
   impl: group({
     controls: [
-      //studio.notebookTopBar(),
+      studio.notebookTopBar(),
       group({
           controls: [
 //              widget.twoTierWidget(studio.eventTracker(), remote.notebookWorkerSpy()),
@@ -18,8 +18,8 @@ jb.component('studio.notebook', {
       studio.ctxCounters()
     ],
     features: [
-        group.wait(studio.fetchProjectSettings(), text('')), 
-        feature.requireService(studio.autoSaveService()), 
+        group.wait(studio.fetchProjectSettings()), 
+        //feature.requireService(studio.autoSaveService()), 
         feature.requireService(urlHistory.mapStudioUrlToResource('studio')),
     ]
   })

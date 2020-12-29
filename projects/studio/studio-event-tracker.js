@@ -254,6 +254,7 @@ jb.component('eventTracker.expandableComp', {
       })),
       controlWithCondition('%cmp/pt%',text('%cmp/pt% %cmp/cmpId%;%cmp/ver%')),
       controlWithCondition('%$cmpElem%',text('%$cmpElem/@cmp-pt% %$cmpElem/@cmp-id%;%$cmpElem/@cmp-ver%')),
+      text('')
     ],
     features: [
       group.firstSucceeding(),

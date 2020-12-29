@@ -5181,7 +5181,7 @@ class JbComponent {
     constructor(ctx,id,ver) {
         this.ctx = ctx // used to calc features
         const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId || ''
-        this.cmpId = id || (widgetId+'-'+(cmpId++))
+        this.cmpId = id || (widgetId ? (widgetId+'-'+(cmpId++)) : ''+cmpId++)
         this.ver = ver || 1
         this.eventObservables = []
         this.cssLines = []
@@ -6986,7 +6986,7 @@ jb.component('html', {
 jb.component('html.plain', {
   type: 'html.style',
   impl: customStyle({
-    template: (cmp,{html},h) => h('div',{$html: html, jb_external: 'true' } ),
+    template: (cmp,{html},h) => h('div',{$html: (html||'').replace(/^(<[a-z0-9]*)/,'$1 jb_external="true"') } ),
     features: [
       watchAndCalcModelProp('html'),
       () => ({ studioFeatures :{$: 'feature.contentEditable', param: 'html' } })

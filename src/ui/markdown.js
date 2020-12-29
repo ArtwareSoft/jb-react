@@ -13,8 +13,8 @@ jb.component('markdown', {
 jb.component('markdown.showdown', {
     type: 'markdown.style',
     impl: customStyle({
-        template: ({},{html},h) => h('div',{$html: html, jb_external: 'true' } ),
+        template: ({},{html},h) => h('div',{$html: html.replace(/^(<[a-z0-9]*)/,'$1 jb_external="true"') }),
         features: calcProp('html',(ctx,{$model}) => 
-            new showdown.Converter({tables:true}).makeHtml($model.markdown(ctx)))
+            new showdown.Converter({tables:true}).makeHtml($model.markdown(ctx)) || '' )
     })  
 })

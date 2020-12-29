@@ -115,7 +115,6 @@ jb.component('remoteTest.uiWorkerWithSamples', {
   impl: remote.worker({id: 'ui-with-samples', libs: ['common','ui-common','remote','two-tier-widget','../projects/ui-tests/test-data-samples'] })
 })
 
-
 jb.component('remoteTest.twoTierWidget.button', {
   impl: uiTest({
     timeout: 500,
@@ -125,12 +124,35 @@ jb.component('remoteTest.twoTierWidget.button', {
   })
 })
 
+jb.component('remoteTest.twoTierWidget.refresh.cleanUp', {
+  impl: uiFrontEndTest({
+    renderDOM: true,
+    control: group({
+      controls: widget.twoTierWidget(text('%$person1/name%'), remoteTest.uiWorker()),
+      features: [
+        variable('person1','%$person%'), // only local vars are passed to remote
+        watchRef('%$person/name%')
+      ]
+    }),
+    action: rx.pipe( 
+      source.data(0),
+      rx.do(writeValue('%$person/name%', 'hello')),
+      rx.flatMap(source.remote(source.promise(waitFor(count(widget.headlessWidgets()))),remoteTest.uiWorker())),
+      rx.do(() => jb.ui.garbageCollectCtxDictionary(true,true)),
+      rx.flatMap(source.remote(source.promise(waitFor(equals(1, count(widget.headlessWidgets())))),remoteTest.uiWorker())),
+      rx.timeoutLimit(1000, () => jb.logError('worker did not cleanup')),
+      rx.catchError()
+    ),    
+    expectedResult: contains('hello')
+  })
+})
+
 jb.component('remoteTest.twoTierWidget.html', {
   impl: uiTest({
     timeout: 500,
     checkResultRx: () => jb.ui.renderingUpdates,
-    control: widget.twoTierWidget(html('<p>hello world<p>'), remoteTest.uiWorker()),
-    expectedResult: contains('<p>hello world')
+    control: widget.twoTierWidget(html('<p>hello world</p>'), remoteTest.uiWorker()),
+    expectedResult: contains('hello world</p>')
   })
 })
 
@@ -244,28 +266,6 @@ jb.component('remoteTest.twoTierWidget.refresh', {
   })
 })
 
-jb.component('remoteTest.twoTierWidget.refresh.cleanUp', {
-  impl: uiFrontEndTest({
-    renderDOM: true,
-    control: group({
-      controls: widget.twoTierWidget(text('%$person1/name%'), remoteTest.uiWorker()),
-      features: [
-        variable('person1','%$person%'), // only local vars are passed to remote
-        watchRef('%$person/name%')
-      ]
-    }),
-    action: rx.pipe( 
-      source.data(0),
-      rx.do(writeValue('%$person/name%', 'hello')),
-      rx.flatMap(source.remote(source.promise(waitFor(count(widget.headlessWidgets()))),remoteTest.uiWorker())),
-      rx.do(() => jb.ui.garbageCollectCtxDictionary(true,true)),
-      rx.flatMap(source.remote(source.promise(waitFor(equals(1, count(widget.headlessWidgets())))),remoteTest.uiWorker())),
-      rx.timeoutLimit(1000, () => jb.logError('worker did not cleanup')),
-      rx.catchError()
-    ),    
-    expectedResult: contains('hello')
-  })
-})
 
 // jb.component('remoteTest.twoTierWidget.recoverAfterError', {
 //   impl: uiTest({

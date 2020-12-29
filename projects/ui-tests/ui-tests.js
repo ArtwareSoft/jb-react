@@ -15,7 +15,7 @@ jb.component('uiTest.label0', {
 jb.component('uiTest.html', {
   impl: uiTest({
     control: html({html: '<p>hello world</p>'}),
-    expectedResult: contains('<p>hello world</p>')
+    expectedResult: contains('>hello world</p>')
   })
 })
 

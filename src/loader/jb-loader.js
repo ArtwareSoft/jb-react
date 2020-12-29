@@ -110,6 +110,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'node_modules/codemirror/mode/javascript/javascript.js',
         'node_modules/codemirror/mode/css/css.js',
         'node_modules/codemirror/mode/jsx/jsx.js',
+        'node_modules/codemirror/mode/markdown/markdown.js',
         'node_modules/codemirror/mode/htmlmixed/htmlmixed.js',
         'node_modules/codemirror/addon/hint/show-hint.js',
 

@@ -10,9 +10,10 @@ jb.component('nb.notebook', {
         itemVariable: 'notebookElem', 
         controls: group({
             controls: [ 
-                (ctx,{notebookElem}) => ctx.run(notebookElem.editor),
+                '%$notebookElem.editor()%',
+                //(ctx,{notebookElem}) => ctx.run(notebookElem.editor),
                 group({
-                    controls: (ctx,{notebookElem}) => ctx.run(notebookElem.result),
+                    controls: '%$notebookElem.result()%',
                     features: [
                         watchRef({ ref: studio.ref('%$path%'), includeChildren: 'yes'}),
                         variable('profileContent',studio.val('%$path%~markdown'))
@@ -33,10 +34,7 @@ jb.component('studio.notebookElem', {
         { id: 'result', type: 'control', dynamic: true},
         { id: 'editor', type: 'control', dynamic: true},
     ],
-    impl: (_ctx,result,editor) => ({
-        result: ctx => result(ctx),
-        editor: ctx => editor(ctx),
-    })
+    impl: ctx => ctx.params
 })
 
 jb.component('nb.markdown', {
@@ -45,10 +43,14 @@ jb.component('nb.markdown', {
         {id: 'markdown', as: 'string'}
     ],
     impl: studio.notebookElem(
-        widget.twoTierWidget(markdown('%$profileContent%'), remote.notebookWorker()), 
-        studio.editableSource('%$path%~markdown',70)
+        widget.twoTierWidget(markdown('%$profileContent%'), remote.notebookWorker()),
+        editableText({
+            databind: studio.profileAsText('%$path%~markdown'),
+            style: editableText.codemirror({ height: 100, mode: 'markdown' }),
+        }),
     )
 })
+
 
 jb.component('nb.control', {
     type: 'nb.elem',

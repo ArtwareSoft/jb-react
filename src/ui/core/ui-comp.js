@@ -54,7 +54,7 @@ class JbComponent {
     constructor(ctx,id,ver) {
         this.ctx = ctx // used to calc features
         const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId || ''
-        this.cmpId = id || (widgetId+'-'+(cmpId++))
+        this.cmpId = id || (widgetId ? (widgetId+'-'+(cmpId++)) : ''+cmpId++)
         this.ver = ver || 1
         this.eventObservables = []
         this.cssLines = []
