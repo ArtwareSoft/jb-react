@@ -14,7 +14,7 @@ function compsRefOfPreviewJb(previewjb) {
 			if (source != 'probe') {
 				st.compsHistory.push({before: previewjb.comps, after: val, opEvent: opEvent, undoIndex: st.undoIndex})
 				if (st.compsHistory.length > historyWin)
-					 	st.compsHistory[st.compsHistory.length-historyWin] == null
+					st.compsHistory = st.compsHistory.slice(-1*historyWin)
 			}
 
 			previewjb.comps = val

@@ -11,20 +11,34 @@ jb.component('openDialog', {
 	{id: 'id', as: 'string'},
     {id: 'features', type: 'dialog-feature[]', dynamic: true}
   ],
-  impl: runActions(
-	Var('$dlg',(ctx,{},{id}) => {
-		const dialog = { id: id || `dlg-${ctx.id}`, launcherCmpId: ctx.exp('%$cmp/cmpId%') }
-		const ctxWithDialog = ctx.cmpCtx._parent.setVars({
-			$dialog: dialog,
-			dialogData: {},
-			formContainer: { err: ''},
-		})
-		dialog.ctx = ctxWithDialog
-		return dialog
-	}),
-	dialog.createDialogTopIfNeeded(),
-	action.subjectNext(dialogs.changeEmitter(), obj(prop('open',true), prop('dialog','%$$dlg%')))
-  )
+  impl: ctx => {
+	const $dialog = { id: ctx.params.id || `dlg-${ctx.id}`, launcherCmpId: ctx.exp('%$cmp/cmpId%') }
+	const ctxWithDialog = ctx.setVars({
+		$dialog,
+		dialogData: {},
+		formContainer: { err: ''},
+	})
+	$dialog.ctx = ctxWithDialog
+	ctxWithDialog.run(runActions(
+		dialog.createDialogTopIfNeeded(),
+		action.subjectNext(dialogs.changeEmitter(), obj(prop('open',true), prop('dialog', '%$$dialog%')))
+	))
+}
+  
+//   runActions(
+// 	Var('$dlg',(ctx,{},{id}) => {
+// 		const dialog = { id: id || `dlg-${ctx.id}`, launcherCmpId: ctx.exp('%$cmp/cmpId%') }
+// 		const ctxWithDialog = ctx.cmpCtx._parent.setVars({
+// 			$dialog: dialog,
+// 			dialogData: {},
+// 			formContainer: { err: ''},
+// 		})
+// 		dialog.ctx = ctxWithDialog
+// 		return dialog
+// 	}),
+// 	dialog.createDialogTopIfNeeded(),
+// 	action.subjectNext(dialogs.changeEmitter(), obj(prop('open',true), prop('dialog','%$$dlg%')))
+//   )
 })
 
 jb.component('openDialog.probe', {

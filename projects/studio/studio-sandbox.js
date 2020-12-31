@@ -2,7 +2,7 @@ jb.component('studio.initProjectSandbox', {
     type: 'action',
     params: [
         {id: 'projectSettings' },
-    ],    
+    ],
     impl: (ctx, projectSettings) => {
         const uri = 'notebook-worker'
         const st = jb.studio
@@ -34,7 +34,8 @@ importScripts('${distPath}/spy-viewer.js?nb')
 spyViewerJb.remote.cbPortFromFrame(self,'${uri}-spy','studio')
 
 jb.exec(rx.pipe(
-    source.data(() => jb.prettyPrint(jb.comps[jb.notebookId])),
+    source.data(() => jb.prettyPrint({...jb.comps[jb.notebookId],
+        location: jb.comps[jb.notebookId][jb.location], loadingPhase: jb.comps[jb.notebookId][jb.loadingPhase]} )),
     remote.operator({$: 'sink.initNotebookStudio'}, () => ({port: portToStudio, uri: '${uri}'})),
 ))
 `
@@ -50,9 +51,10 @@ jb.component('sink.initNotebookStudio', {
     type: 'rx',
     category: 'sink',
     impl: rx.innerPipe(
-        rx.var('parsedProfile',({data}) => jb.studio.evalProfile(data)),
-        sink.action( (ctx,{parsedProfile}) => {
-            jb.component(ctx.exp('%$studio/project%.notebook'), parsedProfile)
+        rx.map(({data}) => jb.studio.evalProfile(data)),
+        rx.map(({data}) => ({...data, [jb.location]: data.location, [jb.loadingPhase]: data.loadingPhase})),
+        sink.action( ctx => {
+            jb.comps[ctx.exp('%$studio/project%.notebook')] = ctx.data
             jb.studio.initCompsRefHandler(jb)
         }),
     )
@@ -82,3 +84,4 @@ jb.component('remote.notebookWorkerSpy', {
     type: 'remote',
     impl: () => ({uri: 'notebook-worker-spy', port: jb.studio.notebookWorker.spyPort})
 })
+

@@ -185,7 +185,7 @@ class JbComponent {
         elem && jb.ui.refreshElem(elem,state,options) // cmpId may be deleted
     }
     calcCssLines() {
-        return jb.unique(this.css.map(l=> typeof l == 'function' ? l(this.calcCtx): l)
+        return jb.unique((this.css || []).map(l=> typeof l == 'function' ? l(this.calcCtx): l)
         .flatMap(css=>css.split(/}\s*/m)
             .map(x=>x.trim()).filter(x=>x)
             .map(x=>x+'}')

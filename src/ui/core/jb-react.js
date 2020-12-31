@@ -566,8 +566,9 @@ Object.assign(jb.ui, {
         if (!_ctx) 
             return jb.logError('refreshElem - no ctx for elem',{elem, cmpId, cmpVer})
         const strongRefresh = jb.path(options,'strongRefresh')
-        let ctx = _ctx.setVar('$state', strongRefresh ? {refresh: true } : 
+        let ctx = _ctx.setVar('$model',null).setVar('$state', strongRefresh ? {refresh: true } : 
             {refresh: true, ...jb.path(elem._component,'state'), ...state}) // strongRefresh kills state
+        ctx._parent = null
 
         if (options && options.extendCtx)
             ctx = options.extendCtx(ctx)

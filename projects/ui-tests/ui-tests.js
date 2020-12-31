@@ -1685,6 +1685,22 @@ jb.component('uiTest.refreshControlById.text', {
   })
 })
 
+jb.component('uiTest.refreshControlById.withButton', {
+  impl: uiFrontEndTest({
+    renderDOM: true,
+    vars: Var('person1', () => ({name: 'Homer'})), // none watchable var
+    control: group({ controls: [
+      text({ text: '%$person1/name%', features: id('t1') }),
+      button({
+        title: 'refresh', 
+        action: runActions(writeValue('%$person1/name%','Dan'),refreshControlById('t1'))
+      })
+    ]}),
+    action: uiAction.click('button'),
+    expectedResult: contains('Dan')
+  })
+})
+
 jb.component('uiTest.refreshByStateChange', {
   impl: uiTest({
     control: group({

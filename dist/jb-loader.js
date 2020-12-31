@@ -60,7 +60,6 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/multi-select.js',
         'src/ui/theme.js',
         'src/ui/slider.js',
-//        'src/ui/table.js',
         'src/ui/window.js',
         'src/ui/divider.js',
         'src/ui/editable-text-helper-popup.js',
@@ -97,7 +96,24 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
           'dist/codemirror.js',
       ],
       'fuse': ['dist/fuse.js' ],
-      'markdown': ['dist/showdown.js', 'src/ui/markdown.js'],
+      'markdown-editor': [
+        'node_modules/codemirror/mode/markdown/markdown.js',
+        'node_modules/codemirror/addon/edit/continuelist.js',
+        'node_modules/codemirror/addon/display/fullscreen.js',
+        'node_modules/codemirror/addon/mode/overlay.js',
+        'node_modules/codemirror/addon/display/placeholder.js',
+        'node_modules/codemirror/addon/selection/mark-selection.js',
+        'node_modules/codemirror/mode/gfm/gfm.js',
+        'dist/mark.js',
+        'dist/simplemde.js',
+        'dist/css/simplemde.css',
+        'src/ui/markdown-viewer.js',
+        'src/ui/markdown-editor.js',
+      ],
+      markdown: [
+        'dist/mark.js',
+        'src/ui/markdown-viewer.js',
+      ],
       'two-tier-widget': ['src/ui/two-tier-widget.js'],        
       'puppeteer': [
 //        'src/misc/puppeteer/pptr-remote.js',
@@ -110,7 +126,6 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'node_modules/codemirror/mode/javascript/javascript.js',
         'node_modules/codemirror/mode/css/css.js',
         'node_modules/codemirror/mode/jsx/jsx.js',
-        'node_modules/codemirror/mode/markdown/markdown.js',
         'node_modules/codemirror/mode/htmlmixed/htmlmixed.js',
         'node_modules/codemirror/addon/hint/show-hint.js',
 
@@ -129,6 +144,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'node_modules/codemirror/addon/selection/active-line.js',
         'src/ui/styles/codemirror-styles.js',
       ],
+    
       'codemirror-css': [
         'node_modules/codemirror/addon/dialog/dialog.css',
         'node_modules/codemirror/addon/fold/foldgutter.css',
@@ -193,7 +209,6 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       'notebook': [ 'src/ui/notebook/notebook-common.js'],
       studio: [
         'dist/material.js', 'src/ui/watchable/text-editor.js',
-        'dist/showdown.js', 'src/ui/markdown.js',
         'src/misc/parsing.js',
         'styles', 'path','utils', 'preview','popups','url','model-components', 'completion', 'undo','tgp-model', 'new-profile',
         'suggestions', 'properties','jb-editor-styles','edit-source','jb-editor','pick','h-to-jsx','style-editor',

@@ -223,7 +223,7 @@ let ctxCounter = 0;
 class jbCtx {
   constructor(ctx,ctx2) {
     this.id = ctxCounter++
-    this._parent = ctx
+//    this._parent = ctx
     if (typeof ctx == 'undefined') {
       this.vars = {}
       this.params = {}
@@ -279,7 +279,7 @@ class jbCtx {
   }
 }
 
-Object.assign(jb,{ 
+Object.assign(jb, { 
   frame: (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {}, 
   comps: {}, ctxDictionary: {}, run: jb_run, jbCtx, jstypes, tojstype 
 })

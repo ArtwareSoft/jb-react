@@ -224,7 +224,7 @@ let ctxCounter = 0;
 class jbCtx {
   constructor(ctx,ctx2) {
     this.id = ctxCounter++
-    this._parent = ctx
+//    this._parent = ctx
     if (typeof ctx == 'undefined') {
       this.vars = {}
       this.params = {}
@@ -280,7 +280,7 @@ class jbCtx {
   }
 }
 
-Object.assign(jb,{ 
+Object.assign(jb, { 
   frame: (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {}, 
   comps: {}, ctxDictionary: {}, run: jb_run, jbCtx, jstypes, tojstype 
 })
@@ -4927,8 +4927,9 @@ Object.assign(jb.ui, {
         if (!_ctx) 
             return jb.logError('refreshElem - no ctx for elem',{elem, cmpId, cmpVer})
         const strongRefresh = jb.path(options,'strongRefresh')
-        let ctx = _ctx.setVar('$state', strongRefresh ? {refresh: true } : 
+        let ctx = _ctx.setVar('$model',null).setVar('$state', strongRefresh ? {refresh: true } : 
             {refresh: true, ...jb.path(elem._component,'state'), ...state}) // strongRefresh kills state
+        ctx._parent = null
 
         if (options && options.extendCtx)
             ctx = options.extendCtx(ctx)
@@ -5313,7 +5314,7 @@ class JbComponent {
         elem && jb.ui.refreshElem(elem,state,options) // cmpId may be deleted
     }
     calcCssLines() {
-        return jb.unique(this.css.map(l=> typeof l == 'function' ? l(this.calcCtx): l)
+        return jb.unique((this.css || []).map(l=> typeof l == 'function' ? l(this.calcCtx): l)
         .flatMap(css=>css.split(/}\s*/m)
             .map(x=>x.trim()).filter(x=>x)
             .map(x=>x+'}')
@@ -7550,20 +7551,34 @@ jb.component('openDialog', {
 	{id: 'id', as: 'string'},
     {id: 'features', type: 'dialog-feature[]', dynamic: true}
   ],
-  impl: runActions(
-	Var('$dlg',(ctx,{},{id}) => {
-		const dialog = { id: id || `dlg-${ctx.id}`, launcherCmpId: ctx.exp('%$cmp/cmpId%') }
-		const ctxWithDialog = ctx.cmpCtx._parent.setVars({
-			$dialog: dialog,
-			dialogData: {},
-			formContainer: { err: ''},
-		})
-		dialog.ctx = ctxWithDialog
-		return dialog
-	}),
-	dialog.createDialogTopIfNeeded(),
-	action.subjectNext(dialogs.changeEmitter(), obj(prop('open',true), prop('dialog','%$$dlg%')))
-  )
+  impl: ctx => {
+	const $dialog = { id: ctx.params.id || `dlg-${ctx.id}`, launcherCmpId: ctx.exp('%$cmp/cmpId%') }
+	const ctxWithDialog = ctx.setVars({
+		$dialog,
+		dialogData: {},
+		formContainer: { err: ''},
+	})
+	$dialog.ctx = ctxWithDialog
+	ctxWithDialog.run(runActions(
+		dialog.createDialogTopIfNeeded(),
+		action.subjectNext(dialogs.changeEmitter(), obj(prop('open',true), prop('dialog', '%$$dialog%')))
+	))
+}
+  
+//   runActions(
+// 	Var('$dlg',(ctx,{},{id}) => {
+// 		const dialog = { id: id || `dlg-${ctx.id}`, launcherCmpId: ctx.exp('%$cmp/cmpId%') }
+// 		const ctxWithDialog = ctx.cmpCtx._parent.setVars({
+// 			$dialog: dialog,
+// 			dialogData: {},
+// 			formContainer: { err: ''},
+// 		})
+// 		dialog.ctx = ctxWithDialog
+// 		return dialog
+// 	}),
+// 	dialog.createDialogTopIfNeeded(),
+// 	action.subjectNext(dialogs.changeEmitter(), obj(prop('open',true), prop('dialog','%$$dlg%')))
+//   )
 })
 
 jb.component('openDialog.probe', {
@@ -12242,7 +12257,7 @@ function compsRefOfPreviewJb(previewjb) {
 			if (source != 'probe') {
 				st.compsHistory.push({before: previewjb.comps, after: val, opEvent: opEvent, undoIndex: st.undoIndex})
 				if (st.compsHistory.length > historyWin)
-					 	st.compsHistory[st.compsHistory.length-historyWin] == null
+					st.compsHistory = st.compsHistory.slice(-1*historyWin)
 			}
 
 			previewjb.comps = val

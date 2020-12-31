@@ -18,11 +18,24 @@ jb.component('studio.notebook', {
       studio.ctxCounters()
     ],
     features: [
-        group.wait(studio.fetchProjectSettings()), 
-        //feature.requireService(studio.autoSaveService()), 
+        group.wait(studio.fetchProjectSettings()),
+        feature.requireService(studio.notebookSaveService()),
         feature.requireService(urlHistory.mapStudioUrlToResource('studio')),
     ]
   })
+})
+
+jb.component('studio.notebookSaveService', {
+    type: 'service',
+    impl: ctx => ({ init: () => {
+        const st = jb.studio
+        st.changedComps = () => {
+            if (!st.compsHistory || !st.compsHistory.length) return []
+
+            const changedComps = jb.unique(st.compsHistory.map(e=>jb.path(e,'opEvent.path.0')))
+            return changedComps.map(id=>[id,jb.comps[id]])
+        }
+    }})
 })
 
 jb.component('studio.notebookTopBar', {
@@ -63,8 +76,7 @@ jb.component('studio.notebookTopBar', {
                 title: 'toolbar',
                 controls: studio.notebookToolbar(),
                 features: css.margin('-10')
-              }),
-              controlWithFeatures(studio.searchComponent(), [css.margin('-10', '-100')])
+              })
             ]
           })
         ],

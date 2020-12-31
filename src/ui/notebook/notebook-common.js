@@ -43,10 +43,11 @@ jb.component('nb.markdown', {
         {id: 'markdown', as: 'string'}
     ],
     impl: studio.notebookElem(
-        widget.twoTierWidget(markdown('%$profileContent%'), remote.notebookWorker()),
+        markdown('%$profileContent%'),
+  //      widget.twoTierWidget(markdown('%$profileContent%'), remote.notebookWorker()),
         editableText({
             databind: studio.profileAsText('%$path%~markdown'),
-            style: editableText.codemirror({ height: 100, mode: 'markdown' }),
+            style: editableText.markdown(),
         }),
     )
 })
