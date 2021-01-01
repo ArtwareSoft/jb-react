@@ -33,7 +33,6 @@ jb.component('studio.jbart', {
           group.wait(studio.fetchProjectSettings(), text('loading project settings...'))
         ]
       }),
-      studio.pageDescription(),
       studio.pages(),
       studio.ctxCounters()
     ],
@@ -537,26 +536,6 @@ jb.component('studio.projectSettings', {
       }),
       css.width('600'),
       feature.initValue('%$studio/libsAsArray%', split({text: '%libs%'}))
-    ]
-  })
-})
-
-jb.component('studio.pageDescription', {
-  type: 'control',
-  impl: group({
-    title: 'desc',
-    controls: markdown(pipeline(list('#%$studio/page%', '%$pageCmp/description%', '```%$code%```'), join(`
-`))),
-    features: [
-      group.wait(studio.waitForPreviewIframe()),
-      watchRef('%$studio/page%'),
-      variable('pageCmp', () => jb.studio.previewjb.comps[jb.exec('%$studio.page%')]),
-      variable('code', prettyPrint('%$pageCmp/impl%')),
-      css.height({
-        height: '250',
-        overflow: 'auto',
-        minMax: 'max'
-      })
     ]
   })
 })

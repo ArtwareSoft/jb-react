@@ -1,4 +1,4 @@
-jb.ns('nb,studio')
+jb.ns('nb,studio,widget,markdown')
 
 jb.component('nb.notebook', {
     type: 'control',
@@ -43,8 +43,8 @@ jb.component('nb.markdown', {
         {id: 'markdown', as: 'string'}
     ],
     impl: studio.notebookElem(
-        markdown('%$profileContent%'),
-  //      widget.twoTierWidget(markdown('%$profileContent%'), remote.notebookWorker()),
+//        markdown('%$profileContent%'),
+        widget.twoTierWidget(markdown('%$profileContent%'), remote.notebookWorker()),
         editableText({
             databind: studio.profileAsText('%$path%~markdown'),
             style: editableText.markdown(),

@@ -118,6 +118,23 @@ jb.component('uiTest.treeDDAfterLast', {
   })
 })
 
+jb.component('uiTest.treeDD.boundedSelection', {
+  impl: uiFrontEndTest({
+    control: group({ controls: 
+      tree({
+        nodeModel: tree.json('%$personWithChildren%', 'personWithChildren'),
+        features: [
+          tree.selection('%$selected%'), tree.dragAndDrop(), tree.keyboardSelection(),
+          tree.expandPath('personWithChildren~children')
+        ]
+      }),
+      features: variable({name: 'selected', watchable: true, value: 'personWithChildren~children~1'})
+    }),
+    action: uiAction.keyboardEvent({ selector: '[interactive]', type: 'keydown', keyCode: 40, ctrl: 'ctrl' }),
+    expectedResult: contains(['Bart','Maggie','selected','Lisa'])
+  })
+})
+
 jb.component('uiTest.treeVisualDD', {
   impl: uiTest({
     control: tree({

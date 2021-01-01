@@ -6333,8 +6333,8 @@ jb.component('defaultTheme', {
     
       --jb-menu-bg: #ffffff;
       --jb-menu-fg: #616161;
-      --jb-menu-selection-bg: #eee;
-      --jb-menu-selection-fg: #111;
+      --jb-menu-selection-bg: #006ab1;
+      --jb-menu-selection-fg: #ffffff;
       --jb-menu-separator-fg: #888888;
       --jb-menubar-selection-bg: rgba(0, 0, 0, 0.1);
       --jb-menubar-selection-fg: #333333;
