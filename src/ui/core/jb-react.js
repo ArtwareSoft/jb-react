@@ -597,7 +597,7 @@ Object.assign(jb.ui, {
         const changed_path = watchHandler.removeLinksFromPath(e.insertedPath || watchHandler.pathOfRef(e.ref))
         if (!changed_path) debugger
         //observe="resources://2~name;person~name
-        const body = jb.path(e,'srcCtx.vars.headlessWidgetId') || jb.path(e,'srcCtx.vars.testID') ? jb.ui.widgetBody(e.srcCtx) : jb.frame.document.body
+        const body = !jb.frame.document || jb.path(e,'srcCtx.vars.headlessWidgetId') || jb.path(e,'srcCtx.vars.testID') ? jb.ui.widgetBody(e.srcCtx) : jb.frame.document.body
         const elemsToCheck = jb.ui.find(body,'[observe]') // top down order
         const elemsToCheckCtxBefore = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
         const originatingCmpId = jb.path(e.srcCtx, 'vars.cmp.cmpId')

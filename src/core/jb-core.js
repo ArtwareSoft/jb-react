@@ -1,4 +1,5 @@
-if (typeof jb == 'undefined' && typeof self != 'undefined') self.jb = {};
+jbFrame = (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {}
+if (typeof jb == 'undefined' && typeof jbFrame != 'undefined') jbFrame.jb = {};
 
 (function() {
 function jb_run(ctx,parentParam,settings) {
@@ -280,9 +281,9 @@ class jbCtx {
 }
 
 Object.assign(jb, { 
-  frame: (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {}, 
+  frame: jbFrame, 
   comps: {}, ctxDictionary: {}, run: jb_run, jbCtx, jstypes, tojstype 
 })
 })()
 
-if (typeof module != 'undefined') module.exports = jb
+if (typeof module != 'undefined') module.exports = jbFrame.jb

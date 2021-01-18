@@ -1,4 +1,4 @@
-jb.ns('mdc,mdc-style')
+var {hidden} = jb.ns('mdc,mdc-style')
 
 jb.component('editableText.input', {
   type: 'editable-text.style',

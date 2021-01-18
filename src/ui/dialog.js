@@ -1,4 +1,5 @@
-jb.ns('dialog,dialogs')
+var {openDialog, dialog,dialogs, dialogFeature, and, or, runActionOnItems, getSessionStorage, userStateProp } 
+	= jb.ns('dialog,dialogs,openDialog,dialogFeature')
 
 jb.component('openDialog', {
   type: 'action,has-side-effects',

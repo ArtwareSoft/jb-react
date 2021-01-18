@@ -1,4 +1,6 @@
-jb.ns('followUp,backEnd')
+
+var { variable,followUp,backEnd,method,features,onDestroy,htmlAttribute,templateModifier,watchAndCalcModelProp,calcProp,watchRef } 
+  = jb.ns('variable,followUp,backEnd,method,htmlAttribute,features,onDestroy,templateModifier,watchAndCalcModelProp,calcProp,watchRef,group')
 
 jb.component('method', {
   type: 'feature',
@@ -368,22 +370,6 @@ jb.component('hidden', {
   impl: (ctx,showCondition) => ({
     templateModifier: (vdom,cmp) => {
       jb.path(vdom,['attributes','style','display'],jb.toboolean(showCondition(cmp.ctx)) ? 'inherit' : 'none')
-      return vdom
-    }
-  })
-})
-
-jb.component('conditionalClass', {
-  type: 'feature',
-  description: 'toggle class by condition',
-  params: [
-    {id: 'cssClass', as: 'string', mandatory: true, dynamic: true},
-    {id: 'condition', type: 'boolean', mandatory: true, dynamic: true}
-  ],
-  impl: (ctx,cssClass,cond) => ({
-    templateModifier: (vdom,cmp) => {
-      if (jb.toboolean(cond(cmp.ctx)))
-        vdom.addClass(cssClass())
       return vdom
     }
   })

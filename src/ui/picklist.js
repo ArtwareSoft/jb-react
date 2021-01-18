@@ -1,4 +1,4 @@
-jb.ns('picklist')
+var {picklist} = jb.ns('picklist')
 
 jb.component('picklist', {
   type: 'control',

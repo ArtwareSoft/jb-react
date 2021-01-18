@@ -151,7 +151,7 @@ jb.component('studio.sampleProject', {
     action: action.if(
       studio.inVscode(),
       studio.reOpenStudio(pipeline(studio.projectsDir(),'%%/%$project%/%$project%.js'), 0),
-      gotoUrl(
+      winUtils.gotoUrl(
         'https://artwaresoft.github.io/jb-react/bin/studio/studio-cloud.html?host=github&hostProjectId=http://artwaresoft.github.io/jb-react/projects/%$project%&project=%$project%',
         'new tab'
       )
@@ -424,7 +424,7 @@ jb.component('studio.pathHyperlink', {
 	  		const title = jb.studio.shortTitle(path) || '',compName = jb.studio.compNameOfPath(path) || '';
 	  		return title == compName ? title : compName + ' ' + title;
 	  	},
-        action: studio.gotoPath('%$path%'),
+        action: runActions(writeValue('%$studio/profile_path%', '%$path%'), studio.openControlTree()),
         style: button.href(),
         features: feature.hoverTitle('%$path%')
       }),

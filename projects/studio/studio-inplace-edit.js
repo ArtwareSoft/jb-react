@@ -1,4 +1,4 @@
-jb.ns('inplaceEdit,sizesEditor')
+var {inplaceEdit,sizesEditor} = jb.ns('inplaceEdit,sizesEditor')
 
 jb.component('inplaceEdit.activate', {
   type: 'action',

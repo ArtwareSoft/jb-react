@@ -1,3 +1,6 @@
+var { not,and,or,contains,writeValue,obj,prop,log,pipeline,filter,firstSucceeding,runActions } 
+  = jb.ns('not,and,or,contains,writeValue,obj,prop,log,pipeline,filter,firstSucceeding,runActions')
+
 jb.component('call', {
   type: 'any',
   params: [
@@ -1198,3 +1201,5 @@ jb.component('waitFor',{
     })
   }
 })
+
+var {Var,remark} = jb.macro // special system comps

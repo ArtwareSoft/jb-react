@@ -1,3 +1,5 @@
+var { css } = jb.ns('css');
+
 (function() {
 const withUnits = jb.ui.withUnits
 const fixCssLine = jb.ui.fixCssLine
@@ -224,6 +226,22 @@ jb.component('css.valueOfCssVar',{
     {id: 'parent', description: 'html element under which to check the var, default is document.body' }
   ],
   impl: (ctx,varName,parent) => jb.ui.valueOfCssVar(varName,parent)
+})
+
+jb.component('css.conditionalClass', {
+  type: 'feature',
+  description: 'toggle class by condition',
+  params: [
+    {id: 'cssClass', as: 'string', mandatory: true, dynamic: true},
+    {id: 'condition', type: 'boolean', mandatory: true, dynamic: true}
+  ],
+  impl: (ctx,cssClass,cond) => ({
+    templateModifier: (vdom,cmp) => {
+      if (jb.toboolean(cond(cmp.ctx)))
+        vdom.addClass(cssClass())
+      return vdom
+    }
+  })
 })
 
 ;['layout','typography','detailedBorder','detailedColor','gridArea'].forEach(f=>

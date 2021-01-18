@@ -1,4 +1,4 @@
-jb.ns('button')
+var { button } = jb.ns('button')
 
 jb.component('button', {
   type: 'control,clickable',
@@ -26,7 +26,7 @@ jb.component('button', {
     ))
 })
 
-jb.component('ctrlAction', {
+jb.component('button.ctrlAction', {
   type: 'feature',
   category: 'button:70',
   description: 'action to perform on control+click',
@@ -36,7 +36,7 @@ jb.component('ctrlAction', {
   impl: method('ctrlAction', (ctx,{},{action}) => action(ctx))
 })
 
-jb.component('altAction', {
+jb.component('button.altAction', {
   type: 'feature',
   category: 'button:70',
   description: 'action to perform on alt+click',

@@ -1,3 +1,5 @@
+var {urlHistory} = jb.ns('urlHistory')
+
 jb.component('urlHistory.mapStudioUrlToResource', {
   type: 'service',
   params: [

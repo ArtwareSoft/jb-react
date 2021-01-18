@@ -1,4 +1,4 @@
-jb.ns('icon,control')
+var { icon, control } = jb.ns('icon,control')
 
 jb.component('control.icon', {
   type: 'control',

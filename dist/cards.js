@@ -1,4 +1,4 @@
-jb.ns('image,card,card-filter,card-list,card-properties')
+var { image,card,cardFilter,cardList,cardProperties } = jb.ns('image,card,cardFilter,cardList,cardProperties')
 
 jb.component('card', {
   type: 'control',

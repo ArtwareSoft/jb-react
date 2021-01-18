@@ -1,5 +1,8 @@
+
+jbFrame = (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {};
 (function (jb) {
-if (typeof jb == 'undefined' && typeof self != 'undefined') self.jb = {};
+jbFrame = (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {}
+if (typeof jb == 'undefined' && typeof jbFrame != 'undefined') jbFrame.jb = {};
 
 (function() {
 function jb_run(ctx,parentParam,settings) {
@@ -281,12 +284,12 @@ class jbCtx {
 }
 
 Object.assign(jb, { 
-  frame: (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {}, 
+  frame: jbFrame, 
   comps: {}, ctxDictionary: {}, run: jb_run, jbCtx, jstypes, tojstype 
 })
 })()
 
-if (typeof module != 'undefined') module.exports = jb;
+if (typeof module != 'undefined') module.exports = jbFrame.jb;
 
 Object.assign(jb, {
     compParams(comp) {
@@ -1512,16 +1515,16 @@ jb.component('prop', {
   impl: ctx => ctx.params
 })
 
-// jb.component('objMethod', {
-//   type: 'prop',
-//   macroByValue: true,
-//   params: [
-//     {id: 'title', as: 'string', mandatory: true},
-//     {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: ''},
-//     {id: 'type', as: 'string', options: 'string,number,boolean,object,array,asIs', defaultValue: 'asIs'}
-//   ],
-//   impl: ({},title,val,type) => ({title,val: () => () => ctx2 => val(ctx2) ,type})
-// })
+jb.component('objMethod', {
+  type: 'prop',
+  macroByValue: true,
+  params: [
+    {id: 'title', as: 'string', mandatory: true},
+    {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: ''},
+    {id: 'type', as: 'string', options: 'string,number,boolean,object,array,asIs', defaultValue: 'asIs'}
+  ],
+  impl: ({},title,val,type) => ({title,val: () => () => ctx2 => val(ctx2) ,type})
+})
 
 jb.component('refProp', {
   type: 'prop',
@@ -4958,7 +4961,7 @@ Object.assign(jb.ui, {
         const changed_path = watchHandler.removeLinksFromPath(e.insertedPath || watchHandler.pathOfRef(e.ref))
         if (!changed_path) debugger
         //observe="resources://2~name;person~name
-        const body = jb.path(e,'srcCtx.vars.headlessWidgetId') || jb.path(e,'srcCtx.vars.testID') ? jb.ui.widgetBody(e.srcCtx) : jb.frame.document.body
+        const body = !jb.frame.document || jb.path(e,'srcCtx.vars.headlessWidgetId') || jb.path(e,'srcCtx.vars.testID') ? jb.ui.widgetBody(e.srcCtx) : jb.frame.document.body
         const elemsToCheck = jb.ui.find(body,'[observe]') // top down order
         const elemsToCheckCtxBefore = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
         const originatingCmpId = jb.path(e.srcCtx, 'vars.cmp.cmpId')
@@ -5233,7 +5236,7 @@ class JbComponent {
                 const value = val == null ? prop.defaultValue : val
                 Object.assign(this.renderProps, { ...(prop.id == '$props' ? value : { [prop.id]: value })})
             })
-        ;(this.calcProp || []).filter(p => p.userStateProp).forEach(p => this.state[p.id] = this.renderProps[p.id])
+        ;(this.calcProp || []).filter(p => p.userStateProp && !this.state.refresh).forEach(p => this.state[p.id] = this.renderProps[p.id])
         Object.assign(this.renderProps,this.styleParams, this.state)
         return this.renderProps
     }
@@ -12284,12 +12287,13 @@ st.initCompsRefHandler = function(previewjb, allowedTypes) {
 		subscribe(e=>{
 			jb.log('script changed',{ctx: e.srcCtx,e})
 			st.scriptChange.next(e)
-			st.highlightByScriptPath(e.path)
 			writeValueToDataResource(e.path,e.newVal)
 			if (st.isStudioCmp(e.path[0]))
 				st.refreshStudioComponent(e.path)
 			st.lastStudioActivity = new Date().getTime()
-			jb.exec(writeValue('%$studio/lastStudioActivity%',() => st.lastStudioActivity))
+			e.srcCtx.run(writeValue('%$studio/lastStudioActivity%',() => st.lastStudioActivity))
+
+			st.highlightByScriptPath && st.highlightByScriptPath(e.path)
 		}))
 }
 
@@ -12575,6 +12579,9 @@ jb.component('studio.scriptChange', {
 
 jb.component('studio.watchScriptChanges', {
   type: 'feature',
+  params: [
+	  {id: 'path', as: 'string', description: 'under this path, empty means any path'}
+  ],
   impl: watchRef('%$studio/lastStudioActivity%') //followUp.flow(studio.scriptChange(), rx.log('watch script refresh'), sink.refreshCmp())
 })
 
@@ -13200,4 +13207,4 @@ jb.component('chromeDebugger.toggleStyle', {
 ;
 
 
-})(self.spyViewerJb = {}); spyViewerJb.studio.previewjb = self.jb;
+})(jbFrame.jbSpyViewer = {}); jbSpyViewer.studio.previewjb = jbFrame.jb;

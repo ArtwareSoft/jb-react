@@ -1,4 +1,4 @@
-jb.ns('uiTest,userInput,uiAction,dialog,widget')
+var {dataTest,uiTest,userInput,uiAction,dialog,widget,last} = jb.ns('dataTest,uiTest,userInput,uiAction,dialog,widget')
 
 jb.test = {
 	runInner(propName, ctx) {
@@ -29,7 +29,7 @@ jb.test = {
 
 jb.component('tests.main', { // needed for loading the 'virtual' tests project
 	type: 'control',
-	impl: text('') // dummy impl needed
+	impl: text() // dummy impl needed
 })
 
 jb.component('dataTest', {

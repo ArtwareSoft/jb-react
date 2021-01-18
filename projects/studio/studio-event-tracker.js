@@ -1,4 +1,4 @@
-jb.ns('chromeDebugger,eventTracker')
+var { chromeDebugger,eventTracker } = jb.ns('chromeDebugger,eventTracker')
 
 Object.assign(jb.ui, {
   getInspectedJb: ctx => {
@@ -454,7 +454,7 @@ jb.component('studio.singleSourceCtxView', {
           style: button.hrefText(),
           features: [
             feature.hoverTitle('%$srcCtx/path%'),
-            ctrlAction(studio.gotoSource('%$srcCtx/path%', true))
+            button.ctrlAction(studio.gotoSource('%$srcCtx/path%', true))
           ]
     }),
 })

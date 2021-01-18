@@ -1,4 +1,4 @@
-jb.ns('vscode')
+var {vscode} = jb.ns('vscode')
 
 jb.component('studio.vsCodeAdapterService', {
   type: 'service',

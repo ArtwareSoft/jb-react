@@ -1,4 +1,5 @@
-if (typeof jb == 'undefined' && typeof self != 'undefined') self.jb = {};
+jbFrame = (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {}
+if (typeof jb == 'undefined' && typeof jbFrame != 'undefined') jbFrame.jb = {};
 
 (function() {
 function jb_run(ctx,parentParam,settings) {
@@ -280,12 +281,12 @@ class jbCtx {
 }
 
 Object.assign(jb, { 
-  frame: (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {}, 
+  frame: jbFrame, 
   comps: {}, ctxDictionary: {}, run: jb_run, jbCtx, jstypes, tojstype 
 })
 })()
 
-if (typeof module != 'undefined') module.exports = jb;
+if (typeof module != 'undefined') module.exports = jbFrame.jb;
 
 Object.assign(jb, {
     compParams(comp) {
@@ -762,7 +763,10 @@ Object.assign(jb, {
     },    
     macroDef: Symbol('macroDef'), macroNs: {}, macro: {},
     macroName: id => id.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
-    ns: nsIds => nsIds.split(',').forEach(nsId => jb.registerMacro(nsId + '.$dummyComp', {})),
+    ns: nsIds => {
+        nsIds.split(',').forEach(nsId => jb.registerMacro(nsId + '.$forwardDef', {}))
+        return jb.macro
+    },
     fixMacroByValue: (profile,comp) => {
         if (profile && profile.$byValue) {
           const params = jb.compParams(comp)
@@ -770,7 +774,9 @@ Object.assign(jb, {
           delete profile.$byValue
         }
     },
-    importAllMacros: (frame,macroNs) => jb.entries(macroNs ? jb.macro[macroNs] : jb.macro).forEach( ([id,val])=>frame[id] = val),
+    importAllMacros: () => ['var { ',
+        jb.unique(Object.keys(jb.macro).map(x=>x.split('_')[0])).join(', '), 
+    '} = jb.macro;'].join(''),
     registerMacro: (id, profile) => {
         const macroId = jb.macroName(id).replace(/\./g, '_')
         const nameSpace = id.indexOf('.') != -1 && jb.macroName(id.split('.')[0])
@@ -783,7 +789,8 @@ Object.assign(jb, {
         }
 
         function registerProxy(proxyId) {
-            jb.frame[proxyId] = jb.macro[proxyId] = new Proxy(() => 0, {
+            //jb.frame[proxyId] = 
+            jb.macro[proxyId] = new Proxy(() => 0, {
                 get: (o, p) => {
                     if (typeof p === 'symbol') return true
                     return jb.macro[proxyId + '_' + p] || genericMacroProcessor(proxyId, p)
@@ -815,28 +822,34 @@ Object.assign(jb, {
                 jb.logError(macroId + ' is reserved by system or libs. please use a different name')
                 return false
             }
-            if (jb.macro[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$dummyComp$/))
+            if (jb.macro[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$forwardDef$/))
                 jb.logError(macroId.replace(/_/g,'.') + ' is defined more than once, using last definition ' + id)
             return true
         }
 
         function processMacro(args) {
+            const _id = id.replace(/\.\$forwardDef$/,'')
+            const _profile = jb.comps[_id]
+            if (!_profile) {
+                jb.logError('forward def ' + _id + ' was not implemented')
+                return { $: _id }
+            }
             if (args.length == 0)
-                return { $: id }
-            const params = profile.params || []
+                return { $: _id }
+            const params = _profile.params || []
             const firstParamIsArray = (params[0] && params[0].type || '').indexOf('[]') != -1
             if (params.length == 1 && firstParamIsArray) // pipeline, or, and, plus
-                return { $: id, [params[0].id]: args }
+                return { $: _id, [params[0].id]: args }
             const macroByProps = args.length == 1 && typeof args[0] === 'object' &&
                 (params[0] && args[0][params[0].id] || params[1] && args[0][params[1].id])
-            if ((profile.macroByValue || params.length < 3) && profile.macroByValue !== false && !macroByProps)
-                return { $: id, ...jb.objFromEntries(args.filter((_, i) => params[i]).map((arg, i) => [params[i].id, arg])) }
+            if ((_profile.macroByValue || params.length < 3) && _profile.macroByValue !== false && !macroByProps)
+                return { $: _id, ...jb.objFromEntries(args.filter((_, i) => params[i]).map((arg, i) => [params[i].id, arg])) }
             if (args.length == 1 && !Array.isArray(args[0]) && typeof args[0] === 'object' && !args[0].$)
-                return { $: id, ...args[0] }
+                return { $: _id, ...args[0] }
             if (args.length == 1 && params.length)
-                return { $: id, [params[0].id]: args[0] }
+                return { $: _id, [params[0].id]: args[0] }
             if (args.length == 2 && params.length > 1)
-                return { $: id, [params[0].id]: args[0], [params[1].id]: args[1] }
+                return { $: _id, [params[0].id]: args[0], [params[1].id]: args[1] }
             debugger;
         }
         //const unMacro = macroId => macroId.replace(/([A-Z])/g, (all, s) => '-' + s.toLowerCase())
@@ -1018,10 +1031,42 @@ initSpyByUrl() {
 	if (spyParam)
 		jb.initSpy({spyParam})
 	if (frame) frame.spy = jb.spy // for console use
-}
+},
+
+injectVisualDebugger(debuggerUri, debuggerClientUri) {
+	const distPath = jb.remote.pathOfDistFolder()
+	const parentUri = jb.frame.jbUri || ''
+	if (debuggerUri.indexOf('->') == -1 && typeof jb_loadFile != 'undefined' && typeof jbDebugger == 'undefined') {
+		jb_loadFile(`${distPath}/jb-debugger.js?${parentUri}`)
+		jbDebugger.remote.cbPortFromFrame(jb.frame,`${parentUri}-debugger`, debuggerClientUri)
+	} else {
+		jb.exec(rx.pipe(
+			source.data(() => jb.remote.servers[debuggerUri.split('->').pop()]),
+			rx.var('worker','%%'),
+			rx.var('distPath',() => jb.remote.pathOfDistFolder()),
+			rx.var('debuggerUri',() => debuggerUri),
+			rx.var('debuggerClientUri',() => debuggerClientUri),
+			remote.operator( ({},{distPath,debuggerUri,debuggerClientUri}) => { // runs in worker
+				if (!self.jbDebugger) {
+					importScripts(`${distPath}/jb-debugger.js?${self.jbUri}`)
+					jbDebugger.remote.cbPortFromFrame(self,debuggerUri,debuggerClientUri)
+				}
+			}, '%$worker%'),
+		))
+	}
+
+},
+
+getDebugVms() {
+	return [jb.frame.jbUri, ...Object.values(jb.remote.servers).map(worker=>worker.jbUri)].map(x => `${x}-debugger`)
+},
+
 })
 jb.initSpyByUrl()
 ;
+
+var { not,and,or,contains,writeValue,obj,prop,log,pipeline,filter,firstSucceeding,runActions } 
+  = jb.ns('not,and,or,contains,writeValue,obj,prop,log,pipeline,filter,firstSucceeding,runActions')
 
 jb.component('call', {
   type: 'any',
@@ -2222,7 +2267,9 @@ jb.component('waitFor',{
         }, interval)
     })
   }
-});
+})
+
+var {Var,remark} = jb.macro // special system comps;
 
 jb.callbag = {
       fromIter: iter => (start, sink) => {
@@ -3058,8 +3105,7 @@ jb.callbag = {
 }
 ;
 
-jb.ns('rx,sink,source')
-
+var { If, call, rx,sink,source } = jb.ns('rx,sink,source')
 // ************ sources
 
 jb.component('source.data', {
@@ -4256,7 +4302,7 @@ class VNode {
         if (selector.indexOf(',') != -1)
             return selector.split(',').map(x=>x.trim()).reduce((res,sel) => [...res, ...this.querySelectorAll(sel,{includeSelf})], [])
         const hasAtt = selector.match(/^\[([a-zA-Z0-9_$\-]+)\]$/)
-        const attEquals = selector.match(/^\[([a-zA-Z0-9_$\-]+)="([a-zA-Z0-9_\-]+)"\]$/)
+        const attEquals = selector.match(/^\[([a-zA-Z0-9_$\-]+)="([a-zA-Z0-9_\-→]+)"\]$/)
         const hasClass = selector.match(/^\.([a-zA-Z0-9_$\-]+)$/)
         const hasTag = selector.match(/^[a-zA-Z0-9_\-]+$/)
         const idEquals = selector.match(/^#([a-zA-Z0-9_$\-]+)$/)
@@ -4957,7 +5003,7 @@ Object.assign(jb.ui, {
         const changed_path = watchHandler.removeLinksFromPath(e.insertedPath || watchHandler.pathOfRef(e.ref))
         if (!changed_path) debugger
         //observe="resources://2~name;person~name
-        const body = jb.path(e,'srcCtx.vars.headlessWidgetId') || jb.path(e,'srcCtx.vars.testID') ? jb.ui.widgetBody(e.srcCtx) : jb.frame.document.body
+        const body = !jb.frame.document || jb.path(e,'srcCtx.vars.headlessWidgetId') || jb.path(e,'srcCtx.vars.testID') ? jb.ui.widgetBody(e.srcCtx) : jb.frame.document.body
         const elemsToCheck = jb.ui.find(body,'[observe]') // top down order
         const elemsToCheckCtxBefore = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
         const originatingCmpId = jb.path(e.srcCtx, 'vars.cmp.cmpId')
@@ -5144,7 +5190,7 @@ Object.assign(jb.ui,{
         if (!cssKey) return ''
 
         const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId
-        const classPrefix = widgetId || 'jb-'
+        const classPrefix = widgetId || 'jb'
         const cssMap = this.cssHashMap[classPrefix] = this.cssHashMap[classPrefix] || {}
 
         if (!cssMap[cssKey]) {
@@ -5154,7 +5200,7 @@ Object.assign(jb.ui,{
             } else {
                 this.cssHashCounter++;
             }
-            const classId = existingClass || `${classPrefix}-${this.cssHashCounter}`
+            const classId = existingClass || `${classPrefix}➤${this.cssHashCounter}`
             cssMap[cssKey] = {classId, paths : {[ctx.path]: true}}
             const cssContent = linesToCssStyle(classId)
             if (cssStyleElem)
@@ -5232,7 +5278,7 @@ class JbComponent {
                 const value = val == null ? prop.defaultValue : val
                 Object.assign(this.renderProps, { ...(prop.id == '$props' ? value : { [prop.id]: value })})
             })
-        ;(this.calcProp || []).filter(p => p.userStateProp).forEach(p => this.state[p.id] = this.renderProps[p.id])
+        ;(this.calcProp || []).filter(p => p.userStateProp && !this.state.refresh).forEach(p => this.state[p.id] = this.renderProps[p.id])
         Object.assign(this.renderProps,this.styleParams, this.state)
         return this.renderProps
     }
@@ -5491,6 +5537,8 @@ Object.assign(jb.ui,{
 
 // ***************** inter-cmp services
 
+var { feature, action } = jb.ns('feature')
+
 jb.component('feature.serviceRegistey', {
   type: 'feature',
   impl: () => ({extendCtx: ctx => jb.ui.extendWithServiceRegistry(ctx) })
@@ -5696,9 +5744,13 @@ jb.component('controlWithFeatures', {
   ],
   impl: (ctx,control,features) => control.jbExtend(features,ctx).orig(ctx)
 })
+
+var { customStyle, styleByControl, styleWithFeatures, controlWithFeatures } = jb.macro
 ;
 
-jb.ns('followUp,backEnd')
+
+var { variable,followUp,backEnd,method,features,onDestroy,htmlAttribute,templateModifier,watchAndCalcModelProp,calcProp,watchRef } 
+  = jb.ns('variable,followUp,backEnd,method,htmlAttribute,features,onDestroy,templateModifier,watchAndCalcModelProp,calcProp,watchRef,group')
 
 jb.component('method', {
   type: 'feature',
@@ -6073,22 +6125,6 @@ jb.component('hidden', {
   })
 })
 
-jb.component('conditionalClass', {
-  type: 'feature',
-  description: 'toggle class by condition',
-  params: [
-    {id: 'cssClass', as: 'string', mandatory: true, dynamic: true},
-    {id: 'condition', type: 'boolean', mandatory: true, dynamic: true}
-  ],
-  impl: (ctx,cssClass,cond) => ({
-    templateModifier: (vdom,cmp) => {
-      if (jb.toboolean(cond(cmp.ctx)))
-        vdom.addClass(cssClass())
-      return vdom
-    }
-  })
-})
-
 jb.component('refreshControlById', {
   type: 'action',
   params: [
@@ -6144,7 +6180,7 @@ jb.component('feature.userEventProps', {
 })
 ;
 
-jb.ns('rx,key,frontEnd,sink,service')
+var { rx,key,frontEnd,sink,service, replace } = jb.ns('rx,key,frontEnd,sink,service')
 
 jb.component('action.runBEMethod', {
     type: 'action',
@@ -6549,6 +6585,8 @@ jb.component('source.findSelectionKeySource', {
 })
 ;
 
+var { css } = jb.ns('css');
+
 (function() {
 const withUnits = jb.ui.withUnits
 const fixCssLine = jb.ui.fixCssLine
@@ -6777,6 +6815,22 @@ jb.component('css.valueOfCssVar',{
   impl: (ctx,varName,parent) => jb.ui.valueOfCssVar(varName,parent)
 })
 
+jb.component('css.conditionalClass', {
+  type: 'feature',
+  description: 'toggle class by condition',
+  params: [
+    {id: 'cssClass', as: 'string', mandatory: true, dynamic: true},
+    {id: 'condition', type: 'boolean', mandatory: true, dynamic: true}
+  ],
+  impl: (ctx,cssClass,cond) => ({
+    templateModifier: (vdom,cmp) => {
+      if (jb.toboolean(cond(cmp.ctx)))
+        vdom.addClass(cssClass())
+      return vdom
+    }
+  })
+})
+
 ;['layout','typography','detailedBorder','detailedColor','gridArea'].forEach(f=>
 jb.component(`css.${f}`, {
   type: 'feature:0',
@@ -6789,7 +6843,7 @@ jb.component(`css.${f}`, {
 
 })();
 
-jb.ns('text')
+var { text, firstSucceeding, customStyle, styleByControl, controlWithFeatures } = jb.ns('text')
 
 jb.component('text', {
   type: 'control',
@@ -6851,7 +6905,7 @@ jb.component('text.highlight', {
 })
 ;
 
-jb.ns('group,layout,tabs')
+var {group,layout,tabs,controlWithCondition} = jb.ns('group,layout,tabs,controlWithCondition')
 
 jb.component('group', {
   type: 'control',
@@ -6969,7 +7023,7 @@ jb.component('group.eliminateRecursion', {
 })
 ;
 
-jb.ns('html')
+var { html } = jb.ns('html')
 
 jb.component('html', {
   type: 'control',
@@ -7015,7 +7069,7 @@ jb.component('html.inIframe', {
 })
 ;
 
-jb.ns('image,css')
+var { image, pipeline } = jb.ns('image,css')
 
 jb.component('image', {
   type: 'control,image',
@@ -7108,7 +7162,7 @@ jb.component('image.img', {
   })
 });
 
-jb.ns('icon,control')
+var { icon, control } = jb.ns('icon,control')
 
 jb.component('control.icon', {
   type: 'control',
@@ -7171,7 +7225,7 @@ jb.component('feature.icon', {
 
 ;
 
-jb.ns('button')
+var { button } = jb.ns('button')
 
 jb.component('button', {
   type: 'control,clickable',
@@ -7199,7 +7253,7 @@ jb.component('button', {
     ))
 })
 
-jb.component('ctrlAction', {
+jb.component('button.ctrlAction', {
   type: 'feature',
   category: 'button:70',
   description: 'action to perform on control+click',
@@ -7209,7 +7263,7 @@ jb.component('ctrlAction', {
   impl: method('ctrlAction', (ctx,{},{action}) => action(ctx))
 })
 
-jb.component('altAction', {
+jb.component('button.altAction', {
   type: 'feature',
   category: 'button:70',
   description: 'action to perform on alt+click',
@@ -7220,6 +7274,8 @@ jb.component('altAction', {
 })
 
 ;
+
+var { field, validation  } = jb.ns('field,validation');
 
 (function() {
 jb.ui.field_id_counter = jb.ui.field_id_counter || 0;
@@ -7417,7 +7473,7 @@ jb.component('field.columnWidth', {
 
 })();
 
-jb.ns('editableText')
+var {editableText} = jb.ns('editableText')
 
 jb.component('editableText', {
   type: 'control',
@@ -7455,7 +7511,7 @@ jb.component('editableText.xButton', {
 })
 ;
 
-jb.ns('editableBoolean')
+var {editableBoolean, refreshIfNotWatchable} = jb.ns('editableBoolean')
 
 jb.component('editableBoolean', {
   type: 'control',
@@ -7482,7 +7538,7 @@ jb.component('editableBoolean', {
 })
 ;
 
-jb.ns('editableNumber')
+var {editableNumber} = jb.ns('editableNumber')
 
 jb.component('editableNumber', {
   type: 'control',
@@ -7537,7 +7593,8 @@ jb.component('editableNumber', {
 
 ;
 
-jb.ns('dialog,dialogs')
+var {openDialog, dialog,dialogs, dialogFeature, and, or, runActionOnItems, getSessionStorage, userStateProp } 
+	= jb.ns('dialog,dialogs,openDialog,dialogFeature')
 
 jb.component('openDialog', {
   type: 'action,has-side-effects',
@@ -8071,7 +8128,7 @@ jb.component('dialogs.defaultStyle', {
 })
 ;
 
-jb.ns('itemlist,itemlistContainer')
+var {itemlist} = jb.ns('itemlist,itemlistContainer')
 
 jb.component('itemlist', {
   description: 'list, dynamic group, collection, repeat',
@@ -8114,6 +8171,8 @@ jb.component('itemlist.init', {
   )
 })
 ;
+
+var {runActionOnItem, isRef, inGroup, list } = jb.macro
 
 jb.component('itemlist.selection', {
   type: 'feature',
@@ -8273,6 +8332,8 @@ jb.component('itemlist.nextSelected', {
     return indeces[Math.min(indeces.length-1,Math.max(0,selectedIndex))]
   }
 });
+
+var { move } = jb.macro
 
 jb.component('itemlist.dragAndDrop', {
   type: 'feature',
@@ -8438,7 +8499,7 @@ jb.component('itemlist.calcSlicedItems', {
 })
 ;
 
-jb.ns('search')
+var { search, itemlistContainer } = jb.ns('search,itemlistContainer')
 
 jb.component('group.itemlistContainer', {
   description: 'itemlist writable container to support addition, deletion and selection',
@@ -8666,7 +8727,7 @@ jb.component('feature.expandToEndOfRow', {
 })
   ;
 
-jb.ns('menuStyle,menuSeparator,mdc,icon,key')
+var { menu,menuStyle,menuSeparator,mdc,icon,key} = jb.ns('menu,menuStyle,menuSeparator,mdc,icon,key')
 
 jb.component('menu.menu', {
   type: 'menu.option',
@@ -9157,7 +9218,7 @@ jb.component('menuStyle.iconMenu', {
 })
 ;
 
-jb.ns('picklist')
+var {picklist} = jb.ns('picklist')
 
 jb.component('picklist', {
   type: 'control',
@@ -9277,7 +9338,7 @@ jb.component('picklist.initGroups', {
 })
 ;
 
-jb.ns('multiSelect')
+var {multiSelect, removeFromArray, addToArray } = jb.ns('multiSelect')
 
 jb.component('multiSelect', {
     type: 'control',
@@ -9474,7 +9535,7 @@ jb.component('theme.materialDesign', {
 })
 ;
 
-jb.ns('slider,mdcStyle')
+var { slider, editableNumber, mdcStyle } = jb.ns('slider,mdcStyle')
 
 jb.component('editableNumber.sliderNoText', {
   type: 'editable-number.style',
@@ -9635,7 +9696,7 @@ jb.component('slider.drag', {
 
 ;
 
-jb.component('gotoUrl', {
+jb.component('winUtils.gotoUrl', {
   type: 'action',
   description: 'navigate/open a new web page, change href location',
   params: [
@@ -9651,7 +9712,7 @@ jb.component('gotoUrl', {
 
 ;
 
-jb.ns('divider');
+var { divider } = jb.ns('divider')
 
 jb.component('divider', {
     type: 'control',
@@ -9687,6 +9748,8 @@ jb.component('divider.flexAutoGrow', {
     })
 })
 ;
+
+var {notEmpty, touch} = jb.macro
 
 jb.component('editableText.picklistHelper', {
   type: 'feature',
@@ -9808,7 +9871,7 @@ jb.component('editableText.helperPopup', {
  )
 });
 
-jb.ns('mdc,mdc-style')
+var {mdc,mdcStyle} = jb.ns('mdc,mdcStyle')
 
 jb.component('mdcStyle.initDynamic', {
   type: 'feature',
@@ -10121,7 +10184,7 @@ jb.component('button.mdcHeader', {
 
 ;
 
-jb.ns('mdc,mdc-style')
+var {hidden} = jb.ns('mdc,mdc-style')
 
 jb.component('editableText.input', {
   type: 'editable-text.style',
@@ -10370,7 +10433,7 @@ jb.component('flexItem.alignSelf', {
 
 ;
 
-jb.ns('css')
+var { dynamicControls, css, header } = jb.ns('css')
 
 jb.component('group.htmlTag', {
   type: 'group.style',
@@ -11373,7 +11436,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
 ;
 
 (function() {
-jb.ns('tree')
+var { tree } = jb.ns('tree')
 
 jb.component('tree', {
   type: 'control',
@@ -11815,7 +11878,7 @@ jb.component('tree.moveItem', {
 })()
 ;
 
-jb.ns('table-tree,tree')
+var { tableTree, tree } = jb.ns('tableTree,tree')
 
 jb.component('tableTree', {
   type: 'control',
@@ -12225,6 +12288,7 @@ jb.remoteCtx = {
 
 ;
 
+var { remote, waitFor } = jb.ns('remote')
 
 jb.remote = {
     servers: {},
@@ -12236,6 +12300,10 @@ jb.remote = {
     cbPortFromFrame(frame,from,to) {
         return this.extendPortWithCbHandler(this.portFromFrame(frame,from,to)).initCommandListener()
     },
+    // createNetworkPort(fromJb, toUri) {
+    //     if (to)
+
+    // },
     portFromFrame(frame,from,to) {
         const port = {
             from,to,
@@ -12333,20 +12401,22 @@ jb.component('remote.worker', {
         {id: 'libs', as: 'array', defaultValue: ['common','remote','rx'] },
     ],    
     impl: (ctx,id,libs) => {
-        const uri = `worker-${id}`
+        const prefix = jb.frame.jbUri ? `${jb.frame.jbUri}→` : ''
+        const uri = `${prefix}worker-${id}`
         if (jb.remote.servers[uri]) return jb.remote.servers[uri]
         const distPath = jb.remote.pathOfDistFolder()
         const spyParam = ((jb.path(jb.frame,'location.href')||'').match('[?&]spy=([^&]+)') || ['', ''])[1]
         const workerCode = [
             ...libs.map(lib=>`importScripts('${distPath}/!${uri}!${lib}.js')`),`
-                jb.cbLogByPath = {}
-                self.spy = jb.initSpy({spyParam: '${spyParam}'})
-                self.portToMaster = jb.remote.cbPortFromFrame(self,'${uri}','master')
+                //jb.cbLogByPath = {}
+                jbUri = '${uri}'
+                spy = jb.initSpy({spyParam: '${spyParam}'})
+                portToMaster = jb.remote.cbPortFromFrame(self,'${uri}','master')
             `
         ].join('\n')
         const worker = jb.remote.servers[uri] = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
         worker.port = jb.remote.cbPortFromFrame(worker,'master',uri)
-        worker.uri = uri
+        worker.jbUri = uri
         return worker
     }
 })

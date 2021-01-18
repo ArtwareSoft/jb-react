@@ -1,4 +1,4 @@
-jb.ns('remote,rx')
+var {rx, remote, widget} = jb.ns('remote,rx,widget')
 
 Object.assign(jb.ui, {
     widgetUserRequests: jb.callbag.subject(),
@@ -6,7 +6,7 @@ Object.assign(jb.ui, {
     headless: {},
     frontendWidgets: {},
     newWidgetId(ctx, remote) {
-        const id = remote.uri + '-' + ctx.id
+        const id = remote.jbUri + '-' + ctx.id
         jb.ui.frontendWidgets[id] = remote
         return id
     }

@@ -1,4 +1,4 @@
-jb.ns('contentEditable')
+var { contentEditable } = jb.ns('contentEditable')
 
 jb.component('studio.toolbar', {
   type: 'control',
@@ -33,7 +33,7 @@ jb.component('studio.toolbar', {
         title: 'Save',
         action: studio.saveComponents(),
         style: button.mdcIcon(icon('save')),
-        features: [ctrlAction(studio.saveComponents()), feature.if(not(studio.inVscode()))]
+        features: [button.ctrlAction(studio.saveComponents()), feature.if(not(studio.inVscode()))]
       }),
       button({
         title: 'Refresh Preview',
@@ -59,7 +59,7 @@ jb.component('studio.toolbar', {
         title: 'jbEditor',
         action: studio.openComponentInJbEditor(studio.currentPagePath()),
         style: button.mdcIcon(icon('build')),
-        features: ctrlAction(
+        features: button.ctrlAction(
           studio.openJbEditor({path: '%$studio/profile_path%', newWindow: true})
         )
       }),
@@ -67,7 +67,7 @@ jb.component('studio.toolbar', {
         title: 'Event Tracker',
         action: studio.openEventTracker(),
         style: button.mdcIcon(icon({icon: 'bug_report', type: 'mdc'})),
-        features: [ctrlAction(studio.openEventTracker())]
+        features: [button.ctrlAction(studio.openEventTracker())]
       }),
       button({
         title: 'History',

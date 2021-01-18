@@ -142,6 +142,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'node_modules/codemirror/addon/fold/indent-fold.js',
 
         'node_modules/codemirror/addon/selection/active-line.js',
+//        'src/ui/watchable/text-editor.js',
         'src/ui/styles/codemirror-styles.js',
       ],
     

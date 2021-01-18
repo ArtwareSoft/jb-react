@@ -1,3 +1,6 @@
+var { studio } = jb.ns('studio');
+eval(jb.importAllMacros());
+
 (function() {
 const st = jb.studio
 const {pipe,subscribe,takeUntil} = jb.callbag
@@ -41,12 +44,13 @@ st.initCompsRefHandler = function(previewjb, allowedTypes) {
 		subscribe(e=>{
 			jb.log('script changed',{ctx: e.srcCtx,e})
 			st.scriptChange.next(e)
-			st.highlightByScriptPath(e.path)
 			writeValueToDataResource(e.path,e.newVal)
 			if (st.isStudioCmp(e.path[0]))
 				st.refreshStudioComponent(e.path)
 			st.lastStudioActivity = new Date().getTime()
 			e.srcCtx.run(writeValue('%$studio/lastStudioActivity%',() => st.lastStudioActivity))
+
+			st.highlightByScriptPath && st.highlightByScriptPath(e.path)
 		}))
 }
 

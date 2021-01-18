@@ -1,4 +1,4 @@
-jb.ns('group,layout,tabs')
+var {group,layout,tabs,controlWithCondition} = jb.ns('group,layout,tabs,controlWithCondition')
 
 jb.component('group', {
   type: 'control',

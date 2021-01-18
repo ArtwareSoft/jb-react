@@ -151,7 +151,7 @@ jb.component('studio.probe', {
   impl: (ctx,pathF) => {
         const _jb = st.previewjb, path = pathF()
         if (!path) return
-        if (_jb.cbLogByPath[path])
+        if (_jb.cbLogByPath && _jb.cbLogByPath[path])
             return { result: _jb.cbLogByPath[path] }
         let circuitCtx = null
         if (jb.path(_jb.comps,[path.split('~')[0],'testData']))

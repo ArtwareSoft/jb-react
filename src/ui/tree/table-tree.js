@@ -1,4 +1,4 @@
-jb.ns('table-tree,tree')
+var { tableTree, tree } = jb.ns('tableTree,tree')
 
 jb.component('tableTree', {
   type: 'control',

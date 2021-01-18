@@ -33,7 +33,10 @@ Object.assign(jb, {
     },    
     macroDef: Symbol('macroDef'), macroNs: {}, macro: {},
     macroName: id => id.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
-    ns: nsIds => nsIds.split(',').forEach(nsId => jb.registerMacro(nsId + '.$dummyComp', {})),
+    ns: nsIds => {
+        nsIds.split(',').forEach(nsId => jb.registerMacro(nsId + '.$forwardDef', {}))
+        return jb.macro
+    },
     fixMacroByValue: (profile,comp) => {
         if (profile && profile.$byValue) {
           const params = jb.compParams(comp)
@@ -41,7 +44,9 @@ Object.assign(jb, {
           delete profile.$byValue
         }
     },
-    importAllMacros: (frame,macroNs) => jb.entries(macroNs ? jb.macro[macroNs] : jb.macro).forEach( ([id,val])=>frame[id] = val),
+    importAllMacros: () => ['var { ',
+        jb.unique(Object.keys(jb.macro).map(x=>x.split('_')[0])).join(', '), 
+    '} = jb.macro;'].join(''),
     registerMacro: (id, profile) => {
         const macroId = jb.macroName(id).replace(/\./g, '_')
         const nameSpace = id.indexOf('.') != -1 && jb.macroName(id.split('.')[0])
@@ -54,7 +59,8 @@ Object.assign(jb, {
         }
 
         function registerProxy(proxyId) {
-            jb.frame[proxyId] = jb.macro[proxyId] = new Proxy(() => 0, {
+            //jb.frame[proxyId] = 
+            jb.macro[proxyId] = new Proxy(() => 0, {
                 get: (o, p) => {
                     if (typeof p === 'symbol') return true
                     return jb.macro[proxyId + '_' + p] || genericMacroProcessor(proxyId, p)
@@ -86,28 +92,34 @@ Object.assign(jb, {
                 jb.logError(macroId + ' is reserved by system or libs. please use a different name')
                 return false
             }
-            if (jb.macro[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$dummyComp$/))
+            if (jb.macro[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$forwardDef$/))
                 jb.logError(macroId.replace(/_/g,'.') + ' is defined more than once, using last definition ' + id)
             return true
         }
 
         function processMacro(args) {
+            const _id = id.replace(/\.\$forwardDef$/,'')
+            const _profile = jb.comps[_id]
+            if (!_profile) {
+                jb.logError('forward def ' + _id + ' was not implemented')
+                return { $: _id }
+            }
             if (args.length == 0)
-                return { $: id }
-            const params = profile.params || []
+                return { $: _id }
+            const params = _profile.params || []
             const firstParamIsArray = (params[0] && params[0].type || '').indexOf('[]') != -1
             if (params.length == 1 && firstParamIsArray) // pipeline, or, and, plus
-                return { $: id, [params[0].id]: args }
+                return { $: _id, [params[0].id]: args }
             const macroByProps = args.length == 1 && typeof args[0] === 'object' &&
                 (params[0] && args[0][params[0].id] || params[1] && args[0][params[1].id])
-            if ((profile.macroByValue || params.length < 3) && profile.macroByValue !== false && !macroByProps)
-                return { $: id, ...jb.objFromEntries(args.filter((_, i) => params[i]).map((arg, i) => [params[i].id, arg])) }
+            if ((_profile.macroByValue || params.length < 3) && _profile.macroByValue !== false && !macroByProps)
+                return { $: _id, ...jb.objFromEntries(args.filter((_, i) => params[i]).map((arg, i) => [params[i].id, arg])) }
             if (args.length == 1 && !Array.isArray(args[0]) && typeof args[0] === 'object' && !args[0].$)
-                return { $: id, ...args[0] }
+                return { $: _id, ...args[0] }
             if (args.length == 1 && params.length)
-                return { $: id, [params[0].id]: args[0] }
+                return { $: _id, [params[0].id]: args[0] }
             if (args.length == 2 && params.length > 1)
-                return { $: id, [params[0].id]: args[0], [params[1].id]: args[1] }
+                return { $: _id, [params[0].id]: args[0], [params[1].id]: args[1] }
             debugger;
         }
         //const unMacro = macroId => macroId.replace(/([A-Z])/g, (all, s) => '-' + s.toLowerCase())

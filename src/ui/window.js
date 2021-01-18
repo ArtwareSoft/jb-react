@@ -1,4 +1,4 @@
-jb.component('gotoUrl', {
+jb.component('winUtils.gotoUrl', {
   type: 'action',
   description: 'navigate/open a new web page, change href location',
   params: [

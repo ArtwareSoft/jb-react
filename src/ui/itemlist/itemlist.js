@@ -1,4 +1,4 @@
-jb.ns('itemlist,itemlistContainer')
+var {itemlist} = jb.ns('itemlist,itemlistContainer')
 
 jb.component('itemlist', {
   description: 'list, dynamic group, collection, repeat',

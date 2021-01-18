@@ -4,7 +4,7 @@ jb.component('studio.gotoProject', {
     {id: 'name', as: 'string'}
   ],
   impl: runActions(
-    gotoUrl(ctx => jb.studio.host.projectUrlInStudio(ctx.exp('%$name%')), 'new tab'),
+    winUtils.gotoUrl(ctx => jb.studio.host.projectUrlInStudio(ctx.exp('%$name%')), 'new tab'),
     dialog.closeDialog()
   )
 })

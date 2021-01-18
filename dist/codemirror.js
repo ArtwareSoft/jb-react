@@ -14379,7 +14379,7 @@ CodeMirror.registerHelper("fold", "indent", function(cm, start) {
 ;
 
 (function() {
-jb.ns('textEditor')
+var {textEditor} = jb.ns('textEditor')
 
 const posToCM = pos => pos && ({line: pos.line, ch: pos.col})
 const posFromCM = pos => pos && ({line: pos.line, col: pos.ch})

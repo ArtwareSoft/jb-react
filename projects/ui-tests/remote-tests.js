@@ -1,4 +1,4 @@
-jb.ns('widget')
+var { remoteTest} = jb.ns('remoteTest,widget')
   
 jb.component('remoteTest.sourceNoTalkback', {
     impl: dataTest({

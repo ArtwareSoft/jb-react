@@ -1,5 +1,3 @@
-jb.ns('sourceEditor')
-
 jb.component('studio.watchableOrPassive', {
   params: [
     {id: 'path', as: 'string'}

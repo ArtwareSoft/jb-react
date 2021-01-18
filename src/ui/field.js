@@ -1,3 +1,5 @@
+var { field, validation  } = jb.ns('field,validation');
+
 (function() {
 jb.ui.field_id_counter = jb.ui.field_id_counter || 0;
 

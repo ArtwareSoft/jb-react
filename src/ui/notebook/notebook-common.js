@@ -1,31 +1,30 @@
-jb.ns('nb,studio,widget,markdown')
+var {nb,studio,widget,markdown} = jb.ns('nb,studio,widget,markdown')
 
 jb.component('nb.notebook', {
-    type: 'control',
-    params: [
-        { id: 'elements', type: 'nb.elem[]' }
-    ],
-    impl: itemlist({ 
-        items: '%$elements%', 
-        itemVariable: 'notebookElem', 
-        controls: group({
-            controls: [ 
-                '%$notebookElem.editor()%',
-                //(ctx,{notebookElem}) => ctx.run(notebookElem.editor),
-                group({
-                    controls: '%$notebookElem.result()%',
-                    features: [
-                        watchRef({ ref: studio.ref('%$path%'), includeChildren: 'yes'}),
-                        variable('profileContent',studio.val('%$path%~markdown'))
-                    ]
-                })
-            ],
-            features: [
-                variable('idx', ({},{index}) => index -1),
-                variable('path', '%$studio/project%.notebook~impl~elements~%$idx%')
-            ]
-        })
-    })
+  type: 'control',
+  params: [
+    {id: 'elements', type: 'nb.elem[]'}
+  ],
+  impl: itemlist({
+    items: '%$elements%',
+    controls: group({
+      layout: layout.horizontal('10'),
+      controls: [
+        button({raised: false, features: feature.icon({icon: 'CardText', type: 'mdi'})}),
+        '%$notebookElem.editor()%',
+        widget.twoTierWidget(        
+          group({
+            controls: (ctx,{path}) => {
+                const ret = jb.run( new jb.jbCtx(ctx, { profile: jb.studio.valOfPath(path), forcePath: path, path: 'control' }), {type: 'control'})
+                return ret.result(ctx)
+            },
+            features: watchRef(studio.ref('%$path%'), 'yes')
+          }), remote.notebookWorker()),
+      ],
+      features: [variable('idx', ({},{index}) => index -1), variable('path', '%$studio/project%.notebook~impl~elements~%$idx%')]
+    }),
+    itemVariable: 'notebookElem'
+  })
 })
 
 jb.component('studio.notebookElem', {
@@ -43,8 +42,8 @@ jb.component('nb.markdown', {
         {id: 'markdown', as: 'string'}
     ],
     impl: studio.notebookElem(
-//        markdown('%$profileContent%'),
-        widget.twoTierWidget(markdown('%$profileContent%'), remote.notebookWorker()),
+        markdown('%$markdown%'),
+//        widget.twoTierWidget(markdown(pipeline('%$profileContent%','%markdown%')), remote.notebookWorker()),
         editableText({
             databind: studio.profileAsText('%$path%~markdown'),
             style: editableText.markdown(),
@@ -58,7 +57,15 @@ jb.component('nb.control', {
     params: [
         {id: 'control', type: 'control', dynamic: true}
     ],
-    impl: studio.notebookElem(group({controls: '%$control%'}), studio.jbEditor('%$path%~control') )    
+    impl: studio.notebookElem(
+        '%$control()%',
+        // (ctx,{profileContent,path}) => 
+        //     jb.run( new jb.jbCtx(ctx, { profile: profileContent.control, forcePath: path, path: 'control' }), {type: 'control'}),
+
+        group({ 
+            controls: studio.jbEditorInteliTree('%$path%~control'),
+            features: studio.jbEditorContainer('comp-in-jb-editor')
+        }))
 })
 
 jb.component('nb.data', {
@@ -68,7 +75,7 @@ jb.component('nb.data', {
         {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
         {id: 'watchable', as: 'boolean', type: 'boolean', description: 'E.g., selected item variable'}
     ],
-    impl: studio.notebookElem(text('%$value%'), studio.jbEditor('%$path%~value') )    
+    impl: studio.notebookElem(text('%$value%'), studio.jbEditor('%$path%~value') )
 })
 
 jb.component('nb.javascript', {
@@ -76,5 +83,5 @@ jb.component('nb.javascript', {
     params: [
         {id: 'code', as: 'string'}
     ],
-    impl: studio.notebookElem(nb.evalCode('%$code%'), studio.editableSource('%$path%~code') )    
+    impl: studio.notebookElem(nb.evalCode('%$code%'), studio.editableSource('%$path%~code') )
 })

@@ -1,4 +1,4 @@
-jb.ns('rx')
+var {studioProbeTest, pathChangeTest} = jb.ns('rx')
 
 jb.component('person', { watchableData: {
 	name: "Homer Simpson",
@@ -108,7 +108,7 @@ jb.component('probeTest.pipelineOneElemJsonFormat', {
 
 jb.component('probeTest.actionsSugar', {
   impl: studioProbeTest({
-    circuit: group({controls: button({title: 'hello', action: [gotoUrl('google')]})}),
+    circuit: group({controls: button({title: 'hello', action: [winUtils.gotoUrl('google')]})}),
     probePath: 'controls~action~0',
     expectedVisits: 1
   })
@@ -145,7 +145,7 @@ jb.component('probeTest.insideOpenDialogOnOk', {
 
 jb.component('probeTest.insideGotoUrl', {
   impl: studioProbeTest({
-    circuit: button({action: gotoUrl('google')}),
+    circuit: button({action: winUtils.gotoUrl('google')}),
     probePath: 'action~url',
     expectedVisits: 1
   })

@@ -158,6 +158,35 @@ initSpyByUrl() {
 	if (spyParam)
 		jb.initSpy({spyParam})
 	if (frame) frame.spy = jb.spy // for console use
-}
+},
+
+injectVisualDebugger(debuggerUri, debuggerClientUri) {
+	const distPath = jb.remote.pathOfDistFolder()
+	const parentUri = jb.frame.jbUri || ''
+	if (debuggerUri.indexOf('->') == -1 && typeof jb_loadFile != 'undefined' && typeof jbDebugger == 'undefined') {
+		jb_loadFile(`${distPath}/jb-debugger.js?${parentUri}`)
+		jbDebugger.remote.cbPortFromFrame(jb.frame,`${parentUri}-debugger`, debuggerClientUri)
+	} else {
+		jb.exec(rx.pipe(
+			source.data(() => jb.remote.servers[debuggerUri.split('->').pop()]),
+			rx.var('worker','%%'),
+			rx.var('distPath',() => jb.remote.pathOfDistFolder()),
+			rx.var('debuggerUri',() => debuggerUri),
+			rx.var('debuggerClientUri',() => debuggerClientUri),
+			remote.operator( ({},{distPath,debuggerUri,debuggerClientUri}) => { // runs in worker
+				if (!self.jbDebugger) {
+					importScripts(`${distPath}/jb-debugger.js?${self.jbUri}`)
+					jbDebugger.remote.cbPortFromFrame(self,debuggerUri,debuggerClientUri)
+				}
+			}, '%$worker%'),
+		))
+	}
+
+},
+
+getDebugVms() {
+	return [jb.frame.jbUri, ...Object.values(jb.remote.servers).map(worker=>worker.jbUri)].map(x => `${x}-debugger`)
+},
+
 })
 jb.initSpyByUrl()

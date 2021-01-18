@@ -1,4 +1,4 @@
-jb.ns('rx,key,frontEnd,sink,service')
+var { rx,key,frontEnd,sink,service, replace } = jb.ns('rx,key,frontEnd,sink,service')
 
 jb.component('action.runBEMethod', {
     type: 'action',

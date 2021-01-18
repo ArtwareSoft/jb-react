@@ -1,3 +1,5 @@
+var {vega} = jb.ns('vega')
+
 x = {
     "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
     "description": "A simple bar chart with embedded data.",
@@ -25,8 +27,6 @@ jb.vega = {
     counter: 0,
     namedData: spec => spec.data && spec.data[jb.vega.jbData] ? [spec.data].map(e=>[e.name, e[jb.vega.jbData]]) : []
 }
-
-jb.ns('vega')
 
 jb.component('vega.interactiveChart', {
   type: 'control',

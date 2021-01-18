@@ -1,12 +1,9 @@
-jb.component('delayedObj', {
+jb.component('dataTest.delayedObj', {
   params: [
     {id: 'obj', type: 'data'}
   ],
-  impl: (ctx,obj) =>
-    jb.delay(1).then(_=>obj)
+  impl: (ctx,obj) => jb.delay(1).then(_=>obj)
 })
-
-
 
 jb.component('test.getAsBool', {
   params: [
@@ -387,14 +384,14 @@ jb.component('dataTest.pipeInPipeWithDelayedVar', {
 
 jb.component('dataTest.pipeWithPromise2', {
   impl: dataTest({
-    calculate: pipe(delayedObj(list(1, 2)), join({})),
+    calculate: pipe(dataTest.delayedObj(list(1, 2)), join({})),
     expectedResult: equals('1,2')
   })
 })
 
 jb.component('dataTest.pipeWithPromise3', {
   impl: dataTest({
-    calculate: pipe(list(delayedObj(1), 2, delayedObj(3)), join({})),
+    calculate: pipe(list(dataTest.delayedObj(1), 2, dataTest.delayedObj(3)), join({})),
     expectedResult: equals('1,2,3')
   })
 })
@@ -538,7 +535,7 @@ jb.component('dataTest.prettyPrintMacroVars', {
       const testToTest = 'dataTest.varsCases'
       const compTxt = jb.prettyPrintComp(testToTest.replace(/varsCases/,'varsCases2'), jb.comps[testToTest])
       eval(compTxt)
-      return ctx.run(dataTest_asArrayBug()) // checks for error
+      return ctx.run(dataTest.asArrayBug()) // checks for error
         .then(({success}) => success)
       } catch(e) {
         return false

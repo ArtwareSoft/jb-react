@@ -1,3 +1,5 @@
+var {markdown} = jb.ns('markdown')
+
 jb.component('markdown', {
     type: 'control', category: 'control:20',
     description: 'md markdown viewer',

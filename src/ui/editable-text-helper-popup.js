@@ -1,3 +1,5 @@
+var {notEmpty, touch} = jb.macro
+
 jb.component('editableText.picklistHelper', {
   type: 'feature',
   params: [

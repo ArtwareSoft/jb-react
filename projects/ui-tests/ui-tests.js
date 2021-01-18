@@ -1621,6 +1621,8 @@ jb.component('uiTest.picklistAsItemlist', {
   })
 })
 
+var { menuTest} = jb.ns('menuTest')
+
 jb.component('menuTest.menu1', {
   impl: menu.menu({
     title: 'main',

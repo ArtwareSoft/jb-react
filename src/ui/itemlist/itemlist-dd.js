@@ -1,3 +1,5 @@
+var { move } = jb.macro
+
 jb.component('itemlist.dragAndDrop', {
   type: 'feature',
   impl: features(

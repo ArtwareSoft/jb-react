@@ -1,4 +1,4 @@
-jb.ns('gridEditor')
+var {gridEditor} = jb.ns('gridEditor')
 
 Object.assign(jb.ui, {
   getGridVals(el,axis) {

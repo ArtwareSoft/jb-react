@@ -16,7 +16,7 @@ Object.assign(jb.ui,{
         if (!cssKey) return ''
 
         const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId
-        const classPrefix = widgetId || 'jb-'
+        const classPrefix = widgetId || 'jb'
         const cssMap = this.cssHashMap[classPrefix] = this.cssHashMap[classPrefix] || {}
 
         if (!cssMap[cssKey]) {
@@ -26,7 +26,7 @@ Object.assign(jb.ui,{
             } else {
                 this.cssHashCounter++;
             }
-            const classId = existingClass || `${classPrefix}-${this.cssHashCounter}`
+            const classId = existingClass || `${classPrefix}➤${this.cssHashCounter}`
             cssMap[cssKey] = {classId, paths : {[ctx.path]: true}}
             const cssContent = linesToCssStyle(classId)
             if (cssStyleElem)

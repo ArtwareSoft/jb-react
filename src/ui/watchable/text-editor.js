@@ -1,4 +1,5 @@
 (function(){
+var { textEditor} = jb.ns('textEditor');
 
 function getSinglePathChange(diff, currentVal) {
     return pathAndValueOfSingleChange(diff,'',currentVal)

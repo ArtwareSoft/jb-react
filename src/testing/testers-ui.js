@@ -1,3 +1,5 @@
+var { winUtils, propertySheet } = jb.macro
+
 jb.component('test.showTestInStudio', {
 	type: 'control',
 	params: [
@@ -30,7 +32,7 @@ jb.component('test.dataTestView', {
           style: button.href(),
           features: [
             css(pipeline(If('%success%', 'green', 'red'), 'color: %%')),
-            ctrlAction(gotoUrl('http://www.google.com'))
+            button.ctrlAction(winUtils.gotoUrl('http://www.google.com'))
           ]
         }),
         group({

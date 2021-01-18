@@ -5,29 +5,44 @@ jb.component('studio.notebook', {
   impl: group({
     controls: [
       studio.notebookTopBar(),
-      group({
-          controls: [
 //              widget.twoTierWidget(studio.eventTracker(), remote.notebookWorkerSpy()),
-              ctx => ctx.run({$: ctx.exp('%$studio/project%.notebook')}),
-          ],
-          features: group.wait(pipe(
-            studio.initProjectSandbox('%%'),
-            waitFor(ctx => jb.comps[ctx.exp('%$studio/project%.notebook')] )
-          ), text('loading notebook...') )
-      }),
+      ctx => ctx.run({$: ctx.exp('%$studio/project%.notebook')}),
       studio.ctxCounters()
     ],
     features: [
-        group.wait(studio.fetchProjectSettings()),
-        feature.requireService(studio.notebookSaveService()),
+        group.wait(runActions(
+          studio.fetchProjectSettings(),
+          studio.initProjectSandbox(),
+          waitFor(ctx => jb.comps[ctx.exp('%$studio/project%.notebook')] ),
+          studio.initAutoUpdateRemoteComponent('%$studio/project%.notebook', remote.notebookWorker()),
+          studio.initNotebookSaveService()
+        )),
         feature.requireService(urlHistory.mapStudioUrlToResource('studio')),
+        id('notebook-main')
     ]
   })
 })
 
-jb.component('studio.notebookSaveService', {
-    type: 'service',
-    impl: ctx => ({ init: () => {
+jb.component('studio.initAutoUpdateRemoteComponent', {
+    params: [
+        {id: 'compId', as: 'string'},
+        {id: 'remote', type: 'remote'},
+    ],
+    type: 'action',
+    impl: rx.pipe(
+        studio.scriptChange(), 
+        rx.filter(equals('%path/0%','%$compId%')), 
+        rx.map(obj(prop('path',join({items:'%path%', separator: '~'})),prop('op','%op%'))),
+        remote.operator(sink.action(ctx => {
+            const {path,op} = ctx.data
+            jb.studio.compsRefHandler.doOp(jb.studio.refOfPath(path),op,ctx)
+        }), '%$remote%')
+    )
+})
+
+jb.component('studio.initNotebookSaveService', {
+    type: 'action',
+    impl: ctx => {
         const st = jb.studio
         st.changedComps = () => {
             if (!st.compsHistory || !st.compsHistory.length) return []
@@ -35,7 +50,7 @@ jb.component('studio.notebookSaveService', {
             const changedComps = jb.unique(st.compsHistory.map(e=>jb.path(e,'opEvent.path.0')))
             return changedComps.map(id=>[id,jb.comps[id]])
         }
-    }})
+    }
 })
 
 jb.component('studio.notebookTopBar', {
@@ -76,9 +91,10 @@ jb.component('studio.notebookTopBar', {
                 title: 'toolbar',
                 controls: studio.notebookToolbar(),
                 features: css.margin('-10')
-              })
+              }),
+              controlWithFeatures(studio.searchComponent(), [css.margin('-10', '-100')])
             ]
-          })
+          }),
         ],
         features: css('padding-left: 18px; width: 100%; ')
       })
@@ -169,21 +185,30 @@ jb.component('studio.notebookToolbar', {
         title: 'Save',
         action: studio.saveComponents(),
         style: button.mdcIcon(icon('save')),
-        features: [ctrlAction(studio.saveComponents()), feature.if(not(studio.inVscode()))]
+        features: [button.ctrlAction(studio.saveComponents()), feature.if(not(studio.inVscode()))]
       }),
       button({
         title: 'jbEditor',
         action: studio.openComponentInJbEditor(studio.currentPagePath()),
         style: button.mdcIcon(icon('build')),
-        features: ctrlAction(
+        features: button.ctrlAction(
           studio.openJbEditor({path: '%$studio/profile_path%', newWindow: true})
         )
       }),
       button({
-        title: 'History',
-        action: studio.openScriptHistory(),
-        style: button.mdcIcon('pets'),
-        features: hidden()
+        title: 'Outline',
+        action: studio.openControlTree(),
+        style: button.mdcIcon(icon('format_align_left'))
+      }),
+    button({
+    title: 'Properties',
+    action: studio.openProperties(true),
+    style: button.mdcIcon(icon('storage'))
+    }),        
+    button({
+        title: 'Refresh Notebook',
+        action: refreshControlById('notebook-main'),
+        style: button.mdcIcon(icon('refresh'))
       }),
       button({
         title: 'add',

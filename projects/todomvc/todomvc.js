@@ -73,7 +73,7 @@ jb.component('todomvc.main', {
                     features: [itemlist.shownOnlyOnItemHover(), css.class('destroy'), field.title('delete')]
                   })
                 ],
-                features: conditionalClass('completed', '%completed%')
+                features: css.conditionalClass('completed', '%completed%')
               })
             ],
             features: [

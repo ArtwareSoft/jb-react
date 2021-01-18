@@ -1,3 +1,5 @@
+var { sourceEditor, textEditor } = jb.ns('sourceEditor');
+
 (function() {
 var st = jb.studio;
 
@@ -5,16 +7,14 @@ jb.component('studio.val', {
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
-  impl: (ctx,path) =>
-		st.valOfPath(path)
+  impl: (ctx,path) => st.valOfPath(path)
 })
 
 jb.component('studio.isPrimitiveValue', {
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
-  impl: (ctx,path) =>
-		st.isPrimitiveValue(st.valOfPath(path))
+  impl: (ctx,path) =>	st.isPrimitiveValue(st.valOfPath(path))
 })
 
 jb.component('studio.isOfType', {
@@ -423,7 +423,7 @@ jb.component('studio.disabledSupport', {
     {id: 'path', as: 'string', mandatory: true}
   ],
   type: 'feature',
-  impl: conditionalClass(
+  impl: css.conditionalClass(
     'jb-disabled',
     studio.isDisabled('%$path%')
   )

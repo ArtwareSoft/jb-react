@@ -67,6 +67,8 @@ Object.assign(jb.ui,{
 
 // ***************** inter-cmp services
 
+var { feature, action } = jb.ns('feature')
+
 jb.component('feature.serviceRegistey', {
   type: 'feature',
   impl: () => ({extendCtx: ctx => jb.ui.extendWithServiceRegistry(ctx) })
@@ -272,3 +274,5 @@ jb.component('controlWithFeatures', {
   ],
   impl: (ctx,control,features) => control.jbExtend(features,ctx).orig(ctx)
 })
+
+var { customStyle, styleByControl, styleWithFeatures, controlWithFeatures } = jb.macro

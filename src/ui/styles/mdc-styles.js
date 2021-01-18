@@ -1,4 +1,4 @@
-jb.ns('mdc,mdc-style')
+var {mdc,mdcStyle} = jb.ns('mdc,mdcStyle')
 
 jb.component('mdcStyle.initDynamic', {
   type: 'feature',

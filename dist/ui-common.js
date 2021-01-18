@@ -1,5 +1,4 @@
-jb.ns('rx,sink,source')
-
+var { If, call, rx,sink,source } = jb.ns('rx,sink,source')
 // ************ sources
 
 jb.component('source.data', {
@@ -1196,7 +1195,7 @@ class VNode {
         if (selector.indexOf(',') != -1)
             return selector.split(',').map(x=>x.trim()).reduce((res,sel) => [...res, ...this.querySelectorAll(sel,{includeSelf})], [])
         const hasAtt = selector.match(/^\[([a-zA-Z0-9_$\-]+)\]$/)
-        const attEquals = selector.match(/^\[([a-zA-Z0-9_$\-]+)="([a-zA-Z0-9_\-]+)"\]$/)
+        const attEquals = selector.match(/^\[([a-zA-Z0-9_$\-]+)="([a-zA-Z0-9_\-→]+)"\]$/)
         const hasClass = selector.match(/^\.([a-zA-Z0-9_$\-]+)$/)
         const hasTag = selector.match(/^[a-zA-Z0-9_\-]+$/)
         const idEquals = selector.match(/^#([a-zA-Z0-9_$\-]+)$/)
@@ -1897,7 +1896,7 @@ Object.assign(jb.ui, {
         const changed_path = watchHandler.removeLinksFromPath(e.insertedPath || watchHandler.pathOfRef(e.ref))
         if (!changed_path) debugger
         //observe="resources://2~name;person~name
-        const body = jb.path(e,'srcCtx.vars.headlessWidgetId') || jb.path(e,'srcCtx.vars.testID') ? jb.ui.widgetBody(e.srcCtx) : jb.frame.document.body
+        const body = !jb.frame.document || jb.path(e,'srcCtx.vars.headlessWidgetId') || jb.path(e,'srcCtx.vars.testID') ? jb.ui.widgetBody(e.srcCtx) : jb.frame.document.body
         const elemsToCheck = jb.ui.find(body,'[observe]') // top down order
         const elemsToCheckCtxBefore = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
         const originatingCmpId = jb.path(e.srcCtx, 'vars.cmp.cmpId')
@@ -2084,7 +2083,7 @@ Object.assign(jb.ui,{
         if (!cssKey) return ''
 
         const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId
-        const classPrefix = widgetId || 'jb-'
+        const classPrefix = widgetId || 'jb'
         const cssMap = this.cssHashMap[classPrefix] = this.cssHashMap[classPrefix] || {}
 
         if (!cssMap[cssKey]) {
@@ -2094,7 +2093,7 @@ Object.assign(jb.ui,{
             } else {
                 this.cssHashCounter++;
             }
-            const classId = existingClass || `${classPrefix}-${this.cssHashCounter}`
+            const classId = existingClass || `${classPrefix}➤${this.cssHashCounter}`
             cssMap[cssKey] = {classId, paths : {[ctx.path]: true}}
             const cssContent = linesToCssStyle(classId)
             if (cssStyleElem)
@@ -2172,7 +2171,7 @@ class JbComponent {
                 const value = val == null ? prop.defaultValue : val
                 Object.assign(this.renderProps, { ...(prop.id == '$props' ? value : { [prop.id]: value })})
             })
-        ;(this.calcProp || []).filter(p => p.userStateProp).forEach(p => this.state[p.id] = this.renderProps[p.id])
+        ;(this.calcProp || []).filter(p => p.userStateProp && !this.state.refresh).forEach(p => this.state[p.id] = this.renderProps[p.id])
         Object.assign(this.renderProps,this.styleParams, this.state)
         return this.renderProps
     }
@@ -2431,6 +2430,8 @@ Object.assign(jb.ui,{
 
 // ***************** inter-cmp services
 
+var { feature, action } = jb.ns('feature')
+
 jb.component('feature.serviceRegistey', {
   type: 'feature',
   impl: () => ({extendCtx: ctx => jb.ui.extendWithServiceRegistry(ctx) })
@@ -2636,9 +2637,13 @@ jb.component('controlWithFeatures', {
   ],
   impl: (ctx,control,features) => control.jbExtend(features,ctx).orig(ctx)
 })
+
+var { customStyle, styleByControl, styleWithFeatures, controlWithFeatures } = jb.macro
 ;
 
-jb.ns('followUp,backEnd')
+
+var { variable,followUp,backEnd,method,features,onDestroy,htmlAttribute,templateModifier,watchAndCalcModelProp,calcProp,watchRef } 
+  = jb.ns('variable,followUp,backEnd,method,htmlAttribute,features,onDestroy,templateModifier,watchAndCalcModelProp,calcProp,watchRef,group')
 
 jb.component('method', {
   type: 'feature',
@@ -3013,22 +3018,6 @@ jb.component('hidden', {
   })
 })
 
-jb.component('conditionalClass', {
-  type: 'feature',
-  description: 'toggle class by condition',
-  params: [
-    {id: 'cssClass', as: 'string', mandatory: true, dynamic: true},
-    {id: 'condition', type: 'boolean', mandatory: true, dynamic: true}
-  ],
-  impl: (ctx,cssClass,cond) => ({
-    templateModifier: (vdom,cmp) => {
-      if (jb.toboolean(cond(cmp.ctx)))
-        vdom.addClass(cssClass())
-      return vdom
-    }
-  })
-})
-
 jb.component('refreshControlById', {
   type: 'action',
   params: [
@@ -3084,7 +3073,7 @@ jb.component('feature.userEventProps', {
 })
 ;
 
-jb.ns('rx,key,frontEnd,sink,service')
+var { rx,key,frontEnd,sink,service, replace } = jb.ns('rx,key,frontEnd,sink,service')
 
 jb.component('action.runBEMethod', {
     type: 'action',
@@ -3489,6 +3478,8 @@ jb.component('source.findSelectionKeySource', {
 })
 ;
 
+var { css } = jb.ns('css');
+
 (function() {
 const withUnits = jb.ui.withUnits
 const fixCssLine = jb.ui.fixCssLine
@@ -3717,6 +3708,22 @@ jb.component('css.valueOfCssVar',{
   impl: (ctx,varName,parent) => jb.ui.valueOfCssVar(varName,parent)
 })
 
+jb.component('css.conditionalClass', {
+  type: 'feature',
+  description: 'toggle class by condition',
+  params: [
+    {id: 'cssClass', as: 'string', mandatory: true, dynamic: true},
+    {id: 'condition', type: 'boolean', mandatory: true, dynamic: true}
+  ],
+  impl: (ctx,cssClass,cond) => ({
+    templateModifier: (vdom,cmp) => {
+      if (jb.toboolean(cond(cmp.ctx)))
+        vdom.addClass(cssClass())
+      return vdom
+    }
+  })
+})
+
 ;['layout','typography','detailedBorder','detailedColor','gridArea'].forEach(f=>
 jb.component(`css.${f}`, {
   type: 'feature:0',
@@ -3729,7 +3736,7 @@ jb.component(`css.${f}`, {
 
 })();
 
-jb.ns('text')
+var { text, firstSucceeding, customStyle, styleByControl, controlWithFeatures } = jb.ns('text')
 
 jb.component('text', {
   type: 'control',
@@ -3791,7 +3798,7 @@ jb.component('text.highlight', {
 })
 ;
 
-jb.ns('group,layout,tabs')
+var {group,layout,tabs,controlWithCondition} = jb.ns('group,layout,tabs,controlWithCondition')
 
 jb.component('group', {
   type: 'control',
@@ -3909,7 +3916,7 @@ jb.component('group.eliminateRecursion', {
 })
 ;
 
-jb.ns('html')
+var { html } = jb.ns('html')
 
 jb.component('html', {
   type: 'control',
@@ -3955,7 +3962,7 @@ jb.component('html.inIframe', {
 })
 ;
 
-jb.ns('image,css')
+var { image, pipeline } = jb.ns('image,css')
 
 jb.component('image', {
   type: 'control,image',
@@ -4048,7 +4055,7 @@ jb.component('image.img', {
   })
 });
 
-jb.ns('icon,control')
+var { icon, control } = jb.ns('icon,control')
 
 jb.component('control.icon', {
   type: 'control',
@@ -4111,7 +4118,7 @@ jb.component('feature.icon', {
 
 ;
 
-jb.ns('button')
+var { button } = jb.ns('button')
 
 jb.component('button', {
   type: 'control,clickable',
@@ -4139,7 +4146,7 @@ jb.component('button', {
     ))
 })
 
-jb.component('ctrlAction', {
+jb.component('button.ctrlAction', {
   type: 'feature',
   category: 'button:70',
   description: 'action to perform on control+click',
@@ -4149,7 +4156,7 @@ jb.component('ctrlAction', {
   impl: method('ctrlAction', (ctx,{},{action}) => action(ctx))
 })
 
-jb.component('altAction', {
+jb.component('button.altAction', {
   type: 'feature',
   category: 'button:70',
   description: 'action to perform on alt+click',
@@ -4160,6 +4167,8 @@ jb.component('altAction', {
 })
 
 ;
+
+var { field, validation  } = jb.ns('field,validation');
 
 (function() {
 jb.ui.field_id_counter = jb.ui.field_id_counter || 0;
@@ -4357,7 +4366,7 @@ jb.component('field.columnWidth', {
 
 })();
 
-jb.ns('editableText')
+var {editableText} = jb.ns('editableText')
 
 jb.component('editableText', {
   type: 'control',
@@ -4395,7 +4404,7 @@ jb.component('editableText.xButton', {
 })
 ;
 
-jb.ns('editableBoolean')
+var {editableBoolean, refreshIfNotWatchable} = jb.ns('editableBoolean')
 
 jb.component('editableBoolean', {
   type: 'control',
@@ -4422,7 +4431,7 @@ jb.component('editableBoolean', {
 })
 ;
 
-jb.ns('editableNumber')
+var {editableNumber} = jb.ns('editableNumber')
 
 jb.component('editableNumber', {
   type: 'control',
@@ -4477,7 +4486,8 @@ jb.component('editableNumber', {
 
 ;
 
-jb.ns('dialog,dialogs')
+var {openDialog, dialog,dialogs, dialogFeature, and, or, runActionOnItems, getSessionStorage, userStateProp } 
+	= jb.ns('dialog,dialogs,openDialog,dialogFeature')
 
 jb.component('openDialog', {
   type: 'action,has-side-effects',
@@ -5011,7 +5021,7 @@ jb.component('dialogs.defaultStyle', {
 })
 ;
 
-jb.ns('itemlist,itemlistContainer')
+var {itemlist} = jb.ns('itemlist,itemlistContainer')
 
 jb.component('itemlist', {
   description: 'list, dynamic group, collection, repeat',
@@ -5054,6 +5064,8 @@ jb.component('itemlist.init', {
   )
 })
 ;
+
+var {runActionOnItem, isRef, inGroup, list } = jb.macro
 
 jb.component('itemlist.selection', {
   type: 'feature',
@@ -5213,6 +5225,8 @@ jb.component('itemlist.nextSelected', {
     return indeces[Math.min(indeces.length-1,Math.max(0,selectedIndex))]
   }
 });
+
+var { move } = jb.macro
 
 jb.component('itemlist.dragAndDrop', {
   type: 'feature',
@@ -5378,7 +5392,7 @@ jb.component('itemlist.calcSlicedItems', {
 })
 ;
 
-jb.ns('search')
+var { search, itemlistContainer } = jb.ns('search,itemlistContainer')
 
 jb.component('group.itemlistContainer', {
   description: 'itemlist writable container to support addition, deletion and selection',
@@ -5606,7 +5620,7 @@ jb.component('feature.expandToEndOfRow', {
 })
   ;
 
-jb.ns('menuStyle,menuSeparator,mdc,icon,key')
+var { menu,menuStyle,menuSeparator,mdc,icon,key} = jb.ns('menu,menuStyle,menuSeparator,mdc,icon,key')
 
 jb.component('menu.menu', {
   type: 'menu.option',
@@ -6097,7 +6111,7 @@ jb.component('menuStyle.iconMenu', {
 })
 ;
 
-jb.ns('picklist')
+var {picklist} = jb.ns('picklist')
 
 jb.component('picklist', {
   type: 'control',
@@ -6217,7 +6231,7 @@ jb.component('picklist.initGroups', {
 })
 ;
 
-jb.ns('multiSelect')
+var {multiSelect, removeFromArray, addToArray } = jb.ns('multiSelect')
 
 jb.component('multiSelect', {
     type: 'control',
@@ -6414,7 +6428,7 @@ jb.component('theme.materialDesign', {
 })
 ;
 
-jb.ns('slider,mdcStyle')
+var { slider, editableNumber, mdcStyle } = jb.ns('slider,mdcStyle')
 
 jb.component('editableNumber.sliderNoText', {
   type: 'editable-number.style',
@@ -6575,7 +6589,7 @@ jb.component('slider.drag', {
 
 ;
 
-jb.component('gotoUrl', {
+jb.component('winUtils.gotoUrl', {
   type: 'action',
   description: 'navigate/open a new web page, change href location',
   params: [
@@ -6591,7 +6605,7 @@ jb.component('gotoUrl', {
 
 ;
 
-jb.ns('divider');
+var { divider } = jb.ns('divider')
 
 jb.component('divider', {
     type: 'control',
@@ -6627,6 +6641,8 @@ jb.component('divider.flexAutoGrow', {
     })
 })
 ;
+
+var {notEmpty, touch} = jb.macro
 
 jb.component('editableText.picklistHelper', {
   type: 'feature',
@@ -6748,7 +6764,7 @@ jb.component('editableText.helperPopup', {
  )
 });
 
-jb.ns('mdc,mdc-style')
+var {mdc,mdcStyle} = jb.ns('mdc,mdcStyle')
 
 jb.component('mdcStyle.initDynamic', {
   type: 'feature',
@@ -7061,7 +7077,7 @@ jb.component('button.mdcHeader', {
 
 ;
 
-jb.ns('mdc,mdc-style')
+var {hidden} = jb.ns('mdc,mdc-style')
 
 jb.component('editableText.input', {
   type: 'editable-text.style',
@@ -7310,7 +7326,7 @@ jb.component('flexItem.alignSelf', {
 
 ;
 
-jb.ns('css')
+var { dynamicControls, css, header } = jb.ns('css')
 
 jb.component('group.htmlTag', {
   type: 'group.style',

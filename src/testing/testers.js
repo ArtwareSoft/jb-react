@@ -1,4 +1,4 @@
-jb.ns('uiTest,userInput,uiAction,dialog,widget')
+var {dataTest,uiTest,userInput,uiAction,dialog,widget,last} = jb.ns('dataTest,uiTest,userInput,uiAction,dialog,widget')
 
 jb.test = {
 	runInner(propName, ctx) {

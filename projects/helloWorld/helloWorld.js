@@ -22,7 +22,12 @@ jb.component('helloWorld.main', {
   type: 'control',
   impl: group({
     controls: [
-      text('hello world')
+      text('hello world'),
+      image({
+        url: 'https://freesvg.org/img/UN-CONSTRUCTION-2.png',
+        width: '100',
+        height: '66'
+      })
     ]
   })
 })

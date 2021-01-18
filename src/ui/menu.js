@@ -1,4 +1,4 @@
-jb.ns('menuStyle,menuSeparator,mdc,icon,key')
+var { menu,menuStyle,menuSeparator,mdc,icon,key} = jb.ns('menu,menuStyle,menuSeparator,mdc,icon,key')
 
 jb.component('menu.menu', {
   type: 'menu.option',

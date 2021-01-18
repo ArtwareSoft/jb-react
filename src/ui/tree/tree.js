@@ -1,5 +1,5 @@
 (function() {
-jb.ns('tree')
+var { tree } = jb.ns('tree')
 
 jb.component('tree', {
   type: 'control',

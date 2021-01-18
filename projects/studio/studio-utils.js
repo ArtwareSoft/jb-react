@@ -28,7 +28,6 @@ st.animateMessage = function (el) {
 }
 
 // ********* Components ************
-
 jb.component('studio.projectId', {
   impl: ctx => jb.macroName(ctx.exp('%$studio/project%'))
 })

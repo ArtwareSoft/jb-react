@@ -1,3 +1,5 @@
+var {jbEditorChildrenTest} = jb.macro
+
 jb.component('jbEditorTest.cmp1', {
   impl: list(
     'a.1',
@@ -26,7 +28,7 @@ jb.component('jbEditorTest.cmp5JsonFormat', {
 // jb.component('jbEditorTest.actionsSugarExample1', {
 //   impl: button({
 //     title: 'hello',
-//     action: [gotoUrl('google')]
+//     action: [winUtils.gotoUrl('google')]
 //   })
 // })
 

@@ -1,7 +1,7 @@
 jb.component('studio.initProjectSandbox', {
     type: 'action',
     params: [
-        {id: 'projectSettings' },
+        {id: 'projectSettings', defaultValue: '%$studio/projectSettings%' },
     ],
     impl: (ctx, projectSettings) => {
         const uri = 'notebook-worker'
@@ -13,14 +13,20 @@ jb.component('studio.initProjectSandbox', {
 
         settings.libs = 'common,ui-common,remote,two-tier-widget,markdown,notebook,pretty-print' + settings.libs
         const workerCode = `
+jbUri = '${uri}'
 jbProjectSettings = ${JSON.stringify(settings)}
 importScripts('${st.host.jbLoader}')
+importScripts('${location.origin}/projects/studio/studio-path.js') // To be fixed - maybe moved to dist
 jb.cbLogByPath = {}
 if (jbProjectSettings.spyParam)
     self.spy = self.spy || jb.initSpy({spyParam: jbProjectSettings.spyParam})
 portToStudio = jb.remote.cbPortFromFrame(self,'${uri}','studio')
 jb.notebookId = '${projectSettings.project}.notebook'
+jb.component('studio', { watchableData: {}})
+jb.studio.initCompsRefHandler(jb)
+
 ${jb.prettyPrintComp('sink.refreshNotebook',jb.comps['sink.refreshNotebook'])}
+
 jb.studio.evalProfile = prof_str => {
     if (!prof_str) return prof_str
     try {
@@ -30,8 +36,8 @@ jb.studio.evalProfile = prof_str => {
     }
 }
 
-importScripts('${distPath}/spy-viewer.js?nb')
-spyViewerJb.remote.cbPortFromFrame(self,'${uri}-spy','studio')
+importScripts('${distPath}/jb-debugger.js?nb')
+jbDebugger.remote.cbPortFromFrame(self,'${uri}-spy','studio')
 
 jb.exec(rx.pipe(
     source.data(() => jb.prettyPrint({...jb.comps[jb.notebookId],
@@ -42,7 +48,7 @@ jb.exec(rx.pipe(
         const worker = st.notebookWorker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
         worker.port = jb.remote.cbPortFromFrame(worker,'studio',uri)
         worker.spyPort = jb.remote.cbPortFromFrame(worker,'studio',`${uri}-spy`)
-        worker.uri = uri
+        worker.uri = worker.jbUri = uri
         return worker
     }
 })
@@ -52,7 +58,12 @@ jb.component('sink.initNotebookStudio', {
     category: 'sink',
     impl: rx.innerPipe(
         rx.map(({data}) => jb.studio.evalProfile(data)),
-        rx.map(({data}) => ({...data, [jb.location]: data.location, [jb.loadingPhase]: data.loadingPhase})),
+        rx.map(({data}) => {
+            res = {...data, [jb.location]: data.location, [jb.loadingPhase]: data.loadingPhase }
+            delete res.location
+            delete res.loadingPhase
+            return res
+        }),
         sink.action( ctx => {
             jb.comps[ctx.exp('%$studio/project%.notebook')] = ctx.data
             jb.studio.initCompsRefHandler(jb)
@@ -73,6 +84,18 @@ jb.component('sink.refreshNotebook', {
         rx.do(({ctx},{parsedProfile}) => jb.comps['%$studio/project%.notebook'].impl = parsedProfile.impl),
         sink.action(({},{path}) => jb.studio.scriptChange.next({path}))
     )
+})
+
+jb.component('sink.doOp', {
+    type: 'rx',
+    category: 'sink',
+    description: 'runs on worker',
+    params: [
+        {id: 'change' }
+    ],
+    impl: sink.action(({data}) => {
+        const {path,opOnRef} = data
+    })
 })
 
 jb.component('remote.notebookWorker', {

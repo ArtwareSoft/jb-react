@@ -1,4 +1,4 @@
-jb.ns('html')
+var { html } = jb.ns('html')
 
 jb.component('html', {
   type: 'control',

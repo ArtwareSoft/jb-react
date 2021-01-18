@@ -65,6 +65,7 @@ jb.remoteCtx = {
 
 ;
 
+var { remote, waitFor } = jb.ns('remote')
 
 jb.remote = {
     servers: {},
@@ -76,6 +77,10 @@ jb.remote = {
     cbPortFromFrame(frame,from,to) {
         return this.extendPortWithCbHandler(this.portFromFrame(frame,from,to)).initCommandListener()
     },
+    // createNetworkPort(fromJb, toUri) {
+    //     if (to)
+
+    // },
     portFromFrame(frame,from,to) {
         const port = {
             from,to,
@@ -173,20 +178,22 @@ jb.component('remote.worker', {
         {id: 'libs', as: 'array', defaultValue: ['common','remote','rx'] },
     ],    
     impl: (ctx,id,libs) => {
-        const uri = `worker-${id}`
+        const prefix = jb.frame.jbUri ? `${jb.frame.jbUri}→` : ''
+        const uri = `${prefix}worker-${id}`
         if (jb.remote.servers[uri]) return jb.remote.servers[uri]
         const distPath = jb.remote.pathOfDistFolder()
         const spyParam = ((jb.path(jb.frame,'location.href')||'').match('[?&]spy=([^&]+)') || ['', ''])[1]
         const workerCode = [
             ...libs.map(lib=>`importScripts('${distPath}/!${uri}!${lib}.js')`),`
-                jb.cbLogByPath = {}
-                self.spy = jb.initSpy({spyParam: '${spyParam}'})
-                self.portToMaster = jb.remote.cbPortFromFrame(self,'${uri}','master')
+                //jb.cbLogByPath = {}
+                jbUri = '${uri}'
+                spy = jb.initSpy({spyParam: '${spyParam}'})
+                portToMaster = jb.remote.cbPortFromFrame(self,'${uri}','master')
             `
         ].join('\n')
         const worker = jb.remote.servers[uri] = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
         worker.port = jb.remote.cbPortFromFrame(worker,'master',uri)
-        worker.uri = uri
+        worker.jbUri = uri
         return worker
     }
 })

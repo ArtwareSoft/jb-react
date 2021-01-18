@@ -1,4 +1,4 @@
-jb.ns('pptr,rx')
+var {pptr} = jb.ns('pptr,rx')
 
 jb.component('pptr.newPage', {
   type: 'rx,pptr',

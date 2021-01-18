@@ -1,6 +1,7 @@
 (function() {
 
 const st = jb.studio;
+var { waitFor, prettyPrint } = jb.macro
 
 st.changedComps = () => {
   if (!st.compsHistory || !st.compsHistory.length) return []
