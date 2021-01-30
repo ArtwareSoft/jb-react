@@ -16,6 +16,16 @@ function concatFiles(files,target,pre,post) {
     fs.appendFileSync(fn,('' +fs.readFileSync(f)) + (type === 'css' ? '' : ';\n\n') ) );
   if (post) fs.appendFileSync(fn,post)
 }
+function packLibrary(moduleName, jbFiles) {
+  const pre = `if (typeof jbmFactory == 'undefined') jbmFactory = {};
+jbmFactory['${moduleName}'] = function(jb) {
+  jb.importAllMacros && eval(jb.importAllMacros());
+`
+  const post = `
+};`
+  concatFiles(jbFiles,`${moduleName}-lib.js`,pre,post)
+}
+
 function removeExports(target) {
   const fn = JBART_DIR + 'dist/' + target;
   fs.writeFileSync(fn,('' +fs.readFileSync(fn)).replace(/module.exports = .*/,''))
@@ -37,27 +47,24 @@ const jbDebuggerFiles = [...filesOfModules('common,ui-common,remote,two-tier-wid
 '/src/ui/styles/codemirror-styles.js', '/src/ui/tree/table-tree.js', '/projects/studio/studio-path.js', '/projects/studio/studio-event-tracker.js']
 
 'core,common,ui-common,animate,d3,cards,cards-sample-data,pretty-print,parsing,xml,puppeteer,rx,md-icons,remote,two-tier-widget'
-  .split(',').forEach(m=>concatFiles(jb_modules[m],`${m}.js`))
+  .split(',').forEach(m=>packLibrary(m,jb_modules[m]))
 
-concatFiles(filesOfModules('ui-common-css'),'css/ui-common.css')
-concatFiles(filesOfModules('codemirror-js-files'),'codemirror.js')
-fixExports('codemirror.js')
-removeExports('animate.js')
+packLibrary('codemirror',filesOfModules('codemirror-js-files'))
+fixExports('codemirror-lib.js')
+removeExports('animate-lib.js')
 
 concatFiles(['node_modules/dragula/dist/dragula.js'],'dragula.js')
 concatFiles(['node_modules/history/umd/history.js'],'history.js')
 
-concatFiles(jbReactFiles,'jb-react-all.js');
-concatFiles(nodeFiles,'jb4node.js');
-concatFiles(studioCssFiles,'../bin/studio/css/studio-all.css');
 
-concatFiles(studioFiles,'../bin/studio/studio-all.js');
-concatFiles(studioFiles.filter(x=>!x.match(/history/)),'../bin/studio/studio-embeddable.js');
+packLibrary('studio-all',studioFiles);
+packLibrary('jb-debugger',jbDebuggerFiles);
+
 concatFiles(['/src/loader/jb-loader.js'],'jb-loader.js');
 concatFiles(['/src/testing/testers.js'],'testers.js');
+
+concatFiles(filesOfModules('ui-common-css'),'css/ui-common.css')
 concatFiles(filesOfModules('codemirror-css'),'css/codemirror.css')
+concatFiles(studioCssFiles,'../bin/studio/css/studio-all.css');
 concatFiles(['node_modules/dragula/dist/dragula.css'],'css/dragula.css')
-concatFiles(jbDebuggerFiles,'jb-debugger.js',`
-jbFrame = (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {};
-(function (jb) {\n`,
-'\n})(jbFrame.jbDebugger = {}); jbDebugger.studio.previewjb = jbFrame.jb;');
+

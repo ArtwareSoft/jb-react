@@ -1,7 +1,7 @@
-jbFrame = (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {}
-if (typeof jb == 'undefined' && typeof jbFrame != 'undefined') jbFrame.jb = {};
+var jbFrame = (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {}
 
-(function() {
+function newJbm() {
+let jb = {}
 function jb_run(ctx,parentParam,settings) {
 //  ctx.profile && jb.log('core request', [ctx.id,...arguments])
   if (ctx.probe && ctx.probe.outOfTime)
@@ -284,9 +284,12 @@ Object.assign(jb, {
   frame: jbFrame, 
   comps: {}, ctxDictionary: {}, run: jb_run, jbCtx, jstypes, tojstype 
 })
-})()
+return jb
+}
 
-if (typeof module != 'undefined') module.exports = jbFrame.jb;
+if (typeof jb == 'undefined' && typeof jbDoNotInvoke_newJbm == 'undefined') jbFrame.jb = newJbm();
+
+//if (typeof module != 'undefined') module.exports = jbFrame.jb;
 
 Object.assign(jb, {
     compParams(comp) {
@@ -1033,6 +1036,9 @@ initSpyByUrl() {
 	if (frame) frame.spy = jb.spy // for console use
 },
 
+injectDebuggerJbm() {
+	jb.jbms.visualDebugger = jb.createChildjbm(`${distPath}/jb-debugger.js?${parentUri}`)
+},
 injectVisualDebugger(debuggerUri, debuggerClientUri) {
 	const distPath = jb.remote.pathOfDistFolder()
 	const parentUri = jb.frame.jbUri || ''

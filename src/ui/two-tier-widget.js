@@ -6,7 +6,7 @@ Object.assign(jb.ui, {
     headless: {},
     frontendWidgets: {},
     newWidgetId(ctx, remote) {
-        const id = remote.jbUri + '-' + ctx.id
+        const id = remote.uri + '-' + ctx.id
         jb.ui.frontendWidgets[id] = remote
         return id
     }
@@ -125,7 +125,7 @@ jb.component('widget.twoTierWidget', {
     type: 'control',
     params: [
       {id: 'control', type: 'control', dynamic: true },
-      {id: 'remote', type: 'remote', defaultValue: remote.worker({libs: ['common','ui-common','remote','two-tier-widget']}) },
+      {id: 'remote', type: 'remote', defaultValue: jbm.worker({libs: ['common','ui-common','remote','two-tier-widget']}) },
     ],
     impl: controlWithFeatures({
         vars: Var('widgetId', (ctx,{},{remote}) => jb.ui.newWidgetId(ctx,remote)),

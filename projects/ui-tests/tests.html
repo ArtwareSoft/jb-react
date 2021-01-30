@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script>
 jbProjectSettings = {
-	libs: 'common,ui-common,material,two-tier-widget,ui-tree,dragula,codemirror,testers,pretty-print,studio,studio-tests,object-encoder,remote,md-icons,fuse,puppeteer,animation,cards,vega-lite,markdown',
+	libs: 'common,ui-common,material,remote,two-tier-widget,ui-tree,markdown,dragula,codemirror,testers,studio,studio-tests,object-encoder,md-icons,fuse,puppeteer,animation,cards,vega-lite',
 	jsFiles: [
 	'/projects/ui-tests/phones-3.js',
 	'/projects/ui-tests/test-data-samples.js',
@@ -16,6 +16,7 @@ jbProjectSettings = {
 	'/projects/ui-tests/watchable-tests.js',
 	'/projects/ui-tests/parsing-tests.js',
 	'/projects/ui-tests/remote-tests.js',
+	'/projects/ui-tests/net-tests.js',
 	'/projects/ui-tests/pptr-tests.js',
 	'/projects/ui-tests/object-encoder-tests.js',
 	'/projects/ui-tests/vega-tests.js',
@@ -35,8 +36,9 @@ jbProjectSettings = {
 	<div id="test"> </div>
 	<div id="show"> </div>
  <script>
-	self.jbUri = 'tests'
+	jb.uri = 'tests'
 	window.jb_initWidget && jb_initWidget()
+	jb.initSpyByUrl()
 	const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
 	const params = { 
 		testType: '',

@@ -4,7 +4,7 @@ jb.component('remoteTest.sourceNoTalkback', {
     impl: dataTest({
       timeout: 5000,
       calculate: pipe(rx.pipe(
-            source.remote(source.interval(1), remote.worker()),
+            source.remote(source.interval(1), jbm.worker()),
             rx.take(2),
             rx.map('-%%-'),
       ), join(',')),
@@ -27,7 +27,7 @@ jb.component('remoteTest.remoteWorker', {
   impl: dataTest({
     timeout: 5000,
     calculate: pipe(
-      rx.pipe(source.remote(source.data([1, 2, 3]), remote.worker()), rx.take(2), rx.map('-%%-')),
+      rx.pipe(source.remote(source.data([1, 2, 3]), jbm.worker()), rx.take(2), rx.map('-%%-')),
       join(',')
     ),
     expectedResult: equals('-1-,-2-')
@@ -40,7 +40,7 @@ jb.component('remoteTest.operator', {
       calculate: pipe(
          rx.pipe(
             source.data([1,2,3]),
-            remote.operator(rx.take(2), remote.worker()),
+            remote.operator(rx.take(2), jbm.worker()),
             rx.map('-%%-')
       ), join(',')),
       expectedResult: equals('-1-,-2-')
@@ -52,8 +52,8 @@ jb.component('remoteTest.operator', {
 //     timeout: 5000,
 //     calculate: rx.pipe(
 //       source.data(1),
-//       remote.operator(rx.map(remoteTest.sampleObject(5)), remote.worker()),
-//       remote.operator(rx.map('%m1()%'), remote.worker()),
+//       remote.operator(rx.map(remoteTest.sampleObject(5)), jbm.worker()),
+//       remote.operator(rx.map('%m1()%'), jbm.worker()),
 //       rx.take(1)
 //     ),
 //     expectedResult: equals(5)
@@ -68,7 +68,7 @@ jb.component('remoteTest.remoteParam', {
     timeout: 5000,
       calculate: rx.pipe(
           source.data(1),
-          remote.operator(rx.map('%$retVal%'), remote.worker()),
+          remote.operator(rx.map('%$retVal%'), jbm.worker()),
           rx.take(1)
     ),
     expectedResult: equals(5)
@@ -83,7 +83,7 @@ jb.component('remoteTest.dynamicProfileFunc', {
     timeout: 5000,
       calculate: rx.pipe(
           source.data(1),
-          remote.operator(rx.map('%$func()%'), remote.worker()),
+          remote.operator(rx.map('%$func()%'), jbm.worker()),
           rx.take(1)
     ),
     expectedResult: equals('-1-')
@@ -98,7 +98,7 @@ jb.component('remoteTest.dynamicProfileFunc', {
 //     timeout: 5000,
 //       calculate: rx.pipe(
 //           source.data(1),
-//           remote.operator(rx.map('%$func()%'), remote.worker()),
+//           remote.operator(rx.map('%$func()%'), jbm.worker()),
 //           rx.take(1)
 //     ),
 //     expectedResult: equals('-1-')
@@ -107,12 +107,12 @@ jb.component('remoteTest.dynamicProfileFunc', {
 
 jb.component('remoteTest.uiWorker', {
   type: 'remote',
-  impl: remote.worker({id: 'ui', libs: ['common','ui-common','remote','two-tier-widget'] })
+  impl: jbm.worker({id: 'ui', libs: ['common','ui-common','remote','two-tier-widget'] })
 })
 
 jb.component('remoteTest.uiWorkerWithSamples', {
   type: 'remote',
-  impl: remote.worker({id: 'ui-with-samples', libs: ['common','ui-common','remote','two-tier-widget','../projects/ui-tests/test-data-samples'] })
+  impl: jbm.worker({id: 'ui-with-samples', libs: ['common','ui-common','remote','two-tier-widget'], jsFiles: ['../projects/ui-tests/test-data-samples'] })
 })
 
 jb.component('remoteTest.twoTierWidget.button', {

@@ -82,11 +82,9 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       ],
       remote: [
         'src/misc/remote-context.js',
-        'src/misc/remote-callbag.js',
+        'src/misc/jbm.js',
+        'src/misc/pretty-print.js',
       ],
-      // 'inner-html': [ // unsafe
-      //   'src/ui/inner-html.js',
-      // ],
       'testers': [
         'src/testing/testers.js',
         'src/testing/testers-ui.js',
@@ -274,6 +272,8 @@ function jb_dynamicLoad(modules,prefix,suffix) {
   }
 }
 
+if (typeof jb == 'undefined') jb = {}
+
 if (typeof window != 'undefined')
   if (document.currentScript && document.currentScript.getAttribute('modules'))
     jb_dynamicLoad(document.currentScript.getAttribute('modules'),document.currentScript.getAttribute('prefix'),document.currentScript.getAttribute('suffix'));
@@ -352,5 +352,21 @@ function jb_loadFile(url) {
   }
  }
  
+function jbm_create(libs,uri) { 
+  return libs.reduce((pr,lib) => pr.then(jb => jbm_load_lib(jb,lib,uri)), Promise.resolve({uri})) 
+}
+
+function jbm_load_lib(jbm,lib,prefix) {
+  return new Promise((resolve,rej) => {
+    const pre = prefix ? `!${prefix}!` : ''
+    const base = typeof jbModuleUrl != 'undefined' && (window.jbModuleUrl + '/dist') || '/dist'
+    var s = document.createElement("script");
+    s.setAttribute("src",`${base}/${pre}${lib}-lib.js`);
+    s.onload = () => { jbmFactory[lib](jbm);resolve(jbm) }
+    s.onerror = e => resolve(jbm)
+    document.head.appendChild(s);
+  })
+}
+
  if (typeof module != 'undefined')
   module.exports = jb_modules

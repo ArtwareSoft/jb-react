@@ -1,7 +1,6 @@
-jbFrame = (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {}
-if (typeof jb == 'undefined' && typeof jbFrame != 'undefined') jbFrame.jb = {};
+(function(){
+var jbFrame = (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {}
 
-(function() {
 function jb_run(ctx,parentParam,settings) {
 //  ctx.profile && jb.log('core request', [ctx.id,...arguments])
   if (ctx.probe && ctx.probe.outOfTime)
@@ -245,6 +244,7 @@ class jbCtx {
       this.params= ctx2.params || ctx.params
       this.cmpCtx= (typeof ctx2.cmpCtx != 'undefined') ? ctx2.cmpCtx : ctx.cmpCtx
       this.probe= ctx.probe
+      this.jbm = jb
     }
   }
   run(profile,parentParam) {
@@ -285,5 +285,3 @@ Object.assign(jb, {
   comps: {}, ctxDictionary: {}, run: jb_run, jbCtx, jstypes, tojstype 
 })
 })()
-
-if (typeof module != 'undefined') module.exports = jbFrame.jb
