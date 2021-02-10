@@ -1202,4 +1202,15 @@ jb.component('waitFor',{
   }
 })
 
+jb.component('addComponent', {
+  description: 'add a component or data resource',
+  type: 'action',
+  params: [
+    {id: 'id', as: 'string', dynamic: true, mandatory: true},
+    {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
+    {id: 'type', options:'watchableData,passiveData,comp', mandatory: true },
+  ],
+  impl: (ctx,id,value,type) => jb.component(id(), type == 'comp' ? value() : {[type]: value() } )
+})
+
 var {Var,remark} = jb.macro // special system comps

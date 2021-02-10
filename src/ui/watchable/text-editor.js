@@ -83,7 +83,7 @@ jb.component('watchableAsText', {
         }},
 
         $jb_observable(cmp) {
-            return jb.ui.refObservable(this.getRef(),{cmp, includeChildren: 'yes'})
+            return jb.refObservable(this.getRef(),{cmp, includeChildren: 'yes'})
         }
     })
 })
@@ -125,7 +125,7 @@ jb.component('textEditor.isDirty', {
 //       try {
 //         const text_ref = cmp.state.databindRef
 //         const data_ref = text_ref.getRef()
-//         jb.isWatchable(data_ref) && jb.ui.refObservable(data_ref,{cmp,srcCtx: cmp.ctx, includeChildren: 'yes'})
+//         jb.isWatchable(data_ref) && jb.refObservable(data_ref,{cmp,srcCtx: cmp.ctx, includeChildren: 'yes'})
 //             .subscribe(e => {
 //             const path = e.path
 //             const editor = cmp.editor

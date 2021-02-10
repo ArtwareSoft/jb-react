@@ -19,7 +19,7 @@ jb.component('source.watchableData', {
     {id: 'ref', as: 'ref' },
     {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
   ],
-  impl: (ctx,ref,includeChildren) => jb.callbag.map(x=>ctx.dataObj(x))(jb.ui.refObservable(ref,{includeChildren, srcCtx: ctx}))
+  impl: (ctx,ref,includeChildren) => jb.callbag.map(x=>ctx.dataObj(x))(jb.refObservable(ref,{includeChildren, srcCtx: ctx}))
 })
 
 jb.component('source.callbag', {
@@ -677,10 +677,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var immu
 //     $jb_childProp: 'title', // used for primitive props
 // }
 
-const isProxy = Symbol.for("isProxy")
-const originalVal = Symbol.for("originalVal")
-const targetVal = Symbol.for("targetVal")
-const jbId = Symbol("jbId")
+const isProxy = Symbol.for("isProxy"), originalVal = Symbol.for("originalVal"), targetVal = Symbol.for("targetVal"), jbId = Symbol("jbId")
 
 class WatchableValueByRef {
   constructor(resources) {
@@ -693,7 +690,6 @@ class WatchableValueByRef {
     this.observables = []
     this.primitiveArraysDeltas = {}
 
-    jb.ui.originalResources = jb.resources
     const resourcesObj = resources()
     resourcesObj[jbId] = this.idCounter++
     this.objToPath.set(resourcesObj[jbId],[])
@@ -714,7 +710,7 @@ class WatchableValueByRef {
       const insertedIndex = jb.path(opOnRef.$splice,[0,2]) && jb.path(opOnRef.$splice,[0,0]) || opOnRef.$push && opVal.length
       const insertedPath = insertedIndex != null && path.concat(insertedIndex)
       const opEvent = {op: opOnRef, path, insertedPath, ref, srcCtx, oldVal, opVal, timeStamp: new Date().getTime(), opCounter: this.opCounter++}
-      this.resources(jb.ui.update(this.resources(),op),opEvent)
+      this.resources(jb.immutableUpdate(this.resources(),op),opEvent)
       const newVal = (opVal != null && opVal[isProxy]) ? opVal : this.valOfPath(path);
       if (opOnRef.$push) {
         opOnRef.$push.forEach((toAdd,i)=>
@@ -1019,7 +1015,7 @@ class WatchableValueByRef {
       const obs = { ref,srcCtx,cmp, subject, key, ctx }
 
       this.observables.push(obs)
-      this.observables.sort((e1,e2) => jb.ui.comparePaths(e1.ctx.path, e2.ctx.path))
+      this.observables.sort((e1,e2) => jb.comparePaths(e1.ctx.path, e2.ctx.path))
       jb.log('register uiComp observable',{cmp, key,obs})
       return subject
   }
@@ -1049,7 +1045,7 @@ class WatchableValueByRef {
       obsPath = obsPath && this.removeLinksFromPath(obsPath)
       if (!obsPath)
         return jb.logError('observer ref path is empty',{obs,e})
-      const diff = jb.ui.comparePaths(changed_path, obsPath)
+      const diff = jb.comparePaths(changed_path, obsPath)
       const isChildOfChange = diff == 1
       const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
       const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
@@ -1064,17 +1060,35 @@ class WatchableValueByRef {
   }
 }
 
-// 0- equals, -1,1 means contains -2,2 lexical
-jb.ui.comparePaths = function(path1,path2) {
-    path1 = path1 || ''
-    path2 = path2 || ''
-    let i=0;
-    while(path1[i] === path2[i] && i < path1.length) i++;
-    if (i == path1.length && i == path2.length) return 0;
-    if (i == path1.length && i < path2.length) return -1;
-    if (i == path2.length && i < path1.length) return 1;
-    return path1[i] < path2[i] ? -2 : 2
-}
+Object.assign(jb, {
+    WatchableValueByRef,
+    comparePaths(path1,path2) { // 0- equals, -1,1 means contains -2,2 lexical
+        path1 = path1 || ''
+        path2 = path2 || ''
+        let i=0;
+        while(path1[i] === path2[i] && i < path1.length) i++;
+        if (i == path1.length && i == path2.length) return 0;
+        if (i == path1.length && i < path2.length) return -1;
+        if (i == path2.length && i < path1.length) return 1;
+        return path1[i] < path2[i] ? -2 : 2
+    },
+    rebuildRefHandler() {
+      jb.mainWatchableHandler && jb.mainWatchableHandler.dispose()
+      jb.setMainWatchableHandler(new WatchableValueByRef(resourcesRef))
+    },
+    isWatchable: ref => jb.refHandler(ref) instanceof WatchableValueByRef || ref && ref.$jb_observable,
+    refObservable(ref,{cmp,includeChildren,srcCtx} = {}) { // cmp._destroyed is checked before notification
+      if (ref && ref.$jb_observable)
+        return ref.$jb_observable(cmp)
+      if (!jb.isWatchable(ref)) {
+        jb.logError('ref is not watchable: ', {ref, cmp,srcCtx})
+        return jb.callbag.fromIter([])
+      }
+      return jb.refHandler(ref).getOrCreateObservable({ref,cmp,includeChildren,srcCtx})
+    }
+})
+
+jb.setMainWatchableHandler(new WatchableValueByRef(resourcesRef))
 
 function resourcesRef(val) {
   if (typeof val == 'undefined')
@@ -1083,31 +1097,6 @@ function resourcesRef(val) {
     jb.resources = val;
 }
 resourcesRef.id = 'resources'
-
-jb.setMainWatchableHandler(new WatchableValueByRef(resourcesRef));
-jb.rebuildRefHandler = () => {
-  jb.mainWatchableHandler && jb.mainWatchableHandler.dispose()
-  jb.setMainWatchableHandler(new WatchableValueByRef(resourcesRef))
-}
-jb.isWatchable = ref => jb.refHandler(ref) instanceof WatchableValueByRef || ref && ref.$jb_observable
-
-jb.ui.refObservable = (ref,{cmp,includeChildren,srcCtx} = {}) => { // cmp._destroyed is checked before notification
-  if (ref && ref.$jb_observable)
-    return ref.$jb_observable(cmp)
-  if (!jb.isWatchable(ref)) {
-    jb.logError('ref is not watchable: ', {ref, cmp,srcCtx})
-    return jb.callbag.fromIter([])
-  }
-  return jb.refHandler(ref).getOrCreateObservable({ref,cmp,includeChildren,srcCtx})
-}
-
-jb.ui.extraWatchableHandler = (resources,oldHandler) => {
-  const res = jb.extraWatchableHandler(new WatchableValueByRef(resources),oldHandler)
-  jb.ui.subscribeToRefChange(res)
-  return res
-}
-
-jb.ui.resourceChange = () => jb.mainWatchableHandler.resourceChange;
 
 jb.component('runTransaction', {
   type: 'action',
@@ -1748,7 +1737,13 @@ Object.assign(jb.ui, {
             jb.log(`backend method request: ${method}`,{cmp: ctx.vars.cmp, method,ctx,elem,data,vars})
             jb.ui.runCtxActionAndUdateCmpState(ctx,data,vars)
         }
-    }
+    },
+    extraWatchableHandler(resources,oldHandler) {
+        const res = jb.extraWatchableHandler(new jb.WatchableValueByRef(resources),oldHandler)
+        jb.ui && jb.ui.subscribeToRefChange(res)
+        return res
+    },
+    resourceChange: () => jb.mainWatchableHandler.resourceChange,
 })
 
 Object.assign(jb.ui, {

@@ -189,7 +189,7 @@ jb.component('studio.compNameRef', {
 					st.setComp(path,value,ctx)
 			},
 			$jb_observable: cmp =>
-				jb.ui.refObservable(st.refOfPath(path),{cmp, includeChildren: 'yes'})
+				jb.refObservable(st.refOfPath(path),{cmp, includeChildren: 'yes'})
 	})
 })
 
@@ -219,7 +219,7 @@ jb.component('studio.profileAsStringByref', {
 			}
 		},
 		$jb_observable: cmp =>
-			jb.ui.refObservable(st.refOfPath(ctx.params.path()),{cmp})
+			jb.refObservable(st.refOfPath(ctx.params.path()),{cmp})
 	})
 })
 

@@ -1,5 +1,150 @@
 var { remoteTest} = jb.ns('remoteTest,widget')
-  
+
+jb.component('remoteTest.childJbm', {
+    impl: dataTest({
+      timeout: 1000,
+      calculate: rx.pipe(
+        source.promise(jbm.child('tst')),
+        rx.flatMap(source.remote(source.data('hello'), '%%'))
+      ),
+      expectedResult: equals('hello')
+    })
+})
+
+jb.component('remoteTest.childWorker', {
+  impl: dataTest({
+    timeout: 3000,
+    calculate: rx.pipe(
+      source.promise(jbm.worker('innerWorker')),
+      rx.flatMap(source.remote(source.promise(pipe(jbm.child('tst'),'hello')), '%%'))
+    ),
+    expectedResult: equals('hello')
+  })
+})
+
+jb.component('remoteTest.remote.data', {
+  impl: dataTest({
+    timeout: 3000,
+    calculate: pipe(
+      Var('w','world'), remote.data('hello %$w%', jbm.worker('innerWorker'))),
+    expectedResult: equals('hello world')
+  })
+})
+
+jb.component('remoteTest.remote.action', {
+  impl: dataTest({
+    timeout: 3000,
+    calculate: pipe(
+      remote.action(() => jb.passive('w','hello'), jbm.worker('innerWorker')),
+      remote.data('%$w%', jbm.worker('innerWorker')),
+    ),
+    expectedResult: equals('hello')
+  })
+})
+
+jb.component('remoteTest.childJbmPort', {
+  impl: dataTest({
+    timeout: 5000,
+    runBefore: pipe(
+      jbm.worker('innerWorker'), 
+      remote.action(jbm.child('inner'),'%%')
+    ),
+    calculate: remote.data('hello',jbm.byUri('tests►innerWorker►inner')),
+    expectedResult: 'hello'
+  })
+})
+
+jb.component('remoteTest.innerWorker', {
+  impl: dataTest({
+    timeout: 5000,
+    runBefore: runActions(jbm.worker({id: 'networkPeer', networkPeer: true}), jbm.child('inner')),
+    calculate: rx.pipe(
+      source.promise(jbm.worker('innerWorker')),
+      rx.flatMap(source.remote(source.promise(pipe(jbm.child('inWorker'),'x')), '%%')),
+      rx.mapPromise(pipe(net.listSubJbms(), join(',')))
+    ),
+    expectedResult: contains(['tests►innerWorker','tests►innerWorker►inWorker'])
+  })
+})
+
+jb.component('remoteTest.jbm.byUri', {
+  impl: dataTest({
+    timeout: 1000,
+    runBefore: jbm.child('tst'),
+    calculate: source.remote(source.data('hello'), jbm.byUri('tests►tst')),
+    expectedResult: equals('hello')
+  })
+})
+
+jb.component('remoteTest.workerByUri', {
+  impl: dataTest({
+    timeout: 1000,
+    runBefore: jbm.worker('innerWorker'),
+    calculate: rx.pipe(
+      source.data('hello'),
+      remote.operator(rx.map('%% world'), jbm.byUri('tests►innerWorker'))
+    ),
+    expectedResult: equals('hello world')
+  })
+})
+
+jb.component('remoteTest.workerToWorker', {
+  impl: dataTest({
+    timeout: 5000,
+    runBefore: runActions(jbm.worker('innerWorker'), jbm.worker('innerWorker2')),
+    calculate: source.remote(rx.pipe(
+        source.data('hello'), 
+        remote.operator(rx.map('%% world'), jbm.byUri('tests►innerWorker2'))
+      ), jbm.byUri('tests►innerWorker')),
+    expectedResult: equals('hello world')
+  })
+})
+
+jb.component('remoteTest.networkToWorker', {
+  impl: dataTest({
+    timeout: 5000,
+    runBefore: runActions(jbm.worker({id: 'peer1', networkPeer: true}), jbm.worker('innerWorker2')),
+    calculate: source.remote(rx.pipe(
+        source.data('hello'), 
+        remote.operator(rx.map('%% world'), jbm.byUri('tests►innerWorker2'))
+      ), jbm.byUri('peer1')),
+    expectedResult: equals('hello world')
+  })
+})
+
+jb.component('remoteTest.networkGateway', {
+  impl: dataTest({
+    timeout: 5000,
+    runBefore: runActions(jbm.worker({id: 'peer1', networkPeer: true}), jbm.worker({id: 'peer2', networkPeer: true})),
+    calculate: source.remote(rx.pipe(
+        source.data('hello'), 
+        remote.operator(rx.map('%% world'), jbm.byUri('peer2'))
+      ), jbm.byUri('peer1')),
+    expectedResult: equals('hello world')
+  })
+})
+
+jb.component('remoteTest.shadowData', {
+  impl: dataTest({
+    timeout: 5000,
+    runBefore: runActions(
+      jbm.worker('innerWorker'), 
+      remote.action(addComponent({id: 'person', value: obj(), type: 'watchableData' }),'%%'),
+      remote.shadowData({src: '%$person%', target: '%$person%', jbm: jbm.byUri('tests►innerWorker')}),
+      () => { jb.exec(runActions(delay(1), writeValue('%$person/name%','Dan'))) } // writeValue after calculate
+    ),
+    calculate: source.remote(
+      rx.pipe(
+        source.watchableData('%$person/name%'),
+        rx.map('%newVal%'),
+        rx.take(1)
+      ), 
+      jbm.byUri('tests►innerWorker')
+    ),
+    expectedResult: equals('Dan')
+  })
+})
+
 jb.component('remoteTest.sourceNoTalkback', {
     impl: dataTest({
       timeout: 5000,
@@ -12,7 +157,7 @@ jb.component('remoteTest.sourceNoTalkback', {
     })
 })
 
-jb.component('remoteTest.remote', {
+jb.component('remoteTest.source.remote', {
   impl: dataTest({
     timeout: 5000,
     calculate: pipe(
@@ -34,7 +179,7 @@ jb.component('remoteTest.remoteWorker', {
   })
 })
 
-jb.component('remoteTest.operator', {
+jb.component('remoteTest.remote.operator', {
     impl: dataTest({
       timeout: 5000,
       calculate: pipe(
@@ -90,7 +235,7 @@ jb.component('remoteTest.dynamicProfileFunc', {
   })
 })
 
-// jb.component('remoteTest.dynamicJsFunc', {
+// jb.component('remoteTest.dynamicJsFuncAsParam', {
 //   params: [
 //     { id: 'func', dynamic: true, defaultValue: ({data}) => `-${data}-`},
 //   ],

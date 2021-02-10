@@ -57,19 +57,21 @@ jb.component('remote.data', {
     }
 })
 
-jb.component('remote.shadow', {
+jb.component('remote.shadowData', {
     description: 'shadow watchable data on remote jbm',
     macroByValue: true,
     params: [
-      {id: 'src', as: 'ref' },
-      {id: 'targetRefExp', as :'string', description: 'ref as exression on target jbm. e.g. %$people%'},
+      {id: 'src', as: 'ref', dynamic: true },
+      {id: 'target', as :'string', description: 'ref as expression on target jbm. e.g. %$people%'},
       {id: 'jbm', type: 'jbm'},
     ],
     impl: rx.pipe(
-        source.dataWithDelta('%$src%'),
-        rx.map('%delta%'),
-        sink.action(remote.action( (ctx,{},{targetRef}) => 
-            jb.doOp(jb.exp(targetRef,'ref'), ctx.data, ctx)))
+        source.watchableData('%$src()%'),
+        rx.map('%op%'),
+        sink.action(remote.action( 
+            (ctx,{},{target}) => jb.doOp(jb.exp(target,'ref'), ctx.data, ctx),
+            '%$jbm%')
+        )
     )
 })
 

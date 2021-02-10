@@ -441,7 +441,13 @@ Object.assign(jb.ui, {
             jb.log(`backend method request: ${method}`,{cmp: ctx.vars.cmp, method,ctx,elem,data,vars})
             jb.ui.runCtxActionAndUdateCmpState(ctx,data,vars)
         }
-    }
+    },
+    extraWatchableHandler(resources,oldHandler) {
+        const res = jb.extraWatchableHandler(new jb.WatchableValueByRef(resources),oldHandler)
+        jb.ui && jb.ui.subscribeToRefChange(res)
+        return res
+    },
+    resourceChange: () => jb.mainWatchableHandler.resourceChange,
 })
 
 Object.assign(jb.ui, {
