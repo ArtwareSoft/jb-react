@@ -257,7 +257,7 @@ jb.component('text.codemirror', {
 	// 				subscribe(x=> jb.writeValue(cmp.data_ref,x, ctx)))
 
 	// 			!cmp.data_ref.oneWay && jb.isWatchable(cmp.data_ref) && pipe(
-	// 					jb.ui.refObservable(cmp.data_ref,cmp,{srcCtx: ctx}),
+	// 					jb.ui.refObservable(cmp.data_ref,{cmp,srcCtx: ctx}),
 	// 					map(e=>jb.tostring(jb.val(cmp.data_ref))),
 	// 					filter(x => x != editor.getValue()),
 	// 					subscribe(x=>{

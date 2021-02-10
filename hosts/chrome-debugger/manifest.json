@@ -7,7 +7,7 @@
   "devtools_page": "create-panels.html",
   "content_security_policy": "script-src 'self' 'unsafe-eval' http://localhost:8082; object-src 'self'",
   "web_accessible_resources": [
-    "http://localhost:8082/bin/studio/studio-all.js",
+    "http://localhost:8082/dist/*",
     "http://localhost:8082/bin/studio/css/studio-all.css"
   ],
   "content_scripts": [

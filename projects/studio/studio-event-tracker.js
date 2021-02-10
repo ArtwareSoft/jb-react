@@ -1,20 +1,11 @@
 var { chromeDebugger,eventTracker } = jb.ns('chromeDebugger,eventTracker')
 
 Object.assign(jb.ui, {
-  getInspectedJb: ctx => {
-    const st = jb.studio
-    return st.inspectedJb || st.previewjb
-  },
-  getReachableJbs: (frame, direction) => {
-    const up = frame.parent && direction != 'down' && frame.parent != frame && frame.parent.jb && jb.ui.getReachableJbs(frame.parent,'up') || []
-    const down = frame.frames && direction != 'up' && Array.from(frame.frames).flatMap(fr=>jb.ui.getReachableJbs(fr,'down')) || []
-    return [frame.jb, ...up, ...down].filter(x=>x)
-  },
-  getSpy: ctx => {
-    const ret = jb.ui.getInspectedJb(ctx).spy
-    if (!ret) debugger
-    return ret || {}
-  }
+  getSpy: () => jb.path(jb.parent,'spy') || {}
+})
+
+jb.component('dataResource.eventTracker', {
+  watchableData: {}
 })
 
 jb.component('studio.openEventTracker', {
@@ -28,7 +19,7 @@ jb.component('studio.openEventTracker', {
 })
 
 jb.component('eventTracker.getSpy', {
-  impl: ctx => jb.ui.getSpy(ctx)
+  impl: () => jb.ui.getSpy()
 })
 
 jb.component('eventTracker.clearSpyLog', {
@@ -57,10 +48,17 @@ jb.component('studio.eventTrackerToolbar', {
     layout: layout.horizontal('2'),
     controls: [
       text({
-        text: pipeline(eventTracker.getSpy(), '%$events/length%/%logs/length%'),
         title: 'counts',
+        text: pipeline(
+            Var('logs', pipeline(
+              eventTracker.getSpy(),
+              '%logs%',
+              filter(eventTracker.isNotDebuggerEvent())
+            )),
+           '%$events/length%/%$logs/length%'
+        ),
         features: [
-          variable('events', eventTracker.eventItems('%$studio/eventTrackerQuery%')),
+          variable('events', eventTracker.eventItems('%$eventTracker/eventTrackerQuery%')),
           css.padding({top: '5', left: '5'})
         ]
       }),
@@ -75,32 +73,12 @@ jb.component('studio.eventTrackerToolbar', {
         title: 'refresh',
         action: refreshControlById('event-tracker'),
         style: chromeDebugger.icon('165px 264px'),
-        features: [feature.hoverTitle('refresh'), feature.if(eventTracker.refreshBlocked())]
+        features: feature.hoverTitle('refresh')
       }),      
-      picklist({
-        title: 'frame',
-        databind: ctx => ({
-            $jb_val: val => {
-              jb.studio.inspectedJb = jb.studio.inspectedJb || jb.ui.getInspectedJb()
-              if (val === undefined)
-                  return jb.path(jb.studio.inspectedJb,'frame.jbUri')
-              jb.studio.inspectedJb = jb.ui.getReachableJbs(ctx.frame()).filter(x=>x.frame.jbUri == val)[0]
-            }
-        }),           
-        options: picklist.options({
-          options: ctx => jb.ui.getReachableJbs(ctx.frame()),
-          code: '%frame/jbUri%',
-          text: '%frame/jbUri% (%spy/logs/length%)',
-        }),
-        features: [
-          chromeDebugger.colors(),
-          picklist.onChange(refreshControlById('event-tracker'))
-        ]
-      }),
       divider({style: divider.vertical()}),
       editableText({
         title: 'query',
-        databind: '%$studio/eventTrackerQuery%',
+        databind: '%$eventTracker/eventTrackerQuery%',
         style: editableText.input(),
         features: [
           htmlAttribute('placeholder', 'query'),
@@ -126,7 +104,7 @@ jb.component('studio.eventTracker', {
     controls: [
       studio.eventTrackerToolbar(),
       itemlist({
-        items: eventTracker.eventItems('%$studio/eventTrackerQuery%'),
+        items: eventTracker.eventItems('%$eventTracker/eventTrackerQuery%'),
         controls: [
           text('%index%'),
           eventTracker.expandableComp(),
@@ -198,28 +176,24 @@ jb.component('studio.eventTracker', {
   })
 })
 
-jb.component('eventTracker.refreshBlocked',{
-  type: 'boolean',
-  impl: ctx => jb.ui.getInspectedJb() == ctx.frame().jb || 
-    (jb.studio.studiojb && jb.studio.studiojb.exec('%$studio/project%') == 'studio-helper')
-})
-
 jb.component('eventTracker.watchSpy',{
   type: 'feature',
   params: [
-    { id: 'delay', defaultValue: 100}
+    { id: 'delay', defaultValue: 3000}
   ],
-  impl: If(not(eventTracker.refreshBlocked()),
-    followUp.watchObservable(
-      source.callbag(ctx => jb.ui.getSpy(ctx).observable()),
+  impl: followUp.watchObservable(
+      rx.pipe(
+        source.callbag(ctx => jb.ui.getSpy(ctx).observable()),
+        rx.filter(eventTracker.isNotDebuggerEvent())
+      ),
       '%$delay%'
-  ))
+  )
 })
 
 jb.component('eventTracker.eventTypes', {
   type: 'control',
   impl: picklist({
-    databind: '%$studio/spyLogs%',
+    databind: '%$eventTracker/spyLogs%',
     options: picklist.options({
       options: ctx => jb.entries(jb.ui.getSpy(ctx).counters),
       code: '%0%',
@@ -330,17 +304,22 @@ jb.component('studio.slicedString', {
     )
 })
 
+jb.component('eventTracker.isNotDebuggerEvent', {
+  impl: ({data}) => !(jb.path(data,'m.routingPath') && jb.path(data,'m.routingPath').find(y=>y.match(/vDebugger/))
+    || (jb.path(data,'m.result.uri') || '').match(/vDebugger/)
+  )
+})
+
 jb.component('eventTracker.eventItems', {
   params: [
     {id: 'query', as: 'string' },
-    {id: 'pattern', as: 'string' },
   ],
-  impl: (ctx,query,pattern) => {
+  impl: (ctx,query) => {
     const spy = jb.ui.getSpy(ctx)
     if (!spy) return []
-    const ret = spy.search(query).filter(x=> !(jb.path(x,'cmp.ctx.path') || '').match(/eventTracker/))
-    const regexp = new RegExp(pattern)
-    const items = pattern ? ret.filter(x=>regexp.test(Array.from(x.values()).filter(x=> typeof x == 'string').join(','))) : ret
+    const checkEv = jb.comps['eventTracker.isNotDebuggerEvent'].impl // efficiency syntax
+    const items = spy.search(query).filter(data=> checkEv({data}))
+      
     jb.log('eventTracker items',{ctx,spy,query,items})
     const itemsWithTimeBreak = items.reduce((acc,item,i) => i && item.time - items[i-1].time > 100 ? 
       [...acc,{index: '---', logNames: `----- ${item.time - items[i-1].time} mSec gap ------`},item] : 
@@ -361,7 +340,7 @@ jb.component('eventTracker.elemInInspectedJb', {
     {id: 'selector' }
   ],
   impl: (ctx,selector) => {
-    const elem = selector != '#' && jb.ui.find(jb.ui.getInspectedJb(ctx).frame.document,selector)[0]
+    const elem = selector != '#' && jb.ui.find(jb.frame.document,selector)[0]
     jb.log('eventTracker elemInInspectedJb',{ctx,selector,elem})
     return elem
   }
@@ -535,11 +514,11 @@ jb.component('chromeDebugger.icon', {
   params: [
       {id: 'position', as: 'string', defaultValue: '0px 144px'}
   ],
-  impl: customStyle({
+  impl: (If(()=>jb.uri.match(/vDebugger$/)),customStyle({
     template: (cmp,{title},h) => h('div',{onclick: true, title}),
     css: `{ -webkit-mask-image: url(largeIcons.svg); -webkit-mask-position: %$position%; width: 28px;  height: 24px; background-color: var(--jb-menu-fg); opacity: 0.7}
       ~:hover { opacity: 1}`,
-  })
+  }), button.native())
 })
 
 jb.component('chromeDebugger.sectionsExpandCollapse', {

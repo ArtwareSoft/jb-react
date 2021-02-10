@@ -1,5 +1,4 @@
 const fs = require('fs');
-const copyFiles = require('copyfiles');
 
 require('../src/loader/jb-loader.js');
 
@@ -37,13 +36,11 @@ function fixExports(target) {
 
 const filesOfModules = modules => modules.split(',').map(m=>jb_modules[m]).flat().filter(x=>typeof x == 'string')
 
-const jbReactFiles = filesOfModules('common,ui-common,pretty-print,ui-tree,remote').filter(x=>!x.match(/.css$/));
-const studioFiles = filesOfModules('common,ui-common,ui-tree,dragula,codemirror,pretty-print,remote,history,animate,fuse,md-icons,two-tier-widget').filter(x=>!x.match(/.css$/))
+const studioFiles = filesOfModules('common,ui-common,ui-tree,dragula,codemirror-js-files,pretty-print,remote,history,animate,fuse,md-icons,two-tier-widget').filter(x=>!x.match(/.css$/))
     .concat(jb_modules.studio.map(file => file.match(/\//) ? file : 'projects/studio/studio-' + file + '.js'));
 const studioCssFiles = ['/css/styles.css','css/font.css','/projects/studio/css/studio.css']
   .concat(filesOfModules('codemirror-css,material-css')).filter(x=>x.match(/.css$/));
-const nodeFiles = filesOfModules('common,node,pretty-print,xml,jison,parsing').filter(x=>!x.match(/.css$/));
-const jbDebuggerFiles = [...filesOfModules('common,ui-common,remote,two-tier-widget,pretty-print'),
+const vDebuggerFiles = [...filesOfModules('common,ui-common,remote,two-tier-widget'),
 '/src/ui/styles/codemirror-styles.js', '/src/ui/tree/table-tree.js', '/projects/studio/studio-path.js', '/projects/studio/studio-event-tracker.js']
 
 'core,common,ui-common,animate,d3,cards,cards-sample-data,pretty-print,parsing,xml,puppeteer,rx,md-icons,remote,two-tier-widget'
@@ -58,7 +55,8 @@ concatFiles(['node_modules/history/umd/history.js'],'history.js')
 
 
 packLibrary('studio-all',studioFiles);
-packLibrary('jb-debugger',jbDebuggerFiles);
+packLibrary('vDebugger',vDebuggerFiles);
+//fixExports('studio-all-lib.js')
 
 concatFiles(['/src/loader/jb-loader.js'],'jb-loader.js');
 concatFiles(['/src/testing/testers.js'],'testers.js');

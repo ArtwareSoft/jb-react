@@ -1,7 +1,7 @@
 if (typeof jbmFactory == 'undefined') jbmFactory = {};
 jbmFactory['two-tier-widget'] = function(jb) {
   jb.importAllMacros && eval(jb.importAllMacros());
-var {rx, remote, widget} = jb.ns('remote,rx,widget')
+var {rx, remote, widget, jbm} = jb.ns('remote,rx,widget,jbm')
 
 Object.assign(jb.ui, {
     widgetUserRequests: jb.callbag.subject(),

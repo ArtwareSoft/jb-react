@@ -29,12 +29,12 @@ Object.assign(jb, {
           p.type = 'boolean'
       })
       comp[jb.loadingPhase] = jb.frame.jbLoadingPhase
-      jb.registerMacro && jb.registerMacro(id, comp)
+      jb.registerMacro && jb.registerMacro(id)
     },    
     macroDef: Symbol('macroDef'), macroNs: {}, macro: {},
     macroName: id => id.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
     ns: nsIds => {
-        nsIds.split(',').forEach(nsId => jb.registerMacro(nsId + '.$forwardDef', {}))
+        nsIds.split(',').forEach(nsId => jb.registerMacro(nsId))
         return jb.macro
     },
     fixMacroByValue: (profile,comp) => {
@@ -47,7 +47,7 @@ Object.assign(jb, {
     importAllMacros: () => ['var { ',
         jb.unique(Object.keys(jb.macro).map(x=>x.split('_')[0])).join(', '), 
     '} = jb.macro;'].join(''),
-    registerMacro: (id, profile) => {
+    registerMacro: id => {
         const macroId = jb.macroName(id).replace(/\./g, '_')
         const nameSpace = id.indexOf('.') != -1 && jb.macroName(id.split('.')[0])
 
@@ -59,7 +59,6 @@ Object.assign(jb, {
         }
 
         function registerProxy(proxyId) {
-            //jb.frame[proxyId] = 
             jb.macro[proxyId] = new Proxy(() => 0, {
                 get: (o, p) => {
                     if (typeof p === 'symbol') return true
@@ -92,13 +91,13 @@ Object.assign(jb, {
                 jb.logError(macroId + ' is reserved by system or libs. please use a different name')
                 return false
             }
-            if (jb.macro[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$forwardDef$/))
+            if (Object.keys(jb.macro[macroId] ||{}).length && !isNS && !jb.macroNs[macroId])
                 jb.logError(macroId.replace(/_/g,'.') + ' is defined more than once, using last definition ' + id)
             return true
         }
 
         function processMacro(args) {
-            const _id = id.replace(/\.\$forwardDef$/,'')
+            const _id = id; //.replace(/\.\$forwardDef$/,'')
             const _profile = jb.comps[_id]
             if (!_profile) {
                 jb.logError('forward def ' + _id + ' was not implemented')

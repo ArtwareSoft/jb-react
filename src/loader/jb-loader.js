@@ -81,9 +81,10 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/tree/json-tree-model.js',
       ],
       remote: [
+        'src/misc/pretty-print.js',
         'src/misc/remote-context.js',
         'src/misc/jbm.js',
-        'src/misc/pretty-print.js',
+        'src/misc/remote.js',
       ],
       'testers': [
         'src/testing/testers.js',

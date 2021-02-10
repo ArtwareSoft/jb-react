@@ -50,13 +50,10 @@ st.copyCompFromStudioToPreview = function(e) {
 }
 
 jb.ui.renderWidgetInStudio = function(profile,top) {
-  let parentAccessible = true
-  try {
-    jb.frame.parent.jb
-  } catch(e) { parentAccessible = false }
+  let parentAccessible = !!jb.ui.parentFrameJb()
   jb.log('render widget in studio',{profile,top,parentAccessible,frame: jb.prame})
   if (parentAccessible && jb.frame.parent != jb.frame)
-    jb.frame.parent.jb.studio.initPreview(jb.frame,[Object.getPrototypeOf({}),Object.getPrototypeOf([])])
+    jb.ui.parentFrameJb().studio.initPreview(jb.frame,[Object.getPrototypeOf({}),Object.getPrototypeOf([])])
 
   let currentProfile = profile
   let lastRenderTime = 0, fixedDebounce = 500

@@ -19,7 +19,8 @@ Object.assign(jb, {
         return profile.$ || jb.singleInType(parentParam)
     },
     path: (object,path,value) => {
-        let cur = object;
+        if (!object) return object
+        let cur = object
         if (typeof path === 'string') path = path.split('.')
         path = jb.asArray(path)
     

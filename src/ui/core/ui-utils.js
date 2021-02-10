@@ -7,7 +7,7 @@ Object.assign(jb.ui,{
           || jb.path(jb,['studio','studioWindow','jb','studio','lastStudioActivity'])
 
         jb.log('focus request',{srcCtx, logTxt, timeDiff: now - lastStudioActivity, elem,srcCtx})
-        if (jb.studio.previewjb == jb && jb.path(jb.frame.parent,'jb.resources.studio.project') != 'studio-helper' && lastStudioActivity && now - lastStudioActivity < 1000)
+        if (jb.studio.previewjb == jb && jb.path(jb.ui.parentFrameJb(),'resources.studio.project') != 'studio-helper' && lastStudioActivity && now - lastStudioActivity < 1000)
             return
         jb.log('focus dom',{elem,srcCtx,logTxt})
         jb.delay(1).then(() => elem.focus())
@@ -20,11 +20,12 @@ Object.assign(jb.ui,{
         return ''+ctx.id
     },
     inStudio() { return jb.studio && jb.studio.studioWindow },
-    inPreview() {
-        try {
-            return !jb.ui.inStudio() && jb.frame.parent && jb.frame.parent.jb.studio.initPreview
-        } catch(e) {}
+    parentFrameJb() {
+      try {
+        return jb.frame.parent && jb.frame.parent.jb
+      } catch(e) {}
     },
+    inPreview: () => !jb.ui.inStudio() && jb.ui.parentFrameJb() && jb.ui.parentFrameJb().studio.initPreview,
     previewOverlayDocument: ctx => (jb.path(ctx.frame(),'document.body') || jb.path(ctx.frame(),'parent.document.body')).ownerDocument,
     widgetBody(ctx) {
       const {elemToTest,previewOverlay,tstWidgetId,headlessWidget,FEwidgetId, headlessWidgetId} = ctx.vars
@@ -50,8 +51,8 @@ Object.assign(jb.ui,{
           jb.callbag.takeUntil(cmp.destroyed)
     ),
     renderWidget(profile,topElem,ctx) {
-      if (!jb.ui.renderWidgetInStudio && jb.path(jb.frame,'parent.jb.ui.renderWidgetInStudio'))
-        eval('jb.ui.renderWidgetInStudio= ' + jb.frame.parent.jb.ui.renderWidgetInStudio.toString())
+      if (!jb.ui.renderWidgetInStudio && jb.path(jb.ui.parentFrameJb(),'ui.renderWidgetInStudio'))
+        eval('jb.ui.renderWidgetInStudio= ' + jb.ui.parentFrameJb().ui.renderWidgetInStudio.toString())
       if (jb.frame.parent != jb.frame && jb.ui.renderWidgetInStudio)
         return jb.ui.renderWidgetInStudio(profile,topElem)
       else

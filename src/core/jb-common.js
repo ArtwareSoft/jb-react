@@ -438,7 +438,7 @@ jb.component('reverse', {
   params: [
     {id: 'items', as: 'array', defaultValue: '%%'}
   ],
-  impl: ({},items) => items.reverse()
+  impl: ({},items) => items.slice(0).reverse()
 })
 
 jb.component('sample', {

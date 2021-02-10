@@ -585,9 +585,7 @@ jb.callbag = {
       },
       last: () => source => (start, sink) => {
           if (start !== 0) return
-          let talkback
-          let lastVal
-          let matched = false
+          let talkback, lastVal, matched = false
           source(0, function last(t, d) {
             if (t === 0) {
               talkback = d
@@ -599,11 +597,32 @@ jb.callbag = {
             } else if (t === 2) {
               if (matched) sink(1, lastVal)
               sink(2)
-            } else {
-              sink(t, d)
             }
           })
       },
+      toArray: () => source => (start, sink) => {
+        if (start !== 0) return
+        let talkback, res = [], ended
+        source(0, function toArray(t, d) {
+          if (t === 0) {
+            talkback = d
+            sink(t, (t,d) => {
+              if (t == 2) end()
+              talkback(t,d)
+            })
+          } else if (t === 1) {
+            res.push(d)
+            talkback && talkback(1)
+          } else if (t === 2) {
+            if (!d) end()
+            sink(2,d)
+          }
+        })
+        function end() {
+          if (!ended && res.length) sink(1, res)
+          ended = true
+        }
+      },      
       forEach: operation => sinkSrc => {
         let talkback
         sinkSrc(0, function forEach(t, d) {

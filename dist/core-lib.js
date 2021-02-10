@@ -247,7 +247,6 @@ class jbCtx {
       this.params= ctx2.params || ctx.params
       this.cmpCtx= (typeof ctx2.cmpCtx != 'undefined') ? ctx2.cmpCtx : ctx.cmpCtx
       this.probe= ctx.probe
-      this.jbm = jb
     }
   }
   run(profile,parentParam) {
@@ -310,7 +309,8 @@ Object.assign(jb, {
         return profile.$ || jb.singleInType(parentParam)
     },
     path: (object,path,value) => {
-        let cur = object;
+        if (!object) return object
+        let cur = object
         if (typeof path === 'string') path = path.split('.')
         path = jb.asArray(path)
     
@@ -657,7 +657,8 @@ Object.assign(jb, {
             else
               return { $jb_parent: obj, $jb_property: prop };
         },
-        pathOfRef: () => []
+        pathOfRef: () => [],
+        doOp: () => {}
     },
     resource: (id,val) => { 
         if (typeof val !== 'undefined')
@@ -721,6 +722,7 @@ Object.assign(jb, {
     splice: (ref,args,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.splice(ref,args,srcCtx)),
     move: (ref,toRef,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.move(ref,toRef,srcCtx)),
     push: (ref,toAdd,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.push(ref,toAdd,srcCtx)),
+    doOp: (ref,op,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.doOp(ref,op,srcCtx)),
     isRef: ref => jb.refHandler(ref),
     isWatchable: () => false, // overriden by the watchable-ref.js (if loaded)
     isValid: ref => jb.safeRefCall(ref, h=>h.isValid(ref)),
@@ -760,12 +762,12 @@ Object.assign(jb, {
           p.type = 'boolean'
       })
       comp[jb.loadingPhase] = jb.frame.jbLoadingPhase
-      jb.registerMacro && jb.registerMacro(id, comp)
+      jb.registerMacro && jb.registerMacro(id)
     },    
     macroDef: Symbol('macroDef'), macroNs: {}, macro: {},
     macroName: id => id.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
     ns: nsIds => {
-        nsIds.split(',').forEach(nsId => jb.registerMacro(nsId + '.$forwardDef', {}))
+        nsIds.split(',').forEach(nsId => jb.registerMacro(nsId))
         return jb.macro
     },
     fixMacroByValue: (profile,comp) => {
@@ -778,7 +780,7 @@ Object.assign(jb, {
     importAllMacros: () => ['var { ',
         jb.unique(Object.keys(jb.macro).map(x=>x.split('_')[0])).join(', '), 
     '} = jb.macro;'].join(''),
-    registerMacro: (id, profile) => {
+    registerMacro: id => {
         const macroId = jb.macroName(id).replace(/\./g, '_')
         const nameSpace = id.indexOf('.') != -1 && jb.macroName(id.split('.')[0])
 
@@ -790,7 +792,6 @@ Object.assign(jb, {
         }
 
         function registerProxy(proxyId) {
-            //jb.frame[proxyId] = 
             jb.macro[proxyId] = new Proxy(() => 0, {
                 get: (o, p) => {
                     if (typeof p === 'symbol') return true
@@ -823,13 +824,13 @@ Object.assign(jb, {
                 jb.logError(macroId + ' is reserved by system or libs. please use a different name')
                 return false
             }
-            if (jb.macro[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$forwardDef$/))
+            if (Object.keys(jb.macro[macroId] ||{}).length && !isNS && !jb.macroNs[macroId])
                 jb.logError(macroId.replace(/_/g,'.') + ' is defined more than once, using last definition ' + id)
             return true
         }
 
         function processMacro(args) {
-            const _id = id.replace(/\.\$forwardDef$/,'')
+            const _id = id; //.replace(/\.\$forwardDef$/,'')
             const _profile = jb.comps[_id]
             if (!_profile) {
                 jb.logError('forward def ' + _id + ' was not implemented')
@@ -908,7 +909,7 @@ initSpy({Error, settings, spyParam, memoryUsage, resetSpyToNull}) {
 		},
 		shouldLog(logNames, record) {
 			const ctx = record && (record.ctx || record.srcCtx || record.cmp && record.cmp.ctx)
-			if (ctx && ctx.vars.$disableLog) return false
+			if (ctx && ctx.vars.$disableLog || jb.path(record,'m.$disableLog') || jb.path(record,'m.remoteRun.vars.$disableLog')) return false
 			if (!logNames) debugger
 			return this.spyParam === 'all' || typeof record == 'object' && 
 				logNames.split(' ').reduce( (acc,logName)=>acc || this.includeLogs[logName],false)

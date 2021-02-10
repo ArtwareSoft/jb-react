@@ -27,7 +27,8 @@ jb.component('text.allowAsynchValue', {
   type: 'feature',
   description: 'allows a text value to be reactive or promise',
   params: [
-    { id: 'propId', defaultValue: 'text'}
+    { id: 'propId', defaultValue: 'text'},
+    { id: 'waitingValue', defaultValue: ''},
   ],
   impl: features(
     calcProp('%$propId%', firstSucceeding('%$$state/{%$propId%}%','%$$props/{%$propId%}%' )),

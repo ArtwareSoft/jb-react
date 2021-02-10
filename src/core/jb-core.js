@@ -244,7 +244,6 @@ class jbCtx {
       this.params= ctx2.params || ctx.params
       this.cmpCtx= (typeof ctx2.cmpCtx != 'undefined') ? ctx2.cmpCtx : ctx.cmpCtx
       this.probe= ctx.probe
-      this.jbm = jb
     }
   }
   run(profile,parentParam) {

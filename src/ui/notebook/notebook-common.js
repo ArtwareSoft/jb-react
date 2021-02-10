@@ -21,7 +21,10 @@ jb.component('nb.notebook', {
             features: watchRef(studio.ref('%$path%'), 'yes')
           }), remote.notebookWorker()),
       ],
-      features: [variable('idx', ({},{index}) => index -1), variable('path', '%$studio/project%.notebook~impl~elements~%$idx%')]
+      features: [
+            variable('idx', ({},{index}) => index -1), 
+            variable('path', '%$studio/project%.notebook~impl~elements~%$idx%')
+        ]
     }),
     itemVariable: 'notebookElem'
   })

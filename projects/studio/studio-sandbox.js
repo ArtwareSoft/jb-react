@@ -103,8 +103,4 @@ jb.component('remote.notebookWorker', {
     impl: () => ({uri: 'notebook-worker', port: jb.studio.notebookWorker.port})
 })
 
-jb.component('remote.notebookWorkerSpy', {
-    type: 'remote',
-    impl: () => ({uri: 'notebook-worker-spy', port: jb.studio.notebookWorker.spyPort})
-})
 

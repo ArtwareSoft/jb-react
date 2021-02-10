@@ -28,15 +28,16 @@ jb.remoteCtx = {
         if (typeof data == 'object')
              return jb.objFromEntries(jb.entries(data).map(e=>[e[0],this.stripData(e[1])]))
     },
-    stripFunction({profile,runCtx,path, forcePath, param}) {
-        if (!profile || !runCtx) return
+    stripFunction(f) {
+        const {profile,runCtx,path,param,srcPath} = f
+        if (!profile || !runCtx) return this.stripJS(f)
         const profText = jb.prettyPrint(profile)
         const profNoJS = this.stripJSFromProfile(profile)
-        const vars = jb.objFromEntries(jb.entries(runCtx.vars).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
+        const vars = jb.objFromEntries(jb.entries(runCtx.vars).filter(e => e[0] == '$disableLog' || profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
         const params = jb.objFromEntries(jb.entries(jb.path(runCtx.cmpCtx,'params')).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
-        return Object.assign({$: 'runCtx', id: runCtx.id, path, forcePath, param, profile: profNoJS, vars}, 
+        return Object.assign({$: 'runCtx', id: runCtx.id, path: [srcPath,path].join('~'), param, profile: profNoJS, vars}, 
             Object.keys(params).length ? {cmpCtx: {params} } : {})
     },
     serailizeCtx(ctx) { return JSON.stringify(this.stripCtx(ctx)) },
@@ -58,10 +59,16 @@ jb.remoteCtx = {
         return res
     },
     stripJSFromProfile(profile) {
-        if (typeof profile == 'object')
-            return jb.objFromEntries(jb.entries(profile)
-                .map(([id,val]) => [id, typeof val == 'function' ? `__JBART_FUNC: ${val.toString()}` : this.stripData(val)]))
+        if (typeof profile == 'function')
+            return `__JBART_FUNC: ${profile.toString()}`
+        else if (Array.isArray(profile))
+            return profile.map(val => this.stripJS(val))
+        else if (typeof profile == 'object')
+            return jb.objFromEntries(jb.entries(profile).map(([id,val]) => [id, this.stripJS(val)]))
         return profile
+    },
+    stripJS(val) {
+        return typeof val == 'function' ? `__JBART_FUNC: ${val.toString()}` : this.stripData(val)
     }
 }
 

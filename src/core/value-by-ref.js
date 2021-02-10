@@ -30,7 +30,8 @@ Object.assign(jb, {
             else
               return { $jb_parent: obj, $jb_property: prop };
         },
-        pathOfRef: () => []
+        pathOfRef: () => [],
+        doOp: () => {}
     },
     resource: (id,val) => { 
         if (typeof val !== 'undefined')
@@ -94,6 +95,7 @@ Object.assign(jb, {
     splice: (ref,args,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.splice(ref,args,srcCtx)),
     move: (ref,toRef,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.move(ref,toRef,srcCtx)),
     push: (ref,toAdd,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.push(ref,toAdd,srcCtx)),
+    doOp: (ref,op,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.doOp(ref,op,srcCtx)),
     isRef: ref => jb.refHandler(ref),
     isWatchable: () => false, // overriden by the watchable-ref.js (if loaded)
     isValid: ref => jb.safeRefCall(ref, h=>h.isValid(ref)),

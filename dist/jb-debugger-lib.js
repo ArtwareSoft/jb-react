@@ -760,12 +760,12 @@ Object.assign(jb, {
           p.type = 'boolean'
       })
       comp[jb.loadingPhase] = jb.frame.jbLoadingPhase
-      jb.registerMacro && jb.registerMacro(id, comp)
+      jb.registerMacro && jb.registerMacro(id)
     },    
     macroDef: Symbol('macroDef'), macroNs: {}, macro: {},
     macroName: id => id.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
     ns: nsIds => {
-        nsIds.split(',').forEach(nsId => jb.registerMacro(nsId + '.$forwardDef', {}))
+        nsIds.split(',').forEach(nsId => jb.registerMacro(nsId))
         return jb.macro
     },
     fixMacroByValue: (profile,comp) => {
@@ -778,7 +778,7 @@ Object.assign(jb, {
     importAllMacros: () => ['var { ',
         jb.unique(Object.keys(jb.macro).map(x=>x.split('_')[0])).join(', '), 
     '} = jb.macro;'].join(''),
-    registerMacro: (id, profile) => {
+    registerMacro: id => {
         const macroId = jb.macroName(id).replace(/\./g, '_')
         const nameSpace = id.indexOf('.') != -1 && jb.macroName(id.split('.')[0])
 
@@ -790,7 +790,6 @@ Object.assign(jb, {
         }
 
         function registerProxy(proxyId) {
-            //jb.frame[proxyId] = 
             jb.macro[proxyId] = new Proxy(() => 0, {
                 get: (o, p) => {
                     if (typeof p === 'symbol') return true
@@ -823,13 +822,13 @@ Object.assign(jb, {
                 jb.logError(macroId + ' is reserved by system or libs. please use a different name')
                 return false
             }
-            if (jb.macro[macroId] !== undefined && !isNS && !jb.macroNs[macroId] && !macroId.match(/_\$forwardDef$/))
+            if (Object.keys(jb.macro[macroId] ||{}).length && !isNS && !jb.macroNs[macroId])
                 jb.logError(macroId.replace(/_/g,'.') + ' is defined more than once, using last definition ' + id)
             return true
         }
 
         function processMacro(args) {
-            const _id = id.replace(/\.\$forwardDef$/,'')
+            const _id = id; //.replace(/\.\$forwardDef$/,'')
             const _profile = jb.comps[_id]
             if (!_profile) {
                 jb.logError('forward def ' + _id + ' was not implemented')
@@ -2831,9 +2830,7 @@ jb.callbag = {
       },
       last: () => source => (start, sink) => {
           if (start !== 0) return
-          let talkback
-          let lastVal
-          let matched = false
+          let talkback, lastVal, matched = false
           source(0, function last(t, d) {
             if (t === 0) {
               talkback = d
@@ -2845,11 +2842,32 @@ jb.callbag = {
             } else if (t === 2) {
               if (matched) sink(1, lastVal)
               sink(2)
-            } else {
-              sink(t, d)
             }
           })
       },
+      toArray: () => source => (start, sink) => {
+        if (start !== 0) return
+        let talkback, res = [], ended
+        source(0, function toArray(t, d) {
+          if (t === 0) {
+            talkback = d
+            sink(t, (t,d) => {
+              if (t == 2) end()
+              talkback(t,d)
+            })
+          } else if (t === 1) {
+            res.push(d)
+            talkback && talkback(1)
+          } else if (t === 2) {
+            if (!d) end()
+            sink(2,d)
+          }
+        })
+        function end() {
+          if (!ended && res.length) sink(1, res)
+          ended = true
+        }
+      },      
       forEach: operation => sinkSrc => {
         let talkback
         sinkSrc(0, function forEach(t, d) {
@@ -3482,6 +3500,13 @@ jb.component('rx.takeWhile', {
     {id: 'passtLastEvent', as: 'boolean'}
   ],
   impl: (ctx,whileCondition,passtLastEvent) => jb.callbag.takeWhile(ctx => whileCondition(ctx), passtLastEvent)
+})
+
+jb.component('rx.toArray', {
+  type: 'rx',
+  category: 'operator',
+  description: 'wait for all and returns next item as array',
+  impl: ctx => source => jb.callbag.pipe(source, jb.callbag.toArray(), jb.callbag.map(arr=> ctx.dataObj(arr.map(x=>x.data))))
 })
 
 jb.component('rx.last', {
@@ -6845,7 +6870,8 @@ jb.component('text.allowAsynchValue', {
   type: 'feature',
   description: 'allows a text value to be reactive or promise',
   params: [
-    { id: 'propId', defaultValue: 'text'}
+    { id: 'propId', defaultValue: 'text'},
+    { id: 'waitingValue', defaultValue: ''},
   ],
   impl: features(
     calcProp('%$propId%', firstSucceeding('%$$state/{%$propId%}%','%$$props/{%$propId%}%' )),
@@ -9213,6 +9239,32 @@ jb.component('picklist.init', {
   impl: features(
     calcProp('options', '%$$model/options()%'),
     calcProp('hasEmptyOption', (ctx,{$props}) => $props.options.filter(x=>!x.text)[0]),
+  )
+})
+
+jb.component('picklist.allowAsynchOptions', {
+  type: 'feature',
+  description: 'allows a text value to be reactive or promise',
+  impl: features(
+    calcProp({
+      id: 'options', 
+      priority: 5, phase: 5,
+      value: ({},{$state,$model},{}) => {
+        const val = $state.options || $model.options()
+        if (Array.isArray(val)) return val
+        const res = []
+        res.delayed = val
+        return res
+      },
+    }),
+    followUp.flow(
+      source.any(({},{$state,$props}) => {
+        if ($state.options) return []
+        return $props.options.delayed || $props.options
+      }),
+      rx.log('followUp allowAsynchValue'),
+      sink.refreshCmp(firstSucceeding('%data%','%%'))
+    ),
   )
 })
 
@@ -11821,7 +11873,7 @@ jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='
 
 ;
 
-var {rx, remote, widget} = jb.ns('remote,rx,widget')
+var {rx, remote, widget, jbm} = jb.ns('remote,rx,widget,jbm')
 
 Object.assign(jb.ui, {
     widgetUserRequests: jb.callbag.subject(),

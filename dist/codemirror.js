@@ -11,7 +11,7 @@
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
   (global.CodeMirror = factory());
-}(this || self, (function () { 'use strict';
+})(this || self, (function () { 'use strict';
 
   // Kludges for bugs and behavior differences that can't be feature
   // detected are enabled based on userAgent etc sniffing.
@@ -9762,7 +9762,7 @@
 
   return CodeMirror;
 
-})));
+}));
 ;
 
 // CodeMirror, copyright (c) by Marijn Haverbeke and others

@@ -157,7 +157,7 @@ jb.component('inPlaceEditTest.grid.inStudio', {
       ctx => {
         if (jb.ui.inPlaceEditTestGrid) return
         jb.ui.inPlaceEditTestGrid = true
-        const studiojb = jb.frame.parent.jb, studioWin = jb.frame.parent
+        const studiojb = jb.ui.parentFrameJb(), studioWin = jb.frame.parent
         studiojb.exec(studioWin.inplaceEdit.activate('test.wixIslandGridCtrl~impl'))
       }
     ),
@@ -176,23 +176,19 @@ jb.component('inPlaceEditTest.sizesEditor.inStudio', {
   })
 })
 
-jb.component('test.eventTracker.inStudio', {
+jb.component('eventTracker.worker.vDebugger', {
   impl: uiTest({
-    control: group({
-      controls: [
-        studio.eventTracker(),
-        group({
-          controls: [
-            text({
-              text: '%$person/name%',
-              features: feature.icon({icon: 'CircleOutline', type: 'mdi'})
-            }),
-            editableText({databind: '%$person/name%'})
-          ]
-        })
-      ]
-    }),
-    expectedResult: true
+    timeout: 2000,
+    runBefore: pipe(
+      jbm.worker('innerWorker'), 
+      remote.action(runActions(
+        () => jb.initSpy({spyParam: 'remote,log1'}),
+        log('log1',obj(prop('hello','world'))),
+        jbm.vDebugger()),
+      '%%')
+    ),
+    control: widget.twoTierWidget(studio.eventTracker(), jbm.byUri('tests►innerWorker►vDebugger')),
+    expectedResult: contains('log1')
   })
 })
 

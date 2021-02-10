@@ -50,7 +50,7 @@ jb.component('feature.contentEditable', {
     frontEnd.flow(source.frontEndEvent('mousedown'), rx.filter(not('%$cmp.state.contentEditableActive%')),frontEnd.addUserEvent(), 
       sink.BEMethod('activate')),
     If('%$$state.contentEditableActive%', features(
-      method('execProfile',({data}) => jb.frame.parent.jb.exec({$: data, from: 'studio'})),
+      method('execProfile',({data}) => jb.ui.parentFrameJb() && jb.ui.parentFrameJb().exec({$: data, from: 'studio'})),
       method('setScriptData',({},{ev,cmp},{param}) => jb.ui.contentEditable.setScriptData(ev,cmp,param,param == 'html') ),
       method('onEnter', ({},{ev,cmp},{param}) => {
         jb.ui.contentEditable.setScriptData(ev,cmp,param)

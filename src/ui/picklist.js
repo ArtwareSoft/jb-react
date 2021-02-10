@@ -23,6 +23,32 @@ jb.component('picklist.init', {
   )
 })
 
+jb.component('picklist.allowAsynchOptions', {
+  type: 'feature',
+  description: 'allows a text value to be reactive or promise',
+  impl: features(
+    calcProp({
+      id: 'options', 
+      priority: 5, phase: 5,
+      value: ({},{$state,$model},{}) => {
+        const val = $state.options || $model.options()
+        if (Array.isArray(val)) return val
+        const res = []
+        res.delayed = val
+        return res
+      },
+    }),
+    followUp.flow(
+      source.any(({},{$state,$props}) => {
+        if ($state.options) return []
+        return $props.options.delayed || $props.options
+      }),
+      rx.log('followUp allowAsynchValue'),
+      sink.refreshCmp(firstSucceeding('%data%','%%'))
+    ),
+  )
+})
+
 jb.component('picklist.onChange', {
   category: 'picklist:100',
   type: 'feature',

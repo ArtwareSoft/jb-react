@@ -15,7 +15,7 @@ jb.test = {
 		})
 	},
 	runInStudio(profile) {
-		return profile && jb.frame.parent.jb.exec(profile)
+		return profile && jb.ui.parentFrameJb().exec(profile)
 	},
 	cleanBeforeRun(ctx) {
 		jb.rebuildRefHandler && jb.rebuildRefHandler();
@@ -286,8 +286,9 @@ startTime = startTime || new Date().getTime();
 
 jb.testers = {
   runTests: function({testType,specificTest,show,pattern,}) {
-	const {pipe, fromIter, subscribe,concatMap, flatMap, fromPromise } = jb.callbag
+	const {pipe, fromIter, subscribe,concatMap, fromPromise } = jb.callbag
 	let index = 1
+	self.jbRunningTests = true
 
 	jb.studio.initTests() && jb.studio.initTests()
 	const $initial_resources = JSON.stringify(jb.resources) //.replace(/\"\$jb_id":[0-9]*,/g,'')
@@ -303,7 +304,7 @@ jb.testers = {
 		.filter(e=>!pattern || e[0].match(pattern))
 //		.filter(e=>!e[0].match(/^remoteTest|inPlaceEditTest|patternsTest/) && ['uiTest','dataTest'].indexOf(e[1].impl.$) != -1) // || includeHeavy || specificTest || !e[1].impl.heavy )
 //		.sort((a,b) => (a[0] > b[0]) ? 1 : ((b[0] > a[0]) ? -1 : 0))
-
+	self.jbSingleTest = tests.length == 1
 	document.write(`<div style="font-size: 20px"><div id="progress"></div><span id="fail-counter" onclick="hide_success_lines()"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span><span id="memory-usage"></span></div>`);
 
 	const times = {}
@@ -313,7 +314,7 @@ jb.testers = {
 			  const testID = e[0]
 			  const $testFinished = jb.callbag.subject()
 			  const tstCtx = jb.ui.extendWithServiceRegistry()
-			  	.setVars({ testID, $initial_resources, $initial_comps, singleTest: tests.length == 1, $testFinished })
+			  	.setVars({ testID, $initial_resources, $initial_comps, singleTest: self.jbSingleTest, $testFinished })
 			  document.getElementById('progress').innerHTML = `<div id=${testID}>${index++}: ${testID} started</div>`
 			  times[testID] = { start: new Date().getTime() }
 			  jb.test.cleanBeforeRun(tstCtx)

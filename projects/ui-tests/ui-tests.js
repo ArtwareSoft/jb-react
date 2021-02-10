@@ -1447,6 +1447,26 @@ jb.component('uiTest.picklist', {
   })
 })
 
+jb.component('uiTest.picklist.delayedOptions', {
+  impl: uiTest({
+    control: group({
+      controls: [
+        group({
+          style: propertySheet.titlesLeft({}),
+          controls: picklist({
+            title: 'city',
+            databind: '%$personWithAddress/address/city%',
+            options: source.data(obj(prop('options',picklist.optionsByComma('Springfield,New York,Tel Aviv,London')))),
+            features: picklist.allowAsynchOptions()
+          })
+        }),
+        text('%$personWithAddress/address/city%')
+      ]
+    }),
+    expectedResult: contains(['Springfield', 'New York'])
+  })
+})
+
 jb.component('uiTest.picklistRadio', {
   impl: uiTest({
     control: picklist({

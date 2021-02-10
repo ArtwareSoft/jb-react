@@ -5,15 +5,16 @@
   <script type="text/javascript">
     startTime = new Date().getTime();
   </script>
-  <script type="text/javascript" src="/bin/studio/studio-all.js"></script>
+  <script type="text/javascript" src="/dist/jb-loader.js"></script>
   <link rel="stylesheet" type="text/css" href="/bin/studio/css/studio-all.css"/>
 
 </head>
 <body>
 
-<div id="studio" style="background-color: white;width:1280px; margin-left: 2px"> </div>
+<div id="main" style="background-color: white;width:1280px; margin-left: 2px"> </div>
 <script>
-  jb.ui.render(jb.ui.h(new jb.jbCtx().run({$:'studio.all'})),document.getElementById('studio'))
+  jbm_create(['studio-all'],'studio-bin')
+    .then(jb=> {self.jb =jb; jb.ui.render(jb.ui.h(new jb.jbCtx().run({$:'studio.all'})),document.getElementById('main')) })
 </script>
 </body>
 </html>

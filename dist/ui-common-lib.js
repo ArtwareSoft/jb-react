@@ -14,11 +14,12 @@ jb.component('source.data', {
 
 jb.component('source.watchableData', {
   type: 'rx',
+  description: 'wait for data change and returns {op, newVal,oldVal}',
   params: [
     {id: 'ref', as: 'ref' },
     {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
   ],
-  impl: (ctx,ref,includeChildren) => jb.ui.refObservable(ref,null,{includeChildren, srcCtx: ctx})
+  impl: (ctx,ref,includeChildren) => jb.callbag.map(x=>ctx.dataObj(x))(jb.ui.refObservable(ref,{includeChildren, srcCtx: ctx}))
 })
 
 jb.component('source.callbag', {
@@ -405,6 +406,13 @@ jb.component('rx.takeWhile', {
     {id: 'passtLastEvent', as: 'boolean'}
   ],
   impl: (ctx,whileCondition,passtLastEvent) => jb.callbag.takeWhile(ctx => whileCondition(ctx), passtLastEvent)
+})
+
+jb.component('rx.toArray', {
+  type: 'rx',
+  category: 'operator',
+  description: 'wait for all and returns next item as array',
+  impl: ctx => source => jb.callbag.pipe(source, jb.callbag.toArray(), jb.callbag.map(arr=> ctx.dataObj(arr.map(x=>x.data))))
 })
 
 jb.component('rx.last', {
@@ -1003,17 +1011,15 @@ class WatchableValueByRef {
   merge(ref,value,srcCtx) {
     return this.doOp(ref,{$merge: this.createSecondaryLink(value)},srcCtx)
   }
-  getOrCreateObservable(req) {
+  getOrCreateObservable({ref,srcCtx,cmp}) {
       const subject = jb.callbag.subject()
-      req.srcCtx = req.srcCtx || { path: ''}
-      const ctx = req.cmpOrElem && req.cmpOrElem.ctx || jb.ui.ctxOfElem(req.cmpOrElem) || req.srcCtx
-      const key = this.pathOfRef(req.ref).join('~') + ' : ' + ctx.path
-      const recycleCounter = req.cmpOrElem && req.cmpOrElem.getAttribute && +(req.cmpOrElem.getAttribute('recycleCounter') || 0)
-      const obs = { ...req, subject, key, recycleCounter, ctx }
+      const ctx = cmp && cmp.ctx || srcCtx || { path: ''}
+      const key = this.pathOfRef(ref).join('~') + ' : ' + ctx.path
+      //const recycleCounter = cmp && cmp.getAttribute && +(cmp.getAttribute('recycleCounter') || 0)
+      const obs = { ref,srcCtx,cmp, subject, key, ctx }
 
       this.observables.push(obs)
       this.observables.sort((e1,e2) => jb.ui.comparePaths(e1.ctx.path, e2.ctx.path))
-      const cmp = req.cmpOrElem && (req.cmpOrElem.ver ? req.cmpOrElem : req.cmpOrElem._component)
       jb.log('register uiComp observable',{cmp, key,obs})
       return subject
   }
@@ -1025,10 +1031,10 @@ class WatchableValueByRef {
       const observablesToUpdate = this.observables.slice(0) // this.observables array may change in the notification process !!
       const changed_path = this.removeLinksFromPath(this.pathOfRef(e.ref))
       if (changed_path) observablesToUpdate.forEach(obs=> {
-        const isOld = jb.path(obs.cmpOrElem,'getAttribute') && (+obs.cmpOrElem.getAttribute('recycleCounter')) > obs.recycleCounter
-        if (jb.path(obs.cmpOrElem,'_destroyed') || isOld) {
+        if (jb.path(obs,'cmp._destroyed')) {
           if (this.observables.indexOf(obs) != -1) {
             jb.log('remove cmpObservable',{obs})
+            obs.subject.complete()
             this.observables.splice(this.observables.indexOf(obs), 1);
           }
         } else {
@@ -1085,15 +1091,14 @@ jb.rebuildRefHandler = () => {
 }
 jb.isWatchable = ref => jb.refHandler(ref) instanceof WatchableValueByRef || ref && ref.$jb_observable
 
-jb.ui.refObservable = (ref,cmpOrElem,settings={}) => {
+jb.ui.refObservable = (ref,{cmp,includeChildren,srcCtx} = {}) => { // cmp._destroyed is checked before notification
   if (ref && ref.$jb_observable)
-    return ref.$jb_observable(cmpOrElem);
+    return ref.$jb_observable(cmp)
   if (!jb.isWatchable(ref)) {
-    jb.logError('ref is not watchable: ', {ref, cmpOrElem})
+    jb.logError('ref is not watchable: ', {ref, cmp,srcCtx})
     return jb.callbag.fromIter([])
   }
-  return jb.refHandler(ref).getOrCreateObservable({ref,cmpOrElem,...settings})
-  //jb.refHandler(ref).refObservable(ref,cmpOrElem,settings);
+  return jb.refHandler(ref).getOrCreateObservable({ref,cmp,includeChildren,srcCtx})
 }
 
 jb.ui.extraWatchableHandler = (resources,oldHandler) => {
@@ -2373,7 +2378,7 @@ Object.assign(jb.ui,{
           || jb.path(jb,['studio','studioWindow','jb','studio','lastStudioActivity'])
 
         jb.log('focus request',{srcCtx, logTxt, timeDiff: now - lastStudioActivity, elem,srcCtx})
-        if (jb.studio.previewjb == jb && jb.path(jb.frame.parent,'jb.resources.studio.project') != 'studio-helper' && lastStudioActivity && now - lastStudioActivity < 1000)
+        if (jb.studio.previewjb == jb && jb.path(jb.ui.parentFrameJb(),'resources.studio.project') != 'studio-helper' && lastStudioActivity && now - lastStudioActivity < 1000)
             return
         jb.log('focus dom',{elem,srcCtx,logTxt})
         jb.delay(1).then(() => elem.focus())
@@ -2386,11 +2391,12 @@ Object.assign(jb.ui,{
         return ''+ctx.id
     },
     inStudio() { return jb.studio && jb.studio.studioWindow },
-    inPreview() {
-        try {
-            return !jb.ui.inStudio() && jb.frame.parent && jb.frame.parent.jb.studio.initPreview
-        } catch(e) {}
+    parentFrameJb() {
+      try {
+        return jb.frame.parent && jb.frame.parent.jb
+      } catch(e) {}
     },
+    inPreview: () => !jb.ui.inStudio() && jb.ui.parentFrameJb() && jb.ui.parentFrameJb().studio.initPreview,
     previewOverlayDocument: ctx => (jb.path(ctx.frame(),'document.body') || jb.path(ctx.frame(),'parent.document.body')).ownerDocument,
     widgetBody(ctx) {
       const {elemToTest,previewOverlay,tstWidgetId,headlessWidget,FEwidgetId, headlessWidgetId} = ctx.vars
@@ -2416,8 +2422,8 @@ Object.assign(jb.ui,{
           jb.callbag.takeUntil(cmp.destroyed)
     ),
     renderWidget(profile,topElem,ctx) {
-      if (!jb.ui.renderWidgetInStudio && jb.path(jb.frame,'parent.jb.ui.renderWidgetInStudio'))
-        eval('jb.ui.renderWidgetInStudio= ' + jb.frame.parent.jb.ui.renderWidgetInStudio.toString())
+      if (!jb.ui.renderWidgetInStudio && jb.path(jb.ui.parentFrameJb(),'ui.renderWidgetInStudio'))
+        eval('jb.ui.renderWidgetInStudio= ' + jb.ui.parentFrameJb().ui.renderWidgetInStudio.toString())
       if (jb.frame.parent != jb.frame && jb.ui.renderWidgetInStudio)
         return jb.ui.renderWidgetInStudio(profile,topElem)
       else
@@ -3768,7 +3774,8 @@ jb.component('text.allowAsynchValue', {
   type: 'feature',
   description: 'allows a text value to be reactive or promise',
   params: [
-    { id: 'propId', defaultValue: 'text'}
+    { id: 'propId', defaultValue: 'text'},
+    { id: 'waitingValue', defaultValue: ''},
   ],
   impl: features(
     calcProp('%$propId%', firstSucceeding('%$$state/{%$propId%}%','%$$props/{%$propId%}%' )),
@@ -6136,6 +6143,32 @@ jb.component('picklist.init', {
   impl: features(
     calcProp('options', '%$$model/options()%'),
     calcProp('hasEmptyOption', (ctx,{$props}) => $props.options.filter(x=>!x.text)[0]),
+  )
+})
+
+jb.component('picklist.allowAsynchOptions', {
+  type: 'feature',
+  description: 'allows a text value to be reactive or promise',
+  impl: features(
+    calcProp({
+      id: 'options', 
+      priority: 5, phase: 5,
+      value: ({},{$state,$model},{}) => {
+        const val = $state.options || $model.options()
+        if (Array.isArray(val)) return val
+        const res = []
+        res.delayed = val
+        return res
+      },
+    }),
+    followUp.flow(
+      source.any(({},{$state,$props}) => {
+        if ($state.options) return []
+        return $props.options.delayed || $props.options
+      }),
+      rx.log('followUp allowAsynchValue'),
+      sink.refreshCmp(firstSucceeding('%data%','%%'))
+    ),
   )
 })
 

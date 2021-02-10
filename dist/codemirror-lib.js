@@ -14,7 +14,7 @@ jbmFactory['codemirror'] = function(jb) {
   typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
   typeof define === 'function' && define.amd ? define(factory) :
   (global.CodeMirror = factory());
-}(this || self, (function () { 'use strict';
+}(self, (function () { 'use strict';
 
   // Kludges for bugs and behavior differences that can't be feature
   // detected are enabled based on userAgent etc sniffing.
@@ -14640,7 +14640,7 @@ jb.component('text.codemirror', {
 	// 				subscribe(x=> jb.writeValue(cmp.data_ref,x, ctx)))
 
 	// 			!cmp.data_ref.oneWay && jb.isWatchable(cmp.data_ref) && pipe(
-	// 					jb.ui.refObservable(cmp.data_ref,cmp,{srcCtx: ctx}),
+	// 					jb.ui.refObservable(cmp.data_ref,{cmp,srcCtx: ctx}),
 	// 					map(e=>jb.tostring(jb.val(cmp.data_ref))),
 	// 					filter(x => x != editor.getValue()),
 	// 					subscribe(x=>{
