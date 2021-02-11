@@ -131,7 +131,7 @@ Object.assign(jb, {
                             }
                         }
                     },
-                    remoteExec(remoteRun, {oneway, timeout = 3000} = {}) {
+                    remoteExec(remoteRun, {oneway, timeout = 3000, isAction} = {}) {
                         if (oneway)
                             return port.postMessage({$:'CB.execOneWay', remoteRun, timeout })
                         return new Promise((resolve,reject) => {
@@ -139,7 +139,7 @@ Object.assign(jb, {
                             const cbId = jb.cbHandler.newId()
                             const timer = setTimeout(() => handlers[cbId] && reject({ type: 'error', desc: 'timeout' }), timeout)
                             handlers[cbId] = {resolve,reject,remoteRun, timer}
-                            port.postMessage({$:'CB.exec', remoteRun, cbId, timeout })
+                            port.postMessage({$:'CB.exec', remoteRun, cbId, isAction, timeout })
                         })
                     }
                 })
@@ -187,14 +187,14 @@ Object.assign(jb, {
                 }
             }
             function handleCBCommnad(cmd) {
-                const {$,sourceId,cbId} = cmd
+                const {$,sourceId,cbId,isAction} = cmd
                 Promise.resolve(jb.remoteCtx.deStrip(cmd.remoteRun)()).then( result => {
                     if ($ == 'CB.createSource' && typeof result == 'function')
                         jb.cbHandler.map[cbId] = result
                     else if ($ == 'CB.createOperator' && typeof result == 'function')
                         jb.cbHandler.map[cbId] = result(remoteCB(sourceId, cbId,cmd) )
                     else if ($ == 'CB.exec')
-                        port.postMessage({$:'execResult', cbId, result: jb.remoteCtx.stripData(result) , ...jb.net.reverseRoutingProps(cmd) })
+                        port.postMessage({$:'execResult', cbId, result: isAction ? {} : jb.remoteCtx.stripData(result) , ...jb.net.reverseRoutingProps(cmd) })
                 }).catch(err=> $ == 'CB.exec' && 
                     port.postMessage({$:'execResult', cbId, result: { type: 'error', err}, ...jb.net.reverseRoutingProps(cmd) }))
             }

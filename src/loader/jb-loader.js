@@ -20,6 +20,10 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       'rx': [
         'src/misc/rx-comps.js',
       ],
+      watchable: [
+        'dist/jb-immutable.js', // the immutable-helper lib
+        'src/ui/watchable/watchable-ref.js',
+      ],
       'ui-common-css': [
         'css/font.css',
         'css/styles.css',
@@ -27,10 +31,9 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       'ui-common': [
         'src/misc/rx-comps.js',
         'dist/jb-immutable.js', // the immutable-helper lib
-
         'src/ui/watchable/watchable-ref.js',
-        'src/ui/core/vdom.js',
         'src/ui/core/jb-react.js',
+        'src/ui/core/vdom.js',
         'src/ui/core/ui-comp.js',
         'src/ui/core/ui-utils.js',
 
@@ -206,7 +209,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       'xml': [ 'src/misc/xml.js' ],
       'jison': [ 'dist/jb-jison.js', 'src/misc/jison.js' ],
       'parsing': [ 'src/misc/parsing.js' ],
-      'notebook': [ 'src/ui/notebook/notebook-common.js'],
+      'notebook-worker': [ 'projects/studio/studio-path.js'],
       studio: [
         'dist/material.js', 'src/ui/watchable/text-editor.js',
         'src/misc/parsing.js',
@@ -217,11 +220,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'hosts', 'probe', 'watch-ref-viewer', 'content-editable', 'position-thumbs', 'html-to-ctrl', 'patterns', 'pick-icon', 
         'inplace-edit', 'grid-editor', 'sizes-editor', 'refactor', 'vscode', 'pptr', 'chrome-debugger',
 
-        'src/ui/notebook/notebook-common.js', 'notebook','sandbox','notebook-editor'
-      ],
-      'studio-tests': [
-        'projects/studio/studio-testers.js',
-        'probe','model','tree','suggestion','patterns','inplace-edit'
+        'src/ui/notebook/notebook-common.js', 'notebook',
       ],
       $dependencies: {
         puppeteer: ['pretty-print','remote']
@@ -243,8 +242,6 @@ function jb_dynamicLoad(modules,prefix,suffix) {
       (jb_modules[m] || []).forEach(file=>{
         if (m == 'studio' && !file.match(/\//))
           file = 'projects/studio/studio-' + file + '.js';
-        if (m == 'studio-tests' && !file.match(/\//))
-          file = 'projects/studio-helper/studio-' + file + '-tests.js';
 
         if (prefix) { // avoid multiple source files with the same name in the debugger
           const file_path = file.split('/');

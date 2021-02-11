@@ -35,6 +35,8 @@ initSpy({Error, settings, spyParam, memoryUsage, resetSpyToNull}) {
 		shouldLog(logNames, record) {
 			const ctx = record && (record.ctx || record.srcCtx || record.cmp && record.cmp.ctx)
 			if (ctx && ctx.vars.$disableLog || jb.path(record,'m.$disableLog') || jb.path(record,'m.remoteRun.vars.$disableLog')) return false
+			if (jb.path(record,'m.routingPath') && jb.path(record,'m.routingPath').find(y=>y.match(/vDebugger/))
+    			|| (jb.path(record,'m.result.uri') || '').match(/vDebugger/)) return false
 			if (!logNames) debugger
 			return this.spyParam === 'all' || typeof record == 'object' && 
 				logNames.split(' ').reduce( (acc,logName)=>acc || this.includeLogs[logName],false)

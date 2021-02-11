@@ -5,10 +5,11 @@ jb.remoteCtx = {
         const profText = jb.prettyPrint(ctx.profile)
         const vars = jb.objFromEntries(jb.entries(ctx.vars).filter(e => e[0] == '$disableLog' || profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
+        const data = profText.match(/({data})|(ctx.data)|(%%)/) && this.stripData(ctx.data) 
         const params = jb.objFromEntries(jb.entries(isJS ? ctx.params: jb.entries(jb.path(ctx.cmpCtx,'params')))
             .filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
-        const res = Object.assign({id: ctx.id, path: ctx.path, profile: ctx.profile, vars }, 
+        const res = Object.assign({id: ctx.id, path: ctx.path, profile: ctx.profile, data, vars }, 
             isJS ? {params,vars} : Object.keys(params).length ? {cmpCtx: {params} } : {} )
         return res
     },
@@ -26,7 +27,7 @@ jb.remoteCtx = {
         if (typeof data == 'object' && data.comps)
             return { uri : data.uri}
         if (typeof data == 'object')
-             return jb.objFromEntries(jb.entries(data).map(e=>[e[0],this.stripData(e[1])]))
+             return jb.objFromEntries(jb.entries(data).filter(e=> typeof e[1] != 'function').map(e=>[e[0],this.stripData(e[1])]))
     },
     stripFunction(f) {
         const {profile,runCtx,path,param,srcPath} = f
@@ -37,7 +38,7 @@ jb.remoteCtx = {
             .map(e=>[e[0],this.stripData(e[1])]))
         const params = jb.objFromEntries(jb.entries(jb.path(runCtx.cmpCtx,'params')).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
-        return Object.assign({$: 'runCtx', id: runCtx.id, path: [srcPath,path].join('~'), param, profile: profNoJS, vars}, 
+        return Object.assign({$: 'runCtx', id: runCtx.id, path: [srcPath,path].join('~'), param, profile: profNoJS, data: this.stripData(runCtx.data), vars}, 
             Object.keys(params).length ? {cmpCtx: {params} } : {})
     },
     serailizeCtx(ctx) { return JSON.stringify(this.stripCtx(ctx)) },
@@ -69,6 +70,24 @@ jb.remoteCtx = {
     },
     stripJS(val) {
         return typeof val == 'function' ? `__JBART_FUNC: ${val.toString()}` : this.stripData(val)
-    }
+    },
+    serializeCmp(compId) {
+        if (!jb.comps[compId])
+            return jb.logError('no component of id ',{compId}),''
+        return jb.prettyPrint({compId, ...jb.comps[compId],
+            location: jb.comps[compId][jb.location], loadingPhase: jb.comps[compId][jb.loadingPhase]} )
+    },
+    deSerializeCmp(code) {
+        if (!code) return
+        try {
+            const cmp = eval('('+code+')')
+            const res = {...cmp, [jb.location]: cmp.location, [jb.loadingPhase]: cmp.loadingPhase }
+            delete res.location
+            delete res.loadingPhase
+            jb.comps[res.compId] = res
+        } catch (e) {
+            jb.logException(e,'eval profile',{code})
+        }        
+    },
 }
 

@@ -77,9 +77,7 @@ jb.component('studio.lastEdit', {
 
 jb.component('studio.gotoLastEdit', {
   type: 'action',
-  impl: studio.gotoPath(
-    studio.lastEdit()
-  )
+  impl: studio.gotoPath(studio.lastEdit())
 })
 
 jb.component('studio.compSource', {
@@ -92,5 +90,35 @@ jb.component('studio.compSource', {
 jb.component('studio.unMacro', {
   impl: ({data}) => data && data.replace(/([A-Z])/g, (all, s) => ' ' + s.toLowerCase()),
 })
+
+jb.component('studio.watchPath', {
+  type: 'feature',
+  category: 'group:0',
+  params: [
+    {id: 'path', as: 'string', mandatory: true},
+    {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
+    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
+    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component, including all features and variables', type: 'boolean'},
+    {id: 'recalcVars', as: 'boolean', description: 'recalculate feature variables', type: 'boolean'},
+    {id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority'}
+  ],
+  impl: (ctx,path) => ({
+	  watchRef: {refF: () => st.refOfPath(path), ...ctx.params},
+  })
+})
+
+jb.component('studio.watchScriptChanges', {
+  type: 'feature',
+  params: [
+	  {id: 'path', as: 'string', description: 'under this path, empty means any path'}
+  ],
+  impl: watchRef('%$studio/lastStudioActivity%') //followUp.flow(studio.scriptChange(), rx.log('watch script refresh'), sink.refreshCmp())
+})
+
+jb.component('studio.watchComponents', {
+  type: 'feature',
+  impl: followUp.flow(studio.scriptChange(), rx.filter('%path/length%==1'), sink.refreshCmp())
+})
+
 
 })();

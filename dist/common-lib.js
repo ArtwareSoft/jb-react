@@ -684,6 +684,11 @@ Object.assign(jb, {
       jb.watchableHandlers = [jb.mainWatchableHandler, ...jb.extraWatchableHandlers].map(x=>x)
       return handler
     },
+    initExtraWatchableHandler(resources, {oldHandler, initUIObserver} = {}) {
+      const res = jb.extraWatchableHandler(new jb.WatchableValueByRef(resources),oldHandler)
+      initUIObserver && jb.ui && jb.ui.subscribeToRefChange(res)
+      return res
+    },
     setMainWatchableHandler: handler => { 
       jb.mainWatchableHandler = handler
       jb.watchableHandlers = [jb.mainWatchableHandler, ...jb.extraWatchableHandlers].map(x=>x)
@@ -726,7 +731,9 @@ Object.assign(jb, {
     isRef: ref => jb.refHandler(ref),
     isWatchable: () => false, // overriden by the watchable-ref.js (if loaded)
     isValid: ref => jb.safeRefCall(ref, h=>h.isValid(ref)),
-    refreshRef: ref => jb.safeRefCall(ref, h=>h.refresh(ref)),    
+    //refreshRef: ref => jb.safeRefCall(ref, h=>h.refresh(ref)),    
+    pathOfRef: ref => jb.safeRefCall(ref, h=>h.pathOfRef(ref)),
+    refOfPath: path => jb.watchableHandlers.reduce((res,h) => res || h.refOfPath(path),null),
 })
 
 ;
@@ -910,6 +917,8 @@ initSpy({Error, settings, spyParam, memoryUsage, resetSpyToNull}) {
 		shouldLog(logNames, record) {
 			const ctx = record && (record.ctx || record.srcCtx || record.cmp && record.cmp.ctx)
 			if (ctx && ctx.vars.$disableLog || jb.path(record,'m.$disableLog') || jb.path(record,'m.remoteRun.vars.$disableLog')) return false
+			if (jb.path(record,'m.routingPath') && jb.path(record,'m.routingPath').find(y=>y.match(/vDebugger/))
+    			|| (jb.path(record,'m.result.uri') || '').match(/vDebugger/)) return false
 			if (!logNames) debugger
 			return this.spyParam === 'all' || typeof record == 'object' && 
 				logNames.split(' ').reduce( (acc,logName)=>acc || this.includeLogs[logName],false)
@@ -2252,6 +2261,15 @@ jb.component('addComponent', {
     {id: 'type', options:'watchableData,passiveData,comp', mandatory: true },
   ],
   impl: (ctx,id,value,type) => jb.component(id(), type == 'comp' ? value() : {[type]: value() } )
+})
+
+jb.component('loadLibs', {
+  description: 'load a list of libraries',
+  type: 'action',
+  params: [
+    {id: 'libs', as: 'array', mandatory: true},
+  ],
+  impl: ({},libs) => libs.reduce((pr,lib) => pr.then(()=>jbm_load_lib(jb,lib,jb.uri)), Promise.resolve(0))
 })
 
 var {Var,remark} = jb.macro // special system comps;

@@ -32,10 +32,10 @@ function compsRefOfPreviewJb(previewjb) {
 st.scriptChange = jb.callbag.subject()
 
 st.initCompsRefHandler = function(previewjb, allowedTypes) {
-	const oldCompsRefHandler = st.compsRefHandler
-	oldCompsRefHandler && oldCompsRefHandler.stopListening.next(1)
+	const oldHandler = st.compsRefHandler
+	oldHandler && oldHandler.stopListening.next(1)
 	const compsRef = compsRefOfPreviewJb(previewjb)
-	st.compsRefHandler = jb.ui.extraWatchableHandler(compsRef, oldCompsRefHandler)
+	st.compsRefHandler = jb.initExtraWatchableHandler(compsRef, {oldHandler, initUIObserver: true})
 	st.compsRefHandler.allowedTypes = st.compsRefHandler.allowedTypes.concat(allowedTypes)
 	st.compsRefHandler.stopListening = jb.callbag.subject()
 
@@ -73,7 +73,7 @@ Object.assign(st,{
   merge: (ref,value,ctx) => st.compsRefHandler.merge(ref,value,ctx),
   isRef: ref => st.compsRefHandler.isRef(ref),
   asRef: obj => st.compsRefHandler.asRef(obj),
-  refreshRef: ref => st.compsRefHandler.refresh(ref),
+  //refreshRef: ref => st.compsRefHandler.refresh(ref),
   refOfPath: (path,silent) => {
 		const _path = path.split('~')
 		st.compsRefHandler.resourceReferred && st.compsRefHandler.resourceReferred(_path[0])
@@ -313,38 +313,9 @@ jb.component('studio.nameOfRef', {
   impl: (ctx,ref) => st.nameOfRef(ref)
 })
 
-jb.component('studio.watchPath', {
-  type: 'feature',
-  category: 'group:0',
-  params: [
-    {id: 'path', as: 'string', mandatory: true},
-    {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
-    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
-    {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component, including all features and variables', type: 'boolean'},
-    {id: 'recalcVars', as: 'boolean', description: 'recalculate feature variables', type: 'boolean'},
-    {id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority'}
-  ],
-  impl: (ctx,path) => ({
-	  watchRef: {refF: () => st.refOfPath(path), ...ctx.params},
-  })
-})
-
 jb.component('studio.scriptChange', {
 	type: 'rx',
 	impl: source.callbag(() => st.scriptChange)
-})
-
-jb.component('studio.watchScriptChanges', {
-  type: 'feature',
-  params: [
-	  {id: 'path', as: 'string', description: 'under this path, empty means any path'}
-  ],
-  impl: watchRef('%$studio/lastStudioActivity%') //followUp.flow(studio.scriptChange(), rx.log('watch script refresh'), sink.refreshCmp())
-})
-
-jb.component('studio.watchComponents', {
-  type: 'feature',
-  impl: followUp.flow(studio.scriptChange(), rx.filter('%path/length%==1'), sink.refreshCmp())
 })
 
 jb.component('studio.boolRef', {

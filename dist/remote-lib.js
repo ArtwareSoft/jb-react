@@ -198,10 +198,11 @@ jb.remoteCtx = {
         const profText = jb.prettyPrint(ctx.profile)
         const vars = jb.objFromEntries(jb.entries(ctx.vars).filter(e => e[0] == '$disableLog' || profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
+        const data = profText.match(/({data})|(ctx.data)|(%%)/) && this.stripData(ctx.data) 
         const params = jb.objFromEntries(jb.entries(isJS ? ctx.params: jb.entries(jb.path(ctx.cmpCtx,'params')))
             .filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
-        const res = Object.assign({id: ctx.id, path: ctx.path, profile: ctx.profile, vars }, 
+        const res = Object.assign({id: ctx.id, path: ctx.path, profile: ctx.profile, data, vars }, 
             isJS ? {params,vars} : Object.keys(params).length ? {cmpCtx: {params} } : {} )
         return res
     },
@@ -219,7 +220,7 @@ jb.remoteCtx = {
         if (typeof data == 'object' && data.comps)
             return { uri : data.uri}
         if (typeof data == 'object')
-             return jb.objFromEntries(jb.entries(data).map(e=>[e[0],this.stripData(e[1])]))
+             return jb.objFromEntries(jb.entries(data).filter(e=> typeof e[1] != 'function').map(e=>[e[0],this.stripData(e[1])]))
     },
     stripFunction(f) {
         const {profile,runCtx,path,param,srcPath} = f
@@ -230,7 +231,7 @@ jb.remoteCtx = {
             .map(e=>[e[0],this.stripData(e[1])]))
         const params = jb.objFromEntries(jb.entries(jb.path(runCtx.cmpCtx,'params')).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
-        return Object.assign({$: 'runCtx', id: runCtx.id, path: [srcPath,path].join('~'), param, profile: profNoJS, vars}, 
+        return Object.assign({$: 'runCtx', id: runCtx.id, path: [srcPath,path].join('~'), param, profile: profNoJS, data: this.stripData(runCtx.data), vars}, 
             Object.keys(params).length ? {cmpCtx: {params} } : {})
     },
     serailizeCtx(ctx) { return JSON.stringify(this.stripCtx(ctx)) },
@@ -262,7 +263,25 @@ jb.remoteCtx = {
     },
     stripJS(val) {
         return typeof val == 'function' ? `__JBART_FUNC: ${val.toString()}` : this.stripData(val)
-    }
+    },
+    serializeCmp(compId) {
+        if (!jb.comps[compId])
+            return jb.logError('no component of id ',{compId}),''
+        return jb.prettyPrint({compId, ...jb.comps[compId],
+            location: jb.comps[compId][jb.location], loadingPhase: jb.comps[compId][jb.loadingPhase]} )
+    },
+    deSerializeCmp(code) {
+        if (!code) return
+        try {
+            const cmp = eval('('+code+')')
+            const res = {...cmp, [jb.location]: cmp.location, [jb.loadingPhase]: cmp.loadingPhase }
+            delete res.location
+            delete res.loadingPhase
+            jb.comps[res.compId] = res
+        } catch (e) {
+            jb.logException(e,'eval profile',{code})
+        }        
+    },
 }
 
 ;
@@ -400,7 +419,7 @@ Object.assign(jb, {
                             }
                         }
                     },
-                    remoteExec(remoteRun, {oneway, timeout = 3000} = {}) {
+                    remoteExec(remoteRun, {oneway, timeout = 3000, isAction} = {}) {
                         if (oneway)
                             return port.postMessage({$:'CB.execOneWay', remoteRun, timeout })
                         return new Promise((resolve,reject) => {
@@ -408,7 +427,7 @@ Object.assign(jb, {
                             const cbId = jb.cbHandler.newId()
                             const timer = setTimeout(() => handlers[cbId] && reject({ type: 'error', desc: 'timeout' }), timeout)
                             handlers[cbId] = {resolve,reject,remoteRun, timer}
-                            port.postMessage({$:'CB.exec', remoteRun, cbId, timeout })
+                            port.postMessage({$:'CB.exec', remoteRun, cbId, isAction, timeout })
                         })
                     }
                 })
@@ -456,14 +475,14 @@ Object.assign(jb, {
                 }
             }
             function handleCBCommnad(cmd) {
-                const {$,sourceId,cbId} = cmd
+                const {$,sourceId,cbId,isAction} = cmd
                 Promise.resolve(jb.remoteCtx.deStrip(cmd.remoteRun)()).then( result => {
                     if ($ == 'CB.createSource' && typeof result == 'function')
                         jb.cbHandler.map[cbId] = result
                     else if ($ == 'CB.createOperator' && typeof result == 'function')
                         jb.cbHandler.map[cbId] = result(remoteCB(sourceId, cbId,cmd) )
                     else if ($ == 'CB.exec')
-                        port.postMessage({$:'execResult', cbId, result: jb.remoteCtx.stripData(result) , ...jb.net.reverseRoutingProps(cmd) })
+                        port.postMessage({$:'execResult', cbId, result: isAction ? {} : jb.remoteCtx.stripData(result) , ...jb.net.reverseRoutingProps(cmd) })
                 }).catch(err=> $ == 'CB.exec' && 
                     port.postMessage({$:'execResult', cbId, result: { type: 'error', err}, ...jb.net.reverseRoutingProps(cmd) }))
             }
@@ -665,7 +684,7 @@ jb.component('remote.action', {
     impl: (ctx,action,jbm,oneway,timeout) => {
         if (!jbm)
             return jb.logError('remote.action - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
-        return jbm.remoteExec(jb.remoteCtx.stripFunction(action),{timeout,oneway})
+        return jbm.remoteExec(jb.remoteCtx.stripFunction(action),{timeout,oneway,isAction: true})
     }
 })
 
@@ -684,19 +703,18 @@ jb.component('remote.data', {
     }
 })
 
-jb.component('remote.shadowData', {
+jb.component('remote.initShadowData', {
+    type: 'action',
     description: 'shadow watchable data on remote jbm',
-    macroByValue: true,
     params: [
-      {id: 'src', as: 'ref', dynamic: true },
-      {id: 'target', as :'string', description: 'ref as expression on target jbm. e.g. %$people%'},
+      {id: 'src', as: 'ref' },
       {id: 'jbm', type: 'jbm'},
     ],
     impl: rx.pipe(
-        source.watchableData('%$src()%'),
-        rx.map('%op%'),
+        source.watchableData({ref: '%$src%', includeChildren: 'yes'}),
+        rx.map(obj(prop('op','%op%'), prop('path',({data}) => jb.pathOfRef(data.ref)))),
         sink.action(remote.action( 
-            (ctx,{},{target}) => jb.doOp(jb.exp(target,'ref'), ctx.data, ctx),
+            ctx => jb.doOp(jb.refOfPath(ctx.data.path), ctx.data.op, ctx),
             '%$jbm%')
         )
     )

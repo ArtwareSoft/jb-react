@@ -19,7 +19,11 @@ jb.component('source.watchableData', {
     {id: 'ref', as: 'ref' },
     {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
   ],
-  impl: (ctx,ref,includeChildren) => jb.callbag.map(x=>ctx.dataObj(x))(jb.refObservable(ref,{includeChildren, srcCtx: ctx}))
+  impl: (ctx,ref,includeChildren) => {
+    const sbj = jb.refObservable(ref,{includeChildren, srcCtx: ctx})
+    const map = jb.callbag.map(x=>ctx.dataObj(x))
+    return map(sbj)
+  }
 })
 
 jb.component('source.callbag', {
@@ -664,7 +668,7 @@ eval("/**\n * Copyright (c) 2013-present, Facebook, Inc.\n *\n * This source cod
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
-eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var immutability_helper__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! immutability-helper */ \"./node_modules/immutability-helper/index.js\");\n/* harmony import */ var immutability_helper__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(immutability_helper__WEBPACK_IMPORTED_MODULE_0__);\n\r\njb.ui = jb.ui || {}\r\njb.ui.update = immutability_helper__WEBPACK_IMPORTED_MODULE_0___default.a;\r\n\n\n//# sourceURL=webpack:///./src/ui/pack-immutable.js?");
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var immutability_helper__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! immutability-helper */ \"./node_modules/immutability-helper/index.js\");\n/* harmony import */ var immutability_helper__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(immutability_helper__WEBPACK_IMPORTED_MODULE_0__);\n\r\njb.immutableUpdate = immutability_helper__WEBPACK_IMPORTED_MODULE_0___default.a;\r\n\n\n//# sourceURL=webpack:///./src/ui/pack-immutable.js?");
 
 /***/ })
 
@@ -1007,16 +1011,16 @@ class WatchableValueByRef {
   merge(ref,value,srcCtx) {
     return this.doOp(ref,{$merge: this.createSecondaryLink(value)},srcCtx)
   }
-  getOrCreateObservable({ref,srcCtx,cmp}) {
+  getOrCreateObservable({ref,srcCtx,includeChildren,cmp}) {
       const subject = jb.callbag.subject()
       const ctx = cmp && cmp.ctx || srcCtx || { path: ''}
       const key = this.pathOfRef(ref).join('~') + ' : ' + ctx.path
       //const recycleCounter = cmp && cmp.getAttribute && +(cmp.getAttribute('recycleCounter') || 0)
-      const obs = { ref,srcCtx,cmp, subject, key, ctx }
+      const obs = { key, ref,srcCtx,includeChildren, cmp, subject, ctx }
 
       this.observables.push(obs)
       this.observables.sort((e1,e2) => jb.comparePaths(e1.ctx.path, e2.ctx.path))
-      jb.log('register uiComp observable',{cmp, key,obs})
+      jb.log('register watchable observable',obs)
       return subject
   }
   frame() {
@@ -1029,9 +1033,9 @@ class WatchableValueByRef {
       if (changed_path) observablesToUpdate.forEach(obs=> {
         if (jb.path(obs,'cmp._destroyed')) {
           if (this.observables.indexOf(obs) != -1) {
-            jb.log('remove cmpObservable',{obs})
             obs.subject.complete()
             this.observables.splice(this.observables.indexOf(obs), 1);
+            jb.log('watchable observable removed',{obs})
           }
         } else {
           this.notifyOneObserver(e,obs,changed_path)
@@ -1044,13 +1048,13 @@ class WatchableValueByRef {
       let obsPath = jb.refHandler(obs.ref).pathOfRef(obs.ref)
       obsPath = obsPath && this.removeLinksFromPath(obsPath)
       if (!obsPath)
-        return jb.logError('observer ref path is empty',{obs,e})
+        return jb.logError('watchable observable ref path is empty',{obs,e})
       const diff = jb.comparePaths(changed_path, obsPath)
       const isChildOfChange = diff == 1
       const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
       const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
       if (diff == -1 || diff == 0 || includeChildrenYes || includeChildrenStructure) {
-          jb.log('notify cmpObservable',{srcCtx: e.srcCtx,obs,e})
+          jb.log('notify watchable observable',{srcCtx: e.srcCtx,obs,e})
           obs.subject.next(e)
       }
   }
@@ -1118,181 +1122,6 @@ jb.component('runTransaction', {
 
 })()
 ;
-
-(function () {
-
-class VNode {
-    constructor(cmpOrTag, _attributes, _children) {
-        const attributes = jb.objFromEntries(jb.entries(_attributes).map(e=>[e[0].toLowerCase(),e[1]])
-            .map(([id,val])=>[id.match(/^on[^-]/) ? `${id.slice(0,2)}-${id.slice(2)}` : id, typeof val == 'object' ? val : ''+val]))
-        let children = (_children === '') ? null : _children
-        if (['string','boolean','number'].indexOf(typeof children) !== -1) {
-            attributes.$text = ''+children
-            children = null
-        }
-        if (children && typeof children.then == 'function') {
-            attributes.$text = '...'
-            children = null
-        }
-        if (children != null && !Array.isArray(children)) children = [children]
-        if (children != null)
-            children = children.filter(x=>x).map(item=> typeof item == 'string' ? jb.ui.h('span',{$text: item}) : item)
-        if (children && children.length == 0) children = null
-        
-        this.attributes = attributes
-            
-        if (typeof cmpOrTag === 'string' && cmpOrTag.indexOf('#') != -1)
-            debugger
-        if (typeof cmpOrTag === 'string' && cmpOrTag.indexOf('.') != -1) {
-            this.addClass(cmpOrTag.split('.').pop().trim())
-            cmpOrTag = cmpOrTag.split('.')[0]
-        }
-        if (children != null)
-            children.forEach(ch=>ch.parentNode = this)
-        Object.assign(this,{...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,...(children && {children}) })
-    }
-    getAttribute(att) {
-        const res = (this.attributes || {})[att]
-        return res == null ? res : (''+res)
-    }
-    setAttribute(att,val) {
-        if (val == null) return
-        this.attributes = this.attributes || {}
-        this.attributes[att.toLowerCase()] = ''+val
-        return this
-    }
-    removeAttribute(att) {
-        this.attributes && delete this.attributes[att.toLowerCase()]
-    }
-    addClass(clz) {
-        if (clz.indexOf(' ') != -1) {
-            clz.split(' ').filter(x=>x).forEach(cl=>this.addClass(cl))
-            return this
-        }
-        this.attributes = this.attributes || {};
-        if (this.attributes.class === undefined) this.attributes.class = ''
-        if (clz && this.attributes.class.split(' ').indexOf(clz) == -1) {
-            this.attributes.class = [this.attributes.class,clz].filter(x=>x).join(' ');
-        }
-        return this;
-    }
-    hasClass(clz) {
-        return (jb.path(this,'attributes.class') || '').split(' ').indexOf(clz) != -1
-    }
-    querySelector(...args) {
-        return this.querySelectorAll(...args)[0]
-    }
-    querySelectorAll(selector,{includeSelf}={}) {
-        let maxDepth = 50
-        if (selector.match(/^:scope>/)) {
-            maxDepth = 1
-            selector = selector.slice(7)
-        }
-        if (selector == '' || selector == ':scope') return [this]
-        if (selector.indexOf(',') != -1)
-            return selector.split(',').map(x=>x.trim()).reduce((res,sel) => [...res, ...this.querySelectorAll(sel,{includeSelf})], [])
-        const hasAtt = selector.match(/^\[([a-zA-Z0-9_$\-]+)\]$/)
-        const attEquals = selector.match(/^\[([a-zA-Z0-9_$\-]+)="([a-zA-Z0-9_\-→►]+)"\]$/)
-        const hasClass = selector.match(/^\.([a-zA-Z0-9_$\-]+)$/)
-        const hasTag = selector.match(/^[a-zA-Z0-9_\-]+$/)
-        const idEquals = selector.match(/^#([a-zA-Z0-9_$\-]+)$/)
-        const selectorMatcher = hasAtt ? el => el.attributes && el.attributes[hasAtt[1]]
-            : hasClass ? el => el.hasClass(hasClass[1])
-            : hasTag ? el => el.tag === hasTag[0]
-            : attEquals ? el => el.attributes && el.attributes[attEquals[1]] == attEquals[2]
-            : idEquals ? el => el.attributes && el.attributes.id == idEquals[1]
-            : null
-
-        return selectorMatcher && doFind(this,selectorMatcher,!includeSelf,0)
-
-        function doFind(vdom,selectorMatcher,excludeSelf,depth) {
-            return depth >= maxDepth ? [] : [ ...(!excludeSelf && selectorMatcher(vdom) ? [vdom] : []), 
-                ...(vdom.children||[]).flatMap(ch=> doFind(ch,selectorMatcher,false,depth+1))
-            ]
-        }
-    }
-}
-
-function toVdomOrStr(val) {
-    if (jb.isDelayed(val))
-        return jb.toSynchArray(val).then(v => jb.ui.toVdomOrStr(v[0]))
-
-    const res1 = Array.isArray(val) ? val.map(v=>jb.val(v)): val
-    let res = jb.val((Array.isArray(res1) && res1.length == 1) ? res1[0] : res1)
-    if (res && res instanceof VNode || Array.isArray(res)) return res
-    if (typeof res === 'boolean' || typeof res === 'object')
-        res = '' + res
-    else if (typeof res === 'string')
-        res = res.slice(0,1000)
-    return res
-}
-
-function stripVdom(vdom) {
-    if (jb.path(vdom,'constructor.name') != 'VNode') {
-        jb.logError('stripVdom - not vnode', {vdom})
-        return jb.ui.h('span')
-    }
-    return { 
-        ...(vdom.attributes && {attributes: vdom.attributes}), 
-        ...(vdom.children && vdom.children.length && {children: vdom.children.map(x=>stripVdom(x))}),
-        tag: vdom.tag
-    }
-}
-
-function _unStripVdom(vdom,parent) {
-    if (!vdom) return // || typeof vdom.parentNode == 'undefined') return
-    vdom.parentNode = parent
-    Object.setPrototypeOf(vdom, VNode.prototype);
-    ;(vdom.children || []).forEach(ch=>_unStripVdom(ch,vdom))
-    return vdom
-}
-
-function unStripVdom(vdom,parent) {
-    return _unStripVdom(JSON.parse(JSON.stringify(vdom)),parent)
-}
-
-function cloneVNode(vdom) {
-    return unStripVdom(JSON.parse(JSON.stringify(stripVdom(vdom))))
-}
-
-function vdomDiff(newObj,orig) {
-    const ignoreRegExp = /\$|checked|style|value|parentNode|frontend|__|widget|on-|remoteuri|width|height|top|left|aria-|tabindex/
-    const ignoreValue = /__undefined/
-    const ignoreClasses = /selected|mdc-tab-[0-9]+/
-    return doDiff(newObj,orig)
-    function doDiff(newObj,orig,attName) {
-        if (Array.isArray(orig) && orig.length == 0) orig = null
-        if (Array.isArray(newObj) && newObj.length == 0) newObj = null
-        if (orig === newObj) return {}
-//        if (jb.path(newObj,'attributes.jb_external') || jb.path(orig,'attributes.jb_external')) return {}
-        if (typeof orig == 'string' && ignoreValue.test(orig) || typeof newObj == 'string' && ignoreValue.test(newObj)) return {}
-        if (attName == 'class' && 
-            (typeof orig == 'string' && ignoreClasses.test(orig) || typeof newObj == 'string' && ignoreClasses.test(newObj))) return {}
-        if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
-        const deletedValues = Object.keys(orig)
-            .filter(k=>!ignoreRegExp.test(k))
-            .filter(k=> !(typeof orig[k] == 'string' && ignoreValue.test(orig[k])))
-            .filter(k => !(Array.isArray(orig[k]) && orig[k].length == 0))
-//            .filter(k => !(typeof orig[k] == 'object' && jb.path(orig[k],'attributes.jb_external')))
-            .reduce((acc, key) => newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: '__undefined'}, {})
-
-        return Object.keys(newObj)
-            .filter(k=>!ignoreRegExp.test(k))
-            .filter(k=> !(typeof newObj[k] == 'string' && ignoreValue.test(newObj[k])))
-            .filter(k => !(Array.isArray(newObj[k]) && newObj[k].length == 0))
-//            .filter(k => !(typeof newObj[k] == 'object' && jb.path(newObj[k],'attributes.jb_external')))
-            .reduce((acc, key) => {
-                if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key
-                const difference = doDiff(newObj[key], orig[key],key)
-                if (jb.isObject(difference) && jb.isEmpty(difference)) return acc // return no diff
-                return { ...acc, [key]: difference } // return updated key
-        }, deletedValues)    
-    }
-}
-
-Object.assign(jb.ui, {VNode, cloneVNode, toVdomOrStr, stripVdom, unStripVdom, vdomDiff})
-
-})();
 
 (function(){
 jb.ui = jb.ui || {}
@@ -1738,11 +1567,6 @@ Object.assign(jb.ui, {
             jb.ui.runCtxActionAndUdateCmpState(ctx,data,vars)
         }
     },
-    extraWatchableHandler(resources,oldHandler) {
-        const res = jb.extraWatchableHandler(new jb.WatchableValueByRef(resources),oldHandler)
-        jb.ui && jb.ui.subscribeToRefChange(res)
-        return res
-    },
     resourceChange: () => jb.mainWatchableHandler.resourceChange,
 })
 
@@ -1919,7 +1743,7 @@ Object.assign(jb.ui, {
                     return jb.logError('observer ref path is empty',{originatingCmpId,cmpId,obs,e})
                 strongRefresh = strongRefresh || obs.strongRefresh
                 cssOnly = cssOnly && obs.cssOnly
-                const diff = ui.comparePaths(changed_path, obsPath)
+                const diff = jb.comparePaths(changed_path, obsPath)
                 const isChildOfChange = diff == 1
                 const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
                 const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
@@ -2065,6 +1889,181 @@ jb.callbag.subscribe(e=> {
             jb.ui.runCtxAction(jb.ctxDictionary[ctxIdToRun])
         } ))
 })(jb.ui.BECmpsDestroyNotification)
+
+})();
+
+(function () {
+
+class VNode {
+    constructor(cmpOrTag, _attributes, _children) {
+        const attributes = jb.objFromEntries(jb.entries(_attributes).map(e=>[e[0].toLowerCase(),e[1]])
+            .map(([id,val])=>[id.match(/^on[^-]/) ? `${id.slice(0,2)}-${id.slice(2)}` : id, typeof val == 'object' ? val : ''+val]))
+        let children = (_children === '') ? null : _children
+        if (['string','boolean','number'].indexOf(typeof children) !== -1) {
+            attributes.$text = ''+children
+            children = null
+        }
+        if (children && typeof children.then == 'function') {
+            attributes.$text = '...'
+            children = null
+        }
+        if (children != null && !Array.isArray(children)) children = [children]
+        if (children != null)
+            children = children.filter(x=>x).map(item=> typeof item == 'string' ? jb.ui.h('span',{$text: item}) : item)
+        if (children && children.length == 0) children = null
+        
+        this.attributes = attributes
+            
+        if (typeof cmpOrTag === 'string' && cmpOrTag.indexOf('#') != -1)
+            debugger
+        if (typeof cmpOrTag === 'string' && cmpOrTag.indexOf('.') != -1) {
+            this.addClass(cmpOrTag.split('.').pop().trim())
+            cmpOrTag = cmpOrTag.split('.')[0]
+        }
+        if (children != null)
+            children.forEach(ch=>ch.parentNode = this)
+        Object.assign(this,{...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,...(children && {children}) })
+    }
+    getAttribute(att) {
+        const res = (this.attributes || {})[att]
+        return res == null ? res : (''+res)
+    }
+    setAttribute(att,val) {
+        if (val == null) return
+        this.attributes = this.attributes || {}
+        this.attributes[att.toLowerCase()] = ''+val
+        return this
+    }
+    removeAttribute(att) {
+        this.attributes && delete this.attributes[att.toLowerCase()]
+    }
+    addClass(clz) {
+        if (clz.indexOf(' ') != -1) {
+            clz.split(' ').filter(x=>x).forEach(cl=>this.addClass(cl))
+            return this
+        }
+        this.attributes = this.attributes || {};
+        if (this.attributes.class === undefined) this.attributes.class = ''
+        if (clz && this.attributes.class.split(' ').indexOf(clz) == -1) {
+            this.attributes.class = [this.attributes.class,clz].filter(x=>x).join(' ');
+        }
+        return this;
+    }
+    hasClass(clz) {
+        return (jb.path(this,'attributes.class') || '').split(' ').indexOf(clz) != -1
+    }
+    querySelector(...args) {
+        return this.querySelectorAll(...args)[0]
+    }
+    querySelectorAll(selector,{includeSelf}={}) {
+        let maxDepth = 50
+        if (selector.match(/^:scope>/)) {
+            maxDepth = 1
+            selector = selector.slice(7)
+        }
+        if (selector == '' || selector == ':scope') return [this]
+        if (selector.indexOf(',') != -1)
+            return selector.split(',').map(x=>x.trim()).reduce((res,sel) => [...res, ...this.querySelectorAll(sel,{includeSelf})], [])
+        const hasAtt = selector.match(/^\[([a-zA-Z0-9_$\-]+)\]$/)
+        const attEquals = selector.match(/^\[([a-zA-Z0-9_$\-]+)="([a-zA-Z0-9_\-→►]+)"\]$/)
+        const hasClass = selector.match(/^\.([a-zA-Z0-9_$\-]+)$/)
+        const hasTag = selector.match(/^[a-zA-Z0-9_\-]+$/)
+        const idEquals = selector.match(/^#([a-zA-Z0-9_$\-]+)$/)
+        const selectorMatcher = hasAtt ? el => el.attributes && el.attributes[hasAtt[1]]
+            : hasClass ? el => el.hasClass(hasClass[1])
+            : hasTag ? el => el.tag === hasTag[0]
+            : attEquals ? el => el.attributes && el.attributes[attEquals[1]] == attEquals[2]
+            : idEquals ? el => el.attributes && el.attributes.id == idEquals[1]
+            : null
+
+        return selectorMatcher && doFind(this,selectorMatcher,!includeSelf,0)
+
+        function doFind(vdom,selectorMatcher,excludeSelf,depth) {
+            return depth >= maxDepth ? [] : [ ...(!excludeSelf && selectorMatcher(vdom) ? [vdom] : []), 
+                ...(vdom.children||[]).flatMap(ch=> doFind(ch,selectorMatcher,false,depth+1))
+            ]
+        }
+    }
+}
+
+function toVdomOrStr(val) {
+    if (jb.isDelayed(val))
+        return jb.toSynchArray(val).then(v => jb.ui.toVdomOrStr(v[0]))
+
+    const res1 = Array.isArray(val) ? val.map(v=>jb.val(v)): val
+    let res = jb.val((Array.isArray(res1) && res1.length == 1) ? res1[0] : res1)
+    if (res && res instanceof VNode || Array.isArray(res)) return res
+    if (typeof res === 'boolean' || typeof res === 'object')
+        res = '' + res
+    else if (typeof res === 'string')
+        res = res.slice(0,1000)
+    return res
+}
+
+function stripVdom(vdom) {
+    if (jb.path(vdom,'constructor.name') != 'VNode') {
+        jb.logError('stripVdom - not vnode', {vdom})
+        return jb.ui.h('span')
+    }
+    return { 
+        ...(vdom.attributes && {attributes: vdom.attributes}), 
+        ...(vdom.children && vdom.children.length && {children: vdom.children.map(x=>stripVdom(x))}),
+        tag: vdom.tag
+    }
+}
+
+function _unStripVdom(vdom,parent) {
+    if (!vdom) return // || typeof vdom.parentNode == 'undefined') return
+    vdom.parentNode = parent
+    Object.setPrototypeOf(vdom, VNode.prototype);
+    ;(vdom.children || []).forEach(ch=>_unStripVdom(ch,vdom))
+    return vdom
+}
+
+function unStripVdom(vdom,parent) {
+    return _unStripVdom(JSON.parse(JSON.stringify(vdom)),parent)
+}
+
+function cloneVNode(vdom) {
+    return unStripVdom(JSON.parse(JSON.stringify(stripVdom(vdom))))
+}
+
+function vdomDiff(newObj,orig) {
+    const ignoreRegExp = /\$|checked|style|value|parentNode|frontend|__|widget|on-|remoteuri|width|height|top|left|aria-|tabindex/
+    const ignoreValue = /__undefined/
+    const ignoreClasses = /selected|mdc-tab-[0-9]+/
+    return doDiff(newObj,orig)
+    function doDiff(newObj,orig,attName) {
+        if (Array.isArray(orig) && orig.length == 0) orig = null
+        if (Array.isArray(newObj) && newObj.length == 0) newObj = null
+        if (orig === newObj) return {}
+//        if (jb.path(newObj,'attributes.jb_external') || jb.path(orig,'attributes.jb_external')) return {}
+        if (typeof orig == 'string' && ignoreValue.test(orig) || typeof newObj == 'string' && ignoreValue.test(newObj)) return {}
+        if (attName == 'class' && 
+            (typeof orig == 'string' && ignoreClasses.test(orig) || typeof newObj == 'string' && ignoreClasses.test(newObj))) return {}
+        if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
+        const deletedValues = Object.keys(orig)
+            .filter(k=>!ignoreRegExp.test(k))
+            .filter(k=> !(typeof orig[k] == 'string' && ignoreValue.test(orig[k])))
+            .filter(k => !(Array.isArray(orig[k]) && orig[k].length == 0))
+//            .filter(k => !(typeof orig[k] == 'object' && jb.path(orig[k],'attributes.jb_external')))
+            .reduce((acc, key) => newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: '__undefined'}, {})
+
+        return Object.keys(newObj)
+            .filter(k=>!ignoreRegExp.test(k))
+            .filter(k=> !(typeof newObj[k] == 'string' && ignoreValue.test(newObj[k])))
+            .filter(k => !(Array.isArray(newObj[k]) && newObj[k].length == 0))
+//            .filter(k => !(typeof newObj[k] == 'object' && jb.path(newObj[k],'attributes.jb_external')))
+            .reduce((acc, key) => {
+                if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key
+                const difference = doDiff(newObj[key], orig[key],key)
+                if (jb.isObject(difference) && jb.isEmpty(difference)) return acc // return no diff
+                return { ...acc, [key]: difference } // return updated key
+        }, deletedValues)    
+    }
+}
+
+Object.assign(jb.ui, {VNode, cloneVNode, toVdomOrStr, stripVdom, unStripVdom, vdomDiff})
 
 })();
 

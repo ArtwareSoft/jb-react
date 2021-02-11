@@ -38,7 +38,7 @@ jb.component('remote.action', {
     impl: (ctx,action,jbm,oneway,timeout) => {
         if (!jbm)
             return jb.logError('remote.action - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
-        return jbm.remoteExec(jb.remoteCtx.stripFunction(action),{timeout,oneway})
+        return jbm.remoteExec(jb.remoteCtx.stripFunction(action),{timeout,oneway,isAction: true})
     }
 })
 
@@ -57,19 +57,18 @@ jb.component('remote.data', {
     }
 })
 
-jb.component('remote.shadowData', {
+jb.component('remote.initShadowData', {
+    type: 'action',
     description: 'shadow watchable data on remote jbm',
-    macroByValue: true,
     params: [
-      {id: 'src', as: 'ref', dynamic: true },
-      {id: 'target', as :'string', description: 'ref as expression on target jbm. e.g. %$people%'},
+      {id: 'src', as: 'ref' },
       {id: 'jbm', type: 'jbm'},
     ],
     impl: rx.pipe(
-        source.watchableData('%$src()%'),
-        rx.map('%op%'),
+        source.watchableData({ref: '%$src%', includeChildren: 'yes'}),
+        rx.map(obj(prop('op','%op%'), prop('path',({data}) => jb.pathOfRef(data.ref)))),
         sink.action(remote.action( 
-            (ctx,{},{target}) => jb.doOp(jb.exp(target,'ref'), ctx.data, ctx),
+            ctx => jb.doOp(jb.refOfPath(ctx.data.path), ctx.data.op, ctx),
             '%$jbm%')
         )
     )

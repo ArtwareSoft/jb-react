@@ -53,7 +53,7 @@ jb.component('studio.eventTrackerToolbar', {
             Var('logs', pipeline(
               eventTracker.getSpy(),
               '%logs%',
-              filter(eventTracker.isNotDebuggerEvent())
+              //filter(eventTracker.isNotDebuggerEvent())
             )),
            '%$events/length%/%$logs/length%'
         ),
@@ -184,7 +184,7 @@ jb.component('eventTracker.watchSpy',{
   impl: followUp.watchObservable(
       rx.pipe(
         source.callbag(ctx => jb.ui.getSpy(ctx).observable()),
-        rx.filter(eventTracker.isNotDebuggerEvent())
+        //rx.filter(eventTracker.isNotDebuggerEvent())
       ),
       '%$delay%'
   )
@@ -304,11 +304,11 @@ jb.component('studio.slicedString', {
     )
 })
 
-jb.component('eventTracker.isNotDebuggerEvent', {
-  impl: ({data}) => !(jb.path(data,'m.routingPath') && jb.path(data,'m.routingPath').find(y=>y.match(/vDebugger/))
-    || (jb.path(data,'m.result.uri') || '').match(/vDebugger/)
-  )
-})
+// jb.component('eventTracker.isNotDebuggerEvent', {
+//   impl: ({data}) => !(jb.path(data,'m.routingPath') && jb.path(data,'m.routingPath').find(y=>y.match(/vDebugger/))
+//     || (jb.path(data,'m.result.uri') || '').match(/vDebugger/)
+//   )
+// })
 
 jb.component('eventTracker.eventItems', {
   params: [
@@ -317,8 +317,9 @@ jb.component('eventTracker.eventItems', {
   impl: (ctx,query) => {
     const spy = jb.ui.getSpy(ctx)
     if (!spy) return []
-    const checkEv = jb.comps['eventTracker.isNotDebuggerEvent'].impl // efficiency syntax
-    const items = spy.search(query).filter(data=> checkEv({data}))
+    //const checkEv = jb.comps['eventTracker.isNotDebuggerEvent'].impl // efficiency syntax
+    //spy.logs = spy.logs.filter(data=> checkEv({data}))
+    const items = spy.search(query)
       
     jb.log('eventTracker items',{ctx,spy,query,items})
     const itemsWithTimeBreak = items.reduce((acc,item,i) => i && item.time - items[i-1].time > 100 ? 

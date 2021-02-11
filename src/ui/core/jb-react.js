@@ -442,11 +442,6 @@ Object.assign(jb.ui, {
             jb.ui.runCtxActionAndUdateCmpState(ctx,data,vars)
         }
     },
-    extraWatchableHandler(resources,oldHandler) {
-        const res = jb.extraWatchableHandler(new jb.WatchableValueByRef(resources),oldHandler)
-        jb.ui && jb.ui.subscribeToRefChange(res)
-        return res
-    },
     resourceChange: () => jb.mainWatchableHandler.resourceChange,
 })
 
@@ -623,7 +618,7 @@ Object.assign(jb.ui, {
                     return jb.logError('observer ref path is empty',{originatingCmpId,cmpId,obs,e})
                 strongRefresh = strongRefresh || obs.strongRefresh
                 cssOnly = cssOnly && obs.cssOnly
-                const diff = ui.comparePaths(changed_path, obsPath)
+                const diff = jb.comparePaths(changed_path, obsPath)
                 const isChildOfChange = diff == 1
                 const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
                 const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')

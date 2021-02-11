@@ -43,7 +43,7 @@ const studioCssFiles = ['/css/styles.css','css/font.css','/projects/studio/css/s
 const vDebuggerFiles = [...filesOfModules('common,ui-common,remote,two-tier-widget'),
 '/src/ui/styles/codemirror-styles.js', '/src/ui/tree/table-tree.js', '/projects/studio/studio-path.js', '/projects/studio/studio-event-tracker.js']
 
-'core,common,ui-common,animate,d3,cards,cards-sample-data,pretty-print,parsing,xml,puppeteer,rx,md-icons,remote,two-tier-widget'
+'core,common,ui-common,watchable,animate,d3,cards,cards-sample-data,pretty-print,parsing,xml,puppeteer,rx,md-icons,remote,two-tier-widget,notebook-worker'
   .split(',').forEach(m=>packLibrary(m,jb_modules[m]))
 
 packLibrary('codemirror',filesOfModules('codemirror-js-files'))

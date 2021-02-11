@@ -335,16 +335,16 @@ class WatchableValueByRef {
   merge(ref,value,srcCtx) {
     return this.doOp(ref,{$merge: this.createSecondaryLink(value)},srcCtx)
   }
-  getOrCreateObservable({ref,srcCtx,cmp}) {
+  getOrCreateObservable({ref,srcCtx,includeChildren,cmp}) {
       const subject = jb.callbag.subject()
       const ctx = cmp && cmp.ctx || srcCtx || { path: ''}
       const key = this.pathOfRef(ref).join('~') + ' : ' + ctx.path
       //const recycleCounter = cmp && cmp.getAttribute && +(cmp.getAttribute('recycleCounter') || 0)
-      const obs = { ref,srcCtx,cmp, subject, key, ctx }
+      const obs = { key, ref,srcCtx,includeChildren, cmp, subject, ctx }
 
       this.observables.push(obs)
       this.observables.sort((e1,e2) => jb.comparePaths(e1.ctx.path, e2.ctx.path))
-      jb.log('register uiComp observable',{cmp, key,obs})
+      jb.log('register watchable observable',obs)
       return subject
   }
   frame() {
@@ -357,9 +357,9 @@ class WatchableValueByRef {
       if (changed_path) observablesToUpdate.forEach(obs=> {
         if (jb.path(obs,'cmp._destroyed')) {
           if (this.observables.indexOf(obs) != -1) {
-            jb.log('remove cmpObservable',{obs})
             obs.subject.complete()
             this.observables.splice(this.observables.indexOf(obs), 1);
+            jb.log('watchable observable removed',{obs})
           }
         } else {
           this.notifyOneObserver(e,obs,changed_path)
@@ -372,13 +372,13 @@ class WatchableValueByRef {
       let obsPath = jb.refHandler(obs.ref).pathOfRef(obs.ref)
       obsPath = obsPath && this.removeLinksFromPath(obsPath)
       if (!obsPath)
-        return jb.logError('observer ref path is empty',{obs,e})
+        return jb.logError('watchable observable ref path is empty',{obs,e})
       const diff = jb.comparePaths(changed_path, obsPath)
       const isChildOfChange = diff == 1
       const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
       const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
       if (diff == -1 || diff == 0 || includeChildrenYes || includeChildrenStructure) {
-          jb.log('notify cmpObservable',{srcCtx: e.srcCtx,obs,e})
+          jb.log('notify watchable observable',{srcCtx: e.srcCtx,obs,e})
           obs.subject.next(e)
       }
   }

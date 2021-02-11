@@ -127,18 +127,22 @@ jb.component('remoteTest.networkGateway', {
 jb.component('remoteTest.shadowData', {
   impl: dataTest({
     timeout: 5000,
-    runBefore: runActions(
+    runBefore: pipe(
       jbm.worker('innerWorker'), 
-      remote.action(addComponent({id: 'person', value: obj(), type: 'watchableData' }),'%%'),
-      remote.shadowData({src: '%$person%', target: '%$person%', jbm: jbm.byUri('tests►innerWorker')}),
+      remote.action(runActions(
+        loadLibs('watchable'),
+        addComponent({id: 'person', value: obj(), type: 'watchableData' })
+      ),'%%'),
+      remote.initShadowData({src: '%$person%', jbm: jbm.byUri('tests►innerWorker')}),
       () => { jb.exec(runActions(delay(1), writeValue('%$person/name%','Dan'))) } // writeValue after calculate
     ),
-    calculate: source.remote(
-      rx.pipe(
+    calculate: remote.data(
+      pipe(rx.pipe(
         source.watchableData('%$person/name%'),
+        rx.log('test'),
         rx.map('%newVal%'),
         rx.take(1)
-      ), 
+      )), 
       jbm.byUri('tests►innerWorker')
     ),
     expectedResult: equals('Dan')

@@ -5,16 +5,17 @@ jb.component('studio.notebook', {
   impl: group({
     controls: [
       studio.notebookTopBar(),
-//              widget.twoTierWidget(studio.eventTracker(), remote.notebookWorkerSpy()),
       ctx => ctx.run({$: ctx.exp('%$studio/project%.notebook')}),
       studio.ctxCounters()
     ],
     features: [
-        group.wait(runActions(
+        group.wait(pipe(
           studio.fetchProjectSettings(),
-          studio.initProjectSandbox(),
-          waitFor(ctx => jb.comps[ctx.exp('%$studio/project%.notebook')] ),
-          studio.initAutoUpdateRemoteComponent('%$studio/project%.notebook', remote.notebookWorker()),
+          Var('notebookId', '%$studio/project%.notebook'),
+          waitFor(ctx => jb.comps[ctx.exp('%$notebookId%')] ),
+          jbm.worker('notebook'),
+          remote.action(loadLibs(['watchable','notebook-worker']),'%%'),
+          remote.initShadowComponent('%$notebookId%', jbm.notebookWorker()),
           studio.initNotebookSaveService()
         )),
         feature.requireService(urlHistory.mapStudioUrlToResource('studio')),
@@ -23,20 +24,61 @@ jb.component('studio.notebook', {
   })
 })
 
-jb.component('studio.initAutoUpdateRemoteComponent', {
-    params: [
+jb.component('nb.notebook', {
+  type: 'control',
+  params: [
+    {id: 'elements', type: 'nb.elem[]'}
+  ],
+  impl: itemlist({
+    items: '%$elements%',
+    controls: group({
+      layout: layout.horizontal('10'),
+      controls: [
+        button({raised: false, features: feature.icon({icon: 'CardText', type: 'mdi'})}),
+        '%$notebookElem.editor()%',
+        widget.twoTierWidget(        
+          group({
+            controls: (ctx,{path}) => {
+                const ret = jb.run( new jb.jbCtx(ctx, { profile: jb.studio.valOfPath(path), forcePath: path, path: 'control' }), {type: 'control'})
+                return ret.result(ctx)
+            },
+            features: watchRef(studio.ref('%$path%'), 'yes')
+          }), jbm.notebookWorker()),
+      ],
+      features: [
+            variable('idx', ({},{index}) => index -1), 
+            variable('path', '%$studio/project%.notebook~impl~elements~%$idx%')
+        ]
+    }),
+    itemVariable: 'notebookElem'
+  })
+})
+
+jb.component('remote.initShadowComponent', {
+  type: 'action',
+  params: [
         {id: 'compId', as: 'string'},
-        {id: 'remote', type: 'remote'},
+        {id: 'jbm', type: 'jbm'},
     ],
-    type: 'action',
-    impl: rx.pipe(
-        studio.scriptChange(), 
-        rx.filter(equals('%path/0%','%$compId%')), 
-        rx.map(obj(prop('path',join({items:'%path%', separator: '~'})),prop('op','%op%'))),
-        remote.operator(sink.action(ctx => {
-            const {path,op} = ctx.data
-            jb.studio.compsRefHandler.doOp(jb.studio.refOfPath(path),op,ctx)
-        }), '%$remote%')
+    impl: runActions(
+      Var('code',({},{},{compId}) => jb.remoteCtx.serializeCmp(compId)),
+      remote.action(({},{code},{compId}) => {
+        const st = jb.studio
+        jb.remoteCtx.deSerializeCmp(code)
+        const compsRef = val => typeof val == 'undefined' ? jb.comps : (jb.comps = val);
+        compsRef.id = 'notebook-comps'
+        st.compsRefHandler = st.compsRefHandler || jb.initExtraWatchableHandler(compsRef)
+        st.compsRefHandler.resourceReferred(compId)
+        jb.callbag.subscribe(e=>st.scriptChange.next(e))(st.compsRefHandler.resourceChange)
+      }, '%$jbm%'),
+      rx.pipe(
+          studio.scriptChange(),
+          rx.filter(equals('%path/0%','%$compId%')), 
+          rx.map(obj(prop('path','%path%'),prop('op','%op%'))),
+          sink.action(remote.action( ctx => 
+            jb.studio.compsRefHandler.doOp(jb.studio.compsRefHandler.refOfPath(ctx.data.path), ctx.data.op, ctx)
+          , '%$jbm%'))
+      )
     )
 })
 
@@ -51,6 +93,11 @@ jb.component('studio.initNotebookSaveService', {
             return changedComps.map(id=>[id,jb.comps[id]])
         }
     }
+})
+
+jb.component('jbm.notebookWorker', {
+  type: 'jbm',
+  impl: jbm.byUri('studio►notebook')
 })
 
 jb.component('studio.notebookTopBar', {

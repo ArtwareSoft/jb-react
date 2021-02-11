@@ -1213,4 +1213,13 @@ jb.component('addComponent', {
   impl: (ctx,id,value,type) => jb.component(id(), type == 'comp' ? value() : {[type]: value() } )
 })
 
+jb.component('loadLibs', {
+  description: 'load a list of libraries',
+  type: 'action',
+  params: [
+    {id: 'libs', as: 'array', mandatory: true},
+  ],
+  impl: ({},libs) => libs.reduce((pr,lib) => pr.then(()=>jbm_load_lib(jb,lib,jb.uri)), Promise.resolve(0))
+})
+
 var {Var,remark} = jb.macro // special system comps

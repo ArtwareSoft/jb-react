@@ -57,6 +57,11 @@ Object.assign(jb, {
       jb.watchableHandlers = [jb.mainWatchableHandler, ...jb.extraWatchableHandlers].map(x=>x)
       return handler
     },
+    initExtraWatchableHandler(resources, {oldHandler, initUIObserver} = {}) {
+      const res = jb.extraWatchableHandler(new jb.WatchableValueByRef(resources),oldHandler)
+      initUIObserver && jb.ui && jb.ui.subscribeToRefChange(res)
+      return res
+    },
     setMainWatchableHandler: handler => { 
       jb.mainWatchableHandler = handler
       jb.watchableHandlers = [jb.mainWatchableHandler, ...jb.extraWatchableHandlers].map(x=>x)
@@ -99,6 +104,8 @@ Object.assign(jb, {
     isRef: ref => jb.refHandler(ref),
     isWatchable: () => false, // overriden by the watchable-ref.js (if loaded)
     isValid: ref => jb.safeRefCall(ref, h=>h.isValid(ref)),
-    refreshRef: ref => jb.safeRefCall(ref, h=>h.refresh(ref)),    
+    //refreshRef: ref => jb.safeRefCall(ref, h=>h.refresh(ref)),    
+    pathOfRef: ref => jb.safeRefCall(ref, h=>h.pathOfRef(ref)),
+    refOfPath: path => jb.watchableHandlers.reduce((res,h) => res || h.refOfPath(path),null),
 })
 
