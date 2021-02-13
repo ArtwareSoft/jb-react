@@ -8,7 +8,7 @@ jb.component('notebookTest.initShadowComponent', {
     timeout: 5000,
     runBefore: pipe(
       jbm.worker('notebook'),
-      remote.action(loadLibs(['watchable','notebook-worker']),'%%'),
+      remote.action(loadLibs(['ui-common','notebook-worker']),'%%'),
       remote.initShadowComponent('notebookTest.compToShadow', jbm.byUri('tests►notebook')),
       () => { jb.exec(runActions(delay(1), writeValue(studio.ref('notebookTest.compToShadow~impl'),'Dan'))) } // writeValue after calculate
     ),

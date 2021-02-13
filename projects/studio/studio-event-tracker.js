@@ -375,7 +375,7 @@ jb.component('eventTracker.highlightElem', {
         content: text(''),
         features: [
           css(({},{},{elem}) => {
-            if (!elem || !elem.getBoundingClientRect) return ''
+            if (!elem || !elem.getBoundingClientRect || !jb.ui.studioFixXPos) return ''
             const elemRect = elem.getBoundingClientRect()
             const left = jb.ui.studioFixXPos(elem) + elemRect.left + 'px'
             const top = jb.ui.studioFixYPos(elem) + elemRect.top + 'px'

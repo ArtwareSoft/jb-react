@@ -83,21 +83,24 @@ jb.callbag = {
           compare = compare || ((prev, cur) => prev === cur)
           if (start !== 0) return
           let inited = false, prev, talkback
-          source(0, function distinctUntilChanged(type, data) {
-              if (type === 0) talkback = data
-              if (type !== 1) {
-                  sink(type, data)
+          source(0, function distinctUntilChanged(t,d) {
+              if (t === 0) {
+                talkback = d
+                sink(t, d)
+              } else if (t == 1) {
+                if (inited && compare(prev, d)) {
+                    talkback(1)
+                    return
+                }
+                inited = true
+                prev = d
+                sink(1, d)
+              } else {
+                  sink(t, d)
                   return
               }
-              if (inited && compare(prev, data)) {
-                  talkback(1)
-                  return
-              }
-              inited = true
-              prev = data
-              sink(1, data)
           })
-      },
+      },  
       takeUntil(notifier) {
           if (jb.isPromise(notifier))
               notifier = jb.callbag.fromPromise(notifier)

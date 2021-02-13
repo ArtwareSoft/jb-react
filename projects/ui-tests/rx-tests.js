@@ -49,8 +49,38 @@ jb.component('rxTest.source.watchableData', {
 
 jb.component('rxTest.toArray', {
   impl: dataTest({
-    calculate: rx.pipe( source.data(list(0,1,2,3)),rx.toArray(),rx.map(({data}) => data.join(','))),    
+    calculate: rx.pipe( source.data(list(0,1,2,3)),rx.toArray(),rx.map(join())),    
     expectedResult: equals('0,1,2,3')
+  })
+})
+
+jb.component('rxTest.distinctUntilChanged', {
+  impl: dataTest({
+    calculate: rx.pipe( 
+      source.data(list(1,2,2,3)),
+      rx.distinctUntilChanged(),
+      rx.toArray(), rx.map(join())
+    ),    
+    expectedResult: equals('1,2,3')
+  })
+})
+
+jb.component('rxTest.enrichWithPrevious', {
+  impl: dataTest({
+    calculate: rx.pipe( source.data(list(1,2,3,2)),
+      rx.reduce({
+        varName: 'upDown',
+        value: ({data},{upDown,prev}) => {
+          const dir = prev && prev < data ? 'up' : 'down'
+          return {dir, count: (upDown.dir == dir) ? upDown.count+1 : 1}
+        },
+        initialValue: obj(prop('count',0),prop('dir',''))
+      }),
+      rx.skip(1),
+      rx.map('%$upDown/dir%-%$upDown/count%'),
+      rx.toArray(), rx.map(join())
+    ),    
+    expectedResult: equals('up-1,up-2,down-1')
   })
 })
 

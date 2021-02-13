@@ -19,11 +19,7 @@ jb.component('source.watchableData', {
     {id: 'ref', as: 'ref' },
     {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
   ],
-  impl: (ctx,ref,includeChildren) => {
-    const sbj = jb.refObservable(ref,{includeChildren, srcCtx: ctx})
-    const map = jb.callbag.map(x=>ctx.dataObj(x))
-    return map(sbj)
-  }
+  impl: (ctx,ref,includeChildren) => jb.callbag.map(x=>ctx.dataObj(x))(jb.refObservable(ref,{includeChildren, srcCtx: ctx}))
 })
 
 jb.component('source.callbag', {
@@ -134,12 +130,12 @@ jb.component('rx.reduce', {
   params: [
     {id: 'varName', as: 'string', mandatory: true, description: 'the result is accumulated in this var', templateValue: 'acc'},
     {id: 'initialValue', dynamic: true, description: 'receives first value as input', mandatory: true},
-    {id: 'value', dynamic: true, defaultValue: '%%', description: 'the accumulated var is available. E,g. %$acc%,%% ',  mandatory: true},
+    {id: 'value', dynamic: true, defaultValue: '%%', description: 'the accumulated value use %$acc%,%% %$prev%',  mandatory: true},
     {id: 'avoidFirst', as: 'boolean', description: 'used for join with separators, initialValue uses the first value without adding the separtor'},
   ],
   impl: (ctx,varName,initialValue,value,avoidFirst) => source => (start, sink) => {
     if (start !== 0) return
-    let acc, first = true
+    let acc, prev, first = true
     source(0, function reduce(t, d) {
       if (t == 1) {
         if (first) {
@@ -148,9 +144,10 @@ jb.component('rx.reduce', {
           if (!avoidFirst)
             acc = value({data: d.data, vars: {...d.vars, [varName]: acc}})
         } else {
-          acc = value({data: d.data, vars: {...d.vars, [varName]: acc}})
+          acc = value({data: d.data, vars: {...d.vars, prev, [varName]: acc}})
         }
         sink(t, acc == null ? d : {data: d.data, vars: {...d.vars, [varName]: acc}})
+        prev = d.data
       } else {
         sink(t, d)
       }
@@ -312,7 +309,11 @@ jb.component('rx.distinctUntilChanged', {
   type: 'rx',
   description: 'filters adjacent items in stream', 
   category: 'filter',
-  impl: () => jb.callbag.distinctUntilChanged((prev,cur) => prev && cur && prev.data == cur.data)
+  params: [
+    {id: 'equalsFunc', dynamic: true, mandatory: true, defaultValue: ({data},{prev}) => data === prev, description: 'e.g. %% == %$prev%'},
+  ],
+  impl: (ctx,equalsFunc) => jb.callbag.distinctUntilChanged((prev,cur) => equalsFunc(ctx.setData(cur.data).setVar('prev',prev.data)))
+  //prev && cur && prev.data == cur.data)
 })
 
 jb.component('rx.catchError', {
@@ -741,7 +742,7 @@ class WatchableValueByRef {
         this.primitiveArraysDeltas[ref.$jb_obj[jbId]].push(opOnRef.$splice)
       }
       opEvent.newVal = newVal;
-      jb.log('watchable set',{opEvent,ref,opOnRef,srcCtx})
+      jb.log('watchable notify doOp',{opEvent,ref,opOnRef,srcCtx})
       if (this.transactionEventsLog)
         this.transactionEventsLog.push(opEvent)
       else

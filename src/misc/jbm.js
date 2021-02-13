@@ -290,11 +290,6 @@ jb.component('jbm.child', {
     }
 })
 
-jb.component('jbm.vDebugger', {
-    type: 'jbm',
-    impl: jbm.child('vDebugger',['vDebugger'])
-})
-
 jb.component('jbm.byUri', {
     type: 'jbm',
     params: [
@@ -353,4 +348,13 @@ jb.component('jbm.same', {
     impl: () => jb
 })
 
-
+jb.component('jbm.vDebugger', {
+    type: 'jbm',
+    impl: pipe(
+		jbm.child('vDebugger',['vDebugger']),
+		pipe(
+        	remote.action(() => jb.studio.initLocalCompsRefHandler(jb.studio.compsRefOfjbm(jb.parent))	,'%%'),
+			'%%'
+		)
+    )
+})

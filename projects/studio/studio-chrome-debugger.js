@@ -83,7 +83,7 @@ jb.chromeDebugger = {
             return cmpElem ? {
                 cmpId: cmpElem.getAttribute("cmp-id"),
                 frontEndState: cmpElem.state,
-                frameUri: [self,...Array.from(frames)].filter(x=>x.document == $0.ownerDocument).map(x=>x.jbUri)[0]
+                frameUri: [self,...Array.from(frames)].filter(x=>x.document == $0.ownerDocument).map(x=>x.jb.uri)[0]
             } : {}
         }
         await this.markSelected()
@@ -125,24 +125,16 @@ jb.component('chromeDebugger.logsCtrl', {
     })
 })
 
-jb.component('chromeDebugger.logsCtrl2', {
-    params: [
-        {id: 'uri', as: 'string'}
-    ],
-    type: 'control',
-    impl: group({
-        controls: widget.twoTierWidget(studio.eventTracker(), jbm.byUri('%$uri%')),
-        features: id('%$uri%')
-    })
-})
-
 jb.component('chromeDebugger.compCtrl', {
     params: [
         {id: 'uri', as: 'string'},
         {id: 'inspectedProps'},
     ],
     type: 'control',
-    impl: widget.twoTierWidget(studio.compInspector('%$inspectedProps%'), jbm.byUri('%$uri%'))
+    impl: group({
+        controls: widget.twoTierWidget(studio.compInspector('%$inspectedProps%'), jbm.byUri('%$uri%►vDebugger')),
+        features: group.wait(remote.data(jbm.vDebugger(),jbm.byUri('%$uri%')))
+    })
 })
 
 jb.component('chromeDebugger.cardCtrl', {
@@ -164,14 +156,3 @@ jb.component('chromeDebugger.openResource', {
     }
 })
 
-jb.component('chromeDebugger.refreshAfterSelection', {
-    type: 'feature',
-    impl: method('refreshAfterDebuggerSelection', runActions(
-        () => {
-            const sorted = Array.from(parent.document.querySelectorAll('[jb-selected-by-debugger]'))
-                .sort((x,y) => (+y.getAttribute('jb-selected-by-debugger')) - (+x.getAttribute('jb-selected-by-debugger')))
-            sorted.slice(1).forEach(el=>el.removeAttribute('jb-selected-by-debugger'))
-        },
-        action.refreshCmp('%%')
-    )),
-})

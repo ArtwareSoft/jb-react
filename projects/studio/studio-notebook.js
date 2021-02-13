@@ -9,48 +9,21 @@ jb.component('studio.notebook', {
       studio.ctxCounters()
     ],
     features: [
-        group.wait(pipe(
-          studio.fetchProjectSettings(),
-          Var('notebookId', '%$studio/project%.notebook'),
-          waitFor(ctx => jb.comps[ctx.exp('%$notebookId%')] ),
-          jbm.worker('notebook'),
-          remote.action(loadLibs(['watchable','notebook-worker']),'%%'),
-          remote.initShadowComponent('%$notebookId%', jbm.notebookWorker()),
-          studio.initNotebookSaveService()
+        group.wait(runActions(
+            pipe(
+              studio.fetchProjectSettings(),
+              ({data}) => self.jb_loadProject(data),
+            ),
+            Var('notebookId', '%$studio/project%.notebook'),
+            waitFor(ctx => jb.comps[ctx.exp('%$notebookId%')] ),
+            jbm.worker('notebook'),
+            remote.action(loadLibs(['ui-common','markdown','two-tier-widget','notebook-worker']),jbm.notebookWorker()),
+            remote.initShadowComponent('%$notebookId%', jbm.notebookWorker()),
+            studio.initNotebookSaveService(),
         )),
         feature.requireService(urlHistory.mapStudioUrlToResource('studio')),
         id('notebook-main')
     ]
-  })
-})
-
-jb.component('nb.notebook', {
-  type: 'control',
-  params: [
-    {id: 'elements', type: 'nb.elem[]'}
-  ],
-  impl: itemlist({
-    items: '%$elements%',
-    controls: group({
-      layout: layout.horizontal('10'),
-      controls: [
-        button({raised: false, features: feature.icon({icon: 'CardText', type: 'mdi'})}),
-        '%$notebookElem.editor()%',
-        widget.twoTierWidget(        
-          group({
-            controls: (ctx,{path}) => {
-                const ret = jb.run( new jb.jbCtx(ctx, { profile: jb.studio.valOfPath(path), forcePath: path, path: 'control' }), {type: 'control'})
-                return ret.result(ctx)
-            },
-            features: watchRef(studio.ref('%$path%'), 'yes')
-          }), jbm.notebookWorker()),
-      ],
-      features: [
-            variable('idx', ({},{index}) => index -1), 
-            variable('path', '%$studio/project%.notebook~impl~elements~%$idx%')
-        ]
-    }),
-    itemVariable: 'notebookElem'
   })
 })
 
@@ -59,18 +32,14 @@ jb.component('remote.initShadowComponent', {
   params: [
         {id: 'compId', as: 'string'},
         {id: 'jbm', type: 'jbm'},
-    ],
-    impl: runActions(
+  ],
+  impl: runActions(
+      studio.initLocalCompsRefHandler('%$compId%'),
       Var('code',({},{},{compId}) => jb.remoteCtx.serializeCmp(compId)),
-      remote.action(({},{code},{compId}) => {
-        const st = jb.studio
-        jb.remoteCtx.deSerializeCmp(code)
-        const compsRef = val => typeof val == 'undefined' ? jb.comps : (jb.comps = val);
-        compsRef.id = 'notebook-comps'
-        st.compsRefHandler = st.compsRefHandler || jb.initExtraWatchableHandler(compsRef)
-        st.compsRefHandler.resourceReferred(compId)
-        jb.callbag.subscribe(e=>st.scriptChange.next(e))(st.compsRefHandler.resourceChange)
-      }, '%$jbm%'),
+      remote.action(runActions(
+        ({},{code}) => jb.remoteCtx.deSerializeCmp(code),
+        studio.initLocalCompsRefHandler('%$compId%'),
+      ), '%$jbm%'),
       rx.pipe(
           studio.scriptChange(),
           rx.filter(equals('%path/0%','%$compId%')), 

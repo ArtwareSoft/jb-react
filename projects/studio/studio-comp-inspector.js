@@ -49,12 +49,11 @@ jb.component('studio.compInspector', {
     features: [
       variable('cmpId', firstSucceeding('%$$state.cmpId%', '%$inspectedProps.cmpId%')),
       variable('frameUri', firstSucceeding('%$$state.frameUri%', '%$inspectedProps.frameUri%')),
-      variable('frameOfElem', ({},{frameUri}) => [self,self.parent,...Array.from(frames)].filter(x=>x.jbUri == frameUri)[0]),
+      variable('frameOfElem', ({},{frameUri}) => [self,self.parent,...Array.from(frames)].filter(x=>x.jb.uri == frameUri)[0]),
       variable('elem', ({},{cmpId,frameOfElem}) => frameOfElem && frameOfElem.document.querySelector(`[cmp-id="${cmpId}"]`)),
       variable('inspectedCmp', ({},{frameOfElem, elem}) => 
             jb.path(elem && frameOfElem && frameOfElem.jb.ctxDictionary[elem.getAttribute('full-cmp-ctx')],'vars.cmp')),
       variable('inspectedCtx', '%$inspectedCmp/ctx%'),
-      feature.requireService(studio.editingService(),'%$frameUri%==studio'),
       chromeDebugger.refreshAfterSelection(),
       followUp.flow(
         source.callbag(({},{frameOfElem}) => frameOfElem && frameOfElem.jb.ui.refreshNotification),
@@ -151,4 +150,16 @@ jb.component('studio.eventsOfComp', {
         followUp.watchObservable(source.callbag(ctx => jb.ui.getSpy(ctx).observable()), 1000)
       ]
     })
+})
+
+jb.component('chromeDebugger.refreshAfterSelection', {
+  type: 'feature',
+  impl: method('refreshAfterDebuggerSelection', runActions(
+      () => {
+          const sorted = Array.from(parent.document.querySelectorAll('[jb-selected-by-debugger]'))
+              .sort((x,y) => (+y.getAttribute('jb-selected-by-debugger')) - (+x.getAttribute('jb-selected-by-debugger')))
+          sorted.slice(1).forEach(el=>el.removeAttribute('jb-selected-by-debugger'))
+      },
+      action.refreshCmp('%%')
+  )),
 })

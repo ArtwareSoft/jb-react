@@ -202,3 +202,27 @@ jb.component('studio.componentsList', {
     ]
   })
 })
+
+jb.component('studio.cmpsOfProjectByFiles', {
+  type: 'data',
+  impl: dynamicObject({
+    items: () => st.projectFiles(),
+    propertyName: '%%',
+    value: pipeline(
+      Var('file', '%%'),
+      () => st.projectCompsAsEntries(),
+      filter(
+          equals(
+            pipeline(
+              ({data}) => jb.studio.previewjb.comps[data][jb.location][0],
+              split({separator: '/', part: 'last'})
+            ),
+            '%$file%'
+          )
+        ),
+      '%[0]%',
+      aggregate(dynamicObject({items: '%%', propertyName: '%%', value: '%%'}))
+    )
+  }),
+  testData: 'sampleData'
+})

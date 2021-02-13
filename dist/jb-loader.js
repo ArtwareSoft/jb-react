@@ -209,7 +209,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       'xml': [ 'src/misc/xml.js' ],
       'jison': [ 'dist/jb-jison.js', 'src/misc/jison.js' ],
       'parsing': [ 'src/misc/parsing.js' ],
-      'notebook-worker': [ 'projects/studio/studio-path.js'],
+      'notebook-worker': [ 'projects/studio/studio-path.js','src/ui/notebook/notebook-common.js'],
       studio: [
         'dist/material.js', 'src/ui/watchable/text-editor.js',
         'src/misc/parsing.js',
@@ -229,17 +229,21 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
 
 Object.keys(jb_modules.$dependencies).forEach(m => jb_modules[m].dependencies = jb_modules.$dependencies[m])
 
+var jbFrame = (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : null;
+
 function jb_dynamicLoad(modules,prefix,suffix) {
   modules = modules || '';
-  const isDist = typeof window != 'undefined' && document.currentScript.getAttribute('src').indexOf('/dist/') != -1
+  const isDist = typeof document != 'undefined' && document.currentScript && document.currentScript.getAttribute('src').indexOf('/dist/') != -1
   if (isDist) {
     const scriptSrc = document.currentScript.getAttribute('src')
     const base = window.jbModuleUrl && (window.jbModuleUrl + '/dist') || scriptSrc.slice(0,scriptSrc.lastIndexOf('/'))
-    calcDependencies(modules).flatMap(m=>[m+'.js', `css/${m}.css`])
-      .forEach(m=>jb_loadFile([base,m].join('/')))
+    return calcDependencies(modules).flatMap(m=>[m+'.js', `css/${m}.css`])
+      .reduce((pr,m) => pr.then(()=> jb_loadFile([base,m].join('/'))), Promise.resolve())
   } else {
-    calcDependencies(modules).flatMap(m=>[m,...(jb_modules[`${m}-css`] ? [`${m}-css`]: [])]).forEach(m=>{
-      (jb_modules[m] || []).forEach(file=>{
+    return calcDependencies(modules)
+      .flatMap(m=>[m,...(jb_modules[`${m}-css`] ? [`${m}-css`]: [])])
+      .flatMap(m=> (jb_modules[m] || []).map(file=>({m,file})) )
+      .reduce((pr, {m,file})=> pr.then(() => {
         if (m == 'studio' && !file.match(/\//))
           file = 'projects/studio/studio-' + file + '.js';
 
@@ -251,9 +255,8 @@ function jb_dynamicLoad(modules,prefix,suffix) {
         if (suffix) file += suffix
 
         const url = (self.jbLoaderRelativePath ? '' : '/') + file;
-        jb_loadFile(url)
-      })
-    })
+        return jb_loadFile(url)
+      }), Promise.resolve())
   }
   function unique(ar) {
     const keys = {}, res = [];
@@ -272,24 +275,25 @@ function jb_dynamicLoad(modules,prefix,suffix) {
 
 if (typeof jb == 'undefined') jb = {}
 
-if (typeof window != 'undefined')
+if (typeof document != 'undefined')
   if (document.currentScript && document.currentScript.getAttribute('modules'))
     jb_dynamicLoad(document.currentScript.getAttribute('modules'),document.currentScript.getAttribute('prefix'),document.currentScript.getAttribute('suffix'));
 
 if (typeof global != 'undefined') global.jb_modules = jb_modules;
 
-function jb_loadProject() {
-  if (typeof jbProjectSettings == 'undefined') return
-  jbProjectSettings.baseUrl = jbProjectSettings.baseUrl || ''
+async function jb_loadProject(settings) {
+  settings = settings || jbFrame.jbProjectSettings
+  if (typeof settings == 'undefined') return
+  settings.baseUrl = settings.baseUrl || ''
   setLoadingPhase('libs')
-  jb_dynamicLoad(jbProjectSettings.libs,'',jbProjectSettings.suffix); // may load packaged libs from dist
+  await jb_dynamicLoad(settings.libs,'',settings.suffix); // may load packaged libs from dist
   setLoadingPhase('src');
-  [...(jbProjectSettings.jsFiles || []), ...(jbProjectSettings.cssFiles || [])]
-    .forEach(fn=> {
-      const path = pathOfProjectFile(fn,jbProjectSettings)
+  return [...(settings.jsFiles || []), ...(settings.cssFiles || [])]
+    .reduce((pr,fn) => pr.then(() => {
+      const path = pathOfProjectFile(fn,settings)
 //      console.log('loading file',fn,path)
-      jb_loadFile(path) 
-    })
+      return jb_loadFile(path) 
+    }), Promise.resolve())
 
   function pathOfProjectFile(fn,{project,baseUrl,source} = {}) {
     const isVscode = (source||'').indexOf('vscode') == 0
@@ -310,10 +314,11 @@ function jb_loadProject() {
   }
 
   function setLoadingPhase(phase) {
-    if (typeof document == 'undefined')
-      self.jbLoadingPhase = phase 
-    else 
-      document.write(`<script>jbLoadingPhase = '${phase}'</script>`)
+    self.jbLoadingPhase = phase 
+    // if (typeof document == 'undefined')
+    //   self.jbLoadingPhase = phase 
+    // else 
+    //   document.write(`<script>jbLoadingPhase = '${phase}'</script>`)
   }
 }
 jb_loadProject()
@@ -342,20 +347,36 @@ function jb_loadFile(url) {
     url = [self.jbBaseProjUrl.replace(/\/$/,''),url.replace(/^\//,'')].join('/')
   if (isWorker) {
     isJs && importScripts(location.origin+url)
-  } else {
+  } else if (typeof document != 'undefined' && document.currentScript) {
     if (isJs)
       document.write(`<script src="${url}" charset="UTF-8"></script>`)
     else
       document.write(`<link rel="stylesheet" type="text/css" href="${url}" />`);
+  } else {
+    return jb_loadFileFromEvent(url)
   }
- }
+}
+
+function jb_loadFileFromEvent(url) {
+  return new Promise(resolve => {
+    const type = url.indexOf('.css') == -1 ? 'script' : 'link'
+    var s = document.createElement(type)
+    s.setAttribute(type == 'script' ? 'src' : 'href',url)
+    if (type == 'script') 
+      s.setAttribute('charset','utf8') 
+    else 
+      s.setAttribute('rel','stylesheet')
+    s.onload = s.onerror = resolve
+    document.head.appendChild(s);
+  })
+}
  
 function jbm_create(libs,uri) { 
   return libs.reduce((pr,lib) => pr.then(jb => jbm_load_lib(jb,lib,uri)), Promise.resolve({uri})) 
 }
 
 function jbm_load_lib(jbm,lib,prefix) {
-  return new Promise((resolve,rej) => {
+  return new Promise(resolve => {
     const pre = prefix ? `!${prefix}!` : ''
     const base = typeof jbModuleUrl != 'undefined' && (window.jbModuleUrl + '/dist') || '/dist'
     var s = document.createElement("script");
@@ -366,6 +387,7 @@ function jbm_load_lib(jbm,lib,prefix) {
   })
 }
 
- if (typeof module != 'undefined')
+
+if (typeof module != 'undefined')
   module.exports = jb_modules;
 

@@ -30,27 +30,17 @@ jb.component('studio.pickAndOpen', {
 jb.component('studio.pickTitle', {
    type: 'control',
    impl: text({
-        text: studio.compName('%$dialogData/path%'),
-        features: css('display: block; margin-top: -20px')
+        text: studio.shortTitle('%$dialogData/path%'),
+        features: css('display: block; margin-top: -20px; background: white')
    })
 })
 
 jb.component('dialogFeature.studioPick', {
   type: 'dialog-feature',
   params: [
-    {id: 'from', as: 'string'}
+    {id: 'from', as: 'string', options: 'preview,studio'}
   ],
   impl: features(
-    feature.initValue('%$$dialog.endPick%', () => ctx =>
-        ctx.run(runActions(
-          writeValue('%$studio/pickSelectionCtxId%', '%$dialogData.ctx.id%'),
-          dialog.closeDialog(true)
-        ))
-    ),
-    frontEnd.onDestroy(({},{cmp,from})=> {
-      const _window = from == 'preview' ? st.previewWindow : window
-      cmp.cover.parentElement == _window.document.body && _window.document.body.removeChild(cmp.cover)
-    }),
     frontEnd.var('from','%$from%'),
     frontEnd.var('projectPrefix', studio.currentPagePath()),
     frontEnd.var('testHost', ctx => ['tests','studio-helper'].indexOf(ctx.exp('%$studio/project%')) != -1),
@@ -70,19 +60,38 @@ jb.component('dialogFeature.studioPick', {
       }
       return cmp.cover
     }),
-    method('hoverOnElem', (ctx,{},{from}) => {
-      const profElem = ctx.data
+    frontEnd.onDestroy(({},{cmp,from})=> {
       const _window = from == 'preview' ? st.previewWindow : window
-      const elemCtx = _window.jb.ctxDictionary[profElem.getAttribute('pick-ctx') || profElem.getAttribute('jb-ctx')]
+      cmp.cover.parentElement == _window.document.body && _window.document.body.removeChild(cmp.cover)
+    }),
+
+    method('hoverOnElem', (ctx,{},{from}) => {
+      const el = ctx.data
+      const _window = from == 'preview' ? st.previewWindow : window
+      const elemCtx = _window.jb.ctxDictionary[el.getAttribute('pick-ctx') || el.getAttribute('jb-ctx')]
       if (!elemCtx) return
-      Object.assign(ctx.vars.dialogData,{ elem: profElem, ctx: elemCtx, path: elemCtx.path })
+      Object.assign(ctx.vars.dialogData,{ elem: el, ctx: elemCtx, path: elemCtx.path })
       ctx.run(touch('%$studio/refreshPick%')) // trigger for refreshing the dialog
     }),
-    method('endPick', '%$$dialog/endPick()%'),
+    method('endPick', runActions(
+      writeValue('%$studio/pickSelectionCtxId%', '%$dialogData.ctx.id%'),
+      dialog.closeDialog(true)
+    )),
     frontEnd.flow(
       source.event('mousemove','%$_window/document%', obj(prop('capture',true))),
       rx.debounceTime(50),
-      rx.map( (ctx,{_window,cmp}) => eventToElem(ctx.data,_window,cmp.eventToElemPredicate)),
+      rx.reduce({
+        varName: 'moveRight',
+        value: ({data},{moveRight,prev}) => {
+          const dir = prev && prev.clientX < data.clientX ? 'right' : 'left'
+          return {dir, count: (moveRight.dir == dir) ? moveRight.count+1 : 1}
+        },
+        initialValue: obj(prop('count',0),prop('dir',''))
+      }),
+      rx.skip(1),      
+      rx.map( (ctx,{_window,cmp,moveRight}) => eventToElem(ctx.data,_window,moveRight,cmp.eventToElemPredicate)),
+      // rx.filter('%el/getAttribute%'),
+      // rx.distinctUntilChanged(equals('%el%','%$prev/el%')),
       rx.filter('%getAttribute%'),
       rx.distinctUntilChanged(),
       sink.BEMethod('hoverOnElem')
@@ -90,12 +99,12 @@ jb.component('dialogFeature.studioPick', {
     frontEnd.flow(
       rx.merge(
         rx.merge(
-          source.event('mousedown',jb.frame.document, obj(prop('capture',true))),
+          source.event('mousedown', ()=>jb.frame.document, obj(prop('capture',true))),
           source.event('mousedown','%$_window/document%', obj(prop('capture',true))),
         ),
         rx.pipe(
           rx.merge(
-            source.event('keyup',jb.frame.document, obj(prop('capture',true))),
+            source.event('keyup',()=>jb.frame.document, obj(prop('capture',true))),
             source.event('keyup','%$_window/document%', obj(prop('capture',true))),
           ),
           rx.filter('%keyCode% == 27')
@@ -132,7 +141,7 @@ jb.component('dialog.studioPickDialog', {
           }
         },
         `{ %top%; %left% } ~ .pick-toolbar { margin-top: -20px }
-        >.top{ %width% } >.left{ %height% } >.right{ left: %widthVal%;  %height% } >.bottom{ top: %heightVal%; %width% }`
+        >.top, >span { %width% } >.left{ %height% } >.right{ left: %widthVal%;  %height% } >.bottom{ top: %heightVal%; %width% }`
       )),
       watchRef({ref: '%$studio/refreshPick%', allowSelfRefresh: true}),
       dialogFeature.studioPick('%$from%'),
@@ -141,29 +150,20 @@ jb.component('dialog.studioPickDialog', {
   })
 })
 
-function eventToElem(e,_window, predicate) {
+function eventToElem(e,_window, moveRight, predicate) {
   const mousePos = { x: e.pageX - _window.pageXOffset, y: e.pageY  - _window.pageYOffset }
   const elems = _window.document.elementsFromPoint(mousePos.x, mousePos.y);
-  const results = elems.flatMap(el=>jb.ui.parents(el,{includeSelf: true}))
+  const results = jb.unique(elems.flatMap(el=>jb.ui.parents(el,{includeSelf: true}))
       .filter(e => e && e.getAttribute)
       .map( el => ({el, ctxId: checkCtxId(el.getAttribute('pick-ctx')) || checkCtxId(el.getAttribute('jb-ctx')) }))
-      .filter(({ctxId}) =>  ctxId)
+      .filter(({ctxId}) =>  ctxId), ({ctxId}) => ctxId)
   if (results.length == 0) return [];
 
-  // promote parents if the mouse is near the edge
-  const first_result = results.shift(); // shift also removes first item from results!
-  const edgeY = Math.max(3,Math.floor(jb.ui.outerHeight(first_result.el) / 10));
-  const edgeX = Math.max(3,Math.floor(jb.ui.outerWidth(first_result.el) / 10));
-  const zoom = +_window.document.body.style.zoom || 1
+  let index = moveRight.dir == 'right' ? 1 + Math.floor(moveRight.count / 10) : 0
+  if (index >= results.length) index = results.length-1
 
-  const orderedResults = jb.unique(results.filter( ({el}) => {
-      return Math.abs(mousePos.y - jb.ui.offset(el).top*zoom) < edgeY || Math.abs(mousePos.x - jb.ui.offset(el).left*zoom) < edgeX;
-  }).concat([first_result]), ({ctxId}) => ctxId)
-  let rnd = Math.floor(Math.random()*orderedResults.length *2) // use random to let the user flip between choices
-  if (rnd >= orderedResults.length) rnd = 0 // first result get twice weight
-
-  jb.log('studio pick eventToElem result',{orderedResults,rnd})
-  return orderedResults[rnd].el;
+  jb.log('studio pick eventToElem result',{results,index,results,elems})
+  return results[index].el // { el: results[index].el , index };
 
   function checkCtxId(ctxId) {
     return ctxId && predicate(_window.jb.ctxDictionary[ctxId].path) && ctxId

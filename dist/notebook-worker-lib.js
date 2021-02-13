@@ -6,38 +6,45 @@ eval(jb.importAllMacros());
 
 (function() {
 const st = jb.studio
-const {pipe,subscribe,takeUntil} = jb.callbag
 
-function compsRefOfPreviewJb(previewjb) {
-	st.compsHistory = []
-	historyWin = 5
+Object.assign(st, {
+  compsHistory: [],
+  scriptChange: jb.callbag.subject(),
+  compsRefOfjbm(jbm, {historyWin, compsRefId} = {historyWin: 5, compsRefId: 'comps'}) {
 	function compsRef(val,opEvent,{source}= {}) {
 		if (typeof val == 'undefined')
-			return previewjb.comps
+			return jbm.comps
 		else {
-			val.$jb_selectionPreview = opEvent && opEvent.srcCtx && opEvent.srcCtx.vars.selectionPreview
-			if (!val.$jb_selectionPreview)
-			if (source != 'probe') {
-				st.compsHistory.push({before: previewjb.comps, after: val, opEvent: opEvent, undoIndex: st.undoIndex})
-				if (st.compsHistory.length > historyWin)
-					st.compsHistory = st.compsHistory.slice(-1*historyWin)
-			}
-
-			previewjb.comps = val
-			if (opEvent)
-				st.undoIndex = st.compsHistory.length
+			if (historyWin) updateHistory(val,opEvent,source)
+			jbm.comps = val
 		}
 	}
-	//compsRef.frame = previewjb.frame
-	compsRef.id = 'comps'
+	compsRef.id = compsRefId
 	return compsRef
-}
-st.scriptChange = jb.callbag.subject()
 
-st.initCompsRefHandler = function(previewjb, allowedTypes) {
+	function updateHistory(val, opEvent, source) {
+		val.$jb_selectionPreview = opEvent && opEvent.srcCtx && opEvent.srcCtx.vars.selectionPreview
+		if (!val.$jb_selectionPreview && source != 'probe') {
+			st.compsHistory.push({before: jbm.comps, after: val, opEvent: opEvent, undoIndex: st.undoIndex})
+			if (st.compsHistory.length > historyWin)
+				st.compsHistory = st.compsHistory.slice(-1*historyWin)
+		}
+			if (opEvent)
+				st.undoIndex = st.compsHistory.length
+	}
+  },
+  initLocalCompsRefHandler(compsRef,compId) {
+	if (st.compsRefHandler) return
+    st.compsRefHandler = jb.initExtraWatchableHandler(compsRef)
+    st.compsRefHandler.resourceReferred(compId)
+    jb.callbag.subscribe(e=>st.scriptChange.next(e))(st.compsRefHandler.resourceChange)
+  },
+
+  initReplaceableCompsRefHandler(compsRef, {allowedTypes}) {
+  	// CompsRefHandler may need to be replaced when reloading the preview iframe
+ 	const {pipe,subscribe,takeUntil} = jb.callbag
 	const oldHandler = st.compsRefHandler
 	oldHandler && oldHandler.stopListening.next(1)
-	const compsRef = compsRefOfPreviewJb(previewjb)
 	st.compsRefHandler = jb.initExtraWatchableHandler(compsRef, {oldHandler, initUIObserver: true})
 	st.compsRefHandler.allowedTypes = st.compsRefHandler.allowedTypes.concat(allowedTypes)
 	st.compsRefHandler.stopListening = jb.callbag.subject()
@@ -54,20 +61,18 @@ st.initCompsRefHandler = function(previewjb, allowedTypes) {
 			e.srcCtx.run(writeValue('%$studio/lastStudioActivity%',() => st.lastStudioActivity))
 
 			st.highlightByScriptPath && st.highlightByScriptPath(e.path)
-		}))
-}
+	}))
 
-function writeValueToDataResource(path,value) {
-	if (path.length > 1 && ['watchableData','passiveData'].indexOf(path[1]) != -1) {
-		const resource = jb.removeDataResourcePrefix(path[0])
-		const dataPath = '%$' + [resource, ...path.slice(2)].map(x=>isNaN(+x) ? x : `[${x}]`).join('/') + '%'
-		return st.previewjb.exec(writeValue(dataPath,_=>value))
-	}
-}
+	function writeValueToDataResource(path,value) {
+		if (path.length > 1 && ['watchableData','passiveData'].indexOf(path[1]) != -1) {
+			const resource = jb.removeDataResourcePrefix(path[0])
+			const dataPath = '%$' + [resource, ...path.slice(2)].map(x=>isNaN(+x) ? x : `[${x}]`).join('/') + '%'
+			return st.previewjb.exec(writeValue(dataPath,_=>value))
+		}
+	}	
+  },
 
-// adaptors
-
-Object.assign(st,{
+  // adaptors
   val: v => st.compsRefHandler.val(v),
   writeValue: (ref,value,ctx) => st.compsRefHandler.writeValue(ref,value,ctx),
   objectProperty: (obj,prop) => st.compsRefHandler.objectProperty(obj,prop),
@@ -114,7 +119,7 @@ Object.assign(st,{
   writeValueOfPath: (path,value,ctx) => st.writeValue(st.refOfPath(path),value,ctx),
   getComp: id => st.previewjb.comps[id],
   compAsStr: id => jb.prettyPrintComp(id,st.getComp(id),{comps: jb.studio.previewjb.comps}),
-  isStudioCmp: id => (jb.path(jb.comps,[id,jb.location,0]) || '').indexOf('projects/studio') != -1
+  isStudioCmp: id => (jb.path(jb.comps,[id,jb.location,0]) || '').indexOf('!st!') != -1
 })
 
 // write operations with logic
@@ -367,8 +372,113 @@ jb.component('studio.getOrCreateCompInArray', {
 	}
 })
 
+jb.component('studio.initLocalCompsRefHandler', {
+  type: 'action',
+  params: [
+    {id: 'compId', as: 'string', description: 'comp to make watchable' },
+    {id: 'compsRefId', as: 'string', defaultValue: 'comps'},
+  ],
+  impl: (ctx,compId,compsRefId) => {
+	const st = jb.studio
+	st.initLocalCompsRefHandler(st.compsRefOfjbm(jb, {historyWin: 5, compsRefId }), compId )
+  }
+})
+
 })()
 ;
+
+var {nb,studio,widget,markdown} = jb.ns('nb,studio,widget,markdown')
+
+jb.component('nb.notebook', {
+  type: 'control',
+  params: [
+    {id: 'elements', type: 'nb.elem[]'}
+  ],
+  impl: itemlist({
+    items: '%$elements%',
+    controls: group({
+      layout: layout.horizontal('10'),
+      controls: [
+        button({raised: false, features: feature.icon({icon: 'CardText', type: 'mdi'})}),
+        '%$notebookElem.editor()%',
+        widget.twoTierWidget(        
+          group({
+            controls: (ctx,{path}) => {
+                const ret = jb.run( new jb.jbCtx(ctx, { profile: jb.studio.valOfPath(path), forcePath: path, path: 'control' }), {type: 'control'})
+                return ret.result(ctx)
+            },
+            features: followUp.flow(
+                source.watchableData(studio.ref('%$path%'), 'yes'),
+                sink.refreshCmp()
+            )
+          }), jbm.notebookWorker()),
+      ],
+      features: [
+            variable('idx', ({},{index}) => index -1), 
+            variable('path', '%$studio/project%.notebook~impl~elements~%$idx%')
+        ]
+    }),
+    itemVariable: 'notebookElem'
+  })
+})
+
+jb.component('studio.notebookElem', {
+    type: 'nb.elem',
+    params: [
+        { id: 'result', type: 'control', dynamic: true},
+        { id: 'editor', type: 'control', dynamic: true},
+    ],
+    impl: ctx => ctx.params
+})
+
+jb.component('nb.markdown', {
+    type: 'nb.elem',
+    params: [
+        {id: 'markdown', as: 'string'}
+    ],
+    impl: studio.notebookElem(
+        markdown('%$markdown%'),
+//        widget.twoTierWidget(markdown(pipeline('%$profileContent%','%markdown%')), jbm.notebookWorker()),
+        editableText({
+            databind: studio.profileAsText('%$path%~markdown'),
+            style: editableText.markdown(),
+        }),
+    )
+})
+
+jb.component('nb.control', {
+    type: 'nb.elem',
+    params: [
+        {id: 'control', type: 'control', dynamic: true}
+    ],
+    impl: studio.notebookElem(
+        '%$control()%',
+        // (ctx,{profileContent,path}) => 
+        //     jb.run( new jb.jbCtx(ctx, { profile: profileContent.control, forcePath: path, path: 'control' }), {type: 'control'}),
+
+        group({ 
+            controls: studio.jbEditorInteliTree('%$path%~control'),
+            features: studio.jbEditorContainer('comp-in-jb-editor')
+        }))
+})
+
+jb.component('nb.data', {
+    type: 'nb.elem',
+    params: [
+        {id: 'name', as: 'string', mandatory: true},
+        {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
+        {id: 'watchable', as: 'boolean', type: 'boolean', description: 'E.g., selected item variable'}
+    ],
+    impl: studio.notebookElem(text('%$value%'), studio.jbEditor('%$path%~value') )
+})
+
+jb.component('nb.javascript', {
+    type: 'nb.elem',
+    params: [
+        {id: 'code', as: 'string'}
+    ],
+    impl: studio.notebookElem(nb.evalCode('%$code%'), studio.editableSource('%$path%~code') )
+});
 
 
 };

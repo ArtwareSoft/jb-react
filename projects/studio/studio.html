@@ -8,15 +8,14 @@
   <script type="text/javascript" src="/src/loader/jb-loader.js"
     modules="common,ui-common,two-tier-widget,remote,material,ui-tree,dragula,codemirror,pretty-print,markdown-editor,studio,history,animate,md-icons,fuse" prefix="!st!"></script>
   <link rel="stylesheet" type="text/css" href="/projects/studio/css/studio.css"/>
-  <script type="text/javascript" src="/dist/spy-viewer.js"></script>
 </head>
 <body style="margin:0">
 
 <div id="studio" style="background-color: var(--jb-editor-background);width:1280px; margin-left: 2px"> </div>
 <script>
+  jb.initSpyByUrl()
   jb.exec({$: 'defaultTheme'})
-  jb.ui.renderWidget({$:'studio.all'},document.getElementById('studio'))
-  //jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry().run({$:'studio.all'})),document.getElementById('studio'))
+  jb.ui.renderWidget({$:'studio.all'}, document.getElementById('studio'))
 </script>
 </body>
 </html>

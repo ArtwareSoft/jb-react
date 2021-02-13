@@ -273,7 +273,7 @@ jb.remoteCtx = {
     deSerializeCmp(code) {
         if (!code) return
         try {
-            const cmp = eval('('+code+')')
+            const cmp = eval(`(function() { ${jb.importAllMacros()}; return ${code} })()`)
             const res = {...cmp, [jb.location]: cmp.location, [jb.loadingPhase]: cmp.loadingPhase }
             delete res.location
             delete res.loadingPhase
@@ -578,11 +578,6 @@ jb.component('jbm.child', {
     }
 })
 
-jb.component('jbm.vDebugger', {
-    type: 'jbm',
-    impl: jbm.child('vDebugger',['vDebugger'])
-})
-
 jb.component('jbm.byUri', {
     type: 'jbm',
     params: [
@@ -641,7 +636,16 @@ jb.component('jbm.same', {
     impl: () => jb
 })
 
-
+jb.component('jbm.vDebugger', {
+    type: 'jbm',
+    impl: pipe(
+		jbm.child('vDebugger',['vDebugger']),
+		pipe(
+        	remote.action(() => jb.studio.initLocalCompsRefHandler(jb.studio.compsRefOfjbm(jb.parent))	,'%%'),
+			'%%'
+		)
+    )
+})
 ;
 
 jb.component('source.remote', {

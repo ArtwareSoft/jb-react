@@ -40,10 +40,12 @@ const studioFiles = filesOfModules('common,ui-common,ui-tree,dragula,codemirror-
     .concat(jb_modules.studio.map(file => file.match(/\//) ? file : 'projects/studio/studio-' + file + '.js'));
 const studioCssFiles = ['/css/styles.css','css/font.css','/projects/studio/css/studio.css']
   .concat(filesOfModules('codemirror-css,material-css')).filter(x=>x.match(/.css$/));
-const vDebuggerFiles = [...filesOfModules('common,ui-common,remote,two-tier-widget'),
-'/src/ui/styles/codemirror-styles.js', '/src/ui/tree/table-tree.js', '/projects/studio/studio-path.js', '/projects/studio/studio-event-tracker.js']
+const vDebuggerFiles = [...filesOfModules('common,ui-common,ui-tree,remote,two-tier-widget'),
+'/src/ui/styles/codemirror-styles.js', '/src/ui/tree/table-tree.js','src/ui/watchable/text-editor.js',
+ ...['path','model-components','event-tracker','comp-inspector'].map(x=>`/projects/studio/studio-${x}.js`)]
 
-'core,common,ui-common,watchable,animate,d3,cards,cards-sample-data,pretty-print,parsing,xml,puppeteer,rx,md-icons,remote,two-tier-widget,notebook-worker'
+
+'core,common,ui-common,watchable,animate,d3,cards,cards-sample-data,pretty-print,parsing,xml,puppeteer,rx,md-icons,remote,two-tier-widget,markdown,notebook-worker'
   .split(',').forEach(m=>packLibrary(m,jb_modules[m]))
 
 packLibrary('codemirror',filesOfModules('codemirror-js-files'))

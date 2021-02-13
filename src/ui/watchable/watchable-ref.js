@@ -65,7 +65,7 @@ class WatchableValueByRef {
         this.primitiveArraysDeltas[ref.$jb_obj[jbId]].push(opOnRef.$splice)
       }
       opEvent.newVal = newVal;
-      jb.log('watchable set',{opEvent,ref,opOnRef,srcCtx})
+      jb.log('watchable notify doOp',{opEvent,ref,opOnRef,srcCtx})
       if (this.transactionEventsLog)
         this.transactionEventsLog.push(opEvent)
       else

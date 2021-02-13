@@ -20,6 +20,11 @@ st.initStudioEditing = () => {
     .forEach(e=>st.copyCompFromStudioToPreview(e))
 }
 
+jb.component('studio.editingService',{
+	type: 'service',
+	impl: () => ({ init: () => st.initStudioEditing() })
+})
+
 jb.component('studio.fetchProjectSettings', {
   impl: ctx => {
     const host = ctx.run(firstSucceeding('%$queryParams/host%','studio'))
@@ -38,11 +43,6 @@ jb.component('studio.fetchProjectSettings', {
         })
     }
   }
-})
-
-jb.component('studio.editingService',{
-  type: 'service',
-  impl: () => ({ init: () => st.initStudioEditing() })
 })
 
 st.copyCompFromStudioToPreview = function(e) {
@@ -139,7 +139,8 @@ st.initPreview = function(preview_window,allowedTypes) {
       } catch (e) {}
   })
 
-  st.initCompsRefHandler(st.previewjb, allowedTypes)
+  st.initReplaceableCompsRefHandler(st.compsRefOfjbm(st.previewjb), {allowedTypes})
+
   changedComps.forEach(e=>{
     st.compsRefHandler.resourceReferred(e[0])
     st.writeValue(st.compsRefHandler.refOfPath([e[0]]), eval(`(${jb.prettyPrint(e[1],{noMacros: true})})`), new jb.jbCtx()) // update the history for future save

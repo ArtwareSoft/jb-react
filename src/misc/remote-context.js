@@ -80,7 +80,7 @@ jb.remoteCtx = {
     deSerializeCmp(code) {
         if (!code) return
         try {
-            const cmp = eval('('+code+')')
+            const cmp = eval(`(function() { ${jb.importAllMacros()}; return ${code} })()`)
             const res = {...cmp, [jb.location]: cmp.location, [jb.loadingPhase]: cmp.loadingPhase }
             delete res.location
             delete res.loadingPhase
