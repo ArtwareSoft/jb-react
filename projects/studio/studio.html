@@ -4,18 +4,21 @@
   <script type="text/javascript">
     jbUri = 'studio';
     startTime = new Date().getTime();
+    jbProjectSettings = {
+      libs: 'common,ui-common,two-tier-widget,remote,material,ui-tree,dragula,codemirror,pretty-print,markdown-editor,studio,history,animate,md-icons,fuse',
+      jsFiles: [],
+      project: 'studio'
+    }
   </script>
   <script type="text/javascript" src="/src/loader/jb-loader.js"
-    modules="common,ui-common,two-tier-widget,remote,material,ui-tree,dragula,codemirror,pretty-print,markdown-editor,studio,history,animate,md-icons,fuse" prefix="!st!"></script>
-  <link rel="stylesheet" type="text/css" href="/projects/studio/css/studio.css"/>
+  modules="common,ui-common,two-tier-widget,remote,material,ui-tree,dragula,codemirror,pretty-print,markdown-editor,studio,history,animate,md-icons,fuse" prefix="!st!"></script>
+<link rel="stylesheet" type="text/css" href="/projects/studio/css/studio.css"/>
 </head>
 <body style="margin:0">
 
-<div id="studio" style="background-color: var(--jb-editor-background);width:1280px; margin-left: 2px"> </div>
+<div id="main" style="background-color: var(--jb-editor-background);width:1280px; margin-left: 2px"> </div>
 <script>
-  jb.initSpyByUrl()
-  jb.exec({$: 'defaultTheme'})
-  jb.ui.renderWidget({$:'studio.all'}, document.getElementById('studio'))
+	window.jb_initWidget && jb_initWidget()
 </script>
 </body>
 </html>

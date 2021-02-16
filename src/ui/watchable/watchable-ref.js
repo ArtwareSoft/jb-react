@@ -388,6 +388,9 @@ class WatchableValueByRef {
   }
 }
 
+const resourcesRef = val => typeof val == 'undefined' ? jb.resources : (jb.resources = val)
+resourcesRef.id = 'resources'
+
 Object.assign(jb, {
     WatchableValueByRef,
     comparePaths(path1,path2) { // 0- equals, -1,1 means contains -2,2 lexical
@@ -400,10 +403,6 @@ Object.assign(jb, {
         if (i == path2.length && i < path1.length) return 1;
         return path1[i] < path2[i] ? -2 : 2
     },
-    rebuildRefHandler() {
-      jb.mainWatchableHandler && jb.mainWatchableHandler.dispose()
-      jb.setMainWatchableHandler(new WatchableValueByRef(resourcesRef))
-    },
     isWatchable: ref => jb.refHandler(ref) instanceof WatchableValueByRef || ref && ref.$jb_observable,
     refObservable(ref,{cmp,includeChildren,srcCtx} = {}) { // cmp._destroyed is checked before notification
       if (ref && ref.$jb_observable)
@@ -413,18 +412,14 @@ Object.assign(jb, {
         return jb.callbag.fromIter([])
       }
       return jb.refHandler(ref).getOrCreateObservable({ref,cmp,includeChildren,srcCtx})
+    },
+    rebuildRefHandler() { // used to clean after tests
+      jb.mainWatchableHandler && jb.mainWatchableHandler.dispose()
+      jb.setMainWatchableHandler(new WatchableValueByRef(resourcesRef))
     }
 })
 
 jb.setMainWatchableHandler(new WatchableValueByRef(resourcesRef))
-
-function resourcesRef(val) {
-  if (typeof val == 'undefined')
-    return jb.resources;
-  else
-    jb.resources = val;
-}
-resourcesRef.id = 'resources'
 
 jb.component('runTransaction', {
   type: 'action',

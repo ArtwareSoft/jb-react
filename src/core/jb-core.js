@@ -6,7 +6,9 @@ function jb_run(ctx,parentParam,settings) {
   if (ctx.probe && ctx.probe.outOfTime)
     return
   if (jb.ctxByPath) jb.ctxByPath[ctx.path] = ctx
-  let res = do_jb_run(...arguments)
+  const runner = () => do_jb_run(...arguments)
+  Object.defineProperty(runner, 'name', { value: `${ctx.path} ${ctx.profile && ctx.profile.$ ||''}-prepare param` })        
+  let res = runner(...arguments)
   if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
       res = ctx.probe.record(ctx,res) || res
 //  ctx.profile && jb.log('core result', [ctx.id,res,ctx,parentParam,settings])
@@ -42,8 +44,7 @@ function do_jb_run(ctx,parentParam,settings) {
       case 'profile':
         if (!run.impl)
           run.ctx.callerPath = ctx.path;
-
-        run.preparedParams.forEach(function prepareParam(paramObj) {
+        const prepareParam = paramObj => {
           switch (paramObj.type) {
             case 'function': run.ctx.params[paramObj.name] = paramObj.outerFunc(run.ctx) ;  break;
             case 'array': run.ctx.params[paramObj.name] =
@@ -53,10 +54,14 @@ function do_jb_run(ctx,parentParam,settings) {
             default: run.ctx.params[paramObj.name] =
               jb_run(new jbCtx(run.ctx,{profile: paramObj.prof, forcePath: paramObj.forcePath || ctx.path + '~' + paramObj.path, path: ''}), paramObj.param);
           }
-        })
+        }
+        Object.defineProperty(prepareParam, 'name', { value: `${run.ctx.path} ${profile.$ ||''}-prepare param` })        
+  
+        run.preparedParams.forEach(paramObj => prepareParam(paramObj))
         const out = run.impl ? run.impl.call(null,run.ctx,...run.preparedParams.map(param=>run.ctx.params[param.name])) 
           : jb_run(new jbCtx(run.ctx, { cmpCtx: run.ctx }),parentParam)
         return castToParam(out,parentParam)
+
     }
   } catch (e) {
     if (ctx.vars.$throw) throw e

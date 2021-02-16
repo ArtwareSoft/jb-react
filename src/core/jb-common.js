@@ -1,5 +1,4 @@
-var { not,and,or,contains,writeValue,obj,prop,log,pipeline,filter,firstSucceeding,runActions } 
-  = jb.ns('not,and,or,contains,writeValue,obj,prop,log,pipeline,filter,firstSucceeding,runActions')
+var { not,contains,writeValue,obj,prop } = jb.ns('not,contains,writeValue,obj,prop') // use in module
 
 jb.component('call', {
   type: 'any',
@@ -1214,12 +1213,24 @@ jb.component('addComponent', {
 })
 
 jb.component('loadLibs', {
-  description: 'load a list of libraries',
+  description: 'load a list of libraries into current jbm',
   type: 'action',
   params: [
     {id: 'libs', as: 'array', mandatory: true},
   ],
-  impl: ({},libs) => libs.reduce((pr,lib) => pr.then(()=>jbm_load_lib(jb,lib,jb.uri)), Promise.resolve(0))
+  impl: ({},libs) => 
+    jb_dynamicLoad(libs, Object.assign(jb, { loadFromDist: true}))
 })
 
-var {Var,remark} = jb.macro // special system comps
+jb.component('loadAppFiles', {
+  description: 'load a list of app files into current jbm',
+  type: 'action',
+  params: [
+    {id: 'jsFiles', as: 'array', mandatory: true},
+  ],
+  impl: ({},jsFiles) => 
+    jb_loadProject({ uri: jb.uri, baseUrl: jb.baseUrl, libs: '', jsFiles })
+})
+
+// widely used in system code
+var { Var,remark,not,and,or,contains,writeValue,obj,prop,log,pipeline,filter,firstSucceeding,runActions,list,waitFor } = jb.macro

@@ -409,7 +409,11 @@ jb.component('studio.jbEditorInteliTree', {
       }),
       tree.dragAndDrop(),
       css.width({width: '500', selector: 'jb-editor'}),
-      studio.watchScriptChanges()
+      studio.watchPath({
+        path: '%$path%',
+        includeChildren: 'yes',
+        allowSelfRefresh: true
+      }),
     ]
   })
 })

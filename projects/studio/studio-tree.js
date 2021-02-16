@@ -146,7 +146,12 @@ jb.component('studio.controlTree', {
             applyMenuShortcuts: studio.treeMenu('%%')
           }),
           tree.dragAndDrop(),
-          studio.watchScriptChanges(),
+          watchRef({ref: '%$studio/profile_path%', strongRefresh: true, remark: 'override selection state'}),
+          studio.watchPath({
+            path: studio.currentPagePath(),
+            includeChildren: 'structure',
+            allowSelfRefresh: true
+          }),
           method(
             'newControl',
             studio.openNewProfileDialog({

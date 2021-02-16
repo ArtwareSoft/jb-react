@@ -12,13 +12,13 @@ jb.component('studio.notebook', {
         group.wait(runActions(
             pipe(
               studio.fetchProjectSettings(),
-              ({data}) => self.jb_loadProject(data),
+              ({data}) => self.jb_loadProject(data,{libs: true, appFiles: true}),
             ),
             Var('notebookId', '%$studio/project%.notebook'),
             waitFor(ctx => jb.comps[ctx.exp('%$notebookId%')] ),
             jbm.worker('notebook'),
             remote.action(loadLibs(['ui-common','markdown','two-tier-widget','notebook-worker']),jbm.notebookWorker()),
-            remote.initShadowComponent('%$notebookId%', jbm.notebookWorker()),
+            remote.initShadowComponent({compId: '%$notebookId%', jbm: jbm.notebookWorker(), initUIObserver: true}),
             studio.initNotebookSaveService(),
         )),
         feature.requireService(urlHistory.mapStudioUrlToResource('studio')),
@@ -30,21 +30,22 @@ jb.component('studio.notebook', {
 jb.component('remote.initShadowComponent', {
   type: 'action',
   params: [
-        {id: 'compId', as: 'string'},
-        {id: 'jbm', type: 'jbm'},
+    {id: 'compId', as: 'string'},
+    {id: 'initUIObserver', as: 'boolean', description: 'enable watchRef on comps' },
+    {id: 'jbm', type: 'jbm'},
   ],
   impl: runActions(
-      studio.initLocalCompsRefHandler('%$compId%'),
+      studio.initLocalCompsRefHandler({compIdAsReferred: '%$compId%', initUIObserver: '%$initUIObserver%'}),
       Var('code',({},{},{compId}) => jb.remoteCtx.serializeCmp(compId)),
       remote.action(runActions(
         ({},{code}) => jb.remoteCtx.deSerializeCmp(code),
-        studio.initLocalCompsRefHandler('%$compId%'),
+        studio.initLocalCompsRefHandler({compIdAsReferred: '%$compId%', initUIObserver: '%$initUIObserver%'}),
       ), '%$jbm%'),
       rx.pipe(
           studio.scriptChange(),
-          rx.filter(equals('%path/0%','%$compId%')), 
+          rx.filter(equals('%path/0%','%$compId%')),
           rx.map(obj(prop('path','%path%'),prop('op','%op%'))),
-          sink.action(remote.action( ctx => 
+          sink.action(remote.action( ctx =>
             jb.studio.compsRefHandler.doOp(jb.studio.compsRefHandler.refOfPath(ctx.data.path), ctx.data.op, ctx)
           , '%$jbm%'))
       )
@@ -116,6 +117,70 @@ jb.component('studio.notebookTopBar', {
       })
     ],
     features: [css('height: 73px; border-bottom: 1px #d9d9d9 solid;')]
+  })
+})
+
+jb.component('nb.nbElemToolbar', {
+  type: 'control',
+  params: [
+    {id: 'path'}
+  ],
+  impl: group({
+    layout: layout.horizontal('3'),
+    controls: [
+      button({
+        title: 'edit',
+        action: studio.openSizesEditor(),
+        style: button.mdcIcon(icon('edit'), '20')
+      }),
+      button({
+        title: 'Insert Before',
+        action: studio.openNewNbElemDialog({
+          mode: 'insert-before',
+          onClose: studio.openNotebookLastEdit()
+        }),
+        style: button.mdcIcon(icon('add'), '20')
+      }),
+      button({
+        title: 'insert after',
+        action: studio.openNewProfileDialog({
+          type: 'control',
+          mode: 'insert-control',
+          onClose: studio.openNotebookLastEdit()
+        }),
+        style: button.mdcIcon(icon('add'), '20')
+      }),
+      button({
+        title: 'view',
+        action: studio.openSizesEditor(),
+        style: button.mdcIcon(icon('view'), '20')
+      }),
+      button({
+        title: 'edit with preview',
+        action: studio.openSizesEditor(),
+        style: button.mdcIcon(icon('view'), '20')
+      }),
+      button({
+        title: 'full screen',
+        action: studio.openSizesEditor(),
+        style: button.mdcIcon(icon('view'), '20')
+      }),
+      button({
+        title: 'inteliscript',
+        action: studio.openSizesEditor(),
+        style: button.mdcIcon(icon('view'), '20')
+      }),
+      button({
+        title: 'javascript',
+        action: studio.openSizesEditor(),
+        style: button.mdcIcon(icon('view'), '20')
+      }),
+      button({
+        title: 'Delete',
+        action: studio.delete('%$path%'),
+        style: button.mdcIcon(icon('delete'), '20')
+      })
+    ]
   })
 })
 
@@ -207,21 +272,19 @@ jb.component('studio.notebookToolbar', {
         title: 'jbEditor',
         action: studio.openComponentInJbEditor(studio.currentPagePath()),
         style: button.mdcIcon(icon('build')),
-        features: button.ctrlAction(
-          studio.openJbEditor({path: '%$studio/profile_path%', newWindow: true})
-        )
+        features: button.ctrlAction(studio.openJbEditor({path: '%$studio/profile_path%', newWindow: true}))
       }),
       button({
         title: 'Outline',
         action: studio.openControlTree(),
         style: button.mdcIcon(icon('format_align_left'))
       }),
-    button({
-    title: 'Properties',
-    action: studio.openProperties(true),
-    style: button.mdcIcon(icon('storage'))
-    }),        
-    button({
+      button({
+        title: 'Properties',
+        action: studio.openProperties(true),
+        style: button.mdcIcon(icon('storage'))
+      }),
+      button({
         title: 'Refresh Notebook',
         action: refreshControlById('notebook-main'),
         style: button.mdcIcon(icon('refresh'))
@@ -229,12 +292,11 @@ jb.component('studio.notebookToolbar', {
       button({
         title: 'add',
         action: studio.openNewProfileDialog({
-          type: 'control',
+          type: 'nb.elem',
           mode: 'insert-control',
           onClose: studio.gotoLastEdit()
         }),
-        style: button.mdcIcon(icon('add')),
-        features: studio.dropHtml(studio.insertControl('%$newCtrl%'))
+        style: button.mdcIcon(icon('add'))
       }),
       button({
         title: 'Responsive',
@@ -243,18 +305,12 @@ jb.component('studio.notebookToolbar', {
       })
     ],
     features: [
-      feature.globalKeyboardShortcut(
-        'Alt++',
-        studio.openNewProfileDialog({type: 'control', mode: 'insert-control'})
-      ),
+      feature.globalKeyboardShortcut('Alt++', studio.openNewProfileDialog({type: 'control', mode: 'insert-control'})),
       feature.globalKeyboardShortcut('Alt+N', studio.pickAndOpen('studio')),
       feature.globalKeyboardShortcut('Ctrl+Z', studio.undo()),
       feature.globalKeyboardShortcut('Ctrl+Y', studio.redo()),
-      css.transformScale({x: '0.7', y: '0.7'}),
-      css.color({
-        background: 'var(--jb-menubar-selection-bg)',
-        selector: '~ button'
-      })
+      css.transformScale('0.7', '0.7'),
+      css.color({background: 'var(--jb-menubar-selection-bg)', selector: '~ button'})
     ]
   })
 })

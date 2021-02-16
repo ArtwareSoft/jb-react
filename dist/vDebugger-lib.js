@@ -9,7 +9,9 @@ function jb_run(ctx,parentParam,settings) {
   if (ctx.probe && ctx.probe.outOfTime)
     return
   if (jb.ctxByPath) jb.ctxByPath[ctx.path] = ctx
-  let res = do_jb_run(...arguments)
+  const runner = () => do_jb_run(...arguments)
+  Object.defineProperty(runner, 'name', { value: `${ctx.path} ${ctx.profile && ctx.profile.$ ||''}-prepare param` })        
+  let res = runner(...arguments)
   if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
       res = ctx.probe.record(ctx,res) || res
 //  ctx.profile && jb.log('core result', [ctx.id,res,ctx,parentParam,settings])
@@ -45,8 +47,7 @@ function do_jb_run(ctx,parentParam,settings) {
       case 'profile':
         if (!run.impl)
           run.ctx.callerPath = ctx.path;
-
-        run.preparedParams.forEach(function prepareParam(paramObj) {
+        const prepareParam = paramObj => {
           switch (paramObj.type) {
             case 'function': run.ctx.params[paramObj.name] = paramObj.outerFunc(run.ctx) ;  break;
             case 'array': run.ctx.params[paramObj.name] =
@@ -56,10 +57,14 @@ function do_jb_run(ctx,parentParam,settings) {
             default: run.ctx.params[paramObj.name] =
               jb_run(new jbCtx(run.ctx,{profile: paramObj.prof, forcePath: paramObj.forcePath || ctx.path + '~' + paramObj.path, path: ''}), paramObj.param);
           }
-        })
+        }
+        Object.defineProperty(prepareParam, 'name', { value: `${run.ctx.path} ${profile.$ ||''}-prepare param` })        
+  
+        run.preparedParams.forEach(paramObj => prepareParam(paramObj))
         const out = run.impl ? run.impl.call(null,run.ctx,...run.preparedParams.map(param=>run.ctx.params[param.name])) 
           : jb_run(new jbCtx(run.ctx, { cmpCtx: run.ctx }),parentParam)
         return castToParam(out,parentParam)
+
     }
   } catch (e) {
     if (ctx.vars.$throw) throw e
@@ -739,6 +744,7 @@ Object.assign(jb, {
 ;
 
 Object.assign(jb, {
+    project: Symbol.for('project'),
     location: Symbol.for('location'),
     loadingPhase: Symbol.for('loadingPhase'),
     component: (_id,comp) => {
@@ -746,7 +752,8 @@ Object.assign(jb, {
       try {
         const errStack = new Error().stack.split(/\r|\n/)
         const line = errStack.filter(x=>x && x != 'Error' && !x.match(/at Object.component/)).shift()
-        comp[jb.location] = line ? (line.match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
+        comp[jb.location] = line ? (line.split('at eval (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
+        comp[jb.project] = comp[jb.location][0].split('?')[1]
         comp[jb.location][0] = comp[jb.location][0].split('?')[0]
       
         if (comp.watchableData !== undefined) {
@@ -1048,8 +1055,7 @@ initSpyByUrl() {
 //jb.initSpyByUrl()
 ;
 
-var { not,and,or,contains,writeValue,obj,prop,log,pipeline,filter,firstSucceeding,runActions } 
-  = jb.ns('not,and,or,contains,writeValue,obj,prop,log,pipeline,filter,firstSucceeding,runActions')
+var { not,contains,writeValue,obj,prop } = jb.ns('not,contains,writeValue,obj,prop') // use in module
 
 jb.component('call', {
   type: 'any',
@@ -2264,15 +2270,27 @@ jb.component('addComponent', {
 })
 
 jb.component('loadLibs', {
-  description: 'load a list of libraries',
+  description: 'load a list of libraries into current jbm',
   type: 'action',
   params: [
     {id: 'libs', as: 'array', mandatory: true},
   ],
-  impl: ({},libs) => libs.reduce((pr,lib) => pr.then(()=>jbm_load_lib(jb,lib,jb.uri)), Promise.resolve(0))
+  impl: ({},libs) => 
+    jb_dynamicLoad(libs, Object.assign(jb, { loadFromDist: true}))
 })
 
-var {Var,remark} = jb.macro // special system comps;
+jb.component('loadAppFiles', {
+  description: 'load a list of app files into current jbm',
+  type: 'action',
+  params: [
+    {id: 'jsFiles', as: 'array', mandatory: true},
+  ],
+  impl: ({},jsFiles) => 
+    jb_loadProject({ uri: jb.uri, baseUrl: jb.baseUrl, libs: '', jsFiles })
+})
+
+// widely used in system code
+var { Var,remark,not,and,or,contains,writeValue,obj,prop,log,pipeline,filter,firstSucceeding,runActions,list,waitFor } = jb.macro;
 
 jb.callbag = {
       fromIter: iter => (start, sink) => {
@@ -4194,6 +4212,9 @@ class WatchableValueByRef {
   }
 }
 
+const resourcesRef = val => typeof val == 'undefined' ? jb.resources : (jb.resources = val)
+resourcesRef.id = 'resources'
+
 Object.assign(jb, {
     WatchableValueByRef,
     comparePaths(path1,path2) { // 0- equals, -1,1 means contains -2,2 lexical
@@ -4206,10 +4227,6 @@ Object.assign(jb, {
         if (i == path2.length && i < path1.length) return 1;
         return path1[i] < path2[i] ? -2 : 2
     },
-    rebuildRefHandler() {
-      jb.mainWatchableHandler && jb.mainWatchableHandler.dispose()
-      jb.setMainWatchableHandler(new WatchableValueByRef(resourcesRef))
-    },
     isWatchable: ref => jb.refHandler(ref) instanceof WatchableValueByRef || ref && ref.$jb_observable,
     refObservable(ref,{cmp,includeChildren,srcCtx} = {}) { // cmp._destroyed is checked before notification
       if (ref && ref.$jb_observable)
@@ -4219,18 +4236,14 @@ Object.assign(jb, {
         return jb.callbag.fromIter([])
       }
       return jb.refHandler(ref).getOrCreateObservable({ref,cmp,includeChildren,srcCtx})
+    },
+    rebuildRefHandler() { // used to clean after tests
+      jb.mainWatchableHandler && jb.mainWatchableHandler.dispose()
+      jb.setMainWatchableHandler(new WatchableValueByRef(resourcesRef))
     }
 })
 
 jb.setMainWatchableHandler(new WatchableValueByRef(resourcesRef))
-
-function resourcesRef(val) {
-  if (typeof val == 'undefined')
-    return jb.resources;
-  else
-    jb.resources = val;
-}
-resourcesRef.id = 'resources'
 
 jb.component('runTransaction', {
   type: 'action',
@@ -4864,7 +4877,7 @@ Object.assign(jb.ui, {
                 return jb.log('observable elem was detached in refresh process',{originatingCmpId,cmpId,elem})
             if (elemsToCheckCtxBefore[i] != elem.getAttribute('jb-ctx')) 
                 return jb.log('observable elem was refreshed from top in refresh process',{originatingCmpId,cmpId,elem})
-            let refresh = false, strongRefresh = false, cssOnly = true
+            let refresh = false, strongRefresh = false, cssOnly = true, delay = 0
             elem.getAttribute('observe').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{
                 if (!obs.allowSelfRefresh && jb.ui.findIncludeSelf(elem,`[cmp-id="${originatingCmpId}"]`)[0]) 
                     return jb.log('blocking self refresh observableElems',{cmpId,originatingCmpId,elem, obs,e})
@@ -4872,6 +4885,7 @@ Object.assign(jb.ui, {
                 if (!obsPath)
                     return jb.logError('observer ref path is empty',{originatingCmpId,cmpId,obs,e})
                 strongRefresh = strongRefresh || obs.strongRefresh
+                delay = delay || obs.delay
                 cssOnly = cssOnly && obs.cssOnly
                 const diff = jb.comparePaths(changed_path, obsPath)
                 const isChildOfChange = diff == 1
@@ -4882,7 +4896,10 @@ Object.assign(jb.ui, {
             })
             if (refresh) {
                 jb.log('refresh from observable elements',{cmpId,originatingCmpId,elem,ctx: e.srcCtx,e})
-                refresh && ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly})
+                if (delay) 
+                    jb.delay(delay).then(()=> ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly}))
+                else
+                    ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly})
             }
         })
 
@@ -4890,12 +4907,13 @@ Object.assign(jb.ui, {
             const parts = obsStr.split('://')
             const innerParts = parts[1].split(';')
             const includeChildren = ((innerParts[2] ||'').match(/includeChildren=([a-z]+)/) || ['',''])[1]
+            const delay = +((parts[1].match(/delay=([0-9]+)/) || ['',''])[1])
             const strongRefresh = innerParts.indexOf('strongRefresh') != -1
             const cssOnly = innerParts.indexOf('cssOnly') != -1
             const allowSelfRefresh = innerParts.indexOf('allowSelfRefresh') != -1
             
             return parts[0] == watchHandler.resources.id && 
-                { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh, cssOnly, allowSelfRefresh }
+                { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh, cssOnly, allowSelfRefresh, delay }
         }
     })
 })
@@ -5321,8 +5339,8 @@ class JbComponent {
         const observe = this.toObserve.map(x=>[
             x.ref.handler.urlOfRef(x.ref),
             x.includeChildren && `includeChildren=${x.includeChildren}`,
-            x.strongRefresh && `strongRefresh`,  x.cssOnly && `cssOnly`, x.allowSelfRefresh && `allowSelfRefresh`,  
-            x.phase && `phase=${x.phase}`].filter(x=>x).join(';')).join(',')
+            x.strongRefresh && `strongRefresh`,  x.cssOnly && `cssOnly`, x.allowSelfRefresh && `allowSelfRefresh`, x.delay && `delay=${x.delay}`] 
+            .filter(x=>x).join(';')).join(',')
         const methods = (this.method||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx.setVars({cmp: this, $props: this.renderProps, ...this.newVars}))}`).join(',')
         const eventhandlers = (this.eventHandler||[]).map(h=>`${h.event}-${ui.preserveCtx(h.ctx.setVars({cmp: this}))}`).join(',')
         const originators = this.originators.map(ctx=>ui.preserveCtx(ctx)).join(',')
@@ -5968,7 +5986,7 @@ jb.component('watchRef', {
     {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
     {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and reinit wait for data', type: 'boolean'},
     {id: 'cssOnly', as: 'boolean', description: 'refresh only css features', type: 'boolean'},
-    {id: 'phase', as: 'number', description: 'controls the order of updates on the same event. default is 0'}
+    {id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority'}
   ],
   impl: ctx => ({ watchRef: {refF: ctx.params.ref, ...ctx.params}})
 })
@@ -12604,25 +12622,20 @@ jb.component('jbm.worker', {
         const workerUri = networkPeer ? name : `${jb.uri}►${name}`
         const distPath = jb.jbm.pathOfDistFolder()
         const spyParam = ((jb.path(jb.frame,'location.href')||'').match('[?&]spy=([^&]+)') || ['', ''])[1]
+        const baseUrl = jb.path(jb.frame,'location.origin') || jb.baseUrl || ''
         const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
-        const workerCode = [
-`const jbUri = '${workerUri}'
-function jbm_create(libs,uri) {
-    return libs.reduce((jb,lib) => jbm_load_lib(jb,lib,uri), {uri})
-}
-function jbm_load_lib(jbm,lib,prefix) {
-    const pre = prefix ? ('!'+prefix+'!') : '';
-    importScripts('${distPath}/'+pre+lib+'-lib.js'); 
-    jbmFactory[lib](jbm);
-    return jbm
-}
-self.jb = jbm_create('${libs.join(',')}'.split(','),jbUri)`,
-...jsFiles.map(path=>`importScripts('${distPath}/${path}.js');`),
-`spy = jb.initSpy({spyParam: '${spyParam}'})
-${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
-`
-].join('\n')
-
+        const settings = { uri: workerUri, libs: libs.join(','), jsFiles, baseUrl, distPath }
+        const jbObj = { uri: workerUri, baseUrl, distPath }
+        const jb_loader_code = [jb_dynamicLoad.toString(),jb_loadProject.toString(),jbm_create.toString(),
+            jb_modules ? `self.jb_modules= ${JSON.stringify(jb_modules)}` : ''
+        ].join(';\n\n')
+        const workerCode = `
+${jb_loader_code};
+jb = ${JSON.stringify(jbObj)}
+jb_loadProject(${JSON.stringify(settings)}).then(() => {
+    self.spy = jb.initSpy({spyParam: '${spyParam}'})
+    self.${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
+})`
         const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
         return childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
     }
@@ -12638,7 +12651,7 @@ jb.component('jbm.child', {
     impl: ({},name,libs) => {
         if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
         // todo - implement the jbm interface on the promise object
-        return jb.frame.jbm_create && Promise.resolve(jb.frame.jbm_create(libs,`${jb.uri}►${name}`))
+        return jb.frame.jbm_create && Promise.resolve(jb.frame.jbm_create(libs, { loadFromDist: true, uri: `${jb.uri}►${name}`, distPath: jb.distPath}))
             .then(child => {
                 jb.jbm.childJbms[name] = child
                 child.parent = jb
@@ -13868,13 +13881,33 @@ Object.assign(st, {
 				st.undoIndex = st.compsHistory.length
 	}
   },
-  initLocalCompsRefHandler(compsRef,compId) {
-	if (st.compsRefHandler) return
-    st.compsRefHandler = jb.initExtraWatchableHandler(compsRef)
-    st.compsRefHandler.resourceReferred(compId)
-    jb.callbag.subscribe(e=>st.scriptChange.next(e))(st.compsRefHandler.resourceChange)
+  scriptChangeHandler(e) {
+	jb.log('watchable studio script changed',{ctx: e.srcCtx,e})
+	st.scriptChange.next(e)
+	writeValueToDataResource(e.path,e.newVal)
+	if (st.isStudioCmp(e.path[0]))
+		st.refreshStudioComponent(e.path)
+	st.lastStudioActivity = new Date().getTime()
+	e.srcCtx.run(writeValue('%$studio/lastStudioActivity%',() => st.lastStudioActivity))
+
+	st.highlightByScriptPath && st.highlightByScriptPath(e.path)
+
+	function writeValueToDataResource(path,value) {
+		if (path.length > 1 && ['watchableData','passiveData'].indexOf(path[1]) != -1) {
+			const resource = jb.removeDataResourcePrefix(path[0])
+			const dataPath = '%$' + [resource, ...path.slice(2)].map(x=>isNaN(+x) ? x : `[${x}]`).join('/') + '%'
+			return st.previewjb.exec(writeValue(dataPath,_=>value))
+		}
+	}		
   },
 
+  initLocalCompsRefHandler(compsRef,{ compIdAsReferred, initUIObserver } = {}) {
+	if (st.compsRefHandler) return
+    st.compsRefHandler = jb.initExtraWatchableHandler(compsRef, {initUIObserver})
+    compIdAsReferred && st.compsRefHandler.resourceReferred(compIdAsReferred)
+	jb.callbag.subscribe(e=>st.scriptChangeHandler(e))(st.compsRefHandler.resourceChange)
+  },
+  
   initReplaceableCompsRefHandler(compsRef, {allowedTypes}) {
   	// CompsRefHandler may need to be replaced when reloading the preview iframe
  	const {pipe,subscribe,takeUntil} = jb.callbag
@@ -13886,25 +13919,8 @@ Object.assign(st, {
 
 	pipe(st.compsRefHandler.resourceChange,
 		takeUntil(st.compsRefHandler.stopListening),
-		subscribe(e=>{
-			jb.log('script changed',{ctx: e.srcCtx,e})
-			st.scriptChange.next(e)
-			writeValueToDataResource(e.path,e.newVal)
-			if (st.isStudioCmp(e.path[0]))
-				st.refreshStudioComponent(e.path)
-			st.lastStudioActivity = new Date().getTime()
-			e.srcCtx.run(writeValue('%$studio/lastStudioActivity%',() => st.lastStudioActivity))
-
-			st.highlightByScriptPath && st.highlightByScriptPath(e.path)
-	}))
-
-	function writeValueToDataResource(path,value) {
-		if (path.length > 1 && ['watchableData','passiveData'].indexOf(path[1]) != -1) {
-			const resource = jb.removeDataResourcePrefix(path[0])
-			const dataPath = '%$' + [resource, ...path.slice(2)].map(x=>isNaN(+x) ? x : `[${x}]`).join('/') + '%'
-			return st.previewjb.exec(writeValue(dataPath,_=>value))
-		}
-	}	
+		subscribe(e=>st.scriptChangeHandler(e))
+	)
   },
 
   // adaptors
@@ -13954,7 +13970,7 @@ Object.assign(st, {
   writeValueOfPath: (path,value,ctx) => st.writeValue(st.refOfPath(path),value,ctx),
   getComp: id => st.previewjb.comps[id],
   compAsStr: id => jb.prettyPrintComp(id,st.getComp(id),{comps: jb.studio.previewjb.comps}),
-  isStudioCmp: id => (jb.path(jb.comps,[id,jb.location,0]) || '').indexOf('!st!') != -1
+  isStudioCmp: id => jb.path(jb.comps,[id,jb.project]) == 'studio'
 })
 
 // write operations with logic
@@ -14210,12 +14226,13 @@ jb.component('studio.getOrCreateCompInArray', {
 jb.component('studio.initLocalCompsRefHandler', {
   type: 'action',
   params: [
-    {id: 'compId', as: 'string', description: 'comp to make watchable' },
+    {id: 'compIdAsReferred', as: 'string', description: 'comp to make watchable' },
+    {id: 'initUIObserver', as: 'boolean', description: 'enable watchRef on comps' },
     {id: 'compsRefId', as: 'string', defaultValue: 'comps'},
   ],
-  impl: (ctx,compId,compsRefId) => {
+  impl: (ctx,compIdAsReferred,initUIObserver,compsRefId) => {
 	const st = jb.studio
-	st.initLocalCompsRefHandler(st.compsRefOfjbm(jb, {historyWin: 5, compsRefId }), compId )
+	st.initLocalCompsRefHandler(st.compsRefOfjbm(jb, {historyWin: 5, compsRefId }), {compIdAsReferred, initUIObserver} )
   }
 })
 
@@ -14671,7 +14688,8 @@ jb.component('studio.macroName', {
 
 jb.component('studio.cmpsOfProject', {
   type: 'data',
-  impl: () => st.projectCompsAsEntries().filter(e=>e[1].impl).map(e=>e[0]),
+  impl: () => 
+    st.projectCompsAsEntries().filter(e=>e[1].impl).map(e=>e[0]),
   testData: 'sampleData'
 })
 

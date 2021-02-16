@@ -36,22 +36,23 @@ jbProjectSettings = {
 </head>
 <body>
 	<div id="mem"> </div>
-	<div id="test"> </div>
+	<div id="testElem"> </div>
 	<div id="show"> </div>
  <script>
-	jb.uri = 'tests'
-	window.jb_initWidget && jb_initWidget()
-	jb.initSpyByUrl()
-	const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
-	const params = { 
-		testType: '',
-		show: location.href.indexOf('&show') != -1,
-		specificTest: urlQuery('test'),
-		rerun: urlQuery('rerun'),
-		pattern: urlQuery('pattern')
-	}
-	console.log(params)
-	jb.testers.runTests(params)
+	window.jb_initWidget && jb_initWidget().then(()=>{
+//		jb.uri = 'tests'
+		jb.initSpyByUrl()
+		const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
+		const params = { 
+			testType: '',
+			show: location.href.indexOf('&show') != -1,
+			specificTest: urlQuery('test'),
+			rerun: urlQuery('rerun'),
+			pattern: urlQuery('pattern')
+		}
+		console.log(params)
+		jb.testers.runTests(params)
+	})
   </script>
 </body>
 </html>

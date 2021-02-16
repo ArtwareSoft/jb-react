@@ -122,8 +122,8 @@ class JbComponent {
         const observe = this.toObserve.map(x=>[
             x.ref.handler.urlOfRef(x.ref),
             x.includeChildren && `includeChildren=${x.includeChildren}`,
-            x.strongRefresh && `strongRefresh`,  x.cssOnly && `cssOnly`, x.allowSelfRefresh && `allowSelfRefresh`,  
-            x.phase && `phase=${x.phase}`].filter(x=>x).join(';')).join(',')
+            x.strongRefresh && `strongRefresh`,  x.cssOnly && `cssOnly`, x.allowSelfRefresh && `allowSelfRefresh`, x.delay && `delay=${x.delay}`] 
+            .filter(x=>x).join(';')).join(',')
         const methods = (this.method||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx.setVars({cmp: this, $props: this.renderProps, ...this.newVars}))}`).join(',')
         const eventhandlers = (this.eventHandler||[]).map(h=>`${h.event}-${ui.preserveCtx(h.ctx.setVars({cmp: this}))}`).join(',')
         const originators = this.originators.map(ctx=>ui.preserveCtx(ctx)).join(',')

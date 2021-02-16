@@ -3,9 +3,9 @@ var { remoteTest} = jb.ns('remoteTest,widget')
 jb.component('remoteTest.childJbm', {
     impl: dataTest({
       timeout: 1000,
-      calculate: rx.pipe(
-        source.promise(jbm.child('tst')),
-        rx.flatMap(source.remote(source.data('hello'), '%%'))
+      calculate: pipe(
+        jbm.child('tst'), 
+        remote.data('hello','%%')
       ),
       expectedResult: equals('hello')
     })
@@ -14,9 +14,9 @@ jb.component('remoteTest.childJbm', {
 jb.component('remoteTest.childWorker', {
   impl: dataTest({
     timeout: 3000,
-    calculate: rx.pipe(
-      source.promise(jbm.worker('innerWorker')),
-      rx.flatMap(source.remote(source.promise(pipe(jbm.child('tst'),'hello')), '%%'))
+    calculate: pipe(
+      jbm.worker('innerWorker'), 
+      remote.data('hello','%%')
     ),
     expectedResult: equals('hello')
   })
@@ -261,7 +261,7 @@ jb.component('remoteTest.uiWorker', {
 
 jb.component('remoteTest.uiWorkerWithSamples', {
   type: 'remote',
-  impl: jbm.worker({id: 'ui-with-samples', libs: ['common','ui-common','remote','two-tier-widget'], jsFiles: ['../projects/ui-tests/test-data-samples'] })
+  impl: jbm.worker({id: 'ui-with-samples', libs: ['common','ui-common','remote','two-tier-widget']})
 })
 
 jb.component('remoteTest.twoTierWidget.button', {
@@ -354,9 +354,11 @@ jb.component('remoteTest.twoTierWidget.infiniteScroll', {
 
 jb.component('remoteTest.twoTierWidget.infiniteScroll.MDInplace', {
   impl: uiFrontEndTest({
+    runBefore: remote.action(loadAppFiles(['/projects/ui-tests/test-data-samples.js']), remoteTest.uiWorkerWithSamples()),
     renderDOM: true,
     control: widget.twoTierWidget(group({
-      controls: itemlist({
+      controls: [
+        itemlist({
         items: '%$people%',
         visualSizeLimit: 2,
         controls: [
@@ -381,7 +383,7 @@ jb.component('remoteTest.twoTierWidget.infiniteScroll.MDInplace', {
           css.height({height: '40', overflow: 'scroll'}),
           itemlist.infiniteScroll(2),  
         ]
-      }),
+      })],
       features: variable({name: 'sectionExpanded', watchable: true, value: obj() }),
     }),
     remoteTest.uiWorkerWithSamples()
@@ -435,3 +437,4 @@ jb.component('remoteTest.twoTierWidget.refresh', {
 //     expectedResult: contains('delta error true')
 //   })
 // })
+

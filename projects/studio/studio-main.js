@@ -1,4 +1,4 @@
-jb.component('studio.all', {
+jb.component('studio.main', {
   type: 'control',
   impl: group({
     controls: [
@@ -336,9 +336,7 @@ jb.component('studio.topBar', {
               }),
               group({
                 title: 'toolbar',
-                controls: [
-                  studio.toolbar()
-                ],
+                controls: studio.toolbar(),
                 features: css.margin('-10')
               }),
               controlWithFeatures(studio.searchComponent(), [css.margin('-10', '-100')])

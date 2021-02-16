@@ -30,13 +30,33 @@ Object.assign(st, {
 				st.undoIndex = st.compsHistory.length
 	}
   },
-  initLocalCompsRefHandler(compsRef,compId) {
-	if (st.compsRefHandler) return
-    st.compsRefHandler = jb.initExtraWatchableHandler(compsRef)
-    st.compsRefHandler.resourceReferred(compId)
-    jb.callbag.subscribe(e=>st.scriptChange.next(e))(st.compsRefHandler.resourceChange)
+  scriptChangeHandler(e) {
+	jb.log('watchable studio script changed',{ctx: e.srcCtx,e})
+	st.scriptChange.next(e)
+	writeValueToDataResource(e.path,e.newVal)
+	if (st.isStudioCmp(e.path[0]))
+		st.refreshStudioComponent(e.path)
+	st.lastStudioActivity = new Date().getTime()
+	e.srcCtx.run(writeValue('%$studio/lastStudioActivity%',() => st.lastStudioActivity))
+
+	st.highlightByScriptPath && st.highlightByScriptPath(e.path)
+
+	function writeValueToDataResource(path,value) {
+		if (path.length > 1 && ['watchableData','passiveData'].indexOf(path[1]) != -1) {
+			const resource = jb.removeDataResourcePrefix(path[0])
+			const dataPath = '%$' + [resource, ...path.slice(2)].map(x=>isNaN(+x) ? x : `[${x}]`).join('/') + '%'
+			return st.previewjb.exec(writeValue(dataPath,_=>value))
+		}
+	}		
   },
 
+  initLocalCompsRefHandler(compsRef,{ compIdAsReferred, initUIObserver } = {}) {
+	if (st.compsRefHandler) return
+    st.compsRefHandler = jb.initExtraWatchableHandler(compsRef, {initUIObserver})
+    compIdAsReferred && st.compsRefHandler.resourceReferred(compIdAsReferred)
+	jb.callbag.subscribe(e=>st.scriptChangeHandler(e))(st.compsRefHandler.resourceChange)
+  },
+  
   initReplaceableCompsRefHandler(compsRef, {allowedTypes}) {
   	// CompsRefHandler may need to be replaced when reloading the preview iframe
  	const {pipe,subscribe,takeUntil} = jb.callbag
@@ -48,25 +68,8 @@ Object.assign(st, {
 
 	pipe(st.compsRefHandler.resourceChange,
 		takeUntil(st.compsRefHandler.stopListening),
-		subscribe(e=>{
-			jb.log('script changed',{ctx: e.srcCtx,e})
-			st.scriptChange.next(e)
-			writeValueToDataResource(e.path,e.newVal)
-			if (st.isStudioCmp(e.path[0]))
-				st.refreshStudioComponent(e.path)
-			st.lastStudioActivity = new Date().getTime()
-			e.srcCtx.run(writeValue('%$studio/lastStudioActivity%',() => st.lastStudioActivity))
-
-			st.highlightByScriptPath && st.highlightByScriptPath(e.path)
-	}))
-
-	function writeValueToDataResource(path,value) {
-		if (path.length > 1 && ['watchableData','passiveData'].indexOf(path[1]) != -1) {
-			const resource = jb.removeDataResourcePrefix(path[0])
-			const dataPath = '%$' + [resource, ...path.slice(2)].map(x=>isNaN(+x) ? x : `[${x}]`).join('/') + '%'
-			return st.previewjb.exec(writeValue(dataPath,_=>value))
-		}
-	}	
+		subscribe(e=>st.scriptChangeHandler(e))
+	)
   },
 
   // adaptors
@@ -116,7 +119,7 @@ Object.assign(st, {
   writeValueOfPath: (path,value,ctx) => st.writeValue(st.refOfPath(path),value,ctx),
   getComp: id => st.previewjb.comps[id],
   compAsStr: id => jb.prettyPrintComp(id,st.getComp(id),{comps: jb.studio.previewjb.comps}),
-  isStudioCmp: id => (jb.path(jb.comps,[id,jb.location,0]) || '').indexOf('!st!') != -1
+  isStudioCmp: id => jb.path(jb.comps,[id,jb.project]) == 'studio'
 })
 
 // write operations with logic
@@ -372,12 +375,13 @@ jb.component('studio.getOrCreateCompInArray', {
 jb.component('studio.initLocalCompsRefHandler', {
   type: 'action',
   params: [
-    {id: 'compId', as: 'string', description: 'comp to make watchable' },
+    {id: 'compIdAsReferred', as: 'string', description: 'comp to make watchable' },
+    {id: 'initUIObserver', as: 'boolean', description: 'enable watchRef on comps' },
     {id: 'compsRefId', as: 'string', defaultValue: 'comps'},
   ],
-  impl: (ctx,compId,compsRefId) => {
+  impl: (ctx,compIdAsReferred,initUIObserver,compsRefId) => {
 	const st = jb.studio
-	st.initLocalCompsRefHandler(st.compsRefOfjbm(jb, {historyWin: 5, compsRefId }), compId )
+	st.initLocalCompsRefHandler(st.compsRefOfjbm(jb, {historyWin: 5, compsRefId }), {compIdAsReferred, initUIObserver} )
   }
 })
 

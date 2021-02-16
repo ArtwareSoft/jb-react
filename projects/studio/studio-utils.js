@@ -69,6 +69,7 @@ jb.component('studio.lastEdit', {
       .filter(r=>	!justNow || now - r.timeStamp < 1000)[0]
     if (!lastEvent) return
     const insertedIndex = jb.path(lastEvent.op.$splice,'0.2') && jb.path(lastEvent.op.$splice,'0.0')
+      || jb.path(lastEvent.op.$push) && lastEvent.oldVal.length
 		const res = [...lastEvent.path, insertedIndex].filter(x=>x != null)
 		if (res)
 			return res.join('~')
@@ -77,7 +78,7 @@ jb.component('studio.lastEdit', {
 
 jb.component('studio.gotoLastEdit', {
   type: 'action',
-  impl: studio.gotoPath(studio.lastEdit())
+  impl: runActions(jb.delay(10), studio.gotoPath(studio.lastEdit()))
 })
 
 jb.component('studio.compSource', {
@@ -99,7 +100,6 @@ jb.component('studio.watchPath', {
     {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
     {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
     {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component, including all features and variables', type: 'boolean'},
-    {id: 'recalcVars', as: 'boolean', description: 'recalculate feature variables', type: 'boolean'},
     {id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority'}
   ],
   impl: (ctx,path) => ({
@@ -110,9 +110,10 @@ jb.component('studio.watchPath', {
 jb.component('studio.watchScriptChanges', {
   type: 'feature',
   params: [
-	  {id: 'path', as: 'string', description: 'under this path, empty means any path'}
+    {id: 'path', as: 'string', description: 'under this path, empty means any path'},
+    {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
   ],
-  impl: watchRef('%$studio/lastStudioActivity%') //followUp.flow(studio.scriptChange(), rx.log('watch script refresh'), sink.refreshCmp())
+  impl: watchRef({ref: '%$studio/lastStudioActivity%', allowSelfRefresh: '%$allowSelfRefresh%'}) //followUp.flow(studio.scriptChange(), rx.log('watch script refresh'), sink.refreshCmp())
 })
 
 jb.component('studio.watchComponents', {

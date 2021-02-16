@@ -609,7 +609,7 @@ Object.assign(jb.ui, {
                 return jb.log('observable elem was detached in refresh process',{originatingCmpId,cmpId,elem})
             if (elemsToCheckCtxBefore[i] != elem.getAttribute('jb-ctx')) 
                 return jb.log('observable elem was refreshed from top in refresh process',{originatingCmpId,cmpId,elem})
-            let refresh = false, strongRefresh = false, cssOnly = true
+            let refresh = false, strongRefresh = false, cssOnly = true, delay = 0
             elem.getAttribute('observe').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{
                 if (!obs.allowSelfRefresh && jb.ui.findIncludeSelf(elem,`[cmp-id="${originatingCmpId}"]`)[0]) 
                     return jb.log('blocking self refresh observableElems',{cmpId,originatingCmpId,elem, obs,e})
@@ -617,6 +617,7 @@ Object.assign(jb.ui, {
                 if (!obsPath)
                     return jb.logError('observer ref path is empty',{originatingCmpId,cmpId,obs,e})
                 strongRefresh = strongRefresh || obs.strongRefresh
+                delay = delay || obs.delay
                 cssOnly = cssOnly && obs.cssOnly
                 const diff = jb.comparePaths(changed_path, obsPath)
                 const isChildOfChange = diff == 1
@@ -627,7 +628,10 @@ Object.assign(jb.ui, {
             })
             if (refresh) {
                 jb.log('refresh from observable elements',{cmpId,originatingCmpId,elem,ctx: e.srcCtx,e})
-                refresh && ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly})
+                if (delay) 
+                    jb.delay(delay).then(()=> ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly}))
+                else
+                    ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly})
             }
         })
 
@@ -635,12 +639,13 @@ Object.assign(jb.ui, {
             const parts = obsStr.split('://')
             const innerParts = parts[1].split(';')
             const includeChildren = ((innerParts[2] ||'').match(/includeChildren=([a-z]+)/) || ['',''])[1]
+            const delay = +((parts[1].match(/delay=([0-9]+)/) || ['',''])[1])
             const strongRefresh = innerParts.indexOf('strongRefresh') != -1
             const cssOnly = innerParts.indexOf('cssOnly') != -1
             const allowSelfRefresh = innerParts.indexOf('allowSelfRefresh') != -1
             
             return parts[0] == watchHandler.resources.id && 
-                { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh, cssOnly, allowSelfRefresh }
+                { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh, cssOnly, allowSelfRefresh, delay }
         }
     })
 })

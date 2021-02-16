@@ -1065,6 +1065,9 @@ class WatchableValueByRef {
   }
 }
 
+const resourcesRef = val => typeof val == 'undefined' ? jb.resources : (jb.resources = val)
+resourcesRef.id = 'resources'
+
 Object.assign(jb, {
     WatchableValueByRef,
     comparePaths(path1,path2) { // 0- equals, -1,1 means contains -2,2 lexical
@@ -1077,10 +1080,6 @@ Object.assign(jb, {
         if (i == path2.length && i < path1.length) return 1;
         return path1[i] < path2[i] ? -2 : 2
     },
-    rebuildRefHandler() {
-      jb.mainWatchableHandler && jb.mainWatchableHandler.dispose()
-      jb.setMainWatchableHandler(new WatchableValueByRef(resourcesRef))
-    },
     isWatchable: ref => jb.refHandler(ref) instanceof WatchableValueByRef || ref && ref.$jb_observable,
     refObservable(ref,{cmp,includeChildren,srcCtx} = {}) { // cmp._destroyed is checked before notification
       if (ref && ref.$jb_observable)
@@ -1090,18 +1089,14 @@ Object.assign(jb, {
         return jb.callbag.fromIter([])
       }
       return jb.refHandler(ref).getOrCreateObservable({ref,cmp,includeChildren,srcCtx})
+    },
+    rebuildRefHandler() { // used to clean after tests
+      jb.mainWatchableHandler && jb.mainWatchableHandler.dispose()
+      jb.setMainWatchableHandler(new WatchableValueByRef(resourcesRef))
     }
 })
 
 jb.setMainWatchableHandler(new WatchableValueByRef(resourcesRef))
-
-function resourcesRef(val) {
-  if (typeof val == 'undefined')
-    return jb.resources;
-  else
-    jb.resources = val;
-}
-resourcesRef.id = 'resources'
 
 jb.component('runTransaction', {
   type: 'action',
@@ -1735,7 +1730,7 @@ Object.assign(jb.ui, {
                 return jb.log('observable elem was detached in refresh process',{originatingCmpId,cmpId,elem})
             if (elemsToCheckCtxBefore[i] != elem.getAttribute('jb-ctx')) 
                 return jb.log('observable elem was refreshed from top in refresh process',{originatingCmpId,cmpId,elem})
-            let refresh = false, strongRefresh = false, cssOnly = true
+            let refresh = false, strongRefresh = false, cssOnly = true, delay = 0
             elem.getAttribute('observe').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{
                 if (!obs.allowSelfRefresh && jb.ui.findIncludeSelf(elem,`[cmp-id="${originatingCmpId}"]`)[0]) 
                     return jb.log('blocking self refresh observableElems',{cmpId,originatingCmpId,elem, obs,e})
@@ -1743,6 +1738,7 @@ Object.assign(jb.ui, {
                 if (!obsPath)
                     return jb.logError('observer ref path is empty',{originatingCmpId,cmpId,obs,e})
                 strongRefresh = strongRefresh || obs.strongRefresh
+                delay = delay || obs.delay
                 cssOnly = cssOnly && obs.cssOnly
                 const diff = jb.comparePaths(changed_path, obsPath)
                 const isChildOfChange = diff == 1
@@ -1753,7 +1749,10 @@ Object.assign(jb.ui, {
             })
             if (refresh) {
                 jb.log('refresh from observable elements',{cmpId,originatingCmpId,elem,ctx: e.srcCtx,e})
-                refresh && ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly})
+                if (delay) 
+                    jb.delay(delay).then(()=> ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly}))
+                else
+                    ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly})
             }
         })
 
@@ -1761,12 +1760,13 @@ Object.assign(jb.ui, {
             const parts = obsStr.split('://')
             const innerParts = parts[1].split(';')
             const includeChildren = ((innerParts[2] ||'').match(/includeChildren=([a-z]+)/) || ['',''])[1]
+            const delay = +((parts[1].match(/delay=([0-9]+)/) || ['',''])[1])
             const strongRefresh = innerParts.indexOf('strongRefresh') != -1
             const cssOnly = innerParts.indexOf('cssOnly') != -1
             const allowSelfRefresh = innerParts.indexOf('allowSelfRefresh') != -1
             
             return parts[0] == watchHandler.resources.id && 
-                { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh, cssOnly, allowSelfRefresh }
+                { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh, cssOnly, allowSelfRefresh, delay }
         }
     })
 })
@@ -2192,8 +2192,8 @@ class JbComponent {
         const observe = this.toObserve.map(x=>[
             x.ref.handler.urlOfRef(x.ref),
             x.includeChildren && `includeChildren=${x.includeChildren}`,
-            x.strongRefresh && `strongRefresh`,  x.cssOnly && `cssOnly`, x.allowSelfRefresh && `allowSelfRefresh`,  
-            x.phase && `phase=${x.phase}`].filter(x=>x).join(';')).join(',')
+            x.strongRefresh && `strongRefresh`,  x.cssOnly && `cssOnly`, x.allowSelfRefresh && `allowSelfRefresh`, x.delay && `delay=${x.delay}`] 
+            .filter(x=>x).join(';')).join(',')
         const methods = (this.method||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx.setVars({cmp: this, $props: this.renderProps, ...this.newVars}))}`).join(',')
         const eventhandlers = (this.eventHandler||[]).map(h=>`${h.event}-${ui.preserveCtx(h.ctx.setVars({cmp: this}))}`).join(',')
         const originators = this.originators.map(ctx=>ui.preserveCtx(ctx)).join(',')
@@ -2839,7 +2839,7 @@ jb.component('watchRef', {
     {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
     {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and reinit wait for data', type: 'boolean'},
     {id: 'cssOnly', as: 'boolean', description: 'refresh only css features', type: 'boolean'},
-    {id: 'phase', as: 'number', description: 'controls the order of updates on the same event. default is 0'}
+    {id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority'}
   ],
   impl: ctx => ({ watchRef: {refF: ctx.params.ref, ...ctx.params}})
 })

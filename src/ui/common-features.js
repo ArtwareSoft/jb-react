@@ -192,7 +192,7 @@ jb.component('watchRef', {
     {id: 'allowSelfRefresh', as: 'boolean', description: 'allow refresh originated from the components or its children', type: 'boolean'},
     {id: 'strongRefresh', as: 'boolean', description: 'rebuild the component and reinit wait for data', type: 'boolean'},
     {id: 'cssOnly', as: 'boolean', description: 'refresh only css features', type: 'boolean'},
-    {id: 'phase', as: 'number', description: 'controls the order of updates on the same event. default is 0'}
+    {id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority'}
   ],
   impl: ctx => ({ watchRef: {refF: ctx.params.ref, ...ctx.params}})
 })

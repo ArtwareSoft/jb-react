@@ -1,48 +1,43 @@
 jb.chromeDebugger = {
     initPanelPortListenser(panelId, panelFrame) {
-        chrome.runtime.onMessage.addListener(req => {
-            if (jb.path(req,'notify') == 'content-script-initialized') {
-                jb.log(`chromeDebugger content-script initialized`,{req})
-            }
-        })        
+        jb.log('chromeDebugger initPanelPortListenser',{panelId})
         panelFrame.chrome.runtime.onConnect.addListener(port => {
-            if (port.name == 'devtools') {
-                jb.log('chromeDebugger panel on connect',{port})
-                if (jb.parent) {
-                    jb.log('chromeDebugger overriding parent jbm of panel',{panelId, port})
-                    jb.parent.disconnect()
-                }
-                const from = jb.uri, to = 'devtools'
-                const jbPort = {
-                    dtport: port, from, to,
-                    postMessage: _m => { 
-                        const m = {from, to,..._m}
-                        jb.log(`remote sent from ${from} to ${to}`,{m})
-                        port.postMessage(m) 
-                    },
-                    onMessage: { addListener: handler => { 
-                        jb.log('chromeDebugger addListener to port',{panelId, port})
-                        port.onMessage.addListener(m => 
-                            jb.net.handleOrRouteMsg(from,to,handler,m)) }
-                        },
-                    onDisconnect: { addListener: handler => { port.onDisconnect.addListener(handler)} }
-                }
-            
-                jb.jbm.gateway = jb.ports['devtools'] = jb.parent = jb.jbm.extendPortToJbmProxy(jbPort)
+            if (port.name != 'devtools') return
+            jb.log('chromeDebugger panel on connect',{port})
+            const from = jb.uri, to = 'devtools'
+            const jbPort = {
+                dtport: port, from, to,
+                postMessage: _m => { 
+                    const m = {from, to,..._m}
+                    if (jbPort.disconnected)
+                        return jb.log(`chromeDebugger sending to disconnected ${from} to ${to}`,{m})
+                    jb.log(`chromeDebugger remote sent from ${from} to ${to}`,{m})
+                    port.postMessage(m) 
+                },
+                onMessage: { addListener: handler => { 
+                    jb.log('chromeDebugger addListener to port',{panelId, port})
+                    port.onMessage.addListener(m => jb.net.handleOrRouteMsg(from,to,handler,m)) }  
+                },
             }
+            port.onDisconnect.addListener(()=> jb.delay(2000).then(() => location.reload()))
+
+            jb.jbm.gateway = jb.ports['devtools'] = jb.parent = jb.jbm.extendPortToJbmProxy(jbPort)
+            jb.log('chromeDebugger panel connected to devtools',{jbPort})
         })
     },
     async initPanel(panelId, panelFrame) {
-        this.initPanelPortListenser(panelId, panelFrame)
-        await this.evalAsPromise(`self.jb && jb.jbm && jb.jbm.initDevToolsDebugge()`)
         const spyParam = await this.evalAsPromise(`self.jb && jb.path(jb,'spy.spyParam') || ''`)
         self.spy = jb.initSpy({spyParam})
-        await jb.exec(pipe(rx.pipe(
+        this.initPanelPortListenser(panelId, panelFrame)
+        jb.log(`chromeDebugger invoking initDevTools on debugee`,{panelId})
+        await this.evalAsPromise(`self.jb && jb.jbm && jb.jbm.initDevToolsDebugge()`)
+        await jb.exec(pipe(rx.pipe( // wait for the content-script to inject jb.jbm.connectToPanel into the debuggee
             source.interval(500), 
-            rx.flatMap(source.promise(this.evalAsPromise(`self.jb && jb.jbm.connectToPanel`))),
+            rx.flatMap(source.promise(this.evalAsPromise(`self.jb && jb.jbm && jb.jbm.connectToPanel`))),
             rx.filter(x=>x),
             rx.take(1)
         )))
+        jb.log(`chromeDebugger invoking connectToPanel on debugee`,{panelId})
         await this.evalAsPromise(`self.jb && jb.jbm.connectToPanel('${jb.uri}')`)
         await jb.exec(waitFor(() => jb.parent))
         await this.renderOnPanel(panelId, panelFrame)

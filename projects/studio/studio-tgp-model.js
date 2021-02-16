@@ -281,13 +281,7 @@ Object.assign(st,{
 	},
 	previewCompsAsEntries: () => jb.entries(st.previewjb.comps).filter(e=>e[1]),
 	projectFiles: () => jb.exec('%$studio/projectSettings/jsFiles%'),
-	projectCompsAsEntries: () => {
-		const files = st.projectFiles()
-		return st.previewCompsAsEntries().filter(e=> {
-			const fn = e[1][jb.location] && e[1][jb.location][0].split('/').pop()
-			return files.indexOf(fn) != -1
-		})
-	},
+	projectCompsAsEntries: () => st.previewCompsAsEntries().filter(e=> e[1][jb.loadingPhase] == 'appFiles'),
 	// queries
 	isArrayType: path => ((st.paramDef(path)||{}).type||'').indexOf('[]') != -1,
 	isOfType: (path,type) => {

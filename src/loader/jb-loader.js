@@ -230,34 +230,29 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
 Object.keys(jb_modules.$dependencies).forEach(m => jb_modules[m].dependencies = jb_modules.$dependencies[m])
 
 var jbFrame = (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : null;
+if (typeof jb == 'undefined') jb = {}
+if (typeof global != 'undefined') global.jb_modules = jb_modules;
 
-function jb_dynamicLoad(modules,prefix,suffix) {
-  modules = modules || '';
-  const isDist = typeof document != 'undefined' && document.currentScript && document.currentScript.getAttribute('src').indexOf('/dist/') != -1
-  if (isDist) {
-    const scriptSrc = document.currentScript.getAttribute('src')
-    const base = window.jbModuleUrl && (window.jbModuleUrl + '/dist') || scriptSrc.slice(0,scriptSrc.lastIndexOf('/'))
-    return calcDependencies(modules).flatMap(m=>[m+'.js', `css/${m}.css`])
-      .reduce((pr,m) => pr.then(()=> jb_loadFile([base,m].join('/'))), Promise.resolve())
-  } else {
-    return calcDependencies(modules)
+function jb_dynamicLoad(modules, settings) {
+  if (settings.loadFromDist)
+      return modules.reduce((pr,lib) => pr.then(jbm=> {
+        const dist = '/dist' // typeof jbModuleUrl != 'undefined' && (window.jbModuleUrl + '/dist') || '/dist' // for devtools
+        return loadFile(`${dist}/${lib}-lib.js`).then(()=>{
+          jbmFactory[lib](jbm)
+          return jbm
+        })
+      }), Promise.resolve(settings))
+
+  return calcDependencies(modules)
       .flatMap(m=>[m,...(jb_modules[`${m}-css`] ? [`${m}-css`]: [])])
       .flatMap(m=> (jb_modules[m] || []).map(file=>({m,file})) )
       .reduce((pr, {m,file})=> pr.then(() => {
         if (m == 'studio' && !file.match(/\//))
           file = 'projects/studio/studio-' + file + '.js';
-
-        if (prefix) { // avoid multiple source files with the same name in the debugger
-          const file_path = file.split('/');
-          file_path.push(prefix+file_path.pop());
-          file = file_path.join('/');
-        }
-        if (suffix) file += suffix
-
         const url = (self.jbLoaderRelativePath ? '' : '/') + file;
-        return jb_loadFile(url)
+        return loadFile(url)
       }), Promise.resolve())
-  }
+
   function unique(ar) {
     const keys = {}, res = [];
     ar.forEach(e=>{
@@ -268,32 +263,46 @@ function jb_dynamicLoad(modules,prefix,suffix) {
     })
     return res;
   }
+
   function calcDependencies(modules) {
-      return unique(modules.split(',').flatMap(m=>[ ...(jb_modules[m] && jb_modules[m].dependencies || []), m]))
+      return unique(modules.flatMap(m=>[ ...(jb_modules[m] && jb_modules[m].dependencies || []), m]))
   }
+
+  function loadFile(url) {
+    const isWorker = typeof window == 'undefined', isJs = url.match(/\.js$|\.js\?/)
+    const suffix = `?${settings.uri || settings.project}`
+    if (self.jbBaseProjUrl && !url.match('//'))
+      url = [self.jbBaseProjUrl.replace(/\/$/,''),url.replace(/^\//,'')].join('/')
+
+    if (isWorker) {
+      return Promise.resolve(isJs && importScripts(location.origin+url+suffix))
+    } else {
+      return new Promise(resolve => {
+        const type = url.indexOf('.css') == -1 ? 'script' : 'link'
+        var s = document.createElement(type)
+        s.setAttribute(type == 'script' ? 'src' : 'href',`${url}${suffix}`)
+        if (type == 'script') 
+          s.setAttribute('charset','utf8') 
+        else 
+          s.setAttribute('rel','stylesheet')
+        s.onload = s.onerror = resolve
+        document.head.appendChild(s);
+      })
+    }
+  }  
 }
 
-if (typeof jb == 'undefined') jb = {}
-
-if (typeof document != 'undefined')
-  if (document.currentScript && document.currentScript.getAttribute('modules'))
-    jb_dynamicLoad(document.currentScript.getAttribute('modules'),document.currentScript.getAttribute('prefix'),document.currentScript.getAttribute('suffix'));
-
-if (typeof global != 'undefined') global.jb_modules = jb_modules;
-
 async function jb_loadProject(settings) {
-  settings = settings || jbFrame.jbProjectSettings
-  if (typeof settings == 'undefined') return
   settings.baseUrl = settings.baseUrl || ''
-  setLoadingPhase('libs')
-  await jb_dynamicLoad(settings.libs,'',settings.suffix); // may load packaged libs from dist
-  setLoadingPhase('src');
-  return [...(settings.jsFiles || []), ...(settings.cssFiles || [])]
-    .reduce((pr,fn) => pr.then(() => {
+  self.jbLoadingPhase = 'libs'
+  const _jb = await jb_dynamicLoad(settings.libs.split(','),settings); // may load packaged libs from dist
+  self.jbLoadingPhase = 'appFiles'
+  await [...(settings.jsFiles || []), ...(settings.cssFiles || [])].reduce((pr,fn) => pr.then(() => {
       const path = pathOfProjectFile(fn,settings)
 //      console.log('loading file',fn,path)
-      return jb_loadFile(path) 
+      return loadAppFile(path) 
     }), Promise.resolve())
+  return self.jb || _jb
 
   function pathOfProjectFile(fn,{project,baseUrl,source} = {}) {
     const isVscode = (source||'').indexOf('vscode') == 0
@@ -307,23 +316,23 @@ async function jb_loadProject(settings) {
       return baseUrl + fn  
     else if (baseUrl)
       return baseUrl == './' ? fn : `/${project}/${fn}`
-    else if (fn[0] == '/')
-      return fn
     else if (source == 'studio')
       return `/projects/${project}/${fn}`
+    else
+      return fn
   }
-
-  function setLoadingPhase(phase) {
-    self.jbLoadingPhase = phase 
-    // if (typeof document == 'undefined')
-    //   self.jbLoadingPhase = phase 
-    // else 
-    //   document.write(`<script>jbLoadingPhase = '${phase}'</script>`)
+  
+  async function loadAppFile(url) {
+    const ret = await fetch(url)
+    const code = await ret.text()
+    const macros = jb.importAllMacros()
+    eval([`(() => { ${macros} \n${code}})()`,`//# sourceURL=${url}?${settings.uri || settings.project}`].join('\n'))
+    return
   }
 }
-jb_loadProject()
 
-function jb_initWidget() {
+async function jb_initWidget(settings,doNotLoadProject) { // export
+  !doNotLoadProject && await jb_loadProject(settings || jbFrame.jbProjectSettings)
   if (!document.getElementById('main')) {
     const mainElem = document.createElement('div')
     mainElem.setAttribute('id','main')
@@ -335,58 +344,16 @@ function jb_initWidget() {
     : jb.path(jb.comps[`${fixedProjName}.main`],'impl')
   const el = document.getElementById('main')
   jb.log('jbLoader init widget',{entryProf,el,initTheme,fixedProjName})
-  ;(async () => {
-    await initTheme && jb.exec(initTheme)
-    await entryProf && jb.ui.renderWidget(entryProf, el)
-  })()
-}
-
-function jb_loadFile(url) {
-  const isWorker = typeof window == 'undefined', isJs = url.match(/\.js$|\.js\?/)
-  if (self.jbBaseProjUrl && !url.match('//'))
-    url = [self.jbBaseProjUrl.replace(/\/$/,''),url.replace(/^\//,'')].join('/')
-  if (isWorker) {
-    isJs && importScripts(location.origin+url)
-  } else if (typeof document != 'undefined' && document.currentScript) {
-    if (isJs)
-      document.write(`<script src="${url}" charset="UTF-8"></script>`)
-    else
-      document.write(`<link rel="stylesheet" type="text/css" href="${url}" />`);
-  } else {
-    return jb_loadFileFromEvent(url)
-  }
-}
-
-function jb_loadFileFromEvent(url) {
-  return new Promise(resolve => {
-    const type = url.indexOf('.css') == -1 ? 'script' : 'link'
-    var s = document.createElement(type)
-    s.setAttribute(type == 'script' ? 'src' : 'href',url)
-    if (type == 'script') 
-      s.setAttribute('charset','utf8') 
-    else 
-      s.setAttribute('rel','stylesheet')
-    s.onload = s.onerror = resolve
-    document.head.appendChild(s);
-  })
+  jb.uri = jb.uri || fixedProjName
+  await (initTheme && jb.exec(initTheme))
+  await (entryProf && jb.ui.renderWidget(entryProf, el))
+  jb.initSpyByUrl && jb.initSpyByUrl()
+  jb.widgetInitialized = true
 }
  
-function jbm_create(libs,uri) { 
-  return libs.reduce((pr,lib) => pr.then(jb => jbm_load_lib(jb,lib,uri)), Promise.resolve({uri})) 
+function jbm_create(libs, settings) {  // export
+  return jb_dynamicLoad(libs, settings) 
 }
-
-function jbm_load_lib(jbm,lib,prefix) {
-  return new Promise(resolve => {
-    const pre = prefix ? `!${prefix}!` : ''
-    const base = typeof jbModuleUrl != 'undefined' && (window.jbModuleUrl + '/dist') || '/dist'
-    var s = document.createElement("script");
-    s.setAttribute("src",`${base}/${pre}${lib}-lib.js`);
-    s.onload = () => { jbmFactory[lib](jbm);resolve(jbm) }
-    s.onerror = e => resolve(jbm)
-    document.head.appendChild(s);
-  })
-}
-
 
 if (typeof module != 'undefined')
   module.exports = jb_modules

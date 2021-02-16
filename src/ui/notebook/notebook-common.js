@@ -8,26 +8,37 @@ jb.component('nb.notebook', {
   impl: itemlist({
     items: '%$elements%',
     controls: group({
+      title: 'item',
       layout: layout.horizontal('10'),
       controls: [
-        button({raised: false, features: feature.icon({icon: 'CardText', type: 'mdi'})}),
-        '%$notebookElem.editor()%',
-        widget.twoTierWidget(        
-          group({
-            controls: (ctx,{path}) => {
-                const ret = jb.run( new jb.jbCtx(ctx, { profile: jb.studio.valOfPath(path), forcePath: path, path: 'control' }), {type: 'control'})
-                return ret.result(ctx)
-            },
-            features: followUp.flow(
-                source.watchableData(studio.ref('%$path%'), 'yes'),
-                sink.refreshCmp()
-            )
-          }), jbm.notebookWorker()),
+        editableBoolean({
+          databind: '%$editMode%',
+          style: editableBoolean.mdcXV('edit', 'edit'),
+          features: css.margin('6', '3')
+        }),
+        group({
+          title: 'editor',
+          controls: [
+            '%$notebookElem.editor()%'
+          ],
+          features: [hidden('%$editMode%'), watchRef('%$editMode%')]
+        }),
+        group({
+          title: 'preview',
+          controls: [
+            widget.twoTierWidget(group({controls: (ctx,{path}) => {
+                      const ret = jb.run( new jb.jbCtx(ctx, { profile: jb.studio.valOfPath(path), forcePath: path, path: 'control' }), {type: 'control'})
+                      return ret.result(ctx)
+                  }, features: followUp.flow(source.watchableData(studio.ref('%$path%'), 'yes'), sink.refreshCmp())}), jbm.notebookWorker())
+          ],
+          features: [hidden(not('%$editMode%')), watchRef('%$editMode%')]
+        })
       ],
       features: [
-            variable('idx', ({},{index}) => index -1), 
-            variable('path', '%$studio/project%.notebook~impl~elements~%$idx%')
-        ]
+        variable('idx', ({},{index}) => index -1),
+        variable('path', '%$studio/project%.notebook~impl~elements~%$idx%'),
+        variable({name: 'editMode', watchable: true})
+      ]
     }),
     itemVariable: 'notebookElem'
   })
@@ -64,10 +75,10 @@ jb.component('nb.control', {
     ],
     impl: studio.notebookElem(
         '%$control()%',
-        // (ctx,{profileContent,path}) => 
+        // (ctx,{profileContent,path}) =>
         //     jb.run( new jb.jbCtx(ctx, { profile: profileContent.control, forcePath: path, path: 'control' }), {type: 'control'}),
 
-        group({ 
+        group({
             controls: studio.jbEditorInteliTree('%$path%~control'),
             features: studio.jbEditorContainer('comp-in-jb-editor')
         }))

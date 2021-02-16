@@ -290,7 +290,7 @@ jb.testers = {
 	let index = 1
 	self.jbRunningTests = true
 
-	jb.studio.initTests() && jb.studio.initTests()
+	jb.studio.initTests && jb.studio.initTests()
 	const $initial_resources = JSON.stringify(jb.resources) //.replace(/\"\$jb_id":[0-9]*,/g,'')
 	const $initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
 

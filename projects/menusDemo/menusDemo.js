@@ -3,10 +3,15 @@ jb.component('dataResource.people', {
   { "name": "Homer Simpson" ,age: 42 , male: true},
   { "name": "Marge Simpson" ,age: 38 , male: false},
   { "name": "Bart Simpson"  ,age: 12 , male: true}
-] 
+]
 })
 
 jb.component('menusDemo.main', {
+  type: 'control',
+  impl: group()
+})
+
+jb.component('menusDemo.pulldown', {
   type: 'control',
   impl: menu.control({
     menu: menu.menu({
@@ -82,34 +87,6 @@ jb.component('menusDemo.popup', {
         }),
         style: button.mdcIcon(icon({icon: 'menu', type: 'mdc', scale: '1'})),
         features: css.transformScale({x: '0.8', y: '0.8'})
-      }),
-      button({
-        title: 'click me',
-        style: button.mdcIcon(
-          icon({
-            icon: '3d_rotation',
-            scale: '',
-            style: icon.material(),
-            features: css('transform: translate(10px,0px) !important')
-          }),
-          '0.8'
-        ),
-        features: feature.icon({
-          icon: 'more_vert',
-          type: 'mdc',
-          scale: '',
-          features: css('transform: translate(3px,0px) !important')
-        })
-      }),
-      button({
-        title: 'more',
-        style: button.mdcIcon(
-          icon({
-            icon: 'ArrowDownDropCircle',
-            type: 'mdi',
-            features: css('transform: translate(0px,10px) !important')
-          })
-        )
       })
     ]
   }),
@@ -136,5 +113,16 @@ jb.component('menusDemo.dynamic', {
     }),
     style: menuStyle.pulldown({}),
     features: [css.width('300')]
+  })
+})
+
+jb.component('menusDemo.iconToolbar', {
+  type: 'control',
+  impl: group({
+    title: '',
+    controls: menu.control(
+      menu.menu({options: [menu.action({icon: icon('alarm')}), menu.action({icon: icon('build')})]}),
+      menuStyle.toolbar()
+    )
   })
 })

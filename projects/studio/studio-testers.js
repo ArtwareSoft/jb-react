@@ -2,9 +2,10 @@
 const st = jb.studio
 
 st.initTests = function() {
+  if (st.compsRefHandler) return
   const compsRef = val => typeof val == 'undefined' ? jb.comps : (jb.comps = val);
   compsRef.id = 'comps-test'
-  st.compsRefHandler = st.compsRefHandler || jb.initExtraWatchableHandler(compsRef)
+  st.compsRefHandler = jb.initExtraWatchableHandler(compsRef)
 	jb.callbag.subscribe(e=>st.scriptChange.next(e))(st.compsRefHandler.resourceChange)
 }
 

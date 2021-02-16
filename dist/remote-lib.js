@@ -521,25 +521,20 @@ jb.component('jbm.worker', {
         const workerUri = networkPeer ? name : `${jb.uri}►${name}`
         const distPath = jb.jbm.pathOfDistFolder()
         const spyParam = ((jb.path(jb.frame,'location.href')||'').match('[?&]spy=([^&]+)') || ['', ''])[1]
+        const baseUrl = jb.path(jb.frame,'location.origin') || jb.baseUrl || ''
         const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
-        const workerCode = [
-`const jbUri = '${workerUri}'
-function jbm_create(libs,uri) {
-    return libs.reduce((jb,lib) => jbm_load_lib(jb,lib,uri), {uri})
-}
-function jbm_load_lib(jbm,lib,prefix) {
-    const pre = prefix ? ('!'+prefix+'!') : '';
-    importScripts('${distPath}/'+pre+lib+'-lib.js'); 
-    jbmFactory[lib](jbm);
-    return jbm
-}
-self.jb = jbm_create('${libs.join(',')}'.split(','),jbUri)`,
-...jsFiles.map(path=>`importScripts('${distPath}/${path}.js');`),
-`spy = jb.initSpy({spyParam: '${spyParam}'})
-${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
-`
-].join('\n')
-
+        const settings = { uri: workerUri, libs: libs.join(','), jsFiles, baseUrl, distPath }
+        const jbObj = { uri: workerUri, baseUrl, distPath }
+        const jb_loader_code = [jb_dynamicLoad.toString(),jb_loadProject.toString(),jbm_create.toString(),
+            jb_modules ? `self.jb_modules= ${JSON.stringify(jb_modules)}` : ''
+        ].join(';\n\n')
+        const workerCode = `
+${jb_loader_code};
+jb = ${JSON.stringify(jbObj)}
+jb_loadProject(${JSON.stringify(settings)}).then(() => {
+    self.spy = jb.initSpy({spyParam: '${spyParam}'})
+    self.${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
+})`
         const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
         return childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
     }
@@ -555,7 +550,7 @@ jb.component('jbm.child', {
     impl: ({},name,libs) => {
         if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
         // todo - implement the jbm interface on the promise object
-        return jb.frame.jbm_create && Promise.resolve(jb.frame.jbm_create(libs,`${jb.uri}►${name}`))
+        return jb.frame.jbm_create && Promise.resolve(jb.frame.jbm_create(libs, { loadFromDist: true, uri: `${jb.uri}►${name}`, distPath: jb.distPath}))
             .then(child => {
                 jb.jbm.childJbms[name] = child
                 child.parent = jb

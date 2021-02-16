@@ -210,7 +210,7 @@ jb.component('studio.setPreviewSize', {
 })
 
 jb.component('studio.waitForPreviewIframe', {
-  impl: waitFor(()=> jb.studio.previewWindow)
+  impl: waitFor(()=> jb.path(jb.studio,'previewWindow.jb.widgetInitialized'))
 })
 
 const {pipe,startWith,filter,flatMap} = jb.callbag
@@ -264,14 +264,14 @@ st.injectProjectToPreview = function(previewWin,projectSettings) {
   <script type="text/javascript">
     ${baseProjUrl}
     ${moduleUrl}
-    jbProjectSettings = ${JSON.stringify({...projectSettings,...baseUrl})}
+    jbProjectSettings = ${JSON.stringify({...projectSettings,...baseUrl, prefix: '!preview!'})}
   </script>
   <script type="text/javascript" src="${st.host.jbLoader}"></script>
 </head>
 <body ${vscodeZoomFix}>
+  <div id="main"></div>
   <script>
-    window.jb_initWidget && jb_initWidget()
-    self.spy = self.spy || jb.initSpy({spyParam: jbProjectSettings.spyParam || 'all'})
+    window.jb_initWidget && jb_initWidget().then(()=> jb.initSpyByUrl && jb.initSpyByUrl())
   </script>
 </body>
 </html>`
