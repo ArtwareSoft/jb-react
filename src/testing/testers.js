@@ -173,12 +173,12 @@ jb.component('uiFrontEndTest', {
 				// put input values as text
 				Array.from(elemToTest.querySelectorAll('input,textarea')).forEach(e=>
 					e.parentNode && jb.ui.addHTML(e.parentNode,`<input-val style="display:none">${e.value}</input-val>`))
-				const countersErr = countersErrors(expectedCounters,allowError)
+				const reason = countersErrors(expectedCounters,allowError)
 				const resultHtml = elemToTest.outerHTML
 				const expectedResultRes = expectedResult(ctx.setData(resultHtml))
-				jb.log('check test result',{testID, expectedResultRes, resultHtml})
-				const success = !! (expectedResultRes && !countersErr)
-				const result = { id: testID, success, reason: countersErr, renderDOM}
+				const success = !! (expectedResultRes && !reason)
+				jb.log('check test result',{testID, success, reason, html: resultHtml})
+				const result = { id: testID, success, reason, renderDOM}
 				// default cleanup
 				if (!show && !singleTest) {
 					jb.ui.unmount(elemToTest)

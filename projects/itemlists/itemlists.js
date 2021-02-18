@@ -1,3 +1,4 @@
+var {itemlists} =jb.ns('itemlists')
 jb.component('dataResource.sortBy', {
   watchableData: 'age'
 })
@@ -18,7 +19,7 @@ jb.component('itemlists.main', {
 The data source is taken from a variable named \"%$people%\".
 In the example, field in a table with title \"name\" is bounded to the path \"%name%\"
   `,
-  impl: itemlist({
+  impl: table({
     items: '%$people%',
     controls: [
       text('%name%', 'name'),
@@ -31,7 +32,7 @@ In the example, field in a table with title \"name\" is bounded to the path \"%n
 jb.component('itemlists.selection', {
   type: 'control',
   description: `Table with single selection. The selection is bounded to a watchable reactive variable named %$selectedItem%`,
-  impl: itemlist({
+  impl: table({
     items: '%$people%',
     controls: [
       text('%name%', 'name'),
@@ -52,7 +53,7 @@ jb.component('itemlists.manyItems', {
 jb.component('itemlists.largeTable', {
   type: 'control',
   description: `Large tables with many items are defined with the infinite scroll feature`,
-  impl: itemlist({
+  impl: table({
     items: itemlists.manyItems(),
     controls: [
       text('%id%','id'),
@@ -77,7 +78,7 @@ jb.component('itemlists.search', {
     layout: layout.vertical('20'),
     controls: [
       itemlistContainer.search(),
-      itemlist({
+      table({
         items: pipeline(
           itemlists.manyItems(),
           itemlistContainer.filter()
@@ -103,7 +104,7 @@ jb.component('itemlists.editableTable', {
   type: 'control',
   impl: group({
     controls: [
-      itemlist({
+      table({
         items: '%$people%',
         controls: [
           control.icon({
@@ -162,7 +163,7 @@ jb.component('itemlists.searchPeople', {
             databind: '%$itemlistCntrData/search_pattern%',
             style: editableText.mdcSearch('300')
           }),
-          itemlist({
+          table({
             items: pipeline('%$people%', itemlistContainer.filter()),
             controls: [
               text({text: '%name%', title: 'name'}),
@@ -211,14 +212,13 @@ jb.component('itemlists.filters', {
               })
             ]
           }),
-          itemlist({
+          table({
             title: '',
             items: pipeline('%$people%', itemlistContainer.filter()),
             controls: [
               text({text: '%name%', title: 'name'}),
               text({text: '%age%', title: 'age'})
             ],
-            style: table.plain(),
             features: [watchRef({ref: '%$itemlistCntrData%', includeChildren: 'yes'})]
           })
         ],
@@ -233,7 +233,7 @@ jb.component('itemlists.masterDetailsWithContainer', {
   impl: group({
     layout: layout.horizontal(),
     controls: [
-      itemlist({
+      table({
         items: '%$people%',
         controls: [
           text({text: '%name%', title: 'name'})
@@ -264,7 +264,7 @@ jb.component('itemlists.masterDetails', {
   impl: group({
     layout: layout.horizontal(),
     controls: [
-      itemlist({
+      table({
         items: '%$people%',
         controls: [
           text({text: '%name%', title: 'name'})
@@ -311,13 +311,12 @@ jb.component('itemlists.sort', {
           })
         ]
       }),
-      itemlist({
+      table({
         items: pipeline('%$people%', sort({propertyName: '%$sortBy%', ascending: 'true'})),
         controls: [
           text({text: '%name%', title: 'name', features: field.columnWidth('250')}),
           text({text: '%age%', title: 'age'})
         ],
-        style: table.plain(),
         features: watchRef('%$sortBy%')
       })
     ]

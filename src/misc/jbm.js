@@ -137,7 +137,11 @@ Object.assign(jb, {
                         return new Promise((resolve,reject) => {
                             const handlers = jb.cbHandler.map
                             const cbId = jb.cbHandler.newId()
-                            const timer = setTimeout(() => handlers[cbId] && reject({ type: 'error', desc: 'timeout' }), timeout)
+                            const timer = setTimeout(() => {
+                                const err = { type: 'error', desc: 'remote exec timeout', remoteRun, timeout }
+                                jb.logError('remote exec timeout',err)
+                                handlers[cbId] && reject(err)
+                            }, timeout)
                             handlers[cbId] = {resolve,reject,remoteRun, timer}
                             port.postMessage({$:'CB.exec', remoteRun, cbId, isAction, timeout })
                         })
@@ -251,9 +255,12 @@ jb_loadProject(${JSON.stringify(settings)}).then(() => {
         const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
         const workerJbm = childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
         // wait for worker jbm to load
-        const res = jb.exec(pipe(waitFor(remote.data(()=>self.loaded, ()=>workerJbm)), ()=>workerJbm, first()))
-        res.uri = workerJbm.uri
-        return res
+        const promise = jb.exec(pipe(waitFor({
+            interval: 800,
+            check: remote.data(()=> self.loaded, ()=>workerJbm),
+        }), ()=>workerJbm, first()))
+        promise.uri = workerJbm.uri
+        return promise
     }
 })
 
@@ -352,11 +359,8 @@ jb.component('jbm.same', {
 
 jb.component('jbm.vDebugger', {
     type: 'jbm',
-    impl: pipe(
-		jbm.child('vDebugger',['vDebugger']),
-		pipe(
-        	remote.action(() => jb.studio.initLocalCompsRefHandler(jb.studio.compsRefOfjbm(jb.parent))	,'%%'),
-			'%%'
-		)
-    )
+    impl: ctx => Promise.resolve(ctx.run(jbm.child('vDebugger',['vDebugger']),)).then(jbm=>{
+        jbm.studio.initLocalCompsRefHandler(jbm.studio.compsRefOfjbm(jbm.parent))
+        return jbm
+    })
 })

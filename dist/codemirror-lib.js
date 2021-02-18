@@ -12714,6 +12714,116 @@ CodeMirror.defineMode("css", function(config, parserConfig) {
 });
 ;
 
+(function() {
+
+    CodeMirror.extendMode("css", {
+      commentStart: "/*",
+      commentEnd: "*/",
+      newlineAfterToken: function(type, content) {
+        return /^[;{}]$/.test(content);
+      }
+    });
+  
+    CodeMirror.extendMode("javascript", {
+      commentStart: "/*",
+      commentEnd: "*/",
+      // FIXME semicolons inside of for
+      newlineAfterToken: function(type, content, textAfter, state) {
+        if (this.jsonMode) {
+          return /^[\[,{]$/.test(content) || /^}/.test(textAfter);
+        } else {
+          if (content == ";" && state.lexical && state.lexical.type == ")") return false;
+          return /^[;{}]$/.test(content) && !/^;/.test(textAfter);
+        }
+      }
+    });
+  
+    CodeMirror.extendMode("xml", {
+      commentStart: "<!--",
+      commentEnd: "-->",
+      newlineAfterToken: function(type, content, textAfter) {
+        return type == "tag" && />$/.test(content) || /^</.test(textAfter);
+      }
+    });
+  
+    // Comment/uncomment the specified range
+    CodeMirror.defineExtension("commentRange", function (isComment, from, to) {
+      var cm = this, curMode = CodeMirror.innerMode(cm.getMode(), cm.getTokenAt(from).state).mode;
+      cm.operation(function() {
+        if (isComment) { // Comment range
+          cm.replaceRange(curMode.commentEnd, to);
+          cm.replaceRange(curMode.commentStart, from);
+          if (from.line == to.line && from.ch == to.ch) // An empty comment inserted - put cursor inside
+            cm.setCursor(from.line, from.ch + curMode.commentStart.length);
+        } else { // Uncomment range
+          var selText = cm.getRange(from, to);
+          var startIndex = selText.indexOf(curMode.commentStart);
+          var endIndex = selText.lastIndexOf(curMode.commentEnd);
+          if (startIndex > -1 && endIndex > -1 && endIndex > startIndex) {
+            // Take string till comment start
+            selText = selText.substr(0, startIndex)
+            // From comment start till comment end
+              + selText.substring(startIndex + curMode.commentStart.length, endIndex)
+            // From comment end till string end
+              + selText.substr(endIndex + curMode.commentEnd.length);
+          }
+          cm.replaceRange(selText, from, to);
+        }
+      });
+    });
+  
+    // Applies automatic mode-aware indentation to the specified range
+    CodeMirror.defineExtension("autoIndentRange", function (from, to) {
+      var cmInstance = this;
+      this.operation(function () {
+        for (var i = from.line; i <= to.line; i++) {
+          cmInstance.indentLine(i, "smart");
+        }
+      });
+    });
+  
+    // Applies automatic formatting to the specified range
+    CodeMirror.defineExtension("autoFormatRange", function (from, to) {
+      var cm = this;
+      var outer = cm.getMode(), text = cm.getRange(from, to).split("\n");
+      var state = CodeMirror.copyState(outer, cm.getTokenAt(from).state);
+      var tabSize = cm.getOption("tabSize");
+  
+      var out = "", lines = 0, atSol = from.ch == 0;
+      function newline() {
+        out += "\n";
+        atSol = true;
+        ++lines;
+      }
+  
+      for (var i = 0; i < text.length; ++i) {
+        var stream = new CodeMirror.StringStream(text[i], tabSize);
+        while (!stream.eol()) {
+          var inner = CodeMirror.innerMode(outer, state);
+          var style = outer.token(stream, state), cur = stream.current();
+          stream.start = stream.pos;
+          if (!atSol || /\S/.test(cur)) {
+            out += cur;
+            atSol = false;
+          }
+          if (!atSol && inner.mode.newlineAfterToken &&
+              inner.mode.newlineAfterToken(style, cur, stream.string.slice(stream.pos) || text[i+1] || "", inner.state))
+            newline();
+        }
+        if (!stream.pos && outer.blankLine) outer.blankLine(state);
+        if (!atSol) newline();
+      }
+  
+      cm.operation(function () {
+        cm.replaceRange(out, from, to);
+        for (var cur = from.line + 1, end = from.line + lines; cur <= end; ++cur)
+          cm.indentLine(cur, "smart");
+        cm.setSelection(from, cm.getCursor(false));
+      });
+    });
+  })();
+  ;
+
 // CodeMirror, copyright (c) by Marijn Haverbeke and others
 // Distributed under an MIT license: https://codemirror.net/LICENSE
 
@@ -14484,7 +14594,8 @@ jb.component('textEditor.cmEnrichUserEvent', {
     )
 })
 
-function injectCodeMirror(ctx,{text,cmp,el,cm_settings,_enableFullScreen}) {
+function injectCodeMirror(ctx,{text,cmp,el,cm_settings,_enableFullScreen,formatText}) {
+	if (cmp.editor) return
 	const _extraKeys = { ...cm_settings.extraKeys, ...jb.path(cmp.extraCmSettings,'extraKeys')}
 	const extraKeys = jb.objFromEntries(jb.entries(_extraKeys).map(e=>[
 		e[0], (''+e[1]).replace(/\s/g,'').indexOf('()=>') == 0 ? e[1]
@@ -14495,6 +14606,11 @@ function injectCodeMirror(ctx,{text,cmp,el,cm_settings,_enableFullScreen}) {
 	cmp.editor = CodeMirror(el, settings)
 	cmp.editor.getWrapperElement().setAttribute('jb_external','true')
 	jb.ui.addClass(cmp.editor.getWrapperElement(),'autoResizeInDialog')
+	if (formatText) {
+		CodeMirror.commands.selectAll(cmp.editor)
+		cmp.editor.autoFormatRange(cmp.editor.getCursor(true), cmp.editor.getCursor(false));
+		cmp.editor.setSelection({line:0, ch:0})
+	}
 	//cmp.editor.refresh()
 	_enableFullScreen && jb.delay(1).then(() => enableFullScreen(ctx,cmp,el))
 }
@@ -14570,7 +14686,8 @@ jb.component('text.codemirror', {
     {id: 'enableFullScreen', type: 'boolean', as: 'boolean', defaultValue: true},
 	{id: 'height', as: 'number'},
     {id: 'lineWrapping', as: 'boolean', type: 'boolean'},
-    {id: 'lineNumbers', as: 'boolean', type: 'boolean'},
+	{id: 'lineNumbers', as: 'boolean', type: 'boolean'},
+	{id: 'formatText', as: 'boolean', type: 'boolean'},
     {id: 'mode', as: 'string', options: 'htmlmixed,javascript,css'},
   ],
   impl: features(
@@ -14580,85 +14697,13 @@ jb.component('text.codemirror', {
 		...cm_settings, lineWrapping, lineNumbers, readOnly: true, mode: mode || 'javascript',
 	})),
 	frontEnd.var('_enableFullScreen', '%$enableFullScreen%'),
+	frontEnd.var('formatText', '%$formatText%'),
     frontEnd.init( (ctx,vars) => injectCodeMirror(ctx,vars)),
-	frontEnd.onRefresh(({},{text,cmp}) => cmp.editor.setValue(text)),	
+//	frontEnd.onRefresh((ctx,vars) => { injectCodeMirror(ctx,vars); vars.cmp.editor.setValue(vars.text) }),	
     css(({},{},{height}) => `{width: 100%}
 		>div { box-shadow: none !important; ${jb.ui.propWithUnits('height',height)} !important}`)
   )
 })
-
-			// let editor = null
-			// cmp.editor = {
-			// 	data_ref: cmp.data_ref,
-			// 	cmp,
-			// 	ctx: () => cmp.ctx.setVars({$launchingElement: { el : cmp.base, launcherHeightFix: 1 }}),
-			// 	getCursorPos: () => posFromCM(editor.getCursor()),
-			// 	charCoords(pos) {
-			// 		return editor.charCoords(posToCM(pos),'window')
-			// 	},
-			// 	cursorCoords() {
-			// 		return editor.cursorCoords('window')
-			// 	},
-			// 	normalizePreviewCoords(coords) {
-			// 		const previewIframe = document.querySelector('.preview-iframe')
-			// 		if (!previewIframe) return coords
-
-			// 		const offset = jb.ui.offset(previewIframe)
-			// 		return coords && Object.assign(coords,{
-			// 			top: coords.top - offset.top,
-			// 			left: coords.left - offset.left
-			// 		})
-			// 	},
-			// 	refreshFromDataRef: () => editor.setValue(jb.tostring(jb.val(cmp.data_ref))),
-			// 	setValue: text => editor.setValue(text),
-			// 	storeToRef: () => jb.writeValue(cmp.data_ref,editor.getValue(), ctx),
-			// 	isDirty: () => editor.getValue() !== jb.tostring(jb.val(cmp.data_ref)),
-			// 	markText: (from,to) => editor.markText(posToCM(from),posToCM(to), {className: 'jb-highlight-comp-changed'}),
-			// 	replaceRange: (text, from, to) => editor.replaceRange(text, posToCM(from),posToCM(to)),
-			// 	setSelectionRange: (from, to) => editor.setSelection(posToCM(from),posToCM(to)),
-			// 	focus: () => editor.focus(),
-			// 	formatComponent() {
-			// 		const {text, from, to} = jb.textEditor.formatComponent(editor.getValue(),this.getCursorPos(),cmp.data_ref.jbToUse)
-			// 		this.replaceRange(text, from, to)
-			// 	},
-			// 	cmEditor: editor
-			// }
-
-				// 		cmp.frontEndRefresh = () => {
-	// 			cmp.editor.cmEditor = editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
-	// 			cmp.data_ref = cmp.ctx.vars.$model.databind()
-	// 			editor.setValue(jb.tostring(jb.val(cmp.data_ref)))
-
-	// 			const {pipe,map,filter,subscribe,distinctUntilChanged,create,debounceTime,takeUntil} = jb.callbag
-
-	// 			pipe(
-	// 				create(obs=> editor.on('change', () => obs(editor.getValue()))),
-	// 				takeUntil( cmp.destroyed ),
-	// 				debounceTime(debounceTime),
-	// 				filter(x => x != jb.tostring(jb.val(cmp.data_ref))),
-	// 				distinctUntilChanged(),
-	// 				subscribe(x=> jb.writeValue(cmp.data_ref,x, ctx)))
-
-	// 			!cmp.data_ref.oneWay && jb.isWatchable(cmp.data_ref) && pipe(
-	// 					jb.ui.refObservable(cmp.data_ref,{cmp,srcCtx: ctx}),
-	// 					map(e=>jb.tostring(jb.val(cmp.data_ref))),
-	// 					filter(x => x != editor.getValue()),
-	// 					subscribe(x=>{
-	// 						const cur = editor.getCursor()
-	// 						editor.setValue(x)
-	// 						editor.setSelection(cur)
-	// 						cmp.editor.markText({line: 0, col:0}, {line: editor.lastLine(), col: 0})
-	// 					}))
-	// 		}
-	// 		cmp.frontEndRefresh()
-	// 		const wrapper = editor.getWrapperElement();
-	// 		jb.delay(1).then(() => _enableFullScreen && enableFullScreen(editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper)))
-
-	// 	} catch(e) {
-	// 		jb.logException(e,'editable-text.codemirror',ctx);
-	// 		return;
-	// 	}
-	// }),
 
 })();
 

@@ -57,7 +57,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/itemlist/itemlist-dd.js',
         'src/ui/itemlist/itemlist-scroll.js',
         'src/ui/itemlist/itemlist-container.js',
-        'src/ui/itemlist/table-colspan.js',
+        'src/ui/itemlist/table.js',
         'src/ui/menu.js',
         'src/ui/picklist.js',
         'src/ui/multi-select.js',
@@ -94,9 +94,9 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/testing/testers-ui.js',
         'src/testing/user-input.js',
       ],
-      'codemirror': [
-          'dist/codemirror.js',
-      ],
+      // 'codemirror': [
+      //     'dist/codemirror.js',
+      // ],
       'fuse': ['dist/fuse.js' ],
       'markdown-editor': [
         'node_modules/codemirror/mode/markdown/markdown.js',
@@ -105,7 +105,9 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'node_modules/codemirror/addon/mode/overlay.js',
         'node_modules/codemirror/addon/display/placeholder.js',
         'node_modules/codemirror/addon/selection/mark-selection.js',
+        'node_modules/codemirror/addon/formatting/formatting.js',
         'node_modules/codemirror/mode/gfm/gfm.js',
+        'node_modules/codemirror/lib/util/formatting.js',
         'dist/mark.js',
         'dist/simplemde.js',
         'dist/css/simplemde.css',
@@ -122,7 +124,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/misc/puppeteer/pptr.js',
         'src/misc/puppeteer/crawler.js',
       ],            
-      'codemirror-js-files': [
+      'codemirror': [
         'node_modules/codemirror/lib/codemirror.js',
         'node_modules/codemirror/mode/xml/xml.js',
         'node_modules/codemirror/mode/javascript/javascript.js',
@@ -130,6 +132,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'node_modules/codemirror/mode/jsx/jsx.js',
         'node_modules/codemirror/mode/htmlmixed/htmlmixed.js',
         'node_modules/codemirror/addon/hint/show-hint.js',
+        'node_modules/codemirror/addon/formatting/formatting.js',
 
         'node_modules/codemirror/addon/dialog/dialog.js',
         'node_modules/codemirror/addon/search/searchcursor.js',
@@ -147,7 +150,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
 //        'src/ui/watchable/text-editor.js',
         'src/ui/styles/codemirror-styles.js',
       ],
-    
+      'codemirror-backend': ['/src/ui/styles/codemirror-styles.js'],
       'codemirror-css': [
         'node_modules/codemirror/addon/dialog/dialog.css',
         'node_modules/codemirror/addon/fold/foldgutter.css',

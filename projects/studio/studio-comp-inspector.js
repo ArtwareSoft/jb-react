@@ -10,7 +10,7 @@ jb.component('studio.compInspector', {
       style: chromeDebugger.sectionsExpandCollapse(),
       controls: [
         text('%$inspectedCmp/cmpId%;%$inspectedCmp/ver% -- %$inspectedCtx/path%', '%$inspectedCtx/profile/$%'),
-        itemlist({
+        table({
             title: 'state',
             items: unique({items: list(keys('%$inspectedCmp/state%'),keys('%$elem/_component/state%'))}),
             controls: [
@@ -18,7 +18,6 @@ jb.component('studio.compInspector', {
              text('%$elem/_component/state/{%%}%', 'front end'),
              text('%$inspectedCmp/state/{%%}%', 'back end'),
             ],
-            style: table.plain(),
             features: followUp.watchObservable(source.callbag('%$frameOfElem.spy.observable()%', 100))
         }),
         studio.eventsOfComp('%$inspectedCmp/cmpId%'),
@@ -28,14 +27,13 @@ jb.component('studio.compInspector', {
             style: editableText.codemirror({height: '100'}),
             features: codemirror.fold()
         }),
-        itemlist({
+        table({
           title: 'methods',
           items: '%$inspectedCmp/method%',
           controls: [
             text('%id%', 'method'),
             studio.sourceCtxView('%ctx%')
           ],
-          style: table.plain(true)
         }),
         tableTree({
             title: 'rendering props',
@@ -105,7 +103,7 @@ jb.component('studio.eventsOfComp', {
           ],
           features: css.color({background: 'var(--jb-menubar-inactive-bg)'})
         }),
-        itemlist({
+        table({
           items: '%$events%',
           controls: [
             text('%index%'),

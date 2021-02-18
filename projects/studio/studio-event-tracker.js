@@ -103,18 +103,18 @@ jb.component('studio.eventTracker', {
   impl: group({
     controls: [
       studio.eventTrackerToolbar(),
-      itemlist({
+      table({
         items: eventTracker.eventItems('%$eventTracker/eventTrackerQuery%'),
         controls: [
           text('%index%'),
           eventTracker.expandableComp(),
-          controlWithCondition('%$cmpExpanded/{%index%}%', group({ 
+          controlWithCondition('%$cmpExpanded/{%$index%}%', group({ 
             controls: eventTracker.compInspector('%cmp%'), 
-            features: feature.expandToEndOfRow('%$cmpExpanded/{%index%}%')
+            features: feature.expandToEndOfRow('%$cmpExpanded/{%$index%}%')
           })),
           controlWithCondition(and('%m/d%','%m/t%==1'), group({
             controls: [
-              editableBoolean({databind: '%$payloadExpanded/{%index%}%', style: chromeDebugger.toggleStyle()}),
+              editableBoolean({databind: '%$payloadExpanded/{%$index%}%', style: chromeDebugger.toggleStyle()}),
               text('%$contentType% %$direction% %m/cbId% (%$payload/length%) %m/$%: %m/t%'),
             ],
             layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'}),
@@ -124,17 +124,17 @@ jb.component('studio.eventTracker', {
               variable('payload', prettyPrint('%m/d%'))
             ]
           })),
-          controlWithCondition('%$payloadExpanded/{%index%}%', group({ 
+          controlWithCondition('%$payloadExpanded/{%$index%}%', group({ 
             controls: text({
               text: prettyPrint('%m/d%'),
               style: text.codemirror({height: '200'}),
               features: [codemirror.fold(), css('min-width: 1200px; font-size: 130%')]
             }), 
-            features: feature.expandToEndOfRow('%$payloadExpanded/{%index%}%')
+            features: feature.expandToEndOfRow('%$payloadExpanded/{%$index%}%')
           })),
           controlWithCondition('%logNames%==check test result', group({
             controls: [
-              editableBoolean({databind: '%$payloadExpanded/{%index%}%', style: chromeDebugger.toggleStyle()}),
+              editableBoolean({databind: '%$testResultExpanded/{%$index%}%', style: chromeDebugger.toggleStyle()}),
               text({
                 vars: Var('color',If('%success%','--jb-success-fg','--jb-error-fg')),
                 text: If('%success%','✓ check test reuslt','⚠ check test reuslt'),
@@ -142,14 +142,16 @@ jb.component('studio.eventTracker', {
               }),
             ]
           })),
-          controlWithCondition('%$payloadExpanded/{%index%}%', group({ 
+          controlWithCondition('%$testResultExpanded/{%$index%}%', group({ 
             controls: [
-              text(If('%success%','✓ check test reuslt','⚠ check test reuslt')),
+              controlWithCondition('%expectedResultCtx/data%', text(prettyPrint('%expectedResultCtx.profile.expectedResult%',true))),
+              controlWithCondition('%expectedResultCtx/data%', text('%expectedResultCtx/data%')),              
               text({
-                text: ctx => { debugger; return ctx.data.html},
-                style: text.codemirror({height: '200', mode: 'html'}),
+                text: '%html%',
+                style: text.codemirror({height: '200', mode: 'htmlmixed', formatText: true}),
                 features: [codemirror.fold(), css('min-width: 1200px; font-size: 130%')]
-            })]
+            })],
+            features: feature.expandToEndOfRow('%$testResultExpanded/{%$index%}%')
           })),
           text({ text: '%logNames%', features: feature.byCondition(
             inGroup(list('exception','error'), '%logNames%'),
@@ -159,8 +161,6 @@ jb.component('studio.eventTracker', {
           studio.objExpandedAsText('%stack%','stack'),
 
           controlWithCondition('%m%',text('%m/$%: %m/t%, %m/cbId%')),
-          controlWithCondition('%expectedResultCtx/data%', text(prettyPrint('%expectedResultCtx.profile.expectedResult%',true))),
-          controlWithCondition('%expectedResultCtx/data%', text('%expectedResultCtx/data%')),
 //          studio.objExpandedAsText('%m/d%','payload'),
           studio.lowFootprintObj('%delta%','delta'),
           studio.lowFootprintObj('%vdom%','vdom'),
@@ -173,25 +173,29 @@ jb.component('studio.eventTracker', {
           studio.sourceCtxView('%ctx%'),
         ],
         style: table.plain(true),
-        visualSizeLimit: 30,
+        visualSizeLimit: 80,
+        lineFeatures: [
+          watchRef({ref: '%$cmpExpanded/{%$index%}%', allowSelfRefresh: true}),
+          watchRef({ref: '%$payloadExpanded/{%$index%}%', allowSelfRefresh: true}),
+          watchRef({ref: '%$testResultExpanded/{%$index%}%', allowSelfRefresh: true}),
+          table.enableExpandToEndOfRow()
+        ],               
         features: [
+          variable({name: 'cmpExpanded', watchable: true, value: obj() }),
+          variable({name: 'payloadExpanded', watchable: true, value: obj() }),
+          variable({name: 'testResultExpanded', watchable: true, value: obj() }),
           itemlist.infiniteScroll(5),
           itemlist.selection({
             onSelection: runActions(({data}) => jb.frame.console.log(data), eventTracker.highlightEvent('%%'))
           }),
           itemlist.keyboardSelection({}),
-          eventTracker.watchSpy(1000),
-          table.expandToEndOfRow(),
-          watchRef({ref: '%$cmpExpanded%', includeChildren: 'yes' , allowSelfRefresh: true }),
-          watchRef({ref: '%$payloadExpanded%', includeChildren: 'yes' , allowSelfRefresh: true })
+          eventTracker.watchSpy(500),
         ]
       })
     ],
     features: [
       variable('$disableLog',true),
       id('event-tracker'),
-      variable({name: 'cmpExpanded', watchable: true, value: obj() }),
-      variable({name: 'payloadExpanded', watchable: true, value: obj() }),
     ]
   })
 })
@@ -241,7 +245,7 @@ jb.component('eventTracker.expandableComp', {
     controls: [
       controlWithCondition('%cmp/ctx/profile/$%', group({
         controls: [
-          editableBoolean({databind: '%$cmpExpanded/{%index%}%', style: chromeDebugger.toggleStyle()}),
+          editableBoolean({databind: '%$cmpExpanded/{%$index%}%', style: chromeDebugger.toggleStyle()}),
           text('%cmp/ctx/profile/$% %cmp/cmpId%;%cmp/ver%'),
         ],
         layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'})
@@ -490,7 +494,7 @@ jb.component('eventTracker.compInspector', {
       style: chromeDebugger.sectionsExpandCollapse(),
       controls: [
         text('%$cmp/cmpId%;%$cmp/ver% -- %$cmp/ctx/path%', '%$cmp/ctx/profile/$%'),
-        itemlist({
+        table({
             title: 'state',
             items: unique({items: list(keys('%$cmp/state%'),keys('%$elem/_component/state%'))}),
             controls: [
@@ -498,7 +502,6 @@ jb.component('eventTracker.compInspector', {
              text('%$elem/_component/state/{%%}%', 'front end'),
              text('%$cmp/state/{%%}%', 'back end'),
             ],
-            style: table.plain(),
         }),
         editableText({
             title: 'source',
@@ -506,7 +509,7 @@ jb.component('eventTracker.compInspector', {
             style: editableText.codemirror({height: '100'}),
             features: codemirror.fold()            
         }),
-        itemlist({
+        table({
           title: 'methods',
           items: '%$cmp/method%',
           controls: [

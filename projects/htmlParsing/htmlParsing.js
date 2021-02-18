@@ -6,7 +6,7 @@ jb.component('htmlParsing.main', {
     title: '',
     layout: layout.horizontal(),
     controls: [
-      itemlist({
+      table({
         title: '',
         items: pipeline('%$phone%', keys()),
         controls: [
@@ -16,7 +16,7 @@ jb.component('htmlParsing.main', {
         style: table.mdc(),
         features: css.width('5005')
       }),
-      itemlist({
+      table({
         items: '%$phone/spec-list%',
         controls: [
           text({text: '%feature%', title: 'feature'}),
@@ -108,7 +108,7 @@ jb.component('htmlParsing.makeToDevices', {
           )
         )
       }),
-      itemlist({
+      table({
         items: '%$deviceUrls%',
         controls: [
           text({text: '%%', title: 'url'}),
@@ -134,7 +134,7 @@ jb.component('htmlParsing.parseDevice', {
       group({
         layout: layout.horizontal(),
         controls: [
-          itemlist({
+          table({
             items: pipeline('%$devices%', properties(), '%val%'),
             controls: [
               text({text: '%name%', title: 'name', features: field.columnWidth('300')}),

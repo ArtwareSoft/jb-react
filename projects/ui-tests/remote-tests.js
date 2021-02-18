@@ -261,7 +261,7 @@ jb.component('remoteTest.uiWorker', {
 
 jb.component('remoteTest.uiWorkerWithSamples', {
   type: 'remote',
-  impl: jbm.worker({id: 'ui-with-samples', libs: ['common','ui-common','remote','remote-widget'], jsFiles: ['/projects/ui-tests/test-data-samples.js']})
+  impl: jbm.worker({id: 'ui-with-samples', libs: ['common','ui-common','remote','remote-widget','codemirror-backend'], jsFiles: ['/projects/ui-tests/test-data-samples.js']})
 })
 
 jb.component('remoteWidgetTest.button', {
@@ -270,6 +270,26 @@ jb.component('remoteWidgetTest.button', {
     checkResultRx: () => jb.ui.renderingUpdates,
     control: remote.widget(button('hello world'), remoteTest.uiWorker()),
     expectedResult: contains('hello world')
+  })
+})
+
+jb.component('remoteWidgetTest.codemirror', {
+  impl: uiFrontEndTest({
+    renderDOM: true,
+    timeout: 3000,
+    action: waitFor(() => document.querySelector('.CodeMirror')),
+    control: remote.widget(text({text: 'hello', style: text.codemirror({height: 100})}), remoteTest.uiWorkerWithSamples()),
+    expectedResult: contains('hello')
+  })
+})
+
+jb.component('remoteWidgetTest.codemirror.editableText', {
+  impl: uiFrontEndTest({
+    renderDOM: true,
+    timeout: 3000,
+    action: waitFor(() => document.querySelector('.CodeMirror')),
+    control: remote.widget(editableText({databind: '%$person/name%', style: editableText.codemirror({height: 100})}), remoteTest.uiWorkerWithSamples()),
+    expectedResult: contains('Homer')
   })
 })
 
@@ -364,8 +384,12 @@ jb.component('remoteWidgetTest.infiniteScroll.MDInplace', {
     renderDOM: true,
     control: remote.widget(group({
       controls: [
-        itemlist({
+        table({
         items: '%$people%',
+        lineFeatures: [
+          watchRef({ref: '%$sectionExpanded/{%$index%}%', allowSelfRefresh: true}),
+          table.enableExpandToEndOfRow()
+        ],        
         visualSizeLimit: 2,
         controls: [
           group({
@@ -382,10 +406,7 @@ jb.component('remoteWidgetTest.infiniteScroll.MDInplace', {
           text('%age%'),
           text('%age%')
         ],
-        style: table.plain(),
         features: [
-          table.expandToEndOfRow(),
-          watchRef({ref: '%$sectionExpanded%', includeChildren: 'yes' , allowSelfRefresh: true }),
           css.height({height: '40', overflow: 'scroll'}),
           itemlist.infiniteScroll(2),  
         ]
@@ -423,6 +444,40 @@ jb.component('remoteWidgetTest.refresh', {
   })
 })
 
+jb.component('eventTracker.worker.vDebugger', {
+  impl: uiTest({
+    timeout: 2000,
+    runBefore: pipe(
+      jbm.worker('innerWorker'), 
+      remote.action(runActions(
+        () => jb.initSpy({spyParam: 'remote,log1'}),
+        log('log1',obj(prop('hello','world'))),
+        jbm.vDebugger()),
+      '%%')
+    ),
+    control: remote.widget(studio.eventTracker(), jbm.byUri('tests►innerWorker►vDebugger')),
+    expectedResult: contains('log1')
+  })
+})
+
+jb.component('eventTracker.uiTest.vDebugger', {
+  impl: uiTest({
+    timeout: 2000,
+    runBefore: remote.action(
+      runActions(
+        jbm.vDebugger(), 
+        log('check test result', obj(prop('html','<div><span>aa</span></div>'), prop('success',true))),
+        log('check test result', obj(prop('html','<span/>'), prop('success',false))),
+      ), remoteTest.uiWorkerWithSamples()),
+    control: group({
+      controls: [
+        remote.widget(editableText({databind:'%$person/name%'}), remoteTest.uiWorkerWithSamples()),
+        remote.widget(studio.eventTracker(), jbm.byUri('tests►ui-with-samples►vDebugger')),
+      ]
+    }),
+    expectedResult: contains('group')
+  })
+})
 
 // jb.component('remoteWidgetTest.recoverAfterError', {
 //   impl: uiTest({

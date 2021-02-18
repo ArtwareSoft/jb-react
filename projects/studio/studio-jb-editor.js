@@ -118,7 +118,7 @@ jb.component('studio.dataBrowse', {
           // ),
           controlWithCondition(
             isOfType('array', '%$obj%'),
-            itemlist({
+            table({
               items: '%$obj%',
               controls: group({title: '%$obj/length% items', controls: studio.dataBrowse('%%', 200)}),
               style: table.mdc(),
@@ -279,7 +279,7 @@ jb.component('studio.probeDataView', {
             '%$probeResult/0/callbagLog%',
             studio.showRxSniffer('%$probeResult/0%')
           ),
-          itemlist({
+          table({
             items: '%$probeResult%',
             controls: [
               group({

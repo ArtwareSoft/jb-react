@@ -8792,27 +8792,133 @@ jb.component('search.fuse', {
 })
 ;
 
-jb.component('table.expandToEndOfRow', {
+var { mdcStyle,table } = jb.ns('mdcStyle,table')
+
+jb.component('table', {
+  description: 'list, dynamic group, collection, repeat',
+  type: 'control',
+  category: 'group:80,common:80',
+  params: [
+    {id: 'title', as: 'string'},
+    {id: 'items', as: 'array', dynamic: true, mandatory: true},
+    {id: 'controls', type: 'control[]', mandatory: true, dynamic: true},
+    {id: 'style', type: 'table.style', defaultValue: table.plain()},
+    {id: 'itemVariable', as: 'string', defaultValue: 'item'},
+    {id: 'visualSizeLimit', as: 'number', defaultValue: 100, description: 'by default itemlist is limmited to 100 shown items'},
+    {id: 'features', type: 'feature[]', dynamic: true, flattenArray: true},
+    {id: 'lineFeatures', type: 'feature[]', dynamic: true, flattenArray: true},
+  ],
+  impl: itemlist({
+    vars: Var('$tableModel', ({},{},params) => params),
+    items: '%$items()%', style: '%$style.itemlistStyle()%', itemVariable: '%$itemVariable%', visualSizeLimit: '%$visualSizeLimit%', features: '%$features()%',
+    controls: group({
+      controls: '%$controls()%',
+      style: '%$style.lineStyle()%',
+      features: '%$lineFeatures()%'
+    })
+  })
+})
+
+jb.component('table.style', {
+    type: 'table.style',
+    params: [
+      {id: 'itemlistStyle', type: 'itemlist.style', dynamic: true},
+      {id: 'lineStyle', type: 'group.style', dynamic: true, defaultValue: table.trTd() },
+    ],
+    impl: ctx => ctx.params
+})
+
+jb.component('table.plain', { // todo change to table.plain after itemlist => table refactor
+  type: 'table.style',
+  params: [
+    {id: 'hideHeaders', as: 'boolean', type: 'boolean'}
+  ],
+  impl: table.style(customStyle({
+    template: (cmp,{ctrls,hideHeaders,headerFields},h) => h('div.jb-itemlist',{},h('table',{},[
+        ...(hideHeaders ? [] : [h('thead',{},h('tr',{},
+        headerFields.map(f=>h('th',{'jb-ctx': f.ctxId, ...(f.width &&  { style: `width: ${f.width}px` }) }, jb.ui.fieldTitle(cmp,f,h))) ))]),
+        h('tbody.jb-items-parent',{}, ctrls.map( ctrl=> h(ctrl[0]))),
+        ctrls.length == 0 ? 'no items' : ''            
+    ])),
+    css: `>table{border-spacing: 0; text-align: left; width: 100%}
+    >table>tbody>tr>td { padding-right: 5px }
+    `,
+    features: [
+      itemlist.init(), 
+      calcProp('headerFields', '%$$tableModel/controls()/field()%')
+    ]
+  }))
+})
+
+jb.component('table.mdc', {
+  type: 'table.style',
+  params: [
+    {id: 'hideHeaders', as: 'boolean', type: 'boolean'},
+    {id: 'classForTable', as: 'string', defaultValue: 'mdc-data-table__table mdc-data-table--selectable'}    
+  ],
+  impl: table.style({ itemlistStyle: customStyle({
+    template: (cmp,{ctrls,sortOptions,hideHeaders,classForTable,headerFields},h) => 
+      h('div.jb-itemlist mdc-data-table',{}, h('table',{class: classForTable}, [
+        ...(hideHeaders ? [] : [h('thead',{},h('tr.mdc-data-table__header-row',{},
+            headerFields.map((f,i) =>h('th.mdc-data-table__header-cell',{
+            'jb-ctx': f.ctxId, 
+            class: [ 
+                (sortOptions && sortOptions.filter(o=>o.field == f)[0] || {}).dir == 'asc' ? 'mdc-data-table__header--sorted-ascending': '',
+                (sortOptions && sortOptions.filter(o=>o.field == f)[0] || {}).dir == 'des' ? 'mdc-data-table__header--sorted-descending': '',
+              ].filter(x=>x).join(' '), 
+            style: { width: f.width ? f.width + 'px' : ''},
+            onclick: 'toggleSort',
+            fieldIndex: i
+            }
+            ,jb.ui.fieldTitle(cmp,f,h))) ))]),
+        h('tbody.jb-items-parent mdc-data-table__content',{},ctrls.map( ctrl=> h(ctrl[0]))),
+        ctrls.length == 0 ? 'no items' : ''            
+    ])),
+    css: `{width: 100%}  
+    ~ .mdc-data-table__header-cell, ~ .mdc-data-table__cell {color: var(--jb-fg)}`,
+    features: [
+      itemlist.init(), mdcStyle.initDynamic(), 
+      calcProp('headerFields', '%$$tableModel/controls()/field()%')
+    ]
+  }), 
+  lineStyle: customStyle({
+        template: ({},{ctrls},h) => h('tr.jb-item mdc-data-table__row',{}, ctrls.map(ctrl=> h('td.mdc-data-table__cell',{}, h(ctrl)))),
+        features: group.initGroup()
+    })
+  })
+})
+
+jb.component('table.trTd', {
+    type: 'group.style',
+    impl: customStyle({
+      template: ({},{ctrls},h) => h('tr.jb-item',{}, ctrls.map(ctrl=> h('td',{}, h(ctrl)))),
+      features: group.initGroup()
+    })
+})
+
+jb.component('table.enableExpandToEndOfRow', {
   type: 'feature',
-  description: 'allows expandToEndOfRow in itemlist with table style',
-  impl: templateModifier( ({},{$props,vdom}) => ((vdom.querySelector('.jb-items-parent') || vdom).children || []).forEach((tr,i) =>{
-        const expandIndex = $props.ctrls[i] ? $props.ctrls[i].findIndex(ctrl=> ctrl.renderProps.expandToEndOfRow) : -1
-        if (expandIndex != -1) {
-            tr.children = tr.children.slice(0,expandIndex+1)
-            tr.children[expandIndex].setAttribute('colspan','10') //($props.ctrls[0] || []).length - expandIndex)
-        }
-    })),
+  category: 'line-feature',
+  description: 'allows expandToEndOfRow in table, set as lineFeatures',
+  impl: templateModifier( ({},{$props,vdom}) => {
+    const expandIndex = $props.ctrls.findIndex(ctrl=> ctrl.renderProps.expandToEndOfRow)
+    if (expandIndex != -1) {
+        const colspan = vdom.children.length - expandIndex
+        vdom.children = vdom.children.slice(0,expandIndex+1)
+        vdom.children[expandIndex].setAttribute('colspan',''+colspan)
+    }
+  }),
 })
 
 jb.component('feature.expandToEndOfRow', {
     type: 'feature',
-    description: 'put on a field to expandToEndOfRow by condition',
+    category: 'table-field',
+    description: 'requires table.enableExpandToEndOfRow as lineFeature. Put on a field to expandToEndOfRow by condition',
     params: [
         {id: 'condition', as: 'boolean', dynamic: true}
     ],
     impl: calcProp('expandToEndOfRow','%$condition()%')
-})
-  ;
+});
 
 var { menu,menuStyle,menuSeparator,mdc,icon,key} = jb.ns('menu,menuStyle,menuSeparator,mdc,icon,key')
 
@@ -10808,8 +10914,6 @@ jb.component('group.sectionsExpandCollapse', {
 })
 ;
 
-jb.ns('mdcStyle,table')
-
 jb.component('itemlist.shownOnlyOnItemHover', {
   type: 'feature',
   category: 'itemlist:75',
@@ -10860,64 +10964,6 @@ jb.component('itemlist.horizontal', {
         >* { margin-right: %$spacing%px }
         >*:last-child { margin-right:0 }`,
     features: itemlist.init()
-  })
-})
-
-jb.component('table.plain', {
-  params: [
-    {id: 'hideHeaders', as: 'boolean', type: 'boolean'}
-  ],
-  type: 'itemlist.style',
-  impl: customStyle({
-    template: (cmp,{ctrls,hideHeaders,headerFields},h) => h('div.jb-itemlist',{},h('table',{},[
-        ...(hideHeaders ? [] : [h('thead',{},h('tr',{},
-        headerFields.map(f=>h('th',{'jb-ctx': f.ctxId, ...(f.width &&  { style: `width: ${f.width}px` }) }, jb.ui.fieldTitle(cmp,f,h))) ))]),
-        h('tbody.jb-items-parent',{},
-          ctrls.map( ctrl=> h('tr.jb-item',{} , ctrl.map( singleCtrl => h('td',{}, h(singleCtrl)))))),
-        ctrls.length == 0 ? 'no items' : ''            
-    ])),
-    css: `>table{border-spacing: 0; text-align: left; width: 100%}
-    >table>tbody>tr>td { padding-right: 5px }
-    `,
-    features: [
-      itemlist.init(), 
-      calcProp('headerFields', '%$$model/controls()/field()%')
-    ]
-  })
-})
-
-jb.component('table.mdc', {
-  type: 'itemlist.style',
-  params: [
-    {id: 'hideHeaders', as: 'boolean', type: 'boolean'},
-    {id: 'classForTable', as: 'string', defaultValue: 'mdc-data-table__table mdc-data-table--selectable'}    
-  ],
-  impl: customStyle({
-    template: (cmp,{ctrls,sortOptions,hideHeaders,classForTable,headerFields},h) => 
-      h('div.jb-itemlist mdc-data-table',{}, h('table',{class: classForTable}, [
-        ...(hideHeaders ? [] : [h('thead',{},h('tr.mdc-data-table__header-row',{},
-            headerFields.map((f,i) =>h('th.mdc-data-table__header-cell',{
-            'jb-ctx': f.ctxId, 
-            class: [ 
-                (sortOptions && sortOptions.filter(o=>o.field == f)[0] || {}).dir == 'asc' ? 'mdc-data-table__header--sorted-ascending': '',
-                (sortOptions && sortOptions.filter(o=>o.field == f)[0] || {}).dir == 'des' ? 'mdc-data-table__header--sorted-descending': '',
-              ].filter(x=>x).join(' '), 
-            style: { width: f.width ? f.width + 'px' : ''},
-            onclick: 'toggleSort',
-            fieldIndex: i
-            }
-            ,jb.ui.fieldTitle(cmp,f,h))) ))]),
-        h('tbody.jb-items-parent mdc-data-table__content',{},
-            ctrls.map((ctrl)=> h('tr.jb-item mdc-data-table__row',{} , ctrl.map( singleCtrl => 
-              h('td.mdc-data-table__cell', {}, h(singleCtrl)))))),
-        ctrls.length == 0 ? 'no items' : ''            
-    ])),
-    css: `{width: 100%}  
-    ~ .mdc-data-table__header-cell, ~ .mdc-data-table__cell {color: var(--jb-fg)}`,
-    features: [
-      itemlist.init(), mdcStyle.initDynamic(), 
-      calcProp('headerFields', '%$$model/controls()/field()%')
-    ]
   })
 })
 ;
@@ -12570,7 +12616,11 @@ Object.assign(jb, {
                         return new Promise((resolve,reject) => {
                             const handlers = jb.cbHandler.map
                             const cbId = jb.cbHandler.newId()
-                            const timer = setTimeout(() => handlers[cbId] && reject({ type: 'error', desc: 'timeout' }), timeout)
+                            const timer = setTimeout(() => {
+                                const err = { type: 'error', desc: 'remote exec timeout', remoteRun, timeout }
+                                jb.logError('remote exec timeout',err)
+                                handlers[cbId] && reject(err)
+                            }, timeout)
                             handlers[cbId] = {resolve,reject,remoteRun, timer}
                             port.postMessage({$:'CB.exec', remoteRun, cbId, isAction, timeout })
                         })
@@ -12684,9 +12734,12 @@ jb_loadProject(${JSON.stringify(settings)}).then(() => {
         const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
         const workerJbm = childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
         // wait for worker jbm to load
-        const res = jb.exec(pipe(waitFor(remote.data(()=>self.loaded, ()=>workerJbm)), ()=>workerJbm, first()))
-        res.uri = workerJbm.uri
-        return res
+        const promise = jb.exec(pipe(waitFor({
+            interval: 800,
+            check: remote.data(()=> self.loaded, ()=>workerJbm),
+        }), ()=>workerJbm, first()))
+        promise.uri = workerJbm.uri
+        return promise
     }
 })
 
@@ -12785,13 +12838,10 @@ jb.component('jbm.same', {
 
 jb.component('jbm.vDebugger', {
     type: 'jbm',
-    impl: pipe(
-		jbm.child('vDebugger',['vDebugger']),
-		pipe(
-        	remote.action(() => jb.studio.initLocalCompsRefHandler(jb.studio.compsRefOfjbm(jb.parent))	,'%%'),
-			'%%'
-		)
-    )
+    impl: ctx => Promise.resolve(ctx.run(jbm.child('vDebugger',['vDebugger']),)).then(jbm=>{
+        jbm.studio.initLocalCompsRefHandler(jbm.studio.compsRefOfjbm(jbm.parent))
+        return jbm
+    })
 })
 ;
 
@@ -13162,7 +13212,8 @@ jb.component('textEditor.cmEnrichUserEvent', {
     )
 })
 
-function injectCodeMirror(ctx,{text,cmp,el,cm_settings,_enableFullScreen}) {
+function injectCodeMirror(ctx,{text,cmp,el,cm_settings,_enableFullScreen,formatText}) {
+	if (cmp.editor) return
 	const _extraKeys = { ...cm_settings.extraKeys, ...jb.path(cmp.extraCmSettings,'extraKeys')}
 	const extraKeys = jb.objFromEntries(jb.entries(_extraKeys).map(e=>[
 		e[0], (''+e[1]).replace(/\s/g,'').indexOf('()=>') == 0 ? e[1]
@@ -13173,6 +13224,11 @@ function injectCodeMirror(ctx,{text,cmp,el,cm_settings,_enableFullScreen}) {
 	cmp.editor = CodeMirror(el, settings)
 	cmp.editor.getWrapperElement().setAttribute('jb_external','true')
 	jb.ui.addClass(cmp.editor.getWrapperElement(),'autoResizeInDialog')
+	if (formatText) {
+		CodeMirror.commands.selectAll(cmp.editor)
+		cmp.editor.autoFormatRange(cmp.editor.getCursor(true), cmp.editor.getCursor(false));
+		cmp.editor.setSelection({line:0, ch:0})
+	}
 	//cmp.editor.refresh()
 	_enableFullScreen && jb.delay(1).then(() => enableFullScreen(ctx,cmp,el))
 }
@@ -13248,7 +13304,8 @@ jb.component('text.codemirror', {
     {id: 'enableFullScreen', type: 'boolean', as: 'boolean', defaultValue: true},
 	{id: 'height', as: 'number'},
     {id: 'lineWrapping', as: 'boolean', type: 'boolean'},
-    {id: 'lineNumbers', as: 'boolean', type: 'boolean'},
+	{id: 'lineNumbers', as: 'boolean', type: 'boolean'},
+	{id: 'formatText', as: 'boolean', type: 'boolean'},
     {id: 'mode', as: 'string', options: 'htmlmixed,javascript,css'},
   ],
   impl: features(
@@ -13258,85 +13315,13 @@ jb.component('text.codemirror', {
 		...cm_settings, lineWrapping, lineNumbers, readOnly: true, mode: mode || 'javascript',
 	})),
 	frontEnd.var('_enableFullScreen', '%$enableFullScreen%'),
+	frontEnd.var('formatText', '%$formatText%'),
     frontEnd.init( (ctx,vars) => injectCodeMirror(ctx,vars)),
-	frontEnd.onRefresh(({},{text,cmp}) => cmp.editor.setValue(text)),	
+//	frontEnd.onRefresh((ctx,vars) => { injectCodeMirror(ctx,vars); vars.cmp.editor.setValue(vars.text) }),	
     css(({},{},{height}) => `{width: 100%}
 		>div { box-shadow: none !important; ${jb.ui.propWithUnits('height',height)} !important}`)
   )
 })
-
-			// let editor = null
-			// cmp.editor = {
-			// 	data_ref: cmp.data_ref,
-			// 	cmp,
-			// 	ctx: () => cmp.ctx.setVars({$launchingElement: { el : cmp.base, launcherHeightFix: 1 }}),
-			// 	getCursorPos: () => posFromCM(editor.getCursor()),
-			// 	charCoords(pos) {
-			// 		return editor.charCoords(posToCM(pos),'window')
-			// 	},
-			// 	cursorCoords() {
-			// 		return editor.cursorCoords('window')
-			// 	},
-			// 	normalizePreviewCoords(coords) {
-			// 		const previewIframe = document.querySelector('.preview-iframe')
-			// 		if (!previewIframe) return coords
-
-			// 		const offset = jb.ui.offset(previewIframe)
-			// 		return coords && Object.assign(coords,{
-			// 			top: coords.top - offset.top,
-			// 			left: coords.left - offset.left
-			// 		})
-			// 	},
-			// 	refreshFromDataRef: () => editor.setValue(jb.tostring(jb.val(cmp.data_ref))),
-			// 	setValue: text => editor.setValue(text),
-			// 	storeToRef: () => jb.writeValue(cmp.data_ref,editor.getValue(), ctx),
-			// 	isDirty: () => editor.getValue() !== jb.tostring(jb.val(cmp.data_ref)),
-			// 	markText: (from,to) => editor.markText(posToCM(from),posToCM(to), {className: 'jb-highlight-comp-changed'}),
-			// 	replaceRange: (text, from, to) => editor.replaceRange(text, posToCM(from),posToCM(to)),
-			// 	setSelectionRange: (from, to) => editor.setSelection(posToCM(from),posToCM(to)),
-			// 	focus: () => editor.focus(),
-			// 	formatComponent() {
-			// 		const {text, from, to} = jb.textEditor.formatComponent(editor.getValue(),this.getCursorPos(),cmp.data_ref.jbToUse)
-			// 		this.replaceRange(text, from, to)
-			// 	},
-			// 	cmEditor: editor
-			// }
-
-				// 		cmp.frontEndRefresh = () => {
-	// 			cmp.editor.cmEditor = editor = CodeMirror.fromTextArea(cmp.base.firstChild, effective_settings);
-	// 			cmp.data_ref = cmp.ctx.vars.$model.databind()
-	// 			editor.setValue(jb.tostring(jb.val(cmp.data_ref)))
-
-	// 			const {pipe,map,filter,subscribe,distinctUntilChanged,create,debounceTime,takeUntil} = jb.callbag
-
-	// 			pipe(
-	// 				create(obs=> editor.on('change', () => obs(editor.getValue()))),
-	// 				takeUntil( cmp.destroyed ),
-	// 				debounceTime(debounceTime),
-	// 				filter(x => x != jb.tostring(jb.val(cmp.data_ref))),
-	// 				distinctUntilChanged(),
-	// 				subscribe(x=> jb.writeValue(cmp.data_ref,x, ctx)))
-
-	// 			!cmp.data_ref.oneWay && jb.isWatchable(cmp.data_ref) && pipe(
-	// 					jb.ui.refObservable(cmp.data_ref,{cmp,srcCtx: ctx}),
-	// 					map(e=>jb.tostring(jb.val(cmp.data_ref))),
-	// 					filter(x => x != editor.getValue()),
-	// 					subscribe(x=>{
-	// 						const cur = editor.getCursor()
-	// 						editor.setValue(x)
-	// 						editor.setSelection(cur)
-	// 						cmp.editor.markText({line: 0, col:0}, {line: editor.lastLine(), col: 0})
-	// 					}))
-	// 		}
-	// 		cmp.frontEndRefresh()
-	// 		const wrapper = editor.getWrapperElement();
-	// 		jb.delay(1).then(() => _enableFullScreen && enableFullScreen(editor,jb.ui.outerWidth(wrapper), jb.ui.outerHeight(wrapper)))
-
-	// 	} catch(e) {
-	// 		jb.logException(e,'editable-text.codemirror',ctx);
-	// 		return;
-	// 	}
-	// }),
 
 })();
 
@@ -14865,18 +14850,18 @@ jb.component('studio.eventTracker', {
   impl: group({
     controls: [
       studio.eventTrackerToolbar(),
-      itemlist({
+      table({
         items: eventTracker.eventItems('%$eventTracker/eventTrackerQuery%'),
         controls: [
           text('%index%'),
           eventTracker.expandableComp(),
-          controlWithCondition('%$cmpExpanded/{%index%}%', group({ 
+          controlWithCondition('%$cmpExpanded/{%$index%}%', group({ 
             controls: eventTracker.compInspector('%cmp%'), 
-            features: feature.expandToEndOfRow('%$cmpExpanded/{%index%}%')
+            features: feature.expandToEndOfRow('%$cmpExpanded/{%$index%}%')
           })),
           controlWithCondition(and('%m/d%','%m/t%==1'), group({
             controls: [
-              editableBoolean({databind: '%$payloadExpanded/{%index%}%', style: chromeDebugger.toggleStyle()}),
+              editableBoolean({databind: '%$payloadExpanded/{%$index%}%', style: chromeDebugger.toggleStyle()}),
               text('%$contentType% %$direction% %m/cbId% (%$payload/length%) %m/$%: %m/t%'),
             ],
             layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'}),
@@ -14886,17 +14871,17 @@ jb.component('studio.eventTracker', {
               variable('payload', prettyPrint('%m/d%'))
             ]
           })),
-          controlWithCondition('%$payloadExpanded/{%index%}%', group({ 
+          controlWithCondition('%$payloadExpanded/{%$index%}%', group({ 
             controls: text({
               text: prettyPrint('%m/d%'),
               style: text.codemirror({height: '200'}),
               features: [codemirror.fold(), css('min-width: 1200px; font-size: 130%')]
             }), 
-            features: feature.expandToEndOfRow('%$payloadExpanded/{%index%}%')
+            features: feature.expandToEndOfRow('%$payloadExpanded/{%$index%}%')
           })),
           controlWithCondition('%logNames%==check test result', group({
             controls: [
-              editableBoolean({databind: '%$payloadExpanded/{%index%}%', style: chromeDebugger.toggleStyle()}),
+              editableBoolean({databind: '%$testResultExpanded/{%$index%}%', style: chromeDebugger.toggleStyle()}),
               text({
                 vars: Var('color',If('%success%','--jb-success-fg','--jb-error-fg')),
                 text: If('%success%','✓ check test reuslt','⚠ check test reuslt'),
@@ -14904,14 +14889,16 @@ jb.component('studio.eventTracker', {
               }),
             ]
           })),
-          controlWithCondition('%$payloadExpanded/{%index%}%', group({ 
+          controlWithCondition('%$testResultExpanded/{%$index%}%', group({ 
             controls: [
-              text(If('%success%','✓ check test reuslt','⚠ check test reuslt')),
+              controlWithCondition('%expectedResultCtx/data%', text(prettyPrint('%expectedResultCtx.profile.expectedResult%',true))),
+              controlWithCondition('%expectedResultCtx/data%', text('%expectedResultCtx/data%')),              
               text({
-                text: ctx => { debugger; return ctx.data.html},
-                style: text.codemirror({height: '200', mode: 'html'}),
+                text: '%html%',
+                style: text.codemirror({height: '200', mode: 'htmlmixed', formatText: true}),
                 features: [codemirror.fold(), css('min-width: 1200px; font-size: 130%')]
-            })]
+            })],
+            features: feature.expandToEndOfRow('%$testResultExpanded/{%$index%}%')
           })),
           text({ text: '%logNames%', features: feature.byCondition(
             inGroup(list('exception','error'), '%logNames%'),
@@ -14921,8 +14908,6 @@ jb.component('studio.eventTracker', {
           studio.objExpandedAsText('%stack%','stack'),
 
           controlWithCondition('%m%',text('%m/$%: %m/t%, %m/cbId%')),
-          controlWithCondition('%expectedResultCtx/data%', text(prettyPrint('%expectedResultCtx.profile.expectedResult%',true))),
-          controlWithCondition('%expectedResultCtx/data%', text('%expectedResultCtx/data%')),
 //          studio.objExpandedAsText('%m/d%','payload'),
           studio.lowFootprintObj('%delta%','delta'),
           studio.lowFootprintObj('%vdom%','vdom'),
@@ -14935,25 +14920,29 @@ jb.component('studio.eventTracker', {
           studio.sourceCtxView('%ctx%'),
         ],
         style: table.plain(true),
-        visualSizeLimit: 30,
+        visualSizeLimit: 80,
+        lineFeatures: [
+          watchRef({ref: '%$cmpExpanded/{%$index%}%', allowSelfRefresh: true}),
+          watchRef({ref: '%$payloadExpanded/{%$index%}%', allowSelfRefresh: true}),
+          watchRef({ref: '%$testResultExpanded/{%$index%}%', allowSelfRefresh: true}),
+          table.enableExpandToEndOfRow()
+        ],               
         features: [
+          variable({name: 'cmpExpanded', watchable: true, value: obj() }),
+          variable({name: 'payloadExpanded', watchable: true, value: obj() }),
+          variable({name: 'testResultExpanded', watchable: true, value: obj() }),
           itemlist.infiniteScroll(5),
           itemlist.selection({
             onSelection: runActions(({data}) => jb.frame.console.log(data), eventTracker.highlightEvent('%%'))
           }),
           itemlist.keyboardSelection({}),
-          eventTracker.watchSpy(1000),
-          table.expandToEndOfRow(),
-          watchRef({ref: '%$cmpExpanded%', includeChildren: 'yes' , allowSelfRefresh: true }),
-          watchRef({ref: '%$payloadExpanded%', includeChildren: 'yes' , allowSelfRefresh: true })
+          eventTracker.watchSpy(500),
         ]
       })
     ],
     features: [
       variable('$disableLog',true),
       id('event-tracker'),
-      variable({name: 'cmpExpanded', watchable: true, value: obj() }),
-      variable({name: 'payloadExpanded', watchable: true, value: obj() }),
     ]
   })
 })
@@ -15003,7 +14992,7 @@ jb.component('eventTracker.expandableComp', {
     controls: [
       controlWithCondition('%cmp/ctx/profile/$%', group({
         controls: [
-          editableBoolean({databind: '%$cmpExpanded/{%index%}%', style: chromeDebugger.toggleStyle()}),
+          editableBoolean({databind: '%$cmpExpanded/{%$index%}%', style: chromeDebugger.toggleStyle()}),
           text('%cmp/ctx/profile/$% %cmp/cmpId%;%cmp/ver%'),
         ],
         layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'})
@@ -15252,7 +15241,7 @@ jb.component('eventTracker.compInspector', {
       style: chromeDebugger.sectionsExpandCollapse(),
       controls: [
         text('%$cmp/cmpId%;%$cmp/ver% -- %$cmp/ctx/path%', '%$cmp/ctx/profile/$%'),
-        itemlist({
+        table({
             title: 'state',
             items: unique({items: list(keys('%$cmp/state%'),keys('%$elem/_component/state%'))}),
             controls: [
@@ -15260,7 +15249,6 @@ jb.component('eventTracker.compInspector', {
              text('%$elem/_component/state/{%%}%', 'front end'),
              text('%$cmp/state/{%%}%', 'back end'),
             ],
-            style: table.plain(),
         }),
         editableText({
             title: 'source',
@@ -15268,7 +15256,7 @@ jb.component('eventTracker.compInspector', {
             style: editableText.codemirror({height: '100'}),
             features: codemirror.fold()            
         }),
-        itemlist({
+        table({
           title: 'methods',
           items: '%$cmp/method%',
           controls: [
@@ -15339,7 +15327,7 @@ jb.component('studio.compInspector', {
       style: chromeDebugger.sectionsExpandCollapse(),
       controls: [
         text('%$inspectedCmp/cmpId%;%$inspectedCmp/ver% -- %$inspectedCtx/path%', '%$inspectedCtx/profile/$%'),
-        itemlist({
+        table({
             title: 'state',
             items: unique({items: list(keys('%$inspectedCmp/state%'),keys('%$elem/_component/state%'))}),
             controls: [
@@ -15347,7 +15335,6 @@ jb.component('studio.compInspector', {
              text('%$elem/_component/state/{%%}%', 'front end'),
              text('%$inspectedCmp/state/{%%}%', 'back end'),
             ],
-            style: table.plain(),
             features: followUp.watchObservable(source.callbag('%$frameOfElem.spy.observable()%', 100))
         }),
         studio.eventsOfComp('%$inspectedCmp/cmpId%'),
@@ -15357,14 +15344,13 @@ jb.component('studio.compInspector', {
             style: editableText.codemirror({height: '100'}),
             features: codemirror.fold()
         }),
-        itemlist({
+        table({
           title: 'methods',
           items: '%$inspectedCmp/method%',
           controls: [
             text('%id%', 'method'),
             studio.sourceCtxView('%ctx%')
           ],
-          style: table.plain(true)
         }),
         tableTree({
             title: 'rendering props',
@@ -15434,7 +15420,7 @@ jb.component('studio.eventsOfComp', {
           ],
           features: css.color({background: 'var(--jb-menubar-inactive-bg)'})
         }),
-        itemlist({
+        table({
           items: '%$events%',
           controls: [
             text('%index%'),

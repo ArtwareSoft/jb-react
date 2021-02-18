@@ -3,7 +3,7 @@ jb.component('studio.searchList', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: itemlist({
+  impl: table({
     items: pipeline(
       studio.allComps(),
       itemlistContainer.filter(),
@@ -49,7 +49,6 @@ jb.component('studio.searchList', {
         features: field.title('impl')
       })
     ],
-    style: table.plain(),
     visualSizeLimit: 30,
     features: [
       watchRef('%$itemlistCntrData/search_pattern%'),

@@ -176,22 +176,6 @@ jb.component('inPlaceEditTest.sizesEditor.inStudio', {
   })
 })
 
-jb.component('eventTracker.worker.vDebugger', {
-  impl: uiTest({
-    timeout: 2000,
-    runBefore: pipe(
-      jbm.worker('innerWorker'), 
-      remote.action(runActions(
-        () => jb.initSpy({spyParam: 'remote,log1'}),
-        log('log1',obj(prop('hello','world'))),
-        jbm.vDebugger()),
-      '%%')
-    ),
-    control: remote.widget(studio.eventTracker(), jbm.byUri('tests►innerWorker►vDebugger')),
-    expectedResult: contains('log1')
-  })
-})
-
 jb.component('test.extractComponentDialog.inStudio', {
   params: [
     {id: 'path', as: 'string', defaultValue: 'hello world'}

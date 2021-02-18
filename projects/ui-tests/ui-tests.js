@@ -483,19 +483,19 @@ jb.component('uiTest.itemlistPrimitiveArrayItemShouldBeRef', {
   })
 })
 
-jb.component('uiTest.itemlistPrimitiveArrayItemShouldBeRef.tableStyle', {
-  impl: uiTest({
-    vars: Var('isResultRef', obj(prop('answer',false))),
-    control: itemlist({items: '%$personWithPrimitiveChildren/childrenNames%', 
-      style: table.mdc(),
-      controls: ctx => { 
-        ctx.run(writeValue('%$isResultRef/answer%', () => !!jb.isRef(ctx.vars.$props.items[0])))
-        return ctx.run(text('%%'))
-      }
-    }),
-    expectedResult: '%$isResultRef/answer%'
-  })
-})
+// jb.component('uiTest.itemlistPrimitiveArrayItemShouldBeRef.tableStyle', {
+//   impl: uiTest({
+//     vars: Var('isResultRef', obj(prop('answer',false))),
+//     control: table({items: '%$personWithPrimitiveChildren/childrenNames%', 
+//       style: table.mdc(),
+//       controls: ctx => { 
+//         ctx.run(writeValue('%$isResultRef/answer%', () => !!jb.isRef(ctx.vars.$props.items[0])))
+//         return ctx.run(text('%%'))
+//       }
+//     }),
+//     expectedResult: '%$isResultRef/answer%'
+//   })
+// })
 
 jb.component('uiTest.itemlistRxSource', {
   impl: uiTest({
@@ -508,9 +508,26 @@ jb.component('uiTest.itemlistRxSource', {
   })
 })
 
+jb.component('uiTest.table', {
+  impl: uiTest({
+    control: table({
+      items: '%$people%',
+      controls: [
+        text('%name%'),
+        button({
+          title: 'delete',
+          style: button.x(),
+          features: field.columnWidth('50px')
+        })
+      ],
+    }),
+    expectedResult: contains('Homer Simpson')
+  })
+})
+
 jb.component('uiTest.itemlist.shownOnlyOnItemHover', {
   impl: uiTest({
-    control: itemlist({
+    control: table({
       items: '%$people%',
       controls: [
         text('%name%'),
@@ -520,7 +537,6 @@ jb.component('uiTest.itemlist.shownOnlyOnItemHover', {
           features: [itemlist.shownOnlyOnItemHover(), field.columnWidth('50px')]
         })
       ],
-      style: table.plain()
     }),
     expectedResult: contains('Homer Simpson')
   })
@@ -606,26 +622,29 @@ jb.component('uiTest.itemlistAddButton', {
   })
 })
 
-jb.component('uiTest.itemlist.expandToEndOfRow', {
+jb.component('uiTest.table.expandToEndOfRow', {
   impl: uiTest({
-    control: itemlist({
+    control: table({
       items: '%$people%',
       controls: [
         text({ text: '%name%', features: feature.expandToEndOfRow('%name%==Homer Simpson')}),
         text('%age%')
       ],
-      style: table.plain(),
-      features: table.expandToEndOfRow()
+      lineFeatures: table.enableExpandToEndOfRow()
     }),
     expectedResult: and(contains('colspan="'),not(contains('>42<')))
   })
 })
 
-jb.component('uiTest.itemlist.table.MDInplace', {
+jb.component('uiTest.table.MDInplace', {
   impl: uiTest({
     control: group({
-      controls: itemlist({
+      controls: table({
         items: '%$people%',
+        lineFeatures: [
+          watchRef({ref: '%$sectionExpanded/{%$index%}%', allowSelfRefresh: true}),
+          table.enableExpandToEndOfRow()
+        ],
         controls: [
           group({
             controls: [
@@ -641,11 +660,6 @@ jb.component('uiTest.itemlist.table.MDInplace', {
           text('%age%'),
           text('%age%')
         ],
-        style: table.plain(),
-        features: [
-          table.expandToEndOfRow(),
-          watchRef({ref: '%$sectionExpanded%', includeChildren: 'yes' , allowSelfRefresh: true })
-        ]
       }),
       features: variable({name: 'sectionExpanded', watchable: true, value: obj() }),
     }),
@@ -654,12 +668,16 @@ jb.component('uiTest.itemlist.table.MDInplace', {
   })
 })
 
-jb.component('uiTest.itemlist.table.MDInplace.withScroll', {
+jb.component('uiTest.table.MDInplace.withScroll', {
   impl: uiFrontEndTest({
     renderDOM: true,
     control: group({
-      controls: itemlist({
+      controls: table({
         items: '%$people%',
+        lineFeatures: [
+          watchRef({ref: '%$sectionExpanded/{%$index%}%', allowSelfRefresh: true}),
+          table.enableExpandToEndOfRow()
+        ],        
         visualSizeLimit: 2,
         controls: [
           group({
@@ -676,10 +694,7 @@ jb.component('uiTest.itemlist.table.MDInplace.withScroll', {
           text('%age%'),
           text('%age%')
         ],
-        style: table.plain(),
         features: [
-          table.expandToEndOfRow(),
-          watchRef({ref: '%$sectionExpanded%', includeChildren: 'yes' , allowSelfRefresh: true }),
           css.height({height: '40', overflow: 'scroll'}),
           itemlist.infiniteScroll(2),  
         ]
@@ -879,14 +894,13 @@ jb.component('uiTest.secondaryLinkSetBug', {
 
 jb.component('uiTest.itemlistWithTableStyle', {
   impl: uiTest({
-    control: itemlist({
+    control: table({
       items: '%$watchablePeople%',
       controls: [
         text({text: '%$index%', title: 'index', features: field.columnWidth(40)}),
         text({text: '%name%', title: 'name', features: field.columnWidth(300)}),
         text({text: '%age%', title: 'age'})
       ],
-      style: table.plain(),
       features: [
         itemlist.selection({
           databind: '%$globals/selectedPerson%',
@@ -908,10 +922,9 @@ jb.component('test.personName', {
 
 jb.component('uiTest.itemlistWithTableStyleUsingDynamicParam', {
   impl: uiTest({
-    control: itemlist({
+    control: table({
       items: '%$watchablePeople%',
       controls: test.personName('%%'),
-      style: table.plain(),
     }),
     expectedResult: contains('Bart')
   })
@@ -2105,10 +2118,9 @@ jb.component('uiTest.infiniteScroll.twice', {
 jb.component('uiTest.infiniteScroll.table', {
   impl: uiFrontEndTest({
     renderDOM: true,
-    control: itemlist({
+    control: table({
       items: range(0, 10),
       controls: text('%%'),
-      style: table.plain(),
       visualSizeLimit: '7',
       features: [
         css.height({height: '100', overflow: 'scroll'}),
