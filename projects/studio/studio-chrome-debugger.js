@@ -106,7 +106,7 @@ jb.component('chromeDebugger.logsCtrl', {
                 features: picklist.allowAsynchOptions(),
             }),
             group({
-                controls: widget.twoTierWidget(studio.eventTracker(), jbm.byUri('%$inspectedUri%►vDebugger')),
+                controls: remote.widget(studio.eventTracker(), jbm.byUri('%$inspectedUri%►vDebugger')),
                 features: [
                     watchRef('%$inspectedUri%'),
                     group.wait(remote.data(jbm.vDebugger(),jbm.byUri('%$inspectedUri%')))
@@ -127,7 +127,7 @@ jb.component('chromeDebugger.compCtrl', {
     ],
     type: 'control',
     impl: group({
-        controls: widget.twoTierWidget(studio.compInspector('%$inspectedProps%'), jbm.byUri('%$uri%►vDebugger')),
+        controls: remote.widget(studio.compInspector('%$inspectedProps%'), jbm.byUri('%$uri%►vDebugger')),
         features: group.wait(remote.data(jbm.vDebugger(),jbm.byUri('%$uri%')))
     })
 })
@@ -137,7 +137,7 @@ jb.component('chromeDebugger.cardCtrl', {
         {id: 'uri', as: 'string'},
     ],
     type: 'control',
-    impl: widget.twoTierWidget( studio.cardExtraction(),jbm.byUri('%$uri%'))
+    impl: remote.widget( studio.cardExtraction(),jbm.byUri('%$uri%'))
 })
 
 jb.component('chromeDebugger.openResource', {

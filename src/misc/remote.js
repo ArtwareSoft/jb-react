@@ -8,7 +8,10 @@ jb.component('source.remote', {
     impl: (ctx,rx,jbm) => {
         if (!jbm)
             return jb.logError('source.remote - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
-        return jbm.createCallbagSource(jbm.callbag ? rx : jb.remoteCtx.stripFunction(rx))
+        const stripedRx = jbm.callbag ? rx : jb.remoteCtx.stripFunction(rx)
+        if (jb.isPromise(jbm))
+            return jb.callbag.pipe(jb.callbag.fromPromise(jbm), jb.callbag.concatMap(_jbm=> _jbm.createCallbagSource(stripedRx)))
+        return jbm.createCallbagSource(stripedRx)
     }        
 })
 
@@ -22,7 +25,15 @@ jb.component('remote.operator', {
     impl: (ctx,rx,jbm) => {
         if (!jbm)
             return jb.logError('remote.operator - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
-        return jbm.createCalllbagOperator(jbm.callbag ? rx : jb.remoteCtx.stripFunction(rx))
+        const stripedRx = jbm.callbag ? rx : jb.remoteCtx.stripFunction(rx)
+        if (jb.isPromise(jbm)) {
+            jb.log('jbm as promise in remote operator, adding request buffer', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
+            return source => {
+                const buffer = jb.callbag.replay(5)(source)
+                return jb.callbag.pipe(jb.callbag.fromPromise(jbm),jb.callbag.concatMap(_jbm=> _jbm.createCalllbagOperator(stripedRx)(buffer)))
+            }
+        }
+        return jbm.createCalllbagOperator(stripedRx)
     }
 })
 
@@ -38,7 +49,7 @@ jb.component('remote.action', {
     impl: (ctx,action,jbm,oneway,timeout) => {
         if (!jbm)
             return jb.logError('remote.action - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
-        return jbm.remoteExec(jb.remoteCtx.stripFunction(action),{timeout,oneway,isAction: true})
+        return Promise.resolve(jbm).then(_jbm => _jbm.remoteExec(jb.remoteCtx.stripFunction(action),{timeout,oneway,isAction: true}))
     }
 })
 
@@ -53,7 +64,7 @@ jb.component('remote.data', {
     impl: (ctx,data,jbm,timeout) => {
         if (!jbm)
             return jb.logError('remote.data - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
-        return jbm.remoteExec(jb.remoteCtx.stripFunction(data),{timeout})
+        return Promise.resolve(jbm).then(_jbm=> _jbm.remoteExec(jb.remoteCtx.stripFunction(data),{timeout}))
     }
 })
 

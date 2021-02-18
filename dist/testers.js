@@ -123,7 +123,7 @@ jb.component('uiTest', {
 			),
 			rx.var('html',uiTest.vdomResultAsHtml()),
 			rx.var('success', pipeline('%$html%', call('expectedResult'), last())),
-			rx.log('check test result'),
+			rx.log('check test result', obj(prop('success','%$success%'), prop('html','%$html%'))),
 			rx.filter('%$success%'), // if failure wait for the next delta
 			rx.map('%$success%'),
 			rx.take(1),
@@ -305,7 +305,8 @@ jb.testers = {
 //		.filter(e=>!e[0].match(/^remoteTest|inPlaceEditTest|patternsTest/) && ['uiTest','dataTest'].indexOf(e[1].impl.$) != -1) // || includeHeavy || specificTest || !e[1].impl.heavy )
 //		.sort((a,b) => (a[0] > b[0]) ? 1 : ((b[0] > a[0]) ? -1 : 0))
 	self.jbSingleTest = tests.length == 1
-	document.write(`<div style="font-size: 20px"><div id="progress"></div><span id="fail-counter" onclick="hide_success_lines()"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span><span id="memory-usage"></span></div>`);
+
+	document.body.innerHTML = `<div style="font-size: 20px"><div id="progress"></div><span id="fail-counter" onclick="hide_success_lines()"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span><span id="memory-usage"></span></div>`;
 
 	const times = {}
 	return pipe(

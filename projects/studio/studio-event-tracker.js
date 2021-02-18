@@ -132,7 +132,25 @@ jb.component('studio.eventTracker', {
             }), 
             features: feature.expandToEndOfRow('%$payloadExpanded/{%index%}%')
           })),
-
+          controlWithCondition('%logNames%==check test result', group({
+            controls: [
+              editableBoolean({databind: '%$payloadExpanded/{%index%}%', style: chromeDebugger.toggleStyle()}),
+              text({
+                vars: Var('color',If('%success%','--jb-success-fg','--jb-error-fg')),
+                text: If('%success%','✓ check test reuslt','⚠ check test reuslt'),
+                features: css.color('var(%$color%)')
+              }),
+            ]
+          })),
+          controlWithCondition('%$payloadExpanded/{%index%}%', group({ 
+            controls: [
+              text(If('%success%','✓ check test reuslt','⚠ check test reuslt')),
+              text({
+                text: ctx => { debugger; return ctx.data.html},
+                style: text.codemirror({height: '200', mode: 'html'}),
+                features: [codemirror.fold(), css('min-width: 1200px; font-size: 130%')]
+            })]
+          })),
           text({ text: '%logNames%', features: feature.byCondition(
             inGroup(list('exception','error'), '%logNames%'),
             css.color('var(--jb-error-fg)')
@@ -141,6 +159,8 @@ jb.component('studio.eventTracker', {
           studio.objExpandedAsText('%stack%','stack'),
 
           controlWithCondition('%m%',text('%m/$%: %m/t%, %m/cbId%')),
+          controlWithCondition('%expectedResultCtx/data%', text(prettyPrint('%expectedResultCtx.profile.expectedResult%',true))),
+          controlWithCondition('%expectedResultCtx/data%', text('%expectedResultCtx/data%')),
 //          studio.objExpandedAsText('%m/d%','payload'),
           studio.lowFootprintObj('%delta%','delta'),
           studio.lowFootprintObj('%vdom%','vdom'),

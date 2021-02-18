@@ -187,7 +187,7 @@ jb.component('eventTracker.worker.vDebugger', {
         jbm.vDebugger()),
       '%%')
     ),
-    control: widget.twoTierWidget(studio.eventTracker(), jbm.byUri('tests►innerWorker►vDebugger')),
+    control: remote.widget(studio.eventTracker(), jbm.byUri('tests►innerWorker►vDebugger')),
     expectedResult: contains('log1')
   })
 })

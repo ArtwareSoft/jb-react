@@ -242,10 +242,19 @@ jb.component('rxTest.rawFlatMapPassivePassive', {
 
 jb.component('rxTest.rawflatMapPassiveActive', {
   impl: dataTest({
-    calculate: ctx => { const {interval, take,flatMap,fromIter,pipe,map,toPromiseArray} = jb.callbag
-      return toPromiseArray(pipe(fromIter([0]), flatMap(x=> pipe(interval(1), take(1),map(x=>`-${x}-`) ) )))
+    calculate: () => { const {interval, take,flatMap,fromIter,pipe,toPromiseArray} = jb.callbag
+      return toPromiseArray(pipe(fromIter([0]), flatMap(()=> pipe(interval(1), take(2)) ))).then(x=>x.join(','))
     },
-    expectedResult: equals('-0-')
+    expectedResult: equals('0,1')
+  })
+})
+
+jb.component('rxTest.rawConcatMapPassiveActive', {
+  impl: dataTest({
+    calculate: () => { const {interval, take,concatMap,fromPromise,pipe,toPromiseArray} = jb.callbag
+      return toPromiseArray(pipe(fromPromise(()=>jb.delay(1)), concatMap(()=> pipe(interval(1), take(2)) ))).then(x=>x.join(','))
+    },
+    expectedResult: equals('0,1')
   })
 })
 

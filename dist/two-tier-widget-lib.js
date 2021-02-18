@@ -5,7 +5,7 @@ var {rx, remote, widget, jbm} = jb.ns('remote,rx,widget,jbm')
 
 Object.assign(jb.ui, {
     widgetUserRequests: jb.callbag.subject(),
-    widgetRenderingSrc: jb.callbag.replayWithTimeout(1000)(jb.ui.renderingUpdates),
+    widgetRenderingSrc: jb.callbag.replay(10)(jb.ui.renderingUpdates), // TODO: event instead of timeout
     headless: {},
     frontendWidgets: {},
     newWidgetId(ctx, remote) {
@@ -128,10 +128,10 @@ jb.component('widget.twoTierWidget', {
     type: 'control',
     params: [
       {id: 'control', type: 'control', dynamic: true },
-      {id: 'remote', type: 'remote', defaultValue: jbm.worker({libs: ['common','ui-common','remote','two-tier-widget']}) },
+      {id: 'jbm', type: 'jbm', defaultValue: jbm.worker({libs: ['common','ui-common','remote','two-tier-widget']}) },
     ],
     impl: controlWithFeatures({
-        vars: Var('widgetId', (ctx,{},{remote}) => jb.ui.newWidgetId(ctx,remote)),
+        vars: Var('widgetId', (ctx,{},{jbm}) => jb.ui.newWidgetId(ctx,jbm)),
         control: widget.frontEndCtrl('%$widgetId%'),
         features: followUp.flow(
             source.callbag(() => jb.ui.widgetUserRequests),
@@ -140,7 +140,7 @@ jb.component('widget.twoTierWidget', {
             rx.takeWhile(({data}) => data.$ != 'destroy',true),
             //source.frontEndUserEvent('%$widgetId%'),
             rx.log('twoTierWidget sent to headless'),
-            remote.operator(widget.headless(call('control'),'%$widgetId%'), '%$remote%'),
+            remote.operator(widget.headless(call('control'),'%$widgetId%'), '%$jbm%'),
             rx.log('twoTierWidget arrived from headless'),
             sink.frontEndDelta('%$widgetId%'),
         )

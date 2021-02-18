@@ -213,7 +213,7 @@ Object.assign(jb, {
                         oneway: true
                     })) // called directly by initPanel
                 jb.jbm.networkPeers['devtools'] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'devtools',{blockContentScriptLoop: true}))
-                postMessage({initDevToolsPeerOnDebugge: {uri: jb.uri, spyParam: jb.path(jb,'spy.spyParam')}})
+                self.postMessage({initDevToolsPeerOnDebugge: {uri: jb.uri, distPath: jb.jbm.pathOfDistFolder(), spyParam: jb.path(jb,'spy.spyParam')}}, '*')
             }
         }            
     }
@@ -235,7 +235,7 @@ jb.component('jbm.worker', {
         const spyParam = ((jb.path(jb.frame,'location.href')||'').match('[?&]spy=([^&]+)') || ['', ''])[1]
         const baseUrl = jb.path(jb.frame,'location.origin') || jb.baseUrl || ''
         const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
-        const settings = { uri: workerUri, libs: libs.join(','), jsFiles, baseUrl, distPath }
+        const settings = { uri: workerUri, libs: libs.join(','), baseUrl, distPath, jsFiles }
         const jbObj = { uri: workerUri, baseUrl, distPath }
         const jb_loader_code = [jb_dynamicLoad.toString(),jb_loadProject.toString(),jbm_create.toString(),
             jb_modules ? `self.jb_modules= ${JSON.stringify(jb_modules)}` : ''
@@ -246,9 +246,14 @@ jb = ${JSON.stringify(jbObj)}
 jb_loadProject(${JSON.stringify(settings)}).then(() => {
     self.spy = jb.initSpy({spyParam: '${spyParam}'})
     self.${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
+    self.loaded = true
 })`
         const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
-        return childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
+        const workerJbm = childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
+        // wait for worker jbm to load
+        const res = jb.exec(pipe(waitFor(remote.data(()=>self.loaded, ()=>workerJbm)), ()=>workerJbm, first()))
+        res.uri = workerJbm.uri
+        return res
     }
 })
 
@@ -261,8 +266,8 @@ jb.component('jbm.child', {
     ],    
     impl: ({},name,libs) => {
         if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
-        // todo - implement the jbm interface on the promise object
-        return jb.frame.jbm_create && Promise.resolve(jb.frame.jbm_create(libs, { loadFromDist: true, uri: `${jb.uri}►${name}`, distPath: jb.distPath}))
+        const childUri = `${jb.uri}►${name}`
+        const res = jb.frame.jbm_create && Promise.resolve(jb.frame.jbm_create(libs, { loadFromDist: true, uri: childUri, distPath: jb.distPath}))
             .then(child => {
                 jb.jbm.childJbms[name] = child
                 child.parent = jb
@@ -282,6 +287,8 @@ jb.component('jbm.child', {
                 jb.spy && child.initSpy({spyParam: jb.spy.spyParam})
                 return child
             })
+        res.uri = childUri
+        return res
     }
 })
 

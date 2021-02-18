@@ -17,7 +17,7 @@ jb.component('studio.notebook', {
             Var('notebookId', '%$studio/project%.notebook'),
             waitFor(ctx => jb.comps[ctx.exp('%$notebookId%')] ),
             jbm.worker('notebook'),
-            remote.action(loadLibs(['ui-common','markdown','two-tier-widget','notebook-worker']),jbm.notebookWorker()),
+            remote.action(loadLibs(['ui-common','markdown','remote-widget','notebook-worker']),jbm.notebookWorker()),
             remote.initShadowComponent({compId: '%$notebookId%', jbm: jbm.notebookWorker(), initUIObserver: true}),
             studio.initNotebookSaveService(),
         )),

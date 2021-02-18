@@ -2248,11 +2248,17 @@ jb.component('waitFor',{
     let count = 0
     return new Promise((resolve,reject) => {
         const toRelease = setInterval(() => {
-            count++
             const v = check()
-            if (v || count >= times) clearInterval(toRelease)
-            if (v) resolve(v)
-            if (count >= times) reject('timeout')
+            if (jb.isPromise(v))
+              v.then(_v=>handleResult(_v))
+            else
+              handleResult(v)
+            function handleResult(res) {
+              count++
+              if (res || count >= times) clearInterval(toRelease)
+              if (res) resolve(res)
+              if (count >= times) reject('timeout')
+            }
         }, interval)
     })
   }
@@ -2446,6 +2452,62 @@ jb.callbag = {
           }
       },
       concatMap(_makeSource,combineResults) {
+        const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
+        if (!combineResults) combineResults = (input, inner) => inner
+        return source => (start, sink) => {
+            if (start !== 0) return
+            let queue = [], activeCb, sourceEnded, allEnded, sourceTalkback, activecbTalkBack
+            source(0, function concatMap(t,d) {
+              if (t == 0)
+                sourceTalkback = d
+              else if (t == 1)
+                queue.push(d)
+              else if (t ==2)
+                sourceEnded = true
+              tick()
+            })
+            sink(0, function concatMap(t,d) {
+              if (t == 1) {
+                activecbTalkBack && activecbTalkBack(1)
+                sourceTalkback && sourceTalkback(1)
+              } else if (t == 2) {
+                allEnded = true
+                queue = []
+                sourceTalkback && sourceTalkback(2)
+              }
+            })
+            
+            function tick() {
+              if (allEnded) return
+              if (!activeCb && queue.length) {
+                const input = queue.shift()
+                activeCb = makeSource(input)
+                activeCb(0, function concatMap(t,d) {
+                  if (t == 0) {
+                    activecbTalkBack = d
+                    activecbTalkBack && activecbTalkBack(1)
+                  } else if (t == 1) {
+                    sink(1, combineResults(input,d))
+                    activecbTalkBack && activecbTalkBack(1)
+                  } else if (t == 2 && d) {
+                    allEnded = true
+                    queue = []
+                    sink(2,d)
+                    sourceTalkback && sourceTalkback(2)
+                  } else if (t == 2) {
+                    activecbTalkBack = activeCb = null
+                    tick()
+                  }
+                })
+              }
+              if (sourceEnded && !activeCb && !queue.length) {
+                allEnded = true
+                sink(2)
+              }
+            }
+        }
+      },
+      concatMap2(_makeSource,combineResults) {
         const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
         return source => (start, sink) => {
             if (start !== 0) return
@@ -2689,27 +2751,6 @@ jb.callbag = {
           subj.sinks = sinks
           return subj
       },
-      replayWithTimeout: timeOut => source => { // replay the messages arrived before timeout
-        timeOut = timeOut || 1000
-        let store = [], done = false
-      
-        source(0, function replayWithTimeout(t, d) {
-          if (t == 1 && d) {
-            const now = new Date().getTime()
-            store = store.filter(e => now < e.time + timeOut)
-            store.push({ time: now, d })
-          }
-        })
-      
-        return function replayWithTimeout(start, sink) {
-          if (start !== 0) return
-          if (done) return sink(2)
-          source(0, function replayWithTimeout(t, d) { sink(t,d) })
-          const now = new Date().getTime()
-          store = store.filter(e => now < e.time + timeOut)
-          store.forEach(e => sink(1, e.d))
-        }
-      },      
       replay: keep => source => {
         keep = keep || 0
         let store = [], sinks = [], talkback, done = false
@@ -2723,6 +2764,7 @@ jb.callbag = {
           }
           if (t == 1) {
             store.push(d)
+            store = store.slice(sliceNum)
             sinks.forEach(sink => sink(1, d))
           }
           if (t == 2) {
@@ -2748,7 +2790,7 @@ jb.callbag = {
               sinks = sinks.filter(s => s !== sink)
           })
       
-          store.slice(sliceNum).forEach(entry => sink(1, entry))
+          store.forEach(entry => sink(1, entry))
       
           if (done) sink(2)
         }

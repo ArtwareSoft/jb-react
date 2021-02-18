@@ -2248,11 +2248,17 @@ jb.component('waitFor',{
     let count = 0
     return new Promise((resolve,reject) => {
         const toRelease = setInterval(() => {
-            count++
             const v = check()
-            if (v || count >= times) clearInterval(toRelease)
-            if (v) resolve(v)
-            if (count >= times) reject('timeout')
+            if (jb.isPromise(v))
+              v.then(_v=>handleResult(_v))
+            else
+              handleResult(v)
+            function handleResult(res) {
+              count++
+              if (res || count >= times) clearInterval(toRelease)
+              if (res) resolve(res)
+              if (count >= times) reject('timeout')
+            }
         }, interval)
     })
   }
@@ -2446,6 +2452,62 @@ jb.callbag = {
           }
       },
       concatMap(_makeSource,combineResults) {
+        const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
+        if (!combineResults) combineResults = (input, inner) => inner
+        return source => (start, sink) => {
+            if (start !== 0) return
+            let queue = [], activeCb, sourceEnded, allEnded, sourceTalkback, activecbTalkBack
+            source(0, function concatMap(t,d) {
+              if (t == 0)
+                sourceTalkback = d
+              else if (t == 1)
+                queue.push(d)
+              else if (t ==2)
+                sourceEnded = true
+              tick()
+            })
+            sink(0, function concatMap(t,d) {
+              if (t == 1) {
+                activecbTalkBack && activecbTalkBack(1)
+                sourceTalkback && sourceTalkback(1)
+              } else if (t == 2) {
+                allEnded = true
+                queue = []
+                sourceTalkback && sourceTalkback(2)
+              }
+            })
+            
+            function tick() {
+              if (allEnded) return
+              if (!activeCb && queue.length) {
+                const input = queue.shift()
+                activeCb = makeSource(input)
+                activeCb(0, function concatMap(t,d) {
+                  if (t == 0) {
+                    activecbTalkBack = d
+                    activecbTalkBack && activecbTalkBack(1)
+                  } else if (t == 1) {
+                    sink(1, combineResults(input,d))
+                    activecbTalkBack && activecbTalkBack(1)
+                  } else if (t == 2 && d) {
+                    allEnded = true
+                    queue = []
+                    sink(2,d)
+                    sourceTalkback && sourceTalkback(2)
+                  } else if (t == 2) {
+                    activecbTalkBack = activeCb = null
+                    tick()
+                  }
+                })
+              }
+              if (sourceEnded && !activeCb && !queue.length) {
+                allEnded = true
+                sink(2)
+              }
+            }
+        }
+      },
+      concatMap2(_makeSource,combineResults) {
         const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
         return source => (start, sink) => {
             if (start !== 0) return
@@ -2689,27 +2751,6 @@ jb.callbag = {
           subj.sinks = sinks
           return subj
       },
-      replayWithTimeout: timeOut => source => { // replay the messages arrived before timeout
-        timeOut = timeOut || 1000
-        let store = [], done = false
-      
-        source(0, function replayWithTimeout(t, d) {
-          if (t == 1 && d) {
-            const now = new Date().getTime()
-            store = store.filter(e => now < e.time + timeOut)
-            store.push({ time: now, d })
-          }
-        })
-      
-        return function replayWithTimeout(start, sink) {
-          if (start !== 0) return
-          if (done) return sink(2)
-          source(0, function replayWithTimeout(t, d) { sink(t,d) })
-          const now = new Date().getTime()
-          store = store.filter(e => now < e.time + timeOut)
-          store.forEach(e => sink(1, e.d))
-        }
-      },      
       replay: keep => source => {
         keep = keep || 0
         let store = [], sinks = [], talkback, done = false
@@ -2723,6 +2764,7 @@ jb.callbag = {
           }
           if (t == 1) {
             store.push(d)
+            store = store.slice(sliceNum)
             sinks.forEach(sink => sink(1, d))
           }
           if (t == 2) {
@@ -2748,7 +2790,7 @@ jb.callbag = {
               sinks = sinks.filter(s => s !== sink)
           })
       
-          store.slice(sliceNum).forEach(entry => sink(1, entry))
+          store.forEach(entry => sink(1, entry))
       
           if (done) sink(2)
         }
@@ -9536,7 +9578,9 @@ jb.component('defaultTheme', {
       --jb-dropdown-bg: #ffffff;
       --jb-dropdown-border: #cecece;
       --jb-error-fg: #a1260d;
-    
+      --jb-success-fg: #4BB543;
+      --jb-warning-fg: #ffcc00;
+          
       --jb-input-bg: #ffffff;
       --jb-input-fg: #616161;
       --jb-textLink-active-fg: #034775;
@@ -12602,7 +12646,7 @@ Object.assign(jb, {
                         oneway: true
                     })) // called directly by initPanel
                 jb.jbm.networkPeers['devtools'] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'devtools',{blockContentScriptLoop: true}))
-                postMessage({initDevToolsPeerOnDebugge: {uri: jb.uri, spyParam: jb.path(jb,'spy.spyParam')}})
+                self.postMessage({initDevToolsPeerOnDebugge: {uri: jb.uri, distPath: jb.jbm.pathOfDistFolder(), spyParam: jb.path(jb,'spy.spyParam')}}, '*')
             }
         }            
     }
@@ -12624,7 +12668,7 @@ jb.component('jbm.worker', {
         const spyParam = ((jb.path(jb.frame,'location.href')||'').match('[?&]spy=([^&]+)') || ['', ''])[1]
         const baseUrl = jb.path(jb.frame,'location.origin') || jb.baseUrl || ''
         const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
-        const settings = { uri: workerUri, libs: libs.join(','), jsFiles, baseUrl, distPath }
+        const settings = { uri: workerUri, libs: libs.join(','), baseUrl, distPath, jsFiles }
         const jbObj = { uri: workerUri, baseUrl, distPath }
         const jb_loader_code = [jb_dynamicLoad.toString(),jb_loadProject.toString(),jbm_create.toString(),
             jb_modules ? `self.jb_modules= ${JSON.stringify(jb_modules)}` : ''
@@ -12635,9 +12679,14 @@ jb = ${JSON.stringify(jbObj)}
 jb_loadProject(${JSON.stringify(settings)}).then(() => {
     self.spy = jb.initSpy({spyParam: '${spyParam}'})
     self.${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
+    self.loaded = true
 })`
         const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
-        return childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
+        const workerJbm = childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
+        // wait for worker jbm to load
+        const res = jb.exec(pipe(waitFor(remote.data(()=>self.loaded, ()=>workerJbm)), ()=>workerJbm, first()))
+        res.uri = workerJbm.uri
+        return res
     }
 })
 
@@ -12650,8 +12699,8 @@ jb.component('jbm.child', {
     ],    
     impl: ({},name,libs) => {
         if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
-        // todo - implement the jbm interface on the promise object
-        return jb.frame.jbm_create && Promise.resolve(jb.frame.jbm_create(libs, { loadFromDist: true, uri: `${jb.uri}►${name}`, distPath: jb.distPath}))
+        const childUri = `${jb.uri}►${name}`
+        const res = jb.frame.jbm_create && Promise.resolve(jb.frame.jbm_create(libs, { loadFromDist: true, uri: childUri, distPath: jb.distPath}))
             .then(child => {
                 jb.jbm.childJbms[name] = child
                 child.parent = jb
@@ -12671,6 +12720,8 @@ jb.component('jbm.child', {
                 jb.spy && child.initSpy({spyParam: jb.spy.spyParam})
                 return child
             })
+        res.uri = childUri
+        return res
     }
 })
 
@@ -12754,7 +12805,10 @@ jb.component('source.remote', {
     impl: (ctx,rx,jbm) => {
         if (!jbm)
             return jb.logError('source.remote - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
-        return jbm.createCallbagSource(jbm.callbag ? rx : jb.remoteCtx.stripFunction(rx))
+        const stripedRx = jbm.callbag ? rx : jb.remoteCtx.stripFunction(rx)
+        if (jb.isPromise(jbm))
+            return jb.callbag.pipe(jb.callbag.fromPromise(jbm), jb.callbag.concatMap(_jbm=> _jbm.createCallbagSource(stripedRx)))
+        return jbm.createCallbagSource(stripedRx)
     }        
 })
 
@@ -12768,7 +12822,15 @@ jb.component('remote.operator', {
     impl: (ctx,rx,jbm) => {
         if (!jbm)
             return jb.logError('remote.operator - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
-        return jbm.createCalllbagOperator(jbm.callbag ? rx : jb.remoteCtx.stripFunction(rx))
+        const stripedRx = jbm.callbag ? rx : jb.remoteCtx.stripFunction(rx)
+        if (jb.isPromise(jbm)) {
+            jb.log('jbm as promise in remote operator, adding request buffer', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
+            return source => {
+                const buffer = jb.callbag.replay(5)(source)
+                return jb.callbag.pipe(jb.callbag.fromPromise(jbm),jb.callbag.concatMap(_jbm=> _jbm.createCalllbagOperator(stripedRx)(buffer)))
+            }
+        }
+        return jbm.createCalllbagOperator(stripedRx)
     }
 })
 
@@ -12784,7 +12846,7 @@ jb.component('remote.action', {
     impl: (ctx,action,jbm,oneway,timeout) => {
         if (!jbm)
             return jb.logError('remote.action - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
-        return jbm.remoteExec(jb.remoteCtx.stripFunction(action),{timeout,oneway,isAction: true})
+        return Promise.resolve(jbm).then(_jbm => _jbm.remoteExec(jb.remoteCtx.stripFunction(action),{timeout,oneway,isAction: true}))
     }
 })
 
@@ -12799,7 +12861,7 @@ jb.component('remote.data', {
     impl: (ctx,data,jbm,timeout) => {
         if (!jbm)
             return jb.logError('remote.data - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
-        return jbm.remoteExec(jb.remoteCtx.stripFunction(data),{timeout})
+        return Promise.resolve(jbm).then(_jbm=> _jbm.remoteExec(jb.remoteCtx.stripFunction(data),{timeout}))
     }
 })
 
@@ -12851,7 +12913,7 @@ var {rx, remote, widget, jbm} = jb.ns('remote,rx,widget,jbm')
 
 Object.assign(jb.ui, {
     widgetUserRequests: jb.callbag.subject(),
-    widgetRenderingSrc: jb.callbag.replayWithTimeout(1000)(jb.ui.renderingUpdates),
+    widgetRenderingSrc: jb.callbag.replay(10)(jb.ui.renderingUpdates), // TODO: event instead of timeout
     headless: {},
     frontendWidgets: {},
     newWidgetId(ctx, remote) {
@@ -12970,24 +13032,24 @@ jb.component('widget.headless', {
     }
 })
 
-jb.component('widget.twoTierWidget', {
+jb.component('remote.widget', {
     type: 'control',
     params: [
       {id: 'control', type: 'control', dynamic: true },
-      {id: 'remote', type: 'remote', defaultValue: jbm.worker({libs: ['common','ui-common','remote','two-tier-widget']}) },
+      {id: 'jbm', type: 'jbm', defaultValue: jbm.worker({libs: ['common','ui-common','remote','remote-widget']}) },
     ],
     impl: controlWithFeatures({
-        vars: Var('widgetId', (ctx,{},{remote}) => jb.ui.newWidgetId(ctx,remote)),
+        vars: Var('widgetId', (ctx,{},{jbm}) => jb.ui.newWidgetId(ctx,jbm)),
         control: widget.frontEndCtrl('%$widgetId%'),
         features: followUp.flow(
             source.callbag(() => jb.ui.widgetUserRequests),
-            rx.log('twoTierWidget userReq'),
+            rx.log('remote widget userReq'),
             rx.filter('%widgetId% == %$widgetId%'),
             rx.takeWhile(({data}) => data.$ != 'destroy',true),
             //source.frontEndUserEvent('%$widgetId%'),
-            rx.log('twoTierWidget sent to headless'),
-            remote.operator(widget.headless(call('control'),'%$widgetId%'), '%$remote%'),
-            rx.log('twoTierWidget arrived from headless'),
+            rx.log('remote widget sent to headless'),
+            remote.operator(widget.headless(call('control'),'%$widgetId%'), '%$jbm%'),
+            rx.log('remote widget arrived from headless'),
             sink.frontEndDelta('%$widgetId%'),
         )
     })
@@ -14832,7 +14894,25 @@ jb.component('studio.eventTracker', {
             }), 
             features: feature.expandToEndOfRow('%$payloadExpanded/{%index%}%')
           })),
-
+          controlWithCondition('%logNames%==check test result', group({
+            controls: [
+              editableBoolean({databind: '%$payloadExpanded/{%index%}%', style: chromeDebugger.toggleStyle()}),
+              text({
+                vars: Var('color',If('%success%','--jb-success-fg','--jb-error-fg')),
+                text: If('%success%','✓ check test reuslt','⚠ check test reuslt'),
+                features: css.color('var(%$color%)')
+              }),
+            ]
+          })),
+          controlWithCondition('%$payloadExpanded/{%index%}%', group({ 
+            controls: [
+              text(If('%success%','✓ check test reuslt','⚠ check test reuslt')),
+              text({
+                text: ctx => { debugger; return ctx.data.html},
+                style: text.codemirror({height: '200', mode: 'html'}),
+                features: [codemirror.fold(), css('min-width: 1200px; font-size: 130%')]
+            })]
+          })),
           text({ text: '%logNames%', features: feature.byCondition(
             inGroup(list('exception','error'), '%logNames%'),
             css.color('var(--jb-error-fg)')
@@ -14841,6 +14921,8 @@ jb.component('studio.eventTracker', {
           studio.objExpandedAsText('%stack%','stack'),
 
           controlWithCondition('%m%',text('%m/$%: %m/t%, %m/cbId%')),
+          controlWithCondition('%expectedResultCtx/data%', text(prettyPrint('%expectedResultCtx.profile.expectedResult%',true))),
+          controlWithCondition('%expectedResultCtx/data%', text('%expectedResultCtx/data%')),
 //          studio.objExpandedAsText('%m/d%','payload'),
           studio.lowFootprintObj('%delta%','delta'),
           studio.lowFootprintObj('%vdom%','vdom'),

@@ -161,7 +161,7 @@ jb.component('remoteTest.sourceNoTalkback', {
     })
 })
 
-jb.component('remoteTest.source.remote', {
+jb.component('remoteTest.source.remote.local', {
   impl: dataTest({
     timeout: 5000,
     calculate: pipe(
@@ -172,7 +172,7 @@ jb.component('remoteTest.source.remote', {
   })
 })
 
-jb.component('remoteTest.remoteWorker', {
+jb.component('remoteTest.source.remote.worker', {
   impl: dataTest({
     timeout: 5000,
     calculate: pipe(
@@ -256,28 +256,28 @@ jb.component('remoteTest.dynamicProfileFunc', {
 
 jb.component('remoteTest.uiWorker', {
   type: 'remote',
-  impl: jbm.worker({id: 'ui', libs: ['common','ui-common','remote','two-tier-widget'] })
+  impl: jbm.worker({id: 'ui', libs: ['common','ui-common','remote','remote-widget'] })
 })
 
 jb.component('remoteTest.uiWorkerWithSamples', {
   type: 'remote',
-  impl: jbm.worker({id: 'ui-with-samples', libs: ['common','ui-common','remote','two-tier-widget']})
+  impl: jbm.worker({id: 'ui-with-samples', libs: ['common','ui-common','remote','remote-widget'], jsFiles: ['/projects/ui-tests/test-data-samples.js']})
 })
 
-jb.component('remoteTest.twoTierWidget.button', {
+jb.component('remoteWidgetTest.button', {
   impl: uiTest({
-    timeout: 500,
+    timeout: 1000,
     checkResultRx: () => jb.ui.renderingUpdates,
-    control: widget.twoTierWidget(button('hello world'), remoteTest.uiWorker()),
+    control: remote.widget(button('hello world'), remoteTest.uiWorker()),
     expectedResult: contains('hello world')
   })
 })
 
-jb.component('remoteTest.twoTierWidget.refresh.cleanUp', {
+jb.component('remoteWidgetTest.refresh.cleanUp', {
   impl: uiFrontEndTest({
     renderDOM: true,
     control: group({
-      controls: widget.twoTierWidget(text('%$person1/name%'), remoteTest.uiWorker()),
+      controls: remote.widget(text('%$person1/name%'), remoteTest.uiWorker()),
       features: [
         variable('person1','%$person%'), // only local vars are passed to remote
         watchRef('%$person/name%')
@@ -296,18 +296,25 @@ jb.component('remoteTest.twoTierWidget.refresh.cleanUp', {
   })
 })
 
-jb.component('remoteTest.twoTierWidget.html', {
+jb.component('remoteWidgetTest.html', {
   impl: uiTest({
     timeout: 500,
     checkResultRx: () => jb.ui.renderingUpdates,
-    control: widget.twoTierWidget(html('<p>hello world</p>'), remoteTest.uiWorker()),
+    control: remote.widget(html('<p>hello world</p>'), remoteTest.uiWorker()),
     expectedResult: contains('hello world</p>')
   })
 })
 
-jb.component('remoteTest.twoTierWidget.changeText', {
+jb.component('remoteWidgetTest.css', {
+  impl: uiFrontEndTest({
+    control: remote.widget(text({text: 'hello', features: css('color: red')}), remoteTest.uiWorker()),
+    expectedResult: true
+  })
+})
+
+jb.component('remoteWidgetTest.changeText', {
   impl: uiTest({
-    control: widget.twoTierWidget(
+    control: remote.widget(
       group({
         controls: [
           text('%$fName%'),
@@ -326,11 +333,11 @@ jb.component('remoteTest.twoTierWidget.changeText', {
   })
 })
 
-jb.component('remoteTest.twoTierWidget.infiniteScroll', {
+jb.component('remoteWidgetTest.infiniteScroll', {
   impl: uiFrontEndTest({
     timeout: 1000,
     renderDOM: true,
-    control: widget.twoTierWidget(
+    control: remote.widget(
       itemlist({
         items: range(0,10),
         controls: text('%%'),
@@ -352,11 +359,10 @@ jb.component('remoteTest.twoTierWidget.infiniteScroll', {
   })
 })
 
-jb.component('remoteTest.twoTierWidget.infiniteScroll.MDInplace', {
+jb.component('remoteWidgetTest.infiniteScroll.MDInplace', {
   impl: uiFrontEndTest({
-    runBefore: remote.action(loadAppFiles(['/projects/ui-tests/test-data-samples.js']), remoteTest.uiWorkerWithSamples()),
     renderDOM: true,
-    control: widget.twoTierWidget(group({
+    control: remote.widget(group({
       controls: [
         itemlist({
         items: '%$people%',
@@ -398,11 +404,11 @@ jb.component('remoteTest.twoTierWidget.infiniteScroll.MDInplace', {
   })
 })
 
-jb.component('remoteTest.twoTierWidget.refresh', {
+jb.component('remoteWidgetTest.refresh', {
   impl: uiFrontEndTest({
     renderDOM: true,
     control: group({
-      controls: widget.twoTierWidget(text('%$person1/name%'), remoteTest.uiWorker()),
+      controls: remote.widget(text('%$person1/name%'), remoteTest.uiWorker()),
       features: [
         variable('person1','%$person%'), // only local vars are passed to remote
         watchRef('%$person/name%')
@@ -418,10 +424,10 @@ jb.component('remoteTest.twoTierWidget.refresh', {
 })
 
 
-// jb.component('remoteTest.twoTierWidget.recoverAfterError', {
+// jb.component('remoteWidgetTest.recoverAfterError', {
 //   impl: uiTest({
 //     timeout: 3000,
-//     control: widget.twoTierWidget( 
+//     control: remote.widget( 
 //       button({ title: 'generate delta error %$recover%',
 //         style: button.native(),
 //         action: ({},{widgetId}) => 

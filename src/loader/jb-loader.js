@@ -116,7 +116,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'dist/mark.js',
         'src/ui/markdown-viewer.js',
       ],
-      'two-tier-widget': ['src/ui/two-tier-widget.js'],        
+      'remote-widget': ['src/ui/remote-widget.js'],        
       'puppeteer': [
 //        'src/misc/puppeteer/pptr-remote.js',
         'src/misc/puppeteer/pptr.js',
@@ -236,7 +236,7 @@ if (typeof global != 'undefined') global.jb_modules = jb_modules;
 function jb_dynamicLoad(modules, settings) {
   if (settings.loadFromDist)
       return modules.reduce((pr,lib) => pr.then(jbm=> {
-        const dist = '/dist' // typeof jbModuleUrl != 'undefined' && (window.jbModuleUrl + '/dist') || '/dist' // for devtools
+        const dist = typeof jbModuleUrl != 'undefined' && (window.jbModuleUrl + '/dist') || '/dist' // for devtools
         return loadFile(`${dist}/${lib}-lib.js`).then(()=>{
           jbmFactory[lib](jbm)
           return jbm

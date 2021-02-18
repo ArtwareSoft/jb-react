@@ -1,26 +1,11 @@
-jbModuleUrl = 'http://localhost:8082'
-function jbm_create(libs,{uri}) { 
-    return libs.reduce((pr,lib) => pr.then(jb => jbm_load_lib(jb,lib,uri)), Promise.resolve({uri}))
-
-    async function jbm_load_lib(jbm,lib,prefix) {
-        const pre = prefix ? `!${prefix}!` : ''
-        const res = await fetch(`${jbModuleUrl}/dist/${pre}${lib}-lib.js`)
-        const script = await res.text()
-        eval([script,`//# sourceURL=${pre}${lib}-lib.js`].join('\n'))
-        self.jbmFactory = jbmFactory
-        jbmFactory[lib](jbm)
-        return jbm
-    }    
-}
-  
 self.addEventListener('message', m => { // debugge asking to be debugged. Panel initiated the process by invoking jb.jbm.initDevToolsDebugge on debugee
     if (m.data && m.data.initDevToolsPeerOnDebugge) {
         if (self.jb) return
-        const {spyParam, uri} = m.data.initDevToolsPeerOnDebugge
+        const {spyParam, uri, distPath} = m.data.initDevToolsPeerOnDebugge
         const debuggeUri = uri
         console.log('devtools gateway attached to debuggeUri',debuggeUri)
 
-        if (debuggeUri) jbm_create(['common','rx','remote'],{uri :'devtools'}).then(jb => {
+        if (debuggeUri) jbm_create(['common','rx','remote'],{uri :'devtools', distPath}).then(jb => {
             self.jb = jb
             self.spy = jb.initSpy({spyParam})
             
@@ -69,4 +54,15 @@ function portFromDevToolsPort(dtport,to) {
     return port
 }
 
+function jbm_create(libs,{uri, distPath}) { 
+    return libs.reduce((pr,lib) => pr.then(jb => jbm_load_lib(jb,lib,uri)), Promise.resolve({uri}))
 
+    async function jbm_load_lib(jbm,lib,prefix) {
+        const res = await fetch(`${distPath}/${lib}-lib.js?${prefix}`)
+        const script = await res.text()
+        eval([script,`//# sourceURL=${lib}-lib.js?${prefix}`].join('\n'))
+        self.jbmFactory = jbmFactory
+        jbmFactory[lib](jbm)
+        return jbm
+    }    
+}

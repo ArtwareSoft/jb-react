@@ -6389,7 +6389,9 @@ jb.component('defaultTheme', {
       --jb-dropdown-bg: #ffffff;
       --jb-dropdown-border: #cecece;
       --jb-error-fg: #a1260d;
-    
+      --jb-success-fg: #4BB543;
+      --jb-warning-fg: #ffcc00;
+          
       --jb-input-bg: #ffffff;
       --jb-input-fg: #616161;
       --jb-textLink-active-fg: #034775;

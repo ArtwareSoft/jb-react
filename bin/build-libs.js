@@ -36,16 +36,16 @@ function fixExports(target) {
 
 const filesOfModules = modules => modules.split(',').map(m=>jb_modules[m]).flat().filter(x=>typeof x == 'string')
 
-const studioFiles = filesOfModules('common,ui-common,ui-tree,dragula,codemirror-js-files,pretty-print,remote,history,animate,fuse,md-icons,two-tier-widget').filter(x=>!x.match(/.css$/))
+const studioFiles = filesOfModules('common,ui-common,ui-tree,dragula,codemirror-js-files,pretty-print,remote,history,animate,fuse,md-icons,remote-widget').filter(x=>!x.match(/.css$/))
     .concat(jb_modules.studio.map(file => file.match(/\//) ? file : 'projects/studio/studio-' + file + '.js'));
 const studioCssFiles = ['/css/styles.css','css/font.css','/projects/studio/css/studio.css']
   .concat(filesOfModules('codemirror-css,material-css')).filter(x=>x.match(/.css$/));
-const vDebuggerFiles = [...filesOfModules('common,ui-common,ui-tree,remote,two-tier-widget'),
+const vDebuggerFiles = [...filesOfModules('common,ui-common,ui-tree,remote,remote-widget'),
 '/src/ui/styles/codemirror-styles.js', '/src/ui/tree/table-tree.js','src/ui/watchable/text-editor.js',
  ...['path','model-components','event-tracker','comp-inspector'].map(x=>`/projects/studio/studio-${x}.js`)]
 
 
-'core,common,ui-common,watchable,animate,d3,cards,cards-sample-data,pretty-print,parsing,xml,puppeteer,rx,md-icons,remote,two-tier-widget,markdown,notebook-worker'
+'core,common,ui-common,watchable,animate,d3,cards,cards-sample-data,pretty-print,parsing,xml,puppeteer,rx,md-icons,remote,remote-widget,markdown,notebook-worker'
   .split(',').forEach(m=>packLibrary(m,jb_modules[m]))
 
 packLibrary('codemirror',filesOfModules('codemirror-js-files'))

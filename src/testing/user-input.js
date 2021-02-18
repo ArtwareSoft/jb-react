@@ -49,7 +49,7 @@ jb.component('source.waitForSelector', {
     source.interval('%$interval%'),
     rx.log('check waitForSelector'),
     rx.filter((ctx,{},{selector}) => jb.ui.elemOfSelector(selector,ctx)),
-    rx.log('arrived waitForSelector'),
+    rx.log('test arrived waitForSelector'),
     rx.take(1)
   )
 })
@@ -69,7 +69,7 @@ jb.component('source.waitForCompReady', {
       const ctxId = el && el.getAttribute && el.getAttribute('full-cmp-ctx')
       return jb.path(jb.ctxDictionary[ctxId],'vars.cmp.ready') === true
     }),
-    rx.log('arrived waitForCompReady'),
+    rx.log('test arrived waitForCompReady'),
     rx.take(1)
   )
 })
@@ -83,7 +83,7 @@ jb.component('uiAction.scrollBy', {
       impl: (ctx,selector,scrollBy) => {
         const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : ctx.vars.elemToTest
         elem && elem.scrollBy(scrollBy,scrollBy)
-        jb.log('scroll on dom',{elem,ctx})
+        jb.log('test scroll on dom',{elem,ctx})
       }
 })
 

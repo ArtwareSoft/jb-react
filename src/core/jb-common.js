@@ -1191,11 +1191,17 @@ jb.component('waitFor',{
     let count = 0
     return new Promise((resolve,reject) => {
         const toRelease = setInterval(() => {
-            count++
             const v = check()
-            if (v || count >= times) clearInterval(toRelease)
-            if (v) resolve(v)
-            if (count >= times) reject('timeout')
+            if (jb.isPromise(v))
+              v.then(_v=>handleResult(_v))
+            else
+              handleResult(v)
+            function handleResult(res) {
+              count++
+              if (res || count >= times) clearInterval(toRelease)
+              if (res) resolve(res)
+              if (count >= times) reject('timeout')
+            }
         }, interval)
     })
   }
