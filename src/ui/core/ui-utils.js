@@ -1,4 +1,4 @@
-Object.assign(jb.ui,{
+jb.initLibs('ui',{
     focus(elem,logTxt,srcCtx) {
         if (!elem) debugger
         // block the preview from stealing the studio focus
@@ -94,7 +94,7 @@ jb.component('service.registerBackEndService', {
 
 
 // ****************** html utils ***************
-Object.assign(jb.ui, {
+jb.initLibs('ui',{
     outerWidth(el) {
         const style = getComputedStyle(el)
         return el.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight)
@@ -276,4 +276,5 @@ jb.component('controlWithFeatures', {
   impl: (ctx,control,features) => control.jbExtend(features,ctx).orig(ctx)
 })
 
+// widely used
 var { customStyle, styleByControl, styleWithFeatures, controlWithFeatures } = jb.macro

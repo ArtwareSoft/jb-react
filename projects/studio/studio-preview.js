@@ -279,4 +279,43 @@ st.injectProjectToPreview = function(previewWin,projectSettings) {
     previewWin.document.write(html)
 }
 
+jb.component('jbm.iframe', {
+  type: 'jbm',
+  params: [
+      {id: 'name', as: 'string', mandatory: true},
+      {id: 'libs', as: 'array' },
+      {id: 'jsFiles', as: 'array' },
+  ],    
+  impl: (ctx,name,libs,jsFiles) => {
+      if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
+      if (typeof document == 'undefined') 
+          return jb.logError('can not create iframe under current frame',{frame: jb.frame, jb, ctx})
+      const childUri = `${jb.uri}►${name}`
+      const distPath = jb.jbm.pathOfDistFolder()
+      const spyParam = ((jb.path(jb.frame,'location.href')||'').match('[?&]spy=([^&]+)') || ['', ''])[1]
+      const baseUrl = jb.path(jb.frame,'location.origin') || jb.baseUrl || ''
+      const settings = { uri: childUri, libs: libs.join(','), baseUrl, distPath, jsFiles }
+      const jbObj = { uri: childUri, baseUrl, distPath }
+      const jb_loader_code = [jb_dynamicLoad.toString(),jb_loadProject.toString(),jbm_create.toString(),
+          jb_modules ? `self.jb_modules= ${JSON.stringify(jb_modules)}` : ''
+      ].join(';\n\n')
+      const iframeCode = `
+      ${jb_loader_code};
+      jb = ${JSON.stringify(jbObj)}
+      jb_loadProject(${JSON.stringify(settings)}).then(() => {
+          self.spy = jb.initSpy({spyParam: '${spyParam}'})
+          self.jb.parent = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
+          self.loaded = true
+      })`        
+
+      const iframe = document.createElement('iframe')
+      iframe.src = `data:text/html;charset=utf-8,<script>${encodeURI(iframeCode)}</script>;`
+      document.body.appendChild(iframe)
+      jb.jbm.childJbms[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(iframe,childUri))
+      const promise = jb.exec(pipe(waitFor(() => jb.path(iframe,'contentWindow.loaded'))))
+      promise.uri = workerJbm.uri
+      return promise
+  }
+})
+
 })()

@@ -2099,6 +2099,7 @@ jb.component('uiTest.infiniteScroll', {
 
 jb.component('uiTest.infiniteScroll.twice', {
   impl: uiFrontEndTest({
+    timeout: 3000,
     renderDOM: true,
     control: itemlist({
       items: range(0, 10),

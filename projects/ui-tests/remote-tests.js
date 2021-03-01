@@ -266,7 +266,7 @@ jb.component('remoteTest.uiWorkerWithSamples', {
 
 jb.component('remoteWidgetTest.button', {
   impl: uiTest({
-    timeout: 1000,
+    timeout: 3000,
     checkResultRx: () => jb.ui.renderingUpdates,
     control: remote.widget(button('hello world'), remoteTest.uiWorker()),
     expectedResult: contains('hello world')
@@ -277,6 +277,7 @@ jb.component('remoteWidgetTest.codemirror', {
   impl: uiFrontEndTest({
     renderDOM: true,
     timeout: 3000,
+    action: jb.delay(1000),
     action: waitFor(() => document.querySelector('.CodeMirror')),
     control: remote.widget(text({text: 'hello', style: text.codemirror({height: 100})}), remoteTest.uiWorkerWithSamples()),
     expectedResult: contains('hello')
@@ -296,6 +297,7 @@ jb.component('remoteWidgetTest.codemirror.editableText', {
 jb.component('remoteWidgetTest.refresh.cleanUp', {
   impl: uiFrontEndTest({
     renderDOM: true,
+    timeout: 3000,
     control: group({
       controls: remote.widget(text('%$person1/name%'), remoteTest.uiWorker()),
       features: [

@@ -2,7 +2,12 @@ Object.assign(jb, {
     project: Symbol.for('project'),
     location: Symbol.for('location'),
     loadingPhase: Symbol.for('loadingPhase'),
-    component: (_id,comp) => {
+    initLibs(libId, libObj) {
+        jb[libId] = jb[libId] || {}
+        Object.assign(jb[libId], libObj)
+        libObj.initializeModule && libObj.initializeModule()
+    },
+    component(_id,comp) {
       const id = jb.macroName(_id)
       try {
         const errStack = new Error().stack.split(/\r|\n/)

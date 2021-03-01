@@ -36,6 +36,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/core/vdom.js',
         'src/ui/core/ui-comp.js',
         'src/ui/core/ui-utils.js',
+        'src/ui/core/ui-frontend.js',
 
         'src/ui/common-features.js',
         'src/ui/front-end-features.js',

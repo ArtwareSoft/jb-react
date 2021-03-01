@@ -2242,22 +2242,34 @@ jb.component('waitFor',{
   params: [
     {id: 'check', dynamic: true},
     {id: 'interval', as: 'number', defaultValue: 50},
-    {id: 'times', as: 'number', defaultValue: 300},
+    {id: 'timeout', as: 'number', defaultValue: 5000},
   ],
-  impl: (ctx,check,interval,times) => {
-    let count = 0
+  impl: (ctx,check,interval,timeout) => {
+    let waitingForPromise, timesoFar = 0
     return new Promise((resolve,reject) => {
         const toRelease = setInterval(() => {
+            timesoFar += interval
+            if (timesoFar >= timeout) {
+              clearInterval(toRelease)
+              reject('timeout')
+            }
+            if (waitingForPromise) return
             const v = check()
-            if (jb.isPromise(v))
-              v.then(_v=>handleResult(_v))
-            else
+            if (jb.isPromise(v)) {
+              waitingForPromise = true
+              v.then(_v=> {
+                waitingForPromise = false
+                handleResult(_v)
+              })
+            } else {
               handleResult(v)
+            }
+
             function handleResult(res) {
-              count++
-              if (res || count >= times) clearInterval(toRelease)
-              if (res) resolve(res)
-              if (count >= times) reject('timeout')
+              if (res) {
+                clearInterval(toRelease)
+                resolve(res)
+              }
             }
         }, interval)
     })

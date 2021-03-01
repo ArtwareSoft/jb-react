@@ -1,361 +1,339 @@
-(function(){
-jb.ui = jb.ui || {}
-const ui = jb.ui
-const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,{ f, ctx: this && this.ctx }) }}
+jb.initLibs('ui', {
+    h(cmpOrTag,attributes,children) {
+        if (cmpOrTag instanceof jb.ui.VNode) return cmpOrTag // Vdom
+        if (cmpOrTag && cmpOrTag.renderVdom)
+            return cmpOrTag.renderVdomAndFollowUp()
+    
+        return new jb.ui.VNode(cmpOrTag,attributes,children)
+    },
+    compareVdom(b,after,ctx) {
+        const a = after instanceof jb.ui.VNode ? jb.ui.stripVdom(after) : after
+        jb.log('vdom diff compare',{before: b,after : a,ctx})
+        const attributes = jb.objectDiff(a.attributes || {}, b.attributes || {})
+        const children = childDiff(b.children || [],a.children || [])
+        return { 
+            ...(Object.keys(attributes).length ? {attributes} : {}), 
+            ...(children ? {children} : {}),
+            ...(a.tag != b.tag ? { tag: a.tag} : {})
+        }
 
-function h(cmpOrTag,attributes,children) {
-    if (cmpOrTag instanceof ui.VNode) return cmpOrTag // Vdom
-    if (cmpOrTag && cmpOrTag.renderVdom)
-        return cmpOrTag.renderVdomAndFollowUp()
-   
-    return new jb.ui.VNode(cmpOrTag,attributes,children)
-}
+        function childDiff(b,a) {
+            if (b.length == 0 && a.length ==0) return
+            if (a.length == 1 && b.length == 1 && a[0].tag == b[0].tag)
+                return { 0: {...jb.ui.compareVdom(b[0],a[0],ctx),__afterIndex: 0}, length: 1 }
+            jb.log('vdom child diff start',{before: b,after: a,ctx})
+            const beforeWithIndex = b.map((e,i)=> ({i, ...e}))
+            let remainingBefore = beforeWithIndex.slice(0)
+            // locating before-objects in after-array. done in two stages. also calcualing the remaining before objects that were not found
+            const afterToBeforeMap = a.map(toLocate => locateVdom(toLocate,remainingBefore))
+            a.forEach((toLocate,i) => afterToBeforeMap[i] = afterToBeforeMap[i] || sameIndexSameTag(toLocate,i,remainingBefore))
 
-function compareVdom(b,after,ctx) {
-    const a = after instanceof ui.VNode ? ui.stripVdom(after) : after
-    jb.log('vdom diff compare',{before: b,after : a,ctx})
-    const attributes = jb.objectDiff(a.attributes || {}, b.attributes || {})
-    const children = childDiff(b.children || [],a.children || [])
-    return { 
-        ...(Object.keys(attributes).length ? {attributes} : {}), 
-        ...(children ? {children} : {}),
-        ...(a.tag != b.tag ? { tag: a.tag} : {})
-    }
-
-    function childDiff(b,a) {
-        if (b.length == 0 && a.length ==0) return
-        if (a.length == 1 && b.length == 1 && a[0].tag == b[0].tag)
-            return { 0: {...compareVdom(b[0],a[0],ctx),__afterIndex: 0}, length: 1 }
-        jb.log('vdom child diff start',{before: b,after: a,ctx})
-        const beforeWithIndex = b.map((e,i)=> ({i, ...e}))
-        let remainingBefore = beforeWithIndex.slice(0)
-        // locating before-objects in after-array. done in two stages. also calcualing the remaining before objects that were not found
-        const afterToBeforeMap = a.map(toLocate => locateVdom(toLocate,remainingBefore))
-        a.forEach((toLocate,i) => afterToBeforeMap[i] = afterToBeforeMap[i] || sameIndexSameTag(toLocate,i,remainingBefore))
-
-        const reused = []
-        const res = { length: 0, sameOrder: true }
-        beforeWithIndex.forEach( (e,i) => {
-            const __afterIndex = afterToBeforeMap.indexOf(e)
-            if (__afterIndex != i) res.sameOrder = false
-            if (__afterIndex == -1) {
-                res.length = i+1
-                res[i] =  {$: 'delete' } //, __afterIndex: i }
-            } else {
-                reused[__afterIndex] = true
-                const innerDiff = { __afterIndex, ...compareVdom(e, a[__afterIndex],ctx), ...(e.$remount ? {remount: true}: {}) }
-                if (Object.keys(innerDiff).length > 1) {
-                    res[i] = innerDiff
+            const reused = []
+            const res = { length: 0, sameOrder: true }
+            beforeWithIndex.forEach( (e,i) => {
+                const __afterIndex = afterToBeforeMap.indexOf(e)
+                if (__afterIndex != i) res.sameOrder = false
+                if (__afterIndex == -1) {
                     res.length = i+1
+                    res[i] =  {$: 'delete' } //, __afterIndex: i }
+                } else {
+                    reused[__afterIndex] = true
+                    const innerDiff = { __afterIndex, ...jb.ui.compareVdom(e, a[__afterIndex],ctx), ...(e.$remount ? {remount: true}: {}) }
+                    if (Object.keys(innerDiff).length > 1) {
+                        res[i] = innerDiff
+                        res.length = i+1
+                    }
+                }
+            })
+            res.toAppend = a.flatMap((e,i) => reused[i] ? [] : [ Object.assign( e, {__afterIndex: i}) ])
+            jb.log('vdom child diff result',{res,before: b,after: a,ctx})
+            if (!res.length && !res.toAppend.length) return null
+            return res
+
+            function locateVdom(toLocate,remainingBefore) {
+                const found = remainingBefore.findIndex(before=>sameSource(before,toLocate))
+                if (found != -1)                
+                    return remainingBefore.splice(found,1)[0]
+            }
+            function sameIndexSameTag(toLocate,index,remainingBefore) {
+                const found = remainingBefore.findIndex(before=>before.tag && before.i == index && before.tag === toLocate.tag)
+                if (found != -1) {
+                    const ret = remainingBefore.splice(found,1)[0]
+                    if (ret.attributes.ctxId && !sameSource(ret,toLocate))
+                        ret.$remount = true
+                    return ret
                 }
             }
+            function sameSource(vdomBefore,vdomAfter) {
+                if (vdomBefore.cmp && vdomBefore.cmp === vdomAfter.cmp) return true
+                const atts1 = vdomBefore.attributes || {}, atts2 = vdomAfter.attributes || {}
+                if (atts1['cmp-id'] && atts1['cmp-id'] === atts2['cmp-id'] || atts1['jb-ctx'] && atts1['jb-ctx'] === atts2['jb-ctx']) return true
+                if (compareCtxAtt('path',atts1,atts2) && compareCtxAtt('data',atts1,atts2)) return true
+                if (compareAtts(['id','path','name'],atts1,atts2)) return true
+            }
+            function compareAtts(attsToCompare,atts1,atts2) {
+                for(let i=0;i<attsToCompare.length;i++)
+                    if (atts1[attsToCompare[i]] && atts1[attsToCompare[i]] == atts2[attsToCompare[i]])
+                        return true
+            }
+            function compareCtxAtt(att,atts1,atts2) {
+                const val1 = atts1.ctxId && jb.path(jb.ui.ctxDictionary[atts1.ctxId],att)
+                const val2 = atts2.ctxId && jb.path(jb.ui.ctxDictionary[atts2.ctxId],att)
+                return val1 && val2 && val1 == val2
+            }            
+        }
+    },
+
+    applyNewVdom(elem,vdomAfter,{strongRefresh, ctx} = {}) {
+        const widgetId = jb.ui.headlessWidgetId(elem)
+        jb.log('applyNew vdom',{widgetId,elem,vdomAfter,strongRefresh, ctx})
+        if (widgetId) {
+            const cmpId = elem.getAttribute('cmp-id')
+            const delta = jb.ui.compareVdom(elem,vdomAfter,ctx)
+            const assumedVdom = JSON.parse(JSON.stringify(jb.ui.stripVdom(elem)))
+            if (elem != vdomAfter) { // update the elem
+                ;(elem.children ||[]).forEach(ch=>ch.parentNode = null)
+                Object.keys(elem).filter(x=>x !='parentNode').forEach(k=>delete elem[k])
+                Object.assign(elem,vdomAfter)
+                ;(vdomAfter.children ||[]).forEach(ch=>ch.parentNode = elem)
+            }
+            jb.ui.renderingUpdates.next({assumedVdom, delta,cmpId,widgetId})
+            return
+        }
+        const active = jb.ui.activeElement() === elem
+        if (vdomAfter.tag != elem.tagName.toLowerCase() || strongRefresh) {
+            jb.ui.unmount(elem)
+            const newElem = jb.ui.render(vdomAfter,elem.parentElement)
+            elem.parentElement.replaceChild(newElem,elem)
+            jb.log('replaceTop vdom',{newElem,elem})
+            elem = newElem
+        } else {
+            const vdomBefore = elem instanceof jb.ui.VNode ? elem : jb.ui.elemToVdom(elem)
+            const delta = jb.ui.compareVdom(vdomBefore,vdomAfter,ctx)
+            jb.log('apply delta top dom',{vdomBefore,vdomAfter,active,elem,vdomAfter,strongRefresh, delta, ctx})
+            jb.ui.applyDeltaToDom(elem,delta)
+        }
+        jb.ui.refreshFrontEnd(elem)
+        if (active) jb.ui.focus(elem,'apply Vdom diff',ctx)
+        jb.ui.garbageCollectCtxDictionary()
+    },
+    elemToVdom(elem) {
+        if (elem instanceof jb.ui.VNode) return elem
+        if (elem.getAttribute('jb_external')) return
+        return {
+            tag: elem.tagName.toLowerCase(),
+            attributes: jb.objFromEntries([
+                ...Array.from(elem.attributes).map(e=>[e.name,e.value]), 
+                ...(jb.path(elem,'firstChild.nodeName') == '#text' ? [['$text',elem.firstChild.nodeValue]] : [])
+            ]),
+            ...( elem.childElementCount && { children: Array.from(elem.children).map(el=> jb.ui.elemToVdom(el)).filter(x=>x) })
+        }
+    },
+
+    applyDeltaToDom(elem,delta) {
+        jb.log('applyDelta dom',{elem,delta})
+        const children = delta.children
+        if (children) {
+            const childrenArr = children.length ? Array.from(Array(children.length).keys()).map(i=>children[i]) : []
+            const childElems = Array.from(elem.children)
+            const {toAppend,deleteCmp,sameOrder,resetAll} = children
+            if (resetAll) 
+                Array.from(elem.children).forEach(toDelete=>removeChild(toDelete))
+            if (deleteCmp) 
+                Array.from(elem.children)
+                    .filter(ch=>ch.getAttribute('cmp-id') == deleteCmp)
+                    .forEach(toDelete=>removeChild(toDelete))
+
+            childrenArr.forEach((e,i) => {
+                if (!e) {
+                    !sameOrder && (childElems[i].setAttribute('__afterIndex',''+i))
+                } else if (e.$ == 'delete') {
+                    jb.ui.unmount(childElems[i])
+                    elem.removeChild(childElems[i])
+                    jb.log('removeChild dom',{childElem: childElems[i],e,elem,delta})
+                } else {
+                    jb.ui.applyDeltaToDom(childElems[i],e)
+                    !sameOrder && (childElems[i].setAttribute('__afterIndex',e.__afterIndex))
+                }
+            })
+            ;(toAppend||[]).forEach(e=>{
+                const newElem = jb.ui.render(e,elem)
+                jb.log('appendChild dom',{newElem,e,elem,delta})
+                !sameOrder && (newElem.setAttribute('__afterIndex',e.__afterIndex))
+            })
+            if (sameOrder === false) {
+                Array.from(elem.children)
+                    .sort((x,y) => Number(x.getAttribute('__afterIndex')) - Number(y.getAttribute('__afterIndex')))
+                    .forEach(el=> {
+                        const index = Number(el.getAttribute('__afterIndex'))
+                        if (elem.children[index] != el)
+                            elem.insertBefore(el, elem.children[index])
+                        el.removeAttribute('__afterIndex')
+                    })
+            }
+            // remove leftover text nodes in mixed
+            if (elem.childElementCount)
+                Array.from(elem.childNodes).filter(ch=>ch.nodeName == '#text')
+                    .forEach(ch=>{
+                        elem.removeChild(ch)
+                        jb.log('removeChild dom leftover',{ch,elem,delta})
+                    })
+        }
+        jb.entries(delta.attributes)
+            .filter(e=> !(e[0] === '$text' && elem.firstElementChild) ) // elem with $text should not have children
+            .forEach(e=> jb.ui.setAtt(elem,e[0],e[1]))
+        
+        function removeChild(toDelete) {
+            jb.ui.unmount(toDelete)
+            elem.removeChild(toDelete)
+            jb.log('removeChild dom',{toDelete,elem,delta})
+        }
+    },
+    applyDeltaToVDom(elem,delta) {
+        if (!elem) return
+        jb.log('applyDelta vdom',{elem,delta})
+        // supports only append/delete
+        if (delta.children) {
+            const toAppend = delta.children.toAppend || []
+            const {resetAll, deleteCmp} = delta.children
+            if (resetAll) {
+                elem.children && elem.children.forEach(ch => ch.parentNode = null)
+                elem.children = []
+            }
+            if (deleteCmp) {
+                const index = elem.children.findIndex(ch=>ch.getAttribute('cmp-id') == deleteCmp)
+                if (index != -1) {
+                    elem.children[index] && (elem.children[index].parentNode = null)
+                    elem.children.splice(index,1)
+                }
+            }
+            toAppend.forEach(ch => { 
+                elem.children = elem.children || []
+                elem.children.push(jb.ui.unStripVdom(ch,elem))
+            })
+            Object.keys(delta.children).filter(x=>!isNaN(x)).forEach(index=>
+                    jb.ui.applyDeltaToVDom(elem.children[+index],delta.children[index]))
+        }
+
+        Object.assign(elem.attributes,delta.attributes)
+    },
+    setAtt(elem,att,val) {
+        if (val == '__undefined') val = null
+        if (att[0] !== '$' && val == null) {
+            elem.removeAttribute(att)
+            jb.log('dom change remove',{elem,att,val})
+        } else if (att.indexOf('on-') == 0 && val != null && !elem[`registeredTo-${att}`]) {
+            elem.addEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev,val))
+            elem[`registeredTo-${att}`] = true
+        } else if (att.indexOf('on-') == 0 && val == null) {
+            elem.removeEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev,val))
+            elem[`registeredTo-${att}`] = false
+        } else if (att === 'checked' && elem.tagName.toLowerCase() === 'input') {
+            elem.setAttribute(att,val)
+            jb.delay(1).then(()=> { // browser bug?
+                elem.checked = true
+                jb.log('dom set checked',{elem,att,val})
+            })
+        } else if (att.indexOf('$__input') === 0) {
+            try {
+                setInput(JSON.parse(val))
+            } catch(e) {}
+        } else if (att.indexOf('$__') === 0) {
+            const id = att.slice(3)
+            try {
+                elem[id] = JSON.parse(val) || ''
+            } catch (e) {}
+            jb.log(`dom set data ${id}`,{elem,att,val})
+        } else if (att === '$focus' && val) {
+            elem.setAttribute('__focus',val)
+            jb.ui.focus(elem,val)
+        } else if (att === '$scrollDown' && val) {
+            elem.__appScroll = true
+            elem.scrollTop = elem.scrollTop = elem.scrollHeight - elem.clientHeight - 1
+        } else if (att === '$scrollDown' && val == null) {
+            delete elem.__appScroll
+        } else if (att === '$text') {
+            elem.innerText = val || ''
+            jb.log('dom set text',{elem,att,val})
+        } else if (att === '$html') {
+            elem.innerHTML = val || ''
+            jb.log('dom set html',{elem,att,val})
+        } else if (att === 'style' && typeof val === 'object') {
+            elem.setAttribute(att,jb.entries(val).map(e=>`${e[0]}:${e[1]}`).join(';'))
+            jb.log('dom set style',{elem,att,val})
+        } else if (att == 'value' && elem.tagName.match(/select|input|textarea/i) ) {
+            const active = document.activeElement === elem
+            if (elem.value == val) return
+            elem.value = val
+            if (active && document.activeElement !== elem) { debugger; elem.focus() }
+            jb.log('dom set elem value',{elem,att,val})
+        } else {
+            elem.setAttribute(att,val)
+            //jb.log('dom set att',{elem,att,val}) to many calls
+        }
+
+        function setInput({assumedVal,newVal,selectionStart}) {
+            const el = jb.ui.findIncludeSelf(elem,'input,textarea')[0]
+            jb.log('dom set input check',{el, assumedVal,newVal,selectionStart})
+            if (!el)
+                return jb.logError('setInput: can not find input under elem',{elem})
+            if (assumedVal != el.value) 
+                return jb.logError('setInput: assumed val is not as expected',{ assumedVal, value: el.value, el })
+            const active = document.activeElement === el
+            jb.log('dom set input',{el, assumedVal,newVal,selectionStart})
+            el.value = newVal
+            if (typeof selectionStart == 'number') 
+                el.selectionStart = selectionStart
+            if (active && document.activeElement !== el) { debugger; el.focus() }
+        }
+    },
+
+    unmount(elem) {
+        if (!elem || !elem.setAttribute) return
+
+        const groupByWidgets = {}
+        jb.ui.findIncludeSelf(elem,'[cmp-id]').forEach(el => {
+            el._component && el._component.destroyFE()
+            if (jb.ui.frontendWidgetId(elem)) return
+            const widgetId = jb.ui.headlessWidgetId(el) || '_local_'
+            groupByWidgets[widgetId] = groupByWidgets[widgetId] || { cmps: []}
+            const destroyCtxs = (el.getAttribute('methods')||'').split(',').filter(x=>x.indexOf('destroy-') == 0).map(x=>x.split('destroy-').pop())
+            const cmpId = el.getAttribute('cmp-id'), ver = el.getAttribute('cmp-ver')
+            groupByWidgets[widgetId].cmps.push({cmpId,ver,el,destroyCtxs})
         })
-        res.toAppend = a.flatMap((e,i) => reused[i] ? [] : [ Object.assign( e, {__afterIndex: i}) ])
-        jb.log('vdom child diff result',{res,before: b,after: a,ctx})
-        if (!res.length && !res.toAppend.length) return null
+        jb.log('unmount',{elem,groupByWidgets})
+        jb.entries(groupByWidgets).forEach(([widgetId,val])=>
+            jb.ui.BECmpsDestroyNotification.next({
+                widgetId, cmps: val.cmps,
+                destroyLocally: widgetId == '_local_',
+                destroyWidget: jb.ui.findIncludeSelf(elem,`[widgetid="${widgetId}"]`).length,
+        }))
+    },
+    render(vdom,parentElem,prepend) {
+        jb.log('render',{vdom,parentElem,prepend})
+        function doRender(vdom,parentElem) {
+            jb.log('dom createElement',{tag: vdom.tag, vdom,parentElem})
+            const elem = jb.ui.createElement(parentElem.ownerDocument, vdom.tag)
+            jb.entries(vdom.attributes).forEach(e=>jb.ui.setAtt(elem,e[0],e[1]))
+            jb.asArray(vdom.children).map(child=> doRender(child,elem)).forEach(el=>elem.appendChild(el))
+            prepend ? parentElem.prepend(elem) : parentElem.appendChild(elem)
+            return elem
+        }
+        const res = doRender(vdom,parentElem)
+        jb.ui.findIncludeSelf(res,'[interactive]').forEach(el=> jb.ui.mountFrontEnd(el))
+        // check
+        const checkResultingVdom = jb.ui.elemToVdom(res)
+        const diff = jb.ui.vdomDiff(checkResultingVdom,vdom)
+        if (checkResultingVdom && Object.keys(diff).length)
+            jb.logError('render diff',{diff,checkResultingVdom,vdom})
+
         return res
-
-        function locateVdom(toLocate,remainingBefore) {
-            const found = remainingBefore.findIndex(before=>sameSource(before,toLocate))
-            if (found != -1)                
-                return remainingBefore.splice(found,1)[0]
-        }
-        function sameIndexSameTag(toLocate,index,remainingBefore) {
-            const found = remainingBefore.findIndex(before=>before.tag && before.i == index && before.tag === toLocate.tag)
-            if (found != -1) {
-                const ret = remainingBefore.splice(found,1)[0]
-                if (ret.attributes.ctxId && !sameSource(ret,toLocate))
-                    ret.$remount = true
-                return ret
-            }
-        }
-    }
-}
-
-function sameSource(vdomBefore,vdomAfter) {
-    if (vdomBefore.cmp && vdomBefore.cmp === vdomAfter.cmp) return true
-    const atts1 = vdomBefore.attributes || {}, atts2 = vdomAfter.attributes || {}
-    if (atts1['cmp-id'] && atts1['cmp-id'] === atts2['cmp-id'] || atts1['jb-ctx'] && atts1['jb-ctx'] === atts2['jb-ctx']) return true
-    if (compareCtxAtt('path',atts1,atts2) && compareCtxAtt('data',atts1,atts2)) return true
-    if (compareAtts(['id','path','name'],atts1,atts2)) return true
-}
-
-function compareAtts(attsToCompare,atts1,atts2) {
-    for(let i=0;i<attsToCompare.length;i++)
-        if (atts1[attsToCompare[i]] && atts1[attsToCompare[i]] == atts2[attsToCompare[i]])
-            return true
-}
-
-function compareCtxAtt(att,atts1,atts2) {
-    const val1 = atts1.ctxId && jb.path(jb.ui.ctxDictionary[atts1.ctxId],att)
-    const val2 = atts2.ctxId && jb.path(jb.ui.ctxDictionary[atts2.ctxId],att)
-    return val1 && val2 && val1 == val2
-}
-
-// dom related functions
-
-function applyNewVdom(elem,vdomAfter,{strongRefresh, ctx} = {}) {
-    const widgetId = jb.ui.headlessWidgetId(elem)
-    jb.log('applyNew vdom',{widgetId,elem,vdomAfter,strongRefresh, ctx})
-    if (widgetId) {
-        const cmpId = elem.getAttribute('cmp-id')
-        const delta = compareVdom(elem,vdomAfter,ctx)
-        const assumedVdom = JSON.parse(JSON.stringify(jb.ui.stripVdom(elem)))
-        if (elem != vdomAfter) { // update the elem
-            ;(elem.children ||[]).forEach(ch=>ch.parentNode = null)
-            Object.keys(elem).filter(x=>x !='parentNode').forEach(k=>delete elem[k])
-            Object.assign(elem,vdomAfter)
-            ;(vdomAfter.children ||[]).forEach(ch=>ch.parentNode = elem)
-        }
-        jb.ui.renderingUpdates.next({assumedVdom, delta,cmpId,widgetId})
-        return
-    }
-    const active = jb.ui.activeElement() === elem
-    if (vdomAfter.tag != elem.tagName.toLowerCase() || strongRefresh) {
-        unmount(elem)
-        const newElem = render(vdomAfter,elem.parentElement)
-        elem.parentElement.replaceChild(newElem,elem)
-        jb.log('replaceTop vdom',{newElem,elem})
-        elem = newElem
-    } else {
-        const vdomBefore = elem instanceof ui.VNode ? elem : elemToVdom(elem)
-        const delta = compareVdom(vdomBefore,vdomAfter,ctx)
-        jb.log('apply delta top dom',{vdomBefore,vdomAfter,active,elem,vdomAfter,strongRefresh, delta, ctx})
-        applyDeltaToDom(elem,delta)
-    }
-    ui.refreshFrontEnd(elem)
-    if (active) jb.ui.focus(elem,'apply Vdom diff',ctx)
-    ui.garbageCollectCtxDictionary()
-}
-
-function refreshFrontEnd(elem) {
-    ui.findIncludeSelf(elem,'[interactive]').forEach(el=> el._component ? el._component.newVDomApplied() : mountFrontEnd(el))
-}
-
-function elemToVdom(elem) {
-    if (elem instanceof jb.ui.VNode) return elem
-    if (elem.getAttribute('jb_external')) return
-    return {
-        tag: elem.tagName.toLowerCase(),
-        attributes: jb.objFromEntries([
-            ...Array.from(elem.attributes).map(e=>[e.name,e.value]), 
-            ...(jb.path(elem,'firstChild.nodeName') == '#text' ? [['$text',elem.firstChild.nodeValue]] : [])
-        ]),
-        ...( elem.childElementCount && { children: Array.from(elem.children).map(el=> elemToVdom(el)).filter(x=>x) })
-    }
-}
-
-function applyDeltaToDom(elem,delta) {
-    jb.log('applyDelta dom',{elem,delta})
-    const children = delta.children
-    if (children) {
-        const childrenArr = children.length ? Array.from(Array(children.length).keys()).map(i=>children[i]) : []
-        const childElems = Array.from(elem.children)
-        const {toAppend,deleteCmp,sameOrder,resetAll} = children
-        if (resetAll) 
-            Array.from(elem.children).forEach(toDelete=>removeChild(toDelete))
-        if (deleteCmp) 
-            Array.from(elem.children)
-                .filter(ch=>ch.getAttribute('cmp-id') == deleteCmp)
-                .forEach(toDelete=>removeChild(toDelete))
-
-        childrenArr.forEach((e,i) => {
-            if (!e) {
-                !sameOrder && (childElems[i].setAttribute('__afterIndex',''+i))
-            } else if (e.$ == 'delete') {
-                unmount(childElems[i])
-                elem.removeChild(childElems[i])
-                jb.log('removeChild dom',{childElem: childElems[i],e,elem,delta})
-            } else {
-                applyDeltaToDom(childElems[i],e)
-                !sameOrder && (childElems[i].setAttribute('__afterIndex',e.__afterIndex))
-            }
-        })
-        ;(toAppend||[]).forEach(e=>{
-            const newElem = render(e,elem)
-            jb.log('appendChild dom',{newElem,e,elem,delta})
-            !sameOrder && (newElem.setAttribute('__afterIndex',e.__afterIndex))
-        })
-        if (sameOrder === false) {
-            Array.from(elem.children)
-                .sort((x,y) => Number(x.getAttribute('__afterIndex')) - Number(y.getAttribute('__afterIndex')))
-                .forEach(el=> {
-                    const index = Number(el.getAttribute('__afterIndex'))
-                    if (elem.children[index] != el)
-                        elem.insertBefore(el, elem.children[index])
-                    el.removeAttribute('__afterIndex')
-                })
-        }
-        // remove leftover text nodes in mixed
-        if (elem.childElementCount)
-            Array.from(elem.childNodes).filter(ch=>ch.nodeName == '#text')
-                .forEach(ch=>{
-                    elem.removeChild(ch)
-                    jb.log('removeChild dom leftover',{ch,elem,delta})
-                })
-    }
-    jb.entries(delta.attributes)
-        .filter(e=> !(e[0] === '$text' && elem.firstElementChild) ) // elem with $text should not have children
-        .forEach(e=> setAtt(elem,e[0],e[1]))
-    
-    function removeChild(toDelete) {
-        unmount(toDelete)
-        elem.removeChild(toDelete)
-        jb.log('removeChild dom',{toDelete,elem,delta})
-    }
-}
-
-function applyDeltaToVDom(elem,delta) {
-    if (!elem) return
-    jb.log('applyDelta vdom',{elem,delta})
-    // supports only append/delete
-    if (delta.children) {
-        const toAppend = delta.children.toAppend || []
-        const {resetAll, deleteCmp} = delta.children
-        if (resetAll) {
-            elem.children && elem.children.forEach(ch => ch.parentNode = null)
-            elem.children = []
-        }
-        if (deleteCmp) {
-            const index = elem.children.findIndex(ch=>ch.getAttribute('cmp-id') == deleteCmp)
-            if (index != -1) {
-                elem.children[index] && (elem.children[index].parentNode = null)
-                elem.children.splice(index,1)
-            }
-        }
-        toAppend.forEach(ch => { 
-            elem.children = elem.children || []
-            elem.children.push(jb.ui.unStripVdom(ch,elem))
-        })
-        Object.keys(delta.children).filter(x=>!isNaN(x)).forEach(index=>
-                applyDeltaToVDom(elem.children[+index],delta.children[index]))
-    }
-
-    Object.assign(elem.attributes,delta.attributes)
-}
-
-function setAtt(elem,att,val) {
-    if (val == '__undefined') val = null
-    if (att[0] !== '$' && val == null) {
-        elem.removeAttribute(att)
-        jb.log('dom change remove',{elem,att,val})
-    } else if (att.indexOf('on-') == 0 && val != null && !elem[`registeredTo-${att}`]) {
-        elem.addEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev,val))
-        elem[`registeredTo-${att}`] = true
-    } else if (att.indexOf('on-') == 0 && val == null) {
-        elem.removeEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev,val))
-        elem[`registeredTo-${att}`] = false
-    } else if (att === 'checked' && elem.tagName.toLowerCase() === 'input') {
-        elem.setAttribute(att,val)
-        jb.delay(1).then(()=> { // browser bug?
-            elem.checked = true
-            jb.log('dom set checked',{elem,att,val})
-        })
-    } else if (att.indexOf('$__input') === 0) {
-        try {
-            setInput(JSON.parse(val))
-        } catch(e) {}
-    } else if (att.indexOf('$__') === 0) {
-        const id = att.slice(3)
-        try {
-            elem[id] = JSON.parse(val) || ''
-        } catch (e) {}
-        jb.log(`dom set data ${id}`,{elem,att,val})
-    } else if (att === '$focus' && val) {
-        elem.setAttribute('__focus',val)
-        jb.ui.focus(elem,val)
-    } else if (att === '$scrollDown' && val) {
-        elem.__appScroll = true
-        elem.scrollTop = elem.scrollTop = elem.scrollHeight - elem.clientHeight - 1
-    } else if (att === '$scrollDown' && val == null) {
-        delete elem.__appScroll
-    } else if (att === '$text') {
-        elem.innerText = val || ''
-        jb.log('dom set text',{elem,att,val})
-    } else if (att === '$html') {
-        elem.innerHTML = val || ''
-        jb.log('dom set html',{elem,att,val})
-    } else if (att === 'style' && typeof val === 'object') {
-        elem.setAttribute(att,jb.entries(val).map(e=>`${e[0]}:${e[1]}`).join(';'))
-        jb.log('dom set style',{elem,att,val})
-    } else if (att == 'value' && elem.tagName.match(/select|input|textarea/i) ) {
-        const active = document.activeElement === elem
-        if (elem.value == val) return
-        elem.value = val
-        if (active && document.activeElement !== elem) { debugger; elem.focus() }
-        jb.log('dom set elem value',{elem,att,val})
-    } else {
-        elem.setAttribute(att,val)
-        //jb.log('dom set att',{elem,att,val}) to many calls
-    }
-
-    function setInput({assumedVal,newVal,selectionStart}) {
-        const el = jb.ui.findIncludeSelf(elem,'input,textarea')[0]
-        jb.log('dom set input check',{el, assumedVal,newVal,selectionStart})
-        if (!el)
-            return jb.logError('setInput: can not find input under elem',{elem})
-        if (assumedVal != el.value) 
-            return jb.logError('setInput: assumed val is not as expected',{ assumedVal, value: el.value, el })
-        const active = document.activeElement === el
-        jb.log('dom set input',{el, assumedVal,newVal,selectionStart})
-        el.value = newVal
-        if (typeof selectionStart == 'number') 
-            el.selectionStart = selectionStart
-        if (active && document.activeElement !== el) { debugger; el.focus() }
-    }
-}
-
-function unmount(elem) {
-    if (!elem || !elem.setAttribute) return
-
-    const groupByWidgets = {}
-    jb.ui.findIncludeSelf(elem,'[cmp-id]').forEach(el => {
-        el._component && el._component.destroyFE()
-        if (jb.ui.frontendWidgetId(elem)) return
-        const widgetId = jb.ui.headlessWidgetId(el) || '_local_'
-        groupByWidgets[widgetId] = groupByWidgets[widgetId] || { cmps: []}
-        const destroyCtxs = (el.getAttribute('methods')||'').split(',').filter(x=>x.indexOf('destroy-') == 0).map(x=>x.split('destroy-').pop())
-        const cmpId = el.getAttribute('cmp-id'), ver = el.getAttribute('cmp-ver')
-        groupByWidgets[widgetId].cmps.push({cmpId,ver,el,destroyCtxs})
-    })
-    jb.log('unmount',{elem,groupByWidgets})
-    jb.entries(groupByWidgets).forEach(([widgetId,val])=>
-        jb.ui.BECmpsDestroyNotification.next({
-            widgetId, cmps: val.cmps,
-            destroyLocally: widgetId == '_local_',
-            destroyWidget: jb.ui.findIncludeSelf(elem,`[widgetid="${widgetId}"]`).length,
-    }))
-}
-
-function render(vdom,parentElem,prepend) {
-    jb.log('render',{vdom,parentElem,prepend})
-    function doRender(vdom,parentElem) {
-        jb.log('dom createElement',{tag: vdom.tag, vdom,parentElem})
-        const elem = createElement(parentElem.ownerDocument, vdom.tag)
-        jb.entries(vdom.attributes).forEach(e=>setAtt(elem,e[0],e[1]))
-        jb.asArray(vdom.children).map(child=> doRender(child,elem)).forEach(el=>elem.appendChild(el))
-        prepend ? parentElem.prepend(elem) : parentElem.appendChild(elem)
-        return elem
-    }
-    const res = doRender(vdom,parentElem)
-    ui.findIncludeSelf(res,'[interactive]').forEach(el=> mountFrontEnd(el))
-    // check
-    const checkResultingVdom = elemToVdom(res)
-    const diff = jb.ui.vdomDiff(checkResultingVdom,vdom)
-    if (checkResultingVdom && Object.keys(diff).length)
-        jb.logError('render diff',{diff,checkResultingVdom,vdom})
-
-    return res
-}
-
-function createElement(doc,tag) {
-    tag = tag || 'div'
-    return (['svg','circle','ellipse','image','line','mesh','path','polygon','polyline','rect','text'].indexOf(tag) != -1) ?
-        doc.createElementNS("http://www.w3.org/2000/svg", tag) : doc.createElement(tag)
-}
-
-// raw event enriched to userEvent and wrapped with userRequest
-Object.assign(jb.ui, {
+    },
+    createElement(doc,tag) {
+        tag = tag || 'div'
+        return (['svg','circle','ellipse','image','line','mesh','path','polygon','polyline','rect','text'].indexOf(tag) != -1) ?
+            doc.createElementNS("http://www.w3.org/2000/svg", tag) : doc.createElement(tag)
+    },
     handleCmpEvent(ev, specificMethod) {
         specificMethod = specificMethod == 'true' ? true : specificMethod
         const userReq = jb.ui.rawEventToUserRequest(ev,specificMethod)
@@ -443,38 +421,35 @@ Object.assign(jb.ui, {
         }
     },
     resourceChange: () => jb.mainWatchableHandler.resourceChange,
-})
 
-Object.assign(jb.ui, {
-    h, render, unmount, applyNewVdom, applyDeltaToDom, applyDeltaToVDom, elemToVdom, mountFrontEnd, compareVdom, refreshFrontEnd,
     BECmpsDestroyNotification: jb.callbag.subject(),
     refreshNotification: jb.callbag.subject(),
     renderingUpdates: jb.callbag.subject(),
     followUps: {},
-    ctrl(context,options) {
-        const styleByControl = jb.path(context,'cmpCtx.profile.$') == 'styleByControl'
-        const $state = (context.vars.$refreshElemCall || styleByControl) ? context.vars.$state : {}
-        const cmpId = context.vars.$cmpId, cmpVer = context.vars.$cmpVer
-        if (!context.vars.$serviceRegistry)
-            jb.logError('no serviceRegistry',{ctx: context})
-        const ctx = context.setVars({
-            $model: { ctx: context, ...context.params},
+    ctrl(origCtx,options) {
+        const styleByControl = jb.path(origCtx,'cmpCtx.profile.$') == 'styleByControl'
+        const $state = (origCtx.vars.$refreshElemCall || styleByControl) ? origCtx.vars.$state : {}
+        const cmpId = origCtx.vars.$cmpId, cmpVer = origCtx.vars.$cmpVer
+        if (!origCtx.vars.$serviceRegistry)
+            jb.logError('no serviceRegistry',{ctx: origCtx})
+        const ctx = origCtx.setVars({
+            $model: { ctx: origCtx, ...origCtx.params},
             $state,
-            $serviceRegistry: context.vars.$serviceRegistry,
+            $serviceRegistry: origCtx.vars.$serviceRegistry,
             $refreshElemCall : undefined, $props : undefined, cmp: undefined, $cmpId: undefined, $cmpVer: undefined 
         })
         const styleOptions = runEffectiveStyle(ctx) || {}
-        if (styleOptions instanceof ui.JbComponent)  {// style by control
+        if (styleOptions instanceof jb.ui.JbComponent)  {// style by control
             return styleOptions.orig(ctx).jbExtend(options,ctx).applyParamFeatures(ctx)
         }
-        return new ui.JbComponent(ctx,cmpId,cmpVer).jbExtend(options,ctx).jbExtend(styleOptions,ctx).applyParamFeatures(ctx)
+        return new jb.ui.JbComponent(ctx,cmpId,cmpVer).jbExtend(options,ctx).jbExtend(styleOptions,ctx).applyParamFeatures(ctx)
     
         function runEffectiveStyle(ctx) {
-            const profile = context.profile
+            const profile = origCtx.profile
             const defaultVar = '$theme.' + (profile.$ || '')
-            if (!profile.style && context.vars[defaultVar])
-                return ctx.run({$:context.vars[defaultVar]})
-            return context.params.style ? context.params.style(ctx) : {}
+            if (!profile.style && origCtx.vars[defaultVar])
+                return ctx.run({$:origCtx.vars[defaultVar]})
+            return origCtx.params.style ? origCtx.params.style(ctx) : {}
         }
     },
     garbageCollectCtxDictionary(forceNow,clearAll) {
@@ -540,7 +515,7 @@ Object.assign(jb.ui, {
             return // { recover: true, reason }
         }
         if (assumedVdom) {
-            const actualVdom = elemToVdom(elem)
+            const actualVdom = jb.ui.elemToVdom(elem)
             const diff = jb.ui.vdomDiff(assumedVdom,actualVdom)
             if (Object.keys(diff).length) {
                 jb.logError('wrong assumed vdom',{actualVdom, assumedVdom, diff, delta, ctx, cmpId, elem})
@@ -563,7 +538,7 @@ Object.assign(jb.ui, {
         if (jb.path(elem,'_component.state.frontEndStatus') == 'initializing' || jb.ui.findIncludeSelf(elem,'[__refreshing]')[0]) 
             return jb.logError('circular refresh',{elem, state, options})
         const cmpId = elem.getAttribute('cmp-id'), cmpVer = +elem.getAttribute('cmp-ver')
-        const _ctx = ui.ctxOfElem(elem)
+        const _ctx = jb.ui.ctxOfElem(elem)
         if (!_ctx) 
             return jb.logError('refreshElem - no ctx for elem',{elem, cmpId, cmpVer})
         const strongRefresh = jb.path(options,'strongRefresh')
@@ -587,7 +562,7 @@ Object.assign(jb.ui, {
             jb.ui.hashCss(cmp.calcCssLines(),cmp.ctx,{existingClass, cssStyleElem})
         } else {
             jb.log('do refresh element',{cmp,ctx,elem, state, options})
-            cmp && applyNewVdom(elem, h(cmp), {strongRefresh, ctx})
+            cmp && jb.ui.applyNewVdom(elem, jb.ui.h(cmp), {strongRefresh, ctx})
         }
         elem.removeAttribute('__refreshing')
         jb.ui.refreshNotification.next({cmp,ctx,elem, state, options})
@@ -629,9 +604,9 @@ Object.assign(jb.ui, {
             if (refresh) {
                 jb.log('refresh from observable elements',{cmpId,originatingCmpId,elem,ctx: e.srcCtx,e})
                 if (delay) 
-                    jb.delay(delay).then(()=> ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly}))
+                    jb.delay(delay).then(()=> jb.ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly}))
                 else
-                    ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly})
+                    jb.ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly})
             }
         })
 
@@ -647,127 +622,45 @@ Object.assign(jb.ui, {
             return parts[0] == watchHandler.resources.id && 
                 { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh, cssOnly, allowSelfRefresh, delay }
         }
-    })
-})
+    }),
+    initializeModule() {
+        // subscribe for watchable change
+        jb.ui.subscribeToRefChange(jb.mainWatchableHandler)
 
-class frontEndCmp {
-    constructor(elem, keepState) {
-        this.ctx = jb.ui.parents(elem,{includeSelf: true}).map(elem=>elem.ctxForFE).filter(x=>x)[0] || new jb.jbCtx()
-        this.state = { ...elem.state, ...(keepState && jb.path(elem._component,'state')), frontEndStatus: 'initializing' }
-        this.base = elem
-        this.cmpId = elem.getAttribute('cmp-id')
-        this.ver= elem.getAttribute('cmp-ver')
-        this.pt = elem.getAttribute('cmp-pt')
-        this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve)
-        this.flows= []
-        elem._component = this
-        this.runFEMethod('calcProps',null,null,true)
-        this.runFEMethod('init',null,null,true)
-        ;(elem.getAttribute('eventhandlers') || '').split(',').forEach(h=>{
-            const [event,ctxId] = h.split('-')
-            elem.addEventListener(event, ev => jb.ui.handleCmpEvent(ev,ctxId))
-        })
-        this.state.frontEndStatus = 'ready'
-    }
-    runFEMethod(method,data,_vars,silent) {
-        if (this.state.frontEndStatus != 'ready' && ['init','calcProps'].indexOf(method) == -1)
-            return jb.logError('frontEnd - running method before init', {cmp: {...this}, method,data,_vars})
-        const toRun = (this.base.frontEndMethods || []).filter(x=>x.method == method)
-        if (toRun.length == 0 && !silent)
-            return jb.logError(`frontEnd - no method ${method}`,{cmp: {...this}})
-        toRun.forEach(({path}) => tryWrapper(() => {
-            const profile = path.split('~').reduce((o,p)=>o[p],jb.comps)
-            const srcCtx = new jb.jbCtx(this.ctx, { profile, path, forcePath: path })
-            const feMEthod = jb.run(srcCtx)
-            const el = this.base
-            const vars = {cmp: this, $state: this.state, el, ...this.base.vars, ..._vars }
-            const ctxToUse = this.ctx.setData(data).setVars(vars)
-            const {_prop, _flow } = feMEthod.frontEndMethod
-            if (_prop)
-                jb.log(`frontend uiComp calc prop ${_prop}`,{cmp: {...this}, srcCtx, ...feMEthod.frontEndMethod, el,ctxToUse})
-            else if (_flow)
-                jb.log(`frontend uiComp start flow ${jb.ui.rxPipeName(_flow)}`,{cmp: {...this}, srcCtx, ...feMEthod.frontEndMethod, el, ctxToUse})
+        // subscribe for widget renderingUpdates
+        jb.callbag.subscribe(e=> {
+            if (!e.widgetId && e.cmpId && typeof document != 'undefined') {
+                const elem = document.querySelector(`[cmp-id="${e.cmpId}"]`)
+                if (elem) {
+                    jb.ui.applyDeltaToDom(elem, e.delta)
+                    jb.ui.refreshFrontEnd(elem)
+                }
+            }
+        })(jb.ui.renderingUpdates)
+
+        // subscribe for destroy notification
+        jb.callbag.subscribe(e=> {
+            const {widgetId,destroyLocally,cmps} = e
+            
+            cmps.forEach(_cmp => {
+                const fus = jb.ui.followUps[_cmp.cmpId]
+                if (!fus) return
+                const index = fus.findIndex(({cmp}) => _cmp.cmpId == cmp.cmpId && _cmp.ver == cmp.ver)
+                if (index != -1) {
+                    fus[index].pipe.dispose()
+                    fus.splice(index,1)
+                }
+                if (!fus.length)
+                    delete jb.ui.followUps[_cmp.cmpId]
+            })
+
+            if (widgetId && !destroyLocally)
+                jb.ui.widgetUserRequests.next({$:'destroy', ...e })
             else 
-                jb.log(`frontend uiComp run method ${method}`,{cmp: {...this}, srcCtx , ...feMEthod.frontEndMethod,el,ctxToUse})
-            const res = ctxToUse.run(feMEthod.frontEndMethod.action)
-            if (_flow) this.flows.push(res)
-        }, `frontEnd-${method}`))
+                cmps.forEach(cmp=> (cmp.destroyCtxs || []).forEach(ctxIdToRun => {
+                    jb.log('backend method destroy uiComp',{cmp, el: cmp.el})
+                    jb.ui.runCtxAction(jb.ctxDictionary[ctxIdToRun])
+                } ))
+        })(jb.ui.BECmpsDestroyNotification)
     }
-    enrichUserEvent(ev, userEvent) {
-        (this.base.frontEndMethods || []).filter(x=>x.method == 'enrichUserEvent').map(({path}) => tryWrapper(() => {
-            const actionPath = path+'~action'
-            const profile = actionPath.split('~').reduce((o,p)=>o[p],jb.comps)
-            const vars = {cmp: this, $state: this.state, el: this.base, ...this.base.vars, ev, userEvent }
-            Object.assign(userEvent, jb.run( new jb.jbCtx(this.ctx, { vars, profile, path: actionPath })))
-        }, 'enrichUserEvent'))
-    }
-    refresh(state, options) {
-        jb.log('frontend uiComp refresh request',{cmp: {...this} , state, options})
-        if (this._deleted) return
-        Object.assign(this.state, state)
-        this.base.state = this.state
-        ui.refreshElem(this.base,this.state,options)
-    }
-    refreshFE(state) {
-        if (this._deleted) return
-        Object.assign(this.state, state)
-        this.base.state = this.state
-        this.runFEMethod('onRefresh',null,null,true)
-    }    
-    newVDomApplied() {
-        Object.assign(this.state,{...this.base.state}) // update state from BE
-        this.ver= this.base.getAttribute('cmp-ver')
-        this.runFEMethod('onRefresh',null,null,true)
-    }
-    destroyFE() {
-        this._deleted = true
-        this.flows.forEach(flow=>flow.dispose())
-        this.runFEMethod('destroy',null,null,true)
-        this.resolveDestroyed() // notifications to takeUntil(this.destroyed) observers
-    }
-}
-
-// interactive handlers like onmousemove and onkeyXX are handled in the frontEnd with and not varsed to the backend headless widgets
-function mountFrontEnd(elem, keepState) {
-    new frontEndCmp(elem, keepState)
-}
-
-// subscribe for watchable change
-ui.subscribeToRefChange(jb.mainWatchableHandler)
-
-// subscribe for widget renderingUpdates
-jb.callbag.subscribe(e=> {
-    if (!e.widgetId && e.cmpId && typeof document != 'undefined') {
-        const elem = document.querySelector(`[cmp-id="${e.cmpId}"]`)
-        if (elem) {
-            jb.ui.applyDeltaToDom(elem, e.delta)
-            jb.ui.refreshFrontEnd(elem)
-        }
-    }
-})(jb.ui.renderingUpdates)
-
-jb.callbag.subscribe(e=> {
-    const {widgetId,destroyLocally,cmps} = e
-    
-    cmps.forEach(_cmp => {
-        const fus = jb.ui.followUps[_cmp.cmpId]
-        if (!fus) return
-        const index = fus.findIndex(({cmp}) => _cmp.cmpId == cmp.cmpId && _cmp.ver == cmp.ver)
-        if (index != -1) {
-            fus[index].pipe.dispose()
-            fus.splice(index,1)
-        }
-        if (!fus.length)
-            delete jb.ui.followUps[_cmp.cmpId]
-    })
-
-    if (widgetId && !destroyLocally)
-        jb.ui.widgetUserRequests.next({$:'destroy', ...e })
-    else 
-        cmps.forEach(cmp=> (cmp.destroyCtxs || []).forEach(ctxIdToRun => {
-            jb.log('backend method destroy uiComp',{cmp, el: cmp.el})
-            jb.ui.runCtxAction(jb.ctxDictionary[ctxIdToRun])
-        } ))
-})(jb.ui.BECmpsDestroyNotification)
-
-})()
+})

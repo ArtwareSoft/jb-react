@@ -2242,22 +2242,34 @@ jb.component('waitFor',{
   params: [
     {id: 'check', dynamic: true},
     {id: 'interval', as: 'number', defaultValue: 50},
-    {id: 'times', as: 'number', defaultValue: 300},
+    {id: 'timeout', as: 'number', defaultValue: 5000},
   ],
-  impl: (ctx,check,interval,times) => {
-    let count = 0
+  impl: (ctx,check,interval,timeout) => {
+    let waitingForPromise, timesoFar = 0
     return new Promise((resolve,reject) => {
         const toRelease = setInterval(() => {
+            timesoFar += interval
+            if (timesoFar >= timeout) {
+              clearInterval(toRelease)
+              reject('timeout')
+            }
+            if (waitingForPromise) return
             const v = check()
-            if (jb.isPromise(v))
-              v.then(_v=>handleResult(_v))
-            else
+            if (jb.isPromise(v)) {
+              waitingForPromise = true
+              v.then(_v=> {
+                waitingForPromise = false
+                handleResult(_v)
+              })
+            } else {
               handleResult(v)
+            }
+
             function handleResult(res) {
-              count++
-              if (res || count >= times) clearInterval(toRelease)
-              if (res) resolve(res)
-              if (count >= times) reject('timeout')
+              if (res) {
+                clearInterval(toRelease)
+                resolve(res)
+              }
             }
         }, interval)
     })
@@ -12729,23 +12741,29 @@ jb = ${JSON.stringify(jbObj)}
 jb_loadProject(${JSON.stringify(settings)}).then(() => {
     self.spy = jb.initSpy({spyParam: '${spyParam}'})
     self.${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
+    postMessage('loaded')
     self.loaded = true
 })`
         const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
-        const workerJbm = childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
         // wait for worker jbm to load
-        const promise = jb.exec(pipe(waitFor({
-            interval: 800,
-            check: remote.data(()=> self.loaded, ()=>workerJbm),
-        }), ()=>workerJbm, first()))
-        promise.uri = workerJbm.uri
+        const promise = jb.callbag.toPromise(
+            jb.callbag.pipe(
+                jb.callbag.fromEvent(worker,'message'),
+                jb.callbag.take(1),
+                jb.callbag.map(() => childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri)))
+        ))
+        // const promise = jb.exec(pipe(
+        //     remote.data( waitFor(()=> self.loaded), ()=>workerJbm ),
+        //     () => childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri)),
+        //     first()
+        // ))
+        promise.uri = workerUri
         return promise
     }
 })
 
 jb.component('jbm.child', {
     type: 'jbm',
-    description: 'returns a promise at the first time. Clients needs to wait for the promise before using the jbm',
     params: [
         {id: 'name', as: 'string', mandatory: true},
         {id: 'libs', as: 'array', defaultValue: ['common','rx','remote'] },
