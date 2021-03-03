@@ -7,7 +7,7 @@ jb.component('group', {
     {id: 'title', as: 'string', dynamic: true},
     {id: 'layout', type: 'layout'},
     {id: 'style', type: 'group.style', defaultValue: group.div(), mandatory: true, dynamic: true},
-    {id: 'controls', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true, composite: true},
+    {id: 'controls', type: 'control[]', mandatory: true, dynamic: true, composite: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx, ctx.params.layout)
@@ -16,7 +16,7 @@ jb.component('group', {
 jb.component('group.initGroup', {
   type: 'feature',
   category: 'group:0',
-  impl: calcProp('ctrls',(ctx,{$model}) => $model.controls(ctx).filter(x=>x))
+  impl: calcProp('ctrls',(ctx,{$model}) => $model.controls(ctx).filter(x=>x).flatMap(x=>x.segment ? x : [x]))
 })
 
 jb.component('inlineControls', {
@@ -91,7 +91,7 @@ jb.component('group.wait', {
         priority: ctx => jb.path(ctx.vars.$state,'dataArrived') ? 0: 10
     }),
     followUp.action((ctx,{cmp},{varName,passRx}) => !cmp.state.dataArrived && !cmp.state.error &&
-        Promise.resolve(jb.toSynchArray(ctx.cmpCtx.params.for(),!passRx))
+        Promise.resolve(jb.utils.toSynchArray(ctx.cmpCtx.params.for(),!passRx))
         .then(data => cmp.refresh({ dataArrived: true }, {
             srcCtx: ctx.cmpCtx,
             extendCtx: ctx => ctx.setVar(varName,data).setData(data)
@@ -112,5 +112,19 @@ jb.component('group.eliminateRecursion', {
     const timesInStack = ctx.callStack().filter(x=>x && x.indexOf(protectedComp) != -1).length
     if (timesInStack > maxDepth)
       return ctx.run( calcProp({id: 'ctrls', value: () => [], phase: 1, priority: 100 }))
+  }
+})
+
+jb.component('controls', {
+  type: 'control',
+  description: 'list of controls to be put inline, flatten inplace. E.g., set of table fields',
+  category: 'group:20',
+  params: [
+    {id: 'controls', type: 'control[]', mandatory: true, dynamic: true, composite: true},
+  ],
+  impl: (ctx,controls) => {
+    const res = controls(ctx)
+    res.segment = true
+    return res
   }
 })

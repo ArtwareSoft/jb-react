@@ -231,7 +231,7 @@ jb.studio.activateWatchRefViewer = () => {
     pipe(delayedSpy, filter(e=>e.logName === 'registerCmpObservable'), subscribe(e=> {
             const ref = e.record[0].ref
             const ctx = e.record[0].ctx
-            const path = ref && jb.refHandler(ref).pathOfRef(ref).join('~')
+            const path = ref && jb.db.refHandler(ref).pathOfRef(ref).join('~')
             if (!editorOfPath(path)) return
             jb.studio.highlightCtx(ctx)
             highlightData(path)
@@ -244,7 +244,7 @@ jb.studio.activateWatchRefViewer = () => {
         subscribe(e=> {
             const ref = e.record[3].ref
             const ctx = e.record[3].srcCtx
-            const path = ref && jb.refHandler(ref).pathOfRef(ref).join('~')
+            const path = ref && jb.db.refHandler(ref).pathOfRef(ref).join('~')
             if (!editorOfPath(path)) return
             jb.studio.highlightCtx(ctx)
             highlightData(path)

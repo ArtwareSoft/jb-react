@@ -5,10 +5,10 @@ jb.ui.contentEditable = {
     const val = isHtml ? ev.innerHTML : ev.innerText
     const resourceRef = cmp.toObserve.filter(e=>e.id == prop).map(e=>e.ref)[0]
     if (resourceRef) {
-      jb.studio.previewjb.writeValue(resourceRef,val,cmp.ctx)
+      jb.studio.previewjb.db.writeValue(resourceRef,val,cmp.ctx)
     } else {
       const scriptRef = this.scriptRef(cmp,prop)
-      scriptRef && jb.writeValue(scriptRef,val,cmp.ctx)
+      scriptRef && jb.db.writeValue(scriptRef,val,cmp.ctx)
     }
   },
   isEnabled() {

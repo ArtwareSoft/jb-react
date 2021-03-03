@@ -35,25 +35,6 @@ Object.assign(jb, {
           return value;
         }
     },
-    isDelayed: v => {
-        if (!v || v.constructor === {}.constructor || Array.isArray(v)) return
-        else if (typeof v === 'object')
-          return jb.isPromise(v)
-        else if (typeof v === 'function')
-          return jb.callbag.isCallbag(v)
-    },
-    toSynchArray: (item, synchCallbag) => {
-        if (! jb.asArray(item).find(v=> jb.callbag.isCallbag(v) || jb.isPromise(v))) return item;
-        const {pipe, fromIter, toPromiseArray, mapPromise,flatMap, map, isCallbag} = jb.callbag
-        if (isCallbag(item)) return synchCallbag ? toPromiseArray(pipe(item,map(x=> x && x.vars ? x.data : x ))) : item
-        if (Array.isArray(item) && isCallbag(item[0])) return synchCallbag ? toPromiseArray(pipe(item[0], map(x=> x && x.vars ? x.data : x ))) : item
-    
-        return pipe( // array of promises
-              fromIter(jb.asArray(item)),
-              mapPromise(x=> Promise.resolve(x)),
-              flatMap(v => Array.isArray(v) ? v : [v]),
-              toPromiseArray)
-    },
     subscribe: (source,listener) => jb.callbag.subscribe(listener)(source),
     log(logName, record, options) { jb.spy && jb.spy.log(logName, record, options) },
     logError(err,logObj) {
@@ -66,7 +47,7 @@ Object.assign(jb, {
     },
     val(ref) {
       if (ref == null || typeof ref != 'object') return ref
-      const handler = jb.refHandler(ref)
+      const handler = jb.db.refHandler(ref)
       if (handler)
         return handler.val(ref)
       return ref
@@ -96,7 +77,7 @@ Object.assign(jb, {
     entries(obj) {
         if (!obj || typeof obj != 'object') return [];
         let ret = [];
-        for(let i in obj) // please do not change. its keeps definition order !!!!
+        for(let i in obj) // please do not change. it keeps the definition order !!!!
             if (obj.hasOwnProperty && obj.hasOwnProperty(i) && i.indexOf('$jb_') != 0)
               ret.push([i,obj[i]])
         return ret
@@ -106,23 +87,24 @@ Object.assign(jb, {
         entries.forEach(e => res[e[0]] = e[1])
         return res
     },
-    unique: (ar,f) => {
-        f = f || (x=>x);
-        const keys = {}, res = [];
-        ar.forEach(e=>{
-          if (!keys[f(e)]) {
-            keys[f(e)] = true;
-            res.push(e)
-          }
-        })
-        return res;
-    },
+    asArray: v => v == null ? [] : (Array.isArray(v) ? v : [v]),
+    delay: (mSec,res) => new Promise(r=>setTimeout(()=>r(res),mSec)),
+})
+
+jb.initLibs('utils', { 
     isEmpty: o => Object.keys(o).length === 0,
     isObject: o => o != null && typeof o === 'object',
-    asArray: v => v == null ? [] : (Array.isArray(v) ? v : [v]),
-    filterEmpty: obj => Object.entries(obj).reduce((a,[k,v]) => (v == null ? a : {...a, [k]:v}), {}),
-    equals: (x,y) => x == y || jb.val(x) == jb.val(y),
-    delay: (mSec,res) => new Promise(r=>setTimeout(()=>r(res),mSec)),
+    tryWrapper: (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,{ctx: this.ctx}) }},
+    flattenArray: items => {
+      let out = [];
+      items.filter(i=>i).forEach(function(item) {
+        if (Array.isArray(item))
+          out = out.concat(item);
+        else
+          out.push(item);
+      })
+      return out;
+    },
     compareArrays: (arr1, arr2) => {
         if (arr1 === arr2)
           return true;
@@ -136,16 +118,52 @@ Object.assign(jb, {
         }
         return true;
     },
-    range: (start, count) => Array.apply(0, Array(count)).map((element, index) => index + start),
-    flattenArray: items => {
-        let out = [];
-        items.filter(i=>i).forEach(function(item) {
-          if (Array.isArray(item))
-            out = out.concat(item);
-          else
-            out.push(item);
-        })
-        return out;
+    isPromise: v => v && Object.prototype.toString.call(v) === '[object Promise]',
+    isDelayed: v => {
+      if (!v || v.constructor === {}.constructor || Array.isArray(v)) return
+      else if (typeof v === 'object')
+        return jb.utils.isPromise(v)
+      else if (typeof v === 'function')
+        return jb.callbag.isCallbag(v)
     },
-    isPromise: v => v && Object.prototype.toString.call(v) === '[object Promise]',    
+    toSynchArray: (item, synchCallbag) => {
+      if (jb.utils.isPromise(item))
+        return item.then(x=>[x])
+
+      if (! jb.asArray(item).find(v=> jb.callbag.isCallbag(v) || jb.utils.isPromise(v))) return item
+      const {pipe, fromIter, toPromiseArray, mapPromise,flatMap, map, isCallbag} = jb.callbag
+      if (isCallbag(item)) return synchCallbag ? toPromiseArray(pipe(item,map(x=> x && x.vars ? x.data : x ))) : item
+      if (Array.isArray(item) && isCallbag(item[0])) return synchCallbag ? toPromiseArray(pipe(item[0], map(x=> x && x.vars ? x.data : x ))) : item
+  
+      return pipe( // array of promises
+              fromIter(jb.asArray(item)),
+              mapPromise(x=> Promise.resolve(x)),
+              flatMap(v => Array.isArray(v) ? v : [v]),
+              toPromiseArray)
+    },    
+    objectDiff(newObj, orig) {
+      if (orig === newObj) return {}
+      if (!jb.utils.isObject(orig) || !jb.utils.isObject(newObj)) return newObj
+      const deletedValues = Object.keys(orig).reduce((acc, key) =>
+          newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: '__undefined'}
+      , {})
+  
+      return Object.keys(newObj).reduce((acc, key) => {
+        if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key
+        const difference = jb.utils.objectDiff(newObj[key], orig[key])
+        if (jb.utils.isObject(difference) && jb.utils.isEmpty(difference)) return acc // return no diff
+        return { ...acc, [key]: difference } // return updated key
+      }, deletedValues)
+    },
+    unique: (ar,f) => {
+      f = f || (x=>x);
+      const keys = {}, res = [];
+      ar.forEach(e=>{
+        if (!keys[f(e)]) {
+          keys[f(e)] = true;
+          res.push(e)
+        }
+      })
+      return res;
+    },    
 })

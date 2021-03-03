@@ -82,7 +82,7 @@ jb.component('studioTest.jbEditorMove', {
   impl: dataTest({
     calculate: pipeline(studio.val('test.moveInTree~impl~controls'), '%text%', join({})),
     runBefore: ctx =>
-	 		jb.move(jb.studio.refOfPath('test.moveInTree~impl~controls~1'), jb.studio.refOfPath('test.moveInTree~impl~controls~0'),ctx),
+	 		jb.db.move(jb.studio.refOfPath('test.moveInTree~impl~controls~1'), jb.studio.refOfPath('test.moveInTree~impl~controls~0'),ctx),
     expectedResult: equals('b,a,c')
   })
 })

@@ -59,7 +59,7 @@ jb.component('studio.initNotebookSaveService', {
         st.changedComps = () => {
             if (!st.compsHistory || !st.compsHistory.length) return []
 
-            const changedComps = jb.unique(st.compsHistory.map(e=>jb.path(e,'opEvent.path.0')))
+            const changedComps = jb.utils.unique(st.compsHistory.map(e=>jb.path(e,'opEvent.path.0')))
             return changedComps.map(id=>[id,jb.comps[id]])
         }
     }
@@ -67,7 +67,7 @@ jb.component('studio.initNotebookSaveService', {
 
 jb.component('jbm.notebookWorker', {
   type: 'jbm',
-  impl: jbm.byUri('studio►notebook')
+  impl: jbm.byUri('studio•notebook')
 })
 
 jb.component('studio.notebookTopBar', {

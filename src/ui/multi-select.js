@@ -28,7 +28,7 @@ jb.component('multiSelect.modelAsBooleanRef',{
         function add() { if (!has(code)) jb.push(ref, code,ctx) }
         function remove() { 
             const index = jb.val(ref).indexOf(code)
-            index != -1 && jb.splice(ref,[[index,1]],ctx)
+            index != -1 && jb.db.splice(ref,[[index,1]],ctx)
         }
     }
 })

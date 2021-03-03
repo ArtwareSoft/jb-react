@@ -26,7 +26,7 @@ jb.xml.xmlToJson = xml => {
 
     function flattenArray(ar) {
       if (!Array.isArray(ar)) return ar;
-      var res = jb.unique(ar.map(item=>jb.entries(item).length == 1 ? jb.entries(item)[0][0] : null));
+      var res = jb.utils.unique(ar.map(item=>jb.entries(item).length == 1 ? jb.entries(item)[0][0] : null));
       if (res.length == 1 && res[0])
         return ar.map(item=>jb.entries(item)[0][1])
       return ar;

@@ -51,7 +51,7 @@ jb.component('field.databind', {
 
 function writeFieldData(ctx,cmp,value,oneWay) {
   if (jb.val(ctx.vars.$model.databind(cmp.ctx)) == value) return
-  jb.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx)
+  jb.db.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx)
   jb.ui.checkValidationError(cmp,value,ctx)
   cmp.hasBEMethod('onValueChange') && cmp.runBEMethod('onValueChange',value,ctx.vars)
   !oneWay && cmp.refresh({},{srcCtx: ctx.cmpCtx})

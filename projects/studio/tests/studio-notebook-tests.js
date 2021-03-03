@@ -9,7 +9,7 @@ jb.component('notebookTest.initShadowComponent', {
     runBefore: pipe(
       jbm.worker('notebook'),
       remote.action(loadLibs(['ui-common','notebook-worker']),'%%'),
-      remote.initShadowComponent({compId: 'notebookTest.compToShadow', jbm: jbm.byUri('tests►notebook')}),
+      remote.initShadowComponent({compId: 'notebookTest.compToShadow', jbm: jbm.byUri('tests•notebook')}),
       () => { jb.exec(runActions(delay(1), writeValue(studio.ref('notebookTest.compToShadow~impl'),'Dan'))) } // writeValue after calculate
     ),
     calculate: remote.data(
@@ -19,7 +19,7 @@ jb.component('notebookTest.initShadowComponent', {
         rx.map('%newVal%'),
         rx.take(1)
       )), 
-      jbm.byUri('tests►notebook')
+      jbm.byUri('tests•notebook')
     ),
     expectedResult: equals('Dan')
   })

@@ -24,17 +24,17 @@ function setStrValue(value, ref, ctx) {
     //     return
     const currentVal = jb.val(ref)
     if (newVal && typeof newVal === 'object' && typeof currentVal === 'object') {
-        const diff = jb.objectDiff(newVal,currentVal)
+        const diff = jb.utils.objectDiff(newVal,currentVal)
         if (Object.keys(diff).length == 0) return // no diffs
         const {innerPath, innerValue} = getSinglePathChange(diff,currentVal) // one diff
         if (innerPath) {
             const fullInnerPath = ref.handler.pathOfRef(ref).concat(innerPath.slice(1).split('~'))
-            return jb.writeValue(ref.handler.refOfPath(fullInnerPath),innerValue,ctx)
+            return jb.db.writeValue(ref.handler.refOfPath(fullInnerPath),innerValue,ctx)
         }
     }
     if (newVal !== undefined) { // many diffs
         currentVal && currentVal[jb.location] && typeof newVal == 'object' && (newVal[jb.location] = currentVal[jb.location])
-        jb.writeValue(ref,newVal,ctx)
+        jb.db.writeValue(ref,newVal,ctx)
     }
 }
 
@@ -49,7 +49,7 @@ jb.component('watchableAsText', {
         getRef() {
             return this.ref || (this.ref = refF())
         },
-        handler: jb.simpleValueByRefHandler,
+        handler: jb.db.simpleValueByRefHandler,
         getVal() {
             return jb.val(this.getRef())
         },
@@ -62,12 +62,12 @@ jb.component('watchableAsText', {
                 return
             }
             const initialPath = ref.handler.pathOfRef(ref).join('~')
-            const res = jb.prettyPrintWithPositions(this.getVal() || '',{initialPath, comps: ref.jbToUse && ref.jbToUse.comps})
+            const res = jb.utils.prettyPrintWithPositions(this.getVal() || '',{initialPath, comps: ref.jbToUse && ref.jbToUse.comps})
             this.locationMap = enrichMapWithOffsets(res.text, res.map)
             this.text = res.text.replace(/\s*(\]|\})$/,'\n$1')
         },
         writeFullValue(newVal) {
-            jb.writeValue(this.getRef(),newVal,ctx)
+            jb.db.writeValue(this.getRef(),newVal,ctx)
             this.prettyPrintWithPositions()
         },
         $jb_val(value) { try {
@@ -83,7 +83,7 @@ jb.component('watchableAsText', {
         }},
 
         $jb_observable(cmp) {
-            return jb.refObservable(this.getRef(),{cmp, includeChildren: 'yes'})
+            return jb.db.refObservable(this.getRef(),{cmp, includeChildren: 'yes'})
         }
     })
 })
@@ -125,15 +125,15 @@ jb.component('textEditor.isDirty', {
 //       try {
 //         const text_ref = cmp.state.databindRef
 //         const data_ref = text_ref.getRef()
-//         jb.isWatchable(data_ref) && jb.refObservable(data_ref,{cmp,srcCtx: cmp.ctx, includeChildren: 'yes'})
+//         jb.db.isWatchable(data_ref) && jb.db.refObservable(data_ref,{cmp,srcCtx: cmp.ctx, includeChildren: 'yes'})
 //             .subscribe(e => {
 //             const path = e.path
 //             const editor = cmp.editor
 //             const locations = cmp.state.databindRef.locationMap
 //             const loc = locations[path.concat('!value').join('~')]
-//             const newVal = jb.prettyPrint(e.newVal)
+//             const newVal = jb.utils.prettyPrint(e.newVal)
 //             editor.replaceRange(newVal, {line: loc[0], col:loc[1]}, {line: loc[2], col: loc[3]})
-//             const newEndPos = jb.prettyPrint.advanceLineCol({line: loc[0], col:loc[1]}, newVal)
+//             const newEndPos = jb.utils.advanceLineCol({line: loc[0], col:loc[1]}, newVal)
 //             editor.markText({line: loc[0], col:loc[1]}, {line: newEndPos.line, col: newEndPos.col},{
 //                 className: 'jb-highlight-comp-changed'
 //             })
@@ -290,7 +290,7 @@ function getSuggestions(fileContent, pos, jbToUse = jb) {
     const compSrc = linesOfComp.join('\n')
     if (jb.eval(compSrc,jbToUse.frame) === Symbol.for('parseError'))
         return []
-    const {text, map} = jb.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
+    const {text, map} = jb.utils.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
     const locationMap = enrichMapWithOffsets(text, map)
     const srcForImpl = '{\n'+compSrc.slice((/^  /m.exec(compSrc) || {}).index,-1)
     const cursorOffset = lineColToOffset(srcForImpl, {line: pos.line - componentHeaderIndex, col: pos.col})
@@ -300,12 +300,12 @@ function getSuggestions(fileContent, pos, jbToUse = jb) {
 
 function getPosOfPath(path,jbToUse = jb) {
     const compId = path.split('~')[0]
-    const {map} = jb.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
+    const {map} = jb.utils.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
     return map[path]
 }
 
 function getPathOfPos(compId,pos,jbToUse = jb) {
-    const { text, map } = jb.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
+    const { text, map } = jb.utils.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
     map.cursor = [pos.line,pos.col,pos.line,pos.col]
     const locationMap = enrichMapWithOffsets(text, map)
     const res = pathOfPosition({text, locationMap}, locationMap.cursor.offset_from )
@@ -334,7 +334,7 @@ function formatComponent(fileContent, pos, jbToUse = jb) {
     if (!compId) return {}
     if (jb.eval(compSrc,jbToUse.frame) === Symbol.for('parseError'))
         return []
-    return {text: jb.prettyPrintComp(compId,jbToUse.comps[compId],{comps: jbToUse.comps}) + '\n',
+    return {text: jb.utils.prettyPrintComp(compId,jbToUse.comps[compId],{comps: jbToUse.comps}) + '\n',
         from: {line: componentHeaderIndex, col: 0}, to: {line: componentHeaderIndex+compLastLine+1, col: 0} }
 }
 

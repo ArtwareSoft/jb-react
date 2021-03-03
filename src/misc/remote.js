@@ -9,7 +9,7 @@ jb.component('source.remote', {
         if (!jbm)
             return jb.logError('source.remote - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
         const stripedRx = jbm.callbag ? rx : jb.remoteCtx.stripFunction(rx)
-        if (jb.isPromise(jbm))
+        if (jb.utils.isPromise(jbm))
             return jb.callbag.pipe(jb.callbag.fromPromise(jbm), jb.callbag.concatMap(_jbm=> _jbm.createCallbagSource(stripedRx)))
         return jbm.createCallbagSource(stripedRx)
     }        
@@ -26,7 +26,7 @@ jb.component('remote.operator', {
         if (!jbm)
             return jb.logError('remote.operator - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
         const stripedRx = jbm.callbag ? rx : jb.remoteCtx.stripFunction(rx)
-        if (jb.isPromise(jbm)) {
+        if (jb.utils.isPromise(jbm)) {
             jb.log('jbm as promise in remote operator, adding request buffer', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
             return source => {
                 const buffer = jb.callbag.replay(5)(source)
@@ -77,9 +77,9 @@ jb.component('remote.initShadowData', {
     ],
     impl: rx.pipe(
         source.watchableData({ref: '%$src%', includeChildren: 'yes'}),
-        rx.map(obj(prop('op','%op%'), prop('path',({data}) => jb.pathOfRef(data.ref)))),
+        rx.map(obj(prop('op','%op%'), prop('path',({data}) => jb.db.pathOfRef(data.ref)))),
         sink.action(remote.action( 
-            ctx => jb.doOp(jb.refOfPath(ctx.data.path), ctx.data.op, ctx),
+            ctx => jb.db.doOp(jb.db.refOfPath(ctx.data.path), ctx.data.op, ctx),
             '%$jbm%')
         )
     )
@@ -98,7 +98,7 @@ jb.component('net.listSubJbms', {
 })
 
 jb.component('net.getRootParentUri', {
-    impl: () => jb.uri.split('►')[0]
+    impl: () => jb.uri.split('•')[0]
 })
 
 jb.component('net.listAll', {

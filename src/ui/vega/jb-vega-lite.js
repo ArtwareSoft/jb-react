@@ -54,7 +54,7 @@ jb.component('vega.interactiveChart', {
     features: [
       variable({
         name: 'prettySpec',
-        value: ({},{},{spec}) => jb.prettyPrint(jb.vega.cleanEmptyValues(spec)),
+        value: ({},{},{spec}) => jb.utils.prettyPrint(jb.vega.cleanEmptyValues(spec)),
         watchable: true
       })
     ]

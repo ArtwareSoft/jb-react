@@ -19,38 +19,40 @@ jb.component('call', {
  	}
 })
 
-jb.pipe = function(ctx,ptName,passRx) {
-  let start = jb.toarray(ctx.data)
-  if (start.length == 0) start = [null]
-	if (typeof ctx.profile.items == 'string')
-		return ctx.runInner(ctx.profile.items,null,'items');
-	const profiles = jb.asArray(ctx.profile.items || ctx.profile[ptName]);
-	const innerPath = (ctx.profile.items && ctx.profile.items.sugar) ? ''
-		: (ctx.profile[ptName] ? (ptName + '~') : 'items~');
+jb.initLibs('utils', {
+  calcPipe(ctx,ptName,passRx) {
+    let start = jb.toarray(ctx.data)
+    if (start.length == 0) start = [null]
+    if (typeof ctx.profile.items == 'string')
+      return ctx.runInner(ctx.profile.items,null,'items');
+    const profiles = jb.asArray(ctx.profile.items || ctx.profile[ptName]);
+    const innerPath = (ctx.profile.items && ctx.profile.items.sugar) ? ''
+      : (ctx.profile[ptName] ? (ptName + '~') : 'items~');
 
-	if (ptName == '$pipe') // promise pipe
-		return profiles.reduce((deferred,prof,index) =>
-			deferred.then(data=>jb.toSynchArray(data, !passRx)).then(data=>step(prof,index,data))
-    , Promise.resolve(start))
-      .then(data=>jb.toSynchArray(data, !passRx))
+    if (ptName == '$pipe') // promise pipe
+      return profiles.reduce((deferred,prof,index) =>
+        deferred.then(data=>jb.utils.toSynchArray(data, !passRx)).then(data=>step(prof,index,data))
+      , Promise.resolve(start))
+        .then(data=>jb.utils.toSynchArray(data, !passRx))
 
-	return profiles.reduce((data,prof,index) => step(prof,index,data), start)
+    return profiles.reduce((data,prof,index) => step(prof,index,data), start)
 
-	function step(profile,i,data) {
-    if (!profile || profile.$disabled) return data;
-    const path = innerPath+i
-		const parentParam = (i < profiles.length - 1) ? { as: 'array'} : (ctx.parentParam || {}) ;
-		if (jb.profileType(profile) == 'aggregator')
-			return jb.run( new jb.jbCtx(ctx, { data, profile, path }), parentParam);
-		return [].concat.apply([],data.map(item =>
-				jb.run(new jb.jbCtx(ctx,{data: item, profile, path}), parentParam))
-			.filter(x=>x!=null)
-			.map(x=> {
-        const val = jb.val(x)
-        return Array.isArray(val) ? val : x 
-      }));
-	}
-}
+    function step(profile,i,data) {
+      if (!profile || profile.$disabled) return data;
+      const path = innerPath+i
+      const parentParam = (i < profiles.length - 1) ? { as: 'array'} : (ctx.parentParam || {}) ;
+      if (jb.profileType(profile) == 'aggregator')
+        return jb.run( new jb.jbCtx(ctx, { data, profile, path }), parentParam);
+      return [].concat.apply([],data.map(item =>
+          jb.run(new jb.jbCtx(ctx,{data: item, profile, path}), parentParam))
+        .filter(x=>x!=null)
+        .map(x=> {
+          const val = jb.val(x)
+          return Array.isArray(val) ? val : x 
+        }));
+    }
+  }
+})
 
 jb.component('pipeline', {
   type: 'data',
@@ -58,7 +60,7 @@ jb.component('pipeline', {
   params: [
     {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true, description: 'click "=" for functions list'}
   ],
-  impl: ctx => jb.pipe(ctx,'$pipeline')
+  impl: ctx => jb.utils.calcPipe(ctx,'$pipeline')
 })
 
 jb.component('pipe', {
@@ -67,16 +69,7 @@ jb.component('pipe', {
   params: [
     {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true}
   ],
-  impl: ctx => jb.pipe(ctx,'$pipe',false)
-})
-
-jb.component('pipePassRx', {
-  type: 'data',
-  description: 'wait for promises, do not wait for reactive data',
-  params: [
-    {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true}
-  ],
-  impl: ctx => jb.pipe(ctx,'$pipe',true)
+  impl: ctx => jb.utils.calcPipe(ctx,'$pipe',false)
 })
 
 jb.component('data.if', {
@@ -292,15 +285,15 @@ jb.component('writeValue', {
     {id: 'noNotifications', as: 'boolean'}
   ],
   impl: (ctx,to,value,noNotifications) => {
-    if (!jb.isRef(to)) {
+    if (!jb.db.isRef(to)) {
       ctx.run(ctx.profile.to,{as: 'ref'}) // for debug
       return jb.logError(`can not write to: ${ctx.profile.to}`, {ctx})
     }
     const val = jb.val(value)
-    if (jb.isDelayed(val))
-      return Promise.resolve(val).then(_val=>jb.writeValue(to,_val,ctx,noNotifications))
+    if (jb.utils.isPromise(val))
+      return Promise.resolve(val).then(_val=>jb.db.writeValue(to,_val,ctx,noNotifications))
     else
-      jb.writeValue(to,val,ctx,noNotifications)
+      jb.db.writeValue(to,val,ctx,noNotifications)
   }
 })
 
@@ -310,7 +303,7 @@ jb.component('property', {
     {id: 'prop', as: 'string', mandatory: true},
     {id: 'obj', defaultValue: '%%'}
   ],
-  impl: (ctx,prop,obj) =>	jb.objectProperty(obj,prop,ctx)
+  impl: (ctx,prop,obj) =>	jb.db.objectProperty(obj,prop,ctx)
 })
 
 jb.component('indexOf', {
@@ -327,7 +320,7 @@ jb.component('addToArray', {
     {id: 'array', as: 'ref', mandatory: true},
     {id: 'toAdd', as: 'array', mandatory: true}
   ],
-  impl: (ctx,array,toAdd) => jb.push(array, JSON.parse(JSON.stringify(toAdd)),ctx)
+  impl: (ctx,array,toAdd) => jb.db.push(array, JSON.parse(JSON.stringify(toAdd)),ctx)
 })
 
 jb.component('move', {
@@ -337,7 +330,7 @@ jb.component('move', {
     {id: 'from', as: 'ref', mandatory: true},
     {id: 'to', as: 'ref', mandatory: true}
   ],
-  impl: (ctx,from,_to) => jb.move(from,_to,ctx)
+  impl: (ctx,from,_to) => jb.db.move(from,_to,ctx)
 })
 
 jb.component('splice', {
@@ -349,7 +342,7 @@ jb.component('splice', {
     {id: 'itemsToAdd', as: 'array', defaultValue: []}
   ],
   impl: (ctx,array,fromIndex,noOfItemsToRemove,itemsToAdd) =>
-		jb.splice(array,[[fromIndex,noOfItemsToRemove,...itemsToAdd]],ctx)
+		jb.db.splice(array,[[fromIndex,noOfItemsToRemove,...itemsToAdd]],ctx)
 })
 
 jb.component('removeFromArray', {
@@ -362,7 +355,7 @@ jb.component('removeFromArray', {
   impl: (ctx,array,itemToRemove,_index) => {
 		const index = itemToRemove ? jb.toarray(array).indexOf(itemToRemove) : _index;
 		if (index != -1)
-			jb.splice(array,[[index,1]],ctx)
+			jb.db.splice(array,[[index,1]],ctx)
 	}
 })
 
@@ -371,7 +364,7 @@ jb.component('toggleBooleanValue', {
   params: [
     {id: 'of', as: 'ref'}
   ],
-  impl: (ctx,_of) => jb.writeValue(_of,jb.val(_of) ? false : true,ctx)
+  impl: (ctx,_of) => jb.db.writeValue(_of,jb.val(_of) ? false : true,ctx)
 })
 
 jb.component('slice', {
@@ -394,9 +387,9 @@ jb.component('sort', {
     {id: 'ascending', as: 'boolean', type: 'boolean'}
   ],
   impl: ({data},prop,lexical,ascending) => {
-		if (!data || ! Array.isArray(data)) return null;
-    let sortFunc;
-    const firstData = jb.entries(data[0]||{})[0][1]
+    if (!data || ! Array.isArray(data)) return null;
+    let sortFunc
+    const firstData = data[0] //jb.entries(data[0]||{})[0][1]
 		if (lexical || isNaN(firstData))
 			sortFunc = prop ? (x,y) => (x[prop] == y[prop] ? 0 : x[prop] < y[prop] ? -1 : 1) : (x,y) => (x == y ? 0 : x < y ? -1 : 1);
 		else
@@ -719,7 +712,7 @@ jb.component('unique', {
   type: 'aggregator',
   impl: (ctx,idFunc,items) => {
 		const _idFunc = idFunc.profile == '%%' ? x=>x : x => idFunc(ctx.setData(x));
-		return jb.unique(items,_idFunc);
+		return jb.utils.unique(items,_idFunc);
 	}
 })
 
@@ -903,10 +896,10 @@ jb.component('runActionOnItems', {
     {id: 'indexVariable', as: 'string'}
   ],
   impl: (ctx,items,action,notifications,indexVariable) => {
-		if (notifications && jb.mainWatchableHandler) jb.mainWatchableHandler.startTransaction()
+		if (notifications && jb.db.mainWatchableHandler) jb.db.mainWatchableHandler.startTransaction()
 		return (jb.val(items)||[]).reduce((def,item,i) => def.then(_ => action(ctx.setVar(indexVariable,i).setData(item))) ,Promise.resolve())
 			.catch((e) => jb.logException(e,'runActionOnItems',{item, action, ctx}))
-			.then(() => notifications && jb.mainWatchableHandler && jb.mainWatchableHandler.endTransaction(notifications === 'no notifications'));
+			.then(() => notifications && jb.db.mainWatchableHandler && jb.db.mainWatchableHandler.endTransaction(notifications === 'no notifications'));
 	}
 })
 
@@ -1090,14 +1083,14 @@ jb.component('isRef', {
   params: [
     {id: 'obj', mandatory: true}
   ],
-  impl: ({},obj) => jb.isRef(obj)
+  impl: ({},obj) => jb.db.isRef(obj)
 })
 
 jb.component('asRef', {
   params: [
     {id: 'obj', mandatory: true}
   ],
-  impl: ({},obj) => jb.asRef(obj)
+  impl: ({},obj) => jb.db.asRef(obj)
 })
 
 jb.component('data.switch', {
@@ -1194,11 +1187,13 @@ jb.component('waitFor',{
             timesoFar += interval
             if (timesoFar >= timeout) {
               clearInterval(toRelease)
+              jb.log('waitFor timeout',{ctx})
               reject('timeout')
             }
             if (waitingForPromise) return
             const v = check()
-            if (jb.isPromise(v)) {
+            jb.log('waitFor check',{v, ctx})
+            if (jb.utils.isPromise(v)) {
               waitingForPromise = true
               v.then(_v=> {
                 waitingForPromise = false

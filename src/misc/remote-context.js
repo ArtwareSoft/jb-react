@@ -2,7 +2,7 @@ jb.remoteCtx = {
     stripCtx(ctx) {
         if (!ctx) return null
         const isJS = typeof ctx.profile == 'function'
-        const profText = jb.prettyPrint(ctx.profile)
+        const profText = jb.utils.prettyPrint(ctx.profile)
         const vars = jb.objFromEntries(jb.entries(ctx.vars).filter(e => e[0] == '$disableLog' || profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
         const data = profText.match(/({data})|(ctx.data)|(%%)/) && this.stripData(ctx.data) 
@@ -32,7 +32,7 @@ jb.remoteCtx = {
     stripFunction(f) {
         const {profile,runCtx,path,param,srcPath} = f
         if (!profile || !runCtx) return this.stripJS(f)
-        const profText = jb.prettyPrint(profile)
+        const profText = jb.utils.prettyPrint(profile)
         const profNoJS = this.stripJSFromProfile(profile)
         const vars = jb.objFromEntries(jb.entries(runCtx.vars).filter(e => e[0] == '$disableLog' || profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
@@ -74,7 +74,7 @@ jb.remoteCtx = {
     serializeCmp(compId) {
         if (!jb.comps[compId])
             return jb.logError('no component of id ',{compId}),''
-        return jb.prettyPrint({compId, ...jb.comps[compId],
+        return jb.utils.prettyPrint({compId, ...jb.comps[compId],
             location: jb.comps[compId][jb.location], loadingPhase: jb.comps[compId][jb.loadingPhase]} )
     },
     deSerializeCmp(code) {

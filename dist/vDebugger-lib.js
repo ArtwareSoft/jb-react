@@ -102,7 +102,7 @@ function prepareParams(comp_name,comp,profile,ctx) {
         const outerFunc = runCtx => {
           let func;
           if (arrayParam)
-            func = (ctx2,data2) => jb.flattenArray(valOrDefaultArray.map((prof,i)=> runCtx.extendVars(ctx2,data2).runInner(prof, {...param, as: 'asIs'}, path+'~'+i)))
+            func = (ctx2,data2) => jb.utils.flattenArray(valOrDefaultArray.map((prof,i)=> runCtx.extendVars(ctx2,data2).runInner(prof, {...param, as: 'asIs'}, path+'~'+i)))
           else
             func = (ctx2,data2) => jb_run(new jb.jbCtx(runCtx.extendVars(ctx2,data2),{ profile: valOrDefault, forcePath, path } ),param)
 
@@ -216,10 +216,10 @@ const jstypes = {
     ref(value) {
       if (Array.isArray(value))
         value = value[0]
-      return jb.asRef(value)
+      return jb.db.asRef(value)
     },
     'ref[]': function(value) {
-      return jb.asRef(value)
+      return jb.db.asRef(value)
     },
     value(value) {
       return jb.val(value)
@@ -289,6 +289,11 @@ class jbCtx {
 
 Object.assign(jb, { 
   frame: jbFrame, 
+  initLibs(libId, libObj) {
+    jb[libId] = jb[libId] || {}
+    Object.assign(jb[libId], libObj)
+    libObj.initializeModule && libObj.initializeModule()
+  },
   comps: {}, ctxDictionary: {}, run: jb_run, jbCtx, jstypes, tojstype 
 })
 })();
@@ -330,25 +335,6 @@ Object.assign(jb, {
           return value;
         }
     },
-    isDelayed: v => {
-        if (!v || v.constructor === {}.constructor || Array.isArray(v)) return
-        else if (typeof v === 'object')
-          return jb.isPromise(v)
-        else if (typeof v === 'function')
-          return jb.callbag.isCallbag(v)
-    },
-    toSynchArray: (item, synchCallbag) => {
-        if (! jb.asArray(item).find(v=> jb.callbag.isCallbag(v) || jb.isPromise(v))) return item;
-        const {pipe, fromIter, toPromiseArray, mapPromise,flatMap, map, isCallbag} = jb.callbag
-        if (isCallbag(item)) return synchCallbag ? toPromiseArray(pipe(item,map(x=> x && x.vars ? x.data : x ))) : item
-        if (Array.isArray(item) && isCallbag(item[0])) return synchCallbag ? toPromiseArray(pipe(item[0], map(x=> x && x.vars ? x.data : x ))) : item
-    
-        return pipe( // array of promises
-              fromIter(jb.asArray(item)),
-              mapPromise(x=> Promise.resolve(x)),
-              flatMap(v => Array.isArray(v) ? v : [v]),
-              toPromiseArray)
-    },
     subscribe: (source,listener) => jb.callbag.subscribe(listener)(source),
     log(logName, record, options) { jb.spy && jb.spy.log(logName, record, options) },
     logError(err,logObj) {
@@ -361,7 +347,7 @@ Object.assign(jb, {
     },
     val(ref) {
       if (ref == null || typeof ref != 'object') return ref
-      const handler = jb.refHandler(ref)
+      const handler = jb.db.refHandler(ref)
       if (handler)
         return handler.val(ref)
       return ref
@@ -391,7 +377,7 @@ Object.assign(jb, {
     entries(obj) {
         if (!obj || typeof obj != 'object') return [];
         let ret = [];
-        for(let i in obj) // please do not change. its keeps definition order !!!!
+        for(let i in obj) // please do not change. it keeps the definition order !!!!
             if (obj.hasOwnProperty && obj.hasOwnProperty(i) && i.indexOf('$jb_') != 0)
               ret.push([i,obj[i]])
         return ret
@@ -401,23 +387,24 @@ Object.assign(jb, {
         entries.forEach(e => res[e[0]] = e[1])
         return res
     },
-    unique: (ar,f) => {
-        f = f || (x=>x);
-        const keys = {}, res = [];
-        ar.forEach(e=>{
-          if (!keys[f(e)]) {
-            keys[f(e)] = true;
-            res.push(e)
-          }
-        })
-        return res;
-    },
+    asArray: v => v == null ? [] : (Array.isArray(v) ? v : [v]),
+    delay: (mSec,res) => new Promise(r=>setTimeout(()=>r(res),mSec)),
+})
+
+jb.initLibs('utils', { 
     isEmpty: o => Object.keys(o).length === 0,
     isObject: o => o != null && typeof o === 'object',
-    asArray: v => v == null ? [] : (Array.isArray(v) ? v : [v]),
-    filterEmpty: obj => Object.entries(obj).reduce((a,[k,v]) => (v == null ? a : {...a, [k]:v}), {}),
-    equals: (x,y) => x == y || jb.val(x) == jb.val(y),
-    delay: (mSec,res) => new Promise(r=>setTimeout(()=>r(res),mSec)),
+    tryWrapper: (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,{ctx: this.ctx}) }},
+    flattenArray: items => {
+      let out = [];
+      items.filter(i=>i).forEach(function(item) {
+        if (Array.isArray(item))
+          out = out.concat(item);
+        else
+          out.push(item);
+      })
+      return out;
+    },
     compareArrays: (arr1, arr2) => {
         if (arr1 === arr2)
           return true;
@@ -431,19 +418,56 @@ Object.assign(jb, {
         }
         return true;
     },
-    range: (start, count) => Array.apply(0, Array(count)).map((element, index) => index + start),
-    flattenArray: items => {
-        let out = [];
-        items.filter(i=>i).forEach(function(item) {
-          if (Array.isArray(item))
-            out = out.concat(item);
-          else
-            out.push(item);
-        })
-        return out;
+    isPromise: v => v && Object.prototype.toString.call(v) === '[object Promise]',
+    isDelayed: v => {
+      if (!v || v.constructor === {}.constructor || Array.isArray(v)) return
+      else if (typeof v === 'object')
+        return jb.utils.isPromise(v)
+      else if (typeof v === 'function')
+        return jb.callbag.isCallbag(v)
     },
-    isPromise: v => v && Object.prototype.toString.call(v) === '[object Promise]',    
-});
+    toSynchArray: (item, synchCallbag) => {
+      if (jb.utils.isPromise(item))
+        return item.then(x=>[x])
+
+      if (! jb.asArray(item).find(v=> jb.callbag.isCallbag(v) || jb.utils.isPromise(v))) return item
+      const {pipe, fromIter, toPromiseArray, mapPromise,flatMap, map, isCallbag} = jb.callbag
+      if (isCallbag(item)) return synchCallbag ? toPromiseArray(pipe(item,map(x=> x && x.vars ? x.data : x ))) : item
+      if (Array.isArray(item) && isCallbag(item[0])) return synchCallbag ? toPromiseArray(pipe(item[0], map(x=> x && x.vars ? x.data : x ))) : item
+  
+      return pipe( // array of promises
+              fromIter(jb.asArray(item)),
+              mapPromise(x=> Promise.resolve(x)),
+              flatMap(v => Array.isArray(v) ? v : [v]),
+              toPromiseArray)
+    },    
+    objectDiff(newObj, orig) {
+      if (orig === newObj) return {}
+      if (!jb.utils.isObject(orig) || !jb.utils.isObject(newObj)) return newObj
+      const deletedValues = Object.keys(orig).reduce((acc, key) =>
+          newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: '__undefined'}
+      , {})
+  
+      return Object.keys(newObj).reduce((acc, key) => {
+        if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key
+        const difference = jb.utils.objectDiff(newObj[key], orig[key])
+        if (jb.utils.isObject(difference) && jb.utils.isEmpty(difference)) return acc // return no diff
+        return { ...acc, [key]: difference } // return updated key
+      }, deletedValues)
+    },
+    unique: (ar,f) => {
+      f = f || (x=>x);
+      const keys = {}, res = [];
+      ar.forEach(e=>{
+        if (!keys[f(e)]) {
+          keys[f(e)] = true;
+          res.push(e)
+        }
+      })
+      return res;
+    },    
+})
+;
 
 (function() {
 function resolveFinishedPromise(val) {
@@ -464,10 +488,10 @@ function calcVar(ctx,varname,jstype) {
       res = ctx.vars[varname]
     else if (ctx.vars.scope && ctx.vars.scope[varname] !== undefined)
       res = ctx.vars.scope[varname]
-    else if (jb.resources && jb.resources[varname] !== undefined)
-      res = isRefType(jstype) ? jb.mainWatchableHandler.refOfPath([varname]) : jb.resource(varname)
-    else if (jb.consts && jb.consts[varname] !== undefined)
-      res = isRefType(jstype) ? jb.simpleValueByRefHandler.objectProperty(jb.consts,varname) : res = jb.consts[varname]
+    else if (jb.db.resources && jb.db.resources[varname] !== undefined)
+      res = isRefType(jstype) ? jb.db.mainWatchableHandler.refOfPath([varname]) : jb.db.resource(varname)
+    else if (jb.db.consts && jb.db.consts[varname] !== undefined)
+      res = isRefType(jstype) ? jb.db.simpleValueByRefHandler.objectProperty(jb.db.consts,varname) : res = jb.db.consts[varname]
   
     return resolveFinishedPromise(res)
 }
@@ -529,7 +553,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
       if (subExp.match(/]$/))
         subExp = subExp.slice(0,-1)
   
-      const refHandler = jb.objHandler(input)
+      const refHandler = jb.db.objHandler(input)
       const functionCallMatch = subExp.match(/=([a-zA-Z]*)\(?([^)]*)\)?/)
       if (functionCallMatch && jb.functions[functionCallMatch[1]])
           return tojstype(jb.functions[functionCallMatch[1]](ctx,functionCallMatch[2]),jstype,ctx)
@@ -592,7 +616,7 @@ function bool_expression(exp, ctx, parentParam) {
     const parts = exp.match(/(.+)(==|!=|<|>|>=|<=|\^=|\$=)(.+)/)
     if (!parts) {
       const ref = expression(exp, ctx, parentParam)
-      if (jb.isRef(ref))
+      if (jb.db.isRef(ref))
         return ref
       
       const val = jb.tostring(ref)
@@ -630,7 +654,7 @@ function bool_expression(exp, ctx, parentParam) {
 Object.assign(jb,{bool_expression,expression})
 })();
 
-Object.assign(jb, {
+jb.initLibs('db', {
     resources: {}, consts: {},
     simpleValueByRefHandler: {
         val(v) {
@@ -667,40 +691,40 @@ Object.assign(jb, {
     },
     resource: (id,val) => { 
         if (typeof val !== 'undefined')
-          jb.resources[id] = val
-        jb.mainWatchableHandler && jb.mainWatchableHandler.resourceReferred(id)
-        return jb.resources[id]
+          jb.db.resources[id] = val
+        jb.db.mainWatchableHandler && jb.db.mainWatchableHandler.resourceReferred(id)
+        return jb.db.resources[id]
     },
     passiveSym: Symbol.for('passive'),
-    passive: (id,val) => typeof val == 'undefined' ? jb.consts[id] : (jb.consts[id] = jb.markAsPassive(val || {})),
+    passive: (id,val) => typeof val == 'undefined' ? jb.db.consts[id] : (jb.db.consts[id] = jb.db.markAsPassive(val || {})),
     markAsPassive: obj => {
       if (obj && typeof obj == 'object') {
-        obj[jb.passiveSym] = true
-        Object.values(obj).forEach(v=>jb.markAsPassive(v))
+        obj[jb.db.passiveSym] = true
+        Object.values(obj).forEach(v=>jb.db.markAsPassive(v))
       }
       return obj
     },
     extraWatchableHandlers: [],
     extraWatchableHandler: (handler,oldHandler) => { 
-      jb.extraWatchableHandlers.push(handler)
-      const oldHandlerIndex = jb.extraWatchableHandlers.indexOf(oldHandler)
+      jb.db.extraWatchableHandlers.push(handler)
+      const oldHandlerIndex = jb.db.extraWatchableHandlers.indexOf(oldHandler)
       if (oldHandlerIndex != -1)
-        jb.extraWatchableHandlers.splice(oldHandlerIndex,1)
-      jb.watchableHandlers = [jb.mainWatchableHandler, ...jb.extraWatchableHandlers].map(x=>x)
+        jb.db.extraWatchableHandlers.splice(oldHandlerIndex,1)
+      jb.db.watchableHandlers = [jb.db.mainWatchableHandler, ...jb.db.extraWatchableHandlers].map(x=>x)
       return handler
     },
     initExtraWatchableHandler(resources, {oldHandler, initUIObserver} = {}) {
-      const res = jb.extraWatchableHandler(new jb.WatchableValueByRef(resources),oldHandler)
+      const res = jb.db.extraWatchableHandler(new jb.db.WatchableValueByRef(resources),oldHandler)
       initUIObserver && jb.ui && jb.ui.subscribeToRefChange(res)
       return res
     },
     setMainWatchableHandler: handler => { 
-      jb.mainWatchableHandler = handler
-      jb.watchableHandlers = [jb.mainWatchableHandler, ...jb.extraWatchableHandlers].map(x=>x)
+      jb.db.mainWatchableHandler = handler
+      jb.db.watchableHandlers = [jb.db.mainWatchableHandler, ...jb.db.extraWatchableHandlers].map(x=>x)
     },
     watchableHandlers: [],
     safeRefCall: (ref,f) => {
-      const handler = jb.refHandler(ref)
+      const handler = jb.db.refHandler(ref)
       if (!handler || !handler.isRef(ref))
         return jb.logError('invalid ref', {ref})
       return f(handler)
@@ -709,36 +733,36 @@ Object.assign(jb, {
     // handler for ref
     refHandler: ref => {
       if (ref && ref.handler) return ref.handler
-      if (jb.simpleValueByRefHandler.isRef(ref)) 
-        return jb.simpleValueByRefHandler
-      return jb.watchableHandlers.find(handler => handler.isRef(ref))
+      if (jb.db.simpleValueByRefHandler.isRef(ref)) 
+        return jb.db.simpleValueByRefHandler
+      return jb.db.watchableHandlers.find(handler => handler.isRef(ref))
     },
     // handler for object (including the case of ref)
     objHandler: obj => 
-        obj && jb.refHandler(obj) || jb.watchableHandlers.find(handler=> handler.watchable(obj)) || jb.simpleValueByRefHandler,
+        obj && jb.db.refHandler(obj) || jb.db.watchableHandlers.find(handler=> handler.watchable(obj)) || jb.db.simpleValueByRefHandler,
     asRef: obj => {
-      const watchableHanlder = jb.watchableHandlers.find(handler => handler.watchable(obj) || handler.isRef(obj))
+      const watchableHanlder = jb.db.watchableHandlers.find(handler => handler.watchable(obj) || handler.isRef(obj))
       if (watchableHanlder)
         return watchableHanlder.asRef(obj)
-      return jb.simpleValueByRefHandler.asRef(obj)
+      return jb.db.simpleValueByRefHandler.asRef(obj)
     },
     // the !srcCtx.probe blocks data change in probe
-    writeValue: (ref,value,srcCtx,noNotifications) => !srcCtx.probe && jb.safeRefCall(ref, h => {
+    writeValue: (ref,value,srcCtx,noNotifications) => !srcCtx.probe && jb.db.safeRefCall(ref, h => {
       noNotifications && h.startTransaction && h.startTransaction()
       h.writeValue(ref,value,srcCtx)
       noNotifications && h.endTransaction && h.endTransaction(true)
     }),
-    objectProperty: (obj,prop,srcCtx) => jb.objHandler(obj).objectProperty(obj,prop,srcCtx),
-    splice: (ref,args,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.splice(ref,args,srcCtx)),
-    move: (ref,toRef,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.move(ref,toRef,srcCtx)),
-    push: (ref,toAdd,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.push(ref,toAdd,srcCtx)),
-    doOp: (ref,op,srcCtx) => !srcCtx.probe && jb.safeRefCall(ref, h=>h.doOp(ref,op,srcCtx)),
-    isRef: ref => jb.refHandler(ref),
+    objectProperty: (obj,prop,srcCtx) => jb.db.objHandler(obj).objectProperty(obj,prop,srcCtx),
+    splice: (ref,args,srcCtx) => !srcCtx.probe && jb.db.safeRefCall(ref, h=>h.splice(ref,args,srcCtx)),
+    move: (ref,toRef,srcCtx) => !srcCtx.probe && jb.db.safeRefCall(ref, h=>h.move(ref,toRef,srcCtx)),
+    push: (ref,toAdd,srcCtx) => !srcCtx.probe && jb.db.safeRefCall(ref, h=>h.push(ref,toAdd,srcCtx)),
+    doOp: (ref,op,srcCtx) => !srcCtx.probe && jb.db.safeRefCall(ref, h=>h.doOp(ref,op,srcCtx)),
+    isRef: ref => jb.db.refHandler(ref),
     isWatchable: () => false, // overriden by the watchable-ref.js (if loaded)
-    isValid: ref => jb.safeRefCall(ref, h=>h.isValid(ref)),
-    //refreshRef: ref => jb.safeRefCall(ref, h=>h.refresh(ref)),    
-    pathOfRef: ref => jb.safeRefCall(ref, h=>h.pathOfRef(ref)),
-    refOfPath: path => jb.watchableHandlers.reduce((res,h) => res || h.refOfPath(path),null),
+    isValid: ref => jb.db.safeRefCall(ref, h=>h.isValid(ref)),
+    //refreshRef: ref => jb.db.safeRefCall(ref, h=>h.refresh(ref)),    
+    pathOfRef: ref => jb.db.safeRefCall(ref, h=>h.pathOfRef(ref)),
+    refOfPath: path => jb.db.watchableHandlers.reduce((res,h) => res || h.refOfPath(path),null),
 })
 
 ;
@@ -747,7 +771,7 @@ Object.assign(jb, {
     project: Symbol.for('project'),
     location: Symbol.for('location'),
     loadingPhase: Symbol.for('loadingPhase'),
-    component: (_id,comp) => {
+    component(_id,comp) {
       const id = jb.macroName(_id)
       try {
         const errStack = new Error().stack.split(/\r|\n/)
@@ -758,11 +782,11 @@ Object.assign(jb, {
       
         if (comp.watchableData !== undefined) {
           jb.comps[jb.addDataResourcePrefix(id)] = comp
-          return jb.resource(jb.removeDataResourcePrefix(id),comp.watchableData)
+          return jb.db.resource(jb.removeDataResourcePrefix(id),comp.watchableData)
         }
         if (comp.passiveData !== undefined) {
           jb.comps[jb.addDataResourcePrefix(id)] = comp
-          return jb.passive(jb.removeDataResourcePrefix(id),comp.passiveData)
+          return jb.db.passive(jb.removeDataResourcePrefix(id),comp.passiveData)
         }
       } catch(e) {
         console.log(e)
@@ -792,7 +816,7 @@ Object.assign(jb, {
         }
     },
     importAllMacros: () => ['var { ',
-        jb.unique(Object.keys(jb.macro).map(x=>x.split('_')[0])).join(', '), 
+        jb.utils.unique(Object.keys(jb.macro).map(x=>x.split('_')[0])).join(', '), 
     '} = jb.macro;'].join(''),
     registerMacro: id => {
         const macroId = jb.macroName(id).replace(/\./g, '_')
@@ -884,6 +908,48 @@ Object.assign(jb, {
     removeDataResourcePrefix: id => id.indexOf('dataResource.') == 0 ? id.slice('dataResource.'.length) : id,
     addDataResourcePrefix: id => id.indexOf('dataResource.') == 0 ? id : 'dataResource.' + id,
 
+})
+;
+
+jb.initLibs('loader', {
+    treeShake(comps, existing) {
+        const _comps = comps.filter(x=>!existing[x])
+        const dependent = jb.utils.unique(_comps.flatMap(cmpId => jb.loader.dependent(cmpId).filter(x=>!existing[x])))
+        if (!dependent.length) return _comps
+        const existingExtended = jb.objFromEntries([...Object.keys(existing), ..._comps ].map(x=>[x,true]) )
+        return [ ..._comps, ...jb.loader.treeShake(dependent, existingExtended)]
+    },
+    dependent(cmpId) {
+        if (jb.comps[cmpId])
+            return dependentOnObj(jb.comps[cmpId])
+        else if (jb.path(jb,cmpId.split('#').pop()))
+            return dependentOnFunc(jb.path(jb,cmpId.split('#').pop()))
+        else
+            jb.logError('can not find comp', {cmpId})
+        return []
+        
+        function dependentOnObj(obj) {
+            return [
+                ...(obj.$ ? [obj.$] : []),
+                ... Object.values(obj).filter(x=> x && typeof x == 'object').flatMap(x => dependentOnObj(x)),
+                ... Object.values(obj).filter(x=> x && typeof x == 'function').flatMap(x => dependentOnFunc(x)),
+            ]
+        }
+        function dependentOnFunc(func) {
+            return [...func.toString().matchAll(/\bjb\.([a-zA-Z_]+)\.?([a-zA-Z0-9_]*)\(/g)].map(e=>e[2] ? `#${e[1]}.${e[2]}` : `#${e[1]}`)
+        }
+    },
+    code(ids) {
+        const funcs = ids.filter(cmpId => !jb.comps[cmpId])
+        const cmps = ids.filter(cmpId => jb.comps[cmpId])
+        const libs = jb.utils.unique(funcs.map(x=> (x.match(/#([a-z]+)\./) || ['',''])[1] ).filter(x=>x).map(x=>x.slice(1))) // group by
+        const libsCode = libs.map(lib => {
+            const funcsCode = funcs.filter(x=>x.indexOf(lib) == 0).map(x=>jb.path(x)).join(',\n\t')
+            return `jb.initLibs('${lib}', {\n${funcsCode}\n})`
+        }).join('\n\n')
+        const compsCode = cmps.map(cmpId =>jb.utils.prettyPrintComp(cmpId,jb.comps[cmpId],{noMacros: true})).join('\n\n')
+        return [libsCode,compsCode].join('\n\n')
+    }
 })
 ;
 
@@ -1076,38 +1142,40 @@ jb.component('call', {
  	}
 })
 
-jb.pipe = function(ctx,ptName,passRx) {
-  let start = jb.toarray(ctx.data)
-  if (start.length == 0) start = [null]
-	if (typeof ctx.profile.items == 'string')
-		return ctx.runInner(ctx.profile.items,null,'items');
-	const profiles = jb.asArray(ctx.profile.items || ctx.profile[ptName]);
-	const innerPath = (ctx.profile.items && ctx.profile.items.sugar) ? ''
-		: (ctx.profile[ptName] ? (ptName + '~') : 'items~');
+jb.initLibs('utils', {
+  calcPipe(ctx,ptName,passRx) {
+    let start = jb.toarray(ctx.data)
+    if (start.length == 0) start = [null]
+    if (typeof ctx.profile.items == 'string')
+      return ctx.runInner(ctx.profile.items,null,'items');
+    const profiles = jb.asArray(ctx.profile.items || ctx.profile[ptName]);
+    const innerPath = (ctx.profile.items && ctx.profile.items.sugar) ? ''
+      : (ctx.profile[ptName] ? (ptName + '~') : 'items~');
 
-	if (ptName == '$pipe') // promise pipe
-		return profiles.reduce((deferred,prof,index) =>
-			deferred.then(data=>jb.toSynchArray(data, !passRx)).then(data=>step(prof,index,data))
-    , Promise.resolve(start))
-      .then(data=>jb.toSynchArray(data, !passRx))
+    if (ptName == '$pipe') // promise pipe
+      return profiles.reduce((deferred,prof,index) =>
+        deferred.then(data=>jb.utils.toSynchArray(data, !passRx)).then(data=>step(prof,index,data))
+      , Promise.resolve(start))
+        .then(data=>jb.utils.toSynchArray(data, !passRx))
 
-	return profiles.reduce((data,prof,index) => step(prof,index,data), start)
+    return profiles.reduce((data,prof,index) => step(prof,index,data), start)
 
-	function step(profile,i,data) {
-    if (!profile || profile.$disabled) return data;
-    const path = innerPath+i
-		const parentParam = (i < profiles.length - 1) ? { as: 'array'} : (ctx.parentParam || {}) ;
-		if (jb.profileType(profile) == 'aggregator')
-			return jb.run( new jb.jbCtx(ctx, { data, profile, path }), parentParam);
-		return [].concat.apply([],data.map(item =>
-				jb.run(new jb.jbCtx(ctx,{data: item, profile, path}), parentParam))
-			.filter(x=>x!=null)
-			.map(x=> {
-        const val = jb.val(x)
-        return Array.isArray(val) ? val : x 
-      }));
-	}
-}
+    function step(profile,i,data) {
+      if (!profile || profile.$disabled) return data;
+      const path = innerPath+i
+      const parentParam = (i < profiles.length - 1) ? { as: 'array'} : (ctx.parentParam || {}) ;
+      if (jb.profileType(profile) == 'aggregator')
+        return jb.run( new jb.jbCtx(ctx, { data, profile, path }), parentParam);
+      return [].concat.apply([],data.map(item =>
+          jb.run(new jb.jbCtx(ctx,{data: item, profile, path}), parentParam))
+        .filter(x=>x!=null)
+        .map(x=> {
+          const val = jb.val(x)
+          return Array.isArray(val) ? val : x 
+        }));
+    }
+  }
+})
 
 jb.component('pipeline', {
   type: 'data',
@@ -1115,7 +1183,7 @@ jb.component('pipeline', {
   params: [
     {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true, description: 'click "=" for functions list'}
   ],
-  impl: ctx => jb.pipe(ctx,'$pipeline')
+  impl: ctx => jb.utils.calcPipe(ctx,'$pipeline')
 })
 
 jb.component('pipe', {
@@ -1124,16 +1192,7 @@ jb.component('pipe', {
   params: [
     {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true}
   ],
-  impl: ctx => jb.pipe(ctx,'$pipe',false)
-})
-
-jb.component('pipePassRx', {
-  type: 'data',
-  description: 'wait for promises, do not wait for reactive data',
-  params: [
-    {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true}
-  ],
-  impl: ctx => jb.pipe(ctx,'$pipe',true)
+  impl: ctx => jb.utils.calcPipe(ctx,'$pipe',false)
 })
 
 jb.component('data.if', {
@@ -1349,15 +1408,15 @@ jb.component('writeValue', {
     {id: 'noNotifications', as: 'boolean'}
   ],
   impl: (ctx,to,value,noNotifications) => {
-    if (!jb.isRef(to)) {
+    if (!jb.db.isRef(to)) {
       ctx.run(ctx.profile.to,{as: 'ref'}) // for debug
       return jb.logError(`can not write to: ${ctx.profile.to}`, {ctx})
     }
     const val = jb.val(value)
-    if (jb.isDelayed(val))
-      return Promise.resolve(val).then(_val=>jb.writeValue(to,_val,ctx,noNotifications))
+    if (jb.utils.isPromise(val))
+      return Promise.resolve(val).then(_val=>jb.db.writeValue(to,_val,ctx,noNotifications))
     else
-      jb.writeValue(to,val,ctx,noNotifications)
+      jb.db.writeValue(to,val,ctx,noNotifications)
   }
 })
 
@@ -1367,7 +1426,7 @@ jb.component('property', {
     {id: 'prop', as: 'string', mandatory: true},
     {id: 'obj', defaultValue: '%%'}
   ],
-  impl: (ctx,prop,obj) =>	jb.objectProperty(obj,prop,ctx)
+  impl: (ctx,prop,obj) =>	jb.db.objectProperty(obj,prop,ctx)
 })
 
 jb.component('indexOf', {
@@ -1384,7 +1443,7 @@ jb.component('addToArray', {
     {id: 'array', as: 'ref', mandatory: true},
     {id: 'toAdd', as: 'array', mandatory: true}
   ],
-  impl: (ctx,array,toAdd) => jb.push(array, JSON.parse(JSON.stringify(toAdd)),ctx)
+  impl: (ctx,array,toAdd) => jb.db.push(array, JSON.parse(JSON.stringify(toAdd)),ctx)
 })
 
 jb.component('move', {
@@ -1394,7 +1453,7 @@ jb.component('move', {
     {id: 'from', as: 'ref', mandatory: true},
     {id: 'to', as: 'ref', mandatory: true}
   ],
-  impl: (ctx,from,_to) => jb.move(from,_to,ctx)
+  impl: (ctx,from,_to) => jb.db.move(from,_to,ctx)
 })
 
 jb.component('splice', {
@@ -1406,7 +1465,7 @@ jb.component('splice', {
     {id: 'itemsToAdd', as: 'array', defaultValue: []}
   ],
   impl: (ctx,array,fromIndex,noOfItemsToRemove,itemsToAdd) =>
-		jb.splice(array,[[fromIndex,noOfItemsToRemove,...itemsToAdd]],ctx)
+		jb.db.splice(array,[[fromIndex,noOfItemsToRemove,...itemsToAdd]],ctx)
 })
 
 jb.component('removeFromArray', {
@@ -1419,7 +1478,7 @@ jb.component('removeFromArray', {
   impl: (ctx,array,itemToRemove,_index) => {
 		const index = itemToRemove ? jb.toarray(array).indexOf(itemToRemove) : _index;
 		if (index != -1)
-			jb.splice(array,[[index,1]],ctx)
+			jb.db.splice(array,[[index,1]],ctx)
 	}
 })
 
@@ -1428,7 +1487,7 @@ jb.component('toggleBooleanValue', {
   params: [
     {id: 'of', as: 'ref'}
   ],
-  impl: (ctx,_of) => jb.writeValue(_of,jb.val(_of) ? false : true,ctx)
+  impl: (ctx,_of) => jb.db.writeValue(_of,jb.val(_of) ? false : true,ctx)
 })
 
 jb.component('slice', {
@@ -1451,9 +1510,9 @@ jb.component('sort', {
     {id: 'ascending', as: 'boolean', type: 'boolean'}
   ],
   impl: ({data},prop,lexical,ascending) => {
-		if (!data || ! Array.isArray(data)) return null;
-    let sortFunc;
-    const firstData = jb.entries(data[0]||{})[0][1]
+    if (!data || ! Array.isArray(data)) return null;
+    let sortFunc
+    const firstData = data[0] //jb.entries(data[0]||{})[0][1]
 		if (lexical || isNaN(firstData))
 			sortFunc = prop ? (x,y) => (x[prop] == y[prop] ? 0 : x[prop] < y[prop] ? -1 : 1) : (x,y) => (x == y ? 0 : x < y ? -1 : 1);
 		else
@@ -1776,7 +1835,7 @@ jb.component('unique', {
   type: 'aggregator',
   impl: (ctx,idFunc,items) => {
 		const _idFunc = idFunc.profile == '%%' ? x=>x : x => idFunc(ctx.setData(x));
-		return jb.unique(items,_idFunc);
+		return jb.utils.unique(items,_idFunc);
 	}
 })
 
@@ -1960,10 +2019,10 @@ jb.component('runActionOnItems', {
     {id: 'indexVariable', as: 'string'}
   ],
   impl: (ctx,items,action,notifications,indexVariable) => {
-		if (notifications && jb.mainWatchableHandler) jb.mainWatchableHandler.startTransaction()
+		if (notifications && jb.db.mainWatchableHandler) jb.db.mainWatchableHandler.startTransaction()
 		return (jb.val(items)||[]).reduce((def,item,i) => def.then(_ => action(ctx.setVar(indexVariable,i).setData(item))) ,Promise.resolve())
 			.catch((e) => jb.logException(e,'runActionOnItems',{item, action, ctx}))
-			.then(() => notifications && jb.mainWatchableHandler && jb.mainWatchableHandler.endTransaction(notifications === 'no notifications'));
+			.then(() => notifications && jb.db.mainWatchableHandler && jb.db.mainWatchableHandler.endTransaction(notifications === 'no notifications'));
 	}
 })
 
@@ -2147,14 +2206,14 @@ jb.component('isRef', {
   params: [
     {id: 'obj', mandatory: true}
   ],
-  impl: ({},obj) => jb.isRef(obj)
+  impl: ({},obj) => jb.db.isRef(obj)
 })
 
 jb.component('asRef', {
   params: [
     {id: 'obj', mandatory: true}
   ],
-  impl: ({},obj) => jb.asRef(obj)
+  impl: ({},obj) => jb.db.asRef(obj)
 })
 
 jb.component('data.switch', {
@@ -2251,11 +2310,13 @@ jb.component('waitFor',{
             timesoFar += interval
             if (timesoFar >= timeout) {
               clearInterval(toRelease)
+              jb.log('waitFor timeout',{ctx})
               reject('timeout')
             }
             if (waitingForPromise) return
             const v = check()
-            if (jb.isPromise(v)) {
+            jb.log('waitFor check',{v, ctx})
+            if (jb.utils.isPromise(v)) {
               waitingForPromise = true
               v.then(_v=> {
                 waitingForPromise = false
@@ -2414,7 +2475,7 @@ jb.callbag = {
           })
       },  
       takeUntil(notifier) {
-          if (jb.isPromise(notifier))
+          if (jb.utils.isPromise(notifier))
               notifier = jb.callbag.fromPromise(notifier)
           const UNIQUE = {}
           return source => (start, sink) => {
@@ -3162,7 +3223,7 @@ jb.callbag = {
       },
       fromCallBag: source => source,
       fromAny: (source, name, options) => {
-          const f = source && 'from' + (jb.isPromise(source) ? 'Promise'
+          const f = source && 'from' + (jb.utils.isPromise(source) ? 'Promise'
               : source.addEventListener ? 'Event'
               : typeof source[Symbol.iterator] === 'function' ? 'Iter'
               : '')
@@ -3220,7 +3281,7 @@ jb.component('source.watchableData', {
     {id: 'ref', as: 'ref' },
     {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
   ],
-  impl: (ctx,ref,includeChildren) => jb.callbag.map(x=>ctx.dataObj(x))(jb.refObservable(ref,{includeChildren, srcCtx: ctx}))
+  impl: (ctx,ref,includeChildren) => jb.callbag.map(x=>ctx.dataObj(x))(jb.db.refObservable(ref,{includeChildren, srcCtx: ctx}))
 })
 
 jb.component('source.callbag', {
@@ -3876,402 +3937,397 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var immu
 
 /******/ });;
 
-(function() {
-
 // const sampleRef = {
 //     $jb_obj: {}, // real object (or parent) val - may exist only in older version of the resource. may contain $jb_id for tracking
 //     $jb_childProp: 'title', // used for primitive props
 // }
 
-const isProxy = Symbol.for("isProxy"), originalVal = Symbol.for("originalVal"), targetVal = Symbol.for("targetVal"), jbId = Symbol("jbId")
+jb.initLibs('db', {
+  isProxy: Symbol.for("isProxy"), originalVal: Symbol.for("originalVal"), targetVal: Symbol.for("targetVal"), jbId: Symbol("jbId"),
 
-class WatchableValueByRef {
-  constructor(resources) {
-    this.resources = resources
-    this.objToPath = new Map()
-    this.idCounter = 1
-    this.opCounter = 1
-    this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])]
-    this.resourceChange = jb.callbag.subject()
-    this.observables = []
-    this.primitiveArraysDeltas = {}
+  WatchableValueByRef: class WatchableValueByRef {
+    constructor(resources) {
+      this.resources = resources
+      this.objToPath = new Map()
+      this.idCounter = 1
+      this.opCounter = 1
+      this.allowedTypes = [Object.getPrototypeOf({}),Object.getPrototypeOf([])]
+      this.resourceChange = jb.callbag.subject()
+      this.observables = []
+      this.primitiveArraysDeltas = {}
 
-    const resourcesObj = resources()
-    resourcesObj[jbId] = this.idCounter++
-    this.objToPath.set(resourcesObj[jbId],[])
-    this.propagateResourceChangeToObservables()
-  }
-  doOp(ref,opOnRef,srcCtx) {
-    try {
-      const opVal = opOnRef.$merge || opOnRef.$push || opOnRef.$splice || opOnRef.$set
-      if (!this.isRef(ref))
-        ref = this.asRef(ref);
+      const resourcesObj = resources()
+      resourcesObj[jb.db.jbId] = this.idCounter++
+      this.objToPath.set(resourcesObj[jb.db.jbId],[])
+      this.propagateResourceChangeToObservables()
+    }
+    doOp(ref,opOnRef,srcCtx) {
+      try {
+        const opVal = opOnRef.$merge || opOnRef.$push || opOnRef.$splice || opOnRef.$set
+        if (!this.isRef(ref))
+          ref = this.asRef(ref);
 
-      const path = this.removeLinksFromPath(this.pathOfRef(ref)), op = {}, oldVal = this.valOfPath(path);
-      if (!path || ref.$jb_val) return;
-      if (opOnRef.$set !== undefined && opOnRef.$set === oldVal) return;
-      if (opOnRef.$push) opOnRef.$push = jb.asArray(opOnRef.$push)
-      this.addJbId(path) // hash ancestors with jbId because the objects will be re-generated by redux
-      jb.path(op,path,opOnRef) // create op as nested object
-      const insertedIndex = jb.path(opOnRef.$splice,[0,2]) && jb.path(opOnRef.$splice,[0,0]) || opOnRef.$push && opVal.length
-      const insertedPath = insertedIndex != null && path.concat(insertedIndex)
-      const opEvent = {op: opOnRef, path, insertedPath, ref, srcCtx, oldVal, opVal, timeStamp: new Date().getTime(), opCounter: this.opCounter++}
-      this.resources(jb.immutableUpdate(this.resources(),op),opEvent)
-      const newVal = (opVal != null && opVal[isProxy]) ? opVal : this.valOfPath(path);
-      if (opOnRef.$push) {
-        opOnRef.$push.forEach((toAdd,i)=>
-          this.addObjToMap(toAdd,[...path,oldVal.length+i]))
-        newVal[jbId] = oldVal[jbId]
-        //opEvent.path.push(oldVal.length)
-        opEvent.ref = this.refOfPath(opEvent.path)
-      } else if (opOnRef.$set === null && typeof oldVal === 'object') { // delete object should return the path that was deleted
-        this.removeObjFromMap(oldVal)
-        this.addObjToMap(newVal,path)
-        opEvent.ref.$jb_path = () => path
-      } else if (opOnRef.$splice) {
-        opOnRef.$splice.forEach(ar=> {
-          this.fixSplicedPaths(path,ar)
-          oldVal.slice(ar[0],ar[0]+ar[1]).forEach(toRemove=>this.removeObjFromMap(toRemove))
-          jb.asArray(ar[2]).forEach(toAdd=>this.addObjToMap(toAdd,path.concat(newVal.indexOf(toAdd))))
-        })
-      } else {
+        const path = this.removeLinksFromPath(this.pathOfRef(ref)), op = {}, oldVal = this.valOfPath(path);
+        if (!path || ref.$jb_val) return;
+        if (opOnRef.$set !== undefined && opOnRef.$set === oldVal) return;
+        if (opOnRef.$push) opOnRef.$push = jb.asArray(opOnRef.$push)
+        this.addJbId(path) // hash ancestors with jbId because the objects will be re-generated by redux
+        jb.path(op,path,opOnRef) // create op as nested object
+        const insertedIndex = jb.path(opOnRef.$splice,[0,2]) && jb.path(opOnRef.$splice,[0,0]) || opOnRef.$push && opVal.length
+        const insertedPath = insertedIndex != null && path.concat(insertedIndex)
+        const opEvent = {op: opOnRef, path, insertedPath, ref, srcCtx, oldVal, opVal, timeStamp: new Date().getTime(), opCounter: this.opCounter++}
+        this.resources(jb.immutableUpdate(this.resources(),op),opEvent)
+        const newVal = (opVal != null && opVal[jb.db.isProxy]) ? opVal : this.valOfPath(path);
+        if (opOnRef.$push) {
+          opOnRef.$push.forEach((toAdd,i)=>
+            this.addObjToMap(toAdd,[...path,oldVal.length+i]))
+          newVal[jb.db.jbId] = oldVal[jb.db.jbId]
+          //opEvent.path.push(oldVal.length)
+          opEvent.ref = this.refOfPath(opEvent.path)
+        } else if (opOnRef.$set === null && typeof oldVal === 'object') { // delete object should return the path that was deleted
           this.removeObjFromMap(oldVal)
           this.addObjToMap(newVal,path)
-      }
-      if (opOnRef.$splice) {
-        this.primitiveArraysDeltas[ref.$jb_obj[jbId]] = this.primitiveArraysDeltas[ref.$jb_obj[jbId]] || []
-        this.primitiveArraysDeltas[ref.$jb_obj[jbId]].push(opOnRef.$splice)
-      }
-      opEvent.newVal = newVal;
-      jb.log('watchable notify doOp',{opEvent,ref,opOnRef,srcCtx})
-      if (this.transactionEventsLog)
-        this.transactionEventsLog.push(opEvent)
-      else
-        this.resourceChange.next(opEvent)
-      return opEvent
-    } catch(e) {
-      jb.logException(e,'doOp',{srcCtx,ref,opOnRef,srcCtx})
-    }
-  }
-  resourceReferred(resName) {
-    const resource = this.resources()[resName]
-    if (!this.objToPath.has(resource))
-      this.addObjToMap(resource,[resName])
-  }
-  addJbId(path) {
-    for(let i=0;i<path.length;i++) {
-      const innerPath = path.slice(0,i+1)
-      const val = this.valOfPath(innerPath,true)
-      if (val && typeof val === 'object' && !val[jbId]) {
-          val[jbId] = this.idCounter++
-          this.addObjToMap(val,innerPath)
-      }
-    }
-  }
-  addObjToMap(top,path) {
-    if (!top || top[isProxy] || top[jb.passiveSym] || top.$jb_val || typeof top !== 'object' || this.allowedTypes.indexOf(Object.getPrototypeOf(top)) == -1) return
-    if (top[jbId]) {
-        this.objToPath.set(top[jbId],path)
-        this.objToPath.delete(top)
-    } else {
-        this.objToPath.set(top,path)
-    }
-    Object.keys(top).filter(key=>typeof top[key] === 'object' && key.indexOf('$jb_') != 0)
-        .forEach(key => this.addObjToMap(top[key],[...path,key]))
-  }
-  removeObjFromMap(top,isInner) {
-    if (!top || typeof top !== 'object' || this.allowedTypes.indexOf(Object.getPrototypeOf(top)) == -1) return
-    this.objToPath.delete(top)
-    if (top[jbId] && isInner)
-        this.objToPath.delete(top[jbId])
-    Object.keys(top).filter(key=>key=>typeof top[key] === 'object' && key.indexOf('$jb_') != 0).forEach(key => this.removeObjFromMap(top[key],true))
-  }
-  fixSplicedPaths(path,spliceOp) {
-    const propDepth = path.length
-    Array.from(this.objToPath.keys())
-      .filter(k=>startsWithPath(this.objToPath.get(k)))
-//      .filter(k=>! spliceOp.reduce((res,ar) => res || jb.asArray(ar[2]).indexOf(k) != -1, false)) // do not touch the moved elem itslef
-      .forEach(k=>{
-        const newPath = this.objToPath.get(k)
-        newPath[propDepth] = fixIndexProp(+newPath[propDepth])
-        if (newPath[propDepth] >= 0)
-          this.objToPath.set(k,newPath)
-      })
-
-    function startsWithPath(toCompare) {
-      if (toCompare.length <= propDepth) return
-      for(let i=0;i<propDepth;i++)
-        if (toCompare[i] != path[i]) return
-      return true
-    }
-    function fixIndexProp(oldIndex) {
-      return oldIndex + (oldIndex < spliceOp[0] ? 0 : jb.asArray(spliceOp[2]).length - spliceOp[1])
-      //return oldIndex + spliceOp.reduce((delta,ar) => delta + (oldIndex < ar[0]) ? 0 : jb.asArray(ar[2]).length - ar[1],0)
-    }
-  }
-  pathOfRef(ref) {
-    if (ref.$jb_path)
-      return ref.$jb_path()
-    const path = this.isRef(ref) && (this.objToPath.get(ref.$jb_obj) || this.objToPath.get(ref.$jb_obj[jbId]))
-    if (path && ref.$jb_childProp !== undefined) {
-        this.refreshPrimitiveArrayRef(ref)
-        return [...path, ref.$jb_childProp]
-    }
-    return path
-  }
-  urlOfRef(ref) {
-    const path = this.pathOfRef(ref)
-    this.addJbId(path)
-    const byId = [ref.$jb_obj[jbId],ref.$jb_childProp].filter(x=>x != null).map(x=>(''+x).replace(/~|;|,/g,'')).join('~')
-    const byPath = path.map(x=>(''+x).replace(/~|;|,/g,'')).join('~')
-    return `${this.resources.id}://${byId};${byPath}`
-  }
-  refOfUrl(url) {
-    const path = url.split(';')[0].split('~')
-    return { handler: this, $jb_obj: {[jbId]: +path[0] }, ...path[1] ? {$jb_childProp: path[1]} : {} }
-  }
-  asRef(obj, silent) {
-    if (this.isRef(obj))
-      return obj
-    if (!obj || typeof obj !== 'object') return obj;
-    const actualObj = obj[isProxy] ? obj[targetVal] : obj
-    const path = this.objToPath.get(actualObj) || this.objToPath.get(actualObj[jbId])
-    if (path)
-        return { $jb_obj: this.valOfPath(path), handler: this, path: function() { return this.handler.pathOfRef(this)} }
-    if (!silent)
-      jb.logError('asRef can not make a watchable ref of obj',{obj})
-    return null;
-  }
-  valOfPath(path) {
-    return path.reduce((o,p)=>this.noProxy(o && o[p]),this.resources())
-  }
-  noProxy(val) {
-    return (val && val[isProxy] && val[originalVal]) || val
-  }
-  hasLinksInPath(path) {
-    let val = this.resources()
-    for(let i=0;i<path.length;i++) {
-      if (val && val[isProxy])
-        return true
-      val = val && val[path[i]]
-    }
-  }
-  removeLinksFromPath(path) {
-    if (!Array.isArray(path)) return
-    if (!this.hasLinksInPath(path))
-      return path
-    return path.reduce(({val,path} ,p) => {
-      const proxy = (val && val[isProxy])
-      const inner =  proxy ? val[originalVal] : val
-      const newPath = proxy ? (this.objToPath.get(inner) || this.objToPath.get(inner[jbId])) : path
-      return { val: inner && inner[p], path: [newPath,p].join('~') }
-    }, {val: this.resources(), path: ''}).path
-  }
-  refOfPath(path) {
-    const val = this.valOfPath(path);
-    if (!val || typeof val !== 'object' && path.length > 0) {
-      const parent = this.asRef(this.valOfPath(path.slice(0,-1)), true);
-      if (path.length == 1)
-        return {$jb_obj: this.resources(), $jb_childProp: path[0], handler: this, $jb_path: () => path }
-      return this.objectProperty(parent,path.slice(-1)[0])
-    }
-    return this.asRef(val)
-  }
-  asStr(ref) { // for logs
-    return this.pathOfRef(ref).join('~')
-  }
-  isValid(ref) {
-    return this.isRef(ref) && this.pathOfRef(ref)
-  }
-  val(ref) {
-    if (ref == null) return ref;
-    if (ref.$jb_val) return ref.$jb_val();
-
-    if (!ref.$jb_obj) return ref;
-    if (ref.handler != this) {
-      if (typeof ref.handler.val != 'function') debugger
-      return ref.handler.val(ref)
-    }
-    this.refreshPrimitiveArrayRef(ref)
-    const path = this.pathOfRef(ref);
-    if (!path) {
-      debugger
-      this.pathOfRef(ref)
-    }
-    return this.valOfPath(path)
-  }
-  watchable(val) {
-    return this.resources() === val || typeof val != 'number' && (this.objToPath.get(val) || (val && this.objToPath.get(val[jbId])))
-  }
-  isRef(ref) {
-    return ref && ref.$jb_obj && this.watchable(ref.$jb_obj);
-  }
-  objectProperty(obj,prop,ctx) {
-    if (!obj)
-      return jb.logError('watchable objectProperty: null obj',{obj,prop,ctx})
-    if (obj && obj[prop] && this.watchable(obj[prop]) && !obj[prop][isProxy])
-      return this.asRef(obj[prop])
-    const ref = this.asRef(obj)
-    if (ref && ref.$jb_obj) {
-      const ret = {$jb_obj: ref.$jb_obj, $jb_childProp: prop, handler: this, path: function() { return this.handler.pathOfRef(this)}}
-      if (this.isPrimitiveArray(ref.$jb_obj)) {
-        ret.$jb_delta_version = (this.primitiveArraysDeltas[ref.$jb_obj[jbId]] || []).length
-        ret.$jb_childProp = +prop
-      }
-      return ret
-    } else {
-      return obj[prop]; // not reffable
-    }
-  }
-  writeValue(ref,value,srcCtx) {
-    if (!ref || !this.isRef(ref) || !this.pathOfRef(ref))
-      return jb.logError('writeValue: err in ref', {srcCtx, ref, value})
-
-    jb.log('watchable writeValue',{ref,value,ref,srcCtx})
-    if (ref.$jb_val)
-      return ref.$jb_val(value)
-    if (this.val(ref) === value) return
-    return this.doOp(ref,{$set: this.createSecondaryLink(value)},srcCtx)
-  }
-  createSecondaryLink(val) {
-    if (val && typeof val === 'object' && !val[isProxy]) {
-      const ref = this.asRef(val,true);
-      if (ref && ref.$jb_obj)
-        return new Proxy(val, {
-          get: (o,p) => (p === targetVal) ? o : (p === isProxy) ? true : (p === originalVal ? val : (jb.val(this.asRef(val)))[p]),
-          set: (o,p,v) => o[p] = v
-        })
-    }
-    return val
-  }
-  splice(ref,args,srcCtx) {
-    return this.doOp(ref,{$splice: args },srcCtx)
-  }
-  move(fromRef,toRef,srcCtx) {
-    const fromPath = this.pathOfRef(fromRef), toPath = this.pathOfRef(toRef);
-    const sameArray = fromPath.slice(0,-1).join('~') == toPath.slice(0,-1).join('~');
-    const fromIndex = Number(fromPath.slice(-1));
-    let toIndex = Number(toPath.slice(-1));
-    const fromArray = this.refOfPath(fromPath.slice(0,-1)),toArray = this.refOfPath(toPath.slice(0,-1));
-    if (isNaN(fromIndex) || isNaN(toIndex))
-        return jb.logError('move: not array element',{srcCtx,fromRef,toRef})
-
-    var valToMove = jb.val(fromRef);
-    if (sameArray) {
-        //if (fromIndex < toIndex) toIndex--; // the deletion changes the index
-        const spliceParam = [[fromIndex,1],[toIndex,0,valToMove]]
-        spliceParam.fromIndex = fromIndex
-        spliceParam.toIndex = toIndex
-        return this.doOp(fromArray,{$splice: spliceParam },srcCtx)
-    }
-    this.startTransaction()
-    const spliceParam = [[fromIndex,1]]
-    spliceParam.fromIndex = fromIndex
-    spliceParam.toIndex = toIndex
-    spliceParam.toArray = toArray
-    this.doOp(fromArray,{$splice: spliceParam },srcCtx),
-    this.doOp(toArray,{$splice: [[toIndex,0,valToMove]] },srcCtx),
-    this.endTransaction()
-  }
-  isPrimitiveArray(arr) {
-    return Array.isArray(arr) && arr.some(x=> x != null && typeof x != 'object')
-  }
-  refreshPrimitiveArrayRef(ref) {
-    if (!this.isPrimitiveArray(ref.$jb_obj)) return
-    const arrayId = ref.$jb_obj[jbId]
-    const deltas = this.primitiveArraysDeltas[arrayId] || []
-    deltas.slice(ref.$jb_delta_version).forEach(group => {
-        if (group.fromIndex != undefined && group.fromIndex === ref.$jb_childProp) { // move
-          ref.$jb_childProp = group.toIndex
-          if (group.toArray)
-            ref.$jb_obj = group.toArray.$jb_obj
-          return
-        }
-        group.forEach(([from,toDelete,toAdd]) => { // splice
-          if (ref.$jb_childProp == -1) return
-          if (ref.$jb_childProp >= from && ref.$jb_childProp < from+toDelete) {
-            ref.$jb_childProp = -1
-          } else if (ref.$jb_childProp >= from) {
-            ref.$jb_childProp = ref.$jb_childProp - toDelete + (toAdd != null) ? 1 : 0
-          }
-        })
-    })
-    ref.$jb_delta_version = deltas.length
-  }
-
-  startTransaction() {
-    this.transactionEventsLog = []
-  }
-  endTransaction(doNotNotify) {
-    if (!doNotNotify)
-      (this.transactionEventsLog || []).forEach(opEvent=>this.resourceChange.next(opEvent))
-    delete this.transactionEventsLog
-  }
-  push(ref,value,srcCtx) {
-    return this.doOp(ref,{$push: this.createSecondaryLink(value)},srcCtx)
-  }
-  merge(ref,value,srcCtx) {
-    return this.doOp(ref,{$merge: this.createSecondaryLink(value)},srcCtx)
-  }
-  getOrCreateObservable({ref,srcCtx,includeChildren,cmp}) {
-      const subject = jb.callbag.subject()
-      const ctx = cmp && cmp.ctx || srcCtx || { path: ''}
-      const key = this.pathOfRef(ref).join('~') + ' : ' + ctx.path
-      //const recycleCounter = cmp && cmp.getAttribute && +(cmp.getAttribute('recycleCounter') || 0)
-      const obs = { key, ref,srcCtx,includeChildren, cmp, subject, ctx }
-
-      this.observables.push(obs)
-      this.observables.sort((e1,e2) => jb.comparePaths(e1.ctx.path, e2.ctx.path))
-      jb.log('register watchable observable',obs)
-      return subject
-  }
-  frame() {
-    return this.resources.frame || jb.frame
-  }
-  propagateResourceChangeToObservables() {
-    jb.subscribe(this.resourceChange, e=>{
-      const observablesToUpdate = this.observables.slice(0) // this.observables array may change in the notification process !!
-      const changed_path = this.removeLinksFromPath(this.pathOfRef(e.ref))
-      if (changed_path) observablesToUpdate.forEach(obs=> {
-        if (jb.path(obs,'cmp._destroyed')) {
-          if (this.observables.indexOf(obs) != -1) {
-            obs.subject.complete()
-            this.observables.splice(this.observables.indexOf(obs), 1);
-            jb.log('watchable observable removed',{obs})
-          }
+          opEvent.ref.$jb_path = () => path
+        } else if (opOnRef.$splice) {
+          opOnRef.$splice.forEach(ar=> {
+            this.fixSplicedPaths(path,ar)
+            oldVal.slice(ar[0],ar[0]+ar[1]).forEach(toRemove=>this.removeObjFromMap(toRemove))
+            jb.asArray(ar[2]).forEach(toAdd=>this.addObjToMap(toAdd,path.concat(newVal.indexOf(toAdd))))
+          })
         } else {
-          this.notifyOneObserver(e,obs,changed_path)
+            this.removeObjFromMap(oldVal)
+            this.addObjToMap(newVal,path)
         }
-      })
-    })
-  }
-
-  notifyOneObserver(e,obs,changed_path) {
-      let obsPath = jb.refHandler(obs.ref).pathOfRef(obs.ref)
-      obsPath = obsPath && this.removeLinksFromPath(obsPath)
-      if (!obsPath)
-        return jb.logError('watchable observable ref path is empty',{obs,e})
-      const diff = jb.comparePaths(changed_path, obsPath)
-      const isChildOfChange = diff == 1
-      const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
-      const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
-      if (diff == -1 || diff == 0 || includeChildrenYes || includeChildrenStructure) {
-          jb.log('notify watchable observable',{srcCtx: e.srcCtx,obs,e})
-          obs.subject.next(e)
+        if (opOnRef.$splice) {
+          this.primitiveArraysDeltas[ref.$jb_obj[jb.db.jbId]] = this.primitiveArraysDeltas[ref.$jb_obj[jb.db.jbId]] || []
+          this.primitiveArraysDeltas[ref.$jb_obj[jb.db.jbId]].push(opOnRef.$splice)
+        }
+        opEvent.newVal = newVal;
+        jb.log('watchable notify doOp',{opEvent,ref,opOnRef,srcCtx})
+        if (this.transactionEventsLog)
+          this.transactionEventsLog.push(opEvent)
+        else
+          this.resourceChange.next(opEvent)
+        return opEvent
+      } catch(e) {
+        jb.logException(e,'doOp',{srcCtx,ref,opOnRef,srcCtx})
       }
-  }
+    }
+    resourceReferred(resName) {
+      const resource = this.resources()[resName]
+      if (!this.objToPath.has(resource))
+        this.addObjToMap(resource,[resName])
+    }
+    addJbId(path) {
+      for(let i=0;i<path.length;i++) {
+        const innerPath = path.slice(0,i+1)
+        const val = this.valOfPath(innerPath,true)
+        if (val && typeof val === 'object' && !val[jb.db.jbId]) {
+            val[jb.db.jbId] = this.idCounter++
+            this.addObjToMap(val,innerPath)
+        }
+      }
+    }
+    addObjToMap(top,path) {
+      if (!top || top[jb.db.isProxy] || top[jb.db.passiveSym] || top.$jb_val || typeof top !== 'object' || this.allowedTypes.indexOf(Object.getPrototypeOf(top)) == -1) return
+      if (top[jb.db.jbId]) {
+          this.objToPath.set(top[jb.db.jbId],path)
+          this.objToPath.delete(top)
+      } else {
+          this.objToPath.set(top,path)
+      }
+      Object.keys(top).filter(key=>typeof top[key] === 'object' && key.indexOf('$jb_') != 0)
+          .forEach(key => this.addObjToMap(top[key],[...path,key]))
+    }
+    removeObjFromMap(top,isInner) {
+      if (!top || typeof top !== 'object' || this.allowedTypes.indexOf(Object.getPrototypeOf(top)) == -1) return
+      this.objToPath.delete(top)
+      if (top[jb.db.jbId] && isInner)
+          this.objToPath.delete(top[jb.db.jbId])
+      Object.keys(top).filter(key=>typeof top[key] === 'object' && key.indexOf('$jb_') != 0).forEach(key => this.removeObjFromMap(top[key],true))
+    }
+    fixSplicedPaths(path,spliceOp) {
+      const propDepth = path.length
+      Array.from(this.objToPath.keys())
+        .filter(k=>startsWithPath(this.objToPath.get(k)))
+  //      .filter(k=>! spliceOp.reduce((res,ar) => res || jb.asArray(ar[2]).indexOf(k) != -1, false)) // do not touch the moved elem itslef
+        .forEach(k=>{
+          const newPath = this.objToPath.get(k)
+          newPath[propDepth] = fixIndexProp(+newPath[propDepth])
+          if (newPath[propDepth] >= 0)
+            this.objToPath.set(k,newPath)
+        })
 
-  dispose() {
-    this.resourceChange.complete()
-  }
-}
+      function startsWithPath(toCompare) {
+        if (toCompare.length <= propDepth) return
+        for(let i=0;i<propDepth;i++)
+          if (toCompare[i] != path[i]) return
+        return true
+      }
+      function fixIndexProp(oldIndex) {
+        return oldIndex + (oldIndex < spliceOp[0] ? 0 : jb.asArray(spliceOp[2]).length - spliceOp[1])
+        //return oldIndex + spliceOp.reduce((delta,ar) => delta + (oldIndex < ar[0]) ? 0 : jb.asArray(ar[2]).length - ar[1],0)
+      }
+    }
+    pathOfRef(ref) {
+      if (ref.$jb_path)
+        return ref.$jb_path()
+      const path = this.isRef(ref) && (this.objToPath.get(ref.$jb_obj) || this.objToPath.get(ref.$jb_obj[jb.db.jbId]))
+      if (path && ref.$jb_childProp !== undefined) {
+          this.refreshPrimitiveArrayRef(ref)
+          return [...path, ref.$jb_childProp]
+      }
+      return path
+    }
+    urlOfRef(ref) {
+      const path = this.pathOfRef(ref)
+      this.addJbId(path)
+      const byId = [ref.$jb_obj[jb.db.jbId],ref.$jb_childProp].filter(x=>x != null).map(x=>(''+x).replace(/~|;|,/g,'')).join('~')
+      const byPath = path.map(x=>(''+x).replace(/~|;|,/g,'')).join('~')
+      return `${this.resources.id}://${byId};${byPath}`
+    }
+    refOfUrl(url) {
+      const path = url.split(';')[0].split('~')
+      return { handler: this, $jb_obj: {[jb.db.jbId]: +path[0] }, ...path[1] ? {$jb_childProp: path[1]} : {} }
+    }
+    asRef(obj, silent) {
+      if (this.isRef(obj))
+        return obj
+      if (!obj || typeof obj !== 'object') return obj;
+      const actualObj = obj[jb.db.isProxy] ? obj[jb.db.targetVal] : obj
+      const path = this.objToPath.get(actualObj) || this.objToPath.get(actualObj[jb.db.jbId])
+      if (path)
+          return { $jb_obj: this.valOfPath(path), handler: this, path: function() { return this.handler.pathOfRef(this)} }
+      if (!silent)
+        jb.logError('asRef can not make a watchable ref of obj',{obj})
+      return null;
+    }
+    valOfPath(path) {
+      return path.reduce((o,p)=>this.noProxy(o && o[p]),this.resources())
+    }
+    noProxy(val) {
+      return (val && val[jb.db.isProxy] && val[jb.db.originalVal]) || val
+    }
+    hasLinksInPath(path) {
+      let val = this.resources()
+      for(let i=0;i<path.length;i++) {
+        if (val && val[jb.db.isProxy])
+          return true
+        val = val && val[path[i]]
+      }
+    }
+    removeLinksFromPath(path) {
+      if (!Array.isArray(path)) return
+      if (!this.hasLinksInPath(path))
+        return path
+      return path.reduce(({val,path} ,p) => {
+        const proxy = (val && val[jb.db.isProxy])
+        const inner =  proxy ? val[jb.db.originalVal] : val
+        const newPath = proxy ? (this.objToPath.get(inner) || this.objToPath.get(inner[jb.db.jbId])) : path
+        return { val: inner && inner[p], path: [newPath,p].join('~') }
+      }, {val: this.resources(), path: ''}).path
+    }
+    refOfPath(path) {
+      const val = this.valOfPath(path);
+      if (!val || typeof val !== 'object' && path.length > 0) {
+        const parent = this.asRef(this.valOfPath(path.slice(0,-1)), true);
+        if (path.length == 1)
+          return {$jb_obj: this.resources(), $jb_childProp: path[0], handler: this, $jb_path: () => path }
+        return this.objectProperty(parent,path.slice(-1)[0])
+      }
+      return this.asRef(val)
+    }
+    asStr(ref) { // for logs
+      return this.pathOfRef(ref).join('~')
+    }
+    isValid(ref) {
+      return this.isRef(ref) && this.pathOfRef(ref)
+    }
+    val(ref) {
+      if (ref == null) return ref;
+      if (ref.$jb_val) return ref.$jb_val();
 
-const resourcesRef = val => typeof val == 'undefined' ? jb.resources : (jb.resources = val)
-resourcesRef.id = 'resources'
+      if (!ref.$jb_obj) return ref;
+      if (ref.handler != this) {
+        if (typeof ref.handler.val != 'function') debugger
+        return ref.handler.val(ref)
+      }
+      this.refreshPrimitiveArrayRef(ref)
+      const path = this.pathOfRef(ref);
+      if (!path) {
+        debugger
+        this.pathOfRef(ref)
+      }
+      return this.valOfPath(path)
+    }
+    watchable(val) {
+      return this.resources() === val || typeof val != 'number' && (this.objToPath.get(val) || (val && this.objToPath.get(val[jb.db.jbId])))
+    }
+    isRef(ref) {
+      return ref && ref.$jb_obj && this.watchable(ref.$jb_obj);
+    }
+    objectProperty(obj,prop,ctx) {
+      if (!obj)
+        return jb.logError('watchable objectProperty: null obj',{obj,prop,ctx})
+      if (obj && obj[prop] && this.watchable(obj[prop]) && !obj[prop][jb.db.isProxy])
+        return this.asRef(obj[prop])
+      const ref = this.asRef(obj)
+      if (ref && ref.$jb_obj) {
+        const ret = {$jb_obj: ref.$jb_obj, $jb_childProp: prop, handler: this, path: function() { return this.handler.pathOfRef(this)}}
+        if (this.isPrimitiveArray(ref.$jb_obj)) {
+          ret.$jb_delta_version = (this.primitiveArraysDeltas[ref.$jb_obj[jb.db.jbId]] || []).length
+          ret.$jb_childProp = +prop
+        }
+        return ret
+      } else {
+        return obj[prop]; // not reffable
+      }
+    }
+    writeValue(ref,value,srcCtx) {
+      if (!ref || !this.isRef(ref) || !this.pathOfRef(ref))
+        return jb.logError('writeValue: err in ref', {srcCtx, ref, value})
 
-Object.assign(jb, {
-    WatchableValueByRef,
-    comparePaths(path1,path2) { // 0- equals, -1,1 means contains -2,2 lexical
+      jb.log('watchable writeValue',{ref,value,ref,srcCtx})
+      if (ref.$jb_val)
+        return ref.$jb_val(value)
+      if (this.val(ref) === value) return
+      return this.doOp(ref,{$set: this.createSecondaryLink(value)},srcCtx)
+    }
+    createSecondaryLink(val) {
+      if (val && typeof val === 'object' && !val[jb.db.isProxy]) {
+        const ref = this.asRef(val,true);
+        if (ref && ref.$jb_obj)
+          return new Proxy(val, {
+            get: (o,p) => (p === jb.db.targetVal) ? o : (p === jb.db.isProxy) ? true : (p === jb.db.originalVal ? val : (jb.val(this.asRef(val)))[p]),
+            set: (o,p,v) => o[p] = v
+          })
+      }
+      return val
+    }
+    splice(ref,args,srcCtx) {
+      return this.doOp(ref,{$splice: args },srcCtx)
+    }
+    move(fromRef,toRef,srcCtx) {
+      const fromPath = this.pathOfRef(fromRef), toPath = this.pathOfRef(toRef);
+      const sameArray = fromPath.slice(0,-1).join('~') == toPath.slice(0,-1).join('~');
+      const fromIndex = Number(fromPath.slice(-1));
+      let toIndex = Number(toPath.slice(-1));
+      const fromArray = this.refOfPath(fromPath.slice(0,-1)),toArray = this.refOfPath(toPath.slice(0,-1));
+      if (isNaN(fromIndex) || isNaN(toIndex))
+          return jb.logError('move: not array element',{srcCtx,fromRef,toRef})
+
+      var valToMove = jb.val(fromRef);
+      if (sameArray) {
+          //if (fromIndex < toIndex) toIndex--; // the deletion changes the index
+          const spliceParam = [[fromIndex,1],[toIndex,0,valToMove]]
+          spliceParam.fromIndex = fromIndex
+          spliceParam.toIndex = toIndex
+          return this.doOp(fromArray,{$splice: spliceParam },srcCtx)
+      }
+      this.startTransaction()
+      const spliceParam = [[fromIndex,1]]
+      spliceParam.fromIndex = fromIndex
+      spliceParam.toIndex = toIndex
+      spliceParam.toArray = toArray
+      this.doOp(fromArray,{$splice: spliceParam },srcCtx),
+      this.doOp(toArray,{$splice: [[toIndex,0,valToMove]] },srcCtx),
+      this.endTransaction()
+    }
+    isPrimitiveArray(arr) {
+      return Array.isArray(arr) && arr.some(x=> x != null && typeof x != 'object')
+    }
+    refreshPrimitiveArrayRef(ref) {
+      if (!this.isPrimitiveArray(ref.$jb_obj)) return
+      const arrayId = ref.$jb_obj[jb.db.jbId]
+      const deltas = this.primitiveArraysDeltas[arrayId] || []
+      deltas.slice(ref.$jb_delta_version).forEach(group => {
+          if (group.fromIndex != undefined && group.fromIndex === ref.$jb_childProp) { // move
+            ref.$jb_childProp = group.toIndex
+            if (group.toArray)
+              ref.$jb_obj = group.toArray.$jb_obj
+            return
+          }
+          group.forEach(([from,toDelete,toAdd]) => { // splice
+            if (ref.$jb_childProp == -1) return
+            if (ref.$jb_childProp >= from && ref.$jb_childProp < from+toDelete) {
+              ref.$jb_childProp = -1
+            } else if (ref.$jb_childProp >= from) {
+              ref.$jb_childProp = ref.$jb_childProp - toDelete + (toAdd != null) ? 1 : 0
+            }
+          })
+      })
+      ref.$jb_delta_version = deltas.length
+    }
+
+    startTransaction() {
+      this.transactionEventsLog = []
+    }
+    endTransaction(doNotNotify) {
+      if (!doNotNotify)
+        (this.transactionEventsLog || []).forEach(opEvent=>this.resourceChange.next(opEvent))
+      delete this.transactionEventsLog
+    }
+    push(ref,value,srcCtx) {
+      return this.doOp(ref,{$push: this.createSecondaryLink(value)},srcCtx)
+    }
+    merge(ref,value,srcCtx) {
+      return this.doOp(ref,{$merge: this.createSecondaryLink(value)},srcCtx)
+    }
+    getOrCreateObservable({ref,srcCtx,includeChildren,cmp}) {
+        const subject = jb.callbag.subject()
+        const ctx = cmp && cmp.ctx || srcCtx || { path: ''}
+        const key = this.pathOfRef(ref).join('~') + ' : ' + ctx.path
+        //const recycleCounter = cmp && cmp.getAttribute && +(cmp.getAttribute('recycleCounter') || 0)
+        const obs = { key, ref,srcCtx,includeChildren, cmp, subject, ctx }
+
+        this.observables.push(obs)
+        this.observables.sort((e1,e2) => jb.db.comparePaths(e1.ctx.path, e2.ctx.path))
+        jb.log('register watchable observable',obs)
+        return subject
+    }
+    frame() {
+      return this.resources.frame || jb.frame
+    }
+    propagateResourceChangeToObservables() {
+      jb.subscribe(this.resourceChange, e=>{
+        const observablesToUpdate = this.observables.slice(0) // this.observables array may change in the notification process !!
+        const changed_path = this.removeLinksFromPath(this.pathOfRef(e.ref))
+        if (changed_path) observablesToUpdate.forEach(obs=> {
+          if (jb.path(obs,'cmp._destroyed')) {
+            if (this.observables.indexOf(obs) != -1) {
+              obs.subject.complete()
+              this.observables.splice(this.observables.indexOf(obs), 1);
+              jb.log('watchable observable removed',{obs})
+            }
+          } else {
+            this.notifyOneObserver(e,obs,changed_path)
+          }
+        })
+      })
+    }
+
+    notifyOneObserver(e,obs,changed_path) {
+        let obsPath = jb.db.refHandler(obs.ref).pathOfRef(obs.ref)
+        obsPath = obsPath && this.removeLinksFromPath(obsPath)
+        if (!obsPath)
+          return jb.logError('watchable observable ref path is empty',{obs,e})
+        const diff = jb.db.comparePaths(changed_path, obsPath)
+        const isChildOfChange = diff == 1
+        const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
+        const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
+        if (diff == -1 || diff == 0 || includeChildrenYes || includeChildrenStructure) {
+            jb.log('notify watchable observable',{srcCtx: e.srcCtx,obs,e})
+            obs.subject.next(e)
+        }
+    }
+
+    dispose() {
+      this.resourceChange.complete()
+    }
+  },
+
+  resourcesRef: val => typeof val == 'undefined' ? jb.db.resources : (jb.db.resources = val),
+  comparePaths(path1,path2) { // 0- equals, -1,1 means contains -2,2 lexical
         path1 = path1 || ''
         path2 = path2 || ''
         let i=0;
@@ -4280,24 +4336,26 @@ Object.assign(jb, {
         if (i == path1.length && i < path2.length) return -1;
         if (i == path2.length && i < path1.length) return 1;
         return path1[i] < path2[i] ? -2 : 2
-    },
-    isWatchable: ref => jb.refHandler(ref) instanceof WatchableValueByRef || ref && ref.$jb_observable,
-    refObservable(ref,{cmp,includeChildren,srcCtx} = {}) { // cmp._destroyed is checked before notification
+  },
+  isWatchable: ref => jb.db.refHandler(ref) instanceof jb.db.WatchableValueByRef || ref && ref.$jb_observable,
+  refObservable(ref,{cmp,includeChildren,srcCtx} = {}) { // cmp._destroyed is checked before notification
       if (ref && ref.$jb_observable)
         return ref.$jb_observable(cmp)
-      if (!jb.isWatchable(ref)) {
+      if (!jb.db.isWatchable(ref)) {
         jb.logError('ref is not watchable: ', {ref, cmp,srcCtx})
         return jb.callbag.fromIter([])
       }
-      return jb.refHandler(ref).getOrCreateObservable({ref,cmp,includeChildren,srcCtx})
-    },
-    rebuildRefHandler() { // used to clean after tests
-      jb.mainWatchableHandler && jb.mainWatchableHandler.dispose()
-      jb.setMainWatchableHandler(new WatchableValueByRef(resourcesRef))
-    }
+      return jb.db.refHandler(ref).getOrCreateObservable({ref,cmp,includeChildren,srcCtx})
+  },
+  rebuildRefHandler() { // used to clean after tests
+      jb.db.mainWatchableHandler && jb.db.mainWatchableHandler.dispose()
+      jb.db.setMainWatchableHandler(new jb.db.WatchableValueByRef(jb.db.resourcesRef))
+  },
+  initializeModule() {
+    jb.db.resourcesRef.id = 'resources'
+    jb.db.setMainWatchableHandler(new jb.db.WatchableValueByRef(jb.db.resourcesRef))
+  }
 })
-
-jb.setMainWatchableHandler(new WatchableValueByRef(resourcesRef))
 
 jb.component('runTransaction', {
   type: 'action',
@@ -4309,375 +4367,351 @@ jb.component('runTransaction', {
 		const actions = jb.asArray(ctx.profile.actions || ctx.profile['$runActions'] || []).filter(x=>x);
 		const innerPath =  (ctx.profile.actions && ctx.profile.actions.sugar) ? ''
 			: (ctx.profile['$runActions'] ? '$runActions~' : 'items~');
-    jb.mainWatchableHandler.startTransaction()
+    jb.db.mainWatchableHandler.startTransaction()
     return actions.reduce((def,action,index) =>
 				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index )) ,Promise.resolve())
 			.catch((e) => jb.logException(e,'runTransaction',{ctx}))
-      .then(() => jb.mainWatchableHandler.endTransaction(ctx.params.noNotifications))
+      .then(() => jb.db.mainWatchableHandler.endTransaction(ctx.params.noNotifications))
 	}
 })
-
-})()
 ;
 
-(function(){
-jb.ui = jb.ui || {}
-const ui = jb.ui
-const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,{ f, ctx: this && this.ctx }) }}
+jb.initLibs('ui', {
+    h(cmpOrTag,attributes,children) {
+        if (cmpOrTag instanceof jb.ui.VNode) return cmpOrTag // Vdom
+        if (cmpOrTag && cmpOrTag.renderVdom)
+            return cmpOrTag.renderVdomAndFollowUp()
+    
+        return new jb.ui.VNode(cmpOrTag,attributes,children)
+    },
+    compareVdom(b,after,ctx) {
+        const a = after instanceof jb.ui.VNode ? jb.ui.stripVdom(after) : after
+        jb.log('vdom diff compare',{before: b,after : a,ctx})
+        const attributes = jb.utils.objectDiff(a.attributes || {}, b.attributes || {})
+        const children = childDiff(b.children || [],a.children || [])
+        return { 
+            ...(Object.keys(attributes).length ? {attributes} : {}), 
+            ...(children ? {children} : {}),
+            ...(a.tag != b.tag ? { tag: a.tag} : {})
+        }
 
-function h(cmpOrTag,attributes,children) {
-    if (cmpOrTag instanceof ui.VNode) return cmpOrTag // Vdom
-    if (cmpOrTag && cmpOrTag.renderVdom)
-        return cmpOrTag.renderVdomAndFollowUp()
-   
-    return new jb.ui.VNode(cmpOrTag,attributes,children)
-}
+        function childDiff(b,a) {
+            if (b.length == 0 && a.length ==0) return
+            if (a.length == 1 && b.length == 1 && a[0].tag == b[0].tag)
+                return { 0: {...jb.ui.compareVdom(b[0],a[0],ctx),__afterIndex: 0}, length: 1 }
+            jb.log('vdom child diff start',{before: b,after: a,ctx})
+            const beforeWithIndex = b.map((e,i)=> ({i, ...e}))
+            let remainingBefore = beforeWithIndex.slice(0)
+            // locating before-objects in after-array. done in two stages. also calcualing the remaining before objects that were not found
+            const afterToBeforeMap = a.map(toLocate => locateVdom(toLocate,remainingBefore))
+            a.forEach((toLocate,i) => afterToBeforeMap[i] = afterToBeforeMap[i] || sameIndexSameTag(toLocate,i,remainingBefore))
 
-function compareVdom(b,after,ctx) {
-    const a = after instanceof ui.VNode ? ui.stripVdom(after) : after
-    jb.log('vdom diff compare',{before: b,after : a,ctx})
-    const attributes = jb.objectDiff(a.attributes || {}, b.attributes || {})
-    const children = childDiff(b.children || [],a.children || [])
-    return { 
-        ...(Object.keys(attributes).length ? {attributes} : {}), 
-        ...(children ? {children} : {}),
-        ...(a.tag != b.tag ? { tag: a.tag} : {})
-    }
-
-    function childDiff(b,a) {
-        if (b.length == 0 && a.length ==0) return
-        if (a.length == 1 && b.length == 1 && a[0].tag == b[0].tag)
-            return { 0: {...compareVdom(b[0],a[0],ctx),__afterIndex: 0}, length: 1 }
-        jb.log('vdom child diff start',{before: b,after: a,ctx})
-        const beforeWithIndex = b.map((e,i)=> ({i, ...e}))
-        let remainingBefore = beforeWithIndex.slice(0)
-        // locating before-objects in after-array. done in two stages. also calcualing the remaining before objects that were not found
-        const afterToBeforeMap = a.map(toLocate => locateVdom(toLocate,remainingBefore))
-        a.forEach((toLocate,i) => afterToBeforeMap[i] = afterToBeforeMap[i] || sameIndexSameTag(toLocate,i,remainingBefore))
-
-        const reused = []
-        const res = { length: 0, sameOrder: true }
-        beforeWithIndex.forEach( (e,i) => {
-            const __afterIndex = afterToBeforeMap.indexOf(e)
-            if (__afterIndex != i) res.sameOrder = false
-            if (__afterIndex == -1) {
-                res.length = i+1
-                res[i] =  {$: 'delete' } //, __afterIndex: i }
-            } else {
-                reused[__afterIndex] = true
-                const innerDiff = { __afterIndex, ...compareVdom(e, a[__afterIndex],ctx), ...(e.$remount ? {remount: true}: {}) }
-                if (Object.keys(innerDiff).length > 1) {
-                    res[i] = innerDiff
+            const reused = []
+            const res = { length: 0, sameOrder: true }
+            beforeWithIndex.forEach( (e,i) => {
+                const __afterIndex = afterToBeforeMap.indexOf(e)
+                if (__afterIndex != i) res.sameOrder = false
+                if (__afterIndex == -1) {
                     res.length = i+1
+                    res[i] =  {$: 'delete' } //, __afterIndex: i }
+                } else {
+                    reused[__afterIndex] = true
+                    const innerDiff = { __afterIndex, ...jb.ui.compareVdom(e, a[__afterIndex],ctx), ...(e.$remount ? {remount: true}: {}) }
+                    if (Object.keys(innerDiff).length > 1) {
+                        res[i] = innerDiff
+                        res.length = i+1
+                    }
+                }
+            })
+            res.toAppend = a.flatMap((e,i) => reused[i] ? [] : [ Object.assign( e, {__afterIndex: i}) ])
+            jb.log('vdom child diff result',{res,before: b,after: a,ctx})
+            if (!res.length && !res.toAppend.length) return null
+            return res
+
+            function locateVdom(toLocate,remainingBefore) {
+                const found = remainingBefore.findIndex(before=>sameSource(before,toLocate))
+                if (found != -1)                
+                    return remainingBefore.splice(found,1)[0]
+            }
+            function sameIndexSameTag(toLocate,index,remainingBefore) {
+                const found = remainingBefore.findIndex(before=>before.tag && before.i == index && before.tag === toLocate.tag)
+                if (found != -1) {
+                    const ret = remainingBefore.splice(found,1)[0]
+                    if (ret.attributes.ctxId && !sameSource(ret,toLocate))
+                        ret.$remount = true
+                    return ret
                 }
             }
+            function sameSource(vdomBefore,vdomAfter) {
+                if (vdomBefore.cmp && vdomBefore.cmp === vdomAfter.cmp) return true
+                const atts1 = vdomBefore.attributes || {}, atts2 = vdomAfter.attributes || {}
+                if (atts1['cmp-id'] && atts1['cmp-id'] === atts2['cmp-id'] || atts1['jb-ctx'] && atts1['jb-ctx'] === atts2['jb-ctx']) return true
+                if (compareCtxAtt('path',atts1,atts2) && compareCtxAtt('data',atts1,atts2)) return true
+                if (compareAtts(['id','path','name'],atts1,atts2)) return true
+            }
+            function compareAtts(attsToCompare,atts1,atts2) {
+                for(let i=0;i<attsToCompare.length;i++)
+                    if (atts1[attsToCompare[i]] && atts1[attsToCompare[i]] == atts2[attsToCompare[i]])
+                        return true
+            }
+            function compareCtxAtt(att,atts1,atts2) {
+                const val1 = atts1.ctxId && jb.path(jb.ui.ctxDictionary[atts1.ctxId],att)
+                const val2 = atts2.ctxId && jb.path(jb.ui.ctxDictionary[atts2.ctxId],att)
+                return val1 && val2 && val1 == val2
+            }            
+        }
+    },
+
+    applyNewVdom(elem,vdomAfter,{strongRefresh, ctx} = {}) {
+        const widgetId = jb.ui.headlessWidgetId(elem)
+        jb.log('applyNew vdom',{widgetId,elem,vdomAfter,strongRefresh, ctx})
+        if (widgetId) {
+            const cmpId = elem.getAttribute('cmp-id')
+            const delta = jb.ui.compareVdom(elem,vdomAfter,ctx)
+            const assumedVdom = JSON.parse(JSON.stringify(jb.ui.stripVdom(elem)))
+            if (elem != vdomAfter) { // update the elem
+                ;(elem.children ||[]).forEach(ch=>ch.parentNode = null)
+                Object.keys(elem).filter(x=>x !='parentNode').forEach(k=>delete elem[k])
+                Object.assign(elem,vdomAfter)
+                ;(vdomAfter.children ||[]).forEach(ch=>ch.parentNode = elem)
+            }
+            jb.ui.renderingUpdates.next({assumedVdom, delta,cmpId,widgetId})
+            return
+        }
+        const active = jb.ui.activeElement() === elem
+        if (vdomAfter.tag != elem.tagName.toLowerCase() || strongRefresh) {
+            jb.ui.unmount(elem)
+            const newElem = jb.ui.render(vdomAfter,elem.parentElement)
+            elem.parentElement.replaceChild(newElem,elem)
+            jb.log('replaceTop vdom',{newElem,elem})
+            elem = newElem
+        } else {
+            const vdomBefore = elem instanceof jb.ui.VNode ? elem : jb.ui.elemToVdom(elem)
+            const delta = jb.ui.compareVdom(vdomBefore,vdomAfter,ctx)
+            jb.log('apply delta top dom',{vdomBefore,vdomAfter,active,elem,vdomAfter,strongRefresh, delta, ctx})
+            jb.ui.applyDeltaToDom(elem,delta)
+        }
+        jb.ui.refreshFrontEnd(elem)
+        if (active) jb.ui.focus(elem,'apply Vdom diff',ctx)
+        jb.ui.garbageCollectCtxDictionary()
+    },
+    elemToVdom(elem) {
+        if (elem instanceof jb.ui.VNode) return elem
+        if (elem.getAttribute('jb_external')) return
+        return {
+            tag: elem.tagName.toLowerCase(),
+            attributes: jb.objFromEntries([
+                ...Array.from(elem.attributes).map(e=>[e.name,e.value]), 
+                ...(jb.path(elem,'firstChild.nodeName') == '#text' ? [['$text',elem.firstChild.nodeValue]] : [])
+            ]),
+            ...( elem.childElementCount && { children: Array.from(elem.children).map(el=> jb.ui.elemToVdom(el)).filter(x=>x) })
+        }
+    },
+
+    applyDeltaToDom(elem,delta) {
+        jb.log('applyDelta dom',{elem,delta})
+        const children = delta.children
+        if (children) {
+            const childrenArr = children.length ? Array.from(Array(children.length).keys()).map(i=>children[i]) : []
+            const childElems = Array.from(elem.children)
+            const {toAppend,deleteCmp,sameOrder,resetAll} = children
+            if (resetAll) 
+                Array.from(elem.children).forEach(toDelete=>removeChild(toDelete))
+            if (deleteCmp) 
+                Array.from(elem.children)
+                    .filter(ch=>ch.getAttribute('cmp-id') == deleteCmp)
+                    .forEach(toDelete=>removeChild(toDelete))
+
+            childrenArr.forEach((e,i) => {
+                if (!e) {
+                    !sameOrder && (childElems[i].setAttribute('__afterIndex',''+i))
+                } else if (e.$ == 'delete') {
+                    jb.ui.unmount(childElems[i])
+                    elem.removeChild(childElems[i])
+                    jb.log('removeChild dom',{childElem: childElems[i],e,elem,delta})
+                } else {
+                    jb.ui.applyDeltaToDom(childElems[i],e)
+                    !sameOrder && (childElems[i].setAttribute('__afterIndex',e.__afterIndex))
+                }
+            })
+            ;(toAppend||[]).forEach(e=>{
+                const newElem = jb.ui.render(e,elem)
+                jb.log('appendChild dom',{newElem,e,elem,delta})
+                !sameOrder && (newElem.setAttribute('__afterIndex',e.__afterIndex))
+            })
+            if (sameOrder === false) {
+                Array.from(elem.children)
+                    .sort((x,y) => Number(x.getAttribute('__afterIndex')) - Number(y.getAttribute('__afterIndex')))
+                    .forEach(el=> {
+                        const index = Number(el.getAttribute('__afterIndex'))
+                        if (elem.children[index] != el)
+                            elem.insertBefore(el, elem.children[index])
+                        el.removeAttribute('__afterIndex')
+                    })
+            }
+            // remove leftover text nodes in mixed
+            if (elem.childElementCount)
+                Array.from(elem.childNodes).filter(ch=>ch.nodeName == '#text')
+                    .forEach(ch=>{
+                        elem.removeChild(ch)
+                        jb.log('removeChild dom leftover',{ch,elem,delta})
+                    })
+        }
+        jb.entries(delta.attributes)
+            .filter(e=> !(e[0] === '$text' && elem.firstElementChild) ) // elem with $text should not have children
+            .forEach(e=> jb.ui.setAtt(elem,e[0],e[1]))
+        
+        function removeChild(toDelete) {
+            jb.ui.unmount(toDelete)
+            elem.removeChild(toDelete)
+            jb.log('removeChild dom',{toDelete,elem,delta})
+        }
+    },
+    applyDeltaToVDom(elem,delta) {
+        if (!elem) return
+        jb.log('applyDelta vdom',{elem,delta})
+        // supports only append/delete
+        if (delta.children) {
+            const toAppend = delta.children.toAppend || []
+            const {resetAll, deleteCmp} = delta.children
+            if (resetAll) {
+                elem.children && elem.children.forEach(ch => ch.parentNode = null)
+                elem.children = []
+            }
+            if (deleteCmp) {
+                const index = elem.children.findIndex(ch=>ch.getAttribute('cmp-id') == deleteCmp)
+                if (index != -1) {
+                    elem.children[index] && (elem.children[index].parentNode = null)
+                    elem.children.splice(index,1)
+                }
+            }
+            toAppend.forEach(ch => { 
+                elem.children = elem.children || []
+                elem.children.push(jb.ui.unStripVdom(ch,elem))
+            })
+            Object.keys(delta.children).filter(x=>!isNaN(x)).forEach(index=>
+                    jb.ui.applyDeltaToVDom(elem.children[+index],delta.children[index]))
+        }
+
+        Object.assign(elem.attributes,delta.attributes)
+    },
+    setAtt(elem,att,val) {
+        if (val == '__undefined') val = null
+        if (att[0] !== '$' && val == null) {
+            elem.removeAttribute(att)
+            jb.log('dom change remove',{elem,att,val})
+        } else if (att.indexOf('on-') == 0 && val != null && !elem[`registeredTo-${att}`]) {
+            elem.addEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev,val))
+            elem[`registeredTo-${att}`] = true
+        } else if (att.indexOf('on-') == 0 && val == null) {
+            elem.removeEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev,val))
+            elem[`registeredTo-${att}`] = false
+        } else if (att === 'checked' && elem.tagName.toLowerCase() === 'input') {
+            elem.setAttribute(att,val)
+            jb.delay(1).then(()=> { // browser bug?
+                elem.checked = true
+                jb.log('dom set checked',{elem,att,val})
+            })
+        } else if (att.indexOf('$__input') === 0) {
+            try {
+                setInput(JSON.parse(val))
+            } catch(e) {}
+        } else if (att.indexOf('$__') === 0) {
+            const id = att.slice(3)
+            try {
+                elem[id] = JSON.parse(val) || ''
+            } catch (e) {}
+            jb.log(`dom set data ${id}`,{elem,att,val})
+        } else if (att === '$focus' && val) {
+            elem.setAttribute('__focus',val)
+            jb.ui.focus(elem,val)
+        } else if (att === '$scrollDown' && val) {
+            elem.__appScroll = true
+            elem.scrollTop = elem.scrollTop = elem.scrollHeight - elem.clientHeight - 1
+        } else if (att === '$scrollDown' && val == null) {
+            delete elem.__appScroll
+        } else if (att === '$text') {
+            elem.innerText = val || ''
+            jb.log('dom set text',{elem,att,val})
+        } else if (att === '$html') {
+            elem.innerHTML = val || ''
+            jb.log('dom set html',{elem,att,val})
+        } else if (att === 'style' && typeof val === 'object') {
+            elem.setAttribute(att,jb.entries(val).map(e=>`${e[0]}:${e[1]}`).join(';'))
+            jb.log('dom set style',{elem,att,val})
+        } else if (att == 'value' && elem.tagName.match(/select|input|textarea/i) ) {
+            const active = document.activeElement === elem
+            if (elem.value == val) return
+            elem.value = val
+            if (active && document.activeElement !== elem) { debugger; elem.focus() }
+            jb.log('dom set elem value',{elem,att,val})
+        } else {
+            elem.setAttribute(att,val)
+            //jb.log('dom set att',{elem,att,val}) to many calls
+        }
+
+        function setInput({assumedVal,newVal,selectionStart}) {
+            const el = jb.ui.findIncludeSelf(elem,'input,textarea')[0]
+            jb.log('dom set input check',{el, assumedVal,newVal,selectionStart})
+            if (!el)
+                return jb.logError('setInput: can not find input under elem',{elem})
+            if (assumedVal != el.value) 
+                return jb.logError('setInput: assumed val is not as expected',{ assumedVal, value: el.value, el })
+            const active = document.activeElement === el
+            jb.log('dom set input',{el, assumedVal,newVal,selectionStart})
+            el.value = newVal
+            if (typeof selectionStart == 'number') 
+                el.selectionStart = selectionStart
+            if (active && document.activeElement !== el) { debugger; el.focus() }
+        }
+    },
+
+    unmount(elem) {
+        if (!elem || !elem.setAttribute) return
+
+        const groupByWidgets = {}
+        jb.ui.findIncludeSelf(elem,'[cmp-id]').forEach(el => {
+            el._component && el._component.destroyFE()
+            if (jb.ui.frontendWidgetId(elem)) return
+            const widgetId = jb.ui.headlessWidgetId(el) || '_local_'
+            groupByWidgets[widgetId] = groupByWidgets[widgetId] || { cmps: []}
+            const destroyCtxs = (el.getAttribute('methods')||'').split(',').filter(x=>x.indexOf('destroy-') == 0).map(x=>x.split('destroy-').pop())
+            const cmpId = el.getAttribute('cmp-id'), ver = el.getAttribute('cmp-ver')
+            groupByWidgets[widgetId].cmps.push({cmpId,ver,el,destroyCtxs})
         })
-        res.toAppend = a.flatMap((e,i) => reused[i] ? [] : [ Object.assign( e, {__afterIndex: i}) ])
-        jb.log('vdom child diff result',{res,before: b,after: a,ctx})
-        if (!res.length && !res.toAppend.length) return null
+        jb.log('unmount',{elem,groupByWidgets})
+        jb.entries(groupByWidgets).forEach(([widgetId,val])=>
+            jb.ui.BECmpsDestroyNotification.next({
+                widgetId, cmps: val.cmps,
+                destroyLocally: widgetId == '_local_',
+                destroyWidget: jb.ui.findIncludeSelf(elem,`[widgetid="${widgetId}"]`).length,
+        }))
+    },
+    render(vdom,parentElem,prepend) {
+        jb.log('render',{vdom,parentElem,prepend})
+        function doRender(vdom,parentElem) {
+            jb.log('dom createElement',{tag: vdom.tag, vdom,parentElem})
+            const elem = jb.ui.createElement(parentElem.ownerDocument, vdom.tag)
+            jb.entries(vdom.attributes).forEach(e=>jb.ui.setAtt(elem,e[0],e[1]))
+            jb.asArray(vdom.children).map(child=> doRender(child,elem)).forEach(el=>elem.appendChild(el))
+            prepend ? parentElem.prepend(elem) : parentElem.appendChild(elem)
+            return elem
+        }
+        const res = doRender(vdom,parentElem)
+        jb.ui.findIncludeSelf(res,'[interactive]').forEach(el=> jb.ui.mountFrontEnd(el))
+        // check
+        const checkResultingVdom = jb.ui.elemToVdom(res)
+        const diff = jb.ui.vdomDiff(checkResultingVdom,vdom)
+        if (checkResultingVdom && Object.keys(diff).length)
+            jb.logError('render diff',{diff,checkResultingVdom,vdom})
+
         return res
-
-        function locateVdom(toLocate,remainingBefore) {
-            const found = remainingBefore.findIndex(before=>sameSource(before,toLocate))
-            if (found != -1)                
-                return remainingBefore.splice(found,1)[0]
-        }
-        function sameIndexSameTag(toLocate,index,remainingBefore) {
-            const found = remainingBefore.findIndex(before=>before.tag && before.i == index && before.tag === toLocate.tag)
-            if (found != -1) {
-                const ret = remainingBefore.splice(found,1)[0]
-                if (ret.attributes.ctxId && !sameSource(ret,toLocate))
-                    ret.$remount = true
-                return ret
-            }
-        }
-    }
-}
-
-function sameSource(vdomBefore,vdomAfter) {
-    if (vdomBefore.cmp && vdomBefore.cmp === vdomAfter.cmp) return true
-    const atts1 = vdomBefore.attributes || {}, atts2 = vdomAfter.attributes || {}
-    if (atts1['cmp-id'] && atts1['cmp-id'] === atts2['cmp-id'] || atts1['jb-ctx'] && atts1['jb-ctx'] === atts2['jb-ctx']) return true
-    if (compareCtxAtt('path',atts1,atts2) && compareCtxAtt('data',atts1,atts2)) return true
-    if (compareAtts(['id','path','name'],atts1,atts2)) return true
-}
-
-function compareAtts(attsToCompare,atts1,atts2) {
-    for(let i=0;i<attsToCompare.length;i++)
-        if (atts1[attsToCompare[i]] && atts1[attsToCompare[i]] == atts2[attsToCompare[i]])
-            return true
-}
-
-function compareCtxAtt(att,atts1,atts2) {
-    const val1 = atts1.ctxId && jb.path(jb.ui.ctxDictionary[atts1.ctxId],att)
-    const val2 = atts2.ctxId && jb.path(jb.ui.ctxDictionary[atts2.ctxId],att)
-    return val1 && val2 && val1 == val2
-}
-
-// dom related functions
-
-function applyNewVdom(elem,vdomAfter,{strongRefresh, ctx} = {}) {
-    const widgetId = jb.ui.headlessWidgetId(elem)
-    jb.log('applyNew vdom',{widgetId,elem,vdomAfter,strongRefresh, ctx})
-    if (widgetId) {
-        const cmpId = elem.getAttribute('cmp-id')
-        const delta = compareVdom(elem,vdomAfter,ctx)
-        const assumedVdom = JSON.parse(JSON.stringify(jb.ui.stripVdom(elem)))
-        if (elem != vdomAfter) { // update the elem
-            ;(elem.children ||[]).forEach(ch=>ch.parentNode = null)
-            Object.keys(elem).filter(x=>x !='parentNode').forEach(k=>delete elem[k])
-            Object.assign(elem,vdomAfter)
-            ;(vdomAfter.children ||[]).forEach(ch=>ch.parentNode = elem)
-        }
-        jb.ui.renderingUpdates.next({assumedVdom, delta,cmpId,widgetId})
-        return
-    }
-    const active = jb.ui.activeElement() === elem
-    if (vdomAfter.tag != elem.tagName.toLowerCase() || strongRefresh) {
-        unmount(elem)
-        const newElem = render(vdomAfter,elem.parentElement)
-        elem.parentElement.replaceChild(newElem,elem)
-        jb.log('replaceTop vdom',{newElem,elem})
-        elem = newElem
-    } else {
-        const vdomBefore = elem instanceof ui.VNode ? elem : elemToVdom(elem)
-        const delta = compareVdom(vdomBefore,vdomAfter,ctx)
-        jb.log('apply delta top dom',{vdomBefore,vdomAfter,active,elem,vdomAfter,strongRefresh, delta, ctx})
-        applyDeltaToDom(elem,delta)
-    }
-    ui.refreshFrontEnd(elem)
-    if (active) jb.ui.focus(elem,'apply Vdom diff',ctx)
-    ui.garbageCollectCtxDictionary()
-}
-
-function refreshFrontEnd(elem) {
-    ui.findIncludeSelf(elem,'[interactive]').forEach(el=> el._component ? el._component.newVDomApplied() : mountFrontEnd(el))
-}
-
-function elemToVdom(elem) {
-    if (elem instanceof jb.ui.VNode) return elem
-    if (elem.getAttribute('jb_external')) return
-    return {
-        tag: elem.tagName.toLowerCase(),
-        attributes: jb.objFromEntries([
-            ...Array.from(elem.attributes).map(e=>[e.name,e.value]), 
-            ...(jb.path(elem,'firstChild.nodeName') == '#text' ? [['$text',elem.firstChild.nodeValue]] : [])
-        ]),
-        ...( elem.childElementCount && { children: Array.from(elem.children).map(el=> elemToVdom(el)).filter(x=>x) })
-    }
-}
-
-function applyDeltaToDom(elem,delta) {
-    jb.log('applyDelta dom',{elem,delta})
-    const children = delta.children
-    if (children) {
-        const childrenArr = children.length ? Array.from(Array(children.length).keys()).map(i=>children[i]) : []
-        const childElems = Array.from(elem.children)
-        const {toAppend,deleteCmp,sameOrder,resetAll} = children
-        if (resetAll) 
-            Array.from(elem.children).forEach(toDelete=>removeChild(toDelete))
-        if (deleteCmp) 
-            Array.from(elem.children)
-                .filter(ch=>ch.getAttribute('cmp-id') == deleteCmp)
-                .forEach(toDelete=>removeChild(toDelete))
-
-        childrenArr.forEach((e,i) => {
-            if (!e) {
-                !sameOrder && (childElems[i].setAttribute('__afterIndex',''+i))
-            } else if (e.$ == 'delete') {
-                unmount(childElems[i])
-                elem.removeChild(childElems[i])
-                jb.log('removeChild dom',{childElem: childElems[i],e,elem,delta})
-            } else {
-                applyDeltaToDom(childElems[i],e)
-                !sameOrder && (childElems[i].setAttribute('__afterIndex',e.__afterIndex))
-            }
-        })
-        ;(toAppend||[]).forEach(e=>{
-            const newElem = render(e,elem)
-            jb.log('appendChild dom',{newElem,e,elem,delta})
-            !sameOrder && (newElem.setAttribute('__afterIndex',e.__afterIndex))
-        })
-        if (sameOrder === false) {
-            Array.from(elem.children)
-                .sort((x,y) => Number(x.getAttribute('__afterIndex')) - Number(y.getAttribute('__afterIndex')))
-                .forEach(el=> {
-                    const index = Number(el.getAttribute('__afterIndex'))
-                    if (elem.children[index] != el)
-                        elem.insertBefore(el, elem.children[index])
-                    el.removeAttribute('__afterIndex')
-                })
-        }
-        // remove leftover text nodes in mixed
-        if (elem.childElementCount)
-            Array.from(elem.childNodes).filter(ch=>ch.nodeName == '#text')
-                .forEach(ch=>{
-                    elem.removeChild(ch)
-                    jb.log('removeChild dom leftover',{ch,elem,delta})
-                })
-    }
-    jb.entries(delta.attributes)
-        .filter(e=> !(e[0] === '$text' && elem.firstElementChild) ) // elem with $text should not have children
-        .forEach(e=> setAtt(elem,e[0],e[1]))
-    
-    function removeChild(toDelete) {
-        unmount(toDelete)
-        elem.removeChild(toDelete)
-        jb.log('removeChild dom',{toDelete,elem,delta})
-    }
-}
-
-function applyDeltaToVDom(elem,delta) {
-    if (!elem) return
-    jb.log('applyDelta vdom',{elem,delta})
-    // supports only append/delete
-    if (delta.children) {
-        const toAppend = delta.children.toAppend || []
-        const {resetAll, deleteCmp} = delta.children
-        if (resetAll) {
-            elem.children && elem.children.forEach(ch => ch.parentNode = null)
-            elem.children = []
-        }
-        if (deleteCmp) {
-            const index = elem.children.findIndex(ch=>ch.getAttribute('cmp-id') == deleteCmp)
-            if (index != -1) {
-                elem.children[index] && (elem.children[index].parentNode = null)
-                elem.children.splice(index,1)
-            }
-        }
-        toAppend.forEach(ch => { 
-            elem.children = elem.children || []
-            elem.children.push(jb.ui.unStripVdom(ch,elem))
-        })
-        Object.keys(delta.children).filter(x=>!isNaN(x)).forEach(index=>
-                applyDeltaToVDom(elem.children[+index],delta.children[index]))
-    }
-
-    Object.assign(elem.attributes,delta.attributes)
-}
-
-function setAtt(elem,att,val) {
-    if (val == '__undefined') val = null
-    if (att[0] !== '$' && val == null) {
-        elem.removeAttribute(att)
-        jb.log('dom change remove',{elem,att,val})
-    } else if (att.indexOf('on-') == 0 && val != null && !elem[`registeredTo-${att}`]) {
-        elem.addEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev,val))
-        elem[`registeredTo-${att}`] = true
-    } else if (att.indexOf('on-') == 0 && val == null) {
-        elem.removeEventListener(att.slice(3), ev => jb.ui.handleCmpEvent(ev,val))
-        elem[`registeredTo-${att}`] = false
-    } else if (att === 'checked' && elem.tagName.toLowerCase() === 'input') {
-        elem.setAttribute(att,val)
-        jb.delay(1).then(()=> { // browser bug?
-            elem.checked = true
-            jb.log('dom set checked',{elem,att,val})
-        })
-    } else if (att.indexOf('$__input') === 0) {
-        try {
-            setInput(JSON.parse(val))
-        } catch(e) {}
-    } else if (att.indexOf('$__') === 0) {
-        const id = att.slice(3)
-        try {
-            elem[id] = JSON.parse(val) || ''
-        } catch (e) {}
-        jb.log(`dom set data ${id}`,{elem,att,val})
-    } else if (att === '$focus' && val) {
-        elem.setAttribute('__focus',val)
-        jb.ui.focus(elem,val)
-    } else if (att === '$scrollDown' && val) {
-        elem.__appScroll = true
-        elem.scrollTop = elem.scrollTop = elem.scrollHeight - elem.clientHeight - 1
-    } else if (att === '$scrollDown' && val == null) {
-        delete elem.__appScroll
-    } else if (att === '$text') {
-        elem.innerText = val || ''
-        jb.log('dom set text',{elem,att,val})
-    } else if (att === '$html') {
-        elem.innerHTML = val || ''
-        jb.log('dom set html',{elem,att,val})
-    } else if (att === 'style' && typeof val === 'object') {
-        elem.setAttribute(att,jb.entries(val).map(e=>`${e[0]}:${e[1]}`).join(';'))
-        jb.log('dom set style',{elem,att,val})
-    } else if (att == 'value' && elem.tagName.match(/select|input|textarea/i) ) {
-        const active = document.activeElement === elem
-        if (elem.value == val) return
-        elem.value = val
-        if (active && document.activeElement !== elem) { debugger; elem.focus() }
-        jb.log('dom set elem value',{elem,att,val})
-    } else {
-        elem.setAttribute(att,val)
-        //jb.log('dom set att',{elem,att,val}) to many calls
-    }
-
-    function setInput({assumedVal,newVal,selectionStart}) {
-        const el = jb.ui.findIncludeSelf(elem,'input,textarea')[0]
-        jb.log('dom set input check',{el, assumedVal,newVal,selectionStart})
-        if (!el)
-            return jb.logError('setInput: can not find input under elem',{elem})
-        if (assumedVal != el.value) 
-            return jb.logError('setInput: assumed val is not as expected',{ assumedVal, value: el.value, el })
-        const active = document.activeElement === el
-        jb.log('dom set input',{el, assumedVal,newVal,selectionStart})
-        el.value = newVal
-        if (typeof selectionStart == 'number') 
-            el.selectionStart = selectionStart
-        if (active && document.activeElement !== el) { debugger; el.focus() }
-    }
-}
-
-function unmount(elem) {
-    if (!elem || !elem.setAttribute) return
-
-    const groupByWidgets = {}
-    jb.ui.findIncludeSelf(elem,'[cmp-id]').forEach(el => {
-        el._component && el._component.destroyFE()
-        if (jb.ui.frontendWidgetId(elem)) return
-        const widgetId = jb.ui.headlessWidgetId(el) || '_local_'
-        groupByWidgets[widgetId] = groupByWidgets[widgetId] || { cmps: []}
-        const destroyCtxs = (el.getAttribute('methods')||'').split(',').filter(x=>x.indexOf('destroy-') == 0).map(x=>x.split('destroy-').pop())
-        const cmpId = el.getAttribute('cmp-id'), ver = el.getAttribute('cmp-ver')
-        groupByWidgets[widgetId].cmps.push({cmpId,ver,el,destroyCtxs})
-    })
-    jb.log('unmount',{elem,groupByWidgets})
-    jb.entries(groupByWidgets).forEach(([widgetId,val])=>
-        jb.ui.BECmpsDestroyNotification.next({
-            widgetId, cmps: val.cmps,
-            destroyLocally: widgetId == '_local_',
-            destroyWidget: jb.ui.findIncludeSelf(elem,`[widgetid="${widgetId}"]`).length,
-    }))
-}
-
-function render(vdom,parentElem,prepend) {
-    jb.log('render',{vdom,parentElem,prepend})
-    function doRender(vdom,parentElem) {
-        jb.log('dom createElement',{tag: vdom.tag, vdom,parentElem})
-        const elem = createElement(parentElem.ownerDocument, vdom.tag)
-        jb.entries(vdom.attributes).forEach(e=>setAtt(elem,e[0],e[1]))
-        jb.asArray(vdom.children).map(child=> doRender(child,elem)).forEach(el=>elem.appendChild(el))
-        prepend ? parentElem.prepend(elem) : parentElem.appendChild(elem)
-        return elem
-    }
-    const res = doRender(vdom,parentElem)
-    ui.findIncludeSelf(res,'[interactive]').forEach(el=> mountFrontEnd(el))
-    // check
-    const checkResultingVdom = elemToVdom(res)
-    const diff = jb.ui.vdomDiff(checkResultingVdom,vdom)
-    if (checkResultingVdom && Object.keys(diff).length)
-        jb.logError('render diff',{diff,checkResultingVdom,vdom})
-
-    return res
-}
-
-function createElement(doc,tag) {
-    tag = tag || 'div'
-    return (['svg','circle','ellipse','image','line','mesh','path','polygon','polyline','rect','text'].indexOf(tag) != -1) ?
-        doc.createElementNS("http://www.w3.org/2000/svg", tag) : doc.createElement(tag)
-}
-
-// raw event enriched to userEvent and wrapped with userRequest
-Object.assign(jb.ui, {
+    },
+    createElement(doc,tag) {
+        tag = tag || 'div'
+        return (['svg','circle','ellipse','image','line','mesh','path','polygon','polyline','rect','text'].indexOf(tag) != -1) ?
+            doc.createElementNS("http://www.w3.org/2000/svg", tag) : doc.createElement(tag)
+    },
     handleCmpEvent(ev, specificMethod) {
         specificMethod = specificMethod == 'true' ? true : specificMethod
         const userReq = jb.ui.rawEventToUserRequest(ev,specificMethod)
@@ -4764,44 +4798,41 @@ Object.assign(jb.ui, {
             jb.ui.runCtxActionAndUdateCmpState(ctx,data,vars)
         }
     },
-    resourceChange: () => jb.mainWatchableHandler.resourceChange,
-})
+    resourceChange: () => jb.db.mainWatchableHandler.resourceChange,
 
-Object.assign(jb.ui, {
-    h, render, unmount, applyNewVdom, applyDeltaToDom, applyDeltaToVDom, elemToVdom, mountFrontEnd, compareVdom, refreshFrontEnd,
     BECmpsDestroyNotification: jb.callbag.subject(),
     refreshNotification: jb.callbag.subject(),
     renderingUpdates: jb.callbag.subject(),
     followUps: {},
-    ctrl(context,options) {
-        const styleByControl = jb.path(context,'cmpCtx.profile.$') == 'styleByControl'
-        const $state = (context.vars.$refreshElemCall || styleByControl) ? context.vars.$state : {}
-        const cmpId = context.vars.$cmpId, cmpVer = context.vars.$cmpVer
-        if (!context.vars.$serviceRegistry)
-            jb.logError('no serviceRegistry',{ctx: context})
-        const ctx = context.setVars({
-            $model: { ctx: context, ...context.params},
+    ctrl(origCtx,options) {
+        const styleByControl = jb.path(origCtx,'cmpCtx.profile.$') == 'styleByControl'
+        const $state = (origCtx.vars.$refreshElemCall || styleByControl) ? origCtx.vars.$state : {}
+        const cmpId = origCtx.vars.$cmpId, cmpVer = origCtx.vars.$cmpVer
+        if (!origCtx.vars.$serviceRegistry)
+            jb.logError('no serviceRegistry',{ctx: origCtx})
+        const ctx = origCtx.setVars({
+            $model: { ctx: origCtx, ...origCtx.params},
             $state,
-            $serviceRegistry: context.vars.$serviceRegistry,
+            $serviceRegistry: origCtx.vars.$serviceRegistry,
             $refreshElemCall : undefined, $props : undefined, cmp: undefined, $cmpId: undefined, $cmpVer: undefined 
         })
         const styleOptions = runEffectiveStyle(ctx) || {}
-        if (styleOptions instanceof ui.JbComponent)  {// style by control
+        if (styleOptions instanceof jb.ui.JbComponent)  {// style by control
             return styleOptions.orig(ctx).jbExtend(options,ctx).applyParamFeatures(ctx)
         }
-        return new ui.JbComponent(ctx,cmpId,cmpVer).jbExtend(options,ctx).jbExtend(styleOptions,ctx).applyParamFeatures(ctx)
+        return new jb.ui.JbComponent(ctx,cmpId,cmpVer).jbExtend(options,ctx).jbExtend(styleOptions,ctx).applyParamFeatures(ctx)
     
         function runEffectiveStyle(ctx) {
-            const profile = context.profile
+            const profile = origCtx.profile
             const defaultVar = '$theme.' + (profile.$ || '')
-            if (!profile.style && context.vars[defaultVar])
-                return ctx.run({$:context.vars[defaultVar]})
-            return context.params.style ? context.params.style(ctx) : {}
+            if (!profile.style && origCtx.vars[defaultVar])
+                return ctx.run({$:origCtx.vars[defaultVar]})
+            return origCtx.params.style ? origCtx.params.style(ctx) : {}
         }
     },
     garbageCollectCtxDictionary(forceNow,clearAll) {
         if (!forceNow)
-            return jb.delay(1000).then(()=>ui.garbageCollectCtxDictionary(true))
+            return jb.delay(1000).then(()=>jb.ui.garbageCollectCtxDictionary(true))
    
         const used = 'jb-ctx,full-cmp-ctx,pick-ctx,props-ctx,methods,frontEnd,originators'.split(',')
             .flatMap(att=>querySelectAllWithWidgets(`[${att}]`)
@@ -4821,13 +4852,13 @@ Object.assign(jb.ui, {
             }
         }
         // remove unused vars from resources
-        const ctxToPath = ctx => Object.values(ctx.vars).filter(v=>jb.isWatchable(v)).map(v => jb.asRef(v))
-            .map(ref=>jb.refHandler(ref).pathOfRef(ref)).flat()
-        const globalVarsUsed = jb.unique(used.map(x=>jb.ctxDictionary[''+x]).filter(x=>x).map(ctx=>ctxToPath(ctx)).flat())
-        Object.keys(jb.resources).filter(id=>id.indexOf(':') != -1)
+        const ctxToPath = ctx => Object.values(ctx.vars).filter(v=>jb.db.isWatchable(v)).map(v => jb.db.asRef(v))
+            .map(ref=>jb.db.refHandler(ref).pathOfRef(ref)).flat()
+        const globalVarsUsed = jb.utils.unique(used.map(x=>jb.ctxDictionary[''+x]).filter(x=>x).map(ctx=>ctxToPath(ctx)).flat())
+        Object.keys(jb.db.resources).filter(id=>id.indexOf(':') != -1)
             .filter(id=>globalVarsUsed.indexOf(id) == -1)
             .filter(id=>+id.split(':').pop < maxUsed)
-            .forEach(id => { removedResources.push(id); delete jb.resources[id]})
+            .forEach(id => { removedResources.push(id); delete jb.db.resources[id]})
 
         // remove front-end widgets
         const usedWidgets = jb.objFromEntries(
@@ -4862,7 +4893,7 @@ Object.assign(jb.ui, {
             return // { recover: true, reason }
         }
         if (assumedVdom) {
-            const actualVdom = elemToVdom(elem)
+            const actualVdom = jb.ui.elemToVdom(elem)
             const diff = jb.ui.vdomDiff(assumedVdom,actualVdom)
             if (Object.keys(diff).length) {
                 jb.logError('wrong assumed vdom',{actualVdom, assumedVdom, diff, delta, ctx, cmpId, elem})
@@ -4885,7 +4916,7 @@ Object.assign(jb.ui, {
         if (jb.path(elem,'_component.state.frontEndStatus') == 'initializing' || jb.ui.findIncludeSelf(elem,'[__refreshing]')[0]) 
             return jb.logError('circular refresh',{elem, state, options})
         const cmpId = elem.getAttribute('cmp-id'), cmpVer = +elem.getAttribute('cmp-ver')
-        const _ctx = ui.ctxOfElem(elem)
+        const _ctx = jb.ui.ctxOfElem(elem)
         if (!_ctx) 
             return jb.logError('refreshElem - no ctx for elem',{elem, cmpId, cmpVer})
         const strongRefresh = jb.path(options,'strongRefresh')
@@ -4909,7 +4940,7 @@ Object.assign(jb.ui, {
             jb.ui.hashCss(cmp.calcCssLines(),cmp.ctx,{existingClass, cssStyleElem})
         } else {
             jb.log('do refresh element',{cmp,ctx,elem, state, options})
-            cmp && applyNewVdom(elem, h(cmp), {strongRefresh, ctx})
+            cmp && jb.ui.applyNewVdom(elem, jb.ui.h(cmp), {strongRefresh, ctx})
         }
         elem.removeAttribute('__refreshing')
         jb.ui.refreshNotification.next({cmp,ctx,elem, state, options})
@@ -4941,7 +4972,7 @@ Object.assign(jb.ui, {
                 strongRefresh = strongRefresh || obs.strongRefresh
                 delay = delay || obs.delay
                 cssOnly = cssOnly && obs.cssOnly
-                const diff = jb.comparePaths(changed_path, obsPath)
+                const diff = jb.db.comparePaths(changed_path, obsPath)
                 const isChildOfChange = diff == 1
                 const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
                 const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
@@ -4951,9 +4982,9 @@ Object.assign(jb.ui, {
             if (refresh) {
                 jb.log('refresh from observable elements',{cmpId,originatingCmpId,elem,ctx: e.srcCtx,e})
                 if (delay) 
-                    jb.delay(delay).then(()=> ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly}))
+                    jb.delay(delay).then(()=> jb.ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly}))
                 else
-                    ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly})
+                    jb.ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly})
             }
         })
 
@@ -4969,317 +5000,223 @@ Object.assign(jb.ui, {
             return parts[0] == watchHandler.resources.id && 
                 { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh, cssOnly, allowSelfRefresh, delay }
         }
-    })
-})
+    }),
+    initializeModule() {
+        // subscribe for watchable change
+        jb.ui.subscribeToRefChange(jb.db.mainWatchableHandler)
 
-class frontEndCmp {
-    constructor(elem, keepState) {
-        this.ctx = jb.ui.parents(elem,{includeSelf: true}).map(elem=>elem.ctxForFE).filter(x=>x)[0] || new jb.jbCtx()
-        this.state = { ...elem.state, ...(keepState && jb.path(elem._component,'state')), frontEndStatus: 'initializing' }
-        this.base = elem
-        this.cmpId = elem.getAttribute('cmp-id')
-        this.ver= elem.getAttribute('cmp-ver')
-        this.pt = elem.getAttribute('cmp-pt')
-        this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve)
-        this.flows= []
-        elem._component = this
-        this.runFEMethod('calcProps',null,null,true)
-        this.runFEMethod('init',null,null,true)
-        ;(elem.getAttribute('eventhandlers') || '').split(',').forEach(h=>{
-            const [event,ctxId] = h.split('-')
-            elem.addEventListener(event, ev => jb.ui.handleCmpEvent(ev,ctxId))
-        })
-        this.state.frontEndStatus = 'ready'
-    }
-    runFEMethod(method,data,_vars,silent) {
-        if (this.state.frontEndStatus != 'ready' && ['init','calcProps'].indexOf(method) == -1)
-            return jb.logError('frontEnd - running method before init', {cmp: {...this}, method,data,_vars})
-        const toRun = (this.base.frontEndMethods || []).filter(x=>x.method == method)
-        if (toRun.length == 0 && !silent)
-            return jb.logError(`frontEnd - no method ${method}`,{cmp: {...this}})
-        toRun.forEach(({path}) => tryWrapper(() => {
-            const profile = path.split('~').reduce((o,p)=>o[p],jb.comps)
-            const srcCtx = new jb.jbCtx(this.ctx, { profile, path, forcePath: path })
-            const feMEthod = jb.run(srcCtx)
-            const el = this.base
-            const vars = {cmp: this, $state: this.state, el, ...this.base.vars, ..._vars }
-            const ctxToUse = this.ctx.setData(data).setVars(vars)
-            const {_prop, _flow } = feMEthod.frontEndMethod
-            if (_prop)
-                jb.log(`frontend uiComp calc prop ${_prop}`,{cmp: {...this}, srcCtx, ...feMEthod.frontEndMethod, el,ctxToUse})
-            else if (_flow)
-                jb.log(`frontend uiComp start flow ${jb.ui.rxPipeName(_flow)}`,{cmp: {...this}, srcCtx, ...feMEthod.frontEndMethod, el, ctxToUse})
-            else 
-                jb.log(`frontend uiComp run method ${method}`,{cmp: {...this}, srcCtx , ...feMEthod.frontEndMethod,el,ctxToUse})
-            const res = ctxToUse.run(feMEthod.frontEndMethod.action)
-            if (_flow) this.flows.push(res)
-        }, `frontEnd-${method}`))
-    }
-    enrichUserEvent(ev, userEvent) {
-        (this.base.frontEndMethods || []).filter(x=>x.method == 'enrichUserEvent').map(({path}) => tryWrapper(() => {
-            const actionPath = path+'~action'
-            const profile = actionPath.split('~').reduce((o,p)=>o[p],jb.comps)
-            const vars = {cmp: this, $state: this.state, el: this.base, ...this.base.vars, ev, userEvent }
-            Object.assign(userEvent, jb.run( new jb.jbCtx(this.ctx, { vars, profile, path: actionPath })))
-        }, 'enrichUserEvent'))
-    }
-    refresh(state, options) {
-        jb.log('frontend uiComp refresh request',{cmp: {...this} , state, options})
-        if (this._deleted) return
-        Object.assign(this.state, state)
-        this.base.state = this.state
-        ui.refreshElem(this.base,this.state,options)
-    }
-    refreshFE(state) {
-        if (this._deleted) return
-        Object.assign(this.state, state)
-        this.base.state = this.state
-        this.runFEMethod('onRefresh',null,null,true)
-    }    
-    newVDomApplied() {
-        Object.assign(this.state,{...this.base.state}) // update state from BE
-        this.ver= this.base.getAttribute('cmp-ver')
-        this.runFEMethod('onRefresh',null,null,true)
-    }
-    destroyFE() {
-        this._deleted = true
-        this.flows.forEach(flow=>flow.dispose())
-        this.runFEMethod('destroy',null,null,true)
-        this.resolveDestroyed() // notifications to takeUntil(this.destroyed) observers
-    }
-}
+        // subscribe for widget renderingUpdates
+        jb.callbag.subscribe(e=> {
+            if (!e.widgetId && e.cmpId && typeof document != 'undefined') {
+                const elem = document.querySelector(`[cmp-id="${e.cmpId}"]`)
+                if (elem) {
+                    jb.ui.applyDeltaToDom(elem, e.delta)
+                    jb.ui.refreshFrontEnd(elem)
+                }
+            }
+        })(jb.ui.renderingUpdates)
 
-// interactive handlers like onmousemove and onkeyXX are handled in the frontEnd with and not varsed to the backend headless widgets
-function mountFrontEnd(elem, keepState) {
-    new frontEndCmp(elem, keepState)
-}
-
-// subscribe for watchable change
-ui.subscribeToRefChange(jb.mainWatchableHandler)
-
-// subscribe for widget renderingUpdates
-jb.callbag.subscribe(e=> {
-    if (!e.widgetId && e.cmpId && typeof document != 'undefined') {
-        const elem = document.querySelector(`[cmp-id="${e.cmpId}"]`)
-        if (elem) {
-            jb.ui.applyDeltaToDom(elem, e.delta)
-            jb.ui.refreshFrontEnd(elem)
-        }
-    }
-})(jb.ui.renderingUpdates)
-
-jb.callbag.subscribe(e=> {
-    const {widgetId,destroyLocally,cmps} = e
-    
-    cmps.forEach(_cmp => {
-        const fus = jb.ui.followUps[_cmp.cmpId]
-        if (!fus) return
-        const index = fus.findIndex(({cmp}) => _cmp.cmpId == cmp.cmpId && _cmp.ver == cmp.ver)
-        if (index != -1) {
-            fus[index].pipe.dispose()
-            fus.splice(index,1)
-        }
-        if (!fus.length)
-            delete jb.ui.followUps[_cmp.cmpId]
-    })
-
-    if (widgetId && !destroyLocally)
-        jb.ui.widgetUserRequests.next({$:'destroy', ...e })
-    else 
-        cmps.forEach(cmp=> (cmp.destroyCtxs || []).forEach(ctxIdToRun => {
-            jb.log('backend method destroy uiComp',{cmp, el: cmp.el})
-            jb.ui.runCtxAction(jb.ctxDictionary[ctxIdToRun])
-        } ))
-})(jb.ui.BECmpsDestroyNotification)
-
-})();
-
-(function () {
-
-class VNode {
-    constructor(cmpOrTag, _attributes, _children) {
-        const attributes = jb.objFromEntries(jb.entries(_attributes).map(e=>[e[0].toLowerCase(),e[1]])
-            .map(([id,val])=>[id.match(/^on[^-]/) ? `${id.slice(0,2)}-${id.slice(2)}` : id, typeof val == 'object' ? val : ''+val]))
-        let children = (_children === '') ? null : _children
-        if (['string','boolean','number'].indexOf(typeof children) !== -1) {
-            attributes.$text = ''+children
-            children = null
-        }
-        if (children && typeof children.then == 'function') {
-            attributes.$text = '...'
-            children = null
-        }
-        if (children != null && !Array.isArray(children)) children = [children]
-        if (children != null)
-            children = children.filter(x=>x).map(item=> typeof item == 'string' ? jb.ui.h('span',{$text: item}) : item)
-        if (children && children.length == 0) children = null
-        
-        this.attributes = attributes
+        // subscribe for destroy notification
+        jb.callbag.subscribe(e=> {
+            const {widgetId,destroyLocally,cmps} = e
             
-        if (typeof cmpOrTag === 'string' && cmpOrTag.indexOf('#') != -1)
-            debugger
-        if (typeof cmpOrTag === 'string' && cmpOrTag.indexOf('.') != -1) {
-            this.addClass(cmpOrTag.split('.').pop().trim())
-            cmpOrTag = cmpOrTag.split('.')[0]
+            cmps.forEach(_cmp => {
+                const fus = jb.ui.followUps[_cmp.cmpId]
+                if (!fus) return
+                const index = fus.findIndex(({cmp}) => _cmp.cmpId == cmp.cmpId && _cmp.ver == cmp.ver)
+                if (index != -1) {
+                    fus[index].pipe.dispose()
+                    fus.splice(index,1)
+                }
+                if (!fus.length)
+                    delete jb.ui.followUps[_cmp.cmpId]
+            })
+
+            if (widgetId && !destroyLocally)
+                jb.ui.widgetUserRequests.next({$:'destroy', ...e })
+            else 
+                cmps.forEach(cmp=> (cmp.destroyCtxs || []).forEach(ctxIdToRun => {
+                    jb.log('backend method destroy uiComp',{cmp, el: cmp.el})
+                    jb.ui.runCtxAction(jb.ctxDictionary[ctxIdToRun])
+                } ))
+        })(jb.ui.BECmpsDestroyNotification)
+    }
+});
+
+jb.initLibs('ui', {
+    VNode: class VNode {
+        constructor(cmpOrTag, _attributes, _children) {
+            const attributes = jb.objFromEntries(jb.entries(_attributes).map(e=>[e[0].toLowerCase(),e[1]])
+                .map(([id,val])=>[id.match(/^on[^-]/) ? `${id.slice(0,2)}-${id.slice(2)}` : id, typeof val == 'object' ? val : ''+val]))
+            let children = (_children === '') ? null : _children
+            if (['string','boolean','number'].indexOf(typeof children) !== -1) {
+                attributes.$text = ''+children
+                children = null
+            }
+            if (children && typeof children.then == 'function') {
+                attributes.$text = '...'
+                children = null
+            }
+            if (children != null && !Array.isArray(children)) children = [children]
+            if (children != null)
+                children = children.filter(x=>x).map(item=> typeof item == 'string' ? jb.ui.h('span',{$text: item}) : item)
+            if (children && children.length == 0) children = null
+            
+            this.attributes = attributes
+                
+            if (typeof cmpOrTag === 'string' && cmpOrTag.indexOf('#') != -1)
+                debugger
+            if (typeof cmpOrTag === 'string' && cmpOrTag.indexOf('.') != -1) {
+                this.addClass(cmpOrTag.split('.').pop().trim())
+                cmpOrTag = cmpOrTag.split('.')[0]
+            }
+            if (children != null)
+                children.forEach(ch=>ch.parentNode = this)
+            Object.assign(this,{...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,...(children && {children}) })
         }
-        if (children != null)
-            children.forEach(ch=>ch.parentNode = this)
-        Object.assign(this,{...{[typeof cmpOrTag === 'string' ? 'tag' : 'cmp'] : cmpOrTag} ,...(children && {children}) })
-    }
-    getAttribute(att) {
-        const res = (this.attributes || {})[att]
-        return res == null ? res : (''+res)
-    }
-    setAttribute(att,val) {
-        if (val == null) return
-        this.attributes = this.attributes || {}
-        this.attributes[att.toLowerCase()] = ''+val
-        return this
-    }
-    removeAttribute(att) {
-        this.attributes && delete this.attributes[att.toLowerCase()]
-    }
-    addClass(clz) {
-        if (clz.indexOf(' ') != -1) {
-            clz.split(' ').filter(x=>x).forEach(cl=>this.addClass(cl))
+        getAttribute(att) {
+            const res = (this.attributes || {})[att]
+            return res == null ? res : (''+res)
+        }
+        setAttribute(att,val) {
+            if (val == null) return
+            this.attributes = this.attributes || {}
+            this.attributes[att.toLowerCase()] = ''+val
             return this
         }
-        this.attributes = this.attributes || {};
-        if (this.attributes.class === undefined) this.attributes.class = ''
-        if (clz && this.attributes.class.split(' ').indexOf(clz) == -1) {
-            this.attributes.class = [this.attributes.class,clz].filter(x=>x).join(' ');
+        removeAttribute(att) {
+            this.attributes && delete this.attributes[att.toLowerCase()]
         }
-        return this;
-    }
-    hasClass(clz) {
-        return (jb.path(this,'attributes.class') || '').split(' ').indexOf(clz) != -1
-    }
-    querySelector(...args) {
-        return this.querySelectorAll(...args)[0]
-    }
-    querySelectorAll(selector,{includeSelf}={}) {
-        let maxDepth = 50
-        if (selector.match(/^:scope>/)) {
-            maxDepth = 1
-            selector = selector.slice(7)
+        addClass(clz) {
+            if (clz.indexOf(' ') != -1) {
+                clz.split(' ').filter(x=>x).forEach(cl=>this.addClass(cl))
+                return this
+            }
+            this.attributes = this.attributes || {};
+            if (this.attributes.class === undefined) this.attributes.class = ''
+            if (clz && this.attributes.class.split(' ').indexOf(clz) == -1) {
+                this.attributes.class = [this.attributes.class,clz].filter(x=>x).join(' ');
+            }
+            return this;
         }
-        if (selector == '' || selector == ':scope') return [this]
-        if (selector.indexOf(',') != -1)
-            return selector.split(',').map(x=>x.trim()).reduce((res,sel) => [...res, ...this.querySelectorAll(sel,{includeSelf})], [])
-        const hasAtt = selector.match(/^\[([a-zA-Z0-9_$\-]+)\]$/)
-        const attEquals = selector.match(/^\[([a-zA-Z0-9_$\-]+)="([a-zA-Z0-9_\-→►]+)"\]$/)
-        const hasClass = selector.match(/^\.([a-zA-Z0-9_$\-]+)$/)
-        const hasTag = selector.match(/^[a-zA-Z0-9_\-]+$/)
-        const idEquals = selector.match(/^#([a-zA-Z0-9_$\-]+)$/)
-        const selectorMatcher = hasAtt ? el => el.attributes && el.attributes[hasAtt[1]]
-            : hasClass ? el => el.hasClass(hasClass[1])
-            : hasTag ? el => el.tag === hasTag[0]
-            : attEquals ? el => el.attributes && el.attributes[attEquals[1]] == attEquals[2]
-            : idEquals ? el => el.attributes && el.attributes.id == idEquals[1]
-            : null
+        hasClass(clz) {
+            return (jb.path(this,'attributes.class') || '').split(' ').indexOf(clz) != -1
+        }
+        querySelector(...args) {
+            return this.querySelectorAll(...args)[0]
+        }
+        querySelectorAll(selector,{includeSelf}={}) {
+            let maxDepth = 50
+            if (selector.match(/^:scope>/)) {
+                maxDepth = 1
+                selector = selector.slice(7)
+            }
+            if (selector == '' || selector == ':scope') return [this]
+            if (selector.indexOf(',') != -1)
+                return selector.split(',').map(x=>x.trim()).reduce((res,sel) => [...res, ...this.querySelectorAll(sel,{includeSelf})], [])
+            const hasAtt = selector.match(/^\[([a-zA-Z0-9_$\-]+)\]$/)
+            const attEquals = selector.match(/^\[([a-zA-Z0-9_$\-]+)="([a-zA-Z0-9_\-→•]+)"\]$/)
+            const hasClass = selector.match(/^\.([a-zA-Z0-9_$\-]+)$/)
+            const hasTag = selector.match(/^[a-zA-Z0-9_\-]+$/)
+            const idEquals = selector.match(/^#([a-zA-Z0-9_$\-]+)$/)
+            const selectorMatcher = hasAtt ? el => el.attributes && el.attributes[hasAtt[1]]
+                : hasClass ? el => el.hasClass(hasClass[1])
+                : hasTag ? el => el.tag === hasTag[0]
+                : attEquals ? el => el.attributes && el.attributes[attEquals[1]] == attEquals[2]
+                : idEquals ? el => el.attributes && el.attributes.id == idEquals[1]
+                : null
 
-        return selectorMatcher && doFind(this,selectorMatcher,!includeSelf,0)
+            return selectorMatcher && doFind(this,selectorMatcher,!includeSelf,0)
 
-        function doFind(vdom,selectorMatcher,excludeSelf,depth) {
-            return depth >= maxDepth ? [] : [ ...(!excludeSelf && selectorMatcher(vdom) ? [vdom] : []), 
-                ...(vdom.children||[]).flatMap(ch=> doFind(ch,selectorMatcher,false,depth+1))
-            ]
+            function doFind(vdom,selectorMatcher,excludeSelf,depth) {
+                return depth >= maxDepth ? [] : [ ...(!excludeSelf && selectorMatcher(vdom) ? [vdom] : []), 
+                    ...(vdom.children||[]).flatMap(ch=> doFind(ch,selectorMatcher,false,depth+1))
+                ]
+            }
+        }
+    },
+    toVdomOrStr(val) {
+        if (jb.utils.isDelayed(val))
+            return jb.utils.toSynchArray(val).then(v => jb.ui.toVdomOrStr(v[0]))
+
+        const res1 = Array.isArray(val) ? val.map(v=>jb.val(v)): val
+        let res = jb.val((Array.isArray(res1) && res1.length == 1) ? res1[0] : res1)
+        if (res && res instanceof jb.ui.VNode || Array.isArray(res)) return res
+        if (typeof res === 'boolean' || typeof res === 'object')
+            res = '' + res
+        else if (typeof res === 'string')
+            res = res.slice(0,1000)
+        return res
+    },
+    stripVdom(vdom) {
+        if (jb.path(vdom,'constructor.name') != 'VNode') {
+            jb.logError('stripVdom - not vnode', {vdom})
+            return jb.ui.h('span')
+        }
+        return { 
+            ...(vdom.attributes && {attributes: vdom.attributes}), 
+            ...(vdom.children && vdom.children.length && {children: vdom.children.map(x=>jb.ui.stripVdom(x))}),
+            tag: vdom.tag
+        }
+    },
+    unStripVdom(vdom,parent) {
+        return _unStripVdom(JSON.parse(JSON.stringify(vdom)),parent)
+
+        function _unStripVdom(vdom,parent) {
+            if (!vdom) return // || typeof vdom.parentNode == 'undefined') return
+            vdom.parentNode = parent
+            Object.setPrototypeOf(vdom, jb.ui.VNode.prototype);
+            ;(vdom.children || []).forEach(ch=>_unStripVdom(ch,vdom))
+            return vdom
+        }
+    },
+    cloneVNode(vdom) {
+        return jb.ui.unStripVdom(JSON.parse(JSON.stringify(jb.ui.stripVdom(vdom))))
+    },
+    vdomDiff(newObj,orig) {
+        const ignoreRegExp = /\$|checked|style|value|parentNode|frontend|__|widget|on-|remoteuri|width|height|top|left|aria-|tabindex/
+        const ignoreValue = /__undefined/
+        const ignoreClasses = /selected|mdc-tab-[0-9]+/
+        return doDiff(newObj,orig)
+        function doDiff(newObj,orig,attName) {
+            if (Array.isArray(orig) && orig.length == 0) orig = null
+            if (Array.isArray(newObj) && newObj.length == 0) newObj = null
+            if (orig === newObj) return {}
+    //        if (jb.path(newObj,'attributes.jb_external') || jb.path(orig,'attributes.jb_external')) return {}
+            if (typeof orig == 'string' && ignoreValue.test(orig) || typeof newObj == 'string' && ignoreValue.test(newObj)) return {}
+            if (attName == 'class' && 
+                (typeof orig == 'string' && ignoreClasses.test(orig) || typeof newObj == 'string' && ignoreClasses.test(newObj))) return {}
+            if (!jb.utils.isObject(orig) || !jb.utils.isObject(newObj)) return newObj
+            const deletedValues = Object.keys(orig)
+                .filter(k=>!ignoreRegExp.test(k))
+                .filter(k=> !(typeof orig[k] == 'string' && ignoreValue.test(orig[k])))
+                .filter(k => !(Array.isArray(orig[k]) && orig[k].length == 0))
+    //            .filter(k => !(typeof orig[k] == 'object' && jb.path(orig[k],'attributes.jb_external')))
+                .reduce((acc, key) => newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: '__undefined'}, {})
+
+            return Object.keys(newObj)
+                .filter(k=>!ignoreRegExp.test(k))
+                .filter(k=> !(typeof newObj[k] == 'string' && ignoreValue.test(newObj[k])))
+                .filter(k => !(Array.isArray(newObj[k]) && newObj[k].length == 0))
+    //            .filter(k => !(typeof newObj[k] == 'object' && jb.path(newObj[k],'attributes.jb_external')))
+                .reduce((acc, key) => {
+                    if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key
+                    const difference = doDiff(newObj[key], orig[key],key)
+                    if (jb.utils.isObject(difference) && jb.utils.isEmpty(difference)) return acc // return no diff
+                    return { ...acc, [key]: difference } // return updated key
+            }, deletedValues)    
         }
     }
-}
+});
 
-function toVdomOrStr(val) {
-    if (jb.isDelayed(val))
-        return jb.toSynchArray(val).then(v => jb.ui.toVdomOrStr(v[0]))
-
-    const res1 = Array.isArray(val) ? val.map(v=>jb.val(v)): val
-    let res = jb.val((Array.isArray(res1) && res1.length == 1) ? res1[0] : res1)
-    if (res && res instanceof VNode || Array.isArray(res)) return res
-    if (typeof res === 'boolean' || typeof res === 'object')
-        res = '' + res
-    else if (typeof res === 'string')
-        res = res.slice(0,1000)
-    return res
-}
-
-function stripVdom(vdom) {
-    if (jb.path(vdom,'constructor.name') != 'VNode') {
-        jb.logError('stripVdom - not vnode', {vdom})
-        return jb.ui.h('span')
-    }
-    return { 
-        ...(vdom.attributes && {attributes: vdom.attributes}), 
-        ...(vdom.children && vdom.children.length && {children: vdom.children.map(x=>stripVdom(x))}),
-        tag: vdom.tag
-    }
-}
-
-function _unStripVdom(vdom,parent) {
-    if (!vdom) return // || typeof vdom.parentNode == 'undefined') return
-    vdom.parentNode = parent
-    Object.setPrototypeOf(vdom, VNode.prototype);
-    ;(vdom.children || []).forEach(ch=>_unStripVdom(ch,vdom))
-    return vdom
-}
-
-function unStripVdom(vdom,parent) {
-    return _unStripVdom(JSON.parse(JSON.stringify(vdom)),parent)
-}
-
-function cloneVNode(vdom) {
-    return unStripVdom(JSON.parse(JSON.stringify(stripVdom(vdom))))
-}
-
-function vdomDiff(newObj,orig) {
-    const ignoreRegExp = /\$|checked|style|value|parentNode|frontend|__|widget|on-|remoteuri|width|height|top|left|aria-|tabindex/
-    const ignoreValue = /__undefined/
-    const ignoreClasses = /selected|mdc-tab-[0-9]+/
-    return doDiff(newObj,orig)
-    function doDiff(newObj,orig,attName) {
-        if (Array.isArray(orig) && orig.length == 0) orig = null
-        if (Array.isArray(newObj) && newObj.length == 0) newObj = null
-        if (orig === newObj) return {}
-//        if (jb.path(newObj,'attributes.jb_external') || jb.path(orig,'attributes.jb_external')) return {}
-        if (typeof orig == 'string' && ignoreValue.test(orig) || typeof newObj == 'string' && ignoreValue.test(newObj)) return {}
-        if (attName == 'class' && 
-            (typeof orig == 'string' && ignoreClasses.test(orig) || typeof newObj == 'string' && ignoreClasses.test(newObj))) return {}
-        if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
-        const deletedValues = Object.keys(orig)
-            .filter(k=>!ignoreRegExp.test(k))
-            .filter(k=> !(typeof orig[k] == 'string' && ignoreValue.test(orig[k])))
-            .filter(k => !(Array.isArray(orig[k]) && orig[k].length == 0))
-//            .filter(k => !(typeof orig[k] == 'object' && jb.path(orig[k],'attributes.jb_external')))
-            .reduce((acc, key) => newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: '__undefined'}, {})
-
-        return Object.keys(newObj)
-            .filter(k=>!ignoreRegExp.test(k))
-            .filter(k=> !(typeof newObj[k] == 'string' && ignoreValue.test(newObj[k])))
-            .filter(k => !(Array.isArray(newObj[k]) && newObj[k].length == 0))
-//            .filter(k => !(typeof newObj[k] == 'object' && jb.path(newObj[k],'attributes.jb_external')))
-            .reduce((acc, key) => {
-                if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key
-                const difference = doDiff(newObj[key], orig[key],key)
-                if (jb.isObject(difference) && jb.isEmpty(difference)) return acc // return no diff
-                return { ...acc, [key]: difference } // return updated key
-        }, deletedValues)    
-    }
-}
-
-Object.assign(jb.ui, {VNode, cloneVNode, toVdomOrStr, stripVdom, unStripVdom, vdomDiff})
-
-})();
-
-(function(){
-const ui = jb.ui
-let cmpId = 1;
-ui.propCounter = 0
-const tryWrapper = (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,{ctx: this.ctx}) }}
-const lifeCycle = new Set('init,extendCtx,templateModifier,followUp,destroy'.split(','))
-const arrayProps = new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,frontEndVar,eventHandler'.split(','))
-const singular = new Set('template,calcRenderProps,toolbar,styleParams,ctxForPick'.split(','))
-
-Object.assign(jb.ui,{
+jb.initLibs('ui', {
+    lifeCycle: new Set('init,extendCtx,templateModifier,followUp,destroy'.split(',')),
+    arrayProps: new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,frontEndVar,eventHandler'.split(',')),
+    singular: new Set('template,calcRenderProps,toolbar,styleParams,ctxForPick'.split(',')),
+    
+    cmpCounter: 1,
     cssHashCounter: 0,
+    propCounter: 0,
     cssHashMap: {},
     hashCss(_cssLines,ctx,{existingClass, cssStyleElem} = {}) {
         const cssLines = (_cssLines||[]).filter(x=>x)
@@ -5297,13 +5234,13 @@ Object.assign(jb.ui,{
             } else {
                 this.cssHashCounter++;
             }
-            const classId = existingClass || `${classPrefix}➤${this.cssHashCounter}`
+            const classId = existingClass || `${classPrefix}⦾${this.cssHashCounter}`
             cssMap[cssKey] = {classId, paths : {[ctx.path]: true}}
             const cssContent = linesToCssStyle(classId)
             if (cssStyleElem)
                 cssStyleElem.innerText = cssContent
             else
-                ui.addStyleElem(ctx,cssContent,widgetId)
+                jb.ui.addStyleElem(ctx,cssContent,widgetId)
         }
         Object.assign(cssMap[cssKey].paths, {[ctx.path] : true})
         return cssMap[cssKey].classId
@@ -5319,253 +5256,250 @@ Object.assign(jb.ui,{
             return remark + cssStyle
         }
     },
-})
-
-class JbComponent {
-    constructor(ctx,id,ver) {
-        this.ctx = ctx // used to calc features
-        const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId || ''
-        this.cmpId = id || (widgetId ? (widgetId+'-'+(cmpId++)) : ''+cmpId++)
-        this.ver = ver || 1
-        this.eventObservables = []
-        this.cssLines = []
-        this.contexts = []
-        this.originators = [ctx]
-    }
-    init() {
-        if (this.initialized) return
-        jb.log('init uiComp',{cmp: this})
-        const baseVars = this.ctx.vars
-        this.ctx = (this.extendCtxFuncs||[])
-            .reduce((acc,extendCtx) => tryWrapper(() => extendCtx(acc,this),'extendCtx'), this.ctx.setVar('cmp',this))
-        this.newVars = jb.objFromEntries(jb.entries(this.ctx.vars).filter(([k,v]) => baseVars[k] != v))
-        this.renderProps = {}
-        this.state = this.ctx.vars.$state
-        this.calcCtx = this.ctx.setVar('$props',this.renderProps).setVar('cmp',this)
-        this.initialized = true
-    }
- 
-    calcRenderProps() {
-        this.init()
-        ;(this.initFuncs||[]).sort((p1,p2) => p1.phase - p2.phase)
-            .forEach(f =>  tryWrapper(() => f.action(this.calcCtx, this.calcCtx.vars), 'init'));
-   
-        this.toObserve = this.watchRef ? this.watchRef.map(obs=>({...obs,ref: obs.refF(this.ctx)})).filter(obs=>jb.isWatchable(obs.ref)) : []
-        this.watchAndCalcModelProp && this.watchAndCalcModelProp.forEach(e=>{
-            if (this.state[e.prop] != undefined) return // we have the value in the state, probably asynch value so do not calc again
-            const modelProp = this.ctx.vars.$model[e.prop]
-            if (!modelProp)
-                return jb.logError('calcRenderProps',`missing model prop "${e.prop}"`, {cmp: this, model: this.ctx.vars.$model, ctx: this.ctx})
-            const ref = modelProp(this.ctx)
-            if (jb.isWatchable(ref))
-                this.toObserve.push({id: e.prop, cmp: this, ref,...e})
-            const val = jb.val(ref)
-            this.renderProps[e.prop] = e.transformValue(this.ctx.setData(val == null ? e.defaultValue : val))
-        })
-
-        ;[...(this.calcProp || []),...(this.method || [])].forEach(
-            p=>typeof p.value == 'function' && Object.defineProperty(p.value, 'name', { value: p.id }))
-        const filteredPropsByPriority = (this.calcProp || []).filter(toFilter=> 
-                this.calcProp.filter(p=>p.id == toFilter.id && p.priority > toFilter.priority).length == 0)
-        filteredPropsByPriority.sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
-            .forEach(prop=> { 
-                const val = jb.val( tryWrapper(() => 
-                    prop.value.profile === null ? this.calcCtx.vars.$model[prop.id] : prop.value(this.calcCtx),
-                `renderProp:${prop.id}`))
-                const value = val == null ? prop.defaultValue : val
-                Object.assign(this.renderProps, { ...(prop.id == '$props' ? value : { [prop.id]: value })})
+    JbComponent : class JbComponent {
+        constructor(ctx,id,ver) {
+            this.ctx = ctx // used to calc features
+            const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId || ''
+            this.cmpId = id || (widgetId ? (widgetId+'-'+(jb.ui.cmpCounter++)) : ''+(jb.ui.cmpCounter++))
+            this.ver = ver || 1
+            this.eventObservables = []
+            this.cssLines = []
+            this.contexts = []
+            this.originators = [ctx]
+        }
+        init() {
+            if (this.initialized) return
+            jb.log('init uiComp',{cmp: this})
+            const baseVars = this.ctx.vars
+            this.ctx = (this.extendCtxFuncs||[])
+                .reduce((acc,extendCtx) => jb.utils.tryWrapper(() => extendCtx(acc,this),'extendCtx'), this.ctx.setVar('cmp',this))
+            this.newVars = jb.objFromEntries(jb.entries(this.ctx.vars).filter(([k,v]) => baseVars[k] != v))
+            this.renderProps = {}
+            this.state = this.ctx.vars.$state
+            this.calcCtx = this.ctx.setVar('$props',this.renderProps).setVar('cmp',this)
+            this.initialized = true
+        }
+    
+        calcRenderProps() {
+            this.init()
+            ;(this.initFuncs||[]).sort((p1,p2) => p1.phase - p2.phase)
+                .forEach(f => jb.utils.tryWrapper(() => f.action(this.calcCtx, this.calcCtx.vars), 'init'));
+    
+            this.toObserve = this.watchRef ? this.watchRef.map(obs=>({...obs,ref: obs.refF(this.ctx)})).filter(obs=>jb.db.isWatchable(obs.ref)) : []
+            this.watchAndCalcModelProp && this.watchAndCalcModelProp.forEach(e=>{
+                if (this.state[e.prop] != undefined) return // we have the value in the state, probably asynch value so do not calc again
+                const modelProp = this.ctx.vars.$model[e.prop]
+                if (!modelProp)
+                    return jb.logError('calcRenderProps',`missing model prop "${e.prop}"`, {cmp: this, model: this.ctx.vars.$model, ctx: this.ctx})
+                const ref = modelProp(this.ctx)
+                if (jb.db.isWatchable(ref))
+                    this.toObserve.push({id: e.prop, cmp: this, ref,...e})
+                const val = jb.val(ref)
+                this.renderProps[e.prop] = e.transformValue(this.ctx.setData(val == null ? e.defaultValue : val))
             })
-        ;(this.calcProp || []).filter(p => p.userStateProp && !this.state.refresh).forEach(p => this.state[p.id] = this.renderProps[p.id])
-        Object.assign(this.renderProps,this.styleParams, this.state)
-        return this.renderProps
-    }
 
-    renderVdom() {
-        jb.log('uiComp start renderVdom', {cmp: this})
-        this.calcRenderProps()
-        if (this.ctx.probe && this.ctx.probe.outOfTime) return
-        this.template = this.template || (() => '')
-        const initialVdom = tryWrapper(() => this.template(this,this.renderProps,ui.h), 'template') || {}
-        const vdom = (this.templateModifierFuncs||[]).reduce((vd,modifier) =>
-                (vd && typeof vd === 'object') ? tryWrapper(() => modifier(vd,this,this.renderProps,ui.h) || vd, 'templateModifier') 
-                    : vd ,initialVdom)
-
-        const observe = this.toObserve.map(x=>[
-            x.ref.handler.urlOfRef(x.ref),
-            x.includeChildren && `includeChildren=${x.includeChildren}`,
-            x.strongRefresh && `strongRefresh`,  x.cssOnly && `cssOnly`, x.allowSelfRefresh && `allowSelfRefresh`, x.delay && `delay=${x.delay}`] 
-            .filter(x=>x).join(';')).join(',')
-        const methods = (this.method||[]).map(h=>`${h.id}-${ui.preserveCtx(h.ctx.setVars({cmp: this, $props: this.renderProps, ...this.newVars}))}`).join(',')
-        const eventhandlers = (this.eventHandler||[]).map(h=>`${h.event}-${ui.preserveCtx(h.ctx.setVars({cmp: this}))}`).join(',')
-        const originators = this.originators.map(ctx=>ui.preserveCtx(ctx)).join(',')
-        const usereventprops = (this.userEventProps||[]).join(',')
-        const frontEndMethods = (this.frontEndMethod || []).map(h=>({method: h.method, path: h.path}))
-        const frontEndVars = this.frontEndVar && jb.objFromEntries(this.frontEndVar.map(h=>[h.id, jb.val(h.value(this.calcCtx))]))
-        if (vdom instanceof jb.ui.VNode) {
-            vdom.addClass(this.jbCssClass())
-            vdom.attributes = Object.assign(vdom.attributes || {}, {
-                    'jb-ctx': ui.preserveCtx(this.originatingCtx()),
-                    'cmp-id': this.cmpId, 
-                    'cmp-ver': ''+this.ver,
-                    'cmp-pt': this.ctx.profile.$,
-                    'full-cmp-ctx': ui.preserveCtx(this.calcCtx),
-                },
-                observe && {observe}, 
-                methods && {methods}, 
-                eventhandlers && {eventhandlers},
-                originators && {originators},
-                usereventprops && {usereventprops},
-                frontEndMethods.length && {$__frontEndMethods : JSON.stringify(frontEndMethods) },
-                frontEndMethods.length && {interactive : 'true'}, 
-                frontEndVars && { $__vars : JSON.stringify(frontEndVars)},
-                this.state && { $__state : JSON.stringify(this.state)},
-                this.ctxForPick && { 'pick-ctx': ui.preserveCtx(this.ctxForPick) },
-            )
+            ;[...(this.calcProp || []),...(this.method || [])].forEach(
+                p=>typeof p.value == 'function' && Object.defineProperty(p.value, 'name', { value: p.id }))
+            const filteredPropsByPriority = (this.calcProp || []).filter(toFilter=> 
+                    this.calcProp.filter(p=>p.id == toFilter.id && p.priority > toFilter.priority).length == 0)
+            filteredPropsByPriority.sort((p1,p2) => (p1.phase - p2.phase) || (p1.index - p2.index))
+                .forEach(prop=> { 
+                    const val = jb.val( jb.utils.tryWrapper(() => 
+                        prop.value.profile === null ? this.calcCtx.vars.$model[prop.id] : prop.value(this.calcCtx),
+                    `renderProp:${prop.id}`))
+                    const value = val == null ? prop.defaultValue : val
+                    Object.assign(this.renderProps, { ...(prop.id == '$props' ? value : { [prop.id]: value })})
+                })
+            ;(this.calcProp || []).filter(p => p.userStateProp && !this.state.refresh).forEach(p => this.state[p.id] = this.renderProps[p.id])
+            Object.assign(this.renderProps,this.styleParams, this.state)
+            return this.renderProps
         }
-        jb.log('uiComp end renderVdom',{cmp: this, vdom})
-        this.afterFirstRendering = true
-        return vdom
-    }
-    renderVdomAndFollowUp() {
-        const vdom = this.renderVdom()
-        jb.delay(1).then(() => (this.followUpFuncs||[]).forEach(fu=> tryWrapper(() => { 
-            jb.log(`backend uiComp followUp`, {cmp: this, fu, srcCtx: fu.srcCtx})
-            fu.action(this.calcCtx)
-            if (this.ver>1)
-                jb.ui.BECmpsDestroyNotification.next({ cmps: [{cmpId: this.cmpId, ver: this.ver-1}]})
-        }, 'followUp') ) ).then(()=> this.ready = true)
-        this.ready = false
-        return vdom
-    }
-    hasBEMethod(method) {
-        return (this.method||[]).filter(h=> h.id == method)[0]
-    }
-    runBEMethod(method, data, vars) {
-        jb.log(`backend uiComp method ${method}`, {cmp: this,data,vars})
-        if (jb.path(vars,'$state'))
-            Object.assign(this.state,vars.$state)
-        const methodImpls = (this.method||[]).filter(h=> h.id == method)
-        methodImpls.forEach(h=> jb.ui.runCtxAction(h.ctx,data,{cmp: this,$state: this.state, $props: this.renderProps, ...vars}))
-        if (methodImpls.length == 0)
-            jb.logError(`no method ${method} in cmp`, {cmp: this, data, vars})
-    }
-    refresh(state,options) {
-        const elem = jb.ui.elemOfCmp(this.ctx,this.cmpId)
-        jb.log('backend uiComp refresh request',{cmp: this,elem,state,options})
-        jb.ui.BECmpsDestroyNotification.next({ cmps: [{cmpId: this.cmpId, ver: this.ver, destroyCtxs: [] }] })
-        elem && jb.ui.refreshElem(elem,state,options) // cmpId may be deleted
-    }
-    calcCssLines() {
-        return jb.unique((this.css || []).map(l=> typeof l == 'function' ? l(this.calcCtx): l)
-        .flatMap(css=>css.split(/}\s*/m)
-            .map(x=>x.trim()).filter(x=>x)
-            .map(x=>x+'}')
-            .map(x=>x.replace(/^!/,' '))))
-    }
-    jbCssClass() {
-        return jb.ui.hashCss(this.calcCssLines() ,this.ctx)
-    }
-    originatingCtx() {
-        return this.originators[this.originators.length-1]
-    }
 
-    field() {
-        if (this._field) return this._field
-        const ctx = this.originatingCtx()
-        this._field = {
-            class: '',
-            ctxId: ui.preserveCtx(ctx),
-            control: (item,index,noCache) => this.getOrCreateItemField(item, () => ctx.setData(item).setVars({index: (index||0)+1}).runItself(),noCache),
+        renderVdom() {
+            jb.log('uiComp start renderVdom', {cmp: this})
+            this.calcRenderProps()
+            if (this.ctx.probe && this.ctx.probe.outOfTime) return
+            this.template = this.template || (() => '')
+            const initialVdom = jb.utils.tryWrapper(() => this.template(this,this.renderProps,jb.ui.h), 'template') || {}
+            const vdom = (this.templateModifierFuncs||[]).reduce((vd,modifier) =>
+                    (vd && typeof vd === 'object') ? jb.utils.tryWrapper(() => modifier(vd,this,this.renderProps,jb.ui.h) || vd, 'templateModifier') 
+                        : vd ,initialVdom)
+
+            const observe = this.toObserve.map(x=>[
+                x.ref.handler.urlOfRef(x.ref),
+                x.includeChildren && `includeChildren=${x.includeChildren}`,
+                x.strongRefresh && `strongRefresh`,  x.cssOnly && `cssOnly`, x.allowSelfRefresh && `allowSelfRefresh`, x.delay && `delay=${x.delay}`] 
+                .filter(x=>x).join(';')).join(',')
+            const methods = (this.method||[]).map(h=>`${h.id}-${jb.ui.preserveCtx(h.ctx.setVars({cmp: this, $props: this.renderProps, ...this.newVars}))}`).join(',')
+            const eventhandlers = (this.eventHandler||[]).map(h=>`${h.event}-${jb.ui.preserveCtx(h.ctx.setVars({cmp: this}))}`).join(',')
+            const originators = this.originators.map(ctx=>jb.ui.preserveCtx(ctx)).join(',')
+            const usereventprops = (this.userEventProps||[]).join(',')
+            const frontEndMethods = (this.frontEndMethod || []).map(h=>({method: h.method, path: h.path}))
+            const frontEndVars = this.frontEndVar && jb.objFromEntries(this.frontEndVar.map(h=>[h.id, jb.val(h.value(this.calcCtx))]))
+            if (vdom instanceof jb.ui.VNode) {
+                vdom.addClass(this.jbCssClass())
+                vdom.attributes = Object.assign(vdom.attributes || {}, {
+                        'jb-ctx': jb.ui.preserveCtx(this.originatingCtx()),
+                        'cmp-id': this.cmpId, 
+                        'cmp-ver': ''+this.ver,
+                        'cmp-pt': this.ctx.profile.$,
+                        'full-cmp-ctx': jb.ui.preserveCtx(this.calcCtx),
+                    },
+                    observe && {observe}, 
+                    methods && {methods}, 
+                    eventhandlers && {eventhandlers},
+                    originators && {originators},
+                    usereventprops && {usereventprops},
+                    frontEndMethods.length && {$__frontEndMethods : JSON.stringify(frontEndMethods) },
+                    frontEndMethods.length && {interactive : 'true'}, 
+                    frontEndVars && { $__vars : JSON.stringify(frontEndVars)},
+                    this.state && { $__state : JSON.stringify(this.state)},
+                    this.ctxForPick && { 'pick-ctx': jb.ui.preserveCtx(this.ctxForPick) },
+                )
+            }
+            jb.log('uiComp end renderVdom',{cmp: this, vdom})
+            this.afterFirstRendering = true
+            return vdom
         }
-        this.enrichField && this.enrichField.forEach(enrichField=>enrichField(this._field))
-        let title = jb.tosingle(jb.val(ctx.params.title)) || (() => '');
-        if (this._field.title !== undefined)
-            title = this._field.title
-        // make it always a function 
-        this._field.title = typeof title == 'function' ? title : () => ''+title;
-        this.itemfieldCache = new Map()
-        return this._field
-    }
-    getOrCreateItemField(item,factory,noCache) {
-        if (noCache)
-            return factory()
-        if (!this.itemfieldCache.get(item))
-            this.itemfieldCache.set(item,factory())
-        return this.itemfieldCache.get(item)
-    }
-    orig(ctx) {
-        if (jb.comps[ctx.profile && ctx.profile.$].type.split(/,|-/).indexOf('control') == -1)
-            debugger
-        this.originators.push(ctx)
-        return this
-    }
-    applyParamFeatures(ctx) {
-        (ctx.params.features && ctx.params.features(ctx) || []).forEach(f => this.jbExtend(f,ctx))
-        return this
-    }
+        renderVdomAndFollowUp() {
+            const vdom = this.renderVdom()
+            jb.delay(1).then(() => (this.followUpFuncs||[]).forEach(fu=> jb.utils.tryWrapper(() => { 
+                jb.log(`backend uiComp followUp`, {cmp: this, fu, srcCtx: fu.srcCtx})
+                fu.action(this.calcCtx)
+                if (this.ver>1)
+                    jb.ui.BECmpsDestroyNotification.next({ cmps: [{cmpId: this.cmpId, ver: this.ver-1}]})
+            }, 'followUp') ) ).then(()=> this.ready = true)
+            this.ready = false
+            return vdom
+        }
+        hasBEMethod(method) {
+            return (this.method||[]).filter(h=> h.id == method)[0]
+        }
+        runBEMethod(method, data, vars) {
+            jb.log(`backend uiComp method ${method}`, {cmp: this,data,vars})
+            if (jb.path(vars,'$state'))
+                Object.assign(this.state,vars.$state)
+            const methodImpls = (this.method||[]).filter(h=> h.id == method)
+            methodImpls.forEach(h=> jb.ui.runCtxAction(h.ctx,data,{cmp: this,$state: this.state, $props: this.renderProps, ...vars}))
+            if (methodImpls.length == 0)
+                jb.logError(`no method ${method} in cmp`, {cmp: this, data, vars})
+        }
+        refresh(state,options) {
+            const elem = jb.ui.elemOfCmp(this.ctx,this.cmpId)
+            jb.log('backend uiComp refresh request',{cmp: this,elem,state,options})
+            jb.ui.BECmpsDestroyNotification.next({ cmps: [{cmpId: this.cmpId, ver: this.ver, destroyCtxs: [] }] })
+            elem && jb.ui.refreshElem(elem,state,options) // cmpId may be deleted
+        }
+        calcCssLines() {
+            return jb.utils.unique((this.css || []).map(l=> typeof l == 'function' ? l(this.calcCtx): l)
+            .flatMap(css=>css.split(/}\s*/m)
+                .map(x=>x.trim()).filter(x=>x)
+                .map(x=>x+'}')
+                .map(x=>x.replace(/^!/,' '))))
+        }
+        jbCssClass() {
+            return jb.ui.hashCss(this.calcCssLines() ,this.ctx)
+        }
+        originatingCtx() {
+            return this.originators[this.originators.length-1]
+        }
 
-    jbExtend(_options,ctx) {
-        if (!_options) return this;
-        if (!ctx) debugger
-        ctx = ctx || this.ctx;
-        if (!ctx)
-            console.log('no ctx provided for jbExtend');
-        if (typeof _options != 'object')
-            debugger;
-        const options = _options.$ ? ctx.run(_options) : _options
-        if (Array.isArray(options)) {
-            options.forEach(o=>this.jbExtend(o,ctx))
+        field() {
+            if (this._field) return this._field
+            const ctx = this.originatingCtx()
+            this._field = {
+                class: '',
+                ctxId: jb.ui.preserveCtx(ctx),
+                control: (item,index,noCache) => this.getOrCreateItemField(item, () => ctx.setData(item).setVars({index: (index||0)+1}).runItself(),noCache),
+            }
+            this.enrichField && this.enrichField.forEach(enrichField=>enrichField(this._field))
+            let title = jb.tosingle(jb.val(ctx.params.title)) || (() => '');
+            if (this._field.title !== undefined)
+                title = this._field.title
+            // make it always a function 
+            this._field.title = typeof title == 'function' ? title : () => ''+title;
+            this.itemfieldCache = new Map()
+            return this._field
+        }
+        getOrCreateItemField(item,factory,noCache) {
+            if (noCache)
+                return factory()
+            if (!this.itemfieldCache.get(item))
+                this.itemfieldCache.set(item,factory())
+            return this.itemfieldCache.get(item)
+        }
+        orig(ctx) {
+            if (jb.comps[ctx.profile && ctx.profile.$].type.split(/,|-/).indexOf('control') == -1)
+                debugger
+            this.originators.push(ctx)
+            return this
+        }
+        applyParamFeatures(ctx) {
+            (ctx.params.features && ctx.params.features(ctx) || []).forEach(f => this.jbExtend(f,ctx))
             return this
         }
 
-        if (options.afterViewInit) 
-            options.frontEnd = options.afterViewInit
-        if (typeof options.class == 'string') 
-            options.templateModifier = vdom => vdom.addClass(options.class)
-
-        Object.keys(options).forEach(key=>{
-            if (typeof options[key] == 'function')
-                Object.defineProperty(options[key], 'name', { value: key })
-
-            if (lifeCycle.has(key)) {
-                this[key+'Funcs'] = this[key+'Funcs'] || []
-                this[key+'Funcs'].push(options[key])
+        jbExtend(_options,ctx) {
+            if (!_options) return this;
+            if (!ctx) debugger
+            ctx = ctx || this.ctx;
+            if (!ctx)
+                console.log('no ctx provided for jbExtend');
+            if (typeof _options != 'object')
+                debugger;
+            const options = _options.$ ? ctx.run(_options) : _options
+            if (Array.isArray(options)) {
+                options.forEach(o=>this.jbExtend(o,ctx))
+                return this
             }
-            if (arrayProps.has(key)) {
-                this[key] = this[key] || []
-                this[key].push(options[key])
+
+            if (options.afterViewInit) 
+                options.frontEnd = options.afterViewInit
+            if (typeof options.class == 'string') 
+                options.templateModifier = vdom => vdom.addClass(options.class)
+
+            Object.keys(options).forEach(key=>{
+                if (typeof options[key] == 'function')
+                    Object.defineProperty(options[key], 'name', { value: key })
+
+                if (jb.ui.lifeCycle.has(key)) {
+                    this[key+'Funcs'] = this[key+'Funcs'] || []
+                    this[key+'Funcs'].push(options[key])
+                }
+                if (jb.ui.arrayProps.has(key)) {
+                    this[key] = this[key] || []
+                    this[key].push(options[key])
+                }
+                if (jb.ui.singular.has(key))
+                    this[key] = this[key] || options[key]
+            })
+            if (options.watchRef) {
+                this.watchRef = this.watchRef || []
+                this.watchRef.push({cmp: this,...options.watchRef});
             }
-            if (singular.has(key))
-                this[key] = this[key] || options[key]
-        })
-        if (options.watchRef) {
-            this.watchRef = this.watchRef || []
-            this.watchRef.push({cmp: this,...options.watchRef});
+
+            // eventObservables
+            this.eventObservables = this.eventObservables.concat(Object.keys(options).filter(op=>op.indexOf('on') == 0))
+
+            jb.asArray(options.featuresOptions || []).filter(x=>x).forEach(f => this.jbExtend(f.$ ? ctx.run(f) : f , ctx))
+            jb.asArray(jb.ui.inStudio() && options.studioFeatures).filter(x=>x).forEach(f => this.jbExtend(ctx.run(f), ctx))
+            return this;
         }
-
-        // eventObservables
-        this.eventObservables = this.eventObservables.concat(Object.keys(options).filter(op=>op.indexOf('on') == 0))
-
-        jb.asArray(options.featuresOptions || []).filter(x=>x).forEach(f => this.jbExtend(f.$ ? ctx.run(f) : f , ctx))
-        jb.asArray(ui.inStudio() && options.studioFeatures).filter(x=>x).forEach(f => this.jbExtend(ctx.run(f), ctx))
-        return this;
     }
-}
+})
 
-ui.JbComponent = JbComponent
+jb.initLibs('jstypes', {
+    renderable(value) {
+        if (value == null) return '';
+        if (value instanceof jb.ui.VNode) return value;
+        if (value instanceof jb.ui.JbComponent) return jb.ui.h(value)
+        if (Array.isArray(value))
+            return jb.ui.h('div',{},value.map(item=>jb.jstypes.renderable(item)));
+        return '' + jb.val(value,true);
+    }
+});
 
-jb.jstypes.renderable = value => {
-    if (value == null) return '';
-    if (value instanceof ui.VNode) return value;
-    if (value instanceof JbComponent) return ui.h(value)
-    if (Array.isArray(value))
-        return ui.h('div',{},value.map(item=>jb.jstypes.renderable(item)));
-    return '' + jb.val(value,true);
-}
-
-})();
-
-Object.assign(jb.ui,{
+jb.initLibs('ui',{
     focus(elem,logTxt,srcCtx) {
         if (!elem) debugger
         // block the preview from stealing the studio focus
@@ -5661,7 +5595,7 @@ jb.component('service.registerBackEndService', {
 
 
 // ****************** html utils ***************
-Object.assign(jb.ui, {
+jb.initLibs('ui',{
     outerWidth(el) {
         const style = getComputedStyle(el)
         return el.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight)
@@ -5734,21 +5668,6 @@ Object.assign(jb.ui, {
       return ret
     }
 })
-
-jb.objectDiff = function(newObj, orig) {
-    if (orig === newObj) return {}
-    if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
-    const deletedValues = Object.keys(orig).reduce((acc, key) =>
-        newObj.hasOwnProperty(key) ? acc : { ...acc, [key]: '__undefined'}
-    , {})
-
-    return Object.keys(newObj).reduce((acc, key) => {
-      if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key
-      const difference = jb.objectDiff(newObj[key], orig[key])
-      if (jb.isObject(difference) && jb.isEmpty(difference)) return acc // return no diff
-      return { ...acc, [key]: difference } // return updated key
-    }, deletedValues)
-}
 
 // ****************** components ****************
 
@@ -5843,7 +5762,96 @@ jb.component('controlWithFeatures', {
   impl: (ctx,control,features) => control.jbExtend(features,ctx).orig(ctx)
 })
 
+// widely used
 var { customStyle, styleByControl, styleWithFeatures, controlWithFeatures } = jb.macro
+;
+
+jb.initLibs('ui', {
+    refreshFrontEnd(elem) {
+        jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> el._component ? el._component.newVDomApplied() : jb.ui.mountFrontEnd(el))
+    },
+    mountFrontEnd(elem, keepState) {
+        new jb.ui.frontEndCmp(elem, keepState)
+    },
+    frontEndCmp: class frontEndCmp {
+        constructor(elem, keepState) {
+            this.ctx = jb.ui.parents(elem,{includeSelf: true}).map(elem=>elem.ctxForFE).filter(x=>x)[0] || new jb.jbCtx()
+            this.state = { ...elem.state, ...(keepState && jb.path(elem._component,'state')), frontEndStatus: 'initializing' }
+            this.base = elem
+            this.cmpId = elem.getAttribute('cmp-id')
+            this.ver= elem.getAttribute('cmp-ver')
+            this.pt = elem.getAttribute('cmp-pt')
+            this.destroyed = new Promise(resolve=>this.resolveDestroyed = resolve)
+            this.flows= []
+            elem._component = this
+            this.runFEMethod('calcProps',null,null,true)
+            this.runFEMethod('init',null,null,true)
+            ;(elem.getAttribute('eventhandlers') || '').split(',').forEach(h=>{
+                const [event,ctxId] = h.split('-')
+                elem.addEventListener(event, ev => jb.ui.handleCmpEvent(ev,ctxId))
+            })
+            this.state.frontEndStatus = 'ready'
+        }
+        runFEMethod(method,data,_vars,silent) {
+            if (this.state.frontEndStatus != 'ready' && ['init','calcProps'].indexOf(method) == -1)
+                return jb.logError('frontEnd - running method before init', {cmp: {...this}, method,data,_vars})
+            const toRun = (this.base.frontEndMethods || []).filter(x=>x.method == method)
+            if (toRun.length == 0 && !silent)
+                return jb.logError(`frontEnd - no method ${method}`,{cmp: {...this}})
+            toRun.forEach(({path}) => jb.utils.tryWrapper(() => {
+                const profile = path.split('~').reduce((o,p)=>o[p],jb.comps)
+                const srcCtx = new jb.jbCtx(this.ctx, { profile, path, forcePath: path })
+                const feMEthod = jb.run(srcCtx)
+                const el = this.base
+                const vars = {cmp: this, $state: this.state, el, ...this.base.vars, ..._vars }
+                const ctxToUse = this.ctx.setData(data).setVars(vars)
+                const {_prop, _flow } = feMEthod.frontEndMethod
+                if (_prop)
+                    jb.log(`frontend uiComp calc prop ${_prop}`,{cmp: {...this}, srcCtx, ...feMEthod.frontEndMethod, el,ctxToUse})
+                else if (_flow)
+                    jb.log(`frontend uiComp start flow ${jb.ui.rxPipeName(_flow)}`,{cmp: {...this}, srcCtx, ...feMEthod.frontEndMethod, el, ctxToUse})
+                else 
+                    jb.log(`frontend uiComp run method ${method}`,{cmp: {...this}, srcCtx , ...feMEthod.frontEndMethod,el,ctxToUse})
+                const res = ctxToUse.run(feMEthod.frontEndMethod.action)
+                if (_flow) this.flows.push(res)
+            }, `frontEnd-${method}`))
+        }
+        enrichUserEvent(ev, userEvent) {
+            (this.base.frontEndMethods || []).filter(x=>x.method == 'enrichUserEvent').map(({path}) => jb.utils.tryWrapper(() => {
+                const actionPath = path+'~action'
+                const profile = actionPath.split('~').reduce((o,p)=>o[p],jb.comps)
+                const vars = {cmp: this, $state: this.state, el: this.base, ...this.base.vars, ev, userEvent }
+                Object.assign(userEvent, jb.run( new jb.jbCtx(this.ctx, { vars, profile, path: actionPath })))
+            }, 'enrichUserEvent'))
+        }
+        refresh(state, options) {
+            jb.log('frontend uiComp refresh request',{cmp: {...this} , state, options})
+            if (this._deleted) return
+            Object.assign(this.state, state)
+            this.base.state = this.state
+            ui.refreshElem(this.base,this.state,options)
+        }
+        refreshFE(state) {
+            if (this._deleted) return
+            Object.assign(this.state, state)
+            this.base.state = this.state
+            this.runFEMethod('onRefresh',null,null,true)
+        }    
+        newVDomApplied() {
+            Object.assign(this.state,{...this.base.state}) // update state from BE
+            this.ver= this.base.getAttribute('cmp-ver')
+            this.runFEMethod('onRefresh',null,null,true)
+        }
+        destroyFE() {
+            this._deleted = true
+            this.flows.forEach(flow=>flow.dispose())
+            this.runFEMethod('destroy',null,null,true)
+            this.resolveDestroyed() // notifications to takeUntil(this.destroyed) observers
+        }
+    }
+})
+
+// interactive handlers like onmousemove and onkeyXX are handled in the frontEnd with and not varsed to the backend headless widgets
 ;
 
 
@@ -5934,9 +5942,9 @@ jb.component('feature.initValue', {
       const toAssign = jb.val(value), currentVal = jb.val(to)
       if ((alsoWhenNotEmpty || currentVal == null) && toAssign !== currentVal) {
         jb.log('init value',{cmp, ...ctx.params})
-        jb.writeValue(to,toAssign,ctx,true)
+        jb.db.writeValue(to,toAssign,ctx,true)
       } else if (toAssign !== currentVal) {
-        jb.logError(`feature.initValue: init non empty value ${jb.prettyPrint(to.profile)}`,{toAssign,currentVal,cmp,ctx,to,value})
+        jb.logError(`feature.initValue: init non empty value ${jb.utils.prettyPrint(to.profile)}`,{toAssign,currentVal,cmp,ctx,to,value})
       }
     }, 
     phase: 10 
@@ -6158,8 +6166,8 @@ jb.component('variable', {
       const fullName = name + ':' + cmp.ctx.id;
       if (fullName == 'items') debugger
       jb.log('create watchable var',{cmp,ctx,fullName})
-      const refToResource = jb.mainWatchableHandler.refOfPath([fullName]);
-      jb.writeValue(refToResource,value(ctx),ctx)
+      const refToResource = jb.db.mainWatchableHandler.refOfPath([fullName]);
+      jb.db.writeValue(refToResource,value(ctx),ctx)
       return ctx.setVar(name, refToResource);
     }
   })
@@ -6187,7 +6195,7 @@ jb.component('calculatedVar', {
         const {name,value} = ctx.cmpCtx.params
         const fullName = name + ':' + cmp.cmpId;
         jb.log('create watchable calculatedVar',{ctx,cmp,fullName})
-        jb.resource(fullName, jb.val(value(_ctx)));
+        jb.db.resource(fullName, jb.val(value(_ctx)));
         const ref = _ctx.exp(`%$${fullName}%`,'ref')
         return _ctx.setVar(name, ref);
       }
@@ -6253,7 +6261,7 @@ jb.component('refreshIfNotWatchable', {
   params: [
     {id: 'data'}
   ],
-  impl: (ctx, data) => !jb.isWatchable(data) && ctx.vars.cmp.refresh(null,{strongRefresh: true})
+  impl: (ctx, data) => !jb.db.isWatchable(data) && ctx.vars.cmp.refresh(null,{strongRefresh: true})
 })
 
 jb.component('feature.byCondition', {
@@ -7013,7 +7021,7 @@ jb.component('group', {
     {id: 'title', as: 'string', dynamic: true},
     {id: 'layout', type: 'layout'},
     {id: 'style', type: 'group.style', defaultValue: group.div(), mandatory: true, dynamic: true},
-    {id: 'controls', type: 'control[]', mandatory: true, flattenArray: true, dynamic: true, composite: true},
+    {id: 'controls', type: 'control[]', mandatory: true, dynamic: true, composite: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
   impl: ctx => jb.ui.ctrl(ctx, ctx.params.layout)
@@ -7022,7 +7030,7 @@ jb.component('group', {
 jb.component('group.initGroup', {
   type: 'feature',
   category: 'group:0',
-  impl: calcProp('ctrls',(ctx,{$model}) => $model.controls(ctx).filter(x=>x))
+  impl: calcProp('ctrls',(ctx,{$model}) => $model.controls(ctx).filter(x=>x).flatMap(x=>x.segment ? x : [x]))
 })
 
 jb.component('inlineControls', {
@@ -7097,7 +7105,7 @@ jb.component('group.wait', {
         priority: ctx => jb.path(ctx.vars.$state,'dataArrived') ? 0: 10
     }),
     followUp.action((ctx,{cmp},{varName,passRx}) => !cmp.state.dataArrived && !cmp.state.error &&
-        Promise.resolve(jb.toSynchArray(ctx.cmpCtx.params.for(),!passRx))
+        Promise.resolve(jb.utils.toSynchArray(ctx.cmpCtx.params.for(),!passRx))
         .then(data => cmp.refresh({ dataArrived: true }, {
             srcCtx: ctx.cmpCtx,
             extendCtx: ctx => ctx.setVar(varName,data).setData(data)
@@ -7120,7 +7128,20 @@ jb.component('group.eliminateRecursion', {
       return ctx.run( calcProp({id: 'ctrls', value: () => [], phase: 1, priority: 100 }))
   }
 })
-;
+
+jb.component('controls', {
+  type: 'control',
+  description: 'list of controls to be put inline, flatten inplace. E.g., set of table fields',
+  category: 'group:20',
+  params: [
+    {id: 'controls', type: 'control[]', mandatory: true, dynamic: true, composite: true},
+  ],
+  impl: (ctx,controls) => {
+    const res = controls(ctx)
+    res.segment = true
+    return res
+  }
+});
 
 var { html } = jb.ns('html')
 
@@ -7427,7 +7448,7 @@ jb.component('field.databind', {
 
 function writeFieldData(ctx,cmp,value,oneWay) {
   if (jb.val(ctx.vars.$model.databind(cmp.ctx)) == value) return
-  jb.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx)
+  jb.db.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx)
   jb.ui.checkValidationError(cmp,value,ctx)
   cmp.hasBEMethod('onValueChange') && cmp.runBEMethod('onValueChange',value,ctx.vars)
   !oneWay && cmp.refresh({},{srcCtx: ctx.cmpCtx})
@@ -8592,7 +8613,7 @@ jb.component('itemlist.calcSlicedItems', {
       return res
     }
     const slicedItems = allItems.length > visualSizeLimit ? allItems.slice(0, visualSizeLimit) : allItems
-    const itemsRefs = jb.isRef(jb.asRef(slicedItems)) ? Object.keys(slicedItems).map(i=> jb.objectProperty(slicedItems,i)) : slicedItems
+    const itemsRefs = jb.db.isRef(jb.db.asRef(slicedItems)) ? Object.keys(slicedItems).map(i=> jb.db.objectProperty(slicedItems,i)) : slicedItems
     return itemsRefs
   }
 })
@@ -8633,9 +8654,9 @@ jb.component('itemlistContainer.filter', {
 			const res = ctx.vars.itemlistCntr.filters.reduce((items,f) => f.filter(items), ctx.data || []);
 			if (updateCounters) { // use merge
 					jb.delay(1).then(_=>{
-					jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeFilter%','ref'),(ctx.data || []).length, ctx);
-					jb.writeValue(ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','ref'),resBeforeMaxFilter.length, ctx);
-					jb.writeValue(ctx.exp('%$itemlistCntrData/countAfterFilter%','ref'),res.length, ctx);
+					jb.db.writeValue(ctx.exp('%$itemlistCntrData/countBeforeFilter%','ref'),(ctx.data || []).length, ctx);
+					jb.db.writeValue(ctx.exp('%$itemlistCntrData/countBeforeMaxFilter%','ref'),resBeforeMaxFilter.length, ctx);
+					jb.db.writeValue(ctx.exp('%$itemlistCntrData/countAfterFilter%','ref'),res.length, ctx);
 			}) } else {
 				ctx.vars.itemlistCntrData.countAfterFilter = res.length
 			}
@@ -9599,7 +9620,7 @@ jb.component('multiSelect.modelAsBooleanRef',{
         function add() { if (!has(code)) jb.push(ref, code,ctx) }
         function remove() { 
             const index = jb.val(ref).indexOf(code)
-            index != -1 && jb.splice(ref,[[index,1]],ctx)
+            index != -1 && jb.db.splice(ref,[[index,1]],ctx)
         }
     }
 })
@@ -9904,14 +9925,14 @@ jb.component('slider.init', {
     method('assignIgnoringUnits', (ctx,{editableNumber,$model}) => {
       const curVal = editableNumber.numericPart(jb.val($model.databind()))
       if (curVal === undefined) return
-      jb.writeValue($model.databind(),editableNumber.calcDataString(ctx.data,ctx),ctx)
+      jb.db.writeValue($model.databind(),editableNumber.calcDataString(ctx.data,ctx),ctx)
     }),
     method('incIgnoringUnits', (ctx,{editableNumber,$model,$props}) => {
       const curVal = editableNumber.numericPart(jb.val($model.databind()))
       if (curVal === undefined) return
       const nVal = curVal + ctx.data*$props.step
       const newVal = editableNumber.autoScale ? nVal : editableNumber.keepInDomain(nVal)
-      jb.writeValue($model.databind(), editableNumber.calcDataString(newVal, ctx),ctx)
+      jb.db.writeValue($model.databind(), editableNumber.calcDataString(newVal, ctx),ctx)
     }),
     frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode%==46'), sink.BEMethod('delete')),
     frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode%==39'), rx.map(If('%shiftKey%',9,1)), sink.BEMethod('incIgnoringUnits')),
@@ -12144,7 +12165,7 @@ class Json {
 	constructor(jsonRef,rootPath) {
 		this.json = jsonRef;
 		this.rootPath = rootPath;
-		this.refHandler = jb.refHandler(jsonRef)
+		this.refHandler = jb.db.refHandler(jsonRef)
 	}
 	children(path) {
 		const val = this.val(path)
@@ -12192,11 +12213,11 @@ class Json {
 		const target = isNaN(Number(_target.split('~').slice(-1))) ? _target + '~0' : _target
 		const targetArr = this.val(target.split('~').slice(0,-1).join('~'));
 		if (Array.isArray(draggedArr) && Array.isArray(targetArr))
-			jb.move(jb.asRef(this.val(dragged)), this.val(target) ? jb.asRef(this.val(target)) : this.extraArrayRef(target) ,ctx)
+			jb.db.move(jb.db.asRef(this.val(dragged)), this.val(target) ? jb.db.asRef(this.val(target)) : this.extraArrayRef(target) ,ctx)
 	}
 	extraArrayRef(target) {
 		const targetArr = this.val(target.split('~').slice(0,-1).join('~'));
-		const targetArrayRef = jb.asRef(targetArr)
+		const targetArrayRef = jb.db.asRef(targetArr)
 		const handler = targetArrayRef.handler
 		return handler && handler.refOfPath(handler.pathOfRef(targetArrayRef).concat(target.split('~').slice(-1)))
 	}
@@ -12209,196 +12230,197 @@ jb.component('prettyPrint', {
     {id: 'profile', defaultValue: '%%'},
     {id: 'forceFlat', as: 'boolean', type: 'boolean'},
   ],
-  impl: (ctx,profile) => jb.prettyPrint(jb.val(profile),{ ...ctx.params, comps: jb.studio.previewjb.comps})
+  impl: (ctx,profile) => jb.utils.prettyPrint(jb.val(profile),{ ...ctx.params, comps: jb.studio.previewjb.comps})
 })
 
-jb.prettyPrintComp = function(compId,comp,settings={}) {
-  if (comp) {
-    return `jb.component('${compId}', ${jb.prettyPrint(comp,{ initialPath: compId, ...settings })})`
-  }
-}
+jb.initLibs('utils', {
+  prettyPrintComp(compId,comp,settings={}) {
+    if (comp) {
+      return `jb.component('${compId}', ${jb.utils.prettyPrint(comp,{ initialPath: compId, ...settings })})`
+    }
+  },
+  
+  prettyPrint(val,settings = {}) {
+    if (val == null) return ''
+    return jb.utils.prettyPrintWithPositions(val,settings).text;
+  },
+  
+  advanceLineCol({line,col},text) {
+    const noOfLines = (text.match(/\n/g) || '').length
+    const newCol = noOfLines ? text.match(/\n(.*)$/)[1].length : col + text.length
+    return { line: line + noOfLines, col: newCol }
+  },
+  emptyLineWithSpaces: Array.from(new Array(200)).map(_=>' ').join(''),
 
-jb.prettyPrint = function(val,settings = {}) {
-  if (val == null) return ''
-  return jb.prettyPrintWithPositions(val,settings).text;
-}
+  prettyPrintWithPositions(val,{colWidth=120,tabSize=2,initialPath='',noMacros,comps,forceFlat} = {}) {
+    comps = comps || jb.comps
+    if (!val || typeof val !== 'object')
+      return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
 
-jb.prettyPrint.advanceLineCol = function({line,col},text) {
-  const noOfLines = (text.match(/\n/g) || '').length
-  const newCol = noOfLines ? text.match(/\n(.*)$/)[1].length : col + text.length
-  return { line: line + noOfLines, col: newCol }
-}
-jb.prettyPrint.spaces = Array.from(new Array(200)).map(_=>' ').join('');
+    const res = valueToMacro({path: initialPath, line:0, col: 0, depth :1}, val)
+    res.text = res.text.replace(/__fixedNL__/g,'\n')
+    return res
 
-jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='',noMacros,comps,forceFlat} = {}) {
-  comps = comps || jb.comps
-  if (!val || typeof val !== 'object')
-    return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
-
-  const res = valueToMacro({path: initialPath, line:0, col: 0, depth :1}, val)
-  res.text = res.text.replace(/__fixedNL__/g,'\n')
-  return res
-
-  function processList(ctx,items) {
-    const res = items.reduce((acc,{prop, item}) => {
-      const toAdd = typeof item === 'function' ? item(acc) : item
-      const toAddStr = toAdd.text || toAdd, toAddMap = toAdd.map || {}, toAddPath = toAdd.path || ctx.path
-      const startPos = jb.prettyPrint.advanceLineCol(acc,''), endPos = jb.prettyPrint.advanceLineCol(acc,toAddStr)
-      const map = { ...acc.map, ...toAddMap, [[toAddPath,prop].join('~')]: [startPos.line, startPos.col, endPos.line, endPos.col] }
-      return { text: acc.text + toAddStr, map, unflat: acc.unflat || toAdd.unflat, ...endPos}
-    }, {text: '', map: {}, ...ctx})
-    return {...ctx, ...res}
-  }
-
-  function joinVals(ctx, innerVals, open, close, flat, isArray) {
-    const {path, depth} = ctx
-    const _open = typeof open === 'string' ? [{prop: '!open', item: open}] : open
-    const openResult = processList(ctx,[..._open, {prop: '!open-newline', item: () => newLine()}])
-    const arrayOrObj = isArray? 'array' : 'obj'
-
-    const beforeClose = innerVals.reduce((acc,{innerPath, val}, index) =>
-      processList(acc,[
-        {prop: `!${arrayOrObj}-prefix-${index}`, item: isArray ? '' : fixPropName(innerPath) + ': '},
-        {prop: '!value', item: ctx => {
-            const ctxWithPath = { ...ctx, path: [path,innerPath].join('~'), depth: depth +1 }
-            return {...ctxWithPath, ...valueToMacro(ctxWithPath, val, flat)}
-          }
-        },
-        {prop: `!${arrayOrObj}-separator-${index}`, item: () => index === innerVals.length-1 ? '' : ',' + (flat ? ' ' : newLine())},
-      ])
-    , {...openResult, unflat: false} )
-    const _close = typeof close === 'string' ? [{prop: '!close', item: close}] : close
-    const result = processList(beforeClose, [{prop: '!close-newline', item: () => newLine(-1)}, ..._close])
-
-    const unflat = shouldNotFlat(result)
-    if ((forceFlat || !unflat) && !flat)
-      return joinVals(ctx, innerVals, open, close, true, isArray)
-    return {...result, unflat}
-
-    function newLine(offset = 0) {
-      return flat ? '' : '\n' + jb.prettyPrint.spaces.slice(0,(depth+offset)*tabSize)
+    function processList(ctx,items) {
+      const res = items.reduce((acc,{prop, item}) => {
+        const toAdd = typeof item === 'function' ? item(acc) : item
+        const toAddStr = toAdd.text || toAdd, toAddMap = toAdd.map || {}, toAddPath = toAdd.path || ctx.path
+        const startPos = jb.utils.advanceLineCol(acc,''), endPos = jb.utils.advanceLineCol(acc,toAddStr)
+        const map = { ...acc.map, ...toAddMap, [[toAddPath,prop].join('~')]: [startPos.line, startPos.col, endPos.line, endPos.col] }
+        return { text: acc.text + toAddStr, map, unflat: acc.unflat || toAdd.unflat, ...endPos}
+      }, {text: '', map: {}, ...ctx})
+      return {...ctx, ...res}
     }
 
-    function shouldNotFlat(result) {
-      const long = result.text.replace(/\n\s*/g,'').split('__fixedNL__')[0].length > colWidth
-      if (!jb.studio.valOfPath)
-        return result.unflat || long
-      const val = jb.studio.valOfPath(path)
-      const paramProps = path.match(/~params~[0-9]+$/)
-      const paramsParent = path.match(/~params$/)
-      const ctrls = path.match(/~controls$/) && Array.isArray(val) // && innerVals.length > 1// jb.studio.isOfType(path,'control') && !arrayElem
-      const customStyle = jb.studio.compNameOfPath && jb.studio.compNameOfPath(path) === 'customStyle'
-      const moreThanTwoVals = innerVals.length > 2 && !isArray
-      const top = !path.match(/~/g)
-      return !paramProps && (result.unflat || paramsParent || customStyle || moreThanTwoVals || top || ctrls || long)
-    }
-    function fixPropName(prop) {
-      return prop.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/) ? prop : `'${prop}'`
-    }
-  }
+    function joinVals(ctx, innerVals, open, close, flat, isArray) {
+      const {path, depth} = ctx
+      const _open = typeof open === 'string' ? [{prop: '!open', item: open}] : open
+      const openResult = processList(ctx,[..._open, {prop: '!open-newline', item: () => newLine()}])
+      const arrayOrObj = isArray? 'array' : 'obj'
 
-  function profileToMacro(ctx, profile,flat) {
-    const id = [jb.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
-    const comp = comps[id]
-    if (comp)
-      jb.fixMacroByValue(profile,comp)
-    if (noMacros || !id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
-      const props = Object.keys(profile)
-      if (props.indexOf('$') > 0) { // make the $ first
-        props.splice(props.indexOf('$'),1);
-        props.unshift('$');
+      const beforeClose = innerVals.reduce((acc,{innerPath, val}, index) =>
+        processList(acc,[
+          {prop: `!${arrayOrObj}-prefix-${index}`, item: isArray ? '' : fixPropName(innerPath) + ': '},
+          {prop: '!value', item: ctx => {
+              const ctxWithPath = { ...ctx, path: [path,innerPath].join('~'), depth: depth +1 }
+              return {...ctxWithPath, ...valueToMacro(ctxWithPath, val, flat)}
+            }
+          },
+          {prop: `!${arrayOrObj}-separator-${index}`, item: () => index === innerVals.length-1 ? '' : ',' + (flat ? ' ' : newLine())},
+        ])
+      , {...openResult, unflat: false} )
+      const _close = typeof close === 'string' ? [{prop: '!close', item: close}] : close
+      const result = processList(beforeClose, [{prop: '!close-newline', item: () => newLine(-1)}, ..._close])
+
+      const unflat = shouldNotFlat(result)
+      if ((forceFlat || !unflat) && !flat)
+        return joinVals(ctx, innerVals, open, close, true, isArray)
+      return {...result, unflat}
+
+      function newLine(offset = 0) {
+        return flat ? '' : '\n' + jb.utils.emptyLineWithSpaces.slice(0,(depth+offset)*tabSize)
       }
-      return joinVals(ctx, props.map(prop=>({innerPath: prop, val: profile[prop]})), '{', '}', flat, false)
-    }
-    const macro = jb.macroName(id)
 
-    const params = comp.params || []
-    const firstParamIsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
-    const vars = (profile.$vars || []).map(({name,val},i) => ({innerPath: `$vars~${i}`, val: {$: 'Var', name, val }}))
-    const remark = profile.remark ? [{innerPath: 'remark', val: {$remark: profile.remark}} ] : []
-    const systemProps = vars.concat(remark)
-    const openProfileByValueGroup = [{prop: '!profile', item: macro}, {prop:'!open-by-value', item:'('}]
-    const closeProfileByValueGroup = [{prop:'!close-by-value', item:')'}]
-    const openProfileSugarGroup = [{prop: '!profile', item: macro}, {prop:'!open-sugar', item:'('}]
-    const closeProfileSugarGroup = [{prop:'!close-sugar', item: ')'}]
-    const openProfileGroup = [{prop: '!profile', item: macro}, {prop:'!open-profile', item:'({'}]
-    const closeProfileGroup = [{prop:'!close-profile', item:'})'}]
-
-    if (firstParamIsArray) { // pipeline, or, and, plus
-      const vars = (profile.$vars || []).map(({name,val}) => ({$: 'Var', name, val }))
-      const args = vars.concat(jb.asArray(profile[params[0].id]))
-        .map((val,i) => ({innerPath: params[0].id + '~' + i, val}))
-      return joinVals(ctx, args, openProfileSugarGroup, closeProfileSugarGroup, flat, true)
+      function shouldNotFlat(result) {
+        const long = result.text.replace(/\n\s*/g,'').split('__fixedNL__')[0].length > colWidth
+        if (!jb.studio.valOfPath)
+          return result.unflat || long
+        const val = jb.studio.valOfPath(path)
+        const paramProps = path.match(/~params~[0-9]+$/)
+        const paramsParent = path.match(/~params$/)
+        const ctrls = path.match(/~controls$/) && Array.isArray(val) // && innerVals.length > 1// jb.studio.isOfType(path,'control') && !arrayElem
+        const customStyle = jb.studio.compNameOfPath && jb.studio.compNameOfPath(path) === 'customStyle'
+        const moreThanTwoVals = innerVals.length > 2 && !isArray
+        const top = !path.match(/~/g)
+        return !paramProps && (result.unflat || paramsParent || customStyle || moreThanTwoVals || top || ctrls || long)
+      }
+      function fixPropName(prop) {
+        return prop.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/) ? prop : `'${prop}'`
+      }
     }
-    const keys = Object.keys(profile).filter(x=>x != '$')
-    const oneFirstArg = keys.length === 1 && params[0] && params[0].id == keys[0]
-    const twoFirstArgs = keys.length == 2 && params.length >= 2 && profile[params[0].id] && profile[params[1].id]
-    if ((params.length < 3 && comp.macroByValue !== false) || comp.macroByValue || oneFirstArg || twoFirstArgs) {
-      const args = systemProps.concat(params.map(param=>({innerPath: param.id, val: propOfProfile(param.id)})))
-      for(let i=0;i<5;i++)
-        if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
-      return joinVals(ctx, args, openProfileByValueGroup, closeProfileByValueGroup, flat, true)
-    }
-    const remarkProp = profile.remark ? [{innerPath: 'remark', val: profile.remark} ] : []
-    const systemPropsInObj = remarkProp.concat(vars.length ? [{innerPath: 'vars', val: vars.map(x=>x.val)}] : [])
-    const args = systemPropsInObj.concat(params.filter(param=>propOfProfile(param.id) !== undefined)
-        .map(param=>({innerPath: param.id, val: propOfProfile(param.id)})))
-    const open = args.length ? openProfileGroup : openProfileByValueGroup
-    const close = args.length ? closeProfileGroup : closeProfileByValueGroup
-    return joinVals(ctx, args, open, close, flat, false)
 
-    function propOfProfile(paramId) {
-      const isFirst = params[0] && params[0].id == paramId
-      return isFirst && profile['$'+id] || profile[paramId]
+    function profileToMacro(ctx, profile,flat) {
+      const id = [jb.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
+      const comp = comps[id]
+      if (comp)
+        jb.fixMacroByValue(profile,comp)
+      if (noMacros || !id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
+        const props = Object.keys(profile)
+        if (props.indexOf('$') > 0) { // make the $ first
+          props.splice(props.indexOf('$'),1);
+          props.unshift('$');
+        }
+        return joinVals(ctx, props.map(prop=>({innerPath: prop, val: profile[prop]})), '{', '}', flat, false)
+      }
+      const macro = jb.macroName(id)
+
+      const params = comp.params || []
+      const firstParamIsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
+      const vars = (profile.$vars || []).map(({name,val},i) => ({innerPath: `$vars~${i}`, val: {$: 'Var', name, val }}))
+      const remark = profile.remark ? [{innerPath: 'remark', val: {$remark: profile.remark}} ] : []
+      const systemProps = vars.concat(remark)
+      const openProfileByValueGroup = [{prop: '!profile', item: macro}, {prop:'!open-by-value', item:'('}]
+      const closeProfileByValueGroup = [{prop:'!close-by-value', item:')'}]
+      const openProfileSugarGroup = [{prop: '!profile', item: macro}, {prop:'!open-sugar', item:'('}]
+      const closeProfileSugarGroup = [{prop:'!close-sugar', item: ')'}]
+      const openProfileGroup = [{prop: '!profile', item: macro}, {prop:'!open-profile', item:'({'}]
+      const closeProfileGroup = [{prop:'!close-profile', item:'})'}]
+
+      if (firstParamIsArray) { // pipeline, or, and, plus
+        const vars = (profile.$vars || []).map(({name,val}) => ({$: 'Var', name, val }))
+        const args = vars.concat(jb.asArray(profile[params[0].id]))
+          .map((val,i) => ({innerPath: params[0].id + '~' + i, val}))
+        return joinVals(ctx, args, openProfileSugarGroup, closeProfileSugarGroup, flat, true)
+      }
+      const keys = Object.keys(profile).filter(x=>x != '$')
+      const oneFirstArg = keys.length === 1 && params[0] && params[0].id == keys[0]
+      const twoFirstArgs = keys.length == 2 && params.length >= 2 && profile[params[0].id] && profile[params[1].id]
+      if ((params.length < 3 && comp.macroByValue !== false) || comp.macroByValue || oneFirstArg || twoFirstArgs) {
+        const args = systemProps.concat(params.map(param=>({innerPath: param.id, val: propOfProfile(param.id)})))
+        for(let i=0;i<5;i++)
+          if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
+        return joinVals(ctx, args, openProfileByValueGroup, closeProfileByValueGroup, flat, true)
+      }
+      const remarkProp = profile.remark ? [{innerPath: 'remark', val: profile.remark} ] : []
+      const systemPropsInObj = remarkProp.concat(vars.length ? [{innerPath: 'vars', val: vars.map(x=>x.val)}] : [])
+      const args = systemPropsInObj.concat(params.filter(param=>propOfProfile(param.id) !== undefined)
+          .map(param=>({innerPath: param.id, val: propOfProfile(param.id)})))
+      const open = args.length ? openProfileGroup : openProfileByValueGroup
+      const close = args.length ? closeProfileGroup : closeProfileByValueGroup
+      return joinVals(ctx, args, open, close, flat, false)
+
+      function propOfProfile(paramId) {
+        const isFirst = params[0] && params[0].id == paramId
+        return isFirst && profile['$'+id] || profile[paramId]
+      }
+    }
+
+    function valueToMacro({path, line, col, depth}, val, flat) {
+      const ctx = {path, line, col, depth}
+      let result = doValueToMacro()
+      if (typeof result === 'string')
+        result = { text: result, map: {}}
+      return result
+
+      function doValueToMacro() {
+        if (Array.isArray(val)) return arrayToMacro(ctx, val, flat);
+        if (val === null) return 'null';
+        if (val === undefined) return 'undefined';
+        if (typeof val === 'object') return profileToMacro(ctx, val, flat);
+        if (typeof val === 'function') return val.toString().replace(/\n/g,'__fixedNL__')
+        if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
+          return processList(ctx,[
+            {prop: '!value-text-start', item: "'"},
+            {prop: '!value-text', item: JSON.stringify(val).slice(1,-1)},
+            {prop: '!value-text-end', item: "'"},
+          ])
+        else if (typeof val === 'string' && val.indexOf('\n') != -1)
+          return processList(ctx,[
+            {prop: '!value-text-start', item: "`"},
+            {prop: '!value-text', item: val.replace(/`/g,'\\`')},
+            {prop: '!value-text-end', item: "`"},
+          ])
+        else
+          return JSON.stringify(val); // primitives
+      }
+    }
+
+    function arrayToMacro(ctx, array, flat) {
+      const vals = array.map((val,i) => ({innerPath: i, val}))
+      const openArray = [{prop:'!open-array', item:'['}]
+      const closeArray = [{prop:'!close-array', item:']'}]
+
+      return joinVals(ctx, vals, openArray, closeArray, flat, true)
     }
   }
-
-  function valueToMacro({path, line, col, depth}, val, flat) {
-    const ctx = {path, line, col, depth}
-    let result = doValueToMacro()
-    if (typeof result === 'string')
-      result = { text: result, map: {}}
-    return result
-
-    function doValueToMacro() {
-      if (Array.isArray(val)) return arrayToMacro(ctx, val, flat);
-      if (val === null) return 'null';
-      if (val === undefined) return 'undefined';
-      if (typeof val === 'object') return profileToMacro(ctx, val, flat);
-      if (typeof val === 'function') return val.toString().replace(/\n/g,'__fixedNL__')
-      if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
-        return processList(ctx,[
-          {prop: '!value-text-start', item: "'"},
-          {prop: '!value-text', item: JSON.stringify(val).slice(1,-1)},
-          {prop: '!value-text-end', item: "'"},
-        ])
-      else if (typeof val === 'string' && val.indexOf('\n') != -1)
-        return processList(ctx,[
-          {prop: '!value-text-start', item: "`"},
-          {prop: '!value-text', item: val.replace(/`/g,'\\`')},
-          {prop: '!value-text-end', item: "`"},
-        ])
-      else
-        return JSON.stringify(val); // primitives
-    }
-  }
-
-  function arrayToMacro(ctx, array, flat) {
-    const vals = array.map((val,i) => ({innerPath: i, val}))
-    const openArray = [{prop:'!open-array', item:'['}]
-    const closeArray = [{prop:'!close-array', item:']'}]
-
-    return joinVals(ctx, vals, openArray, closeArray, flat, true)
-  }
-}
-
+})
 ;
 
 jb.remoteCtx = {
     stripCtx(ctx) {
         if (!ctx) return null
         const isJS = typeof ctx.profile == 'function'
-        const profText = jb.prettyPrint(ctx.profile)
+        const profText = jb.utils.prettyPrint(ctx.profile)
         const vars = jb.objFromEntries(jb.entries(ctx.vars).filter(e => e[0] == '$disableLog' || profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
         const data = profText.match(/({data})|(ctx.data)|(%%)/) && this.stripData(ctx.data) 
@@ -12428,7 +12450,7 @@ jb.remoteCtx = {
     stripFunction(f) {
         const {profile,runCtx,path,param,srcPath} = f
         if (!profile || !runCtx) return this.stripJS(f)
-        const profText = jb.prettyPrint(profile)
+        const profText = jb.utils.prettyPrint(profile)
         const profNoJS = this.stripJSFromProfile(profile)
         const vars = jb.objFromEntries(jb.entries(runCtx.vars).filter(e => e[0] == '$disableLog' || profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
@@ -12470,7 +12492,7 @@ jb.remoteCtx = {
     serializeCmp(compId) {
         if (!jb.comps[compId])
             return jb.logError('no component of id ',{compId}),''
-        return jb.prettyPrint({compId, ...jb.comps[compId],
+        return jb.utils.prettyPrint({compId, ...jb.comps[compId],
             location: jb.comps[compId][jb.location], loadingPhase: jb.comps[compId][jb.loadingPhase]} )
     },
     deSerializeCmp(code) {
@@ -12491,7 +12513,7 @@ jb.remoteCtx = {
 
 /* jbm - a virtual jBart machine - can be implemented in same frame/sub frames/workers over the network
 interface jbm : {
-     uri : string // devtools►logPanel, studio►preview►debugView, ►debugView
+     uri : string // devtools•logPanel, studio•preview•debugView, •debugView
      parent : jbm // null means root
      remoteExec(profile: any, ,{timeout,oneway}) : Promise | void
      createCallbagSource(stripped ctx of cb_source) : cb
@@ -12664,6 +12686,7 @@ Object.assign(jb, {
             }
             function inboundExecResult(m) { 
                 jb.cbHandler.getAsPromise(m.cbId).then(h=>{
+                    if (!h) return
                     clearTimeout(h.timer)
                     if (m.type == 'error') {
                         jb.logError('remote remoteExec', {m, h})
@@ -12725,7 +12748,7 @@ jb.component('jbm.worker', {
     impl: ({},name,libs,jsFiles,networkPeer) => {
         const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
         if (childsOrNet[name]) return childsOrNet[name]
-        const workerUri = networkPeer ? name : `${jb.uri}►${name}`
+        const workerUri = networkPeer ? name : `${jb.uri}•${name}`
         const distPath = jb.jbm.pathOfDistFolder()
         const spyParam = ((jb.path(jb.frame,'location.href')||'').match('[?&]spy=([^&]+)') || ['', ''])[1]
         const baseUrl = jb.path(jb.frame,'location.origin') || jb.baseUrl || ''
@@ -12741,22 +12764,17 @@ jb = ${JSON.stringify(jbObj)}
 jb_loadProject(${JSON.stringify(settings)}).then(() => {
     self.spy = jb.initSpy({spyParam: '${spyParam}'})
     self.${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
+    console.log('worker loaded')
     postMessage('loaded')
     self.loaded = true
 })`
         const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
         // wait for worker jbm to load
-        const promise = jb.callbag.toPromise(
-            jb.callbag.pipe(
-                jb.callbag.fromEvent(worker,'message'),
-                jb.callbag.take(1),
-                jb.callbag.map(() => childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri)))
-        ))
-        // const promise = jb.exec(pipe(
-        //     remote.data( waitFor(()=> self.loaded), ()=>workerJbm ),
-        //     () => childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri)),
-        //     first()
-        // ))
+        const promise = new Promise(resolve => jb.exec(rx.pipe(
+            source.event('message', () =>worker),
+            rx.take(1),
+            sink.action(() => resolve(childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))))
+        )))
         promise.uri = workerUri
         return promise
     }
@@ -12770,7 +12788,7 @@ jb.component('jbm.child', {
     ],    
     impl: ({},name,libs) => {
         if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
-        const childUri = `${jb.uri}►${name}`
+        const childUri = `${jb.uri}•${name}`
         const res = jb.frame.jbm_create && Promise.resolve(jb.frame.jbm_create(libs, { loadFromDist: true, uri: childUri, distPath: jb.distPath}))
             .then(child => {
                 jb.jbm.childJbms[name] = child
@@ -12834,9 +12852,9 @@ jb.component('jbm.byUri', {
         }
 
         function calcRoutingPath(from,to) {
-            const pp1 = from.split('►'), pp2 = to.split('►')
-            const p1 = pp1.map((p,i) => pp1.slice(0,i+1).join('►'))
-            const p2 = pp2.map((p,i) => pp2.slice(0,i+1).join('►'))
+            const pp1 = from.split('•'), pp2 = to.split('•')
+            const p1 = pp1.map((p,i) => pp1.slice(0,i+1).join('•'))
+            const p2 = pp2.map((p,i) => pp2.slice(0,i+1).join('•'))
             let i =0;
             while (p1[i] === p2[i] && i < p1.length) i++;
             const path_to_shared_parent = i ? p1.slice(i-1) : p1.slice(i) // i == 0 means there is no shared parent, so network is used
@@ -12874,7 +12892,7 @@ jb.component('source.remote', {
         if (!jbm)
             return jb.logError('source.remote - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
         const stripedRx = jbm.callbag ? rx : jb.remoteCtx.stripFunction(rx)
-        if (jb.isPromise(jbm))
+        if (jb.utils.isPromise(jbm))
             return jb.callbag.pipe(jb.callbag.fromPromise(jbm), jb.callbag.concatMap(_jbm=> _jbm.createCallbagSource(stripedRx)))
         return jbm.createCallbagSource(stripedRx)
     }        
@@ -12891,7 +12909,7 @@ jb.component('remote.operator', {
         if (!jbm)
             return jb.logError('remote.operator - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
         const stripedRx = jbm.callbag ? rx : jb.remoteCtx.stripFunction(rx)
-        if (jb.isPromise(jbm)) {
+        if (jb.utils.isPromise(jbm)) {
             jb.log('jbm as promise in remote operator, adding request buffer', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
             return source => {
                 const buffer = jb.callbag.replay(5)(source)
@@ -12942,9 +12960,9 @@ jb.component('remote.initShadowData', {
     ],
     impl: rx.pipe(
         source.watchableData({ref: '%$src%', includeChildren: 'yes'}),
-        rx.map(obj(prop('op','%op%'), prop('path',({data}) => jb.pathOfRef(data.ref)))),
+        rx.map(obj(prop('op','%op%'), prop('path',({data}) => jb.db.pathOfRef(data.ref)))),
         sink.action(remote.action( 
-            ctx => jb.doOp(jb.refOfPath(ctx.data.path), ctx.data.op, ctx),
+            ctx => jb.db.doOp(jb.db.refOfPath(ctx.data.path), ctx.data.op, ctx),
             '%$jbm%')
         )
     )
@@ -12963,7 +12981,7 @@ jb.component('net.listSubJbms', {
 })
 
 jb.component('net.getRootParentUri', {
-    impl: () => jb.uri.split('►')[0]
+    impl: () => jb.uri.split('•')[0]
 })
 
 jb.component('net.listAll', {
@@ -13589,17 +13607,17 @@ function setStrValue(value, ref, ctx) {
     //     return
     const currentVal = jb.val(ref)
     if (newVal && typeof newVal === 'object' && typeof currentVal === 'object') {
-        const diff = jb.objectDiff(newVal,currentVal)
+        const diff = jb.utils.objectDiff(newVal,currentVal)
         if (Object.keys(diff).length == 0) return // no diffs
         const {innerPath, innerValue} = getSinglePathChange(diff,currentVal) // one diff
         if (innerPath) {
             const fullInnerPath = ref.handler.pathOfRef(ref).concat(innerPath.slice(1).split('~'))
-            return jb.writeValue(ref.handler.refOfPath(fullInnerPath),innerValue,ctx)
+            return jb.db.writeValue(ref.handler.refOfPath(fullInnerPath),innerValue,ctx)
         }
     }
     if (newVal !== undefined) { // many diffs
         currentVal && currentVal[jb.location] && typeof newVal == 'object' && (newVal[jb.location] = currentVal[jb.location])
-        jb.writeValue(ref,newVal,ctx)
+        jb.db.writeValue(ref,newVal,ctx)
     }
 }
 
@@ -13614,7 +13632,7 @@ jb.component('watchableAsText', {
         getRef() {
             return this.ref || (this.ref = refF())
         },
-        handler: jb.simpleValueByRefHandler,
+        handler: jb.db.simpleValueByRefHandler,
         getVal() {
             return jb.val(this.getRef())
         },
@@ -13627,12 +13645,12 @@ jb.component('watchableAsText', {
                 return
             }
             const initialPath = ref.handler.pathOfRef(ref).join('~')
-            const res = jb.prettyPrintWithPositions(this.getVal() || '',{initialPath, comps: ref.jbToUse && ref.jbToUse.comps})
+            const res = jb.utils.prettyPrintWithPositions(this.getVal() || '',{initialPath, comps: ref.jbToUse && ref.jbToUse.comps})
             this.locationMap = enrichMapWithOffsets(res.text, res.map)
             this.text = res.text.replace(/\s*(\]|\})$/,'\n$1')
         },
         writeFullValue(newVal) {
-            jb.writeValue(this.getRef(),newVal,ctx)
+            jb.db.writeValue(this.getRef(),newVal,ctx)
             this.prettyPrintWithPositions()
         },
         $jb_val(value) { try {
@@ -13648,7 +13666,7 @@ jb.component('watchableAsText', {
         }},
 
         $jb_observable(cmp) {
-            return jb.refObservable(this.getRef(),{cmp, includeChildren: 'yes'})
+            return jb.db.refObservable(this.getRef(),{cmp, includeChildren: 'yes'})
         }
     })
 })
@@ -13690,15 +13708,15 @@ jb.component('textEditor.isDirty', {
 //       try {
 //         const text_ref = cmp.state.databindRef
 //         const data_ref = text_ref.getRef()
-//         jb.isWatchable(data_ref) && jb.refObservable(data_ref,{cmp,srcCtx: cmp.ctx, includeChildren: 'yes'})
+//         jb.db.isWatchable(data_ref) && jb.db.refObservable(data_ref,{cmp,srcCtx: cmp.ctx, includeChildren: 'yes'})
 //             .subscribe(e => {
 //             const path = e.path
 //             const editor = cmp.editor
 //             const locations = cmp.state.databindRef.locationMap
 //             const loc = locations[path.concat('!value').join('~')]
-//             const newVal = jb.prettyPrint(e.newVal)
+//             const newVal = jb.utils.prettyPrint(e.newVal)
 //             editor.replaceRange(newVal, {line: loc[0], col:loc[1]}, {line: loc[2], col: loc[3]})
-//             const newEndPos = jb.prettyPrint.advanceLineCol({line: loc[0], col:loc[1]}, newVal)
+//             const newEndPos = jb.utils.advanceLineCol({line: loc[0], col:loc[1]}, newVal)
 //             editor.markText({line: loc[0], col:loc[1]}, {line: newEndPos.line, col: newEndPos.col},{
 //                 className: 'jb-highlight-comp-changed'
 //             })
@@ -13855,7 +13873,7 @@ function getSuggestions(fileContent, pos, jbToUse = jb) {
     const compSrc = linesOfComp.join('\n')
     if (jb.eval(compSrc,jbToUse.frame) === Symbol.for('parseError'))
         return []
-    const {text, map} = jb.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
+    const {text, map} = jb.utils.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
     const locationMap = enrichMapWithOffsets(text, map)
     const srcForImpl = '{\n'+compSrc.slice((/^  /m.exec(compSrc) || {}).index,-1)
     const cursorOffset = lineColToOffset(srcForImpl, {line: pos.line - componentHeaderIndex, col: pos.col})
@@ -13865,12 +13883,12 @@ function getSuggestions(fileContent, pos, jbToUse = jb) {
 
 function getPosOfPath(path,jbToUse = jb) {
     const compId = path.split('~')[0]
-    const {map} = jb.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
+    const {map} = jb.utils.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
     return map[path]
 }
 
 function getPathOfPos(compId,pos,jbToUse = jb) {
-    const { text, map } = jb.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
+    const { text, map } = jb.utils.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
     map.cursor = [pos.line,pos.col,pos.line,pos.col]
     const locationMap = enrichMapWithOffsets(text, map)
     const res = pathOfPosition({text, locationMap}, locationMap.cursor.offset_from )
@@ -13899,7 +13917,7 @@ function formatComponent(fileContent, pos, jbToUse = jb) {
     if (!compId) return {}
     if (jb.eval(compSrc,jbToUse.frame) === Symbol.for('parseError'))
         return []
-    return {text: jb.prettyPrintComp(compId,jbToUse.comps[compId],{comps: jbToUse.comps}) + '\n',
+    return {text: jb.utils.prettyPrintComp(compId,jbToUse.comps[compId],{comps: jbToUse.comps}) + '\n',
         from: {line: componentHeaderIndex, col: 0}, to: {line: componentHeaderIndex+compLastLine+1, col: 0} }
 }
 
@@ -13968,7 +13986,7 @@ Object.assign(st, {
 
   initLocalCompsRefHandler(compsRef,{ compIdAsReferred, initUIObserver } = {}) {
 	if (st.compsRefHandler) return
-    st.compsRefHandler = jb.initExtraWatchableHandler(compsRef, {initUIObserver})
+    st.compsRefHandler = jb.db.initExtraWatchableHandler(compsRef, {initUIObserver})
     compIdAsReferred && st.compsRefHandler.resourceReferred(compIdAsReferred)
 	jb.callbag.subscribe(e=>st.scriptChangeHandler(e))(st.compsRefHandler.resourceChange)
   },
@@ -13978,7 +13996,7 @@ Object.assign(st, {
  	const {pipe,subscribe,takeUntil} = jb.callbag
 	const oldHandler = st.compsRefHandler
 	oldHandler && oldHandler.stopListening.next(1)
-	st.compsRefHandler = jb.initExtraWatchableHandler(compsRef, {oldHandler, initUIObserver: true})
+	st.compsRefHandler = jb.db.initExtraWatchableHandler(compsRef, {oldHandler, initUIObserver: true})
 	st.compsRefHandler.allowedTypes = st.compsRefHandler.allowedTypes.concat(allowedTypes)
 	st.compsRefHandler.stopListening = jb.callbag.subject()
 
@@ -14034,7 +14052,7 @@ Object.assign(st, {
   paramsOfPath: (path,silent) => jb.compParams(st.compOfPath(path,silent)),
   writeValueOfPath: (path,value,ctx) => st.writeValue(st.refOfPath(path),value,ctx),
   getComp: id => st.previewjb.comps[id],
-  compAsStr: id => jb.prettyPrintComp(id,st.getComp(id),{comps: jb.studio.previewjb.comps}),
+  compAsStr: id => jb.utils.prettyPrintComp(id,st.getComp(id),{comps: jb.studio.previewjb.comps}),
   isStudioCmp: id => jb.path(jb.comps,[id,jb.project]) == 'studio'
 })
 
@@ -14076,7 +14094,7 @@ Object.assign(st, {
 	},
 	clone(profile) {
 		if (typeof profile !== 'object') return profile
-		return st.evalProfile(jb.prettyPrint(profile,{noMacros: true}))
+		return st.evalProfile(jb.utils.prettyPrint(profile,{noMacros: true}))
 	},
 	duplicateControl(path,srcCtx) {
 		const prop = path.split('~').pop()
@@ -14149,13 +14167,13 @@ Object.assign(st, {
    	moveFixDestination(from,to,srcCtx) {
 		if (isNaN(Number(to.split('~').slice(-1)))) {
             if (st.valOfPath(to) === undefined)
-				jb.writeValue(st.refOfPath(to),[],srcCtx)
+				jb.db.writeValue(st.refOfPath(to),[],srcCtx)
 			if (!Array.isArray(st.valOfPath(to)))
-				jb.writeValue(st.refOfPath(to),[st.valOfPath(to)],srcCtx)
+				jb.db.writeValue(st.refOfPath(to),[st.valOfPath(to)],srcCtx)
 
             to += '~' + st.valOfPath(to).length
 		}
-		return jb.move(st.refOfPath(from),st.refOfPath(to),srcCtx)
+		return jb.db.move(st.refOfPath(from),st.refOfPath(to),srcCtx)
 	},
 
 	addArrayItem(path,{toAdd,srcCtx, index} = {}) {
@@ -14187,9 +14205,9 @@ Object.assign(st, {
 			return jb.logError('getOrCreateControlArrayRef: no control param',{path,srcCtx})
 		let ref = st.refOfPath(path+'~'+prop)
 		if (val[prop] === undefined)
-			jb.writeValue(ref,[],srcCtx)
+			jb.db.writeValue(ref,[],srcCtx)
 		else if (!Array.isArray(val[prop])) // wrap
-			jb.writeValue(ref,[val[prop]],srcCtx)
+			jb.db.writeValue(ref,[val[prop]],srcCtx)
 		ref = st.refOfPath(path+'~'+prop)
 		return ref
 	},
@@ -14251,7 +14269,7 @@ jb.component('studio.boolRef', {
             if (value === undefined)
                 return jb.toboolean(st.refOfPath(path))
             else
-				jb.writeValue(st.refOfPath(path),!!value,ctx)
+				jb.db.writeValue(st.refOfPath(path),!!value,ctx)
         }
 	})
 })
@@ -14266,13 +14284,13 @@ jb.component('studio.getOrCreateCompInArray', {
 		let arrayRef = st.refOfPath(path)
 		let arrayVal = jb.val(arrayRef)
 		if (!arrayVal) {
-		  jb.writeValue(arrayRef,{$: compName},ctx)
+		  jb.db.writeValue(arrayRef,{$: compName},ctx)
 		  return path
 		} else if (!Array.isArray(arrayVal) && arrayVal.$ == compName) {
 		  return path
 		} else {
 		  if (!Array.isArray(arrayVal)) { // If a different comp, wrap with array
-			jb.writeValue(arrayRef,[arrayVal],ctx)
+			jb.db.writeValue(arrayRef,[arrayVal],ctx)
 			arrayRef = st.refOfPath(path)
 			arrayVal = jb.val(arrayRef)
 		  }
@@ -14374,7 +14392,7 @@ jb.component('studio.categoriesOfType', {
   impl: (ctx,_type,path) => {
 		var comps = st.previewjb.comps;
 		var pts = st.PTsOfType(_type);
-		var categories = jb.unique([].concat.apply([],pts.map(pt=>
+		var categories = jb.utils.unique([].concat.apply([],pts.map(pt=>
 			(comps[pt].category||'').split(',').map(c=>c.split(':')[0])
 				.concat(pt.indexOf('.') != -1 ? pt.split('.')[0] : [])
 				.filter(x=>x).filter(c=>c!='all')
@@ -14495,7 +14513,7 @@ jb.component('studio.compNameRef', {
 					st.setComp(path,value,ctx)
 			},
 			$jb_observable: cmp =>
-				jb.refObservable(st.refOfPath(path),{cmp, includeChildren: 'yes'})
+				jb.db.refObservable(st.refOfPath(path),{cmp, includeChildren: 'yes'})
 	})
 })
 
@@ -14525,7 +14543,7 @@ jb.component('studio.profileAsStringByref', {
 			}
 		},
 		$jb_observable: cmp =>
-			jb.refObservable(st.refOfPath(ctx.params.path()),{cmp})
+			jb.db.refObservable(st.refOfPath(ctx.params.path()),{cmp})
 	})
 })
 
@@ -14863,6 +14881,87 @@ jb.component('studio.eventTrackerToolbar', {
   }),
 })
 
+jb.component('eventTracker.uiComp', {
+  type: 'control',
+  impl: controls(
+    controlWithCondition(or('%cmp%','%elem%', '%parentElem%'), group({
+      controls: [
+        controlWithCondition('%cmp/ctx/profile/$%', group({
+          controls: [
+            editableBoolean({databind: '%$cmpExpanded/{%$index%}%', style: chromeDebugger.toggleStyle()}),
+            text('%cmp/ctx/profile/$% %cmp/cmpId%;%cmp/ver%'),
+          ],
+          layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'})
+        })),
+        controlWithCondition('%cmp/pt%',text('%cmp/pt% %cmp/cmpId%;%cmp/ver%')),
+        controlWithCondition('%$cmpElem%',text('%$cmpElem/@cmp-pt% %$cmpElem/@cmp-id%;%$cmpElem/@cmp-ver%')),
+      ],
+      features: [
+        group.firstSucceeding(),
+        variable('cmpElem', ({data}) => jb.ui.closestCmpElem(data.elem || data.parentElem))
+      ]
+    })),
+    controlWithCondition('%$cmpExpanded/{%$index%}%', group({ 
+      controls: eventTracker.compInspector('%cmp%'), 
+      features: feature.expandToEndOfRow('%$cmpExpanded/{%$index%}%')
+    })),
+  )
+})
+
+jb.component('eventTracker.callbagMessage', {
+  type: 'control',
+  impl: controls(
+    controlWithCondition(and('%m/d%','%m/t%==1'), group({
+      controls: [
+        editableBoolean({databind: '%$payloadExpanded/{%$index%}%', style: chromeDebugger.toggleStyle()}),
+        text('%$contentType% %$direction% %m/cbId% (%$payload/length%) %m/$%: %m/t%'),
+      ],
+      layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'}),
+      features: [
+        variable('direction', If(contains({allText: '%logNames%', text: 'received'}),'🡸','🡺')),
+        variable('contentType', If('%m/d/data/css%','css', If('%m/d/data/delta%','delta','%m/d/data/$%'))),
+        variable('payload', prettyPrint('%m/d%'))
+      ]
+    })),
+    controlWithCondition('%$payloadExpanded/{%$index%}%', group({ 
+      controls: text({
+        text: prettyPrint('%m/d%'),
+        style: text.codemirror({height: '200'}),
+        features: [codemirror.fold(), css('min-width: 1200px; font-size: 130%')]
+      }), 
+      features: feature.expandToEndOfRow('%$payloadExpanded/{%$index%}%')
+    })),
+  )
+})
+
+jb.component('eventTracker.testResult', {
+  type: 'control',
+  impl: controls(
+    controlWithCondition('%logNames%==check test result', group({
+      controls: [
+        editableBoolean({databind: '%$testResultExpanded/{%$index%}%', style: chromeDebugger.toggleStyle()}),
+        text({
+          vars: Var('color',If('%success%','--jb-success-fg','--jb-error-fg')),
+          text: If('%success%','✓ check test reuslt','⚠ check test reuslt'),
+          features: css.color('var(%$color%)')
+        }),
+      ]
+    })),
+    controlWithCondition('%$testResultExpanded/{%$index%}%', group({ 
+      layout: layout.horizontal(20),
+      controls: [
+        controlWithCondition('%expectedResultCtx/data%', text(prettyPrint('%expectedResultCtx.profile.expectedResult%',true))),
+        controlWithCondition('%expectedResultCtx/data%', text('%expectedResultCtx/data%')),              
+        text({
+          text: '%html%',
+          style: text.codemirror({height: '200', mode: 'htmlmixed', formatText: true}),
+          features: [codemirror.fold(), css('min-width: 1200px; font-size: 130%')]
+      })],
+      features: feature.expandToEndOfRow('%$testResultExpanded/{%$index%}%')
+    })),
+  )
+})
+
 jb.component('studio.eventTracker', {
   type: 'control',
   impl: group({
@@ -14872,52 +14971,9 @@ jb.component('studio.eventTracker', {
         items: eventTracker.eventItems('%$eventTracker/eventTrackerQuery%'),
         controls: [
           text('%index%'),
-          eventTracker.expandableComp(),
-          controlWithCondition('%$cmpExpanded/{%$index%}%', group({ 
-            controls: eventTracker.compInspector('%cmp%'), 
-            features: feature.expandToEndOfRow('%$cmpExpanded/{%$index%}%')
-          })),
-          controlWithCondition(and('%m/d%','%m/t%==1'), group({
-            controls: [
-              editableBoolean({databind: '%$payloadExpanded/{%$index%}%', style: chromeDebugger.toggleStyle()}),
-              text('%$contentType% %$direction% %m/cbId% (%$payload/length%) %m/$%: %m/t%'),
-            ],
-            layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'}),
-            features: [
-              variable('direction', If(contains({allText: '%logNames%', text: 'received'}),'🡸','🡺')),
-              variable('contentType', If('%m/d/data/css%','css', If('%m/d/data/delta%','delta','%m/d/data/$%'))),
-              variable('payload', prettyPrint('%m/d%'))
-            ]
-          })),
-          controlWithCondition('%$payloadExpanded/{%$index%}%', group({ 
-            controls: text({
-              text: prettyPrint('%m/d%'),
-              style: text.codemirror({height: '200'}),
-              features: [codemirror.fold(), css('min-width: 1200px; font-size: 130%')]
-            }), 
-            features: feature.expandToEndOfRow('%$payloadExpanded/{%$index%}%')
-          })),
-          controlWithCondition('%logNames%==check test result', group({
-            controls: [
-              editableBoolean({databind: '%$testResultExpanded/{%$index%}%', style: chromeDebugger.toggleStyle()}),
-              text({
-                vars: Var('color',If('%success%','--jb-success-fg','--jb-error-fg')),
-                text: If('%success%','✓ check test reuslt','⚠ check test reuslt'),
-                features: css.color('var(%$color%)')
-              }),
-            ]
-          })),
-          controlWithCondition('%$testResultExpanded/{%$index%}%', group({ 
-            controls: [
-              controlWithCondition('%expectedResultCtx/data%', text(prettyPrint('%expectedResultCtx.profile.expectedResult%',true))),
-              controlWithCondition('%expectedResultCtx/data%', text('%expectedResultCtx/data%')),              
-              text({
-                text: '%html%',
-                style: text.codemirror({height: '200', mode: 'htmlmixed', formatText: true}),
-                features: [codemirror.fold(), css('min-width: 1200px; font-size: 130%')]
-            })],
-            features: feature.expandToEndOfRow('%$testResultExpanded/{%$index%}%')
-          })),
+          eventTracker.uiComp(),
+          eventTracker.callbagMessage(),
+          eventTracker.testResult(),
           text({ text: '%logNames%', features: feature.byCondition(
             inGroup(list('exception','error'), '%logNames%'),
             css.color('var(--jb-error-fg)')
@@ -15004,28 +15060,6 @@ jb.component('eventTracker.eventTypes', {
   })
 })
 
-jb.component('eventTracker.expandableComp', {
-  type: 'control',
-  impl: group({
-    controls: [
-      controlWithCondition('%cmp/ctx/profile/$%', group({
-        controls: [
-          editableBoolean({databind: '%$cmpExpanded/{%$index%}%', style: chromeDebugger.toggleStyle()}),
-          text('%cmp/ctx/profile/$% %cmp/cmpId%;%cmp/ver%'),
-        ],
-        layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'})
-      })),
-      controlWithCondition('%cmp/pt%',text('%cmp/pt% %cmp/cmpId%;%cmp/ver%')),
-      controlWithCondition('%$cmpElem%',text('%$cmpElem/@cmp-pt% %$cmpElem/@cmp-id%;%$cmpElem/@cmp-ver%')),
-      text('')
-    ],
-    features: [
-      group.firstSucceeding(),
-      variable('cmpElem', ({data}) => jb.ui.closestCmpElem(data.elem || data.parentElem))
-    ]
-  })
-})
-
 jb.component('studio.objExpandedAsText', {
   params: [
     {id: 'obj', mandatory: true },
@@ -15063,7 +15097,7 @@ jb.component('studio.lowFootprintObj', {
         studio.slicedString('%$obj/profile/$%: %$obj/path%')
       ),
       controlWithCondition(
-        ({},{},{obj}) => jb.isRef(obj),
+        ({},{},{obj}) => jb.db.isRef(obj),
         studio.slicedString(({},{},{obj}) => obj.handler.pathOfRef(obj).join('/'))
       ),
       controlWithCondition(
@@ -15303,11 +15337,11 @@ jb.component('chromeDebugger.icon', {
   params: [
       {id: 'position', as: 'string', defaultValue: '0px 144px'}
   ],
-  impl: (If(()=>jb.uri.match(/vDebugger$/)),customStyle({
+  impl: customStyle({
     template: (cmp,{title},h) => h('div',{onclick: true, title}),
-    css: `{ -webkit-mask-image: url(largeIcons.svg); -webkit-mask-position: %$position%; width: 28px;  height: 24px; background-color: var(--jb-menu-fg); opacity: 0.7}
+    css: `{ -webkit-mask-image: url(devtools://devtools/bundled/Images/largeIcons.svg); -webkit-mask-position: %$position%; width: 28px;  height: 24px; background-color: var(--jb-menu-fg); opacity: 0.7}
       ~:hover { opacity: 1}`,
-  }), button.native())
+  })
 })
 
 jb.component('chromeDebugger.sectionsExpandCollapse', {

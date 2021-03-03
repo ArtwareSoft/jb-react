@@ -102,7 +102,7 @@ jb.callbag = {
           })
       },  
       takeUntil(notifier) {
-          if (jb.isPromise(notifier))
+          if (jb.utils.isPromise(notifier))
               notifier = jb.callbag.fromPromise(notifier)
           const UNIQUE = {}
           return source => (start, sink) => {
@@ -850,7 +850,7 @@ jb.callbag = {
       },
       fromCallBag: source => source,
       fromAny: (source, name, options) => {
-          const f = source && 'from' + (jb.isPromise(source) ? 'Promise'
+          const f = source && 'from' + (jb.utils.isPromise(source) ? 'Promise'
               : source.addEventListener ? 'Event'
               : typeof source[Symbol.iterator] === 'function' ? 'Iter'
               : '')

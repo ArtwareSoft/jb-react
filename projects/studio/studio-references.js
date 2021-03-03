@@ -29,7 +29,7 @@ jb.component('studio.componentStatistics', {
 
     const cmp = _jb.comps[cmpId], refs = _jb.statistics
     if (!cmp) return {}
-    const asStr = '' //jb.prettyPrint(cmp.impl || '',{comps: _jb.comps})
+    const asStr = '' //jb.utils.prettyPrint(cmp.impl || '',{comps: _jb.comps})
 
     return {
       id: cmpId,

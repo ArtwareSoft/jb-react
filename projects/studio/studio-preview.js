@@ -6,7 +6,7 @@ var { waitFor, prettyPrint } = jb.macro
 st.changedComps = () => {
   if (!st.compsHistory || !st.compsHistory.length) return []
 
-  const changedComps = jb.unique(st.compsHistory.map(e=>jb.path(e,'opEvent.path.0')))
+  const changedComps = jb.utils.unique(st.compsHistory.map(e=>jb.path(e,'opEvent.path.0')))
     .filter(id=> st.previewjb.comps[id] !== st.serverComps[id])
   return changedComps.map(id=>[id,st.previewjb.comps[id]])
 }
@@ -61,7 +61,7 @@ jb.ui.renderWidgetInStudio = function(profile,top) {
   const studioWin = jb.studio.studioWindow
   if (studioWin) { // listen to script updates
       const st = studioWin.jb.studio
-      const {project,page} = studioWin.jb.resources.studio
+      const {project,page} = studioWin.jb.db.resources.studio
       if (project && page)
           currentProfile = {$: page}
 
@@ -143,10 +143,10 @@ st.initPreview = function(preview_window,allowedTypes) {
 
   changedComps.forEach(e=>{
     st.compsRefHandler.resourceReferred(e[0])
-    st.writeValue(st.compsRefHandler.refOfPath([e[0]]), eval(`(${jb.prettyPrint(e[1],{noMacros: true})})`), new jb.jbCtx()) // update the history for future save
+    st.writeValue(st.compsRefHandler.refOfPath([e[0]]), eval(`(${jb.utils.prettyPrint(e[1],{noMacros: true})})`), new jb.jbCtx()) // update the history for future save
     jb.val(st.compsRefHandler.refOfPath([e[0]]))[jb.location] = e[1][jb.location]
   })
-  jb.entries(st.previewWindow.JSON.parse(st.resourcesFromPrevRun || '{}')).forEach(e=>st.previewjb.resource(e[0],e[1]))
+  jb.entries(st.previewWindow.JSON.parse(st.resourcesFromPrevRun || '{}')).forEach(e=>st.previewjb.db.resource(e[0],e[1]))
 
   st.previewjb.http_get_cache = {}
   st.previewjb.ctxByPath = {}
@@ -175,7 +175,7 @@ jb.component('studio.refreshPreview', {
       return ctx.run(studio.reOpenStudio())
     jb.ui.garbageCollectCtxDictionary(true,true)
     jb.studio.previewjb.ui.garbageCollectCtxDictionary(true,true)
-    jb.studio.resourcesFromPrevRun = st.previewWindow.JSON.stringify(jb.studio.previewjb.resources)
+    jb.studio.resourcesFromPrevRun = st.previewWindow.JSON.stringify(jb.studio.previewjb.db.resources)
     //jb.studio.refreshPreviewWidget && jb.studio.refreshPreviewWidget()
     //jb.ui.dialogs.reRenderAll(ctx)
     ctx.run(refreshControlById('preview-parent'))
@@ -217,7 +217,7 @@ const {pipe,startWith,filter,flatMap} = jb.callbag
 jb.studio.pageChange = pipe(jb.ui.resourceChange(), filter(e=>e.path.join('/') == 'studio/page'),
       startWith(1),
       flatMap(e=> {
-        const page = jb.resources.studio.page
+        const page = jb.db.resources.studio.page
         return page ? [{page}] : []
 }))
 
@@ -290,7 +290,7 @@ jb.component('jbm.iframe', {
       if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
       if (typeof document == 'undefined') 
           return jb.logError('can not create iframe under current frame',{frame: jb.frame, jb, ctx})
-      const childUri = `${jb.uri}►${name}`
+      const childUri = `${jb.uri}•${name}`
       const distPath = jb.jbm.pathOfDistFolder()
       const spyParam = ((jb.path(jb.frame,'location.href')||'').match('[?&]spy=([^&]+)') || ['', ''])[1]
       const baseUrl = jb.path(jb.frame,'location.origin') || jb.baseUrl || ''

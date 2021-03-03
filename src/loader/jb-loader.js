@@ -13,6 +13,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/core/jb-expression.js',
         'src/core/value-by-ref.js',
         'src/core/jb-macro.js',
+        'src/loader/comp-loader.js',
         'src/misc/spy.js',
         'src/core/jb-common.js',
         'src/misc/jb-callbag.js',
@@ -330,7 +331,7 @@ async function jb_loadProject(settings) {
     const ret = await fetch(url)
     const code = await ret.text()
     const macros = jb.importAllMacros()
-    eval([`(() => { ${macros} \n${code}})()`,`//# sourceURL=${url}?${settings.uri || settings.project}`].join('\n'))
+    eval([`(() => { ${macros} \n${code}\n})()`,`//# sourceURL=${url}?${settings.uri || settings.project}`].join('\n'))
     return
   }
 }

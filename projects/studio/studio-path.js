@@ -52,7 +52,7 @@ Object.assign(st, {
 
   initLocalCompsRefHandler(compsRef,{ compIdAsReferred, initUIObserver } = {}) {
 	if (st.compsRefHandler) return
-    st.compsRefHandler = jb.initExtraWatchableHandler(compsRef, {initUIObserver})
+    st.compsRefHandler = jb.db.initExtraWatchableHandler(compsRef, {initUIObserver})
     compIdAsReferred && st.compsRefHandler.resourceReferred(compIdAsReferred)
 	jb.callbag.subscribe(e=>st.scriptChangeHandler(e))(st.compsRefHandler.resourceChange)
   },
@@ -62,7 +62,7 @@ Object.assign(st, {
  	const {pipe,subscribe,takeUntil} = jb.callbag
 	const oldHandler = st.compsRefHandler
 	oldHandler && oldHandler.stopListening.next(1)
-	st.compsRefHandler = jb.initExtraWatchableHandler(compsRef, {oldHandler, initUIObserver: true})
+	st.compsRefHandler = jb.db.initExtraWatchableHandler(compsRef, {oldHandler, initUIObserver: true})
 	st.compsRefHandler.allowedTypes = st.compsRefHandler.allowedTypes.concat(allowedTypes)
 	st.compsRefHandler.stopListening = jb.callbag.subject()
 
@@ -118,7 +118,7 @@ Object.assign(st, {
   paramsOfPath: (path,silent) => jb.compParams(st.compOfPath(path,silent)),
   writeValueOfPath: (path,value,ctx) => st.writeValue(st.refOfPath(path),value,ctx),
   getComp: id => st.previewjb.comps[id],
-  compAsStr: id => jb.prettyPrintComp(id,st.getComp(id),{comps: jb.studio.previewjb.comps}),
+  compAsStr: id => jb.utils.prettyPrintComp(id,st.getComp(id),{comps: jb.studio.previewjb.comps}),
   isStudioCmp: id => jb.path(jb.comps,[id,jb.project]) == 'studio'
 })
 
@@ -160,7 +160,7 @@ Object.assign(st, {
 	},
 	clone(profile) {
 		if (typeof profile !== 'object') return profile
-		return st.evalProfile(jb.prettyPrint(profile,{noMacros: true}))
+		return st.evalProfile(jb.utils.prettyPrint(profile,{noMacros: true}))
 	},
 	duplicateControl(path,srcCtx) {
 		const prop = path.split('~').pop()
@@ -233,13 +233,13 @@ Object.assign(st, {
    	moveFixDestination(from,to,srcCtx) {
 		if (isNaN(Number(to.split('~').slice(-1)))) {
             if (st.valOfPath(to) === undefined)
-				jb.writeValue(st.refOfPath(to),[],srcCtx)
+				jb.db.writeValue(st.refOfPath(to),[],srcCtx)
 			if (!Array.isArray(st.valOfPath(to)))
-				jb.writeValue(st.refOfPath(to),[st.valOfPath(to)],srcCtx)
+				jb.db.writeValue(st.refOfPath(to),[st.valOfPath(to)],srcCtx)
 
             to += '~' + st.valOfPath(to).length
 		}
-		return jb.move(st.refOfPath(from),st.refOfPath(to),srcCtx)
+		return jb.db.move(st.refOfPath(from),st.refOfPath(to),srcCtx)
 	},
 
 	addArrayItem(path,{toAdd,srcCtx, index} = {}) {
@@ -271,9 +271,9 @@ Object.assign(st, {
 			return jb.logError('getOrCreateControlArrayRef: no control param',{path,srcCtx})
 		let ref = st.refOfPath(path+'~'+prop)
 		if (val[prop] === undefined)
-			jb.writeValue(ref,[],srcCtx)
+			jb.db.writeValue(ref,[],srcCtx)
 		else if (!Array.isArray(val[prop])) // wrap
-			jb.writeValue(ref,[val[prop]],srcCtx)
+			jb.db.writeValue(ref,[val[prop]],srcCtx)
 		ref = st.refOfPath(path+'~'+prop)
 		return ref
 	},
@@ -335,7 +335,7 @@ jb.component('studio.boolRef', {
             if (value === undefined)
                 return jb.toboolean(st.refOfPath(path))
             else
-				jb.writeValue(st.refOfPath(path),!!value,ctx)
+				jb.db.writeValue(st.refOfPath(path),!!value,ctx)
         }
 	})
 })
@@ -350,13 +350,13 @@ jb.component('studio.getOrCreateCompInArray', {
 		let arrayRef = st.refOfPath(path)
 		let arrayVal = jb.val(arrayRef)
 		if (!arrayVal) {
-		  jb.writeValue(arrayRef,{$: compName},ctx)
+		  jb.db.writeValue(arrayRef,{$: compName},ctx)
 		  return path
 		} else if (!Array.isArray(arrayVal) && arrayVal.$ == compName) {
 		  return path
 		} else {
 		  if (!Array.isArray(arrayVal)) { // If a different comp, wrap with array
-			jb.writeValue(arrayRef,[arrayVal],ctx)
+			jb.db.writeValue(arrayRef,[arrayVal],ctx)
 			arrayRef = st.refOfPath(path)
 			arrayVal = jb.val(arrayRef)
 		  }

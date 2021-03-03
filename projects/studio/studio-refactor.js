@@ -56,7 +56,7 @@ jb.component('studio.calcExtractComponent', {
         }
         if (activate) {
             ctx.run(studio.newComp({compName, compContent: () => newComp, file}));
-            jb.writeValue(jb.studio.refOfPath(path),
+            jb.db.writeValue(jb.studio.refOfPath(path),
                 {$: compName, ...jb.objFromEntries(newComp.params.map(p=>[p.id,`%$${p.id}%`]))},ctx)
         }
 
@@ -175,8 +175,8 @@ jb.component('studio.calcExtractParam', {
         const newParams = [...(jb.compParams(parentComp) || []), paramToAdd]
 
         if (activate) {
-            jb.writeValue(st.refOfPath(`${compName}~params`),newParams, ctx),
-            jb.writeValue(st.refOfPath(path), `%$${id}%`,ctx)
+            jb.db.writeValue(st.refOfPath(`${compName}~params`),newParams, ctx),
+            jb.db.writeValue(st.refOfPath(path), `%$${id}%`,ctx)
         }
 
 		return paramToAdd

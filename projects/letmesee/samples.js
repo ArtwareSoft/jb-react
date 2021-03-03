@@ -1,4 +1,4 @@
-jb.resource('room-heb',jb.xml.xmlToJson(new DOMParser().parseFromString(`
+jb.db.resource('room-heb',jb.xml.xmlToJson(new DOMParser().parseFromString(`
 <room customerName="פתאל" customerCompany="" phone="0527757757" createdByTemplate="" id="hcb7a8" createdDate="1415786383476" modifiedDate="1450271662632" url="http://jb-letmesee.appspot.com/LetMeSee/bmbqji1boc.html?roomid=hcb7a8" tinyUrl="http://tinyurl.com/naa4f8b" version="1_1" agent="ירון" agentPhone="052-6589539" agentID="yaronby@artwaresoft.com" agentEmail="yaronby@artwaresoft.com" sendEmailToAgent="true" createdByUser="ירון" eMail="" smsTitle="FATAL">
   <style>
     <general mainImageHeight="200" paragraphTextMaxLength="" textForBack="" marginForImageInItem="40" paragraphCounter="false" mobileViewInDesktop="false" rtl="true" textForNoDetails="" marginForImageInMainMenu="20"/>
@@ -66,7 +66,7 @@ jb.resource('room-heb',jb.xml.xmlToJson(new DOMParser().parseFromString(`
 `,'text/xml')))
 
 
-jb.resource('room-eng',jb.xml.xmlToJson(new DOMParser().parseFromString(`
+jb.db.resource('room-eng',jb.xml.xmlToJson(new DOMParser().parseFromString(`
 <room customerName="About LMC" customerCompany="" phone="" createdByTemplate="" id="ns01ae" createdDate="1411535223920" modifiedDate="1450271849016" url="http://jb-letmesee.appspot.com/LetMeSee/bmbqji1boc.html?roomid=ns01ae" tinyUrl="http://tinyurl.com/jt3zc6e" version="1_1" agent="ירון" agentPhone="052-6589539" agentID="yaronby@artwaresoft.com" agentEmail="yaronby@artwaresoft.com" sendEmailToAgent="true" createdByUser="ירון" eMail="">
   <style>
     <general mainImageHeight="200" paragraphTextMaxLength="" textForBack="" marginForImageInItem="40" paragraphCounter="false" mobileViewInDesktop="true" rtl="" marginForImageInMainMenu="0" textForNoDetails=""/>

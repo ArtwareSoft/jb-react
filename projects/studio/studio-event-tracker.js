@@ -98,6 +98,87 @@ jb.component('studio.eventTrackerToolbar', {
   }),
 })
 
+jb.component('eventTracker.uiComp', {
+  type: 'control',
+  impl: controls(
+    controlWithCondition(or('%cmp%','%elem%', '%parentElem%'), group({
+      controls: [
+        controlWithCondition('%cmp/ctx/profile/$%', group({
+          controls: [
+            editableBoolean({databind: '%$cmpExpanded/{%$index%}%', style: chromeDebugger.toggleStyle()}),
+            text('%cmp/ctx/profile/$% %cmp/cmpId%;%cmp/ver%'),
+          ],
+          layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'})
+        })),
+        controlWithCondition('%cmp/pt%',text('%cmp/pt% %cmp/cmpId%;%cmp/ver%')),
+        controlWithCondition('%$cmpElem%',text('%$cmpElem/@cmp-pt% %$cmpElem/@cmp-id%;%$cmpElem/@cmp-ver%')),
+      ],
+      features: [
+        group.firstSucceeding(),
+        variable('cmpElem', ({data}) => jb.ui.closestCmpElem(data.elem || data.parentElem))
+      ]
+    })),
+    controlWithCondition('%$cmpExpanded/{%$index%}%', group({ 
+      controls: eventTracker.compInspector('%cmp%'), 
+      features: feature.expandToEndOfRow('%$cmpExpanded/{%$index%}%')
+    })),
+  )
+})
+
+jb.component('eventTracker.callbagMessage', {
+  type: 'control',
+  impl: controls(
+    controlWithCondition(and('%m/d%','%m/t%==1'), group({
+      controls: [
+        editableBoolean({databind: '%$payloadExpanded/{%$index%}%', style: chromeDebugger.toggleStyle()}),
+        text('%$contentType% %$direction% %m/cbId% (%$payload/length%) %m/$%: %m/t%'),
+      ],
+      layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'}),
+      features: [
+        variable('direction', If(contains({allText: '%logNames%', text: 'received'}),'🡸','🡺')),
+        variable('contentType', If('%m/d/data/css%','css', If('%m/d/data/delta%','delta','%m/d/data/$%'))),
+        variable('payload', prettyPrint('%m/d%'))
+      ]
+    })),
+    controlWithCondition('%$payloadExpanded/{%$index%}%', group({ 
+      controls: text({
+        text: prettyPrint('%m/d%'),
+        style: text.codemirror({height: '200'}),
+        features: [codemirror.fold(), css('min-width: 1200px; font-size: 130%')]
+      }), 
+      features: feature.expandToEndOfRow('%$payloadExpanded/{%$index%}%')
+    })),
+  )
+})
+
+jb.component('eventTracker.testResult', {
+  type: 'control',
+  impl: controls(
+    controlWithCondition('%logNames%==check test result', group({
+      controls: [
+        editableBoolean({databind: '%$testResultExpanded/{%$index%}%', style: chromeDebugger.toggleStyle()}),
+        text({
+          vars: Var('color',If('%success%','--jb-success-fg','--jb-error-fg')),
+          text: If('%success%','✓ check test reuslt','⚠ check test reuslt'),
+          features: css.color('var(%$color%)')
+        }),
+      ]
+    })),
+    controlWithCondition('%$testResultExpanded/{%$index%}%', group({ 
+      layout: layout.horizontal(20),
+      controls: [
+        controlWithCondition('%expectedResultCtx/data%', text(prettyPrint('%expectedResultCtx.profile.expectedResult%',true))),
+        controlWithCondition('%expectedResultCtx/data%', text('%expectedResultCtx/data%')),              
+        text({
+          text: '%html%',
+          style: text.codemirror({height: '200', mode: 'htmlmixed', formatText: true}),
+          features: [codemirror.fold(), css('min-width: 1200px; font-size: 130%')]
+      })],
+      features: feature.expandToEndOfRow('%$testResultExpanded/{%$index%}%')
+    })),
+  )
+})
+
 jb.component('studio.eventTracker', {
   type: 'control',
   impl: group({
@@ -107,52 +188,9 @@ jb.component('studio.eventTracker', {
         items: eventTracker.eventItems('%$eventTracker/eventTrackerQuery%'),
         controls: [
           text('%index%'),
-          eventTracker.expandableComp(),
-          controlWithCondition('%$cmpExpanded/{%$index%}%', group({ 
-            controls: eventTracker.compInspector('%cmp%'), 
-            features: feature.expandToEndOfRow('%$cmpExpanded/{%$index%}%')
-          })),
-          controlWithCondition(and('%m/d%','%m/t%==1'), group({
-            controls: [
-              editableBoolean({databind: '%$payloadExpanded/{%$index%}%', style: chromeDebugger.toggleStyle()}),
-              text('%$contentType% %$direction% %m/cbId% (%$payload/length%) %m/$%: %m/t%'),
-            ],
-            layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'}),
-            features: [
-              variable('direction', If(contains({allText: '%logNames%', text: 'received'}),'🡸','🡺')),
-              variable('contentType', If('%m/d/data/css%','css', If('%m/d/data/delta%','delta','%m/d/data/$%'))),
-              variable('payload', prettyPrint('%m/d%'))
-            ]
-          })),
-          controlWithCondition('%$payloadExpanded/{%$index%}%', group({ 
-            controls: text({
-              text: prettyPrint('%m/d%'),
-              style: text.codemirror({height: '200'}),
-              features: [codemirror.fold(), css('min-width: 1200px; font-size: 130%')]
-            }), 
-            features: feature.expandToEndOfRow('%$payloadExpanded/{%$index%}%')
-          })),
-          controlWithCondition('%logNames%==check test result', group({
-            controls: [
-              editableBoolean({databind: '%$testResultExpanded/{%$index%}%', style: chromeDebugger.toggleStyle()}),
-              text({
-                vars: Var('color',If('%success%','--jb-success-fg','--jb-error-fg')),
-                text: If('%success%','✓ check test reuslt','⚠ check test reuslt'),
-                features: css.color('var(%$color%)')
-              }),
-            ]
-          })),
-          controlWithCondition('%$testResultExpanded/{%$index%}%', group({ 
-            controls: [
-              controlWithCondition('%expectedResultCtx/data%', text(prettyPrint('%expectedResultCtx.profile.expectedResult%',true))),
-              controlWithCondition('%expectedResultCtx/data%', text('%expectedResultCtx/data%')),              
-              text({
-                text: '%html%',
-                style: text.codemirror({height: '200', mode: 'htmlmixed', formatText: true}),
-                features: [codemirror.fold(), css('min-width: 1200px; font-size: 130%')]
-            })],
-            features: feature.expandToEndOfRow('%$testResultExpanded/{%$index%}%')
-          })),
+          eventTracker.uiComp(),
+          eventTracker.callbagMessage(),
+          eventTracker.testResult(),
           text({ text: '%logNames%', features: feature.byCondition(
             inGroup(list('exception','error'), '%logNames%'),
             css.color('var(--jb-error-fg)')
@@ -239,28 +277,6 @@ jb.component('eventTracker.eventTypes', {
   })
 })
 
-jb.component('eventTracker.expandableComp', {
-  type: 'control',
-  impl: group({
-    controls: [
-      controlWithCondition('%cmp/ctx/profile/$%', group({
-        controls: [
-          editableBoolean({databind: '%$cmpExpanded/{%$index%}%', style: chromeDebugger.toggleStyle()}),
-          text('%cmp/ctx/profile/$% %cmp/cmpId%;%cmp/ver%'),
-        ],
-        layout: layout.flex({justifyContent: 'start', direction: 'row', alignItems: 'center'})
-      })),
-      controlWithCondition('%cmp/pt%',text('%cmp/pt% %cmp/cmpId%;%cmp/ver%')),
-      controlWithCondition('%$cmpElem%',text('%$cmpElem/@cmp-pt% %$cmpElem/@cmp-id%;%$cmpElem/@cmp-ver%')),
-      text('')
-    ],
-    features: [
-      group.firstSucceeding(),
-      variable('cmpElem', ({data}) => jb.ui.closestCmpElem(data.elem || data.parentElem))
-    ]
-  })
-})
-
 jb.component('studio.objExpandedAsText', {
   params: [
     {id: 'obj', mandatory: true },
@@ -298,7 +314,7 @@ jb.component('studio.lowFootprintObj', {
         studio.slicedString('%$obj/profile/$%: %$obj/path%')
       ),
       controlWithCondition(
-        ({},{},{obj}) => jb.isRef(obj),
+        ({},{},{obj}) => jb.db.isRef(obj),
         studio.slicedString(({},{},{obj}) => obj.handler.pathOfRef(obj).join('/'))
       ),
       controlWithCondition(
@@ -538,11 +554,11 @@ jb.component('chromeDebugger.icon', {
   params: [
       {id: 'position', as: 'string', defaultValue: '0px 144px'}
   ],
-  impl: (If(()=>jb.uri.match(/vDebugger$/)),customStyle({
+  impl: customStyle({
     template: (cmp,{title},h) => h('div',{onclick: true, title}),
-    css: `{ -webkit-mask-image: url(largeIcons.svg); -webkit-mask-position: %$position%; width: 28px;  height: 24px; background-color: var(--jb-menu-fg); opacity: 0.7}
+    css: `{ -webkit-mask-image: url(devtools://devtools/bundled/Images/largeIcons.svg); -webkit-mask-position: %$position%; width: 28px;  height: 24px; background-color: var(--jb-menu-fg); opacity: 0.7}
       ~:hover { opacity: 1}`,
-  }), button.native())
+  })
 })
 
 jb.component('chromeDebugger.sectionsExpandCollapse', {

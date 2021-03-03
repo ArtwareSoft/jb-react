@@ -69,7 +69,7 @@ jb.component('studio.copy', {
   impl: (ctx, path) => {
     try {
       const val = st.valOfPath(path)
-      st.clipboard = typeof val == 'string' ? val : eval('(' + jb.prettyPrint(val,{noMacros: true}) + ')')
+      st.clipboard = typeof val == 'string' ? val : eval('(' + jb.utils.prettyPrint(val,{noMacros: true}) + ')')
     } catch(e) {
       jb.logExecption(e,'copy',{ctx})
     }
@@ -82,7 +82,7 @@ jb.component('studio.paste', {
     {id: 'path', as: 'string'}
   ],
   impl: (ctx, path) =>
-    (st.clipboard != null) && jb.writeValue(st.refOfPath(path), st.clipboard, ctx)
+    (st.clipboard != null) && jb.db.writeValue(st.refOfPath(path), st.clipboard, ctx)
 })
 
 jb.component('studio.scriptHistoryItems', {

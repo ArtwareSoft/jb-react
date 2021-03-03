@@ -99,14 +99,14 @@ jb.component('chromeDebugger.logsCtrl', {
                 options: pipe(
                     net.listAll(),
                     unique(),
-                    filter(not(contains('►vDebugger'))),
+                    filter(not(contains('•vDebugger'))),
                     filter(not(contains('devtools'))),
                     aggregate(obj(prop('options',picklist.options('%%'))))
                 ),
                 features: picklist.allowAsynchOptions(),
             }),
             group({
-                controls: remote.widget(studio.eventTracker(), jbm.byUri('%$inspectedUri%►vDebugger')),
+                controls: remote.widget(studio.eventTracker(), jbm.byUri('%$inspectedUri%•vDebugger')),
                 features: [
                     watchRef('%$inspectedUri%'),
                     group.wait(remote.data(jbm.vDebugger(),jbm.byUri('%$inspectedUri%')))
@@ -127,7 +127,7 @@ jb.component('chromeDebugger.compCtrl', {
     ],
     type: 'control',
     impl: group({
-        controls: remote.widget(studio.compInspector('%$inspectedProps%'), jbm.byUri('%$uri%►vDebugger')),
+        controls: remote.widget(studio.compInspector('%$inspectedProps%'), jbm.byUri('%$uri%•vDebugger')),
         features: group.wait(remote.data(jbm.vDebugger(),jbm.byUri('%$uri%')))
     })
 })

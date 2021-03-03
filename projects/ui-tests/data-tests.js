@@ -241,7 +241,7 @@ jb.component('dataTest.refOfStringArrayItemMove', {
       refs.refOfb = ctx.exp('%$stringArray[1]%','ref')
       refs.refOfc = ctx.exp('%$stringArray[2]%','ref')
       refs.valBefore = jb.val(refs.refOfc)
-      jb.move(refs.refOfc, refs.refOfb, ctx)
+      jb.db.move(refs.refOfc, refs.refOfb, ctx)
       refs.valAfter = jb.val(refs.refOfc)
     },
     expectedResult: equals('%$refs/valBefore%', '%$refs/valAfter%')
@@ -257,7 +257,7 @@ jb.component('dataTest.refOfStringTreeMove', {
       refs.refOfb = ctx.exp('%$stringTree/node1[1]%','ref')
       refs.refOf2 = ctx.exp('%$stringTree/node2[2]%','ref')
       refs.valBefore = jb.val(refs.refOfb)
-      jb.move(refs.refOfb, refs.refOf2, ctx)
+      jb.db.move(refs.refOfb, refs.refOf2, ctx)
       refs.valAfter = jb.val(refs.refOfb)
     },
     expectedResult: equals('%$refs/valBefore%', '%$refs/valAfter%')
@@ -272,7 +272,7 @@ jb.component('dataTest.moveDown.checkPaths', {
       const bart = ctx.exp('%$personWithChildren/children[0]%')
       const lisa = ctx.exp('%$personWithChildren/children[1]%')
       ctx.run(move('%$personWithChildren/children[0]%','%$personWithChildren/children[1]%'))
-      ctx.vars.res.paths = jb.asRef(bart).path()[2] + ',' + jb.asRef(lisa).path()[2]
+      ctx.vars.res.paths = jb.db.asRef(bart).path()[2] + ',' + jb.db.asRef(lisa).path()[2]
     },
     expectedResult: equals('%$res/paths%', '1,0')
   })
@@ -428,10 +428,10 @@ jb.component('dataTest.restoreArrayIdsBug', {
     calculate: '%$arTest/result%',
     runBefore: ctx => {
       const ar_ref = ctx.run('%$arTest/ar%',{as: 'ref'});
-      const refWithBug = jb.refHandler(ar_ref).refOfPath(['arTest','ar','0']);
-      jb.splice(ar_ref,[[1,0,'1']],ctx);
+      const refWithBug = jb.db.refHandler(ar_ref).refOfPath(['arTest','ar','0']);
+      jb.db.splice(ar_ref,[[1,0,'1']],ctx);
       const v = jb.val(refWithBug);
-      jb.writeValue(ctx.exp('%$arTest/result%','ref'),v,ctx);
+      jb.db.writeValue(ctx.exp('%$arTest/result%','ref'),v,ctx);
    },
     expectedResult: contains('0')
   })
@@ -533,7 +533,7 @@ jb.component('dataTest.prettyPrintMacroVars', {
   impl: dataTest({
     calculate: ctx => { try {
       const testToTest = 'dataTest.varsCases'
-      const compTxt = jb.prettyPrintComp(testToTest.replace(/varsCases/,'varsCases2'), jb.comps[testToTest])
+      const compTxt = jb.utils.prettyPrintComp(testToTest.replace(/varsCases/,'varsCases2'), jb.comps[testToTest])
       eval(compTxt)
       return ctx.run(dataTest.asArrayBug()) // checks for error
         .then(({success}) => success)
@@ -633,7 +633,7 @@ jb.component('data.test1', {
 jb.component('dataTest.prettyPrintPositions', {
   impl: dataTest({
     calculate: pipeline(
-      () => jb.prettyPrintWithPositions(group({title: '2.0', controls: text('my label')})),
+      () => jb.utils.prettyPrintWithPositions(group({title: '2.0', controls: text('my label')})),
       '%map/~controls~text~!value%',
       join({})
     ),
@@ -644,7 +644,7 @@ jb.component('dataTest.prettyPrintPositions', {
 jb.component('dataTest.prettyPrintPositionsInnerFlat', {
   impl: dataTest({
     calculate: pipeline(
-      () => jb.prettyPrintWithPositions(
+      () => jb.utils.prettyPrintWithPositions(
       group({
         title: 'main',
         controls: [
@@ -663,7 +663,7 @@ jb.component('dataTest.prettyPrintPositionsInnerFlat', {
 jb.component('dataTest.prettyPrintPathInPipeline', {
   impl: dataTest({
     calculate: pipeline(
-      () => jb.prettyPrintWithPositions(
+      () => jb.utils.prettyPrintWithPositions(
         pipeline('main')
       ),
       '%map/~items~0~!value[0]%'
@@ -675,7 +675,7 @@ jb.component('dataTest.prettyPrintPathInPipeline', {
 jb.component('dataTest.prettyPrintArray', {
   impl: dataTest({
     calculate: pipeline(
-      () => jb.prettyPrintWithPositions(
+      () => jb.utils.prettyPrintWithPositions(
         group({controls:[]})
       ),
       '%map/~controls~!value[0]%'
@@ -686,7 +686,7 @@ jb.component('dataTest.prettyPrintArray', {
 
 jb.component('dataTest.prettyPrint$contains', {
   impl: dataTest({
-    calculate: pipeline(() => jb.prettyPrintWithPositions(
+    calculate: pipeline(() => jb.utils.prettyPrintWithPositions(
         {$contains: 'hello'}
       ), '%text%'),
     expectedResult: contains('hello')

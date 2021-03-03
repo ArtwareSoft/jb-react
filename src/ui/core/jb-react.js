@@ -9,7 +9,7 @@ jb.initLibs('ui', {
     compareVdom(b,after,ctx) {
         const a = after instanceof jb.ui.VNode ? jb.ui.stripVdom(after) : after
         jb.log('vdom diff compare',{before: b,after : a,ctx})
-        const attributes = jb.objectDiff(a.attributes || {}, b.attributes || {})
+        const attributes = jb.utils.objectDiff(a.attributes || {}, b.attributes || {})
         const children = childDiff(b.children || [],a.children || [])
         return { 
             ...(Object.keys(attributes).length ? {attributes} : {}), 
@@ -420,7 +420,7 @@ jb.initLibs('ui', {
             jb.ui.runCtxActionAndUdateCmpState(ctx,data,vars)
         }
     },
-    resourceChange: () => jb.mainWatchableHandler.resourceChange,
+    resourceChange: () => jb.db.mainWatchableHandler.resourceChange,
 
     BECmpsDestroyNotification: jb.callbag.subject(),
     refreshNotification: jb.callbag.subject(),
@@ -454,7 +454,7 @@ jb.initLibs('ui', {
     },
     garbageCollectCtxDictionary(forceNow,clearAll) {
         if (!forceNow)
-            return jb.delay(1000).then(()=>ui.garbageCollectCtxDictionary(true))
+            return jb.delay(1000).then(()=>jb.ui.garbageCollectCtxDictionary(true))
    
         const used = 'jb-ctx,full-cmp-ctx,pick-ctx,props-ctx,methods,frontEnd,originators'.split(',')
             .flatMap(att=>querySelectAllWithWidgets(`[${att}]`)
@@ -474,13 +474,13 @@ jb.initLibs('ui', {
             }
         }
         // remove unused vars from resources
-        const ctxToPath = ctx => Object.values(ctx.vars).filter(v=>jb.isWatchable(v)).map(v => jb.asRef(v))
-            .map(ref=>jb.refHandler(ref).pathOfRef(ref)).flat()
-        const globalVarsUsed = jb.unique(used.map(x=>jb.ctxDictionary[''+x]).filter(x=>x).map(ctx=>ctxToPath(ctx)).flat())
-        Object.keys(jb.resources).filter(id=>id.indexOf(':') != -1)
+        const ctxToPath = ctx => Object.values(ctx.vars).filter(v=>jb.db.isWatchable(v)).map(v => jb.db.asRef(v))
+            .map(ref=>jb.db.refHandler(ref).pathOfRef(ref)).flat()
+        const globalVarsUsed = jb.utils.unique(used.map(x=>jb.ctxDictionary[''+x]).filter(x=>x).map(ctx=>ctxToPath(ctx)).flat())
+        Object.keys(jb.db.resources).filter(id=>id.indexOf(':') != -1)
             .filter(id=>globalVarsUsed.indexOf(id) == -1)
             .filter(id=>+id.split(':').pop < maxUsed)
-            .forEach(id => { removedResources.push(id); delete jb.resources[id]})
+            .forEach(id => { removedResources.push(id); delete jb.db.resources[id]})
 
         // remove front-end widgets
         const usedWidgets = jb.objFromEntries(
@@ -594,7 +594,7 @@ jb.initLibs('ui', {
                 strongRefresh = strongRefresh || obs.strongRefresh
                 delay = delay || obs.delay
                 cssOnly = cssOnly && obs.cssOnly
-                const diff = jb.comparePaths(changed_path, obsPath)
+                const diff = jb.db.comparePaths(changed_path, obsPath)
                 const isChildOfChange = diff == 1
                 const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
                 const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
@@ -625,7 +625,7 @@ jb.initLibs('ui', {
     }),
     initializeModule() {
         // subscribe for watchable change
-        jb.ui.subscribeToRefChange(jb.mainWatchableHandler)
+        jb.ui.subscribeToRefChange(jb.db.mainWatchableHandler)
 
         // subscribe for widget renderingUpdates
         jb.callbag.subscribe(e=> {

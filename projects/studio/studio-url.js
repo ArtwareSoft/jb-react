@@ -54,7 +54,7 @@ jb.component('urlHistory.mapStudioUrlToResource', {
 
         const databindEm = pipe(jb.ui.resourceChange(),
             filter(e=> e.path[0] == resource && params.indexOf(e.path[1]) != -1),
-            map(_=> jb.resource(resource)),
+            map(_=> jb.db.resource(resource)),
             filter(obj=> obj[params[0]]),
             map(obj=> urlFormat.objToUrl(obj)))
 
@@ -63,7 +63,7 @@ jb.component('urlHistory.mapStudioUrlToResource', {
             subscribe(loc => {
                 const obj = urlFormat.urlToObj(loc);
                 params.forEach(p=>
-                    jb.writeValue(ctx.exp(`%$${resource}/${p}%`,'ref'), jb.tostring(obj[p]) ,ctx) );
+                    jb.db.writeValue(ctx.exp(`%$${resource}/${p}%`,'ref'), jb.tostring(obj[p]) ,ctx) );
                 // change the url if needed
                 if (loc.pathname && loc.pathname === location.pathname) return
                 if (loc.search && loc.search === location.search) return

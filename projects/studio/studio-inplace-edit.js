@@ -134,12 +134,12 @@ Object.assign(jb.ui, {
     let arrayRef = jb.studio.refOfPath(path)
     let arrayVal = jb.val(arrayRef)
     if (!arrayVal) {
-      jb.writeValue(arrayRef,newComp,ctx)
+      jb.db.writeValue(arrayRef,newComp,ctx)
     } else if (!Array.isArray(arrayVal) && arrayVal.$ == newComp.$) {
       writeToExistingComp(path)
     } else {
       if (!Array.isArray(arrayVal)) { // wrap with array
-        jb.writeValue(arrayRef,[arrayVal],ctx)
+        jb.db.writeValue(arrayRef,[arrayVal],ctx)
         arrayRef = jb.studio.refOfPath(path)
         arrayVal = jb.val(arrayRef)
       }
@@ -152,7 +152,7 @@ Object.assign(jb.ui, {
 
     function writeToExistingComp(compPath) {
       Object.keys(newComp).filter(prop=>prop != '$').forEach(prop=>
-        jb.writeValue(jb.studio.refOfPath(`${compPath}~${prop}`),newComp[prop],ctx))
+        jb.db.writeValue(jb.studio.refOfPath(`${compPath}~${prop}`),newComp[prop],ctx))
     }
   },
   setPositionScript(el,fullProp,value,ctx) {
@@ -167,14 +167,14 @@ Object.assign(jb.ui, {
     const st = jb.studio
     const item = ctx.vars.sourceItem
     const _jb = st.previewjb
-    const ref = _jb.asRef(item)
-    const handler = _jb.refHandler(ref)
+    const ref = _jb.db.asRef(item)
+    const handler = _jb.db.refHandler(ref)
     const path = handler.pathOfRef(ref)
     const parent_ref = handler.refOfPath(path.slice(0,-1))
     if (parent_ref && Array.isArray(_jb.val(parent_ref))) {
       const clone = st.previewWindow.JSON.parse(JSON.stringify(item));
       const index = Number(path.slice(-1));
-      _jb.splice(parent_ref,[[index, 0,clone]],ctx);
+      _jb.db.splice(parent_ref,[[index, 0,clone]],ctx);
       ctx.run(runActions(dialog.closeAll(), studio.refreshPreview()))
     }
   },

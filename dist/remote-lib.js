@@ -6,196 +6,197 @@ jb.component('prettyPrint', {
     {id: 'profile', defaultValue: '%%'},
     {id: 'forceFlat', as: 'boolean', type: 'boolean'},
   ],
-  impl: (ctx,profile) => jb.prettyPrint(jb.val(profile),{ ...ctx.params, comps: jb.studio.previewjb.comps})
+  impl: (ctx,profile) => jb.utils.prettyPrint(jb.val(profile),{ ...ctx.params, comps: jb.studio.previewjb.comps})
 })
 
-jb.prettyPrintComp = function(compId,comp,settings={}) {
-  if (comp) {
-    return `jb.component('${compId}', ${jb.prettyPrint(comp,{ initialPath: compId, ...settings })})`
-  }
-}
+jb.initLibs('utils', {
+  prettyPrintComp(compId,comp,settings={}) {
+    if (comp) {
+      return `jb.component('${compId}', ${jb.utils.prettyPrint(comp,{ initialPath: compId, ...settings })})`
+    }
+  },
+  
+  prettyPrint(val,settings = {}) {
+    if (val == null) return ''
+    return jb.utils.prettyPrintWithPositions(val,settings).text;
+  },
+  
+  advanceLineCol({line,col},text) {
+    const noOfLines = (text.match(/\n/g) || '').length
+    const newCol = noOfLines ? text.match(/\n(.*)$/)[1].length : col + text.length
+    return { line: line + noOfLines, col: newCol }
+  },
+  emptyLineWithSpaces: Array.from(new Array(200)).map(_=>' ').join(''),
 
-jb.prettyPrint = function(val,settings = {}) {
-  if (val == null) return ''
-  return jb.prettyPrintWithPositions(val,settings).text;
-}
+  prettyPrintWithPositions(val,{colWidth=120,tabSize=2,initialPath='',noMacros,comps,forceFlat} = {}) {
+    comps = comps || jb.comps
+    if (!val || typeof val !== 'object')
+      return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
 
-jb.prettyPrint.advanceLineCol = function({line,col},text) {
-  const noOfLines = (text.match(/\n/g) || '').length
-  const newCol = noOfLines ? text.match(/\n(.*)$/)[1].length : col + text.length
-  return { line: line + noOfLines, col: newCol }
-}
-jb.prettyPrint.spaces = Array.from(new Array(200)).map(_=>' ').join('');
+    const res = valueToMacro({path: initialPath, line:0, col: 0, depth :1}, val)
+    res.text = res.text.replace(/__fixedNL__/g,'\n')
+    return res
 
-jb.prettyPrintWithPositions = function(val,{colWidth=120,tabSize=2,initialPath='',noMacros,comps,forceFlat} = {}) {
-  comps = comps || jb.comps
-  if (!val || typeof val !== 'object')
-    return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
-
-  const res = valueToMacro({path: initialPath, line:0, col: 0, depth :1}, val)
-  res.text = res.text.replace(/__fixedNL__/g,'\n')
-  return res
-
-  function processList(ctx,items) {
-    const res = items.reduce((acc,{prop, item}) => {
-      const toAdd = typeof item === 'function' ? item(acc) : item
-      const toAddStr = toAdd.text || toAdd, toAddMap = toAdd.map || {}, toAddPath = toAdd.path || ctx.path
-      const startPos = jb.prettyPrint.advanceLineCol(acc,''), endPos = jb.prettyPrint.advanceLineCol(acc,toAddStr)
-      const map = { ...acc.map, ...toAddMap, [[toAddPath,prop].join('~')]: [startPos.line, startPos.col, endPos.line, endPos.col] }
-      return { text: acc.text + toAddStr, map, unflat: acc.unflat || toAdd.unflat, ...endPos}
-    }, {text: '', map: {}, ...ctx})
-    return {...ctx, ...res}
-  }
-
-  function joinVals(ctx, innerVals, open, close, flat, isArray) {
-    const {path, depth} = ctx
-    const _open = typeof open === 'string' ? [{prop: '!open', item: open}] : open
-    const openResult = processList(ctx,[..._open, {prop: '!open-newline', item: () => newLine()}])
-    const arrayOrObj = isArray? 'array' : 'obj'
-
-    const beforeClose = innerVals.reduce((acc,{innerPath, val}, index) =>
-      processList(acc,[
-        {prop: `!${arrayOrObj}-prefix-${index}`, item: isArray ? '' : fixPropName(innerPath) + ': '},
-        {prop: '!value', item: ctx => {
-            const ctxWithPath = { ...ctx, path: [path,innerPath].join('~'), depth: depth +1 }
-            return {...ctxWithPath, ...valueToMacro(ctxWithPath, val, flat)}
-          }
-        },
-        {prop: `!${arrayOrObj}-separator-${index}`, item: () => index === innerVals.length-1 ? '' : ',' + (flat ? ' ' : newLine())},
-      ])
-    , {...openResult, unflat: false} )
-    const _close = typeof close === 'string' ? [{prop: '!close', item: close}] : close
-    const result = processList(beforeClose, [{prop: '!close-newline', item: () => newLine(-1)}, ..._close])
-
-    const unflat = shouldNotFlat(result)
-    if ((forceFlat || !unflat) && !flat)
-      return joinVals(ctx, innerVals, open, close, true, isArray)
-    return {...result, unflat}
-
-    function newLine(offset = 0) {
-      return flat ? '' : '\n' + jb.prettyPrint.spaces.slice(0,(depth+offset)*tabSize)
+    function processList(ctx,items) {
+      const res = items.reduce((acc,{prop, item}) => {
+        const toAdd = typeof item === 'function' ? item(acc) : item
+        const toAddStr = toAdd.text || toAdd, toAddMap = toAdd.map || {}, toAddPath = toAdd.path || ctx.path
+        const startPos = jb.utils.advanceLineCol(acc,''), endPos = jb.utils.advanceLineCol(acc,toAddStr)
+        const map = { ...acc.map, ...toAddMap, [[toAddPath,prop].join('~')]: [startPos.line, startPos.col, endPos.line, endPos.col] }
+        return { text: acc.text + toAddStr, map, unflat: acc.unflat || toAdd.unflat, ...endPos}
+      }, {text: '', map: {}, ...ctx})
+      return {...ctx, ...res}
     }
 
-    function shouldNotFlat(result) {
-      const long = result.text.replace(/\n\s*/g,'').split('__fixedNL__')[0].length > colWidth
-      if (!jb.studio.valOfPath)
-        return result.unflat || long
-      const val = jb.studio.valOfPath(path)
-      const paramProps = path.match(/~params~[0-9]+$/)
-      const paramsParent = path.match(/~params$/)
-      const ctrls = path.match(/~controls$/) && Array.isArray(val) // && innerVals.length > 1// jb.studio.isOfType(path,'control') && !arrayElem
-      const customStyle = jb.studio.compNameOfPath && jb.studio.compNameOfPath(path) === 'customStyle'
-      const moreThanTwoVals = innerVals.length > 2 && !isArray
-      const top = !path.match(/~/g)
-      return !paramProps && (result.unflat || paramsParent || customStyle || moreThanTwoVals || top || ctrls || long)
-    }
-    function fixPropName(prop) {
-      return prop.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/) ? prop : `'${prop}'`
-    }
-  }
+    function joinVals(ctx, innerVals, open, close, flat, isArray) {
+      const {path, depth} = ctx
+      const _open = typeof open === 'string' ? [{prop: '!open', item: open}] : open
+      const openResult = processList(ctx,[..._open, {prop: '!open-newline', item: () => newLine()}])
+      const arrayOrObj = isArray? 'array' : 'obj'
 
-  function profileToMacro(ctx, profile,flat) {
-    const id = [jb.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
-    const comp = comps[id]
-    if (comp)
-      jb.fixMacroByValue(profile,comp)
-    if (noMacros || !id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
-      const props = Object.keys(profile)
-      if (props.indexOf('$') > 0) { // make the $ first
-        props.splice(props.indexOf('$'),1);
-        props.unshift('$');
+      const beforeClose = innerVals.reduce((acc,{innerPath, val}, index) =>
+        processList(acc,[
+          {prop: `!${arrayOrObj}-prefix-${index}`, item: isArray ? '' : fixPropName(innerPath) + ': '},
+          {prop: '!value', item: ctx => {
+              const ctxWithPath = { ...ctx, path: [path,innerPath].join('~'), depth: depth +1 }
+              return {...ctxWithPath, ...valueToMacro(ctxWithPath, val, flat)}
+            }
+          },
+          {prop: `!${arrayOrObj}-separator-${index}`, item: () => index === innerVals.length-1 ? '' : ',' + (flat ? ' ' : newLine())},
+        ])
+      , {...openResult, unflat: false} )
+      const _close = typeof close === 'string' ? [{prop: '!close', item: close}] : close
+      const result = processList(beforeClose, [{prop: '!close-newline', item: () => newLine(-1)}, ..._close])
+
+      const unflat = shouldNotFlat(result)
+      if ((forceFlat || !unflat) && !flat)
+        return joinVals(ctx, innerVals, open, close, true, isArray)
+      return {...result, unflat}
+
+      function newLine(offset = 0) {
+        return flat ? '' : '\n' + jb.utils.emptyLineWithSpaces.slice(0,(depth+offset)*tabSize)
       }
-      return joinVals(ctx, props.map(prop=>({innerPath: prop, val: profile[prop]})), '{', '}', flat, false)
-    }
-    const macro = jb.macroName(id)
 
-    const params = comp.params || []
-    const firstParamIsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
-    const vars = (profile.$vars || []).map(({name,val},i) => ({innerPath: `$vars~${i}`, val: {$: 'Var', name, val }}))
-    const remark = profile.remark ? [{innerPath: 'remark', val: {$remark: profile.remark}} ] : []
-    const systemProps = vars.concat(remark)
-    const openProfileByValueGroup = [{prop: '!profile', item: macro}, {prop:'!open-by-value', item:'('}]
-    const closeProfileByValueGroup = [{prop:'!close-by-value', item:')'}]
-    const openProfileSugarGroup = [{prop: '!profile', item: macro}, {prop:'!open-sugar', item:'('}]
-    const closeProfileSugarGroup = [{prop:'!close-sugar', item: ')'}]
-    const openProfileGroup = [{prop: '!profile', item: macro}, {prop:'!open-profile', item:'({'}]
-    const closeProfileGroup = [{prop:'!close-profile', item:'})'}]
-
-    if (firstParamIsArray) { // pipeline, or, and, plus
-      const vars = (profile.$vars || []).map(({name,val}) => ({$: 'Var', name, val }))
-      const args = vars.concat(jb.asArray(profile[params[0].id]))
-        .map((val,i) => ({innerPath: params[0].id + '~' + i, val}))
-      return joinVals(ctx, args, openProfileSugarGroup, closeProfileSugarGroup, flat, true)
+      function shouldNotFlat(result) {
+        const long = result.text.replace(/\n\s*/g,'').split('__fixedNL__')[0].length > colWidth
+        if (!jb.studio.valOfPath)
+          return result.unflat || long
+        const val = jb.studio.valOfPath(path)
+        const paramProps = path.match(/~params~[0-9]+$/)
+        const paramsParent = path.match(/~params$/)
+        const ctrls = path.match(/~controls$/) && Array.isArray(val) // && innerVals.length > 1// jb.studio.isOfType(path,'control') && !arrayElem
+        const customStyle = jb.studio.compNameOfPath && jb.studio.compNameOfPath(path) === 'customStyle'
+        const moreThanTwoVals = innerVals.length > 2 && !isArray
+        const top = !path.match(/~/g)
+        return !paramProps && (result.unflat || paramsParent || customStyle || moreThanTwoVals || top || ctrls || long)
+      }
+      function fixPropName(prop) {
+        return prop.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/) ? prop : `'${prop}'`
+      }
     }
-    const keys = Object.keys(profile).filter(x=>x != '$')
-    const oneFirstArg = keys.length === 1 && params[0] && params[0].id == keys[0]
-    const twoFirstArgs = keys.length == 2 && params.length >= 2 && profile[params[0].id] && profile[params[1].id]
-    if ((params.length < 3 && comp.macroByValue !== false) || comp.macroByValue || oneFirstArg || twoFirstArgs) {
-      const args = systemProps.concat(params.map(param=>({innerPath: param.id, val: propOfProfile(param.id)})))
-      for(let i=0;i<5;i++)
-        if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
-      return joinVals(ctx, args, openProfileByValueGroup, closeProfileByValueGroup, flat, true)
-    }
-    const remarkProp = profile.remark ? [{innerPath: 'remark', val: profile.remark} ] : []
-    const systemPropsInObj = remarkProp.concat(vars.length ? [{innerPath: 'vars', val: vars.map(x=>x.val)}] : [])
-    const args = systemPropsInObj.concat(params.filter(param=>propOfProfile(param.id) !== undefined)
-        .map(param=>({innerPath: param.id, val: propOfProfile(param.id)})))
-    const open = args.length ? openProfileGroup : openProfileByValueGroup
-    const close = args.length ? closeProfileGroup : closeProfileByValueGroup
-    return joinVals(ctx, args, open, close, flat, false)
 
-    function propOfProfile(paramId) {
-      const isFirst = params[0] && params[0].id == paramId
-      return isFirst && profile['$'+id] || profile[paramId]
+    function profileToMacro(ctx, profile,flat) {
+      const id = [jb.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
+      const comp = comps[id]
+      if (comp)
+        jb.fixMacroByValue(profile,comp)
+      if (noMacros || !id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
+        const props = Object.keys(profile)
+        if (props.indexOf('$') > 0) { // make the $ first
+          props.splice(props.indexOf('$'),1);
+          props.unshift('$');
+        }
+        return joinVals(ctx, props.map(prop=>({innerPath: prop, val: profile[prop]})), '{', '}', flat, false)
+      }
+      const macro = jb.macroName(id)
+
+      const params = comp.params || []
+      const firstParamIsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
+      const vars = (profile.$vars || []).map(({name,val},i) => ({innerPath: `$vars~${i}`, val: {$: 'Var', name, val }}))
+      const remark = profile.remark ? [{innerPath: 'remark', val: {$remark: profile.remark}} ] : []
+      const systemProps = vars.concat(remark)
+      const openProfileByValueGroup = [{prop: '!profile', item: macro}, {prop:'!open-by-value', item:'('}]
+      const closeProfileByValueGroup = [{prop:'!close-by-value', item:')'}]
+      const openProfileSugarGroup = [{prop: '!profile', item: macro}, {prop:'!open-sugar', item:'('}]
+      const closeProfileSugarGroup = [{prop:'!close-sugar', item: ')'}]
+      const openProfileGroup = [{prop: '!profile', item: macro}, {prop:'!open-profile', item:'({'}]
+      const closeProfileGroup = [{prop:'!close-profile', item:'})'}]
+
+      if (firstParamIsArray) { // pipeline, or, and, plus
+        const vars = (profile.$vars || []).map(({name,val}) => ({$: 'Var', name, val }))
+        const args = vars.concat(jb.asArray(profile[params[0].id]))
+          .map((val,i) => ({innerPath: params[0].id + '~' + i, val}))
+        return joinVals(ctx, args, openProfileSugarGroup, closeProfileSugarGroup, flat, true)
+      }
+      const keys = Object.keys(profile).filter(x=>x != '$')
+      const oneFirstArg = keys.length === 1 && params[0] && params[0].id == keys[0]
+      const twoFirstArgs = keys.length == 2 && params.length >= 2 && profile[params[0].id] && profile[params[1].id]
+      if ((params.length < 3 && comp.macroByValue !== false) || comp.macroByValue || oneFirstArg || twoFirstArgs) {
+        const args = systemProps.concat(params.map(param=>({innerPath: param.id, val: propOfProfile(param.id)})))
+        for(let i=0;i<5;i++)
+          if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
+        return joinVals(ctx, args, openProfileByValueGroup, closeProfileByValueGroup, flat, true)
+      }
+      const remarkProp = profile.remark ? [{innerPath: 'remark', val: profile.remark} ] : []
+      const systemPropsInObj = remarkProp.concat(vars.length ? [{innerPath: 'vars', val: vars.map(x=>x.val)}] : [])
+      const args = systemPropsInObj.concat(params.filter(param=>propOfProfile(param.id) !== undefined)
+          .map(param=>({innerPath: param.id, val: propOfProfile(param.id)})))
+      const open = args.length ? openProfileGroup : openProfileByValueGroup
+      const close = args.length ? closeProfileGroup : closeProfileByValueGroup
+      return joinVals(ctx, args, open, close, flat, false)
+
+      function propOfProfile(paramId) {
+        const isFirst = params[0] && params[0].id == paramId
+        return isFirst && profile['$'+id] || profile[paramId]
+      }
+    }
+
+    function valueToMacro({path, line, col, depth}, val, flat) {
+      const ctx = {path, line, col, depth}
+      let result = doValueToMacro()
+      if (typeof result === 'string')
+        result = { text: result, map: {}}
+      return result
+
+      function doValueToMacro() {
+        if (Array.isArray(val)) return arrayToMacro(ctx, val, flat);
+        if (val === null) return 'null';
+        if (val === undefined) return 'undefined';
+        if (typeof val === 'object') return profileToMacro(ctx, val, flat);
+        if (typeof val === 'function') return val.toString().replace(/\n/g,'__fixedNL__')
+        if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
+          return processList(ctx,[
+            {prop: '!value-text-start', item: "'"},
+            {prop: '!value-text', item: JSON.stringify(val).slice(1,-1)},
+            {prop: '!value-text-end', item: "'"},
+          ])
+        else if (typeof val === 'string' && val.indexOf('\n') != -1)
+          return processList(ctx,[
+            {prop: '!value-text-start', item: "`"},
+            {prop: '!value-text', item: val.replace(/`/g,'\\`')},
+            {prop: '!value-text-end', item: "`"},
+          ])
+        else
+          return JSON.stringify(val); // primitives
+      }
+    }
+
+    function arrayToMacro(ctx, array, flat) {
+      const vals = array.map((val,i) => ({innerPath: i, val}))
+      const openArray = [{prop:'!open-array', item:'['}]
+      const closeArray = [{prop:'!close-array', item:']'}]
+
+      return joinVals(ctx, vals, openArray, closeArray, flat, true)
     }
   }
-
-  function valueToMacro({path, line, col, depth}, val, flat) {
-    const ctx = {path, line, col, depth}
-    let result = doValueToMacro()
-    if (typeof result === 'string')
-      result = { text: result, map: {}}
-    return result
-
-    function doValueToMacro() {
-      if (Array.isArray(val)) return arrayToMacro(ctx, val, flat);
-      if (val === null) return 'null';
-      if (val === undefined) return 'undefined';
-      if (typeof val === 'object') return profileToMacro(ctx, val, flat);
-      if (typeof val === 'function') return val.toString().replace(/\n/g,'__fixedNL__')
-      if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
-        return processList(ctx,[
-          {prop: '!value-text-start', item: "'"},
-          {prop: '!value-text', item: JSON.stringify(val).slice(1,-1)},
-          {prop: '!value-text-end', item: "'"},
-        ])
-      else if (typeof val === 'string' && val.indexOf('\n') != -1)
-        return processList(ctx,[
-          {prop: '!value-text-start', item: "`"},
-          {prop: '!value-text', item: val.replace(/`/g,'\\`')},
-          {prop: '!value-text-end', item: "`"},
-        ])
-      else
-        return JSON.stringify(val); // primitives
-    }
-  }
-
-  function arrayToMacro(ctx, array, flat) {
-    const vals = array.map((val,i) => ({innerPath: i, val}))
-    const openArray = [{prop:'!open-array', item:'['}]
-    const closeArray = [{prop:'!close-array', item:']'}]
-
-    return joinVals(ctx, vals, openArray, closeArray, flat, true)
-  }
-}
-
+})
 ;
 
 jb.remoteCtx = {
     stripCtx(ctx) {
         if (!ctx) return null
         const isJS = typeof ctx.profile == 'function'
-        const profText = jb.prettyPrint(ctx.profile)
+        const profText = jb.utils.prettyPrint(ctx.profile)
         const vars = jb.objFromEntries(jb.entries(ctx.vars).filter(e => e[0] == '$disableLog' || profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
         const data = profText.match(/({data})|(ctx.data)|(%%)/) && this.stripData(ctx.data) 
@@ -225,7 +226,7 @@ jb.remoteCtx = {
     stripFunction(f) {
         const {profile,runCtx,path,param,srcPath} = f
         if (!profile || !runCtx) return this.stripJS(f)
-        const profText = jb.prettyPrint(profile)
+        const profText = jb.utils.prettyPrint(profile)
         const profNoJS = this.stripJSFromProfile(profile)
         const vars = jb.objFromEntries(jb.entries(runCtx.vars).filter(e => e[0] == '$disableLog' || profText.match(new RegExp(`\\b${e[0]}\\b`)))
             .map(e=>[e[0],this.stripData(e[1])]))
@@ -267,7 +268,7 @@ jb.remoteCtx = {
     serializeCmp(compId) {
         if (!jb.comps[compId])
             return jb.logError('no component of id ',{compId}),''
-        return jb.prettyPrint({compId, ...jb.comps[compId],
+        return jb.utils.prettyPrint({compId, ...jb.comps[compId],
             location: jb.comps[compId][jb.location], loadingPhase: jb.comps[compId][jb.loadingPhase]} )
     },
     deSerializeCmp(code) {
@@ -288,7 +289,7 @@ jb.remoteCtx = {
 
 /* jbm - a virtual jBart machine - can be implemented in same frame/sub frames/workers over the network
 interface jbm : {
-     uri : string // devtools►logPanel, studio►preview►debugView, ►debugView
+     uri : string // devtools•logPanel, studio•preview•debugView, •debugView
      parent : jbm // null means root
      remoteExec(profile: any, ,{timeout,oneway}) : Promise | void
      createCallbagSource(stripped ctx of cb_source) : cb
@@ -461,6 +462,7 @@ Object.assign(jb, {
             }
             function inboundExecResult(m) { 
                 jb.cbHandler.getAsPromise(m.cbId).then(h=>{
+                    if (!h) return
                     clearTimeout(h.timer)
                     if (m.type == 'error') {
                         jb.logError('remote remoteExec', {m, h})
@@ -522,7 +524,7 @@ jb.component('jbm.worker', {
     impl: ({},name,libs,jsFiles,networkPeer) => {
         const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
         if (childsOrNet[name]) return childsOrNet[name]
-        const workerUri = networkPeer ? name : `${jb.uri}►${name}`
+        const workerUri = networkPeer ? name : `${jb.uri}•${name}`
         const distPath = jb.jbm.pathOfDistFolder()
         const spyParam = ((jb.path(jb.frame,'location.href')||'').match('[?&]spy=([^&]+)') || ['', ''])[1]
         const baseUrl = jb.path(jb.frame,'location.origin') || jb.baseUrl || ''
@@ -538,22 +540,17 @@ jb = ${JSON.stringify(jbObj)}
 jb_loadProject(${JSON.stringify(settings)}).then(() => {
     self.spy = jb.initSpy({spyParam: '${spyParam}'})
     self.${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
+    console.log('worker loaded')
     postMessage('loaded')
     self.loaded = true
 })`
         const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
         // wait for worker jbm to load
-        const promise = jb.callbag.toPromise(
-            jb.callbag.pipe(
-                jb.callbag.fromEvent(worker,'message'),
-                jb.callbag.take(1),
-                jb.callbag.map(() => childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri)))
-        ))
-        // const promise = jb.exec(pipe(
-        //     remote.data( waitFor(()=> self.loaded), ()=>workerJbm ),
-        //     () => childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri)),
-        //     first()
-        // ))
+        const promise = new Promise(resolve => jb.exec(rx.pipe(
+            source.event('message', () =>worker),
+            rx.take(1),
+            sink.action(() => resolve(childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))))
+        )))
         promise.uri = workerUri
         return promise
     }
@@ -567,7 +564,7 @@ jb.component('jbm.child', {
     ],    
     impl: ({},name,libs) => {
         if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
-        const childUri = `${jb.uri}►${name}`
+        const childUri = `${jb.uri}•${name}`
         const res = jb.frame.jbm_create && Promise.resolve(jb.frame.jbm_create(libs, { loadFromDist: true, uri: childUri, distPath: jb.distPath}))
             .then(child => {
                 jb.jbm.childJbms[name] = child
@@ -631,9 +628,9 @@ jb.component('jbm.byUri', {
         }
 
         function calcRoutingPath(from,to) {
-            const pp1 = from.split('►'), pp2 = to.split('►')
-            const p1 = pp1.map((p,i) => pp1.slice(0,i+1).join('►'))
-            const p2 = pp2.map((p,i) => pp2.slice(0,i+1).join('►'))
+            const pp1 = from.split('•'), pp2 = to.split('•')
+            const p1 = pp1.map((p,i) => pp1.slice(0,i+1).join('•'))
+            const p2 = pp2.map((p,i) => pp2.slice(0,i+1).join('•'))
             let i =0;
             while (p1[i] === p2[i] && i < p1.length) i++;
             const path_to_shared_parent = i ? p1.slice(i-1) : p1.slice(i) // i == 0 means there is no shared parent, so network is used
@@ -671,7 +668,7 @@ jb.component('source.remote', {
         if (!jbm)
             return jb.logError('source.remote - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
         const stripedRx = jbm.callbag ? rx : jb.remoteCtx.stripFunction(rx)
-        if (jb.isPromise(jbm))
+        if (jb.utils.isPromise(jbm))
             return jb.callbag.pipe(jb.callbag.fromPromise(jbm), jb.callbag.concatMap(_jbm=> _jbm.createCallbagSource(stripedRx)))
         return jbm.createCallbagSource(stripedRx)
     }        
@@ -688,7 +685,7 @@ jb.component('remote.operator', {
         if (!jbm)
             return jb.logError('remote.operator - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
         const stripedRx = jbm.callbag ? rx : jb.remoteCtx.stripFunction(rx)
-        if (jb.isPromise(jbm)) {
+        if (jb.utils.isPromise(jbm)) {
             jb.log('jbm as promise in remote operator, adding request buffer', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
             return source => {
                 const buffer = jb.callbag.replay(5)(source)
@@ -739,9 +736,9 @@ jb.component('remote.initShadowData', {
     ],
     impl: rx.pipe(
         source.watchableData({ref: '%$src%', includeChildren: 'yes'}),
-        rx.map(obj(prop('op','%op%'), prop('path',({data}) => jb.pathOfRef(data.ref)))),
+        rx.map(obj(prop('op','%op%'), prop('path',({data}) => jb.db.pathOfRef(data.ref)))),
         sink.action(remote.action( 
-            ctx => jb.doOp(jb.refOfPath(ctx.data.path), ctx.data.op, ctx),
+            ctx => jb.db.doOp(jb.db.refOfPath(ctx.data.path), ctx.data.op, ctx),
             '%$jbm%')
         )
     )
@@ -760,7 +757,7 @@ jb.component('net.listSubJbms', {
 })
 
 jb.component('net.getRootParentUri', {
-    impl: () => jb.uri.split('►')[0]
+    impl: () => jb.uri.split('•')[0]
 })
 
 jb.component('net.listAll', {

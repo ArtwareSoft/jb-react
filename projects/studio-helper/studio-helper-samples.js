@@ -63,7 +63,7 @@ jb.component('htmlCloud', { passiveData: `<!DOCTYPE html>
 </body>
 </html>`})
 
-jb.resource('person', {
+jb.db.resource('person', {
   name: "Homer Simpson",
   male: true,
   isMale: 'yes',
@@ -71,14 +71,14 @@ jb.resource('person', {
 })
 
 
-jb.resource('people-array', { "people": [
+jb.db.resource('people-array', { "people": [
   { "name": "Homer Simpson" ,"age": 42 , "male": true},
   { "name": "Marge Simpson" ,"age": 38 , "male": false},
   { "name": "Bart Simpson"  ,"age": 12 , "male": true}
   ]
 })
 
-jb.resource('people',[
+jb.db.resource('people',[
   { "name": "Homer Simpson" ,age: 42 , male: true},
   { "name": "Marge Simpson" ,age: 38 , male: false},
   { "name": "Bart Simpson"  ,age: 12 , male: true}
@@ -91,7 +91,7 @@ jb.component('globals', {
 })
 
 
-jb.resource('group-with-custom-style',
+jb.db.resource('group-with-custom-style',
   {$: 'group',
     title: 'main',
     style : {$: 'customStyle',

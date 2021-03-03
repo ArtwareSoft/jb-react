@@ -70,7 +70,7 @@ jb.initLibs('ui', {
             if (selector.indexOf(',') != -1)
                 return selector.split(',').map(x=>x.trim()).reduce((res,sel) => [...res, ...this.querySelectorAll(sel,{includeSelf})], [])
             const hasAtt = selector.match(/^\[([a-zA-Z0-9_$\-]+)\]$/)
-            const attEquals = selector.match(/^\[([a-zA-Z0-9_$\-]+)="([a-zA-Z0-9_\-→►]+)"\]$/)
+            const attEquals = selector.match(/^\[([a-zA-Z0-9_$\-]+)="([a-zA-Z0-9_\-→•]+)"\]$/)
             const hasClass = selector.match(/^\.([a-zA-Z0-9_$\-]+)$/)
             const hasTag = selector.match(/^[a-zA-Z0-9_\-]+$/)
             const idEquals = selector.match(/^#([a-zA-Z0-9_$\-]+)$/)
@@ -91,8 +91,8 @@ jb.initLibs('ui', {
         }
     },
     toVdomOrStr(val) {
-        if (jb.isDelayed(val))
-            return jb.toSynchArray(val).then(v => jb.ui.toVdomOrStr(v[0]))
+        if (jb.utils.isDelayed(val))
+            return jb.utils.toSynchArray(val).then(v => jb.ui.toVdomOrStr(v[0]))
 
         const res1 = Array.isArray(val) ? val.map(v=>jb.val(v)): val
         let res = jb.val((Array.isArray(res1) && res1.length == 1) ? res1[0] : res1)
@@ -141,7 +141,7 @@ jb.initLibs('ui', {
             if (typeof orig == 'string' && ignoreValue.test(orig) || typeof newObj == 'string' && ignoreValue.test(newObj)) return {}
             if (attName == 'class' && 
                 (typeof orig == 'string' && ignoreClasses.test(orig) || typeof newObj == 'string' && ignoreClasses.test(newObj))) return {}
-            if (!jb.isObject(orig) || !jb.isObject(newObj)) return newObj
+            if (!jb.utils.isObject(orig) || !jb.utils.isObject(newObj)) return newObj
             const deletedValues = Object.keys(orig)
                 .filter(k=>!ignoreRegExp.test(k))
                 .filter(k=> !(typeof orig[k] == 'string' && ignoreValue.test(orig[k])))
@@ -157,7 +157,7 @@ jb.initLibs('ui', {
                 .reduce((acc, key) => {
                     if (!orig.hasOwnProperty(key)) return { ...acc, [key]: newObj[key] } // return added r key
                     const difference = doDiff(newObj[key], orig[key],key)
-                    if (jb.isObject(difference) && jb.isEmpty(difference)) return acc // return no diff
+                    if (jb.utils.isObject(difference) && jb.utils.isEmpty(difference)) return acc // return no diff
                     return { ...acc, [key]: difference } // return updated key
             }, deletedValues)    
         }

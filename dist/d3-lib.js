@@ -18521,7 +18521,7 @@ jb.component('d3g.fromTo', {
 jb.component('d3g.domainByValues', {
   type: 'd3g.domain',
   impl: ctx => {
-    const vals = jb.unique(ctx.vars.items.map(x=>ctx.vars.valFunc(x)))
+    const vals = jb.utils.unique(ctx.vars.items.map(x=>ctx.vars.valFunc(x)))
     if (isNaN(+vals[0]))
       return vals
     return d3.extent(vals)

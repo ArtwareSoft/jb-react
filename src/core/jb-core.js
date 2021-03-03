@@ -99,7 +99,7 @@ function prepareParams(comp_name,comp,profile,ctx) {
         const outerFunc = runCtx => {
           let func;
           if (arrayParam)
-            func = (ctx2,data2) => jb.flattenArray(valOrDefaultArray.map((prof,i)=> runCtx.extendVars(ctx2,data2).runInner(prof, {...param, as: 'asIs'}, path+'~'+i)))
+            func = (ctx2,data2) => jb.utils.flattenArray(valOrDefaultArray.map((prof,i)=> runCtx.extendVars(ctx2,data2).runInner(prof, {...param, as: 'asIs'}, path+'~'+i)))
           else
             func = (ctx2,data2) => jb_run(new jb.jbCtx(runCtx.extendVars(ctx2,data2),{ profile: valOrDefault, forcePath, path } ),param)
 
@@ -213,10 +213,10 @@ const jstypes = {
     ref(value) {
       if (Array.isArray(value))
         value = value[0]
-      return jb.asRef(value)
+      return jb.db.asRef(value)
     },
     'ref[]': function(value) {
-      return jb.asRef(value)
+      return jb.db.asRef(value)
     },
     value(value) {
       return jb.val(value)
@@ -286,6 +286,11 @@ class jbCtx {
 
 Object.assign(jb, { 
   frame: jbFrame, 
+  initLibs(libId, libObj) {
+    jb[libId] = jb[libId] || {}
+    Object.assign(jb[libId], libObj)
+    libObj.initializeModule && libObj.initializeModule()
+  },
   comps: {}, ctxDictionary: {}, run: jb_run, jbCtx, jstypes, tojstype 
 })
 })()

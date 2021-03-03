@@ -38,6 +38,19 @@ jb.component('uiTest.group', {
   })
 })
 
+jb.component('uiTest.controls', {
+  impl: uiTest({
+    control: group({
+      controls: [
+        text('hello'),
+        controls(text('-1-'),controlWithCondition('1==2',text('-1.5-')), text('-2-')),
+        text('world'),
+      ]
+    }),
+    expectedResult: contains(['hello','-1-','-2-','world'])
+  })
+})
+
 jb.component('uiTest.waitForWithPipe', {
   impl: uiTest({
     control: group({
@@ -475,7 +488,7 @@ jb.component('uiTest.itemlistPrimitiveArrayItemShouldBeRef', {
     vars: Var('isResultRef', obj(prop('answer',false))),
     control: itemlist({items: '%$personWithPrimitiveChildren/childrenNames%', 
       controls: ctx => { 
-        ctx.run(writeValue('%$isResultRef/answer%', () => !!jb.isRef(ctx.data)))
+        ctx.run(writeValue('%$isResultRef/answer%', () => !!jb.db.isRef(ctx.data)))
         return ctx.run(text('%%'))
       }
     }),
@@ -489,7 +502,7 @@ jb.component('uiTest.itemlistPrimitiveArrayItemShouldBeRef', {
 //     control: table({items: '%$personWithPrimitiveChildren/childrenNames%', 
 //       style: table.mdc(),
 //       controls: ctx => { 
-//         ctx.run(writeValue('%$isResultRef/answer%', () => !!jb.isRef(ctx.vars.$props.items[0])))
+//         ctx.run(writeValue('%$isResultRef/answer%', () => !!jb.db.isRef(ctx.vars.$props.items[0])))
 //         return ctx.run(text('%%'))
 //       }
 //     }),
@@ -701,12 +714,10 @@ jb.component('uiTest.table.MDInplace.withScroll', {
       }),
       features: variable({name: 'sectionExpanded', watchable: true, value: obj() }),
     }),
-    action: rx.pipe( 
-      source.data(0),
-      rx.do(uiAction.scrollBy('.jb-itemlist',100)),
-      rx.flatMap(source.waitForSelector('.jb-items-parent:nth-child(2)')),
-      rx.do(uiAction.click('i','toggle')),
-      rx.delay(50),
+    action: runActions( 
+      uiAction.scrollBy('.jb-itemlist',100),
+      uiAction.waitForSelector('.jb-items-parent:nth-child(2)'),
+      uiAction.click('i','toggle'),
     ),
     expectedResult: and(contains(['colspan="','inner text','Bart']),not(contains('>42<')), not(contains(['inner text','inner text'])))
   })
@@ -1000,10 +1011,10 @@ jb.component('uiTest.editableText.blockSelfRefresh', {
 jb.component('uiTest.editableText.allowSelfRefresh', {
   impl: uiTest({
     control: group({ 
-      controls: editableText({title: 'name', databind: '%$person/name%', features: id('inp')}),
+      controls: editableText({title: 'name', databind: '%$person/name%'}),
       features: watchRef({ref: '%$person/name%', allowSelfRefresh: true}) 
     }),
-    userInput: userInput.setText('hello','#inp'),
+    userInput: userInput.setText('hello'),
     expectedResult: contains('hello'),
     expectedCounters: {'start renderVdom': 4}
   })
@@ -1077,13 +1088,12 @@ jb.component('uiTest.editableText.richPicklistHelper.setInput', {
         })
       ]
     }),
-    action: rx.pipe( 
-      source.data(0),
-      rx.do(uiAction.keyboardEvent({selector: '#inp', type: 'keyup', keyCode: 37})),
-      rx.flatMap(source.waitForSelector('.jb-popup')),
-      rx.do(uiAction.keyboardEvent({selector: '#inp', type: 'keydown', keyCode: 40})),
-      rx.do(uiAction.keyboardEvent({selector: '#inp', type: 'keyup', keyCode: 13})),
-      rx.do(() => jb.delay(10).then(()=>self.scrollTo(0,0))) // scroll to top bug
+    action: runActions( 
+      uiAction.keyboardEvent({selector: '#inp', type: 'keyup', keyCode: 37}),
+      uiAction.waitForSelector('.jb-popup'),
+      uiAction.keyboardEvent({selector: '#inp', type: 'keydown', keyCode: 40}),
+      uiAction.keyboardEvent({selector: '#inp', type: 'keyup', keyCode: 13}),
+      () => jb.delay(10).then(()=>self.scrollTo(0,0)) // scroll to top bg
     ),    
     expectedResult: contains('1111</input-val>')
   })
@@ -1981,7 +1991,7 @@ jb.component('uiTest.validator', {
 jb.component('uiTest.watchableVariableAsProxy', {
   impl: uiTest({
     control: group({features: variable({name: 'link', value: '%$person%', watchable: true})}),
-    expectedResult: ctx => jb.resources[Object.keys(jb.resources).filter(x=>x.match(/link:[0-9]*/))[0]][Symbol.for("isProxy")]
+    expectedResult: ctx => jb.db.resources[Object.keys(jb.db.resources).filter(x=>x.match(/link:[0-9]*/))[0]][Symbol.for("isProxy")]
   })
 })
 
@@ -2081,6 +2091,7 @@ jb.component('uiTest.watchableRefToInnerElementsWhenValueIsEmpty', {
 
 jb.component('uiTest.infiniteScroll', {
   impl: uiFrontEndTest({
+    timeout: 3000,
     renderDOM: true,
     control: itemlist({
       items: range(0, 10),
@@ -2092,7 +2103,7 @@ jb.component('uiTest.infiniteScroll', {
         css.width('100')
       ]
     }),
-    action: runActions(uiAction.scrollBy('.jb-itemlist',80), delay(30)),
+    action: runActions(uiAction.scrollBy('.jb-itemlist',80), uiAction.waitForSelector('ul>:nth-child(8)')),
     expectedResult: contains('>10<')
   })
 })
@@ -2111,7 +2122,12 @@ jb.component('uiTest.infiniteScroll.twice', {
         css.width('100')
       ]
     }),
-    action: runActions(uiAction.scrollBy('.jb-itemlist',80), delay(30), uiAction.scrollBy('.jb-itemlist',10), delay(30), uiAction.scrollBy('.jb-itemlist',100), delay(30)),
+    action: runActions( 
+      uiAction.scrollBy('.jb-itemlist',80),
+      uiAction.waitForSelector('ul>:nth-child(8)'),
+      uiAction.scrollBy('.jb-itemlist',10),
+      uiAction.waitForSelector('ul>:nth-child(9)')
+    ),    
     expectedResult: contains('>10<')
   })
 })
@@ -2129,7 +2145,7 @@ jb.component('uiTest.infiniteScroll.table', {
         css.width('100')
       ]
     }),
-    action: runActions(uiAction.scrollBy('.jb-itemlist',80), delay(30),uiAction.scrollBy('.jb-itemlist',100)),
+    action: uiAction.scrollBy('.jb-itemlist',80), 
     expectedResult: contains(['>10<','</tbody>'])
   })
 })

@@ -134,14 +134,14 @@ jb.component('slider.init', {
     method('assignIgnoringUnits', (ctx,{editableNumber,$model}) => {
       const curVal = editableNumber.numericPart(jb.val($model.databind()))
       if (curVal === undefined) return
-      jb.writeValue($model.databind(),editableNumber.calcDataString(ctx.data,ctx),ctx)
+      jb.db.writeValue($model.databind(),editableNumber.calcDataString(ctx.data,ctx),ctx)
     }),
     method('incIgnoringUnits', (ctx,{editableNumber,$model,$props}) => {
       const curVal = editableNumber.numericPart(jb.val($model.databind()))
       if (curVal === undefined) return
       const nVal = curVal + ctx.data*$props.step
       const newVal = editableNumber.autoScale ? nVal : editableNumber.keepInDomain(nVal)
-      jb.writeValue($model.databind(), editableNumber.calcDataString(newVal, ctx),ctx)
+      jb.db.writeValue($model.databind(), editableNumber.calcDataString(newVal, ctx),ctx)
     }),
     frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode%==46'), sink.BEMethod('delete')),
     frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode%==39'), rx.map(If('%shiftKey%',9,1)), sink.BEMethod('incIgnoringUnits')),

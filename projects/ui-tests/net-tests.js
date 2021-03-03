@@ -3,7 +3,7 @@ jb.component('netTest.listSubJbms', {
     timeout: 1000,
     runBefore: jbm.child('inner'),
     calculate: pipe(net.listSubJbms(),join(',')),
-    expectedResult: contains(['tests,','tests►inner'])
+    expectedResult: contains(['tests,','tests•inner'])
   })
 })
 
@@ -12,7 +12,7 @@ jb.component('netTest.listAll', {
     timeout: 5000,
     runBefore: runActions(jbm.worker({id: 'networkPeer', networkPeer: true}), jbm.child('inner')),
     calculate: pipe(net.listAll(),join(',')),
-    expectedResult: contains(['tests,','tests►inner','networkPeer'])
+    expectedResult: contains(['tests,','tests•inner','networkPeer'])
   })
 })
 

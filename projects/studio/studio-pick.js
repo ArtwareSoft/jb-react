@@ -153,7 +153,7 @@ jb.component('dialog.studioPickDialog', {
 function eventToElem(e,_window, moveRight, predicate) {
   const mousePos = { x: e.pageX - _window.pageXOffset, y: e.pageY  - _window.pageYOffset }
   const elems = _window.document.elementsFromPoint(mousePos.x, mousePos.y);
-  const results = jb.unique(elems.flatMap(el=>jb.ui.parents(el,{includeSelf: true}))
+  const results = jb.utils.unique(elems.flatMap(el=>jb.ui.parents(el,{includeSelf: true}))
       .filter(e => e && e.getAttribute)
       .map( el => ({el, ctxId: checkCtxId(el.getAttribute('pick-ctx')) || checkCtxId(el.getAttribute('jb-ctx')) }))
       .filter(({ctxId}) =>  ctxId), ({ctxId}) => ctxId)

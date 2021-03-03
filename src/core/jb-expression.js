@@ -17,10 +17,10 @@ function calcVar(ctx,varname,jstype) {
       res = ctx.vars[varname]
     else if (ctx.vars.scope && ctx.vars.scope[varname] !== undefined)
       res = ctx.vars.scope[varname]
-    else if (jb.resources && jb.resources[varname] !== undefined)
-      res = isRefType(jstype) ? jb.mainWatchableHandler.refOfPath([varname]) : jb.resource(varname)
-    else if (jb.consts && jb.consts[varname] !== undefined)
-      res = isRefType(jstype) ? jb.simpleValueByRefHandler.objectProperty(jb.consts,varname) : res = jb.consts[varname]
+    else if (jb.db.resources && jb.db.resources[varname] !== undefined)
+      res = isRefType(jstype) ? jb.db.mainWatchableHandler.refOfPath([varname]) : jb.db.resource(varname)
+    else if (jb.db.consts && jb.db.consts[varname] !== undefined)
+      res = isRefType(jstype) ? jb.db.simpleValueByRefHandler.objectProperty(jb.db.consts,varname) : res = jb.db.consts[varname]
   
     return resolveFinishedPromise(res)
 }
@@ -82,7 +82,7 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
       if (subExp.match(/]$/))
         subExp = subExp.slice(0,-1)
   
-      const refHandler = jb.objHandler(input)
+      const refHandler = jb.db.objHandler(input)
       const functionCallMatch = subExp.match(/=([a-zA-Z]*)\(?([^)]*)\)?/)
       if (functionCallMatch && jb.functions[functionCallMatch[1]])
           return tojstype(jb.functions[functionCallMatch[1]](ctx,functionCallMatch[2]),jstype,ctx)
@@ -145,7 +145,7 @@ function bool_expression(exp, ctx, parentParam) {
     const parts = exp.match(/(.+)(==|!=|<|>|>=|<=|\^=|\$=)(.+)/)
     if (!parts) {
       const ref = expression(exp, ctx, parentParam)
-      if (jb.isRef(ref))
+      if (jb.db.isRef(ref))
         return ref
       
       const val = jb.tostring(ref)

@@ -120,7 +120,7 @@ jb.component('uiTest.calculatedVar', {
         })
       ]
     }),
-    userInputRx: rx.pipe(source.waitForCompReady('#group'), rx.map(userInput.setText('hi', '#var1'))),
+    userInputRx: rx.pipe(source.promise(uiAction.waitForCompReady('#group')), rx.map(userInput.setText('hi', '#var1'))),
     expectedResult: contains('hi world')
   })
 })
@@ -145,7 +145,7 @@ jb.component('uiTest.calculatedVarCyclic', {
         })
       ]
     }),
-    userInputRx: rx.pipe(source.waitForCompReady('#group'), rx.map(userInput.setText('hi', '#var1'))),
+    userInputRx: rx.pipe(source.promise(uiAction.waitForCompReady('#group')), rx.map(userInput.setText('hi', '#var1'))),
     expectedResult: contains('hi world')
   })
 })
@@ -466,6 +466,22 @@ jb.component('uiTest.spliceAndWatchRefWithoutIncludeChildren', {
     action: writeValue('%$watchablePeople[0]/name%', 'mukki'),
     expectedResult: contains('mukki'),
     expectedCounters: {'do refresh element !check': 1}
+  })
+})
+
+jb.component('uiTest.frontEnd.onDestroy', {
+  impl: uiFrontEndTest({
+    vars: Var('res',obj()),
+    control: group({
+      controls: controlWithCondition('%$person/name%!=mukki', text({
+        text: 'hello',
+        style: text.codemirror(),
+        features: frontEnd.onDestroy(writeValue('%$res/destroyed%','ya'))
+      })),
+      features: watchRef('%$person/name%')
+    }),
+    action: writeValue('%$person/name%', 'mukki'),
+    expectedResult: equals('%$res/destroyed%','ya'),
   })
 })
 

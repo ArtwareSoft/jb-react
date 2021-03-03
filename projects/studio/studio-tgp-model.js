@@ -134,7 +134,7 @@ st.jbEditorTree = class {
 				.concat(this.innerProfiles(path) || [])
 	}
 	move(from,to,ctx) {
-		return jb.move(st.refOfPath(from),st.refOfPath(to),ctx)
+		return jb.db.move(st.refOfPath(from),st.refOfPath(to),ctx)
 	}
 	disabled(path) {
 		return st.disabled(path)

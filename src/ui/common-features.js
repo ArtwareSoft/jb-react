@@ -86,9 +86,9 @@ jb.component('feature.initValue', {
       const toAssign = jb.val(value), currentVal = jb.val(to)
       if ((alsoWhenNotEmpty || currentVal == null) && toAssign !== currentVal) {
         jb.log('init value',{cmp, ...ctx.params})
-        jb.writeValue(to,toAssign,ctx,true)
+        jb.db.writeValue(to,toAssign,ctx,true)
       } else if (toAssign !== currentVal) {
-        jb.logError(`feature.initValue: init non empty value ${jb.prettyPrint(to.profile)}`,{toAssign,currentVal,cmp,ctx,to,value})
+        jb.logError(`feature.initValue: init non empty value ${jb.utils.prettyPrint(to.profile)}`,{toAssign,currentVal,cmp,ctx,to,value})
       }
     }, 
     phase: 10 
@@ -310,8 +310,8 @@ jb.component('variable', {
       const fullName = name + ':' + cmp.ctx.id;
       if (fullName == 'items') debugger
       jb.log('create watchable var',{cmp,ctx,fullName})
-      const refToResource = jb.mainWatchableHandler.refOfPath([fullName]);
-      jb.writeValue(refToResource,value(ctx),ctx)
+      const refToResource = jb.db.mainWatchableHandler.refOfPath([fullName]);
+      jb.db.writeValue(refToResource,value(ctx),ctx)
       return ctx.setVar(name, refToResource);
     }
   })
@@ -339,7 +339,7 @@ jb.component('calculatedVar', {
         const {name,value} = ctx.cmpCtx.params
         const fullName = name + ':' + cmp.cmpId;
         jb.log('create watchable calculatedVar',{ctx,cmp,fullName})
-        jb.resource(fullName, jb.val(value(_ctx)));
+        jb.db.resource(fullName, jb.val(value(_ctx)));
         const ref = _ctx.exp(`%$${fullName}%`,'ref')
         return _ctx.setVar(name, ref);
       }
@@ -405,7 +405,7 @@ jb.component('refreshIfNotWatchable', {
   params: [
     {id: 'data'}
   ],
-  impl: (ctx, data) => !jb.isWatchable(data) && ctx.vars.cmp.refresh(null,{strongRefresh: true})
+  impl: (ctx, data) => !jb.db.isWatchable(data) && ctx.vars.cmp.refresh(null,{strongRefresh: true})
 })
 
 jb.component('feature.byCondition', {

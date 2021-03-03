@@ -1,5 +1,3 @@
-jb.initLibs('utils', { tryWrapper: (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,{ctx: this.ctx}) }} })
-
 jb.initLibs('ui', {
     lifeCycle: new Set('init,extendCtx,templateModifier,followUp,destroy'.split(',')),
     arrayProps: new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,frontEndVar,eventHandler'.split(',')),
@@ -25,7 +23,7 @@ jb.initLibs('ui', {
             } else {
                 this.cssHashCounter++;
             }
-            const classId = existingClass || `${classPrefix}➤${this.cssHashCounter}`
+            const classId = existingClass || `${classPrefix}⦾${this.cssHashCounter}`
             cssMap[cssKey] = {classId, paths : {[ctx.path]: true}}
             const cssContent = linesToCssStyle(classId)
             if (cssStyleElem)
@@ -76,14 +74,14 @@ jb.initLibs('ui', {
             ;(this.initFuncs||[]).sort((p1,p2) => p1.phase - p2.phase)
                 .forEach(f => jb.utils.tryWrapper(() => f.action(this.calcCtx, this.calcCtx.vars), 'init'));
     
-            this.toObserve = this.watchRef ? this.watchRef.map(obs=>({...obs,ref: obs.refF(this.ctx)})).filter(obs=>jb.isWatchable(obs.ref)) : []
+            this.toObserve = this.watchRef ? this.watchRef.map(obs=>({...obs,ref: obs.refF(this.ctx)})).filter(obs=>jb.db.isWatchable(obs.ref)) : []
             this.watchAndCalcModelProp && this.watchAndCalcModelProp.forEach(e=>{
                 if (this.state[e.prop] != undefined) return // we have the value in the state, probably asynch value so do not calc again
                 const modelProp = this.ctx.vars.$model[e.prop]
                 if (!modelProp)
                     return jb.logError('calcRenderProps',`missing model prop "${e.prop}"`, {cmp: this, model: this.ctx.vars.$model, ctx: this.ctx})
                 const ref = modelProp(this.ctx)
-                if (jb.isWatchable(ref))
+                if (jb.db.isWatchable(ref))
                     this.toObserve.push({id: e.prop, cmp: this, ref,...e})
                 const val = jb.val(ref)
                 this.renderProps[e.prop] = e.transformValue(this.ctx.setData(val == null ? e.defaultValue : val))
@@ -182,7 +180,7 @@ jb.initLibs('ui', {
             elem && jb.ui.refreshElem(elem,state,options) // cmpId may be deleted
         }
         calcCssLines() {
-            return jb.unique((this.css || []).map(l=> typeof l == 'function' ? l(this.calcCtx): l)
+            return jb.utils.unique((this.css || []).map(l=> typeof l == 'function' ? l(this.calcCtx): l)
             .flatMap(css=>css.split(/}\s*/m)
                 .map(x=>x.trim()).filter(x=>x)
                 .map(x=>x+'}')

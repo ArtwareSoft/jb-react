@@ -122,7 +122,7 @@ jb.ui.cleanRedundentCssFeatures = function(cssFeatures,{remove} = {}) {
             .map(x=>x.replace('{','').replace('}','').replace(/\s*:\s*/g,':').trim() )
             .filter(x=>x)
             .filter(x=>!removeMap[x])
-    return [...cssToFeatures(jb.unique(props)),..._features.filter(x=>!x.o.css).map(x=>x.f)]
+    return [...cssToFeatures(jb.utils.unique(props)),..._features.filter(x=>!x.o.css).map(x=>x.f)]
 }
 
 jb.ui.htmlToControl = function(html,ctx) {
@@ -158,7 +158,7 @@ jb.ui.htmlToControl = function(html,ctx) {
         const richText = innerTags && innerTags.map(x=>x.slice(1)).filter(x=>['em','b'].indexOf(x) == -1).length ==0
         return {
             elem,
-            styleAtt: isAttached && jb.entries(jb.objectDiff(getComputedStyle(elem), getComputedStyle(parentElem)))
+            styleAtt: isAttached && jb.entries(jb.utils.objectDiff(getComputedStyle(elem), getComputedStyle(parentElem)))
                 .map(([p,v])=> [p.replace(/([A-Z])/g, (g) => `-${g[0].toLowerCase()}`),v])
                 .filter(([p,v])=> !(v.indexOf('0px') == 0 && p.match(/border|column/) != -1))
                 .filter(([p])=> jb.ui.htmlToControl.ignoreProps.indexOf(p) == -1)

@@ -13,6 +13,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/core/jb-expression.js',
         'src/core/value-by-ref.js',
         'src/core/jb-macro.js',
+        'src/loader/comp-loader.js',
         'src/misc/spy.js',
         'src/core/jb-common.js',
         'src/misc/jb-callbag.js',
@@ -36,6 +37,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/ui/core/vdom.js',
         'src/ui/core/ui-comp.js',
         'src/ui/core/ui-utils.js',
+        'src/ui/core/ui-frontend.js',
 
         'src/ui/common-features.js',
         'src/ui/front-end-features.js',

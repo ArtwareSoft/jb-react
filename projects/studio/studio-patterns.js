@@ -229,7 +229,7 @@ jb.ui.stylePatterns = {
           .flatMap(x=>[x,options.flattenToGrid && flattenToGrid(x)].filter(x=>x))
 
         function mixedPermutations(type, srcIds, trgIds) {
-            return jb.unique([...bestPermutations(type, srcIds, trgIds,1),
+            return jb.utils.unique([...bestPermutations(type, srcIds, trgIds,1),
                 sameOrderPermutation(type, srcIds, trgIds),
                 randomPermutation(type, srcIds, trgIds)
             ])

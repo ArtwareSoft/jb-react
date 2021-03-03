@@ -18,7 +18,7 @@ Object.assign(jb.ui, {
     const ref = jb.ui.getOrCreateSizesRef(gridPath,axis,ctx)
     const arr = jb.val(ref)
     const together = Number(arr[gridIndex-1]) + Number(arr[gridIndex])
-    jb.splice(ref,[[gridIndex-1,2,together]],ctx)
+    jb.db.splice(ref,[[gridIndex-1,2,together]],ctx)
   },
   addGridTab(gridPath,gridIndex,axis,ctx) {
     const ref = jb.ui.getOrCreateSizesRef(gridPath,axis,ctx)
@@ -26,7 +26,7 @@ Object.assign(jb.ui, {
       jb.push(ref,100,ctx)
     } else {
       const half = Number(jb.val(ref)[gridIndex])/2
-      jb.splice(ref,[[gridIndex,1,half,half]],ctx)
+      jb.db.splice(ref,[[gridIndex,1,half,half]],ctx)
     }
   },
   getOrCreateSizesRef(gridPath,axis,ctx) {
@@ -247,7 +247,7 @@ jb.component('gridEditor.dragableGridLineThumb', {
 //     }
 //     function setGridPosScript(val, axis, i, ctx) {
 //         const ref = jb.studio.refOfPath(`${gridPath}~layout~${axis.toLowerCase().slice(0,-1)}Sizes~items~${i}`)
-//         jb.writeValue(ref,val,ctx)
+//         jb.db.writeValue(ref,val,ctx)
 //     }
 //   })
 // })
@@ -390,7 +390,7 @@ jb.component('gridEditor.dragableGridItemThumb', {
 //         })
 //       const spans = spanBase && [0,1].map(i => `span ${Math.max(1,vals[i] -spanBase[i] + 1)}`)
 //       const newScriptValues = spanBase ? [...spanBase, ...spans] : vals
-//       jb.writeValue(gridAreaRef,`grid-area: ${newScriptValues.join(' / ')}`,ctx)
+//       jb.db.writeValue(gridAreaRef,`grid-area: ${newScriptValues.join(' / ')}`,ctx)
 //     }
 //     function posToGridPos(pos) {
 //       const gridAccVals = jb.ui.calcGridAccVals(inplaceElem)

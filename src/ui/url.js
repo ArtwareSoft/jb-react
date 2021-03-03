@@ -34,7 +34,7 @@ jb.component('url-history.map-url-to-resource', {
 		const databindEm = pipe(
 			jb.ui.resourceChange(),
 			filter(e=> e.path[0] == resource),
-			map(_=> jb.resource(resource)),
+			map(_=> jb.db.resource(resource)),
 			filter(obj=> obj[params[0]]),
 			map(obj=> objToUrl(obj))
 		)
@@ -45,7 +45,7 @@ jb.component('url-history.map-url-to-resource', {
 					jb.ui.location.push(Object.assign({},jb.ui.location.location, {pathname: url}));
 					var obj = urlToObj(url);
 					params.forEach(p=>
-						jb.writeValue(context.exp(`%$${resource}/${p}%`,'ref'),jb.tostring(obj[p])), ctx);
+						jb.db.writeValue(context.exp(`%$${resource}/${p}%`,'ref'),jb.tostring(obj[p])), ctx);
 					context.params.onUrlChange(context.setData(url));
 		}))
 	}

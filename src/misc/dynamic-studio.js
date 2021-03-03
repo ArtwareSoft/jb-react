@@ -10,7 +10,7 @@ jb.dynamicStudio = function(studioVars) {
     iframe.height = '900px'
     iframe.onload = function() {
         this.contentWindow.jb.studio.initPreview(window)
-        Object.assign(this.contentWindow.jb.resources.studio,studioVars || {})
+        Object.assign(this.contentWindow.jb.db.resources.studio,studioVars || {})
     }
     document.querySelector('body>*').prepend(iframe)
 }

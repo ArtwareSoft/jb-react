@@ -15,7 +15,7 @@ self.addEventListener('message', m => { // debugge asking to be debugged. Panel 
                     { id: 'panelUri', as: 'string' }
                 ],
                 impl: ({}, panelUri) => {
-                    const panelId = panelUri.split('►').pop()
+                    const panelId = panelUri.split('•').pop()
                     disconnect()
 
                     const dtport = chrome.runtime.connect({name: 'devtools'})

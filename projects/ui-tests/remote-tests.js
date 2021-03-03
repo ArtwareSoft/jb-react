@@ -35,7 +35,7 @@ jb.component('remoteTest.remote.action', {
   impl: dataTest({
     timeout: 3000,
     calculate: pipe(
-      remote.action(() => jb.passive('w','hello'), jbm.worker('innerWorker')),
+      remote.action(() => jb.db.passive('w','hello'), jbm.worker('innerWorker')),
       remote.data('%$w%', jbm.worker('innerWorker')),
     ),
     expectedResult: equals('hello')
@@ -49,7 +49,7 @@ jb.component('remoteTest.childJbmPort', {
       jbm.worker('innerWorker'), 
       remote.action(jbm.child('inner'),'%%')
     ),
-    calculate: remote.data('hello',jbm.byUri('tests►innerWorker►inner')),
+    calculate: remote.data('hello',jbm.byUri('tests•innerWorker•inner')),
     expectedResult: 'hello'
   })
 })
@@ -63,7 +63,7 @@ jb.component('remoteTest.innerWorker', {
       rx.flatMap(source.remote(source.promise(pipe(jbm.child('inWorker'),'x')), '%%')),
       rx.mapPromise(pipe(net.listSubJbms(), join(',')))
     ),
-    expectedResult: contains(['tests►innerWorker','tests►innerWorker►inWorker'])
+    expectedResult: contains(['tests•innerWorker','tests•innerWorker•inWorker'])
   })
 })
 
@@ -71,7 +71,7 @@ jb.component('remoteTest.jbm.byUri', {
   impl: dataTest({
     timeout: 1000,
     runBefore: jbm.child('tst'),
-    calculate: source.remote(source.data('hello'), jbm.byUri('tests►tst')),
+    calculate: source.remote(source.data('hello'), jbm.byUri('tests•tst')),
     expectedResult: equals('hello')
   })
 })
@@ -82,7 +82,7 @@ jb.component('remoteTest.workerByUri', {
     runBefore: jbm.worker('innerWorker'),
     calculate: rx.pipe(
       source.data('hello'),
-      remote.operator(rx.map('%% world'), jbm.byUri('tests►innerWorker'))
+      remote.operator(rx.map('%% world'), jbm.byUri('tests•innerWorker'))
     ),
     expectedResult: equals('hello world')
   })
@@ -94,8 +94,8 @@ jb.component('remoteTest.workerToWorker', {
     runBefore: runActions(jbm.worker('innerWorker'), jbm.worker('innerWorker2')),
     calculate: source.remote(rx.pipe(
         source.data('hello'), 
-        remote.operator(rx.map('%% world'), jbm.byUri('tests►innerWorker2'))
-      ), jbm.byUri('tests►innerWorker')),
+        remote.operator(rx.map('%% world'), jbm.byUri('tests•innerWorker2'))
+      ), jbm.byUri('tests•innerWorker')),
     expectedResult: equals('hello world')
   })
 })
@@ -106,7 +106,7 @@ jb.component('remoteTest.networkToWorker', {
     runBefore: runActions(jbm.worker({id: 'peer1', networkPeer: true}), jbm.worker('innerWorker2')),
     calculate: source.remote(rx.pipe(
         source.data('hello'), 
-        remote.operator(rx.map('%% world'), jbm.byUri('tests►innerWorker2'))
+        remote.operator(rx.map('%% world'), jbm.byUri('tests•innerWorker2'))
       ), jbm.byUri('peer1')),
     expectedResult: equals('hello world')
   })
@@ -133,7 +133,7 @@ jb.component('remoteTest.shadowData', {
         loadLibs('watchable'),
         addComponent({id: 'person', value: obj(), type: 'watchableData' })
       ),'%%'),
-      remote.initShadowData({src: '%$person%', jbm: jbm.byUri('tests►innerWorker')}),
+      remote.initShadowData({src: '%$person%', jbm: jbm.byUri('tests•innerWorker')}),
       () => { jb.exec(runActions(delay(1), writeValue('%$person/name%','Dan'))) } // writeValue after calculate
     ),
     calculate: remote.data(
@@ -143,7 +143,7 @@ jb.component('remoteTest.shadowData', {
         rx.map('%newVal%'),
         rx.take(1)
       )), 
-      jbm.byUri('tests►innerWorker')
+      jbm.byUri('tests•innerWorker')
     ),
     expectedResult: equals('Dan')
   })
@@ -347,7 +347,7 @@ jb.component('remoteWidgetTest.changeText', {
       remoteTest.uiWorker()
     ),
     userInputRx: rx.pipe(
-      source.waitForSelector('input'),
+      source.promise(uiAction.waitForSelector('input')),
       rx.map(userInput.setText('danny')),
     ),
     checkResultRx: () => jb.ui.renderingUpdates,
@@ -372,10 +372,9 @@ jb.component('remoteWidgetTest.infiniteScroll', {
       }),
       remoteTest.uiWorker()
     ),
-    action: rx.pipe( 
-      source.waitForSelector('.jb-itemlist'),
-      rx.do(uiAction.scrollBy('.jb-itemlist',100)),
-      rx.delay(200),
+    action: runActions( 
+      uiAction.scrollBy('.jb-itemlist',100),
+      delay(200)
     ),
     expectedResult: contains('>8<')
   })
@@ -417,11 +416,10 @@ jb.component('remoteWidgetTest.infiniteScroll.MDInplace', {
     }),
     remoteTest.uiWorkerWithSamples()
     ),
-    action: rx.pipe( 
-      source.waitForSelector('.jb-itemlist'),
-      rx.do(uiAction.scrollBy('.jb-itemlist',100)),
-      rx.do(uiAction.click('i','toggle')),
-      rx.delay(200),
+    action: runActions( 
+      uiAction.scrollBy('.jb-itemlist',100),
+      uiAction.click('i','toggle'),
+      delay(200)
     ),
     expectedResult: and(contains(['colspan="','inner text','Bart']),not(contains('>42<')), not(contains(['inner text','inner text'])))
   })
@@ -457,7 +455,7 @@ jb.component('eventTracker.worker.vDebugger', {
         jbm.vDebugger()),
       '%%')
     ),
-    control: remote.widget(studio.eventTracker(), jbm.byUri('tests►innerWorker►vDebugger')),
+    control: remote.widget(studio.eventTracker(), jbm.byUri('tests•innerWorker•vDebugger')),
     expectedResult: contains('log1')
   })
 })
@@ -474,7 +472,7 @@ jb.component('eventTracker.uiTest.vDebugger', {
     control: group({
       controls: [
         remote.widget(editableText({databind:'%$person/name%'}), remoteTest.uiWorkerWithSamples()),
-        remote.widget(studio.eventTracker(), jbm.byUri('tests►ui-with-samples►vDebugger')),
+        remote.widget(studio.eventTracker(), jbm.byUri('tests•ui-with-samples•vDebugger')),
       ]
     }),
     expectedResult: contains('group')

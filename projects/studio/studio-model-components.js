@@ -68,7 +68,7 @@ jb.component('studio.categoriesOfType', {
   impl: (ctx,_type,path) => {
 		var comps = st.previewjb.comps;
 		var pts = st.PTsOfType(_type);
-		var categories = jb.unique([].concat.apply([],pts.map(pt=>
+		var categories = jb.utils.unique([].concat.apply([],pts.map(pt=>
 			(comps[pt].category||'').split(',').map(c=>c.split(':')[0])
 				.concat(pt.indexOf('.') != -1 ? pt.split('.')[0] : [])
 				.filter(x=>x).filter(c=>c!='all')
@@ -189,7 +189,7 @@ jb.component('studio.compNameRef', {
 					st.setComp(path,value,ctx)
 			},
 			$jb_observable: cmp =>
-				jb.refObservable(st.refOfPath(path),{cmp, includeChildren: 'yes'})
+				jb.db.refObservable(st.refOfPath(path),{cmp, includeChildren: 'yes'})
 	})
 })
 
@@ -219,7 +219,7 @@ jb.component('studio.profileAsStringByref', {
 			}
 		},
 		$jb_observable: cmp =>
-			jb.refObservable(st.refOfPath(ctx.params.path()),{cmp})
+			jb.db.refObservable(st.refOfPath(ctx.params.path()),{cmp})
 	})
 })
 

@@ -27,7 +27,7 @@ st.Probe = class {
         this.result.visits = 0
         this.probe[pathToTrace] = this.result
         this.pathToTrace = pathToTrace
-        const initial_resources = st.previewjb.resources
+        const initial_resources = st.previewjb.db.resources
         const initial_comps = st.compsRefHandler && st.compsRefHandler.resources()
         if (st.probeDisabled) {
             this.completed = false
@@ -51,8 +51,8 @@ st.Probe = class {
                 jb.log('probe completed',{pathToTrace, probe: this})
                 // make values out of ref
                 this.result.forEach(obj=> { obj.out = jb.val(obj.out) ; obj.in.data = jb.val(obj.in.data)})
-                if (jb.resources.studio.project) { // studio and probe development
-                    st.previewjb.watchableValueByRef && st.previewjb.watchableValueByRef.resources(initial_resources,null,{source: 'probe'})
+                if (jb.db.resources.studio.project) { // studio and probe development
+                    st.previewjb.db.watchableValueByRef && st.previewjb.db.watchableValueByRef.resources(initial_resources,null,{source: 'probe'})
                     initial_comps && st.compsRefHandler.resources(initial_comps,null,{source: 'probe'})
                 }
                 return this
@@ -133,7 +133,7 @@ st.Probe = class {
             this.probe[path].visits = 0
         }
         this.probe[path].visits++
-        const found = this.probe[path].find(x=>jb.compareArrays(x.in.data,ctx.data))
+        const found = this.probe[path].find(x=>jb.utils.compareArrays(x.in.data,ctx.data))
         if (found)
             found.counter++
         else

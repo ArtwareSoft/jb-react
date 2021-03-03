@@ -38,53 +38,40 @@ jb.component('userInput.keyboardEvent', {
 
 // ****** uiActions
 
-jb.component('source.waitForSelector', {
-  type: 'rx',
+jb.component('uiAction.waitForSelector', {
+  type: 'action',
   params: [
     {id: 'selector', as: 'string' },
-    {id: 'interval', as: 'number', defaultValue: 100 },
-    {id: 'times', as: 'number', defaultValue: 30 },
   ],
-  impl: rx.pipe(
-    source.interval('%$interval%'),
-    rx.log('check waitForSelector'),
-    rx.filter((ctx,{},{selector}) => jb.ui.elemOfSelector(selector,ctx)),
-    rx.log('test arrived waitForSelector'),
-    rx.take(1)
-  )
+  impl: waitFor((ctx,{},{selector}) => jb.ui.elemOfSelector(selector,ctx))
 })
 
-jb.component('source.waitForCompReady', {
-  type: 'rx',
+jb.component('uiAction.waitForCompReady', {
+  type: 'action',
   params: [
     {id: 'selector', as: 'string' },
-    {id: 'interval', as: 'number', defaultValue: 50 },
-    {id: 'times', as: 'number', defaultValue: 30 },
   ],
-  impl: rx.pipe(
-    source.interval('%$interval%'),
-    rx.log('check waitForCompReady'),
-    rx.filter((ctx,{},{selector}) => {
-      const el = jb.ui.elemOfSelector(selector,ctx)
-      const ctxId = el && el.getAttribute && el.getAttribute('full-cmp-ctx')
-      return jb.path(jb.ctxDictionary[ctxId],'vars.cmp.ready') === true
-    }),
-    rx.log('test arrived waitForCompReady'),
-    rx.take(1)
-  )
+  impl: waitFor((ctx,{},{selector}) => {
+    const el = jb.ui.elemOfSelector(selector,ctx)
+    const ctxId = el && el.getAttribute && el.getAttribute('full-cmp-ctx')
+    return jb.path(jb.ctxDictionary[ctxId],'vars.cmp.ready') === true
+  })
 })
 
 jb.component('uiAction.scrollBy', {
       type: 'user-input',
       params: [
         {id: 'selector', as: 'string' },
-        {id: 'by', as: 'number'},
+        {id: 'scrollBy', as: 'number'},
       ],
-      impl: (ctx,selector,scrollBy) => {
-        const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : ctx.vars.elemToTest
-        elem && elem.scrollBy(scrollBy,scrollBy)
-        jb.log('test scroll on dom',{elem,ctx})
-      }
+      impl: runActions(
+        uiAction.waitForSelector('%$selector%'),
+        (ctx,{},{selector,scrollBy}) => {
+          const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : ctx.vars.elemToTest
+          elem && elem.scrollBy(scrollBy,scrollBy)
+          jb.log('test scroll on dom',{elem,ctx})
+        }
+      )
 })
 
 jb.component('uiAction.setText', {

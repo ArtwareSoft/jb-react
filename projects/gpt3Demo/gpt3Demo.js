@@ -17,7 +17,7 @@ jb.component('gpt3Demo.main', {
                   method: 'POST',
                   headers: obj(
                     prop('Content-Type', 'application/json; charset=UTF-8'),
-                    prop('Authorization', pipeline(() => parent.jb.resources.studio, '%settings/OPENAI_TEST_API_KEY%', 'Bearer %%'))
+                    prop('Authorization', pipeline(() => parent.jb.db.resources.studio, '%settings/OPENAI_TEST_API_KEY%', 'Bearer %%'))
                   ),
                   body: obj(
                     prop('prompt', '%$prompt%', 'string'),

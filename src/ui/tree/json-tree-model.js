@@ -61,7 +61,7 @@ class Json {
 	constructor(jsonRef,rootPath) {
 		this.json = jsonRef;
 		this.rootPath = rootPath;
-		this.refHandler = jb.refHandler(jsonRef)
+		this.refHandler = jb.db.refHandler(jsonRef)
 	}
 	children(path) {
 		const val = this.val(path)
@@ -109,11 +109,11 @@ class Json {
 		const target = isNaN(Number(_target.split('~').slice(-1))) ? _target + '~0' : _target
 		const targetArr = this.val(target.split('~').slice(0,-1).join('~'));
 		if (Array.isArray(draggedArr) && Array.isArray(targetArr))
-			jb.move(jb.asRef(this.val(dragged)), this.val(target) ? jb.asRef(this.val(target)) : this.extraArrayRef(target) ,ctx)
+			jb.db.move(jb.db.asRef(this.val(dragged)), this.val(target) ? jb.db.asRef(this.val(target)) : this.extraArrayRef(target) ,ctx)
 	}
 	extraArrayRef(target) {
 		const targetArr = this.val(target.split('~').slice(0,-1).join('~'));
-		const targetArrayRef = jb.asRef(targetArr)
+		const targetArrayRef = jb.db.asRef(targetArr)
 		const handler = targetArrayRef.handler
 		return handler && handler.refOfPath(handler.pathOfRef(targetArrayRef).concat(target.split('~').slice(-1)))
 	}

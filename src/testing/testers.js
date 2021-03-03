@@ -8,7 +8,7 @@ jb.test = {
 	dataTestResult(ctx) {
 		return Promise.resolve(jb.test.runInner('runBefore',ctx))
 		.then(_ => jb.test.runInner('calculate',ctx))
-		.then(v => jb.toSynchArray(v,true))
+		.then(v => jb.utils.toSynchArray(v,true))
 		.then(value => {
 			const success = !! jb.test.runInner('expectedResult',ctx.setData(value))
 			return { success, value}
@@ -18,10 +18,10 @@ jb.test = {
 		return profile && jb.ui.parentFrameJb().exec(profile)
 	},
 	cleanBeforeRun(ctx) {
-		jb.rebuildRefHandler && jb.rebuildRefHandler();
-		jb.entries(JSON.parse(ctx.vars.$initial_resources || '{}')).forEach(e=>jb.resource(e[0],e[1]))
+		jb.db.rebuildRefHandler && jb.db.rebuildRefHandler();
+		jb.entries(JSON.parse(ctx.vars.$initial_resources || '{}')).forEach(e=>jb.db.resource(e[0],e[1]))
 		jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(ctx.vars.$initial_comps)
-		jb.ui.subscribeToRefChange(jb.mainWatchableHandler)
+		jb.ui.subscribeToRefChange(jb.db.mainWatchableHandler)
 		if (!jb.spy) jb.initSpy({spyParam: 'none'})
 		jb.spy.clear()
 	}
@@ -48,14 +48,14 @@ jb.component('dataTest', {
 		const id = ctx.vars.testID
 		return Promise.race([jb.delay(_timeout).then(()=>[{runErr: 'timeout'}]), Promise.resolve(runBefore())
 			  .then(_ => calculate())
-			  .then(v => jb.toSynchArray(v,true))])
+			  .then(v => jb.utils.toSynchArray(v,true))])
 			  .then(value => {
 				  const runErr = jb.path(value,'0.runErr')
 				  const countersErr = countersErrors(expectedCounters,allowError)
 				  const expectedResultCtx = new jb.jbCtx(ctx,{ data: value })
 				  const expectedResultRes = expectedResult(expectedResultCtx)
 				  const success = !! (expectedResultRes && !countersErr && !runErr)
-				  jb.log('data test result',{success,expectedResultRes, runErr, countersErr, expectedResultCtx})
+				  jb.log('check test result',{success,expectedResultRes, runErr, countersErr, expectedResultCtx})
 				  const result = { id, success, reason: countersErr || runErr }
 				  return result
 			  })
@@ -167,7 +167,7 @@ jb.component('uiFrontEndTest', {
 				}
 			})
 			.then(error => jb.delay(1,error))
-			.then(error => !error && jb.toSynchArray(action(ctx),true))
+			.then(error => !error && jb.utils.toSynchArray(action(ctx),true))
 			.then(() => jb.delay(1))
 			.then(() => {
 				// put input values as text
@@ -291,7 +291,7 @@ jb.testers = {
 	self.jbRunningTests = true
 
 	jb.studio.initTests && jb.studio.initTests()
-	const $initial_resources = JSON.stringify(jb.resources) //.replace(/\"\$jb_id":[0-9]*,/g,'')
+	const $initial_resources = JSON.stringify(jb.db.resources) //.replace(/\"\$jb_id":[0-9]*,/g,'')
 	const $initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
 
 	const tests = jb.entries(jb.comps)

@@ -201,7 +201,7 @@ st.suggestions = class {
         jb.toarray(probeCtx.exp(this.base))
           .map(x=>jb.entries(x).map(x=>new ValueOption(x[0],x[1],this.pos,this.tail,this.input))) )
 
-    options = jb.unique(options,x=>x.toPaste).filter(x=> x.toPaste.indexOf('$jb_') != 0)
+    options = jb.utils.unique(options,x=>x.toPaste).filter(x=> x.toPaste.indexOf('$jb_') != 0)
     if (this.tail != '' && jb.frame.Fuse)
       options = new jb.frame.Fuse(options,{keys: ['toPaste','description']}).search(this.tail || '').map(x=>x.item)
 

@@ -2,11 +2,6 @@ Object.assign(jb, {
     project: Symbol.for('project'),
     location: Symbol.for('location'),
     loadingPhase: Symbol.for('loadingPhase'),
-    initLibs(libId, libObj) {
-        jb[libId] = jb[libId] || {}
-        Object.assign(jb[libId], libObj)
-        libObj.initializeModule && libObj.initializeModule()
-    },
     component(_id,comp) {
       const id = jb.macroName(_id)
       try {
@@ -18,11 +13,11 @@ Object.assign(jb, {
       
         if (comp.watchableData !== undefined) {
           jb.comps[jb.addDataResourcePrefix(id)] = comp
-          return jb.resource(jb.removeDataResourcePrefix(id),comp.watchableData)
+          return jb.db.resource(jb.removeDataResourcePrefix(id),comp.watchableData)
         }
         if (comp.passiveData !== undefined) {
           jb.comps[jb.addDataResourcePrefix(id)] = comp
-          return jb.passive(jb.removeDataResourcePrefix(id),comp.passiveData)
+          return jb.db.passive(jb.removeDataResourcePrefix(id),comp.passiveData)
         }
       } catch(e) {
         console.log(e)
@@ -52,7 +47,7 @@ Object.assign(jb, {
         }
     },
     importAllMacros: () => ['var { ',
-        jb.unique(Object.keys(jb.macro).map(x=>x.split('_')[0])).join(', '), 
+        jb.utils.unique(Object.keys(jb.macro).map(x=>x.split('_')[0])).join(', '), 
     '} = jb.macro;'].join(''),
     registerMacro: id => {
         const macroId = jb.macroName(id).replace(/\./g, '_')
