@@ -172,7 +172,7 @@ jb.component('studio.calcExtractParam', {
             defaultValue: st.valOfPath(path),
             ...(description && { description })
         }
-        const newParams = [...(jb.compParams(parentComp) || []), paramToAdd]
+        const newParams = [...(jb.utils.compParams(parentComp) || []), paramToAdd]
 
         if (activate) {
             jb.db.writeValue(st.refOfPath(`${compName}~params`),newParams, ctx),

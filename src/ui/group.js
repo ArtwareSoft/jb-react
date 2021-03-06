@@ -109,7 +109,7 @@ jb.component('group.eliminateRecursion', {
   ],
   impl: (ctx,maxDepth) => {
     const protectedComp = ctx.cmpCtx.cmpCtx.path
-    const timesInStack = ctx.callStack().filter(x=>x && x.indexOf(protectedComp) != -1).length
+    const timesInStack = jb.core.callStack(ctx).filter(x=>x && x.indexOf(protectedComp) != -1).length
     if (timesInStack > maxDepth)
       return ctx.run( calcProp({id: 'ctrls', value: () => [], phase: 1, priority: 100 }))
   }

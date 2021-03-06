@@ -1,179 +1,264 @@
 if (typeof jbmFactory == 'undefined') jbmFactory = {};
 jbmFactory['common'] = function(jb) {
   jb.importAllMacros && eval(jb.importAllMacros());
-(function(){
-var jbFrame = (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {}
-
-function jb_run(ctx,parentParam,settings) {
-//  ctx.profile && jb.log('core request', [ctx.id,...arguments])
-  if (ctx.probe && ctx.probe.outOfTime)
-    return
-  if (jb.ctxByPath) jb.ctxByPath[ctx.path] = ctx
-  const runner = () => do_jb_run(...arguments)
-  Object.defineProperty(runner, 'name', { value: `${ctx.path} ${ctx.profile && ctx.profile.$ ||''}-prepare param` })        
-  let res = runner(...arguments)
-  if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
-      res = ctx.probe.record(ctx,res) || res
-//  ctx.profile && jb.log('core result', [ctx.id,res,ctx,parentParam,settings])
-  if (typeof res == 'function') jb.assignDebugInfoToFunc(res,ctx)
-  return res
-}
-
-function do_jb_run(ctx,parentParam,settings) {
-  try {
-    const profile = ctx.profile
-    if (profile == null || (typeof profile == 'object' && profile.$disabled))
-      return castToParam(null,parentParam)
-
-    if (profile.$debugger == 0) debugger
-    if (profile.$asIs) return profile.$asIs
-    if (parentParam && (parentParam.type||'').indexOf('[]') > -1 && ! parentParam.as) // fix to array value. e.g. single feature not in array
-        parentParam.as = 'array'
-
-    if (typeof profile === 'object' && Object.getOwnPropertyNames(profile).length == 0)
-      return
-    const ctxWithVars = extendWithVars(ctx,profile.$vars)
-    const run = prepare(ctxWithVars,parentParam)
-    ctx.parentParam = parentParam
-    switch (run.type) {      
-      case 'booleanExp': return castToParam(jb.bool_expression(profile, ctx,parentParam), parentParam)
-      case 'expression': return castToParam(jb.expression(profile, ctx,parentParam), parentParam)
-      case 'asIs': return profile
-      case 'function': return castToParam(profile(ctx,ctx.vars,ctx.cmpCtx && ctx.cmpCtx.params),parentParam)
-      case 'null': return castToParam(null,parentParam)
-      case 'ignore': return ctx.data
-      case 'list': return profile.map((inner,i) => ctxWithVars.runInner(inner,null,i))
-      case 'runActions': return jb.comps.runActions.impl(new jbCtx(ctxWithVars,{profile: { actions : profile },path:''}))
-      case 'profile':
-        if (!run.impl)
-          run.ctx.callerPath = ctx.path;
-        const prepareParam = paramObj => {
-          switch (paramObj.type) {
-            case 'function': run.ctx.params[paramObj.name] = paramObj.outerFunc(run.ctx) ;  break;
-            case 'array': run.ctx.params[paramObj.name] =
-                paramObj.array.map(function prepareParamItem(prof,i) { return prof != null && jb_run(new jbCtx(run.ctx,{
-                      profile: prof, forcePath: paramObj.forcePath || ctx.path + '~' + paramObj.path+ '~' + i, path: ''}), paramObj.param)})
-              ; break;  // maybe we should [].concat and handle nulls
-            default: run.ctx.params[paramObj.name] =
-              jb_run(new jbCtx(run.ctx,{profile: paramObj.prof, forcePath: paramObj.forcePath || ctx.path + '~' + paramObj.path, path: ''}), paramObj.param);
-          }
-        }
-        Object.defineProperty(prepareParam, 'name', { value: `${run.ctx.path} ${profile.$ ||''}-prepare param` })        
-  
-        run.preparedParams.forEach(paramObj => prepareParam(paramObj))
-        const out = run.impl ? run.impl.call(null,run.ctx,...run.preparedParams.map(param=>run.ctx.params[param.name])) 
-          : jb_run(new jbCtx(run.ctx, { cmpCtx: run.ctx }),parentParam)
-        return castToParam(out,parentParam)
-
-    }
-  } catch (e) {
-    if (ctx.vars.$throw) throw e
-    jb.logException(e,'exception while running run',{ctx,parentParam,settings})
-  }
-}
-
-function extendWithVars(ctx,vars) {
-  if (Array.isArray(vars))
-    return vars.reduce((_ctx,{name,val},i) => _ctx.setVar(name,_ctx.runInner(val || '%%', null,`$vars~${i}~val`)), ctx )
-  if (vars)
-    jb.logError('$vars should be array',{ctx,vars})
-  return ctx
-  // let res = ctx
-  // for(let varname in vars || {})
-  //   res = new jbCtx(res,{ vars: {[varname]: res.runInner(vars[varname] || '%%', null,'$vars~'+varname)} })
-  // return res
-}
-
-function prepareParams(comp_name,comp,profile,ctx) {
-  return jb.compParams(comp)
-    .filter(param=> !param.ignore)
-    .map((param) => {
-      const p = param.id
-      let val = profile[p], path =p
-      const valOrDefault = val !== undefined ? val : (param.defaultValue !== undefined ? param.defaultValue : null)
-      const usingDefault = val === undefined && param.defaultValue !== undefined
-      const forcePath = usingDefault && [comp_name, 'params', jb.compParams(comp).indexOf(param), 'defaultValue'].join('~')
-      if (forcePath) path = ''
-
-      const valOrDefaultArray = valOrDefault ? valOrDefault : []; // can remain single, if null treated as empty array
-      const arrayParam = param.type && param.type.indexOf('[]') > -1 && Array.isArray(valOrDefaultArray);
-
-      if (param.dynamic) {
-        const outerFunc = runCtx => {
-          let func;
-          if (arrayParam)
-            func = (ctx2,data2) => jb.utils.flattenArray(valOrDefaultArray.map((prof,i)=> runCtx.extendVars(ctx2,data2).runInner(prof, {...param, as: 'asIs'}, path+'~'+i)))
-          else
-            func = (ctx2,data2) => jb_run(new jb.jbCtx(runCtx.extendVars(ctx2,data2),{ profile: valOrDefault, forcePath, path } ),param)
-
-          const debugFuncName = valOrDefault && valOrDefault.$ || typeof valOrDefault == 'string' && valOrDefault.slice(0,10) || ''
-          Object.defineProperty(func, 'name', { value: p + ': ' + debugFuncName })
-          Object.assign(func,{profile: valOrDefault,runCtx,path,srcPath: ctx.path,forcePath,param})
-          return func
-        }
-        return { name: p, type: 'function', outerFunc, path, param, forcePath };
+Object.assign(jb, { 
+  frame: (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {}, 
+  extension(libId, p1 , p2) {
+    const extId = typeof p1 == 'string' ? p1 : 'main'
+    const extension = p2 || p1
+    const lib = jb[libId] = jb[libId] || {__initialized: {}}
+    const funcs = Object.keys(extension).filter(k=>typeof extension[k] == 'function').filter(k=>k!='initExtension')
+    funcs.forEach(k=>lib[k] = extension[k])
+    if (extension.initExtension) {
+      const initFunc = `init_${libId}_${extId}`
+      lib[initFunc] = extension.initExtension
+      funcs.forEach(k=>lib[k].__initFunc = `#${libId}.${initFunc}`)
+      if (! lib.__initialized[initFunc]) {
+        lib.__initialized[initFunc] = true
+        Object.assign(lib, lib[initFunc](extension))
       }
-
-      if (arrayParam) // array of profiles
-        return { name: p, type: 'array', array: valOrDefaultArray, param: Object.assign({},param,{type:param.type.split('[')[0],as:null}), forcePath, path };
-      else
-        return { name: p, type: 'run', prof: valOrDefault, param, forcePath, path };
-  })
-}
-
-function prepare(ctx,parentParam) {
-  const profile = ctx.profile;
-  const profile_jstype = typeof profile;
-  const parentParam_type = parentParam && parentParam.type;
-  const jstype = parentParam && parentParam.as;
-  const isArray = Array.isArray(profile);
-
-  if (profile_jstype === 'string' && parentParam_type === 'boolean') return { type: 'booleanExp' };
-  if (profile_jstype === 'boolean' || profile_jstype === 'number' || parentParam_type == 'asIs') return { type: 'asIs' };// native primitives
-  if (profile_jstype === 'object' && jstype === 'object') return { type: 'object' };
-  if (profile_jstype === 'string') return { type: 'expression' };
-  if (profile_jstype === 'function') return { type: 'function' };
-  if (profile_jstype === 'object' && (profile instanceof RegExp)) return { type: 'asIs' };
-  if (profile == null) return { type: 'asIs' };
-
-  if (isArray) {
-    if (!profile.length) return { type: 'null' };
-    if (!parentParam || !parentParam.type || parentParam.type === 'data' ) //  as default for array
-      return { type: 'list' };
-    if (parentParam_type === 'action' || parentParam_type === 'action[]' && profile.isArray) {
-      profile.sugar = true;
-      return { type: 'runActions' };
     }
-  } 
-  const comp_name = jb.compName(profile,parentParam)
-  if (!comp_name)
-    return { type: 'asIs' }
-  const comp = jb.comps[comp_name];
-  if (!comp && comp_name) { jb.logError('component ' + comp_name + ' is not defined', {ctx}); return { type:'null' } }
-  if (comp.impl == null) { jb.logError('component ' + comp_name + ' has no implementation', {ctx}); return { type:'null' } }
+  }
+})
 
-  jb.fixMacroByValue && jb.fixMacroByValue(profile,comp)
-  const resCtx = Object.assign(new jbCtx(ctx,{}), {parentParam, params: {}})
-  const preparedParams = prepareParams(comp_name,comp,profile,resCtx);
-  if (typeof comp.impl === 'function') {
-    Object.defineProperty(comp.impl, 'name', { value: comp_name }) // comp_name.replace(/[^a-zA-Z0-9]/g,'_')
-    return { type: 'profile', impl: comp.impl, ctx: resCtx, preparedParams: preparedParams }
-  } else
-    return { type:'profile', ctx: new jbCtx(resCtx,{profile: comp.impl, comp: comp_name, path: ''}), preparedParams: preparedParams };
-}
+jb.extension('core', {
+  initExtension() {
+    Object.assign(jb, { 
+      comps: {}, ctxDictionary: {}, macro: {}
+    })
+    return { 
+      ctxCounter: 0, 
+      project: Symbol.for('project'),
+      location: Symbol.for('location'),
+      loadingPhase: Symbol.for('loadingPhase'),
+      macroNs: {},
+      macroDef: Symbol('macroDef'), 
+    }
+  },
+  run(ctx,parentParam,settings) {
+    //  ctx.profile && jb.log('core request', [ctx.id,...arguments])
+      if (ctx.probe && ctx.probe.outOfTime)
+        return
+      if (jb.ctxByPath) jb.ctxByPath[ctx.path] = ctx
+      const runner = () => jb.core.doRun(...arguments)
+      Object.defineProperty(runner, 'name', { value: `${ctx.path} ${ctx.profile && ctx.profile.$ ||''}-prepare param` })        
+      let res = runner(...arguments)
+      if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
+          res = ctx.probe.record(ctx,res) || res
+    //  ctx.profile && jb.log('core result', [ctx.id,res,ctx,parentParam,settings])
+      if (typeof res == 'function') jb.utils.assignDebugInfoToFunc(res,ctx)
+      return res
+  },
+  doRun(ctx,parentParam,settings) {
+    try {
+      const profile = ctx.profile
+      if (profile == null || (typeof profile == 'object' && profile.$disabled))
+        return jb.core.castToParam(null,parentParam)
+  
+      if (profile.$debugger == 0) debugger
+      if (profile.$asIs) return profile.$asIs
+      if (parentParam && (parentParam.type||'').indexOf('[]') > -1 && ! parentParam.as) // fix to array value. e.g. single feature not in array
+          parentParam.as = 'array'
+  
+      if (typeof profile === 'object' && Object.getOwnPropertyNames(profile).length == 0)
+        return
+      const ctxWithVars = jb.core.extendWithVars(ctx,profile.$vars)
+      const run = jb.core.prepare(ctxWithVars,parentParam)
+      ctx.parentParam = parentParam
+      const {castToParam } = jb.core
+      switch (run.type) {      
+        case 'booleanExp': return castToParam(jb.expression.calcBool(profile, ctx,parentParam), parentParam)
+        case 'expression': return castToParam(jb.expression.calc(profile, ctx,parentParam), parentParam)
+        case 'asIs': return profile
+        case 'function': return castToParam(profile(ctx,ctx.vars,ctx.cmpCtx && ctx.cmpCtx.params),parentParam)
+        case 'null': return castToParam(null,parentParam)
+        case 'ignore': return ctx.data
+        case 'list': return profile.map((inner,i) => ctxWithVars.runInner(inner,null,i))
+        case 'runActions': return jb.comps.runActions.impl(new jb.core.jbCtx(ctxWithVars,{profile: { actions : profile },path:''}))
+        case 'profile':
+          if (!run.impl)
+            run.ctx.callerPath = ctx.path;
+          const prepareParam = paramObj => {
+            switch (paramObj.type) {
+              case 'function': run.ctx.params[paramObj.name] = paramObj.outerFunc(run.ctx) ;  break;
+              case 'array': run.ctx.params[paramObj.name] =
+                  paramObj.array.map(function prepareParamItem(prof,i) { return prof != null && jb.core.run(new jb.core.jbCtx(run.ctx,{
+                        profile: prof, forcePath: paramObj.forcePath || ctx.path + '~' + paramObj.path+ '~' + i, path: ''}), paramObj.param)})
+                ; break;  // maybe we should [].concat and handle nulls
+              default: run.ctx.params[paramObj.name] =
+                jb.core.run(new jb.core.jbCtx(run.ctx,{profile: paramObj.prof, forcePath: paramObj.forcePath || ctx.path + '~' + paramObj.path, path: ''}), paramObj.param);
+            }
+          }
+          Object.defineProperty(prepareParam, 'name', { value: `${run.ctx.path} ${profile.$ ||''}-prepare param` })        
+    
+          run.preparedParams.forEach(paramObj => prepareParam(paramObj))
+          const out = run.impl ? run.impl.call(null,run.ctx,...run.preparedParams.map(param=>run.ctx.params[param.name])) 
+            : jb.core.run(new jb.core.jbCtx(run.ctx, { cmpCtx: run.ctx }),parentParam)
+          return castToParam(out,parentParam)
+      }
+    } catch (e) {
+      if (ctx.vars.$throw) throw e
+      jb.logException(e,'exception while running run',{ctx,parentParam,settings})
+    }
+  },
+  extendWithVars(ctx,vars) {
+    if (Array.isArray(vars))
+      return vars.reduce((_ctx,{name,val},i) => _ctx.setVar(name,_ctx.runInner(val || '%%', null,`$vars~${i}~val`)), ctx )
+    if (vars)
+      jb.logError('$vars should be array',{ctx,vars})
+    return ctx
+  },
+  prepareParams(comp_name,comp,profile,ctx) {
+    return jb.utils.compParams(comp)
+      .filter(param=> !param.ignore)
+      .map((param) => {
+        const p = param.id
+        let val = profile[p], path =p
+        const valOrDefault = val !== undefined ? val : (param.defaultValue !== undefined ? param.defaultValue : null)
+        const usingDefault = val === undefined && param.defaultValue !== undefined
+        const forcePath = usingDefault && [comp_name, 'params', jb.utils.compParams(comp).indexOf(param), 'defaultValue'].join('~')
+        if (forcePath) path = ''
+  
+        const valOrDefaultArray = valOrDefault ? valOrDefault : []; // can remain single, if null treated as empty array
+        const arrayParam = param.type && param.type.indexOf('[]') > -1 && Array.isArray(valOrDefaultArray);
+  
+        if (param.dynamic) {
+          const outerFunc = runCtx => {
+            let func;
+            if (arrayParam)
+              func = (ctx2,data2) => jb.utils.flattenArray(valOrDefaultArray.map((prof,i)=> runCtx.extendVars(ctx2,data2).runInner(prof, {...param, as: 'asIs'}, path+'~'+i)))
+            else
+              func = (ctx2,data2) => jb.core.run(new jb.core.jbCtx(runCtx.extendVars(ctx2,data2),{ profile: valOrDefault, forcePath, path } ),param)
+  
+            const debugFuncName = valOrDefault && valOrDefault.$ || typeof valOrDefault == 'string' && valOrDefault.slice(0,10) || ''
+            Object.defineProperty(func, 'name', { value: p + ': ' + debugFuncName })
+            Object.assign(func,{profile: valOrDefault,runCtx,path,srcPath: ctx.path,forcePath,param})
+            return func
+          }
+          return { name: p, type: 'function', outerFunc, path, param, forcePath };
+        }
+  
+        if (arrayParam) // array of profiles
+          return { name: p, type: 'array', array: valOrDefaultArray, param: Object.assign({},param,{type:param.type.split('[')[0],as:null}), forcePath, path };
+        else
+          return { name: p, type: 'run', prof: valOrDefault, param, forcePath, path };
+    })
+  },
+  prepare(ctx,parentParam) {
+    const profile = ctx.profile;
+    const profile_jstype = typeof profile;
+    const parentParam_type = parentParam && parentParam.type;
+    const jstype = parentParam && parentParam.as;
+    const isArray = Array.isArray(profile);
+  
+    if (profile_jstype === 'string' && parentParam_type === 'boolean') return { type: 'booleanExp' };
+    if (profile_jstype === 'boolean' || profile_jstype === 'number' || parentParam_type == 'asIs') return { type: 'asIs' };// native primitives
+    if (profile_jstype === 'object' && jstype === 'object') return { type: 'object' };
+    if (profile_jstype === 'string') return { type: 'expression' };
+    if (profile_jstype === 'function') return { type: 'function' };
+    if (profile_jstype === 'object' && (profile instanceof RegExp)) return { type: 'asIs' };
+    if (profile == null) return { type: 'asIs' };
+  
+    if (isArray) {
+      if (!profile.length) return { type: 'null' };
+      if (!parentParam || !parentParam.type || parentParam.type === 'data' ) //  as default for array
+        return { type: 'list' };
+      if (parentParam_type === 'action' || parentParam_type === 'action[]' && profile.isArray) {
+        profile.sugar = true;
+        return { type: 'runActions' };
+      }
+    } 
+    const comp_name = jb.utils.compName(profile,parentParam)
+    if (!comp_name)
+      return { type: 'asIs' }
+    const comp = jb.comps[comp_name];
+    if (!comp && comp_name) { jb.logError('component ' + comp_name + ' is not defined', {ctx}); return { type:'null' } }
+    if (comp.impl == null) { jb.logError('component ' + comp_name + ' has no implementation', {ctx}); return { type:'null' } }
+  
+    jb.core.fixMacroByValue(profile,comp)
+    const resCtx = Object.assign(new jb.core.jbCtx(ctx,{}), {parentParam, params: {}})
+    const preparedParams = jb.core.prepareParams(comp_name,comp,profile,resCtx);
+    if (typeof comp.impl === 'function') {
+      Object.defineProperty(comp.impl, 'name', { value: comp_name }) // comp_name.replace(/[^a-zA-Z0-9]/g,'_')
+      return { type: 'profile', impl: comp.impl, ctx: resCtx, preparedParams: preparedParams }
+    } else
+      return { type:'profile', ctx: new jb.core.jbCtx(resCtx,{profile: comp.impl, comp: comp_name, path: ''}), preparedParams: preparedParams };
+  },
+  castToParam: (value,param) => jb.core.tojstype(value,param ? param.as : null),
+  tojstype(value,jstype) {
+    if (!jstype) return value;
+    if (typeof jb.jstypes[jstype] != 'function') debugger;
+    return jb.jstypes[jstype](value);
+  },
+  fixMacroByValue(profile,comp) {
+    if (profile && profile.$byValue) {
+      const params = jb.utils.compParams(comp)
+      profile.$byValue.forEach((v,i)=> Object.assign(profile,{[params[i].id]: v}))
+      delete profile.$byValue
+    }
+  },
+  jbCtx: class jbCtx {
+    constructor(ctx,ctx2) {
+      this.id = jb.core.ctxCounter++
+  //    this._parent = ctx
+      if (typeof ctx == 'undefined') {
+        this.vars = {}
+        this.params = {}
+      } else {
+        if (ctx2.profile && ctx2.path == null) {
+          debugger
+          ctx2.path = '?'
+        }
+        this.profile = (typeof(ctx2.profile) != 'undefined') ?  ctx2.profile : ctx.profile
+  
+        this.path = (ctx.path || '') + (ctx2.path ? '~' + ctx2.path : '')
+        if (ctx2.forcePath)
+          this.path = this.forcePath = ctx2.forcePath
+        if (ctx2.comp)
+          this.path = ctx2.comp + '~impl'
+        this.data= (typeof ctx2.data != 'undefined') ? ctx2.data : ctx.data     // allow setting of data:null
+        this.vars= ctx2.vars ? Object.assign({},ctx.vars,ctx2.vars) : ctx.vars
+        this.params= ctx2.params || ctx.params
+        this.cmpCtx= (typeof ctx2.cmpCtx != 'undefined') ? ctx2.cmpCtx : ctx.cmpCtx
+        this.probe= ctx.probe
+      }
+    }
+    run(profile,parentParam) {
+      return jb.core.run(new jb.core.jbCtx(this,{ profile: profile, comp: profile.$ , path: ''}), parentParam)
+    }
+    exp(exp,jstype) { return jb.expression.calc(exp, this, {as: jstype}) }
+    setVars(vars) { return new jb.core.jbCtx(this,{vars: vars}) }
+    setVar(name,val) { return name ? new jb.core.jbCtx(this,{vars: {[name]: val}}) : this }
+    setData(data) { return new jb.core.jbCtx(this,{data: data}) }
+    runInner(profile,parentParam, path) { return jb.core.run(new jb.core.jbCtx(this,{profile: profile,path}), parentParam) }
+    bool(profile) { return this.run(profile, { as: 'boolean'}) }
+    // keeps the ctx vm and not the caller vm - needed in studio probe
+    ctx(ctx2) { return new jb.core.jbCtx(this,ctx2) }
+    frame() { // used for multi windows apps. e.g., studio
+      return jb.frame
+    }
+    extendVars(ctx2,data2) {
+      if (ctx2 == null && data2 == null)
+        return this;
+      return new jb.core.jbCtx(this,{
+        vars: ctx2 ? ctx2.vars : null,
+        data: (data2 == null) ? ctx2.data : data2,
+        forcePath: (ctx2 && ctx2.forcePath) ? ctx2.forcePath : null
+      })
+    }
+    runItself(parentParam,settings) { return jb.core.run(this,parentParam,settings) }
+    dataObj(data) { return {data, vars: this.vars} }
+  },
+  callStack(ctx) {
+    const ctxStack=[]; 
+    for(let innerCtx=ctx; innerCtx; innerCtx = innerCtx.cmpCtx) 
+      ctxStack.push(innerCtx)
+    return ctxStack.map(ctx=>ctx.callerPath)
+  }
 
+})
 
-function castToParam(value,param) {
-  return tojstype(value,param ? param.as : null);
-}
-
-function tojstype(value,jstype) {
-  if (!jstype) return value;
-  if (typeof jstypes[jstype] != 'function') debugger;
-  return jstypes[jstype](value);
-}
-
-const jstypes = {
+jb.extension('jstypes', {
     asIs: x => x,
     object(value) {
       if (Array.isArray(value))
@@ -224,119 +309,12 @@ const jstypes = {
     value(value) {
       return jb.val(value)
     }
-}
-
-let ctxCounter = 0;
-
-class jbCtx {
-  constructor(ctx,ctx2) {
-    this.id = ctxCounter++
-//    this._parent = ctx
-    if (typeof ctx == 'undefined') {
-      this.vars = {}
-      this.params = {}
-    } else {
-      if (ctx2.profile && ctx2.path == null) {
-        debugger
-        ctx2.path = '?'
-      }
-      this.profile = (typeof(ctx2.profile) != 'undefined') ?  ctx2.profile : ctx.profile
-
-      this.path = (ctx.path || '') + (ctx2.path ? '~' + ctx2.path : '')
-      if (ctx2.forcePath)
-        this.path = this.forcePath = ctx2.forcePath
-      if (ctx2.comp)
-        this.path = ctx2.comp + '~impl'
-      this.data= (typeof ctx2.data != 'undefined') ? ctx2.data : ctx.data     // allow setting of data:null
-      this.vars= ctx2.vars ? Object.assign({},ctx.vars,ctx2.vars) : ctx.vars
-      this.params= ctx2.params || ctx.params
-      this.cmpCtx= (typeof ctx2.cmpCtx != 'undefined') ? ctx2.cmpCtx : ctx.cmpCtx
-      this.probe= ctx.probe
-    }
-  }
-  run(profile,parentParam) {
-    return jb_run(new jbCtx(this,{ profile: profile, comp: profile.$ , path: ''}), parentParam)
-  }
-  exp(exp,jstype) { return jb.expression(exp, this, {as: jstype}) }
-  setVars(vars) { return new jbCtx(this,{vars: vars}) }
-  setVar(name,val) { return name ? new jbCtx(this,{vars: {[name]: val}}) : this }
-  setData(data) { return new jbCtx(this,{data: data}) }
-  runInner(profile,parentParam, path) { return jb_run(new jbCtx(this,{profile: profile,path}), parentParam) }
-  bool(profile) { return this.run(profile, { as: 'boolean'}) }
-  // keeps the ctx vm and not the caller vm - needed in studio probe
-  ctx(ctx2) { return new jbCtx(this,ctx2) }
-  frame() { // used for multi windows apps. e.g., studio
-    return jb.frame
-  }
-  extendVars(ctx2,data2) {
-    if (ctx2 == null && data2 == null)
-      return this;
-    return new jbCtx(this,{
-      vars: ctx2 ? ctx2.vars : null,
-      data: (data2 == null) ? ctx2.data : data2,
-      forcePath: (ctx2 && ctx2.forcePath) ? ctx2.forcePath : null
-    })
-  }
-  runItself(parentParam,settings) { return jb_run(this,parentParam,settings) }
-  dataObj(data) { return {data, vars: this.vars} }
-  callStack() {
-    const ctxStack=[]; 
-    for(let innerCtx=this; innerCtx; innerCtx = innerCtx.cmpCtx) 
-      ctxStack.push(innerCtx)
-    return ctxStack.map(ctx=>ctx.callerPath)
-  }
-}
-
-Object.assign(jb, { 
-  frame: jbFrame, 
-  initLibs(libId, libObj) {
-    jb[libId] = jb[libId] || {}
-    Object.assign(jb[libId], libObj)
-    libObj.initializeModule && libObj.initializeModule()
-  },
-  comps: {}, ctxDictionary: {}, run: jb_run, jbCtx, jstypes, tojstype 
 })
-})();
+;
 
+// core utils promoted for easy usage
 Object.assign(jb, {
-    compParams(comp) {
-        if (!comp || !comp.params)
-          return []
-        return Array.isArray(comp.params) ? comp.params : entries(comp.params).map(x=>Object.assign(x[1],{id: x[0]}))
-    },
-    profileType(profile) {
-        if (!profile) return ''
-        if (typeof profile == 'string') return 'data'
-        const comp_name = jb.compName(profile)
-        return (jb.comps[comp_name] && jb.comps[comp_name].type) || ''
-    },
-    singleInType(parentParam) {
-        const _type = parentParam && parentParam.type && parentParam.type.split('[')[0]
-        return _type && jb.comps[_type] && jb.comps[_type].singleInType && _type
-    },
-    compName(profile,parentParam) {
-        if (!profile || Array.isArray(profile)) return
-        return profile.$ || jb.singleInType(parentParam)
-    },
-    path: (object,path,value) => {
-        if (!object) return object
-        let cur = object
-        if (typeof path === 'string') path = path.split('.')
-        path = jb.asArray(path)
-    
-        if (typeof value == 'undefined') {  // get
-          return path.reduce((o,k)=>o && o[k], object)
-        } else { // set
-          for(let i=0;i<path.length;i++)
-            if (i == path.length-1)
-              cur[path[i]] = value;
-            else
-              cur = cur[path[i]] = cur[path[i]] || {};
-          return value;
-        }
-    },
-    subscribe: (source,listener) => jb.callbag.subscribe(listener)(source),
-    log(logName, record, options) { jb.spy && jb.spy.log(logName, record, options) },
+    log(logName, record, options) { jb.spy && jb.spy.log && jb.spy.log(logName, record, options) },
     logError(err,logObj) {
       jb.frame.console && jb.frame.console.log('%c Error: ','color: red', err, logObj)
       jb.log('error',{err , ...logObj})
@@ -352,50 +330,74 @@ Object.assign(jb, {
         return handler.val(ref)
       return ref
     },
-    tostring: value => jb.tojstype(value,'string'),
-    toarray: value => jb.tojstype(value,'array'),
-    toboolean: value => jb.tojstype(value,'boolean'),
-    tosingle: value => jb.tojstype(value,'single'),
-    tonumber: value => jb.tojstype(value,'number'),
-    assignDebugInfoToFunc(func, ctx) {
-        func.ctx = ctx
-        const debugFuncName = ctx.profile && ctx.profile.$ || typeof ctx.profile == 'string' && ctx.profile.slice(0,10) || ''
-        Object.defineProperty(func, 'name', { value: (ctx.path ||'').split('~').pop() + ': ' + debugFuncName })
+    tostring: value => jb.core.tojstype(value,'string'),
+    toarray: value => jb.core.tojstype(value,'array'),
+    toboolean: value => jb.core.tojstype(value,'boolean'),
+    tosingle: value => jb.core.tojstype(value,'single'),
+    tonumber: value => jb.core.tojstype(value,'number'),
+    exec: (...args) => new jb.core.jbCtx().run(...args),
+    exp: (...args) => new jb.core.jbCtx().exp(...args),
+
+    // todo - move to studio
+    studio: { previewjb: jb },
+    execInStudio: (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.core.jbCtx().run(...args),
+})
+
+jb.extension('utils', { // jb core utils
+    profileType(profile) {
+        if (!profile) return ''
+        if (typeof profile == 'string') return 'data'
+        const comp_name = jb.utils.compName(profile)
+        return (jb.comps[comp_name] && jb.comps[comp_name].type) || ''
     },
-    sessionStorage: (id,val) => val == undefined ? JSON.parse(jb.frame.sessionStorage.getItem(id)) : jb.frame.sessionStorage.setItem(id,JSON.stringify(val)),
-    exec: (...args) => new jb.jbCtx().run(...args),
-    exp: (...args) => new jb.jbCtx().exp(...args),
-    eval: (str,frame) => { try { return (frame || jb.frame).eval('('+str+')') } catch (e) { return Symbol.for('parseError') } },
+    singleInType(parentParam) {
+        const _type = parentParam && parentParam.type && parentParam.type.split('[')[0]
+        return _type && jb.comps[_type] && jb.comps[_type].singleInType && _type
+    },
+    compName(profile,parentParam) {
+        if (!profile || Array.isArray(profile)) return
+        return profile.$ || jb.utils.singleInType(parentParam)
+    },  
+    compParams(comp) {
+      if (!comp || !comp.params)
+        return []
+      return Array.isArray(comp.params) ? comp.params : entries(comp.params).map(x=>Object.assign(x[1],{id: x[0]}))
+    },
+    resolveFinishedPromise(val) {
+      if (val && typeof val == 'object' && val._state == 1) // finished promise
+        return val._result
+      return val
+    },
+    isRefType: jstype => jstype === 'ref' || jstype === 'ref[]',
+    calcVar(ctx,varname,jstype) {
+      let res
+      if (ctx.cmpCtx && ctx.cmpCtx.params[varname] !== undefined)
+        res = ctx.cmpCtx.params[varname]
+      else if (ctx.vars[varname] !== undefined)
+        res = ctx.vars[varname]
+      else if (ctx.vars.scope && ctx.vars.scope[varname] !== undefined)
+        res = ctx.vars.scope[varname]
+      else if (jb.db.resources && jb.db.resources[varname] !== undefined)
+        res = jb.utils.isRefType(jstype) ? jb.db.useResourcesHandler(h=>h.refOfPath([varname])) : jb.db.resource(varname)
+      else if (jb.db.consts && jb.db.consts[varname] !== undefined)
+        res = jb.utils.isRefType(jstype) ? jb.db.simpleValueByRefHandler.objectProperty(jb.db.consts,varname) : res = jb.db.consts[varname]
+    
+      return jb.utils.resolveFinishedPromise(res)
+    },
     addDebugInfo(f,ctx) { f.ctx = ctx; return f},
-
-    studio: { previewjb: jb },    
-    execInStudio: (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.jbCtx().run(...args),
+    assignDebugInfoToFunc(func, ctx) {
+      func.ctx = ctx
+      const debugFuncName = ctx.profile && ctx.profile.$ || typeof ctx.profile == 'string' && ctx.profile.slice(0,10) || ''
+      Object.defineProperty(func, 'name', { value: (ctx.path ||'').split('~').pop() + ': ' + debugFuncName })
+    },
+    subscribe: (source,listener) => jb.callbag.subscribe(listener)(source),
 })
 
-// generic
-Object.assign(jb, {
-    entries(obj) {
-        if (!obj || typeof obj != 'object') return [];
-        let ret = [];
-        for(let i in obj) // please do not change. it keeps the definition order !!!!
-            if (obj.hasOwnProperty && obj.hasOwnProperty(i) && i.indexOf('$jb_') != 0)
-              ret.push([i,obj[i]])
-        return ret
-    },
-    objFromEntries(entries) {
-        const res = {}
-        entries.forEach(e => res[e[0]] = e[1])
-        return res
-    },
-    asArray: v => v == null ? [] : (Array.isArray(v) ? v : [v]),
-    delay: (mSec,res) => new Promise(r=>setTimeout(()=>r(res),mSec)),
-})
-
-jb.initLibs('utils', { 
+jb.extension('utils', { // generic utils
     isEmpty: o => Object.keys(o).length === 0,
     isObject: o => o != null && typeof o === 'object',
-    tryWrapper: (f,msg) => { try { return f() } catch(e) { jb.logException(e,msg,{ctx: this.ctx}) }},
-    flattenArray: items => {
+    tryWrapper(f,msg,ctx) { try { return f() } catch(e) { jb.logException(e,msg,{ctx}) }},
+    flattenArray(items) {
       let out = [];
       items.filter(i=>i).forEach(function(item) {
         if (Array.isArray(item))
@@ -405,28 +407,15 @@ jb.initLibs('utils', {
       })
       return out;
     },
-    compareArrays: (arr1, arr2) => {
-        if (arr1 === arr2)
-          return true;
-        if (!Array.isArray(arr1) && !Array.isArray(arr2)) return arr1 === arr2;
-        if (!arr1 || !arr2 || arr1.length != arr2.length) return false;
-        for (let i = 0; i < arr1.length; i++) {
-          const key1 = (arr1[i]||{}).key, key2 = (arr2[i]||{}).key;
-          if (key1 && key2 && key1 === key2 && arr1[i].val === arr2[i].val)
-            continue;
-          if (arr1[i] !== arr2[i]) return false;
-        }
-        return true;
-    },
     isPromise: v => v && Object.prototype.toString.call(v) === '[object Promise]',
-    isDelayed: v => {
+    isDelayed(v) {
       if (!v || v.constructor === {}.constructor || Array.isArray(v)) return
       else if (typeof v === 'object')
         return jb.utils.isPromise(v)
       else if (typeof v === 'function')
         return jb.callbag.isCallbag(v)
     },
-    toSynchArray: (item, synchCallbag) => {
+    toSynchArray(item, synchCallbag) {
       if (jb.utils.isPromise(item))
         return item.then(x=>[x])
 
@@ -441,6 +430,19 @@ jb.initLibs('utils', {
               flatMap(v => Array.isArray(v) ? v : [v]),
               toPromiseArray)
     },    
+    compareArrays(arr1, arr2) {
+        if (arr1 === arr2)
+          return true;
+        if (!Array.isArray(arr1) && !Array.isArray(arr2)) return arr1 === arr2;
+        if (!arr1 || !arr2 || arr1.length != arr2.length) return false;
+        for (let i = 0; i < arr1.length; i++) {
+          const key1 = (arr1[i]||{}).key, key2 = (arr2[i]||{}).key;
+          if (key1 && key2 && key1 === key2 && arr1[i].val === arr2[i].val)
+            continue;
+          if (arr1[i] !== arr2[i]) return false;
+        }
+        return true;
+    },
     objectDiff(newObj, orig) {
       if (orig === newObj) return {}
       if (!jb.utils.isObject(orig) || !jb.utils.isObject(newObj)) return newObj
@@ -455,6 +457,17 @@ jb.initLibs('utils', {
         return { ...acc, [key]: difference } // return updated key
       }, deletedValues)
     },
+    comparePaths(path1,path2) { // 0- equals, -1,1 means contains -2,2 lexical
+      path1 = path1 || ''
+      path2 = path2 || ''
+      let i=0;
+      while(path1[i] === path2[i] && i < path1.length) i++;
+      if (i == path1.length && i == path2.length) return 0;
+      if (i == path1.length && i < path2.length) return -1;
+      if (i == path2.length && i < path1.length) return 1;
+      return path1[i] < path2[i] ? -2 : 2
+    },    
+
     unique: (ar,f) => {
       f = f || (x=>x);
       const keys = {}, res = [];
@@ -465,53 +478,64 @@ jb.initLibs('utils', {
         }
       })
       return res;
-    },    
+    },
+    sessionStorage: (id,val) => val == undefined ? JSON.parse(jb.frame.sessionStorage.getItem(id)) : jb.frame.sessionStorage.setItem(id,JSON.stringify(val)),
+    eval: (str,frame) => { try { return (frame || jb.frame).eval('('+str+')') } catch (e) { return Symbol.for('parseError') } },
+
+})
+
+// common generic promoted for easy usage
+Object.assign(jb, {
+  path: (object,path,value) => {
+        if (!object) return object
+        let cur = object
+        if (typeof path === 'string') path = path.split('.')
+        path = jb.asArray(path)
+    
+        if (typeof value == 'undefined') {  // get
+          return path.reduce((o,k)=>o && o[k], object)
+        } else { // set
+          for(let i=0;i<path.length;i++)
+            if (i == path.length-1)
+              cur[path[i]] = value;
+            else
+              cur = cur[path[i]] = cur[path[i]] || {};
+          return value;
+        }
+  },  
+  entries(obj) {
+      if (!obj || typeof obj != 'object') return [];
+      let ret = [];
+      for(let i in obj) // please do not change. it keeps the definition order !!!!
+          if (obj.hasOwnProperty && obj.hasOwnProperty(i) && i.indexOf('$jb_') != 0)
+            ret.push([i,obj[i]])
+      return ret
+  },
+  objFromEntries(entries) {
+      const res = {}
+      entries.forEach(e => res[e[0]] = e[1])
+      return res
+  },
+  asArray: v => v == null ? [] : (Array.isArray(v) ? v : [v]),
+  delay: (mSec,res) => new Promise(r=>setTimeout(()=>r(res),mSec)),
 })
 ;
 
-(function() {
-function resolveFinishedPromise(val) {
-    if (val && typeof val == 'object' && val._state == 1) // finished promise
-      return val._result
-    return val
-  }
-  
-function isRefType(jstype) {
-    return jstype === 'ref' || jstype === 'ref[]'
-}
-
-function calcVar(ctx,varname,jstype) {
-    let res
-    if (ctx.cmpCtx && ctx.cmpCtx.params[varname] !== undefined)
-      res = ctx.cmpCtx.params[varname]
-    else if (ctx.vars[varname] !== undefined)
-      res = ctx.vars[varname]
-    else if (ctx.vars.scope && ctx.vars.scope[varname] !== undefined)
-      res = ctx.vars.scope[varname]
-    else if (jb.db.resources && jb.db.resources[varname] !== undefined)
-      res = isRefType(jstype) ? jb.db.mainWatchableHandler.refOfPath([varname]) : jb.db.resource(varname)
-    else if (jb.db.consts && jb.db.consts[varname] !== undefined)
-      res = isRefType(jstype) ? jb.db.simpleValueByRefHandler.objectProperty(jb.db.consts,varname) : res = jb.db.consts[varname]
-  
-    return resolveFinishedPromise(res)
-}
-  
-function expression(_exp, ctx, parentParam) {
+jb.extension('expression', {
+  calc(_exp, ctx, parentParam) {
     const jstype = parentParam && (parentParam.ref ? 'ref' : parentParam.as)
     let exp = '' + _exp
-    if (jstype == 'boolean') return bool_expression(exp, ctx)
+    if (jstype == 'boolean') return jb.expression.calcBool(exp, ctx)
     if (exp.indexOf('$debugger:') == 0) {
       debugger
       exp = exp.split('$debugger:')[1]
     }
     if (exp.indexOf('$log:') == 0) {
-      const out = expression(exp.split('$log:')[1],ctx,parentParam)
+      const out = jb.expression.calc(exp.split('$log:')[1],ctx,parentParam)
       jb.comps.log.impl(ctx, out)
       return out
     }
     if (exp.indexOf('%') == -1 && exp.indexOf('{') == -1) return exp
-    // if (ctx && !ctx.ngMode)
-    //   exp = exp.replace(/{{/g,'{%').replace(/}}/g,'%}')
     if (exp == '{%%}' || exp == '%%')
         return expPart('')
   
@@ -525,22 +549,21 @@ function expression(_exp, ctx, parentParam) {
   
     exp = exp.replace(/%([^%;{}\s><"']*)%/g, (match,contents) => jb.tostring(expPart(contents,{as: 'string'})))
     return exp
-  
+
+    function expPart(expressionPart,_parentParam) {
+      return jb.utils.resolveFinishedPromise(jb.expression.evalExpressionPart(expressionPart,ctx,_parentParam || parentParam))
+    }
     function conditionalExp(exp) {
       // check variable value - if not empty return all exp, otherwise empty
       const match = exp.match(/%([^%;{}\s><"']*)%/)
       if (match && jb.tostring(expPart(match[1])))
-        return expression(exp, ctx, { as: 'string' })
+        return jb.expression.calc(exp, ctx, { as: 'string' })
       else
         return ''
     }
-  
-    function expPart(expressionPart,_parentParam) {
-      return resolveFinishedPromise(evalExpressionPart(expressionPart,ctx,_parentParam || parentParam))
-    }
-}
-  
-function evalExpressionPart(expressionPart,ctx,parentParam) {
+
+  },
+  evalExpressionPart(expressionPart,ctx,parentParam) {
     const jstype = parentParam && (parentParam.ref ? 'ref' : parentParam.as)
     // example: %$person.name%.
   
@@ -554,13 +577,10 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
         subExp = subExp.slice(0,-1)
   
       const refHandler = jb.db.objHandler(input)
-      const functionCallMatch = subExp.match(/=([a-zA-Z]*)\(?([^)]*)\)?/)
-      if (functionCallMatch && jb.functions[functionCallMatch[1]])
-          return tojstype(jb.functions[functionCallMatch[1]](ctx,functionCallMatch[2]),jstype,ctx)
       if (subExp.match(/\(\)$/))
         return pipe(input,subExp.slice(0,-2),last,first,true)
       if (first && subExp.charAt(0) == '$' && subExp.length > 1) {
-        const ret = calcVar(ctx,subExp.substr(1),last ? jstype : null)
+        const ret = jb.utils.calcVar(ctx,subExp.substr(1),last ? jstype : null)
         return typeof ret === 'function' && invokeFunc ? ret(ctx) : ret
       }
       const obj = jb.val(input)
@@ -581,41 +601,40 @@ function evalExpressionPart(expressionPart,ctx,parentParam) {
         }
         if (subExp.match(/^@/) && obj.getAttribute)
             return obj.getAttribute(subExp.slice(1))
-        if (isRefType(jstype)) {
+        if (jb.utils.isRefType(jstype)) {
           if (last)
             return refHandler.objectProperty(obj,subExp,ctx)
           if (obj[subExp] === undefined)
-            obj[subExp] = implicitlyCreateInnerObject(obj,subExp,refHandler)
+            obj[subExp] = jb.expression.implicitlyCreateInnerObject(obj,subExp,refHandler)
         }
         if (last && jstype)
             return jb.jstypes[jstype](obj[subExp])
         return obj[subExp]
       }
     }
-    function implicitlyCreateInnerObject(parent,prop,refHandler) {
-      jb.log('core innerObject created',{parent,prop,refHandler})
-      parent[prop] = {}
-      refHandler.refreshMapDown && refHandler.refreshMapDown(parent)
-      return parent[prop]
-    }
-}
-  
-function bool_expression(exp, ctx, parentParam) {
+  },
+  implicitlyCreateInnerObject(parent,prop,refHandler) {
+    jb.log('core innerObject created',{parent,prop,refHandler})
+    parent[prop] = {}
+    refHandler.refreshMapDown && refHandler.refreshMapDown(parent)
+    return parent[prop]
+  },
+  calcBool(exp, ctx, parentParam) {
     if (exp.indexOf('$debugger:') == 0) {
       debugger
       exp = exp.split('$debugger:')[1]
     }
     if (exp.indexOf('$log:') == 0) {
-      const calculated = expression(exp.split('$log:')[1],ctx,{as: 'boolean'})
-      const result = bool_expression(exp.split('$log:')[1], ctx, parentParam)
+      const calculated = jb.expression.calc(exp.split('$log:')[1],ctx,{as: 'boolean'})
+      const result = jb.expression.calcBool(exp.split('$log:')[1], ctx, parentParam)
       jb.comps.log.impl(ctx, calculated + ':' + result)
       return result
     }
     if (exp.indexOf('!') == 0)
-      return !bool_expression(exp.substring(1), ctx)
+      return !jb.expression.calcBool(exp.substring(1), ctx)
     const parts = exp.match(/(.+)(==|!=|<|>|>=|<=|\^=|\$=)(.+)/)
     if (!parts) {
-      const ref = expression(exp, ctx, parentParam)
+      const ref = jb.expression.calc(exp, ctx, parentParam)
       if (jb.db.isRef(ref))
         return ref
       
@@ -629,8 +648,8 @@ function bool_expression(exp, ctx, parentParam) {
     const op = parts[2].trim()
   
     if (op == '==' || op == '!=' || op == '$=' || op == '^=') {
-      const p1 = jb.tostring(expression(trim(parts[1]), ctx, {as: 'string'}))
-      let p2 = jb.tostring(expression(trim(parts[3]), ctx, {as: 'string'}))
+      const p1 = jb.tostring(jb.expression.calc(trim(parts[1]), ctx, {as: 'string'}))
+      let p2 = jb.tostring(jb.expression.calc(trim(parts[3]), ctx, {as: 'string'}))
       p2 = (p2.match(/^["'](.*)["']/) || ['',p2])[1] // remove quotes
       if (op == '==') return p1 == p2
       if (op == '!=') return p1 != p2
@@ -638,8 +657,8 @@ function bool_expression(exp, ctx, parentParam) {
       if (op == '$=') return p1.indexOf(p2, p1.length - p2.length) !== -1
     }
   
-    const p1 = jb.tonumber(expression(parts[1].trim(), ctx))
-    const p2 = jb.tonumber(expression(parts[3].trim(), ctx))
+    const p1 = jb.tonumber(jb.expression.calc(parts[1].trim(), ctx))
+    const p2 = jb.tonumber(jb.expression.calc(parts[3].trim(), ctx))
   
     if (op == '>') return p1 > p2
     if (op == '<') return p1 < p2
@@ -649,13 +668,20 @@ function bool_expression(exp, ctx, parentParam) {
     function trim(str) {  // trims also " and '
       return str.trim().replace(/^"(.*)"$/,'$1').replace(/^'(.*)'$/,'$1')
     }
-}
+  }
+})
+;
 
-Object.assign(jb,{bool_expression,expression})
-})();
-
-jb.initLibs('db', {
-    resources: {}, consts: {},
+jb.extension('db', {
+    initExtension(ext) {
+      Object.assign(this, { 
+        passiveSym: Symbol.for('passive'),
+        resources: {}, consts: {}, 
+        watchableHandlers: [],
+        isWatchableFunc: [], // assigned by watchable module, if loaded - must be put in array so the code loader will not pack it.
+        simpleValueByRefHandler: ext.simpleValueByRefHandler
+      })
+    },
     simpleValueByRefHandler: {
         val(v) {
           if (v && v.$jb_val) return v.$jb_val()
@@ -687,43 +713,27 @@ jb.initLibs('db', {
               return { $jb_parent: obj, $jb_property: prop };
         },
         pathOfRef: () => [],
-        doOp: () => {}
+        doOp() {},
     },
-    resource: (id,val) => { 
+    resource(id,val) { 
         if (typeof val !== 'undefined')
           jb.db.resources[id] = val
-        jb.db.mainWatchableHandler && jb.db.mainWatchableHandler.resourceReferred(id)
+        jb.db.useResourcesHandler(h => h.makeWatchable(id))
         return jb.db.resources[id]
     },
-    passiveSym: Symbol.for('passive'),
+    useResourcesHandler: f => jb.db.watchableHandlers.filter(x=>x.resources.id == 'resources').map(h=>f(h))[0],
     passive: (id,val) => typeof val == 'undefined' ? jb.db.consts[id] : (jb.db.consts[id] = jb.db.markAsPassive(val || {})),
-    markAsPassive: obj => {
+    markAsPassive(obj) {
       if (obj && typeof obj == 'object') {
         obj[jb.db.passiveSym] = true
         Object.values(obj).forEach(v=>jb.db.markAsPassive(v))
       }
       return obj
     },
-    extraWatchableHandlers: [],
-    extraWatchableHandler: (handler,oldHandler) => { 
-      jb.db.extraWatchableHandlers.push(handler)
-      const oldHandlerIndex = jb.db.extraWatchableHandlers.indexOf(oldHandler)
-      if (oldHandlerIndex != -1)
-        jb.db.extraWatchableHandlers.splice(oldHandlerIndex,1)
-      jb.db.watchableHandlers = [jb.db.mainWatchableHandler, ...jb.db.extraWatchableHandlers].map(x=>x)
-      return handler
-    },
-    initExtraWatchableHandler(resources, {oldHandler, initUIObserver} = {}) {
-      const res = jb.db.extraWatchableHandler(new jb.db.WatchableValueByRef(resources),oldHandler)
-      initUIObserver && jb.ui && jb.ui.subscribeToRefChange(res)
-      return res
-    },
-    setMainWatchableHandler: handler => { 
-      jb.db.mainWatchableHandler = handler
-      jb.db.watchableHandlers = [jb.db.mainWatchableHandler, ...jb.db.extraWatchableHandlers].map(x=>x)
-    },
-    watchableHandlers: [],
-    safeRefCall: (ref,f) => {
+    addWatchableHandler: h => h && jb.db.watchableHandlers.push(h) ,
+    removeWatchableHandler: h => jb.db.watchableHandlers = jb.db.watchableHandlers.filter(x=>x!=h),
+    
+    safeRefCall(ref,f) {
       const handler = jb.db.refHandler(ref)
       if (!handler || !handler.isRef(ref))
         return jb.logError('invalid ref', {ref})
@@ -731,7 +741,7 @@ jb.initLibs('db', {
     },
    
     // handler for ref
-    refHandler: ref => {
+    refHandler(ref) {
       if (ref && ref.handler) return ref.handler
       if (jb.db.simpleValueByRefHandler.isRef(ref)) 
         return jb.db.simpleValueByRefHandler
@@ -740,7 +750,7 @@ jb.initLibs('db', {
     // handler for object (including the case of ref)
     objHandler: obj => 
         obj && jb.db.refHandler(obj) || jb.db.watchableHandlers.find(handler=> handler.watchable(obj)) || jb.db.simpleValueByRefHandler,
-    asRef: obj => {
+    asRef(obj) {
       const watchableHanlder = jb.db.watchableHandlers.find(handler => handler.watchable(obj) || handler.isRef(obj))
       if (watchableHanlder)
         return watchableHanlder.asRef(obj)
@@ -758,35 +768,33 @@ jb.initLibs('db', {
     push: (ref,toAdd,srcCtx) => !srcCtx.probe && jb.db.safeRefCall(ref, h=>h.push(ref,toAdd,srcCtx)),
     doOp: (ref,op,srcCtx) => !srcCtx.probe && jb.db.safeRefCall(ref, h=>h.doOp(ref,op,srcCtx)),
     isRef: ref => jb.db.refHandler(ref),
-    isWatchable: () => false, // overriden by the watchable-ref.js (if loaded)
+    isWatchable: ref => jb.db.isWatchableFunc[0] && jb.db.isWatchableFunc[0](ref), // see remark at initExtension
     isValid: ref => jb.db.safeRefCall(ref, h=>h.isValid(ref)),
-    //refreshRef: ref => jb.db.safeRefCall(ref, h=>h.refresh(ref)),    
     pathOfRef: ref => jb.db.safeRefCall(ref, h=>h.pathOfRef(ref)),
     refOfPath: path => jb.db.watchableHandlers.reduce((res,h) => res || h.refOfPath(path),null),
+    removeDataResourcePrefix: id => id.indexOf('dataResource.') == 0 ? id.slice('dataResource.'.length) : id,
+    addDataResourcePrefix: id => id.indexOf('dataResource.') == 0 ? id : 'dataResource.' + id,
 })
 
 ;
 
 Object.assign(jb, {
-    project: Symbol.for('project'),
-    location: Symbol.for('location'),
-    loadingPhase: Symbol.for('loadingPhase'),
     component(_id,comp) {
       const id = jb.macroName(_id)
       try {
         const errStack = new Error().stack.split(/\r|\n/)
         const line = errStack.filter(x=>x && x != 'Error' && !x.match(/at Object.component/)).shift()
-        comp[jb.location] = line ? (line.split('at eval (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
-        comp[jb.project] = comp[jb.location][0].split('?')[1]
-        comp[jb.location][0] = comp[jb.location][0].split('?')[0]
+        comp[jb.core.location] = line ? (line.split('at eval (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
+        comp[jb.core.project] = comp[jb.core.location][0].split('?')[1]
+        comp[jb.core.location][0] = comp[jb.core.location][0].split('?')[0]
       
         if (comp.watchableData !== undefined) {
-          jb.comps[jb.addDataResourcePrefix(id)] = comp
-          return jb.db.resource(jb.removeDataResourcePrefix(id),comp.watchableData)
+          jb.comps[jb.db.addDataResourcePrefix(id)] = comp
+          return jb.db.resource(jb.db.removeDataResourcePrefix(id),comp.watchableData)
         }
         if (comp.passiveData !== undefined) {
-          jb.comps[jb.addDataResourcePrefix(id)] = comp
-          return jb.db.passive(jb.removeDataResourcePrefix(id),comp.passiveData)
+          jb.comps[jb.db.addDataResourcePrefix(id)] = comp
+          return jb.db.passive(jb.db.removeDataResourcePrefix(id),comp.passiveData)
         }
       } catch(e) {
         console.log(e)
@@ -799,21 +807,13 @@ Object.assign(jb, {
         if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
           p.type = 'boolean'
       })
-      comp[jb.loadingPhase] = jb.frame.jbLoadingPhase
+      comp[jb.core.loadingPhase] = jb.frame.jbLoadingPhase
       jb.registerMacro && jb.registerMacro(id)
     },    
-    macroDef: Symbol('macroDef'), macroNs: {}, macro: {},
     macroName: id => id.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
     ns: nsIds => {
         nsIds.split(',').forEach(nsId => jb.registerMacro(nsId))
         return jb.macro
-    },
-    fixMacroByValue: (profile,comp) => {
-        if (profile && profile.$byValue) {
-          const params = jb.compParams(comp)
-          profile.$byValue.forEach((v,i)=> Object.assign(profile,{[params[i].id]: v}))
-          delete profile.$byValue
-        }
     },
     importAllMacros: () => ['var { ',
         jb.utils.unique(Object.keys(jb.macro).map(x=>x.split('_')[0])).join(', '), 
@@ -826,7 +826,7 @@ Object.assign(jb, {
             registerProxy(macroId)
         if (nameSpace && checkId(nameSpace, true) && !jb.macro[nameSpace]) {
             registerProxy(nameSpace, true)
-            jb.macroNs[nameSpace] = true
+            jb.core.macroNs[nameSpace] = true
         }
 
         function registerProxy(proxyId) {
@@ -858,11 +858,11 @@ Object.assign(jb, {
         }
 
         function checkId(macroId, isNS) {
-            if (jb.frame[macroId] && !jb.frame[macroId][jb.macroDef]) {
+            if (jb.frame[macroId] && !jb.frame[macroId][jb.core.macroDef]) {
                 jb.logError(macroId + ' is reserved by system or libs. please use a different name')
                 return false
             }
-            if (Object.keys(jb.macro[macroId] ||{}).length && !isNS && !jb.macroNs[macroId])
+            if (Object.keys(jb.macro[macroId] ||{}).length && !isNS && !jb.core.macroNs[macroId])
                 jb.logError(macroId.replace(/_/g,'.') + ' is defined more than once, using last definition ' + id)
             return true
         }
@@ -897,21 +897,18 @@ Object.assign(jb, {
             return (...allArgs) => {
                 const { args, system } = splitSystemArgs(allArgs)
                 const out = { $: `${ns}.${macroId}` }
-                if (args.length == 1 && typeof args[0] == 'object' && !jb.compName(args[0]))
+                if (args.length == 1 && typeof args[0] == 'object' && !jb.utils.compName(args[0]))
                     Object.assign(out, args[0])
                 else
                     Object.assign(out, { $byValue: args })
                 return Object.assign(out, system)
             }
         }
-    },
-    removeDataResourcePrefix: id => id.indexOf('dataResource.') == 0 ? id.slice('dataResource.'.length) : id,
-    addDataResourcePrefix: id => id.indexOf('dataResource.') == 0 ? id : 'dataResource.' + id,
-
+    }
 })
 ;
 
-jb.initLibs('loader', {
+jb.extension('loader', {
     treeShake(comps, existing) {
         const _comps = comps.filter(x=>!existing[x])
         const dependent = jb.utils.unique(_comps.flatMap(cmpId => jb.loader.dependent(cmpId).filter(x=>!existing[x])))
@@ -922,7 +919,7 @@ jb.initLibs('loader', {
     dependent(cmpId) {
         if (jb.comps[cmpId])
             return dependentOnObj(jb.comps[cmpId])
-        else if (jb.path(jb,cmpId.split('#').pop()))
+        else if (jb.path(jb,cmpId.split('#').pop()) !== undefined)
             return dependentOnFunc(jb.path(jb,cmpId.split('#').pop()))
         else
             jb.logError('can not find comp', {cmpId})
@@ -936,189 +933,190 @@ jb.initLibs('loader', {
             ]
         }
         function dependentOnFunc(func) {
-            return [...func.toString().matchAll(/\bjb\.([a-zA-Z_]+)\.?([a-zA-Z0-9_]*)\(/g)].map(e=>e[2] ? `#${e[1]}.${e[2]}` : `#${e[1]}`)
+            return [
+                ...[func.__initFunc].filter(x=>x),
+                ...[...func.toString().matchAll(/\bjb\.([a-zA-Z0-9_]+)\.?([a-zA-Z0-9_]*)\(/g)].map(e=>e[2] ? `#${e[1]}.${e[2]}` : `#${e[1]}`)
+            ]
         }
     },
     code(ids) {
         const funcs = ids.filter(cmpId => !jb.comps[cmpId])
         const cmps = ids.filter(cmpId => jb.comps[cmpId])
-        const libs = jb.utils.unique(funcs.map(x=> (x.match(/#([a-z]+)\./) || ['',''])[1] ).filter(x=>x).map(x=>x.slice(1))) // group by
+        console.log(1)
+        const topLevel = jb.utils.unique(funcs.filter(x=>x.match(/#[a-zA-Z0-9_]+$/))).map(x=>x.slice(1))
+        console.log(1,topLevel)
+        const topLevelCode = `Object.assign(jb, ${jb.utils.prettyPrint(jb.objFromEntries(topLevel.map(x=>[x,jb.path(jb,x)])))}\n)`
+        console.log(2,topLevelCode)
+        const libs = jb.utils.unique(funcs.map(x=> (x.match(/#([a-z]+)\./) || ['',''])[1] ).filter(x=>x)) // group by
         const libsCode = libs.map(lib => {
-            const funcsCode = funcs.filter(x=>x.indexOf(lib) == 0).map(x=>jb.path(x)).join(',\n\t')
-            return `jb.initLibs('${lib}', {\n${funcsCode}\n})`
+            const funcsCode = jb.utils.prettyPrint(jb.objFromEntries(funcs.filter(x=>x.indexOf(lib) == 1).map(x=>[x.split('.').pop(),jb.path(jb,x.slice(1))])))
+            return `jb.extension('${lib}', ${funcsCode})`
         }).join('\n\n')
+        debugger
+
         const compsCode = cmps.map(cmpId =>jb.utils.prettyPrintComp(cmpId,jb.comps[cmpId],{noMacros: true})).join('\n\n')
-        return [libsCode,compsCode].join('\n\n')
-    }
+        return [topLevelCode,libsCode,compsCode,'debugger'].join(';\n\n')
+    },
+    core: ['#extension','#core.run','#component','#jbm.extendPortToJbmProxy','#jbm.portFromFrame'],
 })
 ;
 
-Object.assign(jb, {
-spySettings: { 
-	includeLogs: 'exception,error',
-	stackFilter: /spy|jb_spy|Object.log|rx-comps|jb-core|node_modules/i,
-    MAX_LOG_SIZE: 10000
-},
+jb.extension('spy', {
+	initExtension() {
+		Object.assign(this, {
+			logs: [],
+			settings: { 
+				includeLogs: 'exception,error',
+				stackFilter: /spy|jb_spy|Object.log|rx-comps|jb-core|node_modules/i,
+				MAX_LOG_SIZE: 10000
+			},
+			Error: jb.frame.Error
+		})
+	},
+	initSpyByUrl() {
+		const frame = jb.frame
+		const getUrl = () => { try { return frame.location && frame.location.href } catch(e) {} }
+		const getParentUrl = () => { try { return frame.parent && frame.parent.location.href } catch(e) {} }
+		const getSpyParam = url => (url.match('[?&]spy=([^&]+)') || ['', ''])[1]
+		jb.spy.initSpy({spyParam :frame && frame.jbUri == 'studio' && (getUrl().match('[?&]sspy=([^&]+)') || ['', ''])[1] || 
+			getSpyParam(getParentUrl() || '') || getSpyParam(getUrl() || '')})
+	},
+	initSpy({spyParam}) {
+		if (!spyParam) return
+		jb.spy.spyParam = spyParam
+		jb.spy.log = jb.spy._log // actually enables logging
+		if (jb.frame) jb.frame.spy = jb.spy // for console use
+	},
 
-initSpy({Error, settings, spyParam, memoryUsage, resetSpyToNull}) {
-	const frame = jb.frame
-	Error = Error || frame.Error,
-	memoryUsage = memoryUsage || (() => frame.performance && performance.memory && performance.memory.usedJSHeapSize)
-	settings = Object.assign(settings||{}, jb.spySettings)
-	if (resetSpyToNull)
-		return jb.spy = null
-    
-    return jb.spy = {
-		logs: [],
-		spyParam,
-		otherSpies: [],
-		observable() { 
-			const _jb = jb.path(jb,'studio.studiojb') || jb
-			this._obs = this._obs || _jb.callbag.subject()
-			return this._obs
-		},
-		enabled: () => true,
-		calcIncludeLogsFromSpyParam(spyParam) {
-			const includeLogsFromParam = (spyParam || '').split(',').filter(x => x[0] !== '-').filter(x => x)
-			const excludeLogsFromParam = (spyParam || '').split(',').filter(x => x[0] === '-').map(x => x.slice(1))
-			this.includeLogs = settings.includeLogs.split(',').concat(includeLogsFromParam).filter(log => excludeLogsFromParam.indexOf(log) === -1).reduce((acc, log) => {
-				acc[log] = true
-				return acc
-			}, {})
-			this.includeLogsInitialized = true
-		},
-		shouldLog(logNames, record) {
-			const ctx = record && (record.ctx || record.srcCtx || record.cmp && record.cmp.ctx)
-			if (ctx && ctx.vars.$disableLog || jb.path(record,'m.$disableLog') || jb.path(record,'m.remoteRun.vars.$disableLog')) return false
-			if (jb.path(record,'m.routingPath') && jb.path(record,'m.routingPath').find(y=>y.match(/vDebugger/))
-    			|| (jb.path(record,'m.result.uri') || '').match(/vDebugger/)) return false
-			if (!logNames) debugger
-			return this.spyParam === 'all' || typeof record == 'object' && 
-				logNames.split(' ').reduce( (acc,logName)=>acc || this.includeLogs[logName],false)
-		},
-		log(logNames, _record, {takeFrom, funcTitle, modifier} = {}) {
-			if (!this.includeLogsInitialized) this.calcIncludeLogsFromSpyParam(this.spyParam)
-			this.updateCounters(logNames)
-			this.updateLocations(logNames,takeFrom)
-			if (!this.shouldLog(logNames, _record)) return
-			const now = new Date()
-			const index = this.logs.length
-			const record = {
-				logNames,
-				..._record,
-				index,
-				source: this.source(takeFrom),
-				_time: `${now.getSeconds()}:${now.getMilliseconds()}`,
-				time: now.getTime(),
-				mem: memoryUsage() / 1000000,
-				activeElem: jb.path(jb.frame.document,'activeElement'),
-				$attsOrder: _record && Object.keys(_record)
-			}
-			if (this.logs.length > 0 && jb.path(jb.frame.document,'activeElement') != this.logs[index-1].activeElem) {
-				this.logs[index-1].logNames += ' focus'
-				this.logs[index-1].activeElemAfter = record.activeElem
-				this.logs[index-1].focusChanged = true
-			}
+	memoryUsage: () => jb.path(jb.frame,'performance.memory.usedJSHeapSize'),
+	observable() { 
+		const _jb = jb.path(jb,'studio.studiojb') || jb
+		jb.spy._obs = jb.spy._obs || _jb.callbag.subject()
+		return jb.spy._obs
+	},
+	calcIncludeLogsFromSpyParam() {
+		const includeLogsFromParam = (jb.spy.spyParam || '').split(',').filter(x => x[0] !== '-').filter(x => x)
+		const excludeLogsFromParam = (jb.spy.spyParam || '').split(',').filter(x => x[0] === '-').map(x => x.slice(1))
+		jb.spy.includeLogs = jb.spy.settings.includeLogs.split(',').concat(includeLogsFromParam).filter(log => excludeLogsFromParam.indexOf(log) === -1).reduce((acc, log) => {
+			acc[log] = true
+			return acc
+		}, {})
+		jb.spy.includeLogsInitialized = true
+	},
+	shouldLog(logNames, record) {
+		// disable debugging events
+		const ctx = record && (record.ctx || record.srcCtx || record.cmp && record.cmp.ctx)
+		if (ctx && ctx.vars.$disableLog || jb.path(record,'m.$disableLog') || jb.path(record,'m.remoteRun.vars.$disableLog')) return false
+		if (jb.path(record,'m.routingPath') && jb.path(record,'m.routingPath').find(y=>y.match(/vDebugger/))
+			|| (jb.path(record,'m.result.uri') || '').match(/vDebugger/)) return false
+		if (!logNames) debugger
+		return jb.spy.spyParam === 'all' || typeof record == 'object' && 
+			logNames.split(' ').reduce( (acc,logName)=>acc || jb.spy.includeLogs[logName],false)
+	},
+	_log(logNames, _record, {takeFrom, funcTitle, modifier} = {}) {
+		if (!jb.spy.includeLogsInitialized) jb.spy.calcIncludeLogsFromSpyParam(jb.spy.spyParam)
+		jb.spy.updateCounters(logNames)
+		jb.spy.updateLocations(logNames,takeFrom)
+		if (!jb.spy.shouldLog(logNames, _record)) return
+		const now = new Date()
+		const index = jb.spy.logs.length
+		const record = {
+			logNames,
+			..._record,
+			index,
+			source: jb.spy.source(takeFrom),
+			_time: `${now.getSeconds()}:${now.getMilliseconds()}`,
+			time: now.getTime(),
+			mem: jb.spy.memoryUsage() / 1000000,
+			activeElem: jb.path(jb.frame.document,'activeElement'),
+			$attsOrder: _record && Object.keys(_record)
+		}
+		if (jb.spy.logs.length > 0 && jb.path(jb.frame.document,'activeElement') != jb.spy.logs[index-1].activeElem) {
+			jb.spy.logs[index-1].logNames += ' focus'
+			jb.spy.logs[index-1].activeElemAfter = record.activeElem
+			jb.spy.logs[index-1].focusChanged = true
+		}
 
-			this.logs.push(record)
-			if (this.logs.length > settings.MAX_LOG_SIZE *1.1)
-				this.logs = this.logs.slice(-1* settings.MAX_LOG_SIZE)
-			this._obs && this._obs.next(record)
-		},
-		frameAccessible(frame) { try { return Boolean(frame.document || frame.contentDocument) } catch(e) { return false } },
-		source(takeFrom) {
-			Error.stackTraceLimit = 50
-			const frames = [frame]
-			// while (frames[0].parent && frames[0] !== frames[0].parent) {
-			// 	frames.unshift(frames[0].parent)
-			// }
-			let stackTrace = frames.reverse().filter(f=>this.frameAccessible(f)).map(frame => new frame.Error().stack).join('\n').split(/\r|\n/).map(x => x.trim()).slice(4).
-				filter(line => line !== 'Error').
-				filter(line => !settings.stackFilter.test(line))
-			if (takeFrom) {
-				const firstIndex = stackTrace.findIndex(line => line.indexOf(takeFrom) !== -1)
-				stackTrace = stackTrace.slice(firstIndex + 1)
-			}
-			const line = stackTrace[0] || ''
-			const res = [
-				line.split(/at |as /).pop().split(/ |]/)[0],
-				line.split('/').pop().slice(0, -1).trim(),
-				...stackTrace
-			]
-			res.location = line.split(' ').slice(-1)[0].split('(').pop().split(')')[0]
-			return res
-		},
-        
-        // browsing methods
-		resetParam: spyParam => {
-			this.spyParam = spyParam;
-			this.includeLogs = null;
-		},
-		setLogs(spyParam) {
-			if (spyParam === 'all')	this.spyParam = 'all'
-			this.calcIncludeLogsFromSpyParam(spyParam)
-		},
-		clear() {
-			this.logs = []
-			this.counters = {}
-		},
-		updateCounters(logNames) {
-			this.counters = this.counters || {}
-			this.counters[logNames] = this.counters[logNames] || 0
-			this.counters[logNames]++
-		},
-		updateLocations(logNames) {
-			this.locations = this.locations || {}
-			this.locations[logNames] = this.locations[logNames] || this.source().location
-		},
-		count(query) { // dialog core | menu !keyboard  
-			const _or = query.split(/,|\|/)
-			return _or.reduce((acc,exp) => 
-				unify(acc, exp.split(' ').reduce((acc,logNameExp) => filter(acc,logNameExp), jb.entries(this.counters))) 
-			,[]).reduce((acc,e) => acc+e[1], 0)
+		jb.spy.logs.push(record)
+		if (jb.spy.logs.length > jb.spy.settings.MAX_LOG_SIZE *1.1)
+			jb.spy.logs = jb.spy.logs.slice(-1* jb.spy.settings.MAX_LOG_SIZE)
+		jb.spy._obs && jb.spy._obs.next(record)
+	},
+	frameAccessible(frame) { try { return Boolean(frame.document || frame.contentDocument) } catch(e) { return false } },
+	source(takeFrom) {
+		jb.spy.Error.stackTraceLimit = 50
+		const frames = [jb.frame]
+		// while (frames[0].parent && frames[0] !== frames[0].parent) {
+		// 	frames.unshift(frames[0].parent)
+		// }
+		let stackTrace = frames.reverse().filter(f=>jb.spy.frameAccessible(f)).map(frame => new frame.Error().stack).join('\n').split(/\r|\n/).map(x => x.trim()).slice(4).
+			filter(line => line !== 'Error').
+			filter(line => !jb.spy.settings.stackFilter.test(line))
+		if (takeFrom) {
+			const firstIndex = stackTrace.findIndex(line => line.indexOf(takeFrom) !== -1)
+			stackTrace = stackTrace.slice(firstIndex + 1)
+		}
+		const line = stackTrace[0] || ''
+		const res = [
+			line.split(/at |as /).pop().split(/ |]/)[0],
+			line.split('/').pop().slice(0, -1).trim(),
+			...stackTrace
+		]
+		res.location = line.split(' ').slice(-1)[0].split('(').pop().split(')')[0]
+		return res
+	},
+	updateCounters(logNames) {
+		jb.spy.counters = jb.spy.counters || {}
+		jb.spy.counters[logNames] = jb.spy.counters[logNames] || 0
+		jb.spy.counters[logNames]++
+	},
+	updateLocations(logNames) {
+		jb.spy.locations = jb.spy.locations || {}
+		jb.spy.locations[logNames] = jb.spy.locations[logNames] || jb.spy.source().location
+	},	
+	
+	// browsing methods
+	setLogs(spyParam) {
+		jb.spy.spyParam = spyParam
+		jb.spy.calcIncludeLogsFromSpyParam(spyParam)
+	},
+	clear() {
+		jb.spy.logs = []
+		jb.spy.counters = {}
+	},
+	count(query) { // dialog core | menu !keyboard  
+		const _or = query.split(/,|\|/)
+		return _or.reduce((acc,exp) => 
+			unify(acc, exp.split(' ').reduce((acc,logNameExp) => filter(acc,logNameExp), jb.entries(jb.spy.counters))) 
+		,[]).reduce((acc,e) => acc+e[1], 0)
 
-			function filter(set,exp) {
-				return (exp[0] == '!') 
-					? set.filter(rec=>!rec[0].match(new RegExp(`\\b${exp.slice(1)}\\b`)))
-					: set.filter(rec=>rec[0].match(new RegExp(`\\b${exp}\\b`)))
-			}
-			function unify(set1,set2) {
-				return [...set1,...set2]
-			}
-		},
-		search(query,slice= -1000) { // dialog core | menu !keyboard  
-			const _or = query.split(/,|\|/)
-			return _or.reduce((acc,exp) => 
-				unify(acc, exp.split(' ').reduce((acc,logNameExp) => filter(acc,logNameExp), this.logs.slice(slice))) 
-			,[])
+		function filter(set,exp) {
+			return (exp[0] == '!') 
+				? set.filter(rec=>!rec[0].match(new RegExp(`\\b${exp.slice(1)}\\b`)))
+				: set.filter(rec=>rec[0].match(new RegExp(`\\b${exp}\\b`)))
+		}
+		function unify(set1,set2) {
+			return [...set1,...set2]
+		}
+	},
+	search(query,slice= -1000) { // dialog core | menu !keyboard  
+		const _or = query.split(/,|\|/)
+		return _or.reduce((acc,exp) => 
+			unify(acc, exp.split(' ').reduce((acc,logNameExp) => filter(acc,logNameExp), jb.spy.logs.slice(slice))) 
+		,[])
 
-			function filter(set,exp) {
-				return (exp[0] == '!') 
-					? set.filter(rec=>rec.logNames.toLowerCase().indexOf(exp.slice(1)) == -1)
-					: set.filter(rec=>rec.logNames.toLowerCase().indexOf(exp) != -1)
-			}
-			function unify(set1,set2) {
-				let res = [...set1,...set2].sort((x,y) => x.index < y.index)
-				return res.filter((r,i) => i == 0 || res[i-1].index != r.index) // unique
-			}
+		function filter(set,exp) {
+			return (exp[0] == '!') 
+				? set.filter(rec=>rec.logNames.toLowerCase().indexOf(exp.slice(1)) == -1)
+				: set.filter(rec=>rec.logNames.toLowerCase().indexOf(exp) != -1)
+		}
+		function unify(set1,set2) {
+			let res = [...set1,...set2].sort((x,y) => x.index < y.index)
+			return res.filter((r,i) => i == 0 || res[i-1].index != r.index) // unique
 		}
 	}
-},
-
-initSpyByUrl() {
-	const frame = jb.frame
-	const getUrl = () => { try { return frame.location && frame.location.href } catch(e) {} }
-	const getParentUrl = () => { try { return frame.parent && frame.parent.location.href } catch(e) {} }
-	const getSpyParam = url => (url.match('[?&]spy=([^&]+)') || ['', ''])[1]
-	const spyParam = frame && frame.jbUri == 'studio' && (getUrl().match('[?&]sspy=([^&]+)') || ['', ''])[1] || 
-		getSpyParam(getParentUrl() || '') || getSpyParam(getUrl() || '')
-	if (spyParam)
-		jb.initSpy({spyParam})
-	if (frame) frame.spy = jb.spy // for console use
-},
-
 })
-//jb.initSpyByUrl()
+
 ;
 
 var { not,contains,writeValue,obj,prop } = jb.ns('not,contains,writeValue,obj,prop') // use in module
@@ -1131,7 +1129,7 @@ jb.component('call', {
   impl: function(context,param) {
  	  const paramObj = context.cmpCtx && context.cmpCtx.params[param];
       if (typeof paramObj == 'function')
- 		return paramObj(new jb.jbCtx(context, {
+ 		return paramObj(new jb.core.jbCtx(context, {
  			data: context.data,
  			vars: context.vars,
  			cmpCtx: context.cmpCtx.cmpCtx,
@@ -1142,7 +1140,7 @@ jb.component('call', {
  	}
 })
 
-jb.initLibs('utils', {
+jb.extension('utils', {
   calcPipe(ctx,ptName,passRx) {
     let start = jb.toarray(ctx.data)
     if (start.length == 0) start = [null]
@@ -1164,10 +1162,10 @@ jb.initLibs('utils', {
       if (!profile || profile.$disabled) return data;
       const path = innerPath+i
       const parentParam = (i < profiles.length - 1) ? { as: 'array'} : (ctx.parentParam || {}) ;
-      if (jb.profileType(profile) == 'aggregator')
-        return jb.run( new jb.jbCtx(ctx, { data, profile, path }), parentParam);
+      if (jb.utils.profileType(profile) == 'aggregator')
+        return jb.core.run( new jb.core.jbCtx(ctx, { data, profile, path }), parentParam);
       return [].concat.apply([],data.map(item =>
-          jb.run(new jb.jbCtx(ctx,{data: item, profile, path}), parentParam))
+          jb.core.run(new jb.core.jbCtx(ctx,{data: item, profile, path}), parentParam))
         .filter(x=>x!=null)
         .map(x=> {
           const val = jb.val(x)
@@ -1570,7 +1568,7 @@ jb.component('obj', {
   params: [
     {id: 'props', type: 'prop[]', mandatory: true, sugar: true}
   ],
-  impl: (ctx,properties) => jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)]))
+  impl: (ctx,properties) => jb.objFromEntries(properties.map(p=>[p.title, jb.core.tojstype(p.val(ctx),p.type)]))
 })
 
 jb.component('extend', {
@@ -1579,7 +1577,7 @@ jb.component('extend', {
     {id: 'props', type: 'prop[]', mandatory: true, defaultValue: []}
   ],
   impl: (ctx,properties) =>
-		Object.assign({}, ctx.data, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)])))
+		Object.assign({}, ctx.data, jb.objFromEntries(properties.map(p=>[p.title, jb.core.tojstype(p.val(ctx),p.type)])))
 })
 jb.component('assign', jb.comps.extend)
 
@@ -1590,7 +1588,7 @@ jb.component('extendWithIndex', {
     {id: 'props', type: 'prop[]', mandatory: true, defaultValue: []}
   ],
   impl: (ctx,properties) => jb.toarray(ctx.data).map((item,i) =>
-			Object.assign({}, item, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx.setData(item).setVars({index:i})),p.type)]))))
+			Object.assign({}, item, jb.objFromEntries(properties.map(p=>[p.title, jb.core.tojstype(p.val(ctx.setData(item).setVars({index:i})),p.type)]))))
 })
 
 jb.component('prop', {
@@ -1994,8 +1992,9 @@ jb.component('runActions', {
 		const actions = jb.asArray(ctx.profile.actions || ctx.profile['$runActions']).filter(x=>x)
 		const innerPath =  (ctx.profile.actions && ctx.profile.actions.sugar) ? ''
 			: (ctx.profile['$runActions'] ? '$runActions~' : 'items~');
-		return actions.reduce((def,action,index) =>
-				def.then(function runActions() {return ctx.runInner(action, { as: 'single'}, innerPath + index ) })
+    
+		return actions.reduce((pr,action,index) =>
+				pr.finally(function runActions() {return ctx.runInner(action, { as: 'single'}, innerPath + index ) })
 			,Promise.resolve())
 	}
 })
@@ -2015,14 +2014,11 @@ jb.component('runActionOnItems', {
   params: [
     {id: 'items', as: 'ref[]', mandatory: true},
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
-    {id: 'notifications', as: 'string', options: 'wait for all actions,no notifications', description: 'notification for watch-ref, default behavior is after each action'},
     {id: 'indexVariable', as: 'string'}
   ],
-  impl: (ctx,items,action,notifications,indexVariable) => {
-		if (notifications && jb.db.mainWatchableHandler) jb.db.mainWatchableHandler.startTransaction()
+  impl: (ctx,items,action,indexVariable) => {
 		return (jb.val(items)||[]).reduce((def,item,i) => def.then(_ => action(ctx.setVar(indexVariable,i).setData(item))) ,Promise.resolve())
 			.catch((e) => jb.logException(e,'runActionOnItems',{item, action, ctx}))
-			.then(() => notifications && jb.db.mainWatchableHandler && jb.db.mainWatchableHandler.endTransaction(notifications === 'no notifications'));
 	}
 })
 
@@ -2286,7 +2282,7 @@ jb.component('getSessionStorage', {
   params: [
     { id: 'id', as: 'string' }
   ],
-  impl: ({},id) => jb.sessionStorage(id)
+  impl: ({},id) => jb.utils.sessionStorage(id)
 })
 
 jb.component('action.setSessionStorage', {
@@ -2294,13 +2290,13 @@ jb.component('action.setSessionStorage', {
     { id: 'id', as: 'string' },
     { id: 'value', dynamic: true },
   ],
-  impl: ({},id,value) => jb.sessionStorage(id,value())
+  impl: ({},id,value) => jb.utils.sessionStorage(id,value())
 })
 
 jb.component('waitFor',{
   params: [
     {id: 'check', dynamic: true},
-    {id: 'interval', as: 'number', defaultValue: 50},
+    {id: 'interval', as: 'number', defaultValue: 14},
     {id: 'timeout', as: 'number', defaultValue: 5000},
   ],
   impl: (ctx,check,interval,timeout) => {

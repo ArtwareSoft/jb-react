@@ -43,7 +43,7 @@ jb.component('studio.filePosOfPath', {
   ],
   impl: (ctx,path) => {
       const comp = path.split('~')[0]
-      const loc = st.previewjb.comps[comp][jb.location]
+      const loc = st.previewjb.comps[comp][jb.core.location]
       const fn = st.host.locationToPath(loc[0])
       const lineOfComp = (+loc[1]) || 0
       const pos = jb.textEditor.getPosOfPath(path+'~!profile',st.previewjb) || [0,0,0,0]

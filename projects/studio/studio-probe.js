@@ -66,7 +66,7 @@ st.Probe = class {
                 const vdom = res.renderVdom()
                 return ({props: res.renderProps, vdom , cmp: res})
             }
-            else if (st.isCompNameOfType(jb.compName(this.circuit),'table-field')) {
+            else if (st.isCompNameOfType(jb.utils.compName(this.circuit),'table-field')) {
                 const item = this.context.vars.$probe_item
                 const index = this.context.vars.$probe_index
                 return res.control ? res.control(item) : res.fieldData(item,index)
@@ -168,7 +168,7 @@ jb.component('studio.probe', {
             circuitCtx = st.closestTestCtx(path)
         if (!circuitCtx) {
             const circuit = jb.tostring(ctx.exp('%$circuit%') || ctx.exp('%$studio/project%') && ctx.run(studio.currentPagePath()))
-            circuitCtx = new _jb.jbCtx(new _jb.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} )
+            circuitCtx = new _jb.core.jbCtx(new _jb.core.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} )
         }
         if (circuitCtx)
             jb.studio.highlightCtx(circuitCtx)

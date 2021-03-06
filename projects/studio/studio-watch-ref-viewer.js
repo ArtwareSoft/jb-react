@@ -219,7 +219,7 @@ jb.studio.activateWatchRefViewer = () => {
   const {pipe,filter,subscribe} = jb.callbag
 
     if (!st.previewjb.spy)
-        st.previewjb.initSpy({})
+        st.previewjb.spy.initSpy({})
     //st.previewjb.spy.setLogs('registerCmpObservable,notifyCmpObservable,destroyCmp,setState')
 
     // const delayedSpy = jb.callbag.zip(

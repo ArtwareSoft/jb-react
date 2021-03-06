@@ -171,7 +171,7 @@ st.suggestions = class {
 
   calcOptions(probeCtx,path) {
     var options = [];
-    probeCtx = probeCtx || new st.previewjb.jbCtx();
+    probeCtx = probeCtx || new st.previewjb.core.jbCtx();
     const resources = jb.entries(jb.studio.previewjb.comps)
           .filter(e=>! jb.comps[e[0]])
           .filter(e=>e[1].watchableData  !== undefined || e[1].passiveData  !== undefined)

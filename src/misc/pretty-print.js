@@ -6,7 +6,10 @@ jb.component('prettyPrint', {
   impl: (ctx,profile) => jb.utils.prettyPrint(jb.val(profile),{ ...ctx.params, comps: jb.studio.previewjb.comps})
 })
 
-jb.initLibs('utils', {
+jb.extension('utils', {
+  initExtension() {
+    return {emptyLineWithSpaces: Array.from(new Array(200)).map(_=>' ').join('')}
+  },
   prettyPrintComp(compId,comp,settings={}) {
     if (comp) {
       return `jb.component('${compId}', ${jb.utils.prettyPrint(comp,{ initialPath: compId, ...settings })})`
@@ -23,7 +26,6 @@ jb.initLibs('utils', {
     const newCol = noOfLines ? text.match(/\n(.*)$/)[1].length : col + text.length
     return { line: line + noOfLines, col: newCol }
   },
-  emptyLineWithSpaces: Array.from(new Array(200)).map(_=>' ').join(''),
 
   prettyPrintWithPositions(val,{colWidth=120,tabSize=2,initialPath='',noMacros,comps,forceFlat} = {}) {
     comps = comps || jb.comps
@@ -51,16 +53,17 @@ jb.initLibs('utils', {
       const openResult = processList(ctx,[..._open, {prop: '!open-newline', item: () => newLine()}])
       const arrayOrObj = isArray? 'array' : 'obj'
 
-      const beforeClose = innerVals.reduce((acc,{innerPath, val}, index) =>
-        processList(acc,[
-          {prop: `!${arrayOrObj}-prefix-${index}`, item: isArray ? '' : fixPropName(innerPath) + ': '},
+      const beforeClose = innerVals.reduce((acc,{innerPath, val}, index) => {
+        const noColon = valueToMacro(ctx, val, flat).noColon // used to serialize function memeber
+        return processList(acc,[
+          {prop: `!${arrayOrObj}-prefix-${index}`, item: isArray ? '' : fixPropName(innerPath) + (noColon ? '' : ': ')},
           {prop: '!value', item: ctx => {
               const ctxWithPath = { ...ctx, path: [path,innerPath].join('~'), depth: depth +1 }
               return {...ctxWithPath, ...valueToMacro(ctxWithPath, val, flat)}
             }
           },
           {prop: `!${arrayOrObj}-separator-${index}`, item: () => index === innerVals.length-1 ? '' : ',' + (flat ? ' ' : newLine())},
-        ])
+        ])}
       , {...openResult, unflat: false} )
       const _close = typeof close === 'string' ? [{prop: '!close', item: close}] : close
       const result = processList(beforeClose, [{prop: '!close-newline', item: () => newLine(-1)}, ..._close])
@@ -93,10 +96,10 @@ jb.initLibs('utils', {
     }
 
     function profileToMacro(ctx, profile,flat) {
-      const id = [jb.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
+      const id = [jb.utils.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
       const comp = comps[id]
       if (comp)
-        jb.fixMacroByValue(profile,comp)
+        jb.core.fixMacroByValue(profile,comp)
       if (noMacros || !id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
         const props = Object.keys(profile)
         if (props.indexOf('$') > 0) { // make the $ first
@@ -160,7 +163,11 @@ jb.initLibs('utils', {
         if (val === null) return 'null';
         if (val === undefined) return 'undefined';
         if (typeof val === 'object') return profileToMacro(ctx, val, flat);
-        if (typeof val === 'function') return val.toString().replace(/\n/g,'__fixedNL__')
+        if (typeof val === 'function') {
+          const asStr = val.toString().trim()
+          const header = asStr.indexOf(`${val.name}(`) == 0 ? val.name : asStr.indexOf(`function ${val.name}(`) == 0 ? `function ${val.name}` : ''
+          return { text: asStr.slice(header.length).replace(/\n/g,'__fixedNL__'), noColon: header ? true : false, map: {} }
+        }
         if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
           return processList(ctx,[
             {prop: '!value-text-start', item: "'"},
@@ -174,7 +181,7 @@ jb.initLibs('utils', {
             {prop: '!value-text-end', item: "`"},
           ])
         else
-          return JSON.stringify(val); // primitives
+          return JSON.stringify(val) || 'undefined'; // primitives or symbol
       }
     }
 

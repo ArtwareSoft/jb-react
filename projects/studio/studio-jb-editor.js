@@ -90,7 +90,7 @@ jb.component('studio.probeResults', {
   impl: (ctx, path) => jb.delay(300).then(_ => {
     if (ctx.exp('%$stduio/fastPreview%')) {
       const st = jb.studio
-      const inCtx = st.closestCtxOfLastRun(path) || new jb.jbCtx()
+      const inCtx = st.closestCtxOfLastRun(path) || new jb.core.jbCtx()
       return [{in: inCtx, out: st.isOfType(path,'action') ? null :
           st.previewjb.val(inCtx.runItself())}]
     }

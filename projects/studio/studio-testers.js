@@ -5,7 +5,8 @@ st.initTests = function() {
   if (st.compsRefHandler) return
   const compsRef = val => typeof val == 'undefined' ? jb.comps : (jb.comps = val);
   compsRef.id = 'comps-test'
-  st.compsRefHandler = jb.db.initExtraWatchableHandler(compsRef)
+  st.compsRefHandler = new jb.watchable.WatchableValueByRef(compsRef)
+	jb.db.addWatchableHandler(st.compsRefHandler)  
 	jb.callbag.subscribe(e=>st.scriptChange.next(e))(st.compsRefHandler.resourceChange)
 }
 
@@ -23,7 +24,7 @@ jb.component('suggestionsTest', {
       const selectionStart = params.selectionStart == -1 ? params.expression.length : params.selectionStart;
 
       const circuit = params.path.split('~')[0];
-      const probeRes = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: { $: circuit }, comp: circuit, path: '', data: null }))
+      const probeRes = new jb.studio.Probe(new jb.core.jbCtx(ctx,{ profile: { $: circuit }, comp: circuit, path: '', data: null }))
         .runCircuit(params.path);
       return probeRes.then(res=>{
         const probeCtx = res.result[0] && res.result[0].in;
@@ -73,7 +74,7 @@ jb.component('studioProbeTest', {
 
     const full_path = testId + '~impl~circuit~' + probePath;
     jb.cbLogByPath = {}
-    const probeRes = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: circuit.profile, forcePath: testId+ '~impl~circuit', path: '' } ))
+    const probeRes = new jb.studio.Probe(new jb.core.jbCtx(ctx,{ profile: circuit.profile, forcePath: testId+ '~impl~circuit', path: '' } ))
       .runCircuit(full_path)
     return probeRes.then(res=> jb.cbLogByPath[res.pathToTrace] || res)
     .then(res=> {

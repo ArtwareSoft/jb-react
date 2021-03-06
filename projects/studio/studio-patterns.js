@@ -74,7 +74,7 @@ jb.component('studio.selectStyle', {
                 ctx => {
                   const previewCtx = closestCtxInPreview(ctx,ctx.exp('%$targetPath%'))
                   jb.path(jb,'studio.previewjb.ui.workerStyleElems.preview',[])
-                  const cmp = jb.ui.extendWithServiceRegistry(new jb.studio.previewjb.jbCtx()).ctx(previewCtx)
+                  const cmp = jb.ui.extendWithServiceRegistry(new jb.studio.previewjb.core.jbCtx()).ctx(previewCtx)
                     .run(ctx.exp('%$__option%'))
                   const vdom = jb.ui.cloneVNode(cmp.renderVdom())
                   jb.ui.addStyleElem(ctx,jb.studio.previewjb.ui.workerStyleElems.preview.join('\n'))
@@ -159,7 +159,7 @@ function closestCtxInPreview(ctx,path) {
     : jb.studio.closestCtxInPreview(path)
   if (!res) {
     jb.logError('studio-pattern no closest preview ctx',{ctx,path})
-    return ctx.vars.testID ? new jb.jbCtx() : new jb.studio.previewjb.jbCtx()
+    return ctx.vars.testID ? new jb.core.jbCtx() : new jb.studio.previewjb.core.jbCtx()
   }
   return res
 }

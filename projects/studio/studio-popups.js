@@ -119,7 +119,7 @@ jb.component('studioDialogFeature.studioPopupLocation', {
   type: 'dialog-feature',
   impl: templateModifier( ({},{vdom}) => { 
     const id = (vdom.getAttribute('id')||'').replace(/\s/g,'_')
-    if (id && !jb.sessionStorage(id))
+    if (id && !jb.utils.sessionStorage(id))
       vdom.addClass(`default-location ${id}`)
   })
 })
@@ -227,12 +227,11 @@ jb.component('studio.openResponsivePhonePopup', {
           controls: [
             button({
               title: 'phone',
-              action: runTransaction(
-                [
+              action: runTransaction({actions:                [
                   writeValue('%$studio/preview/width%', '400'),
                   writeValue('%$studio/preview/height%', '600')
                 ]
-              ),
+              }),
               style: button.mdcFloatingAction(true),
               features: feature.icon({icon: 'phone_android', title: '', type: 'mdc'})
             }),

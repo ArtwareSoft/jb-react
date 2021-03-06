@@ -14,7 +14,7 @@ st.changedComps = () => {
 st.initStudioEditing = () => {
   if (st.previewjb.comps['dialog.studioPickDialog']) return
   jb.log('studio init editing service',{})
-  st.previewWindow.eval(`jb.ns('${Object.keys(jb.macroNs).join(',')}')`)
+  st.previewWindow.eval(`jb.ns('${Object.keys(jb.core.macroNs).join(',')}')`)
   jb.entries(jb.comps)
     .filter(e=>st.isStudioCmp(e[0]) || !st.previewjb.comps[e[0]])
     .forEach(e=>st.copyCompFromStudioToPreview(e))
@@ -46,7 +46,7 @@ jb.component('studio.fetchProjectSettings', {
 })
 
 st.copyCompFromStudioToPreview = function(e) {
-  st.previewjb.comps[e[0]] = { ...e[1], [jb.location] : [e[1][jb.location][0], e[1][jb.location][1]]}
+  st.previewjb.comps[e[0]] = { ...e[1], [jb.core.location] : [e[1][jb.core.location][0], e[1][jb.core.location][1]]}
 }
 
 jb.ui.renderWidgetInStudio = function(profile,top) {
@@ -110,7 +110,7 @@ jb.ui.renderWidgetInStudio = function(profile,top) {
   function doRender(page) {
         if (page) currentProfile = {$: page}
         const profileToRun = ['dataTest','uiTest'].indexOf(jb.path(jb.comps[currentProfile.$],'impl.$')) != -1 ? { $: 'test.showTestInStudio', testId: currentProfile.$} : currentProfile
-        const cmp = jb.ui.extendWithServiceRegistry(new jb.jbCtx()).run(profileToRun)
+        const cmp = jb.ui.extendWithServiceRegistry(new jb.core.jbCtx()).run(profileToRun)
         const start = new Date().getTime()
         jb.ui.unmount(top)
         top.innerHTML = ''
@@ -142,9 +142,9 @@ st.initPreview = function(preview_window,allowedTypes) {
   st.initReplaceableCompsRefHandler(st.compsRefOfjbm(st.previewjb), {allowedTypes})
 
   changedComps.forEach(e=>{
-    st.compsRefHandler.resourceReferred(e[0])
-    st.writeValue(st.compsRefHandler.refOfPath([e[0]]), eval(`(${jb.utils.prettyPrint(e[1],{noMacros: true})})`), new jb.jbCtx()) // update the history for future save
-    jb.val(st.compsRefHandler.refOfPath([e[0]]))[jb.location] = e[1][jb.location]
+    st.compsRefHandler.makeWatchable(e[0])
+    st.writeValue(st.compsRefHandler.refOfPath([e[0]]), eval(`(${jb.utils.prettyPrint(e[1],{noMacros: true})})`), new jb.core.jbCtx()) // update the history for future save
+    jb.val(st.compsRefHandler.refOfPath([e[0]]))[jb.core.location] = e[1][jb.core.location]
   })
   jb.entries(st.previewWindow.JSON.parse(st.resourcesFromPrevRun || '{}')).forEach(e=>st.previewjb.db.resource(e[0],e[1]))
 
@@ -271,7 +271,7 @@ st.injectProjectToPreview = function(previewWin,projectSettings) {
 <body ${vscodeZoomFix}>
   <div id="main"></div>
   <script>
-    window.jb_initWidget && jb_initWidget().then(()=> jb.initSpyByUrl && jb.initSpyByUrl())
+    window.jb_initWidget && jb_initWidget().then(()=> jb.spy.initSpyByUrl && jb.spy.initSpyByUrl())
   </script>
 </body>
 </html>`
@@ -303,7 +303,7 @@ jb.component('jbm.iframe', {
       ${jb_loader_code};
       jb = ${JSON.stringify(jbObj)}
       jb_loadProject(${JSON.stringify(settings)}).then(() => {
-          self.spy = jb.initSpy({spyParam: '${spyParam}'})
+          self.spy = jb.spy.initSpy({spyParam: '${spyParam}'})
           self.jb.parent = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
           self.loaded = true
       })`        

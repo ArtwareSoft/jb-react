@@ -450,7 +450,7 @@ jb.component('eventTracker.worker.vDebugger', {
     runBefore: pipe(
       jbm.worker('innerWorker'), 
       remote.action(runActions(
-        () => jb.initSpy({spyParam: 'remote,log1'}),
+        () => jb.spy.initSpy({spyParam: 'remote,log1'}),
         log('log1',obj(prop('hello','world'))),
         jbm.vDebugger()),
       '%%')

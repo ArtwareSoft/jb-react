@@ -1,23 +1,20 @@
 Object.assign(jb, {
-    project: Symbol.for('project'),
-    location: Symbol.for('location'),
-    loadingPhase: Symbol.for('loadingPhase'),
     component(_id,comp) {
       const id = jb.macroName(_id)
       try {
         const errStack = new Error().stack.split(/\r|\n/)
         const line = errStack.filter(x=>x && x != 'Error' && !x.match(/at Object.component/)).shift()
-        comp[jb.location] = line ? (line.split('at eval (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
-        comp[jb.project] = comp[jb.location][0].split('?')[1]
-        comp[jb.location][0] = comp[jb.location][0].split('?')[0]
+        comp[jb.core.location] = line ? (line.split('at eval (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
+        comp[jb.core.project] = comp[jb.core.location][0].split('?')[1]
+        comp[jb.core.location][0] = comp[jb.core.location][0].split('?')[0]
       
         if (comp.watchableData !== undefined) {
-          jb.comps[jb.addDataResourcePrefix(id)] = comp
-          return jb.db.resource(jb.removeDataResourcePrefix(id),comp.watchableData)
+          jb.comps[jb.db.addDataResourcePrefix(id)] = comp
+          return jb.db.resource(jb.db.removeDataResourcePrefix(id),comp.watchableData)
         }
         if (comp.passiveData !== undefined) {
-          jb.comps[jb.addDataResourcePrefix(id)] = comp
-          return jb.db.passive(jb.removeDataResourcePrefix(id),comp.passiveData)
+          jb.comps[jb.db.addDataResourcePrefix(id)] = comp
+          return jb.db.passive(jb.db.removeDataResourcePrefix(id),comp.passiveData)
         }
       } catch(e) {
         console.log(e)
@@ -30,21 +27,13 @@ Object.assign(jb, {
         if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
           p.type = 'boolean'
       })
-      comp[jb.loadingPhase] = jb.frame.jbLoadingPhase
+      comp[jb.core.loadingPhase] = jb.frame.jbLoadingPhase
       jb.registerMacro && jb.registerMacro(id)
     },    
-    macroDef: Symbol('macroDef'), macroNs: {}, macro: {},
     macroName: id => id.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
     ns: nsIds => {
         nsIds.split(',').forEach(nsId => jb.registerMacro(nsId))
         return jb.macro
-    },
-    fixMacroByValue: (profile,comp) => {
-        if (profile && profile.$byValue) {
-          const params = jb.compParams(comp)
-          profile.$byValue.forEach((v,i)=> Object.assign(profile,{[params[i].id]: v}))
-          delete profile.$byValue
-        }
     },
     importAllMacros: () => ['var { ',
         jb.utils.unique(Object.keys(jb.macro).map(x=>x.split('_')[0])).join(', '), 
@@ -57,7 +46,7 @@ Object.assign(jb, {
             registerProxy(macroId)
         if (nameSpace && checkId(nameSpace, true) && !jb.macro[nameSpace]) {
             registerProxy(nameSpace, true)
-            jb.macroNs[nameSpace] = true
+            jb.core.macroNs[nameSpace] = true
         }
 
         function registerProxy(proxyId) {
@@ -89,11 +78,11 @@ Object.assign(jb, {
         }
 
         function checkId(macroId, isNS) {
-            if (jb.frame[macroId] && !jb.frame[macroId][jb.macroDef]) {
+            if (jb.frame[macroId] && !jb.frame[macroId][jb.core.macroDef]) {
                 jb.logError(macroId + ' is reserved by system or libs. please use a different name')
                 return false
             }
-            if (Object.keys(jb.macro[macroId] ||{}).length && !isNS && !jb.macroNs[macroId])
+            if (Object.keys(jb.macro[macroId] ||{}).length && !isNS && !jb.core.macroNs[macroId])
                 jb.logError(macroId.replace(/_/g,'.') + ' is defined more than once, using last definition ' + id)
             return true
         }
@@ -128,15 +117,12 @@ Object.assign(jb, {
             return (...allArgs) => {
                 const { args, system } = splitSystemArgs(allArgs)
                 const out = { $: `${ns}.${macroId}` }
-                if (args.length == 1 && typeof args[0] == 'object' && !jb.compName(args[0]))
+                if (args.length == 1 && typeof args[0] == 'object' && !jb.utils.compName(args[0]))
                     Object.assign(out, args[0])
                 else
                     Object.assign(out, { $byValue: args })
                 return Object.assign(out, system)
             }
         }
-    },
-    removeDataResourcePrefix: id => id.indexOf('dataResource.') == 0 ? id.slice('dataResource.'.length) : id,
-    addDataResourcePrefix: id => id.indexOf('dataResource.') == 0 ? id : 'dataResource.' + id,
-
+    }
 })

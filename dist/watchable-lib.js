@@ -131,8 +131,13 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var immu
 //     $jb_childProp: 'title', // used for primitive props
 // }
 
-jb.initLibs('db', {
-  isProxy: Symbol.for("isProxy"), originalVal: Symbol.for("originalVal"), targetVal: Symbol.for("targetVal"), jbId: Symbol("jbId"),
+jb.extension('watchable', {
+  initExtension(ext) {
+    Object.assign(this, {isProxy: Symbol.for("isProxy"), originalVal: Symbol.for("originalVal"), targetVal: Symbol.for("targetVal"), jbId: Symbol("jbId")})
+    jb.watchable.resourcesRef.id = 'resources'
+    jb.db.addWatchableHandler(new jb.watchable.WatchableValueByRef(jb.watchable.resourcesRef))
+    jb.db.isWatchableFunc[0] = ext.isWatchable
+  },
 
   WatchableValueByRef: class WatchableValueByRef {
     constructor(resources) {
@@ -146,8 +151,8 @@ jb.initLibs('db', {
       this.primitiveArraysDeltas = {}
 
       const resourcesObj = resources()
-      resourcesObj[jb.db.jbId] = this.idCounter++
-      this.objToPath.set(resourcesObj[jb.db.jbId],[])
+      resourcesObj[jb.watchable.jbId] = this.idCounter++
+      this.objToPath.set(resourcesObj[jb.watchable.jbId],[])
       this.propagateResourceChangeToObservables()
     }
     doOp(ref,opOnRef,srcCtx) {
@@ -166,11 +171,11 @@ jb.initLibs('db', {
         const insertedPath = insertedIndex != null && path.concat(insertedIndex)
         const opEvent = {op: opOnRef, path, insertedPath, ref, srcCtx, oldVal, opVal, timeStamp: new Date().getTime(), opCounter: this.opCounter++}
         this.resources(jb.immutableUpdate(this.resources(),op),opEvent)
-        const newVal = (opVal != null && opVal[jb.db.isProxy]) ? opVal : this.valOfPath(path);
+        const newVal = (opVal != null && opVal[jb.watchable.isProxy]) ? opVal : this.valOfPath(path);
         if (opOnRef.$push) {
           opOnRef.$push.forEach((toAdd,i)=>
             this.addObjToMap(toAdd,[...path,oldVal.length+i]))
-          newVal[jb.db.jbId] = oldVal[jb.db.jbId]
+          newVal[jb.watchable.jbId] = oldVal[jb.watchable.jbId]
           //opEvent.path.push(oldVal.length)
           opEvent.ref = this.refOfPath(opEvent.path)
         } else if (opOnRef.$set === null && typeof oldVal === 'object') { // delete object should return the path that was deleted
@@ -188,8 +193,8 @@ jb.initLibs('db', {
             this.addObjToMap(newVal,path)
         }
         if (opOnRef.$splice) {
-          this.primitiveArraysDeltas[ref.$jb_obj[jb.db.jbId]] = this.primitiveArraysDeltas[ref.$jb_obj[jb.db.jbId]] || []
-          this.primitiveArraysDeltas[ref.$jb_obj[jb.db.jbId]].push(opOnRef.$splice)
+          this.primitiveArraysDeltas[ref.$jb_obj[jb.watchable.jbId]] = this.primitiveArraysDeltas[ref.$jb_obj[jb.watchable.jbId]] || []
+          this.primitiveArraysDeltas[ref.$jb_obj[jb.watchable.jbId]].push(opOnRef.$splice)
         }
         opEvent.newVal = newVal;
         jb.log('watchable notify doOp',{opEvent,ref,opOnRef,srcCtx})
@@ -202,7 +207,7 @@ jb.initLibs('db', {
         jb.logException(e,'doOp',{srcCtx,ref,opOnRef,srcCtx})
       }
     }
-    resourceReferred(resName) {
+    makeWatchable(resName) {
       const resource = this.resources()[resName]
       if (!this.objToPath.has(resource))
         this.addObjToMap(resource,[resName])
@@ -211,16 +216,16 @@ jb.initLibs('db', {
       for(let i=0;i<path.length;i++) {
         const innerPath = path.slice(0,i+1)
         const val = this.valOfPath(innerPath,true)
-        if (val && typeof val === 'object' && !val[jb.db.jbId]) {
-            val[jb.db.jbId] = this.idCounter++
+        if (val && typeof val === 'object' && !val[jb.watchable.jbId]) {
+            val[jb.watchable.jbId] = this.idCounter++
             this.addObjToMap(val,innerPath)
         }
       }
     }
     addObjToMap(top,path) {
-      if (!top || top[jb.db.isProxy] || top[jb.db.passiveSym] || top.$jb_val || typeof top !== 'object' || this.allowedTypes.indexOf(Object.getPrototypeOf(top)) == -1) return
-      if (top[jb.db.jbId]) {
-          this.objToPath.set(top[jb.db.jbId],path)
+      if (!top || top[jb.watchable.isProxy] || top[jb.db.passiveSym] || top.$jb_val || typeof top !== 'object' || this.allowedTypes.indexOf(Object.getPrototypeOf(top)) == -1) return
+      if (top[jb.watchable.jbId]) {
+          this.objToPath.set(top[jb.watchable.jbId],path)
           this.objToPath.delete(top)
       } else {
           this.objToPath.set(top,path)
@@ -231,8 +236,8 @@ jb.initLibs('db', {
     removeObjFromMap(top,isInner) {
       if (!top || typeof top !== 'object' || this.allowedTypes.indexOf(Object.getPrototypeOf(top)) == -1) return
       this.objToPath.delete(top)
-      if (top[jb.db.jbId] && isInner)
-          this.objToPath.delete(top[jb.db.jbId])
+      if (top[jb.watchable.jbId] && isInner)
+          this.objToPath.delete(top[jb.watchable.jbId])
       Object.keys(top).filter(key=>typeof top[key] === 'object' && key.indexOf('$jb_') != 0).forEach(key => this.removeObjFromMap(top[key],true))
     }
     fixSplicedPaths(path,spliceOp) {
@@ -261,7 +266,7 @@ jb.initLibs('db', {
     pathOfRef(ref) {
       if (ref.$jb_path)
         return ref.$jb_path()
-      const path = this.isRef(ref) && (this.objToPath.get(ref.$jb_obj) || this.objToPath.get(ref.$jb_obj[jb.db.jbId]))
+      const path = this.isRef(ref) && (this.objToPath.get(ref.$jb_obj) || this.objToPath.get(ref.$jb_obj[jb.watchable.jbId]))
       if (path && ref.$jb_childProp !== undefined) {
           this.refreshPrimitiveArrayRef(ref)
           return [...path, ref.$jb_childProp]
@@ -271,20 +276,20 @@ jb.initLibs('db', {
     urlOfRef(ref) {
       const path = this.pathOfRef(ref)
       this.addJbId(path)
-      const byId = [ref.$jb_obj[jb.db.jbId],ref.$jb_childProp].filter(x=>x != null).map(x=>(''+x).replace(/~|;|,/g,'')).join('~')
+      const byId = [ref.$jb_obj[jb.watchable.jbId],ref.$jb_childProp].filter(x=>x != null).map(x=>(''+x).replace(/~|;|,/g,'')).join('~')
       const byPath = path.map(x=>(''+x).replace(/~|;|,/g,'')).join('~')
       return `${this.resources.id}://${byId};${byPath}`
     }
     refOfUrl(url) {
       const path = url.split(';')[0].split('~')
-      return { handler: this, $jb_obj: {[jb.db.jbId]: +path[0] }, ...path[1] ? {$jb_childProp: path[1]} : {} }
+      return { handler: this, $jb_obj: {[jb.watchable.jbId]: +path[0] }, ...path[1] ? {$jb_childProp: path[1]} : {} }
     }
     asRef(obj, silent) {
       if (this.isRef(obj))
         return obj
       if (!obj || typeof obj !== 'object') return obj;
-      const actualObj = obj[jb.db.isProxy] ? obj[jb.db.targetVal] : obj
-      const path = this.objToPath.get(actualObj) || this.objToPath.get(actualObj[jb.db.jbId])
+      const actualObj = obj[jb.watchable.isProxy] ? obj[jb.watchable.targetVal] : obj
+      const path = this.objToPath.get(actualObj) || this.objToPath.get(actualObj[jb.watchable.jbId])
       if (path)
           return { $jb_obj: this.valOfPath(path), handler: this, path: function() { return this.handler.pathOfRef(this)} }
       if (!silent)
@@ -295,12 +300,12 @@ jb.initLibs('db', {
       return path.reduce((o,p)=>this.noProxy(o && o[p]),this.resources())
     }
     noProxy(val) {
-      return (val && val[jb.db.isProxy] && val[jb.db.originalVal]) || val
+      return (val && val[jb.watchable.isProxy] && val[jb.watchable.originalVal]) || val
     }
     hasLinksInPath(path) {
       let val = this.resources()
       for(let i=0;i<path.length;i++) {
-        if (val && val[jb.db.isProxy])
+        if (val && val[jb.watchable.isProxy])
           return true
         val = val && val[path[i]]
       }
@@ -310,9 +315,9 @@ jb.initLibs('db', {
       if (!this.hasLinksInPath(path))
         return path
       return path.reduce(({val,path} ,p) => {
-        const proxy = (val && val[jb.db.isProxy])
-        const inner =  proxy ? val[jb.db.originalVal] : val
-        const newPath = proxy ? (this.objToPath.get(inner) || this.objToPath.get(inner[jb.db.jbId])) : path
+        const proxy = (val && val[jb.watchable.isProxy])
+        const inner =  proxy ? val[jb.watchable.originalVal] : val
+        const newPath = proxy ? (this.objToPath.get(inner) || this.objToPath.get(inner[jb.watchable.jbId])) : path
         return { val: inner && inner[p], path: [newPath,p].join('~') }
       }, {val: this.resources(), path: ''}).path
     }
@@ -350,7 +355,7 @@ jb.initLibs('db', {
       return this.valOfPath(path)
     }
     watchable(val) {
-      return this.resources() === val || typeof val != 'number' && (this.objToPath.get(val) || (val && this.objToPath.get(val[jb.db.jbId])))
+      return this.resources() === val || typeof val != 'number' && (this.objToPath.get(val) || (val && this.objToPath.get(val[jb.watchable.jbId])))
     }
     isRef(ref) {
       return ref && ref.$jb_obj && this.watchable(ref.$jb_obj);
@@ -358,13 +363,13 @@ jb.initLibs('db', {
     objectProperty(obj,prop,ctx) {
       if (!obj)
         return jb.logError('watchable objectProperty: null obj',{obj,prop,ctx})
-      if (obj && obj[prop] && this.watchable(obj[prop]) && !obj[prop][jb.db.isProxy])
+      if (obj && obj[prop] && this.watchable(obj[prop]) && !obj[prop][jb.watchable.isProxy])
         return this.asRef(obj[prop])
       const ref = this.asRef(obj)
       if (ref && ref.$jb_obj) {
         const ret = {$jb_obj: ref.$jb_obj, $jb_childProp: prop, handler: this, path: function() { return this.handler.pathOfRef(this)}}
         if (this.isPrimitiveArray(ref.$jb_obj)) {
-          ret.$jb_delta_version = (this.primitiveArraysDeltas[ref.$jb_obj[jb.db.jbId]] || []).length
+          ret.$jb_delta_version = (this.primitiveArraysDeltas[ref.$jb_obj[jb.watchable.jbId]] || []).length
           ret.$jb_childProp = +prop
         }
         return ret
@@ -383,11 +388,11 @@ jb.initLibs('db', {
       return this.doOp(ref,{$set: this.createSecondaryLink(value)},srcCtx)
     }
     createSecondaryLink(val) {
-      if (val && typeof val === 'object' && !val[jb.db.isProxy]) {
+      if (val && typeof val === 'object' && !val[jb.watchable.isProxy]) {
         const ref = this.asRef(val,true);
         if (ref && ref.$jb_obj)
           return new Proxy(val, {
-            get: (o,p) => (p === jb.db.targetVal) ? o : (p === jb.db.isProxy) ? true : (p === jb.db.originalVal ? val : (jb.val(this.asRef(val)))[p]),
+            get: (o,p) => (p === jb.watchable.targetVal) ? o : (p === jb.watchable.isProxy) ? true : (p === jb.watchable.originalVal ? val : (jb.val(this.asRef(val)))[p]),
             set: (o,p,v) => o[p] = v
           })
       }
@@ -427,7 +432,7 @@ jb.initLibs('db', {
     }
     refreshPrimitiveArrayRef(ref) {
       if (!this.isPrimitiveArray(ref.$jb_obj)) return
-      const arrayId = ref.$jb_obj[jb.db.jbId]
+      const arrayId = ref.$jb_obj[jb.watchable.jbId]
       const deltas = this.primitiveArraysDeltas[arrayId] || []
       deltas.slice(ref.$jb_delta_version).forEach(group => {
           if (group.fromIndex != undefined && group.fromIndex === ref.$jb_childProp) { // move
@@ -470,7 +475,7 @@ jb.initLibs('db', {
         const obs = { key, ref,srcCtx,includeChildren, cmp, subject, ctx }
 
         this.observables.push(obs)
-        this.observables.sort((e1,e2) => jb.db.comparePaths(e1.ctx.path, e2.ctx.path))
+        this.observables.sort((e1,e2) => jb.utils.comparePaths(e1.ctx.path, e2.ctx.path))
         jb.log('register watchable observable',obs)
         return subject
     }
@@ -478,7 +483,7 @@ jb.initLibs('db', {
       return this.resources.frame || jb.frame
     }
     propagateResourceChangeToObservables() {
-      jb.subscribe(this.resourceChange, e=>{
+      jb.utils.subscribe(this.resourceChange, e=>{
         const observablesToUpdate = this.observables.slice(0) // this.observables array may change in the notification process !!
         const changed_path = this.removeLinksFromPath(this.pathOfRef(e.ref))
         if (changed_path) observablesToUpdate.forEach(obs=> {
@@ -500,7 +505,7 @@ jb.initLibs('db', {
         obsPath = obsPath && this.removeLinksFromPath(obsPath)
         if (!obsPath)
           return jb.logError('watchable observable ref path is empty',{obs,e})
-        const diff = jb.db.comparePaths(changed_path, obsPath)
+        const diff = jb.utils.comparePaths(changed_path, obsPath)
         const isChildOfChange = diff == 1
         const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
         const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
@@ -516,51 +521,35 @@ jb.initLibs('db', {
   },
 
   resourcesRef: val => typeof val == 'undefined' ? jb.db.resources : (jb.db.resources = val),
-  comparePaths(path1,path2) { // 0- equals, -1,1 means contains -2,2 lexical
-        path1 = path1 || ''
-        path2 = path2 || ''
-        let i=0;
-        while(path1[i] === path2[i] && i < path1.length) i++;
-        if (i == path1.length && i == path2.length) return 0;
-        if (i == path1.length && i < path2.length) return -1;
-        if (i == path2.length && i < path1.length) return 1;
-        return path1[i] < path2[i] ? -2 : 2
-  },
-  isWatchable: ref => jb.db.refHandler(ref) instanceof jb.db.WatchableValueByRef || ref && ref.$jb_observable,
+  isWatchable: ref => jb.db.refHandler(ref) instanceof jb.watchable.WatchableValueByRef || ref && ref.$jb_observable,
   refObservable(ref,{cmp,includeChildren,srcCtx} = {}) { // cmp._destroyed is checked before notification
       if (ref && ref.$jb_observable)
         return ref.$jb_observable(cmp)
-      if (!jb.db.isWatchable(ref)) {
+      if (!jb.watchable.isWatchable(ref)) {
         jb.logError('ref is not watchable: ', {ref, cmp,srcCtx})
         return jb.callbag.fromIter([])
       }
       return jb.db.refHandler(ref).getOrCreateObservable({ref,cmp,includeChildren,srcCtx})
   },
-  rebuildRefHandler() { // used to clean after tests
-      jb.db.mainWatchableHandler && jb.db.mainWatchableHandler.dispose()
-      jb.db.setMainWatchableHandler(new jb.db.WatchableValueByRef(jb.db.resourcesRef))
-  },
-  initializeModule() {
-    jb.db.resourcesRef.id = 'resources'
-    jb.db.setMainWatchableHandler(new jb.db.WatchableValueByRef(jb.db.resourcesRef))
-  }
+
 })
 
 jb.component('runTransaction', {
   type: 'action',
   params: [
     {id: 'actions', type: 'action[]', ignore: true, composite: true, mandatory: true},
-    {id: 'noNotifications', as: 'boolean', type: 'boolean'}
+    {id: 'noNotifications', as: 'boolean', type: 'boolean'},
+    {id: 'handler', defaultValue: () => jb.db.watchableHandlers.find(x=>x.resources.id == 'resources')}
   ],
-  impl: ctx => {
+  impl: (ctx,noNotifications,handler) => {
 		const actions = jb.asArray(ctx.profile.actions || ctx.profile['$runActions'] || []).filter(x=>x);
 		const innerPath =  (ctx.profile.actions && ctx.profile.actions.sugar) ? ''
 			: (ctx.profile['$runActions'] ? '$runActions~' : 'items~');
-    jb.db.mainWatchableHandler.startTransaction()
+    handler && handler.startTransaction()
     return actions.reduce((def,action,index) =>
 				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index )) ,Promise.resolve())
 			.catch((e) => jb.logException(e,'runTransaction',{ctx}))
-      .then(() => jb.db.mainWatchableHandler.endTransaction(ctx.params.noNotifications))
+      .then(() => handler && handler.endTransaction(noNotifications))
 	}
 })
 ;

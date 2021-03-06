@@ -7,7 +7,7 @@ self.addEventListener('message', m => { // debugge asking to be debugged. Panel 
 
         if (debuggeUri) jbm_create(['common','rx','remote'],{uri :'devtools', distPath}).then(jb => {
             self.jb = jb
-            self.spy = jb.initSpy({spyParam})
+            self.spy = jb.spy.initSpy({spyParam})
             
             jb.component('jbm.connectToPanel', {
                 type: 'jbm',

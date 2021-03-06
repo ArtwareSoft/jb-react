@@ -1,4 +1,4 @@
-jb.initLibs('ui',{
+jb.extension('ui', {
     focus(elem,logTxt,srcCtx) {
         if (!elem) debugger
         // block the preview from stealing the studio focus
@@ -59,7 +59,7 @@ jb.initLibs('ui',{
         return jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry(ctx).run(profile)),topElem)    
     },
     extendWithServiceRegistry(_ctx) {
-      const ctx = _ctx || new jb.jbCtx()
+      const ctx = _ctx || new jb.core.jbCtx()
       return ctx.setVar('$serviceRegistry',{baseCtx: ctx, parentRegistry: ctx.vars.$serviceRegistry, services: {}})
     },
     //cmpV: cmp => cmp ? `${cmp.cmpId};${cmp.ver}` : '',
@@ -94,7 +94,7 @@ jb.component('service.registerBackEndService', {
 
 
 // ****************** html utils ***************
-jb.initLibs('ui',{
+jb.extension('ui', {
     outerWidth(el) {
         const style = getComputedStyle(el)
         return el.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight)

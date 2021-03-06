@@ -38,7 +38,7 @@ jb.component('dataTest.pipelineVar', {
     calculate: pipeline(
       '%$peopleWithChildren%',
       pipeline(Var('parent'), '%children%', '%name% is child of %$parent/name%'),
-      join({})
+      join()
     ),
     expectedResult: equals(
       'Bart is child of Homer,Lisa is child of Homer,Bart is child of Marge,Lisa is child of Marge'
@@ -80,7 +80,7 @@ jb.component('dataTest.ctx.expOfRefWithBooleanType', {
 
 jb.component('dataTest.join', {
   impl: dataTest({
-    calculate: pipeline(list(1, 2), join({})),
+    calculate: pipeline(list(1, 2), join()),
     expectedResult: equals('1,2')
   })
 })
@@ -103,7 +103,7 @@ jb.component('dataTest.writeValueFalseBug', {
 
 jb.component('dataTest.spliceDelete', {
   impl: dataTest({
-    calculate: pipeline('%$personWithChildren/children/name%', join({})),
+    calculate: pipeline('%$personWithChildren/children/name%', join()),
     runBefore: splice({
       array: '%$personWithChildren/children%',
       fromIndex: 1,
@@ -115,7 +115,7 @@ jb.component('dataTest.spliceDelete', {
 
 jb.component('dataTest.splice', {
   impl: dataTest({
-    calculate: pipeline('%$personWithChildren/children/name%', join({})),
+    calculate: pipeline('%$personWithChildren/children/name%', join()),
     runBefore: splice({
       array: '%$personWithChildren/children%',
       fromIndex: 1,
@@ -181,7 +181,7 @@ jb.component('dataTest.writeValueViaArrayLink', {
 
 jb.component('dataTest.runActionOnItems', {
   impl: dataTest({
-    calculate: pipeline('%$personWithChildren/children/name%', join({})),
+    calculate: pipeline('%$personWithChildren/children/name%', join()),
     runBefore: runActionOnItems(
       '%$personWithChildren/children%',
       writeValue('%name%', 'a%name%')
@@ -192,7 +192,7 @@ jb.component('dataTest.runActionOnItems', {
 
 jb.component('dataTest.runActionOnItemsArrayRef', {
   impl: dataTest({
-    calculate: pipeline('%$personWithChildren/children/name%', join({})),
+    calculate: pipeline('%$personWithChildren/children/name%', join()),
     runBefore: runActionOnItems('%$personWithChildren/children/name%', writeValue('%%', 'a%%')),
     expectedResult: equals('aBart,aLisa,aMaggie')
   })
@@ -353,21 +353,21 @@ jb.component('dataTest.waitForPromise', {
 
 jb.component('dataTest.pipe', {
   impl: dataTest({
-    calculate: pipe(list(1, 2), join({})),
+    calculate: pipe(list(1, 2), join()),
     expectedResult: equals('1,2')
   })
 })
 
 jb.component('dataTest.pipeWithPromise', {
   impl: dataTest({
-    calculate: pipe(ctx => Promise.resolve([1,2]), join({})),
+    calculate: pipe(ctx => Promise.resolve([1,2]), join()),
     expectedResult: equals('1,2')
   })
 })
 
 jb.component('dataTest.pipeInPipe', {
   impl: dataTest({
-    calculate: pipe(Var('a', 3), pipe(delay(1), list([1, 2, '%$a%']), join({}))),
+    calculate: pipe(Var('a', 3), pipe(delay(1), list([1, 2, '%$a%']), join())),
     expectedResult: equals('1,2,3')
   })
 })
@@ -376,7 +376,7 @@ jb.component('dataTest.pipeInPipeWithDelayedVar', {
   impl: dataTest({
     calculate: pipe(
       Var('a', ctx => Promise.resolve(3)),
-      pipe(delay(1), list([1, 2, '%$a%']), join({}))
+      pipe(delay(1), list([1, 2, '%$a%']), join())
     ),
     expectedResult: equals('1,2,3')
   })
@@ -384,14 +384,14 @@ jb.component('dataTest.pipeInPipeWithDelayedVar', {
 
 jb.component('dataTest.pipeWithPromise2', {
   impl: dataTest({
-    calculate: pipe(dataTest.delayedObj(list(1, 2)), join({})),
+    calculate: pipe(dataTest.delayedObj(list(1, 2)), join()),
     expectedResult: equals('1,2')
   })
 })
 
 jb.component('dataTest.pipeWithPromise3', {
   impl: dataTest({
-    calculate: pipe(list(dataTest.delayedObj(1), 2, dataTest.delayedObj(3)), join({})),
+    calculate: pipe(list(dataTest.delayedObj(1), 2, dataTest.delayedObj(3)), join()),
     expectedResult: equals('1,2,3')
   })
 })
@@ -453,7 +453,7 @@ jb.component('dataTest.if', {
     calculate: pipeline(
       '%$personWithChildren/children%',
       If(equals('%name%', 'Bart'), 'funny', 'mamy'),
-      join({})
+      join()
     ),
     expectedResult: contains('funny,mamy,mamy')
   })
@@ -477,7 +477,7 @@ jb.component('dataTest.assign', {
       '%$personWithChildren/children%',
       assign(prop('nameTwice', '%name%-%name%')),
       '%nameTwice%',
-      join({})
+      join()
     ),
     expectedResult: contains('Bart-Bart,Lisa-Lisa,Maggie-Maggie')
   })
@@ -524,7 +524,7 @@ jb.component('dataTest.varsCases', {
   impl: dataTest({
     remark: 'should return array',
     vars: [Var('items', [{id: 1}, {id: 2}])],
-    calculate: pipeline(Var('sep', '-'), remark('hello'), '%$items/id%', '%% %$sep%', join({})),
+    calculate: pipeline(Var('sep', '-'), remark('hello'), '%$items/id%', '%% %$sep%', join()),
     expectedResult: equals('1 -,2 -')
   })
 })
@@ -635,7 +635,7 @@ jb.component('dataTest.prettyPrintPositions', {
     calculate: pipeline(
       () => jb.utils.prettyPrintWithPositions(group({title: '2.0', controls: text('my label')})),
       '%map/~controls~text~!value%',
-      join({})
+      join()
     ),
     expectedResult: equals('2,17,2,27')
   })
@@ -654,7 +654,7 @@ jb.component('dataTest.prettyPrintPositionsInnerFlat', {
       })
       ),
       '%map/~controls~0~controls~text~!value%',
-      join({})
+      join()
     ),
     expectedResult: equals('2,49,2,59')
   })

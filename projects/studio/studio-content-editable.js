@@ -12,12 +12,12 @@ jb.ui.contentEditable = {
     }
   },
   isEnabled() {
-    return new jb.jbCtx().exp('%$studio/settings/contentEditable%')
+    return new jb.core.jbCtx().exp('%$studio/settings/contentEditable%')
   },
   activate(cmp,ev) {
     if (!this.isEnabled()) return
     const ctx = jb.ui.extendWithServiceRegistry().setVars({ev})
-    const previewCtx = new jb.studio.previewjb.jbCtx()
+    const previewCtx = new jb.studio.previewjb.core.jbCtx()
     const jbUi = jb.studio.previewjb.ui
     const el = jb.ui.elemOfCmp(previewCtx,cmp.cmpId)
     ctx.run(inplaceEdit.activate(cmp.ctx.path,el))
@@ -54,7 +54,7 @@ jb.component('feature.contentEditable', {
       method('setScriptData',({},{ev,cmp},{param}) => jb.ui.contentEditable.setScriptData(ev,cmp,param,param == 'html') ),
       method('onEnter', ({},{ev,cmp},{param}) => {
         jb.ui.contentEditable.setScriptData(ev,cmp,param)
-        new jb.jbCtx().run(runActions(
+        new jb.core.jbCtx().run(runActions(
           delay(1), // can not wait for script change delay
           contentEditable.deactivate()
         ))

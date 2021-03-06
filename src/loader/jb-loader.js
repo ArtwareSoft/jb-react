@@ -3,7 +3,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/core/jb-core.js',
         'src/core/core-utils.js',
         'src/core/jb-expression.js',
-        'src/core/value-by-ref.js',
+        'src/core/db.js',
         'src/core/jb-macro.js',
         'src/misc/spy.js',
       ],
@@ -11,7 +11,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/core/jb-core.js',
         'src/core/core-utils.js',
         'src/core/jb-expression.js',
-        'src/core/value-by-ref.js',
+        'src/core/db.js',
         'src/core/jb-macro.js',
         'src/loader/comp-loader.js',
         'src/misc/spy.js',
@@ -23,7 +23,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       ],
       watchable: [
         'dist/jb-immutable.js', // the immutable-helper lib
-        'src/ui/watchable/watchable-ref.js',
+        'src/ui/watchable/watchable.js',
       ],
       'ui-common-css': [
         'css/font.css',
@@ -32,7 +32,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       'ui-common': [
         'src/misc/rx-comps.js',
         'dist/jb-immutable.js', // the immutable-helper lib
-        'src/ui/watchable/watchable-ref.js',
+        'src/ui/watchable/watchable.js',
         'src/ui/core/jb-react.js',
         'src/ui/core/vdom.js',
         'src/ui/core/ui-comp.js',
@@ -352,7 +352,7 @@ async function jb_initWidget(settings,doNotLoadProject) { // export
   jb.uri = jb.uri || fixedProjName
   await (initTheme && jb.exec(initTheme))
   await (entryProf && jb.ui.renderWidget(entryProf, el))
-  jb.initSpyByUrl && jb.initSpyByUrl()
+  jb.spy.initSpyByUrl && jb.spy.initSpyByUrl()
   jb.widgetInitialized = true
 }
  

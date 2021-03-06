@@ -10,7 +10,7 @@ jb.component('studio.componentStatistics', {
   ],
   impl: (ctx,cmpId) => {
 	  const _jb = jb.studio.previewjb;
-	  jb.subscribe(jb.studio.scriptChange, _=>_jb.statistics = null);
+	  jb.utils.subscribe(jb.studio.scriptChange, _=>_jb.statistics = null);
 	  if (!_jb.statistics) {
       const refs = {}, comps = _jb.comps;
 
@@ -33,8 +33,8 @@ jb.component('studio.componentStatistics', {
 
     return {
       id: cmpId,
-      file: (cmp[_jb.location] || [])[0],
-      lineInFile: +(cmp[_jb.location] ||[])[1],
+      file: (cmp[_jb.core.location] || [])[0],
+      lineInFile: +(cmp[_jb.core.location] ||[])[1],
       linesOfCode: (asStr.match(/\n/g)||[]).length,
       refs: refs[cmpId].refs,
       referredBy: refs[cmpId].by,
@@ -47,7 +47,7 @@ jb.component('studio.componentStatistics', {
     function calcRefs(profile) {
       if (profile == null || typeof profile != 'object') return [];
       return Object.keys(profile).reduce((res,prop)=>
-        res.concat(calcRefs(profile[prop])),[_jb.compName(profile)])
+        res.concat(calcRefs(profile[prop])),[_jb.utils.compName(profile)])
     }
 	}
 })
@@ -214,7 +214,7 @@ jb.component('studio.cmpsOfProjectByFiles', {
       filter(
           equals(
             pipeline(
-              ({data}) => jb.studio.previewjb.comps[data][jb.location][0],
+              ({data}) => jb.studio.previewjb.comps[data][jb.core.location][0],
               split({separator: '/', part: 'last'})
             ),
             '%$file%'

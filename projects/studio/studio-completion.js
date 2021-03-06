@@ -42,12 +42,12 @@ st.completion = {
         const pt = ptOfProfile(profile_str)
         if (pt) {
             if (/^\s*,/.test(token) || /,\s*$/.test(profile_str))
-                return jb.compParams(st.previewjb.comps[pt]).map(prop =>({ type: 'prop', prop, displayText: prop.id }) )
+                return jb.utils.compParams(st.previewjb.comps[pt]).map(prop =>({ type: 'prop', prop, displayText: prop.id }) )
             if ((/^'/.test(token) || /\s*'$/.test(profile_str))) {
                 const profile_str = extractProfileStr(cleaned)
                 const currentProp = (profile_str.match(/([\$0-9A-Za-z_]*)\s*:[\s|\[]*$/) || ['',''])[1]
                 const options = st.previewjb.comps[pt] ? 
-                    (jb.compParams(st.previewjb.comps[pt]).filter(p=>p.id == currentProp)[0] || {}).options || '' : ''
+                    (jb.utils.compParams(st.previewjb.comps[pt]).filter(p=>p.id == currentProp)[0] || {}).options || '' : ''
                 return options.split(',').map(opt => ({ type: 'enum', displayText: opt}))
             }
         }
@@ -59,7 +59,7 @@ st.completion = {
         const currentProp = typeof path.slice(-2)[0] == 'number' ? path.slice(-3)[0] : path.slice(-2)[0];
         //(parentProfile.match(/([\$0-9A-Za-z_]*)\s*:\s*$/) || ['',''])[1]
         const type = st.previewjb.comps[parentPt] ? 
-            (jb.compParams(st.previewjb.comps[parentPt]).filter(p=>p.id == currentProp)[0] || {}).type || 'data' 
+            (jb.utils.compParams(st.previewjb.comps[parentPt]).filter(p=>p.id == currentProp)[0] || {}).type || 'data' 
             : defaultType
         return st.PTsOfType(type).map(pt=>({ type: 'pt', displayText: pt}));
 

@@ -145,7 +145,7 @@ st.jbEditorTree = class {
 
 	// private
 	// sugarChildren(path,val) {
-	// 	const compName = jb.compName(val)
+	// 	const compName = jb.utils.compName(val)
 	// 	if (!compName) return
 	// 	const sugarPath = path + '~$' +compName
 	// 	const sugarVal = st.valOfPath(sugarPath)
@@ -171,12 +171,12 @@ st.jbEditorTree = class {
 	}
 
 	specialCases(path,val) {
-		if (jb.compName(val) == 'object')
+		if (jb.utils.compName(val) == 'object')
 			return Object.getOwnPropertyNames(val)
 				.filter(p=>p!='$')
 				.filter(p=>p.indexOf('$jb_') != 0)
 				.map(p=>path+'~'+p);
-		if (jb.compName(val) == 'if')
+		if (jb.utils.compName(val) == 'if')
 			return ['then','else']
 		return []
 	}
@@ -281,7 +281,7 @@ Object.assign(st,{
 	},
 	previewCompsAsEntries: () => jb.entries(st.previewjb.comps).filter(e=>e[1]),
 	projectFiles: () => jb.exec('%$studio/projectSettings/jsFiles%'),
-	projectCompsAsEntries: () => st.previewCompsAsEntries().filter(e=> e[1][jb.loadingPhase] == 'appFiles'),
+	projectCompsAsEntries: () => st.previewCompsAsEntries().filter(e=> e[1][jb.core.loadingPhase] == 'appFiles'),
 	// queries
 	isArrayType: path => ((st.paramDef(path)||{}).type||'').indexOf('[]') != -1,
 	isOfType: (path,type) => {
@@ -314,8 +314,8 @@ Object.assign(st,{
 		const _jb = st.previewjb;
 		const comp = name && _jb.comps[name];
 		if (comp) {
-			while (_jb.comps[name] && !(_jb.comps[name].type || _jb.comps[name].typePattern) && _jb.compName(_jb.comps[name].impl))
-				name = _jb.compName(_jb.comps[name].impl);
+			while (_jb.comps[name] && !(_jb.comps[name].type || _jb.comps[name].typePattern) && _jb.utils.compName(_jb.comps[name].impl))
+				name = _jb.utils.compName(_jb.comps[name].impl);
 			return _jb.comps[name] && st.isCompObjOfType(_jb.comps[name],type);
 		}
 	},
@@ -376,9 +376,9 @@ Object.assign(st,{
 	// },
 
 	closestTestCtx: pathToTrace => {
-		const _ctx = new st.previewjb.jbCtx()
+		const _ctx = new st.previewjb.core.jbCtx()
 		const compId = pathToTrace.split('~')[0]
-		const statistics = new jb.jbCtx().run(studio.componentStatistics(ctx=>compId))
+		const statistics = new jb.core.jbCtx().run(studio.componentStatistics(ctx=>compId))
 		const test = jb.path(jb.comps[compId],'impl.expectedResult') ? compId : statistics.referredBy && statistics.referredBy.filter(refferer=>st.isOfType(refferer,'test'))[0]
 		if (test)
 			return _ctx.ctx({ profile: {$: test}, comp: test, path: ''})

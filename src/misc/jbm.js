@@ -24,19 +24,10 @@ The routing path is reversed to create response message
 
 var { rx,source,jbm,remote,net,pipe, aggregate } = jb.ns('rx,source,jbm,remote,net')
 
-jb.execStripedCtx = stripedCtx => jb.remoteCtx.deStrip(stripedCtx)()
-
-Object.assign(jb, {
-    uri: jb.uri || jb.frame.jbUri,
-    ports: {},
-    remoteExec: stripedCtx => Promise.resolve(jb.execStripedCtx(stripedCtx)),
-    createCallbagSource: jb.execStripedCtx, 
-    createCalllbagOperator: jb.execStripedCtx,
-})
-
-jb.initLibs('cbHandler', {
-    counter: 0,
-    map: {},
+jb.extension('cbHandler', {
+    initExtension() {
+        Object.assign(this, { counter: 0, map: {}, })
+    },
     newId: () => jb.uri + ':' + (jb.cbHandler.counter++),
     get: id => jb.cbHandler.map[id],
     getAsPromise(id,t) { 
@@ -59,7 +50,7 @@ jb.initLibs('cbHandler', {
     }
 }),
 
-jb.initLibs('net', {
+jb.extension('net', {
     reverseRoutingProps(routingMsg) {
         if (!routingMsg) return
         const rPath = routingMsg.routingPath && {
@@ -95,9 +86,18 @@ jb.initLibs('net', {
     }
 })
 
-jb.initLibs('jbm', {
-    childJbms: {},
-    networkPeers: {},
+jb.extension('jbm', {
+    initExtension() {
+        Object.assign(this, { childJbms: {}, networkPeers: {} })
+        Object.assign(jb, {
+            uri: jb.uri || jb.frame.jbUri,
+            ports: {},
+            remoteExec: sctx => Promise.resolve(jb.jbm.execStripedCtx(sctx)),
+            createCallbagSource: sctx => jb.jbm.execStripedCtx(sctx), 
+            createCalllbagOperator: sctx => jb.jbm.execStripedCtx(sctx),
+        })        
+    },
+    execStripedCtx: sctx => jb.remoteCtx.deStrip(sctx)(),
     portFromFrame(frame,to,options) {
         if (jb.ports[to]) return jb.ports[to]
         const from = jb.uri
@@ -215,7 +215,7 @@ jb.initLibs('jbm', {
     initDevToolsDebugge() {
         if (self.jbRunningTests && !self.jbSingleTest) return
         if (!jb.jbm.networkPeers['devtools']) {
-            jb.jbm.connectToPanel = panelUri => new jb.jbCtx().setVar('$disableLog',true).run(remote.action({
+            jb.jbm.connectToPanel = panelUri => new jb.core.jbCtx().setVar('$disableLog',true).run(remote.action({
                     action: {$: 'jbm.connectToPanel', panelUri}, 
                     jbm: jbm.byUri('devtools'),
                     oneway: true
@@ -252,12 +252,46 @@ jb.component('jbm.worker', {
 ${jb_loader_code};
 jb = ${JSON.stringify(jbObj)}
 jb_loadProject(${JSON.stringify(settings)}).then(() => {
-    self.spy = jb.initSpy({spyParam: '${spyParam}'})
+    self.spy = jb.spy.initSpy({spyParam: '${spyParam}'})
     self.${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
     console.log('worker loaded')
     postMessage('loaded')
     self.loaded = true
 })`
+        const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
+        // wait for worker jbm to load
+        const promise = new Promise(resolve => jb.exec(rx.pipe(
+            source.event('message', () =>worker),
+            rx.take(1),
+            sink.action(() => resolve(childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))))
+        )))
+        promise.uri = workerUri
+        return promise
+    }
+})
+
+jb.component('jbm.workerWithLoader', {
+    type: 'jbm',
+    params: [
+        {id: 'id', as: 'string', defaultValue: 'w1' },
+        {id: 'compLoader', defaultValue: () => jb.loader},
+    ],    
+    impl: ({},name,loader) => {
+        const childsOrNet = jb.jbm.childJbms
+        if (childsOrNet[name]) return childsOrNet[name]
+        const workerUri = `${jb.uri}•${name}`
+        const parentOrNet = 'jb.parent'
+        const startupCode = loader.code(loader.treeShake(loader.core,{}))
+        const workerCode = `
+const jb = {}
+${startupCode};
+if (jb.jbm && jb.jbm.extendPortToJbmProxy)
+    self.${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
+
+console.log('worker loaded')
+postMessage('loaded')
+self.loaded = true
+`
         const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
         // wait for worker jbm to load
         const promise = new Promise(resolve => jb.exec(rx.pipe(
@@ -296,7 +330,7 @@ jb.component('jbm.child', {
                     onMessage: { addListener: handler => jb.ports[child.uri].handler = handler }, // only one handler
                 }
                 jb.jbm.extendPortToJbmProxy(jb.ports[child.uri])
-                jb.spy && child.initSpy({spyParam: jb.spy.spyParam})
+                jb.spy && child.spy.initSpy({spyParam: jb.spy.spyParam})
                 return child
             })
         res.uri = childUri
@@ -353,7 +387,6 @@ jb.component('jbm.byUri', {
         function calcNeighbourJbm(uri) {
             return [jb.parent, ...Object.values(jb.jbm.childJbms), ...Object.values(jb.jbm.networkPeers)].filter(x=>x).find(x=>x.uri == uri)
         }
-
     }
 })
 

@@ -37,7 +37,7 @@ jb.component('studio.autoSaveService',{
         try {
           const compId = e.path[0]
           const comp = st.previewjb.comps[compId]
-          const fn = st.host.locationToPath(comp[jb.location][0])
+          const fn = st.host.locationToPath(comp[jb.core.location][0])
           const fileContent = await st.host.getFile(fn)
           if (fileContent == null) return
           const edits = [deltaFileContent(fileContent, {compId,comp})].filter(x=>x)
@@ -66,7 +66,7 @@ jb.component('studio.saveProjectSettings', {
 
 function fileNameOfComp(compE) {
   try {
-    return (compE[1] || st.compsHistory[0].before[compE[0]])[jb.location][0].replace(/!st!/,'')
+    return (compE[1] || st.compsHistory[0].before[compE[0]])[jb.core.location][0].replace(/!st!/,'')
   } catch (e) {
     return ''
   }
@@ -107,9 +107,9 @@ function deltaFileContent(fileContent, {compId,comp}) {
   const lines = fileContent.split('\n').map(x=>x.replace(/[\s]*$/,''))
   const lineOfComp = lines.findIndex(line=> line.indexOf(`jb.component('${compId}'`) == 0)
   const newCompLines = comp ? jb.utils.prettyPrintComp(compId,comp,{comps: st.previewjb.comps}).split('\n') : []
-  const justCreatedComp = lineOfComp == -1 && comp[jb.location][1] == 'new'
+  const justCreatedComp = lineOfComp == -1 && comp[jb.core.location][1] == 'new'
   if (justCreatedComp) {
-    comp[jb.location][1] == lines.length
+    comp[jb.core.location][1] == lines.length
     return { range: {start: { line: lines.length, character: 0}, end: {line: lines.length, character: 0} } , newText: '\n\n' + newCompLines.join('\n') }
   }
   const linesFromComp = lines.slice(lineOfComp)

@@ -1,7 +1,51 @@
 var { field, validation  } = jb.ns('field,validation');
 
-(function() {
-jb.ui.field_id_counter = jb.ui.field_id_counter || 0;
+jb.extension('ui', 'field', {
+  initExtension: () => ({field_id_counter : 0 }),
+  writeFieldData(ctx,cmp,value,oneWay) {
+    if (jb.val(ctx.vars.$model.databind(cmp.ctx)) == value) return
+    jb.db.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx)
+    jb.ui.checkValidationError(cmp,value,ctx)
+    cmp.hasBEMethod('onValueChange') && cmp.runBEMethod('onValueChange',value,ctx.vars)
+    !oneWay && cmp.refresh({},{srcCtx: ctx.cmpCtx})
+  },
+  checkValidationError(cmp,val,ctx) {
+    const err = validationError()
+    if (cmp.state.error != err) {
+      jb.log('field validation set error state',{cmp,err})
+      cmp.refresh({valid: !err, error:err}, {srcCtx: ctx.cmpCtx})
+    }
+  
+    function validationError() {
+      if (!cmp.validations) return
+      const ctx = cmp.ctx.setData(val)
+      const err = (cmp.validations || [])
+        .filter(validator=>!validator.validCondition(ctx))
+        .map(validator=>validator.errorMessage(ctx))[0]
+      if (ctx.exp('%$formContainer%'))
+        ctx.run(writeValue('%$formContainer/err%',err))
+      return err
+    }
+  },
+  checkFormValidation(elem) {
+    jb.ui.find(elem,'[jb-ctx]').map(el=>el._component).filter(cmp => cmp && cmp.validations).forEach(cmp => 
+      jb.ui.checkValidationError(cmp,jb.val(cmp.ctx.vars.$model.databind(cmp.ctx)), cmp.ctx))
+  },
+  fieldTitle(cmp,fieldOrCtrl,h) {
+    let field = fieldOrCtrl.field && fieldOrCtrl.field() || fieldOrCtrl
+    field = typeof field === 'function' ? field() : field
+    if (field.titleCtrl) {
+      const ctx = cmp.ctx.setData(field).setVars({input: cmp.ctx.data})
+      const jbComp = field.titleCtrl(ctx);
+      return jbComp && h(jbComp,{'jb-ctx': jb.ui.preserveCtx(ctx) })
+    }
+    return field.title(cmp.ctx)
+  },
+  preserveFieldCtxWithItem(field,item) {
+    const ctx = jb.ctxDictionary[field.ctxId]
+    return ctx && jb.ui.preserveCtx(ctx.setData(item))
+  }
+})
 
 jb.component('field.databind', {
   type: 'feature',
@@ -20,28 +64,28 @@ jb.component('field.databind', {
     calcProp({id: 'fieldId', value: () => jb.ui.field_id_counter++}),
     method(
       'writeFieldValue',
-      (ctx,{cmp},{oneWay}) => writeFieldData(ctx,cmp,ctx.data,oneWay)
+      (ctx,{cmp},{oneWay}) => jb.ui.writeFieldData(ctx,cmp,ctx.data,oneWay)
     ),
     method(
         'onblurHandler',
-        (ctx,{cmp, ev},{oneWay}) => writeFieldData(ctx,cmp,ev.value,oneWay)
+        (ctx,{cmp, ev},{oneWay}) => jb.ui.writeFieldData(ctx,cmp,ev.value,oneWay)
       ),
     method(
         'onchangeHandler',
-        (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && writeFieldData(ctx,cmp,ev.value,oneWay)
+        (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && jb.ui.writeFieldData(ctx,cmp,ev.value,oneWay)
       ),
     method(
         'onkeyupHandler',
-        (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && writeFieldData(ctx,cmp,ev.value,oneWay)
+        (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && jb.ui.writeFieldData(ctx,cmp,ev.value,oneWay)
       ),
     method(
         'onkeydownHandler',
-        (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && writeFieldData(ctx,cmp,ev.value,oneWay)
+        (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && jb.ui.writeFieldData(ctx,cmp,ev.value,oneWay)
       ),
     // frontEndProp(
     //     'jbModel',
     //     (ctx,{cmp}) => value =>
-    //       value == null ? ctx.exp('%$$model/databind%','number') : writeFieldData(ctx,cmp,value,true)
+    //       value == null ? ctx.exp('%$$model/databind%','number') : jb.ui.writeFieldData(ctx,cmp,value,true)
     //   ),
     
     feature.byCondition('%$$dialog%', feature.initValue('%$$dialog/hasFields%',true))
@@ -49,53 +93,6 @@ jb.component('field.databind', {
   )
 })
 
-function writeFieldData(ctx,cmp,value,oneWay) {
-  if (jb.val(ctx.vars.$model.databind(cmp.ctx)) == value) return
-  jb.db.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx)
-  jb.ui.checkValidationError(cmp,value,ctx)
-  cmp.hasBEMethod('onValueChange') && cmp.runBEMethod('onValueChange',value,ctx.vars)
-  !oneWay && cmp.refresh({},{srcCtx: ctx.cmpCtx})
-}
-
-jb.ui.checkValidationError = (cmp,val,ctx) => {
-  const err = validationError()
-  if (cmp.state.error != err) {
-    jb.log('field validation set error state',{cmp,err})
-    cmp.refresh({valid: !err, error:err}, {srcCtx: ctx.cmpCtx})
-  }
-
-  function validationError() {
-    if (!cmp.validations) return
-    const ctx = cmp.ctx.setData(val)
-    const err = (cmp.validations || [])
-      .filter(validator=>!validator.validCondition(ctx))
-      .map(validator=>validator.errorMessage(ctx))[0]
-    if (ctx.exp('%$formContainer%'))
-      ctx.run(writeValue('%$formContainer/err%',err))
-    return err
-  }
-}
-
-jb.ui.checkFormValidation = function(elem) {
-  jb.ui.find(elem,'[jb-ctx]').map(el=>el._component).filter(cmp => cmp && cmp.validations).forEach(cmp => 
-    jb.ui.checkValidationError(cmp,jb.val(cmp.ctx.vars.$model.databind(cmp.ctx)), cmp.ctx))
-}
-
-jb.ui.fieldTitle = function(cmp,fieldOrCtrl,h) {
-  let field = fieldOrCtrl.field && fieldOrCtrl.field() || fieldOrCtrl
-  field = typeof field === 'function' ? field() : field
-	if (field.titleCtrl) {
-		const ctx = cmp.ctx.setData(field).setVars({input: cmp.ctx.data})
-		const jbComp = field.titleCtrl(ctx);
-		return jbComp && h(jbComp,{'jb-ctx': jb.ui.preserveCtx(ctx) })
-	}
-	return field.title(cmp.ctx)
-}
-
-jb.ui.preserveFieldCtxWithItem = (field,item) => {
-	const ctx = jb.ctxDictionary[field.ctxId]
-	return ctx && jb.ui.preserveCtx(ctx.setData(item))
-}
 jb.component('field.onChange', {
   type: 'feature',
   category: 'field:100',
@@ -130,7 +127,7 @@ jb.component('field.databindText', {
 //   frontEnd.init((ctx,{cmp},{key,action}) => {
 //         const elem = cmp.base.querySelector('input') || cmp.base
 //         if (elem.tabIndex === undefined) elem.tabIndex = -1
-//         jb.subscribe(jb.ui.fromEvent(cmp,'keydown',elem),event=>{
+//         jb.utils.subscribe(jb.ui.fromEvent(cmp,'keydown',elem),event=>{
 //               const keyStr = key.split('+').slice(1).join('+');
 //               const keyCode = keyStr.charCodeAt(0);
 //               if (key == 'Delete') keyCode = 46;
@@ -192,6 +189,3 @@ jb.component('field.columnWidth', {
       enrichField: field => field.width = width
   })
 })
-
-
-})()

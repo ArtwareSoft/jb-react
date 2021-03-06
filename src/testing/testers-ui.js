@@ -8,7 +8,7 @@ jb.component('test.showTestInStudio', {
 	impl: (ctx,testId) => {
 		  const profile = jb.path(jb.comps[testId],'impl')
 		  const ctxWithVars = ctx.setVars(jb.objFromEntries((profile.vars||[]).map(v=>[v.name,ctx.run(v.val)])))
-		  const ctxToRun = jb.ui.extendWithServiceRegistry(new jb.jbCtx(ctxWithVars,{ profile, forcePath: testId+ '~impl', path: '' } ))
+		  const ctxToRun = jb.ui.extendWithServiceRegistry(new jb.core.jbCtx(ctxWithVars,{ profile, forcePath: testId+ '~impl', path: '' } ))
 		  if (profile.$ == 'dataTest')
 			  return ctxToRun.run(test.dataTestView(testId, () => jb.test.dataTestResult(ctxToRun)))
 		  if (profile.$ == 'uiTest')

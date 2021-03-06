@@ -310,7 +310,7 @@ jb.component('variable', {
       const fullName = name + ':' + cmp.ctx.id;
       if (fullName == 'items') debugger
       jb.log('create watchable var',{cmp,ctx,fullName})
-      const refToResource = jb.db.mainWatchableHandler.refOfPath([fullName]);
+      const refToResource = jb.db.useResourcesHandler(h=>h.refOfPath([fullName]))
       jb.db.writeValue(refToResource,value(ctx),ctx)
       return ctx.setVar(name, refToResource);
     }

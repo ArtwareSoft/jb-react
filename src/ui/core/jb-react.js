@@ -1,4 +1,51 @@
-jb.initLibs('ui', {
+jb.extension('ui', 'react', {
+    initExtension() {
+        Object.assign(this,{
+            BECmpsDestroyNotification: jb.callbag.subject(),
+            refreshNotification: jb.callbag.subject(),
+            renderingUpdates: jb.callbag.subject(),
+            followUps: {},
+        })
+
+        // subscribe for watchable change
+        jb.ui.subscribeToRefChange(jb.db.watchableHandlers.find(x=>x.resources.id == 'resources'))
+
+        // subscribe for widget renderingUpdates
+        jb.callbag.subscribe(e=> {
+            if (!e.widgetId && e.cmpId && typeof document != 'undefined') {
+                const elem = document.querySelector(`[cmp-id="${e.cmpId}"]`)
+                if (elem) {
+                    jb.ui.applyDeltaToDom(elem, e.delta)
+                    jb.ui.refreshFrontEnd(elem)
+                }
+            }
+        })(jb.ui.renderingUpdates)
+
+        // subscribe for destroy notification
+        jb.callbag.subscribe(e=> {
+            const {widgetId,destroyLocally,cmps} = e
+            
+            cmps.forEach(_cmp => {
+                const fus = jb.ui.followUps[_cmp.cmpId]
+                if (!fus) return
+                const index = fus.findIndex(({cmp}) => _cmp.cmpId == cmp.cmpId && _cmp.ver == cmp.ver)
+                if (index != -1) {
+                    fus[index].pipe.dispose()
+                    fus.splice(index,1)
+                }
+                if (!fus.length)
+                    delete jb.ui.followUps[_cmp.cmpId]
+            })
+
+            if (widgetId && !destroyLocally)
+                jb.ui.widgetUserRequests.next({$:'destroy', ...e })
+            else 
+                cmps.forEach(cmp=> (cmp.destroyCtxs || []).forEach(ctxIdToRun => {
+                    jb.log('backend method destroy uiComp',{cmp, el: cmp.el})
+                    jb.ui.runCtxAction(jb.ctxDictionary[ctxIdToRun])
+                } ))
+        })(jb.ui.BECmpsDestroyNotification)
+    },
     h(cmpOrTag,attributes,children) {
         if (cmpOrTag instanceof jb.ui.VNode) return cmpOrTag // Vdom
         if (cmpOrTag && cmpOrTag.renderVdom)
@@ -77,8 +124,8 @@ jb.initLibs('ui', {
                         return true
             }
             function compareCtxAtt(att,atts1,atts2) {
-                const val1 = atts1.ctxId && jb.path(jb.ui.ctxDictionary[atts1.ctxId],att)
-                const val2 = atts2.ctxId && jb.path(jb.ui.ctxDictionary[atts2.ctxId],att)
+                const val1 = atts1.ctxId && jb.path(jb.ctxDictionary[atts1.ctxId],att)
+                const val2 = atts2.ctxId && jb.path(jb.ctxDictionary[atts2.ctxId],att)
                 return val1 && val2 && val1 == val2
             }            
         }
@@ -420,12 +467,7 @@ jb.initLibs('ui', {
             jb.ui.runCtxActionAndUdateCmpState(ctx,data,vars)
         }
     },
-    resourceChange: () => jb.db.mainWatchableHandler.resourceChange,
-
-    BECmpsDestroyNotification: jb.callbag.subject(),
-    refreshNotification: jb.callbag.subject(),
-    renderingUpdates: jb.callbag.subject(),
-    followUps: {},
+    resourceChange: () => jb.db.useResourcesHandler(h=>h.resourceChange),
     ctrl(origCtx,options) {
         const styleByControl = jb.path(origCtx,'cmpCtx.profile.$') == 'styleByControl'
         const $state = (origCtx.vars.$refreshElemCall || styleByControl) ? origCtx.vars.$state : {}
@@ -556,8 +598,10 @@ jb.initLibs('ui', {
         jb.log('refresh elem start',{cmp,ctx,elem, state, options})
 
         if (jb.path(options,'cssOnly')) {
-            const existingClass = (elem.className.match(/(w|jb-)[0-9]?-[0-9]+/)||[''])[0]
-            const cssStyleElem = Array.from(document.querySelectorAll('style')).map(el=>({el,txt: el.innerText})).filter(x=>x.txt.indexOf(existingClass + ' ') != -1)[0].el
+            const existingClass = (elem.className.match(/[a-zA-Z0-9_-]+⦾[0-9]*/)||[''])[0]
+            if (!existingClass)
+                jb.logError('refresh css only - can not find existing class',{elem,ctx})
+            const cssStyleElem = Array.from(document.querySelectorAll('style')).map(el=>({el,txt: el.innerText})).filter(x=>x.txt.indexOf(existingClass) != -1)[0].el
             jb.log('refresh element css only',{cmp, lines: cmp.cssLines,ctx,elem, state, options})
             jb.ui.hashCss(cmp.calcCssLines(),cmp.ctx,{existingClass, cssStyleElem})
         } else {
@@ -569,7 +613,7 @@ jb.initLibs('ui', {
         //jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
     },
 
-    subscribeToRefChange: watchHandler => jb.subscribe(watchHandler.resourceChange, e=> {
+    subscribeToRefChange: watchHandler => jb.utils.subscribe(watchHandler.resourceChange, e=> {
         const changed_path = watchHandler.removeLinksFromPath(e.insertedPath || watchHandler.pathOfRef(e.ref))
         if (!changed_path) debugger
         //observe="resources://2~name;person~name
@@ -594,7 +638,7 @@ jb.initLibs('ui', {
                 strongRefresh = strongRefresh || obs.strongRefresh
                 delay = delay || obs.delay
                 cssOnly = cssOnly && obs.cssOnly
-                const diff = jb.db.comparePaths(changed_path, obsPath)
+                const diff = jb.utils.comparePaths(changed_path, obsPath)
                 const isChildOfChange = diff == 1
                 const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
                 const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
@@ -622,45 +666,5 @@ jb.initLibs('ui', {
             return parts[0] == watchHandler.resources.id && 
                 { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh, cssOnly, allowSelfRefresh, delay }
         }
-    }),
-    initializeModule() {
-        // subscribe for watchable change
-        jb.ui.subscribeToRefChange(jb.db.mainWatchableHandler)
-
-        // subscribe for widget renderingUpdates
-        jb.callbag.subscribe(e=> {
-            if (!e.widgetId && e.cmpId && typeof document != 'undefined') {
-                const elem = document.querySelector(`[cmp-id="${e.cmpId}"]`)
-                if (elem) {
-                    jb.ui.applyDeltaToDom(elem, e.delta)
-                    jb.ui.refreshFrontEnd(elem)
-                }
-            }
-        })(jb.ui.renderingUpdates)
-
-        // subscribe for destroy notification
-        jb.callbag.subscribe(e=> {
-            const {widgetId,destroyLocally,cmps} = e
-            
-            cmps.forEach(_cmp => {
-                const fus = jb.ui.followUps[_cmp.cmpId]
-                if (!fus) return
-                const index = fus.findIndex(({cmp}) => _cmp.cmpId == cmp.cmpId && _cmp.ver == cmp.ver)
-                if (index != -1) {
-                    fus[index].pipe.dispose()
-                    fus.splice(index,1)
-                }
-                if (!fus.length)
-                    delete jb.ui.followUps[_cmp.cmpId]
-            })
-
-            if (widgetId && !destroyLocally)
-                jb.ui.widgetUserRequests.next({$:'destroy', ...e })
-            else 
-                cmps.forEach(cmp=> (cmp.destroyCtxs || []).forEach(ctxIdToRun => {
-                    jb.log('backend method destroy uiComp',{cmp, el: cmp.el})
-                    jb.ui.runCtxAction(jb.ctxDictionary[ctxIdToRun])
-                } ))
-        })(jb.ui.BECmpsDestroyNotification)
-    }
+    })
 })

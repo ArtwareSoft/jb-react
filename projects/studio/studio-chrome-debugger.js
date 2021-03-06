@@ -27,7 +27,7 @@ jb.chromeDebugger = {
     },
     async initPanel(panelId, panelFrame) {
         const spyParam = await this.evalAsPromise(`self.jb && jb.path(jb,'spy.spyParam') || ''`)
-        self.spy = jb.initSpy({spyParam})
+        self.spy = jb.spy.initSpy({spyParam})
         this.initPanelPortListenser(panelId, panelFrame)
         jb.log(`chromeDebugger invoking initDevTools on debugee`,{panelId})
         await this.evalAsPromise(`self.jb && jb.jbm && jb.jbm.initDevToolsDebugge()`)

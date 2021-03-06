@@ -55,8 +55,10 @@ Object.assign(st, {
 
   initLocalCompsRefHandler(compsRef,{ compIdAsReferred, initUIObserver } = {}) {
 	if (st.compsRefHandler) return
-    st.compsRefHandler = jb.db.initExtraWatchableHandler(compsRef, {initUIObserver})
-    compIdAsReferred && st.compsRefHandler.resourceReferred(compIdAsReferred)
+    st.compsRefHandler = new jb.watchable.WatchableValueByRef(compsRef)
+	jb.db.addWatchableHandler(st.compsRefHandler)
+	initUIObserver && jb.ui.subscribeToRefChange(compsRef)
+    compIdAsReferred && st.compsRefHandler.makeWatchable(compIdAsReferred)
 	jb.callbag.subscribe(e=>st.scriptChangeHandler(e))(st.compsRefHandler.resourceChange)
   },
   
@@ -64,8 +66,11 @@ Object.assign(st, {
   	// CompsRefHandler may need to be replaced when reloading the preview iframe
  	const {pipe,subscribe,takeUntil} = jb.callbag
 	const oldHandler = st.compsRefHandler
+	jb.db.removeWatchableHandler(oldHandler)	
 	oldHandler && oldHandler.stopListening.next(1)
-	st.compsRefHandler = jb.db.initExtraWatchableHandler(compsRef, {oldHandler, initUIObserver: true})
+	st.compsRefHandler = new jb.watchable.WatchableValueByRef(compsRef)
+	jb.db.addWatchableHandler(st.compsRefHandler)
+	jb.ui.subscribeToRefChange(compsRef)
 	st.compsRefHandler.allowedTypes = st.compsRefHandler.allowedTypes.concat(allowedTypes)
 	st.compsRefHandler.stopListening = jb.callbag.subject()
 
@@ -87,7 +92,7 @@ Object.assign(st, {
   //refreshRef: ref => st.compsRefHandler.refresh(ref),
   refOfPath: (path,silent) => {
 		const _path = path.split('~')
-		st.compsRefHandler.resourceReferred && st.compsRefHandler.resourceReferred(_path[0])
+		st.compsRefHandler.makeWatchable && st.compsRefHandler.makeWatchable(_path[0])
 		const ref = st.compsRefHandler.refOfPath(_path,silent)
 		if (!ref) return
 		ref.jbToUse = st.previewjb
@@ -101,7 +106,7 @@ Object.assign(st, {
       return 'jbComponent'
     if (path.match(/~\$vars$/)) return
     const prof = st.valOfPath(path,silent)
-  	return jb.compName(prof) || jb.compName(prof,st.paramDef(path))
+  	return jb.utils.compName(prof) || jb.utils.compName(prof,st.paramDef(path))
   },
   paramDef: path => {
 	if (!st.parentPath(path)) // no param def for root
@@ -109,20 +114,20 @@ Object.assign(st, {
 	if (!isNaN(Number(path.split('~').pop()))) // array elements
 		path = st.parentPath(path);
 	// const parent_prof = st.valOfPath(st.parentPath(path),true);
-	// const comp = parent_prof && st.getComp(jb.compName(parent_prof));
+	// const comp = parent_prof && st.getComp(jb.utils.compName(parent_prof));
 	const comp = st.compOfPath(st.parentPath(path),true);
-	const params = jb.compParams(comp);
+	const params = jb.utils.compParams(comp);
 	const paramName = path.split('~').pop();
 	if (paramName.indexOf('$') == 0) // sugar
 		return params[0];
 	return params.filter(p=>p.id==paramName)[0];
   },
   compOfPath: (path,silent) => st.getComp(st.compNameOfPath(path,silent)),
-  paramsOfPath: (path,silent) => jb.compParams(st.compOfPath(path,silent)),
+  paramsOfPath: (path,silent) => jb.utils.compParams(st.compOfPath(path,silent)),
   writeValueOfPath: (path,value,ctx) => st.writeValue(st.refOfPath(path),value,ctx),
   getComp: id => st.previewjb.comps[id],
   compAsStr: id => jb.utils.prettyPrintComp(id,st.getComp(id),{comps: jb.studio.previewjb.comps}),
-  isStudioCmp: id => jb.path(jb.comps,[id,jb.project]) == 'studio'
+  isStudioCmp: id => jb.path(jb.comps,[id,jb.core.project]) == 'studio'
 })
 
 // write operations with logic
@@ -143,7 +148,7 @@ Object.assign(st, {
 	wrapWithGroup: (path,srcCtx) => st.writeValueOfPath(path,{ $: 'group', controls: [ st.valOfPath(path) ] },srcCtx),
 	wrap(path,compName,srcCtx) {
 		const comp = st.getComp(compName)
-		const compositeParam = jb.compParams(comp).filter(p=>p.composite)[0]
+		const compositeParam = jb.utils.compParams(comp).filter(p=>p.composite)[0]
 		if (compositeParam) {
 			const singleOrArray = compositeParam.type.indexOf('[') == -1 ? st.valOfPath(path) : [st.valOfPath(path)]
 			const result = { $: compName, [compositeParam.id]: singleOrArray}
@@ -190,7 +195,7 @@ Object.assign(st, {
 	},
 	newProfile(comp,compName) {
 		const result = { $: compName }
-		jb.compParams(comp).forEach(p=>{
+		jb.utils.compParams(comp).forEach(p=>{
 			if (p.composite)
 				result[p.id] = []
 			if (p.templateValue)
@@ -201,7 +206,7 @@ Object.assign(st, {
 	setComp(path,compName,srcCtx) {
 		const comp = compName && st.getComp(compName)
 		if (!compName || !comp) return
-		const params = jb.compParams(comp)
+		const params = jb.utils.compParams(comp)
 
 		const result = st.newProfile(comp,compName)
 		const currentVal = st.valOfPath(path)
@@ -420,7 +425,7 @@ jb.component('nb.notebook', {
           title: 'preview',
           controls: [
             remote.widget(group({controls: (ctx,{path}) => {
-                      const ret = jb.run( new jb.jbCtx(ctx, { profile: jb.studio.valOfPath(path), forcePath: path, path: 'control' }), {type: 'control'})
+                      const ret = jb.core.run( new jb.core.jbCtx(ctx, { profile: jb.studio.valOfPath(path), forcePath: path, path: 'control' }), {type: 'control'})
                       return ret.result(ctx)
                   }, features: followUp.flow(source.watchableData(studio.ref('%$path%'), 'yes'), sink.refreshCmp())}), jbm.notebookWorker())
           ],
@@ -469,7 +474,7 @@ jb.component('nb.control', {
     impl: studio.notebookElem(
         '%$control()%',
         // (ctx,{profileContent,path}) =>
-        //     jb.run( new jb.jbCtx(ctx, { profile: profileContent.control, forcePath: path, path: 'control' }), {type: 'control'}),
+        //     jb.core.run( new jb.core.jbCtx(ctx, { profile: profileContent.control, forcePath: path, path: 'control' }), {type: 'control'}),
 
         group({
             controls: studio.jbEditorInteliTree('%$path%~control'),

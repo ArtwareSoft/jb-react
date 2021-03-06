@@ -27,7 +27,7 @@ jb.component('nb.notebook', {
           title: 'preview',
           controls: [
             remote.widget(group({controls: (ctx,{path}) => {
-                      const ret = jb.run( new jb.jbCtx(ctx, { profile: jb.studio.valOfPath(path), forcePath: path, path: 'control' }), {type: 'control'})
+                      const ret = jb.core.run( new jb.core.jbCtx(ctx, { profile: jb.studio.valOfPath(path), forcePath: path, path: 'control' }), {type: 'control'})
                       return ret.result(ctx)
                   }, features: followUp.flow(source.watchableData(studio.ref('%$path%'), 'yes'), sink.refreshCmp())}), jbm.notebookWorker())
           ],
@@ -76,7 +76,7 @@ jb.component('nb.control', {
     impl: studio.notebookElem(
         '%$control()%',
         // (ctx,{profileContent,path}) =>
-        //     jb.run( new jb.jbCtx(ctx, { profile: profileContent.control, forcePath: path, path: 'control' }), {type: 'control'}),
+        //     jb.core.run( new jb.core.jbCtx(ctx, { profile: profileContent.control, forcePath: path, path: 'control' }), {type: 'control'}),
 
         group({
             controls: studio.jbEditorInteliTree('%$path%~control'),

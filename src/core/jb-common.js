@@ -8,7 +8,7 @@ jb.component('call', {
   impl: function(context,param) {
  	  const paramObj = context.cmpCtx && context.cmpCtx.params[param];
       if (typeof paramObj == 'function')
- 		return paramObj(new jb.jbCtx(context, {
+ 		return paramObj(new jb.core.jbCtx(context, {
  			data: context.data,
  			vars: context.vars,
  			cmpCtx: context.cmpCtx.cmpCtx,
@@ -19,7 +19,7 @@ jb.component('call', {
  	}
 })
 
-jb.initLibs('utils', {
+jb.extension('utils', {
   calcPipe(ctx,ptName,passRx) {
     let start = jb.toarray(ctx.data)
     if (start.length == 0) start = [null]
@@ -41,10 +41,10 @@ jb.initLibs('utils', {
       if (!profile || profile.$disabled) return data;
       const path = innerPath+i
       const parentParam = (i < profiles.length - 1) ? { as: 'array'} : (ctx.parentParam || {}) ;
-      if (jb.profileType(profile) == 'aggregator')
-        return jb.run( new jb.jbCtx(ctx, { data, profile, path }), parentParam);
+      if (jb.utils.profileType(profile) == 'aggregator')
+        return jb.core.run( new jb.core.jbCtx(ctx, { data, profile, path }), parentParam);
       return [].concat.apply([],data.map(item =>
-          jb.run(new jb.jbCtx(ctx,{data: item, profile, path}), parentParam))
+          jb.core.run(new jb.core.jbCtx(ctx,{data: item, profile, path}), parentParam))
         .filter(x=>x!=null)
         .map(x=> {
           const val = jb.val(x)
@@ -447,7 +447,7 @@ jb.component('obj', {
   params: [
     {id: 'props', type: 'prop[]', mandatory: true, sugar: true}
   ],
-  impl: (ctx,properties) => jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)]))
+  impl: (ctx,properties) => jb.objFromEntries(properties.map(p=>[p.title, jb.core.tojstype(p.val(ctx),p.type)]))
 })
 
 jb.component('extend', {
@@ -456,7 +456,7 @@ jb.component('extend', {
     {id: 'props', type: 'prop[]', mandatory: true, defaultValue: []}
   ],
   impl: (ctx,properties) =>
-		Object.assign({}, ctx.data, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx),p.type)])))
+		Object.assign({}, ctx.data, jb.objFromEntries(properties.map(p=>[p.title, jb.core.tojstype(p.val(ctx),p.type)])))
 })
 jb.component('assign', jb.comps.extend)
 
@@ -467,7 +467,7 @@ jb.component('extendWithIndex', {
     {id: 'props', type: 'prop[]', mandatory: true, defaultValue: []}
   ],
   impl: (ctx,properties) => jb.toarray(ctx.data).map((item,i) =>
-			Object.assign({}, item, jb.objFromEntries(properties.map(p=>[p.title, jb.tojstype(p.val(ctx.setData(item).setVars({index:i})),p.type)]))))
+			Object.assign({}, item, jb.objFromEntries(properties.map(p=>[p.title, jb.core.tojstype(p.val(ctx.setData(item).setVars({index:i})),p.type)]))))
 })
 
 jb.component('prop', {
@@ -871,8 +871,9 @@ jb.component('runActions', {
 		const actions = jb.asArray(ctx.profile.actions || ctx.profile['$runActions']).filter(x=>x)
 		const innerPath =  (ctx.profile.actions && ctx.profile.actions.sugar) ? ''
 			: (ctx.profile['$runActions'] ? '$runActions~' : 'items~');
-		return actions.reduce((def,action,index) =>
-				def.then(function runActions() {return ctx.runInner(action, { as: 'single'}, innerPath + index ) })
+    
+		return actions.reduce((pr,action,index) =>
+				pr.finally(function runActions() {return ctx.runInner(action, { as: 'single'}, innerPath + index ) })
 			,Promise.resolve())
 	}
 })
@@ -892,14 +893,11 @@ jb.component('runActionOnItems', {
   params: [
     {id: 'items', as: 'ref[]', mandatory: true},
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
-    {id: 'notifications', as: 'string', options: 'wait for all actions,no notifications', description: 'notification for watch-ref, default behavior is after each action'},
     {id: 'indexVariable', as: 'string'}
   ],
-  impl: (ctx,items,action,notifications,indexVariable) => {
-		if (notifications && jb.db.mainWatchableHandler) jb.db.mainWatchableHandler.startTransaction()
+  impl: (ctx,items,action,indexVariable) => {
 		return (jb.val(items)||[]).reduce((def,item,i) => def.then(_ => action(ctx.setVar(indexVariable,i).setData(item))) ,Promise.resolve())
 			.catch((e) => jb.logException(e,'runActionOnItems',{item, action, ctx}))
-			.then(() => notifications && jb.db.mainWatchableHandler && jb.db.mainWatchableHandler.endTransaction(notifications === 'no notifications'));
 	}
 })
 
@@ -1163,7 +1161,7 @@ jb.component('getSessionStorage', {
   params: [
     { id: 'id', as: 'string' }
   ],
-  impl: ({},id) => jb.sessionStorage(id)
+  impl: ({},id) => jb.utils.sessionStorage(id)
 })
 
 jb.component('action.setSessionStorage', {
@@ -1171,13 +1169,13 @@ jb.component('action.setSessionStorage', {
     { id: 'id', as: 'string' },
     { id: 'value', dynamic: true },
   ],
-  impl: ({},id,value) => jb.sessionStorage(id,value())
+  impl: ({},id,value) => jb.utils.sessionStorage(id,value())
 })
 
 jb.component('waitFor',{
   params: [
     {id: 'check', dynamic: true},
-    {id: 'interval', as: 'number', defaultValue: 50},
+    {id: 'interval', as: 'number', defaultValue: 14},
     {id: 'timeout', as: 'number', defaultValue: 5000},
   ],
   impl: (ctx,check,interval,timeout) => {

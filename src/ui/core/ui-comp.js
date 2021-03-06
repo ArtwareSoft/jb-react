@@ -1,12 +1,15 @@
-jb.initLibs('ui', {
-    lifeCycle: new Set('init,extendCtx,templateModifier,followUp,destroy'.split(',')),
-    arrayProps: new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,frontEndVar,eventHandler'.split(',')),
-    singular: new Set('template,calcRenderProps,toolbar,styleParams,ctxForPick'.split(',')),
-    
-    cmpCounter: 1,
-    cssHashCounter: 0,
-    propCounter: 0,
-    cssHashMap: {},
+jb.extension('ui','comp', {
+    initExtension() {
+        Object.assign(this, {
+            lifeCycle: new Set('init,extendCtx,templateModifier,followUp,destroy'.split(',')),
+            arrayProps: new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,frontEndVar,eventHandler'.split(',')),
+            singular: new Set('template,calcRenderProps,toolbar,styleParams,ctxForPick'.split(',')),
+            cmpCounter: 1,
+            cssHashCounter: 0,
+            propCounter: 0,
+            cssHashMap: {},                
+        })
+    },
     hashCss(_cssLines,ctx,{existingClass, cssStyleElem} = {}) {
         const cssLines = (_cssLines||[]).filter(x=>x)
         const cssKey = cssLines.join('\n')
@@ -41,8 +44,7 @@ jb.initLibs('ui', {
                     .map(x=>x.indexOf('~') == -1 ? `.${classId}${x}` : x.replace('~',`.${classId}`));
                 return fixed_selector + ' { ' + selectorPlusExp.split('{')[1];
             }).join('\n');
-            const remark = `/*style: ${ctx.profile.style && ctx.profile.style.$}, path: ${ctx.path}*/\n`;
-            return remark + cssStyle
+            return `${cssStyle} /* ${ctx.path} */`
         }
     },
     JbComponent : class JbComponent {
@@ -61,7 +63,7 @@ jb.initLibs('ui', {
             jb.log('init uiComp',{cmp: this})
             const baseVars = this.ctx.vars
             this.ctx = (this.extendCtxFuncs||[])
-                .reduce((acc,extendCtx) => jb.utils.tryWrapper(() => extendCtx(acc,this),'extendCtx'), this.ctx.setVar('cmp',this))
+                .reduce((acc,extendCtx) => jb.utils.tryWrapper(() => extendCtx(acc,this),'extendCtx',this.ctx), this.ctx.setVar('cmp',this))
             this.newVars = jb.objFromEntries(jb.entries(this.ctx.vars).filter(([k,v]) => baseVars[k] != v))
             this.renderProps = {}
             this.state = this.ctx.vars.$state
@@ -72,7 +74,7 @@ jb.initLibs('ui', {
         calcRenderProps() {
             this.init()
             ;(this.initFuncs||[]).sort((p1,p2) => p1.phase - p2.phase)
-                .forEach(f => jb.utils.tryWrapper(() => f.action(this.calcCtx, this.calcCtx.vars), 'init'));
+                .forEach(f => jb.utils.tryWrapper(() => f.action(this.calcCtx, this.calcCtx.vars), 'init',this.ctx));
     
             this.toObserve = this.watchRef ? this.watchRef.map(obs=>({...obs,ref: obs.refF(this.ctx)})).filter(obs=>jb.db.isWatchable(obs.ref)) : []
             this.watchAndCalcModelProp && this.watchAndCalcModelProp.forEach(e=>{
@@ -95,7 +97,7 @@ jb.initLibs('ui', {
                 .forEach(prop=> { 
                     const val = jb.val( jb.utils.tryWrapper(() => 
                         prop.value.profile === null ? this.calcCtx.vars.$model[prop.id] : prop.value(this.calcCtx),
-                    `renderProp:${prop.id}`))
+                    `renderProp:${prop.id}`,this.ctx))
                     const value = val == null ? prop.defaultValue : val
                     Object.assign(this.renderProps, { ...(prop.id == '$props' ? value : { [prop.id]: value })})
                 })
@@ -109,9 +111,9 @@ jb.initLibs('ui', {
             this.calcRenderProps()
             if (this.ctx.probe && this.ctx.probe.outOfTime) return
             this.template = this.template || (() => '')
-            const initialVdom = jb.utils.tryWrapper(() => this.template(this,this.renderProps,jb.ui.h), 'template') || {}
+            const initialVdom = jb.utils.tryWrapper(() => this.template(this,this.renderProps,jb.ui.h), 'template',this.ctx) || {}
             const vdom = (this.templateModifierFuncs||[]).reduce((vd,modifier) =>
-                    (vd && typeof vd === 'object') ? jb.utils.tryWrapper(() => modifier(vd,this,this.renderProps,jb.ui.h) || vd, 'templateModifier') 
+                    (vd && typeof vd === 'object') ? jb.utils.tryWrapper(() => modifier(vd,this,this.renderProps,jb.ui.h) || vd, 'templateModifier',this.ctx) 
                         : vd ,initialVdom)
 
             const observe = this.toObserve.map(x=>[
@@ -157,7 +159,7 @@ jb.initLibs('ui', {
                 fu.action(this.calcCtx)
                 if (this.ver>1)
                     jb.ui.BECmpsDestroyNotification.next({ cmps: [{cmpId: this.cmpId, ver: this.ver-1}]})
-            }, 'followUp') ) ).then(()=> this.ready = true)
+            }, 'followUp',this.ctx) ) ).then(()=> this.ready = true)
             this.ready = false
             return vdom
         }
@@ -277,7 +279,7 @@ jb.initLibs('ui', {
     }
 })
 
-jb.initLibs('jstypes', {
+jb.extension('jstypes', {
     renderable(value) {
         if (value == null) return '';
         if (value instanceof jb.ui.VNode) return value;

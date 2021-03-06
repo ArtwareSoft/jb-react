@@ -16,7 +16,7 @@ jb.component('source.watchableData', {
     {id: 'ref', as: 'ref' },
     {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
   ],
-  impl: (ctx,ref,includeChildren) => jb.callbag.map(x=>ctx.dataObj(x))(jb.db.refObservable(ref,{includeChildren, srcCtx: ctx}))
+  impl: (ctx,ref,includeChildren) => jb.callbag.map(x=>ctx.dataObj(x))(jb.watchable.refObservable(ref,{includeChildren, srcCtx: ctx}))
 })
 
 jb.component('source.callbag', {
@@ -210,7 +210,7 @@ jb.component('rx.map', {
   params: [
     {id: 'func', dynamic: true, mandatory: true}
   ],
-  impl: (ctx,func) => jb.callbag.map(jb.addDebugInfo(ctx2 => ({data: func(ctx2), vars: ctx2.vars || {}}),ctx))
+  impl: (ctx,func) => jb.callbag.map(jb.utils.addDebugInfo(ctx2 => ({data: func(ctx2), vars: ctx2.vars || {}}),ctx))
 })
 
 jb.component('rx.mapPromise', {
@@ -228,7 +228,7 @@ jb.component('rx.filter', {
   params: [
     {id: 'filter', type: 'boolean', dynamic: true, mandatory: true},
   ],
-  impl: (ctx,filter) => jb.callbag.filter(jb.addDebugInfo(ctx2 => filter(ctx2),ctx))
+  impl: (ctx,filter) => jb.callbag.filter(jb.utils.addDebugInfo(ctx2 => filter(ctx2),ctx))
 })
 
 jb.component('rx.flatMap', {

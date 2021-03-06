@@ -16,7 +16,7 @@ function getSinglePathChange(diff, currentVal) {
 
 function setStrValue(value, ref, ctx) {
     const notPrimitive = value.match(/^\s*[a-zA-Z0-9\._]*\(/) || value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
-    const newVal = notPrimitive ? jb.eval(value,ref.handler.frame()) : value;
+    const newVal = notPrimitive ? jb.utils.eval(value,ref.handler.frame()) : value;
     if (newVal === Symbol.for('parseError'))
         return
     // I had a guess that ',' at the end of line means editing, YET, THIS GUESS DID NOT WORK WELL ...
@@ -33,7 +33,7 @@ function setStrValue(value, ref, ctx) {
         }
     }
     if (newVal !== undefined) { // many diffs
-        currentVal && currentVal[jb.location] && typeof newVal == 'object' && (newVal[jb.location] = currentVal[jb.location])
+        currentVal && currentVal[jb.core.location] && typeof newVal == 'object' && (newVal[jb.core.location] = currentVal[jb.core.location])
         jb.db.writeValue(ref,newVal,ctx)
     }
 }
@@ -83,7 +83,7 @@ jb.component('watchableAsText', {
         }},
 
         $jb_observable(cmp) {
-            return jb.db.refObservable(this.getRef(),{cmp, includeChildren: 'yes'})
+            return jb.watchable.refObservable(this.getRef(),{cmp, includeChildren: 'yes'})
         }
     })
 })
@@ -125,7 +125,7 @@ jb.component('textEditor.isDirty', {
 //       try {
 //         const text_ref = cmp.state.databindRef
 //         const data_ref = text_ref.getRef()
-//         jb.db.isWatchable(data_ref) && jb.db.refObservable(data_ref,{cmp,srcCtx: cmp.ctx, includeChildren: 'yes'})
+//         jb.db.isWatchable(data_ref) && jb.watchable.refObservable(data_ref,{cmp,srcCtx: cmp.ctx, includeChildren: 'yes'})
 //             .subscribe(e => {
 //             const path = e.path
 //             const editor = cmp.editor
@@ -288,7 +288,7 @@ function getSuggestions(fileContent, pos, jbToUse = jb) {
       return jb.logError('textEditor - can not find end of component', {compId, linesFromComp})
     const linesOfComp = linesFromComp.slice(0,compLastLine+1)
     const compSrc = linesOfComp.join('\n')
-    if (jb.eval(compSrc,jbToUse.frame) === Symbol.for('parseError'))
+    if (jb.utils.eval(compSrc,jbToUse.frame) === Symbol.for('parseError'))
         return []
     const {text, map} = jb.utils.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
     const locationMap = enrichMapWithOffsets(text, map)
@@ -332,7 +332,7 @@ function closestComp(fileContent, pos) {
 function formatComponent(fileContent, pos, jbToUse = jb) {
     const {compId, compSrc, componentHeaderIndex, compLastLine} = closestComp(fileContent, pos)
     if (!compId) return {}
-    if (jb.eval(compSrc,jbToUse.frame) === Symbol.for('parseError'))
+    if (jb.utils.eval(compSrc,jbToUse.frame) === Symbol.for('parseError'))
         return []
     return {text: jb.utils.prettyPrintComp(compId,jbToUse.comps[compId],{comps: jbToUse.comps}) + '\n',
         from: {line: componentHeaderIndex, col: 0}, to: {line: componentHeaderIndex+compLastLine+1, col: 0} }

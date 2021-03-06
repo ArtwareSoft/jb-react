@@ -221,7 +221,7 @@ jb.component('test.pathSrcCaller', {
 jb.component('probeTest.pathSrcThrough$call', {
   impl: dataTest({
     calculate: ctx => {
-   	 var probe1 = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: {$: 'test.pathSrcCaller'}, comp: 'test.pathSrcCaller', path: '' } ),true)
+   	 var probe1 = new jb.studio.Probe(new jb.core.jbCtx(ctx,{ profile: {$: 'test.pathSrcCaller'}, comp: 'test.pathSrcCaller', path: '' } ),true)
       .runCircuit('test.pathSrc-comp~impl~items~1');
     return probe1.then(res=>
     	''+res.result.visits)
@@ -233,7 +233,7 @@ jb.component('probeTest.pathSrcThrough$call', {
 jb.component('probeTest.pathSrcThrough$call2', {
   impl: dataTest({
     calculate: ctx => {
-   	 var probe1 = new jb.studio.Probe(new jb.jbCtx(ctx,{ profile: {$: 'test.pathSrcCaller'}, comp: 'test.pathSrcCaller', path: '' } ),true)
+   	 var probe1 = new jb.studio.Probe(new jb.core.jbCtx(ctx,{ profile: {$: 'test.pathSrcCaller'}, comp: 'test.pathSrcCaller', path: '' } ),true)
       .runCircuit('test.pathSrcCaller~impl~items~1');
     return probe1.then(res=>
     	''+res.result.visits)

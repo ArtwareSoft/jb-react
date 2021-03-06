@@ -2126,7 +2126,7 @@ jb.component('uiTest.infiniteScroll.twice', {
       uiAction.scrollBy('.jb-itemlist',80),
       uiAction.waitForSelector('ul>:nth-child(8)'),
       uiAction.scrollBy('.jb-itemlist',10),
-      uiAction.waitForSelector('ul>:nth-child(9)')
+      uiAction.waitForSelector('ul>:nth-child(10)')
     ),    
     expectedResult: contains('>10<')
   })

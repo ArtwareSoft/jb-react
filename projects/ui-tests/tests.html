@@ -42,7 +42,7 @@ jbProjectSettings = {
  <script>
 	window.jb_initWidget && jb_initWidget().then(()=>{
 //		jb.uri = 'tests'
-		jb.initSpyByUrl()
+		jb.spy.initSpyByUrl()
 		const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
 		const params = { 
 			testType: '',

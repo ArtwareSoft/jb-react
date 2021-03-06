@@ -147,7 +147,6 @@ jb.component('gridEditor.openGridLineThumb', {
         )
       ]
     }),
-    undefined,
     'gridIndex'
   )
 })

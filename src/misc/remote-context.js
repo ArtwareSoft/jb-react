@@ -18,7 +18,7 @@ jb.remoteCtx = {
         if (['string','boolean','number'].indexOf(typeof data) != -1) return data
         if (typeof data == 'function')
              return this.stripFunction(data)
-        if (data instanceof jb.jbCtx)
+        if (data instanceof jb.core.jbCtx)
              return this.stripCtx(data)
         if (Array.isArray(data))
              return data.slice(0,100).map(x=>this.stripData(x))
@@ -47,7 +47,7 @@ jb.remoteCtx = {
             return eval(data.slice(14))
         const stripedObj = typeof data == 'object' && jb.objFromEntries(jb.entries(data).map(e=>[e[0],this.deStrip(e[1])]))
         if (stripedObj && data.$ == 'runCtx')
-            return (ctx2,data2) => (new jb.jbCtx().ctx({...stripedObj})).extendVars(ctx2,data2).runItself()
+            return (ctx2,data2) => (new jb.core.jbCtx().ctx({...stripedObj})).extendVars(ctx2,data2).runItself()
         if (Array.isArray(data))
             return data.map(x=>this.deStrip(x))
         return stripedObj || data
@@ -75,13 +75,13 @@ jb.remoteCtx = {
         if (!jb.comps[compId])
             return jb.logError('no component of id ',{compId}),''
         return jb.utils.prettyPrint({compId, ...jb.comps[compId],
-            location: jb.comps[compId][jb.location], loadingPhase: jb.comps[compId][jb.loadingPhase]} )
+            location: jb.comps[compId][jb.core.location], loadingPhase: jb.comps[compId][jb.core.loadingPhase]} )
     },
     deSerializeCmp(code) {
         if (!code) return
         try {
             const cmp = eval(`(function() { ${jb.importAllMacros()}; return ${code} })()`)
-            const res = {...cmp, [jb.location]: cmp.location, [jb.loadingPhase]: cmp.loadingPhase }
+            const res = {...cmp, [jb.core.location]: cmp.location, [jb.core.loadingPhase]: cmp.loadingPhase }
             delete res.location
             delete res.loadingPhase
             jb.comps[res.compId] = res

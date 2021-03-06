@@ -140,11 +140,11 @@ jb.component('studio.styleSource', {
   impl: (ctx,path) => {
       var st = jb.studio;
       var style = st.valOfPath(path);
-      var compName = jb.compName(style);
+      var compName = jb.utils.compName(style);
       if (compName == 'custom-style')
         return { type: 'inner', path: path, style : style }
       var comp = compName && st.getComp(compName);
-      if (comp && jb.compName(comp.impl) == 'custom-style')
+      if (comp && jb.utils.compName(comp.impl) == 'custom-style')
           return { type: 'global', path: compName, style: comp.impl, innerPath: path }
   }
 })

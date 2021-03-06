@@ -18,11 +18,16 @@ jb.test = {
 		return profile && jb.ui.parentFrameJb().exec(profile)
 	},
 	cleanBeforeRun(ctx) {
-		jb.db.rebuildRefHandler && jb.db.rebuildRefHandler();
+		jb.db.watchableHandlers.forEach(h=>h.dispose())
+		jb.db.watchableHandlers = [new jb.watchable.WatchableValueByRef(jb.watchable.resourcesRef)];
 		jb.entries(JSON.parse(ctx.vars.$initial_resources || '{}')).forEach(e=>jb.db.resource(e[0],e[1]))
-		jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources(ctx.vars.$initial_comps)
-		jb.ui.subscribeToRefChange(jb.db.mainWatchableHandler)
-		if (!jb.spy) jb.initSpy({spyParam: 'none'})
+		jb.ui.subscribeToRefChange(jb.db.watchableHandlers[0])
+
+		if (jb.studio && jb.studio.compsRefHandler) {
+			jb.studio.compsRefHandler.resources(ctx.vars.$initial_comps)
+			jb.db.watchableHandlers.push(jb.studio.compsRefHandler)
+		}
+		if (!jb.spy.log) jb.spy.initSpy({spyParam: 'none'})
 		jb.spy.clear()
 	}
 }
@@ -52,7 +57,7 @@ jb.component('dataTest', {
 			  .then(value => {
 				  const runErr = jb.path(value,'0.runErr')
 				  const countersErr = countersErrors(expectedCounters,allowError)
-				  const expectedResultCtx = new jb.jbCtx(ctx,{ data: value })
+				  const expectedResultCtx = new jb.core.jbCtx(ctx,{ data: value })
 				  const expectedResultRes = expectedResult(expectedResultCtx)
 				  const success = !! (expectedResultRes && !countersErr && !runErr)
 				  jb.log('check test result',{success,expectedResultRes, runErr, countersErr, expectedResultCtx})
@@ -224,15 +229,15 @@ jb.component('uiTest.applyVdomDiff', {
 		const diff = jb.ui.vdomDiff(vdom,actualVdom)
 
 		const success = Object.keys(diff).length == 0
+		if (!show);
 		const result = { id: ctx.vars.testID, success, vdom, actualVdom, diff }
-		if (!show)
 			jb.ui.unmount(elem)
 		return result
 	  }
 })
 
 function countersErrors(expectedCounters,allowError) {
-	if (!jb.spy) return ''
+	if (!jb.spy.log) return ''
 	const exception = jb.spy.logs.find(r=>r.logNames.indexOf('exception') != -1)
 	const error = jb.spy.logs.find(r=>r.logNames.indexOf('error') != -1)
 	if (exception) return exception.err
@@ -270,14 +275,14 @@ function hide_success_lines() {
 function isCompNameOfType(name,type) {
 	const comp = name && jb.comps[name];
 	if (comp) {
-		while (jb.comps[name] && !jb.comps[name].type && jb.compName(jb.comps[name].impl))
-			name = jb.compName(jb.comps[name].impl);
+		while (jb.comps[name] && !jb.comps[name].type && jb.utils.compName(jb.comps[name].impl))
+			name = jb.utils.compName(jb.comps[name].impl);
 		return (jb.comps[name] && jb.comps[name].type || '').indexOf(type) == 0;
 	}
 }
 
 function profileSingleTest(testID) {
-	new jb.jbCtx().setVars({testID}).run({$: testID})
+	new jb.core.jbCtx().setVars({testID}).run({$: testID})
 }
 
 if (typeof startTime === 'undefined')
@@ -330,7 +335,7 @@ jb.testers = {
 					jb.log('end test',{testID,res})
 					res.show = () => {
 						if (!e[1].impl.control) return
-						const ctxToRun = jb.ui.extendWithServiceRegistry(new jb.jbCtx(tstCtx,{ profile: e[1].impl.control , forcePath: testID+ '~impl~control', path: '' } ))
+						const ctxToRun = jb.ui.extendWithServiceRegistry(new jb.core.jbCtx(tstCtx,{ profile: e[1].impl.control , forcePath: testID+ '~impl~control', path: '' } ))
 						const elem = document.createElement('div')
 						elem.className = 'show'
 						document.body.appendChild(elem)

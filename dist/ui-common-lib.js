@@ -19,7 +19,7 @@ jb.component('source.watchableData', {
     {id: 'ref', as: 'ref' },
     {id: 'includeChildren', as: 'string', options: 'yes,no,structure', defaultValue: 'no', description: 'watch childern change as well'},
   ],
-  impl: (ctx,ref,includeChildren) => jb.callbag.map(x=>ctx.dataObj(x))(jb.db.refObservable(ref,{includeChildren, srcCtx: ctx}))
+  impl: (ctx,ref,includeChildren) => jb.callbag.map(x=>ctx.dataObj(x))(jb.watchable.refObservable(ref,{includeChildren, srcCtx: ctx}))
 })
 
 jb.component('source.callbag', {
@@ -213,7 +213,7 @@ jb.component('rx.map', {
   params: [
     {id: 'func', dynamic: true, mandatory: true}
   ],
-  impl: (ctx,func) => jb.callbag.map(jb.addDebugInfo(ctx2 => ({data: func(ctx2), vars: ctx2.vars || {}}),ctx))
+  impl: (ctx,func) => jb.callbag.map(jb.utils.addDebugInfo(ctx2 => ({data: func(ctx2), vars: ctx2.vars || {}}),ctx))
 })
 
 jb.component('rx.mapPromise', {
@@ -231,7 +231,7 @@ jb.component('rx.filter', {
   params: [
     {id: 'filter', type: 'boolean', dynamic: true, mandatory: true},
   ],
-  impl: (ctx,filter) => jb.callbag.filter(jb.addDebugInfo(ctx2 => filter(ctx2),ctx))
+  impl: (ctx,filter) => jb.callbag.filter(jb.utils.addDebugInfo(ctx2 => filter(ctx2),ctx))
 })
 
 jb.component('rx.flatMap', {
@@ -680,8 +680,13 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var immu
 //     $jb_childProp: 'title', // used for primitive props
 // }
 
-jb.initLibs('db', {
-  isProxy: Symbol.for("isProxy"), originalVal: Symbol.for("originalVal"), targetVal: Symbol.for("targetVal"), jbId: Symbol("jbId"),
+jb.extension('watchable', {
+  initExtension(ext) {
+    Object.assign(this, {isProxy: Symbol.for("isProxy"), originalVal: Symbol.for("originalVal"), targetVal: Symbol.for("targetVal"), jbId: Symbol("jbId")})
+    jb.watchable.resourcesRef.id = 'resources'
+    jb.db.addWatchableHandler(new jb.watchable.WatchableValueByRef(jb.watchable.resourcesRef))
+    jb.db.isWatchableFunc[0] = ext.isWatchable
+  },
 
   WatchableValueByRef: class WatchableValueByRef {
     constructor(resources) {
@@ -695,8 +700,8 @@ jb.initLibs('db', {
       this.primitiveArraysDeltas = {}
 
       const resourcesObj = resources()
-      resourcesObj[jb.db.jbId] = this.idCounter++
-      this.objToPath.set(resourcesObj[jb.db.jbId],[])
+      resourcesObj[jb.watchable.jbId] = this.idCounter++
+      this.objToPath.set(resourcesObj[jb.watchable.jbId],[])
       this.propagateResourceChangeToObservables()
     }
     doOp(ref,opOnRef,srcCtx) {
@@ -715,11 +720,11 @@ jb.initLibs('db', {
         const insertedPath = insertedIndex != null && path.concat(insertedIndex)
         const opEvent = {op: opOnRef, path, insertedPath, ref, srcCtx, oldVal, opVal, timeStamp: new Date().getTime(), opCounter: this.opCounter++}
         this.resources(jb.immutableUpdate(this.resources(),op),opEvent)
-        const newVal = (opVal != null && opVal[jb.db.isProxy]) ? opVal : this.valOfPath(path);
+        const newVal = (opVal != null && opVal[jb.watchable.isProxy]) ? opVal : this.valOfPath(path);
         if (opOnRef.$push) {
           opOnRef.$push.forEach((toAdd,i)=>
             this.addObjToMap(toAdd,[...path,oldVal.length+i]))
-          newVal[jb.db.jbId] = oldVal[jb.db.jbId]
+          newVal[jb.watchable.jbId] = oldVal[jb.watchable.jbId]
           //opEvent.path.push(oldVal.length)
           opEvent.ref = this.refOfPath(opEvent.path)
         } else if (opOnRef.$set === null && typeof oldVal === 'object') { // delete object should return the path that was deleted
@@ -737,8 +742,8 @@ jb.initLibs('db', {
             this.addObjToMap(newVal,path)
         }
         if (opOnRef.$splice) {
-          this.primitiveArraysDeltas[ref.$jb_obj[jb.db.jbId]] = this.primitiveArraysDeltas[ref.$jb_obj[jb.db.jbId]] || []
-          this.primitiveArraysDeltas[ref.$jb_obj[jb.db.jbId]].push(opOnRef.$splice)
+          this.primitiveArraysDeltas[ref.$jb_obj[jb.watchable.jbId]] = this.primitiveArraysDeltas[ref.$jb_obj[jb.watchable.jbId]] || []
+          this.primitiveArraysDeltas[ref.$jb_obj[jb.watchable.jbId]].push(opOnRef.$splice)
         }
         opEvent.newVal = newVal;
         jb.log('watchable notify doOp',{opEvent,ref,opOnRef,srcCtx})
@@ -751,7 +756,7 @@ jb.initLibs('db', {
         jb.logException(e,'doOp',{srcCtx,ref,opOnRef,srcCtx})
       }
     }
-    resourceReferred(resName) {
+    makeWatchable(resName) {
       const resource = this.resources()[resName]
       if (!this.objToPath.has(resource))
         this.addObjToMap(resource,[resName])
@@ -760,16 +765,16 @@ jb.initLibs('db', {
       for(let i=0;i<path.length;i++) {
         const innerPath = path.slice(0,i+1)
         const val = this.valOfPath(innerPath,true)
-        if (val && typeof val === 'object' && !val[jb.db.jbId]) {
-            val[jb.db.jbId] = this.idCounter++
+        if (val && typeof val === 'object' && !val[jb.watchable.jbId]) {
+            val[jb.watchable.jbId] = this.idCounter++
             this.addObjToMap(val,innerPath)
         }
       }
     }
     addObjToMap(top,path) {
-      if (!top || top[jb.db.isProxy] || top[jb.db.passiveSym] || top.$jb_val || typeof top !== 'object' || this.allowedTypes.indexOf(Object.getPrototypeOf(top)) == -1) return
-      if (top[jb.db.jbId]) {
-          this.objToPath.set(top[jb.db.jbId],path)
+      if (!top || top[jb.watchable.isProxy] || top[jb.db.passiveSym] || top.$jb_val || typeof top !== 'object' || this.allowedTypes.indexOf(Object.getPrototypeOf(top)) == -1) return
+      if (top[jb.watchable.jbId]) {
+          this.objToPath.set(top[jb.watchable.jbId],path)
           this.objToPath.delete(top)
       } else {
           this.objToPath.set(top,path)
@@ -780,8 +785,8 @@ jb.initLibs('db', {
     removeObjFromMap(top,isInner) {
       if (!top || typeof top !== 'object' || this.allowedTypes.indexOf(Object.getPrototypeOf(top)) == -1) return
       this.objToPath.delete(top)
-      if (top[jb.db.jbId] && isInner)
-          this.objToPath.delete(top[jb.db.jbId])
+      if (top[jb.watchable.jbId] && isInner)
+          this.objToPath.delete(top[jb.watchable.jbId])
       Object.keys(top).filter(key=>typeof top[key] === 'object' && key.indexOf('$jb_') != 0).forEach(key => this.removeObjFromMap(top[key],true))
     }
     fixSplicedPaths(path,spliceOp) {
@@ -810,7 +815,7 @@ jb.initLibs('db', {
     pathOfRef(ref) {
       if (ref.$jb_path)
         return ref.$jb_path()
-      const path = this.isRef(ref) && (this.objToPath.get(ref.$jb_obj) || this.objToPath.get(ref.$jb_obj[jb.db.jbId]))
+      const path = this.isRef(ref) && (this.objToPath.get(ref.$jb_obj) || this.objToPath.get(ref.$jb_obj[jb.watchable.jbId]))
       if (path && ref.$jb_childProp !== undefined) {
           this.refreshPrimitiveArrayRef(ref)
           return [...path, ref.$jb_childProp]
@@ -820,20 +825,20 @@ jb.initLibs('db', {
     urlOfRef(ref) {
       const path = this.pathOfRef(ref)
       this.addJbId(path)
-      const byId = [ref.$jb_obj[jb.db.jbId],ref.$jb_childProp].filter(x=>x != null).map(x=>(''+x).replace(/~|;|,/g,'')).join('~')
+      const byId = [ref.$jb_obj[jb.watchable.jbId],ref.$jb_childProp].filter(x=>x != null).map(x=>(''+x).replace(/~|;|,/g,'')).join('~')
       const byPath = path.map(x=>(''+x).replace(/~|;|,/g,'')).join('~')
       return `${this.resources.id}://${byId};${byPath}`
     }
     refOfUrl(url) {
       const path = url.split(';')[0].split('~')
-      return { handler: this, $jb_obj: {[jb.db.jbId]: +path[0] }, ...path[1] ? {$jb_childProp: path[1]} : {} }
+      return { handler: this, $jb_obj: {[jb.watchable.jbId]: +path[0] }, ...path[1] ? {$jb_childProp: path[1]} : {} }
     }
     asRef(obj, silent) {
       if (this.isRef(obj))
         return obj
       if (!obj || typeof obj !== 'object') return obj;
-      const actualObj = obj[jb.db.isProxy] ? obj[jb.db.targetVal] : obj
-      const path = this.objToPath.get(actualObj) || this.objToPath.get(actualObj[jb.db.jbId])
+      const actualObj = obj[jb.watchable.isProxy] ? obj[jb.watchable.targetVal] : obj
+      const path = this.objToPath.get(actualObj) || this.objToPath.get(actualObj[jb.watchable.jbId])
       if (path)
           return { $jb_obj: this.valOfPath(path), handler: this, path: function() { return this.handler.pathOfRef(this)} }
       if (!silent)
@@ -844,12 +849,12 @@ jb.initLibs('db', {
       return path.reduce((o,p)=>this.noProxy(o && o[p]),this.resources())
     }
     noProxy(val) {
-      return (val && val[jb.db.isProxy] && val[jb.db.originalVal]) || val
+      return (val && val[jb.watchable.isProxy] && val[jb.watchable.originalVal]) || val
     }
     hasLinksInPath(path) {
       let val = this.resources()
       for(let i=0;i<path.length;i++) {
-        if (val && val[jb.db.isProxy])
+        if (val && val[jb.watchable.isProxy])
           return true
         val = val && val[path[i]]
       }
@@ -859,9 +864,9 @@ jb.initLibs('db', {
       if (!this.hasLinksInPath(path))
         return path
       return path.reduce(({val,path} ,p) => {
-        const proxy = (val && val[jb.db.isProxy])
-        const inner =  proxy ? val[jb.db.originalVal] : val
-        const newPath = proxy ? (this.objToPath.get(inner) || this.objToPath.get(inner[jb.db.jbId])) : path
+        const proxy = (val && val[jb.watchable.isProxy])
+        const inner =  proxy ? val[jb.watchable.originalVal] : val
+        const newPath = proxy ? (this.objToPath.get(inner) || this.objToPath.get(inner[jb.watchable.jbId])) : path
         return { val: inner && inner[p], path: [newPath,p].join('~') }
       }, {val: this.resources(), path: ''}).path
     }
@@ -899,7 +904,7 @@ jb.initLibs('db', {
       return this.valOfPath(path)
     }
     watchable(val) {
-      return this.resources() === val || typeof val != 'number' && (this.objToPath.get(val) || (val && this.objToPath.get(val[jb.db.jbId])))
+      return this.resources() === val || typeof val != 'number' && (this.objToPath.get(val) || (val && this.objToPath.get(val[jb.watchable.jbId])))
     }
     isRef(ref) {
       return ref && ref.$jb_obj && this.watchable(ref.$jb_obj);
@@ -907,13 +912,13 @@ jb.initLibs('db', {
     objectProperty(obj,prop,ctx) {
       if (!obj)
         return jb.logError('watchable objectProperty: null obj',{obj,prop,ctx})
-      if (obj && obj[prop] && this.watchable(obj[prop]) && !obj[prop][jb.db.isProxy])
+      if (obj && obj[prop] && this.watchable(obj[prop]) && !obj[prop][jb.watchable.isProxy])
         return this.asRef(obj[prop])
       const ref = this.asRef(obj)
       if (ref && ref.$jb_obj) {
         const ret = {$jb_obj: ref.$jb_obj, $jb_childProp: prop, handler: this, path: function() { return this.handler.pathOfRef(this)}}
         if (this.isPrimitiveArray(ref.$jb_obj)) {
-          ret.$jb_delta_version = (this.primitiveArraysDeltas[ref.$jb_obj[jb.db.jbId]] || []).length
+          ret.$jb_delta_version = (this.primitiveArraysDeltas[ref.$jb_obj[jb.watchable.jbId]] || []).length
           ret.$jb_childProp = +prop
         }
         return ret
@@ -932,11 +937,11 @@ jb.initLibs('db', {
       return this.doOp(ref,{$set: this.createSecondaryLink(value)},srcCtx)
     }
     createSecondaryLink(val) {
-      if (val && typeof val === 'object' && !val[jb.db.isProxy]) {
+      if (val && typeof val === 'object' && !val[jb.watchable.isProxy]) {
         const ref = this.asRef(val,true);
         if (ref && ref.$jb_obj)
           return new Proxy(val, {
-            get: (o,p) => (p === jb.db.targetVal) ? o : (p === jb.db.isProxy) ? true : (p === jb.db.originalVal ? val : (jb.val(this.asRef(val)))[p]),
+            get: (o,p) => (p === jb.watchable.targetVal) ? o : (p === jb.watchable.isProxy) ? true : (p === jb.watchable.originalVal ? val : (jb.val(this.asRef(val)))[p]),
             set: (o,p,v) => o[p] = v
           })
       }
@@ -976,7 +981,7 @@ jb.initLibs('db', {
     }
     refreshPrimitiveArrayRef(ref) {
       if (!this.isPrimitiveArray(ref.$jb_obj)) return
-      const arrayId = ref.$jb_obj[jb.db.jbId]
+      const arrayId = ref.$jb_obj[jb.watchable.jbId]
       const deltas = this.primitiveArraysDeltas[arrayId] || []
       deltas.slice(ref.$jb_delta_version).forEach(group => {
           if (group.fromIndex != undefined && group.fromIndex === ref.$jb_childProp) { // move
@@ -1019,7 +1024,7 @@ jb.initLibs('db', {
         const obs = { key, ref,srcCtx,includeChildren, cmp, subject, ctx }
 
         this.observables.push(obs)
-        this.observables.sort((e1,e2) => jb.db.comparePaths(e1.ctx.path, e2.ctx.path))
+        this.observables.sort((e1,e2) => jb.utils.comparePaths(e1.ctx.path, e2.ctx.path))
         jb.log('register watchable observable',obs)
         return subject
     }
@@ -1027,7 +1032,7 @@ jb.initLibs('db', {
       return this.resources.frame || jb.frame
     }
     propagateResourceChangeToObservables() {
-      jb.subscribe(this.resourceChange, e=>{
+      jb.utils.subscribe(this.resourceChange, e=>{
         const observablesToUpdate = this.observables.slice(0) // this.observables array may change in the notification process !!
         const changed_path = this.removeLinksFromPath(this.pathOfRef(e.ref))
         if (changed_path) observablesToUpdate.forEach(obs=> {
@@ -1049,7 +1054,7 @@ jb.initLibs('db', {
         obsPath = obsPath && this.removeLinksFromPath(obsPath)
         if (!obsPath)
           return jb.logError('watchable observable ref path is empty',{obs,e})
-        const diff = jb.db.comparePaths(changed_path, obsPath)
+        const diff = jb.utils.comparePaths(changed_path, obsPath)
         const isChildOfChange = diff == 1
         const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
         const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
@@ -1065,56 +1070,87 @@ jb.initLibs('db', {
   },
 
   resourcesRef: val => typeof val == 'undefined' ? jb.db.resources : (jb.db.resources = val),
-  comparePaths(path1,path2) { // 0- equals, -1,1 means contains -2,2 lexical
-        path1 = path1 || ''
-        path2 = path2 || ''
-        let i=0;
-        while(path1[i] === path2[i] && i < path1.length) i++;
-        if (i == path1.length && i == path2.length) return 0;
-        if (i == path1.length && i < path2.length) return -1;
-        if (i == path2.length && i < path1.length) return 1;
-        return path1[i] < path2[i] ? -2 : 2
-  },
-  isWatchable: ref => jb.db.refHandler(ref) instanceof jb.db.WatchableValueByRef || ref && ref.$jb_observable,
+  isWatchable: ref => jb.db.refHandler(ref) instanceof jb.watchable.WatchableValueByRef || ref && ref.$jb_observable,
   refObservable(ref,{cmp,includeChildren,srcCtx} = {}) { // cmp._destroyed is checked before notification
       if (ref && ref.$jb_observable)
         return ref.$jb_observable(cmp)
-      if (!jb.db.isWatchable(ref)) {
+      if (!jb.watchable.isWatchable(ref)) {
         jb.logError('ref is not watchable: ', {ref, cmp,srcCtx})
         return jb.callbag.fromIter([])
       }
       return jb.db.refHandler(ref).getOrCreateObservable({ref,cmp,includeChildren,srcCtx})
   },
-  rebuildRefHandler() { // used to clean after tests
-      jb.db.mainWatchableHandler && jb.db.mainWatchableHandler.dispose()
-      jb.db.setMainWatchableHandler(new jb.db.WatchableValueByRef(jb.db.resourcesRef))
-  },
-  initializeModule() {
-    jb.db.resourcesRef.id = 'resources'
-    jb.db.setMainWatchableHandler(new jb.db.WatchableValueByRef(jb.db.resourcesRef))
-  }
+
 })
 
 jb.component('runTransaction', {
   type: 'action',
   params: [
     {id: 'actions', type: 'action[]', ignore: true, composite: true, mandatory: true},
-    {id: 'noNotifications', as: 'boolean', type: 'boolean'}
+    {id: 'noNotifications', as: 'boolean', type: 'boolean'},
+    {id: 'handler', defaultValue: () => jb.db.watchableHandlers.find(x=>x.resources.id == 'resources')}
   ],
-  impl: ctx => {
+  impl: (ctx,noNotifications,handler) => {
 		const actions = jb.asArray(ctx.profile.actions || ctx.profile['$runActions'] || []).filter(x=>x);
 		const innerPath =  (ctx.profile.actions && ctx.profile.actions.sugar) ? ''
 			: (ctx.profile['$runActions'] ? '$runActions~' : 'items~');
-    jb.db.mainWatchableHandler.startTransaction()
+    handler && handler.startTransaction()
     return actions.reduce((def,action,index) =>
 				def.then(_ => ctx.runInner(action, { as: 'single'}, innerPath + index )) ,Promise.resolve())
 			.catch((e) => jb.logException(e,'runTransaction',{ctx}))
-      .then(() => jb.db.mainWatchableHandler.endTransaction(ctx.params.noNotifications))
+      .then(() => handler && handler.endTransaction(noNotifications))
 	}
 })
 ;
 
-jb.initLibs('ui', {
+jb.extension('ui', 'react', {
+    initExtension() {
+        Object.assign(this,{
+            BECmpsDestroyNotification: jb.callbag.subject(),
+            refreshNotification: jb.callbag.subject(),
+            renderingUpdates: jb.callbag.subject(),
+            followUps: {},
+        })
+
+        // subscribe for watchable change
+        jb.ui.subscribeToRefChange(jb.db.watchableHandlers.find(x=>x.resources.id == 'resources'))
+
+        // subscribe for widget renderingUpdates
+        jb.callbag.subscribe(e=> {
+            if (!e.widgetId && e.cmpId && typeof document != 'undefined') {
+                const elem = document.querySelector(`[cmp-id="${e.cmpId}"]`)
+                if (elem) {
+                    jb.ui.applyDeltaToDom(elem, e.delta)
+                    jb.ui.refreshFrontEnd(elem)
+                }
+            }
+        })(jb.ui.renderingUpdates)
+
+        // subscribe for destroy notification
+        jb.callbag.subscribe(e=> {
+            const {widgetId,destroyLocally,cmps} = e
+            
+            cmps.forEach(_cmp => {
+                const fus = jb.ui.followUps[_cmp.cmpId]
+                if (!fus) return
+                const index = fus.findIndex(({cmp}) => _cmp.cmpId == cmp.cmpId && _cmp.ver == cmp.ver)
+                if (index != -1) {
+                    fus[index].pipe.dispose()
+                    fus.splice(index,1)
+                }
+                if (!fus.length)
+                    delete jb.ui.followUps[_cmp.cmpId]
+            })
+
+            if (widgetId && !destroyLocally)
+                jb.ui.widgetUserRequests.next({$:'destroy', ...e })
+            else 
+                cmps.forEach(cmp=> (cmp.destroyCtxs || []).forEach(ctxIdToRun => {
+                    jb.log('backend method destroy uiComp',{cmp, el: cmp.el})
+                    jb.ui.runCtxAction(jb.ctxDictionary[ctxIdToRun])
+                } ))
+        })(jb.ui.BECmpsDestroyNotification)
+    },
     h(cmpOrTag,attributes,children) {
         if (cmpOrTag instanceof jb.ui.VNode) return cmpOrTag // Vdom
         if (cmpOrTag && cmpOrTag.renderVdom)
@@ -1193,8 +1229,8 @@ jb.initLibs('ui', {
                         return true
             }
             function compareCtxAtt(att,atts1,atts2) {
-                const val1 = atts1.ctxId && jb.path(jb.ui.ctxDictionary[atts1.ctxId],att)
-                const val2 = atts2.ctxId && jb.path(jb.ui.ctxDictionary[atts2.ctxId],att)
+                const val1 = atts1.ctxId && jb.path(jb.ctxDictionary[atts1.ctxId],att)
+                const val2 = atts2.ctxId && jb.path(jb.ctxDictionary[atts2.ctxId],att)
                 return val1 && val2 && val1 == val2
             }            
         }
@@ -1536,12 +1572,7 @@ jb.initLibs('ui', {
             jb.ui.runCtxActionAndUdateCmpState(ctx,data,vars)
         }
     },
-    resourceChange: () => jb.db.mainWatchableHandler.resourceChange,
-
-    BECmpsDestroyNotification: jb.callbag.subject(),
-    refreshNotification: jb.callbag.subject(),
-    renderingUpdates: jb.callbag.subject(),
-    followUps: {},
+    resourceChange: () => jb.db.useResourcesHandler(h=>h.resourceChange),
     ctrl(origCtx,options) {
         const styleByControl = jb.path(origCtx,'cmpCtx.profile.$') == 'styleByControl'
         const $state = (origCtx.vars.$refreshElemCall || styleByControl) ? origCtx.vars.$state : {}
@@ -1672,8 +1703,10 @@ jb.initLibs('ui', {
         jb.log('refresh elem start',{cmp,ctx,elem, state, options})
 
         if (jb.path(options,'cssOnly')) {
-            const existingClass = (elem.className.match(/(w|jb-)[0-9]?-[0-9]+/)||[''])[0]
-            const cssStyleElem = Array.from(document.querySelectorAll('style')).map(el=>({el,txt: el.innerText})).filter(x=>x.txt.indexOf(existingClass + ' ') != -1)[0].el
+            const existingClass = (elem.className.match(/[a-zA-Z0-9_-]+⦾[0-9]*/)||[''])[0]
+            if (!existingClass)
+                jb.logError('refresh css only - can not find existing class',{elem,ctx})
+            const cssStyleElem = Array.from(document.querySelectorAll('style')).map(el=>({el,txt: el.innerText})).filter(x=>x.txt.indexOf(existingClass) != -1)[0].el
             jb.log('refresh element css only',{cmp, lines: cmp.cssLines,ctx,elem, state, options})
             jb.ui.hashCss(cmp.calcCssLines(),cmp.ctx,{existingClass, cssStyleElem})
         } else {
@@ -1685,7 +1718,7 @@ jb.initLibs('ui', {
         //jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
     },
 
-    subscribeToRefChange: watchHandler => jb.subscribe(watchHandler.resourceChange, e=> {
+    subscribeToRefChange: watchHandler => jb.utils.subscribe(watchHandler.resourceChange, e=> {
         const changed_path = watchHandler.removeLinksFromPath(e.insertedPath || watchHandler.pathOfRef(e.ref))
         if (!changed_path) debugger
         //observe="resources://2~name;person~name
@@ -1710,7 +1743,7 @@ jb.initLibs('ui', {
                 strongRefresh = strongRefresh || obs.strongRefresh
                 delay = delay || obs.delay
                 cssOnly = cssOnly && obs.cssOnly
-                const diff = jb.db.comparePaths(changed_path, obsPath)
+                const diff = jb.utils.comparePaths(changed_path, obsPath)
                 const isChildOfChange = diff == 1
                 const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
                 const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
@@ -1738,50 +1771,10 @@ jb.initLibs('ui', {
             return parts[0] == watchHandler.resources.id && 
                 { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh, cssOnly, allowSelfRefresh, delay }
         }
-    }),
-    initializeModule() {
-        // subscribe for watchable change
-        jb.ui.subscribeToRefChange(jb.db.mainWatchableHandler)
-
-        // subscribe for widget renderingUpdates
-        jb.callbag.subscribe(e=> {
-            if (!e.widgetId && e.cmpId && typeof document != 'undefined') {
-                const elem = document.querySelector(`[cmp-id="${e.cmpId}"]`)
-                if (elem) {
-                    jb.ui.applyDeltaToDom(elem, e.delta)
-                    jb.ui.refreshFrontEnd(elem)
-                }
-            }
-        })(jb.ui.renderingUpdates)
-
-        // subscribe for destroy notification
-        jb.callbag.subscribe(e=> {
-            const {widgetId,destroyLocally,cmps} = e
-            
-            cmps.forEach(_cmp => {
-                const fus = jb.ui.followUps[_cmp.cmpId]
-                if (!fus) return
-                const index = fus.findIndex(({cmp}) => _cmp.cmpId == cmp.cmpId && _cmp.ver == cmp.ver)
-                if (index != -1) {
-                    fus[index].pipe.dispose()
-                    fus.splice(index,1)
-                }
-                if (!fus.length)
-                    delete jb.ui.followUps[_cmp.cmpId]
-            })
-
-            if (widgetId && !destroyLocally)
-                jb.ui.widgetUserRequests.next({$:'destroy', ...e })
-            else 
-                cmps.forEach(cmp=> (cmp.destroyCtxs || []).forEach(ctxIdToRun => {
-                    jb.log('backend method destroy uiComp',{cmp, el: cmp.el})
-                    jb.ui.runCtxAction(jb.ctxDictionary[ctxIdToRun])
-                } ))
-        })(jb.ui.BECmpsDestroyNotification)
-    }
+    })
 });
 
-jb.initLibs('ui', {
+jb.extension('ui', {
     VNode: class VNode {
         constructor(cmpOrTag, _attributes, _children) {
             const attributes = jb.objFromEntries(jb.entries(_attributes).map(e=>[e[0].toLowerCase(),e[1]])
@@ -1947,15 +1940,18 @@ jb.initLibs('ui', {
     }
 });
 
-jb.initLibs('ui', {
-    lifeCycle: new Set('init,extendCtx,templateModifier,followUp,destroy'.split(',')),
-    arrayProps: new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,frontEndVar,eventHandler'.split(',')),
-    singular: new Set('template,calcRenderProps,toolbar,styleParams,ctxForPick'.split(',')),
-    
-    cmpCounter: 1,
-    cssHashCounter: 0,
-    propCounter: 0,
-    cssHashMap: {},
+jb.extension('ui','comp', {
+    initExtension() {
+        Object.assign(this, {
+            lifeCycle: new Set('init,extendCtx,templateModifier,followUp,destroy'.split(',')),
+            arrayProps: new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,frontEndVar,eventHandler'.split(',')),
+            singular: new Set('template,calcRenderProps,toolbar,styleParams,ctxForPick'.split(',')),
+            cmpCounter: 1,
+            cssHashCounter: 0,
+            propCounter: 0,
+            cssHashMap: {},                
+        })
+    },
     hashCss(_cssLines,ctx,{existingClass, cssStyleElem} = {}) {
         const cssLines = (_cssLines||[]).filter(x=>x)
         const cssKey = cssLines.join('\n')
@@ -1990,8 +1986,7 @@ jb.initLibs('ui', {
                     .map(x=>x.indexOf('~') == -1 ? `.${classId}${x}` : x.replace('~',`.${classId}`));
                 return fixed_selector + ' { ' + selectorPlusExp.split('{')[1];
             }).join('\n');
-            const remark = `/*style: ${ctx.profile.style && ctx.profile.style.$}, path: ${ctx.path}*/\n`;
-            return remark + cssStyle
+            return `${cssStyle} /* ${ctx.path} */`
         }
     },
     JbComponent : class JbComponent {
@@ -2010,7 +2005,7 @@ jb.initLibs('ui', {
             jb.log('init uiComp',{cmp: this})
             const baseVars = this.ctx.vars
             this.ctx = (this.extendCtxFuncs||[])
-                .reduce((acc,extendCtx) => jb.utils.tryWrapper(() => extendCtx(acc,this),'extendCtx'), this.ctx.setVar('cmp',this))
+                .reduce((acc,extendCtx) => jb.utils.tryWrapper(() => extendCtx(acc,this),'extendCtx',this.ctx), this.ctx.setVar('cmp',this))
             this.newVars = jb.objFromEntries(jb.entries(this.ctx.vars).filter(([k,v]) => baseVars[k] != v))
             this.renderProps = {}
             this.state = this.ctx.vars.$state
@@ -2021,7 +2016,7 @@ jb.initLibs('ui', {
         calcRenderProps() {
             this.init()
             ;(this.initFuncs||[]).sort((p1,p2) => p1.phase - p2.phase)
-                .forEach(f => jb.utils.tryWrapper(() => f.action(this.calcCtx, this.calcCtx.vars), 'init'));
+                .forEach(f => jb.utils.tryWrapper(() => f.action(this.calcCtx, this.calcCtx.vars), 'init',this.ctx));
     
             this.toObserve = this.watchRef ? this.watchRef.map(obs=>({...obs,ref: obs.refF(this.ctx)})).filter(obs=>jb.db.isWatchable(obs.ref)) : []
             this.watchAndCalcModelProp && this.watchAndCalcModelProp.forEach(e=>{
@@ -2044,7 +2039,7 @@ jb.initLibs('ui', {
                 .forEach(prop=> { 
                     const val = jb.val( jb.utils.tryWrapper(() => 
                         prop.value.profile === null ? this.calcCtx.vars.$model[prop.id] : prop.value(this.calcCtx),
-                    `renderProp:${prop.id}`))
+                    `renderProp:${prop.id}`,this.ctx))
                     const value = val == null ? prop.defaultValue : val
                     Object.assign(this.renderProps, { ...(prop.id == '$props' ? value : { [prop.id]: value })})
                 })
@@ -2058,9 +2053,9 @@ jb.initLibs('ui', {
             this.calcRenderProps()
             if (this.ctx.probe && this.ctx.probe.outOfTime) return
             this.template = this.template || (() => '')
-            const initialVdom = jb.utils.tryWrapper(() => this.template(this,this.renderProps,jb.ui.h), 'template') || {}
+            const initialVdom = jb.utils.tryWrapper(() => this.template(this,this.renderProps,jb.ui.h), 'template',this.ctx) || {}
             const vdom = (this.templateModifierFuncs||[]).reduce((vd,modifier) =>
-                    (vd && typeof vd === 'object') ? jb.utils.tryWrapper(() => modifier(vd,this,this.renderProps,jb.ui.h) || vd, 'templateModifier') 
+                    (vd && typeof vd === 'object') ? jb.utils.tryWrapper(() => modifier(vd,this,this.renderProps,jb.ui.h) || vd, 'templateModifier',this.ctx) 
                         : vd ,initialVdom)
 
             const observe = this.toObserve.map(x=>[
@@ -2106,7 +2101,7 @@ jb.initLibs('ui', {
                 fu.action(this.calcCtx)
                 if (this.ver>1)
                     jb.ui.BECmpsDestroyNotification.next({ cmps: [{cmpId: this.cmpId, ver: this.ver-1}]})
-            }, 'followUp') ) ).then(()=> this.ready = true)
+            }, 'followUp',this.ctx) ) ).then(()=> this.ready = true)
             this.ready = false
             return vdom
         }
@@ -2226,7 +2221,7 @@ jb.initLibs('ui', {
     }
 })
 
-jb.initLibs('jstypes', {
+jb.extension('jstypes', {
     renderable(value) {
         if (value == null) return '';
         if (value instanceof jb.ui.VNode) return value;
@@ -2237,7 +2232,7 @@ jb.initLibs('jstypes', {
     }
 });
 
-jb.initLibs('ui',{
+jb.extension('ui', {
     focus(elem,logTxt,srcCtx) {
         if (!elem) debugger
         // block the preview from stealing the studio focus
@@ -2298,7 +2293,7 @@ jb.initLibs('ui',{
         return jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry(ctx).run(profile)),topElem)    
     },
     extendWithServiceRegistry(_ctx) {
-      const ctx = _ctx || new jb.jbCtx()
+      const ctx = _ctx || new jb.core.jbCtx()
       return ctx.setVar('$serviceRegistry',{baseCtx: ctx, parentRegistry: ctx.vars.$serviceRegistry, services: {}})
     },
     //cmpV: cmp => cmp ? `${cmp.cmpId};${cmp.ver}` : '',
@@ -2333,7 +2328,7 @@ jb.component('service.registerBackEndService', {
 
 
 // ****************** html utils ***************
-jb.initLibs('ui',{
+jb.extension('ui', {
     outerWidth(el) {
         const style = getComputedStyle(el)
         return el.offsetWidth + parseInt(style.marginLeft) + parseInt(style.marginRight)
@@ -2504,7 +2499,7 @@ jb.component('controlWithFeatures', {
 var { customStyle, styleByControl, styleWithFeatures, controlWithFeatures } = jb.macro
 ;
 
-jb.initLibs('ui', {
+jb.extension('ui', 'frontend', {
     refreshFrontEnd(elem) {
         jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> el._component ? el._component.newVDomApplied() : jb.ui.mountFrontEnd(el))
     },
@@ -2513,7 +2508,7 @@ jb.initLibs('ui', {
     },
     frontEndCmp: class frontEndCmp {
         constructor(elem, keepState) {
-            this.ctx = jb.ui.parents(elem,{includeSelf: true}).map(elem=>elem.ctxForFE).filter(x=>x)[0] || new jb.jbCtx()
+            this.ctx = jb.ui.parents(elem,{includeSelf: true}).map(elem=>elem.ctxForFE).filter(x=>x)[0] || new jb.core.jbCtx()
             this.state = { ...elem.state, ...(keepState && jb.path(elem._component,'state')), frontEndStatus: 'initializing' }
             this.base = elem
             this.cmpId = elem.getAttribute('cmp-id')
@@ -2538,8 +2533,8 @@ jb.initLibs('ui', {
                 return jb.logError(`frontEnd - no method ${method}`,{cmp: {...this}})
             toRun.forEach(({path}) => jb.utils.tryWrapper(() => {
                 const profile = path.split('~').reduce((o,p)=>o[p],jb.comps)
-                const srcCtx = new jb.jbCtx(this.ctx, { profile, path, forcePath: path })
-                const feMEthod = jb.run(srcCtx)
+                const srcCtx = new jb.core.jbCtx(this.ctx, { profile, path, forcePath: path })
+                const feMEthod = jb.core.run(srcCtx)
                 const el = this.base
                 const vars = {cmp: this, $state: this.state, el, ...this.base.vars, ..._vars }
                 const ctxToUse = this.ctx.setData(data).setVars(vars)
@@ -2552,15 +2547,15 @@ jb.initLibs('ui', {
                     jb.log(`frontend uiComp run method ${method}`,{cmp: {...this}, srcCtx , ...feMEthod.frontEndMethod,el,ctxToUse})
                 const res = ctxToUse.run(feMEthod.frontEndMethod.action)
                 if (_flow) this.flows.push(res)
-            }, `frontEnd-${method}`))
+            }, `frontEnd-${method}`,this.ctx))
         }
         enrichUserEvent(ev, userEvent) {
             (this.base.frontEndMethods || []).filter(x=>x.method == 'enrichUserEvent').map(({path}) => jb.utils.tryWrapper(() => {
                 const actionPath = path+'~action'
                 const profile = actionPath.split('~').reduce((o,p)=>o[p],jb.comps)
                 const vars = {cmp: this, $state: this.state, el: this.base, ...this.base.vars, ev, userEvent }
-                Object.assign(userEvent, jb.run( new jb.jbCtx(this.ctx, { vars, profile, path: actionPath })))
-            }, 'enrichUserEvent'))
+                Object.assign(userEvent, jb.core.run( new jb.core.jbCtx(this.ctx, { vars, profile, path: actionPath })))
+            }, 'enrichUserEvent',this.ctx))
         }
         refresh(state, options) {
             jb.log('frontend uiComp refresh request',{cmp: {...this} , state, options})
@@ -2589,7 +2584,6 @@ jb.initLibs('ui', {
     }
 })
 
-// interactive handlers like onmousemove and onkeyXX are handled in the frontEnd with and not varsed to the backend headless widgets
 ;
 
 
@@ -2904,7 +2898,7 @@ jb.component('variable', {
       const fullName = name + ':' + cmp.ctx.id;
       if (fullName == 'items') debugger
       jb.log('create watchable var',{cmp,ctx,fullName})
-      const refToResource = jb.db.mainWatchableHandler.refOfPath([fullName]);
+      const refToResource = jb.db.useResourcesHandler(h=>h.refOfPath([fullName]))
       jb.db.writeValue(refToResource,value(ctx),ctx)
       return ctx.setVar(name, refToResource);
     }
@@ -3861,7 +3855,7 @@ jb.component('group.eliminateRecursion', {
   ],
   impl: (ctx,maxDepth) => {
     const protectedComp = ctx.cmpCtx.cmpCtx.path
-    const timesInStack = ctx.callStack().filter(x=>x && x.indexOf(protectedComp) != -1).length
+    const timesInStack = jb.core.callStack(ctx).filter(x=>x && x.indexOf(protectedComp) != -1).length
     if (timesInStack > maxDepth)
       return ctx.run( calcProp({id: 'ctrls', value: () => [], phase: 1, priority: 100 }))
   }
@@ -4135,8 +4129,52 @@ jb.component('button.altAction', {
 
 var { field, validation  } = jb.ns('field,validation');
 
-(function() {
-jb.ui.field_id_counter = jb.ui.field_id_counter || 0;
+jb.extension('ui', 'field', {
+  initExtension: () => ({field_id_counter : 0 }),
+  writeFieldData(ctx,cmp,value,oneWay) {
+    if (jb.val(ctx.vars.$model.databind(cmp.ctx)) == value) return
+    jb.db.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx)
+    jb.ui.checkValidationError(cmp,value,ctx)
+    cmp.hasBEMethod('onValueChange') && cmp.runBEMethod('onValueChange',value,ctx.vars)
+    !oneWay && cmp.refresh({},{srcCtx: ctx.cmpCtx})
+  },
+  checkValidationError(cmp,val,ctx) {
+    const err = validationError()
+    if (cmp.state.error != err) {
+      jb.log('field validation set error state',{cmp,err})
+      cmp.refresh({valid: !err, error:err}, {srcCtx: ctx.cmpCtx})
+    }
+  
+    function validationError() {
+      if (!cmp.validations) return
+      const ctx = cmp.ctx.setData(val)
+      const err = (cmp.validations || [])
+        .filter(validator=>!validator.validCondition(ctx))
+        .map(validator=>validator.errorMessage(ctx))[0]
+      if (ctx.exp('%$formContainer%'))
+        ctx.run(writeValue('%$formContainer/err%',err))
+      return err
+    }
+  },
+  checkFormValidation(elem) {
+    jb.ui.find(elem,'[jb-ctx]').map(el=>el._component).filter(cmp => cmp && cmp.validations).forEach(cmp => 
+      jb.ui.checkValidationError(cmp,jb.val(cmp.ctx.vars.$model.databind(cmp.ctx)), cmp.ctx))
+  },
+  fieldTitle(cmp,fieldOrCtrl,h) {
+    let field = fieldOrCtrl.field && fieldOrCtrl.field() || fieldOrCtrl
+    field = typeof field === 'function' ? field() : field
+    if (field.titleCtrl) {
+      const ctx = cmp.ctx.setData(field).setVars({input: cmp.ctx.data})
+      const jbComp = field.titleCtrl(ctx);
+      return jbComp && h(jbComp,{'jb-ctx': jb.ui.preserveCtx(ctx) })
+    }
+    return field.title(cmp.ctx)
+  },
+  preserveFieldCtxWithItem(field,item) {
+    const ctx = jb.ctxDictionary[field.ctxId]
+    return ctx && jb.ui.preserveCtx(ctx.setData(item))
+  }
+})
 
 jb.component('field.databind', {
   type: 'feature',
@@ -4155,28 +4193,28 @@ jb.component('field.databind', {
     calcProp({id: 'fieldId', value: () => jb.ui.field_id_counter++}),
     method(
       'writeFieldValue',
-      (ctx,{cmp},{oneWay}) => writeFieldData(ctx,cmp,ctx.data,oneWay)
+      (ctx,{cmp},{oneWay}) => jb.ui.writeFieldData(ctx,cmp,ctx.data,oneWay)
     ),
     method(
         'onblurHandler',
-        (ctx,{cmp, ev},{oneWay}) => writeFieldData(ctx,cmp,ev.value,oneWay)
+        (ctx,{cmp, ev},{oneWay}) => jb.ui.writeFieldData(ctx,cmp,ev.value,oneWay)
       ),
     method(
         'onchangeHandler',
-        (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && writeFieldData(ctx,cmp,ev.value,oneWay)
+        (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && jb.ui.writeFieldData(ctx,cmp,ev.value,oneWay)
       ),
     method(
         'onkeyupHandler',
-        (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && writeFieldData(ctx,cmp,ev.value,oneWay)
+        (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && jb.ui.writeFieldData(ctx,cmp,ev.value,oneWay)
       ),
     method(
         'onkeydownHandler',
-        (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && writeFieldData(ctx,cmp,ev.value,oneWay)
+        (ctx,{$model, cmp, ev},{oneWay}) => !$model.updateOnBlur && jb.ui.writeFieldData(ctx,cmp,ev.value,oneWay)
       ),
     // frontEndProp(
     //     'jbModel',
     //     (ctx,{cmp}) => value =>
-    //       value == null ? ctx.exp('%$$model/databind%','number') : writeFieldData(ctx,cmp,value,true)
+    //       value == null ? ctx.exp('%$$model/databind%','number') : jb.ui.writeFieldData(ctx,cmp,value,true)
     //   ),
     
     feature.byCondition('%$$dialog%', feature.initValue('%$$dialog/hasFields%',true))
@@ -4184,53 +4222,6 @@ jb.component('field.databind', {
   )
 })
 
-function writeFieldData(ctx,cmp,value,oneWay) {
-  if (jb.val(ctx.vars.$model.databind(cmp.ctx)) == value) return
-  jb.db.writeValue(ctx.vars.$model.databind(cmp.ctx),value,ctx)
-  jb.ui.checkValidationError(cmp,value,ctx)
-  cmp.hasBEMethod('onValueChange') && cmp.runBEMethod('onValueChange',value,ctx.vars)
-  !oneWay && cmp.refresh({},{srcCtx: ctx.cmpCtx})
-}
-
-jb.ui.checkValidationError = (cmp,val,ctx) => {
-  const err = validationError()
-  if (cmp.state.error != err) {
-    jb.log('field validation set error state',{cmp,err})
-    cmp.refresh({valid: !err, error:err}, {srcCtx: ctx.cmpCtx})
-  }
-
-  function validationError() {
-    if (!cmp.validations) return
-    const ctx = cmp.ctx.setData(val)
-    const err = (cmp.validations || [])
-      .filter(validator=>!validator.validCondition(ctx))
-      .map(validator=>validator.errorMessage(ctx))[0]
-    if (ctx.exp('%$formContainer%'))
-      ctx.run(writeValue('%$formContainer/err%',err))
-    return err
-  }
-}
-
-jb.ui.checkFormValidation = function(elem) {
-  jb.ui.find(elem,'[jb-ctx]').map(el=>el._component).filter(cmp => cmp && cmp.validations).forEach(cmp => 
-    jb.ui.checkValidationError(cmp,jb.val(cmp.ctx.vars.$model.databind(cmp.ctx)), cmp.ctx))
-}
-
-jb.ui.fieldTitle = function(cmp,fieldOrCtrl,h) {
-  let field = fieldOrCtrl.field && fieldOrCtrl.field() || fieldOrCtrl
-  field = typeof field === 'function' ? field() : field
-	if (field.titleCtrl) {
-		const ctx = cmp.ctx.setData(field).setVars({input: cmp.ctx.data})
-		const jbComp = field.titleCtrl(ctx);
-		return jbComp && h(jbComp,{'jb-ctx': jb.ui.preserveCtx(ctx) })
-	}
-	return field.title(cmp.ctx)
-}
-
-jb.ui.preserveFieldCtxWithItem = (field,item) => {
-	const ctx = jb.ctxDictionary[field.ctxId]
-	return ctx && jb.ui.preserveCtx(ctx.setData(item))
-}
 jb.component('field.onChange', {
   type: 'feature',
   category: 'field:100',
@@ -4265,7 +4256,7 @@ jb.component('field.databindText', {
 //   frontEnd.init((ctx,{cmp},{key,action}) => {
 //         const elem = cmp.base.querySelector('input') || cmp.base
 //         if (elem.tabIndex === undefined) elem.tabIndex = -1
-//         jb.subscribe(jb.ui.fromEvent(cmp,'keydown',elem),event=>{
+//         jb.utils.subscribe(jb.ui.fromEvent(cmp,'keydown',elem),event=>{
 //               const keyStr = key.split('+').slice(1).join('+');
 //               const keyCode = keyStr.charCodeAt(0);
 //               if (key == 'Delete') keyCode = 46;
@@ -4326,10 +4317,7 @@ jb.component('field.columnWidth', {
   impl: (ctx,width) => ({
       enrichField: field => field.width = width
   })
-})
-
-
-})();
+});
 
 var {editableText} = jb.ns('editableText')
 
