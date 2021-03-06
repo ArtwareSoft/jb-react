@@ -67,7 +67,7 @@ Object.assign(st, {
 	oldHandler && oldHandler.stopListening.next(1)
 	st.compsRefHandler = new jb.watchable.WatchableValueByRef(compsRef)
 	jb.db.addWatchableHandler(st.compsRefHandler)
-	jb.ui.subscribeToRefChange(compsRef)
+	jb.ui.subscribeToRefChange(st.compsRefHandler)
 	st.compsRefHandler.allowedTypes = st.compsRefHandler.allowedTypes.concat(allowedTypes)
 	st.compsRefHandler.stopListening = jb.callbag.subject()
 
