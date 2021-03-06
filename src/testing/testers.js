@@ -1,37 +1,5 @@
 var {dataTest,uiTest,userInput,uiAction,dialog,widget,last} = jb.ns('dataTest,uiTest,userInput,uiAction,dialog,widget')
 
-jb.test = {
-	runInner(propName, ctx) {
-		const profile = ctx.profile
-		return profile[propName] && ctx.runInner(profile[propName],{type: 'data'}, propName)
-	},
-	dataTestResult(ctx) {
-		return Promise.resolve(jb.test.runInner('runBefore',ctx))
-		.then(_ => jb.test.runInner('calculate',ctx))
-		.then(v => jb.utils.toSynchArray(v,true))
-		.then(value => {
-			const success = !! jb.test.runInner('expectedResult',ctx.setData(value))
-			return { success, value}
-		})
-	},
-	runInStudio(profile) {
-		return profile && jb.ui.parentFrameJb().exec(profile)
-	},
-	cleanBeforeRun(ctx) {
-		jb.db.watchableHandlers.forEach(h=>h.dispose())
-		jb.db.watchableHandlers = [new jb.watchable.WatchableValueByRef(jb.watchable.resourcesRef)];
-		jb.entries(JSON.parse(ctx.vars.$initial_resources || '{}')).forEach(e=>jb.db.resource(e[0],e[1]))
-		jb.ui.subscribeToRefChange(jb.db.watchableHandlers[0])
-
-		if (jb.studio && jb.studio.compsRefHandler) {
-			jb.studio.compsRefHandler.resources(ctx.vars.$initial_comps)
-			jb.db.watchableHandlers.push(jb.studio.compsRefHandler)
-		}
-		if (!jb.spy.log) jb.spy.initSpy({spyParam: 'none'})
-		jb.spy.clear()
-	}
-}
-
 jb.component('tests.main', { // needed for loading the 'virtual' tests project
 	type: 'control',
 	impl: text('') // dummy impl needed
@@ -56,7 +24,7 @@ jb.component('dataTest', {
 			  .then(v => jb.utils.toSynchArray(v,true))])
 			  .then(value => {
 				  const runErr = jb.path(value,'0.runErr')
-				  const countersErr = countersErrors(expectedCounters,allowError)
+				  const countersErr = jb.test.countersErrors(expectedCounters,allowError)
 				  const expectedResultCtx = new jb.core.jbCtx(ctx,{ data: value })
 				  const expectedResultRes = expectedResult(expectedResultCtx)
 				  const success = !! (expectedResultRes && !countersErr && !runErr)
@@ -178,7 +146,7 @@ jb.component('uiFrontEndTest', {
 				// put input values as text
 				Array.from(elemToTest.querySelectorAll('input,textarea')).forEach(e=>
 					e.parentNode && jb.ui.addHTML(e.parentNode,`<input-val style="display:none">${e.value}</input-val>`))
-				const reason = countersErrors(expectedCounters,allowError)
+				const reason = jb.test.countersErrors(expectedCounters,allowError)
 				const resultHtml = elemToTest.outerHTML
 				const expectedResultRes = expectedResult(ctx.setData(resultHtml))
 				const success = !! (expectedResultRes && !reason)
@@ -236,61 +204,63 @@ jb.component('uiTest.applyVdomDiff', {
 	  }
 })
 
-function countersErrors(expectedCounters,allowError) {
-	if (!jb.spy.log) return ''
-	const exception = jb.spy.logs.find(r=>r.logNames.indexOf('exception') != -1)
-	const error = jb.spy.logs.find(r=>r.logNames.indexOf('error') != -1)
-	if (exception) return exception.err
-	if (!allowError() && error) return error.err
+jb.extension('test', {
+	runInner(propName, ctx) {
+		const profile = ctx.profile
+		return profile[propName] && ctx.runInner(profile[propName],{type: 'data'}, propName)
+	},
+	dataTestResult(ctx) {
+		return Promise.resolve(jb.test.runInner('runBefore',ctx))
+		.then(_ => jb.test.runInner('calculate',ctx))
+		.then(v => jb.utils.toSynchArray(v,true))
+		.then(value => {
+			const success = !! jb.test.runInner('expectedResult',ctx.setData(value))
+			return { success, value}
+		})
+	},
+	runInStudio(profile) {
+		return profile && jb.ui.parentFrameJb().exec(profile)
+	},
+	cleanBeforeRun(ctx) {
+		jb.db.watchableHandlers.forEach(h=>h.dispose())
+		jb.db.watchableHandlers = [new jb.watchable.WatchableValueByRef(jb.watchable.resourcesRef)];
+		jb.entries(JSON.parse(ctx.vars.$initial_resources || '{}')).forEach(e=>jb.db.resource(e[0],e[1]))
+		jb.ui.subscribeToRefChange(jb.db.watchableHandlers[0])
 
-	return Object.keys(expectedCounters || {}).map(
-		exp => expectedCounters[exp] != jb.spy.count(exp)
-			? `${exp}: ${jb.spy.count(exp)} instead of ${expectedCounters[exp]}` : '')
-		.filter(x=>x)
-		.join(', ')
-}
+		if (jb.studio && jb.studio.compsRefHandler) {
+			jb.studio.compsRefHandler.resources(ctx.vars.$initial_comps)
+			jb.db.watchableHandlers.push(jb.studio.compsRefHandler)
+		}
+		if (!jb.spy.log) jb.spy.initSpy({spyParam: 'none'})
+		jb.spy.clear()
+	},
+	countersErrors(expectedCounters,allowError) {
+		if (!jb.spy.log) return ''
+		const exception = jb.spy.logs.find(r=>r.logNames.indexOf('exception') != -1)
+		const error = jb.spy.logs.find(r=>r.logNames.indexOf('error') != -1)
+		if (exception) return exception.err
+		if (!allowError() && error) return error.err
 
-jb.ui.elemOfSelector = (selector,ctx) => jb.ui.widgetBody(ctx).querySelector(selector) 
-	|| document.querySelector('.jb-dialogs '+ selector)
-jb.ui.cmpOfSelector = (selector,ctx) => jb.path(jb.ui.elemOfSelector(selector,ctx),'_component')
-
-jb.ui.cssOfSelector = (selector,ctx) => {
-	const jbClass = (jb.ui.elemOfSelector(selector,ctx).classList.value || '').split('-').pop()
-	return jb.entries(jb.ui.cssSelectors_hash).filter(e=>e[1] == jbClass)[0] || ''
-}
-
-var jb_success_counter = 0;
-var jb_fail_counter = 0;
-
-function goto_editor(id) {
-	fetch(`/?op=gotoSource&comp=${id}`)
-}
-function goto_studio(id) {
-	location.href = `/project/studio/${id}?host=test`
-}
-function hide_success_lines() {
-	document.querySelectorAll('.success').forEach(e=>e.style.display = 'none')
-}
-
-function isCompNameOfType(name,type) {
-	const comp = name && jb.comps[name];
-	if (comp) {
-		while (jb.comps[name] && !jb.comps[name].type && jb.utils.compName(jb.comps[name].impl))
-			name = jb.utils.compName(jb.comps[name].impl);
-		return (jb.comps[name] && jb.comps[name].type || '').indexOf(type) == 0;
+		return Object.keys(expectedCounters || {}).map(
+			exp => expectedCounters[exp] != jb.spy.count(exp)
+				? `${exp}: ${jb.spy.count(exp)} instead of ${expectedCounters[exp]}` : '')
+			.filter(x=>x)
+			.join(', ')
 	}
-}
+})
 
-function profileSingleTest(testID) {
-	new jb.core.jbCtx().setVars({testID}).run({$: testID})
-}
+jb.extension('testers', {
+  initExtension() {
+	jb.frame.goto_editor = id => fetch(`/?op=gotoSource&comp=${id}`)
+	jb.frame.hide_success_lines = () => jb.document.querySelectorAll('.success').forEach(e=>e.style.display = 'none')
+	jb.frame.profileSingleTest = testID => new jb.core.jbCtx().setVars({testID}).run({$: testID})
 
-if (typeof startTime === 'undefined')
-	startTime = new Date().getTime();
-startTime = startTime || new Date().getTime();
+	jb.testers.jb_success_counter = 0;
+	jb.testers.jb_fail_counter = 0;
 
-jb.testers = {
-  runTests: function({testType,specificTest,show,pattern,}) {
+	jb.frame.startTime = jb.frame.startTime || new Date().getTime();
+  },
+  runTests({testType,specificTest,show,pattern,}) {
 	const {pipe, fromIter, subscribe,concatMap, fromPromise } = jb.callbag
 	let index = 1
 	self.jbRunningTests = true
@@ -346,9 +316,9 @@ jb.testers = {
 		}),
 		subscribe(res=> {
 			if (res.success)
-				jb_success_counter++;
+				jb.testers.jb_success_counter++;
 			else
-				jb_fail_counter++;
+				jb.testers.jb_fail_counter++;
 			const baseUrl = window.location.href.split('/tests.html')[0]
 			const studioUrl = `http://localhost:8082/project/studio/${res.id}?host=test`
 			const matchLogs = 'remote,itemlist,refresh'.split(',')
@@ -364,13 +334,13 @@ jb.testers = {
 				<span>${res.reason||''}</span>
 				</div>`;
 
-			document.getElementById('success-counter').innerHTML = ', success ' + jb_success_counter;
-			document.getElementById('fail-counter').innerHTML = 'failures ' + jb_fail_counter;
-			document.getElementById('fail-counter').style.color = jb_fail_counter ? 'red' : 'green';
+			document.getElementById('success-counter').innerHTML = ', success ' + jb.testers.jb_success_counter;
+			document.getElementById('fail-counter').innerHTML = 'failures ' + jb.testers.jb_fail_counter;
+			document.getElementById('fail-counter').style.color = jb.testers.jb_fail_counter ? 'red' : 'green';
 			document.getElementById('fail-counter').style.cursor = 'pointer';
 			document.getElementById('memory-usage').innerHTML = ', ' + (jb.path(jb.frame,'performance.memory.usedJSHeapSize' || 0) / 1000000)  + 'M memory used';
 
-			document.getElementById('time').innerHTML = ', ' + (new Date().getTime() - startTime) +' mSec';
+			document.getElementById('time').innerHTML = ', ' + (new Date().getTime() - jb.frame.startTime) +' mSec';
 			jb.ui.addHTML(document.body,testResultHtml);
 			if (!res.renderDOM && show) res.show()
 			if (jb.ui && tests.length >1) {
@@ -378,4 +348,23 @@ jb.testers = {
 				jb.cbLogByPath = {}
 			}
 	}))
-}}
+
+	function isCompNameOfType(name,type) {
+		const comp = name && jb.comps[name];
+		if (comp) {
+			while (jb.comps[name] && !jb.comps[name].type && jb.utils.compName(jb.comps[name].impl))
+				name = jb.utils.compName(jb.comps[name].impl);
+			return (jb.comps[name] && jb.comps[name].type || '').indexOf(type) == 0;
+		}
+	}	
+  }
+})
+
+jb.extension('ui', {
+	elemOfSelector: (selector,ctx) => jb.ui.widgetBody(ctx).querySelector(selector) || document.querySelector('.jb-dialogs '+ selector),
+	cmpOfSelector: (selector,ctx) => jb.path(jb.ui.elemOfSelector(selector,ctx),'_component'),
+	cssOfSelector(selector,ctx) {
+		const jbClass = (jb.ui.elemOfSelector(selector,ctx).classList.value || '').split('-').pop()
+		return jb.entries(jb.ui.cssSelectors_hash).filter(e=>e[1] == jbClass)[0] || ''
+	}
+})
