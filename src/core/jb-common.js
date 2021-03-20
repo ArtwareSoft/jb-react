@@ -721,7 +721,7 @@ jb.component('log', {
     {id: 'logName', as: 'string', mandatory: 'true' },
     {id: 'logObj', as: 'single' }
   ],
-  impl: (ctx,log,logObj) => jb.log(log,{...logObj,ctx})
+  impl: (ctx,log,logObj) => { jb.log(log,{...logObj,ctx}); return ctx.data }
 })
 
 jb.component('asIs', {
@@ -1179,6 +1179,9 @@ jb.component('waitFor',{
     {id: 'timeout', as: 'number', defaultValue: 5000},
   ],
   impl: (ctx,check,interval,timeout) => {
+    // const res1 = check()
+    // if (!jb.utils.isPromise(res1))
+    //   return Promise.resolve(res1)
     let waitingForPromise, timesoFar = 0
     return new Promise((resolve,reject) => {
         const toRelease = setInterval(() => {

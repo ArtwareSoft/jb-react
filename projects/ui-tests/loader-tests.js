@@ -1,23 +1,36 @@
 jb.component('loaderTest.treeShake', {
   impl: dataTest({
-    calculate: pipeline(() => jb.loader.treeShake(['notContains'],{}), sort(), join(',')),
-    expectedResult: '%%==notContains,not,contains,#tostring,#core.tojstype,#core.init_core_main'
+    calculate: pipeline(() => jb.codeLoader.treeShake(['notContains'],{}), join(',')),
+    expectedResult: and(contains('contains'),contains('not'))
   })
 })
 
 jb.component('loaderTest.treeShake.itemlist', {
   impl: dataTest({
-    allowError: true,
-    calculate: pipeline(() => jb.loader.treeShake(['itemlist'],{}), sort(), join(',')),
+    calculate: pipeline(() => jb.codeLoader.treeShake(['itemlist'],{}), join(',')),
     expectedResult: and(contains('writeValue'),contains('#ui.vdomDiff'))
   })
 })
 
-// jb.component('loaderTest.runOnWorker', {
-//   impl: dataTest({
-//     timeout: 5000,
-//     runBefore: runActions(delay(1000), jbm.workerWithLoader('dynaWorker')),
-//     calculate: remote.data(pipeline('hello'), jbm.byUri('tests•dynaWorker')),
-//     expectedResult: 'hello'
-//   })
-// })
+jb.component('loaderTest.treeShake.big', {
+  impl: dataTest({
+    calculate: pipeline(() => jb.codeLoader.code(jb.codeLoader.treeShake('widget.headless,call,editableText,editableText.codemirror'.split(','),{}))),
+    expectedResult: contains('jb.ui.h')
+  })
+})
+
+jb.component('loaderTest.treeShake.funcDef', {
+  impl: dataTest({
+    calculate: pipeline(() => jb.codeLoader.treeShake(['#utils.toSynchArray'],{}), join(',')),
+    expectedResult: contains('#callbag.fromIter')
+  })
+})
+
+jb.component('loaderTest.runOnWorker', {
+  impl: dataTest({
+    timeout: 5000,
+    runBefore: jbm.worker('dynaWorker'),
+    calculate: remote.data(pipeline('hello'), jbm.byUri('tests•dynaWorker')),
+    expectedResult: '%%==hello'
+  })
+})

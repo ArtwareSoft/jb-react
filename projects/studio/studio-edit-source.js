@@ -136,7 +136,7 @@ jb.component('studio.viewAllFiles', {
         })
       ],
       features: [
-        variable({name: 'file', value: pipeline(studio.projectsDir(),'%%/%$studio/project%/index.html'), watchable: true}),
+        watchable('file', pipeline(studio.projectsDir(),'%%/%$studio/project%/index.html')),
         group.wait({
           for: ctx => jb.studio.projectUtils.projectContent(ctx),
           varName: 'content'
@@ -494,7 +494,7 @@ jb.component('studio.githubHelper', {
                 })
               ],
               features: [
-                variable({name: 'item', value: 'new project', watchable: true}),
+                watchable('item', 'new project'),
                 variable({
                   name: 'content',
                   value: obj(
@@ -536,13 +536,8 @@ git push - copy the local repostiry to github's cloud repository`
           features: watchRef({ref: '%$properties%', includeChildren: 'yes'})
         })
       ],
-      features: [
-        variable({
-          name: 'properties',
-          value: obj(prop('username', 'user1'), prop('repository', 'repo1')),
-          watchable: true
-        })
-      ]
+      features: watchable('properties',obj(prop('username', 'user1'), prop('repository', 'repo1'))),
+    
     }),
     title: 'github helper',
     features: [

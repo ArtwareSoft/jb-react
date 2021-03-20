@@ -76,28 +76,12 @@ jb.component('gpt3Demo.main', {
       })
     ],
     features: [
-      variable({
-        name: 'prompt',
-        value: `Q: hello gpt
-A:`,
-        watchable: true
-      }),
-      variable({name: 'result', watchable: true}),
-      variable({
-        name: 'maxTokens',
-        value: '5',
-        watchable: true
-      }),
-      variable({
-        name: 'temperature',
-        value: '0.7',
-        watchable: true
-      }),
-      variable({
-        name: 'topP',
-        value: '0',
-        watchable: true
-      })
+      watchable('prompt',`Q: hello gpt
+A:`),
+      watchable('result'),
+      watchable('maxTokens','5'),
+      watchable('temperature','0.7'),
+      watchable('topP','0')
     ]
   })
 })

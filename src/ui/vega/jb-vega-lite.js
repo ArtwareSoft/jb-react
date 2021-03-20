@@ -51,13 +51,7 @@ jb.component('vega.interactiveChart', {
       }),
       controlWithCondition('%$showSpec%', editableText({databind: '%$prettySpec%', style: editableText.codemirror()})),
     ],
-    features: [
-      variable({
-        name: 'prettySpec',
-        value: ({},{},{spec}) => jb.utils.prettyPrint(jb.vega.cleanEmptyValues(spec)),
-        watchable: true
-      })
-    ]
+    features: watchable('prettySpec', ({},{},{spec}) => jb.utils.prettyPrint(jb.vega.cleanEmptyValues(spec))),
   })
 })
 

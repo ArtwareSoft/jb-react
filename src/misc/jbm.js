@@ -31,7 +31,7 @@ jb.extension('cbHandler', {
     newId: () => jb.uri + ':' + (jb.cbHandler.counter++),
     get: id => jb.cbHandler.map[id],
     getAsPromise(id,t) { 
-        return jb.exec(waitFor({check: ()=> jb.cbHandler.map[id], interval: 5, times: 10}))
+        return jb.exec({$: 'waitFor', check: ()=> jb.cbHandler.map[id], interval: 5, times: 10})
             .catch(err => jb.logError('cbLookUp - can not find cb',{id, in: jb.uri}))
             .then(cb => {
                 if (t == 2) jb.cbHandler.removeEntry(id)
@@ -92,12 +92,11 @@ jb.extension('jbm', {
         Object.assign(jb, {
             uri: jb.uri || jb.frame.jbUri,
             ports: {},
-            remoteExec: sctx => Promise.resolve(jb.jbm.execStripedCtx(sctx)),
-            createCallbagSource: sctx => jb.jbm.execStripedCtx(sctx), 
-            createCalllbagOperator: sctx => jb.jbm.execStripedCtx(sctx),
+            remoteExec: sctx => jb.codeLoader.bringMissingCode(sctx).then(()=>jb.remoteCtx.deStrip(sctx)()),
+            createCallbagSource: sctx => jb.remoteCtx.deStrip(sctx)(),
+            createCalllbagOperator: sctx => jb.remoteCtx.deStrip(sctx)(),
         })        
     },
-    execStripedCtx: sctx => jb.remoteCtx.deStrip(sctx)(),
     portFromFrame(frame,to,options) {
         if (jb.ports[to]) return jb.ports[to]
         const from = jb.uri
@@ -146,6 +145,7 @@ jb.extension('jbm', {
                             handlers[cbId] && reject(err)
                         }, timeout)
                         handlers[cbId] = {resolve,reject,remoteRun, timer}
+                        jb.log('remote exec request',{remoteRun,port,oneway})
                         port.postMessage({$:'CB.exec', remoteRun, cbId, isAction, timeout })
                     })
                 }
@@ -157,6 +157,7 @@ jb.extension('jbm', {
 
         function initCommandListener() {
             port.onMessage.addListener(m => {
+                jb.log('remote command listener',{m})
                 if ((m.$ || '').indexOf('CB.') == 0)
                     handleCBCommnad(m)
                 else if (m.$ == 'CB')
@@ -176,7 +177,8 @@ jb.extension('jbm', {
         }
         function inboundExecResult(m) { 
             jb.cbHandler.getAsPromise(m.cbId).then(h=>{
-                if (!h) return
+                if (!h) 
+                    return jb.logError('remote exec result arrived with no handler',{cbId:m.cbId, m})
                 clearTimeout(h.timer)
                 if (m.type == 'error') {
                     jb.logError('remote remoteExec', {m, h})
@@ -184,8 +186,8 @@ jb.extension('jbm', {
                 } else {
                     h.resolve(m.result)
                 }
+                jb.cbHandler.removeEntry(m.cbId,m)
             })
-            jb.cbHandler.removeEntry(m.cbId,m)
         }            
         function remoteCB(cbId, localCbId, routingMsg) { 
             let talkback
@@ -196,13 +198,19 @@ jb.extension('jbm', {
         }
         function handleCBCommnad(cmd) {
             const {$,sourceId,cbId,isAction} = cmd
-            Promise.resolve(jb.remoteCtx.deStrip(cmd.remoteRun)()).then( result => {
-                if ($ == 'CB.createSource' && typeof result == 'function')
-                    jb.cbHandler.map[cbId] = result
-                else if ($ == 'CB.createOperator' && typeof result == 'function')
-                    jb.cbHandler.map[cbId] = result(remoteCB(sourceId, cbId,cmd) )
-                else if ($ == 'CB.exec')
-                    port.postMessage({$:'execResult', cbId, result: isAction ? {} : jb.remoteCtx.stripData(result) , ...jb.net.reverseRoutingProps(cmd) })
+            jb.codeLoader.bringMissingCode(cmd.remoteRun)
+                .then(()=>{
+                    jb.log('run cmd from remote',{cmd})
+                    return jb.remoteCtx.deStrip(cmd.remoteRun)()
+                })
+                .then( result => {
+                    if ($ == 'CB.createSource' && typeof result == 'function')
+                        jb.cbHandler.map[cbId] = result
+                    else if ($ == 'CB.createOperator' && typeof result == 'function')
+                        jb.cbHandler.map[cbId] = result(remoteCB(sourceId, cbId,cmd) )
+                    else if ($ == 'CB.exec')
+                        port.postMessage({$:'execResult', cbId, result: isAction ? {} : jb.remoteCtx.stripData(result) , ...jb.net.reverseRoutingProps(cmd) })
+
             }).catch(err=> $ == 'CB.exec' && 
                 port.postMessage({$:'execResult', cbId, result: { type: 'error', err}, ...jb.net.reverseRoutingProps(cmd) }))
         }
@@ -226,115 +234,113 @@ jb.extension('jbm', {
     }            
 })
 
+// jb.component('jbm.workerOld', {
+//     type: 'jbm',
+//     params: [
+//         {id: 'id', as: 'string', defaultValue: 'w1' },
+//         {id: 'libs', as: 'array', defaultValue: ['common','rx','remote'] },
+//         {id: 'jsFiles', as: 'array' },
+//         {id: 'networkPeer', as: 'boolean', description: 'used for testing' },
+//     ],    
+//     impl: ({},name,libs,jsFiles,networkPeer) => {
+//         const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
+//         if (childsOrNet[name]) return childsOrNet[name]
+//         const workerUri = networkPeer ? name : `${jb.uri}•${name}`
+//         const distPath = jb.jbm.pathOfDistFolder()
+//         const spyParam = ((jb.path(jb.frame,'location.href')||'').match('[?&]spy=([^&]+)') || ['', ''])[1]
+//         const baseUrl = jb.path(jb.frame,'location.origin') || jb.baseUrl || ''
+//         const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
+//         const settings = { uri: workerUri, libs: libs.join(','), baseUrl, distPath, jsFiles }
+//         const jbObj = { uri: workerUri, baseUrl, distPath }
+//         const jb_loader_code = [jb_dynamicLoad.toString(),jb_loadProject.toString(),jbm_create.toString(),
+//             jb_modules ? `self.jb_modules= ${JSON.stringify(jb_modules)}` : ''
+//         ].join(';\n\n')
+//         const workerCode = `
+// ${jb_loader_code};
+// jb = ${JSON.stringify(jbObj)}
+// jb_loadProject(${JSON.stringify(settings)}).then(() => {
+//     self.spy = jb.spy.initSpy({spyParam: '${spyParam}'})
+//     self.${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
+//     console.log('worker loaded')
+//     postMessage('loaded')
+//     self.loaded = true
+// })`
+//         const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
+//         // wait for worker jbm to load
+//         const promise = new Promise(resolve => jb.exec(rx.pipe(
+//             source.event('message', () =>worker),
+//             rx.take(1),
+//             sink.action(() => resolve(childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))))
+//         )))
+//         promise.uri = workerUri
+//         return promise
+//     }
+// })
+
 jb.component('jbm.worker', {
     type: 'jbm',
     params: [
         {id: 'id', as: 'string', defaultValue: 'w1' },
-        {id: 'libs', as: 'array', defaultValue: ['common','rx','remote'] },
-        {id: 'jsFiles', as: 'array' },
         {id: 'networkPeer', as: 'boolean', description: 'used for testing' },
-        {id: 'startupComps', as: 'array', defaultValue: ['#jbm.extendPortToJbmProxy'] },
     ],    
-    impl: ({},name,libs,jsFiles,networkPeer,startupComps) => {
+    impl: ({},name,networkPeer) => {
         const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
         if (childsOrNet[name]) return childsOrNet[name]
         const workerUri = networkPeer ? name : `${jb.uri}•${name}`
-        const distPath = jb.jbm.pathOfDistFolder()
-        const spyParam = ((jb.path(jb.frame,'location.href')||'').match('[?&]spy=([^&]+)') || ['', ''])[1]
-        const baseUrl = jb.path(jb.frame,'location.origin') || jb.baseUrl || ''
         const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
-        const settings = { uri: workerUri, libs: libs.join(','), startupComps, baseUrl, distPath, jsFiles }
-        const jbObj = { uri: workerUri, baseUrl, distPath }
-        const jb_loader_code = [jb_dynamicLoad.toString(),jb_loadProject.toString(),jbm_create.toString(),
-            jb_modules ? `self.jb_modules= ${JSON.stringify(jb_modules)}` : ''
-        ].join(';\n\n')
+        const startupCode = jb.codeLoader.code(jb.codeLoader.treeShake(jb.codeLoader.coreComps(),{}))
         const workerCode = `
-${jb_loader_code};
-jb = ${JSON.stringify(jbObj)}
-jb_loadProject(${JSON.stringify(settings)}).then(() => {
-    self.spy = jb.spy.initSpy({spyParam: '${spyParam}'})
-    self.${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
-    console.log('worker loaded')
-    postMessage('loaded')
-    self.loaded = true
-})`
-        const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
-        // wait for worker jbm to load
-        const promise = new Promise(resolve => jb.exec(rx.pipe(
-            source.event('message', () =>worker),
-            rx.take(1),
-            sink.action(() => resolve(childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))))
-        )))
-        promise.uri = workerUri
-        return promise
-    }
-})
-
-jb.component('jbm.workerWithLoader', {
-    type: 'jbm',
-    params: [
-        {id: 'id', as: 'string', defaultValue: 'w1' },
-        {id: 'compLoader', defaultValue: () => jb.loader},
-    ],    
-    impl: ({},name,loader) => {
-        const childsOrNet = jb.jbm.childJbms
-        if (childsOrNet[name]) return childsOrNet[name]
-        const workerUri = `${jb.uri}•${name}`
-        const parentOrNet = 'jb.parent'
-        const startupCode = loader.code(loader.treeShake(loader.core,{}))
-        const workerCode = `
-const jb = {}
+jb = { uri: '${workerUri}'}
+jbLoadingPhase = 'libs'
 ${startupCode};
-if (jb.jbm && jb.jbm.extendPortToJbmProxy)
-    self.${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
-
-console.log('worker loaded')
-postMessage('loaded')
-self.loaded = true
+spy = jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
+jb.codeLoaderJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
+jbLoadingPhase = 'appFiles'
+//# sourceURL=${workerUri}-startup.js
 `
         const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
-        // wait for worker jbm to load
-        const promise = new Promise(resolve => jb.exec(rx.pipe(
-            source.event('message', () =>worker),
-            rx.take(1),
-            sink.action(() => resolve(childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))))
-        )))
-        promise.uri = workerUri
-        return promise
+        return childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
     }
 })
 
 jb.component('jbm.child', {
     type: 'jbm',
     params: [
-        {id: 'name', as: 'string', mandatory: true},
-        {id: 'libs', as: 'array', defaultValue: ['common','rx','remote'] },
+        {id: 'id', as: 'string', mandatory: true},
+        {id: 'codeLoaderUri', as: 'string', description: 'default is parent codeLoaderJbm'},
     ],    
-    impl: ({},name,libs) => {
+    impl: ({},name) => {
         if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
         const childUri = `${jb.uri}•${name}`
-        const res = jb.frame.jbm_create && Promise.resolve(jb.frame.jbm_create(libs, { loadFromDist: true, uri: childUri, distPath: jb.distPath}))
-            .then(child => {
-                jb.jbm.childJbms[name] = child
-                child.parent = jb
-                child.ports[jb.uri] = {
-                    from: child.uri, to: jb.uri,
-                    postMessage: m => jb.net.handleOrRouteMsg(jb.uri,child.uri,jb.ports[child.uri].handler,m),
-                    onMessage: { addListener: handler => child.ports[jb.uri].handler = handler }, // only one handler
-                }
-                child.jbm.extendPortToJbmProxy(child.ports[jb.uri])
-                jb.ports[child.uri] = {
-                    from: jb.uri,to: child.uri,
-                    postMessage: m => 
-                        child.net.handleOrRouteMsg(child.uri,jb.uri,child.ports[jb.uri].handler ,m),
-                    onMessage: { addListener: handler => jb.ports[child.uri].handler = handler }, // only one handler
-                }
-                jb.jbm.extendPortToJbmProxy(jb.ports[child.uri])
-                jb.spy && child.spy.initSpy({spyParam: jb.spy.spyParam})
-                return child
-            })
-        res.uri = childUri
-        return res
+        const startupCode = jb.codeLoader.code(jb.codeLoader.treeShake(jb.codeLoader.coreComps(),{}))
+        const child = jb.frame.eval(`(function () {
+const jb = { uri: '${childUri}'}
+self.jbLoadingPhase = 'libs'
+${startupCode};
+self.jbLoadingPhase = 'appFiles'
+return jb
+})()
+//# sourceURL=${childUri}-startup.js
+`)
+        jb.jbm.childJbms[name] = child
+        child.parent = jb
+        child.codeLoaderJbm = jb.codeLoaderJbm || jb // TODO: use codeLoaderUri
+        child.ports[jb.uri] = {
+            from: child.uri, to: jb.uri,
+            postMessage: m => 
+                jb.net.handleOrRouteMsg(jb.uri,child.uri,jb.ports[child.uri].handler,m),
+            onMessage: { addListener: handler => child.ports[jb.uri].handler = handler }, // only one handler
+        }
+        child.jbm.extendPortToJbmProxy(child.ports[jb.uri])
+        jb.ports[child.uri] = {
+            from: jb.uri,to: child.uri,
+            postMessage: m => 
+                child.net.handleOrRouteMsg(child.uri,jb.uri,child.ports[jb.uri].handler ,m),
+            onMessage: { addListener: handler => jb.ports[child.uri].handler = handler }, // only one handler
+        }
+        jb.jbm.extendPortToJbmProxy(jb.ports[child.uri])
+        jb.spy && child.spy.initSpy({spyParam: jb.spy.spyParam})
+        return child
     }
 })
 
@@ -397,8 +403,5 @@ jb.component('jbm.same', {
 
 jb.component('jbm.vDebugger', {
     type: 'jbm',
-    impl: ctx => Promise.resolve(ctx.run(jbm.child('vDebugger',['vDebugger']),)).then(jbm=>{
-        jbm.studio.initLocalCompsRefHandler(jbm.studio.compsRefOfjbm(jbm.parent))
-        return jbm
-    })
+    impl: jbm.child('vDebugger')
 })

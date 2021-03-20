@@ -37,7 +37,7 @@ jb.component('nb.notebook', {
       features: [
         variable('idx', ({},{index}) => index -1),
         variable('path', '%$studio/project%.notebook~impl~elements~%$idx%'),
-        variable({name: 'editMode', watchable: true})
+        watchable('editMode')
       ]
     }),
     itemVariable: 'notebookElem'

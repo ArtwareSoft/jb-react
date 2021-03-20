@@ -100,7 +100,7 @@ jb.component('group.tabs', {
           features: watchRef('%$selectedTab%')
         })
       ],
-      features: variable({name: 'selectedTab', value: 0, watchable: true}),
+      features: watchable('selectedTab', 0),
     }),
     'tabsModel'
   )
@@ -154,7 +154,7 @@ jb.component('group.accordion', {
         itemVariable: 'section',
         indexVariable: 'sectionIndex'
       }),
-      features: variable({name: 'selectedTab', value: 0, watchable: true})
+      features: watchable('selectedTab',0)
     }),
     'sectionsModel'
   )
@@ -212,7 +212,7 @@ jb.component('group.sectionExpandCollapse', {
           features: watchRef('%$sectionExpanded%')
         })
       ],
-      features: variable({name: 'sectionExpanded', watchable: true, value: '%$autoExpand%'}),
+      features: watchable('sectionExpanded','%$autoExpand%'),
     }),
     'sectionsModel'
   )
@@ -247,7 +247,7 @@ jb.component('group.sectionsExpandCollapse', {
               features: watchRef('%$sectionExpanded%')
             })
           ],
-          features: variable({name: 'sectionExpanded', watchable: true, value: '%$autoExpand%'}),
+          features: watchable('sectionExpanded','%$autoExpand%'),
         }),
         itemVariable: 'section',
         indexVariable: 'sectionIndex'

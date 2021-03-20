@@ -9,11 +9,7 @@ jb.component('group.itemlistContainer', {
   ],
   impl: features(
 	feature.serviceRegistey(),
-    variable({
-        name: 'itemlistCntrData',
-        value: {'$': 'object', search_pattern: '', selected: '%$initialSelection%'},
-        watchable: true
-    }),
+    watchable('itemlistCntrData',{'$': 'object', search_pattern: '', selected: '%$initialSelection%'}),
     variable({ // not watchable
 		name: 'itemlistCntr',
 		value: {'$': 'object', filters: () => []},

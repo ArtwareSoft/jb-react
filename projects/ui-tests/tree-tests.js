@@ -128,7 +128,7 @@ jb.component('uiTest.treeDD.boundedSelection', {
           tree.expandPath('personWithChildren~children')
         ]
       }),
-      features: variable({name: 'selected', watchable: true, value: 'personWithChildren~children~1'})
+      features: watchable('selected', 'personWithChildren~children~1')
     }),
     action: uiAction.keyboardEvent({ selector: '[interactive]', type: 'keydown', keyCode: 40, ctrl: 'ctrl' }),
     expectedResult: contains(['Bart','Maggie','selected','Lisa'])

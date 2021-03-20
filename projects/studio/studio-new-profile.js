@@ -190,11 +190,7 @@ jb.component('studio.selectProfile', {
           studio.categoriesMarks('%$type%', '%$path%')
         )
       }),
-      variable({
-        name: 'SelectedCategory',
-        value: If(studio.val('%$path%'), 'all', '%$Categories[0]/code%'),
-        watchable: true
-      }),
+      watchable('SelectedCategory',If(studio.val('%$path%'), 'all', '%$Categories[0]/code%')),
       group.itemlistContainer({initialSelection: studio.compName('%$path%')}),
       css.width('400')
     ]

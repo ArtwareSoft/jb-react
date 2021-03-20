@@ -3,7 +3,7 @@ jb.component('editableBoolean.checkbox', {
   impl: customStyle({
     template: ({},{databind},h) => h('input', { type: 'checkbox', ...(databind && {checked: ''}) , 
       onclick: 'toggle', onchange: 'toggle', onkeyup: 'toggleByKey'  }),
-    features: field.databind()
+    features: [editableBoolean.initToggle(), field.databind()]
   })
 })
 
@@ -14,7 +14,7 @@ jb.component('editableBoolean.checkboxWithLabel', {
       h('input', { type: 'checkbox', ...(databind && {checked: ''}), id: "switch_"+fieldId, onchange: 'toggle', onkeyup: 'toggleByKey' }),
       h('label',{for: "switch_"+fieldId },title())
      ]),
-    features: field.databind()
+    features: [editableBoolean.initToggle(), field.databind()]
   })
 })
 
@@ -28,7 +28,7 @@ jb.component('editableBoolean.expandCollapseWithUnicodeChars', {
     template: ({},{databind,toExpandSign,toCollapseSign},h) => 
       h('span',{ onclick: 'toggle' }, databind ? toCollapseSign : toExpandSign),
     css: '{cursor: pointer; opacity: 0.6; user-select: none}',
-    features: field.databind()
+    features: [editableBoolean.initToggle(), field.databind()]
   })
 })
 
@@ -38,7 +38,7 @@ jb.component('editableBoolean.expandCollapse', {
     template: ({},{databind},h) => h('i',{class:'material-icons noselect', onclick: 'toggle' },
       databind ? 'keyboard_arrow_down' : 'keyboard_arrow_right'),
     css: '{ font-size:16px; cursor: pointer }',
-    features: field.databind()
+    features: [editableBoolean.initToggle(), field.databind()]
   })
 })
 
@@ -57,7 +57,7 @@ jb.component('editableBoolean.mdcXV', {
             h('i',{class:'material-icons mdc-icon-button__icon '}, noIcon),
         ]),
     css: '{ border-radius: 2px; padding: 0; width: 24px; height: 24px;}',
-    features: [field.databind(), mdcStyle.initDynamic()]
+    features: [editableBoolean.initToggle(), field.databind(), mdcStyle.initDynamic()]
   })
 })
 
@@ -70,6 +70,7 @@ jb.component('editableBoolean.buttonXV', {
     {id: 'buttonStyle', type: 'button.style', mandatory: true, defaultValue: button.mdcFloatingAction() }
   ],
   impl: styleWithFeatures(call('buttonStyle'), features(
+      editableBoolean.initToggle(),
       htmlAttribute('onclick','toggle'),
       ctx => ctx.run({...ctx.cmpCtx.params[jb.toboolean(ctx.vars.$model.databind()) ? 'yesIcon' : 'noIcon' ], 
         title: ctx.exp('%$$model/title%'), $: 'feature.icon'}),
@@ -83,6 +84,7 @@ jb.component('editableBoolean.iconWithSlash', {
   ],
   impl: styleWithFeatures(button.mdcIcon({buttonSize: '%$buttonSize%'}), features(
       Var('strokeColor', css.valueOfCssVar('mdc-theme-on-secondary')),
+      editableBoolean.initToggle(),
       htmlAttribute('onclick','toggle'),
       htmlAttribute('title','%$$model/title%'),
       css(If('%$$model/databind%','',`background-repeat: no-repeat; background-image: url("data:image/svg+xml;utf8,<svg width='%$buttonSize%' height='%$buttonSize%' viewBox='0 0 %$buttonSize% %$buttonSize%' xmlns='http://www.w3.org/2000/svg'><line x1='0' y1='0' x2='%$buttonSize%' y2='%$buttonSize%' style='stroke:%$strokeColor%;stroke-width:2' /></svg>")`))
@@ -106,7 +108,7 @@ jb.component('editableBoolean.mdcSlideToggle', {
       h('label',{for: 'switch_' + fieldId},toggleText)
     ]),
     css: ctx => jb.ui.propWithUnits('width',ctx.params.width),
-    features: [field.databind(), mdcStyle.initDynamic()]
+    features: [editableBoolean.initToggle(), field.databind(), mdcStyle.initDynamic()]
   })
 })
 
@@ -132,6 +134,7 @@ jb.component('editableBoolean.mdcCheckBox', {
     ]),
     css: ctx => jb.ui.propWithUnits('width',ctx.params.width),
     features: [
+      editableBoolean.initToggle(),
       field.databind(), 
       css('~ .mdc-checkbox__checkmark { top: -9px}')
       // frontEnd((ctx,{cmp}) => {

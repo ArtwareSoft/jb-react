@@ -78,6 +78,7 @@ jb.component('remote.initShadowData', {
     impl: rx.pipe(
         source.watchableData({ref: '%$src%', includeChildren: 'yes'}),
         rx.map(obj(prop('op','%op%'), prop('path',({data}) => jb.db.pathOfRef(data.ref)))),
+        rx.log('test op'),
         sink.action(remote.action( 
             ctx => jb.db.doOp(jb.db.refOfPath(ctx.data.path), ctx.data.op, ctx),
             '%$jbm%')
@@ -92,7 +93,9 @@ jb.component('net.listSubJbms', {
     category: 'source',
     impl: pipe(
         () => Object.values(jb.jbm.childJbms || {}),
+        log('test listSubJbms 1'),
         remote.data(net.listSubJbms(),'%%'),
+        log('test listSubJbms 2'),
         aggregate(list(() => jb.uri,'%%'))
     )
 })

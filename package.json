@@ -72,7 +72,6 @@
     "eslint": "^5.9.0",
     "eslint-config-google": "^0.11.0",
     "history": "^4.6.1",
-    "immutability-helper": "^2.1.2",
     "jison": "^0.4.17",
     "material-design-lite": "^1.3.0",
     "pretty": "^2.0.0",

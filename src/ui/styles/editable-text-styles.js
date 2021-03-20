@@ -118,7 +118,7 @@ jb.component('editableText.expandable', {
         })
       ],
       features: [
-        variable({name: 'editable', watchable: true}),
+        watchable('editable'),
         variable({name: 'expandableContext', value: obj()})
       ]
     }),

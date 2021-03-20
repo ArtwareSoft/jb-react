@@ -674,7 +674,7 @@ jb.component('uiTest.table.MDInplace', {
           text('%age%')
         ],
       }),
-      features: variable({name: 'sectionExpanded', watchable: true, value: obj() }),
+      features: watchable('sectionExpanded', obj()),
     }),
     userInput: userInput.click('i','toggle'),
     expectedResult: and(contains(['colspan="','inner text']),not(contains('>42<')))
@@ -712,7 +712,7 @@ jb.component('uiTest.table.MDInplace.withScroll', {
           itemlist.infiniteScroll(2),  
         ]
       }),
-      features: variable({name: 'sectionExpanded', watchable: true, value: obj() }),
+      features: watchable('sectionExpanded',obj()),
     }),
     action: runActions( 
       uiAction.scrollBy('.jb-itemlist',100),
@@ -1315,7 +1315,7 @@ jb.component('uiTest.editableBoolean.expandCollapse', {
           features: [feature.if('%$expanded%'), watchRef('%$expanded%')]
         })
       ],
-      features: variable({name: 'expanded', value: false, watchable: true})
+      features: watchable('expanded', false)
     }),
     userInput: userInput.click('#toggle', 'toggle'),
     expectedResult: contains('inner text')
@@ -1349,8 +1349,8 @@ jb.component('uiTest.expandCollapseWithDefaultCollapse', {
       })
     ],
     features: [
-      variable({name: 'expanded', value: null, watchable: true}),
-      variable({name: 'default', value: false, watchable: true})
+      watchable('expanded',() => null),
+      watchable('default',false)
     ]
   })
 })
@@ -1877,7 +1877,7 @@ jb.component('uiTest.firstSucceedingWatchableSample', {
         features: [group.firstSucceeding(), watchRef('%$gender%')]
       })
     ],
-    features: variable({name: 'gender', value: 'male', watchable: true})
+    features: watchable('gender','male')
   })
 })
 
@@ -1943,7 +1943,7 @@ jb.component('uiTest.hiddenRefBug', {
   impl: uiTest({
     control: group({
       controls: text({text: 'hey', features: hidden('%$hidden%')}),
-      features: variable({name: 'hidden', watchable: true})
+      features: watchable('hidden', false)
     }),
     expectedResult: contains('display:none')
   })
@@ -1964,7 +1964,7 @@ jb.component('uiTest.hiddenRefBug', {
 //         }),
 //         button({title: 'blue', action: writeValue('%$color%', 'blue')})
 //       ],
-//       features: variable({name: 'color', value: 'blue', watchable: true})
+//       features: watchable('color','blue')
 //     }),
 //     action: uiAction.click('#green'),
 //     expectedResult: pipeline(ctx => jb.ui.cssOfSelector('#label',ctx), contains('color: green'))
@@ -1981,7 +1981,6 @@ jb.component('uiTest.validator', {
           features: [id('fld'), validation(matchRegex('^[a-zA-Z_0-9]+$'), 'invalid project name')]
         })
       ],
-//      features: variable({name: 'formContainer', value: obj(prop('err', ''))})
     }),
     userInput: userInput.setText('a b', '#fld'),
     expectedResult: contains('invalid project name')
@@ -1990,7 +1989,7 @@ jb.component('uiTest.validator', {
 
 jb.component('uiTest.watchableVariableAsProxy', {
   impl: uiTest({
-    control: group({features: variable({name: 'link', value: '%$person%', watchable: true})}),
+    control: group({features: watchable('link', '%$person%')}),
     expectedResult: ctx => jb.db.resources[Object.keys(jb.db.resources).filter(x=>x.match(/link:[0-9]*/))[0]][Symbol.for("isProxy")]
   })
 })
@@ -2003,7 +2002,7 @@ jb.component('uiTest.watchableLinkWriteOriginalWatchLink', {
         text('%$person/name%'),
         text('%$link/name%')
       ],
-      features: variable({name: 'link', value: '%$person%', watchable: true})
+      features: watchable('link', '%$person%')
     }),
     action: writeValue('%$person/name%', 'hello'),
     expectedResult: contains(['hello', 'hello'])
@@ -2022,7 +2021,7 @@ jb.component('uiTest.watchableWriteViaLink', {
           features: id('set')
         })
       ],
-      features: variable({name: 'link', value: '%$person%', watchable: true})
+      features: watchable('link', '%$person%')
     }),
     userInput: userInput.click('#set'),
     expectedResult: contains(['hello', 'hello'])
@@ -2037,7 +2036,7 @@ jb.component('uiTest.watchableWriteViaLink', {
 //         text({text: '%$link/name%' }),
 //         button({title: 'set', action: writeValue('%$link%',obj(prop('name','hello'))), features: id('set')})
 //       ],
-//       features: variable({name: 'link', value: '%$person%', watchable: true})
+//       features: watchable('link', '%$person%')
 //     }),
 //     userInput: userInput.click('#set'),
 //     expectedResult: contains(['Homer','hello'])
@@ -2082,7 +2081,7 @@ jb.component('uiTest.watchableRefToInnerElementsWhenValueIsEmpty', {
           features: id('set')
         })
       ],
-      features: variable({name: 'selected', watchable: true, value: obj()})
+      features: watchable('selected',obj())
     }),
     userInput: userInput.click('#set'),
     expectedResult: contains('hello')

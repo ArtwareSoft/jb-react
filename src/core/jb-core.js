@@ -1,27 +1,63 @@
 Object.assign(jb, { 
-  frame: (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {}, 
   extension(libId, p1 , p2) {
     const extId = typeof p1 == 'string' ? p1 : 'main'
     const extension = p2 || p1
-    const lib = jb[libId] = jb[libId] || {__initialized: {}}
-    const funcs = Object.keys(extension).filter(k=>typeof extension[k] == 'function').filter(k=>k!='initExtension')
+    const lib = jb[libId] = jb[libId] || {__initialized: {} }
+    const funcs = Object.keys(extension).filter(k=>typeof extension[k] == 'function').filter(k=>!k.match(/^initExtension/))
     funcs.forEach(k=>lib[k] = extension[k])
-    if (extension.initExtension) {
-      const initFunc = `init_${libId}_${extId}`
-      lib[initFunc] = extension.initExtension
-      funcs.forEach(k=>lib[k].__initFunc = `#${libId}.${initFunc}`)
-      if (! lib.__initialized[initFunc]) {
-        lib.__initialized[initFunc] = true
-        Object.assign(lib, lib[initFunc](extension))
-      }
-    }
-  }
+
+    const initFuncId = Object.keys(extension).filter(k=>typeof extension[k] == 'function').filter(k=>k.match(/^initExtension/))[0]
+    const phaseFromFunc = ((initFuncId||'').match(/_phase([0-9]+)/)||[,0])[1]
+    const initFuncPhase = phaseFromFunc || { core: 1, utils: 5, db: 10, watchable: 20}[libId] || 100
+    const initFunc = `init_${libId}-${extId}-phase${initFuncPhase}`
+    const initFuncImpl = extension[initFuncId] || extension[initFunc]
+    if (!initFuncImpl) return
+
+    lib[initFunc] = initFuncImpl    
+    funcs.forEach(k=>lib[k].__initFuncs = [initFunc].map(x=>`#${libId}.${x}`))
+    if (jb.noCodeLoader)
+      Object.assign(lib, lib[initFunc]())
+  },
+  initializeLibs(libs) {
+    libs.flatMap(l => Object.keys(jb[l]).filter(x=>x.match(/^init_/)))
+      .sort((x,y) => Number(x.match(/-phase([0-9]+)/)[1]) - Number(y.match(/-phase([0-9]+)/)[1]) )
+      .forEach(initFunc=> {
+        const lib = jb[initFunc.match(/init_([^-]+)/)[1]]
+        if (! lib.__initialized[initFunc]) {
+          lib.__initialized[initFunc] = true
+          Object.assign(lib, lib[initFunc]())
+        }
+      })
+  },
+  noCodeLoader: true
 })
+
+// if (initFuncImpl) {
+//   lib[initFunc] = initFuncImpl
+//   if (! lib.__initialized[initFunc]) {
+//     lib.__initialized[initFunc] = true
+//     Object.assign(lib, lib[initFunc](extension))
+//   }
+// }
+// jb.core.dependentInit = [...(jb.core.dependentInit || []), 
+//   ...dependentInitFuncs.map(k=>({libId, func: k, extension, dependentOn: [...k.matchAll(/_([A-Za-z0-9]+)/g)].map(x=>x[1]) }))]
+// const initToRun = jb.core.dependentInit.filter(x=>x.dependentOn.every(m=>jb[m]))
+// jb.core.dependentInit = jb.core.dependentInit.filter(x=>! x.dependentOn.every(m=>jb[m]))
+// initToRun.forEach(x=>{
+//   const lib = jb[x.libId], initFunc = x.func
+//   if (! lib.__initialized[initFunc]) {
+//     lib.__initialized[initFunc] = true
+//     Object.assign(lib, lib[initFunc](extension))
+//   }
+// })
+
 
 jb.extension('core', {
   initExtension() {
     Object.assign(jb, { 
-      comps: {}, ctxDictionary: {}, macro: {}
+      frame: (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {},
+      comps: {}, ctxDictionary: {}, macro: {},
+      jstypes: jb.core.jsTypes()
     })
     return { 
       ctxCounter: 0, 
@@ -251,11 +287,8 @@ jb.extension('core', {
     for(let innerCtx=ctx; innerCtx; innerCtx = innerCtx.cmpCtx) 
       ctxStack.push(innerCtx)
     return ctxStack.map(ctx=>ctx.callerPath)
-  }
-
-})
-
-jb.extension('jstypes', {
+  },
+  jsTypes() { return {
     asIs: x => x,
     object(value) {
       if (Array.isArray(value))
@@ -306,4 +339,5 @@ jb.extension('jstypes', {
     value(value) {
       return jb.val(value)
     }
+  }}
 })

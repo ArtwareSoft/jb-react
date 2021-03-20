@@ -4,13 +4,13 @@
 // }
 
 jb.extension('watchable', {
-  initExtension(ext) {
-    Object.assign(this, {isProxy: Symbol.for("isProxy"), originalVal: Symbol.for("originalVal"), targetVal: Symbol.for("targetVal"), jbId: Symbol("jbId")})
-    jb.watchable.resourcesRef.id = 'resources'
-    jb.db.addWatchableHandler(new jb.watchable.WatchableValueByRef(jb.watchable.resourcesRef))
-    jb.db.isWatchableFunc[0] = ext.isWatchable
+  initExtension() {
+    jb.watchable.jbId = Symbol("jbId") // used in constructor
+    jb.watchable.resourcesRef.id = 'resources' // for loader: jb.watchable.resourcesRef()
+    jb.db.watchableHandlers.push(new jb.watchable.WatchableValueByRef(jb.watchable.resourcesRef))
+    jb.db.isWatchableFunc[0] = jb.watchable.isWatchable // for loader: jb.db.isWatchable(), jb.watchable.isWatchable()
+    return {isProxy: Symbol.for("isProxy"), originalVal: Symbol.for("originalVal"), targetVal: Symbol.for("targetVal") }
   },
-
   WatchableValueByRef: class WatchableValueByRef {
     constructor(resources) {
       this.resources = resources
@@ -42,7 +42,7 @@ jb.extension('watchable', {
         const insertedIndex = jb.path(opOnRef.$splice,[0,2]) && jb.path(opOnRef.$splice,[0,0]) || opOnRef.$push && opVal.length
         const insertedPath = insertedIndex != null && path.concat(insertedIndex)
         const opEvent = {op: opOnRef, path, insertedPath, ref, srcCtx, oldVal, opVal, timeStamp: new Date().getTime(), opCounter: this.opCounter++}
-        this.resources(jb.immutableUpdate(this.resources(),op),opEvent)
+        this.resources(jb.immutable.update(this.resources(),op),opEvent)
         const newVal = (opVal != null && opVal[jb.watchable.isProxy]) ? opVal : this.valOfPath(path);
         if (opOnRef.$push) {
           opOnRef.$push.forEach((toAdd,i)=>
@@ -404,6 +404,57 @@ jb.extension('watchable', {
       return jb.db.refHandler(ref).getOrCreateObservable({ref,cmp,includeChildren,srcCtx})
   },
 
+})
+
+jb.extension('immutable', {
+  initExtension() {
+    jb.immutable._commands = jb.immutable.commands()
+  },
+  update(object, spec) {
+    var nextObject = object
+    Object.keys(spec).forEach(key => {
+      if (jb.immutable._commands[key]) {
+        var objectWasNextObject = object === nextObject
+        nextObject = jb.immutable._commands[key](spec[key], nextObject, object)
+        if (objectWasNextObject && nextObject === object)
+          nextObject = object
+      } else {
+        var nextValueForKey = jb.immutable.update(object[key], spec[key])
+        var nextObjectValue = nextObject[key]
+        if (nextValueForKey !== nextObjectValue || typeof nextValueForKey === 'undefined' && !object.hasOwnProperty(key)) {
+          if (nextObject === object)
+            nextObject = jb.immutable.copy(object)
+          nextObject[key] = nextValueForKey;
+        }
+      }
+    })
+    return nextObject
+  },
+  copy(obj) {
+    res = Array.isArray(obj) ? obj.slice(0) : (obj && typeof obj === 'object') ? Object.assign({}, obj) : obj
+    res[jb.watchable.jbId] = obj[jb.watchable.jbId]
+    return res
+  },
+  commands: () => ({ 
+    $push: (value, nextObject) => value.length ? nextObject.concat(value) : nextObject,
+    $splice(value, nextObject, originalObject) {
+      value.forEach(args => {
+        if (nextObject === originalObject && args.length) nextObject = jb.immutable.copy(originalObject)
+        nextObject.splice(...args)
+      })
+      return nextObject
+    },
+    $set: x => x,
+    $merge(value, nextObject, originalObject) {
+      Object.keys(value).forEach(key => {
+        if (value[key] !== nextObject[key]) {
+          if (nextObject === originalObject) nextObject = jb.immutable.copy(originalObject);
+          nextObject[key] = value[key]
+        }
+      })
+      return nextObject
+    }
+  })
 })
 
 jb.component('runTransaction', {

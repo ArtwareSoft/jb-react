@@ -11,9 +11,13 @@ jb.component('control.icon', {
     {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx => jb.ui.ctrl(ctx, features(
-    calcProp('icon'), calcProp('type'), calcProp('title'), calcProp('size')
-  ))
+  impl: ctx => jb.ui.ctrl(ctx)
+})
+
+jb.component('icon.init', {
+  type: 'feature',
+  category: 'icon:0',
+  impl: features(calcProp('icon'), calcProp('type'), calcProp('title'), calcProp('size'))
 })
 
 jb.component('icon', {
@@ -36,6 +40,7 @@ jb.component('icon.material', {
       , icon) 
       : h('div',{title: title(), onclick: true,
         $html: `<svg width="24" height="24" jb_external="true" fill="currentColor" transform="scale(${size/24})"><path d="${jb.path(jb.ui,['MDIcons',icon])}"/></svg>`}),
+    features: icon.init()
   })
 })
 
@@ -51,7 +56,7 @@ jb.component('feature.icon', {
     {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx => ({
+  impl: ctx => ({ // todo - fix for remote
     icon: jb.ui.ctrl(ctx, features(
       calcProp('icon'), calcProp('type'), calcProp('title'), calcProp('size'),
       calcProp('iconPosition','%$$model/position%')

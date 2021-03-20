@@ -159,7 +159,7 @@ jb.component('frontEnd.flow', {
     ],
     impl: (ctx, elems) => ({ frontEndMethod: { 
       method: 'init', path: ctx.path, _flow: elems.profile,
-      action: rx.pipe(_ctx => elems(_ctx))
+      action: { $: 'rx.pipe', elems: _ctx => elems(_ctx) }
     }})
 })
 

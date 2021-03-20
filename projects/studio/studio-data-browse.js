@@ -108,7 +108,7 @@ jb.component('studio.newDataSource', {
           obj(prop('file', pipeline(sourceEditor.filesOfProject(), first())))
         )
       }),
-      variable({name: 'newFile', watchable: true})
+      watchable('newFile')
     ]
   })
 })

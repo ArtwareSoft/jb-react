@@ -75,11 +75,7 @@ jb.component('studio.jbEditorContainer', {
     {id: 'initialSelection', as: 'string', defaultValue: '%$path%'},
     {id: 'circuit', as: 'single', description: 'path or ctx of circuit to run the probe'}
   ],
-  impl: variable({
-        name: 'jbEditorCntrData',
-        value: {'$': 'object', selected: '%$initialSelection%', circuit: '%$circuit%'},
-        watchable: true
-  })
+  impl: watchable('jbEditorCntrData', {'$': 'object', selected: '%$initialSelection%', circuit: '%$circuit%'}),
 })
 
 jb.component('studio.probeResults', {

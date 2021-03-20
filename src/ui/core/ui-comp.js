@@ -235,9 +235,9 @@ jb.extension('ui','comp', {
             if (!ctx) debugger
             ctx = ctx || this.ctx;
             if (!ctx)
-                console.log('no ctx provided for jbExtend');
+                console.logError('uiComp: no ctx provided for jbExtend',{_options,ctx})
             if (typeof _options != 'object')
-                debugger;
+                console.logError('uiComp: _options should be an object',{_options,ctx})
             const options = _options.$ ? ctx.run(_options) : _options
             if (Array.isArray(options)) {
                 options.forEach(o=>this.jbExtend(o,ctx))

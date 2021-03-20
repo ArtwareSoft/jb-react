@@ -120,6 +120,7 @@ function serveFile(req,res,path) {
           if (extension == 'js') res.setHeader('Content-Type', 'application/javascript;charset=utf8');
           if (extension == 'woff') res.setHeader('Content-Type', 'application/x-font-woff');
           if (extension == 'woff2') res.setHeader('Content-Type', 'application/x-font-woff2');
+          if (extension == 'svg') res.setHeader('Content-Type', 'image/svg+xml');
 
           if (req.headers['if-none-match'] === etag) {
             res.statusCode = 304;

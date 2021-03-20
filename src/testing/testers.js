@@ -231,8 +231,8 @@ jb.extension('test', {
 			jb.studio.compsRefHandler.resources(ctx.vars.$initial_comps)
 			jb.db.watchableHandlers.push(jb.studio.compsRefHandler)
 		}
-		if (!jb.spy.log) jb.spy.initSpy({spyParam: 'none'})
-		jb.spy.clear()
+		// if (!jb.spy.log) jb.spy.initSpy({spyParam: 'none'})
+		// jb.spy.clear()
 	},
 	countersErrors(expectedCounters,allowError) {
 		if (!jb.spy.log) return ''
@@ -252,7 +252,7 @@ jb.extension('test', {
 jb.extension('testers', {
   initExtension() {
 	jb.frame.goto_editor = id => fetch(`/?op=gotoSource&comp=${id}`)
-	jb.frame.hide_success_lines = () => jb.document.querySelectorAll('.success').forEach(e=>e.style.display = 'none')
+	jb.frame.hide_success_lines = () => jb.frame.document.querySelectorAll('.success').forEach(e=>e.style.display = 'none')
 	jb.frame.profileSingleTest = testID => new jb.core.jbCtx().setVars({testID}).run({$: testID})
 
 	jb.testers.jb_success_counter = 0;

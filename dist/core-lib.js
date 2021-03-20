@@ -2,29 +2,44 @@ if (typeof jbmFactory == 'undefined') jbmFactory = {};
 jbmFactory['core'] = function(jb) {
   jb.importAllMacros && eval(jb.importAllMacros());
 Object.assign(jb, { 
-  frame: (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {}, 
   extension(libId, p1 , p2) {
     const extId = typeof p1 == 'string' ? p1 : 'main'
     const extension = p2 || p1
-    const lib = jb[libId] = jb[libId] || {__initialized: {}}
+    const lib = jb[libId] = jb[libId] || {__initialized: {} }
     const funcs = Object.keys(extension).filter(k=>typeof extension[k] == 'function').filter(k=>k!='initExtension')
     funcs.forEach(k=>lib[k] = extension[k])
-    if (extension.initExtension) {
-      const initFunc = `init_${libId}_${extId}`
-      lib[initFunc] = extension.initExtension
-      funcs.forEach(k=>lib[k].__initFunc = `#${libId}.${initFunc}`)
+    const initFunc = `init_${libId}_${extId}`
+    const initFuncImpl = extension.initExtension || extension[initFunc]
+    const dependentInitFuncs = Object.keys(extension).filter(k=>k.match(/^dependentInit/))
+    __initFuncs = [initFuncImpl && initFunc, ...dependentInitFuncs].filter(x=>x).map(x=>`#${libId}.${x}`)
+    funcs.forEach(k=>lib[k].__initFuncs = __initFuncs)
+    if (initFuncImpl) {
+      lib[initFunc] = initFuncImpl
       if (! lib.__initialized[initFunc]) {
         lib.__initialized[initFunc] = true
         Object.assign(lib, lib[initFunc](extension))
       }
     }
+    jb.core.dependentInit = [...(jb.core.dependentInit || []), 
+      ...dependentInitFuncs.map(k=>({libId, func: k, extension, dependentOn: [...k.matchAll(/_([A-Za-z0-9]+)/g)].map(x=>x[1]) }))]
+    const initToRun = jb.core.dependentInit.filter(x=>x.dependentOn.every(m=>jb[m]))
+    jb.core.dependentInit = jb.core.dependentInit.filter(x=>! x.dependentOn.every(m=>jb[m]))
+    initToRun.forEach(x=>{
+      const lib = jb[x.libId], initFunc = x.func
+      if (! lib.__initialized[initFunc]) {
+        lib.__initialized[initFunc] = true
+        Object.assign(lib, lib[initFunc](extension))
+      }
+    })
   }
 })
 
 jb.extension('core', {
   initExtension() {
     Object.assign(jb, { 
-      comps: {}, ctxDictionary: {}, macro: {}
+      frame: (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {},
+      comps: {}, ctxDictionary: {}, macro: {},
+      jstypes: jb.core.jsTypes()
     })
     return { 
       ctxCounter: 0, 
@@ -254,11 +269,8 @@ jb.extension('core', {
     for(let innerCtx=ctx; innerCtx; innerCtx = innerCtx.cmpCtx) 
       ctxStack.push(innerCtx)
     return ctxStack.map(ctx=>ctx.callerPath)
-  }
-
-})
-
-jb.extension('jstypes', {
+  },
+  jsTypes() { return {
     asIs: x => x,
     object(value) {
       if (Array.isArray(value))
@@ -309,6 +321,7 @@ jb.extension('jstypes', {
     value(value) {
       return jb.val(value)
     }
+  }}
 })
 ;
 
@@ -673,16 +686,16 @@ jb.extension('expression', {
 ;
 
 jb.extension('db', {
-    initExtension(ext) {
+    initExtension() {
       Object.assign(this, { 
         passiveSym: Symbol.for('passive'),
         resources: {}, consts: {}, 
         watchableHandlers: [],
         isWatchableFunc: [], // assigned by watchable module, if loaded - must be put in array so the code loader will not pack it.
-        simpleValueByRefHandler: ext.simpleValueByRefHandler
+        simpleValueByRefHandler: jb.db._simpleValueByRefHandler()
       })
     },
-    simpleValueByRefHandler: {
+    _simpleValueByRefHandler() { return {
         val(v) {
           if (v && v.$jb_val) return v.$jb_val()
           return v && v.$jb_parent ? v.$jb_parent[v.$jb_property] : v
@@ -714,7 +727,7 @@ jb.extension('db', {
         },
         pathOfRef: () => [],
         doOp() {},
-    },
+    }},
     resource(id,val) { 
         if (typeof val !== 'undefined')
           jb.db.resources[id] = val
@@ -910,6 +923,7 @@ Object.assign(jb, {
 
 jb.extension('spy', {
 	initExtension() {
+		// jb.spy._log() -- for codeLoader
 		Object.assign(this, {
 			logs: [],
 			settings: { 
@@ -933,6 +947,7 @@ jb.extension('spy', {
 		jb.spy.spyParam = spyParam
 		jb.spy.log = jb.spy._log // actually enables logging
 		if (jb.frame) jb.frame.spy = jb.spy // for console use
+		return jb.spy
 	},
 
 	memoryUsage: () => jb.path(jb.frame,'performance.memory.usedJSHeapSize'),

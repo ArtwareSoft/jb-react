@@ -11,7 +11,11 @@ jb.component('prettyPrint', {
 
 jb.extension('utils', {
   initExtension() {
-    return {emptyLineWithSpaces: Array.from(new Array(200)).map(_=>' ').join('')}
+    return {
+      emptyLineWithSpaces: Array.from(new Array(200)).map(_=>' ').join(''),
+      fixedNLRegExp: new RegExp(`__fixedNL${''}__`,'g'), // avoid self replacement
+      fixedNL: `__fixedNL${''}__`, // avoid self replacement
+    }
   },
   prettyPrintComp(compId,comp,settings={}) {
     if (comp) {
@@ -36,7 +40,7 @@ jb.extension('utils', {
       return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
 
     const res = valueToMacro({path: initialPath, line:0, col: 0, depth :1}, val)
-    res.text = res.text.replace(/__fixedNL__/g,'\n')
+    res.text = res.text.replace(jb.utils.fixedNLRegExp,'\n')
     return res
 
     function processList(ctx,items) {
@@ -81,17 +85,16 @@ jb.extension('utils', {
       }
 
       function shouldNotFlat(result) {
-        const long = result.text.replace(/\n\s*/g,'').split('__fixedNL__')[0].length > colWidth
-        if (!jb.studio.valOfPath)
+        const long = result.text.replace(/\n\s*/g,'').split(jb.utils.fixedNL)[0].length > colWidth
+        if (!jb.path(jb,'studio.valOfPath'))
           return result.unflat || long
-        const val = jb.studio.valOfPath(path)
+        const val = jb.path(comps,path.split('~')) 
         const paramProps = path.match(/~params~[0-9]+$/)
         const paramsParent = path.match(/~params$/)
-        const ctrls = path.match(/~controls$/) && Array.isArray(val) // && innerVals.length > 1// jb.studio.isOfType(path,'control') && !arrayElem
-        const customStyle = jb.studio.compNameOfPath && jb.studio.compNameOfPath(path) === 'customStyle'
+        const ctrls = path.match(/~controls$/) && Array.isArray(val)
         const moreThanTwoVals = innerVals.length > 2 && !isArray
         const top = !path.match(/~/g)
-        return !paramProps && (result.unflat || paramsParent || customStyle || moreThanTwoVals || top || ctrls || long)
+        return !paramProps && (result.unflat || paramsParent || moreThanTwoVals || top || ctrls || long)
       }
       function fixPropName(prop) {
         return prop.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/) ? prop : `'${prop}'`
@@ -169,7 +172,7 @@ jb.extension('utils', {
         if (typeof val === 'function') {
           const asStr = val.toString().trim()
           const header = asStr.indexOf(`${val.name}(`) == 0 ? val.name : asStr.indexOf(`function ${val.name}(`) == 0 ? `function ${val.name}` : ''
-          return { text: asStr.slice(header.length).replace(/\n/g,'__fixedNL__'), noColon: header ? true : false, map: {} }
+          return { text: asStr.slice(header.length).replace(/\n/g,jb.utils.fixedNL), noColon: header ? true : false, map: {} }
         }
         if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
           return processList(ctx,[

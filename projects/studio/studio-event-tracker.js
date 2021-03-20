@@ -22,6 +22,10 @@ jb.component('eventTracker.getSpy', {
   impl: () => jb.ui.getSpy()
 })
 
+jb.component('eventTracker.codeSize', {
+  impl: ()=> Math.floor(jb.parent.codeLoader.totalCodeSize/1000) + 'k'
+})
+
 jb.component('eventTracker.clearSpyLog', {
   type: 'action',
   impl: ctx => {
@@ -47,6 +51,11 @@ jb.component('studio.eventTrackerToolbar', {
   impl: group({
     layout: layout.horizontal('2'),
     controls: [
+      text({
+        text: eventTracker.codeSize(),
+        features: css.padding({top: '5'})
+      }),
+      divider({style: divider.vertical()}),
       text({
         title: 'counts',
         text: pipeline(
@@ -219,9 +228,9 @@ jb.component('studio.eventTracker', {
           table.enableExpandToEndOfRow()
         ],               
         features: [
-          variable({name: 'cmpExpanded', watchable: true, value: obj() }),
-          variable({name: 'payloadExpanded', watchable: true, value: obj() }),
-          variable({name: 'testResultExpanded', watchable: true, value: obj() }),
+          watchable('cmpExpanded', obj()),
+          watchable('payloadExpanded', obj()),
+          watchable('testResultExpanded', obj()),
           itemlist.infiniteScroll(5),
           itemlist.selection({
             onSelection: runActions(({data}) => jb.frame.console.log(data), eventTracker.highlightEvent('%%'))
@@ -243,13 +252,7 @@ jb.component('eventTracker.watchSpy',{
   params: [
     { id: 'delay', defaultValue: 3000}
   ],
-  impl: followUp.watchObservable(
-      rx.pipe(
-        source.callbag(ctx => jb.ui.getSpy(ctx).observable()),
-        //rx.filter(eventTracker.isNotDebuggerEvent())
-      ),
-      '%$delay%'
-  )
+  impl: followUp.watchObservable(source.callbag(ctx => jb.ui.getSpy(ctx)._obs),'%$delay%')
 })
 
 jb.component('eventTracker.eventTypes', {
@@ -359,7 +362,7 @@ jb.component('eventTracker.eventItems', {
     if (!spy) return []
     //const checkEv = jb.comps['eventTracker.isNotDebuggerEvent'].impl // efficiency syntax
     //spy.logs = spy.logs.filter(data=> checkEv({data}))
-    const items = spy.search(query)
+    const items = jb.spy.search(query,{spy})
       
     jb.log('eventTracker items',{ctx,spy,query,items})
     const itemsWithTimeBreak = items.reduce((acc,item,i) => i && item.time - items[i-1].time > 100 ? 
@@ -556,7 +559,7 @@ jb.component('chromeDebugger.icon', {
   ],
   impl: customStyle({
     template: (cmp,{title},h) => h('div',{onclick: true, title}),
-    css: `{ -webkit-mask-image: url(devtools://devtools/bundled/Images/largeIcons.svg); -webkit-mask-position: %$position%; width: 28px;  height: 24px; background-color: var(--jb-menu-fg); opacity: 0.7}
+    css: `{ -webkit-mask-image: url(/hosts/chrome-debugger/largeIcons.svg); -webkit-mask-position: %$position%; width: 28px;  height: 24px; background-color: var(--jb-menu-fg); opacity: 0.7}
       ~:hover { opacity: 1}`,
   })
 })

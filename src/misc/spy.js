@@ -1,5 +1,6 @@
 jb.extension('spy', {
 	initExtension() {
+		// jb.spy._log() -- for codeLoader
 		Object.assign(this, {
 			logs: [],
 			settings: { 
@@ -23,14 +24,17 @@ jb.extension('spy', {
 		jb.spy.spyParam = spyParam
 		jb.spy.log = jb.spy._log // actually enables logging
 		if (jb.frame) jb.frame.spy = jb.spy // for console use
+		jb.spy.includeLogsInitialized = false
+		jb.spy._obs = jb.callbag.subject()
+		return jb.spy
 	},
 
 	memoryUsage: () => jb.path(jb.frame,'performance.memory.usedJSHeapSize'),
-	observable() { 
-		const _jb = jb.path(jb,'studio.studiojb') || jb
-		jb.spy._obs = jb.spy._obs || _jb.callbag.subject()
-		return jb.spy._obs
-	},
+	// observable() { 
+	// 	const _jb = jb.path(jb,'studio.studiojb') || jb
+	// 	jb.spy._obs = jb.spy._obs || _jb.callbag.subject()
+	// 	return jb.spy._obs
+	// },
 	calcIncludeLogsFromSpyParam() {
 		const includeLogsFromParam = (jb.spy.spyParam || '').split(',').filter(x => x[0] !== '-').filter(x => x)
 		const excludeLogsFromParam = (jb.spy.spyParam || '').split(',').filter(x => x[0] === '-').map(x => x.slice(1))
@@ -136,10 +140,10 @@ jb.extension('spy', {
 			return [...set1,...set2]
 		}
 	},
-	search(query,slice= -1000) { // dialog core | menu !keyboard  
+	search(query,{ slice, spy } = {slice: -1000, spy: jb.spy}) { // e.g., dialog core | menu !keyboard  
 		const _or = query.split(/,|\|/)
 		return _or.reduce((acc,exp) => 
-			unify(acc, exp.split(' ').reduce((acc,logNameExp) => filter(acc,logNameExp), jb.spy.logs.slice(slice))) 
+			unify(acc, exp.split(' ').reduce((acc,logNameExp) => filter(acc,logNameExp), spy.logs.slice(slice))) 
 		,[])
 
 		function filter(set,exp) {

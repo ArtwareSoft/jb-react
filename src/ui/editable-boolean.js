@@ -11,7 +11,13 @@ jb.component('editableBoolean', {
     {id: 'textForFalse', as: 'string', defaultValue: 'no', dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx => jb.ui.ctrl(ctx, features(
+  impl: ctx => jb.ui.ctrl(ctx)
+})
+
+jb.component('editableBoolean.initToggle', {
+  type: 'feature',
+  category: 'editableBoolean:0',
+  impl: features(
     calcProp('toggleText',If('%$$model/databind()%','%$$model/textForTrue()%','%$$model/textForFalse()%' )),
     watchRef({ref: '%$$model/databind()%', allowSelfRefresh: true, strongRefresh: true}),
     method('toggle', runActions(
@@ -20,6 +26,6 @@ jb.component('editableBoolean', {
     )),
     method('toggleByKey', (ctx,{cmp, ev}) => 
       ev.keyCode != 27 && cmp.runBEMethod('toggle')
-    ))
+    )
   )
 })

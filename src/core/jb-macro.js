@@ -1,5 +1,6 @@
 Object.assign(jb, {
     component(_id,comp) {
+      if (!jb.core.location) jb.initializeLibs(['core'])
       const id = jb.macroName(_id)
       try {
         const errStack = new Error().stack.split(/\r|\n/)

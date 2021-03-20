@@ -226,7 +226,7 @@ jb.studio.activateWatchRefViewer = () => {
     //         jb.callbag.interval(100),
     //         st.previewjb.spy.observable()
     // ).map(z=>z[1])
-    const delayedSpy = st.previewjb.spy.observable()
+    const delayedSpy = st.previewjb.spy._obs
 
     pipe(delayedSpy, filter(e=>e.logName === 'registerCmpObservable'), subscribe(e=> {
             const ref = e.record[0].ref

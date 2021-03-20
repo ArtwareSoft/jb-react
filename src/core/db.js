@@ -1,14 +1,14 @@
 jb.extension('db', {
-    initExtension(ext) {
+    initExtension() {
       Object.assign(this, { 
         passiveSym: Symbol.for('passive'),
         resources: {}, consts: {}, 
         watchableHandlers: [],
         isWatchableFunc: [], // assigned by watchable module, if loaded - must be put in array so the code loader will not pack it.
-        simpleValueByRefHandler: ext.simpleValueByRefHandler
+        simpleValueByRefHandler: jb.db._simpleValueByRefHandler()
       })
     },
-    simpleValueByRefHandler: {
+    _simpleValueByRefHandler() { return {
         val(v) {
           if (v && v.$jb_val) return v.$jb_val()
           return v && v.$jb_parent ? v.$jb_parent[v.$jb_property] : v
@@ -40,7 +40,7 @@ jb.extension('db', {
         },
         pathOfRef: () => [],
         doOp() {},
-    },
+    }},
     resource(id,val) { 
         if (typeof val !== 'undefined')
           jb.db.resources[id] = val

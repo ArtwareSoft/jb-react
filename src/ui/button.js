@@ -10,20 +10,26 @@ jb.component('button', {
     {id: 'raised', as: 'boolean', dynamic: true },
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx => jb.ui.ctrl(ctx, features(
-      watchAndCalcModelProp('title'),
-      watchAndCalcModelProp('raised'),
-      method('onclickHandler', (_ctx,{cmp, ev}) => {
-        if (jb.path(ev,'ev.ctrlKey'))
-          cmp.runBEMethod('ctrlAction',_ctx.data,_ctx.vars)
-        else if (jb.path(ev,'ev.alyKey'))
-          cmp.runBEMethod('altAction',_ctx.data,_ctx.vars)
-        else
-          ctx.params.action(_ctx)
-      }),
-      feature.userEventProps('ctrlKey,altKey'),
-      () => ({studioFeatures :{$: 'feature.contentEditable', param: 'title' }}),
-    ))
+  impl: ctx => jb.ui.ctrl(ctx)
+})
+
+jb.component('button.initAction', {
+  type: 'feature',
+  category: 'button:0',
+  impl: features(
+    watchAndCalcModelProp('title'),
+    watchAndCalcModelProp('raised'),
+    method('onclickHandler', (ctx,{cmp, ev, $model}) => {
+      if (jb.path(ev,'ev.ctrlKey'))
+        cmp.runBEMethod('ctrlAction',ctx.data,ctx.vars)
+      else if (jb.path(ev,'ev.alyKey'))
+        cmp.runBEMethod('altAction',ctx.data,ctx.vars)
+      else
+        $model.action(ctx)
+    }),
+    feature.userEventProps('ctrlKey,altKey'),
+    () => ({studioFeatures :{$: 'feature.contentEditable', param: 'title' }}),
+  )
 })
 
 jb.component('button.ctrlAction', {

@@ -12,7 +12,8 @@ jb.component('button.href', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
-    css: '{color: var(--jb-textLink-fg)} .raised { color: var(--jb-textLink-active-fg) }'
+    css: '{color: var(--jb-textLink-fg)} .raised { color: var(--jb-textLink-active-fg) }',
+    features: button.initAction()
   })
 })
 
@@ -20,7 +21,8 @@ jb.component('button.hrefText', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
-    css: '{color: var(--jb-input-fg) ; text-decoration: none }     ~.hover, ~.active: { text-decoration: underline }'
+    css: '{color: var(--jb-input-fg) ; text-decoration: none }     ~.hover, ~.active: { text-decoration: underline }',
+    features: button.initAction()
   })
 })
 
@@ -42,6 +44,7 @@ jb.component('button.x', {
             font-weight: 700;
         }
         :hover { color: var(--jb-menubar-active-fg) }`,
+    features: button.initAction()
   })
 })
 
@@ -49,7 +52,8 @@ jb.component('button.native', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) => h('button',{class: raised ? 'raised' : '', title, onclick: true },title),
-    css: '.raised {font-weight: bold}'
+    css: '.raised {font-weight: bold}',
+    features: button.initAction()
   })
 })
 
@@ -67,7 +71,7 @@ jb.component('button.mdc', {
       ...[!noTitle && h('span.mdc-button__label',{},title)],
       ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-button__icon')),
     ]),
-    features: mdcStyle.initDynamic()
+    features: [button.initAction(), mdcStyle.initDynamic()]
   })
 })
 
@@ -82,16 +86,17 @@ jb.component('button.mdcChipAction', {
         h('span',{ role: 'gridcell'}, h('span', {role: 'button', tabindex: -1, class: 'mdc-chip__text'}, title )),
         ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-chip__icon mdc-chip__icon--trailing')),
     ])),
-    features: mdcStyle.initDynamic()
+    features: [button.initAction(), mdcStyle.initDynamic()]
   })
 })
 
 jb.component('button.plainIcon', {
   type: 'button.style',
-  impl: customStyle(
-    (cmp,{title,raised},h) =>
-      jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=> vdom.setAttribute('title',vdom.getAttribute('title') || title))[0]
-  )
+  impl: customStyle({
+    template: (cmp,{title,raised},h) =>
+      jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=> vdom.setAttribute('title',vdom.getAttribute('title') || title))[0],
+    features: button.initAction()
+  })
 })
 
 jb.component('button.mdcIcon', {
@@ -123,7 +128,7 @@ jb.component('button.mdcFloatingAction', {
             ...[withTitle && h('span',{ class: 'mdc-fab__label'},title)].filter(x=>x)
       ]),
     css: '{width: %$buttonSize%px; height: %$buttonSize%px;}',
-    features: mdcStyle.initDynamic(),
+    features: [button.initAction(), mdcStyle.initDynamic()]
   })
 })
 
@@ -140,7 +145,7 @@ jb.component('button.mdcTab', {
         h('span',{ class: ['mdc-tab-indicator', raised && 'mdc-tab-indicator--active'].filter(x=>x).join(' ') }, h('span',{ class: 'mdc-tab-indicator__content mdc-tab-indicator__content--underline'})),
         h('span.mdc-tab__ripple'),
       ]),
-    features: mdcStyle.initDynamic()
+    features: [button.initAction(), mdcStyle.initDynamic()]
   })
 })
 

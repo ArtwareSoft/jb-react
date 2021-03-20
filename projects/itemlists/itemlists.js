@@ -289,7 +289,7 @@ jb.component('itemlists.masterDetails', {
       })
     ],
     features: [
-      variable({name: 'selected', value: '%$people/0%', watchable: true}),
+      watchable('selected', '%$people/0%'),
       css.width('500')
     ]
   })

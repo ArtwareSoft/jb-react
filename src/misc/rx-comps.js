@@ -468,7 +468,8 @@ jb.component('rx.log', {
     {id: 'name', as: 'string'},
     {id: 'extra', as: 'single', dynamic: true},
   ],
-  impl: (ctx,name,extra) => ctx.run(rx.do(_ctx => jb.log(name,{data: _ctx.data,vars: _ctx.vars,ctx, ...extra(_ctx)})))
+  impl: rx.do((ctx,vars,{name,extra}) => jb.log(name,{data: ctx.data,vars,...extra(ctx), ctx: ctx.cmpCtx}))
+  //(ctx,name,extra) => ctx.run({$: 'rx.do', action: _ctx => jb.log(name,{data: _ctx.data,vars: _ctx.vars,ctx, ...extra(_ctx)}) })
 })
 
 jb.component('rx.clog', {

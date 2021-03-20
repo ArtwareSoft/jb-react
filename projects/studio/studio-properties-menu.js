@@ -96,7 +96,7 @@ jb.component('studio.jbEditorMenu', {
           title: 'Add Property',
           modal: 'true',
           features: [
-            variable({name: 'name', watchable: true}),
+            watchable('name'),
             dialogFeature.nearLauncherPosition({}),
             dialogFeature.autoFocusOnFirstInput()
           ]
@@ -237,7 +237,7 @@ jb.component('studio.jbEditorMenu', {
               title: 'Remark',
               modal: 'true',
               features: [
-                variable({name: 'remark', value: studio.val('%$path%~remark'), watchable: true}),
+                watchable('remark', studio.val('%$path%~remark')),
                 dialogFeature.nearLauncherPosition({}),
                 dialogFeature.autoFocusOnFirstInput()
               ]

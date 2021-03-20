@@ -42,7 +42,7 @@ jb.component('uiTest.watchableVar', {
     control: group({
       controls: text('%$var1%'),
       features: [
-        variable({name: 'var1', value: 'hello', watchable: true}),
+        watchable('var1', 'hello'),
         followUp.action(writeValue('%$var1%', 'foo'))
       ]
     }),
@@ -55,7 +55,7 @@ jb.component('uiTest.watchableVarAsObject', {
     control: group({
       controls: text('%$obj1/txt%'),
       features: [
-        variable({name: 'obj1', value: {'$': 'object', txt: 'hello'}, watchable: true}),
+        watchable('obj1', {'$': 'object', txt: 'hello'}),
         followUp.action(writeValue('%$obj1/txt%', 'foo'))
       ]
     }),
@@ -67,11 +67,7 @@ jb.component('uiTest.watchableVarAsArray', {
   impl: uiTest({
     control: group({
       controls: text('%$items[1]/title%'),
-      features: variable({
-        name: 'items',
-        value: asIs([{title: 'koo'}, {title: 'foo'}]),
-        watchable: true
-      })
+      features: watchable('items',asIs([{title: 'koo'}, {title: 'foo'}])),
     }),
     expectedResult: contains('foo')
   })
@@ -81,7 +77,7 @@ jb.component('uiTest.watchableVarAsArrayOneItem', {
   impl: uiTest({
     control: group({
       controls: text('%$items[0]/title%'),
-      features: variable({name: 'items', value: asIs([{title: 'foo'}]), watchable: true})
+      features: watchable('items', asIs([{title: 'foo'}]))
     }),
     expectedResult: contains('foo')
   })
@@ -93,7 +89,7 @@ jb.component('uiTest.watchableVarAsObjectNotInitialized', {
     control: group({
       controls: text('%$obj1/txt%'),
       features: [
-        variable({name: 'obj1', value: {'$': 'object'}, watchable: true}),
+        watchable('obj1', {'$': 'object'}),
         followUp.action(writeValue('%$obj1/txt%', 'foo'))
       ]
     }),
@@ -111,8 +107,8 @@ jb.component('uiTest.calculatedVar', {
       ],
       features: [
         id('group'),
-        variable({name: 'var1', value: 'hello', watchable: true}),
-        variable({name: 'var2', value: 'world', watchable: true}),
+        watchable('var1', 'hello'),
+        watchable('var2','world'),
         calculatedVar({
           name: 'var3',
           value: '%$var1% %$var2%',
@@ -137,7 +133,7 @@ jb.component('uiTest.calculatedVarCyclic', {
       features: [
         id('group'),
         calculatedVar({name: 'var1', value: 'xx%$var3%', watchRefs: '%$var3%'}),
-        variable({name: 'var2', value: 'world', watchable: true}),
+        watchable('var2','world'),
         calculatedVar({
           name: 'var3',
           value: '%$var1% %$var2%',
@@ -294,7 +290,7 @@ jb.component('uiTest.groupWatchingWithoutIncludeChildren', {
 //     control: group({
 //       controls: text('%$text1/text%'),
 //       features: [
-//         variable({name: 'text1', value: obj(prop('text', 'OK')), watchable: true}),
+//         watchable('text1', obj(prop('text', 'OK'))),
 //         watchRef({ref: '%$text1%', includeChildren: 'yes'}),
 //         followUp.action(writeValue('%$text1/text%', 'changed'))
 //       ]
@@ -309,7 +305,7 @@ jb.component('uiTest.groupWatchingStructure', {
     control: group({
       controls: text('%$text1/text%'),
       features: [
-        variable({name: 'text1', value: obj(prop('text', 'OK')), watchable: true}),
+        watchable('text1', obj(prop('text', 'OK'))),
         watchRef({ref: '%$text1%', includeChildren: 'structure'}),
         followUp.action(writeValue('%$text1/text%', 'changed'))
       ]
@@ -378,7 +374,7 @@ jb.component('uiTest.watchableAsText', {
       ],
       features: [
         id('group'),
-        variable({name: 'path', value: '', watchable: true})
+        watchable('path')
       ]
     }),
     action: runActions(

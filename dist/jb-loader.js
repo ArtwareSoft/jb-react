@@ -13,7 +13,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/core/jb-expression.js',
         'src/core/db.js',
         'src/core/jb-macro.js',
-        'src/loader/comp-loader.js',
+        'src/loader/code-loader.js',
         'src/misc/spy.js',
         'src/core/jb-common.js',
         'src/misc/jb-callbag.js',
@@ -22,7 +22,6 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'src/misc/rx-comps.js',
       ],
       watchable: [
-        'dist/jb-immutable.js', // the immutable-helper lib
         'src/ui/watchable/watchable.js',
       ],
       'ui-common-css': [
@@ -31,7 +30,6 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
       ],
       'ui-common': [
         'src/misc/rx-comps.js',
-        'dist/jb-immutable.js', // the immutable-helper lib
         'src/ui/watchable/watchable.js',
         'src/ui/core/jb-react.js',
         'src/ui/core/vdom.js',

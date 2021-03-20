@@ -11,7 +11,11 @@ jb.component('prettyPrint', {
 
 jb.extension('utils', {
   initExtension() {
-    return {emptyLineWithSpaces: Array.from(new Array(200)).map(_=>' ').join('')}
+    return {
+      emptyLineWithSpaces: Array.from(new Array(200)).map(_=>' ').join(''),
+      fixedNLRegExp: new RegExp(`__fixedNL${''}__`,'g'), // avoid self replacement
+      fixedNL: `__fixedNL${''}__`, // avoid self replacement
+    }
   },
   prettyPrintComp(compId,comp,settings={}) {
     if (comp) {
@@ -36,7 +40,7 @@ jb.extension('utils', {
       return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
 
     const res = valueToMacro({path: initialPath, line:0, col: 0, depth :1}, val)
-    res.text = res.text.replace(/__fixedNL__/g,'\n')
+    res.text = res.text.replace(jb.utils.fixedNLRegExp,'\n')
     return res
 
     function processList(ctx,items) {
@@ -81,17 +85,16 @@ jb.extension('utils', {
       }
 
       function shouldNotFlat(result) {
-        const long = result.text.replace(/\n\s*/g,'').split('__fixedNL__')[0].length > colWidth
-        if (!jb.studio.valOfPath)
+        const long = result.text.replace(/\n\s*/g,'').split(jb.utils.fixedNL)[0].length > colWidth
+        if (!jb.path(jb,'studio.valOfPath'))
           return result.unflat || long
-        const val = jb.studio.valOfPath(path)
+        const val = jb.path(comps,path.split('~')) 
         const paramProps = path.match(/~params~[0-9]+$/)
         const paramsParent = path.match(/~params$/)
-        const ctrls = path.match(/~controls$/) && Array.isArray(val) // && innerVals.length > 1// jb.studio.isOfType(path,'control') && !arrayElem
-        const customStyle = jb.studio.compNameOfPath && jb.studio.compNameOfPath(path) === 'customStyle'
+        const ctrls = path.match(/~controls$/) && Array.isArray(val)
         const moreThanTwoVals = innerVals.length > 2 && !isArray
         const top = !path.match(/~/g)
-        return !paramProps && (result.unflat || paramsParent || customStyle || moreThanTwoVals || top || ctrls || long)
+        return !paramProps && (result.unflat || paramsParent || moreThanTwoVals || top || ctrls || long)
       }
       function fixPropName(prop) {
         return prop.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/) ? prop : `'${prop}'`
@@ -169,7 +172,7 @@ jb.extension('utils', {
         if (typeof val === 'function') {
           const asStr = val.toString().trim()
           const header = asStr.indexOf(`${val.name}(`) == 0 ? val.name : asStr.indexOf(`function ${val.name}(`) == 0 ? `function ${val.name}` : ''
-          return { text: asStr.slice(header.length).replace(/\n/g,'__fixedNL__'), noColon: header ? true : false, map: {} }
+          return { text: asStr.slice(header.length).replace(/\n/g,jb.utils.fixedNL), noColon: header ? true : false, map: {} }
         }
         if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
           return processList(ctx,[
@@ -199,17 +202,17 @@ jb.extension('utils', {
 })
 ;
 
-jb.remoteCtx = {
+jb.extension('remoteCtx', {
     stripCtx(ctx) {
         if (!ctx) return null
         const isJS = typeof ctx.profile == 'function'
         const profText = jb.utils.prettyPrint(ctx.profile)
         const vars = jb.objFromEntries(jb.entries(ctx.vars).filter(e => e[0] == '$disableLog' || profText.match(new RegExp(`\\b${e[0]}\\b`)))
-            .map(e=>[e[0],this.stripData(e[1])]))
-        const data = profText.match(/({data})|(ctx.data)|(%%)/) && this.stripData(ctx.data) 
+            .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
+        const data = profText.match(/({data})|(ctx.data)|(%%)/) && jb.remoteCtx.stripData(ctx.data) 
         const params = jb.objFromEntries(jb.entries(isJS ? ctx.params: jb.entries(jb.path(ctx.cmpCtx,'params')))
             .filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
-            .map(e=>[e[0],this.stripData(e[1])]))
+            .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
         const res = Object.assign({id: ctx.id, path: ctx.path, profile: ctx.profile, data, vars }, 
             isJS ? {params,vars} : Object.keys(params).length ? {cmpCtx: {params} } : {} )
         return res
@@ -218,39 +221,39 @@ jb.remoteCtx = {
         if (data == null) return
         if (['string','boolean','number'].indexOf(typeof data) != -1) return data
         if (typeof data == 'function')
-             return this.stripFunction(data)
+             return jb.remoteCtx.stripFunction(data)
         if (data instanceof jb.core.jbCtx)
-             return this.stripCtx(data)
+             return jb.remoteCtx.stripCtx(data)
         if (Array.isArray(data))
-             return data.slice(0,100).map(x=>this.stripData(x))
+             return data.slice(0,100).map(x=>jb.remoteCtx.stripData(x))
         if (typeof data == 'object' && ['VNode','Object','Array'].indexOf(data.constructor.name) == -1)
             return { $$: data.constructor.name}
         if (typeof data == 'object' && data.comps)
             return { uri : data.uri}
         if (typeof data == 'object')
-             return jb.objFromEntries(jb.entries(data).filter(e=> typeof e[1] != 'function').map(e=>[e[0],this.stripData(e[1])]))
+             return jb.objFromEntries(jb.entries(data).filter(e=> typeof e[1] != 'function').map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
     },
     stripFunction(f) {
         const {profile,runCtx,path,param,srcPath} = f
-        if (!profile || !runCtx) return this.stripJS(f)
+        if (!profile || !runCtx) return jb.remoteCtx.stripJS(f)
         const profText = jb.utils.prettyPrint(profile)
-        const profNoJS = this.stripJSFromProfile(profile)
+        const profNoJS = jb.remoteCtx.stripJSFromProfile(profile)
         const vars = jb.objFromEntries(jb.entries(runCtx.vars).filter(e => e[0] == '$disableLog' || profText.match(new RegExp(`\\b${e[0]}\\b`)))
-            .map(e=>[e[0],this.stripData(e[1])]))
+            .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
         const params = jb.objFromEntries(jb.entries(jb.path(runCtx.cmpCtx,'params')).filter(e => profText.match(new RegExp(`\\b${e[0]}\\b`)))
-            .map(e=>[e[0],this.stripData(e[1])]))
-        return Object.assign({$: 'runCtx', id: runCtx.id, path: [srcPath,path].join('~'), param, profile: profNoJS, data: this.stripData(runCtx.data), vars}, 
+            .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
+        return Object.assign({$: 'runCtx', id: runCtx.id, path: [srcPath,path].filter(x=>x).join('~'), param, profile: profNoJS, data: jb.remoteCtx.stripData(runCtx.data), vars}, 
             Object.keys(params).length ? {cmpCtx: {params} } : {})
     },
-    serailizeCtx(ctx) { return JSON.stringify(this.stripCtx(ctx)) },
+    serailizeCtx(ctx) { return JSON.stringify(jb.remoteCtx.stripCtx(ctx)) },
     deStrip(data) {
         if (typeof data == 'string' && data.match(/^__JBART_FUNC:/))
             return eval(data.slice(14))
-        const stripedObj = typeof data == 'object' && jb.objFromEntries(jb.entries(data).map(e=>[e[0],this.deStrip(e[1])]))
+        const stripedObj = typeof data == 'object' && jb.objFromEntries(jb.entries(data).map(e=>[e[0],jb.remoteCtx.deStrip(e[1])]))
         if (stripedObj && data.$ == 'runCtx')
             return (ctx2,data2) => (new jb.core.jbCtx().ctx({...stripedObj})).extendVars(ctx2,data2).runItself()
         if (Array.isArray(data))
-            return data.map(x=>this.deStrip(x))
+            return data.map(x=>jb.remoteCtx.deStrip(x))
         return stripedObj || data
     },
     stripCBVars(cbData) {
@@ -264,13 +267,13 @@ jb.remoteCtx = {
         if (typeof profile == 'function')
             return `__JBART_FUNC: ${profile.toString()}`
         else if (Array.isArray(profile))
-            return profile.map(val => this.stripJS(val))
+            return profile.map(val => jb.remoteCtx.stripJS(val))
         else if (typeof profile == 'object')
-            return jb.objFromEntries(jb.entries(profile).map(([id,val]) => [id, this.stripJS(val)]))
+            return jb.objFromEntries(jb.entries(profile).map(([id,val]) => [id, jb.remoteCtx.stripJS(val)]))
         return profile
     },
     stripJS(val) {
-        return typeof val == 'function' ? `__JBART_FUNC: ${val.toString()}` : this.stripData(val)
+        return typeof val == 'function' ? `__JBART_FUNC: ${val.toString()}` : jb.remoteCtx.stripData(val)
     },
     serializeCmp(compId) {
         if (!jb.comps[compId])
@@ -290,7 +293,7 @@ jb.remoteCtx = {
             jb.logException(e,'eval profile',{code})
         }        
     },
-}
+})
 
 ;
 
@@ -327,7 +330,7 @@ jb.extension('cbHandler', {
     newId: () => jb.uri + ':' + (jb.cbHandler.counter++),
     get: id => jb.cbHandler.map[id],
     getAsPromise(id,t) { 
-        return jb.exec(waitFor({check: ()=> jb.cbHandler.map[id], interval: 5, times: 10}))
+        return jb.exec({$: 'waitFor', check: ()=> jb.cbHandler.map[id], interval: 5, times: 10})
             .catch(err => jb.logError('cbLookUp - can not find cb',{id, in: jb.uri}))
             .then(cb => {
                 if (t == 2) jb.cbHandler.removeEntry(id)
@@ -388,12 +391,11 @@ jb.extension('jbm', {
         Object.assign(jb, {
             uri: jb.uri || jb.frame.jbUri,
             ports: {},
-            remoteExec: sctx => Promise.resolve(jb.jbm.execStripedCtx(sctx)),
-            createCallbagSource: sctx => jb.jbm.execStripedCtx(sctx), 
-            createCalllbagOperator: sctx => jb.jbm.execStripedCtx(sctx),
+            remoteExec: sctx => jb.codeLoader.bringMissingCode(sctx.profile).then(()=>jb.remoteCtx.deStrip(sctx)()),
+            createCallbagSource: sctx => jb.remoteCtx.deStrip(sctx)(), // todo: bringMissingCode
+            createCalllbagOperator: sctx => jb.remoteCtx.deStrip(sctx)(), // todo: bringMissingCode
         })        
     },
-    execStripedCtx: sctx => jb.remoteCtx.deStrip(sctx)(),
     portFromFrame(frame,to,options) {
         if (jb.ports[to]) return jb.ports[to]
         const from = jb.uri
@@ -442,6 +444,7 @@ jb.extension('jbm', {
                             handlers[cbId] && reject(err)
                         }, timeout)
                         handlers[cbId] = {resolve,reject,remoteRun, timer}
+                        jb.log('remote exec',{remoteRun,port,oneway})
                         port.postMessage({$:'CB.exec', remoteRun, cbId, isAction, timeout })
                     })
                 }
@@ -453,6 +456,7 @@ jb.extension('jbm', {
 
         function initCommandListener() {
             port.onMessage.addListener(m => {
+                jb.log('remote command listener',{m})
                 if ((m.$ || '').indexOf('CB.') == 0)
                     handleCBCommnad(m)
                 else if (m.$ == 'CB')
@@ -472,7 +476,8 @@ jb.extension('jbm', {
         }
         function inboundExecResult(m) { 
             jb.cbHandler.getAsPromise(m.cbId).then(h=>{
-                if (!h) return
+                if (!h) 
+                    return jb.logError('remote exec result arrived with no handler',{cbId:m.cbId, m})
                 clearTimeout(h.timer)
                 if (m.type == 'error') {
                     jb.logError('remote remoteExec', {m, h})
@@ -480,8 +485,8 @@ jb.extension('jbm', {
                 } else {
                     h.resolve(m.result)
                 }
+                jb.cbHandler.removeEntry(m.cbId,m)
             })
-            jb.cbHandler.removeEntry(m.cbId,m)
         }            
         function remoteCB(cbId, localCbId, routingMsg) { 
             let talkback
@@ -492,13 +497,19 @@ jb.extension('jbm', {
         }
         function handleCBCommnad(cmd) {
             const {$,sourceId,cbId,isAction} = cmd
-            Promise.resolve(jb.remoteCtx.deStrip(cmd.remoteRun)()).then( result => {
-                if ($ == 'CB.createSource' && typeof result == 'function')
-                    jb.cbHandler.map[cbId] = result
-                else if ($ == 'CB.createOperator' && typeof result == 'function')
-                    jb.cbHandler.map[cbId] = result(remoteCB(sourceId, cbId,cmd) )
-                else if ($ == 'CB.exec')
-                    port.postMessage({$:'execResult', cbId, result: isAction ? {} : jb.remoteCtx.stripData(result) , ...jb.net.reverseRoutingProps(cmd) })
+            jb.codeLoader.bringMissingCode(cmd.remoteRun.profile)
+                .then(()=>{
+                    jb.log('run cmd from remote',{cmd})
+                    return jb.remoteCtx.deStrip(cmd.remoteRun)()
+                })
+                .then( result => {
+                    if ($ == 'CB.createSource' && typeof result == 'function')
+                        jb.cbHandler.map[cbId] = result
+                    else if ($ == 'CB.createOperator' && typeof result == 'function')
+                        jb.cbHandler.map[cbId] = result(remoteCB(sourceId, cbId,cmd) )
+                    else if ($ == 'CB.exec')
+                        port.postMessage({$:'execResult', cbId, result: isAction ? {} : jb.remoteCtx.stripData(result) , ...jb.net.reverseRoutingProps(cmd) })
+
             }).catch(err=> $ == 'CB.exec' && 
                 port.postMessage({$:'execResult', cbId, result: { type: 'error', err}, ...jb.net.reverseRoutingProps(cmd) }))
         }
@@ -522,115 +533,111 @@ jb.extension('jbm', {
     }            
 })
 
+// jb.component('jbm.workerOld', {
+//     type: 'jbm',
+//     params: [
+//         {id: 'id', as: 'string', defaultValue: 'w1' },
+//         {id: 'libs', as: 'array', defaultValue: ['common','rx','remote'] },
+//         {id: 'jsFiles', as: 'array' },
+//         {id: 'networkPeer', as: 'boolean', description: 'used for testing' },
+//     ],    
+//     impl: ({},name,libs,jsFiles,networkPeer) => {
+//         const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
+//         if (childsOrNet[name]) return childsOrNet[name]
+//         const workerUri = networkPeer ? name : `${jb.uri}•${name}`
+//         const distPath = jb.jbm.pathOfDistFolder()
+//         const spyParam = ((jb.path(jb.frame,'location.href')||'').match('[?&]spy=([^&]+)') || ['', ''])[1]
+//         const baseUrl = jb.path(jb.frame,'location.origin') || jb.baseUrl || ''
+//         const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
+//         const settings = { uri: workerUri, libs: libs.join(','), baseUrl, distPath, jsFiles }
+//         const jbObj = { uri: workerUri, baseUrl, distPath }
+//         const jb_loader_code = [jb_dynamicLoad.toString(),jb_loadProject.toString(),jbm_create.toString(),
+//             jb_modules ? `self.jb_modules= ${JSON.stringify(jb_modules)}` : ''
+//         ].join(';\n\n')
+//         const workerCode = `
+// ${jb_loader_code};
+// jb = ${JSON.stringify(jbObj)}
+// jb_loadProject(${JSON.stringify(settings)}).then(() => {
+//     self.spy = jb.spy.initSpy({spyParam: '${spyParam}'})
+//     self.${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
+//     console.log('worker loaded')
+//     postMessage('loaded')
+//     self.loaded = true
+// })`
+//         const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
+//         // wait for worker jbm to load
+//         const promise = new Promise(resolve => jb.exec(rx.pipe(
+//             source.event('message', () =>worker),
+//             rx.take(1),
+//             sink.action(() => resolve(childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))))
+//         )))
+//         promise.uri = workerUri
+//         return promise
+//     }
+// })
+
 jb.component('jbm.worker', {
     type: 'jbm',
     params: [
         {id: 'id', as: 'string', defaultValue: 'w1' },
-        {id: 'libs', as: 'array', defaultValue: ['common','rx','remote'] },
-        {id: 'jsFiles', as: 'array' },
         {id: 'networkPeer', as: 'boolean', description: 'used for testing' },
-        {id: 'startupComps', as: 'array', defaultValue: ['#jbm.extendPortToJbmProxy'] },
     ],    
-    impl: ({},name,libs,jsFiles,networkPeer,startupComps) => {
+    impl: ({},name,networkPeer) => {
         const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
         if (childsOrNet[name]) return childsOrNet[name]
         const workerUri = networkPeer ? name : `${jb.uri}•${name}`
-        const distPath = jb.jbm.pathOfDistFolder()
-        const spyParam = ((jb.path(jb.frame,'location.href')||'').match('[?&]spy=([^&]+)') || ['', ''])[1]
-        const baseUrl = jb.path(jb.frame,'location.origin') || jb.baseUrl || ''
         const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
-        const settings = { uri: workerUri, libs: libs.join(','), startupComps, baseUrl, distPath, jsFiles }
-        const jbObj = { uri: workerUri, baseUrl, distPath }
-        const jb_loader_code = [jb_dynamicLoad.toString(),jb_loadProject.toString(),jbm_create.toString(),
-            jb_modules ? `self.jb_modules= ${JSON.stringify(jb_modules)}` : ''
-        ].join(';\n\n')
+        const startupCode = jb.codeLoader.code(jb.codeLoader.treeShake(jb.codeLoader.coreComps(),{}))
         const workerCode = `
-${jb_loader_code};
-jb = ${JSON.stringify(jbObj)}
-jb_loadProject(${JSON.stringify(settings)}).then(() => {
-    self.spy = jb.spy.initSpy({spyParam: '${spyParam}'})
-    self.${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
-    console.log('worker loaded')
-    postMessage('loaded')
-    self.loaded = true
-})`
-        const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
-        // wait for worker jbm to load
-        const promise = new Promise(resolve => jb.exec(rx.pipe(
-            source.event('message', () =>worker),
-            rx.take(1),
-            sink.action(() => resolve(childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))))
-        )))
-        promise.uri = workerUri
-        return promise
-    }
-})
-
-jb.component('jbm.workerWithLoader', {
-    type: 'jbm',
-    params: [
-        {id: 'id', as: 'string', defaultValue: 'w1' },
-        {id: 'compLoader', defaultValue: () => jb.loader},
-    ],    
-    impl: ({},name,loader) => {
-        const childsOrNet = jb.jbm.childJbms
-        if (childsOrNet[name]) return childsOrNet[name]
-        const workerUri = `${jb.uri}•${name}`
-        const parentOrNet = 'jb.parent'
-        const startupCode = loader.code(loader.treeShake(loader.core,{}))
-        const workerCode = `
-const jb = {}
+jb = { uri: '${workerUri}'}
+jbLoadingPhase = 'libs'
 ${startupCode};
-if (jb.jbm && jb.jbm.extendPortToJbmProxy)
-    self.${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
-
-console.log('worker loaded')
-postMessage('loaded')
-self.loaded = true
+spy = jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
+jb.codeLoaderJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
+jbLoadingPhase = 'appFiles'
+//# sourceURL=${workerUri}-startup.js
 `
         const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
-        // wait for worker jbm to load
-        const promise = new Promise(resolve => jb.exec(rx.pipe(
-            source.event('message', () =>worker),
-            rx.take(1),
-            sink.action(() => resolve(childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))))
-        )))
-        promise.uri = workerUri
-        return promise
+        return childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
     }
 })
 
 jb.component('jbm.child', {
     type: 'jbm',
     params: [
-        {id: 'name', as: 'string', mandatory: true},
-        {id: 'libs', as: 'array', defaultValue: ['common','rx','remote'] },
+        {id: 'id', as: 'string', mandatory: true},
     ],    
-    impl: ({},name,libs) => {
+    impl: ({},name) => {
         if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
         const childUri = `${jb.uri}•${name}`
-        const res = jb.frame.jbm_create && Promise.resolve(jb.frame.jbm_create(libs, { loadFromDist: true, uri: childUri, distPath: jb.distPath}))
-            .then(child => {
-                jb.jbm.childJbms[name] = child
-                child.parent = jb
-                child.ports[jb.uri] = {
-                    from: child.uri, to: jb.uri,
-                    postMessage: m => jb.net.handleOrRouteMsg(jb.uri,child.uri,jb.ports[child.uri].handler,m),
-                    onMessage: { addListener: handler => child.ports[jb.uri].handler = handler }, // only one handler
-                }
-                child.jbm.extendPortToJbmProxy(child.ports[jb.uri])
-                jb.ports[child.uri] = {
-                    from: jb.uri,to: child.uri,
-                    postMessage: m => 
-                        child.net.handleOrRouteMsg(child.uri,jb.uri,child.ports[jb.uri].handler ,m),
-                    onMessage: { addListener: handler => jb.ports[child.uri].handler = handler }, // only one handler
-                }
-                jb.jbm.extendPortToJbmProxy(jb.ports[child.uri])
-                jb.spy && child.spy.initSpy({spyParam: jb.spy.spyParam})
-                return child
-            })
-        res.uri = childUri
-        return res
+        const startupCode = jb.codeLoader.code(jb.codeLoader.treeShake(jb.codeLoader.coreComps(),{}))
+        const child = jb.frame.eval(`(function () {
+const jb = { uri: '${childUri}'}
+self.jbLoadingPhase = 'libs'
+${startupCode};
+self.jbLoadingPhase = 'appFiles'
+return jb
+})()
+//# sourceURL=${childUri}-startup.js
+`)
+        jb.jbm.childJbms[name] = child
+        child.codeLoaderJbm = child.parent = jb
+        child.ports[jb.uri] = {
+            from: child.uri, to: jb.uri,
+            postMessage: m => 
+                jb.net.handleOrRouteMsg(jb.uri,child.uri,jb.ports[child.uri].handler,m),
+            onMessage: { addListener: handler => child.ports[jb.uri].handler = handler }, // only one handler
+        }
+        child.jbm.extendPortToJbmProxy(child.ports[jb.uri])
+        jb.ports[child.uri] = {
+            from: jb.uri,to: child.uri,
+            postMessage: m => 
+                child.net.handleOrRouteMsg(child.uri,jb.uri,child.ports[jb.uri].handler ,m),
+            onMessage: { addListener: handler => jb.ports[child.uri].handler = handler }, // only one handler
+        }
+        jb.jbm.extendPortToJbmProxy(jb.ports[child.uri])
+        jb.spy && child.spy.initSpy({spyParam: jb.spy.spyParam})
+        return child
     }
 })
 
@@ -780,6 +787,7 @@ jb.component('remote.initShadowData', {
     impl: rx.pipe(
         source.watchableData({ref: '%$src%', includeChildren: 'yes'}),
         rx.map(obj(prop('op','%op%'), prop('path',({data}) => jb.db.pathOfRef(data.ref)))),
+        rx.log('test op'),
         sink.action(remote.action( 
             ctx => jb.db.doOp(jb.db.refOfPath(ctx.data.path), ctx.data.op, ctx),
             '%$jbm%')
@@ -794,7 +802,9 @@ jb.component('net.listSubJbms', {
     category: 'source',
     impl: pipe(
         () => Object.values(jb.jbm.childJbms || {}),
+        log('test listSubJbms 1'),
         remote.data(net.listSubJbms(),'%%'),
+        log('test listSubJbms 2'),
         aggregate(list(() => jb.uri,'%%'))
     )
 })

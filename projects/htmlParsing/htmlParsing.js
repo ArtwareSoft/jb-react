@@ -179,7 +179,7 @@ jb.component('htmlParsing.parseDevice', {
           }),
           card({data: '%$selected2%', style: card.flat940(), adapter: ''})
         ],
-        features: variable({name: 'selected2', watchable: true})
+        features: watchable('selected2')
       })
     ]
   })

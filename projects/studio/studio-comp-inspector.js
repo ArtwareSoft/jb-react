@@ -145,7 +145,7 @@ jb.component('studio.eventsOfComp', {
           name: 'events',
           value: pipeline(eventTracker.eventItems('%$studio/eventTrackerCmpQuery%'),filter('%cmp/cmpId%==%$cmpId%'))
         }),
-        followUp.watchObservable(source.callbag(ctx => jb.ui.getSpy(ctx).observable()), 1000)
+        eventTracker.watchSpy(1000),
       ]
     })
 })

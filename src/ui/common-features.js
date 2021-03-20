@@ -1,6 +1,6 @@
 
-var { variable,followUp,backEnd,method,features,onDestroy,htmlAttribute,templateModifier,watchAndCalcModelProp,calcProp,watchRef } 
-  = jb.ns('variable,followUp,backEnd,method,htmlAttribute,features,onDestroy,templateModifier,watchAndCalcModelProp,calcProp,watchRef,group')
+var { variable,watchable,followUp,backEnd,method,features,onDestroy,htmlAttribute,templateModifier,watchAndCalcModelProp,calcProp,watchRef } 
+  = jb.ns('variable,watchable,followUp,backEnd,method,htmlAttribute,features,onDestroy,templateModifier,watchAndCalcModelProp,calcProp,watchRef,group')
 
 jb.component('method', {
   type: 'feature',
@@ -194,7 +194,8 @@ jb.component('watchRef', {
     {id: 'cssOnly', as: 'boolean', description: 'refresh only css features', type: 'boolean'},
     {id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority'}
   ],
-  impl: ctx => ({ watchRef: {refF: ctx.params.ref, ...ctx.params}})
+  impl: ctx => ({ watchRef: {refF: ctx.params.ref, ...ctx.params}}),
+  dependencies: () => jb.ui.subscribeToRefChange()
 })
 
 jb.component('followUp.watchObservable', {
@@ -225,20 +226,6 @@ jb.component('followUp.onDataChange', {
   ],
   impl: followUp.flow(source.watchableData('%$ref()%', '%$includeChildren%'), sink.action(call('action')))
 })
-
-// jb.component('followUp.takeUntilCmpDestroyed', {
-//     type: 'rx',
-//     category: 'operator',
-//     params: [
-//       {id: 'cmp' }
-//     ],
-//     impl: rx.takeUntil(rx.pipe(
-//           source.callbag(() => jb.ui.BECmpsDestroyNotification),
-//           rx.filter( ({data},{},{cmp}) => data.cmps.find(_cmp => _cmp.cmpId == cmp.cmpId && _cmp.ver == cmp.ver)),
-//           rx.take(1),
-//           rx.log('uiComp backend takeUntil destroy', obj(prop('cmp','%$cmp%'))),
-//     ))
-// })
 
 jb.component('group.data', {
   type: 'feature',
@@ -288,33 +275,39 @@ jb.component('feature.hoverTitle', {
   impl: htmlAttribute('title', '%$title%')
 })
 
-jb.component('variable', {
+jb.component('watchable', {
   type: 'feature',
   category: 'general:90',
-  description: 'define a variable. watchable or passive, local or global',
+  description: 'define a watchable variable',
   params: [
     {id: 'name', as: 'string', mandatory: true},
     {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
-    {id: 'watchable', as: 'boolean', type: 'boolean', description: 'E.g., selected item variable'}
   ],
-  impl: ({}, name, value, watchable) => ({
+  impl: ({}, name, value) => ({
     destroy: cmp => {
-      if (!watchable) return
       const fullName = name + ':' + cmp.ctx.id;
       cmp.ctx.run(writeValue(`%$${fullName}%`,null))
     },
     extendCtx: (ctx,cmp) => {
-      if (!watchable)
-        return ctx.setVar(name,jb.val(value(ctx)))
-
       const fullName = name + ':' + cmp.ctx.id;
-      if (fullName == 'items') debugger
       jb.log('create watchable var',{cmp,ctx,fullName})
       const refToResource = jb.db.useResourcesHandler(h=>h.refOfPath([fullName]))
       jb.db.writeValue(refToResource,value(ctx),ctx)
       return ctx.setVar(name, refToResource);
     }
-  })
+  }),
+  dependencies: () => jb.ui.subscribeToRefChange()
+})
+
+jb.component('variable', {
+  type: 'feature',
+  category: 'general:90',
+  description: 'define a constant passive variable',
+  params: [
+    {id: 'name', as: 'string', mandatory: true},
+    {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
+  ],
+  impl: ({}, name, value) => ({ extendCtx: ctx => ctx.setVar(name,jb.val(value(ctx))) })
 })
 
 jb.component('calculatedVar', {
@@ -369,7 +362,7 @@ jb.component('hidden', {
   ],
   impl: (ctx,showCondition) => ({
     templateModifier: (vdom,cmp) => {
-      jb.path(vdom,['attributes','style','display'],jb.toboolean(showCondition(cmp.ctx)) ? 'inherit' : 'none')
+      jb.path(vdom,'attributes.style.display',jb.toboolean(showCondition(cmp.ctx)) ? 'inherit' : 'none')
       return vdom
     }
   })

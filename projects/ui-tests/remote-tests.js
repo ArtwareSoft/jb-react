@@ -15,7 +15,7 @@ jb.component('remoteTest.childWorker', {
   impl: dataTest({
     timeout: 3000,
     calculate: pipe(
-      jbm.worker('innerWorker'), 
+      jbm.worker(), 
       remote.data('hello','%%')
     ),
     expectedResult: equals('hello')
@@ -26,7 +26,7 @@ jb.component('remoteTest.remote.data', {
   impl: dataTest({
     timeout: 3000,
     calculate: pipe(
-      Var('w','world'), remote.data('hello %$w%', jbm.worker('innerWorker'))),
+      Var('w','world'), remote.data('hello %$w%', jbm.worker())),
     expectedResult: equals('hello world')
   })
 })
@@ -35,8 +35,8 @@ jb.component('remoteTest.remote.action', {
   impl: dataTest({
     timeout: 3000,
     calculate: pipe(
-      remote.action(() => jb.db.passive('w','hello'), jbm.worker('innerWorker')),
-      remote.data('%$w%', jbm.worker('innerWorker')),
+      remote.action(() => jb.db.passive('w','hello'), jbm.worker()),
+      remote.data('%$w%', jbm.worker()),
     ),
     expectedResult: equals('hello')
   })
@@ -46,7 +46,7 @@ jb.component('remoteTest.childJbmPort', {
   impl: dataTest({
     timeout: 5000,
     runBefore: pipe(
-      jbm.worker('innerWorker'), 
+      jbm.worker(), 
       remote.action(jbm.child('inner'),'%%')
     ),
     calculate: remote.data('hello',jbm.byUri('tests•innerWorker•inner')),
@@ -57,13 +57,9 @@ jb.component('remoteTest.childJbmPort', {
 jb.component('remoteTest.innerWorker', {
   impl: dataTest({
     timeout: 5000,
-    runBefore: runActions(jbm.worker({id: 'networkPeer', networkPeer: true}), jbm.child('inner')),
-    calculate: rx.pipe(
-      source.promise(jbm.worker('innerWorker')),
-      rx.flatMap(source.remote(source.promise(pipe(jbm.child('inWorker'),'x')), '%%')),
-      rx.mapPromise(pipe(net.listSubJbms(), join(',')))
-    ),
-    expectedResult: contains(['tests•innerWorker','tests•innerWorker•inWorker'])
+    runBefore: remote.action(jbm.child('inWorker'), jbm.worker()),
+    calculate: pipe(net.listSubJbms(), join(',')),
+    expectedResult: contains(['tests•w1','tests•w1•inWorker'])
   })
 })
 
@@ -71,7 +67,7 @@ jb.component('remoteTest.jbm.byUri', {
   impl: dataTest({
     timeout: 1000,
     runBefore: jbm.child('tst'),
-    calculate: source.remote(source.data('hello'), jbm.byUri('tests•tst')),
+    calculate: remote.data('hello', jbm.byUri('tests•tst')),
     expectedResult: equals('hello')
   })
 })
@@ -79,10 +75,10 @@ jb.component('remoteTest.jbm.byUri', {
 jb.component('remoteTest.workerByUri', {
   impl: dataTest({
     timeout: 1000,
-    runBefore: jbm.worker('innerWorker'),
+    runBefore: jbm.worker(),
     calculate: rx.pipe(
       source.data('hello'),
-      remote.operator(rx.map('%% world'), jbm.byUri('tests•innerWorker'))
+      remote.operator(rx.map('%% world'), jbm.byUri('tests•w1'))
     ),
     expectedResult: equals('hello world')
   })
@@ -91,11 +87,11 @@ jb.component('remoteTest.workerByUri', {
 jb.component('remoteTest.workerToWorker', {
   impl: dataTest({
     timeout: 5000,
-    runBefore: runActions(jbm.worker('innerWorker'), jbm.worker('innerWorker2')),
+    runBefore: runActions(jbm.worker(), jbm.worker('w2')),
     calculate: source.remote(rx.pipe(
         source.data('hello'), 
-        remote.operator(rx.map('%% world'), jbm.byUri('tests•innerWorker2'))
-      ), jbm.byUri('tests•innerWorker')),
+        remote.operator(rx.map('%% world'), jbm.byUri('tests•w2'))
+      ), jbm.byUri('tests•w1')),
     expectedResult: equals('hello world')
   })
 })
@@ -103,10 +99,10 @@ jb.component('remoteTest.workerToWorker', {
 jb.component('remoteTest.networkToWorker', {
   impl: dataTest({
     timeout: 5000,
-    runBefore: runActions(jbm.worker({id: 'peer1', networkPeer: true}), jbm.worker('innerWorker2')),
+    runBefore: runActions(jbm.worker({id: 'peer1', networkPeer: true}), jbm.worker('w2')),
     calculate: source.remote(rx.pipe(
         source.data('hello'), 
-        remote.operator(rx.map('%% world'), jbm.byUri('tests•innerWorker2'))
+        remote.operator(rx.map('%% world'), jbm.byUri('tests•w2'))
       ), jbm.byUri('peer1')),
     expectedResult: equals('hello world')
   })
@@ -127,13 +123,9 @@ jb.component('remoteTest.networkGateway', {
 jb.component('remoteTest.shadowData', {
   impl: dataTest({
     timeout: 5000,
-    runBefore: pipe(
-      jbm.worker('innerWorker'), 
-      remote.action(runActions(
-        loadLibs('watchable'),
-        addComponent({id: 'person', value: obj(), type: 'watchableData' })
-      ),'%%'),
-      remote.initShadowData({src: '%$person%', jbm: jbm.byUri('tests•innerWorker')}),
+    runBefore: runActions(
+      remote.action(addComponent({id: 'person', value: obj(), type: 'watchableData' }), jbm.worker()),
+      remote.initShadowData('%$person%', jbm.worker()),
       () => { jb.exec(runActions(delay(1), writeValue('%$person/name%','Dan'))) } // writeValue after calculate
     ),
     calculate: remote.data(
@@ -143,7 +135,7 @@ jb.component('remoteTest.shadowData', {
         rx.map('%newVal%'),
         rx.take(1)
       )), 
-      jbm.byUri('tests•innerWorker')
+      jbm.worker()
     ),
     expectedResult: equals('Dan')
   })
@@ -254,22 +246,44 @@ jb.component('remoteTest.dynamicProfileFunc', {
 //   })
 // })
 
-jb.component('remoteTest.uiWorker', {
-  type: 'remote',
-  impl: jbm.worker({id: 'ui', libs: ['common','ui-common','remote','remote-widget'] })
-})
+// jb.component('remoteTest.uiWorker', {
+//   type: 'remote',
+//   impl: jbm.worker('ui')
+// })
 
-jb.component('remoteTest.uiWorkerWithSamples', {
-  type: 'remote',
-  impl: jbm.worker({id: 'ui-with-samples', libs: ['common','ui-common','remote','remote-widget','codemirror-backend'], jsFiles: ['/projects/ui-tests/test-data-samples.js']})
-})
+// jb.component('jbm.worker', {
+//   type: 'remote',
+//   impl: jbm.worker({id: 'ui-with-samples', libs: ['common','ui-common','remote','remote-widget','codemirror-backend'], jsFiles: ['/projects/ui-tests/test-data-samples.js']})
+// })
 
 jb.component('remoteWidgetTest.button', {
   impl: uiTest({
-    timeout: 3000,
+    timeout: 1000,
     checkResultRx: () => jb.ui.renderingUpdates,
-    control: remote.widget(button('hello world'), remoteTest.uiWorker()),
+    control: remote.widget(button('hello world'), jbm.worker()),
     expectedResult: contains('hello world')
+  })
+})
+
+jb.component('remoteWidgetTest.changeText', {
+  impl: uiTest({
+    timeout: 1000,
+    control: remote.widget(
+      group({
+        controls: [
+          text('%$fName%'),
+          editableText({databind:'%$fName%'})
+        ],
+        features: watchable('fName','Dan'),
+      }),
+      jbm.worker()
+    ),
+    userInputRx: rx.pipe(
+      source.promise(uiAction.waitForSelector('input')),
+      rx.map(userInput.setText('danny')),
+    ),
+    checkResultRx: () => jb.ui.renderingUpdates,
+    expectedResult: contains('danny')
   })
 })
 
@@ -279,17 +293,18 @@ jb.component('remoteWidgetTest.codemirror', {
     timeout: 3000,
     action: jb.delay(1000),
     action: waitFor(() => document.querySelector('.CodeMirror')),
-    control: remote.widget(text({text: 'hello', style: text.codemirror({height: 100})}), remoteTest.uiWorkerWithSamples()),
+    control: remote.widget(text({text: 'hello', style: text.codemirror({height: 100})}), jbm.worker()),
     expectedResult: contains('hello')
   })
 })
 
 jb.component('remoteWidgetTest.codemirror.editableText', {
   impl: uiFrontEndTest({
+    runBefore: remote.action(addComponent({id: 'person', value: obj(prop('name','Homer')), type: 'watchableData' }), jbm.worker()),
     renderDOM: true,
     timeout: 3000,
     action: waitFor(() => document.querySelector('.CodeMirror')),
-    control: remote.widget(editableText({databind: '%$person/name%', style: editableText.codemirror({height: 100})}), remoteTest.uiWorkerWithSamples()),
+    control: remote.widget(editableText({databind: '%$person/name%', style: editableText.codemirror({height: 100})}), jbm.worker()),
     expectedResult: contains('Homer')
   })
 })
@@ -299,7 +314,7 @@ jb.component('remoteWidgetTest.refresh.cleanUp', {
     renderDOM: true,
     timeout: 3000,
     control: group({
-      controls: remote.widget(text('%$person1/name%'), remoteTest.uiWorker()),
+      controls: remote.widget(text('%$person1/name%'), jbm.worker()),
       features: [
         variable('person1','%$person%'), // only local vars are passed to remote
         watchRef('%$person/name%')
@@ -308,9 +323,9 @@ jb.component('remoteWidgetTest.refresh.cleanUp', {
     action: rx.pipe( 
       source.data(0),
       rx.do(writeValue('%$person/name%', 'hello')),
-      rx.flatMap(source.remote(source.promise(waitFor(count(widget.headlessWidgets()))),remoteTest.uiWorker())),
+      rx.flatMap(source.remote(source.promise(waitFor(count(widget.headlessWidgets()))), jbm.worker())),
       rx.do(() => jb.ui.garbageCollectCtxDictionary(true,true)),
-      rx.flatMap(source.remote(source.promise(waitFor(equals(1, count(widget.headlessWidgets())))),remoteTest.uiWorker())),
+      rx.flatMap(source.remote(source.promise(waitFor(equals(1, count(widget.headlessWidgets())))), jbm.worker())),
       rx.timeoutLimit(1000, () => jb.logError('worker did not cleanup')),
       rx.catchError()
     ),    
@@ -322,36 +337,15 @@ jb.component('remoteWidgetTest.html', {
   impl: uiTest({
     timeout: 500,
     checkResultRx: () => jb.ui.renderingUpdates,
-    control: remote.widget(html('<p>hello world</p>'), remoteTest.uiWorker()),
+    control: remote.widget(html('<p>hello world</p>'), jbm.worker()),
     expectedResult: contains('hello world</p>')
   })
 })
 
 jb.component('remoteWidgetTest.css', {
   impl: uiFrontEndTest({
-    control: remote.widget(text({text: 'hello', features: css('color: red')}), remoteTest.uiWorker()),
+    control: remote.widget(text({text: 'hello', features: css('color: red')}), jbm.worker()),
     expectedResult: true
-  })
-})
-
-jb.component('remoteWidgetTest.changeText', {
-  impl: uiTest({
-    control: remote.widget(
-      group({
-        controls: [
-          text('%$fName%'),
-          editableText({databind:'%$fName%'})
-        ],
-        features: variable({name: 'fName', value: 'Dan', watchable: true})
-      }),
-      remoteTest.uiWorker()
-    ),
-    userInputRx: rx.pipe(
-      source.promise(uiAction.waitForSelector('input')),
-      rx.map(userInput.setText('danny')),
-    ),
-    checkResultRx: () => jb.ui.renderingUpdates,
-    expectedResult: contains('danny')
   })
 })
 
@@ -370,7 +364,7 @@ jb.component('remoteWidgetTest.infiniteScroll', {
           css.width('600')
         ]
       }),
-      remoteTest.uiWorker()
+      jbm.worker()
     ),
     action: runActions( 
       uiAction.scrollBy('.jb-itemlist',100),
@@ -382,6 +376,7 @@ jb.component('remoteWidgetTest.infiniteScroll', {
 
 jb.component('remoteWidgetTest.infiniteScroll.MDInplace', {
   impl: uiFrontEndTest({
+    timeout: 1000,
     renderDOM: true,
     control: remote.widget(group({
       controls: [
@@ -412,9 +407,17 @@ jb.component('remoteWidgetTest.infiniteScroll.MDInplace', {
           itemlist.infiniteScroll(2),  
         ]
       })],
-      features: variable({name: 'sectionExpanded', watchable: true, value: obj() }),
+      features: [
+        watchable('sectionExpanded', obj()),
+        variable('people', [
+            {name: 'Homer Simpson', age: 42, male: true},
+            {name: 'Marge Simpson', age: 38, male: false},
+            {name: 'Bart Simpson', age: 12, male: true}
+          ]
+        )
+      ]
     }),
-    remoteTest.uiWorkerWithSamples()
+    jbm.worker()
     ),
     action: runActions( 
       uiAction.scrollBy('.jb-itemlist',100),
@@ -429,7 +432,7 @@ jb.component('remoteWidgetTest.refresh', {
   impl: uiFrontEndTest({
     renderDOM: true,
     control: group({
-      controls: remote.widget(text('%$person1/name%'), remoteTest.uiWorker()),
+      controls: remote.widget(text('%$person1/name%'), jbm.worker()),
       features: [
         variable('person1','%$person%'), // only local vars are passed to remote
         watchRef('%$person/name%')
@@ -438,7 +441,7 @@ jb.component('remoteWidgetTest.refresh', {
     action: rx.pipe( 
       source.data(0),
       rx.do(writeValue('%$person/name%', 'hello')),
-      rx.flatMap(source.remote(source.promise(waitFor(count(widget.headlessWidgets()))), remoteTest.uiWorker())),
+      rx.flatMap(source.remote(source.promise(waitFor(count(widget.headlessWidgets()))), jbm.worker())),
     ),    
     expectedResult: contains('hello')
   })
@@ -447,15 +450,14 @@ jb.component('remoteWidgetTest.refresh', {
 jb.component('eventTracker.worker.vDebugger', {
   impl: uiTest({
     timeout: 2000,
-    runBefore: pipe(
-      jbm.worker('innerWorker'), 
-      remote.action(runActions(
+    runBefore: remote.action(
+      runActions(
         () => jb.spy.initSpy({spyParam: 'remote,log1'}),
         log('log1',obj(prop('hello','world'))),
-        jbm.vDebugger()),
-      '%%')
-    ),
-    control: remote.widget(studio.eventTracker(), jbm.byUri('tests•innerWorker•vDebugger')),
+        jbm.vDebugger()
+      ),
+      jbm.worker()),
+    control: remote.widget(studio.eventTracker(), jbm.byUri('tests•w1•vDebugger')),
     expectedResult: contains('log1')
   })
 })
@@ -468,11 +470,11 @@ jb.component('eventTracker.uiTest.vDebugger', {
         jbm.vDebugger(), 
         log('check test result', obj(prop('html','<div><span>aa</span></div>'), prop('success',true))),
         log('check test result', obj(prop('html','<span/>'), prop('success',false))),
-      ), remoteTest.uiWorkerWithSamples()),
+      ), jbm.worker()),
     control: group({
       controls: [
-        remote.widget(editableText({databind:'%$person/name%'}), remoteTest.uiWorkerWithSamples()),
-        remote.widget(studio.eventTracker(), jbm.byUri('tests•ui-with-samples•vDebugger')),
+        remote.widget(editableText({databind:'%$person/name%'}), jbm.worker()),
+        remote.widget(studio.eventTracker(), jbm.byUri('tests•w1•vDebugger')),
       ]
     }),
     expectedResult: contains('group')
@@ -488,7 +490,7 @@ jb.component('eventTracker.uiTest.vDebugger', {
 //         action: ({},{widgetId}) => 
 //           jb.ui.renderingUpdates.next({widgetId, delta: { }, cmpId: 'wrongId'})
 //       }), 
-//       remoteTest.uiWorker()
+//       jbm.worker()
 //     ),
 //     userInputRx: rx.pipe(
 //       source.waitForSelector('button'),

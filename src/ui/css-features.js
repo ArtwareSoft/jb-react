@@ -1,8 +1,4 @@
-var { css } = jb.ns('css');
-
-(function() {
-const withUnits = jb.ui.withUnits
-const fixCssLine = jb.ui.fixCssLine
+var { css } = jb.ns('css')
 
 jb.component('css', {
   description: 'e.g. {color: red; width: 20px} or div>.myClas {color: red} ',
@@ -10,7 +6,7 @@ jb.component('css', {
   params: [
     {id: 'css', mandatory: true, dynamic: true, as: 'string'}
   ],
-  impl: (ctx,css) => ({css: _ctx => fixCssLine(css(_ctx))})
+  impl: (ctx,css) => ({css: _ctx => jb.ui.fixCssLine(css(_ctx))})
 })
 
 jb.component('css.class', {
@@ -30,7 +26,7 @@ jb.component('css.width', {
     {id: 'selector', as: 'string'}
   ],
   impl: (ctx,width,overflow,minMax) =>
-    ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}width: ${withUnits(width)} ${overflow ? '; overflow-x:' + overflow + ';' : ''} }`})
+    ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}width: ${jb.ui.withUnits(width)} ${overflow ? '; overflow-x:' + overflow + ';' : ''} }`})
 })
 
 jb.component('css.height', {
@@ -42,7 +38,7 @@ jb.component('css.height', {
     {id: 'selector', as: 'string'}
   ],
   impl: (ctx,height,overflow,minMax) =>
-    ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}height: ${withUnits(height)} ${overflow ? '; overflow-y:' + overflow : ''} }`})
+    ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}height: ${jb.ui.withUnits(height)} ${overflow ? '; overflow-y:' + overflow : ''} }`})
 })
 
 jb.component('css.opacity', {
@@ -67,7 +63,7 @@ jb.component('css.padding', {
   impl: ctx => {
     const css = ['top','left','right','bottom']
       .filter(x=>ctx.params[x] != '')
-      .map(x=> `padding-${x}: ${withUnits(ctx.params[x])}`)
+      .map(x=> `padding-${x}: ${jb.ui.withUnits(ctx.params[x])}`)
       .join('; ');
     return {css: `${ctx.params.selector} {${css}}`};
   }
@@ -85,7 +81,7 @@ jb.component('css.margin', {
   impl: ctx => {
     const css = ['top','left','right','bottom']
       .filter(x=>ctx.params[x] != null)
-      .map(x=> `margin-${x}: ${withUnits(ctx.params[x])}`)
+      .map(x=> `margin-${x}: ${jb.ui.withUnits(ctx.params[x])}`)
       .join('; ');
     return {css: `${ctx.params.selector} {${css}}`};
   }
@@ -97,7 +93,7 @@ jb.component('css.marginAllSides', {
     {id: 'value', as: 'string', mandatory: true, description: 'e.g. 20, 20%, 0.4em'},
     {id: 'selector', as: 'string'}
   ],
-  impl: (ctx,value,selector) => ({css: `${selector} margin: ${withUnits(value)}`})
+  impl: (ctx,value,selector) => ({css: `${selector} margin: ${jb.ui.withUnits(value)}`})
 })
 
 jb.component('css.marginVerticalHorizontal', {
@@ -108,7 +104,7 @@ jb.component('css.marginVerticalHorizontal', {
     {id: 'selector', as: 'string'}
   ],
   impl: (ctx,vertical,horizontal,selector) =>
-    ({css: `${selector} margin: ${withUnits(vertical)+ ' ' +withUnits(horizontal)}`})
+    ({css: `${selector} margin: ${jb.ui.withUnits(vertical)} ${jb.ui.withUnits(horizontal)}`})
 })
 
 jb.component('css.transformRotate', {
@@ -154,7 +150,7 @@ jb.component('css.transformTranslate', {
     {id: 'y', as: 'string', description: '20px', defaultValue: '0'},
     {id: 'selector', as: 'string'}
   ],
-  impl: ctx => ({css: `${ctx.params.selector} {transform:translate(${withUnits(ctx.params.x)},${withUnits(ctx.params.y)})}`})
+  impl: ctx => ({css: `${ctx.params.selector} {transform:translate(${jb.ui.withUnits(ctx.params.x)},${jb.ui.withUnits(ctx.params.y)})}`})
 })
 
 jb.component('css.bold', {
@@ -181,7 +177,7 @@ jb.component('css.boxShadow', {
   impl: (ctx,blurRadius,spreadRadius,shadowColor,opacity,horizontal,vertical,selector) => {
     const color = [parseInt(shadowColor.slice(1,3),16) || 0, parseInt(shadowColor.slice(3,5),16) || 0, parseInt(shadowColor.slice(5,7),16) || 0]
       .join(',');
-    return ({css: `${selector} { box-shadow: ${withUnits(horizontal)} ${withUnits(vertical)} ${withUnits(blurRadius)} ${withUnits(spreadRadius)} rgba(${color},${opacity}) }`})
+    return ({css: `${selector} { box-shadow: ${jb.ui.withUnits(horizontal)} ${jb.ui.withUnits(vertical)} ${jb.ui.withUnits(blurRadius)} ${jb.ui.withUnits(spreadRadius)} rgba(${color},${opacity}) }`})
   }
 })
 
@@ -195,7 +191,7 @@ jb.component('css.border', {
     {id: 'selector', as: 'string'}
   ],
   impl: (ctx,width,side,style,color,selector) =>
-    ({css: `${selector} { border${side?'-'+side:''}: ${withUnits(width)} ${style} ${color} }`})
+    ({css: `${selector} { border${side?'-'+side:''}: ${jb.ui.withUnits(width)} ${style} ${color} }`})
 })
 
 jb.component('css.borderRadius', {
@@ -204,7 +200,7 @@ jb.component('css.borderRadius', {
     {id: 'radius', as: 'string', defaultValue: '5'},
     {id: 'selector', as: 'string'}
   ],
-  impl: (ctx,radius,selector) => ({css: `${selector} { border-radius: ${withUnits(radius)}}`})
+  impl: (ctx,radius,selector) => ({css: `${selector} { border-radius: ${jb.ui.withUnits(radius)}}`})
 })
 
 jb.component('css.lineClamp', {
@@ -250,8 +246,5 @@ jb.component(`css.${f}`, {
   params: [
     {id: 'css', mandatory: true, as: 'string'}
   ],
-  impl: (ctx,css) => ({css: fixCssLine(css)})
+  impl: (ctx,css) => ({css: jb.ui.fixCssLine(css)})
 }))
-
-
-})()

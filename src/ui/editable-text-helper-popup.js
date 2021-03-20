@@ -12,8 +12,8 @@ jb.component('editableText.picklistHelper', {
     {id: 'popupId', as: 'string', defaultValue: 'editableTextHelper'}
   ],
   impl: features(
-    variable({name: 'selectedOption', watchable: true}),
-    variable({name: 'watchableInput', watchable: true, value: obj(prop('value','')) }),
+    watchable('selectedOption'),
+    watchable('watchableInput', obj(prop('value',''))),
     variable('helperCmp', '%$cmp%'),
     method('openPopup', openDialog({
         style: dialog.popup(), content: picklist({
