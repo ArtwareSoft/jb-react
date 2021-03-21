@@ -1,17 +1,5 @@
 var {rx, remote, widget, jbm} = jb.ns('remote,rx,widget,jbm')
 
-jb.extension('ui','widgetFrontend', {
-    initExtension() { return {
-            frontendWidgets: {},
-        }
-    },
-    newWidgetId(ctx, remote) {
-        const id = remote.uri + '-' + ctx.id
-        jb.ui.frontendWidgets[id] = remote
-        return id
-    }
-})
-
 jb.component('widget.frontEndCtrl', {
     type: 'control',
     params: [
@@ -27,12 +15,26 @@ jb.component('widget.frontEndCtrl', {
     })
 })
 
-jb.component('sink.frontEndDelta', {
-    type: 'rx',
-    impl: sink.action( ctx => {
+jb.component('widget.newId', {
+    params: [
+        {id: 'jbm', type: 'jbm', defaultValue: () => jb },
+    ],
+    impl: (ctx, jbm) => {
+        const id = jbm.uri + '-' + ctx.id
+        jb.ui.frontendWidgets = jb.ui.frontendWidgets || {}
+        jb.ui.frontendWidgets[id] = jbm
+        return id
+    }
+})
+
+jb.component('action.frontEndDelta', {
+    type: 'action',
+    impl: async ctx => {
         const {delta,css,widgetId,cmpId,assumedVdom} = ctx.data
         if (css) 
             return !ctx.vars.headlessWidget && jb.ui.addStyleElem(ctx,css)
+        await jb.codeLoader.getCodeFromRemote(jb.codeLoader.treeShakeFrontendFeatures(pathsOfFEFeatures(delta)))
+        await jb.codeLoader.loadFELibsDirectly(feLibs(delta))
         const ctxToUse = ctx.setVars({headlessWidget: false, FEwidgetId: widgetId})
         const elem = cmpId ? jb.ui.find(jb.ui.widgetBody(ctxToUse),`[cmp-id="${cmpId}"]`)[0] : jb.ui.widgetBody(ctxToUse)
         try {
@@ -44,7 +46,20 @@ jb.component('sink.frontEndDelta', {
         } catch(e) {
             jb.logException(e,'headless frontend apply delta',{ctx,elem,cmpId})
         }
-    })
+
+        function pathsOfFEFeatures(obj) {
+            if (!obj || typeof obj != 'object') return []
+            if (obj.$__frontEndMethods) 
+                return JSON.parse(obj.$__frontEndMethods).map(x=>x.path)
+            return Object.values(obj).flatMap(x=>pathsOfFEFeatures(x))
+        }
+        function feLibs(obj) {
+            if (!obj || typeof obj != 'object') return []
+            if (obj.$__frontEndLibs) 
+                return JSON.parse(obj.$__frontEndLibs)
+            return Object.values(obj).flatMap(x=>feLibs(x))
+        }        
+    }
 })
 
 jb.component('remote.widget', {
@@ -54,7 +69,7 @@ jb.component('remote.widget', {
       {id: 'jbm', type: 'jbm' },
     ],
     impl: controlWithFeatures({
-        vars: Var('widgetId', (ctx,{},{jbm}) => jb.ui.newWidgetId(ctx,jbm)),
+        vars: Var('widgetId', widget.newId('%$jbm%')),
         control: widget.frontEndCtrl('%$widgetId%'),
         features: followUp.flow(
             source.callbag(() => jb.ui.widgetUserRequests),
@@ -65,13 +80,48 @@ jb.component('remote.widget', {
             rx.log('remote widget sent to headless'),
             remote.operator(widget.headless(call('control'),'%$widgetId%'), '%$jbm%'),
             rx.log('remote widget arrived from headless'),
-            sink.frontEndDelta('%$widgetId%'),
+            sink.action(action.frontEndDelta('%$widgetId%')),
         )
     })
 })
 
+jb.component('action.renderXwidget', {
+    type: 'action',
+    params: [
+        {id: 'selector', as: 'string', defaultValue: 'body' },
+        {id: 'widgetId', as: 'string' },
+    ],
+    impl: ({},selector,widgetId) => 
+        jb.ui.renderWidget({$: 'widget.frontEndCtrl', widgetId: widgetId}, document.querySelector(selector)),
+    dependency: widget.frontEndCtrl()
+})
+
+jb.component('remote.widgetFrontEnd', {
+    type: 'action',
+    params: [
+      {id: 'control', type: 'control', dynamic: true },
+      {id: 'jbm', type: 'jbm' },
+      {id: 'selector', as: 'string', defaultValue: 'body', description: 'root selector to put widget in. e.g. #main' },
+    ],
+    impl: runActions(
+        Var('widgetId', widget.newId()),
+        remote.action(action.renderXwidget('%$selector%','%$widgetId%'), '%$jbm%' ),
+        rx.pipe(
+            source.remote(
+                rx.pipe(
+                    source.callbag(() => jb.ui.widgetUserRequests),
+                    rx.log('remote widget userReq'),
+                    rx.filter('%widgetId% == %$widgetId%'),
+                    rx.takeWhile(({data}) => data.$ != 'destroy',true),
+             ), '%$jbm%' ),
+            widget.headless('%$control()%','%$widgetId%'),
+            sink.action(remote.action(action.frontEndDelta('%$widgetId%'),'%$jbm%'))
+        )
+    )
+})
+
 jb.extension('ui','headless', {
-    initExtension_phase1100() {
+    initExtension_phase1100() { // 1100 is after ui phase (100)
         return {
             widgetRenderingSrc: jb.callbag.replay(10)(jb.ui.renderingUpdates),
             headless: {},

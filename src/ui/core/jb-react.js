@@ -525,11 +525,11 @@ jb.extension('ui', 'react', {
         // remove front-end widgets
         const usedWidgets = jb.objFromEntries(
             Array.from(querySelectAllWithWidgets(`[widgetid]`)).filter(el => el.getAttribute('frontend')).map(el => [el.getAttribute('widgetid'),1]))
-        const removeWidgets = Object.keys(jb.ui.frontendWidgets).filter(id=>!usedWidgets[id])
+        const removeWidgets = Object.keys(jb.ui.frontendWidgets||{}).filter(id=>!usedWidgets[id])
 
         removeWidgets.forEach(widgetId => {
             jb.ui.widgetUserRequests.next({$:'destroy', widgetId, destroyWidget: true, cmps: [] })
-            delete jb.ui.frontendWidgets[widgetId]
+            if (jb.ui.frontendWidgets) delete jb.ui.frontendWidgets[widgetId]
         })
         
         // remove component follow ups

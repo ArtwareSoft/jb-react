@@ -265,6 +265,19 @@ jb.component('remoteWidgetTest.button', {
   })
 })
 
+jb.component('remoteWidgetTest.FE.button', {
+  impl: uiFrontEndTest({
+    renderDOM: true,
+    timeout: 3000,
+    action: runActions(
+      jbm.child('jbxServer'),
+      remote.action(remote.widgetFrontEnd({ control: button('hello world'), jbm: jbm.byUri('tests•jbxServer'), selector: '.aa' } ), jbm.worker())
+    ),
+    control: text({text: '', features: css.class('aa')}),
+    expectedResult: contains('hello')
+  })
+})
+
 jb.component('remoteWidgetTest.changeText', {
   impl: uiTest({
     timeout: 1000,
@@ -291,7 +304,6 @@ jb.component('remoteWidgetTest.codemirror', {
   impl: uiFrontEndTest({
     renderDOM: true,
     timeout: 3000,
-    action: jb.delay(1000),
     action: waitFor(() => document.querySelector('.CodeMirror')),
     control: remote.widget(text({text: 'hello', style: text.codemirror({height: 100})}), jbm.worker()),
     expectedResult: contains('hello')

@@ -1,26 +1,37 @@
 
 jb.extension('codeLoader', {
+    initExtension() {
+        return {
+            coreComps: ['#extension','#core.run','#component','#jbm.extendPortToJbmProxy','#jbm.portFromFrame','#spy.initSpy','#codeLoader.getCodeFromRemote','codeLoader.getCode','waitFor'],
+            existingFEPaths: {},
+            loadedFElibs: {}
+        }
+    },
     existing() {
         const jbFuncs = Object.keys(jb).filter(x=> typeof jb[x] == 'function').map(x=>`#${x}`)
         const libs = Object.keys(jb).filter(x=> typeof jb[x] == 'object' && jb[x].__initialized)
         const funcs = libs.flatMap(lib=>Object.keys(jb[lib]).filter(x => typeof jb[lib][x] == 'function').map(x=>`#${lib}.${x}`) )
         return [...Object.keys(jb.comps), ...jbFuncs, ...funcs]
     },
-    treeShake(comps, existing) {
-        const _comps = comps.filter(x=>!existing[x])
-        const dependent = jb.utils.unique(_comps.flatMap(cmpId => jb.codeLoader.dependent(cmpId).filter(x=>!existing[x])))
-        if (!dependent.length) return _comps
-        const existingExtended = jb.objFromEntries([...Object.keys(existing), ..._comps ].map(x=>[x,true]) )
-        return [ ..._comps, ...jb.codeLoader.treeShake(dependent, existingExtended)]
+    treeShake(ids, existing) {
+        const _ids = ids.filter(x=>!existing[x])
+        const dependent = jb.utils.unique(_ids.flatMap(id => jb.codeLoader.dependent(id).filter(x=>!existing[x])))
+        const idsWithoutPartial = jb.utils.unique(_ids.map(id=>id.split('~')[0]))
+        if (!dependent.length) return idsWithoutPartial
+        const existingExtended = jb.objFromEntries([...Object.keys(existing), ..._ids ].map(x=>[x,true]) )
+        return [ ...idsWithoutPartial, ...jb.codeLoader.treeShake(dependent, existingExtended)]
     },
-    dependent(cmpId) {
-        const func = cmpId[0] == '#' && cmpId.slice(1)
+    dependent(id) {
+        const func = id[0] == '#' && id.slice(1)
         if (func && jb.path(jb,func) !== undefined)
             return jb.codeLoader.dependentOnFunc(jb.path(jb,func))
-        else if (jb.comps[cmpId])
-            return jb.codeLoader.dependentOnObj(jb.comps[cmpId])
+        else if (jb.comps[id])
+            return jb.codeLoader.dependentOnObj(jb.comps[id])
+        else if (id.match(/~/)) 
+            return [jb.path(jb.comps,id.split('~'))].filter(x=>x)
+                .flatMap(obj=> typeof obj === 'function' ? jb.codeLoader.dependentOnFunc(obj) : jb.codeLoader.dependentOnObj(obj))
         else
-            jb.logError('codeLoader: can not find comp', {cmpId})
+            jb.logError('codeLoader: can not find comp', {id})
         return []
     },
     dependentOnObj(obj, onlyMissing) {
@@ -69,10 +80,9 @@ jb.extension('codeLoader', {
     },
     bringMissingCode(obj) {
         const missing = getMissingProfiles(obj)
-        jb.log('codeLoader bring missing code 1',{obj, missing})
         if (missing.length) 
             jb.log('codeLoader bring missing code',{obj, missing})
-        return Promise.resolve(missing.length && jb.codeLoader.getCodeFromRemote(missing))
+        return Promise.resolve(jb.codeLoader.getCodeFromRemote(missing))
 
         function getMissingProfiles(obj) {
             if (obj && typeof obj == 'object') 
@@ -86,6 +96,7 @@ jb.extension('codeLoader', {
         return !(jb.comps[id] || id[0] == '#' && jb.path(jb, id.slice(1)))
     },
     getCodeFromRemote(ids) {
+        if (!ids.length) return
         const stripedCode = {
             $: 'runCtx', path: '',
             profile: {$: 'codeLoader.getCode'},
@@ -103,8 +114,34 @@ jb.extension('codeLoader', {
                 }
             })
     },
-    startupCode: () => codeLoader.code(jb.codeLoader.treeShake(codeLoader.coreComps(),{})),
-    coreComps: () => ['#extension','#core.run','#component','#jbm.extendPortToJbmProxy','#jbm.portFromFrame','#spy.initSpy','#codeLoader.getCodeFromRemote','codeLoader.getCode','waitFor'],
+    startupCode: () => jb.codeLoader.code(jb.codeLoader.treeShake(jb.codeLoader.coreComps,{})),
+    treeShakeFrontendFeatures(paths) { // treeshake the code of the FRONTEND features without the backend part
+        const _paths = paths.filter(path=>! jb.codeLoader.existingFEPaths[path]) // performance - avoid tree shake if paths were processed before 
+        if (!_paths.length) return []
+        paths.forEach(path=>jb.codeLoader.existingFEPaths[path] = true)
+        return jb.utils.unique(jb.codeLoader.treeShake(_paths,jb.codeLoader.existing()).map(path=>path.split('~')[0]).filter(id=>jb.codeLoader.missing(id)))
+    },
+    loadFELibsDirectly(libs) {
+        if (typeof document == 'undefined') 
+            return jb.logError('can not load front end libs to a frame without a document')
+        const _libs = libs.filter(lib=>! jb.codeLoader.loadedFElibs[lib])
+        if (!_libs.length) return []
+        return _libs.reduce((pr,lib) => pr.then(loadFile(lib)).then(()=> jb.codeLoader.loadedFElibs[lib] = true), Promise.resolve())
+
+        function loadFile(lib) {
+            return new Promise(resolve => {
+                const type = lib.indexOf('.css') == -1 ? 'script' : 'link'
+                var s = document.createElement(type)
+                s.setAttribute(type == 'script' ? 'src' : 'href',`/dist/${lib}`)
+                if (type == 'script') 
+                    s.setAttribute('charset','utf8') 
+                else 
+                    s.setAttribute('rel','stylesheet')
+                s.onload = s.onerror = resolve
+                document.head.appendChild(s);
+            })
+        }        
+    },
 })
 
 jb.component('codeLoader.getCode',{

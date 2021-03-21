@@ -234,49 +234,6 @@ jb.extension('jbm', {
     }            
 })
 
-// jb.component('jbm.workerOld', {
-//     type: 'jbm',
-//     params: [
-//         {id: 'id', as: 'string', defaultValue: 'w1' },
-//         {id: 'libs', as: 'array', defaultValue: ['common','rx','remote'] },
-//         {id: 'jsFiles', as: 'array' },
-//         {id: 'networkPeer', as: 'boolean', description: 'used for testing' },
-//     ],    
-//     impl: ({},name,libs,jsFiles,networkPeer) => {
-//         const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
-//         if (childsOrNet[name]) return childsOrNet[name]
-//         const workerUri = networkPeer ? name : `${jb.uri}•${name}`
-//         const distPath = jb.jbm.pathOfDistFolder()
-//         const spyParam = ((jb.path(jb.frame,'location.href')||'').match('[?&]spy=([^&]+)') || ['', ''])[1]
-//         const baseUrl = jb.path(jb.frame,'location.origin') || jb.baseUrl || ''
-//         const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
-//         const settings = { uri: workerUri, libs: libs.join(','), baseUrl, distPath, jsFiles }
-//         const jbObj = { uri: workerUri, baseUrl, distPath }
-//         const jb_loader_code = [jb_dynamicLoad.toString(),jb_loadProject.toString(),jbm_create.toString(),
-//             jb_modules ? `self.jb_modules= ${JSON.stringify(jb_modules)}` : ''
-//         ].join(';\n\n')
-//         const workerCode = `
-// ${jb_loader_code};
-// jb = ${JSON.stringify(jbObj)}
-// jb_loadProject(${JSON.stringify(settings)}).then(() => {
-//     self.spy = jb.spy.initSpy({spyParam: '${spyParam}'})
-//     self.${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
-//     console.log('worker loaded')
-//     postMessage('loaded')
-//     self.loaded = true
-// })`
-//         const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
-//         // wait for worker jbm to load
-//         const promise = new Promise(resolve => jb.exec(rx.pipe(
-//             source.event('message', () =>worker),
-//             rx.take(1),
-//             sink.action(() => resolve(childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))))
-//         )))
-//         promise.uri = workerUri
-//         return promise
-//     }
-// })
-
 jb.component('jbm.worker', {
     type: 'jbm',
     params: [
@@ -288,11 +245,10 @@ jb.component('jbm.worker', {
         if (childsOrNet[name]) return childsOrNet[name]
         const workerUri = networkPeer ? name : `${jb.uri}•${name}`
         const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
-        const startupCode = jb.codeLoader.code(jb.codeLoader.treeShake(jb.codeLoader.coreComps(),{}))
         const workerCode = `
 jb = { uri: '${workerUri}'}
 jbLoadingPhase = 'libs'
-${startupCode};
+${jb.codeLoader.startupCode()};
 spy = jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
 jb.codeLoaderJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
 jbLoadingPhase = 'appFiles'
@@ -312,11 +268,10 @@ jb.component('jbm.child', {
     impl: ({},name) => {
         if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
         const childUri = `${jb.uri}•${name}`
-        const startupCode = jb.codeLoader.code(jb.codeLoader.treeShake(jb.codeLoader.coreComps(),{}))
         const child = jb.frame.eval(`(function () {
 const jb = { uri: '${childUri}'}
 self.jbLoadingPhase = 'libs'
-${startupCode};
+${jb.codeLoader.startupCode()};
 self.jbLoadingPhase = 'appFiles'
 return jb
 })()

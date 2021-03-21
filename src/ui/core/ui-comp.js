@@ -2,7 +2,7 @@ jb.extension('ui','comp', {
     initExtension() {
         Object.assign(this, {
             lifeCycle: new Set('init,extendCtx,templateModifier,followUp,destroy'.split(',')),
-            arrayProps: new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,frontEndVar,eventHandler'.split(',')),
+            arrayProps: new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,frontEndLib,frontEndVar,eventHandler'.split(',')),
             singular: new Set('template,calcRenderProps,toolbar,styleParams,ctxForPick'.split(',')),
             cmpCounter: 1,
             cssHashCounter: 0,
@@ -126,6 +126,7 @@ jb.extension('ui','comp', {
             const originators = this.originators.map(ctx=>jb.ui.preserveCtx(ctx)).join(',')
             const usereventprops = (this.userEventProps||[]).join(',')
             const frontEndMethods = (this.frontEndMethod || []).map(h=>({method: h.method, path: h.path}))
+            const frontEndLibs = (this.frontEndLib || [])
             const frontEndVars = this.frontEndVar && jb.objFromEntries(this.frontEndVar.map(h=>[h.id, jb.val(h.value(this.calcCtx))]))
             if (vdom instanceof jb.ui.VNode) {
                 vdom.addClass(this.jbCssClass())
@@ -141,6 +142,7 @@ jb.extension('ui','comp', {
                     eventhandlers && {eventhandlers},
                     originators && {originators},
                     usereventprops && {usereventprops},
+                    frontEndLibs.length && {$__frontEndLibs : JSON.stringify(frontEndLibs)},
                     frontEndMethods.length && {$__frontEndMethods : JSON.stringify(frontEndMethods) },
                     frontEndMethods.length && {interactive : 'true'}, 
                     frontEndVars && { $__vars : JSON.stringify(frontEndVars)},

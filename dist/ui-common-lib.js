@@ -558,12 +558,11 @@ jb.component('action.subjectError', {
 
 jb.extension('watchable', {
   initExtension() {
-    Object.assign(this, {isProxy: Symbol.for("isProxy"), originalVal: Symbol.for("originalVal"), targetVal: Symbol.for("targetVal"), jbId: Symbol("jbId")})
+    jb.watchable.jbId = Symbol("jbId") // used in constructor
     jb.watchable.resourcesRef.id = 'resources' // for loader: jb.watchable.resourcesRef()
-  },
-  dependentInit_db(ext) {
     jb.db.watchableHandlers.push(new jb.watchable.WatchableValueByRef(jb.watchable.resourcesRef))
-    jb.db.isWatchableFunc[0] = ext.isWatchable // for loader: jb.db.isWatchable()
+    jb.db.isWatchableFunc[0] = jb.watchable.isWatchable // for loader: jb.db.isWatchable(), jb.watchable.isWatchable()
+    return {isProxy: Symbol.for("isProxy"), originalVal: Symbol.for("originalVal"), targetVal: Symbol.for("targetVal") }
   },
   WatchableValueByRef: class WatchableValueByRef {
     constructor(resources) {
@@ -1037,11 +1036,9 @@ jb.extension('ui', 'react', {
             BECmpsDestroyNotification: jb.callbag.subject(),
             refreshNotification: jb.callbag.subject(),
             renderingUpdates: jb.callbag.subject(),
+            widgetUserRequests: jb.callbag.subject(),
             followUps: {},
         })
-
-        // subscribe for watchable change
-        jb.ui.subscribeToRefChange(jb.db.watchableHandlers.find(x=>x.resources.id == 'resources'))
 
         // subscribe for widget renderingUpdates
         jb.callbag.subscribe(e=> {
@@ -1560,11 +1557,11 @@ jb.extension('ui', 'react', {
         // remove front-end widgets
         const usedWidgets = jb.objFromEntries(
             Array.from(querySelectAllWithWidgets(`[widgetid]`)).filter(el => el.getAttribute('frontend')).map(el => [el.getAttribute('widgetid'),1]))
-        const removeWidgets = Object.keys(jb.ui.frontendWidgets).filter(id=>!usedWidgets[id])
+        const removeWidgets = Object.keys(jb.ui.frontendWidgets||{}).filter(id=>!usedWidgets[id])
 
         removeWidgets.forEach(widgetId => {
             jb.ui.widgetUserRequests.next({$:'destroy', widgetId, destroyWidget: true, cmps: [] })
-            delete jb.ui.frontendWidgets[widgetId]
+            if (jb.ui.frontendWidgets) delete jb.ui.frontendWidgets[widgetId]
         })
         
         // remove component follow ups
@@ -1644,63 +1641,9 @@ jb.extension('ui', 'react', {
         elem.removeAttribute('__refreshing')
         jb.ui.refreshNotification.next({cmp,ctx,elem, state, options})
         //jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
-    },
-
-    subscribeToRefChange: watchHandler => jb.utils.subscribe(watchHandler.resourceChange, e=> {
-        const changed_path = watchHandler.removeLinksFromPath(e.insertedPath || watchHandler.pathOfRef(e.ref))
-        if (!changed_path) debugger
-        //observe="resources://2~name;person~name
-        const body = !jb.frame.document || jb.path(e,'srcCtx.vars.headlessWidgetId') || jb.path(e,'srcCtx.vars.testID') ? jb.ui.widgetBody(e.srcCtx) : jb.frame.document.body
-        const elemsToCheck = jb.ui.find(body,'[observe]') // top down order
-        const elemsToCheckCtxBefore = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
-        const originatingCmpId = jb.path(e.srcCtx, 'vars.cmp.cmpId')
-        jb.log('refresh check observable elements',{originatingCmpId,elemsToCheck,e,srcCtx:e.srcCtx})
-        elemsToCheck.forEach((elem,i) => {
-            const cmpId = elem.getAttribute('cmp-id')
-            if (!jb.ui.parents(elem).find(el=>el == body))
-                return jb.log('observable elem was detached in refresh process',{originatingCmpId,cmpId,elem})
-            if (elemsToCheckCtxBefore[i] != elem.getAttribute('jb-ctx')) 
-                return jb.log('observable elem was refreshed from top in refresh process',{originatingCmpId,cmpId,elem})
-            let refresh = false, strongRefresh = false, cssOnly = true, delay = 0
-            elem.getAttribute('observe').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{
-                if (!obs.allowSelfRefresh && jb.ui.findIncludeSelf(elem,`[cmp-id="${originatingCmpId}"]`)[0]) 
-                    return jb.log('blocking self refresh observableElems',{cmpId,originatingCmpId,elem, obs,e})
-                const obsPath = watchHandler.removeLinksFromPath(watchHandler.pathOfRef(obs.ref))
-                if (!obsPath)
-                    return jb.logError('observer ref path is empty',{originatingCmpId,cmpId,obs,e})
-                strongRefresh = strongRefresh || obs.strongRefresh
-                delay = delay || obs.delay
-                cssOnly = cssOnly && obs.cssOnly
-                const diff = jb.utils.comparePaths(changed_path, obsPath)
-                const isChildOfChange = diff == 1
-                const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
-                const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
-                if (diff == -1 || diff == 0 || includeChildrenYes || includeChildrenStructure)
-                    refresh = true
-            })
-            if (refresh) {
-                jb.log('refresh from observable elements',{cmpId,originatingCmpId,elem,ctx: e.srcCtx,e})
-                if (delay) 
-                    jb.delay(delay).then(()=> jb.ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly}))
-                else
-                    jb.ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly})
-            }
-        })
-
-        function observerFromStr(obsStr) {
-            const parts = obsStr.split('://')
-            const innerParts = parts[1].split(';')
-            const includeChildren = ((innerParts[2] ||'').match(/includeChildren=([a-z]+)/) || ['',''])[1]
-            const delay = +((parts[1].match(/delay=([0-9]+)/) || ['',''])[1])
-            const strongRefresh = innerParts.indexOf('strongRefresh') != -1
-            const cssOnly = innerParts.indexOf('cssOnly') != -1
-            const allowSelfRefresh = innerParts.indexOf('allowSelfRefresh') != -1
-            
-            return parts[0] == watchHandler.resources.id && 
-                { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh, cssOnly, allowSelfRefresh, delay }
-        }
-    })
-});
+    }
+})
+;
 
 jb.extension('ui', {
     VNode: class VNode {
@@ -1872,7 +1815,7 @@ jb.extension('ui','comp', {
     initExtension() {
         Object.assign(this, {
             lifeCycle: new Set('init,extendCtx,templateModifier,followUp,destroy'.split(',')),
-            arrayProps: new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,frontEndVar,eventHandler'.split(',')),
+            arrayProps: new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,frontEndLib,frontEndVar,eventHandler'.split(',')),
             singular: new Set('template,calcRenderProps,toolbar,styleParams,ctxForPick'.split(',')),
             cmpCounter: 1,
             cssHashCounter: 0,
@@ -1996,6 +1939,7 @@ jb.extension('ui','comp', {
             const originators = this.originators.map(ctx=>jb.ui.preserveCtx(ctx)).join(',')
             const usereventprops = (this.userEventProps||[]).join(',')
             const frontEndMethods = (this.frontEndMethod || []).map(h=>({method: h.method, path: h.path}))
+            const frontEndLibs = (this.frontEndLib || [])
             const frontEndVars = this.frontEndVar && jb.objFromEntries(this.frontEndVar.map(h=>[h.id, jb.val(h.value(this.calcCtx))]))
             if (vdom instanceof jb.ui.VNode) {
                 vdom.addClass(this.jbCssClass())
@@ -2011,6 +1955,7 @@ jb.extension('ui','comp', {
                     eventhandlers && {eventhandlers},
                     originators && {originators},
                     usereventprops && {usereventprops},
+                    frontEndLibs.length && {$__frontEndLibs : JSON.stringify(frontEndLibs)},
                     frontEndMethods.length && {$__frontEndMethods : JSON.stringify(frontEndMethods) },
                     frontEndMethods.length && {interactive : 'true'}, 
                     frontEndVars && { $__vars : JSON.stringify(frontEndVars)},
@@ -2105,9 +2050,9 @@ jb.extension('ui','comp', {
             if (!ctx) debugger
             ctx = ctx || this.ctx;
             if (!ctx)
-                console.log('no ctx provided for jbExtend');
+                console.logError('uiComp: no ctx provided for jbExtend',{_options,ctx})
             if (typeof _options != 'object')
-                debugger;
+                console.logError('uiComp: _options should be an object',{_options,ctx})
             const options = _options.$ ? ctx.run(_options) : _options
             if (Array.isArray(options)) {
                 options.forEach(o=>this.jbExtend(o,ctx))
@@ -2514,9 +2459,72 @@ jb.extension('ui', 'frontend', {
 
 ;
 
+jb.extension('ui', 'watchRef', {
+    initExtension() {
+        // subscribe for watchable change
+        const resourcesHanlder = jb.db.watchableHandlers.find(x=>x.resources.id == 'resources')
+        resourcesHanlder && jb.ui.subscribeToRefChange(resourcesHanlder)
+        // jb.watchable.WatchableValueByRef() - for loader
+    },
+    subscribeToRefChange: watchHandler => jb.utils.subscribe(watchHandler.resourceChange, e=> {
+        const changed_path = watchHandler.removeLinksFromPath(e.insertedPath || watchHandler.pathOfRef(e.ref))
+        if (!changed_path) debugger
+        //observe="resources://2~name;person~name
+        const body = !jb.frame.document || jb.path(e,'srcCtx.vars.headlessWidgetId') || jb.path(e,'srcCtx.vars.testID') ? jb.ui.widgetBody(e.srcCtx) : jb.frame.document.body
+        const elemsToCheck = jb.ui.find(body,'[observe]') // top down order
+        const elemsToCheckCtxBefore = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
+        const originatingCmpId = jb.path(e.srcCtx, 'vars.cmp.cmpId')
+        jb.log('refresh check observable elements',{originatingCmpId,elemsToCheck,e,srcCtx:e.srcCtx})
+        elemsToCheck.forEach((elem,i) => {
+            const cmpId = elem.getAttribute('cmp-id')
+            if (!jb.ui.parents(elem).find(el=>el == body))
+                return jb.log('observable elem was detached in refresh process',{originatingCmpId,cmpId,elem})
+            if (elemsToCheckCtxBefore[i] != elem.getAttribute('jb-ctx')) 
+                return jb.log('observable elem was refreshed from top in refresh process',{originatingCmpId,cmpId,elem})
+            let refresh = false, strongRefresh = false, cssOnly = true, delay = 0
+            elem.getAttribute('observe').split(',').map(obsStr=>observerFromStr(obsStr,elem)).filter(x=>x).forEach(obs=>{
+                if (!obs.allowSelfRefresh && jb.ui.findIncludeSelf(elem,`[cmp-id="${originatingCmpId}"]`)[0]) 
+                    return jb.log('blocking self refresh observableElems',{cmpId,originatingCmpId,elem, obs,e})
+                const obsPath = watchHandler.removeLinksFromPath(watchHandler.pathOfRef(obs.ref))
+                if (!obsPath)
+                    return jb.logError('observer ref path is empty',{originatingCmpId,cmpId,obs,e})
+                strongRefresh = strongRefresh || obs.strongRefresh
+                delay = delay || obs.delay
+                cssOnly = cssOnly && obs.cssOnly
+                const diff = jb.utils.comparePaths(changed_path, obsPath)
+                const isChildOfChange = diff == 1
+                const includeChildrenYes = isChildOfChange && (obs.includeChildren === 'yes' || obs.includeChildren === true)
+                const includeChildrenStructure = isChildOfChange && obs.includeChildren === 'structure' && (typeof e.oldVal == 'object' || typeof e.newVal == 'object')
+                if (diff == -1 || diff == 0 || includeChildrenYes || includeChildrenStructure)
+                    refresh = true
+            })
+            if (refresh) {
+                jb.log('refresh from observable elements',{cmpId,originatingCmpId,elem,ctx: e.srcCtx,e})
+                if (delay) 
+                    jb.delay(delay).then(()=> jb.ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly}))
+                else
+                    jb.ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly})
+            }
+        })
 
-var { variable,followUp,backEnd,method,features,onDestroy,htmlAttribute,templateModifier,watchAndCalcModelProp,calcProp,watchRef } 
-  = jb.ns('variable,followUp,backEnd,method,htmlAttribute,features,onDestroy,templateModifier,watchAndCalcModelProp,calcProp,watchRef,group')
+        function observerFromStr(obsStr) {
+            const parts = obsStr.split('://')
+            const innerParts = parts[1].split(';')
+            const includeChildren = ((innerParts[2] ||'').match(/includeChildren=([a-z]+)/) || ['',''])[1]
+            const delay = +((parts[1].match(/delay=([0-9]+)/) || ['',''])[1])
+            const strongRefresh = innerParts.indexOf('strongRefresh') != -1
+            const cssOnly = innerParts.indexOf('cssOnly') != -1
+            const allowSelfRefresh = innerParts.indexOf('allowSelfRefresh') != -1
+            
+            return parts[0] == watchHandler.resources.id && 
+                { ref: watchHandler.refOfUrl(innerParts[0]), includeChildren, strongRefresh, cssOnly, allowSelfRefresh, delay }
+        }
+    })
+});
+
+
+var { variable,watchable,followUp,backEnd,method,features,onDestroy,htmlAttribute,templateModifier,watchAndCalcModelProp,calcProp,watchRef } 
+  = jb.ns('variable,watchable,followUp,backEnd,method,htmlAttribute,features,onDestroy,templateModifier,watchAndCalcModelProp,calcProp,watchRef,group')
 
 jb.component('method', {
   type: 'feature',
@@ -2710,7 +2718,8 @@ jb.component('watchRef', {
     {id: 'cssOnly', as: 'boolean', description: 'refresh only css features', type: 'boolean'},
     {id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority'}
   ],
-  impl: ctx => ({ watchRef: {refF: ctx.params.ref, ...ctx.params}})
+  impl: ctx => ({ watchRef: {refF: ctx.params.ref, ...ctx.params}}),
+  dependencies: () => jb.ui.subscribeToRefChange()
 })
 
 jb.component('followUp.watchObservable', {
@@ -2741,20 +2750,6 @@ jb.component('followUp.onDataChange', {
   ],
   impl: followUp.flow(source.watchableData('%$ref()%', '%$includeChildren%'), sink.action(call('action')))
 })
-
-// jb.component('followUp.takeUntilCmpDestroyed', {
-//     type: 'rx',
-//     category: 'operator',
-//     params: [
-//       {id: 'cmp' }
-//     ],
-//     impl: rx.takeUntil(rx.pipe(
-//           source.callbag(() => jb.ui.BECmpsDestroyNotification),
-//           rx.filter( ({data},{},{cmp}) => data.cmps.find(_cmp => _cmp.cmpId == cmp.cmpId && _cmp.ver == cmp.ver)),
-//           rx.take(1),
-//           rx.log('uiComp backend takeUntil destroy', obj(prop('cmp','%$cmp%'))),
-//     ))
-// })
 
 jb.component('group.data', {
   type: 'feature',
@@ -2804,33 +2799,39 @@ jb.component('feature.hoverTitle', {
   impl: htmlAttribute('title', '%$title%')
 })
 
-jb.component('variable', {
+jb.component('watchable', {
   type: 'feature',
   category: 'general:90',
-  description: 'define a variable. watchable or passive, local or global',
+  description: 'define a watchable variable',
   params: [
     {id: 'name', as: 'string', mandatory: true},
     {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
-    {id: 'watchable', as: 'boolean', type: 'boolean', description: 'E.g., selected item variable'}
   ],
-  impl: ({}, name, value, watchable) => ({
+  impl: ({}, name, value) => ({
     destroy: cmp => {
-      if (!watchable) return
       const fullName = name + ':' + cmp.ctx.id;
       cmp.ctx.run(writeValue(`%$${fullName}%`,null))
     },
     extendCtx: (ctx,cmp) => {
-      if (!watchable)
-        return ctx.setVar(name,jb.val(value(ctx)))
-
       const fullName = name + ':' + cmp.ctx.id;
-      if (fullName == 'items') debugger
       jb.log('create watchable var',{cmp,ctx,fullName})
       const refToResource = jb.db.useResourcesHandler(h=>h.refOfPath([fullName]))
       jb.db.writeValue(refToResource,value(ctx),ctx)
       return ctx.setVar(name, refToResource);
     }
-  })
+  }),
+  dependencies: () => jb.ui.subscribeToRefChange()
+})
+
+jb.component('variable', {
+  type: 'feature',
+  category: 'general:90',
+  description: 'define a constant passive variable',
+  params: [
+    {id: 'name', as: 'string', mandatory: true},
+    {id: 'value', dynamic: true, defaultValue: '', mandatory: true},
+  ],
+  impl: ({}, name, value) => ({ extendCtx: ctx => ctx.setVar(name,jb.val(value(ctx))) })
 })
 
 jb.component('calculatedVar', {
@@ -2885,7 +2886,7 @@ jb.component('hidden', {
   ],
   impl: (ctx,showCondition) => ({
     templateModifier: (vdom,cmp) => {
-      jb.path(vdom,['attributes','style','display'],jb.toboolean(showCondition(cmp.ctx)) ? 'inherit' : 'none')
+      jb.path(vdom,'attributes.style.display',jb.toboolean(showCondition(cmp.ctx)) ? 'inherit' : 'none')
       return vdom
     }
   })
@@ -3031,6 +3032,17 @@ jb.component('frontEnd.method', {
     impl: (ctx,method,action) => ({ frontEndMethod: { method, path: ctx.path, action: action.profile} })
 })
 
+jb.component('frontEnd.requireExternalLibrary', {
+  type: 'feature',
+  category: 'front-end',
+  description: 'url or name of external library in dist path, js or css',
+  params: [
+      {id: 'libs', as: 'array' },
+  ],
+  impl: ({},libs) => libs.map(frontEndLib =>({ frontEndLib }))
+})
+
+
 jb.component('frontEnd.enrichUserEvent', {
   type: 'feature',
   category: 'front-end',
@@ -3107,7 +3119,7 @@ jb.component('frontEnd.flow', {
     ],
     impl: (ctx, elems) => ({ frontEndMethod: { 
       method: 'init', path: ctx.path, _flow: elems.profile,
-      action: rx.pipe(_ctx => elems(_ctx))
+      action: { $: 'rx.pipe', elems: _ctx => elems(_ctx) }
     }})
 })
 
@@ -3351,11 +3363,7 @@ jb.component('source.findSelectionKeySource', {
 })
 ;
 
-var { css } = jb.ns('css');
-
-(function() {
-const withUnits = jb.ui.withUnits
-const fixCssLine = jb.ui.fixCssLine
+var { css } = jb.ns('css')
 
 jb.component('css', {
   description: 'e.g. {color: red; width: 20px} or div>.myClas {color: red} ',
@@ -3363,7 +3371,7 @@ jb.component('css', {
   params: [
     {id: 'css', mandatory: true, dynamic: true, as: 'string'}
   ],
-  impl: (ctx,css) => ({css: _ctx => fixCssLine(css(_ctx))})
+  impl: (ctx,css) => ({css: _ctx => jb.ui.fixCssLine(css(_ctx))})
 })
 
 jb.component('css.class', {
@@ -3383,7 +3391,7 @@ jb.component('css.width', {
     {id: 'selector', as: 'string'}
   ],
   impl: (ctx,width,overflow,minMax) =>
-    ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}width: ${withUnits(width)} ${overflow ? '; overflow-x:' + overflow + ';' : ''} }`})
+    ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}width: ${jb.ui.withUnits(width)} ${overflow ? '; overflow-x:' + overflow + ';' : ''} }`})
 })
 
 jb.component('css.height', {
@@ -3395,7 +3403,7 @@ jb.component('css.height', {
     {id: 'selector', as: 'string'}
   ],
   impl: (ctx,height,overflow,minMax) =>
-    ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}height: ${withUnits(height)} ${overflow ? '; overflow-y:' + overflow : ''} }`})
+    ({css: `${ctx.params.selector} { ${minMax ? minMax +'-':''}height: ${jb.ui.withUnits(height)} ${overflow ? '; overflow-y:' + overflow : ''} }`})
 })
 
 jb.component('css.opacity', {
@@ -3420,7 +3428,7 @@ jb.component('css.padding', {
   impl: ctx => {
     const css = ['top','left','right','bottom']
       .filter(x=>ctx.params[x] != '')
-      .map(x=> `padding-${x}: ${withUnits(ctx.params[x])}`)
+      .map(x=> `padding-${x}: ${jb.ui.withUnits(ctx.params[x])}`)
       .join('; ');
     return {css: `${ctx.params.selector} {${css}}`};
   }
@@ -3438,7 +3446,7 @@ jb.component('css.margin', {
   impl: ctx => {
     const css = ['top','left','right','bottom']
       .filter(x=>ctx.params[x] != null)
-      .map(x=> `margin-${x}: ${withUnits(ctx.params[x])}`)
+      .map(x=> `margin-${x}: ${jb.ui.withUnits(ctx.params[x])}`)
       .join('; ');
     return {css: `${ctx.params.selector} {${css}}`};
   }
@@ -3450,7 +3458,7 @@ jb.component('css.marginAllSides', {
     {id: 'value', as: 'string', mandatory: true, description: 'e.g. 20, 20%, 0.4em'},
     {id: 'selector', as: 'string'}
   ],
-  impl: (ctx,value,selector) => ({css: `${selector} margin: ${withUnits(value)}`})
+  impl: (ctx,value,selector) => ({css: `${selector} margin: ${jb.ui.withUnits(value)}`})
 })
 
 jb.component('css.marginVerticalHorizontal', {
@@ -3461,7 +3469,7 @@ jb.component('css.marginVerticalHorizontal', {
     {id: 'selector', as: 'string'}
   ],
   impl: (ctx,vertical,horizontal,selector) =>
-    ({css: `${selector} margin: ${withUnits(vertical)+ ' ' +withUnits(horizontal)}`})
+    ({css: `${selector} margin: ${jb.ui.withUnits(vertical)} ${jb.ui.withUnits(horizontal)}`})
 })
 
 jb.component('css.transformRotate', {
@@ -3507,7 +3515,7 @@ jb.component('css.transformTranslate', {
     {id: 'y', as: 'string', description: '20px', defaultValue: '0'},
     {id: 'selector', as: 'string'}
   ],
-  impl: ctx => ({css: `${ctx.params.selector} {transform:translate(${withUnits(ctx.params.x)},${withUnits(ctx.params.y)})}`})
+  impl: ctx => ({css: `${ctx.params.selector} {transform:translate(${jb.ui.withUnits(ctx.params.x)},${jb.ui.withUnits(ctx.params.y)})}`})
 })
 
 jb.component('css.bold', {
@@ -3534,7 +3542,7 @@ jb.component('css.boxShadow', {
   impl: (ctx,blurRadius,spreadRadius,shadowColor,opacity,horizontal,vertical,selector) => {
     const color = [parseInt(shadowColor.slice(1,3),16) || 0, parseInt(shadowColor.slice(3,5),16) || 0, parseInt(shadowColor.slice(5,7),16) || 0]
       .join(',');
-    return ({css: `${selector} { box-shadow: ${withUnits(horizontal)} ${withUnits(vertical)} ${withUnits(blurRadius)} ${withUnits(spreadRadius)} rgba(${color},${opacity}) }`})
+    return ({css: `${selector} { box-shadow: ${jb.ui.withUnits(horizontal)} ${jb.ui.withUnits(vertical)} ${jb.ui.withUnits(blurRadius)} ${jb.ui.withUnits(spreadRadius)} rgba(${color},${opacity}) }`})
   }
 })
 
@@ -3548,7 +3556,7 @@ jb.component('css.border', {
     {id: 'selector', as: 'string'}
   ],
   impl: (ctx,width,side,style,color,selector) =>
-    ({css: `${selector} { border${side?'-'+side:''}: ${withUnits(width)} ${style} ${color} }`})
+    ({css: `${selector} { border${side?'-'+side:''}: ${jb.ui.withUnits(width)} ${style} ${color} }`})
 })
 
 jb.component('css.borderRadius', {
@@ -3557,7 +3565,7 @@ jb.component('css.borderRadius', {
     {id: 'radius', as: 'string', defaultValue: '5'},
     {id: 'selector', as: 'string'}
   ],
-  impl: (ctx,radius,selector) => ({css: `${selector} { border-radius: ${withUnits(radius)}}`})
+  impl: (ctx,radius,selector) => ({css: `${selector} { border-radius: ${jb.ui.withUnits(radius)}}`})
 })
 
 jb.component('css.lineClamp', {
@@ -3603,11 +3611,9 @@ jb.component(`css.${f}`, {
   params: [
     {id: 'css', mandatory: true, as: 'string'}
   ],
-  impl: (ctx,css) => ({css: fixCssLine(css)})
+  impl: (ctx,css) => ({css: jb.ui.fixCssLine(css)})
 }))
-
-
-})();
+;
 
 var { text, firstSucceeding, customStyle, styleByControl, controlWithFeatures } = jb.ns('text')
 
@@ -3955,9 +3961,13 @@ jb.component('control.icon', {
     {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx => jb.ui.ctrl(ctx, features(
-    calcProp('icon'), calcProp('type'), calcProp('title'), calcProp('size')
-  ))
+  impl: ctx => jb.ui.ctrl(ctx)
+})
+
+jb.component('icon.init', {
+  type: 'feature',
+  category: 'icon:0',
+  impl: features(calcProp('icon'), calcProp('type'), calcProp('title'), calcProp('size'))
 })
 
 jb.component('icon', {
@@ -3980,6 +3990,7 @@ jb.component('icon.material', {
       , icon) 
       : h('div',{title: title(), onclick: true,
         $html: `<svg width="24" height="24" jb_external="true" fill="currentColor" transform="scale(${size/24})"><path d="${jb.path(jb.ui,['MDIcons',icon])}"/></svg>`}),
+    features: icon.init()
   })
 })
 
@@ -3995,7 +4006,7 @@ jb.component('feature.icon', {
     {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx => ({
+  impl: ctx => ({ // todo - fix for remote
     icon: jb.ui.ctrl(ctx, features(
       calcProp('icon'), calcProp('type'), calcProp('title'), calcProp('size'),
       calcProp('iconPosition','%$$model/position%')
@@ -4017,20 +4028,26 @@ jb.component('button', {
     {id: 'raised', as: 'boolean', dynamic: true },
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx => jb.ui.ctrl(ctx, features(
-      watchAndCalcModelProp('title'),
-      watchAndCalcModelProp('raised'),
-      method('onclickHandler', (_ctx,{cmp, ev}) => {
-        if (jb.path(ev,'ev.ctrlKey'))
-          cmp.runBEMethod('ctrlAction',_ctx.data,_ctx.vars)
-        else if (jb.path(ev,'ev.alyKey'))
-          cmp.runBEMethod('altAction',_ctx.data,_ctx.vars)
-        else
-          ctx.params.action(_ctx)
-      }),
-      feature.userEventProps('ctrlKey,altKey'),
-      () => ({studioFeatures :{$: 'feature.contentEditable', param: 'title' }}),
-    ))
+  impl: ctx => jb.ui.ctrl(ctx)
+})
+
+jb.component('button.initAction', {
+  type: 'feature',
+  category: 'button:0',
+  impl: features(
+    watchAndCalcModelProp('title'),
+    watchAndCalcModelProp('raised'),
+    method('onclickHandler', (ctx,{cmp, ev, $model}) => {
+      if (jb.path(ev,'ev.ctrlKey'))
+        cmp.runBEMethod('ctrlAction',ctx.data,ctx.vars)
+      else if (jb.path(ev,'ev.alyKey'))
+        cmp.runBEMethod('altAction',ctx.data,ctx.vars)
+      else
+        $model.action(ctx)
+    }),
+    feature.userEventProps('ctrlKey,altKey'),
+    () => ({studioFeatures :{$: 'feature.contentEditable', param: 'title' }}),
+  )
 })
 
 jb.component('button.ctrlAction', {
@@ -4298,7 +4315,13 @@ jb.component('editableBoolean', {
     {id: 'textForFalse', as: 'string', defaultValue: 'no', dynamic: true},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx => jb.ui.ctrl(ctx, features(
+  impl: ctx => jb.ui.ctrl(ctx)
+})
+
+jb.component('editableBoolean.initToggle', {
+  type: 'feature',
+  category: 'editableBoolean:0',
+  impl: features(
     calcProp('toggleText',If('%$$model/databind()%','%$$model/textForTrue()%','%$$model/textForFalse()%' )),
     watchRef({ref: '%$$model/databind()%', allowSelfRefresh: true, strongRefresh: true}),
     method('toggle', runActions(
@@ -4307,7 +4330,7 @@ jb.component('editableBoolean', {
     )),
     method('toggleByKey', (ctx,{cmp, ev}) => 
       ev.keyCode != 27 && cmp.runBEMethod('toggle')
-    ))
+    )
   )
 })
 ;
@@ -5284,11 +5307,7 @@ jb.component('group.itemlistContainer', {
   ],
   impl: features(
 	feature.serviceRegistey(),
-    variable({
-        name: 'itemlistCntrData',
-        value: {'$': 'object', search_pattern: '', selected: '%$initialSelection%'},
-        watchable: true
-    }),
+    watchable('itemlistCntrData',{'$': 'object', search_pattern: '', selected: '%$initialSelection%'}),
     variable({ // not watchable
 		name: 'itemlistCntr',
 		value: {'$': 'object', filters: () => []},
@@ -5968,7 +5987,7 @@ jb.component('menuStyle.optionLine', {
 				>span { padding-top: 3px }
 				>.title { display: block; text-align: left; white-space: nowrap; }
 				>.shortcut { margin-left: auto; text-align: right; padding-right: 15px }`,
-    features: [menu.initMenuOption(), mdc.rippleEffect()]
+    features: [menu.initMenuOption(), feature.mdcRippleEffect()]
   })
 })
 
@@ -5994,7 +6013,7 @@ jb.component('menuStyle.popupThumb', {
     template: ({},{title},h) => h('div.pulldown-top-menu-item',{ onclick: 'openPopup'}, title),
     features: [
       menu.initPopupMenu(), 
-      mdc.rippleEffect(),
+      feature.mdcRippleEffect(),
       frontEnd.flow(source.frontEndEvent('mouseenter'), 
         rx.filter(ctx => jb.ui.find(ctx,'.pulldown-mainmenu-popup')[0]), // the first 'open popup' needs a click
         sink.BEMethod('openNewPopup')
@@ -6671,8 +6690,8 @@ jb.component('editableText.picklistHelper', {
     {id: 'popupId', as: 'string', defaultValue: 'editableTextHelper'}
   ],
   impl: features(
-    variable({name: 'selectedOption', watchable: true}),
-    variable({name: 'watchableInput', watchable: true, value: obj(prop('value','')) }),
+    watchable('selectedOption'),
+    watchable('watchableInput', obj(prop('value',''))),
     variable('helperCmp', '%$cmp%'),
     method('openPopup', openDialog({
         style: dialog.popup(), content: picklist({
@@ -6779,7 +6798,7 @@ jb.component('editableText.helperPopup', {
  )
 });
 
-var {mdc,mdcStyle} = jb.ns('mdc,mdcStyle')
+var {mdcStyle} = jb.ns('mdcStyle')
 
 jb.component('mdcStyle.initDynamic', {
   type: 'feature',
@@ -6787,20 +6806,22 @@ jb.component('mdcStyle.initDynamic', {
     {id: 'query', as: 'string'}
   ],
   impl: features(
+    frontEnd.requireExternalLibrary(['material-components-web.js','css/material-components-web.css','css/fonts.css']),
     frontEnd.init(({},{cmp}) => {
-      if (!jb.ui.material) return jb.logError('please load mdc library')
+      const mdc = jb.frame.mdc
+      if (!mdc) return jb.logError('please load mdc library')
       cmp.mdc_comps = cmp.mdc_comps || []
       ;['switch','chip-set','tab-bar','slider','select','text-field'].forEach(cmpName => {
         const elm = jb.ui.findIncludeSelf(cmp.base,`.mdc-${cmpName}`)[0]
         if (elm) {
           const name1 = cmpName.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase())
           const name = name1[0].toUpperCase() + name1.slice(1)
-          cmp.mdc_comps.push({mdc_cmp: new jb.ui.material[`MDC${name}`](elm), cmpName})
+          cmp.mdc_comps.push({mdc_cmp: new mdc[cmpName][`MDC${name}`](elm), cmpName})
           jb.log(`mdc frontend init ${cmpName}`,{cmp})
         }
       })
       if (cmp.base.classList.contains('mdc-button') || cmp.base.classList.contains('mdc-fab')) {
-        cmp.mdc_comps.push({mdc_cmp: new jb.ui.material.MDCRipple(cmp.base), cmpName: 'ripple' })
+        cmp.mdc_comps.push({mdc_cmp: new mdc.ripple.MDCRipple(cmp.base), cmpName: 'ripple' })
         jb.log('mdc frontend init ripple',{cmp})
       }
     }),
@@ -6811,10 +6832,10 @@ jb.component('mdcStyle.initDynamic', {
   )
 })
 
-jb.component('mdc.rippleEffect', {
+jb.component('feature.mdcRippleEffect', {
   type: 'feature',
   description: 'add ripple effect',
-  impl: ctx => ({
+  impl: () => ({
       templateModifier: vdom => vdom.addClass('mdc-ripple-surface mdc-ripple-radius-bounded mdc-states mdc-states-base-color(red)')
    })
 })
@@ -6943,7 +6964,8 @@ jb.component('button.href', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
-    css: '{color: var(--jb-textLink-fg)} .raised { color: var(--jb-textLink-active-fg) }'
+    css: '{color: var(--jb-textLink-fg)} .raised { color: var(--jb-textLink-active-fg) }',
+    features: button.initAction()
   })
 })
 
@@ -6951,7 +6973,8 @@ jb.component('button.hrefText', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) => h('a',{class: raised ? 'raised' : '', href: 'javascript:;', onclick: true }, title),
-    css: '{color: var(--jb-input-fg) ; text-decoration: none }     ~.hover, ~.active: { text-decoration: underline }'
+    css: '{color: var(--jb-input-fg) ; text-decoration: none }     ~.hover, ~.active: { text-decoration: underline }',
+    features: button.initAction()
   })
 })
 
@@ -6973,6 +6996,7 @@ jb.component('button.x', {
             font-weight: 700;
         }
         :hover { color: var(--jb-menubar-active-fg) }`,
+    features: button.initAction()
   })
 })
 
@@ -6980,7 +7004,8 @@ jb.component('button.native', {
   type: 'button.style',
   impl: customStyle({
     template: (cmp,{title,raised},h) => h('button',{class: raised ? 'raised' : '', title, onclick: true },title),
-    css: '.raised {font-weight: bold}'
+    css: '.raised {font-weight: bold}',
+    features: button.initAction()
   })
 })
 
@@ -6998,7 +7023,7 @@ jb.component('button.mdc', {
       ...[!noTitle && h('span.mdc-button__label',{},title)],
       ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-button__icon')),
     ]),
-    features: mdcStyle.initDynamic()
+    features: [button.initAction(), mdcStyle.initDynamic()]
   })
 })
 
@@ -7013,16 +7038,17 @@ jb.component('button.mdcChipAction', {
         h('span',{ role: 'gridcell'}, h('span', {role: 'button', tabindex: -1, class: 'mdc-chip__text'}, title )),
         ...(cmp.icon||[]).filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'post').map(h).map(vdom=>vdom.addClass('mdc-chip__icon mdc-chip__icon--trailing')),
     ])),
-    features: mdcStyle.initDynamic()
+    features: [button.initAction(), mdcStyle.initDynamic()]
   })
 })
 
 jb.component('button.plainIcon', {
   type: 'button.style',
-  impl: customStyle(
-    (cmp,{title,raised},h) =>
-      jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=> vdom.setAttribute('title',vdom.getAttribute('title') || title))[0]
-  )
+  impl: customStyle({
+    template: (cmp,{title,raised},h) =>
+      jb.ui.chooseIconWithRaised(cmp.icon,raised).map(h).map(vdom=> vdom.setAttribute('title',vdom.getAttribute('title') || title))[0],
+    features: button.initAction()
+  })
 })
 
 jb.component('button.mdcIcon', {
@@ -7054,7 +7080,7 @@ jb.component('button.mdcFloatingAction', {
             ...[withTitle && h('span',{ class: 'mdc-fab__label'},title)].filter(x=>x)
       ]),
     css: '{width: %$buttonSize%px; height: %$buttonSize%px;}',
-    features: mdcStyle.initDynamic(),
+    features: [button.initAction(), mdcStyle.initDynamic()]
   })
 })
 
@@ -7071,7 +7097,7 @@ jb.component('button.mdcTab', {
         h('span',{ class: ['mdc-tab-indicator', raised && 'mdc-tab-indicator--active'].filter(x=>x).join(' ') }, h('span',{ class: 'mdc-tab-indicator__content mdc-tab-indicator__content--underline'})),
         h('span.mdc-tab__ripple'),
       ]),
-    features: mdcStyle.initDynamic()
+    features: [button.initAction(), mdcStyle.initDynamic()]
   })
 })
 
@@ -7092,7 +7118,7 @@ jb.component('button.mdcHeader', {
 
 ;
 
-var {hidden} = jb.ns('mdc,mdc-style')
+var {hidden} = jb.ns('mdc-style')
 
 jb.component('editableText.input', {
   type: 'editable-text.style',
@@ -7212,7 +7238,7 @@ jb.component('editableText.expandable', {
         })
       ],
       features: [
-        variable({name: 'editable', watchable: true}),
+        watchable('editable'),
         variable({name: 'expandableContext', value: obj()})
       ]
     }),
@@ -7443,7 +7469,7 @@ jb.component('group.tabs', {
           features: watchRef('%$selectedTab%')
         })
       ],
-      features: variable({name: 'selectedTab', value: 0, watchable: true}),
+      features: watchable('selectedTab', 0),
     }),
     'tabsModel'
   )
@@ -7497,7 +7523,7 @@ jb.component('group.accordion', {
         itemVariable: 'section',
         indexVariable: 'sectionIndex'
       }),
-      features: variable({name: 'selectedTab', value: 0, watchable: true})
+      features: watchable('selectedTab',0)
     }),
     'sectionsModel'
   )
@@ -7555,7 +7581,7 @@ jb.component('group.sectionExpandCollapse', {
           features: watchRef('%$sectionExpanded%')
         })
       ],
-      features: variable({name: 'sectionExpanded', watchable: true, value: '%$autoExpand%'}),
+      features: watchable('sectionExpanded','%$autoExpand%'),
     }),
     'sectionsModel'
   )
@@ -7590,7 +7616,7 @@ jb.component('group.sectionsExpandCollapse', {
               features: watchRef('%$sectionExpanded%')
             })
           ],
-          features: variable({name: 'sectionExpanded', watchable: true, value: '%$autoExpand%'}),
+          features: watchable('sectionExpanded','%$autoExpand%'),
         }),
         itemVariable: 'section',
         indexVariable: 'sectionIndex'
@@ -7935,7 +7961,7 @@ jb.component('editableBoolean.checkbox', {
   impl: customStyle({
     template: ({},{databind},h) => h('input', { type: 'checkbox', ...(databind && {checked: ''}) , 
       onclick: 'toggle', onchange: 'toggle', onkeyup: 'toggleByKey'  }),
-    features: field.databind()
+    features: [editableBoolean.initToggle(), field.databind()]
   })
 })
 
@@ -7946,7 +7972,7 @@ jb.component('editableBoolean.checkboxWithLabel', {
       h('input', { type: 'checkbox', ...(databind && {checked: ''}), id: "switch_"+fieldId, onchange: 'toggle', onkeyup: 'toggleByKey' }),
       h('label',{for: "switch_"+fieldId },title())
      ]),
-    features: field.databind()
+    features: [editableBoolean.initToggle(), field.databind()]
   })
 })
 
@@ -7960,7 +7986,7 @@ jb.component('editableBoolean.expandCollapseWithUnicodeChars', {
     template: ({},{databind,toExpandSign,toCollapseSign},h) => 
       h('span',{ onclick: 'toggle' }, databind ? toCollapseSign : toExpandSign),
     css: '{cursor: pointer; opacity: 0.6; user-select: none}',
-    features: field.databind()
+    features: [editableBoolean.initToggle(), field.databind()]
   })
 })
 
@@ -7970,7 +7996,7 @@ jb.component('editableBoolean.expandCollapse', {
     template: ({},{databind},h) => h('i',{class:'material-icons noselect', onclick: 'toggle' },
       databind ? 'keyboard_arrow_down' : 'keyboard_arrow_right'),
     css: '{ font-size:16px; cursor: pointer }',
-    features: field.databind()
+    features: [editableBoolean.initToggle(), field.databind()]
   })
 })
 
@@ -7989,7 +8015,7 @@ jb.component('editableBoolean.mdcXV', {
             h('i',{class:'material-icons mdc-icon-button__icon '}, noIcon),
         ]),
     css: '{ border-radius: 2px; padding: 0; width: 24px; height: 24px;}',
-    features: [field.databind(), mdcStyle.initDynamic()]
+    features: [editableBoolean.initToggle(), field.databind(), mdcStyle.initDynamic()]
   })
 })
 
@@ -8002,6 +8028,7 @@ jb.component('editableBoolean.buttonXV', {
     {id: 'buttonStyle', type: 'button.style', mandatory: true, defaultValue: button.mdcFloatingAction() }
   ],
   impl: styleWithFeatures(call('buttonStyle'), features(
+      editableBoolean.initToggle(),
       htmlAttribute('onclick','toggle'),
       ctx => ctx.run({...ctx.cmpCtx.params[jb.toboolean(ctx.vars.$model.databind()) ? 'yesIcon' : 'noIcon' ], 
         title: ctx.exp('%$$model/title%'), $: 'feature.icon'}),
@@ -8015,6 +8042,7 @@ jb.component('editableBoolean.iconWithSlash', {
   ],
   impl: styleWithFeatures(button.mdcIcon({buttonSize: '%$buttonSize%'}), features(
       Var('strokeColor', css.valueOfCssVar('mdc-theme-on-secondary')),
+      editableBoolean.initToggle(),
       htmlAttribute('onclick','toggle'),
       htmlAttribute('title','%$$model/title%'),
       css(If('%$$model/databind%','',`background-repeat: no-repeat; background-image: url("data:image/svg+xml;utf8,<svg width='%$buttonSize%' height='%$buttonSize%' viewBox='0 0 %$buttonSize% %$buttonSize%' xmlns='http://www.w3.org/2000/svg'><line x1='0' y1='0' x2='%$buttonSize%' y2='%$buttonSize%' style='stroke:%$strokeColor%;stroke-width:2' /></svg>")`))
@@ -8038,7 +8066,7 @@ jb.component('editableBoolean.mdcSlideToggle', {
       h('label',{for: 'switch_' + fieldId},toggleText)
     ]),
     css: ctx => jb.ui.propWithUnits('width',ctx.params.width),
-    features: [field.databind(), mdcStyle.initDynamic()]
+    features: [editableBoolean.initToggle(), field.databind(), mdcStyle.initDynamic()]
   })
 })
 
@@ -8064,6 +8092,7 @@ jb.component('editableBoolean.mdcCheckBox', {
     ]),
     css: ctx => jb.ui.propWithUnits('width',ctx.params.width),
     features: [
+      editableBoolean.initToggle(),
       field.databind(), 
       css('~ .mdc-checkbox__checkmark { top: -9px}')
       // frontEnd((ctx,{cmp}) => {

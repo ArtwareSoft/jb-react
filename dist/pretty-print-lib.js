@@ -170,7 +170,7 @@ jb.extension('utils', {
         if (val === undefined) return 'undefined';
         if (typeof val === 'object') return profileToMacro(ctx, val, flat);
         if (typeof val === 'function') {
-          const asStr = val.toString().trim()
+          const asStr = val.toString().trim().replace(/^'([a-zA-Z_\-0-9]+)'/,'$1')
           const header = asStr.indexOf(`${val.name}(`) == 0 ? val.name : asStr.indexOf(`function ${val.name}(`) == 0 ? `function ${val.name}` : ''
           return { text: asStr.slice(header.length).replace(/\n/g,jb.utils.fixedNL), noColon: header ? true : false, map: {} }
         }

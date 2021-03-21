@@ -6,33 +6,54 @@ Object.assign(jb, {
     const extId = typeof p1 == 'string' ? p1 : 'main'
     const extension = p2 || p1
     const lib = jb[libId] = jb[libId] || {__initialized: {} }
-    const funcs = Object.keys(extension).filter(k=>typeof extension[k] == 'function').filter(k=>k!='initExtension')
+    const funcs = Object.keys(extension).filter(k=>typeof extension[k] == 'function').filter(k=>!k.match(/^initExtension/))
     funcs.forEach(k=>lib[k] = extension[k])
-    const initFunc = `init_${libId}_${extId}`
-    const initFuncImpl = extension.initExtension || extension[initFunc]
-    const dependentInitFuncs = Object.keys(extension).filter(k=>k.match(/^dependentInit/))
-    __initFuncs = [initFuncImpl && initFunc, ...dependentInitFuncs].filter(x=>x).map(x=>`#${libId}.${x}`)
-    funcs.forEach(k=>lib[k].__initFuncs = __initFuncs)
-    if (initFuncImpl) {
-      lib[initFunc] = initFuncImpl
-      if (! lib.__initialized[initFunc]) {
-        lib.__initialized[initFunc] = true
-        Object.assign(lib, lib[initFunc](extension))
-      }
-    }
-    jb.core.dependentInit = [...(jb.core.dependentInit || []), 
-      ...dependentInitFuncs.map(k=>({libId, func: k, extension, dependentOn: [...k.matchAll(/_([A-Za-z0-9]+)/g)].map(x=>x[1]) }))]
-    const initToRun = jb.core.dependentInit.filter(x=>x.dependentOn.every(m=>jb[m]))
-    jb.core.dependentInit = jb.core.dependentInit.filter(x=>! x.dependentOn.every(m=>jb[m]))
-    initToRun.forEach(x=>{
-      const lib = jb[x.libId], initFunc = x.func
-      if (! lib.__initialized[initFunc]) {
-        lib.__initialized[initFunc] = true
-        Object.assign(lib, lib[initFunc](extension))
-      }
-    })
-  }
+
+    const initFuncId = Object.keys(extension).filter(k=>typeof extension[k] == 'function').filter(k=>k.match(/^initExtension/))[0]
+    const phaseFromFunc = ((initFuncId||'').match(/_phase([0-9]+)/)||[,0])[1]
+    const initFuncPhase = phaseFromFunc || { core: 1, utils: 5, db: 10, watchable: 20}[libId] || 100
+    const initFunc = `init_${libId}-${extId}-phase${initFuncPhase}`
+    const initFuncImpl = extension[initFuncId] || extension[initFunc]
+    if (!initFuncImpl) return
+
+    lib[initFunc] = initFuncImpl    
+    funcs.forEach(k=>lib[k].__initFuncs = [initFunc].map(x=>`#${libId}.${x}`))
+    if (jb.noCodeLoader)
+      Object.assign(lib, lib[initFunc]())
+  },
+  initializeLibs(libs) {
+    libs.flatMap(l => Object.keys(jb[l]).filter(x=>x.match(/^init_/)))
+      .sort((x,y) => Number(x.match(/-phase([0-9]+)/)[1]) - Number(y.match(/-phase([0-9]+)/)[1]) )
+      .forEach(initFunc=> {
+        const lib = jb[initFunc.match(/init_([^-]+)/)[1]]
+        if (! lib.__initialized[initFunc]) {
+          lib.__initialized[initFunc] = true
+          Object.assign(lib, lib[initFunc]())
+        }
+      })
+  },
+  noCodeLoader: true
 })
+
+// if (initFuncImpl) {
+//   lib[initFunc] = initFuncImpl
+//   if (! lib.__initialized[initFunc]) {
+//     lib.__initialized[initFunc] = true
+//     Object.assign(lib, lib[initFunc](extension))
+//   }
+// }
+// jb.core.dependentInit = [...(jb.core.dependentInit || []), 
+//   ...dependentInitFuncs.map(k=>({libId, func: k, extension, dependentOn: [...k.matchAll(/_([A-Za-z0-9]+)/g)].map(x=>x[1]) }))]
+// const initToRun = jb.core.dependentInit.filter(x=>x.dependentOn.every(m=>jb[m]))
+// jb.core.dependentInit = jb.core.dependentInit.filter(x=>! x.dependentOn.every(m=>jb[m]))
+// initToRun.forEach(x=>{
+//   const lib = jb[x.libId], initFunc = x.func
+//   if (! lib.__initialized[initFunc]) {
+//     lib.__initialized[initFunc] = true
+//     Object.assign(lib, lib[initFunc](extension))
+//   }
+// })
+
 
 jb.extension('core', {
   initExtension() {
@@ -793,6 +814,7 @@ jb.extension('db', {
 
 Object.assign(jb, {
     component(_id,comp) {
+      if (!jb.core.location) jb.initializeLibs(['core'])
       const id = jb.macroName(_id)
       try {
         const errStack = new Error().stack.split(/\r|\n/)
@@ -947,15 +969,17 @@ jb.extension('spy', {
 		jb.spy.spyParam = spyParam
 		jb.spy.log = jb.spy._log // actually enables logging
 		if (jb.frame) jb.frame.spy = jb.spy // for console use
+		jb.spy.includeLogsInitialized = false
+		jb.spy._obs = jb.callbag.subject()
 		return jb.spy
 	},
 
 	memoryUsage: () => jb.path(jb.frame,'performance.memory.usedJSHeapSize'),
-	observable() { 
-		const _jb = jb.path(jb,'studio.studiojb') || jb
-		jb.spy._obs = jb.spy._obs || _jb.callbag.subject()
-		return jb.spy._obs
-	},
+	// observable() { 
+	// 	const _jb = jb.path(jb,'studio.studiojb') || jb
+	// 	jb.spy._obs = jb.spy._obs || _jb.callbag.subject()
+	// 	return jb.spy._obs
+	// },
 	calcIncludeLogsFromSpyParam() {
 		const includeLogsFromParam = (jb.spy.spyParam || '').split(',').filter(x => x[0] !== '-').filter(x => x)
 		const excludeLogsFromParam = (jb.spy.spyParam || '').split(',').filter(x => x[0] === '-').map(x => x.slice(1))
@@ -1061,10 +1085,10 @@ jb.extension('spy', {
 			return [...set1,...set2]
 		}
 	},
-	search(query,slice= -1000) { // dialog core | menu !keyboard  
+	search(query,{ slice, spy } = {slice: -1000, spy: jb.spy}) { // e.g., dialog core | menu !keyboard  
 		const _or = query.split(/,|\|/)
 		return _or.reduce((acc,exp) => 
-			unify(acc, exp.split(' ').reduce((acc,logNameExp) => filter(acc,logNameExp), jb.spy.logs.slice(slice))) 
+			unify(acc, exp.split(' ').reduce((acc,logNameExp) => filter(acc,logNameExp), spy.logs.slice(slice))) 
 		,[])
 
 		function filter(set,exp) {

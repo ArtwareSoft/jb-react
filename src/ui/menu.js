@@ -1,4 +1,4 @@
-var { menu,menuStyle,menuSeparator,mdc,icon,key} = jb.ns('menu,menuStyle,menuSeparator,mdc,icon,key')
+var { menu,menuStyle,menuSeparator,icon,key} = jb.ns('menu,menuStyle,menuSeparator,icon,key')
 
 jb.component('menu.menu', {
   type: 'menu.option',
@@ -359,7 +359,7 @@ jb.component('menuStyle.optionLine', {
 				>span { padding-top: 3px }
 				>.title { display: block; text-align: left; white-space: nowrap; }
 				>.shortcut { margin-left: auto; text-align: right; padding-right: 15px }`,
-    features: [menu.initMenuOption(), mdc.rippleEffect()]
+    features: [menu.initMenuOption(), feature.mdcRippleEffect()]
   })
 })
 
@@ -385,7 +385,7 @@ jb.component('menuStyle.popupThumb', {
     template: ({},{title},h) => h('div.pulldown-top-menu-item',{ onclick: 'openPopup'}, title),
     features: [
       menu.initPopupMenu(), 
-      mdc.rippleEffect(),
+      feature.mdcRippleEffect(),
       frontEnd.flow(source.frontEndEvent('mouseenter'), 
         rx.filter(ctx => jb.ui.find(ctx,'.pulldown-mainmenu-popup')[0]), // the first 'open popup' needs a click
         sink.BEMethod('openNewPopup')

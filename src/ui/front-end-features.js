@@ -83,6 +83,17 @@ jb.component('frontEnd.method', {
     impl: (ctx,method,action) => ({ frontEndMethod: { method, path: ctx.path, action: action.profile} })
 })
 
+jb.component('frontEnd.requireExternalLibrary', {
+  type: 'feature',
+  category: 'front-end',
+  description: 'url or name of external library in dist path, js or css',
+  params: [
+      {id: 'libs', as: 'array' },
+  ],
+  impl: ({},libs) => libs.map(frontEndLib =>({ frontEndLib }))
+})
+
+
 jb.component('frontEnd.enrichUserEvent', {
   type: 'feature',
   category: 'front-end',

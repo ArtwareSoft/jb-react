@@ -14596,13 +14596,15 @@ jb.component('textEditor.cmEnrichUserEvent', {
 
 function injectCodeMirror(ctx,{text,cmp,el,cm_settings,_enableFullScreen,formatText}) {
 	if (cmp.editor) return
+	if (text == null)
+		return jb.logError('codemirror - no binding to text',{ctx, cmp})
 	const _extraKeys = { ...cm_settings.extraKeys, ...jb.path(cmp.extraCmSettings,'extraKeys')}
 	const extraKeys = jb.objFromEntries(jb.entries(_extraKeys).map(e=>[
 		e[0], (''+e[1]).replace(/\s/g,'').indexOf('()=>') == 0 ? e[1]
 			: _ => ctx.setVar('ev',jb.ui.buildUserEvent({},el)).run(action.runBEMethod(e[1]))
 	]))
 	const gutters = [ ...(cm_settings.gutters || []), ...(jb.path(cmp.extraCmSettings,'gutters') || []) ]
-	const settings = {...cm_settings, ...cmp.extraCmSettings, value: text, autofocus: false, extraKeys, gutters }
+	const settings = {...cm_settings, ...cmp.extraCmSettings, value: text || '', autofocus: false, extraKeys, gutters }
 	cmp.editor = CodeMirror(el, settings)
 	cmp.editor.getWrapperElement().setAttribute('jb_external','true')
 	jb.ui.addClass(cmp.editor.getWrapperElement(),'autoResizeInDialog')
