@@ -72911,7 +72911,7 @@ vegaEmbed = (function (exports) {
   }
 
 
-  return { createView, embedExample, compile, View, parse: parse$1$1, loader: loader$1 }
+  return { createView, embedExample, compile, View, parse: parse$1$1, loader: loader$1, AggregateOps }
 
 
 }({}));

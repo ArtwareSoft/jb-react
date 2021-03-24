@@ -49,3 +49,39 @@ jb.component('vegaLiteDemo.cars', {
     features: []
   })
 })
+
+jb.component('population', {
+  type: 'control',
+  impl: group({
+    title: '',
+    controls: [
+      vega.interactiveChart(
+        vega.spec({
+          data: vega.jbData(
+            pipeline(
+              '%$phones%',
+              stat.groupBy(
+                '%Technology%',
+                [
+                  stat.fieldInGroup({
+                    aggregateFunc: stat.min(),
+                    aggregateValues: '%price%',
+                    aggregateResultField: 'minPrice'
+                  }),
+                  stat.fieldInGroup({
+                    aggregateFunc: stat.stdev(),
+                    aggregateValues: '%price%',
+                    aggregateResultField: 'priceVariance'
+                  })
+                ]
+              )
+            )
+          ),
+          transform: [],
+          mark: vega.circle(vega.generalMarkProps({tooltip: 'hello'})),
+          encoding: vega.positionChannels(vega.channel('Technology', 'ordinal'), vega.channel('minPrice'))
+        })
+      )
+    ]
+  })
+})

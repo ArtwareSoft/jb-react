@@ -4,10 +4,6 @@ Object.assign(jb.ui, {
   getSpy: () => jb.path(jb.parent,'spy') || {}
 })
 
-jb.component('dataResource.eventTracker', {
-  watchableData: {}
-})
-
 jb.component('studio.openEventTracker', {
   type: 'action',
   impl: openDialog({
@@ -23,37 +19,34 @@ jb.component('eventTracker.getSpy', {
 })
 
 jb.component('eventTracker.codeSize', {
-  impl: ()=> Math.floor(jb.parent.codeLoader.totalCodeSize/1000) + 'k'
+  impl: ()=> jb.parent.codeLoader.totalCodeSize ? Math.floor(jb.parent.codeLoader.totalCodeSize/1000) + 'k' : ''
 })
 
 jb.component('eventTracker.clearSpyLog', {
   type: 'action',
-  impl: ctx => {
-    const items = ctx.run(eventTracker.eventItems())
-    const lastGroupIndex = items.length - items.reverse().findIndex(x=>x.index == '---')
-    if (lastGroupIndex >= items.length)
-      jb.ui.getSpy(ctx).clear()
-    else
-      jb.ui.getSpy(ctx).logs.splice(0,lastGroupIndex-1)
-  }
+  impl: runActions(
+    Var('items', eventTracker.eventItems()),
+    (ctx, {items}) => {
+      const lastGroupIndex = items.length - items.reverse().findIndex(x=>x.index == '---')
+      if (lastGroupIndex >= items.length)
+        jb.spy.clear(jb.ui.getSpy(ctx))
+      else
+        jb.ui.getSpy(ctx).logs.splice(0,lastGroupIndex-1)
+  })
 })
 
-jb.component('eventTracker.refresh', {
-  type: 'action',
-  params: [
-    {id: 'clear', as: 'boolean'}
-  ],
-  impl: refreshControlById('event-tracker')
-})
-
-jb.component('studio.eventTrackerToolbar', {
+jb.component('eventTracker.toolbar', {
   type: 'control',
   impl: group({
     layout: layout.horizontal('2'),
     controls: [
       text({
         text: eventTracker.codeSize(),
-        features: css.padding({top: '5'})
+        features: [
+          feature.hoverTitle('code size'),
+          css('cursor: default'),
+          css.padding({top: '5'})
+        ]
       }),
       divider({style: divider.vertical()}),
       text({
@@ -68,6 +61,8 @@ jb.component('studio.eventTrackerToolbar', {
         ),
         features: [
           variable('events', eventTracker.eventItems('%$eventTracker/eventTrackerQuery%')),
+          feature.hoverTitle('filtered events / total'),
+          css('cursor: default'),
           css.padding({top: '5', left: '5'})
         ]
       }),
@@ -191,58 +186,61 @@ jb.component('eventTracker.testResult', {
 jb.component('studio.eventTracker', {
   type: 'control',
   impl: group({
-    controls: [
-      studio.eventTrackerToolbar(),
-      table({
-        items: eventTracker.eventItems('%$eventTracker/eventTrackerQuery%'),
-        controls: [
-          text('%index%'),
-          eventTracker.uiComp(),
-          eventTracker.callbagMessage(),
-          eventTracker.testResult(),
-          text({ text: '%logNames%', features: feature.byCondition(
-            inGroup(list('exception','error'), '%logNames%'),
-            css.color('var(--jb-error-fg)')
-          )}),
-          studio.lowFootprintObj('%err%','err'),
-          studio.objExpandedAsText('%stack%','stack'),
+    controls: group({
+      controls: [
+        eventTracker.toolbar(),
+        table({
+          items: eventTracker.eventItems('%$eventTracker/eventTrackerQuery%'),
+          controls: [
+            text('%index%'),
+            eventTracker.uiComp(),
+            eventTracker.callbagMessage(),
+            eventTracker.testResult(),
+            text({ text: '%logNames%', features: feature.byCondition(
+              inGroup(list('exception','error'), '%logNames%'),
+              css.color('var(--jb-error-fg)')
+            )}),
+            studio.lowFootprintObj('%err%','err'),
+            studio.objExpandedAsText('%stack%','stack'),
 
-          controlWithCondition('%m%',text('%m/$%: %m/t%, %m/cbId%')),
-//          studio.objExpandedAsText('%m/d%','payload'),
-          studio.lowFootprintObj('%delta%','delta'),
-          studio.lowFootprintObj('%vdom%','vdom'),
-          studio.lowFootprintObj('%ref%','ref'),
-          studio.lowFootprintObj('%value%','value'),
-          studio.lowFootprintObj('%val%','val'),
-          studio.lowFootprintObj('%focusChanged%','focusChanged'),
-          studio.sourceCtxView('%srcCtx%'),
-          studio.sourceCtxView('%cmp/ctx%'),
-          studio.sourceCtxView('%ctx%'),
-        ],
-        style: table.plain(true),
-        visualSizeLimit: 80,
-        lineFeatures: [
-          watchRef({ref: '%$cmpExpanded/{%$index%}%', allowSelfRefresh: true}),
-          watchRef({ref: '%$payloadExpanded/{%$index%}%', allowSelfRefresh: true}),
-          watchRef({ref: '%$testResultExpanded/{%$index%}%', allowSelfRefresh: true}),
-          table.enableExpandToEndOfRow()
-        ],               
-        features: [
-          watchable('cmpExpanded', obj()),
-          watchable('payloadExpanded', obj()),
-          watchable('testResultExpanded', obj()),
-          itemlist.infiniteScroll(5),
-          itemlist.selection({
-            onSelection: runActions(({data}) => jb.frame.console.log(data), eventTracker.highlightEvent('%%'))
-          }),
-          itemlist.keyboardSelection({}),
-          eventTracker.watchSpy(500),
-        ]
-      })
-    ],
+            controlWithCondition('%m%',text('%m/$%: %m/t%, %m/cbId%')),
+  //          studio.objExpandedAsText('%m/d%','payload'),
+            studio.lowFootprintObj('%delta%','delta'),
+            studio.lowFootprintObj('%vdom%','vdom'),
+            studio.lowFootprintObj('%ref%','ref'),
+            studio.lowFootprintObj('%value%','value'),
+            studio.lowFootprintObj('%val%','val'),
+            studio.lowFootprintObj('%focusChanged%','focusChanged'),
+            studio.sourceCtxView('%srcCtx%'),
+            studio.sourceCtxView('%cmp/ctx%'),
+            studio.sourceCtxView('%ctx%'),
+          ],
+          style: table.plain(true),
+          visualSizeLimit: 80,
+          lineFeatures: [
+            watchRef({ref: '%$cmpExpanded/{%$index%}%', allowSelfRefresh: true}),
+            watchRef({ref: '%$payloadExpanded/{%$index%}%', allowSelfRefresh: true}),
+            watchRef({ref: '%$testResultExpanded/{%$index%}%', allowSelfRefresh: true}),
+            table.enableExpandToEndOfRow()
+          ],               
+          features: [
+            watchable('cmpExpanded', obj()),
+            watchable('payloadExpanded', obj()),
+            watchable('testResultExpanded', obj()),
+            itemlist.infiniteScroll(5),
+            itemlist.selection({
+              onSelection: runActions(({data}) => jb.frame.console.log(data), eventTracker.highlightEvent('%%'))
+            }),
+            itemlist.keyboardSelection({}),
+            eventTracker.watchSpy(500),
+          ]
+        })
+      ],
+      features: id('event-tracker'),
+    }),
     features: [
       variable('$disableLog',true),
-      id('event-tracker'),
+      watchable('eventTracker',obj())
     ]
   })
 })
@@ -559,8 +557,11 @@ jb.component('chromeDebugger.icon', {
   ],
   impl: customStyle({
     template: (cmp,{title},h) => h('div',{onclick: true, title}),
-    css: `{ -webkit-mask-image: url(/hosts/chrome-debugger/largeIcons.svg); -webkit-mask-position: %$position%; width: 28px;  height: 24px; background-color: var(--jb-menu-fg); opacity: 0.7}
-      ~:hover { opacity: 1}`,
+    css: `{ -webkit-mask-image: url(http://localhost:8082/hosts/chrome-debugger/largeIcons.svg); -webkit-mask-position: %$position%; 
+      cursor: pointer; min-width: 24px; max-width: 24px;  height: 24px; background-color: #333; opacity: 0.7 }
+      ~:hover { opacity: 1 }
+      ~:active { opacity: 0.5 }`,
+    features: button.initAction()
   })
 })
 

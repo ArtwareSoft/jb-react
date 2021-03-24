@@ -62,7 +62,7 @@ jb.component('studio.gotoSource', {
     Var('filePos',studio.filePosOfPath('%$path%')),
     ({},{filePos},{chromeDebugger}) => {
       if (jb.frame.jbInvscode)
-        jb.studio.vscodeService({$: 'openEditor', ...filePos })
+        jb.vscode.service({$: 'openEditor', ...filePos })
       else if (chromeDebugger)
         parent.postMessage({ runProfile: {$: 'chromeDebugger.openResource', 
           location: [ location.origin + '/' + filePos.fn, filePos.pos[0], filePos.pos[1]] }})

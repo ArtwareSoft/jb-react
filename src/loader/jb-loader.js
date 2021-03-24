@@ -183,6 +183,10 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'dist/vega-lite.js', 
         'src/ui/vega/jb-vega-lite.js'
       ],    
+      'statistics': [
+        'dist/jstat.js', 
+        'src/misc/jb-stat.js'
+      ],    
       'dragula': [
           'dist/dragula.js',
           'dist/css/dragula.css',

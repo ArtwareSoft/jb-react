@@ -355,8 +355,3 @@ jb.component('jbm.same', {
     type: 'jbm',
     impl: () => jb
 })
-
-jb.component('jbm.vDebugger', {
-    type: 'jbm',
-    impl: jbm.child('vDebugger')
-})

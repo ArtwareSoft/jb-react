@@ -48,7 +48,7 @@ jb.extension('studio', {
 
 	function writeValueToDataResource(path,value) {
 		if (path.length > 1 && ['watchableData','passiveData'].indexOf(path[1]) != -1) {
-			const resource = jb.removeDataResourcePrefix(path[0])
+			const resource = jb.db.removeDataResourcePrefix(path[0])
 			const dataPath = '%$' + [resource, ...path.slice(2)].map(x=>isNaN(+x) ? x : `[${x}]`).join('/') + '%'
 			return jb.studio.previewjb.exec(writeValue(dataPath,_=>value))
 		}
@@ -389,10 +389,19 @@ jb.component('studio.initLocalCompsRefHandler', {
     {id: 'initUIObserver', as: 'boolean', description: 'enable watchRef on comps' },
     {id: 'compsRefId', as: 'string', defaultValue: 'comps'},
   ],
-  impl: (ctx,compIdAsReferred,initUIObserver,compsRefId) => {
-	const {initLocalCompsRefHandler, compsRefOfjbm } = jb.studio
-	initLocalCompsRefHandler(compsRefOfjbm(jb, {historyWin: 5, compsRefId }), {compIdAsReferred, initUIObserver} )
-  }
+  impl: ({}, compIdAsReferred,initUIObserver,compsRefId) =>
+	jb.studio.initLocalCompsRefHandler(jb.studio.compsRefOfjbm(jb, {historyWin: 5, compsRefId }), {compIdAsReferred, initUIObserver} )
+})
+
+jb.component('jbm.vDebugger', {
+    type: 'jbm',
+    impl: pipe(
+        remote.action(runActions(
+			studio.initLocalCompsRefHandler(),
+			() => jb.studio.previewjb = jb.parent
+		), jbm.child('vDebugger')),
+        jbm.child('vDebugger')
+    )
 })
 ;
 

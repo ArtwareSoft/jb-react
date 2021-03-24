@@ -1,5 +1,19 @@
 var {vscode} = jb.ns('vscode')
 
+jb.extension('vscode', {
+    service: (req,timeout) => new Promise((resolve,reject) => {
+        timeout = timeout || 3000
+        messageID++
+        const timer = setTimeout(() => {
+            promises[messageID] && reject({ type: 'error', desc: 'timeout' })
+            jb.logError('vscode service timeout', {promise: promises[messageID]})
+        }, timeout);
+        promises[messageID] = {resolve,reject,req, timer}
+        jb.log(`vscode service ${req.$}`,{messageID,req})
+        vscode.postMessage({...req, messageID})
+    })
+})
+
 jb.component('studio.vsCodeAdapterService', {
   type: 'service',
   params: [
@@ -22,13 +36,13 @@ jb.component('studio.vsCodeAdapterService', {
             filter(e=> e.path[0] == resource && params.indexOf(e.path[1]) != -1),
             subscribe(e => {
                 vscode.setState({...vscode.getState(),...jb.objFromEntries(params.map(p=>[p,ctx.exp(`%$${resource}/${p}%`)]))})
-                jb.studio.vscodeService({$: 'storeWorkspaceState', state})
+                jb.vscode.service({$: 'storeWorkspaceState', state})
             }
         ))
 
         jb.sessionStorage = function(id,val) {
             const state = val == undefined ? (vscode.getState() ||{})[id] : vscode.setState({...vscode.getState(),[id]: val})
-            val && jb.studio.vscodeService({$: 'storeWorkspaceState', state})
+            val && jb.vscode.service({$: 'storeWorkspaceState', state})
             return state
         }
 
@@ -52,18 +66,6 @@ jb.component('studio.vsCodeAdapterService', {
                 jb.log('vscode command', { message, ctx })
                 ctx.run(message)
             }
-        })
-
-        jb.studio.vscodeService = (req,timeout) => new Promise((resolve,reject) => {
-            timeout = timeout || 3000
-            messageID++
-            const timer = setTimeout(() => {
-                promises[messageID] && reject({ type: 'error', desc: 'timeout' })
-                jb.logError('vscode service timeout', {promise: promises[messageID]})
-            }, timeout);
-            promises[messageID] = {resolve,reject,req, timer}
-            jb.log(`vscode service ${req.$}`,{messageID,req})
-            vscode.postMessage({...req, messageID})
         })
     }})
 })

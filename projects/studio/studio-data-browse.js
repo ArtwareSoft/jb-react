@@ -176,7 +176,7 @@ jb.component('studio.dataResourceMenu', {
             .map(e=> {
               const watchableOrPassive = e[1].watchableData !== undefined ? 'watchable' : 'passive'
               const upper = watchableOrPassive.charAt(0).toUpperCase() + watchableOrPassive.slice(1)
-              const name = jb.removeDataResourcePrefix(e[0])
+              const name = jb.db.removeDataResourcePrefix(e[0])
               return {
                 name,
                 title: `${name} (${upper})`,

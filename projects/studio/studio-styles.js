@@ -63,7 +63,10 @@ jb.component('button.selectProfileStyle', {
     css: `{ cursor: pointer; padding-left: 2px; padding-top: 5px; padding-bottom: 0;
     color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-menubar-inactive-bg); }
     :focus { border-color: var(--jb-menubar-active-bg); border-width: 2px}`,
-    features: frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode% == 13'), sink.BEMethod('onclickHandler'))
+    features: [
+      button.initAction(),
+      frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode% == 13'), sink.BEMethod('onclickHandler'))
+    ]
   })
 })
 
@@ -73,7 +76,8 @@ jb.component('studio.propertyToolbarStyle', {
     template: (cmp,state,h) => h('i',{class: 'material-icons', onclick: true, title: 'more...' },'more_vert'),
     css: `{ cursor: pointer;width: 16px; font-size: 16px; vertical-align: super; opacity: 0.5; transform: translate(-5px, 10px);}
       ~:hover { opacity: 1}
-    `
+    `,
+    features: button.initAction()
   })
 })
 
@@ -85,7 +89,10 @@ jb.component('button.studioScript', {
     css: `{ padding-left: 2px; padding-top: 5px; padding-bottom: 0; 
       color: var(--mdc-theme-text-primary-on-background); background: var(--mdc-theme-background); border-color: var(--jb-menubar-inactive-bg);
       cursor: pointer; opacity: 0.8; font-style: italic; }`,
-    features: frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode% == 13'), sink.BEMethod('onclickHandler')) 
+    features: [
+      button.initAction(),
+      frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode% == 13'), sink.BEMethod('onclickHandler')) 
+    ]
     //frontEnd( (ctx,{cmp}) => cmp.clickedEnter = ev => event.keyCode == 13 && cmp.onclickHandler() )
   })
 })

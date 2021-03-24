@@ -246,16 +246,6 @@ jb.component('remoteTest.dynamicProfileFunc', {
 //   })
 // })
 
-// jb.component('remoteTest.uiWorker', {
-//   type: 'remote',
-//   impl: jbm.worker('ui')
-// })
-
-// jb.component('jbm.worker', {
-//   type: 'remote',
-//   impl: jbm.worker({id: 'ui-with-samples', libs: ['common','ui-common','remote','remote-widget','codemirror-backend'], jsFiles: ['/projects/ui-tests/test-data-samples.js']})
-// })
-
 jb.component('remoteWidgetTest.button', {
   impl: uiTest({
     timeout: 1000,
@@ -294,6 +284,28 @@ jb.component('remoteWidgetTest.changeText', {
     userInputRx: rx.pipe(
       source.promise(uiAction.waitForSelector('input')),
       rx.map(userInput.setText('danny')),
+    ),
+    checkResultRx: () => jb.ui.renderingUpdates,
+    expectedResult: contains('danny')
+  })
+})
+
+jb.component('remoteWidgetTest.buttonClick', {
+  impl: uiTest({
+    timeout: 1000,
+    control: remote.widget(
+      group({
+        controls: [
+          text('%$fName%'),
+          button({label: 'change', action: writeValue('%$fName%','danny') })
+        ],
+        features: watchable('fName','Dan'),
+      }),
+      jbm.worker()
+    ),
+    userInputRx: rx.pipe(
+      source.promise(uiAction.waitForSelector('button')),
+      rx.map(userInput.click('button')),
     ),
     checkResultRx: () => jb.ui.renderingUpdates,
     expectedResult: contains('danny')

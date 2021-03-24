@@ -1220,9 +1220,9 @@ jb.extension('spy', {
 		jb.spy.spyParam = spyParam
 		jb.spy.calcIncludeLogsFromSpyParam(spyParam)
 	},
-	clear() {
-		jb.spy.logs = []
-		jb.spy.counters = {}
+	clear(spy = jb.spy) {
+		spy.logs = []
+		spy.counters = {}
 	},
 	count(query) { // dialog core | menu !keyboard  
 		const _or = query.split(/,|\|/)
@@ -9027,7 +9027,7 @@ jb.component('feature.expandToEndOfRow', {
     impl: calcProp('expandToEndOfRow','%$condition()%')
 });
 
-var { menu,menuStyle,menuSeparator,mdc,icon,key} = jb.ns('menu,menuStyle,menuSeparator,mdc,icon,key')
+var { menu,menuStyle,menuSeparator,icon,key} = jb.ns('menu,menuStyle,menuSeparator,icon,key')
 
 jb.component('menu.menu', {
   type: 'menu.option',
@@ -10207,22 +10207,25 @@ jb.component('mdcStyle.initDynamic', {
     {id: 'query', as: 'string'}
   ],
   impl: features(
-    frontEnd.requireExternalLibrary(['material-components-web.js','css/material-components-web.css','css/fonts.css']),
-    frontEnd.init(({},{cmp}) => {
+    frontEnd.requireExternalLibrary(['material-components-web.js','css/material-components-web.css','css/font.css']),
+    frontEnd.init( async ({},{cmp}) => {
+      if (!jb.ui.material) await jb.exec(waitFor(() => jb.frame.mdc))
       const mdc = jb.frame.mdc
-      if (!mdc) return jb.logError('please load mdc library')
-      cmp.mdc_comps = cmp.mdc_comps || []
-      ;['switch','chip-set','tab-bar','slider','select','text-field'].forEach(cmpName => {
+      //if (!mdc) return jb.logError('please load mdc library')
+      cmp.mdc_comps = cmp.mdc_comps || [];
+      //;['switch','chip-set','tab-bar','slider','select','text-field']
+      //Object.keys(mdc)
+      ['switch','chip-set','tab-bar','slider','select','text-field'].forEach(cmpName => {
         const elm = jb.ui.findIncludeSelf(cmp.base,`.mdc-${cmpName}`)[0]
         if (elm) {
           const name1 = cmpName.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase())
           const name = name1[0].toUpperCase() + name1.slice(1)
-          cmp.mdc_comps.push({mdc_cmp: new mdc[cmpName][`MDC${name}`](elm), cmpName})
+          cmp.mdc_comps.push({mdc_cmp: new (jb.ui.material || mdc[cmpName])[`MDC${name}`](elm), cmpName})
           jb.log(`mdc frontend init ${cmpName}`,{cmp})
         }
       })
       if (cmp.base.classList.contains('mdc-button') || cmp.base.classList.contains('mdc-fab')) {
-        cmp.mdc_comps.push({mdc_cmp: new mdc.ripple.MDCRipple(cmp.base), cmpName: 'ripple' })
+        cmp.mdc_comps.push({mdc_cmp: new (jb.ui.material || mdc.ripple).MDCRipple(cmp.base), cmpName: 'ripple' })
         jb.log('mdc frontend init ripple',{cmp})
       }
     }),
@@ -12186,55 +12189,117 @@ jb.component('tableTree.dragAndDrop', {
 
 ;
 
-(function() {
+jb.extension('tree', {
+	ROjson: class ROjson {
+		constructor(json,rootPath) {
+			this.json = json
+			this.rootPath = rootPath
+		}
+		children(path) {
+			const val = this.val(path)
+			const out = (typeof val == 'object') ? Object.keys(val || {}) : []
+			return out.filter(p=>p.indexOf('$jb_') != 0).map(p=>path+'~'+p)
+		}
+		val(path) {
+			if (path.indexOf('~') == -1)
+				return jb.val(this.json)
+			return jb.val(path.split('~').slice(1).reduce((o,p) =>o[p], this.json))
+		}
+		isArray(path) {
+			const val = this.val(path)
+			return typeof val == 'object' && val !== null
+		}
+		icon() {
+			return ''
+		}
+		title(path,collapsed) {
+			const val = this.val(path)
+			const prop = path.split('~').pop()
+			const h = jb.ui.h
+			if (val == null)
+				return h('div',{},prop + ': null')
+			if (!collapsed && typeof val == 'object')
+				return h('div',{},prop)
+	
+			if (typeof val != 'object')
+				return h('div',{},[prop + ': ',h('span',{class:'treenode-val', title: ''+val},jb.ui.limitStringLength(''+val,20))])
+	
+			return h('div',{},[h('span',{},prop + ': ')].concat(
+				Object.keys(val).filter(p=>p.indexOf('$jb_') != 0).filter(p=> ['string','boolean','number'].indexOf(typeof val[p]) != -1)
+				.map(p=> h('span',{class:'treenode-val', title: ''+val[p]},jb.ui.limitStringLength(''+val[p],20)))))
+		}
+	},
+	Json: class Json {
+		constructor(jsonRef,rootPath) {
+			this.json = jsonRef;
+			this.rootPath = rootPath;
+			this.refHandler = jb.db.refHandler(jsonRef)
+		}
+		children(path) {
+			const val = this.val(path)
+			const out = (typeof val == 'object') ? Object.keys(val || {}) : [];
+			return out.filter(p=>p.indexOf('$jb_') != 0).map(p=>path+'~'+p);
+		}
+		val(path) {
+			if (path.indexOf('~') == -1)
+				return jb.val(this.json)
+			return jb.val(path.split('~').slice(1).reduce((o,p) => o[p], jb.val(this.json)))
+	
+			function clean(v) {
+				const cls = jb.path(v,'constructor.name')
+				return ['Object','Array','Boolean','Number','String'].indexOf(cls) == -1 ? cls : v
+			}
+		}
+		isArray(path) {
+			var val = this.val(path);
+			return typeof val == 'object' && val !== null;
+		}
+		icon() {
+			return ''
+		}
+		title(path,collapsed) {
+			var val = this.val(path);
+			var prop = path.split('~').pop();
+			var h = jb.ui.h;
+			if (val == null)
+				return prop + ': null';
+			if (!collapsed && typeof val == 'object')
+				return prop
+	
+			if (typeof val != 'object')
+				return h('div',{},[prop + ': ',h('span',{class:'treenode-val', title: val},jb.ui.limitStringLength(val,20))]);
+	
+			return h('div',{},[h('span',{},prop + ': ')].concat(
+				Object.keys(val).filter(p=> typeof val[p] == 'string' || typeof val[p] == 'number' || typeof val[p] == 'boolean')
+				.map(p=> h('span',{class:'treenode-val', title: ''+val[p]},jb.ui.limitStringLength(''+val[p],20)))))
+		}
+		modify(op,path,args,ctx) {
+			op.call(this,path,args);
+		}
+		move(dragged,_target,ctx) { // drag & drop
+			const draggedArr = this.val(dragged.split('~').slice(0,-1).join('~'));
+			const target = isNaN(Number(_target.split('~').slice(-1))) ? _target + '~0' : _target
+			const targetArr = this.val(target.split('~').slice(0,-1).join('~'));
+			if (Array.isArray(draggedArr) && Array.isArray(targetArr))
+				jb.db.move(jb.db.asRef(this.val(dragged)), this.val(target) ? jb.db.asRef(this.val(target)) : this.extraArrayRef(target) ,ctx)
+		}
+		extraArrayRef(target) {
+			const targetArr = this.val(target.split('~').slice(0,-1).join('~'));
+			const targetArrayRef = jb.db.asRef(targetArr)
+			const handler = targetArrayRef.handler
+			return handler && handler.refOfPath(handler.pathOfRef(targetArrayRef).concat(target.split('~').slice(-1)))
+		}
+	}	
+})
+
 jb.component('tree.jsonReadOnly', {
   type: 'tree.node-model',
   params: [
     {id: 'object', as: 'single', mandatory: true},
     {id: 'rootPath', as: 'string'}
   ],
-  impl: (ctx, json, rootPath) => new ROjson(json,rootPath)
+  impl: ({}, json, rootPath) => new jb.tree.ROjson(json,rootPath)
 })
-
-class ROjson {
-	constructor(json,rootPath) {
-		this.json = json
-		this.rootPath = rootPath
-	}
-	children(path) {
-		const val = this.val(path)
-		const out = (typeof val == 'object') ? Object.keys(val || {}) : []
-		return out.filter(p=>p.indexOf('$jb_') != 0).map(p=>path+'~'+p)
-	}
-	val(path) {
-		if (path.indexOf('~') == -1)
-			return jb.val(this.json)
-		return jb.val(path.split('~').slice(1).reduce((o,p) =>o[p], this.json))
-	}
-	isArray(path) {
-		const val = this.val(path)
-		return typeof val == 'object' && val !== null
-	}
-	icon() {
-		return ''
-	}
-	title(path,collapsed) {
-		const val = this.val(path)
-		const prop = path.split('~').pop()
-		const h = jb.ui.h
-		if (val == null)
-			return h('div',{},prop + ': null')
-		if (!collapsed && typeof val == 'object')
-			return h('div',{},prop)
-
-		if (typeof val != 'object')
-			return h('div',{},[prop + ': ',h('span',{class:'treenode-val', title: ''+val},jb.ui.limitStringLength(''+val,20))])
-
-		return h('div',{},[h('span',{},prop + ': ')].concat(
-			Object.keys(val).filter(p=>p.indexOf('$jb_') != 0).filter(p=> ['string','boolean','number'].indexOf(typeof val[p]) != -1)
-			.map(p=> h('span',{class:'treenode-val', title: ''+val[p]},jb.ui.limitStringLength(''+val[p],20)))))
-	}
-}
 
 jb.component('tree.json', {
   type: 'tree.node-model',
@@ -12242,72 +12307,8 @@ jb.component('tree.json', {
     {id: 'object', as: 'ref', mandatory: true},
     {id: 'rootPath', as: 'string'}
   ],
-  impl: (ctx, json, rootPath) => new Json(json,rootPath)
-})
-
-class Json {
-	constructor(jsonRef,rootPath) {
-		this.json = jsonRef;
-		this.rootPath = rootPath;
-		this.refHandler = jb.db.refHandler(jsonRef)
-	}
-	children(path) {
-		const val = this.val(path)
-		const out = (typeof val == 'object') ? Object.keys(val || {}) : [];
-		return out.filter(p=>p.indexOf('$jb_') != 0).map(p=>path+'~'+p);
-	}
-	val(path) {
-		if (path.indexOf('~') == -1)
-			return jb.val(this.json)
-		return jb.val(path.split('~').slice(1).reduce((o,p) => o[p], jb.val(this.json)))
-
-		function clean(v) {
-			const cls = jb.path(v,'constructor.name')
-			return ['Object','Array','Boolean','Number','String'].indexOf(cls) == -1 ? cls : v
-		}
-	}
-	isArray(path) {
-		var val = this.val(path);
-		return typeof val == 'object' && val !== null;
-	}
-	icon() {
-		return ''
-	}
-	title(path,collapsed) {
-		var val = this.val(path);
-		var prop = path.split('~').pop();
-		var h = jb.ui.h;
-		if (val == null)
-			return prop + ': null';
-		if (!collapsed && typeof val == 'object')
-			return prop
-
-		if (typeof val != 'object')
-			return h('div',{},[prop + ': ',h('span',{class:'treenode-val', title: val},jb.ui.limitStringLength(val,20))]);
-
-		return h('div',{},[h('span',{},prop + ': ')].concat(
-			Object.keys(val).filter(p=> typeof val[p] == 'string' || typeof val[p] == 'number' || typeof val[p] == 'boolean')
-			.map(p=> h('span',{class:'treenode-val', title: ''+val[p]},jb.ui.limitStringLength(''+val[p],20)))))
-	}
-	modify(op,path,args,ctx) {
-		op.call(this,path,args);
-	}
-	move(dragged,_target,ctx) { // drag & drop
-		const draggedArr = this.val(dragged.split('~').slice(0,-1).join('~'));
-		const target = isNaN(Number(_target.split('~').slice(-1))) ? _target + '~0' : _target
-		const targetArr = this.val(target.split('~').slice(0,-1).join('~'));
-		if (Array.isArray(draggedArr) && Array.isArray(targetArr))
-			jb.db.move(jb.db.asRef(this.val(dragged)), this.val(target) ? jb.db.asRef(this.val(target)) : this.extraArrayRef(target) ,ctx)
-	}
-	extraArrayRef(target) {
-		const targetArr = this.val(target.split('~').slice(0,-1).join('~'));
-		const targetArrayRef = jb.db.asRef(targetArr)
-		const handler = targetArrayRef.handler
-		return handler && handler.refOfPath(handler.pathOfRef(targetArrayRef).concat(target.split('~').slice(-1)))
-	}
-}
-
-})();
+  impl: ({}, json, rootPath) => new jb.tree.Json(json,rootPath)
+});
 
 jb.component('prettyPrint', {
   params: [
@@ -12961,11 +12962,6 @@ jb.component('jbm.byUri', {
 jb.component('jbm.same', {
     type: 'jbm',
     impl: () => jb
-})
-
-jb.component('jbm.vDebugger', {
-    type: 'jbm',
-    impl: jbm.child('vDebugger')
 })
 ;
 
@@ -13729,45 +13725,152 @@ jb.component('tableTree.dragAndDrop', {
 
 ;
 
-(function(){
 var { textEditor} = jb.ns('textEditor');
 
-function getSinglePathChange(diff, currentVal) {
-    return pathAndValueOfSingleChange(diff,'',currentVal)
-
-    function pathAndValueOfSingleChange(obj, pathSoFar, currentVal) {
-        if (currentVal === undefined || (typeof obj !== 'object' && obj !== undefined))
-            return { innerPath: pathSoFar, innerValue: obj }
-        const entries = jb.entries(obj)
-        if (entries.length != 1) // if not single returns empty answer
-            return {}
-        return pathAndValueOfSingleChange(entries[0][1],pathSoFar+'~'+entries[0][0],currentVal[entries[0][0]])
-    }
-}
-
-function setStrValue(value, ref, ctx) {
-    const notPrimitive = value.match(/^\s*[a-zA-Z0-9\._]*\(/) || value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
-    const newVal = notPrimitive ? jb.utils.eval(value,ref.handler.frame()) : value;
-    if (newVal === Symbol.for('parseError'))
-        return
-    // I had a guess that ',' at the end of line means editing, YET, THIS GUESS DID NOT WORK WELL ...
-    // if (typeof newVal === 'object' && value.match(/,\s*}/m))
-    //     return
-    const currentVal = jb.val(ref)
-    if (newVal && typeof newVal === 'object' && typeof currentVal === 'object') {
-        const diff = jb.utils.objectDiff(newVal,currentVal)
-        if (Object.keys(diff).length == 0) return // no diffs
-        const {innerPath, innerValue} = getSinglePathChange(diff,currentVal) // one diff
-        if (innerPath) {
-            const fullInnerPath = ref.handler.pathOfRef(ref).concat(innerPath.slice(1).split('~'))
-            return jb.db.writeValue(ref.handler.refOfPath(fullInnerPath),innerValue,ctx)
+jb.extension('textEditor', {
+    getSinglePathChange(diff, currentVal) {
+        return pathAndValueOfSingleChange(diff,'',currentVal)
+    
+        function pathAndValueOfSingleChange(obj, pathSoFar, currentVal) {
+            if (currentVal === undefined || (typeof obj !== 'object' && obj !== undefined))
+                return { innerPath: pathSoFar, innerValue: obj }
+            const entries = jb.entries(obj)
+            if (entries.length != 1) // if not single returns empty answer
+                return {}
+            return pathAndValueOfSingleChange(entries[0][1],pathSoFar+'~'+entries[0][0],currentVal[entries[0][0]])
         }
-    }
-    if (newVal !== undefined) { // many diffs
-        currentVal && currentVal[jb.core.location] && typeof newVal == 'object' && (newVal[jb.core.location] = currentVal[jb.core.location])
-        jb.db.writeValue(ref,newVal,ctx)
-    }
-}
+    },
+    setStrValue(value, ref, ctx) {
+        const notPrimitive = value.match(/^\s*[a-zA-Z0-9\._]*\(/) || value.match(/^\s*(\(|{|\[)/) || value.match(/^\s*ctx\s*=>/) || value.match(/^function/);
+        const newVal = notPrimitive ? jb.utils.eval(value,ref.handler.frame()) : value;
+        if (newVal === Symbol.for('parseError'))
+            return
+        // I had a guess that ',' at the end of line means editing, YET, THIS GUESS DID NOT WORK WELL ...
+        // if (typeof newVal === 'object' && value.match(/,\s*}/m))
+        //     return
+        const currentVal = jb.val(ref)
+        if (newVal && typeof newVal === 'object' && typeof currentVal === 'object') {
+            const diff = jb.utils.objectDiff(newVal,currentVal)
+            if (Object.keys(diff).length == 0) return // no diffs
+            const {innerPath, innerValue} = jb.textEditor.getSinglePathChange(diff,currentVal) // one diff
+            if (innerPath) {
+                const fullInnerPath = ref.handler.pathOfRef(ref).concat(innerPath.slice(1).split('~'))
+                return jb.db.writeValue(ref.handler.refOfPath(fullInnerPath),innerValue,ctx)
+            }
+        }
+        if (newVal !== undefined) { // many diffs
+            currentVal && currentVal[jb.core.location] && typeof newVal == 'object' && (newVal[jb.core.location] = currentVal[jb.core.location])
+            jb.db.writeValue(ref,newVal,ctx)
+        }
+    },
+    lineColToOffset(text,{line,col}) {
+        return text.split('\n').slice(0,line).reduce((sum,line)=> sum+line.length+1,0) + col
+    },
+    offsetToLineCol(text,offset) {
+        return { line: (text.slice(0,offset).match(/\n/g) || []).length || 0,
+            col: offset - text.slice(0,offset).lastIndexOf('\n') }
+    },
+    pathOfPosition(ref,_pos) {
+        const offset = !Number(_pos) ? jb.textEditor.lineColToOffset(ref.text, _pos) : _pos
+        const found = jb.entries(ref.locationMap).find(e=> e[1].offset_from <= offset && offset < e[1].offset_to)
+        if (found)
+            return {path: found[0], offset: offset - found[1].offset_from}
+    },
+    enrichMapWithOffsets(text,locationMap) {
+        const lines = text.split('\n')
+        const accLines = []
+        lines.reduce((acc,line) => {
+            accLines.push(acc)
+            return acc + line.length+1;
+        }, 0)
+        return Object.keys(locationMap).reduce((acc,k) => Object.assign(acc, {[k] : {
+            positions: locationMap[k],
+            offset_from: accLines[locationMap[k][0]] + locationMap[k][1],
+            offset_to: accLines[locationMap[k][2]] + locationMap[k][3]
+        }}), {})
+    },
+    refreshEditor(cmp,_path) {
+        const editor = cmp.editor
+        const data_ref = cmp.ctx.vars.$model.databind()
+        const text = jb.tostring(data_ref)
+        const pathWithOffset = _path ? {path: _path+'~!value',offset:1} : this.pathOfPosition(data_ref, editor.getCursorPos())
+        editor.setValue(text)
+        if (pathWithOffset) {
+            const _pos = data_ref.locationMap[pathWithOffset.path]
+            const pos = _pos && _pos.positions
+            if (pos)
+                editor.setSelectionRange({line: pos[0], col: pos[1] + (pathWithOffset.offset || 0)})
+        }
+        editor.focus && jb.delay(10).then(()=>editor.focus())
+    },
+    getSuggestions(fileContent, pos, jbToUse = jb) {
+        const lines = fileContent.split('\n')
+        const closestComp = lines.slice(0,pos.line+1).reverse().findIndex(line => line.match(/^jb.component\(/))
+        if (closestComp == -1) return []
+        const componentHeaderIndex = pos.line - closestComp
+        const compId = (lines[componentHeaderIndex].match(/'([^']+)'/)||['',''])[1]
+        if (!compId) return []
+        const linesFromComp = lines.slice(componentHeaderIndex)
+        const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
+        const nextjbComponent = lines.slice(componentHeaderIndex+1).findIndex(line => line.match(/^jb.component/))
+        if (nextjbComponent != -1 && nextjbComponent < compLastLine)
+          return jb.logError('textEditor - can not find end of component', {compId, linesFromComp})
+        const linesOfComp = linesFromComp.slice(0,compLastLine+1)
+        const compSrc = linesOfComp.join('\n')
+        if (jb.utils.eval(compSrc,jbToUse.frame) === Symbol.for('parseError'))
+            return []
+        const {text, map} = jb.utils.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
+        const locationMap = jb.textEditor.enrichMapWithOffsets(text, map)
+        const srcForImpl = '{\n'+compSrc.slice((/^  /m.exec(compSrc) || {}).index,-1)
+        const cursorOffset = jb.textEditor.lineColToOffset(srcForImpl, {line: pos.line - componentHeaderIndex, col: pos.col})
+        const path = pathOfPosition({text, locationMap}, cursorOffset)
+        return { path, suggestions: new jbToUse.jbCtx().run(sourceEditor.suggestions(path.path)) }
+    },
+    getPosOfPath(path,jbToUse = jb) {
+        const compId = path.split('~')[0]
+        const {map} = jb.utils.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
+        return map[path]
+    },
+    getPathOfPos(compId,pos,jbToUse = jb) {
+        const { text, map } = jb.utils.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
+        map.cursor = [pos.line,pos.col,pos.line,pos.col]
+        const locationMap = jb.textEditor.enrichMapWithOffsets(text, map)
+        const res = pathOfPosition({text, locationMap}, locationMap.cursor.offset_from )
+        return res && res.path.split('~!')[0]
+    },
+    closestComp(fileContent, pos) {
+        const lines = fileContent.split('\n')
+        const closestComp = lines.slice(0,pos.line+1).reverse().findIndex(line => line.match(/^jb.component\(/))
+        if (closestComp == -1) return {}
+        const componentHeaderIndex = pos.line - closestComp
+        const compId = (lines[componentHeaderIndex].match(/'([^']+)'/)||['',''])[1]
+        const linesFromComp = lines.slice(componentHeaderIndex)
+        const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
+        const nextjbComponent = lines.slice(componentHeaderIndex+1).findIndex(line => line.match(/^jb.component/))
+        if (nextjbComponent != -1 && nextjbComponent < compLastLine) {
+          jb.logError('textEditor - can not find end of component', { compId, linesFromComp })
+          return {}
+        }
+        const compSrc = linesFromComp.slice(0,compLastLine+1).join('\n')
+        return {compId, compSrc, componentHeaderIndex, compLastLine}
+    },
+    formatComponent(fileContent, pos, jbToUse = jb) {
+        const {compId, compSrc, componentHeaderIndex, compLastLine} = jb.textEditor.closestComp(fileContent, pos)
+        if (!compId) return {}
+        if (jb.utils.eval(compSrc,jbToUse.frame) === Symbol.for('parseError'))
+            return []
+        return {text: jb.utils.prettyPrintComp(compId,jbToUse.comps[compId],{comps: jbToUse.comps}) + '\n',
+            from: {line: componentHeaderIndex, col: 0}, to: {line: componentHeaderIndex+compLastLine+1, col: 0} }
+    },
+    posFromCM: pos => pos && ({line: pos.line, col: pos.ch}),
+    cm_hint(cmEditor) {
+        const cursor = cmEditor.getDoc().getCursor()
+        return {
+            from: cursor, to: cursor,
+            list: jb.textEditor.getSuggestions(cmEditor.getValue(),posFromCM(cursor)).suggestions
+        }
+    }    
+})
 
 jb.component('watchableAsText', {
   type: 'data',
@@ -13794,7 +13897,7 @@ jb.component('watchableAsText', {
             }
             const initialPath = ref.handler.pathOfRef(ref).join('~')
             const res = jb.utils.prettyPrintWithPositions(this.getVal() || '',{initialPath, comps: ref.jbToUse && ref.jbToUse.comps})
-            this.locationMap = enrichMapWithOffsets(res.text, res.map)
+            this.locationMap = jb.textEditor.enrichMapWithOffsets(res.text, res.map)
             this.text = res.text.replace(/\s*(\]|\})$/,'\n$1')
         },
         writeFullValue(newVal) {
@@ -13806,7 +13909,7 @@ jb.component('watchableAsText', {
                 this.prettyPrintWithPositions()
                 return this.text
             } else {
-                setStrValue(value,this.getRef(),ctx)
+                jb.textEditor.setStrValue(value,this.getRef(),ctx)
                 this.prettyPrintWithPositions() // refreshing location map
             }
         } catch(e) {
@@ -13887,15 +13990,15 @@ jb.component('textarea.initTextareaEditor', {
       textEditor.enrichUserEvent(),
       frontEnd.method('replaceRange',({data},{cmp}) => {
           const {text, from, to} = data
-          const _from = lineColToOffset(cmp.base.value,from)
-          const _to = lineColToOffset(cmp.base.value,to)
+          const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
+          const _to = jb.textEditor.lineColToOffset(cmp.base.value,to)
           cmp.base.value = cmp.base.value.slice(0,_from) + text + cmp.base.value.slice(_to)
       }),
       frontEnd.method('setSelectionRange',({data},{cmp}) => {
         const from = data.from || data
         const to = data.to || from
-        const _from = lineColToOffset(cmp.base.value,from)
-        const _to = to && lineColToOffset(cmp.base.value,to) || _from
+        const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
+        const _to = to && jb.textEditor.lineColToOffset(cmp.base.value,to) || _from
         cmp.base.setSelectionRange(_from,_to)
       })
     )
@@ -13932,13 +14035,13 @@ jb.component('textEditor.enrichUserEvent', {
 //             cursorCoords: () => {},
 //             markText: () => {},
 //             replaceRange: (text, from, to) => {
-//                 const _from = lineColToOffset(cmp.base.value,from)
-//                 const _to = lineColToOffset(cmp.base.value,to)
+//                 const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
+//                 const _to = jb.textEditor.lineColToOffset(cmp.base.value,to)
 //                 cmp.base.value = cmp.base.value.slice(0,_from) + text + cmp.base.value.slice(_to)
 //             },
 //             setSelectionRange: (from, to) => {
-//                 const _from = lineColToOffset(cmp.base.value,from)
-//                 const _to = to && lineColToOffset(cmp.base.value,to) || _from
+//                 const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
+//                 const _to = to && jb.textEditor.lineColToOffset(cmp.base.value,to) || _from
 //                 cmp.base.setSelectionRange(_from,_to)
 //             },
 //         }
@@ -13946,139 +14049,7 @@ jb.component('textEditor.enrichUserEvent', {
 //             cmp.ctx.vars.editorContainer.editorCmp = cmp
 //     }
 //   )
-// })
-
-function lineColToOffset(text,{line,col}) {
-    return text.split('\n').slice(0,line).reduce((sum,line)=> sum+line.length+1,0) + col
-}
-
-function offsetToLineCol(text,offset) {
-    return { line: (text.slice(0,offset).match(/\n/g) || []).length || 0,
-        col: offset - text.slice(0,offset).lastIndexOf('\n') }
-}
-
-jb.textEditor = {
-    setStrValue,
-    refreshEditor,
-    getSuggestions,
-    offsetToLineCol,
-    lineColToOffset,
-    cm_hint,
-    closestComp,
-    formatComponent,
-    getPosOfPath, getPathOfPos
-}
-
-function pathOfPosition(ref,_pos) {
-    const offset = !Number(_pos) ? lineColToOffset(ref.text, _pos) : _pos
-    const found = jb.entries(ref.locationMap).find(e=> e[1].offset_from <= offset && offset < e[1].offset_to)
-    if (found)
-        return {path: found[0], offset: offset - found[1].offset_from}
-}
-
-function enrichMapWithOffsets(text,locationMap) {
-    const lines = text.split('\n')
-    const accLines = []
-    lines.reduce((acc,line) => {
-        accLines.push(acc)
-        return acc + line.length+1;
-    }, 0)
-    return Object.keys(locationMap).reduce((acc,k) => Object.assign(acc, {[k] : {
-        positions: locationMap[k],
-        offset_from: accLines[locationMap[k][0]] + locationMap[k][1],
-        offset_to: accLines[locationMap[k][2]] + locationMap[k][3]
-    }}), {})
-}
-
-function refreshEditor(cmp,_path) {
-    const editor = cmp.editor
-    const data_ref = cmp.ctx.vars.$model.databind()
-    const text = jb.tostring(data_ref)
-    const pathWithOffset = _path ? {path: _path+'~!value',offset:1} : this.pathOfPosition(data_ref, editor.getCursorPos())
-    editor.setValue(text)
-    if (pathWithOffset) {
-        const _pos = data_ref.locationMap[pathWithOffset.path]
-        const pos = _pos && _pos.positions
-        if (pos)
-            editor.setSelectionRange({line: pos[0], col: pos[1] + (pathWithOffset.offset || 0)})
-    }
-    editor.focus && jb.delay(10).then(()=>editor.focus())
-}
-
-function getSuggestions(fileContent, pos, jbToUse = jb) {
-    const lines = fileContent.split('\n')
-    const closestComp = lines.slice(0,pos.line+1).reverse().findIndex(line => line.match(/^jb.component\(/))
-    if (closestComp == -1) return []
-    const componentHeaderIndex = pos.line - closestComp
-    const compId = (lines[componentHeaderIndex].match(/'([^']+)'/)||['',''])[1]
-    if (!compId) return []
-    const linesFromComp = lines.slice(componentHeaderIndex)
-    const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
-    const nextjbComponent = lines.slice(componentHeaderIndex+1).findIndex(line => line.match(/^jb.component/))
-    if (nextjbComponent != -1 && nextjbComponent < compLastLine)
-      return jb.logError('textEditor - can not find end of component', {compId, linesFromComp})
-    const linesOfComp = linesFromComp.slice(0,compLastLine+1)
-    const compSrc = linesOfComp.join('\n')
-    if (jb.utils.eval(compSrc,jbToUse.frame) === Symbol.for('parseError'))
-        return []
-    const {text, map} = jb.utils.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
-    const locationMap = enrichMapWithOffsets(text, map)
-    const srcForImpl = '{\n'+compSrc.slice((/^  /m.exec(compSrc) || {}).index,-1)
-    const cursorOffset = lineColToOffset(srcForImpl, {line: pos.line - componentHeaderIndex, col: pos.col})
-    const path = pathOfPosition({text, locationMap}, cursorOffset)
-    return { path, suggestions: new jbToUse.jbCtx().run(sourceEditor.suggestions(path.path)) }
-}
-
-function getPosOfPath(path,jbToUse = jb) {
-    const compId = path.split('~')[0]
-    const {map} = jb.utils.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
-    return map[path]
-}
-
-function getPathOfPos(compId,pos,jbToUse = jb) {
-    const { text, map } = jb.utils.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
-    map.cursor = [pos.line,pos.col,pos.line,pos.col]
-    const locationMap = enrichMapWithOffsets(text, map)
-    const res = pathOfPosition({text, locationMap}, locationMap.cursor.offset_from )
-    return res && res.path.split('~!')[0]
-}
-
-function closestComp(fileContent, pos) {
-    const lines = fileContent.split('\n')
-    const closestComp = lines.slice(0,pos.line+1).reverse().findIndex(line => line.match(/^jb.component\(/))
-    if (closestComp == -1) return {}
-    const componentHeaderIndex = pos.line - closestComp
-    const compId = (lines[componentHeaderIndex].match(/'([^']+)'/)||['',''])[1]
-    const linesFromComp = lines.slice(componentHeaderIndex)
-    const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
-    const nextjbComponent = lines.slice(componentHeaderIndex+1).findIndex(line => line.match(/^jb.component/))
-    if (nextjbComponent != -1 && nextjbComponent < compLastLine) {
-      jb.logError('textEditor - can not find end of component', { compId, linesFromComp })
-      return {}
-    }
-    const compSrc = linesFromComp.slice(0,compLastLine+1).join('\n')
-    return {compId, compSrc, componentHeaderIndex, compLastLine}
-}
-
-function formatComponent(fileContent, pos, jbToUse = jb) {
-    const {compId, compSrc, componentHeaderIndex, compLastLine} = closestComp(fileContent, pos)
-    if (!compId) return {}
-    if (jb.utils.eval(compSrc,jbToUse.frame) === Symbol.for('parseError'))
-        return []
-    return {text: jb.utils.prettyPrintComp(compId,jbToUse.comps[compId],{comps: jbToUse.comps}) + '\n',
-        from: {line: componentHeaderIndex, col: 0}, to: {line: componentHeaderIndex+compLastLine+1, col: 0} }
-}
-
-const posFromCM = pos => pos && ({line: pos.line, col: pos.ch})
-function cm_hint(cmEditor) {
-    const cursor = cmEditor.getDoc().getCursor()
-    return {
-        from: cursor, to: cursor,
-        list: jb.textEditor.getSuggestions(cmEditor.getValue(),posFromCM(cursor)).suggestions
-    }
-}
-
-})();
+// });
 
 var { studio } = jb.ns('studio');
 eval(jb.importAllMacros());
@@ -14127,7 +14098,7 @@ jb.extension('studio', {
 
 	function writeValueToDataResource(path,value) {
 		if (path.length > 1 && ['watchableData','passiveData'].indexOf(path[1]) != -1) {
-			const resource = jb.removeDataResourcePrefix(path[0])
+			const resource = jb.db.removeDataResourcePrefix(path[0])
 			const dataPath = '%$' + [resource, ...path.slice(2)].map(x=>isNaN(+x) ? x : `[${x}]`).join('/') + '%'
 			return jb.studio.previewjb.exec(writeValue(dataPath,_=>value))
 		}
@@ -14468,10 +14439,19 @@ jb.component('studio.initLocalCompsRefHandler', {
     {id: 'initUIObserver', as: 'boolean', description: 'enable watchRef on comps' },
     {id: 'compsRefId', as: 'string', defaultValue: 'comps'},
   ],
-  impl: (ctx,compIdAsReferred,initUIObserver,compsRefId) => {
-	const {initLocalCompsRefHandler, compsRefOfjbm } = jb.studio
-	initLocalCompsRefHandler(compsRefOfjbm(jb, {historyWin: 5, compsRefId }), {compIdAsReferred, initUIObserver} )
-  }
+  impl: ({}, compIdAsReferred,initUIObserver,compsRefId) =>
+	jb.studio.initLocalCompsRefHandler(jb.studio.compsRefOfjbm(jb, {historyWin: 5, compsRefId }), {compIdAsReferred, initUIObserver} )
+})
+
+jb.component('jbm.vDebugger', {
+    type: 'jbm',
+    impl: pipe(
+        remote.action(runActions(
+			studio.initLocalCompsRefHandler(),
+			() => jb.studio.previewjb = jb.parent
+		), jbm.child('vDebugger')),
+        jbm.child('vDebugger')
+    )
 })
 ;
 
@@ -14940,10 +14920,6 @@ Object.assign(jb.ui, {
   getSpy: () => jb.path(jb.parent,'spy') || {}
 })
 
-jb.component('dataResource.eventTracker', {
-  watchableData: {}
-})
-
 jb.component('studio.openEventTracker', {
   type: 'action',
   impl: openDialog({
@@ -14959,37 +14935,34 @@ jb.component('eventTracker.getSpy', {
 })
 
 jb.component('eventTracker.codeSize', {
-  impl: ()=> Math.floor(jb.parent.codeLoader.totalCodeSize/1000) + 'k'
+  impl: ()=> jb.parent.codeLoader.totalCodeSize ? Math.floor(jb.parent.codeLoader.totalCodeSize/1000) + 'k' : ''
 })
 
 jb.component('eventTracker.clearSpyLog', {
   type: 'action',
-  impl: ctx => {
-    const items = ctx.run(eventTracker.eventItems())
-    const lastGroupIndex = items.length - items.reverse().findIndex(x=>x.index == '---')
-    if (lastGroupIndex >= items.length)
-      jb.ui.getSpy(ctx).clear()
-    else
-      jb.ui.getSpy(ctx).logs.splice(0,lastGroupIndex-1)
-  }
+  impl: runActions(
+    Var('items', eventTracker.eventItems()),
+    (ctx, {items}) => {
+      const lastGroupIndex = items.length - items.reverse().findIndex(x=>x.index == '---')
+      if (lastGroupIndex >= items.length)
+        jb.spy.clear(jb.ui.getSpy(ctx))
+      else
+        jb.ui.getSpy(ctx).logs.splice(0,lastGroupIndex-1)
+  })
 })
 
-jb.component('eventTracker.refresh', {
-  type: 'action',
-  params: [
-    {id: 'clear', as: 'boolean'}
-  ],
-  impl: refreshControlById('event-tracker')
-})
-
-jb.component('studio.eventTrackerToolbar', {
+jb.component('eventTracker.toolbar', {
   type: 'control',
   impl: group({
     layout: layout.horizontal('2'),
     controls: [
       text({
         text: eventTracker.codeSize(),
-        features: css.padding({top: '5'})
+        features: [
+          feature.hoverTitle('code size'),
+          css('cursor: default'),
+          css.padding({top: '5'})
+        ]
       }),
       divider({style: divider.vertical()}),
       text({
@@ -15004,6 +14977,8 @@ jb.component('studio.eventTrackerToolbar', {
         ),
         features: [
           variable('events', eventTracker.eventItems('%$eventTracker/eventTrackerQuery%')),
+          feature.hoverTitle('filtered events / total'),
+          css('cursor: default'),
           css.padding({top: '5', left: '5'})
         ]
       }),
@@ -15127,58 +15102,61 @@ jb.component('eventTracker.testResult', {
 jb.component('studio.eventTracker', {
   type: 'control',
   impl: group({
-    controls: [
-      studio.eventTrackerToolbar(),
-      table({
-        items: eventTracker.eventItems('%$eventTracker/eventTrackerQuery%'),
-        controls: [
-          text('%index%'),
-          eventTracker.uiComp(),
-          eventTracker.callbagMessage(),
-          eventTracker.testResult(),
-          text({ text: '%logNames%', features: feature.byCondition(
-            inGroup(list('exception','error'), '%logNames%'),
-            css.color('var(--jb-error-fg)')
-          )}),
-          studio.lowFootprintObj('%err%','err'),
-          studio.objExpandedAsText('%stack%','stack'),
+    controls: group({
+      controls: [
+        eventTracker.toolbar(),
+        table({
+          items: eventTracker.eventItems('%$eventTracker/eventTrackerQuery%'),
+          controls: [
+            text('%index%'),
+            eventTracker.uiComp(),
+            eventTracker.callbagMessage(),
+            eventTracker.testResult(),
+            text({ text: '%logNames%', features: feature.byCondition(
+              inGroup(list('exception','error'), '%logNames%'),
+              css.color('var(--jb-error-fg)')
+            )}),
+            studio.lowFootprintObj('%err%','err'),
+            studio.objExpandedAsText('%stack%','stack'),
 
-          controlWithCondition('%m%',text('%m/$%: %m/t%, %m/cbId%')),
-//          studio.objExpandedAsText('%m/d%','payload'),
-          studio.lowFootprintObj('%delta%','delta'),
-          studio.lowFootprintObj('%vdom%','vdom'),
-          studio.lowFootprintObj('%ref%','ref'),
-          studio.lowFootprintObj('%value%','value'),
-          studio.lowFootprintObj('%val%','val'),
-          studio.lowFootprintObj('%focusChanged%','focusChanged'),
-          studio.sourceCtxView('%srcCtx%'),
-          studio.sourceCtxView('%cmp/ctx%'),
-          studio.sourceCtxView('%ctx%'),
-        ],
-        style: table.plain(true),
-        visualSizeLimit: 80,
-        lineFeatures: [
-          watchRef({ref: '%$cmpExpanded/{%$index%}%', allowSelfRefresh: true}),
-          watchRef({ref: '%$payloadExpanded/{%$index%}%', allowSelfRefresh: true}),
-          watchRef({ref: '%$testResultExpanded/{%$index%}%', allowSelfRefresh: true}),
-          table.enableExpandToEndOfRow()
-        ],               
-        features: [
-          watchable('cmpExpanded', obj()),
-          watchable('payloadExpanded', obj()),
-          watchable('testResultExpanded', obj()),
-          itemlist.infiniteScroll(5),
-          itemlist.selection({
-            onSelection: runActions(({data}) => jb.frame.console.log(data), eventTracker.highlightEvent('%%'))
-          }),
-          itemlist.keyboardSelection({}),
-          eventTracker.watchSpy(500),
-        ]
-      })
-    ],
+            controlWithCondition('%m%',text('%m/$%: %m/t%, %m/cbId%')),
+  //          studio.objExpandedAsText('%m/d%','payload'),
+            studio.lowFootprintObj('%delta%','delta'),
+            studio.lowFootprintObj('%vdom%','vdom'),
+            studio.lowFootprintObj('%ref%','ref'),
+            studio.lowFootprintObj('%value%','value'),
+            studio.lowFootprintObj('%val%','val'),
+            studio.lowFootprintObj('%focusChanged%','focusChanged'),
+            studio.sourceCtxView('%srcCtx%'),
+            studio.sourceCtxView('%cmp/ctx%'),
+            studio.sourceCtxView('%ctx%'),
+          ],
+          style: table.plain(true),
+          visualSizeLimit: 80,
+          lineFeatures: [
+            watchRef({ref: '%$cmpExpanded/{%$index%}%', allowSelfRefresh: true}),
+            watchRef({ref: '%$payloadExpanded/{%$index%}%', allowSelfRefresh: true}),
+            watchRef({ref: '%$testResultExpanded/{%$index%}%', allowSelfRefresh: true}),
+            table.enableExpandToEndOfRow()
+          ],               
+          features: [
+            watchable('cmpExpanded', obj()),
+            watchable('payloadExpanded', obj()),
+            watchable('testResultExpanded', obj()),
+            itemlist.infiniteScroll(5),
+            itemlist.selection({
+              onSelection: runActions(({data}) => jb.frame.console.log(data), eventTracker.highlightEvent('%%'))
+            }),
+            itemlist.keyboardSelection({}),
+            eventTracker.watchSpy(500),
+          ]
+        })
+      ],
+      features: id('event-tracker'),
+    }),
     features: [
       variable('$disableLog',true),
-      id('event-tracker'),
+      watchable('eventTracker',obj())
     ]
   })
 })
@@ -15495,8 +15473,11 @@ jb.component('chromeDebugger.icon', {
   ],
   impl: customStyle({
     template: (cmp,{title},h) => h('div',{onclick: true, title}),
-    css: `{ -webkit-mask-image: url(/hosts/chrome-debugger/largeIcons.svg); -webkit-mask-position: %$position%; width: 28px;  height: 24px; background-color: var(--jb-menu-fg); opacity: 0.7}
-      ~:hover { opacity: 1}`,
+    css: `{ -webkit-mask-image: url(http://localhost:8082/hosts/chrome-debugger/largeIcons.svg); -webkit-mask-position: %$position%; 
+      cursor: pointer; min-width: 24px; max-width: 24px;  height: 24px; background-color: #333; opacity: 0.7 }
+      ~:hover { opacity: 1 }
+      ~:active { opacity: 0.5 }`,
+    features: button.initAction()
   })
 })
 

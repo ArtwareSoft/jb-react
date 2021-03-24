@@ -59,7 +59,7 @@ jb.component('vega.spec', {
   type: 'vega.spec',
   params: [
     {id: 'data', type: 'vega.data', mandatory: true},
-    {id: 'transform', type: 'vega.transform'},
+    {id: 'transform', type: 'vega.transform[]', as: 'array'},
     {id: 'mark', type: 'vega.mark', defaultValue: vega.bar()},
     {id: 'encoding', type: 'vega.encoding' },
     {id: 'name', as: 'string'},
@@ -117,7 +117,7 @@ jb.component('vega.aggPipeElem', {
         {id: 'field', as: 'string', mandatory: true },
         {id: 'as', as: 'string', mandatory: true },
     ],
-    impl: (ctx,pipe,groupby) => ({ aggregate: pipe, groupby})
+    impl: ctx => ctx.params
 })
 
 jb.component('vega.calculate', {
@@ -176,14 +176,24 @@ jb.component('vega.inSelection', {
 // TODO: more transform types: ...
 
 // ************ mark ***************
-;'bar,circle,square,line,area,text,rule,point,geoshape,tick,errorband'.split(',').forEach(mark=>
-    jb.component(`vega.${mark}`, {
+;'bar,circle,square,text,rule,point,geoshape,tick,errorband'.split(',').forEach(type=>
+    jb.component(`vega.${type}`, {
         type: 'vega.mark',
         params: [
             {id: 'props', type: 'vega.markProps[]', as: 'array' },
         ],
-        impl: (ctx,props) => props.length ? ({ mark, ...props.reduce((acc,props) => ({...acc,...props}) ,{}) }) : mark
+        impl: (ctx,props) => props.length ? ({ type, ...props.reduce((acc,props) => ({...acc,...props}) ,{}) }) : type
 }))
+
+//;'line,area'.split(',').forEach(type=>
+jb.component(`vega.line`, {
+        type: 'vega.mark',
+        params: [
+            {id: 'showPoints', type: 'boolean' },
+            {id: 'props', type: 'vega.markProps[]', as: 'array' },
+        ],
+        impl: (ctx, point, props) => (point || props) ? ({type: 'line', point, ...props.reduce((acc,props) => ({...acc,...props}) ,{})}) : 'line'
+})
 
 jb.component('vega.generalMarkProps', {
     type: 'vega.markProps',

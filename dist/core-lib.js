@@ -1066,9 +1066,9 @@ jb.extension('spy', {
 		jb.spy.spyParam = spyParam
 		jb.spy.calcIncludeLogsFromSpyParam(spyParam)
 	},
-	clear() {
-		jb.spy.logs = []
-		jb.spy.counters = {}
+	clear(spy = jb.spy) {
+		spy.logs = []
+		spy.counters = {}
 	},
 	count(query) { // dialog core | menu !keyboard  
 		const _or = query.split(/,|\|/)
