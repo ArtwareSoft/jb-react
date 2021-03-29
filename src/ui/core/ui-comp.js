@@ -81,7 +81,7 @@ jb.extension('ui','comp', {
                 if (this.state[e.prop] != undefined) return // we have the value in the state, probably asynch value so do not calc again
                 const modelProp = this.ctx.vars.$model[e.prop]
                 if (!modelProp)
-                    return jb.logError('calcRenderProps',`missing model prop "${e.prop}"`, {cmp: this, model: this.ctx.vars.$model, ctx: this.ctx})
+                    return jb.logError(`calcRenderProps: missing model prop "${e.prop}"`, {cmp: this, model: this.ctx.vars.$model, ctx: this.ctx})
                 const ref = modelProp(this.ctx)
                 if (jb.db.isWatchable(ref))
                     this.toObserve.push({id: e.prop, cmp: this, ref,...e})
@@ -147,6 +147,7 @@ jb.extension('ui','comp', {
                     frontEndMethods.length && {interactive : 'true'}, 
                     frontEndVars && { $__vars : JSON.stringify(frontEndVars)},
                     this.state && { $__state : JSON.stringify(this.state)},
+                    { $__debug: JSON.stringify({ path: (this.ctxForPick || this.calcCtx).path, callStack: jb.utils.callStack(this.calcCtx) }) },
                     this.ctxForPick && { 'pick-ctx': jb.ui.preserveCtx(this.ctxForPick) },
                 )
             }

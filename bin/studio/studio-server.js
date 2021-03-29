@@ -307,6 +307,33 @@ const op_get_handlers = {
         }
       });
     },
+    getAllCode: function(req,res) {
+      const path = getURLParam(req,'path')
+      const include = getURLParam(req,'include') && new RegExp(getURLParam(req,'include'))
+      const exclude = getURLParam(req,'exclude') && new RegExp(getURLParam(req,'exclude'))
+      res.setHeader('Content-Type', 'application/json;charset=utf8');
+      res.end(JSON.stringify(getFilesInDir(settings.http_dir + path).filter(f=>f.match(/\.js/)).flatMap(path => fileContent(path))))
+
+      function getFilesInDir(dirPath) {
+        return fs.readdirSync(dirPath).sort((x,y) => x == y ? 0 : x < y ? -1 : 1).reduce( (acc, file) => {
+          const path = `${dirPath}/${file}`
+          if (include && !include.test(path) || exclude && exclude.test(path)) return acc
+          return fs.statSync(path).isDirectory() ? [...acc, ...getFilesInDir(path)] : [...acc, path]
+        }, [])
+      }
+      function fileContent(path) {
+        const content = fs.readFileSync(path,'utf-8')
+        return { path : path.slice(1),
+          ns: unique(content.split('\n').map(l=>(l.match(/^jb.component\('([^']+)/) || ['',''])[1]).filter(x=>x).map(x=>x.split('.')[0])),
+          libs: unique(content.split('\n').map(l=>(l.match(/^jb.extension\('([^']+)/) || ['',''])[1]).filter(x=>x).map(x=>x.split('.')[0]))
+        }
+      }
+      function unique(list) {
+        const ret = {}
+        list.forEach(x=>ret[x]=true)
+        return Object.keys(ret)
+      }
+    },
     download: function(req,res,path) {
       res.writeHead(200, {'Content-Type': 'application/csv', 'Content-disposition': 'attachment; filename=' + path });
       res.end(getURLParam(req,'data'));

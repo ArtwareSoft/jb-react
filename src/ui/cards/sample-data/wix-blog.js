@@ -1,4 +1,4 @@
-jb.component('dataResource.wix-blog', { /* dataResource.wixBlog */
+jb.component('dataResource.wixBlog', {
     watchableData: {
       items: [
         {

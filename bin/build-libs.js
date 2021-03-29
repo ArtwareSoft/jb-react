@@ -47,6 +47,7 @@ const vDebuggerFiles = [...filesOfModules('common,ui-common,ui-tree,remote,remot
 'core,common,ui-common,watchable,animate,d3,cards,cards-sample-data,pretty-print,parsing,xml,puppeteer,rx,md-icons,remote,remote-widget,codemirror-backend,markdown,notebook-worker'
   .split(',').forEach(m=>packLibrary(m,jb_modules[m]))
 
+concatFiles(filesOfModules('codemirror').filter(x=>x.match(/node_modules/)) ,'codemirror.js')
 packLibrary('codemirror',filesOfModules('codemirror'))
 fixExports('codemirror-lib.js')
 removeExports('animate-lib.js')

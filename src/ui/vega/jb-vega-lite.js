@@ -1,6 +1,6 @@
-var {vega} = jb.ns('vega')
+// var {vega} = jb.ns('vega')
 
-x = {
+vegaSample = {
     "$schema": "https://vega.github.io/schema/vega-lite/v4.json",
     "description": "A simple bar chart with embedded data.",
     "data": {
@@ -17,16 +17,17 @@ x = {
     }
 }
 
-jb.vega = {
-    jbData: Symbol.for('jb-vega-data'),
+jb.extension('vega', {
+    initExtension() {
+        return { jbData: Symbol.for('jb-vega-data'), counter: 0 }
+    },
     cleanEmptyValues: obj => {
         if (typeof obj != 'object') return obj
         if (Array.isArray(obj)) return obj.map(v=>jb.vega.cleanEmptyValues(v))
         return jb.objFromEntries(jb.entries(obj).filter(e=>e[1] !== '' && e[1] != null).map(([k,v]) =>[k,jb.vega.cleanEmptyValues(v)]))
     },
-    counter: 0,
     namedData: spec => spec.data && spec.data[jb.vega.jbData] ? [spec.data].map(e=>[e.name, e[jb.vega.jbData]]) : []
-}
+})
 
 jb.component('vega.interactiveChart', {
   type: 'control',
@@ -51,7 +52,10 @@ jb.component('vega.interactiveChart', {
       }),
       controlWithCondition('%$showSpec%', editableText({databind: '%$prettySpec%', style: editableText.codemirror()})),
     ],
-    features: watchable('prettySpec', ({},{},{spec}) => jb.utils.prettyPrint(jb.vega.cleanEmptyValues(spec))),
+    features: [
+        frontEnd.requireExternalLibrary(['vega-lite.js']),
+        watchable('prettySpec', ({},{},{spec}) => jb.utils.prettyPrint(jb.vega.cleanEmptyValues(spec))),
+    ]
   })
 })
 
@@ -145,8 +149,7 @@ jb.component('vega.filterExpression', {
     impl: (ctx,filter) => ({ filter })
 })
 
-;'equal,lt,lte,gt,gte'.split(',').forEach(op=>
-jb.component(`vega.${op}`, {
+jb.defComponents('equal,lt,lte,gt,gte'.split(',') ,op=>`vega.${op}`, op => ({
     type: 'vega.boolean',
     params: [
         {id: 'field', as: 'string', mandatory: true },
@@ -155,9 +158,8 @@ jb.component(`vega.${op}`, {
     impl: (ctx,field,value) => ({ field, [op]: value })
 }))
 
-;'range,oneOf'.split(',').forEach(op=>
-jb.component(`vega.${op}`, {
-    type: 'vega.boolean',
+jb.defComponents('range,oneOf'.split(',') ,op=>`vega.${op}`, op => ({
+        type: 'vega.boolean',
     params: [
         {id: 'field', as: 'string', mandatory: true },
         {id: 'values', as: 'array', mandatory: true },
@@ -176,23 +178,24 @@ jb.component('vega.inSelection', {
 // TODO: more transform types: ...
 
 // ************ mark ***************
-;'bar,circle,square,text,rule,point,geoshape,tick,errorband'.split(',').forEach(type=>
-    jb.component(`vega.${type}`, {
-        type: 'vega.mark',
-        params: [
-            {id: 'props', type: 'vega.markProps[]', as: 'array' },
-        ],
-        impl: (ctx,props) => props.length ? ({ type, ...props.reduce((acc,props) => ({...acc,...props}) ,{}) }) : type
+// TODO: david: do one by one - more filter types: and, or, not
+
+jb.defComponents('bar,circle,square,text,rule,point,geoshape,tick,errorband'.split(',') , type=>`vega.${type}`, type => ({
+    type: 'vega.mark',
+    params: [
+        {id: 'props', type: 'vega.markProps[]', as: 'array' },
+        {id: 'type', as: 'string', defaultValue: type },
+    ],
+    impl: (ctx,props,type) => props.length ? ({ type, ...props.reduce((acc,props) => ({...acc,...props}) ,{}) }) : type
 }))
 
-//;'line,area'.split(',').forEach(type=>
-jb.component(`vega.line`, {
-        type: 'vega.mark',
-        params: [
-            {id: 'showPoints', type: 'boolean' },
-            {id: 'props', type: 'vega.markProps[]', as: 'array' },
-        ],
-        impl: (ctx, point, props) => (point || props) ? ({type: 'line', point, ...props.reduce((acc,props) => ({...acc,...props}) ,{})}) : 'line'
+jb.component('vega.line', {
+    type: 'vega.mark',
+    params: [
+        {id: 'showPoints', type: 'boolean' },
+        {id: 'props', type: 'vega.markProps[]', as: 'array' },
+    ],
+    impl: (ctx, point, props) => (point || props) ? ({type: 'line', point, ...props.reduce((acc,props) => ({...acc,...props}) ,{})}) : 'line'
 })
 
 jb.component('vega.generalMarkProps', {

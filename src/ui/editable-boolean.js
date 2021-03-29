@@ -1,4 +1,4 @@
-var {editableBoolean, refreshIfNotWatchable} = jb.ns('editableBoolean')
+// var {editableBoolean, refreshIfNotWatchable} = jb.ns('editableBoolean')
 
 jb.component('editableBoolean', {
   type: 'control',

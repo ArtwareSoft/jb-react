@@ -2,36 +2,8 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<script>
-jbProjectSettings = {
-	libs: 'common,ui-common,material,remote,remote-widget,ui-tree,markdown,dragula,codemirror,testers,studio,object-encoder,md-icons,fuse,puppeteer,animation,cards,vega-lite,statistics',
-	jsFiles: [
-	'/projects/ui-tests/phones-3.js',
-	'/projects/ui-tests/test-data-samples.js',
-	'/projects/ui-tests/loader-tests.js',
-	'/projects/ui-tests/data-tests.js',
-	'/projects/ui-tests/rx-tests.js',
-	'/projects/ui-tests/ui-tests.js',
-	'/projects/ui-tests/vdom-tests.js',
-	'/projects/ui-tests/tree-tests.js',
-	'/projects/ui-tests/watchable-tests.js',
-	'/projects/ui-tests/parsing-tests.js',
-	'/projects/ui-tests/remote-tests.js',
-	'/projects/ui-tests/net-tests.js',
-	'/projects/ui-tests/pptr-tests.js',
-	'/projects/ui-tests/object-encoder-tests.js',
-	'/projects/ui-tests/vega-tests.js',
-	'/projects/ui-tests/stat-tests.js',
-
-	'/projects/studio/studio-testers.js',
-    ...['probe','model','tree','suggestion','patterns','inplace-edit','notebook'].map(file =>'/projects/studio/tests/studio-' + file + '-tests.js')
-//	'/projects/studio-helper/studio-helper.js',
-	],
-	project: 'tests'
-}
-</script>
 <script type="text/javascript" src="/src/loader/jb-loader.js"></script>
-<link rel="stylesheet" type="text/css" href="/projects/studio/css/studio.css"/>
+<link rel="stylesheet" type="text/css" href="/bin/studio/css/studio-all.css"/>
 <style>
 	.test-button { opacity: 0 }
 	.test-button:hover { opacity: 1 }
@@ -42,20 +14,21 @@ jbProjectSettings = {
 	<div id="testElem"> </div>
 	<div id="show"> </div>
  <script>
-	window.jb_initWidget && jb_initWidget().then(()=>{
-//		jb.uri = 'tests'
-		jb.spy.initSpyByUrl()
-		const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
-		const params = { 
-			testType: '',
-			show: location.href.indexOf('&show') != -1,
-			specificTest: urlQuery('test'),
-			rerun: urlQuery('rerun'),
-			pattern: urlQuery('pattern')
-		}
-		console.log(params)
-		jb.testers.runTests(params)
-	})
+	jb_codeLoaderServer('tests', {projects: ['studio','ui-tests']})
+		.then(()=>{
+			jb.exec(defaultTheme()),
+			jb.spy.initSpyByUrl()
+			const urlQuery = prop => (location.href.match(new RegExp(prop + '=([^&]*)')) || [])[1]
+			const params = { 
+				testType: '',
+				show: location.href.indexOf('&show') != -1,
+				specificTest: urlQuery('test'),
+				rerun: urlQuery('rerun'),
+				pattern: urlQuery('pattern')
+			}
+			console.log(params)
+			jb.testers.runTests(params)
+		})
   </script>
 </body>
 </html>

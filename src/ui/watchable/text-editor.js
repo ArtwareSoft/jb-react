@@ -1,4 +1,4 @@
-var { textEditor} = jb.ns('textEditor');
+// var { textEditor} = jb.ns('textEditor');
 
 jb.extension('textEditor', {
     getSinglePathChange(diff, currentVal) {

@@ -1,4 +1,4 @@
-jb.ns('nb,studio')
+// jb.ns('nb,studio')
 
 jb.component('studio.notebook', {
   type: 'control',

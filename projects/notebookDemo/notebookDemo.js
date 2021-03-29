@@ -1,4 +1,4 @@
-jb.ns('notebookDemo,nb')
+// jb.ns('notebookDemo,nb')
 
 jb.component('notebookDemo.notebook', {
   type: 'control',

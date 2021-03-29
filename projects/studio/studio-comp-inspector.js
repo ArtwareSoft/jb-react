@@ -1,4 +1,4 @@
-jb.ns('chromeDebugger')
+// jb.ns('chromeDebugger')
 
 jb.component('studio.compInspector', {
   params: [

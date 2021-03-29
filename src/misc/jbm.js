@@ -22,11 +22,11 @@ Routing is implemented by remoteRoutingPort, first calclating the routing path, 
 The routing path is reversed to create response message
 */
 
-var { rx,source,jbm,remote,net,pipe, aggregate } = jb.ns('rx,source,jbm,remote,net')
+//var { rx,source,jbm,remote,net,pipe, aggregate } = jb.ns('rx,source,jbm,remote,net')
 
 jb.extension('cbHandler', {
     initExtension() {
-        Object.assign(this, { counter: 0, map: {}, })
+        return { counter: 0, map: {} }
     },
     newId: () => jb.uri + ':' + (jb.cbHandler.counter++),
     get: id => jb.cbHandler.map[id],
@@ -234,22 +234,54 @@ jb.extension('jbm', {
     }            
 })
 
+jb.component('startup.codeLoaderServer', {
+    type: 'startupCode',
+    params: [
+        { id: 'projects' , as: 'array' },
+        { id: 'init' , type: 'action', dynamic: true },
+    ],
+    impl: ({vars}, projects, init) => `(function() { 
+jb_modules = { core: ${JSON.stringify(jb_modules.core)} };
+${jb_codeLoaderServer.toString()}
+return jb_codeLoaderServer('${vars.uri}',${JSON.stringify({projects, baseUrl: vars.baseUrl, local: vars.local})})
+    .then(jb => { jb.exec(${JSON.stringify(init.profile || {})}); return jb })
+})()`
+})
+
+jb.component('startup.codeLoaderClient', {
+    type: 'startupCode',
+    impl: ({vars}) => vars.local ? `(function () {
+const jb = { uri: '${vars.uri}'}
+self.jbLoadingPhase = 'libs'
+${jb.codeLoader.clientCode()};
+jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
+self.jbLoadingPhase = 'appFiles'
+return jb
+})()
+` : `jb = { uri: '${vars.uri}'}
+jbLoadingPhase = 'libs'
+${jb.codeLoader.clientCode()};
+spy = jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
+`
+})
+
 jb.component('jbm.worker', {
     type: 'jbm',
     params: [
         {id: 'id', as: 'string', defaultValue: 'w1' },
+        {id: 'startupCode', type: 'startupCode', dynamic: true, defaultValue: startup.codeLoaderClient() },
         {id: 'networkPeer', as: 'boolean', description: 'used for testing' },
     ],    
-    impl: ({},name,networkPeer) => {
+    impl: (ctx,name,startupCode, networkPeer) => {
         const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
         if (childsOrNet[name]) return childsOrNet[name]
         const workerUri = networkPeer ? name : `${jb.uri}•${name}`
         const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
+        const code = startupCode(ctx.setVars({uri: workerUri, local: false}))
         const workerCode = `
-jb = { uri: '${workerUri}'}
-jbLoadingPhase = 'libs'
-${jb.codeLoader.startupCode()};
-spy = jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
+jb_modules = { core: ${JSON.stringify(jb_modules.core)} };
+${jb_codeLoaderServer.toString()}
+${code};
 jb.codeLoaderJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
 jbLoadingPhase = 'appFiles'
 //# sourceURL=${workerUri}-startup.js
@@ -262,40 +294,42 @@ jbLoadingPhase = 'appFiles'
 jb.component('jbm.child', {
     type: 'jbm',
     params: [
-        {id: 'id', as: 'string', mandatory: true},
-        {id: 'codeLoaderUri', as: 'string', description: 'default is parent codeLoaderJbm'},
+        {id: 'name', as: 'string', mandatory: true},
+        {id: 'startupCode', type: 'startupCode', dynamic: true, defaultValue: startup.codeLoaderClient() },
     ],    
-    impl: ({},name) => {
+    impl: (ctx,name,startUpCode) => {
         if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
         const childUri = `${jb.uri}•${name}`
-        const child = jb.frame.eval(`(function () {
-const jb = { uri: '${childUri}'}
-self.jbLoadingPhase = 'libs'
-${jb.codeLoader.startupCode()};
-self.jbLoadingPhase = 'appFiles'
-return jb
-})()
+        const code = startUpCode(ctx.setVars({uri: childUri, local: true}))
+        const child = jb.frame.eval(`${code}
 //# sourceURL=${childUri}-startup.js
 `)
-        jb.jbm.childJbms[name] = child
-        child.parent = jb
-        child.codeLoaderJbm = jb.codeLoaderJbm || jb // TODO: use codeLoaderUri
-        child.ports[jb.uri] = {
-            from: child.uri, to: jb.uri,
-            postMessage: m => 
-                jb.net.handleOrRouteMsg(jb.uri,child.uri,jb.ports[child.uri].handler,m),
-            onMessage: { addListener: handler => child.ports[jb.uri].handler = handler }, // only one handler
-        }
-        child.jbm.extendPortToJbmProxy(child.ports[jb.uri])
-        jb.ports[child.uri] = {
-            from: jb.uri,to: child.uri,
-            postMessage: m => 
-                child.net.handleOrRouteMsg(child.uri,jb.uri,child.ports[jb.uri].handler ,m),
-            onMessage: { addListener: handler => jb.ports[child.uri].handler = handler }, // only one handler
-        }
-        jb.jbm.extendPortToJbmProxy(jb.ports[child.uri])
-        jb.spy && child.spy.initSpy({spyParam: jb.spy.spyParam})
+        if (jb.utils.isPromise(child)) 
+            child.then(child => initChild(child) )
+        else 
+            initChild(child)
         return child
+
+        function initChild(child) {
+            //child.spy.initSpy({spyParam: jb.spy.spyParam})
+            jb.jbm.childJbms[name] = child
+            child.parent = jb
+            child.codeLoaderJbm = jb.codeLoaderJbm || jb // TODO: use codeLoaderUri
+            child.ports[jb.uri] = {
+                from: child.uri, to: jb.uri,
+                postMessage: m => 
+                    jb.net.handleOrRouteMsg(jb.uri,child.uri,jb.ports[child.uri].handler,m),
+                onMessage: { addListener: handler => child.ports[jb.uri].handler = handler }, // only one handler
+            }
+            child.jbm.extendPortToJbmProxy(child.ports[jb.uri])
+            jb.ports[child.uri] = {
+                from: jb.uri,to: child.uri,
+                postMessage: m => 
+                    child.net.handleOrRouteMsg(child.uri,jb.uri,child.ports[jb.uri].handler ,m),
+                onMessage: { addListener: handler => jb.ports[child.uri].handler = handler }, // only one handler
+            }
+            jb.jbm.extendPortToJbmProxy(jb.ports[child.uri])
+        }
     }
 })
 

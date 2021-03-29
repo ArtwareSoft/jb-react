@@ -1,4 +1,4 @@
-var { chromeDebugger,eventTracker } = jb.ns('chromeDebugger,eventTracker')
+// var { chromeDebugger,eventTracker } = jb.ns('chromeDebugger,eventTracker')
 
 Object.assign(jb.ui, {
   getSpy: () => jb.path(jb.parent,'spy') || {}

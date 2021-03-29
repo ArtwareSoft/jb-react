@@ -1,4 +1,4 @@
-var {nb,studio,widget,markdown} = jb.ns('nb,studio,widget,markdown')
+// var {nb,studio,widget,markdown} = jb.ns('nb,studio,widget,markdown')
 
 jb.component('nb.notebook', {
   type: 'control',

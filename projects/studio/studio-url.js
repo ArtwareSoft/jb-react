@@ -1,4 +1,4 @@
-var {urlHistory} = jb.ns('urlHistory')
+// var {urlHistory} = jb.ns('urlHistory')
 
 jb.component('urlHistory.mapStudioUrlToResource', {
   type: 'service',
@@ -6,7 +6,7 @@ jb.component('urlHistory.mapStudioUrlToResource', {
     {id: 'resource', as: 'string', mandatory: true},
     {id: 'onUrlChange', type: 'action', dynamic: true}
   ],
-  impl: (ctx,resource) => ({ init: ()=> {
+  impl: (ctx,resource) => ({ init: () => {
         if (jb.ui.location || !jb.frame.History || typeof window == 'undefined' || jb.frame.jbInvscode || jb.studio.urlHistoryInitialized) return
         jb.studio.urlHistoryInitialized = true
         const base = location.pathname.indexOf('studio-bin') != -1 ? 'studio-bin' : 'studio'
@@ -70,7 +70,7 @@ jb.component('urlHistory.mapStudioUrlToResource', {
                 jb.ui.location.push(Object.assign({},jb.ui.location.location, loc));
                 ctx.params.onUrlChange(ctx.setData(loc));
         }))
-    }})
+  }})
 })
 
 jb.component('dataResource.queryParams', {

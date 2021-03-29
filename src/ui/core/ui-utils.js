@@ -68,7 +68,7 @@ jb.extension('ui', {
 
 // ***************** inter-cmp services
 
-var { feature, action } = jb.ns('feature')
+// var { feature, action } = jb.ns('feature')
 
 jb.component('feature.serviceRegistey', {
   type: 'feature',
@@ -262,4 +262,4 @@ jb.component('controlWithFeatures', {
 })
 
 // widely used
-var { customStyle, styleByControl, styleWithFeatures, controlWithFeatures } = jb.macro
+// var { customStyle, styleByControl, styleWithFeatures, controlWithFeatures } = jb.macro

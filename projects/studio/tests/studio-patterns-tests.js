@@ -327,7 +327,7 @@ jb.component('patternsTest.suggestedStyles.text', {
       Var('top',obj())
     ],
     calculate: pipeline(
-      studio.suggestedStyles('%$extractedCtrl%', '%$targetPath%'),
+      cardExtract.suggestedStyles('%$extractedCtrl%', '%$targetPath%'),
       '%control/$%',
       join(',')
     ),
@@ -349,7 +349,7 @@ jb.component('patternsTest.selectStyle.text', {
       Var('targetPath', 'studioTest.dragTargetText~impl'),
       Var('top',obj())
     ],
-    control: studio.selectStyle('%$extractedCtrl%','%$targetPath%'),
+    control: cardExtract.selectStyle('%$extractedCtrl%','%$targetPath%'),
     runBefore: ctx => {
       const top = document.createElement('div')
       jb.ui.renderWidget({$: 'studioTest.dragTargetText'},top)
@@ -369,7 +369,7 @@ jb.component('patternsTest.selectStyle.card1', {
       Var('targetPath', 'studioTest.dragTargetCard~impl'),
       Var('top',obj())
     ],
-    control: studio.selectStyle('%$extractedCtrl%','%$targetPath%'),
+    control: cardExtract.selectStyle('%$extractedCtrl%','%$targetPath%'),
     runBefore: ctx => {
       const top = document.createElement('div')
       jb.ui.renderWidget({$: 'studioTest.dragTargetCard'},top)
@@ -389,7 +389,7 @@ jb.component('patternsTest.selectStyleDeleteUnmapped.card1', {
       Var('targetPath', 'studioTest.dragTargetCard~impl'),
       Var('top',obj())
     ],
-    control: studio.selectStyle('%$extractedCtrl%','%$targetPath%'),
+    control: cardExtract.selectStyle('%$extractedCtrl%','%$targetPath%'),
     runBefore: runActions(
       writeValue('%$studio/patterns/deleteUnmapped%', true),
       ctx => {
@@ -412,7 +412,7 @@ jb.component('patternsTest.selectStyleDeleteUnmapped.card1', {
 //       Var('targetPath', 'studioTest.dragTargetCard~impl'),
 //       Var('top',obj())
 //     ],
-//     control: studio.selectStyle('%$extractedCtrl%','%$targetPath%'),
+//     control: cardExtract.selectStyle('%$extractedCtrl%','%$targetPath%'),
 //     runBefore: runActions(
 //       writeValue('%$studio/patterns/deleteUnmapped%', true),
 //       ctx => {
@@ -435,7 +435,7 @@ jb.component('patternsTest.selectStyleDeleteUnmapped.card2', {
       Var('targetPath', 'studioTest.dragTargetCard~impl'),
       Var('top',obj())
     ],
-    control: ctx => ctx.run(studio.selectStyle('%$extractedCtrl%','%$targetPath%')),
+    control: ctx => ctx.run(cardExtract.selectStyle('%$extractedCtrl%','%$targetPath%')),
     runBefore: runActions(
       writeValue('%$studio/patterns/deleteUnmapped%', true),
       ctx => {
@@ -452,14 +452,14 @@ jb.component('patternsTest.selectStyleDeleteUnmapped.card2', {
 
 jb.component('patternsTest.flattenControlToGrid.card2', {
   impl: uiTest({
-    control: studio.flattenControlToGrid(() => extractedCtrlCard2),
+    control: cardExtract.flattenControlToGrid(() => extractedCtrlCard2),
     expectedResult: contains('Disney in 1946'),
   })
 })
 
 jb.component('patternsTest.flattenControlToGrid.card1', {
   impl: uiTest({
-    control: studio.flattenControlToGrid(() => extractedCtrlCard1),
+    control: cardExtract.flattenControlToGrid(() => extractedCtrlCard1),
     expectedResult: contains('T3.com'),
   })
 })
@@ -471,7 +471,7 @@ jb.component('patternsTest.flattenControlToGrid.wixIsland', {
       controls: ctx => {
         const html_src = () => wixIslandHtml
         const ctrl = ctx.run(studio.htmlToControl(html_src))
-        const flatten = studio.flattenControlToGrid(() => JSON.parse(JSON.stringify(ctrl)))
+        const flatten = cardExtract.flattenControlToGrid(() => JSON.parse(JSON.stringify(ctrl)))
         // html({html: html_src}),
         return [ctrl, flatten].map(x=>ctx.run(x))
       }

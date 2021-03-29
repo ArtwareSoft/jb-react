@@ -6,7 +6,7 @@ jb.component('prettyPrint', {
   impl: (ctx,profile) => jb.utils.prettyPrint(jb.val(profile),{ ...ctx.params, comps: jb.studio.previewjb.comps})
 })
 
-jb.extension('utils', {
+jb.extension('utils', 'prettyPrint', {
   initExtension() {
     return {
       emptyLineWithSpaces: Array.from(new Array(200)).map(_=>' ').join(''),
@@ -102,7 +102,7 @@ jb.extension('utils', {
       const id = [jb.utils.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
       const comp = comps[id]
       if (comp)
-        jb.core.fixMacroByValue(profile,comp)
+        jb.macro.fixProfile(profile)
       if (noMacros || !id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
         const props = Object.keys(profile)
         if (props.indexOf('$') > 0) { // make the $ first
@@ -111,7 +111,7 @@ jb.extension('utils', {
         }
         return joinVals(ctx, props.map(prop=>({innerPath: prop, val: profile[prop]})), '{', '}', flat, false)
       }
-      const macro = jb.macroName(id)
+      const macro = jb.macro.titleToId(id)
 
       const params = comp.params || []
       const firstParamIsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1

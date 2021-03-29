@@ -66,8 +66,8 @@ jb.component('uiAction.scrollBy', {
       ],
       impl: runActions(
         uiAction.waitForSelector('%$selector%'),
-        (ctx,{},{selector,scrollBy}) => {
-          const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : ctx.vars.elemToTest
+        (ctx,{elemToTest},{selector,scrollBy}) => {
+          const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : elemToTest
           elem && elem.scrollBy(scrollBy,scrollBy)
           jb.log('test scroll on dom',{elem,ctx})
         }
@@ -94,11 +94,13 @@ jb.component('uiAction.click', {
     params: [
       {id: 'selector', as: 'string'},
     ],
-    impl: (ctx,selector) => {
-      const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : ctx.vars.elemToTest
-      jb.log('test click',{elem,selector,ctx})
-      elem && elem.click()
-    }
+    impl: runActions(
+      uiAction.waitForSelector('%$selector%'),
+      (ctx,{elemToTest},{selector}) => {
+        const elem = selector ? jb.ui.elemOfSelector(selector,ctx) : elemToTest
+        jb.log('test click',{elem,selector,ctx})
+        elem && elem.click()
+    })
 })
   
 jb.component('uiAction.keyboardEvent', {

@@ -1,7 +1,7 @@
 if (typeof jbmFactory == 'undefined') jbmFactory = {};
 jbmFactory['puppeteer'] = function(jb) {
   jb.importAllMacros && eval(jb.importAllMacros());
-var {pptr} = jb.ns('pptr,rx')
+// var {pptr} = jb.ns('pptr,rx')
 
 jb.component('pptr.newPage', {
   type: 'rx,pptr',
@@ -234,7 +234,7 @@ jb.component('pptr.contentFrame', {
 // await page.type('#mytextarea', 'World', {delay: 100}); // Types slower, like a user
 //page.setJavaScriptEnabled(enabled);
 
-jb.ns('pptr')
+// jb.ns('pptr')
 
 jb.component('pptr.crawler', {
     type: 'pptr.crawler',

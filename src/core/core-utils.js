@@ -23,10 +23,6 @@ Object.assign(jb, {
     tonumber: value => jb.core.tojstype(value,'number'),
     exec: (...args) => new jb.core.jbCtx().run(...args),
     exp: (...args) => new jb.core.jbCtx().exp(...args),
-
-    // todo - move to studio
-    studio: { previewjb: jb },
-    execInStudio: (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.core.jbCtx().run(...args),
 })
 
 jb.extension('utils', { // jb core utils
@@ -70,6 +66,12 @@ jb.extension('utils', { // jb core utils
     
       return jb.utils.resolveFinishedPromise(res)
     },
+    callStack(ctx) {
+      const ctxStack=[]; 
+      for(let innerCtx=ctx; innerCtx; innerCtx = innerCtx.cmpCtx) 
+        ctxStack.push(innerCtx)
+      return ctxStack.map(ctx=>ctx.callerPath)
+    },    
     addDebugInfo(f,ctx) { f.ctx = ctx; return f},
     assignDebugInfoToFunc(func, ctx) {
       func.ctx = ctx

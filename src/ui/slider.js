@@ -1,4 +1,4 @@
-var { slider, editableNumber, mdcStyle } = jb.ns('slider,mdcStyle')
+// var { slider, editableNumber, mdcStyle } = jb.ns('slider,mdcStyle')
 
 jb.component('editableNumber.sliderNoText', {
   type: 'editable-number.style',

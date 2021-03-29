@@ -183,6 +183,10 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'dist/vega-lite.js', 
         'src/ui/vega/jb-vega-lite.js'
       ],    
+      'statistics': [
+        'dist/jstat.js', 
+        'src/misc/jb-stat.js'
+      ],    
       'dragula': [
           'dist/dragula.js',
           'dist/css/dragula.css',
@@ -221,7 +225,7 @@ var jb_modules = Object.assign((typeof jb_modules != 'undefined' ? jb_modules : 
         'suggestions', 'properties','jb-editor-styles','edit-source','jb-editor','pick','h-to-jsx','style-editor',
         'references','properties-menu','save','open-project','tree',
         'data-browse', 'new-project','event-tracker', 'comp-inspector','toolbar','search', 'main', 'component-header', 
-        'hosts', 'probe', 'watch-ref-viewer', 'content-editable', 'position-thumbs', 'html-to-ctrl', 'patterns', 'pick-icon', 
+        'hosts', 'probe', 'watch-ref-viewer', 'content-editable', 'position-thumbs', 'html-to-ctrl', 'pick-icon', 
         'inplace-edit', 'grid-editor', 'sizes-editor', 'refactor', 'vscode', 'pptr', 'chrome-debugger',
 
         'src/ui/notebook/notebook-common.js', 'notebook',
@@ -329,7 +333,7 @@ async function jb_loadProject(settings) {
   async function loadAppFile(url) {
     const ret = await fetch(url)
     const code = await ret.text()
-    const macros = jb.importAllMacros()
+    const macros = jb.macro.importAll()
     eval([`(() => { ${macros} \n${code}\n})()`,`//# sourceURL=${url}?${settings.uri || settings.project}`].join('\n'))
     return
   }
@@ -358,6 +362,58 @@ async function jb_initWidget(settings,doNotLoadProject) { // export
 function jbm_create(libs, settings) {  // export
   return jb_dynamicLoad(libs, settings) 
 }
+
+async function jb_codeLoaderServer(uri, {projects, baseUrl }) {
+  baseUrl = baseUrl || ''
+  self.jb = { uri }
+  const coreFiles= jb_modules.core.map(x=>`/${x}`)
+  await coreFiles.reduce((pr,url) => pr.then(()=> jb_loadFile(url)), Promise.resolve())
+  jb.noCodeLoader = false
+  const src = [...await fetch('?op=getAllCode&path=src&exclude=puppeteer|pptr-|pack-|jb-loader').then(x=>x.json())].filter(x=>coreFiles.indexOf(x.path) == -1)
+  let projectsCode = []
+  await projects.reduce((promise,project) => promise.then(() => fetch(`?op=getAllCode&path=projects/${project}`).then(x=>x.json())
+    .then(items =>projectsCode = projectsCode.concat(items)) ), Promise.resolve() )
+  const ns = jb.utils.unique([...src,...projectsCode,{ns: ['Var','remark']}].flatMap(x=>x.ns))
+  const libs = jb.utils.unique([...src,...projectsCode].flatMap(x=>x.libs))
+  ns.forEach(id=> jb.macro.registerProxy(id))
+  await [...src,...projectsCode].map(x=>x.path).reduce((pr,url) => pr.then(()=> jb_loadFile(url)), Promise.resolve())
+  await jb.initializeLibs(libs)
+  Object.values(jb.comps).filter(cmp => typeof cmp.impl == 'object').forEach(cmp => jb.macro.fixProfile(cmp.impl,jb.comps[cmp.impl.$]))
+}
+
+async function jb_codeLoaderClient(uri) {
+  self.jb = { uri }
+  const coreFiles= jb_modules.core.map(x=>`/${x}`)
+  await coreFiles.reduce((pr,url) => pr.then(()=> jb_loadFile(url)), Promise.resolve())
+  jb.noCodeLoader = false
+  var { If,not,contains,writeValue,obj,prop,rx,source,sink,call,jbm,remote,pipe,log,net,aggregate,list } = jb.macro.ns('If,not,contains,writeValue,obj,prop,rx,source,sink,call,jbm,remote,pipe,log,net,aggregate,list') // ns use in modules
+  await 'loader/code-loader,core/jb-common,misc/jb-callbag,misc/rx-comps,misc/pretty-print,misc/remote-context,misc/jbm,misc/remote'.split(',').map(x=>`/src/${x}.js`)
+    .reduce((pr,url)=> pr.then(() => jb_loadFile(url)), Promise.resolve())
+  await jb.initializeLibs(['core,callbag,utils,remote,jbm,net,cbHandler,codeLoader'])
+  Object.values(jb.comps).filter(cmp => typeof cmp.impl == 'object').forEach(cmp => jb.macro.fixProfile(cmp.impl,jb.comps[cmp.impl.$]))  
+}        
+
+function jb_loadFile(url) {
+  const isWorker = typeof window == 'undefined', isJs = url.match(/\.js$|\.js\?/)
+  if (self.jbBaseProjUrl && !url.match('//'))
+    url = [self.jbBaseProjUrl.replace(/\/$/,''),url.replace(/^\//,'')].join('/')
+
+  if (isWorker) {
+    return Promise.resolve(isJs && importScripts(location.origin+url))
+  } else {
+    return new Promise(resolve => {
+      const type = url.indexOf('.css') == -1 ? 'script' : 'link'
+      var s = document.createElement(type)
+      s.setAttribute(type == 'script' ? 'src' : 'href',url)
+      if (type == 'script') 
+        s.setAttribute('charset','utf8') 
+      else 
+        s.setAttribute('rel','stylesheet')
+      s.onload = s.onerror = resolve
+      document.head.appendChild(s);
+    })
+  }
+}  
 
 if (typeof module != 'undefined')
   module.exports = jb_modules;

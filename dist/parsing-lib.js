@@ -3,29 +3,32 @@ jbmFactory['parsing'] = function(jb) {
   jb.importAllMacros && eval(jb.importAllMacros());
 
 //used mostley for deubgging
-jb.stringWithSourceRef = function(ctx,pathToConstStr,offset,to) {
-  this.ctx = ctx;this.pathToConstStr = pathToConstStr;
-  this.offset = offset;this.to = to;
-  this.val = ctx.exp(`%$${pathToConstStr}%`,'string').substring(offset,to);
-  jb.debugInfo = jb.debugInfo || { in: [], out: []};
-  jb.debugInfo.in.push(this);
-}
-jb.stringWithSourceRef.prototype.$jb_val = function() {
-  return this.val;
-}
-jb.stringWithSourceRef.prototype.substring = function(from,new_to) {
-  const to = typeof new_to == 'undefined' ? this.to : this.offset + new_to;
-  return new jb.stringWithSourceRef(this.ctx,this.pathToConstStr,this.offset+from,to)
-}
-jb.stringWithSourceRef.prototype.trim = function() {
-  if (this.val == this.val.trim()) return this;
-  const left = (this.val.match(/^\s+/)||[''])[0].length;
-  const right = (this.val.match(/\s+$/)||[''])[0].length;
+jb.extension('parsing', {
+  initExtension() {
+    jb.jstypes['string-with-source-ref'] = v => v;
+  },
+  stringWithSourceRef: class stringWithSourceRef {
+    constructor(ctx,pathToConstStr,offset,to) {
+        this.ctx = ctx;this.pathToConstStr = pathToConstStr;
+        this.offset = offset;this.to = to;
+        this.val = ctx.exp(`%$${pathToConstStr}%`,'string').substring(offset,to);
+        jb.debugInfo = jb.debugInfo || { in: [], out: []};
+        jb.debugInfo.in.push(this);
+    }
+    $jb_val() { return this.val }
+    substring(from,new_to) {
+      const to = typeof new_to == 'undefined' ? this.to : this.offset + new_to;
+      return new jb.parsing.stringWithSourceRef(this.ctx,this.pathToConstStr,this.offset+from,to)
+    }
+    trim() {
+      if (this.val == this.val.trim()) return this;
+      const left = (this.val.match(/^\s+/)||[''])[0].length;
+      const right = (this.val.match(/\s+$/)||[''])[0].length;
 
-  return new jb.stringWithSourceRef(this.ctx,this.pathToConstStr,this.offset+left,this.to-right)
-}
-
-jb.jstypes['string-with-source-ref'] = v => v;
+      return new jb.parsing.stringWithSourceRef(this.ctx,this.pathToConstStr,this.offset+left,this.to-right)
+    }
+  }
+})
 
 jb.component('extractText', {
   description: 'text breaking according to begin/end markers',
@@ -197,8 +200,7 @@ jb.component('merge', {
   params: [
     {id: 'objects', as: 'array', mandatory: true}
   ],
-  impl: (ctx,objects) =>
-		Object.assign.apply({},objects)
+  impl: ({}, objects) => Object.assign.apply({},objects)
 })
 
 jb.component('dynamicObject', {

@@ -1,4 +1,4 @@
-jb.ns('animationDemo')
+// jb.ns('animationDemo')
 
 jb.component('animationDemo.main', {
   type: 'control',

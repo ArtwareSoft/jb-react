@@ -1,4 +1,4 @@
-var {multiSelect, removeFromArray, addToArray } = jb.ns('multiSelect')
+// var {multiSelect, removeFromArray, addToArray } = jb.ns('multiSelect')
 
 jb.component('multiSelect', {
     type: 'control',

@@ -1,4 +1,4 @@
-var {inplaceEdit,sizesEditor} = jb.ns('inplaceEdit,sizesEditor')
+// var {inplaceEdit,sizesEditor} = jb.ns('inplaceEdit,sizesEditor')
 
 jb.component('inplaceEdit.activate', {
   type: 'action',
@@ -8,7 +8,7 @@ jb.component('inplaceEdit.activate', {
   ],
   impl: runActions(
     Var('inplaceElem', (ctx,{},{path,elem})=> {
-        const el = elem || (jb.studio.findElemsByCtxCondition(ctx => ctx.path == path)[0] || {}).elem
+        const el = elem || (jb.studio.findElemsByPathCondition(_path => _path == path)[0] || {}).elem
         if (!el) debugger
         return el
     }),

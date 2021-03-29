@@ -29,7 +29,7 @@ st.animateMessage = function (el) {
 
 // ********* Components ************
 jb.component('studio.projectId', {
-  impl: ctx => jb.macroName(ctx.exp('%$studio/project%'))
+  impl: ctx => jb.macro.titleToId(ctx.exp('%$studio/project%'))
 })
 
 jb.component('studio.currentPagePath', {

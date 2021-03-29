@@ -1,4 +1,4 @@
-jb.ns('animation')
+// jb.ns('animation')
 
 jb.component('animation.start', {
   type: 'action',

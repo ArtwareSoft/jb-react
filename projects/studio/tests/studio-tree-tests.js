@@ -1,4 +1,4 @@
-var {jbEditorChildrenTest} = jb.macro
+// var {jbEditorChildrenTest} = jb.macro
 
 jb.component('jbEditorTest.cmp1', {
   impl: list(

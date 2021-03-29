@@ -1,24 +1,25 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <script type="text/javascript">
-    jbUri = 'studio';
-    startTime = new Date().getTime();
-    jbProjectSettings = {
-      libs: 'common,ui-common,remote-widget,remote,material,ui-tree,dragula,codemirror,pretty-print,markdown-editor,studio,history,animate,md-icons,fuse',
-      jsFiles: [],
-      project: 'studio'
-    }
-  </script>
-  <script type="text/javascript" src="/src/loader/jb-loader.js"
-  modules="common,ui-common,remote-widget,remote,material,ui-tree,dragula,codemirror,pretty-print,markdown-editor,studio,history,animate,md-icons,fuse" prefix="!st!"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script type="text/javascript" src="/src/loader/jb-loader.js"></script>
+<script type="text/javascript" src="/dist/history.js"></script>
+<script type="text/javascript" src="/dist/material-components-web.js"></script>
+<link rel="stylesheet" type="text/css" href="/dist/css/material.css"/>
+
+<link rel="stylesheet" type="text/css" href="/dist/css/styles.css"/>
+<link rel="stylesheet" type="text/css" href="/dist/css/font.css"/>
 <link rel="stylesheet" type="text/css" href="/projects/studio/css/studio.css"/>
+
 </head>
 <body style="margin:0">
-
 <div id="main" style="background-color: var(--jb-editor-background);width:1280px; margin-left: 2px"> </div>
 <script>
-	window.jb_initWidget && jb_initWidget()
+	jb_codeLoaderServer('studio',{ projects: ['studio',location.pathname.split('/')[3]] }).then(()=>{
+    jb.exec(defaultTheme()),
+    jb.spy.initSpyByUrl && jb.spy.initSpyByUrl()
+    jb.ui.renderWidget(({$: 'studio.main'}), main)
+  })
 </script>
 </body>
 </html>

@@ -18,7 +18,7 @@ jb.component('textToBreak2', { passiveData: 'l1-a1-b1-c1;l2|a2|b2|c2;l3-a3-b3-c3
 
 jb.component('dataTest.stringWithSourceRef', {
   impl: dataTest({
-    calculate: ctx => new jb.stringWithSourceRef(ctx,'textToBreak',6,8),
+    calculate: ctx => new jb.parsing.stringWithSourceRef(ctx,'textToBreak',6,8),
     expectedResult: '%% == b1'
   })
 })

@@ -1,4 +1,4 @@
-var {suggestionsTest} = jb.macro
+// var {suggestionsTest} = jb.macro
 
 jb.component('peopleArray', {
   watchableData: {

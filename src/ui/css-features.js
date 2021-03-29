@@ -1,4 +1,4 @@
-var { css } = jb.ns('css')
+// var { css } = jb.ns('css')
 
 jb.component('css', {
   description: 'e.g. {color: red; width: 20px} or div>.myClas {color: red} ',
@@ -240,11 +240,11 @@ jb.component('css.conditionalClass', {
   })
 })
 
-;['layout','typography','detailedBorder','detailedColor','gridArea'].forEach(f=>
-jb.component(`css.${f}`, {
+jb.defComponents('layout,typography,detailedBorder,detailedColor,gridArea'.split(','), id=>`css.${id}`, f=> ({
   type: 'feature:0',
   params: [
     {id: 'css', mandatory: true, as: 'string'}
   ],
   impl: (ctx,css) => ({css: jb.ui.fixCssLine(css)})
 }))
+

@@ -27,6 +27,26 @@ jb.component('studio.jbart', {
     controls: [
       studio.topBar(),
       group({
+        controls: studio.workerPreview(),
+        features: watchRef('%$studio/page%')
+      }),
+      studio.pages(),
+      studio.ctxCounters()
+    ],
+    features: [
+      feature.requireService(studio.writableCompsService()),
+      feature.requireService(studio.autoSaveService()),
+      feature.requireService(urlHistory.mapStudioUrlToResource('studio'))
+    ]
+  })
+})
+
+jb.component('studio.jbartOld', {
+  type: 'control',
+  impl: group({
+    controls: [
+      studio.topBar(),
+      group({
         controls: studio.previewWidget(),
         features: [
           id('preview-parent'),
@@ -63,7 +83,7 @@ jb.component('studio.vscode', {
 
 jb.component('dataResource.studio', {
   watchableData: {
-    project: '',
+    project: '', // (jb.path(jb.frame,'location.pathname') ||'').split('/')[3] || '',
     page: '',
     profile_path: '',
     pickSelectionCtxId: '',
@@ -125,7 +145,7 @@ jb.component('studio.pages', {
     ],
     features: [
       css.class('studio-pages'),
-      group.wait({for: studio.waitForPreviewIframe(), loadingControl: text({})})
+      //group.wait({for: studio.waitForPreviewIframe(), loadingControl: text({})})
     ]
   })
 })

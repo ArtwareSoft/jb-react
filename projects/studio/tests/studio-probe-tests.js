@@ -1,4 +1,4 @@
-var {studioProbeTest, pathChangeTest} = jb.ns('rx')
+// var {studioProbeTest, pathChangeTest} = jb.ns('rx')
 
 jb.component('person', { watchableData: {
 	name: "Homer Simpson",
@@ -218,7 +218,7 @@ jb.component('test.pathSrcCaller', {
   )
 })
 
-jb.component('probeTest.pathSrcThrough$call', {
+jb.component('probeTest.pathSrcThrough.call', {
   impl: dataTest({
     calculate: ctx => {
    	 var probe1 = new jb.studio.Probe(new jb.core.jbCtx(ctx,{ profile: {$: 'test.pathSrcCaller'}, comp: 'test.pathSrcCaller', path: '' } ),true)
@@ -230,7 +230,7 @@ jb.component('probeTest.pathSrcThrough$call', {
   })
 })
 
-jb.component('probeTest.pathSrcThrough$call2', {
+jb.component('probeTest.pathSrcThrough.call2', {
   impl: dataTest({
     calculate: ctx => {
    	 var probe1 = new jb.studio.Probe(new jb.core.jbCtx(ctx,{ profile: {$: 'test.pathSrcCaller'}, comp: 'test.pathSrcCaller', path: '' } ),true)

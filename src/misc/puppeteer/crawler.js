@@ -1,4 +1,4 @@
-jb.ns('pptr')
+// jb.ns('pptr')
 
 jb.component('pptr.crawler', {
     type: 'pptr.crawler',

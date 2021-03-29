@@ -1,4 +1,10 @@
-function h_to_jsx({types: t}) {
+jb.extension('studio', 'jsx', {
+  initExtension() {
+    if (jb.studio._initJsxToH || !jb.frame.Babel) return;
+    jb.frame.Babel.registerPlugin('h-to-jsx',h_to_jsx);
+    jb.studio._initJsxToH = true;
+  },  
+ h_to_jsx({types: t}) {
   const getAttributes = (props) => {
     if (t.isIdentifier(props) || t.isMemberExpression(props)) {
       return [t.JSXSpreadAttribute(props)];
@@ -41,47 +47,38 @@ function h_to_jsx({types: t}) {
           path.replaceWith(path.parent.type === 'ReturnStatement' ? t.ParenthesizedExpression(el) : t.ExpressionStatement(el));
         }
       }
-    }
-  }
-}
+    }}
+  },
 
-jb.studio.initJsxToH = _ => {
-  if (jb.studio._initJsxToH || !jb.frame.Babel) return;
-  jb.frame.Babel.registerPlugin('h-to-jsx',h_to_jsx);
-  jb.studio._initJsxToH = true;
-}
+  testJsxToH() {
+      input = (state,h) => h('div',{a: state.a},h('span'));
+      const res = jb.studio.hToJSX(input.toString().split('=>').slice(1).join('=>'));
+      console.log('jsx',jb.studio.pretty(res));
+      console.log('back to h',jb.studio.jsxToH(res))
+  },
 
-jb.studio.testJsxToH = _ => {
-    input = (state,h) => h('div',{a: state.a},h('span'));
-    const res = jb.studio.hToJSX(input.toString().split('=>').slice(1).join('=>'));
-    console.log('jsx',jb.studio.pretty(res));
-    console.log('back to h',jb.studio.jsxToH(res))
-}
-
-//jb.delay(500).then(_ => jb.studio.testJsxToH())
-
-
-jb.studio.jsxToH = jsx => {
-  jb.studio.initJsxToH();
-  try  {
-  return Babel.transform(jsx, {
-    "plugins": [["transform-react-jsx", { "pragma": "h"  }]]
-  }).code.replace(/;$/,'').replace(/\(\s*/mg,'(').replace(/\s*\)/mg,')').replace(/,null,/mg,',{},').replace(/,\s*\{/mg,',{').replace(/"class"/mg,'class').replace(/"/mg,"'")
-  } catch(e) {
-    jb.logException(e)
-  }
-}
-
-jb.studio.hToJSX = hFunc => {
+  jsxToH(jsx) {
     jb.studio.initJsxToH();
-    try {
-    return Babel.transform(hFunc, {
-      "plugins": ['h-to-jsx']
-  }).code
-  } catch(e) {
-    jb.logException(e)
-  }
-}
+    try  {
+    return Babel.transform(jsx, {
+      "plugins": [["transform-react-jsx", { "pragma": "h"  }]]
+    }).code.replace(/;$/,'').replace(/\(\s*/mg,'(').replace(/\s*\)/mg,')').replace(/,null,/mg,',{},').replace(/,\s*\{/mg,',{').replace(/"class"/mg,'class').replace(/"/mg,"'")
+    } catch(e) {
+      jb.logException(e)
+    }
+  },
+
+  hToJSX(hFunc) {
+      jb.studio.initJsxToH();
+      try {
+      return Babel.transform(hFunc, {
+        "plugins": ['h-to-jsx']
+    }).code
+    } catch(e) {
+      jb.logException(e)
+    }
+  },
+})
 
 jb.component('studio.pretty', {
   type: 'data',

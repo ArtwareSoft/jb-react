@@ -1,4 +1,4 @@
-jb.ns('sourceEditor')
+// jb.ns('sourceEditor')
 
 jb.component('studio.categoriesMarks', {
   params: [

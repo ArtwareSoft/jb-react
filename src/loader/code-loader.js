@@ -2,9 +2,10 @@
 jb.extension('codeLoader', {
     initExtension() {
         return {
-            coreComps: ['#extension','#core.run','#component','#jbm.extendPortToJbmProxy','#jbm.portFromFrame','#spy.initSpy','#codeLoader.getCodeFromRemote','codeLoader.getCode','waitFor'],
+            clientComps: ['#extension','#core.run','#component','#jbm.extendPortToJbmProxy','#jbm.portFromFrame','#spy.initSpy','#codeLoader.getCodeFromRemote','codeLoader.getCode','waitFor'],
             existingFEPaths: {},
-            loadedFElibs: {}
+            loadedFElibs: {},
+            server: jb.frame.jb_codeLoaderServer
         }
     },
     existing() {
@@ -114,7 +115,7 @@ jb.extension('codeLoader', {
                 }
             })
     },
-    startupCode: () => jb.codeLoader.code(jb.codeLoader.treeShake(jb.codeLoader.coreComps,{})),
+    clientCode: () => jb.codeLoader.code(jb.codeLoader.treeShake(jb.codeLoader.clientComps,{})),
     treeShakeFrontendFeatures(paths) { // treeshake the code of the FRONTEND features without the backend part
         const _paths = paths.filter(path=>! jb.codeLoader.existingFEPaths[path]) // performance - avoid tree shake if paths were processed before 
         if (!_paths.length) return []
@@ -124,27 +125,26 @@ jb.extension('codeLoader', {
     loadFELibsDirectly(libs) {
         if (typeof document == 'undefined') 
             return jb.logError('can not load front end libs to a frame without a document')
-        const _libs = libs.filter(lib=>! jb.codeLoader.loadedFElibs[lib])
-        if (!_libs.length) return []
-        return _libs.reduce((pr,lib) => pr.then(loadFile(lib)).then(()=> jb.codeLoader.loadedFElibs[lib] = true), Promise.resolve())
+        const _libs = jb.utils.unique(libs).filter(lib=>! jb.codeLoader.loadedFElibs[lib])
+        return _libs.reduce((pr,lib) => pr.then(()=> loadFile(lib)).then(()=> jb.codeLoader.loadedFElibs[lib] = true), Promise.resolve())
 
         function loadFile(lib) {
             return new Promise(resolve => {
                 const type = lib.indexOf('.css') == -1 ? 'script' : 'link'
                 var s = document.createElement(type)
-                s.setAttribute(type == 'script' ? 'src' : 'href',`/dist/${lib}`)
+                s.setAttribute(type == 'script' ? 'src' : 'href',`${jb.codeLoader.baseUrl||''}/dist/${lib}`)
                 if (type == 'script') 
                     s.setAttribute('charset','utf8') 
                 else 
                     s.setAttribute('rel','stylesheet')
                 s.onload = s.onerror = resolve
-                document.head.appendChild(s);
+                document.head.appendChild(s)
             })
         }        
     },
 })
 
-jb.component('codeLoader.getCode',{
+jb.component('codeLoader.getCode', {
     impl: ({vars}) => {
         const treeShake = jb.codeLoader.treeShake(vars.ids.split(','),jb.objFromEntries(vars.existing.split(',').map(x=>[x,true])))
         jb.log('codeLoader treeshake',{...vars, treeShake})

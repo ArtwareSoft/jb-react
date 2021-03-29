@@ -161,7 +161,7 @@ jb.component('studio.controlTree', {
               onClose: studio.gotoLastEdit()
             })
           ),
-          studio.dropHtml(studio.extractStyle('%$newCtrl%', tree.pathOfInteractiveItem()))
+          studio.dropHtml(cardExtract.extractStyle('%$newCtrl%', tree.pathOfInteractiveItem()))
         ]
       })
     ],

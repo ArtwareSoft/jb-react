@@ -1,4 +1,4 @@
-var {runActionOnItem, isRef, inGroup, list } = jb.macro
+// var {runActionOnItem, isRef, inGroup, list } = jb.macro
 
 jb.component('itemlist.selection', {
   type: 'feature',
@@ -101,6 +101,7 @@ jb.component('itemlist.keyboardSelection', {
     ),
     frontEnd.flow(
       '%$cmp.onkeydown%',
+      rx.log('test 1'),
       rx.filter(not('%ctrlKey%')),
       rx.filter(inGroup(list(38, 40), '%keyCode%')),
       rx.map(itemlist.nextSelected(If('%keyCode%==40', 1, -1))),

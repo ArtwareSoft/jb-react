@@ -14,7 +14,7 @@ jb.extension('ui', 'react', {
                 const elem = document.querySelector(`[cmp-id="${e.cmpId}"]`)
                 if (elem) {
                     jb.ui.applyDeltaToDom(elem, e.delta)
-                    jb.ui.refreshFrontEnd(elem)
+                    jb.ui.refreshFrontEnd(elem, {content: e.delta})
                 }
             }
         })(jb.ui.renderingUpdates)
@@ -158,7 +158,7 @@ jb.extension('ui', 'react', {
             jb.log('apply delta top dom',{vdomBefore,vdomAfter,active,elem,vdomAfter,strongRefresh, delta, ctx})
             jb.ui.applyDeltaToDom(elem,delta)
         }
-        jb.ui.refreshFrontEnd(elem)
+        jb.ui.refreshFrontEnd(elem, {content: vdomAfter})
         if (active) jb.ui.focus(elem,'apply Vdom diff',ctx)
         jb.ui.garbageCollectCtxDictionary()
     },
@@ -356,6 +356,11 @@ jb.extension('ui', 'react', {
     },
     render(vdom,parentElem,prepend) {
         jb.log('render',{vdom,parentElem,prepend})
+        const res = doRender(vdom,parentElem)
+        vdomDiffCheckForDebug()
+        jb.ui.refreshFrontEnd(res, {content: vdom })
+        return res
+
         function doRender(vdom,parentElem) {
             jb.log('dom createElement',{tag: vdom.tag, vdom,parentElem})
             const elem = jb.ui.createElement(parentElem.ownerDocument, vdom.tag)
@@ -364,15 +369,12 @@ jb.extension('ui', 'react', {
             prepend ? parentElem.prepend(elem) : parentElem.appendChild(elem)
             return elem
         }
-        const res = doRender(vdom,parentElem)
-        jb.ui.findIncludeSelf(res,'[interactive]').forEach(el=> jb.ui.mountFrontEnd(el))
-        // check
-        const checkResultingVdom = jb.ui.elemToVdom(res)
-        const diff = jb.ui.vdomDiff(checkResultingVdom,vdom)
-        if (checkResultingVdom && Object.keys(diff).length)
-            jb.logError('render diff',{diff,checkResultingVdom,vdom})
-
-        return res
+        function vdomDiffCheckForDebug() {
+            const checkResultingVdom = jb.ui.elemToVdom(res)
+            const diff = jb.ui.vdomDiff(checkResultingVdom,vdom)
+            if (checkResultingVdom && Object.keys(diff).length)
+                jb.logError('render diff',{diff,checkResultingVdom,vdom})
+        }
     },
     createElement(doc,tag) {
         tag = tag || 'div'
@@ -571,7 +573,7 @@ jb.extension('ui', 'react', {
             jb.ui.renderingUpdates.next({delta,cmpId,widgetId: ctx.vars.headlessWidgetId})
         } else if (actualElem) {
             jb.ui.applyDeltaToDom(actualElem, actualdelta)
-            jb.ui.refreshFrontEnd(actualElem)
+            jb.ui.refreshFrontEnd(actualElem, {content: delta})
         }
     },
     refreshElem(elem, state, options) {
@@ -589,8 +591,8 @@ jb.extension('ui', 'react', {
         if (options && options.extendCtx)
             ctx = options.extendCtx(ctx)
         ctx = ctx.setVar('$refreshElemCall',true).setVar('$cmpId', cmpId).setVar('$cmpVer', cmpVer+1) // special vars for refresh
-        if (jb.ui.inStudio()) // updating to latest version of profile
-            ctx.profile = jb.execInStudio({$: 'studio.val', path: ctx.path}) || ctx.profile
+        if (jb.ui.inStudio()) // updating to latest version of profile - todo: moveto studio
+            ctx.profile = jb.studio.execInStudio({$: 'studio.val', path: ctx.path}) || ctx.profile
         elem.setAttribute('__refreshing','')
         const cmp = ctx.profile.$ == 'openDialog' ? ctx.run(dialog.buildComp()) : ctx.runItself()
         jb.log('refresh elem start',{cmp,ctx,elem, state, options})
@@ -608,6 +610,6 @@ jb.extension('ui', 'react', {
         }
         elem.removeAttribute('__refreshing')
         jb.ui.refreshNotification.next({cmp,ctx,elem, state, options})
-        //jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
+        //jb.studio.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
     }
 })

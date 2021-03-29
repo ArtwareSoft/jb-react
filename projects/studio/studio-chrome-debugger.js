@@ -97,7 +97,7 @@ jb.component('chromeDebugger.logsCtrl', {
                 title: 'jbm',
                 databind: '%$inspectedUri%',
                 options: pipe(
-                    net.listAll(),
+                    remote.data(net.listSubJbms(), jbm.byUri('%$uri%')),
                     unique(),
                     filter(not(contains('•vDebugger'))),
                     filter(not(contains('devtools'))),
@@ -114,7 +114,7 @@ jb.component('chromeDebugger.logsCtrl', {
             })
         ],
         features: [
-            variable({name: 'inspectedUri', watchable : true, value: '%$uri%'}),
+            watchable('inspectedUri', '%$uri%'),
             id('%$uri%')
         ]
     })
@@ -137,7 +137,7 @@ jb.component('chromeDebugger.cardCtrl', {
         {id: 'uri', as: 'string'},
     ],
     type: 'control',
-    impl: remote.widget( studio.cardExtraction(),jbm.byUri('%$uri%'))
+    impl: remote.widget( cardExtract.showOptions(),jbm.byUri('%$uri%'))
 })
 
 jb.component('chromeDebugger.openResource', {

@@ -1,4 +1,4 @@
-var {itemlists} =jb.ns('itemlists')
+// var {itemlists} =jb.ns('itemlists')
 jb.component('dataResource.sortBy', {
   watchableData: 'age'
 })

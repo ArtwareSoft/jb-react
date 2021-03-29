@@ -1,4 +1,4 @@
-jb.ns('helloWorld')
+// jb.ns('helloWorld')
 
 jb.component('dataResource.people', {
   watchableData: [

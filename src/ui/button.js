@@ -1,4 +1,4 @@
-var { button } = jb.ns('button')
+// var { button } = jb.ns('button')
 
 jb.component('button', {
   type: 'control,clickable',

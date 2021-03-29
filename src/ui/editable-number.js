@@ -1,4 +1,4 @@
-var {editableNumber} = jb.ns('editableNumber')
+// var {editableNumber} = jb.ns('editableNumber')
 
 jb.component('editableNumber', {
   type: 'control',

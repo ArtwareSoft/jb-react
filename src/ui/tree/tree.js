@@ -1,5 +1,5 @@
 (function() {
-var { tree } = jb.ns('tree')
+// var { tree } = jb.ns('tree')
 
 jb.component('tree', {
   type: 'control',
@@ -287,54 +287,55 @@ jb.component('tree.keyboardSelection', {
 jb.component('tree.dragAndDrop', {
   type: 'feature',
   impl: features(
-		htmlAttribute('tabIndex',0),
-		method('moveItem', tree.moveItem('%from%','%to%')),
-	  	frontEnd.flow(
-			source.frontEndEvent('keydown'), 
-			rx.filter('%ctrlKey%'),
-			rx.filter(inGroup(list(38,40),'%keyCode%')),
-			rx.map(obj(
-				prop('from', tree.nextSelected(0)),
-				prop('to', tree.nextSelected(If('%keyCode%==40',1,-1)))
-			)),
-			rx.filter(tree.sameParent('%from%','%to%')),     
-			sink.BEMethod('moveItem','%%')
-		),
-		frontEnd.onRefresh( (ctx,{cmp}) => cmp.drake.containers = jb.ui.find(cmp.base,'.jb-array-node>.treenode-children')),
-		frontEnd.init( (ctx,{cmp}) => {
-        	const drake = cmp.drake = dragula([], {
-				moves: el => jb.ui.matches(el,'.jb-array-node>.treenode-children>div')
-	    	})
-          	drake.containers = jb.ui.find(cmp.base,'.jb-array-node>.treenode-children');
-			drake.on('drag', function(el) {
-				const path = cmp.elemToPath(el.firstElementChild)
-				el.dragged = { path, expanded: cmp.state.expanded[path]}
-				delete cmp.state.expanded[path]; // collapse when dragging
-			})
+	frontEnd.requireExternalLibrary(['dragula.js','css/dragula.css']),
+	htmlAttribute('tabIndex',0),
+	method('moveItem', tree.moveItem('%from%','%to%')),
+	frontEnd.flow(
+		source.frontEndEvent('keydown'), 
+		rx.filter('%ctrlKey%'),
+		rx.filter(inGroup(list(38,40),'%keyCode%')),
+		rx.map(obj(
+			prop('from', tree.nextSelected(0)),
+			prop('to', tree.nextSelected(If('%keyCode%==40',1,-1)))
+		)),
+		rx.filter(tree.sameParent('%from%','%to%')),     
+		sink.BEMethod('moveItem','%%')
+	),
+	frontEnd.onRefresh( (ctx,{cmp}) => cmp.drake.containers = jb.ui.find(cmp.base,'.jb-array-node>.treenode-children')),
+	frontEnd.init( (ctx,{cmp}) => {
+		const drake = cmp.drake = dragula([], {
+			moves: el => jb.ui.matches(el,'.jb-array-node>.treenode-children>div')
+		})
+		drake.containers = jb.ui.find(cmp.base,'.jb-array-node>.treenode-children');
+		drake.on('drag', function(el) {
+			const path = cmp.elemToPath(el.firstElementChild)
+			el.dragged = { path, expanded: cmp.state.expanded[path]}
+			delete cmp.state.expanded[path]; // collapse when dragging
+		})
 
-			drake.on('drop', (dropElm, target, source,_targetSibling) => {
-				if (!dropElm.dragged) return;
-				dropElm.parentNode.removeChild(dropElm);
-				cmp.state.expanded[dropElm.dragged.path] = dropElm.dragged.expanded; // restore expanded state
-				const targetSibling = _targetSibling; // || target.lastElementChild == dropElm && target.previousElementSibling
-				let targetPath = targetSibling ? cmp.elemToPath(targetSibling) : 
-					target.lastElementChild ? addToIndex(cmp.elemToPath(target.lastElementChild),1) : cmp.elemToPath(target);
-				// strange dragula behavior fix
-				const draggedIndex = Number(dropElm.dragged.path.split('~').pop());
-				const targetIndex = Number(targetPath.split('~').pop()) || 0;
-				if (target === source && targetIndex > draggedIndex)
-					targetPath = addToIndex(targetPath,-1)
-				ctx.run(action.runBEMethod('moveItem',() => ({from: dropElm.dragged.path, to: targetPath})))
+		drake.on('drop', (dropElm, target, source,_targetSibling) => {
+			if (!dropElm.dragged) return;
+			dropElm.parentNode.removeChild(dropElm);
+			cmp.state.expanded[dropElm.dragged.path] = dropElm.dragged.expanded; // restore expanded state
+			const targetSibling = _targetSibling; // || target.lastElementChild == dropElm && target.previousElementSibling
+			let targetPath = targetSibling ? cmp.elemToPath(targetSibling) : 
+				target.lastElementChild ? addToIndex(cmp.elemToPath(target.lastElementChild),1) : cmp.elemToPath(target);
+			// strange dragula behavior fix
+			const draggedIndex = Number(dropElm.dragged.path.split('~').pop());
+			const targetIndex = Number(targetPath.split('~').pop()) || 0;
+			if (target === source && targetIndex > draggedIndex)
+				targetPath = addToIndex(targetPath,-1)
+			ctx.run(action.runBEMethod('moveItem',() => ({from: dropElm.dragged.path, to: targetPath})))
 
-				function addToIndex(path,toAdd) {
-					if (!path) debugger;
-					if (isNaN(Number(path.slice(-1)))) return path
-					const index = Number(path.slice(-1)) + toAdd;
-					return path.split('~').slice(0,-1).concat([index]).join('~')
-				}
-		    })
-      	})
-  	)
+			function addToIndex(path,toAdd) {
+				if (!path) debugger;
+				if (isNaN(Number(path.slice(-1)))) return path
+				const index = Number(path.slice(-1)) + toAdd;
+				return path.split('~').slice(0,-1).concat([index]).join('~')
+			}
+		})
+	})
+  )
 })
 
 jb.component('tree.nextSelected', {

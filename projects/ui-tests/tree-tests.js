@@ -51,6 +51,7 @@ jb.component('uiTest.treeDD.sameArray', {
       ]
     }),
     action: runActions(
+      waitFor(()=> jb.frame.dragula),
       uiAction.click('[title="Bart"]'),
       uiAction.keyboardEvent({ selector: '[interactive]', type: 'keydown', keyCode: 40, ctrl: 'ctrl' }),
     ),

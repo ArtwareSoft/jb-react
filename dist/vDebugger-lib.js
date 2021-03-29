@@ -5,10 +5,12 @@ Object.assign(jb, {
   extension(libId, p1 , p2) {
     const extId = typeof p1 == 'string' ? p1 : 'main'
     const extension = p2 || p1
-    const lib = jb[libId] = jb[libId] || {__initialized: {} }
+    const lib = jb[libId] = jb[libId] || {__initialized: {}, __require: [] }
     const funcs = Object.keys(extension).filter(k=>typeof extension[k] == 'function').filter(k=>!k.match(/^initExtension/))
     funcs.forEach(k=>lib[k] = extension[k])
 
+    if (extension.require) 
+      lib.__require = [...lib.__require, ...extension.require]
     const initFuncId = Object.keys(extension).filter(k=>typeof extension[k] == 'function').filter(k=>k.match(/^initExtension/))[0]
     const phaseFromFunc = ((initFuncId||'').match(/_phase([0-9]+)/)||[,0])[1]
     const initFuncPhase = phaseFromFunc || { core: 1, utils: 5, db: 10, watchable: 20}[libId] || 100
@@ -18,8 +20,10 @@ Object.assign(jb, {
 
     lib[initFunc] = initFuncImpl    
     funcs.forEach(k=>lib[k].__initFuncs = [initFunc].map(x=>`#${libId}.${x}`))
-    if (jb.noCodeLoader)
+    if (jb.noCodeLoader) {
       Object.assign(lib, lib[initFunc]())
+      lib.__initialized[initFunc] = true
+    }
   },
   initializeLibs(libs) {
     libs.flatMap(l => Object.keys(jb[l]).filter(x=>x.match(/^init_/)))
@@ -31,35 +35,50 @@ Object.assign(jb, {
           Object.assign(lib, lib[initFunc]())
         }
       })
+    return libs.flatMap(l => jb[l].__require||[])
+      .filter(url => !jb.frame.jb.__requiredLoaded[url])
+      .reduce((pr,url) => pr.then(() => jb_loadFile(url)).then(() => jb.frame.jb.__requiredLoaded[url] = true), Promise.resolve())
+  },  
+  component(id,comp) {
+    // todo: move functionality to onAddComponent hook
+    if (!jb.core.location) jb.initializeLibs(['core'])
+    try {
+      const errStack = new Error().stack.split(/\r|\n/)
+      const line = errStack.filter(x=>x && x != 'Error' && !x.match(/at Object.component/)).shift()
+      comp[jb.core.location] = line ? (line.split('at eval (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
+      comp[jb.core.project] = comp[jb.core.location][0].split('?')[1]
+      comp[jb.core.location][0] = comp[jb.core.location][0].split('?')[0]
+    
+      if (comp.watchableData !== undefined) {
+        jb.comps[jb.db.addDataResourcePrefix(id)] = comp
+        return jb.db.resource(jb.db.removeDataResourcePrefix(id),comp.watchableData)
+      }
+      if (comp.passiveData !== undefined) {
+        jb.comps[jb.db.addDataResourcePrefix(id)] = comp
+        return jb.db.passive(jb.db.removeDataResourcePrefix(id),comp.passiveData)
+      }
+    } catch(e) {
+      console.log(e)
+    }
+
+    jb.comps[id] = comp;
+
+    // fix as boolean params to have type: 'boolean'
+    (comp.params || []).forEach(p=> {
+      if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
+        p.type = 'boolean'
+    })
+    comp[jb.core.loadingPhase] = jb.frame.jbLoadingPhase
   },
   noCodeLoader: true
 })
-
-// if (initFuncImpl) {
-//   lib[initFunc] = initFuncImpl
-//   if (! lib.__initialized[initFunc]) {
-//     lib.__initialized[initFunc] = true
-//     Object.assign(lib, lib[initFunc](extension))
-//   }
-// }
-// jb.core.dependentInit = [...(jb.core.dependentInit || []), 
-//   ...dependentInitFuncs.map(k=>({libId, func: k, extension, dependentOn: [...k.matchAll(/_([A-Za-z0-9]+)/g)].map(x=>x[1]) }))]
-// const initToRun = jb.core.dependentInit.filter(x=>x.dependentOn.every(m=>jb[m]))
-// jb.core.dependentInit = jb.core.dependentInit.filter(x=>! x.dependentOn.every(m=>jb[m]))
-// initToRun.forEach(x=>{
-//   const lib = jb[x.libId], initFunc = x.func
-//   if (! lib.__initialized[initFunc]) {
-//     lib.__initialized[initFunc] = true
-//     Object.assign(lib, lib[initFunc](extension))
-//   }
-// })
-
 
 jb.extension('core', {
   initExtension() {
     Object.assign(jb, { 
       frame: (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {},
-      comps: {}, ctxDictionary: {}, macro: {},
+      comps: {}, ctxDictionary: {},
+      __requiredLoaded: {},
       jstypes: jb.core.jsTypes()
     })
     return { 
@@ -67,8 +86,6 @@ jb.extension('core', {
       project: Symbol.for('project'),
       location: Symbol.for('location'),
       loadingPhase: Symbol.for('loadingPhase'),
-      macroNs: {},
-      macroDef: Symbol('macroDef'), 
     }
   },
   run(ctx,parentParam,settings) {
@@ -211,7 +228,7 @@ jb.extension('core', {
     if (!comp && comp_name) { jb.logError('component ' + comp_name + ' is not defined', {ctx}); return { type:'null' } }
     if (comp.impl == null) { jb.logError('component ' + comp_name + ' has no implementation', {ctx}); return { type:'null' } }
   
-    jb.core.fixMacroByValue(profile,comp)
+    jb.macro.fixProfile(profile)
     const resCtx = Object.assign(new jb.core.jbCtx(ctx,{}), {parentParam, params: {}})
     const preparedParams = jb.core.prepareParams(comp_name,comp,profile,resCtx);
     if (typeof comp.impl === 'function') {
@@ -221,18 +238,7 @@ jb.extension('core', {
       return { type:'profile', ctx: new jb.core.jbCtx(resCtx,{profile: comp.impl, comp: comp_name, path: ''}), preparedParams: preparedParams };
   },
   castToParam: (value,param) => jb.core.tojstype(value,param ? param.as : null),
-  tojstype(value,jstype) {
-    if (!jstype) return value;
-    if (typeof jb.jstypes[jstype] != 'function') debugger;
-    return jb.jstypes[jstype](value);
-  },
-  fixMacroByValue(profile,comp) {
-    if (profile && profile.$byValue) {
-      const params = jb.utils.compParams(comp)
-      profile.$byValue.forEach((v,i)=> Object.assign(profile,{[params[i].id]: v}))
-      delete profile.$byValue
-    }
-  },
+  tojstype: (v,jstype) => (!jstype || !jb.jstypes[jstype]) ? v : jb.jstypes[jstype](v),
   jbCtx: class jbCtx {
     constructor(ctx,ctx2) {
       this.id = jb.core.ctxCounter++
@@ -371,10 +377,6 @@ Object.assign(jb, {
     tonumber: value => jb.core.tojstype(value,'number'),
     exec: (...args) => new jb.core.jbCtx().run(...args),
     exp: (...args) => new jb.core.jbCtx().exp(...args),
-
-    // todo - move to studio
-    studio: { previewjb: jb },
-    execInStudio: (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.core.jbCtx().run(...args),
 })
 
 jb.extension('utils', { // jb core utils
@@ -813,141 +815,121 @@ jb.extension('db', {
 ;
 
 Object.assign(jb, {
-    component(_id,comp) {
-      if (!jb.core.location) jb.initializeLibs(['core'])
-      const id = jb.macroName(_id)
-      try {
-        const errStack = new Error().stack.split(/\r|\n/)
-        const line = errStack.filter(x=>x && x != 'Error' && !x.match(/at Object.component/)).shift()
-        comp[jb.core.location] = line ? (line.split('at eval (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
-        comp[jb.core.project] = comp[jb.core.location][0].split('?')[1]
-        comp[jb.core.location][0] = comp[jb.core.location][0].split('?')[0]
-      
-        if (comp.watchableData !== undefined) {
-          jb.comps[jb.db.addDataResourcePrefix(id)] = comp
-          return jb.db.resource(jb.db.removeDataResourcePrefix(id),comp.watchableData)
-        }
-        if (comp.passiveData !== undefined) {
-          jb.comps[jb.db.addDataResourcePrefix(id)] = comp
-          return jb.db.passive(jb.db.removeDataResourcePrefix(id),comp.passiveData)
-        }
-      } catch(e) {
-        console.log(e)
-      }
-  
-      jb.comps[id] = comp;
-  
-      // fix as boolean params to have type: 'boolean'
-      (comp.params || []).forEach(p=> {
-        if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
-          p.type = 'boolean'
-      })
-      comp[jb.core.loadingPhase] = jb.frame.jbLoadingPhase
-      jb.registerMacro && jb.registerMacro(id)
-    },    
-    macroName: id => id.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
-    ns: nsIds => {
-        nsIds.split(',').forEach(nsId => jb.registerMacro(nsId))
-        return jb.macro
+    defComponents: (items,id,def) => items.forEach(item=>jb.component(id(item), def(item)))
+})
+
+jb.extension('macro', {
+    initExtension() {
+        return { proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro')}
     },
-    importAllMacros: () => ['var { ',
-        jb.utils.unique(Object.keys(jb.macro).map(x=>x.split('_')[0])).join(', '), 
-    '} = jb.macro;'].join(''),
-    registerMacro: id => {
-        const macroId = jb.macroName(id).replace(/\./g, '_')
-        const nameSpace = id.indexOf('.') != -1 && jb.macroName(id.split('.')[0])
-
-        if (checkId(macroId))
-            registerProxy(macroId)
-        if (nameSpace && checkId(nameSpace, true) && !jb.macro[nameSpace]) {
-            registerProxy(nameSpace, true)
-            jb.core.macroNs[nameSpace] = true
+    ns: nsIds => {
+        nsIds.split(',').forEach(nsId => jb.macro.registerProxy(nsId))
+        return jb.macro.proxies
+    },    
+    titleToId: id => id.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
+    importAll: () => ['var { ',
+        jb.utils.unique(Object.keys(jb.macro.proxies).map(x=>x.split('_')[0])).join(', '), 
+    '} = jb.macro.proxies;'].join(''),
+    newProxy: id => new Proxy(() => 0, {
+        get: (o, p) => p === jb.macro.isMacro? true : jb.macro.getInnerMacro(id, p),
+        apply: function (target, thisArg, allArgs) {
+            const { args, system } = jb.macro.splitSystemArgs(allArgs)
+            return Object.assign(jb.macro.argsToProfile(id, args), system)
         }
-
-        function registerProxy(proxyId) {
-            jb.macro[proxyId] = new Proxy(() => 0, {
-                get: (o, p) => {
-                    if (typeof p === 'symbol') return true
-                    return jb.macro[proxyId + '_' + p] || genericMacroProcessor(proxyId, p)
-                },
-                apply: function (target, thisArg, allArgs) {
-                    const { args, system } = splitSystemArgs(allArgs)
-                    return Object.assign(processMacro(args), system)
-                }
-            })
+    }),
+    getInnerMacro(ns, innerId) {
+        return (...allArgs) => {
+            const { args, system } = jb.macro.splitSystemArgs(allArgs)
+            const out = { $: `${ns}.${innerId}` }
+            if (args.length == 1 && typeof args[0] == 'object' && !Array.isArray(args[0]) && !jb.utils.compName(args[0])) // params by name
+                Object.assign(out, args[0])
+            else
+                Object.assign(out, { $byValue: args })
+            return Object.assign(out, system)
         }
-
-        function splitSystemArgs(allArgs) {
-            const args = [], system = {} // system props: constVar, remark
-            allArgs.forEach(arg => {
-                if (arg && typeof arg === 'object' && (jb.comps[arg.$] || {}).isSystem)
-                    jb.comps[arg.$].macro(system, arg)
-                else
-                    args.push(arg)
-            })
-            if (args.length == 1 && typeof args[0] === 'object') {
-                jb.asArray(args[0].vars).forEach(arg => jb.comps[arg.$].macro(system, arg))
-                args[0].remark && jb.comps.remark.macro(system, args[0])
-            }
-            return { args, system }
+    },    
+    splitSystemArgs(allArgs) {
+        const args = [], system = {} // system props: constVar, remark
+        allArgs.forEach(arg => {
+            if (arg && typeof arg === 'object' && (jb.comps[arg.$] || {}).isSystem)
+                jb.comps[arg.$].macro(system, arg)
+            else
+                args.push(arg)
+        })
+        if (args.length == 1 && typeof args[0] === 'object') {
+            jb.asArray(args[0].vars).forEach(arg => jb.comps[arg.$].macro(system, arg))
+            args[0].remark && jb.comps.remark.macro(system, args[0])
         }
-
-        function checkId(macroId, isNS) {
-            if (jb.frame[macroId] && !jb.frame[macroId][jb.core.macroDef]) {
-                jb.logError(macroId + ' is reserved by system or libs. please use a different name')
-                return false
-            }
-            if (Object.keys(jb.macro[macroId] ||{}).length && !isNS && !jb.core.macroNs[macroId])
-                jb.logError(macroId.replace(/_/g,'.') + ' is defined more than once, using last definition ' + id)
-            return true
+        return { args, system }
+    },
+    argsToProfile(cmpId, args) {
+        const comp = jb.comps[cmpId]
+        if (!comp)
+            return { $: cmpId, $byValue: args }
+        if (args.length == 0)
+            return { $: cmpId }
+        const params = comp.params || []
+        const firstParamIsArray = (params[0] && params[0].type || '').indexOf('[]') != -1
+        if (params.length == 1 && firstParamIsArray) // pipeline, or, and, plus
+            return { $: cmpId, [params[0].id]: args }
+        const macroByProps = args.length == 1 && typeof args[0] === 'object' &&
+            (params[0] && args[0][params[0].id] || params[1] && args[0][params[1].id])
+        if ((comp.macroByValue || params.length < 3) && comp.macroByValue !== false && !macroByProps)
+            return { $: cmpId, ...jb.objFromEntries(args.filter((_, i) => params[i]).map((arg, i) => [params[i].id, arg])) }
+        if (args.length == 1 && !Array.isArray(args[0]) && typeof args[0] === 'object' && !args[0].$)
+            return { $: cmpId, ...args[0] }
+        if (args.length == 1 && params.length)
+            return { $: cmpId, [params[0].id]: args[0] }
+        if (args.length == 2 && params.length > 1)
+            return { $: cmpId, [params[0].id]: args[0], [params[1].id]: args[1] }
+        debugger;
+    },
+    fixProfile(profile) {
+        if (profile && profile.$byValue) {
+          if (!jb.comps[profile.$])
+            return jb.logError('fixProfile - missing component', {cmpId: profile.$, profile})
+          Object.assign(profile, jb.macro.argsToProfile(profile.$, profile.$byValue))
+          delete profile.$byValue
         }
-
-        function processMacro(args) {
-            const _id = id; //.replace(/\.\$forwardDef$/,'')
-            const _profile = jb.comps[_id]
-            if (!_profile) {
-                jb.logError('forward def ' + _id + ' was not implemented')
-                return { $: _id }
-            }
-            if (args.length == 0)
-                return { $: _id }
-            const params = _profile.params || []
-            const firstParamIsArray = (params[0] && params[0].type || '').indexOf('[]') != -1
-            if (params.length == 1 && firstParamIsArray) // pipeline, or, and, plus
-                return { $: _id, [params[0].id]: args }
-            const macroByProps = args.length == 1 && typeof args[0] === 'object' &&
-                (params[0] && args[0][params[0].id] || params[1] && args[0][params[1].id])
-            if ((_profile.macroByValue || params.length < 3) && _profile.macroByValue !== false && !macroByProps)
-                return { $: _id, ...jb.objFromEntries(args.filter((_, i) => params[i]).map((arg, i) => [params[i].id, arg])) }
-            if (args.length == 1 && !Array.isArray(args[0]) && typeof args[0] === 'object' && !args[0].$)
-                return { $: _id, ...args[0] }
-            if (args.length == 1 && params.length)
-                return { $: _id, [params[0].id]: args[0] }
-            if (args.length == 2 && params.length > 1)
-                return { $: _id, [params[0].id]: args[0], [params[1].id]: args[1] }
-            debugger;
-        }
-        //const unMacro = macroId => macroId.replace(/([A-Z])/g, (all, s) => '-' + s.toLowerCase())
-        function genericMacroProcessor(ns, macroId) {
-            return (...allArgs) => {
-                const { args, system } = splitSystemArgs(allArgs)
-                const out = { $: `${ns}.${macroId}` }
-                if (args.length == 1 && typeof args[0] == 'object' && !jb.utils.compName(args[0]))
-                    Object.assign(out, args[0])
-                else
-                    Object.assign(out, { $byValue: args })
-                return Object.assign(out, system)
-            }
-        }
+    },    
+    registerProxy: id => {
+        const proxyId = jb.macro.titleToId(id.split('.')[0])
+        if (jb.frame[proxyId] && jb.frame[proxyId][jb.macro.isMacro]) return
+        if (jb.frame[proxyId])
+            return jb.logError(`register macro proxy: ${proxyId} + ' is reserved by system or libs. please use a different name`,{obj:jb.frame[proxyId]})
+        
+        jb.frame[proxyId] = jb.macro.proxies[proxyId] = jb.macro.newProxy(proxyId)
     }
 })
-;
+
+jb.component('Var', {
+  type: 'var,system',
+  isSystem: true,
+  params: [
+    {id: 'name', as: 'string', mandatory: true},
+    {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: '%%'}
+  ],
+  macro: (result, self) => {
+    result.$vars = result.$vars || []
+    result.$vars.push(self)
+  },
+  impl: '' // for inteliscript
+})
+
+jb.component('remark', {
+  type: 'system',
+  isSystem: true,
+  params: [
+    {id: 'remark', as: 'string', mandatory: true}
+  ],
+  macro: (result, self) => Object.assign(result,{ remark: self.remark })
+});
 
 
 jb.extension('codeLoader', {
     initExtension() {
         return {
-            coreComps: ['#extension','#core.run','#component','#jbm.extendPortToJbmProxy','#jbm.portFromFrame','#spy.initSpy','#codeLoader.getCodeFromRemote','codeLoader.getCode','waitFor'],
+            clientComps: ['#extension','#core.run','#component','#jbm.extendPortToJbmProxy','#jbm.portFromFrame','#spy.initSpy','#codeLoader.getCodeFromRemote','codeLoader.getCode','waitFor'],
             existingFEPaths: {},
             loadedFElibs: {}
         }
@@ -1059,7 +1041,7 @@ jb.extension('codeLoader', {
                 }
             })
     },
-    startupCode: () => jb.codeLoader.code(jb.codeLoader.treeShake(jb.codeLoader.coreComps,{})),
+    startupCode: () => jb.codeLoader.code(jb.codeLoader.treeShake(jb.codeLoader.clientComps,{})),
     treeShakeFrontendFeatures(paths) { // treeshake the code of the FRONTEND features without the backend part
         const _paths = paths.filter(path=>! jb.codeLoader.existingFEPaths[path]) // performance - avoid tree shake if paths were processed before 
         if (!_paths.length) return []
@@ -1069,9 +1051,8 @@ jb.extension('codeLoader', {
     loadFELibsDirectly(libs) {
         if (typeof document == 'undefined') 
             return jb.logError('can not load front end libs to a frame without a document')
-        const _libs = libs.filter(lib=>! jb.codeLoader.loadedFElibs[lib])
-        if (!_libs.length) return []
-        return _libs.reduce((pr,lib) => pr.then(loadFile(lib)).then(()=> jb.codeLoader.loadedFElibs[lib] = true), Promise.resolve())
+        const _libs = jb.utils.unique(libs).filter(lib=>! jb.codeLoader.loadedFElibs[lib])
+        return _libs.reduce((pr,lib) => pr.then(()=> loadFile(lib)).then(()=> jb.codeLoader.loadedFElibs[lib] = true), Promise.resolve())
 
         function loadFile(lib) {
             return new Promise(resolve => {
@@ -1083,19 +1064,20 @@ jb.extension('codeLoader', {
                 else 
                     s.setAttribute('rel','stylesheet')
                 s.onload = s.onerror = resolve
-                document.head.appendChild(s);
+                document.head.appendChild(s)
             })
         }        
     },
 })
 
-jb.component('codeLoader.getCode',{
+jb.component('codeLoader.getCode', {
     impl: ({vars}) => {
         const treeShake = jb.codeLoader.treeShake(vars.ids.split(','),jb.objFromEntries(vars.existing.split(',').map(x=>[x,true])))
         jb.log('codeLoader treeshake',{...vars, treeShake})
         return jb.codeLoader.code(treeShake)
     }
-});
+})
+;
 
 jb.extension('spy', {
 	initExtension() {
@@ -1259,7 +1241,7 @@ jb.extension('spy', {
 
 ;
 
-var { not,contains,writeValue,obj,prop } = jb.ns('not,contains,writeValue,obj,prop') // use in module
+// var { not,contains,writeValue,obj,prop } = jb.ns('not,contains,writeValue,obj,prop') // use in module
 
 jb.component('call', {
   type: 'any',
@@ -1427,7 +1409,7 @@ jb.component('aggregate', {
   impl: ({},aggregator) => aggregator()
 })
 
-jb.ns('math')
+// jb.ns('math')
 
 jb.component('math.max', {
   type: 'aggregator',
@@ -1763,7 +1745,6 @@ jb.component('refProp', {
   impl: ctx => ({ ...ctx.params, type: 'ref' })
 })
 
-
 jb.component('pipeline.var', {
   type: 'aggregator',
   params: [
@@ -1771,31 +1752,6 @@ jb.component('pipeline.var', {
     {id: 'val', mandatory: true, dynamic: true, defaultValue: '%%'}
   ],
   impl: ctx => ({ [Symbol.for('Var')]: true, ...ctx.params })
-})
-
-
-jb.component('Var', {
-  type: 'var,system',
-  isSystem: true,
-  params: [
-    {id: 'name', as: 'string', mandatory: true},
-    {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: '%%'}
-  ],
-  macro: (result, self) => {
-    result.$vars = result.$vars || []
-    result.$vars.push(self)
-  },
-  impl: '' // for inteliscript
-//  Object.assign(result,{ $vars: Object.assign(result.$vars || {}, { [self.name]: self.val }) })
-})
-
-jb.component('remark', {
-  type: 'system',
-  isSystem: true,
-  params: [
-    {id: 'remark', as: 'string', mandatory: true}
-  ],
-  macro: (result, self) => Object.assign(result,{ remark: self.remark })
 })
 
 jb.component('If', {
@@ -2273,8 +2229,6 @@ jb.component('inGroup', {
   impl: ({},group,item) =>	group.indexOf(item) != -1
 })
 
-jb.urlProxy = (typeof window !== 'undefined' && location.href.match(/^[^:]*/)[0] || 'http') + '://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
-jb.cacheKiller = 0
 jb.component('http.get', {
   type: 'data,action',
   description: 'fetch data from external url',
@@ -2284,7 +2238,9 @@ jb.component('http.get', {
     {id: 'useProxy', as: 'string', options: ',localhost-server,cloud'}
   ],
   impl: (ctx,_url,_json,useProxy) => {
-		if (ctx.probe)
+    jb.urlProxy = jb.urlProxy || (typeof window !== 'undefined' && location.href.match(/^[^:]*/)[0] || 'http') + '://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
+    jb.cacheKiller = jb.cacheKiller || 1
+    if (ctx.probe)
 			return jb.http_get_cache[_url];
     const json = _json || _url.match(/json$/);
     let url = _url
@@ -2508,901 +2464,901 @@ jb.component('loadAppFiles', {
 })
 
 // widely used in system code
-var { Var,remark,not,and,or,contains,writeValue,obj,prop,log,pipeline,filter,firstSucceeding,runActions,list,waitFor } = jb.macro;
+// var { Var,remark,not,and,or,contains,writeValue,obj,prop,log,pipeline,filter,firstSucceeding,runActions,list,waitFor } = jb.macro;
 
-jb.callbag = {
-      fromIter: iter => (start, sink) => {
-          if (start !== 0) return
-          const iterator =
-              typeof Symbol !== 'undefined' && iter[Symbol.iterator]
-              ? iter[Symbol.iterator]()
-              : iter
-          let inloop = false
-          let got1 = false
-          let res
-          function loop() {
-              inloop = true
-              while (got1) {
-                  got1 = false
-                  res = iterator.next()
-                  if (res.done) sink(2)
-                  else sink(1, res.value)
-              }
-              inloop = false
+jb.extension('callbag', {
+  fromIter: iter => (start, sink) => {
+      if (start !== 0) return
+      const iterator =
+          typeof Symbol !== 'undefined' && iter[Symbol.iterator]
+          ? iter[Symbol.iterator]()
+          : iter
+      let inloop = false
+      let got1 = false
+      let res
+      function loop() {
+          inloop = true
+          while (got1) {
+              got1 = false
+              res = iterator.next()
+              if (res.done) sink(2)
+              else sink(1, res.value)
           }
-          sink(0, function fromIter(t, d) {
-              if (t === 1) {
-                  got1 = true
-                  if (!inloop && !(res && res.done)) loop()
-              }
-          })
-      },
-      pipe(..._cbs) {
-        const cbs = _cbs.filter(x=>x)
-        if (!cbs[0]) return
-        let res = cbs[0]
-        for (let i = 1, n = cbs.length; i < n; i++) {
-          const newRes = cbs[i](res)
-          if (!newRes) debugger
-          newRes.ctx = cbs[i].ctx
-          Object.defineProperty(newRes, 'name',{value: 'register ' + cbs[i].name})
+          inloop = false
+      }
+      sink(0, function fromIter(t, d) {
+          if (t === 1) {
+              got1 = true
+              if (!inloop && !(res && res.done)) loop()
+          }
+      })
+  },
+  pipe(..._cbs) {
+    const cbs = _cbs.filter(x=>x)
+    if (!cbs[0]) return
+    let res = cbs[0]
+    for (let i = 1, n = cbs.length; i < n; i++) {
+      const newRes = cbs[i](res)
+      if (!newRes) debugger
+      newRes.ctx = cbs[i].ctx
+      Object.defineProperty(newRes, 'name',{value: 'register ' + cbs[i].name})
 
-          res = newRes
+      res = newRes
+    }
+    return res
+  },
+  Do: f => source => (start, sink) => {
+      if (start !== 0) return
+      source(0, function Do(t, d) {
+          if (t == 1) f(d)
+          sink(t, d)
+      })
+  },
+  filter: condition => source => (start, sink) => {
+      if (start !== 0) return
+      let talkback
+      source(0, function filter(t, d) {
+        if (t === 0) {
+          talkback = d
+          sink(t, d)
+        } else if (t === 1) {
+          if (condition(d)) sink(t, d)
+          else talkback(1)
         }
-        return res
-      },
-      Do: f => source => (start, sink) => {
-          if (start !== 0) return
-          source(0, function Do(t, d) {
-              if (t == 1) f(d)
-              sink(t, d)
-          })
-      },
-      filter: condition => source => (start, sink) => {
-          if (start !== 0) return
-          let talkback
-          source(0, function filter(t, d) {
-            if (t === 0) {
-              talkback = d
-              sink(t, d)
-            } else if (t === 1) {
-              if (condition(d)) sink(t, d)
-              else talkback(1)
-            }
-            else sink(t, d)
-          })
-      },
-      map: f => source => (start, sink) => {
-          if (start !== 0) return
-          source(0, function map(t, d) {
-              sink(t, t === 1 ? f(d) : d)
-          })
-      },
-      throwError: (condition,err) => source => (start, sink) => {
-        let talkback
-        if (start !== 0) return
-        source(0, function throwError(t, d) {
-          if (t === 0) talkback = d
-          if (t == 1 && condition(d)) {
-            talkback && talkback(2)
-            sink(2,err)
-          } else {
-            sink(t, d)
-          }
-        })
-      },
-      distinctUntilChanged: compare => source => (start, sink) => {
-          compare = compare || ((prev, cur) => prev === cur)
-          if (start !== 0) return
-          let inited = false, prev, talkback
-          source(0, function distinctUntilChanged(t,d) {
-              if (t === 0) {
-                talkback = d
-                sink(t, d)
-              } else if (t == 1) {
-                if (inited && compare(prev, d)) {
-                    talkback(1)
-                    return
-                }
-                inited = true
-                prev = d
-                sink(1, d)
-              } else {
-                  sink(t, d)
-                  return
-              }
-          })
-      },  
-      takeUntil(notifier) {
-          if (jb.utils.isPromise(notifier))
-              notifier = jb.callbag.fromPromise(notifier)
-          const UNIQUE = {}
-          return source => (start, sink) => {
-              if (start !== 0) return
-              let sourceTalkback, notifierTalkback, inited = false, done = UNIQUE
-  
-              source(0, function takeUntil(t, d) {
-                  if (t === 0) {
-                      sourceTalkback = d
-  
-                      notifier(0, function takeUntilNotifier(t, d) {
-                          if (t === 0) {
-                              notifierTalkback = d
-                              notifierTalkback(1)
-                              return
-                          }
-                          if (t === 1) {
-                              done = void 0
-                              notifierTalkback(2)
-                              sourceTalkback(2)
-                              if (inited) sink(2)
-                              return
-                          }
-                          if (t === 2) {
-                              //notifierTalkback = null
-                              done = d
-                              if (d != null) {
-                                  sourceTalkback(2)
-                                  if (inited) sink(t, d)
-                              }
-                          }
-                      })
-                      inited = true
-  
-                      sink(0, function takeUntilSink(t, d) {
-                          if (done !== UNIQUE) return
-                          if (t === 2 && notifierTalkback) notifierTalkback(2)
-                          sourceTalkback(t, d)
-                      })
-  
-                      if (done !== UNIQUE) sink(2, done)
-                      return
-                  }
-                  if (t === 2) notifierTalkback(2)
-                  if (done === UNIQUE) sink(t, d)
-              })
-          }
-      },
-      concatMap(_makeSource,combineResults) {
-        const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
-        if (!combineResults) combineResults = (input, inner) => inner
-        return source => (start, sink) => {
-            if (start !== 0) return
-            let queue = [], activeCb, sourceEnded, allEnded, sourceTalkback, activecbTalkBack
-            source(0, function concatMap(t,d) {
-              if (t == 0)
-                sourceTalkback = d
-              else if (t == 1)
-                queue.push(d)
-              else if (t ==2)
-                sourceEnded = true
-              tick()
-            })
-            sink(0, function concatMap(t,d) {
-              if (t == 1) {
-                activecbTalkBack && activecbTalkBack(1)
-                sourceTalkback && sourceTalkback(1)
-              } else if (t == 2) {
-                allEnded = true
-                queue = []
-                sourceTalkback && sourceTalkback(2)
-              }
-            })
-            
-            function tick() {
-              if (allEnded) return
-              if (!activeCb && queue.length) {
-                const input = queue.shift()
-                activeCb = makeSource(input)
-                activeCb(0, function concatMap(t,d) {
-                  if (t == 0) {
-                    activecbTalkBack = d
-                    activecbTalkBack && activecbTalkBack(1)
-                  } else if (t == 1) {
-                    sink(1, combineResults(input,d))
-                    activecbTalkBack && activecbTalkBack(1)
-                  } else if (t == 2 && d) {
-                    allEnded = true
-                    queue = []
-                    sink(2,d)
-                    sourceTalkback && sourceTalkback(2)
-                  } else if (t == 2) {
-                    activecbTalkBack = activeCb = null
-                    tick()
-                  }
-                })
-              }
-              if (sourceEnded && !activeCb && !queue.length) {
-                allEnded = true
-                sink(2)
-              }
-            }
-        }
-      },
-      concatMap2(_makeSource,combineResults) {
-        const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
-        return source => (start, sink) => {
-            if (start !== 0) return
-            let queue = []
-            let innerTalkback, sourceTalkback, sourceEnded
-            if (!combineResults) combineResults = (input, inner) => inner
-
-            const concatMapSink= input => function concatMap(t, d) {
-              if (t === 0) {
-                innerTalkback = d
-                innerTalkback(1)
-              } else if (t === 1) {
-                sink(1, combineResults(input,d))
-                innerTalkback(1)
-              } else if (t === 2) {
-                innerTalkback = null
-                if (queue.length === 0) {
-                  stopOrContinue(d)
-                  return
-                }
-                const input = queue.shift()
-                const src = makeSource(input)
-                src(0, concatMapSink(input))
-              }
-            }
-
-            source(0, function concatMap(t, d) {
-              if (t === 0) {
-                sourceTalkback = d
-                sink(0, wrappedSink)
-                return
-              } else if (t === 1) {
-                if (innerTalkback) 
-                  queue.push(d) 
-                else {
-                  const src = makeSource(d)
-                  src(0, concatMapSink(d))
-                  src(1)
-                }
-              } else if (t === 2) {
-                sourceEnded = true
-                stopOrContinue(d)
-              }
-            })
-
-            function wrappedSink(t, d) {
-              if (t === 2 && innerTalkback) innerTalkback(2, d)
-              sourceTalkback(t, d)
-            }
-        
-            function stopOrContinue(d) {
-              if (d != undefined) {
-                queue = []
-                innerTalkback = innerTalkback = null
-                sink(2, d)
-                return
-              }
-              if (sourceEnded && !innerTalkback && queue.length == 0) {
-                sink(2, d)
-                return
-              }
-              innerTalkback && innerTalkback(1)
-            }
-          }
-      },
-      flatMap: (_makeSource, combineResults) => source => (start, sink) => {
-          if (start !== 0) return
-          const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
-          if (!combineResults) combineResults = (input, inner) => inner
-  
-          let index = 0
-          const talkbacks = {}
-          let sourceEnded = false
-          let inputSourceTalkback = null
-
-          source(0, function flatMap(t, d) {
-            if (t === 0) {
-                inputSourceTalkback = d
-                sink(0, pullHandle)
-            }
-            if (t === 1) {
-                makeSource(d)(0, makeSink(index++, d))
-            }
-            if (t === 2) {
-                sourceEnded = true
-                stopOrContinue(d)
-            }
-          })
-
-          function makeSink(i, input) { 
-            return (t, d) => {
-              if (t === 0) {talkbacks[i] = d; talkbacks[i](1)}
-              if (t === 1)
-                sink(1, d == null ? null : combineResults(input, d))
-              if (t === 2) {
-                  delete talkbacks[i]
-                  stopOrContinue(d)
-              }
-          }}
-
-          function stopOrContinue(d) {
-            if (sourceEnded && Object.keys(talkbacks).length === 0) 
-              sink(2, d)
-            else 
-              !sourceEnded && inputSourceTalkback && inputSourceTalkback(1)
-          }
-
-          function pullHandle(t, d) {
-            const currTalkback = Object.values(talkbacks).pop()
-            if (t === 1) {
-              currTalkback && currTalkback(1)
-              if (!sourceEnded) inputSourceTalkback(1)
-            }
-            if (t === 2) {
-              stopOrContinue(d)
-            }
-          }
-      },
-      merge(..._sources) {
-          const sources = _sources.filter(x=>x).filter(x=>jb.callbag.fromAny(x))
-          return function merge(start, sink) {
-            if (start !== 0) return
-            const n = sources.length
-            const sourceTalkbacks = new Array(n)
-            let startCount = 0
-            let endCount = 0
-            let ended = false
-            const talkback = (t, d) => {
-              if (t === 2) ended = true
-              for (let i = 0; i < n; i++) sourceTalkbacks[i] && sourceTalkbacks[i](t, d)
-            }
-            for (let i = 0; i < n; i++) {
-              if (ended) return
-              sources[i](0, (t, d) => {
-                if (t === 0) {
-                  sourceTalkbacks[i] = d
-                  sink(0, talkback) // if (++startCount === 1) 
-                } else if (t === 2 && d) {
-                  ended = true
-                  for (let j = 0; j < n; j++) if (j !== i && sourceTalkbacks[j]) sourceTalkbacks[j](2)
-                  sink(2, d)
-                } else if (t === 2) {
-                  sourceTalkbacks[i] = void 0
-                  if (++endCount === n) sink(2)
-                } else sink(t, d)
-              })
-            }
-          }
-      },
-      race(..._sources) { // take only the first result including errors and complete
-        const sources = _sources.filter(x=>x).filter(x=>jb.callbag.fromAny(x))
-        return function race(start, sink) {
-          if (start !== 0) return
-          const n = sources.length
-          const sourceTalkbacks = new Array(n)
-          let endCount = 0
-          let ended = false
-          const talkback = (t, d) => {
-            if (t === 2) ended = true
-            for (let i = 0; i < n; i++) sourceTalkbacks[i] && sourceTalkbacks[i](t, d)
-          }
-          for (let i = 0; i < n; i++) {
-            if (ended) return
-            sources[i](0, function race(t, d) {
-              if (t === 0) {
-                sourceTalkbacks[i] = d
-                sink(0, talkback)
-              } else {
-                ended = true
-                for (let j = 0; j < n; j++) 
-                  if (j !== i && sourceTalkbacks[j]) sourceTalkbacks[j](2)
-                sink(1,d)
-                sink(2)
-              }
-            })
-          }
-      }},
-      fromEvent: (event, elem, options) => (start, sink) => {
-          if (!elem) return
-          if (start !== 0) return
-          let disposed = false
-          const handler = ev => sink(1, ev)
-        
-          sink(0, function fromEvent(t, d) {
-            if (t !== 2) {
-              return
-            }
-            disposed = true
-            if (elem.removeEventListener) elem.removeEventListener(event, handler, options)
-            else if (elem.removeListener) elem.removeListener(event, handler, options)
-            else throw new Error('cannot remove listener from elem. No method found.')
-          })
-        
-          if (disposed) return
-        
-          if (elem.addEventListener) elem.addEventListener(event, handler, options)
-          else if (elem.addListener) elem.addListener(event, handler, options)
-          else throw new Error('cannot add listener to elem. No method found.')
-      },
-      fromPromise: promise => (start, sink) => {
-          if (start !== 0) return
-          let ended = false
-          const onfulfilled = val => {
-            if (ended) return
-            sink(1, val)
-            if (ended) return
-            sink(2)
-          }
-          const onrejected = (err = new Error()) => {
-            if (ended) return
-            sink(2, err)
-          }
-          Promise.resolve(promise).then(onfulfilled, onrejected)
-          sink(0, function fromPromise(t, d) {
-            if (t === 2) ended = true
-          })
-      },
-      subject() {
-          let sinks = []
-          function subj(t, d) {
-              if (t === 0) {
-                  const sink = d
-                  sinks.push(sink)
-                  sink(0, function subject(t,d) {
-                      if (t === 2) {
-                          const i = sinks.indexOf(sink)
-                          if (i > -1) sinks.splice(i, 1)
-                      }
-                  })
-              } else {
-                      const zinkz = sinks.slice(0)
-                      for (let i = 0, n = zinkz.length, sink; i < n; i++) {
-                          sink = zinkz[i]
-                          if (sinks.indexOf(sink) > -1) sink(t, d)
-                  }
-              }
-          }
-          subj.next = data => subj(1,data)
-          subj.complete = () => subj(2)
-          subj.error = err => subj(2,err)
-          subj.sinks = sinks
-          return subj
-      },
-      replay: keep => source => {
-        keep = keep || 0
-        let store = [], sinks = [], talkback, done = false
-      
-        const sliceNum = keep > 0 ? -1 * keep : 0;
-      
-        source(0, function replay(t, d) {
-          if (t == 0) {
-            talkback = d
-            return
-          }
-          if (t == 1) {
-            store.push(d)
-            store = store.slice(sliceNum)
-            sinks.forEach(sink => sink(1, d))
-          }
-          if (t == 2) {
-            done = true
-            sinks.forEach(sink => sink(2))
-            sinks = []
-          }
-        })
-
-        replay.sinks = sinks
-        return replay
-      
-        function replay(start, sink) {
-          if (start !== 0) return
-          sinks.push(sink)
-          sink(0, function replay(t, d) {
-            if (t == 0) return
-            if (t == 1) {
-              talkback(1)
-              return
-            }
-            if (t == 2)
-              sinks = sinks.filter(s => s !== sink)
-          })
-      
-          store.forEach(entry => sink(1, entry))
-      
-          if (done) sink(2)
-        }
-      },
-      catchError: fn => source => (start, sink) => {
-          if (start !== 0) return
-          let done
-          source(0, function catchError(t, d) {
-            if (done) return
-            if (t === 2 && d !== undefined) { done= true; sink(1, fn(d)); sink(2) } 
-            else sink(t, d) 
-          }
-        )
-      },
-      create: prod => (start, sink) => {
-          if (start !== 0) return
-          if (typeof prod !== 'function') {
-            sink(0, () => {})
-            sink(2)
-            return
-          }
-          let end = false
-          let clean
-          sink(0, (t,d) => {
-            if (!end) {
-              end = t === 2
-              if (end && typeof clean === 'function') clean()
-            }
-          })
-          if (end) return
-          clean = prod((v) => {
-              if (!end) sink(1, v)
-            }, (e) => {
-              if (!end && e !== undefined) {
-                end = true
-                sink(2, e)
-              }
-            }, () => {
-              if (!end) {
-                end = true
-                sink(2)
-              }
-          })
-      },
-      // swallow events. When new event arrives wait for a duration to spit it, if another event arrived when waiting, the original event is 'deleted'
-      // 'immediate' means that the first event is spitted immediately
-      debounceTime: (duration,immediate = true) => source => (start, sink) => {
-          if (start !== 0) return
-          let timeout
-          source(0, function debounceTime(t, d) {
-            let immediateEventSent = false
-            if (!timeout && immediate) { sink(t,d); immediateEventSent = true }
-            if (timeout) clearTimeout(timeout)
-            if (t === 1) timeout = setTimeout(() => { 
-              timeout = null; 
-              if (!immediateEventSent) sink(1, d)
-            }, typeof duration == 'function' ? duration() : duration)
-            else sink(t, d)
-          })
-      },
-      throttleTime: (duration,emitLast) => source => (start, sink) => {
-        if (start !== 0) return
-        let talkbackToSource, sourceTerminated = false, sinkTerminated = false, last, timeout
-        sink(0, function throttle(t, d) {
-          if (t === 2) sinkTerminated = true
-        })
-        source(0, function throttle(t, d) {
-          if (t === 0) {
-            talkbackToSource = d
-            talkbackToSource(1)
-          } else if (sinkTerminated) {
-            return
-          } else if (t === 1) {
-            if (!timeout) {
-              sink(t, d)
-              last = null
-              timeout = setTimeout(() => {
-                timeout = null
-                if (!sourceTerminated) talkbackToSource(1)
-                if ((emitLast === undefined || emitLast) && last != null)
-                  sink(t,d)
-              }, typeof duration == 'function' ? duration() : duration)
-            } else {
-              last = d
-            }
-          } else if (t === 2) {
-            sourceTerminated = true
-            sink(t, d)
-          }
-        })
-      },      
-      take: max => source => (start, sink) => {
-          if (start !== 0) return
-          let taken = 0, sourceTalkback, end
-          function talkback(t, d) {
-            if (t === 2) end = true
-            sourceTalkback(t, d)
-          }
-          source(0, function take(t, d) {
-            if (t === 0) {
-              sourceTalkback = d
-              sink(0, talkback)
-            } else if (t === 1) {
-              if (taken < max) {
-                taken++
-                sink(t, d)
-                if (taken === max && !end) {
-                  end = true
-                  sourceTalkback(2)
-                  sink(2)
-                }
-              }
-            } else {
-              sink(t, d)
-            }
-          })
-      },
-      takeWhile: (predicate,passtLastEvent) => source => (start, sink) => {
-          if (start !== 0) return
-          let talkback
-          source(0, function takeWhile(t,d) {
-            if (t === 0) talkback = d
-            if (t === 1 && !predicate(d)) {
-              if (passtLastEvent) sink(t,d)
-              talkback(2)
-              sink(2)
-            } else {
-              sink(t, d)
-            }
-          })
-      },
-      last: () => source => (start, sink) => {
-          if (start !== 0) return
-          let talkback, lastVal, matched = false
-          source(0, function last(t, d) {
-            if (t === 0) {
-              talkback = d
-              sink(t, d)
-            } else if (t === 1) {
-              lastVal = d
-              matched = true
-              talkback(1)
-            } else if (t === 2) {
-              if (matched) sink(1, lastVal)
-              sink(2)
-            }
-          })
-      },
-      toArray: () => source => (start, sink) => {
-        if (start !== 0) return
-        let talkback, res = [], ended
-        source(0, function toArray(t, d) {
+        else sink(t, d)
+      })
+  },
+  map: f => source => (start, sink) => {
+      if (start !== 0) return
+      source(0, function map(t, d) {
+          sink(t, t === 1 ? f(d) : d)
+      })
+  },
+  throwError: (condition,err) => source => (start, sink) => {
+    let talkback
+    if (start !== 0) return
+    source(0, function throwError(t, d) {
+      if (t === 0) talkback = d
+      if (t == 1 && condition(d)) {
+        talkback && talkback(2)
+        sink(2,err)
+      } else {
+        sink(t, d)
+      }
+    })
+  },
+  distinctUntilChanged: compare => source => (start, sink) => {
+      compare = compare || ((prev, cur) => prev === cur)
+      if (start !== 0) return
+      let inited = false, prev, talkback
+      source(0, function distinctUntilChanged(t,d) {
           if (t === 0) {
             talkback = d
-            sink(t, (t,d) => {
-              if (t == 2) end()
-              talkback(t,d)
-            })
-          } else if (t === 1) {
-            res.push(d)
-            talkback && talkback(1)
-          } else if (t === 2) {
-            if (!d) end()
-            sink(2,d)
-          }
-        })
-        function end() {
-          if (!ended && res.length) sink(1, res)
-          ended = true
-        }
-      },      
-      forEach: operation => sinkSrc => {
-        let talkback
-        sinkSrc(0, function forEach(t, d) {
-            if (t === 0) talkback = d
-            if (t === 1) operation(d)
-            if (t === 1 || t === 0) talkback(1)
-        })
-      },
-      subscribe: (listener = {}) => sinkSrc => {
-          if (typeof listener === "function") listener = { next: listener }
-          let { next, error, complete } = listener
-          let talkback, done
-          sinkSrc(0, function subscribe(t, d) {
-            if (t === 0) talkback = d
-            if (t === 1 && next) next(d)
-            if (t === 1 || t === 0) talkback(1)  // Pull
-            if (t === 2) done = true
-            if (t === 2 && !d && complete) complete()
-            if (t === 2 && !!d && error) error( d )
-            if (t === 2 && listener.finally) listener.finally( d )
-          })
-          return {
-            dispose: () => talkback && !done && talkback(2),
-            isDone: () => done,
-            isActive: () => talkback && !done
-          }
-      },
-      toPromise: sinkSrc => {
-          return new Promise((resolve, reject) => {
-            jb.callbag.subscribe({
-              next: resolve,
-              error: reject,
-              complete: () => {
-                const err = new Error('No elements in sequence.')
-                err.code = 'NO_ELEMENTS'
-                reject(err)
-              },
-            })(jb.callbag.last(sinkSrc))
-          })
-      },
-      toPromiseArray: sinkSrc => {
-          const res = []
-          let talkback
-          return new Promise((resolve, reject) => {
-                  sinkSrc(0, function toPromiseArray(t, d) {
-                      if (t === 0) talkback = d
-                      if (t === 1) res.push(d)
-                      if (t === 1 || t === 0) talkback(1)  // Pull
-                      if (t === 2 && !d) resolve(res)
-                      if (t === 2 && !!d) reject( d )
-              })
-          })
-      },
-      mapPromise: promiseF => source => jb.callbag.concatMap(d => jb.callbag.fromPromise(Promise.resolve().then(()=>promiseF(d))))(source),
-      doPromise: promiseF => source =>  jb.callbag.concatMap(d => jb.callbag.fromPromise(Promise.resolve().then(()=>promiseF(d)).then(()=>d)))(source),
-      interval: period => (start, sink) => {
-        if (start !== 0) return
-        let i = 0
-        const id = setInterval(function set_interval() {
-          sink(1, i++)
-        }, period)
-        sink(0, t => t === 2 && clearInterval(id))
-      },
-      startWith: (...xs) => source => (start, sink) => {
-          if (start !== 0) return
-          let disposed = false
-          let inputTalkback
-          let trackPull = false
-          let lastPull
-        
-          sink(0, function startWith(t, d) {
-            if (trackPull && t === 1) {
-              lastPull = [1, d]
-            }
-        
-            if (t === 2) {
-              disposed = true
-              xs.length = 0
-            }
-        
-            if (!inputTalkback) return
-            inputTalkback(t, d)
-          })
-        
-          while (xs.length !== 0) {
-            if (xs.length === 1) {
-              trackPull = true
-            }
-            sink(1, xs.shift())
-          }
-        
-          if (disposed) return
-        
-          source(0, function startWith(t, d) {
-            if (t === 0) {
-              inputTalkback = d
-              trackPull = false
-        
-              if (lastPull) {
-                inputTalkback(...lastPull)
-                lastPull = null
-              }
-              return
-            }
             sink(t, d)
-          })
-      },
-      delay: duration => source => (start, sink) => {
-          if (start !== 0) return
-          let waiting = 0, end, endD, endSent
-          source(0, function delay(t,d) {
-              if (t == 1 && d && !end) {
-                let id = setTimeout(()=> {
-                  waiting--
-                  clearTimeout(id)
-                  sink(1,d)
-                  if (end && !endSent) {
-                    endSent = true
-                    sink(2,endD)
-                  }
-                }, typeof duration == 'function' ? duration() : duration)
-                waiting++
-              } else if (t == 2) {
-                end = true
-                endD = d
-                if (!waiting) sink (t,d)
-              } else {
-                sink(t,d)
-              }
-          })
-      },
-      skip: max => source => (start, sink) => {
-          if (start !== 0) return
-          let skipped = 0, talkback
-          source(0, function skip(t, d) {
-            if (t === 0) talkback = d
-            if (t === 1 && skipped < max) {
-                skipped++
+          } else if (t == 1) {
+            if (inited && compare(prev, d)) {
                 talkback(1)
                 return
             }
-            sink(t, d)
+            inited = true
+            prev = d
+            sink(1, d)
+          } else {
+              sink(t, d)
+              return
+          }
+      })
+  },  
+  takeUntil(notifier) {
+      if (jb.utils.isPromise(notifier))
+          notifier = jb.callbag.fromPromise(notifier)
+      const UNIQUE = {}
+      return source => (start, sink) => {
+          if (start !== 0) return
+          let sourceTalkback, notifierTalkback, inited = false, done = UNIQUE
+
+          source(0, function takeUntil(t, d) {
+              if (t === 0) {
+                  sourceTalkback = d
+
+                  notifier(0, function takeUntilNotifier(t, d) {
+                      if (t === 0) {
+                          notifierTalkback = d
+                          notifierTalkback(1)
+                          return
+                      }
+                      if (t === 1) {
+                          done = void 0
+                          notifierTalkback(2)
+                          sourceTalkback(2)
+                          if (inited) sink(2)
+                          return
+                      }
+                      if (t === 2) {
+                          //notifierTalkback = null
+                          done = d
+                          if (d != null) {
+                              sourceTalkback(2)
+                              if (inited) sink(t, d)
+                          }
+                      }
+                  })
+                  inited = true
+
+                  sink(0, function takeUntilSink(t, d) {
+                      if (done !== UNIQUE) return
+                      if (t === 2 && notifierTalkback) notifierTalkback(2)
+                      sourceTalkback(t, d)
+                  })
+
+                  if (done !== UNIQUE) sink(2, done)
+                  return
+              }
+              if (t === 2) notifierTalkback(2)
+              if (done === UNIQUE) sink(t, d)
           })
-      },
-      sniffer: (source, snifferSubject) => (start, sink) => {
+      }
+  },
+  concatMap(_makeSource,combineResults) {
+    const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
+    if (!combineResults) combineResults = (input, inner) => inner
+    return source => (start, sink) => {
         if (start !== 0) return
-        let talkback
-        const talkbackWrapper = (t,d) => { report('talkback',t,d); talkback(t,d) }
-        const sniffer = (t,d) => {
-          report('out',t,d)
-          if (t == 0) {
-            talkback = d
-            Object.defineProperty(talkbackWrapper, 'name', { value: talkback.name + '-sniffer' })
-            sink(0, talkbackWrapper)
+        let queue = [], activeCb, sourceEnded, allEnded, sourceTalkback, activecbTalkBack
+        source(0, function concatMap(t,d) {
+          if (t == 0)
+            sourceTalkback = d
+          else if (t == 1)
+            queue.push(d)
+          else if (t ==2)
+            sourceEnded = true
+          tick()
+        })
+        sink(0, function concatMap(t,d) {
+          if (t == 1) {
+            activecbTalkBack && activecbTalkBack(1)
+            sourceTalkback && sourceTalkback(1)
+          } else if (t == 2) {
+            allEnded = true
+            queue = []
+            sourceTalkback && sourceTalkback(2)
+          }
+        })
+        
+        function tick() {
+          if (allEnded) return
+          if (!activeCb && queue.length) {
+            const input = queue.shift()
+            activeCb = makeSource(input)
+            activeCb(0, function concatMap(t,d) {
+              if (t == 0) {
+                activecbTalkBack = d
+                activecbTalkBack && activecbTalkBack(1)
+              } else if (t == 1) {
+                sink(1, combineResults(input,d))
+                activecbTalkBack && activecbTalkBack(1)
+              } else if (t == 2 && d) {
+                allEnded = true
+                queue = []
+                sink(2,d)
+                sourceTalkback && sourceTalkback(2)
+              } else if (t == 2) {
+                activecbTalkBack = activeCb = null
+                tick()
+              }
+            })
+          }
+          if (sourceEnded && !activeCb && !queue.length) {
+            allEnded = true
+            sink(2)
+          }
+        }
+    }
+  },
+  concatMap2(_makeSource,combineResults) {
+    const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
+    return source => (start, sink) => {
+        if (start !== 0) return
+        let queue = []
+        let innerTalkback, sourceTalkback, sourceEnded
+        if (!combineResults) combineResults = (input, inner) => inner
+
+        const concatMapSink= input => function concatMap(t, d) {
+          if (t === 0) {
+            innerTalkback = d
+            innerTalkback(1)
+          } else if (t === 1) {
+            sink(1, combineResults(input,d))
+            innerTalkback(1)
+          } else if (t === 2) {
+            innerTalkback = null
+            if (queue.length === 0) {
+              stopOrContinue(d)
+              return
+            }
+            const input = queue.shift()
+            const src = makeSource(input)
+            src(0, concatMapSink(input))
+          }
+        }
+
+        source(0, function concatMap(t, d) {
+          if (t === 0) {
+            sourceTalkback = d
+            sink(0, wrappedSink)
+            return
+          } else if (t === 1) {
+            if (innerTalkback) 
+              queue.push(d) 
+            else {
+              const src = makeSource(d)
+              src(0, concatMapSink(d))
+              src(1)
+            }
+          } else if (t === 2) {
+            sourceEnded = true
+            stopOrContinue(d)
+          }
+        })
+
+        function wrappedSink(t, d) {
+          if (t === 2 && innerTalkback) innerTalkback(2, d)
+          sourceTalkback(t, d)
+        }
+    
+        function stopOrContinue(d) {
+          if (d != undefined) {
+            queue = []
+            innerTalkback = innerTalkback = null
+            sink(2, d)
             return
           }
-          sink(t,d)
-        }
-        sniffer.ctx = source.ctx    
-        Object.defineProperty(sniffer, 'name', { value: source.name + '-sniffer' })
-        sniffer.dispose = () => { console.log('dispose', sink,talkback); debugger }
-
-        source(0,sniffer)
-        
-        function report(dir,t,d) {
-          const now = new Date()
-          const time = `${now.getSeconds()}:${now.getMilliseconds()}`
-          snifferSubject.next({dir, t, d, time})
-          if (t == 2)
-            snifferSubject.complete && snifferSubject.complete(d)
-        }
-      },
-      timeoutLimit: (timeout,err) => source => (start, sink) => {
-        if (start !== 0) return
-        let talkback
-        let timeoutId = setTimeout(()=> {
-          talkback && talkback(2)
-          sink(2, typeof err == 'function' ? err() : err || 'timeout')
-        }, typeof timeout == 'function' ? timeout() : timeout)
-
-        source(0, function timeoutLimit(t, d) {
-          if (t === 2) clearTimeout(timeoutId)
-          if (t === 0) talkback = d
-          sink(t, d)
-        })        
-      },
-      fromCallBag: source => source,
-      fromAny: (source, name, options) => {
-          const f = source && 'from' + (jb.utils.isPromise(source) ? 'Promise'
-              : source.addEventListener ? 'Event'
-              : typeof source[Symbol.iterator] === 'function' ? 'Iter'
-              : '')
-          if (jb.callbag[f]) 
-              return jb.callbag[f](source, name, options)
-          else if (jb.callbag.isCallbag(source))
-              return source
-          else
-              return jb.callbag.fromIter([source])
-      },
-      isSink: cb => typeof cb == 'function' && cb.toString().match(/sinkSrc/),
-      isCallbag: cb => typeof cb == 'function' && cb.toString().split('=>')[0].split('{')[0].replace(/\s/g,'').match(/start,sink|t,d/),
-
-      injectSniffers(cbs,ctx) {
-        return cbs
-        const _jb = ctx.frame().jb
-        if (!_jb) return cbs
-        return cbs.reduce((acc,cb) => [...acc,cb, ...injectSniffer(cb) ] ,[])
-
-        function injectSniffer(cb) {
-          if (!cb.ctx || cb.sniffer || jb.callbag.isSink(cb)) return []
-          _jb.cbLogByPath =  _jb.cbLogByPath || {}
-          const log = _jb.cbLogByPath[cb.ctx.path] = { callbagLog: true, result: [] }
-          const listener = {
-            next(r) { log.result.push(r) },
-            complete() { log.complete = true }
+          if (sourceEnded && !innerTalkback && queue.length == 0) {
+            sink(2, d)
+            return
           }
-          const res = source => _jb.callbag.sniffer(source, listener)
-          res.sniffer = true
-          res.ctx = cb.ctx
-          Object.defineProperty(res, 'name', { value: 'sniffer' })
-          return [res]
+          innerTalkback && innerTalkback(1)
         }
-      },  
-      log: name => jb.callbag.Do(x=>console.log(name,x)),
-      jbLog: (name,...params) => jb.callbag.Do(data => jb.log(name,{data,...params})),
-}
+      }
+  },
+  flatMap: (_makeSource, combineResults) => source => (start, sink) => {
+      if (start !== 0) return
+      const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
+      if (!combineResults) combineResults = (input, inner) => inner
+
+      let index = 0
+      const talkbacks = {}
+      let sourceEnded = false
+      let inputSourceTalkback = null
+
+      source(0, function flatMap(t, d) {
+        if (t === 0) {
+            inputSourceTalkback = d
+            sink(0, pullHandle)
+        }
+        if (t === 1) {
+            makeSource(d)(0, makeSink(index++, d))
+        }
+        if (t === 2) {
+            sourceEnded = true
+            stopOrContinue(d)
+        }
+      })
+
+      function makeSink(i, input) { 
+        return (t, d) => {
+          if (t === 0) {talkbacks[i] = d; talkbacks[i](1)}
+          if (t === 1)
+            sink(1, d == null ? null : combineResults(input, d))
+          if (t === 2) {
+              delete talkbacks[i]
+              stopOrContinue(d)
+          }
+      }}
+
+      function stopOrContinue(d) {
+        if (sourceEnded && Object.keys(talkbacks).length === 0) 
+          sink(2, d)
+        else 
+          !sourceEnded && inputSourceTalkback && inputSourceTalkback(1)
+      }
+
+      function pullHandle(t, d) {
+        const currTalkback = Object.values(talkbacks).pop()
+        if (t === 1) {
+          currTalkback && currTalkback(1)
+          if (!sourceEnded) inputSourceTalkback(1)
+        }
+        if (t === 2) {
+          stopOrContinue(d)
+        }
+      }
+  },
+  merge(..._sources) {
+      const sources = _sources.filter(x=>x).filter(x=>jb.callbag.fromAny(x))
+      return function merge(start, sink) {
+        if (start !== 0) return
+        const n = sources.length
+        const sourceTalkbacks = new Array(n)
+        let startCount = 0
+        let endCount = 0
+        let ended = false
+        const talkback = (t, d) => {
+          if (t === 2) ended = true
+          for (let i = 0; i < n; i++) sourceTalkbacks[i] && sourceTalkbacks[i](t, d)
+        }
+        for (let i = 0; i < n; i++) {
+          if (ended) return
+          sources[i](0, (t, d) => {
+            if (t === 0) {
+              sourceTalkbacks[i] = d
+              sink(0, talkback) // if (++startCount === 1) 
+            } else if (t === 2 && d) {
+              ended = true
+              for (let j = 0; j < n; j++) if (j !== i && sourceTalkbacks[j]) sourceTalkbacks[j](2)
+              sink(2, d)
+            } else if (t === 2) {
+              sourceTalkbacks[i] = void 0
+              if (++endCount === n) sink(2)
+            } else sink(t, d)
+          })
+        }
+      }
+  },
+  race(..._sources) { // take only the first result including errors and complete
+    const sources = _sources.filter(x=>x).filter(x=>jb.callbag.fromAny(x))
+    return function race(start, sink) {
+      if (start !== 0) return
+      const n = sources.length
+      const sourceTalkbacks = new Array(n)
+      let endCount = 0
+      let ended = false
+      const talkback = (t, d) => {
+        if (t === 2) ended = true
+        for (let i = 0; i < n; i++) sourceTalkbacks[i] && sourceTalkbacks[i](t, d)
+      }
+      for (let i = 0; i < n; i++) {
+        if (ended) return
+        sources[i](0, function race(t, d) {
+          if (t === 0) {
+            sourceTalkbacks[i] = d
+            sink(0, talkback)
+          } else {
+            ended = true
+            for (let j = 0; j < n; j++) 
+              if (j !== i && sourceTalkbacks[j]) sourceTalkbacks[j](2)
+            sink(1,d)
+            sink(2)
+          }
+        })
+      }
+  }},
+  fromEvent: (event, elem, options) => (start, sink) => {
+      if (!elem) return
+      if (start !== 0) return
+      let disposed = false
+      const handler = ev => sink(1, ev)
+    
+      sink(0, function fromEvent(t, d) {
+        if (t !== 2) {
+          return
+        }
+        disposed = true
+        if (elem.removeEventListener) elem.removeEventListener(event, handler, options)
+        else if (elem.removeListener) elem.removeListener(event, handler, options)
+        else throw new Error('cannot remove listener from elem. No method found.')
+      })
+    
+      if (disposed) return
+    
+      if (elem.addEventListener) elem.addEventListener(event, handler, options)
+      else if (elem.addListener) elem.addListener(event, handler, options)
+      else throw new Error('cannot add listener to elem. No method found.')
+  },
+  fromPromise: promise => (start, sink) => {
+      if (start !== 0) return
+      let ended = false
+      const onfulfilled = val => {
+        if (ended) return
+        sink(1, val)
+        if (ended) return
+        sink(2)
+      }
+      const onrejected = (err = new Error()) => {
+        if (ended) return
+        sink(2, err)
+      }
+      Promise.resolve(promise).then(onfulfilled, onrejected)
+      sink(0, function fromPromise(t, d) {
+        if (t === 2) ended = true
+      })
+  },
+  subject() {
+      let sinks = []
+      function subj(t, d) {
+          if (t === 0) {
+              const sink = d
+              sinks.push(sink)
+              sink(0, function subject(t,d) {
+                  if (t === 2) {
+                      const i = sinks.indexOf(sink)
+                      if (i > -1) sinks.splice(i, 1)
+                  }
+              })
+          } else {
+                  const zinkz = sinks.slice(0)
+                  for (let i = 0, n = zinkz.length, sink; i < n; i++) {
+                      sink = zinkz[i]
+                      if (sinks.indexOf(sink) > -1) sink(t, d)
+              }
+          }
+      }
+      subj.next = data => subj(1,data)
+      subj.complete = () => subj(2)
+      subj.error = err => subj(2,err)
+      subj.sinks = sinks
+      return subj
+  },
+  replay: keep => source => {
+    keep = keep || 0
+    let store = [], sinks = [], talkback, done = false
+  
+    const sliceNum = keep > 0 ? -1 * keep : 0;
+  
+    source(0, function replay(t, d) {
+      if (t == 0) {
+        talkback = d
+        return
+      }
+      if (t == 1) {
+        store.push(d)
+        store = store.slice(sliceNum)
+        sinks.forEach(sink => sink(1, d))
+      }
+      if (t == 2) {
+        done = true
+        sinks.forEach(sink => sink(2))
+        sinks = []
+      }
+    })
+
+    replay.sinks = sinks
+    return replay
+  
+    function replay(start, sink) {
+      if (start !== 0) return
+      sinks.push(sink)
+      sink(0, function replay(t, d) {
+        if (t == 0) return
+        if (t == 1) {
+          talkback(1)
+          return
+        }
+        if (t == 2)
+          sinks = sinks.filter(s => s !== sink)
+      })
+  
+      store.forEach(entry => sink(1, entry))
+  
+      if (done) sink(2)
+    }
+  },
+  catchError: fn => source => (start, sink) => {
+      if (start !== 0) return
+      let done
+      source(0, function catchError(t, d) {
+        if (done) return
+        if (t === 2 && d !== undefined) { done= true; sink(1, fn(d)); sink(2) } 
+        else sink(t, d) 
+      }
+    )
+  },
+  create: prod => (start, sink) => {
+      if (start !== 0) return
+      if (typeof prod !== 'function') {
+        sink(0, () => {})
+        sink(2)
+        return
+      }
+      let end = false
+      let clean
+      sink(0, (t,d) => {
+        if (!end) {
+          end = t === 2
+          if (end && typeof clean === 'function') clean()
+        }
+      })
+      if (end) return
+      clean = prod((v) => {
+          if (!end) sink(1, v)
+        }, (e) => {
+          if (!end && e !== undefined) {
+            end = true
+            sink(2, e)
+          }
+        }, () => {
+          if (!end) {
+            end = true
+            sink(2)
+          }
+      })
+  },
+  // swallow events. When new event arrives wait for a duration to spit it, if another event arrived when waiting, the original event is 'deleted'
+  // 'immediate' means that the first event is spitted immediately
+  debounceTime: (duration,immediate = true) => source => (start, sink) => {
+      if (start !== 0) return
+      let timeout
+      source(0, function debounceTime(t, d) {
+        let immediateEventSent = false
+        if (!timeout && immediate) { sink(t,d); immediateEventSent = true }
+        if (timeout) clearTimeout(timeout)
+        if (t === 1) timeout = setTimeout(() => { 
+          timeout = null; 
+          if (!immediateEventSent) sink(1, d)
+        }, typeof duration == 'function' ? duration() : duration)
+        else sink(t, d)
+      })
+  },
+  throttleTime: (duration,emitLast) => source => (start, sink) => {
+    if (start !== 0) return
+    let talkbackToSource, sourceTerminated = false, sinkTerminated = false, last, timeout
+    sink(0, function throttle(t, d) {
+      if (t === 2) sinkTerminated = true
+    })
+    source(0, function throttle(t, d) {
+      if (t === 0) {
+        talkbackToSource = d
+        talkbackToSource(1)
+      } else if (sinkTerminated) {
+        return
+      } else if (t === 1) {
+        if (!timeout) {
+          sink(t, d)
+          last = null
+          timeout = setTimeout(() => {
+            timeout = null
+            if (!sourceTerminated) talkbackToSource(1)
+            if ((emitLast === undefined || emitLast) && last != null)
+              sink(t,d)
+          }, typeof duration == 'function' ? duration() : duration)
+        } else {
+          last = d
+        }
+      } else if (t === 2) {
+        sourceTerminated = true
+        sink(t, d)
+      }
+    })
+  },      
+  take: max => source => (start, sink) => {
+      if (start !== 0) return
+      let taken = 0, sourceTalkback, end
+      function talkback(t, d) {
+        if (t === 2) end = true
+        sourceTalkback(t, d)
+      }
+      source(0, function take(t, d) {
+        if (t === 0) {
+          sourceTalkback = d
+          sink(0, talkback)
+        } else if (t === 1) {
+          if (taken < max) {
+            taken++
+            sink(t, d)
+            if (taken === max && !end) {
+              end = true
+              sourceTalkback(2)
+              sink(2)
+            }
+          }
+        } else {
+          sink(t, d)
+        }
+      })
+  },
+  takeWhile: (predicate,passtLastEvent) => source => (start, sink) => {
+      if (start !== 0) return
+      let talkback
+      source(0, function takeWhile(t,d) {
+        if (t === 0) talkback = d
+        if (t === 1 && !predicate(d)) {
+          if (passtLastEvent) sink(t,d)
+          talkback(2)
+          sink(2)
+        } else {
+          sink(t, d)
+        }
+      })
+  },
+  last: () => source => (start, sink) => {
+      if (start !== 0) return
+      let talkback, lastVal, matched = false
+      source(0, function last(t, d) {
+        if (t === 0) {
+          talkback = d
+          sink(t, d)
+        } else if (t === 1) {
+          lastVal = d
+          matched = true
+          talkback(1)
+        } else if (t === 2) {
+          if (matched) sink(1, lastVal)
+          sink(2)
+        }
+      })
+  },
+  toArray: () => source => (start, sink) => {
+    if (start !== 0) return
+    let talkback, res = [], ended
+    source(0, function toArray(t, d) {
+      if (t === 0) {
+        talkback = d
+        sink(t, (t,d) => {
+          if (t == 2) end()
+          talkback(t,d)
+        })
+      } else if (t === 1) {
+        res.push(d)
+        talkback && talkback(1)
+      } else if (t === 2) {
+        if (!d) end()
+        sink(2,d)
+      }
+    })
+    function end() {
+      if (!ended && res.length) sink(1, res)
+      ended = true
+    }
+  },      
+  forEach: operation => sinkSrc => {
+    let talkback
+    sinkSrc(0, function forEach(t, d) {
+        if (t === 0) talkback = d
+        if (t === 1) operation(d)
+        if (t === 1 || t === 0) talkback(1)
+    })
+  },
+  subscribe: (listener = {}) => sinkSrc => {
+      if (typeof listener === "function") listener = { next: listener }
+      let { next, error, complete } = listener
+      let talkback, done
+      sinkSrc(0, function subscribe(t, d) {
+        if (t === 0) talkback = d
+        if (t === 1 && next) next(d)
+        if (t === 1 || t === 0) talkback(1)  // Pull
+        if (t === 2) done = true
+        if (t === 2 && !d && complete) complete()
+        if (t === 2 && !!d && error) error( d )
+        if (t === 2 && listener.finally) listener.finally( d )
+      })
+      return {
+        dispose: () => talkback && !done && talkback(2),
+        isDone: () => done,
+        isActive: () => talkback && !done
+      }
+  },
+  toPromise: sinkSrc => {
+      return new Promise((resolve, reject) => {
+        jb.callbag.subscribe({
+          next: resolve,
+          error: reject,
+          complete: () => {
+            const err = new Error('No elements in sequence.')
+            err.code = 'NO_ELEMENTS'
+            reject(err)
+          },
+        })(jb.callbag.last(sinkSrc))
+      })
+  },
+  toPromiseArray: sinkSrc => {
+      const res = []
+      let talkback
+      return new Promise((resolve, reject) => {
+              sinkSrc(0, function toPromiseArray(t, d) {
+                  if (t === 0) talkback = d
+                  if (t === 1) res.push(d)
+                  if (t === 1 || t === 0) talkback(1)  // Pull
+                  if (t === 2 && !d) resolve(res)
+                  if (t === 2 && !!d) reject( d )
+          })
+      })
+  },
+  mapPromise: promiseF => source => jb.callbag.concatMap(d => jb.callbag.fromPromise(Promise.resolve().then(()=>promiseF(d))))(source),
+  doPromise: promiseF => source =>  jb.callbag.concatMap(d => jb.callbag.fromPromise(Promise.resolve().then(()=>promiseF(d)).then(()=>d)))(source),
+  interval: period => (start, sink) => {
+    if (start !== 0) return
+    let i = 0
+    const id = setInterval(function set_interval() {
+      sink(1, i++)
+    }, period)
+    sink(0, t => t === 2 && clearInterval(id))
+  },
+  startWith: (...xs) => source => (start, sink) => {
+      if (start !== 0) return
+      let disposed = false
+      let inputTalkback
+      let trackPull = false
+      let lastPull
+    
+      sink(0, function startWith(t, d) {
+        if (trackPull && t === 1) {
+          lastPull = [1, d]
+        }
+    
+        if (t === 2) {
+          disposed = true
+          xs.length = 0
+        }
+    
+        if (!inputTalkback) return
+        inputTalkback(t, d)
+      })
+    
+      while (xs.length !== 0) {
+        if (xs.length === 1) {
+          trackPull = true
+        }
+        sink(1, xs.shift())
+      }
+    
+      if (disposed) return
+    
+      source(0, function startWith(t, d) {
+        if (t === 0) {
+          inputTalkback = d
+          trackPull = false
+    
+          if (lastPull) {
+            inputTalkback(...lastPull)
+            lastPull = null
+          }
+          return
+        }
+        sink(t, d)
+      })
+  },
+  delay: duration => source => (start, sink) => {
+      if (start !== 0) return
+      let waiting = 0, end, endD, endSent
+      source(0, function delay(t,d) {
+          if (t == 1 && d && !end) {
+            let id = setTimeout(()=> {
+              waiting--
+              clearTimeout(id)
+              sink(1,d)
+              if (end && !endSent) {
+                endSent = true
+                sink(2,endD)
+              }
+            }, typeof duration == 'function' ? duration() : duration)
+            waiting++
+          } else if (t == 2) {
+            end = true
+            endD = d
+            if (!waiting) sink (t,d)
+          } else {
+            sink(t,d)
+          }
+      })
+  },
+  skip: max => source => (start, sink) => {
+      if (start !== 0) return
+      let skipped = 0, talkback
+      source(0, function skip(t, d) {
+        if (t === 0) talkback = d
+        if (t === 1 && skipped < max) {
+            skipped++
+            talkback(1)
+            return
+        }
+        sink(t, d)
+      })
+  },
+  sniffer: (source, snifferSubject) => (start, sink) => {
+    if (start !== 0) return
+    let talkback
+    const talkbackWrapper = (t,d) => { report('talkback',t,d); talkback(t,d) }
+    const sniffer = (t,d) => {
+      report('out',t,d)
+      if (t == 0) {
+        talkback = d
+        Object.defineProperty(talkbackWrapper, 'name', { value: talkback.name + '-sniffer' })
+        sink(0, talkbackWrapper)
+        return
+      }
+      sink(t,d)
+    }
+    sniffer.ctx = source.ctx    
+    Object.defineProperty(sniffer, 'name', { value: source.name + '-sniffer' })
+    sniffer.dispose = () => { console.log('dispose', sink,talkback); debugger }
+
+    source(0,sniffer)
+    
+    function report(dir,t,d) {
+      const now = new Date()
+      const time = `${now.getSeconds()}:${now.getMilliseconds()}`
+      snifferSubject.next({dir, t, d, time})
+      if (t == 2)
+        snifferSubject.complete && snifferSubject.complete(d)
+    }
+  },
+  timeoutLimit: (timeout,err) => source => (start, sink) => {
+    if (start !== 0) return
+    let talkback
+    let timeoutId = setTimeout(()=> {
+      talkback && talkback(2)
+      sink(2, typeof err == 'function' ? err() : err || 'timeout')
+    }, typeof timeout == 'function' ? timeout() : timeout)
+
+    source(0, function timeoutLimit(t, d) {
+      if (t === 2) clearTimeout(timeoutId)
+      if (t === 0) talkback = d
+      sink(t, d)
+    })        
+  },
+  fromCallBag: source => source,
+  fromAny: (source, name, options) => {
+      const f = source && 'from' + (jb.utils.isPromise(source) ? 'Promise'
+          : source.addEventListener ? 'Event'
+          : typeof source[Symbol.iterator] === 'function' ? 'Iter'
+          : '')
+      if (jb.callbag[f]) 
+          return jb.callbag[f](source, name, options)
+      else if (jb.callbag.isCallbag(source))
+          return source
+      else
+          return jb.callbag.fromIter([source])
+  },
+  isSink: cb => typeof cb == 'function' && cb.toString().match(/sinkSrc/),
+  isCallbag: cb => typeof cb == 'function' && cb.toString().split('=>')[0].split('{')[0].replace(/\s/g,'').match(/start,sink|t,d/),
+
+  injectSniffers(cbs,ctx) {
+    return cbs
+    const _jb = ctx.frame().jb
+    if (!_jb) return cbs
+    return cbs.reduce((acc,cb) => [...acc,cb, ...injectSniffer(cb) ] ,[])
+
+    function injectSniffer(cb) {
+      if (!cb.ctx || cb.sniffer || jb.callbag.isSink(cb)) return []
+      _jb.cbLogByPath =  _jb.cbLogByPath || {}
+      const log = _jb.cbLogByPath[cb.ctx.path] = { callbagLog: true, result: [] }
+      const listener = {
+        next(r) { log.result.push(r) },
+        complete() { log.complete = true }
+      }
+      const res = source => _jb.callbag.sniffer(source, listener)
+      res.sniffer = true
+      res.ctx = cb.ctx
+      Object.defineProperty(res, 'name', { value: 'sniffer' })
+      return [res]
+    }
+  },  
+  log: name => jb.callbag.Do(x=>console.log(name,x)),
+  jbLog: (name,...params) => jb.callbag.Do(data => jb.log(name,{data,...params})),
+})
 ;
 
-var { If, call, rx,sink,source } = jb.ns('rx,sink,source')
+// var { If, call, rx,sink,source } = jb.ns('rx,sink,source')
 // ************ sources
 
 jb.component('source.data', {
@@ -4447,7 +4403,7 @@ jb.extension('ui', 'react', {
                 const elem = document.querySelector(`[cmp-id="${e.cmpId}"]`)
                 if (elem) {
                     jb.ui.applyDeltaToDom(elem, e.delta)
-                    jb.ui.refreshFrontEnd(elem)
+                    jb.ui.refreshFrontEnd(elem, {content: e.delta})
                 }
             }
         })(jb.ui.renderingUpdates)
@@ -4591,7 +4547,7 @@ jb.extension('ui', 'react', {
             jb.log('apply delta top dom',{vdomBefore,vdomAfter,active,elem,vdomAfter,strongRefresh, delta, ctx})
             jb.ui.applyDeltaToDom(elem,delta)
         }
-        jb.ui.refreshFrontEnd(elem)
+        jb.ui.refreshFrontEnd(elem, {content: vdomAfter})
         if (active) jb.ui.focus(elem,'apply Vdom diff',ctx)
         jb.ui.garbageCollectCtxDictionary()
     },
@@ -4789,6 +4745,11 @@ jb.extension('ui', 'react', {
     },
     render(vdom,parentElem,prepend) {
         jb.log('render',{vdom,parentElem,prepend})
+        const res = doRender(vdom,parentElem)
+        vdomDiffCheckForDebug()
+        jb.ui.refreshFrontEnd(res, {content: vdom })
+        return res
+
         function doRender(vdom,parentElem) {
             jb.log('dom createElement',{tag: vdom.tag, vdom,parentElem})
             const elem = jb.ui.createElement(parentElem.ownerDocument, vdom.tag)
@@ -4797,15 +4758,12 @@ jb.extension('ui', 'react', {
             prepend ? parentElem.prepend(elem) : parentElem.appendChild(elem)
             return elem
         }
-        const res = doRender(vdom,parentElem)
-        jb.ui.findIncludeSelf(res,'[interactive]').forEach(el=> jb.ui.mountFrontEnd(el))
-        // check
-        const checkResultingVdom = jb.ui.elemToVdom(res)
-        const diff = jb.ui.vdomDiff(checkResultingVdom,vdom)
-        if (checkResultingVdom && Object.keys(diff).length)
-            jb.logError('render diff',{diff,checkResultingVdom,vdom})
-
-        return res
+        function vdomDiffCheckForDebug() {
+            const checkResultingVdom = jb.ui.elemToVdom(res)
+            const diff = jb.ui.vdomDiff(checkResultingVdom,vdom)
+            if (checkResultingVdom && Object.keys(diff).length)
+                jb.logError('render diff',{diff,checkResultingVdom,vdom})
+        }
     },
     createElement(doc,tag) {
         tag = tag || 'div'
@@ -5004,7 +4962,7 @@ jb.extension('ui', 'react', {
             jb.ui.renderingUpdates.next({delta,cmpId,widgetId: ctx.vars.headlessWidgetId})
         } else if (actualElem) {
             jb.ui.applyDeltaToDom(actualElem, actualdelta)
-            jb.ui.refreshFrontEnd(actualElem)
+            jb.ui.refreshFrontEnd(actualElem, {content: delta})
         }
     },
     refreshElem(elem, state, options) {
@@ -5022,8 +4980,8 @@ jb.extension('ui', 'react', {
         if (options && options.extendCtx)
             ctx = options.extendCtx(ctx)
         ctx = ctx.setVar('$refreshElemCall',true).setVar('$cmpId', cmpId).setVar('$cmpVer', cmpVer+1) // special vars for refresh
-        if (jb.ui.inStudio()) // updating to latest version of profile
-            ctx.profile = jb.execInStudio({$: 'studio.val', path: ctx.path}) || ctx.profile
+        if (jb.ui.inStudio()) // updating to latest version of profile - todo: moveto studio
+            ctx.profile = jb.studio.execInStudio({$: 'studio.val', path: ctx.path}) || ctx.profile
         elem.setAttribute('__refreshing','')
         const cmp = ctx.profile.$ == 'openDialog' ? ctx.run(dialog.buildComp()) : ctx.runItself()
         jb.log('refresh elem start',{cmp,ctx,elem, state, options})
@@ -5041,7 +4999,7 @@ jb.extension('ui', 'react', {
         }
         elem.removeAttribute('__refreshing')
         jb.ui.refreshNotification.next({cmp,ctx,elem, state, options})
-        //jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
+        //jb.studio.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
     }
 })
 ;
@@ -5295,7 +5253,7 @@ jb.extension('ui','comp', {
                 if (this.state[e.prop] != undefined) return // we have the value in the state, probably asynch value so do not calc again
                 const modelProp = this.ctx.vars.$model[e.prop]
                 if (!modelProp)
-                    return jb.logError('calcRenderProps',`missing model prop "${e.prop}"`, {cmp: this, model: this.ctx.vars.$model, ctx: this.ctx})
+                    return jb.logError(`calcRenderProps: missing model prop "${e.prop}"`, {cmp: this, model: this.ctx.vars.$model, ctx: this.ctx})
                 const ref = modelProp(this.ctx)
                 if (jb.db.isWatchable(ref))
                     this.toObserve.push({id: e.prop, cmp: this, ref,...e})
@@ -5361,6 +5319,7 @@ jb.extension('ui','comp', {
                     frontEndMethods.length && {interactive : 'true'}, 
                     frontEndVars && { $__vars : JSON.stringify(frontEndVars)},
                     this.state && { $__state : JSON.stringify(this.state)},
+                    { $__debug: JSON.stringify({ path: (this.ctxForPick || this.calcCtx).path, cmpCtxPath: this.calcCtx.cmpCtx.path }) },
                     this.ctxForPick && { 'pick-ctx': jb.ui.preserveCtx(this.ctxForPick) },
                 )
             }
@@ -5576,7 +5535,7 @@ jb.extension('ui', {
 
 // ***************** inter-cmp services
 
-var { feature, action } = jb.ns('feature')
+// var { feature, action } = jb.ns('feature')
 
 jb.component('feature.serviceRegistey', {
   type: 'feature',
@@ -5770,15 +5729,20 @@ jb.component('controlWithFeatures', {
 })
 
 // widely used
-var { customStyle, styleByControl, styleWithFeatures, controlWithFeatures } = jb.macro
+// var { customStyle, styleByControl, styleWithFeatures, controlWithFeatures } = jb.macro
 ;
 
 jb.extension('ui', 'frontend', {
-    refreshFrontEnd(elem) {
-        jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> el._component ? el._component.newVDomApplied() : jb.ui.mountFrontEnd(el))
+    refreshFrontEnd(elem, {content} = {}) {
+        jb.codeLoader.loadFELibsDirectly(jb.ui.feLibs(content)).then(()=> 
+            jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> 
+                el._component ? el._component.newVDomApplied() : new jb.ui.frontEndCmp(el)))
     },
-    mountFrontEnd(elem, keepState) {
-        new jb.ui.frontEndCmp(elem, keepState)
+    feLibs(obj) {
+        if (!obj || typeof obj != 'object') return []
+        if (obj.attributes && obj.attributes.$__frontEndLibs) 
+            return JSON.parse(obj.attributes.$__frontEndLibs)
+        return Object.keys(obj).filter(k=> ['parentNode','attributes'].indexOf(k) == -1).flatMap(k =>jb.ui.feLibs(obj[k]))
     },
     frontEndCmp: class frontEndCmp {
         constructor(elem, keepState) {
@@ -5923,9 +5887,8 @@ jb.extension('ui', 'watchRef', {
     })
 });
 
-
-var { variable,watchable,followUp,backEnd,method,features,onDestroy,htmlAttribute,templateModifier,watchAndCalcModelProp,calcProp,watchRef } 
-  = jb.ns('variable,watchable,followUp,backEnd,method,htmlAttribute,features,onDestroy,templateModifier,watchAndCalcModelProp,calcProp,watchRef,group')
+// var { variable,watchable,followUp,backEnd,method,features,onDestroy,htmlAttribute,templateModifier,watchAndCalcModelProp,calcProp,watchRef } 
+//  = jb.ns('variable,watchable,followUp,backEnd,method,htmlAttribute,features,onDestroy,templateModifier,watchAndCalcModelProp,calcProp,watchRef,group')
 
 jb.component('method', {
   type: 'feature',
@@ -6020,7 +5983,7 @@ jb.component('feature.initValue', {
   }})
 })
 
-jb.component('feature.requireService',{
+jb.component('feature.requireService', {
   params: [
     {id: 'service', type: 'service'},
     {id: 'condition', dynamic: true, defaultValue: true},
@@ -6348,7 +6311,7 @@ jb.component('feature.userEventProps', {
 })
 ;
 
-var { rx,key,frontEnd,sink,service, replace } = jb.ns('rx,key,frontEnd,sink,service')
+// var { rx,key,frontEnd,sink,service, replace } = jb.ns('rx,key,frontEnd,sink,service')
 
 jb.component('action.runBEMethod', {
     type: 'action',
@@ -6764,7 +6727,7 @@ jb.component('source.findSelectionKeySource', {
 })
 ;
 
-var { css } = jb.ns('css')
+// var { css } = jb.ns('css')
 
 jb.component('css', {
   description: 'e.g. {color: red; width: 20px} or div>.myClas {color: red} ',
@@ -7006,17 +6969,17 @@ jb.component('css.conditionalClass', {
   })
 })
 
-;['layout','typography','detailedBorder','detailedColor','gridArea'].forEach(f=>
-jb.component(`css.${f}`, {
+jb.defComponents('layout,typography,detailedBorder,detailedColor,gridArea'.split(','), id=>`css.${id}`, f=> ({
   type: 'feature:0',
   params: [
     {id: 'css', mandatory: true, as: 'string'}
   ],
   impl: (ctx,css) => ({css: jb.ui.fixCssLine(css)})
 }))
+
 ;
 
-var { text, firstSucceeding, customStyle, styleByControl, controlWithFeatures } = jb.ns('text')
+// var { text, firstSucceeding, customStyle, styleByControl, controlWithFeatures } = jb.ns('text')
 
 jb.component('text', {
   type: 'control',
@@ -7079,7 +7042,7 @@ jb.component('text.highlight', {
 })
 ;
 
-var {group,layout,tabs,controlWithCondition} = jb.ns('group,layout,tabs,controlWithCondition')
+// var {group,layout,tabs,controlWithCondition} = jb.ns('group,layout,tabs,controlWithCondition')
 
 jb.component('group', {
   type: 'control',
@@ -7210,7 +7173,7 @@ jb.component('controls', {
   }
 });
 
-var { html } = jb.ns('html')
+// var { html } = jb.ns('html')
 
 jb.component('html', {
   type: 'control',
@@ -7256,7 +7219,7 @@ jb.component('html.inIframe', {
 })
 ;
 
-var { image, pipeline } = jb.ns('image,css')
+// var { image, pipeline } = jb.ns('image,css')
 
 jb.component('image', {
   type: 'control,image',
@@ -7349,7 +7312,7 @@ jb.component('image.img', {
   })
 });
 
-var { icon, control } = jb.ns('icon,control')
+// var { icon, control } = jb.ns('icon,control')
 
 jb.component('control.icon', {
   type: 'control',
@@ -7417,7 +7380,7 @@ jb.component('feature.icon', {
 
 ;
 
-var { button } = jb.ns('button')
+// var { button } = jb.ns('button')
 
 jb.component('button', {
   type: 'control,clickable',
@@ -7473,7 +7436,7 @@ jb.component('button.altAction', {
 
 ;
 
-var { field, validation  } = jb.ns('field,validation');
+// var { field, validation  } = jb.ns('field,validation');
 
 jb.extension('ui', 'field', {
   initExtension: () => ({field_id_counter : 0 }),
@@ -7665,7 +7628,7 @@ jb.component('field.columnWidth', {
   })
 });
 
-var {editableText} = jb.ns('editableText')
+// var {editableText} = jb.ns('editableText')
 
 jb.component('editableText', {
   type: 'control',
@@ -7703,7 +7666,7 @@ jb.component('editableText.xButton', {
 })
 ;
 
-var {editableBoolean, refreshIfNotWatchable} = jb.ns('editableBoolean')
+// var {editableBoolean, refreshIfNotWatchable} = jb.ns('editableBoolean')
 
 jb.component('editableBoolean', {
   type: 'control',
@@ -7736,7 +7699,7 @@ jb.component('editableBoolean.initToggle', {
 })
 ;
 
-var {editableNumber} = jb.ns('editableNumber')
+// var {editableNumber} = jb.ns('editableNumber')
 
 jb.component('editableNumber', {
   type: 'control',
@@ -7791,8 +7754,7 @@ jb.component('editableNumber', {
 
 ;
 
-var {openDialog, dialog,dialogs, dialogFeature, and, or, runActionOnItems, getSessionStorage, userStateProp } 
-	= jb.ns('dialog,dialogs,openDialog,dialogFeature')
+// var {openDialog, dialog,dialogs, dialogFeature, and, or, runActionOnItems, getSessionStorage, userStateProp } = jb.ns('dialog,dialogs,openDialog,dialogFeature')
 
 jb.component('openDialog', {
   type: 'action,has-side-effects',
@@ -8326,7 +8288,7 @@ jb.component('dialogs.defaultStyle', {
 })
 ;
 
-var {itemlist} = jb.ns('itemlist,itemlistContainer')
+// var {itemlist} = jb.ns('itemlist,itemlistContainer')
 
 jb.component('itemlist', {
   description: 'list, dynamic group, collection, repeat',
@@ -8370,7 +8332,7 @@ jb.component('itemlist.init', {
 })
 ;
 
-var {runActionOnItem, isRef, inGroup, list } = jb.macro
+// var {runActionOnItem, isRef, inGroup, list } = jb.macro
 
 jb.component('itemlist.selection', {
   type: 'feature',
@@ -8473,6 +8435,7 @@ jb.component('itemlist.keyboardSelection', {
     ),
     frontEnd.flow(
       '%$cmp.onkeydown%',
+      rx.log('test 1'),
       rx.filter(not('%ctrlKey%')),
       rx.filter(inGroup(list(38, 40), '%keyCode%')),
       rx.map(itemlist.nextSelected(If('%keyCode%==40', 1, -1))),
@@ -8531,11 +8494,12 @@ jb.component('itemlist.nextSelected', {
   }
 });
 
-var { move } = jb.macro
+// var { move } = jb.macro
 
 jb.component('itemlist.dragAndDrop', {
   type: 'feature',
   impl: features(
+    frontEnd.requireExternalLibrary(['dragula.js','css/dragula.css']),
     method('moveItem', runActions(move(itemlist.indexToData('%from%'), itemlist.indexToData('%to%')), action.refreshCmp())),
     frontEnd.prop('drake', ({},{cmp}) => {
         if (!jb.frame.dragula) return jb.logError('itemlist.dragAndDrop - the dragula lib is not loaded')
@@ -8697,7 +8661,7 @@ jb.component('itemlist.calcSlicedItems', {
 })
 ;
 
-var { search, itemlistContainer } = jb.ns('search,itemlistContainer')
+// var { search, itemlistContainer } = jb.ns('search,itemlistContainer')
 
 jb.component('group.itemlistContainer', {
   description: 'itemlist writable container to support addition, deletion and selection',
@@ -8899,7 +8863,7 @@ jb.component('search.fuse', {
 })
 ;
 
-var { mdcStyle,table } = jb.ns('mdcStyle,table')
+// var { mdcStyle,table } = jb.ns('mdcStyle,table')
 
 jb.component('table', {
   description: 'list, dynamic group, collection, repeat',
@@ -9027,7 +8991,7 @@ jb.component('feature.expandToEndOfRow', {
     impl: calcProp('expandToEndOfRow','%$condition()%')
 });
 
-var { menu,menuStyle,menuSeparator,icon,key} = jb.ns('menu,menuStyle,menuSeparator,icon,key')
+// var { menu,menuStyle,menuSeparator,icon,key} = jb.ns('menu,menuStyle,menuSeparator,icon,key')
 
 jb.component('menu.menu', {
   type: 'menu.option',
@@ -9518,7 +9482,7 @@ jb.component('menuStyle.iconMenu', {
 })
 ;
 
-var {picklist} = jb.ns('picklist')
+// var {picklist} = jb.ns('picklist')
 
 jb.component('picklist', {
   type: 'control',
@@ -9664,7 +9628,7 @@ jb.component('picklist.initGroups', {
 })
 ;
 
-var {multiSelect, removeFromArray, addToArray } = jb.ns('multiSelect')
+// var {multiSelect, removeFromArray, addToArray } = jb.ns('multiSelect')
 
 jb.component('multiSelect', {
     type: 'control',
@@ -9863,7 +9827,7 @@ jb.component('theme.materialDesign', {
 })
 ;
 
-var { slider, editableNumber, mdcStyle } = jb.ns('slider,mdcStyle')
+// var { slider, editableNumber, mdcStyle } = jb.ns('slider,mdcStyle')
 
 jb.component('editableNumber.sliderNoText', {
   type: 'editable-number.style',
@@ -10040,7 +10004,7 @@ jb.component('winUtils.gotoUrl', {
 
 ;
 
-var { divider } = jb.ns('divider')
+// var { divider } = jb.ns('divider')
 
 jb.component('divider', {
     type: 'control',
@@ -10077,7 +10041,7 @@ jb.component('divider.flexAutoGrow', {
 })
 ;
 
-var {notEmpty, touch} = jb.macro
+// var {notEmpty, touch} = jb.macro
 
 jb.component('editableText.picklistHelper', {
   type: 'feature',
@@ -10199,7 +10163,11 @@ jb.component('editableText.helperPopup', {
  )
 });
 
-var {mdcStyle} = jb.ns('mdcStyle')
+// var {mdcStyle} = jb.ns('mdcStyle')
+
+jb.extension('mdIcons', {
+  require: ['/dist/md-icons.js']
+})
 
 jb.component('mdcStyle.initDynamic', {
   type: 'feature',
@@ -10207,25 +10175,24 @@ jb.component('mdcStyle.initDynamic', {
     {id: 'query', as: 'string'}
   ],
   impl: features(
-    frontEnd.requireExternalLibrary(['material-components-web.js','css/material-components-web.css','css/font.css']),
+    frontEnd.requireExternalLibrary(['material-components-web.js','css/font.css','css/material.css']),
     frontEnd.init( async ({},{cmp}) => {
-      if (!jb.ui.material) await jb.exec(waitFor(() => jb.frame.mdc))
       const mdc = jb.frame.mdc
-      //if (!mdc) return jb.logError('please load mdc library')
+      if (!mdc) return jb.logError('please load mdc library')
       cmp.mdc_comps = cmp.mdc_comps || [];
-      //;['switch','chip-set','tab-bar','slider','select','text-field']
-      //Object.keys(mdc)
-      ['switch','chip-set','tab-bar','slider','select','text-field'].forEach(cmpName => {
+      const module = { switch: 'switchControl', 'chip-set': 'chips', 'tab-bar': 'tabBar', 'text-field': 'textField' }
+      ;['switch','chip-set','tab-bar','slider','select','text-field'].forEach(cmpName => {
         const elm = jb.ui.findIncludeSelf(cmp.base,`.mdc-${cmpName}`)[0]
         if (elm) {
           const name1 = cmpName.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase())
           const name = name1[0].toUpperCase() + name1.slice(1)
-          cmp.mdc_comps.push({mdc_cmp: new (jb.ui.material || mdc[cmpName])[`MDC${name}`](elm), cmpName})
+          const m = mdc[cmpName] ? cmpName : module[cmpName]
+          cmp.mdc_comps.push({mdc_cmp: new mdc[m][`MDC${name}`](elm), cmpName})
           jb.log(`mdc frontend init ${cmpName}`,{cmp})
         }
       })
       if (cmp.base.classList.contains('mdc-button') || cmp.base.classList.contains('mdc-fab')) {
-        cmp.mdc_comps.push({mdc_cmp: new (jb.ui.material || mdc.ripple).MDCRipple(cmp.base), cmpName: 'ripple' })
+        cmp.mdc_comps.push({mdc_cmp: new mdc.ripple.MDCRipple(cmp.base), cmpName: 'ripple' })
         jb.log('mdc frontend init ripple',{cmp})
       }
     }),
@@ -10483,8 +10450,7 @@ jb.component('button.mdcFloatingAction', {
                 vdom.addClass('mdc-fab__icon').setAttribute('title',vdom.getAttribute('title') || title)),
             ...[withTitle && h('span',{ class: 'mdc-fab__label'},title)].filter(x=>x)
       ]),
-    css: '{width: %$buttonSize%px; height: %$buttonSize%px;}',
-    features: [button.initAction(), mdcStyle.initDynamic()]
+    features: [button.initAction(), mdcStyle.initDynamic(), css('~.mdc-fab {width: %$buttonSize%px; height: %$buttonSize%px;}')]
   })
 })
 
@@ -10522,7 +10488,7 @@ jb.component('button.mdcHeader', {
 
 ;
 
-var {hidden} = jb.ns('mdc-style')
+// var {hidden} = jb.ns('mdc-style')
 
 jb.component('editableText.input', {
   type: 'editable-text.style',
@@ -10739,10 +10705,7 @@ jb.component('flexItem.grow', {
   params: [
     {id: 'factor', as: 'string', defaultValue: '1'}
   ],
-  impl: {
-    '$': 'feature.css',
-    '$byValue': ['flex-grow: %$factor%']
-  }
+  impl: css('flex-grow: %$factor%')
 })
 
 jb.component('flexItem.basis', {
@@ -10751,10 +10714,7 @@ jb.component('flexItem.basis', {
   params: [
     {id: 'factor', as: 'string', defaultValue: '1'}
   ],
-  impl: {
-    '$': 'feature.css',
-    '$byValue': ['flex-basis: %$factor%']
-  }
+  impl: css('flex-basis: %$factor%')
 })
 
 jb.component('flexItem.alignSelf', {
@@ -10763,15 +10723,12 @@ jb.component('flexItem.alignSelf', {
   params: [
     {id: 'align', as: 'string', options: 'auto,flex-start,flex-end,center,baseline,stretch', defaultValue: 'auto'}
   ],
-  impl: {
-    '$': 'feature.css',
-    '$byValue': ['align-self: %$align%']
-  }
+  impl: css('align-self: %$align%')
 })
 
 ;
 
-var { dynamicControls, css, header } = jb.ns('css')
+// var { dynamicControls, css, header } = jb.ns('css')
 
 jb.component('group.htmlTag', {
   type: 'group.style',
@@ -11527,7 +11484,7 @@ jb.component('editableBoolean.picklist', {
 });
 
 (function() {
-var { tree } = jb.ns('tree')
+// var { tree } = jb.ns('tree')
 
 jb.component('tree', {
   type: 'control',
@@ -11815,54 +11772,55 @@ jb.component('tree.keyboardSelection', {
 jb.component('tree.dragAndDrop', {
   type: 'feature',
   impl: features(
-		htmlAttribute('tabIndex',0),
-		method('moveItem', tree.moveItem('%from%','%to%')),
-	  	frontEnd.flow(
-			source.frontEndEvent('keydown'), 
-			rx.filter('%ctrlKey%'),
-			rx.filter(inGroup(list(38,40),'%keyCode%')),
-			rx.map(obj(
-				prop('from', tree.nextSelected(0)),
-				prop('to', tree.nextSelected(If('%keyCode%==40',1,-1)))
-			)),
-			rx.filter(tree.sameParent('%from%','%to%')),     
-			sink.BEMethod('moveItem','%%')
-		),
-		frontEnd.onRefresh( (ctx,{cmp}) => cmp.drake.containers = jb.ui.find(cmp.base,'.jb-array-node>.treenode-children')),
-		frontEnd.init( (ctx,{cmp}) => {
-        	const drake = cmp.drake = dragula([], {
-				moves: el => jb.ui.matches(el,'.jb-array-node>.treenode-children>div')
-	    	})
-          	drake.containers = jb.ui.find(cmp.base,'.jb-array-node>.treenode-children');
-			drake.on('drag', function(el) {
-				const path = cmp.elemToPath(el.firstElementChild)
-				el.dragged = { path, expanded: cmp.state.expanded[path]}
-				delete cmp.state.expanded[path]; // collapse when dragging
-			})
+	frontEnd.requireExternalLibrary(['dragula.js','css/dragula.css']),
+	htmlAttribute('tabIndex',0),
+	method('moveItem', tree.moveItem('%from%','%to%')),
+	frontEnd.flow(
+		source.frontEndEvent('keydown'), 
+		rx.filter('%ctrlKey%'),
+		rx.filter(inGroup(list(38,40),'%keyCode%')),
+		rx.map(obj(
+			prop('from', tree.nextSelected(0)),
+			prop('to', tree.nextSelected(If('%keyCode%==40',1,-1)))
+		)),
+		rx.filter(tree.sameParent('%from%','%to%')),     
+		sink.BEMethod('moveItem','%%')
+	),
+	frontEnd.onRefresh( (ctx,{cmp}) => cmp.drake.containers = jb.ui.find(cmp.base,'.jb-array-node>.treenode-children')),
+	frontEnd.init( (ctx,{cmp}) => {
+		const drake = cmp.drake = dragula([], {
+			moves: el => jb.ui.matches(el,'.jb-array-node>.treenode-children>div')
+		})
+		drake.containers = jb.ui.find(cmp.base,'.jb-array-node>.treenode-children');
+		drake.on('drag', function(el) {
+			const path = cmp.elemToPath(el.firstElementChild)
+			el.dragged = { path, expanded: cmp.state.expanded[path]}
+			delete cmp.state.expanded[path]; // collapse when dragging
+		})
 
-			drake.on('drop', (dropElm, target, source,_targetSibling) => {
-				if (!dropElm.dragged) return;
-				dropElm.parentNode.removeChild(dropElm);
-				cmp.state.expanded[dropElm.dragged.path] = dropElm.dragged.expanded; // restore expanded state
-				const targetSibling = _targetSibling; // || target.lastElementChild == dropElm && target.previousElementSibling
-				let targetPath = targetSibling ? cmp.elemToPath(targetSibling) : 
-					target.lastElementChild ? addToIndex(cmp.elemToPath(target.lastElementChild),1) : cmp.elemToPath(target);
-				// strange dragula behavior fix
-				const draggedIndex = Number(dropElm.dragged.path.split('~').pop());
-				const targetIndex = Number(targetPath.split('~').pop()) || 0;
-				if (target === source && targetIndex > draggedIndex)
-					targetPath = addToIndex(targetPath,-1)
-				ctx.run(action.runBEMethod('moveItem',() => ({from: dropElm.dragged.path, to: targetPath})))
+		drake.on('drop', (dropElm, target, source,_targetSibling) => {
+			if (!dropElm.dragged) return;
+			dropElm.parentNode.removeChild(dropElm);
+			cmp.state.expanded[dropElm.dragged.path] = dropElm.dragged.expanded; // restore expanded state
+			const targetSibling = _targetSibling; // || target.lastElementChild == dropElm && target.previousElementSibling
+			let targetPath = targetSibling ? cmp.elemToPath(targetSibling) : 
+				target.lastElementChild ? addToIndex(cmp.elemToPath(target.lastElementChild),1) : cmp.elemToPath(target);
+			// strange dragula behavior fix
+			const draggedIndex = Number(dropElm.dragged.path.split('~').pop());
+			const targetIndex = Number(targetPath.split('~').pop()) || 0;
+			if (target === source && targetIndex > draggedIndex)
+				targetPath = addToIndex(targetPath,-1)
+			ctx.run(action.runBEMethod('moveItem',() => ({from: dropElm.dragged.path, to: targetPath})))
 
-				function addToIndex(path,toAdd) {
-					if (!path) debugger;
-					if (isNaN(Number(path.slice(-1)))) return path
-					const index = Number(path.slice(-1)) + toAdd;
-					return path.split('~').slice(0,-1).concat([index]).join('~')
-				}
-		    })
-      	})
-  	)
+			function addToIndex(path,toAdd) {
+				if (!path) debugger;
+				if (isNaN(Number(path.slice(-1)))) return path
+				const index = Number(path.slice(-1)) + toAdd;
+				return path.split('~').slice(0,-1).concat([index]).join('~')
+			}
+		})
+	})
+  )
 })
 
 jb.component('tree.nextSelected', {
@@ -11969,7 +11927,7 @@ jb.component('tree.moveItem', {
 })()
 ;
 
-var { tableTree, tree } = jb.ns('tableTree,tree')
+// var { tableTree, tree } = jb.ns('tableTree,tree')
 
 jb.component('tableTree', {
   type: 'control',
@@ -12154,6 +12112,7 @@ jb.component('tableTree.resizer', {
 jb.component('tableTree.dragAndDrop', {
   type: 'feature',
   impl: features(
+    frontEnd.requireExternalLibrary(['dragula.js','css/dragula.css']),
     frontEnd.onRefresh( (ctx,{cmp}) => cmp.drake.containers = jb.ui.find(cmp.base,'.jb-items-parent')),
     method('moveItem', (ctx,{$props}) => $props.model.move(ctx.data.from,ctx.data.to,ctx)),
 		frontEnd.init( (ctx,{cmp}) => {
@@ -12318,7 +12277,7 @@ jb.component('prettyPrint', {
   impl: (ctx,profile) => jb.utils.prettyPrint(jb.val(profile),{ ...ctx.params, comps: jb.studio.previewjb.comps})
 })
 
-jb.extension('utils', {
+jb.extension('utils', 'prettyPrint', {
   initExtension() {
     return {
       emptyLineWithSpaces: Array.from(new Array(200)).map(_=>' ').join(''),
@@ -12414,7 +12373,7 @@ jb.extension('utils', {
       const id = [jb.utils.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
       const comp = comps[id]
       if (comp)
-        jb.core.fixMacroByValue(profile,comp)
+        jb.macro.fixProfile(profile)
       if (noMacros || !id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
         const props = Object.keys(profile)
         if (props.indexOf('$') > 0) { // make the $ first
@@ -12423,7 +12382,7 @@ jb.extension('utils', {
         }
         return joinVals(ctx, props.map(prop=>({innerPath: prop, val: profile[prop]})), '{', '}', flat, false)
       }
-      const macro = jb.macroName(id)
+      const macro = jb.macro.titleToId(id)
 
       const params = comp.params || []
       const firstParamIsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
@@ -12593,7 +12552,7 @@ jb.extension('remoteCtx', {
     deSerializeCmp(code) {
         if (!code) return
         try {
-            const cmp = eval(`(function() { ${jb.importAllMacros()}; return ${code} })()`)
+            const cmp = eval(`(function() { ${jb.macro.importAll()}; return ${code} })()`)
             const res = {...cmp, [jb.core.location]: cmp.location, [jb.core.loadingPhase]: cmp.loadingPhase }
             delete res.location
             delete res.loadingPhase
@@ -12630,11 +12589,11 @@ Routing is implemented by remoteRoutingPort, first calclating the routing path, 
 The routing path is reversed to create response message
 */
 
-var { rx,source,jbm,remote,net,pipe, aggregate } = jb.ns('rx,source,jbm,remote,net')
+//var { rx,source,jbm,remote,net,pipe, aggregate } = jb.ns('rx,source,jbm,remote,net')
 
 jb.extension('cbHandler', {
     initExtension() {
-        Object.assign(this, { counter: 0, map: {}, })
+        return { counter: 0, map: {} }
     },
     newId: () => jb.uri + ':' + (jb.cbHandler.counter++),
     get: id => jb.cbHandler.map[id],
@@ -12867,6 +12826,37 @@ jbLoadingPhase = 'appFiles'
     }
 })
 
+jb.component('jbm.worker1', {
+    type: 'jbm',
+    params: [
+        {id: 'id', as: 'string', defaultValue: 'w1' },
+        {id: 'networkPeer', as: 'boolean', description: 'used for testing' },
+    ],    
+    impl: ({},name,networkPeer) => {
+        const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
+        if (childsOrNet[name]) return childsOrNet[name]
+        const workerUri = networkPeer ? name : `${jb.uri}•${name}`
+        const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
+        
+        const workerCode = `
+importScripts(location.origin+'/src/loader/jb-loader.js')
+jb_codeLoaderClient('${workerUri}').then(() => {
+spy = jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
+jb.codeLoaderJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
+})
+//# sourceURL=${workerUri}-startup.js
+`
+        const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
+        return childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
+
+        function jb_codeLoaderClient() {
+            'core/jb-core,core/core-utils,core/jb-expression,core/jb-macro,misc/spy'.split(',').map(x=>`/src/${x}.js`).forEach(url=> importScripts(location.origin+url))
+            var { If,not,contains,writeValue,obj,prop,rx,source,sink,call,jbm,remote,pipe,log,net,aggregate,list } = jb.macro.ns('If,not,contains,writeValue,obj,prop,rx,source,sink,call,jbm,remote,pipe,log,net,aggregate,list') // ns use in modules
+            'loader/code-loader,core/jb-common,misc/jb-callbag,misc/rx-comps,misc/pretty-print,misc/remote-context,misc/jbm,misc/remote'.split(',').map(x=>`/src/${x}.js`).forEach(url=> importScripts(location.origin+url))
+        }        
+    }
+})
+
 jb.component('jbm.child', {
     type: 'jbm',
     params: [
@@ -13053,6 +13043,19 @@ jb.component('remote.initShadowData', {
     )
 })
 
+jb.component('remote.copyPassiveData', {
+    type: 'action',
+    description: 'copy passive data to remote jbm',
+    params: [
+      {id: 'jbm', type: 'jbm'},
+    ],
+    impl: runActions(
+        Var('passiveData', () => jb.db.passive()),
+        remote.action( (ctx,passiveData) => Object.keys(passiveData).forEach(k=>jb.db.passive(k,passiveData[k])),
+            '%$jbm%')
+    )
+})
+
 /*** net comps */
 
 jb.component('net.listSubJbms', {
@@ -13082,7 +13085,7 @@ jb.component('net.listAll', {
     )
 });
 
-var {rx, remote, widget, jbm} = jb.ns('remote,rx,widget,jbm')
+// var {rx, remote, widget, jbm} = jb.ns('remote,rx,widget,jbm')
 
 jb.component('widget.frontEndCtrl', {
     type: 'control',
@@ -13207,7 +13210,7 @@ jb.component('remote.widgetFrontEnd', {
 jb.extension('ui','headless', {
     initExtension_phase1100() { // 1100 is after ui phase (100)
         return {
-            widgetRenderingSrc: jb.callbag.replay(10)(jb.ui.renderingUpdates),
+            widgetRenderingSrc: jb.callbag.replay(100)(jb.ui.renderingUpdates),
             headless: {},
         }
     },
@@ -13287,11 +13290,94 @@ jb.component('widget.headlessWidgets', {
     impl: () => Object.keys(jb.ui.headless)
 });
 
-(function() {
-var {textEditor} = jb.ns('textEditor')
-
-const posToCM = pos => pos && ({line: pos.line, ch: pos.col})
-const posFromCM = pos => pos && ({line: pos.line, col: pos.ch})
+jb.extension('codemirror', {
+	injectCodeMirror(ctx,{text,cmp,el,cm_settings,_enableFullScreen,formatText}) {
+		if (cmp.editor) return
+		if (text == null)
+			return jb.logError('codemirror - no binding to text',{ctx, cmp})
+		const _extraKeys = { ...cm_settings.extraKeys, ...jb.path(cmp.extraCmSettings,'extraKeys')}
+		const extraKeys = jb.objFromEntries(jb.entries(_extraKeys).map(e=>[
+			e[0], (''+e[1]).replace(/\s/g,'').indexOf('()=>') == 0 ? e[1]
+				: _ => ctx.setVar('ev',jb.ui.buildUserEvent({},el)).run(action.runBEMethod(e[1]))
+		]))
+		const gutters = [ ...(cm_settings.gutters || []), ...(jb.path(cmp.extraCmSettings,'gutters') || []) ]
+		const settings = {...cm_settings, ...cmp.extraCmSettings, value: text || '', autofocus: false, extraKeys, gutters }
+		cmp.editor = CodeMirror(el, settings)
+		cmp.editor.getWrapperElement().setAttribute('jb_external','true')
+		jb.ui.addClass(cmp.editor.getWrapperElement(),'autoResizeInDialog')
+		if (formatText) {
+			CodeMirror.commands.selectAll(cmp.editor)
+			cmp.editor.autoFormatRange(cmp.editor.getCursor(true), cmp.editor.getCursor(false));
+			cmp.editor.setSelection({line:0, ch:0})
+		}
+		//cmp.editor.refresh()
+		_enableFullScreen && jb.delay(1).then(() => jb.codemirror.enableFullScreen(ctx,cmp,el))
+	},
+	
+	enableFullScreen(ctx,cmp,el) {
+		const width = jb.ui.outerWidth(el), height = jb.ui.outerHeight(el), editor = cmp.editor
+		const fullScreenBtnHtml = '<div class="jb-codemirror-fullScreenBtnCss hidden"><img title="Full Screen (F11)" src="http://png-1.findicons.com/files/icons/1150/tango/22/view_fullscreen.png"/></div>'
+		const escText = '<span class="jb-codemirror-escCss">Press ESC or F11 to exit full screen</span>'
+		const lineNumbers = true
+		const css = `
+			.jb-codemirror-escCss { cursor:default; text-align: center; width: 100%; position:absolute; top:0px; left:0px; font-family: arial; font-size: 11px; color: #a00; padding: 2px 5px 3px; }
+			.jb-codemirror-escCss:hover { text-decoration: underline; }
+			.jb-codemirror-fullScreenBtnCss { position:absolute; bottom:5px; right:15px; -webkit-transition: opacity 1s; z-index: 20; }
+			.jb-codemirror-fullScreenBtnCss.hidden { opacity:0; }
+			.jb-codemirror-editorCss { position:relative; }
+			.jb-codemirror-fullScreenEditorCss { padding-top: 20px, display: block; position: fixed !important; top: 0; left: 0; z-index: 99999999; }
+		`;
+		if (!jb.ui.find(document,'#jb_codemirror_fullscreen')[0])
+			jb.ui.addHTML(document.head,`<style id="jb_codemirror_fullscreen" type="text/css">${css}</style>`)
+	
+		const jEditorElem = editor.getWrapperElement()
+		  jb.ui.addClass(jEditorElem,'jb-codemirror-editorCss')
+		const prevLineNumbers = editor.getOption('lineNumbers')
+		  jb.ui.addHTML(jEditorElem,fullScreenBtnHtml)
+		const fullScreenButton =jb.ui.find(jEditorElem,'.jb-codemirror-fullScreenBtnCss')[0]
+		fullScreenButton.onclick = _ => switchMode()
+		fullScreenButton.onmouseenter = _ => jb.ui.removeClass(fullScreenButton,'hidden')
+		fullScreenButton.onmouseleave = _ => jb.ui.addClass(fullScreenButton,'hidden')
+	
+		const fullScreenClass = 'jb-codemirror-fullScreenEditorCss'
+	
+		function onresize() {
+			const wrapper = editor.getWrapperElement()
+			wrapper.style.width = window.innerWidth + 'px'
+			wrapper.style.height = window.innerHeight + 'px'
+			editor.setSize(window.innerWidth, window.innerHeight - 20)
+			jEditorElem.style.height = document.body.innerHeight + 'px' //Math.max( document.body.innerHeight, $(window).height()) + 'px' );
+		}
+	
+		function switchMode(onlyBackToNormal) {
+			cmp.innerElemOffset = null
+			if (jb.ui.hasClass(jEditorElem,fullScreenClass)) {
+				jb.ui.removeClass(jEditorElem,fullScreenClass)
+				window.removeEventListener('resize', onresize)
+				editor.setOption('lineNumbers', prevLineNumbers)
+				editor.setSize(width, height)
+				editor.refresh()
+				jEditorElem.removeChild(jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0])
+				jEditorElem.style.width = null
+			} else if (!onlyBackToNormal) {
+				jb.ui.addClass(jEditorElem,fullScreenClass)
+				window.addEventListener('resize', onresize)
+				onresize()
+				document.documentElement.style.overflow = 'hidden'
+				if (lineNumbers) editor.setOption('lineNumbers', true)
+				editor.refresh()
+				jb.ui.addHTML(jEditorElem,escText)
+				  jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0].onclick = _ => switchMode(true)
+				jb.ui.focus(editor,'code mirror',ctx)
+			}
+		}
+	
+		editor.addKeyMap({
+			'F11': () => switchMode(),
+			'Esc': () => switchMode(true)
+		})
+	}	
+})
 
 jb.component('editableText.codemirror', {
   type: 'editable-text.style',
@@ -13309,6 +13395,7 @@ jb.component('editableText.codemirror', {
     {id: 'maxLength', as: 'number', defaultValue: 5000}
   ],
   impl: features(
+    frontEnd.requireExternalLibrary(['codemirror.js','css/codemirror.css']),
 	calcProp('text','%$$model/databind()%'),
 	frontEnd.var('text', '%$$props/text%'),
     calcProp('textAreaAlternative',({},{$props},{maxLength}) => ($props.text || '').length > maxLength),
@@ -13324,7 +13411,7 @@ jb.component('editableText.codemirror', {
 	method('onCtrlEnter', call('onCtrlEnter')),
 	textEditor.cmEnrichUserEvent(),
     frontEnd.init( (ctx,vars) => ! jb.ui.hasClass(vars.el, 'jb-textarea-alternative-for-codemirror')
-		 && injectCodeMirror(ctx,vars)),
+		 && jb.codemirror.injectCodeMirror(ctx,vars)),
 	frontEnd.onRefresh(({},{text,cmp}) => cmp.editor.setValue(text)),
 	method('writeText',writeValue('%$$model/databind()%','%%')),
 	frontEnd.flow(
@@ -13384,98 +13471,11 @@ jb.component('textEditor.cmEnrichUserEvent', {
                 outerWidth: jb.ui.outerWidth(elem), 
                 clientRect: elem.getBoundingClientRect(),
                 text: editor.getValue(),
-                selectionStart: posFromCM(editor.getCursor()),
+                selectionStart: {line: editor.getCursor().line, col: editor.getCursor().ch}
             }
         })
     )
 })
-
-function injectCodeMirror(ctx,{text,cmp,el,cm_settings,_enableFullScreen,formatText}) {
-	if (cmp.editor) return
-	if (text == null)
-		return jb.logError('codemirror - no binding to text',{ctx, cmp})
-	const _extraKeys = { ...cm_settings.extraKeys, ...jb.path(cmp.extraCmSettings,'extraKeys')}
-	const extraKeys = jb.objFromEntries(jb.entries(_extraKeys).map(e=>[
-		e[0], (''+e[1]).replace(/\s/g,'').indexOf('()=>') == 0 ? e[1]
-			: _ => ctx.setVar('ev',jb.ui.buildUserEvent({},el)).run(action.runBEMethod(e[1]))
-	]))
-	const gutters = [ ...(cm_settings.gutters || []), ...(jb.path(cmp.extraCmSettings,'gutters') || []) ]
-	const settings = {...cm_settings, ...cmp.extraCmSettings, value: text || '', autofocus: false, extraKeys, gutters }
-	cmp.editor = CodeMirror(el, settings)
-	cmp.editor.getWrapperElement().setAttribute('jb_external','true')
-	jb.ui.addClass(cmp.editor.getWrapperElement(),'autoResizeInDialog')
-	if (formatText) {
-		CodeMirror.commands.selectAll(cmp.editor)
-		cmp.editor.autoFormatRange(cmp.editor.getCursor(true), cmp.editor.getCursor(false));
-		cmp.editor.setSelection({line:0, ch:0})
-	}
-	//cmp.editor.refresh()
-	_enableFullScreen && jb.delay(1).then(() => enableFullScreen(ctx,cmp,el))
-}
-
-function enableFullScreen(ctx,cmp,el) {
-	const width = jb.ui.outerWidth(el), height = jb.ui.outerHeight(el), editor = cmp.editor
-	const fullScreenBtnHtml = '<div class="jb-codemirror-fullScreenBtnCss hidden"><img title="Full Screen (F11)" src="http://png-1.findicons.com/files/icons/1150/tango/22/view_fullscreen.png"/></div>'
-	const escText = '<span class="jb-codemirror-escCss">Press ESC or F11 to exit full screen</span>'
-	const lineNumbers = true
-	const css = `
-		.jb-codemirror-escCss { cursor:default; text-align: center; width: 100%; position:absolute; top:0px; left:0px; font-family: arial; font-size: 11px; color: #a00; padding: 2px 5px 3px; }
-		.jb-codemirror-escCss:hover { text-decoration: underline; }
-		.jb-codemirror-fullScreenBtnCss { position:absolute; bottom:5px; right:15px; -webkit-transition: opacity 1s; z-index: 20; }
-		.jb-codemirror-fullScreenBtnCss.hidden { opacity:0; }
-		.jb-codemirror-editorCss { position:relative; }
-		.jb-codemirror-fullScreenEditorCss { padding-top: 20px, display: block; position: fixed !important; top: 0; left: 0; z-index: 99999999; }
-	`;
-	if (!jb.ui.find(document,'#jb_codemirror_fullscreen')[0])
-    	jb.ui.addHTML(document.head,`<style id="jb_codemirror_fullscreen" type="text/css">${css}</style>`)
-
-	const jEditorElem = editor.getWrapperElement()
-  	jb.ui.addClass(jEditorElem,'jb-codemirror-editorCss')
-	const prevLineNumbers = editor.getOption('lineNumbers')
-  	jb.ui.addHTML(jEditorElem,fullScreenBtnHtml)
-	const fullScreenButton =jb.ui.find(jEditorElem,'.jb-codemirror-fullScreenBtnCss')[0]
-	fullScreenButton.onclick = _ => switchMode()
-	fullScreenButton.onmouseenter = _ => jb.ui.removeClass(fullScreenButton,'hidden')
-	fullScreenButton.onmouseleave = _ => jb.ui.addClass(fullScreenButton,'hidden')
-
-	const fullScreenClass = 'jb-codemirror-fullScreenEditorCss'
-
-	function onresize() {
-		const wrapper = editor.getWrapperElement()
-		wrapper.style.width = window.innerWidth + 'px'
-		wrapper.style.height = window.innerHeight + 'px'
-		editor.setSize(window.innerWidth, window.innerHeight - 20)
-		jEditorElem.style.height = document.body.innerHeight + 'px' //Math.max( document.body.innerHeight, $(window).height()) + 'px' );
-	}
-
-	function switchMode(onlyBackToNormal) {
-		cmp.innerElemOffset = null
-		if (jb.ui.hasClass(jEditorElem,fullScreenClass)) {
-			jb.ui.removeClass(jEditorElem,fullScreenClass)
-			window.removeEventListener('resize', onresize)
-			editor.setOption('lineNumbers', prevLineNumbers)
-			editor.setSize(width, height)
-			editor.refresh()
-			jEditorElem.removeChild(jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0])
-			jEditorElem.style.width = null
-		} else if (!onlyBackToNormal) {
-			jb.ui.addClass(jEditorElem,fullScreenClass)
-			window.addEventListener('resize', onresize)
-			onresize()
-			document.documentElement.style.overflow = 'hidden'
-			if (lineNumbers) editor.setOption('lineNumbers', true)
-			editor.refresh()
-			jb.ui.addHTML(jEditorElem,escText)
-      		jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0].onclick = _ => switchMode(true)
-			jb.ui.focus(editor,'code mirror',ctx)
-		}
-	}
-
-	editor.addKeyMap({
-		'F11': () => switchMode(),
-		'Esc': () => switchMode(true)
-	})
-}
 
 jb.component('text.codemirror', {
   type: 'text.style',
@@ -13489,6 +13489,7 @@ jb.component('text.codemirror', {
     {id: 'mode', as: 'string', options: 'htmlmixed,javascript,css'},
   ],
   impl: features(
+    frontEnd.requireExternalLibrary(['codemirror.js','css/codemirror.css']),
 	frontEnd.var('text', '%$$model/text()%'),
     () => ({ template: ({},{},h) => h('div') }),
 	frontEnd.var('cm_settings', ({},{},{cm_settings,lineWrapping, mode, lineNumbers}) => ({
@@ -13496,16 +13497,15 @@ jb.component('text.codemirror', {
 	})),
 	frontEnd.var('_enableFullScreen', '%$enableFullScreen%'),
 	frontEnd.var('formatText', '%$formatText%'),
-    frontEnd.init( (ctx,vars) => injectCodeMirror(ctx,vars)),
-//	frontEnd.onRefresh((ctx,vars) => { injectCodeMirror(ctx,vars); vars.cmp.editor.setValue(vars.text) }),	
+    frontEnd.init( (ctx,vars) => jb.codemirror.injectCodeMirror(ctx,vars)),
+//	frontEnd.onRefresh((ctx,vars) => { jb.codemirror.injectCodeMirror(ctx,vars); vars.cmp.editor.setValue(vars.text) }),	
     css(({},{},{height}) => `{width: 100%}
 		>div { box-shadow: none !important; ${jb.ui.propWithUnits('height',height)} !important}`)
   )
 })
+;
 
-})();
-
-var { tableTree, tree } = jb.ns('tableTree,tree')
+// var { tableTree, tree } = jb.ns('tableTree,tree')
 
 jb.component('tableTree', {
   type: 'control',
@@ -13690,6 +13690,7 @@ jb.component('tableTree.resizer', {
 jb.component('tableTree.dragAndDrop', {
   type: 'feature',
   impl: features(
+    frontEnd.requireExternalLibrary(['dragula.js','css/dragula.css']),
     frontEnd.onRefresh( (ctx,{cmp}) => cmp.drake.containers = jb.ui.find(cmp.base,'.jb-items-parent')),
     method('moveItem', (ctx,{$props}) => $props.model.move(ctx.data.from,ctx.data.to,ctx)),
 		frontEnd.init( (ctx,{cmp}) => {
@@ -13725,7 +13726,7 @@ jb.component('tableTree.dragAndDrop', {
 
 ;
 
-var { textEditor} = jb.ns('textEditor');
+// var { textEditor} = jb.ns('textEditor');
 
 jb.extension('textEditor', {
     getSinglePathChange(diff, currentVal) {
@@ -13793,7 +13794,7 @@ jb.extension('textEditor', {
         const editor = cmp.editor
         const data_ref = cmp.ctx.vars.$model.databind()
         const text = jb.tostring(data_ref)
-        const pathWithOffset = _path ? {path: _path+'~!value',offset:1} : this.pathOfPosition(data_ref, editor.getCursorPos())
+        const pathWithOffset = _path ? {path: _path+'~!value',offset:1} : jb.textEditor.pathOfPosition(data_ref, editor.getCursorPos())
         editor.setValue(text)
         if (pathWithOffset) {
             const _pos = data_ref.locationMap[pathWithOffset.path]
@@ -13823,7 +13824,7 @@ jb.extension('textEditor', {
         const locationMap = jb.textEditor.enrichMapWithOffsets(text, map)
         const srcForImpl = '{\n'+compSrc.slice((/^  /m.exec(compSrc) || {}).index,-1)
         const cursorOffset = jb.textEditor.lineColToOffset(srcForImpl, {line: pos.line - componentHeaderIndex, col: pos.col})
-        const path = pathOfPosition({text, locationMap}, cursorOffset)
+        const path = jb.textEditor.pathOfPosition({text, locationMap}, cursorOffset)
         return { path, suggestions: new jbToUse.jbCtx().run(sourceEditor.suggestions(path.path)) }
     },
     getPosOfPath(path,jbToUse = jb) {
@@ -13835,7 +13836,7 @@ jb.extension('textEditor', {
         const { text, map } = jb.utils.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
         map.cursor = [pos.line,pos.col,pos.line,pos.col]
         const locationMap = jb.textEditor.enrichMapWithOffsets(text, map)
-        const res = pathOfPosition({text, locationMap}, locationMap.cursor.offset_from )
+        const res = jb.textEditor.pathOfPosition({text, locationMap}, locationMap.cursor.offset_from )
         return res && res.path.split('~!')[0]
     },
     closestComp(fileContent, pos) {
@@ -13936,7 +13937,7 @@ jb.component('watchableAsText', {
 //         }
 //         if (editor && editor.getCursorPos)
 //             action(editor.ctx().setVars({
-//                 cursorPath: pathOfPosition(editor.data_ref, editor.getCursorPos()).path,
+//                 cursorPath: jb.textEditor.pathOfPosition(editor.data_ref, editor.getCursorPos()).path,
 //                 cursorCoord: editor.cursorCoords()
 //             }))
 //     }
@@ -13981,7 +13982,7 @@ jb.component('textEditor.cursorPath', {
         {id: 'watchableAsText', as: 'ref', mandatory: true, description: 'the same that was used for databind'},
         {id: 'cursorPos', dynamic: true, defaultValue: '%$ev/selectionStart%'},
     ],  
-    impl: (ctx,ref,pos) => jb.path(pathOfPosition(ref, pos()),'path') || ''
+    impl: (ctx,ref,pos) => jb.path(jb.textEditor.pathOfPosition(ref, pos()),'path') || ''
 })
 
 jb.component('textarea.initTextareaEditor', {
@@ -14018,7 +14019,7 @@ jb.component('textEditor.enrichUserEvent', {
                 outerWidth: jb.ui.outerWidth(elem), 
                 clientRect: elem.getBoundingClientRect(),
                 text: elem.value,
-                selectionStart: offsetToLineCol(elem.value,elem.selectionStart)
+                selectionStart: jb.textEditor.offsetToLineCol(elem.value,elem.selectionStart)
             }
         })
     )
@@ -14051,16 +14052,18 @@ jb.component('textEditor.enrichUserEvent', {
 //   )
 // });
 
-var { studio } = jb.ns('studio');
-eval(jb.importAllMacros());
+// var { studio } = jb.ns('studio');
+//eval(jb.macro.importAll());
 
-jb.extension('studio', {
-	initExtension() {
+jb.extension('studio', 'path', {
+  initExtension() {
 		return {
 			compsHistory: [],
 			scriptChange: jb.callbag.subject(),
+			previewjb: jb
 		}
-   },
+  },
+  execInStudio: (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.core.jbCtx().run(...args),
   compsRefOfjbm(jbm, {historyWin, compsRefId} = {historyWin: 5, compsRefId: 'comps'}) {
 	function compsRef(val,opEvent,{source}= {}) {
 		if (typeof val == 'undefined')
@@ -14109,7 +14112,7 @@ jb.extension('studio', {
 	if (jb.studio.compsRefHandler) return
     jb.studio.compsRefHandler = new jb.watchable.WatchableValueByRef(compsRef)
 	jb.db.addWatchableHandler(jb.studio.compsRefHandler)
-	initUIObserver && jb.ui.subscribeToRefChange(compsRef)
+	initUIObserver && jb.ui.subscribeToRefChange(jb.studio.compsRefHandler)
     compIdAsReferred && jb.studio.compsRefHandler.makeWatchable(compIdAsReferred)
 	jb.callbag.subscribe(e=>jb.studio.scriptChangeHandler(e))(jb.studio.compsRefHandler.resourceChange)
   },
@@ -14432,6 +14435,13 @@ jb.component('studio.getOrCreateCompInArray', {
 	}
 })
 
+jb.component('studio.writableCompsService', {
+	type: 'service',
+	impl: () => ({ init: 
+		() => jb.studio.initLocalCompsRefHandler(jb.studio.compsRefOfjbm(jb), {compIdAsReferred: '', initUIObserver: true} )
+	})
+})
+
 jb.component('studio.initLocalCompsRefHandler', {
   type: 'action',
   params: [
@@ -14455,23 +14465,18 @@ jb.component('jbm.vDebugger', {
 })
 ;
 
-var { sourceEditor, textEditor } = jb.ns('sourceEditor');
-
-(function() {
-var st = jb.studio;
-
 jb.component('studio.val', {
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
-  impl: (ctx,path) => st.valOfPath(path)
+  impl: (ctx,path) => jb.studio.valOfPath(path)
 })
 
 jb.component('studio.isPrimitiveValue', {
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
-  impl: (ctx,path) =>	st.isPrimitiveValue(st.valOfPath(path))
+  impl: (ctx,path) =>	jb.studio.isPrimitiveValue(jb.studio.valOfPath(path))
 })
 
 jb.component('studio.isOfType', {
@@ -14479,42 +14484,42 @@ jb.component('studio.isOfType', {
     {id: 'path', as: 'string', mandatory: true},
     {id: 'type', as: 'string', mandatory: true}
   ],
-  impl: (ctx,path,_type) =>	st.isOfType(path,_type)
+  impl: (ctx,path,_type) =>	jb.studio.isOfType(path,_type)
 })
 
 jb.component('studio.isArrayType', {
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
-  impl: (ctx,path) =>	st.isArrayType(path)
+  impl: (ctx,path) =>	jb.studio.isArrayType(path)
 })
 
 jb.component('studio.parentPath', {
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
-  impl: (ctx,path) => st.parentPath(path)
+  impl: (ctx,path) => jb.studio.parentPath(path)
 })
 
 jb.component('studio.paramType', {
   params: [
     {id: 'path', as: 'string', mandatory: true}
   ],
-  impl: (ctx,path) =>	st.paramTypeOfPath(path)
+  impl: (ctx,path) =>	jb.studio.paramTypeOfPath(path)
 })
 
 jb.component('studio.PTsOfType', {
   params: [
     {id: 'type', as: 'string', mandatory: true}
   ],
-  impl: (ctx,_type) => st.PTsOfType(_type)
+  impl: (ctx,_type) => jb.studio.PTsOfType(_type)
 })
 
 jb.component('studio.profilesOfPT', {
   params: [
     {id: 'PT', as: 'string', mandatory: true}
   ],
-  impl: (ctx, pt) => st.profilesOfPT(pt)
+  impl: (ctx, pt) => jb.studio.profilesOfPT(pt)
 })
 
 jb.component('studio.categoriesOfType', {
@@ -14523,8 +14528,8 @@ jb.component('studio.categoriesOfType', {
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,_type,path) => {
-		var comps = st.previewjb.comps;
-		var pts = st.PTsOfType(_type);
+		var comps = jb.studio.previewjb.comps;
+		var pts = jb.studio.PTsOfType(_type);
 		var categories = jb.utils.unique([].concat.apply([],pts.map(pt=>
 			(comps[pt].category||'').split(',').map(c=>c.split(':')[0])
 				.concat(pt.indexOf('.') != -1 ? pt.split('.')[0] : [])
@@ -14563,14 +14568,14 @@ jb.component('studio.shortTitle', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>	st.shortTitle(path)
+  impl: (ctx,path) =>	jb.studio.shortTitle(path)
 })
 
 jb.component('studio.summary', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>	st.summary(path)
+  impl: (ctx,path) =>	jb.studio.summary(path)
 })
 
 jb.component('studio.hasParam', {
@@ -14578,7 +14583,7 @@ jb.component('studio.hasParam', {
     {id: 'path', as: 'string'},
     {id: 'param', as: 'string'}
   ],
-  impl: (ctx,path,param) =>	st.paramDef(path+'~'+param)
+  impl: (ctx,path,param) =>	jb.studio.paramDef(path+'~'+param)
 })
 
 jb.component('studio.nonControlChildren', {
@@ -14586,28 +14591,28 @@ jb.component('studio.nonControlChildren', {
     {id: 'path', as: 'string'},
     {id: 'includeFeatures', as: 'boolean', type: 'boolean'}
   ],
-  impl: (ctx,path,includeFeatures) =>	st.nonControlChildren(path,includeFeatures)
+  impl: (ctx,path,includeFeatures) =>	jb.studio.nonControlChildren(path,includeFeatures)
 })
 
 jb.component('studio.asArrayChildren', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>	st.asArrayChildren(path)
+  impl: (ctx,path) =>	jb.studio.asArrayChildren(path)
 })
 
 jb.component('studio.compName', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) => st.compNameOfPath(path) || ''
+  impl: (ctx,path) => jb.studio.compNameOfPath(path) || ''
 })
 
 jb.component('studio.paramDef', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) => st.paramDef(path)
+  impl: (ctx,path) => jb.studio.paramDef(path)
 })
 
 jb.component('studio.enumOptions', {
@@ -14615,21 +14620,21 @@ jb.component('studio.enumOptions', {
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) =>
-		((st.paramDef(path) || {}).options ||'').split(',').map(x=> ({code: x.split(':')[0],text: x.split(':')[0]}))
+		((jb.studio.paramDef(path) || {}).options ||'').split(',').map(x=> ({code: x.split(':')[0],text: x.split(':')[0]}))
 })
 
 jb.component('studio.propName', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>	st.propName(path)
+  impl: (ctx,path) =>	jb.studio.propName(path)
 })
 
 jb.component('studio.moreParams', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>	st.jbEditorMoreParams(path)
+  impl: (ctx,path) =>	jb.studio.jbEditorMoreParams(path)
 })
 
 
@@ -14641,12 +14646,12 @@ jb.component('studio.compNameRef', {
 			$jb_path: () => path.split('~'),
 			$jb_val: function(value) {
 				if (typeof value == 'undefined')
-					return st.compNameOfPath(path);
+					return jb.studio.compNameOfPath(path);
 				else
-					st.setComp(path,value,ctx)
+					jb.studio.setComp(path,value,ctx)
 			},
 			$jb_observable: cmp =>
-				jb.watchable.refObservable(st.refOfPath(path),{cmp, includeChildren: 'yes'})
+				jb.watchable.refObservable(jb.studio.refOfPath(path),{cmp, includeChildren: 'yes'})
 	})
 })
 
@@ -14670,13 +14675,13 @@ jb.component('studio.profileAsStringByref', {
 			var path = ctx.params.path();
 			if (!path) return '';
 			if (typeof value == 'undefined') {
-				return st.valOfPath(path) || '';
+				return jb.studio.valOfPath(path) || '';
 			} else {
-				st.writeValueOfPath(path, value,ctx);
+				jb.studio.writeValueOfPath(path, value,ctx);
 			}
 		},
 		$jb_observable: cmp =>
-			jb.watchable.refObservable(st.refOfPath(ctx.params.path()),{cmp})
+			jb.watchable.refObservable(jb.studio.refOfPath(ctx.params.path()),{cmp})
 	})
 })
 
@@ -14689,19 +14694,19 @@ jb.component('studio.profileValueAsText', {
 		$jb_path: () => path.split('~'),
 			$jb_val: function(value) {
 				if (value == undefined) {
-					const val = st.valOfPath(path);
+					const val = jb.studio.valOfPath(path);
 					if (val == null)
 						return '';
-					if (st.isPrimitiveValue(val))
+					if (jb.studio.isPrimitiveValue(val))
 						return '' + val
-					if (st.compNameOfPath(path))
-						return '=' + st.compNameOfPath(path)
+					if (jb.studio.compNameOfPath(path))
+						return '=' + jb.studio.compNameOfPath(path)
 				}
 				else if (value.indexOf('=') != 0)
-					st.writeValueOfPath(path, valToWrite(value),ctx);
+					jb.studio.writeValueOfPath(path, valToWrite(value),ctx);
 
         function valToWrite(val) {
-          const type = (st.paramDef(path) || {}).as
+          const type = (jb.studio.paramDef(path) || {}).as
           if (type == 'number' && Number(val)) return +val
           if (type == 'boolean')
             return val === 'true' ? true : val === 'false' ? false : '' + val
@@ -14717,7 +14722,7 @@ jb.component('studio.insertControl', {
     {id: 'comp', mandatory: true, description: 'comp name or comp json'},
     {id: 'path', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
-  impl: (ctx,comp,path) =>	st.insertControl(path, comp,ctx)
+  impl: (ctx,comp,path) =>	jb.studio.insertControl(path, comp,ctx)
 })
 
 jb.component('studio.wrap', {
@@ -14726,7 +14731,7 @@ jb.component('studio.wrap', {
     {id: 'path', as: 'string'},
     {id: 'comp', as: 'string'}
   ],
-  impl: (ctx,path,comp) => st.wrap(path,comp,ctx)
+  impl: (ctx,path,comp) => jb.studio.wrap(path,comp,ctx)
 })
 
 jb.component('studio.wrapWithGroup', {
@@ -14734,7 +14739,7 @@ jb.component('studio.wrapWithGroup', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>		st.wrapWithGroup(path,ctx)
+  impl: (ctx,path) =>		jb.studio.wrapWithGroup(path,ctx)
 })
 
 jb.component('studio.addProperty', {
@@ -14742,7 +14747,7 @@ jb.component('studio.addProperty', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>	st.addProperty(path,ctx)
+  impl: (ctx,path) =>	jb.studio.addProperty(path,ctx)
 })
 
 jb.component('studio.duplicateControl', {
@@ -14750,7 +14755,7 @@ jb.component('studio.duplicateControl', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>	st.duplicateControl(path,ctx)
+  impl: (ctx,path) =>	jb.studio.duplicateControl(path,ctx)
 })
 
 jb.component('studio.duplicateArrayItem', {
@@ -14758,7 +14763,7 @@ jb.component('studio.duplicateArrayItem', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>	st.duplicateArrayItem(path,ctx)
+  impl: (ctx,path) =>	jb.studio.duplicateArrayItem(path,ctx)
 })
 
 jb.component('studio.newArrayItem', {
@@ -14766,7 +14771,7 @@ jb.component('studio.newArrayItem', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>	st.addArrayItem(path,{srcCtx: ctx})
+  impl: (ctx,path) =>	jb.studio.addArrayItem(path,{srcCtx: ctx})
 })
 
 jb.component('studio.addArrayItem', {
@@ -14777,8 +14782,8 @@ jb.component('studio.addArrayItem', {
     {id: 'index', as: 'number', defaultValue: -1}
   ],
   impl: (ctx,path,toAdd,index) =>
-    index == -1 ? st.addArrayItem(path, {srcCtx: ctx, toAdd})
-      : st.addArrayItem(path, {srcCtx: ctx, toAdd, index})
+    index == -1 ? jb.studio.addArrayItem(path, {srcCtx: ctx, toAdd})
+      : jb.studio.addArrayItem(path, {srcCtx: ctx, toAdd, index})
 })
 
 jb.component('studio.wrapWithArray', {
@@ -14787,7 +14792,7 @@ jb.component('studio.wrapWithArray', {
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path,toAdd) =>
-		st.wrapWithArray(path,ctx)
+		jb.studio.wrapWithArray(path,ctx)
 })
 
 jb.component('studio.canWrapWithArray', {
@@ -14795,7 +14800,7 @@ jb.component('studio.canWrapWithArray', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>	st.paramDef(path) && (st.paramDef(path).type || '').indexOf('[') != -1 && !Array.isArray(st.valOfPath(path))
+  impl: (ctx,path) =>	jb.studio.paramDef(path) && (jb.studio.paramDef(path).type || '').indexOf('[') != -1 && !Array.isArray(jb.studio.valOfPath(path))
 })
 
 jb.component('studio.isArrayItem', {
@@ -14803,9 +14808,8 @@ jb.component('studio.isArrayItem', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>	Array.isArray(st.valOfPath(st.parentPath(path)))
+  impl: (ctx,path) =>	Array.isArray(jb.studio.valOfPath(jb.studio.parentPath(path)))
 })
-
 
 jb.component('studio.setComp', {
   type: 'action',
@@ -14813,7 +14817,7 @@ jb.component('studio.setComp', {
     {id: 'path', as: 'string'},
     {id: 'comp', as: 'single'}
   ],
-  impl: (ctx,path,comp) => st.setComp(path, comp,ctx)
+  impl: (ctx,path,comp) => jb.studio.setComp(path, comp,ctx)
 })
 
 jb.component('studio.delete', {
@@ -14821,7 +14825,7 @@ jb.component('studio.delete', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) => st._delete(path,ctx)
+  impl: (ctx,path) => jb.studio._delete(path,ctx)
 })
 
 jb.component('studio.disabled', {
@@ -14829,7 +14833,7 @@ jb.component('studio.disabled', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) => st.disabled(path,ctx)
+  impl: (ctx,path) => jb.studio.disabled(path,ctx)
 })
 
 jb.component('studio.toggleDisabled', {
@@ -14837,7 +14841,7 @@ jb.component('studio.toggleDisabled', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) => st.toggleDisabled(path,ctx)
+  impl: (ctx,path) => jb.studio.toggleDisabled(path,ctx)
 })
 
 jb.component('studio.jbEditorNodes', {
@@ -14845,7 +14849,7 @@ jb.component('studio.jbEditorNodes', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>	new st.jbEditorTree(path,true)
+  impl: (ctx,path) =>	new jb.studio.jbEditorTree(path,true)
 })
 
 jb.component('studio.iconOfType', {
@@ -14872,7 +14876,7 @@ jb.component('studio.isDisabled', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>	st.disabled(path)
+  impl: (ctx,path) =>	jb.studio.disabled(path)
 })
 
 jb.component('studio.disabledSupport', {
@@ -14891,7 +14895,7 @@ jb.component('studio.paramsOfPath', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) => st.paramsOfPath(path)
+  impl: (ctx,path) => jb.studio.paramsOfPath(path)
 })
 
 jb.component('studio.macroName', {
@@ -14899,22 +14903,19 @@ jb.component('studio.macroName', {
   params: [
     {id: 'name', as: 'string', defaultValue: '%%'}
   ],
-  impl: (ctx,name) => jb.macroName(name)
+  impl: (ctx,name) => jb.macro.titleToId(name)
 })
 
 jb.component('studio.cmpsOfProject', {
   type: 'data',
   impl: () => 
-    st.projectCompsAsEntries().filter(e=>e[1].impl).map(e=>e[0]),
+    jb.studio.projectCompsAsEntries().filter(e=>e[1].impl).map(e=>e[0]),
   testData: 'sampleData'
 })
 
-
-})();
-
 ;
 
-var { chromeDebugger,eventTracker } = jb.ns('chromeDebugger,eventTracker')
+// var { chromeDebugger,eventTracker } = jb.ns('chromeDebugger,eventTracker')
 
 Object.assign(jb.ui, {
   getSpy: () => jb.path(jb.parent,'spy') || {}
@@ -15504,7 +15505,7 @@ jb.component('chromeDebugger.toggleStyle', {
 })
 ;
 
-jb.ns('chromeDebugger')
+// jb.ns('chromeDebugger')
 
 jb.component('studio.compInspector', {
   params: [

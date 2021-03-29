@@ -1,4 +1,4 @@
-jb.ns('cards,cardsDemo,styleGallery')
+// jb.ns('cards,cardsDemo,styleGallery')
 
 jb.component('cardsDemo.main', {
   impl: group({

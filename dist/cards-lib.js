@@ -1,7 +1,7 @@
 if (typeof jbmFactory == 'undefined') jbmFactory = {};
 jbmFactory['cards'] = function(jb) {
   jb.importAllMacros && eval(jb.importAllMacros());
-var { image,card,cardFilter,cardList,cardProperties } = jb.ns('image,card,cardFilter,cardList,cardProperties')
+// var { image,card,cardFilter,cardList,cardProperties } = jb.ns('image,card,cardFilter,cardList,cardProperties')
 
 jb.component('card', {
   type: 'control',

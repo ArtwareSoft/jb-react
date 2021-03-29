@@ -87,10 +87,7 @@ jb.component('flexItem.grow', {
   params: [
     {id: 'factor', as: 'string', defaultValue: '1'}
   ],
-  impl: {
-    '$': 'feature.css',
-    '$byValue': ['flex-grow: %$factor%']
-  }
+  impl: css('flex-grow: %$factor%')
 })
 
 jb.component('flexItem.basis', {
@@ -99,10 +96,7 @@ jb.component('flexItem.basis', {
   params: [
     {id: 'factor', as: 'string', defaultValue: '1'}
   ],
-  impl: {
-    '$': 'feature.css',
-    '$byValue': ['flex-basis: %$factor%']
-  }
+  impl: css('flex-basis: %$factor%')
 })
 
 jb.component('flexItem.alignSelf', {
@@ -111,9 +105,6 @@ jb.component('flexItem.alignSelf', {
   params: [
     {id: 'align', as: 'string', options: 'auto,flex-start,flex-end,center,baseline,stretch', defaultValue: 'auto'}
   ],
-  impl: {
-    '$': 'feature.css',
-    '$byValue': ['align-self: %$align%']
-  }
+  impl: css('align-self: %$align%')
 })
 

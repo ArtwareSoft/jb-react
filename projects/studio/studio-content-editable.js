@@ -1,4 +1,4 @@
-jb.ns('contentEditable')
+// jb.ns('contentEditable')
 
 jb.ui.contentEditable = {
   setScriptData(ev,cmp,prop,isHtml) {

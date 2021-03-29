@@ -1,4 +1,4 @@
-jb.ns('vega')
+// jb.ns('vega')
 
 jb.component('dataResource.vegaItems', {
   passiveData: [
@@ -16,6 +16,7 @@ jb.component('vegaTest.bar', {
         mark: vega.bar(),
         encoding: vega.positionChannels(vega.channel('a', 'nominal'), vega.channel('b', 'quantitative'))
     })),
+    action: uiAction.waitForSelector('svg'),
     expectedResult: contains('linear scale with values from 0 to 100'),
     renderDOM: true
   })

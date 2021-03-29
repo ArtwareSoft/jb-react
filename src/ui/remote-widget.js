@@ -1,4 +1,4 @@
-var {rx, remote, widget, jbm} = jb.ns('remote,rx,widget,jbm')
+// var {rx, remote, widget, jbm} = jb.ns('remote,rx,widget,jbm')
 
 jb.component('widget.frontEndCtrl', {
     type: 'control',

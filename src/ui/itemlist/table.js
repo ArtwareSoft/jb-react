@@ -1,4 +1,4 @@
-var { mdcStyle,table } = jb.ns('mdcStyle,table')
+// var { mdcStyle,table } = jb.ns('mdcStyle,table')
 
 jb.component('table', {
   description: 'list, dynamic group, collection, repeat',

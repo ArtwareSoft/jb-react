@@ -1,29 +1,29 @@
-var { contentEditable } = jb.ns('contentEditable')
+// var { contentEditable } = jb.ns('contentEditable')
 
 jb.component('studio.toolbar', {
   type: 'control',
   impl: group({
     layout: layout.horizontal('5'),
     controls: [
-      editableBoolean({
-        databind: '%$studio/settings/contentEditable%',
-        style: editableBoolean.buttonXV({
-          yesIcon: icon({icon: 'location_searching', type: 'mdc'}),
-          noIcon: icon({icon: 'location_disabled', type: 'mdc'}),
-          buttonStyle: button.mdcFloatingAction('40', true)
-        }),
-        title: 'Inline content editing',
-        features: feature.onEvent('click', contentEditable.deactivate())
-      }),
-      editableBoolean({
-        databind: '%$studio/settings/activateWatchRefViewer%',
-        style: editableBoolean.buttonXV({
-          yesIcon: icon({icon: 'blur_on', type: 'mdc'}),
-          noIcon: icon({icon: 'blur_off', type: 'mdc'}),
-          buttonStyle: button.mdcFloatingAction('40', false)
-        }),
-        title: 'Watch Data Connections'
-      }),
+      // editableBoolean({
+      //   databind: '%$studio/settings/contentEditable%',
+      //   style: editableBoolean.buttonXV({
+      //     yesIcon: icon({icon: 'location_searching', type: 'mdc'}),
+      //     noIcon: icon({icon: 'location_disabled', type: 'mdc'}),
+      //     buttonStyle: button.mdcFloatingAction('40', true)
+      //   }),
+      //   title: 'Inline content editing',
+      //   features: feature.onEvent('click', contentEditable.deactivate())
+      // }),
+      // editableBoolean({
+      //   databind: '%$studio/settings/activateWatchRefViewer%',
+      //   style: editableBoolean.buttonXV({
+      //     yesIcon: icon({icon: 'blur_on', type: 'mdc'}),
+      //     noIcon: icon({icon: 'blur_off', type: 'mdc'}),
+      //     buttonStyle: button.mdcFloatingAction('40', false)
+      //   }),
+      //   title: 'Watch Data Connections'
+      // }),
       button({
         title: 'Select',
         action: studio.pickAndOpen(),

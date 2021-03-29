@@ -1,7 +1,7 @@
 if (typeof jbmFactory == 'undefined') jbmFactory = {};
 jbmFactory['rx'] = function(jb) {
   jb.importAllMacros && eval(jb.importAllMacros());
-var { If, call, rx,sink,source } = jb.ns('rx,sink,source')
+// var { If, call, rx,sink,source } = jb.ns('rx,sink,source')
 // ************ sources
 
 jb.component('source.data', {

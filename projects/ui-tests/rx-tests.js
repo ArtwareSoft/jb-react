@@ -1,4 +1,4 @@
-var { rxTest} = jb.ns('rxTest')
+// var { rxTest} = jb.ns('rxTest')
 
 jb.component('rxTest.pipeWithObservable', {
   impl: dataTest({

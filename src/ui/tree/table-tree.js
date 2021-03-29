@@ -1,4 +1,4 @@
-var { tableTree, tree } = jb.ns('tableTree,tree')
+// var { tableTree, tree } = jb.ns('tableTree,tree')
 
 jb.component('tableTree', {
   type: 'control',
@@ -183,6 +183,7 @@ jb.component('tableTree.resizer', {
 jb.component('tableTree.dragAndDrop', {
   type: 'feature',
   impl: features(
+    frontEnd.requireExternalLibrary(['dragula.js','css/dragula.css']),
     frontEnd.onRefresh( (ctx,{cmp}) => cmp.drake.containers = jb.ui.find(cmp.base,'.jb-items-parent')),
     method('moveItem', (ctx,{$props}) => $props.model.move(ctx.data.from,ctx.data.to,ctx)),
 		frontEnd.init( (ctx,{cmp}) => {

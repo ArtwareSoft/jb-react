@@ -1,4 +1,4 @@
-var { remoteTest} = jb.ns('remoteTest,widget')
+// var { remoteTest} = jb.ns('remoteTest,widget')
 
 jb.component('remoteTest.childJbm', {
     impl: dataTest({
@@ -261,7 +261,8 @@ jb.component('remoteWidgetTest.FE.button', {
     timeout: 3000,
     action: runActions(
       jbm.child('jbxServer'),
-      remote.action(remote.widgetFrontEnd({ control: button('hello world'), jbm: jbm.byUri('tests•jbxServer'), selector: '.aa' } ), jbm.worker())
+      remote.action(remote.widgetFrontEnd({ control: button('hello world'), jbm: jbm.byUri('tests•jbxServer'), selector: '.aa' } ), jbm.worker()),
+      uiAction.waitForSelector('button')
     ),
     control: text({text: '', features: css.class('aa')}),
     expectedResult: contains('hello')

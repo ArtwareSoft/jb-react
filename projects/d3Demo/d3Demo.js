@@ -1,5 +1,5 @@
-jb.ns('d3Demo,d3g')
-jb.ns('d3Chart,d3Scatter,d3Histogram')
+// jb.ns('d3Demo,d3g')
+// jb.ns('d3Chart,d3Scatter,d3Histogram')
 
 jb.component('d3Demo.main', {
   type: 'control',

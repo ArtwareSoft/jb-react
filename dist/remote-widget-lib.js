@@ -1,7 +1,7 @@
 if (typeof jbmFactory == 'undefined') jbmFactory = {};
 jbmFactory['remote-widget'] = function(jb) {
   jb.importAllMacros && eval(jb.importAllMacros());
-var {rx, remote, widget, jbm} = jb.ns('remote,rx,widget,jbm')
+// var {rx, remote, widget, jbm} = jb.ns('remote,rx,widget,jbm')
 
 jb.component('widget.frontEndCtrl', {
     type: 'control',
@@ -126,7 +126,7 @@ jb.component('remote.widgetFrontEnd', {
 jb.extension('ui','headless', {
     initExtension_phase1100() { // 1100 is after ui phase (100)
         return {
-            widgetRenderingSrc: jb.callbag.replay(10)(jb.ui.renderingUpdates),
+            widgetRenderingSrc: jb.callbag.replay(100)(jb.ui.renderingUpdates),
             headless: {},
         }
     },

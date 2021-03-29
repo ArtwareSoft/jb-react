@@ -1,4 +1,4 @@
-jb.ns('remote')
+// jb.ns('remote')
 
 jb.component('uiTest.checkBoxWithCalculatedAndWatchRef', {
   impl: uiFrontEndTest({

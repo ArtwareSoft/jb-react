@@ -1,4 +1,4 @@
-jb.ns('tree,rx')
+// jb.ns('tree,rx')
 
 jb.component('studio.jbEditor', {
   type: 'control',

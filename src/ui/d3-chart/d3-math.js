@@ -1,4 +1,4 @@
-jb.ns('d3g,d3Scatter,d3Histogram')
+// jb.ns('d3g,d3Scatter,d3Histogram')
 
 jb.component('d3g.pivot', {
   type: 'd3g.pivot',

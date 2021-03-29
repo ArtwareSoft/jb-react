@@ -1,5 +1,5 @@
-jb.ns('vegaLiteDemo,vega')
-x = {
+// jb.ns('vegaLiteDemo,vega')
+sampleX = {
   "encoding": {
     "x": {"field": "a", "type": "nominal", "axis": {"labelAngle": 0}},
     "y": {"field": "b", "type": "quantitative"}

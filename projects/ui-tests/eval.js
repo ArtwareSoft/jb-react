@@ -1,1 +1,0 @@
-eval(`({"Primary": "12 MP (f/2.0, 1/2.8\\", 1.25 ï¿½m), phase detection autofocus, dual-LED dual-tone flash"})`)

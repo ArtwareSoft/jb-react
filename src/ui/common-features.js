@@ -1,6 +1,5 @@
-
-var { variable,watchable,followUp,backEnd,method,features,onDestroy,htmlAttribute,templateModifier,watchAndCalcModelProp,calcProp,watchRef } 
-  = jb.ns('variable,watchable,followUp,backEnd,method,htmlAttribute,features,onDestroy,templateModifier,watchAndCalcModelProp,calcProp,watchRef,group')
+// var { variable,watchable,followUp,backEnd,method,features,onDestroy,htmlAttribute,templateModifier,watchAndCalcModelProp,calcProp,watchRef } 
+//  = jb.ns('variable,watchable,followUp,backEnd,method,htmlAttribute,features,onDestroy,templateModifier,watchAndCalcModelProp,calcProp,watchRef,group')
 
 jb.component('method', {
   type: 'feature',
@@ -95,7 +94,7 @@ jb.component('feature.initValue', {
   }})
 })
 
-jb.component('feature.requireService',{
+jb.component('feature.requireService', {
   params: [
     {id: 'service', type: 'service'},
     {id: 'condition', dynamic: true, defaultValue: true},

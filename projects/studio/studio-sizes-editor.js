@@ -9,7 +9,7 @@ jb.component('studio.openSizesEditor', {
   ],
   impl: runActions(
     Var('inplaceElem', (ctx,{inplaceElem},{path,elem})=> {
-        const el = elem || inplaceElem || (jb.studio.findElemsByCtxCondition(ctx => ctx.path == path)[0] || {}).elem
+        const el = elem || inplaceElem || (jb.studio.findElemsByPathCondition(_path => _path == path)[0] || {}).elem
         if (!el) debugger
         return el
     }),
@@ -49,7 +49,7 @@ jb.component('sizesEditor.computedContent', {
     type: 'control',
     impl:ctx => {
         const style = jb.studio.previewWindow.getComputedStyle(ctx.vars.inplaceElem)
-        return style[jb.macroName(ctx.exp('%level%-%side%'))]
+        return style[jb.macro.titleToId(ctx.exp('%level%-%side%'))]
     }
 })
 

@@ -1,4 +1,4 @@
-var {gridEditor} = jb.ns('gridEditor')
+// var {gridEditor} = jb.ns('gridEditor')
 
 Object.assign(jb.ui, {
   getGridVals(el,axis) {
@@ -164,7 +164,7 @@ jb.component('gridEditor.dragableGridLineThumb', {
     frontEnd.var('inplaceElemPath',(ctx,{inplaceElem})=> jb.ui.ctxOfElem(inplaceElem).path),
     frontEnd.var('axis','%$axis%'),
     frontEnd.var('gridIndex','%$gridIndex%'),
-    frontEnd.prop('inplaceElem',({},{inplaceElemPath}) => (jb.studio.findElemsByCtxCondition(ctx => ctx.path == inplaceElemPath)[0] || {}).elem),
+    frontEnd.prop('inplaceElem',({},{inplaceElemPath}) => (jb.studio.findElemsByPathCondition(path => path == inplaceElemPath)[0] || {}).elem),
     frontEnd.prop('gridRect', ({},{cmp}) => cmp.inplaceElem.getBoundingClientRect()),
     frontEnd.prop('handlerPos', ({},{axis}) => ev => axis == 'Rows' ? ev.clientY - jb.ui.studioFixYPos() : ev.clientX),
 
@@ -304,7 +304,7 @@ jb.component('gridEditor.dragableGridItemThumb', {
       ), '%%' 
     )),
     frontEnd.var('inplaceElemPath',({},{inplaceElem})=> jb.ui.ctxOfElem(inplaceElem).path),
-    frontEnd.prop('inplaceElem',({},{inplaceElemPath}) => (jb.studio.findElemsByCtxCondition(ctx => ctx.path == inplaceElemPath)[0] || {}).elem),
+    frontEnd.prop('inplaceElem',({},{inplaceElemPath}) => (jb.studio.findElemsByPathCondition(path => path == inplaceElemPath)[0] || {}).elem),
     frontEnd.prop('gridRect', ({},{cmp}) => cmp.inplaceElem.getBoundingClientRect()),
     frontEnd.prop('posToGridPos', ({},{inplaceElem}) => pos => {
       const gridAccVals = jb.ui.calcGridAccVals(inplaceElem)

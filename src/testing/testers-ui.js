@@ -1,4 +1,4 @@
-var { winUtils, propertySheet } = jb.macro
+// var { winUtils, propertySheet } = jb.macro
 
 jb.component('test.showTestInStudio', {
 	type: 'control',

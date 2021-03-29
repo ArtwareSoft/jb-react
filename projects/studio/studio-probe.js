@@ -171,7 +171,7 @@ jb.component('studio.probe', {
             circuitCtx = new _jb.core.jbCtx(new _jb.core.jbCtx(),{ profile: {$: circuit}, comp: circuit, path: '', data: null} )
         }
         if (circuitCtx)
-            jb.studio.highlightCtx(circuitCtx)
+            jb.studio.highlightCtx(circuitCtx.id)
         return new (_jb.studio.Probe || st.Probe)(circuitCtx).runCircuit(path)
     }
 })

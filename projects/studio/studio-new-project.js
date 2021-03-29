@@ -26,7 +26,7 @@ jb.component('studio.newProject', {
 </html>`),
   prop('%$project%.js',`jb.ns('%$project%')
 
-jb.component('%$project%.main', {
+`+`jb.component('%$project%.main', {
   type: 'control',
   impl: group({
     controls: [button('my button')]

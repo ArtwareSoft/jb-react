@@ -580,6 +580,7 @@ jb.component('uiTest.itemlistWithSelect.click', {
 
 jb.component('uiTest.itemlistDD', {
   impl: uiFrontEndTest({
+    renderDOM: true,
     control: group({
       controls: [
         itemlist({
@@ -604,7 +605,10 @@ jb.component('uiTest.itemlistDD', {
         })
       ]
     }),
-    action: uiAction.keyboardEvent({ selector: '#itemlist', type: 'keydown', keyCode: 40, ctrl: 'ctrl' }),
+    action: runActions(
+      uiAction.waitForSelector('.drag-handle'),
+      uiAction.keyboardEvent({ selector: '#itemlist', type: 'keydown', keyCode: 40, ctrl: 'ctrl' })
+    ),
     expectedResult: contains(['Bart', 'Marge', 'Homer'])
   })
 })
@@ -1400,6 +1404,7 @@ jb.component('uiTest.codeMirror', {
         })
       ]
     }),
+    action: uiAction.waitForSelector('.CodeMirror'),
     expectedResult: contains(['function', 'f1', '15'])
   })
 })
@@ -1664,7 +1669,7 @@ jb.component('uiTest.picklistAsItemlist', {
   })
 })
 
-var { menuTest} = jb.ns('menuTest')
+// var { menuTest} = jb.ns('menuTest')
 
 jb.component('menuTest.menu1', {
   impl: menu.menu({

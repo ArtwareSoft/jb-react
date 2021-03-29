@@ -18431,7 +18431,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 }));
 ;
 
-jb.ns('d3g,d3Scatter,d3Histogram')
+// jb.ns('d3g,d3Scatter,d3Histogram')
 
 jb.component('d3g.pivot', {
   type: 'd3g.pivot',
@@ -18530,7 +18530,7 @@ jb.component('d3g.domainByValues', {
 
 ;
 
-jb.ns('d3g,d3Scatter,d3Histogram')
+// jb.ns('d3g,d3Scatter,d3Histogram')
 
 jb.component('d3g.chartScatter', {
   type: 'control',
@@ -18679,7 +18679,7 @@ jb.component('d3g.frame', {
 })
 ;
 
-jb.ns('d3g,d3Scatter,d3Histogram')
+// jb.ns('d3g,d3Scatter,d3Histogram')
 
 jb.component('d3g.histogram', {
   type: 'control',

@@ -1283,7 +1283,7 @@ anime.penner = penner;
 anime.random = function (min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; };
 ;
 
-jb.ns('animation')
+// jb.ns('animation')
 
 jb.component('animation.start', {
   type: 'action',

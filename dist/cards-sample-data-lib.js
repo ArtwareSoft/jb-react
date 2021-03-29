@@ -1,7 +1,7 @@
 if (typeof jbmFactory == 'undefined') jbmFactory = {};
 jbmFactory['cards-sample-data'] = function(jb) {
   jb.importAllMacros && eval(jb.importAllMacros());
-jb.component('dataResource.wix-blog', { /* dataResource.wixBlog */
+jb.component('dataResource.wixBlog', {
     watchableData: {
       items: [
         {

@@ -1,4 +1,4 @@
-jb.ns('studioHelper,d3g,dataTest,pptr')
+// jb.ns('studioHelper,d3g,dataTest,pptr')
 jb.studio.initLocalCompsRefHandler(jb.studio.compsRefOfjbm(jb))
 jb.studio.previewWindow = jb.frame
 jb.studio.inspectedJb = jb.ui.parentFrameJb()
@@ -257,15 +257,15 @@ jb.component('studioHelperSample.table', {
   })
 })
 
-jb.component('studioHelper.studioPropertiesPptr', {
-  type: 'control',
-  impl: group({
-    vars: [Var('circuit', 'studioHelperSample.pptr')],
-    title: '',
-    controls: studio.properties('studioHelperSample.pptr'),
-    features: css.width('500')
-  })
-})
+// jb.component('studioHelper.studioPropertiesPptr', {
+//   type: 'control',
+//   impl: group({
+//     vars: [Var('circuit', 'studioHelperSample.pptr')],
+//     title: '',
+//     controls: studio.properties('studioHelperSample.pptr'),
+//     features: css.width('500')
+//   })
+// })
 
 jb.component('studioHelper.studioPropertiesRich', {
   type: 'control',
@@ -363,22 +363,22 @@ jb.component('studioHelperSample.propertiesParamsProf', {
   }),
 })
 
-jb.component('studioHelperSample.pptr', {
-  impl: pptr.session({
-    showBrowser: true,
-    databindEvents: '%$events%',
-    actions: [
-      pptr.newPage({url: 'https://google.com/', waitUntil: 'networkidle0'}),
-      pptr.type({
-        text: 'vitamin',
-        selector: 'input[name=q]',
-        enterAtEnd: true,
-        delay: 100
-      }),
-      pptr.extractBySelector({selector: 'h3', extract: 'textContent', multiple: true})
-    ]
-  })
-})
+// jb.component('studioHelperSample.pptr', {
+//   impl: pptr.session({
+//     showBrowser: true,
+//     databindEvents: '%$events%',
+//     actions: [
+//       pptr.newPage({url: 'https://google.com/', waitUntil: 'networkidle0'}),
+//       pptr.type({
+//         text: 'vitamin',
+//         selector: 'input[name=q]',
+//         enterAtEnd: true,
+//         delay: 100
+//       }),
+//       pptr.extractBySelector({selector: 'h3', extract: 'textContent', multiple: true})
+//     ]
+//   })
+// })
 
 jb.component('studioHelperSample.propertiesPTForTgp', {
   type: 'control',

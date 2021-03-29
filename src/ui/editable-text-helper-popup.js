@@ -1,4 +1,4 @@
-var {notEmpty, touch} = jb.macro
+// var {notEmpty, touch} = jb.macro
 
 jb.component('editableText.picklistHelper', {
   type: 'feature',

@@ -1,4 +1,4 @@
-var {dataTest,uiTest,userInput,uiAction,dialog,widget,last} = jb.ns('dataTest,uiTest,userInput,uiAction,dialog,widget')
+// var {dataTest,uiTest,userInput,uiAction,dialog,widget,last} = jb.ns('dataTest,uiTest,userInput,uiAction,dialog,widget')
 
 jb.component('tests.main', { // needed for loading the 'virtual' tests project
 	type: 'control',
@@ -279,6 +279,10 @@ jb.extension('testers', {
 		.filter(e=>!pattern || e[0].match(pattern))
 //		.filter(e=>!e[0].match(/^remoteTest|inPlaceEditTest|patternsTest/) && ['uiTest','dataTest'].indexOf(e[1].impl.$) != -1) // || includeHeavy || specificTest || !e[1].impl.heavy )
 //		.sort((a,b) => (a[0] > b[0]) ? 1 : ((b[0] > a[0]) ? -1 : 0))
+	tests.forEach(e => e.group = e[0].split('.')[0].split('Test')[0])
+	const priority = 'data,ui,rx,remote,studio'.split(',').reverse().join(',')
+	const groups = jb.utils.unique(tests.map(e=>e.group)).sort((x,y) => priority.indexOf(x) - priority.indexOf(y))
+	tests.sort((y,x) => groups.indexOf(x.group) - groups.indexOf(y.group))
 	self.jbSingleTest = tests.length == 1
 
 	document.body.innerHTML = `<div style="font-size: 20px"><div id="progress"></div><span id="fail-counter" onclick="hide_success_lines()"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span><span id="memory-usage"></span></div>`;

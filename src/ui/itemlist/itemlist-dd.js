@@ -1,8 +1,9 @@
-var { move } = jb.macro
+// var { move } = jb.macro
 
 jb.component('itemlist.dragAndDrop', {
   type: 'feature',
   impl: features(
+    frontEnd.requireExternalLibrary(['dragula.js','css/dragula.css']),
     method('moveItem', runActions(move(itemlist.indexToData('%from%'), itemlist.indexToData('%to%')), action.refreshCmp())),
     frontEnd.prop('drake', ({},{cmp}) => {
         if (!jb.frame.dragula) return jb.logError('itemlist.dragAndDrop - the dragula lib is not loaded')

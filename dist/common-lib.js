@@ -5,10 +5,12 @@ Object.assign(jb, {
   extension(libId, p1 , p2) {
     const extId = typeof p1 == 'string' ? p1 : 'main'
     const extension = p2 || p1
-    const lib = jb[libId] = jb[libId] || {__initialized: {} }
+    const lib = jb[libId] = jb[libId] || {__initialized: {}, __require: [] }
     const funcs = Object.keys(extension).filter(k=>typeof extension[k] == 'function').filter(k=>!k.match(/^initExtension/))
     funcs.forEach(k=>lib[k] = extension[k])
 
+    if (extension.require) 
+      lib.__require = [...lib.__require, ...extension.require]
     const initFuncId = Object.keys(extension).filter(k=>typeof extension[k] == 'function').filter(k=>k.match(/^initExtension/))[0]
     const phaseFromFunc = ((initFuncId||'').match(/_phase([0-9]+)/)||[,0])[1]
     const initFuncPhase = phaseFromFunc || { core: 1, utils: 5, db: 10, watchable: 20}[libId] || 100
@@ -18,8 +20,10 @@ Object.assign(jb, {
 
     lib[initFunc] = initFuncImpl    
     funcs.forEach(k=>lib[k].__initFuncs = [initFunc].map(x=>`#${libId}.${x}`))
-    if (jb.noCodeLoader)
+    if (jb.noCodeLoader) {
       Object.assign(lib, lib[initFunc]())
+      lib.__initialized[initFunc] = true
+    }
   },
   initializeLibs(libs) {
     libs.flatMap(l => Object.keys(jb[l]).filter(x=>x.match(/^init_/)))
@@ -31,35 +35,50 @@ Object.assign(jb, {
           Object.assign(lib, lib[initFunc]())
         }
       })
+    return libs.flatMap(l => jb[l].__require||[])
+      .filter(url => !jb.frame.jb.__requiredLoaded[url])
+      .reduce((pr,url) => pr.then(() => jb_loadFile(url)).then(() => jb.frame.jb.__requiredLoaded[url] = true), Promise.resolve())
+  },  
+  component(id,comp) {
+    // todo: move functionality to onAddComponent hook
+    if (!jb.core.location) jb.initializeLibs(['core'])
+    try {
+      const errStack = new Error().stack.split(/\r|\n/)
+      const line = errStack.filter(x=>x && x != 'Error' && !x.match(/at Object.component/)).shift()
+      comp[jb.core.location] = line ? (line.split('at eval (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
+      comp[jb.core.project] = comp[jb.core.location][0].split('?')[1]
+      comp[jb.core.location][0] = comp[jb.core.location][0].split('?')[0]
+    
+      if (comp.watchableData !== undefined) {
+        jb.comps[jb.db.addDataResourcePrefix(id)] = comp
+        return jb.db.resource(jb.db.removeDataResourcePrefix(id),comp.watchableData)
+      }
+      if (comp.passiveData !== undefined) {
+        jb.comps[jb.db.addDataResourcePrefix(id)] = comp
+        return jb.db.passive(jb.db.removeDataResourcePrefix(id),comp.passiveData)
+      }
+    } catch(e) {
+      console.log(e)
+    }
+
+    jb.comps[id] = comp;
+
+    // fix as boolean params to have type: 'boolean'
+    (comp.params || []).forEach(p=> {
+      if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
+        p.type = 'boolean'
+    })
+    comp[jb.core.loadingPhase] = jb.frame.jbLoadingPhase
   },
   noCodeLoader: true
 })
-
-// if (initFuncImpl) {
-//   lib[initFunc] = initFuncImpl
-//   if (! lib.__initialized[initFunc]) {
-//     lib.__initialized[initFunc] = true
-//     Object.assign(lib, lib[initFunc](extension))
-//   }
-// }
-// jb.core.dependentInit = [...(jb.core.dependentInit || []), 
-//   ...dependentInitFuncs.map(k=>({libId, func: k, extension, dependentOn: [...k.matchAll(/_([A-Za-z0-9]+)/g)].map(x=>x[1]) }))]
-// const initToRun = jb.core.dependentInit.filter(x=>x.dependentOn.every(m=>jb[m]))
-// jb.core.dependentInit = jb.core.dependentInit.filter(x=>! x.dependentOn.every(m=>jb[m]))
-// initToRun.forEach(x=>{
-//   const lib = jb[x.libId], initFunc = x.func
-//   if (! lib.__initialized[initFunc]) {
-//     lib.__initialized[initFunc] = true
-//     Object.assign(lib, lib[initFunc](extension))
-//   }
-// })
-
 
 jb.extension('core', {
   initExtension() {
     Object.assign(jb, { 
       frame: (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {},
-      comps: {}, ctxDictionary: {}, macro: {},
+      comps: {}, ctxDictionary: {},
+      __requiredLoaded: {},
       jstypes: jb.core.jsTypes()
     })
     return { 
@@ -67,8 +86,6 @@ jb.extension('core', {
       project: Symbol.for('project'),
       location: Symbol.for('location'),
       loadingPhase: Symbol.for('loadingPhase'),
-      macroNs: {},
-      macroDef: Symbol('macroDef'), 
     }
   },
   run(ctx,parentParam,settings) {
@@ -211,7 +228,7 @@ jb.extension('core', {
     if (!comp && comp_name) { jb.logError('component ' + comp_name + ' is not defined', {ctx}); return { type:'null' } }
     if (comp.impl == null) { jb.logError('component ' + comp_name + ' has no implementation', {ctx}); return { type:'null' } }
   
-    jb.core.fixMacroByValue(profile,comp)
+    jb.macro.fixProfile(profile)
     const resCtx = Object.assign(new jb.core.jbCtx(ctx,{}), {parentParam, params: {}})
     const preparedParams = jb.core.prepareParams(comp_name,comp,profile,resCtx);
     if (typeof comp.impl === 'function') {
@@ -221,18 +238,7 @@ jb.extension('core', {
       return { type:'profile', ctx: new jb.core.jbCtx(resCtx,{profile: comp.impl, comp: comp_name, path: ''}), preparedParams: preparedParams };
   },
   castToParam: (value,param) => jb.core.tojstype(value,param ? param.as : null),
-  tojstype(value,jstype) {
-    if (!jstype) return value;
-    if (typeof jb.jstypes[jstype] != 'function') debugger;
-    return jb.jstypes[jstype](value);
-  },
-  fixMacroByValue(profile,comp) {
-    if (profile && profile.$byValue) {
-      const params = jb.utils.compParams(comp)
-      profile.$byValue.forEach((v,i)=> Object.assign(profile,{[params[i].id]: v}))
-      delete profile.$byValue
-    }
-  },
+  tojstype: (v,jstype) => (!jstype || !jb.jstypes[jstype]) ? v : jb.jstypes[jstype](v),
   jbCtx: class jbCtx {
     constructor(ctx,ctx2) {
       this.id = jb.core.ctxCounter++
@@ -371,10 +377,6 @@ Object.assign(jb, {
     tonumber: value => jb.core.tojstype(value,'number'),
     exec: (...args) => new jb.core.jbCtx().run(...args),
     exp: (...args) => new jb.core.jbCtx().exp(...args),
-
-    // todo - move to studio
-    studio: { previewjb: jb },
-    execInStudio: (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.core.jbCtx().run(...args),
 })
 
 jb.extension('utils', { // jb core utils
@@ -813,141 +815,121 @@ jb.extension('db', {
 ;
 
 Object.assign(jb, {
-    component(_id,comp) {
-      if (!jb.core.location) jb.initializeLibs(['core'])
-      const id = jb.macroName(_id)
-      try {
-        const errStack = new Error().stack.split(/\r|\n/)
-        const line = errStack.filter(x=>x && x != 'Error' && !x.match(/at Object.component/)).shift()
-        comp[jb.core.location] = line ? (line.split('at eval (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
-        comp[jb.core.project] = comp[jb.core.location][0].split('?')[1]
-        comp[jb.core.location][0] = comp[jb.core.location][0].split('?')[0]
-      
-        if (comp.watchableData !== undefined) {
-          jb.comps[jb.db.addDataResourcePrefix(id)] = comp
-          return jb.db.resource(jb.db.removeDataResourcePrefix(id),comp.watchableData)
-        }
-        if (comp.passiveData !== undefined) {
-          jb.comps[jb.db.addDataResourcePrefix(id)] = comp
-          return jb.db.passive(jb.db.removeDataResourcePrefix(id),comp.passiveData)
-        }
-      } catch(e) {
-        console.log(e)
-      }
-  
-      jb.comps[id] = comp;
-  
-      // fix as boolean params to have type: 'boolean'
-      (comp.params || []).forEach(p=> {
-        if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
-          p.type = 'boolean'
-      })
-      comp[jb.core.loadingPhase] = jb.frame.jbLoadingPhase
-      jb.registerMacro && jb.registerMacro(id)
-    },    
-    macroName: id => id.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
-    ns: nsIds => {
-        nsIds.split(',').forEach(nsId => jb.registerMacro(nsId))
-        return jb.macro
+    defComponents: (items,id,def) => items.forEach(item=>jb.component(id(item), def(item)))
+})
+
+jb.extension('macro', {
+    initExtension() {
+        return { proxies: {}, macroNs: {}, isMacro: Symbol.for('isMacro')}
     },
-    importAllMacros: () => ['var { ',
-        jb.utils.unique(Object.keys(jb.macro).map(x=>x.split('_')[0])).join(', '), 
-    '} = jb.macro;'].join(''),
-    registerMacro: id => {
-        const macroId = jb.macroName(id).replace(/\./g, '_')
-        const nameSpace = id.indexOf('.') != -1 && jb.macroName(id.split('.')[0])
-
-        if (checkId(macroId))
-            registerProxy(macroId)
-        if (nameSpace && checkId(nameSpace, true) && !jb.macro[nameSpace]) {
-            registerProxy(nameSpace, true)
-            jb.core.macroNs[nameSpace] = true
+    ns: nsIds => {
+        nsIds.split(',').forEach(nsId => jb.macro.registerProxy(nsId))
+        return jb.macro.proxies
+    },    
+    titleToId: id => id.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase()),
+    importAll: () => ['var { ',
+        jb.utils.unique(Object.keys(jb.macro.proxies).map(x=>x.split('_')[0])).join(', '), 
+    '} = jb.macro.proxies;'].join(''),
+    newProxy: id => new Proxy(() => 0, {
+        get: (o, p) => p === jb.macro.isMacro? true : jb.macro.getInnerMacro(id, p),
+        apply: function (target, thisArg, allArgs) {
+            const { args, system } = jb.macro.splitSystemArgs(allArgs)
+            return Object.assign(jb.macro.argsToProfile(id, args), system)
         }
-
-        function registerProxy(proxyId) {
-            jb.macro[proxyId] = new Proxy(() => 0, {
-                get: (o, p) => {
-                    if (typeof p === 'symbol') return true
-                    return jb.macro[proxyId + '_' + p] || genericMacroProcessor(proxyId, p)
-                },
-                apply: function (target, thisArg, allArgs) {
-                    const { args, system } = splitSystemArgs(allArgs)
-                    return Object.assign(processMacro(args), system)
-                }
-            })
+    }),
+    getInnerMacro(ns, innerId) {
+        return (...allArgs) => {
+            const { args, system } = jb.macro.splitSystemArgs(allArgs)
+            const out = { $: `${ns}.${innerId}` }
+            if (args.length == 1 && typeof args[0] == 'object' && !Array.isArray(args[0]) && !jb.utils.compName(args[0])) // params by name
+                Object.assign(out, args[0])
+            else
+                Object.assign(out, { $byValue: args })
+            return Object.assign(out, system)
         }
-
-        function splitSystemArgs(allArgs) {
-            const args = [], system = {} // system props: constVar, remark
-            allArgs.forEach(arg => {
-                if (arg && typeof arg === 'object' && (jb.comps[arg.$] || {}).isSystem)
-                    jb.comps[arg.$].macro(system, arg)
-                else
-                    args.push(arg)
-            })
-            if (args.length == 1 && typeof args[0] === 'object') {
-                jb.asArray(args[0].vars).forEach(arg => jb.comps[arg.$].macro(system, arg))
-                args[0].remark && jb.comps.remark.macro(system, args[0])
-            }
-            return { args, system }
+    },    
+    splitSystemArgs(allArgs) {
+        const args = [], system = {} // system props: constVar, remark
+        allArgs.forEach(arg => {
+            if (arg && typeof arg === 'object' && (jb.comps[arg.$] || {}).isSystem)
+                jb.comps[arg.$].macro(system, arg)
+            else
+                args.push(arg)
+        })
+        if (args.length == 1 && typeof args[0] === 'object') {
+            jb.asArray(args[0].vars).forEach(arg => jb.comps[arg.$].macro(system, arg))
+            args[0].remark && jb.comps.remark.macro(system, args[0])
         }
-
-        function checkId(macroId, isNS) {
-            if (jb.frame[macroId] && !jb.frame[macroId][jb.core.macroDef]) {
-                jb.logError(macroId + ' is reserved by system or libs. please use a different name')
-                return false
-            }
-            if (Object.keys(jb.macro[macroId] ||{}).length && !isNS && !jb.core.macroNs[macroId])
-                jb.logError(macroId.replace(/_/g,'.') + ' is defined more than once, using last definition ' + id)
-            return true
+        return { args, system }
+    },
+    argsToProfile(cmpId, args) {
+        const comp = jb.comps[cmpId]
+        if (!comp)
+            return { $: cmpId, $byValue: args }
+        if (args.length == 0)
+            return { $: cmpId }
+        const params = comp.params || []
+        const firstParamIsArray = (params[0] && params[0].type || '').indexOf('[]') != -1
+        if (params.length == 1 && firstParamIsArray) // pipeline, or, and, plus
+            return { $: cmpId, [params[0].id]: args }
+        const macroByProps = args.length == 1 && typeof args[0] === 'object' &&
+            (params[0] && args[0][params[0].id] || params[1] && args[0][params[1].id])
+        if ((comp.macroByValue || params.length < 3) && comp.macroByValue !== false && !macroByProps)
+            return { $: cmpId, ...jb.objFromEntries(args.filter((_, i) => params[i]).map((arg, i) => [params[i].id, arg])) }
+        if (args.length == 1 && !Array.isArray(args[0]) && typeof args[0] === 'object' && !args[0].$)
+            return { $: cmpId, ...args[0] }
+        if (args.length == 1 && params.length)
+            return { $: cmpId, [params[0].id]: args[0] }
+        if (args.length == 2 && params.length > 1)
+            return { $: cmpId, [params[0].id]: args[0], [params[1].id]: args[1] }
+        debugger;
+    },
+    fixProfile(profile) {
+        if (profile && profile.$byValue) {
+          if (!jb.comps[profile.$])
+            return jb.logError('fixProfile - missing component', {cmpId: profile.$, profile})
+          Object.assign(profile, jb.macro.argsToProfile(profile.$, profile.$byValue))
+          delete profile.$byValue
         }
-
-        function processMacro(args) {
-            const _id = id; //.replace(/\.\$forwardDef$/,'')
-            const _profile = jb.comps[_id]
-            if (!_profile) {
-                jb.logError('forward def ' + _id + ' was not implemented')
-                return { $: _id }
-            }
-            if (args.length == 0)
-                return { $: _id }
-            const params = _profile.params || []
-            const firstParamIsArray = (params[0] && params[0].type || '').indexOf('[]') != -1
-            if (params.length == 1 && firstParamIsArray) // pipeline, or, and, plus
-                return { $: _id, [params[0].id]: args }
-            const macroByProps = args.length == 1 && typeof args[0] === 'object' &&
-                (params[0] && args[0][params[0].id] || params[1] && args[0][params[1].id])
-            if ((_profile.macroByValue || params.length < 3) && _profile.macroByValue !== false && !macroByProps)
-                return { $: _id, ...jb.objFromEntries(args.filter((_, i) => params[i]).map((arg, i) => [params[i].id, arg])) }
-            if (args.length == 1 && !Array.isArray(args[0]) && typeof args[0] === 'object' && !args[0].$)
-                return { $: _id, ...args[0] }
-            if (args.length == 1 && params.length)
-                return { $: _id, [params[0].id]: args[0] }
-            if (args.length == 2 && params.length > 1)
-                return { $: _id, [params[0].id]: args[0], [params[1].id]: args[1] }
-            debugger;
-        }
-        //const unMacro = macroId => macroId.replace(/([A-Z])/g, (all, s) => '-' + s.toLowerCase())
-        function genericMacroProcessor(ns, macroId) {
-            return (...allArgs) => {
-                const { args, system } = splitSystemArgs(allArgs)
-                const out = { $: `${ns}.${macroId}` }
-                if (args.length == 1 && typeof args[0] == 'object' && !jb.utils.compName(args[0]))
-                    Object.assign(out, args[0])
-                else
-                    Object.assign(out, { $byValue: args })
-                return Object.assign(out, system)
-            }
-        }
+    },    
+    registerProxy: id => {
+        const proxyId = jb.macro.titleToId(id.split('.')[0])
+        if (jb.frame[proxyId] && jb.frame[proxyId][jb.macro.isMacro]) return
+        if (jb.frame[proxyId])
+            return jb.logError(`register macro proxy: ${proxyId} + ' is reserved by system or libs. please use a different name`,{obj:jb.frame[proxyId]})
+        
+        jb.frame[proxyId] = jb.macro.proxies[proxyId] = jb.macro.newProxy(proxyId)
     }
 })
-;
+
+jb.component('Var', {
+  type: 'var,system',
+  isSystem: true,
+  params: [
+    {id: 'name', as: 'string', mandatory: true},
+    {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: '%%'}
+  ],
+  macro: (result, self) => {
+    result.$vars = result.$vars || []
+    result.$vars.push(self)
+  },
+  impl: '' // for inteliscript
+})
+
+jb.component('remark', {
+  type: 'system',
+  isSystem: true,
+  params: [
+    {id: 'remark', as: 'string', mandatory: true}
+  ],
+  macro: (result, self) => Object.assign(result,{ remark: self.remark })
+});
 
 
 jb.extension('codeLoader', {
     initExtension() {
         return {
-            coreComps: ['#extension','#core.run','#component','#jbm.extendPortToJbmProxy','#jbm.portFromFrame','#spy.initSpy','#codeLoader.getCodeFromRemote','codeLoader.getCode','waitFor'],
+            clientComps: ['#extension','#core.run','#component','#jbm.extendPortToJbmProxy','#jbm.portFromFrame','#spy.initSpy','#codeLoader.getCodeFromRemote','codeLoader.getCode','waitFor'],
             existingFEPaths: {},
             loadedFElibs: {}
         }
@@ -1059,7 +1041,7 @@ jb.extension('codeLoader', {
                 }
             })
     },
-    startupCode: () => jb.codeLoader.code(jb.codeLoader.treeShake(jb.codeLoader.coreComps,{})),
+    startupCode: () => jb.codeLoader.code(jb.codeLoader.treeShake(jb.codeLoader.clientComps,{})),
     treeShakeFrontendFeatures(paths) { // treeshake the code of the FRONTEND features without the backend part
         const _paths = paths.filter(path=>! jb.codeLoader.existingFEPaths[path]) // performance - avoid tree shake if paths were processed before 
         if (!_paths.length) return []
@@ -1069,9 +1051,8 @@ jb.extension('codeLoader', {
     loadFELibsDirectly(libs) {
         if (typeof document == 'undefined') 
             return jb.logError('can not load front end libs to a frame without a document')
-        const _libs = libs.filter(lib=>! jb.codeLoader.loadedFElibs[lib])
-        if (!_libs.length) return []
-        return _libs.reduce((pr,lib) => pr.then(loadFile(lib)).then(()=> jb.codeLoader.loadedFElibs[lib] = true), Promise.resolve())
+        const _libs = jb.utils.unique(libs).filter(lib=>! jb.codeLoader.loadedFElibs[lib])
+        return _libs.reduce((pr,lib) => pr.then(()=> loadFile(lib)).then(()=> jb.codeLoader.loadedFElibs[lib] = true), Promise.resolve())
 
         function loadFile(lib) {
             return new Promise(resolve => {
@@ -1083,19 +1064,20 @@ jb.extension('codeLoader', {
                 else 
                     s.setAttribute('rel','stylesheet')
                 s.onload = s.onerror = resolve
-                document.head.appendChild(s);
+                document.head.appendChild(s)
             })
         }        
     },
 })
 
-jb.component('codeLoader.getCode',{
+jb.component('codeLoader.getCode', {
     impl: ({vars}) => {
         const treeShake = jb.codeLoader.treeShake(vars.ids.split(','),jb.objFromEntries(vars.existing.split(',').map(x=>[x,true])))
         jb.log('codeLoader treeshake',{...vars, treeShake})
         return jb.codeLoader.code(treeShake)
     }
-});
+})
+;
 
 jb.extension('spy', {
 	initExtension() {
@@ -1259,7 +1241,7 @@ jb.extension('spy', {
 
 ;
 
-var { not,contains,writeValue,obj,prop } = jb.ns('not,contains,writeValue,obj,prop') // use in module
+// var { not,contains,writeValue,obj,prop } = jb.ns('not,contains,writeValue,obj,prop') // use in module
 
 jb.component('call', {
   type: 'any',
@@ -1427,7 +1409,7 @@ jb.component('aggregate', {
   impl: ({},aggregator) => aggregator()
 })
 
-jb.ns('math')
+// jb.ns('math')
 
 jb.component('math.max', {
   type: 'aggregator',
@@ -1763,7 +1745,6 @@ jb.component('refProp', {
   impl: ctx => ({ ...ctx.params, type: 'ref' })
 })
 
-
 jb.component('pipeline.var', {
   type: 'aggregator',
   params: [
@@ -1771,31 +1752,6 @@ jb.component('pipeline.var', {
     {id: 'val', mandatory: true, dynamic: true, defaultValue: '%%'}
   ],
   impl: ctx => ({ [Symbol.for('Var')]: true, ...ctx.params })
-})
-
-
-jb.component('Var', {
-  type: 'var,system',
-  isSystem: true,
-  params: [
-    {id: 'name', as: 'string', mandatory: true},
-    {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: '%%'}
-  ],
-  macro: (result, self) => {
-    result.$vars = result.$vars || []
-    result.$vars.push(self)
-  },
-  impl: '' // for inteliscript
-//  Object.assign(result,{ $vars: Object.assign(result.$vars || {}, { [self.name]: self.val }) })
-})
-
-jb.component('remark', {
-  type: 'system',
-  isSystem: true,
-  params: [
-    {id: 'remark', as: 'string', mandatory: true}
-  ],
-  macro: (result, self) => Object.assign(result,{ remark: self.remark })
 })
 
 jb.component('If', {
@@ -2273,8 +2229,6 @@ jb.component('inGroup', {
   impl: ({},group,item) =>	group.indexOf(item) != -1
 })
 
-jb.urlProxy = (typeof window !== 'undefined' && location.href.match(/^[^:]*/)[0] || 'http') + '://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
-jb.cacheKiller = 0
 jb.component('http.get', {
   type: 'data,action',
   description: 'fetch data from external url',
@@ -2284,7 +2238,9 @@ jb.component('http.get', {
     {id: 'useProxy', as: 'string', options: ',localhost-server,cloud'}
   ],
   impl: (ctx,_url,_json,useProxy) => {
-		if (ctx.probe)
+    jb.urlProxy = jb.urlProxy || (typeof window !== 'undefined' && location.href.match(/^[^:]*/)[0] || 'http') + '://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
+    jb.cacheKiller = jb.cacheKiller || 1
+    if (ctx.probe)
 			return jb.http_get_cache[_url];
     const json = _json || _url.match(/json$/);
     let url = _url
@@ -2508,898 +2464,898 @@ jb.component('loadAppFiles', {
 })
 
 // widely used in system code
-var { Var,remark,not,and,or,contains,writeValue,obj,prop,log,pipeline,filter,firstSucceeding,runActions,list,waitFor } = jb.macro;
+// var { Var,remark,not,and,or,contains,writeValue,obj,prop,log,pipeline,filter,firstSucceeding,runActions,list,waitFor } = jb.macro;
 
-jb.callbag = {
-      fromIter: iter => (start, sink) => {
-          if (start !== 0) return
-          const iterator =
-              typeof Symbol !== 'undefined' && iter[Symbol.iterator]
-              ? iter[Symbol.iterator]()
-              : iter
-          let inloop = false
-          let got1 = false
-          let res
-          function loop() {
-              inloop = true
-              while (got1) {
-                  got1 = false
-                  res = iterator.next()
-                  if (res.done) sink(2)
-                  else sink(1, res.value)
-              }
-              inloop = false
+jb.extension('callbag', {
+  fromIter: iter => (start, sink) => {
+      if (start !== 0) return
+      const iterator =
+          typeof Symbol !== 'undefined' && iter[Symbol.iterator]
+          ? iter[Symbol.iterator]()
+          : iter
+      let inloop = false
+      let got1 = false
+      let res
+      function loop() {
+          inloop = true
+          while (got1) {
+              got1 = false
+              res = iterator.next()
+              if (res.done) sink(2)
+              else sink(1, res.value)
           }
-          sink(0, function fromIter(t, d) {
-              if (t === 1) {
-                  got1 = true
-                  if (!inloop && !(res && res.done)) loop()
-              }
-          })
-      },
-      pipe(..._cbs) {
-        const cbs = _cbs.filter(x=>x)
-        if (!cbs[0]) return
-        let res = cbs[0]
-        for (let i = 1, n = cbs.length; i < n; i++) {
-          const newRes = cbs[i](res)
-          if (!newRes) debugger
-          newRes.ctx = cbs[i].ctx
-          Object.defineProperty(newRes, 'name',{value: 'register ' + cbs[i].name})
+          inloop = false
+      }
+      sink(0, function fromIter(t, d) {
+          if (t === 1) {
+              got1 = true
+              if (!inloop && !(res && res.done)) loop()
+          }
+      })
+  },
+  pipe(..._cbs) {
+    const cbs = _cbs.filter(x=>x)
+    if (!cbs[0]) return
+    let res = cbs[0]
+    for (let i = 1, n = cbs.length; i < n; i++) {
+      const newRes = cbs[i](res)
+      if (!newRes) debugger
+      newRes.ctx = cbs[i].ctx
+      Object.defineProperty(newRes, 'name',{value: 'register ' + cbs[i].name})
 
-          res = newRes
+      res = newRes
+    }
+    return res
+  },
+  Do: f => source => (start, sink) => {
+      if (start !== 0) return
+      source(0, function Do(t, d) {
+          if (t == 1) f(d)
+          sink(t, d)
+      })
+  },
+  filter: condition => source => (start, sink) => {
+      if (start !== 0) return
+      let talkback
+      source(0, function filter(t, d) {
+        if (t === 0) {
+          talkback = d
+          sink(t, d)
+        } else if (t === 1) {
+          if (condition(d)) sink(t, d)
+          else talkback(1)
         }
-        return res
-      },
-      Do: f => source => (start, sink) => {
-          if (start !== 0) return
-          source(0, function Do(t, d) {
-              if (t == 1) f(d)
-              sink(t, d)
-          })
-      },
-      filter: condition => source => (start, sink) => {
-          if (start !== 0) return
-          let talkback
-          source(0, function filter(t, d) {
-            if (t === 0) {
-              talkback = d
-              sink(t, d)
-            } else if (t === 1) {
-              if (condition(d)) sink(t, d)
-              else talkback(1)
-            }
-            else sink(t, d)
-          })
-      },
-      map: f => source => (start, sink) => {
-          if (start !== 0) return
-          source(0, function map(t, d) {
-              sink(t, t === 1 ? f(d) : d)
-          })
-      },
-      throwError: (condition,err) => source => (start, sink) => {
-        let talkback
-        if (start !== 0) return
-        source(0, function throwError(t, d) {
-          if (t === 0) talkback = d
-          if (t == 1 && condition(d)) {
-            talkback && talkback(2)
-            sink(2,err)
-          } else {
-            sink(t, d)
-          }
-        })
-      },
-      distinctUntilChanged: compare => source => (start, sink) => {
-          compare = compare || ((prev, cur) => prev === cur)
-          if (start !== 0) return
-          let inited = false, prev, talkback
-          source(0, function distinctUntilChanged(t,d) {
-              if (t === 0) {
-                talkback = d
-                sink(t, d)
-              } else if (t == 1) {
-                if (inited && compare(prev, d)) {
-                    talkback(1)
-                    return
-                }
-                inited = true
-                prev = d
-                sink(1, d)
-              } else {
-                  sink(t, d)
-                  return
-              }
-          })
-      },  
-      takeUntil(notifier) {
-          if (jb.utils.isPromise(notifier))
-              notifier = jb.callbag.fromPromise(notifier)
-          const UNIQUE = {}
-          return source => (start, sink) => {
-              if (start !== 0) return
-              let sourceTalkback, notifierTalkback, inited = false, done = UNIQUE
-  
-              source(0, function takeUntil(t, d) {
-                  if (t === 0) {
-                      sourceTalkback = d
-  
-                      notifier(0, function takeUntilNotifier(t, d) {
-                          if (t === 0) {
-                              notifierTalkback = d
-                              notifierTalkback(1)
-                              return
-                          }
-                          if (t === 1) {
-                              done = void 0
-                              notifierTalkback(2)
-                              sourceTalkback(2)
-                              if (inited) sink(2)
-                              return
-                          }
-                          if (t === 2) {
-                              //notifierTalkback = null
-                              done = d
-                              if (d != null) {
-                                  sourceTalkback(2)
-                                  if (inited) sink(t, d)
-                              }
-                          }
-                      })
-                      inited = true
-  
-                      sink(0, function takeUntilSink(t, d) {
-                          if (done !== UNIQUE) return
-                          if (t === 2 && notifierTalkback) notifierTalkback(2)
-                          sourceTalkback(t, d)
-                      })
-  
-                      if (done !== UNIQUE) sink(2, done)
-                      return
-                  }
-                  if (t === 2) notifierTalkback(2)
-                  if (done === UNIQUE) sink(t, d)
-              })
-          }
-      },
-      concatMap(_makeSource,combineResults) {
-        const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
-        if (!combineResults) combineResults = (input, inner) => inner
-        return source => (start, sink) => {
-            if (start !== 0) return
-            let queue = [], activeCb, sourceEnded, allEnded, sourceTalkback, activecbTalkBack
-            source(0, function concatMap(t,d) {
-              if (t == 0)
-                sourceTalkback = d
-              else if (t == 1)
-                queue.push(d)
-              else if (t ==2)
-                sourceEnded = true
-              tick()
-            })
-            sink(0, function concatMap(t,d) {
-              if (t == 1) {
-                activecbTalkBack && activecbTalkBack(1)
-                sourceTalkback && sourceTalkback(1)
-              } else if (t == 2) {
-                allEnded = true
-                queue = []
-                sourceTalkback && sourceTalkback(2)
-              }
-            })
-            
-            function tick() {
-              if (allEnded) return
-              if (!activeCb && queue.length) {
-                const input = queue.shift()
-                activeCb = makeSource(input)
-                activeCb(0, function concatMap(t,d) {
-                  if (t == 0) {
-                    activecbTalkBack = d
-                    activecbTalkBack && activecbTalkBack(1)
-                  } else if (t == 1) {
-                    sink(1, combineResults(input,d))
-                    activecbTalkBack && activecbTalkBack(1)
-                  } else if (t == 2 && d) {
-                    allEnded = true
-                    queue = []
-                    sink(2,d)
-                    sourceTalkback && sourceTalkback(2)
-                  } else if (t == 2) {
-                    activecbTalkBack = activeCb = null
-                    tick()
-                  }
-                })
-              }
-              if (sourceEnded && !activeCb && !queue.length) {
-                allEnded = true
-                sink(2)
-              }
-            }
-        }
-      },
-      concatMap2(_makeSource,combineResults) {
-        const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
-        return source => (start, sink) => {
-            if (start !== 0) return
-            let queue = []
-            let innerTalkback, sourceTalkback, sourceEnded
-            if (!combineResults) combineResults = (input, inner) => inner
-
-            const concatMapSink= input => function concatMap(t, d) {
-              if (t === 0) {
-                innerTalkback = d
-                innerTalkback(1)
-              } else if (t === 1) {
-                sink(1, combineResults(input,d))
-                innerTalkback(1)
-              } else if (t === 2) {
-                innerTalkback = null
-                if (queue.length === 0) {
-                  stopOrContinue(d)
-                  return
-                }
-                const input = queue.shift()
-                const src = makeSource(input)
-                src(0, concatMapSink(input))
-              }
-            }
-
-            source(0, function concatMap(t, d) {
-              if (t === 0) {
-                sourceTalkback = d
-                sink(0, wrappedSink)
-                return
-              } else if (t === 1) {
-                if (innerTalkback) 
-                  queue.push(d) 
-                else {
-                  const src = makeSource(d)
-                  src(0, concatMapSink(d))
-                  src(1)
-                }
-              } else if (t === 2) {
-                sourceEnded = true
-                stopOrContinue(d)
-              }
-            })
-
-            function wrappedSink(t, d) {
-              if (t === 2 && innerTalkback) innerTalkback(2, d)
-              sourceTalkback(t, d)
-            }
-        
-            function stopOrContinue(d) {
-              if (d != undefined) {
-                queue = []
-                innerTalkback = innerTalkback = null
-                sink(2, d)
-                return
-              }
-              if (sourceEnded && !innerTalkback && queue.length == 0) {
-                sink(2, d)
-                return
-              }
-              innerTalkback && innerTalkback(1)
-            }
-          }
-      },
-      flatMap: (_makeSource, combineResults) => source => (start, sink) => {
-          if (start !== 0) return
-          const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
-          if (!combineResults) combineResults = (input, inner) => inner
-  
-          let index = 0
-          const talkbacks = {}
-          let sourceEnded = false
-          let inputSourceTalkback = null
-
-          source(0, function flatMap(t, d) {
-            if (t === 0) {
-                inputSourceTalkback = d
-                sink(0, pullHandle)
-            }
-            if (t === 1) {
-                makeSource(d)(0, makeSink(index++, d))
-            }
-            if (t === 2) {
-                sourceEnded = true
-                stopOrContinue(d)
-            }
-          })
-
-          function makeSink(i, input) { 
-            return (t, d) => {
-              if (t === 0) {talkbacks[i] = d; talkbacks[i](1)}
-              if (t === 1)
-                sink(1, d == null ? null : combineResults(input, d))
-              if (t === 2) {
-                  delete talkbacks[i]
-                  stopOrContinue(d)
-              }
-          }}
-
-          function stopOrContinue(d) {
-            if (sourceEnded && Object.keys(talkbacks).length === 0) 
-              sink(2, d)
-            else 
-              !sourceEnded && inputSourceTalkback && inputSourceTalkback(1)
-          }
-
-          function pullHandle(t, d) {
-            const currTalkback = Object.values(talkbacks).pop()
-            if (t === 1) {
-              currTalkback && currTalkback(1)
-              if (!sourceEnded) inputSourceTalkback(1)
-            }
-            if (t === 2) {
-              stopOrContinue(d)
-            }
-          }
-      },
-      merge(..._sources) {
-          const sources = _sources.filter(x=>x).filter(x=>jb.callbag.fromAny(x))
-          return function merge(start, sink) {
-            if (start !== 0) return
-            const n = sources.length
-            const sourceTalkbacks = new Array(n)
-            let startCount = 0
-            let endCount = 0
-            let ended = false
-            const talkback = (t, d) => {
-              if (t === 2) ended = true
-              for (let i = 0; i < n; i++) sourceTalkbacks[i] && sourceTalkbacks[i](t, d)
-            }
-            for (let i = 0; i < n; i++) {
-              if (ended) return
-              sources[i](0, (t, d) => {
-                if (t === 0) {
-                  sourceTalkbacks[i] = d
-                  sink(0, talkback) // if (++startCount === 1) 
-                } else if (t === 2 && d) {
-                  ended = true
-                  for (let j = 0; j < n; j++) if (j !== i && sourceTalkbacks[j]) sourceTalkbacks[j](2)
-                  sink(2, d)
-                } else if (t === 2) {
-                  sourceTalkbacks[i] = void 0
-                  if (++endCount === n) sink(2)
-                } else sink(t, d)
-              })
-            }
-          }
-      },
-      race(..._sources) { // take only the first result including errors and complete
-        const sources = _sources.filter(x=>x).filter(x=>jb.callbag.fromAny(x))
-        return function race(start, sink) {
-          if (start !== 0) return
-          const n = sources.length
-          const sourceTalkbacks = new Array(n)
-          let endCount = 0
-          let ended = false
-          const talkback = (t, d) => {
-            if (t === 2) ended = true
-            for (let i = 0; i < n; i++) sourceTalkbacks[i] && sourceTalkbacks[i](t, d)
-          }
-          for (let i = 0; i < n; i++) {
-            if (ended) return
-            sources[i](0, function race(t, d) {
-              if (t === 0) {
-                sourceTalkbacks[i] = d
-                sink(0, talkback)
-              } else {
-                ended = true
-                for (let j = 0; j < n; j++) 
-                  if (j !== i && sourceTalkbacks[j]) sourceTalkbacks[j](2)
-                sink(1,d)
-                sink(2)
-              }
-            })
-          }
-      }},
-      fromEvent: (event, elem, options) => (start, sink) => {
-          if (!elem) return
-          if (start !== 0) return
-          let disposed = false
-          const handler = ev => sink(1, ev)
-        
-          sink(0, function fromEvent(t, d) {
-            if (t !== 2) {
-              return
-            }
-            disposed = true
-            if (elem.removeEventListener) elem.removeEventListener(event, handler, options)
-            else if (elem.removeListener) elem.removeListener(event, handler, options)
-            else throw new Error('cannot remove listener from elem. No method found.')
-          })
-        
-          if (disposed) return
-        
-          if (elem.addEventListener) elem.addEventListener(event, handler, options)
-          else if (elem.addListener) elem.addListener(event, handler, options)
-          else throw new Error('cannot add listener to elem. No method found.')
-      },
-      fromPromise: promise => (start, sink) => {
-          if (start !== 0) return
-          let ended = false
-          const onfulfilled = val => {
-            if (ended) return
-            sink(1, val)
-            if (ended) return
-            sink(2)
-          }
-          const onrejected = (err = new Error()) => {
-            if (ended) return
-            sink(2, err)
-          }
-          Promise.resolve(promise).then(onfulfilled, onrejected)
-          sink(0, function fromPromise(t, d) {
-            if (t === 2) ended = true
-          })
-      },
-      subject() {
-          let sinks = []
-          function subj(t, d) {
-              if (t === 0) {
-                  const sink = d
-                  sinks.push(sink)
-                  sink(0, function subject(t,d) {
-                      if (t === 2) {
-                          const i = sinks.indexOf(sink)
-                          if (i > -1) sinks.splice(i, 1)
-                      }
-                  })
-              } else {
-                      const zinkz = sinks.slice(0)
-                      for (let i = 0, n = zinkz.length, sink; i < n; i++) {
-                          sink = zinkz[i]
-                          if (sinks.indexOf(sink) > -1) sink(t, d)
-                  }
-              }
-          }
-          subj.next = data => subj(1,data)
-          subj.complete = () => subj(2)
-          subj.error = err => subj(2,err)
-          subj.sinks = sinks
-          return subj
-      },
-      replay: keep => source => {
-        keep = keep || 0
-        let store = [], sinks = [], talkback, done = false
-      
-        const sliceNum = keep > 0 ? -1 * keep : 0;
-      
-        source(0, function replay(t, d) {
-          if (t == 0) {
-            talkback = d
-            return
-          }
-          if (t == 1) {
-            store.push(d)
-            store = store.slice(sliceNum)
-            sinks.forEach(sink => sink(1, d))
-          }
-          if (t == 2) {
-            done = true
-            sinks.forEach(sink => sink(2))
-            sinks = []
-          }
-        })
-
-        replay.sinks = sinks
-        return replay
-      
-        function replay(start, sink) {
-          if (start !== 0) return
-          sinks.push(sink)
-          sink(0, function replay(t, d) {
-            if (t == 0) return
-            if (t == 1) {
-              talkback(1)
-              return
-            }
-            if (t == 2)
-              sinks = sinks.filter(s => s !== sink)
-          })
-      
-          store.forEach(entry => sink(1, entry))
-      
-          if (done) sink(2)
-        }
-      },
-      catchError: fn => source => (start, sink) => {
-          if (start !== 0) return
-          let done
-          source(0, function catchError(t, d) {
-            if (done) return
-            if (t === 2 && d !== undefined) { done= true; sink(1, fn(d)); sink(2) } 
-            else sink(t, d) 
-          }
-        )
-      },
-      create: prod => (start, sink) => {
-          if (start !== 0) return
-          if (typeof prod !== 'function') {
-            sink(0, () => {})
-            sink(2)
-            return
-          }
-          let end = false
-          let clean
-          sink(0, (t,d) => {
-            if (!end) {
-              end = t === 2
-              if (end && typeof clean === 'function') clean()
-            }
-          })
-          if (end) return
-          clean = prod((v) => {
-              if (!end) sink(1, v)
-            }, (e) => {
-              if (!end && e !== undefined) {
-                end = true
-                sink(2, e)
-              }
-            }, () => {
-              if (!end) {
-                end = true
-                sink(2)
-              }
-          })
-      },
-      // swallow events. When new event arrives wait for a duration to spit it, if another event arrived when waiting, the original event is 'deleted'
-      // 'immediate' means that the first event is spitted immediately
-      debounceTime: (duration,immediate = true) => source => (start, sink) => {
-          if (start !== 0) return
-          let timeout
-          source(0, function debounceTime(t, d) {
-            let immediateEventSent = false
-            if (!timeout && immediate) { sink(t,d); immediateEventSent = true }
-            if (timeout) clearTimeout(timeout)
-            if (t === 1) timeout = setTimeout(() => { 
-              timeout = null; 
-              if (!immediateEventSent) sink(1, d)
-            }, typeof duration == 'function' ? duration() : duration)
-            else sink(t, d)
-          })
-      },
-      throttleTime: (duration,emitLast) => source => (start, sink) => {
-        if (start !== 0) return
-        let talkbackToSource, sourceTerminated = false, sinkTerminated = false, last, timeout
-        sink(0, function throttle(t, d) {
-          if (t === 2) sinkTerminated = true
-        })
-        source(0, function throttle(t, d) {
-          if (t === 0) {
-            talkbackToSource = d
-            talkbackToSource(1)
-          } else if (sinkTerminated) {
-            return
-          } else if (t === 1) {
-            if (!timeout) {
-              sink(t, d)
-              last = null
-              timeout = setTimeout(() => {
-                timeout = null
-                if (!sourceTerminated) talkbackToSource(1)
-                if ((emitLast === undefined || emitLast) && last != null)
-                  sink(t,d)
-              }, typeof duration == 'function' ? duration() : duration)
-            } else {
-              last = d
-            }
-          } else if (t === 2) {
-            sourceTerminated = true
-            sink(t, d)
-          }
-        })
-      },      
-      take: max => source => (start, sink) => {
-          if (start !== 0) return
-          let taken = 0, sourceTalkback, end
-          function talkback(t, d) {
-            if (t === 2) end = true
-            sourceTalkback(t, d)
-          }
-          source(0, function take(t, d) {
-            if (t === 0) {
-              sourceTalkback = d
-              sink(0, talkback)
-            } else if (t === 1) {
-              if (taken < max) {
-                taken++
-                sink(t, d)
-                if (taken === max && !end) {
-                  end = true
-                  sourceTalkback(2)
-                  sink(2)
-                }
-              }
-            } else {
-              sink(t, d)
-            }
-          })
-      },
-      takeWhile: (predicate,passtLastEvent) => source => (start, sink) => {
-          if (start !== 0) return
-          let talkback
-          source(0, function takeWhile(t,d) {
-            if (t === 0) talkback = d
-            if (t === 1 && !predicate(d)) {
-              if (passtLastEvent) sink(t,d)
-              talkback(2)
-              sink(2)
-            } else {
-              sink(t, d)
-            }
-          })
-      },
-      last: () => source => (start, sink) => {
-          if (start !== 0) return
-          let talkback, lastVal, matched = false
-          source(0, function last(t, d) {
-            if (t === 0) {
-              talkback = d
-              sink(t, d)
-            } else if (t === 1) {
-              lastVal = d
-              matched = true
-              talkback(1)
-            } else if (t === 2) {
-              if (matched) sink(1, lastVal)
-              sink(2)
-            }
-          })
-      },
-      toArray: () => source => (start, sink) => {
-        if (start !== 0) return
-        let talkback, res = [], ended
-        source(0, function toArray(t, d) {
+        else sink(t, d)
+      })
+  },
+  map: f => source => (start, sink) => {
+      if (start !== 0) return
+      source(0, function map(t, d) {
+          sink(t, t === 1 ? f(d) : d)
+      })
+  },
+  throwError: (condition,err) => source => (start, sink) => {
+    let talkback
+    if (start !== 0) return
+    source(0, function throwError(t, d) {
+      if (t === 0) talkback = d
+      if (t == 1 && condition(d)) {
+        talkback && talkback(2)
+        sink(2,err)
+      } else {
+        sink(t, d)
+      }
+    })
+  },
+  distinctUntilChanged: compare => source => (start, sink) => {
+      compare = compare || ((prev, cur) => prev === cur)
+      if (start !== 0) return
+      let inited = false, prev, talkback
+      source(0, function distinctUntilChanged(t,d) {
           if (t === 0) {
             talkback = d
-            sink(t, (t,d) => {
-              if (t == 2) end()
-              talkback(t,d)
-            })
-          } else if (t === 1) {
-            res.push(d)
-            talkback && talkback(1)
-          } else if (t === 2) {
-            if (!d) end()
-            sink(2,d)
-          }
-        })
-        function end() {
-          if (!ended && res.length) sink(1, res)
-          ended = true
-        }
-      },      
-      forEach: operation => sinkSrc => {
-        let talkback
-        sinkSrc(0, function forEach(t, d) {
-            if (t === 0) talkback = d
-            if (t === 1) operation(d)
-            if (t === 1 || t === 0) talkback(1)
-        })
-      },
-      subscribe: (listener = {}) => sinkSrc => {
-          if (typeof listener === "function") listener = { next: listener }
-          let { next, error, complete } = listener
-          let talkback, done
-          sinkSrc(0, function subscribe(t, d) {
-            if (t === 0) talkback = d
-            if (t === 1 && next) next(d)
-            if (t === 1 || t === 0) talkback(1)  // Pull
-            if (t === 2) done = true
-            if (t === 2 && !d && complete) complete()
-            if (t === 2 && !!d && error) error( d )
-            if (t === 2 && listener.finally) listener.finally( d )
-          })
-          return {
-            dispose: () => talkback && !done && talkback(2),
-            isDone: () => done,
-            isActive: () => talkback && !done
-          }
-      },
-      toPromise: sinkSrc => {
-          return new Promise((resolve, reject) => {
-            jb.callbag.subscribe({
-              next: resolve,
-              error: reject,
-              complete: () => {
-                const err = new Error('No elements in sequence.')
-                err.code = 'NO_ELEMENTS'
-                reject(err)
-              },
-            })(jb.callbag.last(sinkSrc))
-          })
-      },
-      toPromiseArray: sinkSrc => {
-          const res = []
-          let talkback
-          return new Promise((resolve, reject) => {
-                  sinkSrc(0, function toPromiseArray(t, d) {
-                      if (t === 0) talkback = d
-                      if (t === 1) res.push(d)
-                      if (t === 1 || t === 0) talkback(1)  // Pull
-                      if (t === 2 && !d) resolve(res)
-                      if (t === 2 && !!d) reject( d )
-              })
-          })
-      },
-      mapPromise: promiseF => source => jb.callbag.concatMap(d => jb.callbag.fromPromise(Promise.resolve().then(()=>promiseF(d))))(source),
-      doPromise: promiseF => source =>  jb.callbag.concatMap(d => jb.callbag.fromPromise(Promise.resolve().then(()=>promiseF(d)).then(()=>d)))(source),
-      interval: period => (start, sink) => {
-        if (start !== 0) return
-        let i = 0
-        const id = setInterval(function set_interval() {
-          sink(1, i++)
-        }, period)
-        sink(0, t => t === 2 && clearInterval(id))
-      },
-      startWith: (...xs) => source => (start, sink) => {
-          if (start !== 0) return
-          let disposed = false
-          let inputTalkback
-          let trackPull = false
-          let lastPull
-        
-          sink(0, function startWith(t, d) {
-            if (trackPull && t === 1) {
-              lastPull = [1, d]
-            }
-        
-            if (t === 2) {
-              disposed = true
-              xs.length = 0
-            }
-        
-            if (!inputTalkback) return
-            inputTalkback(t, d)
-          })
-        
-          while (xs.length !== 0) {
-            if (xs.length === 1) {
-              trackPull = true
-            }
-            sink(1, xs.shift())
-          }
-        
-          if (disposed) return
-        
-          source(0, function startWith(t, d) {
-            if (t === 0) {
-              inputTalkback = d
-              trackPull = false
-        
-              if (lastPull) {
-                inputTalkback(...lastPull)
-                lastPull = null
-              }
-              return
-            }
             sink(t, d)
-          })
-      },
-      delay: duration => source => (start, sink) => {
-          if (start !== 0) return
-          let waiting = 0, end, endD, endSent
-          source(0, function delay(t,d) {
-              if (t == 1 && d && !end) {
-                let id = setTimeout(()=> {
-                  waiting--
-                  clearTimeout(id)
-                  sink(1,d)
-                  if (end && !endSent) {
-                    endSent = true
-                    sink(2,endD)
-                  }
-                }, typeof duration == 'function' ? duration() : duration)
-                waiting++
-              } else if (t == 2) {
-                end = true
-                endD = d
-                if (!waiting) sink (t,d)
-              } else {
-                sink(t,d)
-              }
-          })
-      },
-      skip: max => source => (start, sink) => {
-          if (start !== 0) return
-          let skipped = 0, talkback
-          source(0, function skip(t, d) {
-            if (t === 0) talkback = d
-            if (t === 1 && skipped < max) {
-                skipped++
+          } else if (t == 1) {
+            if (inited && compare(prev, d)) {
                 talkback(1)
                 return
             }
-            sink(t, d)
+            inited = true
+            prev = d
+            sink(1, d)
+          } else {
+              sink(t, d)
+              return
+          }
+      })
+  },  
+  takeUntil(notifier) {
+      if (jb.utils.isPromise(notifier))
+          notifier = jb.callbag.fromPromise(notifier)
+      const UNIQUE = {}
+      return source => (start, sink) => {
+          if (start !== 0) return
+          let sourceTalkback, notifierTalkback, inited = false, done = UNIQUE
+
+          source(0, function takeUntil(t, d) {
+              if (t === 0) {
+                  sourceTalkback = d
+
+                  notifier(0, function takeUntilNotifier(t, d) {
+                      if (t === 0) {
+                          notifierTalkback = d
+                          notifierTalkback(1)
+                          return
+                      }
+                      if (t === 1) {
+                          done = void 0
+                          notifierTalkback(2)
+                          sourceTalkback(2)
+                          if (inited) sink(2)
+                          return
+                      }
+                      if (t === 2) {
+                          //notifierTalkback = null
+                          done = d
+                          if (d != null) {
+                              sourceTalkback(2)
+                              if (inited) sink(t, d)
+                          }
+                      }
+                  })
+                  inited = true
+
+                  sink(0, function takeUntilSink(t, d) {
+                      if (done !== UNIQUE) return
+                      if (t === 2 && notifierTalkback) notifierTalkback(2)
+                      sourceTalkback(t, d)
+                  })
+
+                  if (done !== UNIQUE) sink(2, done)
+                  return
+              }
+              if (t === 2) notifierTalkback(2)
+              if (done === UNIQUE) sink(t, d)
           })
-      },
-      sniffer: (source, snifferSubject) => (start, sink) => {
+      }
+  },
+  concatMap(_makeSource,combineResults) {
+    const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
+    if (!combineResults) combineResults = (input, inner) => inner
+    return source => (start, sink) => {
         if (start !== 0) return
-        let talkback
-        const talkbackWrapper = (t,d) => { report('talkback',t,d); talkback(t,d) }
-        const sniffer = (t,d) => {
-          report('out',t,d)
-          if (t == 0) {
-            talkback = d
-            Object.defineProperty(talkbackWrapper, 'name', { value: talkback.name + '-sniffer' })
-            sink(0, talkbackWrapper)
+        let queue = [], activeCb, sourceEnded, allEnded, sourceTalkback, activecbTalkBack
+        source(0, function concatMap(t,d) {
+          if (t == 0)
+            sourceTalkback = d
+          else if (t == 1)
+            queue.push(d)
+          else if (t ==2)
+            sourceEnded = true
+          tick()
+        })
+        sink(0, function concatMap(t,d) {
+          if (t == 1) {
+            activecbTalkBack && activecbTalkBack(1)
+            sourceTalkback && sourceTalkback(1)
+          } else if (t == 2) {
+            allEnded = true
+            queue = []
+            sourceTalkback && sourceTalkback(2)
+          }
+        })
+        
+        function tick() {
+          if (allEnded) return
+          if (!activeCb && queue.length) {
+            const input = queue.shift()
+            activeCb = makeSource(input)
+            activeCb(0, function concatMap(t,d) {
+              if (t == 0) {
+                activecbTalkBack = d
+                activecbTalkBack && activecbTalkBack(1)
+              } else if (t == 1) {
+                sink(1, combineResults(input,d))
+                activecbTalkBack && activecbTalkBack(1)
+              } else if (t == 2 && d) {
+                allEnded = true
+                queue = []
+                sink(2,d)
+                sourceTalkback && sourceTalkback(2)
+              } else if (t == 2) {
+                activecbTalkBack = activeCb = null
+                tick()
+              }
+            })
+          }
+          if (sourceEnded && !activeCb && !queue.length) {
+            allEnded = true
+            sink(2)
+          }
+        }
+    }
+  },
+  concatMap2(_makeSource,combineResults) {
+    const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
+    return source => (start, sink) => {
+        if (start !== 0) return
+        let queue = []
+        let innerTalkback, sourceTalkback, sourceEnded
+        if (!combineResults) combineResults = (input, inner) => inner
+
+        const concatMapSink= input => function concatMap(t, d) {
+          if (t === 0) {
+            innerTalkback = d
+            innerTalkback(1)
+          } else if (t === 1) {
+            sink(1, combineResults(input,d))
+            innerTalkback(1)
+          } else if (t === 2) {
+            innerTalkback = null
+            if (queue.length === 0) {
+              stopOrContinue(d)
+              return
+            }
+            const input = queue.shift()
+            const src = makeSource(input)
+            src(0, concatMapSink(input))
+          }
+        }
+
+        source(0, function concatMap(t, d) {
+          if (t === 0) {
+            sourceTalkback = d
+            sink(0, wrappedSink)
+            return
+          } else if (t === 1) {
+            if (innerTalkback) 
+              queue.push(d) 
+            else {
+              const src = makeSource(d)
+              src(0, concatMapSink(d))
+              src(1)
+            }
+          } else if (t === 2) {
+            sourceEnded = true
+            stopOrContinue(d)
+          }
+        })
+
+        function wrappedSink(t, d) {
+          if (t === 2 && innerTalkback) innerTalkback(2, d)
+          sourceTalkback(t, d)
+        }
+    
+        function stopOrContinue(d) {
+          if (d != undefined) {
+            queue = []
+            innerTalkback = innerTalkback = null
+            sink(2, d)
             return
           }
-          sink(t,d)
-        }
-        sniffer.ctx = source.ctx    
-        Object.defineProperty(sniffer, 'name', { value: source.name + '-sniffer' })
-        sniffer.dispose = () => { console.log('dispose', sink,talkback); debugger }
-
-        source(0,sniffer)
-        
-        function report(dir,t,d) {
-          const now = new Date()
-          const time = `${now.getSeconds()}:${now.getMilliseconds()}`
-          snifferSubject.next({dir, t, d, time})
-          if (t == 2)
-            snifferSubject.complete && snifferSubject.complete(d)
-        }
-      },
-      timeoutLimit: (timeout,err) => source => (start, sink) => {
-        if (start !== 0) return
-        let talkback
-        let timeoutId = setTimeout(()=> {
-          talkback && talkback(2)
-          sink(2, typeof err == 'function' ? err() : err || 'timeout')
-        }, typeof timeout == 'function' ? timeout() : timeout)
-
-        source(0, function timeoutLimit(t, d) {
-          if (t === 2) clearTimeout(timeoutId)
-          if (t === 0) talkback = d
-          sink(t, d)
-        })        
-      },
-      fromCallBag: source => source,
-      fromAny: (source, name, options) => {
-          const f = source && 'from' + (jb.utils.isPromise(source) ? 'Promise'
-              : source.addEventListener ? 'Event'
-              : typeof source[Symbol.iterator] === 'function' ? 'Iter'
-              : '')
-          if (jb.callbag[f]) 
-              return jb.callbag[f](source, name, options)
-          else if (jb.callbag.isCallbag(source))
-              return source
-          else
-              return jb.callbag.fromIter([source])
-      },
-      isSink: cb => typeof cb == 'function' && cb.toString().match(/sinkSrc/),
-      isCallbag: cb => typeof cb == 'function' && cb.toString().split('=>')[0].split('{')[0].replace(/\s/g,'').match(/start,sink|t,d/),
-
-      injectSniffers(cbs,ctx) {
-        return cbs
-        const _jb = ctx.frame().jb
-        if (!_jb) return cbs
-        return cbs.reduce((acc,cb) => [...acc,cb, ...injectSniffer(cb) ] ,[])
-
-        function injectSniffer(cb) {
-          if (!cb.ctx || cb.sniffer || jb.callbag.isSink(cb)) return []
-          _jb.cbLogByPath =  _jb.cbLogByPath || {}
-          const log = _jb.cbLogByPath[cb.ctx.path] = { callbagLog: true, result: [] }
-          const listener = {
-            next(r) { log.result.push(r) },
-            complete() { log.complete = true }
+          if (sourceEnded && !innerTalkback && queue.length == 0) {
+            sink(2, d)
+            return
           }
-          const res = source => _jb.callbag.sniffer(source, listener)
-          res.sniffer = true
-          res.ctx = cb.ctx
-          Object.defineProperty(res, 'name', { value: 'sniffer' })
-          return [res]
+          innerTalkback && innerTalkback(1)
         }
-      },  
-      log: name => jb.callbag.Do(x=>console.log(name,x)),
-      jbLog: (name,...params) => jb.callbag.Do(data => jb.log(name,{data,...params})),
-}
+      }
+  },
+  flatMap: (_makeSource, combineResults) => source => (start, sink) => {
+      if (start !== 0) return
+      const makeSource = (...args) => jb.callbag.fromAny(_makeSource(...args))
+      if (!combineResults) combineResults = (input, inner) => inner
+
+      let index = 0
+      const talkbacks = {}
+      let sourceEnded = false
+      let inputSourceTalkback = null
+
+      source(0, function flatMap(t, d) {
+        if (t === 0) {
+            inputSourceTalkback = d
+            sink(0, pullHandle)
+        }
+        if (t === 1) {
+            makeSource(d)(0, makeSink(index++, d))
+        }
+        if (t === 2) {
+            sourceEnded = true
+            stopOrContinue(d)
+        }
+      })
+
+      function makeSink(i, input) { 
+        return (t, d) => {
+          if (t === 0) {talkbacks[i] = d; talkbacks[i](1)}
+          if (t === 1)
+            sink(1, d == null ? null : combineResults(input, d))
+          if (t === 2) {
+              delete talkbacks[i]
+              stopOrContinue(d)
+          }
+      }}
+
+      function stopOrContinue(d) {
+        if (sourceEnded && Object.keys(talkbacks).length === 0) 
+          sink(2, d)
+        else 
+          !sourceEnded && inputSourceTalkback && inputSourceTalkback(1)
+      }
+
+      function pullHandle(t, d) {
+        const currTalkback = Object.values(talkbacks).pop()
+        if (t === 1) {
+          currTalkback && currTalkback(1)
+          if (!sourceEnded) inputSourceTalkback(1)
+        }
+        if (t === 2) {
+          stopOrContinue(d)
+        }
+      }
+  },
+  merge(..._sources) {
+      const sources = _sources.filter(x=>x).filter(x=>jb.callbag.fromAny(x))
+      return function merge(start, sink) {
+        if (start !== 0) return
+        const n = sources.length
+        const sourceTalkbacks = new Array(n)
+        let startCount = 0
+        let endCount = 0
+        let ended = false
+        const talkback = (t, d) => {
+          if (t === 2) ended = true
+          for (let i = 0; i < n; i++) sourceTalkbacks[i] && sourceTalkbacks[i](t, d)
+        }
+        for (let i = 0; i < n; i++) {
+          if (ended) return
+          sources[i](0, (t, d) => {
+            if (t === 0) {
+              sourceTalkbacks[i] = d
+              sink(0, talkback) // if (++startCount === 1) 
+            } else if (t === 2 && d) {
+              ended = true
+              for (let j = 0; j < n; j++) if (j !== i && sourceTalkbacks[j]) sourceTalkbacks[j](2)
+              sink(2, d)
+            } else if (t === 2) {
+              sourceTalkbacks[i] = void 0
+              if (++endCount === n) sink(2)
+            } else sink(t, d)
+          })
+        }
+      }
+  },
+  race(..._sources) { // take only the first result including errors and complete
+    const sources = _sources.filter(x=>x).filter(x=>jb.callbag.fromAny(x))
+    return function race(start, sink) {
+      if (start !== 0) return
+      const n = sources.length
+      const sourceTalkbacks = new Array(n)
+      let endCount = 0
+      let ended = false
+      const talkback = (t, d) => {
+        if (t === 2) ended = true
+        for (let i = 0; i < n; i++) sourceTalkbacks[i] && sourceTalkbacks[i](t, d)
+      }
+      for (let i = 0; i < n; i++) {
+        if (ended) return
+        sources[i](0, function race(t, d) {
+          if (t === 0) {
+            sourceTalkbacks[i] = d
+            sink(0, talkback)
+          } else {
+            ended = true
+            for (let j = 0; j < n; j++) 
+              if (j !== i && sourceTalkbacks[j]) sourceTalkbacks[j](2)
+            sink(1,d)
+            sink(2)
+          }
+        })
+      }
+  }},
+  fromEvent: (event, elem, options) => (start, sink) => {
+      if (!elem) return
+      if (start !== 0) return
+      let disposed = false
+      const handler = ev => sink(1, ev)
+    
+      sink(0, function fromEvent(t, d) {
+        if (t !== 2) {
+          return
+        }
+        disposed = true
+        if (elem.removeEventListener) elem.removeEventListener(event, handler, options)
+        else if (elem.removeListener) elem.removeListener(event, handler, options)
+        else throw new Error('cannot remove listener from elem. No method found.')
+      })
+    
+      if (disposed) return
+    
+      if (elem.addEventListener) elem.addEventListener(event, handler, options)
+      else if (elem.addListener) elem.addListener(event, handler, options)
+      else throw new Error('cannot add listener to elem. No method found.')
+  },
+  fromPromise: promise => (start, sink) => {
+      if (start !== 0) return
+      let ended = false
+      const onfulfilled = val => {
+        if (ended) return
+        sink(1, val)
+        if (ended) return
+        sink(2)
+      }
+      const onrejected = (err = new Error()) => {
+        if (ended) return
+        sink(2, err)
+      }
+      Promise.resolve(promise).then(onfulfilled, onrejected)
+      sink(0, function fromPromise(t, d) {
+        if (t === 2) ended = true
+      })
+  },
+  subject() {
+      let sinks = []
+      function subj(t, d) {
+          if (t === 0) {
+              const sink = d
+              sinks.push(sink)
+              sink(0, function subject(t,d) {
+                  if (t === 2) {
+                      const i = sinks.indexOf(sink)
+                      if (i > -1) sinks.splice(i, 1)
+                  }
+              })
+          } else {
+                  const zinkz = sinks.slice(0)
+                  for (let i = 0, n = zinkz.length, sink; i < n; i++) {
+                      sink = zinkz[i]
+                      if (sinks.indexOf(sink) > -1) sink(t, d)
+              }
+          }
+      }
+      subj.next = data => subj(1,data)
+      subj.complete = () => subj(2)
+      subj.error = err => subj(2,err)
+      subj.sinks = sinks
+      return subj
+  },
+  replay: keep => source => {
+    keep = keep || 0
+    let store = [], sinks = [], talkback, done = false
+  
+    const sliceNum = keep > 0 ? -1 * keep : 0;
+  
+    source(0, function replay(t, d) {
+      if (t == 0) {
+        talkback = d
+        return
+      }
+      if (t == 1) {
+        store.push(d)
+        store = store.slice(sliceNum)
+        sinks.forEach(sink => sink(1, d))
+      }
+      if (t == 2) {
+        done = true
+        sinks.forEach(sink => sink(2))
+        sinks = []
+      }
+    })
+
+    replay.sinks = sinks
+    return replay
+  
+    function replay(start, sink) {
+      if (start !== 0) return
+      sinks.push(sink)
+      sink(0, function replay(t, d) {
+        if (t == 0) return
+        if (t == 1) {
+          talkback(1)
+          return
+        }
+        if (t == 2)
+          sinks = sinks.filter(s => s !== sink)
+      })
+  
+      store.forEach(entry => sink(1, entry))
+  
+      if (done) sink(2)
+    }
+  },
+  catchError: fn => source => (start, sink) => {
+      if (start !== 0) return
+      let done
+      source(0, function catchError(t, d) {
+        if (done) return
+        if (t === 2 && d !== undefined) { done= true; sink(1, fn(d)); sink(2) } 
+        else sink(t, d) 
+      }
+    )
+  },
+  create: prod => (start, sink) => {
+      if (start !== 0) return
+      if (typeof prod !== 'function') {
+        sink(0, () => {})
+        sink(2)
+        return
+      }
+      let end = false
+      let clean
+      sink(0, (t,d) => {
+        if (!end) {
+          end = t === 2
+          if (end && typeof clean === 'function') clean()
+        }
+      })
+      if (end) return
+      clean = prod((v) => {
+          if (!end) sink(1, v)
+        }, (e) => {
+          if (!end && e !== undefined) {
+            end = true
+            sink(2, e)
+          }
+        }, () => {
+          if (!end) {
+            end = true
+            sink(2)
+          }
+      })
+  },
+  // swallow events. When new event arrives wait for a duration to spit it, if another event arrived when waiting, the original event is 'deleted'
+  // 'immediate' means that the first event is spitted immediately
+  debounceTime: (duration,immediate = true) => source => (start, sink) => {
+      if (start !== 0) return
+      let timeout
+      source(0, function debounceTime(t, d) {
+        let immediateEventSent = false
+        if (!timeout && immediate) { sink(t,d); immediateEventSent = true }
+        if (timeout) clearTimeout(timeout)
+        if (t === 1) timeout = setTimeout(() => { 
+          timeout = null; 
+          if (!immediateEventSent) sink(1, d)
+        }, typeof duration == 'function' ? duration() : duration)
+        else sink(t, d)
+      })
+  },
+  throttleTime: (duration,emitLast) => source => (start, sink) => {
+    if (start !== 0) return
+    let talkbackToSource, sourceTerminated = false, sinkTerminated = false, last, timeout
+    sink(0, function throttle(t, d) {
+      if (t === 2) sinkTerminated = true
+    })
+    source(0, function throttle(t, d) {
+      if (t === 0) {
+        talkbackToSource = d
+        talkbackToSource(1)
+      } else if (sinkTerminated) {
+        return
+      } else if (t === 1) {
+        if (!timeout) {
+          sink(t, d)
+          last = null
+          timeout = setTimeout(() => {
+            timeout = null
+            if (!sourceTerminated) talkbackToSource(1)
+            if ((emitLast === undefined || emitLast) && last != null)
+              sink(t,d)
+          }, typeof duration == 'function' ? duration() : duration)
+        } else {
+          last = d
+        }
+      } else if (t === 2) {
+        sourceTerminated = true
+        sink(t, d)
+      }
+    })
+  },      
+  take: max => source => (start, sink) => {
+      if (start !== 0) return
+      let taken = 0, sourceTalkback, end
+      function talkback(t, d) {
+        if (t === 2) end = true
+        sourceTalkback(t, d)
+      }
+      source(0, function take(t, d) {
+        if (t === 0) {
+          sourceTalkback = d
+          sink(0, talkback)
+        } else if (t === 1) {
+          if (taken < max) {
+            taken++
+            sink(t, d)
+            if (taken === max && !end) {
+              end = true
+              sourceTalkback(2)
+              sink(2)
+            }
+          }
+        } else {
+          sink(t, d)
+        }
+      })
+  },
+  takeWhile: (predicate,passtLastEvent) => source => (start, sink) => {
+      if (start !== 0) return
+      let talkback
+      source(0, function takeWhile(t,d) {
+        if (t === 0) talkback = d
+        if (t === 1 && !predicate(d)) {
+          if (passtLastEvent) sink(t,d)
+          talkback(2)
+          sink(2)
+        } else {
+          sink(t, d)
+        }
+      })
+  },
+  last: () => source => (start, sink) => {
+      if (start !== 0) return
+      let talkback, lastVal, matched = false
+      source(0, function last(t, d) {
+        if (t === 0) {
+          talkback = d
+          sink(t, d)
+        } else if (t === 1) {
+          lastVal = d
+          matched = true
+          talkback(1)
+        } else if (t === 2) {
+          if (matched) sink(1, lastVal)
+          sink(2)
+        }
+      })
+  },
+  toArray: () => source => (start, sink) => {
+    if (start !== 0) return
+    let talkback, res = [], ended
+    source(0, function toArray(t, d) {
+      if (t === 0) {
+        talkback = d
+        sink(t, (t,d) => {
+          if (t == 2) end()
+          talkback(t,d)
+        })
+      } else if (t === 1) {
+        res.push(d)
+        talkback && talkback(1)
+      } else if (t === 2) {
+        if (!d) end()
+        sink(2,d)
+      }
+    })
+    function end() {
+      if (!ended && res.length) sink(1, res)
+      ended = true
+    }
+  },      
+  forEach: operation => sinkSrc => {
+    let talkback
+    sinkSrc(0, function forEach(t, d) {
+        if (t === 0) talkback = d
+        if (t === 1) operation(d)
+        if (t === 1 || t === 0) talkback(1)
+    })
+  },
+  subscribe: (listener = {}) => sinkSrc => {
+      if (typeof listener === "function") listener = { next: listener }
+      let { next, error, complete } = listener
+      let talkback, done
+      sinkSrc(0, function subscribe(t, d) {
+        if (t === 0) talkback = d
+        if (t === 1 && next) next(d)
+        if (t === 1 || t === 0) talkback(1)  // Pull
+        if (t === 2) done = true
+        if (t === 2 && !d && complete) complete()
+        if (t === 2 && !!d && error) error( d )
+        if (t === 2 && listener.finally) listener.finally( d )
+      })
+      return {
+        dispose: () => talkback && !done && talkback(2),
+        isDone: () => done,
+        isActive: () => talkback && !done
+      }
+  },
+  toPromise: sinkSrc => {
+      return new Promise((resolve, reject) => {
+        jb.callbag.subscribe({
+          next: resolve,
+          error: reject,
+          complete: () => {
+            const err = new Error('No elements in sequence.')
+            err.code = 'NO_ELEMENTS'
+            reject(err)
+          },
+        })(jb.callbag.last(sinkSrc))
+      })
+  },
+  toPromiseArray: sinkSrc => {
+      const res = []
+      let talkback
+      return new Promise((resolve, reject) => {
+              sinkSrc(0, function toPromiseArray(t, d) {
+                  if (t === 0) talkback = d
+                  if (t === 1) res.push(d)
+                  if (t === 1 || t === 0) talkback(1)  // Pull
+                  if (t === 2 && !d) resolve(res)
+                  if (t === 2 && !!d) reject( d )
+          })
+      })
+  },
+  mapPromise: promiseF => source => jb.callbag.concatMap(d => jb.callbag.fromPromise(Promise.resolve().then(()=>promiseF(d))))(source),
+  doPromise: promiseF => source =>  jb.callbag.concatMap(d => jb.callbag.fromPromise(Promise.resolve().then(()=>promiseF(d)).then(()=>d)))(source),
+  interval: period => (start, sink) => {
+    if (start !== 0) return
+    let i = 0
+    const id = setInterval(function set_interval() {
+      sink(1, i++)
+    }, period)
+    sink(0, t => t === 2 && clearInterval(id))
+  },
+  startWith: (...xs) => source => (start, sink) => {
+      if (start !== 0) return
+      let disposed = false
+      let inputTalkback
+      let trackPull = false
+      let lastPull
+    
+      sink(0, function startWith(t, d) {
+        if (trackPull && t === 1) {
+          lastPull = [1, d]
+        }
+    
+        if (t === 2) {
+          disposed = true
+          xs.length = 0
+        }
+    
+        if (!inputTalkback) return
+        inputTalkback(t, d)
+      })
+    
+      while (xs.length !== 0) {
+        if (xs.length === 1) {
+          trackPull = true
+        }
+        sink(1, xs.shift())
+      }
+    
+      if (disposed) return
+    
+      source(0, function startWith(t, d) {
+        if (t === 0) {
+          inputTalkback = d
+          trackPull = false
+    
+          if (lastPull) {
+            inputTalkback(...lastPull)
+            lastPull = null
+          }
+          return
+        }
+        sink(t, d)
+      })
+  },
+  delay: duration => source => (start, sink) => {
+      if (start !== 0) return
+      let waiting = 0, end, endD, endSent
+      source(0, function delay(t,d) {
+          if (t == 1 && d && !end) {
+            let id = setTimeout(()=> {
+              waiting--
+              clearTimeout(id)
+              sink(1,d)
+              if (end && !endSent) {
+                endSent = true
+                sink(2,endD)
+              }
+            }, typeof duration == 'function' ? duration() : duration)
+            waiting++
+          } else if (t == 2) {
+            end = true
+            endD = d
+            if (!waiting) sink (t,d)
+          } else {
+            sink(t,d)
+          }
+      })
+  },
+  skip: max => source => (start, sink) => {
+      if (start !== 0) return
+      let skipped = 0, talkback
+      source(0, function skip(t, d) {
+        if (t === 0) talkback = d
+        if (t === 1 && skipped < max) {
+            skipped++
+            talkback(1)
+            return
+        }
+        sink(t, d)
+      })
+  },
+  sniffer: (source, snifferSubject) => (start, sink) => {
+    if (start !== 0) return
+    let talkback
+    const talkbackWrapper = (t,d) => { report('talkback',t,d); talkback(t,d) }
+    const sniffer = (t,d) => {
+      report('out',t,d)
+      if (t == 0) {
+        talkback = d
+        Object.defineProperty(talkbackWrapper, 'name', { value: talkback.name + '-sniffer' })
+        sink(0, talkbackWrapper)
+        return
+      }
+      sink(t,d)
+    }
+    sniffer.ctx = source.ctx    
+    Object.defineProperty(sniffer, 'name', { value: source.name + '-sniffer' })
+    sniffer.dispose = () => { console.log('dispose', sink,talkback); debugger }
+
+    source(0,sniffer)
+    
+    function report(dir,t,d) {
+      const now = new Date()
+      const time = `${now.getSeconds()}:${now.getMilliseconds()}`
+      snifferSubject.next({dir, t, d, time})
+      if (t == 2)
+        snifferSubject.complete && snifferSubject.complete(d)
+    }
+  },
+  timeoutLimit: (timeout,err) => source => (start, sink) => {
+    if (start !== 0) return
+    let talkback
+    let timeoutId = setTimeout(()=> {
+      talkback && talkback(2)
+      sink(2, typeof err == 'function' ? err() : err || 'timeout')
+    }, typeof timeout == 'function' ? timeout() : timeout)
+
+    source(0, function timeoutLimit(t, d) {
+      if (t === 2) clearTimeout(timeoutId)
+      if (t === 0) talkback = d
+      sink(t, d)
+    })        
+  },
+  fromCallBag: source => source,
+  fromAny: (source, name, options) => {
+      const f = source && 'from' + (jb.utils.isPromise(source) ? 'Promise'
+          : source.addEventListener ? 'Event'
+          : typeof source[Symbol.iterator] === 'function' ? 'Iter'
+          : '')
+      if (jb.callbag[f]) 
+          return jb.callbag[f](source, name, options)
+      else if (jb.callbag.isCallbag(source))
+          return source
+      else
+          return jb.callbag.fromIter([source])
+  },
+  isSink: cb => typeof cb == 'function' && cb.toString().match(/sinkSrc/),
+  isCallbag: cb => typeof cb == 'function' && cb.toString().split('=>')[0].split('{')[0].replace(/\s/g,'').match(/start,sink|t,d/),
+
+  injectSniffers(cbs,ctx) {
+    return cbs
+    const _jb = ctx.frame().jb
+    if (!_jb) return cbs
+    return cbs.reduce((acc,cb) => [...acc,cb, ...injectSniffer(cb) ] ,[])
+
+    function injectSniffer(cb) {
+      if (!cb.ctx || cb.sniffer || jb.callbag.isSink(cb)) return []
+      _jb.cbLogByPath =  _jb.cbLogByPath || {}
+      const log = _jb.cbLogByPath[cb.ctx.path] = { callbagLog: true, result: [] }
+      const listener = {
+        next(r) { log.result.push(r) },
+        complete() { log.complete = true }
+      }
+      const res = source => _jb.callbag.sniffer(source, listener)
+      res.sniffer = true
+      res.ctx = cb.ctx
+      Object.defineProperty(res, 'name', { value: 'sniffer' })
+      return [res]
+    }
+  },  
+  log: name => jb.callbag.Do(x=>console.log(name,x)),
+  jbLog: (name,...params) => jb.callbag.Do(data => jb.log(name,{data,...params})),
+})
 ;
 
 

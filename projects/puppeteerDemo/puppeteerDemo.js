@@ -1,4 +1,4 @@
-jb.ns('puppeteerDemo')
+// jb.ns('puppeteerDemo')
 
 jb.component('dataResource.events', {
   watchableData: [

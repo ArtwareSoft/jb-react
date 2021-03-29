@@ -1,9 +1,14 @@
 jb.extension('ui', 'frontend', {
-    refreshFrontEnd(elem) {
-        jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> el._component ? el._component.newVDomApplied() : jb.ui.mountFrontEnd(el))
+    refreshFrontEnd(elem, {content} = {}) {
+        jb.codeLoader.loadFELibsDirectly(jb.ui.feLibs(content)).then(()=> 
+            jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> 
+                el._component ? el._component.newVDomApplied() : new jb.ui.frontEndCmp(el)))
     },
-    mountFrontEnd(elem, keepState) {
-        new jb.ui.frontEndCmp(elem, keepState)
+    feLibs(obj) {
+        if (!obj || typeof obj != 'object') return []
+        if (obj.attributes && obj.attributes.$__frontEndLibs) 
+            return JSON.parse(obj.attributes.$__frontEndLibs)
+        return Object.keys(obj).filter(k=> ['parentNode','attributes'].indexOf(k) == -1).flatMap(k =>jb.ui.feLibs(obj[k]))
     },
     frontEndCmp: class frontEndCmp {
         constructor(elem, keepState) {

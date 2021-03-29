@@ -1,4 +1,4 @@
-var { image, pipeline } = jb.ns('image,css')
+// var { image, pipeline } = jb.ns('image,css')
 
 jb.component('image', {
   type: 'control,image',

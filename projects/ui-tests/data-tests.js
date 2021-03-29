@@ -400,9 +400,9 @@ jb.component('dataTest.dataSwitch', {
   impl: dataTest({
     calculate: pipeline(
       5,
-      data.switch(
-          [data.case(equals(4), 'a'), data.case(equals(5), 'b'), data.case(equals(6), 'c')]
-        )
+      data.switch({
+          cases: [data.case(equals(4), 'a'), data.case(equals(5), 'b'), data.case(equals(6), 'c')]
+      })
     ),
     expectedResult: equals('b')
   })
@@ -684,11 +684,9 @@ jb.component('dataTest.prettyPrintArray', {
   })
 })
 
-jb.component('dataTest.prettyPrint$contains', {
+jb.component('dataTest.prettyPrint.contains', {
   impl: dataTest({
-    calculate: pipeline(() => jb.utils.prettyPrintWithPositions(
-        {$contains: 'hello'}
-      ), '%text%'),
+    calculate: pipeline(() => jb.utils.prettyPrintWithPositions( {$contains: 'hello'}), '%text%'),
     expectedResult: contains('hello')
   })
 })

@@ -9,7 +9,7 @@ jb.component('prettyPrint', {
   impl: (ctx,profile) => jb.utils.prettyPrint(jb.val(profile),{ ...ctx.params, comps: jb.studio.previewjb.comps})
 })
 
-jb.extension('utils', {
+jb.extension('utils', 'prettyPrint', {
   initExtension() {
     return {
       emptyLineWithSpaces: Array.from(new Array(200)).map(_=>' ').join(''),
@@ -105,7 +105,7 @@ jb.extension('utils', {
       const id = [jb.utils.compName(profile)].map(x=> x=='var' ? 'variable' : x)[0]
       const comp = comps[id]
       if (comp)
-        jb.core.fixMacroByValue(profile,comp)
+        jb.macro.fixProfile(profile)
       if (noMacros || !id || !comp || ',object,var,'.indexOf(`,${id},`) != -1) { // result as is
         const props = Object.keys(profile)
         if (props.indexOf('$') > 0) { // make the $ first
@@ -114,7 +114,7 @@ jb.extension('utils', {
         }
         return joinVals(ctx, props.map(prop=>({innerPath: prop, val: profile[prop]})), '{', '}', flat, false)
       }
-      const macro = jb.macroName(id)
+      const macro = jb.macro.titleToId(id)
 
       const params = comp.params || []
       const firstParamIsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
@@ -284,7 +284,7 @@ jb.extension('remoteCtx', {
     deSerializeCmp(code) {
         if (!code) return
         try {
-            const cmp = eval(`(function() { ${jb.importAllMacros()}; return ${code} })()`)
+            const cmp = eval(`(function() { ${jb.macro.importAll()}; return ${code} })()`)
             const res = {...cmp, [jb.core.location]: cmp.location, [jb.core.loadingPhase]: cmp.loadingPhase }
             delete res.location
             delete res.loadingPhase
@@ -321,11 +321,11 @@ Routing is implemented by remoteRoutingPort, first calclating the routing path, 
 The routing path is reversed to create response message
 */
 
-var { rx,source,jbm,remote,net,pipe, aggregate } = jb.ns('rx,source,jbm,remote,net')
+//var { rx,source,jbm,remote,net,pipe, aggregate } = jb.ns('rx,source,jbm,remote,net')
 
 jb.extension('cbHandler', {
     initExtension() {
-        Object.assign(this, { counter: 0, map: {}, })
+        return { counter: 0, map: {} }
     },
     newId: () => jb.uri + ':' + (jb.cbHandler.counter++),
     get: id => jb.cbHandler.map[id],
@@ -558,6 +558,37 @@ jbLoadingPhase = 'appFiles'
     }
 })
 
+jb.component('jbm.worker1', {
+    type: 'jbm',
+    params: [
+        {id: 'id', as: 'string', defaultValue: 'w1' },
+        {id: 'networkPeer', as: 'boolean', description: 'used for testing' },
+    ],    
+    impl: ({},name,networkPeer) => {
+        const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
+        if (childsOrNet[name]) return childsOrNet[name]
+        const workerUri = networkPeer ? name : `${jb.uri}•${name}`
+        const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
+        
+        const workerCode = `
+importScripts(location.origin+'/src/loader/jb-loader.js')
+jb_codeLoaderClient('${workerUri}').then(() => {
+spy = jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
+jb.codeLoaderJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
+})
+//# sourceURL=${workerUri}-startup.js
+`
+        const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
+        return childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
+
+        function jb_codeLoaderClient() {
+            'core/jb-core,core/core-utils,core/jb-expression,core/jb-macro,misc/spy'.split(',').map(x=>`/src/${x}.js`).forEach(url=> importScripts(location.origin+url))
+            var { If,not,contains,writeValue,obj,prop,rx,source,sink,call,jbm,remote,pipe,log,net,aggregate,list } = jb.macro.ns('If,not,contains,writeValue,obj,prop,rx,source,sink,call,jbm,remote,pipe,log,net,aggregate,list') // ns use in modules
+            'loader/code-loader,core/jb-common,misc/jb-callbag,misc/rx-comps,misc/pretty-print,misc/remote-context,misc/jbm,misc/remote'.split(',').map(x=>`/src/${x}.js`).forEach(url=> importScripts(location.origin+url))
+        }        
+    }
+})
+
 jb.component('jbm.child', {
     type: 'jbm',
     params: [
@@ -741,6 +772,19 @@ jb.component('remote.initShadowData', {
             ctx => jb.db.doOp(jb.db.refOfPath(ctx.data.path), ctx.data.op, ctx),
             '%$jbm%')
         )
+    )
+})
+
+jb.component('remote.copyPassiveData', {
+    type: 'action',
+    description: 'copy passive data to remote jbm',
+    params: [
+      {id: 'jbm', type: 'jbm'},
+    ],
+    impl: runActions(
+        Var('passiveData', () => jb.db.passive()),
+        remote.action( (ctx,passiveData) => Object.keys(passiveData).forEach(k=>jb.db.passive(k,passiveData[k])),
+            '%$jbm%')
     )
 })
 

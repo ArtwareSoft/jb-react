@@ -1,16 +1,18 @@
 if (typeof jbmFactory == 'undefined') jbmFactory = {};
 jbmFactory['notebook-worker'] = function(jb) {
   jb.importAllMacros && eval(jb.importAllMacros());
-var { studio } = jb.ns('studio');
-eval(jb.importAllMacros());
+// var { studio } = jb.ns('studio');
+//eval(jb.macro.importAll());
 
-jb.extension('studio', {
-	initExtension() {
+jb.extension('studio', 'path', {
+  initExtension() {
 		return {
 			compsHistory: [],
 			scriptChange: jb.callbag.subject(),
+			previewjb: jb
 		}
-   },
+  },
+  execInStudio: (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.core.jbCtx().run(...args),
   compsRefOfjbm(jbm, {historyWin, compsRefId} = {historyWin: 5, compsRefId: 'comps'}) {
 	function compsRef(val,opEvent,{source}= {}) {
 		if (typeof val == 'undefined')
@@ -59,7 +61,7 @@ jb.extension('studio', {
 	if (jb.studio.compsRefHandler) return
     jb.studio.compsRefHandler = new jb.watchable.WatchableValueByRef(compsRef)
 	jb.db.addWatchableHandler(jb.studio.compsRefHandler)
-	initUIObserver && jb.ui.subscribeToRefChange(compsRef)
+	initUIObserver && jb.ui.subscribeToRefChange(jb.studio.compsRefHandler)
     compIdAsReferred && jb.studio.compsRefHandler.makeWatchable(compIdAsReferred)
 	jb.callbag.subscribe(e=>jb.studio.scriptChangeHandler(e))(jb.studio.compsRefHandler.resourceChange)
   },
@@ -382,6 +384,13 @@ jb.component('studio.getOrCreateCompInArray', {
 	}
 })
 
+jb.component('studio.writableCompsService', {
+	type: 'service',
+	impl: () => ({ init: 
+		() => jb.studio.initLocalCompsRefHandler(jb.studio.compsRefOfjbm(jb), {compIdAsReferred: '', initUIObserver: true} )
+	})
+})
+
 jb.component('studio.initLocalCompsRefHandler', {
   type: 'action',
   params: [
@@ -405,7 +414,7 @@ jb.component('jbm.vDebugger', {
 })
 ;
 
-var {nb,studio,widget,markdown} = jb.ns('nb,studio,widget,markdown')
+// var {nb,studio,widget,markdown} = jb.ns('nb,studio,widget,markdown')
 
 jb.component('nb.notebook', {
   type: 'control',

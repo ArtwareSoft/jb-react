@@ -127,8 +127,7 @@ jb.component('button.mdcFloatingAction', {
                 vdom.addClass('mdc-fab__icon').setAttribute('title',vdom.getAttribute('title') || title)),
             ...[withTitle && h('span',{ class: 'mdc-fab__label'},title)].filter(x=>x)
       ]),
-    css: '{width: %$buttonSize%px; height: %$buttonSize%px;}',
-    features: [button.initAction(), mdcStyle.initDynamic()]
+    features: [button.initAction(), mdcStyle.initDynamic(), css('~.mdc-fab {width: %$buttonSize%px; height: %$buttonSize%px;}')]
   })
 })
 

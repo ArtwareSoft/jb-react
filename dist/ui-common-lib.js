@@ -1,7 +1,7 @@
 if (typeof jbmFactory == 'undefined') jbmFactory = {};
 jbmFactory['ui-common'] = function(jb) {
   jb.importAllMacros && eval(jb.importAllMacros());
-var { If, call, rx,sink,source } = jb.ns('rx,sink,source')
+// var { If, call, rx,sink,source } = jb.ns('rx,sink,source')
 // ************ sources
 
 jb.component('source.data', {
@@ -1046,7 +1046,7 @@ jb.extension('ui', 'react', {
                 const elem = document.querySelector(`[cmp-id="${e.cmpId}"]`)
                 if (elem) {
                     jb.ui.applyDeltaToDom(elem, e.delta)
-                    jb.ui.refreshFrontEnd(elem)
+                    jb.ui.refreshFrontEnd(elem, {content: e.delta})
                 }
             }
         })(jb.ui.renderingUpdates)
@@ -1190,7 +1190,7 @@ jb.extension('ui', 'react', {
             jb.log('apply delta top dom',{vdomBefore,vdomAfter,active,elem,vdomAfter,strongRefresh, delta, ctx})
             jb.ui.applyDeltaToDom(elem,delta)
         }
-        jb.ui.refreshFrontEnd(elem)
+        jb.ui.refreshFrontEnd(elem, {content: vdomAfter})
         if (active) jb.ui.focus(elem,'apply Vdom diff',ctx)
         jb.ui.garbageCollectCtxDictionary()
     },
@@ -1388,6 +1388,11 @@ jb.extension('ui', 'react', {
     },
     render(vdom,parentElem,prepend) {
         jb.log('render',{vdom,parentElem,prepend})
+        const res = doRender(vdom,parentElem)
+        vdomDiffCheckForDebug()
+        jb.ui.refreshFrontEnd(res, {content: vdom })
+        return res
+
         function doRender(vdom,parentElem) {
             jb.log('dom createElement',{tag: vdom.tag, vdom,parentElem})
             const elem = jb.ui.createElement(parentElem.ownerDocument, vdom.tag)
@@ -1396,15 +1401,12 @@ jb.extension('ui', 'react', {
             prepend ? parentElem.prepend(elem) : parentElem.appendChild(elem)
             return elem
         }
-        const res = doRender(vdom,parentElem)
-        jb.ui.findIncludeSelf(res,'[interactive]').forEach(el=> jb.ui.mountFrontEnd(el))
-        // check
-        const checkResultingVdom = jb.ui.elemToVdom(res)
-        const diff = jb.ui.vdomDiff(checkResultingVdom,vdom)
-        if (checkResultingVdom && Object.keys(diff).length)
-            jb.logError('render diff',{diff,checkResultingVdom,vdom})
-
-        return res
+        function vdomDiffCheckForDebug() {
+            const checkResultingVdom = jb.ui.elemToVdom(res)
+            const diff = jb.ui.vdomDiff(checkResultingVdom,vdom)
+            if (checkResultingVdom && Object.keys(diff).length)
+                jb.logError('render diff',{diff,checkResultingVdom,vdom})
+        }
     },
     createElement(doc,tag) {
         tag = tag || 'div'
@@ -1603,7 +1605,7 @@ jb.extension('ui', 'react', {
             jb.ui.renderingUpdates.next({delta,cmpId,widgetId: ctx.vars.headlessWidgetId})
         } else if (actualElem) {
             jb.ui.applyDeltaToDom(actualElem, actualdelta)
-            jb.ui.refreshFrontEnd(actualElem)
+            jb.ui.refreshFrontEnd(actualElem, {content: delta})
         }
     },
     refreshElem(elem, state, options) {
@@ -1621,8 +1623,8 @@ jb.extension('ui', 'react', {
         if (options && options.extendCtx)
             ctx = options.extendCtx(ctx)
         ctx = ctx.setVar('$refreshElemCall',true).setVar('$cmpId', cmpId).setVar('$cmpVer', cmpVer+1) // special vars for refresh
-        if (jb.ui.inStudio()) // updating to latest version of profile
-            ctx.profile = jb.execInStudio({$: 'studio.val', path: ctx.path}) || ctx.profile
+        if (jb.ui.inStudio()) // updating to latest version of profile - todo: moveto studio
+            ctx.profile = jb.studio.execInStudio({$: 'studio.val', path: ctx.path}) || ctx.profile
         elem.setAttribute('__refreshing','')
         const cmp = ctx.profile.$ == 'openDialog' ? ctx.run(dialog.buildComp()) : ctx.runItself()
         jb.log('refresh elem start',{cmp,ctx,elem, state, options})
@@ -1640,7 +1642,7 @@ jb.extension('ui', 'react', {
         }
         elem.removeAttribute('__refreshing')
         jb.ui.refreshNotification.next({cmp,ctx,elem, state, options})
-        //jb.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
+        //jb.studio.execInStudio({ $: 'animate.refreshElem', elem: () => elem })
     }
 })
 ;
@@ -1894,7 +1896,7 @@ jb.extension('ui','comp', {
                 if (this.state[e.prop] != undefined) return // we have the value in the state, probably asynch value so do not calc again
                 const modelProp = this.ctx.vars.$model[e.prop]
                 if (!modelProp)
-                    return jb.logError('calcRenderProps',`missing model prop "${e.prop}"`, {cmp: this, model: this.ctx.vars.$model, ctx: this.ctx})
+                    return jb.logError(`calcRenderProps: missing model prop "${e.prop}"`, {cmp: this, model: this.ctx.vars.$model, ctx: this.ctx})
                 const ref = modelProp(this.ctx)
                 if (jb.db.isWatchable(ref))
                     this.toObserve.push({id: e.prop, cmp: this, ref,...e})
@@ -1960,6 +1962,7 @@ jb.extension('ui','comp', {
                     frontEndMethods.length && {interactive : 'true'}, 
                     frontEndVars && { $__vars : JSON.stringify(frontEndVars)},
                     this.state && { $__state : JSON.stringify(this.state)},
+                    { $__debug: JSON.stringify({ path: (this.ctxForPick || this.calcCtx).path, cmpCtxPath: this.calcCtx.cmpCtx.path }) },
                     this.ctxForPick && { 'pick-ctx': jb.ui.preserveCtx(this.ctxForPick) },
                 )
             }
@@ -2175,7 +2178,7 @@ jb.extension('ui', {
 
 // ***************** inter-cmp services
 
-var { feature, action } = jb.ns('feature')
+// var { feature, action } = jb.ns('feature')
 
 jb.component('feature.serviceRegistey', {
   type: 'feature',
@@ -2369,15 +2372,20 @@ jb.component('controlWithFeatures', {
 })
 
 // widely used
-var { customStyle, styleByControl, styleWithFeatures, controlWithFeatures } = jb.macro
+// var { customStyle, styleByControl, styleWithFeatures, controlWithFeatures } = jb.macro
 ;
 
 jb.extension('ui', 'frontend', {
-    refreshFrontEnd(elem) {
-        jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> el._component ? el._component.newVDomApplied() : jb.ui.mountFrontEnd(el))
+    refreshFrontEnd(elem, {content} = {}) {
+        jb.codeLoader.loadFELibsDirectly(jb.ui.feLibs(content)).then(()=> 
+            jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> 
+                el._component ? el._component.newVDomApplied() : new jb.ui.frontEndCmp(el)))
     },
-    mountFrontEnd(elem, keepState) {
-        new jb.ui.frontEndCmp(elem, keepState)
+    feLibs(obj) {
+        if (!obj || typeof obj != 'object') return []
+        if (obj.attributes && obj.attributes.$__frontEndLibs) 
+            return JSON.parse(obj.attributes.$__frontEndLibs)
+        return Object.keys(obj).filter(k=> ['parentNode','attributes'].indexOf(k) == -1).flatMap(k =>jb.ui.feLibs(obj[k]))
     },
     frontEndCmp: class frontEndCmp {
         constructor(elem, keepState) {
@@ -2522,9 +2530,8 @@ jb.extension('ui', 'watchRef', {
     })
 });
 
-
-var { variable,watchable,followUp,backEnd,method,features,onDestroy,htmlAttribute,templateModifier,watchAndCalcModelProp,calcProp,watchRef } 
-  = jb.ns('variable,watchable,followUp,backEnd,method,htmlAttribute,features,onDestroy,templateModifier,watchAndCalcModelProp,calcProp,watchRef,group')
+// var { variable,watchable,followUp,backEnd,method,features,onDestroy,htmlAttribute,templateModifier,watchAndCalcModelProp,calcProp,watchRef } 
+//  = jb.ns('variable,watchable,followUp,backEnd,method,htmlAttribute,features,onDestroy,templateModifier,watchAndCalcModelProp,calcProp,watchRef,group')
 
 jb.component('method', {
   type: 'feature',
@@ -2619,7 +2626,7 @@ jb.component('feature.initValue', {
   }})
 })
 
-jb.component('feature.requireService',{
+jb.component('feature.requireService', {
   params: [
     {id: 'service', type: 'service'},
     {id: 'condition', dynamic: true, defaultValue: true},
@@ -2947,7 +2954,7 @@ jb.component('feature.userEventProps', {
 })
 ;
 
-var { rx,key,frontEnd,sink,service, replace } = jb.ns('rx,key,frontEnd,sink,service')
+// var { rx,key,frontEnd,sink,service, replace } = jb.ns('rx,key,frontEnd,sink,service')
 
 jb.component('action.runBEMethod', {
     type: 'action',
@@ -3363,7 +3370,7 @@ jb.component('source.findSelectionKeySource', {
 })
 ;
 
-var { css } = jb.ns('css')
+// var { css } = jb.ns('css')
 
 jb.component('css', {
   description: 'e.g. {color: red; width: 20px} or div>.myClas {color: red} ',
@@ -3605,17 +3612,17 @@ jb.component('css.conditionalClass', {
   })
 })
 
-;['layout','typography','detailedBorder','detailedColor','gridArea'].forEach(f=>
-jb.component(`css.${f}`, {
+jb.defComponents('layout,typography,detailedBorder,detailedColor,gridArea'.split(','), id=>`css.${id}`, f=> ({
   type: 'feature:0',
   params: [
     {id: 'css', mandatory: true, as: 'string'}
   ],
   impl: (ctx,css) => ({css: jb.ui.fixCssLine(css)})
 }))
+
 ;
 
-var { text, firstSucceeding, customStyle, styleByControl, controlWithFeatures } = jb.ns('text')
+// var { text, firstSucceeding, customStyle, styleByControl, controlWithFeatures } = jb.ns('text')
 
 jb.component('text', {
   type: 'control',
@@ -3678,7 +3685,7 @@ jb.component('text.highlight', {
 })
 ;
 
-var {group,layout,tabs,controlWithCondition} = jb.ns('group,layout,tabs,controlWithCondition')
+// var {group,layout,tabs,controlWithCondition} = jb.ns('group,layout,tabs,controlWithCondition')
 
 jb.component('group', {
   type: 'control',
@@ -3809,7 +3816,7 @@ jb.component('controls', {
   }
 });
 
-var { html } = jb.ns('html')
+// var { html } = jb.ns('html')
 
 jb.component('html', {
   type: 'control',
@@ -3855,7 +3862,7 @@ jb.component('html.inIframe', {
 })
 ;
 
-var { image, pipeline } = jb.ns('image,css')
+// var { image, pipeline } = jb.ns('image,css')
 
 jb.component('image', {
   type: 'control,image',
@@ -3948,7 +3955,7 @@ jb.component('image.img', {
   })
 });
 
-var { icon, control } = jb.ns('icon,control')
+// var { icon, control } = jb.ns('icon,control')
 
 jb.component('control.icon', {
   type: 'control',
@@ -4016,7 +4023,7 @@ jb.component('feature.icon', {
 
 ;
 
-var { button } = jb.ns('button')
+// var { button } = jb.ns('button')
 
 jb.component('button', {
   type: 'control,clickable',
@@ -4072,7 +4079,7 @@ jb.component('button.altAction', {
 
 ;
 
-var { field, validation  } = jb.ns('field,validation');
+// var { field, validation  } = jb.ns('field,validation');
 
 jb.extension('ui', 'field', {
   initExtension: () => ({field_id_counter : 0 }),
@@ -4264,7 +4271,7 @@ jb.component('field.columnWidth', {
   })
 });
 
-var {editableText} = jb.ns('editableText')
+// var {editableText} = jb.ns('editableText')
 
 jb.component('editableText', {
   type: 'control',
@@ -4302,7 +4309,7 @@ jb.component('editableText.xButton', {
 })
 ;
 
-var {editableBoolean, refreshIfNotWatchable} = jb.ns('editableBoolean')
+// var {editableBoolean, refreshIfNotWatchable} = jb.ns('editableBoolean')
 
 jb.component('editableBoolean', {
   type: 'control',
@@ -4335,7 +4342,7 @@ jb.component('editableBoolean.initToggle', {
 })
 ;
 
-var {editableNumber} = jb.ns('editableNumber')
+// var {editableNumber} = jb.ns('editableNumber')
 
 jb.component('editableNumber', {
   type: 'control',
@@ -4390,8 +4397,7 @@ jb.component('editableNumber', {
 
 ;
 
-var {openDialog, dialog,dialogs, dialogFeature, and, or, runActionOnItems, getSessionStorage, userStateProp } 
-	= jb.ns('dialog,dialogs,openDialog,dialogFeature')
+// var {openDialog, dialog,dialogs, dialogFeature, and, or, runActionOnItems, getSessionStorage, userStateProp } = jb.ns('dialog,dialogs,openDialog,dialogFeature')
 
 jb.component('openDialog', {
   type: 'action,has-side-effects',
@@ -4925,7 +4931,7 @@ jb.component('dialogs.defaultStyle', {
 })
 ;
 
-var {itemlist} = jb.ns('itemlist,itemlistContainer')
+// var {itemlist} = jb.ns('itemlist,itemlistContainer')
 
 jb.component('itemlist', {
   description: 'list, dynamic group, collection, repeat',
@@ -4969,7 +4975,7 @@ jb.component('itemlist.init', {
 })
 ;
 
-var {runActionOnItem, isRef, inGroup, list } = jb.macro
+// var {runActionOnItem, isRef, inGroup, list } = jb.macro
 
 jb.component('itemlist.selection', {
   type: 'feature',
@@ -5072,6 +5078,7 @@ jb.component('itemlist.keyboardSelection', {
     ),
     frontEnd.flow(
       '%$cmp.onkeydown%',
+      rx.log('test 1'),
       rx.filter(not('%ctrlKey%')),
       rx.filter(inGroup(list(38, 40), '%keyCode%')),
       rx.map(itemlist.nextSelected(If('%keyCode%==40', 1, -1))),
@@ -5130,11 +5137,12 @@ jb.component('itemlist.nextSelected', {
   }
 });
 
-var { move } = jb.macro
+// var { move } = jb.macro
 
 jb.component('itemlist.dragAndDrop', {
   type: 'feature',
   impl: features(
+    frontEnd.requireExternalLibrary(['dragula.js','css/dragula.css']),
     method('moveItem', runActions(move(itemlist.indexToData('%from%'), itemlist.indexToData('%to%')), action.refreshCmp())),
     frontEnd.prop('drake', ({},{cmp}) => {
         if (!jb.frame.dragula) return jb.logError('itemlist.dragAndDrop - the dragula lib is not loaded')
@@ -5296,7 +5304,7 @@ jb.component('itemlist.calcSlicedItems', {
 })
 ;
 
-var { search, itemlistContainer } = jb.ns('search,itemlistContainer')
+// var { search, itemlistContainer } = jb.ns('search,itemlistContainer')
 
 jb.component('group.itemlistContainer', {
   description: 'itemlist writable container to support addition, deletion and selection',
@@ -5498,7 +5506,7 @@ jb.component('search.fuse', {
 })
 ;
 
-var { mdcStyle,table } = jb.ns('mdcStyle,table')
+// var { mdcStyle,table } = jb.ns('mdcStyle,table')
 
 jb.component('table', {
   description: 'list, dynamic group, collection, repeat',
@@ -5626,7 +5634,7 @@ jb.component('feature.expandToEndOfRow', {
     impl: calcProp('expandToEndOfRow','%$condition()%')
 });
 
-var { menu,menuStyle,menuSeparator,icon,key} = jb.ns('menu,menuStyle,menuSeparator,icon,key')
+// var { menu,menuStyle,menuSeparator,icon,key} = jb.ns('menu,menuStyle,menuSeparator,icon,key')
 
 jb.component('menu.menu', {
   type: 'menu.option',
@@ -6117,7 +6125,7 @@ jb.component('menuStyle.iconMenu', {
 })
 ;
 
-var {picklist} = jb.ns('picklist')
+// var {picklist} = jb.ns('picklist')
 
 jb.component('picklist', {
   type: 'control',
@@ -6263,7 +6271,7 @@ jb.component('picklist.initGroups', {
 })
 ;
 
-var {multiSelect, removeFromArray, addToArray } = jb.ns('multiSelect')
+// var {multiSelect, removeFromArray, addToArray } = jb.ns('multiSelect')
 
 jb.component('multiSelect', {
     type: 'control',
@@ -6462,7 +6470,7 @@ jb.component('theme.materialDesign', {
 })
 ;
 
-var { slider, editableNumber, mdcStyle } = jb.ns('slider,mdcStyle')
+// var { slider, editableNumber, mdcStyle } = jb.ns('slider,mdcStyle')
 
 jb.component('editableNumber.sliderNoText', {
   type: 'editable-number.style',
@@ -6639,7 +6647,7 @@ jb.component('winUtils.gotoUrl', {
 
 ;
 
-var { divider } = jb.ns('divider')
+// var { divider } = jb.ns('divider')
 
 jb.component('divider', {
     type: 'control',
@@ -6676,7 +6684,7 @@ jb.component('divider.flexAutoGrow', {
 })
 ;
 
-var {notEmpty, touch} = jb.macro
+// var {notEmpty, touch} = jb.macro
 
 jb.component('editableText.picklistHelper', {
   type: 'feature',
@@ -6798,7 +6806,11 @@ jb.component('editableText.helperPopup', {
  )
 });
 
-var {mdcStyle} = jb.ns('mdcStyle')
+// var {mdcStyle} = jb.ns('mdcStyle')
+
+jb.extension('mdIcons', {
+  require: ['/dist/md-icons.js']
+})
 
 jb.component('mdcStyle.initDynamic', {
   type: 'feature',
@@ -6806,25 +6818,24 @@ jb.component('mdcStyle.initDynamic', {
     {id: 'query', as: 'string'}
   ],
   impl: features(
-    frontEnd.requireExternalLibrary(['material-components-web.js','css/material-components-web.css','css/font.css']),
+    frontEnd.requireExternalLibrary(['material-components-web.js','css/font.css','css/material.css']),
     frontEnd.init( async ({},{cmp}) => {
-      if (!jb.ui.material) await jb.exec(waitFor(() => jb.frame.mdc))
       const mdc = jb.frame.mdc
-      //if (!mdc) return jb.logError('please load mdc library')
+      if (!mdc) return jb.logError('please load mdc library')
       cmp.mdc_comps = cmp.mdc_comps || [];
-      //;['switch','chip-set','tab-bar','slider','select','text-field']
-      //Object.keys(mdc)
-      ['switch','chip-set','tab-bar','slider','select','text-field'].forEach(cmpName => {
+      const module = { switch: 'switchControl', 'chip-set': 'chips', 'tab-bar': 'tabBar', 'text-field': 'textField' }
+      ;['switch','chip-set','tab-bar','slider','select','text-field'].forEach(cmpName => {
         const elm = jb.ui.findIncludeSelf(cmp.base,`.mdc-${cmpName}`)[0]
         if (elm) {
           const name1 = cmpName.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase())
           const name = name1[0].toUpperCase() + name1.slice(1)
-          cmp.mdc_comps.push({mdc_cmp: new (jb.ui.material || mdc[cmpName])[`MDC${name}`](elm), cmpName})
+          const m = mdc[cmpName] ? cmpName : module[cmpName]
+          cmp.mdc_comps.push({mdc_cmp: new mdc[m][`MDC${name}`](elm), cmpName})
           jb.log(`mdc frontend init ${cmpName}`,{cmp})
         }
       })
       if (cmp.base.classList.contains('mdc-button') || cmp.base.classList.contains('mdc-fab')) {
-        cmp.mdc_comps.push({mdc_cmp: new (jb.ui.material || mdc.ripple).MDCRipple(cmp.base), cmpName: 'ripple' })
+        cmp.mdc_comps.push({mdc_cmp: new mdc.ripple.MDCRipple(cmp.base), cmpName: 'ripple' })
         jb.log('mdc frontend init ripple',{cmp})
       }
     }),
@@ -7082,8 +7093,7 @@ jb.component('button.mdcFloatingAction', {
                 vdom.addClass('mdc-fab__icon').setAttribute('title',vdom.getAttribute('title') || title)),
             ...[withTitle && h('span',{ class: 'mdc-fab__label'},title)].filter(x=>x)
       ]),
-    css: '{width: %$buttonSize%px; height: %$buttonSize%px;}',
-    features: [button.initAction(), mdcStyle.initDynamic()]
+    features: [button.initAction(), mdcStyle.initDynamic(), css('~.mdc-fab {width: %$buttonSize%px; height: %$buttonSize%px;}')]
   })
 })
 
@@ -7121,7 +7131,7 @@ jb.component('button.mdcHeader', {
 
 ;
 
-var {hidden} = jb.ns('mdc-style')
+// var {hidden} = jb.ns('mdc-style')
 
 jb.component('editableText.input', {
   type: 'editable-text.style',
@@ -7338,10 +7348,7 @@ jb.component('flexItem.grow', {
   params: [
     {id: 'factor', as: 'string', defaultValue: '1'}
   ],
-  impl: {
-    '$': 'feature.css',
-    '$byValue': ['flex-grow: %$factor%']
-  }
+  impl: css('flex-grow: %$factor%')
 })
 
 jb.component('flexItem.basis', {
@@ -7350,10 +7357,7 @@ jb.component('flexItem.basis', {
   params: [
     {id: 'factor', as: 'string', defaultValue: '1'}
   ],
-  impl: {
-    '$': 'feature.css',
-    '$byValue': ['flex-basis: %$factor%']
-  }
+  impl: css('flex-basis: %$factor%')
 })
 
 jb.component('flexItem.alignSelf', {
@@ -7362,15 +7366,12 @@ jb.component('flexItem.alignSelf', {
   params: [
     {id: 'align', as: 'string', options: 'auto,flex-start,flex-end,center,baseline,stretch', defaultValue: 'auto'}
   ],
-  impl: {
-    '$': 'feature.css',
-    '$byValue': ['align-self: %$align%']
-  }
+  impl: css('align-self: %$align%')
 })
 
 ;
 
-var { dynamicControls, css, header } = jb.ns('css')
+// var { dynamicControls, css, header } = jb.ns('css')
 
 jb.component('group.htmlTag', {
   type: 'group.style',

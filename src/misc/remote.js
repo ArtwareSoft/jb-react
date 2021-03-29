@@ -86,6 +86,19 @@ jb.component('remote.initShadowData', {
     )
 })
 
+jb.component('remote.copyPassiveData', {
+    type: 'action',
+    description: 'copy passive data to remote jbm',
+    params: [
+      {id: 'jbm', type: 'jbm'},
+    ],
+    impl: runActions(
+        Var('passiveData', () => jb.db.passive()),
+        remote.action( (ctx,passiveData) => Object.keys(passiveData).forEach(k=>jb.db.passive(k,passiveData[k])),
+            '%$jbm%')
+    )
+})
+
 /*** net comps */
 
 jb.component('net.listSubJbms', {

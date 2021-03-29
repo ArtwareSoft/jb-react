@@ -14491,11 +14491,94 @@ CodeMirror.registerHelper("fold", "indent", function(cm, start) {
 });
 ;
 
-(function() {
-var {textEditor} = jb.ns('textEditor')
-
-const posToCM = pos => pos && ({line: pos.line, ch: pos.col})
-const posFromCM = pos => pos && ({line: pos.line, col: pos.ch})
+jb.extension('codemirror', {
+	injectCodeMirror(ctx,{text,cmp,el,cm_settings,_enableFullScreen,formatText}) {
+		if (cmp.editor) return
+		if (text == null)
+			return jb.logError('codemirror - no binding to text',{ctx, cmp})
+		const _extraKeys = { ...cm_settings.extraKeys, ...jb.path(cmp.extraCmSettings,'extraKeys')}
+		const extraKeys = jb.objFromEntries(jb.entries(_extraKeys).map(e=>[
+			e[0], (''+e[1]).replace(/\s/g,'').indexOf('()=>') == 0 ? e[1]
+				: _ => ctx.setVar('ev',jb.ui.buildUserEvent({},el)).run(action.runBEMethod(e[1]))
+		]))
+		const gutters = [ ...(cm_settings.gutters || []), ...(jb.path(cmp.extraCmSettings,'gutters') || []) ]
+		const settings = {...cm_settings, ...cmp.extraCmSettings, value: text || '', autofocus: false, extraKeys, gutters }
+		cmp.editor = CodeMirror(el, settings)
+		cmp.editor.getWrapperElement().setAttribute('jb_external','true')
+		jb.ui.addClass(cmp.editor.getWrapperElement(),'autoResizeInDialog')
+		if (formatText) {
+			CodeMirror.commands.selectAll(cmp.editor)
+			cmp.editor.autoFormatRange(cmp.editor.getCursor(true), cmp.editor.getCursor(false));
+			cmp.editor.setSelection({line:0, ch:0})
+		}
+		//cmp.editor.refresh()
+		_enableFullScreen && jb.delay(1).then(() => jb.codemirror.enableFullScreen(ctx,cmp,el))
+	},
+	
+	enableFullScreen(ctx,cmp,el) {
+		const width = jb.ui.outerWidth(el), height = jb.ui.outerHeight(el), editor = cmp.editor
+		const fullScreenBtnHtml = '<div class="jb-codemirror-fullScreenBtnCss hidden"><img title="Full Screen (F11)" src="http://png-1.findicons.com/files/icons/1150/tango/22/view_fullscreen.png"/></div>'
+		const escText = '<span class="jb-codemirror-escCss">Press ESC or F11 to exit full screen</span>'
+		const lineNumbers = true
+		const css = `
+			.jb-codemirror-escCss { cursor:default; text-align: center; width: 100%; position:absolute; top:0px; left:0px; font-family: arial; font-size: 11px; color: #a00; padding: 2px 5px 3px; }
+			.jb-codemirror-escCss:hover { text-decoration: underline; }
+			.jb-codemirror-fullScreenBtnCss { position:absolute; bottom:5px; right:15px; -webkit-transition: opacity 1s; z-index: 20; }
+			.jb-codemirror-fullScreenBtnCss.hidden { opacity:0; }
+			.jb-codemirror-editorCss { position:relative; }
+			.jb-codemirror-fullScreenEditorCss { padding-top: 20px, display: block; position: fixed !important; top: 0; left: 0; z-index: 99999999; }
+		`;
+		if (!jb.ui.find(document,'#jb_codemirror_fullscreen')[0])
+			jb.ui.addHTML(document.head,`<style id="jb_codemirror_fullscreen" type="text/css">${css}</style>`)
+	
+		const jEditorElem = editor.getWrapperElement()
+		  jb.ui.addClass(jEditorElem,'jb-codemirror-editorCss')
+		const prevLineNumbers = editor.getOption('lineNumbers')
+		  jb.ui.addHTML(jEditorElem,fullScreenBtnHtml)
+		const fullScreenButton =jb.ui.find(jEditorElem,'.jb-codemirror-fullScreenBtnCss')[0]
+		fullScreenButton.onclick = _ => switchMode()
+		fullScreenButton.onmouseenter = _ => jb.ui.removeClass(fullScreenButton,'hidden')
+		fullScreenButton.onmouseleave = _ => jb.ui.addClass(fullScreenButton,'hidden')
+	
+		const fullScreenClass = 'jb-codemirror-fullScreenEditorCss'
+	
+		function onresize() {
+			const wrapper = editor.getWrapperElement()
+			wrapper.style.width = window.innerWidth + 'px'
+			wrapper.style.height = window.innerHeight + 'px'
+			editor.setSize(window.innerWidth, window.innerHeight - 20)
+			jEditorElem.style.height = document.body.innerHeight + 'px' //Math.max( document.body.innerHeight, $(window).height()) + 'px' );
+		}
+	
+		function switchMode(onlyBackToNormal) {
+			cmp.innerElemOffset = null
+			if (jb.ui.hasClass(jEditorElem,fullScreenClass)) {
+				jb.ui.removeClass(jEditorElem,fullScreenClass)
+				window.removeEventListener('resize', onresize)
+				editor.setOption('lineNumbers', prevLineNumbers)
+				editor.setSize(width, height)
+				editor.refresh()
+				jEditorElem.removeChild(jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0])
+				jEditorElem.style.width = null
+			} else if (!onlyBackToNormal) {
+				jb.ui.addClass(jEditorElem,fullScreenClass)
+				window.addEventListener('resize', onresize)
+				onresize()
+				document.documentElement.style.overflow = 'hidden'
+				if (lineNumbers) editor.setOption('lineNumbers', true)
+				editor.refresh()
+				jb.ui.addHTML(jEditorElem,escText)
+				  jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0].onclick = _ => switchMode(true)
+				jb.ui.focus(editor,'code mirror',ctx)
+			}
+		}
+	
+		editor.addKeyMap({
+			'F11': () => switchMode(),
+			'Esc': () => switchMode(true)
+		})
+	}	
+})
 
 jb.component('editableText.codemirror', {
   type: 'editable-text.style',
@@ -14513,6 +14596,7 @@ jb.component('editableText.codemirror', {
     {id: 'maxLength', as: 'number', defaultValue: 5000}
   ],
   impl: features(
+    frontEnd.requireExternalLibrary(['codemirror.js','css/codemirror.css']),
 	calcProp('text','%$$model/databind()%'),
 	frontEnd.var('text', '%$$props/text%'),
     calcProp('textAreaAlternative',({},{$props},{maxLength}) => ($props.text || '').length > maxLength),
@@ -14528,7 +14612,7 @@ jb.component('editableText.codemirror', {
 	method('onCtrlEnter', call('onCtrlEnter')),
 	textEditor.cmEnrichUserEvent(),
     frontEnd.init( (ctx,vars) => ! jb.ui.hasClass(vars.el, 'jb-textarea-alternative-for-codemirror')
-		 && injectCodeMirror(ctx,vars)),
+		 && jb.codemirror.injectCodeMirror(ctx,vars)),
 	frontEnd.onRefresh(({},{text,cmp}) => cmp.editor.setValue(text)),
 	method('writeText',writeValue('%$$model/databind()%','%%')),
 	frontEnd.flow(
@@ -14588,98 +14672,11 @@ jb.component('textEditor.cmEnrichUserEvent', {
                 outerWidth: jb.ui.outerWidth(elem), 
                 clientRect: elem.getBoundingClientRect(),
                 text: editor.getValue(),
-                selectionStart: posFromCM(editor.getCursor()),
+                selectionStart: {line: editor.getCursor().line, col: editor.getCursor().ch}
             }
         })
     )
 })
-
-function injectCodeMirror(ctx,{text,cmp,el,cm_settings,_enableFullScreen,formatText}) {
-	if (cmp.editor) return
-	if (text == null)
-		return jb.logError('codemirror - no binding to text',{ctx, cmp})
-	const _extraKeys = { ...cm_settings.extraKeys, ...jb.path(cmp.extraCmSettings,'extraKeys')}
-	const extraKeys = jb.objFromEntries(jb.entries(_extraKeys).map(e=>[
-		e[0], (''+e[1]).replace(/\s/g,'').indexOf('()=>') == 0 ? e[1]
-			: _ => ctx.setVar('ev',jb.ui.buildUserEvent({},el)).run(action.runBEMethod(e[1]))
-	]))
-	const gutters = [ ...(cm_settings.gutters || []), ...(jb.path(cmp.extraCmSettings,'gutters') || []) ]
-	const settings = {...cm_settings, ...cmp.extraCmSettings, value: text || '', autofocus: false, extraKeys, gutters }
-	cmp.editor = CodeMirror(el, settings)
-	cmp.editor.getWrapperElement().setAttribute('jb_external','true')
-	jb.ui.addClass(cmp.editor.getWrapperElement(),'autoResizeInDialog')
-	if (formatText) {
-		CodeMirror.commands.selectAll(cmp.editor)
-		cmp.editor.autoFormatRange(cmp.editor.getCursor(true), cmp.editor.getCursor(false));
-		cmp.editor.setSelection({line:0, ch:0})
-	}
-	//cmp.editor.refresh()
-	_enableFullScreen && jb.delay(1).then(() => enableFullScreen(ctx,cmp,el))
-}
-
-function enableFullScreen(ctx,cmp,el) {
-	const width = jb.ui.outerWidth(el), height = jb.ui.outerHeight(el), editor = cmp.editor
-	const fullScreenBtnHtml = '<div class="jb-codemirror-fullScreenBtnCss hidden"><img title="Full Screen (F11)" src="http://png-1.findicons.com/files/icons/1150/tango/22/view_fullscreen.png"/></div>'
-	const escText = '<span class="jb-codemirror-escCss">Press ESC or F11 to exit full screen</span>'
-	const lineNumbers = true
-	const css = `
-		.jb-codemirror-escCss { cursor:default; text-align: center; width: 100%; position:absolute; top:0px; left:0px; font-family: arial; font-size: 11px; color: #a00; padding: 2px 5px 3px; }
-		.jb-codemirror-escCss:hover { text-decoration: underline; }
-		.jb-codemirror-fullScreenBtnCss { position:absolute; bottom:5px; right:15px; -webkit-transition: opacity 1s; z-index: 20; }
-		.jb-codemirror-fullScreenBtnCss.hidden { opacity:0; }
-		.jb-codemirror-editorCss { position:relative; }
-		.jb-codemirror-fullScreenEditorCss { padding-top: 20px, display: block; position: fixed !important; top: 0; left: 0; z-index: 99999999; }
-	`;
-	if (!jb.ui.find(document,'#jb_codemirror_fullscreen')[0])
-    	jb.ui.addHTML(document.head,`<style id="jb_codemirror_fullscreen" type="text/css">${css}</style>`)
-
-	const jEditorElem = editor.getWrapperElement()
-  	jb.ui.addClass(jEditorElem,'jb-codemirror-editorCss')
-	const prevLineNumbers = editor.getOption('lineNumbers')
-  	jb.ui.addHTML(jEditorElem,fullScreenBtnHtml)
-	const fullScreenButton =jb.ui.find(jEditorElem,'.jb-codemirror-fullScreenBtnCss')[0]
-	fullScreenButton.onclick = _ => switchMode()
-	fullScreenButton.onmouseenter = _ => jb.ui.removeClass(fullScreenButton,'hidden')
-	fullScreenButton.onmouseleave = _ => jb.ui.addClass(fullScreenButton,'hidden')
-
-	const fullScreenClass = 'jb-codemirror-fullScreenEditorCss'
-
-	function onresize() {
-		const wrapper = editor.getWrapperElement()
-		wrapper.style.width = window.innerWidth + 'px'
-		wrapper.style.height = window.innerHeight + 'px'
-		editor.setSize(window.innerWidth, window.innerHeight - 20)
-		jEditorElem.style.height = document.body.innerHeight + 'px' //Math.max( document.body.innerHeight, $(window).height()) + 'px' );
-	}
-
-	function switchMode(onlyBackToNormal) {
-		cmp.innerElemOffset = null
-		if (jb.ui.hasClass(jEditorElem,fullScreenClass)) {
-			jb.ui.removeClass(jEditorElem,fullScreenClass)
-			window.removeEventListener('resize', onresize)
-			editor.setOption('lineNumbers', prevLineNumbers)
-			editor.setSize(width, height)
-			editor.refresh()
-			jEditorElem.removeChild(jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0])
-			jEditorElem.style.width = null
-		} else if (!onlyBackToNormal) {
-			jb.ui.addClass(jEditorElem,fullScreenClass)
-			window.addEventListener('resize', onresize)
-			onresize()
-			document.documentElement.style.overflow = 'hidden'
-			if (lineNumbers) editor.setOption('lineNumbers', true)
-			editor.refresh()
-			jb.ui.addHTML(jEditorElem,escText)
-      		jb.ui.find(jEditorElem,'.jb-codemirror-escCss')[0].onclick = _ => switchMode(true)
-			jb.ui.focus(editor,'code mirror',ctx)
-		}
-	}
-
-	editor.addKeyMap({
-		'F11': () => switchMode(),
-		'Esc': () => switchMode(true)
-	})
-}
 
 jb.component('text.codemirror', {
   type: 'text.style',
@@ -14693,6 +14690,7 @@ jb.component('text.codemirror', {
     {id: 'mode', as: 'string', options: 'htmlmixed,javascript,css'},
   ],
   impl: features(
+    frontEnd.requireExternalLibrary(['codemirror.js','css/codemirror.css']),
 	frontEnd.var('text', '%$$model/text()%'),
     () => ({ template: ({},{},h) => h('div') }),
 	frontEnd.var('cm_settings', ({},{},{cm_settings,lineWrapping, mode, lineNumbers}) => ({
@@ -14700,14 +14698,13 @@ jb.component('text.codemirror', {
 	})),
 	frontEnd.var('_enableFullScreen', '%$enableFullScreen%'),
 	frontEnd.var('formatText', '%$formatText%'),
-    frontEnd.init( (ctx,vars) => injectCodeMirror(ctx,vars)),
-//	frontEnd.onRefresh((ctx,vars) => { injectCodeMirror(ctx,vars); vars.cmp.editor.setValue(vars.text) }),	
+    frontEnd.init( (ctx,vars) => jb.codemirror.injectCodeMirror(ctx,vars)),
+//	frontEnd.onRefresh((ctx,vars) => { jb.codemirror.injectCodeMirror(ctx,vars); vars.cmp.editor.setValue(vars.text) }),	
     css(({},{},{height}) => `{width: 100%}
 		>div { box-shadow: none !important; ${jb.ui.propWithUnits('height',height)} !important}`)
   )
 })
-
-})();
+;
 
 
 };

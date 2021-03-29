@@ -2,10 +2,12 @@ Object.assign(jb, {
   extension(libId, p1 , p2) {
     const extId = typeof p1 == 'string' ? p1 : 'main'
     const extension = p2 || p1
-    const lib = jb[libId] = jb[libId] || {__initialized: {} }
+    const lib = jb[libId] = jb[libId] || {__initialized: {}, __require: [] }
     const funcs = Object.keys(extension).filter(k=>typeof extension[k] == 'function').filter(k=>!k.match(/^initExtension/))
     funcs.forEach(k=>lib[k] = extension[k])
 
+    if (extension.require) 
+      lib.__require = [...lib.__require, ...extension.require]
     const initFuncId = Object.keys(extension).filter(k=>typeof extension[k] == 'function').filter(k=>k.match(/^initExtension/))[0]
     const phaseFromFunc = ((initFuncId||'').match(/_phase([0-9]+)/)||[,0])[1]
     const initFuncPhase = phaseFromFunc || { core: 1, utils: 5, db: 10, watchable: 20}[libId] || 100
@@ -15,8 +17,10 @@ Object.assign(jb, {
 
     lib[initFunc] = initFuncImpl    
     funcs.forEach(k=>lib[k].__initFuncs = [initFunc].map(x=>`#${libId}.${x}`))
-    if (jb.noCodeLoader)
+    if (jb.noCodeLoader) {
       Object.assign(lib, lib[initFunc]())
+      lib.__initialized[initFunc] = true
+    }
   },
   initializeLibs(libs) {
     libs.flatMap(l => Object.keys(jb[l]).filter(x=>x.match(/^init_/)))
@@ -28,35 +32,51 @@ Object.assign(jb, {
           Object.assign(lib, lib[initFunc]())
         }
       })
+    const baseUrl = jb.path(jb.codeLoader,'baseUrl')
+    return libs.flatMap(l => jb[l].__require||[])
+      .filter(url => !jb.frame.jb.__requiredLoaded[url])
+      .reduce((pr,url) => pr.then(() => jb_loadFile(url,baseUrl,jb)).then(() => jb.frame.jb.__requiredLoaded[url] = true), Promise.resolve())
+  },  
+  component(id,comp) {
+    // todo: move functionality to onAddComponent hook
+    if (!jb.core.location) jb.initializeLibs(['core'])
+    try {
+      const errStack = new Error().stack.split(/\r|\n/)
+      const line = errStack.filter(x=>x && x != 'Error' && !x.match(/at Object.component/)).shift()
+      comp[jb.core.location] = line ? (line.split('at eval (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
+      comp[jb.core.project] = comp[jb.core.location][0].split('?')[1]
+      comp[jb.core.location][0] = comp[jb.core.location][0].split('?')[0]
+    
+      if (comp.watchableData !== undefined) {
+        jb.comps[jb.db.addDataResourcePrefix(id)] = comp
+        return jb.db.resource(jb.db.removeDataResourcePrefix(id),comp.watchableData)
+      }
+      if (comp.passiveData !== undefined) {
+        jb.comps[jb.db.addDataResourcePrefix(id)] = comp
+        return jb.db.passive(jb.db.removeDataResourcePrefix(id),comp.passiveData)
+      }
+    } catch(e) {
+      console.log(e)
+    }
+
+    jb.comps[id] = comp;
+
+    // fix as boolean params to have type: 'boolean'
+    (comp.params || []).forEach(p=> {
+      if (p.as == 'boolean' && ['boolean','ref'].indexOf(p.type) == -1)
+        p.type = 'boolean'
+    })
+    comp[jb.core.loadingPhase] = jb.frame.jbLoadingPhase
   },
   noCodeLoader: true
 })
-
-// if (initFuncImpl) {
-//   lib[initFunc] = initFuncImpl
-//   if (! lib.__initialized[initFunc]) {
-//     lib.__initialized[initFunc] = true
-//     Object.assign(lib, lib[initFunc](extension))
-//   }
-// }
-// jb.core.dependentInit = [...(jb.core.dependentInit || []), 
-//   ...dependentInitFuncs.map(k=>({libId, func: k, extension, dependentOn: [...k.matchAll(/_([A-Za-z0-9]+)/g)].map(x=>x[1]) }))]
-// const initToRun = jb.core.dependentInit.filter(x=>x.dependentOn.every(m=>jb[m]))
-// jb.core.dependentInit = jb.core.dependentInit.filter(x=>! x.dependentOn.every(m=>jb[m]))
-// initToRun.forEach(x=>{
-//   const lib = jb[x.libId], initFunc = x.func
-//   if (! lib.__initialized[initFunc]) {
-//     lib.__initialized[initFunc] = true
-//     Object.assign(lib, lib[initFunc](extension))
-//   }
-// })
-
 
 jb.extension('core', {
   initExtension() {
     Object.assign(jb, { 
       frame: (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {},
-      comps: {}, ctxDictionary: {}, macro: {},
+      comps: {}, ctxDictionary: {},
+      __requiredLoaded: {},
       jstypes: jb.core.jsTypes()
     })
     return { 
@@ -64,8 +84,6 @@ jb.extension('core', {
       project: Symbol.for('project'),
       location: Symbol.for('location'),
       loadingPhase: Symbol.for('loadingPhase'),
-      macroNs: {},
-      macroDef: Symbol('macroDef'), 
     }
   },
   run(ctx,parentParam,settings) {
@@ -208,7 +226,7 @@ jb.extension('core', {
     if (!comp && comp_name) { jb.logError('component ' + comp_name + ' is not defined', {ctx}); return { type:'null' } }
     if (comp.impl == null) { jb.logError('component ' + comp_name + ' has no implementation', {ctx}); return { type:'null' } }
   
-    jb.core.fixMacroByValue(profile,comp)
+    jb.macro.fixProfile(profile)
     const resCtx = Object.assign(new jb.core.jbCtx(ctx,{}), {parentParam, params: {}})
     const preparedParams = jb.core.prepareParams(comp_name,comp,profile,resCtx);
     if (typeof comp.impl === 'function') {
@@ -218,18 +236,7 @@ jb.extension('core', {
       return { type:'profile', ctx: new jb.core.jbCtx(resCtx,{profile: comp.impl, comp: comp_name, path: ''}), preparedParams: preparedParams };
   },
   castToParam: (value,param) => jb.core.tojstype(value,param ? param.as : null),
-  tojstype(value,jstype) {
-    if (!jstype) return value;
-    if (typeof jb.jstypes[jstype] != 'function') debugger;
-    return jb.jstypes[jstype](value);
-  },
-  fixMacroByValue(profile,comp) {
-    if (profile && profile.$byValue) {
-      const params = jb.utils.compParams(comp)
-      profile.$byValue.forEach((v,i)=> Object.assign(profile,{[params[i].id]: v}))
-      delete profile.$byValue
-    }
-  },
+  tojstype: (v,jstype) => (!jstype || !jb.jstypes[jstype]) ? v : jb.jstypes[jstype](v),
   jbCtx: class jbCtx {
     constructor(ctx,ctx2) {
       this.id = jb.core.ctxCounter++
@@ -281,12 +288,6 @@ jb.extension('core', {
     }
     runItself(parentParam,settings) { return jb.core.run(this,parentParam,settings) }
     dataObj(data) { return {data, vars: this.vars} }
-  },
-  callStack(ctx) {
-    const ctxStack=[]; 
-    for(let innerCtx=ctx; innerCtx; innerCtx = innerCtx.cmpCtx) 
-      ctxStack.push(innerCtx)
-    return ctxStack.map(ctx=>ctx.callerPath)
   },
   jsTypes() { return {
     asIs: x => x,

@@ -1,4 +1,4 @@
-var { not,contains,writeValue,obj,prop } = jb.ns('not,contains,writeValue,obj,prop') // use in module
+// var { not,contains,writeValue,obj,prop } = jb.ns('not,contains,writeValue,obj,prop') // use in module
 
 jb.component('call', {
   type: 'any',
@@ -166,7 +166,7 @@ jb.component('aggregate', {
   impl: ({},aggregator) => aggregator()
 })
 
-jb.ns('math')
+// jb.ns('math')
 
 jb.component('math.max', {
   type: 'aggregator',
@@ -502,7 +502,6 @@ jb.component('refProp', {
   impl: ctx => ({ ...ctx.params, type: 'ref' })
 })
 
-
 jb.component('pipeline.var', {
   type: 'aggregator',
   params: [
@@ -510,31 +509,6 @@ jb.component('pipeline.var', {
     {id: 'val', mandatory: true, dynamic: true, defaultValue: '%%'}
   ],
   impl: ctx => ({ [Symbol.for('Var')]: true, ...ctx.params })
-})
-
-
-jb.component('Var', {
-  type: 'var,system',
-  isSystem: true,
-  params: [
-    {id: 'name', as: 'string', mandatory: true},
-    {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: '%%'}
-  ],
-  macro: (result, self) => {
-    result.$vars = result.$vars || []
-    result.$vars.push(self)
-  },
-  impl: '' // for inteliscript
-//  Object.assign(result,{ $vars: Object.assign(result.$vars || {}, { [self.name]: self.val }) })
-})
-
-jb.component('remark', {
-  type: 'system',
-  isSystem: true,
-  params: [
-    {id: 'remark', as: 'string', mandatory: true}
-  ],
-  macro: (result, self) => Object.assign(result,{ remark: self.remark })
 })
 
 jb.component('If', {
@@ -1012,8 +986,6 @@ jb.component('inGroup', {
   impl: ({},group,item) =>	group.indexOf(item) != -1
 })
 
-jb.urlProxy = (typeof window !== 'undefined' && location.href.match(/^[^:]*/)[0] || 'http') + '://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
-jb.cacheKiller = 0
 jb.component('http.get', {
   type: 'data,action',
   description: 'fetch data from external url',
@@ -1023,7 +995,9 @@ jb.component('http.get', {
     {id: 'useProxy', as: 'string', options: ',localhost-server,cloud'}
   ],
   impl: (ctx,_url,_json,useProxy) => {
-		if (ctx.probe)
+    jb.urlProxy = jb.urlProxy || (typeof window !== 'undefined' && location.href.match(/^[^:]*/)[0] || 'http') + '://jbartdb.appspot.com/jbart_db.js?op=proxy&url='
+    jb.cacheKiller = jb.cacheKiller || 1
+    if (ctx.probe)
 			return jb.http_get_cache[_url];
     const json = _json || _url.match(/json$/);
     let url = _url
@@ -1247,4 +1221,4 @@ jb.component('loadAppFiles', {
 })
 
 // widely used in system code
-var { Var,remark,not,and,or,contains,writeValue,obj,prop,log,pipeline,filter,firstSucceeding,runActions,list,waitFor } = jb.macro
+// var { Var,remark,not,and,or,contains,writeValue,obj,prop,log,pipeline,filter,firstSucceeding,runActions,list,waitFor } = jb.macro

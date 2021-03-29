@@ -1,4 +1,4 @@
-var {vscode} = jb.ns('vscode')
+// var {vscode} = jb.ns('vscode')
 
 jb.extension('vscode', {
     service: (req,timeout) => new Promise((resolve,reject) => {

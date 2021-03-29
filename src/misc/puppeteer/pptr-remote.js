@@ -1,4 +1,4 @@
-jb.ns('pptr,remote')
+// jb.ns('pptr,remote')
 
 Object.assign(jb.remote.remoteClassNames,{Browser: true, Page: true})
 

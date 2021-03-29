@@ -1,4 +1,8 @@
-var {mdcStyle} = jb.ns('mdcStyle')
+// var {mdcStyle} = jb.ns('mdcStyle')
+
+jb.extension('mdIcons', {
+  require: ['/dist/md-icons.js']
+})
 
 jb.component('mdcStyle.initDynamic', {
   type: 'feature',
@@ -6,25 +10,24 @@ jb.component('mdcStyle.initDynamic', {
     {id: 'query', as: 'string'}
   ],
   impl: features(
-    frontEnd.requireExternalLibrary(['material-components-web.js','css/material-components-web.css','css/font.css']),
+    frontEnd.requireExternalLibrary(['material-components-web.js','css/font.css','css/material.css']),
     frontEnd.init( async ({},{cmp}) => {
-      if (!jb.ui.material) await jb.exec(waitFor(() => jb.frame.mdc))
       const mdc = jb.frame.mdc
-      //if (!mdc) return jb.logError('please load mdc library')
+      if (!mdc) return jb.logError('please load mdc library')
       cmp.mdc_comps = cmp.mdc_comps || [];
-      //;['switch','chip-set','tab-bar','slider','select','text-field']
-      //Object.keys(mdc)
-      ['switch','chip-set','tab-bar','slider','select','text-field'].forEach(cmpName => {
+      const module = { switch: 'switchControl', 'chip-set': 'chips', 'tab-bar': 'tabBar', 'text-field': 'textField' }
+      ;['switch','chip-set','tab-bar','slider','select','text-field'].forEach(cmpName => {
         const elm = jb.ui.findIncludeSelf(cmp.base,`.mdc-${cmpName}`)[0]
         if (elm) {
           const name1 = cmpName.replace(/[_-]([a-zA-Z])/g, (_, letter) => letter.toUpperCase())
           const name = name1[0].toUpperCase() + name1.slice(1)
-          cmp.mdc_comps.push({mdc_cmp: new (jb.ui.material || mdc[cmpName])[`MDC${name}`](elm), cmpName})
+          const m = mdc[cmpName] ? cmpName : module[cmpName]
+          cmp.mdc_comps.push({mdc_cmp: new mdc[m][`MDC${name}`](elm), cmpName})
           jb.log(`mdc frontend init ${cmpName}`,{cmp})
         }
       })
       if (cmp.base.classList.contains('mdc-button') || cmp.base.classList.contains('mdc-fab')) {
-        cmp.mdc_comps.push({mdc_cmp: new (jb.ui.material || mdc.ripple).MDCRipple(cmp.base), cmpName: 'ripple' })
+        cmp.mdc_comps.push({mdc_cmp: new mdc.ripple.MDCRipple(cmp.base), cmpName: 'ripple' })
         jb.log('mdc frontend init ripple',{cmp})
       }
     }),

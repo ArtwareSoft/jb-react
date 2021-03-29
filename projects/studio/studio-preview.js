@@ -1,7 +1,7 @@
 (function() {
 
 const st = jb.studio;
-var { waitFor, prettyPrint } = jb.macro
+// var { waitFor, prettyPrint } = jb.macro
 
 st.changedComps = () => {
   if (!st.compsHistory || !st.compsHistory.length) return []
@@ -28,12 +28,12 @@ jb.component('studio.editingService',{
 jb.component('studio.fetchProjectSettings', {
   impl: ctx => {
     const host = ctx.run(firstSucceeding('%$queryParams/host%','studio'))
-    if (host && st.projectHosts[host]) {
+    if (host && jb.projectHosts[host]) {
       const project = ctx.exp('%$studio/project%')
       document.title = `${project} with jBart`
       const hostProjectId = ctx.exp('%$queryParams/hostProjectId%')
       jb.log('fetch project settings using projectHost',{host,hostProjectId,project})
-      return st.projectHosts[host].fetchProjectSettings(hostProjectId,project)
+      return jb.projectHosts[host].fetchProjectSettings(hostProjectId,project)
   //      .then(x=>jb.delay(2000).then(()=>{debugger; return x})) // debug point for vscode
         .then(projectSettings => {
           jb.log('project settings fetched',{host,hostProjectId,projectSettings})

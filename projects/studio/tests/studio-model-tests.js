@@ -177,14 +177,14 @@ jb.component('studioUiTest.gotoReferencesButton', {
 
 jb.component('studio.completionPropOfPt', {
   impl: dataTest({
-    calculate: ctx=> jb.studio.completion.hint("{$: 'group', controls :{$: 'itemlist',"),
+    calculate: ctx=> jb.studioCompletion.hint("{$: 'group', controls :{$: 'itemlist',"),
     expectedResult: ctx => JSON.stringify(ctx.data || '').indexOf('items') != -1
   })
 })
 
 jb.component('studio.completionPtOfType', {
   impl: dataTest({
-    calculate: ctx=> jb.studio.completion.hint("{$: 'group', controls:{ "),
+    calculate: ctx=> jb.studioCompletion.hint("{$: 'group', controls:{ "),
     expectedResult: ctx =>
 		JSON.stringify(ctx.data || '').indexOf('"displayText":"itemlist"') != -1
   })
@@ -192,7 +192,7 @@ jb.component('studio.completionPtOfType', {
 
 jb.component('studio.completionPtOfTypeInArray', {
   impl: dataTest({
-    calculate: ctx=> jb.studio.completion.hint("{$: 'group', controls :[{$: 'label' }, {$:'"),
+    calculate: ctx=> jb.studioCompletion.hint("{$: 'group', controls :[{$: 'label' }, {$:'"),
     expectedResult: ctx =>
 		JSON.stringify(ctx.data || '').indexOf('"displayText":"itemlist"') != -1
   })
@@ -201,28 +201,28 @@ jb.component('studio.completionPtOfTypeInArray', {
 
 jb.component('studioTest.pathOfTextInArray', {
   impl: dataTest({
-    calculate: ctx => jb.studio.completion.pathOfText("{$: 'group', \n\tcontrols: [ {$: 'label', text: 'aa' }, {$: 'label', text: '"),
+    calculate: ctx => jb.studioCompletion.pathOfText("{$: 'group', \n\tcontrols: [ {$: 'label', text: 'aa' }, {$: 'label', text: '"),
     expectedResult: ctx => ctx.data.join('~') == "controls~1~text"
   })
 })
 
 jb.component('studioTest.pathOfTextProp', {
   impl: dataTest({
-    calculate: ctx => jb.studio.completion.pathOfText("{$: 'group', text :{$: 'split' , part: '"),
+    calculate: ctx => jb.studioCompletion.pathOfText("{$: 'group', text :{$: 'split' , part: '"),
     expectedResult: ctx => ctx.data.join('~') == "text~part"
   })
 })
 
 jb.component('studioTest.pathOfTextPropTop', {
   impl: dataTest({
-    calculate: ctx => jb.studio.completion.pathOfText("{ $:'group', style :{$: 'layo"),
+    calculate: ctx => jb.studioCompletion.pathOfText("{ $:'group', style :{$: 'layo"),
     expectedResult: ctx => ctx.data.join('~') == "style"
   })
 })
 
 jb.component('studioTest.pathOfTextPropAfterArray', {
   impl: dataTest({
-    calculate: ctx => jb.studio.completion.pathOfText("{ $:'group', controls :[{$: '' }, {$:'label'}], style :{$: 'layo"),
+    calculate: ctx => jb.studioCompletion.pathOfText("{ $:'group', controls :[{$: '' }, {$:'label'}], style :{$: 'layo"),
     expectedResult: ctx => ctx.data.join('~') == "style"
   })
 })
