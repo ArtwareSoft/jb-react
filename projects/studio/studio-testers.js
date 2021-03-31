@@ -1,15 +1,3 @@
-(function(){
-const st = jb.studio
-
-st.initTests = function() {
-  if (st.compsRefHandler) return
-  const compsRef = val => typeof val == 'undefined' ? jb.comps : (jb.comps = val);
-  compsRef.id = 'comps-test'
-  st.compsRefHandler = new jb.watchable.WatchableValueByRef(compsRef)
-	jb.db.addWatchableHandler(st.compsRefHandler)  
-	jb.callbag.subscribe(e=>st.scriptChange.next(e))(st.compsRefHandler.resourceChange)
-}
-
 jb.component('suggestionsTest', {
   type: 'test',
   params: [
@@ -66,7 +54,7 @@ jb.component('studioProbeTest', {
     {id: 'expectedOutResult', type: 'boolean', dynamic: true, defaultValue: true}
   ],
   impl: (ctx,circuit,probePath,allowClosestPath,expectedVisits,expectedOutResult)=> {
-    st.initTests()
+    //st.initTests()
 
     const testId = ctx.vars.testID;
     const failure = reason => ({ id: testId, title: testId, success:false, reason: reason });
@@ -109,7 +97,7 @@ jb.component('pathChangeTest', {
     {id: 'cleanUp', type: 'action', dynamic: true}
   ],
   impl: (ctx,path,action,expectedPathAfter,cleanUp)=> {
-    st.initTests();
+    //st.initTests();
 
     const testId = ctx.vars.testID;
     const failure = (part,reason) => ({ id: testId, title: testId + '- ' + part, success:false, reason: reason });
@@ -128,5 +116,3 @@ jb.component('pathChangeTest', {
     return res;
   }
 })
-
-})()

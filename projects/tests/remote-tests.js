@@ -216,6 +216,20 @@ jb.component('remoteTest.remoteParam', {
   })
 })
 
+jb.component('remoteTest.operator.useVars', {
+  impl: dataTest({
+    timeout: 5000,
+      calculate: rx.pipe(
+          source.data(1),
+          rx.var('keepIt','keep me'),
+          remote.operator(rx.var('remoteVar','alive'), jbm.worker()),
+          rx.map('%$keepIt%-%$remoteVar%'),
+          rx.take(1)
+    ),
+    expectedResult: equals('keep me-alive')
+  })
+})
+
 jb.component('remoteTest.dynamicProfileFunc', {
   params: [
     { id: 'func', dynamic: true, defaultValue: '-%%-'},
@@ -335,6 +349,7 @@ jb.component('remoteWidgetTest.codemirror.editableText', {
 })
 
 jb.component('remoteWidgetTest.refresh.cleanUp', {
+  description: 'creating remote widgets and deleting them with gc',
   impl: uiFrontEndTest({
     renderDOM: true,
     timeout: 3000,

@@ -20,7 +20,7 @@
     "start": "npm run studio",
     "electron": "node_modules/.bin/electron hosts/jb-electron",
     "eStudio": "node_modules/.bin/electron hosts/jb-electron -path:projects/studio/cards",
-    "eTests": "node_modules/.bin/electron hosts/jb-electron -path:projects/ui-tests/tests.html",
+    "eTests": "node_modules/.bin/electron hosts/jb-electron -path:projects/tests/tests.html",
     "dev": "concurrently \"npm run webpack\" \"npm run studio\" ",
     "webpack": "node_modules/.bin/webpack",
     "build": "node_modules/.bin/webpack & node bin/build-libs & npm run ts",
@@ -33,7 +33,7 @@
     "studio-server": "node bin/studio/studio-server.js",
     "puppeteer-server": "node src/misc/puppeteer/pptr-server.js",
     "helloWorld": "start http://localhost:8082/project/studio/helloWorld",
-    "test": "start http://localhost:8082/projects/ui-tests/tests.html",
+    "test": "start http://localhost:8082/projects/tests/tests.html",
     "pub": "yarn build-libs && git commit -am build-lib",
     "vscode-package": "vsce package",
     "copy-projects-to-template": "node bin/copy-projects-to-template.js"

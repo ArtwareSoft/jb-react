@@ -2,7 +2,7 @@ jb.extension('studio', {
 	PropertiesTree: class PropertiesTree {
 		constructor(rootPath) {
 			this.rootPath = rootPath;
-			this.refHandler = jb.studio.compsRefHandler;
+			this.refHandler = jb.watchableComps.handler;
 		}
 		isArray(path) {
 			return this.children(path).length > 0;
@@ -32,7 +32,7 @@ jb.extension('studio', {
 	ControlTree: class ControlTree{
 		constructor(rootPath) {
 			this.rootPath = rootPath;
-			this.refHandler = jb.studio.compsRefHandler;
+			this.refHandler = jb.watchableComps.handler;
 		}
 		title(path,collapsed) {
 			const val = jb.studio.valOfPath(path);
@@ -78,7 +78,7 @@ jb.extension('studio', {
 	jbEditorTree: class jbEditorTree {
 		constructor(rootPath,includeCompHeader) {
 			this.rootPath = rootPath;
-			this.refHandler = jb.studio.compsRefHandler;
+			this.refHandler = jb.watchableComps.handler;
 			this.includeCompHeader= includeCompHeader;
 		}
 		title(path, collapsed) {

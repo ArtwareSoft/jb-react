@@ -35,9 +35,10 @@ Object.assign(jb, {
           Object.assign(lib, lib[initFunc]())
         }
       })
+    const baseUrl = jb.path(jb.codeLoader,'baseUrl')
     return libs.flatMap(l => jb[l].__require||[])
       .filter(url => !jb.frame.jb.__requiredLoaded[url])
-      .reduce((pr,url) => pr.then(() => jb_loadFile(url)).then(() => jb.frame.jb.__requiredLoaded[url] = true), Promise.resolve())
+      .reduce((pr,url) => pr.then(() => jb_loadFile(url,baseUrl,jb)).then(() => jb.frame.jb.__requiredLoaded[url] = true), Promise.resolve())
   },  
   component(id,comp) {
     // todo: move functionality to onAddComponent hook
@@ -270,7 +271,7 @@ jb.extension('core', {
     }
     exp(exp,jstype) { return jb.expression.calc(exp, this, {as: jstype}) }
     setVars(vars) { return new jb.core.jbCtx(this,{vars: vars}) }
-    setVar(name,val) { return name ? new jb.core.jbCtx(this,{vars: {[name]: val}}) : this }
+    setVar(name,val) { return name ? (name == 'datum' ? new jb.core.jbCtx(this,{data:val}) : new jb.core.jbCtx(this,{vars: {[name]: val}})) : this }
     setData(data) { return new jb.core.jbCtx(this,{data: data}) }
     runInner(profile,parentParam, path) { return jb.core.run(new jb.core.jbCtx(this,{profile: profile,path}), parentParam) }
     bool(profile) { return this.run(profile, { as: 'boolean'}) }
@@ -290,12 +291,6 @@ jb.extension('core', {
     }
     runItself(parentParam,settings) { return jb.core.run(this,parentParam,settings) }
     dataObj(data) { return {data, vars: this.vars} }
-  },
-  callStack(ctx) {
-    const ctxStack=[]; 
-    for(let innerCtx=ctx; innerCtx; innerCtx = innerCtx.cmpCtx) 
-      ctxStack.push(innerCtx)
-    return ctxStack.map(ctx=>ctx.callerPath)
   },
   jsTypes() { return {
     asIs: x => x,
@@ -420,6 +415,12 @@ jb.extension('utils', { // jb core utils
     
       return jb.utils.resolveFinishedPromise(res)
     },
+    callStack(ctx) {
+      const ctxStack=[]; 
+      for(let innerCtx=ctx; innerCtx; innerCtx = innerCtx.cmpCtx) 
+        ctxStack.push(innerCtx)
+      return ctxStack.map(ctx=>ctx.callerPath)
+    },    
     addDebugInfo(f,ctx) { f.ctx = ctx; return f},
     assignDebugInfoToFunc(func, ctx) {
       func.ctx = ctx
@@ -931,7 +932,8 @@ jb.extension('codeLoader', {
         return {
             clientComps: ['#extension','#core.run','#component','#jbm.extendPortToJbmProxy','#jbm.portFromFrame','#spy.initSpy','#codeLoader.getCodeFromRemote','codeLoader.getCode','waitFor'],
             existingFEPaths: {},
-            loadedFElibs: {}
+            loadedFElibs: {},
+            server: jb.frame.jb_codeLoaderServer
         }
     },
     existing() {
@@ -1041,7 +1043,7 @@ jb.extension('codeLoader', {
                 }
             })
     },
-    startupCode: () => jb.codeLoader.code(jb.codeLoader.treeShake(jb.codeLoader.clientComps,{})),
+    clientCode: () => jb.codeLoader.code(jb.codeLoader.treeShake(jb.codeLoader.clientComps,{})),
     treeShakeFrontendFeatures(paths) { // treeshake the code of the FRONTEND features without the backend part
         const _paths = paths.filter(path=>! jb.codeLoader.existingFEPaths[path]) // performance - avoid tree shake if paths were processed before 
         if (!_paths.length) return []
@@ -1058,7 +1060,7 @@ jb.extension('codeLoader', {
             return new Promise(resolve => {
                 const type = lib.indexOf('.css') == -1 ? 'script' : 'link'
                 var s = document.createElement(type)
-                s.setAttribute(type == 'script' ? 'src' : 'href',`/dist/${lib}`)
+                s.setAttribute(type == 'script' ? 'src' : 'href',`${jb.codeLoader.baseUrl||''}/dist/${lib}`)
                 if (type == 'script') 
                     s.setAttribute('charset','utf8') 
                 else 
@@ -1335,7 +1337,7 @@ jb.component('action.if', {
     {id: 'then', type: 'action', mandatory: true, dynamic: true, composite: true},
     {id: 'else', type: 'action', dynamic: true}
   ],
-  impl: ({},cond,_then,_else) =>	cond ? _then() : _else()
+  impl: ({},cond,_then,_else) => jb.utils.isPromise(cond) ? Promise.resolve(cond).then(_cond=> _cond ? _then() : _else()) :	(cond ? _then() : _else())
 })
 
 jb.component('jbRun', {

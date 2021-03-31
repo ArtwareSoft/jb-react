@@ -1,9 +1,6 @@
 jb.extension('ui', 'watchRef', {
-    initExtension() {
-        // subscribe for watchable change
-        const resourcesHanlder = jb.db.watchableHandlers.find(x=>x.resources.id == 'resources')
-        resourcesHanlder && jb.ui.subscribeToRefChange(resourcesHanlder)
-        // jb.watchable.WatchableValueByRef() - for loader
+    initExtension_phase100() {
+        jb.db.watchableHandlers.forEach(h=> jb.ui.subscribeToRefChange(h))
     },
     subscribeToRefChange: watchHandler => jb.utils.subscribe(watchHandler.resourceChange, e=> {
         const changed_path = watchHandler.removeLinksFromPath(e.insertedPath || watchHandler.pathOfRef(e.ref))

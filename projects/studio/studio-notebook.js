@@ -46,7 +46,7 @@ jb.component('remote.initShadowComponent', {
           rx.filter(equals('%path/0%','%$compId%')),
           rx.map(obj(prop('path','%path%'),prop('op','%op%'))),
           sink.action(remote.action( ctx =>
-            jb.studio.compsRefHandler.doOp(jb.studio.compsRefHandler.refOfPath(ctx.data.path), ctx.data.op, ctx)
+            jb.watchableComps.handler.doOp(jb.watchableComps.handler.refOfPath(ctx.data.path), ctx.data.op, ctx)
           , '%$jbm%'))
       )
     )
@@ -57,9 +57,9 @@ jb.component('studio.initNotebookSaveService', {
     impl: ctx => {
         const st = jb.studio
         st.changedComps = () => {
-            if (!st.compsHistory || !st.compsHistory.length) return []
+            if (!jb.watchableComps.compsHistory || !jb.watchableComps.compsHistory.length) return []
 
-            const changedComps = jb.utils.unique(st.compsHistory.map(e=>jb.path(e,'opEvent.path.0')))
+            const changedComps = jb.utils.unique(jb.watchableComps.compsHistory.map(e=>jb.path(e,'opEvent.path.0')))
             return changedComps.map(id=>[id,jb.comps[id]])
         }
     }

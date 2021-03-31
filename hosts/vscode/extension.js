@@ -77,7 +77,7 @@ class jBartStudio {
         const jbartFolder = splitedPath.slice(0,splitedPath.indexOf('jb-react')+1)
         const htmlFileCandidates = [
             [...splitedPath, 'index.html'].join('/'),
-            [...jbartFolder,'projects/ui-tests/tests.html'].join('/')
+            [...jbartFolder,'projects/tests/tests.html'].join('/')
         ]
         return htmlFileCandidates
             .filter(htmlFile=>fs.existsSync(htmlFile))

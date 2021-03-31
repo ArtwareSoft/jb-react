@@ -29,10 +29,13 @@ jb.component('widget.newId', {
 
 jb.component('action.frontEndDelta', {
     type: 'action',
-    impl: async ctx => {
-        const {delta,css,widgetId,cmpId,assumedVdom} = ctx.data
+    params: [
+        {id: 'event', defaultValue: '%%'}
+    ],
+    impl: async (ctx,ev) => {
+        const {delta,css,widgetId,cmpId,assumedVdom,elemId} = ev
         if (css) 
-            return !ctx.vars.headlessWidget && jb.ui.addStyleElem(ctx,css)
+            return !ctx.vars.headlessWidget && jb.ui.insertOrUpdateStyleElem(ctx,css,elemId)
         await jb.codeLoader.getCodeFromRemote(jb.codeLoader.treeShakeFrontendFeatures(pathsOfFEFeatures(delta)))
         await jb.codeLoader.loadFELibsDirectly(feLibs(delta))
         const ctxToUse = ctx.setVars({headlessWidget: false, FEwidgetId: widgetId})
@@ -80,7 +83,7 @@ jb.component('remote.widget', {
             rx.log('remote widget sent to headless'),
             remote.operator(widget.headless(call('control'),'%$widgetId%'), '%$jbm%'),
             rx.log('remote widget arrived from headless'),
-            sink.action(action.frontEndDelta('%$widgetId%')),
+            sink.action(action.frontEndDelta('%%')),
         )
     })
 })
@@ -115,7 +118,7 @@ jb.component('remote.widgetFrontEnd', {
                     rx.takeWhile(({data}) => data.$ != 'destroy',true),
              ), '%$jbm%' ),
             widget.headless('%$control()%','%$widgetId%'),
-            sink.action(remote.action(action.frontEndDelta('%$widgetId%'),'%$jbm%'))
+            sink.action(remote.action(action.frontEndDelta('%%'),'%$jbm%'))
         )
     )
 })
@@ -130,16 +133,17 @@ jb.extension('ui','headless', {
     createHeadlessWidget(widgetId, ctrl,ctx,{recover} = {}) {
         const ctxToUse = jb.ui.extendWithServiceRegistry(ctx.setVars(
             {...(recover && { recover: true}), headlessWidget: true, headlessWidgetId: widgetId }))
-        const cmp = ctrl(ctxToUse)
-        const top = jb.ui.h(cmp)
-        const body = jb.ui.h('div',{ widgetTop: true, headless: true, widgetId, ...(ctx.vars.remoteUri && { remoteUri: ctx.vars.remoteUri })},top)
         if (jb.ui.headless[widgetId]) {
             if (!recover) jb.logError('headless widgetId already exists',{widgetId,ctx})
-            jb.ui.unmount(jb.ui.headless[widgetId])
+            jb.ui.destroyHeadless(widgetId)
         }
-        if (recover && !jb.ui.headless[widgetId])
-            jb.logError('headless recover no existing widget',{widgetId,ctx})
-        jb.ui.headless[widgetId] = { body }
+        const cmp = ctrl(ctxToUse)
+        jb.ui.headless[widgetId] = {} // used by styles
+        const top = jb.ui.h(cmp)
+        const body = jb.ui.h('div',{ widgetTop: true, headless: true, widgetId, ...(ctx.vars.remoteUri && { remoteUri: ctx.vars.remoteUri })},top)
+        jb.ui.headless[widgetId].body = body
+        // if (recover && !jb.ui.headless[widgetId])
+        //     jb.logError('headless recover no existing widget',{widgetId,ctx})
         jb.log('headless widget created',{widgetId,body})
         const delta = { children: {resetAll : true, toAppend: [jb.ui.stripVdom(top)]} }
         jb.ui.renderingUpdates.next({widgetId, delta })
@@ -163,6 +167,10 @@ jb.extension('ui','headless', {
                 }) // the delay is needed for tests
             sink(2)
         }
+    },
+    destroyHeadless(widgetId) {
+        jb.ui.unmount(jb.ui.headless[widgetId])
+        delete jb.ui.headless[widgetId]
     }
 })
 

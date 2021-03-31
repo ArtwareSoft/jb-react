@@ -164,7 +164,7 @@ jb.extension('projectHosts', {
         },
         test: {
             fetchProjectSettings(id,project) {
-                return fetch('/projects/ui-tests/tests.html').then(r=>r.text()).then(html =>{
+                return fetch('/projects/tests/tests.html').then(r=>r.text()).then(html =>{
                     const settings = eval('({' + jb.projectHosts.extractText(html,'jbProjectSettings = {','}') + '})')
                     return {...settings, project, 
                         entry: { $: 'test.showTestInStudio', testId: project },

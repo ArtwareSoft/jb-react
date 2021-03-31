@@ -62,6 +62,7 @@ jb.extension('ui', {
         }
         querySelectorAll(selector,{includeSelf}={}) {
             let maxDepth = 50
+            if (!selector) debugger
             if (selector.match(/^:scope>/)) {
                 maxDepth = 1
                 selector = selector.slice(7)

@@ -1,100 +1,59 @@
-// var { studio } = jb.ns('studio');
-//eval(jb.macro.importAll());
+jb.extension('watchableComps', {
+    initExtension_phase30() {
+        const compsRef = val => typeof val == 'undefined' ? jb.comps : (jb.comps = val);
+        compsRef.id = 'comps'
+        const handler = new jb.watchable.WatchableValueByRef(compsRef)
+        jb.db.addWatchableHandler(handler)
+        return { handler }
+    },
+	forceLoad() {}
+})
+
+jb.extension('watchableComps', 'studio', {
+    initExtension_phase40() {
+      jb.utils.subscribe(jb.watchableComps.handler.resourceChange, e => jb.watchableComps.scriptChangeHnadler(e))
+    },
+	scriptChangeHnadler(e) {
+		jb.log('watchable studio script changed',{ctx: e.srcCtx,e})
+		jb.studio.scriptChange.next(e)
+		writeValueToDataResource(e.path,e.newVal)
+		if (jb.studio.isStudioCmp(e.path[0]))
+			jb.studio.refreshStudioComponent(e.path)
+		jb.studio.lastStudioActivity = new Date().getTime()
+		e.srcCtx.run(writeValue('%$studio/lastStudioActivity%',() => jb.studio.lastStudioActivity))
+	
+		jb.studio.highlightByScriptPath(e.path)
+	
+		function writeValueToDataResource(path,value) {
+			if (path.length > 1 && ['watchableData','passiveData'].indexOf(path[1]) != -1) {
+				const resource = jb.db.removeDataResourcePrefix(path[0])
+				const dataPath = '%$' + [resource, ...path.slice(2)].map(x=>isNaN(+x) ? x : `[${x}]`).join('/') + '%'
+				return jb.exec(writeValue(dataPath,_=>value))
+			}
+		}		
+	},  
+}) 
 
 jb.extension('studio', 'path', {
-  initExtension() {
-		return {
-			compsHistory: [],
-			scriptChange: jb.callbag.subject(),
-			previewjb: jb
-		}
-  },
+  initExtension() { return { 
+	  previewjb: jb,
+	  scriptChange: jb.callbag.subject()
+  }},
   execInStudio: (...args) => jb.studio.studioWindow && new jb.studio.studioWindow.jb.core.jbCtx().run(...args),
-  compsRefOfjbm(jbm, {historyWin, compsRefId} = {historyWin: 5, compsRefId: 'comps'}) {
-	function compsRef(val,opEvent,{source}= {}) {
-		if (typeof val == 'undefined')
-			return jbm.comps
-		else {
-			if (historyWin) updateHistory(val,opEvent,source)
-			jbm.comps = val
-		}
-	}
-	compsRef.id = compsRefId
-	return compsRef
-
-	function updateHistory(val, opEvent, source) {
-		const history = jb.studio.compsHistory
-		val.$jb_selectionPreview = opEvent && opEvent.srcCtx && opEvent.srcCtx.vars.selectionPreview
-		if (!val.$jb_selectionPreview && source != 'probe') {
-			history.push({before: jbm.comps, after: val, opEvent: opEvent, undoIndex: jb.studio.undoIndex})
-			if (history.length > historyWin)
-			jb.studio.compsHistory = history.slice(-1*historyWin)
-		}
-		if (opEvent)
-			jb.studio.undoIndex = history.length
-	}
-  },
-  scriptChangeHandler(e) {
-	jb.log('watchable studio script changed',{ctx: e.srcCtx,e})
-	jb.studio.scriptChange.next(e)
-	writeValueToDataResource(e.path,e.newVal)
-	if (jb.studio.isStudioCmp(e.path[0]))
-		jb.studio.refreshStudioComponent(e.path)
-	jb.studio.lastStudioActivity = new Date().getTime()
-	e.srcCtx.run(writeValue('%$studio/lastStudioActivity%',() => jb.studio.lastStudioActivity))
-
-	jb.studio.highlightByScriptPath && jb.studio.highlightByScriptPath(e.path)
-
-	function writeValueToDataResource(path,value) {
-		if (path.length > 1 && ['watchableData','passiveData'].indexOf(path[1]) != -1) {
-			const resource = jb.db.removeDataResourcePrefix(path[0])
-			const dataPath = '%$' + [resource, ...path.slice(2)].map(x=>isNaN(+x) ? x : `[${x}]`).join('/') + '%'
-			return jb.studio.previewjb.exec(writeValue(dataPath,_=>value))
-		}
-	}		
-  },
-
-  initLocalCompsRefHandler(compsRef,{ compIdAsReferred, initUIObserver } = {}) {
-	if (jb.studio.compsRefHandler) return
-    jb.studio.compsRefHandler = new jb.watchable.WatchableValueByRef(compsRef)
-	jb.db.addWatchableHandler(jb.studio.compsRefHandler)
-	initUIObserver && jb.ui.subscribeToRefChange(jb.studio.compsRefHandler)
-    compIdAsReferred && jb.studio.compsRefHandler.makeWatchable(compIdAsReferred)
-	jb.callbag.subscribe(e=>jb.studio.scriptChangeHandler(e))(jb.studio.compsRefHandler.resourceChange)
-  },
-  
-  initReplaceableCompsRefHandler(compsRef, {allowedTypes}) {
-  	// CompsRefHandler may need to be replaced when reloading the preview iframe
- 	const {pipe,subscribe,takeUntil} = jb.callbag
-	const oldHandler = jb.studio.compsRefHandler
-	jb.db.removeWatchableHandler(oldHandler)	
-	oldHandler && oldHandler.stopListening.next(1)
-	jb.studio.compsRefHandler = new jb.watchable.WatchableValueByRef(compsRef)
-	jb.db.addWatchableHandler(jb.studio.compsRefHandler)
-	jb.ui.subscribeToRefChange(jb.studio.compsRefHandler)
-	jb.studio.compsRefHandler.allowedTypes = jb.studio.compsRefHandler.allowedTypes.concat(allowedTypes)
-	jb.studio.compsRefHandler.stopListening = jb.callbag.subject()
-
-	pipe(jb.studio.compsRefHandler.resourceChange,
-		takeUntil(jb.studio.compsRefHandler.stopListening),
-		subscribe(e=>jb.studio.scriptChangeHandler(e))
-	)
-  },
-
   // adaptors
-  val: v => jb.studio.compsRefHandler.val(v),
-  writeValue: (ref,value,ctx) => jb.studio.compsRefHandler.writeValue(ref,value,ctx),
-  objectProperty: (obj,prop) => jb.studio.compsRefHandler.objectProperty(obj,prop),
-  splice: (ref,args,ctx) => jb.studio.compsRefHandler.splice(ref,args,ctx),
-  push: (ref,value,ctx) => jb.studio.compsRefHandler.push(ref,value,ctx),
-  merge: (ref,value,ctx) => jb.studio.compsRefHandler.merge(ref,value,ctx),
-  isRef: ref => jb.studio.compsRefHandler.isRef(ref),
-  asRef: obj => jb.studio.compsRefHandler.asRef(obj),
-  //refreshRef: ref => jb.studio.compsRefHandler.refresh(ref),
+  val: v => jb.watchableComps.handler.val(v),
+  writeValue: (ref,value,ctx) => jb.watchableComps.handler.writeValue(ref,value,ctx),
+  objectProperty: (obj,prop) => jb.watchableComps.handler.objectProperty(obj,prop),
+  splice: (ref,args,ctx) => jb.watchableComps.handler.splice(ref,args,ctx),
+  push: (ref,value,ctx) => jb.watchableComps.handler.push(ref,value,ctx),
+  merge: (ref,value,ctx) => jb.watchableComps.handler.merge(ref,value,ctx),
+  isRef: ref => jb.watchableComps.handler.isRef(ref),
+  asRef: obj => jb.watchableComps.handler.asRef(obj),
+  //refreshRef: ref => jb.watchableComps.handler.refresh(ref),
   refOfPath: (path,silent) => {
 		const _path = path.split('~')
-		jb.studio.compsRefHandler.makeWatchable && jb.studio.compsRefHandler.makeWatchable(_path[0])
-		const ref = jb.studio.compsRefHandler.refOfPath(_path,silent)
+		jb.watchableComps.handler.makeWatchable && jb.watchableComps.handler.makeWatchable(_path[0])
+		const ref = jb.watchableComps.handler.refOfPath(_path,silent)
 		if (!ref) return
 		ref.jbToUse = jb.studio.previewjb
 		return ref
@@ -381,25 +340,29 @@ jb.component('studio.getOrCreateCompInArray', {
 	}
 })
 
-jb.component('studio.writableCompsService', {
-	type: 'service',
-	impl: () => ({ init: 
-		() => jb.studio.initLocalCompsRefHandler(jb.studio.compsRefOfjbm(jb), {compIdAsReferred: '', initUIObserver: true} )
-	})
-})
+jb.component('studio.isCssPath', {
+    type: 'boolean',
+    description: 'check if the script will change only css and not html',
+    params: [
+        {id: 'path'}
+    ],
+    impl: (ctx, path) => {
+        const compPath = pathOfCssFeature(path)
+        return compPath && (jb.studio.compNameOfPath(compPath) || '').match(/^(css|layout)/)
 
-jb.component('studio.initLocalCompsRefHandler', {
-  type: 'action',
-  params: [
-    {id: 'compIdAsReferred', as: 'string', description: 'comp to make watchable' },
-    {id: 'initUIObserver', as: 'boolean', description: 'enable watchRef on comps' },
-    {id: 'compsRefId', as: 'string', defaultValue: 'comps'},
-  ],
-  impl: ({}, compIdAsReferred,initUIObserver,compsRefId) =>
-	jb.studio.initLocalCompsRefHandler(jb.studio.compsRefOfjbm(jb, {historyWin: 5, compsRefId }), {compIdAsReferred, initUIObserver} )
+        function pathOfCssFeature(path) {
+            const featureIndex = path.lastIndexOf('features')
+            if (featureIndex == -1) {
+              const layoutIndex = path.lastIndexOf('layout')
+              return layoutIndex != -1 && path.slice(0,layoutIndex+1).join('~')
+            }
+            const array = Array.isArray(jb.studio.valOfPath(path.slice(0,featureIndex+1).join('~')))
+            return path.slice(0,featureIndex+(array?2:1)).join('~')
+        }
+    }
 })
 
 jb.component('jbm.vDebugger', {
     type: 'jbm',
-    impl: jbm.child('vDebugger', startup.codeLoaderServer('studio', studio.initLocalCompsRefHandler()))
+    impl: jbm.child('vDebugger', startup.codeLoaderServer('studio'))
 })

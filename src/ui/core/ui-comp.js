@@ -6,6 +6,7 @@ jb.extension('ui','comp', {
             singular: new Set('template,calcRenderProps,toolbar,styleParams,ctxForPick'.split(',')),
             cmpCounter: 1,
             cssHashCounter: 0,
+            cssElemCounter: 0,
             propCounter: 0,
             cssHashMap: {},                
         })
@@ -29,10 +30,8 @@ jb.extension('ui','comp', {
             const classId = existingClass || `${classPrefix}⦾${this.cssHashCounter}`
             cssMap[cssKey] = {classId, paths : {[ctx.path]: true}}
             const cssContent = linesToCssStyle(classId)
-            if (cssStyleElem)
-                cssStyleElem.innerText = cssContent
-            else
-                jb.ui.addStyleElem(ctx,cssContent,widgetId)
+            const elemId = cssStyleElem && (cssStyleElem.elemId || cssStyleElem.getAttribute('elemId')) || (++jb.ui.cssElemCounter)
+            jb.ui.insertOrUpdateStyleElem(ctx,cssContent,elemId)
         }
         Object.assign(cssMap[cssKey].paths, {[ctx.path] : true})
         return cssMap[cssKey].classId

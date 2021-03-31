@@ -90,17 +90,18 @@ jb.component('uiTest', {
 					rx.log('userRequest from widgetUserRequests'),
 					widget.headless('%$control()%', '%$tstWidgetId%'),
 					rx.log('uiDelta from headless'),
-					rx.delay(1)
+					rx.delay(1),
 				),
 				'%$checkResultRx%'
 			),
+			rx.takeUntil('%$$testFinished%'),
 			rx.var('html',uiTest.vdomResultAsHtml()),
 			rx.var('success', pipeline('%$html%', call('expectedResult'), last())),
 			rx.log('check test result', obj(prop('success','%$success%'), prop('html','%$html%'))),
 			rx.filter('%$success%'), // if failure wait for the next delta
 			rx.map('%$success%'),
 			rx.take(1),
-			rx.do( ({},{tstWidgetId})=>jb.ui.unmount(jb.ui.headless[tstWidgetId].body)),
+			rx.do( ({},{tstWidgetId})=> jb.ui.destroyHeadless(tstWidgetId)),
 		),
 		expectedResult: '%%',
 		cleanUp: call('cleanUp'),
@@ -153,7 +154,7 @@ jb.component('uiFrontEndTest', {
 				jb.log('check test result',{testID, success, reason, html: resultHtml})
 				const result = { id: testID, success, reason, renderDOM}
 				// default cleanup
-				if (!show && !singleTest) {
+				if (!show) { //} && !singleTest) {
 					jb.ui.unmount(elemToTest)
 					ctx.run(runActions(dialog.closeAll(), dialogs.destroyAllEmitters()))
 				}
@@ -227,9 +228,9 @@ jb.extension('test', {
 		jb.entries(JSON.parse(ctx.vars.$initial_resources || '{}')).forEach(e=>jb.db.resource(e[0],e[1]))
 		jb.ui.subscribeToRefChange(jb.db.watchableHandlers[0])
 
-		if (jb.studio && jb.studio.compsRefHandler) {
-			jb.studio.compsRefHandler.resources(ctx.vars.$initial_comps)
-			jb.db.watchableHandlers.push(jb.studio.compsRefHandler)
+		if (jb.studio && jb.watchableComps.handler) {
+			jb.watchableComps.handler.resources(ctx.vars.$initial_comps)
+			jb.db.watchableHandlers.push(jb.watchableComps.handler)
 		}
 		// if (!jb.spy.log) jb.spy.initSpy({spyParam: 'none'})
 		// jb.spy.clear()
@@ -265,9 +266,9 @@ jb.extension('testers', {
 	let index = 1
 	self.jbRunningTests = true
 
-	jb.studio.initTests && jb.studio.initTests()
+	//jb.studio.initTests && jb.studio.initTests()
 	const $initial_resources = JSON.stringify(jb.db.resources) //.replace(/\"\$jb_id":[0-9]*,/g,'')
-	const $initial_comps = jb.studio && jb.studio.compsRefHandler && jb.studio.compsRefHandler.resources();
+	const $initial_comps = jb.studio && jb.watchableComps.handler && jb.watchableComps.handler.resources();
 
 	const tests = jb.entries(jb.comps)
 		.filter(e=>typeof e[1].impl == 'object')
@@ -303,6 +304,7 @@ jb.extension('testers', {
 			  return fromPromise(Promise.resolve(tstCtx.run({$:testID}))
 				.then(res => {
 					$testFinished.next(1)
+					$testFinished.complete()
 					document.getElementById('progress').innerHTML = `<div id=${testID}>${testID} finished</div>`
 					res.duration = new Date().getTime() - times[testID].start
 					console.log('end      ' + testID, res)

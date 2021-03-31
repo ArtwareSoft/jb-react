@@ -26,14 +26,12 @@ jb.extension('ui', {
       } catch(e) {}
     },
     inPreview: () => !jb.ui.inStudio() && jb.ui.parentFrameJb() && jb.ui.parentFrameJb().studio.initPreview,
-    previewOverlayDocument: ctx => (jb.path(ctx.frame(),'document.body') || jb.path(ctx.frame(),'parent.document.body')).ownerDocument,
     widgetBody(ctx) {
-      const {elemToTest,previewOverlay,tstWidgetId,headlessWidget,FEwidgetId, headlessWidgetId} = ctx.vars
+      const {elemToTest,tstWidgetId,headlessWidget,FEwidgetId, headlessWidgetId} = ctx.vars
       const top = elemToTest ||
-        previewOverlay && jb.path(this.previewOverlayDocument(ctx),'body') ||
         tstWidgetId && jb.path(jb.ui.headless[tstWidgetId],'body') ||
         headlessWidget && jb.path(jb.ui.headless[headlessWidgetId],'body') ||
-        jb.path(ctx.frame().document,'body')
+        jb.path(jb.frame.document,'body')
       return FEwidgetId ? jb.ui.findIncludeSelf(top,`[widgetid="${FEwidgetId}"]`)[0] : top
     },
     ctxOfElem: (elem,att) => elem && elem.getAttribute && jb.ctxDictionary[elem.getAttribute(att || 'jb-ctx')],
@@ -142,14 +140,20 @@ jb.extension('ui', {
         elem.innerHTML = html
         el.appendChild(elem.firstChild)
     },
-    addStyleElem(ctx,innerHtml,widgetId) {
-      if (widgetId && !ctx.vars.previewOverlay) {
-        jb.ui.renderingUpdates.next({widgetId, css: innerHtml})
-      } else {
-        const style_elem = document.createElement('style')
-        style_elem.innerHTML = innerHtml
-        this.previewOverlayDocument(ctx).head.appendChild(style_elem)
-        return style_elem
+    insertOrUpdateStyleElem(ctx,innerText,elemId) {
+      const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId
+      if (widgetId && !ctx.vars.previewOverlay) { // headless
+        jb.ui.headless[widgetId].styles = jb.ui.headless[widgetId].styles || {}
+        jb.ui.headless[widgetId].styles[elemId] = {innerText, elemId }
+        jb.ui.renderingUpdates.next({widgetId, css: innerText, elemId})
+      } else { // FE or local
+        let elem = elemId && document.querySelector(`head>style[elemId="${elemId}"]`)
+        if (!elem) {
+          elem = document.createElement('style')
+          elem.setAttribute('elemId',elemId)
+          document.head.appendChild(elem)
+        }
+        elem.innerText = innerText
       }
     },
     valueOfCssVar(varName,parent) {

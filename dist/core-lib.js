@@ -35,9 +35,10 @@ Object.assign(jb, {
           Object.assign(lib, lib[initFunc]())
         }
       })
+    const baseUrl = jb.path(jb.codeLoader,'baseUrl')
     return libs.flatMap(l => jb[l].__require||[])
       .filter(url => !jb.frame.jb.__requiredLoaded[url])
-      .reduce((pr,url) => pr.then(() => jb_loadFile(url)).then(() => jb.frame.jb.__requiredLoaded[url] = true), Promise.resolve())
+      .reduce((pr,url) => pr.then(() => jb_loadFile(url,baseUrl,jb)).then(() => jb.frame.jb.__requiredLoaded[url] = true), Promise.resolve())
   },  
   component(id,comp) {
     // todo: move functionality to onAddComponent hook
@@ -270,7 +271,7 @@ jb.extension('core', {
     }
     exp(exp,jstype) { return jb.expression.calc(exp, this, {as: jstype}) }
     setVars(vars) { return new jb.core.jbCtx(this,{vars: vars}) }
-    setVar(name,val) { return name ? new jb.core.jbCtx(this,{vars: {[name]: val}}) : this }
+    setVar(name,val) { return name ? (name == 'datum' ? new jb.core.jbCtx(this,{data:val}) : new jb.core.jbCtx(this,{vars: {[name]: val}})) : this }
     setData(data) { return new jb.core.jbCtx(this,{data: data}) }
     runInner(profile,parentParam, path) { return jb.core.run(new jb.core.jbCtx(this,{profile: profile,path}), parentParam) }
     bool(profile) { return this.run(profile, { as: 'boolean'}) }
@@ -290,12 +291,6 @@ jb.extension('core', {
     }
     runItself(parentParam,settings) { return jb.core.run(this,parentParam,settings) }
     dataObj(data) { return {data, vars: this.vars} }
-  },
-  callStack(ctx) {
-    const ctxStack=[]; 
-    for(let innerCtx=ctx; innerCtx; innerCtx = innerCtx.cmpCtx) 
-      ctxStack.push(innerCtx)
-    return ctxStack.map(ctx=>ctx.callerPath)
   },
   jsTypes() { return {
     asIs: x => x,
@@ -420,6 +415,12 @@ jb.extension('utils', { // jb core utils
     
       return jb.utils.resolveFinishedPromise(res)
     },
+    callStack(ctx) {
+      const ctxStack=[]; 
+      for(let innerCtx=ctx; innerCtx; innerCtx = innerCtx.cmpCtx) 
+        ctxStack.push(innerCtx)
+      return ctxStack.map(ctx=>ctx.callerPath)
+    },    
     addDebugInfo(f,ctx) { f.ctx = ctx; return f},
     assignDebugInfoToFunc(func, ctx) {
       func.ctx = ctx

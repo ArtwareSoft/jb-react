@@ -73,7 +73,7 @@ jb.component('cardExtract.selectStyle', {
                     const cmp = jb.ui.extendWithServiceRegistry(new jb.studio.previewjb.core.jbCtx()).ctx(previewCtx)
                       .run(ctx.exp('%$__option%'))
                     const vdom = jb.ui.cloneVNode(cmp.renderVdom())
-                    jb.ui.addStyleElem(ctx,jb.studio.previewjb.ui.workerStyleElems.preview.join('\n'))
+                    jb.ui.insertOrUpdateStyleElem(ctx,jb.studio.previewjb.ui.workerStyleElems.preview.join('\n'))
                     jb.path(jb,'studio.previewjb.ui.workerStyleElems.preview',[])
                     return vdom
                 },

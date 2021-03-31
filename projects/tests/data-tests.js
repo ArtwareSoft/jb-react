@@ -46,6 +46,17 @@ jb.component('dataTest.pipelineVar', {
   })
 })
 
+jb.component('dataTest.datum', {
+  impl: dataTest({
+    calculate: pipeline(
+      'hello',
+      pipeline(Var('datum','world'), '%%'),
+      join()
+    ),
+    expectedResult: equals('world')
+  })
+})
+
 jb.component('dataTest.propertyPassive', {
   impl: dataTest({
     vars: [Var('person', obj(prop('name', 'homer')))],

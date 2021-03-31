@@ -1,42 +1,56 @@
-(function () {
-const st = jb.studio;
+jb.extension('watchableComps', 'history', {
+  initExtension_phase40() {
+    jb.utils.subscribe(jb.watchableComps.handler.resourceChange, e => jb.watchableComps.updateHistory(e))
+    return {
+        undoIndex: 0,
+        historyWin: 5,
+        compsHistory: [],
+    }
+  },
+  updateHistory(val, opEvent, source) {
+      val.$jb_selectionPreview = opEvent && opEvent.srcCtx && opEvent.srcCtx.vars.selectionPreview
+      if (val.$jb_selectionPreview || source == 'probe') return
 
-st.undoIndex = 0;
+      const {historyWin, compsHistory} = jb.watchableComps
+      compsHistory.push({before: jbm.comps, after: val, opEvent: opEvent, undoIndex: jb.watchableComps.undoIndex})
+      if (compsHistory.length > historyWin)
+      jb.watchableComps.compsHistory = compsHistory.slice(-1*historyWin)
+      if (opEvent)
+          jb.watchableComps.undoIndex = compsHistory.length
+  },
+  setToVersion(versionIndex, ctx, after) {
+    const version = jb.watchableComps.compsHistory[versionIndex];
+    if (!version || !version.opEvent) debugger;
 
-function setToVersion(versionIndex, ctx, after) {
-  const version = st.compsHistory[versionIndex];
-  if (!version || !version.opEvent) debugger;
+    let opEvent = Object.assign({}, version.opEvent);
+    opEvent.oldVal = version.opEvent.newVal;
+    opEvent.newVal = version.opEvent.oldVal;
+    opEvent.srcCtx = ctx;
 
-  let opEvent = Object.assign({}, version.opEvent);
-  opEvent.oldVal = version.opEvent.newVal;
-  opEvent.newVal = version.opEvent.oldVal;
-  opEvent.srcCtx = ctx;
-
-  if (after) {
-    st.previewjb.comps = version.after;
-    st.compsRefHandler.resourceVersions = version.opEvent.resourceVersionsAfter;
-  } else {
-    st.previewjb.comps = version.before;
-    st.compsRefHandler.resourceVersions = version.opEvent.resourceVersionsBefore;
+    if (after) {
+      jb.comps = version.after
+      jb.watchableComps.handler.resourceVersions = version.opEvent.resourceVersionsAfter
+    } else {
+      jb.comps = version.before;
+      jb.watchableComps.handler.resourceVersions = version.opEvent.resourceVersionsBefore;
+    }
   }
-
-  st.compsRefHandler.resourceChange.next(opEvent)
-  //st.scriptChange.next(opEvent);
-}
+//  jb.watchableComps.handler.resourceChange.next(opEvent) ???
+})
 
 jb.component('studio.undo', {
   type: 'action',
   impl: ctx => {
-    if (st.undoIndex > 0)
-      setToVersion(--st.undoIndex, ctx)
+    if (jb.watchableComps.undoIndex > 0)
+      jb.watchableComps.setToVersion(--jb.watchableComps.undoIndex, ctx)
   }
 })
 
 jb.component('studio.cleanSelectionPreview', {
   type: 'action',
   impl: () => {
-    if (st.compsHistory.length > 0)
-      st.previewjb.comps = st.compsHistory.slice(-1)[0].after;
+    if (jb.watchableComps.compsHistory.length > 0)
+      jb.comps = jb.watchableComps.compsHistory.slice(-1)[0].after;
   }
 })
 
@@ -46,18 +60,18 @@ jb.component('studio.revert', {
     {id: 'toIndex', as: 'number'}
   ],
   impl: (ctx, toIndex) => {
-    if (st.compsHistory.length == 0 || toIndex < 0) return;
-    st.undoIndex = toIndex;
-    st.compsHistory = st.compsHistory.slice(0, toIndex + 1);
-    setToVersion(st.undoIndex, ctx)
+    if (jb.watchableComps.compsHistory.length == 0 || toIndex < 0) return;
+    jb.watchableComps.undoIndex = toIndex;
+    jb.watchableComps.compsHistory = jb.watchableComps.compsHistory.slice(0, toIndex + 1);
+    jb.watchableComps.setToVersion(jb.watchableComps.undoIndex, ctx)
   }
 })
 
 jb.component('studio.redo', {
   type: 'action',
   impl: ctx => {
-    if (st.undoIndex < st.compsHistory.length)
-      setToVersion(st.undoIndex++, ctx, true)
+    if (jb.watchableComps.undoIndex < jb.watchableComps.compsHistory.length)
+      jb.watchableComps.setToVersion(jb.watchableComps.undoIndex++, ctx, true)
   }
 })
 
@@ -68,8 +82,8 @@ jb.component('studio.copy', {
   ],
   impl: (ctx, path) => {
     try {
-      const val = st.valOfPath(path)
-      st.clipboard = typeof val == 'string' ? val : eval('(' + jb.utils.prettyPrint(val,{noMacros: true}) + ')')
+      const val = jb.studio.valOfPath(path)
+      jb.studio.clipboard = typeof val == 'string' ? val : eval('(' + jb.utils.prettyPrint(val,{noMacros: true}) + ')')
     } catch(e) {
       jb.logExecption(e,'copy',{ctx})
     }
@@ -82,15 +96,15 @@ jb.component('studio.paste', {
     {id: 'path', as: 'string'}
   ],
   impl: (ctx, path) =>
-    (st.clipboard != null) && jb.db.writeValue(st.refOfPath(path), st.clipboard, ctx)
+    jb.studio.clipboard && jb.db.writeValue(jb.studio.refOfPath(path), jb.studio.clipboard, ctx)
 })
 
 jb.component('studio.scriptHistoryItems', {
-  impl: ctx => st.compsHistory
+  impl: ctx => jb.watchableComps.compsHistory
 })
 
 jb.component('studio.compsUndoIndex', {
-  impl: ctx => st.undoIndex - 1
+  impl: ctx => jb.watchableComps.undoIndex - 1
 })
 
 jb.component('studio.scriptHistory', {
@@ -132,4 +146,3 @@ jb.component('studio.openScriptHistory', {
   })
 })
 
-})()

@@ -27,14 +27,14 @@ jb.component('studio.jbart', {
     controls: [
       studio.topBar(),
       group({
-        controls: studio.workerPreview(),
+        controls: remote.wPreviewCtrl(),
         features: watchRef('%$studio/page%')
       }),
       studio.pages(),
       studio.ctxCounters()
     ],
     features: [
-      feature.requireService(studio.writableCompsService()),
+      studio.initShadowCompsOnPreview(),
       feature.requireService(studio.autoSaveService()),
       feature.requireService(urlHistory.mapStudioUrlToResource('studio'))
     ]

@@ -66,7 +66,7 @@ jb.component('studio.saveProjectSettings', {
 
 function fileNameOfComp(compE) {
   try {
-    return (compE[1] || st.compsHistory[0].before[compE[0]])[jb.core.location][0].replace(/!st!/,'')
+    return (compE[1] || jb.watchableComps.compsHistory[0].before[compE[0]])[jb.core.location][0].replace(/!st!/,'')
   } catch (e) {
     return ''
   }

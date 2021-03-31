@@ -1,5 +1,4 @@
 // jb.ns('studioHelper,d3g,dataTest,pptr')
-jb.studio.initLocalCompsRefHandler(jb.studio.compsRefOfjbm(jb))
 jb.studio.previewWindow = jb.frame
 jb.studio.inspectedJb = jb.ui.parentFrameJb()
 

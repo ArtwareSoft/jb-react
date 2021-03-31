@@ -35,31 +35,6 @@ jb.component('text.chip', {
     })
 })
   
-;[1,2,3,4,5,6].map(level=>jb.component(`header.h${level}`, {
-    type: 'text.style',
-    impl: customStyle({
-      template: (cmp,{text},h) => h(`h${level}`,{},text),
-      features: text.bindText()
-    })
-}))
-  
-  
-;[1,2,3,4,5,6].map(level=>jb.component(`header.mdcHeadline${level}`, {
-    type: 'text.style',
-    impl: customStyle({
-      template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--headline${level}`},text),
-      features: text.bindText()
-    })
-}))
-  
-;[1,2].map(level=>jb.component(`header.mdcSubtitle${level}`, {
-    type: 'text.style',
-    impl: customStyle({
-      template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--subtitle${level}`},text),
-      features: text.bindText()
-    })
-}))
-
 jb.component('header.mdcHeaderWithIcon', {
   type: 'text.style',
   params: [
@@ -86,10 +61,33 @@ jb.component('text.alignToBottom', {
   })
 })
 
-;[1,2].map(level=>jb.component(`text.mdcBody${level}`, {
-    type: 'text.style',
-    impl: customStyle({
-      template: (cmp,{text},h) => h('h2',{class: `mdc-typography mdc-typography--body${level}`},text),
-      features: text.bindText()
-    })
+jb.defComponents('1,2,3,4,5,6'.split(','), level=> `header.h${level}`, level => ({
+  type: 'text.style',
+  params: [
+    { id: 'level', as: 'string', defaultValue: level }
+  ],
+  impl: customStyle({
+    template: (cmp,{text,level},h) => h(`h${level}`,{},text),
+    features: text.bindText()
+  })
 }))
+
+jb.component('text.h2WithClass', {
+  type: 'text.style:0',
+  params: [
+    {id: 'clz', as: 'string'},
+  ],
+  impl: customStyle({
+    template: (cmp,{text,clz},h) => h('h2',{class: clz},text),
+    features: text.bindText()
+  })
+})
+
+jb.defComponents('1,2,3,4,5,6'.split(','), level=> `header.mdcHeadline${level}`, 
+  level => ({type: 'text.style', impl: {$: 'text.h2WithClass', clz: `mdc-typography mdc-typography--headline${level}`}}))
+
+jb.defComponents('1,2'.split(','), level=> `header.mdcSubtitle${level}`, 
+  level => ({type: 'text.style', impl: {$: 'text.h2WithClass', clz: `header.mdcSubtitle${level}`}}))
+
+jb.defComponents('1,2'.split(','), level=> `header.mdcBody${level}`, 
+  level => ({type: 'text.style', impl: {$: 'text.h2WithClass', clz: `mdc-typography mdc-typography--body${level}`}}))

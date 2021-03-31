@@ -270,9 +270,10 @@ jb.component('jbm.worker', {
     params: [
         {id: 'id', as: 'string', defaultValue: 'w1' },
         {id: 'startupCode', type: 'startupCode', dynamic: true, defaultValue: startup.codeLoaderClient() },
+        {id: 'init' , type: 'action', dynamic: true },
         {id: 'networkPeer', as: 'boolean', description: 'used for testing' },
     ],    
-    impl: (ctx,name,startupCode, networkPeer) => {
+    impl: (ctx,name,startupCode, init, networkPeer) => {
         const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
         if (childsOrNet[name]) return childsOrNet[name]
         const workerUri = networkPeer ? name : `${jb.uri}•${name}`
@@ -287,7 +288,10 @@ jbLoadingPhase = 'appFiles'
 //# sourceURL=${workerUri}-startup.js
 `
         const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
-        return childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
+        childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
+        const result = Promise.resolve(init()).then(()=>childsOrNet[name])
+        result.uri = workerUri
+        return result
     }
 })
 
@@ -296,19 +300,21 @@ jb.component('jbm.child', {
     params: [
         {id: 'name', as: 'string', mandatory: true},
         {id: 'startupCode', type: 'startupCode', dynamic: true, defaultValue: startup.codeLoaderClient() },
+        {id: 'init', type: 'action', dynamic: true },
     ],    
-    impl: (ctx,name,startUpCode) => {
+    impl: (ctx,name,startUpCode,init) => {
         if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
         const childUri = `${jb.uri}•${name}`
         const code = startUpCode(ctx.setVars({uri: childUri, local: true}))
-        const child = jb.frame.eval(`${code}
+        const _child = jb.frame.eval(`${code}
 //# sourceURL=${childUri}-startup.js
 `)
-        if (jb.utils.isPromise(child)) 
-            child.then(child => initChild(child) )
-        else 
+        const result = Promise.resolve(_child).then(child=>{
             initChild(child)
-        return child
+            return Promise.resolve(()=>init()).then(()=>child)
+        })
+        result.uri = childUri
+        return result
 
         function initChild(child) {
             //child.spy.initSpy({spyParam: jb.spy.spyParam})

@@ -591,17 +591,20 @@ jb.extension('ui', 'react', {
         if (options && options.extendCtx)
             ctx = options.extendCtx(ctx)
         ctx = ctx.setVar('$refreshElemCall',true).setVar('$cmpId', cmpId).setVar('$cmpVer', cmpVer+1) // special vars for refresh
-        if (jb.ui.inStudio()) // updating to latest version of profile - todo: moveto studio
-            ctx.profile = jb.studio.execInStudio({$: 'studio.val', path: ctx.path}) || ctx.profile
+        if (ctx.vars.$previewMode && jb.watchableComps.handler) // updating to latest version of profile - todo: moveto studio
+            ctx.profile = jb.watchableComps.handler.valOfPath(ctx.path.split('~')) || ctx.profile
         elem.setAttribute('__refreshing','')
         const cmp = ctx.profile.$ == 'openDialog' ? ctx.run(dialog.buildComp()) : ctx.runItself()
         jb.log('refresh elem start',{cmp,ctx,elem, state, options})
 
-        if (jb.path(options,'cssOnly')) {
-            const existingClass = (elem.className.match(/[a-zA-Z0-9_-]+⦾[0-9]*/)||[''])[0]
-            if (!existingClass)
-                jb.logError('refresh css only - can not find existing class',{elem,ctx})
-            const cssStyleElem = Array.from(document.querySelectorAll('style')).map(el=>({el,txt: el.innerText})).filter(x=>x.txt.indexOf(existingClass) != -1)[0].el
+        const className = elem.className != null ? elem.className : jb.path(elem.attributes.class) || ''
+        const existingClass = (className.match(/[a-zA-Z0-9_-]+⦾[0-9]*/)||[''])[0]
+        if (jb.path(options,'cssOnly') && existingClass) {
+            // if (!existingClass)
+            //     jb.logError('refresh css only - can not find existing class',{elem,ctx})
+            const { headlessWidget, headlessWidgetId } = ctx.vars
+            const styleElems = headlessWidget ? jb.ui.headless[headlessWidgetId].styles || [] : Array.from(document.querySelectorAll('style'))
+            const cssStyleElem = styleElems.map(el=>({el,txt: el.innerText})).filter(x=>x.txt.indexOf(existingClass) != -1)[0].el
             jb.log('refresh element css only',{cmp, lines: cmp.cssLines,ctx,elem, state, options})
             jb.ui.hashCss(cmp.calcCssLines(),cmp.ctx,{existingClass, cssStyleElem})
         } else {
