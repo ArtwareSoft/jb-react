@@ -13,7 +13,7 @@ jb.component('jbm.wPreview', {
                 rx.map(obj(prop('op','%op%'), prop('path','%path%'))),
                 rx.log('test op'),
                 rx.var('cssOnlyChange',studio.isCssPath('%path%')),
-                sink.action(remote.action( wPreview.handlePageChangeOnWorker('%$cssOnlyChange%'), jbm.worker('wPreview')))
+                sink.action(remote.action( wPreview.handleScriptChangeOnWorker('%$cssOnlyChange%'), jbm.worker('wPreview')))
             )
         )
     })
@@ -35,7 +35,7 @@ jb.component('remote.wPreviewCtrl', {
 })
 
 
-jb.component('wPreview.handlePageChangeOnWorker', {
+jb.component('wPreview.handleScriptChangeOnWorker', {
     type: 'action',
     description: 'preview script change handler',
     params: [

@@ -348,30 +348,30 @@ jb.component('remoteWidgetTest.codemirror.editableText', {
   })
 })
 
-jb.component('remoteWidgetTest.refresh.cleanUp', {
-  description: 'creating remote widgets and deleting them with gc',
-  impl: uiFrontEndTest({
-    renderDOM: true,
-    timeout: 3000,
-    control: group({
-      controls: remote.widget(text('%$person1/name%'), jbm.worker()),
-      features: [
-        variable('person1','%$person%'), // only local vars are passed to remote
-        watchRef('%$person/name%')
-      ]
-    }),
-    action: rx.pipe( 
-      source.data(0),
-      rx.do(writeValue('%$person/name%', 'hello')),
-      rx.flatMap(source.remote(source.promise(waitFor(count(widget.headlessWidgets()))), jbm.worker())),
-      rx.do(() => jb.ui.garbageCollectCtxDictionary(true,true)),
-      rx.flatMap(source.remote(source.promise(waitFor(equals(1, count(widget.headlessWidgets())))), jbm.worker())),
-      rx.timeoutLimit(1000, () => jb.logError('worker did not cleanup')),
-      rx.catchError()
-    ),    
-    expectedResult: contains('hello')
-  })
-})
+// jb.component('remoteWidgetTest.refresh.cleanUp', {
+//   description: 'creating remote widgets and deleting them with gc',
+//   impl: uiFrontEndTest({
+//     renderDOM: true,
+//     timeout: 3000,
+//     control: group({
+//       controls: remote.widget(text('%$person1/name%'), jbm.worker()),
+//       features: [
+//         variable('person1','%$person%'), // only local vars are passed to remote
+//         watchRef('%$person/name%')
+//       ]
+//     }),
+//     action: rx.pipe( 
+//       source.data(0),
+//       rx.do(writeValue('%$person/name%', 'hello')),
+//       rx.flatMap(source.remote(source.promise(waitFor(count(widget.headlessWidgets()))), jbm.worker())),
+//       rx.do(() => jb.ui.garbageCollectCtxDictionary(true,true)),
+//       rx.flatMap(source.remote(source.promise(waitFor(equals(1, count(widget.headlessWidgets())))), jbm.worker())),
+//       rx.timeoutLimit(1000, () => jb.logError('worker did not cleanup')),
+//       rx.catchError()
+//     ),    
+//     expectedResult: contains('hello')
+//   })
+// })
 
 jb.component('remoteWidgetTest.html', {
   impl: uiTest({
@@ -379,13 +379,6 @@ jb.component('remoteWidgetTest.html', {
     checkResultRx: () => jb.ui.renderingUpdates,
     control: remote.widget(html('<p>hello world</p>'), jbm.worker()),
     expectedResult: contains('hello world</p>')
-  })
-})
-
-jb.component('remoteWidgetTest.css', {
-  impl: uiFrontEndTest({
-    control: remote.widget(text({text: 'hello', features: css('color: red')}), jbm.worker()),
-    expectedResult: true
   })
 })
 

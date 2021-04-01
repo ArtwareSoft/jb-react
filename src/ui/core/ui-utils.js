@@ -140,19 +140,20 @@ jb.extension('ui', {
         elem.innerHTML = html
         el.appendChild(elem.firstChild)
     },
-    insertOrUpdateStyleElem(ctx,innerText,elemId) {
+    insertOrUpdateStyleElem(ctx,innerText,elemId,{classId} = {}) {
       const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId
       if (widgetId && !ctx.vars.previewOverlay) { // headless
         jb.ui.headless[widgetId].styles = jb.ui.headless[widgetId].styles || {}
-        jb.ui.headless[widgetId].styles[elemId] = {innerText, elemId }
-        jb.ui.renderingUpdates.next({widgetId, css: innerText, elemId})
+        jb.ui.headless[widgetId].styles[elemId] = innerText
+        jb.ui.renderingUpdates.next({widgetId, css: innerText, elemId, classId })
       } else { // FE or local
-        let elem = elemId && document.querySelector(`head>style[elemId="${elemId}"]`)
+        let elem = document.querySelector(`head>style[elemId="${elemId}"]`)
         if (!elem) {
           elem = document.createElement('style')
           elem.setAttribute('elemId',elemId)
           document.head.appendChild(elem)
         }
+        elem.setAttribute('src',`${classId || ''} ${ctx.path}`)
         elem.innerText = innerText
       }
     },

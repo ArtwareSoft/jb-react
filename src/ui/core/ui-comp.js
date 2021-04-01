@@ -11,7 +11,7 @@ jb.extension('ui','comp', {
             cssHashMap: {},                
         })
     },
-    hashCss(_cssLines,ctx,{existingClass, cssStyleElem} = {}) {
+    hashCss(_cssLines,ctx,{existingClass, existingElemId} = {}) {
         const cssLines = (_cssLines||[]).filter(x=>x)
         const cssKey = cssLines.join('\n')
         if (!cssKey) return ''
@@ -28,10 +28,10 @@ jb.extension('ui','comp', {
                 this.cssHashCounter++;
             }
             const classId = existingClass || `${classPrefix}⦾${this.cssHashCounter}`
+            const elemId = existingElemId || `${classPrefix}⦾${(++jb.ui.cssElemCounter)}`
             cssMap[cssKey] = {classId, paths : {[ctx.path]: true}}
             const cssContent = linesToCssStyle(classId)
-            const elemId = cssStyleElem && (cssStyleElem.elemId || cssStyleElem.getAttribute('elemId')) || (++jb.ui.cssElemCounter)
-            jb.ui.insertOrUpdateStyleElem(ctx,cssContent,elemId)
+            jb.ui.insertOrUpdateStyleElem(ctx,cssContent,elemId,{classId})
         }
         Object.assign(cssMap[cssKey].paths, {[ctx.path] : true})
         return cssMap[cssKey].classId

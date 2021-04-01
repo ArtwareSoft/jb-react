@@ -598,15 +598,19 @@ jb.extension('ui', 'react', {
         jb.log('refresh elem start',{cmp,ctx,elem, state, options})
 
         const className = elem.className != null ? elem.className : jb.path(elem.attributes.class) || ''
-        const existingClass = (className.match(/[a-zA-Z0-9_-]+⦾[0-9]*/)||[''])[0]
+        const existingClass = (className.match(/[•a-zA-Z0-9_-]+⦾[0-9]*/)||[''])[0]
         if (jb.path(options,'cssOnly') && existingClass) {
-            // if (!existingClass)
-            //     jb.logError('refresh css only - can not find existing class',{elem,ctx})
             const { headlessWidget, headlessWidgetId } = ctx.vars
-            const styleElems = headlessWidget ? jb.ui.headless[headlessWidgetId].styles || [] : Array.from(document.querySelectorAll('style'))
-            const cssStyleElem = styleElems.map(el=>({el,txt: el.innerText})).filter(x=>x.txt.indexOf(existingClass) != -1)[0].el
-            jb.log('refresh element css only',{cmp, lines: cmp.cssLines,ctx,elem, state, options})
-            jb.ui.hashCss(cmp.calcCssLines(),cmp.ctx,{existingClass, cssStyleElem})
+            if (headlessWidget) {
+                const existingElemId = jb.entries(jb.ui.headless[headlessWidgetId].styles||{}).find(([id,text])=>text.indexOf(existingClass) != -1)[0]
+                jb.log('css only refresh headelss element',{existingElemId, cmp, lines: cmp.cssLines,ctx,elem, state, options})
+                jb.ui.hashCss(cmp.calcCssLines(),cmp.ctx,{existingClass, existingElemId})
+            } else {
+                const existingElem = Array.from(document.querySelectorAll('style')).find(el=>el.innerText.indexOf(existingClass) != -1)
+                const existingElemId = existingElem.getAttribute('elemId')
+                jb.log('css only refresh element',{existingElemId, existingElem, cmp, lines: cmp.cssLines,ctx,elem, state, options})
+                jb.ui.hashCss(cmp.calcCssLines(),cmp.ctx,{existingClass, existingElemId})
+            }
         } else {
             jb.log('do refresh element',{cmp,ctx,elem, state, options})
             cmp && jb.ui.applyNewVdom(elem, jb.ui.h(cmp), {strongRefresh, ctx})

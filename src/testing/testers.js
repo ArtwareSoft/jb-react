@@ -169,7 +169,7 @@ jb.component('uiTest.vdomResultAsHtml', {
 	],
 	impl: ctx => {
 		const widget = jb.ui.headless[ctx.vars.tstWidgetId]
-		if (!widget) debugger
+		if (!widget) return ''
 		const elemToTest = document.createElement('div')
 		elemToTest.ctxForFE = ctx.setVars({elemToTest})
 		jb.ui.render(widget.body, elemToTest)
@@ -261,7 +261,7 @@ jb.extension('testers', {
 
 	jb.frame.startTime = jb.frame.startTime || new Date().getTime();
   },
-  runTests({testType,specificTest,show,pattern,}) {
+  runTests({testType,specificTest,show,pattern,notPattern}) {
 	const {pipe, fromIter, subscribe,concatMap, fromPromise } = jb.callbag
 	let index = 1
 	self.jbRunningTests = true
@@ -278,6 +278,7 @@ jb.extension('testers', {
 		.filter(e=>!specificTest || e[0] == specificTest)
 //		.filter(e=> !e[0].match(/throw/)) // tests that throw exceptions and stop the debugger
 		.filter(e=>!pattern || e[0].match(pattern))
+		.filter(e=>!notPattern || !e[0].match(notPattern))
 //		.filter(e=>!e[0].match(/^remoteTest|inPlaceEditTest|patternsTest/) && ['uiTest','dataTest'].indexOf(e[1].impl.$) != -1) // || includeHeavy || specificTest || !e[1].impl.heavy )
 //		.sort((a,b) => (a[0] > b[0]) ? 1 : ((b[0] > a[0]) ? -1 : 0))
 	tests.forEach(e => e.group = e[0].split('.')[0].split('Test')[0])
@@ -305,6 +306,7 @@ jb.extension('testers', {
 				.then(res => {
 					$testFinished.next(1)
 					$testFinished.complete()
+					jb.ui.garbageCollectCtxDictionary(true,true)
 					document.getElementById('progress').innerHTML = `<div id=${testID}>${testID} finished</div>`
 					res.duration = new Date().getTime() - times[testID].start
 					console.log('end      ' + testID, res)

@@ -384,7 +384,7 @@ jb.component('studio.colorPicker', {
 
 jb.component('studio.colorVariables', {
   impl: ctx => {
-    const doc = jb.studio.previewWindow.document
+    const doc = jb.frame.document
     return Array.from(doc.querySelectorAll('style')).map(x=>x.innerHTML).join('\n').split('\n').filter(x=>x.match(/--/)).filter(x=>!x.match(/font/)).map(x=>x.split(':')[0].trim().slice(2))
       .map(varName=> ({ varName, color : jb.ui.valueOfCssVar(varName,doc.body) }))
     }

@@ -24,7 +24,8 @@
 				show: location.href.indexOf('&show') != -1,
 				specificTest: urlQuery('test'),
 				rerun: urlQuery('rerun'),
-				pattern: urlQuery('pattern')
+				pattern: urlQuery('pattern'),
+				notPattern: urlQuery('not')
 			}
 			console.log(params)
 			jb.testers.runTests(params)

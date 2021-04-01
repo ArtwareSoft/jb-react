@@ -33,9 +33,9 @@ jb.component('action.frontEndDelta', {
         {id: 'event', defaultValue: '%%'}
     ],
     impl: async (ctx,ev) => {
-        const {delta,css,widgetId,cmpId,assumedVdom,elemId} = ev
+        const {delta,css,widgetId,cmpId,assumedVdom} = ev
         if (css) 
-            return !ctx.vars.headlessWidget && jb.ui.insertOrUpdateStyleElem(ctx,css,elemId)
+            return !ctx.vars.headlessWidget && jb.ui.insertOrUpdateStyleElem(ctx,css,ev.elemId, {classId: ev.classId})
         await jb.codeLoader.getCodeFromRemote(jb.codeLoader.treeShakeFrontendFeatures(pathsOfFEFeatures(delta)))
         await jb.codeLoader.loadFELibsDirectly(feLibs(delta))
         const ctxToUse = ctx.setVars({headlessWidget: false, FEwidgetId: widgetId})

@@ -312,7 +312,7 @@ const op_get_handlers = {
       const include = getURLParam(req,'include') && new RegExp(getURLParam(req,'include'))
       const exclude = getURLParam(req,'exclude') && new RegExp(getURLParam(req,'exclude'))
       res.setHeader('Content-Type', 'application/json;charset=utf8');
-      res.end(JSON.stringify(getFilesInDir(settings.http_dir + path).filter(f=>f.match(/\.js/)).flatMap(path => fileContent(path))))
+      res.end(JSON.stringify(getFilesInDir(settings.http_dir + path).filter(f=>f.match(/\.js/)).map(path => fileContent(path))))
 
       function getFilesInDir(dirPath) {
         return fs.readdirSync(dirPath).sort((x,y) => x == y ? 0 : x < y ? -1 : 1).reduce( (acc, file) => {
