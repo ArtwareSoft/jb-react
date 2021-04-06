@@ -14,8 +14,9 @@ jb.extension('utils', 'prettyPrint', {
       fixedNL: `__fixedNL${''}__`, // avoid self replacement
     }
   },
-  prettyPrintComp(compId,comp,settings={}) {
-    if (comp) {
+  prettyPrintComp(compId,_comp,settings={}) {
+    if (_comp) {
+      const comp = Object.assign({}, _comp,{location: null})
       return `jb.component('${compId}', ${jb.utils.prettyPrint(comp,{ initialPath: compId, ...settings })})`
     }
   },

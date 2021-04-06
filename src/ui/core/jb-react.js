@@ -545,7 +545,8 @@ jb.extension('ui', 'react', {
         jb.log('garbageCollect',{maxUsed,removedCtxs,removedResources,removeWidgets,removeFollowUps})
 
         function querySelectAllWithWidgets(query) {
-            return jb.ui.headless ? [...Object.values(jb.ui.headless).flatMap(w=>w.body.querySelectorAll(query,{includeSelf:true})), ...Array.from(document.querySelectorAll(query))] : []
+            return jb.ui.headless ? [...Object.values(jb.ui.headless).flatMap(w=>w.body.querySelectorAll(query,{includeSelf:true})), 
+                ...Array.from(jb.frame.document && document.querySelectorAll(query) || [])] : []
         }
     },
     applyDeltaToCmp({delta, ctx, cmpId, elem, assumedVdom}) {
@@ -584,18 +585,18 @@ jb.extension('ui', 'react', {
         if (!_ctx) 
             return jb.logError('refreshElem - no ctx for elem',{elem, cmpId, cmpVer})
         const strongRefresh = jb.path(options,'strongRefresh')
-        let ctx = _ctx.setVar('$model',null).setVar('$state', strongRefresh ? {refresh: true } : 
-            {refresh: true, ...jb.path(elem._component,'state'), ...state}) // strongRefresh kills state
+        const newState = strongRefresh ? {refresh: true } 
+            : { ...jb.path(elem._component,'state'), refreshSource: jb.path(options,'refreshSource'), refresh: true, ...state} // strongRefresh kills state
+        let ctx = _ctx.setVars({$model: null, $state: newState, $refreshElemCall: true, $cmpId: cmpId, $cmpVer: cmpVer+1})
         ctx._parent = null
-
         if (options && options.extendCtx)
             ctx = options.extendCtx(ctx)
-        ctx = ctx.setVar('$refreshElemCall',true).setVar('$cmpId', cmpId).setVar('$cmpVer', cmpVer+1) // special vars for refresh
+//        ctx = ctx.setVar('$refreshElemCall',true).setVar('$cmpId', cmpId).setVar('$cmpVer', cmpVer+1) // special vars for refresh
         if (ctx.vars.$previewMode && jb.watchableComps.handler) // updating to latest version of profile - todo: moveto studio
             ctx.profile = jb.watchableComps.handler.valOfPath(ctx.path.split('~')) || ctx.profile
         elem.setAttribute('__refreshing','')
         const cmp = ctx.profile.$ == 'openDialog' ? ctx.run(dialog.buildComp()) : ctx.runItself()
-        jb.log('refresh elem start',{cmp,ctx,elem, state, options})
+        jb.log('refresh elem start',{cmp,ctx,newState ,elem, state, options})
 
         const className = elem.className != null ? elem.className : jb.path(elem.attributes.class) || ''
         const existingClass = (className.match(/[•a-zA-Z0-9_-]+⦾[0-9]*/)||[''])[0]

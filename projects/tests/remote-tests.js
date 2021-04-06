@@ -49,7 +49,7 @@ jb.component('remoteTest.childJbmPort', {
       jbm.worker(), 
       remote.action(jbm.child('inner'),'%%')
     ),
-    calculate: remote.data('hello',jbm.byUri('tests•innerWorker•inner')),
+    calculate: remote.data('hello',jbm.byUri('tests•w1•inner')),
     expectedResult: 'hello'
   })
 })

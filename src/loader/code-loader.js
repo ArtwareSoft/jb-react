@@ -48,13 +48,13 @@ jb.extension('codeLoader', {
     dependentOnFunc(func, onlyMissing) {
         if (!func) debugger
         const funcStr = typeof func == 'string' ? func : func.toString()
-        const funcDefs = [...funcStr.matchAll(/{([a-zA-Z0-9_ ,]+)}\s*=\s*jb\.([a-zA-Z0-9_]+)\b/g)] // {...} = jb.xx
+        const funcDefs = [...funcStr.matchAll(/{([a-zA-Z0-9_ ,]+)}\s*=\s*jb\.([a-zA-Z0-9_]+)\b[^\.]/g)] // {...} = jb.xx
             .map(line=>({ lib: line[2], funcs: line[1].split(',')}))
             .flatMap(({lib,funcs}) => funcs.map(f=>`#${lib}.${f.trim()}`))
         const funcUsage = [...funcStr.matchAll(/\bjb\.([a-zA-Z0-9_]+)\.?([a-zA-Z0-9_]*)\(/g)].map(e=>e[2] ? `#${e[1]}.${e[2]}` : `#${e[1]}`)
         //jb.log('codeLoader dependent on func',{f: func.name || funcStr, funcDefs, funcUsage})
 
-        return [ ...(func.__initFuncs || []), ...funcDefs, ...funcUsage]
+        return [ ...(func.__initFuncs || []), ...(func.__require || []) , ...funcDefs, ...funcUsage]
             .filter(x=>!x.match(/^#frame\./)).filter(id=> !onlyMissing || jb.codeLoader.missing(id))
     },
     code(ids) {
@@ -104,6 +104,7 @@ jb.extension('codeLoader', {
             vars: { ids: ids.join(','), existing: jb.codeLoader.existing().join(',') }
         }
         jb.log('codeLoader request code from remote',{ids, stripedCode})
+        jb.codeLoader.loadingCode = true
         return jb.codeLoaderJbm && jb.codeLoaderJbm['remoteExec'](stripedCode)
             .then(code=> {
                 jb.log('codeLoader code arrived from remote',{ids, stripedCode, length: code.length, url: `${jb.uri}-${ids[0]}-x.js`, lines: 1+(code.match(/\n/g) || []).length })
@@ -112,6 +113,8 @@ jb.extension('codeLoader', {
                     eval(`(function(jb) {${code}})(jb)\n//# sourceURL=${jb.uri}-${ids[0]}-x.js` )
                 } catch(error) {
                     jb.log('codeLoader eval error from remote',{error, ids, stripedCode})
+                } finally {
+                    jb.codeLoader.loadingCode = false
                 }
             })
     },

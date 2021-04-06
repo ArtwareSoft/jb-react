@@ -5,6 +5,7 @@ jb.component('editableText.picklistHelper', {
   params: [
     {id: 'options', type: 'picklist.options', dynamic: true, mandatory: true},
     {id: 'picklistStyle', type: 'picklist.style', dynamic: true, defaultValue: picklist.labelList()},
+    {id: 'picklistFeatures', type: 'feature[]', flattenArray: true, dynamic: true},
     {id: 'showHelper', as: 'boolean', dynamic: true, defaultValue: notEmpty('%value%'), description: 'show/hide helper according to input content', type: 'boolean'},
     {id: 'autoOpen', as: 'boolean', type: 'boolean'},
     {id: 'onEnter', type: 'action', dynamic: true, defaultValue: writeValue('%$$model/databind%','%$selectedOption%')},
@@ -17,9 +18,9 @@ jb.component('editableText.picklistHelper', {
     variable('helperCmp', '%$cmp%'),
     method('openPopup', openDialog({
         style: dialog.popup(), content: picklist({
-          options: pipeline('%$watchableInput%',call('options')),
+          options: (ctx,{watchableInput},{options}) => options(ctx.setData(jb.val(watchableInput))),
           databind: '%$selectedOption%',
-          features: watchRef('%$watchableInput%'),
+          features: [ watchRef('%$watchableInput%'), '%$picklistFeatures()%'],
           style: call('picklistStyle')
         }),
         features: [
@@ -72,7 +73,7 @@ jb.component('editableText.setInputState', {
 
 jb.component('editableText.addUserEvent', {
   type: 'rx',
-  impl: rx.innerPipe(frontEnd.addUserEvent(), rx.map('%$ev/input%'))
+  impl: rx.innerPipe(rx.userEventVar(), rx.map('%$ev/input%'))
 })
 
 jb.component('editableText.helperPopup', {
@@ -97,9 +98,11 @@ jb.component('editableText.helperPopup', {
     })),
     variable('helperCmp', '%$cmp%'),
     method('closePopup', dialog.closeDialogById('%$popupId%')),
-    method('refresh', If(call('showHelper'),
-      If(dialog.isOpen('%$popupId%'), touch('%$watchableInput%'), action.runBEMethod('openPopup')),
-      action.runBEMethod('closePopup')
+    method('refresh', runActions(
+      If(call('showHelper'),
+        If(not(dialog.isOpen('%$popupId%')), action.runBEMethod('openPopup')),
+        action.runBEMethod('closePopup')
+      )
     )),
     frontEnd.enrichUserEvent(({},{cmp}) => {
         const input = jb.ui.findIncludeSelf(cmp.base,'input,textarea')[0];

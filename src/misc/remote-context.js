@@ -20,6 +20,8 @@ jb.extension('remoteCtx', {
              return jb.remoteCtx.stripFunction(data)
         if (data instanceof jb.core.jbCtx)
              return jb.remoteCtx.stripCtx(data)
+        if (Array.isArray(data) && data.length > 100)
+            jb.logError('stripData slicing large array',{data})
         if (Array.isArray(data))
              return data.slice(0,100).map(x=>jb.remoteCtx.stripData(x))
         if (typeof data == 'object' && ['VNode','Object','Array'].indexOf(data.constructor.name) == -1)

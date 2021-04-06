@@ -141,6 +141,7 @@ jb.extension('ui','headless', {
         jb.ui.headless[widgetId] = {} // used by styles
         const top = jb.ui.h(cmp)
         const body = jb.ui.h('div',{ widgetTop: true, headless: true, widgetId, ...(ctx.vars.remoteUri && { remoteUri: ctx.vars.remoteUri })},top)
+        top.parentNode = body
         jb.ui.headless[widgetId].body = body
         // if (recover && !jb.ui.headless[widgetId])
         //     jb.logError('headless recover no existing widget',{widgetId,ctx})

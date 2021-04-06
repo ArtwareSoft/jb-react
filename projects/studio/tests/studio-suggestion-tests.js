@@ -51,3 +51,4 @@ jb.component('suggestionsTest.1', {
     expectedResult: contains('people')
   })
 })
+

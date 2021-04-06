@@ -47,7 +47,7 @@ jb.component('feature.contentEditable', {
   ],
   impl: If(()=> jb.ui.contentEditable.isEnabled(), features(
     method('activate',({},{cmp,ev}) => jb.ui.contentEditable.activate(cmp,ev)),
-    frontEnd.flow(source.frontEndEvent('mousedown'), rx.filter(not('%$cmp.state.contentEditableActive%')),frontEnd.addUserEvent(), 
+    frontEnd.flow(source.frontEndEvent('mousedown'), rx.filter(not('%$cmp.state.contentEditableActive%')),rx.userEventVar(), 
       sink.BEMethod('activate')),
     If('%$$state.contentEditableActive%', features(
       method('execProfile',({data}) => jb.ui.parentFrameJb() && jb.ui.parentFrameJb().exec({$: data, from: 'studio'})),
@@ -60,10 +60,10 @@ jb.component('feature.contentEditable', {
         ))
       }),
       feature.keyboardShortcut('Alt+N', studio.pickAndOpen('studio')),
-      feature.keyboardShortcut('Ctrl+Z', action.runBEMethod('execProfile','studio.undo')),
-      feature.keyboardShortcut('Ctrl+Y', action.runBEMethod('execProfile','studio.redo')),
+      feature.keyboardShortcut('Ctrl+Z', action.runBEMethod('execProfile','watchableComps.undo')),
+      feature.keyboardShortcut('Ctrl+Y', action.runBEMethod('execProfile','watchableComps.redo')),
       frontEnd.enrichUserEvent(({},{ev}) => ({ innerText: ev.target.innerText, innerHTML: ev.target.innerText})),
-      frontEnd.flow(source.frontEndEvent('blur'), rx.filter('%$cmp.state.contentEditableActive%'), frontEnd.addUserEvent(), 
+      frontEnd.flow(source.frontEndEvent('blur'), rx.filter('%$cmp.state.contentEditableActive%'), rx.userEventVar(), 
         sink.BEMethod('setScriptData')),
       frontEnd.onRefresh(({},{$state,el}) => el.onkeydown = $state.contentEditableActive ? 
           ev => {

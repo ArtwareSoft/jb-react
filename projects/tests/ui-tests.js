@@ -1495,6 +1495,49 @@ jb.component('uiTest.picklist.delayedOptions', {
   })
 })
 
+jb.component('uiTest.picklist.delayedOptions.StyleByControlBug', {
+  impl: uiTest({
+    control: picklist({
+      title: 'city',
+      style: picklist.labelList(),
+      databind: '%$personWithAddress/address/city%',
+      options: source.data(obj(prop('options', picklist.optionsByComma('Springfield,New York,Tel Aviv,London')))),
+      features: picklist.allowAsynchOptions()
+    }),
+    expectedResult: contains(['Springfield', 'New York'])
+  })
+})
+
+jb.component('uiTest.picklist.delayedOptions.StyleByControlBug.Promise', {
+  impl: uiTest({
+    control: picklist({
+      title: 'city',
+      style: picklist.labelList(),
+      databind: '%$personWithAddress/address/city%',
+      options: pipe(delay(1),(obj(prop('options', picklist.optionsByComma('Springfield,New York,Tel Aviv,London'))))),
+      features: picklist.allowAsynchOptions()
+    }),
+    expectedResult: contains(['Springfield', 'New York'])
+  })
+})
+
+jb.component('uiTest.picklistHelper.delayedOptions', {
+  impl: uiTest({
+    control: editableText({
+      databind: '%$person/name%',
+      features: editableText.picklistHelper({
+          showHelper: true,
+          options: pipe(delay(1), 
+            (obj(prop('options', picklist.optionsByComma(() => [1,2,3].map(() => Math.floor(Math.random() *10 )).join(',')))))
+          ),
+          picklistFeatures: picklist.allowAsynchOptions(),
+          picklistStyle: picklist.labelList(),
+      }),
+    }),
+    expectedResult: true
+  })
+})
+
 jb.component('uiTest.picklistRadio', {
   impl: uiTest({
     control: picklist({

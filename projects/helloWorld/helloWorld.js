@@ -29,5 +29,6 @@ jb.component('helloWorld.main', {
         height: '66'
       })
     ]
-  })
+  }),
+  location: ['8082/projects/helloWorld/helloWorld.js', '21']
 })

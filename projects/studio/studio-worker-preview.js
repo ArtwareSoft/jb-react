@@ -5,13 +5,14 @@ jb.component('jbm.wPreview', {
         init: runActions(
             Var('dataResources', () => jb.studio.projectCompsAsEntries().map(e=>e[0]).filter(x=>x.match(/^dataResource/)).map(x=> ({$: x}))),
             remote.action(runActions(
-                () => jb.component('dataResource.studio', { watchableData: { scriptChangeCounter: 0} }), 
-                ({},{dataResources}) => jb.watchableComps.forceLoad(), 
+                () => jb.component('dataResource.studio', { watchableData: { jbEditor: {}, scriptChangeCounter: 0} }),
+                ({},{dataResources}) => { jb.ctxByPath = {}; jb.watchableComps.forceLoad() }, 
             ), jbm.worker('wPreview')),
+            remote.initShadowData('%$studio%', jbm.worker('wPreview')),
             rx.pipe(
                 source.callbag(() => jb.watchableComps.handler.resourceChange),
                 rx.map(obj(prop('op','%op%'), prop('path','%path%'))),
-                rx.log('test op'),
+                rx.log('wPreview change script'),
                 rx.var('cssOnlyChange',studio.isCssPath('%path%')),
                 sink.action(remote.action( wPreview.handleScriptChangeOnWorker('%$cssOnlyChange%'), jbm.worker('wPreview')))
             )
@@ -31,7 +32,7 @@ jb.component('remote.wPreviewCtrl', {
                 watchRef('%$studio/scriptChangeCounter%'),
                 variable('$previewMode',true)
             ]
-    }), jbm.wPreview() ),
+        }), jbm.wPreview() )
 })
 
 
@@ -44,6 +45,7 @@ jb.component('wPreview.handleScriptChangeOnWorker', {
     impl: (ctx, cssOnlyChange) => {
         const {op, path} = ctx.data
         const handler = jb.watchableComps.handler
+        if (path[0] == 'probeTest.label1') return
         handler.makeWatchable(path[0])
         handler.doOp(handler.refOfPath(path), op, ctx)
 
@@ -59,7 +61,8 @@ jb.component('wPreview.handleScriptChangeOnWorker', {
             elems.forEach(e=>jb.ui.refreshElem(e.elem,null,{cssOnly: e.elem.attributes.class ? true : false}))           
         } else {
             const ref = ctx.exp('%$studio/scriptChangeCounter%','ref')
-            jb.db.writeValue(ref, +jb.val(ref)+1 ,ctx.setVars({headlessWidgetId, headlessWidget: true}))
+            jb.db.writeValue(ref, +jb.val(ref)+1 ,ctx.setVars({headlessWidget: true}))
         }
     }
 })
+

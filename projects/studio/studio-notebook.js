@@ -241,13 +241,13 @@ jb.component('studio.notebookMenu', {
           options: [
             menu.action({
               title: 'Undo',
-              action: studio.undo(),
+              action: watchableComps.undo(),
               icon: icon('undo'),
               shortcut: 'Ctrl+Z'
             }),
             menu.action({
               title: 'Redo',
-              action: studio.redo(),
+              action: watchableComps.redo(),
               icon: icon('redo'),
               shortcut: 'Ctrl+Y'
             }),
@@ -307,8 +307,8 @@ jb.component('studio.notebookToolbar', {
     features: [
       feature.globalKeyboardShortcut('Alt++', studio.openNewProfileDialog({type: 'control', mode: 'insert-control'})),
       feature.globalKeyboardShortcut('Alt+N', studio.pickAndOpen('studio')),
-      feature.globalKeyboardShortcut('Ctrl+Z', studio.undo()),
-      feature.globalKeyboardShortcut('Ctrl+Y', studio.redo()),
+      feature.globalKeyboardShortcut('Ctrl+Z', watchableComps.undo()),
+      feature.globalKeyboardShortcut('Ctrl+Y', watchableComps.redo()),
       css.transformScale('0.7', '0.7'),
       css.color({background: 'var(--jb-menubar-selection-bg)', selector: '~ button'})
     ]

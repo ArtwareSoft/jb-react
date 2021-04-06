@@ -185,7 +185,7 @@ jb.component('probeTest.filterNoSugar', {
 //   })
 // })
 
-jb.component('test.label1', {
+jb.component('probeTest.label1', {
   type: 'control',
   impl: text({
 
@@ -194,9 +194,9 @@ jb.component('test.label1', {
 
 jb.component('pathChangeTest.wrap', {
   impl: pathChangeTest({
-    path: 'test.label1~impl',
-    action: studio.wrapWithGroup('test.label1~impl'),
-    expectedPathAfter: 'test.label1~impl~controls~0'
+    path: 'probeTest.label1~impl',
+    action: studio.wrapWithGroup('probeTest.label1~impl'),
+    expectedPathAfter: 'probeTest.label1~impl~controls~0'
   })
 })
 
@@ -221,7 +221,7 @@ jb.component('test.pathSrcCaller', {
 jb.component('probeTest.pathSrcThrough.call', {
   impl: dataTest({
     calculate: ctx => {
-   	 var probe1 = new jb.studio.Probe(new jb.core.jbCtx(ctx,{ profile: {$: 'test.pathSrcCaller'}, comp: 'test.pathSrcCaller', path: '' } ),true)
+   	 var probe1 = new jb.probe.Probe(new jb.core.jbCtx(ctx,{ profile: {$: 'test.pathSrcCaller'}, comp: 'test.pathSrcCaller', path: '' } ),true)
       .runCircuit('test.pathSrc-comp~impl~items~1');
     return probe1.then(res=>
     	''+res.result.visits)
@@ -233,7 +233,7 @@ jb.component('probeTest.pathSrcThrough.call', {
 jb.component('probeTest.pathSrcThrough.call2', {
   impl: dataTest({
     calculate: ctx => {
-   	 var probe1 = new jb.studio.Probe(new jb.core.jbCtx(ctx,{ profile: {$: 'test.pathSrcCaller'}, comp: 'test.pathSrcCaller', path: '' } ),true)
+   	 var probe1 = new jb.probe.Probe(new jb.core.jbCtx(ctx,{ profile: {$: 'test.pathSrcCaller'}, comp: 'test.pathSrcCaller', path: '' } ),true)
       .runCircuit('test.pathSrcCaller~impl~items~1');
     return probe1.then(res=>
     	''+res.result.visits)
@@ -248,7 +248,7 @@ jb.component('probeTest.pathSrcThrough.call2', {
 // 	 	path: 'test.group1~impl',
 // 	 	action :{$: 'studio.insert-control', path: 'test.group1~impl', comp: 'label' },
 // 	 	expectedPathAfter: 'test.group1~impl~controls',
-// //	 	cleanUp: {$: 'studio.undo'}
+// //	 	cleanUp: {$: 'watchableComps.undo'}
 // 	}
 // })
 

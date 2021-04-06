@@ -122,7 +122,7 @@ jb.component('studio.selectProfile', {
                 databind: '%$itemlistCntrData/selected%',
                 onSelection: call('onBrowse'),
                 onDoubleClick: runActions(
-                  studio.cleanSelectionPreview(),
+                  watchableComps.cleanSelectionPreview(),
                   call('onSelect'),
                   dialog.closeDialog()
                 ),
@@ -130,7 +130,7 @@ jb.component('studio.selectProfile', {
               }),
               itemlist.keyboardSelection({
                 onEnter: runActions(
-                  studio.cleanSelectionPreview(),
+                  watchableComps.cleanSelectionPreview(),
                   call('onSelect'),
                   dialog.closeDialog()
                 )

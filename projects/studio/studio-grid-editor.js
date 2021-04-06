@@ -90,7 +90,6 @@ jb.component('gridEditor.addRemoveTabPopup', {
               })
             ]
           }),
-          popupStyle: dialog.transparentPopup(),
           menuStyle: menuStyle.toolbar()
         })
     ))))

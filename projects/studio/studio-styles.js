@@ -93,7 +93,6 @@ jb.component('button.studioScript', {
       button.initAction(),
       frontEnd.flow(source.frontEndEvent('keydown'), rx.filter('%keyCode% == 13'), sink.BEMethod('onclickHandler')) 
     ]
-    //frontEnd( (ctx,{cmp}) => cmp.clickedEnter = ev => event.keyCode == 13 && cmp.onclickHandler() )
   })
 })
 

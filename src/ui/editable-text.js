@@ -15,6 +15,7 @@ jb.component('editableText', {
 
 jb.component('editableText.xButton', {
   type: 'feature',
+  category: 'editableText:80',
   impl: features(
     method('cleanValue', writeValue('%$$model/databind()%', '')),
     templateModifier(({},{vdom,databind}) => jb.ui.h('div', {},[

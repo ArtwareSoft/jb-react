@@ -30,12 +30,6 @@ jb.component('studio.openResource', {
         content: editableText({
           databind: studio.profileAsText('%$path%'),
           style: editableText.studioCodemirrorTgp(),
-          // features: [
-          //   frontEnd((ctx,{cmp}) => ctx.vars.$dialog.cmp.refresh = () => {
-          //     ctx.run(studio.copyDataResourceToComp('%$path%','%$name%'))
-          //     cmp.refresh && cmp.refresh(null,{srcCtx: ctx.cmpCtx})}
-          //   )
-          // ]
         }),
         title: pipeline(studio.watchableOrPassive('%$path%'), 'Edit %$name% (%%)'),
         features: [

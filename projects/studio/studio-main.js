@@ -34,33 +34,45 @@ jb.component('studio.jbart', {
       studio.ctxCounters()
     ],
     features: [
-      studio.initShadowCompsOnPreview(),
       feature.requireService(studio.autoSaveService()),
       feature.requireService(urlHistory.mapStudioUrlToResource('studio'))
     ]
   })
 })
 
-jb.component('studio.jbartOld', {
+// jb.component('studio.jbartOld', {
+//   type: 'control',
+//   impl: group({
+//     controls: [
+//       studio.topBar(),
+//       group({
+//         controls: studio.previewWidget(),
+//         features: [
+//           id('preview-parent'),
+//           group.wait(studio.fetchProjectSettings(), text('loading project settings...'))
+//         ]
+//       }),
+//       studio.pages(),
+//       studio.ctxCounters()
+//     ],
+//     features: [
+//         feature.requireService(studio.autoSaveService()),
+//         feature.requireService(urlHistory.mapStudioUrlToResource('studio'))
+//     ]
+//   })
+// })
+
+jb.component('studio.previewWidget', {
   type: 'control',
-  impl: group({
-    controls: [
-      studio.topBar(),
-      group({
-        controls: studio.previewWidget(),
-        features: [
-          id('preview-parent'),
-          group.wait(studio.fetchProjectSettings(), text('loading project settings...'))
-        ]
-      }),
-      studio.pages(),
-      studio.ctxCounters()
-    ],
-    features: [
-        feature.requireService(studio.autoSaveService()),
-        feature.requireService(urlHistory.mapStudioUrlToResource('studio'))
-    ]
-  })
+  params: [
+    {id: 'style', type: 'preview-style', dynamic: true}
+  ],
+  impl: {}
+})
+
+jb.component('studio.refreshPreview', {
+  type: 'action',
+  impl: {}
 })
 
 jb.component('studio.vscode', {
@@ -69,7 +81,7 @@ jb.component('studio.vscode', {
     controls: [
       studio.vscodeTopBar(),
       group({
-        controls: studio.previewWidget(),
+        controls: [],
         features: id('preview-parent')
       }),
       studio.ctxCounters()
@@ -87,6 +99,7 @@ jb.component('dataResource.studio', {
     page: '',
     profile_path: '',
     pickSelectionCtxId: '',
+    jbEditor: {},
     preview: {width: 1280, height: 520, zoom: jb.frame.jbInvscode ? 8 : 10},
     settings: {contentEditable: false, activateWatchRefViewer: true},
     vscode: jb.frame.jbInvscode
@@ -254,13 +267,13 @@ jb.component('studio.mainMenu', {
         options: [
           menu.action({
             title: 'Undo',
-            action: studio.undo(),
+            action: watchableComps.undo(),
             icon: icon('undo'),
             shortcut: 'Ctrl+Z'
           }),
           menu.action({
             title: 'Redo',
-            action: studio.redo(),
+            action: watchableComps.redo(),
             icon: icon('redo'),
             shortcut: 'Ctrl+Y'
           }),

@@ -137,12 +137,7 @@ jb.component('editableBoolean.mdcCheckBox', {
       editableBoolean.initToggle(),
       field.databind(), 
       css('~ .mdc-checkbox__checkmark { top: -9px}')
-      // frontEnd((ctx,{cmp}) => {
-      //   // svg refresh bug (maybe a jb-react bug)
-      //   const bck = cmp.base.querySelector('.mdc-checkbox__background')
-      //   bck.outerHTML = ''+ bck.outerHTML
-      // })
-    ]
+     ]
   })
 })
 

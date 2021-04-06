@@ -344,7 +344,7 @@ jb.extension('studio', {
 	closestCtxOfLastRun(pathToTrace) {
 		let path = pathToTrace.split('~'),res
 		if (pathToTrace.match(/items~0$/) && jb.studio.isExtraElem(pathToTrace)) {
-				const pipelineCtx = jb.studio.previewjb.ctxByPath[path.slice(0,-2).join('~')]
+				const pipelineCtx = jb.ctxByPath[path.slice(0,-2).join('~')]
 				if (pipelineCtx)
 					res = pipelineCtx.setVars(pipelineCtx.profile.$vars || {})
 			}
@@ -353,9 +353,9 @@ jb.extension('studio', {
 			path[path.length-1] = formerIndex
         }
 
-		for (;path.length > 0 && !jb.studio.previewjb.ctxByPath[path.join('~')];path.pop());
+		for (;path.length > 0 && !jb.ctxByPath[path.join('~')];path.pop());
 		if (path.length)
-			res = jb.studio.previewjb.ctxByPath[path.join('~')]
+			res = jb.ctxByPath[path.join('~')]
 			
 		if ((jb.path(res,'profile.$') ||'').indexOf('rx.') != 0) // ignore rx ctxs
 			return res

@@ -104,8 +104,8 @@ jb.component('studio.toolbar', {
         studio.openNewProfileDialog({type: 'control', mode: 'insert-control'})
       ),
       feature.globalKeyboardShortcut('Alt+N', studio.pickAndOpen('studio')),
-      feature.globalKeyboardShortcut('Ctrl+Z', studio.undo()),
-      feature.globalKeyboardShortcut('Ctrl+Y', studio.redo()),
+      feature.globalKeyboardShortcut('Ctrl+Z', watchableComps.undo()),
+      feature.globalKeyboardShortcut('Ctrl+Y', watchableComps.redo()),
       feature.globalKeyboardShortcut(
         'Alt+X',
         studio.openJbEditor({

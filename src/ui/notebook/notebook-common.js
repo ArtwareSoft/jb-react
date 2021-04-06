@@ -93,11 +93,3 @@ jb.component('nb.data', {
     ],
     impl: studio.notebookElem(text('%$value%'), studio.jbEditor('%$path%~value') )
 })
-
-jb.component('nb.javascript', {
-    type: 'nb.elem',
-    params: [
-        {id: 'code', as: 'string'}
-    ],
-    impl: studio.notebookElem(nb.evalCode('%$code%'), studio.editableSource('%$path%~code') )
-})

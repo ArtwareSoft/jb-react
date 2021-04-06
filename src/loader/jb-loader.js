@@ -383,7 +383,9 @@ async function jb_codeLoaderServer(uri, {projects, baseUrl, local }) {
   await [...src,...projectsCode].map(x=>x.path).reduce((pr,url) => pr.then(()=> jb_loadFile(url,baseUrl,jb)), Promise.resolve())
   jb.codeLoader.baseUrl = baseUrl
   await jb.initializeLibs(libs)
-  Object.values(jb.comps).filter(cmp => typeof cmp.impl == 'object').forEach(cmp => jb.macro.fixProfile(cmp.impl,jb.comps[cmp.impl.$]))
+  Object.values(jb.comps).forEach(comp => jb.macro.fixProfile(comp))
+  Object.values(jb.comps).forEach(comp => comp.location = comp[jb.core.location])
+
   return jb
 
   async function jb_loadFileLocal(url, baseUrl,jb) {
@@ -424,7 +426,8 @@ async function jb_codeLoaderClient(uri,baseUrl) {
   await 'loader/code-loader,core/jb-common,misc/jb-callbag,misc/rx-comps,misc/pretty-print,misc/remote-context,misc/jbm,misc/remote'.split(',').map(x=>`/src/${x}.js`)
     .reduce((pr,url)=> pr.then(() => jb_loadFile(url,baseUrl)), Promise.resolve())
   await jb.initializeLibs('core,callbag,utils,jbm,net,cbHandler,codeLoader'.split(','))
-  Object.values(jb.comps).filter(cmp => typeof cmp.impl == 'object').forEach(cmp => jb.macro.fixProfile(cmp.impl,jb.comps[cmp.impl.$]))  
+  Object.values(jb.comps).forEach(comp => jb.macro.fixProfile(comp))
+  Object.values(jb.comps).forEach(comp => comp.location = comp[jb.core.location])
 }        
 
 if (typeof module != 'undefined')

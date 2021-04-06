@@ -23,7 +23,7 @@ jb.component('studio.openStyleMenu', {
         menu.action({
           title: 'Clone as local style',
           action: [
-            studio.makeLocal('%$path%'),
+            studio.calcMakeLocal('%$path%',true),
             studio.openStyleEditor('%$styleSource/innerPath%'),
             studio.openProperties(true)
           ],
@@ -179,7 +179,7 @@ jb.component('studio.styleEditorOptions', {
     options: [
       menu.action({
         title: 'Style editor',
-        action: runActions(studio.makeLocal('%$path%'), studio.openStyleEditor('%$path%')),
+        action: runActions(studio.calcMakeLocal('%$path%',true), studio.openStyleEditor('%$path%')),
         showCondition: endsWith('~style', '%$path%')
       }),
       menu.action({

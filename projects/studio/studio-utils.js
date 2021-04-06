@@ -1,33 +1,48 @@
-(function() { var st = jb.studio;
+jb.extension('studio', {
+  showMultiMessages(messages) {
+    const el = jb.frame.document && document.querySelector('.studio-message');
+    if (!el) return
+    el.innerHTML = ''
+    messages.forEach(m=>{
+      const inner = document.createElement('div')
+      inner.style.background = m.error ? 'red' : '#327DC8';
+      inner.textContent = m.text;
+      el.appendChild(inner)
+    })
+    jb.studio.animateMessage(el)
+  },
+  animateMessage (el) {
+    el.style.marginTop = 0;
+    // el.style.animation = '';
+    // jb.delay(100).then(()=>	el.style.animation = 'slide_from_top 5s ease')
+    jb.delay(6000).then(()=> el.style.marginTop = '-50px')
+  }
+})
 
-st.message = function(message,error) {
-  const el = document.querySelector('.studio-message');
-  el.innerHTML = ''
-	el.textContent = message;
-  el.style.background = error ? 'red' : '#327DC8';
-  st.animateMessage(el)
-}
+jb.component('studio.copy', {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx, path) => {
+    try {
+      const val = jb.studio.valOfPath(path)
+      jb.studio.clipboard = typeof val == 'string' ? val : eval('(' + jb.utils.prettyPrint(val,{noMacros: true}) + ')')
+    } catch(e) {
+      jb.logExecption(e,'copy',{ctx})
+    }
+  }
+})
 
-st.showMultiMessages = function(messages) {
-  const el = document.querySelector('.studio-message');
-  el.innerHTML = ''
-  messages.forEach(m=>{
-    const inner = document.createElement('div')
-    inner.style.background = m.error ? 'red' : '#327DC8';
-    inner.textContent = m.text;
-    el.appendChild(inner)
-  })
-  st.animateMessage(el)
-}
+jb.component('studio.paste', {
+  type: 'action',
+  params: [
+    {id: 'path', as: 'string'}
+  ],
+  impl: (ctx, path) =>
+    jb.studio.clipboard && jb.db.writeValue(jb.studio.refOfPath(path), jb.studio.clipboard, ctx)
+})
 
-st.animateMessage = function (el) {
-  el.style.marginTop = 0;
-  // el.style.animation = '';
-  // jb.delay(100).then(()=>	el.style.animation = 'slide_from_top 5s ease')
-  jb.delay(6000).then(()=> el.style.marginTop = '-50px')
-}
-
-// ********* Components ************
 jb.component('studio.projectId', {
   impl: ctx => jb.macro.titleToId(ctx.exp('%$studio/project%'))
 })
@@ -47,14 +62,22 @@ jb.component('studio.currentProfilePath', {
 jb.component('studio.message', {
   type: 'action',
   params: [
-    {id: 'message', as: 'string'}
+    {id: 'message', as: 'string'},
+    {id: 'error', as: 'boolean'}
   ],
-  impl: (ctx,message) => st.message(message)
+  impl: (ctx,message, error) => {
+    const el = jb.frame.document && document.querySelector('.studio-message');
+    if (!el) return
+    el.innerHTML = ''
+    el.textContent = message;
+    el.style.background = error ? 'red' : '#327DC8';
+    jb.studio.animateMessage(el)
+  }
 })
 
 jb.component('studio.redrawStudio', {
   type: 'action',
-  impl: ctx => st.redrawStudio && st.redrawStudio()
+  impl: ctx => jb.studio.redrawStudio && jb.studio.redrawStudio()
 })
 
 jb.component('studio.lastEdit', {
@@ -85,7 +108,7 @@ jb.component('studio.compSource', {
   params: [
     {id: 'comp', as: 'string', defaultValue: studio.currentProfilePath()}
   ],
-  impl: (context,comp) =>	st.compAsStr(comp.split('~')[0])
+  impl: (context,comp) =>	jb.studio.compAsStr(comp.split('~')[0])
 })
 
 jb.component('studio.unMacro', {
@@ -103,7 +126,7 @@ jb.component('studio.watchPath', {
     {id: 'delay', as: 'number', description: 'delay in activation, can be used to set priority'}
   ],
   impl: (ctx,path) => ({
-	  watchRef: {refF: () => st.refOfPath(path), ...ctx.params},
+	  watchRef: {refF: () => jb.studio.refOfPath(path), ...ctx.params},
   })
 })
 
@@ -120,6 +143,3 @@ jb.component('studio.watchComponents', {
   type: 'feature',
   impl: followUp.flow(studio.scriptChange(), rx.filter('%path/length%==1'), sink.refreshCmp())
 })
-
-
-})();

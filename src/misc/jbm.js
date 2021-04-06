@@ -145,7 +145,7 @@ jb.extension('jbm', {
                             handlers[cbId] && reject(err)
                         }, timeout)
                         handlers[cbId] = {resolve,reject,remoteRun, timer}
-                        jb.log('remote exec request',{remoteRun,port,oneway})
+                        jb.log('remote exec request',{remoteRun,port,oneway,cbId})
                         port.postMessage({$:'CB.exec', remoteRun, cbId, isAction, timeout })
                     })
                 }
@@ -196,21 +196,18 @@ jb.extension('jbm', {
                 port.postMessage({$:'CB', cbId,t, d: t == 0 ? (talkback = jb.cbHandler.addToLookup(d)) : jb.remoteCtx.stripCBVars(d), ...jb.net.reverseRoutingProps(routingMsg) }) 
             }
         }
-        function handleCBCommnad(cmd) {
+        async function handleCBCommnad(cmd) {
             const {$,sourceId,cbId,isAction} = cmd
-            jb.codeLoader.bringMissingCode(cmd.remoteRun)
-                .then(()=>{
-                    jb.log('run cmd from remote',{cmd})
-                    return jb.remoteCtx.deStrip(cmd.remoteRun)()
-                })
-                .then( result => {
-                    if ($ == 'CB.createSource' && typeof result == 'function')
-                        jb.cbHandler.map[cbId] = result
-                    else if ($ == 'CB.createOperator' && typeof result == 'function')
-                        jb.cbHandler.map[cbId] = result(remoteCB(sourceId, cbId,cmd) )
-                    else if ($ == 'CB.exec')
-                        port.postMessage({$:'execResult', cbId, result: isAction ? {} : jb.remoteCtx.stripData(result) , ...jb.net.reverseRoutingProps(cmd) })
-
+            if (jb.codeLoader.loadingCode)
+                await jb.exec({$: 'waitFor', timeout: 500, check: () => !jb.codeLoader.loadingCode })
+            await jb.codeLoader.bringMissingCode(cmd.remoteRun)
+            Promise.resolve(jb.remoteCtx.deStrip(cmd.remoteRun)()).then( result => {
+                if ($ == 'CB.createSource' && typeof result == 'function')
+                    jb.cbHandler.map[cbId] = result
+                else if ($ == 'CB.createOperator' && typeof result == 'function')
+                    jb.cbHandler.map[cbId] = result(remoteCB(sourceId, cbId,cmd) )
+                else if ($ == 'CB.exec')
+                    port.postMessage({$:'execResult', cbId, result: isAction ? {} : jb.remoteCtx.stripData(result) , ...jb.net.reverseRoutingProps(cmd) })
             }).catch(err=> $ == 'CB.exec' && 
                 port.postMessage({$:'execResult', cbId, result: { type: 'error', err}, ...jb.net.reverseRoutingProps(cmd) }))
         }
@@ -221,7 +218,8 @@ jb.extension('jbm', {
         return pathOfDistFolder && pathOfDistFolder() || location && location.href.match(/^[^:]*/)[0] + `://${location.host}/dist`
     },
     initDevToolsDebugge() {
-        if (self.jbRunningTests && !self.jbSingleTest) return
+        if (self.jbRunningTests && !self.jbSingleTest) 
+            return jb.logError('jbart devtools is disables for multiple tests')
         if (!jb.jbm.networkPeers['devtools']) {
             jb.jbm.connectToPanel = panelUri => new jb.core.jbCtx().setVar('$disableLog',true).run(remote.action({
                     action: {$: 'jbm.connectToPanel', panelUri}, 
@@ -282,12 +280,16 @@ jb.component('jbm.worker', {
         const workerCode = `
 jb_modules = { core: ${JSON.stringify(jb_modules.core)} };
 ${jb_codeLoaderServer.toString()}
+function jb_loadFile(url, baseUrl) { 
+    baseUrl = baseUrl || location.origin || ''
+    return Promise.resolve(importScripts(baseUrl+url)) 
+}
 ${code};
 jb.codeLoaderJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
 jbLoadingPhase = 'appFiles'
 //# sourceURL=${workerUri}-startup.js
 `
-        const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name: id, type: 'application/javascript'})))
+        const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name, type: 'application/javascript'})))
         childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
         const result = Promise.resolve(init()).then(()=>childsOrNet[name])
         result.uri = workerUri

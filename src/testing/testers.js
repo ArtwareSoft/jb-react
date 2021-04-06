@@ -65,21 +65,22 @@ jb.component('uiTest', {
 	impl: dataTest({
 		vars: [
 			Var('uiTest',true),
-			Var('tstWidgetId',replace({text: '%$testID%', find: '[.]', replace: '_'})),
+			Var('tstWidgetId', pipeline( replace({text: '%$testID%', find: '[.]', replace: '_'}), 'tests-%%')),
 		],
 		timeout: '%$timeout%',
 		allowError: '%$allowError%',
 		runBefore: runActions(
-			call('runBefore'), rx.pipe(
-						rx.merge(
-							'%$userInputRx()%',
-							rx.pipe(source.data('%$userInput%'),rx.delay(1))
-						),
-						rx.log('userInput'),
-						rx.takeUntil('%$$testFinished%'),
-						userInput.eventToRequest(),
-						rx.log('userRequest'),
-						sink.action(({data}) => jb.ui.widgetUserRequests.next(data))
+			call('runBefore'), 
+			rx.pipe(
+				rx.merge(
+					'%$userInputRx()%',
+					rx.pipe(source.data('%$userInput%'),rx.delay(1))
+				),
+				rx.log('userInput'),
+				rx.takeUntil('%$$testFinished%'),
+				userInput.eventToRequest(),
+				rx.log('userRequest'),
+				sink.action(({data}) => jb.ui.widgetUserRequests.next(data))
 			)
 		),
 		calculate: rx.pipe(
@@ -232,8 +233,9 @@ jb.extension('test', {
 			jb.watchableComps.handler.resources(ctx.vars.$initial_comps)
 			jb.db.watchableHandlers.push(jb.watchableComps.handler)
 		}
-		// if (!jb.spy.log) jb.spy.initSpy({spyParam: 'none'})
-		// jb.spy.clear()
+		if (!jb.spy.log) jb.spy.initSpy({spyParam: 'none'})
+		jb.spy.clear()
+		jb.ui.garbageCollectCtxDictionary && jb.ui.garbageCollectCtxDictionary(true,true)
 	},
 	countersErrors(expectedCounters,allowError) {
 		if (!jb.spy.log) return ''
@@ -282,7 +284,7 @@ jb.extension('testers', {
 //		.filter(e=>!e[0].match(/^remoteTest|inPlaceEditTest|patternsTest/) && ['uiTest','dataTest'].indexOf(e[1].impl.$) != -1) // || includeHeavy || specificTest || !e[1].impl.heavy )
 //		.sort((a,b) => (a[0] > b[0]) ? 1 : ((b[0] > a[0]) ? -1 : 0))
 	tests.forEach(e => e.group = e[0].split('.')[0].split('Test')[0])
-	const priority = 'data,ui,rx,remote,studio'.split(',').reverse().join(',')
+	const priority = 'net,data,ui,rx,remote,studio'.split(',').reverse().join(',')
 	const groups = jb.utils.unique(tests.map(e=>e.group)).sort((x,y) => priority.indexOf(x) - priority.indexOf(y))
 	tests.sort((y,x) => groups.indexOf(x.group) - groups.indexOf(y.group))
 	self.jbSingleTest = tests.length == 1
@@ -352,8 +354,8 @@ jb.extension('testers', {
 			jb.ui.addHTML(document.body,testResultHtml);
 			if (!res.renderDOM && show) res.show()
 			if (jb.ui && tests.length >1) {
-				jb.ui.garbageCollectCtxDictionary && jb.ui.garbageCollectCtxDictionary(true,true)
 				jb.cbLogByPath = {}
+				window.scrollTo(0,0)
 			}
 	}))
 

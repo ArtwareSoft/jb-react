@@ -92,13 +92,13 @@ jb.component('studio.treeMenu', {
       }),
       menu.action({
         title: 'Undo',
-        action: studio.undo(),
+        action: watchableComps.undo(),
         icon: icon('undo'),
         shortcut: 'Ctrl+Z'
       }),
       menu.action({
         title: 'Redo',
-        action: studio.redo(),
+        action: watchableComps.redo(),
         icon: icon('redo'),
         shortcut: 'Ctrl+Y'
       })

@@ -117,7 +117,7 @@ jb.component('studio.jbEditorMenu', {
               studio.addProperty('%%'),
               tree.redraw(),
               dialog.closeDialog(),
-              writeValue('%$jbEditorCntrData/selected%', '%%'),
+              writeValue('%$studio/jbEditor/selected%', '%%'),
               studio.openJbEditProperty('%%')
             )
           })
@@ -127,7 +127,7 @@ jb.component('studio.jbEditorMenu', {
         title: 'Variables',
         action: [
           writeValue(studio.ref('%$path%~$vars'), list()),
-          writeValue('%$jbEditorCntrData/selected%', '%$path%~$vars'),
+          writeValue('%$studio/jbEditor/selected%', '%$path%~$vars'),
           tree.redraw(),
           studio.addVariable('%$path%~$vars')
         ],
@@ -254,7 +254,7 @@ jb.component('studio.jbEditorMenu', {
             title: 'Delete',
             action: runActions(
               action.if(and(matchRegex('vars~[0-9]+~val$','%$path%'), isEmpty(studio.val('%$path%'))), 
-                writeValue('%$jbEditorCntrData/selected%', studio.parentPath(studio.parentPath('%$path%')))),
+                writeValue('%$studio/jbEditor/selected%', studio.parentPath(studio.parentPath('%$path%')))),
               studio.delete('%$path%'),
             ),
             icon: icon('delete'),
@@ -280,13 +280,13 @@ jb.component('studio.jbEditorMenu', {
           }),
           menu.action({
             title: 'Undo',
-            action: studio.undo(),
+            action: watchableComps.undo(),
             icon: icon('undo'),
             shortcut: 'Ctrl+Z'
           }),
           menu.action({
             title: 'Redo',
-            action: studio.redo(),
+            action: watchableComps.redo(),
             icon: icon('redo'),
             shortcut: 'Ctrl+Y'
           }),

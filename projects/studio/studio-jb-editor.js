@@ -1,5 +1,3 @@
-// jb.ns('tree,rx')
-
 jb.component('studio.jbEditor', {
   type: 'control',
   params: [
@@ -11,9 +9,7 @@ jb.component('studio.jbEditor', {
     controls: [
       studio.jbEditorInteliTree('%$path%'),
       group({
-        controls: [
-          studio.probeDataView()
-        ],
+        controls: studio.probeDataView(),
         features: [feature.if(not('%$studio/hideProbe%')), watchRef('%$studio/hideProbe%')]
       })
     ],
@@ -79,19 +75,10 @@ jb.component('studio.jbEditorContainer', {
 })
 
 jb.component('studio.probeResults', {
-  type: 'control',
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx, path) => jb.delay(300).then(_ => {
-    if (ctx.exp('%$stduio/fastPreview%')) {
-      const st = jb.studio
-      const inCtx = st.closestCtxOfLastRun(path) || new jb.core.jbCtx()
-      return [{in: inCtx, out: st.isOfType(path,'action') ? null :
-          st.previewjb.val(inCtx.runItself())}]
-    }
-    return ctx.run(pipe(studio.probe(path), '%result%'))
-  })
+  impl: pipe(studio.probe('%$path%'), '%result%')
 })
 
 jb.component('studio.dataBrowse', {
@@ -112,6 +99,7 @@ jb.component('studio.dataBrowse', {
           //   (ctx,{obj}) => jb.callbag.isCallbag(obj),
           //   studio.browseRx('%$obj%')
           // ),
+
           controlWithCondition(
             isOfType('array', '%$obj%'),
             table({
@@ -180,12 +168,13 @@ jb.component('studio.dataBrowse', {
       )
     ],
     features: [
-      group.wait({
-        for: '%$objToShow%',
-        loadingControl: text('...'),
-        varName: 'obj',
-        passRx: true
-      }),
+      variable('obj','%$objToShow%'),
+      // group.wait({
+      //   for: '%$objToShow%',
+      //   loadingControl: text('...'),
+      //   varName: 'obj',
+      //   passRx: true
+      // }),
       css.height({height: '400', overflow: 'auto', minMax: 'max'}),
       css.width({overflow: 'auto', minMax: 'max'}),
       group.eliminateRecursion(5)
@@ -267,7 +256,7 @@ jb.component('studio.showRxSniffer', {
 
 jb.component('studio.probeDataView', {
   type: 'control',
-  impl: group({
+  impl: remote.widget( group({
     controls: group({
       controls: group({
         controls: [
@@ -302,9 +291,9 @@ jb.component('studio.probeDataView', {
         features: group.firstSucceeding()
       }),
       features: [
-        feature.if('%$jbEditorCntrData/selected%'),
+        feature.if('%$studio/jbEditor/selected%'),
         group.wait({
-          for: studio.probeResults('%$jbEditorCntrData/selected%'),
+          for: studio.probeResults('%$studio/jbEditor/selected%'),
           loadingControl: text('...'),
           varName: 'probeResult',
           passRx: true
@@ -312,11 +301,11 @@ jb.component('studio.probeDataView', {
       ]
     }),
     features: [
-      watchRef({ref: '%$jbEditorCntrData/selected%', strongRefresh: true}),
+      watchRef({ref: '%$studio/jbEditor/selected%', strongRefresh: true}),
       watchRef({ref: '%$studio/pickSelectionCtxId%', strongRefresh: true}),
       watchRef({ref: '%$studio/refreshProbe%', strongRefresh: true})
     ]
-  })
+  }), jbm.wPreview() )
 })
 
 jb.component('studio.openJbEditProperty', {
@@ -393,12 +382,12 @@ jb.component('studio.jbEditorInteliTree', {
     features: [
       css.class('jb-editor'),
       tree.selection({
-        databind: '%$jbEditorCntrData/selected%',
+        databind: '%$studio/jbEditor/selected%',
         autoSelectFirst: true,
         onRightClick: studio.openJbEditorMenu('%%', '%$path%')
       }),
       tree.keyboardSelection({
-        onEnter: studio.openJbEditProperty('%$jbEditorCntrData/selected%'),
+        onEnter: studio.openJbEditProperty('%$studio/jbEditor/selected%'),
         onRightClickOfExpanded: studio.openJbEditorMenu('%%', '%$path%'),
         autoFocus: true,
         applyMenuShortcuts: studio.jbEditorMenu('%%', '%$path%')
@@ -427,7 +416,7 @@ jb.component('studio.openComponentInJbEditor', {
         style: dialog.studioFloating({id: 'jb-editor', width: '860', height: '100%'}),
         content: studio.jbEditor('%$compPath%'),
         menu: button({
-          action: studio.openJbEditorMenu('%$jbEditorCntrData/selected%', '%$path%'),
+          action: studio.openJbEditorMenu('%$studio/jbEditor/selected%', '%$path%'),
           style: button.mdcIcon('menu')
         }),
         title: studio.pathHyperlink('%$compPath%', 'Inteliscript'),

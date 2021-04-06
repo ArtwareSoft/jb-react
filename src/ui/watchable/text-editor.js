@@ -195,25 +195,25 @@ jb.component('watchableAsText', {
     })
 })
 
-// jb.component('textEditor.withCursorPath', {
-//   type: 'action',
-//   params: [
-//     {id: 'action', type: 'action', dynamic: true, mandatory: true},
-//     {id: 'selector', as: 'string', defaultValue: '#editor'}
-//   ],
-//   impl: (ctx,action,selector) => {
-//         let editor = ctx.vars.editor
-//         if (!editor) {
-//             const elem = selector ? jb.ui.widgetBody(ctx).querySelector(selector) : jb.ui.widgetBody(ctx);
-//             editor = jb.path(elem,'_component.editor')
-//         }
-//         if (editor && editor.getCursorPos)
-//             action(editor.ctx().setVars({
-//                 cursorPath: jb.textEditor.pathOfPosition(editor.data_ref, editor.getCursorPos()).path,
-//                 cursorCoord: editor.cursorCoords()
-//             }))
-//     }
-// })
+jb.component('textEditor.withCursorPath', {
+  type: 'action',
+  params: [
+    {id: 'action', type: 'action', dynamic: true, mandatory: true},
+    {id: 'selector', as: 'string', defaultValue: '#editor'}
+  ],
+  impl: (ctx,action,selector) => {
+        let editor = ctx.vars.editor
+        if (!editor) {
+            const elem = selector ? jb.ui.widgetBody(ctx).querySelector(selector) : jb.ui.widgetBody(ctx);
+            editor = jb.path(elem,'_component.editor')
+        }
+        if (editor && editor.getCursorPos)
+            action(editor.ctx().setVars({
+                cursorPath: jb.textEditor.pathOfPosition(editor.data_ref, editor.getCursorPos()).path,
+                cursorCoord: editor.cursorCoords()
+            }))
+    }
+})
 
 jb.component('textEditor.isDirty', {
   impl: ctx => {

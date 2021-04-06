@@ -9,7 +9,7 @@ jb.component('netTest.listSubJbms', {
 
 jb.component('netTest.listAll', {
   impl: dataTest({
-    timeout: 5000,
+    timeout: 1000,
     runBefore: runActions(jbm.worker({id: 'networkPeer', networkPeer: true}), jbm.child('inner')),
     calculate: pipe(net.listAll(),join(',')),
     expectedResult: contains(['tests,','tests•inner','networkPeer'])

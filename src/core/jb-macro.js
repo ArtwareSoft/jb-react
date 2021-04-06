@@ -25,7 +25,9 @@ jb.extension('macro', {
         return (...allArgs) => {
             const { args, system } = jb.macro.splitSystemArgs(allArgs)
             const out = { $: `${ns}.${innerId}` }
-            if (args.length == 1 && typeof args[0] == 'object' && !Array.isArray(args[0]) && !jb.utils.compName(args[0])) // params by name
+            if (args.length == 0)
+                Object.assign(out)
+            else if (args.length == 1 && typeof args[0] == 'object' && !Array.isArray(args[0]) && !jb.utils.compName(args[0])) // params by name
                 Object.assign(out, args[0])
             else
                 Object.assign(out, { $byValue: args })
@@ -48,10 +50,10 @@ jb.extension('macro', {
     },
     argsToProfile(cmpId, args) {
         const comp = jb.comps[cmpId]
+        if (args.length == 0)
+            return { $: cmpId }        
         if (!comp)
             return { $: cmpId, $byValue: args }
-        if (args.length == 0)
-            return { $: cmpId }
         const params = comp.params || []
         const firstParamIsArray = (params[0] && params[0].type || '').indexOf('[]') != -1
         if (params.length == 1 && firstParamIsArray) // pipeline, or, and, plus
@@ -69,7 +71,9 @@ jb.extension('macro', {
         debugger;
     },
     fixProfile(profile) {
-        if (profile && profile.$byValue) {
+        if (!profile || !profile.constructor || ['Object','Array'].indexOf(profile.constructor.name) == -1) return
+        Object.values(profile).forEach(v=>jb.macro.fixProfile(v))
+        if (profile.$byValue) {
           if (!jb.comps[profile.$])
             return jb.logError('fixProfile - missing component', {cmpId: profile.$, profile})
           Object.assign(profile, jb.macro.argsToProfile(profile.$, profile.$byValue))

@@ -74,13 +74,13 @@ jb.component('remote.initShadowData', {
     params: [
       {id: 'src', as: 'ref' },
       {id: 'jbm', type: 'jbm'},
+      {id: 'headlessWidget', as: 'boolean', defaultValue: true },
     ],
     impl: rx.pipe(
         source.watchableData({ref: '%$src%', includeChildren: 'yes'}),
         rx.map(obj(prop('op','%op%'), prop('path',({data}) => jb.db.pathOfRef(data.ref)))),
-        rx.log('test op'),
         sink.action(remote.action( 
-            ctx => jb.db.doOp(jb.db.refOfPath(ctx.data.path), ctx.data.op, ctx),
+            (ctx,{},{headlessWidget}) => jb.db.doOp(jb.db.refOfPath(ctx.data.path), ctx.data.op, ctx.setVar('headlessWidget',headlessWidget)),
             '%$jbm%')
         )
     )

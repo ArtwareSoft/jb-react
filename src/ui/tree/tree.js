@@ -1,5 +1,26 @@
-(function() {
-// var { tree } = jb.ns('tree')
+jb.extension('ui', 'tree', {
+	TreeRenderer: class TreeRenderer {
+		constructor(args) {
+			Object.assign(this,args)
+		}
+		renderTree() {
+			const {model,h} = this
+			if (this.noHead)
+				return h('div',{}, model.children(model.rootPath).map(childPath=> this.renderNode(childPath)))
+			return this.renderNode(model.rootPath)
+		}
+		renderNode(path) {
+			const {expanded,model,h} = this
+			const disabled = model.disabled && model.disabled(path) ? 'jb-disabled' : ''
+			const selected = path == this.selected ? 'selected' : ''
+			const clz = ['treenode', model.isArray(path) ? 'jb-array-node': '',disabled, selected].filter(x=>x).join(' ')
+			const children = expanded[path] && model.children(path).length ? [h('div.treenode-children', {} ,
+				model.children(path).map(childPath=>this.renderNode(childPath)))] : []
+	
+			return h('div',{class: clz, path, ...expanded[path] ? {expanded: true} :{} }, [ this.renderLine(path), ...children ] )
+		}
+	}
+})
 
 jb.component('tree', {
   type: 'control',
@@ -74,7 +95,7 @@ jb.component('tree.plain', {
 				h('span',{class: 'treenode-label'}, model.title(path,!expanded[path])),
 			])
 		}
-		return new TreeRenderer({model,expanded,h,showIcon,noHead,renderLine,selected}).renderTree(cmp.renderProps.model.rootPath)
+		return new jb.ui.TreeRenderer({model,expanded,h,showIcon,noHead,renderLine,selected}).renderTree(cmp.renderProps.model.rootPath)
 	},
 	css: `|>.treenode-children { padding-left: 10px; min-height: 7px }
 	|>.treenode-label { margin-top: -1px }
@@ -117,7 +138,7 @@ jb.component('tree.expandBox', {
 				h('span.treenode-label',{}, model.title(path,!expanded[path])),
 			])
 		}
-		return new TreeRenderer({model,expanded,h,showIcon,noHead,renderLine,selected}).renderTree(cmp.renderProps.model.rootPath)
+		return new jb.ui.TreeRenderer({model,expanded,h,showIcon,noHead,renderLine,selected}).renderTree(cmp.renderProps.model.rootPath)
 	  },
 	  css: ({},{},{lineWidth}) => `|>.treenode-children { padding-left: 10px; min-height: 7px }
 	|>.treenode-label { margin-top: -2px }
@@ -144,31 +165,6 @@ jb.component('tree.expandBox', {
 		features: tree.initTree()
 	}),
 })
-
-// helper for styles
-class TreeRenderer {
-	constructor(args) {
-		Object.assign(this,args)
-	}
-	renderTree() {
-		const {model,h} = this
-		if (this.noHead)
-			return h('div',{}, model.children(model.rootPath).map(childPath=> this.renderNode(childPath)))
-		return this.renderNode(model.rootPath)
-	}
-	renderNode(path) {
-		const {expanded,model,h} = this
-		const disabled = model.disabled && model.disabled(path) ? 'jb-disabled' : ''
-		const selected = path == this.selected ? 'selected' : ''
-		const clz = ['treenode', model.isArray(path) ? 'jb-array-node': '',disabled, selected].filter(x=>x).join(' ')
-		const children = expanded[path] && model.children(path).length ? [h('div.treenode-children', {} ,
-			model.children(path).map(childPath=>this.renderNode(childPath)))] : []
-
-		return h('div',{class: clz, path, ...expanded[path] ? {expanded: true} :{} }, [ this.renderLine(path), ...children ] )
-	}
-}
-
-// ******** tree features
 
 jb.component('tree.selection', {
 	type: 'feature',
@@ -259,7 +255,7 @@ jb.component('tree.keyboardSelection', {
 		}
 	  }),
 	  frontEnd.prop('onkeydown', rx.pipe(
-		  source.frontEndEvent('keydown'), rx.filter(not('%ctrlKey%')), rx.filter(not('%altKey%')), frontEnd.addUserEvent() )),
+		  source.frontEndEvent('keydown'), rx.filter(not('%ctrlKey%')), rx.filter(not('%altKey%')), rx.userEventVar() )),
 	  frontEnd.flow('%$cmp.onkeydown%', rx.filter('%keyCode%==13'), rx.filter('%$cmp.state.selected%'), sink.BEMethod('onEnter','%$cmp.state.selected%') ),
 	  frontEnd.flow('%$cmp.onkeydown%', rx.filter(inGroup(list(38,40),'%keyCode%')),
 		rx.map(tree.nextSelected(If('%keyCode%==40',1,-1))), 
@@ -273,7 +269,7 @@ jb.component('tree.keyboardSelection', {
 		)),
 		rx.filter(({data}) => (data.ctrlKey || data.altKey || data.keyCode == 46) // Delete
 			  && (data.keyCode != 17 && data.keyCode != 18)), // ctrl or alt alone
-		frontEnd.addUserEvent(),
+		rx.userEventVar(),
 		sink.BEMethod('runShortcut','%$ev%',obj(prop('path','%$cmp.state.selected%')))
 	  ),
 	  frontEnd.flow(source.frontEndEvent('click'), sink.FEMethod('regainFocus')),
@@ -438,5 +434,3 @@ jb.component('tree.moveItem', {
 		function refToPath(ref) { return ref && ref.path ? ref.path().join('~') : '' }
 	}
 })
-
-})()

@@ -156,7 +156,7 @@ jb.component('source.frontEndEvent', {
     rx.pipe(source.event('%$event%','%$cmp.base%'), rx.takeUntil('%$cmp.destroyed%'))
 })
 
-jb.component('frontEnd.addUserEvent', {
+jb.component('rx.userEventVar', {
   type: 'rx',
   impl: rx.var('ev', ({data}) => jb.ui.buildUserEvent(data, jb.ui.closestCmpElem(data.currentTarget || data.target))),
 })
@@ -275,7 +275,7 @@ jb.component('feature.onKey', {
         frontEnd.init((ctx,{cmp,el}) => {
           if (! cmp.hasOnKeyHanlder) {
             cmp.hasOnKeyHanlder = true
-            ctx.run(rx.pipe(source.frontEndEvent('keydown'), frontEnd.addUserEvent(), 
+            ctx.run(rx.pipe(source.frontEndEvent('keydown'), rx.userEventVar(), 
               rx.map(key.eventToMethod('%%',el)), rx.filter('%%'), rx.log('keyboard uiComp onKey %$key%'), sink.BEMethod('%%')))
           }
       })

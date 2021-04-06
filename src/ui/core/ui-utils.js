@@ -43,19 +43,15 @@ jb.extension('ui', {
     frontendWidgetId: elem => jb.ui.parents(elem,{includeSelf: true})
         .filter(el=>el.getAttribute && el.getAttribute('widgettop') && el.getAttribute('frontend'))
         .map(el=>el.getAttribute('widgetid'))[0],
+    parentWidgetId: elem => jb.ui.parents(elem,{includeSelf: true})
+        .filter(el=>el.getAttribute && el.getAttribute('widgettop'))
+        .map(el=>el.getAttribute('widgetid'))[0],    
     elemOfCmp: (ctx,cmpId) => jb.ui.findIncludeSelf(jb.ui.widgetBody(ctx),`[cmp-id="${cmpId}"]`)[0],
     fromEvent: (cmp,event,elem,options) => jb.callbag.pipe(
           jb.callbag.fromEvent(event, elem || cmp.base, options),
           jb.callbag.takeUntil(cmp.destroyed)
     ),
-    renderWidget(profile,topElem,ctx) {
-      if (!jb.ui.renderWidgetInStudio && jb.path(jb.ui.parentFrameJb(),'ui.renderWidgetInStudio'))
-        eval('jb.ui.renderWidgetInStudio= ' + jb.ui.parentFrameJb().ui.renderWidgetInStudio.toString())
-      if (jb.frame.parent != jb.frame && jb.ui.renderWidgetInStudio)
-        return jb.ui.renderWidgetInStudio(profile,topElem)
-      else
-        return jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry(ctx).run(profile)),topElem)    
-    },
+    renderWidget: (profile,topElem,ctx) => jb.ui.render(jb.ui.h(jb.ui.extendWithServiceRegistry(ctx).run(profile)),topElem),
     extendWithServiceRegistry(_ctx) {
       const ctx = _ctx || new jb.core.jbCtx()
       return ctx.setVar('$serviceRegistry',{baseCtx: ctx, parentRegistry: ctx.vars.$serviceRegistry, services: {}})
@@ -143,10 +139,12 @@ jb.extension('ui', {
     insertOrUpdateStyleElem(ctx,innerText,elemId,{classId} = {}) {
       const widgetId = ctx.vars.headlessWidget && ctx.vars.headlessWidgetId
       if (widgetId && !ctx.vars.previewOverlay) { // headless
+        if (!jb.ui.headless[widgetId])
+          return
         jb.ui.headless[widgetId].styles = jb.ui.headless[widgetId].styles || {}
         jb.ui.headless[widgetId].styles[elemId] = innerText
         jb.ui.renderingUpdates.next({widgetId, css: innerText, elemId, classId })
-      } else { // FE or local
+      } else if (jb.frame.document) { // FE or local
         let elem = document.querySelector(`head>style[elemId="${elemId}"]`)
         if (!elem) {
           elem = document.createElement('style')
@@ -237,7 +235,7 @@ jb.component('styleByControl', {
     {id: 'control', type: 'control', mandatory: true, dynamic: true},
     {id: 'modelVar', as: 'string', mandatory: true}
   ],
-  impl: (ctx,control,modelVar) => control(ctx.setVar(modelVar,ctx.vars.$model))
+  impl: (ctx,control,modelVar) => control(ctx.setVar(modelVar, ctx.vars.$model))
 })
 
 jb.component('styleWithFeatures', {

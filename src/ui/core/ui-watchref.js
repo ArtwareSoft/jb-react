@@ -7,14 +7,18 @@ jb.extension('ui', 'watchRef', {
         const changed_path = watchHandler.removeLinksFromPath(e.insertedPath || watchHandler.pathOfRef(e.ref))
         if (!changed_path) debugger
         //observe="resources://2~name;person~name
-        const body = !jb.frame.document || jb.path(e,'srcCtx.vars.headlessWidgetId') || jb.path(e,'srcCtx.vars.testID') ? jb.ui.widgetBody(e.srcCtx) : jb.frame.document.body
-        const elemsToCheck = jb.ui.find(body,'[observe]') // top down order
+        const body = !jb.frame.document || jb.path(e,'srcCtx.vars.testID') ? jb.ui.widgetBody(e.srcCtx) : jb.frame.document.body
+        const elemsToCheck = (jb.path(e,'srcCtx.vars.headlessWidget') ? headlessElemsToCheck() : jb.ui.find(body,'[observe]')) // top down order
+            .filter(el => {
+                const parentWidgetId = jb.ui.parentWidgetId(el)
+                return !parentWidgetId || parentWidgetId.split('-')[0] == jb.uri
+        })
         const elemsToCheckCtxBefore = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
         const originatingCmpId = jb.path(e.srcCtx, 'vars.cmp.cmpId')
         jb.log('refresh check observable elements',{originatingCmpId,elemsToCheck,e,srcCtx:e.srcCtx})
         elemsToCheck.forEach((elem,i) => {
             const cmpId = elem.getAttribute('cmp-id')
-            if (!jb.ui.parents(elem).find(el=>el == body))
+            if (elem instanceof jb.ui.VNode ? headlessElemDetached(elem) : !jb.ui.parents(elem).find(el=>el == body))
                 return jb.log('observable elem was detached in refresh process',{originatingCmpId,cmpId,elem})
             if (elemsToCheckCtxBefore[i] != elem.getAttribute('jb-ctx')) 
                 return jb.log('observable elem was refreshed from top in refresh process',{originatingCmpId,cmpId,elem})
@@ -43,6 +47,15 @@ jb.extension('ui', 'watchRef', {
                     jb.ui.refreshElem(elem,null,{srcCtx: e.srcCtx, strongRefresh, cssOnly})
             }
         })
+
+        function headlessElemsToCheck() {
+            const widgets = jb.path(e,'srcCtx.vars.headlessWidgetId') ? [jb.path(e,'srcCtx.vars.headlessWidgetId')] : Object.keys(jb.ui.headless)
+            return widgets.flatMap(w=> jb.ui.find(jb.path(jb.ui.headless,[w,'body']),'[observe]'))
+        }
+        function headlessElemDetached(el) {
+            const topParent = jb.ui.parents(el).pop()
+            return !Object.values(jb.ui.headless).find(x=>x.body == topParent)
+        }
 
         function observerFromStr(obsStr) {
             const parts = obsStr.split('://')

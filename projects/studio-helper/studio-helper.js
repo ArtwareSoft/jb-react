@@ -148,8 +148,7 @@ jb.component('studioHelper.contentEditablePosition', {
     style: header.mdcHeadline2(),
     features: [
       frontEnd.init(({},{cmp}) => jb.ui.contentEditable.activate(cmp.base)),
-      css.height('100'),
-      css.padding({top: '', bottom: '40'}),
+      css.padding({ bottom: '40'}),
     ]
   })
 })
