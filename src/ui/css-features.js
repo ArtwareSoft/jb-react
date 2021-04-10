@@ -240,11 +240,12 @@ jb.component('css.conditionalClass', {
   })
 })
 
-jb.defComponents('layout,typography,detailedBorder,detailedColor,gridArea'.split(','), id=>`css.${id}`, f=> ({
-  type: 'feature:0',
-  params: [
-    {id: 'css', mandatory: true, as: 'string'}
-  ],
-  impl: (ctx,css) => ({css: jb.ui.fixCssLine(css)})
-}))
+jb.defComponents('layout,typography,detailedBorder,detailedColor,gridArea'.split(','), 
+  id => jb.component(`css.${id}`, ({
+    type: 'feature:0',
+    params: [
+      {id: 'css', mandatory: true, as: 'string'}
+    ],
+    impl: (ctx,css) => ({css: jb.ui.fixCssLine(css)})
+})))
 

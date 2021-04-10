@@ -858,7 +858,8 @@ jb.component('runActionOnItem', {
     {id: 'item', mandatory: true},
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
   ],
-  impl: (ctx,item,action) => item != null && action(ctx.setData(item))
+  impl: (ctx,item,action) => jb.utils.isPromise(item) ? Promise.resolve(item).then(_item => action(ctx.setData(_item))) 
+    : item != null && action(ctx.setData(item))
 })
 
 jb.component('runActionOnItems', {

@@ -56,11 +56,11 @@ jb.component('feature.icon', {
     {id: 'style', type: 'icon.style', dynamic: true, defaultValue: icon.material()},
     {id: 'features', type: 'feature[]', dynamic: true}
   ],
-  impl: ctx => ({ // todo - fix for remote
-    icon: jb.ui.ctrl(ctx, features(
-      calcProp('icon'), calcProp('type'), calcProp('title'), calcProp('size'),
-      calcProp('iconPosition','%$$model/position%')
-    ))
+  impl: ctx => ({ 
+    icon: jb.ui.ctrl(ctx, {$: 'features', features: [
+      {$: 'calcProp', id: 'icon' }, {$: 'calcProp', id: 'type' }, {$: 'calcProp', id: 'title' }, {$: 'calcProp', id: 'size' }, 
+      {$: 'calcProp', id: 'iconPosition', value: '%$$model/position%' }
+    ] })
   })
 })
 

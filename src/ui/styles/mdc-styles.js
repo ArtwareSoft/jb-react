@@ -1,5 +1,3 @@
-// var {mdcStyle} = jb.ns('mdcStyle')
-
 jb.extension('mdIcons', {
   require: ['/dist/md-icons.js']
 })

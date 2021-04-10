@@ -269,7 +269,7 @@ jb.component('studio.probeDataView', {
             controls: [
               group({
                 title: 'in (%$probeResult/length%)',
-                controls: studio.dataBrowse(({data}) => jb.studio.previewjb.val(data.in.data)),
+                controls: studio.dataBrowse(({data}) => jb.val(data.in.data)),
                 features: css.width({width: '300', minMax: 'max'})
               }),
               group({

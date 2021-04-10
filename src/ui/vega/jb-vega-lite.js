@@ -149,23 +149,25 @@ jb.component('vega.filterExpression', {
     impl: (ctx,filter) => ({ filter })
 })
 
-jb.defComponents('equal,lt,lte,gt,gte'.split(',') ,op=>`vega.${op}`, op => ({
-    type: 'vega.boolean',
-    params: [
-        {id: 'field', as: 'string', mandatory: true },
-        {id: 'value', as: 'string', mandatory: true },
-    ],
-    impl: (ctx,field,value) => ({ field, [op]: value })
-}))
+jb.defComponents('equal,lt,lte,gt,gte'.split(','),
+    op=> jb.component(`vega.${op}`, ({
+        type: 'vega.boolean',
+        params: [
+            {id: 'field', as: 'string', mandatory: true },
+            {id: 'value', as: 'string', mandatory: true },
+        ],
+        impl: (ctx,field,value) => ({ field, [op]: value })
+})))
 
-jb.defComponents('range,oneOf'.split(',') ,op=>`vega.${op}`, op => ({
+jb.defComponents('range,oneOf'.split(','),
+    op=> jb.component(`vega.${op}`, ({
         type: 'vega.boolean',
     params: [
         {id: 'field', as: 'string', mandatory: true },
         {id: 'values', as: 'array', mandatory: true },
     ],
     impl: (ctx,field,values) => ({ field, [op]: values })
-}))
+})))
 
 jb.component('vega.inSelection', {
   type: 'vega.boolean',
@@ -180,14 +182,15 @@ jb.component('vega.inSelection', {
 // ************ mark ***************
 // TODO: david: do one by one - more filter types: and, or, not
 
-jb.defComponents('bar,circle,square,text,rule,point,geoshape,tick,errorband'.split(',') , type=>`vega.${type}`, type => ({
-    type: 'vega.mark',
-    params: [
-        {id: 'props', type: 'vega.markProps[]', as: 'array' },
-        {id: 'type', as: 'string', defaultValue: type },
-    ],
-    impl: (ctx,props,type) => props.length ? ({ type, ...props.reduce((acc,props) => ({...acc,...props}) ,{}) }) : type
-}))
+jb.defComponents('bar,circle,square,text,rule,point,geoshape,tick,errorband'.split(','), 
+    type => jb.component(`vega.${type}`, ({
+        type: 'vega.mark',
+        params: [
+            {id: 'props', type: 'vega.markProps[]', as: 'array' },
+            {id: 'type', as: 'string', defaultValue: type },
+        ],
+        impl: (ctx,props,type) => props.length ? ({ type, ...props.reduce((acc,props) => ({...acc,...props}) ,{}) }) : type
+})))
 
 jb.component('vega.line', {
     type: 'vega.mark',

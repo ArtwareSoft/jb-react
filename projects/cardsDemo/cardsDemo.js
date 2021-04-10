@@ -17,7 +17,7 @@ jb.component('styleGallery.stylesOfUiComponent', {
   params: [
     {id: 'component', as: 'string'}
   ],
-  impl: (ctx,component) => ctx.frame().parent.jb.studio.PTsOfType(component)
+  impl: (ctx,component) => jb.studio.PTsOfType(component)
     .filter(x=>['customStyle','styleByControl','styleWithFeatures'].indexOf(x) == -1).sort()
 })
 

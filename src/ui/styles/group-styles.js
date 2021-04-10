@@ -86,8 +86,8 @@ jb.component('group.tabs', {
               raised: '%$tabIndex% == %$selectedTab%',
               // watchRef breaks mdcTabBar animation
               features: [
-                ctx => ctx.cmpCtx.params.barStyle.profile.$ !== 'group.mdcTabBar' && watchRef('%$selectedTab%'),
-                ctx => ctx.run(features((ctx.vars.tab.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x)))
+                ctx => ctx.cmpCtx.params.barStyle.profile.$ !== 'group.mdcTabBar' && {$: 'watchRef', ref: '%$selectedTab%'},
+                ctx => ctx.run({ $: 'features', features: (ctx.vars.tab.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x) }),
               ]
             }),
             itemVariable: 'tab',
@@ -141,7 +141,7 @@ jb.component('group.accordion', {
                 css.width('%$width%'),
                 css('{justify-content: left}'),
                 watchRef('%$selectedTab%'),
-                ctx => ctx.run(features((ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x)))
+                ctx => ctx.run({ $: 'features', features: (ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x) }),
               ]
             }),
             group({
@@ -178,7 +178,7 @@ jb.component('group.sections', {
             text({
               text: '%$section/field()/title()%',
               style: call('titleStyle'),
-              features: ctx => ctx.run(features((ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x)))
+              features: ctx => ctx.run({ $: 'features', features: (ctx.vars.section.icon || []).map(cmp=>cmp.ctx.profile).filter(x=>x) }),
             }),
             group({style: call('innerGroupStyle'), controls: '%$section%'})
           ]

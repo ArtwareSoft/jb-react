@@ -13,7 +13,7 @@ jb.component('studio.copyDataResourceToComp', {
   ],
   impl: writeValue(
     studio.profileAsText('%$path%'),
-    (ctx,vars,{name}) => jb.utils.prettyPrint(new jb.studio.previewjb.core.jbCtx().exp('%$'+name+'%'))
+    (ctx,vars,{name}) => jb.utils.prettyPrint(new jb.core.jbCtx().exp('%$'+name+'%'))
   )
 })
 

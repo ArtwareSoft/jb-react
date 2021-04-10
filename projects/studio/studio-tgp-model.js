@@ -269,14 +269,12 @@ jb.extension('studio', {
 
 		return '';
 	},
-	//previewCompsAsEntries: () => jb.entries(jb.studio.previewjb.comps).filter(e=>e[1]),
 	projectFiles: () => jb.exec('%$studio/projectSettings/jsFiles%'),
 	projectCompsAsEntries: () => {
 		const project = jb.exec('%$studio/project%')
 		return jb.entries(jb.comps).filter(([id,comp]) => comp[jb.core.location][0].indexOf(project) != -1)
+			.filter(([id,comp]) => !comp.internal)
 	},
-	//jb.studio.previewCompsAsEntries().filter(e=> e[1][jb.core.loadingPhase] == 'appFiles'),
-	// queries
 	isArrayType: path => ((jb.studio.paramDef(path)||{}).type||'').indexOf('[]') != -1,
 	isOfType(path,type) {
 		const types = type.split(',');
@@ -299,18 +297,17 @@ jb.extension('studio', {
 			.map(x=>
 				x=='data' ? ['data','aggregator','boolean'] : [x]));
 		const comp_arr = types.map(t=>
-			jb.entries(jb.studio.previewjb.comps)
+			jb.entries(jb.comps)
 				.filter(c=> jb.studio.isCompObjOfType(c[1],t))
 				.map(c=>c[0]));
 		return comp_arr.reduce((all,ar)=>all.concat(ar),[]);
 	},
 	isCompNameOfType(name,type) {
-		const _jb = jb.studio.previewjb;
-		const comp = name && _jb.comps[name];
+		const comp = name && jb.comps[name];
 		if (comp) {
-			while (_jb.comps[name] && !(_jb.comps[name].type || _jb.comps[name].typePattern) && _jb.utils.compName(_jb.comps[name].impl))
-				name = _jb.utils.compName(_jb.comps[name].impl);
-			return _jb.comps[name] && jb.studio.isCompObjOfType(_jb.comps[name],type);
+			while (jb.comps[name] && !(jb.comps[name].type || jb.comps[name].typePattern) && jb.utils.compName(jb.comps[name].impl))
+				name = jb.utils.compName(jb.comps[name].impl);
+			return jb.comps[name] && jb.studio.isCompObjOfType(jb.comps[name],type);
 		}
 	},
 	isCompObjOfType: (compObj,type) => (compObj.type||'data').split(',').indexOf(type) != -1
@@ -367,13 +364,14 @@ jb.extension('studio', {
 	// },
 
 	closestTestCtx(pathToTrace) {
-		const _ctx = new jb.studio.previewjb.core.jbCtx()
+		const _ctx = new jb.core.jbCtx()
 		const compId = pathToTrace.split('~')[0]
-		const statistics = new jb.core.jbCtx().run(studio.componentStatistics(ctx=>compId))
-		const test = jb.path(jb.comps[compId],'impl.expectedResult') ? compId : statistics.referredBy && statistics.referredBy.filter(refferer=>jb.studio.isOfType(refferer,'test'))[0]
+		const statistics = jb.exec(studio.componentStatistics(compId))
+		const test = jb.path(jb.comps[compId],'impl.expectedResult') ? compId 
+			: (statistics.referredBy||[]).find(refferer=>jb.studio.isOfType(refferer,'test'))
 		if (test)
 			return _ctx.ctx({ profile: {$: test}, comp: test, path: ''})
-		const testData = jb.studio.previewjb.comps[compId].testData
+		const testData = jb.comps[compId].testData
 		if (testData)
 			return _ctx.ctx({profile: pipeline(testData, {$: compId}), path: '' })
 	},

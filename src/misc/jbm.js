@@ -198,18 +198,20 @@ jb.extension('jbm', {
         }
         async function handleCBCommnad(cmd) {
             const {$,sourceId,cbId,isAction} = cmd
+            try {
             if (jb.codeLoader.loadingCode)
                 await jb.exec({$: 'waitFor', timeout: 500, check: () => !jb.codeLoader.loadingCode })
-            await jb.codeLoader.bringMissingCode(cmd.remoteRun)
-            Promise.resolve(jb.remoteCtx.deStrip(cmd.remoteRun)()).then( result => {
+                await jb.codeLoader.bringMissingCode(cmd.remoteRun)
+                const result = await jb.remoteCtx.deStrip(cmd.remoteRun)()
                 if ($ == 'CB.createSource' && typeof result == 'function')
                     jb.cbHandler.map[cbId] = result
                 else if ($ == 'CB.createOperator' && typeof result == 'function')
                     jb.cbHandler.map[cbId] = result(remoteCB(sourceId, cbId,cmd) )
                 else if ($ == 'CB.exec')
                     port.postMessage({$:'execResult', cbId, result: isAction ? {} : jb.remoteCtx.stripData(result) , ...jb.net.reverseRoutingProps(cmd) })
-            }).catch(err=> $ == 'CB.exec' && 
-                port.postMessage({$:'execResult', cbId, result: { type: 'error', err}, ...jb.net.reverseRoutingProps(cmd) }))
+            } catch(err) { 
+                $ == 'CB.exec' && port.postMessage({$:'execResult', cbId, result: { type: 'error', err}, ...jb.net.reverseRoutingProps(cmd) })
+            }
         }
     },
     pathOfDistFolder() {

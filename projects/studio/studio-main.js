@@ -28,7 +28,12 @@ jb.component('studio.jbart', {
       studio.topBar(),
       group({
         controls: remote.wPreviewCtrl(),
-        features: watchRef('%$studio/page%')
+        features: [
+          watchRef('%$studio/page%'),
+          watchRef({ref: '%$studio/preview%', includeChildren: 'yes'}),
+          css.height({height: '%$studio/preview/height%', overflow: 'auto', minMax: 'max'}),
+          css.width({width: '%$studio/preview/width%', overflow: 'auto', minMax: 'max'})
+        ]
       }),
       studio.pages(),
       studio.ctxCounters()

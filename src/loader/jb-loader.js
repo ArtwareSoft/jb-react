@@ -363,19 +363,22 @@ function jbm_create(libs, settings) {  // export
   return jb_dynamicLoad(libs, settings) 
 }
 
-async function jb_codeLoaderServer(uri, {projects, baseUrl, local }) {
-  const isWorker = typeof window == 'undefined'
-  baseUrl = baseUrl || isWorker && location.origin || ''
-  jb_loadFile = local ? jb_loadFileLocal : jb_loadFileToFrame
+async function jb_codeLoaderServer(uri, {projects, baseUrl, local, loadFileFunc, getAllCodeFunc }) {
+  const isWorker = typeof window == 'undefined' && typeof self != 'undefined'
+  baseUrl = baseUrl || isWorker && typeof location != 'undefined' && location.origin || ''
+  jb_loadFile = loadFileFunc || (local ? jb_loadFileLocal : jb_loadFileToFrame)
+  getAllCode = getAllCodeFunc || getAllCodeFromHttp
   const jb = { uri }
-  if (!local)
+  if (!local && typeof self != 'undefined')
     self.jb = jb
+  if (!local && typeof global != 'undefined')
+    global.jb = jb
   const coreFiles= jb_modules.core.map(x=>`/${x}`)
   await coreFiles.reduce((pr,url) => pr.then(()=> jb_loadFile(url,baseUrl,jb)), Promise.resolve())
   jb.noCodeLoader = false
-  const src = [...await fetch(baseUrl+'?op=getAllCode&path=src&exclude=puppeteer|pptr-|pack-|jb-loader').then(x=>x.json())].filter(x=>coreFiles.indexOf(x.path) == -1)
+  const src = [...await getAllCode('src','','puppeteer|pptr-|pack-|jb-loader')].filter(x=>coreFiles.indexOf(x.path) == -1)
   let projectsCode = []
-  await projects.reduce((promise,project) => promise.then(() => fetch(baseUrl+`?op=getAllCode&path=projects/${project}`).then(x=>x.json())
+  await projects.reduce((promise,project) => promise.then(() => getAllCode(`projects/${project}`)
     .then(items =>projectsCode = projectsCode.concat(items)) ), Promise.resolve() )
   const ns = jb.utils.unique([...src,...projectsCode,{ns: ['Var','remark']}].flatMap(x=>x.ns))
   const libs = jb.utils.unique([...src,...projectsCode].flatMap(x=>x.libs))
@@ -388,6 +391,12 @@ async function jb_codeLoaderServer(uri, {projects, baseUrl, local }) {
 
   return jb
 
+  async function getAllCodeFromHttp(path,include,exclude) {
+    const inc = include ? `&include=${include}` : ''
+    const exc = exclude ? `&exclude=${exclude}` : ''
+    return fetch(`${baseUrl}?op=getAllCode&path=${path}${inc}${exc}`).then(x=>x.json())
+  }
+
   async function jb_loadFileLocal(url, baseUrl,jb) {
     const code = await fetch(baseUrl+url).then(x=>x.text())
     const funcId = '__'+url.replace(/[^a-zA-Z0-9]/g,'_')
@@ -397,7 +406,7 @@ async function jb_codeLoaderServer(uri, {projects, baseUrl, local }) {
   }
 
   function jb_loadFileToFrame(url, baseUrl) {
-    const isWorker = typeof window == 'undefined'
+    const isWorker = typeof window == 'undefined' && typeof self != 'undefined'
     if (isWorker) {
       return Promise.resolve(importScripts(baseUrl+url))
     } else {

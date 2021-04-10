@@ -265,28 +265,23 @@ jb.component('studio.openResponsivePhonePopup', {
           ],
           features: css.padding({top: '7', left: '4', right: '4'})
         }),
-        group({
-          title: 'Zoom',
-          style: propertySheet.titlesAbove({}),
-          controls: [
-            editableNumber({
-              databind: '%$studio/preview/zoom%',
-              title: 'zoom',
-              style: editableNumber.mdcSliderNoText({}),
-              symbol: '',
-              min: '1',
-              max: '20',
-              displayString: '%%px'
-            })
-          ],
-          features: css.margin({left: '10', bottom: '10'})
-        })
+        // group({
+        //   title: 'Zoom',
+        //   style: propertySheet.titlesAbove({}),
+        //   controls: [
+        //     editableNumber({
+        //       databind: '%$studio/preview/zoom%',
+        //       title: 'zoom',
+        //       style: editableNumber.mdcSliderNoText({}),
+        //       symbol: '',
+        //       min: '1',
+        //       max: '20',
+        //       displayString: '%%px'
+        //     })
+        //   ],
+        //   features: css.margin({left: '10', bottom: '10'})
+        // })
       ],
-      features: followUp.onDataChange({
-        ref: '%$studio/preview%',
-        includeChildren: 'yes',
-        action: studio.setPreviewSize({ width: '%$studio/preview/width%', height: '%$studio/preview/height%', zoom: '%$studio/preview/zoom%'})
-      })
     }),
     title: 'responsive'
   })

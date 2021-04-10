@@ -108,8 +108,7 @@ jb.component('studio.selectProfile', {
                   )
                 ),
               '%pts%',
-              ({data}) => ({ id: data, desc: jb.studio.previewjb.comps[data
-].description }),
+              ({data}) => ({ id: data, desc: jb.comps[data].description }),
               itemlistContainer.filter(),
               '%id%',
               unique('%%', '%%')
@@ -472,12 +471,9 @@ jb.component('studio.newComp', {
     {id: 'file', as: 'string'},
   ],
   impl: (ctx, compName, compContent,file) => {
-    const _jb = jb.studio.previewjb
-    _jb.component(compName, _jb.frame.JSON.parse(JSON.stringify({...compContent, type: '_'})))
+    jb.component(compName, jb.frame.JSON.parse(JSON.stringify({...compContent, type: '_'})))
     const path = (jb.frame.jbBaseProjUrl || '') + jb.studio.host.pathOfJsFile(ctx.exp('%$studio/project%'), file)
-//    const projectFile = file || jb.entries(_jb.comps).map(e=>e[1][_jb.core.location][0]).filter(x=> x && x.indexOf(filePattern) != -1)[0]
-    _jb.comps[compName][_jb.core.location] = [path,'new']
-    // fake change to trigger refresh page and save
+    jb.comps[compName][jb.core.location] = [path,'new']
     jb.studio.writeValue(jb.studio.refOfPath(`${compName}~type`),compContent.type || '',ctx)
   }
 })

@@ -191,7 +191,7 @@ jb.extension('studio','highlight', {
     jb.delay(1000).then(()=>jb.studio.getOrCreateHighlightBox(elems[0]).innerHTML = ''); // clean after the fade animation
   },
   refreshStudioComponent(path) { // editing the studio...
-    jb.comps[path[0]] = jb.studio.previewjb.comps[path[0]]
+    jb.comps[path[0]] = jb.comps[path[0]]
     const pathStr = Array.isArray(path) ? path.join('~') : path;
     const {elem, ctxId} = jb.studio.findElemsByPathCondition(path => pathStr.indexOf(path) == 0)[0] || {}
     const ctx = jb.ctxDictionary[ctxId]

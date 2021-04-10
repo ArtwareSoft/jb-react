@@ -45,12 +45,12 @@ jb.extension('studio', 'path', {
 		jb.watchableComps.handler.makeWatchable && jb.watchableComps.handler.makeWatchable(_path[0])
 		const ref = jb.watchableComps.handler.refOfPath(_path,silent)
 		if (!ref) return
-		ref.jbToUse = jb.studio.previewjb
+		ref.jbToUse = jb
 		return ref
   },
   parentPath: path => path.split('~').slice(0,-1).join('~'),
   parents: path => path.split('~').reduce((acc,last,i) => acc.concat(i ? [acc[acc.length-1],last].join('~') : last),[]).reverse(),
-  valOfPath: path => jb.path(jb.studio.previewjb.comps,path.split('~')),
+  valOfPath: path => jb.path(jb.comps,path.split('~')),
   compNameOfPath: (path,silent) => {
     if (path.indexOf('~') == -1)
       return 'jbComponent'
@@ -75,8 +75,8 @@ jb.extension('studio', 'path', {
   compOfPath: (path,silent) => jb.studio.getComp(jb.studio.compNameOfPath(path,silent)),
   paramsOfPath: (path,silent) => jb.utils.compParams(jb.studio.compOfPath(path,silent)),
   writeValueOfPath: (path,value,ctx) => jb.studio.writeValue(jb.studio.refOfPath(path),value,ctx),
-  getComp: id => jb.studio.previewjb.comps[id],
-  compAsStr: id => jb.utils.prettyPrintComp(id,jb.studio.getComp(id),{comps: jb.studio.previewjb.comps}),
+  getComp: id => jb.comps[id],
+  compAsStr: id => jb.utils.prettyPrintComp(id,jb.studio.getComp(id)),
   isStudioCmp: id => jb.path(jb.comps,[id,jb.core.project]) == 'studio'
 })
 

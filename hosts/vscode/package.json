@@ -1,12 +1,16 @@
 {
 	"name": "jbart-studio",
 	"displayName": "jBart Studio",
-	"description": "Javascript Visual Editor for material design, puppeteer, d3, rxjs/callbag, and more (alpha)",
-	"version": "0.6.8",
+	"description": "jBart Visual Editor",
+	"version": "0.6.9",
 	"publisher": "artwaresoft",
 	"engines": {
-		"vscode": "^1.38.0"
+		"vscode": "^1.50.0"
 	},
+	"extensionKind": [
+		"ui",
+		"workspace"
+	],
 	"categories": [
 		"Other"
 	],
@@ -14,12 +18,29 @@
 	"keywords": ["javascript", "visual programming", "visual", "html5", "web development", "css"],
 	"repository": "https://github.com/Artwaresoft/jb-react",
 	"activationEvents": [
-		"onCommand:jb.studio.openJbEditor",
-		"onCommand:jb.studio.openProperties",
-		"onWebviewPanel:jb.studio"
+		"onView:jbart.jbEditor",
+		"onCommand:jb.studio.openJbEditor"
 	],
-	"main": "extension.js",
+	"main": "vscode-ext.js",
 	"contributes": {
+		"viewsContainers": {
+			"activitybar": [
+			  {
+				"id": "jbart",
+				"title": "jBart",
+				"icon": "logo128.png"
+			  }
+			]
+		},		
+		"views": {
+			"jbart": [
+				{
+					"type": "webview",
+					"id": "jbart.jbEditor",
+					"name": "inteliscript"
+				}
+			]
+		},		
 		"commands": [
 			{
 				"command": "jb.studio.openJbEditor",

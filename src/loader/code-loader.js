@@ -154,3 +154,10 @@ jb.component('codeLoader.getCode', {
         return jb.codeLoader.code(treeShake)
     }
 })
+
+jb.component('codeLoader.getCodeFromRemote', {
+    params: [
+        {id: 'ids', as: 'string'}
+    ],
+    impl: (ctx,ids) => jb.codeLoader.getCodeFromRemote(ids)
+})

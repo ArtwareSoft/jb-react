@@ -61,16 +61,17 @@ jb.component('text.alignToBottom', {
   })
 })
 
-jb.defComponents('1,2,3,4,5,6'.split(','), level=> `header.h${level}`, level => ({
-  type: 'text.style',
-  params: [
-    { id: 'level', as: 'string', defaultValue: level }
-  ],
-  impl: customStyle({
-    template: (cmp,{text,level},h) => h(`h${level}`,{},text),
-    features: text.bindText()
-  })
-}))
+jb.defComponents('1,2,3,4,5,6'.split(','), 
+  level=> jb.component(`header.h${level}`, ({
+    type: 'text.style',
+    params: [
+      { id: 'level', as: 'string', defaultValue: level }
+    ],
+    impl: customStyle({
+      template: (cmp,{text,level},h) => h(`h${level}`,{},text),
+      features: text.bindText()
+    })
+})))
 
 jb.component('text.h2WithClass', {
   type: 'text.style:0',
@@ -83,11 +84,17 @@ jb.component('text.h2WithClass', {
   })
 })
 
-jb.defComponents('1,2,3,4,5,6'.split(','), level=> `header.mdcHeadline${level}`, 
-  level => ({type: 'text.style', impl: {$: 'text.h2WithClass', clz: `mdc-typography mdc-typography--headline${level}`}}))
+jb.defComponents('1,2,3,4,5,6'.split(','), 
+  level=> jb.component(`header.mdcHeadline${level}`, 
+    ({type: 'text.style', impl: {$: 'text.h2WithClass', clz: `mdc-typography mdc-typography--headline${level}`}})
+))
 
-jb.defComponents('1,2'.split(','), level=> `header.mdcSubtitle${level}`, 
-  level => ({type: 'text.style', impl: {$: 'text.h2WithClass', clz: `header.mdcSubtitle${level}`}}))
+jb.defComponents('1,2'.split(','), 
+  level=> jb.component(`header.mdcSubtitle${level}`, 
+    ({type: 'text.style', impl: {$: 'text.h2WithClass', clz: `header.mdcSubtitle${level}`}})
+))
 
-jb.defComponents('1,2'.split(','), level=> `header.mdcBody${level}`, 
-  level => ({type: 'text.style', impl: {$: 'text.h2WithClass', clz: `mdc-typography mdc-typography--body${level}`}}))
+jb.defComponents('1,2'.split(','), 
+  level => jb.component(`header.mdcBody${level}`, 
+    ({type: 'text.style', impl: {$: 'text.h2WithClass', clz: `mdc-typography mdc-typography--body${level}`}})
+))

@@ -1,5 +1,5 @@
 Object.assign(jb, {
-    defComponents: (items,id,def) => items.forEach(item=>jb.component(id(item), def(item)))
+    defComponents: (items,def) => items.forEach(item=>def(item))
 })
 
 jb.extension('macro', {

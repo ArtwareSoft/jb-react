@@ -100,10 +100,11 @@ jb.component('editableNumber.mdcSliderNoText', {
         ])
       ]),
     features: [
+      frontEnd.requireExternalLibrary(['material-components-web.js','css/font.css','css/material.css']),
       field.databind(),
       slider.init(),
       frontEnd.init((ctx,{cmp}) => {
-        cmp.mdcSlider = new jb.ui.material.MDCSlider(cmp.base)
+        cmp.mdcSlider = new jb.frame.mdc.slider.MDCSlider(cmp.base)
         cmp.mdcSlider.listen('MDCSlider:change', () => ctx.run(action.runBEMethod('assignIgnoringUnits', ()=> cmp.mdcSlider.value)))
       }),
       frontEnd.onRefresh((ctx,{cmp,el}) => {

@@ -3,10 +3,10 @@ jb.extension('statistics', {
 })
 
 jb.defComponents('sum,sumsqrd,sumsqerr,sumrow,product,min,max,mean,meansqerr,geomean,median,cumsum,cumprod,diff,rank,mode,range,variance,pooledvariance,deviation,stdev,pooledstdev,meandev,meddev,skewness,kurtosis,coeffvar,quartiles,quantiles,percentile,percentileOfScore,histogram,covariance,corrcoeff'.split(','),
-    f=>`stat.${f}`, f=> ({
+    f => jb.component(`stat.${f}`, ({
         type: 'aggregator',
         impl: ({data}) => Array.isArray(data) ? jb.stat[f](data) : []
-}))
+})))
 
 jb.component('stat.groupBy', {
     type: 'aggregator',

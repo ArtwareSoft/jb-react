@@ -35,7 +35,6 @@ jb.extension('studioCompletion', {
     },
     hint(text, token, ctx) {
         const defaultType = 'control'
-        const previewjb = jb.studio.previewjb
 
         const cleanStringContent = txt=>txt.replace(/,|{|}|\$/g,'')
         const cleaned = text.replace(/'[^']*'/g, cleanStringContent).replace(/"[^"]*"/g, cleanStringContent).replace(/`[^`]*`/gm, cleanStringContent);
@@ -43,12 +42,12 @@ jb.extension('studioCompletion', {
         const pt = ptOfProfile(profile_str)
         if (pt) {
             if (/^\s*,/.test(token) || /,\s*$/.test(profile_str))
-                return jb.utils.compParams(previewjb.comps[pt]).map(prop =>({ type: 'prop', prop, displayText: prop.id }) )
+                return jb.utils.compParams(jb.comps[pt]).map(prop =>({ type: 'prop', prop, displayText: prop.id }) )
             if ((/^'/.test(token) || /\s*'$/.test(profile_str))) {
                 const profile_str = extractProfileStr(cleaned)
                 const currentProp = (profile_str.match(/([\$0-9A-Za-z_]*)\s*:[\s|\[]*$/) || ['',''])[1]
-                const options = previewjb.comps[pt] ? 
-                    (jb.utils.compParams(previewjb.comps[pt]).filter(p=>p.id == currentProp)[0] || {}).options || '' : ''
+                const options = jb.comps[pt] ? 
+                    (jb.utils.compParams(jb.comps[pt]).filter(p=>p.id == currentProp)[0] || {}).options || '' : ''
                 return options.split(',').map(opt => ({ type: 'enum', displayText: opt}))
             }
         }
@@ -59,8 +58,8 @@ jb.extension('studioCompletion', {
         const path = this.pathOfText(cleaned)
         const currentProp = typeof path.slice(-2)[0] == 'number' ? path.slice(-3)[0] : path.slice(-2)[0];
         //(parentProfile.match(/([\$0-9A-Za-z_]*)\s*:\s*$/) || ['',''])[1]
-        const type = previewjb.comps[parentPt] ? 
-            (jb.utils.compParams(previewjb.comps[parentPt]).filter(p=>p.id == currentProp)[0] || {}).type || 'data' 
+        const type = jb.comps[parentPt] ? 
+            (jb.utils.compParams(jb.comps[parentPt]).filter(p=>p.id == currentProp)[0] || {}).type || 'data' 
             : defaultType
         return jb.studio.PTsOfType(type).map(pt=>({ type: 'pt', displayText: pt}));
 
@@ -106,7 +105,7 @@ jb.extension('studioCompletion', {
                 if (option.type == 'prop') {
                     const separator = /,\s*$/.test(textToToken) ? '' : ','
                     const space = /\s+$/.test(textToToken) ? '' : ' '
-                    let value = option.prop.defaultValue && jb.utils.prettyPrint(option.prop.defaultValue,{comps: jb.studio.previewjb.comps})
+                    let value = option.prop.defaultValue && jb.utils.prettyPrint(option.prop.defaultValue,{comps: jb.comps})
                     value = value || ((option.prop.type &&  option.prop.type != 'data') ? "{$: '' }" : "''")
                     const spaceBeforeValue = value.indexOf('$') == -1 ? ' ' : ''
                     const spaceBeforeColon = value.indexOf('$') == -1 ? '' : ' '

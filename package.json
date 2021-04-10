@@ -38,6 +38,7 @@
     "studio": "bin/studio"
   },
   "dependencies": {
+    "@types/vscode": "^1.55.0",
     "node-fetch": "^2.6.0"
   },
   "devDependencies": {

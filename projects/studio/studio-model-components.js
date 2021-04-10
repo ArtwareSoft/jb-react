@@ -61,7 +61,7 @@ jb.component('studio.categoriesOfType', {
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,_type,path) => {
-		var comps = jb.studio.previewjb.comps;
+		var comps = jb.comps;
 		var pts = jb.studio.PTsOfType(_type);
 		var categories = jb.utils.unique([].concat.apply([],pts.map(pt=>
 			(comps[pt].category||'').split(',').map(c=>c.split(':')[0])

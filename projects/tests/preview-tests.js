@@ -2,6 +2,7 @@ jb.component('sampleProject.main', {
   impl: group({
     controls: text('hello'),
     features: [
+//      group.wait(delay(100)),
       variable('var1','world'),
       variable('xx','xx')
     ]
