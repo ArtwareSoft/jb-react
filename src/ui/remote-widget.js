@@ -1,5 +1,3 @@
-// var {rx, remote, widget, jbm} = jb.ns('remote,rx,widget,jbm')
-
 jb.component('widget.frontEndCtrl', {
     type: 'control',
     params: [
@@ -116,7 +114,8 @@ jb.component('remote.widgetFrontEnd', {
                     rx.log('remote widget userReq'),
                     rx.filter('%widgetId% == %$widgetId%'),
                     rx.takeWhile(({data}) => data.$ != 'destroy',true),
-             ), '%$jbm%' ),
+             ), 
+             '%$jbm%' ),
             widget.headless('%$control()%','%$widgetId%'),
             sink.action(remote.action(action.frontEndDelta('%%'),'%$jbm%'))
         )

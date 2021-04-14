@@ -89,9 +89,6 @@ class jBartStudio {
     }
 
     studioHtml(jbModuleUrl, jbBaseProjUrl, jbProjectSettings, jbDocsDiffFromFiles) {
-    }
-
-    studioHtmlOld(jbModuleUrl, jbBaseProjUrl, jbProjectSettings, jbDocsDiffFromFiles) {
         const studioBin = `<script type="text/javascript" src="${jbModuleUrl}/bin/studio/studio-all.js"></script>
         <link rel="stylesheet" type="text/css" href="${jbModuleUrl}/bin/studio/css/studio-all.css"/>`
 

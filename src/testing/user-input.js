@@ -11,7 +11,7 @@ jb.component('userInput.eventToRequest', {
 jb.component('userInput.click', {
     type: 'user-input',
     params: [
-      {id: 'selector', as: 'string'},
+      {id: 'selector', as: 'string', defaultValue: 'button'},
       {id: 'methodToActivate', as: 'string'}
     ],
     impl: (ctx,selector,methodToActivate) => ({ type: 'click', selector, specificMethod: methodToActivate })

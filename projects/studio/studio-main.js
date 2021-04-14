@@ -80,23 +80,23 @@ jb.component('studio.refreshPreview', {
   impl: {}
 })
 
-jb.component('studio.vscode', {
-  type: 'control',
-  impl: group({
-    controls: [
-      studio.vscodeTopBar(),
-      group({
-        controls: [],
-        features: id('preview-parent')
-      }),
-      studio.ctxCounters()
-    ],
-    features: [
-        feature.requireService(studio.autoSaveService()),
-        feature.requireService(studio.vsCodeAdapterService('studio'))
-    ]
-  })
-})
+// jb.component('studio.vscode', {
+//   type: 'control',
+//   impl: group({
+//     controls: [
+//       studio.vscodeTopBar(),
+//       group({
+//         controls: [],
+//         features: id('preview-parent')
+//       }),
+//       studio.ctxCounters()
+//     ],
+//     features: [
+//         feature.requireService(studio.autoSaveService()),
+//         feature.requireService(studio.vsCodeAdapterService('studio'))
+//     ]
+//   })
+// })
 
 jb.component('dataResource.studio', {
   watchableData: {

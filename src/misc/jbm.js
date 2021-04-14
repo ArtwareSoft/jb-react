@@ -243,14 +243,15 @@ jb.component('startup.codeLoaderServer', {
     impl: ({vars}, projects, init) => `(function() { 
 jb_modules = { core: ${JSON.stringify(jb_modules.core)} };
 ${jb_codeLoaderServer.toString()}
-return jb_codeLoaderServer('${vars.uri}',${JSON.stringify({projects, baseUrl: vars.baseUrl, local: vars.local})})
+${jb_evalCode.toString()}
+return jb_codeLoaderServer('${vars.uri}',${JSON.stringify({projects, baseUrl: vars.baseUrl, multipleInFrame: vars.multipleJbmsInFrame})})
     .then(jb => { jb.exec(${JSON.stringify(init.profile || {})}); return jb })
 })()`
 })
 
 jb.component('startup.codeLoaderClient', {
     type: 'startupCode',
-    impl: ({vars}) => vars.local ? `(function () {
+    impl: ({vars}) => vars.multipleJbmsInFrame ? `(function () {
 const jb = { uri: '${vars.uri}'}
 self.jbLoadingPhase = 'libs'
 ${jb.codeLoader.clientCode()};
@@ -278,10 +279,11 @@ jb.component('jbm.worker', {
         if (childsOrNet[name]) return childsOrNet[name]
         const workerUri = networkPeer ? name : `${jb.uri}•${name}`
         const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
-        const code = startupCode(ctx.setVars({uri: workerUri, local: false}))
+        const code = startupCode(ctx.setVars({uri: workerUri, multipleJbmsInFrame: false}))
         const workerCode = `
 jb_modules = { core: ${JSON.stringify(jb_modules.core)} };
 ${jb_codeLoaderServer.toString()}
+${jb_evalCode.toString()}
 function jb_loadFile(url, baseUrl) { 
     baseUrl = baseUrl || location.origin || ''
     return Promise.resolve(importScripts(baseUrl+url)) 
@@ -309,7 +311,7 @@ jb.component('jbm.child', {
     impl: (ctx,name,startUpCode,init) => {
         if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
         const childUri = `${jb.uri}•${name}`
-        const code = startUpCode(ctx.setVars({uri: childUri, local: true}))
+        const code = startUpCode(ctx.setVars({uri: childUri, multipleJbmsInFrame: true}))
         const _child = jb.frame.eval(`${code}
 //# sourceURL=${childUri}-startup.js
 `)

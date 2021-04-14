@@ -1,5 +1,3 @@
-// var {openDialog, dialog,dialogs, dialogFeature, and, or, runActionOnItems, getSessionStorage, userStateProp } = jb.ns('dialog,dialogs,openDialog,dialogFeature')
-
 jb.component('openDialog', {
   type: 'action,has-side-effects',
   params: [
@@ -9,7 +7,11 @@ jb.component('openDialog', {
     {id: 'menu', type: 'control', dynamic: true},
 	{id: 'onOK', type: 'action', dynamic: true},
 	{id: 'id', as: 'string'},
-    {id: 'features', type: 'dialog-feature[]', dynamic: true}
+    {id: 'features', type: 'dialog-feature[]', dynamic: true},
+	{id: 'doOpen', type: 'action', dynamic: true, defaultValue: runActions(
+		dialog.createDialogTopIfNeeded(),
+		action.subjectNext(dialogs.changeEmitter(), obj(prop('open',true), prop('dialog', '%$$dialog%')))
+	)}
   ],
   impl: ctx => {
 	const $dialog = { id: ctx.params.id || `dlg-${ctx.id}`, launcherCmpId: ctx.exp('%$cmp/cmpId%') }
@@ -19,32 +21,15 @@ jb.component('openDialog', {
 		formContainer: { err: ''},
 	})
 	$dialog.ctx = ctxWithDialog
-	ctxWithDialog.run(runActions(
-		dialog.createDialogTopIfNeeded(),
-		action.subjectNext(dialogs.changeEmitter(), obj(prop('open',true), prop('dialog', '%$$dialog%')))
-	))
-}
-  
-//   runActions(
-// 	Var('$dlg',(ctx,{},{id}) => {
-// 		const dialog = { id: id || `dlg-${ctx.id}`, launcherCmpId: ctx.exp('%$cmp/cmpId%') }
-// 		const ctxWithDialog = ctx.cmpCtx._parent.setVars({
-// 			$dialog: dialog,
-// 			dialogData: {},
-// 			formContainer: { err: ''},
-// 		})
-// 		dialog.ctx = ctxWithDialog
-// 		return dialog
-// 	}),
-// 	dialog.createDialogTopIfNeeded(),
-// 	action.subjectNext(dialogs.changeEmitter(), obj(prop('open',true), prop('dialog','%$$dlg%')))
-//   )
+	ctx.params.doOpen(ctxWithDialog)
+  }
 })
 
 jb.component('openDialog.probe', {
 	type: 'control:0',
 	params: jb.comps.openDialog.params,
-	impl: ctx => jb.ui.ctrl(ctx.setVar('$dialog',{}), dialog.init()).renderVdom()
+	impl: ctx => jb.ui.ctrl(ctx.setVar('$dialog',{}), {$: 'dialog.init'}).renderVdom(),
+	require: {$: 'dialog.init'}
 })
 
 jb.component('dialog.init', {
@@ -69,7 +54,8 @@ jb.component('dialog.buildComp', {
 	params: [
 		{id: 'dialog', defaultValue: '%$$dialog%' },
 	],
-	impl: (ctx,dlg) => jb.ui.ctrl(dlg.ctx, dialog.init())
+	impl: (ctx,dlg) => jb.ui.ctrl(dlg.ctx, {$: 'dialog.init'}),
+	require: {$: 'dialog.init'}
 })
 
 jb.component('dialog.createDialogTopIfNeeded', {
@@ -77,16 +63,19 @@ jb.component('dialog.createDialogTopIfNeeded', {
 	impl: (ctx) => {
 		const widgetBody = jb.ui.widgetBody(ctx)
 		if (widgetBody.querySelector(':scope>.jb-dialogs')) return
-		const vdom = ctx.run(dialog.dialogTop()).renderVdomAndFollowUp()
+		const vdom = ctx.run({$: 'dialog.dialogTop'}).renderVdomAndFollowUp()
 		if (ctx.vars.headlessWidget && widgetBody instanceof jb.ui.VNode) {
+			jb.log('dialog headless createTop',{vdom,widgetBody})
 			widgetBody.children.push(vdom)
 			vdom.parentNode = widgetBody
-			jb.log('dialog headless createTop',{vdom,widgetBody})
+			const delta = { children: { toAppend: [jb.ui.stripVdom(vdom)] }}
+			jb.ui.renderingUpdates.next({delta ,widgetId: ctx.vars.headlessWidgetId})
 		} else {
 			jb.ui.render(vdom,widgetBody)
 			jb.log('dialog dom createTop',{vdom,widgetBody})
 		}
-	}
+	},
+	require: {$: 'dialog.dialogTop'}
 })
 
 jb.component('dialog.closeDialog', {
@@ -479,9 +468,10 @@ jb.component('dialogs.changeEmitter', {
 	impl: (ctx,_widgetId) => {
 		const widgetId = !ctx.vars.previewOverlay && _widgetId || 'default'
 		jb.ui.dlgEmitters = jb.ui.dlgEmitters || {}
-		jb.ui.dlgEmitters[widgetId] = jb.ui.dlgEmitters[widgetId] || ctx.run(rx.subject({replay: true}))
+		jb.ui.dlgEmitters[widgetId] = jb.ui.dlgEmitters[widgetId] || ctx.run({$: 'rx.subject', replay: true})
 		return jb.ui.dlgEmitters[widgetId]
-	}
+	},
+	require: {$: 'rx.subject'}
 })
 
 jb.component('dialogs.destroyAllEmitters', {

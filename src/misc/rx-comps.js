@@ -24,7 +24,8 @@ jb.component('source.callbag', {
   params: [
     {id: 'callbag', mandatory: true, description: 'callbag source function'},
   ],
-  impl: (ctx,callbag) => jb.callbag.map(x=>ctx.dataObj(x))(callbag || jb.callbag.fromIter([]))
+  impl: (ctx,callbag) => 
+    jb.callbag.map(x=>ctx.dataObj(x))(callbag || jb.callbag.fromIter([]))
 })
   
 jb.component('source.event', {
@@ -69,7 +70,8 @@ jb.component('rx.pipe', {
   params: [
     {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, dynamic: true, templateValue: []}
   ],
-  impl: (ctx,elems) => jb.callbag.pipe(...jb.callbag.injectSniffers(elems(ctx).filter(x=>x),ctx))
+  impl: (ctx,elems) => 
+    jb.callbag.pipe(...jb.callbag.injectSniffers(elems(ctx).filter(x=>x),ctx))
 })
 
 jb.component('rx.merge', {

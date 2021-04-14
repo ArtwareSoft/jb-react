@@ -180,7 +180,8 @@ jb.component('action.applyDeltaToCmp', {
     {id: 'cmpId', as: 'string', mandatory: true },
     {id: 'assumedVdom' },
   ],
-  impl: (ctx,delta,cmpId,assumedVdom) => jb.ui.applyDeltaToCmp({ctx,delta,cmpId,assumedVdom})
+  impl: (ctx,delta,cmpId,assumedVdom) => 
+    jb.ui.applyDeltaToCmp({ctx,delta,cmpId,assumedVdom})
 })
 
 jb.component('sink.applyDeltaToCmp', {

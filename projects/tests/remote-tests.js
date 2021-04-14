@@ -1,5 +1,3 @@
-// var { remoteTest} = jb.ns('remoteTest,widget')
-
 jb.component('remoteTest.childJbm', {
     impl: dataTest({
       timeout: 1000,
@@ -275,10 +273,14 @@ jb.component('remoteWidgetTest.FE.button', {
     timeout: 3000,
     action: runActions(
       jbm.child('jbxServer'),
-      remote.action(remote.widgetFrontEnd({ control: button('hello world'), jbm: jbm.byUri('tests•jbxServer'), selector: '.aa' } ), jbm.worker()),
+      remote.action(remote.widgetFrontEnd({ 
+        control: button('hello world'), 
+        jbm: jbm.byUri('tests•jbxServer'), 
+        selector: '.xRoot' 
+      } ), jbm.worker()),
       uiAction.waitForSelector('button')
     ),
-    control: text({text: '', features: css.class('aa')}),
+    control: group({controls: [], features: css.class('xRoot')}),
     expectedResult: contains('hello')
   })
 })
@@ -305,6 +307,33 @@ jb.component('remoteWidgetTest.changeText', {
   })
 })
 
+jb.component('remoteWidgetTest.FE.changeText', {
+  impl: uiFrontEndTest({
+    renderDOM: true,
+    timeout: 3000,
+    action: runActions(
+      jbm.child('jbxServer'),
+      remote.action(remote.widgetFrontEnd({ 
+        control: group({
+          controls: [
+            text({ text: 'hey %$fName%', features: watchRef('%$fName%')}),
+            editableText({databind:'%$fName%'})
+          ],
+          features: watchable('fName','Dan'),
+        }), 
+        jbm: jbm.byUri('tests•jbxServer'), 
+        selector: '.xRoot' 
+      } ), jbm.worker()),
+      uiAction.waitForSelector('input'),
+      uiAction.setText('danny'),
+      uiAction.keyboardEvent({selector: 'input', type: 'keyup'}),
+      uiAction.waitForSelector('[cmp-ver="2"]'),
+    ),
+    control: group({controls: [], features: css.class('xRoot')}),
+    expectedResult: contains('hey danny')
+  })
+})  
+
 jb.component('remoteWidgetTest.buttonClick', {
   impl: uiTest({
     timeout: 1000,
@@ -312,7 +341,7 @@ jb.component('remoteWidgetTest.buttonClick', {
       group({
         controls: [
           text('%$fName%'),
-          button({label: 'change', action: writeValue('%$fName%','danny') })
+          button({title: 'change', action: writeValue('%$fName%','danny') })
         ],
         features: watchable('fName','Dan'),
       }),
@@ -320,10 +349,26 @@ jb.component('remoteWidgetTest.buttonClick', {
     ),
     userInputRx: rx.pipe(
       source.promise(uiAction.waitForSelector('button')),
-      rx.map(userInput.click('button')),
+      rx.map(userInput.click()),
     ),
     checkResultRx: () => jb.ui.renderingUpdates,
     expectedResult: contains('danny')
+  })
+})
+
+jb.component('remoteWidgetTest.dialog', {
+  impl: uiTest({
+    timeout: 1000,
+    control: remote.widget(
+      button({title: 'open', action: openDialog({title: 'hello', content: group()})}),
+      jbm.worker()
+    ),
+    userInputRx: rx.pipe(
+      source.promise(uiAction.waitForSelector('button')),
+      rx.map(userInput.click()),
+    ),
+    checkResultRx: () => jb.ui.renderingUpdates,
+    expectedResult: contains('hello')
   })
 })
 

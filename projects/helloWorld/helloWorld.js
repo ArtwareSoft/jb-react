@@ -1,5 +1,3 @@
-// jb.ns('helloWorld')
-
 jb.component('dataResource.people', {
   watchableData: [
     {
@@ -30,5 +28,4 @@ jb.component('helloWorld.main', {
       })
     ]
   }),
-  location: ['8082/projects/helloWorld/helloWorld.js', '21']
 })

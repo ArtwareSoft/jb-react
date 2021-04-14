@@ -29,7 +29,9 @@ jb.extension('remoteCtx', {
         if (typeof data == 'object' && data.comps)
             return { uri : data.uri}
         if (typeof data == 'object')
-             return jb.objFromEntries(jb.entries(data).filter(e=> typeof e[1] != 'function').map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
+             return jb.objFromEntries(jb.entries(data)
+                .filter(e=> data.$ || typeof e[1] != 'function') // if not a profile, block functions
+                .map(e=>[e[0],jb.remoteCtx.stripData(e[1])]))
     },
     stripFunction(f) {
         const {profile,runCtx,path,param,srcPath} = f

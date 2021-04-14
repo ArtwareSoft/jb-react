@@ -21,7 +21,7 @@
 		"onView:jbart.jbEditor",
 		"onCommand:jb.studio.openJbEditor"
 	],
-	"main": "vscode-ext.js",
+	"main": "vscode-loader.js",
 	"contributes": {
 		"viewsContainers": {
 			"activitybar": [
