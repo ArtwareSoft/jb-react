@@ -36,7 +36,9 @@ jb.extension('ui', 'frontend', {
             if (toRun.length == 0 && !silent)
                 return jb.logError(`frontEnd - no method ${method}`,{cmp: {...this}})
             toRun.forEach(({path}) => jb.utils.tryWrapper(() => {
-                const profile = path.split('~').reduce((o,p)=>o[p],jb.comps)
+                const profile = path.split('~').reduce((o,p)=>o && o[p],jb.comps)
+                if (!profile)
+                    return jb.logError('runFEMethod - can not get profile',{method, path})
                 const srcCtx = new jb.core.jbCtx(this.ctx, { profile, path, forcePath: path })
                 const feMEthod = jb.core.run(srcCtx)
                 const el = this.base
@@ -56,7 +58,9 @@ jb.extension('ui', 'frontend', {
         enrichUserEvent(ev, userEvent) {
             (this.base.frontEndMethods || []).filter(x=>x.method == 'enrichUserEvent').map(({path}) => jb.utils.tryWrapper(() => {
                 const actionPath = path+'~action'
-                const profile = actionPath.split('~').reduce((o,p)=>o[p],jb.comps)
+                const profile = actionPath.split('~').reduce((o,p)=>o && o[p],jb.comps)
+                if (!profile)
+                    return jb.logError('enrichUserEvent - can not get profile',{method, path})
                 const vars = {cmp: this, $state: this.state, el: this.base, ...this.base.vars, ev, userEvent }
                 Object.assign(userEvent, jb.core.run( new jb.core.jbCtx(this.ctx, { vars, profile, path: actionPath })))
             }, 'enrichUserEvent',this.ctx))

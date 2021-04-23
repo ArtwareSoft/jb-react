@@ -1,7 +1,7 @@
 jb.extension('spy', {
 	initExtension() {
 		// jb.spy._log() -- for codeLoader
-		Object.assign(this, {
+		return {
 			logs: [],
 			settings: { 
 				includeLogs: 'exception,error',
@@ -9,7 +9,7 @@ jb.extension('spy', {
 				MAX_LOG_SIZE: 10000
 			},
 			Error: jb.frame.Error
-		})
+		}
 	},
 	initSpyByUrl() {
 		const frame = jb.frame
@@ -27,6 +27,7 @@ jb.extension('spy', {
 		jb.spy.includeLogsInitialized = false
 		jb.spy._obs = jb.callbag.subject()
 		return jb.spy
+		// for loader - jb.spy.clear(), jb.spy.search()
 	},
 
 	memoryUsage: () => jb.path(jb.frame,'performance.memory.usedJSHeapSize'),
@@ -83,7 +84,7 @@ jb.extension('spy', {
 			jb.spy.logs = jb.spy.logs.slice(-1* jb.spy.settings.MAX_LOG_SIZE)
 		jb.spy._obs && jb.spy._obs.next(record)
 	},
-	frameAccessible(frame) { try { return Boolean(frame.document || frame.contentDocument) } catch(e) { return false } },
+	frameAccessible(frame) { try { return Boolean(frame.document || frame.contentDocument || frame.global) } catch(e) { return false } },
 	source(takeFrom) {
 		jb.spy.Error.stackTraceLimit = 50
 		const frames = [jb.frame]

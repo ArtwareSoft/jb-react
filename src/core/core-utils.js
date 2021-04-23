@@ -167,9 +167,11 @@ jb.extension('utils', { // generic utils
       })
       return res;
     },
-    sessionStorage: (id,val) => val == undefined ? JSON.parse(jb.frame.sessionStorage.getItem(id)) : jb.frame.sessionStorage.setItem(id,JSON.stringify(val)),
+    sessionStorage(id,val) {
+      if (!jb.frame.sessionStorage) return
+      return val == undefined ? JSON.parse(jb.frame.sessionStorage.getItem(id)) : jb.frame.sessionStorage.setItem(id,JSON.stringify(val))
+    },
     eval: (str,frame) => { try { return (frame || jb.frame).eval('('+str+')') } catch (e) { return Symbol.for('parseError') } },
-
 })
 
 // common generic promoted for easy usage

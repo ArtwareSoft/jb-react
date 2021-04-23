@@ -273,9 +273,9 @@ jb.component('remoteWidgetTest.FE.button', {
     timeout: 3000,
     action: runActions(
       jbm.child('jbxServer'),
-      remote.action(remote.widgetFrontEnd({ 
+      remote.action(remote.distributedWidget({ 
         control: button('hello world'), 
-        jbm: jbm.byUri('tests•jbxServer'), 
+        frontend: jbm.byUri('tests•jbxServer'), 
         selector: '.xRoot' 
       } ), jbm.worker()),
       uiAction.waitForSelector('button')
@@ -313,7 +313,7 @@ jb.component('remoteWidgetTest.FE.changeText', {
     timeout: 3000,
     action: runActions(
       jbm.child('jbxServer'),
-      remote.action(remote.widgetFrontEnd({ 
+      remote.action(remote.distributedWidget({ 
         control: group({
           controls: [
             text({ text: 'hey %$fName%', features: watchRef('%$fName%')}),
@@ -321,7 +321,7 @@ jb.component('remoteWidgetTest.FE.changeText', {
           ],
           features: watchable('fName','Dan'),
         }), 
-        jbm: jbm.byUri('tests•jbxServer'), 
+        frontend: jbm.byUri('tests•jbxServer'), 
         selector: '.xRoot' 
       } ), jbm.worker()),
       uiAction.waitForSelector('input'),
@@ -368,6 +368,20 @@ jb.component('remoteWidgetTest.dialog', {
       rx.map(userInput.click()),
     ),
     checkResultRx: () => jb.ui.renderingUpdates,
+    expectedResult: contains('hello')
+  })
+})
+
+jb.component('remoteWidgetTest.loadCodeManully', {
+  impl: uiTest({
+    timeout: 1000,
+    control: remote.widget(
+      group({
+        controls: ctx => ctx.run({$: 'text', text: 'hello' }),
+        features: group.wait(codeLoader.getCodeFromRemote('text'))
+      }),
+      jbm.worker()
+    ),
     expectedResult: contains('hello')
   })
 })

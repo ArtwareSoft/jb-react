@@ -11,7 +11,7 @@ var jb_modules = {
 
 async function jb_codeLoaderServer(uri, {projects, baseUrl, multipleInFrame, loadFileFunc, getAllCodeFunc }) {
   // multipleInFrame is used for multiple jbms in the same frame
-  const isWorker = typeof window == 'undefined' && typeof self != 'undefined'
+  const isWorker = typeof jbInWorker != 'undefined'
   baseUrl = baseUrl || isWorker && typeof location != 'undefined' && location.origin || ''
   jb_loadFile = loadFileFunc || (multipleInFrame ? jb_loadFileIntoClosure : jb_loadFileToFrame)
   getAllCode = getAllCodeFunc || getAllCodeFromHttp
@@ -44,8 +44,7 @@ async function jb_codeLoaderServer(uri, {projects, baseUrl, multipleInFrame, loa
   }
 
   function jb_loadFileToFrame(url, baseUrl) {
-    const isWorker = typeof window == 'undefined' && typeof self != 'undefined'
-    if (isWorker) {
+    if (typeof jbInWorker != 'undefined') {
       return Promise.resolve(importScripts(baseUrl+url))
     } else {
       return new Promise(resolve => {
@@ -71,7 +70,6 @@ async function jb_evalCode(loadedCode, {jb, jb_loadFile, baseUrl} = {}) {
   jb.codeLoader.baseUrl = baseUrl
   await jb.initializeLibs(libs)
   Object.values(jb.comps).forEach(comp => jb.macro.fixProfile(comp))
-  Object.values(jb.comps).forEach(comp => comp.location = comp[jb.core.location])
 }
 
 async function jb_codeLoaderClient(uri,baseUrl) {
@@ -85,5 +83,4 @@ async function jb_codeLoaderClient(uri,baseUrl) {
     .reduce((pr,url)=> pr.then(() => jb_loadFile(url,baseUrl)), Promise.resolve())
   await jb.initializeLibs('core,callbag,utils,jbm,net,cbHandler,codeLoader'.split(','))
   Object.values(jb.comps).forEach(comp => jb.macro.fixProfile(comp))
-  Object.values(jb.comps).forEach(comp => comp.location = comp[jb.core.location])
 }        

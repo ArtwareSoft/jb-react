@@ -39,7 +39,6 @@ jb.component('studio.jbart', {
       studio.ctxCounters()
     ],
     features: [
-      feature.requireService(studio.autoSaveService()),
       feature.requireService(urlHistory.mapStudioUrlToResource('studio'))
     ]
   })
@@ -74,29 +73,6 @@ jb.component('studio.previewWidget', {
   ],
   impl: {}
 })
-
-jb.component('studio.refreshPreview', {
-  type: 'action',
-  impl: {}
-})
-
-// jb.component('studio.vscode', {
-//   type: 'control',
-//   impl: group({
-//     controls: [
-//       studio.vscodeTopBar(),
-//       group({
-//         controls: [],
-//         features: id('preview-parent')
-//       }),
-//       studio.ctxCounters()
-//     ],
-//     features: [
-//         feature.requireService(studio.autoSaveService()),
-//         feature.requireService(studio.vsCodeAdapterService('studio'))
-//     ]
-//   })
-// })
 
 jb.component('dataResource.studio', {
   watchableData: {
@@ -134,7 +110,10 @@ jb.component('studio.pages', {
         features: [
           itemlist.selection({
             databind: '%$studio/page%',
-            onSelection: writeValue('%$studio/profile_path%', '%$studio/page%'),
+            onSelection: runActions(
+              writeValue('%$studio/profile_path%', '%$studio/page%'),
+              writeValue('%$studio/circuit%', studio.circuitOptions('%$studio/page%')),
+            ),
             autoSelectFirst: true
           }),
           css.class('studio-pages-items'),
@@ -401,7 +380,7 @@ jb.component('studio.vscodeTopBar', {
       text({
         text: If(
           '%$studio/project%==tests',
-          '%$studio/page%',
+          '%$studio/circuit%',
           replace({
             find: '_',
             replace: ' ',
@@ -411,7 +390,7 @@ jb.component('studio.vscodeTopBar', {
         style: header.h1(),
         features: [
           watchRef('%$studio/project%'),
-          watchRef('%$studio/page%'),
+          watchRef('%$studio/circuit%'),
           css('font-size: var(--jb-font-size)'),
           field.title('project name')
         ]

@@ -42,7 +42,7 @@ jb.component('urlHistory.mapStudioUrlToResource', {
         }
 
         const hasSearchUrl = location.pathname.match(/\.html$/);
-        const params = ['project','page','profile_path'].concat( hasSearchUrl ? ['host','hostProjectId'] : [])
+        const params = ['project','circuit','profile_path'].concat( hasSearchUrl ? ['host','hostProjectId'] : [])
 
         jb.ui.location = jb.frame.History.createBrowserHistory();
         const _search = location.search.substring(1);

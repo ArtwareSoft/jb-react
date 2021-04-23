@@ -40,7 +40,7 @@ jb.component('editableText.picklistHelper', {
         const input = jb.ui.findIncludeSelf(cmp.base,'input,textarea')[0];
         return { input: { value: input.value, selectionStart: input.selectionStart}}
     }),
-    method('onEnter', action.if(ctx => ctx.run(dialog.isOpen('%$popupId%')), runActions(call('onEnter'),dialog.closeDialogById('%$popupId%')))),
+    method('onEnter', action.if(dialog.isOpen('%$popupId%'), runActions(call('onEnter'),dialog.closeDialogById('%$popupId%')))),
     method('onEsc', action.if(dialog.isOpen('%$popupId%'), runActions(call('onEsc'),dialog.closeDialogById('%$popupId%')))),
     feature.serviceRegistey(),
     frontEnd.selectionKeySourceService(),

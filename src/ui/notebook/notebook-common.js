@@ -80,7 +80,7 @@ jb.component('nb.control', {
 
         group({
             controls: studio.jbEditorInteliTree('%$path%~control'),
-            features: studio.jbEditorContainer('comp-in-jb-editor')
+            //features: studio.jbEditorContainer('comp-in-jb-editor')
         }))
 })
 

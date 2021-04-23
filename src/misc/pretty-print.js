@@ -14,9 +14,9 @@ jb.extension('utils', 'prettyPrint', {
       fixedNL: `__fixedNL${''}__`, // avoid self replacement
     }
   },
-  prettyPrintComp(compId,_comp,settings={}) {
-    if (_comp) {
-      const comp = Object.assign({}, _comp,{location: null})
+  prettyPrintComp(compId,comp,settings={}) {
+    if (comp) {
+      //const comp = Object.assign({}, _comp,{location: null})
       return `jb.component('${compId}', ${jb.utils.prettyPrint(comp,{ initialPath: compId, ...settings })})`
     }
   },
@@ -59,9 +59,9 @@ jb.extension('utils', 'prettyPrint', {
       const arrayOrObj = isArray? 'array' : 'obj'
 
       const beforeClose = innerVals.reduce((acc,{innerPath, val}, index) => {
-        const noColon = valueToMacro(ctx, val, flat).noColon // used to serialize function memeber
+        const fixedPropName = valueToMacro(ctx, val, flat).fixedPropName // used to serialize function memeber
         return processList(acc,[
-          {prop: `!${arrayOrObj}-prefix-${index}`, item: isArray ? '' : fixPropName(innerPath) + (noColon ? '' : ': ')},
+          {prop: `!${arrayOrObj}-prefix-${index}`, item: isArray ? '' : fixedPropName || (fixPropName(innerPath) + ': ')},
           {prop: '!value', item: ctx => {
               const ctxWithPath = { ...ctx, path: [path,innerPath].join('~'), depth: depth +1 }
               return {...ctxWithPath, ...valueToMacro(ctxWithPath, val, flat)}
@@ -155,6 +155,18 @@ jb.extension('utils', 'prettyPrint', {
       }
     }
 
+    function serializeFunction(func) {
+      let asStr = func.toString().trim().replace(/^'([a-zA-Z_\-0-9]+)'/,'$1')
+      if (func.fixedName)
+        asStr = asStr.replace(/initExtension[^(]*\(/,`${func.fixedName}(`)
+      const asynch = asStr.indexOf('async') == 0 ? 'async ' : ''
+      const noPrefix = asStr.slice(asynch.length)
+      const funcName = func.fixedName || func.name
+      const header = noPrefix.indexOf(`${funcName}(`) == 0 ? funcName : noPrefix.indexOf(`function ${funcName}(`) == 0 ? `function ${funcName}` : ''
+      const fixedPropName = header ? `${asynch}${header}` : ''
+      return { text: asStr.slice(header.length+asynch.length).replace(/\n/g,jb.utils.fixedNL), fixedPropName, map: {} }
+    }
+
     function valueToMacro({path, line, col, depth}, val, flat) {
       const ctx = {path, line, col, depth}
       let result = doValueToMacro()
@@ -164,14 +176,11 @@ jb.extension('utils', 'prettyPrint', {
 
       function doValueToMacro() {
         if (Array.isArray(val)) return arrayToMacro(ctx, val, flat);
-        if (val === null) return 'null';
-        if (val === undefined) return 'undefined';
-        if (typeof val === 'object') return profileToMacro(ctx, val, flat);
-        if (typeof val === 'function') {
-          const asStr = val.toString().trim().replace(/^'([a-zA-Z_\-0-9]+)'/,'$1')
-          const header = asStr.indexOf(`${val.name}(`) == 0 ? val.name : asStr.indexOf(`function ${val.name}(`) == 0 ? `function ${val.name}` : ''
-          return { text: asStr.slice(header.length).replace(/\n/g,jb.utils.fixedNL), noColon: header ? true : false, map: {} }
-        }
+        if (val === null) return 'null'
+        if (val === undefined) return 'undefined'
+        if (typeof val === 'object') return profileToMacro(ctx, val, flat)
+        if (typeof val === 'function') return serializeFunction(val)
+    
         if (typeof val === 'string' && val.indexOf("'") == -1 && val.indexOf('\n') == -1)
           return processList(ctx,[
             {prop: '!value-text-start', item: "'"},

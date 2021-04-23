@@ -193,7 +193,7 @@ jb.component('tree.selection', {
 		  .forEach(elem=>elem.classList.remove('selected'))
 		Array.from(jb.ui.findIncludeSelf(cmp.base,'.treenode'))
 		  .filter(elem=> elem.getAttribute('path') == cmp.state.selected)
-		  .forEach(elem=> {elem.classList.add('selected'); elem.scrollIntoViewIfNeeded()})
+		  .forEach(elem=> {elem.classList.add('selected'); jb.ui.scrollIntoView(elem)})
 	  }),
 	  frontEnd.method('setSelected', ({data},{cmp}) => {
 		cmp.base.state.selected = cmp.state.selected = data

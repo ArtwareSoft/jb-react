@@ -64,11 +64,12 @@ jb.component('menu.action', {
       title: ctx.params.title(ctx),
       shortcut: ctx.params.shortcut,
 			runShortcut: event => {
-				if (ctx.run(key.eventMatchKey(() => event.ev, () => ctx.params.shortcut)))
+				if (ctx.run({$: 'key.eventMatchKey', event: () => event.ev, key: () => ctx.params.shortcut}))
 					ctx.params.action()
 			},
 			ctx: ctx.setVar('menuDepth', (ctx.vars.menuDepth || 0)+1)
-		})
+		}),
+  require: {$: 'key.eventMatchKey'}
 })
 
 // ********* actions / controls ************
@@ -87,12 +88,13 @@ jb.component('menu.control', {
     const ctxWithModel = ctx.setVars({menuModel})
     const ctxToUse = ctx.vars.topMenu ? ctxWithModel : jb.ui.extendWithServiceRegistry(ctxWithModel.setVar('topMenu',{}))
     jb.log('menu create uiComp',{topMenu: ctx.vars.topMenu, menuModel,ctx,ctxToUse})
-    return jb.ui.ctrl(ctxToUse, features(
+    return jb.ui.ctrl(ctxToUse, {$: 'features', features: [
       () => ({ctxForPick: menuModel.ctx }),
-      calcProp('title','%$menuModel.title%'),
-      htmlAttribute('menuDepth', '%$menuModel/ctx/vars/menuDepth%'),
-    ))
-	}
+      {$: 'calcProp', id: 'title', value: '%$menuModel.title%' },
+      {$: 'htmlAttribute', attribute: 'menuDepth', value: '%$menuModel/ctx/vars/menuDepth%' },
+    ]})
+	},
+  require: [{$: 'features'}, {$: 'calcProp'}, {$: 'htmlAttribute'}]
 })
 
 jb.component('menu.openContextMenu', {
@@ -157,19 +159,20 @@ jb.component('menu.initPopupMenu', {
   ],
   impl: features(
     calcProp('title', '%$menuModel.title%'),
-    method('openPopup', runActions(
-      parentCtx => parentCtx.run(menu.openContextMenu({
-        popupStyle: call('popupStyle'),
-        menu: () => parentCtx.run(If('%$innerMenu%','%$innerMenu.menu()%', '%$$model.menu()%')),
-      }))
-    )),
+    method('openPopup', 
+      parentCtx => parentCtx.run({$: 'menu.openContextMenu',
+        popupStyle: {$: 'call', param: 'popupStyle'},
+        menu: () => parentCtx.run({$: 'If', condition: '%$innerMenu%', then: '%$innerMenu.menu()%', Else: '%$$model.menu()%'}),
+      })
+    ),
     method('closePopup', dialog.closeDialogById('%$optionsParentId%')),
     method('openNewPopup', runActions(action.runBEMethod('closePopup'), action.runBEMethod('openPopup'))),
     frontEnd.onDestroy(action.runBEMethod('closePopup')),
     menu.passMenuKeySource(),
     frontEnd.flow(source.findMenuKeySource(), rx.filter('%keyCode%==39'), sink.BEMethod('openPopup')),
     frontEnd.flow(source.findMenuKeySource(), rx.filter(inGroup(list(37,27),'%keyCode%')), sink.BEMethod('closePopup')),
-  )
+  ),
+  requires: [{$: 'menu.openContextMenu'}, {$: 'call'}, {$: 'If'}]
 })
 
 jb.component('menu.initMenuOption', {
@@ -245,7 +248,7 @@ jb.component('menu.selection', {
       const elem = parent.children[cmp.state.selected]
       if (elem) {
         elem.classList.add('selected')
-        elem.scrollIntoViewIfNeeded()
+        jb.ui.scrollIntoView(elem)
       }
     }),
     frontEnd.method('setSelected', ({data},{cmp}) => {

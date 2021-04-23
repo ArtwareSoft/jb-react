@@ -76,7 +76,7 @@ jb.component('studio.styleEditor', {
               text({text: 'jsx', style: text.htmlTag('h5')}),
               editableText({
                 title: 'template',
-                databind: pipeline(studio.templateAsJsx('%$path%~template'), studio.pretty('%%')),
+                databind: pipeline(studio.templateAsJsx('%$path%~template'), prettyPrint('%%')),
                 style: editableText.codemirror({
                   cm_settings: '',
                   height: '200',

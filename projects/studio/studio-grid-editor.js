@@ -23,7 +23,7 @@ Object.assign(jb.ui, {
   addGridTab(gridPath,gridIndex,axis,ctx) {
     const ref = jb.ui.getOrCreateSizesRef(gridPath,axis,ctx)
     if (jb.val(ref).length == gridIndex) {
-      jb.push(ref,100,ctx)
+      jb.db.push(ref,100,ctx)
     } else {
       const half = Number(jb.val(ref)[gridIndex])/2
       jb.db.splice(ref,[[gridIndex,1,half,half]],ctx)

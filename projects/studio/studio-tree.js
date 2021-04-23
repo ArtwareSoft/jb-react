@@ -44,10 +44,6 @@ jb.component('studio.treeMenu', {
         shortcut: 'Ctrl+I'
       }),
       menu.action({
-        title: 'Context viewer',
-        action: {'$': 'studio.open-context-viewer', path: '%$path%'}
-      }),
-      menu.action({
         title: 'Javascript editor',
         action: studio.editSource('%$path%'),
         icon: icon('code'),

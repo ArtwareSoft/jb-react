@@ -148,7 +148,7 @@ jb.component('studio.propertyPrimitive', {
         feature.onKey('Right', studio.applyOption('/')),
         editableText.picklistHelper({
           showHelper: studio.shouldShowSuggestions(true),
-          options: remote.data(studio.suggestions('%$path%',true), jbm.wPreview()),
+          options: remote.data(studio.suggestions('%$path%',true), jbm.preview()),
           picklistFeatures: picklist.allowAsynchOptions(),
           picklistStyle: studio.suggestionList(),
           onEnter: studio.applyOption()
@@ -168,7 +168,7 @@ jb.component('studio.jbFloatingInput', {
       control.icon({
         icon: 'FunctionVariant',
         title: "hit '=' to calculate with function",
-        type: 'mdi',
+        //type: 'mdi',
         features: [css.margin('25')]
       }),
       button({
@@ -176,7 +176,7 @@ jb.component('studio.jbFloatingInput', {
         action: writeValue(studio.boolRef('%$path%'), false),
         style: button.mdcIcon(icon({icon: 'cancel', type: 'mdc'}), '24'),
         features: [
-          feature.if(ctx => ctx.run(studio.isOfType('%$path%', 'boolean'))),
+          feature.if(studio.isOfType('%$path%', 'boolean')),
           css.margin('26'),
           css.width('38')
         ]
@@ -186,7 +186,7 @@ jb.component('studio.jbFloatingInput', {
         action: writeValue(studio.boolRef('%$path%'), true),
         style: button.mdcIcon(icon({icon: 'done', type: 'mdc'}), '24'),
         features: [
-          feature.if(ctx => ctx.run(studio.isOfType('%$path%', 'boolean'))),
+          feature.if(studio.isOfType('%$path%', 'boolean')),
           css.margin('26'),
           css.width('38')
         ]
@@ -220,7 +220,7 @@ jb.component('studio.jbFloatingInput', {
               feature.onKey('Esc', runActions(dialog.closeDialogById('studio-jb-editor-popup'), tree.regainFocus())),
               editableText.picklistHelper({
                 showHelper: studio.shouldShowSuggestions(),
-                options: remote.data(studio.suggestions('%$path%'), jbm.wPreview()),
+                options: remote.data(studio.suggestions('%$path%'), jbm.preview()),
                 picklistFeatures: picklist.allowAsynchOptions(),
                 picklistStyle: studio.suggestionList(),
               }),

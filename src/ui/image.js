@@ -1,5 +1,3 @@
-// var { image, pipeline } = jb.ns('image,css')
-
 jb.component('image', {
   type: 'control,image',
   category: 'control:50,common:70',

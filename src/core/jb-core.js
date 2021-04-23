@@ -1,4 +1,4 @@
-Object.assign(jb, { 
+Object.assign(jb, {
   extension(libId, p1 , p2) {
     const extId = typeof p1 == 'string' ? p1 : 'main'
     const extension = p2 || p1
@@ -6,20 +6,21 @@ Object.assign(jb, {
     const funcs = Object.keys(extension).filter(k=>typeof extension[k] == 'function').filter(k=>!k.match(/^initExtension/))
     funcs.forEach(k=>lib[k] = extension[k])
 
-    const initFuncId = Object.keys(extension).filter(k=>typeof extension[k] == 'function').filter(k=>k.match(/^initExtension/))[0]
-    const phaseFromFunc = ((initFuncId||'').match(/_phase([0-9]+)/)||[,0])[1]
+    const initFuncOrigId = Object.keys(extension).filter(k=>typeof extension[k] == 'function').filter(k=>k.match(/^initExtension/))[0]
+    const phaseFromFunc = ((initFuncOrigId||'').match(/_phase([0-9]+)/)||[,0])[1]
     const initFuncPhase = phaseFromFunc || { core: 1, utils: 5, db: 10, watchable: 20}[libId] || 100
-    const initFunc = `init_${libId}-${extId}-phase${initFuncPhase}`
-    const initFuncImpl = extension[initFuncId] || extension[initFunc]
+    const initFuncId = `init_${libId}$${extId}$phase${initFuncPhase}` // normalized name
+    const initFuncImpl = extension[initFuncOrigId] || extension[initFuncId]
     if (initFuncImpl) {
-      lib[initFunc] = initFuncImpl    
-      funcs.forEach(k=>lib[k].__initFuncs = [`#${libId}.${initFunc}`]) // [initFunc].map(x=>`#${libId}.${x}`))
+      lib[initFuncId] = initFuncImpl
+      initFuncImpl.fixedName = initFuncId
+      funcs.forEach(k=>lib[k].__initFuncs = [`#${libId}.${initFuncId}`]) // [initFunc].map(x=>`#${libId}.${x}`))
       if (jb.noCodeLoader) {
-        Object.assign(lib, lib[initFunc]())
-        lib.__initialized[initFunc] = true
+        Object.assign(lib, lib[initFuncId]())
+        lib.__initialized[initFuncId] = true
       }
     }
-    const require = ['require',...Object.keys(extension).filter(k=>k.indexOf('__require_') == 0)]
+    ;['require',...Object.keys(extension).filter(k=>k.indexOf('__require_') == 0)]
       .filter(k =>extension[k]).forEach(k => {
         const k2 = k == 'require' ? `__require_${extId}` : k
         lib[k2] = extension[k]
@@ -28,9 +29,9 @@ Object.assign(jb, {
   },
   initializeLibs(libs) {
     libs.flatMap(l => Object.keys(jb[l]).filter(x=>x.match(/^init_/)))
-      .sort((x,y) => Number(x.match(/-phase([0-9]+)/)[1]) - Number(y.match(/-phase([0-9]+)/)[1]) )
+      .sort((x,y) => Number(x.match(/\$phase([0-9]+)/)[1]) - Number(y.match(/\$phase([0-9]+)/)[1]) )
       .forEach(initFunc=> {
-        const lib = jb[initFunc.match(/init_([^-]+)/)[1]]
+        const lib = jb[initFunc.match(/init_([^$]+)/)[1]]
         if (! lib.__initialized[initFunc]) {
           lib.__initialized[initFunc] = true
           Object.assign(lib, lib[initFunc]())
@@ -40,7 +41,7 @@ Object.assign(jb, {
     return libs.flatMap(l => Object.keys(jb[l]).filter(x=>x.match(/^__require_/)).flatMap(ext => jb[l][ext]||[]))
       .filter(url => !jb.frame.jb.__requiredLoaded[url])
       .reduce((pr,url) => pr.then(() => jb_loadFile(url,baseUrl,jb)).then(() => jb.frame.jb.__requiredLoaded[url] = true), Promise.resolve())
-  },  
+  },
   component(id,comp) {
     // todo: move functionality to onAddComponent hook
     if (!jb.core.location) jb.initializeLibs(['core'])
@@ -49,11 +50,12 @@ Object.assign(jb, {
         delete comp.location
     } else {
       try {
-        const errStack = new Error().stack.split(/\r|\n/)
-        const line = errStack.filter(x=>x && x != 'Error' && !x.match(/at Object.component/)).shift()
-        comp[jb.core.location] = line ? (line.split('at eval (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
+//        if (jb.frame.jbInvscode) debugger
+        const errStack = new Error().stack.split(/\r|\n/).map(x=>x.trim())
+        const line = errStack.filter(x=>x && !x.match(/^Error/) && !x.match(/at Object.component/)).shift()
+        comp[jb.core.location] = line ? (line.split('at ').pop().split('eval (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
         comp[jb.core.project] = comp[jb.core.location][0].split('?')[1]
-        comp[jb.core.location][0] = comp[jb.core.location][0].split('?')[0]      
+        comp[jb.core.location][0] = comp[jb.core.location][0].split('?')[0]
       } catch(e) {
         console.log(e)
       }
@@ -81,14 +83,14 @@ Object.assign(jb, {
 
 jb.extension('core', {
   initExtension() {
-    Object.assign(jb, { 
+    Object.assign(jb, {
       frame: (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {},
       comps: {}, ctxDictionary: {},
       __requiredLoaded: {},
       jstypes: jb.core.jsTypes()
     })
-    return { 
-      ctxCounter: 0, 
+    return {
+      ctxCounter: 0,
       project: Symbol.for('project'),
       location: Symbol.for('location'),
       loadingPhase: Symbol.for('loadingPhase'),
@@ -100,7 +102,7 @@ jb.extension('core', {
         return
       if (jb.ctxByPath) jb.ctxByPath[ctx.path] = ctx
       const runner = () => jb.core.doRun(...arguments)
-      Object.defineProperty(runner, 'name', { value: `${ctx.path} ${ctx.profile && ctx.profile.$ ||''}-prepare param` })        
+      Object.defineProperty(runner, 'name', { value: `${ctx.path} ${ctx.profile && ctx.profile.$ ||''}-prepare param` })
       let res = runner(...arguments)
       if (ctx.probe && ctx.probe.pathToTrace.indexOf(ctx.path) == 0)
           res = ctx.probe.record(ctx,res) || res
@@ -113,19 +115,19 @@ jb.extension('core', {
       const profile = ctx.profile
       if (profile == null || (typeof profile == 'object' && profile.$disabled))
         return jb.core.castToParam(null,parentParam)
-  
+
       if (profile.$debugger == 0) debugger
       if (profile.$asIs) return profile.$asIs
       if (parentParam && (parentParam.type||'').indexOf('[]') > -1 && ! parentParam.as) // fix to array value. e.g. single feature not in array
           parentParam.as = 'array'
-  
+
       if (typeof profile === 'object' && Object.getOwnPropertyNames(profile).length == 0)
         return
       const ctxWithVars = jb.core.extendWithVars(ctx,profile.$vars)
       const run = jb.core.prepare(ctxWithVars,parentParam)
       ctx.parentParam = parentParam
       const {castToParam } = jb.core
-      switch (run.type) {      
+      switch (run.type) {
         case 'booleanExp': return castToParam(jb.expression.calcBool(profile, ctx,parentParam), parentParam)
         case 'expression': return castToParam(jb.expression.calc(profile, ctx,parentParam), parentParam)
         case 'asIs': return profile
@@ -148,10 +150,10 @@ jb.extension('core', {
                 jb.core.run(new jb.core.jbCtx(run.ctx,{profile: paramObj.prof, forcePath: paramObj.forcePath || ctx.path + '~' + paramObj.path, path: ''}), paramObj.param);
             }
           }
-          Object.defineProperty(prepareParam, 'name', { value: `${run.ctx.path} ${profile.$ ||''}-prepare param` })        
-    
+          Object.defineProperty(prepareParam, 'name', { value: `${run.ctx.path} ${profile.$ ||''}-prepare param` })
+
           run.preparedParams.forEach(paramObj => prepareParam(paramObj))
-          const out = run.impl ? run.impl.call(null,run.ctx,...run.preparedParams.map(param=>run.ctx.params[param.name])) 
+          const out = run.impl ? run.impl.call(null,run.ctx,...run.preparedParams.map(param=>run.ctx.params[param.name]))
             : jb.core.run(new jb.core.jbCtx(run.ctx, { cmpCtx: run.ctx }),parentParam)
           return castToParam(out,parentParam)
       }
@@ -177,10 +179,10 @@ jb.extension('core', {
         const usingDefault = val === undefined && param.defaultValue !== undefined
         const forcePath = usingDefault && [comp_name, 'params', jb.utils.compParams(comp).indexOf(param), 'defaultValue'].join('~')
         if (forcePath) path = ''
-  
+
         const valOrDefaultArray = valOrDefault ? valOrDefault : []; // can remain single, if null treated as empty array
         const arrayParam = param.type && param.type.indexOf('[]') > -1 && Array.isArray(valOrDefaultArray);
-  
+
         if (param.dynamic) {
           const outerFunc = runCtx => {
             let func;
@@ -188,7 +190,7 @@ jb.extension('core', {
               func = (ctx2,data2) => jb.utils.flattenArray(valOrDefaultArray.map((prof,i)=> runCtx.extendVars(ctx2,data2).runInner(prof, {...param, as: 'asIs'}, path+'~'+i)))
             else
               func = (ctx2,data2) => jb.core.run(new jb.core.jbCtx(runCtx.extendVars(ctx2,data2),{ profile: valOrDefault, forcePath, path } ),param)
-  
+
             const debugFuncName = valOrDefault && valOrDefault.$ || typeof valOrDefault == 'string' && valOrDefault.slice(0,10) || ''
             Object.defineProperty(func, 'name', { value: p + ': ' + debugFuncName })
             Object.assign(func,{profile: valOrDefault,runCtx,path,srcPath: ctx.path,forcePath,param})
@@ -196,7 +198,7 @@ jb.extension('core', {
           }
           return { name: p, type: 'function', outerFunc, path, param, forcePath };
         }
-  
+
         if (arrayParam) // array of profiles
           return { name: p, type: 'array', array: valOrDefaultArray, param: Object.assign({},param,{type:param.type.split('[')[0],as:null}), forcePath, path };
         else
@@ -209,7 +211,7 @@ jb.extension('core', {
     const parentParam_type = parentParam && parentParam.type;
     const jstype = parentParam && parentParam.as;
     const isArray = Array.isArray(profile);
-  
+
     if (profile_jstype === 'string' && parentParam_type === 'boolean') return { type: 'booleanExp' };
     if (profile_jstype === 'boolean' || profile_jstype === 'number' || parentParam_type == 'asIs') return { type: 'asIs' };// native primitives
     if (profile_jstype === 'object' && jstype === 'object') return { type: 'object' };
@@ -217,7 +219,7 @@ jb.extension('core', {
     if (profile_jstype === 'function') return { type: 'function' };
     if (profile_jstype === 'object' && (profile instanceof RegExp)) return { type: 'asIs' };
     if (profile == null) return { type: 'asIs' };
-  
+
     if (isArray) {
       if (!profile.length) return { type: 'null' };
       if (!parentParam || !parentParam.type || parentParam.type === 'data' ) //  as default for array
@@ -226,14 +228,14 @@ jb.extension('core', {
         profile.sugar = true;
         return { type: 'runActions' };
       }
-    } 
+    }
     const comp_name = jb.utils.compName(profile,parentParam)
     if (!comp_name)
       return { type: 'asIs' }
     const comp = jb.comps[comp_name];
     if (!comp && comp_name) { jb.logError('component ' + comp_name + ' is not defined', {ctx}); return { type:'null' } }
     if (comp.impl == null) { jb.logError('component ' + comp_name + ' has no implementation', {ctx}); return { type:'null' } }
-  
+
     jb.macro.fixProfile(profile)
     const resCtx = Object.assign(new jb.core.jbCtx(ctx,{}), {parentParam, params: {}})
     const preparedParams = jb.core.prepareParams(comp_name,comp,profile,resCtx);
@@ -258,7 +260,7 @@ jb.extension('core', {
           ctx2.path = '?'
         }
         this.profile = (typeof(ctx2.profile) != 'undefined') ?  ctx2.profile : ctx.profile
-  
+
         this.path = (ctx.path || '') + (ctx2.path ? '~' + ctx2.path : '')
         if (ctx2.forcePath)
           this.path = this.forcePath = ctx2.forcePath

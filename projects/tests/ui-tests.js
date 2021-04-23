@@ -1619,14 +1619,12 @@ jb.component('uiTest.picklistGroups', {
 jb.component('uiTest.dynamicControls', {
   impl: uiTest({
     control: group({
-      style: propertySheet.titlesLeft({}),
-      controls: dynamicControls({
-        controlItems: list('name', 'age'),
-        genericControl: editableText({title: '%$controlItem%', databind: '%$person/{%$controlItem%}%'})
-      })
+      style: propertySheet.titlesLeft(),
+      controls: dynamicControls(list('name', 'age'), editableText('%$controlItem%', '%$person/{%$controlItem%}%'))
     }),
     expectedResult: contains(['name', 'age'])
-  })
+  }),
+  location: null
 })
 
 jb.component('uiTest.inlineControls', {

@@ -1,12 +1,11 @@
 jb.extension('db', {
-    initExtension() {
-      Object.assign(this, { 
+    initExtension() { return { 
         passiveSym: Symbol.for('passive'),
         resources: {}, consts: {}, 
         watchableHandlers: [],
         isWatchableFunc: [], // assigned by watchable module, if loaded - must be put in array so the code loader will not pack it.
         simpleValueByRefHandler: jb.db._simpleValueByRefHandler()
-      })
+      }
     },
     _simpleValueByRefHandler() { return {
         val(v) {

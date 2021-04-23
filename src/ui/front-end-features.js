@@ -30,7 +30,7 @@ jb.component('sink.BEMethod', {
     macroByValue: true,
     params: [
         {id: 'method', as: 'string', dynamic: true },
-        {id: 'data', defaultValue: ({data}) => data instanceof Event ? null : data, dynamic: true },
+        {id: 'data', defaultValue: ({data}) => jb.frame.Event && data instanceof jb.frame.Event ? null : data, dynamic: true },
         {id: 'vars', dynamic: true },
     ],
     impl: sink.action((ctx,{},{method,data,vars}) => jb.ui.runBEMethodInAnyContext(ctx,method(ctx),data(ctx),vars(ctx)))
@@ -272,13 +272,23 @@ jb.component('feature.onKey', {
     ],
     impl: features(
         method(replace({find: '-', replace: '+', text: 'onKey%$key%Handler',useRegex: true}), call('action')),
-        frontEnd.init((ctx,{cmp,el}) => {
-          if (! cmp.hasOnKeyHanlder) {
-            cmp.hasOnKeyHanlder = true
-            ctx.run(rx.pipe(source.frontEndEvent('keydown'), rx.userEventVar(), 
-              rx.map(key.eventToMethod('%%',el)), rx.filter('%%'), rx.log('keyboard uiComp onKey %$key%'), sink.BEMethod('%%')))
-          }
-      })
+        frontEnd.init(If(not('%$cmp.hasOnKeyHanlder%'), runActions(
+          ({},{cmp}) => cmp.hasOnKeyHanlder = true,
+          rx.pipe(
+            source.frontEndEvent('keydown'), 
+            rx.userEventVar(), 
+            rx.map(key.eventToMethod('%%','%$el%')), 
+            rx.filter('%%'), 
+            rx.log('keyboard uiComp onKey %$key%'), 
+            sink.BEMethod('%%'))
+        ))),
+      //   frontEnd.init((ctx,{cmp,el}) => {
+      //     if (! cmp.hasOnKeyHanlder) {
+      //       cmp.hasOnKeyHanlder = true
+      //       ctx.run(rx.pipe(source.frontEndEvent('keydown'), rx.userEventVar(), 
+      //         rx.map(key.eventToMethod('%%',el)), rx.filter('%%'), rx.log('keyboard uiComp onKey %$key%'), sink.BEMethod('%%')))
+      //     }
+      // })
     )
 })
 

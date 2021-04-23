@@ -29,7 +29,7 @@ jb.component('studio.copy', {
       const val = jb.studio.valOfPath(path)
       jb.studio.clipboard = typeof val == 'string' ? val : eval('(' + jb.utils.prettyPrint(val,{noMacros: true}) + ')')
     } catch(e) {
-      jb.logExecption(e,'copy',{ctx})
+      jb.logException(e,'copy',{ctx})
     }
   }
 })
@@ -48,7 +48,7 @@ jb.component('studio.projectId', {
 })
 
 jb.component('studio.currentPagePath', {
-  impl: '%$studio/page%'
+  impl: '%$studio/circuit%'
 })
 
 jb.component('studio.currentProfilePath', {

@@ -226,7 +226,7 @@ jb.component('studioHelper.jbEditor.callbag', {
     ],
     features: [
       css('{ height: 200px; padding: 50px }'),
-      studio.jbEditorContainer({id: 'helper', initialSelection: 'dataTest.callbag.pipe~impl~calculate~items~0~elems~0', circuit: 'dataTest.callbag.pipe'})
+      //studio.jbEditorContainer({id: 'helper', initialSelection: 'dataTest.callbag.pipe~impl~calculate~items~0~elems~0', circuit: 'dataTest.callbag.pipe'})
     ]
   })
 })

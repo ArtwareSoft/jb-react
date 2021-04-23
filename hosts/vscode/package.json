@@ -19,7 +19,7 @@
 	"repository": "https://github.com/Artwaresoft/jb-react",
 	"activationEvents": [
 		"onView:jbart.jbEditor",
-		"onCommand:jb.studio.openJbEditor"
+		"onView:jbart.preview"
 	],
 	"main": "vscode-loader.js",
 	"contributes": {
@@ -35,26 +35,17 @@
 		"views": {
 			"jbart": [
 				{
-					"type": "webview",
 					"id": "jbart.jbEditor",
+					"type": "webview",
 					"name": "inteliscript"
-				}
+				},
+				{
+					"id": "jbart.preview",
+					"type": "webview",
+					"name": "preview"
+				}				
 			]
-		},		
-		"commands": [
-			{
-				"command": "jb.studio.openJbEditor",
-				"title": "Open jBart Editor",
-				"category": "jBart"
-			}
-		],
-		"keybindings": [
-			{
-			  "command": "jb.studio.openJbEditor",
-			  "key": "ctrl+shift+j",
-			  "when": "editorTextFocus"
-			}
-		]		
+		}
 	},
 	"scripts": {
 	},

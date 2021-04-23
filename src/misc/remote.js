@@ -3,7 +3,7 @@ jb.component('source.remote', {
     macroByValue: true,
     params: [
       {id: 'rx', type: 'rx', dynamic: true },
-      {id: 'jbm', type: 'jbm', defaultValue: jbm.same() },
+      {id: 'jbm', type: 'jbm', defaultValue: jbm.self() },
     ],
     impl: (ctx,rx,jbm) => {
         if (!jbm)
@@ -20,7 +20,7 @@ jb.component('remote.operator', {
     macroByValue: true,
     params: [
       {id: 'rx', type: 'rx', dynamic: true },
-      {id: 'jbm', type: 'jbm', defaultValue: jbm.same()},
+      {id: 'jbm', type: 'jbm', defaultValue: jbm.self()},
     ],
     impl: (ctx,rx,jbm) => {
         if (!jbm)
@@ -42,7 +42,7 @@ jb.component('remote.action', {
     description: 'exec a script on a remote node and returns a promise if not oneWay',
     params: [
       {id: 'action', dynamic: true },
-      {id: 'jbm', type: 'jbm', defaultValue: jbm.same()},
+      {id: 'jbm', type: 'jbm', defaultValue: jbm.self()},
       {id: 'oneway', as: 'boolean', description: 'do not wait for the respone' },
       {id: 'timeout', as: 'number', defaultValue: 10000 },
     ],
@@ -58,7 +58,7 @@ jb.component('remote.data', {
     macroByValue: true,
     params: [
       {id: 'data', dynamic: true },
-      {id: 'jbm', type: 'jbm', defaultValue: jbm.same()},
+      {id: 'jbm', type: 'jbm', defaultValue: jbm.self()},
       {id: 'timeout', as: 'number', defaultValue: 10000 },
     ],
     impl: (ctx,data,jbm,timeout) => {
@@ -80,7 +80,10 @@ jb.component('remote.initShadowData', {
         source.watchableData({ref: '%$src%', includeChildren: 'yes'}),
         rx.map(obj(prop('op','%op%'), prop('path',({data}) => jb.db.pathOfRef(data.ref)))),
         sink.action(remote.action( 
-            (ctx,{},{headlessWidget}) => jb.db.doOp(jb.db.refOfPath(ctx.data.path), ctx.data.op, ctx.setVar('headlessWidget',headlessWidget)),
+            (ctx,{},{headlessWidget}) => {
+                jb.log('shadowData update',{op: ctx.data.op, ctx})
+                jb.db.doOp(jb.db.refOfPath(ctx.data.path), ctx.data.op, ctx.setVar('headlessWidget',headlessWidget))
+            },
             '%$jbm%')
         )
     )
@@ -125,5 +128,16 @@ jb.component('net.listAll', {
             aggregate(list(net.listSubJbms() ,'%%'))
         )
         ,jbm.byUri(net.getRootParentUri())
+    )
+})
+
+jb.component('dataResource.yellowPages', { watchableData: {}})
+
+jb.component('remote.useYellowPages', {
+    type: 'action',
+    impl: runActions(
+        Var('yp','%$yellowPages%'),
+        remote.action(({},{yp}) => jb.component('dataResource.yellowPages', { watchableData: yp }), '%$jbm%'),
+        remote.initShadowData('%$yellowPages%', '%$jbm%'),
     )
 })

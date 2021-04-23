@@ -35,14 +35,8 @@ jb.component('dataTest.propertyWatchable', {
 
 jb.component('dataTest.pipelineVar', {
   impl: dataTest({
-    calculate: pipeline(
-      '%$peopleWithChildren%',
-      pipeline(Var('parent'), '%children%', '%name% is child of %$parent/name%'),
-      join()
-    ),
-    expectedResult: equals(
-      'Bart is child of Homer,Lisa is child of Homer,Bart is child of Marge,Lisa is child of Marge'
-    )
+    calculate: pipeline('%$peopleWithChildren%', pipeline(Var('parent'), '%children%', '%name% is child of %$parent/name%'), join()),
+    expectedResult: equals('Bart is child of Homer,Lisa is child of Homer,Bart is child of Marge,Lisa is child of Marge')
   })
 })
 
@@ -699,6 +693,20 @@ jb.component('dataTest.prettyPrint.contains', {
   impl: dataTest({
     calculate: pipeline(() => jb.utils.prettyPrintWithPositions( {$contains: 'hello'}), '%text%'),
     expectedResult: contains('hello')
+  })
+})
+
+jb.component('dataTest.prettyPrint.async', {
+  impl: dataTest({
+    calculate: () => jb.utils.prettyPrint({ async a() {3} }),
+    expectedResult: and(not(contains('a:')),contains('async a() {3}'))
+  })
+})
+
+jb.component('dataTest.prettyPrint.funcDefaults', {
+  impl: dataTest({
+    calculate: () => jb.utils.prettyPrint({ aB(c,{b} = {}) {3} }),
+    expectedResult: and(not(contains('aB:')),contains('aB(c,{b} = {}) {3}'))
   })
 })
 

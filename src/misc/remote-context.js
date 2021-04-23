@@ -24,6 +24,8 @@ jb.extension('remoteCtx', {
             jb.logError('stripData slicing large array',{data})
         if (Array.isArray(data))
              return data.slice(0,100).map(x=>jb.remoteCtx.stripData(x))
+        if (typeof data == 'object' && ['DOMRect'].indexOf(data.constructor.name) != -1)
+            return jb.objFromEntries(Object.keys(data.__proto__).map(k=>[k,data[k]]))
         if (typeof data == 'object' && ['VNode','Object','Array'].indexOf(data.constructor.name) == -1)
             return { $$: data.constructor.name}
         if (typeof data == 'object' && data.comps)

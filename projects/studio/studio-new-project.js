@@ -64,7 +64,7 @@ jb.component('studio.openNewProject', {
       studio.saveNewProject('%$project%'),
       writeValue('%$studio/project%', '%$project%'),
 //      writeValue('%$studio/projectFolder%', '%$project%'),
-      writeValue('%$studio/page%', '%$project%.main'),
+      writeValue('%$studio/circuit%', '%$project%.main'),
       writeValue('%$studio/profile_path%', studio.currentPagePath()),
       studio.reOpenStudio('%$mainFileName%',5)
     ),

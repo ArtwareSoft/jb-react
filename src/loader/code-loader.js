@@ -1,4 +1,3 @@
-
 jb.extension('codeLoader', {
     initExtension() {
         return {
@@ -74,12 +73,13 @@ jb.extension('codeLoader', {
         return [topLevelCode,libsCode,compsCode,`jb.initializeLibs([${libs.map(l=>"'"+l+"'").join(',')}])`].join(';\n\n')
     },
     compToStr(cmpId) {
-        const content = JSON.stringify(jb.comps[cmpId],
+        const compWithLocation = { ...jb.comps[cmpId], location : jb.comps[cmpId][jb.core.location]}
+        const content = JSON.stringify(compWithLocation,
             (k,v) => typeof v === 'function' ? '@@FUNC'+v.toString()+'FUNC@@' : v,2)
                 .replace(/"@@FUNC([^@]+)FUNC@@"/g, (_,str) => str.replace(/\\\\n/g,'@@__N').replace(/\\r\\n/g,'\n').replace(/\\n/g,'\n').replace(/\\t/g,'').replace(/@@__N/g,'\\\\n') )
         return `jb.component('${cmpId}', ${content})`
     },
-    bringMissingCode(obj) {
+    async bringMissingCode(obj) {
         const missing = getMissingProfiles(obj)
         if (missing.length) 
             jb.log('codeLoader bring missing code',{obj, missing})
@@ -96,7 +96,8 @@ jb.extension('codeLoader', {
     missing(id) {
         return !(jb.comps[id] || id[0] == '#' && jb.path(jb, id.slice(1)))
     },
-    getCodeFromRemote(ids) {
+    async getCodeFromRemote(_ids) {
+        const ids = _ids.filter(id => jb.codeLoader.missing(id))
         if (!ids.length) return
         const stripedCode = {
             $: 'runCtx', path: '',
@@ -125,9 +126,11 @@ jb.extension('codeLoader', {
         paths.forEach(path=>jb.codeLoader.existingFEPaths[path] = true)
         return jb.utils.unique(jb.codeLoader.treeShake(_paths,jb.codeLoader.existing()).map(path=>path.split('~')[0]).filter(id=>jb.codeLoader.missing(id)))
     },
-    loadFELibsDirectly(libs) {
-        if (typeof document == 'undefined') 
+    async loadFELibsDirectly(libs) {
+        if (typeof document == 'undefined') {
+            debugger
             return jb.logError('can not load front end libs to a frame without a document')
+        }
         const _libs = jb.utils.unique(libs).filter(lib=>! jb.codeLoader.loadedFElibs[lib])
         return _libs.reduce((pr,lib) => pr.then(()=> loadFile(lib)).then(()=> jb.codeLoader.loadedFElibs[lib] = true), Promise.resolve())
 
@@ -157,7 +160,7 @@ jb.component('codeLoader.getCode', {
 
 jb.component('codeLoader.getCodeFromRemote', {
     params: [
-        {id: 'ids', as: 'string'}
+        {id: 'ids'}
     ],
-    impl: (ctx,ids) => jb.codeLoader.getCodeFromRemote(ids)
+    impl: async (ctx,ids) => ids && jb.codeLoader.getCodeFromRemote(ids.split(','))
 })

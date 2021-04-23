@@ -63,10 +63,8 @@ jb.extension('ui', {
         querySelectorAll(selector,{includeSelf}={}) {
             let maxDepth = 50
             if (!selector) debugger
-            if (selector.match(/^:scope>/)) {
-                maxDepth = 1
-                selector = selector.slice(7)
-            }
+            if (selector.match(/^:scope>/)) 
+                return this.children.filter(el=>el.querySelector(selector.slice(7),{includeSelf: true}))
             if (selector == '' || selector == ':scope') return [this]
             if (selector.indexOf(',') != -1)
                 return selector.split(',').map(x=>x.trim()).reduce((res,sel) => [...res, ...this.querySelectorAll(sel,{includeSelf})], [])

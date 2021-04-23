@@ -23,9 +23,9 @@ jb.component('helloWorld.main', {
       text('hello world'),
       image({
         url: 'https://freesvg.org/img/UN-CONSTRUCTION-2.png',
-        width: '100',
-        height: '66'
+        width: 21,
+        height: 100
       })
     ]
-  }),
+  })
 })

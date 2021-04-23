@@ -63,6 +63,32 @@ jb.component('action.frontEndDelta', {
     }
 })
 
+jb.component('remote.distributedWidget', {
+    type: 'action',
+    params: [
+      {id: 'control', type: 'control', dynamic: true },
+      {id: 'backend', type: 'jbm', defaultValue: jbm.self() },
+      {id: 'frontend', type: 'jbm' },
+      {id: 'selector', as: 'string', defaultValue: 'body', description: 'root selector to put widget in. e.g. #main' },
+    ],
+    impl: remote.action(runActions(
+        Var('widgetId', widget.newId()),
+        Var('frontEndUri', '%$frontend/uri%'),
+        remote.action(action.renderXwidget('%$selector%','%$widgetId%'), jbm.byUri('%$frontEndUri%') ),
+        rx.pipe(
+            source.remote(
+                rx.pipe(
+                    source.callbag(() => jb.ui.widgetUserRequests),
+                    rx.log('remote widget userReq'),
+                    rx.filter('%widgetId% == %$widgetId%'),
+                    rx.takeWhile(({data}) => data.$ != 'destroy',true),
+             ), jbm.byUri('%$frontEndUri%') ),
+            widget.headless('%$control()%','%$widgetId%'),
+            sink.action(remote.action(action.frontEndDelta('%%'), jbm.byUri('%$frontEndUri%')))
+        )
+    ), '%$backend%')
+})
+
 jb.component('remote.widget', {
     type: 'control',
     params: [
@@ -97,33 +123,9 @@ jb.component('action.renderXwidget', {
     dependency: widget.frontEndCtrl()
 })
 
-jb.component('remote.widgetFrontEnd', {
-    type: 'action',
-    params: [
-      {id: 'control', type: 'control', dynamic: true },
-      {id: 'jbm', type: 'jbm' },
-      {id: 'selector', as: 'string', defaultValue: 'body', description: 'root selector to put widget in. e.g. #main' },
-    ],
-    impl: runActions(
-        Var('widgetId', widget.newId()),
-        remote.action(action.renderXwidget('%$selector%','%$widgetId%'), '%$jbm%' ),
-        rx.pipe(
-            source.remote(
-                rx.pipe(
-                    source.callbag(() => jb.ui.widgetUserRequests),
-                    rx.log('remote widget userReq'),
-                    rx.filter('%widgetId% == %$widgetId%'),
-                    rx.takeWhile(({data}) => data.$ != 'destroy',true),
-             ), 
-             '%$jbm%' ),
-            widget.headless('%$control()%','%$widgetId%'),
-            sink.action(remote.action(action.frontEndDelta('%%'),'%$jbm%'))
-        )
-    )
-})
-
 jb.extension('ui','headless', {
     initExtension_phase1100() { // 1100 is after ui phase (100)
+        // for loader : jb.ui.render( 
         return {
             widgetRenderingSrc: jb.callbag.replay(100)(jb.ui.renderingUpdates),
             headless: {},

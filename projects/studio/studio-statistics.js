@@ -1,6 +1,59 @@
+jb.extension('studio', 'statistics', {
+  initExtension_phase40() {
+    jb.utils.subscribe(jb.watchableComps.handler.resourceChange, () => jb.studio.statistics = {})
+    return { statistics: {} }
+  },
+  calcRefs() {
+    if (Object.keys(jb.studio.statistics).length) return
+    const refs = {}, comps = jb.comps;
+
+    Object.keys(comps).filter(k=>comps[k]).forEach(k=>
+      refs[k] = {
+        refs: calcRefs(comps[k].impl).filter((x,index,self)=>self.indexOf(x) === index),
+        by: []
+    })
+    Object.keys(comps).filter(k=>comps[k]).forEach(k=>
+      refs[k].refs.forEach(cross=>
+        refs[cross] && refs[cross].by.push(k))
+    )
+    jb.studio.statistics = refs
+
+    function calcRefs(profile) {
+      if (profile == null || typeof profile != 'object') return [];
+      return Object.values(profile).reduce((res,v)=> [...res,...calcRefs(v)], [jb.utils.compName(profile)])
+    }    
+  },
+  circuitOptions(cmpId) {
+    jb.studio.calcRefs()
+    const candidates = {[cmpId]: true}
+    while (expand()) {}
+    const comps = Object.keys(candidates).filter(k => (jb.comps[k].params || []).length == 0)
+    return comps.sort((x,y) => mark(y) - mark(x))
+
+    function mark(cmpId) {
+      if (cmpId.match(/test|tst/i)) return 10
+      return 0
+    }
+
+    function expand() {
+      const length_before = Object.keys(candidates).length
+      Object.keys(candidates).forEach(k=> 
+        jb.studio.statistics[candidates[k]] && (jb.studio.statistics[candidates[k]].by || []).forEach(caller=>candidates[caller] = true))
+      return Object.keys(candidates).length > length_before
+    }
+  }
+})
+
+jb.component('studio.circuitOptions', {
+  params: [
+    {id: 'path'}
+  ],
+  impl: (ctx,path) => jb.studio.circuitOptions(path.split('~')[0])
+})
+
 jb.component('studio.allComps', {
   type: 'data',
-  impl: (ctx,cmpId) => Object.keys(jb.studio.previewjb.comps)
+  impl: () => Object.keys(jb.comps)
 })
 
 jb.component('studio.componentStatistics', {
@@ -9,32 +62,16 @@ jb.component('studio.componentStatistics', {
     {id: 'cmpId', as: 'string', defaultValue: '%%'}
   ],
   impl: (ctx,cmpId) => {
-	  const _jb = jb.studio.previewjb;
-	  jb.utils.subscribe(jb.studio.scriptChange, _=>_jb.statistics = null);
-	  if (!_jb.statistics) {
-      const refs = {}, comps = _jb.comps;
+	  jb.studio.calcRefs()
 
-      Object.keys(comps).filter(k=>comps[k]).forEach(k=>
-        refs[k] = {
-          refs: calcRefs(comps[k].impl).filter((x,index,self)=>self.indexOf(x) === index) ,
-          by: []
-      })
-      Object.keys(comps).filter(k=>comps[k]).forEach(k=>
-        refs[k].refs.forEach(cross=>
-          refs[cross] && refs[cross].by.push(k))
-      )
-
-      _jb.statistics = refs;
-    }
-
-    const cmp = _jb.comps[cmpId], refs = _jb.statistics
+    const cmp = jb.comps[cmpId], refs = jb.studio.statistics
     if (!cmp) return {}
-    const asStr = '' //jb.utils.prettyPrint(cmp.impl || '',{comps: _jb.comps})
+    const asStr = '' //jb.utils.prettyPrint(cmp.impl || '',{comps: jb.comps})
 
     return {
       id: cmpId,
-      file: (cmp[_jb.core.location] || [])[0],
-      lineInFile: +(cmp[_jb.core.location] ||[])[1],
+      file: (cmp[jb.core.location] || [])[0],
+      lineInFile: +(cmp[jb.core.location] ||[])[1],
       linesOfCode: (asStr.match(/\n/g)||[]).length,
       refs: refs[cmpId].refs,
       referredBy: refs[cmpId].by,
@@ -42,12 +79,6 @@ jb.component('studio.componentStatistics', {
       implType: typeof cmp.impl,
       refCount: refs[cmpId].by.length,
       size: asStr.length
-    }
-
-    function calcRefs(profile) {
-      if (profile == null || typeof profile != 'object') return [];
-      return Object.keys(profile).reduce((res,prop)=>
-        res.concat(calcRefs(profile[prop])),[_jb.utils.compName(profile)])
     }
 	}
 })
@@ -60,8 +91,7 @@ jb.component('studio.references', {
   impl: (ctx,path) => {
 	  if (path.indexOf('~') != -1) return [];
 
-    //debugger;refs(jb.studio.previewjb.comps['test.referer1']);
-    var res = jb.entries(jb.studio.previewjb.comps)
+    var res = jb.entries(jb.comps)
     	.map(e=>({id: e[0], refs: refs(e[1].impl,`${e[0]}~impl`)}))
       .filter(e=>e.refs.length > 0)
     return res;

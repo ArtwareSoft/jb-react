@@ -1,6 +1,6 @@
 jb.extension('ui','comp', {
     initExtension() {
-        Object.assign(this, {
+        return {
             lifeCycle: new Set('init,extendCtx,templateModifier,followUp,destroy'.split(',')),
             arrayProps: new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,frontEndLib,frontEndVar,eventHandler'.split(',')),
             singular: new Set('template,calcRenderProps,toolbar,styleParams,ctxForPick'.split(',')),
@@ -9,7 +9,7 @@ jb.extension('ui','comp', {
             cssElemCounter: 0,
             propCounter: 0,
             cssHashMap: {},                
-        })
+        }
     },
     hashCss(_cssLines,ctx,{existingClass, existingElemId} = {}) {
         const cssLines = (_cssLines||[]).filter(x=>x)

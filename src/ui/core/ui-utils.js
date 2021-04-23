@@ -25,7 +25,7 @@ jb.extension('ui', {
         return jb.frame.parent && jb.frame.parent.jb
       } catch(e) {}
     },
-    inPreview: () => !jb.ui.inStudio() && jb.ui.parentFrameJb() && jb.ui.parentFrameJb().studio.initPreview,
+//    inPreview: () => !jb.ui.inStudio() && jb.ui.parentFrameJb() && jb.ui.parentFrameJb().studio.initPreview,
     widgetBody(ctx) {
       const {elemToTest,tstWidgetId,headlessWidget,FEwidgetId, headlessWidgetId} = ctx.vars
       const top = elemToTest ||
@@ -113,6 +113,7 @@ jb.extension('ui', {
           el = el.parentNode
         }
     },
+    scrollIntoView: el => el.scrollIntoViewIfNeeded && el.scrollIntoViewIfNeeded(),
     activeElement: () => document.activeElement,
     find(el,selector,options) {
       if (!el) return []

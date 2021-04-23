@@ -323,7 +323,7 @@ jb.component('studio.getOrCreateCompInArray', {
 			return `${path}~${existingFeature}`
 		  } else {
 			const length = arrayVal.length
-			jb.push(arrayRef,{$: compName},ctx)
+			jb.db.push(arrayRef,{$: compName},ctx)
 			return `${path}~${length}`
 		  }
 		}

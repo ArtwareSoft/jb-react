@@ -308,7 +308,7 @@ jb.component('studio.openNewPage', {
         file: '%$dialogData/file%'
       }),
       writeValue('%$studio/profile_path%', '%$compName%~impl'),
-      writeValue('%$studio/page%', '%$compName%'),
+      writeValue('%$studio/circuit%', '%$compName%'),
       studio.openControlTree(),
       tree.regainFocus(),
     )

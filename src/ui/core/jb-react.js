@@ -289,8 +289,8 @@ jb.extension('ui', 'react', {
                 elem[id] = JSON.parse(val) || ''
             } catch (e) {}
             jb.log(`dom set data ${id}`,{elem,att,val})
-        } else if (att === '$focus' && val) {
-            elem.setAttribute('__focus',val)
+        } else if (att === '$focus') {
+            elem.setAttribute('__focus',val || 'no source')
             jb.ui.focus(elem,val)
         } else if (att === '$scrollDown' && val) {
             elem.__appScroll = true

@@ -109,7 +109,7 @@ jb.component('studioHelper.jbEditor', {
         features: [watchRef('%$jbEditorCntrData/selected%')]
       })
     ],
-    features: [css('{ height: 200px; padding: 50px }'), studio.jbEditorContainer('helper')]
+    features: [css('{ height: 200px; padding: 50px }')]
   })
 })
 
@@ -121,7 +121,7 @@ jb.component('studioHelper.jbEditor.callbag', {
     ],
     features: [
       css('{ height: 200px; padding: 50px }'),
-      studio.jbEditorContainer({id: 'helper', initialSelection: 'dataTest.callbag.pipe~impl~calculate~items~0~elems~0', circuit: 'dataTest.callbag.pipe'})
+      //studio.jbEditorContainer({id: 'helper', initialSelection: 'dataTest.callbag.pipe~impl~calculate~items~0~elems~0', circuit: 'dataTest.callbag.pipe'})
     ]
   })
 })
@@ -137,7 +137,7 @@ jb.component('studioHelper.inteliTree', {
     controls: [
       studio.jbEditorInteliTree('%$path%~impl~controls')
     ],
-    features: [css('{ height: 200px; padding: 50px }'), studio.jbEditorContainer('helper')]
+    features: [css('{ height: 200px; padding: 50px }')]
   })
 })
 

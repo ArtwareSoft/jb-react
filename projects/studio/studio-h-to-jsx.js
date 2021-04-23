@@ -53,12 +53,11 @@ jb.extension('studio', 'jsx', {
   testJsxToH() {
       input = (state,h) => h('div',{a: state.a},h('span'));
       const res = jb.studio.hToJSX(input.toString().split('=>').slice(1).join('=>'));
-      console.log('jsx',jb.studio.pretty(res));
+      console.log('jsx',jb.utils.prettyPrint(res));
       console.log('back to h',jb.studio.jsxToH(res))
   },
 
   jsxToH(jsx) {
-    jb.studio.initJsxToH();
     try  {
     return Babel.transform(jsx, {
       "plugins": [["transform-react-jsx", { "pragma": "h"  }]]
@@ -69,7 +68,6 @@ jb.extension('studio', 'jsx', {
   },
 
   hToJSX(hFunc) {
-      jb.studio.initJsxToH();
       try {
       return Babel.transform(hFunc, {
         "plugins": ['h-to-jsx']
@@ -78,14 +76,6 @@ jb.extension('studio', 'jsx', {
       jb.logException(e)
     }
   },
-})
-
-jb.component('studio.pretty', {
-  type: 'data',
-  params: [
-    {id: 'text', as: 'string', defaultValue: '%%'}
-  ],
-  impl: (ctx,text) => jb.studio.pretty(text)
 })
 
 jb.component('studio.jsxToH', {
@@ -126,6 +116,6 @@ jb.component('studio.templateAsJsx', {
 			}
 		},
 		$jb_observable: cmp =>
-			jb.studio.refObservable(jb.studio.refOfPath(ctx.params.path()),cmp,{includeChildren: 'yes'})
+			jb.watchableComps.handler.refObservable(jb.watchableComps.handler.refOfPath(ctx.params.path()),cmp,{includeChildren: 'yes'})
 	})
 })

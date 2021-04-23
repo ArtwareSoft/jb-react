@@ -200,7 +200,7 @@ jb.component('studio.jbEditorMenu', {
       menu.action({
         title: 'Set as current page',
         action: writeValue(
-          '%$studio/page%',
+          '%$studio/circuit%',
           split({separator: '~', text: '%$path%', part: 'first'})
         )
       }),

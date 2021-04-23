@@ -147,7 +147,7 @@ Object.assign(jb.ui, {
       if (existingFeature != -1)
         writeToExistingComp(`${path}~${existingFeature}`)
       else
-        jb.push(arrayRef,newComp,ctx)
+        jb.db.push(arrayRef,newComp,ctx)
     }
 
     function writeToExistingComp(compPath) {

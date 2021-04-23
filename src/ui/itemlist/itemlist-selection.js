@@ -56,7 +56,7 @@ jb.component('itemlist.selection', {
       const elem = parent.children[cmp.state.selected]
       if (elem) {
         elem.classList.add('selected')
-        elem.scrollIntoViewIfNeeded()
+        jb.ui.scrollIntoView(elem)
       }
     }),
     frontEnd.method('setSelected', ({data},{cmp}) => {

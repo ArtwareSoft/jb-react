@@ -1,5 +1,3 @@
-// var {multiSelect, removeFromArray, addToArray } = jb.ns('multiSelect')
-
 jb.component('multiSelect', {
     type: 'control',
     description: 'select list of options, check multiple',
@@ -25,7 +23,7 @@ jb.component('multiSelect.modelAsBooleanRef',{
         return { $jb_val: val => val === undefined ? has() : val === true ? add() : remove() }
 
         function has() { return jb.val(ref).indexOf(code) != -1 }
-        function add() { if (!has(code)) jb.push(ref, code,ctx) }
+        function add() { if (!has(code)) jb.db.push(ref, code,ctx) }
         function remove() { 
             const index = jb.val(ref).indexOf(code)
             index != -1 && jb.db.splice(ref,[[index,1]],ctx)

@@ -12,9 +12,9 @@ jb.component('sampleProject.main', {
 jb.component('workerPreviewTest.basic', {
   impl: uiTest({
     timeout: 1000,
-    runBefore: writeValue('%$studio/page%','sampleProject.main'),
+    runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
     checkResultRx: () => jb.ui.renderingUpdates,
-    control: remote.wPreviewCtrl(),
+    control: preview.remoteWidget(),
     expectedResult: contains('hello')
   })
 })
@@ -23,11 +23,11 @@ jb.component('workerPreviewTest.changeScript', {
   impl: uiFrontEndTest({
     renderDOM: true,
     timeout: 5000,
-    runBefore: writeValue('%$studio/page%','sampleProject.main'),
+    runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
     control: group({
       controls: [
         button({title: 'change script', action: writeValue(studio.ref('sampleProject.main~impl~controls~text'),'world') }),
-        remote.wPreviewCtrl()
+        preview.remoteWidget()
       ],
     }),
     action: runActions(
@@ -43,11 +43,11 @@ jb.component('workerPreviewTest.addCss', {
   impl: uiFrontEndTest({
     renderDOM: true,
     timeout: 5000,
-    runBefore: writeValue('%$studio/page%','sampleProject.main'),
+    runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
     control: group({
       controls: [
         button({title: 'change script', action: writeValue(studio.ref('sampleProject.main~impl~controls~features'),() => css('color: red')) }),
-        remote.wPreviewCtrl()
+        preview.remoteWidget()
       ],
     }),
     action: runActions(
@@ -65,13 +65,13 @@ jb.component('workerPreviewTest.changeCss', {
     renderDOM: true,
     timeout: 5000,
     runBefore: runActions(
-      writeValue('%$studio/page%','sampleProject.main'),
+      writeValue('%$studio/circuit%','sampleProject.main'),
       writeValue(studio.ref('sampleProject.main~impl~controls~features'),() => css('color: green'))
     ),
     control: group({
       controls: [
         button({title: 'change script', action: writeValue(studio.ref('sampleProject.main~impl~controls~features'),() => css('color: red')) }),
-        remote.wPreviewCtrl()
+        preview.remoteWidget()
       ],
     }),
     action: runActions(
@@ -80,7 +80,7 @@ jb.component('workerPreviewTest.changeCss', {
       waitFor(()=>Array.from(document.querySelectorAll('head>style')).find(x=>x.innerText.match(/color: red/)))
     ),    
     expectedResult: () => getComputedStyle(document.querySelector('[cmp-pt="text"]')).color == 'rgb(255, 0, 0)',
-    cleanUp: () => Array.from(document.querySelectorAll('head>style')).filter(x=>x.innerText.match(/tests•wPreview/)).forEach(x=>x.remove())
+    cleanUp: () => Array.from(document.querySelectorAll('head>style')).filter(x=>x.innerText.match(/tests•preview/)).forEach(x=>x.remove())
   })
 })
 
@@ -88,10 +88,10 @@ jb.component('workerPreviewTest.suggestions', {
   impl: uiFrontEndTest({
     renderDOM: true,
     timeout: 5000,
-    runBefore: writeValue('%$studio/page%','sampleProject.main'),
+    runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
     control: group({
       controls: [
-        remote.wPreviewCtrl(),
+        preview.remoteWidget(),
         studio.propertyPrimitive('sampleProject.main~impl~controls~text')
       ],
     }),
@@ -110,10 +110,10 @@ jb.component('workerPreviewTest.suggestions.select', {
   impl: uiFrontEndTest({
     renderDOM: true,
     timeout: 5000,
-    runBefore: writeValue('%$studio/page%','sampleProject.main'),
+    runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
     control: group({
       controls: [
-        remote.wPreviewCtrl(),
+        preview.remoteWidget(),
         studio.propertyPrimitive('sampleProject.main~impl~controls~text')
       ],
     }),
@@ -121,7 +121,7 @@ jb.component('workerPreviewTest.suggestions.select', {
       uiAction.waitForSelector('[cmp-pt="text"]'),
       uiAction.waitForSelector('input'),
       uiAction.setText('hello %$v','input'),
-      uiAction.keyboardEvent({ selector: 'input', type: 'keyup', keyCode: ()=> '%'.charCodeAt(0) }),
+      uiAction.keyboardEvent({ selector: 'input', type: 'keyup', keyCode: '%'.charCodeAt(0) }),
       uiAction.waitForSelector('.jb-dialog .jb-item'),
       uiAction.click('.jb-dialog .jb-item:first-child'),
       uiAction.keyboardEvent({ selector: 'input', type: 'keyup', keyCode: 13 }),
@@ -131,14 +131,27 @@ jb.component('workerPreviewTest.suggestions.select', {
   })
 })
 
+// jb.component('workerPreviewTest.suggestions2', {
+//   impl: uiTest({
+//     runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
+//     control: group({
+//       controls: [
+//         preview.remoteWidget(),
+//         studio.propertyPrimitive('sampleProject.main~impl~controls~text')
+//       ],
+//     }),
+//     expectedResult: contains('hello world')
+//   })
+// })
+
 jb.component('workerPreviewTest.suggestions.filtered', {
   impl: uiFrontEndTest({
     renderDOM: true,
     timeout: 5000,
-    runBefore: writeValue('%$studio/page%','sampleProject.main'),
+    runBefore: writeValue('%$studio/circuit%','sampleProject.main'),
     control: group({
       controls: [
-        remote.wPreviewCtrl(),
+        preview.remoteWidget(),
         studio.propertyPrimitive('sampleProject.main~impl~controls~text')
       ],
     }),
@@ -155,16 +168,62 @@ jb.component('workerPreviewTest.suggestions.filtered', {
 
 jb.component('jbEditorTest.basic', {
   impl: uiTest({
-    timeout: 1000,
-    runBefore: writeValue('%$studio/page%','sampleProject.main'),
-    checkResultRx: () => jb.ui.renderingUpdates,
     control: group({
       controls: [
-        remote.wPreviewCtrl(),
-        studio.jbEditor('sampleProject.main~impl'),
-      ],
-      features: studio.jbEditorContainer('jbEditorTest')
+        preview.remoteWidget(),
+        studio.jbEditor('sampleProject.main~impl')
+      ]
     }),
-    expectedResult: contains('hello')
-  })
+    runBefore: writeValue('%$studio/circuit%', 'sampleProject.main'),
+    checkResultRx: () => jb.ui.renderingUpdates,
+    expectedResult: contains('hello'),
+    timeout: 1000
+  }),
+  location: null
 })
+
+// jb.component('jbEditorTest.onWorker', {
+//   impl: uiFrontEndTest({
+//     renderDOM: true,
+//     timeout: 5000,
+//     runBefore: runActions(
+//       writeValue('%$studio/circuit%','sampleProject.main'),
+//       remote.action(() => jb.component('dataResource.studio', { watchableData: {
+//         jbEditor: { 
+//           circuit: 'sampleProject.main',
+//           selected: 'sampleProject.main~impl~controls~0~text'}} 
+//         }), jbm.worker('inteli'))
+//     ),
+//     control: group({
+//       controls: [
+//         preview.remoteWidget(),
+//         remote.widget(
+//           controlWithFeatures(
+//             studio.jbEditorInteliTree('sampleProject.main~impl'),{
+//               toLoad: [
+//               () => { /* code loader: jb.watchableComps.forceLoad(); jb.ui.createHeadlessWidget() */ },
+//               {$: 'sampleProject.main'}
+//             ]})
+//         ,jbm.worker('inteli')),
+//       ],
+//     }),
+//     action: runActions(
+//       uiAction.click('[path="sampleProject.main~impl~controls~text"]'),
+//       uiAction.waitForSelector('.selected'),
+//       uiAction.keyboardEvent({ selector: '.jb-editor', type: 'keydown', keyCode: 13 }),
+//       uiAction.waitForSelector('.jb-dialog'),
+//     ),    
+//     expectedResult: contains('hello')
+//   })
+// })
+
+// jb.component('workerPreviewTest.yellowPages', {
+//   impl: dataTest({
+//     runBefore: runActions(
+//       jbm.wPreview(),
+//       remote.useYellowPages(jbm.worker())
+//     ),
+//     calculate: remote.data('%$yellowPages/preview%', jbm.worker()),
+//     expectedResult: contains('wPreview')
+//   })
+// })

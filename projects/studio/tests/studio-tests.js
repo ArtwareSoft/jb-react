@@ -13,6 +13,6 @@ jb.component('studioTest.save', {
             waitFor('%$saveResult.isDone()%'),
             http.get('/projects/studio/tests/studio-changing-file.js'),
         ),
-        expectedResult: contains('%$newVal%')
+        expectedResult: and(contains('%$newVal%'),notContains('location'))
     })
 })

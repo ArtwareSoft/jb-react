@@ -88,14 +88,14 @@ jb.extension('net', {
 
 jb.extension('jbm', {
     initExtension() {
-        Object.assign(this, { childJbms: {}, networkPeers: {} })
         Object.assign(jb, {
             uri: jb.uri || jb.frame.jbUri,
             ports: {},
             remoteExec: sctx => jb.codeLoader.bringMissingCode(sctx).then(()=>jb.remoteCtx.deStrip(sctx)()),
             createCallbagSource: sctx => jb.remoteCtx.deStrip(sctx)(),
             createCalllbagOperator: sctx => jb.remoteCtx.deStrip(sctx)(),
-        })        
+        })
+        return { childJbms: {}, networkPeers: {} }
     },
     portFromFrame(frame,to,options) {
         if (jb.ports[to]) return jb.ports[to]
@@ -270,17 +270,18 @@ jb.component('jbm.worker', {
     type: 'jbm',
     params: [
         {id: 'id', as: 'string', defaultValue: 'w1' },
-        {id: 'startupCode', type: 'startupCode', dynamic: true, defaultValue: startup.codeLoaderClient() },
         {id: 'init' , type: 'action', dynamic: true },
+        {id: 'startupCode', type: 'startupCode', dynamic: true, defaultValue: startup.codeLoaderClient() },
         {id: 'networkPeer', as: 'boolean', description: 'used for testing' },
     ],    
-    impl: (ctx,name,startupCode, init, networkPeer) => {
+    impl: (ctx,name,init,startupCode,networkPeer) => {
         const childsOrNet = networkPeer ? jb.jbm.networkPeers : jb.jbm.childJbms
         if (childsOrNet[name]) return childsOrNet[name]
         const workerUri = networkPeer ? name : `${jb.uri}•${name}`
         const parentOrNet = networkPeer ? `jb.jbm.gateway = jb.jbm.networkPeers['${jb.uri}']` : 'jb.parent'
         const code = startupCode(ctx.setVars({uri: workerUri, multipleJbmsInFrame: false}))
         const workerCode = `
+jbInWorker = true
 jb_modules = { core: ${JSON.stringify(jb_modules.core)} };
 ${jb_codeLoaderServer.toString()}
 ${jb_evalCode.toString()}
@@ -295,7 +296,7 @@ jbLoadingPhase = 'appFiles'
 `
         const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name, type: 'application/javascript'})))
         childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
-        const result = Promise.resolve(init()).then(()=>childsOrNet[name])
+        const result = Promise.resolve(init(ctx.setVar('jbm',childsOrNet[name]))).then(()=>childsOrNet[name])
         result.uri = workerUri
         return result
     }
@@ -317,7 +318,7 @@ jb.component('jbm.child', {
 `)
         const result = Promise.resolve(_child).then(child=>{
             initChild(child)
-            return Promise.resolve(()=>init()).then(()=>child)
+            return Promise.resolve(()=>init(ctx.setVar('jbm',child))).then(()=>child)
         })
         result.uri = childUri
         return result
@@ -397,7 +398,7 @@ jb.component('jbm.byUri', {
     }
 })
 
-jb.component('jbm.same', {
+jb.component('jbm.self', {
     type: 'jbm',
     impl: () => jb
 })

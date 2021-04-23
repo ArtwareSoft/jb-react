@@ -1,14 +1,27 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const vscode = require("vscode");
-global.vscodeNS = vscode
-const fs = require("fs")
+global.vscodeNS = require("vscode");
+global.fs = require("fs")
 const vm = require("vm")
+const {Worker} = require('worker_threads')
 global.jbBaseUrl = '/home/shaiby/projects/jb-react' // TODO: to be put in a global place, maybe in extension code
 // (vscode.workspace.workspaceFolders[0] || { uri: { path: '' } }).uri.path
 global.jbInvscode = true
 global.reloadJbart = loadCodeLoaderServer
 global.loadProjectsCode = loadProjectsCode
+global.Worker = Worker
+
+console.log('vscode extension started')
+
+async function activate(context) {
+    console.log('vscode extension activate')
+    await loadCodeLoaderServer()
+    console.log('vscode init')
+    await jb.vscode.init()
+    context.subscriptions.push(vscodeNS.window.registerWebviewViewProvider('jbart.preview', jb.vscode.createWebViewProvider('preview',context.extensionUri)))
+    context.subscriptions.push(vscodeNS.window.registerWebviewViewProvider('jbart.jbEditor', jb.vscode.createWebViewProvider('jbEditor',context.extensionUri)))
+}
+exports.activate = activate
 
 function loadCodeLoaderServer() {
     try {
@@ -16,7 +29,7 @@ function loadCodeLoaderServer() {
         vm.runInThisContext(loaderCode)
         return jb_codeLoaderServer('vscode', { projects: ['studio'], loadFileFunc, getAllCodeFunc })
     } catch (e) {
-        vscode.window.showErrorMessage(`error loading jb-loader: ${JSON.stringify(e || '')}`)
+        vscodeNS.window.showErrorMessage(`error loading jb-loader: ${JSON.stringify(e || '')}`)
     }
 }
 
@@ -24,7 +37,7 @@ function loadFileFunc(url) {
     vm.runInThisContext(fs.readFileSync(`${jbBaseUrl}${url}`), url)
 }
 
-function getAllCodeFunc(path, _include, _exclude) { // todo - get files from editor version
+function getAllCodeFunc(path, _include, _exclude) {
     const include = _include && new RegExp(_include)
     const exclude = _exclude && new RegExp(_exclude)
     return Promise.resolve(getFilesInDir(path).filter(f => f.match(/\.js/)).map(path => fileContent(path)))
@@ -56,9 +69,3 @@ async function loadProjectsCode(projects) {
     await jb_evalCode(projectsCode,{jb, jb_loadFile: loadFileFunc})
 }
 
-async function activate(context) {
-    await loadCodeLoaderServer()
-    jb.vscode.init()
-    context.subscriptions.push(vscode.window.registerWebviewViewProvider('jbart.jbEditor', jb.vscode.createWebViewProvider('jbEditor',context.extensionUri)))
-}
-exports.activate = activate;
