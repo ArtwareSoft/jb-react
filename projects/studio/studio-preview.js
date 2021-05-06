@@ -11,7 +11,7 @@ jb.component('jbm.preview', {
 jb.component('studio.initPreview', {
     type: 'action',
     impl: runActions(
-        Var('dataResources', () => jb.studio.projectCompsAsEntries().map(e=>e[0]).filter(x=>x.match(/^dataResource/)).map(x=> ({$: x}))),
+        Var('dataResources',() => jb.studio.projectCompsAsEntries().map(e=>e[0]).filter(x=>x.match(/^dataResource/)).map(x=> ({$: x}))),
         Var('circuit', '%$studio/circuit%'),
         writeValue('%$yellowPages/preview%', '%$jbm/uri%'),
         remote.action(runActions(
@@ -30,7 +30,7 @@ jb.component('studio.initPreview', {
             rx.var('cssOnlyChange',studio.isCssPath('%path%')),
             sink.action(remote.action( preview.handleScriptChangeOnPreview('%$cssOnlyChange%'), '%$jbm%'))
         )
-    )
+    ),
 })
 
 jb.component('preview.remoteWidget', {
@@ -47,16 +47,18 @@ jb.component('preview.control', {
     type: 'control',
     impl: group({
         controls: ctx => { 
-            const circuit = ctx.exp('%$studio/circuit%')
+            const _circuit = ctx.exp('%$studio/circuit%')
+            const circuit = (jb.path(jb.comps[_circuit],'impl.$') || '').match(/Test/) ? { $: 'test.showTestInStudio', testId: _circuit} : { $: _circuit }
             jb.log('preview circuit',{circuit, ctx})
-            return circuit && ctx.run({$: circuit})
+            return circuit && ctx.run(circuit)
         },
         features: [ 
             If(ctx => !jb.comps[ctx.exp('%$studio/circuit%')], group.wait(codeLoader.getCodeFromRemote('%$studio/circuit%'))),
             watchRef('%$studio/scriptChangeCounter%'),
             variable('$previewMode',true)
         ]
-    }) 
+    }),
+    require: {$: 'test.showTestInStudio'}
 })
 
 jb.component('preview.handleScriptChangeOnPreview', {

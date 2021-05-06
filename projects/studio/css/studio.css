@@ -117,6 +117,8 @@
   --jb-dropdown-bg:             var(--vscode-dropdown-background);
   --jb-dropdown-border:                 var(--vscode-dropdown-border);
   --jb-error-fg:                 var(--vscode-errorForeground);
+  --jb-success-fg: #4BB543;
+  --jb-warning-fg: #ffcc00;
 
   --jb-input-bg:                var(--vscode-input-background);
   --jb-input-fg:                var(--vscode-input-foreground);

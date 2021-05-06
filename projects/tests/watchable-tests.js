@@ -351,7 +351,7 @@ jb.component('uiTest.watchableAsText', {
             id('editor'),
             feature.onKey(
               'Alt-P',
-              writeValue('%$path%', textEditor.cursorPath('%$watchedText%'))
+              writeValue('%$path%', codeEditor.cursorPath('%$watchedText%'))
             ),
             textarea.initTextareaEditor(),
             watchRef({ ref: '%$watchablePeople%', includeChildren: 'yes'})
@@ -359,10 +359,10 @@ jb.component('uiTest.watchableAsText', {
         }),
         button({
           title: 'show path of cursor',
-          action: writeValue('%$path%', textEditor.cursorPath('%$watchedText%')),
+          action: writeValue('%$path%', codeEditor.cursorPath('%$watchedText%')),
           features: [
             id('show-path'),
-            textEditor.enrichUserEvent('#editor'),
+            codeEditor.enrichUserEvent('#editor'),
           ]
         }),
         button({

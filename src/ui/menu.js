@@ -1,5 +1,3 @@
-// var { menu,menuStyle,menuSeparator,icon,key} = jb.ns('menu,menuStyle,menuSeparator,icon,key')
-
 jb.component('menu.menu', {
   type: 'menu.option',
   params: [
@@ -60,7 +58,7 @@ jb.component('menu.action', {
   ],
   impl: ctx => ctx.params.showCondition && ({
 			leaf : ctx.params,
-			action: _ => ctx.params.action(ctx.setVars({topMenu:null})), // clean topMenu from context after the action
+			action: () => ctx.params.action(ctx.setVars({topMenu:null})), // clean topMenu from context after the action
       title: ctx.params.title(ctx),
       shortcut: ctx.params.shortcut,
 			runShortcut: event => {
@@ -72,7 +70,7 @@ jb.component('menu.action', {
   require: {$: 'key.eventMatchKey'}
 })
 
-// ********* actions / controls ************
+// ********* controls ************
 
 jb.component('menu.control', {
   type: 'control,clickable,menu',
@@ -83,7 +81,6 @@ jb.component('menu.control', {
   ],
   impl: ctx => {
     const model = ctx.params.menu()
-    if (!model) debugger
     const menuModel = model || { options: [], ctx, title: ''}
     const ctxWithModel = ctx.setVars({menuModel})
     const ctxToUse = ctx.vars.topMenu ? ctxWithModel : jb.ui.extendWithServiceRegistry(ctxWithModel.setVar('topMenu',{}))

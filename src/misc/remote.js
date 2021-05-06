@@ -79,14 +79,24 @@ jb.component('remote.initShadowData', {
     impl: rx.pipe(
         source.watchableData({ref: '%$src%', includeChildren: 'yes'}),
         rx.map(obj(prop('op','%op%'), prop('path',({data}) => jb.db.pathOfRef(data.ref)))),
-        sink.action(remote.action( 
-            (ctx,{},{headlessWidget}) => {
-                jb.log('shadowData update',{op: ctx.data.op, ctx})
-                jb.db.doOp(jb.db.refOfPath(ctx.data.path), ctx.data.op, ctx.setVar('headlessWidget',headlessWidget))
-            },
-            '%$jbm%')
-        )
+        sink.action(remote.action( remote.updateShadowData('%$headlessWidget%'), '%$jbm%'))
     )
+})
+
+jb.component('remote.updateShadowData', {
+    type: 'action:0',
+    description: 'internal - update shadow on remote jbm',
+    params: [
+        {id: 'headlessWidget', as: 'boolean', defaultValue: true },
+    ],    
+    impl: (ctx,headlessWidget) => {
+        jb.log('shadowData update',{op: ctx.data.op, ctx})
+        const ref = jb.db.refOfPath(ctx.data.path)
+        if (!ref)
+            jb.logError('shadowData path not found at destination',{path: ctx.data.path, ctx, headlessWidget})
+        else
+            jb.db.doOp(ref, ctx.data.op, ctx.setVar('headlessWidget',headlessWidget))
+    }
 })
 
 jb.component('remote.copyPassiveData', {

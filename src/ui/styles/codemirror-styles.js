@@ -117,7 +117,7 @@ jb.component('editableText.codemirror', {
 	})),
 	frontEnd.var('_enableFullScreen', '%$enableFullScreen%'),
 	method('onCtrlEnter', call('onCtrlEnter')),
-	textEditor.cmEnrichUserEvent(),
+	codeEditor.cmEnrichUserEvent(),
     frontEnd.init( (ctx,vars) => ! jb.ui.hasClass(vars.el, 'jb-textarea-alternative-for-codemirror')
 		 && jb.codemirror.injectCodeMirror(ctx,vars)),
 	frontEnd.onRefresh(({},{text,cmp}) => cmp.editor.setValue(text)),
@@ -164,7 +164,7 @@ jb.component('codemirror.lineNumbers', {
 	}})),
 })
 
-jb.component('textEditor.cmEnrichUserEvent', {
+jb.component('codeEditor.cmEnrichUserEvent', {
     type: 'feature',
     params: [
       {id: 'cmSelector', as: 'string', description: 'used for external buttons'}

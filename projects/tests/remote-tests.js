@@ -73,7 +73,7 @@ jb.component('remoteTest.jbm.byUri', {
 jb.component('remoteTest.workerByUri', {
   impl: dataTest({
     timeout: 1000,
-    runBefore: jbm.worker(),
+    runBefore: jbm.worker('w1'),
     calculate: rx.pipe(
       source.data('hello'),
       remote.operator(rx.map('%% world'), jbm.byUri('tests•w1'))
@@ -134,6 +134,27 @@ jb.component('remoteTest.shadowData', {
         rx.take(1)
       )), 
       jbm.worker()
+    ),
+    expectedResult: equals('Dan')
+  })
+})
+
+jb.component('remoteTest.shadowData.childJbm', {
+  impl: dataTest({
+    timeout: 5000,
+    runBefore: runActions(
+      remote.action(addComponent({id: 'person', value: obj(), type: 'watchableData' }), jbm.child('inner')),
+      remote.initShadowData('%$person%', jbm.child('inner')),
+      () => { jb.exec(runActions(delay(1), writeValue('%$person/name%','Dan'))) } // writeValue after calculate
+    ),
+    calculate: remote.data(
+      pipe(rx.pipe(
+        source.watchableData('%$person/name%'),
+        rx.log('test'),
+        rx.map('%newVal%'),
+        rx.take(1)
+      )), 
+      jbm.child('inner')
     ),
     expectedResult: equals('Dan')
   })
@@ -260,7 +281,7 @@ jb.component('remoteTest.dynamicProfileFunc', {
 
 jb.component('remoteWidgetTest.button', {
   impl: uiTest({
-    timeout: 1000,
+    timeout: 3000,
     checkResultRx: () => jb.ui.renderingUpdates,
     control: remote.widget(button('hello world'), jbm.worker()),
     expectedResult: contains('hello world')
@@ -541,7 +562,7 @@ jb.component('remoteWidgetTest.refresh', {
 
 jb.component('eventTracker.worker.vDebugger', {
   impl: uiTest({
-    timeout: 2000,
+    timeout: 5000,
     runBefore: remote.action(
       runActions(
         () => jb.spy.initSpy({spyParam: 'remote,log1'}),

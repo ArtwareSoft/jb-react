@@ -47,7 +47,7 @@ jb.component('studio.compInspector', {
     features: [
       variable('cmpId', firstSucceeding('%$$state.cmpId%', '%$inspectedProps.cmpId%')),
       variable('frameUri', firstSucceeding('%$$state.frameUri%', '%$inspectedProps.frameUri%')),
-      variable('frameOfElem', ({},{frameUri}) => [self,self.parent,...Array.from(frames)].filter(x=>x.jb.uri == frameUri)[0]),
+      variable('frameOfElem', ({},{frameUri}) => [globalThis,globalThis.parent,...Array.from(frames)].filter(x=>x.jb.uri == frameUri)[0]),
       variable('elem', ({},{cmpId,frameOfElem}) => frameOfElem && frameOfElem.document.querySelector(`[cmp-id="${cmpId}"]`)),
       variable('inspectedCmp', ({},{frameOfElem, elem}) => 
             jb.path(elem && frameOfElem && frameOfElem.jb.ctxDictionary[elem.getAttribute('full-cmp-ctx')],'vars.cmp')),
@@ -74,7 +74,7 @@ jb.component('studio.eventsOfComp', {
           layout: layout.horizontal('2'),
           controls: [
             text({
-                text: pipeline(eventTracker.getSpy(), '%$events/length%/%logs/length%'),
+                text: pipeline(eventTracker.getParentSpy(), '%$events/length%/%logs/length%'),
                 title: 'counts',
                 features: [css.padding({top: '5', left: '5'})]
             }),              
@@ -99,7 +99,7 @@ jb.component('studio.eventsOfComp', {
                 css.width('300')
               ]
             }),
-            eventTracker.eventTypes()
+            eventTracker.eventTypes(eventTracker.getParentSpy())
           ],
           features: css.color({background: 'var(--jb-menubar-inactive-bg)'})
         }),
@@ -143,9 +143,9 @@ jb.component('studio.eventsOfComp', {
         id('cmp-event-tracker'),
         variable({
           name: 'events',
-          value: pipeline(eventTracker.eventItems('%$studio/eventTrackerCmpQuery%'),filter('%cmp/cmpId%==%$cmpId%'))
+          value: pipeline(eventTracker.eventItems(eventTracker.getParentSpy(),'%$studio/eventTrackerCmpQuery%'),filter('%cmp/cmpId%==%$cmpId%'))
         }),
-        eventTracker.watchSpy(1000),
+        eventTracker.watchSpy(eventTracker.getParentSpy(), 1000),
       ]
     })
 })

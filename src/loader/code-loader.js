@@ -1,7 +1,7 @@
 jb.extension('codeLoader', {
     initExtension() {
         return {
-            clientComps: ['#extension','#core.run','#component','#jbm.extendPortToJbmProxy','#jbm.portFromFrame','#spy.initSpy','#codeLoader.getCodeFromRemote','codeLoader.getCode','waitFor'],
+            clientComps: ['#extension','#core.run','#component','#jbm.extendPortToJbmProxy','#jbm.portFromFrame','#spy.initSpy','#codeLoader.getCodeFromRemote','#cbHandler.terminate','codeLoader.getCode','waitFor'],
             existingFEPaths: {},
             loadedFElibs: {},
             server: jb.frame.jb_codeLoaderServer
@@ -163,4 +163,12 @@ jb.component('codeLoader.getCodeFromRemote', {
         {id: 'ids'}
     ],
     impl: async (ctx,ids) => ids && jb.codeLoader.getCodeFromRemote(ids.split(','))
+})
+
+jb.component('codeLoader.setCodeLoaderJbm', {
+    params: [
+        {id: 'codeLoaderUri' }
+    ],
+    impl: (ctx, uri) => jb.codeLoaderJbm = ctx.run({$: 'jbm.byUri', uri}),
+    require: {$ : 'jbm.byUri'}
 })

@@ -272,7 +272,7 @@ jb.component('studio.wrapWithGroup', {
   params: [
     {id: 'path', as: 'string'}
   ],
-  impl: (ctx,path) =>		jb.studio.wrapWithGroup(path,ctx)
+  impl: (ctx,path) =>	jb.studio.wrapWithGroup(path,ctx)
 })
 
 jb.component('studio.addProperty', {

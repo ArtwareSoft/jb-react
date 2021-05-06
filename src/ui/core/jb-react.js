@@ -36,7 +36,7 @@ jb.extension('ui', 'react', {
             })
 
             if (widgetId && !destroyLocally)
-                jb.ui.widgetUserRequests.next({$:'destroy', ...e })
+                jb.ui.widgetUserRequests.next({$$:'destroy', ...e })
             else 
                 cmps.forEach(cmp=> (cmp.destroyCtxs || []).forEach(ctxIdToRun => {
                     jb.log('backend method destroy uiComp',{cmp, el: cmp.el})
@@ -80,7 +80,7 @@ jb.extension('ui', 'react', {
                 if (__afterIndex != i) res.sameOrder = false
                 if (__afterIndex == -1) {
                     res.length = i+1
-                    res[i] =  {$: 'delete' } //, __afterIndex: i }
+                    res[i] =  {$$: 'delete' } //, __afterIndex: i }
                 } else {
                     reused[__afterIndex] = true
                     const innerDiff = { __afterIndex, ...jb.ui.compareVdom(e, a[__afterIndex],ctx), ...(e.$remount ? {remount: true}: {}) }
@@ -165,13 +165,15 @@ jb.extension('ui', 'react', {
     elemToVdom(elem) {
         if (elem instanceof jb.ui.VNode) return elem
         if (elem.getAttribute('jb_external')) return
+        const textNode = Array.from(elem.children).filter(x=>x.tagName != 'BR').length == 0
         return {
             tag: elem.tagName.toLowerCase(),
             attributes: jb.objFromEntries([
                 ...Array.from(elem.attributes).map(e=>[e.name,e.value]), 
-                ...(jb.path(elem,'firstChild.nodeName') == '#text' ? [['$text',elem.firstChild.nodeValue]] : [])
+                ...(textNode ? [['$text',elem.innerText]] : [])
+                //...(jb.path(elem,'firstChild.nodeName') == '#text' ? [['$text',elem.firstChild.nodeValue]] : [])
             ]),
-            ...( elem.childElementCount && { children: Array.from(elem.children).map(el=> jb.ui.elemToVdom(el)).filter(x=>x) })
+            ...( elem.childElementCount && !textNode && { children: Array.from(elem.children).map(el=> jb.ui.elemToVdom(el)).filter(x=>x) })
         }
     },
 
@@ -192,7 +194,7 @@ jb.extension('ui', 'react', {
             childrenArr.forEach((e,i) => {
                 if (!e) {
                     !sameOrder && (childElems[i].setAttribute('__afterIndex',''+i))
-                } else if (e.$ == 'delete') {
+                } else if (e.$$ == 'delete') {
                     jb.ui.unmount(childElems[i])
                     elem.removeChild(childElems[i])
                     jb.log('removeChild dom',{childElem: childElems[i],e,elem,delta})
@@ -530,7 +532,7 @@ jb.extension('ui', 'react', {
         const removeWidgets = Object.keys(jb.ui.frontendWidgets||{}).filter(id=>!usedWidgets[id])
 
         removeWidgets.forEach(widgetId => {
-            jb.ui.widgetUserRequests.next({$:'destroy', widgetId, destroyWidget: true, cmps: [] })
+            jb.ui.widgetUserRequests.next({$$:'destroy', widgetId, destroyWidget: true, cmps: [] })
             if (jb.ui.frontendWidgets) delete jb.ui.frontendWidgets[widgetId]
         })
         
@@ -545,7 +547,7 @@ jb.extension('ui', 'react', {
         jb.log('garbageCollect',{maxUsed,removedCtxs,removedResources,removeWidgets,removeFollowUps})
 
         function querySelectAllWithWidgets(query) {
-            return jb.ui.headless ? [...Object.values(jb.ui.headless).flatMap(w=>w.body.querySelectorAll(query,{includeSelf:true})), 
+            return jb.ui.headless ? [...Object.values(jb.ui.headless).filter(x=>x.body).flatMap(w=>w.body.querySelectorAll(query,{includeSelf:true})), 
                 ...Array.from(jb.frame.document && document.querySelectorAll(query) || [])] : []
         }
     },

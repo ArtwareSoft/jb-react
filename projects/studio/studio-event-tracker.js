@@ -1,41 +1,72 @@
-// var { chromeDebugger,eventTracker } = jb.ns('chromeDebugger,eventTracker')
+jb.component('studio.eventTracker', {
+  params: [
+    {id: 'spy', dynamic: true, defaultValue: () => jb.path(jb.parent,'spy') }
+  ],
+  type: 'control',
+  impl: group({
+    controls: group({
+      controls: [
+        eventTracker.toolbar('%$spy()%'),
+        table({
+          items: eventTracker.eventItems('%$spy()%','%$eventTracker/eventTrackerQuery%'),
+          controls: [
+            text('%index%'),
+            eventTracker.uiComp(),
+            eventTracker.callbagMessage(),
+            eventTracker.testResult(),
+            text({ text: '%logNames%', features: feature.byCondition(
+              inGroup(list('exception','error'), '%logNames%'),
+              css.color('var(--jb-error-fg)')
+            )}),
+            studio.lowFootprintObj('%err%','err'),
+            studio.objExpandedAsText('%stack%','stack'),
 
-Object.assign(jb.ui, {
-  getSpy: () => jb.path(jb.parent,'spy') || {}
-})
-
-jb.component('studio.openEventTracker', {
-  type: 'action',
-  impl: openDialog({
-    style: dialog.studioFloating({id: 'event-tracker', width: '700', height: '400'}),
-    content: studio.eventTracker(),
-    title: 'Spy',
-    features: dialogFeature.resizer()
-  })
-})
-
-jb.component('eventTracker.getSpy', {
-  impl: () => jb.ui.getSpy()
-})
-
-jb.component('eventTracker.codeSize', {
-  impl: ()=> jb.parent.codeLoader.totalCodeSize ? Math.floor(jb.parent.codeLoader.totalCodeSize/1000) + 'k' : ''
-})
-
-jb.component('eventTracker.clearSpyLog', {
-  type: 'action',
-  impl: runActions(
-    Var('items', eventTracker.eventItems()),
-    (ctx, {items}) => {
-      const lastGroupIndex = items.length - items.reverse().findIndex(x=>x.index == '---')
-      if (lastGroupIndex >= items.length)
-        jb.spy.clear(jb.ui.getSpy(ctx))
-      else
-        jb.ui.getSpy(ctx).logs.splice(0,lastGroupIndex-1)
+            controlWithCondition('%m%',text('%m/$%: %m/t%, %m/cbId%')),
+  //          studio.objExpandedAsText('%m/d%','payload'),
+            studio.lowFootprintObj('%delta%','delta'),
+            studio.lowFootprintObj('%vdom%','vdom'),
+            studio.lowFootprintObj('%ref%','ref'),
+            studio.lowFootprintObj('%value%','value'),
+            studio.lowFootprintObj('%val%','val'),
+            studio.lowFootprintObj('%focusChanged%','focusChanged'),
+            studio.sourceCtxView('%srcCtx%'),
+            studio.sourceCtxView('%cmp/ctx%'),
+            studio.sourceCtxView('%ctx%'),
+          ],
+          style: table.plain(true),
+          visualSizeLimit: 80,
+          lineFeatures: [
+            watchRef({ref: '%$cmpExpanded/{%$index%}%', allowSelfRefresh: true}),
+            watchRef({ref: '%$payloadExpanded/{%$index%}%', allowSelfRefresh: true}),
+            watchRef({ref: '%$testResultExpanded/{%$index%}%', allowSelfRefresh: true}),
+            table.enableExpandToEndOfRow()
+          ],               
+          features: [
+            watchable('cmpExpanded', obj()),
+            watchable('payloadExpanded', obj()),
+            watchable('testResultExpanded', obj()),
+            itemlist.infiniteScroll(5),
+            itemlist.selection({
+              onSelection: runActions(({data}) => { jb.frame.console.log(data) }, eventTracker.highlightEvent('%%'))
+            }),
+            itemlist.keyboardSelection({}),
+            eventTracker.watchSpy('%$spy()%',500),
+          ]
+        })
+      ],
+      features: id('event-tracker'),
+    }),
+    features: [
+      variable('$disableLog',true),
+      watchable('eventTracker',obj())
+    ]
   })
 })
 
 jb.component('eventTracker.toolbar', {
+  params: [
+    {id: 'spy' }
+  ],
   type: 'control',
   impl: group({
     layout: layout.horizontal('2'),
@@ -51,16 +82,9 @@ jb.component('eventTracker.toolbar', {
       divider({style: divider.vertical()}),
       text({
         title: 'counts',
-        text: pipeline(
-            Var('logs', pipeline(
-              eventTracker.getSpy(),
-              '%logs%',
-              //filter(eventTracker.isNotDebuggerEvent())
-            )),
-           '%$events/length%/%$logs/length%'
-        ),
+        text: '%$events/length%/%$spy/logs/length%',
         features: [
-          variable('events', eventTracker.eventItems('%$eventTracker/eventTrackerQuery%')),
+          variable('events', eventTracker.eventItems('%$spy%','%$eventTracker/eventTrackerQuery%')),
           feature.hoverTitle('filtered events / total'),
           css('cursor: default'),
           css.padding({top: '5', left: '5'})
@@ -69,7 +93,7 @@ jb.component('eventTracker.toolbar', {
       divider({style: divider.vertical()}),
       button({
         title: 'clear',
-        action: runActions(eventTracker.clearSpyLog(), refreshControlById('event-tracker')),
+        action: runActions(eventTracker.clearSpyLog('%$spy%'), refreshControlById('event-tracker')),
         style: chromeDebugger.icon(),
         features: feature.hoverTitle('clear')
       }),
@@ -93,11 +117,11 @@ jb.component('eventTracker.toolbar', {
           css.width('300')
         ]
       }),
-      eventTracker.eventTypes()
+      eventTracker.eventTypes('%$spy%')
     ],
     features: [
       chromeDebugger.colors(),
-      eventTracker.watchSpy(100)
+      eventTracker.watchSpy('%$spy%',100)
     ]
   }),
 })
@@ -163,7 +187,7 @@ jb.component('eventTracker.testResult', {
         editableBoolean({databind: '%$testResultExpanded/{%$index%}%', style: chromeDebugger.toggleStyle()}),
         text({
           vars: Var('color',If('%success%','--jb-success-fg','--jb-error-fg')),
-          text: If('%success%','✓ check test reuslt','⚠ check test reuslt'),
+          text: If('%success%','✓ check test result','⚠ check test result'),
           features: css.color('var(%$color%)')
         }),
       ]
@@ -183,94 +207,36 @@ jb.component('eventTracker.testResult', {
   )
 })
 
-jb.component('studio.eventTracker', {
-  type: 'control',
-  impl: group({
-    controls: group({
-      controls: [
-        eventTracker.toolbar(),
-        table({
-          items: eventTracker.eventItems('%$eventTracker/eventTrackerQuery%'),
-          controls: [
-            text('%index%'),
-            eventTracker.uiComp(),
-            eventTracker.callbagMessage(),
-            eventTracker.testResult(),
-            text({ text: '%logNames%', features: feature.byCondition(
-              inGroup(list('exception','error'), '%logNames%'),
-              css.color('var(--jb-error-fg)')
-            )}),
-            studio.lowFootprintObj('%err%','err'),
-            studio.objExpandedAsText('%stack%','stack'),
-
-            controlWithCondition('%m%',text('%m/$%: %m/t%, %m/cbId%')),
-  //          studio.objExpandedAsText('%m/d%','payload'),
-            studio.lowFootprintObj('%delta%','delta'),
-            studio.lowFootprintObj('%vdom%','vdom'),
-            studio.lowFootprintObj('%ref%','ref'),
-            studio.lowFootprintObj('%value%','value'),
-            studio.lowFootprintObj('%val%','val'),
-            studio.lowFootprintObj('%focusChanged%','focusChanged'),
-            studio.sourceCtxView('%srcCtx%'),
-            studio.sourceCtxView('%cmp/ctx%'),
-            studio.sourceCtxView('%ctx%'),
-          ],
-          style: table.plain(true),
-          visualSizeLimit: 80,
-          lineFeatures: [
-            watchRef({ref: '%$cmpExpanded/{%$index%}%', allowSelfRefresh: true}),
-            watchRef({ref: '%$payloadExpanded/{%$index%}%', allowSelfRefresh: true}),
-            watchRef({ref: '%$testResultExpanded/{%$index%}%', allowSelfRefresh: true}),
-            table.enableExpandToEndOfRow()
-          ],               
-          features: [
-            watchable('cmpExpanded', obj()),
-            watchable('payloadExpanded', obj()),
-            watchable('testResultExpanded', obj()),
-            itemlist.infiniteScroll(5),
-            itemlist.selection({
-              onSelection: runActions(({data}) => jb.frame.console.log(data), eventTracker.highlightEvent('%%'))
-            }),
-            itemlist.keyboardSelection({}),
-            eventTracker.watchSpy(500),
-          ]
-        })
-      ],
-      features: id('event-tracker'),
-    }),
-    features: [
-      variable('$disableLog',true),
-      watchable('eventTracker',obj())
-    ]
-  })
-})
-
 jb.component('eventTracker.watchSpy',{
   type: 'feature',
   params: [
-    { id: 'delay', defaultValue: 3000}
+    {id: 'spy' },
+    {id: 'delay', defaultValue: 3000}
   ],
-  impl: followUp.watchObservable(source.callbag(ctx => jb.ui.getSpy(ctx)._obs),'%$delay%')
+  impl: followUp.watchObservable(source.callbag('%$spy/_obs%','%$delay%'))
 })
 
 jb.component('eventTracker.eventTypes', {
+  params: [
+    {id: 'spy' }
+  ],  
   type: 'control',
   impl: picklist({
     databind: '%$eventTracker/spyLogs%',
     options: picklist.options({
-      options: ctx => jb.entries(jb.ui.getSpy(ctx).counters),
-      code: '%0%',
-      text: '%0% (%1%)'
+      options: properties('%$spy/counters%'),
+      code: '%id%',
+      text: '%id% (%val%)'
     }),
     features: [
       chromeDebugger.colors(),
       picklist.onChange(
-        ctx => {
-        const loc = jb.ui.getSpy(ctx).locations[ctx.data].split(':')
+        (ctx,{},{spy}) => {
+        const loc = spy.locations[ctx.data].split(':')
         const col = +loc.pop()
         const line = (+loc.pop())-1
         const location = [loc.join(':'),line,col]
-        jb.log('eventTracker openResource',{ctx,loc: jb.ui.getSpy(ctx).locations[ctx.data], location})
+        jb.log('eventTracker openResource',{ctx,loc: spy.locations[ctx.data], location})
         loc && parent.postMessage({ runProfile: {$: 'chromeDebugger.openResource', location }})
       }
       )
@@ -353,10 +319,11 @@ jb.component('studio.slicedString', {
 
 jb.component('eventTracker.eventItems', {
   params: [
+    {id: 'spy', dynamic: true},
     {id: 'query', as: 'string' },
   ],
-  impl: (ctx,query) => {
-    const spy = jb.ui.getSpy(ctx)
+  impl: (ctx,_spy, query) => {
+    const spy = _spy()
     if (!spy) return []
     //const checkEv = jb.comps['eventTracker.isNotDebuggerEvent'].impl // efficiency syntax
     //spy.logs = spy.logs.filter(data=> checkEv({data}))
@@ -585,4 +552,38 @@ jb.component('chromeDebugger.sectionsExpandCollapse', {
 jb.component('chromeDebugger.toggleStyle', {
   type: 'editable-boolean.style',
   impl: editableBoolean.expandCollapseWithUnicodeChars()
+})
+
+jb.component('studio.openEventTracker', {
+  type: 'action',
+  impl: openDialog({
+    style: dialog.studioFloating({id: 'event-tracker', width: '700', height: '400'}),
+    content: studio.eventTracker(),
+    title: 'Spy',
+    features: dialogFeature.resizer()
+  })
+})
+
+jb.component('eventTracker.getParentSpy', {
+  impl: () => jb.path(jb.parent,'spy') || {}
+})
+
+jb.component('eventTracker.codeSize', {
+  impl: ()=> jb.parent.codeLoader.totalCodeSize ? Math.floor(jb.parent.codeLoader.totalCodeSize/1000) + 'k' : ''
+})
+
+jb.component('eventTracker.clearSpyLog', {
+  type: 'action',
+  params: [
+    {id: 'spy' }
+  ],
+  impl: runActions(
+    Var('items', eventTracker.eventItems('%$spy%')),
+    (ctx, {items}, {spy}) => {
+      const lastGroupIndex = items.length - items.reverse().findIndex(x=>x.index == '---')
+      if (lastGroupIndex >= items.length)
+        jb.spy.clear(spy)
+      else
+        spy.logs.splice(0,lastGroupIndex-1)
+  })
 })

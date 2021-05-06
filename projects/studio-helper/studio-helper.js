@@ -291,28 +291,6 @@ jb.component('studioHelper.scriptHistory', {
   })
 })
 
-jb.component('studioHelper.editFile', {
-  type: 'control',
-  impl: editableText({
-    databind: ctx => jb.studio.host.getFile('/projects/studio-helper/studioHelper.js'),
-    style: editableText.codemirror({
-      cm_settings: {
-        extraKeys: {
-          'Ctrl-Enter': ctx => {
-                  ctx.vars.editor().formatComponent()
-                },
-          'Ctrl-Space': ctx => {
-                  const cmEditor = ctx.vars.editor().cmEditor
-                  cmEditor.showHint({ hint: jb.textEditor.cm_hint })
-                }
-        }
-      },
-      height: '100%'
-    }),
-    features: {'$': 'textEditor.init', '$byValue': []}
-  })
-})
-
 jb.component('studioHelperSample.propertiesParams', {
   type: 'control',
   params: [

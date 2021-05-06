@@ -37,7 +37,7 @@ jb.extension('utils', 'prettyPrint', {
     if (!val || typeof val !== 'object')
       return { text: val != null && val.toString ? val.toString() : JSON.stringify(val), map: {} }
 
-    const res = valueToMacro({path: initialPath, line:0, col: 0, depth :1}, val)
+    const res = valueToMacro({path: initialPath, line:0, col: 0, depth :1}, val, forceFlat)
     res.text = res.text.replace(jb.utils.fixedNLRegExp,'\n')
     return res
 
@@ -55,23 +55,25 @@ jb.extension('utils', 'prettyPrint', {
     function joinVals(ctx, innerVals, open, close, flat, isArray) {
       const {path, depth} = ctx
       const _open = typeof open === 'string' ? [{prop: '!open', item: open}] : open
-      const openResult = processList(ctx,[..._open, {prop: '!open-newline', item: () => newLine()}])
-      const arrayOrObj = isArray? 'array' : 'obj'
+      const arrayOrProfile = isArray? 'array' : 'profile'
+      const openResult = processList(ctx,[..._open, {prop: `!open-${arrayOrProfile}`, item: () => newLine()}])
 
       const beforeClose = innerVals.reduce((acc,{innerPath, val}, index) => {
         const fixedPropName = valueToMacro(ctx, val, flat).fixedPropName // used to serialize function memeber
+        const semanticPrefix = isArray ? `array-prefix-${index}` : 'prop'
+        const semanticSeparator = isArray ? `array-separator-${index}` : `obj-separator-${index}`
         return processList(acc,[
-          {prop: `!${arrayOrObj}-prefix-${index}`, item: isArray ? '' : fixedPropName || (fixPropName(innerPath) + ': ')},
+          {prop: `${innerPath}~!${semanticPrefix}`, item: isArray ? '' : fixedPropName || (fixPropName(innerPath) + ': ')},
           {prop: '!value', item: ctx => {
               const ctxWithPath = { ...ctx, path: [path,innerPath].join('~'), depth: depth +1 }
               return {...ctxWithPath, ...valueToMacro(ctxWithPath, val, flat)}
             }
           },
-          {prop: `!${arrayOrObj}-separator-${index}`, item: () => index === innerVals.length-1 ? '' : ',' + (flat ? ' ' : newLine())},
+          {prop: `!${semanticSeparator}`, item: () => index === innerVals.length-1 ? '' : ',' + (flat ? ' ' : newLine())},
         ])}
       , {...openResult, unflat: false} )
-      const _close = typeof close === 'string' ? [{prop: '!close', item: close}] : close
-      const result = processList(beforeClose, [{prop: '!close-newline', item: () => newLine(-1)}, ..._close])
+      const _close = typeof close === 'string' ? [{prop: `!close-${arrayOrProfile}`, item: close}] : close
+      const result = processList(beforeClose, [{prop: `!close-${arrayOrProfile}`, item: () => newLine(-1)}, ..._close])
 
       const unflat = shouldNotFlat(result)
       if ((forceFlat || !unflat) && !flat)

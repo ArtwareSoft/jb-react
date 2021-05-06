@@ -32,19 +32,22 @@ jb.extension('studio', 'suggestions', {
           || ['%','%$','/','.'].indexOf(this.tailSymbol) != -1
       }
 
-      calcOptions(probeCtx,path) {
-        var options = [];
-        probeCtx = probeCtx || new jb.core.jbCtx();
+      calcVars(probeCtx) {
         const resources = jb.entries(jb.comps)
               .filter(e=>! jb.comps[e[0]])
               .filter(e=>e[1].watchableData  !== undefined || e[1].passiveData  !== undefined)
               .map(e=>[jb.db.removeDataResourcePrefix(e[0]),e[1]])
-        const vars = jb.entries(Object.assign({},(probeCtx.cmpCtx||{}).params,probeCtx.vars))
+        return jb.entries(Object.assign({},(probeCtx.cmpCtx||{}).params,probeCtx.vars))
             .concat(resources)
             .filter(x=>jb.studio.hideInSuggestions.indexOf(x[0]) == -1)
             .map(x=> jb.studio.valueOption('$'+x[0],jb.val(x[1]),this.pos,this.tail,this.input))
             .filter(x=> x.toPaste.indexOf('$$') != 0)
             // .filter(x=> x.toPaste.indexOf(':') == -1)
+      }
+
+      calcOptions(probeCtx,path) {
+        var options = [];
+        probeCtx = probeCtx || new jb.core.jbCtx();
 
         if (this.inputVal.indexOf('=') == 0 && !this.expressionOnly)
           options = jb.studio.PTsOfPath(path).map(compName=> {
@@ -54,17 +57,16 @@ jb.extension('studio', 'suggestions', {
             })
         else if (this.tailSymbol == '%')
           options = [].concat.apply([],jb.toarray(probeCtx.exp('%%'))
-            .map(x=>
-              jb.entries(x).map(x=> jb.studio.valueOption(x[0],x[1],this.pos,this.tail,this.input))))
-            .concat(vars)
+            .map(x => jb.entries(x).map(x=> jb.studio.valueOption(x[0],x[1],this.pos,this.tail,this.input))))
+            .concat(this.calcVars(probeCtx))
         else if (this.tailSymbol == '%$')
-          options = vars
+          options = this.calcVars(probeCtx)
         else if (this.tailSymbol == '/' || this.tailSymbol == '.')
           options = [].concat.apply([],
             jb.toarray(probeCtx.exp(this.base))
               .map(x=>jb.entries(x).map(x=> jb.studio.valueOption(x[0],x[1],this.pos,this.tail,this.input))) )
 
-        options = jb.utils.unique(options,x=>x.toPaste).filter(x=> x.toPaste.indexOf('$jb_') != 0)
+        options = jb.utils.unique(options,x=>x.toPaste)
         if (this.tail != '' && jb.frame.Fuse)
           options = new jb.frame.Fuse(options,{keys: ['toPaste','description']}).search(this.tail || '').map(x=>x.item)
 

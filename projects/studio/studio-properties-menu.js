@@ -1,13 +1,15 @@
 jb.component('studio.gotoPath', {
   type: 'action',
   params: [
-    {id: 'path', as: 'string'}
+    {id: 'path', as: 'string'},
+    {id: 'semanticPart', as: 'string', options: 'prop,value', defaultValue: 'value' }
   ],
   impl: action.if(
     '%$path%',
     runActions(
       dialog.closeDialog(),
-      writeValue('%$studio/profile_path%', '%$path%')
+      writeValue('%$studio/profile_path%', '%$path%'),
+      action.if(studio.inVscode(), vscode.gotoPath('%$path%','%$semanticPart%'))
     )
   )
 })

@@ -1,6 +1,3 @@
-(function() {
-const st = jb.studio;
-
 jb.component('sourceEditor.refreshEditor', {
   type: 'action',
   params: [
@@ -14,8 +11,8 @@ jb.component('sourceEditor.propOptions', {
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) =>  {
-    const val = st.val(path) || {}
-    return st.paramsOfPath(path).filter(p=> val[p.id] === undefined)
+    const val = jb.studio.val(path) || {}
+    return jb.studio.paramsOfPath(path).filter(p=> val[p.id] === undefined)
       .map(param=> Object.assign(param,{ text: param.id }))
   }
 })
@@ -31,7 +28,7 @@ jb.component('sourceEditor.firstParamAsArrayPath', {
     {id: 'path', as: 'string'}
   ],
   impl: (ctx,path) => {
-    const params = st.paramsOfPath(path)
+    const params = jb.studio.paramsOfPath(path)
     const firstParamIsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
     return firstParamIsArray ? path + '~' + params[0].id : path
   }
@@ -43,10 +40,10 @@ jb.component('studio.filePosOfPath', {
   ],
   impl: (ctx,path) => {
       const comp = path.split('~')[0]
-      const loc = st.previewjb.comps[comp][jb.core.location]
-      const fn = st.host.locationToPath(loc[0])
+      const loc = jb.comps[comp][jb.core.location]
+      const fn = jb.studio.host.locationToPath(loc[0])
       const lineOfComp = (+loc[1]) || 0
-      const pos = jb.textEditor.getPosOfPath(path+'~!profile',st.previewjb) || [0,0,0,0]
+      const pos = jb.codeEditor.getPosOfPath(path+'~!profile') || [0,0,0,0]
       pos[0] += lineOfComp; pos[2] += lineOfComp
       return {path,comp,loc,fn, pos}
   }
@@ -84,9 +81,9 @@ jb.component('studio.editableSource', {
       cm_settings: {
         extraKeys: {
           Enter: action.if(
-            textEditor.isDirty(),
+            codeEditor.isDirty(),
             runActions(sourceEditor.storeToRef(), sourceEditor.refreshEditor()),
-            textEditor.withCursorPath(studio.openEditProperty('%$cursorPath%'))
+            codeEditor.withCursorPath(studio.openEditProperty('%$cursorPath%'))
           )
         }
       }
@@ -337,29 +334,29 @@ jb.component('studio.openEditProperty', {
   )
 })
 
-jb.component('sourceEditor.suggestions', {
-  params: [
-    {id: 'path', as: 'string'}
-  ],
-  impl: If(
-    Var('pathType', split({separator: '~!', text: '%$path%', part: 'last'})),
-    Var('actualPath', split({separator: '~!', text: '%$path%', part: 'first'})),
-    Var('paramDef', studio.paramDef('%$actualPath%')),
-    or(
-      startsWith('obj-separator', '%$pathType%'),
-      inGroup(
-          list('close-profile', 'open-profile', 'open-by-value', 'close-by-value'),
-          '%$pathType%'
-        )
-    ),
-    pipeline(studio.paramsOfPath('%$actualPath%'), '%id%'),
-    If(
-      '%$paramDef/options%',
-      split({separator: ',', text: '%$paramDef/options%', part: 'all'}),
-      studio.PTsOfType(firstSucceeding('%$paramDef/type%', 'data'))
-    )
-  )
-})
+// jb.component('sourceEditor.suggestions', {
+//   params: [
+//     {id: 'path', as: 'string'}
+//   ],
+//   impl: If(
+//     Var('pathType', split({separator: '~!', text: '%$path%', part: 'last'})),
+//     Var('actualPath', split({separator: '~!', text: '%$path%', part: 'first'})),
+//     Var('paramDef', studio.paramDef('%$actualPath%')),
+//     or(
+//       startsWith('obj-separator', '%$pathType%'),
+//       inGroup(
+//           list('close-profile', 'open-profile', 'open-by-value', 'close-by-value'),
+//           '%$pathType%'
+//         )
+//     ),
+//     pipeline(studio.paramsOfPath('%$actualPath%'), '%id%'),
+//     If(
+//       '%$paramDef/options%',
+//       split({separator: ',', text: '%$paramDef/options%', part: 'all'}),
+//       studio.PTsOfType(firstSucceeding('%$paramDef/type%', 'data'))
+//     )
+//   )
+// })
 
 jb.component('sourceEditor.addProp', {
   type: 'control',
@@ -546,5 +543,3 @@ git push - copy the local repostiry to github's cloud repository`
     ]
   })
 })
-
-})()

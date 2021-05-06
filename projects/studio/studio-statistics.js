@@ -9,7 +9,7 @@ jb.extension('studio', 'statistics', {
 
     Object.keys(comps).filter(k=>comps[k]).forEach(k=>
       refs[k] = {
-        refs: calcRefs(comps[k].impl).filter((x,index,self)=>self.indexOf(x) === index),
+        refs: calcRefs(comps[k].impl).filter((x,index,_self)=>_self.indexOf(x) === index),
         by: []
     })
     Object.keys(comps).filter(k=>comps[k]).forEach(k=>

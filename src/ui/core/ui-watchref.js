@@ -11,7 +11,7 @@ jb.extension('ui', 'watchRef', {
         const elemsToCheck = (jb.path(e,'srcCtx.vars.headlessWidget') ? headlessElemsToCheck() : jb.ui.find(body,'[observe]')) // top down order
             .filter(el => {
                 const parentWidgetId = jb.ui.parentWidgetId(el)
-                return !parentWidgetId || parentWidgetId.split('-')[0] == jb.uri
+                return !parentWidgetId || parentWidgetId.split('-')[0] == jb.uri // || ['tests',jb.uri].indexOf(parentWidgetId.split('-')[0]) != -1
         })
         const elemsToCheckCtxBefore = elemsToCheck.map(el=>el.getAttribute('jb-ctx'))
         const originatingCmpId = jb.path(e.srcCtx, 'vars.cmp.cmpId')

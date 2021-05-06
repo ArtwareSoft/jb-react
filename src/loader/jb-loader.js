@@ -16,10 +16,8 @@ async function jb_codeLoaderServer(uri, {projects, baseUrl, multipleInFrame, loa
   jb_loadFile = loadFileFunc || (multipleInFrame ? jb_loadFileIntoClosure : jb_loadFileToFrame)
   getAllCode = getAllCodeFunc || getAllCodeFromHttp
   const jb = { uri }
-  if (!multipleInFrame && typeof self != 'undefined')
-    self.jb = jb
-  if (!multipleInFrame && typeof global != 'undefined')
-    global.jb = jb
+  if (!multipleInFrame)
+    globalThis.jb = jb
   const coreFiles= jb_modules.core.map(x=>`/${x}`)
   await coreFiles.reduce((pr,url) => pr.then(()=> jb_loadFile(url,baseUrl,jb)), Promise.resolve())
   jb.noCodeLoader = false
@@ -38,9 +36,9 @@ async function jb_codeLoaderServer(uri, {projects, baseUrl, multipleInFrame, loa
   async function jb_loadFileIntoClosure(url, baseUrl,jb) {
     const code = await fetch(baseUrl+url).then(x=>x.text())
     const funcId = '__'+url.replace(/[^a-zA-Z0-9]/g,'_')
-    self.eval(`function ${funcId}(jb) {${code}
+    globalThis.eval(`function ${funcId}(jb) {${code}
   }//# sourceURL=${url}?${uri}`)
-    self[funcId](jb)
+    globalThis[funcId](jb)
   }
 
   function jb_loadFileToFrame(url, baseUrl) {
@@ -73,7 +71,7 @@ async function jb_evalCode(loadedCode, {jb, jb_loadFile, baseUrl} = {}) {
 }
 
 async function jb_codeLoaderClient(uri,baseUrl) {
-  self.jb = { uri }
+  globalThis.jb = { uri }
   const coreFiles= jb_modules.core.map(x=>`/${x}`)
   await coreFiles.reduce((pr,url) => pr.then(()=> jb_loadFile(url,baseUrl)), Promise.resolve())
   jb.noCodeLoader = false

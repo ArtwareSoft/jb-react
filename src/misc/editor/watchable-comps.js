@@ -31,20 +31,20 @@ jb.extension('watchableComps', 'history', {
       jb.watchableComps.undoIndex = compsHistory.length
   },
   setToVersion(versionIndex, ctx, after) {
-    const version = jb.watchableComps.compsHistory[versionIndex];
-    if (!version || !version.opEvent) debugger;
+    const version = jb.watchableComps.compsHistory[versionIndex]
+    if (!version || !version.opEvent) debugger
 
-    let opEvent = Object.assign({}, version.opEvent);
-    opEvent.oldVal = version.opEvent.newVal;
-    opEvent.newVal = version.opEvent.oldVal;
-    opEvent.srcCtx = ctx;
+    let opEvent = Object.assign({}, version.opEvent)
+    opEvent.oldVal = version.opEvent.newVal
+    opEvent.newVal = version.opEvent.oldVal
+    opEvent.srcCtx = ctx
 
     if (after) {
       jb.comps = version.after
       jb.watchableComps.handler.resourceVersions = version.opEvent.resourceVersionsAfter
     } else {
-      jb.comps = version.before;
-      jb.watchableComps.handler.resourceVersions = version.opEvent.resourceVersionsBefore;
+      jb.comps = version.before
+      jb.watchableComps.handler.resourceVersions = version.opEvent.resourceVersionsBefore
     }
   }
 //  jb.watchableComps.handler.resourceChange.next(opEvent) ???

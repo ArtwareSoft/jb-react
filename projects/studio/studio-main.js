@@ -27,7 +27,7 @@ jb.component('studio.jbart', {
     controls: [
       studio.topBar(),
       group({
-        controls: remote.wPreviewCtrl(),
+        controls: preview.remoteWidget(),
         features: [
           watchRef('%$studio/page%'),
           watchRef({ref: '%$studio/preview%', includeChildren: 'yes'}),

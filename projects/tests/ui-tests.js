@@ -238,7 +238,7 @@ jb.component('uiTest.twoWayBinding', {
   impl: uiTest({
     control: group({
       controls: [
-        editableText({title: 'name', databind: '%$person/name%'}),
+        editableText('name', '%$person/name%'),
         text('%$person/name%')
       ]
     }),
@@ -251,12 +251,12 @@ jb.component('uiTest.autoFocusOnFirstInput', {
   impl: uiTest({
     control: group({
       controls: [
-        editableText({title: 'name', databind: '%$person/name%'}),
-        editableText({title: 'age', databind: '%$person/age%'}),
+        editableText('name', '%$person/name%'),
+        editableText('age', '%$person/age%')
       ],
       features: group.autoFocusOnFirstInput()
     }),
-    expectedResult: contains('__focus="autoFocusOnFirstInput"')
+    expectedResult: contains('__focus=\"autoFocusOnFirstInput\"')
   })
 })
 
@@ -321,18 +321,15 @@ jb.component('uiTest.codeMirrorDialogResizer', {
 
 jb.component('uiTest.codeMirrorDialogResizerOkCancel', {
   impl: uiTest({
-    control: button({
-      title: 'click me',
-      action: openDialog({
-        style: dialog.dialogOkCancel(),
-        content: editableText({
-          databind: '%$person/name%',
-          style: editableText.codemirror({mode: 'javascript'})
-        }),
+    control: button(
+      'click me',
+      openDialog({
         title: 'resizer',
-        features: [dialogFeature.nearLauncherPosition({}), dialogFeature.resizer(true)]
+        content: editableText({databind: '%$person/name%', style: editableText.codemirror({mode: 'javascript'})}),
+        style: dialog.dialogOkCancel(),
+        features: [dialogFeature.nearLauncherPosition(), dialogFeature.resizer(true)]
       })
-    }),
+    ),
     expectedResult: true
   })
 })
@@ -484,7 +481,7 @@ jb.component('uiTest.itemlistPrimitiveArray', {
 
 jb.component('uiTest.itemlistPrimitiveArrayItemShouldBeRef', {
   impl: uiTest({
-    timeout: 20,
+    timeout: 100,
     vars: Var('isResultRef', obj(prop('answer',false))),
     control: itemlist({items: '%$personWithPrimitiveChildren/childrenNames%', 
       controls: ctx => { 
@@ -495,20 +492,6 @@ jb.component('uiTest.itemlistPrimitiveArrayItemShouldBeRef', {
     expectedResult: '%$isResultRef/answer%'
   })
 })
-
-// jb.component('uiTest.itemlistPrimitiveArrayItemShouldBeRef.tableStyle', {
-//   impl: uiTest({
-//     vars: Var('isResultRef', obj(prop('answer',false))),
-//     control: table({items: '%$personWithPrimitiveChildren/childrenNames%', 
-//       style: table.mdc(),
-//       controls: ctx => { 
-//         ctx.run(writeValue('%$isResultRef/answer%', () => !!jb.db.isRef(ctx.vars.$props.items[0])))
-//         return ctx.run(text('%%'))
-//       }
-//     }),
-//     expectedResult: '%$isResultRef/answer%'
-//   })
-// })
 
 jb.component('uiTest.itemlistRxSource', {
   impl: uiTest({
@@ -1038,11 +1021,11 @@ jb.component('uiTest.editableTextHelper', {
 
 jb.component('uiTest.editableText.picklistHelper', {
   impl: uiTest({
-    control: editableText({title: 'name', databind: '%$person/name%',
-      features: editableText.picklistHelper({
-        options: picklist.optionsByComma('1,2,333'),
-        autoOpen: true
-      })
+    control: editableText({
+      title: 'name',
+      databind: '%$person/name%',
+      style: editableText.mdcInput(),
+      features: editableText.picklistHelper({options: picklist.optionsByComma('1,2,333'), autoOpen: true})
     }),
     expectedResult: contains('333')
   })
@@ -1050,11 +1033,13 @@ jb.component('uiTest.editableText.picklistHelper', {
 
 jb.component('uiTest.editableText.picklistHelperWithChangingOptions', {
   impl: uiTest({
-    control: editableText({title: 'name', databind: '%$person/name%',
+    control: editableText({
+      title: 'name',
+      databind: '%$person/name%',
       features: editableText.picklistHelper({
-        options: picklist.optionsByComma(If(test.getSelectionChar(),'1,2,3,4','a,b,c,ddd')),
-        showHelper: notEquals(test.getSelectionChar(),'b'),
-        autoOpen: true,
+        options: picklist.optionsByComma(If(test.getSelectionChar(), '1,2,3,4', 'a,b,c,ddd')),
+        showHelper: notEquals(test.getSelectionChar(), 'b'),
+        autoOpen: true
       })
     }),
     expectedResult: contains('ddd')
@@ -1097,7 +1082,7 @@ jb.component('uiTest.editableText.richPicklistHelper.setInput', {
       uiAction.waitForSelector('.jb-popup'),
       uiAction.keyboardEvent({selector: '#inp', type: 'keydown', keyCode: 40}),
       uiAction.keyboardEvent({selector: '#inp', type: 'keyup', keyCode: 13}),
-      () => jb.delay(10).then(()=>self.scrollTo(0,0)) // scroll to top bg
+      () => jb.delay(10).then(()=> jb.frame.scrollTo(0,0)) // scroll to top bg
     ),    
     expectedResult: contains('1111</input-val>')
   })
@@ -2190,7 +2175,10 @@ jb.component('uiTest.infiniteScroll.table', {
         css.width('100')
       ]
     }),
-    action: uiAction.scrollBy('.jb-itemlist',80), 
+    action: runActions(
+      uiAction.scrollBy('.jb-itemlist',80),
+      uiAction.waitForSelector('tbody>tr:nth-child(10)')
+    ),
     expectedResult: contains(['>10<','</tbody>'])
   })
 })

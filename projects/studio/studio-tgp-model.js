@@ -178,7 +178,7 @@ jb.extension('studio', {
 		}
 	},
 	jbEditorMoreParams: path => jb.studio.paramsOfPath(path)
-			.filter(p=>jb.studio.valOfPath(path+'~'+p.id) == null && !p.mandatory)
+			.filter(p=>jb.studio.valOfPath(path+'~'+p.id) == null) // && !p.mandatory)
 			.map(p=> path + '~' + p.id),
 
 	nonControlChildren: (path,includeFeatures) =>
@@ -277,17 +277,17 @@ jb.extension('studio', {
 	},
 	isArrayType: path => ((jb.studio.paramDef(path)||{}).type||'').indexOf('[]') != -1,
 	isOfType(path,type) {
-		const types = type.split(',');
+		const types = type.split(',')
 		if (types.length > 1)
-			return types.some(t=>jb.studio.isOfType(path,t));
-		
+			return types.some(t=>jb.studio.isOfType(path,t))
+		if (path.match(/~impl$/)) path = path.replace('~impl','')
     	if (path.indexOf('~') == -1)
-		  return jb.studio.isCompNameOfType(path,type);
-		const paramDef = jb.studio.paramDef(path) || {};
+		  return jb.studio.isCompNameOfType(path,type)
+		const paramDef = jb.studio.paramDef(path) || {}
 		if (type == 'style' && (paramDef.type || '').indexOf('.style') != -1)
 			return true
 		return (paramDef.type || 'data').split(',')
-			.map(x=>x.split('[')[0]).filter(_t=>type.split(',').indexOf(_t) != -1).length;
+			.map(x=>x.split('[')[0]).filter(_t=>type.split(',').indexOf(_t) != -1).length
 	},
 	PTsOfType(type) {
 		const single = /([^\[]*)(\[\])?/;

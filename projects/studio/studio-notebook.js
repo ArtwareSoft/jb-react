@@ -12,7 +12,7 @@ jb.component('studio.notebook', {
         group.wait(runActions(
             pipe(
               studio.fetchProjectSettings(),
-              ({data}) => self.jb_loadProject(data,{libs: true, appFiles: true}),
+              ({data}) => globalThis.jb_loadProject(data,{libs: true, appFiles: true}),
             ),
             Var('notebookId', '%$studio/project%.notebook'),
             waitFor(ctx => jb.comps[ctx.exp('%$notebookId%')] ),

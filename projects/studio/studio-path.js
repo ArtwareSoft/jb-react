@@ -59,8 +59,8 @@ jb.extension('studio', 'path', {
   	return jb.utils.compName(prof) || jb.utils.compName(prof,jb.studio.paramDef(path))
   },
   paramDef: path => {
-	if (!jb.studio.parentPath(path)) // no param def for root
-		return;
+	if (!jb.studio.parentPath(path))
+		return { type: jb.path(jb.comps[path],'type')};
 	if (!isNaN(Number(path.split('~').pop()))) // array elements
 		path = jb.studio.parentPath(path);
 	// const parent_prof = jb.studio.valOfPath(jb.studio.parentPath(path),true);
@@ -109,11 +109,10 @@ jb.extension('studio', {
 		// if (jb.studio.paramTypeOfPath(path) == 'data')
 		// 	return jb.studio.writeValueOfPath(path,'')
 		const param = jb.studio.paramDef(path)
-		let result = param.defaultValue || {$: ''}
-		if (jb.studio.paramTypeOfPath(path).indexOf('data') != -1)
-			result = ''
-		if ((param.type ||'').indexOf('[') != -1)
-			result = []
+		const paramType = jb.studio.paramTypeOfPath(path)
+		const result = param.defaultValue ? JSON.parse(JSON.stringify(param.defaultValue))
+			: (paramType.indexOf('data') != -1 || jb.frame.jbInvscode) ? '' : {$: ''}
+		
 		jb.studio.writeValueOfPath(path,result,srcCtx)
 	},
 	clone(profile) {
@@ -207,7 +206,7 @@ jb.extension('studio', {
 			if (index === undefined)
 				jb.studio.push(jb.studio.refOfPath(path),[toAdd],srcCtx)
 			else
-				jb.studio.splice(jb.studio.refOfPath(path),[[val.length,0,toAdd]],srcCtx)
+				jb.studio.splice(jb.studio.refOfPath(path),[[index,0,toAdd]],srcCtx)
 		}
 		else if (!val) {
 			jb.studio.writeValueOfPath(path,toAdd,srcCtx)

@@ -1,4 +1,4 @@
-jb.extension('textEditor', {
+jb.extension('codeEditor', {
     getSinglePathChange(diff, currentVal) {
         return pathAndValueOfSingleChange(diff,'',currentVal)
     
@@ -6,7 +6,7 @@ jb.extension('textEditor', {
             if (currentVal === undefined || (typeof obj !== 'object' && obj !== undefined))
                 return { innerPath: pathSoFar, innerValue: obj }
             const entries = jb.entries(obj)
-            if (entries.length != 1) // if not single returns empty answer
+            if (entries.length != 1 || Object.values(jb.path(entries,'0.1')||{})[0]== '__undefined') // if not single returns empty answer
                 return {}
             return pathAndValueOfSingleChange(entries[0][1],pathSoFar+'~'+entries[0][0],currentVal[entries[0][0]])
         }
@@ -23,7 +23,7 @@ jb.extension('textEditor', {
         if (newVal && typeof newVal === 'object' && typeof currentVal === 'object') {
             const diff = jb.utils.objectDiff(newVal,currentVal)
             if (Object.keys(diff).length == 0) return // no diffs
-            const {innerPath, innerValue} = jb.textEditor.getSinglePathChange(diff,currentVal) // one diff
+            const {innerPath, innerValue} = jb.codeEditor.getSinglePathChange(diff,currentVal) // one diff
             if (innerPath) {
                 const fullInnerPath = ref.handler.pathOfRef(ref).concat(innerPath.slice(1).split('~'))
                 return jb.db.writeValue(ref.handler.refOfPath(fullInnerPath),innerValue,ctx)
@@ -42,10 +42,15 @@ jb.extension('textEditor', {
             col: offset - text.slice(0,offset).lastIndexOf('\n') }
     },
     pathOfPosition(ref,_pos) {
-        const offset = !Number(_pos) ? jb.textEditor.lineColToOffset(ref.text, _pos) : _pos
-        const found = jb.entries(ref.locationMap).find(e=> e[1].offset_from <= offset && offset < e[1].offset_to)
+        const offset = !Number(_pos) ? jb.codeEditor.lineColToOffset(ref.text, _pos) : _pos
+        const charBefore = jb.codeEditor.pathOfOffset(offset-1,ref.locationMap)
+        const found = (jb.path(charBefore,'0') || '').match(/~!open-by-value/) ? charBefore : jb.codeEditor.pathOfOffset(offset,ref.locationMap)
         if (found)
             return {path: found[0], offset: offset - found[1].offset_from}
+    },
+    pathOfOffset(offset,locationMap) {
+        const entries = jb.entries(locationMap).filter(e=> e[1].offset_from <= offset && offset < e[1].offset_to)
+        return entries.sort((x,y) => (x[1].offset_to - x[1].offset_from) - (y[1].offset_to - y[1].offset_from) )[0] // smallest selection
     },
     enrichMapWithOffsets(text,locationMap) {
         const lines = text.split('\n')
@@ -64,7 +69,7 @@ jb.extension('textEditor', {
         const editor = cmp.editor
         const data_ref = cmp.ctx.vars.$model.databind()
         const text = jb.tostring(data_ref)
-        const pathWithOffset = _path ? {path: _path+'~!value',offset:1} : jb.textEditor.pathOfPosition(data_ref, editor.getCursorPos())
+        const pathWithOffset = _path ? {path: _path+'~!value',offset:1} : jb.codeEditor.pathOfPosition(data_ref, editor.getCursorPos())
         editor.setValue(text)
         if (pathWithOffset) {
             const _pos = data_ref.locationMap[pathWithOffset.path]
@@ -74,40 +79,35 @@ jb.extension('textEditor', {
         }
         editor.focus && jb.delay(10).then(()=>editor.focus())
     },
-    getSuggestions(fileContent, pos, jbToUse = jb) {
-        const lines = fileContent.split('\n')
-        const closestComp = lines.slice(0,pos.line+1).reverse().findIndex(line => line.match(/^jb.component\(/))
-        if (closestComp == -1) return []
-        const componentHeaderIndex = pos.line - closestComp
-        const compId = (lines[componentHeaderIndex].match(/'([^']+)'/)||['',''])[1]
-        if (!compId) return []
-        const linesFromComp = lines.slice(componentHeaderIndex)
-        const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
-        const nextjbComponent = lines.slice(componentHeaderIndex+1).findIndex(line => line.match(/^jb.component/))
-        if (nextjbComponent != -1 && nextjbComponent < compLastLine)
-          return jb.logError('textEditor - can not find end of component', {compId, linesFromComp})
-        const linesOfComp = linesFromComp.slice(0,compLastLine+1)
-        const compSrc = linesOfComp.join('\n')
-        if (jb.utils.eval(compSrc,jbToUse.frame) === Symbol.for('parseError'))
-            return []
-        const {text, map} = jb.utils.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
-        const locationMap = jb.textEditor.enrichMapWithOffsets(text, map)
-        const srcForImpl = '{\n'+compSrc.slice((/^  /m.exec(compSrc) || {}).index,-1)
-        const cursorOffset = jb.textEditor.lineColToOffset(srcForImpl, {line: pos.line - componentHeaderIndex, col: pos.col})
-        const path = jb.textEditor.pathOfPosition({text, locationMap}, cursorOffset)
-        return { path, suggestions: new jbToUse.jbCtx().run(sourceEditor.suggestions(path.path)) }
+    getSuggestions(semanticPath) {
+        if (!semanticPath) return []
+        const path = semanticPath.path.split('~!')[0]
+        const semantic = semanticPath.path.split('~!').pop()
+        const profile = jb.studio.valOfPath(path)
+        const prop = profile && typeof profile == 'object' && (semantic.match(/-by-value|-separator-|-profile/) || semantic == 'value')
+        const options = prop ? jb.studio.paramsOfPath(path).filter(p=>jb.studio.valOfPath(path+'~'+p.id) == null)
+            .map(p=> addProperty(p, path + '~' + p.id))
+            : []
+        return options
+
+        function addProperty(prop,path) { return {
+            label: prop.id,
+            action: {$: 'studio.addProperty', path }
+        }}
     },
-    getPosOfPath(path,jbToUse = jb) {
+    getPosOfPath(path) {
         const compId = path.split('~')[0]
-        const {map} = jb.utils.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
+        const {map} = jb.utils.prettyPrintWithPositions(jb.comps[compId],{initialPath: compId, comps: jb.comps})
         return map[path]
     },
-    getPathOfPos(compId,pos,jbToUse = jb) {
-        const { text, map } = jb.utils.prettyPrintWithPositions(jbToUse.comps[compId],{initialPath: compId, comps: jbToUse.comps})
+    getPathOfPos(compId,pos,actualText) {
+        if (jb.utils.prettyPrintComp(compId,jb.comps[compId]) != actualText)
+            return { needsFormat: true }
+        const { text, map } = jb.utils.prettyPrintWithPositions(jb.comps[compId],{initialPath: compId, comps: jb.comps})
         map.cursor = [pos.line,pos.col,pos.line,pos.col]
-        const locationMap = jb.textEditor.enrichMapWithOffsets(text, map)
-        const res = jb.textEditor.pathOfPosition({text, locationMap}, locationMap.cursor.offset_from )
-        return res && res.path.split('~!')[0]
+        const locationMap = jb.codeEditor.enrichMapWithOffsets(text, map)
+        const semanticPath = jb.codeEditor.pathOfPosition({text, locationMap}, locationMap.cursor.offset_from )
+        return { semanticPath, path: semanticPath && semanticPath.path.split('~!')[0] }
     },
     closestComp(fileContent, pos) {
         const lines = fileContent.split('\n')
@@ -119,18 +119,18 @@ jb.extension('textEditor', {
         const compLastLine = linesFromComp.findIndex(line => line.match(/^}\)\s*$/))
         const nextjbComponent = lines.slice(componentHeaderIndex+1).findIndex(line => line.match(/^jb.component/))
         if (nextjbComponent != -1 && nextjbComponent < compLastLine) {
-          jb.logError('textEditor - can not find end of component', { compId, linesFromComp })
+          jb.logError('codeEditor - can not find end of component', { compId, linesFromComp })
           return {}
         }
         const compSrc = linesFromComp.slice(0,compLastLine+1).join('\n')
         return {compId, compSrc, componentHeaderIndex, compLastLine}
     },
-    formatComponent(fileContent, pos, jbToUse = jb) {
-        const {compId, compSrc, componentHeaderIndex, compLastLine} = jb.textEditor.closestComp(fileContent, pos)
+    formatComponent(fileContent, pos) {
+        const {compId, compSrc, componentHeaderIndex, compLastLine} = jb.codeEditor.closestComp(fileContent, pos)
         if (!compId) return {}
-        if (jb.utils.eval(compSrc,jbToUse.frame) === Symbol.for('parseError'))
+        if (jb.utils.eval(compSrc,jb.frame) === Symbol.for('parseError'))
             return []
-        return {text: jb.utils.prettyPrintComp(compId,jbToUse.comps[compId],{comps: jbToUse.comps}) + '\n',
+        return {text: jb.utils.prettyPrintComp(compId,jb.comps[compId],{comps: jb.comps}) + '\n',
             from: {line: componentHeaderIndex, col: 0}, to: {line: componentHeaderIndex+compLastLine+1, col: 0} }
     },
     posFromCM: pos => pos && ({line: pos.line, col: pos.ch}),
@@ -138,7 +138,7 @@ jb.extension('textEditor', {
         const cursor = cmEditor.getDoc().getCursor()
         return {
             from: cursor, to: cursor,
-            list: jb.textEditor.getSuggestions(cmEditor.getValue(),posFromCM(cursor)).suggestions
+            list: jb.codeEditor.getSuggestions(cmEditor.getValue(),posFromCM(cursor)).suggestions
         }
     }    
 })
@@ -167,8 +167,8 @@ jb.component('watchableAsText', {
                 return
             }
             const initialPath = ref.handler.pathOfRef(ref).join('~')
-            const res = jb.utils.prettyPrintWithPositions(this.getVal() || '',{initialPath, comps: ref.jbToUse && ref.jbToUse.comps})
-            this.locationMap = jb.textEditor.enrichMapWithOffsets(res.text, res.map)
+            const res = jb.utils.prettyPrintWithPositions(this.getVal() || '',{initialPath, comps: jb.comps})
+            this.locationMap = jb.codeEditor.enrichMapWithOffsets(res.text, res.map)
             this.text = res.text.replace(/\s*(\]|\})$/,'\n$1')
         },
         writeFullValue(newVal) {
@@ -180,7 +180,7 @@ jb.component('watchableAsText', {
                 this.prettyPrintWithPositions()
                 return this.text
             } else {
-                jb.textEditor.setStrValue(value,this.getRef(),ctx)
+                jb.codeEditor.setStrValue(value,this.getRef(),ctx)
                 this.prettyPrintWithPositions() // refreshing location map
             }
         } catch(e) {
@@ -193,7 +193,7 @@ jb.component('watchableAsText', {
     })
 })
 
-jb.component('textEditor.withCursorPath', {
+jb.component('codeEditor.withCursorPath', {
   type: 'action',
   params: [
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
@@ -205,15 +205,16 @@ jb.component('textEditor.withCursorPath', {
             const elem = selector ? jb.ui.widgetBody(ctx).querySelector(selector) : jb.ui.widgetBody(ctx);
             editor = jb.path(elem,'_component.editor')
         }
+        debugger
         if (editor && editor.getCursorPos)
             action(editor.ctx().setVars({
-                cursorPath: jb.textEditor.pathOfPosition(editor.data_ref, editor.getCursorPos()).path,
+                cursorPath: jb.codeEditor.pathOfPosition(editor.data_ref, editor.getCursorPos()).path,
                 cursorCoord: editor.cursorCoords()
             }))
     }
 })
 
-jb.component('textEditor.isDirty', {
+jb.component('codeEditor.isDirty', {
   impl: ctx => {
         try {
             return ctx.vars.editor().isDirty()
@@ -221,7 +222,7 @@ jb.component('textEditor.isDirty', {
     }
 })
 
-// jb.component('text-editor.watch-source-changes', { /* textEditor.watchSourceChanges */
+// jb.component('text-editor.watch-source-changes', { /* codeEditor.watchSourceChanges */
 //   type: 'feature',
 //   params: [
 
@@ -247,35 +248,35 @@ jb.component('textEditor.isDirty', {
 //     }})
 // })
 
-jb.component('textEditor.cursorPath', {
+jb.component('codeEditor.cursorPath', {
     params: [
         {id: 'watchableAsText', as: 'ref', mandatory: true, description: 'the same that was used for databind'},
         {id: 'cursorPos', dynamic: true, defaultValue: '%$ev/selectionStart%'},
     ],  
-    impl: (ctx,ref,pos) => jb.path(jb.textEditor.pathOfPosition(ref, pos()),'path') || ''
+    impl: (ctx,ref,pos) => jb.path(jb.codeEditor.pathOfPosition(ref, pos()),'path') || ''
 })
 
 jb.component('textarea.initTextareaEditor', {
   type: 'feature',
   impl: features(
-      textEditor.enrichUserEvent(),
+      codeEditor.enrichUserEvent(),
       frontEnd.method('replaceRange',({data},{cmp}) => {
           const {text, from, to} = data
-          const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
-          const _to = jb.textEditor.lineColToOffset(cmp.base.value,to)
+          const _from = jb.codeEditor.lineColToOffset(cmp.base.value,from)
+          const _to = jb.codeEditor.lineColToOffset(cmp.base.value,to)
           cmp.base.value = cmp.base.value.slice(0,_from) + text + cmp.base.value.slice(_to)
       }),
       frontEnd.method('setSelectionRange',({data},{cmp}) => {
         const from = data.from || data
         const to = data.to || from
-        const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
-        const _to = to && jb.textEditor.lineColToOffset(cmp.base.value,to) || _from
+        const _from = jb.codeEditor.lineColToOffset(cmp.base.value,from)
+        const _to = to && jb.codeEditor.lineColToOffset(cmp.base.value,to) || _from
         cmp.base.setSelectionRange(_from,_to)
       })
     )
 })
 
-jb.component('textEditor.enrichUserEvent', {
+jb.component('codeEditor.enrichUserEvent', {
     type: 'feature',
     params: [
       {id: 'textEditorSelector', as: 'string', description: 'used for external buttons'}
@@ -289,7 +290,7 @@ jb.component('textEditor.enrichUserEvent', {
                 outerWidth: jb.ui.outerWidth(elem), 
                 clientRect: elem.getBoundingClientRect(),
                 text: elem.value,
-                selectionStart: jb.textEditor.offsetToLineCol(elem.value,elem.selectionStart)
+                selectionStart: jb.codeEditor.offsetToLineCol(elem.value,elem.selectionStart)
             }
         })
     )
@@ -306,13 +307,13 @@ jb.component('textEditor.enrichUserEvent', {
 //             cursorCoords: () => {},
 //             markText: () => {},
 //             replaceRange: (text, from, to) => {
-//                 const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
-//                 const _to = jb.textEditor.lineColToOffset(cmp.base.value,to)
+//                 const _from = jb.codeEditor.lineColToOffset(cmp.base.value,from)
+//                 const _to = jb.codeEditor.lineColToOffset(cmp.base.value,to)
 //                 cmp.base.value = cmp.base.value.slice(0,_from) + text + cmp.base.value.slice(_to)
 //             },
 //             setSelectionRange: (from, to) => {
-//                 const _from = jb.textEditor.lineColToOffset(cmp.base.value,from)
-//                 const _to = to && jb.textEditor.lineColToOffset(cmp.base.value,to) || _from
+//                 const _from = jb.codeEditor.lineColToOffset(cmp.base.value,from)
+//                 const _to = to && jb.codeEditor.lineColToOffset(cmp.base.value,to) || _from
 //                 cmp.base.setSelectionRange(_from,_to)
 //             },
 //         }

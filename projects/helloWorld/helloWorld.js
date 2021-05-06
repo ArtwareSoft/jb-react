@@ -23,9 +23,13 @@ jb.component('helloWorld.main', {
       text('hello world'),
       image({
         url: 'https://freesvg.org/img/UN-CONSTRUCTION-2.png',
-        width: 21,
+        width: 77,
         height: 100
       })
     ]
   })
+})
+
+jb.component('x', {
+  impl: {a: 1, b: 2}
 })

@@ -88,6 +88,11 @@ jb.extension('ui', {
                 ]
             }
         }
+        outerHTML() { // for tests
+            return `<${this.tag} ${jb.entries(this.attributes).map(([att,val]) => att+'="'+val+'"').join(' ')}>
+    ${(this.children || []).map(x=>x.outerHTML()).join('\n')}
+</${this.tag}>`
+        }
     },
     toVdomOrStr(val) {
         if (jb.utils.isDelayed(val))
@@ -130,7 +135,7 @@ jb.extension('ui', {
     vdomDiff(newObj,orig) {
         const ignoreRegExp = /\$|checked|style|value|parentNode|frontend|__|widget|on-|remoteuri|width|height|top|left|aria-|tabindex/
         const ignoreValue = /__undefined/
-        const ignoreClasses = /selected|mdc-tab-[0-9]+/
+        const ignoreClasses = /selected|mdc-[a-z\-0-9]+/
         return doDiff(newObj,orig)
         function doDiff(newObj,orig,attName) {
             if (Array.isArray(orig) && orig.length == 0) orig = null

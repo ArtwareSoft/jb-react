@@ -1,5 +1,3 @@
-// var {dataTest,uiTest,userInput,uiAction,dialog,widget,last} = jb.ns('dataTest,uiTest,userInput,uiAction,dialog,widget')
-
 jb.component('tests.main', { // needed for loading the 'virtual' tests project
 	type: 'control',
 	impl: text('') // dummy impl needed
@@ -9,14 +7,14 @@ jb.component('dataTest', {
 	type: 'test',
 	params: [
 	  {id: 'calculate', dynamic: true},
-	  {id: 'runBefore', type: 'action', dynamic: true},
 	  {id: 'expectedResult', type: 'boolean', dynamic: true},
+	  {id: 'runBefore', type: 'action', dynamic: true},
 	  {id: 'timeout', as: 'number', defaultValue: 200},
 	  {id: 'allowError', as: 'boolean', dynamic: true},
 	  {id: 'cleanUp', type: 'action', dynamic: true},
 	  {id: 'expectedCounters', as: 'single'},
 	],
-	impl: function(ctx,calculate,runBefore,expectedResult,timeout,allowError,cleanUp,expectedCounters) {
+	impl: function(ctx,calculate,expectedResult,runBefore,timeout,allowError,cleanUp,expectedCounters) {
 		const _timeout = ctx.vars.singleTest ? Math.max(1000,timeout) : timeout
 		const id = ctx.vars.testID
 		return Promise.race([jb.delay(_timeout).then(()=>[{runErr: 'timeout'}]), Promise.resolve(runBefore())
@@ -65,7 +63,7 @@ jb.component('uiTest', {
 	impl: dataTest({
 		vars: [
 			Var('uiTest',true),
-			Var('tstWidgetId', pipeline( replace({text: '%$testID%', find: '[.]', replace: '_'}), 'tests-%%')),
+			Var('tstWidgetId', ({},{testID}) => `${jb.uri}-${testID.replace(/\./g,'_')}`)
 		],
 		timeout: '%$timeout%',
 		allowError: '%$allowError%',
@@ -125,9 +123,10 @@ jb.component('uiFrontEndTest', {
 	  {id: 'runInStudio', type: 'action', dynamic: true, descrition: 'not for test mode'},
 	],
 	impl: (_ctx,control,runBefore,action,expectedResult,allowError,cleanUp,expectedCounters,renderDOM) => {
+		const {testID, singleTest} = _ctx.vars
+		//return Promise.resolve({ id: testID, success: true})
 		const elemToTest = document.createElement('div')
 		const ctx = _ctx.setVars({elemToTest})
-		const {testID, singleTest} = ctx.vars
 		elemToTest.ctxForFE = ctx
 		elemToTest.setAttribute('id','jb-testResult')
 		const show = new URL(location.href).searchParams.get('show') !== null
@@ -171,6 +170,8 @@ jb.component('uiTest.vdomResultAsHtml', {
 	impl: ctx => {
 		const widget = jb.ui.headless[ctx.vars.tstWidgetId]
 		if (!widget) return ''
+		if (typeof document == 'undefined')
+			return widget.body.outerHTML()
 		const elemToTest = document.createElement('div')
 		elemToTest.ctxForFE = ctx.setVars({elemToTest})
 		jb.ui.render(widget.body, elemToTest)
@@ -181,12 +182,12 @@ jb.component('uiTest.vdomResultAsHtml', {
 })
 
 jb.component('uiTest.applyVdomDiff', {
-  type: 'test',
-  params: [
-    {id: 'controlBefore', type: 'control', dynamic: true},
-    {id: 'control', type: 'control', dynamic: true}
-  ],
-  impl: function(ctx,controlBefore,control) {
+	type: 'test',
+	params: [
+		{id: 'controlBefore', type: 'control', dynamic: true},
+		{id: 'control', type: 'control', dynamic: true}
+	],
+	impl: function(ctx,controlBefore,control) {
 		console.log('starting ' + ctx.vars.testID)
 		const show = new URL(location.href).searchParams.get('show') !== null
 
@@ -203,10 +204,15 @@ jb.component('uiTest.applyVdomDiff', {
 		const result = { id: ctx.vars.testID, success, vdom, actualVdom, diff }
 			jb.ui.unmount(elem)
 		return result
-	  }
+	}
 })
 
 jb.extension('test', {
+	initExtension() { return { success_counter: 0, fail_counter: 0, startTime: new Date().getTime() } },
+	goto_editor: id => fetch(`/?op=gotoSource&comp=${id}`),
+	hide_success_lines: () => jb.frame.document.querySelectorAll('.success').forEach(e=>e.style.display = 'none'),
+	profileSingleTest: testID => new jb.core.jbCtx().setVars({testID}).run({$: testID}),
+
 	runInner(propName, ctx) {
 		const profile = ctx.profile
 		return profile[propName] && ctx.runInner(profile[propName],{type: 'data'}, propName)
@@ -223,19 +229,20 @@ jb.extension('test', {
 	runInStudio(profile) {
 		return profile && jb.ui.parentFrameJb().exec(profile)
 	},
-	cleanBeforeRun(ctx) {
+	cleanBeforeRun() {
 		jb.db.watchableHandlers.forEach(h=>h.dispose())
 		jb.db.watchableHandlers = [new jb.watchable.WatchableValueByRef(jb.watchable.resourcesRef)];
-		jb.entries(JSON.parse(ctx.vars.$initial_resources || '{}')).forEach(e=>jb.db.resource(e[0],e[1]))
+		jb.entries(JSON.parse(jb.test.initial_resources || '{}')).filter(e=>e[0] != 'studio').forEach(e=>jb.db.resource(e[0],e[1]))
 		jb.ui.subscribeToRefChange(jb.db.watchableHandlers[0])
 
-		if (jb.studio && jb.watchableComps.handler) {
-			jb.watchableComps.handler.resources(ctx.vars.$initial_comps)
+		if (jb.watchableComps.handler) {
+			jb.watchableComps.handler.resources(jb.test.initial_comps)
 			jb.db.watchableHandlers.push(jb.watchableComps.handler)
 		}
-		if (!jb.spy.log) jb.spy.initSpy({spyParam: 'none'})
+		if (!jb.spy.log) jb.spy.initSpy({spyParam: 'test'})
 		jb.spy.clear()
-		jb.ui.garbageCollectCtxDictionary && jb.ui.garbageCollectCtxDictionary(true,true)
+		jb.jbm.terminateAllChildren()
+		jb.ui.garbageCollectCtxDictionary(true,true)
 	},
 	countersErrors(expectedCounters,allowError) {
 		if (!jb.spy.log) return ''
@@ -249,125 +256,113 @@ jb.extension('test', {
 				? `${exp}: ${jb.spy.count(exp)} instead of ${expectedCounters[exp]}` : '')
 			.filter(x=>x)
 			.join(', ')
-	}
-})
-
-jb.extension('testers', {
-  initExtension() {
-	jb.frame.goto_editor = id => fetch(`/?op=gotoSource&comp=${id}`)
-	jb.frame.hide_success_lines = () => jb.frame.document.querySelectorAll('.success').forEach(e=>e.style.display = 'none')
-	jb.frame.profileSingleTest = testID => new jb.core.jbCtx().setVars({testID}).run({$: testID})
-
-	jb.testers.jb_success_counter = 0;
-	jb.testers.jb_fail_counter = 0;
-
-	jb.frame.startTime = jb.frame.startTime || new Date().getTime();
-  },
-  runTests({testType,specificTest,show,pattern,notPattern}) {
-	const {pipe, fromIter, subscribe,concatMap, fromPromise } = jb.callbag
-	let index = 1
-	self.jbRunningTests = true
-
-	//jb.studio.initTests && jb.studio.initTests()
-	const $initial_resources = JSON.stringify(jb.db.resources) //.replace(/\"\$jb_id":[0-9]*,/g,'')
-	const $initial_comps = jb.studio && jb.watchableComps.handler && jb.watchableComps.handler.resources();
-
-	const tests = jb.entries(jb.comps)
-		.filter(e=>typeof e[1].impl == 'object')
-		.filter(e=>e[1].type != 'test') // exclude the testers
-		.filter(e=>isCompNameOfType(e[0],'test'))
-		.filter(e=>!testType || e[1].impl.$ == testType)
-		.filter(e=>!specificTest || e[0] == specificTest)
-//		.filter(e=> !e[0].match(/throw/)) // tests that throw exceptions and stop the debugger
-		.filter(e=>!pattern || e[0].match(pattern))
-		.filter(e=>!notPattern || !e[0].match(notPattern))
-//		.filter(e=>!e[0].match(/^remoteTest|inPlaceEditTest|patternsTest/) && ['uiTest','dataTest'].indexOf(e[1].impl.$) != -1) // || includeHeavy || specificTest || !e[1].impl.heavy )
-//		.sort((a,b) => (a[0] > b[0]) ? 1 : ((b[0] > a[0]) ? -1 : 0))
-	tests.forEach(e => e.group = e[0].split('.')[0].split('Test')[0])
-	const priority = 'net,data,ui,rx,remote,studio'.split(',').reverse().join(',')
-	const groups = jb.utils.unique(tests.map(e=>e.group)).sort((x,y) => priority.indexOf(x) - priority.indexOf(y))
-	tests.sort((y,x) => groups.indexOf(x.group) - groups.indexOf(y.group))
-	self.jbSingleTest = tests.length == 1
-
-	document.body.innerHTML = `<div style="font-size: 20px"><div id="progress"></div><span id="fail-counter" onclick="hide_success_lines()"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span><span id="memory-usage"></span></div>`;
-
-	const times = {}
-	return pipe(
-			fromIter(tests),
-			concatMap(e => {
-			  const testID = e[0]
-			  const $testFinished = jb.callbag.subject()
-			  const tstCtx = jb.ui.extendWithServiceRegistry()
-			  	.setVars({ testID, $initial_resources, $initial_comps, singleTest: self.jbSingleTest, $testFinished })
-			  document.getElementById('progress').innerHTML = `<div id=${testID}>${index++}: ${testID} started</div>`
-			  times[testID] = { start: new Date().getTime() }
-			  jb.test.cleanBeforeRun(tstCtx)
-			  jb.log('start test',{testID})
-			  console.log('starting ' + testID )
-			  return fromPromise(Promise.resolve(tstCtx.run({$:testID}))
-				.then(res => {
-					$testFinished.next(1)
-					$testFinished.complete()
-					jb.ui.garbageCollectCtxDictionary(true,true)
-					document.getElementById('progress').innerHTML = `<div id=${testID}>${testID} finished</div>`
-					res.duration = new Date().getTime() - times[testID].start
-					console.log('end      ' + testID, res)
-					jb.log('end test',{testID,res})
-					res.show = () => {
-						if (!e[1].impl.control) return
-						const ctxToRun = jb.ui.extendWithServiceRegistry(new jb.core.jbCtx(tstCtx,{ profile: e[1].impl.control , forcePath: testID+ '~impl~control', path: '' } ))
-						const elem = document.createElement('div')
-						elem.className = 'show'
-						document.body.appendChild(elem)
-						jb.ui.render(jb.ui.h(ctxToRun.runItself()),elem)    
-					}
-					return res
-			 }))
-		}),
-		subscribe(res=> {
-			if (res.success)
-				jb.testers.jb_success_counter++;
-			else
-				jb.testers.jb_fail_counter++;
-			const baseUrl = window.location.href.split('/tests.html')[0]
-			const studioUrl = `http://localhost:8082/project/studio/${res.id}?host=test`
-			const matchLogs = 'remote,itemlist,refresh'.split(',')
-			const matchLogsMap = jb.entries({ui: ['uiComp'], widget: ['uiComp','widget'] })
-			const spyLogs = ['test', ...(matchLogs.filter(x=>res.id.toLowerCase().indexOf(x) != -1)), 
-				...(matchLogsMap.flatMap( ([k,logs]) =>res.id.toLowerCase().indexOf(k) != -1 ? logs : []))]
-			const testResultHtml = `<div class="${res.success ? 'success' : 'failure'}"">
-				<a href="${baseUrl}/tests.html?test=${res.id}&show&spy=${spyLogs.join(',')}" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
-				<span> ${res.duration}mSec</span> 
-				<a class="test-button" href="javascript:goto_editor('${res.id}')">src</a>
-				<a class="test-button" href="${studioUrl}">studio</a>
-				<a class="test-button" href="javascript:profileSingleTest('${res.id}')">profile</a>
-				<span>${res.reason||''}</span>
-				</div>`;
-
-			document.getElementById('success-counter').innerHTML = ', success ' + jb.testers.jb_success_counter;
-			document.getElementById('fail-counter').innerHTML = 'failures ' + jb.testers.jb_fail_counter;
-			document.getElementById('fail-counter').style.color = jb.testers.jb_fail_counter ? 'red' : 'green';
-			document.getElementById('fail-counter').style.cursor = 'pointer';
-			document.getElementById('memory-usage').innerHTML = ', ' + (jb.path(jb.frame,'performance.memory.usedJSHeapSize' || 0) / 1000000)  + 'M memory used';
-
-			document.getElementById('time').innerHTML = ', ' + (new Date().getTime() - jb.frame.startTime) +' mSec';
-			jb.ui.addHTML(document.body,testResultHtml);
-			if (!res.renderDOM && show) res.show()
-			if (jb.ui && tests.length >1) {
-				jb.cbLogByPath = {}
-				window.scrollTo(0,0)
-			}
-	}))
-
-	function isCompNameOfType(name,type) {
-		const comp = name && jb.comps[name];
+  	},
+	isCompNameOfType(name,type) {
+		const comp = name && jb.comps[name]
 		if (comp) {
 			while (jb.comps[name] && !jb.comps[name].type && jb.utils.compName(jb.comps[name].impl))
-				name = jb.utils.compName(jb.comps[name].impl);
-			return (jb.comps[name] && jb.comps[name].type || '').indexOf(type) == 0;
+				name = jb.utils.compName(jb.comps[name].impl)
+			return (jb.comps[name] && jb.comps[name].type || '').indexOf(type) == 0
 		}
-	}	
-  }
+	},
+	async runOneTest(testID,{doNotcleanBeforeRun} = {}) {
+		const $testFinished = jb.callbag.subject()
+		const tstCtx = jb.ui.extendWithServiceRegistry()
+			.setVars({ testID, singleTest: jb.test.singleTest, $testFinished })
+		const start = new Date().getTime()
+		!doNotcleanBeforeRun && jb.test.cleanBeforeRun()
+		jb.log('start test',{testID})
+		const res = await tstCtx.run({$:testID})
+		$testFinished.next(1)
+		$testFinished.complete()
+		res.duration = new Date().getTime() - start
+		jb.log('end test',{testID,res})
+		res.show = () => {
+			const profile = jb.comps[testID]
+			if (!profile.impl.control) return
+			const ctxToRun = jb.ui.extendWithServiceRegistry(new jb.core.jbCtx(tstCtx,{ profile: profile.impl.control , forcePath: testID+ '~impl~control', path: '' } ))
+			const elem = document.createElement('div')
+			elem.className = 'show'
+			document.body.appendChild(elem)
+			jb.ui.render(jb.ui.h(ctxToRun.runItself()),elem)    
+		}		
+		return res
+	},
+	runTests({testType,specificTest,show,pattern,notPattern}) {
+		const {pipe, fromIter, subscribe,concatMap, fromPromise } = jb.callbag 
+		let index = 1
+
+		jb.test.initial_resources = JSON.stringify(jb.db.resources) //.replace(/\"\$jb_id":[0-9]*,/g,'')
+		jb.test.initial_comps = jb.watchableComps.handler && jb.watchableComps.handler.resources();
+
+		const tests = jb.entries(jb.comps)
+			.filter(e=>typeof e[1].impl == 'object')
+			.filter(e=>e[1].type != 'test') // exclude the testers
+			.filter(e=>jb.test.isCompNameOfType(e[0],'test'))
+			.filter(e=>!testType || e[1].impl.$ == testType)
+			.filter(e=>!specificTest || e[0] == specificTest)
+	//		.filter(e=> !e[0].match(/throw/)) // tests that throw exceptions and stop the debugger
+			.filter(e=>!pattern || e[0].match(pattern))
+			.filter(e=>!notPattern || !e[0].match(notPattern))
+	//		.filter(e=>!e[0].match(/^remoteTest|inPlaceEditTest|patternsTest/) && ['uiTest','dataTest'].indexOf(e[1].impl.$) != -1) // || includeHeavy || specificTest || !e[1].impl.heavy )
+	//		.sort((a,b) => (a[0] > b[0]) ? 1 : ((b[0] > a[0]) ? -1 : 0))
+		tests.forEach(e => e.group = e[0].split('.')[0].split('Test')[0])
+		const priority = 'net,data,ui,rx,remote,studio'.split(',').reverse().join(',')
+		const groups = jb.utils.unique(tests.map(e=>e.group)).sort((x,y) => priority.indexOf(x) - priority.indexOf(y))
+		tests.sort((y,x) => groups.indexOf(x.group) - groups.indexOf(y.group))
+		jb.test.singleTest = tests.length == 1	
+		jb.test.runningTests = true
+
+		document.body.innerHTML = `<div style="font-size: 20px"><div id="progress"></div><span id="fail-counter" onclick="jb.test.hide_success_lines()"></span><span id="success-counter"></span><span>, total ${tests.length}</span><span id="time"></span><span id="memory-usage"></span></div>`;
+
+		return pipe(
+			fromIter(tests),
+			concatMap(e => fromPromise((async () => {
+				if (e[1].impl.timeout && e[1].impl.timeout > 1000)
+					await jb.delay(5)
+				const testID = e[0]
+				document.getElementById('progress').innerHTML = `<div id=${testID}>${index++}: ${testID} started</div>`
+				console.log('starting ' + testID )
+				const res = await jb.test.runOneTest(testID)
+				console.log('end      ' + testID, res)
+				document.getElementById('progress').innerHTML = `<div id=${testID}>${testID} finished</div>`
+				return res
+			})() )),
+			subscribe(res=> {
+				if (res.success)
+					jb.test.success_counter++;
+				else
+					jb.test.fail_counter++;
+				const baseUrl = window.location.href.split('/tests.html')[0]
+				const studioUrl = `http://localhost:8082/project/studio/${res.id}?host=test`
+				const matchLogs = 'remote,itemlist,refresh'.split(',')
+				const matchLogsMap = jb.entries({ui: ['uiComp'], widget: ['uiComp','widget'] })
+				const spyLogs = ['test', ...(matchLogs.filter(x=>res.id.toLowerCase().indexOf(x) != -1)), 
+					...(matchLogsMap.flatMap( ([k,logs]) =>res.id.toLowerCase().indexOf(k) != -1 ? logs : []))]
+				const testResultHtml = `<div class="${res.success ? 'success' : 'failure'}"">
+					<a href="${baseUrl}/tests.html?test=${res.id}&show&spy=${spyLogs.join(',')}" style="color:${res.success ? 'green' : 'red'}">${res.id}</a>
+					<span> ${res.duration}mSec</span> 
+					<a class="test-button" href="javascript:jb.test.goto_editor('${res.id}')">src</a>
+					<a class="test-button" href="${studioUrl}">studio</a>
+					<a class="test-button" href="javascript:jb.test.profileSingleTest('${res.id}')">profile</a>
+					<span>${res.reason||''}</span>
+					</div>`;
+
+				document.getElementById('success-counter').innerHTML = ', success ' + jb.test.success_counter;
+				document.getElementById('fail-counter').innerHTML = 'failures ' + jb.test.fail_counter;
+				document.getElementById('fail-counter').style.color = jb.test.fail_counter ? 'red' : 'green';
+				document.getElementById('fail-counter').style.cursor = 'pointer';
+				document.getElementById('memory-usage').innerHTML = ', ' + (jb.path(jb.frame,'performance.memory.usedJSHeapSize' || 0) / 1000000)  + 'M memory used';
+
+				document.getElementById('time').innerHTML = ', ' + (new Date().getTime() - jb.test.startTime) +' mSec';
+				jb.ui.addHTML(document.body,testResultHtml);
+				if (!res.renderDOM && show) res.show()
+				if (jb.ui && tests.length >1) {
+					jb.cbLogByPath = {}
+					window.scrollTo(0,0)
+				}
+		}))
+  	}
 })
 
 jb.extension('ui', {

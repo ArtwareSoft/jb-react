@@ -227,3 +227,16 @@ jb.component('jbEditorTest.basic', {
 //     expectedResult: contains('wPreview')
 //   })
 // })
+
+jb.component('previewTest.childJbm', {
+  impl: uiTest({
+    timeout: 1000,
+    runBefore: runActions(
+      jbm.child({id: 'wPreview', init: studio.initPreview()}),
+      writeValue('%$studio/circuit%','sampleProject.main'),
+    ),
+    checkResultRx: () => jb.ui.renderingUpdates,
+    control: preview.remoteWidget(),
+    expectedResult: contains('hello')
+  })
+})

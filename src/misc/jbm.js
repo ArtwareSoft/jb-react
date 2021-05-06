@@ -22,8 +22,6 @@ Routing is implemented by remoteRoutingPort, first calclating the routing path, 
 The routing path is reversed to create response message
 */
 
-//var { rx,source,jbm,remote,net,pipe, aggregate } = jb.ns('rx,source,jbm,remote,net')
-
 jb.extension('cbHandler', {
     initExtension() {
         return { counter: 0, map: {} }
@@ -47,6 +45,11 @@ jb.extension('cbHandler', {
         jb.log(`remote remove cb handlers at ${jb.uri}`,{ids,m})
         jb.delay(1000).then(()=>
             jb.asArray(ids).filter(x=>x).forEach(id => delete jb.cbHandler.map[id]))
+    },
+    terminate() {
+        const keys = Object.keys(jb.cbHandler.map)
+        keys.forEach(id => typeof jb.cbHandler.map[id] == 'function' && jb.cbHandler.map[id](2))
+        jb.delay(1000).then(keys.forEach(id => delete jb.cbHandler.map[id]))
     }
 }),
 
@@ -220,7 +223,7 @@ jb.extension('jbm', {
         return pathOfDistFolder && pathOfDistFolder() || location && location.href.match(/^[^:]*/)[0] + `://${location.host}/dist`
     },
     initDevToolsDebugge() {
-        if (self.jbRunningTests && !self.jbSingleTest) 
+        if (jb.test && jb.test.runningTests && !jb.test.singleTest) 
             return jb.logError('jbart devtools is disables for multiple tests')
         if (!jb.jbm.networkPeers['devtools']) {
             jb.jbm.connectToPanel = panelUri => new jb.core.jbCtx().setVar('$disableLog',true).run(remote.action({
@@ -228,10 +231,19 @@ jb.extension('jbm', {
                     jbm: jbm.byUri('devtools'),
                     oneway: true
                 })) // called directly by initPanel
-            jb.jbm.networkPeers['devtools'] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'devtools',{blockContentScriptLoop: true}))
-            self.postMessage({initDevToolsPeerOnDebugge: {uri: jb.uri, distPath: jb.jbm.pathOfDistFolder(), spyParam: jb.path(jb,'spy.spyParam')}}, '*')
+            jb.jbm.networkPeers['devtools'] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(globalThis,'devtools',{blockContentScriptLoop: true}))
+            globalThis.postMessage({initDevToolsPeerOnDebugge: {uri: jb.uri, distPath: jb.jbm.pathOfDistFolder(), spyParam: jb.path(jb,'spy.spyParam')}}, '*')
         }
-    }            
+    },
+    terminateChild(id) {
+        if (!jb.jbm.childJbms[id]) return
+        jb.jbm.childJbms[id].remoteExec(jb.remoteCtx.stripJS(() => {jb.cbHandler.terminate(); if (typeof close == 'function') close() } ))
+        delete jb.ports[jb.jbm.childJbms[id].uri]
+        delete jb.jbm.childJbms[id]
+    },
+    terminateAllChildren() {
+        Object.keys(jb.jbm.childJbms).forEach(id=>jb.jbm.terminateChild(id))
+    }
 })
 
 jb.component('startup.codeLoaderServer', {
@@ -253,10 +265,10 @@ jb.component('startup.codeLoaderClient', {
     type: 'startupCode',
     impl: ({vars}) => vars.multipleJbmsInFrame ? `(function () {
 const jb = { uri: '${vars.uri}'}
-self.jbLoadingPhase = 'libs'
+globalThis.jbLoadingPhase = 'libs'
 ${jb.codeLoader.clientCode()};
 jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
-self.jbLoadingPhase = 'appFiles'
+globalThis.jbLoadingPhase = 'appFiles'
 return jb
 })()
 ` : `jb = { uri: '${vars.uri}'}
@@ -296,6 +308,7 @@ jbLoadingPhase = 'appFiles'
 `
         const worker = new Worker(URL.createObjectURL(new Blob([workerCode], {name, type: 'application/javascript'})))
         childsOrNet[name] = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(worker,workerUri))
+        childsOrNet[name].worker = worker
         const result = Promise.resolve(init(ctx.setVar('jbm',childsOrNet[name]))).then(()=>childsOrNet[name])
         result.uri = workerUri
         return result
@@ -305,7 +318,7 @@ jbLoadingPhase = 'appFiles'
 jb.component('jbm.child', {
     type: 'jbm',
     params: [
-        {id: 'name', as: 'string', mandatory: true},
+        {id: 'id', as: 'string', mandatory: true},
         {id: 'startupCode', type: 'startupCode', dynamic: true, defaultValue: startup.codeLoaderClient() },
         {id: 'init', type: 'action', dynamic: true },
     ],    
@@ -316,15 +329,16 @@ jb.component('jbm.child', {
         const _child = jb.frame.eval(`${code}
 //# sourceURL=${childUri}-startup.js
 `)
+        jb.jbm.childJbms[name] = _child
         const result = Promise.resolve(_child).then(child=>{
             initChild(child)
-            return Promise.resolve(()=>init(ctx.setVar('jbm',child))).then(()=>child)
+            return Promise.resolve(init(ctx.setVar('jbm',child))).then(()=>child)
         })
         result.uri = childUri
         return result
 
         function initChild(child) {
-            //child.spy.initSpy({spyParam: jb.spy.spyParam})
+            child.spy.initSpy({spyParam: jb.spy.spyParam})
             jb.jbm.childJbms[name] = child
             child.parent = jb
             child.codeLoaderJbm = jb.codeLoaderJbm || jb // TODO: use codeLoaderUri
@@ -354,6 +368,8 @@ jb.component('jbm.byUri', {
     impl: ({},_uri) => {
         const uri = _uri()
         if (uri == jb.uri) return jb
+        const childJbm = Object.values(jb.jbm.childJbms).find(x=>x.uri == uri)
+        if (childJbm) return childJbm
         return calcNeighbourJbm(uri) || jb.jbm.extendPortToJbmProxy(remoteRoutingPort(jb.uri, uri),{doNotinitCommandListener: true})
 
         function remoteRoutingPort(from,to) {
@@ -401,4 +417,12 @@ jb.component('jbm.byUri', {
 jb.component('jbm.self', {
     type: 'jbm',
     impl: () => jb
+})
+
+jb.component('jbm.terminateChild', {
+    type: 'action',
+    params: [
+        {id: 'id', as: 'string'}
+    ],
+    impl: (ctx,id) => jb.jbm.terminateChild(id)
 })

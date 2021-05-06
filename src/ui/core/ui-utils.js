@@ -266,5 +266,11 @@ jb.component('controlWithFeatures', {
   impl: (ctx,control,features) => control.jbExtend(features,ctx).orig(ctx)
 })
 
-// widely used
-// var { customStyle, styleByControl, styleWithFeatures, controlWithFeatures } = jb.macro
+jb.component('renderWidget', {
+  type: 'action',
+  params: [
+    {id: 'control', type: 'control', dynamic: true, mandatory: true},
+    {id: 'selector', as: 'string', defaultValue: 'body'}
+  ],
+  impl: (ctx, control, selector) => jb.ui.render(jb.ui.h(control(jb.ui.extendWithServiceRegistry(ctx))), document.querySelector(selector))
+})

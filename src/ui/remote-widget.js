@@ -81,7 +81,7 @@ jb.component('remote.distributedWidget', {
                     source.callbag(() => jb.ui.widgetUserRequests),
                     rx.log('remote widget userReq'),
                     rx.filter('%widgetId% == %$widgetId%'),
-                    rx.takeWhile(({data}) => data.$ != 'destroy',true),
+                    rx.takeWhile(({data}) => data.$$ != 'destroy',true),
              ), jbm.byUri('%$frontEndUri%') ),
             widget.headless('%$control()%','%$widgetId%'),
             sink.action(remote.action(action.frontEndDelta('%%'), jbm.byUri('%$frontEndUri%')))
@@ -102,7 +102,7 @@ jb.component('remote.widget', {
             source.callbag(() => jb.ui.widgetUserRequests),
             rx.log('remote widget userReq'),
             rx.filter('%widgetId% == %$widgetId%'),
-            rx.takeWhile(({data}) => data.$ != 'destroy',true),
+            rx.takeWhile(({data}) => data.$$ != 'destroy',true),
             //source.frontEndUserEvent('%$widgetId%'),
             rx.log('remote widget sent to headless'),
             remote.operator(widget.headless(call('control'),'%$widgetId%'), '%$jbm%'),
@@ -160,7 +160,7 @@ jb.extension('ui','headless', {
         } else if (userReq.$ == 'recoverWidget') {
             jb.log('recover headless widget',{userReq})
             //createHeadlessWidget({ recover: true })
-        } else if (userReq.$ == 'destroy') {
+        } else if (userReq.$$ == 'destroy') {
             jb.log('destroy headless widget request',{widgetId: userReq.widgetId,userReq})
             jb.ui.BECmpsDestroyNotification.next({cmps: userReq.cmps, destroyLocally: true})
             if (userReq.destroyWidget) jb.delay(1).then(()=> {

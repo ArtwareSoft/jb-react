@@ -1,5 +1,3 @@
-// var { not,contains,writeValue,obj,prop } = jb.ns('not,contains,writeValue,obj,prop') // use in module
-
 jb.component('call', {
   type: 'any',
   params: [

@@ -1,25 +1,23 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-global.vscodeNS = require("vscode");
+Object.defineProperty(exports, "__esModule", { value: true })
+global.vscodeNS = require("vscode")
 global.fs = require("fs")
 const vm = require("vm")
-const {Worker} = require('worker_threads')
-global.jbBaseUrl = '/home/shaiby/projects/jb-react' // TODO: to be put in a global place, maybe in extension code
-// (vscode.workspace.workspaceFolders[0] || { uri: { path: '' } }).uri.path
+const workspaceDir = (vscodeNS.workspace.workspaceFolders || []).map(ws=>ws.uri.path).filter(path=>path.match(/jb-react/))[0]
+global.jbBaseUrl = __dirname.match(/extensions/) ? workspaceDir : __dirname.replace(/\/hosts\/vscode$/,'')
+// TODO: support more generic codeLoader - internet, or locally installed
 global.jbInvscode = true
-global.reloadJbart = loadCodeLoaderServer
 global.loadProjectsCode = loadProjectsCode
-global.Worker = Worker
-
-console.log('vscode extension started')
+global.Worker = require('worker_threads').Worker
 
 async function activate(context) {
-    console.log('vscode extension activate')
-    await loadCodeLoaderServer()
+    global.jb = await loadCodeLoaderServer()
     console.log('vscode init')
     await jb.vscode.init()
-    context.subscriptions.push(vscodeNS.window.registerWebviewViewProvider('jbart.preview', jb.vscode.createWebViewProvider('preview',context.extensionUri)))
-    context.subscriptions.push(vscodeNS.window.registerWebviewViewProvider('jbart.jbEditor', jb.vscode.createWebViewProvider('jbEditor',context.extensionUri)))
+
+    ;['preview','jbEditor','logs'].forEach(viewId => context.subscriptions.push(
+        vscodeNS.window.registerWebviewViewProvider(`jbart.${viewId}`, jb.vscode.createWebViewProvider(viewId,context.extensionUri))))
+    ;['formatComponent','onEnter'].forEach(cmd => vscodeNS.commands.registerCommand(`jbart.${cmd}`, jb.vscode[cmd]))
 }
 exports.activate = activate
 
@@ -34,7 +32,12 @@ function loadCodeLoaderServer() {
 }
 
 function loadFileFunc(url) {
-    vm.runInThisContext(fs.readFileSync(`${jbBaseUrl}${url}`), url)
+    try {
+        require(jbBaseUrl+url)
+    } catch (e) {
+        console.log(url,e)
+        vscodeNS.window.showErrorMessage(`error loading ${url} ${e}`)
+    }
 }
 
 function getAllCodeFunc(path, _include, _exclude) {

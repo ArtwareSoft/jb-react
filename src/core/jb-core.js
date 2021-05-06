@@ -53,7 +53,7 @@ Object.assign(jb, {
 //        if (jb.frame.jbInvscode) debugger
         const errStack = new Error().stack.split(/\r|\n/).map(x=>x.trim())
         const line = errStack.filter(x=>x && !x.match(/^Error/) && !x.match(/at Object.component/)).shift()
-        comp[jb.core.location] = line ? (line.split('at ').pop().split('eval (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
+        comp[jb.core.location] = line ? (line.split('at ').pop().split('eval (').pop().split(' (').pop().match(/\\?([^:]+):([^:]+):[^:]+$/) || ['','','','']).slice(1,3) : ['','']
         comp[jb.core.project] = comp[jb.core.location][0].split('?')[1]
         comp[jb.core.location][0] = comp[jb.core.location][0].split('?')[0]
       } catch(e) {
@@ -84,7 +84,7 @@ Object.assign(jb, {
 jb.extension('core', {
   initExtension() {
     Object.assign(jb, {
-      frame: (typeof frame == 'object') ? frame : typeof self === 'object' ? self : typeof global === 'object' ? global : {},
+      frame: globalThis,
       comps: {}, ctxDictionary: {},
       __requiredLoaded: {},
       jstypes: jb.core.jsTypes()

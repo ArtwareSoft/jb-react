@@ -41,7 +41,8 @@ jb.extension('watchable', {
         jb.path(op,path,opOnRef) // create op as nested object
         const insertedIndex = jb.path(opOnRef.$splice,[0,2]) && jb.path(opOnRef.$splice,[0,0]) || opOnRef.$push && opVal.length
         const insertedPath = insertedIndex != null && path.concat(insertedIndex)
-        const opEvent = {before: this.resources(), op: opOnRef, path, insertedPath, ref, srcCtx, oldVal, opVal, timeStamp: new Date().getTime(), opCounter: this.opCounter++}
+        const opEvent = {before: this.resources(), op: opOnRef, path, insertedPath, ref, srcCtx, oldVal, opVal, 
+            timeStamp: new Date().getTime(), opCounter: this.opCounter++ }
         this.resources(jb.immutable.update(this.resources(),op))
         opEvent.after = this.resources() 
         const newVal = (opVal != null && opVal[jb.watchable.isProxy]) ? opVal : this.valOfPath(path);
@@ -69,7 +70,7 @@ jb.extension('watchable', {
           this.primitiveArraysDeltas[ref.$jb_obj[jb.watchable.jbId]] = this.primitiveArraysDeltas[ref.$jb_obj[jb.watchable.jbId]] || []
           this.primitiveArraysDeltas[ref.$jb_obj[jb.watchable.jbId]].push(opOnRef.$splice)
         }
-        opEvent.newVal = newVal;
+        opEvent.newVal = newVal
         jb.log('watchable notify doOp',{opEvent,ref,opOnRef,srcCtx})
         if (this.transactionEventsLog)
           this.transactionEventsLog.push(opEvent)
