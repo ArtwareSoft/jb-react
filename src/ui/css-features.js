@@ -166,18 +166,19 @@ jb.component('css.underline', {
 jb.component('css.boxShadow', {
   type: 'feature,dialog-feature',
   params: [
-    {id: 'blurRadius', as: 'string', templateValue: '5'},
-    {id: 'spreadRadius', as: 'string', templateValue: '0'},
-    {id: 'shadowColor', as: 'string', templateValue: '#000000'},
-    {id: 'opacity', as: 'string', templateValue: 0.5, description: '0-1'},
-    {id: 'horizontal', as: 'string', templateValue: '10'},
-    {id: 'vertical', as: 'string', templateValue: '10'},
+    {id: 'inset', as: 'boolean', description: 'the box is raised or content is depressed inside the box'},
+    {id: 'blurRadius', as: 'string', defaultValue: '5', description: 'bigger and lighter shadow'},
+    {id: 'spreadRadius', as: 'string', defaultValue: '0', description: 'just bigger shadow'},
+    {id: 'shadowColor', as: 'string', defaultValue: '#000000'},
+    {id: 'opacity', as: 'string', defaultValue: 0.5, description: '0-1'},
+    {id: 'horizontal', as: 'string', defaultValue: '10', description: 'offset-x'},
+    {id: 'vertical', as: 'string', defaultValue: '10', description: 'offset-y'},
     {id: 'selector', as: 'string'}
   ],
-  impl: (ctx,blurRadius,spreadRadius,shadowColor,opacity,horizontal,vertical,selector) => {
+  impl: (ctx,inset, blurRadius,spreadRadius,shadowColor,opacity,horizontal,vertical,selector) => {
     const color = [parseInt(shadowColor.slice(1,3),16) || 0, parseInt(shadowColor.slice(3,5),16) || 0, parseInt(shadowColor.slice(5,7),16) || 0]
       .join(',');
-    return ({css: `${selector} { box-shadow: ${jb.ui.withUnits(horizontal)} ${jb.ui.withUnits(vertical)} ${jb.ui.withUnits(blurRadius)} ${jb.ui.withUnits(spreadRadius)} rgba(${color},${opacity}) }`})
+    return ({css: `${selector} { box-shadow: ${inset?'inset ':''}${jb.ui.withUnits(horizontal)} ${jb.ui.withUnits(vertical)} ${jb.ui.withUnits(blurRadius)} ${jb.ui.withUnits(spreadRadius)} rgba(${color},${opacity}) }`})
   }
 })
 

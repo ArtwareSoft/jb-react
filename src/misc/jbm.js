@@ -2,7 +2,7 @@
 interface jbm : {
      uri : string // devtools•logPanel, studio•preview•debugView, •debugView
      parent : jbm // null means root
-     remoteExec(profile: any, ,{timeout,oneway}) : Promise | void
+     remoteExec(profile: any ,{timeout,oneway}) : Promise | void
      createCallbagSource(stripped ctx of cb_source) : cb
      createCalllbagOperator(stripped ctx of cb_operator) : (source => cb)
 }
@@ -98,7 +98,7 @@ jb.extension('jbm', {
             createCallbagSource: sctx => jb.remoteCtx.deStrip(sctx)(),
             createCalllbagOperator: sctx => jb.remoteCtx.deStrip(sctx)(),
         })
-        return { childJbms: {}, networkPeers: {} }
+        return { childJbms: {}, networkPeers: {}, notifyChildReady: {} }
     },
     portFromFrame(frame,to,options) {
         if (jb.ports[to]) return jb.ports[to]
@@ -237,7 +237,7 @@ jb.extension('jbm', {
     },
     terminateChild(id) {
         if (!jb.jbm.childJbms[id]) return
-        jb.jbm.childJbms[id].remoteExec(jb.remoteCtx.stripJS(() => {jb.cbHandler.terminate(); if (typeof close == 'function') close() } ))
+        jb.jbm.childJbms[id].remoteExec(jb.remoteCtx.stripJS(() => {jb.cbHandler.terminate(); if (typeof close == 'function') close() } ), {oneway: true} )
         delete jb.ports[jb.jbm.childJbms[id].uri]
         delete jb.jbm.childJbms[id]
     },

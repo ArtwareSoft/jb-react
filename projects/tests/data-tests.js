@@ -155,14 +155,23 @@ jb.component('dataTest.writeValueWithArrayLink', {
 
 jb.component('zbl', {
   type: 'control',
-  params: [
-    {id: 'aaa', as: 'string', dynamic: true, type: 'action'}
-  ],
   impl: group({
     controls: [
+      button('asa', runActions(writeValue('aaa'))),
+      text({
+        text: 'hello',
+        features: css.boxShadow({
+          blurRadius: 10,
+          spreadRadius: 1,
+          shadowColor: 'blue'
+        })
+      }),
       html(),
       text({text: 'sdsds', features: css.color('red')}),
-      button('click me', writeValue())
+      button({title: 'click me', style: ''}),
+      text(),
+      button(),
+      text('aa')
     ],
     features: features(method('aaa', addToArray()))
   })
@@ -541,6 +550,18 @@ jb.component('dataTest.prettyPrintPositions', {
   )
 })
 
+jb.component('dataTest.prettyPrintPositions.closeArray', {
+  impl: dataTest(
+    pipeline(
+      () => jb.utils.prettyPrintWithPositions(group({controls: [text('my label'), text('my label')]} ), {colWidth: 30} ),
+      '%map/~controls~!close-array%',
+      join()
+    ),
+    equals('3,20,4,2')
+  )
+})
+
+
 jb.component('dataTest.prettyPrintPositions.separator', {
   impl: dataTest(
     pipeline(() => jb.utils.prettyPrintWithPositions({a: 1, b: 2}), '%map/~!obj-separator-0%', join()),
@@ -574,6 +595,10 @@ jb.component('dataTest.prettyPrintArray', {
 
 jb.component('dataTest.prettyPrint.contains', {
   impl: dataTest(pipeline(() => jb.utils.prettyPrintWithPositions( {$contains: 'hello'}), '%text%'), contains('hello'))
+})
+
+jb.component('dataTest.prettyPrint.byValue.cutTailingUndefinedArgs', {
+  impl: dataTest(() => jb.utils.prettyPrint(css.boxShadow({inset: false})), notContains('undefined'))
 })
 
 jb.component('dataTest.prettyPrint.async', {

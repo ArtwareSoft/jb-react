@@ -52,7 +52,8 @@ jb.component('menu.action', {
   params: [
     {id: 'title', as: 'string', dynamic: true, mandatory: true},
     {id: 'action', type: 'action', dynamic: true, mandatory: true},
-    {id: 'icon', type: 'icon' },
+    {id: 'description', as: 'string', dynamic: true, mandatory: true},
+    {id: 'icon', type: 'icon'},
     {id: 'shortcut', as: 'string'},
     {id: 'showCondition', type: 'boolean', as: 'boolean', defaultValue: true}
   ],
@@ -60,6 +61,7 @@ jb.component('menu.action', {
 			leaf : ctx.params,
 			action: () => ctx.params.action(ctx.setVars({topMenu:null})), // clean topMenu from context after the action
       title: ctx.params.title(ctx),
+      description: ctx.params.description(ctx),
       shortcut: ctx.params.shortcut,
 			runShortcut: event => {
 				if (ctx.run({$: 'key.eventMatchKey', event: () => event.ev, key: () => ctx.params.shortcut}))
@@ -67,7 +69,7 @@ jb.component('menu.action', {
 			},
 			ctx: ctx.setVar('menuDepth', (ctx.vars.menuDepth || 0)+1)
 		}),
-  require: {$: 'key.eventMatchKey'}
+  require: key.eventMatchKey()
 })
 
 // ********* controls ************

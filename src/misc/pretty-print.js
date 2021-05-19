@@ -1,7 +1,7 @@
 jb.component('prettyPrint', {
   params: [
     {id: 'profile', defaultValue: '%%'},
-    {id: 'forceFlat', as: 'boolean', type: 'boolean'},
+    {id: 'forceFlat', as: 'boolean', type: 'boolean'}
   ],
   impl: (ctx,profile) => jb.utils.prettyPrint(jb.val(profile),{ ...ctx.params, comps: jb.studio.previewjb.comps})
 })
@@ -139,8 +139,7 @@ jb.extension('utils', 'prettyPrint', {
       const twoFirstArgs = keys.length == 2 && params.length >= 2 && profile[params[0].id] && profile[params[1].id]
       if ((params.length < 3 && comp.macroByValue !== false) || comp.macroByValue || oneFirstArg || twoFirstArgs) {
         const args = systemProps.concat(params.map(param=>({innerPath: param.id, val: propOfProfile(param.id)})))
-        for(let i=0;i<5;i++)
-          if (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop()
+        while (args.length && (!args[args.length-1] || args[args.length-1].val === undefined)) args.pop() // cut the undefined's at the end
         return joinVals(ctx, args, openProfileByValueGroup, closeProfileByValueGroup, flat, true)
       }
       const remarkProp = profile.remark ? [{innerPath: 'remark', val: profile.remark} ] : []
@@ -202,8 +201,8 @@ jb.extension('utils', 'prettyPrint', {
 
     function arrayToMacro(ctx, array, flat) {
       const vals = array.map((val,i) => ({innerPath: i, val}))
-      const openArray = [{prop:'!open-array', item:'['}]
-      const closeArray = [{prop:'!close-array', item:']'}]
+      const openArray = [{prop:'!open-array-char', item:'['}]
+      const closeArray = [{prop:'!close-array-char', item:']'}]
 
       return joinVals(ctx, vals, openArray, closeArray, flat, true)
     }

@@ -1,5 +1,3 @@
-// jb.ns('sourceEditor')
-
 jb.component('studio.categoriesMarks', {
   params: [
     {id: 'type', as: 'string'},
@@ -56,6 +54,13 @@ jb.component('studio.categoriesMarks', {
         {'$': 'object', code: 'all', mark: '100'}
       )
   )
+})
+
+jb.component('studio.flattenCategories', {
+  type: 'aggregator',
+  impl: ctx => 
+    ctx.data.filter(cat=>cat.code != 'all')
+      .flatMap(category=> [{text: `---${category.code}---`}, ...category.pts.map(text => ({text, compName: text, description: jb.comps[text].description}))])
 })
 
 jb.component('studio.selectProfile', {
@@ -180,7 +185,7 @@ jb.component('studio.selectProfile', {
       css.margin({top: '10', left: '20'}),
       variable({
         name: 'unsortedCategories',
-        value: studio.categoriesOfType('%$type%', '%$path%')
+        value: studio.categoriesOfType('%$type%')
       }),
       variable({
         name: 'Categories',

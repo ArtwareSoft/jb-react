@@ -1,6 +1,3 @@
-// var { variable,watchable,followUp,backEnd,method,features,onDestroy,htmlAttribute,templateModifier,watchAndCalcModelProp,calcProp,watchRef } 
-//  = jb.ns('variable,watchable,followUp,backEnd,method,htmlAttribute,features,onDestroy,templateModifier,watchAndCalcModelProp,calcProp,watchRef,group')
-
 jb.component('method', {
   type: 'feature',
   description: 'define backend event handler',

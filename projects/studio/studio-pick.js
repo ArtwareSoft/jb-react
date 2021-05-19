@@ -59,7 +59,7 @@ jb.component('dialogFeature.studioPick', {
     method('hoverOnElem', (ctx,{}) => {
       const el = ctx.data
       Object.assign(ctx.vars.dialogData,{ elem: el, path: jb.path(el,'debug.path') })
-      ctx.run(touch('%$studio/refreshPick%')) // trigger for refreshing the dialog
+      ctx.run(mutable.toggleBooleanValue('%$studio/refreshPick%')) // trigger for refreshing the dialog
     }),
     method('endPick', runActions(
       writeValue('%$studio/pickSelectionCtxId%', '%$dialogData.ctx.id%'),
@@ -150,15 +150,15 @@ jb.extension('studio','highlight', {
   getOrCreateHighlightBox(sampleElem) {
     const doc = sampleElem.ownerDocument
     if (!doc.querySelector('#preview-box')) {
-      const elem = doc.createElement('div');
-      elem.setAttribute('id','preview-box');
-      !doc.body.appendChild(elem);
+      const elem = doc.createElement('div')
+      elem.setAttribute('id','preview-box')
+      !doc.body.appendChild(elem)
     }
-    return doc.querySelector('#preview-box');
+    return doc.querySelector('#preview-box')
   },
   highlightCtx: ctxId => jb.frame.document && jb.studio.highlightElems(Array.from(jb.frame.document.querySelectorAll(`[jb-ctx="${ctxId}"]`))),
   highlightByScriptPath(path) {
-      const pathStr = Array.isArray(path) ? path.join('~') : path;
+      const pathStr = Array.isArray(path) ? path.join('~') : path
       const result = jb.studio.closestCtxInPreview(pathStr)
       jb.studio.highlightCtx(result.ctxId)
   },

@@ -42,7 +42,7 @@ jb.component('studio.openJbEditProperty', {
               feature.onEnter(
                 dialog.closeDialog(true),
                 tree.regainFocus(),
-                toggleBooleanValue('%$studio/refreshProbe%')
+                mutable.toggleBooleanValue('%$studio/refreshProbe%')
               )
             ]
           }),
@@ -63,7 +63,7 @@ jb.component('studio.openJbEditProperty', {
           content: studio.jbFloatingInput('%$actualPath%'),
           features: [
             dialogFeature.autoFocusOnFirstInput(),
-            dialogFeature.onClose(toggleBooleanValue('%$studio/refreshProbe%'))
+            dialogFeature.onClose(mutable.toggleBooleanValue('%$studio/refreshProbe%'))
           ]
         })
       ),

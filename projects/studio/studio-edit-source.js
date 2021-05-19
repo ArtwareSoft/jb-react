@@ -270,7 +270,7 @@ jb.component('studio.openEditProperty', {
                 studio.nearLauncherPosition(),
                 dialogFeature.onClose(
                   runActions(
-                    toggleBooleanValue('%$studio/jb_preview_result_counter%'),
+                    mutable.toggleBooleanValue('%$studio/jb_preview_result_counter%'),
                     sourceEditor.refreshEditor()
                   )
                 )

@@ -1,5 +1,3 @@
-// var {editableText} = jb.ns('editableText')
-
 jb.component('editableText', {
   type: 'control',
   category: 'input:100,common:80',
@@ -17,13 +15,13 @@ jb.component('editableText.xButton', {
   type: 'feature',
   category: 'editableText:80',
   impl: features(
-    method('cleanValue', writeValue('%$$model/databind()%', '')),
+    method('cleanValue', writeValue({to: '%$$model/databind()%', value: ''})),
     templateModifier(({},{vdom,databind}) => jb.ui.h('div', {},[
         vdom,
         ...(databind ? [jb.ui.h('button', { class: 'delete', onclick: 'cleanValue' } ,'×')]  : [])
     ])),
     css(
-        `>.delete {
+      `>.delete {
           margin-left: -16px;
           float: right;
           cursor: pointer; font: 20px sans-serif;
@@ -32,6 +30,6 @@ jb.component('editableText.xButton', {
       }
       { display : flex }
       >.delete:hover { opacity: .5 }`
-      )
+    )
   )
 })

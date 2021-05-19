@@ -85,7 +85,7 @@ jb.component('remote.initShadowData', {
 
 jb.component('remote.updateShadowData', {
     type: 'action:0',
-    description: 'internal - update shadow on remote jbm',
+    description: 'internal - update shadow on remote jbm, assumes specific ctx.data',
     params: [
         {id: 'headlessWidget', as: 'boolean', defaultValue: true },
     ],    

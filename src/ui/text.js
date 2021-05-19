@@ -1,5 +1,3 @@
-// var { text, firstSucceeding, customStyle, styleByControl, controlWithFeatures } = jb.ns('text')
-
 jb.component('text', {
   type: 'control',
   category: 'control:100,common:100',

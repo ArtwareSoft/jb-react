@@ -1,3 +1,3 @@
-MIT license for jbart RT
+MIT license for jbart RT (the code under /src)
 
-jBart Studio may be downloaded and evaluated for free, however a license must be purchased for continued use. There is currently no enforced time limit for the evaluation.
+jBart Studio and hosts adapters (the code under /hosts and /projects/studio) may be downloaded and evaluated for free, however a license must be purchased for continued use. There is currently no enforced time limit for the evaluation.

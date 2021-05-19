@@ -1,7 +1,9 @@
 jb.component('call', {
   type: 'any',
+  description: 'invoke dynamic parameter',
+  category: 'system:50',
   params: [
-    {id: 'param', as: 'string'}
+    {id: 'param', as: 'string', description: 'parameter name'}
   ],
   impl: function(context,param) {
  	  const paramObj = context.cmpCtx && context.cmpCtx.params[param];
@@ -54,6 +56,7 @@ jb.extension('utils', {
 
 jb.component('pipeline', {
   type: 'data',
+  category: 'common:100',
   description: 'map data arrays one after the other, do not wait for promises and rx',
   params: [
     {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true, description: 'click "=" for functions list'}
@@ -63,6 +66,7 @@ jb.component('pipeline', {
 
 jb.component('pipe', {
   type: 'data',
+  category: 'async:100',
   description: 'synch data, wait for promises and reactive (callbag) data',
   params: [
     {id: 'items', type: 'data,aggregator[]', ignore: true, mandatory: true, composite: true}
@@ -75,7 +79,7 @@ jb.component('data.if', {
   macroByValue: true,
   params: [
     {id: 'condition', as: 'boolean', mandatory: true, dynamic: true, type: 'boolean'},
-    {id: 'then', mandatory: true, dynamic: true },
+    {id: 'then', mandatory: true, dynamic: true},
     {id: 'else', dynamic: true, defaultValue: '%%'}
   ],
   impl: ({},cond,_then,_else) =>	cond() ? _then() : _else()
@@ -93,18 +97,9 @@ jb.component('action.if', {
   impl: ({},cond,_then,_else) => jb.utils.isPromise(cond) ? Promise.resolve(cond).then(_cond=> _cond ? _then() : _else()) :	(cond ? _then() : _else())
 })
 
-jb.component('jbRun', {
-  type: 'action',
-  params: [
-    {id: 'profile', as: 'string', mandatory: true, description: 'profile name'},
-    {id: 'params', as: 'single'}
-  ],
-  impl: (ctx,profile,params) =>	ctx.run(Object.assign({$:profile},params || {}))
-})
-
 jb.component('list', {
   type: 'data',
-  description: 'also flatten arrays',
+  description: 'list definition, flatten internal arrays',
   params: [
     {id: 'items', type: 'data[]', as: 'array', composite: true}
   ],
@@ -164,24 +159,26 @@ jb.component('aggregate', {
   impl: ({},aggregator) => aggregator()
 })
 
-// jb.ns('math')
-
 jb.component('math.max', {
   type: 'aggregator',
+  category: 'math:80',
   impl: ctx => Math.max.apply(0,ctx.data)
 })
 
 jb.component('math.min', {
   type: 'aggregator',
+  category: 'math:80',
   impl: ctx => Math.max.apply(0,ctx.data)
 })
 
 jb.component('math.sum', {
   type: 'aggregator',
+  category: 'math:80',
   impl: ctx => ctx.data.reduce((acc,item) => +item+acc, 0)
 })
 
 jb.component('math.plus', {
+  category: 'math:80',
   params: [
     {id: 'x', as: 'number', mandatory: true },
     {id: 'y', as: 'number', mandatory: true },
@@ -190,6 +187,7 @@ jb.component('math.plus', {
 })
 
 jb.component('math.minus', {
+  category: 'math:80',
   params: [
     {id: 'x', as: 'number', mandatory: true},
     {id: 'y', as: 'number', mandatory: true},
@@ -199,6 +197,7 @@ jb.component('math.minus', {
 
 'abs,acos,acosh,asin,asinh,atan,atan2,atanh,cbrt,ceil,clz32,cos,cosh,exp,expm1,floor,fround,hypot,log2,random,round,sign,sin,sinh,sqrt,tan,tanh,trunc'
   .split(',').forEach(f=>jb.component(`math.${f}`, {
+    category: 'math:70',
     impl: ctx => Math[f](ctx.data)
   })
 )
@@ -227,6 +226,7 @@ jb.component('evalExpression', {
 
 jb.component('prefix', {
   type: 'data',
+  category: 'string:90',
   params: [
     {id: 'separator', as: 'string', mandatory: true},
     {id: 'text', as: 'string', defaultValue: '%%'}
@@ -236,6 +236,7 @@ jb.component('prefix', {
 
 jb.component('suffix', {
   type: 'data',
+  category: 'string:90',
   params: [
     {id: 'separator', as: 'string', mandatory: true},
     {id: 'text', as: 'string', defaultValue: '%%'}
@@ -245,6 +246,7 @@ jb.component('suffix', {
 
 jb.component('removePrefix', {
   type: 'data',
+  category: 'string:80',
   params: [
     {id: 'separator', as: 'string', mandatory: true},
     {id: 'text', as: 'string', defaultValue: '%%'}
@@ -255,6 +257,7 @@ jb.component('removePrefix', {
 
 jb.component('removeSuffix', {
   type: 'data',
+  category: 'string:80',
   params: [
     {id: 'separator', as: 'string', mandatory: true},
     {id: 'text', as: 'string', defaultValue: '%%'}
@@ -264,6 +267,7 @@ jb.component('removeSuffix', {
 
 jb.component('removeSuffixRegex', {
   type: 'data',
+  category: 'string:80',
   params: [
     {id: 'suffix', as: 'string', mandatory: true, description: 'regular expression. e.g [0-9]*'},
     {id: 'text', as: 'string', defaultValue: '%%'}
@@ -275,8 +279,28 @@ jb.component('removeSuffixRegex', {
 	}
 })
 
+jb.component('property', {
+  description: 'navigate/select/path property of object',
+  category: 'common:70',
+  params: [
+    {id: 'prop', as: 'string', mandatory: true},
+    {id: 'obj', defaultValue: '%%'}
+  ],
+  impl: (ctx,prop,obj) =>	jb.db.objectProperty(obj,prop,ctx)
+})
+
+jb.component('indexOf', {
+  category: 'common:70',
+  params: [
+    {id: 'array', as: 'array', mandatory: true},
+    {id: 'item', as: 'single', mandatory: true}
+  ],
+  impl: ({},array,item) => array.indexOf(item)
+})
+
 jb.component('writeValue', {
   type: 'action',
+  category: 'mutable:100',
   params: [
     {id: 'to', as: 'ref', mandatory: true},
     {id: 'value', mandatory: true},
@@ -295,25 +319,9 @@ jb.component('writeValue', {
   }
 })
 
-jb.component('property', {
-  description: 'navigate/select/path property of object',
-  params: [
-    {id: 'prop', as: 'string', mandatory: true},
-    {id: 'obj', defaultValue: '%%'}
-  ],
-  impl: (ctx,prop,obj) =>	jb.db.objectProperty(obj,prop,ctx)
-})
-
-jb.component('indexOf', {
-  params: [
-    {id: 'array', as: 'array', mandatory: true},
-    {id: 'item', as: 'single', mandatory: true}
-  ],
-  impl: ({},array,item) => array.indexOf(item)
-})
-
 jb.component('addToArray', {
   type: 'action',
+  category: 'mutable:80',
   params: [
     {id: 'array', as: 'ref', mandatory: true},
     {id: 'toAdd', as: 'array', mandatory: true}
@@ -323,6 +331,7 @@ jb.component('addToArray', {
 
 jb.component('move', {
   type: 'action',
+  category: 'mutable:80',
   description: 'move item in tree, activated from D&D',
   params: [
     {id: 'from', as: 'ref', mandatory: true},
@@ -333,6 +342,7 @@ jb.component('move', {
 
 jb.component('splice', {
   type: 'action',
+  category: 'mutable:80',
   params: [
     {id: 'array', as: 'ref', mandatory: true},
     {id: 'fromIndex', as: 'number', mandatory: true},
@@ -345,6 +355,7 @@ jb.component('splice', {
 
 jb.component('removeFromArray', {
   type: 'action',
+  category: 'mutable:80',
   params: [
     {id: 'array', as: 'ref', mandatory: true},
     {id: 'itemToRemove', as: 'single', description: 'choose item or index'},
@@ -357,7 +368,7 @@ jb.component('removeFromArray', {
 	}
 })
 
-jb.component('toggleBooleanValue', {
+jb.component('mutable.toggleBooleanValue', {
   type: 'action',
   params: [
     {id: 'of', as: 'ref'}
@@ -442,6 +453,7 @@ jb.component('sample', {
 
 jb.component('obj', {
   description: 'build object (dictionary) from props',
+  category: 'common:100',
   params: [
     {id: 'props', type: 'prop[]', mandatory: true, sugar: true}
   ],
@@ -478,17 +490,6 @@ jb.component('prop', {
   ],
   impl: ctx => ctx.params
 })
-
-// jb.component('objMethod', {
-//   type: 'prop',
-//   macroByValue: true,
-//   params: [
-//     {id: 'title', as: 'string', mandatory: true},
-//     {id: 'val', dynamic: true, type: 'data', mandatory: true, defaultValue: ''},
-//     {id: 'type', as: 'string', options: 'string,number,boolean,object,array,asIs', defaultValue: 'asIs'}
-//   ],
-//   impl: ({},title,val,type) => ({title,val: () => () => ctx2 => val(ctx2) ,type})
-// })
 
 jb.component('refProp', {
   type: 'prop',
@@ -768,17 +769,8 @@ jb.component('replace', {
     {id: 'useRegex', type: 'boolean', as: 'boolean', defaultValue: true},
     {id: 'regexFlags', as: 'string', defaultValue: 'g', description: 'g,i,m'}
   ],
-  impl: ({},find,replace,text,useRegex,regexFlags) => 
+  impl: ({},find,replace,text,useRegex,regexFlags) =>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
     useRegex ? text.replace(new RegExp(find,regexFlags) ,replace) : text.replace(find,replace)
-})
-
-jb.component('touch', {
-  description: 'change the value of a watchable variable to acticate its watchers',
-  type: 'action',
-  params: [
-    {id: 'dataRef', as: 'ref'}
-  ],
-  impl: writeValue('%$dataRef%',not('%$dataRef%'))
 })
 
 jb.component('isNull', {

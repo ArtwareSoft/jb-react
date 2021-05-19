@@ -178,8 +178,7 @@ jb.extension('studio', {
 		}
 	},
 	jbEditorMoreParams: path => jb.studio.paramsOfPath(path)
-			.filter(p=>jb.studio.valOfPath(path+'~'+p.id) == null) // && !p.mandatory)
-			.map(p=> path + '~' + p.id),
+			.filter(p=>jb.studio.valOfPath(path+'~'+p.id) == null), // && !p.mandatory)
 
 	nonControlChildren: (path,includeFeatures) =>
 		jb.studio.paramsOfPath(path).filter(p=>!jb.studio.isControlType(p.type))

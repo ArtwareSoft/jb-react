@@ -1,36 +1,76 @@
-jb.component('codeEditor.selectPT', {
+jb.component('codeEditor.selectPT1', {
   type: 'menu.option',
   params: [
     {id: 'path', as: 'string'},
-    {id: 'semanticPart', as: 'string'},
+    {id: 'semanticPart', as: 'string'}
   ],
   impl: menu.menu({
     options: menu.dynamicOptions(
       ({},{},{path}) => jb.studio.PTsOfPath(path).map(compName=> {
-        var name = compName.substring(compName.indexOf('.')+1);
-        var ns = compName.substring(0,compName.indexOf('.'));
-        return jb.studio.compOption(path, compName, compName, ns ? `${name} (${ns})` : name, jb.studio.getComp(compName).description || '')
-      }), 
-      menu.action('%text% (%description%)', (ctx,{},{path, semanticPart}) => {
-        const profile = jb.studio.valOfPath(path)
-        const params = jb.path(jb.comps[(profile||{}).$],'params') || []
-        const firstParamIsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
-        const semanticIndex = semanticPart.match(/[0-9]+$/)
-        if (firstParamIsArray)
-          path = [path,params[0].id].join('~')
-          if (Array.isArray(profile)) {
-            const index = semanticPart == 'open-array' ? 0 : semanticIndex ? +semanticIndex[0]+1 : profile.length
-            jb.studio.addArrayItem(path,{toAdd: {$: ctx.data.toPaste}, srcCtx: ctx, index})
-          } else if (firstParamIsArray || semanticIndex) {
-            const ar = profile[params[0].id]
-            const lastIndex = Array.isArray(ar) ? ar.length : 1
-            const index = ar == null ? undefined : semanticPart == 'open-array' ? 0 : semanticIndex ? +semanticIndex[0]+1 : lastIndex
-            jb.studio.addArrayItem(path,{toAdd: {$: ctx.data.toPaste}, srcCtx: ctx, index})
-          } else {
-            jb.studio.setComp(path, ctx.data.toPaste, ctx) 
-        }
-      }
-    ))
+        const name = compName.substring(compName.indexOf('.')+1)
+        const ns = compName.substring(0,compName.indexOf('.'))
+				const mark = [ ((jb.comps[compName].type || '').match(':([0-9]*)') || ['','50'])[1],
+          ...(jb.comps[compName].category||'').split(',').map(x=>(x.match(':([0-9]*)') || ['','50'])[1])].filter(x=>x).sort()[0] || 50
+        return {compName, title: ns ? `${name} (${ns})` : name, description: jb.studio.getComp(compName).description || '', mark}
+      }).filter(x=>x.mark).sort((x,y) => y.mark - x.mark),
+      menu.action({
+        title: '%title%',
+        description: '%description%',
+        action: codeEditor.setSelectedPT({path: '%$path%', semanticPart: '%$semanticPart%', compName: '%compName%'}),
+      })
+    )
+  })
+})
+
+jb.component('codeEditor.setSelectedPT', {
+  type: 'menu.option',
+  params: [
+    {id: 'path', as: 'string'},
+    {id: 'semanticPart', as: 'string'},
+    {id: 'compName', as: 'string'},
+  ],
+  impl: (ctx,path,semanticPart,compName) => {
+    const profile = jb.studio.valOfPath(path)
+    const params = jb.path(jb.comps[(profile||{}).$],'params') || []
+    const firstParamIsArray = params.length == 1 && (params[0] && params[0].type||'').indexOf('[]') != -1
+    const semanticIndex = semanticPart.match(/[0-9]+$/)
+    if (firstParamIsArray)
+      path = [path,params[0].id].join('~')
+      if (Array.isArray(profile)) {
+        const index = semanticPart == 'open-array' ? 0 : semanticIndex ? +semanticIndex[0]+1 : profile.length
+        jb.studio.addArrayItem(path,{toAdd: {$: compName}, srcCtx: ctx, index})
+      } else if (firstParamIsArray || semanticIndex) {
+        const ar = profile[params[0].id]
+        const lastIndex = Array.isArray(ar) ? ar.length : 1
+        const index = ar == null ? undefined : semanticPart == 'open-array' ? 0 : semanticIndex ? +semanticIndex[0]+1 : lastIndex
+        jb.studio.addArrayItem(path,{toAdd: {$: compName}, srcCtx: ctx, index})
+      } else {
+        jb.studio.setComp(path, compName, ctx)
+    }
+  }
+})
+
+jb.component('codeEditor.selectPT', {
+  type: 'menu.option',
+  params: [
+    {id: 'path', as: 'string'},
+    {id: 'semanticPart', as: 'string'}
+  ],
+  impl: menu.menu({
+    vars: Var('type',studio.paramType('%$path%')),
+    options: menu.dynamicOptions(pipeline(
+      picklist.sortedOptions(
+        studio.categoriesOfType('%$type%'),
+        studio.categoriesMarks('%$type%', '%$path%')
+      ),
+      studio.flattenCategories()
+    ),
+    menu.action({
+        title: '%text%',
+        action: codeEditor.setSelectedPT({path: '%$path%', semanticPart: '%$semanticPart%', compName: '%compName%'}),
+        description: '%description%'
+      })
+    )
   })
 })
 
@@ -49,7 +89,7 @@ jb.component('codeEditor.selectEnum', {
 jb.component('codeEditor.editMenu', {
   type: 'menu.option',
   params: [
-    {id: 'path', as: 'string'},
+    {id: 'path', as: 'string'}
   ],
   impl: menu.menu(
     studio.shortTitle('%$path%'),
@@ -62,7 +102,11 @@ jb.component('codeEditor.editMenu', {
       menu.endWithSeparator(
         menu.dynamicOptions(
           studio.moreParams('%$path%'),
-          menu.action(suffix('~'), runActions(studio.addProperty('%%'), studio.gotoPath('%%','value') ))
+          menu.action({ 
+            title: '%id%', 
+            description: '%description%',
+            action: runActions(studio.addProperty('%$path%~%id%'), studio.gotoPath('%$path%~%id%', 'value'))
+          })
         )
       ),
       studio.styleEditorOptions('%$path%'),
@@ -71,7 +115,7 @@ jb.component('codeEditor.editMenu', {
           menu.action({
             vars: [Var('compName', studio.compName('%$path%'))],
             title: 'Goto %$compName%',
-            action: studio.gotoPath('%$compName%','open'),
+            action: studio.gotoPath('%$compName%', 'open'),
             showCondition: '%$compName%'
           }),
           menu.action({

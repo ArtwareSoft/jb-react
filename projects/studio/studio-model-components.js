@@ -58,41 +58,41 @@ jb.component('studio.profilesOfPT', {
 jb.component('studio.categoriesOfType', {
   params: [
     {id: 'type', as: 'string', mandatory: true},
-    {id: 'path', as: 'string'}
   ],
-  impl: (ctx,_type,path) => {
-		var comps = jb.comps;
-		var pts = jb.studio.PTsOfType(_type);
-		var categories = jb.utils.unique([].concat.apply([],pts.map(pt=>
-			(comps[pt].category||'').split(',').map(c=>c.split(':')[0])
-				.concat(pt.indexOf('.') != -1 ? pt.split('.')[0] : [])
-				.filter(x=>x).filter(c=>c!='all')
-			))).map(c=>({
-					code: c,
-					pts: ptsOfCategory(c)
-				}));
-		var res = categories.concat({code: 'all', pts: ptsOfCategory('all') });
-		return res;
+  impl: (ctx,type) => {
+		const comps = jb.comps;
+		const pts = jb.studio.PTsOfType(type);
+		const categories = jb.utils.unique([
+      'common',
+      ...pts.flatMap(pt=> [
+        ...(comps[pt].category||'').split(',').map(c=>c.split(':')[0]),
+				...(pt.indexOf('.') != -1 ? pt.split('.').slice(0,1) : []),
+        ].filter(x=>x)),
+      'all'])
+			.map(c=>({	code: c, pts: ptsOfCategory(c) }))
+      .filter(c=>c.pts.length)
+		return categories
 
 		function ptsOfCategory(category) {
-			var pts_with_marks = pts.filter(pt=>
-					category == 'all' || pt.split('.')[0] == category ||
-					(comps[pt].category||'').split(',').map(x=>x.split(':')[0]).indexOf(category) != -1)
-				.map(pt=>({
+			const pts_with_marks = pts.filter(pt=>
+					category == 'all' 
+          || pt.split('.')[0] == category 
+          || (comps[pt].category||'').split(',').map(x=>x.split(':')[0]).indexOf(category) != -1
+          || category == 'common' && pt.indexOf('.') == -1 && !comps[pt].category 
+        ).map(pt=>({
 					pt: pt,
 					mark: (comps[pt].category||'').split(',')
 						.filter(c=>c.indexOf(category) == 0)
-						.map(c=>Number(c.split(':')[1] || 50))[0]
+						.map(c=>Number(c.split(':')[1] || 50))[0] || 50
 				}))
-				.map(x=> {
-					if (x.mark == null)
-						x.mark = 50;
-					return x;
-				})
-				.filter(x=>x.mark != 0);
-			pts_with_marks.sort((c1,c2)=>c2.mark-c1.mark);
-			var out = pts_with_marks.map(pt=>pt.pt);
-			return out;
+				// .map(x=> {
+				// 	if (x.mark == null)
+				// 		x.mark = 50;
+				// 	return x
+				// })
+				.filter(x=>x.mark != 0)
+			pts_with_marks.sort((c1,c2)=>c2.mark-c1.mark)
+			return pts_with_marks.map(pt=>pt.pt)
 		}
 	}
 })

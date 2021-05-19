@@ -114,13 +114,13 @@ jb.component('studio.jbEditorMenu', {
         options: menu.dynamicOptions(
           studio.moreParams('%$path%'),
           menu.action({
-            title: suffix('~'),
+            title: '%id%',
             action: runActions(
-              studio.addProperty('%%'),
+              studio.addProperty('%$path%~%id%'),
               tree.redraw(),
               dialog.closeDialog(),
-              writeValue('%$studio/jbEditor/selected%', '%%'),
-              studio.openJbEditProperty('%%')
+              writeValue('%$studio/jbEditor/selected%', '%$path%~%id%'),
+              studio.openJbEditProperty('%$path%~%id%')
             )
           })
         )
