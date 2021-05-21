@@ -49,7 +49,11 @@ jb.component('remote.action', {
     impl: (ctx,action,jbm,oneway,timeout) => {
         if (!jbm)
             return jb.logError('remote.action - can not find jbm', {in: jb.uri, jbm: ctx.profile.jbm, jb, ctx})
-        return Promise.resolve(jbm).then(_jbm => _jbm.remoteExec(jb.remoteCtx.stripFunction(action),{timeout,oneway,isAction: true}))
+        return Promise.resolve(jbm).then(_jbm => {
+            if (!_jbm || !_jbm.remoteExec)
+                return jb.logError('remote.action - can not resolve jbm', {in: jb.uri, jbm, _jbm, jbmProfile: ctx.profile.jbm, jb, ctx})
+            return _jbm.remoteExec(jb.remoteCtx.stripFunction(action),{timeout,oneway,isAction: true})
+        })
     }
 })
 

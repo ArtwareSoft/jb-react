@@ -44,7 +44,7 @@ jb.component('remoteTest.childJbmPort', {
   impl: dataTest({
     timeout: 5000,
     runBefore: pipe(
-      jbm.worker(), 
+      jbm.worker(),
       remote.action(jbm.child('inner'),'%%')
     ),
     calculate: remote.data('hello',jbm.byUri('tests•w1•inner')),

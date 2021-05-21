@@ -43,15 +43,16 @@ jb.extension('cbHandler', {
     },
     removeEntry(ids,m) {
         jb.log(`remote remove cb handlers at ${jb.uri}`,{ids,m})
-        jb.delay(1000).then(()=>
-            jb.asArray(ids).filter(x=>x).forEach(id => delete jb.cbHandler.map[id]))
+        jb.delay(10).then(()=> // TODO: BUGGY delay - not sure why the delay is needed - test: remoteTest.workerByUri
+            jb.asArray(ids).filter(x=>x).forEach(id => delete jb.cbHandler.map[id])
+        )
     },
     terminate() {
         const keys = Object.keys(jb.cbHandler.map)
-        keys.forEach(id => typeof jb.cbHandler.map[id] == 'function' && jb.cbHandler.map[id](2))
-        jb.delay(1000).then(keys.forEach(id => delete jb.cbHandler.map[id]))
+        keys.forEach(id => typeof jb.cbHandler.map[id] == 'function' && jb.cbHandler.map[id](2)) // close connetions - may cause problems in tests
+        keys.forEach(id => delete jb.cbHandler.map[id])
     }
-}),
+})
 
 jb.extension('net', {
     reverseRoutingProps(routingMsg) {

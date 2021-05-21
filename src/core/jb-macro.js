@@ -75,7 +75,7 @@ jb.extension('macro', {
         Object.values(profile).forEach(v=>jb.macro.fixProfile(v))
         if (profile.$byValue) {
           if (!jb.comps[profile.$])
-            return jb.logError('fixProfile - missing component', {cmpId: profile.$, profile})
+            return jb.logError('fixProfile - missing component', {compId: profile.$, profile})
           Object.assign(profile, jb.macro.argsToProfile(profile.$, profile.$byValue))
           delete profile.$byValue
         }

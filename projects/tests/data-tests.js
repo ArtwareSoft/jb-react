@@ -156,13 +156,18 @@ jb.component('dataTest.writeValueWithArrayLink', {
 jb.component('zbl', {
   type: 'control',
   impl: group({
+    layout: layout.flex({direction: 'column', spacing: '21'}),
     controls: [
-      button('asa', runActions(writeValue('aaa'))),
+      button({
+        title: 'hello',
+        action: runActions(writeValue('aaa')),
+        style: button.href()
+      }),
       text({
         text: 'hello',
         features: css.boxShadow({
           blurRadius: 10,
-          spreadRadius: 1,
+          spreadRadius: 3,
           shadowColor: 'blue'
         })
       }),

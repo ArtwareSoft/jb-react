@@ -44,7 +44,7 @@
 			{ "command": "jbart.formatComponent", "title": "format jBart component" }
 		],
 		"keybindings": [
-			{ "command": "jbart.onEnter", "key": "Enter", "when": "jbart.inComponent" }
+			{ "command": "jbart.onEnter", "key": "Ctrl+Enter", "when": "jbart.inComponent" }
 		]		
 	},
 	"scripts": {
