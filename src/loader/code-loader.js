@@ -9,7 +9,7 @@ jb.extension('codeLoader', {
     },
     existing() {
         const jbFuncs = Object.keys(jb).filter(x=> typeof jb[x] == 'function').map(x=>`#${x}`)
-        const libs = Object.keys(jb).filter(x=> typeof jb[x] == 'object' && jb[x].__initialized)
+        const libs = Object.keys(jb).filter(x=> typeof jb[x] == 'object' && jb[x].__extensions)
         const funcs = libs.flatMap(lib=>Object.keys(jb[lib]).filter(x => typeof jb[lib][x] == 'function').map(x=>`#${lib}.${x}`) )
         return [...Object.keys(jb.comps), ...jbFuncs, ...funcs]
     },
@@ -52,8 +52,7 @@ jb.extension('codeLoader', {
             .flatMap(({lib,funcs}) => funcs.map(f=>`#${lib}.${f.trim()}`))
         const funcUsage = [...funcStr.matchAll(/\bjb\.([a-zA-Z0-9_]+)\.?([a-zA-Z0-9_]*)\(/g)].map(e=>e[2] ? `#${e[1]}.${e[2]}` : `#${e[1]}`)
         //jb.log('codeLoader dependent on func',{f: func.name || funcStr, funcDefs, funcUsage})
-
-        return [ ...(func.__initFuncs || []), ...(func.__require || []) , ...funcDefs, ...funcUsage]
+        return [ ...(func.__initFunc ? [func.__initFunc] : []), ...funcDefs, ...funcUsage]
             .filter(x=>!x.match(/^#frame\./)).filter(id=> !onlyMissing || jb.codeLoader.missing(id))
     },
     code(ids) {
@@ -62,15 +61,30 @@ jb.extension('codeLoader', {
         const cmps = ids.filter(cmpId => jb.comps[cmpId])
         const topLevel = jb.utils.unique(funcs.filter(x=>x.match(/#[a-zA-Z0-9_]+$/))).map(x=>x.slice(1))
         const topLevelCode = topLevel.length && `Object.assign(jb, ${jb.utils.prettyPrint(jb.objFromEntries(topLevel.map(x=>[x,jb.path(jb,x)])))}\n)` || ''
-        const libs = jb.utils.unique(funcs.map(x=> (x.match(/#([a-zA-Z0-9_]+)\./) || ['',''])[1] ).filter(x=>x)) // group by
-        const libsCode = libs.map(lib => {
-            const funcsCode = jb.utils.prettyPrint(jb.objFromEntries(funcs.filter(x=>x.indexOf(lib) == 1).map(x=>[x.split('.').pop(),jb.path(jb,x.slice(1))])))
-            return `jb.extension('${lib}', ${funcsCode})`
+        const libsFuncs = jb.utils.unique(funcs.filter(x=>!x.match(/#[a-zA-Z0-9_]+$/))).map(x=>x.slice(1))
+            .filter(x=>jb.path(jb,x)).map(funcId =>({funcId, lib: funcId.split('.')[0], ext: jb.path(jb,funcId).extId}))
+            .filter(x=>!x.funcId.match(/\.__extensions/))
+        const noExt = libsFuncs.filter(x=>!x.ext)
+        if (noExt.length)
+            debugger
+        const extensions = jb.utils.unique(libsFuncs.map(x=>`${x.lib}#${x.ext}`)).map(x=>x.split('#'))
+        const libsCode = extensions.map(([lib,ext]) => {
+            const extObj = {
+                ...jb.objFromEntries(libsFuncs.filter(x=>x.lib == lib && x.ext == ext)
+                    .map(x=>[x.funcId.split('.').pop(), jb.path(jb,x.funcId)]) ),
+                $phase: jb.path(jb,`${lib}.__extensions.${ext}.phase`),
+                $requireLibs: jb.path(jb,`${lib}.__extensions.${ext}.requireLibs`),
+                $requireFuncs: jb.path(jb,`${lib}.__extensions.${ext}.requireFuncs`),
+                initExtension: jb.path(jb,`${lib}.__extensions.${ext}.init`),
+            }
+            const extCode = jb.utils.prettyPrint(Object.fromEntries(Object.entries(extObj).filter(([_, v]) => v != null)))
+            return `jb.extension('${lib}', '${ext}', ${extCode})`
         }).join('\n\n')
 
         const compsCode = cmps.map(cmpId =>jb.codeLoader.compToStr(cmpId)).join('\n\n')
             //jb.utils.prettyPrintComp(cmpId,jb.comps[cmpId],{noMacros: true})).join('\n\n')
-        return [topLevelCode,libsCode,compsCode,`jb.initializeLibs([${libs.map(l=>"'"+l+"'").join(',')}])`].join(';\n\n')
+        return [topLevelCode,libsCode,compsCode,`jb.initializeLibs([${jb.utils.unique(libsFuncs.map(x=>x.lib)).map(l=>"'"+l+"'").join(',')}])`].join(';\n\n')
+
     },
     compToStr(cmpId) {
         const compWithLocation = { ...jb.comps[cmpId], location : jb.comps[cmpId][jb.core.location]}

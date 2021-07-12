@@ -1,5 +1,5 @@
 jb.extension('mdIcons', {
-  require: ['/dist/md-icons.js']
+  $requireLibs: ['/dist/md-icons.js']
 })
 
 jb.component('mdcStyle.initDynamic', {

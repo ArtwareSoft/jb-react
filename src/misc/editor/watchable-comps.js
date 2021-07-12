@@ -1,5 +1,6 @@
 jb.extension('watchableComps', {
-    initExtension_phase30() {
+  $phase: 30,
+  initExtension() {
         const compsRef = val => typeof val == 'undefined' ? jb.comps : (jb.comps = val);
         compsRef.id = 'comps'
         const handler = new jb.watchable.WatchableValueByRef(compsRef)
@@ -10,7 +11,8 @@ jb.extension('watchableComps', {
 })
 
 jb.extension('watchableComps', 'history', {
-  initExtension_phase40() {
+	$phase: 40,
+  initExtension() {
     jb.utils.subscribe(jb.watchableComps.handler.resourceChange, e => jb.watchableComps.updateHistory(e))
     return {
         undoIndex: 0,

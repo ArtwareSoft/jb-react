@@ -1,4 +1,5 @@
 jb.extension('spy', {
+	$requireFuncs: 'jb.spy._log',
 	initExtension() {
 		// jb.spy._log() -- for codeLoader
 		return {

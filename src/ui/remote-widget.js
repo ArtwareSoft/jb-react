@@ -124,7 +124,10 @@ jb.component('action.renderXwidget', {
 })
 
 jb.extension('ui','headless', {
-    initExtension_phase1100() { // 1100 is after ui phase (100)
+    $phase: 1100,
+    $requireFuncs: 'jb.ui.render',
+
+    initExtension() { // 1100 is after ui phase (100)
         // for loader : jb.ui.render( 
         return {
             widgetRenderingSrc: jb.callbag.replay(100)(jb.ui.renderingUpdates),

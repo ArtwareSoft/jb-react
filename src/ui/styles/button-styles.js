@@ -1,12 +1,14 @@
-jb.ui.chooseIconWithRaised = (icons,raised) => {
-  if (!icons) return []
-  const raisedIcon = icons.filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'raised')[0]
-  const otherIcons = (raisedIcon && icons.filter(cmp=>cmp && cmp.ctx.vars.$model.position != 'raised') || icons)
-    .filter(cmp=>cmp && cmp.ctx.vars.$model.position != 'post')
-  if (raised)
-    return raisedIcon ? [raisedIcon] : otherIcons
-  return otherIcons
-}
+jb.extension('ui','button', {
+  chooseIconWithRaised(icons,raised) {
+    if (!icons) return []
+    const raisedIcon = icons.filter(cmp=>cmp && cmp.ctx.vars.$model.position == 'raised')[0]
+    const otherIcons = (raisedIcon && icons.filter(cmp=>cmp && cmp.ctx.vars.$model.position != 'raised') || icons)
+      .filter(cmp=>cmp && cmp.ctx.vars.$model.position != 'post')
+    if (raised)
+      return raisedIcon ? [raisedIcon] : otherIcons
+    return otherIcons
+  }
+})
 
 jb.component('button.href', {
   type: 'button.style',

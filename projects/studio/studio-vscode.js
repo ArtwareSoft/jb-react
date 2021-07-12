@@ -111,10 +111,10 @@ jb.extension('vscode', {
                 if (!doc) return // todo: open file and try again
                 const fileContent = doc.getText()
                 if (fileContent == null) return
-                const edits = [jb.vscode.deltaFileContent(fileContent, {compId,comp})].filter(x=>x)
+                const edits = [jb.vscode.deltaFileContent(fileContent, {compId,comp})].filter(x=>x).filter(x=>x.newText.length > 10000)
                 console.log('edits', edits)
                 const edit = new vscodeNS.WorkspaceEdit()
-                edit.set(doc.uri, edits)
+                edit.set(doc.uri, edits)                
                 await vscodeNS.workspace.applyEdit(edit)
                 //await jb.vscode.gotoPath(e.path.join('~'),'value')
             } catch (e) {
@@ -265,7 +265,7 @@ jb.component('vscode.gotoUrl', {
   params: [
     {id: 'url', as: 'string'}
   ],
-  impl: (ctx,url) => vscodeNS.env.openExternal(vscode.Uri.parse(url))
+  impl: remote.action(({},{},{url}) => { debugger; vscodeNS.env.openExternal(vscodeNS.Uri.parse(url)) }, jbm.byUri('vscode')),
 })
 
 jb.component('vscode.openQuickPickMenu', {

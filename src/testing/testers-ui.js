@@ -39,78 +39,70 @@ jb.component('test.dataTestView', {
     {id: 'testResult', dynamic: true}
   ],
   impl: group({
-			controls: [
-				  button({
-					style: button.href(),
-					vars: Var('color',If('%success%','--jb-success-fg','--jb-error-fg')),
-					title: If('%success%','✓ %$testId%','⚠ %$testId%'),
-					features: css.color('var(%$color%)'),
-					action: vscode.gotoUrl('http://localhost:8082/projects/tests/tests.html?test=%$testId%&show&spy=test'),
-				  }),
-				  group({ 
-					layout: layout.horizontal(20),
-					controls: [
-						controlWithCondition('%expectedResultCtx/data%', text('%expectedResultCtx/data%')),              
-						controlWithCondition('%expectedResultCtx/data%', text(prettyPrint('%expectedResultCtx.profile.expectedResult%',true))),
-						controlWithCondition('%html%', text({
-							text: '%html%',
-							style: text.codemirror({height: '200', mode: 'htmlmixed', formatText: true}),
-							features: [codemirror.fold(), css('min-width: 1200px')]
-						})),
-					]
-				}),
-				text('%$result/duration% mSec {?, %$result/reason%?}'),
-			],
-			features: [
-				group.data(() => jb.spy.logs.find(e=>e.logNames =='check test result')),
-				group.wait({for: '%$testResult()%' , varName: 'result'})
-			]
-	})
+    controls: [
+      button({
+        vars: [Var('color', If('%success%', '--jb-success-fg', '--jb-error-fg'))],
+        title: If('%success%', '✓ %$testId%', '⚠ %$testId%'),
+        action: vscode.gotoUrl('http://localhost:8082/projects/tests/tests.html?test=%$testId%&show&spy=test'),
+        style: button.href(),
+        features: css.color('var(%$color%)')
+      }),
+      group({
+        layout: layout.horizontal(20),
+        controls: [
+          controlWithCondition('%expectedResultCtx/data%', text('%expectedResultCtx/data%')),
+          controlWithCondition('%expectedResultCtx/data%', text(prettyPrint('%expectedResultCtx.profile.expectedResult%', true))),
+          controlWithCondition(
+            '%html%',
+            text({
+              text: '%html%',
+              style: text.codemirror({
+                height: '200',
+                formatText: true,
+                mode: 'htmlmixed'
+              }),
+              features: [codemirror.fold(), css('min-width: 1200px')]
+            })
+          )
+        ]
+      }),
+      text('%$result/duration% mSec {?, %$result/reason%?}')
+    ],
+    features: [
+      group.data(() => jb.spy.logs.find(e=>e.logNames =='check test result')),
+      group.wait({for: '%$testResult()%', varName: 'result'})
+    ]
+  })
 })
 
 jb.component('test.uiTestRunner', {
-	type: 'control',
-	params: [
-	  {id: 'testId', as: 'string', defaultValue: 'ui-test.label'},
-	  {id: 'ctxToRun'},
-	  {id: 'testResult', dynamic: true}
-	],
-	impl: group({
-		controls: [
-			button({
-				title: '%$testId%',
-				action: ({},{},{testId}) => jb.test.runInStudio({$: 'studio.openComponentInJbEditor', path: `${testId}~impl~control` }),
-				style: button.href(),
-			}),
-			group({controls: ({},{},{ctxToRun}) => ctxToRun.runInner(ctxToRun.profile.control,{type: 'control'}, 'control') }),
-			group({
-				controls: [
-					button({
-						style: button.href(),
-						vars: Var('color',If('%success%','--jb-success-fg','--jb-error-fg')),
-						title: If('%success%','✓ %$testId%','⚠ %$testId%'),
-						features: css.color('var(%$color%)'),
-						action: vscode.gotoUrl('http://localhost:8082/projects/tests/tests.html?test=%$testId%&show&spy=test'),
-					}),
-					controlWithCondition('%expectedResultCtx/data%', text('%expectedResultCtx/data%')),              
-					controlWithCondition('%expectedResultCtx/data%', text(prettyPrint('%expectedResultCtx.profile.expectedResult%',true))),
-					studio.eventTracker(()=>jb.spy)					
-				],
-				features: [
-					group.data(() => jb.spy.logs.find(e=>e.logNames =='check test result') ),
-				]
-			})
-		],
-		features: [
-			group.wait({for: async ({},{},{ctxToRun,testResult}) => {
-				await jb.test.runInner('runBefore',ctxToRun) 
-				return testResult()
-			}, varName: 'result' }),
-			// frontEnd.init( () => {
-			// 	return jb.test.runInStudio(studio.waitForPreviewIframe())
-			// 		.then(() => jb.test.runInner('runInPreview',ctxToRun))
-			// 		.then(() => jb.test.runInStudio(ctxToRun.profile.runInStudio))
-			// })
-		]
-	})
+  type: 'control',
+  params: [
+    {id: 'testId', as: 'string', defaultValue: 'ui-test.label'},
+    {id: 'ctxToRun'},
+    {id: 'testResult', dynamic: true}
+  ],
+  impl: group({
+    controls: [
+      button({
+        vars: [
+          Var('color', If('%success%', '--jb-success-fg', '--jb-error-fg')),
+        ],
+        title: If('%success%', '✓ %$testId%', '⚠ %$testId%'),
+        action: vscode.gotoUrl('http://localhost:8082/projects/tests/tests.html?test=%$testId%&show&spy=test'),
+        style: button.href(),
+        features: css.color('var(%$color%)')
+      }),
+      group({controls: ({},{},{ctxToRun}) => ctxToRun.runInner(ctxToRun.profile.control,{type: 'control'}, 'control')}),
+      group({
+        controls: [
+          controlWithCondition('%expectedResultCtx/data%', text('%expectedResultCtx/data%')),
+          controlWithCondition('%expectedResultCtx/data%', text(prettyPrint('%expectedResultCtx.profile.expectedResult%', true)))
+        ],
+        features: [group.data(() => jb.spy.logs.find(e=>e.logNames =='check test result'))]
+      })
+    ],
+    features: [group.wait({for: ({},{},{ctxToRun,testResult}) =>
+				Promise.resolve(jb.test.runInner('runBefore',ctxToRun)).then(() => testResult()), varName: 'result'})]
+  })
 })

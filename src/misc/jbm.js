@@ -67,6 +67,8 @@ jb.extension('net', {
         return { ...rPath, ...diableLog}
     },
     handleOrRouteMsg(from,to,handler,m, {blockContentScriptLoop} = {}) {
+        if (jb.frame.terminated)
+            debugger
 //            jb.log(`remote handle or route at ${from}`,{m})
         if (blockContentScriptLoop && m.routingPath && m.routingPath.join(',').indexOf([from,to].join(',')) != -1) return
         const arrivedToDest = m.routingPath && m.routingPath.slice(-1)[0] === jb.uri || (m.to == from && m.from == to)
@@ -238,9 +240,12 @@ jb.extension('jbm', {
     },
     terminateChild(id) {
         if (!jb.jbm.childJbms[id]) return
-        jb.jbm.childJbms[id].remoteExec(jb.remoteCtx.stripJS(() => {jb.cbHandler.terminate(); if (typeof close == 'function') close() } ), {oneway: true} )
-        delete jb.ports[jb.jbm.childJbms[id].uri]
+        const childJbm = jb.jbm.childJbms[id]
+        childJbm.terminated = true
+        Object.keys(jb.ports).filter(x=>x.indexOf(childJbm.uri) == 0)
+            .forEach(uri=>delete jb.ports[uri])
         delete jb.jbm.childJbms[id]
+        childJbm.remoteExec(jb.remoteCtx.stripJS(() => {jb.cbHandler.terminate(); terminated = true; if (typeof close1 == 'function') close() } ), {oneway: true} )
     },
     terminateAllChildren() {
         Object.keys(jb.jbm.childJbms).forEach(id=>jb.jbm.terminateChild(id))
@@ -317,13 +322,13 @@ jbLoadingPhase = 'appFiles'
 })
 
 jb.component('jbm.child', {
-    type: 'jbm',
-    params: [
-        {id: 'id', as: 'string', mandatory: true},
-        {id: 'startupCode', type: 'startupCode', dynamic: true, defaultValue: startup.codeLoaderClient() },
-        {id: 'init', type: 'action', dynamic: true },
-    ],    
-    impl: (ctx,name,startUpCode,init) => {
+  type: 'jbm',
+  params: [
+    {id: 'id', as: 'string', mandatory: true},
+    {id: 'startupCode', type: 'startupCode', dynamic: true, defaultValue: startup.codeLoaderClient()},
+    {id: 'init', type: 'action', dynamic: true}
+  ],
+  impl: (ctx,name,startUpCode,init) => {
         if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
         const childUri = `${jb.uri}•${name}`
         const code = startUpCode(ctx.setVars({uri: childUri, multipleJbmsInFrame: true}))

@@ -77,29 +77,46 @@ jb.component('remote.initShadowData', {
     description: 'shadow watchable data on remote jbm',
     params: [
       {id: 'src', as: 'ref' },
-      {id: 'jbm', type: 'jbm'},
-      {id: 'headlessWidget', as: 'boolean', defaultValue: true },
+      {id: 'jbm', type: 'jbm'}
     ],
     impl: rx.pipe(
         source.watchableData({ref: '%$src%', includeChildren: 'yes'}),
         rx.map(obj(prop('op','%op%'), prop('path',({data}) => jb.db.pathOfRef(data.ref)))),
-        sink.action(remote.action( remote.updateShadowData('%$headlessWidget%'), '%$jbm%'))
+        sink.action(remote.action( remote.updateShadowData('%%'), '%$jbm%'))
+    )
+})
+
+jb.component('remote.shadowResource', {
+    type: 'action',
+    description: 'shadow watchable data on remote jbm',
+    params: [
+      {id: 'resourceId', as: 'string' },
+      {id: 'jbm', type: 'jbm'},
+    ],
+    impl: runActions(
+        Var('resourceCopy', '%${%$resourceId%}%'),
+        remote.action(addComponent({id: '%$resourceId%', value: '%$resourceCopy%', type: 'watchableData' }),'%$jbm%'),
+        rx.pipe(
+            source.watchableData({ref: '%${%$resourceId%}%', includeChildren: 'yes'}),
+            rx.map(obj(prop('op','%op%'), prop('path',({data}) => jb.db.pathOfRef(data.ref)))),
+            sink.action(remote.action( remote.updateShadowData('%%'), '%$jbm%')
+        ))
     )
 })
 
 jb.component('remote.updateShadowData', {
     type: 'action:0',
-    description: 'internal - update shadow on remote jbm, assumes specific ctx.data',
+    description: 'internal - update shadow on remote jbm',
     params: [
-        {id: 'headlessWidget', as: 'boolean', defaultValue: true },
-    ],    
-    impl: (ctx,headlessWidget) => {
-        jb.log('shadowData update',{op: ctx.data.op, ctx})
-        const ref = jb.db.refOfPath(ctx.data.path)
+        {id: 'entry' },
+    ],
+    impl: (ctx,entry) => {
+        jb.log('shadowData update',{op: entry.op, ctx})
+        const ref = jb.db.refOfPath(entry.path)
         if (!ref)
-            jb.logError('shadowData path not found at destination',{path: ctx.data.path, ctx, headlessWidget})
+            jb.logError('shadowData path not found at destination',{path: entry.path, ctx})
         else
-            jb.db.doOp(ref, ctx.data.op, ctx.setVar('headlessWidget',headlessWidget))
+            jb.db.doOp(ref, entry.op, ctx)
     }
 })
 

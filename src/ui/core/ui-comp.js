@@ -1,5 +1,14 @@
 jb.extension('ui','comp', {
     initExtension() {
+        jb.core.jstypes.renderable = value => {
+            if (value == null) return '';
+            if (value instanceof jb.ui.VNode) return value;
+            if (value instanceof jb.ui.JbComponent) return jb.ui.h(value)
+            if (Array.isArray(value))
+                return jb.ui.h('div',{},value.map(item=>jb.core.jstypes.renderable(item)));
+            return '' + jb.val(value,true);
+        }
+    
         return {
             lifeCycle: new Set('init,extendCtx,templateModifier,followUp,destroy'.split(',')),
             arrayProps: new Set('enrichField,icon,watchAndCalcModelProp,css,method,calcProp,userEventProps,validations,frontEndMethod,frontEndLib,frontEndVar,eventHandler'.split(',')),
@@ -278,16 +287,5 @@ jb.extension('ui','comp', {
             jb.asArray(jb.ui.inStudio() && options.studioFeatures).filter(x=>x).forEach(f => this.jbExtend(ctx.run(f), ctx))
             return this;
         }
-    }
-})
-
-jb.extension('jstypes', {
-    renderable(value) {
-        if (value == null) return '';
-        if (value instanceof jb.ui.VNode) return value;
-        if (value instanceof jb.ui.JbComponent) return jb.ui.h(value)
-        if (Array.isArray(value))
-            return jb.ui.h('div',{},value.map(item=>jb.jstypes.renderable(item)));
-        return '' + jb.val(value,true);
     }
 })

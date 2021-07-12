@@ -1,5 +1,6 @@
 jb.extension('studio', 'statistics', {
-  initExtension_phase40() {
+  $phase: 40,
+  initExtension() {
     jb.utils.subscribe(jb.watchableComps.handler.resourceChange, () => jb.studio.statistics = {})
     return { statistics: {} }
   },

@@ -4,6 +4,8 @@
 // }
 
 jb.extension('watchable', {
+  $requireFuncs: 'jb.watchable.resourcesRef,jb.db.isWatchable,jb.watchable.isWatchable',
+
   initExtension() {
     jb.watchable.jbId = Symbol("jbId") // used in constructor
     jb.watchable.resourcesRef.id = 'resources' // for loader: jb.watchable.resourcesRef()
@@ -404,8 +406,7 @@ jb.extension('watchable', {
         return jb.callbag.fromIter([])
       }
       return jb.db.refHandler(ref).getOrCreateObservable({ref,cmp,includeChildren,srcCtx})
-  },
-
+  }
 })
 
 jb.extension('immutable', {

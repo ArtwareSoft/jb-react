@@ -85,7 +85,7 @@ jb.extension('expression', {
             obj[subExp] = jb.expression.implicitlyCreateInnerObject(obj,subExp,refHandler)
         }
         if (last && jstype)
-            return jb.jstypes[jstype](obj[subExp])
+            return jb.core.jstypes[jstype](obj[subExp])
         return obj[subExp]
       }
     }

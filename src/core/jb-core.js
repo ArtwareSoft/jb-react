@@ -2,46 +2,34 @@ Object.assign(jb, {
   extension(libId, p1 , p2) {
     const extId = typeof p1 == 'string' ? p1 : 'main'
     const extension = p2 || p1
-    const lib = jb[libId] = jb[libId] || {__initialized: {} }
+    const lib = jb[libId] = jb[libId] || {__extensions: {} }
     const funcs = Object.keys(extension).filter(k=>typeof extension[k] == 'function').filter(k=>!k.match(/^initExtension/))
+    const initialized = !!lib.__extensions[extId]
+    funcs.forEach(k=> {
+      extension[k].extId = extId
+      extension[k].__initFunc = extension.initExtension && `#${libId}.__extensions.${extId}.init`
+    })
     funcs.forEach(k=>lib[k] = extension[k])
+    const phase =  extension.$phase || { core: 1, utils: 5, db: 10, watchable: 20}[libId] || 100
+    lib.__extensions[extId] = { libId, phase, init: extension.initExtension, initialized, requireLibs: extension.$requireLibs, requireFuncs: extension.$requireFuncs }
 
-    const initFuncOrigId = Object.keys(extension).filter(k=>typeof extension[k] == 'function').filter(k=>k.match(/^initExtension/))[0]
-    const phaseFromFunc = ((initFuncOrigId||'').match(/_phase([0-9]+)/)||[,0])[1]
-    const initFuncPhase = phaseFromFunc || { core: 1, utils: 5, db: 10, watchable: 20}[libId] || 100
-    const initFuncId = `init_${libId}$${extId}$phase${initFuncPhase}` // normalized name
-    const initFuncImpl = extension[initFuncOrigId] || extension[initFuncId]
-    if (initFuncImpl) {
-      lib[initFuncId] = initFuncImpl
-      initFuncImpl.fixedName = initFuncId
-      funcs.forEach(k=>lib[k].__initFuncs = [`#${libId}.${initFuncId}`]) // [initFunc].map(x=>`#${libId}.${x}`))
-      if (jb.noCodeLoader) {
-        Object.assign(lib, lib[initFuncId]())
-        lib.__initialized[initFuncId] = true
-      }
+    if (jb.noCodeLoader && extension.initExtension) {
+      Object.assign(lib, extension.initExtension.apply(lib))
+      lib.__extensions[extId].initialized = true
     }
-    ;['require',...Object.keys(extension).filter(k=>k.indexOf('__require_') == 0)]
-      .filter(k =>extension[k]).forEach(k => {
-        const k2 = k == 'require' ? `__require_${extId}` : k
-        lib[k2] = extension[k]
-        funcs.forEach(k=>lib[k].__require = [`#${libId}.${k2}`])
-      })
   },
   initializeLibs(libs) {
-    libs.flatMap(l => Object.keys(jb[l]).filter(x=>x.match(/^init_/)))
-      .sort((x,y) => Number(x.match(/\$phase([0-9]+)/)[1]) - Number(y.match(/\$phase([0-9]+)/)[1]) )
-      .forEach(initFunc=> {
-        const lib = jb[initFunc.match(/init_([^$]+)/)[1]]
-        if (! lib.__initialized[initFunc]) {
-          lib.__initialized[initFunc] = true
-          Object.assign(lib, lib[initFunc]())
-        }
+    libs.flatMap(l => Object.values(jb[l].__extensions)).sort((x,y) => x.phase - y.phase )
+      .filter(ext => ext.init && !ext.initialized)
+      .forEach(ext => {
+          ext.initialized = true
+          Object.assign(jb[ext.libId], ext.init.apply(jb[ext.libId]))
       })
     const baseUrl = jb.path(jb.codeLoader,'baseUrl')
-    return libs.flatMap(l => Object.keys(jb[l]).filter(x=>x.match(/^__require_/)).flatMap(ext => jb[l][ext]||[]))
-      .filter(url => !jb.frame.jb.__requiredLoaded[url])
-      .reduce((pr,url) => pr.then(() => jb_loadFile(url,baseUrl,jb)).then(() => jb.frame.jb.__requiredLoaded[url] = true), Promise.resolve())
+    const libsToLoad = libs.flatMap(l => Object.values(jb[l].__extensions)).flatMap(ext => ext.requireLibs || []).filter(url => !jb.frame.jb.__requiredLoaded[url])
+    return Promise.all(libsToLoad.map( url => jb_loadFile(url,baseUrl,jb).then(() => jb.frame.jb.__requiredLoaded[url] = true) ))
   },
+
   component(id,comp) {
     // todo: move functionality to onAddComponent hook
     if (!jb.core.location) jb.initializeLibs(['core'])
@@ -86,14 +74,14 @@ jb.extension('core', {
     Object.assign(jb, {
       frame: globalThis,
       comps: {}, ctxDictionary: {},
-      __requiredLoaded: {},
-      jstypes: jb.core.jsTypes()
+      __requiredLoaded: {}
     })
     return {
       ctxCounter: 0,
       project: Symbol.for('project'),
       location: Symbol.for('location'),
       loadingPhase: Symbol.for('loadingPhase'),
+      jstypes: jb.core._jsTypes()
     }
   },
   run(ctx,parentParam,settings) {
@@ -246,7 +234,7 @@ jb.extension('core', {
       return { type:'profile', ctx: new jb.core.jbCtx(resCtx,{profile: comp.impl, comp: comp_name, path: ''}), preparedParams: preparedParams };
   },
   castToParam: (value,param) => jb.core.tojstype(value,param ? param.as : null),
-  tojstype: (v,jstype) => (!jstype || !jb.jstypes[jstype]) ? v : jb.jstypes[jstype](v),
+  tojstype: (v,jstype) => (!jstype || !jb.core.jstypes[jstype]) ? v : jb.core.jstypes[jstype](v),
   jbCtx: class jbCtx {
     constructor(ctx,ctx2) {
       this.id = jb.core.ctxCounter++
@@ -299,7 +287,7 @@ jb.extension('core', {
     runItself(parentParam,settings) { return jb.core.run(this,parentParam,settings) }
     dataObj(data) { return {data, vars: this.vars} }
   },
-  jsTypes() { return {
+  _jsTypes() { return {
     asIs: x => x,
     object(value) {
       if (Array.isArray(value))

@@ -1,5 +1,5 @@
 jb.extension('studio', 'suggestions', {
-    require: ['/dist/fuse.js'],
+    $requireLibs: ['/dist/fuse.js'],
     initExtension() {
       return { hideInSuggestions: 'cmp,widgetId,headlessWidget,headlessWidgetId'.split(',')}
     },

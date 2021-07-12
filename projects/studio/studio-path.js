@@ -1,5 +1,6 @@
 jb.extension('watchableComps', 'studio', {
-	initExtension_phase40() {
+	$phase: 40,
+	initExtension() {
 		  jb.studio.scriptChange && jb.utils.subscribe(jb.watchableComps.handler.resourceChange, e => jb.watchableComps.scriptChangeHnadler(e))
   	},
 	scriptChangeHnadler(e) {

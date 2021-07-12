@@ -548,7 +548,7 @@ jb.extension('ui', 'react', {
 
         function querySelectAllWithWidgets(query) {
             return jb.ui.headless ? [...Object.values(jb.ui.headless).filter(x=>x.body).flatMap(w=>w.body.querySelectorAll(query,{includeSelf:true})), 
-                ...Array.from(jb.frame.document && document.querySelectorAll(query) || [])] : []
+                ...Array.from(jb.frame.document && document.querySelectorAll(query) || [])].filter(x=>x) : []
         }
     },
     applyDeltaToCmp({delta, ctx, cmpId, elem, assumedVdom}) {

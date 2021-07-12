@@ -1,22 +1,33 @@
+// jb.component('netSetup.peers', { 
+//   impl: net.setup(
+//     jbm.peers(
+//       jbm.worker({id: 'peer1', networkPeer: true}), jbm.worker({id: 'peer2', networkPeer: true})
+//     )
+//   )
+// })
+
+// jb.component('netSetup.workerWithInner', { 
+//   impl: net.setup(
+//     jbm.children(jbm.worker({
+//       id: 'w1',
+//       features: jbm.children(jbm.child('inWorker'))
+//     })))
+// })
+
+
 jb.component('remoteTest.childJbm', {
-    impl: dataTest({
-      timeout: 1000,
-      calculate: pipe(
-        jbm.child('tst'), 
-        remote.data('hello','%%')
-      ),
-      expectedResult: equals('hello')
-    })
+  impl: dataTest({
+    calculate: pipe(jbm.child('tst'), remote.data('hello', '%%')),
+    expectedResult: equals('hello'),
+    timeout: 1000
+  })
 })
 
 jb.component('remoteTest.childWorker', {
   impl: dataTest({
-    timeout: 3000,
-    calculate: pipe(
-      jbm.worker(), 
-      remote.data('hello','%%')
-    ),
-    expectedResult: equals('hello')
+    calculate: pipe(jbm.worker(), remote.data('hello', '%%')),
+    expectedResult: equals('hello'),
+    timeout: 3000
   })
 })
 
@@ -40,15 +51,21 @@ jb.component('remoteTest.remote.action', {
   })
 })
 
+jb.component('remoteTest.innerCodeLoader', {
+  impl: dataTest({
+    calculate: remote.data(() => jb.utils.emptyLineWithSpaces != null, jbm.byUri('tests•w1•inner')),
+    expectedResult: equals(true),
+    runBefore: pipe(jbm.worker(), remote.action(jbm.child('inner'), '%%')),
+    timeout: 5000
+  })
+})
+
 jb.component('remoteTest.childJbmPort', {
   impl: dataTest({
-    timeout: 5000,
-    runBefore: pipe(
-      jbm.worker(),
-      remote.action(jbm.child('inner'),'%%')
-    ),
-    calculate: remote.data('hello',jbm.byUri('tests•w1•inner')),
-    expectedResult: 'hello'
+    calculate: remote.data('hello', jbm.byUri('tests•w1•inner')),
+    expectedResult: 'hello',
+    runBefore: pipe(jbm.worker(), remote.action(jbm.child('inner'), '%%')),
+    timeout: 5000
   })
 })
 
@@ -118,12 +135,11 @@ jb.component('remoteTest.networkGateway', {
   })
 })
 
-jb.component('remoteTest.shadowData', {
+jb.component('remoteTest.shadowResource', {
   impl: dataTest({
     timeout: 5000,
     runBefore: runActions(
-      remote.action(addComponent({id: 'person', value: obj(), type: 'watchableData' }), jbm.worker()),
-      remote.initShadowData('%$person%', jbm.worker()),
+      remote.shadowResource('person', jbm.worker()),
       () => { jb.exec(runActions(delay(1), writeValue('%$person/name%','Dan'))) } // writeValue after calculate
     ),
     calculate: remote.data(
@@ -139,12 +155,11 @@ jb.component('remoteTest.shadowData', {
   })
 })
 
-jb.component('remoteTest.shadowData.childJbm', {
+jb.component('remoteTest.shadowResource.childJbm', {
   impl: dataTest({
     timeout: 5000,
     runBefore: runActions(
-      remote.action(addComponent({id: 'person', value: obj(), type: 'watchableData' }), jbm.child('inner')),
-      remote.initShadowData('%$person%', jbm.child('inner')),
+      remote.shadowResource('person', jbm.child('inner')),
       () => { jb.exec(runActions(delay(1), writeValue('%$person/name%','Dan'))) } // writeValue after calculate
     ),
     calculate: remote.data(

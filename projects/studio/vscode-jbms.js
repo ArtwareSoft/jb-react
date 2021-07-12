@@ -203,8 +203,11 @@ jb.component('vscode.openLogsPanel', {
     {id: 'id', as: 'string'},
     {id: 'panel'}
   ],
-  impl: vscode.showInXWebView({id: '%$id%', panel: '%$panel%', backend: pipe(
-    remote.data(jbm.child('logs'), jbm.preview()),
+  impl: vscode.showInXWebView({
+      id: '%$id%', 
+      panel: '%$panel%', 
+      backend: pipe(
+        remote.data(jbm.child('logs'), jbm.preview()),
         jbm.byUri('%uri%'),
         first()
     )})

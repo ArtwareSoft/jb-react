@@ -2,7 +2,7 @@
 //used mostley for deubgging
 jb.extension('parsing', {
   initExtension() {
-    jb.jstypes['string-with-source-ref'] = v => v;
+    jb.core.jstypes['string-with-source-ref'] = v => v;
   },
   stringWithSourceRef: class stringWithSourceRef {
     constructor(ctx,pathToConstStr,offset,to) {

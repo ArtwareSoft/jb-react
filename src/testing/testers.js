@@ -13,14 +13,17 @@ jb.component('dataTest', {
 	  {id: 'allowError', as: 'boolean', dynamic: true},
 	  {id: 'cleanUp', type: 'action', dynamic: true},
 	  {id: 'expectedCounters', as: 'single'},
+	  {id: 'useResource', as: 'string'},
 	],
 	impl: function(ctx,calculate,expectedResult,runBefore,timeout,allowError,cleanUp,expectedCounters) {
 		const _timeout = ctx.vars.singleTest ? Math.max(1000,timeout) : timeout
 		const id = ctx.vars.testID
-		return Promise.race([jb.delay(_timeout).then(()=>[{runErr: 'timeout'}]), Promise.resolve(runBefore())
+		return Promise.race([ 
+			jb.delay(_timeout).then(()=>[{runErr: 'timeout'}]), 
+			Promise.resolve(runBefore())
 			  .then(_ => calculate())
-			  .then(v => jb.utils.toSynchArray(v,true))])
-			  .then(value => {
+			  .then(v => jb.utils.toSynchArray(v,true))
+			]).then(value => {
 				  const runErr = jb.path(value,'0.runErr')
 				  const countersErr = jb.test.countersErrors(expectedCounters,allowError)
 				  const expectedResultCtx = new jb.core.jbCtx(ctx,{ data: value })

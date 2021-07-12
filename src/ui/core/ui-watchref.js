@@ -1,5 +1,7 @@
 jb.extension('ui', 'watchRef', {
-    initExtension_phase100() {
+    $phase: 100,
+    $requireFuncs: 'jb.watchable.WatchableValueByRef',
+    initExtension() {
         // for loader: jb.watchable.WatchableValueByRef(
         jb.db.watchableHandlers.forEach(h=> jb.ui.subscribeToRefChange(h))
     },
