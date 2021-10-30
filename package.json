@@ -39,7 +39,8 @@
   },
   "dependencies": {
     "@types/vscode": "^1.55.0",
-    "node-fetch": "^2.6.0"
+    "node-fetch": "^2.6.0",
+    "websocket": "^1.0.34"
   },
   "devDependencies": {
     "@mdi/js": "^4.9.95",

@@ -1,4 +1,5 @@
 {
+  "ports": { "studio": 8082, "codeLoader": 26100, "nodeContainer": 26101, "log": 26102, "ping": 26103, "serviceRegistration": 26104 },
   "open_source_cmd_vsCode": "code -r -g",
   "open_source_cmd_atom": "atom ",
   "open_source_cmd_sublime": "\"c:\\Program Files\\sublime Text 3\\\"subl ",

@@ -119,6 +119,22 @@ jb.extension('jbm', {
         jb.ports[to] = port
         return port
     },
+    portFromNodeSocket(socket,to,options) {
+        if (jb.ports[to]) return jb.ports[to]
+        const from = jb.uri
+        const port = {
+            socket, from, to,
+            postMessage: _m => {
+                const m = {from, to,..._m}
+                jb.log(`remote sent from ${from} to ${to}`,{m})
+                socket.send(m) 
+            },
+            onMessage: { addListener: handler => socket.on('message', m => jb.net.handleOrRouteMsg(from,to,handler,m,options)) },
+            onDisconnect: { addListener: handler => { port.disconnectHandler = handler} }
+        }
+        jb.ports[to] = port
+        return port
+    },    
     extendPortToJbmProxy(port,{doNotinitCommandListener} = {}) {
         if (port && !port.createCalllbagSource) {
             Object.assign(port, {
@@ -418,6 +434,27 @@ jb.component('jbm.byUri', {
             return [jb.parent, ...Object.values(jb.jbm.childJbms), ...Object.values(jb.jbm.networkPeers)].filter(x=>x).find(x=>x.uri == uri)
         }
     }
+})
+
+jb.component('jbm.remoteNode', {
+    type: 'jbm',
+    params: [
+        {id: 'containerHost', as: 'string', dynamic: true, default: 'localhost'},
+        {id: 'init', type: 'action', dynamic: true}
+    ],
+    impl: ({},containerHost) => new Promise( (resolve,reject) => {
+        jb.websocket.connectAsClient('nodeContainer', containerHost, port=> {
+            port.onMessage.addListener(m => {
+                if (m.$ == 'ready') {
+                    port.from = uri
+                    port.to = m.serverUri
+                    const remoteNode = jb.jbm.extendPortToJbmProxy(port)
+                    Promise.resolve(init(ctx.setVar('jbm',remoteNode))).then(resolve(remoteNode))
+                }
+            })
+            port.send({$: 'createJbm', clientUri: uri})
+        })
+    })
 })
 
 jb.component('jbm.self', {

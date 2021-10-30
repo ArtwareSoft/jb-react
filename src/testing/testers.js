@@ -238,7 +238,7 @@ jb.extension('test', {
 		jb.entries(JSON.parse(jb.test.initial_resources || '{}')).filter(e=>e[0] != 'studio').forEach(e=>jb.db.resource(e[0],e[1]))
 		jb.ui.subscribeToRefChange(jb.db.watchableHandlers[0])
 
-		if (jb.watchableComps.handler) {
+		if (jb.watchableComps && jb.watchableComps.handler) {
 			jb.watchableComps.handler.resources(jb.test.initial_comps)
 			jb.db.watchableHandlers.push(jb.watchableComps.handler)
 		}

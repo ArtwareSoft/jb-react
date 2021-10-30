@@ -172,6 +172,8 @@ jb.component('codeLoader.getCode', {
     }
 })
 
+// code loader client
+
 jb.component('codeLoader.getCodeFromRemote', {
     params: [
         {id: 'ids'}

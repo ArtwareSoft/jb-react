@@ -126,7 +126,7 @@ function serveFile(req,res,path) {
             res.statusCode = 304;
             res.end();
           } else {
-            res.setHeader('Content-Length', content.length);
+            res.setHeader('Content-Length', Buffer.byteLength(content, 'utf8'));
             res.setHeader('ETag', etag);
             res.statusCode = 200;
             res.end(content);
@@ -300,7 +300,7 @@ const op_get_handlers = {
             res.statusCode = 500;
           return endWithFailure(res,'Can not read file ' + full_path + ' ' + err);
         } else {
-          res.setHeader('Content-Length', content.length);
+          res.setHeader('Content-Length', Buffer.byteLength(content, 'utf8'));
           res.statusCode = 200;
           res.setHeader('Content-Type', 'application/text;charset=utf8');
           res.end(content);

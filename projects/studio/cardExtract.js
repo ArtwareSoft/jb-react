@@ -1,3 +1,5 @@
+var { chromeDebugger } = jb.macro.ns('chromeDebugger');
+
 jb.component('cardExtract.showOptions', {
     params: [
       {id: 'inspectorProps'}

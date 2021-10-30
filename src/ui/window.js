@@ -8,7 +8,7 @@ jb.component('winUtils.gotoUrl', {
   impl: (ctx,url,target) => {
 		var _target = (target == 'new tab') ? '_blank' : '_self';
 		if (!ctx.probe)
-			window.open(url,_target);
+      globalThis.window.open(url,_target);
 	}
 })
 

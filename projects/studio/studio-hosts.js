@@ -36,7 +36,7 @@ jb.extension('studio', 'hosts', {
         // goto project
         projectUrlInStudio: project => `/project/studio/${project}`,
         // preview
-        jbLoader: location.origin + '/src/loader/jb-loader.js',
+        jbLoader: jb.frame.location ? jb.frame.location.origin + '/src/loader/jb-loader.js' : '',
     }),
     vscodeDevHost: () => ({
         name: 'vscodeDevHost',

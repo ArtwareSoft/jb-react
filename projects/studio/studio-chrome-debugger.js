@@ -1,4 +1,4 @@
-jb.chromeDebugger = {
+jb.extension('chromeDebugger', {
     initPanelPortListenser(panelId, panelFrame) {
         jb.log('chromeDebugger initPanelPortListenser',{panelId})
         panelFrame.chrome.runtime.onConnect.addListener(port => {
@@ -84,7 +84,7 @@ jb.chromeDebugger = {
         await this.markSelected()
         return this.evalAsPromise(`(${buildPropsObj.toString()})()`)
     },
-}
+})
 
 jb.component('chromeDebugger.logsCtrl', {
     params: [

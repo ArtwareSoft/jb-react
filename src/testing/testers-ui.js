@@ -1,3 +1,5 @@
+var { vscode } = jb.macro.ns('vscode');
+
 jb.component('test.showTestInStudio', {
 	type: 'control',
 	params: [

@@ -1,5 +1,3 @@
-// var { button } = jb.ns('button')
-
 jb.component('button', {
   type: 'control,clickable',
   category: 'control:100,common:100',

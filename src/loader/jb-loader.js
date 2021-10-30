@@ -21,10 +21,16 @@ async function jb_codeLoaderServer(uri, {projects, baseUrl, multipleInFrame, loa
   const coreFiles= jb_modules.core.map(x=>`/${x}`)
   await coreFiles.reduce((pr,url) => pr.then(()=> jb_loadFile(url,baseUrl,jb)), Promise.resolve())
   jb.noCodeLoader = false
+
   const src = [...await getAllCode('src','','puppeteer|pptr-|pack-|jb-loader')].filter(x=>coreFiles.indexOf(x.path) == -1)
   const projectsCode = await projects.reduce( async (acc,project) => [...await acc, ...await getAllCode(`projects/${project}`)], [])
 
   await jb_evalCode([...src,...projectsCode],{jb, jb_loadFile, baseUrl})
+
+  jb.codeLoader.loadModules = async function(modules) { // helper function
+    const modulesCode = await modules.reduce( async (acc,dir) => [...await acc, ...await getAllCode(dir)], [])
+    await jb_evalCode(modulesCode,{jb, jb_loadFile, baseUrl})      
+  }
   return jb
 
   async function getAllCodeFromHttp(path,include,exclude) {
@@ -75,10 +81,10 @@ async function jb_codeLoaderClient(uri,baseUrl) {
   const coreFiles= jb_modules.core.map(x=>`/${x}`)
   await coreFiles.reduce((pr,url) => pr.then(()=> jb_loadFile(url,baseUrl)), Promise.resolve())
   jb.noCodeLoader = false
-  var { If,not,contains,writeValue,obj,prop,rx,source,sink,call,jbm,remote,pipe,log,net,aggregate,list,runActions,Var } = 
-    jb.macro.ns('If,not,contains,writeValue,obj,prop,rx,source,sink,call,jbm,remote,pipe,log,net,aggregate,list,runActions,Var') // ns use in modules
-  await 'loader/code-loader,core/jb-common,misc/jb-callbag,misc/rx-comps,misc/pretty-print,misc/remote-context,misc/jbm,misc/remote'.split(',').map(x=>`/src/${x}.js`)
+  var { If,not,contains,writeValue,obj,prop,rx,source,sink,call,jbm,remote,pipe,log,net,aggregate,list,runActions,Var,http } = 
+    jb.macro.ns('If,not,contains,writeValue,obj,prop,rx,source,sink,call,jbm,remote,pipe,log,net,aggregate,list,runActions,Var,http') // ns use in modules
+  await 'loader/code-loader,core/jb-common,misc/jb-callbag,misc/rx-comps,misc/pretty-print,misc/remote-context,misc/jbm,misc/remote,misc/net'.split(',').map(x=>`/src/${x}.js`)
     .reduce((pr,url)=> pr.then(() => jb_loadFile(url,baseUrl)), Promise.resolve())
-  await jb.initializeLibs('core,callbag,utils,jbm,net,cbHandler,codeLoader'.split(','))
+  await jb.initializeLibs('core,callbag,utils,jbm,net,cbHandler,codeLoader,websocket'.split(','))
   Object.values(jb.comps).forEach(comp => jb.macro.fixProfile(comp))
-}        
+}

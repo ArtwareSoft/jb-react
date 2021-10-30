@@ -8,6 +8,8 @@ function getProcessArgument(argName) {
     return '';
 }
 
+function log(...args) { console.log(...args) }
+
 module.exports = {
-    getProcessArgument
+    getProcessArgument, log
 }
