@@ -42,7 +42,7 @@ jb.extension('vscode', {
         return jb.vscode._api
     },   
     watchFileChange() {
-        vscodeNS.workspace.onDidSaveTextDocument(() => {
+        vscodeNS.workspace.onDidSaveTextDocument(() => { // update component of active selection
             const editor = vscodeNS.window.activeTextEditor
             const ctx = new jb.core.jbCtx({},{vars: {headlessWidget: true, fromVsCode: true}})
             const {compId, compSrc} = jb.codeEditor.closestComp(editor.document.getText(), {line: editor.selection.active.line})
@@ -87,8 +87,8 @@ jb.extension('vscode', {
             if (circuitOptions && circuitOptions[0])
                 jb.db.writeValue(ctx.exp('%$studio/circuit%','ref'), circuitOptions[0] ,ctx)
             const profilePath = (fixedPath.match(/^[^~]+~impl/) || [])[0]
+            if (profilePath)
                 jb.db.writeValue(ctx.exp('%$studio/profile_path%','ref'), profilePath ,ctx)
-    
         }
     },
     openedProjects() {
@@ -155,7 +155,7 @@ jb.extension('vscode', {
           while(newText[i] == oldText[i] && i < newText.length) i++
           const common = oldText.slice(0,i)
           oldText = oldText.slice(i); newText = newText.slice(i);
-          while(newText[newText.length-j] == oldText[oldText.length-j] && j < newText.length) j++
+          while(newText[newText.length-j] == oldText[oldText.length-j] && j < newText.length) j++ // calc backwards from the end
           return {firstDiff: i, common, oldText: oldText.slice(0,-j+1), newText: newText.slice(0,-j+1)}
         }
     },

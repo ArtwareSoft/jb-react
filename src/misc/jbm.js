@@ -67,8 +67,10 @@ jb.extension('net', {
         return { ...rPath, ...diableLog}
     },
     handleOrRouteMsg(from,to,handler,m, {blockContentScriptLoop} = {}) {
-        if (jb.frame.terminated)
-            debugger
+        if (jb.frame.terminated) {
+            jb.log(`remote messsage arrived to terminated ${from}`,{from,to, m})
+            return
+        }
 //            jb.log(`remote handle or route at ${from}`,{m})
         if (blockContentScriptLoop && m.routingPath && m.routingPath.join(',').indexOf([from,to].join(',')) != -1) return
         const arrivedToDest = m.routingPath && m.routingPath.slice(-1)[0] === jb.uri || (m.to == from && m.from == to)
@@ -258,6 +260,7 @@ jb.extension('jbm', {
         if (!jb.jbm.childJbms[id]) return
         const childJbm = jb.jbm.childJbms[id]
         childJbm.terminated = true
+        jb.log('remote terminate child', {id})
         Object.keys(jb.ports).filter(x=>x.indexOf(childJbm.uri) == 0)
             .forEach(uri=>delete jb.ports[uri])
         delete jb.jbm.childJbms[id]

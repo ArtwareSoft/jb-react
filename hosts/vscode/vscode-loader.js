@@ -9,6 +9,7 @@ global.jbBaseUrl = __dirname.match(/extensions/) ? workspaceDir : __dirname.repl
 global.jbInvscode = true
 global.loadProjectsCode = loadProjectsCode
 global.Worker = require('worker_threads').Worker
+console.log('vscode init 0')
 
 async function activate(context) {
     global.jb = await loadCodeLoaderServer()
@@ -38,6 +39,7 @@ function loadFileFunc(url) {
         console.log(url,e)
         vscodeNS.window.showErrorMessage(`error loading ${url} ${e}`)
     }
+    return Promise.resolve()
 }
 
 function getAllCodeFunc(path, _include, _exclude) {

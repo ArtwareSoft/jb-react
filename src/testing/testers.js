@@ -291,14 +291,14 @@ jb.extension('test', {
 		}		
 		return res
 	},
-	runTests({testType,specificTest,show,pattern,notPattern}) {
+	runTests({testType,specificTest,show,pattern,notPattern,take}) {
 		const {pipe, fromIter, subscribe,concatMap, fromPromise } = jb.callbag 
 		let index = 1
 
 		jb.test.initial_resources = JSON.stringify(jb.db.resources) //.replace(/\"\$jb_id":[0-9]*,/g,'')
 		jb.test.initial_comps = jb.watchableComps.handler && jb.watchableComps.handler.resources();
 
-		const tests = jb.entries(jb.comps)
+		let tests = jb.entries(jb.comps)
 			.filter(e=>typeof e[1].impl == 'object')
 			.filter(e=>e[1].type != 'test') // exclude the testers
 			.filter(e=>jb.test.isCompNameOfType(e[0],'test'))
@@ -313,6 +313,7 @@ jb.extension('test', {
 		const priority = 'net,data,ui,rx,remote,studio'.split(',').reverse().join(',')
 		const groups = jb.utils.unique(tests.map(e=>e.group)).sort((x,y) => priority.indexOf(x) - priority.indexOf(y))
 		tests.sort((y,x) => groups.indexOf(x.group) - groups.indexOf(y.group))
+		tests = tests.slice(0,take)
 		jb.test.singleTest = tests.length == 1	
 		jb.test.runningTests = true
 

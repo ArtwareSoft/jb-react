@@ -18,8 +18,7 @@
 jb.component('remoteTest.childJbm', {
   impl: dataTest({
     calculate: pipe(jbm.child('tst'), remote.data('hello', '%%')),
-    expectedResult: equals('hello'),
-    timeout: 1000
+    expectedResult: equals('hello')
   })
 })
 
