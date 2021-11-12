@@ -357,13 +357,51 @@ jb.extension('callbag', {
         }
       }
   },
+  fork: (...cbs) => source => (start, sink) => {
+    if (start != 0) return
+    let sinks = []
+    let talkback = null
+
+    registerSink(sink)
+    jb.callbag.pipe(forkSource, ...cbs)
+
+    source(0, function mainForkSource(t, d) {
+      if (t == 0) {
+        talkback = d
+        talkback(1)
+      } else {
+        const zinkz = sinks.slice(0)
+        for (let i = 0, n = zinkz.length, sink; i < n; i++) {
+            sink = zinkz[i]
+            if (sinks.indexOf(sink) > -1) sink(t, d)
+        }
+      }
+    })
+
+    function forkSource(start, forkSink) {
+      if (start == 0) registerSink(forkSink)
+    }
+
+    function registerSink(sink) {
+      sinks.push(sink)
+      sink(0, function fork(t,d) {
+          if (t === 2) {
+              const i = sinks.indexOf(sink)
+              if (i > -1) sinks.splice(i, 1)
+              if (!sinks.length)
+                talkback && talkback(2)
+          }
+          if (t == 1 && !d) // talkback
+            talkback && talkback(1)
+      })
+    }
+  },
   race(..._sources) { // take only the first result including errors and complete
     const sources = _sources.filter(x=>x).filter(x=>jb.callbag.fromAny(x))
     return function race(start, sink) {
       if (start !== 0) return
       const n = sources.length
       const sourceTalkbacks = new Array(n)
-      let endCount = 0
       let ended = false
       const talkback = (t, d) => {
         if (t === 2) ended = true
@@ -442,7 +480,7 @@ jb.extension('callbag', {
                   for (let i = 0, n = zinkz.length, sink; i < n; i++) {
                       sink = zinkz[i]
                       if (sinks.indexOf(sink) > -1) sink(t, d)
-              }
+                  }
           }
       }
       subj.next = data => subj(1,data)

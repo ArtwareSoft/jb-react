@@ -92,6 +92,16 @@ jb.component('rx.innerPipe', {
   impl: (ctx,elems) => source => jb.callbag.pipe(source, ...elems)
 })
 
+jb.component('rx.fork', {
+  type: 'rx',
+  category: 'operator',
+  description: 'run a separate pipeline with same source data',
+  params: [
+    {id: 'elems', type: 'rx[]', as: 'array', mandatory: true, templateValue: []},
+  ],
+  impl: (ctx,elems) => jb.callbag.fork(...elems)
+})
+
 jb.component('rx.startWith', {
     type: 'rx',
     category: 'operator',

@@ -1,5 +1,3 @@
-// var { rxTest} = jb.ns('rxTest')
-
 jb.component('rxTest.pipeWithObservable', {
   impl: dataTest({
     calculate: pipe(ctx => jb.callbag.fromIter([1,2]), '%%a', join({})),
@@ -663,5 +661,34 @@ jb.component('rxTest.timeoutLimit.notActivated', {
           rx.catchError(),
     ),
     expectedResult: '%%==1'
+  })
+})
+
+jb.component('rxTest.fork', {
+  impl: dataTest({
+      vars: Var('a', obj()),
+      calculate: pipe(rx.pipe( 
+        source.data(list(1,2,3,4)), 
+        rx.fork(rx.take(1), sink.data('%$a/fork%')),
+        rx.skip(1),
+        rx.take(1),
+//        rx.delay(20),
+        ),join(',')),    
+      expectedResult: equals('%%,%$a/fork%','2,1')
+  })
+})
+
+jb.component('rxTest.fork.cleanActiveSource', {
+  impl: dataTest({
+      vars: Var('a', obj()),
+      calculate: pipe(rx.pipe( 
+        source.interval(1),
+        rx.log('test 0'),
+        rx.fork(rx.take(1), sink.data('%$a/fork%')),
+        rx.skip(1),
+        rx.take(1),
+        rx.delay(1),
+        ),join(',')),    
+      expectedResult: and(() => jb.spy.search('test 0').length == 2, equals('%%,%$a/fork%','1,0'))
   })
 })

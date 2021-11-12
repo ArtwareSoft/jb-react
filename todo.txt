@@ -1,0 +1,4 @@
+fork tests - simple, ensure active source is stoped
+remote.dispatcher
+rx.bufferUntil(cb)
+source.waitFor()
