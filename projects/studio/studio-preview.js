@@ -15,7 +15,7 @@ jb.component('studio.initPreview', {
         Var('circuit', '%$studio/circuit%'),
         writeValue('%$yellowPages/preview%', '%$jbm/uri%'),
         remote.action(runActions(
-            codeLoader.getCodeFromRemote('%$circuit%'),
+            treeShake.getCodeFromRemote('%$circuit%'),
             ({},{circuit}) => jb.component('dataResource.studio', { watchableData: { jbEditor: {}, scriptChangeCounter: 0, circuit } }),
             ({},{dataResources}) => { 
                 jb.ctxByPath = {}; 
@@ -53,7 +53,7 @@ jb.component('preview.control', {
             return circuit && ctx.run(circuit)
         },
         features: [ 
-            If(ctx => !jb.comps[ctx.exp('%$studio/circuit%')], group.wait(codeLoader.getCodeFromRemote('%$studio/circuit%'))),
+            If(ctx => !jb.comps[ctx.exp('%$studio/circuit%')], group.wait(treeShake.getCodeFromRemote('%$studio/circuit%'))),
             watchRef('%$studio/scriptChangeCounter%'),
             variable('$previewMode',true)
         ]

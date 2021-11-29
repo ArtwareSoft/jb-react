@@ -1,7 +1,7 @@
 jb.extension('vscode', {
     initExtension() { return { loadedProjects : {} } },
     async init() {
-        global.spy = jb.spy.initSpy({spyParam: 'dialog,watchable,headless,method,refresh,remote,codeLoader,vscode'})
+        global.spy = jb.spy.initSpy({spyParam: 'dialog,watchable,headless,method,refresh,remote,treeShake,vscode'})
         await jb.vscode.loadOpenedProjects()
         jb.vscode.watchFileChange()
         jb.vscode.watchCursorChange()

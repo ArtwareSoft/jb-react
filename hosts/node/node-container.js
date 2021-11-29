@@ -22,8 +22,8 @@ async function run() {
   const uri = `node${process.pid}`
   global.jb = { uri }
   global.jbLoadingPhase = 'libs'
-  await jbGetJSFromUrl(`http://localhost:${settings.ports.codeLoader}/codeloader-client.js`)
-  await jbGetJSFromUrl(`http://localhost:${settings.ports.codeLoader}/jb-test.js?ids=-jbm.portFromNodeChildProcess`)
+  await jbGetJSFromUrl(`http://localhost:${settings.ports.treeShake}/treeShake-client.js`)
+  await jbGetJSFromUrl(`http://localhost:${settings.ports.treeShake}/jb-test.js?ids=-jbm.portFromNodeChildProcess`)
 
   spy = jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
   global.jbLoadingPhase = 'appFiles'

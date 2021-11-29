@@ -99,7 +99,7 @@ jb.extension('jbm', {
         Object.assign(jb, {
             uri: jb.uri || jb.frame.jbUri,
             ports: {},
-            remoteExec: sctx => jb.codeLoader.bringMissingCode(sctx).then(()=>jb.remoteCtx.deStrip(sctx)()),
+            remoteExec: sctx => jb.treeShake.bringMissingCode(sctx).then(()=>jb.remoteCtx.deStrip(sctx)()),
             createCallbagSource: sctx => jb.remoteCtx.deStrip(sctx)(),
             createCallbagOperator: sctx => jb.remoteCtx.deStrip(sctx)(),
         })
@@ -207,9 +207,9 @@ jb.extension('jbm', {
         async function handleCBCommnad(cmd) {
             const {$,sourceId,cbId,isAction} = cmd
             try {
-            if (jb.codeLoader.loadingCode)
-                await jb.exec({$: 'waitFor', timeout: 500, check: () => !jb.codeLoader.loadingCode })
-                await jb.codeLoader.bringMissingCode(cmd.remoteRun)
+            if (jb.treeShake.loadingCode)
+                await jb.exec({$: 'waitFor', timeout: 500, check: () => !jb.treeShake.loadingCode })
+                await jb.treeShake.bringMissingCode(cmd.remoteRun)
                 const result = await jb.remoteCtx.deStrip(cmd.remoteRun)()
                 if ($ == 'CB.createSource' && typeof result == 'function')
                     jb.cbHandler.map[cbId] = result
@@ -255,7 +255,7 @@ jb.extension('jbm', {
     }
 })
 
-jb.component('startup.codeLoaderServer', {
+jb.component('startup.treeShakeServer', {
     type: 'startupCode',
     params: [
         { id: 'projects' , as: 'array' },
@@ -270,19 +270,19 @@ return jbInit('${vars.uri}',${JSON.stringify({projects, baseUrl: vars.baseUrl, m
 })()`
 })
 
-jb.component('startup.codeLoaderClient', {
+jb.component('startup.treeShakeClient', {
     type: 'startupCode',
     impl: ({vars}) => vars.multipleJbmsInFrame ? `(function () {
 const jb = { uri: '${vars.uri}'}
 globalThis.jbLoadingPhase = 'libs'
-${jb.codeLoader.clientCode()};
+${jb.treeShake.clientCode()};
 jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
 globalThis.jbLoadingPhase = 'appFiles'
 return jb
 })()
 ` : `jb = { uri: '${vars.uri}'}
 jbLoadingPhase = 'libs'
-${jb.codeLoader.clientCode()};
+${jb.treeShake.clientCode()};
 spy = jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
 `
 })
@@ -292,7 +292,7 @@ jb.component('jbm.worker', {
     params: [
         {id: 'id', as: 'string', defaultValue: 'w1' },
         {id: 'init' , type: 'action', dynamic: true },
-        {id: 'startupCode', type: 'startupCode', dynamic: true, defaultValue: startup.codeLoaderClient() },
+        {id: 'startupCode', type: 'startupCode', dynamic: true, defaultValue: startup.treeShakeClient() },
         {id: 'networkPeer', as: 'boolean', description: 'used for testing' },
     ],    
     impl: (ctx,name,init,startupCode,networkPeer) => {
@@ -311,7 +311,7 @@ function jb_loadFile(url, baseUrl) {
     return Promise.resolve(importScripts(baseUrl+url)) 
 }
 ${code};
-jb.codeLoaderJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
+jb.treeShakeJbm = ${parentOrNet} = jb.jbm.extendPortToJbmProxy(jb.jbm.portFromFrame(self,'${jb.uri}'))
 jbLoadingPhase = 'appFiles'
 //# sourceURL=${workerUri}-startup.js
 `
@@ -328,7 +328,7 @@ jb.component('jbm.child', {
   type: 'jbm',
   params: [
     {id: 'id', as: 'string', mandatory: true},
-    {id: 'startupCode', type: 'startupCode', dynamic: true, defaultValue: startup.codeLoaderClient()},
+    {id: 'startupCode', type: 'startupCode', dynamic: true, defaultValue: startup.treeShakeClient()},
     {id: 'init', type: 'action', dynamic: true}
   ],
   impl: (ctx,name,startUpCode,init) => {
@@ -350,7 +350,7 @@ jb.component('jbm.child', {
             child.spy.initSpy({spyParam: jb.spy.spyParam})
             jb.jbm.childJbms[name] = child
             child.parent = jb
-            child.codeLoaderJbm = jb.codeLoaderJbm || jb // TODO: use codeLoaderUri
+            child.treeShakeJbm = jb.treeShakeJbm || jb // TODO: use codeLoaderUri
             child.ports[jb.uri] = {
                 from: child.uri, to: jb.uri,
                 postMessage: m => 

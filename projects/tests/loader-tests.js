@@ -1,27 +1,27 @@
 jb.component('loaderTest.treeShake', {
   impl: dataTest({
-    calculate: pipeline(() => jb.codeLoader.treeShake(['notContains'],{}), join(',')),
+    calculate: pipeline(() => jb.treeShake.treeShake(['notContains'],{}), join(',')),
     expectedResult: and(contains('contains'),contains('not'))
   })
 })
 
 jb.component('loaderTest.treeShake.itemlist', {
   impl: dataTest({
-    calculate: pipeline(() => jb.codeLoader.treeShake(['itemlist'],{}), join(',')),
+    calculate: pipeline(() => jb.treeShake.treeShake(['itemlist'],{}), join(',')),
     expectedResult: and(contains('writeValue'),contains('#ui.vdomDiff'))
   })
 })
 
 jb.component('loaderTest.treeShake.big', {
   impl: dataTest({
-    calculate: pipeline(() => jb.codeLoader.code(jb.codeLoader.treeShake('widget.headless,call,editableText,editableText.codemirror'.split(','),{}))),
+    calculate: pipeline(() => jb.treeShake.code(jb.treeShake.treeShake('widget.headless,call,editableText,editableText.codemirror'.split(','),{}))),
     expectedResult: contains('jb.ui.h')
   })
 })
 
 jb.component('loaderTest.treeShake.funcDef', {
   impl: dataTest({
-    calculate: pipeline(() => jb.codeLoader.treeShake(['#utils.toSynchArray'],{}), join(',')),
+    calculate: pipeline(() => jb.treeShake.treeShake(['#utils.toSynchArray'],{}), join(',')),
     expectedResult: contains('#callbag.fromIter')
   })
 })

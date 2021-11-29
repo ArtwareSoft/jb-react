@@ -25,7 +25,7 @@ Object.assign(jb, {
           ext.initialized = true
           Object.assign(jb[ext.libId], ext.init.apply(jb[ext.libId]))
       })
-    const baseUrl = jb.path(jb.codeLoader,'baseUrl')
+    const baseUrl = jb.path(jb.treeShake,'baseUrl')
     const libsToLoad = libs.flatMap(l => Object.values(jb[l].__extensions)).flatMap(ext => ext.requireLibs || []).filter(url => !jb.frame.jb.__requiredLoaded[url])
     return Promise.all(libsToLoad.map( url => Promise.resolve(jb_loadFile(url,baseUrl,jb)).then(() => jb.frame.jb.__requiredLoaded[url] = true) ))
   },

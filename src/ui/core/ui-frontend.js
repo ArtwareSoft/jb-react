@@ -1,6 +1,6 @@
 jb.extension('ui', 'frontend', {
     refreshFrontEnd(elem, {content} = {}) {
-        jb.codeLoader.loadFELibsDirectly(jb.ui.feLibs(content)).then(()=> 
+        jb.treeShake.loadFELibsDirectly(jb.ui.feLibs(content)).then(()=> 
             jb.ui.findIncludeSelf(elem,'[interactive]').forEach(el=> 
                 el._component ? el._component.newVDomApplied() : new jb.ui.frontEndCmp(el)))
     },

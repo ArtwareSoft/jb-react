@@ -27,7 +27,7 @@ async function jbInit(uri, {projects, baseUrl, multipleInFrame, loadFileFunc, fi
 
   await jbSupervisedLoad([...src,...projectsCode],{jb, jb_loadFile, baseUrl})
 
-  jb.codeLoader.loadModules = async function(modules) { // helper function
+  jb.treeShake.loadModules = async function(modules) { // helper function
     const modulesCode = await modules.reduce( async (acc,dir) => [...await acc, ...await fileSymbols(dir)], [])
     await jbSupervisedLoad(modulesCode,{jb, jb_loadFile, baseUrl})      
   }
@@ -71,12 +71,12 @@ async function jbSupervisedLoad(loadedCode, {jb, jb_loadFile, baseUrl} = {}) {
   const libs = jb.utils.unique(loadedCode.flatMap(x=>x.libs))
   ns.forEach(id=> jb.macro.registerProxy(id))
   await loadedCode.map(x=>x.path).reduce((pr,url) => pr.then(()=> jb_loadFile(url,baseUrl,jb)), Promise.resolve())
-  jb.codeLoader.baseUrl = baseUrl
+  jb.treeShake.baseUrl = baseUrl
   await jb.initializeLibs(libs)
   Object.values(jb.comps).forEach(comp => jb.macro.fixProfile(comp))
 }
 
-async function jb_codeLoaderClient(uri,baseUrl) {
+async function jb_treeShakeClient(uri,baseUrl) {
   globalThis.jb = { uri }
   const coreFiles= jb_modules.core.map(x=>`/${x}`)
   await coreFiles.reduce((pr,url) => pr.then(()=> jb_loadFile(url,baseUrl)), Promise.resolve())
@@ -85,6 +85,6 @@ async function jb_codeLoaderClient(uri,baseUrl) {
     jb.macro.ns('If,not,contains,writeValue,obj,prop,rx,source,sink,call,jbm,remote,pipe,log,net,aggregate,list,runActions,Var,http') // ns use in modules
   await 'loader/code-loader,core/jb-common,misc/jb-callbag,misc/rx-comps,misc/pretty-print,misc/remote-context,misc/jbm,misc/remote,misc/net'.split(',').map(x=>`/src/${x}.js`)
     .reduce((pr,url)=> pr.then(() => jb_loadFile(url,baseUrl)), Promise.resolve())
-  await jb.initializeLibs('core,callbag,utils,jbm,net,cbHandler,codeLoader,websocket'.split(','))
+  await jb.initializeLibs('core,callbag,utils,jbm,net,cbHandler,treeShake,websocket'.split(','))
   Object.values(jb.comps).forEach(comp => jb.macro.fixProfile(comp))
 }

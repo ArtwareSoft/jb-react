@@ -49,7 +49,7 @@ jb.component('remoteTest.remote.action', {
   })
 })
 
-jb.component('remoteTest.innerCodeLoader', {
+jb.component('remoteTest.innerTreeShake', {
   impl: dataTest({
     calculate: remote.data(() => jb.utils.emptyLineWithSpaces != null, jbm.byUri('tests•w1•inner')),
     expectedResult: equals(true),
@@ -440,7 +440,7 @@ jb.component('remoteWidgetTest.loadCodeManully', {
     control: remote.widget(
       group({
         controls: ctx => ctx.run({$: 'text', text: 'hello' }),
-        features: group.wait(codeLoader.getCodeFromRemote('text'))
+        features: group.wait(treeShake.getCodeFromRemote('text'))
       }),
       jbm.worker()
     ),

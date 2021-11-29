@@ -5,7 +5,7 @@ self.addEventListener('message', m => { // debugge asking to be debugged. Panel 
         const debuggeUri = uri
         console.log('chromeDebugger devtools gateway attached to debuggeUri',debuggeUri)
 
-        if (debuggeUri) jb_codeLoaderClient('devtools','http://localhost:8082').then(() => {
+        if (debuggeUri) jbTreeShakeClient('devtools','http://localhost:8082').then(() => {
             self.spy = jb.spy.initSpy({spyParam})
             
             jb.component('jbm.connectToPanel', {
@@ -64,7 +64,7 @@ var jb_modules = {
     ]
 }
 
-async function jb_codeLoaderClient(uri,baseUrl) {
+async function jbTreeShakeClient(uri,baseUrl) {
   self.jb = { uri }
   const coreFiles= jb_modules.core.map(x=>`/${x}`)
   await coreFiles.reduce((pr,url) => pr.then(()=> jb_loadFile(url,baseUrl)), Promise.resolve())
@@ -73,7 +73,7 @@ async function jb_codeLoaderClient(uri,baseUrl) {
     jb.macro.ns('If,not,contains,writeValue,obj,prop,rx,source,sink,call,jbm,startup,remote,pipe,log,net,aggregate,list,runActions,Var') // ns use in modules
   await 'loader/code-loader,core/jb-common,misc/jb-callbag,misc/rx-comps,misc/pretty-print,misc/remote-context,misc/jbm,misc/remote'.split(',').map(x=>`/src/${x}.js`)
     .reduce((pr,url)=> pr.then(() => jb_loadFile(url,baseUrl)), Promise.resolve())
-  await jb.initializeLibs('core,callbag,utils,jbm,net,cbHandler,codeLoader'.split(','))
+  await jb.initializeLibs('core,callbag,utils,jbm,net,cbHandler,treeShake'.split(','))
   Object.values(jb.comps).filter(cmp => typeof cmp.impl == 'object').forEach(cmp => jb.macro.fixProfile(cmp.impl,jb.comps[cmp.impl.$]))  
 }        
 

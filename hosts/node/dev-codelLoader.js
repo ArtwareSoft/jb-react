@@ -3,7 +3,7 @@ const vm = require('vm')
 const jbBaseUrl = __dirname.replace(/\\/g,'/').replace(/\/hosts\/node$/,'').replace(/\/bin\/jbman$/,'')
 
 module.exports = { 
-    loadCodeLoaderServer(uri, projects = []) {
+    loadTreeShakeServer(uri, projects = []) {
         try {
             const loaderCode = fs.readFileSync(`${jbBaseUrl}/src/loader/jb-loader.js`) + '\n//# sourceURL=jb-loader.js'
             vm.runInThisContext(loaderCode)

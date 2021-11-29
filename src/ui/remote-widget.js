@@ -34,8 +34,8 @@ jb.component('action.frontEndDelta', {
         const {delta,css,widgetId,cmpId,assumedVdom} = ev
         if (css) 
             return !ctx.vars.headlessWidget && jb.ui.insertOrUpdateStyleElem(ctx,css,ev.elemId, {classId: ev.classId})
-        await jb.codeLoader.getCodeFromRemote(jb.codeLoader.treeShakeFrontendFeatures(pathsOfFEFeatures(delta)))
-        await jb.codeLoader.loadFELibsDirectly(feLibs(delta))
+        await jb.treeShake.getCodeFromRemote(jb.treeShake.treeShakeFrontendFeatures(pathsOfFEFeatures(delta)))
+        await jb.treeShake.loadFELibsDirectly(feLibs(delta))
         const ctxToUse = ctx.setVars({headlessWidget: false, FEwidgetId: widgetId})
         const elem = cmpId ? jb.ui.find(jb.ui.widgetBody(ctxToUse),`[cmp-id="${cmpId}"]`)[0] : jb.ui.widgetBody(ctxToUse)
         try {

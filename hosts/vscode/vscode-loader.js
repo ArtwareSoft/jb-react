@@ -5,14 +5,14 @@ global.fs = require("fs")
 const vm = require("vm")
 const workspaceDir = (vscodeNS.workspace.workspaceFolders || []).map(ws=>ws.uri.path).filter(path=>path.match(/jb-react/))[0]
 global.jbBaseUrl = __dirname.match(/extensions/) ? workspaceDir : __dirname.replace(/\/hosts\/vscode$/,'')
-// TODO: support more generic codeLoader - internet, or locally installed
+// TODO: support more generic tree shake - internet, or locally installed
 global.jbInvscode = true
 global.loadProjectsCode = loadProjectsCode
 global.Worker = require('worker_threads').Worker
 console.log('vscode init 0')
 
 async function activate(context) {
-    global.jb = await loadCodeLoaderServer()
+    global.jb = await loadTreeShakeServer()
     console.log('vscode init')
     await jb.vscode.init()
 
@@ -22,7 +22,7 @@ async function activate(context) {
 }
 exports.activate = activate
 
-function loadCodeLoaderServer() {
+function loadTreeShakeServer() {
     try {
         const loaderCode = fs.readFileSync(`${jbBaseUrl}/src/loader/jb-loader.js`) + '\n//# sourceURL=jb-loader.js'
         vm.runInThisContext(loaderCode)

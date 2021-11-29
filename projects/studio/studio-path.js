@@ -354,5 +354,5 @@ jb.component('studio.isCssPath', {
 
 jb.component('jbm.vDebugger', {
     type: 'jbm',
-    impl: jbm.child('vDebugger', startup.codeLoaderServer('studio'))
+    impl: jbm.child('vDebugger', startup.treeShakeServer('studio'))
 })

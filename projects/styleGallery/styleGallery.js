@@ -4,7 +4,7 @@ jb.component('styleGallery.loadStyles', {
   ],
   impl: runActionOnItem(
       remote.data(jb.studio.PTsOfType('%$component%') ,() => jb.parent),
-      codeLoader.getCodeFromRemote('%%')
+      treeShake.getCodeFromRemote('%%')
   )
 })
 

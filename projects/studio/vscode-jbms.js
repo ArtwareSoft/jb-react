@@ -52,7 +52,7 @@ jb.component('jbm.vscodeWebView', {
         if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
         const webViewUri = `${jb.uri}•${name}`
         const _jbBaseUrl = 'http://localhost:8082'
-        const code = jb.codeLoader.code(jb.codeLoader.treeShake([...jb.codeLoader.clientComps,'#vscode.portFromWebViewToExt'],{}))
+        const code = jb.treeShake.code(jb.treeShake.treeShake([...jb.treeShake.clientComps,'#vscode.portFromWebViewToExt'],{}))
         const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -65,9 +65,9 @@ jb.component('jbm.vscodeWebView', {
     jb = { uri: '${webViewUri}'}
     ${code};
 
-    jb.codeLoader.baseUrl = '${_jbBaseUrl}'
+    jb.treeShake.baseUrl = '${_jbBaseUrl}'
     spy = jb.spy.initSpy({spyParam: '${jb.spy.spyParam}'})
-    jb.codeLoaderJbm = jb.parent = jb.ports['${jb.uri}'] = jb.jbm.extendPortToJbmProxy(jb.vscode.portFromWebViewToExt('${webViewUri}','${jb.uri}'))
+    jb.treeShakeJbm = jb.parent = jb.ports['${jb.uri}'] = jb.jbm.extendPortToJbmProxy(jb.vscode.portFromWebViewToExt('${webViewUri}','${jb.uri}'))
     jb.parent.remoteExec(jb.remoteCtx.stripJS(() => jb.jbm.notifyChildReady['${webViewUri}']() ), {oneway: true} )
     </script>
     <link rel="stylesheet" type="text/css" href="${_jbBaseUrl}/dist/css/material.css"/>
@@ -146,7 +146,7 @@ jb.component('jbm.vscodeWebView', {
 //     params: [
 //         {id: 'id', as: 'string' },
 //         {id: 'init' , type: 'action', dynamic: true },
-//         {id: 'startupCode', type: 'startupCode', dynamic: true, defaultValue: startup.codeLoaderClient() },
+//         {id: 'startupCode', type: 'startupCode', dynamic: true, defaultValue: startup.treeShakeClient() },
 //     ],    
 //     impl: (ctx,name,init,startupCode) => {
 //         if (jb.jbm.childJbms[name]) return jb.jbm.childJbms[name]
@@ -166,7 +166,7 @@ jb.component('jbm.vscodeWebView', {
 
 // function ${jb.vscode.portFromWorkerToExt.toString()}
 // const { parentPort} = require('worker_threads')
-// jb.codeLoaderJbm = jb.parent = jb.ports['${jb.uri}'] = jb.jbm.extendPortToJbmProxy(portFromWorkerToExt(parentPort,'${workerUri}','${jb.uri}'))
+// jb.treeShakeJbm = jb.parent = jb.ports['${jb.uri}'] = jb.jbm.extendPortToJbmProxy(portFromWorkerToExt(parentPort,'${workerUri}','${jb.uri}'))
 // //jb.delay(3000).then(()=>{debugger})
 // //# sourceURL=${workerUri}-startup.js
 // `
